@@ -1,28 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-label="Lumen fintech dashboard cover">
-  <defs>
-    <linearGradient id="p3" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#2a2620"/>
-      <stop offset="1" stop-color="#4a4238"/>
-    </linearGradient>
-  </defs>
-  <rect width="640" height="400" fill="url(#p3)"/>
+  <rect width="640" height="400" fill="#11193b"/>
+  <circle cx="80" cy="70" r="90" fill="#f889e7" opacity="0.3"/>
+  <circle cx="580" cy="350" r="100" fill="#47aaeb" opacity="0.25"/>
   <g transform="translate(110 60)">
-    <rect width="420" height="280" rx="16" fill="#faf5ef"/>
-    <rect x="0" y="0" width="110" height="280" rx="16" fill="#f3ebe0"/>
-    <circle cx="34" cy="36" r="12" fill="#e4572e"/>
-    <rect x="22" y="70" width="66" height="9" rx="4.5" fill="#221f1a" opacity="0.4"/>
-    <rect x="22" y="92" width="66" height="9" rx="4.5" fill="#221f1a" opacity="0.25"/>
-    <rect x="22" y="114" width="66" height="9" rx="4.5" fill="#221f1a" opacity="0.25"/>
-    <rect x="134" y="28" width="150" height="16" rx="8" fill="#221f1a"/>
-    <rect x="134" y="66" width="120" height="70" rx="12" fill="#e4572e"/>
-    <rect x="268" y="66" width="120" height="70" rx="12" fill="#f2a65a"/>
-    <rect x="150" y="88" width="60" height="8" rx="4" fill="#faf5ef" opacity="0.8"/>
-    <rect x="150" y="104" width="40" height="12" rx="6" fill="#faf5ef"/>
-    <rect x="284" y="88" width="60" height="8" rx="4" fill="#221f1a" opacity="0.5"/>
-    <rect x="284" y="104" width="40" height="12" rx="6" fill="#221f1a"/>
+    <rect width="420" height="280" rx="18" fill="#fdf9ec"/>
+    <rect x="0" y="0" width="110" height="280" rx="18" fill="#faebc5"/>
+    <circle cx="34" cy="36" r="12" fill="#c71e70"/>
+    <rect x="22" y="70" width="66" height="9" rx="4.5" fill="#11193b" opacity="0.4"/>
+    <rect x="22" y="92" width="66" height="9" rx="4.5" fill="#11193b" opacity="0.25"/>
+    <rect x="22" y="114" width="66" height="9" rx="4.5" fill="#11193b" opacity="0.25"/>
+    <rect x="134" y="28" width="150" height="16" rx="8" fill="#11193b"/>
+    <rect x="134" y="66" width="120" height="70" rx="14" fill="#feadd2"/>
+    <rect x="268" y="66" width="120" height="70" rx="14" fill="#ffdf2b"/>
+    <rect x="150" y="88" width="60" height="8" rx="4" fill="#11193b" opacity="0.6"/>
+    <rect x="150" y="104" width="40" height="12" rx="6" fill="#11193b"/>
+    <rect x="284" y="88" width="60" height="8" rx="4" fill="#11193b" opacity="0.6"/>
+    <rect x="284" y="104" width="40" height="12" rx="6" fill="#11193b"/>
     <!-- chart -->
     <polyline points="140,240 190,200 240,220 290,170 340,190 385,150"
-      fill="none" stroke="#e4572e" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="385" cy="150" r="8" fill="#221f1a"/>
+      fill="none" stroke="#c71e70" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="385" cy="150" r="8" fill="#ffdf2b" stroke="#11193b" stroke-width="3"/>
   </g>
 </svg>

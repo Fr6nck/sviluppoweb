@@ -1,6 +1,6 @@
 # Studio Nova — One-Page Portfolio Site
 
-A responsive one-page website built with plain **HTML, CSS and JavaScript** — no frameworks, no build step. Inspired by modern design-studio sites like designgal.studio.
+A responsive one-page website built with plain **HTML, CSS and JavaScript** — no frameworks, no build step. Design and color mood matched to designgal.studio: butter-cream background, deep navy ink, bright yellow CTAs and candy pink / peach / lilac accents, set in the Figtree typeface.
 
 ## Sections
 
