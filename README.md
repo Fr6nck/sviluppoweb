@@ -1,52 +1,52 @@
-# Studio Nova — One-Page Portfolio Site
+# Studio Nova — Sito One-Page
 
-A responsive one-page website built with plain **HTML, CSS and JavaScript** — no frameworks, no build step. Design and color mood matched to designgal.studio: butter-cream background, deep navy ink, bright yellow CTAs and candy pink / peach / lilac accents, set in the Figtree typeface.
+Un sito one-page responsive realizzato solo con **HTML, CSS e JavaScript** — senza framework e senza build. Layout e palette ispirati a designgal.studio: sfondo crema burro, blu navy per i testi, CTA giallo acceso e accenti candy rosa / pesca / lilla, con il carattere Figtree.
 
-## Sections
+## Sezioni
 
-1. **Hero** — headline, CTA buttons, stats and a floating image collage, with a scrolling services marquee
-2. **Work** — selected projects grid with hover effects
-3. **Services** — three service cards
-4. **About** — studio intro with portrait and client quote
-5. **Contact** — validated contact form (just above the footer)
+1. **Hero** — wordmark gigante a tutta larghezza, card rosa con titolo e CTA, fiore corallo animato, immagine e striscia "Si fidano di noi"
+2. **Lavori** — griglia di progetti con chip multi-tag ed effetti hover
+3. **Servizi** — sezione problema → soluzione su sfondo navy, con 4 punti critici e due card servizio (gialla e rosa) con checklist
+4. **Lo Studio** — presentazione con ritratto, sottotitolo e citazione di un cliente
+5. **Contatti** — form con validazione (subito sopra il footer)
 
-Plus a sticky header with mobile hamburger menu and a footer with navigation and social links.
+Più un header fisso con navigazione a pillole centrata (menu hamburger a schermo intero su mobile) e un footer navy con link e "Torna su".
 
-## Run it locally
+## Come avviarlo in locale
 
-No build needed. Either open `index.html` directly in a browser, or serve the folder:
+Non serve installare nulla. Puoi aprire direttamente `index.html` nel browser, oppure servire la cartella:
 
 ```bash
-# Python
+# con Python
 python3 -m http.server 8000
 
-# or Node
+# oppure con Node
 npx serve .
 ```
 
-Then open http://localhost:8000
+Poi apri http://localhost:8000
 
-## Features
+## Caratteristiche
 
-- Fully responsive (desktop → tablet → mobile breakpoints at 900px / 720px)
-- Scroll-reveal animations via `IntersectionObserver`
-- Active nav link highlighting while scrolling
-- Mobile fullscreen menu with animated hamburger
-- Client-side contact form validation (required fields + email format) with success message
-- Local SVG illustrations — works fully offline (only the Google Fonts link needs a connection; system fonts are used as fallback)
-- Respects `prefers-reduced-motion`
+- Completamente responsive (breakpoint a 900px e 720px)
+- Animazioni allo scroll con `IntersectionObserver`
+- Evidenziazione del link attivo durante lo scorrimento
+- Menu mobile a schermo intero con hamburger animato
+- Validazione del form lato client (campi obbligatori + formato email) con messaggio di conferma
+- Illustrazioni SVG locali — funziona anche offline (solo il font Google richiede la connessione; senza, viene usato un font di sistema simile)
+- Rispetta `prefers-reduced-motion`
 
-## Structure
+## Struttura
 
 ```
 ├── index.html
 ├── css/style.css
 ├── js/main.js
-└── assets/         # local SVG illustrations
+└── assets/         # illustrazioni SVG locali
 ```
 
-## Customizing
+## Personalizzazione
 
-- Colors and fonts are defined as CSS custom properties at the top of `css/style.css` (`:root`)
-- Replace the SVGs in `assets/` with your own photos/images (any format) — keep the same file names or update `index.html`
-- The contact form is front-end only; wire the `submit` handler in `js/main.js` to your backend or a service like Formspree to actually send messages
+- Colori e font sono variabili CSS all'inizio di `css/style.css` (`:root`)
+- Sostituisci gli SVG in `assets/` con le tue foto/immagini (qualsiasi formato) — mantieni gli stessi nomi file o aggiorna `index.html`
+- Il form è solo front-end; collega il gestore `submit` in `js/main.js` al tuo backend o a un servizio come Formspree per ricevere davvero i messaggi

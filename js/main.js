@@ -92,14 +92,14 @@
     var value = input.value.trim();
 
     if (input.required && !value) {
-      setError(input, "This field is required.");
+      setError(input, "Questo campo è obbligatorio.");
       return false;
     }
 
     if (input.type === "email" && value) {
       var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
       if (!emailOk) {
-        setError(input, "Please enter a valid email address.");
+        setError(input, "Inserisci un indirizzo email valido.");
         return false;
       }
     }
