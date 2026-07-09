@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-label="Bloom wellness app cover">
+  <defs>
+    <linearGradient id="p1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8fb996"/>
+      <stop offset="1" stop-color="#5e8d6a"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#p1)"/>
+  <circle cx="540" cy="80" r="110" fill="#faf5ef" opacity="0.15"/>
+  <g transform="translate(230 60)">
+    <rect width="180" height="340" rx="26" fill="#221f1a"/>
+    <rect x="10" y="12" width="160" height="316" rx="18" fill="#faf5ef"/>
+    <rect x="28" y="40" width="90" height="12" rx="6" fill="#221f1a"/>
+    <rect x="28" y="62" width="124" height="7" rx="3.5" fill="#221f1a" opacity="0.3"/>
+    <circle cx="90" cy="150" r="46" fill="#8fb996"/>
+    <path d="M90 128 c10 14 10 30 0 44 c-10 -14 -10 -30 0 -44z" fill="#faf5ef"/>
+    <rect x="28" y="220" width="124" height="34" rx="10" fill="#f3ebe0"/>
+    <rect x="28" y="264" width="124" height="34" rx="10" fill="#e4572e"/>
+  </g>
+  <path d="M110 260 q30 -60 60 0 q-30 40 -60 0z" fill="#faf5ef" opacity="0.6"/>
+</svg>

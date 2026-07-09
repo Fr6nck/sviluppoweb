@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Studio Nova — a design studio helping mission-driven brands win customers through expert web and product design.">
+  <title>Studio Nova — Web &amp; Product Design</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23e4572e'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ============ HEADER ============ -->
+  <header class="site-header" id="top">
+    <nav class="nav container" aria-label="Main navigation">
+      <a href="#top" class="nav__logo">Studio&nbsp;Nova<span class="dot">.</span></a>
+
+      <button class="nav__toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+
+      <ul class="nav__menu" id="nav-menu">
+        <li><a href="#work" class="nav__link">Work</a></li>
+        <li><a href="#services" class="nav__link">Services</a></li>
+        <li><a href="#about" class="nav__link">About</a></li>
+        <li><a href="#contact" class="nav__link nav__link--cta">Let's talk</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ============ 1. HERO ============ -->
+    <section class="hero" id="hero">
+      <div class="container hero__grid">
+        <div class="hero__content reveal">
+          <p class="eyebrow">Web &amp; product design studio</p>
+          <h1 class="hero__title">
+            Helping mission-driven brands <em>win customers</em> through expert design.
+          </h1>
+          <p class="hero__lead">
+            We craft websites and digital products built on credibility, clarity
+            and conversion — so your big idea gets the audience it deserves.
+          </p>
+          <div class="hero__actions">
+            <a href="#contact" class="btn btn--primary">Start a project</a>
+            <a href="#work" class="btn btn--ghost">See our work</a>
+          </div>
+          <ul class="hero__stats">
+            <li><strong>15+</strong><span>years of experience</span></li>
+            <li><strong>120</strong><span>projects shipped</span></li>
+            <li><strong>98%</strong><span>happy clients</span></li>
+          </ul>
+        </div>
+
+        <div class="hero__collage reveal reveal--delay">
+          <img src="assets/hero-main.svg" alt="Abstract preview of a designed product interface" class="hero__img hero__img--main">
+          <img src="assets/hero-card-1.svg" alt="Mobile app design preview" class="hero__img hero__img--float1">
+          <img src="assets/hero-card-2.svg" alt="Brand palette preview" class="hero__img hero__img--float2">
+        </div>
+      </div>
+
+      <div class="hero__marquee" aria-hidden="true">
+        <div class="marquee__track">
+          <span>Strategy</span><span>✦</span><span>Web design</span><span>✦</span>
+          <span>Product design</span><span>✦</span><span>Branding</span><span>✦</span>
+          <span>Development</span><span>✦</span>
+          <span>Strategy</span><span>✦</span><span>Web design</span><span>✦</span>
+          <span>Product design</span><span>✦</span><span>Branding</span><span>✦</span>
+          <span>Development</span><span>✦</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 2. WORK ============ -->
+    <section class="work section" id="work">
+      <div class="container">
+        <div class="section__head reveal">
+          <p class="eyebrow">Selected work</p>
+          <h2 class="section__title">Results our clients brag about</h2>
+        </div>
+
+        <div class="work__grid">
+          <article class="work-card reveal">
+            <div class="work-card__media">
+              <img src="assets/project-1.svg" alt="Bloom — wellness app case study cover" loading="lazy">
+            </div>
+            <div class="work-card__body">
+              <h3>Bloom — AI wellness app</h3>
+              <p>End-to-end product design that helped raise a $2M seed round.</p>
+              <span class="work-card__tag">Product design</span>
+            </div>
+          </article>
+
+          <article class="work-card reveal reveal--delay">
+            <div class="work-card__media">
+              <img src="assets/project-2.svg" alt="Verde — meal delivery website case study cover" loading="lazy">
+            </div>
+            <div class="work-card__body">
+              <h3>Verde — plant-forward meals</h3>
+              <p>A conversion-first website redesign: +64% sign-ups in 3 months.</p>
+              <span class="work-card__tag">Web design</span>
+            </div>
+          </article>
+
+          <article class="work-card reveal">
+            <div class="work-card__media">
+              <img src="assets/project-3.svg" alt="Lumen — fintech dashboard case study cover" loading="lazy">
+            </div>
+            <div class="work-card__body">
+              <h3>Lumen — fintech dashboard</h3>
+              <p>Complex data made simple with a clean, human-friendly UI system.</p>
+              <span class="work-card__tag">UI system</span>
+            </div>
+          </article>
+
+          <article class="work-card reveal reveal--delay">
+            <div class="work-card__media">
+              <img src="assets/project-4.svg" alt="Atlas — travel brand identity case study cover" loading="lazy">
+            </div>
+            <div class="work-card__body">
+              <h3>Atlas — travel brand</h3>
+              <p>Identity and launch site for a boutique travel startup.</p>
+              <span class="work-card__tag">Branding</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 3. SERVICES ============ -->
+    <section class="services section section--tinted" id="services">
+      <div class="container">
+        <div class="section__head reveal">
+          <p class="eyebrow">What we do</p>
+          <h2 class="section__title">Design that works as good as it looks</h2>
+        </div>
+
+        <div class="services__grid">
+          <article class="service-card reveal">
+            <span class="service-card__num">01</span>
+            <h3>Web design &amp; development</h3>
+            <p>Strategy-led marketing sites that build trust at first glance and turn visitors into customers.</p>
+            <ul>
+              <li>Landing pages &amp; one-pagers</li>
+              <li>Marketing websites</li>
+              <li>SEO-friendly, fast builds</li>
+            </ul>
+          </article>
+
+          <article class="service-card reveal reveal--delay">
+            <span class="service-card__num">02</span>
+            <h3>Product design</h3>
+            <p>From first sketch to polished interface — UX and UI that make complex products feel effortless.</p>
+            <ul>
+              <li>UX research &amp; flows</li>
+              <li>UI design &amp; prototyping</li>
+              <li>Design systems</li>
+            </ul>
+          </article>
+
+          <article class="service-card reveal reveal--delay2">
+            <span class="service-card__num">03</span>
+            <h3>Brand identity</h3>
+            <p>Memorable visual identities that give startups the credibility of established brands.</p>
+            <ul>
+              <li>Logo &amp; visual language</li>
+              <li>Brand guidelines</li>
+              <li>Pitch &amp; launch assets</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 4. ABOUT ============ -->
+    <section class="about section" id="about">
+      <div class="container about__grid">
+        <div class="about__media reveal">
+          <img src="assets/about.svg" alt="Portrait illustration of the studio founder">
+        </div>
+        <div class="about__content reveal reveal--delay">
+          <p class="eyebrow">Meet the studio</p>
+          <h2 class="section__title">Hi, we're Studio Nova — small team, big outcomes.</h2>
+          <p>
+            For over 15 years we've designed for startups and scale-ups across
+            wellness, fintech and e-commerce. We keep things simple: no account
+            managers, no hand-offs — you work directly with the designers
+            building your product.
+          </p>
+          <p>
+            Every engagement starts with strategy, because pretty pixels without
+            a plan don't move the needle. Then we design, test and refine until
+            it converts.
+          </p>
+          <blockquote class="about__quote">
+            “Working with Studio Nova was the best decision we made pre-launch.
+            Investors kept complimenting the product before we even demoed it.”
+            <cite>— Maya R., founder of Bloom</cite>
+          </blockquote>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 5. CONTACT ============ -->
+    <section class="contact section section--dark" id="contact">
+      <div class="container contact__grid">
+        <div class="contact__intro reveal">
+          <p class="eyebrow eyebrow--light">Contact</p>
+          <h2 class="section__title">Have a project in mind? Let's make it real.</h2>
+          <p>
+            Tell us a little about your idea and we'll get back to you within
+            one business day — with honest thoughts, not a sales pitch.
+          </p>
+          <a href="mailto:hello@studionova.example" class="contact__email">hello@studionova.example</a>
+        </div>
+
+        <form class="contact__form reveal reveal--delay" id="contact-form" novalidate>
+          <div class="form__row">
+            <div class="form__field">
+              <label for="name">Name</label>
+              <input type="text" id="name" name="name" placeholder="Your name" required>
+              <small class="form__error"></small>
+            </div>
+            <div class="form__field">
+              <label for="email">Email</label>
+              <input type="email" id="email" name="email" placeholder="you@company.com" required>
+              <small class="form__error"></small>
+            </div>
+          </div>
+          <div class="form__field">
+            <label for="budget">Budget</label>
+            <select id="budget" name="budget">
+              <option value="">Select a range (optional)</option>
+              <option value="small">Under €5k</option>
+              <option value="medium">€5k – €15k</option>
+              <option value="large">€15k+</option>
+            </select>
+          </div>
+          <div class="form__field">
+            <label for="message">Project details</label>
+            <textarea id="message" name="message" rows="5" placeholder="What are you building, and when do you need it?" required></textarea>
+            <small class="form__error"></small>
+          </div>
+          <button type="submit" class="btn btn--primary btn--full">Send message</button>
+          <p class="form__success" hidden>✦ Thanks! Your message has been sent — we'll reply shortly.</p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="site-footer">
+    <div class="container footer__grid">
+      <p class="footer__logo">Studio&nbsp;Nova<span class="dot">.</span></p>
+      <ul class="footer__links">
+        <li><a href="#work">Work</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <ul class="footer__social">
+        <li><a href="#" aria-label="LinkedIn">LinkedIn</a></li>
+        <li><a href="#" aria-label="Instagram">Instagram</a></li>
+        <li><a href="#" aria-label="Dribbble">Dribbble</a></li>
+      </ul>
+    </div>
+    <div class="container footer__bottom">
+      <p>© <span id="year">2026</span> Studio Nova. All rights reserved.</p>
+      <a href="#top" class="footer__top">Back to top ↑</a>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

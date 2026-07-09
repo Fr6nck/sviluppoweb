@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-label="Atlas travel brand cover">
+  <defs>
+    <linearGradient id="p4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6a9bc3"/>
+      <stop offset="1" stop-color="#3d6a94"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#p4)"/>
+  <circle cx="320" cy="200" r="130" fill="#faf5ef"/>
+  <circle cx="320" cy="200" r="130" fill="none" stroke="#221f1a" stroke-width="3" opacity="0.15"/>
+  <!-- abstract globe -->
+  <ellipse cx="320" cy="200" rx="130" ry="46" fill="none" stroke="#e4572e" stroke-width="4"/>
+  <ellipse cx="320" cy="200" rx="56" ry="130" fill="none" stroke="#f2a65a" stroke-width="4"/>
+  <path d="M250 160 q70 -40 140 0" fill="none" stroke="#221f1a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M250 240 q70 40 140 0" fill="none" stroke="#221f1a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M480 100 l10 22 22 10 -22 10 -10 22 -10 -22 -22 -10 22 -10z" fill="#faf5ef"/>
+  <rect x="240" y="330" width="160" height="34" rx="17" fill="#221f1a"/>
+  <rect x="262" y="344" width="116" height="7" rx="3.5" fill="#faf5ef" opacity="0.75"/>
+</svg>
