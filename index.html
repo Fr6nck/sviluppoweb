@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Studio Nova — a design studio helping mission-driven brands win customers through expert web and product design.">
+  <meta name="description" content="Studio Nova — a design studio helping mission-driven startups win customers through expert web and product design.">
   <title>Studio Nova — Web &amp; Product Design</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23ffdf2b'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,7 +13,7 @@
 </head>
 <body>
 
-  <!-- ============ HEADER ============ -->
+  <!-- ============ HEADER : centered pill nav ============ -->
   <header class="site-header" id="top">
     <nav class="nav container" aria-label="Main navigation">
       <a href="#top" class="nav__logo">Studio&nbsp;Nova<span class="dot">.</span></a>
@@ -25,8 +25,8 @@
       <ul class="nav__menu" id="nav-menu">
         <li><a href="#work" class="nav__link">Work</a></li>
         <li><a href="#services" class="nav__link">Services</a></li>
-        <li><a href="#about" class="nav__link">About</a></li>
-        <li><a href="#contact" class="nav__link nav__link--cta">Let's talk</a></li>
+        <li><a href="#about" class="nav__link">Meet the Studio</a></li>
+        <li><a href="#contact" class="nav__link">Get in Touch</a></li>
       </ul>
     </nav>
   </header>
@@ -34,142 +34,154 @@
   <main>
     <!-- ============ 1. HERO ============ -->
     <section class="hero" id="hero">
+      <h1 class="hero__wordmark" aria-label="Studio Nova">Studio&nbsp;Nova</h1>
+
       <div class="container hero__grid">
-        <div class="hero__content reveal">
-          <p class="eyebrow">Web &amp; product design studio</p>
-          <h1 class="hero__title">
-            Helping mission-driven brands <em>win customers</em> through expert design.
-          </h1>
-          <p class="hero__lead">
-            We craft websites and digital products built on credibility, clarity
-            and conversion — so your big idea gets the audience it deserves.
-          </p>
-          <div class="hero__actions">
-            <a href="#contact" class="btn btn--primary">Start a project</a>
-            <a href="#work" class="btn btn--ghost">See our work</a>
-          </div>
-          <ul class="hero__stats">
-            <li><strong>15+</strong><span>years of experience</span></li>
-            <li><strong>120</strong><span>projects shipped</span></li>
-            <li><strong>98%</strong><span>happy clients</span></li>
-          </ul>
+        <div class="hero__card reveal">
+          <h2 class="hero__title">
+            Helping mission-driven startups win customers &amp; funding through
+            expert web and product design
+          </h2>
+          <a href="#contact" class="btn btn--dark">Get in touch <span class="btn__arrow">→</span></a>
+          <svg class="hero__flower" viewBox="0 0 200 200" aria-hidden="true">
+            <g fill="#ff5a52">
+              <circle cx="100" cy="38" r="30"/>
+              <circle cx="144" cy="56" r="30"/>
+              <circle cx="162" cy="100" r="30"/>
+              <circle cx="144" cy="144" r="30"/>
+              <circle cx="100" cy="162" r="30"/>
+              <circle cx="56" cy="144" r="30"/>
+              <circle cx="38" cy="100" r="30"/>
+              <circle cx="56" cy="56" r="30"/>
+              <circle cx="100" cy="100" r="42"/>
+            </g>
+            <circle cx="100" cy="100" r="26" fill="#ffdf2b"/>
+          </svg>
         </div>
 
-        <div class="hero__collage reveal reveal--delay">
-          <img src="assets/hero-main.svg" alt="Abstract preview of a designed product interface" class="hero__img hero__img--main">
-          <img src="assets/hero-card-1.svg" alt="Mobile app design preview" class="hero__img hero__img--float1">
-          <img src="assets/hero-card-2.svg" alt="Brand palette preview" class="hero__img hero__img--float2">
+        <div class="hero__media reveal reveal--delay">
+          <img src="assets/hero-main.svg" alt="A colorful preview of the studio's design work">
         </div>
       </div>
 
-      <div class="hero__marquee" aria-hidden="true">
-        <div class="marquee__track">
-          <span>Strategy</span><span>✦</span><span>Web design</span><span>✦</span>
-          <span>Product design</span><span>✦</span><span>Branding</span><span>✦</span>
-          <span>Development</span><span>✦</span>
-          <span>Strategy</span><span>✦</span><span>Web design</span><span>✦</span>
-          <span>Product design</span><span>✦</span><span>Branding</span><span>✦</span>
-          <span>Development</span><span>✦</span>
-        </div>
+      <div class="container hero__trusted reveal">
+        <span class="hero__trusted-label">Trusted by:</span>
+        <ul class="hero__logos">
+          <li>Bloom</li>
+          <li>Verde</li>
+          <li>Lumen</li>
+          <li>Atlas</li>
+          <li>Pelby</li>
+        </ul>
       </div>
     </section>
 
     <!-- ============ 2. WORK ============ -->
     <section class="work section" id="work">
       <div class="container">
-        <div class="section__head reveal">
-          <p class="eyebrow">Selected work</p>
-          <h2 class="section__title">Results our clients brag about</h2>
+        <div class="section__head section__head--center reveal">
+          <h2 class="section__title">Design that drives results</h2>
+          <p class="section__sub">
+            Great design isn't about trends. It's about clarity, credibility and
+            conversion. We combine timeless design principles with deep UX
+            strategy to create products people trust.
+          </p>
         </div>
 
         <div class="work__grid">
           <article class="work-card reveal">
             <div class="work-card__media">
-              <img src="assets/project-1.svg" alt="Bloom — wellness app case study cover" loading="lazy">
+              <img src="assets/project-1.svg" alt="Bloom — AI-powered parenting app website" loading="lazy">
             </div>
             <div class="work-card__body">
-              <h3>Bloom — AI wellness app</h3>
-              <p>End-to-end product design that helped raise a $2M seed round.</p>
-              <span class="work-card__tag">Product design</span>
+              <h3>AI-powered Parenting App Website</h3>
+              <ul class="work-card__tags">
+                <li>Web Design</li><li>AI</li><li>Parenthood</li>
+              </ul>
             </div>
           </article>
 
           <article class="work-card reveal reveal--delay">
             <div class="work-card__media">
-              <img src="assets/project-2.svg" alt="Verde — meal delivery website case study cover" loading="lazy">
+              <img src="assets/project-2.svg" alt="Verde — plant-forward meal delivery website" loading="lazy">
             </div>
             <div class="work-card__body">
-              <h3>Verde — plant-forward meals</h3>
-              <p>A conversion-first website redesign: +64% sign-ups in 3 months.</p>
-              <span class="work-card__tag">Web design</span>
+              <h3>Plant-forward Meal Delivery Website</h3>
+              <ul class="work-card__tags">
+                <li>Web Design</li><li>Copywriting</li><li>D2C</li><li>Food</li>
+              </ul>
             </div>
           </article>
 
           <article class="work-card reveal">
             <div class="work-card__media">
-              <img src="assets/project-3.svg" alt="Lumen — fintech dashboard case study cover" loading="lazy">
+              <img src="assets/project-3.svg" alt="Lumen — fintech dashboard product design" loading="lazy">
             </div>
             <div class="work-card__body">
-              <h3>Lumen — fintech dashboard</h3>
-              <p>Complex data made simple with a clean, human-friendly UI system.</p>
-              <span class="work-card__tag">UI system</span>
+              <h3>Fintech Dashboard Product Design</h3>
+              <ul class="work-card__tags">
+                <li>Product Design</li><li>Fintech</li><li>UI System</li>
+              </ul>
             </div>
           </article>
 
           <article class="work-card reveal reveal--delay">
             <div class="work-card__media">
-              <img src="assets/project-4.svg" alt="Atlas — travel brand identity case study cover" loading="lazy">
+              <img src="assets/project-4.svg" alt="Atlas — travel brand website and identity" loading="lazy">
             </div>
             <div class="work-card__body">
-              <h3>Atlas — travel brand</h3>
-              <p>Identity and launch site for a boutique travel startup.</p>
-              <span class="work-card__tag">Branding</span>
+              <h3>Travel Brand Website &amp; Identity</h3>
+              <ul class="work-card__tags">
+                <li>Web Design</li><li>Brand Refresh</li><li>Travel</li>
+              </ul>
             </div>
           </article>
         </div>
       </div>
     </section>
 
-    <!-- ============ 3. SERVICES ============ -->
-    <section class="services section section--tinted" id="services">
+    <!-- ============ 3. SERVICES : problem → solution ============ -->
+    <section class="services section section--dark" id="services">
       <div class="container">
-        <div class="section__head reveal">
-          <p class="eyebrow">What we do</p>
-          <h2 class="section__title">Design that works as good as it looks</h2>
+        <div class="section__head section__head--center reveal">
+          <p class="services__kicker">If you're here, you're at a turning point.</p>
+          <h2 class="section__title">Your product or website needs to level up</h2>
         </div>
 
+        <ul class="pains reveal">
+          <li class="pain">Your MVP looks scrappy, and investors or customers aren't taking you seriously.</li>
+          <li class="pain">Your website isn't convincing customers to buy, and you're leaving money on the table.</li>
+          <li class="pain">Your story is unclear, and potential customers are confused about what you offer.</li>
+          <li class="pain">Your app has points of friction, and your users aren't sticking around.</li>
+        </ul>
+
+        <p class="services__bridge reveal">
+          We help startups like yours solve these exact challenges.<br>Here's how:
+        </p>
+
         <div class="services__grid">
-          <article class="service-card reveal">
-            <span class="service-card__num">01</span>
-            <h3>Web design &amp; development</h3>
-            <p>Strategy-led marketing sites that build trust at first glance and turn visitors into customers.</p>
+          <article class="service-card service-card--yellow reveal">
+            <h3>Web Design &amp; Development</h3>
+            <p>Sites that build credibility, convert visitors, and scale.</p>
             <ul>
-              <li>Landing pages &amp; one-pagers</li>
-              <li>Marketing websites</li>
-              <li>SEO-friendly, fast builds</li>
+              <li>Designed to convert visitors into customers</li>
+              <li>Built for easy updates without a developer</li>
+              <li>Strategic content that guides users to action</li>
+              <li>Add-on a brand refresh or copywriting help</li>
             </ul>
+            <a href="#contact" class="btn btn--dark">Get in touch <span class="btn__arrow">→</span></a>
           </article>
 
-          <article class="service-card reveal reveal--delay">
-            <span class="service-card__num">02</span>
-            <h3>Product design</h3>
-            <p>From first sketch to polished interface — UX and UI that make complex products feel effortless.</p>
+          <article class="service-card service-card--pink reveal reveal--delay">
+            <h3>Product Design</h3>
+            <p>Apps that engage, reduce drop-off, and drive growth.</p>
             <ul>
-              <li>UX research &amp; flows</li>
-              <li>UI design &amp; prototyping</li>
-              <li>Design systems</li>
+              <li>Clear design that builds trust and credibility</li>
+              <li>UX research, flows and rapid prototyping</li>
+              <li>Design systems your team can grow with</li>
+              <li>Custom-tailored to your goals and audience</li>
             </ul>
-          </article>
-
-          <article class="service-card reveal reveal--delay2">
-            <span class="service-card__num">03</span>
-            <h3>Brand identity</h3>
-            <p>Memorable visual identities that give startups the credibility of established brands.</p>
-            <ul>
-              <li>Logo &amp; visual language</li>
-              <li>Brand guidelines</li>
-              <li>Pitch &amp; launch assets</li>
-            </ul>
+            <a href="#contact" class="btn btn--dark">Get in touch <span class="btn__arrow">→</span></a>
           </article>
         </div>
       </div>
@@ -179,25 +191,26 @@
     <section class="about section" id="about">
       <div class="container about__grid">
         <div class="about__media reveal">
-          <img src="assets/about.svg" alt="Portrait illustration of the studio founder">
+          <img src="assets/about.svg" alt="Portrait illustration of the studio team">
         </div>
         <div class="about__content reveal reveal--delay">
-          <p class="eyebrow">Meet the studio</p>
-          <h2 class="section__title">Hi, we're Studio Nova — small team, big outcomes.</h2>
+          <h2 class="section__title">Hi, we're Studio Nova</h2>
+          <p class="about__aka">a.k.a. your design team. Nice to meet you!</p>
           <p>
-            For over 15 years we've designed for startups and scale-ups across
-            wellness, fintech and e-commerce. We keep things simple: no account
-            managers, no hand-offs — you work directly with the designers
-            building your product.
+            With 15+ years of experience, we've learned that great design isn't
+            just about looking good — it's about building trust, reducing
+            friction, and driving real business results.
           </p>
+          <h3 class="about__sub">Agency quality without the agency cost.</h3>
           <p>
-            Every engagement starts with strategy, because pretty pixels without
-            a plan don't move the needle. Then we design, test and refine until
-            it converts.
+            Work directly with us from start to finish: no account managers or
+            junior designers. Just senior-level expertise, a smooth process, and
+            results you can count on.
           </p>
           <blockquote class="about__quote">
-            “Working with Studio Nova was the best decision we made pre-launch.
-            Investors kept complimenting the product before we even demoed it.”
+            "Working with Studio Nova gave us a professional, sophisticated MVP
+            that looks genuinely elevated — something I'm proud to bring into
+            investor conversations."
             <cite>— Maya R., founder of Bloom</cite>
           </blockquote>
         </div>
@@ -205,16 +218,29 @@
     </section>
 
     <!-- ============ 5. CONTACT ============ -->
-    <section class="contact section section--dark" id="contact">
+    <section class="contact section section--pink" id="contact">
       <div class="container contact__grid">
         <div class="contact__intro reveal">
-          <p class="eyebrow eyebrow--light">Contact</p>
           <h2 class="section__title">Have a project in mind? Let's make it real.</h2>
           <p>
             Tell us a little about your idea and we'll get back to you within
             one business day — with honest thoughts, not a sales pitch.
           </p>
           <a href="mailto:hello@studionova.example" class="contact__email">hello@studionova.example</a>
+          <svg class="contact__flower" viewBox="0 0 200 200" aria-hidden="true">
+            <g fill="#ffdf2b">
+              <circle cx="100" cy="38" r="30"/>
+              <circle cx="144" cy="56" r="30"/>
+              <circle cx="162" cy="100" r="30"/>
+              <circle cx="144" cy="144" r="30"/>
+              <circle cx="100" cy="162" r="30"/>
+              <circle cx="56" cy="144" r="30"/>
+              <circle cx="38" cy="100" r="30"/>
+              <circle cx="56" cy="56" r="30"/>
+              <circle cx="100" cy="100" r="42"/>
+            </g>
+            <circle cx="100" cy="100" r="26" fill="#ff5a52"/>
+          </svg>
         </div>
 
         <form class="contact__form reveal reveal--delay" id="contact-form" novalidate>
@@ -244,7 +270,7 @@
             <textarea id="message" name="message" rows="5" placeholder="What are you building, and when do you need it?" required></textarea>
             <small class="form__error"></small>
           </div>
-          <button type="submit" class="btn btn--primary btn--full">Send message</button>
+          <button type="submit" class="btn btn--dark btn--full">Send message <span class="btn__arrow">→</span></button>
           <p class="form__success" hidden>✦ Thanks! Your message has been sent — we'll reply shortly.</p>
         </form>
       </div>
@@ -258,7 +284,7 @@
       <ul class="footer__links">
         <li><a href="#work">Work</a></li>
         <li><a href="#services">Services</a></li>
-        <li><a href="#about">About</a></li>
+        <li><a href="#about">Meet the Studio</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
       <ul class="footer__social">
@@ -269,7 +295,7 @@
     </div>
     <div class="container footer__bottom">
       <p>© <span id="year">2026</span> Studio Nova. All rights reserved.</p>
-      <a href="#top" class="footer__top">Back to top ↑</a>
+      <a href="#top" class="footer__top">Back to Top ↑</a>
     </div>
   </footer>
 
