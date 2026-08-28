@@ -50,3 +50,40 @@ Poi apri http://localhost:8000
 - Colori e font sono variabili CSS all'inizio di `css/style.css` (`:root`)
 - Sostituisci gli SVG in `assets/` con le tue foto/immagini (qualsiasi formato) — mantieni gli stessi nomi file o aggiorna `index.html`
 - Il form è solo front-end; collega il gestore `submit` in `js/main.js` al tuo backend o a un servizio come Formspree per ricevere davvero i messaggi
+
+---
+
+# Anfiteatro Romano di Assisi — pagina informativa
+
+Una seconda pagina, indipendente dal sito Studio Nova, dedicata all'anfiteatro
+romano di Assisi: un edificio del I secolo d.C. smontato e reimpiegato nel
+Medioevo, la cui pianta ellittica sopravvive nella forma dell'isolato di case
+vicino a Porta Perlici.
+
+Si apre direttamente da `assisi-anfiteatro-romano.html` e non condivide fogli di
+stile né script con `index.html` — palette in pietra e terracotta, Cormorant
+Garamond per i titoli e Figtree per il testo.
+
+## Sezioni
+
+1. **Hero** — titolo, sintesi e striscia di dati essenziali (epoca, luogo, pianta, ingresso)
+2. **Storia** — timeline in quattro tappe, dalla costruzione al reimpiego
+3. **Cosa resta** — schema SVG della pianta con l'anello di case, più tre note di lettura
+4. **Visita** — tre schede su dove, quando e come guardarlo
+5. **Dintorni** — quattro luoghi da unire alla passeggiata
+
+## File
+
+```
+├── assisi-anfiteatro-romano.html
+├── css/assisi.css
+├── js/assisi.js
+└── assets/anfiteatro-hero.svg
+```
+
+## Note
+
+- Nessuna dipendenza esterna oltre al font di Google; senza connessione si usa lo stack di fallback
+- Lo schema della pianta è illustrativo, non un rilievo archeologico
+- I contenuti dell'animazione allo scroll restano leggibili anche senza JavaScript
+- Orari e accessi ai siti archeologici vanno verificati sui canali ufficiali del Comune di Assisi
