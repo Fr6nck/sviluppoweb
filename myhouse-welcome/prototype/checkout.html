@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Checkout — MyHouse Welcome</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231F5B4B'/><path d='M8 17l8-7 8 7v7a1 1 0 01-1 1h-4v-5h-6v5H9a1 1 0 01-1-1z' fill='%23fff'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/app.css">
+<style>
+body { min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 2.4rem; }
+.topbar { border-bottom: 1px solid var(--mh-border); padding: .9rem var(--mh-space-7); }
+.topbar__in { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; gap: .55rem; font-weight: 700; font-size: var(--mh-text-sm); }
+.brand__m { width: 28px; height: 28px; border-radius: 8px; background: var(--mh-brand-600); display: grid; place-items: center; }
+main { flex: 1; width: 100%; max-width: 880px; margin: 0 auto; padding: var(--mh-space-10) var(--mh-space-7); }
+
+/* the flow is a set of stages; only one is shown at a time */
+.stage { display: none; }
+.stage.is-on { display: block; animation: rise var(--mh-motion-base) var(--mh-ease); }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+
+h1.big { font-family: var(--mh-font-display); font-size: var(--mh-text-3xl); line-height: var(--mh-lh-3xl); letter-spacing: -.02em; margin-bottom: var(--mh-space-5); }
+.lede { color: var(--mh-ink-muted); line-height: 1.65; max-width: 54ch; }
+
+.summary { display: grid; grid-template-columns: 1.25fr .95fr; gap: var(--mh-space-9); align-items: start; }
+@media (max-width: 860px) { .summary { grid-template-columns: 1fr; } }
+.line { display: flex; justify-content: space-between; gap: 1rem; padding: .55rem 0; font-size: var(--mh-text-sm); }
+.line--total { border-top: 1px solid var(--mh-border); margin-top: .4rem; padding-top: .8rem; font-size: var(--mh-text-lg); font-weight: 700; }
+
+/* the deliberately fake Stripe page: card data never touches our DOM */
+.stripe { max-width: 420px; margin: 0 auto; }
+.stripe__chrome { display: flex; align-items: center; justify-content: center; gap: .5rem; font-size: var(--mh-text-xs);
+  color: var(--mh-ink-subtle); margin-bottom: var(--mh-space-7); }
+.stripe__lock { width: 13px; height: 13px; }
+
+.steps-rail { display: flex; gap: .4rem; margin-bottom: var(--mh-space-9); flex-wrap: wrap; }
+.rail { display: flex; align-items: center; gap: .4rem; font-size: var(--mh-text-xs); color: var(--mh-ink-subtle); }
+.rail__d { width: 7px; height: 7px; border-radius: 50%; background: var(--mh-border-strong); }
+.rail.is-done .rail__d { background: var(--mh-success); }
+.rail.is-now .rail__d { background: var(--mh-brand-600); }
+.rail.is-now { color: var(--mh-brand-700); font-weight: 600; }
+/* decorative (aria-hidden), so WCAG 1.4.3 does not apply - but it should still
+   be visible, so it uses a token that carries text rather than a border colour */
+.rail__sep { color: var(--mh-ink-subtle); margin: 0 .3rem; }
+
+.spin { width: 20px; height: 20px; border: 2px solid var(--mh-brand-200); border-top-color: var(--mh-brand-600);
+  border-radius: 50%; animation: mh-spin .8s linear infinite; }
+
+.hint { background: var(--mh-surface-sunken); border-left: 3px solid var(--mh-brand-300);
+  padding: var(--mh-space-5); border-radius: 0 var(--mh-radius-md) var(--mh-radius-md) 0;
+  font-size: var(--mh-text-xs); color: var(--mh-ink-muted); line-height: 1.6; }
+.hint strong { color: var(--mh-ink); }
+
+.proto-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 80; background: var(--mh-ink); color: #fff;
+  font-size: var(--mh-text-xs); padding: .5rem var(--mh-space-5); display: flex; gap: .8rem; align-items: center; justify-content: center; flex-wrap: wrap; }
+.proto-bar a, .proto-bar button { color: #fff; background: none; border: 0; text-decoration: underline; cursor: pointer; font-size: inherit; }
+</style>
+</head>
+<!-- data-stages: one <h1> per stage; only one stage is ever in the
+     accessibility tree, because the others are display:none. -->
+<body data-stages>
+<a class="mh-skip" href="#main">Skip to content</a>
+
+<div class="topbar">
+  <div class="topbar__in">
+    <span class="brand__m"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></span>
+    MyHouse <span class="subtle" style="font-weight:500">Welcome</span>
+  </div>
+</div>
+
+<main id="main">
+
+  <div class="steps-rail" id="rail" aria-label="Progress"></div>
+
+  <!-- ---------- 1. ORDER SUMMARY ---------- -->
+  <section class="stage is-on" id="s-summary" aria-labelledby="h-summary">
+    <h1 class="big" id="h-summary">You're buying <span id="pkg-name">Plus</span></h1>
+    <p class="lede" style="margin-bottom:var(--mh-space-9)">One payment. No subscription, no per-guest charge.</p>
+
+    <div class="summary">
+      <div>
+        <div class="card"><div class="card__body">
+          <div class="line"><span id="pkg-line">MyHouse Welcome — Plus</span><span class="num" id="pkg-price">€99</span></div>
+          <div class="line"><span class="muted">Discount</span><span class="num muted" id="disc-line">—</span></div>
+          <div class="line"><span class="muted">VAT (22%)</span><span class="num muted" id="vat-line">included</span></div>
+          <div class="line line--total"><span>Total</span><span class="num" id="total-line">€99</span></div>
+        </div></div>
+
+        <form class="card" style="margin-top:var(--mh-space-5)" id="promo-form"><div class="card__body">
+          <div class="field" style="margin:0">
+            <label class="field__label" for="promo">Have a code?</label>
+            <div class="row" style="gap:.5rem">
+              <input class="input" id="promo" name="promo" placeholder="e.g. BENVENUTO20" autocomplete="off">
+              <button class="btn btn--secondary" type="submit">Apply</button>
+            </div>
+            <p class="field__help" id="promo-msg">Try <code>BENVENUTO20</code> in this prototype.</p>
+          </div>
+        </div></form>
+
+        <div class="field" style="margin-top:var(--mh-space-7)">
+          <label class="field__label" for="email">Your email</label>
+          <input class="input" id="email" type="email" value="marco@example.com" autocomplete="email" inputmode="email">
+          <p class="field__help">We'll send your receipt and the link to set your password here.</p>
+        </div>
+
+        <button class="btn btn--primary btn--lg btn--block" id="go-pay" style="margin-top:var(--mh-space-5)">
+          Continue to payment
+        </button>
+        <p class="xs subtle center" style="margin-top:.7rem">
+          Payment is handled by Stripe. Your card details never reach our servers.
+        </p>
+      </div>
+
+      <aside>
+        <div class="card"><div class="card__body">
+          <strong style="font-size:var(--mh-text-sm)">What you get</strong>
+          <ul style="list-style:none; display:grid; gap:.5rem; margin-top:.8rem" id="pkg-bullets"></ul>
+        </div></div>
+        <div class="hint" style="margin-top:var(--mh-space-5)">
+          <strong>In the real product</strong> this button calls
+          <code>POST /api/public/checkout</code>, which creates an order pinned to
+          the current package version and redirects to a Stripe Checkout Session.
+          See <a href="../docs/06-billing-stripe.md">document 06</a>.
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ---------- 2. STRIPE (stand-in) ---------- -->
+  <section class="stage" id="s-stripe" aria-labelledby="h-stripe">
+    <div class="stripe">
+      <div class="stripe__chrome">
+        <svg class="stripe__lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>
+        checkout.stripe.com — this is Stripe's page, not ours
+      </div>
+      <div class="card"><div class="card__body">
+        <h1 class="big" id="h-stripe" style="font-size:var(--mh-text-xl); font-family:var(--mh-font-ui)">
+          MyHouse Welcome — <span data-pkg-name>Plus</span>
+        </h1>
+        <p class="num" style="font-size:var(--mh-text-3xl); font-weight:700; margin:.2rem 0 var(--mh-space-7)" data-total>€99</p>
+
+        <div class="field">
+          <label class="field__label" for="card">Card number</label>
+          <input class="input mh-mono" id="card" value="4242 4242 4242 4242" inputmode="numeric" autocomplete="cc-number">
+        </div>
+        <div class="row" style="gap:.6rem; align-items:flex-start">
+          <div class="field grow"><label class="field__label" for="exp">Expiry</label>
+            <input class="input mh-mono" id="exp" value="12 / 29" inputmode="numeric" autocomplete="cc-exp"></div>
+          <div class="field grow"><label class="field__label" for="cvc">CVC</label>
+            <input class="input mh-mono" id="cvc" value="123" inputmode="numeric" autocomplete="cc-csc"></div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="piva">P.IVA / VAT number <span class="subtle" style="font-weight:400">(optional)</span></label>
+          <input class="input" id="piva" placeholder="IT01234567890" autocomplete="off">
+        </div>
+
+        <button class="btn btn--primary btn--lg btn--block" id="pay">Pay <span data-total>€99</span></button>
+        <button class="btn btn--ghost btn--block btn--sm" id="decline" style="margin-top:.5rem">
+          Simulate a declined card
+        </button>
+      </div></div>
+      <p class="xs subtle center" style="margin-top:var(--mh-space-5)">
+        A stand-in for Stripe's hosted page. In the product, card fields live on
+        Stripe's domain — PCI scope stays SAQ-A.
+      </p>
+    </div>
+  </section>
+
+  <!-- ---------- 3. DECLINED ---------- -->
+  <section class="stage" id="s-declined" aria-labelledby="h-declined">
+    <div style="max-width:460px; margin:0 auto">
+      <div class="alert alert--danger" style="margin-bottom:var(--mh-space-7)">
+        <span aria-hidden="true">&#9888;</span>
+        <div class="alert__body">
+          <strong>The payment didn't go through</strong>
+          Your bank declined the card. Nothing has been charged. This is usually a
+          card limit or an expiry date.
+        </div>
+      </div>
+      <button class="btn btn--primary btn--block" id="retry">Try again</button>
+      <p class="xs subtle center" style="margin-top:var(--mh-space-5)">
+        Still stuck? Email <a href="mailto:support@myhouse.it">support@myhouse.it</a>
+      </p>
+      <div class="hint" style="margin-top:var(--mh-space-7)">
+        No account is created and no order is fulfilled. The customer never sees
+        a Stripe error code — they see what happened and what to do.
+        <a href="../docs/20-content-states-and-copy.md">Document 20</a>.
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- 4. WAITING ON THE WEBHOOK ---------- -->
+  <section class="stage" id="s-wait" aria-labelledby="h-wait">
+    <div style="max-width:520px; margin:0 auto; text-align:center">
+      <div class="spin" style="margin:0 auto var(--mh-space-7)" id="wait-spin"></div>
+      <h1 class="big" id="h-wait" style="font-size:var(--mh-text-2xl)">Confirming your payment…</h1>
+      <p class="lede" id="wait-copy" style="margin:0 auto">This usually takes a few seconds.</p>
+      <div class="hint" style="margin-top:var(--mh-space-9); text-align:left">
+        <strong>The webhook is the truth.</strong> The account is created by
+        Stripe's verified <code>checkout.session.completed</code> event, never by
+        the browser returning from Stripe. This screen polls
+        <code>GET /api/orders/:id/status</code> — and if the webhook is slow, it
+        settles on “we'll email you”, which is a promise the queue can keep.
+        <a href="../docs/06-billing-stripe.md">Document 06</a>.
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- 5. PAID ---------- -->
+  <section class="stage" id="s-paid" aria-labelledby="h-paid">
+    <div style="max-width:520px; margin:0 auto; text-align:center">
+      <div style="width:52px; height:52px; margin:0 auto var(--mh-space-7); border-radius:50%; background:var(--mh-success-bg); color:var(--mh-success); display:grid; place-items:center">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <h1 class="big" id="h-paid">Payment received</h1>
+      <p class="lede" style="margin:0 auto var(--mh-space-8)">
+        We've emailed <strong id="paid-email">marco@example.com</strong> a link to
+        set your password. Your receipt is on its way too.
+      </p>
+      <button class="btn btn--primary btn--lg" id="to-activate">Open the email link</button>
+      <p class="xs subtle" style="margin-top:var(--mh-space-5)">Order MH-O-2026-00412 · <span id="paid-total">€99</span></p>
+    </div>
+  </section>
+
+  <!-- ---------- 6. ACTIVATE ---------- -->
+  <section class="stage" id="s-activate" aria-labelledby="h-activate">
+    <div style="max-width:420px; margin:0 auto">
+      <h1 class="big" id="h-activate">Set your password</h1>
+      <p class="lede" style="margin-bottom:var(--mh-space-8)">
+        One last thing, then we'll start on your guide.
+      </p>
+      <form id="activate-form">
+        <div class="field">
+          <label class="field__label" for="pw">Choose a password</label>
+          <input class="input" id="pw" type="password" autocomplete="new-password" value="olivetree-2026" required>
+          <div class="progress" style="margin-top:.45rem"><div class="progress__bar" id="pw-bar" style="width:82%; background:var(--mh-success)"></div></div>
+          <p class="field__help" id="pw-msg">Strong. At least 10 characters — a few words you'll remember beats a symbol you won't.</p>
+        </div>
+        <div class="field">
+          <label class="toggle">
+            <input type="checkbox" id="terms" checked>
+            <span class="toggle__track" aria-hidden="true"></span>
+            <span class="small">I accept the <a href="../docs/22-privacy-gdpr.md">terms</a> and <a href="../docs/22-privacy-gdpr.md">privacy policy</a></span>
+          </label>
+        </div>
+        <button class="btn btn--primary btn--lg btn--block" type="submit">Create my account</button>
+      </form>
+      <div class="hint" style="margin-top:var(--mh-space-8)">
+        Paying with a card and then following a link sent to that address is
+        stronger evidence than a click-to-confirm email — so activation
+        <em>is</em> verification, and we don't ask twice.
+        <a href="../docs/17-auth-and-security.md">Document 17</a>.
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- 7. FIRST LOGIN ---------- -->
+  <section class="stage" id="s-welcome" aria-labelledby="h-welcome">
+    <div style="max-width:520px; margin:0 auto; text-align:center">
+      <p class="chip chip--brand" style="margin-bottom:var(--mh-space-6)" id="wel-pkg">Plus</p>
+      <h1 class="big" id="h-welcome" style="font-family:var(--mh-font-display); font-size:var(--mh-text-4xl); line-height:var(--mh-lh-4xl)">
+        Welcome to MyHouse Welcome
+      </h1>
+      <p class="lede" style="margin:0 auto var(--mh-space-8); font-size:var(--mh-text-lg)">
+        Let's create your guest guide.
+      </p>
+
+      <div class="card" style="text-align:left; margin-bottom:var(--mh-space-7)"><div class="card__body">
+        <div class="row row--between" style="margin-bottom:.8rem">
+          <span class="small"><strong id="wel-steps">17 questions</strong> about your home</span>
+          <span class="chip"><span id="wel-time">about 20 minutes</span></span>
+        </div>
+        <div class="progress"><div class="progress__bar" style="width:0%"></div></div>
+        <p class="xs subtle" style="margin-top:.7rem">
+          You can stop at any point and come back — everything you've answered is kept.
+        </p>
+      </div></div>
+
+      <a class="btn btn--primary btn--lg" href="onboarding.html">Start configuration</a>
+      <p style="margin-top:var(--mh-space-5)">
+        <a class="small muted" href="dashboard.html">I'll do it later — take me to my dashboard</a>
+      </p>
+      <div class="hint" style="margin-top:var(--mh-space-9); text-align:left">
+        <strong>No CMS yet.</strong> A host who has just paid meets one sentence
+        and one button, not a sidebar with nine items.
+        <a href="../docs/07-onboarding-wizard.md">Document 07</a>.
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="proto-bar">
+  <span>Prototype</span>
+  <a href="index.html">All screens</a>
+  <a href="marketing.html">Back to pricing</a>
+  <button id="restart">Restart this flow</button>
+</div>
+
+<div id="live" class="mh-sr" role="status" aria-live="polite"></div>
+
+<script src="scripts/store.js"></script>
+<script>
+(function () {
+  'use strict';
+  var params = new URLSearchParams(location.search);
+  var key = params.get('package') || MHW.get().packageKey || 'plus';
+  if (!MHW.PACKAGES[key]) key = 'plus';
+  MHW.set({ packageKey: key });
+
+  var pkg = MHW.PACKAGES[key];
+  var discount = 0;
+  var live = document.getElementById('live');
+  function say(m) { live.textContent = ''; setTimeout(function () { live.textContent = m; }, 40); }
+
+  var BULLETS = {
+    essential: ['Check-in, Wi-Fi and house rules', 'How to arrive and where to park',
+                'Emergency contacts', 'Your link and QR code', 'One language'],
+    plus: ['Everything in Essential', 'Services, appliances and waste', 'Places you recommend',
+           'PDFs and more photos', 'Up to 5 languages', 'Search'],
+    pro: ['Everything in Plus', 'Automatic translations', 'Up to 20 languages',
+          'Up to 5 properties', 'Your branding', 'Detailed statistics']
+  };
+
+  /* ---- render the order ------------------------------------------------- */
+  function money(c) { return MHW.money(c); }
+  function total() { return Math.max(0, pkg.amountCents - discount); }
+
+  function paint() {
+    document.getElementById('pkg-name').textContent = pkg.name;
+    document.getElementById('pkg-line').textContent = 'MyHouse Welcome — ' + pkg.name;
+    document.getElementById('pkg-price').textContent = money(pkg.amountCents);
+    document.getElementById('disc-line').textContent = discount ? '−' + money(discount) : '—';
+    document.getElementById('total-line').textContent = money(total());
+    document.getElementById('paid-total').textContent = money(total());
+    document.querySelectorAll('[data-total]').forEach(function (e) { e.textContent = money(total()); });
+    document.querySelectorAll('[data-pkg-name]').forEach(function (e) { e.textContent = pkg.name; });
+    document.getElementById('wel-pkg').textContent = pkg.name;
+    document.getElementById('pkg-bullets').innerHTML = BULLETS[key].map(function (b) {
+      return '<li class="small" style="display:flex;gap:.5rem"><span style="color:var(--mh-brand-600)" aria-hidden="true">✓</span>' + b + '</li>';
+    }).join('');
+    /* Essential sees fewer steps because gated steps are not shown in the
+       wizard at all — a wizard is the wrong place to sell (docs/07) */
+    var steps = key === 'essential' ? 13 : (key === 'plus' ? 15 : 17);
+    document.getElementById('wel-steps').textContent = steps + ' questions';
+    document.getElementById('wel-time').textContent =
+      key === 'essential' ? 'about 12 minutes' : (key === 'plus' ? 'about 18 minutes' : 'about 25 minutes');
+  }
+
+  /* ---- stage machine ---------------------------------------------------- */
+  var RAIL = [
+    { id: 's-summary',  label: 'Your order' },
+    { id: 's-stripe',   label: 'Payment' },
+    { id: 's-paid',     label: 'Confirmed' },
+    { id: 's-activate', label: 'Your password' },
+    { id: 's-welcome',  label: 'Start' }
+  ];
+  var current = 's-summary';
+
+  function show(id) {
+    document.querySelectorAll('.stage').forEach(function (s) { s.classList.toggle('is-on', s.id === id); });
+    current = id;
+    rail();
+    window.scrollTo(0, 0);
+    var h = document.querySelector('#' + id + ' h1');
+    if (h) { h.setAttribute('tabindex', '-1'); h.focus(); say(h.textContent.trim()); }
+  }
+
+  function rail() {
+    var idx = RAIL.map(function (r) { return r.id; }).indexOf(current);
+    if (idx === -1) idx = current === 's-wait' ? 2 : 1;      /* waiting sits with Confirmed */
+    document.getElementById('rail').innerHTML = RAIL.map(function (r, i) {
+      var cls = i < idx ? 'is-done' : (i === idx ? 'is-now' : '');
+      return (i ? '<span class="rail__sep" aria-hidden="true">›</span>' : '') +
+        '<span class="rail ' + cls + '"><span class="rail__d"></span>' + r.label + '</span>';
+    }).join('');
+  }
+
+  /* ---- interactions ----------------------------------------------------- */
+  document.getElementById('promo-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var code = document.getElementById('promo').value.trim().toUpperCase();
+    var msg = document.getElementById('promo-msg');
+    if (code === 'BENVENUTO20') {
+      discount = Math.round(pkg.amountCents * 0.20);
+      msg.textContent = 'BENVENUTO20 applied — 20% off.';
+      msg.style.color = 'var(--mh-success)';
+      say('Discount applied');
+    } else if (code) {
+      discount = 0;
+      msg.textContent = "That code isn't valid, or it has expired.";
+      msg.style.color = 'var(--mh-danger)';
+    }
+    paint();
+  });
+
+  document.getElementById('go-pay').addEventListener('click', function () {
+    var em = document.getElementById('email').value.trim();
+    if (!em || em.indexOf('@') === -1) {
+      say('Please check your email address');
+      document.getElementById('email').focus();
+      return;
+    }
+    document.getElementById('paid-email').textContent = em;
+    MHW.set({ account: { name: MHW.get().account.name, email: em } });
+    this.classList.add('is-loading');
+    var btn = this;
+    setTimeout(function () { btn.classList.remove('is-loading'); show('s-stripe'); }, 700);
+  });
+
+  document.getElementById('decline').addEventListener('click', function () { show('s-declined'); });
+  document.getElementById('retry').addEventListener('click', function () { show('s-stripe'); });
+
+  document.getElementById('pay').addEventListener('click', function () {
+    this.classList.add('is-loading');
+    var btn = this;
+    setTimeout(function () {
+      btn.classList.remove('is-loading');
+      show('s-wait');
+      waitForWebhook();
+    }, 900);
+  });
+
+  /* The success page is a state machine, not a celebration: the copy changes
+     as the wait lengthens, and a slow webhook is never framed as an error. */
+  function waitForWebhook() {
+    var copy = document.getElementById('wait-copy');
+    var t1 = setTimeout(function () {
+      copy.textContent = 'Still confirming. This usually takes a few seconds.';
+    }, 2600);
+    var t2 = setTimeout(function () {
+      show('s-paid');
+      clearTimeout(t1);
+    }, 4200);
+    /* If it ran past 60s the real page would settle here instead:
+       "Your payment went through. We're finishing setup and will email you." */
+    void t2;
+  }
+
+  document.getElementById('to-activate').addEventListener('click', function () { show('s-activate'); });
+
+  document.getElementById('activate-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!document.getElementById('terms').checked) { say('Please accept the terms'); return; }
+    var b = this.querySelector('button[type="submit"]');
+    b.classList.add('is-loading');
+    setTimeout(function () { b.classList.remove('is-loading'); show('s-welcome'); }, 700);
+  });
+
+  document.getElementById('pw').addEventListener('input', function () {
+    var v = this.value, bar = document.getElementById('pw-bar'), msg = document.getElementById('pw-msg');
+    /* entropy-ish, not character classes — "Password1!" should not score well */
+    var score = Math.min(100, v.length * 6 + (/\s/.test(v) ? 15 : 0) + (new Set(v).size * 2));
+    bar.style.width = score + '%';
+    bar.style.background = score < 40 ? 'var(--mh-danger)' : (score < 70 ? 'var(--mh-warning)' : 'var(--mh-success)');
+    msg.textContent = score < 40 ? 'Too short. Ten characters or more.'
+      : score < 70 ? 'Nearly. A few words together is easier to remember and harder to guess.'
+      : "Strong. At least 10 characters — a few words you'll remember beats a symbol you won't.";
+  });
+
+  document.getElementById('restart').addEventListener('click', function () {
+    discount = 0;
+    document.getElementById('promo').value = '';
+    document.getElementById('promo-msg').textContent = 'Try BENVENUTO20 in this prototype.';
+    document.getElementById('promo-msg').style.color = '';
+    paint(); show('s-summary');
+  });
+
+  paint(); rail();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Create your guide — MyHouse Welcome</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231F5B4B'/><path d='M8 17l8-7 8 7v7a1 1 0 01-1 1h-4v-5h-6v5H9a1 1 0 01-1-1z' fill='%23fff'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/app.css">
+<style>
+body { min-height: 100vh; display: flex; flex-direction: column; }
+.wz-top { position: sticky; top: 0; z-index: 40; background: color-mix(in srgb, var(--mh-surface) 92%, transparent);
+  backdrop-filter: blur(10px); border-bottom: 1px solid var(--mh-border); }
+.wz-top__in { max-width: 720px; margin: 0 auto; padding: .75rem var(--mh-space-6); }
+.wz-top__row { display: flex; align-items: center; gap: var(--mh-space-5); margin-bottom: .6rem; }
+.wz-step { font-size: var(--mh-text-xs); color: var(--mh-ink-muted); font-weight: 600; }
+.wz-pct { font-size: var(--mh-text-xs); color: var(--mh-ink-subtle); font-variant-numeric: tabular-nums; }
+
+.wz-main { flex: 1; width: 100%; max-width: 720px; margin: 0 auto; padding: var(--mh-space-9) var(--mh-space-6) 7rem; }
+.wz-q { font-family: var(--mh-font-display); font-size: var(--mh-text-3xl); line-height: var(--mh-lh-3xl);
+  letter-spacing: -.02em; margin-bottom: .55rem; }
+.wz-help { color: var(--mh-ink-muted); margin-bottom: var(--mh-space-9); line-height: 1.6; max-width: 52ch; }
+
+/* conditional fields animate in, so the host sees cause and effect */
+.cond { border-left: 2px solid var(--mh-brand-200); padding-left: var(--mh-space-6); margin-left: 2px; }
+.cond[hidden] { display: none; }
+.reveal { animation: revealin var(--mh-motion-base) var(--mh-ease); }
+@keyframes revealin { from { opacity: 0; transform: translateY(-4px); } }
+
+.wz-foot { position: fixed; bottom: 0; left: 0; right: 0; z-index: 45;
+  background: color-mix(in srgb, var(--mh-surface) 92%, transparent); backdrop-filter: blur(10px);
+  border-top: 1px solid var(--mh-border);
+  padding: var(--mh-space-5) var(--mh-space-6) calc(var(--mh-space-5) + env(safe-area-inset-bottom)); }
+.wz-foot__in { max-width: 720px; margin: 0 auto; display: flex; align-items: center; gap: var(--mh-space-5); }
+
+.hint { background: var(--mh-surface-sunken); border-left: 3px solid var(--mh-brand-300);
+  padding: var(--mh-space-5); border-radius: 0 var(--mh-radius-md) var(--mh-radius-md) 0;
+  font-size: var(--mh-text-xs); color: var(--mh-ink-muted); line-height: 1.6; margin-top: var(--mh-space-9); }
+.hint strong { color: var(--mh-ink); }
+.hint code { background: var(--mh-surface-raised); padding: .05rem .3rem; border-radius: 4px; font-size: .95em; }
+
+.tri { display: flex; gap: .35rem; }
+.tri input { position: absolute; opacity: 0; width: 0; height: 0; }
+.tri label { flex: 1; min-height: 40px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--mh-border-strong); border-radius: var(--mh-radius-md); background: var(--mh-surface-raised);
+  font-size: var(--mh-text-xs); font-weight: 600; cursor: pointer; text-align: center; padding: 0 .4rem; }
+.tri input:checked + label { border-color: var(--mh-brand-600); background: var(--mh-brand-50); color: var(--mh-brand-700); }
+.tri input:focus-visible + label { box-shadow: var(--mh-focus); }
+
+.rule-row { display: grid; grid-template-columns: 1fr 1.5fr; gap: var(--mh-space-5); align-items: center; margin-bottom: var(--mh-space-5); }
+@media (max-width: 560px) { .rule-row { grid-template-columns: 1fr; gap: .4rem; } }
+
+/* done screen */
+.done { text-align: center; }
+.url-box { display: flex; align-items: center; gap: .5rem; justify-content: center; flex-wrap: wrap;
+  background: var(--mh-surface-raised); border: 1px solid var(--mh-border); border-radius: var(--mh-radius-md);
+  padding: var(--mh-space-5); margin: var(--mh-space-7) 0; font-family: var(--mh-font-mono); font-size: var(--mh-text-sm); }
+
+.proto-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 90; background: var(--mh-ink); color: #fff;
+  font-size: var(--mh-text-xs); padding: .35rem var(--mh-space-5); display: flex; gap: .8rem; justify-content: center; flex-wrap: wrap; }
+.proto-bar a, .proto-bar button { color: #fff; background: none; border: 0; text-decoration: underline; cursor: pointer; font-size: inherit; }
+.wz-top { top: 26px; }
+body { padding-top: 26px; }
+</style>
+</head>
+<body>
+<a class="mh-skip" href="#wz-main">Skip to the question</a>
+
+<div class="proto-bar">
+  <span>Prototype</span><a href="index.html">All screens</a>
+  <a href="dashboard.html">Dashboard</a>
+  <button id="jump">Fill in a demo property</button>
+</div>
+
+<header class="wz-top">
+  <div class="wz-top__in">
+    <div class="wz-top__row">
+      <button class="btn btn--ghost btn--sm" id="back" aria-label="Previous step">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        <span class="hide-sm">Back</span>
+      </button>
+      <span class="wz-step grow" id="stepline">Step 1 of 15 · Your property</span>
+      <a class="btn btn--ghost btn--sm" href="dashboard.html">Save &amp; exit</a>
+    </div>
+    <div class="row" style="gap:.6rem">
+      <div class="progress grow"><div class="progress__bar" id="bar" style="width:6%"></div></div>
+      <span class="wz-pct" id="pct">6%</span>
+    </div>
+  </div>
+</header>
+
+<main class="wz-main" id="wz-main">
+  <h1 class="wz-q" id="q">Let's start with the basics.</h1>
+  <p class="wz-help" id="help"></p>
+  <form id="form" novalidate></form>
+  <div class="hint" id="hint"></div>
+</main>
+
+<div class="wz-foot">
+  <div class="wz-foot__in">
+    <span class="saveind saveind--saved grow" id="save">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+      Saved
+    </span>
+    <button class="btn btn--ghost" id="skip">Skip this step</button>
+    <button class="btn btn--primary" id="next">Continue</button>
+  </div>
+</div>
+
+<div id="live" class="mh-sr" role="status" aria-live="polite"></div>
+
+<script src="scripts/store.js"></script>
+<script>
+(function () {
+  'use strict';
+  var S = MHW;
+  var live = document.getElementById('live');
+  function say(m) { live.textContent = ''; setTimeout(function () { live.textContent = m; }, 40); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+
+  /* -------------------------------------------------------------------------
+     The wizard is DATA. This mirrors schema/wizard-schema.json: the renderer
+     below knows nothing about Wi-Fi or parking, only about field types and
+     visibleWhen conditions. Adding a question is a data change. (docs/07)
+     ------------------------------------------------------------------------- */
+  var STEPS = [
+    { key: 'property', title: 'Your property', q: "Let's start with the basics.",
+      help: 'This is what guests see at the top of your guide.',
+      fields: [
+        { key: 'name', type: 'text', label: "What's your property called?", placeholder: 'Casa San Francesco', required: true },
+        { key: 'propertyType', type: 'select', label: 'What kind of place is it?',
+          options: [['apartment','Apartment'],['house','House'],['villa','Villa'],['bnb','B&B'],['room','A room'],['guesthouse','Guest house']] },
+        { key: 'cover', type: 'media', label: 'Add a photo of your place',
+          help: 'A wide photo works best. Guests see this first.' },
+        { key: 'address', type: 'text', label: 'Where is it?', placeholder: 'Via Paleocapa 14, Savona SV',
+          help: "We use this for directions and to work out how far away your recommendations are." },
+        { key: 'phone', type: 'tel', label: 'Phone number guests can call', placeholder: '+39 010 000 0000' },
+        { key: 'whatsappSame', type: 'check', label: 'WhatsApp is the same number', default: true },
+        { key: 'whatsapp', type: 'tel', label: 'WhatsApp number', visibleWhen: { field: 'whatsappSame', equals: false } }
+      ],
+      hint: 'Only <strong>two fields in the whole wizard are required</strong>: the property name and the check-in time. Everything else can wait until after a guest asks.' },
+
+    { key: 'welcome', title: 'Your welcome', q: 'What would you like to say to your guests?',
+      help: 'A couple of warm sentences. This is the first thing they read.',
+      fields: [
+        { key: 'welcomeMessage', type: 'textarea', label: 'Your welcome message',
+          placeholder: 'Welcome to Casa San Francesco. We hope you feel at home…', templates: true },
+        { key: 'hostName', type: 'text', label: 'What should guests call you?', placeholder: 'Marco' },
+        { key: 'hostPhoto', type: 'media', label: 'A photo of you', help: 'Guests trust a face. You can skip this.' }
+      ],
+      hint: 'The three starter templates matter more than they look. A blank textarea is where hosts stop.' },
+
+    { key: 'arrival', title: 'How to arrive', q: 'How do guests get to you?',
+      fields: [
+        { key: 'byCar', type: 'textarea', label: 'Arriving by car', placeholder: 'Leave the A10 at Savona, then…' },
+        { key: 'byTrain', type: 'textarea', label: 'Arriving by train', placeholder: 'The station is a 12-minute walk…' }
+      ] },
+
+    { key: 'parking', title: 'Parking', q: 'Is there somewhere to park?',
+      fields: [
+        { key: 'hasParking', type: 'yesno', label: 'Is there somewhere to park?', default: true },
+        { key: 'parkingType', type: 'radio', label: 'What kind of parking?',
+          options: [['private','A private space'],['garage','A garage'],['public','A public car park'],['street','On the street']],
+          visibleWhen: { field: 'hasParking', equals: true } },
+        { key: 'parkingInstructions', type: 'textarea', label: 'Anything guests should know?',
+          placeholder: 'Blue lines are paid, free after 20:00 and on Sundays…',
+          visibleWhen: { field: 'hasParking', equals: true } },
+        { key: 'noParkingAdvice', type: 'textarea', label: 'Where do you suggest guests park instead?',
+          visibleWhen: { field: 'hasParking', equals: false } }
+      ],
+      hint: 'Answer “no” and the follow-up questions disappear — and the section still counts as <strong>complete</strong>. Answering is completing. (docs/07)' },
+
+    { key: 'checkin', title: 'Check-in', q: 'How do guests get in?',
+      help: 'This is the question guests ask most.',
+      fields: [
+        { key: 'checkinTime', type: 'time', label: 'What time can guests check in?', required: true, default: '15:00' },
+        { key: 'selfCheckin', type: 'yesno', label: 'Is it a self check-in?',
+          yesLabel: 'Yes, guests let themselves in', noLabel: 'No, I meet them', default: true },
+        { key: 'keyLocation', type: 'select', label: 'Where are the keys?',
+          options: [['lockbox','In a lockbox'],['key_safe','In a key safe'],['reception','At reception'],['neighbour','With a neighbour'],['smart_lock','A smart lock'],['handover','I hand them over']],
+          visibleWhen: { field: 'selfCheckin', equals: true } },
+        { key: 'accessInstructions', type: 'textarea', label: 'Tell guests how to find and open it',
+          placeholder: 'The lockbox is to the right of the green door, under the letterboxes…',
+          visibleWhen: { field: 'selfCheckin', equals: true } },
+        { key: 'doorCode', type: 'text', label: 'Door or lockbox code', sensitive: true, mono: true,
+          help: 'Stored securely, never machine-translated, never in a printed QR card.',
+          visibleWhen: { field: 'selfCheckin', equals: true } }
+      ],
+      hint: 'The code field is flagged <code>sensitive</code>. That one flag excludes it from machine translation, masks it in logs, keeps it out of indexable pages, and makes it eligible for PIN protection. (docs/11, docs/17)' },
+
+    { key: 'wifi', title: 'Wi-Fi', q: 'Do your guests have Wi-Fi?',
+      fields: [
+        { key: 'hasWifi', type: 'yesno', label: 'Do your guests have Wi-Fi?', default: true },
+        { key: 'ssid', type: 'text', label: 'Network name', placeholder: 'CasaSanFrancesco', mono: true,
+          visibleWhen: { field: 'hasWifi', equals: true } },
+        { key: 'wifiPassword', type: 'text', label: 'Password', sensitive: true, mono: true,
+          help: 'Guests will be able to copy it with one tap.',
+          visibleWhen: { field: 'hasWifi', equals: true } },
+        { key: 'wifiInstructions', type: 'textarea', label: 'Anything else to know?',
+          placeholder: 'The router is in the hallway cupboard…',
+          visibleWhen: { field: 'hasWifi', equals: true } }
+      ],
+      hint: 'The network name and password are <strong>not translatable</strong>. A Wi-Fi password rendered into German is a support call.' },
+
+    { key: 'services', title: 'Services', q: 'What can guests use?',
+      gate: 'welcome.sections.services',
+      fields: [
+        { key: 'amenities', type: 'checkgrid', label: 'Tick everything your guests can use',
+          options: [['kitchen','Kitchen'],['dishwasher','Dishwasher'],['washing_machine','Washing machine'],
+                    ['dryer','Dryer'],['air_conditioning','Air conditioning'],['heating','Heating'],['tv','TV'],
+                    ['streaming','Netflix'],['pool','Pool'],['terrace','Terrace'],['garden','Garden'],['bbq','Barbecue'],
+                    ['crib','Cot'],['high_chair','High chair'],['iron','Iron'],['hairdryer','Hairdryer'],['lift','Lift'],
+                    ['accessible_entrance','Step-free entrance'],['pets_welcome','Pets welcome'],['workspace','Desk'],
+                    ['linen','Bed linen'],['towels','Towels'],['safe','Safe'],['parking','Parking']] }
+      ] },
+
+    { key: 'appliances', title: 'Appliances', q: 'Which appliances need explaining?',
+      help: 'The ones guests always ask about: the hob, the coffee machine, the heating.',
+      gate: 'welcome.sections.appliances',
+      fields: [{ key: 'appliancesNote', type: 'seedlist', label: 'Appliances' }],
+      hint: 'The list is <strong>seeded, not empty</strong>. An empty repeater is where hosts stop; five suggestions they can delete is where they carry on.' },
+
+    { key: 'rules', title: 'House rules', q: 'What should guests know about the house?',
+      fields: [{ key: 'rules', type: 'rules', label: 'Rules' },
+               { key: 'quietHours', type: 'text', label: 'Quiet hours', placeholder: '22:00 – 08:00' }] },
+
+    { key: 'waste', title: 'Waste', q: 'How does the rubbish work?',
+      help: 'Guests get this wrong more than anything else. Photos help.',
+      gate: 'welcome.sections.waste',
+      fields: [
+        { key: 'wasteSystem', type: 'radio', label: 'How is waste collected?',
+          options: [['separate_collection','Separate collection'],['single_bin','One bin for everything'],['collection_point','Take it to a collection point']] },
+        { key: 'binLocation', type: 'textarea', label: 'Where are the bins?', placeholder: 'Under the stairs, on the left…' },
+        { key: 'wastePhotos', type: 'media', label: 'Photos of the bins' }
+      ] },
+
+    { key: 'checkout', title: 'Check-out', q: 'What should guests do when they leave?',
+      fields: [
+        { key: 'checkoutTime', type: 'time', label: 'What time should they leave by?', default: '10:00' },
+        { key: 'keyReturn', type: 'textarea', label: 'What should they do with the keys?',
+          placeholder: 'Leave them in the lockbox and spin the dial…' }
+      ] },
+
+    { key: 'emergency', title: 'Safety', q: 'Who should guests call if something goes wrong?',
+      fields: [
+        { key: 'emergencyNumber', type: 'tel', label: 'Emergency number', default: '112',
+          help: 'Prefilled from your country. 112 works across the EU.' },
+        { key: 'hostEmergency', type: 'tel', label: 'Your number for emergencies' }
+      ] },
+
+    { key: 'recommendations', title: 'Places', q: 'Where do you send your guests?',
+      help: "Paste a Google Maps link and we'll fill in the rest.",
+      gate: 'welcome.sections.recommendations',
+      fields: [{ key: 'places', type: 'places', label: 'Places you recommend' }],
+      hint: 'Paste-a-link is the <strong>primary</strong> input, not a convenience. Typing nine fields per restaurant is how a host adds two and gives up.' },
+
+    { key: 'extras', title: 'Extras', q: 'Do you offer anything else guests can book?',
+      gate: 'welcome.sections.extras',
+      fields: [{ key: 'extrasNote', type: 'textarea', label: 'Transfers, breakfast, bike hire, late check-out…' }] },
+
+    { key: 'languages', title: 'Languages', q: 'Which languages should your guide be in?',
+      fields: [{ key: 'locales', type: 'locales', label: 'Languages' }],
+      hint: 'The limit comes from <code>welcome.languages.max</code>, never from a package name in the code. (docs/05)' },
+
+    { key: 'preview', title: 'Preview', q: "Here's what your guests will see.",
+      fields: [{ key: 'preview', type: 'preview', label: 'Preview' }] },
+
+    { key: 'publish', title: 'Publish', q: 'Ready to go online?',
+      fields: [{ key: 'slug', type: 'slug', label: 'Your guide address' }] }
+  ];
+
+  /* steps the package does not include are removed entirely — a wizard is the
+     wrong place to sell (docs/07) */
+  var steps = STEPS.filter(function (s) { return !s.gate || S.can(s.gate); });
+
+  var i = 0;
+  var st = S.get();
+  if (st.onboarding && st.onboarding.currentStep) {
+    var found = steps.map(function (s) { return s.key; }).indexOf(st.onboarding.currentStep);
+    if (found > -1) i = found;
+  }
+
+  var form = document.getElementById('form');
+
+  /* ---- condition evaluation, the whole of it ---------------------------- */
+  function value(key) {
+    var c = S.get().content;
+    if (key === 'whatsappSame') return c.whatsapp === '' || c.whatsapp === c.phone;
+    return c[key];
+  }
+  function visible(f) {
+    if (!f.visibleWhen) return true;
+    var w = f.visibleWhen, v = value(w.field);
+    if ('equals' in w)    return v === w.equals;
+    if ('notEquals' in w) return v !== w.notEquals;
+    if ('in' in w)        return w['in'].indexOf(v) > -1;
+    if ('isNotEmpty' in w) return !!v;
+    return true;
+  }
+
+  /* ---- field renderers -------------------------------------------------- */
+  function renderField(f) {
+    var c = S.get().content;
+    var v = c[f.key] !== undefined && c[f.key] !== '' ? c[f.key] : (f.default !== undefined ? f.default : '');
+    var id = 'f-' + f.key;
+    var wrap = f.visibleWhen ? 'cond' : '';
+    var hidden = visible(f) ? '' : ' hidden';
+    var lbl = '<label class="field__label" for="' + id + '">' + esc(f.label) +
+      (f.sensitive ? ' <span class="chip chip--lock">sensitive</span>' : '') + '</label>';
+    var help = f.help ? '<p class="field__help">' + f.help + '</p>' : '';
+    var body = '';
+
+    switch (f.type) {
+      case 'text': case 'tel': case 'time':
+        body = '<input class="input' + (f.mono ? ' mh-mono' : '') + '" id="' + id + '" data-k="' + f.key +
+          '" type="' + (f.type === 'time' ? 'time' : (f.type === 'tel' ? 'tel' : 'text')) + '"' +
+          (f.type === 'tel' ? ' inputmode="tel" autocomplete="tel"' : '') +
+          ' value="' + esc(v) + '" placeholder="' + esc(f.placeholder || '') + '">';
+        break;
+      case 'textarea':
+        body = '<textarea class="textarea" id="' + id + '" data-k="' + f.key + '" placeholder="' +
+          esc(f.placeholder || '') + '">' + esc(v) + '</textarea>' +
+          (f.templates ? '<div class="row row--wrap" style="gap:.4rem;margin-top:.5rem">' +
+            '<span class="xs subtle">Start from:</span>' +
+            '<button type="button" class="btn btn--ghost btn--sm" data-tpl="warm">Warm</button>' +
+            '<button type="button" class="btn btn--ghost btn--sm" data-tpl="short">Short</button>' +
+            '<button type="button" class="btn btn--ghost btn--sm" data-tpl="practical">Practical</button></div>' : '');
+        break;
+      case 'select':
+        body = '<select class="select" id="' + id + '" data-k="' + f.key + '">' +
+          f.options.map(function (o) {
+            return '<option value="' + o[0] + '"' + (v === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+          }).join('') + '</select>';
+        break;
+      case 'yesno':
+        body = '<div class="yesno" role="radiogroup" aria-labelledby="' + id + '-l">' +
+          '<input type="radio" id="' + id + '-y" name="' + id + '" data-k="' + f.key + '" data-v="true"' + (v === true ? ' checked' : '') + '>' +
+          '<label for="' + id + '-y">' + esc(f.yesLabel || 'Yes') + '</label>' +
+          '<input type="radio" id="' + id + '-n" name="' + id + '" data-k="' + f.key + '" data-v="false"' + (v === false ? ' checked' : '') + '>' +
+          '<label for="' + id + '-n">' + esc(f.noLabel || 'No') + '</label></div>';
+        lbl = '<span class="field__label" id="' + id + '-l">' + esc(f.label) + '</span>';
+        break;
+      case 'radio':
+        body = '<div class="stack" role="radiogroup" aria-labelledby="' + id + '-l">' + f.options.map(function (o, n) {
+          return '<label class="checkgrid" style="display:block"><span style="display:flex;align-items:center;gap:.55rem;min-height:44px;padding:.5rem .7rem;border:1px solid ' +
+            (v === o[0] ? 'var(--mh-brand-600);background:var(--mh-brand-50)' : 'var(--mh-border)') +
+            ';border-radius:var(--mh-radius-md);cursor:pointer">' +
+            '<input type="radio" name="' + id + '" data-k="' + f.key + '" data-v="' + o[0] + '"' + (v === o[0] ? ' checked' : '') +
+            ' style="width:18px;height:18px;accent-color:var(--mh-brand-600)">' + esc(o[1]) + '</span></label>';
+        }).join('') + '</div>';
+        lbl = '<span class="field__label" id="' + id + '-l">' + esc(f.label) + '</span>';
+        break;
+      case 'check':
+        body = '<label class="toggle"><input type="checkbox" data-k="' + f.key + '"' + (v ? ' checked' : '') +
+          '><span class="toggle__track" aria-hidden="true"></span><span class="small">' + esc(f.label) + '</span></label>';
+        lbl = '';
+        break;
+      case 'checkgrid':
+        var sel = Array.isArray(v) ? v : [];
+        body = '<div class="checkgrid">' + f.options.map(function (o) {
+          return '<label><input type="checkbox" data-multi="' + f.key + '" value="' + o[0] + '"' +
+            (sel.indexOf(o[0]) > -1 ? ' checked' : '') + '><span>' + esc(o[1]) + '</span></label>';
+        }).join('') + '</div>';
+        lbl = '<span class="field__label">' + esc(f.label) + '</span>';
+        break;
+      case 'media':
+        body = '<div class="dropzone"><div class="dropzone__icon" aria-hidden="true">' +
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>' +
+          '<div class="row" style="justify-content:center;gap:.5rem;flex-wrap:wrap">' +
+          '<button type="button" class="btn btn--secondary btn--sm">Choose from your phone</button>' +
+          '<button type="button" class="btn btn--ghost btn--sm">Choose from your photos</button></div>' +
+          '<p class="dropzone__hint">JPG, PNG or HEIC · up to 15 MB' +
+          (S.can('welcome.media.pdf') ? ' · PDFs too' : '') + '</p></div>';
+        lbl = '<span class="field__label">' + esc(f.label) + '</span>';
+        break;
+      case 'seedlist':
+        body = ['Induction hob', 'Coffee machine', 'Washing machine', 'Air conditioning', 'Oven']
+          .map(function (n) {
+            return '<div class="card" style="margin-bottom:.5rem"><div class="card__body" style="padding:.8rem 1rem;display:flex;align-items:center;gap:.7rem">' +
+              '<span aria-hidden="true">\u{1F50C}</span><strong class="small grow">' + n + '</strong>' +
+              '<button type="button" class="btn btn--ghost btn--sm">Explain</button>' +
+              '<button type="button" class="btn btn--ghost btn--sm" aria-label="Remove ' + n + '">×</button></div></div>';
+          }).join('') + '<button type="button" class="btn btn--secondary btn--sm">+ Add another</button>';
+        lbl = '<span class="field__label">' + esc(f.label) + '</span>';
+        break;
+      case 'rules':
+        var r = c.rules || {};
+        body = [['smoking', 'Smoking'], ['pets', 'Pets'], ['parties', 'Parties']].map(function (p) {
+          var cur = r[p[0]] || 'ask';
+          return '<div class="rule-row"><span class="small"><strong>' + p[1] + '</strong></span>' +
+            '<div class="tri" role="radiogroup" aria-label="' + p[1] + '">' +
+            [['allowed', 'Allowed'], ['not_allowed', 'Not allowed'], ['ask', 'Ask me']].map(function (o, n) {
+              var rid = 'r-' + p[0] + '-' + n;
+              return '<input type="radio" id="' + rid + '" name="r-' + p[0] + '" data-rule="' + p[0] +
+                '" data-v="' + o[0] + '"' + (cur === o[0] ? ' checked' : '') + '>' +
+                '<label for="' + rid + '">' + o[1] + '</label>';
+            }).join('') + '</div></div>';
+        }).join('');
+        lbl = '';
+        break;
+      case 'places':
+        var places = c.places || [];
+        body = '<div class="field"><label class="field__label" for="maps">Paste a Google Maps link</label>' +
+          '<div class="row" style="gap:.5rem"><input class="input" id="maps" placeholder="https://maps.app.goo.gl/…">' +
+          '<button type="button" class="btn btn--secondary" id="add-place">Add</button></div>' +
+          '<p class="field__help">We read the name, address, phone and coordinates from the link.</p></div>' +
+          '<div id="place-list">' + (places.length ? places.map(function (p, n) {
+            return '<div class="card" style="margin-bottom:.5rem"><div class="card__body" style="padding:.8rem 1rem;display:flex;align-items:center;gap:.7rem">' +
+              '<span aria-hidden="true">' + (p.icon || '\u{1F37D}') + '</span>' +
+              '<div class="grow"><strong class="small">' + esc(p.name) + '</strong>' +
+              '<div class="xs subtle">' + esc(p.cat || 'Restaurant') + (p.dist ? ' · ' + esc(p.dist) : '') + '</div></div>' +
+              '<button type="button" class="btn btn--ghost btn--sm" data-rm="' + n + '" aria-label="Remove ' + esc(p.name) + '">×</button></div></div>';
+          }).join('') : '<div class="empty"><div class="empty__icon" aria-hidden="true">\u{1F37D}</div>' +
+            '<div class="empty__title">No places added yet</div>' +
+            '<p class="empty__body">Add the restaurants, bars and shops you’d recommend to a friend.</p></div>') + '</div>' +
+          '<p class="xs subtle">' + places.length + ' of ' + S.limit('welcome.recommendations.max') + ' used</p>';
+        lbl = '';
+        break;
+      case 'locales':
+        var max = S.limit('welcome.languages.max');
+        var chosen = S.get().guide.locales;
+        var all = [['it-IT', 'Italiano'], ['en-GB', 'English'], ['de-DE', 'Deutsch'], ['fr-FR', 'Français'], ['es-ES', 'Español'], ['nl-NL', 'Nederlands']];
+        body = '<div class="stack">' + all.map(function (l) {
+          var on = chosen.indexOf(l[0]) > -1;
+          var isDefault = l[0] === S.get().guide.defaultLocale;
+          var full = !on && chosen.length >= max;
+          return '<div class="card"><div class="card__body" style="padding:.75rem 1rem;display:flex;align-items:center;gap:.7rem">' +
+            '<strong class="small grow">' + l[1] + (isDefault ? ' <span class="chip chip--brand">Original</span>' : '') + '</strong>' +
+            (full ? '<span class="chip chip--lock">Limit reached</span>' :
+              '<label class="toggle"><input type="checkbox" data-locale="' + l[0] + '"' + (on ? ' checked' : '') +
+              (isDefault ? ' disabled' : '') + '><span class="toggle__track" aria-hidden="true"></span>' +
+              '<span class="mh-sr">' + l[1] + '</span></label>') +
+            '</div></div>';
+        }).join('') + '</div><p class="xs subtle" style="margin-top:.6rem" id="loc-count">' +
+          chosen.length + ' of ' + max + ' used' +
+          (S.can('welcome.languages.auto_translate') ? ' · automatic translation is included' :
+            ' · automatic translation is available with Pro') + '</p>';
+        lbl = '';
+        break;
+      case 'preview':
+        body = '<div style="display:flex;justify-content:center"><div class="phone"><div class="phone__notch" aria-hidden="true"></div>' +
+          '<iframe class="phone__screen" src="guide.html" title="Preview of your guide as guests will see it" style="width:100%;border:0"></iframe>' +
+          '</div></div><p class="xs subtle center" style="margin-top:.8rem">The real guest renderer, showing what you have written so far.</p>';
+        lbl = '';
+        break;
+      case 'slug':
+        body = '<div class="input-group"><span class="input-group__prefix">welcome.myhouse.it/</span>' +
+          '<input class="input" id="' + id + '" data-k="slug" value="' + esc(S.get().guide.slug) + '"></div>' +
+          '<p class="field__help" style="color:var(--mh-success)">✓ Available</p>';
+        lbl = '<label class="field__label" for="' + id + '">' + esc(f.label) + '</label>';
+        break;
+      default:
+        body = '';
+    }
+
+    return '<div class="field ' + wrap + '" data-field="' + f.key + '"' + hidden + '>' + lbl + help + body + '</div>';
+  }
+
+  /* ---- render a step ---------------------------------------------------- */
+  function render() {
+    var s = steps[i];
+    document.getElementById('q').textContent = s.q;
+    var h = document.getElementById('help');
+    h.textContent = s.help || ''; h.style.display = s.help ? '' : 'none';
+    document.getElementById('stepline').textContent =
+      'Step ' + (i + 1) + ' of ' + steps.length + ' · ' + s.title;
+    var pct = Math.round(((i) / steps.length) * 100);
+    document.getElementById('bar').style.width = pct + '%';
+    document.getElementById('pct').textContent = pct + '%';
+    form.innerHTML = s.fields.map(renderField).join('');
+    var hint = document.getElementById('hint');
+    hint.innerHTML = s.hint || '';
+    hint.style.display = s.hint ? '' : 'none';
+    document.getElementById('back').disabled = i === 0;
+    document.getElementById('skip').style.display =
+      (s.key === 'preview' || s.key === 'publish') ? 'none' : '';
+    document.getElementById('next').textContent =
+      s.key === 'publish' ? 'Publish my guide' : (s.key === 'preview' ? 'Looks good' : 'Continue');
+    S.set({ onboarding: { currentStep: s.key, completed: S.get().onboarding.completed, skipped: S.get().onboarding.skipped } });
+    window.scrollTo(0, 0);
+  }
+
+  /* ---- autosave: debounced, per field, writes the real content ---------- */
+  var timer = null;
+  function saving() {
+    var el = document.getElementById('save');
+    el.classList.remove('saveind--saved');
+    el.lastChild.textContent = ' Saving…';
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      el.classList.add('saveind--saved');
+      el.lastChild.textContent = ' Saved';
+    }, 700);
+  }
+
+  function refreshConditionals() {
+    form.querySelectorAll('[data-field]').forEach(function (el) {
+      var key = el.dataset.field;
+      var f = null;
+      steps[i].fields.forEach(function (x) { if (x.key === key) f = x; });
+      if (!f) return;
+      var show = visible(f);
+      if (show && el.hidden) { el.hidden = false; el.classList.add('reveal'); }
+      else if (!show) { el.hidden = true; el.classList.remove('reveal'); }
+    });
+  }
+
+  form.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t.dataset.k) {
+      var v = t.value;
+      if (t.dataset.k === 'slug') {
+        var g = S.get().guide; g.slug = v; S.set({ guide: g });
+      } else {
+        var patch = {}; patch[t.dataset.k] = v; S.patchContent(patch);
+      }
+      saving(); refreshConditionals();
+    }
+  });
+
+  form.addEventListener('change', function (e) {
+    var t = e.target;
+
+    if (t.type === 'radio' && t.dataset.k) {
+      var raw = t.dataset.v;
+      var val = raw === 'true' ? true : (raw === 'false' ? false : raw);
+      var p = {}; p[t.dataset.k] = val; S.patchContent(p);
+      saving(); render(); return;
+    }
+    if (t.dataset.rule) {
+      var r = S.get().content.rules || {};
+      r[t.dataset.rule] = t.dataset.v;
+      S.patchContent({ rules: r }); saving(); return;
+    }
+    if (t.dataset.multi) {
+      var arr = (S.get().content[t.dataset.multi] || []).slice();
+      var n = arr.indexOf(t.value);
+      if (t.checked && n === -1) arr.push(t.value);
+      if (!t.checked && n > -1) arr.splice(n, 1);
+      var pm = {}; pm[t.dataset.multi] = arr; S.patchContent(pm);
+      saving(); return;
+    }
+    if (t.dataset.locale) {
+      var gl = S.get().guide;
+      var li = gl.locales.indexOf(t.dataset.locale);
+      if (t.checked && li === -1) gl.locales.push(t.dataset.locale);
+      if (!t.checked && li > -1) gl.locales.splice(li, 1);
+      S.set({ guide: gl }); saving(); render(); return;
+    }
+    if (t.type === 'checkbox' && t.dataset.k === 'whatsappSame') {
+      S.patchContent({ whatsapp: t.checked ? '' : S.get().content.whatsapp });
+      saving(); render(); return;
+    }
+    if (t.dataset.k) {
+      var pc = {}; pc[t.dataset.k] = t.value; S.patchContent(pc); saving();
+    }
+  });
+
+  var TEMPLATES = {
+    warm: 'Welcome to our home. We hope you find everything you need — and if you don’t, just message me. Make yourself comfortable, the coffee is in the cupboard above the kettle.',
+    short: 'Welcome! Everything you need for your stay is in this guide. Message me any time.',
+    practical: 'Welcome. This guide has the Wi-Fi, the check-in instructions, how the appliances work and where to eat. Please have a read before you arrive — it saves us both a phone call.'
+  };
+
+  form.addEventListener('click', function (e) {
+    var tpl = e.target.closest('[data-tpl]');
+    if (tpl) {
+      e.preventDefault();
+      var ta = form.querySelector('textarea[data-k="welcomeMessage"]');
+      ta.value = TEMPLATES[tpl.dataset.tpl];
+      S.patchContent({ welcomeMessage: ta.value });
+      saving(); say('Template inserted'); return;
+    }
+    if (e.target.id === 'add-place') {
+      e.preventDefault();
+      var inp = document.getElementById('maps');
+      var demo = [
+        { name: 'Trattoria del Porto', cat: 'Restaurant', dist: '400 m', icon: '\u{1F35D}', desc: 'Simple fish, family run.', pick: true },
+        { name: 'Bar Aurora', cat: 'Breakfast', dist: '120 m', icon: '☕', desc: 'Where I have my coffee.', pick: true },
+        { name: 'Gelateria Perotti', cat: 'Gelato', dist: '350 m', icon: '\u{1F368}', desc: 'The pistachio is the reason.', pick: false }
+      ];
+      var pl = (S.get().content.places || []).slice();
+      if (pl.length >= S.limit('welcome.recommendations.max')) {
+        say('You have reached the limit for your package'); return;
+      }
+      pl.push(demo[pl.length % demo.length]);
+      S.patchContent({ places: pl });
+      if (inp) inp.value = '';
+      saving(); render(); say('Place added'); return;
+    }
+    var rm = e.target.closest('[data-rm]');
+    if (rm) {
+      e.preventDefault();
+      var list = (S.get().content.places || []).slice();
+      list.splice(Number(rm.dataset.rm), 1);
+      S.patchContent({ places: list }); saving(); render(); return;
+    }
+  });
+
+  /* ---- navigation ------------------------------------------------------- */
+  document.getElementById('back').addEventListener('click', function () {
+    if (i > 0) { i--; render(); }
+  });
+
+  document.getElementById('skip').addEventListener('click', function () {
+    var sk = S.get().onboarding.skipped.slice();
+    if (sk.indexOf(steps[i].key) === -1) sk.push(steps[i].key);
+    S.set({ onboarding: { currentStep: steps[i].key, completed: S.get().onboarding.completed, skipped: sk } });
+    advance();
+  });
+
+  document.getElementById('next').addEventListener('click', function () {
+    var s = steps[i];
+    /* the only two required fields in the whole wizard */
+    var req = s.fields.filter(function (f) { return f.required && visible(f); });
+    for (var n = 0; n < req.length; n++) {
+      var val = S.get().content[req[n].key];
+      if (!val) {
+        var el = form.querySelector('[data-k="' + req[n].key + '"]');
+        if (el) {
+          el.setAttribute('aria-invalid', 'true');
+          el.focus();
+          var msg = req[n].key === 'name'
+            ? 'Your guests will see this name. What’s your place called?'
+            : 'Guests ask this most. What time can they arrive?';
+          var p = el.parentElement.querySelector('.field__error');
+          if (!p) {
+            p = document.createElement('p'); p.className = 'field__error';
+            el.parentElement.appendChild(p);
+          }
+          p.textContent = msg;
+          say(msg);
+        }
+        return;
+      }
+    }
+    var done = S.get().onboarding.completed.slice();
+    if (done.indexOf(s.key) === -1) done.push(s.key);
+    S.set({ onboarding: { currentStep: s.key, completed: done, skipped: S.get().onboarding.skipped } });
+
+    if (s.key === 'publish') { finish(); return; }
+    advance();
+  });
+
+  function advance() {
+    if (i < steps.length - 1) { i++; render(); }
+    else finish();
+  }
+
+  function finish() {
+    S.publish();
+    var ex = S.excluded();
+    document.querySelector('.wz-foot').style.display = 'none';
+    document.getElementById('hint').style.display = 'none';
+    document.getElementById('bar').style.width = '100%';
+    document.getElementById('pct').textContent = '100%';
+    document.getElementById('stepline').textContent = 'Done';
+    document.getElementById('q').textContent = 'Your guide is online';
+    document.getElementById('help').textContent = '';
+    document.getElementById('help').style.display = 'none';
+    form.innerHTML =
+      '<div class="done">' +
+      '<div class="url-box"><span>' + esc(S.guideUrl()) + '</span>' +
+      '<button type="button" class="btn btn--secondary btn--sm" id="copy-url">Copy</button></div>' +
+      (ex.length ? '<div class="alert alert--info" style="text-align:left;margin-bottom:var(--mh-space-7)">' +
+        '<span aria-hidden="true">ℹ</span><div class="alert__body"><strong>' + ex.length +
+        (ex.length === 1 ? ' thing wasn’t' : ' things weren’t') + ' included</strong>' +
+        '<ul style="margin:.4rem 0 .5rem 1rem">' + ex.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
+        'Everything else is live. Nothing was deleted — it’ll be included if you upgrade.</div></div>' : '') +
+      '<div class="row" style="justify-content:center;gap:.6rem;flex-wrap:wrap">' +
+      '<a class="btn btn--primary btn--lg" href="guide.html">See my guide</a>' +
+      '<a class="btn btn--secondary btn--lg" href="dashboard.html">Go to my dashboard</a></div>' +
+      '<p class="xs subtle" style="margin-top:var(--mh-space-7)">' +
+      'Your QR code is ready to download from the dashboard. It will keep working even if you change your guide.</p>' +
+      '</div>';
+    document.getElementById('copy-url').addEventListener('click', function () {
+      if (navigator.clipboard) navigator.clipboard.writeText('https://' + S.guideUrl()).catch(function(){});
+      this.textContent = 'Copied'; say('Link copied');
+    });
+    say('Your guide is online');
+    window.scrollTo(0, 0);
+  }
+
+  /* prototype helper */
+  document.getElementById('jump').addEventListener('click', function () {
+    S.patchContent({
+      name: 'Casa San Francesco', propertyType: 'apartment',
+      address: 'Via Paleocapa 14, Savona SV', phone: '+39 010 000 0000',
+      hostName: 'Marco', welcomeMessage: TEMPLATES.warm,
+      checkinTime: '15:00', selfCheckin: true, keyLocation: 'lockbox',
+      accessInstructions: 'The lockbox is to the right of the green door, under the letterboxes. Turn the dial to the code, then slide the cover down.',
+      doorCode: '4821', hasWifi: true, ssid: 'CasaSanFrancesco', wifiPassword: 'ulivo2026',
+      wifiInstructions: 'The router is in the hallway cupboard. If it stops working, switch it off for ten seconds.',
+      hasParking: true, parkingType: 'street',
+      parkingInstructions: 'Blue lines are paid (1.20 EUR/hour, free after 20:00 and on Sundays). The car park in Piazza del Popolo is 200 m away.',
+      byCar: 'Leave the A10 at Savona, then follow signs for the centre. The last 300 m is a pedestrian street — you can drive in to unload.',
+      byTrain: 'Savona station is a 12-minute walk, mostly flat, or a 4-minute taxi.',
+      amenities: ['kitchen', 'dishwasher', 'washing_machine', 'air_conditioning', 'heating', 'tv', 'terrace', 'linen'],
+      quietHours: '22:00 – 08:00', checkoutTime: '10:00',
+      keyReturn: 'Leave the keys in the lockbox and spin the dial. Pull the door firmly behind you — it sticks a little.',
+      emergencyNumber: '112', hostEmergency: '+39 010 000 0000',
+      rules: { smoking: 'not_allowed', pets: 'ask', parties: 'not_allowed' }
+    });
+    render(); say('Demo property filled in');
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
