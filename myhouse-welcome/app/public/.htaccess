@@ -1,0 +1,15 @@
+# Tutte le richieste passano da index.php, tranne i file che esistono davvero.
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
+
+# Le cartelle di servizio non devono essere raggiungibili dal web.
+RedirectMatch 404 /\.git
+Options -Indexes
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
