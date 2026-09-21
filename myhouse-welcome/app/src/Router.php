@@ -19,10 +19,11 @@ final class Router
     public function dispatch(string $method, string $path): void
     {
         $path = (string) (parse_url($path, PHP_URL_PATH) ?: '/');
-        $base = Support::base();
-        if ($base !== '' && str_starts_with($path, $base)) $path = substr($path, strlen($base));
-        // Via di riserva per gli hosting senza mod_rewrite:
-        // /welcomebook/index.php/pannello funziona come /welcomebook/pannello.
+        // Prima la cartella, poi l'eventuale index.php: cosi' entrambe le forme
+        // — /welcomebook/pannello e /welcomebook/index.php/pannello — arrivano
+        // alla stessa rotta, che il server sappia riscrivere o no.
+        $dir = Support::baseDir();
+        if ($dir !== '' && str_starts_with($path, $dir)) $path = substr($path, strlen($dir));
         if (str_starts_with($path, '/index.php')) $path = substr($path, strlen('/index.php'));
         $path = '/' . trim($path, '/');
         foreach ($this->routes as [$m, $pattern, $handler]) {

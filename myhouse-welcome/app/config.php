@@ -8,6 +8,9 @@ return [
     // Sottocartella in cui vive l'applicazione (es. 'welcomebook').
     // Vuoto = si ricava da sola: lasciatelo così, salvo proxy strani.
     'base_path' => getenv('MHW_BASE_PATH') ?: '',
+    // Indirizzi puliti (senza index.php). null = l'applicazione se ne accorge
+    // da sola; true = forzali; false = usa sempre index.php.
+    'pretty_urls' => null,
     'db' => [
         'driver' => getenv('MHW_DB_DRIVER') ?: 'sqlite',
         'sqlite_path' => __DIR__ . '/storage/myhouse.sqlite',

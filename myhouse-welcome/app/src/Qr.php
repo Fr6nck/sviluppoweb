@@ -46,11 +46,21 @@ final class Qr
         return self::buildMatrix($codewords, $version);
     }
 
-    /** PNG pronto da servire o salvare. */
-    public static function png(string $text, int $scale = 8, int $quiet = 4): string
+    /**
+     * PNG pronto da servire o salvare.
+     *
+     * Con $minPx la scala si adatta alla densita': un indirizzo piu' lungo
+     * produce un QR con piu' moduli, e a scala fissa ogni modulo diventerebbe
+     * piu' piccolo da stampare. Cosi' invece il codice resta sempre leggibile.
+     */
+    public static function png(string $text, int $scale = 8, int $quiet = 4, int $minPx = 0): string
     {
         $m = self::matrix($text);
         $n = count($m);
+        if ($minPx > 0) {
+            $necessaria = (int) ceil($minPx / ($n + $quiet * 2));
+            $scale = max($scale, $necessaria);
+        }
         $size = ($n + $quiet * 2) * $scale;
         $img = imagecreatetruecolor($size, $size);
         $white = imagecolorallocate($img, 255, 255, 255);

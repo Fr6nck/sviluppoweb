@@ -1,4 +1,4 @@
-<?php use function MHW\b; use MHW\{Auth, Support, Csrf}; $u = Auth::user(); $f = Support::flash(); ?>
+<?php use function MHW\a; use function MHW\b; use MHW\{Auth, Support, Csrf}; $u = Auth::user(); $f = Support::flash(); ?>
 <!doctype html>
 <html lang="it">
 <head>
@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= Support::e($title ?? 'MyHouse Welcome') ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Gloock&family=Onest:wght@300..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?= b() ?>/assets/app.css">
+<link rel="stylesheet" href="<?= a() ?>/assets/app.css">
 </head>
 <body>
 <?php if (Auth::isImpersonating()): ?>

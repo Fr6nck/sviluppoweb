@@ -254,7 +254,7 @@ $r->get('/qr/{token}.png', function (array $a) {
     $t = Db::one('SELECT * FROM qr_tokens WHERE token = ?', [$a['token']]);
     if (!$t) { http_response_code(404); exit; }
     header('Content-Type: image/png');
-    echo Qr::png(Support::baseUrl() . '/q/' . $t['token'], 8, 4);
+    echo Qr::png(Support::baseUrl() . '/q/' . $t['token'], 8, 4, 640);
 });
 
 require MHW_APP . '/src/routes_host.php';

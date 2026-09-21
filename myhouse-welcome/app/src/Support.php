@@ -34,11 +34,10 @@ final class Support
     }
 
     /**
-     * La cartella in cui vive l'applicazione: '' se sta sulla radice del
-     * dominio, '/welcomebook' se sta in una sottocartella. Si ricava da sola
-     * da SCRIPT_NAME, così lo stesso pacchetto funziona in tutti e due i casi.
+     * La cartella in cui vive l'applicazione: '' sulla radice del dominio,
+     * '/welcomebook' in una sottocartella. Serve per CAPIRE le richieste.
      */
-    public static function base(): string
+    public static function baseDir(): string
     {
         static $cache = null;
         if ($cache !== null) return $cache;
@@ -47,6 +46,36 @@ final class Support
         $script = (string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php');
         $dir = rtrim(str_replace('\\', '/', dirname($script)), '/');
         return $cache = ($dir === '' || $dir === '.') ? '' : $dir;
+    }
+
+    /**
+     * Il prefisso da mettere davanti agli indirizzi che GENERIAMO.
+     *
+     * Non tutti i server riscrivono gli indirizzi: dove .htaccess viene
+     * ignorato, /welcomebook/accedi non esiste e solo
+     * /welcomebook/index.php/accedi funziona. Qui ce ne accorgiamo da soli.
+     *
+     * Nel dubbio si sceglie la forma con index.php, perche' quella funziona
+     * su ENTRAMBE le configurazioni: e' il router a toglierla.
+     */
+    public static function base(): string
+    {
+        static $cache = null;
+        if ($cache !== null) return $cache;
+
+        $dir = self::baseDir();
+        $script = (string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php');
+
+        $scelta = Config::get('pretty_urls');            // true | false | null = da solo
+        if ($scelta === true)  return $cache = $dir;
+        if ($scelta === false) return $cache = $script;
+
+        $req = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/');
+        // La richiesta e' arrivata riscritta: il server sa farlo, usiamo gli indirizzi puliti.
+        if ($req !== $dir && $req !== $dir . '/' && !str_starts_with($req, $script)) {
+            return $cache = $dir;
+        }
+        return $cache = $script;
     }
 
     /** Un indirizzo interno, sempre corretto anche in sottocartella. */
@@ -98,3 +127,15 @@ function u(string $path = '/'): string { return Support::url($path); }
 
 /** Solo il prefisso della sottocartella: '' oppure '/welcomebook'. */
 function b(): string { return Support::base(); }
+
+/**
+ * Per i FILE veri (il foglio di stile, le immagini fisse): mai index.php
+ * davanti. Senza argomenti restituisce solo il prefisso, come b(), cosi'
+ * nel markup si scrive <?= a() ?>/assets/... senza doppie barre.
+ */
+function a(string $path = ''): string
+{
+    if ($path === '') return Support::baseDir();
+    if ($path[0] !== '/') $path = '/' . $path;
+    return Support::baseDir() . $path;
+}
