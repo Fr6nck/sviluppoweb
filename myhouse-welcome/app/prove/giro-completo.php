@@ -210,6 +210,9 @@ prova('Il foglio di stile esce', $css['code'] === 200);
 prova('La sabbia è dichiarata sulle superfici', str_contains($css['body'], "--grana:url(\"grana.png\")"));
 prova('Le superfici la usano davvero', str_contains($css['body'], 'background-image: var(--grana)'));
 prova('Le fotografie restano pulite', str_contains($css['body'], 'background-image: none'));
+prova('I comandi restano lisci',
+      str_contains($css['body'], '.btn, .icon-btn, .lang, .chips a, .chips button, .btn--go .go,')
+      && !str_contains($css['body'], '.plan,\n.btn, .icon-btn'));
 $grana = chiama(str_replace('/index.php', '', $BASE) . '/assets/grana.png');
 prova('L\'immagine della sabbia si scarica', $grana['code'] === 200 && str_starts_with($grana['body'], "\x89PNG"),
       strlen($grana['body']) . ' byte');

@@ -207,11 +207,18 @@ terracotta `#b4451f`, mare `#1c5a78`, pino `#1f6b3f`, ocra `#b07d0c`,
 allarme `#9c2b20`, notte `#17130d`. Sull'ocra il testo è scuro, non chiaro:
 in chiaro si ferma a 3.5:1 e non passa. È l'unica eccezione della tavolozza.
 
-Su tutte le superfici — carta, schede, riquadri, bottoni, barre — corre una
+Su tutte le superfici — carta, schede, riquadri di colore, barre — corre una
 **grana di sabbia** finissima (`assets/grana.png`, 17 kB, una sola richiesta).
 Sta nello sfondo, sotto il contenuto: non tocca le fotografie, né il testo, né
 le icone. La stessa immagine ha granelli chiari e scuri, così funziona nei due
 temi senza cambiarla.
+
+**Su quello che si preme, invece, la sabbia non c'è.** Bottoni, tondi dei
+comandi, pastiglie dei filtri e della lingua restano lisci: un comando deve
+staccare dalla superficie che lo ospita, e liscio sopra ruvido si vede che è un
+altro piano. Verificato elemento per elemento — 23 comandi, nessuno ruvido; 20
+superfici, nessuna liscia — e sui pixel: dentro un bottone la variazione è
+esattamente 0, sulla carta è 4.7.
 
 Le **due barre di navigazione**, quella in alto e quella in fondo alla guida,
 sono vetro: 40% di colore e il resto è la pagina che ci scorre sotto, sfocata.

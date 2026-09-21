@@ -470,7 +470,7 @@ th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute
    prima, senza doverli riscrivere uno per uno.                              */
 
 body, .card, .panel, .stat, .note, .saying, .rowcard, .place, .tile, .plan,
-.btn, .icon-btn, .lang, .chips a, .chips button, .badge, .tag, .avatar,
+.badge, .tag, .avatar,
 .nav, .topbar, .guest-bottom, .band, .preview, .preview__body, .impersonating,
 .trrow, .trrow__head, .trrow__a, .trrow__b, .wizard__side, .wizard__step,
 .langpick__menu, .step, .checklist li, .search, .qr-sheet,
@@ -495,6 +495,13 @@ select {
 /* Le fotografie e le schermate a tutto campo restano pulite. */
 .shot, .shot img, .thumb, .thumb img, .preview__shot, .full, .full__photo,
 .full__scrim, .preview__grid i, img { background-image: none; }
+
+/* E niente sabbia su quello che si preme. Un comando deve staccare dalla
+   superficie che lo ospita: liscio sopra il ruvido, si vede che e' un altro
+   piano. Vale per i bottoni, i loro tondi, le pastiglie dei filtri e della
+   lingua — cioe' tutto quello su cui si clicca per fare qualcosa. */
+.btn, .icon-btn, .lang, .chips a, .chips button, .btn--go .go,
+button, input[type=submit], input[type=button] { background-image: none; }
 
 /* --------------------------------------------------- l'interruttore del tema */
 .tema{position:relative}

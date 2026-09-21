@@ -34,7 +34,8 @@ a folder on shared hosting, and it works whether or not the server rewrites URLs
 Its surfaces follow the **Fauna** direction of the design canvas: full-bleed
 photography, solid colour tiles, Gloock on headings and Onest on everything else,
 and a night theme for the Wi-Fi page — the one guests look for in the dark. A
-fine sand grain runs under every surface (never over photographs, text or icons),
+fine sand grain runs under every surface — but never under a control, so buttons
+and calls to action stay smooth against it, and never over photographs, text or icons —
 the two navigation bars are glass at 40% with a blurred backdrop, and there is a
 light/dark switch that follows the system until someone chooses otherwise.
 
