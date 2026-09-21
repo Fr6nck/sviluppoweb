@@ -119,6 +119,31 @@ $up = $storage . '/uploads';
 riga('Cartella uploads scrivibile', is_dir($up) && is_writable($up),
      is_writable($up) ? 'si può scrivere' : 'DATE PERMESSI 755 o 775 a app/storage/uploads');
 
+// --------------------------------------------------------------- sessioni
+// Il guasto piu' insidioso: il cookie regge ma il contenuto della sessione
+// si perde, e ogni modulo viene respinto come "sessione scaduta".
+$sessDir = $storage . '/sessions';
+if (!is_dir($sessDir)) @mkdir($sessDir, 0770, true);
+$sessOk = is_dir($sessDir) && is_writable($sessDir);
+if ($sessOk) session_save_path($sessDir);
+@session_start();
+$giro = (int) ($_GET['giro'] ?? 0);
+if ($giro === 0) {
+    $_SESSION['prova'] = 'valore-di-prova';
+    riga('Cartella delle sessioni scrivibile', $sessOk,
+         $sessOk ? $sessDir : 'NON scrivibile: ' . $sessDir);
+    riga('Sessione da verificare', false,
+         'Ho scritto un valore in sessione. RICARICATE questa pagina aggiungendo ?giro=1 '
+         . 'in fondo all\'indirizzo per sapere se e\' sopravvissuto.');
+} else {
+    $sopravvissuto = ($_SESSION['prova'] ?? null) === 'valore-di-prova';
+    riga('Cartella delle sessioni scrivibile', $sessOk, $sessOk ? $sessDir : 'NON scrivibile');
+    riga('La sessione sopravvive fra due richieste', $sopravvissuto,
+         $sopravvissuto ? 'sì: i moduli funzioneranno'
+                        : 'NO: e\' questo che fa respingere i moduli con "sessione scaduta"');
+}
+riga('Dove PHP salva le sessioni', true, session_save_path() ?: '(predefinita del server)');
+
 $prova = $storage . '/prova-scrittura.tmp';
 $scritto = @file_put_contents($prova, 'prova');
 riga('Scrittura reale nella cartella storage', $scritto !== false,

@@ -5,13 +5,31 @@ final class Auth
 {
     public static function start(): void
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_set_cookie_params([
-                'httponly' => true, 'samesite' => 'Lax',
-                'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
-            ]);
-            session_start();
-        }
+        if (session_status() !== PHP_SESSION_NONE) return;
+
+        // Parecchi hosting condivisi hanno una cartella di sessione non
+        // scrivibile: il cookie regge ma il CONTENUTO si perde a ogni
+        // richiesta, e ogni modulo viene respinto come "sessione scaduta".
+        // Ce la teniamo in casa, dove sappiamo di poter scrivere.
+        $propria = MHW_APP . '/storage/sessions';
+        if (!is_dir($propria)) @mkdir($propria, 0770, true);
+        if (is_dir($propria) && is_writable($propria)) session_save_path($propria);
+
+        session_set_cookie_params([
+            'path' => Support::base() . '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+            'secure' => self::httpsAttivo(),
+        ]);
+        session_start();
+    }
+
+    /** Dietro un proxy $_SERVER['HTTPS'] può mancare: guardiamo anche l'intestazione inoltrata. */
+    private static function httpsAttivo(): bool
+    {
+        if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') return true;
+        if (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https') return true;
+        return ((int) ($_SERVER['SERVER_PORT'] ?? 0)) === 443;
     }
 
     public static function register(string $email, string $password, string $name): array

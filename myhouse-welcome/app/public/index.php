@@ -77,6 +77,12 @@ spl_autoload_register(function (string $class): void {
 Config::load(MHW_APP . '/config.php');
 Auth::start();
 
+// Una pagina con un modulo dentro non va mai messa in cache: servirebbe a
+// qualcun altro un token di sessione ormai scaduto. Su questo hosting c'e'
+// un livello di cache davanti (x-nginx-cache), quindi lo diciamo esplicitamente.
+header('Cache-Control: no-store, no-cache, must-revalidate, private');
+header('X-LiteSpeed-Cache-Control: no-cache');
+
 // Il webhook non arriva da un browser e non può portare un token di sessione:
 // la sua autenticazione è la firma di Stripe, verificata dentro la rotta.
 $path = '/' . trim((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/');
