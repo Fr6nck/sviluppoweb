@@ -8,6 +8,38 @@ use MHW\{Auth, Billing, Config, Csrf, Db, Entitlements, Guide, Installer, Media,
 $APP = is_dir(dirname(__DIR__) . '/src') ? dirname(__DIR__) : __DIR__ . '/app';
 define('MHW_APP', $APP);
 
+/**
+ * Un errore fatale su un hosting con display_errors spento dà una pagina
+ * bianca e un 500 muto, impossibile da diagnosticare via FTP. Qui lo
+ * trasformiamo in un messaggio leggibile, senza mai rivelare i percorsi
+ * del server a chi passa di lì per caso.
+ */
+function mhw_fatale(string $titolo, string $dettaglio = ''): never
+{
+    if (!headers_sent()) { http_response_code(500); header('Content-Type: text/html; charset=utf-8'); }
+    echo '<!doctype html><meta charset="utf-8">'
+       . '<meta name="viewport" content="width=device-width,initial-scale=1">'
+       . '<div style="font-family:system-ui,sans-serif;max-width:640px;margin:48px auto;padding:24px;'
+       . 'background:#f8e3df;color:#9c2b20;border-radius:14px;line-height:1.55">'
+       . '<strong style="font-size:18px">' . htmlspecialchars($titolo) . '</strong>';
+    if ($dettaglio !== '') echo '<p style="margin:12px 0 0">' . htmlspecialchars($dettaglio) . '</p>';
+    echo '<p style="margin:14px 0 0;font-size:14px">Caricate <code>controllo.php</code> accanto a '
+       . '<code>index.php</code> e apritelo: dice esattamente cosa manca.</p></div>';
+    exit;
+}
+
+set_exception_handler(function (\Throwable $e): void {
+    mhw_fatale('L\'applicazione si è fermata su un errore.', get_class($e) . ': ' . $e->getMessage());
+});
+
+foreach (['config.php', 'src/Config.php', 'src/Support.php', 'src/Router.php',
+          'src/routes_host.php', 'src/routes_admin.php', 'views/layout/app.php'] as $necessario) {
+    if (!is_file($APP . '/' . $necessario)) {
+        mhw_fatale('Manca un file dell\'applicazione: ' . $necessario,
+                   'Il trasferimento FTP non è arrivato in fondo. Ricaricate la cartella app/ per intero.');
+    }
+}
+
 spl_autoload_register(function (string $class): void {
     if (!str_starts_with($class, 'MHW\\')) return;
     $file = MHW_APP . '/src/' . substr($class, 4) . '.php';
