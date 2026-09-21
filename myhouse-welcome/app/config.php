@@ -5,6 +5,9 @@
 return [
     'app_name'  => 'MyHouse Welcome',
     'base_url'  => getenv('MHW_BASE_URL') ?: '',      // vuoto = rilevato da solo
+    // Sottocartella in cui vive l'applicazione (es. 'welcomebook').
+    // Vuoto = si ricava da sola: lasciatelo così, salvo proxy strani.
+    'base_path' => getenv('MHW_BASE_PATH') ?: '',
     'db' => [
         'driver' => getenv('MHW_DB_DRIVER') ?: 'sqlite',
         'sqlite_path' => __DIR__ . '/storage/myhouse.sqlite',

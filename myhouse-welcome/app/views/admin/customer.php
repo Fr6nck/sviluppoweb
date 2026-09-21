@@ -1,5 +1,5 @@
-<?php use MHW\{Support, Csrf}; $title = 'Cliente'; $nav = 'clienti'; ?>
-<p class="small"><a href="/admin">&larr; Clienti</a></p>
+<?php use function MHW\b; use MHW\{Support, Csrf}; $title = 'Cliente'; $nav = 'clienti'; ?>
+<p class="small"><a href="<?= b() ?>/admin">&larr; Clienti</a></p>
 <h1 style="margin-top:10px"><?= Support::e($acc['user_name'] ?: $acc['email']) ?></h1>
 <p class="muted" style="margin-top:8px"><?= Support::e($acc['email']) ?></p>
 
@@ -14,7 +14,7 @@
       <td><span class="badge badge--<?= $e['source'] === 'override' ? 'terracotta' : ($e['source'] === 'package' ? 'pine' : 'ochre') ?>">
         <?= ['default' => 'predefinito', 'package' => 'dal piano', 'override' => 'eccezione'][$e['source']] ?></span></td>
       <td>
-        <form method="post" action="/admin/cliente/<?= (int) $acc['id'] ?>/override" class="row" style="gap:6px"><?= Csrf::field() ?>
+        <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/override" class="row" style="gap:6px"><?= Csrf::field() ?>
           <input type="hidden" name="feature" value="<?= Support::e($code) ?>">
           <input name="valore" type="text" value="<?= $e['source'] === 'override' ? Support::e($e['value']) : '' ?>"
                  placeholder="vuoto = nessuna" style="min-height:38px;width:130px">

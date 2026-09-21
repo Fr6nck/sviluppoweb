@@ -54,7 +54,7 @@ final class Media
     {
         if (!$id) return null;
         $m = Db::one('SELECT filename FROM media WHERE id = ?', [$id]);
-        return $m ? Config::get('uploads_url') . '/' . $m['filename'] : null;
+        return $m ? Support::url(Config::get('uploads_url') . '/' . $m['filename']) : null;
     }
 
     public static function alt(?int $id): string

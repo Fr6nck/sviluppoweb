@@ -1,10 +1,10 @@
-<?php use MHW\{Support, Csrf}; $title = 'Lingue'; $nav = 'pannello'; ?>
+<?php use function MHW\b; use MHW\{Support, Csrf}; $title = 'Lingue'; $nav = 'pannello'; ?>
 <h1>Lingue e traduzioni</h1>
 <nav class="nav" style="margin-top:20px;display:inline-flex">
-  <a href="/pannello/<?= (int) $p['id'] ?>">Sezioni</a>
-  <a class="on" href="/pannello/<?= (int) $p['id'] ?>/lingue">Lingue</a>
-  <a href="/pannello/<?= (int) $p['id'] ?>/qr">QR</a>
-  <a href="/pannello/<?= (int) $p['id'] ?>/impostazioni">Impostazioni</a>
+  <a href="<?= b() ?>/pannello/<?= (int) $p['id'] ?>">Sezioni</a>
+  <a class="on" href="<?= b() ?>/pannello/<?= (int) $p['id'] ?>/lingue">Lingue</a>
+  <a href="<?= b() ?>/pannello/<?= (int) $p['id'] ?>/qr">QR</a>
+  <a href="<?= b() ?>/pannello/<?= (int) $p['id'] ?>/impostazioni">Impostazioni</a>
 </nav>
 <?php if ($err): ?><p class="note note--err" style="margin-top:16px"><?= Support::e($err) ?></p><?php endif; ?>
 

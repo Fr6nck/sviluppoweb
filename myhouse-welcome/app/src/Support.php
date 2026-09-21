@@ -33,8 +33,33 @@ final class Support
         return rtrim(strtr(base64_encode(random_bytes($bytes)), '+/', 'ab'), '=');
     }
 
+    /**
+     * La cartella in cui vive l'applicazione: '' se sta sulla radice del
+     * dominio, '/welcomebook' se sta in una sottocartella. Si ricava da sola
+     * da SCRIPT_NAME, così lo stesso pacchetto funziona in tutti e due i casi.
+     */
+    public static function base(): string
+    {
+        static $cache = null;
+        if ($cache !== null) return $cache;
+        $forced = Config::get('base_path');
+        if (is_string($forced) && trim($forced, '/') !== '') return $cache = '/' . trim($forced, '/');
+        $script = (string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php');
+        $dir = rtrim(str_replace('\\', '/', dirname($script)), '/');
+        return $cache = ($dir === '' || $dir === '.') ? '' : $dir;
+    }
+
+    /** Un indirizzo interno, sempre corretto anche in sottocartella. */
+    public static function url(string $path = '/'): string
+    {
+        if ($path === '' || $path[0] !== '/') $path = '/' . $path;
+        return self::base() . $path;
+    }
+
     public static function redirect(string $to): never
     {
+        // Gli indirizzi esterni (Stripe) passano intatti.
+        if ($to !== '' && $to[0] === '/') $to = self::url($to);
         header('Location: ' . $to); exit;
     }
 
@@ -52,7 +77,7 @@ final class Support
         $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
               || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        return ($https ? 'https://' : 'http://') . $host;
+        return ($https ? 'https://' : 'http://') . $host . self::base();
     }
 
     public static function money(int $cents, string $currency = 'EUR'): string
@@ -67,3 +92,9 @@ final class Support
         $f = $_SESSION['flash'] ?? null; unset($_SESSION['flash']); return $f;
     }
 }
+
+/** Scorciatoia per le viste: u('/pannello') tiene conto della sottocartella. */
+function u(string $path = '/'): string { return Support::url($path); }
+
+/** Solo il prefisso della sottocartella: '' oppure '/welcomebook'. */
+function b(): string { return Support::base(); }

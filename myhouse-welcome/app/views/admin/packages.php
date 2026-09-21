@@ -1,4 +1,4 @@
-<?php use MHW\{Support, Csrf}; $title = 'Pacchetti'; $nav = 'pacchetti'; ?>
+<?php use function MHW\b; use MHW\{Support, Csrf}; $title = 'Pacchetti'; $nav = 'pacchetti'; ?>
 <h1>Pacchetti</h1>
 <p class="note" style="margin-top:16px;max-width:680px">Modificare un pacchetto non tocca chi l'ha già comprato:
 si crea una <strong>versione nuova</strong>, e gli abbonamenti già venduti restano agganciati alla loro.</p>
@@ -9,7 +9,7 @@ si crea una <strong>versione nuova</strong>, e gli abbonamenti già venduti rest
       <h2><?= Support::e($pk['name']) ?></h2>
       <span class="muted small"><?= count($pk['versions']) ?> versione/i</span>
     </div>
-    <form method="post" action="/admin/pacchetti/<?= (int) $pk['id'] ?>/nuova-versione" style="margin-top:16px"><?= Csrf::field() ?>
+    <form method="post" action="<?= b() ?>/admin/pacchetti/<?= (int) $pk['id'] ?>/nuova-versione" style="margin-top:16px"><?= Csrf::field() ?>
       <div class="grid grid-2">
         <div class="field"><label for="nome<?= (int) $pk['id'] ?>">Nome</label>
           <input id="nome<?= (int) $pk['id'] ?>" name="nome" type="text" value="<?= Support::e($pk['name']) ?>" required></div>

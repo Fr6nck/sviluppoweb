@@ -29,7 +29,8 @@ Tutto il resto funziona da subito. Queste tre cose richiedono chiavi vostre:
 1. **Pagamenti reali** — in `app/config.php` (o come variabili d'ambiente):
    `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`.
    Senza, gli acquisti restano in modalità prova **e lo dichiarano a schermo**.
-   Nel pannello Stripe puntate il webhook a `https://vostrodominio/webhook/stripe`.
+   Nel pannello Stripe puntate il webhook all'indirizzo completo, sottocartella
+   compresa: `https://vostrodominio/welcomebook/webhook/stripe`.
 2. **Traduzione automatica** — `MHW_TRANSLATE_PROVIDER` (`deepl` o `libre`) e
    `MHW_TRANSLATE_KEY`. Senza, le lingue si compilano a mano: tutto il resto funziona.
 3. **HTTPS** — i cookie di sessione diventano `secure` solo sotto HTTPS.
@@ -50,26 +51,36 @@ Puntate il dominio sulla cartella `public/` e tenete il resto **sopra** la radic
 
 Così niente del codice né il database è raggiungibile dal web, qualunque server usiate.
 
-### Disposizione per hosting con solo FTP
+### Installazione in una sottocartella (es. `dominio.it/welcomebook/`)
 
-Se non potete spostare la radice del dominio, caricate il contenuto del pacchetto
-dentro `public_html`, lasciando la sottocartella `app/`:
+L'applicazione si accorge da sola di stare in una sottocartella: tutti gli
+indirizzi, **il QR compreso**, prendono il prefisso giusto. Caricate il
+contenuto del pacchetto dentro la sottocartella:
 
 ```
 public_html/
-  index.php  .htaccess  web.config  assets/
-  app/       <- protetta da .htaccess, e con nomi non indovinabili
+  welcomebook/
+    index.php  .htaccess  web.config  assets/
+    app/       <- src, views, migrations, config.php, storage
 ```
 
 > **Leggete questo.** In questa disposizione la protezione della cartella `app/`
 > dipende da `.htaccess`, che **nginx non legge affatto** e che Apache ignora se
 > `AllowOverride` è disattivato. Per questo il file del database prende un nome
 > casuale, deciso all'installazione e custodito in un file `.php` che il server
-> esegue invece di servirlo. È una difesa in più, non una garanzia: se potete,
-> usate la disposizione consigliata.
+> esegue invece di servirlo. È una difesa in più, non una garanzia.
 >
 > Dopo l'installazione aprite **Diagnostica** nel menu di amministrazione: il
 > server prova a scaricare il proprio database e vi dice se ci riesce.
+
+**Se gli indirizzi danno 404** (per esempio `/welcomebook/installa` non si apre),
+il server non sta riscrivendo gli indirizzi: manca `mod_rewrite`, oppure
+`AllowOverride` è su `None`. Due strade:
+
+- chiedete all'assistenza di abilitare `mod_rewrite` e `AllowOverride All`
+  per quella cartella (è la soluzione giusta);
+- oppure usate la via di riserva, che funziona senza riscrittura:
+  `dominio.it/welcomebook/index.php/installa`, e da lì in poi tutto prosegue.
 
 ### Poi
 

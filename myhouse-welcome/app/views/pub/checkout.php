@@ -1,4 +1,4 @@
-<?php use MHW\{Support, Csrf, Stripe}; $title = 'Conferma'; ?>
+<?php use function MHW\b; use MHW\{Support, Csrf, Stripe}; $title = 'Conferma'; ?>
 <h1><?= Support::e($pkg['name']) ?></h1>
 <p class="muted" style="margin-top:10px"><?= Support::e($pkg['tagline']) ?></p>
 <div class="card" style="margin-top:20px">
@@ -14,4 +14,4 @@
 <form method="post" style="margin-top:20px"><?= Csrf::field() ?>
   <button class="btn btn--block"><?= Stripe::enabled() ? 'Paga con Stripe' : 'Attiva in modalità prova' ?></button>
 </form>
-<p style="margin-top:14px"><a class="btn btn--quiet" href="/">Annulla</a></p>
+<p style="margin-top:14px"><a class="btn btn--quiet" href="<?= b() ?>/">Annulla</a></p>

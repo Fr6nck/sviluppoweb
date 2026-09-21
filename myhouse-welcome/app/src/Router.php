@@ -1,6 +1,8 @@
 <?php
 namespace MHW;
 
+use MHW\Support;
+
 final class Router
 {
     private array $routes = [];
@@ -16,7 +18,13 @@ final class Router
 
     public function dispatch(string $method, string $path): void
     {
-        $path = '/' . trim(parse_url($path, PHP_URL_PATH) ?: '/', '/');
+        $path = (string) (parse_url($path, PHP_URL_PATH) ?: '/');
+        $base = Support::base();
+        if ($base !== '' && str_starts_with($path, $base)) $path = substr($path, strlen($base));
+        // Via di riserva per gli hosting senza mod_rewrite:
+        // /welcomebook/index.php/pannello funziona come /welcomebook/pannello.
+        if (str_starts_with($path, '/index.php')) $path = substr($path, strlen('/index.php'));
+        $path = '/' . trim($path, '/');
         foreach ($this->routes as [$m, $pattern, $handler]) {
             if ($m !== '*' && $m !== $method) continue;
             $regex = '#^' . preg_replace('#\{(\w+)\}#', '(?P<$1>[^/]+)', $pattern) . '$#';

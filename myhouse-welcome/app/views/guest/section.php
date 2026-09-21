@@ -1,8 +1,8 @@
-<?php use MHW\Support; $pr = $snap['property'];
+<?php use function MHW\b; use MHW\Support; $pr = $snap['property'];
 $t = $sec['tr'][$loc] ?? $sec['tr'][$pr['default_locale']] ?? ['title' => '', 'body' => ''];
 $title = $t['title'] . ' — ' . $pr['name']; ?>
 
-<p class="small"><a href="/g/<?= Support::e($slug) ?>?l=<?= Support::e($loc) ?>">&larr; <?= Support::e($pr['name']) ?></a></p>
+<p class="small"><a href="<?= b() ?>/g/<?= Support::e($slug) ?>?l=<?= Support::e($loc) ?>">&larr; <?= Support::e($pr['name']) ?></a></p>
 <h1 style="margin-top:12px"><?= Support::e($t['title']) ?></h1>
 
 <?php if ($sec['image']): ?>

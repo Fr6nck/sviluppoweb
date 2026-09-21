@@ -1,10 +1,10 @@
-<?php use MHW\Support; $pr = $snap['property']; $title = $pr['name'];
+<?php use function MHW\b; use MHW\Support; $pr = $snap['property']; $title = $pr['name'];
 $tone = ['terracotta' => 't-terracotta', 'sea' => 't-sea', 'pine' => 't-pine', 'ochre' => 't-ochre', 'alert' => 't-alert']; ?>
 
 <?php if (count($snap['locales']) > 1): ?>
   <nav class="nav" style="margin-bottom:18px">
     <?php foreach ($snap['locales'] as $l): ?>
-      <a href="/g/<?= Support::e($slug) ?>?l=<?= Support::e($l) ?>" class="<?= $l === $loc ? 'on' : '' ?>"
+      <a href="<?= b() ?>/g/<?= Support::e($slug) ?>?l=<?= Support::e($l) ?>" class="<?= $l === $loc ? 'on' : '' ?>"
          hreflang="<?= Support::e($l) ?>"><?= Support::e(strtoupper($l)) ?></a>
     <?php endforeach; ?>
   </nav>
@@ -26,7 +26,7 @@ $tone = ['terracotta' => 't-terracotta', 'sea' => 't-sea', 'pine' => 't-pine', '
   <?php foreach ($snap['sections'] as $s):
     $t = $s['tr'][$loc] ?? $s['tr'][$pr['default_locale']] ?? ['title' => '', 'body' => '']; ?>
     <a class="tile <?= $tone[$s['color']] ?? 't-terracotta' ?>"
-       href="/g/<?= Support::e($slug) ?>/<?= (int) $s['id'] ?>?l=<?= Support::e($loc) ?>">
+       href="<?= b() ?>/g/<?= Support::e($slug) ?>/<?= (int) $s['id'] ?>?l=<?= Support::e($loc) ?>">
       <span class="kicker" style="color:inherit;opacity:.85"><?= Support::e($s['kind']) ?></span>
       <h3><?= Support::e($t['title']) ?></h3>
     </a>

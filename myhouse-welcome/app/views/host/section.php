@@ -1,5 +1,5 @@
-<?php use MHW\{Support, Csrf, Media}; $title = 'Sezione'; $nav = 'pannello'; ?>
-<p class="small"><a href="/pannello/<?= (int) $p['id'] ?>">&larr; <?= Support::e($p['name']) ?></a></p>
+<?php use function MHW\b; use MHW\{Support, Csrf, Media}; $title = 'Sezione'; $nav = 'pannello'; ?>
+<p class="small"><a href="<?= b() ?>/pannello/<?= (int) $p['id'] ?>">&larr; <?= Support::e($p['name']) ?></a></p>
 <h1 style="margin-top:10px"><?= Support::e($tr['title'] ?: 'Sezione') ?></h1>
 <?php if ($err): ?><p class="note note--err" style="margin-top:16px"><?= Support::e($err) ?></p><?php endif; ?>
 

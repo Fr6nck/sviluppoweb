@@ -1,10 +1,10 @@
-<?php use MHW\Support; $title = 'MyHouse Welcome'; ?>
+<?php use function MHW\b; use MHW\Support; $title = 'MyHouse Welcome'; ?>
 <section style="text-align:center;padding:28px 0 40px">
   <h1 style="max-width:760px;margin:0 auto">La casa risponde prima che chiedano.</h1>
   <p class="muted" style="max-width:520px;margin:20px auto 0;font-size:19px">
     Una guida digitale per la vostra casa vacanze. Wi-Fi, chiavi, orari, i posti giusti —
     in quattro lingue, dietro un QR sul frigo.</p>
-  <p style="margin-top:26px"><a class="btn" href="/registrati">Create la vostra guida</a></p>
+  <p style="margin-top:26px"><a class="btn" href="<?= b() ?>/registrati">Create la vostra guida</a></p>
 </section>
 
 <section class="grid grid-3" style="margin-bottom:48px">
@@ -35,7 +35,7 @@
               <strong><?= $f['value'] === 'unlimited' ? 'senza limite' : ($f['kind'] === 'bool' ? 'sì' : Support::e($f['value'])) ?></strong></li>
           <?php endforeach; ?>
         </ul>
-        <a class="btn btn--block" href="/registrati?piano=<?= (int) $pk['pv_id'] ?>">Scegli <?= Support::e($pk['name']) ?></a>
+        <a class="btn btn--block" href="<?= b() ?>/registrati?piano=<?= (int) $pk['pv_id'] ?>">Scegli <?= Support::e($pk['name']) ?></a>
       </div>
     <?php endforeach; ?>
   </div>
