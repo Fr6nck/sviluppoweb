@@ -41,15 +41,22 @@ Tutto il resto funziona da subito. Queste tre cose richiedono chiavi vostre:
 
 ### Disposizione consigliata (la più sicura)
 
-Puntate il dominio sulla cartella `public/` e tenete il resto **sopra** la radice pubblica:
+Caricate la cartella **intera** fuori dalla radice pubblica e puntate il dominio
+su `public/`, che sta dentro:
 
 ```
 /home/vostroutente/
-  myhouse/          <- src, views, migrations, config.php, storage
-  public_html/      <- il contenuto di public/ (index.php, .htaccess, assets/)
+  myhouse-welcome/
+    config.php  src/  views/  migrations/  storage/
+    public/      <- il dominio punta QUI
+      index.php  .htaccess  assets/
 ```
 
-Così niente del codice né il database è raggiungibile dal web, qualunque server usiate.
+Così niente del codice né il database è raggiungibile dal web, qualunque server
+usiate: sopra `public/` il browser non può salire.
+
+Non spezzate la cartella: `public/` deve restare **dentro** `myhouse-welcome/`,
+perché l'applicazione si cerca nella cartella che contiene `public/`.
 
 ### Installazione in una sottocartella (es. `dominio.it/welcomebook/`)
 

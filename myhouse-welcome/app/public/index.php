@@ -5,8 +5,27 @@ use MHW\{Auth, Billing, Config, Csrf, Db, Entitlements, Guide, Installer, Media,
 
 // L'applicazione può stare sopra la cartella pubblica (disposizione consigliata)
 // oppure dentro una sottocartella "app", come serve sugli hosting con solo FTP.
-$APP = is_dir(dirname(__DIR__) . '/src') ? dirname(__DIR__) : __DIR__ . '/app';
-define('MHW_APP', $APP);
+/**
+ * Dove sta l'applicazione.
+ *
+ * Si controlla prima il caso senza ambiguità — una cartella "app" accanto a
+ * index.php — e poi la disposizione consigliata, con l'applicazione sopra la
+ * radice pubblica. In tutti e due i casi si pretendono DUE file
+ * caratteristici: una cartella "src" qualsiasi, lasciata lì da un altro
+ * progetto, non deve poter dirottare l'applicazione.
+ */
+function mhw_trova_app(string $qui): ?string
+{
+    foreach ([$qui . '/app', dirname($qui)] as $c) {
+        if (is_file($c . '/config.php') && is_file($c . '/src/Config.php') && is_dir($c . '/views')) {
+            return $c;
+        }
+    }
+    return null;
+}
+
+$APP = mhw_trova_app(__DIR__);
+
 
 /**
  * Un errore fatale su un hosting con display_errors spento dà una pagina
@@ -32,11 +51,20 @@ set_exception_handler(function (\Throwable $e): void {
     mhw_fatale('L\'applicazione si è fermata su un errore.', get_class($e) . ': ' . $e->getMessage());
 });
 
+if ($APP === null) {
+    mhw_fatale(
+        'Non trovo la cartella dell\'applicazione.',
+        'Accanto a index.php deve esserci una cartella "app" che contiene config.php, '
+        . 'src/Config.php e views/. Cercata in: ' . basename(__DIR__) . '/app'
+    );
+}
+define('MHW_APP', $APP);
+
 foreach (['config.php', 'src/Config.php', 'src/Support.php', 'src/Router.php',
           'src/routes_host.php', 'src/routes_admin.php', 'views/layout/app.php'] as $necessario) {
     if (!is_file($APP . '/' . $necessario)) {
         mhw_fatale('Manca un file dell\'applicazione: ' . $necessario,
-                   'Il trasferimento FTP non è arrivato in fondo. Ricaricate la cartella app/ per intero.');
+                   'Ricaricate la cartella app/ per intero: il trasferimento FTP non è arrivato in fondo.');
     }
 }
 

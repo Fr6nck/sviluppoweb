@@ -17,7 +17,28 @@ error_reporting(E_ALL);
 
 header('Content-Type: text/html; charset=utf-8');
 
-$APP = is_dir(dirname(__DIR__) . '/src') ? dirname(__DIR__) : __DIR__ . '/app';
+/**
+ * Dove sta l'applicazione.
+ *
+ * Si controlla prima il caso senza ambiguità — una cartella "app" accanto a
+ * index.php — e poi la disposizione consigliata, con l'applicazione sopra la
+ * radice pubblica. In tutti e due i casi si pretendono DUE file
+ * caratteristici: una cartella "src" qualsiasi, lasciata lì da un altro
+ * progetto, non deve poter dirottare l'applicazione.
+ */
+function mhw_trova_app(string $qui): ?string
+{
+    foreach ([$qui . '/app', dirname($qui)] as $c) {
+        if (is_file($c . '/config.php') && is_file($c . '/src/Config.php') && is_dir($c . '/views')) {
+            return $c;
+        }
+    }
+    return null;
+}
+
+$APP = mhw_trova_app(__DIR__) ?? (__DIR__ . '/app');   // se non la trova, mostra dove ha cercato
+$trovata = mhw_trova_app(__DIR__) !== null;
+define('MHW_APP', $APP);   // le viste e l'installatore la usano per trovarsi
 
 function riga(string $etichetta, bool $ok, string $dettaglio = ''): void
 {
@@ -53,7 +74,10 @@ riga('Driver SQLite per PDO', in_array('sqlite', \PDO::getAvailableDrivers(), tr
      'driver disponibili: ' . implode(', ', \PDO::getAvailableDrivers()));
 
 // -------------------------------------------------------------------- i file
-riga('Cartella dell\'applicazione trovata', is_dir($APP), $APP);
+riga('Cartella dell\'applicazione trovata', $trovata,
+     $trovata ? $APP
+              : 'NON TROVATA. Accanto a index.php serve una cartella "app" con dentro '
+                . 'config.php, src/ e views/. Ho guardato in: ' . __DIR__ . '/app');
 
 $attesi = [
     'config.php', 'migrations/001_schema.sql',
