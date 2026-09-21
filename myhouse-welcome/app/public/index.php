@@ -59,6 +59,10 @@ if ($APP === null) {
     );
 }
 define('MHW_APP', $APP);
+// La cartella servita dal web: qui stanno il foglio di stile e le fotografie.
+// Serve saperlo con certezza, perche' nelle due disposizioni possibili non sta
+// nello stesso posto rispetto all'applicazione.
+define('MHW_PUBLIC', __DIR__);
 
 foreach (['config.php', 'src/Config.php', 'src/Support.php', 'src/Router.php',
           'src/routes_host.php', 'src/routes_admin.php', 'views/layout/app.php'] as $necessario) {
@@ -97,9 +101,15 @@ $r->any('/installa', function () {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             Installer::install(trim((string) $_POST['email']), (string) $_POST['password']);
-            Support::flash('Installazione completata. Siete dentro.');
+            $msg = 'Installazione completata. Siete dentro.';
+            if (!empty($_POST['esempi'])) {
+                $creati = \MHW\Demo::popola();
+                $msg .= ' Creati ' . count($creati) . ' clienti di esempio (password: '
+                      . \MHW\Demo::PASSWORD . '). Cancellateli prima di aprire al pubblico.';
+            }
+            Support::flash($msg);
             Auth::attempt(trim((string) $_POST['email']), (string) $_POST['password']);
-            Support::redirect('/pannello');
+            Support::redirect('/admin');
         } catch (\Throwable $e) { $err = $e->getMessage(); }
     }
     View::out('pub/install', ['err' => $err], 'layout/bare');
@@ -125,7 +135,21 @@ $r->get('/', function () use ($guard) {
         );
     }
     unset($pk);
-    View::out('pub/home', ['packages' => $packages]);
+
+    // La fotografia grande e la pastiglia sotto vengono da una guida vera, se
+    // ce n'e' una pubblicata: il sito non mostra numeri inventati.
+    $vetrina = Db::one("SELECT * FROM properties WHERE status = 'published' ORDER BY id");
+    $copertina = null;
+    if ($vetrina) {
+        $vetrina['aperture'] = (int) Db::val(
+            'SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = ? AND day >= ?',
+            [$vetrina['id'], 'open', gmdate('Y-m-d', strtotime('-30 days'))], 0);
+        $copertina = Media::url($vetrina['cover_media_id'] ? (int) $vetrina['cover_media_id'] : null);
+    }
+    View::out('pub/home', [
+        'packages' => $packages, 'vetrina' => $vetrina,
+        'copertina' => $copertina ?: MHW\a('/assets/foto/casa.jpg'),
+    ]);
 });
 
 // ------------------------------------------------------------------ registrazione
@@ -214,7 +238,7 @@ $r->get('/q/{token}', function (array $a) {
     Db::run('UPDATE qr_tokens SET scans = scans + 1 WHERE id = ?', [$t['id']]);
     $p = Db::one('SELECT slug FROM properties WHERE id = ?', [$t['property_id']]);
     Guide::track((int) $t['property_id'], 'qr');
-    Support::redirect('/g/' . $p['slug']);          // il token non cambia mai, lo slug sì
+    Support::redirect('/g/' . $p['slug'] . '/benvenuto');   // il token non cambia mai, lo slug sì
 });
 
 $r->get('/g/{slug}', function (array $a) {
@@ -225,6 +249,37 @@ $r->get('/g/{slug}', function (array $a) {
     if (!in_array($loc, $snap['locales'], true)) $loc = $snap['property']['default_locale'];
     Guide::track((int) $g['property']['id'], 'open', null, $loc);
     View::out('guest/guide', ['snap' => $snap, 'loc' => $loc, 'slug' => $a['slug']], 'layout/guest');
+});
+
+/** La soglia: la schermata che si apre inquadrando il QR. */
+$r->get('/g/{slug}/benvenuto', function (array $a) {
+    $g = Guide::bySlug($a['slug']);
+    if (!$g) { http_response_code(404); echo View::render('pub/404'); return; }
+    $snap = $g['snapshot'];
+    $loc = (string) ($_GET['l'] ?? '');
+    if (!in_array($loc, $snap['locales'], true)) $loc = $snap['property']['default_locale'];
+    View::out('guest/splash', ['snap' => $snap, 'loc' => $loc, 'slug' => $a['slug']], 'layout/full');
+});
+
+/** Il congedo: le poche cose da fare prima di partire. */
+$r->get('/g/{slug}/commiato', function (array $a) {
+    $g = Guide::bySlug($a['slug']);
+    if (!$g) { http_response_code(404); echo View::render('pub/404'); return; }
+    $snap = $g['snapshot'];
+    $loc = (string) ($_GET['l'] ?? '');
+    if (!in_array($loc, $snap['locales'], true)) $loc = $snap['property']['default_locale'];
+
+    // L'elenco nasce da quello che l'host ha davvero scritto: il codice della
+    // cassetta se c'e', l'orario di partenza, e niente che non sia suo.
+    $cose = [];
+    foreach ($snap['sections'] as $s) {
+        if ($s['kind'] === 'checkin' && $s['door_code'] !== '')
+            $cose[] = 'Le chiavi nella cassetta, codice ' . $s['door_code'];
+    }
+    $cose[] = 'Finestre accostate, luci e gas spenti';
+    $cose[] = 'Partenza entro le ' . $snap['property']['checkout_by'];
+    View::out('guest/farewell',
+        ['snap' => $snap, 'loc' => $loc, 'slug' => $a['slug'], 'cose' => $cose], 'layout/full');
 });
 
 $r->get('/g/{slug}/{sid}', function (array $a) {

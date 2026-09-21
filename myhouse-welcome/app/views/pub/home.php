@@ -1,42 +1,104 @@
-<?php use function MHW\b; use MHW\Support; $title = 'MyHouse Welcome'; ?>
-<section style="text-align:center;padding:28px 0 40px">
-  <h1 style="max-width:760px;margin:0 auto">La casa risponde prima che chiedano.</h1>
-  <p class="muted" style="max-width:520px;margin:20px auto 0;font-size:19px">
-    Una guida digitale per la vostra casa vacanze. Wi-Fi, chiavi, orari, i posti giusti —
-    in quattro lingue, dietro un QR sul frigo.</p>
-  <p style="margin-top:26px"><a class="btn" href="<?= b() ?>/registrati">Create la vostra guida</a></p>
+<?php use function MHW\b; use function MHW\a; use MHW\{Support, Icon, Translator};
+$title = 'MyHouse Welcome — la guida della vostra casa';
+
+/** Una funzione del piano, detta come la direbbe una persona. */
+$riga = function (array $f): array {
+    $v = $f['value'];
+    $spento = ($v === '0' || $v === '');
+    $testo = match ($f['code']) {
+        'sections'   => $v === 'unlimited' ? 'Sezioni illimitate' : 'Fino a ' . (int) $v . ' sezioni',
+        // Senza una chiave di traduzione la promessa "tradotte da sole" sarebbe falsa.
+        'locales'    => (int) $v <= 1 ? 'Una lingua'
+                        : (int) $v . (Translator::enabled() ? ' lingue, tradotte da sole' : ' lingue pubblicabili'),
+        'photos'     => 'Foto nelle sezioni',
+        'places'     => 'Consigli sul posto',
+        'properties' => (int) $v <= 1 ? 'Una struttura' : 'Fino a ' . (int) $v . ' strutture',
+        'branding'   => 'Colori e logo vostri',
+        'analytics'  => 'Statistiche di lettura',
+        default      => $f['label'],
+    };
+    return [$testo, $spento];
+}; ?>
+
+<section class="hero">
+  <h1 class="display">La casa risponde<br>prima che chiedano.</h1>
+  <p>Una guida digitale per la vostra casa vacanze. Wi-Fi, chiavi, orari, i posti giusti —
+     in quattro lingue, dietro un QR sul frigo.</p>
+  <div class="row" style="justify-content:center">
+    <a class="btn btn--lg btn--go" href="<?= b() ?>/registrati">
+      Create la vostra guida <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
+    <?php if ($vetrina): ?>
+      <a class="btn btn--lg btn--ghost" href="<?= b() ?>/g/<?= Support::e($vetrina['slug']) ?>/benvenuto">Guardane una vera</a>
+    <?php endif; ?>
+  </div>
 </section>
 
-<section class="grid grid-3" style="margin-bottom:48px">
-  <div class="tile t-sea"><span class="kicker" style="color:inherit;opacity:.85">Passaggio 1</span>
-    <h3>Rispondete a sei domande</h3></div>
-  <div class="tile t-pine"><span class="kicker" style="color:inherit;opacity:.85">Passaggio 2</span>
-    <h3>Stampate il QR</h3></div>
-  <div class="tile t-ochre"><span class="kicker" style="color:inherit;opacity:.8">Passaggio 3</span>
-    <h3>Smettete di rispondere</h3></div>
+<div class="shot shot--wide shot--h380">
+  <img src="<?= Support::e($copertina) ?>" alt="Una casa in pietra fra gli ulivi, all'ora del tramonto">
+  <?php if ($vetrina): ?>
+    <span class="shot-pill"><span class="dot"></span>
+      <?= Support::e($vetrina['name']) ?><?= $vetrina['city'] ? ' · ' . Support::e($vetrina['city']) : '' ?>
+      <?= $vetrina['aperture'] ? ' · ' . (int) $vetrina['aperture'] . ' aperture questo mese' : '' ?></span>
+  <?php endif; ?>
+</div>
+
+<section class="grid grid-3" style="margin-top:56px">
+  <div class="tile tile--big t-sea">
+    <span class="kicker">Passaggio 1</span>
+    <div class="stack" style="gap:10px"><b>Rispondete<br>a sei domande</b><p>Venti minuti, una volta sola.</p></div>
+  </div>
+  <div class="tile tile--big t-pine">
+    <span class="kicker">Passaggio 2</span>
+    <div class="stack" style="gap:10px"><b>Stampate<br>il QR</b><p>L'indirizzo non cambia mai più.</p></div>
+  </div>
+  <div class="tile tile--big t-ochre">
+    <span class="kicker">Passaggio 3</span>
+    <div class="stack" style="gap:10px"><b>Smettete<br>di rispondere</b><p>Alle stesse domande, ogni settimana.</p></div>
+  </div>
 </section>
 
-<section>
-  <h2>Tre piani. Si cambia quando volete.</h2>
-  <p class="muted" style="margin-top:10px;max-width:560px">Se scendete di piano non perdete niente di quello che avete già scritto: resta lì, in attesa.</p>
-  <div class="grid grid-3" style="margin-top:24px">
-    <?php foreach ($packages as $pk): ?>
-      <div class="card stack">
-        <div>
-          <h3 style="font-family:Gloock,Georgia,serif;font-size:26px"><?= Support::e($pk['name']) ?></h3>
-          <p class="muted small" style="margin:6px 0 0"><?= Support::e($pk['tagline']) ?></p>
+<section style="margin-top:56px">
+  <div class="spread">
+    <h2 style="font-size:clamp(32px,4.4vw,46px);line-height:1">Tre piani. Si cambia<br>quando volete.</h2>
+    <p class="muted" style="max-width:340px;line-height:24px">Se scendete di piano non perdete niente di quello che
+      avete già scritto: resta lì, in attesa.</p>
+  </div>
+
+  <div class="grid grid-3" style="margin-top:28px">
+    <?php foreach ($packages as $pk): $scuro = $pk['code'] === 'plus'; ?>
+      <div class="plan <?= $scuro ? 'plan--dark' : '' ?>">
+        <div class="spread spread--mid" style="gap:12px">
+          <div class="stack" style="gap:8px">
+            <span class="name"><?= Support::e($pk['name']) ?></span>
+            <span class="muted" style="font-size:15px"><?= Support::e($pk['tagline']) ?></span>
+          </div>
+          <?php if ($scuro): ?><span class="badge badge--ochre-strong">Il più scelto</span><?php endif; ?>
         </div>
-        <p style="font-size:34px;margin:0;font-family:Gloock,Georgia,serif">
-          <?= Support::e(Support::money((int) $pk['price_cents'], $pk['currency'])) ?>
-          <span class="muted" style="font-size:15px;font-family:Onest,sans-serif"> / anno</span></p>
-        <ul style="margin:0;padding-left:18px" class="small">
-          <?php foreach ($pk['features'] as $f): if ($f['value'] === '0') continue; ?>
-            <li><?= Support::e($f['label']) ?>:
-              <strong><?= $f['value'] === 'unlimited' ? 'senza limite' : ($f['kind'] === 'bool' ? 'sì' : Support::e($f['value'])) ?></strong></li>
+        <span class="price"><?= Support::e(Support::money((int) $pk['price_cents'], $pk['currency'])) ?><small> / anno</small></span>
+        <ul>
+          <li>Guida completa e QR permanente</li>
+          <?php foreach ($pk['features'] as $f): [$testo, $spento] = $riga($f);
+            if ($f['code'] === 'sections' || $spento) continue; ?>
+            <li><?= Support::e($testo) ?></li>
+          <?php endforeach; ?>
+          <?php foreach ($pk['features'] as $f): [$testo, $spento] = $riga($f);
+            if ($f['code'] !== 'sections') continue; ?>
+            <li><?= Support::e($testo) ?></li>
           <?php endforeach; ?>
         </ul>
-        <a class="btn btn--block" href="<?= b() ?>/registrati?piano=<?= (int) $pk['pv_id'] ?>">Scegli <?= Support::e($pk['name']) ?></a>
+        <a class="btn <?= $scuro ? '' : 'btn--ghost' ?>" href="<?= b() ?>/registrati?piano=<?= (int) $pk['pv_id'] ?>">
+          Scegli <?= Support::e($pk['name']) ?></a>
       </div>
     <?php endforeach; ?>
   </div>
+</section>
+
+<section class="band" style="margin-top:56px">
+  <div class="stack" style="gap:12px">
+    <h2 style="font-size:clamp(30px,4vw,42px);line-height:1">Venti minuti oggi,<br>una stagione tranquilla.</h2>
+    <p class="muted" style="font-size:17px;line-height:26px;max-width:480px">Provate a crearne una.
+      Si paga solo quando decidete di pubblicarla.</p>
+  </div>
+  <a class="btn btn--lg btn--go" href="<?= b() ?>/registrati">
+    Comincia <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
 </section>

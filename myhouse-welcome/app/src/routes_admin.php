@@ -1,15 +1,84 @@
 <?php
 /** Rotte di amministrazione. $r è il Router creato in public/index.php. */
 
-use MHW\{Auth, Db, Entitlements, Support, View};
+use MHW\{Auth, Db, Demo, Entitlements, Stripe, Support, Translator, View};
 
+/**
+ * Il quadro: quanti clienti, quanto hanno pagato, quanto viene letto quello che
+ * scrivono. Sono numeri interrogati adesso, non un riassunto tenuto da parte.
+ */
 $r->get('/admin', function () {
     Auth::requireAdmin();
-    $rows = Db::all(
-        'SELECT u.id AS user_id, u.email, u.name, u.created_at, a.id AS account_id,
-                (SELECT COUNT(*) FROM properties p WHERE p.account_id = a.id) AS properties
-         FROM users u JOIN accounts a ON a.user_id = u.id
-         WHERE u.role = ? ORDER BY u.id DESC', ['host']);
+    $da30 = gmdate('Y-m-d', strtotime('-30 days'));
+
+    $numeri = [
+        'clienti'     => (int) Db::val('SELECT COUNT(*) FROM users WHERE role = ?', ['host'], 0),
+        'abbonati'    => (int) Db::val('SELECT COUNT(DISTINCT account_id) FROM subscriptions WHERE status = ?', ['active'], 0),
+        'guide'       => (int) Db::val('SELECT COUNT(*) FROM properties', [], 0),
+        'pubblicate'  => (int) Db::val('SELECT COUNT(*) FROM properties WHERE status = ?', ['published'], 0),
+        'aperture'    => (int) Db::val('SELECT COUNT(*) FROM analytics_events WHERE kind = ? AND day >= ?', ['open', $da30], 0),
+        'scansioni'   => (int) Db::val('SELECT COALESCE(SUM(scans),0) FROM qr_tokens', [], 0),
+        'incassato'   => (int) Db::val('SELECT COALESCE(SUM(amount_cents),0) FROM orders WHERE status = ?', ['paid'], 0),
+        'in_attesa'   => (int) Db::val('SELECT COUNT(*) FROM orders WHERE status = ?', ['pending'], 0),
+    ];
+
+    // Quanti stanno su ciascun piano, e su quale versione: è il numero che dice
+    // se una modifica al listino toccherebbe qualcuno.
+    $piani = Db::all(
+        'SELECT pk.name, pv.version, pv.price_cents, pv.currency, pv.is_current,
+                COUNT(s.id) AS clienti
+         FROM package_versions pv
+         JOIN packages pk ON pk.id = pv.package_id
+         LEFT JOIN subscriptions s ON s.package_version_id = pv.id AND s.status = \'active\'
+         GROUP BY pv.id ORDER BY pk.sort, pv.version DESC');
+
+    $ordini = Db::all(
+        'SELECT o.*, pk.name AS package, u.email, u.name AS cliente, a.id AS account_id
+         FROM orders o
+         JOIN package_versions pv ON pv.id = o.package_version_id
+         JOIN packages pk ON pk.id = pv.package_id
+         JOIN accounts a ON a.id = o.account_id
+         JOIN users u ON u.id = a.user_id
+         ORDER BY o.id DESC LIMIT 6');
+
+    $lette = Db::all(
+        'SELECT p.name, p.slug, p.id, COUNT(e.id) AS aperture
+         FROM properties p LEFT JOIN analytics_events e
+           ON e.property_id = p.id AND e.kind = \'open\' AND e.day >= ?
+         WHERE p.status = \'published\'
+         GROUP BY p.id ORDER BY aperture DESC LIMIT 5', [$da30]);
+
+    // Le cose che mancano per andare in produzione, dette una volta sola.
+    $avvisi = [];
+    if (!Stripe::enabled())
+        $avvisi[] = ['Stripe non è configurato', 'Gli acquisti restano in modalità prova e non addebitano niente.'];
+    elseif (\MHW\Config::get('stripe')['webhook_secret'] === '')
+        $avvisi[] = ['Manca il segreto dei webhook', 'Senza, ogni notifica di Stripe viene rifiutata e nessun piano si attiva.'];
+    if (!Translator::enabled())
+        $avvisi[] = ['Traduzione automatica spenta', 'Le lingue si compilano a mano: tutto il resto funziona.'];
+    if (Demo::presente())
+        $avvisi[] = ['Ci sono ancora i clienti di esempio', 'Sono account finti con una password nota. Toglieteli prima di aprire al pubblico.'];
+
+    View::out('admin/dashboard', [
+        'numeri' => $numeri, 'piani' => $piani, 'ordini' => $ordini,
+        'lette' => $lette, 'avvisi' => $avvisi, 'esempi' => Demo::presente(),
+    ]);
+});
+
+$r->get('/admin/clienti', function () {
+    Auth::requireAdmin();
+    $cerca = trim((string) ($_GET['q'] ?? ''));
+    $sql = 'SELECT u.id AS user_id, u.email, u.name, u.created_at, a.id AS account_id,
+                   (SELECT COUNT(*) FROM properties p WHERE p.account_id = a.id) AS properties
+            FROM users u JOIN accounts a ON a.user_id = u.id WHERE u.role = ?';
+    $args = ['host'];
+    if ($cerca !== '') {
+        $sql .= ' AND (u.name LIKE ? OR u.email LIKE ? OR EXISTS
+                  (SELECT 1 FROM properties p WHERE p.account_id = a.id AND p.name LIKE ?))';
+        array_push($args, '%' . $cerca . '%', '%' . $cerca . '%', '%' . $cerca . '%');
+    }
+    $rows = Db::all($sql . ' ORDER BY u.id DESC', $args);
+
     foreach ($rows as &$row) {
         $sub = Db::one(
             'SELECT pk.name, pv.version, s.status FROM subscriptions s
@@ -18,9 +87,17 @@ $r->get('/admin', function () {
              WHERE s.account_id = ? AND s.status = ? ORDER BY s.id DESC', [$row['account_id'], 'active']);
         $row['plan'] = $sub['name'] ?? '—';
         $row['plan_version'] = $sub['version'] ?? null;
+        $p = Db::one('SELECT name, city, status FROM properties WHERE account_id = ? ORDER BY id', [$row['account_id']]);
+        $row['struttura'] = $p['name'] ?? '';
+        $row['citta'] = $p['city'] ?? '';
+        // Lo stato che interessa a chi assiste: paga? ha pubblicato?
+        if (!$sub)                              { $row['stato'] = ['Senza piano', 'ochre']; }
+        elseif (!$p)                            { $row['stato'] = ['Nessuna struttura', 'ochre']; }
+        elseif ($p['status'] !== 'published')   { $row['stato'] = ['Mai pubblicata', 'ochre']; }
+        else                                    { $row['stato'] = ['Attivo', 'pine']; }
     }
     unset($row);
-    View::out('admin/customers', ['rows' => $rows]);
+    View::out('admin/customers', ['rows' => $rows, 'cerca' => $cerca, 'esempi' => Demo::presente()]);
 });
 
 $r->post('/admin/entra/{uid}', function (array $a) {
@@ -32,7 +109,24 @@ $r->post('/admin/entra/{uid}', function (array $a) {
 
 $r->post('/admin/esci-da-cliente', function () {
     Auth::stopImpersonating();
-    Support::redirect('/admin');
+    Support::redirect('/admin/clienti');
+});
+
+/** I clienti di esempio: si creano e si tolgono da qui, non dal database a mano. */
+$r->post('/admin/dati-esempio', function () {
+    Auth::requireAdmin();
+    if (($_POST['cosa'] ?? '') === 'elimina') {
+        $n = Demo::rimuovi();
+        Support::flash($n . ' clienti di esempio eliminati, con le loro guide e le loro foto.');
+    } else {
+        if (Demo::presente()) {
+            Support::flash('Ci sono già: toglieteli prima di ricrearli.', 'err');
+        } else {
+            $creati = Demo::popola();
+            Support::flash('Creati ' . count($creati) . ' clienti di esempio. Password: ' . Demo::PASSWORD . '.');
+        }
+    }
+    Support::redirect('/admin/clienti');
 });
 
 $r->get('/admin/pacchetti', function () {

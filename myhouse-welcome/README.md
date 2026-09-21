@@ -17,9 +17,32 @@ system, and a clickable prototype.
 
 | Path | What it is |
 | --- | --- |
+| `app/` | **The working application** — PHP 8 + SQLite, no dependencies, deployable over FTP |
 | `docs/` | The product and engineering specification (24 documents) |
 | `schema/` | PostgreSQL DDL, Prisma schema, package seed data, wizard definition |
 | `prototype/` | A clickable, framework-free HTML/CSS/JS prototype of every surface |
+
+### The working application
+
+`app/` is not a mock: it registers accounts, takes Stripe payments, resolves
+entitlements against frozen package versions, publishes immutable guide
+snapshots, generates QR codes from scratch, and lets an administrator enter a
+customer's account without ever touching their password. It has no Composer, no
+Node, no build step — `./costruisci-pacchetto.sh` produces a zip you upload into
+a folder on shared hosting, and it works whether or not the server rewrites URLs.
+
+Its surfaces follow the **Fauna** direction of the design canvas: full-bleed
+photography, solid colour tiles, Gloock on headings and Onest on everything else,
+and a night theme for the Wi-Fi page — the one guests look for in the dark.
+
+At install time it offers **three sample customers** (Lucia in Montepulciano,
+Marco in Lecce, Agnese in Ortigia) with published guides, photographs,
+translations and thirty days of analytics, so the product can be seen inhabited
+rather than empty. They are real accounts with a documented password and the
+admin dashboard nags until they are removed; one button deletes them, their
+guides and their photographs.
+
+Read [`app/LEGGIMI.md`](app/LEGGIMI.md) for installation and the address map.
 
 ### Documentation index
 
@@ -98,6 +121,7 @@ against the real artifacts:
 | `python3 schema/validate.py` | The three configuration files agree: every feature a package prices exists, values match their declared types, tiers are monotonic, every wizard gate resolves. |
 | `node prototype/walkthrough.mjs` | 45 browser assertions across the whole product: conditional wizard logic, entitlement gating, the publish bar, support mode requiring a reason, keyboard access, no horizontal scroll at 320px, dark mode. |
 | `node prototype/contrast-check.mjs` | Every visible text node on every page measured against its effective background at the WCAG AA threshold. |
+| `app/prove/esegui.sh` | 78 end-to-end checks over real HTTP: installation, the seeded sample data, the admin dashboard's numbers, impersonation, every guest surface in three languages, the night theme, the permanent QR redirect and its PNG, and the deletion and recreation of the sample customers. The script deploys a copy of the app the way it lands on shared hosting, serves it, runs the checks and cleans up after itself. |
 
 The browser suites need Playwright:
 `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers NODE_PATH=$(npm root -g) node prototype/walkthrough.mjs`

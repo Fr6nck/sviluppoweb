@@ -1,6 +1,6 @@
-<?php use function MHW\b; ?>
-<?php $title = 'Pagamento ricevuto'; ?>
+<?php use function MHW\b; use MHW\Icon; $title = 'Pagamento ricevuto'; ?>
 <h1>Grazie.</h1>
-<p class="muted" style="margin-top:12px">Stripe ci sta confermando il pagamento. L'attivazione avviene quando arriva
-la conferma firmata da Stripe, non da questa pagina: se il piano non risulta subito attivo, ricaricate fra qualche secondo.</p>
-<p style="margin-top:20px"><a class="btn" href="<?= b() ?>/pannello">Vai al pannello</a></p>
+<p class="muted" style="margin-top:14px">Stripe ci sta confermando l'incasso con una notifica firmata:
+  il piano si attiva lì, non qui. Di solito è questione di secondi.</p>
+<p style="margin-top:24px"><a class="btn btn--go" href="<?= b() ?>/pannello">
+  Vai alle mie guide <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></a></p>

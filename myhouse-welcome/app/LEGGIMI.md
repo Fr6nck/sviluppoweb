@@ -20,7 +20,9 @@ niente Node, niente librerie esterne. Si carica via FTP e funziona.
 | Pubblicazione a istantanee | gli ospiti leggono una copia congelata, non la bozza |
 | QR permanente | generato in PHP; l'indirizzo non cambia mai, nemmeno rinominando la casa |
 | Amministrazione | clienti, impersonazione senza password, pacchetti, eccezioni |
+| Amministrazione, il quadro | clienti, incassi, aperture, versioni di piano e chi ci sta sopra |
 | Diagnostica | il server verifica sé stesso invece di promettere |
+| Dati di esempio | tre host finti con guide vere, foto e statistiche, creabili e cancellabili |
 
 ## Cosa serve configurare per andare in produzione
 
@@ -94,7 +96,26 @@ il server non sta riscrivendo gli indirizzi: manca `mod_rewrite`, oppure
 1. Aprite il dominio: vi porta a `/installa`.
 2. Scegliete email e password dell'amministratore. Il database si crea da solo,
    con le funzioni e i tre piani già dentro.
-3. Date permessi di scrittura a `app/storage/` e `app/storage/uploads/` (di solito 755 o 775).
+3. Lasciate spuntato **«Riempi con tre clienti di esempio»** se volete vedere il
+   prodotto pieno invece che vuoto (vedi sotto). Si tolgono in un clic.
+4. Date permessi di scrittura a `app/storage/` e `app/storage/uploads/` (di solito 755 o 775).
+
+### I tre clienti di esempio
+
+Servono a vedere com'è l'applicazione quando è abitata: guide pubblicate, foto,
+luoghi, traduzioni in tre lingue, trenta giorni di statistiche, ordini pagati.
+
+| Chi | Entra con | Piano | Cosa mostra |
+|---|---|---|---|
+| Lucia Ferrante | `lucia@esempio.it` | Plus | Casa Lucia, Montepulciano — pubblicata, it/en/de, tre luoghi con foto |
+| Marco Bevilacqua | `marco@esempio.it` | Pro | B&B Le Rondini, Lecce — pubblicata, it/en |
+| Agnese Ruta | `agnese@esempio.it` | Essential | Il Cortile, Ortigia — **ferma in bozza**, di proposito |
+
+Entrano tutti con la password `dimostrazione1`.
+
+> **Toglieteli prima di aprire il sito al pubblico.** Sono account veri con una
+> password che sta scritta qui. Si eliminano — con le loro guide e le loro foto —
+> dal riquadro in fondo a **Amministrazione → Clienti**, e da lì si ricreano.
 
 ### MySQL invece di SQLite
 
@@ -109,10 +130,16 @@ In `config.php` mettete `'driver' => 'mysql'` e le credenziali. Lo schema è lo 
 | `/` | sito pubblico con i piani |
 | `/registrati`, `/accedi` | account |
 | `/pannello` | area host: guide, sezioni, lingue, QR |
+| `/g/{slug}/benvenuto` | la soglia: la schermata che si apre inquadrando il QR |
 | `/g/{slug}` | la guida che vedono gli ospiti |
+| `/g/{slug}/{id}` | una sezione: arrivo, Wi-Fi (in tema notte), luoghi, testo |
+| `/g/{slug}/commiato` | il congedo, con le poche cose da fare prima di partire |
 | `/q/{token}` | l'indirizzo dietro il QR — **non cambia mai** |
 | `/qr/{token}.png` | l'immagine del QR |
-| `/admin` | clienti, pacchetti, diagnostica |
+| `/admin` | il quadro: clienti, incassi, aperture, piani |
+| `/admin/clienti` | elenco, ricerca, impersonazione, dati di esempio |
+| `/admin/pacchetti` | il listino, versione per versione |
+| `/admin/diagnostica` | i controlli che il server fa su sé stesso |
 | `/webhook/stripe` | solo per Stripe, verificato per firma |
 
 ---
@@ -145,3 +172,42 @@ correzione M, versioni 1-10) proprio per non dipendere da librerie esterne.
   veda mezze frasi, e ogni versione pubblicata resta conservata.
 - **L'impersonazione non passa mai dalla password del cliente** e lascia traccia
   nel registro, in entrata e in uscita.
+- **Una riga vuota separa i passaggi.** L'host scrive normalmente; sulla guida
+  ogni capoverso diventa un riquadro numerato. L'unica convenzione da imparare è
+  che un capoverso che comincia con `Nota:` non è un passaggio ma l'avviso in
+  fondo alla pagina.
+
+---
+
+## Provarla
+
+```
+app/prove/esegui.sh
+```
+
+Schiera una copia dell'applicazione come finisce sull'hosting, le mette davanti
+un server, e le passa sopra 78 controlli veri via HTTP: installazione, dati di
+esempio, i numeri del quadro, l'impersonazione, tutte le schermate dell'ospite
+in tre lingue, il tema notte, il QR che rimanda alla soglia e la sua immagine,
+la cancellazione e la ricreazione dei clienti di esempio. Alla fine pulisce.
+
+---
+
+## Com'è fatta da vedere
+
+Il disegno segue la direzione **Fauna** della tavola di progetto: fotografie a
+tutta larghezza, riquadri di colore pieno al posto delle icone, **Gloock** sui
+titoli e **Onest** su tutto il resto, angoli 8 / 18 / 26 e tondo pieno su ogni
+cosa che si preme. Tutto quello che si tocca è alto almeno 44 px.
+
+La tavolozza è quella delle Fondamenta: carta `#faf5ec`, inchiostro `#231b12`,
+terracotta `#b4451f`, mare `#1c5a78`, pino `#1f6b3f`, ocra `#b07d0c`,
+allarme `#9c2b20`, notte `#17130d`. Sull'ocra il testo è scuro, non chiaro:
+in chiaro si ferma a 3.5:1 e non passa. È l'unica eccezione della tavolozza.
+
+La sezione Wi-Fi è in **tema notte**: è quella che si cerca al buio, in una casa
+che non si conosce ancora.
+
+Tutto sta in un unico foglio di stile (`public/assets/app.css`) e in un unico
+insieme di icone disegnate a tratto (`src/Icon.php`), scritte in PHP invece che
+caricate da fuori: una guida si apre spesso con una tacca di segnale.

@@ -76,17 +76,31 @@ $r->get('/pannello/{id}', function (array $a) use ($ownProperty) {
     }
     unset($s);
     $qr = Db::one('SELECT * FROM qr_tokens WHERE property_id = ?', [$p['id']]);
+    $da = gmdate('Y-m-d', strtotime('-30 days'));
+    $piuLetta = Db::one(
+        'SELECT section_id, COUNT(*) AS n FROM analytics_events
+         WHERE property_id = ? AND kind = ? AND section_id IS NOT NULL AND day >= ?
+         GROUP BY section_id ORDER BY n DESC', [$p['id'], 'section', $da]);
+    $titoloPiuLetta = '—';
+    if ($piuLetta) {
+        $titoloPiuLetta = (string) Db::val(
+            'SELECT title FROM section_translations WHERE section_id = ? AND locale = ?',
+            [$piuLetta['section_id'], $p['default_locale']], '—');
+    }
     $stats = [
-        'aperture' => (int) Db::val('SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = ?', [$p['id'], 'open'], 0),
+        'aperture' => (int) Db::val(
+            'SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = ? AND day >= ?',
+            [$p['id'], 'open', $da], 0),
         'scansioni' => (int) ($qr['scans'] ?? 0),
         'lingue' => (int) Db::val('SELECT COUNT(*) FROM property_locales WHERE property_id = ?', [$p['id']], 0),
+        'piu_letta' => $titoloPiuLetta,
     ];
     View::out('host/dashboard', [
         'p' => $p, 'sections' => $sections, 'qr' => $qr, 'stats' => $stats,
         'pending' => Guide::pendingChanges((int) $p['id']),
         'ent' => Entitlements::forAccount((int) $acc['id']),
         'acc' => $acc,
-    ]);
+    ], 'layout/wide');
 });
 
 $r->post('/pannello/{id}/pubblica', function (array $a) use ($ownProperty) {
@@ -124,7 +138,7 @@ $r->any('/pannello/{id}/impostazioni', function (array $a) use ($ownProperty) {
         } catch (\Throwable $e) { $err = $e->getMessage(); }
     }
     View::out('host/settings', ['p' => $p, 'err' => $err, 'acc' => $acc,
-                                'ent' => Entitlements::forAccount((int) $acc['id'])]);
+                                'ent' => Entitlements::forAccount((int) $acc['id'])], 'layout/wide');
 });
 
 $r->post('/pannello/{id}/sezioni/nuova', function (array $a) use ($ownProperty) {
@@ -211,7 +225,7 @@ $r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($ownProperty) {
         ?: ['title' => '', 'body' => ''];
     $places = Db::all('SELECT * FROM places WHERE section_id = ? ORDER BY position, id', [$s['id']]);
     View::out('host/section', ['p' => $p, 's' => $s, 'tr' => $tr, 'places' => $places, 'err' => $err,
-                               'ent' => Entitlements::forAccount((int) $acc['id']), 'acc' => $acc]);
+                               'ent' => Entitlements::forAccount((int) $acc['id']), 'acc' => $acc], 'layout/wide');
 });
 
 $r->any('/pannello/{id}/lingue', function (array $a) use ($ownProperty) {
@@ -261,7 +275,7 @@ $r->any('/pannello/{id}/lingue', function (array $a) use ($ownProperty) {
     unset($s);
     View::out('host/languages', ['p' => $p, 'sections' => $sections, 'active' => $active,
         'allowed' => $allowed, 'err' => $err, 'all' => Config::get('locales'),
-        'translator' => Translator::enabled(), 'acc' => $acc]);
+        'translator' => Translator::enabled(), 'acc' => $acc], 'layout/wide');
 });
 
 $r->get('/pannello/{id}/qr', function (array $a) use ($ownProperty) {
@@ -272,5 +286,5 @@ $r->get('/pannello/{id}/qr', function (array $a) use ($ownProperty) {
         Db::insert('qr_tokens', ['property_id' => $p['id'], 'token' => Support::token(9), 'scans' => 0, 'created_at' => Support::now()]);
         $qr = Db::one('SELECT * FROM qr_tokens WHERE property_id = ?', [$p['id']]);
     }
-    View::out('host/qr', ['p' => $p, 'qr' => $qr, 'acc' => Auth::account()]);
+    View::out('host/qr', ['p' => $p, 'qr' => $qr, 'acc' => Auth::account()], 'layout/wide');
 });

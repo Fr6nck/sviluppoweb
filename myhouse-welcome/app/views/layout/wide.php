@@ -1,3 +1,5 @@
+<?php /* Come layout/app, ma il contenuto corre fino ai bordi: serve alle
+         pagine costruite a colonne (il quadro, il wizard). */ ?>
 <?php use function MHW\a; use function MHW\b; use MHW\{Auth, Support, Csrf};
 $u = Auth::user(); $f = Support::flash();
 $iniziale = strtoupper(mb_substr((string) ($u['name'] ?? $u['email'] ?? '?'), 0, 1)); ?>
@@ -18,35 +20,22 @@ $iniziale = strtoupper(mb_substr((string) ($u['name'] ?? $u['email'] ?? '?'), 0,
   <form method="post" action="<?= b() ?>/admin/esci-da-cliente"><?= Csrf::field() ?><button class="btn">Torna al mio account</button></form>
 </div></div>
 <?php endif; ?>
-
 <header class="topbar"><div class="wrap">
   <div class="row" style="gap:14px">
     <a class="brand" href="<?= b() ?>/">myhouse welcome</a>
     <?php if (($u['role'] ?? '') === 'admin'): ?><span class="tag">Amministrazione</span><?php endif; ?>
   </div>
-
   <?php if ($u): ?>
-    <nav class="nav">
-      <?php if ($u['role'] === 'admin'): ?>
-        <a href="<?= b() ?>/admin" class="<?= ($nav ?? '') === 'admin' ? 'on' : '' ?>">Quadro</a>
-        <a href="<?= b() ?>/admin/clienti" class="<?= ($nav ?? '') === 'clienti' ? 'on' : '' ?>">Clienti</a>
-        <a href="<?= b() ?>/admin/pacchetti" class="<?= ($nav ?? '') === 'pacchetti' ? 'on' : '' ?>">Pacchetti</a>
-        <a href="<?= b() ?>/admin/diagnostica" class="<?= ($nav ?? '') === 'diagnostica' ? 'on' : '' ?>">Diagnostica</a>
-      <?php endif; ?>
-      <a href="<?= b() ?>/pannello" class="<?= ($nav ?? '') === 'pannello' ? 'on' : '' ?>">Le mie guide</a>
-    </nav>
-    <form method="post" action="<?= b() ?>/esci" class="row" style="gap:10px"><?= Csrf::field() ?>
-      <span class="avatar" title="<?= Support::e($u['email']) ?>"><?= Support::e($iniziale) ?></span>
-      <button class="btn btn--ghost btn--sm">Esci</button>
-    </form>
-  <?php else: ?>
-    <div class="row">
-      <a class="btn btn--ghost btn--sm" href="<?= b() ?>/accedi">Accedi</a>
-      <a class="btn btn--sm" href="<?= b() ?>/registrati">Create la vostra guida</a>
+    <nav class="nav"><?= $topnav ?? '' ?></nav>
+    <div class="row" style="gap:10px">
+      <?= $topright ?? '' ?>
+      <form method="post" action="<?= b() ?>/esci" class="row" style="gap:10px"><?= Csrf::field() ?>
+        <span class="avatar" title="<?= Support::e($u['email']) ?>"><?= Support::e($iniziale) ?></span>
+        <button class="btn btn--ghost btn--sm">Esci</button>
+      </form>
     </div>
   <?php endif; ?>
 </div></header>
-
 <main class="wrap" style="padding-top:36px;padding-bottom:64px">
 <?php if ($f): ?>
   <p class="note note--<?= $f['kind'] === 'err' ? 'err' : 'ok' ?>" style="margin-bottom:24px"><?= Support::e($f['msg']) ?></p>
