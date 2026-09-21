@@ -21,6 +21,7 @@ niente Node, niente librerie esterne. Si carica via FTP e funziona.
 | QR permanente | generato in PHP; l'indirizzo non cambia mai, nemmeno rinominando la casa |
 | Amministrazione | clienti, impersonazione senza password, pacchetti, eccezioni |
 | Amministrazione, il quadro | clienti, incassi, aperture, versioni di piano e chi ci sta sopra |
+| Tema chiaro e scuro | segue il sistema finché non scegliete; poi la scelta resta |
 | Diagnostica | il server verifica sé stesso invece di promettere |
 | Dati di esempio | tre host finti con guide vere, foto e statistiche, creabili e cancellabili |
 
@@ -186,10 +187,11 @@ app/prove/esegui.sh
 ```
 
 Schiera una copia dell'applicazione come finisce sull'hosting, le mette davanti
-un server, e le passa sopra 78 controlli veri via HTTP: installazione, dati di
+un server, e le passa sopra 91 controlli veri via HTTP: installazione, dati di
 esempio, i numeri del quadro, l'impersonazione, tutte le schermate dell'ospite
 in tre lingue, il tema notte, il QR che rimanda alla soglia e la sua immagine,
-la cancellazione e la ricreazione dei clienti di esempio. Alla fine pulisce.
+la cancellazione e la ricreazione dei clienti di esempio, e infine la sabbia, il
+vetro delle barre e l'interruttore dei temi. Alla fine pulisce.
 
 ---
 
@@ -205,8 +207,36 @@ terracotta `#b4451f`, mare `#1c5a78`, pino `#1f6b3f`, ocra `#b07d0c`,
 allarme `#9c2b20`, notte `#17130d`. Sull'ocra il testo è scuro, non chiaro:
 in chiaro si ferma a 3.5:1 e non passa. È l'unica eccezione della tavolozza.
 
-La sezione Wi-Fi è in **tema notte**: è quella che si cerca al buio, in una casa
-che non si conosce ancora.
+Su tutte le superfici — carta, schede, riquadri, bottoni, barre — corre una
+**grana di sabbia** finissima (`assets/grana.png`, 17 kB, una sola richiesta).
+Sta nello sfondo, sotto il contenuto: non tocca le fotografie, né il testo, né
+le icone. La stessa immagine ha granelli chiari e scuri, così funziona nei due
+temi senza cambiarla.
+
+Le **due barre di navigazione**, quella in alto e quella in fondo alla guida,
+sono vetro: 40% di colore e il resto è la pagina che ci scorre sotto, sfocata.
+Il vetro non si limita a sfocare, tira anche quello che c'è sotto verso il
+colore del tema: senza, il marchio sulla barra scendeva a 3.66:1 sopra una
+fotografia chiara — misurato, non supposto; ora sta a 4.70:1. Dove il browser
+non sa sfocare, le barre tornano opache, perché un 40% senza sfocatura renderebbe
+illeggibile quello che c'è sopra.
+
+### Chiaro e scuro
+
+C'è un interruttore in ogni intestazione, e nella guida accanto alla lingua.
+Finché nessuno lo tocca, il tema segue il sistema — e continua a seguirlo anche
+se il sistema cambia mentre la pagina è aperta. Appena qualcuno sceglie, la
+scelta vince e resta, anche dopo aver chiuso il browser.
+
+I riquadri di colore pieno **non cambiano col tema**: sono il marchio, non una
+superficie. Cambiano le superfici, le righe, il testo e l'accento, che di notte
+si schiarisce (`#ee7a4a`) per restare leggibile. Il contrasto di ogni testo è
+stato misurato in tutti e due i temi, su tutte le pagine: nessuno sta sotto la
+soglia AA.
+
+La sezione Wi-Fi resta in **tema notte** comunque: è quella che si cerca al buio,
+in una casa che non si conosce ancora. Lì l'interruttore non compare, perché non
+cambierebbe niente sotto gli occhi di chi guarda.
 
 Tutto sta in un unico foglio di stile (`public/assets/app.css`) e in un unico
 insieme di icone disegnate a tratto (`src/Icon.php`), scritte in PHP invece che

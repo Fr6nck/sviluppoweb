@@ -34,7 +34,10 @@ $indietro = b() . '/g/' . Support::e($slug) . '?l=' . Support::e($loc); ?>
   <?php if ($notte): ?>
     <span class="pill-quiet"><?= Icon::svg('moon', 13) ?>Tema notte</span>
   <?php else: ?>
-    <?php include __DIR__ . '/_lingue.php'; ?>
+    <div class="row" style="gap:8px">
+      <?php include __DIR__ . '/../layout/_tema-bottone.php'; ?>
+      <?php include __DIR__ . '/_lingue.php'; ?>
+    </div>
   <?php endif; ?>
 </div>
 

@@ -9,6 +9,7 @@ $iniziale = strtoupper(mb_substr((string) ($u['name'] ?? $u['email'] ?? '?'), 0,
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= Support::e($title ?? 'MyHouse Welcome') ?></title>
+<?php include __DIR__ . '/_tema.php'; ?>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gloock&family=Onest:wght@300..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= a() ?>/assets/app.css">
@@ -29,6 +30,7 @@ $iniziale = strtoupper(mb_substr((string) ($u['name'] ?? $u['email'] ?? '?'), 0,
     <nav class="nav"><?= $topnav ?? '' ?></nav>
     <div class="row" style="gap:10px">
       <?= $topright ?? '' ?>
+      <?php include __DIR__ . '/_tema-bottone.php'; ?>
       <form method="post" action="<?= b() ?>/esci" class="row" style="gap:10px"><?= Csrf::field() ?>
         <span class="avatar" title="<?= Support::e($u['email']) ?>"><?= Support::e($iniziale) ?></span>
         <button class="btn btn--ghost btn--sm">Esci</button>

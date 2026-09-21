@@ -7,6 +7,7 @@ $iniziale = strtoupper(mb_substr((string) ($u['name'] ?? $u['email'] ?? '?'), 0,
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= Support::e($title ?? 'MyHouse Welcome') ?></title>
+<?php include __DIR__ . '/_tema.php'; ?>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gloock&family=Onest:wght@300..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= a() ?>/assets/app.css">
@@ -35,12 +36,16 @@ $iniziale = strtoupper(mb_substr((string) ($u['name'] ?? $u['email'] ?? '?'), 0,
       <?php endif; ?>
       <a href="<?= b() ?>/pannello" class="<?= ($nav ?? '') === 'pannello' ? 'on' : '' ?>">Le mie guide</a>
     </nav>
-    <form method="post" action="<?= b() ?>/esci" class="row" style="gap:10px"><?= Csrf::field() ?>
-      <span class="avatar" title="<?= Support::e($u['email']) ?>"><?= Support::e($iniziale) ?></span>
-      <button class="btn btn--ghost btn--sm">Esci</button>
-    </form>
+    <div class="row" style="gap:10px">
+      <?php include __DIR__ . '/_tema-bottone.php'; ?>
+      <form method="post" action="<?= b() ?>/esci" class="row" style="gap:10px"><?= Csrf::field() ?>
+        <span class="avatar" title="<?= Support::e($u['email']) ?>"><?= Support::e($iniziale) ?></span>
+        <button class="btn btn--ghost btn--sm">Esci</button>
+      </form>
+    </div>
   <?php else: ?>
-    <div class="row">
+    <div class="row" style="gap:10px">
+      <?php include __DIR__ . '/_tema-bottone.php'; ?>
       <a class="btn btn--ghost btn--sm" href="<?= b() ?>/accedi">Accedi</a>
       <a class="btn btn--sm" href="<?= b() ?>/registrati">Create la vostra guida</a>
     </div>

@@ -3,16 +3,64 @@
    Gloock sui titoli, Onest su tutto il resto, angoli 8/18/26 e tondo pieno
    su ogni cosa che si preme. Le misure vengono dalle tavole del progetto. */
 
+/* --------------------------------------------------------------- i due temi
+
+   La carta di giorno, la notte di sera. Il tema segue il sistema finche'
+   qualcuno non sceglie: allora la scelta resta, e vince.
+   I riquadri di colore pieno NON cambiano col tema — sono il marchio, non
+   una superficie — e per questo hanno token a parte.                       */
+
 :root {
+  /* superfici */
   --paper:#faf5ec; --sunk:#f1e9db; --raised:#fff; --line:#e2d7c4; --line-strong:#94825f;
   --ink:#231b12; --muted:#6a5b48;
+  /* il rovescio: i riquadri che devono staccare da tutto il resto */
+  --inverse-bg:#231b12; --inverse-fg:#faf5ec; --inverse-muted:#b6a891;
+  /* accento e avvisi */
   --terracotta:#b4451f; --terracotta-soft:#f7e6dc; --on-dark:#fff8f2;
   --ochre:#b07d0c; --ochre-soft:#f9edd2; --pine:#1f6b3f; --pine-soft:#e1f0e5;
   --sea:#1c5a78; --sea-soft:#ddecf3; --alert:#9c2b20; --alert-soft:#f8e3df;
-  --night:#17130d; --night-card:#211c15; --night-line:#342d23;
-  --night-ink:#f6f0e5; --night-muted:#b6a891; --night-accent:#ee7a4a;
+  /* i riquadri pieni, uguali in tutti e due i temi */
+  --tile-terracotta:#b4451f; --tile-sea:#1c5a78; --tile-pine:#1f6b3f;
+  --tile-ochre:#b07d0c; --tile-alert:#9c2b20;
+  --tile-ink:#fff8f2; --tile-ink-scuro:#231b12;
+  /* il vetro delle barre: 40% di colore, il resto e' quello che scorre sotto */
+  --vetro:rgba(250,245,236,.40); --vetro-orlo:rgba(35,27,18,.10);
+  --vetro-filtro:blur(26px) saturate(1.35) contrast(.12) brightness(1.95);
+  /* la sabbia */
+  --grana:url("grana.png");
   --r-sm:8px; --r-md:14px; --r-lg:18px; --r-xl:26px; --r-2xl:34px;
-  --accent:var(--terracotta);
+  --accent:var(--terracotta); --accent-hover:#93370f;
+  color-scheme:light;
+}
+
+/* I valori della notte, in un posto solo: li usano il sistema, la scelta
+   esplicita e le isole notturne come la pagina del Wi-Fi. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="chiaro"]) {
+    --paper:#17130d; --sunk:#201a13; --raised:#2e261c; --line:#3d3327; --line-strong:#7d7160;
+    --ink:#f6f0e5; --muted:#b6a891;
+    --inverse-bg:#32291d; --inverse-fg:#f6f0e5; --inverse-muted:#b6a891;
+    --terracotta:#ee7a4a; --terracotta-soft:#3a1c10; --on-dark:#1c1008;
+    --ochre:#d9a63a; --ochre-soft:#2f2410; --pine:#6fc48c; --pine-soft:#12261a;
+    --sea:#74bcd9; --sea-soft:#0f2a36; --alert:#e0705f; --alert-soft:#331512;
+    --vetro:rgba(23,19,13,.40); --vetro-orlo:rgba(246,240,229,.10);
+    --vetro-filtro:blur(26px) saturate(1.35) contrast(.12) brightness(.26);
+    --accent:var(--terracotta); --accent-hover:#f59a74;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="scuro"], .night {
+  --paper:#17130d; --sunk:#201a13; --raised:#2e261c; --line:#3d3327; --line-strong:#7d7160;
+  --ink:#f6f0e5; --muted:#b6a891;
+  --inverse-bg:#32291d; --inverse-fg:#f6f0e5; --inverse-muted:#b6a891;
+  --terracotta:#ee7a4a; --terracotta-soft:#3a1c10; --on-dark:#1c1008;
+  --ochre:#d9a63a; --ochre-soft:#2f2410; --pine:#6fc48c; --pine-soft:#12261a;
+  --sea:#74bcd9; --sea-soft:#0f2a36; --alert:#e0705f; --alert-soft:#331512;
+  --vetro:rgba(23,19,13,.40); --vetro-orlo:rgba(246,240,229,.10);
+  --vetro-filtro:blur(26px) saturate(1.35) contrast(.12) brightness(.26);
+  --accent:var(--terracotta); --accent-hover:#f59a74;
+  color-scheme:dark;
 }
 
 *{box-sizing:border-box}
@@ -25,7 +73,7 @@ h1{font-size:clamp(34px,6.4vw,46px)}
 h2{font-size:clamp(24px,3.4vw,30px)}
 h3{font-size:22px}
 .display{font-size:clamp(40px,6.6vw,72px);line-height:.97;letter-spacing:-.7px;text-wrap:balance}
-a{color:var(--terracotta);text-decoration:none} a:hover{color:#93370f}
+a{color:var(--terracotta);text-decoration:none} a:hover{color:var(--accent-hover)}
 img{max-width:100%;display:block}
 p{margin:0}
 
@@ -54,14 +102,17 @@ p{margin:0}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;
   padding:0 26px;border:0;border-radius:999px;background:var(--accent);color:var(--on-dark);
   font:inherit;font-weight:500;letter-spacing:-.3px;cursor:pointer;text-align:center}
-.btn:hover{background:#9d3b18;color:var(--on-dark)}
+.btn:hover{background:var(--accent-hover);color:var(--on-dark)}
 .btn--ghost{background:var(--raised);color:var(--ink);border:1px solid var(--line-strong)}
 .btn--ghost:hover{background:var(--sunk);color:var(--ink)}
 .btn--quiet{background:none;color:var(--muted);border:0;padding:0 18px}
 .btn--quiet:hover{background:none;color:var(--ink)}
-.btn--dark{background:var(--ink);color:var(--paper)} .btn--dark:hover{background:#3a2d1f;color:var(--paper)}
-.btn--pine{background:var(--pine)} .btn--pine:hover{background:#18542f}
-.btn--danger{background:var(--alert)} .btn--danger:hover{background:#7d2219}
+.btn--dark{background:var(--inverse-bg);color:var(--inverse-fg)}
+.btn--dark:hover{background:var(--inverse-bg);color:var(--inverse-fg);filter:brightness(1.25)}
+.btn--pine{background:var(--pine);color:var(--on-dark)}
+.btn--pine:hover{background:var(--pine);color:var(--on-dark);filter:brightness(1.12)}
+.btn--danger{background:var(--alert);color:var(--on-dark)}
+.btn--danger:hover{background:var(--alert);color:var(--on-dark);filter:brightness(1.12)}
 .btn--block{width:100%}
 .btn--sm{height:44px;padding:0 18px;font-size:14px}
 .btn--lg{height:60px;font-size:17px;padding:0 32px}
@@ -92,25 +143,30 @@ p{margin:0}
 .nav a:hover{color:var(--ink)}
 .nav a.on{background:var(--raised);color:var(--ink)}
 
-.topbar{border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+/* Le due barre sono vetro: 40% di colore, il resto e' la pagina che ci scorre
+   sotto, sfocata. Dove il browser non sa sfocare si torna opachi, perche' un
+   40% senza sfocatura renderebbe illeggibile quello che c'e' sopra. */
+.topbar{position:sticky;top:0;z-index:20;border-bottom:1px solid var(--vetro-orlo);
+  background:var(--vetro);backdrop-filter:var(--vetro-filtro);
+  -webkit-backdrop-filter:var(--vetro-filtro)}
 .topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:20px;
   min-height:76px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
 .topbar--plain{border-bottom:0}
 .brand{font-size:17px;font-weight:600;letter-spacing:-.5px;color:var(--ink)}
 .brand:hover{color:var(--ink)}
 .avatar{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;
-  flex:none;border-radius:999px;background:var(--ink);color:var(--paper);
+  flex:none;border-radius:999px;background:var(--inverse-bg);color:var(--inverse-fg);
   font-size:14px;font-weight:600;letter-spacing:-.02em}
 .avatar--sm{width:30px;height:30px;font-size:13px}
 .tag{display:inline-flex;align-items:center;height:26px;padding:0 11px;border-radius:var(--r-sm);
-  background:var(--ink);color:var(--paper);font-size:12px;font-weight:600}
+  background:var(--inverse-bg);color:var(--inverse-fg);font-size:12px;font-weight:600}
 
 /* ------------------------------------------------------------- contenitori */
 .card{background:var(--raised);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px}
 .card--sunk{background:var(--sunk);border-color:transparent}
 .panel{background:var(--raised);border:1px solid var(--line);border-radius:var(--r-xl);padding:24px}
-.panel--dark{background:var(--ink);color:var(--paper);border-color:transparent}
-.panel--dark .muted{color:var(--night-muted)}
+.panel--dark{background:var(--inverse-bg);color:var(--inverse-fg);border-color:transparent}
+.panel--dark .muted,.panel--dark .kicker{color:var(--inverse-muted)}
 .band{border-radius:var(--r-2xl);background:var(--terracotta-soft);padding:44px;
   display:flex;align-items:center;justify-content:space-between;gap:40px;flex-wrap:wrap}
 
@@ -122,8 +178,8 @@ p{margin:0}
 
 /* Riquadri di colore pieno: la seconda voce del linguaggio, dopo le foto. */
 .tile{display:flex;flex-direction:column;justify-content:space-between;gap:14px;
-  min-height:124px;padding:16px;border-radius:22px;background:var(--terracotta);color:var(--on-dark)}
-.tile:hover{color:var(--on-dark);filter:brightness(1.06)}
+  min-height:124px;padding:16px;border-radius:22px;background:var(--tile-terracotta);color:var(--tile-ink)}
+.tile:hover{color:var(--tile-ink);filter:brightness(1.06)}
 .tile b{font-size:19px;font-weight:500;letter-spacing:-.5px;line-height:23px}
 .tile p{font-size:15px;line-height:22px;opacity:.85}
 .tile svg{stroke:currentColor}
@@ -131,10 +187,10 @@ p{margin:0}
 .tile--big b{font-family:Gloock,Georgia,serif;font-size:30px;line-height:32px;
   font-weight:400;letter-spacing:-.2px}
 .tile--big .kicker{color:inherit;opacity:.85;font-size:13px;letter-spacing:.08em}
-.t-terracotta{background:var(--terracotta)} .t-sea{background:var(--sea)}
-.t-pine{background:var(--pine)} .t-alert{background:var(--alert)}
-.t-ochre{background:var(--ochre);color:var(--ink)}
-.t-ochre:hover{color:var(--ink)}
+.t-terracotta{background:var(--tile-terracotta)} .t-sea{background:var(--tile-sea)}
+.t-pine{background:var(--tile-pine)} .t-alert{background:var(--tile-alert)}
+.t-ochre{background:var(--tile-ochre);color:var(--tile-ink-scuro)}
+.t-ochre:hover{color:var(--tile-ink-scuro)}
 
 /* --------------------------------------------------------------- fotografie */
 .shot{position:relative;border-radius:var(--r-xl);overflow:hidden;background:var(--sunk)}
@@ -169,10 +225,10 @@ p{margin:0}
 .badge--pine{background:var(--pine-soft);color:var(--pine)}
 .badge--sea{background:var(--sea-soft);color:var(--sea)}
 .badge--ochre{background:var(--ochre-soft);color:var(--ink)}
-.badge--ochre-strong{background:var(--ochre);color:var(--ink)}
+.badge--ochre-strong{background:var(--ochre);color:var(--tile-ink-scuro)}
 .badge--terracotta{background:var(--terracotta-soft);color:var(--terracotta)}
 .badge--alert{background:var(--alert-soft);color:var(--alert)}
-.badge--paper{background:var(--paper);color:var(--ink)}
+.badge--paper{background:var(--inverse-fg);color:var(--inverse-bg)}
 .badge .dot{width:6px;height:6px;background:currentColor}
 
 /* --------------------------------------------------------------------- moduli */
@@ -221,18 +277,23 @@ select{appearance:none;padding-right:44px;
   color:var(--muted);font-size:14px;font-weight:500}
 .langbar a.on{color:var(--ink);font-weight:600}
 .guest-title{font-size:41px;line-height:41px}
-.guest-bottom{position:sticky;bottom:0;margin-top:28px;padding:12px 0 20px;background:var(--paper);
-  border-top:1px solid var(--line);display:flex;gap:10px}
+.guest-bottom{position:sticky;bottom:0;z-index:15;margin-top:28px;padding:12px 0 20px;
+  border-top:1px solid var(--vetro-orlo);background:var(--vetro);
+  backdrop-filter:var(--vetro-filtro);-webkit-backdrop-filter:var(--vetro-filtro);
+  display:flex;gap:10px}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  .topbar,.guest-bottom{background:var(--paper);border-color:var(--line)}
+}
 .guest-bottom .btn{flex:1 1 0;min-width:0;height:52px;font-size:15px;padding:0 16px}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chips a,.chips button{display:inline-flex;align-items:center;height:44px;padding:0 18px;
   border-radius:999px;border:1px solid var(--line-strong);background:var(--raised);color:var(--ink);
   font:inherit;font-size:14px;font-weight:500;letter-spacing:-.2px;cursor:pointer}
-.chips .on{background:var(--ink);color:var(--paper);border-color:transparent}
+.chips .on{background:var(--inverse-bg);color:var(--inverse-fg);border-color:transparent}
 
 .step{display:flex;gap:14px;padding:18px;border-radius:22px;background:var(--raised);border:1px solid var(--line)}
 .step .n{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
-  border-radius:999px;background:var(--ink);color:var(--paper);font-size:14px;font-weight:500}
+  border-radius:999px;background:var(--inverse-bg);color:var(--inverse-fg);font-size:14px;font-weight:500}
 .step h2,.step h3{font-size:19px;line-height:23px;letter-spacing:0}
 .step p{font-size:15px;line-height:22px;color:var(--muted)}
 
@@ -242,32 +303,21 @@ select{appearance:none;padding-right:44px;
 .copyline b{font-size:23px;line-height:27px;font-weight:500;letter-spacing:-.6px;word-break:break-all}
 .copyline b.pw{letter-spacing:.5px;font-variant-numeric:tabular-nums}
 
-/* Il tema notte: il Wi-Fi si legge anche al buio, in una casa che non si conosce. */
-.night{background:var(--night);color:var(--night-ink);min-height:100vh}
-.night h1,.night h2,.night h3{color:var(--night-ink)}
-.night .muted,.night .kicker{color:var(--night-muted)}
-.night .card,.night .panel{background:var(--night-card);border-color:var(--night-line);color:var(--night-ink)}
-.night .icon-btn{background:var(--night-card);border-color:var(--night-line);color:var(--night-ink)}
-.night .icon-btn--strong{background:var(--night);border-color:#736855}
-.night .icon-btn--accent{background:var(--night-accent);border-color:transparent;color:#1c1008}
-.night .rule,.night hr{background:var(--night-line)}
-.night .btn{background:var(--night-accent);color:#1c1008}
-.night .btn:hover{background:#f59a74;color:#1c1008}
-.night .btn--go .go{background:var(--night);color:var(--night-accent)}
-.night .guest-bottom{background:var(--night);border-color:var(--night-line)}
-.night a{color:var(--night-accent)}
-.night .guest-name{color:var(--night-ink)}
+/* L'isola notturna: il Wi-Fi si legge anche al buio, in una casa che non si
+   conosce. I colori arrivano dai token qui sopra — .night li ridichiara — e
+   qui resta solo quello che esiste unicamente in questa pagina. */
+.night{background:var(--paper);color:var(--ink);min-height:100svh}
 .night .listrow{display:flex;align-items:center;gap:14px;min-height:60px;padding:10px 4px;
-  border-bottom:1px solid var(--night-line);color:var(--night-ink)}
+  border-bottom:1px solid var(--line);color:var(--ink)}
 .night .listrow:last-child{border-bottom:0}
 .night .listrow .ico{flex:none;display:inline-flex;align-items:center;justify-content:center;
-  width:38px;height:38px;border-radius:12px;background:#3a1c10}
+  width:38px;height:38px;border-radius:12px;background:var(--terracotta-soft);color:var(--terracotta)}
 .night .listrow span.grow{font-size:16px;font-weight:500;letter-spacing:-.3px}
-.night .pill-quiet{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 14px;
-  border-radius:999px;border:1px solid var(--night-line);font-size:12px;font-weight:500;color:var(--night-muted)}
+.pill-quiet{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 14px;
+  border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:500;color:var(--muted)}
 
 /* ------------------------------------------------- soglia e congedo (a tutto schermo) */
-.full{position:relative;min-height:100svh;overflow:hidden;background:var(--night);color:var(--night-ink);
+.full{position:relative;min-height:100svh;overflow:hidden;background:#17130d;color:#f6f0e5;
   display:flex;flex-direction:column}
 .full__photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
   transform-origin:52% 45%;animation:mh-breathe 24s cubic-bezier(.33,0,.2,1) forwards}
@@ -285,7 +335,7 @@ select{appearance:none;padding-right:44px;
 .full .btn--go .go{background:var(--on-dark);color:var(--accent)}
 .checklist{display:flex;flex-direction:column;gap:8px}
 .checklist li{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:16px;
-  background:rgba(246,240,229,.10);font-size:15px;font-weight:500;color:var(--night-ink);list-style:none}
+  background:rgba(246,240,229,.10);font-size:15px;font-weight:500;color:#f6f0e5;list-style:none}
 .checklist{margin:0;padding:0}
 .arch{stroke:currentColor}
 
@@ -306,8 +356,7 @@ select{appearance:none;padding-right:44px;
 .hero p{max-width:560px;font-size:clamp(17px,2vw,20px);line-height:1.5;color:var(--muted)}
 .plan{display:flex;flex-direction:column;gap:18px;padding:28px;border-radius:var(--r-xl);
   background:var(--raised);border:1px solid var(--line)}
-.plan--dark{background:var(--ink);color:var(--paper);border-color:transparent}
-.plan--dark .muted{color:var(--night-muted)}
+.plan--dark{background:var(--inverse-bg);color:var(--inverse-fg);border-color:transparent}
 .plan .name{font-size:26px;font-weight:500;letter-spacing:-.9px}
 .plan .price{font-size:38px;line-height:38px;font-weight:500;letter-spacing:-1.4px}
 .plan .price small{font-size:16px;font-weight:400;letter-spacing:-.2px;color:var(--muted)}
@@ -315,6 +364,7 @@ select{appearance:none;padding-right:44px;
 .plan li{font-size:15px;line-height:22px}
 .plan li.off{color:var(--muted)}
 .plan .btn{margin-top:auto}
+.plan--dark .muted,.plan--dark .price small,.plan--dark li.off{color:var(--inverse-muted)}
 
 /* -------------------------------------------------------------------- host */
 .sheet{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:32px;align-items:start}
@@ -334,8 +384,8 @@ select{appearance:none;padding-right:44px;
   border-radius:999px;border:1px solid var(--line-strong);color:var(--muted);font-size:13px;font-weight:600}
 .wizard__step.done{color:var(--muted)}
 .wizard__step.done .n{background:var(--pine);border-color:transparent;color:#fff}
-.wizard__step.on{background:var(--ink);color:var(--paper)}
-.wizard__step.on .n{background:var(--paper);border-color:transparent;color:var(--ink)}
+.wizard__step.on{background:var(--inverse-bg);color:var(--inverse-fg)}
+.wizard__step.on .n{background:var(--inverse-fg);border-color:transparent;color:var(--inverse-bg)}
 .wizard__main{padding:48px 0 48px 56px}
 
 .trrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;
@@ -361,13 +411,15 @@ th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute
 .switch i{display:block;width:20px;height:20px;border-radius:999px;background:#fff}
 .switch.on{background:var(--pine);justify-content:flex-end}
 
-.impersonating{background:var(--alert);color:#fff;padding:10px 0;font-size:14px}
+.impersonating{background:#9c2b20;color:#fff;padding:10px 0;font-size:14px}
 .impersonating .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .impersonating form{margin:0}
-.impersonating .btn{background:#fff;color:var(--alert);height:38px;padding:0 16px;font-size:13px}
+.impersonating .btn{background:#fff;color:#9c2b20;height:38px;padding:0 16px;font-size:13px}
 
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
-.qr-sheet{background:#fff;padding:32px;border-radius:var(--r-2xl);text-align:center;border:1px solid var(--line)}
+.qr-sheet{background:#fff;color:#231b12;padding:32px;border-radius:var(--r-2xl);
+  text-align:center;border:1px solid #e2d7c4}
+.qr-sheet h2{color:#231b12} .qr-sheet .muted{color:#6a5b48}
 .qr-sheet img{margin:0 auto;width:min(280px,72vw);height:auto}
 @media print{.topbar,.noprint,.impersonating{display:none!important}.qr-sheet{border:0}}
 
@@ -405,9 +457,47 @@ th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute
 .langpick__menu a{display:flex;align-items:center;min-height:44px;padding:0 14px;border-radius:12px;
   color:var(--ink);font-size:15px;font-weight:500}
 .langpick__menu a:hover{background:var(--sunk);color:var(--ink)}
-.langpick__menu a.on{background:var(--ink);color:var(--paper)}
-.night .langpick__menu{background:var(--night-card);border-color:var(--night-line)}
-.night .langpick__menu a{color:var(--night-ink)}
-.night .langpick__menu a:hover{background:var(--night);color:var(--night-ink)}
-.night .langpick__menu a.on{background:var(--night-accent);color:#1c1008}
-.night .lang{background:var(--night-card);border-color:var(--night-line);color:var(--night-ink)}
+.langpick__menu a.on{background:var(--inverse-bg);color:var(--inverse-fg)}
+
+
+/* ------------------------------------------------------------------ la sabbia
+
+   Una grana finissima su tutto quello che e' superficie: carta, schede,
+   riquadri, bottoni, barre. Non sulle fotografie, non sul testo, non sulle
+   icone — il rumore sta SOTTO il contenuto, nello sfondo, non sopra.
+   La stessa immagine ha granelli chiari e scuri, cosi' funziona nei due temi.
+   Questo blocco sta in fondo apposta: vince su ogni `background:` scritto
+   prima, senza doverli riscrivere uno per uno.                              */
+
+body, .card, .panel, .stat, .note, .saying, .rowcard, .place, .tile, .plan,
+.btn, .icon-btn, .lang, .chips a, .chips button, .badge, .tag, .avatar,
+.nav, .topbar, .guest-bottom, .band, .preview, .preview__body, .impersonating,
+.trrow, .trrow__head, .trrow__a, .trrow__b, .wizard__side, .wizard__step,
+.langpick__menu, .step, .checklist li, .search, .qr-sheet,
+input[type=text], input[type=email], input[type=password], input[type=tel],
+input[type=search], input[type=number], textarea, select {
+  background-image: var(--grana);
+  background-repeat: repeat;
+  background-size: 128px 128px;
+  background-blend-mode: normal;
+}
+/* Il menu a tendina disegna la freccetta con due gradienti: li' la sabbia
+   andrebbe a sostituirli, quindi la si mette in coda invece che al posto loro. */
+select {
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%),
+    var(--grana);
+  background-position: calc(100% - 22px) 24px, calc(100% - 16px) 24px, 0 0;
+  background-size: 6px 6px, 6px 6px, 128px 128px;
+  background-repeat: no-repeat, no-repeat, repeat;
+}
+/* Le fotografie e le schermate a tutto campo restano pulite. */
+.shot, .shot img, .thumb, .thumb img, .preview__shot, .full, .full__photo,
+.full__scrim, .preview__grid i, img { background-image: none; }
+
+/* --------------------------------------------------- l'interruttore del tema */
+.tema{position:relative}
+[data-tema="chiaro"] .i-sole{display:none}
+[data-tema="scuro"] .i-luna{display:none}
+.tema svg{display:block}

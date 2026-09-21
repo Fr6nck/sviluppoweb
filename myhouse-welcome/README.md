@@ -33,7 +33,10 @@ a folder on shared hosting, and it works whether or not the server rewrites URLs
 
 Its surfaces follow the **Fauna** direction of the design canvas: full-bleed
 photography, solid colour tiles, Gloock on headings and Onest on everything else,
-and a night theme for the Wi-Fi page — the one guests look for in the dark.
+and a night theme for the Wi-Fi page — the one guests look for in the dark. A
+fine sand grain runs under every surface (never over photographs, text or icons),
+the two navigation bars are glass at 40% with a blurred backdrop, and there is a
+light/dark switch that follows the system until someone chooses otherwise.
 
 At install time it offers **three sample customers** (Lucia in Montepulciano,
 Marco in Lecce, Agnese in Ortigia) with published guides, photographs,
@@ -121,7 +124,7 @@ against the real artifacts:
 | `python3 schema/validate.py` | The three configuration files agree: every feature a package prices exists, values match their declared types, tiers are monotonic, every wizard gate resolves. |
 | `node prototype/walkthrough.mjs` | 45 browser assertions across the whole product: conditional wizard logic, entitlement gating, the publish bar, support mode requiring a reason, keyboard access, no horizontal scroll at 320px, dark mode. |
 | `node prototype/contrast-check.mjs` | Every visible text node on every page measured against its effective background at the WCAG AA threshold. |
-| `app/prove/esegui.sh` | 78 end-to-end checks over real HTTP: installation, the seeded sample data, the admin dashboard's numbers, impersonation, every guest surface in three languages, the night theme, the permanent QR redirect and its PNG, and the deletion and recreation of the sample customers. The script deploys a copy of the app the way it lands on shared hosting, serves it, runs the checks and cleans up after itself. |
+| `app/prove/esegui.sh` | 91 end-to-end checks over real HTTP: installation, the seeded sample data, the admin dashboard's numbers, impersonation, every guest surface in three languages, the night theme, the permanent QR redirect and its PNG, the deletion and recreation of the sample customers, and the grain, glass and theme machinery. The script deploys a copy of the app the way it lands on shared hosting, serves it, runs the checks and cleans up after itself. |
 
 The browser suites need Playwright:
 `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers NODE_PATH=$(npm root -g) node prototype/walkthrough.mjs`

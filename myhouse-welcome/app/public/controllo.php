@@ -88,6 +88,7 @@ $attesi = [
     'src/Translator.php', 'src/View.php', 'src/routes_admin.php', 'src/routes_host.php',
     'views/layout/app.php', 'views/layout/bare.php', 'views/layout/guest.php',
     'views/layout/wide.php', 'views/layout/full.php',
+    'views/layout/_tema.php', 'views/layout/_tema-bottone.php',
     'views/pub/home.php', 'views/pub/install.php', 'views/pub/404.php',
     'views/pub/checkout.php', 'views/pub/paid.php',
     'views/auth/login.php', 'views/auth/register.php',

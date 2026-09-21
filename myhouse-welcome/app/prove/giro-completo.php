@@ -204,6 +204,30 @@ prova('Sono di nuovo tre', $rifatti === 3, "$rifatti utenti");
 $media = (int) $pdo->query("SELECT COUNT(*) FROM media")->fetchColumn();
 prova('Con le loro fotografie', $media >= 6, "$media immagini");
 
+// ---------------------------------------------------- sabbia, vetro e temi
+$css = chiama(str_replace('/index.php', '', $BASE) . '/assets/app.css');
+prova('Il foglio di stile esce', $css['code'] === 200);
+prova('La sabbia è dichiarata sulle superfici', str_contains($css['body'], "--grana:url(\"grana.png\")"));
+prova('Le superfici la usano davvero', str_contains($css['body'], 'background-image: var(--grana)'));
+prova('Le fotografie restano pulite', str_contains($css['body'], 'background-image: none'));
+$grana = chiama(str_replace('/index.php', '', $BASE) . '/assets/grana.png');
+prova('L\'immagine della sabbia si scarica', $grana['code'] === 200 && str_starts_with($grana['body'], "\x89PNG"),
+      strlen($grana['body']) . ' byte');
+prova('Le due barre sono vetro al 40%', substr_count($css['body'], 'backdrop-filter:var(--vetro-filtro)') >= 2
+      && str_contains($css['body'], '--vetro:rgba(250,245,236,.40)'));
+prova('Senza sfocatura le barre tornano opache', str_contains($css['body'], '@supports not ((backdrop-filter'));
+prova('Il tema scuro ha i suoi valori', str_contains($css['body'], ':root[data-theme="scuro"]')
+      && str_contains($css['body'], 'prefers-color-scheme: dark'));
+prova('L\'accento è ridichiarato in ogni tema',
+      substr_count($css['body'], '--accent:var(--terracotta)') >= 3);
+
+$r = chiama("$BASE/");
+prova('La scelta del tema si applica prima di disegnare', str_contains($r['body'], "localStorage.getItem('mhw-tema')"));
+prova('C\'è l\'interruttore del tema', str_contains($r['body'], 'class="icon-btn tema"'));
+prova('Porta tutte e due le icone', str_contains($r['body'], 'i-luna') && str_contains($r['body'], 'i-sole'));
+$r = chiama("$BASE/g/casa-lucia");
+prova('L\'interruttore c\'è anche per l\'ospite', str_contains($r['body'], 'class="icon-btn tema"'));
+
 echo implode("\n", $esiti), "\n\n";
 echo $falliti === 0
     ? count($esiti) . " controlli, tutti superati.\n"

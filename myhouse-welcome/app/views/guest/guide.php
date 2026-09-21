@@ -12,7 +12,10 @@ $tel = preg_replace('/\D/', '', (string) $pr['host_whatsapp']); ?>
     <span class="avatar avatar--sm"><?= Support::e($iniziali) ?></span>
     <span class="guest-name"><?= Support::e($pr['name']) ?></span>
   </div>
-  <?php include __DIR__ . '/_lingue.php'; ?>
+  <div class="row" style="gap:8px">
+    <?php include __DIR__ . '/../layout/_tema-bottone.php'; ?>
+    <?php include __DIR__ . '/_lingue.php'; ?>
+  </div>
 </div>
 
 <h1 class="guest-title" style="margin-top:22px">Benvenuti<br>a <?= Support::e($pr['name']) ?>.</h1>
