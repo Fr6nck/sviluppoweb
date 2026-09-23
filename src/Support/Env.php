@@ -44,6 +44,11 @@ final class Env
                 $value = substr($value, 1, -1);
             } elseif (str_contains($value, ' #')) {
                 $value = rtrim(substr($value, 0, strpos($value, ' #')));
+            } elseif (str_starts_with($value, '#')) {
+                // «CHIAVE=   # spiegazione»: la chiave è vuota e quello che
+                // segue è un commento, non il suo valore. Un .env si scrive a
+                // mano su un server, e questa è la sbavatura più facile.
+                $value = '';
             }
 
             self::$values[$key] = $value;

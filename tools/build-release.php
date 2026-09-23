@@ -1,0 +1,478 @@
+<?php
+/**
+ * Arco del Vento — prepara il pacchetto da caricare sul server.
+ *
+ *     php tools/build-release.php
+ *     php tools/build-release.php --tutto        (non scarta nessuna immagine)
+ *     php tools/build-release.php --out=/tmp/x   (un'altra cartella)
+ *
+ * Il sito non si compila: non c'è un passo di build, e questo strumento non
+ * ne è uno. Fa tre cose che a mano si sbagliano sempre:
+ *
+ *   1. COPIA SOLO QUELLO CHE SERVE. La cronologia git, gli originali delle
+ *      fotografie, i registri, gli strumenti da tavolo e il .env non vanno
+ *      sul server. Il .env in particolare NON si copia mai: quello locale ha
+ *      i valori di sviluppo, e copiarlo è il modo più rapido di pubblicare un
+ *      sito in APP_DEBUG=true con l'indirizzo di prova per le e-mail.
+ *
+ *   2. VERIFICA CHE IL SITO RISPONDA DAVVERO. Rende ogni pagina delle due
+ *      lingue in un processo a parte e si ferma se una non risponde 200 o
+ *      contiene un errore di PHP. Un pacchetto che si carica e dà schermo
+ *      bianco è peggio di nessun pacchetto.
+ *
+ *   3. SCARTA LE IMMAGINI CHE NESSUNA PAGINA CHIEDE. I tagli non usati e i
+ *      segnaposto delle camere che adesso hanno una fotografia. La lista la
+ *      calcola dalle pagine rese al punto 2, non da una lista scritta a
+ *      mano: se una pagina non risponde, non scarta niente e si ferma.
+ *
+ * Alla fine scrive l'archivio e il suo SHA-256, e stampa cosa caricare dove.
+ * Non carica niente da sé: la pubblicazione resta una decisione di chi la fa.
+ */
+
+declare(strict_types=1);
+
+$root = dirname(__DIR__);
+require $root . '/src/autoload.php';
+
+use ArcoDelVento\I18n\Routes;
+use ArcoDelVento\Support\Env;
+
+Env::load($root . '/.env');
+
+// ------------------------------------------------------------------ opzioni
+$opzioni = getopt('', ['out::', 'tutto', 'senza-zip']) ?: [];
+$uscita  = rtrim((string) ($opzioni['out'] ?? $root . '/dist'), '/');
+$tutto   = array_key_exists('tutto', $opzioni);
+$senzaZip = array_key_exists('senza-zip', $opzioni);
+
+$VERDE = "\033[32m"; $ROSSO = "\033[31m"; $GIALLO = "\033[33m"; $FINE = "\033[0m";
+$passo = static function (string $testo) use ($VERDE, $FINE): void {
+    echo $VERDE . '  ok  ' . $FINE . $testo . PHP_EOL;
+};
+$muori = static function (string $testo) use ($ROSSO, $FINE): never {
+    echo $ROSSO . ' NO   ' . $FINE . $testo . PHP_EOL;
+    exit(1);
+};
+$nota = static function (string $testo) use ($GIALLO, $FINE): void {
+    echo $GIALLO . ' nota ' . $FINE . $testo . PHP_EOL;
+};
+
+echo PHP_EOL . "Arco del Vento — pacchetto per il server" . PHP_EOL;
+echo str_repeat('=', 74) . PHP_EOL . PHP_EOL;
+
+// ============================================================== 1. le pagine
+echo "PAGINE" . PHP_EOL;
+
+/** @return list<string> ogni indirizzo pubblico del sito, nelle lingue attive */
+$indirizzi = (static function () use ($root): array {
+    $config = require $root . '/config/config.php';
+    $lingue = (array) $config['i18n']['available'];
+    $camere = require $root . '/content/rooms.php';
+
+    $out = [];
+    foreach ($lingue as $lingua) {
+        foreach (Routes::pages() as $pagina) {
+            $out[] = Routes::url($pagina, $lingua);
+        }
+        foreach ($camere as $camera) {
+            $slug = $camera['slug'][$lingua] ?? null;
+            if (!is_string($slug) || $slug === '') {
+                continue;
+            }
+            $out[] = Routes::url('room', $lingua, ['slug' => $slug]);
+        }
+    }
+    // Il percorso di prenotazione mostra immagini che l'elenco non mostra.
+    $out[] = '/it/prenota?passo=camere&arrivo=2026-12-10&partenza=2026-12-13&ospiti=2';
+    $out[] = '/sitemap.xml';
+    $out[] = '/robots.txt';
+
+    $out = array_values(array_unique($out));
+
+    /* Quante devono essere: una pagina per lingua, una camera per lingua, più
+       il passo camere della prenotazione, la sitemap e robots.txt. Il conto sta
+       qui perché una lista che si accorcia in silenzio — un nome di rotta
+       cambiato, uno slug mancante — farebbe sembrare non usate le fotografie
+       delle camere, e il pacchetto partirebbe senza. Meglio fermarsi. */
+    $attesi = count($lingue) * (count(Routes::pages()) + count($camere)) + 3;
+    if (count($out) !== $attesi) {
+        fwrite(STDERR, sprintf(
+            "Gli indirizzi generati sono %d e dovrebbero essere %d.\n"
+            . "Controlla src/I18n/Routes.php e gli slug in content/rooms.php.\n",
+            count($out),
+            $attesi
+        ));
+        exit(1);
+    }
+
+    return $out;
+})();
+
+/**
+ * Rende un indirizzo in un processo a parte.
+ *
+ * A parte e non qui dentro perché public/index.php include le funzioni di
+ * aiuto con require: due pagine nello stesso processo e PHP si ferma su una
+ * funzione già dichiarata. Un processo per pagina costa qualche decimo di
+ * secondo e in cambio ogni pagina parte pulita, che è anche una prova più
+ * onesta.
+ *
+ * @return array{stato:int, corpo:string}
+ */
+$rendi = static function (string $indirizzo) use ($root): array {
+    $script = <<<'CODICE'
+        <?php
+        $root = $argv[1];
+        $uri  = $argv[2];
+        $parti = parse_url($uri);
+        $_SERVER['REQUEST_URI']    = $uri;
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['HTTP_HOST']      = 'localhost';
+        $_SERVER['SCRIPT_NAME']    = '/index.php';
+        $_GET = [];
+        if (isset($parti['query'])) { parse_str($parti['query'], $_GET); }
+        $_POST = [];
+        ob_start();
+        require $root . '/public/index.php';
+        $corpo = ob_get_clean();
+        echo json_encode(['stato' => http_response_code(), 'corpo' => $corpo]);
+        CODICE;
+
+    $tmp = tempnam(sys_get_temp_dir(), 'adv') . '.php';
+    file_put_contents($tmp, $script);
+    $cmd = escapeshellcmd(PHP_BINARY) . ' ' . escapeshellarg($tmp)
+         . ' ' . escapeshellarg($root) . ' ' . escapeshellarg($indirizzo) . ' 2>&1';
+    $grezzo = (string) shell_exec($cmd);
+    @unlink($tmp);
+
+    $dati = json_decode($grezzo, true);
+    if (!is_array($dati)) {
+        return ['stato' => 0, 'corpo' => $grezzo];
+    }
+
+    return ['stato' => (int) ($dati['stato'] ?: 200), 'corpo' => (string) $dati['corpo']];
+};
+
+$riferite = [];   // ogni /assets/... che una pagina chiede
+$guasti   = [];
+
+foreach ($indirizzi as $indirizzo) {
+    $r = $rendi($indirizzo);
+    $male = $r['stato'] !== 200
+        || preg_match('/Fatal error|Uncaught|Warning:|Notice:|Vista mancante/', $r['corpo']) === 1;
+    if ($male) {
+        $guasti[] = sprintf('%s → %d %s', $indirizzo, $r['stato'], substr(trim($r['corpo']), 0, 160));
+        continue;
+    }
+    preg_match_all('#/assets/[A-Za-z0-9._/-]+#', $r['corpo'], $m);
+    foreach ($m[0] as $rif) {
+        $riferite[strtok($rif, '?')] = true;
+    }
+}
+
+if ($guasti !== []) {
+    foreach ($guasti as $g) {
+        echo '       ' . $g . PHP_EOL;
+    }
+    $muori(count($guasti) . ' pagine su ' . count($indirizzi) . ' non rispondono: non si pubblica.');
+}
+$passo(count($indirizzi) . ' indirizzi resi, tutti 200, nessun errore di PHP');
+
+// I fogli di stile chiedono i caratteri con percorsi relativi: si risolvono
+// rispetto al foglio, altrimenti i .woff2 sembrano non usati e restano fuori.
+foreach (array_keys($riferite) as $rif) {
+    if (!str_ends_with($rif, '.css')) {
+        continue;
+    }
+    $file = $root . '/public' . $rif;
+    if (!is_file($file)) {
+        continue;
+    }
+    preg_match_all('#url\(\s*[\'"]?([^\'")]+)[\'"]?\s*\)#', (string) file_get_contents($file), $m);
+    foreach ($m[1] as $dentro) {
+        if (str_starts_with($dentro, 'data:')) {
+            continue;
+        }
+        $assoluto = '/' . ltrim($dentro, '/');
+        if (!str_starts_with($dentro, '/')) {
+            $base = dirname($rif);
+            $assoluto = $base . '/' . $dentro;
+        }
+        // schiaccia i ../
+        $pezzi = [];
+        foreach (explode('/', $assoluto) as $pezzo) {
+            if ($pezzo === '..') { array_pop($pezzi); } elseif ($pezzo !== '.' && $pezzo !== '') { $pezzi[] = $pezzo; }
+        }
+        $riferite['/' . implode('/', $pezzi)] = true;
+    }
+}
+$passo(count($riferite) . ' file statici chiesti dalle pagine e dai fogli di stile');
+echo PHP_EOL;
+
+// =========================================================== 2. cosa si copia
+echo "COPIA" . PHP_EOL;
+
+/** Cartelle e file che vanno sul server. */
+$daCopiare = ['public', 'src', 'views', 'content', 'config', 'database', '.htaccess', 'README.md'];
+
+/** Strumenti che servono SUL server: gli altri vogliono GD o Node e restano qui. */
+$strumentiServer = ['preflight.php', 'export-seed.php'];
+
+/** Quello che non va mai sul server, con il motivo. */
+$esclusi = [
+    '.git'                 => 'la cronologia del progetto: non serve al sito',
+    '.env'                 => 'va CREATO sul server, non copiato: questo ha i valori di sviluppo',
+    'docs/foto-originali'  => 'gli originali delle fotografie: servono a te, non al sito',
+    'storage/logs'         => 'si riempie da sola',
+    'storage/mail'         => 'si riempie da sola',
+    'dist'                 => 'i pacchetti precedenti',
+    'tools/router.php'     => 'serve al server di sviluppo di PHP, in produzione mai',
+    'tools/serve.sh'       => 'idem',
+    'tools/build-photos.php'      => 'strumento da tavolo: vuole GD',
+    'tools/build-tokens.php'      => 'strumento da tavolo',
+    'tools/build-placeholders.php' => 'strumento da tavolo',
+    'tools/build-release.php'     => 'questo stesso strumento',
+];
+
+if (is_dir($uscita)) {
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($uscita, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST
+    );
+    foreach ($it as $f) {
+        $f->isDir() ? @rmdir($f->getPathname()) : @unlink($f->getPathname());
+    }
+    @rmdir($uscita);
+}
+if (!@mkdir($uscita, 0o755, true) && !is_dir($uscita)) {
+    $muori('non riesco a creare ' . $uscita);
+}
+
+$cartella = $uscita . '/arcodelvento';
+@mkdir($cartella, 0o755, true);
+
+$copiati = 0; $byte = 0; $scartate = [];
+
+/** Copia un file creando le cartelle che servono. */
+$copia = static function (string $da, string $a) use (&$copiati, &$byte, $muori): void {
+    @mkdir(dirname($a), 0o755, true);
+    if (!@copy($da, $a)) {
+        $muori('non riesco a copiare ' . $da);
+    }
+    $copiati++;
+    $byte += (int) filesize($da);
+};
+
+foreach ($daCopiare as $voce) {
+    $sorgente = $root . '/' . $voce;
+    if (!file_exists($sorgente)) {
+        $muori('manca ' . $voce . ': il progetto non è completo');
+    }
+    if (is_file($sorgente)) {
+        $copia($sorgente, $cartella . '/' . $voce);
+        continue;
+    }
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($sorgente, FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($it as $f) {
+        if (!$f->isFile()) {
+            continue;
+        }
+        $relativo = substr($f->getPathname(), strlen($root) + 1);
+
+        // Un'immagine che nessuna pagina chiede non sale: pesa e, nel caso dei
+        // segnaposto delle camere fotografate, racconta una cosa falsa.
+        if (!$tutto && str_starts_with($relativo, 'public/assets/')) {
+            $chiave = substr($relativo, strlen('public'));
+            if (!isset($riferite[$chiave])) {
+                $scartate[$chiave] = (int) $f->getSize();
+                continue;
+            }
+        }
+        $copia($f->getPathname(), $cartella . '/' . $relativo);
+    }
+}
+
+foreach ($strumentiServer as $s) {
+    $copia($root . '/tools/' . $s, $cartella . '/tools/' . $s);
+}
+$copia($root . '/.env.example', $cartella . '/.env.example');
+$copia($root . '/docs/DEPLOY-HOSTINGER.md', $cartella . '/docs/DEPLOY-HOSTINGER.md');
+
+// Le due cartelle scrivibili devono esistere: il sito ci scrive.
+foreach (['storage/logs', 'storage/mail'] as $c) {
+    @mkdir($cartella . '/' . $c, 0o755, true);
+    file_put_contents($cartella . '/' . $c . '/.gitkeep', '');
+}
+
+$passo($copiati . ' file copiati, ' . round($byte / 1048576, 1) . ' MB');
+
+if ($scartate !== []) {
+    $pesoScartato = array_sum($scartate);
+    $passo(count($scartate) . ' file statici lasciati fuori perché nessuna pagina li chiede ('
+        . round($pesoScartato / 1024) . ' KB)');
+    $gruppi = [];
+    foreach (array_keys($scartate) as $s) {
+        $gruppi[dirname($s)] = ($gruppi[dirname($s)] ?? 0) + 1;
+    }
+    foreach ($gruppi as $dir => $n) {
+        echo '       ' . $dir . ': ' . $n . PHP_EOL;
+    }
+}
+echo PHP_EOL;
+
+// ============================================================ 3. le verifiche
+echo "VERIFICHE" . PHP_EOL;
+
+// 3a. nessun file che non deve esserci
+$vietati = [];
+$it = new RecursiveIteratorIterator(
+    new RecursiveDirectoryIterator($cartella, FilesystemIterator::SKIP_DOTS)
+);
+$phpDaControllare = [];
+$totali = 0;
+foreach ($it as $f) {
+    if (!$f->isFile()) {
+        continue;
+    }
+    $totali++;
+    $rel = substr($f->getPathname(), strlen($cartella) + 1);
+    if ($rel === '.env' || str_starts_with($rel, '.git')) {
+        $vietati[] = $rel;
+    }
+    if (str_ends_with($rel, '.php')) {
+        $phpDaControllare[] = $f->getPathname();
+    }
+}
+$vietati === []
+    ? $passo('nessun .env e nessun .git nel pacchetto')
+    : $muori('nel pacchetto ci sono file che non devono uscire: ' . implode(', ', $vietati));
+
+// 3b. nessun segreto nel contenuto dei file
+$segreti = array_filter([
+    'OWNER_TAX_CODE' => (string) Env::get('OWNER_TAX_CODE', ''),
+    'DB_PASSWORD'    => (string) Env::get('DB_PASSWORD', ''),
+    'MAIL_PASSWORD'  => (string) Env::get('MAIL_PASSWORD', ''),
+    'BOOKING_API_KEY' => (string) Env::get('BOOKING_API_KEY', ''),
+], static fn (string $v): bool => strlen($v) >= 6);
+
+$trovati = [];
+foreach ($phpDaControllare as $file) {
+    $testo = (string) file_get_contents($file);
+    foreach ($segreti as $nome => $valore) {
+        if (str_contains($testo, $valore)) {
+            $trovati[] = $nome . ' in ' . substr($file, strlen($cartella) + 1);
+        }
+    }
+}
+$trovati === []
+    ? $passo($segreti === []
+        ? 'nessun segreto da cercare in .env'
+        : (count($segreti) === 1
+            ? 'il valore riservato di .env non compare nei file copiati'
+            : 'nessuno dei ' . count($segreti) . ' valori riservati di .env compare nei file copiati'))
+    : $muori('valori di .env finiti nei file: ' . implode(', ', $trovati));
+
+// 3c. la sintassi di tutto quello che sale
+$rotti = [];
+foreach ($phpDaControllare as $file) {
+    exec(escapeshellcmd(PHP_BINARY) . ' -l ' . escapeshellarg($file) . ' 2>&1', $o, $esito);
+    if ($esito !== 0) {
+        $rotti[] = substr($file, strlen($cartella) + 1);
+    }
+}
+$rotti === []
+    ? $passo(count($phpDaControllare) . ' file PHP, sintassi pulita')
+    : $muori('sintassi rotta in: ' . implode(', ', $rotti));
+
+// 3d. i file che senza l'FTP giusto non arrivano
+foreach (['.htaccess', 'public/.htaccess'] as $nascosto) {
+    is_file($cartella . '/' . $nascosto)
+        ? $passo($nascosto . ' presente (i client FTP lo nascondono: controlla che salga)')
+        : $muori($nascosto . ' manca: senza, ogni pagina tranne la home dà 404');
+}
+
+// 3e. l'ultima immagine chiesta esiste davvero nel pacchetto
+$mancanti = [];
+foreach (array_keys($riferite) as $rif) {
+    if (!is_file($cartella . '/public' . $rif)) {
+        $mancanti[] = $rif;
+    }
+}
+$mancanti === []
+    ? $passo('tutti i file statici chiesti dalle pagine sono nel pacchetto')
+    : $muori('il pacchetto non ha: ' . implode(', ', array_slice($mancanti, 0, 8)));
+
+echo PHP_EOL;
+
+// =============================================================== 4. archivio
+echo "ARCHIVIO" . PHP_EOL;
+
+$data    = date('Ymd-Hi');
+$nomeZip = $uscita . '/arcodelvento-' . $data . '.zip';
+
+if ($senzaZip) {
+    $nota('archivio non richiesto: la cartella pronta è ' . $cartella);
+} elseif (!class_exists(ZipArchive::class)) {
+    $nota("l'estensione zip non c'è: carica la cartella " . $cartella . ' così com\'è');
+    $nomeZip = null;
+} else {
+    $zip = new ZipArchive();
+    if ($zip->open($nomeZip, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        $muori('non riesco a creare ' . $nomeZip);
+    }
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($cartella, FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($it as $f) {
+        $rel = substr($f->getPathname(), strlen($cartella) + 1);
+        $f->isDir() ? $zip->addEmptyDir($rel) : $zip->addFile($f->getPathname(), $rel);
+    }
+    $zip->close();
+    $passo(basename($nomeZip) . ' — ' . round((int) filesize($nomeZip) / 1048576, 1) . ' MB, ' . $totali . ' file');
+    $passo('SHA-256 ' . hash_file('sha256', $nomeZip));
+}
+
+// il manifesto, per sapere dopo cosa era dentro
+$manifesto = $uscita . '/MANIFESTO.txt';
+$righe = [
+    'Arco del Vento — pacchetto del ' . date('d/m/Y H:i'),
+    str_repeat('-', 64),
+    'file: ' . $totali,
+    'peso: ' . round($byte / 1048576, 2) . ' MB',
+    'PHP di sviluppo: ' . PHP_VERSION,
+    '',
+    'DENTRO: ' . implode(' ', $daCopiare) . ' .env.example'
+        . ' tools/{' . implode(',', $strumentiServer) . '} docs/DEPLOY-HOSTINGER.md'
+        . ' storage/{logs,mail} (vuote)',
+    '',
+    'FUORI:',
+];
+foreach ($esclusi as $cosa => $perche) {
+    $righe[] = sprintf('  %-32s %s', $cosa, $perche);
+}
+if ($scartate !== []) {
+    $righe[] = '';
+    $righe[] = 'FILE STATICI SCARTATI (nessuna pagina li chiede):';
+    foreach (array_keys($scartate) as $s) {
+        $righe[] = '  ' . $s;
+    }
+}
+if ($nomeZip !== null) {
+    $righe[] = '';
+    $righe[] = 'archivio: ' . basename($nomeZip);
+    $righe[] = 'sha256:   ' . hash_file('sha256', $nomeZip);
+}
+file_put_contents($manifesto, implode(PHP_EOL, $righe) . PHP_EOL);
+$passo('MANIFESTO.txt scritto');
+
+echo PHP_EOL . str_repeat('=', 74) . PHP_EOL;
+echo 'PRONTO DA CARICARE. Il pacchetto non è pubblicato: caricarlo è una tua mossa.' . PHP_EOL . PHP_EOL;
+echo "Poi, sul server, nell'ordine:" . PHP_EOL;
+echo '  1. crea .env copiando .env.example — APP_ENV=production, APP_DEBUG=false,' . PHP_EOL;
+echo '     APP_URL con il dominio vero in https, MAIL_TO_ADDRESS con un indirizzo che leggi' . PHP_EOL;
+echo '  2. rendi scrivibili storage/logs e storage/mail (755, se non basta 775)' . PHP_EOL;
+echo '  3. punta il dominio su public/ (hPanel → Cambia cartella radice del sito)' . PHP_EOL;
+echo '  4. php tools/preflight.php — deve finire senza bloccanti' . PHP_EOL;
+echo PHP_EOL . 'La procedura completa, passo per passo: docs/DEPLOY-HOSTINGER.md' . PHP_EOL . PHP_EOL;

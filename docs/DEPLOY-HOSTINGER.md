@@ -42,19 +42,59 @@ lo ignorasse, `.env` diventerebbe leggibile. Per questo A è meglio.
 
 ## 2. Che cosa caricare
 
-Circa **11 MB**, 234 file.
+**Il pacchetto lo prepara uno script**, e conviene usarlo invece di scegliere
+le cartelle a mano:
 
-**Carica**: `public/` `src/` `views/` `content/` `config/` `database/`
-`tools/` `.htaccess` `README.md`
+```bash
+php tools/build-release.php
+```
 
-**Non caricare**:
+Scrive in `dist/` tre cose:
+
+- `dist/arcodelvento/`: la cartella pronta da caricare così com'è
+- `dist/arcodelvento-AAAAMMGG-HHMM.zip`: la stessa cosa in un file solo, per
+  il **File Manager dell'hPanel**, che lo scompatta sul server. Con l'FTP
+  lento è molto più rapido di 186 file uno per uno.
+- `dist/MANIFESTO.txt`: cosa c'è dentro, cosa è rimasto fuori e l'impronta
+  SHA-256 dell'archivio
+
+Prima di scrivere il pacchetto, lo script **rende ogni pagina delle due lingue**
+e si ferma se una non risponde o contiene un errore di PHP. Poi controlla che
+dentro non ci siano `.env` o `.git`, che nessun valore del tuo `.env` sia
+finito nei file, che la sintassi PHP sia pulita, che i due `.htaccess` ci
+siano, e che ogni immagine chiesta da una pagina sia nel pacchetto.
+
+**Lascia fuori le immagini che nessuna pagina chiede**: i ritagli non usati e
+i segnaposto disegnati delle camere che adesso hanno una fotografia (circa
+1 MB). Restano nel progetto, non vanno sul server. Con `--tutto` le porta
+comunque.
+
+**Che cosa resta fuori, e perché**:
 
 | Cosa | Perché |
 | --- | --- |
 | `.git/` | è la storia del progetto, non serve al sito e pesa |
 | `.env` | va **creato sul server**, non copiato: quello locale ha i valori di sviluppo |
-| `docs/foto-originali/` | 1,4 MB di originali già lavorati: servono a te, non al sito |
-| `storage/mail/` `storage/logs/` | contenuto: si riempiono da sole |
+| `docs/foto-originali/` | gli originali già lavorati: servono a te, non al sito |
+| `storage/mail/` `storage/logs/` | il contenuto: le cartelle salgono vuote e si riempiono da sole |
+| `tools/router.php` `tools/serve.sh` | servono al server di sviluppo, in produzione mai |
+| `tools/build-*.php` | strumenti da tavolo: vogliono GD o si usano solo qui |
+
+Sul server salgono solo due strumenti: `tools/preflight.php` (il controllo
+finale) e `tools/export-seed.php` (serve il giorno in cui si attiva MySQL).
+
+### Con il File Manager (consigliato)
+
+1. hPanel → **File** → **File Manager**
+2. entra nella cartella che hai scelto al punto 1 (A o B)
+3. **Carica** lo `.zip`, poi tasto destro → **Estrai**
+4. controlla che siano comparsi `.htaccess` e `public/.htaccess`, poi cancella
+   lo `.zip` dal server
+
+### Con l'FTP
+
+Carica il **contenuto** di `dist/arcodelvento/` (non la cartella stessa)
+nella cartella scelta al punto 1.
 
 **Attenzione ai file che cominciano con un punto.** Molti client FTP li
 nascondono, e se non carichi `.htaccess` il sito risponde 404 su ogni pagina

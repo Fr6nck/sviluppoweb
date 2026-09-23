@@ -10,3 +10,6 @@
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Pacchetti per il server: si rigenerano con tools/build-release.php
+/dist/

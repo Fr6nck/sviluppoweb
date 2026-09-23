@@ -518,5 +518,10 @@ php tools/build-photos.php        # ritaglia le fotografie nei formati del siste
                                   #    misura piccola dev'essere davvero più
                                   #    leggera, non solo più stretta)
 php tools/export-seed.php         # rigenera database/seed.sql dai contenuti
+php tools/build-release.php       # prepara il pacchetto per il server in dist/:
+                                  #   rende tutte le pagine, si ferma se una
+                                  #   non risponde, lascia fuori .env e le
+                                  #   immagini che nessuna pagina chiede
+php tools/preflight.php           # sul server: dice se si può pubblicare
 sh  tools/serve.sh [porta]        # server di sviluppo
 ```
