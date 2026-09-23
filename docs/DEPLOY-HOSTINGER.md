@@ -57,6 +57,29 @@ Scrive in `dist/` tre cose:
   lento è molto più rapido di 186 file uno per uno.
 - `dist/MANIFESTO.txt`: cosa c'è dentro, cosa è rimasto fuori e l'impronta
   SHA-256 dell'archivio
+- `dist/file-da-rinominare/`: copie con un nome normale dei file che il
+  computer nasconde, più il `.env` di produzione già compilato — vedi sotto
+- `dist/LEGGIMI-PRIMA.txt`: le stesse istruzioni, in breve
+
+### I file che non si vedono
+
+`.htaccess` e `public/.htaccess` **sono nello .zip**, ma il nome comincia con
+un punto e il Finder del Mac li nasconde (Cmd + Maiusc + . li mostra).
+FileZilla, nel pannello di sinistra, li vede comunque. Senza `.htaccess` sul
+server ogni pagina tranne la home dà 404: se dopo il caricamento non ci sono,
+usa le copie in `dist/file-da-rinominare/`:
+
+| File | Dove va | Nome sul server |
+| --- | --- | --- |
+| `htaccess-radice.txt` | `public_html/` | `.htaccess` |
+| `htaccess-public.txt` | `public_html/public/` | `.htaccess` |
+| `env-produzione.txt` | `public_html/` | `.env` |
+
+**Il `.env` non è nello .zip, di proposito**: deve contenere la password della
+posta. `env-produzione.txt` è già compilato con produzione, debug spento,
+dominio ricavato dall'e-mail della struttura, SMTP di Hostinger e un gettone
+casuale per il controllo finale. Manca solo la password della casella: la
+scrivi, controlli il dominio, lo carichi e lo rinomini.
 
 Prima di scrivere il pacchetto, lo script **rende ogni pagina delle due lingue**
 e si ferma se una non risponde o contiene un errore di PHP. Poi controlla che

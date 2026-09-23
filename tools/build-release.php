@@ -414,6 +414,7 @@ $nomeZip = $uscita . '/arcodelvento-' . $data . '.zip';
 
 if ($senzaZip) {
     $nota('archivio non richiesto: la cartella pronta è ' . $cartella);
+    $nomeZip = null;
 } elseif (!class_exists(ZipArchive::class)) {
     $nota("l'estensione zip non c'è: carica la cartella " . $cartella . ' così com\'è');
     $nomeZip = null;
@@ -433,6 +434,118 @@ if ($senzaZip) {
     $passo(basename($nomeZip) . ' — ' . round((int) filesize($nomeZip) / 1048576, 1) . ' MB, ' . $totali . ' file');
     $passo('SHA-256 ' . hash_file('sha256', $nomeZip));
 }
+
+// ======================================================== 5. file da rinominare
+/* I file che cominciano con un punto — .htaccess, .env — il Finder del Mac li
+   nasconde, e anche dentro lo .zip sembrano non esserci. Ci sono, ma chi non
+   li vede pensa che manchino, e senza .htaccess ogni pagina tranne la home dà
+   404. Quindi accanto allo .zip, e FUORI dalla cartella da caricare, ne esce
+   una copia con un nome normale, da rinominare sul server.
+
+   Il .env di produzione invece non esiste da nessuna parte, perché deve
+   contenere la password della posta: qui esce già compilato con tutto quello
+   che si sa, e con la password da scrivere. */
+echo PHP_EOL . "FILE DA RINOMINARE" . PHP_EOL;
+
+// lo .zip deve contenere davvero i due .htaccess: lo si controlla sull'archivio
+if ($nomeZip !== null && !$senzaZip) {
+    $zip = new ZipArchive();
+    $zip->open($nomeZip);
+    foreach (['.htaccess', 'public/.htaccess', '.env.example'] as $nascosto) {
+        $zip->locateName($nascosto) !== false
+            ? $passo('nello .zip c\'è ' . $nascosto)
+            : $muori('nello .zip manca ' . $nascosto);
+    }
+    $zip->close();
+}
+
+$rinominare = $uscita . '/file-da-rinominare';
+@mkdir($rinominare, 0o755, true);
+copy($root . '/.htaccess', $rinominare . '/htaccess-radice.txt');
+copy($root . '/public/.htaccess', $rinominare . '/htaccess-public.txt');
+
+$impostazioni = require $root . '/content/settings.php';
+$posta   = (string) ($impostazioni['contacts']['email'] ?? '');
+$dominio = str_contains($posta, '@') ? substr($posta, strpos($posta, '@') + 1) : '';
+
+/** @var array<string,array{0:string,1:string}> chiave => [valore, nota sopra la riga] */
+$produzione = [
+    'APP_ENV'   => ['production', ''],
+    'APP_DEBUG' => ['false', ''],
+    'APP_URL'   => [
+        $dominio !== '' ? 'https://' . $dominio : '',
+        'CONTROLLA: il dominio esattamente come lo apri nel browser, con o senza www, senza barra finale.',
+    ],
+    'PREFLIGHT_TOKEN' => [
+        bin2hex(random_bytes(12)),
+        'Serve una volta sola, per tools/preflight.php dal browser. Dopo il controllo svuotalo.',
+    ],
+    'MAIL_TRANSPORT'       => ['smtp', ''],
+    'MAIL_FROM_ADDRESS'    => [$posta, ''],
+    'MAIL_TO_ADDRESS'      => [$posta, 'Dove arrivano le richieste di prenotazione e i messaggi dei moduli.'],
+    'MAIL_SMTP_HOST'       => ['smtp.hostinger.com', 'Valido se la casella è su Hostinger. Se è altrove, servono i dati di quel provider.'],
+    'MAIL_SMTP_PORT'       => ['587', ''],
+    'MAIL_SMTP_USER'       => [$posta, ''],
+    'MAIL_SMTP_PASSWORD'   => ['', 'DA SCRIVERE: la password della casella ' . $posta . '. Senza, il controllo finale si ferma.'],
+    'MAIL_SMTP_ENCRYPTION' => ['tls', ''],
+];
+
+$righe = [
+    '# Arco del Vento — .env di produzione',
+    '#',
+    '# 1. Scrivi la password della posta (MAIL_SMTP_PASSWORD) e controlla APP_URL.',
+    '# 2. Caricalo in public_html, accanto a .htaccess.',
+    '# 3. Sul server rinominalo in .env (con il punto davanti, senza .txt).',
+    '#',
+    '# Non mandarlo per e-mail e non metterlo su GitHub: contiene una password.',
+    '',
+];
+foreach (file($root . '/.env.example', FILE_IGNORE_NEW_LINES) ?: [] as $riga) {
+    if (preg_match('/^([A-Z_]+)=/', $riga, $m) && isset($produzione[$m[1]])) {
+        [$valore, $sopra] = $produzione[$m[1]];
+        if ($sopra !== '') {
+            $righe[] = '# ' . $sopra;
+        }
+        $righe[] = $m[1] . '=' . (str_contains($valore, ' ') ? '"' . $valore . '"' : $valore);
+        continue;
+    }
+    $righe[] = $riga;
+}
+file_put_contents($rinominare . '/env-produzione.txt', implode(PHP_EOL, $righe) . PHP_EOL);
+
+file_put_contents($uscita . '/LEGGIMI-PRIMA.txt', implode(PHP_EOL, [
+    'ARCO DEL VENTO — COME SI CARICA',
+    str_repeat('=', 64),
+    '',
+    'Nello .zip ci sono anche due file che il tuo computer probabilmente',
+    'nasconde, perché il nome comincia con un punto:',
+    '',
+    '    .htaccess           nella radice',
+    '    public/.htaccess    dentro public',
+    '',
+    'Ci sono. Sul Mac, nel Finder, Cmd + Maiusc + . (punto) li fa vedere.',
+    'FileZilla, nel pannello di sinistra, li mostra comunque.',
+    '',
+    'Se non ti fidi, o se dopo il caricamento sul server non ci sono, usa',
+    'le copie nella cartella file-da-rinominare:',
+    '',
+    '    htaccess-radice.txt  → in public_html,        rinominalo .htaccess',
+    '    htaccess-public.txt  → in public_html/public, rinominalo .htaccess',
+    '    env-produzione.txt   → in public_html,        rinominalo .env',
+    '',
+    'Il file .env NON è nello .zip, di proposito: contiene la password',
+    'della posta. env-produzione.txt è già compilato con tutto il resto:',
+    'scrivi la password, controlla il dominio, caricalo e rinominalo.',
+    '',
+    'NON caricare la cartella file-da-rinominare così com\'è: solo i tre',
+    'file, ognuno al suo posto, e rinominati.',
+    '',
+    'La procedura completa è in docs/DEPLOY-HOSTINGER.md, dentro lo .zip.',
+    '',
+]));
+
+$passo('file-da-rinominare/ — htaccess-radice.txt, htaccess-public.txt, env-produzione.txt');
+$passo('LEGGIMI-PRIMA.txt scritto');
 
 // il manifesto, per sapere dopo cosa era dentro
 $manifesto = $uscita . '/MANIFESTO.txt';
