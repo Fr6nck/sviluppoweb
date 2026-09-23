@@ -1,0 +1,32 @@
+# Arco del Vento — .htaccess della radice del progetto.
+#
+# Serve SOLO nel caso in cui tutto il progetto venga caricato dentro
+# public_html, che su Hostinger è la strada più rapida. Manda ogni richiesta
+# dentro public/ e impedisce che le cartelle dell'applicazione — src, views,
+# content, config, storage — siano raggiungibili dal web.
+#
+# La strada migliore resta l'altra: puntare il dominio su public/ dall'hPanel
+# (Avanzate → Cambia cartella radice del sito). Vedi README, «Hostinger».
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Le cartelle dell'applicazione non si servono mai.
+  RewriteRule ^(src|views|content|config|storage|database|tools|docs)/ - [F,L]
+
+  # Tutto il resto entra in public/.
+  RewriteCond %{REQUEST_URI} !^/public/
+  RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+<FilesMatch "^(\.env|\.env\..*|composer\.(json|lock)|.*\.md|.*\.sql)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+Options -Indexes

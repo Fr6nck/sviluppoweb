@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 700" width="700" height="700" role="img">
+  <rect width="700" height="700" fill="#eacb89"/>
+  <path d="M 189.0 539.0 L 189.0 266.0 A 161.0 161.0 0 0 1 511.0 266.0 L 511.0 539.0" fill="none" stroke="#a05938" stroke-width="2.8" stroke-linecap="round" opacity="0.5"/>
+  <text x="350" y="322" fill="#813131" opacity="0.62"
+        font-family="Prata, 'Playfair Display', Georgia, serif" font-size="133"
+        text-anchor="middle" dominant-baseline="central">01</text>
+  <text x="350" y="630" fill="#65412a"
+        font-family="Figtree, 'Segoe UI', system-ui, sans-serif" font-size="22.4"
+        font-weight="600" letter-spacing="2.24" text-anchor="middle">FOTOGRAFIA DA FORNIRE</text>
+</svg>

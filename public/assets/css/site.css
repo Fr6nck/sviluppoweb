@@ -1,0 +1,394 @@
+/* Arco del Vento — il foglio del sito.
+   Si carica dopo tokens.css e bundle.css e non ridefinisce mai un componente
+   del design system: aggiunge solo quello che il sistema non porta con sé —
+   il documento, la testata, il menu su schermo stretto, le primitive di
+   impaginazione e il marcatore dei dati da confermare.
+
+   Regola che vale per tutto il file: nessun colore scritto a mano, nessun
+   raggio sotto i 30px, nessuna ombra che non sia una delle tre del sistema.
+   ================================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-testo);
+  font-size: 16px;
+  line-height: 27px;
+  -webkit-text-size-adjust: 100%;
+  /* La barra di prenotazione appiccicata non deve coprire il piè di pagina. */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+img, svg, video { max-width: 100%; }
+img { height: auto; }
+
+/* Il design system è stato scritto quando ogni figura portava un <img> nudo.
+   Servendo .webp con il ripiego .jpg, l'immagine sta dentro un <picture>:
+   queste due righe rimettono l'<img> a contatto con la figura, così le regole
+   del bundle continuano a valere senza modificarlo. */
+picture { display: contents; }
+
+:is(.adv-camera__figura, .adv-elenco__figura, .adv-hero__figura,
+    .adv-persona__figura, .adv-hero-s__figura) > picture > img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.adv-hero__figura > picture > img { border-radius: inherit; }
+:is(.adv-elenco__figura, .adv-persona__figura, .adv-hero-s__figura) > picture > img {
+  border-radius: var(--radius-lg);
+}
+.adv-persona__figura > picture > img { filter: saturate(0.94); }
+.adv-elenco__voce:hover .adv-elenco__figura > picture > img { transform: scale(1.03); }
+.adv-elenco__figura > picture > img { transition: transform 400ms ease-out; }
+.adv-cornice > picture > img {
+  display: block; width: 100%; height: auto; border-radius: var(--radius-xl);
+}
+
+/* --------------------------------------------------- salta al contenuto */
+/* Il primo elemento raggiungibile da tastiera: per chi naviga così, saltare
+   cinque voci di menu a ogni pagina è la differenza fra usabile e no. */
+.adv-salta {
+  position: absolute; left: var(--space-4); top: -100px; z-index: 60;
+  background: var(--surface-raised); color: var(--ink-brand);
+  font-family: var(--font-testo); font-size: 15px; font-weight: 600;
+  padding: var(--space-3) var(--space-6); border-radius: var(--radius-sm);
+  border: var(--bordo-medio) solid var(--ink-brand); text-decoration: none;
+  transition: top 150ms ease-out;
+}
+.adv-salta:focus { top: var(--space-4); }
+
+#contenuto:focus { outline: none; }
+
+/* Visibile agli screen reader, non allo schermo. */
+.adv-visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+/* ------------------------------------------------------------- testata */
+.adv-testata {
+  position: sticky; top: 0; z-index: 40;
+  background: var(--surface);
+  border-bottom: var(--bordo-sottile) solid var(--line);
+}
+.adv-testata__interno {
+  display: flex; align-items: center; gap: var(--space-8);
+  padding-block: var(--space-3);
+}
+.adv-testata .adv-nav--principale { flex: 1; min-width: 0; }
+.adv-testata__azioni { display: flex; align-items: center; gap: var(--space-4); }
+.adv-nav__marchio { flex: none; }
+.adv-menu__apri { display: none; }
+
+@media (max-width: 1000px) {
+  .adv-menu__apri { display: inline-flex; }
+  .adv-testata__interno { gap: var(--space-4); justify-content: space-between; }
+  /* La barra si svuota e il pannello prende il suo posto: nascosta la lista,
+     il <nav> resta largo zero ma continua a consumare i due spazi della riga
+     che lo circondano — 32px che a 390px fanno traboccare la testata. */
+  .adv-testata .adv-nav--principale { display: none; }
+}
+@media (max-width: 560px) {
+  /* Sotto questa misura il pulsante di prenotazione della testata sparisce:
+     c'è già quello appiccicato in fondo, e due volte la stessa azione nella
+     stessa schermata è rumore. */
+  .adv-testata__prenota { display: none; }
+
+  /* A 390px la riga della testata deve stare in 342px netti. Il marchio si
+     stringe, gli spazi si accorciano; le due lingue e il tasto del menu
+     restano come sono, perché sono bersagli da toccare. */
+  .adv-testata__interno { gap: var(--space-3); }
+  .adv-testata__azioni  { gap: var(--space-2); }
+  .adv-nav__marchio     { gap: var(--space-2); }
+  .adv-nav__marchio img { width: 40px; height: 40px; }
+  .adv-nav__nome        { font-size: 17px; line-height: 21px; }
+}
+
+/* --------------------------------------------------------- le lingue */
+.adv-lingue { display: flex; align-items: center; gap: var(--space-3); }
+.adv-lingue__etichetta {
+  font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.16em;
+  color: var(--ink-soft);
+}
+.adv-lingue__lista { list-style: none; display: flex; gap: var(--space-1); margin: 0; padding: 0; }
+.adv-lingue__link {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px; padding-inline: var(--space-2);
+  font-size: 13px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--ink-muted); text-decoration: none; border-radius: var(--radius-sm);
+  border: var(--bordo-medio) solid transparent;
+  transition: color 150ms ease-out, border-color 150ms ease-out;
+}
+.adv-lingue__link:hover { color: var(--ink-brand); }
+.adv-lingue__link[aria-current="true"] { color: var(--ink-brand); border-color: var(--line-strong); }
+.adv-lingue__link:focus-visible { outline: var(--bordo-medio) solid var(--focus-ring); outline-offset: 2px; }
+
+@media (max-width: 1000px) { .adv-lingue__etichetta { display: none; } }
+
+/* ------------------------------------------------- menu schermo stretto */
+/* Il design system non porta un pannello: porta l'«Indice», e dice che la
+   navigazione a tutta pagina è il suo uso originale. Quindi il menu è un
+   sommario numerato, non un cassetto di voci. */
+.adv-menu {
+  position: fixed; inset: 0; z-index: 50;
+  background: var(--surface);
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.adv-menu[hidden] { display: none; }
+.adv-menu__interno {
+  min-height: 100%; display: flex; flex-direction: column; gap: var(--space-10);
+  padding-block: var(--space-4) var(--space-12);
+}
+.adv-menu__testa { display: flex; align-items: center; justify-content: space-between; }
+.adv-menu__testa .adv-sezione__occhiello { margin: 0; }
+.adv-menu__piede { margin-top: auto; display: flex; flex-direction: column; gap: var(--space-6); }
+.adv-menu__piede .adv-lingue { justify-content: center; }
+body.adv-menu-aperto { overflow: hidden; }
+
+/* ----------------------------------------- prenotazione appiccicata */
+.adv-sticky {
+  position: fixed; inset: auto 0 0 0; z-index: 45;
+  display: none; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom));
+  /* Fondo pieno e ombra, mai una trasparenza: sopra una fotografia i
+     controlli diventerebbero illeggibili. */
+  background: var(--surface-raised);
+  border-top: var(--bordo-sottile) solid var(--line);
+  box-shadow: var(--shadow-lg);
+}
+.adv-sticky .adv-btn { flex: 1; }
+.adv-sticky__secondaria { flex: 0 0 auto !important; }
+
+@media (max-width: 560px) { .adv-sticky { display: flex; } body { padding-bottom: 84px; } }
+
+/* --------------------------------------------- primitive di impaginazione */
+
+/* La fascia che alterna il fondo: è così che il sistema ritma la pagina. */
+.adv-sezione-alt { background: var(--surface-alt); }
+
+.adv-editoriale--stretto { padding-block: var(--space-16); }
+
+/* Due colonne asimmetriche: il testo largo, la nota stretta. Sotto i 900px
+   si impilano, perché una colonna di nota larga 200px non si legge. */
+.adv-split {
+  display: grid; gap: var(--space-12) var(--space-16);
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  align-items: start;
+}
+.adv-split--stretta { grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); }
+.adv-split--immagine { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); align-items: center; }
+.adv-split__nota { padding-top: var(--space-10); }
+
+@media (max-width: 900px) {
+  .adv-split, .adv-split--stretta, .adv-split--immagine { grid-template-columns: 1fr; gap: var(--space-10); }
+  .adv-split__nota { padding-top: 0; }
+}
+
+/* La barra di prenotazione che sale sull'apertura. Solo da 1000px in su:
+   sotto, sovrapporre due blocchi in una colonna sola non compone niente. */
+.adv-barra-sospesa { margin-top: var(--space-10); }
+@media (min-width: 1000px) { .adv-barra-sospesa { margin-top: calc(var(--space-12) * -1); position: relative; z-index: 10; } }
+
+/* La fascia dei quattro fatti e l'apertura sono due blocchi, e fra due blocchi
+   ci va dell'aria: a filo l'uno sull'altro la curva del mattone sembra tagliare
+   la fascia invece di seguirla. */
+.adv-fascia-fiducia { padding-top: var(--space-6); padding-bottom: var(--space-5); }
+@media (max-width: 720px) { .adv-fascia-fiducia { display: none; } }
+
+.adv-chiusura { padding-block: var(--space-24); margin-block: var(--space-24) var(--space-16); }
+.adv-chiusura__azioni { margin-top: var(--space-8); }
+.adv-chiusura .adv-ornamento { margin-top: var(--space-16); }
+
+.adv-azione-coda { margin: var(--space-10) 0 0; }
+
+.adv-figura-verticale { margin: 0; }
+.adv-figura-verticale > picture > img,
+.adv-figura-verticale > img {
+  width: 100%; aspect-ratio: 3 / 4; object-fit: cover; display: block;
+  border-radius: var(--radius-lg);
+}
+
+/* Il piè di pagina è una fascia con gli angoli tondi: va rientrato dal bordo,
+   altrimenti la curva si taglia contro il margine del browser. */
+.adv-piede-fuori { padding-block: var(--space-16) var(--space-10); }
+.adv-piede__interno .adv-contenuto { padding-inline: var(--space-8); }
+.adv-piede__lista--fatti { color: var(--brand-grano); font-size: 15px; line-height: 24px; }
+/* I link del piede stanno in colonna: sono bersagli a sé, non link dentro una
+   frase, quindi devono rispettare i 24px minimi (WCAG 2.5.8). Un <a> in linea
+   è alto quanto il carattere e non quanto la riga — diventa inline-block. */
+.adv-piede__lista a { display: inline-block; padding-block: 3px; }
+.adv-piede__indirizzo { font-style: normal; }
+
+/* ------------------------------------------------------- tipografia */
+.adv-testo {
+  font-size: 16px; line-height: 27px; color: var(--ink-muted);
+  max-width: var(--larghezza-testo); margin: var(--space-5) 0 0;
+}
+.adv-testo--grande { font-size: 18px; line-height: 30px; }
+.adv-testo + .adv-testo { margin-top: var(--space-5); }
+
+.adv-titolo-sm {
+  font-family: var(--font-display); font-weight: 400; font-size: 18px; line-height: 25px;
+  color: var(--ink); margin: 0 0 var(--space-3);
+}
+.adv-titolo-md {
+  font-family: var(--font-display); font-weight: 400; font-size: 21px; line-height: 28px;
+  color: var(--ink); margin: 0 0 var(--space-4);
+}
+
+.adv-nota {
+  font-size: 13px; line-height: 19px; color: var(--ink-muted);
+  margin: var(--space-4) 0 0; max-width: var(--larghezza-testo);
+}
+.adv-didascalia {
+  font-size: 13px; line-height: 19px; color: var(--ink-muted); margin: var(--space-3) 0 0;
+}
+
+/* Il link con la freccia del design system misura 23px: un pixel sotto i 24
+   richiesti per un bersaglio che non sta dentro una frase. Un pixel di
+   imbottitura lo porta a norma e sposta la sottolineatura di altrettanto. */
+.adv-elenco__link { padding-bottom: 3px; }
+
+/* ------------------------------------------------------ da confermare */
+/* Il marcatore è testo, non un colore: chi usa uno screen reader lo sente
+   come chiunque altro lo legge, e nessuno può scambiare un dato di prova per
+   un dato verificato. Niente pastiglia, così funziona anche nel registro
+   editoriale, dove le cornici si tolgono. */
+.adv-dc {
+  font-family: var(--font-testo);
+  font-size: 0.78em; line-height: 1.4; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--state-avviso);
+  white-space: nowrap;
+  border-bottom: var(--bordo-sottile) dotted currentColor;
+}
+
+/* Sopra i riempimenti pieni di marca il colore dell'avvertenza non regge:
+   il bruno dell'avviso sul bruno del piede misura 2,2:1, cioè illeggibile.
+   Lì il marcatore passa al grano — 10,1:1 sul bruno e 5,5:1 sul mattone —
+   che è la stessa coppia di inchiostri della tavola negativa del marchio.
+   Il segno resta comunque testo e sottolineatura, non solo colore. */
+:is(.adv-piede, .adv-fondo-bruno, .adv-fondo-mattone, .adv-hero) .adv-dc {
+  color: var(--brand-grano);
+}
+
+/* ---------------------------------------------------------- tabelle */
+/* Le tariffe vanno in <table>: è una tabella di dati, e chi legge con uno
+   screen reader ha diritto alle intestazioni di riga e di colonna. */
+.adv-tabella-avvolta { overflow-x: auto; margin-top: var(--space-8); }
+.adv-tabella {
+  width: 100%; border-collapse: collapse;
+  font-family: var(--font-testo); font-size: 14px; line-height: 22px;
+  min-width: 580px;
+}
+.adv-tabella caption {
+  text-align: left; color: var(--ink-muted);
+  font-size: 13px; line-height: 19px; padding-bottom: var(--space-4);
+}
+.adv-tabella th, .adv-tabella td {
+  text-align: left; padding: var(--space-4) var(--space-4) var(--space-4) 0;
+  border-bottom: var(--bordo-sottile) solid var(--line);
+  vertical-align: baseline;
+}
+.adv-tabella thead th {
+  font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.16em;
+  color: var(--ink-muted); border-bottom-color: var(--line-strong);
+}
+.adv-tabella tbody th {
+  font-family: var(--font-display); font-weight: 400; font-size: 18px; line-height: 25px; color: var(--ink);
+}
+.adv-tabella__prezzo { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* -------------------------------------------------------- riepilogo */
+.adv-riepilogo {
+  margin: 0; border-top: var(--bordo-sottile) solid var(--line);
+  font-family: var(--font-testo);
+}
+.adv-riepilogo__riga {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-6);
+  padding-block: var(--space-4); border-bottom: var(--bordo-sottile) solid var(--line);
+}
+.adv-riepilogo dt { font-size: 13px; font-weight: 600; letter-spacing: 0.02em; color: var(--ink-muted); }
+.adv-riepilogo dd { margin: 0; font-size: 15px; color: var(--ink); text-align: right; }
+.adv-riepilogo__riga--totale { border-bottom: 0; }
+.adv-riepilogo__totale {
+  font-size: 28px; line-height: 32px; font-weight: 600; letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums; color: var(--ink);
+}
+
+/* ---------------------------------------------------------- galleria */
+.adv-galleria {
+  list-style: none; margin: var(--space-8) 0 0; padding: 0;
+  display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.adv-galleria figure { margin: 0; }
+.adv-galleria img {
+  width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block;
+  border-radius: var(--radius-lg);
+}
+
+/* ------------------------------------------------- elenchi di fatti */
+/* Le informazioni pratiche: filetti, nessun riquadro, la voce a sinistra e
+   il dato a destra. Sotto i 640px il dato scende sotto la voce. */
+.adv-fatti { margin: var(--space-6) 0 0; border-top: var(--bordo-sottile) solid var(--line); }
+.adv-fatti__riga {
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-6);
+  padding-block: var(--space-4); border-bottom: var(--bordo-sottile) solid var(--line);
+}
+.adv-fatti dt {
+  font-family: var(--font-testo); font-size: 13px; line-height: 20px; font-weight: 600;
+  letter-spacing: 0.02em; color: var(--ink);
+}
+.adv-fatti dd { margin: 0; font-size: 15px; line-height: 24px; color: var(--ink-muted); }
+
+@media (max-width: 640px) {
+  .adv-fatti__riga { grid-template-columns: 1fr; gap: var(--space-1); }
+}
+
+/* --------------------------------------------------------- moduli */
+.adv-modulo { display: grid; gap: var(--space-6); max-width: var(--larghezza-stretta); }
+.adv-modulo fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: var(--space-6); }
+.adv-modulo legend {
+  font-family: var(--font-display); font-weight: 400; font-size: 21px; line-height: 28px;
+  color: var(--ink); padding: 0; margin-bottom: var(--space-2);
+}
+.adv-modulo__coppia { display: grid; gap: var(--space-6); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.adv-modulo__spunta { display: flex; align-items: flex-start; gap: var(--space-3); }
+.adv-modulo__spunta input {
+  width: 24px; height: 24px; margin: 1px 0 0; flex: none;
+  accent-color: var(--brand-mattone);
+}
+.adv-modulo__spunta label { font-size: 14px; line-height: 22px; color: var(--ink-muted); }
+/* La trappola per i robot: ritagliata via, esclusa dalla tabulazione e
+   annunciata come non pertinente. Chi compila davvero non la incontra mai.
+   Si ritaglia invece di spostarla a -9999px, perché un elemento spinto fuori
+   dal bordo allarga comunque la tela e fa comparire la barra orizzontale. */
+.adv-esca {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+.adv-passi {
+  list-style: none; margin: 0 0 var(--space-10); padding: 0;
+  display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-6);
+  font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.16em;
+  color: var(--ink-soft);
+}
+.adv-passi li { display: inline-flex; align-items: center; gap: var(--space-2); }
+.adv-passi li[aria-current="step"] { color: var(--ink-brand); }
+.adv-passi__numero { font-variant-numeric: tabular-nums; }
+
+/* --------------------------------------------------- camere in griglia */
+.adv-griglia-camere {
+  list-style: none; margin: var(--space-8) 0 0; padding: 0;
+  display: grid; gap: var(--space-8); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.adv-persone--una { grid-template-columns: minmax(0, 320px); }
+
+/* ------------------------------------------------------ movimento ridotto */
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 1ms !important; animation-duration: 1ms !important; scroll-behavior: auto !important; }
+  .adv-elenco__voce:hover .adv-elenco__figura > picture > img { transform: none; }
+}

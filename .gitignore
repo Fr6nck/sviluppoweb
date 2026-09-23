@@ -1,0 +1,12 @@
+# Ambiente
+.env
+
+# Registri e cache dell'applicazione
+/storage/logs/*
+!/storage/logs/.gitkeep
+/storage/mail/*
+!/storage/mail/.gitkeep
+
+# Sistema
+.DS_Store
+Thumbs.db

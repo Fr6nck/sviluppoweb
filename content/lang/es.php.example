@@ -1,0 +1,40 @@
+<?php
+/**
+ * Español — traccia per la terza lingua.
+ *
+ * Per attivare lo spagnolo:
+ *
+ *   1. cp content/lang/es.php.example content/lang/es.php
+ *   2. tradurre le stringhe (la struttura delle chiavi è identica a it.php)
+ *   3. aggiungere «es» a APP_LOCALES nel file .env
+ *
+ * Gli indirizzi spagnoli sono già scritti in src/I18n/Routes.php
+ * (/es/habitaciones, /es/la-casa, /es/reservar…), e gli slug delle camere
+ * sono già in content/rooms.php. Nessuna pagina va duplicata: una chiave che
+ * manca qui ricade sull'italiano, quindi il sito resta usabile anche a
+ * traduzione incompleta.
+ */
+
+declare(strict_types=1);
+
+return [
+    'common' => [
+        'brand'            => 'Arco del Vento',
+        'brand_full'       => 'Arco del Vento di Pecetta Daniele',
+        'to_confirm'       => '[por confirmar]',
+        'price_to_confirm' => '[tarifa por confirmar]',
+        'skip'             => 'Ir al contenido',
+        // … le restanti chiavi si copiano da it.php e si traducono.
+    ],
+
+    'nav' => [
+        'label'    => 'Principal',
+        'home'     => 'Inicio',
+        'rooms'    => 'Habitaciones',
+        'property' => 'La casa',
+        'assisi'   => 'Asís a pie',
+        'info'     => 'Información',
+        'contact'  => 'Contacto',
+        'book'     => 'Reservar',
+    ],
+];
