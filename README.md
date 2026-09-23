@@ -352,6 +352,17 @@ nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
   subito visibile e le transizioni sono azzerate.
 - Menu su schermo stretto: apre, tiene il fuoco dentro, chiude con `Esc` e
   restituisce il fuoco al pulsante che lo ha aperto.
+- **Senza JavaScript**: prenotazione completa nei quattro passi, modulo
+  contatti, domande, cambio lingua. La navigazione su schermo stretto ha le
+  voci in chiaro al posto del pannello, e il pulsante che aprirebbe il
+  pannello non compare — un comando spento è un vicolo cieco.
+- **Tema notte** disegnato e misurato, non solo generato: il pulsante
+  principale prende il filo d'oro perché il mattone su fondo scuro sta a
+  1,6:1 contro la scheda, sotto i 3:1 che servono perché un comando si
+  riconosca (WCAG 1.4.11).
+- **Peso reale misurato a browser**, con le immagini in differita caricate:
+  home 627 KB su mobile, 745 KB su desktop; camere 351 KB; prenota 185 KB.
+  Il `srcset` sceglie la misura piccola dove la colonna è stretta.
 
 ---
 
@@ -361,6 +372,9 @@ nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
 php tools/build-tokens.php        # rigenera tokens.css da docs/tokens.json
 php tools/build-placeholders.php  # rigenera i segnaposto delle fotografie
 php tools/build-photos.php        # ritaglia le fotografie nei formati del sistema
+                                  #   (il tetto di peso scala con l'area: la
+                                  #    misura piccola dev'essere davvero più
+                                  #    leggera, non solo più stretta)
 php tools/export-seed.php         # rigenera database/seed.sql dai contenuti
 sh  tools/serve.sh [porta]        # server di sviluppo
 ```

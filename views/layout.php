@@ -47,7 +47,7 @@ foreach (($alternative ?? []) as $lingua => $indirizzo): ?>
 <?php if (!empty($canonico)): ?>
 <meta property="og:url" content="<?= e($base . $canonico) ?>">
 <?php endif; ?>
-<meta property="og:image" content="<?= e($base . '/assets/img/foto/vicolo-campanile.jpg') ?>">
+<meta property="og:image" content="<?= e($base . '/assets/img/foto/vicolo-campanile-4x3.jpg') ?>">
 <meta property="og:image:alt" content="<?= te('home.hero.image_alt') ?>">
 <meta name="twitter:card" content="summary_large_image">
 
@@ -60,6 +60,11 @@ foreach (($alternative ?? []) as $lingua => $indirizzo): ?>
    quindi può arrivare con calma. */ ?>
 <link rel="preload" href="<?= e(asset('fonts/prata-latin.woff2')) ?>" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="<?= e(asset('fonts/figtree-latin.woff2')) ?>" as="font" type="font/woff2" crossorigin>
+
+<?php /* Sessanta byte, senza defer: segnano che il JavaScript c'è prima
+         che la pagina si disegni, così le voci di riserva non compaiono
+         per un istante spostando tutto il resto. */ ?>
+<script src="<?= e(asset('js/abilita-js.js')) ?>"></script>
 
 <link rel="stylesheet" href="<?= e(asset('css/fonts.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/tokens.css')) ?>">

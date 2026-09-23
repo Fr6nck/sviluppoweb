@@ -51,11 +51,10 @@
 
     <figure class="adv-figura-verticale adv-rivela">
       <?= component('picture', [
-          'src'    => 'img/foto/basilica-tramonto',
-          'alt'    => t('home.walk.image_alt'),
-          'width'  => 900,
-          'height' => 1200,
-          'eager'  => true,
+          'src'   => 'img/foto/basilica-tramonto-3x4',
+          'alt'   => t('home.walk.image_alt'),
+          'eager' => true,
+          'sizes' => '(max-width: 900px) 100vw, 480px',
       ]) ?>
       <figcaption class="adv-didascalia"><?= te('home.walk.image_credit') ?></figcaption>
     </figure>
@@ -89,10 +88,9 @@
 <section class="adv-contenuto adv-editoriale">
   <figure class="adv-cornice adv-rivela">
     <?= component('picture', [
-        'src'    => 'img/foto/valle-panorama',
-        'alt'    => t('home.position.frame_alt'),
-        'width'  => 1400,
-        'height' => 788,
+        'src'   => 'img/foto/valle-panorama-16x9',
+        'alt'   => t('home.position.frame_alt'),
+        'sizes' => '(max-width: 1120px) 100vw, 1072px',
     ]) ?>
     <figcaption class="adv-cornice__barra">
       <span class="adv-cornice__didascalia"><?= te('home.position.frame_caption') ?></span>

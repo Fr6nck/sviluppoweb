@@ -28,7 +28,11 @@ $attiva   = $corrente === 'room' ? 'rooms' : $corrente;
     <a class="adv-nav__marchio" href="<?= e(url('home')) ?>">
       <?php /* Il nome è già scritto accanto: l'alt vuoto evita che chi usa uno
                screen reader senta «Arco del Vento Arco del Vento Assisi». */ ?>
-      <img src="<?= e(asset('img/logo/icona-192.png')) ?>" width="46" height="46" alt="" loading="eager" decoding="async">
+      <?php /* 96px per uno slot da 46: l'icona a 192 pesava 78 KB su ogni
+               pagina del sito per riempirne quarantasei. */ ?>
+      <img src="<?= e(asset('img/logo/icona-96.png')) ?>"
+           srcset="<?= e(asset('img/logo/icona-48.png')) ?> 1x, <?= e(asset('img/logo/icona-96.png')) ?> 2x"
+           width="46" height="46" alt="" loading="eager" decoding="async">
       <span class="adv-nav__nome"><?= te('common.brand') ?><small>ASSISI</small></span>
     </a>
 
@@ -62,6 +66,26 @@ $attiva   = $corrente === 'room' ? 'rooms' : $corrente;
     </div>
   </div>
 </header>
+
+<?php /* Le stesse voci, in chiaro, per chi non ha JavaScript. Stanno nel
+         markup di tutti ma le vede solo chi ne ha bisogno: il foglio le
+         spegne appena abilita-js.js segna che il JavaScript c'è. */ ?>
+<nav class="adv-nav-riserva" aria-label="<?= te('nav.label') ?>">
+  <div class="adv-contenuto">
+    <ul class="adv-nav-riserva__voci">
+      <?php foreach ($voci as $chiave => $etichetta): ?>
+        <li>
+          <a class="adv-nav__link" href="<?= e(url($chiave)) ?>"<?= $attiva === $chiave ? ' aria-current="page"' : '' ?>>
+            <?= te($etichetta) ?>
+          </a>
+        </li>
+      <?php endforeach; ?>
+      <li>
+        <a class="adv-nav__link" href="<?= e(url('book')) ?>"><?= te('cta.book') ?></a>
+      </li>
+    </ul>
+  </div>
+</nav>
 
 <?php
 /* Il pannello di navigazione su schermo stretto. Il design system non porta

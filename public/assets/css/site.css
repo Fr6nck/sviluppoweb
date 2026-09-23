@@ -82,8 +82,15 @@ picture { display: contents; }
 .adv-nav__marchio { flex: none; }
 .adv-menu__apri { display: none; }
 
+/* Il comando che apre il pannello esiste solo se il pannello si può aprire:
+   senza JavaScript resta fuori, e al suo posto compaiono le voci in chiaro.
+   Un pulsante spento senza motivo è un vicolo cieco. */
+.adv-menu__apri  { display: none; }
+.adv-nav-riserva { display: none; }
+
 @media (max-width: 1000px) {
-  .adv-menu__apri { display: inline-flex; }
+  .adv-js .adv-menu__apri { display: inline-flex; }
+  html:not(.adv-js) .adv-nav-riserva { display: block; }
   .adv-testata__interno { gap: var(--space-4); justify-content: space-between; }
   /* La barra si svuota e il pannello prende il suo posto: nascosta la lista,
      il <nav> resta largo zero ma continua a consumare i due spazi della riga
@@ -105,6 +112,19 @@ picture { display: contents; }
   .adv-nav__marchio img { width: 40px; height: 40px; }
   .adv-nav__nome        { font-size: 17px; line-height: 21px; }
 }
+
+/* Le voci di navigazione senza JavaScript: una riga di link sotto la
+   testata, separata da un filetto. Non è un menu elegante, è una via
+   d'uscita che funziona sempre. */
+.adv-nav-riserva {
+  background: var(--surface);
+  border-bottom: var(--bordo-sottile) solid var(--line);
+}
+.adv-nav-riserva__voci {
+  list-style: none; margin: 0; padding-block: var(--space-3);
+  display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5);
+}
+.adv-nav-riserva__voci a { padding-block: var(--space-2); }
 
 /* --------------------------------------------------------- le lingue */
 .adv-lingue { display: flex; align-items: center; gap: var(--space-3); }
@@ -396,6 +416,12 @@ body.adv-menu-aperto { overflow: hidden; }
 /* Il respiro fra due blocchi dentro una stessa sezione. */
 .adv-spazio-sopra { margin-top: var(--space-16); }
 
+/* Un messaggio in linea sta dentro il flusso della pagina, e il bundle gli
+   lascia i margini a chi lo impagina: senza, l'avviso finisce addosso al
+   titolo che lo segue. */
+.adv-avviso { margin-block: var(--space-8); }
+.adv-avviso:first-child { margin-top: 0; }
+
 /* L'apertura di sezione si stacca da ciò che introduce. */
 .adv-sezione { margin-bottom: var(--space-10); }
 
@@ -438,6 +464,39 @@ body.adv-menu-aperto { overflow: hidden; }
    subito da un modulo o da una scheda. */
 .adv-heroT--camera,
 .adv-heroT--modulo { padding-block: var(--space-12) var(--space-8); }
+
+/* ============================================================
+   Tema notte — le due cose che il sistema non poteva prevedere.
+   I token del design system sono giusti; questi sono aggiustamenti
+   di pagina, che nascono dal mettere quei token su un fondo scuro.
+   ============================================================ */
+
+/* 1. Il pulsante principale è rosso mattone, ed è un inchiostro fisso del
+   marchio: giustamente non si schiarisce. Ma su fondo scuro misura 1,6:1
+   contro la scheda e 2:1 contro la pagina, sotto i 3:1 che servono perché
+   un comando si riconosca come comando (WCAG 1.4.11). Il testo dentro si
+   legge benissimo — 7:1 — ma il pulsante non si vede come pulsante.
+
+   Gli si dà il filo d'oro: 9,2:1 contro la scheda, 5,7:1 contro il proprio
+   riempimento. È la coppia di inchiostri della tavola negativa del marchio,
+   ed è esattamente il mestiere che il manuale assegna all'oro — filetti,
+   mai fondi. Nel tema avorio non serve: lì il mattone già si stacca a 7:1. */
+[data-tema="notte"] .adv-btn--primario { border-color: var(--brand-oro); }
+
+/* 2. Il piede e la fascia di fiducia sono `surface-bruno`, che di notte è
+   più scuro della pagina: 1,06:1, cioè la fascia sparisce e il piede smette
+   di essere un blocco. Il testo dentro resta leggibile, ma la composizione
+   si perde. Un filo sottile le ridisegna senza introdurre un colore nuovo. */
+[data-tema="notte"] :is(.adv-piede, .adv-fiducia) {
+  border: var(--bordo-sottile) solid var(--line);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="avorio"]) .adv-btn--primario { border-color: var(--brand-oro); }
+  :root:not([data-tema="avorio"]) :is(.adv-piede, .adv-fiducia) {
+    border: var(--bordo-sottile) solid var(--line);
+  }
+}
 
 /* ------------------------------------------------------ movimento ridotto */
 @media (prefers-reduced-motion: reduce) {

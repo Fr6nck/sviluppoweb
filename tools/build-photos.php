@@ -56,6 +56,13 @@ $sorgenti = [
     'san-rufino-finestra' => ['dir' => 'casa', 'fuoco' => [0.50, 0.45], 'formati' => ['3x4', '4x3', '1x1']],
     'piazza-san-rufino'   => ['dir' => 'casa', 'fuoco' => [0.50, 0.50], 'formati' => ['16x9', '3x2', '4x3']],
     'camera-05'           => ['dir' => 'camere', 'fuoco' => [0.60, 0.58], 'formati' => ['4x3', '3x2', '16x9', '1x1']],
+
+    // Le tre vedute di Assisi su licenza Unsplash. Arrivavano dal design
+    // system già tagliate, ma servite in una misura sola: su un telefono si
+    // scaricavano 1400px per riempirne 350. Passano di qui come le altre.
+    'vicolo-campanile'  => ['dir' => 'foto', 'fuoco' => [0.50, 0.45], 'formati' => ['3x4', '4x3']],
+    'basilica-tramonto' => ['dir' => 'foto', 'fuoco' => [0.50, 0.50], 'formati' => ['3x4']],
+    'valle-panorama'    => ['dir' => 'foto', 'fuoco' => [0.50, 0.50], 'formati' => ['16x9']],
 ];
 
 /** Apre un originale, qualunque sia il suo formato. */
@@ -124,7 +131,7 @@ function scrivi(\GdImage $im, string $base, int $tettoKB): array
     do {
         imagewebp($im, $base . '.webp', $qualita);
         $peso = (int) round(filesize($base . '.webp') / 1024);
-        if ($peso <= $tettoKB || $qualita <= 62) {
+        if ($peso <= $tettoKB || $qualita <= 56) {
             break;
         }
         $qualita -= 6;
@@ -161,13 +168,23 @@ foreach ($sorgenti as $nome => $spec) {
         [$larghezze, $tetto] = FORMATI[$formato];
         $tagliata = ritaglia($src, $rapporti[$formato], $spec['fuoco']);
 
+        $larghezzaMax = imagesx($tagliata);
+
         foreach ($larghezze as $i => $larghezza) {
             $im   = ridimensiona($tagliata, $larghezza);
             $vera = imagesx($im);
+
+            // Il tetto scala con l'area: la misura piccola ha senso solo se è
+            // davvero più leggera, e un tetto uguale per tutte le lascerebbe
+            // pesare quanto la grande. Un'immagine larga la metà ha un quarto
+            // dei pixel, quindi il tetto scende con il quadrato del rapporto.
+            $rapporto   = $vera / min($larghezzaMax, $larghezze[0]);
+            $tettoQui   = (int) max(28, round($tetto * $rapporto ** 2));
+
             // La misura piccola tiene il suffisso: è la seconda voce del srcset.
             $base = sprintf('%s/%s-%s%s', $cartella, $nome, $formato, $i === 0 ? '' : '-sm');
-            [$w, $j, $q] = scrivi($im, $base, $tetto);
-            $esito = $w <= $tetto ? 'ok' : sprintf('OLTRE IL TETTO (%d KB)', $tetto);
+            [$w, $j, $q] = scrivi($im, $base, $tettoQui);
+            $esito = $w <= $tettoQui ? 'ok' : sprintf('OLTRE IL TETTO (%d KB)', $tettoQui);
             printf("%-34s %7dK %7dK %8d  %s (%dpx)\n", basename($base), $w, $j, $q, $esito, $vera);
             $fatti++;
         }

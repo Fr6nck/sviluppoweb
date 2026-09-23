@@ -58,11 +58,10 @@ $lingua = locale();
 
       <figure class="adv-hero__figura adv-arco">
         <?= component('picture', [
-            'src'    => 'img/foto/vicolo-campanile',
-            'alt'    => t('home.hero.image_alt'),
-            'width'  => 900,
-            'height' => 1200,
-            'eager'  => true,
+            'src'   => 'img/foto/vicolo-campanile-3x4',
+            'alt'   => t('home.hero.image_alt'),
+            'eager' => true,
+            'sizes' => '(max-width: 900px) 100vw, 460px',
         ]) ?>
       </figure>
 
@@ -110,10 +109,9 @@ $lingua = locale();
 
     <figure class="adv-cornice adv-rivela">
       <?= component('picture', [
-          'src'    => 'img/foto/valle-panorama',
-          'alt'    => t('home.position.frame_alt'),
-          'width'  => 1400,
-          'height' => 788,
+          'src'   => 'img/foto/valle-panorama-16x9',
+          'alt'   => t('home.position.frame_alt'),
+          'sizes' => '(max-width: 1120px) 100vw, 1072px',
       ]) ?>
       <figcaption class="adv-cornice__barra">
         <span class="adv-cornice__didascalia"><?= te('home.position.frame_caption') ?></span>
@@ -222,10 +220,9 @@ $lingua = locale();
 
     <figure class="adv-figura-verticale adv-rivela">
       <?= component('picture', [
-          'src'    => 'img/foto/basilica-tramonto',
-          'alt'    => t('home.walk.image_alt'),
-          'width'  => 900,
-          'height' => 1200,
+          'src'   => 'img/foto/basilica-tramonto-3x4',
+          'alt'   => t('home.walk.image_alt'),
+          'sizes' => '(max-width: 900px) 100vw, 480px',
       ]) ?>
       <figcaption class="adv-didascalia"><?= te('home.walk.image_credit') ?></figcaption>
     </figure>

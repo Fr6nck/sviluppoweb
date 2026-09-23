@@ -102,10 +102,9 @@
 
     <figure class="adv-figura-verticale">
       <?= component('picture', [
-          'src'    => 'img/foto/vicolo-campanile',
-          'alt'    => t('assisi.image_alt'),
-          'width'  => 900,
-          'height' => 1200,
+          'src'   => 'img/foto/vicolo-campanile-3x4',
+          'alt'   => t('assisi.image_alt'),
+          'sizes' => '(max-width: 900px) 100vw, 480px',
       ]) ?>
       <figcaption class="adv-didascalia"><?= te('home.hero.image_credit') ?></figcaption>
     </figure>
