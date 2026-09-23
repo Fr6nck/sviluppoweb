@@ -6,17 +6,13 @@
  * Le tariffe non sono stagionali: dipendono da quante persone dormono nella
  * camera, ed è questo che il motore di prenotazione calcola.
  *
- * LE FOTOGRAFIE SONO ASSEGNATE PER COERENZA CON I LETTI, non per numero.
- * Nessuna delle quattro fotografie mostra tre letti, quindi la Stanza 1 — la
- * tripla — non può essere nessuna di quelle: resta senza fotografia. Le altre
- * tre mostrano due letti singoli affiancati e vanno alle camere che quei letti
- * li hanno; la quarta mostra un letto grande e va alla camera con il solo
- * matrimoniale.
+ * LE FOTOGRAFIE SONO ACCOPPIATE ALLE CAMERE, e l'accoppiamento è confermato
+ * dal titolare. Il nome del file è il numero della camera: camera-03.webp è
+ * la Camera 03, e non c'è altro da sapere.
  *
- * DA CONFERMARE IN UNA RIGA: se l'accoppiamento è giusto. È un'inferenza dai
- * letti che si vedono nell'inquadratura, non un dato. Per cambiarlo si
- * rinominano i file in docs/foto-originali/ e si rilancia
- * `php tools/build-photos.php`.
+ * LA CAMERA 01 — la tripla, quella con la vista su San Rufino dichiarata dal
+ * titolare, e la più cara del listino — è l'unica senza fotografia: nessuna
+ * di quelle consegnate mostra tre letti. È la prima da fotografare.
  *
  * Restano da confermare: i nomi definitivi, le metrature, il piano, la
  * stagionalità delle tariffe e la tassa di soggiorno.
@@ -110,8 +106,8 @@ $duiLetti = static function (string $coda = ''): array {
 };
 
 return [
-    // ---- Stanza 1: la tripla, quella con la vista dichiarata dal titolare.
-    // Nessuna fotografia la ritrae: nessuna delle quattro mostra tre letti.
+    // ---- La tripla. Vista su San Rufino dichiarata dal titolare. È l'unica
+    // camera ancora senza fotografia, ed è quella che ne ha più bisogno.
     $camera(1, [
         'type'            => 'triple',
         'occupancy'       => ['standard' => 3, 'max' => 3],
@@ -122,9 +118,8 @@ return [
         'amenities'       => ['private-bathroom', 'wifi', 'heating', 'linen', 'towels', 'wardrobe'],
     ]),
 
-    // ---- Stanza 2: la doppia con i letti separabili. È l'unica camera per
-    // cui il titolare dichiara esplicitamente i due singoli, quindi prende la
-    // fotografia in cui la finestra mostra anche la facciata della cattedrale.
+    // ---- La doppia con i letti separabili: si uniscono in un matrimoniale o
+    // si dividono. Dalla sua finestra si vedono il campanile e la facciata.
     $camera(2, [
         'type'            => 'double-twin',
         'occupancy'       => ['standard' => 2, 'max' => 2],
@@ -142,28 +137,26 @@ return [
         ],
     ]),
 
-    // ---- Stanze 3 e 4: matrimoniale, stessa tariffa. Prendono le altre due
-    // fotografie con i letti affiancati: un matrimoniale composto da due
-    // singoli uniti è la regola, non l'eccezione, in una casa così.
+    // ---- Le due matrimoniali, stessa tariffa. Il letto è composto da due
+    // singoli uniti, che in una casa così è la regola e non l'eccezione.
     $camera(3, [
         'rates'           => [1 => 70, 2 => 80],
         'photographed'    => true,
-        'images'          => $fotografie('camera-01'),
+        'images'          => $fotografie('camera-03'),
         'view_san_rufino' => true,
         'alt'             => $duiLetti(),
     ]),
     $camera(4, [
         'rates'           => [1 => 70, 2 => 80],
         'photographed'    => true,
-        'images'          => $fotografie('camera-03'),
+        'images'          => $fotografie('camera-04'),
         'view_san_rufino' => true,
         'amenities'       => ['private-bathroom', 'wifi', 'heating', 'linen', 'towels', 'wardrobe'],
         'alt'             => $duiLetti(', e in camera c’è un armadio in legno chiaro'),
     ]),
 
-    // ---- Stanza 5: singola con letto matrimoniale. Una persona sola in una
-    // camera con un letto grande: la fotografia con il letto unico e la
-    // scrivania è l'unica coerente.
+    // ---- Singola con letto matrimoniale: una persona sola in una camera con
+    // un letto grande e una scrivania.
     $camera(5, [
         'type'         => 'single-double',
         'occupancy'    => ['standard' => 1, 'max' => 1],
@@ -171,7 +164,7 @@ return [
         'layouts'      => ['single'],
         'rates'        => [1 => 70],
         'photographed' => true,
-        'images'       => $fotografie('camera-04'),
+        'images'       => $fotografie('camera-05'),
         'amenities'    => ['private-bathroom', 'wifi', 'heating', 'linen', 'towels', 'desk'],
         'alt' => [
             'it' => 'Un letto matrimoniale con coperta color crema, pavimento in parquet, una '

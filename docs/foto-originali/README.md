@@ -11,36 +11,28 @@ php tools/build-photos.php
 
 ## Provenienza
 
-| File | Che cosa ritrae | Da dove viene | Si pubblica |
-| --- | --- | --- | --- |
-| `camera-01.webp` | camera con due letti singoli affiancati, finestra sul campanile | fornita dal titolare | sì |
-| `camera-02.webp` | camera con due letti singoli, finestra su campanile e facciata | fornita dal titolare | sì |
-| `camera-03.webp` | camera con due letti singoli e armadio, finestra sul campanile | fornita dal titolare | sì |
-| `camera-04.webp` | camera con letto matrimoniale, scrivania, parquet | fornita dal titolare | sì |
-| `casa-corridoio.webp` | il corridoio, con la rosa dei venti intarsiata nel pavimento | fornita dal titolare | sì |
+Tutte fornite dal titolare, tutte pubblicabili. **Il nome del file è il numero
+della camera**: l'accoppiamento è confermato, non dedotto.
 
-Le vedute di Assisi in `public/assets/img/foto/` hanno un'altra provenienza —
-licenza Unsplash — e i crediti stanno nel piè di pagina del sito.
-
-## Da confermare
-
-**Quale fotografia è quale camera.** La numerazione qui è quella in cui le
-fotografie sono arrivate, non una numerazione della casa. Serve una riga di
-Daniele. Per cambiarla: si rinominano questi file e si rilancia lo script.
-
-**La quinta camera** non ha ancora una fotografia e tiene il segnaposto
-disegnato. Il sito lo dice, non lo nasconde.
-
-## Ancora attese
-
-Lo script ha già il posto pronto per tre file: appena arrivano in questa
-cartella con questi nomi, si rilancia e il sito li serve.
-
-| Nome atteso | Che cos'è | Dove andrà |
+| File | Camera | Che cosa ritrae |
 | --- | --- | --- |
-| `san-rufino-finestra` | la cattedrale inquadrata dalla finestra della camera | l'apertura della home, dentro l'arco |
-| `piazza-san-rufino` | la piazza vista dall'alto, dalla finestra della casa | la fascia larga della sezione «la posizione» |
-| `camera-05` | la quinta camera | al posto del suo segnaposto |
+| `camera-02.webp` | Camera 02 — doppia, letti separabili | due letti singoli affiancati; dalla finestra il campanile e la facciata della cattedrale |
+| `camera-03.webp` | Camera 03 — matrimoniale | due letti singoli affiancati; dalla finestra il campanile |
+| `camera-04.webp` | Camera 04 — matrimoniale | come sopra, con l'armadio in legno chiaro |
+| `camera-05.webp` | Camera 05 — singola con letto matrimoniale | letto grande, parquet, scrivania e due sedie impagliate |
+| `casa-corridoio.webp` | la casa | il corridoio, con la rosa dei venti intarsiata nel pavimento |
+| `vicolo-campanile.webp` `basilica-tramonto.webp` `valle-panorama.webp` | Assisi | vedute su licenza Unsplash — crediti nel piè di pagina del sito |
+
+## Le tre che mancano
+
+Appena arrivano in questa cartella con questi nomi, si rilancia lo script e il
+sito le serve: lo manifesto le aspetta già.
+
+| Nome atteso | Che cos'è | Dove andrà | Quanto pesa che manchi |
+| --- | --- | --- | --- |
+| `camera-01` | la tripla | la sua pagina e l'elenco | **molto**: è la camera più cara del listino, l'unica senza fotografia, ed è quella con la vista dichiarata su San Rufino |
+| `san-rufino-finestra` | la cattedrale inquadrata dalla finestra | l'apertura della home, dentro l'arco | molto: è l'immagine che racconta il sito |
+| `piazza-san-rufino` | la piazza dall'alto | la fascia larga della sezione «la posizione» | media: oggi c'è la valle |
 
 ## Regole
 

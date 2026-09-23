@@ -104,13 +104,13 @@ INSERT INTO room_amenities (room_id, amenity_key, position) VALUES (3, 'heating'
 INSERT INTO room_amenities (room_id, amenity_key, position) VALUES (3, 'linen', 40);
 INSERT INTO room_amenities (room_id, amenity_key, position) VALUES (3, 'towels', 50);
 INSERT INTO room_images (room_id, role, path, ratio, alt, position, credit)
-  VALUES (3, 'card', 'img/camere/camera-01-4x3', '4/3', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
+  VALUES (3, 'card', 'img/camere/camera-03-4x3', '4/3', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
 INSERT INTO room_images (room_id, role, path, ratio, alt, position, credit)
-  VALUES (3, 'list', 'img/camere/camera-01-3x2', '3/2', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
+  VALUES (3, 'list', 'img/camere/camera-03-3x2', '3/2', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
 INSERT INTO room_images (room_id, role, path, ratio, alt, position, credit)
-  VALUES (3, 'hero', 'img/camere/camera-01-16x9', '16/9', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
+  VALUES (3, 'hero', 'img/camere/camera-03-16x9', '16/9', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
 INSERT INTO room_images (room_id, role, path, ratio, alt, position, credit)
-  VALUES (3, 'gallery', 'img/camere/camera-01-1x1', '1/1', NULL, 10, 'segnaposto disegnato — sostituire con la fotografia vera');
+  VALUES (3, 'gallery', 'img/camere/camera-03-1x1', '1/1', NULL, 10, 'segnaposto disegnato — sostituire con la fotografia vera');
 INSERT INTO room_rates (room_id, guests, nightly_rate, currency, confirmed) VALUES (3, 1, 70, 'EUR', 1);
 INSERT INTO room_rates (room_id, guests, nightly_rate, currency, confirmed) VALUES (3, 2, 80, 'EUR', 1);
 
@@ -129,13 +129,13 @@ INSERT INTO room_amenities (room_id, amenity_key, position) VALUES (4, 'linen', 
 INSERT INTO room_amenities (room_id, amenity_key, position) VALUES (4, 'towels', 50);
 INSERT INTO room_amenities (room_id, amenity_key, position) VALUES (4, 'wardrobe', 60);
 INSERT INTO room_images (room_id, role, path, ratio, alt, position, credit)
-  VALUES (4, 'card', 'img/camere/camera-03-4x3', '4/3', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
+  VALUES (4, 'card', 'img/camere/camera-04-4x3', '4/3', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
 INSERT INTO room_images (room_id, role, path, ratio, alt, position, credit)
-  VALUES (4, 'list', 'img/camere/camera-03-3x2', '3/2', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
+  VALUES (4, 'list', 'img/camere/camera-04-3x2', '3/2', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
 INSERT INTO room_images (room_id, role, path, ratio, alt, position, credit)
-  VALUES (4, 'hero', 'img/camere/camera-03-16x9', '16/9', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
+  VALUES (4, 'hero', 'img/camere/camera-04-16x9', '16/9', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
 INSERT INTO room_images (room_id, role, path, ratio, alt, position, credit)
-  VALUES (4, 'gallery', 'img/camere/camera-03-1x1', '1/1', NULL, 10, 'segnaposto disegnato — sostituire con la fotografia vera');
+  VALUES (4, 'gallery', 'img/camere/camera-04-1x1', '1/1', NULL, 10, 'segnaposto disegnato — sostituire con la fotografia vera');
 INSERT INTO room_rates (room_id, guests, nightly_rate, currency, confirmed) VALUES (4, 1, 70, 'EUR', 1);
 INSERT INTO room_rates (room_id, guests, nightly_rate, currency, confirmed) VALUES (4, 2, 80, 'EUR', 1);
 
@@ -154,13 +154,13 @@ INSERT INTO room_amenities (room_id, amenity_key, position) VALUES (5, 'linen', 
 INSERT INTO room_amenities (room_id, amenity_key, position) VALUES (5, 'towels', 50);
 INSERT INTO room_amenities (room_id, amenity_key, position) VALUES (5, 'desk', 60);
 INSERT INTO room_images (room_id, role, path, ratio, alt, position, credit)
-  VALUES (5, 'card', 'img/camere/camera-04-4x3', '4/3', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
+  VALUES (5, 'card', 'img/camere/camera-05-4x3', '4/3', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
 INSERT INTO room_images (room_id, role, path, ratio, alt, position, credit)
-  VALUES (5, 'list', 'img/camere/camera-04-3x2', '3/2', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
+  VALUES (5, 'list', 'img/camere/camera-05-3x2', '3/2', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
 INSERT INTO room_images (room_id, role, path, ratio, alt, position, credit)
-  VALUES (5, 'hero', 'img/camere/camera-04-16x9', '16/9', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
+  VALUES (5, 'hero', 'img/camere/camera-05-16x9', '16/9', NULL, 0, 'segnaposto disegnato — sostituire con la fotografia vera');
 INSERT INTO room_images (room_id, role, path, ratio, alt, position, credit)
-  VALUES (5, 'gallery', 'img/camere/camera-04-1x1', '1/1', NULL, 10, 'segnaposto disegnato — sostituire con la fotografia vera');
+  VALUES (5, 'gallery', 'img/camere/camera-05-1x1', '1/1', NULL, 10, 'segnaposto disegnato — sostituire con la fotografia vera');
 INSERT INTO room_rates (room_id, guests, nightly_rate, currency, confirmed) VALUES (5, 1, 70, 'EUR', 1);
 
 -- Nessuna recensione: la sezione del sito non compare finché questa

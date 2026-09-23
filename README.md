@@ -294,10 +294,8 @@ così all'ospite. Questi sono i dati che servono, in ordine di quanto pesano.
 
 - i nomi definitivi delle cinque camere
 - metratura, piano ed esposizione di ciascuna
-- **quale fotografia corrisponde a quale camera** — la numerazione attuale è
-  quella in cui le fotografie sono arrivate, non quella della casa: basta una
-  riga di Daniele
-- la fotografia della quinta camera, l'unica che ancora manca
+- **la fotografia della Camera 01**, la tripla: è la più cara del listino,
+  è quella con la vista su San Rufino, ed è l'unica rimasta senza
 
 **Servono per obbligo di legge**: CIN, partita IVA, CAP, e il testo completo
 dell'informativa privacy (titolare, indirizzo per la privacy, tempi di
@@ -312,17 +310,20 @@ verso i sei luoghi, coordinate della casa per la mappa.
 ## Fotografie
 
 **Quattro camere su cinque sono fotografate**, e le fotografie sono della
-casa: le ha fornite il titolare. Con loro è arrivata anche la conferma della
-cosa che questo sito racconta — dalle finestre delle camere si vede il
-campanile della **Cattedrale di San Rufino**, e in una si vede la facciata.
+casa: le ha fornite il titolare, che ha anche confermato quale fotografia
+appartiene a quale camera. Con loro è arrivata la conferma della cosa che
+questo sito racconta — dalle finestre delle camere si vede il campanile della
+**Cattedrale di San Rufino**, e da una si vede la facciata.
 
 Ci sono anche il corridoio con la **rosa dei venti intarsiata nel pavimento**
 — la stessa del marchio, e messa lì molto prima del sito — e tre vedute di
 Assisi su licenza Unsplash (Niels Baars, Gary Walker-Jones, Alessandro
 Guarino), con i crediti nel piè di pagina.
 
-La quinta camera aspetta ancora la sua fotografia e tiene il segnaposto
-disegnato. Il sito lo dice, non lo nasconde.
+L'accoppiamento fotografia-camera è confermato dal titolare: il nome del file
+è il numero della camera. La **Camera 01** — la tripla — è l'unica ancora
+senza fotografia e tiene il segnaposto disegnato. Il sito lo dice, non lo
+nasconde.
 
 ### Come si lavorano
 
@@ -352,7 +353,7 @@ nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
   c'è: comparirà quando ci saranno recensioni vere da riportare.
 - Nessuna mappa: senza le coordinate della casa, un segnaposto messo a occhio
   manda l'ospite alla porta di un altro.
-- La quinta camera non ha fotografia: tiene il segnaposto disegnato.
+- La Camera 01, la tripla, non ha fotografia: tiene il segnaposto disegnato.
 - Le tre vedute di Assisi si ripetono fra le pagine.
 - L'informativa privacy è impostata ma non è un documento legale finito.
 - Non c'è un pannello di amministrazione: i contenuti si modificano nei file.

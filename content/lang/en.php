@@ -180,10 +180,10 @@ return [
         'corridor_caption' => 'The compass rose in the corridor floor. It is the one from the mark, '
                             . 'and it was there first.',
 
-        'demo_notice_title' => 'Placeholder content',
-        'demo_notice_text'  => 'The photographs of four rooms out of five are of the house itself. Still to be '
-                             . 'confirmed: the final names, the sizes, the floor and the rates — and which '
-                             . 'photograph belongs to which room. The fifth room is still waiting for its own.',
+        'demo_notice_title' => 'What is still missing',
+        'demo_notice_text'  => 'Rates, room types and beds are the real ones, and the photographs are of the '
+                             . 'house itself. Still to be written: the final room names, the sizes and the '
+                             . 'floor. Room 01 — the triple — is the only one still without a photograph.',
 
         'list_title'    => 'One by',
         'list_sign'     => 'one',
@@ -429,10 +429,11 @@ return [
         'lead'    => 'Four steps: the dates, the room, your details, the request. Nothing is paid online '
                    . 'and no account is needed.',
 
-        'demo_title' => 'Demo booking engine',
-        'demo_text'  => 'The availability and totals you see are produced by a demo provider built into the '
-                      . 'site, not by a real property-management system: they exist to make the whole path '
-                      . 'work. The request does not reach any real inbox.',
+        'demo_title' => 'The dates are a demo, the rates are not',
+        'demo_text'  => 'The prices you see are the real ones, and the total is worked out from them. '
+                      . 'Which dates come up as free, though, is decided by a demo provider built into '
+                      . 'the site rather than a real calendar — and the request does not reach any inbox '
+                      . 'yet.',
 
         'steps' => [
             'dates'   => 'Dates and guests',

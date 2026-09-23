@@ -182,10 +182,10 @@ return [
         'corridor_caption' => 'La rosa dei venti nel pavimento del corridoio. È la stessa del marchio, '
                             . 'ed era lì prima.',
 
-        'demo_notice_title' => 'Contenuto dimostrativo',
-        'demo_notice_text'  => 'Le fotografie di quattro camere su cinque sono della casa. Restano da confermare '
-                             . 'i nomi definitivi, le metrature, il piano e le tariffe — e quale fotografia '
-                             . 'corrisponde a quale camera. La quinta camera aspetta ancora la sua fotografia.',
+        'demo_notice_title' => 'Che cosa manca ancora',
+        'demo_notice_text'  => 'Tariffe, tipologie e letti sono quelli veri, e le fotografie sono della casa. '
+                             . 'Restano da scrivere i nomi definitivi delle camere, le metrature e il piano. '
+                             . 'La Camera 01 — la tripla — è l’unica ancora senza fotografia.',
 
         'list_title'    => 'Una per',
         'list_sign'     => 'una',
@@ -434,10 +434,11 @@ return [
         'lead'    => 'Quattro passaggi: le date, la camera, i tuoi dati, la richiesta. Non si paga nulla '
                    . 'online e non serve un account.',
 
-        'demo_title' => 'Motore di prenotazione dimostrativo',
-        'demo_text'  => 'La disponibilità e i totali che vedi sono calcolati da un provider di prova incluso '
-                      . 'nel sito, non da un gestionale reale: servono a far funzionare tutto il percorso. '
-                      . 'La richiesta non raggiunge nessuna casella di posta vera.',
+        'demo_title' => 'Le date sono di prova, le tariffe no',
+        'demo_text'  => 'I prezzi che vedi sono quelli della casa, e il totale è calcolato su quelli. '
+                      . 'Quali date risultino libere, invece, lo decide un provider di prova incluso nel '
+                      . 'sito e non un calendario reale — e la richiesta non raggiunge ancora nessuna '
+                      . 'casella di posta.',
 
         'steps' => [
             'dates'   => 'Date e ospiti',

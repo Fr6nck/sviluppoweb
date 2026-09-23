@@ -45,17 +45,19 @@ const FORMATI = [
  * c'è la finestra, sotto ci sono i letti, e sopra c'è solo soffitto.
  */
 $sorgenti = [
-    'camera-01'       => ['dir' => 'camere', 'fuoco' => [0.60, 0.58], 'formati' => ['4x3', '3x2', '16x9', '1x1']],
+    // Il nome del file è il numero della camera: l'accoppiamento è confermato
+    // dal titolare. La Camera 01 — la tripla — non ha ancora una fotografia.
     'camera-02'       => ['dir' => 'camere', 'fuoco' => [0.60, 0.58], 'formati' => ['4x3', '3x2', '16x9', '1x1']],
     'camera-03'       => ['dir' => 'camere', 'fuoco' => [0.60, 0.58], 'formati' => ['4x3', '3x2', '16x9', '1x1']],
-    'camera-04'       => ['dir' => 'camere', 'fuoco' => [0.55, 0.58], 'formati' => ['4x3', '3x2', '16x9', '1x1']],
+    'camera-04'       => ['dir' => 'camere', 'fuoco' => [0.60, 0.58], 'formati' => ['4x3', '3x2', '16x9', '1x1']],
+    'camera-05'       => ['dir' => 'camere', 'fuoco' => [0.55, 0.58], 'formati' => ['4x3', '3x2', '16x9', '1x1']],
     // Il corridoio: la rosa dei venti è intarsiata in basso, e tagliando
     // dall'alto si perde. Il fuoco scende.
     'casa-corridoio'  => ['dir' => 'casa',   'fuoco' => [0.50, 0.66], 'formati' => ['3x4', '4x3', '1x1']],
     // Le due di San Rufino, quando arrivano:
     'san-rufino-finestra' => ['dir' => 'casa', 'fuoco' => [0.50, 0.45], 'formati' => ['3x4', '4x3', '1x1']],
     'piazza-san-rufino'   => ['dir' => 'casa', 'fuoco' => [0.50, 0.50], 'formati' => ['16x9', '3x2', '4x3']],
-    'camera-05'           => ['dir' => 'camere', 'fuoco' => [0.60, 0.58], 'formati' => ['4x3', '3x2', '16x9', '1x1']],
+    'camera-01'           => ['dir' => 'camere', 'fuoco' => [0.60, 0.58], 'formati' => ['4x3', '3x2', '16x9', '1x1']],
 
     // Le tre vedute di Assisi su licenza Unsplash. Arrivavano dal design
     // system già tagliate, ma servite in una misura sola: su un telefono si
