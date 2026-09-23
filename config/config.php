@@ -49,7 +49,13 @@ return [
         'api_base'    => (string) Env::get('BOOKING_API_BASE_URL', ''),
         'api_key'     => (string) Env::get('BOOKING_API_KEY', ''),
         'property_id' => (string) Env::get('BOOKING_PROPERTY_ID', ''),
-        'min_nights'  => (int) Env::get('BOOKING_MIN_NIGHTS', 2),
+        // Il minimo è un dato della casa e sta in content/settings.php;
+        // questa variabile serve solo a un gestionale che ne imponga un
+        // altro. Lasciata vuota, comanda il file dei contenuti — mai un
+        // numero scritto qui, che sarebbe una regola inventata.
+        'min_nights'  => Env::get('BOOKING_MIN_NIGHTS', '') === ''
+            ? null
+            : (int) Env::get('BOOKING_MIN_NIGHTS'),
         'currency'    => Env::get('BOOKING_CURRENCY', 'EUR'),
     ],
 

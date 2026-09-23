@@ -239,6 +239,11 @@ body.adv-menu-aperto { overflow: hidden; }
    frase, quindi devono rispettare i 24px minimi (WCAG 2.5.8). Un <a> in linea
    è alto quanto il carattere e non quanto la riga — diventa inline-block. */
 .adv-piede__lista a { display: inline-block; padding-block: 3px; }
+
+/* Un numero, un indirizzo, un WhatsApp: ognuno sta su una riga sua, non
+   dentro una frase, quindi è un bersaglio a sé e vale la stessa regola —
+   ovunque compaia, nel piede, negli elenchi di fatti, nelle schede. */
+.adv-contatto { display: inline-block; padding-block: 3px; }
 .adv-piede__indirizzo { font-style: normal; }
 
 /* ------------------------------------------------------- tipografia */
@@ -292,6 +297,20 @@ body.adv-menu-aperto { overflow: hidden; }
 :is(.adv-piede, .adv-fondo-bruno, .adv-fondo-mattone, .adv-hero) .adv-dc {
   color: var(--brand-grano);
 }
+
+/* Dove il prezzo non si mostra, al suo posto resta una riga sottile che dice
+   dove trovarlo: il vuoto si legge come «manca», e chi legge «manca» va a
+   cercarlo altrove. */
+.adv-elenco__prezzo--muto { font-size: 0; }
+.adv-elenco__prezzo--muto small {
+  font-size: 12px; line-height: 18px; font-weight: 500; letter-spacing: 0.16em;
+  color: var(--ink-soft); display: block; white-space: normal; max-width: 15ch;
+}
+.adv-nota--prezzo { margin-top: 0; }
+
+/* La tassa di soggiorno sta staccata dal totale: non si paga al sito. */
+.adv-riepilogo--tassa { margin-top: var(--space-4); border-top: 0; }
+.adv-riepilogo--tassa .adv-riepilogo__riga { border-bottom: 0; padding-block: 0; }
 
 /* Le tariffe di una camera, una riga per numero di ospiti. */
 .adv-tariffe-camera { margin: 0; display: flex; flex-direction: column; gap: var(--space-2); }

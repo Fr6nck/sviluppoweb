@@ -53,59 +53,63 @@ return [
             'en' => 'What time can we arrive?',
         ],
         'a' => [
-            'it' => 'L’orario di check-in è {dc}. Se il tuo treno o il tuo volo arrivano fuori da quella '
-                  . 'fascia, scrivilo quando prenoti invece che il giorno stesso: è l’unica cosa che va '
-                  . 'organizzata prima.',
-            'en' => 'Check-in is {dc}. If your train or flight gets in outside that window, say so when you '
-                  . 'book rather than on the day: it is the one thing worth arranging in advance.',
+            'it' => 'Dalle 13:00 alle 20:00, e ti accoglie Daniele in persona: non c’è una cassetta con '
+                  . 'le chiavi. Se il tuo treno o il tuo volo arrivano fuori da quella fascia, scrivilo '
+                  . 'quando prenoti invece che il giorno stesso. L’orario di check-out è {dc}.',
+            'en' => 'Between 13:00 and 20:00, and Daniele meets you himself: there is no key box. If your '
+                  . 'train or flight gets in outside that window, say so when you book rather than on the '
+                  . 'day. The check-out time is {dc}.',
         ],
     ],
     [
         'id'        => 'parcheggio',
-        'confirmed' => false,
+        'confirmed' => true,
         'q' => [
             'it' => 'Dove si lascia la macchina?',
             'en' => 'Where do we leave the car?',
         ],
         'a' => [
-            'it' => 'Il parcheggio che consigliamo per questa casa, e come si fa l’ultimo tratto con i '
-                  . 'bagagli, è {dc}. È la domanda che arriva più spesso e merita una risposta precisa, '
-                  . 'non una generica.',
-            'en' => 'The car park we recommend for this house, and how to do the last stretch with luggage, '
-                  . 'is {dc}. It is the question that comes up most often and deserves a precise answer, '
-                  . 'not a generic one.',
+            'it' => 'In auto non si arriva fino alla porta. Il parcheggio più comodo è Piazza Matteotti, a '
+                  . 'pagamento — circa 18 € per 24 ore — a duecento metri da casa; in alternativa si lascia '
+                  . 'gratis in via dell’Eremo, verso la Porta dei Cappuccini. L’ultimo tratto si fa a piedi, '
+                  . 'quindi conviene una valigia che si porti su qualche scalino.',
+            'en' => 'You cannot drive to the door. The handiest car park is Piazza Matteotti — paid, about '
+                  . '€18 per 24 hours — two hundred metres from the house; otherwise you can park free in '
+                  . 'via dell’Eremo, towards Porta dei Cappuccini. The last stretch is on foot, so pack a '
+                  . 'case you do not mind carrying up a few steps.',
         ],
     ],
     [
         'id'        => 'scale',
-        'confirmed' => false,
+        'confirmed' => true,
         'q' => [
             'it' => 'Ci sono scale? C’è l’ascensore?',
             'en' => 'Are there stairs? Is there a lift?',
         ],
         'a' => [
-            'it' => 'Quante rampe separano la strada dalle camere, e se ci sia un ascensore, è {dc}. In una '
-                  . 'casa del centro storico è un dato che cambia il viaggio a chi ha una valigia pesante o '
-                  . 'un ginocchio che non collabora, quindi va scritto per esteso.',
-            'en' => 'How many flights of stairs there are between the street and the rooms, and whether '
-                  . 'there is a lift, is {dc}. In a house in the old town this changes the trip for anyone '
-                  . 'with a heavy suitcase or an uncooperative knee, so it has to be spelled out.',
+            'it' => 'Le camere sono al secondo piano e l’ascensore non c’è. Si salgono due rampe: una decina '
+                  . 'di scalini, poi altri tre. Non è una salita lunga, ma va saputa prima da chi ha una '
+                  . 'valigia pesante o un ginocchio che non collabora.',
+            'en' => 'The rooms are on the second floor and there is no lift. It is two flights: about ten '
+                  . 'steps, then three more. It is not a long climb, but it is worth knowing in advance if '
+                  . 'you have a heavy suitcase or an uncooperative knee.',
         ],
     ],
     [
         'id'        => 'colazione',
-        'confirmed' => false,
+        'confirmed' => true,
         'q' => [
             'it' => 'La colazione è compresa?',
             'en' => 'Is breakfast included?',
         ],
         'a' => [
-            'it' => 'Se la colazione ci sia è {dc}: nel materiale consegnato non è dichiarata, e un sito non '
-                  . 'può prometterla al posto di chi la prepara. Appena è confermato, la risposta prende il '
-                  . 'posto di questa riga.',
-            'en' => 'Whether breakfast is served is {dc}: the material handed over does not say, and a '
-                  . 'website cannot promise it on behalf of whoever would make it. As soon as it is '
-                  . 'confirmed, the answer replaces this line.',
+            'it' => 'No, e non c’è nemmeno servita a parte: Arco del Vento è un affittacamere, non dà pasti. '
+                  . 'In camera trovi un bollitore, e a pochi passi ci sono i bar del centro. Lo diciamo qui '
+                  . 'perché è una cosa da sapere prima di prenotare, non da scoprire la mattina.',
+            'en' => 'No, and it is not available separately either: Arco del Vento rents rooms and does not '
+                  . 'serve meals. There is a kettle in the room, and the cafés of the old town are a few '
+                  . 'steps away. We say so here because it is something to know before booking, not to '
+                  . 'discover in the morning.',
         ],
     ],
 ];

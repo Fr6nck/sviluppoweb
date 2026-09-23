@@ -50,4 +50,28 @@
     </dd>
   </div>
 </dl>
+
+<?php
+/* La tassa di soggiorno non entra nel totale perché non si paga al sito: si
+   paga a Daniele al check-in. Ma va detta prima, e con la cifra, perché
+   trovarsela all'arrivo è la sorpresa che rovina un soggiorno per tre euro. */
+$tassa = tassaSoggiorno((int) $ospiti, (int) $notti);
+$cfg   = site('stay.city_tax');
+?>
+<?php if ($tassa !== null): ?>
+  <dl class="adv-riepilogo adv-riepilogo--tassa">
+    <div class="adv-riepilogo__riga">
+      <dt><?= te('book.summary.city_tax') ?></dt>
+      <dd><?= te('book.summary.city_tax_upto', ['amount' => euro($tassa['amount'])]) ?></dd>
+    </div>
+  </dl>
+  <p class="adv-nota">
+    <?= te('book.summary.city_tax_note', [
+        'amount' => euro((float) $cfg['amount']),
+        'nights' => (int) $cfg['max_nights'],
+        'age'    => (int) $cfg['exempt_under'],
+    ]) ?>
+  </p>
+<?php endif; ?>
+
 <p class="adv-nota"><?= te('book.summary.total_note') ?></p>

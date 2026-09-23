@@ -165,6 +165,13 @@ php tools/preflight.php
 
 Dice, in chiaro, se si può pubblicare e che cosa manca.
 
+**Un bloccante non si toglie da riga di comando: il CIN.** Il Codice
+Identificativo Nazionale va esposto nel sito e in ogni annuncio, e la sanzione
+per chi non lo fa parte da 800 €. Si ottiene dalla Banca Dati Strutture
+Ricettive del Ministero del Turismo e si scrive in `content/settings.php`,
+sotto `legal.cin`. Finché non c'è, il piè di pagina dice `CIN [da confermare]`
+— che è onesto verso l'ospite, ma non mette in regola la struttura.
+
 ### E a mano, aprendo il sito
 
 - [ ] `https://iltuodominio.it/` porta a `/it/`

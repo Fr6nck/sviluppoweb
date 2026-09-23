@@ -56,11 +56,9 @@ final class RoomPresenter
      */
     public static function viewLabel(array $room): ?string
     {
-        if (($room['view_san_rufino'] ?? null) === true) {
-            return t('views.san_rufino');
-        }
+        $vista = $room['view'] ?? null;
 
-        return null;
+        return is_string($vista) && $vista !== '' ? t('views.' . $vista) : null;
     }
 
     /** @param array<string,mixed> $room */

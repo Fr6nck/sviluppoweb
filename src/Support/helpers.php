@@ -105,16 +105,72 @@ function daConfermare(?string $valore = null): string
     );
 }
 
+/**
+ * Una frase dei contenuti, nella lingua della pagina.
+ *
+ * Certi dati della casa sono prosa, non numeri: com'è fatta la scala, dove si
+ * parcheggia, come stanno gli animali. Quella prosa va scritta una volta per
+ * lingua, altrimenti un ospite inglese si trova l'italiano in mezzo alla
+ * pagina — che è peggio di un dato mancante, perché sembra un errore del sito
+ * e non lo si può nemmeno leggere.
+ *
+ * Il valore può essere:
+ *   - un array per lingua, ['it' => '…', 'en' => '…'] — la forma giusta;
+ *   - una stringa, che vale per tutte le lingue: solo per quello che non si
+ *     traduce, come «60 Mbps» o il nome di una piazza;
+ *   - null, e allora è null anche qui: chi chiama mostrerà «da confermare».
+ *
+ * Se la lingua corrente manca dall'array il valore NON ricade sull'italiano:
+ * restituisce null, perché una riga assente è onesta e una riga nella lingua
+ * sbagliata no.
+ */
+function testoLocale(mixed $valore, ?string $locale = null): ?string
+{
+    if ($valore === null || $valore === '') {
+        return null;
+    }
+
+    if (!is_array($valore)) {
+        return (string) $valore;
+    }
+
+    $lingua = $locale ?? locale();
+    $scelto = $valore[$lingua] ?? null;
+
+    if ($scelto === null || $scelto === '') {
+        return null;
+    }
+
+    // Certe voci sono liste per lingua (i mesi tranquilli, le date di punta):
+    // una lista non si stampa come una frase, e il modo di unirla dipende da
+    // dove va. Chi la usa se la prende dall'array e la compone lì, invece di
+    // farsi restituire «Array» da un cast.
+    return is_scalar($scelto) ? (string) $scelto : null;
+}
+
 /** Come daConfermare(), ma per un prezzo non ancora fissato. */
 function prezzoDaConfermare(): string
 {
     return sprintf('<span class="adv-dc" data-dc>%s</span>', Html::e(t('common.price_to_confirm')));
 }
 
-/** Una cifra in euro, con le cifre tabellari già attive dal design system. */
-function euro(int|float $amount): string
+/**
+ * Una cifra in euro, scritta come la scrive la lingua della pagina.
+ *
+ * In italiano il simbolo sta staccato e le migliaia si separano col punto:
+ * «€ 1.200». In inglese sta attaccato e le migliaia con la virgola: «€1,200».
+ * È un dettaglio che nessuno nota quando è giusto e stona subito quando non
+ * lo è. Le cifre tabellari le porta già il design system.
+ */
+function euro(int|float $amount, ?string $locale = null): string
 {
-    return '€ ' . number_format((float) $amount, 0, ',', '.');
+    $lingua = $locale ?? locale();
+
+    if ($lingua === 'it') {
+        return '€ ' . number_format((float) $amount, 0, ',', '.');
+    }
+
+    return '€' . number_format((float) $amount, 0, '.', ',');
 }
 
 /** Una data ISO scritta per esteso nella lingua corrente: «ven 12 giugno». */
@@ -133,6 +189,34 @@ function dataEstesa(string $iso, ?string $locale = null): string
     $mese   = $mesi[(int) $date->format('n') - 1] ?? $date->format('F');
 
     return sprintf('%s %d %s', $giorno, (int) $date->format('j'), $mese);
+}
+
+/**
+ * Se le tariffe si possono mostrare fuori dal percorso di prenotazione.
+ * Dentro il percorso si mostrano sempre: lì l'ospite ha già dato le date, e
+ * il prezzo è quello vero per quelle notti e quelle persone.
+ */
+function prezziPubblici(): bool
+{
+    return (bool) site('stay.show_prices_publicly', false);
+}
+
+/**
+ * La tassa di soggiorno per un soggiorno: 3 € a persona per notte, per le
+ * prime tre notti. Si calcola sul caso peggiore, perché il sito non chiede
+ * l'età degli ospiti e i minori di dodici anni sono esenti.
+ *
+ * @return array{amount: float, nights: int}|null
+ */
+function tassaSoggiorno(int $ospiti, int $notti): ?array
+{
+    $t = site('stay.city_tax');
+    if (!is_array($t) || empty($t['amount'])) {
+        return null;
+    }
+    $nottiTassate = min($notti, (int) ($t['max_nights'] ?? $notti));
+
+    return ['amount' => (float) $t['amount'] * $ospiti * $nottiTassate, 'nights' => $nottiTassate];
 }
 
 /** Rende un componente di views/components/. */

@@ -137,10 +137,28 @@ final class App
             // BookingProviderInterface. Il resto del sito non se ne accorge.
             default => new DemoBookingProvider(
                 $this->rooms(),
-                (int) $this->config('booking.min_nights'),
+                $this->minNights(),
                 (string) $this->config('booking.currency'),
             ),
         };
+    }
+
+    /**
+     * Il soggiorno minimo in notti.
+     *
+     * Comanda content/settings.php, perché è una regola della casa. BOOKING_MIN_NIGHTS
+     * esiste solo per il giorno in cui un gestionale ne imponga un'altra: finché
+     * resta vuota non se ne accorge nessuno. In mancanza di tutto è 1 — non
+     * imporre un minimo è l'unico ripiego che non inventa una regola.
+     */
+    public function minNights(): int
+    {
+        $env = $this->config('booking.min_nights');
+        if ($env !== null && (int) $env > 0) {
+            return (int) $env;
+        }
+
+        return max(1, (int) ($this->settings()['stay']['min_nights']['default'] ?? 1));
     }
 
     public function booking(): BookingService
@@ -148,7 +166,10 @@ final class App
         return $this->services['booking'] ??= new BookingService(
             $this->bookingProvider(),
             $this->rooms(),
-            (int) $this->config('booking.min_nights'),
+            $this->minNights(),
+            // La regola del sabato è un dato della casa, non una scelta di
+            // configurazione: sta in content/settings.php insieme agli altri.
+            (int) ($this->settings()['stay']['min_nights']['saturday'] ?? 1),
         );
     }
 

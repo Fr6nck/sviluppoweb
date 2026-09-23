@@ -29,6 +29,8 @@ return [
         'guest'            => 'guest',
         'guests'           => 'guests',
         'optional'         => 'optional',
+        'yes'              => 'Yes',
+        'no'               => 'No',
         'required_note'    => 'Every field without the «optional» note is needed.',
         'back'             => 'Go back',
         'close'            => 'Close',
@@ -181,13 +183,19 @@ return [
                             . 'and it was there first.',
 
         'demo_notice_title' => 'What is still missing',
-        'demo_notice_text'  => 'Rates, room types and beds are the real ones, and the photographs are of the '
-                             . 'house itself. Still to be written: the final room names, the sizes and the '
-                             . 'floor. Room 01 — the triple — is the only one still without a photograph.',
+        'demo_notice_text'  => 'Rates, room types, beds, occupancy and floor are the real ones, and the '
+                             . 'photographs are of the house itself. Still to be written: the room sizes. '
+                             . 'Room 01 — the triple — is the only one still without a photograph.',
 
         'list_title'    => 'One by',
         'list_sign'     => 'one',
         'rates_title'   => 'The rates side by side',
+        'price_on_dates' => 'rate with your dates',
+        'price_on_dates_long' => 'The rate depends on your dates and on how many of you there are: '
+                               . 'pick the period and you will see it, with no account and no commitment.',
+        'rates_hidden'  => 'Rates change with the season and with how many people sleep in the room, so '
+                         . 'there is no fixed price list on the page: choose your dates and see the real '
+                         . 'price for those nights. No account needed, and it commits you to nothing.',
         'rates_note'    => 'The price is for the room, not per person: a double room used by one '
                          . 'person costs less.',
         'rates_caption' => 'Rate per night for the room, according to how many people sleep in it. '
@@ -260,7 +268,7 @@ return [
 
     'views' => [
         'demo'       => 'Aspect to be confirmed',
-        'san_rufino' => 'Onto the bell tower of San Rufino',
+        'piazza'     => 'Onto Piazza San Rufino and the cathedral',
     ],
 
     'amenities' => [
@@ -270,6 +278,9 @@ return [
         'towels'           => 'Towels',
         'desk'             => 'Desk',
         'wardrobe'         => 'Wardrobe',
+        'kettle'           => 'Kettle',
+        'minibar'          => 'Mini fridge on request',
+        'fan'              => 'Fan',
         'heating'          => 'Heating',
     ],
 
@@ -308,9 +319,10 @@ return [
         'host_more'  => 'The rest of the story of the house — how it was before, what was rebuilt and when',
 
         'building_title' => 'The building',
-        'building_text'  => 'About the house itself — its age, its materials, how many floors, what it was '
-                          . 'before it took in guests — the material handed over says nothing, and these are '
-                          . 'exactly the things a guest remembers. They have to be told by whoever knows them.',
+        'building_text'  => 'What we know about the house is that the rooms are on the second floor, reached '
+                          . 'by two flights of stairs. Its age, its materials, what it was before it took in '
+                          . 'guests: those we do not, and they are exactly the things a guest remembers. '
+                          . 'They have to be told by whoever knows them.',
 
         'city_title' => 'Staying inside the city',
         'city_text'  => 'Sleeping in the old town is not the same as sleeping out of town with a shuttle: '
@@ -369,10 +381,11 @@ return [
                    . 'they travel. Where a fact is missing it is marked, not rounded off.',
 
         'notice_title' => 'Why so much is marked',
-        'notice_text'  => 'The material handed over covers the name, the address, the number of rooms and '
-                        . 'the year it opened. Times, parking, amenities and rules it does not: until '
-                        . 'Daniele confirms them they stay marked, because a wrong time on a website is one '
-                        . 'more phone call and one guest fewer.',
+        'notice_text'  => 'Arrival times, parking, stairs, amenities and house rules come from Daniele '
+                        . 'himself, and you read them as he gave them. What is still missing stays marked: '
+                        . 'the check-out time, how payment and cancellation work, the walking times to the '
+                        . 'six places. A wrong time on a website is one more phone call and one guest fewer, '
+                        . 'so we would rather leave it blank.',
 
         'sections' => [
             'arrival'  => 'Before you arrive',
@@ -386,8 +399,22 @@ return [
         'items' => [
             'check_in'      => 'Check-in time',
             'check_out'     => 'Check-out time',
+            'welcome'       => 'Who lets you in',
+            'documents'     => 'Documents',
+            'contact_hours' => 'When we answer',
+            'navigator'     => 'What to put in the sat-nav',
+            'taxi'          => 'By taxi',
+            'plane'         => 'From the airport',
+            'kettle'        => 'Kettle',
+            'minibar'       => 'Mini fridge',
+            'fans'          => 'Fans',
+            'air_conditioning' => 'Air conditioning',
+            'rooms'         => 'How many rooms',
+            'floor'         => 'Which floor',
+            'common_areas'  => 'Shared spaces',
+            'open'          => 'When we are open',
+            'guest_contact' => 'Booking for someone else',
             'late_arrival'  => 'Arriving outside those hours',
-            'keys'          => 'Handing over the keys',
             'parking'       => 'Parking',
             'car'           => 'Arriving by car',
             'train'         => 'Arriving by train',
@@ -411,11 +438,28 @@ return [
         ],
 
         'known' => [
-            'keys'    => 'Daniele hands over the keys in person.',
-            'rooms'   => 'Five rooms in all, in the same building.',
-            'address' => 'Via Santa Maria delle Rose 1/A, Assisi.',
-            'since'   => 'Open since 2002.',
-            'direct'  => 'Booking is direct: the request reaches Daniele, not a platform.',
+            'welcome'       => 'Daniele, in person: he hands over the keys and shows you the house.',
+            'documents'     => 'At check-in, or send them ahead on WhatsApp and it goes quicker.',
+            'min_nights'    => 'A stay that includes a Saturday night is at least :nights nights.',
+            'navigator'     => 'Set :place, not the street address: the street is a dead end. On foot the exact address works.',
+            'car'           => 'You cannot drive right up to the door: you leave the car and walk the last stretch.',
+            'train'         => 'Assisi station, then AssisiLink or line C up to Piazza Matteotti.',
+            'plane'         => 'Perugia airport, Airlink service: about four runs a day, arriving at Piazza Matteotti.',
+            'taxi'          => 'Ask to be taken to :place.',
+            'bus_note'      => 'Lines, current timetables and the connection to the Eremo delle Carceri',
+            'no_meals'      => 'There is none: we serve no meals, and no breakfast either.',
+            'wifi'          => 'Yes, around :speed — enough to work on.',
+            'city_tax'      => ':amount per person per night, for the first :nights nights. Under :age are exempt. Paid at check-in.',
+            'rooms'         => 'Five, all with a private bathroom.',
+            'common_areas'  => 'The entrance is shared with the building and the corridor is a passageway.',
+            'open_all_year' => 'All year round.',
+            'no_smoking'    => 'No smoking in the rooms.',
+            'guest_contact' => 'If you book for someone else, leave us a direct contact for whoever is sleeping here.',
+            'remote_work'   => 'The connection is good enough to work on.',
+            'keys'          => 'Daniele hands over the keys in person.',
+            'address'       => 'Via Santa Maria delle Rose 1/A, Assisi.',
+            'since'         => 'Open since 2002.',
+            'direct'        => 'Booking is direct: the request reaches Daniele, not a platform.',
         ],
     ],
 
@@ -450,8 +494,8 @@ return [
             'guests'    => 'Guests',
             'submit'    => 'Check availability',
             'note'      => 'Minimum stay :nights nights. City tax not included, still to be confirmed.',
-            'note_no_min' => 'The price depends on how many people sleep in the room. City tax not '
-                           . 'included, still to be confirmed.',
+            'note_no_min' => 'The price depends on how many people sleep in the room. City tax of €3 '
+                           . 'per person per night, for the first three nights, paid at check-in.',
             'note_stay' => ':nights nights · :guests',
         ],
 
@@ -509,7 +553,11 @@ return [
             'guests'     => 'Guests',
             'rate'       => 'Rate per night',
             'total'      => 'Indicative total',
-            'total_note' => 'City tax not included. Daniele confirms the final total.',
+            'total_note' => 'Daniele confirms the final total.',
+        'city_tax'   => 'City tax',
+        'city_tax_note' => ':amount per person per night, for the first :nights nights. Under :age '
+                         . 'are exempt. Paid at check-in together with the balance.',
+        'city_tax_upto' => 'up to :amount',
         ],
     ],
 
@@ -623,7 +671,9 @@ return [
         'accepted'   => 'The tick is needed to carry on.',
         'past'       => 'The arrival date has already gone by.',
         'order'      => 'Departure has to come after arrival.',
-        'min_nights' => 'The minimum stay is :nights nights.',
+        'min_nights'   => 'The minimum stay is :nights nights.',
+        'saturday_min' => 'Saturday is not booked on its own: a stay that includes a Saturday night is '
+                        . 'at least :nights nights. Friday and Saturday works, or Saturday and Sunday.',
         'max_stay'   => 'For stays longer than :nights nights write to us: we arrange those separately.',
         'token'      => 'The page sat open too long. Reload it and try again.',
         'room'       => 'Choose one of the free rooms.',

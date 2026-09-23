@@ -57,10 +57,12 @@ $libera  = $offerta?->available ?? null;
             · <?= te('book.results.per_night', ['amount' => euro($offerta->nightlyRate)]) ?>
             <?php if ($offerta->rateIsDemo) { echo ' · ' . te('common.price_to_confirm'); } ?>
           </small>
-        <?php else: ?>
+        <?php elseif (prezziPubblici()): ?>
           <?php if (!R::hasSingleRate($camera)): ?><?= e(t('common.from')) ?> <?php endif; ?>
           <?= e(euro((int) R::fromRate($camera))) ?>
           <small><?= te('common.per_night') ?></small>
+        <?php else: ?>
+          <small><?= te('rooms.price_on_dates') ?></small>
         <?php endif; ?>
       </p>
 

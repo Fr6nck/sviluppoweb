@@ -67,61 +67,79 @@ $lingua = locale();
   <?php /* Le tariffe a confronto: è una tabella di dati, e va in <table>
            con le intestazioni al posto giusto — anche perché è la sola
            schermata in cui si confrontano cinque camere in un colpo. */ ?>
-  <div class="adv-tariffe">
-    <?= component('section-header', [
-        'occhiello' => t('rooms.eyebrow'),
-        'titolo'    => t('rooms.rates_title'),
-        'piccolo'   => true,
-        'filetto'   => false,
-    ]) ?>
+  <?php if (prezziPubblici()): ?>
+    <div class="adv-tariffe">
+      <?= component('section-header', [
+          'occhiello' => t('rooms.eyebrow'),
+          'titolo'    => t('rooms.rates_title'),
+          'piccolo'   => true,
+          'filetto'   => false,
+      ]) ?>
 
-    <?php
-    // Le colonne degli ospiti sono quelle che esistono davvero in almeno una
-    // camera: con una tripla in casa sono tre, con solo doppie sarebbero due.
-    $occupazioni = [];
-    foreach ($camere as $c) { $occupazioni = array_merge($occupazioni, array_keys(R::rates($c))); }
-    $occupazioni = array_unique($occupazioni); sort($occupazioni);
-    ?>
-    <p class="adv-testo"><?= te('rooms.rates_note') ?></p>
+      <?php
+      // Le colonne degli ospiti sono quelle che esistono davvero in almeno una
+      // camera: con una tripla in casa sono tre, con solo doppie sarebbero due.
+      $occupazioni = [];
+      foreach ($camere as $c) { $occupazioni = array_merge($occupazioni, array_keys(R::rates($c))); }
+      $occupazioni = array_unique($occupazioni); sort($occupazioni);
+      ?>
+      <p class="adv-testo"><?= te('rooms.rates_note') ?></p>
 
-    <div class="adv-tabella-avvolta">
-      <table class="adv-tabella">
-        <caption><?= te('rooms.rates_caption') ?></caption>
-        <thead>
-          <tr>
-            <th scope="col"><?= te('rooms.table.room') ?></th>
-            <th scope="col"><?= te('rooms.table.type') ?></th>
-            <th scope="col"><?= te('rooms.table.beds') ?></th>
-            <?php foreach ($occupazioni as $n): ?>
-              <th scope="col" class="adv-tabella__prezzo">
-                <?= $n ?> <?= te($n === 1 ? 'common.guest' : 'common.guests') ?>
-              </th>
-            <?php endforeach; ?>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($camere as $camera): $tariffe = R::rates($camera); ?>
+      <div class="adv-tabella-avvolta">
+        <table class="adv-tabella">
+          <caption><?= te('rooms.rates_caption') ?></caption>
+          <thead>
             <tr>
-              <th scope="row">
-                <a class="adv-camera__link" href="<?= e(R::href($camera, $lingua)) ?>"><?= e(R::name($camera, $lingua)) ?></a>
-              </th>
-              <td><?= e(R::typeLabel($camera)) ?></td>
-              <td><?= e(R::beds($camera)) ?></td>
+              <th scope="col"><?= te('rooms.table.room') ?></th>
+              <th scope="col"><?= te('rooms.table.type') ?></th>
+              <th scope="col"><?= te('rooms.table.beds') ?></th>
               <?php foreach ($occupazioni as $n): ?>
-                <td class="adv-tabella__prezzo">
-                  <?php if (isset($tariffe[$n])): ?>
-                    <?= e(euro($tariffe[$n])) ?>
-                  <?php else: ?>
-                    <span class="adv-tabella__vuoto" aria-label="<?= te('rooms.table.not_available') ?>">&mdash;</span>
-                  <?php endif; ?>
-                </td>
+                <th scope="col" class="adv-tabella__prezzo">
+                  <?= $n ?> <?= te($n === 1 ? 'common.guest' : 'common.guests') ?>
+                </th>
               <?php endforeach; ?>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($camere as $camera): $tariffe = R::rates($camera); ?>
+              <tr>
+                <th scope="row">
+                  <a class="adv-camera__link" href="<?= e(R::href($camera, $lingua)) ?>"><?= e(R::name($camera, $lingua)) ?></a>
+                </th>
+                <td><?= e(R::typeLabel($camera)) ?></td>
+                <td><?= e(R::beds($camera)) ?></td>
+                <?php foreach ($occupazioni as $n): ?>
+                  <td class="adv-tabella__prezzo">
+                    <?php if (isset($tariffe[$n])): ?>
+                      <?= e(euro($tariffe[$n])) ?>
+                    <?php else: ?>
+                      <span class="adv-tabella__vuoto" aria-label="<?= te('rooms.table.not_available') ?>">&mdash;</span>
+                    <?php endif; ?>
+                  </td>
+                <?php endforeach; ?>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
+  <?php else: ?>
+    <?php /* Senza listino in pagina, l'ospite deve sapere dove sono i prezzi
+             e che cosa li determina. Dirlo costa tre righe e toglie la
+             sensazione che il sito nasconda qualcosa. */ ?>
+    <div class="adv-tariffe">
+      <?= component('section-header', [
+          'occhiello' => t('rooms.eyebrow'),
+          'titolo'    => t('rooms.rates_title'),
+          'piccolo'   => true,
+          'filetto'   => false,
+      ]) ?>
+      <p class="adv-testo"><?= te('rooms.rates_hidden') ?></p>
+      <p class="adv-azione-coda">
+        <a class="adv-btn adv-btn--primario" href="<?= e(url('book')) ?>"><?= te('cta.check') ?></a>
+      </p>
+    </div>
+  <?php endif; ?>
 
 </section>
 

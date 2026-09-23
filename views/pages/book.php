@@ -80,27 +80,6 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
 
     <?= partial('booking-bar', ['id' => 'prenota', 'criteri' => $criteri, 'errori' => $errori, 'ospiti' => $ospiti ?? 2]) ?>
 
-    <div class="adv-spazio-sopra">
-      <?= component('section-header', [
-          'occhiello' => t('rooms.eyebrow'),
-          'titolo'    => t('rooms.rates_title'),
-          'piccolo'   => true,
-          'filetto'   => false,
-      ]) ?>
-      <?= component('index-list', [
-          'voci' => array_map(static function (array $camera) use ($lingua): array {
-              $tariffa = R::fromRate($camera);
-              return [
-                  'etichetta' => R::name($camera, $lingua),
-                  'nota_html' => $tariffa !== null
-                      ? e(t('common.from') . ' ' . euro($tariffa)) . ' ' . daConfermare()
-                      : prezzoDaConfermare(),
-                  'href'      => R::href($camera, $lingua),
-              ];
-          }, \ArcoDelVento\App::instance()->rooms()->all()),
-      ]) ?>
-    </div>
-
 
   <?php /* ---------------------------------------- 2. le camere libere */ ?>
   <?php elseif ($passo === 'rooms' && $disponibilita !== null): ?>

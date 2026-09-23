@@ -15,16 +15,33 @@
 
 $stay     = site('stay');
 $contatti = site('contacts');
-$minNotti = \ArcoDelVento\App::instance()->booking()->minNights();
+$tassa    = $stay['city_tax'];
+$scale    = $stay['min_nights'];
 
-/** Una riga: etichetta a sinistra, dato o marcatore a destra. */
-$riga = static function (string $chiave, ?string $valore, bool $confermato = true): void {
+/**
+ * Una riga: etichetta a sinistra, dato o marcatore a destra.
+ *
+ * Accetta qualunque tipo e lo normalizza, perché content/settings.php è un
+ * file che il cliente modifica: un booleano al posto di una stringa non deve
+ * poter mandare giù la pagina.
+ */
+$riga = static function (string $chiave, mixed $valore, ?string $etichetta = null): void {
+    if (is_bool($valore)) {
+        $valore = $valore ? t('common.yes') : t('common.no');
+    } elseif (is_array($valore)) {
+        // Una frase scritta per lingua: ['it' => '…', 'en' => '…']. Qualunque
+        // altro array è un dato strutturato e si stampa a mano, non qui.
+        $valore = testoLocale($valore);
+    } elseif (is_object($valore)) {
+        $valore = null;
+    } elseif ($valore !== null) {
+        $valore = (string) $valore;
+    }
+
     printf(
         '<div class="adv-fatti__riga"><dt>%s</dt><dd>%s</dd></div>',
-        te('info.items.' . $chiave),
-        ($valore !== null && $valore !== '')
-            ? ($confermato ? e($valore) : daConfermare($valore))
-            : daConfermare()
+        $etichetta !== null ? e($etichetta) : te('info.items.' . $chiave),
+        ($valore !== null && $valore !== '') ? e($valore) : daConfermare()
     );
 };
 ?>
@@ -41,23 +58,18 @@ $riga = static function (string $chiave, ?string $valore, bool $confermato = tru
 
 <section class="adv-contenuto adv-editoriale">
 
-  <?= component('alert', [
-      'tipo'   => 'info',
-      'titolo' => t('info.notice_title'),
-      'testo'  => t('info.notice_text'),
-  ]) ?>
-
   <div class="adv-split adv-info-griglia">
 
     <div>
       <h2 class="adv-titolo-md"><?= te('info.sections.arrival') ?></h2>
       <dl class="adv-fatti">
         <?php
-        $riga('check_in', $stay['check_in_from'] ? $stay['check_in_from'] . '–' . $stay['check_in_to'] : null);
+        $riga('check_in', $stay['check_in_from'] . '–' . $stay['check_in_to']);
         $riga('check_out', $stay['check_out_by']);
-        $riga('late_arrival', null);
-        $riga('keys', t('info.known.keys'));
-        $riga('min_nights', $minNotti . ' ' . t('common.nights'), false);
+        $riga('welcome', t('info.known.welcome'));
+        $riga('documents', t('info.known.documents'));
+        $riga('contact_hours', $contatti['hours']['from'] . '–' . $contatti['hours']['to']);
+        $riga('min_nights', t('info.known.min_nights', ['nights' => (int) $scale['saturday']]));
         $riga('payment', null);
         $riga('cancellation', null);
         ?>
@@ -65,30 +77,41 @@ $riga = static function (string $chiave, ?string $valore, bool $confermato = tru
     </div>
 
     <div>
-      <?php /* «Come arrivare» raccoglie l'arrivo in auto, il parcheggio, il
-               treno e gli autobus: il parcheggio resta la voce che pesa di più
-               nell'esperienza di chi arriva, e sta qui in cima. */ ?>
+      <?php /* «Come arrivare» raccoglie navigatore, parcheggio e mezzi. Il
+               parcheggio è la voce che pesa di più su chi arriva, e sta in
+               cima. */ ?>
       <h2 class="adv-titolo-md"><?= te('info.sections.getting') ?></h2>
       <dl class="adv-fatti">
         <?php
+        $riga('navigator', t('info.known.navigator', ['place' => site('navigation.by_car')]));
         $riga('parking', $stay['parking']);
-        $riga('car', null);
-        $riga('train', null);
-        $riga('bus', null);
+        $riga('car', t('info.known.car'));
+        $riga('train', t('info.known.train'));
+        $riga('plane', t('info.known.plane'));
+        $riga('taxi', t('info.known.taxi', ['place' => site('navigation.by_car')]));
         ?>
       </dl>
+      <p class="adv-nota"><?= te('info.known.bus_note') ?> <?= daConfermare() ?></p>
     </div>
 
     <div>
       <h2 class="adv-titolo-md"><?= te('info.sections.stay') ?></h2>
       <dl class="adv-fatti">
         <?php
-        $riga('breakfast', $stay['breakfast'] === null ? null : ($stay['breakfast'] ? t('common.brand') : '—'));
-        $riga('wifi', $stay['wifi'] === null ? null : ($stay['wifi'] ? 'Wi-Fi' : '—'));
-        $riga('heating', null);
+        $riga('breakfast', t('info.known.no_meals'));
+        $riga('kettle', $stay['kettle']);
+        $riga('minibar', $stay['minibar']);
+        $riga('fans', $stay['fans']);
+        $riga('heating', $stay['heating']);
+        $riga('air_conditioning', $stay['air_conditioning']);
+        $riga('wifi', t('info.known.wifi', ['speed' => $stay['wifi_speed']]));
         $riga('cleaning', null);
         $riga('linen', null);
-        $riga('city_tax', $stay['city_tax']);
+        $riga('city_tax', t('info.known.city_tax', [
+            'amount' => euro((float) $tassa['amount']),
+            'nights' => (int) $tassa['max_nights'],
+            'age'    => (int) $tassa['exempt_under'],
+        ]));
         ?>
       </dl>
     </div>
@@ -97,9 +120,13 @@ $riga = static function (string $chiave, ?string $valore, bool $confermato = tru
       <h2 class="adv-titolo-md"><?= te('info.sections.house') ?></h2>
       <dl class="adv-fatti">
         <?php
+        $riga('rooms', t('info.known.rooms'));
+        $riga('floor', site('address.floor'));
         $riga('stairs', $stay['stairs']);
-        $riga('lift', $stay['lift'] === null ? null : ($stay['lift'] ? 'Sì' : 'No'));
-        $riga('accessibility', null);
+        $riga('lift', $stay['lift']);
+        $riga('accessibility', $stay['accessibility']);
+        $riga('common_areas', t('info.known.common_areas'));
+        $riga('open', t('info.known.open_all_year'));
         $riga('languages', $stay['languages']);
         ?>
       </dl>
@@ -109,11 +136,13 @@ $riga = static function (string $chiave, ?string $valore, bool $confermato = tru
       <h2 class="adv-titolo-md"><?= te('info.sections.rules') ?></h2>
       <dl class="adv-fatti">
         <?php
+        $riga('smoking', t('info.known.no_smoking'));
         $riga('pets', $stay['pets']);
-        $riga('smoking', $stay['smoking']);
+        $riga('guest_contact', t('info.known.guest_contact'));
         $riga('children', null);
         ?>
       </dl>
+      <p class="adv-nota"><?= te('info.known.remote_work') ?></p>
     </div>
 
     <div>
@@ -128,13 +157,14 @@ $riga = static function (string $chiave, ?string $valore, bool $confermato = tru
           <dd><?= component('contact-line', ['tipo' => 'phone', 'valore' => $contatti['phone']]) ?></dd>
         </div>
         <div class="adv-fatti__riga">
-          <dt><?= te('contact.form.email') ?></dt>
-          <dd><?= component('contact-line', ['tipo' => 'email', 'valore' => $contatti['email']]) ?></dd>
-        </div>
-        <div class="adv-fatti__riga">
           <dt><?= te('cta.whatsapp') ?></dt>
           <dd><?= component('contact-line', ['tipo' => 'whatsapp', 'valore' => $contatti['whatsapp']]) ?></dd>
         </div>
+        <div class="adv-fatti__riga">
+          <dt><?= te('contact.form.email') ?></dt>
+          <dd><?= component('contact-line', ['tipo' => 'email', 'valore' => $contatti['email']]) ?></dd>
+        </div>
+        <?php $riga('contact_hours', $contatti['hours']['from'] . '–' . $contatti['hours']['to']); ?>
       </dl>
     </div>
 

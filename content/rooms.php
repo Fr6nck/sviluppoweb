@@ -2,7 +2,10 @@
 /**
  * Le cinque camere.
  *
- * TIPOLOGIE, OCCUPAZIONE, LETTI E TARIFFE SONO CONFERMATI dal titolare.
+ * TIPOLOGIE, OCCUPAZIONE, LETTI, TARIFFE E VISTA SONO CONFERMATI dal titolare.
+ * La vista premium su Piazza San Rufino e il Duomo è di DUE camere, la 01 e
+ * la 02, e le tariffe lo confermano da sole: quelle due stanno nelle fasce
+ * «con vista» del listino (130 e 85-95), le altre in quelle «senza» (70-80).
  * Le tariffe non sono stagionali: dipendono da quante persone dormono nella
  * camera, ed è questo che il motore di prenotazione calcola.
  *
@@ -59,7 +62,7 @@ $camera = static function (int $n, array $overrides = []): array {
         'size_sqm'  => null,        // non si misura da una fotografia
         'floor'     => null,
         'bathroom'  => ['private' => true, 'shower' => true, 'bathtub' => false],
-        'amenities' => ['private-bathroom', 'wifi', 'heating', 'linen', 'towels'],
+        'amenities' => ['private-bathroom', 'wifi', 'heating', 'kettle', 'linen', 'towels'],
 
         'images' => [
             'card'    => ['src' => 'img/demo/camera-' . $due . '-4x3.svg',  'ratio' => '4/3'],
@@ -113,9 +116,12 @@ return [
         'occupancy'       => ['standard' => 3, 'max' => 3],
         'beds'            => ['double' => 1, 'single' => 1],
         'layouts'         => ['triple', 'double'],
-        'rates'           => [1 => 100, 2 => 110, 3 => 120],
-        'view_san_rufino' => true,   // dichiarata dal titolare
-        'amenities'       => ['private-bathroom', 'wifi', 'heating', 'linen', 'towels', 'wardrobe'],
+        // 130 per tre persone è il prezzo del brief; 110 come matrimoniale
+        // lo confermano entrambe le fonti. Il prezzo per una persona sola
+        // non è nel brief e resta quello dato prima.
+        'rates' => [1 => 100, 2 => 110, 3 => 130],
+        'view'  => 'piazza',
+        'amenities'       => ['private-bathroom', 'wifi', 'heating', 'kettle', 'linen', 'towels', 'wardrobe'],
     ]),
 
     // ---- La doppia con i letti separabili: si uniscono in un matrimoniale o
@@ -128,7 +134,7 @@ return [
         'rates'           => [1 => 80, 2 => 90],
         'photographed'    => true,
         'images'          => $fotografie('camera-02'),
-        'view_san_rufino' => true,
+        'view'            => 'piazza',
         'alt' => [
             'it' => 'Due letti singoli affiancati con coperte gialle; dalla finestra si vedono '
                   . 'il campanile e la facciata della cattedrale di San Rufino.',
@@ -143,15 +149,20 @@ return [
         'rates'           => [1 => 70, 2 => 80],
         'photographed'    => true,
         'images'          => $fotografie('camera-03'),
-        'view_san_rufino' => true,
+        // Il titolare la mette in fascia «senza vista» (70-80). La fotografia
+        // però mostra il campanile dalla finestra: o è una vista minore, di
+        // scorcio, oppure l'accoppiamento fotografia-camera va rivisto.
+        // Finché non è chiarito il sito non vende una vista che il listino
+        // non prezza: il testo alternativo descrive l'immagine, il campo no.
+        'view'            => null,
         'alt'             => $duiLetti(),
     ]),
     $camera(4, [
         'rates'           => [1 => 70, 2 => 80],
         'photographed'    => true,
         'images'          => $fotografie('camera-04'),
-        'view_san_rufino' => true,
-        'amenities'       => ['private-bathroom', 'wifi', 'heating', 'linen', 'towels', 'wardrobe'],
+        'view'            => null,   // come la 03: vedi la nota qui sopra
+        'amenities'       => ['private-bathroom', 'wifi', 'heating', 'kettle', 'linen', 'towels', 'wardrobe'],
         'alt'             => $duiLetti(', e in camera c’è un armadio in legno chiaro'),
     ]),
 
@@ -165,7 +176,7 @@ return [
         'rates'        => [1 => 70],
         'photographed' => true,
         'images'       => $fotografie('camera-05'),
-        'amenities'    => ['private-bathroom', 'wifi', 'heating', 'linen', 'towels', 'desk'],
+        'amenities'    => ['private-bathroom', 'wifi', 'heating', 'kettle', 'linen', 'towels', 'desk'],
         'alt' => [
             'it' => 'Un letto matrimoniale con coperta color crema, pavimento in parquet, una '
                   . 'scrivania e due sedie impagliate sul fondo.',

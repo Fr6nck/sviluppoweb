@@ -21,6 +21,37 @@ final class SearchCriteria
         return max(0, (int) $this->arrival->diff($this->departure)->days);
     }
 
+    /**
+     * Le notti del soggiorno, una per una. Una «notte» è il giorno in cui si
+     * dorme: un arrivo venerdì con partenza domenica sono le notti di venerdì
+     * e di sabato, non quella di domenica.
+     *
+     * @return list<\DateTimeImmutable>
+     */
+    public function nightsList(): array
+    {
+        $notti = [];
+        $n = $this->arrival;
+        for ($i = 0; $i < $this->nights(); $i++) {
+            $notti[] = $n;
+            $n = $n->modify('+1 day');
+        }
+
+        return $notti;
+    }
+
+    /** Vero se fra le notti del soggiorno c'è un sabato. */
+    public function includesSaturdayNight(): bool
+    {
+        foreach ($this->nightsList() as $notte) {
+            if ((int) $notte->format('N') === 6) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function arrivalIso(): string
     {
         return $this->arrival->format('Y-m-d');

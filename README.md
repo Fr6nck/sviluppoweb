@@ -36,13 +36,23 @@ con convalida e riepilogo, il modulo dei contatti con convalida e trappola per
 i robot, il menu su schermo stretto, `sitemap.xml` e `robots.txt` generati,
 i dati strutturati, il tema notte.
 
-**È reale**: le tariffe, le tipologie, i letti e l'occupazione massima delle
-cinque camere. Le fotografie di quattro camere su cinque e del corridoio. E
-il fatto che dalle finestre si veda San Rufino.
+**È reale**: tutto quello che il titolare ha dichiarato nell'intervista —
+tariffe, tipologie, letti e occupazione delle cinque camere; telefono,
+WhatsApp ed e-mail; partita IVA; orari di check-in e di reperibilità; il
+piano, le scale e l'assenza di ascensore; la tassa di soggiorno; la regola
+del sabato; colazione e pasti (non ci sono); Wi-Fi, bollitore, ventilatori,
+minibar su richiesta, animali, divieto di fumo; l'apertura tutto l'anno. Le
+fotografie di quattro camere su cinque e del corridoio. E il fatto che dalle
+finestre si veda San Rufino.
 
-**È dimostrativo**: la disponibilità — cioè quali date risultino libere — i
-nomi delle camere, le metrature e il piano. Il provider di prenotazione
-calcola i totali con i prezzi veri, ma il calendario se lo inventa.
+**È dimostrativo**: la disponibilità — cioè quali date risultino libere — e
+le metrature. Il provider di prenotazione calcola i totali con i prezzi veri
+e applica le regole vere di soggiorno minimo, ma il calendario se lo inventa.
+
+**È una scelta del cliente**: i prezzi non compaiono fuori dal percorso di
+prenotazione (`show_prices_publicly => false`). Si vedono al passo «camere»,
+dopo le date. Ha un costo — chi confronta strutture a colpo d'occhio se ne va
+prima — ed è ribaltabile con una riga in `content/settings.php`.
 
 **Non c'è**: nessuna credenziale, nessun pagamento, nessun invio di posta
 vero, nessun collegamento a un gestionale.
@@ -167,7 +177,7 @@ matrimoniale occupata da una persona sola costa meno.
 
 | Camera | Tipologia | 1 ospite | 2 ospiti | 3 ospiti |
 | --- | --- | ---: | ---: | ---: |
-| 01 | Tripla | € 100 | € 110 | € 120 |
+| 01 | Tripla | € 100 | € 110 | € 130 |
 | 02 | Doppia, letti separabili | € 80 | € 90 | — |
 | 03 | Matrimoniale | € 70 | € 80 | — |
 | 04 | Matrimoniale | € 70 | € 80 | — |
@@ -181,8 +191,17 @@ Su MySQL diventano la tabella `room_rates`, una riga per camera e per
 occupazione. `seasonal_rates` è pronta per le variazioni di periodo, con una
 colonna `guests` per poterle fare anche per occupazione.
 
-**Nessun soggiorno minimo**: il titolare non ne ha dichiarato uno, quindi
-`BOOKING_MIN_NIGHTS` è a 1 e il sito non ne impone uno inventato.
+**Soggiorno minimo**: una notte, tranne il sabato, che non si prenota da solo
+— chi arriva di sabato resta almeno due notti. Sta in `stay.min_nights`
+(`default` 1, `saturday` 2) e lo applica `BookingService`, che per un
+soggiorno comprendente un sabato prende il maggiore fra i due. Nei periodi di
+punta — Ferragosto, 4 ottobre, Capodanno — il titolare ha detto che il minimo
+sale, ma non di quanto: `peak` resta `null` e non viene imposto nulla.
+
+**Tassa di soggiorno**: 3 € a persona per notte, per le prime tre notti,
+esenti i minori di 12 anni, si paga al check-in. Il preventivo la mostra a
+parte, mai dentro il totale della camera. Non chiedendo l'età degli ospiti, il
+sito calcola il caso peggiore (tutti paganti) e lo dice.
 
 ## E-mail
 
@@ -230,7 +249,7 @@ stessa forma di dati: nessuna vista cambia.
 
 ## Lingue
 
-Italiano e inglese, completi: 408 chiavi per lingua, in parità.
+Italiano e inglese, completi: 460 chiavi per lingua, in parità.
 
 Le pagine non sono duplicate. Esiste una vista per pagina; gli indirizzi per
 lingua stanno in `src/I18n/Routes.php` e i testi in `content/lang/`. Una
@@ -239,6 +258,26 @@ usabile invece di mostrare le chiavi.
 
 Ogni pagina dichiara `hreflang` per ogni lingua più `x-default`, e il cambio
 lingua porta alla **stessa pagina** nell'altra lingua, non alla home.
+
+**I contenuti sono due cose diverse, e si scrivono in due posti.** I *dati*
+stanno in `content/settings.php` e non hanno lingua: un orario, un numero, un
+booleano, un prezzo. La *prosa* ha lingua, anche quando descrive un dato — com'è
+fatta la scala, dove si parcheggia, come stanno gli animali. Quella si scrive
+per lingua, dentro lo stesso file:
+
+```php
+'stairs' => [
+    'it' => 'due rampe, circa 10 scalini e poi 3',
+    'en' => 'two flights: about 10 steps, then 3',
+],
+```
+
+e le viste la leggono con `testoLocale()`. Se la lingua corrente manca, la
+funzione restituisce `null` e la riga diventa `[da confermare]`: **non ricade
+sull'italiano**, perché una riga assente è onesta e una riga nella lingua
+sbagliata sembra un guasto del sito. Una stringa semplice, senza chiavi di
+lingua, vale per tutte: si usa solo per ciò che non si traduce — «60 Mbps», il
+nome di una piazza.
 
 **Per aggiungere lo spagnolo**: gli indirizzi (`/es/habitaciones`,
 `/es/la-casa`, `/es/reservar`…) e gli slug delle camere sono già scritti.
@@ -249,6 +288,10 @@ cp content/lang/es.php.example content/lang/es.php
 # tradurre (la struttura delle chiavi è identica a it.php)
 # poi nel .env:  APP_LOCALES=it,en,es
 ```
+
+E poi la quarta: aggiungere `'es' => …` alle voci di prosa in
+`content/settings.php` — parcheggio, scale, animali, minibar, accessibilità,
+mesi tranquilli, date di punta, prezzo del parcheggio. Sono otto.
 
 ---
 
@@ -289,32 +332,61 @@ Il prototipo **non è stato caricato** su Hostinger.
 ## Contenuti da confermare
 
 Il sito non inventa: dove un dato manca lo marca `[da confermare]` e lo mostra
-così all'ospite. Questi sono i dati che servono, in ordine di quanto pesano.
+così all'ospite. Dopo l'intervista al titolare la lista si è accorciata molto
+— restano diciannove campi vuoti su settantotto.
 
-**Servono per primi** — sono quelli che l'ospite cerca prima di prenotare:
+**Servono per obbligo di legge**:
 
-- orario di check-in e check-out, e cosa fare arrivando fuori orario
-- parcheggio: quale, quanto dista, come si fa l'ultimo tratto con i bagagli
-- scale: quante rampe dalla strada alle camere, e se c'è un ascensore
-- telefono, e-mail, numero WhatsApp
-- la stagionalità delle tariffe (i prezzi base ci sono), la tassa di
-  soggiorno, l'eventuale soggiorno minimo
-- se c'è la colazione (nel materiale non è dichiarata: il sito non la promette)
+- **CIN** — il Codice Identificativo Nazionale. Va esposto nel sito e negli
+  annunci: senza, la sanzione parte da 800 €. È il buco più grave. Compare in
+  fondo a ogni pagina come `CIN [da confermare]` accanto alla partita IVA, che
+  invece c'è (03323290548).
+- CIR e REA, se la struttura ne ha
+- il CAP di via Santa Maria delle Rose
+- il testo completo dell'informativa privacy: tempi di conservazione,
+  responsabile del trattamento, destinatari dei dati
+
+Il codice fiscale del titolare **non è nel repository**: sta in `.env`, sotto
+`OWNER_TAX_CODE`, che non è versionato. `content/settings.php` lo legge da lì
+con `tax_code_public => false`, e nessuna vista lo stampa in nessuna lingua.
+Per una ditta individuale la partita IVA basta, il codice fiscale di una
+persona è un dato personale, e da una cronologia git non si cancella più
+niente.
+
+**Servono per primi** — l'ospite li cerca prima di prenotare:
+
+- **orario di check-out**: il check-in è confermato (13:00–20:00, di persona),
+  il check-out no
+- **pagamento, caparra e disdetta**: come si paga, se serve un anticipo, entro
+  quando si annulla senza penale
+- **politica sui bambini**: culle, letti aggiunti, sconti per età
+- **pulizia e cambio biancheria** durante il soggiorno
+- **lingue parlate** dal titolare
+- di quanto sale il soggiorno minimo nei tre periodi di punta
 
 **Servono per la pagina camere**:
 
-- i nomi definitivi delle cinque camere
-- metratura, piano ed esposizione di ciascuna
-- **la fotografia della Camera 01**, la tripla: è la più cara del listino,
-  è quella con la vista su San Rufino, ed è l'unica rimasta senza
+- **la fotografia della Camera 01**, la tripla: è la più cara del listino, è
+  quella con la vista, ed è l'unica rimasta senza. Il posto è pronto e la
+  scheda è completa in tutto il resto.
+- metratura ed esposizione di ciascuna camera (il piano è confermato: secondo)
+- i due scatti che risultano inviati ma non arrivati sul disco:
+  `san-rufino-finestra` e `piazza-san-rufino`
 
-**Servono per obbligo di legge**: CIN, partita IVA, CAP, e il testo completo
-dell'informativa privacy (titolare, indirizzo per la privacy, tempi di
-conservazione).
+**Da chiarire, perché due dati confermati non tornano** — vedi «Limiti noti».
 
-**Utili**: Wi-Fi, animali, fumo, bambini, riscaldamento, cambio biancheria,
-lingue parlate, accessibilità, pagamento e disdetta, tempi a piedi verificati
-verso i sei luoghi, coordinate della casa per la mappa.
+**Utili**:
+
+- coordinate della casa per la mappa (`geo.latitude`, `geo.longitude`)
+- i **tempi a piedi verificati** verso i sei luoghi. Assisi è in salita: una
+  stima piatta presa da una mappa sottostima il percorso, quindi restano vuoti
+  finché qualcuno non li cammina.
+- il **numero e il voto delle recensioni** Booking e Google, che il titolare
+  ha dato per «in verifica». Finché lo sono, la sezione recensioni non compare
+  affatto: meglio assente che approssimata.
+- profili Instagram e Facebook, se esistono
+- prezzo e distanza del parcheggio di via dell'Eremo (quello di piazza
+  Matteotti è confermato: circa 18 € per 24 ore, 200 m)
 
 ---
 
@@ -360,10 +432,23 @@ nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
 - Il motore di prenotazione è finto e va sostituito prima di aprire al
   pubblico. Finché è quello, il sito lo dichiara in ogni passo.
 - Nessuna e-mail parte davvero: `MAIL_TRANSPORT=log`.
-- Nessuna recensione, quindi la sezione recensioni non compare. Il componente
-  c'è: comparirà quando ci saranno recensioni vere da riportare.
+- Nessuna recensione riportabile: il titolare ha dato numero e voto per «in
+  verifica», quindi la sezione non compare. Il componente c'è e si accende da
+  solo quando `reviews` si riempie.
+- **Due dati confermati non tornano, e li deciderà il titolare.**
+  *La vista*: dalle fasce di prezzo dell'intervista risulta che solo la 01 e
+  la 02 guardano piazza San Rufino, e così sta nei file. Ma le fotografie
+  della 03 e della 04 mostrano il campanile dalla finestra. O è una vista
+  minore — il campanile di scorcio, non la piazza — oppure l'accoppiamento
+  fotografia-camera va rivisto.
+  *La tripla a tre ospiti*: il primo listino diceva 120 €, l'intervista 130 €.
+  Vale 130, perché l'intervista è più recente ed esplicita; basta una riga per
+  tornare indietro.
 - Nessuna mappa: senza le coordinate della casa, un segnaposto messo a occhio
   manda l'ospite alla porta di un altro.
+- Manca il CIN, ed è un obbligo di legge: va messo prima di pubblicare.
+- I prezzi non si vedono fuori dal percorso di prenotazione, per scelta del
+  cliente. È un freno reale alla conversione, non un dettaglio di stile.
 - La Camera 01, la tripla, non ha fotografia: tiene il segnaposto disegnato.
 - Le tre vedute di Assisi si ripetono fra le pagine.
 - L'informativa privacy è impostata ma non è un documento legale finito.
@@ -386,7 +471,25 @@ nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
 - Contrasto misurato su ogni coppia testo/fondo usata, nei due temi: tutte
   sopra 4,5:1 (3:1 per bordi e anelli di fuoco).
 - Nessun trabocco orizzontale a 1440, 1280, 1024, 768 e 390 px.
-- Bersagli da toccare sopra i 24px.
+- Bersagli da toccare sopra i 24px, con due sole eccezioni, entrambe previste
+  dalla norma: la trappola per i robot, che nessuno può raggiungere, e il link
+  all'informativa dentro la frase del consenso.
+- **Regola del sabato** provata sui quattro casi: venerdì→sabato di una notte
+  passa, sabato→domenica di una notte viene rifiutato con la spiegazione,
+  venerdì→domenica di due notti passa, martedì→mercoledì di una notte passa.
+- **Prezzi nascosti** verificati a browser: nessun importo su `/it/camere`,
+  sulla home, su `/en/rooms` né sulle schede camera; presenti al passo
+  «camere» della prenotazione.
+- **Tassa di soggiorno** calcolata e mostrata a parte: due ospiti per tre
+  notti fanno 18 €, e la quarta notte non la aumenta.
+- **Il codice fiscale del titolare non compare in nessuna pagina** né nel
+  repository: controllato su tutti gli indirizzi generati e su tutto il diff.
+- **Nessuna frase italiana nelle pagine inglesi**: le nove pagine `/en/`
+  passate al setaccio parola per parola. La prosa dei contenuti — parcheggio,
+  scale, animali, minibar, accessibilità — è scritta per lingua e passa da
+  `testoLocale()`.
+- **Le cifre scritte come le scrive la lingua**: «€ 1.200» in italiano, «€1,200»
+  in inglese.
 - Movimento ridotto rispettato: con `prefers-reduced-motion` il contenuto è
   subito visibile e le transizioni sono azzerate.
 - Menu su schermo stretto: apre, tiene il fuoco dentro, chiude con `Esc` e

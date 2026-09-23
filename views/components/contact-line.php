@@ -25,4 +25,4 @@ $href = match ($tipo) {
     'whatsapp' => 'https://wa.me/' . preg_replace('/\D/', '', $valore),
 };
 ?>
-<a href="<?= e($href) ?>"<?= $tipo === 'whatsapp' ? ' rel="noopener"' : '' ?>><?= e($valore) ?></a>
+<a class="adv-contatto" href="<?= e($href) ?>"<?= $tipo === 'whatsapp' ? ' rel="noopener"' : '' ?>><?= e($valore) ?></a>

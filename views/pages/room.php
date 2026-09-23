@@ -128,7 +128,7 @@ $tariffa = R::fromRate($camera);
 
     <aside class="adv-prenota-camera">
       <div class="adv-barra adv-barra--verticale">
-        <?php $tariffe = R::rates($camera); ?>
+        <?php $tariffe = prezziPubblici() ? R::rates($camera) : []; ?>
         <?php if ($tariffe !== []): ?>
           <?php /* La tariffa dipende da quante persone dormono in camera, e
                    allora si scrivono tutte: una riga per occupazione, invece
@@ -143,7 +143,7 @@ $tariffa = R::fromRate($camera);
           </dl>
           <p class="adv-nota"><?= te('rooms.rates_caption') ?></p>
         <?php else: ?>
-          <p class="adv-camera__prezzo"><?= prezzoDaConfermare() ?></p>
+          <p class="adv-nota adv-nota--prezzo"><?= te('rooms.price_on_dates_long') ?></p>
         <?php endif; ?>
 
         <a class="adv-btn adv-btn--primario adv-btn--pieno"

@@ -43,17 +43,20 @@ $tariffa = R::fromRate($camera);
     </div>
 
     <div class="adv-elenco__aside">
-      <p class="adv-elenco__prezzo">
-        <?php if ($tariffa !== null): ?>
-          <?php /* «da» solo dove c'è davvero più di una tariffa: su una camera
-                   con un prezzo solo prometterebbe uno sconto che non esiste. */ ?>
+      <?php if (prezziPubblici() && $tariffa !== null): ?>
+        <p class="adv-elenco__prezzo">
           <?php if (!R::hasSingleRate($camera)): ?><?= e(t('common.from')) ?> <?php endif; ?>
           <?= e(euro($tariffa)) ?>
           <small><?= te('common.per_night') ?></small>
-        <?php else: ?>
-          <?= prezzoDaConfermare() ?>
-        <?php endif; ?>
-      </p>
+        </p>
+      <?php else: ?>
+        <?php /* Il titolare mostra le tariffe solo a date scelte. Al posto del
+                 prezzo va detto DOVE si trova, altrimenti l'ospite pensa che
+                 manchi e se ne va a cercarlo su Booking. */ ?>
+        <p class="adv-elenco__prezzo adv-elenco__prezzo--muto">
+          <small><?= te('rooms.price_on_dates') ?></small>
+        </p>
+      <?php endif; ?>
 
       <a class="adv-elenco__link" href="<?= e(R::href($camera, $lingua)) ?>">
         <?= te('cta.see_room') ?><span aria-hidden="true">&rarr;</span>

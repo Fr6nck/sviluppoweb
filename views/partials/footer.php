@@ -46,8 +46,9 @@ $legal    = site('legal');
             <li><?= te('info.items.check_out') ?>: <?= $stay['check_out_by']
                   ? e($stay['check_out_by'])
                   : daConfermare() ?></li>
-            <li><?= te('info.items.parking') ?>: <?= $stay['parking']
-                  ? e($stay['parking'])
+            <?php $parcheggio = testoLocale($stay['parking'] ?? null); ?>
+            <li><?= te('info.items.parking') ?>: <?= $parcheggio
+                  ? e($parcheggio)
                   : daConfermare() ?></li>
           </ul>
         </div>

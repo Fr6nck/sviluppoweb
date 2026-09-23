@@ -22,8 +22,20 @@ final class BookingService
     public function __construct(
         private readonly BookingProviderInterface $provider,
         private readonly RoomRepositoryInterface $rooms,
-        private readonly int $minNights = 2,
+        private readonly int $minNights = 1,
+        /**
+         * Il sabato notte non si vende da solo: un soggiorno che lo comprende
+         * dura almeno due notti. Vale tutto l'anno, ed è una regola della
+         * casa, non un'invenzione del sito — quindi sta qui e non sepolta in
+         * un provider che un giorno verrà sostituito.
+         */
+        private readonly int $saturdayMinNights = 1,
     ) {
+    }
+
+    public function saturdayMinNights(): int
+    {
+        return $this->saturdayMinNights;
     }
 
     public function minNights(): int
@@ -63,8 +75,15 @@ final class BookingService
 
         $nights = $criteria->nights();
 
-        if ($nights < $this->minNights) {
-            $errors['departure'] = ['min_nights', ['nights' => $this->minNights]];
+        // La regola del sabato è più stretta di quella generale, quindi vince.
+        $minimo = $criteria->includesSaturdayNight()
+            ? max($this->minNights, $this->saturdayMinNights)
+            : $this->minNights;
+
+        if ($nights < $minimo) {
+            $errors['departure'] = $criteria->includesSaturdayNight() && $minimo > $this->minNights
+                ? ['saturday_min', ['nights' => $minimo]]
+                : ['min_nights', ['nights' => $minimo]];
         } elseif ($nights > self::MAX_NIGHTS) {
             $errors['departure'] = ['max_stay', ['nights' => self::MAX_NIGHTS]];
         }

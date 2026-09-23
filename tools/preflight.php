@@ -244,8 +244,29 @@ $aggiungi(
 
 // ----------------------------------------------------------- contenuti
 $settings = require $root . '/content/settings.php';
+
+// Il CIN sta a parte perché non è una cortesia verso l'ospite: è un obbligo
+// di legge per chi affitta a chi viaggia, va esposto nel sito e negli
+// annunci, e la sanzione parte da 800 euro. Senza, non si pubblica.
+$obbligatori = [];
+foreach (['cin' => 'Codice Identificativo Nazionale', 'vat' => 'partita IVA'] as $campo => $nome) {
+    if (empty($settings['legal'][$campo])) {
+        $obbligatori[] = $nome;
+    }
+}
+$aggiungi($obbligatori === [] ? 'ok' : 'bloccante', 'Contenuti',
+    $obbligatori === []
+        ? 'gli identificativi di legge ci sono'
+        : 'manca per legge: ' . implode(', ', $obbligatori),
+    'Va esposto nel sito e in ogni annuncio. Il piè di pagina lo mostra come '
+    . '«da confermare», che è onesto ma non basta a mettersi in regola.');
+
 $vuoti = [];
-foreach (['contacts' => ['phone', 'email'], 'stay' => ['check_in_from', 'check_out_by'], 'legal' => ['cin', 'vat']] as $gruppo => $campi) {
+foreach ([
+    'contacts' => ['phone', 'email'],
+    'stay'     => ['check_in_from', 'check_out_by'],
+    'address'  => ['postal_code'],
+] as $gruppo => $campi) {
     foreach ($campi as $campo) {
         if (empty($settings[$gruppo][$campo])) {
             $vuoti[] = "{$gruppo}.{$campo}";
@@ -253,9 +274,9 @@ foreach (['contacts' => ['phone', 'email'], 'stay' => ['check_in_from', 'check_o
     }
 }
 $aggiungi($vuoti === [] ? 'ok' : 'attenzione', 'Contenuti',
-    $vuoti === [] ? 'i dati essenziali ci sono tutti' : 'ancora da confermare: ' . implode(', ', $vuoti),
-    'Il sito li mostra come «da confermare»: è onesto, ma un ospite che non trova un telefono scrive altrove. '
-    . 'CIN e partita IVA sono obbligatori per legge su una struttura ricettiva.');
+    $vuoti === [] ? 'i dati pratici ci sono tutti' : 'ancora da confermare: ' . implode(', ', $vuoti),
+    'Il sito li mostra come «da confermare»: è onesto, ma sono le prime cose '
+    . 'che un ospite cerca, e chi non le trova scrive altrove.');
 
 $camere = require $root . '/content/rooms.php';
 $senzaFoto = array_values(array_filter($camere, static fn (array $c): bool => empty($c['photographed'])));
