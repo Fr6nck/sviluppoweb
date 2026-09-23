@@ -36,12 +36,13 @@ con convalida e riepilogo, il modulo dei contatti con convalida e trappola per
 i robot, il menu su schermo stretto, `sitemap.xml` e `robots.txt` generati,
 i dati strutturati, il tema notte.
 
-**È reale**: le fotografie di quattro camere su cinque, il corridoio, e il
-fatto che dalle finestre si veda San Rufino.
+**È reale**: le tariffe, le tipologie, i letti e l'occupazione massima delle
+cinque camere. Le fotografie di quattro camere su cinque e del corridoio. E
+il fatto che dalle finestre si veda San Rufino.
 
-**È dimostrativo**: le tariffe, la disponibilità, i nomi delle camere, le
-metrature e il piano. E il provider di prenotazione, che calcola tutto in
-locale senza chiamare nessuno.
+**È dimostrativo**: la disponibilità — cioè quali date risultino libere — i
+nomi delle camere, le metrature e il piano. Il provider di prenotazione
+calcola i totali con i prezzi veri, ma il calendario se lo inventa.
 
 **Non c'è**: nessuna credenziale, nessun pagamento, nessun invio di posta
 vero, nessun collegamento a un gestionale.
@@ -158,6 +159,31 @@ ricerca si può salvare, rimandare a qualcuno e ricaricare, e il tasto
 
 ---
 
+## Tariffe
+
+Non sono stagionali: **dipendono da quante persone dormono in camera**. È così
+che il titolare le ha date, ed è anche come funzionano davvero — una
+matrimoniale occupata da una persona sola costa meno.
+
+| Camera | Tipologia | 1 ospite | 2 ospiti | 3 ospiti |
+| --- | --- | ---: | ---: | ---: |
+| 01 | Tripla | € 100 | € 110 | € 120 |
+| 02 | Doppia, letti separabili | € 80 | € 90 | — |
+| 03 | Matrimoniale | € 70 | € 80 | — |
+| 04 | Matrimoniale | € 70 | € 80 | — |
+| 05 | Singola con letto matrimoniale | € 70 | — | — |
+
+Stanno in `content/rooms.php` sotto `rates`, una voce per numero di ospiti.
+Dove una voce manca, la camera non ospita quel numero di persone e il motore
+non la propone: le due cose sono lo stesso dato.
+
+Su MySQL diventano la tabella `room_rates`, una riga per camera e per
+occupazione. `seasonal_rates` è pronta per le variazioni di periodo, con una
+colonna `guests` per poterle fare anche per occupazione.
+
+**Nessun soggiorno minimo**: il titolare non ne ha dichiarato uno, quindi
+`BOOKING_MIN_NIGHTS` è a 1 e il sito non ne impone uno inventato.
+
 ## E-mail
 
 ```
@@ -260,7 +286,8 @@ così all'ospite. Questi sono i dati che servono, in ordine di quanto pesano.
 - parcheggio: quale, quanto dista, come si fa l'ultimo tratto con i bagagli
 - scale: quante rampe dalla strada alle camere, e se c'è un ascensore
 - telefono, e-mail, numero WhatsApp
-- tariffe vere e stagionalità, tassa di soggiorno, soggiorno minimo
+- la stagionalità delle tariffe (i prezzi base ci sono), la tassa di
+  soggiorno, l'eventuale soggiorno minimo
 - se c'è la colazione (nel materiale non è dichiarata: il sito non la promette)
 
 **Servono per la pagina camere**:

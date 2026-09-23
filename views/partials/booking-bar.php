@@ -87,5 +87,13 @@ $errore = static function (string $campo) use ($errori): ?string {
     <button class="adv-btn adv-btn--primario" type="submit"><?= te('book.search.submit') ?></button>
   </div>
 
-  <p class="adv-barra__nota"><?= te('book.search.note', ['nights' => $minNights]) ?></p>
+  <?php /* Il soggiorno minimo si dichiara solo se esiste davvero: il titolare
+           non ne ha indicato uno, e inventarne uno bloccherebbe prenotazioni
+           vere. Con BOOKING_MIN_NIGHTS a 1 la riga parla solo del prezzo —
+           «soggiorno minimo 1 notti» non è una condizione, è un refuso. */ ?>
+  <p class="adv-barra__nota">
+    <?= $minNights > 1
+        ? te('book.search.note', ['nights' => $minNights])
+        : te('book.search.note_no_min') ?>
+  </p>
 </form>

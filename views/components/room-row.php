@@ -45,12 +45,11 @@ $tariffa = R::fromRate($camera);
     <div class="adv-elenco__aside">
       <p class="adv-elenco__prezzo">
         <?php if ($tariffa !== null): ?>
-          <?= e(t('common.from')) ?> <?= e(euro($tariffa)) ?>
-          <?php /* Il marcatore va messo come marcatore e non come testo nudo:
-                   dentro questo <small> il sistema traccia le lettere a 0,16em,
-                   e «[tariffa da confermare]» a quella spaziatura si legge una
-                   lettera per volta. La classe .adv-dc porta la sua. */ ?>
-          <small><?= te('common.per_night') ?> · <?= prezzoDaConfermare() ?></small>
+          <?php /* «da» solo dove c'è davvero più di una tariffa: su una camera
+                   con un prezzo solo prometterebbe uno sconto che non esiste. */ ?>
+          <?php if (!R::hasSingleRate($camera)): ?><?= e(t('common.from')) ?> <?php endif; ?>
+          <?= e(euro($tariffa)) ?>
+          <small><?= te('common.per_night') ?></small>
         <?php else: ?>
           <?= prezzoDaConfermare() ?>
         <?php endif; ?>

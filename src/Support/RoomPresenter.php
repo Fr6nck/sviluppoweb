@@ -155,12 +155,44 @@ final class RoomPresenter
         return implode(' · ', $voci);
     }
 
-    /** La tariffa più bassa dimostrativa, per l'elenco. @param array<string,mixed> $room */
+    /**
+     * La tariffa più bassa della camera — quella dell'occupazione minima —
+     * per la riga «da € …» dell'elenco, dove le date e gli ospiti non si
+     * sanno ancora.
+     *
+     * @param array<string,mixed> $room
+     */
     public static function fromRate(array $room): ?int
     {
-        $rate = (int) ($room['price']['demo_from'] ?? 0);
+        $tariffe = array_filter((array) ($room['rates'] ?? []));
 
-        return $rate > 0 ? $rate : null;
+        return $tariffe === [] ? null : (int) min($tariffe);
+    }
+
+    /**
+     * Vero quando la camera ha una sola tariffa: allora si scrive «€ 70» e
+     * non «da € 70», che prometterebbe uno sconto che non esiste.
+     *
+     * @param array<string,mixed> $room
+     */
+    public static function hasSingleRate(array $room): bool
+    {
+        return count(array_unique((array) ($room['rates'] ?? []))) <= 1;
+    }
+
+    /**
+     * Le tariffe per numero di ospiti, ordinate: serve alla tabella di
+     * confronto e alla scheda della camera.
+     *
+     * @param array<string,mixed> $room
+     * @return array<int,int>
+     */
+    public static function rates(array $room): array
+    {
+        $tariffe = (array) ($room['rates'] ?? []);
+        ksort($tariffe);
+
+        return array_map('intval', $tariffe);
     }
 
     /** @param array<string,mixed> $room */

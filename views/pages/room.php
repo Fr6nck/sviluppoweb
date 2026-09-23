@@ -128,16 +128,22 @@ $tariffa = R::fromRate($camera);
 
     <aside class="adv-prenota-camera">
       <div class="adv-barra adv-barra--verticale">
-        <p class="adv-camera__prezzo">
-          <?php if ($tariffa !== null): ?>
-            <?= e(t('common.from')) ?> <?= e(euro($tariffa)) ?>
-            <small><?= te('common.per_night') ?></small>
-          <?php else: ?>
-            <?= prezzoDaConfermare() ?>
-          <?php endif; ?>
-        </p>
-        <?php if ($tariffa !== null): ?>
-          <p class="adv-nota"><?= prezzoDaConfermare() ?></p>
+        <?php $tariffe = R::rates($camera); ?>
+        <?php if ($tariffe !== []): ?>
+          <?php /* La tariffa dipende da quante persone dormono in camera, e
+                   allora si scrivono tutte: una riga per occupazione, invece
+                   di un «da € …» che fa cercare altrove il prezzo vero. */ ?>
+          <dl class="adv-tariffe-camera">
+            <?php foreach ($tariffe as $n => $prezzo): ?>
+              <div class="adv-tariffe-camera__riga">
+                <dt><?= (int) $n ?> <?= te($n === 1 ? 'common.guest' : 'common.guests') ?></dt>
+                <dd><?= e(euro($prezzo)) ?> <small><?= te('common.per_night') ?></small></dd>
+              </div>
+            <?php endforeach; ?>
+          </dl>
+          <p class="adv-nota"><?= te('rooms.rates_caption') ?></p>
+        <?php else: ?>
+          <p class="adv-camera__prezzo"><?= prezzoDaConfermare() ?></p>
         <?php endif; ?>
 
         <a class="adv-btn adv-btn--primario adv-btn--pieno"

@@ -188,14 +188,17 @@ return [
         'list_title'    => 'One by',
         'list_sign'     => 'one',
         'rates_title'   => 'The rates side by side',
-        'rates_caption' => 'Placeholder rates for one night, two guests. Final prices and seasonality are '
-                         . 'still to be confirmed.',
+        'rates_note'    => 'The price is for the room, not per person: a double room used by one '
+                         . 'person costs less.',
+        'rates_caption' => 'Rate per night for the room, according to how many people sleep in it. '
+                         . 'City tax not included. Any seasonal variation is still to be confirmed.',
         'table' => [
             'room'      => 'Room',
             'type'      => 'Type',
             'occupancy' => 'Guests',
             'beds'      => 'Beds',
-            'rate'      => 'Per night',
+            'rate'          => 'Per night',
+            'not_available' => 'not available for this number of guests',
         ],
         'status' => [
             'free'     => 'AVAILABLE',
@@ -236,6 +239,8 @@ return [
         'single'       => 'Single',
         'double'       => 'Double',
         'double-extra' => 'Double with an extra bed',
+        'double-twin'  => 'Double, beds can be separated',
+        'single-double' => 'Single use of a double room',
         'twin'         => 'Twin',
         'triple'       => 'Triple',
     ],
@@ -444,6 +449,8 @@ return [
             'guests'    => 'Guests',
             'submit'    => 'Check availability',
             'note'      => 'Minimum stay :nights nights. City tax not included, still to be confirmed.',
+            'note_no_min' => 'The price depends on how many people sleep in the room. City tax not '
+                           . 'included, still to be confirmed.',
             'note_stay' => ':nights nights · :guests',
         ],
 

@@ -75,6 +75,15 @@ $lingua = locale();
         'filetto'   => false,
     ]) ?>
 
+    <?php
+    // Le colonne degli ospiti sono quelle che esistono davvero in almeno una
+    // camera: con una tripla in casa sono tre, con solo doppie sarebbero due.
+    $occupazioni = [];
+    foreach ($camere as $c) { $occupazioni = array_merge($occupazioni, array_keys(R::rates($c))); }
+    $occupazioni = array_unique($occupazioni); sort($occupazioni);
+    ?>
+    <p class="adv-testo"><?= te('rooms.rates_note') ?></p>
+
     <div class="adv-tabella-avvolta">
       <table class="adv-tabella">
         <caption><?= te('rooms.rates_caption') ?></caption>
@@ -82,28 +91,31 @@ $lingua = locale();
           <tr>
             <th scope="col"><?= te('rooms.table.room') ?></th>
             <th scope="col"><?= te('rooms.table.type') ?></th>
-            <th scope="col"><?= te('rooms.table.occupancy') ?></th>
             <th scope="col"><?= te('rooms.table.beds') ?></th>
-            <th scope="col"><?= te('rooms.table.rate') ?></th>
+            <?php foreach ($occupazioni as $n): ?>
+              <th scope="col" class="adv-tabella__prezzo">
+                <?= $n ?> <?= te($n === 1 ? 'common.guest' : 'common.guests') ?>
+              </th>
+            <?php endforeach; ?>
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($camere as $camera): ?>
+          <?php foreach ($camere as $camera): $tariffe = R::rates($camera); ?>
             <tr>
               <th scope="row">
                 <a class="adv-camera__link" href="<?= e(R::href($camera, $lingua)) ?>"><?= e(R::name($camera, $lingua)) ?></a>
               </th>
               <td><?= e(R::typeLabel($camera)) ?></td>
-              <td><?= (int) $camera['occupancy']['max'] ?></td>
               <td><?= e(R::beds($camera)) ?></td>
-              <td class="adv-tabella__prezzo">
-                <?php $tariffa = R::fromRate($camera); ?>
-                <?php if ($tariffa !== null): ?>
-                  <?= e(euro($tariffa)) ?> <?= daConfermare() ?>
-                <?php else: ?>
-                  <?= prezzoDaConfermare() ?>
-                <?php endif; ?>
-              </td>
+              <?php foreach ($occupazioni as $n): ?>
+                <td class="adv-tabella__prezzo">
+                  <?php if (isset($tariffe[$n])): ?>
+                    <?= e(euro($tariffe[$n])) ?>
+                  <?php else: ?>
+                    <span class="adv-tabella__vuoto" aria-label="<?= te('rooms.table.not_available') ?>">&mdash;</span>
+                  <?php endif; ?>
+                </td>
+              <?php endforeach; ?>
             </tr>
           <?php endforeach; ?>
         </tbody>

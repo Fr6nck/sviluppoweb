@@ -50,6 +50,10 @@ final class PdoRoomRepository implements RoomRepositoryInterface
                 $byId[$id]['description'][$locale] = (string) ($t['description'] ?? '');
             }
 
+            foreach ($this->pdo->query("SELECT room_id, guests, nightly_rate FROM room_rates WHERE room_id IN ({$ids}) ORDER BY guests ASC") as $r) {
+                $byId[(int) $r['room_id']]['rates'][(int) $r['guests']] = (float) $r['nightly_rate'];
+            }
+
             foreach ($this->pdo->query("SELECT room_id, amenity_key FROM room_amenities WHERE room_id IN ({$ids}) ORDER BY position ASC") as $a) {
                 $byId[(int) $a['room_id']]['amenities'][] = (string) $a['amenity_key'];
             }
@@ -127,8 +131,10 @@ final class PdoRoomRepository implements RoomRepositoryInterface
             'price'    => [
                 'confirmed' => (bool) $row['price_confirmed'],
                 'currency'  => (string) ($row['currency'] ?? 'EUR'),
-                'demo_from' => (int) ($row['base_rate'] ?? 0),
             ],
+            // Riempite da room_rates qui sotto: una riga per numero di ospiti.
+            'rates'    => [],
+            'currency' => (string) ($row['currency'] ?? 'EUR'),
             'view_san_rufino' => $row['view_san_rufino'] !== null ? (bool) $row['view_san_rufino'] : null,
             'name'            => [],
             'slug'            => [],

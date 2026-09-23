@@ -94,8 +94,8 @@ foreach ($camere as $camera) {
         "INSERT INTO rooms (id, ref, position, published, confirmed, name_confirmed, type_key,\n"
         . "                   occupancy_standard, occupancy_max, beds_json, layouts_json,\n"
         . "                   size_sqm, floor, view_key, bathroom_json,\n"
-        . "                   price_confirmed, currency, base_rate, view_san_rufino)\n"
-        . "  VALUES (%d, %s, %d, 1, %d, %d, %s, %d, %d, %s, %s, %s, %s, %s, %s, %d, %s, %s, %s);",
+        . "                   price_confirmed, currency, view_san_rufino)\n"
+        . "  VALUES (%d, %s, %d, 1, %d, %d, %s, %d, %d, %s, %s, %s, %s, %s, %s, %d, %s, %s);",
         $camera['id'],
         $q($camera['ref']),
         $camera['position'],
@@ -108,11 +108,10 @@ foreach ($camere as $camera) {
         $q($camera['layouts']),
         $q($camera['size_sqm']),
         $q($camera['floor']),
-        $q($camera['view']),
+        'NULL',
         $q($camera['bathroom']),
         $camera['price']['confirmed'] ? 1 : 0,
         $q($camera['price']['currency']),
-        $q($camera['price']['demo_from']),
         $q($camera['view_san_rufino']),
     );
 
@@ -152,11 +151,13 @@ foreach ($camere as $camera) {
         );
     }
 
-    $out[] = sprintf(
-        'INSERT INTO prices (room_id, nightly_rate, currency, min_nights, confirmed) VALUES (%d, %s, %s, 1, %d);',
-        $camera['id'], $q($camera['price']['demo_from']), $q($camera['price']['currency']),
-        $camera['price']['confirmed'] ? 1 : 0
-    );
+    foreach ((array) $camera['rates'] as $ospiti => $tariffa) {
+        $out[] = sprintf(
+            'INSERT INTO room_rates (room_id, guests, nightly_rate, currency, confirmed) VALUES (%d, %d, %s, %s, %d);',
+            $camera['id'], (int) $ospiti, $q($tariffa), $q($camera['price']['currency']),
+            $camera['price']['confirmed'] ? 1 : 0
+        );
+    }
     $out[] = '';
 }
 

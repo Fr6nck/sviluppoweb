@@ -190,14 +190,17 @@ return [
         'list_title'    => 'Una per',
         'list_sign'     => 'una',
         'rates_title'   => 'Le tariffe a confronto',
-        'rates_caption' => 'Tariffe dimostrative per una notte, due ospiti. I prezzi definitivi e la '
-                         . 'stagionalità sono da confermare.',
+        'rates_note'    => 'Il prezzo è della camera, non della persona: una matrimoniale occupata '
+                         . 'da una sola persona costa meno.',
+        'rates_caption' => 'Tariffa a notte per camera, secondo quante persone dormono. Tassa di '
+                         . 'soggiorno esclusa. Eventuali variazioni stagionali sono da confermare.',
         'table' => [
             'room'      => 'Camera',
             'type'      => 'Tipologia',
             'occupancy' => 'Ospiti',
             'beds'      => 'Letti',
-            'rate'      => 'A notte',
+            'rate'          => 'A notte',
+            'not_available' => 'non disponibile per questo numero di ospiti',
         ],
         'status' => [
             'free'     => 'LIBERA',
@@ -238,6 +241,8 @@ return [
         'single'       => 'Singola',
         'double'       => 'Matrimoniale',
         'double-extra' => 'Matrimoniale con letto aggiunto',
+        'double-twin'  => 'Doppia, letti separabili',
+        'single-double' => 'Singola con letto matrimoniale',
         'twin'         => 'Doppia a due letti',
         'triple'       => 'Tripla',
     ],
@@ -449,6 +454,8 @@ return [
             'guests'    => 'Ospiti',
             'submit'    => 'Verifica disponibilità',
             'note'      => 'Soggiorno minimo :nights notti. Tassa di soggiorno esclusa, da confermare.',
+            'note_no_min' => 'Il prezzo dipende da quante persone dormono in camera. Tassa di '
+                           . 'soggiorno esclusa, da confermare.',
             'note_stay' => ':nights notti · :guests',
         ],
 

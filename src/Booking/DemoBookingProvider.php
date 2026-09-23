@@ -28,9 +28,6 @@ final class DemoBookingProvider implements BookingProviderInterface
     /** Quanti giorni in avanti cercare quando le date chieste sono piene. */
     private const ALTERNATIVE_WINDOW_DAYS = 60;
 
-    /** Mesi in cui la tariffa dimostrativa sale: primavera e inizio autunno. */
-    private const HIGH_SEASON_MONTHS = [4, 5, 6, 9, 10];
-
     public function __construct(
         private readonly RoomRepositoryInterface $rooms,
         private readonly int $minNights = 2,
@@ -42,7 +39,11 @@ final class DemoBookingProvider implements BookingProviderInterface
     {
         $offers = [];
         foreach ($this->rooms->all() as $room) {
-            $fitsGuests = (int) ($room['occupancy']['max'] ?? 0) >= $criteria->guests;
+            // Ospita quel numero di persone E ha una tariffa per quel numero:
+            // le due cose vanno insieme, e la seconda è quella che dice il
+            // prezzo da mettere in pagina.
+            $fitsGuests = (int) ($room['occupancy']['max'] ?? 0) >= $criteria->guests
+                && self::rateFor($room, $criteria->guests) !== null;
             $free       = $fitsGuests && $this->isFree((string) $room['ref'], $criteria);
             $offers[]   = $this->makeOffer($room, $criteria, $free);
         }
@@ -63,6 +64,7 @@ final class DemoBookingProvider implements BookingProviderInterface
         }
 
         $free = (int) ($room['occupancy']['max'] ?? 0) >= $criteria->guests
+            && self::rateFor($room, $criteria->guests) !== null
             && $this->isFree($roomRef, $criteria);
 
         return $this->makeOffer($room, $criteria, $free);
@@ -86,44 +88,37 @@ final class DemoBookingProvider implements BookingProviderInterface
     private function makeOffer(array $room, SearchCriteria $criteria, bool $available): RoomOffer
     {
         $nights = max(1, $criteria->nights());
-        $total  = 0.0;
-
-        $night = $criteria->arrival;
-        for ($i = 0; $i < $nights; $i++) {
-            $total += $this->rateFor($room, $night);
-            $night = $night->modify('+1 day');
-        }
+        $tariffa = self::rateFor($room, $criteria->guests);
 
         return new RoomOffer(
             room:        $room,
-            available:   $available,
+            available:   $available && $tariffa !== null,
             nights:      $nights,
-            nightlyRate: round($total / $nights, 2),
-            total:       round($total, 2),
+            nightlyRate: $tariffa ?? 0.0,
+            total:       round(($tariffa ?? 0.0) * $nights, 2),
             currency:    (string) ($room['price']['currency'] ?? $this->currency),
             rateIsDemo:  !(bool) ($room['price']['confirmed'] ?? false),
         );
     }
 
     /**
-     * Tariffa di una singola notte. È dimostrativa, ma si muove come si muove
-     * una tariffa vera — alta stagione e fine settimana — così il totale che
-     * l'ospite vede nel prototipo ha la forma di un totale credibile.
+     * La tariffa a notte per quel numero di ospiti.
+     *
+     * Le tariffe di questa casa non sono stagionali: dipendono da quante
+     * persone dormono nella camera, ed è così che il titolare le ha date.
+     * Una matrimoniale occupata da una persona sola costa meno, e il sito
+     * deve dirlo.
+     *
+     * Restituisce null quando per quel numero di ospiti la camera non ha una
+     * tariffa: vuol dire che non li ospita, e quindi non è prenotabile.
      *
      * @param array<string,mixed> $room
      */
-    private function rateFor(array $room, \DateTimeImmutable $night): float
+    public static function rateFor(array $room, int $guests): ?float
     {
-        $base = (float) ($room['price']['demo_from'] ?? 80);
+        $tariffe = (array) ($room['rates'] ?? []);
 
-        if (in_array((int) $night->format('n'), self::HIGH_SEASON_MONTHS, true)) {
-            $base *= 1.20;
-        }
-        if (in_array((int) $night->format('N'), [5, 6], true)) {   // venerdì e sabato
-            $base *= 1.10;
-        }
-
-        return round($base, 2);
+        return isset($tariffe[$guests]) ? (float) $tariffe[$guests] : null;
     }
 
     /** Una camera è libera solo se lo sono tutte le notti del soggiorno. */

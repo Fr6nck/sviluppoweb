@@ -97,7 +97,6 @@ CREATE TABLE rooms (
   bathroom_json       JSON             NULL,
   price_confirmed     TINYINT(1)   NOT NULL DEFAULT 0,
   currency            CHAR(3)      NOT NULL DEFAULT 'EUR',
-  base_rate           DECIMAL(8,2)     NULL,
   view_san_rufino     TINYINT(1)       NULL,
   created_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -172,15 +171,20 @@ CREATE TABLE room_images (
 -- senza quella colonna, due offerte sovrapposte danno due prezzi diversi per
 -- la stessa notte, che è il modo più rapido di perdere la fiducia di un ospite.
 -- ---------------------------------------------------------------------------
-CREATE TABLE prices (
+-- Le tariffe non sono stagionali: dipendono da quante persone dormono nella
+-- camera. È così che il titolare le ha date, ed è così che vanno tenute — una
+-- riga per camera e per numero di ospiti. Una matrimoniale occupata da una
+-- persona sola costa meno, e senza questa tabella quel prezzo non esiste.
+-- Se per un certo numero di ospiti non c'è una riga, la camera non li ospita.
+CREATE TABLE room_rates (
   room_id      INT UNSIGNED NOT NULL,
+  guests       TINYINT UNSIGNED NOT NULL,
   nightly_rate DECIMAL(8,2) NOT NULL,
   currency     CHAR(3)      NOT NULL DEFAULT 'EUR',
-  min_nights   TINYINT UNSIGNED NOT NULL DEFAULT 1,
   confirmed    TINYINT(1)   NOT NULL DEFAULT 0,
   updated_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (room_id),
-  CONSTRAINT fk_prices_room FOREIGN KEY (room_id) REFERENCES rooms (id) ON DELETE CASCADE
+  PRIMARY KEY (room_id, guests),
+  CONSTRAINT fk_rates_room FOREIGN KEY (room_id) REFERENCES rooms (id) ON DELETE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 CREATE TABLE seasonal_rates (
@@ -189,6 +193,8 @@ CREATE TABLE seasonal_rates (
   label        VARCHAR(80)  NOT NULL,
   starts_on    DATE         NOT NULL,
   ends_on      DATE         NOT NULL,
+  -- NULL = vale per qualunque occupazione; un numero = solo per quella.
+  guests       TINYINT UNSIGNED NULL,
   nightly_rate DECIMAL(8,2) NOT NULL,
   min_nights   TINYINT UNSIGNED NOT NULL DEFAULT 1,
   priority     SMALLINT     NOT NULL DEFAULT 0,
