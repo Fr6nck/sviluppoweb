@@ -267,9 +267,20 @@ in locale, caricamento via FTP.
    richieste in `public/` e blocca `src`, `views`, `content`, `config`,
    `storage`, `database`, `tools`, `docs`.
 
-**Resta da fare al deploy**: certificato HTTPS (incluso nei piani, si attiva
-dal pannello), `APP_ENV=production` e `APP_DEBUG=false`, `APP_URL` col dominio
-vero, la casella di posta e le credenziali SMTP, e — se serve — il database.
+**La procedura completa è in [`docs/DEPLOY-HOSTINGER.md`](docs/DEPLOY-HOSTINGER.md)**:
+dove mettere i file, che cosa non caricare, il `.env` di produzione, la posta,
+il certificato, e i sintomi dei guai più comuni.
+
+Prima di pubblicare, sul server:
+
+```bash
+php tools/preflight.php
+```
+
+Controlla versione di PHP ed estensioni, `.env` e ambiente, cartelle
+scrivibili, cartelle esposte al web, riscritture, database, posta, materiali e
+sessione. Dice che cosa manca e come rimediare, ed esce con codice 1 se c'è un
+problema bloccante.
 
 Il prototipo **non è stato caricato** su Hostinger.
 

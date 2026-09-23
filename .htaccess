@@ -1,18 +1,31 @@
 # Arco del Vento — .htaccess della radice del progetto.
 #
-# Serve SOLO nel caso in cui tutto il progetto venga caricato dentro
-# public_html, che su Hostinger è la strada più rapida. Manda ogni richiesta
-# dentro public/ e impedisce che le cartelle dell'applicazione — src, views,
-# content, config, storage — siano raggiungibili dal web.
+# Serve SOLO se tutto il progetto viene caricato dentro public_html, che è la
+# strada più rapida via FTP. Manda ogni richiesta dentro public/ e impedisce
+# che le cartelle dell'applicazione siano raggiungibili dal web.
 #
 # La strada migliore resta l'altra: puntare il dominio su public/ dall'hPanel
-# (Avanzate → Cambia cartella radice del sito). Vedi README, «Hostinger».
+# (Avanzate → Cambia cartella radice del sito). Allora questo file non viene
+# nemmeno letto. Vedi docs/DEPLOY-HOSTINGER.md.
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
+  # HTTPS prima di tutto: farlo qui evita un giro in più rispetto a lasciarlo
+  # all'.htaccess dentro public/, che verrebbe letto solo dopo la riscrittura.
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteCond %{HTTP:X-Forwarded-SSL}   !=on
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
   # Le cartelle dell'applicazione non si servono mai.
   RewriteRule ^(src|views|content|config|storage|database|tools|docs)/ - [F,L]
+
+  # /public/… non deve esistere come indirizzo pubblico: senza questa regola
+  # ogni pagina del sito avrebbe due indirizzi — /it/camere e
+  # /public/it/camere — che per un motore di ricerca è contenuto duplicato.
+  RewriteCond %{THE_REQUEST} \s/+public/([^\s?]*)
+  RewriteRule ^ /%1 [R=301,L]
 
   # Tutto il resto entra in public/.
   RewriteCond %{REQUEST_URI} !^/public/

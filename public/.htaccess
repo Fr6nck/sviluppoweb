@@ -11,6 +11,16 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
+  # HTTPS sempre. Su Hostinger il certificato è incluso e si attiva dal
+  # pannello: appena è attivo, questa regola manda lì ogni richiesta.
+  # La condizione guarda anche X-Forwarded-Proto perché dietro il proxy di
+  # LiteSpeed la variabile HTTPS può restare vuota su una richiesta cifrata,
+  # e senza quel controllo il sito entrerebbe in un ciclo di redirezioni.
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteCond %{HTTP:X-Forwarded-SSL}   !=on
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
   # Una barra finale in meno: /it/camere/ e /it/camere sono la stessa pagina,
   # e due indirizzi per una pagina sola sono contenuto duplicato.
   # La home di lingua (/it/) resta con la barra, che è il suo indirizzo.
@@ -82,5 +92,14 @@ Options -Indexes
   AddType font/woff2 .woff2
   AddType application/manifest+json .webmanifest
 </IfModule>
+
+# --------------------------------------------------------- pagine d'errore
+# Il 404 lo disegna l'applicazione e resta nella lingua dell'indirizzo
+# sbagliato: ci arriva già da solo, perché le riscritture mandano al front
+# controller tutto ciò che non è un file vero.
+# Il 500 no: se PHP è a terra, non può disegnare niente. Serve una pagina
+# statica, che non dipenda da PHP per essere mostrata.
+ErrorDocument 500 /500.html
+ErrorDocument 503 /500.html
 
 DirectoryIndex index.php

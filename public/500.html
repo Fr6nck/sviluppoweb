@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arco del Vento — il sito non risponde</title>
+<meta name="robots" content="noindex">
+<!-- Gli stili sono qui dentro di proposito: questa pagina compare quando PHP
+     non è in grado di rispondere, e in quel momento non si può contare su un
+     foglio esterno che potrebbe a sua volta non arrivare. -->
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center;
+    background: #f8e6c2; color: #331d18;
+    font-family: Figtree, -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 16px; line-height: 27px; padding: 24px;
+  }
+  main { max-width: 34rem; text-align: center; }
+  h1 {
+    font-family: Prata, "Playfair Display", Georgia, serif; font-weight: 400;
+    font-size: 40px; line-height: 44px; color: #813131; margin: 0 0 16px;
+  }
+  p { color: #65412a; margin: 0 0 12px; }
+  .occhiello {
+    font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.16em;
+    color: #7a563c; display: block; margin-bottom: 12px;
+  }
+  a { color: #813131; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #241510; color: #f8e6c2; }
+    h1 { color: #eccf6e; } p { color: #dcc39a; } .occhiello { color: #b99b74; }
+    a { color: #eccf6e; }
+  }
+</style>
+</head>
+<body>
+  <main>
+    <span class="occhiello">ARCO DEL VENTO · ASSISI</span>
+    <h1>Il sito non risponde</h1>
+    <p>È un problema nostro, non tuo. Di solito passa in pochi minuti: prova a
+       ricaricare la pagina.</p>
+    <p>Se hai bisogno di scriverci subito, siamo in Via Santa Maria delle Rose 1/A,
+       ad Assisi.</p>
+    <p><a href="/">Torna alla home</a></p>
+  </main>
+</body>
+</html>
