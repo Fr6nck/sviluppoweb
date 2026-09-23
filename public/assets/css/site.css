@@ -387,6 +387,58 @@ body.adv-menu-aperto { overflow: hidden; }
 
 .adv-persone--una { grid-template-columns: minmax(0, 320px); }
 
+/* ============================================================
+   Le classi di impaginazione che le viste chiamano per nome.
+   Stanno qui e non nel bundle perché appartengono a questo sito,
+   non al design system.
+   ============================================================ */
+
+/* Il respiro fra due blocchi dentro una stessa sezione. */
+.adv-spazio-sopra { margin-top: var(--space-16); }
+
+/* L'apertura di sezione si stacca da ciò che introduce. */
+.adv-sezione { margin-bottom: var(--space-10); }
+
+/* Le informazioni pratiche: sei blocchi pari, non due colonne asimmetriche.
+   Sotto i 900px .adv-split li mette già in colonna. */
+.adv-info-griglia { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-12) var(--space-16); }
+
+/* La tabella delle tariffe e l'elenco dei servizi: solo aria sopra. */
+.adv-tariffe  { margin-top: var(--space-20); }
+.adv-servizi  { margin-top: var(--space-12); }
+.adv-elenco--pagina { margin-top: var(--space-6); }
+
+/* I blocchi dell'informativa, uno sotto l'altro. */
+.adv-blocco-testo + .adv-blocco-testo { margin-top: var(--space-12); }
+
+/* La nota «(facoltativo)» accanto a un'etichetta: c'è, ma non compete
+   con il nome del campo. Si segnano i facoltativi, non gli obbligatori. */
+.adv-campo__facoltativo { font-weight: 400; color: var(--ink-soft); letter-spacing: 0; }
+
+/* L'indirizzo in un <address>: il corsivo predefinito qui non serve. */
+.adv-indirizzo { font-style: normal; }
+
+/* La colonna di prenotazione nella pagina di una camera: la barra del
+   sistema è una griglia orizzontale, qui sta in una colonna stretta e
+   quindi si impila. Resta appesa mentre si legge la scheda. */
+.adv-prenota-camera { position: sticky; top: calc(var(--space-20) + var(--space-4)); }
+.adv-barra--verticale { grid-template-columns: 1fr; gap: var(--space-4); }
+.adv-barra--verticale .adv-camera__prezzo { margin: 0; }
+@media (max-width: 900px) { .adv-prenota-camera { position: static; } }
+
+/* Le date alternative dentro il messaggio «queste date non sono libere»:
+   una per riga, perché sono scelte e non parole di una frase. */
+.adv-alternativa { display: inline-flex; margin-top: var(--space-3); margin-right: var(--space-6); }
+
+/* Quello che della persona ancora non sappiamo. */
+.adv-persona__nota { color: var(--ink-soft); }
+
+/* Le aperture tipografiche delle pagine interne respirano meno di quella
+   della home: lì il titolo è l'unica cosa in pagina, qui viene seguito
+   subito da un modulo o da una scheda. */
+.adv-heroT--camera,
+.adv-heroT--modulo { padding-block: var(--space-12) var(--space-8); }
+
 /* ------------------------------------------------------ movimento ridotto */
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 1ms !important; animation-duration: 1ms !important; scroll-behavior: auto !important; }

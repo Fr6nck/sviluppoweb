@@ -216,6 +216,7 @@ return [
         'view'          => 'Esposizione',
         'rate'          => 'Tariffa',
         'other_rooms'   => 'Le altre camere',
+        'name_to_confirm' => 'Nome della camera',
         'meta' => [
             'occupancy' => 'Ospiti',
             'beds'      => 'Letti',

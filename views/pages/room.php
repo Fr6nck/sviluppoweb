@@ -26,7 +26,9 @@ $tariffa = R::fromRate($camera);
     <ul class="adv-heroT__meta">
       <li><?= e(R::beds($camera)) ?></li>
       <?php if (!$camera['name_confirmed']): ?>
-        <li><?= te('room.eyebrow') ?> <?= daConfermare() ?></li>
+        <?php /* Dire «CAMERA [da confermare]» non spiega niente: quello che
+                 manca è il nome, e la riga deve dirlo con le sue parole. */ ?>
+        <li><?= te('room.name_to_confirm') ?> <?= daConfermare() ?></li>
       <?php endif; ?>
     </ul>
   </header>

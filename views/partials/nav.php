@@ -33,7 +33,7 @@ $attiva   = $corrente === 'room' ? 'rooms' : $corrente;
     </a>
 
     <nav class="adv-nav adv-nav--principale" aria-label="<?= te('nav.label') ?>">
-      <ul class="adv-nav__voci adv-nav__voci--desktop">
+      <ul class="adv-nav__voci">
         <?php foreach ($voci as $chiave => $etichetta): ?>
           <li>
             <a class="adv-nav__link" href="<?= e(url($chiave)) ?>"<?= $attiva === $chiave ? ' aria-current="page"' : '' ?>>

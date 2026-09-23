@@ -214,6 +214,7 @@ return [
         'view'          => 'Which way it faces',
         'rate'          => 'Rate',
         'other_rooms'   => 'The other rooms',
+        'name_to_confirm' => 'Room name',
         'meta' => [
             'occupancy' => 'Guests',
             'beds'      => 'Beds',

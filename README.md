@@ -201,7 +201,7 @@ stessa forma di dati: nessuna vista cambia.
 
 ## Lingue
 
-Italiano e inglese, completi: 407 chiavi per lingua, in parità.
+Italiano e inglese, completi: 408 chiavi per lingua, in parità.
 
 Le pagine non sono duplicate. Esiste una vista per pagina; gli indirizzi per
 lingua stanno in `src/I18n/Routes.php` e i testi in `content/lang/`. Una
