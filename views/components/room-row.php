@@ -19,10 +19,12 @@ $tariffa = R::fromRate($camera);
 
     <figure class="adv-elenco__figura">
       <?= component('picture', [
-          'src'    => $camera['images']['list']['src'],
-          'alt'    => t('rooms.image_alt'),
-          'width'  => 900,
-          'height' => 600,
+          'src'   => $camera['images']['list']['src'],
+          'alt'   => R::alt($camera, $lingua),
+          // Nell'elenco la figura è una colonna di 300px su schermo largo e
+          // tutta la riga su mobile: dirlo evita di scaricare 1400px per
+          // riempirne 300.
+          'sizes' => '(max-width: 900px) 100vw, 300px',
       ]) ?>
     </figure>
 

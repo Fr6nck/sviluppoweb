@@ -2,39 +2,99 @@
 /**
  * Una fotografia servita bene.
  *
- * Preferisce il .webp e tiene il .jpg di ripiego, scrive sempre width e
- * height perché la pagina non salti durante il caricamento, e carica in
- * differita tutto tranne la prima immagine della pagina.
+ * Preferisce il .webp e tiene il .jpg di ripiego, serve due misure con
+ * srcset, e scrive sempre width e height perché la pagina non salti durante
+ * il caricamento. Tutto tranne la prima immagine della pagina arriva in
+ * differita.
  *
- * I segnaposto disegnati sono SVG: lì non c'è nulla da negoziare, si serve
- * il file e basta.
+ * Le misure NON si passano a mano: le legge dal file. Un width dichiarato a
+ * occhio e diverso da quello vero è esattamente il salto di impaginazione
+ * che l'attributo dovrebbe impedire, e non se ne accorge nessuno finché non
+ * si guarda la pagina caricare su una rete lenta.
  *
- * @var string $src     percorso sotto /assets/, senza estensione per le foto
- * @var string $alt
- * @var int    $width
- * @var int    $height
- * @var bool   $eager   true per l'immagine che apre la pagina
- * @var string $classe
+ * I segnaposto disegnati sono SVG: lì non c'è nulla da negoziare.
+ *
+ * @var string      $src    percorso sotto /assets/, senza estensione per le foto
+ * @var string      $alt
+ * @var bool        $eager  true per l'immagine che apre la pagina
+ * @var string|null $sizes  quanto spazio occupa in pagina, per il srcset
+ * @var string      $classe
+ * @var int         $width  usati solo se il file non si trova
+ * @var int         $height
  */
 
 $eager  = $eager ?? false;
 $classe = $classe ?? '';
-$attr   = attrs([
+$sizes  = $sizes ?? '(max-width: 900px) 100vw, 50vw';
+
+$radice = \ArcoDelVento\App::instance()->config('root') . '/public/assets/';
+
+/** Le misure vere di un file, lette una volta sola per richiesta. */
+$misure = static function (string $relativo) use ($radice): ?array {
+    static $cache = [];
+    if (array_key_exists($relativo, $cache)) {
+        return $cache[$relativo];
+    }
+    $file = $radice . ltrim($relativo, '/');
+    $info = is_file($file) ? @getimagesize($file) : false;
+
+    return $cache[$relativo] = $info ? [(int) $info[0], (int) $info[1]] : null;
+};
+
+// ------------------------------------------------------------- segnaposto SVG
+if (str_ends_with($src, '.svg')) {
+    $dim = $misure($src) ?? [(int) ($width ?? 800), (int) ($height ?? 600)];
+    printf(
+        '<img src="%s"%s>',
+        e(asset($src)),
+        attrs([
+            'class'    => $classe !== '' ? $classe : null,
+            'width'    => (string) $dim[0],
+            'height'   => (string) $dim[1],
+            'alt'      => $alt,
+            'loading'  => $eager ? 'eager' : 'lazy',
+            'decoding' => $eager ? 'sync' : 'async',
+            'fetchpriority' => $eager ? 'high' : null,
+        ])
+    );
+    return;
+}
+
+// --------------------------------------------------------------- fotografia
+$grande  = $misure($src . '.webp');
+$piccola = $misure($src . '-sm.webp');
+
+$dim = $grande ?? [(int) ($width ?? 1200), (int) ($height ?? 900)];
+
+/** Costruisce il srcset solo quando la seconda misura esiste davvero. */
+$srcset = static function (string $estensione) use ($src, $grande, $piccola): ?string {
+    if ($grande === null || $piccola === null) {
+        return null;
+    }
+
+    return sprintf(
+        '%s %dw, %s %dw',
+        asset($src . '-sm' . $estensione), $piccola[0],
+        asset($src . $estensione), $grande[0]
+    );
+};
+
+$comuni = attrs([
     'class'    => $classe !== '' ? $classe : null,
-    'width'    => (string) $width,
-    'height'   => (string) $height,
+    'width'    => (string) $dim[0],
+    'height'   => (string) $dim[1],
     'alt'      => $alt,
     'loading'  => $eager ? 'eager' : 'lazy',
     'decoding' => $eager ? 'sync' : 'async',
     'fetchpriority' => $eager ? 'high' : null,
+    'srcset'   => $srcset('.jpg'),
+    'sizes'    => $srcset('.jpg') !== null ? $sizes : null,
 ]);
-
-if (str_ends_with($src, '.svg')) {
-    printf('<img src="%s"%s>', e(asset($src)), $attr);
-    return;
-}
 ?>
 <picture>
-  <source srcset="<?= e(asset($src . '.webp')) ?>" type="image/webp">
-  <img src="<?= e(asset($src . '.jpg')) ?>"<?= $attr ?>>
+  <source type="image/webp"<?= attrs([
+      'srcset' => $srcset('.webp') ?? asset($src . '.webp'),
+      'sizes'  => $srcset('.webp') !== null ? $sizes : null,
+  ]) ?>>
+  <img src="<?= e(asset($src . '.jpg')) ?>"<?= $comuni ?>>
 </picture>

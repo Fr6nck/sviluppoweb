@@ -2,22 +2,21 @@
 /**
  * Le cinque camere.
  *
- * CONTENUTO DIMOSTRATIVO. Confermato dal cliente c'è solo il numero — cinque —
- * e il fatto che la casa sia un affittacamere in Via Santa Maria delle Rose.
- * Nomi, metrature, letti, esposizioni, servizi e tariffe qui sotto servono a
- * far funzionare e leggere il sito finché non arrivano i dati veri.
+ * QUATTRO SONO FOTOGRAFATE. Le fotografie di Camera 01–04 sono state fornite
+ * dal titolare e ritraggono la casa vera: si pubblicano. La quinta camera non
+ * ha ancora una fotografia e tiene il segnaposto disegnato.
  *
- * Ogni scheda porta `confirmed => false`: finché è così, l'elenco delle camere
- * mostra in cima un avviso che lo dice, i nomi restano «Camera 01…05» e le
- * tariffe sono marcate come da confermare. Confermando una camera si mette
- * `confirmed => true`, si scrivono i valori veri e il sito smette di segnalarla.
+ * DA CONFERMARE CON DANIELE, in una riga: quale fotografia corrisponde a
+ * quale camera. La numerazione qui sotto è quella in cui le fotografie sono
+ * arrivate, non una numerazione della casa. Cambiarla vuol dire rinominare i
+ * file in public/assets/img/camere/ e gli originali in docs/foto-originali/,
+ * nient'altro.
  *
- * Le fotografie: nel materiale consegnato non ci sono immagini delle camere di
- * Arco del Vento con una provenienza dichiarata, quindi nessuna foto d'interno
- * va sul sito pubblico. I file in public/assets/img/demo/ sono segnaposto
- * disegnati, tagliati ai rapporti del design system (4:3 per la scheda, 3:2
- * per l'elenco, 16:9 per l'apertura): la foto vera prende lo stesso nome e
- * lo stesso rapporto, e non cambia nient'altro.
+ * Letti, esposizione e servizi delle prime quattro sono presi DALLE
+ * FOTOGRAFIE: due letti singoli affiancati nelle prime tre, un letto grande
+ * nella quarta, e la finestra sul campanile dove si vede nell'inquadratura.
+ * Metrature, piano e tariffe restano da confermare: non si misurano da una
+ * fotografia.
  *
  * Quando le camere passano su MySQL, questo file smette di essere letto:
  * PdoRoomRepository restituisce gli stessi array leggendo dalle tabelle
@@ -47,18 +46,21 @@ $camera = static function (int $n, array $overrides = []): array {
         'name' => ['it' => 'Camera ' . $due, 'en' => 'Room ' . $due, 'es' => 'Habitación ' . $due],
         'name_confirmed' => false,
 
+        // Vero quando la fotografia è della casa e si può pubblicare.
+        'photographed' => false,
+
         'confirmed' => false,
         'position'  => $n,
 
-        'type'        => 'double',          // chiave tradotta in content/lang/
+        'type'        => 'twin',
         'occupancy'   => ['standard' => 2, 'max' => 2],
-        'beds'        => ['double' => 1],
-        'layouts'     => ['double'],        // configurazioni possibili
-        'size_sqm'    => null,              // da confermare
+        'beds'        => ['single' => 2],
+        'layouts'     => ['double', 'twin'],
+        'size_sqm'    => null,              // non si misura da una fotografia
         'floor'       => null,              // da confermare
-        'view'        => 'demo',            // chiave tradotta
+        'view'        => 'demo',
         'bathroom'    => ['private' => true, 'shower' => true, 'bathtub' => false],
-        'amenities'   => ['private-bathroom', 'wifi', 'linen', 'towels'],
+        'amenities'   => ['private-bathroom', 'wifi', 'heating', 'linen', 'towels'],
 
         'images' => [
             'card'    => ['src' => 'img/demo/camera-' . $due . '-4x3.svg',  'ratio' => '4/3'],
@@ -70,6 +72,9 @@ $camera = static function (int $n, array $overrides = []): array {
             ],
         ],
 
+        // Il testo alternativo dice cosa si vede, non cosa è.
+        'alt' => ['it' => null, 'en' => null],
+
         'price' => [
             'confirmed' => false,
             'currency'  => 'EUR',
@@ -78,49 +83,81 @@ $camera = static function (int $n, array $overrides = []): array {
             'demo_from' => 85,
         ],
 
-        // Quali camere vedano la Cattedrale di San Rufino è la cosa che più
-        // conta per il racconto di questo sito, ed è anche una di quelle che
-        // non si possono dedurre da una pianta. Il campo aspetta la conferma.
+        // `true` solo dove la fotografia mostra il campanile dalla finestra.
         'view_san_rufino' => null,
     ], $overrides);
 };
 
+/** Le immagini vere di una camera fotografata, nei cinque tagli del sistema. */
+$fotografie = static function (string $nome): array {
+    return [
+        'card'    => ['src' => "img/camere/{$nome}-4x3",  'ratio' => '4/3'],
+        'list'    => ['src' => "img/camere/{$nome}-3x2",  'ratio' => '3/2'],
+        'hero'    => ['src' => "img/camere/{$nome}-16x9", 'ratio' => '16/9'],
+        'gallery' => [['src' => "img/camere/{$nome}-1x1", 'ratio' => '1/1']],
+    ];
+};
+
 return [
     $camera(1, [
-        'type'      => 'double',
-        'occupancy' => ['standard' => 2, 'max' => 2],
-        'beds'      => ['double' => 1],
-        'layouts'   => ['double', 'twin'],
-        'price'     => ['demo_from' => 85],
+        'photographed'    => true,
+        'images'          => $fotografie('camera-01'),
+        'view_san_rufino' => true,
+        'alt' => [
+            'it' => 'Due letti singoli affiancati con coperte gialle; dalla finestra aperta si vede '
+                  . 'il campanile in pietra di San Rufino.',
+            'en' => 'Two single beds side by side with yellow covers; through the open window, the stone '
+                  . 'bell tower of San Rufino.',
+        ],
+        'price' => ['demo_from' => 85],
     ]),
     $camera(2, [
-        'type'      => 'double-extra',
+        'photographed'    => true,
+        'images'          => $fotografie('camera-02'),
+        'view_san_rufino' => true,
+        'alt' => [
+            'it' => 'Due letti singoli affiancati con coperte gialle; dalla finestra si vedono il '
+                  . 'campanile e la facciata della cattedrale di San Rufino.',
+            'en' => 'Two single beds side by side with yellow covers; through the window, the bell tower '
+                  . 'and the façade of the cathedral of San Rufino.',
+        ],
+        'price' => ['demo_from' => 90],
+    ]),
+    $camera(3, [
+        'photographed'    => true,
+        'images'          => $fotografie('camera-03'),
+        'view_san_rufino' => true,
+        'amenities'       => ['private-bathroom', 'wifi', 'heating', 'linen', 'towels', 'wardrobe'],
+        'alt' => [
+            'it' => 'Due letti singoli affiancati con coperte gialle e un armadio in legno chiaro; '
+                  . 'dalla finestra si vede il campanile di San Rufino.',
+            'en' => 'Two single beds side by side with yellow covers and a pale wooden wardrobe; through '
+                  . 'the window, the bell tower of San Rufino.',
+        ],
+        'price' => ['demo_from' => 85],
+    ]),
+    $camera(4, [
+        'photographed' => true,
+        'images'       => $fotografie('camera-04'),
+        'type'         => 'double',
+        'beds'         => ['double' => 1],
+        'layouts'      => ['double'],
+        'amenities'    => ['private-bathroom', 'wifi', 'heating', 'linen', 'towels', 'desk'],
+        'alt' => [
+            'it' => 'Un letto matrimoniale con coperta color crema, pavimento in parquet, una scrivania '
+                  . 'e due sedie impagliate sul fondo.',
+            'en' => 'A double bed with a cream cover, a parquet floor, a desk and two rush-seated chairs '
+                  . 'at the far end.',
+        ],
+        'price' => ['demo_from' => 95],
+    ]),
+    // La quinta non ha ancora una fotografia: tiene il segnaposto, e i suoi
+    // attributi restano quelli dimostrativi finché non arrivano i dati veri.
+    $camera(5, [
+        'type'      => 'triple',
         'occupancy' => ['standard' => 2, 'max' => 3],
         'beds'      => ['double' => 1, 'single' => 1],
         'layouts'   => ['double', 'triple'],
-        'amenities' => ['private-bathroom', 'wifi', 'linen', 'towels', 'desk'],
-        'price'     => ['demo_from' => 95],
-    ]),
-    $camera(3, [
-        'type'      => 'twin',
-        'occupancy' => ['standard' => 2, 'max' => 2],
-        'beds'      => ['single' => 2],
-        'layouts'   => ['twin', 'double'],
-        'price'     => ['demo_from' => 85],
-    ]),
-    $camera(4, [
-        'type'      => 'triple',
-        'occupancy' => ['standard' => 3, 'max' => 3],
-        'beds'      => ['double' => 1, 'single' => 1],
-        'layouts'   => ['triple', 'double'],
-        'amenities' => ['private-bathroom', 'wifi', 'linen', 'towels', 'wardrobe'],
         'price'     => ['demo_from' => 110],
-    ]),
-    $camera(5, [
-        'type'      => 'single',
-        'occupancy' => ['standard' => 1, 'max' => 2],
-        'beds'      => ['single' => 1],
-        'layouts'   => ['single', 'double'],
-        'price'     => ['demo_from' => 70],
     ]),
 ];

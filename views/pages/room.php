@@ -18,21 +18,59 @@ $nome    = R::name($camera, $lingua);
 $tariffa = R::fromRate($camera);
 ?>
 
-<div class="adv-contenuto">
-  <header class="adv-heroT adv-heroT--camera">
-    <span class="adv-heroT__occhiello"><?= te('room.eyebrow') ?></span>
-    <h1 class="adv-heroT__titolo"><?= e($nome) ?></h1>
-    <p class="adv-heroT__spalla"><?= e(R::metaLine($camera)) ?></p>
-    <ul class="adv-heroT__meta">
-      <li><?= e(R::beds($camera)) ?></li>
-      <?php if (!$camera['name_confirmed']): ?>
-        <?php /* Dire «CAMERA [da confermare]» non spiega niente: quello che
-                 manca è il nome, e la riga deve dirlo con le sue parole. */ ?>
-        <li><?= te('room.name_to_confirm') ?> <?= daConfermare() ?></li>
-      <?php endif; ?>
-    </ul>
-  </header>
-</div>
+<?php if (R::isPhotographed($camera)): ?>
+  <?php /* Con una fotografia vera l'apertura è quella silenziosa del design
+           system: la foto larga e, sotto, il titolo. A parlare è la camera,
+           non il marchio, che sta già nella barra. */ ?>
+  <div class="adv-contenuto">
+    <section class="adv-hero-s">
+      <figure class="adv-hero-s__figura">
+        <?= component('picture', [
+            'src'   => $camera['images']['hero']['src'],
+            'alt'   => R::alt($camera, $lingua),
+            'eager' => true,
+            'sizes' => '(max-width: 1120px) 100vw, 1120px',
+        ]) ?>
+      </figure>
+
+      <div class="adv-hero-s__testo">
+        <div>
+          <span class="adv-hero-s__occhiello"><?= te('room.eyebrow') ?></span>
+          <h1 class="adv-hero-s__titolo"><?= e($nome) ?></h1>
+        </div>
+        <div>
+          <?php /* Solo la riga di attributi: la tipologia dice già i letti
+                   («Doppia a due letti · 2 singoli» ripete sé stessa), e il
+                   dettaglio completo sta nella tabella qui sotto. */ ?>
+          <p class="adv-hero-s__spalla"><?= e(R::metaLine($camera)) ?></p>
+          <div class="adv-hero-s__azioni">
+            <a class="adv-btn adv-btn--primario"
+               href="<?= e(url('book', [], ['camera' => $camera['ref']])) ?>">
+              <?= te('cta.book_room') ?>
+            </a>
+            <?php /* La seconda azione è un link, non un pulsante: due pulsanti
+                     affiancati in un'apertura silenziosa sono uno di troppo. */ ?>
+            <a class="adv-elenco__link" href="<?= e(url('rooms')) ?>">
+              <?= te('cta.all_rooms') ?><span aria-hidden="true">&rarr;</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+<?php else: ?>
+  <div class="adv-contenuto">
+    <header class="adv-heroT adv-heroT--camera">
+      <span class="adv-heroT__occhiello"><?= te('room.eyebrow') ?></span>
+      <h1 class="adv-heroT__titolo"><?= e($nome) ?></h1>
+      <p class="adv-heroT__spalla"><?= e(R::metaLine($camera)) ?></p>
+      <ul class="adv-heroT__meta">
+        <li><?= e(R::beds($camera)) ?></li>
+        <li><?= te('room.photo_pending') ?></li>
+      </ul>
+    </header>
+  </div>
+<?php endif; ?>
 
 <section class="adv-contenuto adv-editoriale">
   <div class="adv-split">
@@ -74,7 +112,7 @@ $tariffa = R::fromRate($camera);
         </div>
         <div class="adv-fatti__riga">
           <dt><?= te('room.view') ?></dt>
-          <dd><?= daConfermare() ?></dd>
+          <dd><?= ($esposizione = R::viewLabel($camera)) !== null ? e($esposizione) : daConfermare() ?></dd>
         </div>
       </dl>
 
@@ -126,14 +164,21 @@ $tariffa = R::fromRate($camera);
         'piccolo'   => true,
     ]) ?>
 
-    <?= component('alert', ['tipo' => 'avviso', 'titolo' => t('rooms.demo_notice_title'), 'testo' => t('room.gallery_note')]) ?>
+    <?php if (!R::isPhotographed($camera)): ?>
+      <?= component('alert', [
+          'tipo'   => 'avviso',
+          'titolo' => t('rooms.demo_notice_title'),
+          'testo'  => t('room.gallery_note'),
+      ]) ?>
+    <?php endif; ?>
 
     <ul class="adv-galleria">
       <li>
         <figure>
           <?= component('picture', [
-              'src' => $camera['images']['card']['src'], 'alt' => t('rooms.image_alt'),
-              'width' => 800, 'height' => 600,
+              'src'   => $camera['images']['card']['src'],
+              'alt'   => R::alt($camera, $lingua),
+              'sizes' => '(max-width: 720px) 100vw, 340px',
           ]) ?>
         </figure>
       </li>
@@ -141,8 +186,9 @@ $tariffa = R::fromRate($camera);
         <li>
           <figure>
             <?= component('picture', [
-                'src' => $immagine['src'], 'alt' => t('rooms.image_alt'),
-                'width' => 700, 'height' => 700,
+                'src'   => $immagine['src'],
+                'alt'   => R::alt($camera, $lingua),
+                'sizes' => '(max-width: 720px) 100vw, 340px',
             ]) ?>
           </figure>
         </li>

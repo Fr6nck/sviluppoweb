@@ -177,11 +177,15 @@ return [
         'lead'      => 'Sono cinque e stanno tutte nello stesso edificio. Qui sotto trovi letti, occupazione '
                      . 'massima e servizi di ciascuna; la disponibilità si verifica con le date.',
         'image_alt' => 'Segnaposto: la fotografia della casa non è ancora disponibile.',
+        'corridor_alt' => 'Il corridoio della casa, con il pavimento in parquet e una rosa dei venti '
+                        . 'intarsiata nel legno; alle pareti, vedute di Assisi incorniciate.',
+        'corridor_caption' => 'La rosa dei venti nel pavimento del corridoio. È la stessa del marchio, '
+                            . 'ed era lì prima.',
 
         'demo_notice_title' => 'Contenuto dimostrativo',
-        'demo_notice_text'  => 'Nomi, metrature, letti e tariffe delle camere sono di prova, in attesa dei dati '
-                             . 'definitivi. Le fotografie degli interni non sono ancora disponibili: al loro posto '
-                             . 'ci sono segnaposto disegnati, già tagliati nei formati giusti.',
+        'demo_notice_text'  => 'Le fotografie di quattro camere su cinque sono della casa. Restano da confermare '
+                             . 'i nomi definitivi, le metrature, il piano e le tariffe — e quale fotografia '
+                             . 'corrisponde a quale camera. La quinta camera aspetta ancora la sua fotografia.',
 
         'list_title'    => 'Una per',
         'list_sign'     => 'una',
@@ -209,6 +213,7 @@ return [
         'eyebrow'       => 'CAMERA',
         'gallery'       => 'La camera',
         'gallery_note'  => 'Le fotografie di questa camera non sono ancora disponibili.',
+        'photo_pending' => 'Questa camera aspetta ancora la sua fotografia.',
         'description'   => 'La camera',
         'characteristics' => 'Caratteristiche',
         'amenities'     => 'Servizi',
@@ -251,7 +256,8 @@ return [
     ],
 
     'views' => [
-        'demo' => 'Esposizione da confermare',
+        'demo'       => 'Esposizione da confermare',
+        'san_rufino' => 'Sul campanile di San Rufino',
     ],
 
     'amenities' => [
@@ -643,7 +649,8 @@ return [
         'legal_note' => 'I dati identificativi obbligatori per una struttura ricettiva — CIN, partita IVA — '
                       . 'vanno pubblicati qui.',
         'credits'    => 'Prototipo. Contenuti e fotografie delle camere da fornire.',
-        'photo_credits' => 'Fotografie di Assisi: Niels Baars, Gary Walker-Jones, Alessandro Guarino (Unsplash).',
+        'photo_credits' => 'Fotografie della casa e delle camere: Arco del Vento. '
+                         . 'Vedute di Assisi: Niels Baars, Gary Walker-Jones, Alessandro Guarino (Unsplash).',
         'rights'     => '© :year Arco del Vento di Pecetta Daniele',
     ],
 

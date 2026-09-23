@@ -28,6 +28,41 @@ final class RoomPresenter
         return \ArcoDelVento\I18n\Routes::url('room', $locale, ['slug' => $slug]);
     }
 
+    /**
+     * Il testo alternativo della fotografia: quello scritto per la camera se
+     * la fotografia è sua, altrimenti quello del segnaposto. Dice cosa si
+     * vede, non cosa è.
+     *
+     * @param array<string,mixed> $room
+     */
+    public static function alt(array $room, string $locale): string
+    {
+        $alt = $room['alt'][$locale] ?? $room['alt']['it'] ?? null;
+
+        return (is_string($alt) && $alt !== '') ? $alt : t('rooms.image_alt');
+    }
+
+    /** @param array<string,mixed> $room */
+    public static function isPhotographed(array $room): bool
+    {
+        return (bool) ($room['photographed'] ?? false);
+    }
+
+    /**
+     * L'esposizione. Dove la fotografia mostra il campanile dalla finestra
+     * non c'è niente da confermare: si vede.
+     *
+     * @param array<string,mixed> $room
+     */
+    public static function viewLabel(array $room): ?string
+    {
+        if (($room['view_san_rufino'] ?? null) === true) {
+            return t('views.san_rufino');
+        }
+
+        return null;
+    }
+
     /** @param array<string,mixed> $room */
     public static function typeLabel(array $room): string
     {

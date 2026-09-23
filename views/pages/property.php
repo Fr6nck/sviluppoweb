@@ -23,24 +23,8 @@
   </header>
 </div>
 
-<div class="adv-contenuto">
-  <figure class="adv-cornice">
-    <?= component('picture', [
-        'src'    => 'img/demo/struttura-16x9.svg',
-        'alt'    => t('property.image_alt'),
-        'width'  => 1400,
-        'height' => 788,
-        'eager'  => true,
-    ]) ?>
-    <figcaption class="adv-cornice__barra">
-      <span class="adv-cornice__didascalia"><?= e(strtoupper(site('address.street'))) ?></span>
-      <span class="adv-cornice__conta"><i aria-hidden="true"></i><?= e(strtoupper(site('address.city'))) ?></span>
-    </figcaption>
-  </figure>
-</div>
-
 <section class="adv-contenuto adv-editoriale">
-  <div class="adv-split">
+  <div class="adv-split adv-split--immagine">
     <div>
       <?= component('section-header', [
           'occhiello' => t('property.eyebrow'),
@@ -48,12 +32,23 @@
           'piccolo'   => true,
       ]) ?>
       <p class="adv-testo adv-testo--grande"><?= te('property.what_text') ?></p>
-    </div>
 
-    <div class="adv-split__nota">
-      <h3 class="adv-titolo-sm"><?= te('property.city_title') ?></h3>
+      <h3 class="adv-titolo-sm adv-spazio-sopra"><?= te('property.city_title') ?></h3>
       <p class="adv-testo"><?= te('property.city_text') ?></p>
     </div>
+
+    <?php /* Il corridoio della casa, con la rosa dei venti intarsiata nel
+             pavimento: è il marchio della casa, messo lì da chi la casa
+             l'ha fatta, molto prima che esistesse questo sito. */ ?>
+    <figure class="adv-figura-verticale adv-rivela">
+      <?= component('picture', [
+          'src'   => 'img/casa/casa-corridoio-3x4',
+          'alt'   => t('property.corridor_alt'),
+          'eager' => true,
+          'sizes' => '(max-width: 900px) 100vw, 480px',
+      ]) ?>
+      <figcaption class="adv-didascalia"><?= te('property.corridor_caption') ?></figcaption>
+    </figure>
   </div>
 
   <?= component('ornament', ['corto' => true]) ?>

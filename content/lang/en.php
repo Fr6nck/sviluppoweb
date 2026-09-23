@@ -175,11 +175,15 @@ return [
         'lead'      => 'There are five and they are all in the same building. Below you will find the beds, '
                      . 'the maximum occupancy and the amenities of each one; availability is checked with dates.',
         'image_alt' => 'Placeholder: the photograph of the house is not available yet.',
+        'corridor_alt' => 'The corridor of the house, with a parquet floor and a compass rose inlaid '
+                        . 'in the wood; framed views of Assisi on the walls.',
+        'corridor_caption' => 'The compass rose in the corridor floor. It is the one from the mark, '
+                            . 'and it was there first.',
 
         'demo_notice_title' => 'Placeholder content',
-        'demo_notice_text'  => 'Room names, sizes, beds and rates below are placeholders, waiting for the '
-                             . 'final data. Interior photographs are not available yet: in their place there '
-                             . 'are drawn placeholders, already cut to the right formats.',
+        'demo_notice_text'  => 'The photographs of four rooms out of five are of the house itself. Still to be '
+                             . 'confirmed: the final names, the sizes, the floor and the rates — and which '
+                             . 'photograph belongs to which room. The fifth room is still waiting for its own.',
 
         'list_title'    => 'One by',
         'list_sign'     => 'one',
@@ -207,6 +211,7 @@ return [
         'eyebrow'       => 'ROOM',
         'gallery'       => 'The room',
         'gallery_note'  => 'Photographs of this room are not available yet.',
+        'photo_pending' => 'This room is still waiting for its own photograph.',
         'description'   => 'The room',
         'characteristics' => 'Characteristics',
         'amenities'     => 'Amenities',
@@ -249,7 +254,8 @@ return [
     ],
 
     'views' => [
-        'demo' => 'Aspect to be confirmed',
+        'demo'       => 'Aspect to be confirmed',
+        'san_rufino' => 'Onto the bell tower of San Rufino',
     ],
 
     'amenities' => [
@@ -633,7 +639,8 @@ return [
         'legal_note' => 'The identifiers an Italian accommodation is required to publish — CIN, VAT number — '
                       . 'belong here.',
         'credits'    => 'Prototype. Room content and photographs still to be supplied.',
-        'photo_credits' => 'Photographs of Assisi: Niels Baars, Gary Walker-Jones, Alessandro Guarino (Unsplash).',
+        'photo_credits' => 'Photographs of the house and the rooms: Arco del Vento. '
+                         . 'Views of Assisi: Niels Baars, Gary Walker-Jones, Alessandro Guarino (Unsplash).',
         'rights'     => '© :year Arco del Vento di Pecetta Daniele',
     ],
 

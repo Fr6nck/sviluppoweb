@@ -36,9 +36,12 @@ con convalida e riepilogo, il modulo dei contatti con convalida e trappola per
 i robot, il menu su schermo stretto, `sitemap.xml` e `robots.txt` generati,
 i dati strutturati, il tema notte.
 
+**È reale**: le fotografie di quattro camere su cinque, il corridoio, e il
+fatto che dalle finestre si veda San Rufino.
+
 **È dimostrativo**: le tariffe, la disponibilità, i nomi delle camere, le
-metrature, i letti, le esposizioni, le fotografie degli interni. E il provider
-di prenotazione, che calcola tutto in locale senza chiamare nessuno.
+metrature e il piano. E il provider di prenotazione, che calcola tutto in
+locale senza chiamare nessuno.
 
 **Non c'è**: nessuna credenziale, nessun pagamento, nessun invio di posta
 vero, nessun collegamento a un gestionale.
@@ -264,9 +267,10 @@ così all'ospite. Questi sono i dati che servono, in ordine di quanto pesano.
 
 - i nomi definitivi delle cinque camere
 - metratura, piano ed esposizione di ciascuna
-- **quali camere vedono il campanile di San Rufino dalla finestra** — è il
-  dato che più conta per il racconto di questo sito
-- le fotografie vere degli interni
+- **quale fotografia corrisponde a quale camera** — la numerazione attuale è
+  quella in cui le fotografie sono arrivate, non quella della casa: basta una
+  riga di Daniele
+- la fotografia della quinta camera, l'unica che ancora manca
 
 **Servono per obbligo di legge**: CIN, partita IVA, CAP, e il testo completo
 dell'informativa privacy (titolare, indirizzo per la privacy, tempi di
@@ -280,26 +284,37 @@ verso i sei luoghi, coordinate della casa per la mappa.
 
 ## Fotografie
 
-Tre fotografie di Assisi sono autentiche e pubblicabili, con licenza Unsplash:
-`vicolo-campanile` (Niels Baars), `valle-panorama` (Gary Walker-Jones),
-`basilica-tramonto` (Alessandro Guarino).
+**Quattro camere su cinque sono fotografate**, e le fotografie sono della
+casa: le ha fornite il titolare. Con loro è arrivata anche la conferma della
+cosa che questo sito racconta — dalle finestre delle camere si vede il
+campanile della **Cattedrale di San Rufino**, e in una si vede la facciata.
 
-Le camere **non hanno fotografie**. Nel materiale consegnato non c'è nessuna
-immagine degli interni con una provenienza dichiarata, quindi al loro posto ci
-sono segnaposto disegnati con i colori del marchio, già tagliati nei formati
-del design system — 4:3 per la scheda, 3:2 per l'elenco, 16:9 per l'apertura,
-1:1 per la galleria.
+Ci sono anche il corridoio con la **rosa dei venti intarsiata nel pavimento**
+— la stessa del marchio, e messa lì molto prima del sito — e tre vedute di
+Assisi su licenza Unsplash (Niels Baars, Gary Walker-Jones, Alessandro
+Guarino), con i crediti nel piè di pagina.
 
-Mettere online l'interno di casa d'altri sotto il nome di una vostra camera è
-una bugia che l'ospite scopre aprendo la porta, ed è pratica commerciale
-ingannevole ai sensi degli artt. 21-22 del Codice del consumo. Una fotografia
-fatta col telefono in una buona luce vale di più.
+La quinta camera aspetta ancora la sua fotografia e tiene il segnaposto
+disegnato. Il sito lo dice, non lo nasconde.
 
-**Per sostituirle**: stesso nome, stesso rapporto, in `public/assets/img/`.
-Nel sito non cambia nient'altro. I segnaposto si rigenerano con
-`php tools/build-placeholders.php`.
+### Come si lavorano
 
----
+Gli originali stanno in `docs/foto-originali/`, fuori dalla cartella
+pubblica. Da lì si ricavano tutti i tagli del design system:
+
+```bash
+php tools/build-photos.php
+```
+
+Lo script taglia a 4:3, 3:2, 16:9, 1:1 e 3:4 tenendo il punto che conta —
+nelle camere la finestra, nel corridoio la rosa dei venti — e scrive `.webp`
+con il ripiego `.jpg`, due misure ciascuno per il `srcset`, restando dentro i
+tetti di peso del manuale. Non corregge il colore e non ingrandisce mai oltre
+i pixel dell'originale.
+
+Per sostituire o aggiungere una fotografia: il file in `docs/foto-originali/`
+con il nome giusto, poi si rilancia lo script. Nel sito non cambia
+nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
 
 ## Limiti noti
 
@@ -310,8 +325,8 @@ Nel sito non cambia nient'altro. I segnaposto si rigenerano con
   c'è: comparirà quando ci saranno recensioni vere da riportare.
 - Nessuna mappa: senza le coordinate della casa, un segnaposto messo a occhio
   manda l'ospite alla porta di un altro.
-- Le tre fotografie di Assisi si ripetono fra le pagine: sono le sole
-  pubblicabili che abbiamo.
+- La quinta camera non ha fotografia: tiene il segnaposto disegnato.
+- Le tre vedute di Assisi si ripetono fra le pagine.
 - L'informativa privacy è impostata ma non è un documento legale finito.
 - Non c'è un pannello di amministrazione: i contenuti si modificano nei file.
 
@@ -345,6 +360,7 @@ Nel sito non cambia nient'altro. I segnaposto si rigenerano con
 ```bash
 php tools/build-tokens.php        # rigenera tokens.css da docs/tokens.json
 php tools/build-placeholders.php  # rigenera i segnaposto delle fotografie
+php tools/build-photos.php        # ritaglia le fotografie nei formati del sistema
 php tools/export-seed.php         # rigenera database/seed.sql dai contenuti
 sh  tools/serve.sh [porta]        # server di sviluppo
 ```

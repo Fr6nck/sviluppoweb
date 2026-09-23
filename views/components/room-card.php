@@ -20,10 +20,9 @@ $libera  = $offerta?->available ?? null;
 
   <figure class="adv-camera__figura">
     <?= component('picture', [
-        'src'    => $camera['images']['card']['src'],
-        'alt'    => t('rooms.image_alt'),
-        'width'  => 800,
-        'height' => 600,
+        'src'   => $camera['images']['card']['src'],
+        'alt'   => R::alt($camera, $lingua),
+        'sizes' => '(max-width: 900px) 100vw, 360px',
     ]) ?>
     <?php if ($libera !== null): ?>
       <span class="adv-camera__etichetta">
