@@ -17,12 +17,30 @@ final class Translator
     /** @var array<string, array<string,mixed>> */
     private array $catalogues = [];
 
+    /**
+     * @param (\Closure(string, array<string,mixed>): array<string,mixed>)|null $ritocchi
+     *        le modifiche dell'area riservata, applicate al catalogo appena caricato
+     */
     public function __construct(
         private readonly string $path,
         private string $locale,
         private readonly string $fallback,
         private readonly array $available,
+        private readonly ?\Closure $ritocchi = null,
     ) {
+    }
+
+    /**
+     * Il catalogo di una lingua com'è nel file, senza modifiche: serve all'area
+     * riservata per mostrare accanto a ogni testo quello di partenza.
+     *
+     * @return array<string,mixed>
+     */
+    public function baseCatalogue(string $locale): array
+    {
+        $file = $this->path . '/' . $locale . '.php';
+
+        return is_file($file) ? (array) require $file : [];
     }
 
     public function locale(): string
@@ -96,6 +114,9 @@ final class Translator
             $file = $this->path . '/' . $locale . '.php';
             /** @var array<string,mixed> $loaded */
             $loaded = is_file($file) ? require $file : [];
+            if ($this->ritocchi !== null) {
+                $loaded = ($this->ritocchi)($locale, $loaded);
+            }
             $this->catalogues[$locale] = $loaded;
         }
 

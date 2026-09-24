@@ -32,6 +32,20 @@ final class Response
         return new self('', $status, ['Location' => $location]);
     }
 
+    /** La stessa risposta con un'intestazione in più (o sostituita). */
+    public function withHeader(string $name, string $value): self
+    {
+        $headers = $this->headers;
+        $headers[$name] = $value;
+
+        return new self($this->body, $this->status, $headers);
+    }
+
+    public function status(): int
+    {
+        return $this->status;
+    }
+
     public function send(): void
     {
         if (!headers_sent()) {

@@ -93,6 +93,9 @@ $indirizzi = (static function () use ($root): array {
     $out[] = '/it/prenota?passo=camere&arrivo=2026-12-10&partenza=2026-12-13&ospiti=2';
     $out[] = '/sitemap.xml';
     $out[] = '/robots.txt';
+    // L'area riservata: senza account mostra la configurazione, con l'account
+    // l'accesso. In tutti e due i casi i suoi link devono restare nella cartella.
+    $out[] = '/admin';
 
     $out = array_values(array_unique($out));
 
@@ -101,7 +104,7 @@ $indirizzi = (static function () use ($root): array {
        qui perché una lista che si accorcia in silenzio — un nome di rotta
        cambiato, uno slug mancante — farebbe sembrare non usate le fotografie
        delle camere, e il pacchetto partirebbe senza. Meglio fermarsi. */
-    $attesi = count($lingue) * (count(Routes::pages()) + count($camere)) + 3;
+    $attesi = count($lingue) * (count(Routes::pages()) + count($camere)) + 4;
     if (count($out) !== $attesi) {
         fwrite(STDERR, sprintf(
             "Gli indirizzi generati sono %d e dovrebbero essere %d.\n"
@@ -414,8 +417,11 @@ foreach ($it as $f) {
         $phpDaControllare[] = $f->getPathname();
     }
 }
+if (is_dir($cartella . '/storage/data')) {
+    $vietati[] = 'storage/data (modifiche e richieste di questa macchina)';
+}
 $vietati === []
-    ? $passo('nessun .env e nessun .git nel pacchetto')
+    ? $passo('nessun .env, nessun .git e nessun dato dell\'area riservata nel pacchetto')
     : $muori('nel pacchetto ci sono file che non devono uscire: ' . implode(', ', $vietati));
 
 // 3b. nessun segreto nel contenuto dei file
@@ -559,6 +565,10 @@ $produzione = [
         bin2hex(random_bytes(12)),
         'Serve una volta sola, per tools/preflight.php dal browser. Dopo il controllo svuotalo.',
     ],
+    'ADMIN_SETUP_TOKEN' => [
+        bin2hex(random_bytes(16)),
+        'Il codice per creare l\'account dell\'area riservata (/admin), la prima volta. Creato l\'account, svuotalo.',
+    ],
     'MAIL_TRANSPORT'       => ['smtp', ''],
     'MAIL_FROM_ADDRESS'    => [$posta, ''],
     'MAIL_TO_ADDRESS'      => [$posta, 'Dove arrivano le richieste di prenotazione e i messaggi dei moduli.'],
@@ -618,6 +628,10 @@ if ($urlProva !== '') {
             bin2hex(random_bytes(12)),
             'Serve una volta sola, per tools/preflight.php dal browser. Dopo il controllo svuotalo.',
         ],
+        'ADMIN_SETUP_TOKEN' => [
+            bin2hex(random_bytes(16)),
+            'Il codice per creare l\'account dell\'area riservata (/admin), la prima volta. Creato l\'account, svuotalo.',
+        ],
         'MAIL_TRANSPORT' => [
             'log',
             'In prova nessuna e-mail parte: i messaggi dei moduli restano in storage/mail, li leggi via FTP. '
@@ -672,6 +686,17 @@ file_put_contents($uscita . '/LEGGIMI-PRIMA.txt', implode(PHP_EOL, [
     '',
     'NON caricare la cartella file-da-rinominare così com\'è: solo i file',
     'che ti servono, ognuno al suo posto, e rinominati.',
+    '',
+    'AREA RISERVATA',
+    '',
+    'Si apre all\'indirizzo del sito seguito da /admin. La prima volta chiede',
+    'di creare l\'account e un codice: è la riga ADMIN_SETUP_TOKEN del file',
+    'env-prova.txt o env-produzione.txt che hai caricato. Creato l\'account,',
+    'quella riga si può svuotare.',
+    '',
+    'Quando ricarichi il sito, NON cancellare e NON sovrascrivere la cartella',
+    'storage/ sul server: dentro ci sono le modifiche fatte dal pannello e le',
+    'richieste arrivate dal sito.',
     '',
     'La procedura completa è in docs/DEPLOY-HOSTINGER.md, dentro lo .zip.',
     '',

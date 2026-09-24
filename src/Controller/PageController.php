@@ -111,7 +111,7 @@ final class PageController
     /** @return list<array<string,mixed>> */
     private function faq(): array
     {
-        return require $this->app->config('content') . '/faq.php';
+        return $this->app->faq();
     }
 
     private function seoTitle(string $page): string

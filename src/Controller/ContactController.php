@@ -103,6 +103,20 @@ final class ContactController
             // Rispondere al messaggio scrive all'ospite, non a sé stessi.
             replyTo:     $v->value('email'),
         ));
+
+        // Anche nell'area riservata; se non riesce, il messaggio è comunque partito.
+        try {
+            $this->app->inbox()->add('messaggio', [
+                'oggetto'   => $oggetto,
+                'nome'      => $v->value('nome'),
+                'email'     => $v->value('email'),
+                'telefono'  => $v->value('telefono'),
+                'messaggio' => $v->value('messaggio'),
+                'lingua'    => $this->app->locale(),
+            ]);
+        } catch (\Throwable $e) {
+            error_log('Messaggio non salvato nell\'area riservata: ' . $e->getMessage());
+        }
     }
 
     /** @param array<string,mixed> $data */

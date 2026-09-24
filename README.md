@@ -356,6 +356,56 @@ fai tu, via FTP.
 
 ---
 
+## Area riservata
+
+**`/admin`** — sul sito di prova `https://blackout.in/assisiapartment/admin`.
+Un solo account, protetto da password. Da lì si modifica il sito senza toccare
+un file e senza FTP:
+
+| Sezione | Che cosa |
+| --- | --- |
+| Bacheca | richieste nuove e l'elenco di quello che sul sito è ancora «da confermare», CIN in testa |
+| Richieste | le prenotazioni e i messaggi arrivati dal sito, con stato: nuova, letta, confermata, rifiutata, archiviata |
+| La struttura | contatti, orari, soggiorno minimo, tassa, dotazioni, obblighi di legge, recensioni, social, coordinate |
+| Camere e tariffe | nome, metratura, piano, vista, tariffa per numero di ospiti, descrizione della fotografia |
+| Testi del sito | tutti i testi in italiano e inglese, pagina per pagina, con l'originale accanto |
+| Domande frequenti | aggiungere, modificare, riordinare, togliere |
+| Account | cambiare la password |
+
+**Dove vanno le modifiche.** In `storage/data/`, non in `content/`. I file di
+`content/` restano il punto di partenza, sotto controllo di versione; quello che
+si cambia dal pannello si sovrappone (`src/Storage/ContentOverrides.php`) e vince.
+Così ricaricare il sito via FTP non cancella mai una modifica, e «torna al testo
+originale» vuol dire togliere la modifica. Niente database: file JSON scritti in
+modo atomico, con un lucchetto, e con le ultime trenta versioni di ogni archivio
+nello storico — dal pannello si rimette una versione precedente con un click.
+
+**Che cosa non si cambia da lì.** Tipologia, letti e occupazione massima delle
+camere (da quelli dipende il motore di prenotazione) e le fotografie.
+
+**Sicurezza.**
+- *La prima volta* `/admin` chiede di creare l'account, ma solo con il codice
+  `ADMIN_SETUP_TOKEN` del `.env`: chi lo conosce ha già i file del sito. Senza
+  codice la creazione è chiusa — nessuno arriva per primo su un sito appena
+  caricato e si prende il pannello. Creato l'account, il codice si toglie.
+- La password sta solo come hash (`password_hash`). Cinque tentativi sbagliati
+  dallo stesso indirizzo in un quarto d'ora chiudono l'accesso a
+  quell'indirizzo per un quarto d'ora; gli indirizzi si salvano come impronta.
+  Il tempo di risposta non rivela se il nome utente esiste.
+- Ogni modulo porta il gettone anti-CSRF; la sessione si rinnova all'ingresso,
+  scade dopo due ore di inattività e comunque dopo dodici.
+- Ogni pagina del pannello è `no-store`, `noindex`, non incorniciabile.
+- `storage/` ha il suo `.htaccess` che la chiude anche se mancasse quello
+  della radice.
+- *Password dimenticata*: via FTP si cancella `storage/data/admin.json` e si
+  rifà la prima volta con il codice. Modifiche e richieste restano.
+
+**Le richieste** arrivano sempre anche per e-mail. Nel pannello si cancellano da
+sole dopo 24 mesi: sono dati personali, e lo stesso periodo va scritto
+nell'informativa privacy.
+
+---
+
 ## Contenuti da confermare
 
 Il sito non inventa: dove un dato manca lo marca `[da confermare]` e lo mostra
@@ -409,8 +459,9 @@ niente.
   stima piatta presa da una mappa sottostima il percorso, quindi restano vuoti
   finché qualcuno non li cammina.
 - il **numero e il voto delle recensioni** Booking e Google, che il titolare
-  ha dato per «in verifica». Finché lo sono, la sezione recensioni non compare
-  affatto: meglio assente che approssimata.
+  ha dato per «in verifica». Si inseriscono dall'area riservata, sezione «La
+  struttura», appena verificati; fino ad allora il blocco non compare:
+  meglio assente che approssimato.
 - profili Instagram e Facebook, se esistono
 - prezzo e distanza del parcheggio di via dell'Eremo (quello di piazza
   Matteotti è confermato: circa 18 € per 24 ore, 200 m)
@@ -460,8 +511,9 @@ nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
   pubblico. Finché è quello, il sito lo dichiara in ogni passo.
 - Nessuna e-mail parte davvero: `MAIL_TRANSPORT=log`.
 - Nessuna recensione riportabile: il titolare ha dato numero e voto per «in
-  verifica», quindi la sezione non compare. Il componente c'è e si accende da
-  solo quando `reviews` si riempie.
+  verifica». Il blocco recensioni (in home, sotto Daniele: non in apertura)
+  compare quando dall'area riservata si inseriscono punteggio e numero di una
+  piattaforma; fino ad allora non c'è.
 - **Due dati confermati non tornano, e li deciderà il titolare.**
   *La vista*: dalle fasce di prezzo dell'intervista risulta che solo la 01 e
   la 02 guardano piazza San Rufino, e così sta nei file. Ma le fotografie
@@ -479,7 +531,10 @@ nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
 - La Camera 01, la tripla, non ha fotografia: tiene il segnaposto disegnato.
 - Le tre vedute di Assisi si ripetono fra le pagine.
 - L'informativa privacy è impostata ma non è un documento legale finito.
-- Non c'è un pannello di amministrazione: i contenuti si modificano nei file.
+- Il calendario non è ancora collegato a Booking: l'area riservata mostra le
+  richieste, ma le date libere del sito restano dimostrative.
+- Le fotografie non si caricano dall'area riservata: si aggiungono via FTP con
+  `tools/build-photos.php`.
 
 ---
 
@@ -509,6 +564,14 @@ nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
   «camere» della prenotazione.
 - **Tassa di soggiorno** calcolata e mostrata a parte: due ospiti per tre
   notti fanno 18 €, e la quarta notte non la aumenta.
+- **Area riservata**, 44 prove a browser: prima configurazione con codice
+  giusto e sbagliato, password corta, ogni sezione senza errori, salvataggio
+  che arriva sul sito (CIN, orari, testi inglesi, tariffe nel percorso di
+  prenotazione, metratura, domande anche nei dati strutturati), convalide che
+  non salvano niente, segnaposto dei testi protetti, ripristino di una versione
+  precedente, richieste vere dal sito nel pannello, stati, eliminazione con
+  conferma, accesso negato senza login, POST senza gettone CSRF rifiutato,
+  blocco dopo cinque tentativi, intestazioni `noindex`/`no-store`, uscita.
 - **Il codice fiscale del titolare non compare in nessuna pagina** né nel
   repository: controllato su tutti gli indirizzi generati e su tutto il diff.
 - **Nessuna frase italiana nelle pagine inglesi**: le nove pagine `/en/`

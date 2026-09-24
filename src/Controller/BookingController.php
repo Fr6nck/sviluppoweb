@@ -189,6 +189,7 @@ final class BookingController
 
         $confirmation = $this->app->booking()->request($booking);
         $this->notify($confirmation->reference, $booking, $offer);
+        $this->archive($confirmation->reference, $booking, $offer);
 
         $locale = $this->app->locale();
         $_SESSION[self::SESSION_DONE] = [
@@ -212,6 +213,35 @@ final class BookingController
     }
 
     // --------------------------------------------------------- interni
+
+    /**
+     * La richiesta resta anche nell'area riservata, oltre che nella posta.
+     * Se non si riesce a salvarla l'ospite non deve accorgersene: l'e-mail è
+     * già partita, e l'errore finisce nel registro.
+     */
+    private function archive(string $reference, BookingRequest $booking, RoomOffer $offer): void
+    {
+        try {
+            $this->app->inbox()->add('prenotazione', [
+                'camera'    => (string) ($offer->room['name']['it'] ?? $offer->ref()),
+                'ref'       => $offer->ref(),
+                'arrivo'    => $booking->criteria->arrivalIso(),
+                'partenza'  => $booking->criteria->departureIso(),
+                'notti'     => $offer->nights,
+                'ospiti'    => $booking->criteria->guests,
+                'totale'    => $offer->total,
+                'valuta'    => $offer->currency,
+                'nome'      => $booking->guestName(),
+                'email'     => $booking->email,
+                'telefono'  => $booking->phone,
+                'paese'     => $booking->country,
+                'note'      => $booking->notes,
+                'lingua'    => $booking->locale,
+            ], $reference);
+        } catch (\Throwable $e) {
+            error_log('Richiesta ' . $reference . ' non salvata nell\'area riservata: ' . $e->getMessage());
+        }
+    }
 
     private function criteriaFromRequest(Request $request): ?SearchCriteria
     {

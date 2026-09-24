@@ -9,6 +9,8 @@ use ArcoDelVento\Booking\DemoBookingProvider;
 use ArcoDelVento\Booking\BookingProviderInterface;
 use ArcoDelVento\Database\Connection;
 use ArcoDelVento\I18n\Translator;
+use ArcoDelVento\Storage\ContentOverrides;
+use ArcoDelVento\Storage\JsonStore;
 use ArcoDelVento\Mail\LogMailer;
 use ArcoDelVento\Mail\MailerInterface;
 use ArcoDelVento\Mail\NativeMailer;
@@ -44,11 +46,16 @@ final class App
     {
         \ArcoDelVento\I18n\Routes::setBase((string) ($config['app']['base'] ?? ''));
 
+        // I testi modificati dall'area riservata si sovrappongono a quelli dei
+        // file di lingua, chiave per chiave.
+        $ritocchi = new ContentOverrides(new JsonStore($config['storage'] . '/data'));
+
         $translator = new Translator(
             $config['content'] . '/lang',
             (string) $config['i18n']['default'],
             (string) $config['i18n']['default'],
             $config['i18n']['available'],
+            static fn (string $lingua, array $catalogo): array => $ritocchi->translations($lingua, $catalogo),
         );
 
         return self::$instance = new self($config, $translator);
@@ -95,10 +102,56 @@ final class App
         return $this->services['view'] ??= new View((string) $this->config['views']);
     }
 
-    /** Le impostazioni del sito: indirizzo, contatti, orari. */
+    /** L'archivio dell'area riservata, in storage/data. */
+    public function store(): JsonStore
+    {
+        return $this->services['store'] ??= new JsonStore($this->config['storage'] . '/data');
+    }
+
+    public function auth(): \ArcoDelVento\Admin\Auth
+    {
+        return $this->services['auth'] ??= new \ArcoDelVento\Admin\Auth(
+            $this->store(),
+            (string) $this->config('admin.setup_token', ''),
+        );
+    }
+
+    /** Le richieste arrivate dal sito, per l'area riservata. */
+    public function inbox(): \ArcoDelVento\Admin\Inbox
+    {
+        return $this->services['inbox'] ??= new \ArcoDelVento\Admin\Inbox($this->store());
+    }
+
+    /** Le modifiche dell'area riservata, sovrapposte ai file di content/. */
+    public function overrides(): ContentOverrides
+    {
+        return $this->services['overrides'] ??= new ContentOverrides($this->store());
+    }
+
+    /** Le impostazioni del sito: indirizzo, contatti, orari — con le modifiche del pannello. */
     public function settings(): array
     {
-        return $this->services['settings'] ??= require $this->config['content'] . '/settings.php';
+        return $this->services['settings'] ??= $this->overrides()->settings(
+            require $this->config['content'] . '/settings.php'
+        );
+    }
+
+    /** Le impostazioni come stanno nel file, senza le modifiche del pannello. */
+    public function baseSettings(): array
+    {
+        return require $this->config['content'] . '/settings.php';
+    }
+
+    /** @return list<array<string,mixed>> le camere come stanno nel file */
+    public function baseRooms(): array
+    {
+        return require $this->config['content'] . '/rooms.php';
+    }
+
+    /** @return list<array<string,mixed>> le domande frequenti, con le modifiche del pannello */
+    public function faq(): array
+    {
+        return $this->services['faq'] ??= $this->overrides()->faq(require $this->config['content'] . '/faq.php');
     }
 
     public function rooms(): RoomRepositoryInterface
@@ -116,7 +169,7 @@ final class App
             return new PdoRoomRepository($connection);
         }
 
-        return new ArrayRoomRepository(require $this->config['content'] . '/rooms.php');
+        return new ArrayRoomRepository($this->overrides()->rooms($this->baseRooms()));
     }
 
     public function database(): ?\PDO

@@ -314,7 +314,33 @@ perdere più tempo. Nel client FTP metti il trasferimento su **binario** o
 
 ---
 
-## 10. Dalla prova al dominio vero
+## 10. L'area riservata
+
+Si apre all'indirizzo del sito seguito da **`/admin`** — in prova
+`https://blackout.in/assisiapartment/admin`.
+
+**La prima volta** chiede di creare l'account: nome utente, password (almeno
+10 caratteri) e il **codice di configurazione**, che è la riga
+`ADMIN_SETUP_TOKEN` del `.env` (cioè di `env-prova.txt` o
+`env-produzione.txt`, prima di rinominarlo). Creato l'account, quella riga si
+può svuotare: il controllo finale lo ricorda.
+
+**Password dimenticata**: via FTP cancella `storage/data/admin.json` e rifai la
+prima volta con il codice. Se il codice l'hai già tolto dal `.env`, rimettine
+uno nuovo (almeno 16 caratteri a caso).
+
+**Le modifiche fatte dal pannello stanno in `storage/data/`** sul server, non nei
+file del pacchetto. Quindi:
+
+- quando ricarichi il sito, **non cancellare e non sovrascrivere `storage/`**:
+  dentro ci sono modifiche e richieste. Caricare i file nuovi sopra quelli
+  vecchi va bene — il pacchetto non contiene `storage/data`;
+- se qualcosa va storto dopo una modifica, ogni sezione ha le **versioni
+  precedenti**, e una si rimette con un click.
+
+---
+
+## 11. Dalla prova al dominio vero
 
 **I file del sito sono gli stessi.** Cambia solo il `.env`.
 
@@ -331,12 +357,22 @@ perdere più tempo. Nel client FTP metti il trasferimento su **binario** o
    almeno lasciala con `APP_NOINDEX=true`: due copie aperte dello stesso sito
    si fanno concorrenza
 
+**Le modifiche fatte dal pannello in prova vengono con te** se copi la cartella
+`storage/data/` dalla prova al dominio vero. Dentro ci sono:
+
+| File | Che cosa | Copiarlo? |
+| --- | --- | --- |
+| `impostazioni.json`, `camere.json`, `testi-it.json`, `testi-en.json`, `domande.json` | le modifiche ai contenuti | **sì** |
+| `admin.json` | l'account e la sua password | sì, se vuoi tenere la stessa |
+| `richieste.json` | le richieste arrivate alla prova | di solito no: sono di prova |
+| `accessi.json`, la cartella `storico/` | tentativi di accesso, versioni precedenti | no |
+
 Se invece di ricaricare tutto preferisci spostare i file della prova, sposta
 tutto **tranne** il `.env`, e sul nuovo server metti quello di produzione.
 
 ---
 
-## 11. Aggiornare il sito dopo
+## 12. Aggiornare il sito dopo
 
 Cambiano i contenuti (`content/`), le viste (`views/`) o i fogli di stile
 (`public/assets/css/`): si ricaricano quei file e basta. Non c'è cache da

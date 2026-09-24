@@ -111,6 +111,12 @@ if (!headers_sent()) {
         . "form-action 'self'; base-uri 'self'; frame-ancestors 'self'"
     );
 
+    // Le pagine portano il gettone anti-CSRF della sessione di chi le guarda:
+    // una copia in cache, servita a un altro, gli farebbe fallire ogni modulo.
+    // E su un server condiviso con WordPress, la sua cache non deve metterci
+    // le mani — è successo in prova, con i rimandi di WordPress memorizzati.
+    header('X-LiteSpeed-Cache-Control: no-cache');
+
     // Copia di prova: fuori dai motori di ricerca, pagine e risposte tutte.
     if ((bool) $config['app']['noindex']) {
         header('X-Robots-Tag: noindex, nofollow');

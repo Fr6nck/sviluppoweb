@@ -138,6 +138,31 @@ foreach (['storage/logs', 'storage/mail'] as $cartella) {
         'Senza permesso di scrittura i messaggi dei moduli si perdono in silenzio.');
 }
 
+// ------------------------------------------------------ area riservata
+// Le modifiche fatte dal pannello e le richieste arrivate dal sito vanno in
+// storage/data: se non si può scrivere, il pannello salva a vuoto.
+$dati = $root . '/storage/data';
+$scrivibile = is_dir($dati) ? is_writable($dati) : is_writable($root . '/storage');
+$aggiungi($scrivibile ? 'ok' : 'bloccante', 'Area riservata',
+    'storage/data ' . ($scrivibile ? 'scrivibile' : 'NON scrivibile'),
+    'Rendi scrivibile storage/ (755, se non basta 775): il pannello ci salva modifiche e richieste.');
+
+$account = is_file($dati . '/admin.json')
+    && !empty((json_decode((string) file_get_contents($dati . '/admin.json'), true) ?: [])['hash']);
+$gettone = (string) Env::get('ADMIN_SETUP_TOKEN', '');
+if ($account) {
+    $aggiungi($gettone === '' ? 'ok' : 'attenzione', 'Area riservata',
+        'account creato' . ($gettone === '' ? '' : ', ma ADMIN_SETUP_TOKEN è ancora nel .env'),
+        'Il codice serve solo la prima volta: toglilo dal .env. Se un giorno dimentichi la password, '
+        . 'lo rimetti e cancelli storage/data/admin.json.');
+} else {
+    $aggiungi(strlen($gettone) >= 16 ? 'nota' : 'attenzione', 'Area riservata',
+        'nessun account ancora' . (strlen($gettone) >= 16 ? ': si crea aprendo /admin' : ''),
+        strlen($gettone) >= 16
+            ? 'Alla prima apertura di /admin serve il codice ADMIN_SETUP_TOKEN del .env.'
+            : 'Per creare l\'account serve ADMIN_SETUP_TOKEN nel .env: almeno 16 caratteri a caso.');
+}
+
 // ------------------------------------------------ cartelle non pubbliche
 $docRoot = realpath((string) ($_SERVER['DOCUMENT_ROOT'] ?? '')) ?: null;
 if ($docRoot !== null) {

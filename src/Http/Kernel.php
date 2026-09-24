@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ArcoDelVento\Http;
 
 use ArcoDelVento\App;
+use ArcoDelVento\Controller\AdminController;
 use ArcoDelVento\Controller\BookingController;
 use ArcoDelVento\Controller\ContactController;
 use ArcoDelVento\Controller\PageController;
@@ -40,6 +41,11 @@ final class Kernel
         }
         if ($request->path === '/robots.txt') {
             return (new SitemapController($this->app))->robots();
+        }
+
+        // L'area riservata: fuori dalle lingue del sito, sempre in italiano.
+        if ($request->path === '/admin' || str_starts_with($request->path, '/admin/')) {
+            return (new AdminController($this->app))->handle($request);
         }
 
         // La radice non ha contenuto proprio: porta alla lingua giusta.

@@ -72,6 +72,12 @@ return [
         'password' => (string) Env::get('DB_PASSWORD', ''),
     ],
 
+    // L'area riservata. Il gettone serve una volta sola, per creare l'account:
+    // chi lo conosce ha già accesso ai file del sito. Dopo, si svuota.
+    'admin' => [
+        'setup_token' => (string) Env::get('ADMIN_SETUP_TOKEN', ''),
+    ],
+
     'booking' => [
         'provider'    => Env::get('BOOKING_PROVIDER', 'demo'),
         'api_base'    => (string) Env::get('BOOKING_API_BASE_URL', ''),

@@ -73,6 +73,20 @@ function assoluto(string $percorso): string
     return rtrim((string) App::instance()->config('app.origin'), '/') . $percorso;
 }
 
+/** Un indirizzo dell'area riservata, dentro la cartella del sito. */
+function adminUrl(string $sotto = ''): string
+{
+    return Routes::base() . '/admin' . ($sotto !== '' ? '/' . ltrim($sotto, '/') : '');
+}
+
+/** «2026-09-24T12:30:00+02:00» → «24/09/2026, 12:30». */
+function dataOra(string $iso): string
+{
+    $t = strtotime($iso);
+
+    return $t ? date('d/m/Y, H:i', $t) : $iso;
+}
+
 /** La lingua corrente. */
 function locale(): string
 {

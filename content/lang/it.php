@@ -129,6 +129,13 @@ return [
             'author' => 'ARCO DEL VENTO · AFFITTACAMERE',
         ],
 
+        'reviews' => [
+            'title'   => 'Chi è già stato qui',
+            'booking' => 'Booking',
+            'google'  => 'Google',
+            'count'   => ':count recensioni su :platform',
+        ],
+
         'host' => [
             'eyebrow' => 'CHI TIENE APERTO',
             'title'   => 'La casa la manda avanti una',

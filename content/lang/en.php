@@ -128,6 +128,13 @@ return [
             'author' => 'ARCO DEL VENTO · GUEST ROOMS',
         ],
 
+        'reviews' => [
+            'title'   => 'What past guests say',
+            'booking' => 'Booking',
+            'google'  => 'Google',
+            'count'   => ':count reviews on :platform',
+        ],
+
         'host' => [
             'eyebrow' => 'WHO KEEPS IT OPEN',
             'title'   => 'The house is run by one',

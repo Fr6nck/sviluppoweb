@@ -542,3 +542,10 @@ body.adv-menu-aperto { overflow: hidden; }
   * { transition-duration: 1ms !important; animation-duration: 1ms !important; scroll-behavior: auto !important; }
   .adv-elenco__voce:hover .adv-elenco__figura > picture > img { transform: none; }
 }
+
+/* ------------------------------------------------------- recensioni */
+/* Solo le cifre, con il link alla fonte: nessuna citazione scelta a mano. */
+.adv-recensioni { margin-top: var(--space-10); }
+.adv-recensioni .adv-titolo-md { margin-bottom: var(--space-4); }
+.adv-recensioni__scala { font-size: 0.55em; color: var(--ink-muted); margin-left: 2px; }
+.adv-recensioni a { display: inline-block; padding-block: 3px; }

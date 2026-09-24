@@ -13,3 +13,7 @@ Thumbs.db
 
 # Pacchetti per il server: si rigenerano con tools/build-release.php
 /dist/
+
+# Le modifiche fatte dall'area riservata e le richieste arrivate dal sito:
+# stanno sul server, non nel repository
+/storage/data/

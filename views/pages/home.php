@@ -166,6 +166,8 @@ $lingua = locale();
           <?php endforeach; ?>
         </ul>
 
+        <?= component('reviews') ?>
+
         <p class="adv-azione-coda">
           <a class="adv-elenco__link" href="<?= e(url('property')) ?>">
             <?= te('cta.see_property') ?><span aria-hidden="true">&rarr;</span>
