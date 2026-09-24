@@ -271,7 +271,13 @@ echo PHP_EOL;
 echo "COPIA" . PHP_EOL;
 
 /** Cartelle e file che vanno sul server. */
-$daCopiare = ['public', 'src', 'views', 'content', 'config', 'database', '.htaccess', 'README.md'];
+/* README.md non sale: al server non serve, e se l'.htaccess della radice
+   mancasse sarebbe leggibile da chiunque. index.php sì: risponde solo quando
+   quell'.htaccess manca, e dice che cosa fare invece di un «403» muto. */
+$daCopiare = ['public', 'src', 'views', 'content', 'config', 'database', '.htaccess', 'index.php'];
+
+/** Le cartelle private, ognuna con il suo .htaccess che la chiude. */
+$private = ['src', 'views', 'content', 'config', 'database', 'storage', 'tools', 'docs'];
 
 /** Strumenti che servono SUL server: gli altri vogliono GD o Node e restano qui. */
 $strumentiServer = ['preflight.php', 'export-seed.php'];
@@ -354,6 +360,11 @@ foreach ($daCopiare as $voce) {
 
 foreach ($strumentiServer as $s) {
     $copia($root . '/tools/' . $s, $cartella . '/tools/' . $s);
+}
+// storage, tools e docs salgono solo in parte: il loro .htaccess va copiato
+// a mano, le altre cartelle private lo portano con sé.
+foreach (['storage', 'tools', 'docs'] as $c) {
+    $copia($root . '/' . $c . '/.htaccess', $cartella . '/' . $c . '/.htaccess');
 }
 $copia($root . '/.env.example', $cartella . '/.env.example');
 $copia($root . '/docs/DEPLOY-HOSTINGER.md', $cartella . '/docs/DEPLOY-HOSTINGER.md');
@@ -445,6 +456,14 @@ $rotti === []
     : $muori('sintassi rotta in: ' . implode(', ', $rotti));
 
 // 3d. i file che senza l'FTP giusto non arrivano
+$chiuse = array_filter($private, static fn (string $c): bool => is_file($cartella . '/' . $c . '/.htaccess')
+    && str_contains((string) file_get_contents($cartella . '/' . $c . '/.htaccess'), 'Require all denied'));
+count($chiuse) === count($private)
+    ? $passo('ogni cartella privata ha il suo .htaccess che la chiude (' . count($private) . ')')
+    : $muori('cartelle private senza protezione: ' . implode(', ', array_diff($private, $chiuse)));
+is_file($cartella . '/index.php')
+    ? $passo('index.php nella radice: spiega che cosa manca se l\'.htaccess non arriva')
+    : $muori('manca index.php nella radice del pacchetto');
 foreach (['.htaccess', 'public/.htaccess'] as $nascosto) {
     is_file($cartella . '/' . $nascosto)
         ? $passo($nascosto . ' presente (i client FTP lo nascondono: controlla che salga)')
@@ -509,7 +528,9 @@ echo PHP_EOL . "FILE DA RINOMINARE" . PHP_EOL;
 if ($nomeZip !== null && !$senzaZip) {
     $zip = new ZipArchive();
     $zip->open($nomeZip);
-    foreach (['.htaccess', 'public/.htaccess', '.env.example'] as $nascosto) {
+    $daTrovare = array_merge(['.htaccess', 'public/.htaccess', '.env.example', 'index.php'],
+        array_map(static fn (string $c): string => $c . '/.htaccess', $private));
+    foreach ($daTrovare as $nascosto) {
         $zip->locateName($nascosto) !== false
             ? $passo('nello .zip c\'è ' . $nascosto)
             : $muori('nello .zip manca ' . $nascosto);
@@ -668,7 +689,7 @@ $righe = [
     'peso: ' . round($byte / 1048576, 2) . ' MB',
     'PHP di sviluppo: ' . PHP_VERSION,
     '',
-    'DENTRO: ' . implode(' ', $daCopiare) . ' .env.example'
+    'DENTRO: ' . implode(' ', $daCopiare) . ' .env.example, un .htaccess di chiusura in ' . implode(' ', $private)
         . ' tools/{' . implode(',', $strumentiServer) . '} docs/DEPLOY-HOSTINGER.md'
         . ' storage/{logs,mail} (vuote)',
     '',

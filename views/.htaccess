@@ -1,0 +1,12 @@
+# Questa cartella non si serve mai dal web: la leggono solo i file PHP del
+# sito, dal disco. Lo dice già l'.htaccess della radice; questo file lo ripete
+# qui dentro perché viaggia con la cartella. Se l'.htaccess della radice non
+# arriva sul server — succede, il nome comincia con un punto e molti computer
+# lo nascondono — la cartella resta chiusa lo stesso.
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>

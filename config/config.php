@@ -23,7 +23,10 @@ return [
 
     'app' => [
         'env'     => Env::get('APP_ENV', 'development'),
-        'debug'   => Env::bool('APP_DEBUG', true),
+        // Senza .env il debug è SPENTO: un sito caricato senza il suo .env non
+        // deve mostrare agli ospiti gli errori di PHP con i percorsi del server.
+        // In sviluppo lo accende il .env, con APP_DEBUG=true.
+        'debug'   => Env::bool('APP_DEBUG', false),
         'url'     => rtrim((string) Env::get('APP_URL', ''), '/'),
         'name'    => 'Arco del Vento',
 

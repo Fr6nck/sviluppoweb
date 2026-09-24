@@ -288,6 +288,10 @@ sotto `legal.cin`. Finché non c'è, il piè di pagina dice `CIN [da confermare]
 
 | Sintomo | Quasi sempre è |
 | --- | --- |
+| Pagina «Installazione incompleta — manca il file .htaccess» | l'`.htaccess` della cartella del sito non è salito: carica `htaccess-radice.txt` e rinominalo |
+| «403 Forbidden» nero di Hostinger sulla cartella del sito | come sopra, con un pacchetto precedente al 24 settembre 2026 |
+| In una sottocartella, `/it/` porta a una pagina del sito principale | come sopra: senza `.htaccess` la richiesta finisce al sito della radice (WordPress) |
+| Testo «installazione incompleta — manca il file .env» | `.env` non caricato o non rinominato (è ancora `env-prova.txt`) |
 | 404 su tutto tranne la home | `.htaccess` non caricato, o `AllowOverride` spento |
 | 500 su ogni pagina | permessi dei file, o PHP sotto la 8.1 |
 | Pagina bianca | `APP_DEBUG=false` e un errore: guarda `storage/logs/` |
@@ -295,6 +299,14 @@ sotto `legal.cin`. Finché non c'è, il piè di pagina dice `CIN [da confermare]
 | Ciclo di redirezioni | `.htaccess` forza https ma il certificato non è attivo |
 | La posta non arriva | `MAIL_TRANSPORT` ancora su `log` |
 | Caratteri sbagliati | `.woff2` caricati in modalità ASCII invece che binaria |
+
+**Perché l'`.htaccess` resta indietro.** Se trascini nel client FTP le
+cartelle, i file nascosti dentro di loro salgono — `public/.htaccess` arriva.
+Se selezioni i file sciolti della radice, quelli nascosti non si vedono e non
+si selezionano: l'`.htaccess` della radice resta sul tuo computer. Per questo
+ogni cartella privata porta anche un suo `.htaccess` che la chiude: senza
+quello della radice il sito non funziona, ma `src/`, `content/`, `storage/` e
+le altre restano comunque inaccessibili dal web.
 
 Il ciclo di redirezioni e i file caricati in ASCII sono i due che fanno
 perdere più tempo. Nel client FTP metti il trasferimento su **binario** o

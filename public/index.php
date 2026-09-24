@@ -25,6 +25,26 @@ ini_set('display_errors', $debug ? '1' : '0');
 ini_set('log_errors', '1');
 error_reporting($debug ? E_ALL : E_ALL & ~E_DEPRECATED);
 
+/*
+ * Senza APP_URL il sito non sa in che cartella sta né qual è il suo indirizzo:
+ * in una sottocartella ogni link si romperebbe in silenzio. In locale va bene
+ * — il server di sviluppo sta sempre alla radice — ma su un server vero vuol
+ * dire che il .env non è arrivato, o non è stato rinominato. Meglio dirlo.
+ */
+$host   = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+$locale = $host === '' || preg_match('/^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/', $host) === 1;
+if ((string) $config['app']['url'] === '' && !$locale) {
+    http_response_code(503);
+    header('Content-Type: text/plain; charset=UTF-8');
+    header('X-Robots-Tag: noindex, nofollow');
+    header('Retry-After: 600');
+    echo "Arco del Vento: installazione incompleta.\n\n"
+       . "Manca il file .env nella cartella del sito, oppure non contiene APP_URL.\n"
+       . "Carica env-prova.txt (o env-produzione.txt sul dominio vero) accanto a\n"
+       . ".htaccess e rinominalo .env, con il punto davanti e senza .txt.\n";
+    exit;
+}
+
 $app = App::boot($config);
 
 /*
