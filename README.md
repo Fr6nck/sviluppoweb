@@ -397,6 +397,10 @@ camere (da quelli dipende il motore di prenotazione) e le fotografie.
 - Ogni pagina del pannello è `no-store`, `noindex`, non incorniciabile.
 - `storage/` ha il suo `.htaccess` che la chiude anche se mancasse quello
   della radice.
+- Le sessioni stanno in `storage/sessions`, non nella cartella di PHP: su
+  blackout.in quella non conservava i dati tra una pagina e l'altra, e ogni
+  modulo del sito — area riservata, prenotazione, contatti — rispondeva
+  «sessione scaduta».
 - *Password dimenticata*: via FTP si cancella `storage/data/admin.json` e si
   rifà la prima volta con il codice. Modifiche e richieste restano.
 

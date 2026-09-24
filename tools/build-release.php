@@ -420,6 +420,9 @@ foreach ($it as $f) {
 if (is_dir($cartella . '/storage/data')) {
     $vietati[] = 'storage/data (modifiche e richieste di questa macchina)';
 }
+if (is_dir($cartella . '/storage/sessions')) {
+    $vietati[] = 'storage/sessions (sessioni di questa macchina)';
+}
 $vietati === []
     ? $passo('nessun .env, nessun .git e nessun dato dell\'area riservata nel pacchetto')
     : $muori('nel pacchetto ci sono file che non devono uscire: ' . implode(', ', $vietati));

@@ -291,6 +291,7 @@ sotto `legal.cin`. Finché non c'è, il piè di pagina dice `CIN [da confermare]
 | Pagina «Installazione incompleta — manca il file .htaccess» | l'`.htaccess` della cartella del sito non è salito: carica `htaccess-radice.txt` e rinominalo |
 | «403 Forbidden» nero di Hostinger sulla cartella del sito | come sopra, con un pacchetto precedente al 24 settembre 2026 |
 | In una sottocartella, `/it/` porta a una pagina del sito principale | come sopra: senza `.htaccess` la richiesta finisce al sito della radice (WordPress) |
+| «Sessione scaduta» a ogni invio di un modulo, anche appena aperto | PHP non ritrova le sessioni. Dal 24 settembre 2026 il sito le tiene in `storage/sessions`: serve che `storage/` sia scrivibile. Il controllo finale lo verifica scrivendone e rileggendone una |
 | Testo «installazione incompleta — manca il file .env» | `.env` non caricato o non rinominato (è ancora `env-prova.txt`) |
 | 404 su tutto tranne la home | `.htaccess` non caricato, o `AllowOverride` spento |
 | 500 su ogni pagina | permessi dei file, o PHP sotto la 8.1 |

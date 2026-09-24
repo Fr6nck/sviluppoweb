@@ -341,11 +341,39 @@ $aggiungi($mancanti === [] ? 'ok' : 'bloccante', 'Materiali',
     'Ricarica via FTP la cartella public/ per intero, compresi i file che cominciano con un punto.');
 
 // --------------------------------------------------------------- sessione
-if (!$daBrowser || session_status() === PHP_SESSION_NONE) {
-    $ok = @session_start();
-    $aggiungi($ok ? 'ok' : 'bloccante', 'Sessione', $ok ? 'funziona' : 'non parte',
+/* Non basta che la sessione parta: deve RITROVARE i dati alla richiesta dopo,
+   altrimenti ogni modulo del sito risponde «sessione scaduta». Su blackout.in
+   succedeva proprio questo, con la cartella delle sessioni di PHP. Il sito
+   ora le tiene in storage/sessions; qui si prova a scriverne una e a
+   rileggerla, come fanno due pagine di fila. */
+$cartellaSessioni = $root . '/storage/sessions';
+if (!is_dir($cartellaSessioni)) {
+    @mkdir($cartellaSessioni, 0700, true);
+}
+if (!is_dir($cartellaSessioni) || !is_writable($cartellaSessioni)) {
+    $aggiungi('bloccante', 'Sessione', 'storage/sessions non scrivibile',
+        'Rendi scrivibile storage/ (755, se non basta 775): senza sessioni ogni modulo risponde «sessione scaduta».');
+} elseif (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.save_handler', 'files');
+    session_save_path($cartellaSessioni);
+    $id = 'preflight' . bin2hex(random_bytes(8));
+    session_id($id);
+    $partita = @session_start();
+    $valore  = bin2hex(random_bytes(4));
+    if ($partita) {
+        $_SESSION['prova'] = $valore;
+        session_write_close();
+        $_SESSION = [];
+        session_id($id);
+        @session_start();
+    }
+    $ritrovata = $partita && (($_SESSION['prova'] ?? null) === $valore);
+    if ($partita) {
+        session_destroy();
+    }
+    $aggiungi($ritrovata ? 'ok' : 'bloccante', 'Sessione',
+        $ritrovata ? 'salvata e ritrovata in storage/sessions' : 'si apre ma non ritrova i dati',
         'Senza sessione il gettone anti-CSRF non regge e i moduli rifiutano ogni invio.');
-    if ($ok) { session_destroy(); }
 }
 
 // ------------------------------------------------------- questo file stesso

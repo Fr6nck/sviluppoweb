@@ -17,3 +17,4 @@ Thumbs.db
 # Le modifiche fatte dall'area riservata e le richieste arrivate dal sito:
 # stanno sul server, non nel repository
 /storage/data/
+/storage/sessions/
