@@ -8,7 +8,7 @@
  * ancora di aprire il sito.
  *
  * @var string $pagina
- * @var string $base
+ * @var string $immagine   indirizzo assoluto dell'immagine della casa
  */
 
 use ArcoDelVento\Support\Html;
@@ -21,8 +21,8 @@ $struttura = [
     '@type'      => 'LodgingBusiness',
     'name'       => site('legal_name'),
     'alternateName' => site('name'),
-    'url'        => $base . url('home'),
-    'image'      => $base . '/assets/img/foto/vicolo-campanile-4x3.jpg',
+    'url'        => assoluto(url('home')),
+    'image'      => $immagine,
     'address'    => array_filter([
         '@type'           => 'PostalAddress',
         'streetAddress'   => site('address.street'),

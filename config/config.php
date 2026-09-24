@@ -26,6 +26,31 @@ return [
         'debug'   => Env::bool('APP_DEBUG', true),
         'url'     => rtrim((string) Env::get('APP_URL', ''), '/'),
         'name'    => 'Arco del Vento',
+
+        // La cartella in cui vive il sito, ricavata da APP_URL: «» sul dominio
+        // vero, «/assisiapartment» su https://blackout.in/assisiapartment.
+        // È la sola cosa che cambia fra la prova e la pubblicazione, e sta in
+        // un posto solo: ogni link, ogni reindirizzamento e ogni file statico
+        // la prende da qui.
+        'base'    => rtrim((string) (parse_url((string) Env::get('APP_URL', ''), PHP_URL_PATH) ?? ''), '/'),
+
+        // «https://blackout.in»: davanti ai percorsi, che la cartella la
+        // contengono già, per gli indirizzi assoluti — canonical, hreflang,
+        // sitemap, Open Graph.
+        'origin'  => (static function (): string {
+            $parti = parse_url((string) Env::get('APP_URL', ''));
+            if (!is_array($parti) || empty($parti['host'])) {
+                return '';
+            }
+
+            return ($parti['scheme'] ?? 'https') . '://' . $parti['host']
+                . (isset($parti['port']) ? ':' . $parti['port'] : '');
+        })(),
+
+        // In prova il sito non va nei motori di ricerca: finirebbe indicizzato
+        // su un dominio che non è il suo, e il giorno della pubblicazione
+        // Google avrebbe due copie dello stesso sito.
+        'noindex' => Env::bool('APP_NOINDEX', false),
     ],
 
     'i18n' => [

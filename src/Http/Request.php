@@ -23,11 +23,17 @@ final class Request
     ) {
     }
 
+    /**
+     * La richiesta corrente. Il percorso arriva già senza la cartella del
+     * sito: su https://blackout.in/assisiapartment/it/camere vale «/it/camere»,
+     * come sul dominio vero.
+     */
     public static function fromGlobals(): self
     {
         $uri  = (string) ($_SERVER['REQUEST_URI'] ?? '/');
         $path = parse_url($uri, PHP_URL_PATH);
         $path = is_string($path) ? rawurldecode($path) : '/';
+        $path = \ArcoDelVento\I18n\Routes::stripBase($path);
 
         return new self(
             strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')),

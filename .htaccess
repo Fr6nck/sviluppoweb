@@ -4,9 +4,10 @@
 # strada più rapida via FTP. Manda ogni richiesta dentro public/ e impedisce
 # che le cartelle dell'applicazione siano raggiungibili dal web.
 #
-# La strada migliore resta l'altra: puntare il dominio su public/ dall'hPanel
-# (Avanzate → Cambia cartella radice del sito). Allora questo file non viene
-# nemmeno letto. Vedi docs/DEPLOY-HOSTINGER.md.
+# Funziona uguale alla radice di un dominio e in una sottocartella — per
+# esempio blackout.in/assisiapartment/ durante la prova: nessuna regola scrive
+# un percorso che cominci con «/». La cartella del sito la conosce PHP, da
+# APP_URL nel file .env. Vedi docs/DEPLOY-HOSTINGER.md.
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
@@ -21,14 +22,10 @@
   # Le cartelle dell'applicazione non si servono mai.
   RewriteRule ^(src|views|content|config|storage|database|tools|docs)/ - [F,L]
 
-  # /public/… non deve esistere come indirizzo pubblico: senza questa regola
-  # ogni pagina del sito avrebbe due indirizzi — /it/camere e
-  # /public/it/camere — che per un motore di ricerca è contenuto duplicato.
-  RewriteCond %{THE_REQUEST} \s/+public/([^\s?]*)
-  RewriteRule ^ /%1 [R=301,L]
-
-  # Tutto il resto entra in public/.
-  RewriteCond %{REQUEST_URI} !^/public/
+  # Tutto il resto entra in public/. Un indirizzo che contiene già /public/
+  # non passa di qui: lo prende l'.htaccess di public/, che lo rimanda a
+  # quello pulito.
+  RewriteCond $1 !^public(/|$)
   RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
 

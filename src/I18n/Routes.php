@@ -29,6 +29,43 @@ final class Routes
     /** La pagina di una camera vive sotto quella dell'elenco: /it/camere/camera-01 */
     public const ROOM_PARENT = 'rooms';
 
+    /**
+     * La cartella del sito sul server, senza barra finale: «» alla radice del
+     * dominio, «/assisiapartment» in una sottocartella. Si imposta una volta,
+     * all'avvio, da APP_URL.
+     */
+    private static string $base = '';
+
+    public static function setBase(string $base): void
+    {
+        $base = '/' . trim($base, '/');
+        self::$base = $base === '/' ? '' : $base;
+    }
+
+    public static function base(): string
+    {
+        return self::$base;
+    }
+
+    /**
+     * Toglie la cartella dal percorso di una richiesta, perché le rotte si
+     * riconoscono sempre come se il sito stesse alla radice.
+     */
+    public static function stripBase(string $path): string
+    {
+        if (self::$base === '') {
+            return $path;
+        }
+        if ($path === self::$base) {
+            return '/';
+        }
+        if (str_starts_with($path, self::$base . '/')) {
+            return substr($path, strlen(self::$base));
+        }
+
+        return $path;
+    }
+
     /** @return list<string> */
     public static function pages(): array
     {
@@ -70,6 +107,7 @@ final class Routes
         if ($page === 'home') {
             $path = rtrim($path, '/') . '/';
         }
+        $path = self::$base . $path;
 
         return $query === [] ? $path : $path . '?' . http_build_query($query);
     }

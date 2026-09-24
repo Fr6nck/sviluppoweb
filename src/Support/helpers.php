@@ -49,13 +49,28 @@ function url(string $page, array $params = [], array $query = [], ?string $local
     return Routes::url($page, $locale ?? App::instance()->locale(), $params, $query);
 }
 
-/** Un file statico, con la marca temporale per non servire una versione vecchia. */
+/**
+ * Un file statico, con la marca temporale per non servire una versione vecchia.
+ * Porta davanti la cartella del sito: in prova su blackout.in/assisiapartment
+ * un «/assets/…» nudo chiederebbe il file alla radice di blackout.in.
+ */
 function asset(string $path): string
 {
-    $path = '/assets/' . ltrim($path, '/');
-    $file = App::instance()->config('root') . '/public' . $path;
+    $relativo = '/assets/' . ltrim($path, '/');
+    $file     = App::instance()->config('root') . '/public' . $relativo;
+    $pubblico = Routes::base() . $relativo;
 
-    return is_file($file) ? $path . '?v=' . filemtime($file) : $path;
+    return is_file($file) ? $pubblico . '?v=' . filemtime($file) : $pubblico;
+}
+
+/**
+ * Un indirizzo assoluto da un percorso del sito: «https://blackout.in» davanti
+ * a «/assisiapartment/it/camere». Il percorso la cartella la contiene già, per
+ * questo davanti va l'origine e non APP_URL intero — che la ripeterebbe.
+ */
+function assoluto(string $percorso): string
+{
+    return rtrim((string) App::instance()->config('app.origin'), '/') . $percorso;
 }
 
 /** La lingua corrente. */

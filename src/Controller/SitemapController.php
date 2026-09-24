@@ -28,7 +28,9 @@ final class SitemapController
 
     public function sitemap(): Response
     {
-        $base    = rtrim((string) $this->app->config('app.url'), '/');
+        // I percorsi di Routes::url() contengono già la cartella del sito:
+        // davanti va solo l'origine, «https://dominio».
+        $base    = rtrim((string) $this->app->config('app.origin'), '/');
         $locales = $this->app->config('i18n.available');
 
         // Le pagine che vanno indicizzate. «privacy» c'è ma vale poco;
@@ -90,6 +92,18 @@ final class SitemapController
     public function robots(): Response
     {
         $base = rtrim((string) $this->app->config('app.url'), '/');
+
+        // In prova: nessuno entra. Un motore di ricerca legge robots.txt solo
+        // alla radice di un dominio, quindi in una sottocartella questo file
+        // conta poco — il lavoro vero lo fanno il meta robots e l'intestazione
+        // X-Robots-Tag. Ma se il sito di prova sta su un dominio suo, è qui
+        // che si ferma.
+        if ((bool) $this->app->config('app.noindex')) {
+            return Response::text(
+                "# Arco del Vento — copia di prova, non indicizzare\n\nUser-agent: *\nDisallow: /\n",
+                'text/plain; charset=UTF-8'
+            );
+        }
 
         $righe = [
             '# Arco del Vento — affittacamere, Assisi',

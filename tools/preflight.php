@@ -108,6 +108,19 @@ if ($url === '') {
     }
 }
 
+// ------------------------------------------------------------- prova o no
+$inProva = (bool) ($config['app']['noindex'] ?? false);
+$cartella = (string) ($config['app']['base'] ?? '');
+$aggiungi('nota', 'Ambiente',
+    $cartella === '' ? 'il sito sta alla radice del dominio' : "il sito sta nella cartella {$cartella}",
+    'La ricava da APP_URL: link, reindirizzamenti e file statici la seguono da soli.');
+$aggiungi($inProva ? 'attenzione' : 'ok', 'Ambiente',
+    $inProva ? 'APP_NOINDEX=true: copia di prova, fuori dai motori di ricerca' : 'il sito si fa indicizzare',
+    $inProva
+        ? 'Giusto finché è una prova. Sul dominio vero va tolto, altrimenti Google non lo trova.'
+        : 'Se questa è una copia di prova, metti APP_NOINDEX=true: indicizzata su un dominio non suo, '
+          . 'il giorno della pubblicazione Google avrebbe due copie dello stesso sito.');
+
 $aggiungi(date_default_timezone_get() !== '' ? 'ok' : 'attenzione', 'Ambiente',
     'fuso orario ' . date_default_timezone_get(),
     'Le date delle prenotazioni seguono questo fuso: per una struttura italiana va Europe/Rome.');
@@ -254,7 +267,9 @@ foreach (['cin' => 'Codice Identificativo Nazionale', 'vat' => 'partita IVA'] as
         $obbligatori[] = $nome;
     }
 }
-$aggiungi($obbligatori === [] ? 'ok' : 'bloccante', 'Contenuti',
+// In prova, fuori dai motori di ricerca e prima di qualunque annuncio, il CIN
+// mancante è da ricordare e non ancora da bloccare. Sul dominio vero sì.
+$aggiungi($obbligatori === [] ? 'ok' : ($inProva ? 'attenzione' : 'bloccante'), 'Contenuti',
     $obbligatori === []
         ? 'gli identificativi di legge ci sono'
         : 'manca per legge: ' . implode(', ', $obbligatori),
@@ -345,7 +360,9 @@ $attenzioni = count(array_filter($esiti, static fn (array $e): bool => $e[0] ===
 $righe[] = '';
 $righe[] = str_repeat('=', 74);
 $righe[] = $bloccanti === 0
-    ? sprintf('SI PUÒ PUBBLICARE.  %d cose da guardare con calma.', $attenzioni)
+    ? ($inProva
+        ? sprintf('LA PROVA PUÒ ANDARE ONLINE.  %d cose da guardare prima del dominio vero.', $attenzioni)
+        : sprintf('SI PUÒ PUBBLICARE.  %d cose da guardare con calma.', $attenzioni))
     : sprintf('NON ANCORA.  %d problemi bloccanti, %d cose da guardare.', $bloccanti, $attenzioni);
 $righe[] = '';
 

@@ -38,6 +38,41 @@ nemmeno se un giorno l'`.htaccess` smettesse di funzionare.
 In questo modo la sicurezza dipende dall'`.htaccess`. Se il server un giorno
 lo ignorasse, `.env` diventerebbe leggibile. Per questo A è meglio.
 
+### C. In una sottocartella di un altro sito — la prova
+
+Durante la prova il sito sta in **`blackout.in/assisiapartment/`**. È il modo B
+dentro una cartella:
+
+1. In `public_html` di blackout.in crea la cartella **`assisiapartment`**
+2. Carica **dentro di lei** tutto il contenuto del pacchetto
+3. Usa come `.env` il file **`env-prova.txt`** (vedi sotto), rinominato
+
+Il sito capisce da solo di stare in una cartella: la legge da `APP_URL`. Ogni
+link, reindirizzamento, foglio di stile e immagine se la porta dietro, e
+nessuna regola degli `.htaccess` scrive un percorso che cominci con «/» —
+quindi funzionano uguali alla radice di un dominio e in una sottocartella. Il
+resto di blackout.in non viene toccato: un sito WordPress nella radice
+continua a funzionare, perché Apache applica alla cartella solo le regole del
+suo `.htaccess`.
+
+La prova è **fuori dai motori di ricerca** (`APP_NOINDEX=true`): ogni pagina
+porta `noindex, nofollow`, nell'HTML e nell'intestazione `X-Robots-Tag`. Senza,
+Google indicizzerebbe il sito su blackout.in, e il giorno della pubblicazione
+avrebbe due copie dello stesso sito. E **non spedisce e-mail**
+(`MAIL_TRANSPORT=log`): le richieste di prova restano in
+`assisiapartment/storage/mail/`, leggibili via FTP, e non arrivano nella
+casella del cliente.
+
+Il pacchetto con il `.env` di prova si prepara così:
+
+```bash
+php tools/build-release.php --prova=https://blackout.in/assisiapartment
+```
+
+Il controllo finale, in prova, non si ferma per il CIN (lo segnala e basta) e
+chiude con **«LA PROVA PUÒ ANDARE ONLINE»**. Sul dominio vero il CIN torna
+bloccante.
+
 ---
 
 ## 2. Che cosa caricare
@@ -267,7 +302,29 @@ perdere più tempo. Nel client FTP metti il trasferimento su **binario** o
 
 ---
 
-## 10. Aggiornare il sito dopo
+## 10. Dalla prova al dominio vero
+
+**I file del sito sono gli stessi.** Cambia solo il `.env`.
+
+1. Sul dominio vero carica il contenuto del pacchetto in `public_html`
+   (modo B) o nella cartella su cui punta il dominio (modo A)
+2. Come `.env` usa **`env-produzione.txt`**, non quello di prova: `APP_URL`
+   senza cartella, `APP_NOINDEX` tolto, posta vera con la password della
+   casella
+3. Inserisci il CIN in `content/settings.php` — senza, il controllo finale si
+   ferma, ed è giusto così
+4. `php tools/preflight.php` (o dal browser, con il gettone): deve dire
+   **«SI PUÒ PUBBLICARE»**
+5. Solo allora, su blackout.in, **cancella la cartella `assisiapartment`**, o
+   almeno lasciala con `APP_NOINDEX=true`: due copie aperte dello stesso sito
+   si fanno concorrenza
+
+Se invece di ricaricare tutto preferisci spostare i file della prova, sposta
+tutto **tranne** il `.env`, e sul nuovo server metti quello di produzione.
+
+---
+
+## 11. Aggiornare il sito dopo
 
 Cambiano i contenuti (`content/`), le viste (`views/`) o i fogli di stile
 (`public/assets/css/`): si ricaricano quei file e basta. Non c'è cache da

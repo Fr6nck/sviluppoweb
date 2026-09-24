@@ -21,11 +21,29 @@
   RewriteCond %{HTTP:X-Forwarded-SSL}   !=on
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 
+  # /public/… non è un indirizzo del sito: se qualcuno ci arriva — un link
+  # copiato male, un vecchio segnalibro — torna a quello pulito. Senza, ogni
+  # pagina avrebbe due indirizzi. Sta qui e non nell'.htaccess della radice
+  # perché una richiesta che entra in public/ legge solo questo file.
+  # THE_REQUEST è la riga di richiesta originale: tiene la cartella del sito
+  # (/assisiapartment in prova) e non viene toccata dalle riscritture.
+  RewriteCond %{THE_REQUEST} ^\S+\s([^\s?]*?)/public/([^\s?]*)
+  RewriteRule ^ %1/%2 [R=301,L,NE]
+
   # Una barra finale in meno: /it/camere/ e /it/camere sono la stessa pagina,
   # e due indirizzi per una pagina sola sono contenuto duplicato.
-  # La home di lingua (/it/) resta con la barra, che è il suo indirizzo.
+  # La home di lingua (/it/) invece TIENE la barra, che è il suo indirizzo:
+  # la regola di prima la toglieva anche a lei, e ogni visita partiva con due
+  # reindirizzamenti — / → /it/ → /it — verso un indirizzo diverso da quello
+  # dichiarato in canonical. Il percorso si legge su THE_REQUEST, così il
+  # reindirizzamento resta dentro la cartella del sito ovunque stia.
+  # Si cattura solo il percorso: la parte dopo «?» la riattacca Apache da sé.
+  # Metterla nella destinazione da un riferimento fa rispondere 403 agli
+  # Apache recenti, che lo trattano come un tentativo di iniezione.
   RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^(.+)/$ /$1 [R=301,L]
+  RewriteCond %{THE_REQUEST} !^\S+\s[^\s?]*/[a-z]{2}/[\s?]
+  RewriteCond %{THE_REQUEST} ^\S+\s([^\s?]*[^/\s?])/+[\s?]
+  RewriteRule ^ %1 [R=301,L,NE]
 
   # Tutto quello che non è un file o una cartella reale va al front controller.
   RewriteCond %{REQUEST_FILENAME} !-f
@@ -97,9 +115,12 @@ Options -Indexes
 # Il 404 lo disegna l'applicazione e resta nella lingua dell'indirizzo
 # sbagliato: ci arriva già da solo, perché le riscritture mandano al front
 # controller tutto ciò che non è un file vero.
-# Il 500 no: se PHP è a terra, non può disegnare niente. Serve una pagina
-# statica, che non dipenda da PHP per essere mostrata.
-ErrorDocument 500 /500.html
-ErrorDocument 503 /500.html
+# Il 500 lo mostra public/index.php, che usa 500.html e sa in che cartella
+# sta il sito. Qui resta solo il caso in cui PHP non parte proprio: una riga
+# di testo invece di un percorso, perché ErrorDocument vuole un indirizzo
+# fisso dalla radice del dominio — «/500.html» — che in una sottocartella
+# punterebbe alla pagina di errore di un altro sito.
+ErrorDocument 500 "Arco del Vento: il sito non risponde. Riprova tra qualche minuto."
+ErrorDocument 503 "Arco del Vento: il sito non risponde. Riprova tra qualche minuto."
 
 DirectoryIndex index.php

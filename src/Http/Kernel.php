@@ -47,6 +47,19 @@ final class Kernel
             return Response::redirect(Routes::url('home', $this->negotiate($request, $locales, $default)), 302);
         }
 
+        // «/it» senza barra è la home di lingua scritta male: l'indirizzo vero
+        // è «/it/», ed è quello che dichiarano canonical e hreflang. Prima
+        // rispondevano tutti e due, e una pagina con due indirizzi è contenuto
+        // doppio. Il reindirizzamento lo fa PHP e non .htaccess perché qui la
+        // cartella del sito si conosce.
+        // Il percorso di Request è già normalizzato, barre in coda comprese: la
+        // barra si legge sull'indirizzo com'è arrivato.
+        $solo   = trim($request->path, '/');
+        $grezzo = (string) (parse_url((string) ($request->server['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '');
+        if (in_array($solo, $locales, true) && !str_ends_with($grezzo, '/')) {
+            return Response::redirect(Routes::url('home', $solo), 301);
+        }
+
         $match = Routes::match($request->path, $locales);
 
         if ($match === null) {

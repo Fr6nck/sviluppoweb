@@ -42,6 +42,8 @@ final class App
     /** @param array<string,mixed> $config */
     public static function boot(array $config): self
     {
+        \ArcoDelVento\I18n\Routes::setBase((string) ($config['app']['base'] ?? ''));
+
         $translator = new Translator(
             $config['content'] . '/lang',
             (string) $config['i18n']['default'],

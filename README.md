@@ -310,6 +310,23 @@ in locale, caricamento via FTP.
    richieste in `public/` e blocca `src`, `views`, `content`, `config`,
    `storage`, `database`, `tools`, `docs`.
 
+**Funziona anche in una sottocartella**, ed è così che gira in prova:
+`blackout.in/assisiapartment/`. La cartella il sito la legge da `APP_URL`
+(`https://blackout.in/assisiapartment`) e la mette davanti a ogni link,
+reindirizzamento e file statico; gli `.htaccess` non scrivono mai un percorso
+che cominci con «/». Per passare al dominio vero si cambia il `.env`, non i
+file. La copia di prova sta fuori dai motori di ricerca (`APP_NOINDEX=true`)
+e non spedisce posta (`MAIL_TRANSPORT=log`).
+
+```bash
+php tools/build-release.php --prova=https://blackout.in/assisiapartment
+```
+
+prepara il pacchetto e, accanto, un `env-prova.txt` già pronto. Il pacchetto
+**si ferma se una pagina, resa come in una sottocartella, chiede anche un solo
+file fuori dalla sua cartella**: è l'errore più facile da reintrodurre, e con
+il server di sviluppo alla radice non si vede.
+
 **La procedura completa è in [`docs/DEPLOY-HOSTINGER.md`](docs/DEPLOY-HOSTINGER.md)**:
 dove mettere i file, che cosa non caricare, il `.env` di produzione, la posta,
 il certificato, e i sintomi dei guai più comuni.
@@ -325,7 +342,17 @@ scrivibili, cartelle esposte al web, riscritture, database, posta, materiali e
 sessione. Dice che cosa manca e come rimediare, ed esce con codice 1 se c'è un
 problema bloccante.
 
-Il prototipo **non è stato caricato** su Hostinger.
+**Provato con Apache vero** (2.4, mod_rewrite, mod_php), non solo con il
+server di sviluppo di PHP — che gli `.htaccess` non li legge: alla radice di un
+dominio e in `/assisiapartment/`, con un sito diverso nella radice. Tutte le
+pagine, i reindirizzamenti, i file protetti (`.env`, `src/`, `content/` danno
+403), la prenotazione fino alla conferma, il modulo contatti, il menu, il cambio
+lingua e la pagina d'errore. Quella prova ha trovato due errori che il server
+di sviluppo nascondeva: `/it/` veniva rimandato a `/it`, diverso dall'indirizzo
+dichiarato in canonical, e una barra finale con una query dava 403.
+
+Il prototipo **non è stato caricato** su Hostinger da qui: il caricamento lo
+fai tu, via FTP.
 
 ---
 
@@ -518,7 +545,8 @@ php tools/build-photos.php        # ritaglia le fotografie nei formati del siste
                                   #    misura piccola dev'essere davvero più
                                   #    leggera, non solo più stretta)
 php tools/export-seed.php         # rigenera database/seed.sql dai contenuti
-php tools/build-release.php       # prepara il pacchetto per il server in dist/:
+php tools/build-release.php [--prova=URL]
+                                  # prepara il pacchetto per il server in dist/:
                                   #   rende tutte le pagine, si ferma se una
                                   #   non risponde, lascia fuori .env e le
                                   #   immagini che nessuna pagina chiede

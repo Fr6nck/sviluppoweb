@@ -40,10 +40,17 @@ use ArcoDelVento\Support\Env;
 Env::load($root . '/.env');
 
 // ------------------------------------------------------------------ opzioni
-$opzioni = getopt('', ['out::', 'tutto', 'senza-zip']) ?: [];
+$opzioni = getopt('', ['out::', 'tutto', 'senza-zip', 'prova::']) ?: [];
 $uscita  = rtrim((string) ($opzioni['out'] ?? $root . '/dist'), '/');
 $tutto   = array_key_exists('tutto', $opzioni);
 $senzaZip = array_key_exists('senza-zip', $opzioni);
+// --prova=https://blackout.in/assisiapartment: scrive anche il .env della copia
+// di prova, fuori dai motori di ricerca e senza posta vera.
+$urlProva = rtrim((string) ($opzioni['prova'] ?? ''), '/');
+if ($urlProva !== '' && !preg_match('#^https?://[^/]+#', $urlProva)) {
+    fwrite(STDERR, "--prova vuole un indirizzo intero, per esempio --prova=https://blackout.in/assisiapartment\n");
+    exit(1);
+}
 
 $VERDE = "\033[32m"; $ROSSO = "\033[31m"; $GIALLO = "\033[33m"; $FINE = "\033[0m";
 $passo = static function (string $testo) use ($VERDE, $FINE): void {
@@ -119,13 +126,19 @@ $indirizzi = (static function () use ($root): array {
  *
  * @return array{stato:int, corpo:string}
  */
-$rendi = static function (string $indirizzo) use ($root): array {
+$rendi = static function (string $indirizzo, string $cartella = '') use ($root): array {
     $script = <<<'CODICE'
         <?php
         $root = $argv[1];
         $uri  = $argv[2];
+        $cartella = $argv[3] ?? '';
+        if ($cartella !== '') {
+            // Il sito finto in sottocartella: APP_URL la contiene, e la
+            // richiesta arriva con la cartella davanti, come da Apache.
+            $_SERVER['APP_URL'] = 'https://esempio.test' . $cartella;
+        }
         $parti = parse_url($uri);
-        $_SERVER['REQUEST_URI']    = $uri;
+        $_SERVER['REQUEST_URI']    = $cartella . $uri;
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['HTTP_HOST']      = 'localhost';
         $_SERVER['SCRIPT_NAME']    = '/index.php';
@@ -141,7 +154,8 @@ $rendi = static function (string $indirizzo) use ($root): array {
     $tmp = tempnam(sys_get_temp_dir(), 'adv') . '.php';
     file_put_contents($tmp, $script);
     $cmd = escapeshellcmd(PHP_BINARY) . ' ' . escapeshellarg($tmp)
-         . ' ' . escapeshellarg($root) . ' ' . escapeshellarg($indirizzo) . ' 2>&1';
+         . ' ' . escapeshellarg($root) . ' ' . escapeshellarg($indirizzo)
+         . ($cartella !== '' ? ' ' . escapeshellarg($cartella) : '') . ' 2>&1';
     $grezzo = (string) shell_exec($cmd);
     @unlink($tmp);
 
@@ -177,6 +191,50 @@ if ($guasti !== []) {
     $muori(count($guasti) . ' pagine su ' . count($indirizzi) . ' non rispondono: non si pubblica.');
 }
 $passo(count($indirizzi) . ' indirizzi resi, tutti 200, nessun errore di PHP');
+
+/* Seconda passata: lo stesso sito, come se stesse in una sottocartella — è
+   così che gira in prova, su blackout.in/assisiapartment. Ogni link, ogni
+   file statico, ogni indirizzo di un modulo deve portarsi dietro la cartella:
+   uno solo che comincia con «/» nudo chiede la pagina alla radice di un altro
+   sito. È l'errore più facile da reintrodurre scrivendo una vista, e con il
+   server di sviluppo alla radice non si vede mai. */
+$cartellaProva = '/prova-sottocartella';
+$fuoriCartella = [];
+foreach ($indirizzi as $indirizzo) {
+    $r = $rendi($indirizzo, $cartellaProva);
+    if ($r['stato'] !== 200 || preg_match('/Fatal error|Uncaught|Warning:|Notice:/', $r['corpo']) === 1) {
+        $fuoriCartella[] = $indirizzo . ' → ' . $r['stato'];
+        continue;
+    }
+    $percorsi = [];
+    preg_match_all('#\s(?:href|src|action)="(/[^"]*)"#', $r['corpo'], $m);
+    $percorsi = $m[1];
+    preg_match_all('#\ssrcset="([^"]*)"#', $r['corpo'], $m);
+    foreach ($m[1] as $insieme) {
+        foreach (explode(',', $insieme) as $voce) {
+            $percorsi[] = strtok(trim($voce), ' ');
+        }
+    }
+    foreach ($percorsi as $percorso) {
+        if (str_starts_with((string) $percorso, '/') && !str_starts_with((string) $percorso, $cartellaProva . '/')) {
+            $fuoriCartella[] = $indirizzo . ' → ' . $percorso;
+        }
+    }
+    // gli indirizzi assoluti: canonical, hreflang, sitemap, Open Graph
+    preg_match_all('#https://esempio\.test(/[^"<\s]*)#', $r['corpo'], $m);
+    foreach ($m[1] as $percorso) {
+        if (!str_starts_with($percorso, $cartellaProva . '/')) {
+            $fuoriCartella[] = $indirizzo . ' → https://esempio.test' . $percorso;
+        }
+    }
+}
+if ($fuoriCartella !== []) {
+    foreach (array_slice(array_unique($fuoriCartella), 0, 12) as $f) {
+        echo '       ' . $f . PHP_EOL;
+    }
+    $muori('in una sottocartella il sito chiederebbe file e pagine fuori dalla sua cartella.');
+}
+$passo('rese di nuovo come in una sottocartella: ogni link e ogni file resta nella cartella');
 
 // I fogli di stile chiedono i caratteri con percorsi relativi: si risolvono
 // rispetto al foglio, altrimenti i .woff2 sembrano non usati e restano fuori.
@@ -490,28 +548,75 @@ $produzione = [
     'MAIL_SMTP_ENCRYPTION' => ['tls', ''],
 ];
 
-$righe = [
-    '# Arco del Vento — .env di produzione',
+/**
+ * Scrive un .env partendo da .env.example: le chiavi indicate prendono il
+ * valore dato (con la loro nota sopra), tutto il resto resta com'è, commenti
+ * compresi — così chi lo apre trova le stesse spiegazioni dell'esempio.
+ *
+ * @param array<string,array{0:string,1:string}> $valori
+ * @param list<string> $intestazione
+ */
+$scriviEnv = static function (string $file, array $valori, array $intestazione) use ($root): void {
+    $righe = array_merge($intestazione, ['']);
+    foreach (file($root . '/.env.example', FILE_IGNORE_NEW_LINES) ?: [] as $riga) {
+        if (preg_match('/^([A-Z_]+)=/', $riga, $m) && isset($valori[$m[1]])) {
+            [$valore, $sopra] = $valori[$m[1]];
+            if ($sopra !== '') {
+                $righe[] = '# ' . $sopra;
+            }
+            $righe[] = $m[1] . '=' . (str_contains($valore, ' ') ? '"' . $valore . '"' : $valore);
+            continue;
+        }
+        $righe[] = $riga;
+    }
+    file_put_contents($file, implode(PHP_EOL, $righe) . PHP_EOL);
+};
+
+$scriviEnv($rinominare . '/env-produzione.txt', $produzione, [
+    '# Arco del Vento — .env di produzione, per il dominio vero',
     '#',
     '# 1. Scrivi la password della posta (MAIL_SMTP_PASSWORD) e controlla APP_URL.',
-    '# 2. Caricalo in public_html, accanto a .htaccess.',
+    '# 2. Caricalo nella cartella del sito, accanto a .htaccess.',
     '# 3. Sul server rinominalo in .env (con il punto davanti, senza .txt).',
     '#',
     '# Non mandarlo per e-mail e non metterlo su GitHub: contiene una password.',
-    '',
-];
-foreach (file($root . '/.env.example', FILE_IGNORE_NEW_LINES) ?: [] as $riga) {
-    if (preg_match('/^([A-Z_]+)=/', $riga, $m) && isset($produzione[$m[1]])) {
-        [$valore, $sopra] = $produzione[$m[1]];
-        if ($sopra !== '') {
-            $righe[] = '# ' . $sopra;
-        }
-        $righe[] = $m[1] . '=' . (str_contains($valore, ' ') ? '"' . $valore . '"' : $valore);
-        continue;
-    }
-    $righe[] = $riga;
+]);
+
+$fileEnv = ['env-produzione.txt'];
+
+if ($urlProva !== '') {
+    /* La copia di prova: stessi file, un altro .env. Fuori dai motori di
+       ricerca, e senza posta vera — le richieste di prova non devono arrivare
+       nella casella del cliente. Restano in storage/mail, leggibili via FTP. */
+    $prova = [
+        'APP_ENV'     => ['production', 'Come in produzione: gli errori non si mostrano a chi visita la prova.'],
+        'APP_DEBUG'   => ['false', ''],
+        'APP_URL'     => [$urlProva, 'La copia di prova. La cartella fa parte dell\'indirizzo: il sito si regola da solo.'],
+        'APP_NOINDEX' => ['true', 'Copia di prova: nessuna pagina nei motori di ricerca. Sul dominio vero va tolto.'],
+        'PREFLIGHT_TOKEN' => [
+            bin2hex(random_bytes(12)),
+            'Serve una volta sola, per tools/preflight.php dal browser. Dopo il controllo svuotalo.',
+        ],
+        'MAIL_TRANSPORT' => [
+            'log',
+            'In prova nessuna e-mail parte: i messaggi dei moduli restano in storage/mail, li leggi via FTP. '
+            . 'Per provare la posta vera metti smtp e i dati di una tua casella, non quella del cliente.',
+        ],
+        'MAIL_FROM_ADDRESS' => [$posta, ''],
+        'MAIL_TO_ADDRESS'   => [$posta, ''],
+    ];
+    $scriviEnv($rinominare . '/env-prova.txt', $prova, [
+        '# Arco del Vento — .env della copia di prova: ' . $urlProva,
+        '#',
+        '# Pronto così: non serve nessuna password.',
+        '# 1. Caricalo nella cartella del sito, accanto a .htaccess.',
+        '# 2. Sul server rinominalo in .env (con il punto davanti, senza .txt).',
+        '#',
+        '# Quando il sito passa al dominio vero, questo file si sostituisce con',
+        '# env-produzione.txt: i file del sito restano gli stessi.',
+    ]);
+    $fileEnv[] = 'env-prova.txt';
 }
-file_put_contents($rinominare . '/env-produzione.txt', implode(PHP_EOL, $righe) . PHP_EOL);
 
 file_put_contents($uscita . '/LEGGIMI-PRIMA.txt', implode(PHP_EOL, [
     'ARCO DEL VENTO — COME SI CARICA',
@@ -529,22 +634,29 @@ file_put_contents($uscita . '/LEGGIMI-PRIMA.txt', implode(PHP_EOL, [
     'Se non ti fidi, o se dopo il caricamento sul server non ci sono, usa',
     'le copie nella cartella file-da-rinominare:',
     '',
-    '    htaccess-radice.txt  → in public_html,        rinominalo .htaccess',
-    '    htaccess-public.txt  → in public_html/public, rinominalo .htaccess',
-    '    env-produzione.txt   → in public_html,        rinominalo .env',
+    '    htaccess-radice.txt  → nella cartella del sito, rinominalo .htaccess',
+    '    htaccess-public.txt  → nella sua cartella public, rinominalo .htaccess',
+    '    env-produzione.txt   → nella cartella del sito, rinominalo .env',
+    ...($urlProva !== '' ? [
+        '    env-prova.txt        → per la copia di prova (' . $urlProva . '),',
+        '                           al posto di env-produzione.txt, rinominalo .env',
+    ] : []),
     '',
     'Il file .env NON è nello .zip, di proposito: contiene la password',
     'della posta. env-produzione.txt è già compilato con tutto il resto:',
     'scrivi la password, controlla il dominio, caricalo e rinominalo.',
     '',
-    'NON caricare la cartella file-da-rinominare così com\'è: solo i tre',
-    'file, ognuno al suo posto, e rinominati.',
+    'La cartella del sito è public_html sul dominio vero, oppure la',
+    'sottocartella della prova (per esempio public_html/assisiapartment).',
+    '',
+    'NON caricare la cartella file-da-rinominare così com\'è: solo i file',
+    'che ti servono, ognuno al suo posto, e rinominati.',
     '',
     'La procedura completa è in docs/DEPLOY-HOSTINGER.md, dentro lo .zip.',
     '',
 ]));
 
-$passo('file-da-rinominare/ — htaccess-radice.txt, htaccess-public.txt, env-produzione.txt');
+$passo('file-da-rinominare/ — htaccess-radice.txt, htaccess-public.txt, ' . implode(', ', $fileEnv));
 $passo('LEGGIMI-PRIMA.txt scritto');
 
 // il manifesto, per sapere dopo cosa era dentro
