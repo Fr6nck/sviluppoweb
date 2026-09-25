@@ -1,10 +1,11 @@
 /* Arco del Vento — i gettoni del sistema.
 
-   Crema e avorio per le superfici, verde bosco per l'inchiostro, terracotta
-   per il gesto: il pulsante, la parola in corsivo, il filetto. Tutte le
-   coppie di colore usate per il testo passano il contrasto AA:
-     muto su crema 5,3 · terracotta su crema 4,6 · avorio su terracotta 5,1
-     verde su crema 10,8 · crema su verde 11,4.
+   I colori vengono dal logotipo: il mattone di «arco del vento» per il gesto
+   (il pulsante, la parola in corsivo, il filetto, il piè di pagina), il bruno
+   della rosa dei venti per l'inchiostro; crema e avorio per le superfici.
+   Tutte le coppie usate per il testo passano il contrasto AA:
+     bruno su crema 11,1 · mattone su crema 7,7 · avorio su mattone 8,6
+     mattone su sabbia 7,0 · muto su crema 5,3 · muto su sabbia 4,8.
 
    Un solo tema, chiaro: la casa si guarda di giorno.
 
@@ -13,7 +14,8 @@
 
 :root {
   /* Caratteri */
-  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-display: "Prata", "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-firma: "Allura", "Snell Roundhand", cursive;
   --font-testo: "Sora", -apple-system, "Segoe UI", system-ui, sans-serif;
 
   /* Colore */
@@ -21,11 +23,12 @@
   --avorio: #fffdf8;
   --sabbia: #eee5d5;
   --sabbia-chiara: #f0e7d8;
-  --salvia: #e4e6d4;
-  --verde: #1c3b35;
-  --verde-scuro: #1b3733;
-  --terracotta: #b64c28;
-  --terracotta-scura: #92391c;
+  --caldo: #f1e4c9;
+  --bruno: #4b2c1f;
+  --bruno-scuro: #331d18;
+  --mattone: #813131;
+  --mattone-scuro: #6b2727;
+  --petrolio: #39606b;
   --muto: #6b6257;
   --filo: #e4d8c3;
   --filo-tenue: rgba(203, 189, 166, 0.5);
@@ -40,10 +43,10 @@
   --errore-tenue: #f6e0d6;
 
   /* Ombre */
-  --ombra-scheda: 0 10px 25px rgba(28, 59, 53, 0.027);
-  --ombra-barra: 0 14px 34px rgba(28, 59, 53, 0.09);
-  --ombra-testata: 0 10px 30px rgba(28, 59, 53, 0.1);
-  --ombra-pannello: 0 24px 60px rgba(28, 59, 53, 0.14);
+  --ombra-scheda: 0 10px 25px rgba(75, 44, 31, 0.03);
+  --ombra-barra: 0 14px 34px rgba(75, 44, 31, 0.1);
+  --ombra-testata: 0 10px 30px rgba(75, 44, 31, 0.1);
+  --ombra-pannello: 0 24px 60px rgba(75, 44, 31, 0.14);
 
   /* Forma */
   --raggio: 25px;
@@ -78,15 +81,15 @@
   --surface-alt: var(--sabbia);
   --surface-raised: var(--avorio);
   --surface-sunken: var(--sabbia-chiara);
-  --ink: var(--verde);
+  --ink: var(--bruno);
   --ink-muted: var(--muto);
   --ink-soft: var(--muto);
-  --ink-brand: var(--terracotta);
+  --ink-brand: var(--mattone);
   --line: var(--filo);
   --line-strong: #c4b192;
-  --brand-mattone: var(--terracotta);
+  --brand-mattone: var(--mattone);
   --on-mattone: var(--avorio);
-  --focus-ring: var(--terracotta);
+  --focus-ring: var(--mattone);
   --state-successo: var(--successo);
   --state-successo-tenue: var(--successo-tenue);
   --state-avviso: var(--avviso);

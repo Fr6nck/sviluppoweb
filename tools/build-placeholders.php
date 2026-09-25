@@ -31,9 +31,9 @@ $formats = [
 ];
 
 $sabbia = '#eee5d5';   // sabbia
-$siena  = '#b64c28';   // terracotta, per l'arco
-$noce   = '#1c3b35';   // verde, per la scritta
-$mattone = '#b64c28';  // terracotta, per il numero
+$siena  = '#813131';   // mattone, per l'arco
+$noce   = '#4b2c1f';   // bruno, per la scritta
+$mattone = '#813131';  // mattone, per il numero
 
 /** Un arco: due montanti e una volta a tutto sesto. È la forma del marchio. */
 $arco = static function (float $cx, float $cy, float $w, float $h, string $colore, float $spessore): string {
@@ -69,7 +69,7 @@ $svg = static function (int $w, int $h, string $ordinale, string $etichetta) use
       <rect width="{$w}" height="{$h}" fill="{$sabbia}"/>
       {$arco($cx, $cy, $archW, $archH, $siena, max(1.5, $lato * 0.004))}
       <text x="{$cx}" y="{$cy}" fill="{$mattone}" opacity="0.7"
-            font-family="'Cormorant Garamond', Georgia, serif" font-size="{$ordinaleSize}"
+            font-family="Prata, 'Playfair Display', Georgia, serif" font-size="{$ordinaleSize}"
             text-anchor="middle" dominant-baseline="central">{$ordinale}</text>
       <text x="{$cx}" y="{$etichettaY}" fill="{$noce}"
             font-family="Sora, 'Segoe UI', system-ui, sans-serif" font-size="{$etichettaSize}"

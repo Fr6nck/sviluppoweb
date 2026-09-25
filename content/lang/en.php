@@ -56,7 +56,6 @@ return [
         'contact'  => 'Contact',
         'book'     => 'Book now',
         'privacy'  => 'Privacy',
-        'brand_sub' => 'GUEST ROOMS · ASSISI',
         'topbar' => [
             'center'  => 'In the old town of Assisi',
             'host'    => 'The owner welcomes you',

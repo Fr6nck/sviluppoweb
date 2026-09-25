@@ -62,10 +62,10 @@ foreach (($alternative ?? []) as $lingua => $indirizzo): ?>
 <link rel="apple-touch-icon" href="<?= e(asset('img/logo/icona-512.png')) ?>">
 
 <?php
-/* I due caratteri che si vedono per primi — il titolo in Cormorant e il
-   testo in Sora — si precaricano. Il corsivo entra con una parola per
-   titolo, quindi può arrivare con calma. */ ?>
-<link rel="preload" href="<?= e(asset('fonts/cormorant-latin.woff2')) ?>" as="font" type="font/woff2" crossorigin>
+/* I due caratteri che si vedono per primi — il titolo in Prata e il testo
+   in Sora — si precaricano. Allura entra con una parola per titolo, quindi
+   può arrivare con calma. */ ?>
+<link rel="preload" href="<?= e(asset('fonts/prata-latin.woff2')) ?>" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="<?= e(asset('fonts/sora-latin.woff2')) ?>" as="font" type="font/woff2" crossorigin>
 
 <?php /* Sessanta byte, senza defer: segnano che il JavaScript c'è prima

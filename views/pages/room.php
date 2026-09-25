@@ -22,9 +22,11 @@ $foto    = R::isPhotographed($camera);
 $massimo = (int) ($camera['occupancy']['max'] ?? 1);
 $vista   = R::viewLabel($camera);
 
-// «Camera 02» → «Camera» e, in corsivo, «02». Un nome di una parola sola resta dritto.
+// L'ultima parola del nome va nella mano del logotipo, ma solo se è una
+// parola: «02» in corsivo a mano si legge male, e «Camera 02» resta tutto in
+// Prata. Un nome di una parola sola resta dritto.
 $parole = preg_split('/\s+/u', trim($nome)) ?: [$nome];
-$firma  = count($parole) > 1 ? array_pop($parole) : null;
+$firma  = count($parole) > 1 && preg_match('/\p{L}/u', (string) end($parole)) ? array_pop($parole) : null;
 ?>
 
 <header class="adv-contenuto adv-testa">

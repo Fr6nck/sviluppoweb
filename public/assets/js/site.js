@@ -90,10 +90,10 @@
       }
     });
 
-    /* Tornando oltre i 1080px con il pannello aperto, le voci sono di nuovo
+    /* Tornando oltre i 1180px con il pannello aperto, le voci sono di nuovo
        nella testata: il pannello va chiuso, altrimenti copre la pagina. */
     if (window.matchMedia) {
-      var largo = window.matchMedia('(min-width: 1081px)');
+      var largo = window.matchMedia('(min-width: 1181px)');
       var reagisci = function (evento) {
         if (evento.matches && !pannello.hidden) {
           nascondi();

@@ -1,6 +1,6 @@
 <?php
 /**
- * La chiusura di ogni pagina, tutta in terracotta: prima l'invito a
+ * La chiusura di ogni pagina, tutta in mattone: prima l'invito a
  * prenotare, poi il piè di pagina con il marchio, le pagine, i contatti e
  * gli orari.
  *
@@ -35,8 +35,11 @@ $invito   = ($paginaCorrente ?? '') !== 'book';
     <div class="adv-piede__griglia" data-reveal="lift">
 
       <div>
+        <?php /* Sul mattone il logotipo nella versione chiara del marchio:
+                 il nome in crema, «Assisi» in oro. */ ?>
         <a class="adv-piede__marchio" href="<?= e(url('home')) ?>">
-          <?= te('common.brand') ?><small><?= te('nav.brand_sub') ?></small>
+          <img src="<?= e(asset('img/logo/logotipo-avorio.svg')) ?>" width="185" height="110"
+               alt="<?= te('common.brand') ?>, Assisi">
         </a>
         <p class="adv-piede__tagline"><?= righe(t('footer.tagline')) ?></p>
         <address class="adv-piede__indirizzo">

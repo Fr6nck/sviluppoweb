@@ -329,8 +329,9 @@ $aggiungi($senzaFoto === [] ? 'ok' : 'attenzione', 'Contenuti',
 // ------------------------------------------------------------ materiali
 $mancanti = [];
 foreach (['assets/css/tokens.css', 'assets/css/site.css', 'assets/css/fonts.css',
-          'assets/js/site.js', 'assets/js/abilita-js.js', 'assets/fonts/cormorant-latin.woff2',
-          'assets/fonts/cormorant-italic-latin.woff2', 'assets/fonts/sora-latin.woff2',
+          'assets/js/site.js', 'assets/js/abilita-js.js', 'assets/fonts/prata-latin.woff2',
+          'assets/fonts/allura-latin.woff2', 'assets/fonts/sora-latin.woff2',
+          'assets/img/logo/logotipo-mattone.svg', 'assets/img/logo/logotipo-avorio.svg',
           'favicon.ico', '500.html', '.htaccess'] as $f) {
     if (!is_file($root . '/public/' . $f)) {
         $mancanti[] = $f;

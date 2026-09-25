@@ -32,14 +32,14 @@ header('Cache-Control: no-store');
 <style>
   body {
     margin: 0; min-height: 100vh; display: grid; place-items: center;
-    background: #f8f1e3; color: #1c3b35; padding: 24px;
+    background: #f8f1e3; color: #4b2c1f; padding: 24px;
     font-family: -apple-system, "Segoe UI", system-ui, sans-serif; font-size: 16px; line-height: 26px;
   }
   main { max-width: 36rem; }
-  h1 { font-family: Georgia, serif; font-weight: 400; font-size: 32px; line-height: 38px; color: #1c3b35; margin: 0 0 16px; }
+  h1 { font-family: Georgia, serif; font-weight: 400; font-size: 32px; line-height: 38px; color: #813131; margin: 0 0 16px; }
   p, li { color: #6b6257; }
-  code { background: rgba(182, 76, 40, .1); color: #92391c; padding: 1px 6px; border-radius: 4px; font-size: 15px; }
-  .occhiello { font-size: 12px; font-weight: 600; letter-spacing: .16em; color: #1c3b35; }
+  code { background: rgba(129, 49, 49, .1); color: #813131; padding: 1px 6px; border-radius: 4px; font-size: 15px; }
+  .occhiello { font-size: 12px; font-weight: 600; letter-spacing: .16em; color: #4b2c1f; }
 </style>
 </head>
 <body>

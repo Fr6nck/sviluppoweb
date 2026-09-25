@@ -4,12 +4,14 @@ Prototipo del sito di **Arco del Vento di Pecetta Daniele**, affittacamere in
 Via Santa Maria delle Rose 1/A, ad Assisi. Cinque camere, gestite dal titolare
 dal 2002.
 
-Il disegno viene dal progetto grafico **«Assisi · Anfiteatro Romano»**: crema e
-avorio per le superfici, verde bosco per il testo, terracotta per i pulsanti e
-per la parola in corsivo di ogni titolo; Cormorant Garamond per i titoli, Sora
-per tutto il resto; schede avorio con il filo sabbia, pulsanti a pillola,
-testata in vetro che resta in alto. Del progetto si è preso il disegno, non i
-contenuti: nomi, dati e fotografie sono quelli di Arco del Vento.
+L'impianto viene dal progetto grafico **«Assisi · Anfiteatro Romano»** —
+schede avorio con il filo sabbia, pulsanti a pillola, testata in vetro che
+resta in alto — vestito con il logotipo di Arco del Vento: il logotipo al
+centro della testata, il bruno della rosa dei venti per il testo, il mattone
+di «arco del vento» per pulsanti, filetti e piè di pagina; Prata per i titoli
+e Allura, la mano di «Assisi», per l'ultima parola di ogni titolo; Sora per il
+testo. Del progetto si è preso il disegno, non i contenuti: nomi, dati e
+fotografie sono quelli di Arco del Vento.
 
 ---
 
@@ -73,9 +75,10 @@ o LiteSpeed con PHP e MySQL. Un sito di otto pagine che cambia i contenuti due
 volte l'anno non ha bisogno di più di così, e ogni dipendenza in meno è una
 cosa in meno da aggiornare fra tre anni.
 
-I due caratteri — Cormorant Garamond e Sora, entrambi con licenza SIL Open
-Font — sono serviti dalla nostra cartella in `.woff2` variabili, sottoinsiemi
-`latin` e `latin-ext`. Nessun dominio terzo vede l'indirizzo IP di chi legge, e il sito
+I tre caratteri — Prata e Allura, quelli del logotipo, e Sora per il testo,
+tutti con licenza SIL Open Font — sono serviti dalla nostra cartella in
+`.woff2`, sottoinsiemi `latin` e `latin-ext` (Prata esiste solo in `latin`,
+che copre già le accentate dell'italiano). Nessun dominio terzo vede l'indirizzo IP di chi legge, e il sito
 funziona anche senza rete verso Google.
 
 ---
@@ -141,7 +144,7 @@ il piè di pagina, pillola in fondo allo schermo su mobile, campo di modulo,
 riepilogo prenotazione, riga di contatto, immagine, marcatore «da confermare».
 
 Aiuti per le viste in `src/Support/helpers.php`: `titolo()` (l'ultima parola
-in corsivo terracotta; «|» nel testo va a capo), `occhiello()`, `righe()`,
+in Allura, color mattone; «|» nel testo va a capo), `occhiello()`, `righe()`,
 `icona()` (tracciati Lucide, in linea), `mappa()` (link a Google Maps).
 
 Movimento: entrate e parallasse sono CSS legato allo scorrimento
@@ -601,10 +604,10 @@ nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
   contatti, domande, cambio lingua. La navigazione su schermo stretto ha le
   voci in chiaro al posto del pannello, e il pulsante che aprirebbe il
   pannello non compare — un comando spento è un vicolo cieco.
-- **Contrasto misurato** su ogni coppia di colori usata per il testo: muto su
-  crema 5,3:1, terracotta su crema 4,6:1, avorio su terracotta 5,1:1. Dove il
-  fondo è sabbia i numeri piccoli passano alla terracotta scura (6:1), perché
-  quella normale lì scende a 4,1:1.
+- **Contrasto misurato** su ogni coppia di colori usata per il testo: bruno su
+  crema 11,1:1, mattone su crema 7,7:1, avorio su mattone 8,6:1, mattone su
+  sabbia 7,0:1, muto su crema 5,3:1; l'oro della parola in corsivo sul
+  mattone del piè di pagina 5,7:1.
 - **Fotografie in apertura**: autoplay ogni sei secondi, fermo per chi chiede
   meno movimento, pulsante pausa, la didascalia si annuncia solo quando la
   foto la cambia chi legge. Dopo la prima, ogni fotografia si scarica appena

@@ -57,7 +57,6 @@ return [
         'contact'  => 'Contatti',
         'book'     => 'Prenota ora',
         'privacy'  => 'Privacy',
-        'brand_sub' => 'AFFITTACAMERE · ASSISI',
         'topbar' => [
             'center'  => 'Nel centro storico di Assisi',
             'host'    => 'Ti accoglie il titolare',

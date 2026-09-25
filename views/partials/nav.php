@@ -1,12 +1,15 @@
 <?php
 /**
- * La riga verde in cima, la testata a pillola e il menu su schermo stretto.
+ * La riga bruna in cima, la testata a pillola e il menu su schermo stretto.
  *
- * La testata resta attaccata in alto mentre si scorre, in vetro chiaro; dopo
- * i primi settanta pixel si stringe e prende l'ombra (lo fa site.js), e una
- * riga terracotta sul fondo dice quanto manca alla fine della pagina.
+ * Nella testata il logotipo sta al centro: le voci a sinistra, lingua e
+ * «Prenota» a destra. Su schermo stretto a sinistra va il pulsante del menu,
+ * e il logotipo resta dov'è. La testata resta attaccata in alto mentre si
+ * scorre, in vetro chiaro; dopo i primi settanta pixel si stringe e prende
+ * l'ombra (lo fa site.js), e una riga mattone sul fondo dice quanto manca
+ * alla fine della pagina.
  *
- * La riga verde porta solo fatti che il titolare ha confermato: il centro
+ * La riga in cima porta solo fatti che il titolare ha confermato: il centro
  * storico, l'accoglienza di persona, il parcheggio a Piazza Matteotti, il
  * 2002.
  *
@@ -50,20 +53,30 @@ $contatti = site('contacts');
 <header class="adv-testata" data-testata>
   <span class="adv-testata__traccia" aria-hidden="true"><span class="adv-testata__progresso" data-progresso></span></span>
 
-  <a class="adv-marchio" href="<?= e(url('home')) ?>">
-    <span class="adv-marchio__nome"><?= te('common.brand') ?></span>
-    <span class="adv-marchio__sotto"><?= te('nav.brand_sub') ?></span>
-  </a>
+  <div class="adv-testata__sinistra">
+    <button class="adv-tondo adv-menu__apri" type="button"
+            aria-expanded="false" aria-controls="menu-mobile"
+            aria-label="<?= te('common.menu_open') ?>" data-menu-apri>
+      <?= icona('menu', 20) ?>
+    </button>
 
-  <nav class="adv-nav" aria-label="<?= te('nav.label') ?>">
-    <ul class="adv-nav__voci">
-      <?php foreach ($voci as $chiave => $etichetta): ?>
-        <li>
-          <a class="adv-nav__link" href="<?= e(url($chiave)) ?>"<?= $attiva === $chiave ? ' aria-current="page"' : '' ?>><?= te($etichetta) ?></a>
-        </li>
-      <?php endforeach; ?>
-    </ul>
-  </nav>
+    <nav class="adv-nav" aria-label="<?= te('nav.label') ?>">
+      <ul class="adv-nav__voci">
+        <?php foreach ($voci as $chiave => $etichetta): ?>
+          <li>
+            <a class="adv-nav__link" href="<?= e(url($chiave)) ?>"<?= $attiva === $chiave ? ' aria-current="page"' : '' ?>><?= te($etichetta) ?></a>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+    </nav>
+  </div>
+
+  <?php /* Il logotipo vero, quello del marchio: «arco del vento» in mattone
+           e «Assisi» a mano. È un SVG, quindi resta nitido a ogni misura. */ ?>
+  <a class="adv-marchio" href="<?= e(url('home')) ?>">
+    <img src="<?= e(asset('img/logo/logotipo-mattone.svg')) ?>" width="111" height="66"
+         alt="<?= te('common.brand') ?>, Assisi">
+  </a>
 
   <div class="adv-testata__azioni">
     <?= partial('language-switcher', ['alternative' => $alternative]) ?>
@@ -71,12 +84,6 @@ $contatti = site('contacts');
     <a class="adv-btn adv-btn--primario adv-testata__prenota" href="<?= e(url('book')) ?>">
       <?= te('cta.book') ?><?= icona('freccia-su-destra', 14) ?>
     </a>
-
-    <button class="adv-tondo adv-menu__apri" type="button"
-            aria-expanded="false" aria-controls="menu-mobile"
-            aria-label="<?= te('common.menu_open') ?>" data-menu-apri>
-      <?= icona('menu', 20) ?>
-    </button>
   </div>
 </header>
 
@@ -102,8 +109,8 @@ $contatti = site('contacts');
 
     <div class="adv-menu__testa">
       <a class="adv-marchio" href="<?= e(url('home')) ?>">
-        <span class="adv-marchio__nome"><?= te('common.brand') ?></span>
-        <span class="adv-marchio__sotto"><?= te('nav.brand_sub') ?></span>
+        <img src="<?= e(asset('img/logo/logotipo-mattone.svg')) ?>" width="94" height="56"
+             alt="<?= te('common.brand') ?>, Assisi">
       </a>
       <button class="adv-tondo" type="button" aria-label="<?= te('common.menu_close') ?>" data-menu-chiudi>
         <?= icona('chiudi', 20) ?>
