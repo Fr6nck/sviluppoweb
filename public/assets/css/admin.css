@@ -443,6 +443,8 @@
 .adm-dati dt, .adm-dati dd { margin: 0; padding: 12px 18px; border-bottom: 1px solid var(--a-bordo); }
 .adm-dati div:last-child dt, .adm-dati div:last-child dd { border-bottom: 0; }
 .adm-dati dt { background: var(--a-tela-2); color: var(--a-tenue); font-size: 13.5px; font-weight: 600; }
+/* Dentro una scheda: senza cornice e senza ombra, le righe bastano. */
+.adm-dati--piatta { grid-template-columns: minmax(110px, 150px) minmax(0, 1fr); border-radius: 14px; box-shadow: none; overflow-wrap: anywhere; }
 
 /* ============================================================ avvisi */
 .adm-avviso { display: flex; align-items: flex-start; gap: 12px; margin: 0 0 20px; padding: 14px 16px; border: 1px solid; border-radius: 14px; font-size: 14.5px; line-height: 1.5; }

@@ -95,7 +95,7 @@ final class ContactController
         ]);
 
         $this->app->mailer()->send(new MailMessage(
-            to:          (string) $this->app->config('mail.to'),
+            to:          $this->app->destinatari(),
             subject:     '[Arco del Vento] ' . $oggetto . ' — ' . $v->value('nome'),
             body:        $body,
             fromAddress: (string) $this->app->config('mail.from.address'),

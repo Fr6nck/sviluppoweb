@@ -12,6 +12,7 @@ use ArcoDelVento\App;
 use ArcoDelVento\Http\Request;
 use ArcoDelVento\Http\Response;
 use ArcoDelVento\I18n\Routes;
+use ArcoDelVento\Mail\MailMessage;
 use ArcoDelVento\Media\Elaboratore;
 use ArcoDelVento\Media\ErroreImmagine;
 use ArcoDelVento\Media\Immagini;
@@ -139,6 +140,7 @@ final class AdminController
             $pezzi === ['domande']                          => $this->faq($request),
             $pezzi === ['immagini']                         => $this->images(),
             count($pezzi) === 2 && $pezzi[0] === 'immagini'  => $this->image($request, $pezzi[1]),
+            $pezzi === ['posta']                            => $this->mail($request),
             $pezzi === ['account']                          => $this->account($request),
             $pezzi === ['ripristina'] && $metodo === 'POST'  => $this->restore($request),
             default                                         => Response::html($this->page('non-trovata', ['titolo' => 'Pagina non trovata']), 404),
@@ -764,6 +766,106 @@ final class AdminController
         $this->flash('ok', 'Domande salvate. Sono già sul sito.');
 
         return Response::redirect($this->url('domande'), 303);
+    }
+
+    // =============================================================== posta
+
+    /** Quanti indirizzi si possono scrivere nel pannello. */
+    private const DESTINATARI_MAX = 5;
+
+    /**
+     * A chi arrivano le richieste. Da qui si cambiano solo gli indirizzi che
+     * ricevono; la casella che spedisce e la sua password restano nel .env,
+     * e la pagina le mostra senza la password.
+     */
+    private function mail(Request $request): Response
+    {
+        $store  = $this->app->store();
+        $scelti = array_values(array_filter((array) ($store->read('posta')['destinatari'] ?? []), 'is_string'));
+        $dati   = fn (array $extra = []): array => $extra + [
+            'titolo'      => 'Ricezione e-mail',
+            'sottotitolo' => 'A chi arrivano le richieste di prenotazione e i messaggi del sito.',
+            'scelti'      => $scelti,
+            'effettivi'   => MailMessage::indirizzi($this->app->destinatari()),
+            'dalFile'     => MailMessage::indirizzi((string) $this->app->config('mail.to')),
+            'trasporto'   => (string) $this->app->config('mail.transport'),
+            'mittente'    => (string) $this->app->config('mail.from.address'),
+            'smtpHost'    => (string) $this->app->config('mail.smtp.host'),
+            'smtpUtente'  => (string) $this->app->config('mail.smtp.user'),
+            'massimo'     => self::DESTINATARI_MAX,
+        ];
+
+        if (!$request->isPost()) {
+            return Response::html($this->page('posta', $dati()));
+        }
+
+        if ($this->in($request, 'azione') === 'prova') {
+            return $this->mailTest();
+        }
+
+        $scritti = array_slice((array) ($request->post['destinatari'] ?? []), 0, self::DESTINATARI_MAX);
+        $nuovi   = [];
+        $errori  = [];
+        foreach ($scritti as $i => $indirizzo) {
+            $indirizzo = trim(is_string($indirizzo) ? $indirizzo : '');
+            if ($indirizzo === '') {
+                continue;
+            }
+            if (MailMessage::indirizzi($indirizzo) !== [$indirizzo] || mb_strlen($indirizzo) > 190) {
+                $errori[] = 'Indirizzo ' . ((int) $i + 1) . ': «' . mb_substr($indirizzo, 0, 60) . '» non è un indirizzo e-mail valido.';
+                continue;
+            }
+            $nuovi[strtolower($indirizzo)] ??= $indirizzo;
+        }
+        if ($errori !== []) {
+            return Response::html($this->page('posta', $dati([
+                'errori' => $errori, 'scelti' => array_map(static fn ($v): string => is_string($v) ? trim($v) : '', $scritti),
+            ])), 422);
+        }
+
+        $store->write('posta', ['destinatari' => array_values($nuovi)]);
+        $this->flash('ok', $nuovi === []
+            ? 'Nessun indirizzo nel pannello: le richieste arrivano a quelli del file .env (' . ($this->app->config('mail.to') ?: 'nessuno') . ').'
+            : 'Salvato. Da adesso le richieste arrivano a: ' . implode(', ', $nuovi) . '. Manda un messaggio di prova per controllare.');
+
+        return Response::redirect($this->url('posta'), 303);
+    }
+
+    /** Un messaggio di prova ai destinatari di adesso, al massimo uno al minuto. */
+    private function mailTest(): Response
+    {
+        $ultima = (int) ($_SESSION['_adv_prova_posta'] ?? 0);
+        if (time() - $ultima < 60) {
+            $this->flash('errore', 'Hai appena mandato un messaggio di prova: aspetta un minuto prima del prossimo.');
+
+            return Response::redirect($this->url('posta'), 303);
+        }
+        $_SESSION['_adv_prova_posta'] = time();
+
+        $destinatari = $this->app->destinatari();
+        $mailer = $this->app->mailer();
+        $partito = $mailer->send(new MailMessage(
+            to:          $destinatari,
+            subject:     '[Arco del Vento] Messaggio di prova',
+            body:        "Questo è un messaggio di prova mandato dall'area riservata del sito.\n\n"
+                       . "Se lo stai leggendo, le richieste di prenotazione e i messaggi del modulo contatti "
+                       . "arrivano a questo indirizzo.\n\nMandato il " . date('d/m/Y \a\l\l\e H:i') . '.',
+            fromAddress: (string) $this->app->config('mail.from.address'),
+            fromName:    (string) $this->app->config('mail.from.name'),
+        ));
+
+        $elenco = implode(', ', MailMessage::indirizzi($destinatari)) ?: 'nessuno';
+        if (!$partito) {
+            $this->flash('errore', 'Il messaggio non è partito. Controlla nel file .env la casella che spedisce: '
+                . 'MAIL_SMTP_HOST, MAIL_SMTP_USER e MAIL_SMTP_PASSWORD, e che MAIL_FROM_ADDRESS sia lo stesso indirizzo dell\'utente.');
+        } elseif ($mailer->isPretend()) {
+            $this->flash('ok', 'Messaggio di prova per ' . $elenco . ' scritto in storage/mail/, non spedito: nel .env c\'è '
+                . 'MAIL_TRANSPORT=' . ((string) $this->app->config('mail.transport') ?: 'log') . ', il modo della copia di prova.');
+        } else {
+            $this->flash('ok', 'Messaggio di prova spedito a ' . $elenco . '. Se non arriva entro qualche minuto, guarda nella posta indesiderata.');
+        }
+
+        return Response::redirect($this->url('posta'), 303);
     }
 
     // =============================================================== immagini

@@ -349,7 +349,7 @@ final class BookingController
         ]);
 
         $this->app->mailer()->send(new MailMessage(
-            to:          (string) $this->app->config('mail.to'),
+            to:          $this->app->destinatari(),
             subject:     sprintf('[Arco del Vento] Richiesta %s — %s', $reference, $room),
             body:        $body,
             fromAddress: (string) $this->app->config('mail.from.address'),

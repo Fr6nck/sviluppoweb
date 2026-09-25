@@ -289,17 +289,22 @@ $diProva = static function (string $indirizzo): bool {
 
 // Uno o più indirizzi, separati da virgola. Ne basta uno vero; quelli di
 // prova o scritti male si segnalano, perché lì non arriverebbe niente.
-$scritti = array_filter(array_map('trim', preg_split('/[,;]+/', (string) $config['mail']['to']) ?: []));
-$validi  = \ArcoDelVento\Mail\MailMessage::indirizzi((string) $config['mail']['to']);
+// Se nell'area riservata ci sono indirizzi scelti, valgono quelli.
+$postaPannello = (new \ArcoDelVento\Storage\JsonStore((string) $config['data']))->read('posta');
+$sceltiPannello = implode(',', array_filter((array) ($postaPannello['destinatari'] ?? []), 'is_string'));
+$elencoPosta = \ArcoDelVento\Mail\MailMessage::indirizzi($sceltiPannello) !== [] ? $sceltiPannello : (string) $config['mail']['to'];
+$scritti = array_filter(array_map('trim', preg_split('/[,;]+/', $elencoPosta) ?: []));
+$validi  = \ArcoDelVento\Mail\MailMessage::indirizzi($elencoPosta);
 $veri    = array_values(array_filter($validi, static fn (string $x): bool => !$diProva($x)));
 $scartati = array_diff($scritti, $veri);
 $aggiungi(
     $veri !== [] ? ($scartati === [] ? 'ok' : 'avviso') : 'bloccante',
     'Posta', 'le richieste arrivano a: ' . ($veri !== [] ? implode(', ', $veri) : '(nessuno)')
+        . ($elencoPosta === $sceltiPannello ? ' (scelti dall\'area riservata)' : ' (dal .env)')
         . ($scartati !== [] ? ' — non valido o di prova: ' . implode(', ', $scartati) : ''),
     $veri === []
-        ? 'MAIL_TO_ADDRESS è vuoto o ancora un indirizzo di prova: le richieste di prenotazione non arriverebbero a nessuno.'
-        : 'In MAIL_TO_ADDRESS c\'è un indirizzo non valido o di prova: correggilo o toglilo (gli altri ricevono lo stesso).'
+        ? 'MAIL_TO_ADDRESS è vuoto o ancora un indirizzo di prova, e l\'area riservata (Ricezione e-mail) non ne ha: le richieste di prenotazione non arriverebbero a nessuno.'
+        : 'C\'è un indirizzo non valido o di prova: correggilo o toglilo (gli altri ricevono lo stesso).'
 );
 
 // ----------------------------------------------------------- contenuti

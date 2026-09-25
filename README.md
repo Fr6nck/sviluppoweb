@@ -237,11 +237,12 @@ Si sceglie con `MAIL_TRANSPORT` nel `.env`:
 Quando il trasporto non spedisce davvero, il sito lo dice all'utente nella
 pagina di conferma. Non finge.
 
-**Chi riceve.** `MAIL_TO_ADDRESS` nel `.env`: uno o più indirizzi separati da
-virgola (`info@arcodelvento.it, daniele@esempio.it`). Si cambia via FTP, non dal
-pannello, perché lo stesso file contiene la password della casella che spedisce
-(`MAIL_SMTP_USER`, `MAIL_SMTP_PASSWORD`, con `MAIL_FROM_ADDRESS` uguale
-all'utente). I passi sono in `docs/DEPLOY-HOSTINGER.md`, «La posta».
+**Chi riceve.** Dall'area riservata, *Ricezione e-mail*: fino a cinque
+indirizzi (in `storage/data/posta.json`), con un pulsante per un messaggio di
+prova. Se lì non ce n'è nessuno vale `MAIL_TO_ADDRESS` del `.env`, uno o più
+separati da virgola. La casella che spedisce (`MAIL_FROM_ADDRESS`,
+`MAIL_SMTP_USER`, `MAIL_SMTP_PASSWORD`) sta solo nel `.env`: ha una password, e
+dal pannello si vede senza. I passi sono in `docs/DEPLOY-HOSTINGER.md`, «La posta».
 
 ---
 
@@ -390,6 +391,7 @@ un file e senza FTP:
 | Immagini e logo | la rosa dei venti (anche icona del browser), il logotipo chiaro e scuro, le cinque foto dell'apertura, le foto delle pagine e quella per i social, la foto principale e due di galleria per ogni camera: si carica il file, si descrive, si torna all'originale |
 | Testi del sito | tutti i testi in italiano e inglese, pagina per pagina, con l'originale accanto |
 | Domande frequenti | aggiungere, modificare, riordinare, togliere |
+| Ricezione e-mail | a chi arrivano le richieste (fino a cinque indirizzi), come spedisce il sito, e un messaggio di prova |
 | Account | cambiare la password |
 
 **Dove vanno le modifiche.** In `storage/data/`, non in `content/`. I file di

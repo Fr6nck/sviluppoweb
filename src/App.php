@@ -13,6 +13,7 @@ use ArcoDelVento\Storage\ContentOverrides;
 use ArcoDelVento\Storage\JsonStore;
 use ArcoDelVento\Mail\LogMailer;
 use ArcoDelVento\Mail\MailerInterface;
+use ArcoDelVento\Mail\MailMessage;
 use ArcoDelVento\Mail\NativeMailer;
 use ArcoDelVento\Mail\SmtpMailer;
 use ArcoDelVento\Repository\ArrayRoomRepository;
@@ -236,6 +237,24 @@ final class App
             // configurazione: sta in content/settings.php insieme agli altri.
             (int) ($this->settings()['stay']['min_nights']['saturday'] ?? 1),
         );
+    }
+
+    /**
+     * A chi arrivano le richieste dei moduli.
+     *
+     * Gli indirizzi scelti dall'area riservata, se ce ne sono; altrimenti
+     * MAIL_TO_ADDRESS del .env, che resta la riserva: svuotare i campi nel
+     * pannello vuol dire tornare al file. La casella che spedisce, con la sua
+     * password, sta solo nel .env.
+     */
+    public function destinatari(): string
+    {
+        $scelti = MailMessage::indirizzi(implode(',', array_filter(
+            (array) ($this->store()->read('posta')['destinatari'] ?? []),
+            'is_string'
+        )));
+
+        return $scelti !== [] ? implode(', ', $scelti) : (string) $this->config('mail.to');
     }
 
     public function mailer(): MailerInterface
