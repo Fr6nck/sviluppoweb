@@ -216,6 +216,41 @@ esenti i minori di 12 anni, si paga al check-in. Il preventivo la mostra a
 parte, mai dentro il totale della camera. Non chiedendo l'età degli ospiti, il
 sito calcola il caso peggiore (tutti paganti) e lo dice.
 
+### Pagamento online (SumUp)
+
+Con `PAYMENT_PROVIDER=sumup`, `SUMUP_API_KEY` e `SUMUP_MERCHANT_CODE` nel
+`.env`, il passo dei dati chiede solo nome ed e-mail e porta a una pagina di
+SumUp (Hosted Checkout): i dati della carta non passano dal sito. I passi per
+accenderlo sono in `docs/DEPLOY-HOSTINGER.md`, sezione 13.
+
+```
+modulo  →  prenotazione «in attesa» (Inbox)  →  POST /v0.1/checkouts  →  pagina del sito  →  SumUp
+SumUp   →  ?passo=esito  e  POST /pagamenti/sumup  →  GET /v0.1/checkouts/{id}  →  «pagato»  →  e-mail
+```
+
+- `src/Payment/SumUp.php`: le due chiamate, con la chiave; segue solo pagine
+  di pagamento su un dominio di SumUp.
+- `src/Payment/Pagamenti.php`: apre, verifica, riprova (fino a cinque pagine per
+  prenotazione, controllando prima che una precedente non sia stata pagata).
+  Lo stato si chiede sempre a SumUp: niente di quello che torna dal browser o
+  dalla notifica (non firmata) decide. Il passaggio a «pagato» avviene sotto il
+  lucchetto dell'archivio, così le e-mail partono una volta sola anche se ritorno
+  e notifica arrivano insieme. Un importo diverso da quello chiesto diventa «da
+  controllare», e all'ospite non parte la conferma.
+- Il prezzo lo ricalcola il provider al momento dell'invio, dalle date e dalla
+  camera: il modulo non porta cifre.
+- Il passaggio a SumUp è una pagina del sito con un link, aperto dal JavaScript:
+  `form-action 'self'` non lascia che un modulo porti fuori dal sito.
+- `BOOKING_PROVIDER=sito`: il calendario è libero tranne le notti già vendute
+  dal sito (`Inbox::nottiOccupate`): pagate, confermate, o con la pagina di
+  pagamento aperta da meno di 35 minuti. Le notti vendute contano anche con `demo`.
+- Ogni pagina aperta tiene la camera mezz'ora, quindi dalla stessa connessione
+  se ne aprono al massimo sei l'ora (`storage/data/limiti-pagamento.json`, con
+  un'impronta dell'indirizzo cambiata ogni giorno e tenuta un'ora).
+- Nel pannello le pagine abbandonate non contano fra le nuove, negli arrivi o
+  nel valore; ogni prenotazione mostra lo stato del pagamento e, se non è
+  pagata, il pulsante «Controlla con SumUp».
+
 ## E-mail
 
 ```

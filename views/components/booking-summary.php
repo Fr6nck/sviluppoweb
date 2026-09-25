@@ -15,7 +15,10 @@
  * @var float  $tariffa
  * @var float  $totale
  * @var bool   $dimostrativa
+ * @var string $modo  richiesta (predefinito) | paga | pagato: con il pagamento
+ *                    online il totale è quello che si paga, non un'indicazione
  */
+$modo = $modo ?? 'richiesta';
 ?>
 <dl class="adv-riepilogo">
   <div class="adv-riepilogo__riga">
@@ -43,7 +46,7 @@
     <dd><?= e(euro($tariffa)) ?></dd>
   </div>
   <div class="adv-riepilogo__riga adv-riepilogo__riga--totale">
-    <dt><?= te('book.summary.total') ?></dt>
+    <dt><?= te(match ($modo) { 'paga' => 'book.summary.total_pay', 'pagato' => 'book.summary.total_paid', default => 'book.summary.total' }) ?></dt>
     <dd>
       <span class="adv-riepilogo__totale"><?= e(euro($totale)) ?></span>
       <?php if ($dimostrativa): ?><?= prezzoDaConfermare() ?><?php endif; ?>
@@ -66,7 +69,7 @@ $cfg   = site('stay.city_tax');
     </div>
   </dl>
   <p class="adv-nota">
-    <?= te('book.summary.city_tax_note', [
+    <?= te($modo === 'richiesta' ? 'book.summary.city_tax_note' : 'book.summary.city_tax_note_pay', [
         'amount' => euro((float) $cfg['amount']),
         'nights' => (int) $cfg['max_nights'],
         'age'    => (int) $cfg['exempt_under'],
@@ -74,4 +77,6 @@ $cfg   = site('stay.city_tax');
   </p>
 <?php endif; ?>
 
-<p class="adv-nota"><?= te('book.summary.total_note') ?></p>
+<?php if ($modo === 'richiesta'): ?>
+  <p class="adv-nota"><?= te('book.summary.total_note') ?></p>
+<?php endif; ?>

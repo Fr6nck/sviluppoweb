@@ -419,6 +419,11 @@
 .adm-tipo { display: inline-flex; align-items: center; gap: 5px; margin-right: 6px; padding: 3px 9px; border-radius: 8px; background: var(--a-tela);
             color: var(--a-tenue); font-size: 12px; font-weight: 600; white-space: nowrap; }
 .adm-tipo--prenotazione { background: var(--a-ok-tenue); color: var(--a-ok); }
+.adm-pagamento { display: inline-flex; align-items: center; margin-right: 6px; padding: 3px 9px; border-radius: 8px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.adm-pagamento--ok     { background: var(--a-ok);  color: var(--a-carta); }
+.adm-pagamento--avviso { background: var(--a-avviso-tenue); color: var(--a-avviso); box-shadow: inset 0 0 0 1px var(--a-avviso-bordo); }
+.adm-pagamento--neutro { background: var(--a-bruno-tenue); color: var(--a-bruno-testo); }
+.adm-pagamento--spento { background: transparent; color: var(--a-tenue); box-shadow: inset 0 0 0 1px var(--a-bordo-forte); }
 
 .adm-stato { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--a-tela);
              color: var(--a-tenue); font-size: 12px; font-weight: 600; white-space: nowrap; }

@@ -28,10 +28,22 @@ final class DemoBookingProvider implements BookingProviderInterface
     /** Quanti giorni in avanti cercare quando le date chieste sono piene. */
     private const ALTERNATIVE_WINDOW_DAYS = 60;
 
+    /** @var list<array{ref: string, arrivo: string, partenza: string}>|null */
+    private ?array $vendute = null;
+
+    /**
+     * @param \Closure(): list<array{ref: string, arrivo: string, partenza: string}>|null $occupate
+     *        le notti già vendute dal sito, che non si vendono una seconda volta
+     * @param bool $inventa true: circa una notte su cinque risulta occupata a
+     *        caso (la dimostrazione); false: il calendario del sito, libero
+     *        tranne le notti già vendute
+     */
     public function __construct(
         private readonly RoomRepositoryInterface $rooms,
         private readonly int $minNights = 2,
         private readonly string $currency = 'EUR',
+        private readonly ?\Closure $occupate = null,
+        private readonly bool $inventa = true,
     ) {
     }
 
@@ -124,6 +136,16 @@ final class DemoBookingProvider implements BookingProviderInterface
     /** Una camera è libera solo se lo sono tutte le notti del soggiorno. */
     private function isFree(string $ref, SearchCriteria $criteria): bool
     {
+        $this->vendute ??= $this->occupate !== null ? ($this->occupate)() : [];
+        foreach ($this->vendute as $v) {
+            if ($v['ref'] === $ref && $criteria->arrivalIso() < $v['partenza'] && $criteria->departureIso() > $v['arrivo']) {
+                return false;
+            }
+        }
+        if (!$this->inventa) {
+            return true;
+        }
+
         $night  = $criteria->arrival;
         $nights = max(1, $criteria->nights());
 

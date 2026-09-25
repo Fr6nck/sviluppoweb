@@ -60,6 +60,8 @@ final class Schema
                 ['path' => 'stay.min_nights.peak', 'label' => 'Nei periodi di punta, notti', 'type' => 'int', 'min' => 1, 'max' => 30,
                  'help' => 'Per ora il sito lo mostra soltanto; non lo impone.'],
                 ['path' => 'stay.min_nights.peak_dates_note', 'label' => 'Periodi di punta', 'type' => 'prose', 'rows' => 1],
+                ['path' => 'stay.cancellation', 'label' => 'Condizioni di cancellazione', 'type' => 'prose', 'rows' => 3,
+                 'help' => 'Fino a quando si può annullare e quanto si rimborsa. Compare prima del pagamento e nella conferma: con il pagamento online è obbligatorio dirlo.'],
                 ['path' => 'stay.city_tax.amount', 'label' => 'Tassa di soggiorno, € a persona per notte', 'type' => 'money', 'max' => 20],
                 ['path' => 'stay.city_tax.max_nights', 'label' => 'Tassa: per le prime notti', 'type' => 'int', 'min' => 1, 'max' => 30],
                 ['path' => 'stay.city_tax.exempt_under', 'label' => 'Tassa: esenti sotto gli anni', 'type' => 'int', 'min' => 0, 'max' => 18],

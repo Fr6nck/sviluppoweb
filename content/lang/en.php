@@ -482,6 +482,7 @@ return [
             'welcome'       => 'Daniele, in person: he hands over the keys and shows you the house.',
             'documents'     => 'At check-in, or send them ahead on WhatsApp and it goes quicker.',
             'min_nights'    => 'A stay that includes a Saturday night is at least :nights nights.',
+            'payment_online' => 'Online by card when you book: the whole stay, on a SumUp page.',
             'navigator'     => 'Set :place, not the street address: the street is a dead end. On foot the exact address works.',
             'car'           => 'You cannot drive right up to the door: you leave the car and walk the last stretch.',
             'train'         => 'Assisi station, then AssisiLink or line C up to Piazza Matteotti.',
@@ -513,6 +514,11 @@ return [
         'sign'    => 'rest.',
         'lead'    => 'Four steps: the dates, the room, your details, the request. Nothing is paid online '
                    . 'and no account is needed.',
+        // With online payment on, instead of the two lines above.
+        'lead_pay' => 'Four steps: the dates, the room, name and email, payment on a secure SumUp page. '
+                    . 'No account needed.',
+        'seo_description_pay' => 'Check your dates, choose the room and book paying online with SumUp: Arco del '
+                               . 'Vento, guest rooms on Via Santa Maria delle Rose in Assisi.',
 
         'demo_title' => 'The dates are a demo, the rates are not',
         'demo_text'  => 'The prices you see are the real ones, and the total is worked out from them. '
@@ -587,6 +593,65 @@ return [
             'home'      => 'Back to the home page',
         ],
 
+        // Online payment (PAYMENT_PROVIDER=sumup): only name and email, and the
+        // guest pays on a SumUp page.
+        'pay' => [
+            'legend'        => 'Booking name',
+            'name'          => 'Full name',
+            'email'         => 'Email',
+            'email_help'    => 'The booking confirmation is sent here.',
+            'accept'        => 'I have read the conditions alongside and how my data is handled:',
+            'submit'        => 'Pay :amount with SumUp',
+            'secure'        => 'You pay on a secure SumUp page: card details never pass through this site.',
+            'conditions'    => 'Conditions',
+            'full_amount'   => 'The whole stay is paid now.',
+            'city_tax'      => 'City tax not included: € :amount per person per night, for the first :nights nights, under :age exempt. Paid on arrival.',
+            'cancellation'  => 'Cancellation',
+            'going_title'   => 'Taking you to the payment',
+            'going_text'    => 'You are about to go to the SumUp page to pay :amount. If it does not open by itself, use the button.',
+            'going_button'  => 'Go to payment',
+            'going_note'    => 'The page is valid for thirty minutes. While it is open, the room is held for you.',
+            'paid_title'    => 'Payment received: the room is booked',
+            'paid_text'     => 'The confirmation has been sent by email. Below is the summary: worth keeping.',
+            'pending_title' => 'The payment is not complete yet',
+            'pending_text'  => 'If you have just paid, wait a few seconds and refresh the page. If you closed the SumUp page before paying, you can try again.',
+            'failed_title'  => 'The payment did not go through',
+            'failed_text'   => 'Nothing has been charged. You can try again, with another card too.',
+            'expired_title' => 'The payment page has expired',
+            'expired_text'  => 'The SumUp page stays open for thirty minutes. Nothing has been charged: you can try again.',
+            'check_title'   => 'Payment received, to be checked',
+            'check_text'    => 'The amount received does not match the booking. We will write to you to sort it out.',
+            'unknown_title' => 'Booking not found',
+            'unknown_text'  => 'The reference does not match any booking. If you have paid, write to us: :email.',
+            'retry'         => 'Try the payment again',
+            'reload'        => 'Refresh the page',
+            'taken_title'   => 'The room is no longer available',
+            'error_title'   => 'The payment did not start',
+            'taken'         => 'In the meantime this room has been booked for the same dates. Nothing has been charged: choose another room or other dates.',
+            'error'         => 'The payment could not be started. Try again in a few minutes, or write to us: :email.',
+            'paid_amount'   => 'Paid',
+            'step'          => 'Payment',
+        ],
+
+        // The confirmation email to the guest, in their language.
+        'mail' => [
+            'subject'   => 'Booking confirmed — Arco del Vento (:ref)',
+            'hello'     => 'Hello :name,',
+            'intro'     => 'thank you: the payment went through and the room is booked.',
+            'reference' => 'Reference',
+            'room'      => 'Room',
+            'arrival'   => 'Arrival',
+            'departure' => 'Departure',
+            'nights'    => 'Nights',
+            'guests'    => 'Guests',
+            'paid'      => 'Paid',
+            'check_in'  => 'check-in from :from to :to',
+            'check_out' => 'check-out by :time',
+            'address'   => 'Address',
+            'contact'   => 'For anything at all, reply to this email or call :phone.',
+            'sign'      => 'Arco del Vento, Assisi',
+        ],
+
         'summary' => [
             'room'       => 'Room',
             'dates'      => 'Dates',
@@ -599,6 +664,11 @@ return [
         'city_tax_note' => ':amount per person per night, for the first :nights nights. Under :age '
                          . 'are exempt. Paid at check-in together with the balance.',
         'city_tax_upto' => 'up to :amount',
+        // With online payment the total is what is paid, in full.
+        'total_pay'  => 'Total to pay',
+        'total_paid' => 'Total paid',
+        'city_tax_note_pay' => ':amount per person per night, for the first :nights nights. Under :age '
+                             . 'are exempt. Not included: paid at check-in.',
         ],
     ],
 
@@ -672,6 +742,13 @@ return [
                          . 'to send you advertising, we do not sell it and we do not pass it to third '
                          . 'parties beyond what it takes to run the site and the mail.',
             ],
+            'payment' => [
+                'title' => 'Payment',
+                'text'  => 'If you pay for your booking online, you pay on a SumUp page, which handles your '
+                         . 'card details under its own privacy policy. This site never sees or stores card '
+                         . 'details: from SumUp it only receives the outcome, the amount and the transaction '
+                         . 'code, and keeps them with the booking.',
+            ],
             'how_long' => [
                 'title' => 'For how long',
                 'text'  => 'The retention period for messages and requests has to be decided and stated '
@@ -703,6 +780,8 @@ return [
     ],
 
     'errors' => [
+        'pay_limit'  => 'Too many payment pages opened from this connection. Try again in an hour, or write to us: :email.',
+        'pay_error'  => 'The payment could not be started. Try again in a few minutes, or write to us: :email.',
         'required'   => 'This field is needed.',
         'email'      => 'The @ or the domain is missing: check the address.',
         'too_short'  => 'Write a few words more.',

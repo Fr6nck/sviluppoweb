@@ -96,6 +96,85 @@ final class Inbox
         return $trovata;
     }
 
+    /**
+     * Cambia una richiesta sotto il lucchetto dell'archivio: due processi che
+     * la toccano insieme (la pagina di ritorno da SumUp e la notifica di
+     * SumUp, per esempio) non si pestano i piedi.
+     *
+     * @param callable(array<string,mixed>): array<string,mixed> $cambia
+     * @return array<string,mixed>|null la richiesta com'è dopo, o null se non c'è
+     */
+    public function aggiorna(string $id, callable $cambia): ?array
+    {
+        $dopo = null;
+        $this->store->update('richieste', static function (array $voci) use ($id, $cambia, &$dopo): array {
+            foreach ($voci as &$voce) {
+                if (is_array($voce) && ($voce['id'] ?? null) === $id) {
+                    $voce = $cambia($voce);
+                    $voce['aggiornata'] = date('c');
+                    $dopo = $voce;
+                    break;
+                }
+            }
+            unset($voce);
+
+            return $voci;
+        });
+
+        return $dopo;
+    }
+
+    /** La prenotazione a cui appartiene un pagamento SumUp. */
+    public function perPagamento(string $checkoutId): ?array
+    {
+        foreach ($this->all() as $voce) {
+            foreach ((array) ($voce['dati']['pagamento']['tentativi'] ?? []) as $t) {
+                if (is_array($t) && ($t['id'] ?? null) === $checkoutId) {
+                    return $voce;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Le notti che il sito ha già venduto o sta vendendo, camera per camera.
+     *
+     * Contano le prenotazioni confermate nell'area riservata, quelle pagate, e
+     * quelle con la pagina di pagamento ancora aperta (per mezz'ora, quanto
+     * vale la pagina di SumUp): due ospiti non devono pagare la stessa camera
+     * per le stesse notti. Rifiutate e archiviate non contano.
+     *
+     * @return list<array{id: string, ref: string, arrivo: string, partenza: string}>
+     */
+    public function nottiOccupate(int $minutiInAttesa = 35): array
+    {
+        $out = [];
+        foreach ($this->all() as $v) {
+            if (($v['tipo'] ?? '') !== 'prenotazione' || in_array($v['stato'] ?? '', ['rifiutata', 'archiviata'], true)) {
+                continue;
+            }
+            $p = (array) ($v['dati']['pagamento'] ?? []);
+            // Il tempo si conta dall'apertura dell'ultima pagina di pagamento,
+            // non dall'ultima verifica: controllare non allunga la tenuta.
+            $tentativi = (array) ($p['tentativi'] ?? []);
+            $aperta    = (string) (end($tentativi)['creato'] ?? '');
+            $inAttesa  = ($p['stato'] ?? '') === 'in attesa' && $aperta !== ''
+                && (time() - (strtotime($aperta) ?: 0)) < $minutiInAttesa * 60;
+            if (($v['stato'] ?? '') === 'confermata' || in_array($p['stato'] ?? '', ['pagato', 'da controllare'], true) || $inAttesa) {
+                $out[] = [
+                    'id'       => (string) ($v['id'] ?? ''),
+                    'ref'      => (string) ($v['dati']['ref'] ?? ''),
+                    'arrivo'   => (string) ($v['dati']['arrivo'] ?? ''),
+                    'partenza' => (string) ($v['dati']['partenza'] ?? ''),
+                ];
+            }
+        }
+
+        return $out;
+    }
+
     public function delete(string $id): bool
     {
         $prima = count($this->all());
@@ -109,7 +188,9 @@ final class Inbox
 
     public function countNew(): int
     {
-        return count(array_filter($this->all(), static fn (array $v): bool => ($v['stato'] ?? '') === 'nuova'));
+        // Un pagamento abbandonato non è una richiesta da leggere.
+        return count(array_filter($this->all(), static fn (array $v): bool => ($v['stato'] ?? '') === 'nuova'
+            && \ArcoDelVento\Payment\Pagamenti::conta((array) ($v['dati'] ?? []))));
     }
 
     /**

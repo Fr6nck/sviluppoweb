@@ -198,13 +198,28 @@ final class App
 
     public function bookingProvider(): BookingProviderInterface
     {
+        // Le notti già vendute dal sito (pagate, in pagamento, confermate) sono
+        // occupate con qualunque provider di questo file: il sito non vende due
+        // volte la stessa camera.
+        $occupate = fn (): array => $this->inbox()->nottiOccupate();
+
         return $this->services['booking.provider'] ??= match ((string) $this->config('booking.provider')) {
-            // Un provider reale si aggiunge qui, come terzo caso, e implementa
+            // Il calendario del sito: libero tutto, tranne quello che il sito
+            // ha già venduto. Niente notti occupate a caso.
+            'sito'  => new DemoBookingProvider(
+                $this->rooms(),
+                $this->minNights(),
+                (string) $this->config('booking.currency'),
+                $occupate,
+                false,
+            ),
+            // Un provider reale si aggiunge qui, come altro caso, e implementa
             // BookingProviderInterface. Il resto del sito non se ne accorge.
             default => new DemoBookingProvider(
                 $this->rooms(),
                 $this->minNights(),
                 (string) $this->config('booking.currency'),
+                $occupate,
             ),
         };
     }
@@ -237,6 +252,51 @@ final class App
             // configurazione: sta in content/settings.php insieme agli altri.
             (int) ($this->settings()['stay']['min_nights']['saturday'] ?? 1),
         );
+    }
+
+    /** Il pagamento online è acceso: SumUp scelto, con chiave e codice esercente. */
+    public function pagamentoAttivo(): bool
+    {
+        return $this->config('payment.provider') === 'sumup'
+            && (string) $this->config('payment.sumup.api_key') !== ''
+            && (string) $this->config('payment.sumup.merchant_code') !== '';
+    }
+
+    /** Il pagamento delle prenotazioni, o null se è spento. */
+    public function pagamenti(): ?\ArcoDelVento\Payment\Pagamenti
+    {
+        if (!$this->pagamentoAttivo()) {
+            return null;
+        }
+
+        return $this->services['pagamenti'] ??= new \ArcoDelVento\Payment\Pagamenti(
+            new \ArcoDelVento\Payment\SumUp(
+                (string) $this->config('payment.sumup.api_key'),
+                (string) $this->config('payment.sumup.merchant_code'),
+                (string) $this->config('payment.sumup.api_url'),
+            ),
+            $this->inbox(),
+            fn (string $riferimento, string $lingua): string => $this->indirizzoCompleto(
+                \ArcoDelVento\I18n\Routes::url('book', $lingua, [], ['passo' => 'esito', 'rif' => $riferimento])
+            ),
+            $this->indirizzoCompleto(\ArcoDelVento\I18n\Routes::base() . '/pagamenti/sumup'),
+            \Closure::fromCallable(new \ArcoDelVento\Booking\AvvisiPagamento($this)),
+        );
+    }
+
+    /**
+     * Un indirizzo completo, con https e dominio, per chi sta fuori dal sito
+     * (SumUp, le e-mail). Il dominio viene da APP_URL; se manca, dalla richiesta.
+     */
+    public function indirizzoCompleto(string $percorso): string
+    {
+        if (preg_match('#^(https?://[^/]+)#i', (string) $this->config('app.url'), $m) === 1) {
+            return $m[1] . $percorso;
+        }
+        $https = (($_SERVER['HTTPS'] ?? '') !== '' && ($_SERVER['HTTPS'] ?? '') !== 'off')
+            || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+
+        return ($https ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . $percorso;
     }
 
     /**

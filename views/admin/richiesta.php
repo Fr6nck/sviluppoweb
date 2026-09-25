@@ -27,6 +27,21 @@ $righe = $voce['tipo'] === 'prenotazione'
         'Lingua del sito' => strtoupper((string) ($d['lingua'] ?? '')),
         'Messaggio' => $d['messaggio'] ?? '',
     ];
+$pagamento = is_array($d['pagamento'] ?? null) ? (array) $d['pagamento'] : null;
+$etichettaPagamento = \ArcoDelVento\Payment\Pagamenti::etichetta($d);
+unset($righe['Totale indicato sul sito']);
+if ($pagamento !== null) {
+    $righe = array_slice($righe, 0, 5, true) + [
+        'Da pagare' => '€ ' . number_format((float) ($pagamento['importo'] ?? 0), 2, ',', '.'),
+        'Pagamento' => (string) ($etichettaPagamento['testo'] ?? ''),
+        'Pagato'    => isset($pagamento['pagato']) ? '€ ' . number_format((float) $pagamento['pagato'], 2, ',', '.') . ' il ' . dataOra((string) ($pagamento['pagato_il'] ?? '')) : '',
+        'Codice della transazione SumUp' => (string) ($pagamento['codice'] ?? ''),
+        'Pagine di pagamento aperte' => (string) count((array) ($pagamento['tentativi'] ?? [])),
+    ] + array_slice($righe, 5, null, true);
+} elseif (isset($d['totale'])) {
+    $righe = array_slice($righe, 0, 5, true) + ['Totale indicato sul sito' => '€ ' . number_format((float) $d['totale'], 2, ',', '.')] + array_slice($righe, 5, null, true);
+}
+$righe = array_filter($righe, static fn ($v, $k): bool => !in_array($k, ['Telefono', 'Paese', 'Note'], true) || ($v !== '' && $v !== null) || $pagamento === null, ARRAY_FILTER_USE_BOTH);
 $telefono = preg_replace('/[^\d+]/', '', (string) ($d['telefono'] ?? ''));
 ?>
 <p class="adm-intro">
@@ -54,7 +69,29 @@ $telefono = preg_replace('/[^\d+]/', '', (string) ($d['telefono'] ?? ''));
   <?php endif; ?>
 </p>
 
-<?php if ($voce['tipo'] === 'prenotazione'): ?>
+<?php if ($pagamento !== null): ?>
+  <div class="adm-avviso adm-avviso--<?= ($etichettaPagamento['tono'] ?? '') === 'ok' ? 'ok' : 'attenzione' ?>">
+    <?= icona(($etichettaPagamento['tono'] ?? '') === 'ok' ? 'spunta' : 'attenzione', 18, 'adm-avviso__icona') ?>
+    <div>
+      <?php if (($pagamento['stato'] ?? '') === 'pagato'): ?>
+        <p><strong>Pagata su SumUp.</strong> Il calendario del sito non conosce le prenotazioni di Booking: controlla che
+           le date siano libere. Se non lo sono, il rimborso si fa dal pannello di SumUp; poi scrivi all'ospite.</p>
+      <?php elseif (($pagamento['stato'] ?? '') === 'da controllare'): ?>
+        <p><strong>SumUp dice pagata, ma l'importo non coincide.</strong> Guarda la transazione nel pannello di SumUp prima di confermare.</p>
+      <?php else: ?>
+        <p><strong>Non ancora pagata.</strong> L'ospite ha aperto la pagina di SumUp ma il pagamento non risulta. Non è una prenotazione:
+           le date restano libere. Se credi che abbia pagato, controlla qui sotto.</p>
+      <?php endif; ?>
+      <?php if (!empty($pagamentoAttivo) && !in_array($pagamento['stato'] ?? '', ['pagato'], true)): ?>
+        <form method="post" action="<?= e(adminUrl('richieste/' . rawurlencode((string) $voce['id']))) ?>" class="adm-spazio">
+          <?= Csrf::field() ?>
+          <input type="hidden" name="azione" value="verifica">
+          <button type="submit" class="adm-bottone adm-bottone--piatto"><?= icona('ripristina', 16) ?>Controlla con SumUp</button>
+        </form>
+      <?php endif; ?>
+    </div>
+  </div>
+<?php elseif ($voce['tipo'] === 'prenotazione'): ?>
   <p class="adm-nota">Prima di confermare, controlla che le date siano libere su Booking: il calendario del sito è ancora dimostrativo.</p>
 <?php endif; ?>
 

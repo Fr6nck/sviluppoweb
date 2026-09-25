@@ -448,3 +448,71 @@ alleggerisce e lo pubblica subito, e l'originale si rimette con un click.
 Per cambiare le immagini *del pacchetto* (quelle predefinite), invece: metti
 l'originale in `docs/foto-originali/`, lancia `php tools/build-photos.php`
 **sulla tua macchina**, e carica i file nuovi da `public/assets/img/`.
+
+---
+
+## 13. Il pagamento online con SumUp
+
+Acceso, cambia l'ultimo passo della prenotazione: l'ospite scrive **solo nome
+ed e-mail**, spunta le condizioni e paga **l'intero soggiorno** su una pagina
+di SumUp. I dati della carta non passano mai dal sito. Tornato sul sito, legge
+l'esito; se è pagato, a lui arriva la conferma e a te la prenotazione, per
+e-mail e nell'area riservata (con la scritta **Pagata** e il codice SumUp).
+Spento, tutto resta com'è: la prenotazione è una richiesta.
+
+### Che cosa serve da SumUp
+
+- un conto SumUp con i **pagamenti online** attivi (se non lo sono, lo si
+  chiede a SumUp);
+- una **chiave API segreta**: si crea nel pannello di SumUp, nella parte per
+  sviluppatori (API keys), e comincia con `sup_sk_`;
+- il **codice esercente** (merchant code), che il pannello di SumUp mostra nel
+  profilo del conto.
+
+La chiave è come una password del conto: scrivila direttamente nel `.env` sul
+server, non mandarla per e-mail o in chat. Documentazione di SumUp:
+https://developer.sumup.com/online-payments/checkouts/hosted-checkout
+
+### Il file `.env`
+
+```ini
+PAYMENT_PROVIDER=sumup
+SUMUP_API_KEY=sup_sk_…
+SUMUP_MERCHANT_CODE=M…
+BOOKING_PROVIDER=sito
+```
+
+`APP_URL` deve essere in **https**: SumUp rimanda l'ospite e avvisa il sito a
+quell'indirizzo. `SUMUP_API_URL` resta vuoto (serve solo alle prove in locale).
+
+### Prima di aprire
+
+1. Area riservata → **La struttura** → **Condizioni di cancellazione**, in
+   italiano e in inglese: chi paga deve saperle prima. Finché mancano, sul sito
+   compaiono come «da confermare» e il controllo finale si ferma.
+2. `tools/preflight.php`: la sezione «Pagamento» deve essere tutta a posto.
+3. **Una prenotazione vera con la tua carta**, sulla camera che costa meno;
+   controlla che arrivino le due e-mail e che nell'area riservata risulti
+   «Pagata». Poi rimborsala dal pannello di SumUp.
+
+### Il calendario e i rimborsi
+
+Con `BOOKING_PROVIDER=sito` il calendario è quello del sito: tutto libero,
+tranne le notti che il sito ha già venduto (pagate, confermate, o con la pagina
+di pagamento aperta da meno di mezz'ora). Il sito **non conosce Booking** né le
+prenotazioni prese al telefono: quando arriva una prenotazione pagata, chiudi
+quelle date su Booking; se nel frattempo erano già occupate, rimborsa
+l'ospite dal pannello di SumUp e scrivigli. Con `BOOKING_PROVIDER=demo` alcune
+notti risultano occupate a caso: con i pagamenti non va usato.
+
+### Se qualcosa non torna
+
+- SumUp avvisa il sito da solo a `…/pagamenti/sumup`: non c'è niente da
+  impostare. Se una notifica si perde, il sito chiede comunque l'esito a SumUp
+  quando l'ospite torna, e nell'area riservata ogni prenotazione non pagata ha
+  il pulsante **Controlla con SumUp**.
+- «Pagamento da controllare»: SumUp dice pagata, ma con un importo diverso.
+  All'ospite non parte la conferma finché non guardi tu la transazione.
+- Per spegnere i pagamenti basta svuotare `PAYMENT_PROVIDER`: si torna alle
+  richieste, e le prenotazioni già pagate restano nell'area riservata.
+

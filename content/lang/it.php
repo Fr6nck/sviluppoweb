@@ -489,6 +489,7 @@ return [
             'welcome'       => 'Daniele, di persona: consegna le chiavi e mostra la casa.',
             'documents'     => 'Al check-in, oppure mandali prima su WhatsApp e facciamo più in fretta.',
             'min_nights'    => 'Un soggiorno che comprende un sabato dura almeno :nights notti.',
+            'payment_online' => 'Online, con carta, quando prenoti: l’intero soggiorno, su una pagina di SumUp.',
             'navigator'     => 'Imposta :place, non l’indirizzo: la via è senza uscita. A piedi l’indirizzo preciso funziona.',
             'car'           => 'In auto non si arriva fino alla porta: si lascia la macchina e si fa l’ultimo tratto a piedi.',
             'train'         => 'Stazione di Assisi, poi AssisiLink o la linea C fino a Piazza Matteotti.',
@@ -521,6 +522,11 @@ return [
         'sign'    => 'resto.',
         'lead'    => 'Quattro passaggi: le date, la camera, i tuoi dati, la richiesta. Non si paga nulla '
                    . 'online e non serve un account.',
+        // Con il pagamento online acceso, al posto delle due righe sopra.
+        'lead_pay' => 'Quattro passaggi: le date, la camera, nome ed e-mail, il pagamento su una pagina '
+                    . 'sicura di SumUp. Non serve un account.',
+        'seo_description_pay' => 'Verifica le date, scegli la camera e prenota pagando online con SumUp: '
+                               . 'Arco del Vento, affittacamere in Via Santa Maria delle Rose, ad Assisi.',
 
         'demo_title' => 'Le date sono di prova, le tariffe no',
         'demo_text'  => 'I prezzi che vedi sono quelli della casa, e il totale è calcolato su quelli. '
@@ -596,6 +602,65 @@ return [
             'home'      => 'Torna alla home',
         ],
 
+        // Il pagamento online (PAYMENT_PROVIDER=sumup): si chiedono solo nome
+        // ed e-mail, e si paga su una pagina di SumUp.
+        'pay' => [
+            'legend'        => 'A nome di chi',
+            'name'          => 'Nome e cognome',
+            'email'         => 'E-mail',
+            'email_help'    => 'Qui arriva la conferma della prenotazione.',
+            'accept'        => 'Ho letto le condizioni qui accanto e come vengono trattati i miei dati:',
+            'submit'        => 'Paga :amount con SumUp',
+            'secure'        => 'Il pagamento avviene su una pagina sicura di SumUp: i dati della carta non passano da questo sito.',
+            'conditions'    => 'Condizioni',
+            'full_amount'   => 'Si paga adesso l’intero soggiorno.',
+            'city_tax'      => 'Tassa di soggiorno esclusa: € :amount a persona per notte, per le prime :nights notti, esenti sotto i :age anni. Si paga all’arrivo.',
+            'cancellation'  => 'Cancellazione',
+            'going_title'   => 'Ti portiamo al pagamento',
+            'going_text'    => 'Stai per passare alla pagina di SumUp per pagare :amount. Se non si apre da sola, usa il pulsante.',
+            'going_button'  => 'Vai al pagamento',
+            'going_note'    => 'La pagina resta valida trenta minuti. Finché è aperta, la camera è tenuta per te.',
+            'paid_title'    => 'Pagamento ricevuto: la camera è prenotata',
+            'paid_text'     => 'La conferma è partita per e-mail. Qui sotto c’è il riepilogo: conviene tenerlo.',
+            'pending_title' => 'Il pagamento non risulta ancora completato',
+            'pending_text'  => 'Se hai appena pagato, aspetta qualche secondo e aggiorna la pagina. Se hai chiuso la pagina di SumUp prima di pagare, puoi riprovare.',
+            'failed_title'  => 'Il pagamento non è andato a buon fine',
+            'failed_text'   => 'Non è stato addebitato niente. Puoi riprovare, anche con un’altra carta.',
+            'expired_title' => 'La pagina di pagamento è scaduta',
+            'expired_text'  => 'La pagina di SumUp resta aperta trenta minuti. Non è stato addebitato niente: puoi riprovare.',
+            'check_title'   => 'Pagamento ricevuto, da verificare',
+            'check_text'    => 'L’importo ricevuto non coincide con quello della prenotazione. Ti scriviamo noi per sistemare.',
+            'unknown_title' => 'Prenotazione non trovata',
+            'unknown_text'  => 'Il riferimento non corrisponde a nessuna prenotazione. Se hai pagato, scrivici: :email.',
+            'retry'         => 'Riprova il pagamento',
+            'reload'        => 'Aggiorna la pagina',
+            'taken_title'   => 'La camera non è più libera',
+            'error_title'   => 'Il pagamento non è partito',
+            'taken'         => 'Nel frattempo questa camera è stata prenotata per le stesse date. Non è stato addebitato niente: scegli un’altra camera o altre date.',
+            'error'         => 'Il pagamento non si è potuto avviare. Riprova fra qualche minuto, oppure scrivici: :email.',
+            'paid_amount'   => 'Pagato',
+            'step'          => 'Pagamento',
+        ],
+
+        // L'e-mail di conferma all'ospite, nella sua lingua.
+        'mail' => [
+            'subject'   => 'Prenotazione confermata — Arco del Vento (:ref)',
+            'hello'     => 'Buongiorno :name,',
+            'intro'     => 'grazie: il pagamento è andato a buon fine e la camera è prenotata.',
+            'reference' => 'Riferimento',
+            'room'      => 'Camera',
+            'arrival'   => 'Arrivo',
+            'departure' => 'Partenza',
+            'nights'    => 'Notti',
+            'guests'    => 'Ospiti',
+            'paid'      => 'Pagato',
+            'check_in'  => 'check-in dalle :from alle :to',
+            'check_out' => 'check-out entro le :time',
+            'address'   => 'Indirizzo',
+            'contact'   => 'Per qualsiasi cosa rispondi a questa e-mail, oppure chiama il :phone.',
+            'sign'      => 'Arco del Vento, Assisi',
+        ],
+
         'summary' => [
             'room'      => 'Camera',
             'dates'     => 'Date',
@@ -608,6 +673,11 @@ return [
         'city_tax_note' => ':amount a persona per notte, per le prime :nights notti. Esenti i minori '
                          . 'di :age anni. Si paga al check-in insieme al saldo.',
         'city_tax_upto' => 'fino a :amount',
+        // Con il pagamento online il totale è quello che si paga, per intero.
+        'total_pay'  => 'Totale da pagare',
+        'total_paid' => 'Totale pagato',
+        'city_tax_note_pay' => ':amount a persona per notte, per le prime :nights notti. Esenti i minori '
+                             . 'di :age anni. Non è compresa: si paga al check-in.',
         ],
     ],
 
@@ -683,6 +753,13 @@ return [
                          . 'dati per mandarti pubblicità, non li vendiamo e non li passiamo a terzi, '
                          . 'salvo quanto serve a far funzionare il sito e la posta.',
             ],
+            'payment' => [
+                'title' => 'Il pagamento',
+                'text'  => 'Se paghi la prenotazione online, paghi su una pagina di SumUp, che tratta i dati '
+                         . 'della carta secondo la propria informativa. Questo sito non vede e non conserva i '
+                         . 'dati della carta: da SumUp riceve solo l’esito, l’importo e il codice della '
+                         . 'transazione, e li tiene con la prenotazione.',
+            ],
             'how_long' => [
                 'title' => 'Per quanto tempo',
                 'text'  => 'Il periodo di conservazione dei messaggi e delle richieste va deciso e '
@@ -716,6 +793,8 @@ return [
 
     // ------------------------------------------------------------- Errori
     'errors' => [
+        'pay_limit'  => 'Troppe pagine di pagamento aperte da questa connessione. Riprova fra un’ora, oppure scrivici: :email.',
+        'pay_error'  => 'Il pagamento non si è potuto avviare. Riprova fra qualche minuto, oppure scrivici: :email.',
         'required'   => 'Questo campo serve.',
         'email'      => 'Manca la chiocciola o il dominio: controlla l’indirizzo.',
         'too_short'  => 'Scrivi qualche parola in più.',

@@ -27,6 +27,12 @@ final class Response
         return new self($body, 200, ['Content-Type' => $contentType]);
     }
 
+    /** Una risposta senza corpo: 204, o un altro codice. */
+    public static function vuota(int $status = 204): self
+    {
+        return new self('', $status);
+    }
+
     public static function redirect(string $location, int $status = 302): self
     {
         return new self('', $status, ['Location' => $location]);

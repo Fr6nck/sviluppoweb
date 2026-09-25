@@ -114,6 +114,11 @@ return [
          */
         'show_prices_publicly' => false,
 
+        // Che cosa succede se l'ospite annulla. Non è stato fornito, e non si
+        // inventa: vuoto, sul sito compare «da confermare». Con il pagamento
+        // online va scritto prima di aprirlo (il controllo finale si ferma).
+        'cancellation' => null,
+
         'city_tax' => [
             'amount'       => 3.00,
             'per'          => 'persona/notte',

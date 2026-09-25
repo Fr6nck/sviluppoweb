@@ -8,6 +8,7 @@ use ArcoDelVento\App;
 use ArcoDelVento\Controller\AdminController;
 use ArcoDelVento\Controller\BookingController;
 use ArcoDelVento\Controller\ContactController;
+use ArcoDelVento\Controller\PaymentController;
 use ArcoDelVento\Controller\PageController;
 use ArcoDelVento\Controller\SitemapController;
 use ArcoDelVento\I18n\Routes;
@@ -41,6 +42,12 @@ final class Kernel
         }
         if ($request->path === '/robots.txt') {
             return (new SitemapController($this->app))->robots();
+        }
+
+        // Le notifiche di SumUp: senza lingua, senza sessione, senza gettone.
+        // Non ci si fida del contenuto: dice solo quale pagamento guardare.
+        if ($request->path === '/pagamenti/sumup') {
+            return (new PaymentController($this->app))->notifica($request);
         }
 
         // L'area riservata: fuori dalle lingue del sito, sempre in italiano.

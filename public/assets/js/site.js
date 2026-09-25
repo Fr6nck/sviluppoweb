@@ -7,7 +7,8 @@
  *
  * Qui dentro: il menu su schermo stretto, la testata che si stringe
  * scorrendo, le fotografie che si alternano (con il pulsante per fermarle),
- * le frecce del carosello delle camere, la pillola in fondo allo schermo.
+ * le frecce del carosello delle camere, la pillola in fondo allo schermo, il
+ * passaggio automatico alla pagina di pagamento di SumUp.
  *
  * Nessuna dipendenza, nessuna richiesta di rete.
  */
@@ -336,5 +337,16 @@
       pillola.classList.toggle('adv-sticky--visibile', inVista.size === 0);
     });
     Array.prototype.forEach.call(barre, function (b) { osservatore.observe(b); });
+  })();
+
+  /* ------------------------------------------------- verso la pagina di SumUp
+     Il passaggio al pagamento è una pagina del sito con un pulsante: la
+     politica di sicurezza non lascia che il modulo porti direttamente fuori.
+     Qui il pulsante si preme da solo, dopo un attimo per leggere l'importo.
+     Solo verso un indirizzo https: mai altrove. */
+  (function () {
+    var vai = document.querySelector('[data-vai-al-pagamento]');
+    if (!vai || !/^https:\/\//.test(vai.href)) return;
+    window.setTimeout(function () { window.location.assign(vai.href); }, 1500);
   })();
 })();

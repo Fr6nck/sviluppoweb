@@ -58,6 +58,7 @@ $iniziali = static function (string $nome): string {
               <td>
                 <?php if ($v['tipo'] === 'prenotazione'): ?>
                   <span class="adm-tipo adm-tipo--prenotazione"><?= icona('calendario', 13) ?>Prenotazione</span>
+                  <?php if ($pg = \ArcoDelVento\Payment\Pagamenti::etichetta($d)): ?><span class="adm-pagamento adm-pagamento--<?= e($pg['tono']) ?>"><?= e($pg['testo']) ?></span><?php endif; ?>
                   <span class="adm-tenue">
                     <?= e((string) ($d['camera'] ?? '')) ?>, <?= e(date('d/m', strtotime((string) $d['arrivo']))) ?>–<?= e(date('d/m/Y', strtotime((string) $d['partenza']))) ?>,
                     <?= (int) ($d['ospiti'] ?? 0) ?> <?= (int) ($d['ospiti'] ?? 0) === 1 ? 'ospite' : 'ospiti' ?>

@@ -7,7 +7,9 @@
  * Funziona senza JavaScript: le date sono campi nativi, ogni passo è una
  * pagina con il suo indirizzo, e il tasto «indietro» fa quello che promette.
  *
- * @var string $passo   dates | rooms | details | done
+ * @var string $passo   dates | rooms | details | done — con il pagamento: pay | result
+ * @var bool   $pagamento  il pagamento online è acceso
+ * @var bool   $calendarioDemo
  * @var \ArcoDelVento\Booking\SearchCriteria|null      $criteri
  * @var \ArcoDelVento\Booking\AvailabilityResult|null  $disponibilita
  * @var \ArcoDelVento\Booking\RoomOffer|null           $offerta
@@ -22,8 +24,9 @@ use ArcoDelVento\Support\RoomPresenter as R;
 $lingua  = locale();
 $errori  = $errori ?? [];
 $valori  = $valori ?? [];
-$passi   = ['dates', 'rooms', 'details', 'done'];
-$indice  = array_search($passo, $passi, true);
+$pagamento = $pagamento ?? false;
+$passi   = $pagamento ? ['dates', 'rooms', 'details', 'pay'] : ['dates', 'rooms', 'details', 'done'];
+$indice  = in_array($passo, ['pay', 'result'], true) ? 3 : array_search($passo, $passi, true);
 $indice  = $indice === false ? 0 : $indice;
 
 /** Il messaggio d'errore di un campo, tradotto. */
@@ -44,7 +47,7 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
 <header class="adv-contenuto adv-testa">
   <?= occhiello(t('book.eyebrow'), 'adv-occhiello--centro') ?>
   <h1 class="adv-titolo adv-titolo--l"><?= titolo(t('book.title'), t('book.sign')) ?></h1>
-  <p class="adv-testa__testo"><?= te('book.lead') ?></p>
+  <p class="adv-testa__testo"><?= te(!empty($pagamento) ? 'book.lead_pay' : 'book.lead') ?></p>
 </header>
 
 <section class="adv-contenuto adv-sezione adv-sezione--stretta-sopra">
@@ -53,12 +56,12 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
     <?php foreach ($passi as $i => $chiave): ?>
       <li<?= $i === $indice ? ' aria-current="step"' : '' ?>>
         <span class="adv-passi__numero"><?= sprintf('%02d', $i + 1) ?></span>
-        <?= te('book.steps.' . ['dates' => 'dates', 'rooms' => 'rooms', 'details' => 'details', 'done' => 'done'][$chiave]) ?>
+        <?= $chiave === 'pay' ? te('book.pay.step') : te('book.steps.' . $chiave) ?>
       </li>
     <?php endforeach; ?>
   </ol>
 
-  <?php if ($passo !== 'done'): ?>
+  <?php if (!in_array($passo, ['done', 'pay', 'result'], true) && ($calendarioDemo ?? true)): ?>
     <?= component('alert', [
         'tipo'   => 'avviso',
         'titolo' => t('book.demo_title'),
@@ -198,6 +201,89 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
 
 
   <?php /* ------------------------------------------- 3. i tuoi dati */ ?>
+  <?php elseif ($passo === 'details' && $offerta !== null && $pagamento): ?>
+
+    <?php
+    /* Con il pagamento online: nome, e-mail, la spunta sulle condizioni, e
+       il pulsante dice quanto si paga. Le condizioni stanno accanto, prima
+       del pulsante: chi paga deve sapere che cosa succede se annulla. */
+    $cancellazione = site('stay.cancellation');
+    $cancellazione = is_array($cancellazione) ? trim((string) ($cancellazione[$lingua] ?? '')) : trim((string) $cancellazione);
+    ?>
+    <div class="adv-due adv-due--modulo">
+
+      <form class="adv-modulo adv-pannello" method="post" action="<?= e(url('book')) ?>" novalidate>
+        <?= Csrf::field() ?>
+        <input type="hidden" name="arrivo"   value="<?= e($criteri->arrivalIso()) ?>">
+        <input type="hidden" name="partenza" value="<?= e($criteri->departureIso()) ?>">
+        <input type="hidden" name="ospiti"   value="<?= e((string) $criteri->guests) ?>">
+        <input type="hidden" name="camera"   value="<?= e($offerta->ref()) ?>">
+
+        <fieldset>
+          <legend><?= te('book.pay.legend') ?></legend>
+
+          <?= component('field', [
+              'nome' => 'nome', 'etichetta' => t('book.pay.name'),
+              'valore' => $valore('nome'), 'errore' => $errore('nome'),
+              'autocomplete' => 'name', 'obbligatorio' => true,
+          ]) ?>
+          <?= component('field', [
+              'nome' => 'email', 'tipo' => 'email', 'etichetta' => t('book.pay.email'),
+              'valore' => $valore('email'), 'errore' => $errore('email'),
+              'aiuto' => t('book.pay.email_help'),
+              'autocomplete' => 'email', 'obbligatorio' => true,
+          ]) ?>
+
+          <div class="adv-modulo__spunta">
+            <input type="checkbox" id="condizioni" name="condizioni" value="1"
+                   <?= $valore('condizioni') !== '' ? 'checked' : '' ?>
+                   <?= $errore('condizioni') ? 'aria-invalid="true" aria-describedby="err-condizioni"' : '' ?>>
+            <label for="condizioni">
+              <?= te('book.pay.accept') ?>
+              <a href="<?= e(url('privacy')) ?>"><?= te('nav.privacy') ?></a>
+            </label>
+          </div>
+          <?php if ($messaggio = $errore('condizioni')): ?>
+            <p class="adv-campo__errore" id="err-condizioni"><span aria-hidden="true">&#9888;</span><?= e($messaggio) ?></p>
+          <?php endif; ?>
+        </fieldset>
+
+        <div>
+          <button class="adv-btn adv-btn--primario adv-btn--grande" type="submit"><?= te('book.pay.submit', ['amount' => euro($offerta->total)]) ?><?= icona('freccia-su-destra', 14) ?></button>
+          <p class="adv-nota adv-spazio-sopra-s"><?= te('book.pay.secure') ?></p>
+        </div>
+      </form>
+
+      <aside class="adv-pannello adv-prenota-camera">
+        <h2 class="adv-titolo adv-titolo--xs"><?= te('book.details.summary') ?></h2>
+        <?= component('booking-summary', [
+            'camera'       => R::name($offerta->room, $lingua),
+            'arrivo'       => $criteri->arrivalIso(),
+            'partenza'     => $criteri->departureIso(),
+            'notti'        => $offerta->nights,
+            'ospiti'       => $criteri->guests,
+            'tariffa'      => $offerta->nightlyRate,
+            'totale'       => $offerta->total,
+            'dimostrativa' => $offerta->rateIsDemo,
+            'modo'         => 'paga',
+        ]) ?>
+        <h3 class="adv-titolo adv-titolo--xs adv-spazio-sopra"><?= te('book.pay.conditions') ?></h3>
+        <ul class="adv-condizioni">
+          <li><?= te('book.pay.full_amount') ?></li>
+          <li><strong><?= te('book.pay.cancellation') ?>:</strong>
+            <?= $cancellazione !== '' ? nl2br(e($cancellazione)) : daConfermare() ?></li>
+        </ul>
+        <p>
+          <a class="adv-link" href="<?= e(url('book', [], [
+              'passo' => 'camere', 'arrivo' => $criteri->arrivalIso(),
+              'partenza' => $criteri->departureIso(), 'ospiti' => (string) $criteri->guests,
+          ])) ?>"><?= te('book.details.change_room') ?><?= icona('freccia-su-destra', 13) ?></a>
+        </p>
+      </aside>
+
+    </div>
+
+
   <?php elseif ($passo === 'details' && $offerta !== null): ?>
 
     <div class="adv-due adv-due--modulo">
@@ -334,6 +420,106 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
         ]) ?>
       </aside>
 
+    </div>
+
+  <?php /* ------------------------------------- 4. verso SumUp */ ?>
+  <?php elseif ($passo === 'pay' && !empty($voce)): ?>
+
+    <?php
+    $d = (array) $voce['dati'];
+    $unaCamera = \ArcoDelVento\App::instance()->rooms()->findByRef((string) ($d['ref'] ?? ''));
+    ?>
+    <div class="adv-due adv-due--modulo">
+      <div class="adv-pannello adv-vai-pagamento">
+        <h2 class="adv-titolo adv-titolo--s"><?= te('book.pay.going_title') ?></h2>
+        <p class="adv-testo"><?= te('book.pay.going_text', ['amount' => euro((float) $d['pagamento']['importo'])]) ?></p>
+        <p class="adv-azioni">
+          <a class="adv-btn adv-btn--primario adv-btn--grande" href="<?= e($urlPagamento) ?>" data-vai-al-pagamento><?= te('book.pay.going_button') ?><?= icona('freccia-su-destra', 14) ?></a>
+        </p>
+        <p class="adv-nota"><?= te('book.pay.going_note') ?></p>
+        <p class="adv-nota"><?= te('book.pay.secure') ?></p>
+      </div>
+      <aside class="adv-pannello">
+        <h2 class="adv-titolo adv-titolo--xs"><?= te('book.details.summary') ?></h2>
+        <?= component('booking-summary', [
+            'camera'       => $unaCamera ? R::name($unaCamera, $lingua) : (string) ($d['camera'] ?? ''),
+            'arrivo'       => (string) $d['arrivo'],
+            'partenza'     => (string) $d['partenza'],
+            'notti'        => (int) $d['notti'],
+            'ospiti'       => (int) $d['ospiti'],
+            'tariffa'      => (float) $d['totale'] / max(1, (int) $d['notti']),
+            'totale'       => (float) $d['pagamento']['importo'],
+            'dimostrativa' => false,
+            'modo'         => 'paga',
+        ]) ?>
+      </aside>
+    </div>
+
+
+  <?php /* ------------------------------------- 4. com'è andata */ ?>
+  <?php elseif ($passo === 'result'): ?>
+
+    <?php
+    $email = (string) site('contacts.email');
+    [$tipo, $titolo, $testo] = match (true) {
+        ($avviso ?? null) === 'taken' => ['errore', t('book.pay.taken_title'), t('book.pay.taken')],
+        ($avviso ?? null) === 'error' => ['errore', t('book.pay.error_title'), t('book.pay.error', ['email' => $email])],
+        $stato === 'pagato'           => ['successo', t('book.pay.paid_title'), t('book.pay.paid_text')],
+        $stato === 'da controllare'   => ['avviso', t('book.pay.check_title'), t('book.pay.check_text')],
+        $stato === 'non riuscito'     => ['errore', t('book.pay.failed_title'), t('book.pay.failed_text')],
+        $stato === 'scaduto'          => ['avviso', t('book.pay.expired_title'), t('book.pay.expired_text')],
+        $stato === 'in attesa'        => ['avviso', t('book.pay.pending_title'), t('book.pay.pending_text')],
+        default                       => ['errore', t('book.pay.unknown_title'), t('book.pay.unknown_text', ['email' => $email])],
+    };
+    $siRiprova = !empty($voce) && in_array($stato, ['in attesa', 'non riuscito', 'scaduto'], true) && ($avviso ?? null) !== 'taken';
+    $d = !empty($voce) ? (array) $voce['dati'] : null;
+    $unaCamera = $d ? \ArcoDelVento\App::instance()->rooms()->findByRef((string) ($d['ref'] ?? '')) : null;
+    ?>
+    <?= component('alert', ['tipo' => $tipo, 'titolo' => $titolo, 'testo' => $testo]) ?>
+
+    <div class="adv-due adv-due--modulo adv-spazio-sopra">
+      <div>
+        <?php if ($riferimento !== '' && $d !== null): ?>
+          <?= occhiello(mb_strtoupper(t('book.done.reference'))) ?>
+          <h2 class="adv-titolo adv-titolo--m adv-riferimento"><?= e($riferimento) ?></h2>
+        <?php endif; ?>
+
+        <?php if ($siRiprova): ?>
+          <form method="post" action="<?= e(url('book')) ?>" class="adv-azioni">
+            <?= Csrf::field() ?>
+            <input type="hidden" name="azione" value="riprova">
+            <input type="hidden" name="rif" value="<?= e($riferimento) ?>">
+            <button class="adv-btn adv-btn--primario" type="submit"><?= te('book.pay.retry') ?><?= icona('freccia-su-destra', 14) ?></button>
+            <?php if ($stato === 'in attesa'): ?>
+              <a class="adv-btn adv-btn--contorno" href="<?= e(url('book', [], ['passo' => 'esito', 'rif' => $riferimento])) ?>"><?= te('book.pay.reload') ?></a>
+            <?php endif; ?>
+          </form>
+        <?php else: ?>
+          <div class="adv-azioni">
+            <?php if (($avviso ?? null) === 'taken'): ?>
+              <a class="adv-btn adv-btn--primario" href="<?= e(url('book')) ?>"><?= te('book.results.change') ?><?= icona('freccia-su-destra', 14) ?></a>
+            <?php endif; ?>
+            <a class="adv-btn adv-btn--contorno" href="<?= e(url('home')) ?>"><?= te('book.done.home') ?></a>
+          </div>
+        <?php endif; ?>
+      </div>
+
+      <?php if ($d !== null): ?>
+        <aside class="adv-pannello">
+          <h2 class="adv-titolo adv-titolo--xs"><?= te('book.details.summary') ?></h2>
+          <?= component('booking-summary', [
+              'camera'       => $unaCamera ? R::name($unaCamera, $lingua) : (string) ($d['camera'] ?? ''),
+              'arrivo'       => (string) $d['arrivo'],
+              'partenza'     => (string) $d['partenza'],
+              'notti'        => (int) $d['notti'],
+              'ospiti'       => (int) $d['ospiti'],
+              'tariffa'      => (float) $d['totale'] / max(1, (int) $d['notti']),
+              'totale'       => (float) ($d['pagamento']['importo'] ?? $d['totale']),
+              'dimostrativa' => false,
+              'modo'         => $stato === 'pagato' ? 'pagato' : 'paga',
+          ]) ?>
+        </aside>
+      <?php endif; ?>
     </div>
 
   <?php endif; ?>

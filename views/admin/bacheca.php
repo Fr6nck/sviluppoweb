@@ -15,6 +15,7 @@
  * @var list<array{ref:string,nome:string,buchi:list<string>}> $camereIncomplete
  * @var list<array<string,mixed>> $camere
  * @var bool  $demo
+ * @var bool  $pagamentoAttivo
  */
 
 use ArcoDelVento\Admin\Cruscotto;
@@ -69,7 +70,17 @@ $iniziali = static function (string $nome): string {
 };
 ?>
 
-<?php if ($demo): ?>
+<?php if (!empty($pagamentoAttivo)): ?>
+  <section class="adm-striscia adm-striscia--pagamenti" aria-labelledby="b-pagamenti">
+    <span class="adm-striscia__icona" aria-hidden="true"><?= icona('chiave', 20) ?></span>
+    <div>
+      <h2 id="b-pagamenti" class="adm-striscia__titolo">Il pagamento online è acceso (SumUp)</h2>
+      <p>Chi prenota paga subito l'intero soggiorno. Il calendario del sito conosce solo le prenotazioni fatte qui:
+         <?= $demo ? 'in più, con BOOKING_PROVIDER=demo, alcune notti risultano occupate a caso — nel file .env metti <code>BOOKING_PROVIDER=sito</code>. ' : '' ?>
+         per ogni prenotazione pagata controlla che le date siano libere su Booking; se non lo sono, rimborsa da SumUp.</p>
+    </div>
+  </section>
+<?php elseif ($demo): ?>
   <section class="adm-striscia" aria-labelledby="b-calendario">
     <span class="adm-striscia__icona" aria-hidden="true"><?= icona('calendario', 20) ?></span>
     <div>
@@ -189,6 +200,7 @@ $iniziali = static function (string $nome): string {
                   <td>
                     <?php if ($v['tipo'] === 'prenotazione'): ?>
                       <span class="adm-tipo adm-tipo--prenotazione"><?= icona('calendario', 13) ?>Prenotazione</span>
+                      <?php if ($pg = \ArcoDelVento\Payment\Pagamenti::etichetta($d)): ?><span class="adm-pagamento adm-pagamento--<?= e($pg['tono']) ?>"><?= e($pg['testo']) ?></span><?php endif; ?>
                       <span class="adm-tenue"><?= e((string) ($d['camera'] ?? '')) ?> · <?= e(Cruscotto::breve((string) ($d['arrivo'] ?? ''))) ?>–<?= e(Cruscotto::breve((string) ($d['partenza'] ?? ''))) ?></span>
                     <?php else: ?>
                       <span class="adm-tipo"><?= icona('messaggio', 13) ?>Messaggio</span>

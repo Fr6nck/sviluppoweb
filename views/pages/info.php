@@ -82,8 +82,11 @@ $testa = static function (string $sezione, string $icona): string {
         $riga('documents', t('info.known.documents'));
         $riga('contact_hours', $contatti['hours']['from'] . '–' . $contatti['hours']['to']);
         $riga('min_nights', t('info.known.min_nights', ['nights' => (int) $scale['saturday']]));
-        $riga('payment', null);
-        $riga('cancellation', null);
+        // Il pagamento si sa quando è online; la disdetta quando è scritta
+        // nell'area riservata. Fino ad allora, «da confermare».
+        $cancellazione = $stay['cancellation'] ?? null;
+        $riga('payment', \ArcoDelVento\App::instance()->pagamentoAttivo() ? t('info.known.payment_online') : null);
+        $riga('cancellation', is_array($cancellazione) ? (string) ($cancellazione[locale()] ?? '') : $cancellazione);
         ?>
       </dl>
     </section>

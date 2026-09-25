@@ -307,6 +307,44 @@ $aggiungi(
         : 'C\'è un indirizzo non valido o di prova: correggilo o toglilo (gli altri ricevono lo stesso).'
 );
 
+// ------------------------------------------------------------ pagamento
+// Acceso solo con PAYMENT_PROVIDER=sumup. Con i soldi di mezzo, quello che
+// manca si ferma qui e non davanti a un ospite con la carta in mano.
+$pagamento = (array) ($config['payment'] ?? []);
+if (($pagamento['provider'] ?? '') === '') {
+    $aggiungi('ok', 'Pagamento', 'pagamento online spento: le prenotazioni restano richieste');
+} elseif ($pagamento['provider'] !== 'sumup') {
+    $aggiungi('bloccante', 'Pagamento', 'PAYMENT_PROVIDER = ' . $pagamento['provider'], 'L\'unico valore previsto è sumup (o vuoto, per spegnerlo).');
+} else {
+    $chiave = (string) ($pagamento['sumup']['api_key'] ?? '');
+    $codice = (string) ($pagamento['sumup']['merchant_code'] ?? '');
+    $aggiungi($chiave !== '' && $codice !== '' ? 'ok' : 'bloccante', 'Pagamento',
+        'SumUp: chiave ' . ($chiave !== '' ? 'presente' : 'MANCANTE') . ', codice esercente ' . ($codice !== '' ? $codice : 'MANCANTE'),
+        'Nel .env: SUMUP_API_KEY (la chiave API del conto SumUp) e SUMUP_MERCHANT_CODE. Senza, il sito non apre il pagamento.');
+    if ($chiave !== '' && !str_starts_with($chiave, 'sup_sk_')) {
+        $aggiungi('attenzione', 'Pagamento', 'la chiave SumUp non comincia con sup_sk_',
+            'Le chiavi API segrete di SumUp cominciano con sup_sk_. Controlla di aver copiato quella giusta, per intero.');
+    }
+    $aggiungi(function_exists('curl_init') ? 'ok' : 'bloccante', 'Pagamento', 'estensione cURL ' . (function_exists('curl_init') ? 'presente' : 'ASSENTE'),
+        'Serve per parlare con SumUp: chiedi all\'assistenza di Hostinger di attivarla.');
+    $https = str_starts_with((string) $config['app']['url'], 'https://');
+    $aggiungi($https ? 'ok' : 'bloccante', 'Pagamento', 'indirizzo del sito in ' . ($https ? 'https' : 'http'),
+        'SumUp rimanda l\'ospite e avvisa il sito all\'indirizzo di APP_URL: deve essere https.');
+    $impostazioniPagamento = (new \ArcoDelVento\Storage\ContentOverrides(new \ArcoDelVento\Storage\JsonStore((string) $config['data'])))->settings(require $root . '/content/settings.php');
+    $canc = $impostazioniPagamento['stay']['cancellation'] ?? null;
+    $cancScritta = is_array($canc) ? trim((string) ($canc['it'] ?? '')) !== '' && trim((string) ($canc['en'] ?? '')) !== '' : trim((string) $canc) !== '';
+    $aggiungi($cancScritta ? 'ok' : 'bloccante', 'Pagamento', 'condizioni di cancellazione ' . ($cancScritta ? 'scritte' : 'NON scritte'),
+        'Chi paga deve sapere prima che cosa succede se annulla. Area riservata → La struttura → Condizioni di cancellazione, in italiano e in inglese.');
+    $provider = (string) $config['booking']['provider'];
+    $aggiungi($provider === 'sito' ? 'attenzione' : 'bloccante', 'Pagamento',
+        'calendario: ' . ($provider === 'sito' ? 'quello del sito (BOOKING_PROVIDER=sito)' : 'BOOKING_PROVIDER=' . $provider),
+        $provider === 'sito'
+            ? 'Il sito non vende due volte una notte già venduta da lui, ma non conosce Booking né il telefono: per ogni prenotazione pagata controlla che le date siano libere, e se non lo sono rimborsa da SumUp.'
+            : 'Con il calendario dimostrativo alcune notti risultano occupate a caso, e si incassa su date che nessuno ha controllato. Nel .env metti BOOKING_PROVIDER=sito.');
+    $aggiungi('attenzione', 'Pagamento', 'notifiche di SumUp a ' . rtrim((string) $config['app']['url'], '/') . '/pagamenti/sumup',
+        'Il sito le riceve da solo. Prima di aprire, fai una prenotazione vera con una carta tua e rimborsala dal pannello di SumUp: così sai che tutto il giro funziona.');
+}
+
 // ----------------------------------------------------------- contenuti
 $settings = require $root . '/content/settings.php';
 

@@ -312,6 +312,7 @@ final class AdminController
             'camereIncomplete' => $this->camereIncomplete(),
             'camere'           => $this->app->rooms()->all(),
             'demo'             => (string) $this->app->config('booking.provider') === 'demo',
+            'pagamentoAttivo'  => $this->app->pagamentoAttivo(),
         ]));
     }
 
@@ -408,6 +409,23 @@ final class AdminController
         }
 
         if ($request->isPost()) {
+            if ($this->in($request, 'azione') === 'verifica') {
+                $pagamenti = $this->app->pagamenti();
+                if ($pagamenti === null) {
+                    $this->flash('errore', 'Il pagamento online è spento: nel file .env mancano PAYMENT_PROVIDER, SUMUP_API_KEY o SUMUP_MERCHANT_CODE.');
+                } else {
+                    $stato = $pagamenti->verifica($id);
+                    $this->flash($stato === 'pagato' ? 'ok' : 'errore', 'SumUp dice: ' . match ($stato) {
+                        'pagato' => 'pagata. Le e-mail di conferma sono partite, se non erano già partite.',
+                        'da controllare' => 'pagata, ma con un importo diverso. Controlla la transazione nel pannello di SumUp.',
+                        'non riuscito' => 'pagamento non riuscito.',
+                        'scaduto' => 'pagina di pagamento scaduta, senza pagamento.',
+                        default => 'non ancora pagata.',
+                    });
+                }
+
+                return Response::redirect($this->url('richieste/' . rawurlencode($id)), 303);
+            }
             if ($this->in($request, 'azione') === 'elimina') {
                 if ($this->in($request, 'conferma') !== '1') {
                     $this->flash('errore', 'Per eliminare la richiesta spunta «Sì, eliminala».');
@@ -431,7 +449,9 @@ final class AdminController
             $voce['stato'] = 'letta';
         }
 
-        return Response::html($this->page('richiesta', ['titolo' => 'Richiesta ' . $id, 'voce' => $voce]));
+        return Response::html($this->page('richiesta', [
+            'titolo' => 'Richiesta ' . $id, 'voce' => $voce, 'pagamentoAttivo' => $this->app->pagamentoAttivo(),
+        ]));
     }
 
     // =============================================================== struttura

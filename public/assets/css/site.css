@@ -1372,6 +1372,13 @@ a.adv-tappe__voce:hover .adv-tappe__freccia { transform: translate(3px, -3px); }
 .adv-tariffe-camera dd small { font-family: var(--font-testo); font-size: 10px; color: var(--muto); }
 
 .adv-prenota-camera { position: sticky; top: 120px; }
+
+/* Il pagamento online: le condizioni accanto al riepilogo, e il passaggio a SumUp. */
+.adv-condizioni { margin: 10px 0 18px; padding-left: 18px; color: var(--muto); font-size: 14px; line-height: 1.55; }
+.adv-condizioni li { margin-bottom: 6px; }
+.adv-condizioni strong { color: var(--bruno); font-weight: 600; }
+.adv-spazio-sopra-s { margin-top: 12px; }
+.adv-vai-pagamento .adv-azioni { margin: 22px 0 18px; }
 .adv-pannello--azioni { display: flex; flex-direction: column; gap: 12px; }
 .adv-pannello--azioni > .adv-titolo { margin-bottom: 4px; }
 

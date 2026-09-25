@@ -98,6 +98,19 @@ return [
         'currency'    => Env::get('BOOKING_CURRENCY', 'EUR'),
     ],
 
+    // Il pagamento online. Spento finché PAYMENT_PROVIDER è vuoto o mancano
+    // la chiave e il codice esercente: allora la prenotazione resta una
+    // richiesta, come prima. Le chiavi stanno solo nel .env, mai nel codice.
+    'payment' => [
+        'provider' => strtolower(trim((string) Env::get('PAYMENT_PROVIDER', ''))),
+        'sumup'    => [
+            'api_key'       => trim((string) Env::get('SUMUP_API_KEY', '')),
+            'merchant_code' => trim((string) Env::get('SUMUP_MERCHANT_CODE', '')),
+            // Si cambia solo per le prove, con un finto SumUp in locale.
+            'api_url'       => rtrim((string) (Env::get('SUMUP_API_URL', '') ?: 'https://api.sumup.com'), '/'),
+        ],
+    ],
+
     'mail' => [
         'transport' => Env::get('MAIL_TRANSPORT', 'log'),
         'from'      => [
