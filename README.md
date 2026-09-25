@@ -377,10 +377,11 @@ un file e senza FTP:
 
 | Sezione | Che cosa |
 | --- | --- |
-| Bacheca | richieste nuove e l'elenco di quello che sul sito è ancora «da confermare», CIN in testa |
-| Richieste | le prenotazioni e i messaggi arrivati dal sito, con stato: nuova, letta, confermata, rifiutata, archiviata |
+| Bacheca | i numeri delle richieste (nuove, prenotazioni e messaggi negli ultimi 30 giorni, con l'andamento), il grafico a colonne di 7 giorni o 6 mesi, le ultime arrivate, i prossimi arrivi e le notti chieste nei prossimi 30 giorni, le camere, il marchio, e quello che sul sito è ancora «da confermare», CIN in testa |
+| Richieste | le prenotazioni e i messaggi arrivati dal sito, con stato: nuova, letta, confermata, rifiutata, archiviata; si cercano per nome, e-mail, riferimento, camera |
 | La struttura | contatti, orari, soggiorno minimo, tassa, dotazioni, obblighi di legge, recensioni, social, coordinate |
 | Camere e tariffe | nome, metratura, piano, vista, tariffa per numero di ospiti, descrizione della fotografia |
+| Immagini e logo | la rosa dei venti (anche icona del browser), il logotipo chiaro e scuro, le cinque foto dell'apertura, le foto delle pagine e quella per i social, la foto principale e due di galleria per ogni camera: si carica il file, si descrive, si torna all'originale |
 | Testi del sito | tutti i testi in italiano e inglese, pagina per pagina, con l'originale accanto |
 | Domande frequenti | aggiungere, modificare, riordinare, togliere |
 | Account | cambiare la password |
@@ -394,7 +395,25 @@ modo atomico, con un lucchetto, e con le ultime trenta versioni di ogni archivio
 nello storico — dal pannello si rimette una versione precedente con un click.
 
 **Che cosa non si cambia da lì.** Tipologia, letti e occupazione massima delle
-camere (da quelli dipende il motore di prenotazione) e le fotografie.
+camere: da quelli dipende il motore di prenotazione.
+
+**Le immagini** (`src/Media/`). Il file caricato non si pubblica mai così com'è:
+GD lo apre, lo raddrizza secondo l'EXIF del telefono, lo porta a 2600 px di lato
+lungo, lo ritaglia ai rapporti che il posto usa (una camera: 4:3, 3:2, 16:9,
+1:1) e lo riscrive in WebP e JPG, grande e piccolo, con lo stesso tetto di peso
+di `tools/build-photos.php`. Loghi e rosa tengono la trasparenza (PNG e WebP;
+la rosa in tutte le misure dell'icona). Riscrivere è anche la difesa: del file
+arrivato resta solo l'immagine, e il nome lo decide il sito. Si rifiutano con
+un motivo chiaro i file non immagine, le HEIC dell'iPhone, quelle troppo
+piccole per il posto, troppo grandi per la memoria del server. I file vanno in
+`public/assets/media/` (chiusa agli script da un suo `.htaccess`, fuori dal
+pacchetto e da git), il posto che usano in `storage/data/immagini.json`.
+
+**La bacheca non inventa.** Tutti i numeri vengono dalle richieste arrivate dal
+sito (`src/Admin/Cruscotto.php`); i grafici sono SVG disegnati sul server
+(`src/Admin/Grafici.php`), senza librerie e senza stili in linea, che la
+politica di sicurezza non ammette. Le prenotazioni di Booking non ci sono, e la
+pagina lo dice.
 
 **Sicurezza.**
 - *La prima volta* `/admin` chiede di creare l'account, ma solo con il codice
@@ -545,13 +564,12 @@ nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
 - Manca il CIN, ed è un obbligo di legge: va messo prima di pubblicare.
 - I prezzi non si vedono fuori dal percorso di prenotazione, per scelta del
   cliente. È un freno reale alla conversione, non un dettaglio di stile.
-- La Camera 01, la tripla, non ha fotografia: tiene il segnaposto disegnato.
+- La Camera 01, la tripla, non ha fotografia: tiene il segnaposto disegnato finché
+  non se ne carica una da «Immagini e logo».
 - Le tre vedute di Assisi si ripetono fra le pagine.
 - L'informativa privacy è impostata ma non è un documento legale finito.
 - Il calendario non è ancora collegato a Booking: l'area riservata mostra le
   richieste, ma le date libere del sito restano dimostrative.
-- Le fotografie non si caricano dall'area riservata: si aggiungono via FTP con
-  `tools/build-photos.php`.
 
 ---
 

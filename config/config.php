@@ -18,6 +18,11 @@ Env::load($root . '/.env');
 return [
     'root'    => $root,
     'storage' => $root . '/storage',
+    // Dove l'area riservata tiene modifiche, richieste e immagini caricate.
+    // Lo strumento del pacchetto la punta su una cartella vuota, così le
+    // pagine si controllano come escono dal pacchetto, senza le modifiche
+    // fatte su questa macchina.
+    'data'    => (string) ($_SERVER['ADV_DATA_DIR'] ?? ($root . '/storage/data')),
     'views'   => $root . '/views',
     'content' => $root . '/content',
 

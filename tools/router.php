@@ -14,6 +14,13 @@ declare(strict_types=1);
 $path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
 $file = __DIR__ . '/../public' . $path;
 
+// Come Apache e LiteSpeed: i file che cominciano con un punto (.htaccess,
+// .user.ini) non si servono mai.
+if (preg_match('#/\.[^/]+$#', $path) === 1) {
+    http_response_code(403);
+    return true;
+}
+
 if ($path !== '/' && is_file($file)) {
     return false;   // lo serve il server interno
 }

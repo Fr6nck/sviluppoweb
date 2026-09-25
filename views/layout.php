@@ -18,8 +18,10 @@ $inProva = (bool) \ArcoDelVento\App::instance()->config('app.noindex');
 $noindex = ($noindex ?? false) || $inProva;
 
 // L'immagine per le anteprime nei social: senza marca temporale, perché chi la
-// legge la mette in cache per conto suo.
-$immagineAnteprima = assoluto(\ArcoDelVento\I18n\Routes::base() . '/assets/img/foto/vicolo-campanile-4x3.jpg');
+// legge la mette in cache per conto suo. Si cambia da Immagini → Le pagine.
+$anteprima = immagine('pagine.anteprima');
+$immagineAnteprima = assoluto(\ArcoDelVento\I18n\Routes::base() . '/assets/' . $anteprima['src'] . '.jpg');
+$rosa = (string) immagine('marchio.rosa')['src'];
 ?>
 <!DOCTYPE html>
 <html lang="<?= e(locale()) ?>">
@@ -55,11 +57,11 @@ foreach (($alternative ?? []) as $lingua => $indirizzo): ?>
 <meta property="og:url" content="<?= e(assoluto($canonico)) ?>">
 <?php endif; ?>
 <meta property="og:image" content="<?= e($immagineAnteprima) ?>">
-<meta property="og:image:alt" content="<?= te('home.hero.image_alt') ?>">
+<meta property="og:image:alt" content="<?= e(immagineAlt($anteprima, 'home.hero.image_alt')) ?>">
 <meta name="twitter:card" content="summary_large_image">
 
-<link rel="icon" href="<?= e(asset('img/logo/icona-192.png')) ?>" sizes="192x192" type="image/png">
-<link rel="apple-touch-icon" href="<?= e(asset('img/logo/icona-512.png')) ?>">
+<link rel="icon" href="<?= e(asset($rosa . '-192.png')) ?>" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="<?= e(asset($rosa . '-512.png')) ?>">
 
 <?php
 /* I due caratteri che si vedono per primi — il titolo in Prata e il testo

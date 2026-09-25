@@ -18,3 +18,4 @@ Thumbs.db
 # stanno sul server, non nel repository
 /storage/data/
 /storage/sessions/
+/public/assets/media/

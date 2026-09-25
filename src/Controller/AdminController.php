@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ArcoDelVento\Controller;
 
+use ArcoDelVento\Admin\Cruscotto;
 use ArcoDelVento\Admin\Form;
 use ArcoDelVento\Admin\Inbox;
 use ArcoDelVento\Admin\Schema;
@@ -11,6 +12,9 @@ use ArcoDelVento\App;
 use ArcoDelVento\Http\Request;
 use ArcoDelVento\Http\Response;
 use ArcoDelVento\I18n\Routes;
+use ArcoDelVento\Media\Elaboratore;
+use ArcoDelVento\Media\ErroreImmagine;
+use ArcoDelVento\Media\Immagini;
 use ArcoDelVento\Storage\ContentOverrides;
 use ArcoDelVento\Support\Csrf;
 
@@ -73,6 +77,15 @@ final class AdminController
         $pezzi  = $resto === '' ? [] : explode('/', $resto);
         $metodo = $request->isPost() ? 'POST' : 'GET';
 
+        // Un file più grande di post_max_size fa arrivare la richiesta vuota,
+        // gettone compreso: senza questo controllo sembrerebbe una sessione
+        // scaduta. Si torna alla pagina con il motivo vero; non si scrive niente.
+        if ($request->isPost() && $request->post === [] && (int) ($request->server['CONTENT_LENGTH'] ?? 0) > self::byte((string) ini_get('post_max_size'))) {
+            $this->flash('errore', 'Il file è troppo grande per il server: al massimo ' . $this->limiteCaricamento() . '. Riducilo e riprova.');
+
+            return $this->headers(Response::redirect($this->url($resto), 303));
+        }
+
         if ($request->isPost() && !Csrf::isValid($this->in($request, '_token'))) {
             // 403 e non 419: il 419 non è un codice HTTP standard, e Apache lo
             // trasforma in un 500 (visto in prova). LiteSpeed potrebbe fare lo stesso.
@@ -101,7 +114,7 @@ final class AdminController
 
         // ------------------------------------------------ dentro
         $risposta = match (true) {
-            $pezzi === []                                   => $this->dashboard(),
+            $pezzi === []                                   => $this->dashboard($request),
             $pezzi === ['esci'] && $metodo === 'POST'        => $this->logout(),
             $pezzi === ['richieste']                        => $this->requests($request),
             count($pezzi) === 2 && $pezzi[0] === 'richieste' => $this->request($request, $pezzi[1]),
@@ -111,6 +124,8 @@ final class AdminController
             $pezzi === ['testi']                            => $this->texts(),
             count($pezzi) === 2 && $pezzi[0] === 'testi'     => $this->textSection($request, $pezzi[1]),
             $pezzi === ['domande']                          => $this->faq($request),
+            $pezzi === ['immagini']                         => $this->images(),
+            count($pezzi) === 2 && $pezzi[0] === 'immagini'  => $this->image($request, $pezzi[1]),
             $pezzi === ['account']                          => $this->account($request),
             $pezzi === ['ripristina'] && $metodo === 'POST'  => $this->restore($request),
             default                                         => Response::html($this->page('non-trovata', ['titolo' => 'Pagina non trovata']), 404),
@@ -232,7 +247,31 @@ final class AdminController
 
     // =============================================================== bacheca
 
-    private function dashboard(): Response
+    private function dashboard(Request $request): Response
+    {
+        $inbox     = $this->app->inbox();
+        $richieste = $inbox->all();
+        $periodo   = $request->get('periodo') === 'mesi' ? 'mesi' : 'settimana';
+
+        return Response::html($this->page('bacheca', [
+            'titolo'           => 'Bacheca',
+            'sottotitolo'      => 'Le richieste arrivate dal sito e quello che resta da fare.',
+            'cruscotto'        => new Cruscotto($richieste),
+            'periodo'          => $periodo,
+            'ultime'           => array_slice($richieste, 0, 6),
+            'mancanti'         => $this->mancanti(),
+            'camereIncomplete' => $this->camereIncomplete(),
+            'camere'           => $this->app->rooms()->all(),
+            'demo'             => (string) $this->app->config('booking.provider') === 'demo',
+        ]));
+    }
+
+    /**
+     * I dati della casa che mancano: sul sito sono «da confermare».
+     *
+     * @return list<array{label:string,gruppo:string,path:string}>
+     */
+    private function mancanti(): array
     {
         $impostazioni = $this->app->settings();
         $mancanti = [];
@@ -250,7 +289,13 @@ final class AdminController
         // Il CIN prima di tutto: è l'unico obbligo di legge.
         usort($mancanti, static fn (array $a, array $b): int => ($b['path'] === 'legal.cin') <=> ($a['path'] === 'legal.cin'));
 
-        $camereIncomplete = [];
+        return $mancanti;
+    }
+
+    /** @return list<array{ref:string,nome:string,buchi:list<string>}> */
+    private function camereIncomplete(): array
+    {
+        $out = [];
         foreach ($this->app->rooms()->all() as $camera) {
             $buchi = [];
             if (empty($camera['size_sqm'])) {
@@ -263,18 +308,11 @@ final class AdminController
                 $buchi[] = 'fotografia';
             }
             if ($buchi !== []) {
-                $camereIncomplete[] = ['ref' => $camera['ref'], 'nome' => $camera['name']['it'] ?? $camera['ref'], 'buchi' => $buchi];
+                $out[] = ['ref' => (string) $camera['ref'], 'nome' => (string) ($camera['name']['it'] ?? $camera['ref']), 'buchi' => $buchi];
             }
         }
 
-        return Response::html($this->page('bacheca', [
-            'titolo'           => 'Bacheca',
-            'nuove'            => $this->app->inbox()->countNew(),
-            'ultime'           => array_slice($this->app->inbox()->all(), 0, 5),
-            'mancanti'         => $mancanti,
-            'camereIncomplete' => $camereIncomplete,
-            'demo'             => (string) $this->app->config('booking.provider') === 'demo',
-        ]));
+        return $out;
     }
 
     // =============================================================== richieste
@@ -282,8 +320,24 @@ final class AdminController
     private function requests(Request $request): Response
     {
         $stato = (string) $this->in($request, 'stato', '');
+        $cerca = trim(mb_substr((string) $this->in($request, 'q', ''), 0, 80));
         $voci  = $this->app->inbox()->all();
-        if ($stato !== '' && isset(Inbox::STATI[$stato])) {
+        if ($cerca !== '') {
+            // Si cerca fra tutte, archiviate comprese: chi cerca un nome lo
+            // vuole trovare anche se la richiesta è chiusa da mesi.
+            $ago  = mb_strtolower($cerca);
+            $voci = array_values(array_filter($voci, static function (array $v) use ($ago): bool {
+                $d = (array) ($v['dati'] ?? []);
+                foreach ([$v['id'] ?? '', $d['nome'] ?? '', $d['email'] ?? '', $d['telefono'] ?? '', $d['camera'] ?? '', $d['oggetto'] ?? '', $d['messaggio'] ?? '', $d['note'] ?? ''] as $campo) {
+                    if (is_string($campo) && str_contains(mb_strtolower($campo), $ago)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }));
+            $stato = '';
+        } elseif ($stato !== '' && isset(Inbox::STATI[$stato])) {
             $voci = array_values(array_filter($voci, static fn (array $v): bool => ($v['stato'] ?? '') === $stato));
         } else {
             // di norma le archiviate non si vedono
@@ -292,7 +346,7 @@ final class AdminController
         }
 
         return Response::html($this->page('richieste', [
-            'titolo' => 'Richieste', 'voci' => $voci, 'stato' => $stato,
+            'titolo' => 'Richieste', 'voci' => $voci, 'stato' => $stato, 'cerca' => $cerca,
         ]));
     }
 
@@ -662,6 +716,150 @@ final class AdminController
         return Response::redirect($this->url('domande'), 303);
     }
 
+    // =============================================================== immagini
+
+    private function images(): Response
+    {
+        $media  = $this->app->media();
+        $gruppi = [];
+        foreach ($media->posti() as $chiave => $posto) {
+            $gruppi[$posto['gruppo']][] = ['chiave' => $chiave, 'posto' => $posto, 'img' => $media->risolvi($chiave)];
+        }
+
+        return Response::html($this->page('immagini', [
+            'titolo' => 'Immagini e logo', 'gruppi' => $gruppi,
+            'sottotitolo' => 'Cambia il logo, l\'icona e le fotografie del sito, senza FTP.',
+        ] + $this->statoCaricamento()));
+    }
+
+    private function image(Request $request, string $chiave): Response
+    {
+        $media = $this->app->media();
+        $posto = $media->posto($chiave);
+        if ($posto === null) {
+            return Response::html($this->page('non-trovata', ['titolo' => 'Immagine non trovata']), 404);
+        }
+        $dati = fn (array $extra = []): array => [
+            'titolo' => (string) $posto['nome'], 'sottotitolo' => (string) $posto['gruppo'], 'chiave' => $chiave, 'posto' => $posto,
+            'img' => $media->risolvi($chiave), 'registrata' => $media->registrata($chiave),
+        ] + $extra + $this->statoCaricamento();
+
+        if (!$request->isPost()) {
+            return Response::html($this->page('immagine', $dati()));
+        }
+
+        $ritorno = 'immagini/' . rawurlencode($chiave);
+        switch ($this->in($request, 'azione')) {
+            case 'carica':
+                $file = $_FILES['immagine'] ?? null;
+                $errore = $this->erroreCaricamento(is_array($file) ? $file : null);
+                if ($errore === null) {
+                    try {
+                        $media->carica($chiave, (string) $file['tmp_name'], (string) ($file['name'] ?? ''));
+                    } catch (ErroreImmagine $e) {
+                        $errore = $e->getMessage();
+                    }
+                }
+                if ($errore !== null) {
+                    return Response::html($this->page('immagine', $dati(['errori' => [$errore]])), 422);
+                }
+                $avviso = $media->registrata($chiave)['avviso'] ?? null;
+                $this->flash('ok', 'Immagine caricata: è già sul sito.'
+                    . ($avviso ? ' Attenzione: ' . $avviso : '')
+                    . (isset($posto['camera']) ? ' Se la foto mostra qualcosa di diverso, aggiorna la descrizione nella pagina della camera.'
+                        : (!empty($posto['alt']) ? ' Scrivi qui sotto che cosa mostra, per chi non la vede.' : '')));
+
+                return Response::redirect($this->url($ritorno), 303);
+
+            case 'testi':
+                if ($media->registrata($chiave) === null) {
+                    return Response::redirect($this->url($ritorno), 303);
+                }
+                $alt = $credito = [];
+                $errori = [];
+                foreach ($this->form->languages() as $lingua) {
+                    $alt[$lingua]     = trim((string) ($request->post['alt'][$lingua] ?? ''));
+                    $credito[$lingua] = trim((string) ($request->post['credito'][$lingua] ?? ''));
+                    if (mb_strlen($alt[$lingua]) > 250 || mb_strlen($credito[$lingua]) > 160) {
+                        $errori[] = strtoupper($lingua) . ': la descrizione al massimo 250 caratteri, la didascalia 160.';
+                    }
+                }
+                if ($errori !== []) {
+                    return Response::html($this->page('immagine', $dati(['errori' => $errori])), 422);
+                }
+                $media->aggiornaTesti($chiave, $alt, $credito);
+                $this->flash('ok', 'Descrizione salvata.');
+
+                return Response::redirect($this->url($ritorno), 303);
+
+            case 'ripristina':
+                $this->flash('ok', $media->ripristina($chiave)
+                    ? 'Tornata l\'immagine originale. Il file caricato è stato cancellato.'
+                    : 'Questa immagine era già l\'originale.');
+
+                return Response::redirect($this->url($ritorno), 303);
+        }
+
+        return Response::redirect($this->url($ritorno), 303);
+    }
+
+    /**
+     * Che cosa è andato storto nel caricamento, detto a chi carica.
+     *
+     * @param array<string,mixed>|null $file
+     */
+    private function erroreCaricamento(?array $file): ?string
+    {
+        $codice = is_array($file) ? (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) : UPLOAD_ERR_NO_FILE;
+
+        return match (true) {
+            $codice === UPLOAD_ERR_NO_FILE => 'Scegli prima un file.',
+            $codice === UPLOAD_ERR_INI_SIZE, $codice === UPLOAD_ERR_FORM_SIZE
+                => 'Il file è troppo grande per il server: al massimo ' . $this->limiteCaricamento() . '. Riducilo e riprova.',
+            $codice === UPLOAD_ERR_PARTIAL => 'Il file è arrivato a metà: la connessione si è interrotta. Riprova.',
+            $codice !== UPLOAD_ERR_OK => 'Il server non ha potuto ricevere il file (errore ' . $codice . '). Se si ripete, chiedi all\'assistenza di Hostinger.',
+            !is_uploaded_file((string) ($file['tmp_name'] ?? '')) => 'Il file non è arrivato. Riprova.',
+            default => null,
+        };
+    }
+
+    /** @return array{scrivibile: bool, gd: bool, webp: bool, limite: string} */
+    private function statoCaricamento(): array
+    {
+        return [
+            'scrivibile' => Immagini::cartellaScrivibile($this->app->config('root') . '/public'),
+            'gd'         => Elaboratore::disponibile(),
+            'webp'       => Elaboratore::scriveWebp(),
+            'limite'     => $this->limiteCaricamento(),
+        ];
+    }
+
+    /** Il file più grande che il server accetta, detto in MB. */
+    private function limiteCaricamento(): string
+    {
+        $limite = min(
+            self::byte((string) ini_get('upload_max_filesize')) ?: PHP_INT_MAX,
+            self::byte((string) ini_get('post_max_size')) ?: PHP_INT_MAX,
+            Elaboratore::MAX_BYTE
+        );
+
+        return rtrim(rtrim(number_format($limite / 1048576, 1, ',', ''), '0'), ',') . ' MB';
+    }
+
+    /** «8M» → 8388608. Zero vuol dire senza limite. */
+    private static function byte(string $valore): int
+    {
+        $valore = trim($valore);
+        $numero = (int) $valore;
+
+        return match (strtolower(substr($valore, -1))) {
+            'g' => $numero * 1024 ** 3,
+            'm' => $numero * 1024 ** 2,
+            'k' => $numero * 1024,
+            default => $numero,
+        };
+    }
+
     // =============================================================== storico
 
     private function restore(Request $request): Response
@@ -692,6 +890,7 @@ final class AdminController
             'flash'  => $flash,
             'utente' => $utente,
             'nuove'  => $utente !== null ? $this->app->inbox()->countNew() : 0,
+            'daCompletare' => $utente !== null ? count($this->mancanti()) + count($this->camereIncomplete()) : 0,
             'errori' => [],
             'valori' => [],
             'lingue' => $this->form->languages(),

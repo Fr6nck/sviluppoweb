@@ -9,6 +9,10 @@
  */
 ?>
 
+<?php
+$corridoio = immagine('pagine.corridoio');
+$vicolo    = immagine('pagine.vicolo');
+?>
 <header class="adv-contenuto adv-testa">
   <?= occhiello(t('property.eyebrow'), 'adv-occhiello--centro') ?>
   <h1 class="adv-titolo adv-titolo--xl"><?= titolo(t('property.title'), t('property.sign')) ?></h1>
@@ -41,14 +45,16 @@
       <div class="adv-figura-alta" data-reveal="photo-reveal">
         <div class="adv-figura-alta__cornice" data-parallax="soft">
           <?= component('picture', [
-              'src'   => 'img/casa/casa-corridoio-3x4',
-              'alt'   => t('rooms.corridor_alt'),
+              'src'   => $corridoio['src'],
+              'alt'   => immagineAlt($corridoio, 'rooms.corridor_alt'),
               'eager' => true,
               'sizes' => '(max-width: 760px) 100vw, 540px',
           ]) ?>
         </div>
       </div>
-      <figcaption class="adv-figura__didascalia"><?= te('rooms.corridor_caption') ?></figcaption>
+      <?php if ($didascalia = immagineCredito($corridoio, 'rooms.corridor_caption')): ?>
+        <figcaption class="adv-figura__didascalia"><?= e($didascalia) ?></figcaption>
+      <?php endif; ?>
     </figure>
   </div>
 </section>
@@ -94,14 +100,16 @@
       <div class="adv-figura-alta" data-reveal="photo-reveal">
         <div class="adv-figura-alta__cornice" data-parallax="soft">
           <?= component('picture', [
-              'src'   => 'img/foto/vicolo-campanile-3x4',
-              'alt'   => t('assisi.image_alt'),
+              'src'   => $vicolo['src'],
+              'alt'   => immagineAlt($vicolo, 'assisi.image_alt'),
               'sizes' => '(max-width: 760px) 100vw, 540px',
           ]) ?>
         </div>
         <span class="adv-chip-foto"><?= icona('pin', 13) ?><?= te('home.position.chip') ?></span>
       </div>
-      <figcaption class="adv-figura__didascalia"><?= te('home.hero.image_credit') ?></figcaption>
+      <?php if ($credito = immagineCredito($vicolo, 'home.hero.image_credit')): ?>
+        <figcaption class="adv-figura__didascalia"><?= e($credito) ?></figcaption>
+      <?php endif; ?>
     </figure>
 
     <div>

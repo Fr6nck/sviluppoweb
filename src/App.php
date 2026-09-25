@@ -48,7 +48,7 @@ final class App
 
         // I testi modificati dall'area riservata si sovrappongono a quelli dei
         // file di lingua, chiave per chiave.
-        $ritocchi = new ContentOverrides(new JsonStore($config['storage'] . '/data'));
+        $ritocchi = new ContentOverrides(new JsonStore($config['data']));
 
         $translator = new Translator(
             $config['content'] . '/lang',
@@ -105,7 +105,7 @@ final class App
     /** L'archivio dell'area riservata, in storage/data. */
     public function store(): JsonStore
     {
-        return $this->services['store'] ??= new JsonStore($this->config['storage'] . '/data');
+        return $this->services['store'] ??= new JsonStore($this->config['data']);
     }
 
     public function auth(): \ArcoDelVento\Admin\Auth
@@ -123,6 +123,16 @@ final class App
     }
 
     /** Le modifiche dell'area riservata, sovrapposte ai file di content/. */
+    /** Le immagini sostituibili dall'area riservata. */
+    public function media(): \ArcoDelVento\Media\Immagini
+    {
+        return $this->services['media'] ??= new \ArcoDelVento\Media\Immagini(
+            $this->store(),
+            $this->config['root'] . '/public',
+            $this->overrides()->rooms($this->baseRooms()),
+        );
+    }
+
     public function overrides(): ContentOverrides
     {
         return $this->services['overrides'] ??= new ContentOverrides($this->store());
@@ -169,7 +179,7 @@ final class App
             return new PdoRoomRepository($connection);
         }
 
-        return new ArrayRoomRepository($this->overrides()->rooms($this->baseRooms()));
+        return new ArrayRoomRepository($this->media()->applicaCamere($this->overrides()->rooms($this->baseRooms())));
     }
 
     public function database(): ?\PDO

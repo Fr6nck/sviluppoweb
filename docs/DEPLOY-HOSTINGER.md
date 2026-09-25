@@ -110,6 +110,12 @@ usa le copie in `dist/file-da-rinominare/`:
 | `htaccess-public.txt` | `public_html/public/` | `.htaccess` |
 | `env-produzione.txt` | `public_html/` | `.env` |
 
+Nello .zip c'è anche **`public/.user.ini`**: chiede a PHP di accettare file
+fino a 16 MB, perché le foto del telefono (3–8 MB) si possano caricare
+dall'area Immagini. Se il server non lo legge, il limite resta quello del
+pannello di Hostinger (*Avanzate → Configurazione PHP → upload_max_filesize*):
+l'area Immagini mostra sempre il limite vero.
+
 **Il `.env` non è nello .zip, di proposito**: deve contenere la password della
 posta. `env-produzione.txt` è già compilato con produzione, debug spento,
 dominio ricavato dall'e-mail della struttura, SMTP di Hostinger e un gettone
@@ -164,6 +170,9 @@ tranne la home. In FileZilla: *Server → Forza visualizzazione file nascosti*.
 
 `storage/logs/` e `storage/mail/` devono essere scrivibili dal server:
 il sito ci scrive i registri e, in modalità `log`, i messaggi dei moduli.
+
+Lo stesso per **`public/assets/`**: la prima volta che carichi un'immagine
+dall'area riservata, il sito ci crea dentro la cartella `media/`.
 
 Da FileZilla, tasto destro sulla cartella → *Permessi file* → **755**.
 Se non basta, 775. Mai 777.
@@ -339,6 +348,17 @@ file del pacchetto. Quindi:
 - se qualcosa va storto dopo una modifica, ogni sezione ha le **versioni
   precedenti**, e una si rimette con un click.
 
+**Le immagini caricate dal pannello** (logo, rosa dei venti, fotografie)
+stanno in **`public/assets/media/`**, e quale posto usano sta in
+`storage/data/immagini.json`. Anche questa cartella non è nel pacchetto:
+quando ricarichi il sito **non cancellare `public/assets/media/`**. Dentro
+c'è un `.htaccess` che impedisce a qualunque script di girare: non toglierlo.
+Per tornare a un'immagine originale non serve l'FTP: nella pagina
+dell'immagine, «Ripristina l'originale».
+
+Il pannello si serve della libreria **GD** di PHP per ritagliare e alleggerire
+le immagini: su Hostinger è attiva di norma, e il controllo finale lo verifica.
+
 ---
 
 ## 11. Dalla prova al dominio vero
@@ -366,7 +386,12 @@ file del pacchetto. Quindi:
 | `impostazioni.json`, `camere.json`, `testi-it.json`, `testi-en.json`, `domande.json` | le modifiche ai contenuti | **sì** |
 | `admin.json` | l'account e la sua password | sì, se vuoi tenere la stessa |
 | `richieste.json` | le richieste arrivate alla prova | di solito no: sono di prova |
+| `immagini.json` **insieme a `public/assets/media/`** | le immagini caricate dal pannello | **sì**, sempre in coppia |
 | `accessi.json`, la cartella `storico/` | tentativi di accesso, versioni precedenti | no |
+
+`immagini.json` senza la cartella `public/assets/media/` non fa danni — il sito
+ignora le righe che puntano a file che non ci sono e mostra gli originali — ma
+le immagini caricate in prova non si vedono.
 
 Se invece di ricaricare tutto preferisci spostare i file della prova, sposta
 tutto **tranne** il `.env`, e sul nuovo server metti quello di produzione.
@@ -380,6 +405,10 @@ Cambiano i contenuti (`content/`), le viste (`views/`) o i fogli di stile
 svuotare — fogli e script portano nell'indirizzo la data di modifica, quindi
 al cambio cambia l'indirizzo e il browser riscarica da solo.
 
-Cambiano le fotografie: metti l'originale in `docs/foto-originali/`, lancia
-`php tools/build-photos.php` **sulla tua macchina**, e carica i file nuovi da
-`public/assets/img/`.
+Cambiano le fotografie o il logo: il modo più semplice è l'area riservata,
+**Immagini e logo**. Scegli il posto, carica il file: il sito lo ritaglia, lo
+alleggerisce e lo pubblica subito, e l'originale si rimette con un click.
+
+Per cambiare le immagini *del pacchetto* (quelle predefinite), invece: metti
+l'originale in `docs/foto-originali/`, lancia `php tools/build-photos.php`
+**sulla tua macchina**, e carica i file nuovi da `public/assets/img/`.

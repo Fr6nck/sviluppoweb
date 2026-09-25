@@ -67,7 +67,7 @@ if (str_ends_with($src, '.svg')) {
 $grande  = $misure($src . '.webp');
 $piccola = $misure($src . '-sm.webp');
 
-$dim = $grande ?? [(int) ($width ?? 1200), (int) ($height ?? 900)];
+$dim = $grande ?? $misure($src . '.jpg') ?? [(int) ($width ?? 1200), (int) ($height ?? 900)];
 
 /** Costruisce il srcset solo quando la seconda misura esiste davvero. */
 $srcset = static function (string $estensione) use ($src, $grande, $piccola): ?string {
@@ -103,9 +103,14 @@ $comuni = attrs([
 ]);
 ?>
 <picture>
-  <source type="image/webp"<?= attrs([
-      $pre . 'srcset' => $srcset('.webp') ?? asset($src . '.webp'),
-      'sizes'  => $srcset('.webp') !== null ? $sizes : null,
-  ]) ?>>
+  <?php /* La WebP si offre solo se c'è: un server senza WebP scrive solo JPG,
+           e una <source> che punta a un file mancante lascia il riquadro
+           vuoto invece di ripiegare sulla JPG. */ ?>
+  <?php if ($grande !== null): ?>
+    <source type="image/webp"<?= attrs([
+        $pre . 'srcset' => $srcset('.webp') ?? asset($src . '.webp'),
+        'sizes'  => $srcset('.webp') !== null ? $sizes : null,
+    ]) ?>>
+  <?php endif; ?>
   <img <?= $pre ?>src="<?= e(asset($src . '.jpg')) ?>"<?= $comuni ?>>
 </picture>

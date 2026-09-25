@@ -15,7 +15,24 @@ use ArcoDelVento\Support\RoomPresenter as R;
   <a class="adm-link" href="<?= e(url('room', ['slug' => $camera['slug']['it']], [], 'it')) ?>" target="_blank" rel="noopener">Vedi la pagina ↗</a>
 </p>
 
-<form method="post" action="<?= e(adminUrl('camere/' . rawurlencode((string) $camera['ref']))) ?>" class="adm-modulo" novalidate>
+<?php $foto = immagine('camera.' . $camera['ref']); $mini = anteprima($foto, 'foto'); ?>
+<section class="adm-carta adm-camera-foto" aria-labelledby="c-foto">
+  <?php if ($mini !== null): ?>
+    <img class="adm-camera-foto__img" src="<?= e(asset($mini)) ?>" alt="" width="160" height="120">
+  <?php endif; ?>
+  <div>
+    <h2 id="c-foto">Le fotografie</h2>
+    <p class="adm-nota"><?= !empty($camera['photographed']) ? 'La foto principale e, se vuoi, due per la galleria.' : 'Questa camera non ha ancora una foto vera: sul sito compare un disegno.' ?>
+      Il campo «Che cosa si vede nella fotografia», qui sotto, è quello che leggono i lettori di schermo: se cambi la foto, controllalo.</p>
+    <p class="adm-azioni">
+      <a class="adm-bottone adm-bottone--piatto" href="<?= e(adminUrl('immagini/camera.' . $camera['ref'])) ?>"><?= icona('immagine', 17) ?><?= !empty($camera['photographed']) ? 'Cambia la foto' : 'Carica la foto' ?></a>
+      <a class="adm-link" href="<?= e(adminUrl('immagini/camera.' . $camera['ref'] . '.galleria-1')) ?>">Galleria 1</a>
+      <a class="adm-link" href="<?= e(adminUrl('immagini/camera.' . $camera['ref'] . '.galleria-2')) ?>">Galleria 2</a>
+    </p>
+  </div>
+</section>
+
+<form method="post" action="<?= e(adminUrl('camere/' . rawurlencode((string) $camera['ref']))) ?>" class="adm-modulo adm-gruppo" novalidate>
   <?= Csrf::field() ?>
   <?php foreach ($schema as $campo): ?>
     <?= $this->render('admin/_campo', [

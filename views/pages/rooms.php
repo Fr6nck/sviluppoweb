@@ -12,6 +12,7 @@
 use ArcoDelVento\Support\RoomPresenter as R;
 
 $lingua = locale();
+$corridoio = immagine('pagine.corridoio');
 ?>
 
 <header class="adv-contenuto adv-testa">
@@ -61,13 +62,15 @@ $lingua = locale();
         <div class="adv-figura-alta" data-reveal="photo-reveal">
           <div class="adv-figura-alta__cornice" data-parallax="soft">
             <?= component('picture', [
-                'src'   => 'img/casa/casa-corridoio-3x4',
-                'alt'   => t('rooms.corridor_alt'),
+                'src'   => $corridoio['src'],
+                'alt'   => immagineAlt($corridoio, 'rooms.corridor_alt'),
                 'sizes' => '(max-width: 760px) 100vw, 540px',
             ]) ?>
           </div>
         </div>
-        <figcaption class="adv-figura__didascalia"><?= te('rooms.corridor_caption') ?></figcaption>
+        <?php if ($didascalia = immagineCredito($corridoio, 'rooms.corridor_caption')): ?>
+          <figcaption class="adv-figura__didascalia"><?= e($didascalia) ?></figcaption>
+        <?php endif; ?>
       </figure>
 
       <div>

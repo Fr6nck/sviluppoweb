@@ -300,6 +300,27 @@ function icona(string $nome, int $misura = 16, string $classe = ''): string
         'wifi'       => ['<path d="M12 20h.01"/>', '<path d="M2 8.82a15 15 0 0 1 20 0"/>', '<path d="M5 12.86a10 10 0 0 1 14 0"/>', '<path d="M8.5 16.43a5 5 0 0 1 7 0"/>'],
         'messaggio'  => ['<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>'],
         'finestra'   => ['<rect width="18" height="18" x="3" y="3" rx="2"/>', '<path d="M3 12h18"/>', '<path d="M12 3v18"/>'],
+        // Per l'area riservata.
+        'griglia'    => ['<rect width="7" height="7" x="3" y="3" rx="1"/>', '<rect width="7" height="7" x="14" y="3" rx="1"/>', '<rect width="7" height="7" x="14" y="14" rx="1"/>', '<rect width="7" height="7" x="3" y="14" rx="1"/>'],
+        'vassoio'    => ['<path d="M22 12h-6l-2 3h-4l-2-3H2"/>', '<path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>'],
+        'edificio'   => ['<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/>', '<path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/>', '<path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/>', '<path d="M10 6h4"/>', '<path d="M10 10h4"/>', '<path d="M10 14h4"/>', '<path d="M10 18h4"/>'],
+        'immagine'   => ['<rect width="18" height="18" x="3" y="3" rx="2"/>', '<circle cx="9" cy="9" r="2"/>', '<path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/>'],
+        'testo'      => ['<path d="M4 7V4h16v3"/>', '<path d="M9 20h6"/>', '<path d="M12 4v16"/>'],
+        'aiuto'      => ['<circle cx="12" cy="12" r="10"/>', '<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>', '<path d="M12 17h.01"/>'],
+        'utente'     => ['<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>', '<circle cx="12" cy="7" r="4"/>'],
+        'esci'       => ['<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>', '<path d="m16 17 5-5-5-5"/>', '<path d="M21 12H9"/>'],
+        'cerca'      => ['<circle cx="11" cy="11" r="8"/>', '<path d="m21 21-4.3-4.3"/>'],
+        'campanella' => ['<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>', '<path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>'],
+        'esterno'    => ['<path d="M15 3h6v6"/>', '<path d="M10 14 21 3"/>', '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>'],
+        'piu'        => ['<path d="M5 12h14"/>', '<path d="M12 5v14"/>'],
+        'sale'       => ['<path d="M22 7 13.5 15.5 8.5 10.5 2 17"/>', '<path d="M16 7h6v6"/>'],
+        'scende'     => ['<path d="M22 17 13.5 8.5 8.5 13.5 2 7"/>', '<path d="M16 17h6v-6"/>'],
+        'carica'     => ['<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>', '<path d="m17 8-5-5-5 5"/>', '<path d="M12 3v12"/>'],
+        'ripristina' => ['<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>', '<path d="M3 3v5h5"/>'],
+        'calendario' => ['<rect width="18" height="18" x="3" y="4" rx="2"/>', '<path d="M16 2v4"/>', '<path d="M8 2v4"/>', '<path d="M3 10h18"/>'],
+        'filtro'     => ['<path d="M3 6h18"/>', '<path d="M7 12h10"/>', '<path d="M10 18h4"/>'],
+        'matita'     => ['<path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/>', '<path d="m15 5 4 4"/>'],
+        'attenzione' => ['<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>', '<path d="M12 9v4"/>', '<path d="M12 17h.01"/>'],
         // La rosa dei venti del marchio, ridotta a segno: quattro punte e un
         // cerchio. È la sola icona che non viene da Lucide.
         'rosa'       => ['<circle cx="12" cy="12" r="9.5" stroke-width="1"/>', '<path d="M12 2.5 13.6 10.4 21.5 12 13.6 13.6 12 21.5 10.4 13.6 2.5 12 10.4 10.4Z" stroke-width="1.4"/>'],
@@ -361,4 +382,69 @@ function righe(string $testo): string
 function mappa(string $luogo): string
 {
     return 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode($luogo);
+}
+
+/**
+ * Un'immagine che si può sostituire dall'area riservata: quella caricata, se
+ * c'è, altrimenti l'originale del pacchetto. Vedi src/Media/Immagini.php.
+ *
+ * @return array{src: ?string, sostituita: bool, alt: ?string, credito: ?string, w: ?int, h: ?int, formati: list<string>}
+ */
+function immagine(string $posto): array
+{
+    return App::instance()->media()->risolvi($posto, locale());
+}
+
+/**
+ * Il testo alternativo: quello scritto nell'area riservata per l'immagine
+ * caricata, altrimenti quello dell'originale. Un'immagine caricata senza
+ * descrizione resta senza: il testo dell'originale descriverebbe un'altra
+ * fotografia.
+ */
+function immagineAlt(array $img, string $chiaveOriginale): string
+{
+    return $img['sostituita'] ? (string) ($img['alt'] ?? '') : t($chiaveOriginale);
+}
+
+/** Il credito o la didascalia, con la stessa regola del testo alternativo. */
+function immagineCredito(array $img, ?string $chiaveOriginale): ?string
+{
+    if ($img['sostituita']) {
+        return $img['credito'];
+    }
+
+    return $chiaveOriginale !== null ? t($chiaveOriginale) : null;
+}
+
+/** Se un file statico esiste davvero sotto public/assets/. */
+function assetEsiste(string $percorso): bool
+{
+    return is_file(App::instance()->config('root') . '/public/assets/' . ltrim($percorso, '/'));
+}
+
+/**
+ * Il file più leggero con cui mostrare un'immagine in piccolo nel pannello:
+ * la misura ridotta della foto, il logo così com'è, la rosa a 96 px.
+ *
+ * @param array{src: ?string} $img quello che restituisce immagine()
+ */
+function anteprima(array $img, string $tipo): ?string
+{
+    $src = $img['src'] ?? null;
+    if (!is_string($src) || $src === '') {
+        return null;
+    }
+    if ($tipo === 'icona') {
+        return $src . '-96.png';
+    }
+    if ($tipo === 'logo' || str_ends_with($src, '.svg')) {
+        return $src;
+    }
+    foreach (['-sm.webp', '-sm.jpg', '.webp', '.jpg'] as $estensione) {
+        if (assetEsiste($src . $estensione)) {
+            return $src . $estensione;
+        }
+    }
+
+    return null;
 }

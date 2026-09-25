@@ -15,6 +15,10 @@
  */
 ?>
 
+<?php
+$panorama = immagine('pagine.panorama');
+$basilica = immagine('pagine.basilica');
+?>
 <header class="adv-contenuto adv-testa">
   <?= occhiello(t('assisi.eyebrow'), 'adv-occhiello--centro') ?>
   <h1 class="adv-titolo adv-titolo--xl"><?= titolo(t('assisi.title'), t('assisi.sign')) ?></h1>
@@ -25,8 +29,8 @@
   <figure class="adv-banda" data-reveal="photo-reveal">
     <div class="adv-banda__cornice" data-parallax="soft">
       <?= component('picture', [
-          'src'   => 'img/foto/valle-panorama-16x9',
-          'alt'   => t('home.position.frame_alt'),
+          'src'   => $panorama['src'],
+          'alt'   => immagineAlt($panorama, 'home.position.frame_alt'),
           'eager' => true,
           'sizes' => '(max-width: 1170px) 100vw, 1170px',
       ]) ?>
@@ -42,13 +46,15 @@
       <div class="adv-figura-alta" data-reveal="photo-reveal">
         <div class="adv-figura-alta__cornice" data-parallax="soft">
           <?= component('picture', [
-              'src'   => 'img/foto/basilica-tramonto-3x4',
-              'alt'   => t('home.walk.image_alt'),
+              'src'   => $basilica['src'],
+              'alt'   => immagineAlt($basilica, 'home.walk.image_alt'),
               'sizes' => '(max-width: 760px) 100vw, 540px',
           ]) ?>
         </div>
       </div>
-      <figcaption class="adv-figura__didascalia"><?= te('home.walk.image_credit') ?></figcaption>
+      <?php if ($credito = immagineCredito($basilica, 'home.walk.image_credit')): ?>
+        <figcaption class="adv-figura__didascalia"><?= e($credito) ?></figcaption>
+      <?php endif; ?>
     </figure>
 
     <div>

@@ -94,7 +94,7 @@ Options -Indexes
 
 # I file che non devono mai essere serviti, anche se qualcuno li carica per
 # sbaglio nella cartella pubblica.
-<FilesMatch "^(\.env|\.env\..*|composer\.(json|lock)|.*\.md|.*\.sql)$">
+<FilesMatch "^(\.env|\.env\..*|\.user\.ini|composer\.(json|lock)|.*\.md|.*\.sql)$">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>

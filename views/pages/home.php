@@ -16,21 +16,39 @@ use ArcoDelVento\Support\RoomPresenter as R;
 
 $lingua = locale();
 
-// Le fotografie dell'apertura: Assisi, la casa, una camera vera.
-$diapositive = [
-    ['src' => 'img/foto/valle-panorama-16x9', 'alt' => t('home.position.frame_alt'), 'didascalia' => t('home.slides.valle')],
-    ['src' => 'img/foto/vicolo-campanile-4x3', 'alt' => t('home.hero.image_alt'), 'didascalia' => t('home.slides.vicolo')],
-    ['src' => 'img/foto/basilica-tramonto-3x4', 'alt' => t('home.walk.image_alt'), 'didascalia' => t('home.slides.basilica'), 'classe' => 'adv-diapositive__foto--alta'],
-    ['src' => 'img/casa/casa-corridoio-4x3', 'alt' => t('rooms.corridor_alt'), 'didascalia' => t('home.slides.corridoio')],
+// Le fotografie dell'apertura: Assisi, la casa, una camera vera. Ognuna si
+// sostituisce dall'area riservata (Immagini → Home); una sostituita porta la
+// descrizione e la didascalia scritte lì, non quelle dell'originale.
+$diapositive = [];
+$originali = [
+    1 => ['home.position.frame_alt', 'home.slides.valle', null],
+    2 => ['home.hero.image_alt', 'home.slides.vicolo', null],
+    3 => ['home.walk.image_alt', 'home.slides.basilica', 'adv-diapositive__foto--alta'],
+    4 => ['rooms.corridor_alt', 'home.slides.corridoio', null],
 ];
-foreach ($camere as $unaCamera) {
-    // La prima camera fotografata che guarda su San Rufino, altrimenti la prima fotografata.
-    if (R::isPhotographed($unaCamera) && R::viewLabel($unaCamera) !== null) {
-        $diapositive[] = ['src' => $unaCamera['images']['hero']['src'], 'alt' => R::alt($unaCamera, $lingua), 'didascalia' => t('home.slides.camera')];
-        break;
+foreach ($originali as $n => [$alt, $didascalia, $classe]) {
+    $img = immagine('home.foto-' . $n);
+    $diapositive[] = [
+        'src'        => $img['src'],
+        'alt'        => immagineAlt($img, $alt),
+        'didascalia' => (string) immagineCredito($img, $didascalia),
+        'classe'     => $img['sostituita'] ? null : $classe,
+    ];
+}
+$quinta = immagine('home.foto-5');
+if ($quinta['sostituita']) {
+    $diapositive[] = ['src' => $quinta['src'], 'alt' => (string) $quinta['alt'], 'didascalia' => (string) $quinta['credito']];
+} else {
+    foreach ($camere as $unaCamera) {
+        // La prima camera fotografata che guarda su San Rufino.
+        if (R::isPhotographed($unaCamera) && R::viewLabel($unaCamera) !== null) {
+            $diapositive[] = ['src' => $unaCamera['images']['hero']['src'], 'alt' => R::alt($unaCamera, $lingua), 'didascalia' => t('home.slides.camera')];
+            break;
+        }
     }
 }
 $totale = count($diapositive);
+$centro = immagine('pagine.centro');
 
 // «Apri la mappa»: le coordinate se il titolare le ha inserite, altrimenti l'indirizzo.
 $lat = site('geo.latitude');
@@ -149,8 +167,8 @@ foreach ((array) site('parking_spots', []) as $posto) {
     <figure class="adv-figura-alta" data-reveal="photo-reveal">
       <div class="adv-figura-alta__cornice" data-parallax="soft">
         <?= component('picture', [
-            'src'   => 'img/foto/vicolo-campanile-3x4',
-            'alt'   => t('home.hero.image_alt'),
+            'src'   => $centro['src'],
+            'alt'   => immagineAlt($centro, 'home.hero.image_alt'),
             'sizes' => '(max-width: 760px) 100vw, 540px',
         ]) ?>
       </div>

@@ -147,6 +147,20 @@ $aggiungi($scrivibile ? 'ok' : 'bloccante', 'Area riservata',
     'storage/data ' . ($scrivibile ? 'scrivibile' : 'NON scrivibile'),
     'Rendi scrivibile storage/ (755, se non basta 775): il pannello ci salva modifiche e richieste.');
 
+// L'area Immagini: GD per rifare i file, una cartella dove scriverli.
+$gd = function_exists('imagecreatefromjpeg') && function_exists('imagecreatetruecolor');
+$aggiungi($gd ? 'ok' : 'avviso', 'Immagini',
+    $gd ? 'GD presente' . (function_exists('imagewebp') ? ', con WebP' : ', ma senza WebP: il sito scriverà solo JPG e PNG') : 'GD assente',
+    'Senza GD dall\'area riservata non si caricano immagini (il resto del sito funziona). Chiedi all\'assistenza di Hostinger di attivare l\'estensione GD di PHP.');
+$media = $root . '/public/assets/media';
+$mediaOk = is_dir($media) ? is_writable($media) : is_writable($root . '/public/assets');
+$aggiungi($mediaOk ? 'ok' : 'avviso', 'Immagini',
+    (is_dir($media) ? 'public/assets/media' : 'public/assets (dove nascerà media/)') . ($mediaOk ? ' scrivibile' : ' NON scrivibile'),
+    'Rendi scrivibile public/assets/media (755): è lì che vanno le immagini caricate dall\'area riservata.');
+$limite = (string) ini_get('upload_max_filesize');
+$aggiungi('ok', 'Immagini', 'file caricabili fino a ' . $limite . ' (post_max_size ' . ini_get('post_max_size') . ')',
+    'Le foto del telefono pesano 3–8 MB: public/.user.ini chiede 16 MB.');
+
 $account = is_file($dati . '/admin.json')
     && !empty((json_decode((string) file_get_contents($dati . '/admin.json'), true) ?: [])['hash']);
 $gettone = (string) Env::get('ADMIN_SETUP_TOKEN', '');

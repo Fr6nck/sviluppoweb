@@ -148,6 +148,9 @@ $rendi = static function (string $indirizzo, string $cartella = '') use ($root):
         $_GET = [];
         if (isset($parti['query'])) { parse_str($parti['query'], $_GET); }
         $_POST = [];
+        // Le pagine come escono dal pacchetto: senza le modifiche e le immagini
+        // caricate dall'area riservata su questa macchina.
+        $_SERVER['ADV_DATA_DIR'] = sys_get_temp_dir() . '/adv-dati-vuoti-' . getmypid();
         ob_start();
         require $root . '/public/index.php';
         $corpo = ob_get_clean();
@@ -293,6 +296,7 @@ $esclusi = [
     'storage/logs'         => 'si riempie da sola',
     'storage/mail'         => 'si riempie da sola',
     'dist'                 => 'i pacchetti precedenti',
+    'public/assets/media'  => 'le immagini caricate dall\'area riservata: stanno sul server, e ricaricare il pacchetto non deve toccarle',
     'tools/router.php'     => 'serve al server di sviluppo di PHP, in produzione mai',
     'tools/serve.sh'       => 'idem',
     'tools/build-photos.php'      => 'strumento da tavolo: vuole GD',
@@ -348,9 +352,14 @@ foreach ($daCopiare as $voce) {
         }
         $relativo = substr($f->getPathname(), strlen($root) + 1);
 
+        // Le immagini caricate dall'area riservata stanno solo sul server.
+        if (str_starts_with($relativo, 'public/assets/media/')) {
+            continue;
+        }
         // Un'immagine che nessuna pagina chiede non sale: pesa e, nel caso dei
-        // segnaposto delle camere fotografate, racconta una cosa falsa.
-        if (!$tutto && str_starts_with($relativo, 'public/assets/')) {
+        // segnaposto delle camere fotografate, racconta una cosa falsa. Il
+        // marchio sale tutto: l'area Immagini ne mostra tutte le misure.
+        if (!$tutto && str_starts_with($relativo, 'public/assets/') && !str_starts_with($relativo, 'public/assets/img/logo/')) {
             $chiave = substr($relativo, strlen('public'));
             if (!isset($riferite[$chiave])) {
                 $scartate[$chiave] = (int) $f->getSize();
