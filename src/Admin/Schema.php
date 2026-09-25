@@ -125,7 +125,7 @@ final class Schema
                 'path' => 'rates.' . $ospiti,
                 'label' => 'Tariffa a notte, ' . $ospiti . ($ospiti === 1 ? ' ospite' : ' ospiti') . ' (€)',
                 'type' => 'money', 'max' => 2000,
-                'help' => $ospiti === 1 ? 'Vuota: la camera non si vende a quel numero di persone.' : '',
+                'help' => 'Vuota: la camera non si vende a ' . ($ospiti === 1 ? 'una persona sola' : $ospiti . ' persone') . '.',
             ];
         }
         $campi[] = ['path' => 'alt', 'label' => 'Che cosa si vede nella fotografia', 'type' => 'prose', 'rows' => 2,

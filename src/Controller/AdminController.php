@@ -498,7 +498,10 @@ final class AdminController
             return Response::html($this->page('non-trovata', ['titolo' => 'Camera non trovata']), 404);
         }
 
-        $massimo = (int) ($camera['occupancy']['max'] ?? 2);
+        // Un campo di tariffa per ogni persona che la camera può ospitare, non
+        // solo per quelle a cui oggi si vende: il campo vuoto è il modo di
+        // aprirla a una persona in più.
+        $massimo = (int) ($camera['occupancy']['capacity'] ?? $camera['occupancy']['max'] ?? 2);
         $schema  = Schema::room($massimo);
 
         if (!$request->isPost()) {

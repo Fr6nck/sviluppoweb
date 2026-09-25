@@ -237,6 +237,12 @@ Si sceglie con `MAIL_TRANSPORT` nel `.env`:
 Quando il trasporto non spedisce davvero, il sito lo dice all'utente nella
 pagina di conferma. Non finge.
 
+**Chi riceve.** `MAIL_TO_ADDRESS` nel `.env`: uno o più indirizzi separati da
+virgola (`info@arcodelvento.it, daniele@esempio.it`). Si cambia via FTP, non dal
+pannello, perché lo stesso file contiene la password della casella che spedisce
+(`MAIL_SMTP_USER`, `MAIL_SMTP_PASSWORD`, con `MAIL_FROM_ADDRESS` uguale
+all'utente). I passi sono in `docs/DEPLOY-HOSTINGER.md`, «La posta».
+
 ---
 
 ## Database

@@ -63,7 +63,14 @@ final class SmtpMailer implements MailerInterface
             }
 
             $this->command($socket, 'MAIL FROM:<' . $this->sanitize($message->fromAddress) . '>', 250);
-            $this->command($socket, 'RCPT TO:<' . $this->sanitize($message->to) . '>', 250);
+            $destinatari = $message->recipients();
+            if ($destinatari === []) {
+                return false;
+            }
+            foreach ($destinatari as $destinatario) {
+                // 250 accettato, 251 inoltrato: vanno bene tutti e due.
+                $this->command($socket, 'RCPT TO:<' . $destinatario . '>', 250, 251);
+            }
             $this->command($socket, 'DATA', 354);
             $this->write($socket, $this->buildData($message) . "\r\n.");
             $this->expect($socket, 250);
@@ -89,7 +96,7 @@ final class SmtpMailer implements MailerInterface
             'From: ' . ($message->fromName === ''
                 ? $this->sanitize($message->fromAddress)
                 : sprintf('%s <%s>', $this->encodeHeader($message->fromName), $this->sanitize($message->fromAddress))),
-            'To: ' . $this->sanitize($message->to),
+            'To: ' . implode(', ', $message->recipients()),
             $message->replyTo !== '' ? 'Reply-To: ' . $this->sanitize($message->replyTo) : null,
             'Subject: ' . $this->encodeHeader($message->subject),
             'MIME-Version: 1.0',
@@ -105,10 +112,10 @@ final class SmtpMailer implements MailerInterface
     }
 
     /** @param resource $socket */
-    private function command($socket, string $line, int $expected): void
+    private function command($socket, string $line, int ...$expected): void
     {
         $this->write($socket, $line);
-        $this->expect($socket, $expected);
+        $this->expect($socket, ...$expected);
     }
 
     /** @param resource $socket */
@@ -120,7 +127,7 @@ final class SmtpMailer implements MailerInterface
     }
 
     /** @param resource $socket */
-    private function expect($socket, int $code): void
+    private function expect($socket, int ...$codes): void
     {
         $line = '';
         do {
@@ -131,7 +138,7 @@ final class SmtpMailer implements MailerInterface
             // Le risposte su più righe hanno un trattino in quarta posizione.
         } while (isset($line[3]) && $line[3] === '-');
 
-        if ((int) substr($line, 0, 3) !== $code) {
+        if (!in_array((int) substr($line, 0, 3), $codes, true)) {
             throw new \RuntimeException('SMTP: risposta inattesa — ' . trim($line));
         }
     }

@@ -287,11 +287,19 @@ $diProva = static function (string $indirizzo): bool {
     return false;
 };
 
-$a = (string) $config['mail']['to'];
+// Uno o più indirizzi, separati da virgola. Ne basta uno vero; quelli di
+// prova o scritti male si segnalano, perché lì non arriverebbe niente.
+$scritti = array_filter(array_map('trim', preg_split('/[,;]+/', (string) $config['mail']['to']) ?: []));
+$validi  = \ArcoDelVento\Mail\MailMessage::indirizzi((string) $config['mail']['to']);
+$veri    = array_values(array_filter($validi, static fn (string $x): bool => !$diProva($x)));
+$scartati = array_diff($scritti, $veri);
 $aggiungi(
-    ($a !== '' && !$diProva($a)) ? 'ok' : 'bloccante',
-    'Posta', 'le richieste arrivano a: ' . ($a !== '' ? $a : '(nessuno)'),
-    'MAIL_TO_ADDRESS è ancora un indirizzo di prova: le richieste di prenotazione non arriverebbero a nessuno.'
+    $veri !== [] ? ($scartati === [] ? 'ok' : 'avviso') : 'bloccante',
+    'Posta', 'le richieste arrivano a: ' . ($veri !== [] ? implode(', ', $veri) : '(nessuno)')
+        . ($scartati !== [] ? ' — non valido o di prova: ' . implode(', ', $scartati) : ''),
+    $veri === []
+        ? 'MAIL_TO_ADDRESS è vuoto o ancora un indirizzo di prova: le richieste di prenotazione non arriverebbero a nessuno.'
+        : 'In MAIL_TO_ADDRESS c\'è un indirizzo non valido o di prova: correggilo o toglilo (gli altri ricevono lo stesso).'
 );
 
 // ----------------------------------------------------------- contenuti

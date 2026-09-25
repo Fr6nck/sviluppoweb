@@ -13,7 +13,7 @@ namespace ArcoDelVento\Repository;
  *
  * Una camera è un array con questa forma (vedi content/rooms.php):
  *   id, ref, slug[lingua], name[lingua], name_confirmed, confirmed, position,
- *   type, occupancy{standard,max}, beds{tipo:quantità}, layouts[],
+ *   type, occupancy{standard,max,capacity}, beds{tipo:quantità}, layouts[],
  *   size_sqm, floor, view, bathroom{}, amenities[], images{}, price{},
  *   view_san_rufino
  */

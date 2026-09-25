@@ -70,7 +70,9 @@ final class PdoRoomRepository implements RoomRepositoryInterface
             }
         }
 
-        return $this->cache = array_values($byId);
+        // La stessa regola delle camere in file: si vende fino al numero di
+        // ospiti che ha un prezzo.
+        return $this->cache = array_values(array_map([ArrayRoomRepository::class, 'inVendita'], $byId));
     }
 
     public function findByRef(string $ref): ?array

@@ -36,7 +36,7 @@ final class LogMailer implements MailerInterface
         $headers = array_filter([
             'Date: ' . (new \DateTimeImmutable('now'))->format(\DATE_RFC2822),
             'From: ' . $this->formatFrom($message),
-            'To: ' . $message->to,
+            'To: ' . implode(', ', $message->recipients()),
             $message->replyTo !== '' ? 'Reply-To: ' . $message->replyTo : null,
             'Subject: ' . $this->encodeHeader($message->subject),
             'MIME-Version: 1.0',

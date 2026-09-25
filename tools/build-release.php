@@ -583,7 +583,7 @@ $produzione = [
     ],
     'MAIL_TRANSPORT'       => ['smtp', ''],
     'MAIL_FROM_ADDRESS'    => [$posta, ''],
-    'MAIL_TO_ADDRESS'      => [$posta, 'Dove arrivano le richieste di prenotazione e i messaggi dei moduli.'],
+    'MAIL_TO_ADDRESS'      => [$posta, ''],   // la spiegazione è già in .env.example
     'MAIL_SMTP_HOST'       => ['smtp.hostinger.com', 'Valido se la casella è su Hostinger. Se è altrove, servono i dati di quel provider.'],
     'MAIL_SMTP_PORT'       => ['587', ''],
     'MAIL_SMTP_USER'       => [$posta, ''],

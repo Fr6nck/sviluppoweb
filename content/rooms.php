@@ -166,11 +166,14 @@ return [
         'alt'             => $duiLetti(', e in camera c’è un armadio in legno chiaro'),
     ]),
 
-    // ---- Singola con letto matrimoniale: una persona sola in una camera con
-    // un letto grande e una scrivania.
+    // ---- Singola con letto matrimoniale: una camera con un letto grande e una
+    // scrivania. Nel letto dormono in due, e dal pannello si chiede anche la
+    // tariffa per due: la capienza è 2. Il prezzo per due però non è stato
+    // dato, e un prezzo non si inventa: finché nel pannello quel campo resta
+    // vuoto, la camera si vende a una persona sola (vedi ArrayRoomRepository).
     $camera(5, [
         'type'         => 'single-double',
-        'occupancy'    => ['standard' => 1, 'max' => 1],
+        'occupancy'    => ['standard' => 1, 'max' => 2],
         'beds'         => ['double' => 1],
         'layouts'      => ['single'],
         'rates'        => [1 => 70],

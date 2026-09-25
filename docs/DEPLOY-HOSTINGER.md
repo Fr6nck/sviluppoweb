@@ -224,6 +224,38 @@ finisce nella posta indesiderata.
 Con `MAIL_TRANSPORT=mail` funziona anche senza credenziali, ma i messaggi non
 sono autenticati e arrivano peggio. `smtp` è la scelta giusta.
 
+### Cambiare o aggiungere l'indirizzo che riceve le richieste
+
+Si fa nel file **`.env`** sul server, non dall'area riservata: dentro ci sono
+anche la password della casella, e non deve passare da una pagina web.
+
+1. Con il File Manager di hPanel (o FileZilla) apri il `.env` nella cartella
+   del sito — `public_html/`, o `public_html/assisiapartment/` per la prova.
+   Il nome comincia con un punto: se non lo vedi, attiva «mostra file nascosti».
+2. Cambia la riga **`MAIL_TO_ADDRESS`**. Per più destinatari, separali con
+   una virgola:
+
+   ```ini
+   MAIL_TO_ADDRESS=info@arcodelvento.it, daniele@esempio.it
+   ```
+
+3. Salva. Vale dalla richiesta successiva: non c'è niente da riavviare.
+4. Prova il modulo dei contatti, e controlla con `tools/preflight.php` che la
+   riga «Posta» dica a chi arrivano le richieste.
+
+Le altre righe della posta riguardano **la casella che spedisce**, non chi
+riceve: `MAIL_FROM_ADDRESS`, `MAIL_SMTP_USER` e `MAIL_SMTP_PASSWORD` sono
+indirizzo, utente e password di quella casella (su Hostinger mittente e
+utente devono essere lo stesso indirizzo). Si cambiano solo se cambi la
+casella da cui partono i messaggi, e allora tutte e tre insieme.
+
+L'e-mail che compare **sul sito** per gli ospiti è un'altra cosa: si cambia
+dall'area riservata, *La struttura → Contatti*.
+
+Nella copia di prova `MAIL_TRANSPORT=log`: i messaggi non partono, restano
+in `storage/mail/`. Per ricevere davvero serve `smtp` con i dati di una
+casella.
+
 ---
 
 ## 6. Il certificato HTTPS

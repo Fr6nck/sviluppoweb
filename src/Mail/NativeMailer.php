@@ -25,8 +25,13 @@ final class NativeMailer implements MailerInterface
             'Content-Transfer-Encoding: 8bit',
         ]);
 
+        $destinatari = $message->recipients();
+        if ($destinatari === []) {
+            return false;
+        }
+
         return @mail(
-            $this->sanitize($message->to),
+            implode(', ', $destinatari),
             $this->encodeHeader($message->subject),
             // RFC 5322: le righe finiscono con CRLF e non superano i 998 ottetti.
             wordwrap(str_replace(["\r\n", "\r"], "\n", $message->body), 900, "\r\n", true),

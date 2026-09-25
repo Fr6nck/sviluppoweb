@@ -9,9 +9,17 @@ use ArcoDelVento\Admin\Form;
 use ArcoDelVento\Support\Csrf;
 use ArcoDelVento\Support\RoomPresenter as R;
 ?>
+<?php
+$capienza = (int) ($camera['occupancy']['capacity'] ?? $camera['occupancy']['max']);
+$inVendita = (int) $camera['occupancy']['max'];
+?>
 <p class="adm-intro">
-  <?= e(R::typeLabel($camera)) ?> · <?= e(R::beds($camera)) ?> · fino a <?= (int) $camera['occupancy']['max'] ?>
-  <?= (int) $camera['occupancy']['max'] === 1 ? 'ospite' : 'ospiti' ?>.
+  <?= e(R::typeLabel($camera)) ?> · <?= e(R::beds($camera)) ?> · fino a <?= $capienza ?>
+  <?= $capienza === 1 ? 'ospite' : 'ospiti' ?>.
+  <?php if ($inVendita < $capienza): ?>
+    <strong>Sul sito si vende fino a <?= $inVendita ?> <?= $inVendita === 1 ? 'ospite' : 'ospiti' ?>:</strong>
+    per aprirla a <?= $capienza ?>, scrivi la tariffa per <?= $capienza ?> qui sotto.
+  <?php endif; ?>
   <a class="adm-link" href="<?= e(url('room', ['slug' => $camera['slug']['it']], [], 'it')) ?>" target="_blank" rel="noopener">Vedi la pagina ↗</a>
 </p>
 
