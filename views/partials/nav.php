@@ -71,12 +71,8 @@ $contatti = site('contacts');
     </nav>
   </div>
 
-  <?php /* Il logotipo vero, quello del marchio: «arco del vento» in mattone
-           e «Assisi» a mano. È un SVG, quindi resta nitido a ogni misura. */ ?>
-  <a class="adv-marchio" href="<?= e(url('home')) ?>">
-    <img src="<?= e(asset('img/logo/logotipo-mattone.svg')) ?>" width="111" height="66"
-         alt="<?= te('common.brand') ?>, Assisi">
-  </a>
+  <?php /* Il marchio intero al centro: la rosa dei venti e il logotipo. */ ?>
+  <?= component('logo') ?>
 
   <div class="adv-testata__azioni">
     <?= partial('language-switcher', ['alternative' => $alternative]) ?>
@@ -108,10 +104,7 @@ $contatti = site('contacts');
   <div class="adv-menu__interno">
 
     <div class="adv-menu__testa">
-      <a class="adv-marchio" href="<?= e(url('home')) ?>">
-        <img src="<?= e(asset('img/logo/logotipo-mattone.svg')) ?>" width="94" height="56"
-             alt="<?= te('common.brand') ?>, Assisi">
-      </a>
+      <?= component('logo', ['classe' => 'adv-marchio adv-marchio--menu']) ?>
       <button class="adv-tondo" type="button" aria-label="<?= te('common.menu_close') ?>" data-menu-chiudi>
         <?= icona('chiudi', 20) ?>
       </button>

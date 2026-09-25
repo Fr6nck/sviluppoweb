@@ -136,7 +136,8 @@ Tre fogli, tutti in `public/assets/css/`: `fonts.css` (i caratteri),
 `tokens.css` (colori, raggi, ombre, spazi — scritto a mano, con in fondo i
 vecchi nomi che usa l'area riservata) e `site.css` (tutto il resto).
 
-In `views/`: telaio di pagina, riga verde in cima, testata a pillola, menu a
+In `views/`: telaio di pagina, riga bruna in cima, testata a pillola con il
+marchio al centro (rosa dei venti e logotipo, `components/logo.php`), menu a
 tutta pagina, cambio lingua, fotografie che si alternano, barra di
 prenotazione, scheda camera (la stessa per il carosello, l'elenco e le camere
 libere), elenco numerato, pannello mappa, domande, chiusura in terracotta con
@@ -622,6 +623,7 @@ nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
 
 ```bash
 php tools/build-placeholders.php  # rigenera i segnaposto delle fotografie
+php tools/build-icone.php         # rosa dei venti in WebP (72 e 144 px) per la testata
 php tools/build-photos.php        # ritaglia le fotografie nei formati del sistema
                                   #   (il tetto di peso scala con l'area: la
                                   #    misura piccola dev'essere davvero più

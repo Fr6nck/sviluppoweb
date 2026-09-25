@@ -402,9 +402,24 @@ main:focus { outline: none; }
 }
 
 .adv-testata__sinistra { display: flex; align-items: center; gap: 12px; min-width: 0; justify-self: start; }
-.adv-marchio { display: block; justify-self: center; line-height: 0; border-radius: 12px; }
-.adv-marchio img { width: auto; height: 68px; transition: height 0.5s var(--curva); }
-.adv-testata--compatta .adv-marchio img { height: 58px; }
+.adv-marchio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: center;
+  line-height: 0;
+  border-radius: 12px;
+}
+.adv-marchio picture { flex: none; }
+.adv-marchio__rosa { width: 62px; height: 62px; transition: width 0.5s var(--curva), height 0.5s var(--curva); }
+.adv-marchio__nome { width: auto; height: 68px; transition: height 0.5s var(--curva); }
+.adv-testata--compatta .adv-marchio__rosa { width: 54px; height: 54px; }
+.adv-testata--compatta .adv-marchio__nome { height: 58px; }
+.adv-marchio--menu .adv-marchio__rosa { width: 48px; height: 48px; }
+.adv-marchio--menu .adv-marchio__nome { height: 54px; }
+.adv-marchio--piede { justify-self: start; display: inline-flex; gap: 14px; }
+.adv-marchio--piede .adv-marchio__rosa { width: 84px; height: 84px; }
+.adv-marchio--piede .adv-marchio__nome { height: 96px; }
 
 .adv-nav__voci {
   display: flex;
@@ -1151,8 +1166,6 @@ a.adv-tappe__voce:hover .adv-tappe__freccia { transform: translate(3px, -3px); }
   gap: clamp(30px, 4vw, 50px);
   margin: clamp(40px, 5vw, 50px) 0;
 }
-.adv-piede__marchio { display: inline-block; align-self: start; line-height: 0; }
-.adv-piede__marchio img { width: 185px; height: auto; }
 .adv-piede__tagline { margin-top: 22px; font-size: 12px; line-height: 1.9; }
 .adv-piede__indirizzo { margin-top: 14px; font-size: 12px; line-height: 1.8; }
 .adv-piede__titolo { margin-bottom: 16px; font-size: 9px; font-weight: 500; letter-spacing: 0.17em; }
@@ -1519,8 +1532,11 @@ a.adv-tappe__voce:hover .adv-tappe__freccia { transform: translate(3px, -3px); }
     gap: 12px;
   }
   .adv-testata--compatta { width: calc(100% - 24px); min-height: 62px; }
-  .adv-marchio img { height: 52px; }
-  .adv-testata--compatta .adv-marchio img { height: 48px; }
+  .adv-marchio { gap: 7px; }
+  .adv-marchio__rosa { width: 44px; height: 44px; }
+  .adv-marchio__nome { height: 50px; }
+  .adv-testata--compatta .adv-marchio__rosa { width: 40px; height: 40px; }
+  .adv-testata--compatta .adv-marchio__nome { height: 46px; }
   .adv-apertura { padding-top: 44px; }
   .adv-apertura__giu { display: none; }
   .adv-apertura__testo br { display: none; }

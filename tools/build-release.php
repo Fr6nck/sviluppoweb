@@ -297,6 +297,7 @@ $esclusi = [
     'tools/serve.sh'       => 'idem',
     'tools/build-photos.php'      => 'strumento da tavolo: vuole GD',
     'tools/build-placeholders.php' => 'strumento da tavolo',
+    'tools/build-icone.php'       => 'strumento da tavolo: vuole GD',
     'tools/build-release.php'     => 'questo stesso strumento',
 ];
 

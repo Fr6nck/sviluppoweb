@@ -36,11 +36,8 @@ $invito   = ($paginaCorrente ?? '') !== 'book';
 
       <div>
         <?php /* Sul mattone il logotipo nella versione chiara del marchio:
-                 il nome in crema, «Assisi» in oro. */ ?>
-        <a class="adv-piede__marchio" href="<?= e(url('home')) ?>">
-          <img src="<?= e(asset('img/logo/logotipo-avorio.svg')) ?>" width="185" height="110"
-               alt="<?= te('common.brand') ?>, Assisi">
-        </a>
+                 il nome in crema, «Assisi» in oro, accanto alla rosa. */ ?>
+        <?= component('logo', ['variante' => 'avorio', 'classe' => 'adv-marchio adv-marchio--piede']) ?>
         <p class="adv-piede__tagline"><?= righe(t('footer.tagline')) ?></p>
         <address class="adv-piede__indirizzo">
           <?= e(site('address.street')) ?><br>
