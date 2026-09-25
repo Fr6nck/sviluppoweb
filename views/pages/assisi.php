@@ -2,46 +2,73 @@
 /**
  * Assisi a piedi.
  *
- * Non è una pagina con una mappa incorporata e sei riquadri con l'icona: è un
- * indice numerato, una fotografia e due blocchi di testo. L'indice dice «in
- * che ordine vanno le cose», che è quello che serve a chi ha due giorni.
+ * La valle in grande, poi l'elenco numerato dei sei posti che si raggiungono
+ * camminando, ciascuno con il link alla mappa; poi San Rufino e come ci si
+ * muove.
  *
  * I tempi a piedi restano marcati finché non li verifica qualcuno che li ha
- * camminati. Una mappa con il segnaposto messo a occhio non c'è: le coordinate
- * non erano nel materiale, e un segnaposto sbagliato manda l'ospite alla porta
- * di un altro.
+ * camminati. Una mappa incorporata non c'è: le coordinate della casa non
+ * erano nel materiale, e un segnaposto messo a occhio manda l'ospite alla
+ * porta di un altro.
  *
  * @var array $luoghi
  */
 ?>
 
+<header class="adv-contenuto adv-testa">
+  <?= occhiello(t('assisi.eyebrow'), 'adv-occhiello--centro') ?>
+  <h1 class="adv-titolo adv-titolo--xl"><?= titolo(t('assisi.title'), t('assisi.sign')) ?></h1>
+  <p class="adv-testa__testo"><?= te('assisi.lead') ?></p>
+</header>
+
 <div class="adv-contenuto">
-  <header class="adv-heroT">
-    <span class="adv-heroT__occhiello"><?= te('assisi.eyebrow') ?></span>
-    <h1 class="adv-heroT__titolo">
-      <?= te('assisi.title') ?> <span class="adv-firma-inline"><?= te('assisi.sign') ?></span>
-    </h1>
-    <p class="adv-heroT__spalla"><?= te('assisi.lead') ?></p>
-  </header>
+  <figure class="adv-banda" data-reveal="photo-reveal">
+    <div class="adv-banda__cornice" data-parallax="soft">
+      <?= component('picture', [
+          'src'   => 'img/foto/valle-panorama-16x9',
+          'alt'   => t('home.position.frame_alt'),
+          'eager' => true,
+          'sizes' => '(max-width: 1170px) 100vw, 1170px',
+      ]) ?>
+    </div>
+    <figcaption class="adv-chip-foto"><?= icona('pin', 13) ?><?= te('home.hero.place') ?></figcaption>
+  </figure>
 </div>
 
-<section class="adv-contenuto adv-editoriale">
-  <div class="adv-split adv-split--immagine">
+<section class="adv-contenuto adv-sezione" aria-labelledby="titolo-luoghi">
+  <div class="adv-due adv-due--centro">
+
+    <figure class="adv-figura">
+      <div class="adv-figura-alta" data-reveal="photo-reveal">
+        <div class="adv-figura-alta__cornice" data-parallax="soft">
+          <?= component('picture', [
+              'src'   => 'img/foto/basilica-tramonto-3x4',
+              'alt'   => t('home.walk.image_alt'),
+              'sizes' => '(max-width: 760px) 100vw, 540px',
+          ]) ?>
+        </div>
+      </div>
+      <figcaption class="adv-figura__didascalia"><?= te('home.walk.image_credit') ?></figcaption>
+    </figure>
 
     <div>
       <?= component('section-header', [
           'occhiello' => t('assisi.eyebrow'),
           'titolo'    => t('assisi.places_title'),
-          'piccolo'   => true,
+          'id'        => 'titolo-luoghi',
       ]) ?>
 
       <?= component('index-list', [
           'voci' => array_map(static function (array $luogo): array {
+              $nome  = t('places.' . $luogo['id'] . '.name');
+              $tempo = $luogo['walk_minutes']
+                  ? e($luogo['walk_minutes'] . ' min ' . t('assisi.walk_label'))
+                  : daConfermare();
               return [
-                  'etichetta' => t('places.' . $luogo['id'] . '.name'),
-                  'nota_html' => $luogo['walk_minutes']
-                      ? e($luogo['walk_minutes'] . ' min ' . t('assisi.walk_label'))
-                      : daConfermare(),
+                  'etichetta' => $nome,
+                  'nota_html' => e(t('places.' . $luogo['id'] . '.note')) . ' · ' . $tempo,
+                  'href'      => mappa($nome . ', Assisi'),
+                  'esterno'   => true,
               ];
           }, $luoghi),
       ]) ?>
@@ -49,58 +76,30 @@
       <p class="adv-nota"><?= te('assisi.places_note') ?></p>
     </div>
 
-    <figure class="adv-figura-verticale adv-rivela">
-      <?= component('picture', [
-          'src'   => 'img/foto/basilica-tramonto-3x4',
-          'alt'   => t('home.walk.image_alt'),
-          'eager' => true,
-          'sizes' => '(max-width: 900px) 100vw, 480px',
-      ]) ?>
-      <figcaption class="adv-didascalia"><?= te('home.walk.image_credit') ?></figcaption>
-    </figure>
-
   </div>
 </section>
 
-<section class="adv-sezione-alt">
-  <div class="adv-contenuto adv-editoriale">
-    <div class="adv-split">
+<section class="adv-blocco adv-blocco--sabbia" aria-labelledby="titolo-rufino">
+  <div class="adv-contenuto adv-due">
+    <div>
+      <?= component('section-header', [
+          'occhiello' => t('assisi.eyebrow'),
+          'titolo'    => t('assisi.rufino_title'),
+          'id'        => 'titolo-rufino',
+      ]) ?>
+      <p class="adv-testo adv-testo--grande"><?= te('assisi.rufino_text') ?></p>
+    </div>
 
-      <div>
-        <?= component('section-header', [
-            'occhiello' => t('home.position.eyebrow'),
-            'titolo'    => t('assisi.rufino_title'),
-            'piccolo'   => true,
-        ]) ?>
-        <p class="adv-testo adv-testo--grande"><?= te('assisi.rufino_text') ?></p>
+    <div class="adv-pannello" data-reveal="lift">
+      <div class="adv-pannello__testa">
+        <span class="adv-pannello__icona" aria-hidden="true"><?= icona('navigatore', 18) ?></span>
+        <h3 class="adv-titolo adv-titolo--xs"><?= te('assisi.moving_title') ?></h3>
       </div>
-
-      <div class="adv-split__nota">
-        <h3 class="adv-titolo-sm"><?= te('assisi.moving_title') ?></h3>
-        <p class="adv-testo"><?= te('assisi.moving_text') ?></p>
-        <p class="adv-nota"><?= te('assisi.moving_note') ?> <?= daConfermare() ?></p>
+      <p class="adv-testo"><?= te('assisi.moving_text') ?></p>
+      <p class="adv-nota"><?= te('assisi.moving_note') ?> <?= daConfermare() ?></p>
+      <div class="adv-azioni">
+        <a class="adv-link" href="<?= e(url('info')) ?>"><?= te('cta.see_info') ?><?= icona('freccia-su-destra', 13) ?></a>
       </div>
-
     </div>
   </div>
-</section>
-
-<section class="adv-contenuto adv-editoriale">
-  <figure class="adv-cornice adv-rivela">
-    <?= component('picture', [
-        'src'   => 'img/foto/valle-panorama-16x9',
-        'alt'   => t('home.position.frame_alt'),
-        'sizes' => '(max-width: 1120px) 100vw, 1072px',
-    ]) ?>
-    <figcaption class="adv-cornice__barra">
-      <span class="adv-cornice__didascalia"><?= te('home.position.frame_caption') ?></span>
-      <span class="adv-cornice__conta"><i aria-hidden="true"></i><?= te('home.position.frame_count') ?></span>
-    </figcaption>
-  </figure>
-
-  <p class="adv-azione-coda">
-    <a class="adv-elenco__link" href="<?= e(url('info')) ?>">
-      <?= te('cta.see_info') ?><span aria-hidden="true">&rarr;</span>
-    </a>
-  </p>
 </section>

@@ -44,7 +44,6 @@ $attiva = match ($vista) {
 <link rel="icon" href="<?= e(asset('img/logo/icona-48.png')) ?>" type="image/png">
 <link rel="stylesheet" href="<?= e(asset('css/fonts.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/tokens.css')) ?>">
-<link rel="stylesheet" href="<?= e(asset('css/bundle.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/admin.css')) ?>">
 </head>
 <body class="adm">

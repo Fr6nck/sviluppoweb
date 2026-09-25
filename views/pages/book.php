@@ -41,17 +41,13 @@ $errore = static function (string $campo) use ($errori): ?string {
 $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
 ?>
 
-<div class="adv-contenuto">
-  <header class="adv-heroT adv-heroT--modulo">
-    <span class="adv-heroT__occhiello"><?= te('book.eyebrow') ?></span>
-    <h1 class="adv-heroT__titolo">
-      <?= te('book.title') ?> <span class="adv-firma-inline"><?= te('book.sign') ?></span>
-    </h1>
-    <p class="adv-heroT__spalla"><?= te('book.lead') ?></p>
-  </header>
-</div>
+<header class="adv-contenuto adv-testa">
+  <?= occhiello(t('book.eyebrow'), 'adv-occhiello--centro') ?>
+  <h1 class="adv-titolo adv-titolo--l"><?= titolo(t('book.title'), t('book.sign')) ?></h1>
+  <p class="adv-testa__testo"><?= te('book.lead') ?></p>
+</header>
 
-<section class="adv-contenuto adv-editoriale adv-editoriale--stretto">
+<section class="adv-contenuto adv-sezione adv-sezione--stretta-sopra">
 
   <ol class="adv-passi">
     <?php foreach ($passi as $i => $chiave): ?>
@@ -87,7 +83,7 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
     <?= component('section-header', [
         'occhiello' => t('book.eyebrow'),
         'titolo'    => t('book.results.title'),
-        'piccolo'   => true,
+        'misura'    => 's',
         'testo'     => t('book.results.for_dates', [
             'from'   => dataEstesa($criteri->arrivalIso()),
             'to'     => dataEstesa($criteri->departureIso()),
@@ -95,10 +91,8 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
         ]),
     ]) ?>
 
-    <p class="adv-azione-coda">
-      <a class="adv-elenco__link" href="<?= e(url('book')) ?>">
-        <?= te('book.results.change') ?><span aria-hidden="true">&rarr;</span>
-      </a>
+    <p>
+      <a class="adv-link" href="<?= e(url('book')) ?>"><?= te('book.results.change') ?><?= icona('freccia-su-destra', 13) ?></a>
     </p>
 
     <?php
@@ -121,9 +115,9 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
           'testo'  => t('book.results.too_many_text', ['max' => $capienzaMassima]),
       ]) ?>
 
-      <p class="adv-azione-coda">
-        <a class="adv-btn adv-btn--primario" href="<?= e(url('contact')) ?>"><?= te('cta.write') ?></a>
-      </p>
+      <div class="adv-azioni">
+        <a class="adv-btn adv-btn--primario" href="<?= e(url('contact')) ?>"><?= te('cta.write') ?><?= icona('freccia-su-destra', 14) ?></a>
+      </div>
 
     <?php elseif (!$disponibilita->hasAvailability()): ?>
 
@@ -140,7 +134,7 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
                   'partenza' => $a['departure'], 'ospiti' => (string) $criteri->guests,
               ]);
               $html .= sprintf(
-                  '<a class="adv-elenco__link adv-alternativa" href="%s">%s &rarr; %s</a>',
+                  '<a class="adv-link adv-alternativa" href="%s">%s &rarr; %s</a>',
                   e($href), e(dataEstesa($a['arrival'])), e(dataEstesa($a['departure']))
               );
           }
@@ -156,14 +150,14 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
 
     <?php $libere = $disponibilita->available(); ?>
     <?php if ($libere !== []): ?>
-      <ul class="adv-griglia-camere">
+      <ul class="adv-griglia-camere adv-spazio-sopra">
         <?php foreach ($libere as $offerta): ?>
           <li>
             <?= component('room-card', [
                 'camera'  => $offerta->room,
                 'offerta' => $offerta,
                 'azione'  => sprintf(
-                    '<a class="adv-btn adv-btn--primario adv-btn--sm" href="%s">%s</a>',
+                    '<a class="adv-btn adv-btn--primario adv-btn--pieno" href="%s">%s</a>',
                     e(url('book', [], [
                         'passo'    => 'dati',
                         'arrivo'   => $criteri->arrivalIso(),
@@ -189,7 +183,7 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
     ?>
     <?php if ($occupate !== []): ?>
       <div class="adv-spazio-sopra">
-        <h3 class="adv-titolo-md"><?= te('book.results.unavailable_room') ?></h3>
+        <h3 class="adv-titolo adv-titolo--xs"><?= te('book.results.unavailable_room') ?></h3>
         <?= component('index-list', [
             'voci' => array_map(static function ($o) use ($lingua): array {
                 return [
@@ -206,9 +200,9 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
   <?php /* ------------------------------------------- 3. i tuoi dati */ ?>
   <?php elseif ($passo === 'details' && $offerta !== null): ?>
 
-    <div class="adv-split adv-split--stretta">
+    <div class="adv-due adv-due--modulo">
 
-      <form class="adv-modulo" method="post" action="<?= e(url('book')) ?>" novalidate>
+      <form class="adv-modulo adv-pannello" method="post" action="<?= e(url('book')) ?>" novalidate>
         <?= Csrf::field() ?>
         <input type="hidden" name="arrivo"   value="<?= e($criteri->arrivalIso()) ?>">
         <input type="hidden" name="partenza" value="<?= e($criteri->departureIso()) ?>">
@@ -272,12 +266,12 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
         </fieldset>
 
         <div>
-          <button class="adv-btn adv-btn--primario adv-btn--lg" type="submit"><?= te('book.details.submit') ?></button>
+          <button class="adv-btn adv-btn--primario adv-btn--grande" type="submit"><?= te('book.details.submit') ?><?= icona('freccia-su-destra', 14) ?></button>
         </div>
       </form>
 
-      <aside class="adv-split__nota">
-        <h2 class="adv-titolo-md"><?= te('book.details.summary') ?></h2>
+      <aside class="adv-pannello adv-prenota-camera">
+        <h2 class="adv-titolo adv-titolo--xs"><?= te('book.details.summary') ?></h2>
         <?= component('booking-summary', [
             'camera'       => R::name($offerta->room, $lingua),
             'arrivo'       => $criteri->arrivalIso(),
@@ -288,13 +282,11 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
             'totale'       => $offerta->total,
             'dimostrativa' => $offerta->rateIsDemo,
         ]) ?>
-        <p class="adv-azione-coda">
-          <a class="adv-elenco__link" href="<?= e(url('book', [], [
+        <p>
+          <a class="adv-link" href="<?= e(url('book', [], [
               'passo' => 'camere', 'arrivo' => $criteri->arrivalIso(),
               'partenza' => $criteri->departureIso(), 'ospiti' => (string) $criteri->guests,
-          ])) ?>">
-            <?= te('book.details.change_room') ?><span aria-hidden="true">&rarr;</span>
-          </a>
+          ])) ?>"><?= te('book.details.change_room') ?><?= icona('freccia-su-destra', 13) ?></a>
         </p>
       </aside>
 
@@ -310,29 +302,26 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
         'testo'  => t('book.done.text'),
     ]) ?>
 
-    <div class="adv-split adv-split--stretta adv-spazio-sopra">
+    <div class="adv-due adv-due--modulo adv-spazio-sopra">
 
       <div>
-        <?= component('section-header', [
-            'occhiello' => t('book.done.reference'),
-            'titolo'    => $conferma['reference'],
-            'piccolo'   => true,
-        ]) ?>
+        <?= occhiello(mb_strtoupper(t('book.done.reference'))) ?>
+        <h2 class="adv-titolo adv-titolo--m adv-riferimento"><?= e($conferma['reference']) ?></h2>
 
-        <h3 class="adv-titolo-sm adv-spazio-sopra"><?= te('book.done.next') ?></h3>
+        <h3 class="adv-titolo adv-titolo--xs adv-spazio-sopra"><?= te('book.done.next') ?></h3>
         <p class="adv-testo"><?= te('book.done.next_text') ?></p>
 
         <?php if (!empty($conferma['pretend'])): ?>
           <p class="adv-nota"><?= te('book.done.demo_note') ?></p>
         <?php endif; ?>
 
-        <p class="adv-azione-coda">
+        <div class="adv-azioni">
           <a class="adv-btn adv-btn--contorno" href="<?= e(url('home')) ?>"><?= te('book.done.home') ?></a>
-        </p>
+        </div>
       </div>
 
-      <aside class="adv-split__nota">
-        <h2 class="adv-titolo-md"><?= te('book.details.summary') ?></h2>
+      <aside class="adv-pannello">
+        <h2 class="adv-titolo adv-titolo--xs"><?= te('book.details.summary') ?></h2>
         <?= component('booking-summary', [
             'camera'       => $conferma['room'],
             'arrivo'       => $conferma['arrival'],

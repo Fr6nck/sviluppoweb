@@ -24,5 +24,9 @@ $href = match ($tipo) {
     'email'    => 'mailto:' . $valore,
     'whatsapp' => 'https://wa.me/' . preg_replace('/\D/', '', $valore),
 };
+
+// WhatsApp si salva come sole cifre: a vederle stampate sembrano un codice.
+// Il link dice il nome del servizio, che è quello che si cerca con gli occhi.
+$testo = $tipo === 'whatsapp' ? t('cta.whatsapp') : (string) $valore;
 ?>
-<a class="adv-contatto" href="<?= e($href) ?>"<?= $tipo === 'whatsapp' ? ' rel="noopener"' : '' ?>><?= e($valore) ?></a>
+<a class="adv-contatto" href="<?= e($href) ?>"<?= $tipo === 'whatsapp' ? ' rel="noopener"' : '' ?>><?= e($testo) ?></a>

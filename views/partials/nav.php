@@ -1,11 +1,14 @@
 <?php
 /**
- * La barra di navigazione, variante allineata a sinistra.
+ * La riga verde in cima, la testata a pillola e il menu su schermo stretto.
  *
- * Il design system ha anche una variante a marchio centrato, ma il suo README
- * è esplicito: quella serve quando la barra apre una pagina sola. Qui le
- * pagine sono otto, e allora il marchio deve riportare a casa dal solito
- * angolo.
+ * La testata resta attaccata in alto mentre si scorre, in vetro chiaro; dopo
+ * i primi settanta pixel si stringe e prende l'ombra (lo fa site.js), e una
+ * riga terracotta sul fondo dice quanto manca alla fine della pagina.
+ *
+ * La riga verde porta solo fatti che il titolare ha confermato: il centro
+ * storico, l'accoglienza di persona, il parcheggio a Piazza Matteotti, il
+ * 2002.
  *
  * @var array $alternative lingua => indirizzo della pagina corrente
  */
@@ -20,98 +23,99 @@ $voci = [
 
 $corrente = $paginaCorrente ?? '';
 // La pagina di una camera tiene acceso «Camere»: è lì che l'ospite si trova.
-$attiva   = $corrente === 'room' ? 'rooms' : $corrente;
-?>
-<header class="adv-testata">
-  <div class="adv-contenuto adv-testata__interno">
+$attiva = $corrente === 'room' ? 'rooms' : $corrente;
 
-    <a class="adv-nav__marchio" href="<?= e(url('home')) ?>">
-      <?php /* Il nome è già scritto accanto: l'alt vuoto evita che chi usa uno
-               screen reader senta «Arco del Vento Arco del Vento Assisi». */ ?>
-      <?php /* 96px per uno slot da 46: l'icona a 192 pesava 78 KB su ogni
-               pagina del sito per riempirne quarantasei. */ ?>
-      <img src="<?= e(asset('img/logo/icona-96.png')) ?>"
-           srcset="<?= e(asset('img/logo/icona-48.png')) ?> 1x, <?= e(asset('img/logo/icona-96.png')) ?> 2x"
-           width="46" height="46" alt="" loading="eager" decoding="async">
-      <span class="adv-nav__nome"><?= te('common.brand') ?><small>ASSISI</small></span>
+// Il parcheggio più vicino di cui si conosce la distanza.
+$metri = null;
+foreach ((array) site('parking_spots', []) as $posto) {
+    if (!empty($posto['metres'])) {
+        $metri = (int) $posto['metres'];
+        break;
+    }
+}
+
+$contatti = site('contacts');
+?>
+<div class="adv-infobar" id="inizio">
+  <ul class="adv-infobar__voci">
+    <li class="adv-infobar__voce"><?= icona('pin', 12) ?><?= te('nav.topbar.center') ?></li>
+    <li class="adv-infobar__voce"><?= icona('chiave', 12) ?><?= te('nav.topbar.host') ?></li>
+    <?php if ($metri): ?>
+      <li class="adv-infobar__voce"><?= icona('parcheggio', 12) ?><?= te('nav.topbar.parking', ['metres' => $metri]) ?></li>
+    <?php endif; ?>
+    <li class="adv-infobar__voce"><?= icona('casa', 12) ?><?= te('nav.topbar.since') ?></li>
+  </ul>
+</div>
+
+<header class="adv-testata" data-testata>
+  <span class="adv-testata__traccia" aria-hidden="true"><span class="adv-testata__progresso" data-progresso></span></span>
+
+  <a class="adv-marchio" href="<?= e(url('home')) ?>">
+    <span class="adv-marchio__nome"><?= te('common.brand') ?></span>
+    <span class="adv-marchio__sotto"><?= te('nav.brand_sub') ?></span>
+  </a>
+
+  <nav class="adv-nav" aria-label="<?= te('nav.label') ?>">
+    <ul class="adv-nav__voci">
+      <?php foreach ($voci as $chiave => $etichetta): ?>
+        <li>
+          <a class="adv-nav__link" href="<?= e(url($chiave)) ?>"<?= $attiva === $chiave ? ' aria-current="page"' : '' ?>><?= te($etichetta) ?></a>
+        </li>
+      <?php endforeach; ?>
+    </ul>
+  </nav>
+
+  <div class="adv-testata__azioni">
+    <?= partial('language-switcher', ['alternative' => $alternative]) ?>
+
+    <a class="adv-btn adv-btn--primario adv-testata__prenota" href="<?= e(url('book')) ?>">
+      <?= te('cta.book') ?><?= icona('freccia-su-destra', 14) ?>
     </a>
 
-    <nav class="adv-nav adv-nav--principale" aria-label="<?= te('nav.label') ?>">
-      <ul class="adv-nav__voci">
-        <?php foreach ($voci as $chiave => $etichetta): ?>
-          <li>
-            <a class="adv-nav__link" href="<?= e(url($chiave)) ?>"<?= $attiva === $chiave ? ' aria-current="page"' : '' ?>>
-              <?= te($etichetta) ?>
-            </a>
-          </li>
-        <?php endforeach; ?>
-      </ul>
-    </nav>
-
-    <div class="adv-testata__azioni">
-      <?= partial('language-switcher', ['alternative' => $alternative]) ?>
-
-      <a class="adv-btn adv-btn--primario adv-btn--sm adv-testata__prenota" href="<?= e(url('book')) ?>">
-        <?= te('cta.book') ?>
-      </a>
-
-      <button class="adv-tondo adv-menu__apri" type="button"
-              aria-expanded="false" aria-controls="menu-mobile"
-              aria-label="<?= te('common.menu_open') ?>" data-menu-apri>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M4 7h16M4 12h16M4 17h16"/>
-        </svg>
-      </button>
-    </div>
+    <button class="adv-tondo adv-menu__apri" type="button"
+            aria-expanded="false" aria-controls="menu-mobile"
+            aria-label="<?= te('common.menu_open') ?>" data-menu-apri>
+      <?= icona('menu', 20) ?>
+    </button>
   </div>
 </header>
 
-<?php /* Le stesse voci, in chiaro, per chi non ha JavaScript. Stanno nel
-         markup di tutti ma le vede solo chi ne ha bisogno: il foglio le
-         spegne appena abilita-js.js segna che il JavaScript c'è. */ ?>
+<?php /* Le stesse voci, in chiaro, per chi non ha JavaScript: su schermo
+         stretto il pulsante del menu non c'è, e queste prendono il suo
+         posto. Il foglio le spegne appena abilita-js.js segna che il
+         JavaScript c'è. */ ?>
 <nav class="adv-nav-riserva" aria-label="<?= te('nav.label') ?>">
-  <div class="adv-contenuto">
-    <ul class="adv-nav-riserva__voci">
-      <?php foreach ($voci as $chiave => $etichetta): ?>
-        <li>
-          <a class="adv-nav__link" href="<?= e(url($chiave)) ?>"<?= $attiva === $chiave ? ' aria-current="page"' : '' ?>>
-            <?= te($etichetta) ?>
-          </a>
-        </li>
-      <?php endforeach; ?>
+  <ul class="adv-nav-riserva__voci">
+    <?php foreach ($voci as $chiave => $etichetta): ?>
       <li>
-        <a class="adv-nav__link" href="<?= e(url('book')) ?>"><?= te('cta.book') ?></a>
+        <a class="adv-nav__link" href="<?= e(url($chiave)) ?>"<?= $attiva === $chiave ? ' aria-current="page"' : '' ?>><?= te($etichetta) ?></a>
       </li>
-    </ul>
-  </div>
+    <?php endforeach; ?>
+    <li><a class="adv-nav__link" href="<?= e(url('book')) ?>"><?= te('cta.book') ?></a></li>
+  </ul>
 </nav>
 
-<?php
-/* Il pannello di navigazione su schermo stretto. Il design system non porta
-   un menu mobile: porta l'«Indice», e dice che la navigazione a tutta pagina
-   è il suo uso originale. Quindi il menu è un indice numerato, non una pila
-   di voci in un cassetto. */ ?>
+<?php /* Il menu su schermo stretto: le pagine come un indice numerato, in
+         grande, e sotto il pulsante per prenotare, i contatti e la lingua. */ ?>
 <div class="adv-menu" id="menu-mobile" hidden data-menu>
-  <div class="adv-contenuto adv-menu__interno">
+  <div class="adv-menu__interno">
 
     <div class="adv-menu__testa">
-      <span class="adv-sezione__occhiello"><?= te('common.menu') ?></span>
+      <a class="adv-marchio" href="<?= e(url('home')) ?>">
+        <span class="adv-marchio__nome"><?= te('common.brand') ?></span>
+        <span class="adv-marchio__sotto"><?= te('nav.brand_sub') ?></span>
+      </a>
       <button class="adv-tondo" type="button" aria-label="<?= te('common.menu_close') ?>" data-menu-chiudi>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M6 6l12 12M18 6L6 18"/>
-        </svg>
+        <?= icona('chiudi', 20) ?>
       </button>
     </div>
 
     <nav aria-label="<?= te('nav.label') ?>">
-      <ol class="adv-indice">
+      <ol class="adv-menu__voci">
         <?php $n = 0; foreach ($voci as $chiave => $etichetta): $n++; ?>
-          <li class="adv-indice__voce">
-            <a class="adv-indice__link" href="<?= e(url($chiave)) ?>"<?= $attiva === $chiave ? ' aria-current="page"' : '' ?>>
-              <span class="adv-indice__numero"><?= sprintf('%02d', $n) ?></span>
-              <span class="adv-indice__etichetta"><?= te($etichetta) ?></span>
+          <li class="adv-menu__voce">
+            <a class="adv-menu__link" href="<?= e(url($chiave)) ?>"<?= $attiva === $chiave ? ' aria-current="page"' : '' ?>>
+              <span class="adv-menu__numero" aria-hidden="true"><?= sprintf('%02d', $n) ?></span><?= te($etichetta) ?>
             </a>
           </li>
         <?php endforeach; ?>
@@ -119,7 +123,13 @@ $attiva   = $corrente === 'room' ? 'rooms' : $corrente;
     </nav>
 
     <div class="adv-menu__piede">
-      <a class="adv-btn adv-btn--primario adv-btn--pieno" href="<?= e(url('book')) ?>"><?= te('cta.book') ?></a>
+      <a class="adv-btn adv-btn--primario adv-btn--grande adv-btn--pieno" href="<?= e(url('book')) ?>">
+        <?= te('cta.book') ?><?= icona('freccia-su-destra', 14) ?>
+      </a>
+      <p class="adv-menu__contatti">
+        <?= component('contact-line', ['tipo' => 'phone', 'valore' => $contatti['phone'] ?? null]) ?>
+        <?= component('contact-line', ['tipo' => 'email', 'valore' => $contatti['email'] ?? null]) ?>
+      </p>
       <?= partial('language-switcher', ['alternative' => $alternative, 'id' => 'menu']) ?>
     </div>
   </div>

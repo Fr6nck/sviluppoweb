@@ -19,11 +19,14 @@
  * @var bool        $eager  true per l'immagine che apre la pagina
  * @var string|null $sizes  quanto spazio occupa in pagina, per il srcset
  * @var string      $classe
+ * @var bool        $differita  true per le fotografie che il JavaScript carica
+ *                              quando servono: gli indirizzi stanno in data-*
  * @var int         $width  usati solo se il file non si trova
  * @var int         $height
  */
 
 $eager  = $eager ?? false;
+$differita = $differita ?? false;
 $classe = $classe ?? '';
 $sizes  = $sizes ?? '(max-width: 900px) 100vw, 50vw';
 
@@ -79,6 +82,14 @@ $srcset = static function (string $estensione) use ($src, $grande, $piccola): ?s
     );
 };
 
+/* Una fotografia «differita» non ha src: gli indirizzi stanno in data-src e
+   data-srcset, e li copia al loro posto site.js appena la fotografia sta per
+   comparire. Serve alle fotografie che si alternano in apertura: sono cinque
+   a tutta larghezza, e scaricarle tutte subito per mostrarne una costava
+   seicento kilobyte. Senza JavaScript se ne vede solo la prima, quindi non
+   si perde niente. */
+$pre = $differita ? 'data-' : '';
+
 $comuni = attrs([
     'class'    => $classe !== '' ? $classe : null,
     'width'    => (string) $dim[0],
@@ -87,14 +98,14 @@ $comuni = attrs([
     'loading'  => $eager ? 'eager' : 'lazy',
     'decoding' => $eager ? 'sync' : 'async',
     'fetchpriority' => $eager ? 'high' : null,
-    'srcset'   => $srcset('.jpg'),
+    $pre . 'srcset' => $srcset('.jpg'),
     'sizes'    => $srcset('.jpg') !== null ? $sizes : null,
 ]);
 ?>
 <picture>
   <source type="image/webp"<?= attrs([
-      'srcset' => $srcset('.webp') ?? asset($src . '.webp'),
+      $pre . 'srcset' => $srcset('.webp') ?? asset($src . '.webp'),
       'sizes'  => $srcset('.webp') !== null ? $sizes : null,
   ]) ?>>
-  <img src="<?= e(asset($src . '.jpg')) ?>"<?= $comuni ?>>
+  <img <?= $pre ?>src="<?= e(asset($src . '.jpg')) ?>"<?= $comuni ?>>
 </picture>

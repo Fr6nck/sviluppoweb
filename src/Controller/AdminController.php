@@ -56,7 +56,6 @@ final class AdminController
         'bathroom'  => 'Bagno',
         'layouts'   => 'Disposizioni dei letti',
         'beds'      => 'Letti',
-        'theme'     => 'Tema chiaro e scuro',
     ];
 
     private readonly Form $form;

@@ -32,7 +32,7 @@ if ($piattaforme === []) {
 }
 ?>
 <div class="adv-recensioni">
-  <h3 class="adv-titolo-md"><?= te('home.reviews.title') ?></h3>
+  <h3 class="adv-titolo adv-titolo--xs"><?= te('home.reviews.title') ?></h3>
   <ul class="adv-numeri">
     <?php foreach ($piattaforme as $p): ?>
       <li>

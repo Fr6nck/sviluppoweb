@@ -1,65 +1,65 @@
-/* Arco del Vento — token del design system.
-   GENERATO da tools/build-tokens.php a partire da docs/tokens.json.
-   Non modificare a mano.
+/* Arco del Vento — i gettoni del sistema.
 
-   Due temi: «avorio» (di casa, predefinito) e «notte» (lettura serale e gallerie).
-   Si sceglie con data-tema="avorio" | "notte" su <html>; senza attributo
-   la pagina segue la preferenza di sistema. */
+   Crema e avorio per le superfici, verde bosco per l'inchiostro, terracotta
+   per il gesto: il pulsante, la parola in corsivo, il filetto. Tutte le
+   coppie di colore usate per il testo passano il contrasto AA:
+     muto su crema 5,3 · terracotta su crema 4,6 · avorio su terracotta 5,1
+     verde su crema 10,8 · crema su verde 11,4.
+
+   Un solo tema, chiaro: la casa si guarda di giorno.
+
+   In fondo ci sono i vecchi nomi (surface, ink, line…), tenuti come alias
+   perché l'area riservata li usa. Un gettone nuovo va scritto qui sopra. */
 
 :root {
   /* Caratteri */
-  --font-display: "Prata", "Playfair Display", Georgia, "Times New Roman", serif;
-  --font-testo: "Figtree", -apple-system, "Segoe UI", system-ui, sans-serif;
-  --font-firma: "Allura", "Snell Roundhand", cursive;
+  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-testo: "Sora", -apple-system, "Segoe UI", system-ui, sans-serif;
 
   /* Colore */
-  --brand-avorio: #f8e6c2;
-  --brand-paglia: #f4e1b7;
-  --brand-sabbia: #f2daac;
-  --brand-grano: #eacb89;
-  --brand-oro: #eccf6e;
-  --brand-ocra: #e29f63;
-  --brand-terracotta: #f27e4f;
-  --brand-siena: #a05938;
-  --brand-mattone: #813131;
-  --brand-noce: #65412a;
-  --brand-bruno: #4b2c1f;
-  --brand-inchiostro: #331d18;
-  --brand-salvia: #79a199;
-  --brand-alloro: #48605c;
-  --brand-petrolio: #39606b;
-  --surface-mattone: #813131;
-  --on-mattone: #f8e6c2;
-  --on-bruno: #f8e6c2;
-  --on-terracotta: #331d18;
-  --on-oro: #331d18;
-  --on-petrolio: #f8e6c2;
-  --on-salvia: #331d18;
-  --focus-ring-inverso: #f8e6c2;
-  --surface: #f8e6c2;
-  --surface-alt: #f2daac;
-  --surface-raised: #fcf6eb;
-  --surface-sunken: #eacb89;
-  --surface-bruno: #331d18;
-  --ink: #331d18;
-  --ink-muted: #65412a;
-  --ink-soft: #7a563c;
-  --ink-brand: #813131;
-  --ink-firma: var(--brand-petrolio);
-  --line: rgba(51, 29, 24, 0.16);
-  --line-strong: #8a6a4a;
-  --decoro: var(--brand-siena);
-  --focus-ring: #39606b;
-  --state-successo: #3f6340;
-  --state-successo-tenue: #e7dab6;
-  --state-avviso: #7a4f0c;
-  --state-avviso-tenue: #edd8b2;
-  --state-errore: #9c3a21;
-  --state-errore-tenue: #f0d7b4;
-  --state-info: #39606b;
-  --state-info-tenue: #e7daba;
+  --crema: #f8f1e3;
+  --avorio: #fffdf8;
+  --sabbia: #eee5d5;
+  --sabbia-chiara: #f0e7d8;
+  --salvia: #e4e6d4;
+  --verde: #1c3b35;
+  --verde-scuro: #1b3733;
+  --terracotta: #b64c28;
+  --terracotta-scura: #92391c;
+  --muto: #6b6257;
+  --filo: #e4d8c3;
+  --filo-tenue: rgba(203, 189, 166, 0.5);
+  --filo-vetro: rgba(196, 177, 146, 0.55);
+  --segnaposto: #c7bc97;
 
-  /* Spazio */
+  --successo: #2f5b3c;
+  --successo-tenue: #e6ecdc;
+  --avviso: #7a4f0c;
+  --avviso-tenue: #f5e7cc;
+  --errore: #9c3a21;
+  --errore-tenue: #f6e0d6;
+
+  /* Ombre */
+  --ombra-scheda: 0 10px 25px rgba(28, 59, 53, 0.027);
+  --ombra-barra: 0 14px 34px rgba(28, 59, 53, 0.09);
+  --ombra-testata: 0 10px 30px rgba(28, 59, 53, 0.1);
+  --ombra-pannello: 0 24px 60px rgba(28, 59, 53, 0.14);
+
+  /* Forma */
+  --raggio: 25px;
+  --raggio-md: 18px;
+  --raggio-sm: 12px;
+  --pillola: 999px;
+
+  /* Misure */
+  --contenuto: 1170px;
+  --margine: clamp(20px, 4vw, 40px);
+  --testo-max: 62ch;
+
+  /* Movimento: una sola curva per tutto il sito. */
+  --curva: cubic-bezier(0.16, 0.84, 0.28, 1);
+
+  /* Spazio — scala da 4px, usata anche dall'area riservata. */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -72,93 +72,31 @@
   --space-16: 64px;
   --space-20: 80px;
   --space-24: 96px;
-  --space-32: 128px;
-  --space-40: 160px;
 
-  /* Raggi */
-  --radius-sm: 30px;
-  --radius-md: 36px;
-  --radius-lg: 44px;
-  --radius-xl: 56px;
-  --radius-arco: 999px;
-  --radius-tondo: 9999px;
-
-  /* Ombre */
-  --shadow-sm: 0 1px 2px rgba(51, 29, 24, 0.10);
-  --shadow-md: 0 4px 14px rgba(51, 29, 24, 0.12);
-  --shadow-lg: 0 14px 36px rgba(51, 29, 24, 0.16);
-
-  /* Bordi */
+  /* ---------------------------------------------- alias per l'area riservata */
+  --surface: var(--crema);
+  --surface-alt: var(--sabbia);
+  --surface-raised: var(--avorio);
+  --surface-sunken: var(--sabbia-chiara);
+  --ink: var(--verde);
+  --ink-muted: var(--muto);
+  --ink-soft: var(--muto);
+  --ink-brand: var(--terracotta);
+  --line: var(--filo);
+  --line-strong: #c4b192;
+  --brand-mattone: var(--terracotta);
+  --on-mattone: var(--avorio);
+  --focus-ring: var(--terracotta);
+  --state-successo: var(--successo);
+  --state-successo-tenue: var(--successo-tenue);
+  --state-avviso: var(--avviso);
+  --state-avviso-tenue: var(--avviso-tenue);
+  --state-errore: var(--errore);
+  --state-errore-tenue: var(--errore-tenue);
+  --radius-sm: var(--raggio-sm);
+  --radius-md: var(--raggio-md);
   --bordo-sottile: 1px;
   --bordo-medio: 2px;
-  --bordo-spesso: 3px;
-
-  /* Larghezze */
-  --larghezza-testo: 66ch;
-  --larghezza-stretta: 720px;
-  --larghezza-contenuto: 1120px;
-  --larghezza-piena: 1440px;
 }
 
-/* Tema «notte» — scelto esplicitamente. */
-[data-tema="notte"] {
-  --surface: #241510;
-  --surface-alt: #331d18;
-  --surface-raised: #3d2620;
-  --surface-sunken: #180d0a;
-  --surface-bruno: #1b100c;
-  --ink: #f8e6c2;
-  --ink-muted: #dcc39a;
-  --ink-soft: #b99b74;
-  --ink-brand: #eccf6e;
-  --ink-firma: var(--brand-oro);
-  --line: rgba(248, 230, 194, 0.14);
-  --line-strong: #8a6f5c;
-  --decoro: var(--brand-oro);
-  --focus-ring: #f4d98a;
-  --state-successo: #8fb894;
-  --state-successo-tenue: #39362a;
-  --state-avviso: #e2ad53;
-  --state-avviso-tenue: #4a331d;
-  --state-errore: #f0917a;
-  --state-errore-tenue: #4d2e25;
-  --state-info: #79a199;
-  --state-info-tenue: #35312b;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.44);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.50);
-  --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.58);
-}
-
-/* Tema «notte» — seguendo la preferenza di sistema, se non è stato scelto «avorio». */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-tema="avorio"]) {
-    --surface: #241510;
-    --surface-alt: #331d18;
-    --surface-raised: #3d2620;
-    --surface-sunken: #180d0a;
-    --surface-bruno: #1b100c;
-    --ink: #f8e6c2;
-    --ink-muted: #dcc39a;
-    --ink-soft: #b99b74;
-    --ink-brand: #eccf6e;
-    --ink-firma: var(--brand-oro);
-    --line: rgba(248, 230, 194, 0.14);
-    --line-strong: #8a6f5c;
-    --decoro: var(--brand-oro);
-    --focus-ring: #f4d98a;
-    --state-successo: #8fb894;
-    --state-successo-tenue: #39362a;
-    --state-avviso: #e2ad53;
-    --state-avviso-tenue: #4a331d;
-    --state-errore: #f0917a;
-    --state-errore-tenue: #4d2e25;
-    --state-info: #79a199;
-    --state-info-tenue: #35312b;
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.44);
-    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.50);
-    --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.58);
-  }
-}
-
-/* Il documento. bundle.css veste i componenti, non la pagina che li contiene. */
-html { background: var(--surface); color-scheme: light dark; }
+html { background: var(--crema); }

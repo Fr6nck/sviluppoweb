@@ -1,34 +1,35 @@
 <?php
 /**
- * L'apertura di una sezione: occhiello, titolo display, firma corsiva, filetto.
+ * L'apertura di una sezione: occhiello con il filetto, titolo in Cormorant
+ * con l'ultima parola in corsivo terracotta, e un testo breve.
  *
- * La firma è l'ultima parola del titolo e passa ad Allura: è il gesto del
- * logotipo — serif per il nome, corsivo per «Assisi» — ripetuto dentro la
- * pagina. Una volta per titolo, mai due.
+ * «|» nel titolo e nel testo va a capo.
  *
  * @var string      $occhiello
  * @var string      $titolo
- * @var string|null $firma      ultima parola, in corsivo
+ * @var string|null $firma      l'ultima parola, in corsivo
  * @var string|null $testo
  * @var string      $livello    h1 | h2 | h3
- * @var bool        $filetto
- * @var bool        $piccolo
+ * @var string      $misura     l | m | s | xs
+ * @var bool        $centro
+ * @var string|null $id         per aria-labelledby
  */
 
-$livello  = $livello ?? 'h2';
-$filetto  = $filetto ?? true;
-$piccolo  = $piccolo ?? false;
-$classe   = 'adv-sezione__titolo' . ($piccolo ? ' adv-sezione__titolo--sm' : '');
+$livello = $livello ?? 'h2';
+$misura  = $misura ?? 'm';
+$centro  = $centro ?? false;
+$id      = $id ?? null;
 ?>
-<div class="adv-sezione">
+<div class="adv-intestazione<?= $centro ? ' adv-intestazione--centro' : '' ?>">
   <?php if (!empty($occhiello)): ?>
-    <span class="adv-sezione__occhiello"><?= e($occhiello) ?></span>
+    <?= occhiello($occhiello, $centro ? 'adv-occhiello--centro' : '') ?>
   <?php endif; ?>
 
-  <<?= $livello ?> class="<?= e($classe) ?>">
-    <?= e($titolo) ?><?php if (!empty($firma)): ?> <span class="adv-firma-inline"><?= e($firma) ?></span><?php endif; ?>
+  <<?= $livello ?> class="adv-titolo adv-titolo--<?= e($misura) ?>"<?= $id ? ' id="' . e($id) . '"' : '' ?> data-reveal="title-reveal">
+    <?= titolo($titolo, $firma ?? null) ?>
   </<?= $livello ?>>
 
-  <?php if ($filetto): ?><hr class="adv-sezione__filetto"><?php endif; ?>
-  <?php if (!empty($testo)): ?><p class="adv-sezione__testo"><?= e($testo) ?></p><?php endif; ?>
+  <?php if (!empty($testo)): ?>
+    <p class="adv-testo" data-reveal="reveal"><?= righe($testo) ?></p>
+  <?php endif; ?>
 </div>

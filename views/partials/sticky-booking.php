@@ -1,11 +1,10 @@
 <?php
 /**
- * La barra di prenotazione appiccicata in fondo, solo su schermo stretto.
+ * La pillola in fondo allo schermo, solo su schermo stretto: prenotare e
+ * scrivere restano a un pollice di distanza.
  *
- * Il design system chiede fondo pieno e ombra quando una barra resta
- * appiccicata: mai una trasparenza, che sopra una fotografia rende
- * illeggibile quello che c'è dentro.
- *
+ * Con JavaScript compare quando la barra di prenotazione della pagina è
+ * uscita dallo schermo, così non ne copre una uguale; senza, c'è sempre.
  * Non compare nella pagina di prenotazione: lì il pulsante c'è già, ed è
  * quello vero.
  */
@@ -17,18 +16,15 @@ if (($paginaCorrente ?? '') === 'book') {
 $whatsapp = site('contacts.whatsapp');
 ?>
 <div class="adv-sticky" data-sticky>
-  <a class="adv-btn adv-btn--primario adv-btn--pieno" href="<?= e(url('book')) ?>"><?= te('cta.book') ?></a>
+  <a class="adv-btn adv-btn--primario" href="<?= e(url('book')) ?>"><?= te('cta.book') ?></a>
   <?php if ($whatsapp): ?>
-    <a class="adv-btn adv-btn--secondario adv-sticky__secondaria"
+    <a class="adv-btn adv-btn--contorno"
        href="https://wa.me/<?= e(preg_replace('/\D/', '', (string) $whatsapp)) ?>" rel="noopener">
-      <?= te('cta.whatsapp') ?>
+      <?= icona('messaggio', 15) ?><?= te('cta.whatsapp') ?>
     </a>
   <?php else: ?>
     <?php /* Senza un numero confermato la seconda azione porta ai contatti,
-             dove il modulo funziona davvero. Un pulsante WhatsApp che non
-             apre WhatsApp è peggio di un pulsante in meno. */ ?>
-    <a class="adv-btn adv-btn--secondario adv-sticky__secondaria" href="<?= e(url('contact')) ?>">
-      <?= te('cta.write') ?>
-    </a>
+             dove il modulo funziona davvero. */ ?>
+    <a class="adv-btn adv-btn--contorno" href="<?= e(url('contact')) ?>"><?= te('cta.write') ?></a>
   <?php endif; ?>
 </div>

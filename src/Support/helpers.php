@@ -259,3 +259,106 @@ function partial(string $name, array $data = []): string
 {
     return App::instance()->view()->partial('partials/' . $name, $data);
 }
+
+/**
+ * Un'icona a tratto, in linea.
+ *
+ * I tracciati sono quelli di Lucide (licenza ISC), la stessa famiglia del
+ * progetto grafico: 24×24, tratto 2, estremità arrotondate. Stanno qui e non
+ * in un file .svg da caricare perché sono pochi byte ciascuno e così non
+ * costano una richiesta. Sono decorative: il testo accanto dice già tutto.
+ */
+function icona(string $nome, int $misura = 16, string $classe = ''): string
+{
+    static $tracciati = [
+        'pin'        => ['<path d="M20 10c0 4.99-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 14.99 4 10a8 8 0 0 1 16 0"/>', '<circle cx="12" cy="10" r="3"/>'],
+        'freccia-su-destra' => ['<path d="M7 7h10v10"/>', '<path d="M7 17 17 7"/>'],
+        'freccia-sinistra'  => ['<path d="m12 19-7-7 7-7"/>', '<path d="M19 12H5"/>'],
+        'freccia-destra'    => ['<path d="M5 12h14"/>', '<path d="m12 5 7 7-7 7"/>'],
+        'freccia-giu'       => ['<path d="M12 5v14"/>', '<path d="m19 12-7 7-7-7"/>'],
+        'freccia-su'        => ['<path d="m5 12 7-7 7 7"/>', '<path d="M12 19V5"/>'],
+        'giu'        => ['<path d="m6 9 6 6 6-6"/>'],
+        'ospiti'     => ['<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>', '<circle cx="9" cy="7" r="4"/>', '<path d="M22 21v-2a4 4 0 0 0-3-3.87"/>', '<path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
+        'letto'      => ['<path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/>', '<path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/>', '<path d="M12 4v6"/>', '<path d="M2 18h20"/>'],
+        'metratura'  => ['<path d="M15 3h6v6"/>', '<path d="m21 3-7 7"/>', '<path d="m3 21 7-7"/>', '<path d="M9 21H3v-6"/>'],
+        'bagno'      => ['<path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-1-.5C4.68 3 4 3.68 4 4.5V17a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/>', '<path d="M10 5 8 7"/>', '<path d="M2 12h20"/>', '<path d="M7 19v2"/>', '<path d="M17 19v2"/>'],
+        'pausa'      => ['<path d="M14 4h4v16h-4z"/>', '<path d="M6 4h4v16H6z"/>'],
+        'avvia'      => ['<path d="M6 3l14 9-14 9z"/>'],
+        'chiave'     => ['<path d="M2.59 17.41A2 2 0 0 0 2 18.83V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.17a2 2 0 0 0 1.42-.59l.81-.81a6.5 6.5 0 1 0-4-4z"/>', '<circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>'],
+        'parcheggio' => ['<rect width="18" height="18" x="3" y="3" rx="2"/>', '<path d="M9 17V7h4a3 3 0 0 1 0 6H9"/>'],
+        'casa'       => ['<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>', '<path d="M3 10a2 2 0 0 1 .71-1.53l7-6a2 2 0 0 1 2.58 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'],
+        'spunta'     => ['<path d="M20 6 9 17l-5-5"/>'],
+        'menu'       => ['<path d="M4 7h16"/>', '<path d="M4 12h16"/>', '<path d="M4 17h16"/>'],
+        'chiudi'     => ['<path d="M18 6 6 18"/>', '<path d="m6 6 12 12"/>'],
+        'telefono'   => ['<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>'],
+        'posta'      => ['<rect width="20" height="16" x="2" y="4" rx="2"/>', '<path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>'],
+        'auto'       => ['<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>', '<circle cx="7" cy="17" r="2"/>', '<path d="M9 17h6"/>', '<circle cx="17" cy="17" r="2"/>'],
+        'treno'      => ['<path d="M8 3.1V7a4 4 0 0 0 8 0V3.1"/>', '<path d="m9 15-1-1"/>', '<path d="m15 15 1-1"/>', '<path d="M9 19c-2.8 0-5-2.2-5-5v-4a8 8 0 0 1 16 0v4c0 2.8-2.2 5-5 5Z"/>', '<path d="m8 19-2 3"/>', '<path d="m16 19 2 3"/>'],
+        'aereo'      => ['<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>'],
+        'navigatore' => ['<polygon points="3 11 22 2 13 21 11 13 3 11"/>'],
+        'orologio'   => ['<circle cx="12" cy="12" r="10"/>', '<path d="M12 6v6l4 2"/>'],
+        'wifi'       => ['<path d="M12 20h.01"/>', '<path d="M2 8.82a15 15 0 0 1 20 0"/>', '<path d="M5 12.86a10 10 0 0 1 14 0"/>', '<path d="M8.5 16.43a5 5 0 0 1 7 0"/>'],
+        'messaggio'  => ['<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>'],
+        'finestra'   => ['<rect width="18" height="18" x="3" y="3" rx="2"/>', '<path d="M3 12h18"/>', '<path d="M12 3v18"/>'],
+        // La rosa dei venti del marchio, ridotta a segno: quattro punte e un
+        // cerchio. È la sola icona che non viene da Lucide.
+        'rosa'       => ['<circle cx="12" cy="12" r="9.5" stroke-width="1"/>', '<path d="M12 2.5 13.6 10.4 21.5 12 13.6 13.6 12 21.5 10.4 13.6 2.5 12 10.4 10.4Z" stroke-width="1.4"/>'],
+    ];
+
+    $parti = $tracciati[$nome] ?? $tracciati['spunta'];
+
+    return sprintf(
+        '<svg%s width="%d" height="%d" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"'
+        . ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">%s</svg>',
+        $classe !== '' ? ' class="' . Html::e($classe) . '"' : '',
+        $misura,
+        $misura,
+        implode('', $parti)
+    );
+}
+
+/**
+ * Un titolo con l'ultima parola in corsivo terracotta.
+ *
+ * Il testo arriva dai file di lingua e dall'area riservata, quindi si mette
+ * in sicurezza per intero. Il solo segno ammesso è la barra verticale «|»,
+ * che diventa un a capo: così chi scrive decide dove spezzare la riga senza
+ * dover scrivere HTML.
+ */
+function titolo(string $testo, ?string $firma = null): string
+{
+    $html = implode(' <br>', array_map(
+        static fn (string $riga): string => Html::e(trim($riga)),
+        explode('|', $testo)
+    ));
+
+    if ($firma !== null && trim($firma) !== '') {
+        $html .= ($html !== '' && !str_ends_with($html, '<br>') ? ' ' : '') . '<em>' . Html::e(trim($firma)) . '</em>';
+    }
+
+    return $html;
+}
+
+/** L'occhiello: il filetto terracotta e le parole in maiuscoletto. */
+function occhiello(string $testo, string $classe = ''): string
+{
+    return sprintf(
+        '<p class="adv-occhiello%s"><span class="adv-occhiello__filo" aria-hidden="true" data-rule></span>%s</p>',
+        $classe !== '' ? ' ' . Html::e($classe) : '',
+        Html::e($testo)
+    );
+}
+
+/** Un testo che può andare a capo con «|», come i titoli. */
+function righe(string $testo): string
+{
+    // Lo spazio prima dell'a capo resta quando il foglio nasconde il <br> su
+    // schermo stretto: senza, le due frasi si attaccherebbero.
+    return implode(' <br>', array_map(static fn (string $r): string => Html::e(trim($r)), explode('|', $testo)));
+}
+
+/** L'indirizzo di Google Maps per un luogo o per la casa. */
+function mappa(string $luogo): string
+{
+    return 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode($luogo);
+}

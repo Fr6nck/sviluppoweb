@@ -4,10 +4,12 @@ Prototipo del sito di **Arco del Vento di Pecetta Daniele**, affittacamere in
 Via Santa Maria delle Rose 1/A, ad Assisi. Cinque camere, gestite dal titolare
 dal 2002.
 
-Il disegno viene dal design system **«Arco del Vento»**: i colori sono
-campionati dal file del marchio, i caratteri sono i suoi tre, e
-`public/assets/css/bundle.css` è il foglio dei componenti del sistema,
-copiato senza modifiche.
+Il disegno viene dal progetto grafico **«Assisi · Anfiteatro Romano»**: crema e
+avorio per le superfici, verde bosco per il testo, terracotta per i pulsanti e
+per la parola in corsivo di ogni titolo; Cormorant Garamond per i titoli, Sora
+per tutto il resto; schede avorio con il filo sabbia, pulsanti a pillola,
+testata in vetro che resta in alto. Del progetto si è preso il disegno, non i
+contenuti: nomi, dati e fotografie sono quelli di Arco del Vento.
 
 ---
 
@@ -34,7 +36,8 @@ cp .env.example .env
 le cinque pagine camera, il percorso di prenotazione completo in quattro passi
 con convalida e riepilogo, il modulo dei contatti con convalida e trappola per
 i robot, il menu su schermo stretto, `sitemap.xml` e `robots.txt` generati,
-i dati strutturati, il tema notte.
+i dati strutturati, le fotografie che si alternano in apertura (con il
+pulsante per fermarle), il carosello delle camere.
 
 **È reale**: tutto quello che il titolare ha dichiarato nell'intervista —
 tariffe, tipologie, letti e occupazione delle cinque camere; telefono,
@@ -70,9 +73,9 @@ o LiteSpeed con PHP e MySQL. Un sito di otto pagine che cambia i contenuti due
 volte l'anno non ha bisogno di più di così, e ogni dipendenza in meno è una
 cosa in meno da aggiornare fra tre anni.
 
-I tre caratteri — Prata, Figtree, Allura, tutti con licenza SIL Open Font —
-sono serviti dalla nostra cartella in `.woff2`, sottoinsiemi `latin` e
-`latin-ext`. Nessun dominio terzo vede l'indirizzo IP di chi legge, e il sito
+I due caratteri — Cormorant Garamond e Sora, entrambi con licenza SIL Open
+Font — sono serviti dalla nostra cartella in `.woff2` variabili, sottoinsiemi
+`latin` e `latin-ext`. Nessun dominio terzo vede l'indirizzo IP di chi legge, e il sito
 funziona anche senza rete verso Google.
 
 ---
@@ -83,7 +86,7 @@ funziona anche senza rete verso Google.
 config/       configurazione, legge .env e l'ambiente del server
 content/      i contenuti: camere, impostazioni, domande, luoghi, lingue
 database/     schema.sql e seed.sql (generato)
-docs/         tokens.json esportato dal design system
+docs/         guida alla pubblicazione, originali delle fotografie
 public/       LA SOLA CARTELLA DA ESPORRE AL WEB
   index.php   punto d'ingresso unico
   .htaccess   indirizzi puliti, compressione, cache, sicurezza
@@ -99,7 +102,7 @@ src/          l'applicazione
   Support/    escape, convalida, gettone CSRF, presentazione delle camere
   View/       il motore di viste
 storage/      registri e posta scritta su file (non versionati)
-tools/        script: token, segnaposto, seed, server di sviluppo
+tools/        script: segnaposto, fotografie, seed, pacchetto, server di sviluppo
 views/        telaio, frammenti, componenti, pagine
 ```
 
@@ -126,20 +129,26 @@ views/        telaio, frammenti, componenti, pagine
 
 ## Componenti
 
-Dal design system, via `bundle.css`: Bottoni, Campi, Etichette, Avvisi,
-TitoloSezione, SchedaCamera, ElencoCamere, BarraPrenotazione, Indice,
-Manifesto, Domande, Persone, Citazione, Ornamenti, PiediPagina, Navigazione,
-Hero, HeroSilenzioso, Cornice, Numeri.
+Tre fogli, tutti in `public/assets/css/`: `fonts.css` (i caratteri),
+`tokens.css` (colori, raggi, ombre, spazi — scritto a mano, con in fondo i
+vecchi nomi che usa l'area riservata) e `site.css` (tutto il resto).
 
-Scritti qui, in `views/`: telaio di pagina, testata, menu a tutta pagina,
-cambio lingua, piè di pagina, barra appiccicata su mobile, dati strutturati,
-riga camera, scheda camera, campo di modulo, riepilogo prenotazione, elenco
-numerato, galleria, riga di contatto, segnaposto immagine, marcatore «da
-confermare».
+In `views/`: telaio di pagina, riga verde in cima, testata a pillola, menu a
+tutta pagina, cambio lingua, fotografie che si alternano, barra di
+prenotazione, scheda camera (la stessa per il carosello, l'elenco e le camere
+libere), elenco numerato, pannello mappa, domande, chiusura in terracotta con
+il piè di pagina, pillola in fondo allo schermo su mobile, campo di modulo,
+riepilogo prenotazione, riga di contatto, immagine, marcatore «da confermare».
 
-Primitive di impaginazione in `site.css`: contenitore, sezione, fascia
-alternata, colonne asimmetriche, figura verticale, griglia camere, elenco di
-fatti, tabella tariffe.
+Aiuti per le viste in `src/Support/helpers.php`: `titolo()` (l'ultima parola
+in corsivo terracotta; «|» nel testo va a capo), `occhiello()`, `righe()`,
+`icona()` (tracciati Lucide, in linea), `mappa()` (link a Google Maps).
+
+Movimento: entrate e parallasse sono CSS legato allo scorrimento
+(`animation-timeline: view()`), solo traslazioni — mai da opacità zero — e
+spente per chi chiede meno movimento. Il JavaScript (`site.js`) aggiunge e non
+regge: senza, la prima fotografia resta ferma, le camere scorrono con il dito
+e il menu diventa una riga di voci in chiaro.
 
 ---
 
@@ -592,12 +601,16 @@ nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
   contatti, domande, cambio lingua. La navigazione su schermo stretto ha le
   voci in chiaro al posto del pannello, e il pulsante che aprirebbe il
   pannello non compare — un comando spento è un vicolo cieco.
-- **Tema notte** disegnato e misurato, non solo generato: il pulsante
-  principale prende il filo d'oro perché il mattone su fondo scuro sta a
-  1,6:1 contro la scheda, sotto i 3:1 che servono perché un comando si
-  riconosca (WCAG 1.4.11).
-- **Peso reale misurato a browser**, con le immagini in differita caricate:
-  home 627 KB su mobile, 745 KB su desktop; camere 351 KB; prenota 185 KB.
+- **Contrasto misurato** su ogni coppia di colori usata per il testo: muto su
+  crema 5,3:1, terracotta su crema 4,6:1, avorio su terracotta 5,1:1. Dove il
+  fondo è sabbia i numeri piccoli passano alla terracotta scura (6:1), perché
+  quella normale lì scende a 4,1:1.
+- **Fotografie in apertura**: autoplay ogni sei secondi, fermo per chi chiede
+  meno movimento, pulsante pausa, la didascalia si annuncia solo quando la
+  foto la cambia chi legge. Dopo la prima, ogni fotografia si scarica appena
+  prima di comparire.
+- **Peso reale misurato a browser**, al primo caricamento: home 681 KB su
+  mobile, 874 KB su desktop; camere 497 KB; prenota 251 KB.
   Il `srcset` sceglie la misura piccola dove la colonna è stretta.
 
 ---
@@ -605,7 +618,6 @@ nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
 ## Script
 
 ```bash
-php tools/build-tokens.php        # rigenera tokens.css da docs/tokens.json
 php tools/build-placeholders.php  # rigenera i segnaposto delle fotografie
 php tools/build-photos.php        # ritaglia le fotografie nei formati del sistema
                                   #   (il tetto di peso scala con l'area: la

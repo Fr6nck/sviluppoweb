@@ -24,18 +24,18 @@ $errore = static fn (string $campo): ?string => isset($errori[$campo]) ? t('erro
 $valore = static fn (string $campo, string $default = ''): string => (string) ($valori[$campo] ?? $default);
 ?>
 
-<div class="adv-contenuto">
-  <header class="adv-heroT">
-    <span class="adv-heroT__occhiello"><?= te('contact.eyebrow') ?></span>
-    <h1 class="adv-heroT__titolo">
-      <?= te('contact.title') ?> <span class="adv-firma-inline"><?= te('contact.sign') ?></span>
-    </h1>
-    <p class="adv-heroT__spalla"><?= te('contact.lead') ?></p>
-  </header>
-</div>
+<header class="adv-contenuto adv-testa">
+  <?= occhiello(t('contact.eyebrow'), 'adv-occhiello--centro') ?>
+  <h1 class="adv-titolo adv-titolo--xl"><?= titolo(t('contact.title'), t('contact.sign')) ?></h1>
+  <p class="adv-testa__testo"><?= te('contact.lead') ?></p>
+  <ul class="adv-testa__meta">
+    <li><?= icona('orologio', 13) ?><?= te('info.items.contact_hours') ?> <?= e($contatti['hours']['from'] . '–' . $contatti['hours']['to']) ?></li>
+    <li><?= icona('pin', 13) ?><?= e(site('address.street')) ?></li>
+  </ul>
+</header>
 
-<section class="adv-contenuto adv-editoriale">
-  <div class="adv-split">
+<section class="adv-contenuto adv-sezione adv-sezione--stretta-sopra">
+  <div class="adv-due adv-due--modulo">
 
     <div>
       <?php if ($inviato): ?>
@@ -57,18 +57,14 @@ $valore = static fn (string $campo, string $default = ''): string => (string) ($
         ]) ?>
       <?php endif; ?>
 
-      <?= component('section-header', [
-          'occhiello' => t('contact.eyebrow'),
-          'titolo'    => t('contact.form_title'),
-          'piccolo'   => true,
-          'filetto'   => false,
-      ]) ?>
-
-      <form class="adv-modulo" method="post" action="<?= e(url('contact')) ?>" novalidate>
+      <form class="adv-modulo adv-pannello" method="post" action="<?= e(url('contact')) ?>" novalidate aria-labelledby="titolo-modulo">
+        <h2 class="adv-titolo adv-titolo--s" id="titolo-modulo"><?= te('contact.form_title') ?></h2>
         <?= Csrf::field() ?>
 
         <fieldset>
-          <legend><?= te('contact.form.legend') ?></legend>
+          <?php /* Il titolo «Scrivici» sta già sopra il modulo: la legenda
+                   resta per chi usa uno screen reader, non si ripete a video. */ ?>
+          <legend class="adv-visually-hidden"><?= te('contact.form.legend') ?></legend>
           <p class="adv-nota"><?= te('common.required_note') ?></p>
 
           <div class="adv-modulo__coppia">
@@ -125,41 +121,49 @@ $valore = static fn (string $campo, string $default = ''): string => (string) ($
         </fieldset>
 
         <div>
-          <button class="adv-btn adv-btn--primario adv-btn--lg" type="submit"><?= te('contact.form.submit') ?></button>
+          <button class="adv-btn adv-btn--primario adv-btn--grande" type="submit"><?= te('contact.form.submit') ?><?= icona('freccia-su-destra', 14) ?></button>
         </div>
       </form>
     </div>
 
-    <aside class="adv-split__nota">
-      <h2 class="adv-titolo-md"><?= te('contact.where_title') ?></h2>
-      <address class="adv-testo adv-indirizzo">
-        <?= te('common.brand_full') ?><br>
-        <?= e(site('address.street')) ?><br>
-        <?= e(site('address.city')) ?> (<?= e(site('address.province')) ?>) &middot; <?= e(site('address.region')) ?>
-      </address>
+    <aside class="adv-prenota-camera">
+      <div class="adv-pannello">
+        <div class="adv-pannello__testa">
+          <span class="adv-pannello__icona" aria-hidden="true"><?= icona('pin', 18) ?></span>
+          <h2 class="adv-titolo adv-titolo--xs"><?= te('contact.where_title') ?></h2>
+        </div>
+        <address class="adv-indirizzo">
+          <?= te('common.brand_full') ?><br>
+          <?= e(site('address.street')) ?><br>
+          <?= e(site('address.city')) ?> (<?= e(site('address.province')) ?>) &middot; <?= e(site('address.region')) ?>
+        </address>
 
-      <dl class="adv-fatti">
-        <div class="adv-fatti__riga">
-          <dt><?= te('contact.form.phone') ?></dt>
-          <dd><?= component('contact-line', ['tipo' => 'phone', 'valore' => $contatti['phone']]) ?></dd>
-        </div>
-        <div class="adv-fatti__riga">
-          <dt><?= te('contact.form.email') ?></dt>
-          <dd><?= component('contact-line', ['tipo' => 'email', 'valore' => $contatti['email']]) ?></dd>
-        </div>
-        <div class="adv-fatti__riga">
-          <dt><?= te('cta.whatsapp') ?></dt>
-          <dd><?= component('contact-line', ['tipo' => 'whatsapp', 'valore' => $contatti['whatsapp']]) ?></dd>
-        </div>
-      </dl>
+        <dl class="adv-fatti adv-spazio-sopra">
+          <div class="adv-fatti__riga">
+            <dt><?= te('contact.form.phone') ?></dt>
+            <dd><?= component('contact-line', ['tipo' => 'phone', 'valore' => $contatti['phone']]) ?></dd>
+          </div>
+          <div class="adv-fatti__riga">
+            <dt><?= te('contact.form.email') ?></dt>
+            <dd><?= component('contact-line', ['tipo' => 'email', 'valore' => $contatti['email']]) ?></dd>
+          </div>
+          <div class="adv-fatti__riga">
+            <dt><?= te('cta.whatsapp') ?></dt>
+            <dd><?= component('contact-line', ['tipo' => 'whatsapp', 'valore' => $contatti['whatsapp']]) ?></dd>
+          </div>
+        </dl>
+      </div>
 
-      <h2 class="adv-titolo-md adv-spazio-sopra"><?= te('contact.how_title') ?></h2>
-      <p class="adv-testo"><?= te('assisi.moving_text') ?></p>
-      <p class="adv-azione-coda">
-        <a class="adv-elenco__link" href="<?= e(url('info')) ?>">
-          <?= te('cta.see_info') ?><span aria-hidden="true">&rarr;</span>
-        </a>
-      </p>
+      <div class="adv-pannello">
+        <div class="adv-pannello__testa">
+          <span class="adv-pannello__icona" aria-hidden="true"><?= icona('navigatore', 18) ?></span>
+          <h2 class="adv-titolo adv-titolo--xs"><?= te('contact.how_title') ?></h2>
+        </div>
+        <p class="adv-testo"><?= te('assisi.moving_text') ?></p>
+        <div class="adv-azioni">
+          <a class="adv-link" href="<?= e(url('info')) ?>"><?= te('cta.see_info') ?><?= icona('freccia-su-destra', 13) ?></a>
+        </div>
+      </div>
     </aside>
 
   </div>

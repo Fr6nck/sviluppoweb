@@ -6,19 +6,18 @@
  * a una pagina vuota è peggio di nessuna spunta. Il testo è impostato e
  * onesto, e i punti che il titolare deve decidere sono segnati.
  */
+
+$blocchi   = tlist('privacy.blocks');
+$daSegnare = ['who', 'how_long'];   // i punti che il titolare deve completare
 ?>
 
-<div class="adv-contenuto">
-  <header class="adv-heroT">
-    <span class="adv-heroT__occhiello"><?= te('privacy.eyebrow') ?></span>
-    <h1 class="adv-heroT__titolo">
-      <?= te('privacy.title') ?> <span class="adv-firma-inline"><?= te('privacy.sign') ?></span>
-    </h1>
-    <p class="adv-heroT__spalla"><?= te('privacy.lead') ?></p>
-  </header>
-</div>
+<header class="adv-contenuto adv-testa">
+  <?= occhiello(t('privacy.eyebrow'), 'adv-occhiello--centro') ?>
+  <h1 class="adv-titolo adv-titolo--xl"><?= titolo(t('privacy.title'), t('privacy.sign')) ?></h1>
+  <p class="adv-testa__testo"><?= te('privacy.lead') ?></p>
+</header>
 
-<section class="adv-stretto adv-editoriale">
+<section class="adv-stretto adv-sezione adv-sezione--stretta-sopra">
 
   <?= component('alert', [
       'tipo'   => 'avviso',
@@ -26,26 +25,19 @@
       'testo'  => t('privacy.notice_text'),
   ]) ?>
 
-  <?php
-  $blocchi   = tlist('privacy.blocks');
-  $daSegnare = ['who', 'how_long'];   // i punti che il titolare deve completare
-  ?>
+  <div class="adv-pannello adv-spazio-sopra">
+    <?php foreach ($blocchi as $chiave => $blocco): ?>
+      <div class="adv-blocco-testo">
+        <h2 class="adv-titolo adv-titolo--s"><?= e($blocco['title']) ?></h2>
+        <p class="adv-testo"><?= e($blocco['text']) ?></p>
+        <?php if (in_array($chiave, $daSegnare, true)): ?>
+          <p class="adv-nota"><?= daConfermare() ?></p>
+        <?php endif; ?>
+      </div>
+    <?php endforeach; ?>
+  </div>
 
-  <?php foreach ($blocchi as $chiave => $blocco): ?>
-    <div class="adv-blocco-testo">
-      <h2 class="adv-titolo-md"><?= e($blocco['title']) ?></h2>
-      <p class="adv-testo"><?= e($blocco['text']) ?></p>
-      <?php if (in_array($chiave, $daSegnare, true)): ?>
-        <p class="adv-nota"><?= daConfermare() ?></p>
-      <?php endif; ?>
-    </div>
-  <?php endforeach; ?>
-
-  <?= component('ornament', ['corto' => true]) ?>
-
-  <p class="adv-azione-coda">
-    <a class="adv-elenco__link" href="<?= e(url('contact')) ?>">
-      <?= te('cta.write') ?><span aria-hidden="true">&rarr;</span>
-    </a>
-  </p>
+  <div class="adv-azioni">
+    <a class="adv-btn adv-btn--contorno" href="<?= e(url('contact')) ?>"><?= te('cta.write') ?><?= icona('freccia-su-destra', 14) ?></a>
+  </div>
 </section>

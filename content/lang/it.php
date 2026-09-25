@@ -57,6 +57,13 @@ return [
         'contact'  => 'Contatti',
         'book'     => 'Prenota ora',
         'privacy'  => 'Privacy',
+        'brand_sub' => 'AFFITTACAMERE · ASSISI',
+        'topbar' => [
+            'center'  => 'Nel centro storico di Assisi',
+            'host'    => 'Ti accoglie il titolare',
+            'parking' => 'Parcheggio a :metres m',
+            'since'   => 'Aperto dal 2002',
+        ],
     ],
 
     'cta' => [
@@ -82,51 +89,69 @@ return [
         'seo_description' => 'Cinque camere in una casa di Assisi, in Via Santa Maria delle Rose. '
                            . 'Un affittacamere gestito da Daniele Pecetta dal 2002. Prenotazione diretta.',
 
+        // La riga sotto la barra di prenotazione.
         'trust' => [
-            'Cinque camere',
-            'Nel centro storico',
-            'Aperto dal 2002',
-            'Ti accoglie il titolare',
+            'Prenotazione diretta',
+            'Nessuna commissione di piattaforma',
+            'Ti risponde Daniele',
         ],
 
+        // «|» nei titoli e nei testi brevi è un a capo.
         'hero' => [
-            'eyebrow' => 'AFFITTACAMERE · VIA SANTA MARIA DELLE ROSE',
-            'title'   => 'Cinque camere in una casa di',
-            'sign'    => 'Assisi',
-            'lead'    => 'Via Santa Maria delle Rose 1/A. Cinque stanze, gestite da Daniele Pecetta dal 2002. '
-                       . 'Non siamo un albergo: siamo una casa che affitta camere, e la differenza si sente dal primo giorno.',
+            'eyebrow' => 'AFFITTACAMERE DAL 2002',
+            'title'   => 'Cinque camere,|una casa di',
+            'sign'    => 'Assisi.',
+            'lead'    => 'Nel centro storico, accanto a San Rufino.|Cinque stanze tenute di persona da Daniele.',
+            'place'   => 'Assisi, Umbria',
+            'scroll'  => 'Vai alle camere',
             'image_alt' => 'Un vicolo in salita del centro di Assisi, con un campanile in pietra sullo sfondo.',
             'image_credit' => 'Assisi, centro storico — fotografia Niels Baars, Unsplash',
         ],
 
-        'position' => [
-            'eyebrow' => 'LA POSIZIONE',
-            'title'   => 'La città comincia fuori dalla',
-            'sign'    => 'porta',
-            'lead'    => 'La casa sta in Via Santa Maria delle Rose, nel centro storico. Da qui non serve '
-                       . 'l’auto: tutto quello che si viene a vedere si raggiunge camminando.',
-            'rufino_title' => 'San Rufino',
-            'rufino_text'  => 'San Rufino è la chiesa del quartiere ed è la cattedrale della città: nel suo '
-                            . 'fonte battesimale sono stati battezzati Francesco e Chiara. È il riferimento '
-                            . 'più vicino alla casa, e il primo campanile che si impara a riconoscere.',
-            'rufino_note'  => 'Quali camere vedano il campanile dalla finestra',
-            'frame_caption' => 'LA VALLE VISTA DALLA COLLINA DI ASSISI',
-            'frame_count'   => 'UMBRIA',
-            'frame_alt'     => 'La valle umbra vista dall’alto, con i campi coltivati e un borgo in lontananza.',
-        ],
-
-        'rooms' => [
-            'eyebrow' => 'LE CAMERE',
-            'title'   => 'Le cinque camere della',
-            'sign'    => 'casa',
-            'lead'    => 'Cinque stanze, tutte nella stessa casa. Quello che le distingue sono i letti, '
-                       . 'l’esposizione e quanto ci si sta larghi.',
+        'slides' => [
+            'label'     => 'Fotografie di Assisi e della casa',
+            'prev'      => 'Fotografia precedente',
+            'next'      => 'Fotografia successiva',
+            'pause'     => 'Ferma le fotografie',
+            'play'      => 'Riprendi le fotografie',
+            'valle'     => 'LA VALLE, VISTA DA ASSISI.',
+            'vicolo'    => 'IL CENTRO STORICO, A PIEDI.',
+            'basilica'  => 'SAN FRANCESCO, AL TRAMONTO.',
+            'corridoio' => 'LA ROSA DEI VENTI, NEL CORRIDOIO DI CASA.',
+            'camera'    => 'UNA DELLE CINQUE CAMERE.',
         ],
 
         'manifesto' => [
-            'text'   => 'Cinque camere. Una sola persona a darti le chiavi,',
-            'sign'   => 'dal 2002',
-            'author' => 'ARCO DEL VENTO · AFFITTACAMERE',
+            'text'   => 'Cinque camere.|Una sola persona a darti le chiavi,',
+            'sign'   => 'dal 2002.',
+            'author' => 'AFFITTACAMERE|NEL CENTRO DI ASSISI',
+        ],
+
+        'rooms' => [
+            'eyebrow'  => 'LE CAMERE DELLA CASA',
+            'title'    => 'Le cinque camere|della',
+            'sign'     => 'casa.',
+            'lead'     => 'Cinque stanze, tutte nella stessa casa. Quello che le distingue sono i letti, '
+                        . 'l’esposizione e quanto ci si sta larghi.',
+            'discover' => 'Tutte le camere',
+            'prev'     => 'Camere precedenti',
+            'next'     => 'Camere successive',
+            'tagline'  => 'CINQUE CAMERE, UNA SOLA CASA.',
+        ],
+
+        'position' => [
+            'eyebrow'  => 'IL CENTRO STORICO, A PIEDI',
+            'title'    => 'La città comincia|fuori dalla',
+            'sign'     => 'porta.',
+            'lead'     => 'La casa sta in Via Santa Maria delle Rose, nel centro storico. Da qui non serve '
+                        . 'l’auto: tutto quello che si viene a vedere si raggiunge camminando.',
+            'rufino_text' => 'San Rufino è la chiesa del quartiere ed è la cattedrale della città: nel suo '
+                           . 'fonte battesimale sono stati battezzati Francesco e Chiara. È il riferimento '
+                           . 'più vicino alla casa, e il primo campanile che si impara a riconoscere.',
+            'chip'     => 'Il centro storico',
+            'vertical' => 'ASSISI, UN PASSO ALLA VOLTA',
+            'new_tab'  => 'su Google Maps, in una nuova scheda',
+            'frame_alt'     => 'La valle umbra vista dall’alto, con i campi coltivati e un borgo in lontananza.',
         ],
 
         'reviews' => [
@@ -138,24 +163,30 @@ return [
 
         'host' => [
             'eyebrow' => 'CHI TIENE APERTO',
-            'title'   => 'La casa la manda avanti una',
-            'sign'    => 'persona',
+            'title'   => 'La casa la manda avanti|una',
+            'sign'    => 'persona.',
             'lead'    => 'Nessuna reception, nessun servizio in camera, nessun numero verde. C’è Daniele, '
                        . 'che ha aperto nel 2002 e da allora tiene aperto.',
             'numbers' => [
-                ['value' => '5',    'name' => 'CAMERE'],
+                ['value' => '05',   'name' => 'CAMERE'],
                 ['value' => '2002', 'name' => 'APERTO DAL'],
-                ['value' => '1',    'name' => 'PERSONA A GESTIRLA'],
+                ['value' => '01',   'name' => 'PERSONA A GESTIRLA'],
             ],
         ],
 
+        'arrive' => [
+            'eyebrow'         => 'COME ARRIVARE',
+            'map'             => 'Apri la mappa',
+            'navigator_label' => 'Nel navigatore',
+            'parking_label'   => 'Parcheggio',
+            'parking_value'   => 'Piazza Matteotti, :metres m',
+            'train_label'     => 'In treno',
+            'train_value'     => 'Stazione di Assisi, poi l’autobus',
+            'plane_label'     => 'In aereo',
+            'plane_value'     => 'Aeroporto di Perugia, poi Airlink',
+        ],
+
         'walk' => [
-            'eyebrow' => 'A PIEDI',
-            'title'   => 'Quanto ci vuole, davvero, a',
-            'sign'    => 'piedi',
-            'lead'    => 'I tempi qui sotto sono quelli che serve sapere prima di prenotare. Vanno confermati '
-                       . 'da Daniele prima di finire sul sito pubblico: un minuto dichiarato male è un ospite '
-                       . 'che arriva in ritardo.',
             'image_alt' => 'La Basilica di San Francesco al tramonto, con la facciata in pietra chiara illuminata di lato.',
             'image_credit' => 'Basilica di San Francesco — fotografia Alessandro Guarino, Unsplash',
         ],
@@ -163,15 +194,15 @@ return [
         'faq' => [
             'eyebrow' => 'LE DOMANDE DI SEMPRE',
             'title'   => 'Quello che si chiede',
-            'sign'    => 'prima',
+            'sign'    => 'prima.',
         ],
 
         'closing' => [
-            'eyebrow' => 'PRENOTA',
-            'title'   => 'Chiedi le date che ti',
-            'sign'    => 'servono',
+            'eyebrow' => 'PRENOTAZIONE DIRETTA',
+            'title'   => 'Chiedi le date|che ti',
+            'sign'    => 'servono.',
             'lead'    => 'La richiesta arriva direttamente a Daniele, senza intermediari e senza commissioni '
-                       . 'di piattaforma. Ti risponde lui.',
+                       . 'di piattaforma. E la risposta arriva da Daniele.',
         ],
     ],
 
@@ -181,8 +212,8 @@ return [
         'seo_description' => 'Le cinque camere di Arco del Vento, affittacamere in Via Santa Maria delle Rose, '
                            . 'ad Assisi. Letti, occupazione, servizi e tariffe.',
         'eyebrow'   => 'LE CAMERE',
-        'title'     => 'Cinque stanze, una',
-        'sign'      => 'casa',
+        'title'     => 'Cinque stanze,|una sola',
+        'sign'      => 'casa.',
         'lead'      => 'Sono cinque e stanno tutte nello stesso edificio. Qui sotto trovi letti, occupazione '
                      . 'massima e servizi di ciascuna; la disponibilità si verifica con le date.',
         'image_alt' => 'Segnaposto: la fotografia della casa non è ancora disponibile.',
@@ -197,7 +228,7 @@ return [
                              . '— la tripla — è l’unica ancora senza fotografia.',
 
         'list_title'    => 'Una per',
-        'list_sign'     => 'una',
+        'list_sign'     => 'una.',
         'rates_title'   => 'Le tariffe a confronto',
         'price_on_dates' => 'tariffa con le date',
         'price_on_dates_long' => 'La tariffa dipende dalle date e da quante persone siete: la vedi '
@@ -216,6 +247,13 @@ return [
             'beds'      => 'Letti',
             'rate'          => 'A notte',
             'not_available' => 'non disponibile per questo numero di ospiti',
+        ],
+        'card' => [
+            'layouts'      => 'Configurazioni',
+            'rate'         => 'Tariffa',
+            'photo_soon'   => 'Fotografia in arrivo',
+            'guests_one'   => '1 ospite',
+            'guests_up_to' => 'Fino a :count ospiti',
         ],
         'status' => [
             'free'     => 'LIBERA',
@@ -306,8 +344,8 @@ return [
         'seo_description' => 'Cinque camere in Via Santa Maria delle Rose, ad Assisi. Un affittacamere '
                            . 'gestito di persona da Daniele Pecetta dal 2002.',
         'eyebrow' => 'LA STRUTTURA',
-        'title'   => 'Una casa, cinque camere, una',
-        'sign'    => 'persona',
+        'title'   => 'Una casa, cinque camere,|una',
+        'sign'    => 'persona.',
         'lead'    => 'Arco del Vento è un affittacamere: cinque stanze in una casa di Via Santa Maria delle '
                    . 'Rose, ad Assisi, affittate una per volta a chi passa. Non è un albergo e non prova a '
                    . 'sembrarlo.',
@@ -346,8 +384,8 @@ return [
         'seo_description' => 'Cosa si raggiunge a piedi da Via Santa Maria delle Rose: San Rufino, Santa '
                            . 'Chiara, San Francesco, Piazza del Comune, la Spoliazione, le Carceri.',
         'eyebrow' => 'A PIEDI',
-        'title'   => 'Tutto quello che c’è, senza salire in',
-        'sign'    => 'auto',
+        'title'   => 'Tutto quello che c’è,|senza salire in',
+        'sign'    => 'auto.',
         'lead'    => 'La casa è dentro il centro storico di Assisi: da lì si va a piedi, in salita e in '
                    . 'discesa, e la distanza si misura in minuti, non in chilometri.',
         'image_alt' => 'Un vicolo in salita del centro di Assisi, con un campanile in pietra sullo sfondo.',
@@ -386,8 +424,8 @@ return [
         'seo_description' => 'Check-in, arrivo, parcheggio, scale, Wi-Fi, animali e regole della casa. '
                            . 'Le informazioni pratiche di Arco del Vento, affittacamere ad Assisi.',
         'eyebrow' => 'INFORMAZIONI',
-        'title'   => 'Quello che significa stare',
-        'sign'    => 'qui',
+        'title'   => 'Quello che significa|stare',
+        'sign'    => 'qui.',
         'lead'    => 'Questa non è la pagina secondaria del sito: è quella che si legge la sera prima di '
                    . 'partire. Dove un dato manca è segnato, non arrotondato.',
 
@@ -480,8 +518,8 @@ return [
         'seo_description' => 'Verifica le date e invia la richiesta di prenotazione ad Arco del Vento, '
                            . 'affittacamere in Via Santa Maria delle Rose, ad Assisi.',
         'eyebrow' => 'PRENOTA',
-        'title'   => 'Le date, e poi tutto il',
-        'sign'    => 'resto',
+        'title'   => 'Le date, e poi|tutto il',
+        'sign'    => 'resto.',
         'lead'    => 'Quattro passaggi: le date, la camera, i tuoi dati, la richiesta. Non si paga nulla '
                    . 'online e non serve un account.',
 
@@ -580,8 +618,8 @@ return [
         'seo_description' => 'Scrivi ad Arco del Vento, affittacamere in Via Santa Maria delle Rose, ad '
                            . 'Assisi. Risponde Daniele Pecetta.',
         'eyebrow' => 'CONTATTI',
-        'title'   => 'Scrivi, risponde una',
-        'sign'    => 'persona',
+        'title'   => 'Scrivi,|risponde una',
+        'sign'    => 'persona.',
         'lead'    => 'Non c’è un centralino e non c’è un modulo che smista: quello che scrivi lo legge '
                    . 'Daniele.',
 
@@ -621,8 +659,8 @@ return [
         'seo_description' => 'Quali dati raccoglie questo sito, perché, per quanto tempo e come si '
                            . 'chiede di cancellarli.',
         'eyebrow' => 'PRIVACY',
-        'title'   => 'Che cosa sappiamo di',
-        'sign'    => 'te',
+        'title'   => 'Che cosa|sappiamo di',
+        'sign'    => 'te.',
         'lead'    => 'Poco, e solo quello che serve per rispondere. Questa pagina lo dice per intero: '
                    . 'senza di essa le spunte nei moduli non vogliono dire niente.',
 
@@ -700,8 +738,8 @@ return [
     'not_found' => [
         'seo_title' => 'Pagina non trovata — Arco del Vento',
         'eyebrow'   => 'ERRORE 404',
-        'title'     => 'Questa pagina non',
-        'sign'      => 'esiste',
+        'title'     => 'Questa pagina|non',
+        'sign'      => 'esiste.',
         'lead'      => 'L’indirizzo che hai seguito non porta da nessuna parte. Le cinque camere, le '
                      . 'informazioni pratiche e i contatti sono tutti a un clic da qui.',
     ],
@@ -718,11 +756,8 @@ return [
         'photo_credits' => 'Fotografie della casa e delle camere: Arco del Vento. '
                          . 'Vedute di Assisi: Niels Baars, Gary Walker-Jones, Alessandro Guarino (Unsplash).',
         'rights'     => '© :year Arco del Vento di Pecetta Daniele',
+        'tagline'    => 'Cinque camere nel centro storico.|Una persona a tenerle aperte.',
+        'back_top'   => 'Torna su',
     ],
 
-    'theme' => [
-        'label'  => 'Tema',
-        'avorio' => 'Chiaro',
-        'notte'  => 'Notte',
-    ],
 ];

@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 788" width="1400" height="788" role="img">
-  <rect width="1400" height="788" fill="#eacb89"/>
-  <path d="M 518.8 606.8 L 518.8 299.4 A 181.2 181.2 0 0 1 881.2 299.4 L 881.2 606.8" fill="none" stroke="#a05938" stroke-width="3.2" stroke-linecap="round" opacity="0.5"/>
-  <text x="700" y="362.48" fill="#813131" opacity="0.62"
-        font-family="Prata, 'Playfair Display', Georgia, serif" font-size="149.72"
+  <rect width="1400" height="788" fill="#eee5d5"/>
+  <path d="M 518.8 606.8 L 518.8 299.4 A 181.2 181.2 0 0 1 881.2 299.4 L 881.2 606.8" fill="none" stroke="#b64c28" stroke-width="3.2" stroke-linecap="round" opacity="0.4"/>
+  <text x="700" y="362.48" fill="#b64c28" opacity="0.7"
+        font-family="'Cormorant Garamond', Georgia, serif" font-size="149.72"
         text-anchor="middle" dominant-baseline="central">05</text>
-  <text x="700" y="709.2" fill="#65412a"
-        font-family="Figtree, 'Segoe UI', system-ui, sans-serif" font-size="25.216"
-        font-weight="600" letter-spacing="2.5216" text-anchor="middle">FOTOGRAFIA DA FORNIRE</text>
+  <text x="700" y="504.714" fill="#1c3b35"
+        font-family="Sora, 'Segoe UI', system-ui, sans-serif" font-size="20.488"
+        font-weight="500" letter-spacing="2.0488" text-anchor="middle">FOTOGRAFIA DA FORNIRE</text>
 </svg>

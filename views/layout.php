@@ -62,11 +62,11 @@ foreach (($alternative ?? []) as $lingua => $indirizzo): ?>
 <link rel="apple-touch-icon" href="<?= e(asset('img/logo/icona-512.png')) ?>">
 
 <?php
-/* I due caratteri che si vedono per primi — il display del titolo e il testo
-   corrente — si precaricano. Allura entra solo su una parola per schermata,
-   quindi può arrivare con calma. */ ?>
-<link rel="preload" href="<?= e(asset('fonts/prata-latin.woff2')) ?>" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="<?= e(asset('fonts/figtree-latin.woff2')) ?>" as="font" type="font/woff2" crossorigin>
+/* I due caratteri che si vedono per primi — il titolo in Cormorant e il
+   testo in Sora — si precaricano. Il corsivo entra con una parola per
+   titolo, quindi può arrivare con calma. */ ?>
+<link rel="preload" href="<?= e(asset('fonts/cormorant-latin.woff2')) ?>" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="<?= e(asset('fonts/sora-latin.woff2')) ?>" as="font" type="font/woff2" crossorigin>
 
 <?php /* Sessanta byte, senza defer: segnano che il JavaScript c'è prima
          che la pagina si disegni, così le voci di riserva non compaiono
@@ -75,7 +75,6 @@ foreach (($alternative ?? []) as $lingua => $indirizzo): ?>
 
 <link rel="stylesheet" href="<?= e(asset('css/fonts.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/tokens.css')) ?>">
-<link rel="stylesheet" href="<?= e(asset('css/bundle.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/site.css')) ?>">
 
 <?= partial('structured-data', ['pagina' => $pagina, 'domande' => $domande ?? null, 'camera' => $camera ?? null, 'immagine' => $immagineAnteprima]) ?>

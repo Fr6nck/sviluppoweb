@@ -1,6 +1,6 @@
 /* Arco del Vento — area riservata.
    Uno strumento di lavoro: stessi colori e caratteri del sito, nessuna
-   decorazione. Tutto dai gettoni di tokens.css, così il tema scuro viene da sé.
+   decorazione. Tutto dai gettoni di tokens.css, così segue il sito.
    ================================================================ */
 
 .adm { margin: 0; background: var(--surface); color: var(--ink);

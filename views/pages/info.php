@@ -46,22 +46,34 @@ $riga = static function (string $chiave, mixed $valore, ?string $etichetta = nul
 };
 ?>
 
-<div class="adv-contenuto">
-  <header class="adv-heroT">
-    <span class="adv-heroT__occhiello"><?= te('info.eyebrow') ?></span>
-    <h1 class="adv-heroT__titolo">
-      <?= te('info.title') ?> <span class="adv-firma-inline"><?= te('info.sign') ?></span>
-    </h1>
-    <p class="adv-heroT__spalla"><?= te('info.lead') ?></p>
-  </header>
-</div>
+<header class="adv-contenuto adv-testa">
+  <?= occhiello(t('info.eyebrow'), 'adv-occhiello--centro') ?>
+  <h1 class="adv-titolo adv-titolo--xl"><?= titolo(t('info.title'), t('info.sign')) ?></h1>
+  <p class="adv-testa__testo"><?= te('info.lead') ?></p>
+  <ul class="adv-testa__meta">
+    <li><?= icona('orologio', 13) ?><?= te('info.items.check_in') ?> <?= e($stay['check_in_from'] . '–' . $stay['check_in_to']) ?></li>
+    <li><?= icona('pin', 13) ?><?= e(site('address.street')) ?></li>
+  </ul>
+</header>
 
-<section class="adv-contenuto adv-editoriale">
+<?php
+/** L'apertura di un pannello: l'icona nel cerchio e il titolo. */
+$testa = static function (string $sezione, string $icona): string {
+    return sprintf(
+        '<div class="adv-pannello__testa"><span class="adv-pannello__icona" aria-hidden="true">%s</span>'
+        . '<h2 class="adv-titolo adv-titolo--xs" id="info-%s">%s</h2></div>',
+        icona($icona, 18),
+        e($sezione),
+        te('info.sections.' . $sezione)
+    );
+};
+?>
 
-  <div class="adv-split adv-info-griglia">
+<section class="adv-contenuto adv-sezione adv-sezione--stretta-sopra">
+  <div class="adv-info-griglia">
 
-    <div>
-      <h2 class="adv-titolo-md"><?= te('info.sections.arrival') ?></h2>
+    <section class="adv-pannello" aria-labelledby="info-arrival">
+      <?= $testa('arrival', 'chiave') ?>
       <dl class="adv-fatti">
         <?php
         $riga('check_in', $stay['check_in_from'] . '–' . $stay['check_in_to']);
@@ -74,13 +86,13 @@ $riga = static function (string $chiave, mixed $valore, ?string $etichetta = nul
         $riga('cancellation', null);
         ?>
       </dl>
-    </div>
+    </section>
 
-    <div>
-      <?php /* «Come arrivare» raccoglie navigatore, parcheggio e mezzi. Il
-               parcheggio è la voce che pesa di più su chi arriva, e sta in
-               cima. */ ?>
-      <h2 class="adv-titolo-md"><?= te('info.sections.getting') ?></h2>
+    <?php /* «Come arrivare» raccoglie navigatore, parcheggio e mezzi. Il
+             parcheggio è la voce che pesa di più su chi arriva, e sta in
+             cima. */ ?>
+    <section class="adv-pannello" aria-labelledby="info-getting">
+      <?= $testa('getting', 'navigatore') ?>
       <dl class="adv-fatti">
         <?php
         $riga('navigator', t('info.known.navigator', ['place' => site('navigation.by_car')]));
@@ -92,10 +104,10 @@ $riga = static function (string $chiave, mixed $valore, ?string $etichetta = nul
         ?>
       </dl>
       <p class="adv-nota"><?= te('info.known.bus_note') ?> <?= daConfermare() ?></p>
-    </div>
+    </section>
 
-    <div>
-      <h2 class="adv-titolo-md"><?= te('info.sections.stay') ?></h2>
+    <section class="adv-pannello" aria-labelledby="info-stay">
+      <?= $testa('stay', 'orologio') ?>
       <dl class="adv-fatti">
         <?php
         $riga('breakfast', t('info.known.no_meals'));
@@ -114,10 +126,10 @@ $riga = static function (string $chiave, mixed $valore, ?string $etichetta = nul
         ]));
         ?>
       </dl>
-    </div>
+    </section>
 
-    <div>
-      <h2 class="adv-titolo-md"><?= te('info.sections.house') ?></h2>
+    <section class="adv-pannello" aria-labelledby="info-house">
+      <?= $testa('house', 'casa') ?>
       <dl class="adv-fatti">
         <?php
         $riga('rooms', t('info.known.rooms'));
@@ -130,10 +142,10 @@ $riga = static function (string $chiave, mixed $valore, ?string $etichetta = nul
         $riga('languages', $stay['languages']);
         ?>
       </dl>
-    </div>
+    </section>
 
-    <div>
-      <h2 class="adv-titolo-md"><?= te('info.sections.rules') ?></h2>
+    <section class="adv-pannello" aria-labelledby="info-rules">
+      <?= $testa('rules', 'spunta') ?>
       <dl class="adv-fatti">
         <?php
         $riga('smoking', t('info.known.no_smoking'));
@@ -143,10 +155,10 @@ $riga = static function (string $chiave, mixed $valore, ?string $etichetta = nul
         ?>
       </dl>
       <p class="adv-nota"><?= te('info.known.remote_work') ?></p>
-    </div>
+    </section>
 
-    <div>
-      <h2 class="adv-titolo-md"><?= te('info.sections.contact') ?></h2>
+    <section class="adv-pannello" aria-labelledby="info-contact">
+      <?= $testa('contact', 'telefono') ?>
       <dl class="adv-fatti">
         <div class="adv-fatti__riga">
           <dt><?= te('footer.where') ?></dt>
@@ -166,34 +178,37 @@ $riga = static function (string $chiave, mixed $valore, ?string $etichetta = nul
         </div>
         <?php $riga('contact_hours', $contatti['hours']['from'] . '–' . $contatti['hours']['to']); ?>
       </dl>
-    </div>
+    </section>
 
   </div>
 </section>
 
-<section class="adv-sezione-alt">
-  <div class="adv-contenuto adv-editoriale">
+<section class="adv-blocco adv-blocco--sabbia" aria-labelledby="titolo-domande">
+  <div class="adv-contenuto adv-due">
     <?= component('section-header', [
         'occhiello' => t('home.faq.eyebrow'),
         'titolo'    => t('home.faq.title'),
         'firma'     => t('home.faq.sign'),
+        'id'        => 'titolo-domande',
     ]) ?>
     <?= component('faq', ['domande' => $domande]) ?>
   </div>
 </section>
 
-<section class="adv-contenuto adv-editoriale">
-  <div class="adv-split">
-    <div>
-      <?= component('section-header', [
-          'occhiello' => t('contact.eyebrow'),
-          'titolo'    => t('contact.title'),
-          'firma'     => t('contact.sign'),
-          'testo'     => t('contact.lead'),
-      ]) ?>
-      <p class="adv-azione-coda">
-        <a class="adv-btn adv-btn--primario" href="<?= e(url('contact')) ?>"><?= te('cta.write') ?></a>
-      </p>
+<section class="adv-contenuto adv-sezione" aria-labelledby="titolo-scrivi">
+  <div class="adv-due adv-due--centro">
+    <?= component('section-header', [
+        'occhiello' => t('contact.eyebrow'),
+        'titolo'    => t('contact.title'),
+        'firma'     => t('contact.sign'),
+        'testo'     => t('contact.lead'),
+        'id'        => 'titolo-scrivi',
+    ]) ?>
+    <div class="adv-azioni adv-azioni--destra">
+      <a class="adv-btn adv-btn--primario adv-btn--grande" href="<?= e(url('contact')) ?>"><?= te('cta.write') ?><?= icona('freccia-su-destra', 14) ?></a>
+      <?php if (!empty($contatti['phone'])): ?>
+        <a class="adv-btn adv-btn--contorno adv-btn--grande" href="tel:<?= e(preg_replace('/[^\d+]/', '', (string) $contatti['phone'])) ?>"><?= icona('telefono', 15) ?><?= te('cta.call') ?></a>
+      <?php endif; ?>
     </div>
   </div>
 </section>

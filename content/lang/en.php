@@ -56,6 +56,13 @@ return [
         'contact'  => 'Contact',
         'book'     => 'Book now',
         'privacy'  => 'Privacy',
+        'brand_sub' => 'GUEST ROOMS · ASSISI',
+        'topbar' => [
+            'center'  => 'In the old town of Assisi',
+            'host'    => 'The owner welcomes you',
+            'parking' => 'Parking :metres m away',
+            'since'   => 'Open since 2002',
+        ],
     ],
 
     'cta' => [
@@ -81,51 +88,66 @@ return [
                            . 'Daniele Pecetta since 2002. Book direct.',
 
         'trust' => [
-            'Five rooms',
-            'In the old town',
-            'Open since 2002',
-            'The owner greets you',
+            'Direct booking',
+            'No platform commission',
+            'Daniele answers in person',
         ],
 
         'hero' => [
-            'eyebrow' => 'GUEST ROOMS · VIA SANTA MARIA DELLE ROSE',
-            'title'   => 'Five rooms in a house in',
-            'sign'    => 'Assisi',
-            'lead'    => 'Via Santa Maria delle Rose 1/A. Five rooms, run by Daniele Pecetta since 2002. '
-                       . 'We are not a hotel: we are a house that rents rooms, and you feel the difference '
-                       . 'on day one.',
+            'eyebrow' => 'GUEST ROOMS SINCE 2002',
+            'title'   => 'Five rooms,|one house in',
+            'sign'    => 'Assisi.',
+            'lead'    => 'In the old town, next to San Rufino.|Five rooms, looked after in person by Daniele.',
+            'place'   => 'Assisi, Umbria',
+            'scroll'  => 'Go to the rooms',
             'image_alt' => 'A steep lane in the old town of Assisi, with a stone bell tower in the background.',
             'image_credit' => 'Assisi, old town — photograph by Niels Baars, Unsplash',
         ],
 
-        'position' => [
-            'eyebrow' => 'THE LOCATION',
-            'title'   => 'The city starts outside the',
-            'sign'    => 'door',
-            'lead'    => 'The house is on Via Santa Maria delle Rose, inside the old town. You will not need '
-                       . 'the car: everything you came to see is within walking distance.',
-            'rufino_title' => 'San Rufino',
-            'rufino_text'  => 'San Rufino is the church of this quarter and the cathedral of the city: '
-                            . 'Francis and Clare were both baptised at its font. It is the closest landmark '
-                            . 'to the house, and the first bell tower you learn to recognise.',
-            'rufino_note'  => 'Which rooms look onto the bell tower',
-            'frame_caption' => 'THE VALLEY SEEN FROM THE HILL OF ASSISI',
-            'frame_count'   => 'UMBRIA',
-            'frame_alt'     => 'The Umbrian valley seen from above, with cultivated fields and a village in the distance.',
-        ],
-
-        'rooms' => [
-            'eyebrow' => 'THE ROOMS',
-            'title'   => 'The five rooms of the',
-            'sign'    => 'house',
-            'lead'    => 'Five rooms, all in the same house. What tells them apart are the beds, which way '
-                       . 'they face and how much space you get.',
+        'slides' => [
+            'label'     => 'Photographs of Assisi and of the house',
+            'prev'      => 'Previous photograph',
+            'next'      => 'Next photograph',
+            'pause'     => 'Pause the photographs',
+            'play'      => 'Play the photographs',
+            'valle'     => 'THE VALLEY, SEEN FROM ASSISI.',
+            'vicolo'    => 'THE OLD TOWN, ON FOOT.',
+            'basilica'  => 'SAN FRANCESCO, AT SUNSET.',
+            'corridoio' => 'THE COMPASS ROSE, IN THE HALLWAY.',
+            'camera'    => 'ONE OF THE FIVE ROOMS.',
         ],
 
         'manifesto' => [
-            'text'   => 'Five rooms. One person handing you the keys,',
-            'sign'   => 'since 2002',
-            'author' => 'ARCO DEL VENTO · GUEST ROOMS',
+            'text'   => 'Five rooms.|One person handing you the keys,',
+            'sign'   => 'since 2002.',
+            'author' => 'GUEST ROOMS|IN THE OLD TOWN OF ASSISI',
+        ],
+
+        'rooms' => [
+            'eyebrow'  => 'THE ROOMS OF THE HOUSE',
+            'title'    => 'The five rooms|of the',
+            'sign'     => 'house.',
+            'lead'     => 'Five rooms, all in the same house. What tells them apart are the beds, which way '
+                        . 'they face and how much space you get.',
+            'discover' => 'All the rooms',
+            'prev'     => 'Previous rooms',
+            'next'     => 'Next rooms',
+            'tagline'  => 'FIVE ROOMS, ONE HOUSE.',
+        ],
+
+        'position' => [
+            'eyebrow'  => 'THE OLD TOWN, ON FOOT',
+            'title'    => 'The city starts|outside the',
+            'sign'     => 'door.',
+            'lead'     => 'The house is on Via Santa Maria delle Rose, inside the old town. You will not need '
+                        . 'the car: everything you came to see is within walking distance.',
+            'rufino_text' => 'San Rufino is the church of this quarter and the cathedral of the city: '
+                           . 'Francis and Clare were both baptised at its font. It is the closest landmark '
+                           . 'to the house, and the first bell tower you learn to recognise.',
+            'chip'     => 'The old town',
+            'vertical' => 'ASSISI, ONE STEP AT A TIME',
+            'new_tab'  => 'on Google Maps, in a new tab',
+            'frame_alt'     => 'The Umbrian valley seen from above, with cultivated fields and a village in the distance.',
         ],
 
         'reviews' => [
@@ -137,24 +159,30 @@ return [
 
         'host' => [
             'eyebrow' => 'WHO KEEPS IT OPEN',
-            'title'   => 'The house is run by one',
-            'sign'    => 'person',
+            'title'   => 'The house is run|by one',
+            'sign'    => 'person.',
             'lead'    => 'No front desk, no room service, no call centre. There is Daniele, who opened in '
                        . '2002 and has kept it open ever since.',
             'numbers' => [
-                ['value' => '5',    'name' => 'ROOMS'],
+                ['value' => '05',   'name' => 'ROOMS'],
                 ['value' => '2002', 'name' => 'OPEN SINCE'],
-                ['value' => '1',    'name' => 'PERSON RUNNING IT'],
+                ['value' => '01',   'name' => 'PERSON RUNNING IT'],
             ],
         ],
 
+        'arrive' => [
+            'eyebrow'         => 'GETTING HERE',
+            'map'             => 'Open the map',
+            'navigator_label' => 'In the sat nav',
+            'parking_label'   => 'Parking',
+            'parking_value'   => 'Piazza Matteotti, :metres m',
+            'train_label'     => 'By train',
+            'train_value'     => 'Assisi station, then the bus',
+            'plane_label'     => 'By plane',
+            'plane_value'     => 'Perugia airport, then Airlink',
+        ],
+
         'walk' => [
-            'eyebrow' => 'ON FOOT',
-            'title'   => 'How long it really takes on',
-            'sign'    => 'foot',
-            'lead'    => 'These are the times worth knowing before you book. Daniele has to confirm them '
-                       . 'before they go on the public site: a walking time stated wrong is a guest arriving '
-                       . 'late.',
             'image_alt' => 'The Basilica di San Francesco at sunset, its pale stone façade lit from the side.',
             'image_credit' => 'Basilica di San Francesco — photograph by Alessandro Guarino, Unsplash',
         ],
@@ -162,15 +190,15 @@ return [
         'faq' => [
             'eyebrow' => 'THE USUAL QUESTIONS',
             'title'   => 'What people ask',
-            'sign'    => 'first',
+            'sign'    => 'first.',
         ],
 
         'closing' => [
-            'eyebrow' => 'BOOK',
-            'title'   => 'Ask for the dates you',
-            'sign'    => 'need',
+            'eyebrow' => 'DIRECT BOOKING',
+            'title'   => 'Ask for the dates|you',
+            'sign'    => 'need.',
             'lead'    => 'The request goes straight to Daniele — no agency in between, no platform '
-                       . 'commission. He answers it himself.',
+                       . 'commission. And the answer comes from Daniele too.',
         ],
     ],
 
@@ -179,8 +207,8 @@ return [
         'seo_description' => 'The five rooms of Arco del Vento, guest rooms on Via Santa Maria delle Rose in '
                            . 'Assisi. Beds, occupancy, amenities and rates.',
         'eyebrow'   => 'THE ROOMS',
-        'title'     => 'Five rooms, one',
-        'sign'      => 'house',
+        'title'     => 'Five rooms,|one',
+        'sign'      => 'house.',
         'lead'      => 'There are five and they are all in the same building. Below you will find the beds, '
                      . 'the maximum occupancy and the amenities of each one; availability is checked with dates.',
         'image_alt' => 'Placeholder: the photograph of the house is not available yet.',
@@ -195,7 +223,7 @@ return [
                              . 'Room 01 — the triple — is the only one still without a photograph.',
 
         'list_title'    => 'One by',
-        'list_sign'     => 'one',
+        'list_sign'     => 'one.',
         'rates_title'   => 'The rates side by side',
         'price_on_dates' => 'rate with your dates',
         'price_on_dates_long' => 'The rate depends on your dates and on how many of you there are: '
@@ -214,6 +242,13 @@ return [
             'beds'      => 'Beds',
             'rate'          => 'Per night',
             'not_available' => 'not available for this number of guests',
+        ],
+        'card' => [
+            'layouts'      => 'Layouts',
+            'rate'         => 'Rate',
+            'photo_soon'   => 'Photograph coming soon',
+            'guests_one'   => '1 guest',
+            'guests_up_to' => 'Up to :count guests',
         ],
         'status' => [
             'free'     => 'AVAILABLE',
@@ -303,8 +338,8 @@ return [
         'seo_description' => 'Five rooms on Via Santa Maria delle Rose in Assisi. Guest rooms run in person '
                            . 'by Daniele Pecetta since 2002.',
         'eyebrow' => 'THE HOUSE',
-        'title'   => 'One house, five rooms, one',
-        'sign'    => 'person',
+        'title'   => 'One house, five rooms,|one',
+        'sign'    => 'person.',
         'lead'    => 'Arco del Vento rents rooms: five of them, in a house on Via Santa Maria delle Rose in '
                    . 'Assisi, let one at a time to whoever is passing through. It is not a hotel and does '
                    . 'not try to look like one.',
@@ -343,8 +378,8 @@ return [
         'seo_description' => 'What you can reach on foot from Via Santa Maria delle Rose: San Rufino, Santa '
                            . 'Chiara, San Francesco, Piazza del Comune, the Spoliazione, the Carceri.',
         'eyebrow' => 'ON FOOT',
-        'title'   => 'Everything there is, without getting in the',
-        'sign'    => 'car',
+        'title'   => 'Everything there is,|without getting in the',
+        'sign'    => 'car.',
         'lead'    => 'The house is inside the old town of Assisi: from there you walk, uphill and down, and '
                    . 'distance is measured in minutes rather than kilometres.',
         'image_alt' => 'A steep lane in the old town of Assisi, with a stone bell tower in the background.',
@@ -382,8 +417,8 @@ return [
         'seo_description' => 'Check-in, arrival, parking, stairs, Wi-Fi, pets and house rules. Practical '
                            . 'information for Arco del Vento, guest rooms in Assisi.',
         'eyebrow' => 'INFORMATION',
-        'title'   => 'What staying here actually',
-        'sign'    => 'means',
+        'title'   => 'What staying here|actually',
+        'sign'    => 'means.',
         'lead'    => 'This is not the site’s secondary page: it is the one people read the night before '
                    . 'they travel. Where a fact is missing it is marked, not rounded off.',
 
@@ -475,8 +510,8 @@ return [
         'seo_description' => 'Check your dates and send a booking request to Arco del Vento, guest rooms on '
                            . 'Via Santa Maria delle Rose in Assisi.',
         'eyebrow' => 'BOOK',
-        'title'   => 'The dates first, then the',
-        'sign'    => 'rest',
+        'title'   => 'The dates first,|then the',
+        'sign'    => 'rest.',
         'lead'    => 'Four steps: the dates, the room, your details, the request. Nothing is paid online '
                    . 'and no account is needed.',
 
@@ -573,8 +608,8 @@ return [
         'seo_description' => 'Write to Arco del Vento, guest rooms on Via Santa Maria delle Rose in Assisi. '
                            . 'Daniele Pecetta answers.',
         'eyebrow' => 'CONTACT',
-        'title'   => 'Write, and a person',
-        'sign'    => 'answers',
+        'title'   => 'Write,|and a person',
+        'sign'    => 'answers.',
         'lead'    => 'There is no switchboard and no form that routes anywhere: what you write, Daniele '
                    . 'reads.',
 
@@ -613,8 +648,8 @@ return [
         'seo_description' => 'What data this site collects, why, for how long, and how to ask for it to '
                            . 'be deleted.',
         'eyebrow' => 'PRIVACY',
-        'title'   => 'What we know about',
-        'sign'    => 'you',
+        'title'   => 'What we know|about',
+        'sign'    => 'you.',
         'lead'    => 'Little, and only what is needed to answer. This page says all of it: without it '
                    . 'the tick-boxes in the forms mean nothing.',
 
@@ -690,8 +725,8 @@ return [
     'not_found' => [
         'seo_title' => 'Page not found — Arco del Vento',
         'eyebrow'   => 'ERROR 404',
-        'title'     => 'This page does not',
-        'sign'      => 'exist',
+        'title'     => 'This page|does not',
+        'sign'      => 'exist.',
         'lead'      => 'The address you followed leads nowhere. The five rooms, the practical information '
                      . 'and the contact page are all one click from here.',
     ],
@@ -707,11 +742,8 @@ return [
         'photo_credits' => 'Photographs of the house and the rooms: Arco del Vento. '
                          . 'Views of Assisi: Niels Baars, Gary Walker-Jones, Alessandro Guarino (Unsplash).',
         'rights'     => '© :year Arco del Vento di Pecetta Daniele',
+        'tagline'    => 'Five rooms in the old town.|One person keeping them open.',
+        'back_top'   => 'Back to top',
     ],
 
-    'theme' => [
-        'label'  => 'Theme',
-        'avorio' => 'Light',
-        'notte'  => 'Night',
-    ],
 ];

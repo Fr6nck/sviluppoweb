@@ -30,10 +30,10 @@ $formats = [
     '1x1'  => [700, 700],
 ];
 
-$sabbia = '#eacb89';   // surface-sunken
-$siena  = '#a05938';   // decoro
-$noce   = '#65412a';   // ink-muted
-$mattone = '#813131';  // ink-brand
+$sabbia = '#eee5d5';   // sabbia
+$siena  = '#b64c28';   // terracotta, per l'arco
+$noce   = '#1c3b35';   // verde, per la scritta
+$mattone = '#b64c28';  // terracotta, per il numero
 
 /** Un arco: due montanti e una volta a tutto sesto. È la forma del marchio. */
 $arco = static function (float $cx, float $cy, float $w, float $h, string $colore, float $spessore): string {
@@ -44,7 +44,7 @@ $arco = static function (float $cx, float $cy, float $w, float $h, string $color
 
     return sprintf(
         '<path d="M %1$.1f %2$.1f L %1$.1f %3$.1f A %4$.1f %4$.1f 0 0 1 %5$.1f %3$.1f L %5$.1f %2$.1f" '
-        . 'fill="none" stroke="%6$s" stroke-width="%7$.1f" stroke-linecap="round" opacity="0.5"/>',
+        . 'fill="none" stroke="%6$s" stroke-width="%7$.1f" stroke-linecap="round" opacity="0.4"/>',
         $left, $base, $spring, $r, $left + $w, $colore, $spessore
     );
 };
@@ -58,20 +58,22 @@ $svg = static function (int $w, int $h, string $ordinale, string $etichetta) use
     $cy     = $h / 2 - $lato * 0.04;
 
     $ordinaleSize  = $lato * 0.19;
-    $etichettaSize = max(11.0, $lato * 0.032);
-    $etichettaY    = $h - $lato * 0.10;          // la riga sta staccata dal bordo basso
+    $etichettaSize = max(10.0, $lato * 0.026);
+    // La scritta sta dentro l'arco, sotto il numero: le schede tagliano la
+    // fotografia in alto e in basso, e una riga sul bordo sparirebbe.
+    $etichettaY    = $cy + $ordinaleSize * 0.95;
     $etichettaGap  = $etichettaSize * 0.10;      // maiuscoletto: le lettere vanno spaziate
 
     return <<<SVG
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {$w} {$h}" width="{$w}" height="{$h}" role="img">
       <rect width="{$w}" height="{$h}" fill="{$sabbia}"/>
       {$arco($cx, $cy, $archW, $archH, $siena, max(1.5, $lato * 0.004))}
-      <text x="{$cx}" y="{$cy}" fill="{$mattone}" opacity="0.62"
-            font-family="Prata, 'Playfair Display', Georgia, serif" font-size="{$ordinaleSize}"
+      <text x="{$cx}" y="{$cy}" fill="{$mattone}" opacity="0.7"
+            font-family="'Cormorant Garamond', Georgia, serif" font-size="{$ordinaleSize}"
             text-anchor="middle" dominant-baseline="central">{$ordinale}</text>
       <text x="{$cx}" y="{$etichettaY}" fill="{$noce}"
-            font-family="Figtree, 'Segoe UI', system-ui, sans-serif" font-size="{$etichettaSize}"
-            font-weight="600" letter-spacing="{$etichettaGap}" text-anchor="middle">{$etichetta}</text>
+            font-family="Sora, 'Segoe UI', system-ui, sans-serif" font-size="{$etichettaSize}"
+            font-weight="500" letter-spacing="{$etichettaGap}" text-anchor="middle">{$etichetta}</text>
     </svg>
     SVG;
 };

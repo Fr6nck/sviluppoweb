@@ -296,7 +296,6 @@ $esclusi = [
     'tools/router.php'     => 'serve al server di sviluppo di PHP, in produzione mai',
     'tools/serve.sh'       => 'idem',
     'tools/build-photos.php'      => 'strumento da tavolo: vuole GD',
-    'tools/build-tokens.php'      => 'strumento da tavolo',
     'tools/build-placeholders.php' => 'strumento da tavolo',
     'tools/build-release.php'     => 'questo stesso strumento',
 ];
