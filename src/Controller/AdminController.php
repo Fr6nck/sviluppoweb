@@ -64,6 +64,12 @@ final class AdminController
 
     private readonly Form $form;
 
+    /** La pagina corrente sotto /admin, con la sua query: il pulsante del tema ci torna. */
+    private string $percorso = '';
+
+    /** Il cookie del tema: chiaro, scuro, o assente (segue il sistema). */
+    private const COOKIE_TEMA = 'adv_tema';
+
     public function __construct(private readonly App $app)
     {
         $this->form = new Form(array_values((array) $app->config('i18n.available')));
@@ -76,6 +82,8 @@ final class AdminController
         $resto  = trim(substr($request->path, strlen('/admin')), '/');
         $pezzi  = $resto === '' ? [] : explode('/', $resto);
         $metodo = $request->isPost() ? 'POST' : 'GET';
+        $query  = (string) ($request->server['QUERY_STRING'] ?? '');
+        $this->percorso = $resto . ($query !== '' && !$request->isPost() ? '?' . $query : '');
 
         // Un file più grande di post_max_size fa arrivare la richiesta vuota,
         // gettone compreso: senza questo controllo sembrerebbe una sessione
@@ -92,6 +100,11 @@ final class AdminController
             return $this->headers(Response::html($this->page('scaduta', [
                 'titolo' => 'Sessione scaduta',
             ]), 403));
+        }
+
+        // Il tema si sceglie anche dalla pagina di accesso: prima di tutto il resto.
+        if ($pezzi === ['tema'] && $metodo === 'POST') {
+            return $this->headers($this->theme($request));
         }
 
         $auth = $this->app->auth();
@@ -243,6 +256,40 @@ final class AdminController
         $this->flash('ok', 'Password cambiata.');
 
         return Response::redirect($this->url('account'), 303);
+    }
+
+    // =============================================================== tema
+
+    /**
+     * Chiaro o scuro, per chi usa questo browser. È una preferenza di chi
+     * guarda, non un dato del sito: sta in un cookie, non in storage/data.
+     */
+    private function theme(Request $request): Response
+    {
+        $tema = (string) $this->in($request, 'tema', '');
+        $opzioni = [
+            'path'     => Routes::base() . '/admin',
+            'secure'   => (($request->server['HTTPS'] ?? '') !== '' && ($request->server['HTTPS'] ?? '') !== 'off')
+                          || (($request->server['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'),
+            'httponly' => false,   // lo scrive anche admin.js, per cambiare senza ricaricare
+            'samesite' => 'Lax',
+        ];
+        if (in_array($tema, ['chiaro', 'scuro'], true)) {
+            setcookie(self::COOKIE_TEMA, $tema, ['expires' => time() + 365 * 86400] + $opzioni);
+        } else {
+            setcookie(self::COOKIE_TEMA, '', ['expires' => time() - 3600] + $opzioni);
+        }
+        $ritorno = (string) $this->in($request, 'ritorno', '');
+        $ritorno = preg_match('#^[A-Za-z0-9/_.\-]*(\?[A-Za-z0-9_=&%.\-]*)?$#', $ritorno) === 1 ? $ritorno : '';
+
+        return Response::redirect($this->url($ritorno), 303);
+    }
+
+    private function tema(): ?string
+    {
+        $tema = $_COOKIE[self::COOKIE_TEMA] ?? null;
+
+        return in_array($tema, ['chiaro', 'scuro'], true) ? $tema : null;
     }
 
     // =============================================================== bacheca
@@ -895,6 +942,8 @@ final class AdminController
             'valori' => [],
             'lingue' => $this->form->languages(),
             'vista'  => $vista,
+            'tema'   => $this->tema(),
+            'percorso' => $this->percorso,
         ];
         $dati['contenuto'] = $this->app->view()->render('admin/' . $vista, $dati);
 

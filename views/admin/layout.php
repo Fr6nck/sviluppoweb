@@ -18,6 +18,8 @@
  * @var int         $nuove
  * @var int         $daCompletare
  * @var string      $vista
+ * @var string|null $tema     chiaro | scuro | null: segue il sistema
+ * @var string      $percorso la pagina corrente, sotto /admin
  */
 
 use ArcoDelVento\Support\Csrf;
@@ -41,11 +43,14 @@ $attiva = match ($vista) {
 };
 $rosa  = immagine('marchio.rosa');
 $logo  = immagine('marchio.logotipo');
+$logoChiaro = immagine('marchio.logotipo-chiaro');
+$larghezza = static fn (array $l, int $alto, float $rapporto): int => (int) round($alto * (($l['w'] ?? 0) && ($l['h'] ?? 0) ? $l['w'] / $l['h'] : $rapporto));
+$pulsanteTema = $this->render('admin/_tema', ['tema' => $tema ?? null, 'ritorno' => $percorso ?? '', 'classe' => '']);
 $sito  = url('home', [], [], 'it');
 $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
 ?>
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it"<?= in_array($tema ?? null, ['chiaro', 'scuro'], true) ? ' data-tema="' . e($tema) . '"' : '' ?>>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -63,7 +68,8 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
   <div class="adm-fuori__scheda">
     <p class="adm-fuori__marchio">
       <img src="<?= e(asset($rosa['src'] . '-96.png')) ?>" alt="" width="48" height="48">
-      <img src="<?= e(asset((string) $logo['src'])) ?>" alt="Arco del Vento" height="44" width="<?= (int) round(44 * (($logo['w'] ?? 111) / max(1, $logo['h'] ?? 66))) ?>">
+      <img class="adm-marchio-scuro" src="<?= e(asset((string) $logo['src'])) ?>" alt="Arco del Vento" height="44" width="<?= $larghezza($logo, 44, 111 / 66) ?>">
+      <img class="adm-marchio-chiaro" src="<?= e(asset((string) $logoChiaro['src'])) ?>" alt="Arco del Vento" height="44" width="<?= $larghezza($logoChiaro, 44, 185 / 110) ?>">
     </p>
     <p class="adm-fuori__area">Area riservata</p>
     <h1 class="adm-titolo"><?= e($titolo) ?></h1>
@@ -71,6 +77,8 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
     <?= $contenuto ?>
   </div>
   <p class="adm-fuori__piede"><a href="<?= e($sito) ?>"><?= icona('freccia-sinistra', 14) ?> Torna al sito</a></p>
+  <?php /* Dopo la scheda, non prima: il primo pulsante del modulo di accesso resta «Entra». */ ?>
+  <div class="adm-fuori__tema"><?= $pulsanteTema ?></div>
 </main>
 </body>
 <?php else: ?>
@@ -81,7 +89,8 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
   <aside class="adm-lato">
     <a class="adm-lato__marchio" href="<?= e(adminUrl()) ?>" aria-label="Arco del Vento, area riservata: bacheca">
       <img class="adm-lato__rosa" src="<?= e(asset($rosa['src'] . '-96.png')) ?>" alt="" width="40" height="40">
-      <img class="adm-lato__nome" src="<?= e(asset((string) $logo['src'])) ?>" alt="" height="36" width="<?= (int) round(36 * (($logo['w'] ?? 111) / max(1, $logo['h'] ?? 66))) ?>">
+      <img class="adm-lato__nome adm-marchio-scuro" src="<?= e(asset((string) $logo['src'])) ?>" alt="" height="42" width="<?= $larghezza($logo, 42, 111 / 66) ?>">
+      <img class="adm-lato__nome adm-marchio-chiaro" src="<?= e(asset((string) $logoChiaro['src'])) ?>" alt="" height="42" width="<?= $larghezza($logoChiaro, 42, 185 / 110) ?>">
     </a>
 
     <nav class="adm-nav" aria-label="Sezioni dell'area riservata">
@@ -144,6 +153,7 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
       </form>
       <div class="adm-barra__azioni">
         <a class="adm-pillola" href="<?= e($sito) ?>" target="_blank" rel="noopener"><?= icona('esterno', 16) ?><span>Vedi il sito</span></a>
+        <?= $pulsanteTema ?>
         <a class="adm-tondo<?= $nuove > 0 ? ' adm-tondo--segnale' : '' ?>" href="<?= e(adminUrl('richieste')) ?>?stato=nuova"
            aria-label="<?= $nuove > 0 ? (int) $nuove . ($nuove === 1 ? ' richiesta nuova' : ' richieste nuove') : 'Nessuna richiesta nuova' ?>">
           <?= icona('campanella', 19) ?>

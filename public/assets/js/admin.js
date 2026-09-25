@@ -1,10 +1,50 @@
 /* Arco del Vento — area riservata.
-   Solo comodità: l'anteprima del file scelto prima di caricarlo, e il file
-   trascinato sul riquadro. Senza JavaScript il modulo funziona lo stesso. */
+   Solo comodità: il tema chiaro o scuro senza ricaricare, l'anteprima del
+   file scelto prima di caricarlo e il file trascinato sul riquadro. Senza
+   JavaScript funziona tutto lo stesso, con un passaggio in più. */
 (function () {
   'use strict';
 
   var TIPI = ['image/jpeg', 'image/png', 'image/webp'];
+
+  /* ---------------------------------------------------- chiaro e scuro
+     Il server ha già scritto il tema scelto su <html>; qui il pulsante lo
+     cambia senza ricaricare e scrive lo stesso cookie che scriverebbe il
+     server. Senza una scelta vale quello del sistema. */
+  var radice = document.documentElement;
+  var sistemaScuro = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+  function temaAttuale() {
+    var scelto = radice.getAttribute('data-tema');
+    if (scelto === 'chiaro' || scelto === 'scuro') return scelto;
+    return sistemaScuro && sistemaScuro.matches ? 'scuro' : 'chiaro';
+  }
+
+  document.querySelectorAll('[data-tema-modulo]').forEach(function (modulo) {
+    var bottone = modulo.querySelector('button');
+    if (!bottone) return;
+
+    function allinea() {
+      var scuro = temaAttuale() === 'scuro';
+      bottone.setAttribute('aria-pressed', scuro ? 'true' : 'false');
+      bottone.value = scuro ? 'chiaro' : 'scuro';
+    }
+
+    modulo.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var nuovo = temaAttuale() === 'scuro' ? 'chiaro' : 'scuro';
+      radice.setAttribute('data-tema', nuovo);
+      document.cookie = 'adv_tema=' + nuovo + '; path=' + (modulo.getAttribute('data-tema-percorso') || '/') +
+        '; max-age=31536000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : '');
+      document.querySelectorAll('[data-tema-modulo] button').forEach(function (b) {
+        b.setAttribute('aria-pressed', nuovo === 'scuro' ? 'true' : 'false');
+        b.value = nuovo === 'scuro' ? 'chiaro' : 'scuro';
+      });
+    });
+
+    allinea();
+    if (sistemaScuro && sistemaScuro.addEventListener) sistemaScuro.addEventListener('change', allinea);
+  });
 
   function misura(byte) {
     return byte >= 1048576

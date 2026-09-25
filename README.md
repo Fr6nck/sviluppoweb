@@ -409,6 +409,13 @@ piccole per il posto, troppo grandi per la memoria del server. I file vanno in
 `public/assets/media/` (chiusa agli script da un suo `.htaccess`, fuori dal
 pacchetto e da git), il posto che usano in `storage/data/immagini.json`.
 
+**Chiaro o scuro.** Il pulsante con la luna (o il sole) nella barra in alto, e
+sulla pagina di accesso, passa dal tema chiaro a quello scuro. Finché non si
+sceglie, il pannello segue il tema del telefono o del computer. La scelta sta
+in un cookie del browser (`adv_tema`, solo sotto `/admin`), e il server la
+scrive già nella pagina: niente lampo chiaro all'apertura. Senza JavaScript il
+pulsante funziona lo stesso, come modulo. Il sito pubblico resta com'è.
+
 **La bacheca non inventa.** Tutti i numeri vengono dalle richieste arrivate dal
 sito (`src/Admin/Cruscotto.php`); i grafici sono SVG disegnati sul server
 (`src/Admin/Grafici.php`), senza librerie e senza stili in linea, che la
