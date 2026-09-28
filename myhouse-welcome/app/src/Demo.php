@@ -2,16 +2,17 @@
 namespace MHW;
 
 /**
- * Dati di esempio: tre host con contenuti veri, guide pubblicate e foto.
+ * La demo: tre host di esempio, per vedere il prodotto abitato invece che vuoto.
  *
- * Serve a vedere il prodotto pieno invece che vuoto. Sono account finti:
- * cancellateli prima di aprire il sito al pubblico.
+ * Sono account veri con una password nota: si tolgono prima di aprire al
+ * pubblico. Le strutture sono segnate come demo e la guida lo dice agli
+ * ospiti. Nessun numero inventato: niente statistiche finte, niente scansioni
+ * finte, niente codici di cassette. I badge dei luoghi sono consigli
+ * dell'host, non orari che nessuno controlla.
  */
 final class Demo
 {
     public const PASSWORD = 'dimostrazione1';
-
-    /** Il dominio che marca gli account finti: serve a poterli togliere tutti. */
     public const DOMINIO = 'esempio.it';
 
     public static function presente(): bool
@@ -19,222 +20,199 @@ final class Demo
         return (bool) Db::val('SELECT COUNT(*) FROM users WHERE email LIKE ?', ['%@' . self::DOMINIO], 0);
     }
 
-    /**
-     * Toglie di mezzo gli account di esempio, le loro guide e le loro foto.
-     * Le chiavi esterne fanno il resto: un utente cancellato porta via account,
-     * strutture, sezioni, traduzioni, luoghi, ordini e statistiche.
-     */
     public static function rimuovi(): int
     {
-        $utenti = Db::all('SELECT id FROM users WHERE email LIKE ?', ['%@' . self::DOMINIO]);
-        $dir = Config::get('uploads_dir');
-        foreach (glob($dir . '/demo-*') ?: [] as $f) @unlink($f);
-        foreach ($utenti as $u) Db::run('DELETE FROM users WHERE id = ?', [$u['id']]);
+        $utenti = Db::all('SELECT u.id, a.id AS account_id FROM users u JOIN accounts a ON a.user_id = u.id WHERE u.email LIKE ?', ['%@' . self::DOMINIO]);
+        foreach ($utenti as $u) {
+            foreach (Db::all('SELECT id FROM media WHERE account_id = ?', [$u['account_id']]) as $m) Media::delete((int) $m['id'], (int) $u['account_id']);
+            Db::run('DELETE FROM users WHERE id = ?', [$u['id']]);
+        }
         return count($utenti);
     }
 
-    /** Le foto di partenza, copiate dentro storage/uploads come se fossero caricate. */
-    private static function foto(string $nome, int $accountId, string $alt): ?int
+    private static function foto(string $nome, int $accountId, int $propertyId, string $alt): ?int
     {
-        // Le fotografie stanno fra i file serviti dal web, che a seconda della
-        // disposizione sta dentro o accanto alla cartella dell'applicazione.
-        $sorgente = null;
         foreach ([defined('MHW_PUBLIC') ? MHW_PUBLIC : null, dirname(__DIR__) . '/public'] as $dove) {
-            if ($dove && is_file($dove . '/assets/foto/' . $nome)) { $sorgente = $dove . '/assets/foto/' . $nome; break; }
+            if ($dove && is_file($dove . '/assets/foto/' . $nome)) return Media::importImage($dove . '/assets/foto/' . $nome, $accountId, $propertyId, $alt);
         }
-        if ($sorgente === null) return null;
-
-        $dir = Config::get('uploads_dir');
-        if (!is_dir($dir)) @mkdir($dir, 0775, true);
-        $destinazione = 'demo-' . Support::token(6) . '-' . $nome;
-        if (!@copy($sorgente, $dir . '/' . $destinazione)) return null;
-
-        $info = @getimagesize($dir . '/' . $destinazione) ?: [0, 0];
-        return Db::insert('media', [
-            'account_id' => $accountId, 'filename' => $destinazione, 'mime' => 'image/jpeg',
-            'bytes' => (int) filesize($dir . '/' . $destinazione),
-            'width' => (int) $info[0], 'height' => (int) $info[1],
-            'alt' => $alt, 'created_at' => Support::now(),
-        ]);
+        return null;
     }
 
-    private static function pacchetto(string $codice): ?array
-    {
-        return Db::one(
-            'SELECT pv.* FROM package_versions pv JOIN packages p ON p.id = pv.package_id
-             WHERE p.code = ? AND pv.is_current = 1', [$codice]);
-    }
-
-    /** Un host completo: account, abbonamento pagato, struttura, sezioni, lingue. */
     private static function host(string $nome, string $email, string $pacchetto): array
     {
         $u = Auth::register($email, self::PASSWORD, $nome);
-        $pv = self::pacchetto($pacchetto);
-        if ($pv) {
-            $ordine = Db::insert('orders', [
-                'account_id' => $u['account_id'], 'package_version_id' => $pv['id'],
-                'amount_cents' => $pv['price_cents'], 'currency' => $pv['currency'],
-                'status' => 'pending', 'provider' => 'dimostrazione',
-                'provider_session_id' => '', 'created_at' => Support::now(),
-            ]);
-            Billing::markPaid($ordine, 'dimostrazione');
-        }
+        Db::update('users', ['email_verified_at' => Support::now()], 'id = :uid', ['uid' => $u['user_id']]);
+        Auth::recordConsent((int) $u['user_id']);
+        $pv = (int) Db::val('SELECT pv.id FROM package_versions pv JOIN packages p ON p.id = pv.package_id
+                             WHERE p.code = ? AND pv.is_current = 1', [$pacchetto]);
+        // Un abbonamento dimostrativo: nessun pagamento, e l'incasso del quadro non lo conta.
+        Db::insert('subscriptions', [
+            'account_id' => $u['account_id'], 'package_version_id' => $pv, 'status' => 'active',
+            'provider' => 'dimostrazione', 'payment_status' => 'dimostrazione',
+            'current_period_start' => Support::now(), 'current_period_end' => gmdate('Y-m-d\TH:i:s\Z', strtotime('+1 year')),
+            'created_at' => Support::now(), 'updated_at' => Support::now(),
+        ]);
+        Db::update('accounts', ['intended_package_version_id' => $pv], 'id = :aid', ['aid' => $u['account_id']]);
+        Entitlements::forget((int) $u['account_id']);
         return $u;
     }
 
-    private static function struttura(int $accountId, array $dati): int
+    private static function struttura(int $acc, array $d): int
     {
-        $pid = Db::insert('properties', [
-            'account_id' => $accountId,
-            'name' => $dati['nome'], 'slug' => Support::uniqueSlug($dati['nome']),
-            'city' => $dati['citta'], 'region' => $dati['regione'],
-            'checkin_from' => $dati['arrivo'], 'checkout_by' => $dati['partenza'],
-            'host_name' => $dati['host'], 'host_phone' => $dati['telefono'],
-            'host_whatsapp' => $dati['telefono'],
-            'cover_media_id' => $dati['copertina'],
-            'default_locale' => 'it', 'status' => 'draft', 'created_at' => Support::now(),
-        ]);
-        foreach ($dati['lingue'] as $l) Db::insert('property_locales', ['property_id' => $pid, 'locale' => $l]);
-        Db::insert('qr_tokens', ['property_id' => $pid, 'token' => Support::token(9),
-                                 'scans' => $dati['scansioni'], 'created_at' => Support::now()]);
+        $pid = Properties::create($acc, $d['nome'], $d['citta'], $d['host']);
+        Db::update('properties', [
+            'region' => $d['regione'], 'checkin_from' => $d['arrivo'], 'checkout_by' => $d['partenza'],
+            'host_phone' => $d['telefono'], 'host_whatsapp' => $d['telefono'], 'palette' => $d['palette'],
+            'is_demo' => 1, 'wizard_step' => 'fatto',
+        ], 'id = :pid', ['pid' => $pid]);
+        Properties::setLocales($acc, $pid, $d['lingue']);
         return $pid;
     }
 
-    private static function sezione(int $pid, int $pos, array $s): int
+    private static function nucleo(int $pid): int
     {
-        $sid = Db::insert('sections', [
-            'property_id' => $pid, 'kind' => $s['tipo'], 'icon' => $s['tipo'],
-            'color' => $s['colore'], 'position' => $pos,
-            'wifi_ssid' => $s['ssid'] ?? '', 'wifi_pass' => $s['pass'] ?? '',
-            'door_code' => $s['codice'] ?? '', 'media_id' => $s['foto'] ?? null,
-            'created_at' => Support::now(),
-        ]);
-        foreach ($s['testi'] as $locale => [$titolo, $corpo]) {
-            Db::insert('section_translations', [
-                'section_id' => $sid, 'locale' => $locale, 'title' => $titolo, 'body' => $corpo,
-                'state' => $locale === 'it' ? 'reviewed' : ($s['riviste'] ?? false ? 'reviewed' : 'machine'),
-                'updated_at' => Support::now(),
-            ]);
+        return (int) Db::val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$pid]);
+    }
+
+    /** @param array<string,array> $testi lingua => campi */
+    private static function scrivi(int $pid, int $sid, array $testi, string $titoloIt = ''): void
+    {
+        foreach ($testi as $loc => $campi) {
+            Properties::saveSection($pid, $sid, $loc, $campi + ['title' => $loc === 'it' ? $titoloIt : ''], $loc === 'it');
         }
-        return $sid;
     }
 
     public static function popola(): array
     {
         $creati = [];
 
-        // ---------------------------------------------------- Casa Lucia, Toscana
+        // ------------------------------------------------ Casa Lucia, Toscana — Plus
         $lucia = self::host('Lucia Ferrante', 'lucia@' . self::DOMINIO, 'plus');
         $acc = (int) $lucia['account_id'];
         $pid = self::struttura($acc, [
-            'nome' => 'Casa Lucia', 'citta' => 'Montepulciano', 'regione' => 'Toscana',
-            'arrivo' => '15:00', 'partenza' => '10:30', 'host' => 'Lucia',
-            'telefono' => '+39 0578 000000', 'lingue' => ['it', 'en', 'de'],
-            'scansioni' => 128,
-            'copertina' => self::foto('casa.jpg', $acc, 'La casa in pietra vista dal vialetto'),
+            'nome' => 'Casa Lucia', 'citta' => 'Montepulciano', 'regione' => 'Toscana', 'host' => 'Lucia',
+            'arrivo' => '15:00', 'partenza' => '10:30', 'telefono' => '+39 0578 000000',
+            'lingue' => ['it', 'en', 'de'], 'palette' => 'terracotta',
         ]);
-        self::sezione($pid, 0, [
-            'tipo' => 'checkin', 'colore' => 'terracotta', 'codice' => '4729',
-            'foto' => self::foto('portone.jpg', $acc, 'Il portone con le rose accanto'),
-            'riviste' => true,
-            'testi' => [
-                'it' => ['Entrare in casa', "La cassetta delle chiavi è a destra del portone, dietro il glicine, all'altezza della mano.\n\nRuotate la manopola dopo l'ultima cifra, poi tirate: la porta è pesante.\n\nNota: se arrivate dopo le 21, scriveteci — veniamo ad aprire noi."],
-                'en' => ['Getting in', "The key box is to the right of the door, behind the wisteria, at hand height.\n\nTurn the knob after the last digit, then pull: the door is heavy.\n\nNota: if you arrive after 9pm, message us — we will come and open up."],
-                'de' => ['Ins Haus kommen', "Der Schlüsselkasten ist rechts von der Tür, hinter dem Blauregen, auf Handhöhe.\n\nDrehen Sie den Knauf nach der letzten Ziffer."],
-            ],
+        Db::update('properties', [
+            'cover_media_id' => self::foto('casa.jpg', $acc, $pid, 'La casa in pietra vista dal vialetto'),
+        ], 'id = :pid', ['pid' => $pid]);
+
+        $core = self::nucleo($pid);
+        Db::update('sections', ['media_id' => self::foto('portone.jpg', $acc, $pid, 'Il portone con le rose accanto')], 'id = :sid', ['sid' => $core]);
+        self::scrivi($pid, $core, [
+            'it' => ['checkin_steps' => ["Il portone d'ingresso è quello rosso, a destra della fontana.",
+                                        'Lucia ti aspetta in casa per consegnarti le chiavi e mostrarti dove si trova tutto.'],
+                     'checkin_note' => "Se arrivi dopo le 21, scrivici su WhatsApp: ci organizziamo.",
+                     'checkout_keys' => 'Lascia le chiavi sul tavolo della cucina e accosta il portone.',
+                     'checkout_waste' => "L'umido va nel bidone marrone in cortile.",
+                     'checkout_notes' => 'Grazie di essere stati qui. Buon viaggio!'],
+            'en' => ['checkin_steps' => ['The front door is the red one, to the right of the fountain.',
+                                        'Lucia will be waiting inside to hand you the keys and show you around.'],
+                     'checkin_note' => 'If you arrive after 9pm, message us on WhatsApp and we will sort it out.',
+                     'checkout_keys' => 'Leave the keys on the kitchen table and pull the front door closed.',
+                     'checkout_waste' => 'Food waste goes in the brown bin in the courtyard.',
+                     'checkout_notes' => 'Thank you for staying with us. Safe travels!'],
+            'de' => ['checkin_steps' => ['Die Haustür ist die rote rechts neben dem Brunnen.',
+                                        'Lucia erwartet Sie im Haus, übergibt die Schlüssel und zeigt Ihnen alles.'],
+                     'checkout_keys' => 'Lassen Sie die Schlüssel auf dem Küchentisch und ziehen Sie die Haustür zu.'],
+        ], 'Check-in & Check-out');
+
+        $wifi = Properties::addSection($acc, $pid, 'wifi');
+        self::scrivi($pid, $wifi, [
+            'it' => ['network' => 'CasaLucia_5G', 'password' => 'glicine2024',
+                     'instructions' => 'Se la rete sparisce, stacca la spina del router e riattaccala dopo un minuto.',
+                     'router_location' => "Nell'ingresso, sopra la mensola."],
+            'en' => ['instructions' => 'If the network drops, unplug the router and plug it back in after a minute.',
+                     'router_location' => 'In the hallway, above the shelf.'],
+            'de' => ['instructions' => 'Wenn das Netz ausfällt, ziehen Sie den Stecker des Routers und stecken ihn nach einer Minute wieder ein.',
+                     'router_location' => 'Im Flur, über dem Regal.'],
+        ], 'Wi-Fi e servizi');
+
+        $regole = Properties::addSection($acc, $pid, 'rules');
+        self::scrivi($pid, $regole, [
+            'it' => ['items' => ['Silenzio dalle 22 alle 8: il borgo dorme presto.', 'Non si fuma in casa.', 'Gli animali sono i benvenuti, chiedici prima.']],
+            'en' => ['items' => ['Quiet hours from 10pm to 8am: the village goes to bed early.', 'No smoking indoors.', 'Pets are welcome, just ask us first.']],
         ]);
-        self::sezione($pid, 1, [
-            'tipo' => 'wifi', 'colore' => 'sea', 'ssid' => 'CasaLucia_5G', 'pass' => 'glicine2024',
-            'riviste' => true,
-            'testi' => [
-                'it' => ['Wi-Fi e servizi', "Il router è nell'ingresso, sopra la mensola. Se la rete sparisce staccate la spina e riattaccatela dopo un minuto.\n\nL'umido si porta fuori il martedì e il venerdì, prima delle otto."],
-                'en' => ['Wi-Fi and utilities', "The router is in the hallway, above the shelf. If the network drops, unplug it and plug it back in after a minute.\n\nFood waste goes out on Tuesday and Friday, before eight."],
-                'de' => ['WLAN und Technik', "Der Router steht im Flur über dem Regal. Wenn das Netz ausfällt, ziehen Sie den Stecker und stecken ihn nach einer Minute wieder ein."],
-            ],
-        ]);
-        $mangiare = self::sezione($pid, 2, [
-            'tipo' => 'places', 'colore' => 'pine',
-            'testi' => [
-                'it' => ['Dove mangiare', "Tre posti a piedi. Li abbiamo provati tutti, più di una volta.\n\nAl Ponte prenotate per telefono: non rispondono alle mail, ma rispondono sempre."],
-                'en' => ['Where to eat', "Three places within walking distance. We have tried them all, more than once.\n\nBook Al Ponte by phone: they never answer email, but they always answer the phone."],
-                'de' => ['Wo essen', "Drei Lokale zu Fuß erreichbar. Wir haben sie alle mehr als einmal probiert."],
-            ],
-        ]);
+
+        $mangiare = Properties::addSection($acc, $pid, 'eat');
+        self::scrivi($pid, $mangiare, [
+            'it' => ['intro' => 'Tre posti a piedi. Li abbiamo provati tutti, più di una volta.',
+                     'host_note' => 'Al Ponte prenota per telefono: non rispondono alle mail, ma rispondono sempre.'],
+            'en' => ['intro' => 'Three places within walking distance. We have tried them all, more than once.',
+                     'host_note' => 'Book Al Ponte by phone: they never answer email, but they always pick up.'],
+            'de' => ['intro' => 'Drei Lokale zu Fuß. Wir haben sie alle mehr als einmal probiert.'],
+        ], 'Dove mangiare e bere');
         foreach ([
-            ['Osteria del Ponte', 'Trattoria', '450 m · a piedi', 'Si prenota solo per telefono, ma rispondono sempre.', 'Aperto fino alle 23', 'pine', 'osteria.jpg', 'Tavoli apparecchiati nel vicolo'],
-            ['Bar Centrale', 'Colazione', '200 m · a piedi', 'Il cornetto finisce presto: andateci entro le nove.', 'Apre alle 7', 'sea', 'caffe.jpg', 'Una tazzina di espresso sul bancone'],
-            ['Gelateria Marchetti', 'Gelato', '600 m · a piedi', 'Il pistacchio vale la camminata in salita.', 'Il preferito di Lucia', 'ochre', 'gelato.jpg', 'Vaschette di gelato dietro il banco'],
-        ] as $i => [$n, $cat, $dist, $nota, $badge, $tono, $img, $alt]) {
-            Db::insert('places', [
-                'section_id' => $mangiare, 'name' => $n, 'category' => $cat, 'distance' => $dist,
-                'note' => $nota, 'badge' => $badge, 'badge_tone' => $tono,
-                'media_id' => self::foto($img, $acc, $alt), 'position' => $i,
+            ['Osteria del Ponte', 'Trattoria', 'Cucina toscana, pici fatti a mano.', 'Via del Ponte 3', 6, 'pine', 'osteria.jpg', 'Tavoli apparecchiati nel vicolo',
+             ['it' => 'Perfetto per cena', 'en' => 'Perfect for dinner'], ['en' => 'Trattoria', 'de' => 'Trattoria']],
+            ['Bar Centrale', 'Colazione', 'Cornetti caldi e cappuccino al banco.', 'Piazza Grande 1', 3, 'sea', 'caffe.jpg', 'Una tazzina di espresso sul bancone',
+             ['it' => 'Ideale per colazione', 'en' => 'Ideal for breakfast'], ['en' => 'Breakfast', 'de' => 'Frühstück']],
+            ['Gelateria Marchetti', 'Gelato', 'Il pistacchio vale la camminata in salita.', 'Via di Gracciano 22', 8, 'ochre', 'gelato.jpg', 'Vaschette di gelato dietro il banco',
+             ['it' => "Consigliato dall'host", 'en' => 'Host favourite'], ['en' => 'Ice cream', 'de' => 'Eis']],
+        ] as [$n, $cat, $desc, $ind, $min, $tono, $img, $alt, $badge, $catTr]) {
+            $plid = Properties::savePlace($acc, $pid, $mangiare, null, 'it', true, [
+                'name' => $n, 'category' => $cat, 'description' => $desc, 'address' => $ind . ', Montepulciano',
+                'maps_url' => 'https://maps.google.com/?q=' . rawurlencode($ind . ', Montepulciano'),
+                'walk_minutes' => $min, 'badge' => $badge['it'], 'badge_tone' => $tono,
             ]);
+            Properties::savePlace($acc, $pid, $mangiare, $plid, 'en', false, ['category' => $catTr['en'], 'badge' => $badge['en']]);
+            Properties::savePlace($acc, $pid, $mangiare, $plid, 'de', false, ['category' => $catTr['de']]);
+            Db::update('places', ['media_id' => self::foto($img, $acc, $pid, $alt)], 'id = :pid', ['pid' => $plid]);
         }
         Guide::publish($pid);
-        for ($g = 0; $g < 30; $g++) {
-            $giorno = gmdate('Y-m-d', strtotime("-$g days"));
-            for ($k = 0, $n = (int) (2 + ($g % 4)); $k < $n; $k++) {
-                Db::insert('analytics_events', ['property_id' => $pid, 'section_id' => null,
-                    'locale' => ['it', 'en', 'de'][$k % 3], 'kind' => 'open',
-                    'day' => $giorno, 'created_at' => $giorno . 'T10:00:00Z']);
-            }
-        }
         $creati[] = ['Lucia Ferrante', 'lucia@' . self::DOMINIO, 'Plus', 'Casa Lucia — pubblicata'];
 
-        // ------------------------------------------------- B&B Le Rondini, Puglia
-        $marco = self::host('Marco Bevilacqua', 'marco@' . self::DOMINIO, 'pro');
+        // ------------------------------------- B&B Le Rondini, Puglia — Portfolio 2
+        $marco = self::host('Marco Bevilacqua', 'marco@' . self::DOMINIO, 'portfolio2');
         $acc = (int) $marco['account_id'];
         $pid = self::struttura($acc, [
-            'nome' => 'B&B Le Rondini', 'citta' => 'Lecce', 'regione' => 'Puglia',
-            'arrivo' => '14:00', 'partenza' => '11:00', 'host' => 'Marco',
-            'telefono' => '+39 0832 000000', 'lingue' => ['it', 'en'],
-            'scansioni' => 41,
-            'copertina' => self::foto('soggiorno.jpg', $acc, 'Il soggiorno con il divano chiaro'),
+            'nome' => 'B&B Le Rondini', 'citta' => 'Lecce', 'regione' => 'Puglia', 'host' => 'Marco',
+            'arrivo' => '14:00', 'partenza' => '11:00', 'telefono' => '+39 0832 000000',
+            'lingue' => ['it', 'en', 'es'], 'palette' => 'mare',
         ]);
-        self::sezione($pid, 0, [
-            'tipo' => 'checkin', 'colore' => 'terracotta', 'codice' => '1908', 'riviste' => true,
-            'testi' => [
-                'it' => ['Arrivo e chiavi', "Il portone sulla strada resta aperto fino alle 20. Le chiavi sono nella cassetta a sinistra della scala, sotto la cassetta della posta."],
-                'en' => ['Arrival and keys', "The street door stays open until 8pm. The keys are in the box to the left of the stairs, under the letterbox."],
-            ],
+        Db::update('properties', ['cover_media_id' => self::foto('soggiorno.jpg', $acc, $pid, 'Il soggiorno con il divano chiaro')],
+                   'id = :pid', ['pid' => $pid]);
+        self::scrivi($pid, self::nucleo($pid), [
+            'it' => ['checkin_steps' => ['Il portone sulla strada resta aperto fino alle 20.', 'Sali al primo piano: Marco ti aspetta alla porta blu.'],
+                     'checkout_keys' => 'Lascia le chiavi nella ciotola accanto alla porta.'],
+            'en' => ['checkin_steps' => ['The street door stays open until 8pm.', 'Go up to the first floor: Marco will meet you at the blue door.'],
+                     'checkout_keys' => 'Leave the keys in the bowl next to the door.'],
+            'es' => ['checkin_steps' => ['La puerta de la calle está abierta hasta las 20.', 'Sube al primer piso: Marco os espera en la puerta azul.'],
+                     'checkout_keys' => 'Dejad las llaves en el cuenco junto a la puerta.'],
+        ], 'Check-in & Check-out');
+        $wifi = Properties::addSection($acc, $pid, 'wifi');
+        self::scrivi($pid, $wifi, ['it' => ['network' => 'Rondini_Ospiti', 'password' => 'salento2024',
+                                            'instructions' => 'La rete arriva in tutte le stanze, meno che sul terrazzo.']], '');
+        $mare = Properties::addSection($acc, $pid, 'visit');
+        self::scrivi($pid, $mare, ['it' => ['intro' => "Il mare è a venti minuti di macchina. Vai presto la mattina: dopo le dieci il parcheggio è pieno."],
+                                   'en' => ['intro' => 'The sea is twenty minutes by car. Go early: after ten the car park is full.']], 'Il mare');
+        Properties::savePlace($acc, $pid, $mare, null, 'it', true, [
+            'name' => "Torre dell'Orso", 'category' => 'Spiaggia', 'drive_minutes' => 20,
+            'maps_url' => 'https://maps.google.com/?q=Torre+dell%27Orso', 'badge' => 'Al mattino presto', 'badge_tone' => 'sea',
         ]);
-        self::sezione($pid, 1, [
-            'tipo' => 'wifi', 'colore' => 'sea', 'ssid' => 'Rondini_Ospiti', 'pass' => 'salento2024',
-            'testi' => [
-                'it' => ['Wi-Fi', "La rete prende bene in tutte le stanze, meno che sul terrazzo."],
-                'en' => ['Wi-Fi', "The network reaches every room, except the terrace."],
-            ],
-        ]);
-        self::sezione($pid, 2, [
-            'tipo' => 'text', 'colore' => 'ochre',
-            'testi' => [
-                'it' => ['Il mare', "Torre dell'Orso è a venti minuti di macchina. Andateci presto la mattina: dopo le dieci il parcheggio è pieno."],
-                'en' => ['The sea', "Torre dell'Orso is twenty minutes by car. Go early: after ten the car park is full."],
-            ],
-        ]);
+        $parcheggio = Properties::addSection($acc, $pid, 'parking');
+        self::scrivi($pid, $parcheggio, ['it' => ['parking_type' => 'Parcheggio pubblico gratuito', 'address' => 'Viale Lo Re, Lecce',
+                                                  'instructions' => 'Le strisce bianche sono gratuite, quelle blu a pagamento.']], '');
         Guide::publish($pid);
-        for ($g = 0; $g < 14; $g++) {
-            $giorno = gmdate('Y-m-d', strtotime("-$g days"));
-            Db::insert('analytics_events', ['property_id' => $pid, 'section_id' => null,
-                'locale' => 'it', 'kind' => 'open', 'day' => $giorno, 'created_at' => $giorno . 'T09:00:00Z']);
-        }
-        $creati[] = ['Marco Bevilacqua', 'marco@' . self::DOMINIO, 'Pro', 'B&B Le Rondini — pubblicata'];
+        // La seconda struttura del Portfolio, ancora in preparazione.
+        $pid2 = self::struttura($acc, [
+            'nome' => 'Casa sul Mare', 'citta' => 'Otranto', 'regione' => 'Puglia', 'host' => 'Marco',
+            'arrivo' => '15:00', 'partenza' => '10:00', 'telefono' => '+39 0832 000000', 'lingue' => ['it'], 'palette' => 'sabbia',
+        ]);
+        unset($pid2);
+        $creati[] = ['Marco Bevilacqua', 'marco@' . self::DOMINIO, 'Portfolio 2', 'B&B Le Rondini — pubblicata; Casa sul Mare — in bozza'];
 
-        // --------------------------------------------- Il Cortile, Sicilia (bozza)
+        // --------------------------------------------- Il Cortile, Sicilia — Essential
         $agnese = self::host('Agnese Ruta', 'agnese@' . self::DOMINIO, 'essential');
         $acc = (int) $agnese['account_id'];
         $pid = self::struttura($acc, [
-            'nome' => 'Il Cortile', 'citta' => 'Ortigia', 'regione' => 'Sicilia',
-            'arrivo' => '16:00', 'partenza' => '10:00', 'host' => 'Agnese',
-            'telefono' => '+39 0931 000000', 'lingue' => ['it'], 'scansioni' => 0,
-            'copertina' => null,
+            'nome' => 'Il Cortile', 'citta' => 'Ortigia', 'regione' => 'Sicilia', 'host' => 'Agnese',
+            'arrivo' => '16:00', 'partenza' => '10:00', 'telefono' => '+39 0931 000000', 'lingue' => ['it'], 'palette' => 'oliva',
         ]);
-        self::sezione($pid, 0, [
-            'tipo' => 'checkin', 'colore' => 'terracotta', 'codice' => '',
-            'testi' => ['it' => ['Entrare in casa', "Sto ancora scrivendo questa parte."]],
-        ]);
-        // volutamente NON pubblicata: serve a vedere lo stato di bozza
+        self::scrivi($pid, self::nucleo($pid), ['it' => ['checkin_steps' => ['Sto ancora scrivendo questa parte.']]], 'Check-in & Check-out');
+        Db::update('properties', ['wizard_step' => 'sezioni'], 'id = :pid', ['pid' => $pid]);
+        // Volutamente NON pubblicata: serve a vedere lo stato di bozza.
         $creati[] = ['Agnese Ruta', 'agnese@' . self::DOMINIO, 'Essential', 'Il Cortile — ancora in bozza'];
 
         return $creati;

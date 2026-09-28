@@ -1,62 +1,48 @@
-<?php use function MHW\a; use function MHW\b; use MHW\{Auth, Support, Csrf};
-$u = Auth::user(); $f = Support::flash();
-$iniziale = strtoupper(mb_substr((string) ($u['name'] ?? $u['email'] ?? '?'), 0, 1)); ?>
+<?php
+/* Il telaio del sito pubblico. Chi è già dentro vede "Le mie guide", non
+   "Registrati": nessuno si registra due volte. */
+use function MHW\a; use function MHW\b; use MHW\{Auth, Support, Csrf};
+$u = Auth::user(); $f = Support::flash(); ?>
 <!doctype html>
 <html lang="it">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= Support::e($title ?? 'MyHouse Welcome') ?></title>
+<meta name="description" content="La reception digitale per case vacanza, B&amp;B, affittacamere e agriturismi. Una guida per gli ospiti in un link e un QR.">
 <?php include __DIR__ . '/_tema.php'; ?>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gloock&family=Onest:wght@300..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= a() ?>/assets/app.css">
 </head>
 <body>
-<?php if (Auth::isImpersonating()): ?>
-<div class="impersonating"><div class="wrap">
-  <span>State guardando l'applicazione con l'account di un cliente.</span>
-  <form method="post" action="<?= b() ?>/admin/esci-da-cliente"><?= Csrf::field() ?><button class="btn">Torna al mio account</button></form>
-</div></div>
-<?php endif; ?>
-
 <header class="topbar"><div class="wrap">
-  <div class="row" style="gap:14px">
-    <a class="brand" href="<?= b() ?>/">myhouse welcome</a>
-    <?php if (($u['role'] ?? '') === 'admin'): ?><span class="tag">Amministrazione</span><?php endif; ?>
-  </div>
-
-  <?php if ($u): ?>
-    <nav class="nav">
-      <?php if ($u['role'] === 'admin'): ?>
-        <a href="<?= b() ?>/admin" class="<?= ($nav ?? '') === 'admin' ? 'on' : '' ?>">Quadro</a>
-        <a href="<?= b() ?>/admin/clienti" class="<?= ($nav ?? '') === 'clienti' ? 'on' : '' ?>">Clienti</a>
-        <a href="<?= b() ?>/admin/pacchetti" class="<?= ($nav ?? '') === 'pacchetti' ? 'on' : '' ?>">Pacchetti</a>
-        <a href="<?= b() ?>/admin/diagnostica" class="<?= ($nav ?? '') === 'diagnostica' ? 'on' : '' ?>">Diagnostica</a>
-      <?php endif; ?>
-      <a href="<?= b() ?>/pannello" class="<?= ($nav ?? '') === 'pannello' ? 'on' : '' ?>">Le mie guide</a>
-    </nav>
-    <div class="row" style="gap:10px">
-      <?php include __DIR__ . '/_tema-bottone.php'; ?>
-      <form method="post" action="<?= b() ?>/esci" class="row" style="gap:10px"><?= Csrf::field() ?>
-        <span class="avatar" title="<?= Support::e($u['email']) ?>"><?= Support::e($iniziale) ?></span>
-        <button class="btn btn--ghost btn--sm">Esci</button>
-      </form>
-    </div>
-  <?php else: ?>
-    <div class="row" style="gap:10px">
-      <?php include __DIR__ . '/_tema-bottone.php'; ?>
+  <a class="brand" href="<?= b() ?>/">myhouse welcome</a>
+  <nav class="nav" aria-label="Sito">
+    <a href="<?= b() ?>/#come-funziona">Come funziona</a>
+    <a href="<?= b() ?>/#piani">Piani</a>
+    <a href="<?= b() ?>/#qr">Il QR</a>
+  </nav>
+  <div class="row" style="gap:10px">
+    <?php include __DIR__ . '/_tema-bottone.php'; ?>
+    <?php if ($u): ?>
+      <a class="btn btn--sm" href="<?= b() ?>/<?= $u['role'] === 'admin' ? 'admin' : 'pannello' ?>"><?= $u['role'] === 'admin' ? 'Amministrazione' : 'Le mie guide' ?></a>
+    <?php else: ?>
       <a class="btn btn--ghost btn--sm" href="<?= b() ?>/accedi">Accedi</a>
-      <a class="btn btn--sm" href="<?= b() ?>/registrati">Create la vostra guida</a>
-    </div>
-  <?php endif; ?>
+      <a class="btn btn--sm" href="<?= b() ?>/registrati">Crea gratis</a>
+    <?php endif; ?>
+  </div>
 </div></header>
-
-<main class="wrap" style="padding-top:36px;padding-bottom:64px">
-<?php if ($f): ?>
-  <p class="note note--<?= $f['kind'] === 'err' ? 'err' : 'ok' ?>" style="margin-bottom:24px"><?= Support::e($f['msg']) ?></p>
-<?php endif; ?>
+<main class="wrap" style="padding-top:12px;padding-bottom:40px">
+<?php if ($f): ?><p class="note note--<?= $f['kind'] === 'err' ? 'err' : 'ok' ?>" style="margin:20px 0" role="status"><?= Support::e($f['msg']) ?></p><?php endif; ?>
 <?= $content ?>
 </main>
+<footer class="wrap" style="padding-bottom:40px">
+  <hr class="rule">
+  <div class="spread spread--mid" style="padding-top:20px">
+    <span class="small muted">MyHouse Welcome · la reception digitale della tua struttura</span>
+    <span class="small"><a href="<?= b() ?>/termini">Termini</a> · <a href="<?= b() ?>/privacy">Privacy</a></span>
+  </div>
+</footer>
 </body>
 </html>

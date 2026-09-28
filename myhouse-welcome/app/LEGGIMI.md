@@ -1,126 +1,168 @@
-# MyHouse Welcome — applicazione funzionante
+# MyHouse Welcome — applicazione
 
-PHP 8 + SQLite (o MySQL). **Nessuna dipendenza da installare**: niente Composer,
-niente Node, niente librerie esterne. Si carica via FTP e funziona.
+PHP 8.1+ e SQLite (o MySQL). **Nessuna dipendenza da installare**: niente
+Composer, niente Node, niente SDK. Si carica via FTP, anche in una
+sottocartella del dominio, e funziona.
+
+Il percorso del cliente è uno solo:
+
+```
+Landing → Crea gratis → Registrazione → Scegli il piano (senza pagare)
+→ Configura la guida → Anteprima → Pubblica → Stripe → webhook firmato
+→ guida online → QR
+```
+
+Configurare è gratis. Si paga solo per pubblicare, con un abbonamento annuale.
+La guida va online **solo** quando arriva il webhook firmato di Stripe: il
+ritorno dal browser non attiva niente.
 
 ---
 
-## Cosa funziona davvero
+## Cosa fa
 
 | | |
 |---|---|
-| Registrazione, accesso, sessioni | password con `password_hash`, sessione rigenerata a ogni accesso |
-| Acquisto di un piano | Stripe Checkout se configurate le chiavi, altrimenti modalità prova dichiarata |
-| Webhook Stripe | firma verificata, finestra temporale, riconsegne ignorate |
-| Diritti per piano | override → pacchetto comprato → predefinito |
-| Versioni di pacchetto congelate | cambiare un piano **non** toglie niente a chi l'ha già comprato |
-| CMS della guida | sezioni, testi, Wi-Fi, codici, luoghi, foto |
-| Caricamento immagini | riconvertite in JPEG e ridimensionate; i file finti vengono rifiutati |
-| Multilingua | quattro lingue; una traduzione confermata non viene mai sovrascritta |
-| Pubblicazione a istantanee | gli ospiti leggono una copia congelata, non la bozza |
-| QR permanente | generato in PHP; l'indirizzo non cambia mai, nemmeno rinominando la casa |
-| Amministrazione | clienti, impersonazione senza password, pacchetti, eccezioni |
-| Amministrazione, il quadro | clienti, incassi, aperture, versioni di piano e chi ci sta sopra |
-| Tema chiaro e scuro | segue il sistema finché non scegliete; poi la scelta resta |
-| Diagnostica | il server verifica sé stesso invece di promettere |
-| Dati di esempio | tre host finti con guide vere, foto e statistiche, creabili e cancellabili |
+| Account | registrazione con accettazione dei Termini e presa visione della Privacy (versione e data salvate), verifica email obbligatoria prima di pagare, recupero password, limiti ai tentativi |
+| Piani | Essential, Plus, Portfolio 2 e 3 letti dal database; prezzi e testi della landing modificabili dall'amministrazione; ogni modifica di prezzo o funzioni crea una **versione nuova**, chi ha già comprato resta sulla sua |
+| Limiti del piano | verificati **sul server**: sezioni aggiuntive, lingue, immagini, PDF, immagine profilo, strutture |
+| Procedura guidata | La tua struttura → Check-in & Check-out → Scegli le sezioni → Compila i contenuti → Lingue → Aspetto → Anteprima; salva a ogni passo, si riprende quando si vuole |
+| Editor | campi veri per ogni tipo di sezione (passaggi numerati, elenchi, indirizzi, link), salvataggio mentre si scrive, anteprima nel telefono accanto |
+| Sezioni | Check-in & Check-out sempre incluso e fuori dal conto; catalogo di 12 sezioni; ordinamento con Sposta su / giù; disattivare libera un posto |
+| Consigli sul posto | nome, categoria, descrizione, indirizzo, minuti a piedi e in auto, Maps, telefono, sito, prenotazione, consiglio dell'host, etichetta editoriale, foto (Plus) |
+| Lingue | italiano, inglese, francese, tedesco, spagnolo; traduzione **manuale**, affiancata all'originale; tutta l'interfaccia della guida è tradotta |
+| Aspetto | sei palette curate, testo chiaro o scuro solo se il contrasto supera AA, logo, copertina, immagine profilo (Plus) |
+| Media | su **Amazon S3** (firma SigV4 scritta a mano, niente SDK) o sul disco; tipo vero controllato dal contenuto, SVG rifiutati, PDF con JavaScript rifiutati, nomi non prevedibili per account e struttura |
+| Pagamenti | Stripe Checkout in modalità abbonamento, rinnovo annuale, prezzi IVA esclusa, indirizzo di fatturazione e partita IVA, portale clienti, rinnovo automatico attivabile e disattivabile |
+| Scadenza | a fine periodo pagato la guida va offline da sola (nessun cron): i dati restano, il QR resta valido e torna a funzionare al rinnovo |
+| QR | permanente; PNG, SVG e PDF da stampare; link da copiare |
+| Statistiche (Plus) | aperture, aperture dal QR, sezioni più lette, lingue; eventi anonimi, niente cookie |
+| Amministrazione | quadro, clienti, abbonamenti con gli ID Stripe, guide, pacchetti e versioni, eccezioni per cliente, abbonamenti manuali, accesso come cliente tracciato (scade da solo dopo un'ora), registro, diagnostica |
+| Guida ospite | non indicizzabile (`noindex`), nessun cookie, nessun codice di porte o cassette, commiato con le sole istruzioni scritte dall'host |
 
-## Cosa serve configurare per andare in produzione
+---
 
-Tutto il resto funziona da subito. Queste tre cose richiedono chiavi vostre:
+## Configurazione
 
-1. **Pagamenti reali** — in `app/config.php` (o come variabili d'ambiente):
-   `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`.
-   Senza, gli acquisti restano in modalità prova **e lo dichiarano a schermo**.
-   Nel pannello Stripe puntate il webhook all'indirizzo completo, sottocartella
-   compresa: `https://vostrodominio/welcomebook/webhook/stripe`.
-2. **Traduzione automatica** — `MHW_TRANSLATE_PROVIDER` (`deepl` o `libre`) e
-   `MHW_TRANSLATE_KEY`. Senza, le lingue si compilano a mano: tutto il resto funziona.
-3. **HTTPS** — i cookie di sessione diventano `secure` solo sotto HTTPS.
+**Nessun segreto va scritto nel codice o nel repository.** Tutto si legge
+dalle variabili d'ambiente. Se l'hosting non permette di impostarle, copia
+`config.local.esempio.php` in `config.local.php` (escluso dal repository),
+accanto a `config.php`, e riempi solo le voci che servono.
+
+| Variabile | A cosa serve |
+|---|---|
+| `MHW_BASE_URL` | indirizzo pubblico senza barra finale, es. `https://blackout.in/welcomebook` — finisce nei QR e nelle email, **impostalo** |
+| `STRIPE_SECRET_KEY` | chiave segreta (`sk_live_…` o `sk_test_…`) |
+| `STRIPE_PUBLISHABLE_KEY` | chiave pubblicabile (facoltativa: il checkout è ospitato da Stripe) |
+| `STRIPE_WEBHOOK_SECRET` | segreto del webhook (`whsec_…`) |
+| `STRIPE_AUTOMATIC_TAX` | `1` per far calcolare l'IVA a Stripe Tax (va attivato anche su Stripe) |
+| `MHW_GRACE_DAYS` | giorni di tolleranza dopo un rinnovo non riuscito (predefinito 0) |
+| `MAIL_TRANSPORT` | `smtp`, `mail` o `log` (predefinito: le email finiscono in `storage/logs/mail.log`) |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS`, `MAIL_ENCRYPTION` | server SMTP (`tls` = STARTTLS sulla 587, `ssl` sulla 465) |
+| `MAIL_FROM`, `MAIL_FROM_NAME` | mittente |
+| `MHW_STORAGE` | `s3` oppure `local` (predefinito) |
+| `AWS_REGION`, `AWS_S3_BUCKET` | regione e bucket |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | credenziali di un utente IAM con i soli permessi `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject` su quel bucket |
+| `AWS_S3_PUBLIC_URL` | facoltativo: indirizzo di un CDN (CloudFront) davanti al bucket; senza, le immagini usano URL prefirmati |
+| `MHW_TERMS_VERSION`, `MHW_PRIVACY_VERSION` | versione dei testi legali: cambiandola, i nuovi consensi la registrano |
+| `MHW_DEBUG` | `1` solo in sviluppo: mostra i dettagli degli errori |
+
+### Stripe, passo per passo
+
+1. In Stripe, **Sviluppatori → Webhook → Aggiungi endpoint** con l'indirizzo
+   completo, sottocartella compresa: `https://tuodominio/welcomebook/webhook/stripe`
+   (se il server non riscrive gli indirizzi: `…/welcomebook/index.php/webhook/stripe`).
+2. Eventi da inviare: `checkout.session.completed`, `checkout.session.expired`,
+   `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`,
+   `customer.subscription.deleted`.
+3. Copia il segreto del webhook in `STRIPE_WEBHOOK_SECRET` e la chiave segreta in
+   `STRIPE_SECRET_KEY`. Senza tutte e due nessuno può pubblicare: i clienti
+   preparano la guida, e il pannello dice che i pagamenti non sono ancora attivi.
+4. Per il **portale clienti** (fatture, carta, disdetta) attivalo in
+   **Impostazioni → Fatturazione → Portale clienti**.
+5. I prezzi: di base l'applicazione descrive a Stripe il prezzo della versione
+   del listino (annuale, IVA esclusa). Se preferisci prezzi creati su Stripe,
+   crea un prezzo **ricorrente annuale** con lo stesso importo e incolla il suo
+   `price_…` nella nuova versione del pacchetto, da **Amministrazione → Pacchetti**.
+6. Prova tutto in modalità test (`sk_test_…`, carta `4242 4242 4242 4242`) prima
+   di passare alle chiavi live.
+
+### Amazon S3
+
+Crea un bucket **privato** (Blocco dell'accesso pubblico attivo) nella regione
+che preferisci, un utente IAM con la policy qui sotto, e imposta le variabili.
+Le immagini si vedono con URL prefirmati che scadono dopo un'ora; se metti
+CloudFront davanti, imposta `AWS_S3_PUBLIC_URL`.
+
+```json
+{ "Version": "2012-10-17", "Statement": [{ "Effect": "Allow",
+  "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
+  "Resource": "arn:aws:s3:::NOME-BUCKET/*" }] }
+```
+
+Le immagini già caricate sul disco prima del passaggio a S3 continuano a
+funzionare: ogni file ricorda dove è stato salvato.
 
 ---
 
 ## Installazione
 
-### Disposizione consigliata (la più sicura)
-
-Caricate la cartella **intera** fuori dalla radice pubblica e puntate il dominio
-su `public/`, che sta dentro:
+### In una sottocartella (es. `dominio.it/welcomebook/`)
 
 ```
-/home/vostroutente/
-  myhouse-welcome/
-    config.php  src/  views/  migrations/  storage/
-    public/      <- il dominio punta QUI
-      index.php  .htaccess  assets/
+./costruisci-pacchetto.sh welcomebook      → dist/myhouse-welcome-welcomebook.zip
 ```
 
-Così niente del codice né il database è raggiungibile dal web, qualunque server
-usiate: sopra `public/` il browser non può salire.
-
-Non spezzate la cartella: `public/` deve restare **dentro** `myhouse-welcome/`,
-perché l'applicazione si cerca nella cartella che contiene `public/`.
-
-### Installazione in una sottocartella (es. `dominio.it/welcomebook/`)
-
-L'applicazione si accorge da sola di stare in una sottocartella: tutti gli
-indirizzi, **il QR compreso**, prendono il prefisso giusto. Caricate il
-contenuto del pacchetto dentro la sottocartella:
+Carica il contenuto dello zip nella sottocartella:
 
 ```
 public_html/
   welcomebook/
-    index.php  .htaccess  web.config  assets/
-    app/       <- src, views, migrations, config.php, storage
+    index.php  .htaccess  web.config  assets/  controllo.php
+    app/       <- src, views, lang, migrations, config.php, storage
 ```
 
-> **Leggete questo.** In questa disposizione la protezione della cartella `app/`
-> dipende da `.htaccess`, che **nginx non legge affatto** e che Apache ignora se
-> `AllowOverride` è disattivato. Per questo il file del database prende un nome
-> casuale, deciso all'installazione e custodito in un file `.php` che il server
-> esegue invece di servirlo. È una difesa in più, non una garanzia.
->
-> Dopo l'installazione aprite **Diagnostica** nel menu di amministrazione: il
-> server prova a scaricare il proprio database e vi dice se ci riesce.
+L'applicazione si accorge da sola della sottocartella: tutti gli indirizzi,
+il QR e il webhook prendono il prefisso giusto. Per un dominio dedicato in
+futuro (`welcome.myhouse.it`) basta cambiare `MHW_BASE_URL`; i QR già stampati
+puntano a `/q/{token}`, quindi conviene lasciare un reindirizzamento dal vecchio
+indirizzo al nuovo.
 
-**Se gli indirizzi danno 404** (per esempio `/welcomebook/installa` non si apre),
-il server non sta riscrivendo gli indirizzi: manca `mod_rewrite`, oppure
-`AllowOverride` è su `None`. Due strade:
+> In questa disposizione la protezione della cartella `app/` dipende da
+> `.htaccess`, che nginx non legge e che Apache ignora con `AllowOverride None`.
+> Dopo l'installazione apri **Amministrazione → Diagnostica**: il server prova a
+> scaricare il proprio database e ti dice se ci riesce. La disposizione più
+> sicura resta quella con il dominio che punta su `public/` e il resto fuori.
 
-- chiedete all'assistenza di abilitare `mod_rewrite` e `AllowOverride All`
-  per quella cartella (è la soluzione giusta);
-- oppure usate la via di riserva, che funziona senza riscrittura:
-  `dominio.it/welcomebook/index.php/installa`, e da lì in poi tutto prosegue.
+Se gli indirizzi danno 404, il server non riscrive gli URL: usa
+`dominio.it/welcomebook/index.php/installa` e tutto prosegue così.
 
 ### Poi
 
-1. Aprite il dominio: vi porta a `/installa`.
-2. Scegliete email e password dell'amministratore. Il database si crea da solo,
-   con le funzioni e i tre piani già dentro.
-3. Lasciate spuntato **«Riempi con tre clienti di esempio»** se volete vedere il
-   prodotto pieno invece che vuoto (vedi sotto). Si tolgono in un clic.
-4. Date permessi di scrittura a `app/storage/` e `app/storage/uploads/` (di solito 755 o 775).
+1. Apri l'indirizzo: ti porta a `/installa`.
+2. Scegli email e password dell'amministratore. Il database si crea da solo.
+3. Se vuoi, spunta **«Crea anche la demo e tre clienti di esempio»**.
+4. Permessi di scrittura a `app/storage/` e `app/storage/uploads/` (755 o 775).
+5. Cancella `controllo.php` dal server quando tutto funziona.
 
-### I tre clienti di esempio
+### Aggiornare un'installazione esistente
 
-Servono a vedere com'è l'applicazione quando è abitata: guide pubblicate, foto,
-luoghi, traduzioni in tre lingue, trenta giorni di statistiche, ordini pagati.
+Carica i file nuovi sopra i vecchi **senza toccare `app/storage/`**. Alla prima
+richiesta le migrazioni partono da sole, una volta sola, dentro una transazione:
+niente di venduto o scritto si perde, i QR stampati restano validi, le versioni
+di pacchetto già vendute tengono le loro funzioni. I vecchi codici di porte e
+cassette vengono **cancellati**, anche dalle guide già pubblicate.
+
+### I clienti di esempio
 
 | Chi | Entra con | Piano | Cosa mostra |
 |---|---|---|---|
-| Lucia Ferrante | `lucia@esempio.it` | Plus | Casa Lucia, Montepulciano — pubblicata, it/en/de, tre luoghi con foto |
-| Marco Bevilacqua | `marco@esempio.it` | Pro | B&B Le Rondini, Lecce — pubblicata, it/en |
-| Agnese Ruta | `agnese@esempio.it` | Essential | Il Cortile, Ortigia — **ferma in bozza**, di proposito |
+| Lucia Ferrante | `lucia@esempio.it` | Plus | Casa Lucia, Montepulciano — pubblicata, è la **demo** della landing |
+| Marco Bevilacqua | `marco@esempio.it` | Portfolio 2 | B&B Le Rondini pubblicata, Casa sul Mare in bozza |
+| Agnese Ruta | `agnese@esempio.it` | Essential | Il Cortile, in bozza |
 
-Entrano tutti con la password `dimostrazione1`.
-
-> **Toglieteli prima di aprire il sito al pubblico.** Sono account veri con una
-> password che sta scritta qui. Si eliminano — con le loro guide e le loro foto —
-> dal riquadro in fondo a **Amministrazione → Clienti**, e da lì si ricreano.
-
-### MySQL invece di SQLite
-
-In `config.php` mettete `'driver' => 'mysql'` e le credenziali. Lo schema è lo stesso.
+Password: `dimostrazione1`. Hanno abbonamenti «dimostrativi» che non entrano
+nell'incasso. **Toglili prima di aprire al pubblico**: sono account veri con una
+password scritta qui. Si eliminano da **Amministrazione → Quadro**.
 
 ---
 
@@ -128,20 +170,16 @@ In `config.php` mettete `'driver' => 'mysql'` e le credenziali. Lo schema è lo 
 
 | Indirizzo | Cosa |
 |---|---|
-| `/` | sito pubblico con i piani |
-| `/registrati`, `/accedi` | account |
-| `/pannello` | area host: guide, sezioni, lingue, QR |
-| `/g/{slug}/benvenuto` | la soglia: la schermata che si apre inquadrando il QR |
-| `/g/{slug}` | la guida che vedono gli ospiti |
-| `/g/{slug}/{id}` | una sezione: arrivo, Wi-Fi (in tema notte), luoghi, testo |
-| `/g/{slug}/commiato` | il congedo, con le poche cose da fare prima di partire |
+| `/` | landing con i piani |
+| `/registrati`, `/accedi`, `/password/dimenticata` | account |
+| `/piano` | scelta del piano, senza pagare |
+| `/pannello` | le guide; `/pannello/{id}` contenuti, `/procedura/{passo}` la procedura guidata |
+| `/pannello/{id}/anteprima` | l'anteprima, visibile solo all'host |
+| `/account` | piano, rinnovo, pagamenti, portale Stripe |
+| `/g/{slug}/benvenuto`, `/g/{slug}`, `/g/{slug}/{id}`, `/g/{slug}/commiato` | la guida degli ospiti |
 | `/q/{token}` | l'indirizzo dietro il QR — **non cambia mai** |
-| `/qr/{token}.png` | l'immagine del QR |
-| `/admin` | il quadro: clienti, incassi, aperture, piani |
-| `/admin/clienti` | elenco, ricerca, impersonazione, dati di esempio |
-| `/admin/pacchetti` | il listino, versione per versione |
-| `/admin/diagnostica` | i controlli che il server fa su sé stesso |
-| `/webhook/stripe` | solo per Stripe, verificato per firma |
+| `/admin` … | quadro, clienti, abbonamenti, guide, pacchetti, registro, diagnostica |
+| `/webhook/stripe` | solo per Stripe: niente sessione né CSRF, firma verificata |
 
 ---
 
@@ -149,102 +187,68 @@ In `config.php` mettete `'driver' => 'mysql'` e le credenziali. Lo schema è lo 
 
 ```
 app/
-  config.php            unica configurazione
-  migrations/           lo schema (21 tabelle)
-  src/                  Db, Auth, Csrf, Router, View, Entitlements,
-                        Guide, Media, Qr, Stripe, Billing, Translator, Installer
-  views/                le pagine
-  storage/              database e immagini caricate
-public/                 index.php, .htaccess, web.config, assets/
+  config.php               configurazione, tutta da variabili d'ambiente
+  config.local.esempio.php modello per gli hosting senza variabili d'ambiente
+  migrations/              001 schema, 002 MVP, 003 listino e sezioni (PHP)
+  lang/                    dizionari della guida: it, en, fr, de, es
+  src/                     il codice: una classe per file, caricate da sole
+  views/                   le pagine
+  prove/                   le prove automatiche (non vanno sul server)
+  storage/                 database, file caricati, registri
+public/                    index.php, .htaccess, web.config, assets/
 ```
 
-Il generatore di QR è scritto da zero seguendo ISO/IEC 18004 (modalità byte,
-correzione M, versioni 1-10) proprio per non dipendere da librerie esterne.
+## Scelte da conoscere
 
-## Scelte che vale la pena conoscere
-
-- **Il webhook è l'unica fonte di verità sui pagamenti.** Il ritorno dal browser
-  non attiva niente: chiunque potrebbe visitare quell'indirizzo.
-- **Una versione di pacchetto venduta non si modifica.** L'amministratore che
-  cambia un piano ne crea una nuova; gli abbonamenti già venduti restano sulla loro.
-- **Le traduzioni confermate sono intoccabili.** Lo stato passa da `missing` a
-  `machine` a `reviewed`, e da `reviewed` nessuna macchina torna indietro.
-- **Gli ospiti leggono un'istantanea.** Si modifica la guida senza che nessuno
-  veda mezze frasi, e ogni versione pubblicata resta conservata.
-- **L'impersonazione non passa mai dalla password del cliente** e lascia traccia
-  nel registro, in entrata e in uscita.
-- **Una riga vuota separa i passaggi.** L'host scrive normalmente; sulla guida
-  ogni capoverso diventa un riquadro numerato. L'unica convenzione da imparare è
-  che un capoverso che comincia con `Nota:` non è un passaggio ma l'avviso in
-  fondo alla pagina.
+- **Il webhook è l'unica fonte di verità.** L'evento si segna come elaborato
+  nella stessa transazione che lo applica: se qualcosa fallisce, torna tutto
+  indietro e Stripe lo rimanda. Lo stesso evento due volte non fa niente.
+- **Un abbonamento vale finché è pagato e il periodo non è finito.** La data
+  conta anche da sola: se un webhook si perde, alla scadenza la guida va offline
+  comunque.
+- **Una versione di pacchetto venduta non si modifica.** Prezzo o funzioni nuove
+  = versione nuova.
+- **Prima di pagare valgono le regole del piano scelto**, così la configurazione
+  è già quella che si comprerà.
+- **Gli ospiti leggono un'istantanea.** Le modifiche si vedono quando l'host
+  ripubblica; con l'abbonamento attivo ripubblicare non costa niente.
+- **Niente traduzione automatica.** Le lingue le scrive l'host; dove manca una
+  traduzione l'ospite legge la lingua principale.
+- **Niente codici di accesso nella guida.** Si mandano all'ospite in privato.
 
 ---
 
 ## Provarla
 
 ```
-app/prove/esegui.sh
+app/prove/esegui.sh                      # 227 prove via HTTP, con Stripe e S3 finti
+MHW_STORAGE=local app/prove/esegui.sh    # le stesse, con i file sul disco
+app/prove/aggiornamento.sh               # aggiorna un'installazione della versione precedente
+php app/prove/firma-s3.php               # firma S3 contro i vettori ufficiali di AWS
 ```
 
-Schiera una copia dell'applicazione come finisce sull'hosting, le mette davanti
-un server, e le passa sopra 91 controlli veri via HTTP: installazione, dati di
-esempio, i numeri del quadro, l'impersonazione, tutte le schermate dell'ospite
-in tre lingue, il tema notte, il QR che rimanda alla soglia e la sua immagine,
-la cancellazione e la ricreazione dei clienti di esempio, e infine la sabbia, il
-vetro delle barre e l'interruttore dei temi. Alla fine pulisce.
+`esegui.sh` schiera l'applicazione come sull'hosting, avvia uno Stripe finto e
+un bucket S3 finto, e prova: installazione, landing e listino, registrazione e
+consensi, verifica email, procedura guidata, limiti di Essential, Plus e
+Portfolio lato server, caricamenti rifiutati (SVG travestiti, PDF con
+JavaScript), pubblicazione con Stripe, webhook firmati, sbagliati, vecchi e
+ripetuti, rinnovo, scadenza, pagamento fallito, chiusura, QR in tre formati,
+accesso ai dati di altri clienti, CSRF, recupero password, amministrazione,
+demo in più lingue.
+
+**Cosa le prove non coprono**: Stripe e S3 veri. I servizi finti controllano
+cosa l'applicazione manda e come reagisce, non il comportamento reale di Stripe
+o AWS. Prima di aprire al pubblico fai un giro completo in modalità test di
+Stripe e con un bucket vero.
 
 ---
 
 ## Com'è fatta da vedere
 
-Il disegno segue la direzione **Fauna** della tavola di progetto: fotografie a
-tutta larghezza, riquadri di colore pieno al posto delle icone, **Gloock** sui
-titoli e **Onest** su tutto il resto, angoli 8 / 18 / 26 e tondo pieno su ogni
-cosa che si preme. Tutto quello che si tocca è alto almeno 44 px.
-
-La tavolozza è quella delle Fondamenta: carta `#faf5ec`, inchiostro `#231b12`,
-terracotta `#b4451f`, mare `#1c5a78`, pino `#1f6b3f`, ocra `#b07d0c`,
-allarme `#9c2b20`, notte `#17130d`. Sull'ocra il testo è scuro, non chiaro:
-in chiaro si ferma a 3.5:1 e non passa. È l'unica eccezione della tavolozza.
-
-Su tutte le superfici — carta, schede, riquadri di colore, barre — corre una
-**grana di sabbia** finissima (`assets/grana.png`, 17 kB, una sola richiesta).
-Sta nello sfondo, sotto il contenuto: non tocca le fotografie, né il testo, né
-le icone. La stessa immagine ha granelli chiari e scuri, così funziona nei due
-temi senza cambiarla.
-
-**Su quello che si preme, invece, la sabbia non c'è.** Bottoni, tondi dei
-comandi, pastiglie dei filtri e della lingua restano lisci: un comando deve
-staccare dalla superficie che lo ospita, e liscio sopra ruvido si vede che è un
-altro piano. Verificato elemento per elemento — 23 comandi, nessuno ruvido; 20
-superfici, nessuna liscia — e sui pixel: dentro un bottone la variazione è
-esattamente 0, sulla carta è 4.7.
-
-Le **due barre di navigazione**, quella in alto e quella in fondo alla guida,
-sono vetro: 40% di colore e il resto è la pagina che ci scorre sotto, sfocata.
-Il vetro non si limita a sfocare, tira anche quello che c'è sotto verso il
-colore del tema: senza, il marchio sulla barra scendeva a 3.66:1 sopra una
-fotografia chiara — misurato, non supposto; ora sta a 4.70:1. Dove il browser
-non sa sfocare, le barre tornano opache, perché un 40% senza sfocatura renderebbe
-illeggibile quello che c'è sopra.
-
-### Chiaro e scuro
-
-C'è un interruttore in ogni intestazione, e nella guida accanto alla lingua.
-Finché nessuno lo tocca, il tema segue il sistema — e continua a seguirlo anche
-se il sistema cambia mentre la pagina è aperta. Appena qualcuno sceglie, la
-scelta vince e resta, anche dopo aver chiuso il browser.
-
-I riquadri di colore pieno **non cambiano col tema**: sono il marchio, non una
-superficie. Cambiano le superfici, le righe, il testo e l'accento, che di notte
-si schiarisce (`#ee7a4a`) per restare leggibile. Il contrasto di ogni testo è
-stato misurato in tutti e due i temi, su tutte le pagine: nessuno sta sotto la
-soglia AA.
-
-La sezione Wi-Fi resta in **tema notte** comunque: è quella che si cerca al buio,
-in una casa che non si conosce ancora. Lì l'interruttore non compare, perché non
-cambierebbe niente sotto gli occhi di chi guarda.
-
-Tutto sta in un unico foglio di stile (`public/assets/app.css`) e in un unico
-insieme di icone disegnate a tratto (`src/Icon.php`), scritte in PHP invece che
-caricate da fuori: una guida si apre spesso con una tacca di segnale.
+La direzione è **Fauna**: fotografie a tutta larghezza, riquadri di colore
+pieno, **Gloock** sui titoli e **Onest** sul resto, angoli morbidi, tutto quello
+che si tocca alto almeno 44 px. Una grana di sabbia leggera corre sotto le
+superfici del sito e della guida, mai sotto bottoni, fotografie, testo o icone;
+nel pannello di lavoro è tolta dai componenti operativi, per leggere meglio.
+Le barre di navigazione sono vetro al 40% con sfocatura. C'è un interruttore
+chiaro/scuro; nella guida il tema di partenza lo sceglie l'host con la palette.

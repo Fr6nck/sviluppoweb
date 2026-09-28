@@ -78,6 +78,27 @@ final class Support
         return $cache = $script;
     }
 
+    /**
+     * Il percorso della rotta, tolti la sottocartella e l'eventuale index.php:
+     * /welcomebook/index.php/webhook/stripe e /webhook/stripe diventano la
+     * stessa cosa. Lo usano il router E l'esenzione CSRF del webhook: se i due
+     * calcoli fossero diversi, in una sottocartella Stripe riceverebbe un 419.
+     */
+    public static function routePath(?string $uri = null): string
+    {
+        $path = (string) (parse_url($uri ?? (string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/');
+        $dir = self::baseDir();
+        if ($dir !== '' && str_starts_with($path, $dir)) $path = substr($path, strlen($dir));
+        if (str_starts_with($path, '/index.php')) $path = substr($path, strlen('/index.php'));
+        return '/' . trim($path, '/');
+    }
+
+    /** Le pagine degli ospiti: niente sessione, niente cookie, niente indicizzazione. */
+    public static function isGuestPath(string $route): bool
+    {
+        return (bool) preg_match('#^/(g|q|qr|media)(/|$)#', $route);
+    }
+
     /** Un indirizzo interno, sempre corretto anche in sottocartella. */
     public static function url(string $path = '/'): string
     {
@@ -109,10 +130,40 @@ final class Support
         return ($https ? 'https://' : 'http://') . $host . self::base();
     }
 
+    /** 87 €, 117,50 € — il simbolo dopo, come si scrive in italiano. */
     public static function money(int $cents, string $currency = 'EUR'): string
     {
-        $sym = ['EUR' => '€', 'USD' => '$', 'GBP' => '£'][$currency] ?? $currency . ' ';
-        return $sym . number_format($cents / 100, ($cents % 100 === 0) ? 0 : 2, ',', '.');
+        $sym = ['EUR' => '€', 'USD' => '$', 'GBP' => '£'][$currency] ?? $currency;
+        return number_format($cents / 100, ($cents % 100 === 0) ? 0 : 2, ',', '.') . "\u{00A0}" . $sym;
+    }
+
+    /** Una data leggibile: 26 settembre 2026. */
+    public static function date(?string $iso): string
+    {
+        if (!$iso) return '—';
+        $t = strtotime($iso); if (!$t) return '—';
+        $mesi = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+        return (int) gmdate('j', $t) . ' ' . $mesi[(int) gmdate('n', $t) - 1] . ' ' . gmdate('Y', $t);
+    }
+
+    /** Un indirizzo web accettabile per un link: solo http e https. */
+    public static function safeUrl(string $u): string
+    {
+        $u = trim($u);
+        if ($u === '') return '';
+        if (!preg_match('#^https?://#i', $u)) $u = 'https://' . ltrim($u, '/');
+        return filter_var($u, FILTER_VALIDATE_URL) && preg_match('#^https?://#i', $u) ? $u : '';
+    }
+
+    /** Un numero di telefono per tel: solo cifre e il più iniziale. */
+    public static function telHref(string $n): string
+    {
+        return preg_replace('/(?!^\+)[^0-9]/', '', trim($n)) ?? '';
+    }
+
+    public static function json_attr(mixed $v): string
+    {
+        return htmlspecialchars((string) json_encode($v, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8');
     }
 
     public static function flash(?string $msg = null, string $kind = 'ok'): ?array

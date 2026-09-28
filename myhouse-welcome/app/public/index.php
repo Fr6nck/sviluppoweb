@@ -1,16 +1,14 @@
 <?php
 declare(strict_types=1);
 
-use MHW\{Auth, Billing, Config, Csrf, Db, Entitlements, Guide, Installer, Media, Qr, Router, Stripe, Support, Translator, View};
+use MHW\{Auth, Config, Csrf, Installer, Log, Migrator, Router, Support};
 
-// L'applicazione può stare sopra la cartella pubblica (disposizione consigliata)
-// oppure dentro una sottocartella "app", come serve sugli hosting con solo FTP.
 /**
  * Dove sta l'applicazione.
  *
  * Si controlla prima il caso senza ambiguità — una cartella "app" accanto a
  * index.php — e poi la disposizione consigliata, con l'applicazione sopra la
- * radice pubblica. In tutti e due i casi si pretendono DUE file
+ * radice pubblica. In tutti e due i casi si pretendono TRE segni
  * caratteristici: una cartella "src" qualsiasi, lasciata lì da un altro
  * progetto, non deve poter dirottare l'applicazione.
  */
@@ -24,51 +22,52 @@ function mhw_trova_app(string $qui): ?string
     return null;
 }
 
-$APP = mhw_trova_app(__DIR__);
-
-
 /**
  * Un errore fatale su un hosting con display_errors spento dà una pagina
- * bianca e un 500 muto, impossibile da diagnosticare via FTP. Qui lo
- * trasformiamo in un messaggio leggibile, senza mai rivelare i percorsi
- * del server a chi passa di lì per caso.
+ * bianca e un 500 muto. Qui diventa un messaggio leggibile per chi usa il
+ * sito, con un codice da citare; i dettagli tecnici vanno nel registro
+ * (storage/logs/app.log) e si vedono a schermo solo con debug acceso.
  */
-function mhw_fatale(string $titolo, string $dettaglio = ''): never
+function mhw_fatale(string $titolo, string $dettaglio = '', string $codice = ''): never
 {
     if (!headers_sent()) { http_response_code(500); header('Content-Type: text/html; charset=utf-8'); }
     echo '<!doctype html><meta charset="utf-8">'
-       . '<meta name="viewport" content="width=device-width,initial-scale=1">'
+       . '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Errore</title>'
        . '<div style="font-family:system-ui,sans-serif;max-width:640px;margin:48px auto;padding:24px;'
-       . 'background:#f8e3df;color:#9c2b20;border-radius:14px;line-height:1.55">'
+       . 'background:#f9edd2;color:#231b12;border-radius:14px;line-height:1.55">'
        . '<strong style="font-size:18px">' . htmlspecialchars($titolo) . '</strong>';
     if ($dettaglio !== '') echo '<p style="margin:12px 0 0">' . htmlspecialchars($dettaglio) . '</p>';
-    echo '<p style="margin:14px 0 0;font-size:14px">Caricate <code>controllo.php</code> accanto a '
-       . '<code>index.php</code> e apritelo: dice esattamente cosa manca.</p></div>';
+    if ($codice !== '') echo '<p style="margin:12px 0 0;font-size:14px">Codice per l\'assistenza: <strong>' . htmlspecialchars($codice) . '</strong></p>';
+    echo '</div>';
     exit;
 }
 
+$APP = mhw_trova_app(__DIR__);
+
 set_exception_handler(function (\Throwable $e): void {
-    mhw_fatale('L\'applicazione si è fermata su un errore.', get_class($e) . ': ' . $e->getMessage());
+    $codice = '';
+    if (defined('MHW_APP') && class_exists(Log::class)) $codice = Log::exception($e, 'non gestita');
+    $debug = class_exists(Config::class, false) && (bool) Config::get('debug');
+    mhw_fatale('Qualcosa non ha funzionato.',
+        $debug ? get_class($e) . ': ' . $e->getMessage() . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')'
+               : 'Riprova tra qualche istante. Se il problema resta, scrivici indicando il codice qui sotto.',
+        $codice);
 });
 
 if ($APP === null) {
-    mhw_fatale(
-        'Non trovo la cartella dell\'applicazione.',
-        'Accanto a index.php deve esserci una cartella "app" che contiene config.php, '
-        . 'src/Config.php e views/. Cercata in: ' . basename(__DIR__) . '/app'
-    );
+    mhw_fatale('Non trovo la cartella dell\'applicazione.',
+        'Accanto a index.php deve esserci una cartella "app" che contiene config.php, src/ e views/. '
+        . 'Se hai appena caricato i file via FTP, apri controllo.php: dice cosa manca.');
 }
 define('MHW_APP', $APP);
-// La cartella servita dal web: qui stanno il foglio di stile e le fotografie.
-// Serve saperlo con certezza, perche' nelle due disposizioni possibili non sta
-// nello stesso posto rispetto all'applicazione.
+// La cartella servita dal web: foglio di stile e fotografie stanno qui.
 define('MHW_PUBLIC', __DIR__);
 
-foreach (['config.php', 'src/Config.php', 'src/Support.php', 'src/Router.php',
+foreach (['config.php', 'src/Config.php', 'src/Support.php', 'src/Router.php', 'src/routes_public.php',
           'src/routes_host.php', 'src/routes_admin.php', 'views/layout/app.php'] as $necessario) {
     if (!is_file($APP . '/' . $necessario)) {
         mhw_fatale('Manca un file dell\'applicazione: ' . $necessario,
-                   'Ricaricate la cartella app/ per intero: il trasferimento FTP non è arrivato in fondo.');
+                   'Ricarica la cartella app/ per intero: il trasferimento FTP non è arrivato in fondo.');
     }
 }
 
@@ -79,240 +78,37 @@ spl_autoload_register(function (string $class): void {
 });
 
 Config::load(MHW_APP . '/config.php');
-Auth::start();
+
+// Un aggiornamento caricato via FTP porta con sé le sue migrazioni: si
+// applicano da sole alla prima richiesta. Quando non c'è niente di nuovo
+// costa la lettura di un file.
+if (!Migrator::upToDate() && Installer::installed()) Migrator::run();
+
+$route = Support::routePath();
+$ospite = Support::isGuestPath($route);
+
+// Le guide degli ospiti non aprono sessioni: niente cookie, niente dati
+// personali. Hanno solo pagine in lettura, quindi non serve nemmeno il CSRF.
+if (!$ospite) Auth::start();
 
 // Una pagina con un modulo dentro non va mai messa in cache: servirebbe a
-// qualcun altro un token di sessione ormai scaduto. Su questo hosting c'e'
-// un livello di cache davanti (x-nginx-cache), quindi lo diciamo esplicitamente.
+// qualcun altro un token di sessione ormai scaduto.
 header('Cache-Control: no-store, no-cache, must-revalidate, private');
 header('X-LiteSpeed-Cache-Control: no-cache');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('X-Frame-Options: SAMEORIGIN');
+// Le guide contengono informazioni operative della casa: non si indicizzano.
+if ($ospite) header('X-Robots-Tag: noindex, nofollow, noarchive');
 
-// Il webhook non arriva da un browser e non può portare un token di sessione:
-// la sua autenticazione è la firma di Stripe, verificata dentro la rotta.
-$path = '/' . trim((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/');
-if ($path !== '/webhook/stripe') Csrf::check();
+// Il webhook di Stripe non arriva da un browser e non porta un token di
+// sessione: la sua autenticazione è la firma, verificata dentro la rotta.
+// Si confronta il percorso DI ROTTA, lo stesso che vede il router: così
+// funziona in una sottocartella e con o senza index.php nell'indirizzo.
+if ($route !== '/webhook/stripe' && !$ospite) Csrf::check();
 
 $r = new Router();
-
-// ---------------------------------------------------------------- installazione
-$r->any('/installa', function () {
-    if (Installer::installed()) Support::redirect('/');
-    $err = null;
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        try {
-            Installer::install(trim((string) $_POST['email']), (string) $_POST['password']);
-            $msg = 'Installazione completata. Siete dentro.';
-            if (!empty($_POST['esempi'])) {
-                $creati = \MHW\Demo::popola();
-                $msg .= ' Creati ' . count($creati) . ' clienti di esempio (password: '
-                      . \MHW\Demo::PASSWORD . '). Cancellateli prima di aprire al pubblico.';
-            }
-            Support::flash($msg);
-            Auth::attempt(trim((string) $_POST['email']), (string) $_POST['password']);
-            Support::redirect('/admin');
-        } catch (\Throwable $e) { $err = $e->getMessage(); }
-    }
-    View::out('pub/install', ['err' => $err], 'layout/bare');
-});
-
-$guard = function () {
-    if (!Installer::installed()) Support::redirect('/installa');
-};
-
-// ---------------------------------------------------------------------- pubblico
-$r->get('/', function () use ($guard) {
-    $guard();
-    $packages = Db::all(
-        'SELECT p.*, pv.id AS pv_id, pv.price_cents, pv.currency FROM packages p
-         JOIN package_versions pv ON pv.package_id = p.id AND pv.is_current = 1
-         WHERE p.active = 1 ORDER BY p.sort'
-    );
-    foreach ($packages as &$pk) {
-        $pk['features'] = Db::all(
-            'SELECT f.code, f.label, f.kind, pf.value FROM package_features pf
-             JOIN features f ON f.id = pf.feature_id WHERE pf.package_version_id = ? ORDER BY f.id',
-            [$pk['pv_id']]
-        );
-    }
-    unset($pk);
-
-    // La fotografia grande e la pastiglia sotto vengono da una guida vera, se
-    // ce n'e' una pubblicata: il sito non mostra numeri inventati.
-    $vetrina = Db::one("SELECT * FROM properties WHERE status = 'published' ORDER BY id");
-    $copertina = null;
-    if ($vetrina) {
-        $vetrina['aperture'] = (int) Db::val(
-            'SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = ? AND day >= ?',
-            [$vetrina['id'], 'open', gmdate('Y-m-d', strtotime('-30 days'))], 0);
-        $copertina = Media::url($vetrina['cover_media_id'] ? (int) $vetrina['cover_media_id'] : null);
-    }
-    View::out('pub/home', [
-        'packages' => $packages, 'vetrina' => $vetrina,
-        'copertina' => $copertina ?: MHW\a('/assets/foto/casa.jpg'),
-    ]);
-});
-
-// ------------------------------------------------------------------ registrazione
-$r->any('/registrati', function () use ($guard) {
-    $guard();
-    $err = null; $pv = (int) ($_GET['piano'] ?? $_POST['piano'] ?? 0);
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        try {
-            $u = Auth::register((string) $_POST['email'], (string) $_POST['password'], trim((string) $_POST['name']));
-            Auth::login($u['user_id']);
-            Support::redirect($pv ? '/acquista/' . $pv : '/pannello');
-        } catch (\Throwable $e) { $err = $e->getMessage(); }
-    }
-    View::out('auth/register', ['err' => $err, 'piano' => $pv], 'layout/bare');
-});
-
-$r->any('/accedi', function () use ($guard) {
-    $guard();
-    $err = null;
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        if (Auth::attempt((string) $_POST['email'], (string) $_POST['password'])) {
-            $u = Auth::user();
-            Support::redirect(($u['role'] ?? '') === 'admin' ? '/admin' : '/pannello');
-        }
-        $err = 'Email o password non corrispondono.';
-    }
-    View::out('auth/login', ['err' => $err], 'layout/bare');
-});
-
-$r->post('/esci', function () { Auth::logout(); Support::redirect('/'); });
-
-// ------------------------------------------------------------------- pagamento
-$r->any('/acquista/{pv}', function (array $a) {
-    Auth::requireUser();
-    $acc = Auth::account();
-    $pv = Db::one('SELECT * FROM package_versions WHERE id = ?', [(int) $a['pv']]);
-    if (!$pv) { http_response_code(404); exit('Piano inesistente.'); }
-    $pkg = Db::one('SELECT * FROM packages WHERE id = ?', [$pv['package_id']]);
-
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $orderId = Db::insert('orders', [
-            'account_id' => $acc['id'], 'package_version_id' => $pv['id'],
-            'amount_cents' => $pv['price_cents'], 'currency' => $pv['currency'],
-            'status' => 'pending', 'provider' => Stripe::enabled() ? 'stripe' : 'prova',
-            'provider_session_id' => '', 'created_at' => Support::now(),
-        ]);
-        $order = Db::one('SELECT * FROM orders WHERE id = ?', [$orderId]);
-        if (Stripe::enabled()) {
-            try { Support::redirect(Stripe::checkout($order, $pv, $pkg, Auth::user()['email'])); }
-            catch (\Throwable $e) { Support::flash('Stripe: ' . $e->getMessage(), 'err'); Support::redirect('/acquista/' . $pv['id']); }
-        }
-        // Senza chiavi Stripe: ordine confermato localmente, dichiarato come prova.
-        Billing::markPaid($orderId, 'prova');
-        Support::flash('Piano ' . $pkg['name'] . ' attivato in modalità prova (nessun pagamento reale).');
-        Support::redirect('/pannello');
-    }
-    View::out('pub/checkout', ['pv' => $pv, 'pkg' => $pkg], 'layout/bare');
-});
-
-$r->get('/pagamento/ok', function () {
-    Auth::requireUser();
-    // Il ritorno dal browser non prova nulla: la verità arriva dal webhook firmato.
-    View::out('pub/paid', ['order' => (int) ($_GET['order'] ?? 0)], 'layout/bare');
-});
-$r->get('/pagamento/annullato', function () {
-    Support::flash('Pagamento annullato. Non è stato addebitato nulla.', 'err');
-    Support::redirect('/');
-});
-
-$r->post('/webhook/stripe', function () {
-    $payload = (string) file_get_contents('php://input');
-    $secret = Config::get('stripe')['webhook_secret'];
-    $sig = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
-    if ($secret === '' || !Stripe::verifySignature($payload, $sig, $secret)) {
-        http_response_code(400); exit('firma non valida');
-    }
-    $event = json_decode($payload, true);
-    if (!is_array($event)) { http_response_code(400); exit('payload illeggibile'); }
-    echo Stripe::handleEvent($event);
-});
-
-// -------------------------------------------------------------- guida pubblica
-$r->get('/q/{token}', function (array $a) {
-    $t = Db::one('SELECT * FROM qr_tokens WHERE token = ?', [$a['token']]);
-    if (!$t) { http_response_code(404); echo View::render('pub/404'); return; }
-    Db::run('UPDATE qr_tokens SET scans = scans + 1 WHERE id = ?', [$t['id']]);
-    $p = Db::one('SELECT slug FROM properties WHERE id = ?', [$t['property_id']]);
-    Guide::track((int) $t['property_id'], 'qr');
-    Support::redirect('/g/' . $p['slug'] . '/benvenuto');   // il token non cambia mai, lo slug sì
-});
-
-$r->get('/g/{slug}', function (array $a) {
-    $g = Guide::bySlug($a['slug']);
-    if (!$g) { http_response_code(404); echo View::render('pub/404'); return; }
-    $snap = $g['snapshot'];
-    $loc = (string) ($_GET['l'] ?? '');
-    if (!in_array($loc, $snap['locales'], true)) $loc = $snap['property']['default_locale'];
-    Guide::track((int) $g['property']['id'], 'open', null, $loc);
-    View::out('guest/guide', ['snap' => $snap, 'loc' => $loc, 'slug' => $a['slug']], 'layout/guest');
-});
-
-/** La soglia: la schermata che si apre inquadrando il QR. */
-$r->get('/g/{slug}/benvenuto', function (array $a) {
-    $g = Guide::bySlug($a['slug']);
-    if (!$g) { http_response_code(404); echo View::render('pub/404'); return; }
-    $snap = $g['snapshot'];
-    $loc = (string) ($_GET['l'] ?? '');
-    if (!in_array($loc, $snap['locales'], true)) $loc = $snap['property']['default_locale'];
-    View::out('guest/splash', ['snap' => $snap, 'loc' => $loc, 'slug' => $a['slug']], 'layout/full');
-});
-
-/** Il congedo: le poche cose da fare prima di partire. */
-$r->get('/g/{slug}/commiato', function (array $a) {
-    $g = Guide::bySlug($a['slug']);
-    if (!$g) { http_response_code(404); echo View::render('pub/404'); return; }
-    $snap = $g['snapshot'];
-    $loc = (string) ($_GET['l'] ?? '');
-    if (!in_array($loc, $snap['locales'], true)) $loc = $snap['property']['default_locale'];
-
-    // L'elenco nasce da quello che l'host ha davvero scritto: il codice della
-    // cassetta se c'e', l'orario di partenza, e niente che non sia suo.
-    $cose = [];
-    foreach ($snap['sections'] as $s) {
-        if ($s['kind'] === 'checkin' && $s['door_code'] !== '')
-            $cose[] = 'Le chiavi nella cassetta, codice ' . $s['door_code'];
-    }
-    $cose[] = 'Finestre accostate, luci e gas spenti';
-    $cose[] = 'Partenza entro le ' . $snap['property']['checkout_by'];
-    View::out('guest/farewell',
-        ['snap' => $snap, 'loc' => $loc, 'slug' => $a['slug'], 'cose' => $cose], 'layout/full');
-});
-
-$r->get('/g/{slug}/{sid}', function (array $a) {
-    $g = Guide::bySlug($a['slug']);
-    if (!$g) { http_response_code(404); echo View::render('pub/404'); return; }
-    $snap = $g['snapshot'];
-    $loc = (string) ($_GET['l'] ?? '');
-    if (!in_array($loc, $snap['locales'], true)) $loc = $snap['property']['default_locale'];
-    $section = null;
-    foreach ($snap['sections'] as $s) if ((string) $s['id'] === $a['sid']) $section = $s;
-    if (!$section) { http_response_code(404); echo View::render('pub/404'); return; }
-    Guide::track((int) $g['property']['id'], 'section', (int) $section['id'], $loc);
-    View::out('guest/section', ['snap' => $snap, 'sec' => $section, 'loc' => $loc, 'slug' => $a['slug']], 'layout/guest');
-});
-
-// I file caricati sono serviti da PHP, così restano fuori dalla cartella pubblica.
-$r->get('/media/{file}', function (array $a) {
-    $name = basename($a['file']);
-    $path = Config::get('uploads_dir') . '/' . $name;
-    if (!is_file($path)) { http_response_code(404); exit; }
-    header('Content-Type: image/jpeg');
-    header('Cache-Control: public, max-age=31536000, immutable');
-    readfile($path);
-});
-
-$r->get('/qr/{token}.png', function (array $a) {
-    $t = Db::one('SELECT * FROM qr_tokens WHERE token = ?', [$a['token']]);
-    if (!$t) { http_response_code(404); exit; }
-    header('Content-Type: image/png');
-    echo Qr::png(Support::baseUrl() . '/q/' . $t['token'], 8, 4, 640);
-});
-
+require MHW_APP . '/src/routes_public.php';
 require MHW_APP . '/src/routes_host.php';
 require MHW_APP . '/src/routes_admin.php';
-
 $r->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $_SERVER['REQUEST_URI'] ?? '/');

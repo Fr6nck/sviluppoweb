@@ -1,183 +1,223 @@
-<?php use function MHW\b; use MHW\{Support, Icon};
-$pr = $snap['property'];
-$t = $sec['tr'][$loc] ?? $sec['tr'][$pr['default_locale']] ?? ['title' => '', 'body' => ''];
-$title = $t['title'] . ' — ' . $pr['name'];
+<?php
+/* Una sezione della guida. Si disegna dai CAMPI del catalogo: passaggi
+   numerati, elenchi, indirizzi con Maps, luoghi con i loro bottoni. Ogni
+   etichetta è nella lingua dell'ospite. Nessun codice d'accesso, mai. */
+use MHW\{Support, Icon, Guide, Media, SectionCatalog, I18n};
+$pr = $snap['property']; $def = $pr['default_locale'];
+$kind = $sec['kind'];
+$d = $sec['data'] ?? [];
+$t = Guide::tdata($sec, $loc, $def);
+$titolo = Guide::title($sec, $loc, $def);
+$title = $titolo . ' — ' . $pr['name'];
 $coda = '/' . (int) $sec['id'];
-$notte = $sec['kind'] === 'wifi';
+$notte = $kind === 'wifi';
 $theme = $notte ? 'night' : 'light';
-
-/* I capoversi del testo: l'host scrive normalmente, qui diventano passaggi.
-   Un capoverso che comincia con "Nota:" non e' un passaggio ma un avviso, e
-   finisce nel riquadro ocra in fondo: e' l'unica convenzione da imparare. */
-$tutti = array_values(array_filter(array_map('trim', preg_split('/\R{2,}/', (string) $t['body']) ?: [])));
-$capoversi = []; $note = [];
-foreach ($tutti as $c) {
-    if (preg_match('/^nota\s*:\s*/iu', $c)) {
-        $testo = (string) preg_replace('/^nota\s*:\s*/iu', '', $c);
-        // Tolta l'etichetta, la frase comincia da capo: anche la maiuscola.
-        $note[] = mb_strtoupper(mb_substr($testo, 0, 1)) . mb_substr($testo, 1);
-    }
-    else $capoversi[] = $c;
-}
+$indietro = true;
+$nascondiTema = $notte;
+$img = Guide::img($sec);
+$pdf = !empty($sec['pdf_id']) ? Media::url((int) $sec['pdf_id']) : null;
+$val = fn(string $k) => trim((string) ($t[$k] ?? ''));
+$lista = fn(string $k) => array_values(array_filter((array) ($t[$k] ?? []), fn($x) => trim((string) $x) !== ''));
+$maps = function (string $indirizzo, string $url): string {
+    if ($url !== '') return $url;
+    return $indirizzo !== '' ? 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode($indirizzo) : '';
+};
 
 /* La sezione che viene dopo: l'invito in fondo alla pagina. */
 $dopo = null; $trovata = false;
 foreach ($snap['sections'] as $s) {
     if ($trovata) { $dopo = $s; break; }
     if ((int) $s['id'] === (int) $sec['id']) $trovata = true;
-}
-$titoloDopo = $dopo ? ($dopo['tr'][$loc]['title'] ?? $dopo['tr'][$pr['default_locale']]['title'] ?? '') : '';
-$indietro = b() . '/g/' . Support::e($slug) . '?l=' . Support::e($loc); ?>
+} ?>
 
-<div class="guest-top">
-  <a class="icon-btn" href="<?= $indietro ?>" aria-label="Torna alla guida"><?= Icon::svg('back', 18, 1.9) ?></a>
-  <?php if ($notte): ?>
-    <span class="pill-quiet"><?= Icon::svg('moon', 13) ?>Tema notte</span>
-  <?php else: ?>
-    <div class="row" style="gap:8px">
-      <?php include __DIR__ . '/../layout/_tema-bottone.php'; ?>
-      <?php include __DIR__ . '/_lingue.php'; ?>
-    </div>
-  <?php endif; ?>
-</div>
+<?php include __DIR__ . '/_top.php'; ?>
 
 <div class="stack stack--sm" style="margin-top:20px">
-  <?php if ($sec['kind'] === 'checkin' && $capoversi): ?>
-    <span class="kicker">Arrivo · <?= count($capoversi) + ($sec['door_code'] ? 1 : 0) ?> passaggi</span>
+  <?php if ($kind === 'checkin' && $lista('checkin_steps')): ?>
+    <span class="kicker"><?= Support::e(I18n::t($loc, 'arrival')) ?> · <?= Support::e(I18n::t($loc, 'steps_count', count($lista('checkin_steps')))) ?></span>
+  <?php elseif ($notte): ?>
+    <span class="pill-quiet" style="align-self:flex-start"><?= Icon::svg('moon', 13) ?><?= Support::e(I18n::t($loc, 'night_theme')) ?></span>
   <?php endif; ?>
-  <h1 class="guest-title" style="font-size:38px;line-height:38px"><?= Support::e($t['title']) ?></h1>
+  <h1 class="guest-title" style="font-size:38px;line-height:38px"><?= Support::e($titolo) ?></h1>
 </div>
 
-<?php if ($sec['image']): ?>
-  <div class="shot shot--h186" style="margin-top:20px">
-    <img src="<?= Support::e($sec['image']) ?>" alt="<?= Support::e($sec['image_alt']) ?>"></div>
+<?php if ($img): ?>
+  <div class="shot shot--h186" style="margin-top:20px"><img src="<?= Support::e($img) ?>" alt="" loading="lazy" decoding="async"></div>
 <?php endif; ?>
 
-<?php /* ------------------------------------------------------------- Wi-Fi */ ?>
-<?php if ($notte && ($sec['wifi_ssid'] !== '' || $sec['wifi_pass'] !== '')): ?>
-  <div class="panel stack" style="margin-top:20px;gap:18px">
-    <?php if ($sec['wifi_ssid'] !== ''): ?>
-      <div class="stack stack--sm" style="gap:6px">
-        <span class="kicker">Rete</span>
-        <div class="copyline">
-          <b data-copia="<?= Support::e($sec['wifi_ssid']) ?>"><?= Support::e($sec['wifi_ssid']) ?></b>
-          <button type="button" class="icon-btn icon-btn--strong" data-copia-di="<?= Support::e($sec['wifi_ssid']) ?>"
-                  aria-label="Copia il nome della rete"><?= Icon::svg('copy', 17) ?></button>
-        </div>
-      </div>
-    <?php endif; ?>
-    <?php if ($sec['wifi_ssid'] !== '' && $sec['wifi_pass'] !== ''): ?><hr class="rule"><?php endif; ?>
-    <?php if ($sec['wifi_pass'] !== ''): ?>
-      <div class="stack stack--sm" style="gap:6px">
-        <span class="kicker">Password</span>
-        <div class="copyline">
-          <b class="pw"><?= Support::e($sec['wifi_pass']) ?></b>
-          <button type="button" class="icon-btn icon-btn--accent" data-copia-di="<?= Support::e($sec['wifi_pass']) ?>"
-                  aria-label="Copia la password"><?= Icon::svg('copy', 17, 2) ?></button>
-        </div>
-      </div>
-    <?php endif; ?>
-  </div>
-<?php endif; ?>
-
-<?php /* -------------------------------------------------- arrivo: i passaggi */ ?>
-<?php if ($sec['kind'] === 'checkin'): ?>
-  <div class="stack" style="margin-top:20px;gap:12px">
-    <?php foreach ($capoversi as $i => $c): ?>
-      <div class="step">
-        <span class="n"><?= $i + 1 ?></span>
-        <p style="white-space:pre-line"><?= Support::e($c) ?></p>
-      </div>
-    <?php endforeach; ?>
-    <?php if ($sec['door_code'] !== ''): ?>
-      <div class="step">
-        <span class="n"><?= count($capoversi) + 1 ?></span>
-        <div class="stack stack--sm" style="gap:10px;min-width:0">
-          <h2>Il codice</h2>
-          <div class="row" style="gap:10px">
-            <span class="bigcode"><?= Support::e(trim(chunk_split($sec['door_code'], 1, ' '))) ?></span>
-            <button type="button" class="icon-btn icon-btn--strong" data-copia-di="<?= Support::e($sec['door_code']) ?>"
-                    aria-label="Copia il codice"><?= Icon::svg('copy', 17) ?></button>
+<?php /* ---------------------------------------------------------------- Wi-Fi */ ?>
+<?php if ($kind === 'wifi'): ?>
+  <?php if (($d['network'] ?? '') !== '' || ($d['password'] ?? '') !== ''): ?>
+    <div class="panel stack" style="margin-top:20px;gap:18px">
+      <?php if (($d['network'] ?? '') !== ''): ?>
+        <div class="stack" style="gap:6px">
+          <span class="kicker"><?= Support::e(I18n::t($loc, 'network')) ?></span>
+          <div class="copyline">
+            <b><?= Support::e($d['network']) ?></b>
+            <button type="button" class="icon-btn icon-btn--strong" data-copia-di="<?= Support::e($d['network']) ?>"
+                    aria-label="<?= Support::e(I18n::t($loc, 'copy_network')) ?>"><?= Icon::svg('copy', 17) ?></button>
           </div>
         </div>
-      </div>
+      <?php endif; ?>
+      <?php if (($d['network'] ?? '') !== '' && ($d['password'] ?? '') !== ''): ?><hr class="rule"><?php endif; ?>
+      <?php if (($d['password'] ?? '') !== ''): ?>
+        <div class="stack" style="gap:6px">
+          <span class="kicker"><?= Support::e(I18n::t($loc, 'password')) ?></span>
+          <div class="copyline">
+            <b class="pw"><?= Support::e($d['password']) ?></b>
+            <button type="button" class="icon-btn icon-btn--accent" data-copia-di="<?= Support::e($d['password']) ?>"
+                    aria-label="<?= Support::e(I18n::t($loc, 'copy_password')) ?>"><?= Icon::svg('copy', 17, 2) ?></button>
+          </div>
+        </div>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
+  <?php if ($val('router_location') !== ''): ?>
+    <p class="small muted" style="margin-top:14px"><strong><?= Support::e(I18n::t($loc, 'router')) ?>:</strong> <?= Support::e($val('router_location')) ?></p>
+  <?php endif; ?>
+  <?php if ($val('instructions') !== ''): ?><p style="margin-top:14px;font-size:16px;line-height:24px;white-space:pre-line"><?= Support::e($val('instructions')) ?></p><?php endif; ?>
+
+<?php /* ------------------------------------------------ check-in e check-out */ ?>
+<?php elseif ($kind === 'checkin'): ?>
+  <div class="stack" style="margin-top:20px;gap:12px">
+    <?php foreach ($lista('checkin_steps') as $i => $passo): ?>
+      <div class="step"><span class="n"><?= $i + 1 ?></span><p style="white-space:pre-line"><?= Support::e($passo) ?></p></div>
+    <?php endforeach; ?>
+  </div>
+  <?php if ($val('checkin_note') !== ''): ?>
+    <p class="note" style="margin-top:14px"><?= Icon::svg('info', 19) ?><span><?= Support::e($val('checkin_note')) ?></span></p>
+  <?php endif; ?>
+  <?php $uscita = array_filter(['checkout_keys', 'checkout_waste', 'checkout_lights', 'checkout_climate', 'checkout_windows'], fn($k) => $val($k) !== ''); ?>
+  <div class="stack" style="margin-top:28px;gap:10px">
+    <span class="kicker"><?= Support::e(I18n::t($loc, 'departure')) ?> · <?= Support::e(I18n::t($loc, 'checkout_by', $pr['checkout_by'])) ?></span>
+    <?php if ($uscita): ?>
+      <ul class="lined">
+        <?php foreach ($uscita as $k): ?>
+          <li><strong><?= Support::e(I18n::t($loc, $k)) ?>.</strong> <?= Support::e($val($k)) ?></li>
+        <?php endforeach; ?>
+      </ul>
     <?php endif; ?>
+    <?php if ($val('checkout_notes') !== ''): ?><p style="white-space:pre-line;line-height:24px"><?= Support::e($val('checkout_notes')) ?></p><?php endif; ?>
   </div>
 
-<?php /* --------------------------------------------------- i luoghi consigliati */ ?>
-<?php elseif ($sec['places']): ?>
-  <?php if ($capoversi): ?>
-    <p class="muted" style="margin-top:14px;max-width:300px;line-height:23px"><?= Support::e($capoversi[0]) ?></p>
-  <?php endif; ?>
-  <?php $categorie = array_values(array_unique(array_filter(array_column($sec['places'], 'category')))); ?>
+<?php /* --------------------------------------------------- luoghi consigliati */ ?>
+<?php elseif (SectionCatalog::hasPlaces($kind)): ?>
+  <?php if ($val('intro') !== ''): ?><p class="muted" style="margin-top:14px;line-height:23px"><?= Support::e($val('intro')) ?></p><?php endif; ?>
+  <?php $luoghi = $sec['places'] ?? [];
+        $categorie = array_values(array_unique(array_filter(array_map(fn($pl) => trim((string) Guide::ptr($pl, $loc, $def)['category']), $luoghi)))); ?>
   <?php if (count($categorie) > 1): ?>
     <div class="chips" style="margin-top:18px">
-      <button type="button" class="on" data-filtro="">Tutti</button>
-      <?php foreach ($categorie as $c): ?>
-        <button type="button" data-filtro="<?= Support::e($c) ?>"><?= Support::e($c) ?></button>
-      <?php endforeach; ?>
+      <button type="button" class="on" data-filtro=""><?= Support::e(I18n::t($loc, 'all')) ?></button>
+      <?php foreach ($categorie as $c): ?><button type="button" data-filtro="<?= Support::e($c) ?>"><?= Support::e($c) ?></button><?php endforeach; ?>
     </div>
   <?php endif; ?>
   <div class="stack" style="margin-top:18px;gap:12px">
-    <?php foreach ($sec['places'] as $pl): ?>
-      <div class="place" data-categoria="<?= Support::e($pl['category']) ?>">
-        <?php if ($pl['image']): ?>
-          <span class="thumb"><img src="<?= Support::e($pl['image']) ?>" alt="<?= Support::e($pl['image_alt']) ?>"></span>
+    <?php foreach ($luoghi as $pl): $ptr = Guide::ptr($pl, $loc, $def); $foto = Guide::img($pl);
+          $meta = array_filter([$ptr['category'],
+              $pl['walk_minutes'] ? I18n::t($loc, 'walk_min', (int) $pl['walk_minutes']) : '',
+              $pl['drive_minutes'] ? I18n::t($loc, 'drive_min', (int) $pl['drive_minutes']) : '',
+              $pl['distance'] ?? '']);
+          $mapsUrl = $maps((string) $pl['address'], (string) $pl['maps_url']); ?>
+      <article class="place" data-categoria="<?= Support::e($ptr['category']) ?>" style="flex-direction:column;align-items:stretch;gap:12px">
+        <div class="row" style="gap:14px;flex-wrap:nowrap;align-items:center">
+          <?php if ($foto): ?><span class="thumb"><img src="<?= Support::e($foto) ?>" alt="" loading="lazy" decoding="async"></span><?php endif; ?>
+          <span class="grow stack" style="gap:5px">
+            <b><?= Support::e($pl['name']) ?></b>
+            <?php if ($meta): ?><span class="meta"><?= Support::e(implode(' · ', $meta)) ?></span><?php endif; ?>
+            <?php if (trim($ptr['badge']) !== ''): ?>
+              <span class="badge badge--<?= $pl['badge_tone'] === 'ochre' ? 'ochre-strong' : Support::e($pl['badge_tone'] ?: 'pine') ?>" style="align-self:flex-start"><?= Support::e($ptr['badge']) ?></span>
+            <?php endif; ?>
+          </span>
+        </div>
+        <?php if (trim($ptr['description']) !== ''): ?><p class="small" style="line-height:21px"><?= Support::e($ptr['description']) ?></p><?php endif; ?>
+        <?php if (trim((string) $pl['address']) !== ''): ?><p class="small muted"><?= Support::e($pl['address']) ?></p><?php endif; ?>
+        <?php if (trim($ptr['note']) !== ''): ?><p class="small" style="line-height:21px"><em><?= Support::e($ptr['note']) ?></em></p><?php endif; ?>
+        <?php if ($mapsUrl || $pl['phone'] || $pl['website'] || $pl['booking_url']): ?>
+          <div class="ctas">
+            <?php if ($mapsUrl): ?><a href="<?= Support::e($mapsUrl) ?>" target="_blank" rel="noopener"><?= Icon::svg('pin', 15) ?><?= Support::e(I18n::t($loc, 'open_maps')) ?></a><?php endif; ?>
+            <?php if ($pl['phone']): ?><a href="tel:<?= Support::e(Support::telHref($pl['phone'])) ?>"><?= Icon::svg('phone', 15) ?><?= Support::e(I18n::t($loc, 'call_place')) ?></a><?php endif; ?>
+            <?php if ($pl['website']): ?><a href="<?= Support::e($pl['website']) ?>" target="_blank" rel="noopener"><?= Icon::svg('globe', 15) ?><?= Support::e(I18n::t($loc, 'visit_site')) ?></a><?php endif; ?>
+            <?php if ($pl['booking_url']): ?><a href="<?= Support::e($pl['booking_url']) ?>" target="_blank" rel="noopener"><?= Icon::svg('check', 15) ?><?= Support::e(I18n::t($loc, 'book')) ?></a><?php endif; ?>
+          </div>
         <?php endif; ?>
-        <span class="grow stack" style="gap:5px">
-          <b><?= Support::e($pl['name']) ?></b>
-          <span class="meta"><?= Support::e(trim($pl['category'] . ' · ' . $pl['distance'], ' ·')) ?></span>
-          <?php if ($pl['badge']): ?>
-            <span class="badge badge--<?= $pl['badge_tone'] === 'ochre' ? 'ochre-strong' : Support::e($pl['badge_tone']) ?>"
-                  style="align-self:flex-start"><?= Support::e($pl['badge']) ?></span>
-          <?php endif; ?>
-        </span>
-      </div>
+      </article>
     <?php endforeach; ?>
   </div>
-  <?php if (count($capoversi) > 1): ?>
+  <?php if ($val('host_note') !== ''): ?>
     <div class="saying" style="margin-top:18px">
-      <p><?= Support::e(implode("\n\n", array_slice($capoversi, 1))) ?></p>
-      <cite><?= Support::e($pr['host_name'] ?: 'chi ospita') ?>, la vostra host</cite>
+      <p><?= Support::e($val('host_note')) ?></p>
+      <cite><?= Support::e(I18n::t($loc, 'host_signature', $pr['host_name'] ?: $pr['name'])) ?></cite>
     </div>
   <?php endif; ?>
 
-<?php /* ------------------------------------------------ tutto il resto: testo */ ?>
+<?php /* ------------------------------------------------ tutte le altre sezioni */ ?>
 <?php else: ?>
-  <?php foreach ($capoversi as $c): ?>
-    <p style="margin-top:16px;font-size:17px;line-height:26px;white-space:pre-line"><?= Support::e($c) ?></p>
+  <?php foreach (SectionCatalog::fields($kind) as $campo => [$tipo]): ?>
+    <?php if ($tipo === 'steps' && $lista($campo)): ?>
+      <div class="stack" style="margin-top:18px;gap:12px">
+        <?php foreach ($lista($campo) as $i => $passo): ?>
+          <div class="step"><span class="n"><?= $i + 1 ?></span><p style="white-space:pre-line"><?= Support::e($passo) ?></p></div>
+        <?php endforeach; ?>
+      </div>
+    <?php elseif ($tipo === 'list' && $lista($campo)): ?>
+      <ul class="lined" style="margin-top:14px">
+        <?php foreach ($lista($campo) as $voce): ?><li><?= Support::e($voce) ?></li><?php endforeach; ?>
+      </ul>
+    <?php elseif ($tipo === 'text' && $val($campo) !== ''): ?>
+      <p style="margin-top:14px"><?php if (I18n::has($loc, $campo) || I18n::has('en', $campo)): ?><span class="kicker"><?= Support::e(I18n::t($loc, $campo)) ?></span><?php endif; ?>
+        <span style="font-size:17px"><?= Support::e($val($campo)) ?></span></p>
+    <?php elseif ($tipo === 'textarea' && $val($campo) !== ''): ?>
+      <?php if ($campo === 'note'): ?>
+        <p class="note" style="margin-top:16px"><?= Icon::svg('info', 19) ?><span style="white-space:pre-line"><?= Support::e($val($campo)) ?></span></p>
+      <?php else: ?>
+        <p style="margin-top:16px;font-size:16px;line-height:24px;white-space:pre-line"><?= Support::e($val($campo)) ?></p>
+      <?php endif; ?>
+    <?php elseif ($tipo === 'plain' && trim((string) ($d[$campo] ?? '')) !== ''): ?>
+      <?php if ($campo === 'emergency_number'): ?>
+        <a class="panel" href="tel:<?= Support::e(Support::telHref($d[$campo])) ?>" style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;color:var(--ink)">
+          <span class="stack" style="gap:4px"><span class="kicker"><?= Support::e(I18n::t($loc, 'emergency_number')) ?></span>
+            <b style="font-size:30px;letter-spacing:1px"><?= Support::e($d[$campo]) ?></b></span>
+          <span class="icon-btn icon-btn--accent"><?= Icon::svg('phone', 18) ?></span></a>
+      <?php else: ?>
+        <div class="stack" style="margin-top:16px;gap:8px">
+          <span class="kicker"><?= Support::e(I18n::t($loc, 'address')) ?></span>
+          <p style="font-size:17px"><?= Support::e($d[$campo]) ?></p>
+          <?php $u = $maps((string) $d[$campo], (string) ($d['maps_url'] ?? '')); if ($u): ?>
+            <div class="ctas"><a href="<?= Support::e($u) ?>" target="_blank" rel="noopener"><?= Icon::svg('pin', 15) ?><?= Support::e(I18n::t($loc, 'open_maps')) ?></a></div>
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
+    <?php endif; ?>
   <?php endforeach; ?>
 <?php endif; ?>
 
-<?php foreach ($note as $n): ?>
-  <p class="note" style="margin-top:16px"><?= Icon::svg('info', 19) ?><span><?= Support::e($n) ?></span></p>
-<?php endforeach; ?>
-
-<?php if ($dopo): ?>
-  <div class="guest-bottom">
-    <a class="btn btn--go grow" href="<?= b() ?>/g/<?= Support::e($slug) ?>/<?= (int) $dopo['id'] ?>?l=<?= Support::e($loc) ?>">
-      <?= Support::e($titoloDopo ?: 'Continua') ?>
-      <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span>
-    </a>
-  </div>
-<?php else: ?>
-  <div class="guest-bottom">
-    <a class="btn btn--ghost grow" href="<?= $indietro ?>"><?= Icon::svg('back', 17) ?>Torna alla guida</a>
-  </div>
+<?php if ($pdf): ?>
+  <div class="ctas" style="margin-top:18px"><a href="<?= Support::e($pdf) ?>" target="_blank" rel="noopener"><?= Icon::svg('doc', 15) ?><?= Support::e(I18n::t($loc, 'open_pdf')) ?></a></div>
 <?php endif; ?>
 
+<div class="guest-bottom">
+  <?php if ($dopo): ?>
+    <a class="btn btn--go grow" href="<?= Support::e($base) ?>/<?= (int) $dopo['id'] ?>?l=<?= Support::e($loc) ?>"
+       aria-label="<?= Support::e(I18n::t($loc, 'next')) ?>: <?= Support::e(Guide::title($dopo, $loc, $def)) ?>">
+      <?= Support::e(Guide::title($dopo, $loc, $def)) ?><span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></a>
+  <?php else: ?>
+    <a class="btn btn--ghost grow" href="<?= Support::e($base) ?>?l=<?= Support::e($loc) ?>"><?= Icon::svg('back', 17) ?><?= Support::e(I18n::t($loc, 'back')) ?></a>
+  <?php endif; ?>
+</div>
+
 <script>
-/* Copiare il codice o la password: se il browser non lo permette, il bottone
-   sparisce invece di mentire. Il valore resta comunque scritto a schermo. */
+/* Copiare nome della rete e password: se il browser non lo permette il bottone
+   sparisce invece di mentire; il valore resta comunque scritto a schermo. */
 (function () {
   var bottoni = document.querySelectorAll('[data-copia-di]');
-  if (!navigator.clipboard) { bottoni.forEach(function (b) { b.remove(); }); return; }
+  if (!navigator.clipboard) { bottoni.forEach(function (b) { b.remove(); }); }
   bottoni.forEach(function (b) {
     b.addEventListener('click', function () {
       navigator.clipboard.writeText(b.getAttribute('data-copia-di')).then(function () {
-        var prima = b.innerHTML;
-        b.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-11"/></svg>';
-        setTimeout(function () { b.innerHTML = prima; }, 1400);
+        var prima = b.innerHTML, et = b.getAttribute('aria-label');
+        b.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11"/></svg>';
+        b.setAttribute('aria-label', <?= json_encode(I18n::t($loc, 'copied')) ?>);
+        setTimeout(function () { b.innerHTML = prima; b.setAttribute('aria-label', et); }, 1400);
       });
     });
   });
@@ -185,7 +225,7 @@ $indietro = b() . '/g/' . Support::e($slug) . '?l=' . Support::e($loc); ?>
   chips.forEach(function (c) {
     c.addEventListener('click', function () {
       var q = c.getAttribute('data-filtro');
-      chips.forEach(function (x) { x.classList.toggle('on', x === c); });
+      chips.forEach(function (x) { x.classList.toggle('on', x === c); x.setAttribute('aria-pressed', x === c ? 'true' : 'false'); });
       document.querySelectorAll('[data-categoria]').forEach(function (p) {
         p.style.display = (q === '' || p.getAttribute('data-categoria') === q) ? '' : 'none';
       });

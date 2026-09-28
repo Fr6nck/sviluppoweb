@@ -80,25 +80,32 @@ riga('Cartella dell\'applicazione trovata', $trovata,
                 . 'config.php, src/ e views/. Ho guardato in: ' . __DIR__ . '/app');
 
 $attesi = [
-    'config.php', 'migrations/001_schema.sql',
-    'src/Auth.php', 'src/Billing.php', 'src/Config.php', 'src/Csrf.php', 'src/Db.php',
-    'src/Demo.php', 'src/Icon.php',
-    'src/Entitlements.php', 'src/Guide.php', 'src/Installer.php', 'src/Media.php',
-    'src/Qr.php', 'src/Router.php', 'src/Stripe.php', 'src/Support.php',
-    'src/Translator.php', 'src/View.php', 'src/routes_admin.php', 'src/routes_host.php',
-    'views/layout/app.php', 'views/layout/bare.php', 'views/layout/guest.php',
-    'views/layout/wide.php', 'views/layout/full.php',
-    'views/layout/_tema.php', 'views/layout/_tema-bottone.php',
-    'views/pub/home.php', 'views/pub/install.php', 'views/pub/404.php',
-    'views/pub/checkout.php', 'views/pub/paid.php',
-    'views/auth/login.php', 'views/auth/register.php',
-    'views/host/dashboard.php', 'views/host/languages.php', 'views/host/new_property.php',
-    'views/host/properties.php', 'views/host/qr.php', 'views/host/section.php',
-    'views/host/settings.php', 'views/host/_propnav.php',
-    'views/admin/customer.php', 'views/admin/customers.php', 'views/admin/packages.php',
-    'views/admin/diagnostics.php', 'views/admin/dashboard.php',
+    'config.php', 'lang/de.php', 'lang/en.php', 'lang/es.php', 'lang/fr.php', 'lang/it.php',
+    'migrations/001_schema.sql', 'migrations/002_mvp.sql', 'migrations/003_listino_e_sezioni.php',
+    'src/Auth.php', 'src/Billing.php', 'src/Config.php', 'src/Csrf.php', 'src/Db.php', 'src/Demo.php',
+    'src/Entitlements.php', 'src/Guide.php', 'src/I18n.php', 'src/Icon.php', 'src/Installer.php',
+    'src/LimitReached.php', 'src/LocalStorage.php', 'src/Log.php', 'src/Mailer.php', 'src/Media.php',
+    'src/Migrator.php', 'src/NotFound.php', 'src/Palette.php', 'src/Plans.php', 'src/Properties.php',
+    'src/Qr.php', 'src/QrExport.php', 'src/RateLimit.php', 'src/Router.php', 'src/S3Storage.php',
+    'src/SectionCatalog.php', 'src/Stats.php', 'src/Storage.php', 'src/Storages.php', 'src/Stripe.php',
+    'src/Subscriptions.php', 'src/Support.php', 'src/Tokens.php', 'src/Translator.php', 'src/View.php',
+    'src/routes_admin.php', 'src/routes_host.php', 'src/routes_public.php',
+    'views/admin/_testi_pacchetto.php', 'views/admin/audit.php', 'views/admin/customer.php',
+    'views/admin/customers.php', 'views/admin/dashboard.php', 'views/admin/diagnostics.php',
+    'views/admin/guides.php', 'views/admin/packages.php', 'views/admin/subscriptions.php',
+    'views/auth/forgot.php', 'views/auth/login.php', 'views/auth/register.php', 'views/auth/reset.php',
+    'views/auth/verify.php', 'views/guest/_lingue.php', 'views/guest/_top.php', 'views/guest/farewell.php',
     'views/guest/guide.php', 'views/guest/section.php', 'views/guest/splash.php',
-    'views/guest/farewell.php', 'views/guest/_lingue.php',
+    'views/guest/unavailable.php', 'views/host/_aspetto_form.php', 'views/host/_campi.php',
+    'views/host/_lingue_form.php', 'views/host/_qr_box.php', 'views/host/_sezioni.php',
+    'views/host/_struttura_form.php', 'views/host/_telefono.php', 'views/host/account.php',
+    'views/host/appearance.php', 'views/host/dashboard.php', 'views/host/languages.php',
+    'views/host/new_property.php', 'views/host/properties.php', 'views/host/published.php',
+    'views/host/qr.php', 'views/host/section.php', 'views/host/settings.php', 'views/host/stats.php',
+    'views/host/translate.php', 'views/host/wizard.php', 'views/layout/_tema-bottone.php',
+    'views/layout/_tema.php', 'views/layout/app.php', 'views/layout/bare.php', 'views/layout/cms.php',
+    'views/layout/full.php', 'views/layout/guest.php', 'views/pub/404.php', 'views/pub/home.php',
+    'views/pub/install.php', 'views/pub/legal.php', 'views/pub/paid.php', 'views/pub/plan.php',
 ];
 $mancanti = [];
 $vuoti = [];
@@ -172,7 +179,8 @@ try {
 
     foreach (['Config', 'Support', 'Db', 'Auth', 'Csrf', 'Router', 'View',
               'Entitlements', 'Guide', 'Media', 'Qr', 'Stripe', 'Billing',
-              'Translator', 'Installer'] as $c) {
+              'Translator', 'Installer', 'Migrator', 'Subscriptions', 'Plans', 'Palette',
+              'SectionCatalog', 'Properties', 'I18n', 'Mailer', 'Storages', 'S3Storage', 'LocalStorage'] as $c) {
         $nome = 'MHW\\' . $c;
         class_exists($nome);
         riga('Classe ' . $c, class_exists($nome, false), class_exists($nome, false) ? 'caricata' : 'NON caricata');
@@ -192,6 +200,8 @@ try {
     // I due file di rotte si caricano davvero? Un file troncato dal
     // trasferimento FTP si manifesta qui, con file e riga esatti.
     $r = new \MHW\Router();
+    require $APP . '/src/routes_public.php';
+    riga('routes_public.php si carica', true, 'nessun errore di sintassi');
     require $APP . '/src/routes_host.php';
     riga('routes_host.php si carica', true, 'nessun errore di sintassi');
     require $APP . '/src/routes_admin.php';

@@ -24,27 +24,29 @@ system, and a clickable prototype.
 
 ### The working application
 
-`app/` is not a mock: it registers accounts, takes Stripe payments, resolves
-entitlements against frozen package versions, publishes immutable guide
-snapshots, generates QR codes from scratch, and lets an administrator enter a
-customer's account without ever touching their password. It has no Composer, no
-Node, no build step — `./costruisci-pacchetto.sh` produces a zip you upload into
-a folder on shared hosting, and it works whether or not the server rewrites URLs.
+`app/` is not a mock. Creating a guide is free; publishing it requires an
+annual Stripe subscription (Essential, Plus, Portfolio 2 and 3, all priced from
+the database and sold as frozen package versions). The guide goes online only
+when a signed Stripe webhook confirms payment, and goes offline by itself when
+the paid period ends — the content is kept and the printed QR keeps working
+once the subscription is renewed. Plan limits (sections, languages, images,
+PDFs, properties) are enforced server-side; media can live on Amazon S3
+(hand-written SigV4, no SDK) or on disk; the guest guide is fully localised in
+Italian, English, French, German and Spanish, with manual translations only.
+It has no Composer, no Node, no build step — `./costruisci-pacchetto.sh`
+produces a zip you upload into a folder on shared hosting, and it works whether
+or not the server rewrites URLs.
 
 Its surfaces follow the **Fauna** direction of the design canvas: full-bleed
-photography, solid colour tiles, Gloock on headings and Onest on everything else,
-and a night theme for the Wi-Fi page — the one guests look for in the dark. A
-fine sand grain runs under every surface — but never under a control, so buttons
-and calls to action stay smooth against it, and never over photographs, text or icons —
-the two navigation bars are glass at 40% with a blurred backdrop, and there is a
-light/dark switch that follows the system until someone chooses otherwise.
+photography, solid colour tiles, Gloock on headings and Onest on everything
+else, six curated palettes for the guest guide, a light/dark switch, and a
+night theme for the Wi-Fi page. The operational CMS drops the sand grain from
+its working components for legibility.
 
-At install time it offers **three sample customers** (Lucia in Montepulciano,
-Marco in Lecce, Agnese in Ortigia) with published guides, photographs,
-translations and thirty days of analytics, so the product can be seen inhabited
-rather than empty. They are real accounts with a documented password and the
-admin dashboard nags until they are removed; one button deletes them, their
-guides and their photographs.
+> The documents in `docs/` and `schema/` are the original product specification.
+> Where they differ from the working application (for example: no public Pro
+> plan, no machine translation, no door codes in the guide), the application
+> and [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md) describe the current decisions.
 
 Read [`app/LEGGIMI.md`](app/LEGGIMI.md) for installation and the address map.
 
@@ -125,7 +127,9 @@ against the real artifacts:
 | `python3 schema/validate.py` | The three configuration files agree: every feature a package prices exists, values match their declared types, tiers are monotonic, every wizard gate resolves. |
 | `node prototype/walkthrough.mjs` | 45 browser assertions across the whole product: conditional wizard logic, entitlement gating, the publish bar, support mode requiring a reason, keyboard access, no horizontal scroll at 320px, dark mode. |
 | `node prototype/contrast-check.mjs` | Every visible text node on every page measured against its effective background at the WCAG AA threshold. |
-| `app/prove/esegui.sh` | 91 end-to-end checks over real HTTP: installation, the seeded sample data, the admin dashboard's numbers, impersonation, every guest surface in three languages, the night theme, the permanent QR redirect and its PNG, the deletion and recreation of the sample customers, and the grain, glass and theme machinery. The script deploys a copy of the app the way it lands on shared hosting, serves it, runs the checks and cleans up after itself. |
+| `app/prove/esegui.sh` | 227 end-to-end checks over real HTTP against a copy deployed the way it lands on shared hosting, with a fake Stripe API and a fake S3 bucket: installation, landing and price list, registration with consent and email verification, the setup wizard, Essential/Plus/Portfolio limits enforced server-side, rejected uploads (disguised SVGs, PDFs with JavaScript), checkout parameters, signed/forged/stale/replayed webhooks, renewal on/off, expiry, failed payment, cancellation, QR in PNG/SVG/PDF, cross-tenant access, CSRF, password reset, the admin console. `MHW_STORAGE=local` runs the same suite with files on disk. |
+| `app/prove/aggiornamento.sh` | Installs the previous release with its sample data, copies the new code over it, and checks that migrations run once by themselves, nothing sold or written is lost, printed QR codes stay valid, and every door code is gone — including from published snapshots. |
+| `php app/prove/firma-s3.php` | The hand-written S3 SigV4 signer against AWS's published test vectors (and `firma-s3-botocore.php` against botocore). |
 
 The browser suites need Playwright:
 `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers NODE_PATH=$(npm root -g) node prototype/walkthrough.mjs`

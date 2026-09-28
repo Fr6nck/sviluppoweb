@@ -10,14 +10,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Gloock&family=Onest:wght@300..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= a() ?>/assets/app.css">
 </head>
-<body>
-<main class="wrap" style="max-width:520px;padding-top:48px;padding-bottom:64px">
+<body class="cms">
+<main class="wrap" style="max-width:<?= Support::e($larghezza ?? '520px') ?>;padding-top:40px;padding-bottom:48px">
   <div class="spread spread--mid">
     <a class="brand" href="<?= b() ?>/">myhouse welcome</a>
     <?php include __DIR__ . '/_tema-bottone.php'; ?>
   </div>
-  <?php if ($f): ?><p class="note note--<?= $f['kind'] === 'err' ? 'err' : 'ok' ?>" style="margin-top:24px"><?= Support::e($f['msg']) ?></p><?php endif; ?>
+  <?php if ($f): ?><p class="note note--<?= $f['kind'] === 'err' ? 'err' : 'ok' ?>" style="margin-top:24px" role="status"><?= Support::e($f['msg']) ?></p><?php endif; ?>
   <div style="margin-top:28px"><?= $content ?></div>
+  <p class="tiny muted" style="margin-top:40px;text-align:center">
+    <a href="<?= b() ?>/termini">Termini</a> · <a href="<?= b() ?>/privacy">Privacy</a></p>
 </main>
 </body>
 </html>

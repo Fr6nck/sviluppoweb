@@ -89,9 +89,15 @@ final class Db
         return self::run("UPDATE $table SET $set WHERE $where", $data + $args);
     }
 
+    /**
+     * Una transazione. Se ce n'è già una aperta — il webhook che pubblica una
+     * guida, una migrazione che crea un abbonamento — si entra in quella:
+     * PDO non annida le transazioni, e l'atomicità la garantisce l'esterna.
+     */
     public static function tx(callable $fn): mixed
     {
         $pdo = self::conn();
+        if ($pdo->inTransaction()) return $fn($pdo);
         $pdo->beginTransaction();
         try { $r = $fn($pdo); $pdo->commit(); return $r; }
         catch (\Throwable $e) { $pdo->rollBack(); throw $e; }

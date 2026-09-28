@@ -1,110 +1,66 @@
-<?php use function MHW\b; use MHW\{Support, Icon}; $title = 'Quadro'; $nav = 'admin'; ?>
+<?php
+/* Il quadro dell'amministrazione: numeri veri, interrogati adesso.
+   Gli abbonamenti manuali e di esempio non contano nell'incasso. */
+use function MHW\b;
+use MHW\{Support, Csrf};
+$title = 'Amministrazione'; ?>
+<div class="stack stack--lg">
+  <h1>Quadro.</h1>
 
-<div class="spread">
-  <div class="stack stack--sm">
-    <h1>Il quadro.</h1>
-    <p class="lead">Quanti sono, quanto hanno pagato, quanto viene letto quello che scrivono.
-      Numeri interrogati adesso.</p>
-  </div>
-  <div class="row">
-    <a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/clienti"><?= Icon::svg('people', 15) ?>Clienti</a>
-    <a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/pacchetti"><?= Icon::svg('book', 15) ?>Pacchetti</a>
-    <a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/diagnostica"><?= Icon::svg('chart', 15) ?>Diagnostica</a>
-  </div>
-</div>
+  <?php foreach ($avvisi as [$t, $d]): ?>
+    <div class="note" role="status"><div class="stack" style="gap:4px"><b><?= Support::e($t) ?></b><span class="small"><?= Support::e($d) ?></span></div></div>
+  <?php endforeach; ?>
 
-<?php if ($avvisi): ?>
-  <div class="stack" style="margin-top:28px;gap:10px">
-    <?php foreach ($avvisi as [$che, $perche]): ?>
-      <p class="note"><?= Icon::svg('warning', 19) ?>
-        <span><strong><?= Support::e($che) ?>.</strong> <?= Support::e($perche) ?></span></p>
-    <?php endforeach; ?>
-  </div>
-<?php endif; ?>
-
-<div class="grid grid-4" style="margin-top:28px">
-  <div class="stat stat--accent"><b><?= (int) $numeri['clienti'] ?></b>
-    <span><?= (int) $numeri['abbonati'] ?> con un piano attivo</span></div>
-  <div class="stat"><b><?= Support::e(Support::money((int) $numeri['incassato'])) ?></b>
-    <span>incassato, ordini confermati</span></div>
-  <div class="stat"><b><?= (int) $numeri['pubblicate'] ?></b>
-    <span>guide pubblicate su <?= (int) $numeri['guide'] ?></span></div>
-  <div class="stat"><b><?= (int) $numeri['aperture'] ?></b>
-    <span>aperture negli ultimi 30 giorni</span></div>
-</div>
-
-<div class="sheet" style="margin-top:36px">
-  <div class="stack stack--lg">
-
-    <section class="stack" style="gap:12px">
-      <div class="spread spread--mid">
-        <h2 style="font-size:22px">I piani, versione per versione</h2>
-        <a class="small" href="<?= b() ?>/admin/pacchetti">Modifica il listino &rarr;</a>
-      </div>
-      <p class="muted small">Una versione già venduta non si tocca: chi l'ha comprata ci resta,
-        con quello che aveva comprato. Questa colonna dice quante persone ne dipendono.</p>
-      <div class="stack" style="gap:8px">
-        <?php foreach ($piani as $pl): ?>
-          <div class="rowcard">
-            <b class="grow"><?= Support::e($pl['name']) ?>
-              <span class="muted" style="font-weight:400">· versione <?= (int) $pl['version'] ?></span></b>
-            <span class="small muted"><?= Support::e(Support::money((int) $pl['price_cents'], $pl['currency'])) ?> / anno</span>
-            <span class="badge badge--<?= $pl['is_current'] ? 'pine' : 'ochre' ?>">
-              <?= $pl['is_current'] ? 'In vendita' : 'Storica' ?></span>
-            <span class="small" style="min-width:92px;text-align:right">
-              <strong><?= (int) $pl['clienti'] ?></strong> client<?= (int) $pl['clienti'] === 1 ? 'e' : 'i' ?></span>
-          </div>
-        <?php endforeach; ?>
-      </div>
-    </section>
-
-    <section class="stack" style="gap:12px">
-      <h2 style="font-size:22px">Gli ultimi ordini</h2>
-      <?php if ($numeri['in_attesa']): ?>
-        <p class="note note--quiet"><?= (int) $numeri['in_attesa'] ?> ordini sono ancora in attesa:
-          restano così finché Stripe non conferma l'incasso con una notifica firmata.</p>
-      <?php endif; ?>
-      <table>
-        <thead><tr><th>Quando</th><th>Cliente</th><th>Piano</th><th>Importo</th><th>Stato</th></tr></thead>
-        <tbody>
-        <?php foreach ($ordini as $o): ?>
-          <tr>
-            <td class="muted"><?= Support::e(substr($o['created_at'], 0, 10)) ?></td>
-            <td><a href="<?= b() ?>/admin/cliente/<?= (int) $o['account_id'] ?>">
-              <?= Support::e($o['cliente'] ?: $o['email']) ?></a></td>
-            <td><?= Support::e($o['package']) ?></td>
-            <td><?= Support::e(Support::money((int) $o['amount_cents'], $o['currency'])) ?></td>
-            <td><span class="badge badge--<?= $o['status'] === 'paid' ? 'pine' : ($o['status'] === 'failed' ? 'alert' : 'ochre') ?>">
-              <?= ['paid' => 'pagato', 'pending' => 'in attesa', 'failed' => 'fallito'][$o['status']] ?? Support::e($o['status']) ?></span></td>
-          </tr>
-        <?php endforeach; ?>
-        <?php if (!$ordini): ?><tr><td colspan="5" class="muted">Nessun ordine ancora.</td></tr><?php endif; ?>
-        </tbody>
-      </table>
-    </section>
+  <div class="grid grid-4">
+    <div class="stat"><b><?= (int) $numeri['clienti'] ?></b><span>clienti registrati</span></div>
+    <div class="stat"><b><?= (int) $numeri['abbonati'] ?></b><span>abbonamenti Stripe attivi</span></div>
+    <div class="stat"><b><?= (int) $numeri['pubblicate'] ?></b><span>guide pubblicate su <?= (int) $numeri['guide'] ?></span></div>
+    <div class="stat"><b><?= Support::e(Support::money($numeri['incassato'])) ?></b><span>incassato con Stripe (IVA esclusa)</span></div>
+    <div class="stat"><b><?= (int) $numeri['aperture'] ?></b><span>aperture delle guide (30 giorni)</span></div>
+    <div class="stat"><b><?= (int) $numeri['in_attesa'] ?></b><span>pagamenti in attesa</span></div>
+    <div class="stat"><b><?= (int) $numeri['rinnovo_off'] ?></b><span>con rinnovo disattivato</span></div>
+    <div class="stat"><b><?= (int) $numeri['falliti'] ?></b><span>rinnovi non riusciti</span></div>
   </div>
 
-  <div class="stack" style="gap:14px">
-    <span class="kicker">Le guide più lette · 30 giorni</span>
-    <div class="stack" style="gap:8px">
-      <?php foreach ($lette as $g): ?>
-        <a class="rowcard" href="<?= b() ?>/g/<?= Support::e($g['slug']) ?>">
-          <b class="grow" style="font-size:15px"><?= Support::e($g['name']) ?></b>
-          <span class="small muted"><?= (int) $g['aperture'] ?></span>
-        </a>
+  <section class="stack" style="gap:10px">
+    <div class="spread spread--mid"><h2 style="font-size:22px">Listino</h2><a class="small" href="<?= b() ?>/admin/pacchetti">Gestisci pacchetti</a></div>
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th>Pacchetto</th><th>Versione</th><th>Prezzo</th><th>Stripe Price</th><th>Clienti attivi</th><th>Stato</th></tr></thead>
+      <tbody>
+      <?php foreach ($piani as $p): ?>
+        <tr><td><?= Support::e($p['name']) ?></td><td>v<?= (int) $p['version'] ?><?= $p['is_current'] ? ' · in vendita' : '' ?></td>
+          <td><?= Support::e(Support::money((int) $p['price_cents'], $p['currency'])) ?> + IVA</td>
+          <td><code><?= Support::e($p['stripe_price_id'] ?: '— (prezzo inline)') ?></code></td>
+          <td><?= (int) $p['clienti'] ?></td>
+          <td><?= !$p['active'] ? 'Disattivato' : ($p['public'] ? 'Pubblico' : 'Nascosto') ?></td></tr>
       <?php endforeach; ?>
-      <?php if (!$lette): ?>
-        <p class="note note--quiet">Nessuna guida pubblicata: quando qualcuno pubblicherà,
-          le aperture compariranno qui.</p>
-      <?php endif; ?>
-    </div>
+      </tbody></table></div>
+  </section>
 
-    <span class="kicker" style="margin-top:14px">Il QR</span>
-    <div class="stat"><b><?= (int) $numeri['scansioni'] ?></b><span>scansioni da sempre</span></div>
-
-    <?php if ($esempi): ?>
-      <p class="note note--quiet" style="margin-top:6px">I clienti di esempio sono ancora dentro.
-        Si tolgono dalla pagina <a href="<?= b() ?>/admin/clienti">Clienti</a>.</p>
+  <section class="stack" style="gap:10px">
+    <h2 style="font-size:22px">Ultimi ordini</h2>
+    <?php if (!$ordini): ?><p class="muted small">Nessun ordine.</p><?php else: ?>
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th>Data</th><th>Cliente</th><th>Piano</th><th>Importo</th><th>Stato</th></tr></thead>
+      <tbody>
+      <?php foreach ($ordini as $o): ?>
+        <tr><td><?= Support::e(Support::date($o['created_at'])) ?></td>
+          <td><a href="<?= b() ?>/admin/cliente/<?= (int) $o['account_id'] ?>"><?= Support::e($o['cliente'] ?: $o['email']) ?></a></td>
+          <td><?= Support::e($o['package']) ?></td><td><?= Support::e(Support::money((int) $o['amount_cents'], $o['currency'])) ?></td>
+          <td><?= Support::e($o['status']) ?> <span class="tiny muted"><?= Support::e($o['provider']) ?></span></td></tr>
+      <?php endforeach; ?>
+      </tbody></table></div>
     <?php endif; ?>
-  </div>
+  </section>
+
+  <section class="panel stack">
+    <span class="kicker">Clienti di esempio</span>
+    <?php if ($esempi): ?>
+      <p class="small">Tre account dimostrativi (dominio esempio.it) con password nota. Servono per provare il prodotto: toglili prima di aprire al pubblico.</p>
+      <form method="post" action="<?= b() ?>/admin/dati-esempio"><?= Csrf::field() ?><button class="btn btn--danger btn--sm" name="cosa" value="elimina">Elimina i clienti di esempio</button></form>
+    <?php else: ?>
+      <p class="small">Crea tre clienti di prova (Essential, Plus, Portfolio) con la guida di Casa Lucia usata come demo pubblica.</p>
+      <form method="post" action="<?= b() ?>/admin/dati-esempio"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm" name="cosa" value="crea">Crea i clienti di esempio</button></form>
+    <?php endif; ?>
+  </section>
 </div>

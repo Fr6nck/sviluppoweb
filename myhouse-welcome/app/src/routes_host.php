@@ -1,290 +1,613 @@
 <?php
 /** Rotte dell'area host. $r è il Router creato in public/index.php. */
 
-use MHW\{Auth, Config, Db, Entitlements, Guide, Media, Support, Translator, View};
+use MHW\{Auth, Config, Db, Entitlements, Guide, LimitReached, Log, Media, NotFound, Palette, Plans, Properties,
+         Qr, QrExport, SectionCatalog, Stats, Stripe, Subscriptions, Support, View};
 
-/** La struttura chiesta deve appartenere all'account di chi è connesso. */
-$ownProperty = function (int $id): array {
+const MHW_PASSI = ['struttura' => 'La tua struttura', 'checkin' => 'Check-in & Check-out', 'sezioni' => 'Scegli le sezioni',
+                   'contenuti' => 'Compila i contenuti', 'lingue' => 'Lingue', 'aspetto' => 'Aspetto', 'anteprima' => 'Anteprima'];
+
+/** L'account di chi è connesso, per ogni rotta di quest'area. */
+$host = function (): array {
+    $u = Auth::requireUser();
     $acc = Auth::account();
-    $p = Db::one('SELECT * FROM properties WHERE id = ? AND account_id = ?', [$id, $acc['id']]);
-    if (!$p) { http_response_code(404); exit('Struttura non trovata.'); }
-    return $p;
+    if (!$acc) Support::redirect('/admin');
+    return [$u, $acc];
 };
 
-$r->get('/pannello', function () {
-    Auth::requireUser();
-    $acc = Auth::account();
+/** La struttura chiesta, se appartiene all'account. Altrimenti non esiste. */
+$mia = function (int $id) use ($host): array {
+    [$u, $acc] = $host();
+    $p = Db::one('SELECT * FROM properties WHERE id = ? AND account_id = ?', [$id, $acc['id']]);
+    if (!$p) { http_response_code(404); View::out('pub/404', []); }
+    return [$u, $acc, $p];
+};
+
+/**
+ * Dopo un salvataggio dentro la procedura guidata si va al passo indicato dal
+ * modulo — solo se è uno dei passi veri — altrimenti si resta sulla pagina.
+ */
+$dopo = function (array $p, string $restaQui): string {
+    $passo = (string) ($_POST['dopo'] ?? '');
+    return isset(MHW_PASSI[$passo]) ? '/pannello/' . $p['id'] . '/procedura/' . $passo : $restaQui;
+};
+
+/** Una richiesta arrivata dal salvataggio automatico vuole JSON, non un redirect. */
+$vuoleJson = fn(): bool => str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json');
+
+/** Messaggio d'errore per l'utente: i RuntimeException sono già scritti per lui, il resto no. */
+$messaggio = function (\Throwable $e, string $dove): string {
+    if ($e instanceof \RuntimeException && !($e instanceof \PDOException)) return $e->getMessage();
+    return 'Non è stato possibile salvare. Riprova tra poco (codice ' . Log::exception($e, $dove) . ').';
+};
+
+/** Le informazioni che ogni pagina di una struttura mostra in alto e nella colonna. */
+$contesto = function (array $acc, array $p): array {
+    $aid = (int) $acc['id'];
+    $gov = Subscriptions::governingVersionId($aid);
+    return [
+        'prop' => $p, 'acc' => $acc, 'ent' => Entitlements::forAccount($aid),
+        'sub' => Subscriptions::active($aid),
+        'piano' => $gov ? Plans::version($gov) : null,
+        'limite' => Entitlements::limit($aid, 'sections', 4),
+        'attive' => Properties::activeCount((int) $p['id']),
+    ];
+};
+
+// ------------------------------------------------------------------ le mie guide
+$r->get('/pannello', function () use ($host) {
+    [$u, $acc] = $host();
     $props = Db::all('SELECT * FROM properties WHERE account_id = ? ORDER BY id', [$acc['id']]);
-    if (!$props) Support::redirect('/pannello/nuova');
-    $sub = Db::one(
-        'SELECT s.*, p.name AS package_name, pv.version FROM subscriptions s
-         JOIN package_versions pv ON pv.id = s.package_version_id
-         JOIN packages p ON p.id = pv.package_id
-         WHERE s.account_id = ? AND s.status = ? ORDER BY s.id DESC', [$acc['id'], 'active']);
-    View::out('host/properties', ['props' => $props, 'sub' => $sub, 'acc' => $acc]);
+    if (!$props) Support::redirect($acc['intended_package_version_id'] || Subscriptions::active((int) $acc['id']) ? '/pannello/nuova' : '/piano');
+    foreach ($props as &$pr) $pr['online'] = Subscriptions::propertyOnline($pr);
+    unset($pr);
+    $gov = Subscriptions::governingVersionId((int) $acc['id']);
+    View::out('host/properties', [
+        'props' => $props, 'acc' => $acc, 'user' => $u, 'sub' => Subscriptions::active((int) $acc['id']),
+        'piano' => $gov ? Plans::version($gov) : null,
+        'maxProp' => Entitlements::limit((int) $acc['id'], 'properties', 1), 'nav' => 'guide',
+    ], 'layout/cms');
 });
 
-$r->any('/pannello/nuova', function () {
-    Auth::requireUser();
-    $acc = Auth::account();
-    $err = null;
+$r->any('/pannello/nuova', function () use ($host, $messaggio) {
+    [$u, $acc] = $host();
+    if (!$acc['intended_package_version_id'] && !Subscriptions::active((int) $acc['id'])) Support::redirect('/piano');
     $max = Entitlements::limit((int) $acc['id'], 'properties', 1);
     $have = (int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$acc['id']], 0);
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        if ($have >= $max) {
-            $err = 'Il vostro piano consente ' . $max . ' struttura/e. Passate a un piano superiore per aggiungerne altre.';
-        } else {
-            $name = trim((string) $_POST['name']);
-            if ($name === '') $err = 'Serve un nome.';
-            else {
-                $pid = Db::insert('properties', [
-                    'account_id' => $acc['id'], 'name' => $name, 'slug' => Support::uniqueSlug($name),
-                    'city' => trim((string) ($_POST['city'] ?? '')), 'region' => '',
-                    'host_name' => $acc['name'], 'default_locale' => 'it',
-                    'status' => 'draft', 'created_at' => Support::now(),
-                ]);
-                Db::insert('property_locales', ['property_id' => $pid, 'locale' => 'it']);
-                Db::insert('qr_tokens', ['property_id' => $pid, 'token' => Support::token(9), 'scans' => 0, 'created_at' => Support::now()]);
-                foreach ([['checkin', 'Entrare in casa', 'Le chiavi sono nella cassetta accanto al portone.'],
-                          ['wifi', 'Wi-Fi e servizi', 'La rete si chiama come la casa.'],
-                          ['places', 'Dove mangiare', 'I posti che proviamo anche noi.']] as $i => [$kind, $title, $body]) {
-                    $sid = Db::insert('sections', [
-                        'property_id' => $pid, 'kind' => $kind, 'icon' => $kind, 'color' => ['terracotta','sea','pine'][$i],
-                        'position' => $i, 'created_at' => Support::now(),
-                    ]);
-                    Db::insert('section_translations', [
-                        'section_id' => $sid, 'locale' => 'it', 'title' => $title, 'body' => $body,
-                        'state' => 'reviewed', 'updated_at' => Support::now(),
-                    ]);
-                }
-                Support::flash('Struttura creata. Ora riempite le sezioni.');
-                Support::redirect('/pannello/' . $pid);
-            }
-        }
-    }
-    View::out('host/new_property', ['err' => $err, 'have' => $have, 'max' => $max]);
-});
-
-$r->get('/pannello/{id}', function (array $a) use ($ownProperty) {
-    Auth::requireUser();
-    $p = $ownProperty((int) $a['id']);
-    $acc = Auth::account();
-    $sections = Db::all('SELECT * FROM sections WHERE property_id = ? ORDER BY position, id', [$p['id']]);
-    foreach ($sections as &$s) {
-        $s['tr'] = Db::one('SELECT * FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $p['default_locale']]) ?: ['title' => '', 'body' => ''];
-        $s['locales'] = (int) Db::val('SELECT COUNT(*) FROM section_translations WHERE section_id = ?', [$s['id']], 0);
-    }
-    unset($s);
-    $qr = Db::one('SELECT * FROM qr_tokens WHERE property_id = ?', [$p['id']]);
-    $da = gmdate('Y-m-d', strtotime('-30 days'));
-    $piuLetta = Db::one(
-        'SELECT section_id, COUNT(*) AS n FROM analytics_events
-         WHERE property_id = ? AND kind = ? AND section_id IS NOT NULL AND day >= ?
-         GROUP BY section_id ORDER BY n DESC', [$p['id'], 'section', $da]);
-    $titoloPiuLetta = '—';
-    if ($piuLetta) {
-        $titoloPiuLetta = (string) Db::val(
-            'SELECT title FROM section_translations WHERE section_id = ? AND locale = ?',
-            [$piuLetta['section_id'], $p['default_locale']], '—');
-    }
-    $stats = [
-        'aperture' => (int) Db::val(
-            'SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = ? AND day >= ?',
-            [$p['id'], 'open', $da], 0),
-        'scansioni' => (int) ($qr['scans'] ?? 0),
-        'lingue' => (int) Db::val('SELECT COUNT(*) FROM property_locales WHERE property_id = ?', [$p['id']], 0),
-        'piu_letta' => $titoloPiuLetta,
-    ];
-    View::out('host/dashboard', [
-        'p' => $p, 'sections' => $sections, 'qr' => $qr, 'stats' => $stats,
-        'pending' => Guide::pendingChanges((int) $p['id']),
-        'ent' => Entitlements::forAccount((int) $acc['id']),
-        'acc' => $acc,
-    ], 'layout/wide');
-});
-
-$r->post('/pannello/{id}/pubblica', function (array $a) use ($ownProperty) {
-    Auth::requireUser();
-    $p = $ownProperty((int) $a['id']);
-    $v = Guide::publish((int) $p['id']);
-    Support::flash('Guida pubblicata (versione ' . $v . '). È online su /g/' . $p['slug']);
-    Support::redirect('/pannello/' . $p['id']);
-});
-
-$r->any('/pannello/{id}/impostazioni', function (array $a) use ($ownProperty) {
-    Auth::requireUser();
-    $p = $ownProperty((int) $a['id']);
-    $acc = Auth::account();
     $err = null;
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
-            $data = [
-                'name' => trim((string) $_POST['name']),
-                'city' => trim((string) $_POST['city']),
-                'checkin_from' => trim((string) $_POST['checkin_from']),
-                'checkout_by' => trim((string) $_POST['checkout_by']),
-                'host_name' => trim((string) $_POST['host_name']),
-                'host_phone' => trim((string) $_POST['host_phone']),
-                'host_whatsapp' => trim((string) $_POST['host_whatsapp']),
-            ];
-            if ($data['name'] === '') throw new RuntimeException('Il nome non può restare vuoto.');
-            if (($_FILES['cover']['error'] ?? 4) === 0) {
-                if (!Entitlements::can((int) $acc['id'], 'photos')) throw new RuntimeException('Le foto sono comprese dal piano Plus in su.');
-                $data['cover_media_id'] = Media::store($_FILES['cover'], (int) $acc['id'], $data['name']);
-            }
-            Db::update('properties', $data, 'id = :pid', ['pid' => $p['id']]);
-            Support::flash('Impostazioni salvate.');
-            Support::redirect('/pannello/' . $p['id'] . '/impostazioni');
-        } catch (\Throwable $e) { $err = $e->getMessage(); }
+            $pid = Properties::create((int) $acc['id'], (string) ($_POST['name'] ?? ''), (string) ($_POST['city'] ?? ''), (string) $u['name']);
+            Db::update('properties', ['wizard_step' => 'checkin'], 'id = :pid', ['pid' => $pid]);
+            Support::redirect('/pannello/' . $pid . '/procedura/struttura');
+        } catch (\Throwable $e) { $err = $messaggio($e, 'nuova struttura'); }
     }
-    View::out('host/settings', ['p' => $p, 'err' => $err, 'acc' => $acc,
-                                'ent' => Entitlements::forAccount((int) $acc['id'])], 'layout/wide');
+    View::out('host/new_property', ['err' => $err, 'have' => $have, 'max' => $max, 'nav' => 'guide'], 'layout/cms');
 });
 
-$r->post('/pannello/{id}/sezioni/nuova', function (array $a) use ($ownProperty) {
-    Auth::requireUser();
-    $p = $ownProperty((int) $a['id']);
-    $acc = Auth::account();
-    $max = Entitlements::limit((int) $acc['id'], 'sections', 8);
-    $have = (int) Db::val('SELECT COUNT(*) FROM sections WHERE property_id = ?', [$p['id']], 0);
-    if ($have >= $max) {
-        Support::flash('Il vostro piano arriva a ' . $max . ' sezioni.', 'err');
-        Support::redirect('/pannello/' . $p['id']);
+$r->post('/pannello/{id}/elimina', function (array $a) use ($mia) {
+    [$u, $acc, $p] = $mia((int) $a['id']);
+    if (trim((string) ($_POST['conferma'] ?? '')) !== $p['name']) {
+        Support::flash('Per eliminare scrivi il nome esatto della struttura.', 'err');
+        Support::redirect('/pannello/' . $p['id'] . '/impostazioni');
     }
-    $sid = Db::insert('sections', [
-        'property_id' => $p['id'], 'kind' => 'text', 'icon' => 'home', 'color' => 'ochre',
-        'position' => $have, 'created_at' => Support::now(),
-    ]);
-    Db::insert('section_translations', [
-        'section_id' => $sid, 'locale' => $p['default_locale'], 'title' => 'Nuova sezione',
-        'body' => '', 'state' => 'reviewed', 'updated_at' => Support::now(),
-    ]);
+    foreach (Db::all('SELECT id FROM media WHERE property_id = ?', [$p['id']]) as $m) Media::delete((int) $m['id'], (int) $acc['id']);
+    Db::run('DELETE FROM properties WHERE id = ?', [$p['id']]);
+    Auth::audit('property.delete', (int) $u['id'], ['name' => $p['name']]);
+    Support::flash('Struttura eliminata, con la sua guida e il suo QR.');
+    Support::redirect('/pannello');
+});
+
+// ---------------------------------------------------------------- contenuti
+$r->get('/pannello/{id}', function (array $a) use ($mia, $contesto) {
+    [$u, $acc, $p] = $mia((int) $a['id']);
+    $sections = Db::all('SELECT * FROM sections WHERE property_id = ? ORDER BY is_core DESC, position, id', [$p['id']]);
+    foreach ($sections as &$s) {
+        $t = Db::one('SELECT * FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $p['default_locale']]);
+        $s['title'] = $t['title'] ?? SectionCatalog::title($s['kind'], $p['default_locale']);
+        $s['empty'] = SectionCatalog::isEmpty($s['kind'], json_decode((string) $s['data'], true) ?: [],
+            json_decode((string) ($t['data'] ?? ''), true) ?: [],
+            (int) Db::val('SELECT COUNT(*) FROM places WHERE section_id = ?', [$s['id']], 0));
+    }
+    unset($s);
+    $presenti = array_column($sections, 'kind');
+    $stats = Entitlements::can((int) $acc['id'], 'analytics') ? Stats::forProperty((int) $p['id']) : null;
+    View::out('host/dashboard', $contesto($acc, $p) + [
+        'user' => $u, 'sections' => $sections,
+        'catalogo' => array_values(array_diff(SectionCatalog::selectable(), $presenti)),
+        'pending' => $p['status'] === 'published' ? Guide::pendingChanges((int) $p['id']) : 1,
+        'problemi' => Guide::problems((int) $acc['id'], (int) $p['id']),
+        'online' => Subscriptions::propertyOnline($p), 'stats' => $stats, 'qui' => 'contenuti',
+    ], 'layout/cms');
+});
+
+$r->post('/pannello/{id}/sezioni', function (array $a) use ($mia, $messaggio) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    $torna = (string) ($_POST['torna'] ?? '') === 'procedura' ? '/pannello/' . $p['id'] . '/procedura/sezioni' : '/pannello/' . $p['id'];
+    try {
+        $sid = Properties::addSection((int) $acc['id'], (int) $p['id'], (string) ($_POST['kind'] ?? ''));
+        Support::flash(SectionCatalog::title((string) $_POST['kind'], 'it') . ' aggiunta.');
+        Support::redirect($torna === '/pannello/' . $p['id'] ? '/pannello/' . $p['id'] . '/sezioni/' . $sid : $torna);
+    } catch (LimitReached $e) {
+        Support::flash($e->getMessage(), 'limite');
+    } catch (\Throwable $e) {
+        Support::flash($messaggio($e, 'aggiungi sezione'), 'err');
+    }
+    Support::redirect($torna);
+});
+
+$r->post('/pannello/{id}/sezioni/{sid}/azione', function (array $a) use ($mia, $messaggio) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    $sid = (int) $a['sid'];
+    $torna = (string) ($_POST['torna'] ?? '') === 'procedura' ? '/pannello/' . $p['id'] . '/procedura/sezioni' : '/pannello/' . $p['id'];
+    try {
+        match ((string) ($_POST['fai'] ?? '')) {
+            'attiva' => Properties::setActive((int) $acc['id'], (int) $p['id'], $sid, true),
+            'disattiva' => Properties::setActive((int) $acc['id'], (int) $p['id'], $sid, false),
+            'su' => Properties::move((int) $p['id'], $sid, 'su'),
+            'giu' => Properties::move((int) $p['id'], $sid, 'giu'),
+            'elimina' => Properties::deleteSection((int) $p['id'], $sid),
+            default => throw new RuntimeException('Azione sconosciuta.'),
+        };
+    } catch (LimitReached $e) {
+        Support::flash($e->getMessage(), 'limite');
+    } catch (NotFound $e) {
+        http_response_code(404); View::out('pub/404', []);
+    } catch (\Throwable $e) {
+        Support::flash($messaggio($e, 'azione sezione'), 'err');
+    }
+    Support::redirect($torna);
+});
+
+// ---------------------------------------------------------- editor di sezione
+$r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($mia, $contesto, $vuoleJson, $messaggio, $dopo) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    try { $s = Properties::section((int) $p['id'], (int) $a['sid']); }
+    catch (NotFound) { http_response_code(404); View::out('pub/404', []); }
+    $aid = (int) $acc['id'];
+    $err = null;
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        try {
+            $cosa = (string) ($_POST['azione'] ?? 'salva');
+            if ($cosa === 'togli-foto') {
+                if ($s['media_id']) Media::delete((int) $s['media_id'], $aid);
+                Db::update('sections', ['media_id' => null], 'id = :sid', ['sid' => $s['id']]);
+            } elseif ($cosa === 'togli-pdf') {
+                if ($s['pdf_media_id']) Media::delete((int) $s['pdf_media_id'], $aid);
+                Db::update('sections', ['pdf_media_id' => null], 'id = :sid', ['sid' => $s['id']]);
+            } else {
+                Properties::saveSection((int) $p['id'], (int) $s['id'], $p['default_locale'], $_POST, true);
+                if (($_FILES['foto']['error'] ?? 4) !== UPLOAD_ERR_NO_FILE) {
+                    if (!Entitlements::can($aid, 'photos')) throw new RuntimeException('Le immagini nelle sezioni sono comprese dal piano Plus.');
+                    $mid = Media::storeImage($_FILES['foto'], $aid, (int) $p['id'], (string) ($_POST['title'] ?? ''), 'section');
+                    if ($s['media_id']) Media::delete((int) $s['media_id'], $aid);
+                    Db::update('sections', ['media_id' => $mid], 'id = :sid', ['sid' => $s['id']]);
+                }
+                if (($_FILES['pdf']['error'] ?? 4) !== UPLOAD_ERR_NO_FILE) {
+                    if (!Entitlements::can($aid, 'pdf')) throw new RuntimeException('I PDF nelle sezioni sono compresi dal piano Plus.');
+                    $mid = Media::storePdf($_FILES['pdf'], $aid, (int) $p['id'], (string) ($_POST['title'] ?? ''));
+                    if ($s['pdf_media_id']) Media::delete((int) $s['pdf_media_id'], $aid);
+                    Db::update('sections', ['pdf_media_id' => $mid], 'id = :sid', ['sid' => $s['id']]);
+                }
+            }
+            if ($vuoleJson()) Support::json(['ok' => true, 'salvato' => Support::now()]);
+            Support::flash('Salvato. Ricordati di pubblicare quando hai finito.');
+            Support::redirect($dopo($p, '/pannello/' . $p['id'] . '/sezioni/' . $s['id']));
+        } catch (\Throwable $e) {
+            $err = $messaggio($e, 'salva sezione');
+            if ($vuoleJson()) Support::json(['ok' => false, 'errore' => $err], 422);
+        }
+        $s = Properties::section((int) $p['id'], (int) $s['id']);
+    }
+
+    $tr = Db::one('SELECT * FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $p['default_locale']]);
+    $places = [];
+    if (SectionCatalog::hasPlaces($s['kind'])) {
+        foreach (Db::all('SELECT * FROM places WHERE section_id = ? ORDER BY position, id', [$s['id']]) as $pl) {
+            $pl['tr'] = Db::one('SELECT * FROM place_translations WHERE place_id = ? AND locale = ?', [$pl['id'], $p['default_locale']])
+                     ?: ['category' => '', 'description' => '', 'note' => '', 'badge' => ''];
+            $places[] = $pl;
+        }
+    }
+    View::out('host/section', $contesto($acc, $p) + [
+        's' => $s, 'title' => $tr['title'] ?? '', 'dati' => json_decode((string) $s['data'], true) ?: [],
+        'tdati' => json_decode((string) ($tr['data'] ?? ''), true) ?: [], 'places' => $places, 'err' => $err,
+        'modifica' => (int) ($_GET['luogo'] ?? 0), 'procedura' => (string) ($_GET['da'] ?? '') === 'procedura',
+        'qui' => 'contenuti',
+    ], 'layout/cms');
+});
+
+$r->post('/pannello/{id}/sezioni/{sid}/luogo', function (array $a) use ($mia, $messaggio) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    $aid = (int) $acc['id'];
+    $torna = '/pannello/' . $p['id'] . '/sezioni/' . (int) $a['sid'];
+    try {
+        $plid = (int) ($_POST['place_id'] ?? 0) ?: null;
+        $plid = Properties::savePlace($aid, (int) $p['id'], (int) $a['sid'], $plid, $p['default_locale'], true, $_POST);
+        if (($_FILES['foto']['error'] ?? 4) !== UPLOAD_ERR_NO_FILE) {
+            if (!Entitlements::can($aid, 'photos')) throw new RuntimeException('Le immagini dei luoghi sono comprese dal piano Plus.');
+            $mid = Media::storeImage($_FILES['foto'], $aid, (int) $p['id'], (string) ($_POST['name'] ?? ''), 'place');
+            $prima = Db::val('SELECT media_id FROM places WHERE id = ?', [$plid]);
+            if ($prima) Media::delete((int) $prima, $aid);
+            Db::update('places', ['media_id' => $mid], 'id = :pid', ['pid' => $plid]);
+        }
+        Support::flash('Luogo salvato.');
+    } catch (NotFound) { http_response_code(404); View::out('pub/404', []); }
+    catch (\Throwable $e) { Support::flash($messaggio($e, 'salva luogo'), 'err'); }
+    Support::redirect($torna);
+});
+
+$r->post('/pannello/{id}/sezioni/{sid}/luogo/{plid}/azione', function (array $a) use ($mia, $messaggio) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    $sid = (int) $a['sid']; $plid = (int) $a['plid'];
+    try {
+        Properties::section((int) $p['id'], $sid);
+        $pl = Db::one('SELECT * FROM places WHERE id = ? AND section_id = ?', [$plid, $sid]);
+        if (!$pl) throw new NotFound('Luogo non trovato.');
+        match ((string) ($_POST['fai'] ?? '')) {
+            'su' => Properties::movePlace((int) $p['id'], $sid, $plid, 'su'),
+            'giu' => Properties::movePlace((int) $p['id'], $sid, $plid, 'giu'),
+            'elimina' => (function () use ($p, $sid, $plid, $pl, $acc) {
+                if ($pl['media_id']) Media::delete((int) $pl['media_id'], (int) $acc['id']);
+                Properties::deletePlace((int) $p['id'], $sid, $plid);
+            })(),
+            'togli-foto' => (function () use ($pl, $acc) {
+                if ($pl['media_id']) Media::delete((int) $pl['media_id'], (int) $acc['id']);
+                Db::update('places', ['media_id' => null], 'id = :pid', ['pid' => $pl['id']]);
+            })(),
+            default => throw new RuntimeException('Azione sconosciuta.'),
+        };
+    } catch (NotFound) { http_response_code(404); View::out('pub/404', []); }
+    catch (\Throwable $e) { Support::flash($messaggio($e, 'azione luogo'), 'err'); }
     Support::redirect('/pannello/' . $p['id'] . '/sezioni/' . $sid);
 });
 
-$r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($ownProperty) {
-    Auth::requireUser();
-    $p = $ownProperty((int) $a['id']);
-    $acc = Auth::account();
-    $s = Db::one('SELECT * FROM sections WHERE id = ? AND property_id = ?', [(int) $a['sid'], $p['id']]);
-    if (!$s) { http_response_code(404); exit('Sezione non trovata.'); }
+// ------------------------------------------------------------------- lingue
+$r->any('/pannello/{id}/lingue', function (array $a) use ($mia, $contesto, $messaggio, $dopo) {
+    [, $acc, $p] = $mia((int) $a['id']);
     $err = null;
-
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
-            $act = (string) ($_POST['azione'] ?? 'salva');
-            if ($act === 'elimina') {
-                Db::run('DELETE FROM sections WHERE id = ?', [$s['id']]);
-                Support::flash('Sezione eliminata.');
-                Support::redirect('/pannello/' . $p['id']);
-            }
-            if ($act === 'luogo') {
-                if (!Entitlements::can((int) $acc['id'], 'places')) throw new RuntimeException('I consigli sul posto sono compresi dal piano Plus in su.');
-                $mid = null;
-                if (($_FILES['foto']['error'] ?? 4) === 0) $mid = Media::store($_FILES['foto'], (int) $acc['id'], (string) $_POST['nome']);
-                Db::insert('places', [
-                    'section_id' => $s['id'], 'name' => trim((string) $_POST['nome']),
-                    'category' => trim((string) $_POST['categoria']), 'distance' => trim((string) $_POST['distanza']),
-                    'note' => trim((string) ($_POST['nota'] ?? '')), 'badge' => trim((string) ($_POST['badge'] ?? '')),
-                    'badge_tone' => (string) ($_POST['tono'] ?? 'pine'), 'media_id' => $mid,
-                    'position' => (int) Db::val('SELECT COUNT(*) FROM places WHERE section_id = ?', [$s['id']], 0),
-                ]);
-                Support::flash('Luogo aggiunto.');
-                Support::redirect('/pannello/' . $p['id'] . '/sezioni/' . $s['id']);
-            }
-            if ($act === 'elimina-luogo') {
-                Db::run('DELETE FROM places WHERE id = ? AND section_id = ?', [(int) $_POST['place_id'], $s['id']]);
-                Support::redirect('/pannello/' . $p['id'] . '/sezioni/' . $s['id']);
-            }
+            Properties::setLocales((int) $acc['id'], (int) $p['id'], (array) ($_POST['locali'] ?? []));
+            Support::flash('Lingue aggiornate.');
+            Support::redirect($dopo($p, '/pannello/' . $p['id'] . '/lingue'));
+        } catch (\Throwable $e) { $err = $messaggio($e, 'lingue'); }
+    }
+    $attive = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
+    // Quanto è tradotto: sezioni attive con un titolo o un campo nella lingua.
+    $sez = Db::all('SELECT id FROM sections WHERE property_id = ? AND is_active = 1', [$p['id']]);
+    $copertura = [];
+    foreach ($attive as $l) {
+        $n = 0;
+        foreach ($sez as $s) {
+            $t = Db::one('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $l]);
+            if ($t && array_filter(json_decode((string) $t['data'], true) ?: [])) $n++;
+        }
+        $copertura[$l] = [$n, count($sez)];
+    }
+    View::out('host/languages', $contesto($acc, $p) + [
+        'err' => $err, 'lingueAttive' => $attive, 'consentite' => Entitlements::allowedLocales((int) $acc['id']),
+        'tutte' => Config::get('locales'), 'copertura' => $copertura, 'qui' => 'lingue',
+    ], 'layout/cms');
+});
 
-            $data = [
-                'kind' => (string) $_POST['kind'], 'color' => (string) $_POST['color'],
-                'wifi_ssid' => trim((string) ($_POST['wifi_ssid'] ?? '')),
-                'wifi_pass' => trim((string) ($_POST['wifi_pass'] ?? '')),
-                'door_code' => trim((string) ($_POST['door_code'] ?? '')),
+$r->any('/pannello/{id}/lingue/{loc}', function (array $a) use ($mia, $contesto, $messaggio, $vuoleJson) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    $loc = (string) $a['loc'];
+    $attive = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
+    if ($loc === $p['default_locale']) Support::redirect('/pannello/' . $p['id']);
+    if (!in_array($loc, $attive, true) || !in_array($loc, Entitlements::allowedLocales((int) $acc['id']), true)) {
+        Support::flash('Prima attiva questa lingua: deve essere compresa nel tuo piano.', 'err');
+        Support::redirect('/pannello/' . $p['id'] . '/lingue');
+    }
+    $err = null;
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        try {
+            foreach ((array) ($_POST['s'] ?? []) as $sid => $campi) {
+                Properties::saveSection((int) $p['id'], (int) $sid, $loc, (array) $campi, false);
+            }
+            foreach ((array) ($_POST['pl'] ?? []) as $plid => $campi) {
+                $sid = (int) Db::val('SELECT section_id FROM places WHERE id = ?', [(int) $plid]);
+                if ($sid) Properties::savePlace((int) $acc['id'], (int) $p['id'], $sid, (int) $plid, $loc, false, (array) $campi);
+            }
+            if ($vuoleJson()) Support::json(['ok' => true]);
+            Support::flash('Traduzione salvata.');
+            Support::redirect('/pannello/' . $p['id'] . '/lingue/' . $loc);
+        } catch (NotFound) { http_response_code(404); View::out('pub/404', []); }
+        catch (\Throwable $e) { $err = $messaggio($e, 'traduzione'); }
+    }
+    $sections = [];
+    foreach (Db::all('SELECT * FROM sections WHERE property_id = ? AND is_active = 1 ORDER BY is_core DESC, position, id', [$p['id']]) as $s) {
+        $orig = Db::one('SELECT * FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $p['default_locale']]);
+        $trad = Db::one('SELECT * FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $loc]);
+        $s['orig'] = ['title' => $orig['title'] ?? '', 'data' => json_decode((string) ($orig['data'] ?? ''), true) ?: []];
+        $s['trad'] = ['title' => $trad['title'] ?? '', 'data' => json_decode((string) ($trad['data'] ?? ''), true) ?: []];
+        $s['places'] = [];
+        if (SectionCatalog::hasPlaces($s['kind'])) {
+            foreach (Db::all('SELECT * FROM places WHERE section_id = ? ORDER BY position, id', [$s['id']]) as $pl) {
+                $pl['orig'] = Db::one('SELECT * FROM place_translations WHERE place_id = ? AND locale = ?', [$pl['id'], $p['default_locale']]) ?: [];
+                $pl['trad'] = Db::one('SELECT * FROM place_translations WHERE place_id = ? AND locale = ?', [$pl['id'], $loc]) ?: [];
+                $s['places'][] = $pl;
+            }
+        }
+        $sections[] = $s;
+    }
+    View::out('host/translate', $contesto($acc, $p) + [
+        'loc' => $loc, 'nome' => Config::get('locales')[$loc] ?? $loc, 'sections' => $sections, 'err' => $err, 'qui' => 'lingue',
+    ], 'layout/cms');
+});
+
+// ------------------------------------------------------------------- aspetto
+$r->any('/pannello/{id}/aspetto', function (array $a) use ($mia, $contesto, $messaggio, $vuoleJson, $dopo) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    $aid = (int) $acc['id'];
+    $err = null;
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        try {
+            $cosa = (string) ($_POST['azione'] ?? 'salva');
+            $campi = ['logo' => ['logo_media_id', 'logo', 'Il logo'], 'cover' => ['cover_media_id', 'cover', 'La foto di copertina'],
+                      'profile' => ['profile_media_id', 'profile_image', "L'immagine profilo"]];
+            if (str_starts_with($cosa, 'togli-')) {
+                $quale = substr($cosa, 6);
+                if (!isset($campi[$quale])) throw new RuntimeException('Azione sconosciuta.');
+                $col = $campi[$quale][0];
+                if ($p[$col]) Media::delete((int) $p[$col], $aid);
+                Db::update('properties', [$col => null], 'id = :pid', ['pid' => $p['id']]);
+            } else {
+                $pal = (string) ($_POST['palette'] ?? $p['palette']);
+                $tono = (string) ($_POST['text_tone'] ?? $p['text_tone']);
+                if (!Palette::exists($pal)) throw new RuntimeException('Palette sconosciuta.');
+                // Un tono che non passa il controllo di contrasto non si salva.
+                if (!Palette::readable($pal, $tono)) throw new RuntimeException('Questa combinazione non è abbastanza leggibile: scegli l\'altra.');
+                if (!Entitlements::can($aid, 'palette')) $pal = Palette::DEFAULT;
+                Db::update('properties', ['palette' => $pal, 'text_tone' => $tono], 'id = :pid', ['pid' => $p['id']]);
+                foreach ($campi as $input => [$col, $feature, $nome]) {
+                    if (($_FILES[$input]['error'] ?? 4) === UPLOAD_ERR_NO_FILE) continue;
+                    if (!Entitlements::can($aid, $feature)) throw new RuntimeException("$nome non è compreso nel tuo piano.");
+                    $mid = Media::storeImage($_FILES[$input], $aid, (int) $p['id'], $p['name'], $input);
+                    if ($p[$col]) Media::delete((int) $p[$col], $aid);
+                    Db::update('properties', [$col => $mid], 'id = :pid', ['pid' => $p['id']]);
+                }
+            }
+            if ($vuoleJson()) Support::json(['ok' => true]);
+            Support::flash('Aspetto salvato.');
+            Support::redirect($dopo($p, '/pannello/' . $p['id'] . '/aspetto'));
+        } catch (\Throwable $e) {
+            $err = $messaggio($e, 'aspetto');
+            if ($vuoleJson()) Support::json(['ok' => false, 'errore' => $err], 422);
+        }
+        $p = Db::one('SELECT * FROM properties WHERE id = ?', [$p['id']]);
+    }
+    $palette = [];
+    foreach (Palette::all() as $code => $nome) $palette[$code] = ['nome' => $nome, 'dati' => Palette::get($code), 'toni' => Palette::tones($code), 'css' => Palette::css($code)];
+    View::out('host/appearance', $contesto($acc, $p) + ['err' => $err, 'palette' => $palette, 'qui' => 'aspetto'], 'layout/cms');
+});
+
+// -------------------------------------------------------------- impostazioni
+$r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto, $messaggio, $dopo) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    $err = null;
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        try {
+            $ora = fn(string $v, string $d) => preg_match('/^([01]?\d|2[0-3])[:.][0-5]\d$/', trim($v)) ? str_replace('.', ':', trim($v)) : $d;
+            $dati = [
+                'name' => mb_substr(trim((string) $_POST['name']), 0, 120),
+                'city' => mb_substr(trim((string) ($_POST['city'] ?? '')), 0, 120),
+                'region' => mb_substr(trim((string) ($_POST['region'] ?? '')), 0, 120),
+                'checkin_from' => $ora((string) ($_POST['checkin_from'] ?? ''), $p['checkin_from']),
+                'checkout_by' => $ora((string) ($_POST['checkout_by'] ?? ''), $p['checkout_by']),
+                'host_name' => mb_substr(trim((string) ($_POST['host_name'] ?? '')), 0, 120),
+                'host_phone' => mb_substr(trim((string) ($_POST['host_phone'] ?? '')), 0, 40),
+                'host_whatsapp' => mb_substr(trim((string) ($_POST['host_whatsapp'] ?? '')), 0, 40),
             ];
-            if (($_FILES['foto']['error'] ?? 4) === 0) {
-                if (!Entitlements::can((int) $acc['id'], 'photos')) throw new RuntimeException('Le foto sono comprese dal piano Plus in su.');
-                $data['media_id'] = Media::store($_FILES['foto'], (int) $acc['id'], (string) $_POST['title']);
-            }
-            Db::update('sections', $data, 'id = :sid', ['sid' => $s['id']]);
-
-            $loc = $p['default_locale'];
-            $tr = Db::one('SELECT * FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $loc]);
-            $t = ['title' => trim((string) $_POST['title']), 'body' => (string) $_POST['body'],
-                  'state' => 'reviewed', 'updated_at' => Support::now()];
-            if ($tr) Db::update('section_translations', $t, 'id = :tid', ['tid' => $tr['id']]);
-            else Db::insert('section_translations', $t + ['section_id' => $s['id'], 'locale' => $loc]);
-
-            Support::flash('Sezione salvata. Ricordatevi di pubblicare.');
-            Support::redirect('/pannello/' . $p['id'] . '/sezioni/' . $s['id']);
-        } catch (\Throwable $e) { $err = $e->getMessage(); }
+            if ($dati['name'] === '') throw new RuntimeException('Il nome non può restare vuoto.');
+            Db::update('properties', $dati, 'id = :pid', ['pid' => $p['id']]);
+            Support::flash('Impostazioni salvate.');
+            Support::redirect($dopo($p, '/pannello/' . $p['id'] . '/impostazioni'));
+        } catch (\Throwable $e) { $err = $messaggio($e, 'impostazioni'); }
     }
-
-    $tr = Db::one('SELECT * FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $p['default_locale']])
-        ?: ['title' => '', 'body' => ''];
-    $places = Db::all('SELECT * FROM places WHERE section_id = ? ORDER BY position, id', [$s['id']]);
-    View::out('host/section', ['p' => $p, 's' => $s, 'tr' => $tr, 'places' => $places, 'err' => $err,
-                               'ent' => Entitlements::forAccount((int) $acc['id']), 'acc' => $acc], 'layout/wide');
+    View::out('host/settings', $contesto($acc, $p) + ['err' => $err, 'qui' => 'impostazioni'], 'layout/cms');
 });
 
-$r->any('/pannello/{id}/lingue', function (array $a) use ($ownProperty) {
-    Auth::requireUser();
-    $p = $ownProperty((int) $a['id']);
-    $acc = Auth::account();
-    $allowed = Entitlements::allowedLocales((int) $acc['id']);
-    $err = null;
+// ---------------------------------------------------------- procedura guidata
+$r->get('/pannello/{id}/procedura/{passo}', function (array $a) use ($mia, $contesto) {
+    [$u, $acc, $p] = $mia((int) $a['id']);
+    $passo = (string) $a['passo'];
+    if (!isset(MHW_PASSI[$passo])) Support::redirect('/pannello/' . $p['id'] . '/procedura/struttura');
+    $indice = array_search($passo, array_keys(MHW_PASSI), true);
+    $fatto = array_search($p['wizard_step'] ?: 'struttura', array_keys(MHW_PASSI), true);
+    if ($indice > (int) $fatto) Db::update('properties', ['wizard_step' => $passo], 'id = :pid', ['pid' => $p['id']]);
 
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        try {
-            $act = (string) ($_POST['azione'] ?? '');
-            if ($act === 'attiva') {
-                $want = array_values(array_intersect((array) ($_POST['locali'] ?? []), $allowed));
-                if (!in_array($p['default_locale'], $want, true)) $want[] = $p['default_locale'];
-                Db::run('DELETE FROM property_locales WHERE property_id = ?', [$p['id']]);
-                foreach ($want as $l) Db::insert('property_locales', ['property_id' => $p['id'], 'locale' => $l]);
-                Support::flash('Lingue aggiornate.');
-            } elseif ($act === 'traduci') {
-                if (!Translator::enabled()) throw new RuntimeException('Nessun servizio di traduzione configurato: compilate a mano, oppure aggiungete una chiave in config.php.');
-                $locs = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
-                $res = Translator::fillProperty((int) $p['id'], $locs);
-                Support::flash('Tradotte ' . $res['tradotte'] . ' voci; ' . $res['saltate_perche_riviste'] . ' lasciate stare perché già riviste da voi.');
-            } elseif ($act === 'salva-traduzione') {
-                $sid = (int) $_POST['section_id']; $loc = (string) $_POST['locale'];
-                if (!in_array($loc, $allowed, true)) throw new RuntimeException('Lingua non compresa nel piano.');
-                $own = Db::one('SELECT id FROM sections WHERE id = ? AND property_id = ?', [$sid, $p['id']]);
-                if (!$own) throw new RuntimeException('Sezione non vostra.');
-                $cur = Db::one('SELECT * FROM section_translations WHERE section_id = ? AND locale = ?', [$sid, $loc]);
-                $t = ['title' => trim((string) $_POST['title']), 'body' => (string) $_POST['body'],
-                      'state' => 'reviewed', 'updated_at' => Support::now()];
-                if ($cur) Db::update('section_translations', $t, 'id = :tid', ['tid' => $cur['id']]);
-                else Db::insert('section_translations', $t + ['section_id' => $sid, 'locale' => $loc]);
-                Support::flash('Traduzione confermata: da ora nessuna macchina la tocca più.');
-            }
-            Support::redirect('/pannello/' . $p['id'] . '/lingue');
-        } catch (\Throwable $e) { $err = $e->getMessage(); }
+    $extra = [];
+    if ($passo === 'checkin') {
+        $core = Db::one('SELECT * FROM sections WHERE property_id = ? AND is_core = 1', [$p['id']]);
+        $t = Db::one('SELECT * FROM section_translations WHERE section_id = ? AND locale = ?', [$core['id'], $p['default_locale']]);
+        $extra = ['core' => $core, 'tdati' => json_decode((string) ($t['data'] ?? ''), true) ?: []];
     }
-
-    $active = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
-    $sections = Db::all('SELECT * FROM sections WHERE property_id = ? ORDER BY position, id', [$p['id']]);
-    foreach ($sections as &$s) {
-        $s['tr'] = [];
-        foreach (Db::all('SELECT * FROM section_translations WHERE section_id = ?', [$s['id']]) as $t)
-            $s['tr'][$t['locale']] = $t;
+    if (in_array($passo, ['sezioni', 'contenuti'], true)) {
+        $sez = Db::all('SELECT * FROM sections WHERE property_id = ? AND is_core = 0 ORDER BY position, id', [$p['id']]);
+        foreach ($sez as &$s) {
+            $t = Db::one('SELECT title, data FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $p['default_locale']]);
+            $s['title'] = $t['title'] ?? SectionCatalog::title($s['kind'], $p['default_locale']);
+            $s['empty'] = SectionCatalog::isEmpty($s['kind'], json_decode((string) $s['data'], true) ?: [], json_decode((string) ($t['data'] ?? ''), true) ?: [],
+                (int) Db::val('SELECT COUNT(*) FROM places WHERE section_id = ?', [$s['id']], 0));
+        }
+        unset($s);
+        $extra = ['sezioni' => $sez];
     }
-    unset($s);
-    View::out('host/languages', ['p' => $p, 'sections' => $sections, 'active' => $active,
-        'allowed' => $allowed, 'err' => $err, 'all' => Config::get('locales'),
-        'translator' => Translator::enabled(), 'acc' => $acc], 'layout/wide');
+    if ($passo === 'lingue') {
+        $extra = ['lingueAttive' => array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale'),
+                  'consentite' => Entitlements::allowedLocales((int) $acc['id']), 'tutte' => Config::get('locales')];
+    }
+    if ($passo === 'aspetto') {
+        $pal = [];
+        foreach (Palette::all() as $code => $nome) $pal[$code] = ['nome' => $nome, 'dati' => Palette::get($code), 'toni' => Palette::tones($code), 'css' => Palette::css($code)];
+        $extra = ['palette' => $pal];
+    }
+    if ($passo === 'anteprima') {
+        $extra = ['problemi' => Guide::problems((int) $acc['id'], (int) $p['id']), 'verificato' => Auth::isVerified($u),
+                  'online' => Subscriptions::propertyOnline($p)];
+    }
+    View::out('host/wizard', $contesto($acc, $p) + $extra + ['passo' => $passo, 'passi' => MHW_PASSI, 'user' => $u, 'qui' => 'procedura'], 'layout/cms');
 });
 
-$r->get('/pannello/{id}/qr', function (array $a) use ($ownProperty) {
-    Auth::requireUser();
-    $p = $ownProperty((int) $a['id']);
+// ------------------------------------------------------------------ anteprima
+$anteprima = function (array $a, string $pagina) use ($mia) {
+    [, , $p] = $mia((int) $a['id']);
+    $snap = Guide::normalize(Guide::build((int) $p['id']));
+    $loc = in_array($_GET['l'] ?? '', $snap['locales'], true) ? $_GET['l'] : $snap['property']['default_locale'];
+    $dati = ['snap' => $snap, 'loc' => $loc, 'base' => Support::url('/pannello/' . $p['id'] . '/anteprima'), 'anteprima' => true,
+             'paletteCss' => Palette::css($snap['property']['palette']), 'tema' => Palette::themeFor($snap['property']['text_tone'])];
+    header('X-Robots-Tag: noindex, nofollow');
+    if ($pagina === 'sezione') {
+        foreach ($snap['sections'] as $s) if ((string) $s['id'] === (string) $a['sid']) View::out('guest/section', $dati + ['sec' => $s], 'layout/guest');
+        Support::redirect('/pannello/' . $p['id'] . '/anteprima');
+    }
+    View::out(['home' => 'guest/guide', 'benvenuto' => 'guest/splash', 'commiato' => 'guest/farewell'][$pagina], $dati,
+              $pagina === 'home' ? 'layout/guest' : 'layout/full');
+};
+$r->get('/pannello/{id}/anteprima', fn(array $a) => $anteprima($a, 'home'));
+$r->get('/pannello/{id}/anteprima/benvenuto', fn(array $a) => $anteprima($a, 'benvenuto'));
+$r->get('/pannello/{id}/anteprima/commiato', fn(array $a) => $anteprima($a, 'commiato'));
+$r->get('/pannello/{id}/anteprima/{sid}', fn(array $a) => $anteprima($a, 'sezione'));
+
+// ---------------------------------------------------------------- pubblica
+/**
+ * Pubblica → c'è un abbonamento valido? Si pubblica subito una versione nuova.
+ * Altrimenti: guida pubblicabile, email verificata, piano scelto → Stripe.
+ * La guida va online SOLO quando arriva il webhook firmato del pagamento.
+ */
+$r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
+    [$u, $acc, $p] = $mia((int) $a['id']);
+    $aid = (int) $acc['id'];
+    $problemi = Guide::problems($aid, (int) $p['id']);
+    if ($problemi) {
+        Support::flash('Prima di pubblicare: ' . implode(' ', $problemi), 'err');
+        Support::redirect('/pannello/' . $p['id'] . '/procedura/anteprima');
+    }
+
+    if (Subscriptions::active($aid)) {
+        $v = Guide::publish((int) $p['id']);
+        Auth::audit('guide.publish', (int) $u['id'], ['property_id' => (int) $p['id'], 'version' => $v]);
+        Support::redirect('/pannello/' . $p['id'] . '/pubblicata');
+    }
+
+    if (!Auth::isVerified($u)) {
+        Support::flash('Conferma prima la tua email: ti abbiamo scritto a ' . $u['email'] . '. Serve per attivare l\'abbonamento.', 'err');
+        Support::redirect('/pannello/' . $p['id'] . '/procedura/anteprima');
+    }
+    $pv = $acc['intended_package_version_id'] ? Plans::currentVersion((int) $acc['intended_package_version_id']) : null;
+    if (!$pv) { Support::flash('Scegli il piano con cui pubblicare.', 'err'); Support::redirect('/piano'); }
+    // Il listino può essere cambiato dopo la scelta: si compra sempre la versione in vendita.
+    if ((int) $pv['id'] !== (int) $acc['intended_package_version_id']) {
+        Db::update('accounts', ['intended_package_version_id' => $pv['id']], 'id = :aid', ['aid' => $aid]);
+        Entitlements::forget($aid);
+        $problemi = Guide::problems($aid, (int) $p['id']);
+        if ($problemi) { Support::flash('Il piano è stato aggiornato: ' . implode(' ', $problemi), 'err'); Support::redirect('/pannello/' . $p['id'] . '/procedura/anteprima'); }
+    }
+    if (!Stripe::enabled()) {
+        Log::error('Pubblicazione richiesta ma Stripe non è configurato', ['account' => $aid]);
+        Support::flash('I pagamenti non sono ancora attivi. La guida resta salvata in bozza: riprova più tardi.', 'err');
+        Support::redirect('/pannello/' . $p['id'] . '/procedura/anteprima');
+    }
+    $pkg = Db::one('SELECT * FROM packages WHERE id = ?', [$pv['package_id']]);
+    $oid = Db::insert('orders', [
+        'account_id' => $aid, 'package_version_id' => $pv['id'], 'property_id' => $p['id'],
+        'amount_cents' => $pv['price_cents'], 'currency' => $pv['currency'], 'status' => 'pending',
+        'provider' => 'stripe', 'provider_session_id' => '', 'created_at' => Support::now(), 'updated_at' => Support::now(),
+    ]);
+    try {
+        $url = Stripe::checkoutSubscription(Db::one('SELECT * FROM orders WHERE id = ?', [$oid]), $pv, $pkg, $acc, $u);
+    } catch (\Throwable $e) {
+        Db::update('orders', ['status' => 'failed', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $oid]);
+        $codice = Log::exception($e, 'checkout');
+        Support::flash('Il pagamento non è disponibile in questo momento. Riprova tra poco (codice ' . $codice . ').', 'err');
+        Support::redirect('/pannello/' . $p['id'] . '/procedura/anteprima');
+    }
+    Support::redirect($url);
+});
+
+$r->get('/pannello/{id}/pubblicata', function (array $a) use ($mia, $contesto) {
+    [, $acc, $p] = $mia((int) $a['id']);
     $qr = Db::one('SELECT * FROM qr_tokens WHERE property_id = ?', [$p['id']]);
-    if (!$qr) {
-        Db::insert('qr_tokens', ['property_id' => $p['id'], 'token' => Support::token(9), 'scans' => 0, 'created_at' => Support::now()]);
-        $qr = Db::one('SELECT * FROM qr_tokens WHERE property_id = ?', [$p['id']]);
+    View::out('host/published', $contesto($acc, $p) + ['qr' => $qr, 'qui' => 'contenuti'], 'layout/cms');
+});
+
+// ----------------------------------------------------------------------- QR
+$r->get('/pannello/{id}/qr', function (array $a) use ($mia, $contesto) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    $qr = Db::one('SELECT * FROM qr_tokens WHERE property_id = ?', [$p['id']]);
+    View::out('host/qr', $contesto($acc, $p) + ['qr' => $qr, 'online' => Subscriptions::propertyOnline($p), 'qui' => 'qr'], 'layout/cms');
+});
+
+$r->get('/pannello/{id}/qr.{formato}', function (array $a) use ($mia) {
+    [, , $p] = $mia((int) $a['id']);
+    $qr = Db::one('SELECT * FROM qr_tokens WHERE property_id = ?', [$p['id']]);
+    $url = Support::baseUrl() . '/q/' . $qr['token'];
+    $nome = 'qr-' . $p['slug'];
+    header_remove('Cache-Control');
+    header('Cache-Control: private, max-age=300');
+    switch ($a['formato']) {
+        case 'png': header('Content-Type: image/png'); header('Content-Disposition: attachment; filename="' . $nome . '.png"');
+                    echo Qr::png($url, 8, 4, 1200); break;
+        case 'svg': header('Content-Type: image/svg+xml'); header('Content-Disposition: attachment; filename="' . $nome . '.svg"');
+                    echo QrExport::svg($url); break;
+        case 'pdf': header('Content-Type: application/pdf'); header('Content-Disposition: attachment; filename="' . $nome . '.pdf"');
+                    echo QrExport::pdf($url, $p['name']); break;
+        default: http_response_code(404);
     }
-    View::out('host/qr', ['p' => $p, 'qr' => $qr, 'acc' => Auth::account()], 'layout/wide');
+    exit;
+});
+
+// --------------------------------------------------------------- statistiche
+$r->get('/pannello/{id}/statistiche', function (array $a) use ($mia, $contesto) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    $ok = Entitlements::can((int) $acc['id'], 'analytics');
+    View::out('host/stats', $contesto($acc, $p) + ['stats' => $ok ? Stats::forProperty((int) $p['id']) : null, 'qui' => 'statistiche'], 'layout/cms');
+});
+
+// ------------------------------------------------------ account e fatturazione
+$r->get('/account', function () use ($host) {
+    [$u, $acc] = $host();
+    $ultimo = MHW\Subscriptions::latest((int) $acc['id']);
+    $gov = Subscriptions::governingVersionId((int) $acc['id']);
+    View::out('host/account', [
+        'user' => $u, 'acc' => $acc, 'sub' => Subscriptions::active((int) $acc['id']), 'ultimo' => $ultimo,
+        'piano' => $gov ? Plans::version($gov) : null,
+        'ordini' => Db::all('SELECT o.*, pk.name AS package FROM orders o JOIN package_versions pv ON pv.id = o.package_version_id
+                             JOIN packages pk ON pk.id = pv.package_id WHERE o.account_id = ? ORDER BY o.id DESC LIMIT 10', [$acc['id']]),
+        'portale' => Stripe::enabled() && Config::get('stripe')['customer_portal'] && $acc['stripe_customer_id'] !== '',
+        'nav' => 'account',
+    ], 'layout/cms');
+});
+
+$r->post('/account/rinnovo', function () use ($host) {
+    [$u, $acc] = $host();
+    $s = Subscriptions::active((int) $acc['id']);
+    if (!$s || $s['provider'] !== 'stripe' || $s['provider_subscription_id'] === '') {
+        Support::flash('Non c\'è un abbonamento con rinnovo da modificare.', 'err'); Support::redirect('/account');
+    }
+    $spegni = (string) ($_POST['rinnovo'] ?? '') === 'no';
+    try {
+        Stripe::setCancelAtPeriodEnd($s['provider_subscription_id'], $spegni);
+        // Il webhook confermerà; intanto lo si scrive, perché la pagina lo mostri subito.
+        Db::update('subscriptions', ['cancel_at_period_end' => $spegni ? 1 : 0, 'updated_at' => Support::now()], 'id = :sid', ['sid' => $s['id']]);
+        Auth::audit($spegni ? 'subscription.renewal_off' : 'subscription.renewal_on', (int) $u['id']);
+        Support::flash($spegni ? 'Rinnovo automatico disattivato. La guida resta online fino al ' . Support::date($s['current_period_end']) . '.'
+                               : 'Rinnovo automatico riattivato.');
+    } catch (\Throwable $e) {
+        Support::flash('Non è stato possibile cambiare il rinnovo adesso (codice ' . Log::exception($e, 'rinnovo') . ').', 'err');
+    }
+    Support::redirect('/account');
+});
+
+$r->post('/account/portale', function () use ($host) {
+    [, $acc] = $host();
+    if (!Stripe::enabled() || $acc['stripe_customer_id'] === '') Support::redirect('/account');
+    try { Support::redirect(Stripe::portalUrl($acc['stripe_customer_id'])); }
+    catch (\Throwable $e) {
+        Support::flash('Il portale di fatturazione non è disponibile adesso (codice ' . Log::exception($e, 'portale') . ').', 'err');
+        Support::redirect('/account');
+    }
 });

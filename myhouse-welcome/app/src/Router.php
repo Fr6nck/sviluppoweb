@@ -18,17 +18,12 @@ final class Router
 
     public function dispatch(string $method, string $path): void
     {
-        $path = (string) (parse_url($path, PHP_URL_PATH) ?: '/');
-        // Prima la cartella, poi l'eventuale index.php: cosi' entrambe le forme
-        // — /welcomebook/pannello e /welcomebook/index.php/pannello — arrivano
-        // alla stessa rotta, che il server sappia riscrivere o no.
-        $dir = Support::baseDir();
-        if ($dir !== '' && str_starts_with($path, $dir)) $path = substr($path, strlen($dir));
-        if (str_starts_with($path, '/index.php')) $path = substr($path, strlen('/index.php'));
-        $path = '/' . trim($path, '/');
+        // Entrambe le forme — /welcomebook/pannello e /welcomebook/index.php/pannello —
+        // arrivano alla stessa rotta, che il server sappia riscrivere o no.
+        $path = Support::routePath($path);
         foreach ($this->routes as [$m, $pattern, $handler]) {
             if ($m !== '*' && $m !== $method) continue;
-            $regex = '#^' . preg_replace('#\{(\w+)\}#', '(?P<$1>[^/]+)', $pattern) . '$#';
+            $regex = '#^' . preg_replace('#\{(\w+)\}#', '(?P<$1>[^/]+)', str_replace('.', '\.', $pattern)) . '$#';
             if (preg_match($regex, $path, $mt)) {
                 $args = array_filter($mt, 'is_string', ARRAY_FILTER_USE_KEY);
                 $handler($args);

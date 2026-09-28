@@ -1,104 +1,139 @@
-<?php use function MHW\b; use function MHW\a; use MHW\{Support, Icon, Translator};
-$title = 'MyHouse Welcome — la guida della vostra casa';
-
-/** Una funzione del piano, detta come la direbbe una persona. */
-$riga = function (array $f): array {
-    $v = $f['value'];
-    $spento = ($v === '0' || $v === '');
-    $testo = match ($f['code']) {
-        'sections'   => $v === 'unlimited' ? 'Sezioni illimitate' : 'Fino a ' . (int) $v . ' sezioni',
-        // Senza una chiave di traduzione la promessa "tradotte da sole" sarebbe falsa.
-        'locales'    => (int) $v <= 1 ? 'Una lingua'
-                        : (int) $v . (Translator::enabled() ? ' lingue, tradotte da sole' : ' lingue pubblicabili'),
-        'photos'     => 'Foto nelle sezioni',
-        'places'     => 'Consigli sul posto',
-        'properties' => (int) $v <= 1 ? 'Una struttura' : 'Fino a ' . (int) $v . ' strutture',
-        'branding'   => 'Colori e logo vostri',
-        'analytics'  => 'Statistiche di lettura',
-        default      => $f['label'],
-    };
-    return [$testo, $spento];
-}; ?>
+<?php
+/* La landing. Tutti i prezzi, i nomi e gli elenchi dei piani arrivano dal
+   database: li cambia l'amministratore. Nessun numero di "riprova sociale":
+   la demo è dichiarata come demo, e basta. */
+use function MHW\b;
+use MHW\{Support, Icon, Plans};
+$title = 'MyHouse Welcome — la reception digitale della tua struttura';
+$dentro = !empty($user);
+$vai = fn(int $pv) => b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . $pv;
+$crea = b() . ($dentro ? '/pannello' : '/registrati');
+$elementi = [['home', 'Check-in & Check-out'], ['wifi', 'Wi-Fi'], ['pin', 'Come arrivare'], ['key', 'Parcheggio'],
+             ['washer', 'Servizi'], ['doc', 'Regole della casa'], ['fork', 'Dove mangiare e bere'], ['globe', 'Cosa fare e vedere']]; ?>
 
 <section class="hero">
   <h1 class="display">La casa risponde<br>prima che chiedano.</h1>
-  <p>Una guida digitale per la vostra casa vacanze. Wi-Fi, chiavi, orari, i posti giusti —
-     in quattro lingue, dietro un QR sul frigo.</p>
+  <p>La reception digitale per case vacanza, B&amp;B, affittacamere e agriturismi. Check-in, Wi-Fi, parcheggio,
+     regole e consigli locali in un unico link, sempre aggiornabile e accessibile da QR Code.</p>
   <div class="row" style="justify-content:center">
-    <a class="btn btn--lg btn--go" href="<?= b() ?>/registrati">
-      Create la vostra guida <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
-    <?php if ($vetrina): ?>
-      <a class="btn btn--lg btn--ghost" href="<?= b() ?>/g/<?= Support::e($vetrina['slug']) ?>/benvenuto">Guardane una vera</a>
-    <?php endif; ?>
+    <a class="btn btn--lg btn--go" href="<?= $crea ?>">Crea gratis la tua guida <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
+    <?php if ($demo): ?><a class="btn btn--lg btn--ghost" href="<?= b() ?>/g/<?= Support::e($demo['slug']) ?>/benvenuto">Guarda la demo</a><?php endif; ?>
   </div>
+  <p class="micro"><span>Nessuna app</span><span>Aggiornabile quando vuoi</span><span>Paghi solo quando pubblichi</span></p>
 </section>
 
 <div class="shot shot--wide shot--h380">
-  <img src="<?= Support::e($copertina) ?>" alt="Una casa in pietra fra gli ulivi, all'ora del tramonto">
-  <?php if ($vetrina): ?>
-    <span class="shot-pill"><span class="dot"></span>
-      <?= Support::e($vetrina['name']) ?><?= $vetrina['city'] ? ' · ' . Support::e($vetrina['city']) : '' ?>
-      <?= $vetrina['aperture'] ? ' · ' . (int) $vetrina['aperture'] . ' aperture questo mese' : '' ?></span>
+  <img src="<?= Support::e($copertina) ?>" alt="Una casa in pietra, la facciata con le persiane verdi" fetchpriority="high">
+  <?php if ($demo): ?>
+    <span class="shot-pill"><span class="demo-tag">Demo</span><?= Support::e($demo['name']) ?><?= $demo['city'] ? ' · ' . Support::e($demo['city']) : '' ?></span>
   <?php endif; ?>
 </div>
 
-<section class="grid grid-3" style="margin-top:56px">
-  <div class="tile tile--big t-sea">
-    <span class="kicker">Passaggio 1</span>
-    <div class="stack" style="gap:10px"><b>Rispondete<br>a sei domande</b><p>Venti minuti, una volta sola.</p></div>
+<section style="margin-top:72px" class="split">
+  <div class="stack stack--lg">
+    <div class="stack stack--sm">
+      <h2 style="font-size:clamp(30px,4vw,44px);line-height:1.02">Tutto quello che serve ai tuoi ospiti.<br>In un unico posto.</h2>
+      <p class="lead">Check-in, Wi-Fi, parcheggio, regole, servizi e consigli locali sempre disponibili sul loro smartphone.</p>
+    </div>
+    <div class="features8">
+      <?php foreach ($elementi as [$ico, $nome]): ?>
+        <div class="feat"><span class="ico"><?= Icon::svg($ico, 22, 1.7) ?></span><b><?= Support::e($nome) ?></b></div>
+      <?php endforeach; ?>
+    </div>
   </div>
-  <div class="tile tile--big t-pine">
-    <span class="kicker">Passaggio 2</span>
-    <div class="stack" style="gap:10px"><b>Stampate<br>il QR</b><p>L'indirizzo non cambia mai più.</p></div>
-  </div>
-  <div class="tile tile--big t-ochre">
-    <span class="kicker">Passaggio 3</span>
-    <div class="stack" style="gap:10px"><b>Smettete<br>di rispondere</b><p>Alle stesse domande, ogni settimana.</p></div>
+  <div class="mockphone" aria-hidden="true">
+    <div class="mockphone__screen">
+      <div class="mockphone__shot"><img src="<?= Support::e($copertina) ?>" alt=""></div>
+      <div class="mockphone__body">
+        <span style="font-family:Gloock,Georgia,serif;font-size:26px;line-height:1.05">Benvenuti<br>a <?= Support::e($demo['name'] ?? 'Casa Lucia') ?>.</span>
+        <div class="mockphone__grid">
+          <span class="t-terracotta">Check-in &amp; Check-out</span><span class="t-sea">Wi-Fi</span>
+          <span class="t-pine">Dove mangiare</span><span class="t-ochre">Parcheggio</span>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
-<section style="margin-top:56px">
+<section id="come-funziona" style="margin-top:88px;scroll-margin-top:96px">
+  <div class="stack stack--sm" style="margin-bottom:28px">
+    <span class="kicker">Come funziona</span>
+    <h2 style="font-size:clamp(30px,4vw,44px);line-height:1.02">Tre passaggi, pochi minuti.</h2>
+  </div>
+  <div class="howto">
+    <div class="step-card"><span class="big">01</span><b style="font-size:20px;font-weight:500">Rispondi a poche domande</b>
+      <p class="muted">Inserisci le informazioni principali della tua struttura. Bastano pochi minuti per iniziare.</p></div>
+    <div class="step-card"><span class="big">02</span><b style="font-size:20px;font-weight:500">Guarda subito l'anteprima</b>
+      <p class="muted">Vedi in tempo reale come apparirà la guida sullo smartphone dei tuoi ospiti.</p></div>
+    <div class="step-card"><span class="big">03</span><b style="font-size:20px;font-weight:500">Pubblica e condividi</b>
+      <p class="muted">Attiva il piano, scarica il QR Code e condividi la guida con i tuoi ospiti.</p></div>
+  </div>
+  <p style="margin-top:28px;text-align:center;font-family:Gloock,Georgia,serif;font-size:clamp(26px,3vw,34px)">Smetti di ripeterti.</p>
+</section>
+
+<section id="qr" class="band" style="margin-top:72px;background:var(--sunk);scroll-margin-top:96px">
+  <div class="stack" style="gap:14px;max-width:560px">
+    <h2 style="font-size:clamp(28px,3.6vw,40px);line-height:1.02">Un QR. Tutta la struttura.</h2>
+    <ul class="lined">
+      <li>Il QR resta sempre lo stesso: lo stampi una volta.</li>
+      <li>La guida la aggiorni quando vuoi, e gli ospiti vedono subito la versione nuova.</li>
+      <li>Non devi ristampare niente dopo ogni modifica.</li>
+      <li>Puoi condividerla anche come link, via WhatsApp o email, prima dell'arrivo.</li>
+    </ul>
+  </div>
+  <div class="qr-sheet" style="width:220px">
+    <?php /* Se c'è la demo, il QR la apre davvero: provalo col telefono. */ ?>
+    <?= preg_replace('/width="\d+" height="\d+"/', 'width="160" height="160"',
+                     MHW\QrExport::svg($demo ? Support::baseUrl() . '/g/' . $demo['slug'] . '/benvenuto' : Support::baseUrl())) ?>
+    <p class="small" style="margin-top:10px;color:#231b12"><?= $demo ? 'Inquadra: si apre la demo' : 'Inquadra per la guida' ?></p>
+  </div>
+</section>
+
+<section id="piani" style="margin-top:88px;scroll-margin-top:96px">
   <div class="spread">
-    <h2 style="font-size:clamp(32px,4.4vw,46px);line-height:1">Tre piani. Si cambia<br>quando volete.</h2>
-    <p class="muted" style="max-width:340px;line-height:24px">Se scendete di piano non perdete niente di quello che
-      avete già scritto: resta lì, in attesa.</p>
+    <div class="stack stack--sm">
+      <span class="kicker">Piani</span>
+      <h2 style="font-size:clamp(30px,4.4vw,46px);line-height:1">Crei gratis.<br>Paghi quando pubblichi.</h2>
+    </div>
+    <p class="muted" style="max-width:360px;line-height:24px">Abbonamento annuale con rinnovo automatico, che puoi
+      disattivare quando vuoi. Prezzi IVA esclusa.</p>
   </div>
 
-  <div class="grid grid-3" style="margin-top:28px">
-    <?php foreach ($packages as $pk): $scuro = $pk['code'] === 'plus'; ?>
+  <div class="grid grid-3" style="margin-top:28px;align-items:stretch">
+    <?php foreach ($offers as $of): $p = $of['main']; $famiglia = count($of['options']) > 1;
+          $scuro = $p['badge'] !== '';
+          $min = min(array_map(fn($o) => (int) $o['price_cents'], $of['options'])); ?>
       <div class="plan <?= $scuro ? 'plan--dark' : '' ?>">
         <div class="spread spread--mid" style="gap:12px">
-          <div class="stack" style="gap:8px">
-            <span class="name"><?= Support::e($pk['name']) ?></span>
-            <span class="muted" style="font-size:15px"><?= Support::e($pk['tagline']) ?></span>
-          </div>
-          <?php if ($scuro): ?><span class="badge badge--ochre-strong">Il più scelto</span><?php endif; ?>
+          <span class="kicker" style="<?= $scuro ? 'color:var(--inverse-muted)' : '' ?>"><?= Support::e($famiglia ? preg_replace('/\s*\d+$/', '', $p['name']) : $p['name']) ?></span>
+          <?php if ($p['badge'] !== ''): ?><span class="badge badge--ochre-strong"><?= Support::e($p['badge']) ?></span><?php endif; ?>
         </div>
-        <span class="price"><?= Support::e(Support::money((int) $pk['price_cents'], $pk['currency'])) ?><small> / anno</small></span>
-        <ul>
-          <li>Guida completa e QR permanente</li>
-          <?php foreach ($pk['features'] as $f): [$testo, $spento] = $riga($f);
-            if ($f['code'] === 'sections' || $spento) continue; ?>
-            <li><?= Support::e($testo) ?></li>
-          <?php endforeach; ?>
-          <?php foreach ($pk['features'] as $f): [$testo, $spento] = $riga($f);
-            if ($f['code'] !== 'sections') continue; ?>
-            <li><?= Support::e($testo) ?></li>
-          <?php endforeach; ?>
-        </ul>
-        <a class="btn <?= $scuro ? '' : 'btn--ghost' ?>" href="<?= b() ?>/registrati?piano=<?= (int) $pk['pv_id'] ?>">
-          Scegli <?= Support::e($pk['name']) ?></a>
+        <div class="stack" style="gap:8px">
+          <span class="name" style="font-family:Gloock,Georgia,serif;font-weight:400;letter-spacing:-.3px;font-size:26px;line-height:1.1"><?= Support::e($p['headline']) ?></span>
+          <span class="muted" style="font-size:15px;line-height:22px"><?= Support::e($p['description']) ?></span>
+        </div>
+        <span class="price"><?= $famiglia ? '<small style="font-size:16px">da </small>' : '' ?><?= Support::e(Support::money($min, $p['currency'])) ?><small> + IVA / anno</small></span>
+        <?php if ($famiglia): ?>
+          <div class="options">
+            <?php foreach ($of['options'] as $o): ?>
+              <a class="option" href="<?= $vai((int) $o['pv_id']) ?>" style="color:inherit"><span><?= Support::e($o['tagline']) ?></span>
+                <strong><?= Support::e(Support::money((int) $o['price_cents'], $o['currency'])) ?></strong></a>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+        <ul><?php foreach ($p['bullet_list'] as $bl): ?><li><?= Support::e($bl) ?></li><?php endforeach; ?></ul>
+        <p class="small <?= $scuro ? '' : 'muted' ?>" style="<?= $scuro ? 'color:var(--inverse-muted)' : '' ?>"><?= Support::e($p['tagline'] !== '' && !$famiglia ? $p['tagline'] : '') ?></p>
+        <a class="btn <?= $scuro ? '' : 'btn--ghost' ?>" href="<?= $vai((int) $p['pv_id']) ?>"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $p['name']) ?></a>
       </div>
     <?php endforeach; ?>
   </div>
 </section>
 
-<section class="band" style="margin-top:56px">
+<section class="band" style="margin-top:72px">
   <div class="stack" style="gap:12px">
-    <h2 style="font-size:clamp(30px,4vw,42px);line-height:1">Venti minuti oggi,<br>una stagione tranquilla.</h2>
-    <p class="muted" style="font-size:17px;line-height:26px;max-width:480px">Provate a crearne una.
-      Si paga solo quando decidete di pubblicarla.</p>
+    <h2 style="font-size:clamp(30px,4vw,42px);line-height:1">Pochi minuti oggi,<br>una stagione tranquilla.</h2>
+    <p class="muted" style="font-size:17px;line-height:26px;max-width:480px">Crea la tua guida gratis e guarda l'anteprima.
+      Paghi solo quando decidi di pubblicarla.</p>
   </div>
-  <a class="btn btn--lg btn--go" href="<?= b() ?>/registrati">
-    Comincia <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
+  <a class="btn btn--lg btn--go" href="<?= $crea ?>">Crea gratis la tua guida <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
 </section>

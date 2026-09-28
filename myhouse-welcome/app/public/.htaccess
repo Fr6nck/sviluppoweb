@@ -4,8 +4,11 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [QSA,L]
 
-# Le cartelle di servizio non devono essere raggiungibili dal web.
+# Le cartelle di servizio non devono essere raggiungibili dal web. In una
+# sottocartella l'applicazione sta in app/, accanto a questo file: la si chiude
+# qui e con app/.htaccess, due volte, perché basta una svista per aprirla.
 RedirectMatch 404 /\.git
+RedirectMatch 404 /app/(src|views|lang|migrations|storage|prove|config)
 Options -Indexes
 
 <IfModule mod_headers.c>

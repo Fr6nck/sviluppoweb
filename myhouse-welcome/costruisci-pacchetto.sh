@@ -18,8 +18,13 @@ cp "$QUI/app/public/web.config" "$BASE/" 2>/dev/null || true
 cp -r "$QUI/app/public/assets" "$BASE/assets"
 
 # Quello che sta dietro: codice, viste, schema, configurazione.
-cp -r "$QUI/app/src" "$QUI/app/views" "$QUI/app/migrations" "$BASE/app/"
-cp "$QUI/app/config.php" "$QUI/app/LEGGIMI.md" "$BASE/app/"
+cp -r "$QUI/app/src" "$QUI/app/views" "$QUI/app/migrations" "$QUI/app/lang" "$BASE/app/"
+cp "$QUI/app/config.php" "$QUI/app/config.local.esempio.php" "$QUI/app/LEGGIMI.md" "$BASE/app/"
+# La cartella app/ sta dentro quella pubblica: la si chiude per Apache e per IIS.
+cp "$QUI/app/app.htaccess" "$BASE/app/.htaccess"
+cp "$QUI/app/app.web.config" "$BASE/app/web.config"
+# Mai nel pacchetto: le prove, i segreti locali, i dati di chi l'ha costruito.
+rm -f "$BASE/app/config.local.php"
 
 # Un segnaposto, perche' l'FTP non carica le cartelle vuote.
 printf 'Questa cartella deve essere scrivibile dal server (755 o 775).\n' \
