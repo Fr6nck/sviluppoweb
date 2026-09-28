@@ -250,5 +250,5 @@ pieno, **Gloock** sui titoli e **Onest** sul resto, angoli morbidi, tutto quello
 che si tocca alto almeno 44 px. Una grana di sabbia leggera corre sotto le
 superfici del sito e della guida, mai sotto bottoni, fotografie, testo o icone;
 nel pannello di lavoro è tolta dai componenti operativi, per leggere meglio.
-Le barre di navigazione sono vetro al 40% con sfocatura. C'è un interruttore
+Le barre di navigazione sono piene, senza trasparenze. C'è un interruttore
 chiaro/scuro; nella guida il tema di partenza lo sceglie l'host con la palette.

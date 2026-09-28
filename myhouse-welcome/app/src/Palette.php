@@ -127,8 +127,7 @@ final class Palette
                . "--muted:{$v['muted']};--line:{$v['line']};--line-strong:{$v['muted']};"
                . "--terracotta:{$v['accent']};--accent:{$v['accent']};--accent-hover:{$v['accent']};--on-dark:{$v['on_accent']};"
                . "--terracotta-soft:color-mix(in srgb,{$v['accent']} 14%,{$v['bg']});"
-               . "--inverse-bg:{$v['ink']};--inverse-fg:{$v['bg']};--inverse-muted:{$v['line']};"
-               . "--vetro:color-mix(in srgb,{$v['bg']} 40%,transparent);";
+               . "--inverse-bg:{$v['ink']};--inverse-fg:{$v['bg']};--inverse-muted:{$v['line']};";
             foreach (['terracotta', 'sea', 'pine', 'ochre'] as $i => $n) $r .= "--tile-$n:{$p['tiles'][$i]};";
             $r .= "--tile-ink:{$p['tile_ink'][0]};--tile-ink-scuro:{$p['tile_ink'][3]};";
             return $r;
