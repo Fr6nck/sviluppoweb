@@ -1,7 +1,7 @@
 <?php
 /* La scelta del piano, dopo la registrazione. Non si paga niente qui: il piano
    scelto decide cosa si può configurare, e si paga solo alla pubblicazione. */
-use function MHW\b; use MHW\{Support, Csrf, Icon}; $title = 'Scegli il piano'; ?>
+use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli il piano'; ?>
 <div class="stack stack--sm" style="max-width:720px">
   <h1>Scegli la soluzione ideale per te.</h1>
   <p class="lead">Adesso non paghi niente: configuri la guida con le funzioni del piano scelto, e paghi solo quando
@@ -29,8 +29,22 @@ use function MHW\b; use MHW\{Support, Csrf, Icon}; $title = 'Scegli il piano'; ?
             <label class="swatch" style="flex-direction:row;align-items:center;justify-content:space-between">
               <input type="radio" name="pv" value="<?= $id ?>" <?= $sel ? 'checked' : '' ?> required>
               <span><?= Support::e($famiglia ? $o['tagline'] : $o['name']) ?></span>
-              <strong><?= Support::e(Support::money((int) $o['price_cents'], $o['currency'])) ?> <span class="small muted" style="font-weight:400">+ IVA / anno</span></strong>
+              <?php if (!Plans::perProperty($o)): ?>
+                <strong><?= Support::e(Support::money((int) $o['price_cents'], $o['currency'])) ?> <span class="small muted" style="font-weight:400">+ IVA / anno</span></strong>
+              <?php endif; ?>
             </label>
+            <?php if (Plans::perProperty($o)):
+                  $q = Plans::quantity($o, $strutture ?: null) ?? (int) $o['min_quantity']; ?>
+              <div class="quantita" data-quantita data-base="<?= (int) $o['price_cents'] ?>" data-extra="<?= (int) $o['extra_price_cents'] ?>" data-valuta="<?= Support::e($o['currency']) ?>">
+                <label for="strutture-<?= $id ?>" class="plan__label">Quante strutture vuoi gestire?</label>
+                <input id="strutture-<?= $id ?>" name="strutture" type="number" inputmode="numeric" step="1"
+                       min="<?= (int) $o['min_quantity'] ?>" max="<?= (int) $o['max_quantity'] ?>" value="<?= $q ?>">
+                <p class="small muted">Prima struttura <?= Support::e(Support::money((int) $o['price_cents'], $o['currency'])) ?>/anno.
+                  Ogni struttura aggiuntiva +<?= Support::e(Support::money((int) $o['extra_price_cents'], $o['currency'])) ?>/anno.</p>
+                <strong><span data-totale><?= Support::e(Support::money(Plans::price($o, $q), $o['currency'])) ?></span>
+                  <span class="small muted" style="font-weight:400">+ IVA / anno</span></strong>
+              </div>
+            <?php endif; ?>
           <?php endforeach; ?>
         </div>
       </fieldset>
@@ -42,3 +56,4 @@ use function MHW\b; use MHW\{Support, Csrf, Icon}; $title = 'Scegli il piano'; ?
   </div>
 </form>
 <?php endif; ?>
+<script src="<?= a() ?>/assets/prezzi.js" defer></script>

@@ -41,12 +41,23 @@ if (getenv('STRIPE_FINTO_GUASTO') === '1' || is_file($dir . '/guasto')) $rispond
 $stato['n']++;
 $n = $stato['n'];
 $ora = time();
-$abbonamento = function (string $id) use (&$stato, $ora): array {
-    $s = $stato['subs'][$id] ?? ['cancel_at_period_end' => false, 'status' => 'active', 'start' => $ora, 'end' => $ora + 365 * 86400];
+// Portfolio: la prova scrive "extra-<sub>" con le strutture aggiuntive pagate al checkout;
+// l'abbonamento avrà allora una seconda voce, come quello vero.
+$espandi = in_array('items.data.price.product', (array) ($_GET['expand'] ?? []), true);
+$abbonamento = function (string $id) use (&$stato, $ora, $dir, $espandi): array {
+    $s = $stato['subs'][$id] ?? ['cancel_at_period_end' => false, 'status' => 'active', 'start' => $ora, 'end' => $ora + 365 * 86400,
+                                 'extra' => is_file("$dir/extra-$id") ? (int) file_get_contents("$dir/extra-$id") : null];
     $stato['subs'][$id] = $s;
+    $prodotto = fn(string $pid, string $ruolo) => $espandi ? ['id' => $pid, 'object' => 'product', 'metadata' => ['ruolo' => $ruolo]] : $pid;
+    $voci = [['id' => 'si_base_' . $id, 'quantity' => 1, 'current_period_start' => $s['start'], 'current_period_end' => $s['end'],
+              'price' => ['id' => 'price_finto_annuale', 'product' => $prodotto('prod_finto_base', 'base')]]];
+    if (($s['extra'] ?? null) !== null) {
+        $voci[] = ['id' => 'si_extra_' . $id, 'quantity' => $s['extra'], 'current_period_start' => $s['start'], 'current_period_end' => $s['end'],
+                   'price' => ['id' => 'price_finto_extra', 'product' => $prodotto('prod_finto_extra', 'aggiuntiva')]];
+    }
     return [
         'id' => $id, 'object' => 'subscription', 'status' => $s['status'], 'cancel_at_period_end' => $s['cancel_at_period_end'],
-        'items' => ['data' => [['current_period_start' => $s['start'], 'current_period_end' => $s['end'], 'price' => ['id' => 'price_finto_annuale']]]],
+        'items' => ['data' => $voci],
     ];
 };
 
@@ -59,6 +70,11 @@ if (preg_match('#^/v1/subscriptions/([A-Za-z0-9_]+)$#', $percorso, $m)) {
     if ($metodo === 'POST' && isset($corpo['cancel_at_period_end'])) {
         $abbonamento($m[1]);
         $stato['subs'][$m[1]]['cancel_at_period_end'] = $corpo['cancel_at_period_end'] === 'true';
+    }
+    if ($metodo === 'POST' && isset($corpo['items'][0]['id'])) {
+        $abbonamento($m[1]);
+        if ($corpo['items'][0]['id'] !== 'si_extra_' . $m[1]) $rispondi(['error' => ['message' => 'No such subscription item']], 400);
+        $stato['subs'][$m[1]]['extra'] = (int) $corpo['items'][0]['quantity'];
     }
     $rispondi($abbonamento($m[1]));
 }

@@ -1,7 +1,7 @@
 <?php
 /* Account & Fatturazione: piano, prezzo, stato, rinnovo, scadenza. */
 use function MHW\b;
-use MHW\{Support, Csrf, Auth};
+use MHW\{Support, Csrf, Auth, Plans};
 $title = 'Account & Fatturazione';
 $stripe = $sub && $sub['provider'] === 'stripe' && $sub['provider_subscription_id'] !== '';
 $fine = $sub['current_period_end'] ?? ($ultimo['current_period_end'] ?? '');
@@ -12,9 +12,10 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
   <section class="panel stack">
     <span class="kicker">Abbonamento</span>
     <?php if ($sub): ?>
+      <?php $perStruttura = $piano && Plans::perProperty($piano); $q = (int) ($sub['quantity'] ?? 1); ?>
       <div class="spread spread--mid">
-        <b style="font-size:24px;font-weight:500"><?= Support::e($piano['name'] ?? '') ?></b>
-        <span style="font-size:20px;font-weight:500"><?= Support::e(Support::money((int) ($piano['price_cents'] ?? 0), $piano['currency'] ?? 'EUR')) ?>
+        <b style="font-size:24px;font-weight:500"><?= Support::e($piano['name'] ?? '') ?><?= $q > 1 ? ' · ' . $q . ' strutture' : '' ?></b>
+        <span style="font-size:20px;font-weight:500"><?= Support::e(Support::money($piano ? Plans::price($piano, $q) : 0, $piano['currency'] ?? 'EUR')) ?>
           <span class="small muted">+ IVA / anno</span></span>
       </div>
       <?php if ($sub['status'] === 'past_due'): ?>
@@ -24,6 +25,16 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
       <?php else: ?>
         <p><span class="badge badge--pine"><span class="dot"></span>Attivo</span>
           <?php if ($fine): ?><span class="small muted"> · si rinnova il <?= Support::e(Support::date($fine)) ?></span><?php endif; ?></p>
+      <?php endif; ?>
+      <?php if ($perStruttura && $stripe && ($sub['provider_extra_item_id'] ?? '') !== ''): ?>
+        <form method="post" action="<?= b() ?>/account/strutture" class="row" style="gap:10px;align-items:flex-end"><?= Csrf::field() ?>
+          <div class="field" style="margin:0"><label for="strutture">Numero di strutture</label>
+            <input id="strutture" name="strutture" type="number" inputmode="numeric" step="1" required style="max-width:120px"
+                   min="<?= (int) $piano['min_quantity'] ?>" max="<?= (int) $piano['max_quantity'] ?>" value="<?= $q ?>"></div>
+          <button class="btn btn--ghost btn--sm">Cambia</button>
+          <span class="small muted">Prima struttura <?= Support::e(Support::money((int) $piano['price_cents'], $piano['currency'])) ?>, ogni struttura aggiuntiva
+            +<?= Support::e(Support::money((int) $piano['extra_price_cents'], $piano['currency'])) ?> / anno.</span>
+        </form>
       <?php endif; ?>
       <?php if (!$stripe): ?><p class="small muted">Abbonamento attivato dal nostro staff<?= $fine ? ', valido fino al ' . Support::e(Support::date($fine)) : '' ?>.</p><?php endif; ?>
       <div class="actions">

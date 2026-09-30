@@ -73,7 +73,7 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
     [$u, $acc] = $host();
     if (!$acc['intended_package_version_id'] && !Subscriptions::active((int) $acc['id'])) Support::redirect('/piano');
     $max = Entitlements::limit((int) $acc['id'], 'properties', 1);
-    $have = (int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$acc['id']], 0);
+    $have = (int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL', [$acc['id']], 0);
     $err = null;
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
@@ -512,9 +512,10 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
         Support::redirect('/pannello/' . $p['id'] . '/procedura/anteprima');
     }
     $pkg = Db::one('SELECT * FROM packages WHERE id = ?', [$pv['package_id']]);
+    $quantita = Plans::quantity($pv, (int) ($acc['intended_quantity'] ?? 1)) ?? (int) $pv['min_quantity'];
     $oid = Db::insert('orders', [
-        'account_id' => $aid, 'package_version_id' => $pv['id'], 'property_id' => $p['id'],
-        'amount_cents' => $pv['price_cents'], 'currency' => $pv['currency'], 'status' => 'pending',
+        'account_id' => $aid, 'package_version_id' => $pv['id'], 'property_id' => $p['id'], 'quantity' => $quantita,
+        'amount_cents' => Plans::price($pv, $quantita), 'currency' => $pv['currency'], 'status' => 'pending',
         'provider' => 'stripe', 'provider_session_id' => '', 'created_at' => Support::now(), 'updated_at' => Support::now(),
     ]);
     try {
@@ -610,4 +611,79 @@ $r->post('/account/portale', function () use ($host) {
         Support::flash('Il portale di fatturazione non è disponibile adesso (codice ' . Log::exception($e, 'portale') . ').', 'err');
         Support::redirect('/account');
     }
+});
+
+// ------------------------------------------------- Portfolio: numero di strutture
+/**
+ * Aumento: Stripe fattura subito il conguaglio e applica il cambio solo se il
+ * pagamento riesce; il numero nuovo arriva col webhook. Riduzione: credito
+ * sulla prossima fattura. Se si scende sotto le strutture che esistono, prima
+ * si scelgono quelle da archiviare: niente si cancella, niente si sceglie da solo.
+ */
+$portfolioAttivo = function (array $acc): ?array {
+    $s = Subscriptions::active((int) $acc['id']);
+    if (!$s) return null;
+    $pv = Plans::version((int) $s['package_version_id']);
+    return $pv && Plans::perProperty($pv) ? [$s, $pv] : null;
+};
+
+$r->any('/account/strutture', function () use ($host, $portfolioAttivo) {
+    [$u, $acc] = $host();
+    $pa = $portfolioAttivo($acc);
+    if (!$pa) { Support::flash('Il numero di strutture si cambia solo con un abbonamento Portfolio attivo.', 'err'); Support::redirect('/account'); }
+    [$s, $pv] = $pa;
+    $n = Plans::quantity($pv, (string) ($_POST['strutture'] ?? $_GET['strutture'] ?? ''));
+    if ($n === null) {
+        Support::flash('Indica un numero intero di strutture tra ' . (int) $pv['min_quantity'] . ' e ' . (int) $pv['max_quantity'] . '.', 'err');
+        Support::redirect('/account');
+    }
+    $attuale = (int) $s['quantity'];
+    if ($n === $attuale) { Support::flash('Il tuo abbonamento comprende già ' . $n . ' strutture.'); Support::redirect('/account'); }
+    if ($s['provider'] !== 'stripe' || $s['provider_subscription_id'] === '' || $s['provider_extra_item_id'] === '') {
+        Support::flash('Questo abbonamento non si modifica da qui: scrivici e lo aggiorniamo noi.', 'err');
+        Support::redirect('/account');
+    }
+    $attive = Db::all('SELECT id, name, city, status FROM properties WHERE account_id = ? AND archived_at IS NULL ORDER BY id', [$acc['id']]);
+    $daTogliere = max(0, count($attive) - $n);
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['conferma'] ?? '') === '1') {
+        $scelte = array_values(array_unique(array_map('intval', (array) ($_POST['archivia'] ?? []))));
+        $ids = array_map('intval', array_column($attive, 'id'));
+        if (count($scelte) !== $daTogliere || array_diff($scelte, $ids)) {
+            Support::flash("Scegli esattamente $daTogliere struttur" . ($daTogliere === 1 ? 'a' : 'e') . ' da archiviare.', 'err');
+            Support::redirect('/account/strutture?strutture=' . $n);
+        }
+        try {
+            Stripe::updateExtraQuantity($s['provider_subscription_id'], $s['provider_extra_item_id'], $n - 1, $n > $attuale);
+        } catch (\Throwable $e) {
+            Support::flash('Non è stato possibile cambiare l\'abbonamento adesso (codice ' . Log::exception($e, 'quantita') . ').', 'err');
+            Support::redirect('/account');
+        }
+        foreach ($scelte as $pid) Db::update('properties', ['archived_at' => Support::now()], 'id = :pid AND account_id = :aid', ['pid' => $pid, 'aid' => $acc['id']]);
+        Auth::audit('subscription.quantity', (int) $u['id'], ['da' => $attuale, 'a' => $n, 'archiviate' => $scelte]);
+        Support::flash($n > $attuale
+            ? "Richiesta inviata: le strutture diventano $n appena Stripe conferma il pagamento del conguaglio."
+            : "Abbonamento ridotto a $n strutture. La differenza ti viene accreditata sulla prossima fattura."
+              . ($scelte ? ' Le strutture scelte sono archiviate: contenuti e QR restano, puoi riattivarle quando vuoi.' : ''));
+        Support::redirect('/account');
+    }
+
+    View::out('host/strutture', [
+        'n' => $n, 'attuale' => $attuale, 'pv' => $pv, 'attive' => $attive, 'daTogliere' => $daTogliere,
+        'nuovo' => Plans::price($pv, $n), 'vecchio' => Plans::price($pv, $attuale), 'nav' => 'account',
+    ], 'layout/cms');
+});
+
+$r->post('/pannello/{id}/riattiva', function (array $a) use ($mia) {
+    [$u, $acc, $p] = $mia((int) $a['id']);
+    $max = Entitlements::limit((int) $acc['id'], 'properties', 1);
+    $attive = (int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL', [$acc['id']], 0);
+    if ($attive >= $max) {
+        Support::flash("Il tuo piano comprende $max struttur" . ($max === 1 ? 'a' : 'e') . ': per riattivarla aumenta il numero di strutture da Account & Fatturazione.', 'err');
+    } else {
+        Db::update('properties', ['archived_at' => null], 'id = :pid', ['pid' => $p['id']]);
+        Auth::audit('property.unarchive', (int) $u['id'], ['property_id' => (int) $p['id']]);
+        Support::flash('Struttura riattivata. Se era pubblicata, torna online.');
+    }
+    Support::redirect('/pannello');
 });

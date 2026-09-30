@@ -225,6 +225,7 @@ final class Guide
         $out = Entitlements::violations($accountId, $propertyId);
         $p = Db::one('SELECT * FROM properties WHERE id = ?', [$propertyId]);
         if (trim((string) $p['name']) === '') $out[] = 'Manca il nome della struttura.';
+        if (!empty($p['archived_at'])) $out[] = 'La struttura è archiviata: riattivala dalle tue guide per pubblicarla.';
         $core = Db::one('SELECT * FROM sections WHERE property_id = ? AND is_core = 1', [$propertyId]);
         $t = $core ? Db::one('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$core['id'], $p['default_locale']]) : null;
         $d = json_decode((string) ($t['data'] ?? ''), true) ?: [];

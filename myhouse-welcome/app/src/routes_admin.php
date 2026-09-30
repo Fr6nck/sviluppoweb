@@ -154,7 +154,7 @@ $r->post('/admin/cliente/{aid}/abbonamento', function (array $a) {
         Support::flash('Scegli un piano e scrivi il motivo: resta nel registro.', 'err');
         Support::redirect('/admin/cliente/' . $accId);
     }
-    Billing::grantManual($accId, (int) $pv['id'], $mesi, $nota);
+    Billing::grantManual($accId, (int) $pv['id'], $mesi, $nota, max(1, (int) ($_POST['strutture'] ?? 1)));
     Support::flash("Abbonamento manuale attivo per $mesi mesi. Non compare nell'incasso.");
     Support::redirect('/admin/cliente/' . $accId);
 });
@@ -246,13 +246,25 @@ $r->post('/admin/pacchetti/{pid}/nuova-versione', function (array $a) {
     if ($priceId !== '' && !preg_match('/^price_[A-Za-z0-9]+$/', $priceId)) {
         Support::flash('Il Price ID di Stripe comincia con price_.', 'err'); Support::redirect('/admin/pacchetti');
     }
-    $vid = Db::tx(function () use ($pkg, $prezzo, $priceId) {
+    // Piani a struttura (Portfolio): prezzo per struttura aggiuntiva, minimo, massimo.
+    $corrente = Db::one('SELECT * FROM package_versions WHERE package_id = ? AND is_current = 1', [$pkg['id']]) ?: [];
+    $aStruttura = ['per_property' => 0, 'extra_price_cents' => 0, 'min_quantity' => 1, 'max_quantity' => 1, 'stripe_extra_price_id' => ''];
+    if (Plans::perProperty($corrente)) {
+        $extra = (int) round(((float) str_replace(',', '.', (string) ($_POST['prezzo_extra'] ?? '0'))) * 100);
+        $min = (int) ($_POST['min_quantita'] ?? 2); $max = (int) ($_POST['max_quantita'] ?? 50);
+        $extraId = trim((string) ($_POST['stripe_extra_price_id'] ?? ''));
+        if ($extra < 0 || $extra > 10_000_000 || $min < 1 || $max < $min || $max > 500 || ($extraId !== '' && !preg_match('/^price_[A-Za-z0-9]+$/', $extraId))) {
+            Support::flash('Controlla prezzo per struttura aggiuntiva, minimo, massimo e Price ID.', 'err'); Support::redirect('/admin/pacchetti');
+        }
+        $aStruttura = ['per_property' => 1, 'extra_price_cents' => $extra, 'min_quantity' => $min, 'max_quantity' => $max, 'stripe_extra_price_id' => $extraId];
+    }
+    $vid = Db::tx(function () use ($pkg, $prezzo, $priceId, $aStruttura) {
         $next = (int) Db::val('SELECT COALESCE(MAX(version),0)+1 FROM package_versions WHERE package_id = ?', [$pkg['id']], 1);
         Db::run('UPDATE package_versions SET is_current = 0 WHERE package_id = ?', [$pkg['id']]);
         $vid = Db::insert('package_versions', [
             'package_id' => $pkg['id'], 'version' => $next, 'price_cents' => $prezzo, 'currency' => 'EUR',
             'interval_unit' => 'year', 'is_current' => 1, 'sold_count' => 0, 'stripe_price_id' => $priceId, 'created_at' => Support::now(),
-        ]);
+        ] + $aStruttura);
         foreach (Db::all('SELECT * FROM features ORDER BY id') as $f) {
             $val = trim((string) ($_POST['f'][$f['code']] ?? '0'));
             if (!preg_match('/^(\d{1,4}|unlimited)$/', $val)) $val = '0';

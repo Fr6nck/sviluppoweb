@@ -81,7 +81,7 @@ riga('Cartella dell\'applicazione trovata', $trovata,
 
 $attesi = [
     'config.php', 'lang/de.php', 'lang/en.php', 'lang/es.php', 'lang/fr.php', 'lang/it.php',
-    'migrations/001_schema.sql', 'migrations/002_mvp.sql', 'migrations/003_listino_e_sezioni.php', 'migrations/004_testi_listino.php', 'migrations/005_listino_e_demo.php',
+    'migrations/001_schema.sql', 'migrations/002_mvp.sql', 'migrations/003_listino_e_sezioni.php', 'migrations/004_testi_listino.php', 'migrations/005_listino_e_demo.php', 'migrations/006_portfolio_quantita.php',
     'src/Auth.php', 'src/Billing.php', 'src/Config.php', 'src/Csrf.php', 'src/Db.php', 'src/Demo.php',
     'src/Entitlements.php', 'src/Guide.php', 'src/I18n.php', 'src/Icon.php', 'src/Installer.php',
     'src/LimitReached.php', 'src/LocalStorage.php', 'src/Log.php', 'src/Mailer.php', 'src/Media.php',
@@ -98,7 +98,7 @@ $attesi = [
     'views/guest/guide.php', 'views/guest/section.php', 'views/guest/splash.php',
     'views/guest/unavailable.php', 'views/host/_aspetto_form.php', 'views/host/_campi.php',
     'views/host/_lingue_form.php', 'views/host/_qr_box.php', 'views/host/_sezioni.php',
-    'views/host/_struttura_form.php', 'views/host/_telefono.php', 'views/host/account.php',
+    'views/host/_struttura_form.php', 'views/host/_telefono.php', 'views/host/account.php', 'views/host/strutture.php',
     'views/host/appearance.php', 'views/host/dashboard.php', 'views/host/languages.php',
     'views/host/new_property.php', 'views/host/properties.php', 'views/host/published.php',
     'views/host/qr.php', 'views/host/section.php', 'views/host/settings.php', 'views/host/stats.php',

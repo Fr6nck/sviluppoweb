@@ -51,6 +51,7 @@ final class Subscriptions
     public static function propertyOnline(array $property): bool
     {
         if ($property['status'] !== 'published') return false;
+        if (!empty($property['archived_at'])) return false;   // archiviata dopo una riduzione del Portfolio
         if ((int) ($property['is_demo'] ?? 0) === 1) return true;
         return self::active((int) $property['account_id']) !== null;
     }

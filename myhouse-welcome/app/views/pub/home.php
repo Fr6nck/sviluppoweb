@@ -222,16 +222,19 @@ $elementi = [['home', 'Check-in & Check-out'], ['wifi', 'Wi-Fi'], ['pin', 'Come 
         <span class="plan__headline"><?= Support::e($p['headline']) ?></span>
         <?php if (trim((string) $p['description']) !== ''): ?><p class="plan__desc"><?= Support::e($p['description']) ?></p><?php endif; ?>
 
-        <?php if ($famiglia): /* Portfolio: un modulo vero. Senza JavaScript il bottone manda
-                  comunque la scelta; lo script aggiorna solo il prezzo, preso dal listino. */ ?>
-          <form class="plan__scelta" method="get" action="<?= b() . ($dentro ? '/piano' : '/registrati') ?>" data-portfolio>
+        <?php if (Plans::perProperty($primo)): /* Portfolio a quantità: un modulo vero. Senza JavaScript il
+                  bottone manda comunque la scelta; lo script calcola solo il totale mostrato,
+                  con base e costo aggiuntivo presi dal listino. */
+              $minimo = (int) $primo['min_quantity']; ?>
+          <form class="plan__scelta" method="get" action="<?= b() . ($dentro ? '/piano' : '/registrati') ?>" data-portfolio
+                data-quantita data-base="<?= (int) $primo['price_cents'] ?>" data-extra="<?= (int) $primo['extra_price_cents'] ?>" data-valuta="<?= Support::e($primo['currency']) ?>">
+            <input type="hidden" name="piano" value="<?= (int) $primo['pv_id'] ?>">
             <label for="<?= $idSel ?>" class="plan__label">Quante strutture vuoi gestire?</label>
-            <select id="<?= $idSel ?>" name="piano">
-              <?php foreach ($of['options'] as $o): ?>
-                <option value="<?= (int) $o['pv_id'] ?>" data-prezzo="<?= Support::e(Support::money((int) $o['price_cents'], $o['currency'])) ?>"><?= Support::e($o['tagline'] ?: $o['name']) ?></option>
-              <?php endforeach; ?>
-            </select>
-            <span class="price" aria-live="polite"><span data-prezzo-mostrato><?= Support::e(Support::money((int) $primo['price_cents'], $primo['currency'])) ?></span><small> + IVA / anno</small></span>
+            <input id="<?= $idSel ?>" name="strutture" type="number" inputmode="numeric" step="1" required
+                   min="<?= $minimo ?>" max="<?= (int) $primo['max_quantity'] ?>" value="<?= $minimo ?>">
+            <p class="plan__regola">Prima struttura <?= Support::e(Support::money((int) $primo['price_cents'], $primo['currency'])) ?>/anno.
+              Ogni struttura aggiuntiva +<?= Support::e(Support::money((int) $primo['extra_price_cents'], $primo['currency'])) ?>/anno.</p>
+            <span class="price" aria-live="polite"><span data-totale><?= Support::e(Support::money(Plans::price($primo, $minimo), $primo['currency'])) ?></span><small> + IVA / anno</small></span>
             <ul class="plan__lista">
               <?php foreach ($p['bullet_list'] as $bl): ?><li><?= Icon::svg('check', 16, 2) ?><span><?= Support::e($bl) ?></span></li><?php endforeach; ?>
             </ul>
@@ -260,13 +263,4 @@ $elementi = [['home', 'Check-in & Check-out'], ['wifi', 'Wi-Fi'], ['pin', 'Come 
   <a class="btn btn--lg btn--go" href="<?= $crea ?>">Crea gratis la tua guida <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
 </section>
 
-<script>
-/* Portfolio: il prezzo mostrato segue la scelta. I prezzi arrivano dal listino
-   (attributo data-prezzo di ogni opzione), qui non ce n'è nessuno scritto. */
-document.querySelectorAll('[data-portfolio]').forEach(function (form) {
-  var sel = form.querySelector('select'), out = form.querySelector('[data-prezzo-mostrato]');
-  function aggiorna() { var o = sel.options[sel.selectedIndex]; if (o) out.textContent = o.getAttribute('data-prezzo'); }
-  sel.addEventListener('change', aggiorna);
-  aggiorna();
-});
-</script>
+<script src="<?= a() ?>/assets/prezzi.js" defer></script>

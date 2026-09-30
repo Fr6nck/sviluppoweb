@@ -59,8 +59,11 @@ $r->get('/privacy', fn() => View::out('pub/legal', ['doc' => 'privacy'], 'layout
 $r->any('/registrati', function () use ($guard, $doveComincia) {
     $guard();
     $piano = (int) ($_GET['piano'] ?? $_POST['piano'] ?? 0);
+    // Il numero di strutture scelto (Portfolio) viaggia con il piano fino al checkout.
+    $strutture = (int) ($_GET['strutture'] ?? $_POST['strutture'] ?? 0);
+    $scelta = $piano ? '/piano?piano=' . $piano . ($strutture > 0 ? '&strutture=' . $strutture : '') : '';
     // Chi è già dentro non si registra una seconda volta.
-    if ($u = Auth::user()) Support::redirect($piano ? '/piano?piano=' . $piano : $doveComincia($u));
+    if ($u = Auth::user()) Support::redirect($scelta ?: $doveComincia($u));
 
     $err = null; $vecchi = ['name' => '', 'email' => ''];
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -77,10 +80,10 @@ $r->any('/registrati', function () use ($guard, $doveComincia) {
             Auth::login((int) $u['user_id']);
             Auth::sendVerification((int) $u['user_id']);
             Support::flash('Account creato. Ti abbiamo scritto per confermare l\'email: intanto puoi preparare la guida.');
-            Support::redirect('/piano' . ($piano ? '?piano=' . $piano : ''));
+            Support::redirect($scelta ?: '/piano');
         } catch (\RuntimeException $e) { $err = $e->getMessage(); }
     }
-    View::out('auth/register', ['err' => $err, 'piano' => $piano, 'vecchi' => $vecchi], 'layout/bare');
+    View::out('auth/register', ['err' => $err, 'piano' => $piano, 'strutture' => $strutture, 'vecchi' => $vecchi], 'layout/bare');
 });
 
 $r->any('/accedi', function () use ($guard, $doveComincia) {
@@ -180,16 +183,22 @@ $r->any('/piano', function () {
         }
         $pv = Plans::currentVersion((int) ($_POST['pv'] ?? 0));
         if (!$pv) { Support::flash('Scegli uno dei piani in elenco.', 'err'); Support::redirect('/piano'); }
-        Db::update('accounts', ['intended_package_version_id' => $pv['id']], 'id = :aid', ['aid' => $acc['id']]);
+        $q = Plans::quantity($pv, Plans::perProperty($pv) ? (string) ($_POST['strutture'] ?? '') : 1);
+        if ($q === null) {
+            Support::flash('Indica un numero intero di strutture tra ' . (int) $pv['min_quantity'] . ' e ' . (int) $pv['max_quantity'] . '.', 'err');
+            Support::redirect('/piano?piano=' . (int) $pv['id']);
+        }
+        Db::update('accounts', ['intended_package_version_id' => $pv['id'], 'intended_quantity' => $q], 'id = :aid', ['aid' => $acc['id']]);
         MHW\Entitlements::forget((int) $acc['id']);
-        Auth::audit('plan.intended', (int) $u['id'], ['package_version_id' => (int) $pv['id']]);
-        Support::flash('Piano ' . $pv['name'] . ' scelto. Non paghi niente adesso: solo quando pubblichi.');
+        Auth::audit('plan.intended', (int) $u['id'], ['package_version_id' => (int) $pv['id'], 'quantity' => $q]);
+        Support::flash('Piano ' . $pv['name'] . (Plans::perProperty($pv) ? ' per ' . $q . ' strutture' : '') . ' scelto. Non paghi niente adesso: solo quando pubblichi.');
         $ha = Db::val('SELECT id FROM properties WHERE account_id = ?', [$acc['id']]);
         Support::redirect($ha ? '/pannello' : '/pannello/nuova');
     }
     View::out('pub/plan', [
         'offers' => Plans::offers(), 'scelto' => (int) ($acc['intended_package_version_id'] ?? 0),
         'preselezione' => (int) ($_GET['piano'] ?? 0), 'attivo' => $attivo, 'nav' => 'account',
+        'strutture' => (int) ($_GET['strutture'] ?? 0) ?: (int) ($acc['intended_quantity'] ?? 0),
     ]);
 });
 

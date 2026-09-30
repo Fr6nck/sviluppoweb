@@ -5,6 +5,7 @@
 <?php if ($err): ?><p class="note note--err" style="margin-top:20px" role="alert"><?= Support::e($err) ?></p><?php endif; ?>
 <form method="post" class="panel stack" style="margin-top:24px" novalidate><?= Csrf::field() ?>
   <input type="hidden" name="piano" value="<?= (int) $piano ?>">
+  <?php if (!empty($strutture)): ?><input type="hidden" name="strutture" value="<?= (int) $strutture ?>"><?php endif; ?>
   <div class="field" style="margin:0"><label for="name">Nome</label>
     <input id="name" name="name" type="text" required maxlength="120" autocomplete="name" value="<?= Support::e($vecchi['name']) ?>" autofocus></div>
   <div class="field" style="margin:0"><label for="email">Email</label>

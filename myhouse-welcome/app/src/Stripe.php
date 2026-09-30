@@ -62,9 +62,11 @@ final class Stripe
     {
         $base = Support::baseUrl();
         $cfg = Config::get('stripe');
+        $quantita = max(1, (int) ($order['quantity'] ?? 1));
         $meta = [
             'order_id' => (string) $order['id'], 'account_id' => (string) $account['id'],
             'package_version_id' => (string) $pv['id'], 'property_id' => (string) ($order['property_id'] ?? ''),
+            'quantity' => (string) $quantita,
         ];
         $p = [
             'mode' => 'subscription',
@@ -91,6 +93,22 @@ final class Stripe
             $p['line_items[0][price_data][recurring][interval]'] = 'year';
             $p['line_items[0][price_data][product_data][name]'] = 'MyHouse Welcome ' . $pkg['name'];
             $p['line_items[0][price_data][product_data][metadata][package]'] = $pkg['code'];
+            $p['line_items[0][price_data][product_data][metadata][ruolo]'] = 'base';
+        }
+        // Portfolio: un solo abbonamento con due voci, la prima struttura e le altre × quantità.
+        if (Plans::perProperty($pv) && $quantita > 1) {
+            $p['line_items[1][quantity]'] = $quantita - 1;
+            if (($pv['stripe_extra_price_id'] ?? '') !== '') {
+                $p['line_items[1][price]'] = $pv['stripe_extra_price_id'];
+            } else {
+                $p['line_items[1][price_data][currency]'] = strtolower($pv['currency']);
+                $p['line_items[1][price_data][unit_amount]'] = (string) (int) $pv['extra_price_cents'];
+                $p['line_items[1][price_data][tax_behavior]'] = 'exclusive';
+                $p['line_items[1][price_data][recurring][interval]'] = 'year';
+                $p['line_items[1][price_data][product_data][name]'] = 'MyHouse Welcome ' . $pkg['name'] . ' — struttura aggiuntiva';
+                $p['line_items[1][price_data][product_data][metadata][package]'] = $pkg['code'];
+                $p['line_items[1][price_data][product_data][metadata][ruolo]'] = 'aggiuntiva';
+            }
         }
         if (!empty($cfg['automatic_tax'])) $p['automatic_tax[enabled]'] = 'true';
         foreach ($meta as $k => $v) { $p["metadata[$k]"] = $v; $p["subscription_data[metadata][$k]"] = $v; }
@@ -102,7 +120,23 @@ final class Stripe
 
     public static function retrieveSubscription(string $id): array
     {
-        return self::call('GET', 'subscriptions/' . rawurlencode($id));
+        // Con il prodotto espanso si riconosce la voce "struttura aggiuntiva".
+        return self::call('GET', 'subscriptions/' . rawurlencode($id), ['expand' => ['items.data.price.product']]);
+    }
+
+    /**
+     * Cambia il numero di strutture aggiuntive di un abbonamento Portfolio.
+     * Aumento: conguaglio fatturato subito e cambio applicato SOLO se il
+     * pagamento riesce (pending_if_incomplete); il webhook porta la quantità.
+     * Riduzione: credito proporzionale sulla prossima fattura.
+     */
+    public static function updateExtraQuantity(string $subscriptionId, string $itemId, int $extra, bool $aumento): array
+    {
+        $p = ['items[0][id]' => $itemId, 'items[0][quantity]' => max(0, $extra),
+              'proration_behavior' => $aumento ? 'always_invoice' : 'create_prorations'];
+        if ($aumento) $p['payment_behavior'] = 'pending_if_incomplete';
+        return self::call('POST', 'subscriptions/' . rawurlencode($subscriptionId), $p,
+                          'mhw-qty-' . $subscriptionId . '-' . $extra . '-' . gmdate('YmdHi'));
     }
 
     /** Rinnovo automatico acceso o spento. Il servizio pagato resta fino alla fine del periodo. */

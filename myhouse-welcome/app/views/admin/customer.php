@@ -53,7 +53,7 @@ $fonte = ['package' => 'piano pagato', 'intended' => 'piano scelto', 'override' 
     <div class="tablewrap"><table class="data">
       <thead><tr><th>Piano</th><th>Stato</th><th>Periodo</th><th>Rinnovo</th><th>Stripe</th></tr></thead>
       <tbody><?php foreach ($subs as $s): ?>
-        <tr><td><?= Support::e($s['package']) ?> <span class="tiny muted">v<?= (int) $s['version'] ?></span><br><span class="tiny muted"><?= Support::e($s['provider']) ?></span></td>
+        <tr><td><?= Support::e($s['package']) ?> <span class="tiny muted">v<?= (int) $s['version'] ?></span><?= (int) ($s['quantity'] ?? 1) > 1 ? ' · ' . (int) $s['quantity'] . ' strutture' : '' ?><br><span class="tiny muted"><?= Support::e($s['provider']) ?></span></td>
           <td><?= Support::e($s['status']) ?><?= $s['payment_status'] ? '<br><span class="tiny muted">' . Support::e($s['payment_status']) . '</span>' : '' ?></td>
           <td class="small"><?= Support::e(Support::date($s['current_period_start'])) ?> → <?= Support::e(Support::date($s['current_period_end'])) ?></td>
           <td class="small"><?= (int) $s['cancel_at_period_end'] ? 'disattivato' : 'automatico' ?></td>
@@ -64,10 +64,11 @@ $fonte = ['package' => 'piano pagato', 'intended' => 'piano scelto', 'override' 
       <summary class="legend" style="cursor:pointer;min-height:32px">Attiva un abbonamento manuale</summary>
       <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/abbonamento" class="stack" style="margin-top:12px"><?= Csrf::field() ?>
         <p class="small muted">Per omaggi o pagamenti arrivati per altre vie. Non passa da Stripe, non conta nell'incasso e resta nel registro.</p>
-        <div class="grid grid-3">
+        <div class="grid grid-4">
           <div class="field" style="margin:0"><label for="pv">Piano</label><select id="pv" name="pv">
             <?php foreach ($versioni as $v): ?><option value="<?= (int) $v['id'] ?>"><?= Support::e($v['name']) ?> v<?= (int) $v['version'] ?></option><?php endforeach; ?></select></div>
           <div class="field" style="margin:0"><label for="mesi">Mesi</label><input id="mesi" name="mesi" type="number" min="1" max="36" value="12"></div>
+          <div class="field" style="margin:0"><label for="strutture">Strutture <span class="muted">(Portfolio)</span></label><input id="strutture" name="strutture" type="number" min="1" max="500" value="2"></div>
           <div class="field" style="margin:0"><label for="nota">Motivo</label><input id="nota" name="nota" required maxlength="200"></div>
         </div>
         <div class="actions"><button class="btn btn--sm">Attiva</button></div>

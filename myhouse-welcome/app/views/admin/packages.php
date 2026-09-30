@@ -3,7 +3,7 @@
    chi ha già comprato resta sulla sua. I testi commerciali si cambiano sul
    pacchetto e compaiono subito sulla landing. */
 use function MHW\b;
-use MHW\{Support, Csrf};
+use MHW\{Support, Csrf, Plans};
 $title = 'Pacchetti'; ?>
 <div class="stack stack--lg">
   <div class="stack stack--sm">
@@ -18,7 +18,8 @@ $title = 'Pacchetti'; ?>
         <div class="stack" style="gap:4px"><b style="font-size:22px;font-weight:500"><?= Support::e($p['name']) ?></b>
           <span class="small muted"><code><?= Support::e($p['code']) ?></code><?= $p['family'] ? ' · famiglia ' . Support::e($p['family']) : '' ?>
             · <?= !$p['active'] ? 'disattivato' : ($p['public'] ? 'pubblico' : 'nascosto') ?></span></div>
-        <?php if ($cur): ?><span style="font-size:22px;font-weight:500"><?= Support::e(Support::money((int) $cur['price_cents'], $cur['currency'])) ?> <span class="small muted">+ IVA / anno · v<?= (int) $cur['version'] ?></span></span><?php endif; ?>
+        <?php if ($cur): ?><span style="font-size:22px;font-weight:500"><?= Support::e(Support::money((int) $cur['price_cents'], $cur['currency'])) ?>
+          <span class="small muted"><?= Plans::perProperty($cur) ? 'prima struttura, +' . Support::e(Support::money((int) $cur['extra_price_cents'], $cur['currency'])) . ' per ogni altra · ' : '' ?>+ IVA / anno · v<?= (int) $cur['version'] ?></span></span><?php endif; ?>
       </div>
 
       <div class="tablewrap"><table class="data">
@@ -49,6 +50,17 @@ $title = 'Pacchetti'; ?>
             <div class="field" style="margin:0"><label>Stripe Price ID <span class="muted">(facoltativo)</span></label>
               <input name="stripe_price_id" placeholder="price_…" pattern="price_[A-Za-z0-9]+" value="<?= Support::e($cur['stripe_price_id'] ?? '') ?>"></div>
           </div>
+          <?php if ($cur && Plans::perProperty($cur)): ?>
+            <div class="grid grid-4">
+              <div class="field" style="margin:0"><label>Struttura aggiuntiva (€/anno)</label>
+                <input name="prezzo_extra" inputmode="decimal" required value="<?= Support::e(number_format($cur['extra_price_cents'] / 100, 2, ',', '')) ?>"></div>
+              <div class="field" style="margin:0"><label>Strutture minime</label><input name="min_quantita" type="number" min="1" value="<?= (int) $cur['min_quantity'] ?>"></div>
+              <div class="field" style="margin:0"><label>Strutture massime</label><input name="max_quantita" type="number" min="1" value="<?= (int) $cur['max_quantity'] ?>"></div>
+              <div class="field" style="margin:0"><label>Price ID aggiuntive <span class="muted">(facoltativo)</span></label>
+                <input name="stripe_extra_price_id" placeholder="price_…" pattern="price_[A-Za-z0-9]+" value="<?= Support::e($cur['stripe_extra_price_id'] ?? '') ?>"></div>
+            </div>
+            <p class="small muted">Prezzo = prima struttura + (strutture − 1) × struttura aggiuntiva. Il limite di strutture è la quantità acquistata.</p>
+          <?php endif; ?>
           <div class="grid grid-4">
             <?php foreach ($features as $f): ?>
               <div class="field" style="margin:0"><label class="small" for="f-<?= (int) $p['id'] ?>-<?= Support::e($f['code']) ?>"><?= Support::e($f['label']) ?></label>

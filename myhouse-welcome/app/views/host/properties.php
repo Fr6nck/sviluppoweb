@@ -3,7 +3,7 @@
    online, offline perché l'abbonamento è scaduto. */
 use function MHW\b; use MHW\{Support, Media, Icon};
 $title = 'Le mie guide';
-$n = count($props);
+$n = count(array_filter($props, fn($x) => empty($x['archived_at'])));
 $puoiAggiungere = $n < $maxProp; ?>
 <div class="spread">
   <div class="stack stack--sm">
@@ -24,7 +24,8 @@ $puoiAggiungere = $n < $maxProp; ?>
 
 <div class="grid grid-3" style="margin-top:28px">
   <?php foreach ($props as $pr): $cop = Media::url($pr['cover_media_id'] ? (int) $pr['cover_media_id'] : null);
-        $stato = $pr['status'] !== 'published' ? ['ochre', 'Bozza'] : ($pr['online'] ? ['pine', 'Online'] : ['alert', 'Offline']); ?>
+        $stato = !empty($pr['archived_at']) ? ['paper', 'Archiviata'] : ($pr['status'] !== 'published' ? ['ochre', 'Bozza'] : ($pr['online'] ? ['pine', 'Online'] : ['alert', 'Offline'])); ?>
+    <div class="stack" style="gap:8px">
     <a class="panel stack" style="padding:0;overflow:hidden;gap:0;color:var(--ink)" href="<?= b() ?>/pannello/<?= (int) $pr['id'] ?>">
       <span style="display:block;height:150px;overflow:hidden;background:var(--sunk)">
         <?php if ($cop): ?><img src="<?= Support::e($cop) ?>" alt="" style="width:100%;height:100%;object-fit:cover"><?php endif; ?>
@@ -35,13 +36,23 @@ $puoiAggiungere = $n < $maxProp; ?>
         <span class="badge badge--<?= $stato[0] ?>" style="align-self:flex-start"><span class="dot"></span><?= $stato[1] ?></span>
       </span>
     </a>
+    <?php if (!empty($pr['archived_at'])): ?>
+      <form method="post" action="<?= b() ?>/pannello/<?= (int) $pr['id'] ?>/riattiva" style="margin:0"><?= MHW\Csrf::field() ?>
+        <button class="btn btn--ghost btn--sm">Riattiva <?= Support::e($pr['name']) ?></button></form>
+    <?php endif; ?>
+    </div>
   <?php endforeach; ?>
 </div>
 
-<?php if (!$puoiAggiungere && $maxProp < 3): ?>
+<?php if (!$puoiAggiungere && $maxProp < PHP_INT_MAX): ?>
   <div class="limit" style="margin-top:28px">
-    <p style="max-width:620px">Il tuo piano comprende <?= (int) $maxProp ?> struttur<?= $maxProp === 1 ? 'a' : 'e' ?>.
-      Con Portfolio gestisci 2 o 3 strutture dallo stesso account, ognuna con la sua guida e il suo QR.</p>
-    <a class="btn btn--ghost btn--sm" href="<?= b() ?>/piano">Scopri Portfolio</a>
+    <?php if ($maxProp === 1): ?>
+      <p style="max-width:620px">Il tuo piano comprende una struttura. Con Portfolio gestisci più strutture dallo stesso account,
+        ognuna con la sua guida e il suo QR.</p>
+      <a class="btn btn--ghost btn--sm" href="<?= b() ?>/piano">Scopri Portfolio</a>
+    <?php else: ?>
+      <p style="max-width:620px">Il tuo piano comprende <?= (int) $maxProp ?> strutture. Puoi aggiungerne altre da Account &amp; Fatturazione.</p>
+      <a class="btn btn--ghost btn--sm" href="<?= b() ?>/account">Account &amp; Fatturazione</a>
+    <?php endif; ?>
   </div>
 <?php endif; ?>

@@ -191,11 +191,14 @@ prova('Demo dichiarata come demo', str_contains($r['body'], 'Guarda la demo') &&
 prova('Microcopy', str_contains($r['body'], 'Paghi solo quando pubblichi'));
 foreach (['87', '117', '177'] as $p) prova("Prezzo $p € dal listino", str_contains($r['body'], $p . "\u{00A0}€"));
 $portfolio = preg_match('#<form class="plan__scelta".*?</form>#s', $r['body'], $m) ? $m[0] : '';
-prova('Portfolio: selettore con 2 e 3 strutture presi dal listino', str_contains($portfolio, 'Quante strutture vuoi gestire?') && str_contains($portfolio, 'value="' . pv('portfolio2') . '"')
-      && str_contains($portfolio, 'value="' . pv('portfolio3') . '"') && str_contains($portfolio, "data-prezzo=\"177\u{00A0}€\"") && str_contains($portfolio, "data-prezzo=\"237\u{00A0}€\""));
-prova('…parte da 2 strutture e mostra un solo prezzo', preg_match("#data-prezzo-mostrato>177\u{00A0}€<#u", $portfolio) === 1 && substr_count($portfolio, '+ IVA / anno') === 1);
-prova('…la scelta va alla registrazione', str_contains($portfolio, 'action="') && str_contains($portfolio, '/registrati"') && str_contains($portfolio, 'name="piano"') && str_contains($portfolio, 'Crea gratis con Portfolio'));
-prova('…label esplicita del selettore', preg_match('#<label for="([a-z0-9-]+)"[^>]*>Quante strutture#', $portfolio, $mm) === 1 && str_contains($portfolio, 'id="' . $mm[1] . '"'));
+prova('Portfolio: campo numerico (min 2, solo interi) al posto del menu', str_contains($portfolio, 'Quante strutture vuoi gestire?') && preg_match('#<input[^>]*name="strutture"[^>]*type="number"[^>]*step="1"[^>]*min="2"[^>]*value="2"#', $portfolio) === 1
+      && !str_contains($portfolio, '<select'));
+prova('…regola del prezzo dal listino', str_contains($portfolio, "Prima struttura 117\u{00A0}€/anno.") && str_contains($portfolio, "Ogni struttura aggiuntiva +60\u{00A0}€/anno."));
+prova('…base e costo aggiuntivo dal listino, totale iniziale 177 €', str_contains($portfolio, 'data-base="11700"') && str_contains($portfolio, 'data-extra="6000"')
+      && preg_match("#<span data-totale>177\u{00A0}€</span><small> \+ IVA / anno</small>#u", $portfolio) === 1 && substr_count($portfolio, '+ IVA / anno') === 1);
+prova('…la quantità va alla registrazione col piano', str_contains($portfolio, '/registrati"') && str_contains($portfolio, 'name="piano" value="' . pv('portfolio') . '"') && str_contains($portfolio, 'Crea gratis con Portfolio'));
+prova('…label esplicita del campo', preg_match('#<label for="([a-z0-9-]+)"[^>]*>Quante strutture#', $portfolio, $mm) === 1 && str_contains($portfolio, 'id="' . $mm[1] . '"'));
+prova('…il totale lo calcola uno script senza prezzi scritti dentro', str_contains($r['body'], '/assets/prezzi.js') && is_file("$DOVE/assets/prezzi.js") && !preg_match('/11700|6000|117|177/', (string) @file_get_contents("$DOVE/assets/prezzi.js")));
 prova('Pricing: "Pannello di controllo" al posto di "CMS", niente frasi finali', !preg_match('/>\s*CMS\s*</', $r['body']) && str_contains($r['body'], 'Pannello di controllo')
       && !str_contains($r['body'], 'Meno domande ripetitive, più tempo per accogliere') && !str_contains($r['body'], 'concierge digitale'));
 prova('Piani: headline e descrizioni nuove', str_contains($r['body'], 'Le informazioni importanti, sempre a disposizione.') && str_contains($r['body'], 'Una guida completa, senza limiti di sezioni.')
@@ -256,7 +259,8 @@ $r = $anna->get('/registrati?piano=' . pv('plus'));
 prova('Chi è già dentro e clicca un piano non si registra di nuovo', $r['code'] === 302 && str_contains($r['loc'], '/piano?piano=' . pv('plus')));
 $r = $anna->get('/piano?piano=' . pv('essential'));
 prova('La scelta del piano si apre', $r['code'] === 200 && pulita($r));
-prova('Dopo il clic, Portfolio mostra 2 e 3 strutture con i prezzi', str_contains($r['body'], '2 strutture') && str_contains($r['body'], "177\u{00A0}€") && str_contains($r['body'], '3 strutture') && str_contains($r['body'], "237\u{00A0}€"));
+prova('Dopo il clic, Portfolio chiede il numero di strutture', preg_match('#name="strutture" type="number"[^>]*min="2"[^>]*value="2"#', $r['body']) === 1 && str_contains($r['body'], "177\u{00A0}€")
+      && !str_contains($r['body'], '3 strutture'));
 $r = $anna->post('/piano', ['pv' => pv('essential')]);
 prova('Scelta del piano senza pagare', $r['code'] === 302 && str_contains($r['loc'], '/pannello/nuova'));
 $acc = riga("SELECT a.* FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = 'anna@prova.test'");
@@ -590,20 +594,148 @@ prova('Plus non verificato: pubblicazione ferma', str_contains($r['body'], 'Conf
 
 // =================================================================== PORTFOLIO
 capitolo('Portfolio');
+$pp = pv('portfolio');
+$pubblici = righe("SELECT p.code FROM packages p WHERE p.public = 1 AND p.active = 1 ORDER BY p.sort");
+prova('Un solo Portfolio in vendita; i vecchi 2 e 3 restano, fuori listino', in_array('portfolio', array_column($pubblici, 'code'), true)
+      && !array_intersect(['portfolio2', 'portfolio3'], array_column($pubblici, 'code')) && pv('portfolio2') > 0 && pv('portfolio3') > 0);
+prova('Portfolio: 117 € la prima struttura, 60 € ogni altra, da 2 strutture', (bool) val('SELECT id FROM package_versions WHERE id = ? AND per_property = 1 AND price_cents = 11700 AND extra_price_cents = 6000 AND min_quantity = 2', [$pp]));
 $carla = new Browser('carla');
-$carla->get('/registrati?piano=' . pv('portfolio2'));
-$carla->post('/registrati', ['piano' => pv('portfolio2'), 'name' => 'Carla Portfolio', 'email' => 'carla@prova.test', 'password' => 'CarlaProva123', 'termini' => '1', 'privacy' => '1']);
-$carla->get('/piano'); $carla->post('/piano', ['pv' => pv('portfolio2')]);
-foreach (['Casa Uno', 'Casa Due', 'Casa Tre'] as $n) $carla->modulo('/pannello/nuova', '/pannello/nuova', ['name' => $n, 'city' => 'Bari']);
+$r = $carla->get("/registrati?piano=$pp&strutture=3");
+prova('La quantità scelta sulla landing arriva alla registrazione', str_contains($r['body'], 'name="strutture" value="3"'));
+$r = $carla->post('/registrati', ['piano' => $pp, 'strutture' => '3', 'name' => 'Carla Portfolio', 'email' => 'carla@prova.test', 'password' => 'CarlaProva123', 'termini' => '1', 'privacy' => '1']);
+prova('…e dopo la registrazione alla scelta del piano', $r['code'] === 302 && str_contains($r['loc'], "/piano?piano=$pp&strutture=3"));
+$r = $carla->get("/piano?piano=$pp&strutture=3");
+prova('…che la mostra già impostata, con il totale (237 €)', preg_match('#name="strutture" type="number"[^>]*value="3"#', $r['body']) === 1 && str_contains($r['body'], "237\u{00A0}€"));
 $cacc = (int) val("SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = 'carla@prova.test'");
-prova('Portfolio 2: due strutture, la terza no', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$cacc]) === 2);
-$c1 = (int) val("SELECT id FROM properties WHERE account_id = ? ORDER BY id", [$cacc]);
+foreach (['1', '2.5', '0', 'tre', '51', '-3', '2e1'] as $x) {
+    $r = $carla->post('/piano', ['pv' => $pp, 'strutture' => $x]);
+    if (!($r['code'] === 302 && str_contains($r['loc'], "/piano?piano=$pp"))) prova("Quantità «{$x}» rifiutata", false, $r['loc']);
+}
+prova('Quantità non intere o fuori dai limiti rifiutate dal server', (int) val('SELECT COALESCE(intended_package_version_id, 0) FROM accounts WHERE id = ?', [$cacc]) !== $pp
+      && str_contains($carla->get("/piano?piano=$pp")['body'], 'Indica un numero intero di strutture tra 2 e 50.'));
+$r = $carla->post('/piano', ['pv' => $pp, 'strutture' => '3']);
+prova('Portfolio per 3 strutture scelto', $r['code'] === 302 && (int) val('SELECT intended_quantity FROM accounts WHERE id = ?', [$cacc]) === 3
+      && (int) val('SELECT intended_package_version_id FROM accounts WHERE id = ?', [$cacc]) === $pp);
+foreach (['Casa Uno', 'Casa Due', 'Casa Tre', 'Casa Quattro'] as $n) $carla->modulo('/pannello/nuova', '/pannello/nuova', ['name' => $n, 'city' => 'Bari']);
+prova('Limite lato server: tre strutture, la quarta no', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$cacc]) === 3);
+$cp = array_map('intval', array_column(righe('SELECT id FROM properties WHERE account_id = ? ORDER BY id', [$cacc]), 'id'));
+$c1 = $cp[0];
 $carla->get("/pannello/$c1");
 foreach (['wifi', 'rules', 'eat', 'parking', 'transport'] as $k) $carla->post("/pannello/$c1/sezioni", ['kind' => $k]);
 prova('Portfolio: funzioni Plus per struttura (più di 4 sezioni)', (int) val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_core = 0', [$c1]) === 5);
-$carla->get('/piano'); $carla->post('/piano', ['pv' => pv('portfolio3')]);
-$carla->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Tre', 'city' => 'Bari']);
-prova('Portfolio 3: la terza struttura entra', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$cacc]) === 3);
+
+// Checkout: un abbonamento, due voci.
+$link = linkPosta('carla@prova.test', 'verifica');
+$carla->get(substr($link, strpos($link, '/verifica/')));
+$ccore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$c1]);
+$carla->post("/pannello/$c1/sezioni/$ccore", ['checkin_steps' => ['Suona al citofono.']]);
+$r = $carla->modulo("/pannello/$c1/procedura/anteprima", "/pannello/$c1/pubblica", []);
+prova('Pubblica → Stripe Checkout', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/'), $r['loc']);
+$cord = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$cacc]);
+prova('Ordine per 3 strutture: 117 + 2 × 60 = 237 €', $cord && (int) $cord['quantity'] === 3 && (int) $cord['amount_cents'] === 23700);
+$cs = array_values(array_filter(richiesteStripe(), fn($x) => $x['percorso'] === '/v1/checkout/sessions'));
+$c = end($cs)['corpo'] ?? [];
+$li = $c['line_items'] ?? [];
+prova('Checkout: un solo abbonamento annuale con due voci', ($c['mode'] ?? '') === 'subscription' && count($li) === 2
+      && ($li[0]['price_data']['recurring']['interval'] ?? '') === 'year' && ($li[1]['price_data']['recurring']['interval'] ?? '') === 'year');
+prova('…prima struttura 117 € × 1', ($li[0]['quantity'] ?? '') === '1' && ($li[0]['price_data']['unit_amount'] ?? '') === '11700' && ($li[0]['price_data']['tax_behavior'] ?? '') === 'exclusive');
+prova('…strutture aggiuntive 60 € × 2, IVA esclusa', ($li[1]['quantity'] ?? '') === '2' && ($li[1]['price_data']['unit_amount'] ?? '') === '6000' && ($li[1]['price_data']['tax_behavior'] ?? '') === 'exclusive'
+      && ($li[1]['price_data']['product_data']['metadata']['ruolo'] ?? '') === 'aggiuntiva');
+prova('…quantità nei metadati', ($c['subscription_data']['metadata']['quantity'] ?? '') === '3');
+prova('Prima del pagamento: ancora nessun abbonamento', !val('SELECT id FROM subscriptions WHERE account_id = ?', [$cacc]));
+file_put_contents("$STRIPE_DIR/extra-sub_prova_carla", '2');
+$r = inviaWebhook(['id' => 'evt_carla_1', 'type' => 'checkout.session.completed', 'data' => ['object' => [
+    'id' => $cord['provider_session_id'], 'mode' => 'subscription', 'payment_status' => 'paid', 'customer' => 'cus_carla',
+    'subscription' => 'sub_prova_carla', 'client_reference_id' => (string) $cord['id'], 'metadata' => ['order_id' => (string) $cord['id'], 'account_id' => (string) $cacc]]]]);
+$csub = riga("SELECT * FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'");
+prova('Webhook: abbonamento attivo per 3 strutture, letto dalle voci di Stripe', $r['body'] === 'abbonamento-attivato' && $csub && (int) $csub['quantity'] === 3
+      && $csub['provider_extra_item_id'] === 'si_extra_sub_prova_carla', $r['body']);
+$ult = array_values(array_filter(richiesteStripe(), fn($x) => $x['percorso'] === '/v1/subscriptions/sub_prova_carla'));
+prova('…chiedendo a Stripe il prodotto di ogni voce', str_contains((string) ($ult[0]['percorso'] ?? ''), 'sub_prova_carla'));
+prova('Guida online dopo il pagamento', $carla->get('/g/' . val('SELECT slug FROM properties WHERE id = ?', [$c1]))['code'] === 200);
+$carla->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Quattro', 'city' => 'Bari']);
+prova('Con l\'abbonamento attivo il limite resta 3', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$cacc]) === 3);
+$r = $carla->get('/account');
+prova('Account: Portfolio · 3 strutture, 237 €, e il campo per cambiarle', str_contains($r['body'], 'Portfolio · 3 strutture') && str_contains($r['body'], "237\u{00A0}€") && str_contains($r['body'], 'action="' . preg_replace('#^https?://[^/]+#', '', $BASE) . '/account/strutture"'));
+
+// Aumento: conguaglio pagato subito, quantità nuova solo col webhook.
+$r = $carla->post('/account/strutture', ['strutture' => '5']);
+prova('Aumento a 5: conferma con il nuovo prezzo (357 €)', $r['code'] === 200 && str_contains($r['body'], "237\u{00A0}€ → <b>357\u{00A0}€</b>") && str_contains($r['body'], 'differenza'));
+$r = $carla->post('/account/strutture', ['strutture' => '5', 'conferma' => '1']);
+$mod = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_carla'));
+$mc = end($mod)['corpo'] ?? [];
+prova('Stripe: stessa voce, 4 strutture aggiuntive, conguaglio fatturato subito', ($mc['items'][0]['id'] ?? '') === 'si_extra_sub_prova_carla' && ($mc['items'][0]['quantity'] ?? '') === '4'
+      && ($mc['proration_behavior'] ?? '') === 'always_invoice' && ($mc['payment_behavior'] ?? '') === 'pending_if_incomplete' && (end($mod)['idem'] ?? '') !== '');
+prova('…ma la quantità non cambia prima della conferma', (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === 3);
+$voci = fn(int $extra) => ['data' => [
+    ['id' => 'si_base_sub_prova_carla', 'quantity' => 1, 'current_period_start' => time(), 'current_period_end' => time() + 360 * 86400, 'price' => ['id' => 'price_finto_annuale', 'product' => 'prod_finto_base']],
+    ['id' => 'si_extra_sub_prova_carla', 'quantity' => $extra, 'current_period_start' => time(), 'current_period_end' => time() + 360 * 86400, 'price' => ['id' => 'price_finto_extra', 'product' => 'prod_finto_extra']]]];
+inviaWebhook(['id' => 'evt_carla_2', 'type' => 'customer.subscription.updated', 'data' => ['object' => [
+    'id' => 'sub_prova_carla', 'status' => 'active', 'cancel_at_period_end' => false, 'items' => $voci(2), 'pending_update' => ['subscription_items' => [['id' => 'si_extra_sub_prova_carla', 'quantity' => 4]]]]]]);
+prova('Pagamento del conguaglio non riuscito: restano 3 strutture', (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === 3);
+inviaWebhook(['id' => 'evt_carla_3', 'type' => 'customer.subscription.updated', 'data' => ['object' => [
+    'id' => 'sub_prova_carla', 'status' => 'active', 'cancel_at_period_end' => false, 'items' => $voci(4)]]]);
+prova('Pagamento confermato dal webhook: 5 strutture', (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === 5);
+foreach (['Casa Quattro', 'Casa Cinque', 'Casa Sei'] as $n) $carla->modulo('/pannello/nuova', '/pannello/nuova', ['name' => $n, 'city' => 'Bari']);
+prova('…la quarta e la quinta entrano, la sesta no', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$cacc]) === 5);
+
+// Riduzione: prima si sceglie cosa archiviare; niente si cancella.
+$sezioniPrima = (int) val('SELECT COUNT(*) FROM sections s JOIN properties p ON p.id = s.property_id WHERE p.account_id = ?', [$cacc]);
+$richiestePrima = count(richiesteStripe());
+$r = $carla->post('/account/strutture', ['strutture' => '3']);
+prova('Riduzione a 3: chiede quali 2 strutture archiviare', $r['code'] === 200 && str_contains($r['body'], 'Scegli 2 strutture da archiviare') && substr_count($r['body'], 'name="archivia[]"') === 5);
+$r = $carla->post('/account/strutture', ['strutture' => '3', 'conferma' => '1', 'archivia' => [$c1]]);
+prova('…una sola scelta non basta, e Stripe non viene toccato', str_contains($r['loc'], '/account/strutture?strutture=3') && count(richiesteStripe()) === $richiestePrima
+      && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NOT NULL', [$cacc]) === 0);
+$altro = (int) val('SELECT id FROM properties WHERE id NOT IN (SELECT id FROM properties WHERE account_id = ?) LIMIT 1', [$cacc]);
+$r = $carla->post('/account/strutture', ['strutture' => '3', 'conferma' => '1', 'archivia' => [$c1, $altro]]);
+prova('…né una struttura di un altro account', count(richiesteStripe()) === $richiestePrima && val('SELECT archived_at FROM properties WHERE id = ?', [$altro]) === null);
+$r = $carla->post('/account/strutture', ['strutture' => '3', 'conferma' => '1', 'archivia' => [$c1, $cp[1]]]);
+$mod = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_carla'));
+$mc = end($mod)['corpo'] ?? [];
+prova('Stripe: 2 strutture aggiuntive, credito proporzionale', ($mc['items'][0]['quantity'] ?? '') === '2' && ($mc['proration_behavior'] ?? '') === 'create_prorations' && !isset($mc['payment_behavior']));
+prova('Le due strutture scelte sono archiviate, non cancellate', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NOT NULL', [$cacc]) === 2
+      && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$cacc]) === 5
+      && (int) val('SELECT COUNT(*) FROM sections s JOIN properties p ON p.id = s.property_id WHERE p.account_id = ?', [$cacc]) === $sezioniPrima);
+prova('La guida archiviata va offline (il QR resta)', $carla->get('/g/' . val('SELECT slug FROM properties WHERE id = ?', [$c1]))['code'] === 404
+      && (bool) val('SELECT id FROM qr_tokens WHERE property_id = ?', [$c1]));
+inviaWebhook(['id' => 'evt_carla_4', 'type' => 'customer.subscription.updated', 'data' => ['object' => [
+    'id' => 'sub_prova_carla', 'status' => 'active', 'cancel_at_period_end' => false, 'items' => $voci(2)]]]);
+prova('Webhook: 3 strutture', (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === 3);
+$r = $carla->get('/pannello');
+prova('Le guide mostrano le archiviate, con "Riattiva"', str_contains($r['body'], 'Archiviata') && str_contains($r['body'], "/pannello/$c1/riattiva"));
+$carla->post("/pannello/$c1/riattiva", []);
+prova('Riattivare oltre il limite non si può', val('SELECT archived_at FROM properties WHERE id = ?', [$c1]) !== null);
+$carla->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Sette', 'city' => 'Bari']);
+prova('…né crearne una nuova', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$cacc]) === 5);
+$r = $carla->modulo("/pannello/$c1/procedura/anteprima", "/pannello/$c1/pubblica", []);
+prova('…né pubblicare un\'archiviata', $carla->get('/g/' . val('SELECT slug FROM properties WHERE id = ?', [$c1]))['code'] === 404);
+$nome3 = (string) val('SELECT name FROM properties WHERE id = ?', [$cp[2]]);
+$carla->modulo("/pannello/{$cp[2]}/impostazioni", "/pannello/{$cp[2]}/elimina", ['conferma' => $nome3]);
+$carla->get('/pannello');
+$carla->post("/pannello/$c1/riattiva", []);
+prova('Liberato un posto, l\'archiviata si riattiva e torna online', val('SELECT archived_at FROM properties WHERE id = ?', [$c1]) === null
+      && $carla->get('/g/' . val('SELECT slug FROM properties WHERE id = ?', [$c1]))['code'] === 200);
+
+// Chi ha un Portfolio 2 o 3 di prima tiene le sue strutture.
+$dario = new Browser('dario');
+$dario->get('/registrati?piano=' . pv('plus'));
+$dario->post('/registrati', ['piano' => pv('plus'), 'name' => 'Dario Vecchio', 'email' => 'dario@prova.test', 'password' => 'DarioProva123', 'termini' => '1', 'privacy' => '1']);
+$dario->get('/piano'); $dario->post('/piano', ['pv' => pv('plus')]);
+$dacc = (int) val("SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = 'dario@prova.test'");
+$admin->get('/admin/cliente/' . $dacc);
+$admin->post("/admin/cliente/$dacc/abbonamento", ['pv' => pv('portfolio2'), 'mesi' => '12', 'nota' => 'Portfolio 2 venduto prima del cambio']);
+foreach (['D1', 'D2', 'D3'] as $n) $dario->modulo('/pannello/nuova', '/pannello/nuova', ['name' => $n, 'city' => 'Lecce']);
+prova('Portfolio 2 di prima: restano 2 strutture, senza quantità da cambiare', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$dacc]) === 2
+      && !str_contains($dario->get('/account')['body'], '/account/strutture'));
+$r = $dario->post('/account/strutture', ['strutture' => '4']);
+prova('…e la modifica della quantità non si applica', $r['code'] === 302 && (int) val("SELECT COUNT(*) FROM subscriptions WHERE account_id = ? AND status = 'active'", [$dacc]) === 1);
+$admin->post("/admin/cliente/$dacc/abbonamento", ['pv' => $pp, 'mesi' => '12', 'nota' => 'Portfolio a quantità', 'strutture' => '4']);
+$dario->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'D3', 'city' => 'Lecce']);
+$dario->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'D4', 'city' => 'Lecce']);
+$dario->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'D5', 'city' => 'Lecce']);
+prova('Abbonamento manuale Portfolio per 4 strutture: il limite è 4', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$dacc]) === 4
+      && (int) val("SELECT quantity FROM subscriptions WHERE account_id = ? AND status = 'active'", [$dacc]) === 4);
 
 // ==================================================================== SICUREZZA
 capitolo('Sicurezza: proprietà dei dati, CSRF, amministrazione');
@@ -670,14 +802,23 @@ prova('Nuovo prezzo = nuova versione', pv('essential') !== $vecchia && (int) val
 prova('La versione venduta resta com\'era', (int) val('SELECT price_cents FROM package_versions WHERE id = ?', [$vecchia]) === 8700);
 $home = $ospite->get('/')['body'];
 prova('La landing mostra il prezzo nuovo', str_contains($home, "97\u{00A0}€") && str_contains($home, "Da 97\u{00A0}€ + IVA all'anno."));
-$p3 = (int) val("SELECT id FROM packages WHERE code = 'portfolio3'");
-$feat3 = []; foreach (righe('SELECT f.code, pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id WHERE pf.package_version_id = ?', [pv('portfolio3')]) as $x) $feat3[$x['code']] = $x['value'];
-$pk3 = riga('SELECT * FROM packages WHERE id = ?', [$p3]);
+$pf = (int) val("SELECT id FROM packages WHERE code = 'portfolio'");
+$featP = []; foreach (righe('SELECT f.code, pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id WHERE pf.package_version_id = ?', [pv('portfolio')]) as $x) $featP[$x['code']] = $x['value'];
+$pkP = riga('SELECT * FROM packages WHERE id = ?', [$pf]);
+$vecchiaP = pv('portfolio');
 $admin->get('/admin/pacchetti');
-$admin->post("/admin/pacchetti/$p3/nuova-versione", ['nome' => $pk3['name'], 'prezzo' => '247', 'stripe_price_id' => '', 'f' => $feat3, 'headline' => $pk3['headline'], 'tagline' => $pk3['tagline'],
-    'description' => $pk3['description'], 'bullets' => $pk3['bullets'], 'badge' => $pk3['badge'], 'cta_label' => $pk3['cta_label'], 'public' => '1', 'active' => '1']);
+prova('Pacchetti: Portfolio con prezzo per struttura aggiuntiva modificabile', str_contains($admin->get('/admin/pacchetti')['body'], 'name="prezzo_extra"'));
+$admin->post("/admin/pacchetti/$pf/nuova-versione", ['nome' => $pkP['name'], 'prezzo' => '119', 'prezzo_extra' => '65', 'min_quantita' => '2', 'max_quantita' => '40', 'stripe_price_id' => '', 'stripe_extra_price_id' => '',
+    'f' => $featP, 'headline' => $pkP['headline'], 'tagline' => $pkP['tagline'], 'description' => $pkP['description'], 'bullets' => $pkP['bullets'], 'badge' => $pkP['badge'], 'cta_label' => $pkP['cta_label'], 'public' => '1', 'active' => '1']);
+$nuovaP = riga('SELECT * FROM package_versions WHERE id = ?', [pv('portfolio')]);
+prova('Nuovi prezzi Portfolio = nuova versione per struttura', pv('portfolio') !== $vecchiaP && (int) $nuovaP['per_property'] === 1 && (int) $nuovaP['price_cents'] === 11900
+      && (int) $nuovaP['extra_price_cents'] === 6500 && (int) $nuovaP['max_quantity'] === 40);
+prova('…la versione venduta a Carla resta com\'era', (int) val('SELECT extra_price_cents FROM package_versions WHERE id = ?', [$vecchiaP]) === 6000
+      && (int) val("SELECT package_version_id FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === $vecchiaP);
 $home = $ospite->get('/')['body'];
-prova('Il selettore Portfolio segue il nuovo prezzo dell\'amministrazione', str_contains($home, "data-prezzo=\"247\u{00A0}€\"") && str_contains($home, 'value="' . pv('portfolio3') . '"'));
+prova('La landing segue i prezzi dell\'amministrazione (119 + 65 = 184 €)', str_contains($home, 'data-base="11900"') && str_contains($home, 'data-extra="6500"') && str_contains($home, "<span data-totale>184\u{00A0}€</span>"));
+$admin->post("/admin/pacchetti/$pf/nuova-versione", ['nome' => $pkP['name'], 'prezzo' => '119', 'prezzo_extra' => '65', 'min_quantita' => '2', 'max_quantita' => '40', 'stripe_price_id' => '', 'stripe_extra_price_id' => 'sbagliato', 'f' => $featP]);
+prova('Price ID delle aggiuntive malformato rifiutato', !val("SELECT id FROM package_versions WHERE stripe_extra_price_id = 'sbagliato'"));
 $r = $admin->post("/admin/pacchetti/$essential/nuova-versione", ['prezzo' => '97', 'stripe_price_id' => 'prezzo-sbagliato', 'f' => $feat]);
 prova('Price ID Stripe malformato rifiutato', pv('essential') === (int) val('SELECT MAX(id) FROM package_versions WHERE package_id = ?', [$essential]) && !val("SELECT id FROM package_versions WHERE stripe_price_id = 'prezzo-sbagliato'"));
 $uid = (int) val("SELECT id FROM users WHERE email = 'bruno@prova.test'");

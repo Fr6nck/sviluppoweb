@@ -34,6 +34,15 @@ final class Entitlements
                  JOIN features f ON f.id = pf.feature_id WHERE pf.package_version_id = ?', [$pv]) as $r) {
                 if (isset($out[$r['code']])) $out[$r['code']] = ['value' => $r['value'], 'kind' => $out[$r['code']]['kind'], 'source' => $sorgente];
             }
+            // Portfolio a quantità: le strutture sono esattamente quelle comprate
+            // (o, prima di pagare, quelle scelte).
+            $versione = Db::one('SELECT * FROM package_versions WHERE id = ?', [$pv]);
+            if ($versione && Plans::perProperty($versione) && isset($out['properties'])) {
+                $attivo = Subscriptions::active($accountId);
+                $q = $attivo ? (int) $attivo['quantity']
+                             : (int) Db::val('SELECT intended_quantity FROM accounts WHERE id = ?', [$accountId], 1);
+                $out['properties']['value'] = (string) (Plans::quantity($versione, $q) ?? (int) $versione['min_quantity']);
+            }
         }
 
         foreach (Db::all(
@@ -115,7 +124,7 @@ final class Entitlements
             }
         }
         $maxProp = self::limit($accountId, 'properties', 1);
-        $strutture = (int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$accountId], 0);
+        $strutture = (int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL', [$accountId], 0);
         if ($strutture > $maxProp) {
             $fuori[] = "Hai $strutture strutture, il piano ne comprende $maxProp. Scegli Portfolio, oppure eliminane una.";
         }

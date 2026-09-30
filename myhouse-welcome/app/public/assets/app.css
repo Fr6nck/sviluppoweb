@@ -809,6 +809,11 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .plan__scelta .btn{margin-top:auto}
 .plan__label{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:-10px}
 .plan__scelta select{height:48px;font-size:16px;border-radius:14px}
+.plan__scelta input[type=number]{height:48px;font-size:16px;max-width:140px}
+.plan__regola{font-size:14px;line-height:20px;color:var(--ink);margin-top:-6px}
+.plan--dark .plan__regola{color:var(--inverse-fg)}
+.quantita{display:flex;flex-direction:column;gap:8px;padding:4px 2px 0}
+.quantita input[type=number]{height:44px;max-width:120px}
 .piani__nota{margin:22px auto 0;max-width:640px;text-align:center;font-size:14px;line-height:21px;color:var(--muted)}
 
 /* QR: spunte leggere al posto delle righe divisorie. */

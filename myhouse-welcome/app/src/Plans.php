@@ -13,7 +13,8 @@ final class Plans
     public static function public(): array
     {
         $rows = Db::all(
-            'SELECT p.*, pv.id AS pv_id, pv.version, pv.price_cents, pv.currency, pv.stripe_price_id
+            'SELECT p.*, pv.id AS pv_id, pv.version, pv.price_cents, pv.currency, pv.stripe_price_id,
+                    pv.per_property, pv.extra_price_cents, pv.min_quantity, pv.max_quantity
              FROM packages p JOIN package_versions pv ON pv.package_id = p.id AND pv.is_current = 1
              WHERE p.active = 1 AND p.public = 1 ORDER BY p.sort, p.id');
         foreach ($rows as &$r) {
@@ -53,6 +54,31 @@ final class Plans
     {
         return Db::one('SELECT pv.*, p.name, p.code, p.family, p.tagline FROM package_versions pv
                         JOIN packages p ON p.id = pv.package_id WHERE pv.id = ?', [$pvId]);
+    }
+
+    /** Il piano si paga a struttura (Portfolio)? */
+    public static function perProperty(array $pv): bool { return (int) ($pv['per_property'] ?? 0) === 1; }
+
+    /**
+     * La quantità valida per una versione, o null se quella chiesta non va bene.
+     * I piani a struttura singola valgono sempre 1.
+     */
+    public static function quantity(array $pv, mixed $chiesta): ?int
+    {
+        if (!self::perProperty($pv)) return 1;
+        $min = max(1, (int) $pv['min_quantity']); $max = max($min, (int) $pv['max_quantity']);
+        if ($chiesta === null || $chiesta === '') return $min;
+        if (!is_int($chiesta) && !(is_string($chiesta) && ctype_digit(trim($chiesta)))) return null;
+        $q = (int) $chiesta;
+        return $q >= $min && $q <= $max ? $q : null;
+    }
+
+    /** Il prezzo annuale per una quantità: prima struttura + le altre al prezzo aggiuntivo. */
+    public static function price(array $pv, int $quantity = 1): int
+    {
+        $base = (int) $pv['price_cents'];
+        if (!self::perProperty($pv)) return $base;
+        return $base + max(0, $quantity - 1) * (int) $pv['extra_price_cents'];
     }
 
     public static function priceLabel(int $cents, string $currency = 'EUR'): string
