@@ -629,14 +629,6 @@ button, input[type=submit], input[type=button] { background-image: none; }
 .feat{display:flex;flex-direction:column;gap:12px;padding:18px;border-radius:22px;background:var(--raised);border:1px solid var(--line)}
 .feat .ico{color:var(--accent);display:flex}
 .feat b{font-size:16px;font-weight:500;letter-spacing:-.3px}
-.split{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:48px;align-items:center}
-.mockphone{width:300px;max-width:100%;margin:0 auto;border-radius:40px;padding:10px;background:#231b12;box-shadow:0 40px 80px -40px rgba(35,27,18,.5)}
-.mockphone__screen{border-radius:30px;overflow:hidden;background:var(--paper);display:flex;flex-direction:column}
-.mockphone__shot{height:170px;overflow:hidden}
-.mockphone__shot img{width:100%;height:100%;object-fit:cover}
-.mockphone__body{padding:18px;display:flex;flex-direction:column;gap:12px}
-.mockphone__grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mockphone__grid span{display:flex;align-items:flex-end;height:70px;padding:10px;border-radius:14px;color:var(--tile-ink);font-size:13px;font-weight:500}
 .howto{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .howto .step-card{display:flex;flex-direction:column;gap:12px;padding:26px;border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line)}
 .howto .big{font-family:Gloock,Georgia,serif;font-size:40px;line-height:1;color:var(--accent)}
@@ -651,9 +643,9 @@ button, input[type=submit], input[type=button] { background-image: none; }
 .plan .vat{font-size:13px;color:var(--muted)}
 @media(max-width:900px){
   .features8{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .split,.howto{grid-template-columns:minmax(0,1fr)}
+  .howto{grid-template-columns:minmax(0,1fr)}
 }
-@media(max-width:420px){ .features8{grid-template-columns:minmax(0,1fr)} }
+@media(max-width:420px){ .features8{gap:8px} .feat{padding:14px;gap:10px;border-radius:18px} .feat b{font-size:15px;line-height:20px} }
 
 /* Tabelle dell'amministrazione: dense, leggibili, scorrono sui telefoni. */
 .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--raised)}
@@ -682,7 +674,7 @@ input[type=file]::file-selector-button{height:36px;margin-right:12px;padding:0 1
    sfalsate, non una chat: esempi da riconoscere, non testimonianze. */
 .tempo{margin-top:72px;padding:56px 48px;border-radius:var(--r-2xl);background:var(--sunk);
   display:flex;flex-direction:column;gap:44px;scroll-margin-top:96px}
-.tempo__intro{display:flex;flex-direction:column;gap:14px;max-width:720px}
+.tempo__intro{display:flex;flex-direction:column;gap:14px;max-width:860px}
 .tempo__titolo{font-size:clamp(30px,4.2vw,46px);line-height:1.04;text-wrap:balance}
 .tempo__intro .lead{max-width:620px}
 .tempo__grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;align-items:center}
@@ -703,25 +695,123 @@ input[type=file]::file-selector-button{height:36px;margin-right:12px;padding:0 1
 .tempo__h3{font-size:clamp(24px,2.8vw,32px);line-height:1.1;text-wrap:balance}
 .tempo__frase{margin-top:6px;font-family:Gloock,Georgia,serif;font-size:clamp(22px,2.4vw,27px);line-height:1.2;
   color:var(--ink)!important;letter-spacing:-.3px;padding-left:18px;border-left:3px solid var(--accent)}
-.momenti{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.momento{display:flex;flex-direction:column;gap:8px;padding:22px;border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line)}
-.momento .kicker{display:flex;align-items:center;gap:8px}
-.momento__n{color:var(--accent)}
-.momento b{font-size:18px;font-weight:500;letter-spacing:-.3px;line-height:24px}
-.momento p{font-size:15px;line-height:22px}
-.tempo__nota{margin-top:-28px;font-size:15px;line-height:22px;max-width:680px}
 .tempo__valore{display:flex;flex-direction:column;gap:12px;padding:36px 40px;border-radius:var(--r-xl);
   background:var(--raised);border:1px solid var(--line);max-width:860px;align-self:center;width:100%}
 .tempo__valore p{font-size:17px;line-height:26px;color:var(--muted);max-width:640px}
 .tempo__valore .tempo__h3{margin-bottom:4px}
 .tempo__cta{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
 .tempo__cta p{max-width:460px}
-.tempo, .msg, .momento, .tempo__valore{background-image:var(--grana);background-repeat:repeat;background-size:128px 128px}
+.tempo, .msg, .tempo__valore, .chiaro{background-image:var(--grana);background-repeat:repeat;background-size:128px 128px}
 @media(max-width:900px){
   .tempo{padding:36px 22px;gap:36px}
   .tempo__grid{grid-template-columns:minmax(0,1fr);gap:32px}
-  .momenti{grid-template-columns:minmax(0,1fr)}
-  .tempo__nota{margin-top:-20px}
   .tempo__valore{padding:26px 22px}
 }
 @media(max-width:420px){ .msg:nth-child(2){margin-left:22px} .msg:nth-child(3){margin-left:10px} }
+
+/* ======================================================== la landing, v2 */
+.h-sezione{font-size:clamp(30px,4vw,44px);line-height:1.02;text-wrap:balance}
+.blocco{margin-top:96px;scroll-margin-top:96px}
+.micro--left{justify-content:flex-start}
+
+/* Hero: il testo a sinistra, il telefono a destra che scende sulla foto. */
+.hero2{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:48px;align-items:start;
+  padding-top:56px;position:relative;z-index:2}
+.hero2__testo{display:flex;flex-direction:column;gap:24px;padding:36px 0 64px}
+.hero2__sub{font-size:clamp(17px,1.8vw,20px);line-height:1.5;color:var(--muted);max-width:520px}
+.hero2 .display{text-wrap:balance}
+.hero2 .device{justify-self:center;margin-bottom:-260px}
+.stage{position:relative;height:clamp(300px,40vw,500px);border-radius:var(--r-2xl);overflow:hidden;background:var(--sunk)}
+.stage img{width:100%;height:100%;object-fit:cover;object-position:50% 45%}
+.stage .shot-pill{left:24px;bottom:24px;height:46px;padding:0 22px;font-size:15px}
+
+/* Il telefono. Proporzioni di uno smartphone di oggi (circa 9:19,5), cornice
+   sottile, isola in alto, ombra morbida e larga: un oggetto, non un giocattolo. */
+.device{position:relative;width:292px;aspect-ratio:292/610;padding:9px;border-radius:52px;
+  background:linear-gradient(145deg,#3a3129,#15110c 55%,#2a231c);
+  box-shadow:0 0 0 1px rgba(255,255,255,.06) inset,0 1px 0 rgba(255,255,255,.12) inset,
+             0 50px 90px -40px rgba(35,27,18,.55),0 18px 36px -24px rgba(35,27,18,.35)}
+.device::before,.device::after{content:"";position:absolute;width:3px;border-radius:2px;background:#2a231c}
+.device::before{left:-3px;top:120px;height:52px}
+.device::after{right:-3px;top:150px;height:76px}
+.device__screen{position:relative;height:100%;border-radius:44px;overflow:hidden;background:#faf5ec;color:#231b12;
+  display:flex;flex-direction:column;background-image:none}
+.device__status{display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 26px 0 30px;
+  font-size:13px;font-weight:600;letter-spacing:-.2px;flex:none}
+.device__island{position:absolute;left:50%;top:10px;transform:translateX(-50%);width:92px;height:26px;border-radius:999px;background:#0d0a07}
+.device__icons{display:inline-flex;align-items:center;gap:5px}
+.device__icons .sig{width:15px;height:9px;background:linear-gradient(90deg,#231b12 0 2px,transparent 2px 4px,#231b12 4px 6px,transparent 6px 8px,#231b12 8px 10px,transparent 10px 12px,#231b12 12px 14px);
+  clip-path:polygon(0 100%,100% 0,100% 100%)}
+.device__icons .bat{width:22px;height:11px;border:1.5px solid #231b12;border-radius:3.5px;position:relative;opacity:.9}
+.device__icons .bat::after{content:"";position:absolute;inset:1.5px 5px 1.5px 1.5px;border-radius:1.5px;background:#231b12}
+.device__app{flex:1 1 auto;display:flex;flex-direction:column;gap:12px;padding:6px 16px 0;min-height:0}
+.device__top{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:500}
+.device__avatar{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:999px;
+  background:#231b12;color:#faf5ec;font-size:10px;font-weight:700}
+.device__top .demo-tag{height:20px;font-size:9.5px;padding:0 7px;margin-left:auto;background:#b07d0c;color:#231b12}
+.device__title{font-family:Gloock,Georgia,serif;font-size:27px;line-height:1.02;letter-spacing:-.4px}
+.device__shot{position:relative;height:150px;border-radius:18px;overflow:hidden;flex:none;background:#f1e9db}
+.device__shot img{width:100%;height:100%;object-fit:cover}
+.device__pill{position:absolute;left:10px;bottom:10px;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;
+  border-radius:999px;background:#fffdf8;color:#231b12;font-size:11px;font-weight:500}
+.device__pill i{width:6px;height:6px;border-radius:999px;background:#1f6b3f}
+.device__tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.device__tiles span{display:flex;flex-direction:column;justify-content:space-between;height:84px;padding:11px;border-radius:16px;
+  color:#fff8f2;font-size:12.5px;font-weight:500;line-height:15px;letter-spacing:-.1px}
+.device__tiles span.t-ochre{color:#231b12}
+.device__tiles svg{stroke:currentColor}
+.device__home{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:108px;height:4px;border-radius:999px;background:#231b12;opacity:.85}
+
+/* Cosa trova l'ospite: titolo a sinistra, gli otto elementi a destra. */
+.prodotto{margin-top:96px;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:48px;align-items:start}
+.prodotto__testa{display:flex;flex-direction:column;gap:12px;max-width:380px}
+.prodotto__testa p{font-size:17px;line-height:26px}
+
+/* Il tempo: firma editoriale, blocco "chiaro". */
+.tempo__firma{font-size:15px;line-height:23px;color:var(--muted);max-width:560px;padding-top:14px;border-top:1px solid var(--line)}
+.chiaro{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:center;padding:32px 36px;
+  border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line)}
+.chiaro__testa{display:flex;flex-direction:column;gap:12px}
+.chiaro__testa p{font-size:16px;line-height:24px}
+.chiaro__tappe{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0;counter-reset:tappa}
+.chiaro__tappe li{display:flex;flex-direction:column;gap:4px;padding:14px 0 14px 22px;position:relative;font-size:16px;line-height:23px}
+.chiaro__tappe li::before{content:"";position:absolute;left:0;top:21px;width:8px;height:8px;border-radius:999px;background:var(--accent)}
+.chiaro__tappe li::after{content:"";position:absolute;left:3.5px;top:33px;bottom:-9px;width:1px;background:var(--line-strong)}
+.chiaro__tappe li:last-child::after{display:none}
+.tempo__cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+/* QR: spunte leggere al posto delle righe divisorie. */
+.qrband{margin-top:96px;background:var(--sunk);scroll-margin-top:96px}
+.spunte{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.spunte li{display:flex;gap:12px;align-items:flex-start;font-size:17px;line-height:25px}
+.spunte svg{flex:none;margin-top:3px;color:var(--pine)}
+
+/* Piani: nomi forti, elenco allineato con spunte, niente frasi finali. */
+.piani{align-items:stretch}
+.plan__nome{font-family:Gloock,Georgia,serif;font-size:36px;line-height:1;letter-spacing:-.6px}
+.plan__headline{font-size:16px;font-weight:500;line-height:22px;letter-spacing:-.2px;margin-top:-6px}
+.plan--dark .plan__headline{color:var(--inverse-fg)}
+.plan__da{font-size:16px;font-weight:400;letter-spacing:0}
+.plan__lista{padding-top:18px!important;border-top:1px solid var(--line)}
+.plan--dark .plan__lista{border-top-color:rgba(246,240,229,.16)}
+.plan__lista li{display:grid;grid-template-columns:16px minmax(0,1fr);gap:10px;align-items:start}
+.plan__lista svg{margin-top:3px;color:var(--pine)}
+.plan--dark .plan__lista svg{color:#6fc48c}
+
+@media(max-width:980px){
+  .hero2{grid-template-columns:minmax(0,1fr);gap:40px;padding-top:40px}
+  .hero2__testo{align-items:flex-start;padding:0}
+  .hero2 .device{margin-bottom:-200px}
+  .prodotto{grid-template-columns:minmax(0,1fr);gap:24px}
+  .chiaro{grid-template-columns:minmax(0,1fr);gap:20px;padding:24px 22px}
+}
+@media(max-width:560px){
+  .hero2 .device{width:250px;border-radius:46px;margin-bottom:-170px}
+  .device__screen{border-radius:38px}
+  .device__title{font-size:23px}
+  .device__shot{height:122px}
+  .device__tiles span{height:70px}
+  .stage{height:300px;border-radius:var(--r-xl)}
+  .stage .shot-pill{left:14px;bottom:14px;height:40px;padding:0 16px;font-size:14px}
+  .plan__nome{font-size:32px}
+}

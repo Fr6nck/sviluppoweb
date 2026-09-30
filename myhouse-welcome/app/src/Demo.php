@@ -95,7 +95,7 @@ final class Demo
             'lingue' => ['it', 'en', 'de'], 'palette' => 'terracotta',
         ]);
         Db::update('properties', [
-            'cover_media_id' => self::foto('casa.jpg', $acc, $pid, 'La casa in pietra vista dal vialetto'),
+            'cover_media_id' => self::foto('casa.jpg', $acc, $pid, 'La facciata in pietra con la scalinata e i gerani'),
         ], 'id = :pid', ['pid' => $pid]);
 
         $core = self::nucleo($pid);

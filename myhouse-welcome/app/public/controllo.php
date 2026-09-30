@@ -81,7 +81,7 @@ riga('Cartella dell\'applicazione trovata', $trovata,
 
 $attesi = [
     'config.php', 'lang/de.php', 'lang/en.php', 'lang/es.php', 'lang/fr.php', 'lang/it.php',
-    'migrations/001_schema.sql', 'migrations/002_mvp.sql', 'migrations/003_listino_e_sezioni.php',
+    'migrations/001_schema.sql', 'migrations/002_mvp.sql', 'migrations/003_listino_e_sezioni.php', 'migrations/004_testi_listino.php',
     'src/Auth.php', 'src/Billing.php', 'src/Config.php', 'src/Csrf.php', 'src/Db.php', 'src/Demo.php',
     'src/Entitlements.php', 'src/Guide.php', 'src/I18n.php', 'src/Icon.php', 'src/Installer.php',
     'src/LimitReached.php', 'src/LocalStorage.php', 'src/Log.php', 'src/Mailer.php', 'src/Media.php',
