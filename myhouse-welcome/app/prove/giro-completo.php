@@ -190,15 +190,32 @@ prova('CTA principale', str_contains($r['body'], 'Crea gratis la tua guida'));
 prova('Demo dichiarata come demo', str_contains($r['body'], 'Guarda la demo') && str_contains($r['body'], 'demo-tag'));
 prova('Microcopy', str_contains($r['body'], 'Paghi solo quando pubblichi'));
 foreach (['87', '117', '177'] as $p) prova("Prezzo $p € dal listino", str_contains($r['body'], $p . "\u{00A0}€"));
-prova('Portfolio sintetico: il dettaglio 2/3 strutture non sta in homepage', !str_contains($r['body'], "237\u{00A0}€") && str_contains($r['body'], 'Il Plus per più strutture.'));
+$portfolio = preg_match('#<form class="plan__scelta".*?</form>#s', $r['body'], $m) ? $m[0] : '';
+prova('Portfolio: selettore con 2 e 3 strutture presi dal listino', str_contains($portfolio, 'Quante strutture vuoi gestire?') && str_contains($portfolio, 'value="' . pv('portfolio2') . '"')
+      && str_contains($portfolio, 'value="' . pv('portfolio3') . '"') && str_contains($portfolio, "data-prezzo=\"177\u{00A0}€\"") && str_contains($portfolio, "data-prezzo=\"237\u{00A0}€\""));
+prova('…parte da 2 strutture e mostra un solo prezzo', preg_match("#data-prezzo-mostrato>177\u{00A0}€<#u", $portfolio) === 1 && substr_count($portfolio, '+ IVA / anno') === 1);
+prova('…la scelta va alla registrazione', str_contains($portfolio, 'action="') && str_contains($portfolio, '/registrati"') && str_contains($portfolio, 'name="piano"') && str_contains($portfolio, 'Crea gratis con Portfolio'));
+prova('…label esplicita del selettore', preg_match('#<label for="([a-z0-9-]+)"[^>]*>Quante strutture#', $portfolio, $mm) === 1 && str_contains($portfolio, 'id="' . $mm[1] . '"'));
 prova('Pricing: "Pannello di controllo" al posto di "CMS", niente frasi finali', !preg_match('/>\s*CMS\s*</', $r['body']) && str_contains($r['body'], 'Pannello di controllo')
       && !str_contains($r['body'], 'Meno domande ripetitive, più tempo per accogliere') && !str_contains($r['body'], 'concierge digitale'));
-prova('Plus: foto e PDF spiegati, niente "immagine profilo", badge sobrio', str_contains($r['body'], 'Foto esplicative nelle sezioni') && str_contains($r['body'], 'PDF utili allegati alle sezioni')
+prova('Piani: headline e descrizioni nuove', str_contains($r['body'], 'Le informazioni importanti, sempre a disposizione.') && str_contains($r['body'], 'Una guida completa, senza limiti di sezioni.')
+      && str_contains($r['body'], 'Il Plus per più strutture.') && str_contains($r['body'], 'statistiche distinti per ogni struttura'));
+prova('Plus: foto e PDF spiegati, niente "immagine profilo", badge sobrio', str_contains($r['body'], 'Foto esplicative nelle sezioni') && str_contains($r['body'], 'Possibilità di allegare documenti PDF')
       && !str_contains($r['body'], 'Immagine profilo') && str_contains($r['body'], 'Più completo') && !str_contains($r['body'], 'Più scelto'));
+prova('Nota sul rinnovo automatico sotto i piani', str_contains($r['body'], 'Puoi disattivare il rinnovo dal tuo account'));
 prova('Il prodotto si vede subito: telefono nella hero, prima della foto', strpos($r['body'], 'class="device"') !== false && strpos($r['body'], 'class="device"') < strpos($r['body'], 'class="stage"'));
-prova('Nuova foto del borgo', str_contains($r['body'], '/assets/foto/borgo.jpg') && str_contains($r['body'], '/assets/foto/borgo-telefono.jpg'));
-prova('Frase di autorevolezza', str_contains($r['body'], 'nasce da chi conosce da vicino il lavoro di chi ospita'));
-prova('Blocco QR fedele al prodotto (le modifiche si pubblicano)', str_contains($r['body'], 'pubblichi le modifiche') && !str_contains($r['body'], 'class="lined"'));
+prova('Il telefono è un link alla demo, con invito', preg_match('#<a class="device-link" href="([^"]+)"#', $r['body'], $mm) === 1 && str_ends_with($mm[1], '/benvenuto') && str_contains($r['body'], 'Scopri come la vedranno i tuoi ospiti'));
+prova('Demo, telefono e QR portano alla stessa demo', isset($mm[1]) && substr_count($r['body'], 'href="' . $mm[1] . '"') >= 2 && str_contains($r['body'], 'Inquadra e prova la demo.'));
+prova('Nuova foto del borgo, anche in WebP', str_contains($r['body'], '/assets/foto/borgo.jpg') && str_contains($r['body'], 'borgo-1200.webp') && str_contains($r['body'], 'borgo-telefono-600.webp'));
+foreach (['borgo.jpg', 'borgo-1200.webp', 'borgo-2000.webp', 'borgo-telefono.jpg', 'borgo-telefono-600.webp'] as $f) {
+    $x = $ospite->get(preg_replace('#/index\.php$#', '', $BASE) . '/assets/foto/' . $f);
+    prova("Immagine $f raggiungibile", $x['code'] === 200 && strlen($x['body']) > 10000);
+}
+prova('Cosa trova l\'ospite: c\'è la raccolta differenziata', str_contains($r['body'], 'Rifiuti e raccolta differenziata') && !str_contains($r['body'], 'Cosa fare e vedere'));
+prova('Autorevolezza: Blackout Agency, con link', str_contains($r['body'], 'Pensata per chi ospita.') && str_contains($r['body'], 'href="https://blackout.in"'));
+prova('Come funziona: "Inizia in pochi minuti"', str_contains($r['body'], 'Inizia in pochi minuti.') && !str_contains($r['body'], 'Pronta in pochi minuti'));
+prova('Blocco QR fedele al prodotto (le modifiche si pubblicano)', str_contains($r['body'], 'pubblichi la nuova versione senza cambiare il QR') && !str_contains($r['body'], 'class="lined"'));
+prova('Chiusura nuova', str_contains($r['body'], 'La tua struttura ha tanto da raccontare.') && !str_contains($r['body'], 'stagione tranquilla') && !str_contains($r['body'], 'stagione più tranquilla'));
 prova('Prezzi + IVA', str_contains($r['body'], '+ IVA / anno'));
 prova('Niente testi vecchi', !str_contains($r['body'], 'Guardane una vera') && !str_contains($r['body'], 'sei domande') && !preg_match('/\bavete\b|\bvostr[aoie]\b/i', $r['body']));
 prova('Niente piano Pro in vendita', !preg_match('/>\s*Pro\s*</', $r['body']));
@@ -207,9 +224,12 @@ prova('I link dei piani portano alla registrazione col piano', str_contains($r['
 $tempo = preg_match('#<section id="il-tempo".*?</section>#s', $r['body'], $m) ? $m[0] : '';
 prova('Sezione "Il tempo che non vedi" presente', $tempo !== '' && str_contains($tempo, 'Ogni ospite è nuovo.'));
 prova('…dopo il prodotto e prima di "Come funziona"', strpos($r['body'], 'class="prodotto"') < strpos($r['body'], 'id="il-tempo"') && strpos($r['body'], 'id="il-tempo"') < strpos($r['body'], 'id="come-funziona"'));
-prova('…con le tre domande, la svolta e il valore del canone', substr_count($tempo, 'class="msg"') === 3 && str_contains($tempo, 'Le risposte le prepari una volta.') && str_contains($tempo, "La guida si paga una volta l'anno.") && str_contains($tempo, 'Meno dubbi all'));
+prova('…con le tre domande, la soluzione, due vantaggi e il valore annuale', substr_count($tempo, 'class="msg"') === 3 && str_contains($tempo, 'Le risposte sono già nella tua guida.')
+      && substr_count($tempo, 'class="vantaggio"') === 2 && str_contains($tempo, 'Meno dubbi all') && str_contains($tempo, 'Un piccolo investimento annuale'));
+prova('…il prezzo di partenza viene dal listino', str_contains($tempo, "Da 87\u{00A0}€ + IVA all'anno."));
+prova('…niente tono difensivo', !str_contains($r['body'], 'Non paghi una pagina con un QR'));
 prova('…senza numeri di risparmio inventati', !preg_match('/\d+\s*(%|ore|messaggi in meno)|mai più|elimin/i', strip_tags($tempo)));
-prova('…CTA verso la registrazione e verso la demo', str_contains($tempo, '/registrati"') && str_contains($tempo, 'Guarda la demo') && str_contains($tempo, '/benvenuto'));
+prova('CTA della hero verso la registrazione e verso la demo', preg_match('#<section class="hero2">.*?</section>#s', $r['body'], $mh) && str_contains($mh[0], '/registrati"') && str_contains($mh[0], 'Guarda la demo'));
 foreach (['/termini', '/privacy'] as $p) { $r = $ospite->get($p); prova("$p si apre", $r['code'] === 200 && pulita($r)); }
 
 // ================================================================= REGISTRAZIONE
@@ -230,7 +250,8 @@ prova('Email non ancora verificata', $u && $u['email_verified_at'] === null);
 prova('Password salvata con hash', $u && str_starts_with($u['password_hash'], '$2y$') || str_starts_with((string) $u['password_hash'], '$argon'));
 prova('Email di verifica spedita', linkPosta('anna@prova.test', 'verifica') !== '');
 $r = $anna->get('/');
-prova('Utente dentro: la CTA della sezione porta al pannello, non alla registrazione', preg_match('#<section id="il-tempo".*?</section>#s', $r['body'], $m) && str_contains($m[0], '/pannello"') && !str_contains($m[0], '/registrati'));
+prova('Utente dentro: le CTA portano al pannello e alla scelta del piano, non alla registrazione', preg_match('#<section class="hero2">.*?</section>#s', $r['body'], $m) && str_contains($m[0], '/pannello"')
+      && !str_contains($r['body'], '/registrati') && str_contains($r['body'], 'action="' . preg_replace('#^https?://[^/]+#', '', $BASE) . '/piano"'));
 $r = $anna->get('/registrati?piano=' . pv('plus'));
 prova('Chi è già dentro e clicca un piano non si registra di nuovo', $r['code'] === 302 && str_contains($r['loc'], '/piano?piano=' . pv('plus')));
 $r = $anna->get('/piano?piano=' . pv('essential'));
@@ -647,7 +668,16 @@ $admin->post("/admin/pacchetti/$essential/nuova-versione", ['nome' => 'Essential
     'headline' => 'Tutto quello che serve', 'tagline' => '', 'description' => 'x', 'bullets' => "Una struttura\nCheck-in & Check-out", 'badge' => '', 'cta_label' => 'Crea gratis', 'public' => '1', 'active' => '1']);
 prova('Nuovo prezzo = nuova versione', pv('essential') !== $vecchia && (int) val('SELECT price_cents FROM package_versions WHERE id = ?', [pv('essential')]) === 9700);
 prova('La versione venduta resta com\'era', (int) val('SELECT price_cents FROM package_versions WHERE id = ?', [$vecchia]) === 8700);
-prova('La landing mostra il prezzo nuovo', str_contains($ospite->get('/')['body'], "97\u{00A0}€"));
+$home = $ospite->get('/')['body'];
+prova('La landing mostra il prezzo nuovo', str_contains($home, "97\u{00A0}€") && str_contains($home, "Da 97\u{00A0}€ + IVA all'anno."));
+$p3 = (int) val("SELECT id FROM packages WHERE code = 'portfolio3'");
+$feat3 = []; foreach (righe('SELECT f.code, pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id WHERE pf.package_version_id = ?', [pv('portfolio3')]) as $x) $feat3[$x['code']] = $x['value'];
+$pk3 = riga('SELECT * FROM packages WHERE id = ?', [$p3]);
+$admin->get('/admin/pacchetti');
+$admin->post("/admin/pacchetti/$p3/nuova-versione", ['nome' => $pk3['name'], 'prezzo' => '247', 'stripe_price_id' => '', 'f' => $feat3, 'headline' => $pk3['headline'], 'tagline' => $pk3['tagline'],
+    'description' => $pk3['description'], 'bullets' => $pk3['bullets'], 'badge' => $pk3['badge'], 'cta_label' => $pk3['cta_label'], 'public' => '1', 'active' => '1']);
+$home = $ospite->get('/')['body'];
+prova('Il selettore Portfolio segue il nuovo prezzo dell\'amministrazione', str_contains($home, "data-prezzo=\"247\u{00A0}€\"") && str_contains($home, 'value="' . pv('portfolio3') . '"'));
 $r = $admin->post("/admin/pacchetti/$essential/nuova-versione", ['prezzo' => '97', 'stripe_price_id' => 'prezzo-sbagliato', 'f' => $feat]);
 prova('Price ID Stripe malformato rifiutato', pv('essential') === (int) val('SELECT MAX(id) FROM package_versions WHERE package_id = ?', [$essential]) && !val("SELECT id FROM package_versions WHERE stripe_price_id = 'prezzo-sbagliato'"));
 $uid = (int) val("SELECT id FROM users WHERE email = 'bruno@prova.test'");

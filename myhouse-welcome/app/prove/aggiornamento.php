@@ -73,6 +73,12 @@ foreach ($db->query("SELECT id FROM sections WHERE property_id = (SELECT id FROM
     if ($r['code'] !== 200 || !pulita($r['body']) || str_contains($r['body'], '4729')) prova("Sezione $sid della demo", false, (string) $r['code']);
 }
 prova('Tutte le sezioni della demo si aprono, senza codici', true);
+$demoCover = $db->query("SELECT m.alt FROM properties p JOIN media m ON m.id = p.cover_media_id WHERE p.slug = " . $db->quote($demo))->fetchColumn();
+prova('Copertina della demo allineata alla foto della landing', $demoCover === 'La facciata in pietra con la scalinata e i gerani', (string) $demoCover);
+prova('…le altre strutture tengono la loro copertina', (int) $db->query("SELECT COUNT(*) FROM properties p JOIN media m ON m.id = p.cover_media_id WHERE p.slug <> " . $db->quote($demo) . " AND m.alt = 'La facciata in pietra con la scalinata e i gerani'")->fetchColumn() === 0);
+$snap = $db->query("SELECT snapshot FROM guide_versions g JOIN properties p ON p.id = g.property_id WHERE p.slug = " . $db->quote($demo) . " ORDER BY g.version DESC LIMIT 1")->fetchColumn();
+$cid = $db->query("SELECT cover_media_id FROM properties WHERE slug = " . $db->quote($demo))->fetchColumn();
+prova('…e la guida demo pubblicata la mostra', str_contains((string) $snap, '"cover_id":' . (int) $cid) || str_contains((string) $snap, '"cover_id":"' . (int) $cid . '"'));
 $r = http("$BASE/accedi");
 $r = http("$BASE/accedi", ['_csrf' => tok($r['body']), 'email' => 'lucia@esempio.it', 'password' => 'dimostrazione1']);
 prova('Un cliente di prima entra con la sua password', $r['code'] === 302);

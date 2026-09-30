@@ -701,13 +701,13 @@ input[type=file]::file-selector-button{height:36px;margin-right:12px;padding:0 1
 .tempo__valore .tempo__h3{margin-bottom:4px}
 .tempo__cta{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
 .tempo__cta p{max-width:460px}
-.tempo, .msg, .tempo__valore, .chiaro{background-image:var(--grana);background-repeat:repeat;background-size:128px 128px}
+.tempo, .msg, .tempo__valore, .vantaggio{background-image:var(--grana);background-repeat:repeat;background-size:128px 128px}
 @media(max-width:900px){
   .tempo{padding:36px 22px;gap:36px}
   .tempo__grid{grid-template-columns:minmax(0,1fr);gap:32px}
   .tempo__valore{padding:26px 22px}
 }
-@media(max-width:420px){ .msg:nth-child(2){margin-left:22px} .msg:nth-child(3){margin-left:10px} }
+@media(max-width:420px){ .msg:nth-child(2){margin-left:22px} .msg:nth-child(3){margin-left:10px} .vantaggio b{font-size:21px} .vantaggio{padding:20px} }
 
 /* ======================================================== la landing, v2 */
 .h-sezione{font-size:clamp(30px,4vw,44px);line-height:1.02;text-wrap:balance}
@@ -720,7 +720,7 @@ input[type=file]::file-selector-button{height:36px;margin-right:12px;padding:0 1
 .hero2__testo{display:flex;flex-direction:column;gap:24px;padding:36px 0 64px}
 .hero2__sub{font-size:clamp(17px,1.8vw,20px);line-height:1.5;color:var(--muted);max-width:520px}
 .hero2 .display{text-wrap:balance}
-.hero2 .device{justify-self:center;margin-bottom:-260px}
+.hero2 .device-link{justify-self:center;margin-bottom:-260px}
 .stage{position:relative;height:clamp(300px,40vw,500px);border-radius:var(--r-2xl);overflow:hidden;background:var(--sunk)}
 .stage img{width:100%;height:100%;object-fit:cover;object-position:50% 45%}
 .stage .shot-pill{left:24px;bottom:24px;height:46px;padding:0 22px;font-size:15px}
@@ -767,23 +767,55 @@ input[type=file]::file-selector-button{height:36px;margin-right:12px;padding:0 1
 .prodotto__testa{display:flex;flex-direction:column;gap:12px;max-width:380px}
 .prodotto__testa p{font-size:17px;line-height:26px}
 
-/* Il tempo: firma editoriale, blocco "chiaro". */
-.tempo__firma{font-size:15px;line-height:23px;color:var(--muted);max-width:560px;padding-top:14px;border-top:1px solid var(--line)}
-.chiaro{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:center;padding:32px 36px;
-  border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line)}
-.chiaro__testa{display:flex;flex-direction:column;gap:12px}
-.chiaro__testa p{font-size:16px;line-height:24px}
-.chiaro__tappe{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0;counter-reset:tappa}
-.chiaro__tappe li{display:flex;flex-direction:column;gap:4px;padding:14px 0 14px 22px;position:relative;font-size:16px;line-height:23px}
-.chiaro__tappe li::before{content:"";position:absolute;left:0;top:21px;width:8px;height:8px;border-radius:999px;background:var(--accent)}
-.chiaro__tappe li::after{content:"";position:absolute;left:3.5px;top:33px;bottom:-9px;width:1px;background:var(--line-strong)}
-.chiaro__tappe li:last-child::after{display:none}
-.tempo__cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+/* Il tempo: due vantaggi, la frase sulla chiarezza, il prezzo di partenza. */
+.vantaggi{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.vantaggio{display:flex;flex-direction:column;gap:8px;padding:24px;border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line)}
+.vantaggio__ico{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:999px;
+  background:var(--terracotta-soft);color:var(--accent);margin-bottom:4px}
+.vantaggio b{font-family:Gloock,Georgia,serif;font-weight:400;font-size:24px;line-height:1.1;letter-spacing:-.3px}
+.vantaggio p{font-size:16px;line-height:24px;color:var(--muted)}
+.chiarezza{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:32px;align-items:center;padding:8px 4px}
+.chiarezza__frase{font-family:Gloock,Georgia,serif;font-size:clamp(26px,3.2vw,38px);line-height:1.08;letter-spacing:-.4px;
+  padding-left:20px;border-left:3px solid var(--accent)}
+.chiarezza p.muted{font-size:16px;line-height:24px}
+.tempo__prezzo{font-size:15px;font-weight:500;color:var(--ink)!important;margin-top:4px}
+.tempo__prezzo a{margin-left:8px}
+
+/* Chi c'è dietro: una nota breve, non una sezione istituzionale. */
+.chi{margin-top:56px;display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center;
+  max-width:680px;margin-left:auto;margin-right:auto;padding:0 8px}
+.chi__titolo{font-family:Gloock,Georgia,serif;font-size:clamp(20px,2.2vw,24px);line-height:1.25;letter-spacing:-.2px}
+.chi p.muted{font-size:15px;line-height:23px}
+
+/* Il telefono è un link alla demo. */
+.device-link{display:flex;flex-direction:column;align-items:center;gap:14px;color:inherit;border-radius:56px;text-decoration:none}
+a.device-link:hover{color:inherit}
+a.device-link:focus-visible{outline:none}
+a.device-link:focus-visible .device{outline:3px solid var(--accent);outline-offset:6px}
+.device-link__invito{position:relative;z-index:3;display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 16px;border-radius:999px;
+  background:var(--raised);border:1px solid var(--line);font-size:13.5px;font-weight:500;color:var(--ink);
+  box-shadow:0 8px 20px -12px rgba(35,27,18,.35)}
+.device-link__invito svg{color:var(--accent)}
+a.device-link:hover .device-link__invito{border-color:var(--line-strong)}
+a.device-link .device{transition:transform .35s cubic-bezier(.22,.7,.25,1),box-shadow .35s}
+a.device-link:hover .device{transform:translateY(-4px)}
+@media (prefers-reduced-motion: reduce){ a.device-link .device{transition:none} a.device-link:hover .device{transform:none} }
+
+/* Piani: descrizione, selettore Portfolio, nota sull'abbonamento. */
+.plan__desc{font-size:14.5px;line-height:21px;color:var(--muted);margin-top:-8px}
+.plan--dark .plan__desc{color:var(--inverse-muted)}
+.plan--dark{border:1px solid color-mix(in srgb,var(--accent) 55%,transparent)}
+.plan__scelta{display:flex;flex-direction:column;gap:18px;flex:1 1 auto}
+.plan__scelta .btn{margin-top:auto}
+.plan__label{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:-10px}
+.plan__scelta select{height:48px;font-size:16px;border-radius:14px}
+.piani__nota{margin:22px auto 0;max-width:640px;text-align:center;font-size:14px;line-height:21px;color:var(--muted)}
 
 /* QR: spunte leggere al posto delle righe divisorie. */
 .qrband{margin-top:96px;background:var(--sunk);scroll-margin-top:96px}
 .spunte{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
-.spunte li{display:flex;gap:12px;align-items:flex-start;font-size:17px;line-height:25px}
+.spunte li{display:flex;gap:12px;align-items:flex-start;font-size:16px;line-height:24px;color:var(--muted)}
+.spunte li b{display:block;color:var(--ink);font-size:17px;font-weight:600;letter-spacing:-.2px}
 .spunte svg{flex:none;margin-top:3px;color:var(--pine)}
 
 /* Piani: nomi forti, elenco allineato con spunte, niente frasi finali. */
@@ -801,12 +833,21 @@ input[type=file]::file-selector-button{height:36px;margin-right:12px;padding:0 1
 @media(max-width:980px){
   .hero2{grid-template-columns:minmax(0,1fr);gap:40px;padding-top:40px}
   .hero2__testo{align-items:flex-start;padding:0}
-  .hero2 .device{margin-bottom:-200px}
+  .hero2 .device-link{margin-bottom:-200px}
   .prodotto{grid-template-columns:minmax(0,1fr);gap:24px}
-  .chiaro{grid-template-columns:minmax(0,1fr);gap:20px;padding:24px 22px}
-}
+  .vantaggi,.chiarezza{grid-template-columns:minmax(0,1fr)}
+  .chiarezza{gap:14px}
+  }
 @media(max-width:560px){
-  .hero2 .device{width:250px;border-radius:46px;margin-bottom:-170px}
+  .hero2 .device-link{margin-bottom:-170px}
+  .hero2{padding-top:20px;gap:28px}
+  .hero2__testo{gap:16px}
+  .hero2 .display{font-size:clamp(34px,10.5vw,44px)}
+  .hero2__sub{font-size:16px;line-height:1.5}
+  .hero2 .row{gap:10px}
+  .hero2 .row .btn--lg{height:52px;font-size:16px}
+  .micro--left{font-size:13px;column-gap:12px}
+  .hero2 .device{width:250px;border-radius:46px}
   .device__screen{border-radius:38px}
   .device__title{font-size:23px}
   .device__shot{height:122px}
