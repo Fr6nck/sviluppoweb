@@ -11,8 +11,10 @@ $prec = $i > 0 ? $chiavi[$i - 1] : null;
 $succ = $chiavi[$i + 1] ?? null;
 $title = $passi[$passo] . ' — ' . $prop['name'];
 $vai = fn(string $p) => b() . '/pannello/' . $pid . '/procedura/' . $p;
-$indietro = $prec ? '<a class="btn btn--quiet" href="' . $vai($prec) . '">' . Icon::svg('back', 16) . 'Indietro</a>' : '';
-$dopo = '<a class="btn btn--quiet" href="' . b() . '/pannello/' . $pid . '">Continua dopo</a>'; ?>
+$barraIndietro = $prec ? $vai($prec) : '';
+$avanti = fn(string $testo, string $verso = '') => $verso !== ''
+    ? '<a class="btn btn--go" href="' . $verso . '">' . $testo . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></a>'
+    : ''; ?>
 
 <nav class="steps-nav" aria-label="Passi della configurazione" style="margin-bottom:28px">
   <?php foreach ($passi as $k => $nome): $j = array_search($k, $chiavi, true); ?>
@@ -41,10 +43,8 @@ case 'checkin': $dati = json_decode((string) $core['data'], true) ?: []; ?>
     </div>
     <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/sezioni/<?= (int) $core['id'] ?>" class="stack" data-autosave><?= Csrf::field() ?>
       <?php $kind = 'checkin'; $uid = 'core'; include __DIR__ . '/_campi.php'; ?>
-      <div class="actions">
-        <button class="btn btn--go" name="dopo" value="sezioni">Salva e continua <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></button>
-        <?= $indietro ?><span class="small muted" data-stato-salvataggio aria-live="polite"></span>
-      </div>
+      <?php $barraAvanti = '<button class="btn btn--go" name="dopo" value="sezioni">Salva e continua <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
+            include __DIR__ . '/_barra_passo.php'; ?>
     </form>
 <?php break;
 
@@ -53,7 +53,7 @@ case 'sezioni': ?>
       <p class="lead">Aggiungi solo quello che serve davvero ai tuoi ospiti. Potrai cambiare idea quando vuoi: una sezione disattivata tiene i suoi contenuti.</p>
     </div>
     <?php $torna = 'procedura'; include __DIR__ . '/_sezioni.php'; ?>
-    <div class="actions"><a class="btn btn--go" href="<?= $vai('contenuti') ?>">Continua <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></a><?= $indietro ?></div>
+    <?php $barraAvanti = $avanti('Salva e continua', $vai('contenuti')); include __DIR__ . '/_barra_passo.php'; ?>
 <?php break;
 
 case 'contenuti': $attiveSez = array_filter($sezioni, fn($s) => (int) $s['is_active'] === 1); ?>
@@ -71,7 +71,7 @@ case 'contenuti': $attiveSez = array_filter($sezioni, fn($s) => (int) $s['is_act
         </a>
       <?php endforeach; ?>
     </div>
-    <div class="actions"><a class="btn btn--go" href="<?= $vai('lingue') ?>">Continua <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></a><?= $indietro ?></div>
+    <?php $barraAvanti = $avanti('Salva e continua', $vai('lingue')); include __DIR__ . '/_barra_passo.php'; ?>
 <?php break;
 
 case 'lingue': ?>
@@ -79,7 +79,6 @@ case 'lingue': ?>
       <p class="lead">In quali lingue vuoi pubblicare la guida? Le traduzioni le scrivi tu, da Lingue, quando vuoi.</p>
     </div>
     <?php $dopoPasso = 'aspetto'; include __DIR__ . '/_lingue_form.php'; ?>
-    <div class="actions"><?= $indietro ?></div>
 <?php break;
 
 case 'aspetto': ?>
@@ -87,7 +86,6 @@ case 'aspetto': ?>
       <p class="lead">Scegli i colori e carica la copertina. L'anteprima accanto cambia mentre scegli.</p>
     </div>
     <?php $dopoPasso = 'anteprima'; include __DIR__ . '/_aspetto_form.php'; ?>
-    <div class="actions"><?= $indietro ?></div>
 <?php break;
 
 case 'anteprima': ?>
@@ -122,16 +120,15 @@ case 'anteprima': ?>
         <p>Scegli il piano con cui pubblicare. <a href="<?= b() ?>/piano">Vedi i piani</a></p>
       <?php endif; ?>
 
-      <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/pubblica" class="actions" style="margin:0"><?= Csrf::field() ?>
-        <button class="btn btn--go" <?= $problemi || (!$sub && (!$verificato || !$piano)) ? 'disabled' : '' ?>>
-          <?= $sub ? 'Pubblica ora' : 'Attiva e pubblica' ?> <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></button>
-        <?= $indietro ?><?= $dopo ?>
-      </form>
     </div>
+    <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/pubblica" style="margin:0"><?= Csrf::field() ?>
+      <?php $barraAvanti = '<button class="btn btn--go" ' . ($problemi || (!$sub && (!$verificato || !$piano)) ? 'disabled' : '') . '>'
+                         . ($sub ? 'Pubblica ora' : 'Attiva e pubblica') . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
+            include __DIR__ . '/_barra_passo.php'; ?>
+    </form>
 <?php break;
 endswitch; ?>
 
-    <?php if (!in_array($passo, ['anteprima'], true)): ?><p class="small"><?= $dopo ?></p><?php endif; ?>
   </div>
   <?php include __DIR__ . '/_telefono.php'; ?>
 </div>

@@ -29,8 +29,10 @@ $partenza = null;
 foreach ($offers as $of) foreach ($of['options'] as $o) {
     if ($partenza === null || (int) $o['price_cents'] < (int) $partenza['price_cents']) $partenza = $o;
 }
-$elementi = [['home', 'Check-in & Check-out'], ['wifi', 'Wi-Fi'], ['pin', 'Come arrivare'], ['car', 'Parcheggio'],
-             ['washer', 'Servizi'], ['doc', 'Regole della casa'], ['fork', 'Dove mangiare'], ['bin', 'Rifiuti e raccolta differenziata']]; ?>
+// Le icone vengono dal catalogo delle sezioni: le stesse del pannello e della guida.
+$elementi = array_map(fn($x) => [MHW\SectionCatalog::icon($x[0]), $x[1]],
+    [['checkin', 'Check-in & Check-out'], ['wifi', 'Wi-Fi'], ['arrival', 'Come arrivare'], ['parking', 'Parcheggio'],
+     ['services', 'Servizi'], ['rules', 'Regole della casa'], ['eat', 'Dove mangiare'], ['waste', 'Rifiuti e raccolta differenziata']]); ?>
 
 <section class="hero2">
   <div class="hero2__testo">
@@ -54,7 +56,7 @@ $elementi = [['home', 'Check-in & Check-out'], ['wifi', 'Wi-Fi'], ['pin', 'Come 
         <span class="device__status"><span>9:41</span><span class="device__island"></span>
           <span class="device__icons"><i class="sig"></i><i class="bat"></i></span></span>
         <span class="device__app">
-          <span class="device__top"><span class="device__avatar">CL</span><span><?= Support::e($nomeDemo) ?></span>
+          <span class="device__top"><?= Icon::brand(24) ?><span><?= Support::e($nomeDemo) ?></span>
             <?php if ($demo): ?><span class="demo-tag">Demo</span><?php endif; ?></span>
           <span class="device__title">Benvenuti<br>a <?= Support::e($nomeDemo) ?>.</span>
           <span class="device__shot"><picture><source srcset="<?= Support::e($telefonoWebp) ?>" type="image/webp">
@@ -64,7 +66,7 @@ $elementi = [['home', 'Check-in & Check-out'], ['wifi', 'Wi-Fi'], ['pin', 'Come 
             <span class="t-terracotta"><?= Icon::svg('home', 16, 1.8) ?>Check-in &amp; Check-out</span>
             <span class="t-sea"><?= Icon::svg('wifi', 16, 1.8) ?>Wi-Fi</span>
             <span class="t-pine"><?= Icon::svg('fork', 16, 1.8) ?>Dove mangiare</span>
-            <span class="t-ochre"><?= Icon::svg('car', 16, 1.8) ?>Parcheggio</span>
+            <span class="t-ochre"><?= Icon::svg(MHW\SectionCatalog::icon('parking'), 16, 1.8) ?>Parcheggio</span>
           </span>
         </span>
         <span class="device__home"></span>

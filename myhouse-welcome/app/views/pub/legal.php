@@ -5,14 +5,19 @@
    e ogni accettazione resterà legata alla versione letta. */
 use MHW\{Support, Config};
 $l = Config::get('legal');
+// I dati dell'attività vengono dalla configurazione: niente segnaposto da riempire a mano.
+$chi = implode(' · ', array_filter([
+    $l['company'], ($l['company_vat'] ?? '') !== '' ? 'P.IVA ' . $l['company_vat'] : '', $l['company_city'] ?? '',
+]));
+$contatti = implode(' · ', array_filter([$l['contact_email'], ($l['contact_phone'] ?? '') !== '' ? 'Tel. ' . $l['contact_phone'] : '']));
 $larghezza = '760px';
 $title = $doc === 'termini' ? 'Termini e condizioni' : 'Informativa sulla privacy'; ?>
 <p class="note" role="note"><span><strong>Testo di partenza.</strong> Prima di aprire le vendite questo documento va rivisto
-  da un legale e completato con i dati dell'attività (ragione sociale, sede, partita IVA).</span></p>
+  da un legale.</span></p>
 
 <?php if ($doc === 'termini'): ?>
 <h1 style="margin-top:24px">Termini e condizioni</h1>
-<p class="small muted" style="margin-top:8px">Versione <?= Support::e($l['terms_version']) ?> · Fornitore: <?= Support::e($l['company']) ?> · <?= Support::e($l['contact_email']) ?></p>
+<p class="small muted" style="margin-top:8px">Versione <?= Support::e($l['terms_version']) ?> · Fornitore: <?= Support::e($chi) ?> · <?= Support::e($contatti) ?></p>
 <div class="stack" style="margin-top:24px;line-height:1.6">
   <h2 style="font-size:22px">1. Il servizio</h2>
   <p>MyHouse Welcome permette a chi gestisce una struttura ricettiva di creare una guida digitale per i propri ospiti,
@@ -44,10 +49,10 @@ $title = $doc === 'termini' ? 'Termini e condizioni' : 'Informativa sulla privac
 </div>
 <?php else: ?>
 <h1 style="margin-top:24px">Informativa sulla privacy</h1>
-<p class="small muted" style="margin-top:8px">Versione <?= Support::e($l['privacy_version']) ?> · Titolare: <?= Support::e($l['company']) ?> · <?= Support::e($l['contact_email']) ?></p>
+<p class="small muted" style="margin-top:8px">Versione <?= Support::e($l['privacy_version']) ?> · Titolare: <?= Support::e($chi) ?> · <?= Support::e($contatti) ?></p>
 <div class="stack" style="margin-top:24px;line-height:1.6">
   <h2 style="font-size:22px">Chi tratta i dati</h2>
-  <p>Il titolare del trattamento è <?= Support::e($l['company']) ?> [completare con ragione sociale, sede e contatti].</p>
+  <p>Il titolare del trattamento è <?= Support::e($chi) ?>. Contatti: <?= Support::e($contatti) ?>.</p>
   <h2 style="font-size:22px">Dati degli host</h2>
   <p>Nome, email, password (conservata solo in forma cifrata con hash), dati di fatturazione raccolti da Stripe al
     momento del pagamento, contenuti della guida, data e versione dei documenti accettati. Servono a fornire il

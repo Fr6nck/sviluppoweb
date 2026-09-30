@@ -70,7 +70,11 @@
      Solo i moduli con data-autosave. Si manda il modulo com'è, senza i file:
      quelli partono solo col bottone. */
   var stato = document.querySelector('[data-stato-salvataggio]');
-  function mostra(t) { if (stato) stato.textContent = t; }
+  function mostra(t, ok) {
+    if (!stato) return;
+    stato.textContent = t;
+    stato.classList.toggle('stato--ok', !!ok);
+  }
   function salva(form) {
     var dati = new FormData(form);
     var chiavi = [];
@@ -82,7 +86,7 @@
       method: 'POST', body: dati, credentials: 'same-origin', headers: { 'Accept': 'application/json' }
     }).then(function (r) { return r.json().then(function (j) { return [r.ok, j]; }); })
       .then(function (x) {
-        if (x[0] && x[1].ok) { mostra('Salvato'); aggiornaAnteprima(); }
+        if (x[0] && x[1].ok) { mostra('Salvato', true); aggiornaAnteprima(); }
         else mostra(x[1].errore || 'Non salvato: controlla i campi.');
       })
       .catch(function () { mostra('Non salvato: sei offline? Usa il bottone Salva.'); });
@@ -91,12 +95,139 @@
   for (var i = 0; i < forms.length; i++) (function (form) {
     var timer = null;
     form.addEventListener('input', function (e) {
-      if (e.target && e.target.type === 'file') return;
+      if (e.target && (e.target.type === 'file' || e.target.closest('[data-no-autosave]'))) return;
       mostra('Modifiche non salvate');
       clearTimeout(timer);
       timer = setTimeout(function () { salva(form); }, 1200);
     });
   })(forms[i]);
+
+  /* ---- Caricamento dei file: trascina, anteprima, annulla ----------------
+     L'input vero resta dentro la zona; qui si mostra cosa si è scelto e si
+     accetta anche il file trascinato sopra. */
+  function peso(b) {
+    if (b < 1024 * 1024) return Math.max(1, Math.round(b / 1024)) + ' KB';
+    return (b / 1024 / 1024).toFixed(1).replace('.', ',') + ' MB';
+  }
+  var zone = document.querySelectorAll('[data-drop]');
+  for (var z = 0; z < zone.length; z++) (function (zona) {
+    var input = zona.querySelector('.drop__input');
+    var mini = zona.querySelector('[data-drop-mini]');
+    var nome = zona.querySelector('[data-drop-nome]');
+    var pesoEl = zona.querySelector('[data-drop-peso]');
+    var prima = { pieno: zona.classList.contains('drop--pieno'), mini: mini.innerHTML, nome: nome.textContent, peso: pesoEl.textContent };
+    var url = null;
+    function ripristina() {
+      if (url) { URL.revokeObjectURL(url); url = null; }
+      zona.classList.remove('drop--nuovo');
+      zona.classList.toggle('drop--pieno', prima.pieno);
+      mini.innerHTML = prima.mini; nome.textContent = prima.nome; pesoEl.textContent = prima.peso;
+    }
+    function mostra() {
+      var f = input.files && input.files[0];
+      if (!f) { ripristina(); return; }
+      if (url) URL.revokeObjectURL(url);
+      zona.classList.add('drop--pieno', 'drop--nuovo');
+      nome.textContent = f.name;
+      pesoEl.textContent = peso(f.size) + ' · si salva con il bottone';
+      if (/^image\//.test(f.type)) {
+        url = URL.createObjectURL(f);
+        mini.innerHTML = '';
+        var img = document.createElement('img'); img.alt = ''; img.src = url; mini.appendChild(img);
+      } else { url = null; mini.innerHTML = prima.mini.indexOf('<img') === -1 ? prima.mini : ''; }
+    }
+    input.addEventListener('change', mostra);
+    zona.addEventListener('click', function (e) {
+      if (e.target.closest('[data-drop-annulla]')) { e.preventDefault(); input.value = ''; ripristina(); input.focus(); }
+    });
+    ['dragenter', 'dragover'].forEach(function (t) {
+      zona.addEventListener(t, function (e) { e.preventDefault(); zona.classList.add('drop--sopra'); });
+    });
+    ['dragleave', 'dragend'].forEach(function (t) {
+      zona.addEventListener(t, function (e) { if (!zona.contains(e.relatedTarget)) zona.classList.remove('drop--sopra'); });
+    });
+    zona.addEventListener('drop', function (e) {
+      e.preventDefault();
+      zona.classList.remove('drop--sopra');
+      var dt = e.dataTransfer;
+      if (!dt || !dt.files || !dt.files.length) return;
+      var accetta = (input.getAttribute('accept') || '').split(',');
+      var f = dt.files[0];
+      if (accetta[0] && accetta.indexOf(f.type) === -1) {
+        pesoEl.textContent = 'Questo tipo di file non va bene qui.';
+        zona.classList.add('drop--pieno', 'drop--nuovo'); nome.textContent = f.name; input.value = '';
+        return;
+      }
+      try {
+        var tieni = new DataTransfer(); tieni.items.add(f); input.files = tieni.files;
+      } catch (err) { input.files = dt.files; }
+      mostra();
+    });
+  })(zone[z]);
+
+  /* ---- Menu ⋯ delle righe: uno aperto per volta, Esc e clic fuori chiudono -- */
+  document.addEventListener('click', function (e) {
+    var aperti = document.querySelectorAll('details.menu-riga[open]');
+    for (var i = 0; i < aperti.length; i++) if (!aperti[i].contains(e.target)) aperti[i].open = false;
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    var d = document.querySelector('details.menu-riga[open]');
+    if (d) { d.open = false; d.querySelector('summary').focus(); }
+  });
+
+  /* ---- Trascina per ordinare ----------------------------------------------
+     Si sposta la riga nella lista e poi si chiedono al server tanti «su» o
+     «giù» quanti servono: le stesse rotte del menu, nessuna rotta nuova.
+     Da tastiera e sul telefono restano «Sposta su / giù» nel menu ⋯. */
+  var liste = document.querySelectorAll('[data-ordina]');
+  for (var l = 0; l < liste.length; l++) (function (lista) {
+    var trascinata = null, da = -1;
+    var righe = function () { return Array.prototype.slice.call(lista.querySelectorAll('[data-riga]')); };
+    righe().forEach(function (r) {
+      var maniglia = r.querySelector('.riga__maniglia');
+      if (!maniglia) return;
+      maniglia.addEventListener('mousedown', function () { r.draggable = true; });
+      r.addEventListener('dragstart', function (e) {
+        trascinata = r; da = righe().indexOf(r);
+        r.classList.add('riga--trascina');
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('text/plain', ''); } catch (err) {}
+      });
+      r.addEventListener('dragend', function () {
+        r.draggable = false; r.classList.remove('riga--trascina');
+        righe().forEach(function (x) { x.classList.remove('riga--sopra'); });
+      });
+      r.addEventListener('dragover', function (e) {
+        if (!trascinata || trascinata === r) return;
+        e.preventDefault();
+        righe().forEach(function (x) { x.classList.toggle('riga--sopra', x === r); });
+      });
+      r.addEventListener('drop', function (e) {
+        if (!trascinata || trascinata === r) return;
+        e.preventDefault();
+        var tutte = righe(), a = tutte.indexOf(r);
+        lista.insertBefore(trascinata, a > da ? r.nextSibling : r);
+        var passi = a - da, riga = trascinata;
+        trascinata = null;
+        if (!passi) return;
+        var token = riga.querySelector('input[name="_csrf"]');
+        var corpo = function () {
+          var f = new FormData();
+          f.append('_csrf', token ? token.value : '');
+          f.append('fai', passi < 0 ? 'su' : 'giu');
+          f.append('torna', riga.getAttribute('data-torna') || '');
+          return f;
+        };
+        var n = Math.abs(passi), catena = Promise.resolve();
+        lista.setAttribute('aria-busy', 'true');
+        for (var k = 0; k < n; k++) catena = catena.then(function () {
+          return fetch(riga.getAttribute('data-azione'), { method: 'POST', body: corpo(), credentials: 'same-origin' });
+        });
+        catena.then(function () { location.reload(); }, function () { location.reload(); });
+      });
+    });
+  })(liste[l]);
 
   /* ---- Palette: prova dal vivo nell'anteprima ---------------------------- */
   var scelta = document.querySelector('[data-palette-scelta]');

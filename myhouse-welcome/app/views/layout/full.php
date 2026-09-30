@@ -9,6 +9,7 @@ use function MHW\a; use MHW\{Support, I18n}; ?>
 <title><?= Support::e($title ?? 'MyHouse Welcome') ?></title>
 <meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="theme-color" content="#17130d">
+<?php include __DIR__ . '/_icone.php'; ?>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gloock&family=Onest:wght@300..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= a() ?>/assets/app.css">

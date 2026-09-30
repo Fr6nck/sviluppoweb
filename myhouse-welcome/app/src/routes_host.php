@@ -264,15 +264,19 @@ $r->post('/pannello/{id}/sezioni/{sid}/luogo/{plid}/azione', function (array $a)
 });
 
 // ------------------------------------------------------------------- lingue
-$r->any('/pannello/{id}/lingue', function (array $a) use ($mia, $contesto, $messaggio, $dopo) {
+$r->any('/pannello/{id}/lingue', function (array $a) use ($mia, $contesto, $messaggio, $dopo, $vuoleJson) {
     [, $acc, $p] = $mia((int) $a['id']);
     $err = null;
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             Properties::setLocales((int) $acc['id'], (int) $p['id'], (array) ($_POST['locali'] ?? []));
+            if ($vuoleJson()) Support::json(['ok' => true]);
             Support::flash('Lingue aggiornate.');
             Support::redirect($dopo($p, '/pannello/' . $p['id'] . '/lingue'));
-        } catch (\Throwable $e) { $err = $messaggio($e, 'lingue'); }
+        } catch (\Throwable $e) {
+            $err = $messaggio($e, 'lingue');
+            if ($vuoleJson()) Support::json(['ok' => false, 'errore' => $err], 422);
+        }
     }
     $attive = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
     // Quanto è tradotto: sezioni attive con un titolo o un campo nella lingua.
@@ -385,7 +389,7 @@ $r->any('/pannello/{id}/aspetto', function (array $a) use ($mia, $contesto, $mes
 });
 
 // -------------------------------------------------------------- impostazioni
-$r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto, $messaggio, $dopo) {
+$r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto, $messaggio, $dopo, $vuoleJson) {
     [, $acc, $p] = $mia((int) $a['id']);
     $err = null;
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -403,9 +407,13 @@ $r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto,
             ];
             if ($dati['name'] === '') throw new RuntimeException('Il nome non può restare vuoto.');
             Db::update('properties', $dati, 'id = :pid', ['pid' => $p['id']]);
+            if ($vuoleJson()) Support::json(['ok' => true]);
             Support::flash('Impostazioni salvate.');
             Support::redirect($dopo($p, '/pannello/' . $p['id'] . '/impostazioni'));
-        } catch (\Throwable $e) { $err = $messaggio($e, 'impostazioni'); }
+        } catch (\Throwable $e) {
+            $err = $messaggio($e, 'impostazioni');
+            if ($vuoleJson()) Support::json(['ok' => false, 'errore' => $err], 422);
+        }
     }
     View::out('host/settings', $contesto($acc, $p) + ['err' => $err, 'qui' => 'impostazioni'], 'layout/cms');
 });

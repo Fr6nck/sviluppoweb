@@ -233,6 +233,25 @@ prova('…il prezzo di partenza viene dal listino', str_contains($tempo, "Da 87\
 prova('…niente tono difensivo', !str_contains($r['body'], 'Non paghi una pagina con un QR'));
 prova('…senza numeri di risparmio inventati', !preg_match('/\d+\s*(%|ore|messaggi in meno)|mai più|elimin/i', strip_tags($tempo)));
 prova('CTA della hero verso la registrazione e verso la demo', preg_match('#<section class="hero2">.*?</section>#s', $r['body'], $mh) && str_contains($mh[0], '/registrati"') && str_contains($mh[0], 'Guarda la demo'));
+prova('Fase 1 · piè di pagina con P.IVA, telefono e WhatsApp', str_contains($r['body'], 'P.IVA 02945910541') && str_contains($r['body'], 'href="tel:+393920061600"')
+      && str_contains($r['body'], 'href="https://wa.me/393920061600"') && str_contains($r['body'], 'un progetto Blackout'));
+prova('Fase 1 · favicon, icona Home e anteprima di condivisione', str_contains($r['body'], '/assets/favicon.svg') && str_contains($r['body'], '/assets/apple-touch-icon.png')
+      && preg_match('#<meta property="og:image" content="https?://[^"]+/assets/og\.jpg">#', $r['body']) === 1);
+foreach (['favicon.svg', 'apple-touch-icon.png', 'og.jpg'] as $f) prova("Fase 1 · $f presente", is_file("$DOVE/assets/$f") && filesize("$DOVE/assets/$f") > 300);
+prova('Fase 1 · header del telefono: CTA e menu con tutte le voci', preg_match('#<div class="topbar__telefono">.*?</div>\s*</div></header>#s', $r['body'], $mt) === 1
+      && str_contains($mt[0], 'Crea gratis') && str_contains($mt[0], 'Come funziona') && str_contains($mt[0], 'Piani') && str_contains($mt[0], 'Il QR') && str_contains($mt[0], 'Accedi'));
+prova('Fase 1 · simbolo del marchio nell\'header', str_contains($r['body'], 'class="brand"') && str_contains($r['body'], 'class="simbolo"'));
+$icone = [];
+foreach (['arrival', 'transport', 'parking', 'waste', 'visit', 'todo', 'rules', 'services'] as $k) {
+    $icone[$k] = (string) shell_exec('php -r ' . escapeshellarg('require "' . $DOVE . '/app/src/SectionCatalog.php"; echo MHW\SectionCatalog::icon("' . $k . '");'));
+}
+prova('Fase 1 · un\'icona diversa per ogni sezione', $icone === ['arrival' => 'pin', 'transport' => 'bus', 'parking' => 'car', 'waste' => 'bin',
+      'visit' => 'monument', 'todo' => 'compass', 'rules' => 'doc', 'services' => 'washer'], json_encode($icone));
+$senzaTipo = 0;
+foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator("$DOVE/app/views")) as $f) {
+    if ($f->isFile()) foreach (preg_split('/<input\b/', (string) file_get_contents($f)) as $i => $pezzo) if ($i && !preg_match('/^(?:\?>|[^>])*?\btype=/s', $pezzo)) $senzaTipo++;
+}
+prova('Fase 1 · ogni <input> dei modelli ha un type esplicito', $senzaTipo === 0, (string) $senzaTipo);
 foreach (['/termini', '/privacy'] as $p) { $r = $ospite->get($p); prova("$p si apre", $r['code'] === 200 && pulita($r)); }
 
 // ================================================================= REGISTRAZIONE
@@ -807,6 +826,11 @@ $featP = []; foreach (righe('SELECT f.code, pf.value FROM package_features pf JO
 $pkP = riga('SELECT * FROM packages WHERE id = ?', [$pf]);
 $vecchiaP = pv('portfolio');
 $admin->get('/admin/pacchetti');
+$pag = $admin->get('/admin/pacchetti')['body'];
+prova('Fase 1 · funzioni dei pacchetti leggibili', str_contains($pag, '<span class="etichetta">4 sezioni</span>') && str_contains($pag, '<span class="etichetta">2 lingue</span>')
+      && !str_contains($pag, 'sections=') && !str_contains($pag, 'locales='));
+prova('Fase 1 · Portfolio 2 e 3 in fondo, nel blocco dei nascosti', preg_match('#<details class="fieldset nascosti">.*Portfolio 2.*Portfolio 3#s', $pag) === 1
+      && strpos($pag, 'nascosti') > strpos($pag, '>Portfolio<'));
 prova('Pacchetti: Portfolio con prezzo per struttura aggiuntiva modificabile', str_contains($admin->get('/admin/pacchetti')['body'], 'name="prezzo_extra"'));
 $admin->post("/admin/pacchetti/$pf/nuova-versione", ['nome' => $pkP['name'], 'prezzo' => '119', 'prezzo_extra' => '65', 'min_quantita' => '2', 'max_quantita' => '40', 'stripe_price_id' => '', 'stripe_extra_price_id' => '',
     'f' => $featP, 'headline' => $pkP['headline'], 'tagline' => $pkP['tagline'], 'description' => $pkP['description'], 'bullets' => $pkP['bullets'], 'badge' => $pkP['badge'], 'cta_label' => $pkP['cta_label'], 'public' => '1', 'active' => '1']);
@@ -837,6 +861,7 @@ capitolo('Demo e guida ospite');
 $demo = riga("SELECT * FROM properties WHERE is_demo = 1 AND status = 'published' ORDER BY id");
 $r = $ospite->get('/g/' . $demo['slug']);
 prova('La demo è online e dichiarata', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'demo-tag'));
+prova('Fase 1 · senza logo la guida mostra il simbolo, non le iniziali', str_contains($r['body'], 'simbolo--ospite') && !str_contains($r['body'], 'avatar avatar--sm'));
 prova('La demo non inventa statistiche', !preg_match('/\d+\s+(ospiti|aperture|recensioni)/i', $r['body']));
 foreach (['en' => 'lang="en"', 'de' => 'lang="de"'] as $l => $segno) {
     $r = $ospite->get('/g/' . $demo['slug'] . '?l=' . $l);
@@ -844,6 +869,8 @@ foreach (['en' => 'lang="en"', 'de' => 'lang="de"'] as $l => $segno) {
 }
 $r = $ospite->get('/g/' . $demo['slug'] . '/benvenuto');
 prova('Schermata di benvenuto', $r['code'] === 200 && pulita($r));
+prova('Fase 1 · splash: niente og:image né cookie, «Entra» nel terracotta del marchio', !str_contains($r['body'], 'og:image') && intestazione($r, 'Set-Cookie') === ''
+      && str_contains((string) file_get_contents("$DOVE/assets/app.css"), '.full .btn{background:var(--tile-terracotta)'));
 $r = $ospite->get('/g/' . $demo['slug'] . '/commiato');
 prova('Schermata di commiato', $r['code'] === 200 && pulita($r));
 $r = $ospite->get('/g/non-esiste');

@@ -99,6 +99,12 @@ $config = [
         'privacy_version' => $env('MHW_PRIVACY_VERSION', '2026-09'),
         'company'         => $env('MHW_COMPANY', 'Blackout'),
         'contact_email'   => $env('MHW_CONTACT_EMAIL', 'info@myhouse.it'),
+        // Dati aziendali mostrati nel piè di pagina e nei documenti legali.
+        // Un valore vuoto nasconde la sua riga.
+        'company_vat'      => $env('MHW_COMPANY_VAT', '02945910541'),
+        'contact_phone'    => $env('MHW_CONTACT_PHONE', '+39 392 006 1600'),
+        'contact_whatsapp' => $env('MHW_CONTACT_WHATSAPP', '393920061600'),
+        'company_city'     => $env('MHW_COMPANY_CITY', ''),
     ],
 
     'uploads_dir' => __DIR__ . '/storage/uploads',

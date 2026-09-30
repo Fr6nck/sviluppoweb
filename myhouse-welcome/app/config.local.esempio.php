@@ -33,4 +33,14 @@ return [
             // 'public_base_url' => 'https://cdn.tuodominio.it',
         ],
     ],
+
+    // Dati aziendali del piè di pagina e dei documenti legali (un valore vuoto nasconde la riga).
+    // 'legal' => [
+    //     'company'          => 'Blackout',
+    //     'company_vat'      => '02945910541',
+    //     'company_city'     => '',
+    //     'contact_email'    => 'info@tuodominio.it',
+    //     'contact_phone'    => '+39 392 006 1600',
+    //     'contact_whatsapp' => '393920061600',
+    // ],
 ];

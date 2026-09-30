@@ -12,7 +12,7 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
     <div class="rise row" style="gap:10px;animation-delay:.1s">
       <svg class="mh-arch arch" width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">
         <path d="M6 28V14a10 10 0 0 1 20 0v14" stroke="#f6f0e5" stroke-width="2.2" stroke-linecap="round"></path>
-        <circle cx="20.5" cy="19" r="1.9" fill="var(--accent)"></circle>
+        <circle cx="20.5" cy="19" r="1.9" fill="#ee7a4a"></circle>
       </svg>
       <span style="font-size:14px;font-weight:500;letter-spacing:-.2px;color:#f6f0e5">myhouse welcome</span>
       <?php if (!empty($pr['is_demo'])): ?><span class="demo-tag"><?= Support::e(I18n::t($loc, 'demo_badge')) ?></span><?php endif; ?>
@@ -37,7 +37,7 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
       </div>
     </div>
   </div>
-  <div id="velo" style="position:absolute;inset:0;background:var(--accent);pointer-events:none;transform:translateY(101%);z-index:5"></div>
+  <div id="velo" style="position:absolute;inset:0;background:var(--tile-terracotta);pointer-events:none;transform:translateY(101%);z-index:5"></div>
 </div>
 <script>
 (function () {

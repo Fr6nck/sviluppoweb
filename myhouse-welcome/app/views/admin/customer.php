@@ -69,7 +69,7 @@ $fonte = ['package' => 'piano pagato', 'intended' => 'piano scelto', 'override' 
             <?php foreach ($versioni as $v): ?><option value="<?= (int) $v['id'] ?>"><?= Support::e($v['name']) ?> v<?= (int) $v['version'] ?></option><?php endforeach; ?></select></div>
           <div class="field" style="margin:0"><label for="mesi">Mesi</label><input id="mesi" name="mesi" type="number" min="1" max="36" value="12"></div>
           <div class="field" style="margin:0"><label for="strutture">Strutture <span class="muted">(Portfolio)</span></label><input id="strutture" name="strutture" type="number" min="1" max="500" value="2"></div>
-          <div class="field" style="margin:0"><label for="nota">Motivo</label><input id="nota" name="nota" required maxlength="200"></div>
+          <div class="field" style="margin:0"><label for="nota">Motivo</label><input type="text" id="nota" name="nota" required maxlength="200"></div>
         </div>
         <div class="actions"><button class="btn btn--sm">Attiva</button></div>
       </form>
@@ -86,8 +86,8 @@ $fonte = ['package' => 'piano pagato', 'intended' => 'piano scelto', 'override' 
           <td><b><?= Support::e($e['value']) ?></b></td><td class="small"><?= Support::e($fonte[$e['source']] ?? $e['source']) ?></td>
           <td><form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/override" class="row" style="gap:6px;flex-wrap:nowrap"><?= Csrf::field() ?>
             <input type="hidden" name="feature" value="<?= Support::e($code) ?>">
-            <input name="valore" value="<?= $e['source'] === 'override' ? Support::e($e['value']) : '' ?>" style="width:110px" aria-label="Eccezione per <?= Support::e($code) ?>">
-            <input name="nota" placeholder="motivo" style="width:140px" aria-label="Motivo">
+            <input type="text" name="valore" value="<?= $e['source'] === 'override' ? Support::e($e['value']) : '' ?>" style="width:110px" aria-label="Eccezione per <?= Support::e($code) ?>">
+            <input type="text" name="nota" placeholder="motivo" style="width:140px" aria-label="Motivo">
             <button class="btn btn--ghost btn--sm">Salva</button></form></td></tr>
       <?php endforeach; ?></tbody></table></div>
   </section>

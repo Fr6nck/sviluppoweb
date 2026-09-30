@@ -21,7 +21,7 @@ $aumento = $n > $attuale; ?>
         <legend>Scegli <?= (int) $daTogliere ?> struttur<?= $daTogliere === 1 ? 'a' : 'e' ?> da archiviare</legend>
         <p class="help">Una struttura archiviata va offline, ma contenuti, traduzioni e QR restano: la riattivi quando vuoi.</p>
         <?php foreach ($attive as $p): ?>
-          <label class="check"><input type="checkbox" name="archivia[]" value="<?= (int) $p['id'] ?>">
+          <label class="scelta"><input type="checkbox" name="archivia[]" value="<?= (int) $p['id'] ?>">
             <span><?= Support::e($p['name']) ?><?= $p['city'] ? ' <span class="small muted">· ' . Support::e($p['city']) . '</span>' : '' ?>
               <?= $p['status'] === 'published' ? '<span class="badge badge--pine">Pubblicata</span>' : '' ?></span></label>
         <?php endforeach; ?>

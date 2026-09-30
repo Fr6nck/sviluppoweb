@@ -6,7 +6,7 @@ $title = 'Clienti'; ?>
   <div class="spread spread--mid">
     <h1>Clienti.</h1>
     <form method="get" class="search" role="search" style="min-width:280px">
-      <input name="q" value="<?= Support::e($cerca) ?>" placeholder="Nome, email o struttura" aria-label="Cerca clienti"></form>
+      <input type="search" name="q" value="<?= Support::e($cerca) ?>" placeholder="Nome, email o struttura" aria-label="Cerca clienti"></form>
   </div>
   <?php if (!$rows): ?><p class="muted">Nessun cliente<?= $cerca !== '' ? ' per questa ricerca' : '' ?>.</p><?php else: ?>
   <div class="tablewrap"><table class="data">

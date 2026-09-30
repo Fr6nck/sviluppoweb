@@ -17,6 +17,7 @@ $vedeStatistiche = $prop && Entitlements::can((int) $prop['account_id'], 'analyt
 <meta name="robots" content="noindex">
 <title><?= Support::e($title ?? 'MyHouse Welcome') ?></title>
 <?php include __DIR__ . '/_tema.php'; ?>
+<?php include __DIR__ . '/_icone.php'; ?>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gloock&family=Onest:wght@300..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= a() ?>/assets/app.css">
@@ -31,7 +32,7 @@ $vedeStatistiche = $prop && Entitlements::can((int) $prop['account_id'], 'analyt
 
 <header class="topbar"><div class="wrap">
   <div class="row" style="gap:14px">
-    <a class="brand" href="<?= b() ?>/<?= $admin ? 'admin' : 'pannello' ?>">myhouse welcome</a>
+    <a class="brand" href="<?= b() ?>/<?= $admin ? 'admin' : 'pannello' ?>"><?= Icon::brand(26) ?><span>myhouse welcome</span></a>
     <?php if ($admin): ?><span class="tag">Amministrazione</span><?php endif; ?>
   </div>
   <?php if ($u): ?>
@@ -68,6 +69,9 @@ $vedeStatistiche = $prop && Entitlements::can((int) $prop['account_id'], 'analyt
 <div class="propbar"><div class="wrap">
   <div class="row" style="gap:14px">
     <span class="propbar__name"><?= Support::e($prop['name']) ?></span>
+    <?php if ($qui === 'procedura'): ?>
+      <a class="btn btn--quiet btn--sm propbar__dopo" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>">Continua dopo</a>
+    <?php endif; ?>
     <nav class="nav" aria-label="La guida">
       <a href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>" class="<?= in_array($qui, ['contenuti', 'procedura'], true) ? 'on' : '' ?>">Contenuti</a>
       <a href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/lingue" class="<?= $qui === 'lingue' ? 'on' : '' ?>">Lingue</a>

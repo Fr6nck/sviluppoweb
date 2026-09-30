@@ -32,6 +32,7 @@ final class Icon
         'doc'       => '<path d="M4 20V6a2 2 0 0 1 2-2h8l6 6v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M8 13h8M8 17h5"/>',
         'drop'      => '<path d="M12 3s6 6.4 6 10.4A6 6 0 0 1 6 13.4C6 9.4 12 3 12 3Z"/>',
         'washer'    => '<rect x="3.5" y="6" width="17" height="13" rx="2.5"/><path d="M8 6V4h8v2M8 19v1.5M16 19v1.5"/>',
+        'menu'      => '<path d="M4 7h16M4 12h16M4 17h16"/>',
         'grip'      => '<path d="M8 7h.01M8 12h.01M8 17h.01M16 7h.01M16 12h.01M16 17h.01"/>',
         'key'       => '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17.5 5.5l2 2M15 8l2 2"/>',
         'qr'        => '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><path d="M14 14h2.5M20.5 14v2.5M14 17.5v3M17.5 20.5h3"/>',
@@ -42,8 +43,23 @@ final class Icon
         'bin'       => '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/><path d="M10.5 11v5.5M13.5 11v5.5"/>',
         'clock'     => '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
         'message'   => '<path d="M20 12a7.5 7.5 0 0 1-11 6.6L4 20l1.4-4.6A7.5 7.5 0 1 1 20 12Z"/>',
+        'bus'       => '<rect x="4.5" y="3.5" width="15" height="14" rx="3"/><path d="M4.5 11h15M8 17.5v2.5M16 17.5v2.5"/><path d="M8 14.3h.01M16 14.3h.01"/><path d="M8.5 6.5h7"/>',
+        'monument'  => '<path d="M3.5 20.5h17M5 17.5h14"/><path d="M6.5 17.5v-7M10 17.5v-7M14 17.5v-7M17.5 17.5v-7"/><path d="M4 10.5h16L12 4.5 4 10.5Z"/>',
+        'compass'   => '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5 5-2Z"/>',
         'car'       => '<path d="M5 16.5V12l1.8-4.6A2 2 0 0 1 8.7 6h6.6a2 2 0 0 1 1.9 1.4L19 12v4.5"/><path d="M4 16.5h16M5 12h14"/><circle cx="8" cy="16.5" r="1.6"/><circle cx="16" cy="16.5" r="1.6"/>',
     ];
+
+    /**
+     * Il simbolo del marchio: l'arco di una porta e il punto della maniglia.
+     * L'arco prende il colore del testo, il punto il terracotta del tema.
+     */
+    public static function brand(int $size = 26, string $class = ''): string
+    {
+        return '<svg class="simbolo' . ($class !== '' ? ' ' . $class : '') . '" width="' . $size . '" height="' . $size . '"'
+             . ' viewBox="0 0 32 32" fill="none" aria-hidden="true">'
+             . '<path d="M6 28V14a10 10 0 0 1 20 0v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>'
+             . '<circle class="simbolo__punto" cx="20.5" cy="19" r="2" fill="#b4451f"/></svg>';
+    }
 
     public static function svg(string $name, int $size = 20, float $stroke = 1.8, string $class = ''): string
     {

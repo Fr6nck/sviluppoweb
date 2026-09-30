@@ -3,7 +3,6 @@ use MHW\{Support, Guide, Media, I18n};
 $pr = $snap['property'];
 $logo = !empty($pr['logo_id']) ? Media::url((int) $pr['logo_id']) : null;
 $profilo = !empty($pr['profile_id']) ? Media::url((int) $pr['profile_id']) : null;
-$iniziali = mb_strtoupper(mb_substr($pr['name'], 0, 1) . (($sp = mb_strpos($pr['name'], ' ')) !== false ? mb_substr($pr['name'], $sp + 1, 1) : ''));
 $etScuro = I18n::t($loc, 'theme_dark'); $etChiaro = I18n::t($loc, 'theme_light'); ?>
 <div class="guest-top">
   <div class="row" style="gap:9px;min-width:0">
@@ -14,7 +13,7 @@ $etScuro = I18n::t($loc, 'theme_dark'); $etChiaro = I18n::t($loc, 'theme_light')
     <?php elseif ($profilo): ?>
       <img class="profile-guest" src="<?= Support::e($profilo) ?>" alt="" width="30" height="30">
     <?php else: ?>
-      <span class="avatar avatar--sm" aria-hidden="true"><?= Support::e($iniziali) ?></span>
+      <?= MHW\Icon::brand(28, 'simbolo--ospite') ?>
     <?php endif; ?>
     <?php if (empty($indietro) && !$logo): ?><span class="guest-name"><?= Support::e($pr['name']) ?></span><?php endif; ?>
     <?php if (!empty($pr['is_demo'])): ?><span class="demo-tag"><?= Support::e(I18n::t($loc, 'demo_badge')) ?></span><?php endif; ?>

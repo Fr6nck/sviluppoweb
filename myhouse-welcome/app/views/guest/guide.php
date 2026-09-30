@@ -14,7 +14,7 @@ $copertina = !empty($pr['cover_id']) ? MHW\Media::url((int) $pr['cover_id']) : (
 <h1 class="guest-title" style="margin-top:22px"><?= Support::e(I18n::t($loc, 'welcome_1')) ?><br><?= Support::e(I18n::t($loc, 'welcome_2', $pr['name'])) ?></h1>
 
 <?php if ($copertina): ?>
-  <div class="shot shot--h262" style="margin-top:22px">
+  <div class="shot shot--h262 guest-cover" style="margin-top:22px">
     <img src="<?= Support::e($copertina) ?>" alt="" fetchpriority="high" decoding="async">
     <span class="shot-pill"><span class="dot"></span><?= Support::e(I18n::t($loc, 'checkin_from', $pr['checkin_from'])) ?></span>
   </div>

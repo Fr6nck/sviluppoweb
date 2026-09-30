@@ -41,7 +41,7 @@ $campo = function (string $name, string $tipo, $orig, $trad, string $etichetta) 
         <div class="field" style="margin:0">
           <label for="t<?= $sid ?>"><span class="kicker">Titolo</span></label>
           <p class="orig" style="margin-bottom:6px"><?= Support::e($titoloOrig) ?></p>
-          <input id="t<?= $sid ?>" name="s[<?= $sid ?>][title]" maxlength="120" value="<?= Support::e($s['trad']['title']) ?>"
+          <input type="text" id="t<?= $sid ?>" name="s[<?= $sid ?>][title]" maxlength="120" value="<?= Support::e($s['trad']['title']) ?>"
                  placeholder="<?= Support::e(SectionCatalog::title($s['kind'], $loc)) ?>">
         </div>
         <?php foreach (SectionCatalog::fields($s['kind']) as $f => [$tipo, $etichetta]):

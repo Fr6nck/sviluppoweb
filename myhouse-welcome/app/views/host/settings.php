@@ -17,7 +17,7 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
       <p class="small">Si cancellano la guida, le traduzioni, le immagini e il QR. Chi ha già stampato il QR troverà una pagina vuota.
         Non si può annullare. L'abbonamento non si disdice da qui: lo gestisci in <a href="<?= b() ?>/account">Account &amp; Fatturazione</a>.</p>
       <div class="field" style="margin:0"><label for="conferma">Per confermare scrivi <b><?= Support::e($prop['name']) ?></b></label>
-        <input id="conferma" name="conferma" required autocomplete="off"></div>
+        <input type="text" id="conferma" name="conferma" required autocomplete="off"></div>
       <div class="actions"><button class="btn btn--danger">Elimina per sempre</button></div>
     </form>
   </details>

@@ -46,32 +46,35 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
       <?php if ($foto || $fotoUrl): ?>
         <fieldset class="fieldset">
           <legend>Immagine della sezione</legend>
-          <div class="mediabox">
-            <span class="mediabox__img"><?php if ($fotoUrl): ?><img src="<?= Support::e($fotoUrl) ?>" alt=""><?php endif; ?></span>
-            <div class="stack" style="gap:8px">
-              <?php if ($foto): ?>
-                <input type="file" name="foto" accept="image/jpeg,image/png,image/webp" aria-label="Scegli un'immagine">
-                <p class="help">JPG, PNG o WebP, fino a 8 MB.</p>
-              <?php else: ?>
+          <?php if ($foto):
+                $carica = ['id' => 'carica-foto', 'name' => 'foto', 'accept' => 'image/jpeg,image/png,image/webp', 'cosa' => "l'immagine",
+                           'aiuto' => 'JPG, PNG o WebP, fino a 8 MB.', 'url' => $fotoUrl, 'togli' => 'togli-foto'];
+                include __DIR__ . '/_carica.php';
+              else: ?>
+            <div class="mediabox">
+              <span class="mediabox__img"><img src="<?= Support::e($fotoUrl) ?>" alt=""></span>
+              <div class="stack" style="gap:8px">
                 <p class="help">Il tuo piano non comprende le immagini nelle sezioni: toglila prima di pubblicare.</p>
-              <?php endif; ?>
-              <?php if ($fotoUrl): ?><button class="linkbtn" name="azione" value="togli-foto" formnovalidate>Togli l'immagine</button><?php endif; ?>
+                <button class="linkbtn" name="azione" value="togli-foto" formnovalidate>Togli l'immagine</button>
+              </div>
             </div>
-          </div>
+          <?php endif; ?>
         </fieldset>
       <?php endif; ?>
 
       <?php if ($pdf || $pdfRow): ?>
         <fieldset class="fieldset">
           <legend>PDF allegato</legend>
-          <?php if ($pdfRow): ?><p class="small"><?= Icon::svg('doc', 15) ?> <?= Support::e($pdfRow['original_name'] ?: 'Documento') ?></p><?php endif; ?>
-          <?php if ($pdf): ?>
-            <input type="file" name="pdf" accept="application/pdf" aria-label="Scegli un PDF">
-            <p class="help">Per esempio il manuale della caldaia o la mappa del paese. Solo PDF, fino a 10 MB.</p>
-          <?php else: ?>
+          <?php if ($pdf):
+                $carica = ['id' => 'carica-pdf', 'name' => 'pdf', 'accept' => 'application/pdf', 'cosa' => 'il PDF',
+                           'aiuto' => 'Per esempio il manuale della caldaia o la mappa del paese. Solo PDF, fino a 10 MB.',
+                           'file' => $pdfRow ? ($pdfRow['original_name'] ?: 'Documento') : '', 'togli' => $pdfRow ? 'togli-pdf' : ''];
+                include __DIR__ . '/_carica.php';
+              else: ?>
+            <?php if ($pdfRow): ?><p class="small"><?= Icon::svg('doc', 15) ?> <?= Support::e($pdfRow['original_name'] ?: 'Documento') ?></p><?php endif; ?>
             <p class="help">Il tuo piano non comprende i PDF: toglilo prima di pubblicare.</p>
+            <?php if ($pdfRow): ?><button class="linkbtn" name="azione" value="togli-pdf" formnovalidate>Togli il PDF</button><?php endif; ?>
           <?php endif; ?>
-          <?php if ($pdfRow): ?><button class="linkbtn" name="azione" value="togli-pdf" formnovalidate>Togli il PDF</button><?php endif; ?>
         </fieldset>
       <?php endif; ?>
 
@@ -90,25 +93,30 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
       <div class="stack" style="gap:12px">
         <h2 style="font-size:22px">I luoghi che consigli</h2>
         <?php if (!$places): ?><p class="note note--quiet">Ancora nessun luogo. Aggiungi il primo qui sotto: nome, indirizzo e due righe su perché ti piace.</p><?php endif; ?>
-        <?php foreach ($places as $i => $pl): ?>
-          <div class="rowcard" style="flex-wrap:wrap">
-            <span class="grow stack" style="gap:2px"><b><?= Support::e($pl['name']) ?></b>
-              <span class="small muted"><?= Support::e(implode(' · ', array_filter([$pl['tr']['category'], $pl['address']]))) ?></span></span>
-            <?php if ($pl['tr']['badge'] !== ''): ?><span class="badge badge--<?= Support::e($pl['badge_tone'] === 'ochre' ? 'ochre' : $pl['badge_tone']) ?>"><?= Support::e($pl['tr']['badge']) ?></span><?php endif; ?>
-            <span class="row" style="gap:2px">
-              <a class="btn btn--quiet btn--sm" href="<?= $qui_url ?>?luogo=<?= (int) $pl['id'] ?><?= $procedura ? '&amp;da=procedura' : '' ?>#luogo">Modifica</a>
-              <?php foreach (array_filter(['su' => $i > 0 ? 'Sposta su' : '', 'giu' => $i < count($places) - 1 ? 'Sposta giù' : '']) as $fai => $et): ?>
-                <form method="post" action="<?= $qui_url ?>/luogo/<?= (int) $pl['id'] ?>/azione" style="margin:0"><?= Csrf::field() ?>
-                  <button class="btn btn--quiet btn--sm" name="fai" value="<?= $fai ?>"><?= $et ?></button></form>
-              <?php endforeach; ?>
-              <details class="langpick"><summary class="btn btn--quiet btn--sm">Altro</summary>
-                <div class="langpick__menu" style="min-width:220px;padding:12px">
-                  <form method="post" action="<?= $qui_url ?>/luogo/<?= (int) $pl['id'] ?>/azione" style="margin:0"><?= Csrf::field() ?>
-                    <button class="btn btn--danger btn--sm btn--block" name="fai" value="elimina">Elimina il luogo</button></form>
-                </div></details>
-            </span>
+        <?php if ($places): ?><div class="righe" data-ordina><?php endif; ?>
+        <?php foreach ($places as $i => $pl): $azioneLuogo = $qui_url . '/luogo/' . (int) $pl['id'] . '/azione';
+              $modificaLuogo = $qui_url . '?luogo=' . (int) $pl['id'] . ($procedura ? '&amp;da=procedura' : '') . '#luogo'; ?>
+          <div class="riga" data-riga data-azione="<?= $azioneLuogo ?>">
+            <span class="riga__maniglia" aria-hidden="true" title="Trascina per cambiare l'ordine"><?= Icon::svg('grip', 18, 2.6) ?></span>
+            <a class="riga__nome" href="<?= $modificaLuogo ?>"><b><?= Support::e($pl['name']) ?></b>
+              <span class="small muted"><?= Support::e(implode(' · ', array_filter([$pl['tr']['category'], $pl['address']]))) ?></span></a>
+            <?php if ($pl['tr']['badge'] !== ''): ?><span class="badge badge--<?= Support::e($pl['badge_tone']) ?> riga__etichetta"><?= Support::e($pl['tr']['badge']) ?></span><?php endif; ?>
+            <details class="menu-riga">
+              <summary class="icon-btn" aria-label="Azioni per <?= Support::e($pl['name']) ?>"><span aria-hidden="true">⋯</span></summary>
+              <div class="menu-riga__lista">
+                <a class="menu-riga__voce" href="<?= $modificaLuogo ?>">Modifica</a>
+                <?php foreach (array_filter(['su' => $i > 0 ? 'Sposta su' : '', 'giu' => $i < count($places) - 1 ? 'Sposta giù' : '']) as $fai => $et): ?>
+                  <form method="post" action="<?= $azioneLuogo ?>" style="margin:0"><?= Csrf::field() ?>
+                    <button class="menu-riga__voce" name="fai" value="<?= $fai ?>"><?= $et ?></button></form>
+                <?php endforeach; ?>
+                <hr class="rule">
+                <form method="post" action="<?= $azioneLuogo ?>" style="margin:0"><?= Csrf::field() ?>
+                  <button class="menu-riga__voce menu-riga__voce--danger" name="fai" value="elimina">Elimina</button></form>
+              </div>
+            </details>
           </div>
         <?php endforeach; ?>
+        <?php if ($places): ?></div><?php endif; ?>
 
         <?php $v = $inModifica ?? ['id' => 0, 'name' => '', 'address' => '', 'maps_url' => '', 'phone' => '', 'website' => '', 'booking_url' => '',
                                    'walk_minutes' => 0, 'drive_minutes' => 0, 'badge_tone' => 'pine', 'media_id' => null,
@@ -120,15 +128,15 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
             <input type="hidden" name="place_id" value="<?= (int) $v['id'] ?>">
             <div class="grid grid-2">
               <div class="field" style="margin:0"><label for="pl-name">Nome</label>
-                <input id="pl-name" name="name" required maxlength="160" value="<?= Support::e($v['name']) ?>"></div>
+                <input type="text" id="pl-name" name="name" required maxlength="160" value="<?= Support::e($v['name']) ?>"></div>
               <div class="field" style="margin:0"><label for="pl-cat">Categoria</label>
-                <input id="pl-cat" name="category" maxlength="80" list="categorie" value="<?= Support::e($v['tr']['category']) ?>" placeholder="Trattoria, Bar, Spiaggia…"></div>
+                <input type="text" id="pl-cat" name="category" maxlength="80" list="categorie" value="<?= Support::e($v['tr']['category']) ?>" placeholder="Trattoria, Bar, Spiaggia…"></div>
             </div>
             <div class="field" style="margin:0"><label for="pl-desc">Descrizione</label>
               <textarea id="pl-desc" name="description" rows="2" maxlength="600"><?= Support::e($v['tr']['description']) ?></textarea></div>
             <div class="grid grid-2">
               <div class="field" style="margin:0"><label for="pl-addr">Indirizzo</label>
-                <input id="pl-addr" name="address" maxlength="255" value="<?= Support::e($v['address']) ?>"></div>
+                <input type="text" id="pl-addr" name="address" maxlength="255" value="<?= Support::e($v['address']) ?>"></div>
               <div class="field" style="margin:0"><label for="pl-maps">Link a Google Maps <span class="muted">(facoltativo)</span></label>
                 <input id="pl-maps" name="maps_url" type="url" maxlength="500" value="<?= Support::e($v['maps_url']) ?>" placeholder="https://"></div>
               <div class="field" style="margin:0"><label for="pl-walk">A piedi (minuti)</label>
@@ -142,21 +150,21 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
               <div class="field" style="margin:0"><label for="pl-book">Link per prenotare</label>
                 <input id="pl-book" name="booking_url" type="url" maxlength="500" value="<?= Support::e($v['booking_url']) ?>" placeholder="https://"></div>
               <div class="field" style="margin:0"><label for="pl-badge">Etichetta</label>
-                <input id="pl-badge" name="badge" maxlength="80" list="etichette" value="<?= Support::e($v['tr']['badge']) ?>" placeholder="Consigliato dall'host"></div>
+                <input type="text" id="pl-badge" name="badge" maxlength="80" list="etichette" value="<?= Support::e($v['tr']['badge']) ?>" placeholder="Consigliato dall'host"></div>
             </div>
             <div class="field" style="margin:0"><label for="pl-note">Il tuo consiglio</label>
               <textarea id="pl-note" name="note" rows="2" maxlength="400" placeholder="Prenota il tavolo in terrazza, al tramonto."><?= Support::e($v['tr']['note']) ?></textarea></div>
-            <fieldset class="tones" style="border:0;padding:0;margin:0"><legend class="small" style="margin-bottom:6px">Colore dell'etichetta</legend>
+            <fieldset class="tones scelte scelte--riga" style="border:0;padding:0;margin:0"><legend class="small" style="margin-bottom:6px">Colore dell'etichetta</legend>
               <?php foreach (['pine' => 'Verde', 'sea' => 'Blu', 'ochre' => 'Ocra', 'terracotta' => 'Terracotta'] as $k => $et): ?>
-                <label class="tone"><input type="radio" name="badge_tone" value="<?= $k ?>" <?= $v['badge_tone'] === $k ? 'checked' : '' ?>><span class="badge badge--<?= $k ?>"><?= $et ?></span></label>
+                <label class="tone scelta"><input type="radio" name="badge_tone" value="<?= $k ?>" <?= $v['badge_tone'] === $k ? 'checked' : '' ?>><span class="badge badge--<?= $k ?>"><?= $et ?></span></label>
               <?php endforeach; ?>
             </fieldset>
             <?php if ($foto): ?>
-              <div class="mediabox">
-                <?php if ($vFoto): ?><span class="mediabox__img"><img src="<?= Support::e($vFoto) ?>" alt=""></span><?php endif; ?>
-                <div class="field" style="margin:0"><label for="pl-foto">Foto del luogo <span class="muted">(facoltativa)</span></label>
-                  <input id="pl-foto" type="file" name="foto" accept="image/jpeg,image/png,image/webp"></div>
-              </div>
+              <div class="field" style="margin:0"><span class="label">Foto del luogo <span class="muted">(facoltativa)</span></span>
+                <?php $carica = ['id' => 'pl-foto', 'name' => 'foto', 'accept' => 'image/jpeg,image/png,image/webp', 'cosa' => 'la foto',
+                                 'aiuto' => 'JPG, PNG o WebP, fino a 8 MB.', 'url' => $vFoto ?: null,
+                                 'togli' => $vFoto ? 'togli-foto' : '', 'togliNome' => 'fai', 'togliVerso' => $qui_url . '/luogo/' . (int) $v['id'] . '/azione'];
+                      include __DIR__ . '/_carica.php'; ?></div>
             <?php endif; ?>
             <div class="actions">
               <button class="btn"><?= $inModifica ? 'Salva il luogo' : 'Aggiungi il luogo' ?></button>

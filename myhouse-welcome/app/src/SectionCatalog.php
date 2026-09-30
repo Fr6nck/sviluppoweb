@@ -69,14 +69,14 @@ final class SectionCatalog
             ],
         ],
         'transport' => [
-            'icon' => 'pin',
+            'icon' => 'bus',
             'fields' => [
                 'items' => ['list', 'Come muoversi', 'Uno per riga: autobus, taxi, noleggio bici.'],
                 'note'  => ['textarea', 'Nota', 'Facoltativa.'],
             ],
         ],
         'parking' => [
-            'icon' => 'key',
+            'icon' => 'car',
             'fields' => [
                 'parking_type' => ['text', 'Tipo di parcheggio', 'Per esempio: posto riservato in cortile, parcheggio pubblico gratuito.'],
                 'address'      => ['plain', 'Indirizzo del parcheggio', ''],
@@ -86,7 +86,7 @@ final class SectionCatalog
             ],
         ],
         'waste' => [
-            'icon' => 'doc',
+            'icon' => 'bin',
             'fields' => [
                 'items' => ['list', 'Come si differenzia', 'Una voce per riga: umido martedì e venerdì, carta il giovedì…'],
                 'note'  => ['textarea', 'Nota', 'Facoltativa. Dove sono i bidoni.'],
@@ -100,14 +100,14 @@ final class SectionCatalog
             ],
         ],
         'visit' => [
-            'icon' => 'pin', 'places' => true,
+            'icon' => 'monument', 'places' => true,
             'fields' => [
                 'intro'     => ['textarea', 'Introduzione', ''],
                 'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo.'],
             ],
         ],
         'todo' => [
-            'icon' => 'pin', 'places' => true,
+            'icon' => 'compass', 'places' => true,
             'fields' => [
                 'intro'     => ['textarea', 'Introduzione', ''],
                 'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo.'],

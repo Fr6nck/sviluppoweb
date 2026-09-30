@@ -145,7 +145,7 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
 .topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:20px;
   min-height:76px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
 .topbar--plain{border-bottom:0}
-.brand{font-size:17px;font-weight:600;letter-spacing:-.5px;color:var(--ink)}
+.brand{display:inline-flex;align-items:center;gap:9px;font-size:17px;font-weight:600;letter-spacing:-.5px;color:var(--ink);white-space:nowrap}
 .brand:hover{color:var(--ink)}
 .avatar{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;
   flex:none;border-radius:999px;background:var(--inverse-bg);color:var(--inverse-fg);
@@ -227,8 +227,8 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
 /* --------------------------------------------------------------------- moduli */
 label{display:block;font-size:14px;font-weight:500;margin-bottom:8px}
 label .muted{font-weight:400}
-input[type=text],input[type=email],input[type=password],input[type=tel],input[type=search],
-input[type=number],textarea,select{
+input:not([type]),input[type=text],input[type=email],input[type=password],input[type=tel],input[type=search],
+input[type=number],input[type=time],input[type=date],input[type=url],input[type=datetime-local],textarea,select{
   width:100%;height:54px;padding:0 18px;border:1px solid var(--line-strong);
   border-radius:var(--r-md);background:var(--raised);font:inherit;color:var(--ink)}
 input[type=file]{font:inherit;font-size:14px}
@@ -240,7 +240,64 @@ select{appearance:none;padding-right:44px;
   background-size:6px 6px,6px 6px;background-repeat:no-repeat}
 .field{margin-bottom:18px}
 .check{display:inline-flex;align-items:center;gap:9px;min-height:44px;margin:0;font-weight:400}
-.check input{width:auto;height:auto;min-height:0}
+.check input{flex:none}
+.label{display:block;font-size:14px;font-weight:500;margin-bottom:8px}
+
+/* Caselle e pallini disegnati da noi, sopra gli input veri: stessa tastiera,
+   stesso comportamento, ma con il terracotta del marchio e non il blu del sistema. */
+input[type=checkbox],input[type=radio]{appearance:none;-webkit-appearance:none;flex:none;display:inline-grid;place-content:center;
+  width:22px;height:22px;margin:0;border:1.5px solid var(--line-strong);border-radius:7px;background:var(--raised);
+  cursor:pointer;vertical-align:middle;transition:background-color .15s,border-color .15s}
+input[type=radio]{border-radius:999px}
+input[type=checkbox]::before{content:"";width:12px;height:12px;background:var(--on-dark);transform:scale(0);transition:transform .12s ease-out;
+  clip-path:polygon(14% 44%,0 65%,50% 100%,100% 16%,80% 0,43% 62%)}
+input[type=radio]::before{content:"";width:10px;height:10px;border-radius:999px;background:var(--on-dark);transform:scale(0);transition:transform .12s ease-out}
+input[type=checkbox]:checked,input[type=radio]:checked{background:var(--accent);border-color:var(--accent)}
+input[type=checkbox]:checked::before,input[type=radio]:checked::before{transform:scale(1)}
+input[type=checkbox]:disabled,input[type=radio]:disabled{cursor:not-allowed;opacity:.6}
+input[type=checkbox]:focus-visible,input[type=radio]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){input[type=checkbox]::before,input[type=radio]::before{transition:none}}
+
+/* Le scelte come schede: tutta la riga si preme, bordo terracotta quando è attiva. */
+.scelte{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.scelte--riga{display:flex;flex-wrap:wrap;gap:8px}
+.scelta{display:flex;align-items:center;gap:12px;min-height:52px;margin:0;padding:10px 16px 10px 14px;border-radius:var(--r-md);
+  border:1px solid var(--line-strong);background:var(--raised);font-weight:500;cursor:pointer}
+.scelta:hover{border-color:var(--ink)}
+.scelta:has(input:checked){border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.scelta:has(input:disabled){cursor:not-allowed}
+.scelta:has(input:disabled:not(:checked)){opacity:.6}
+.scelta--fissa{background:var(--sunk)}
+.scelta__testo{display:flex;flex-direction:column;gap:1px;line-height:1.3}
+.scelta__testo .small{font-weight:400}
+
+/* Il caricamento dei file. */
+.drop{position:relative;border:1.5px dashed var(--line-strong);border-radius:var(--r-lg);background:var(--sunk);
+  transition:border-color .15s,background-color .15s}
+.drop__input{position:absolute;left:0;top:0;width:1px;height:1px;opacity:0;overflow:hidden}
+.drop:has(.drop__input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.drop--sopra{border-color:var(--accent);background:var(--terracotta-soft)}
+.drop__vuoto{display:flex;align-items:center;gap:14px;margin:0;padding:18px;cursor:pointer;font-weight:400}
+.drop__vuoto b{display:block;font-size:15px;font-weight:500;margin-bottom:2px}
+.drop__vuoto .help{margin:0}
+.drop__piu{flex:none;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:999px;
+  background:var(--raised);border:1px solid var(--line);color:var(--accent)}
+.drop__scegli{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+.drop__pieno{display:none;align-items:center;gap:14px;padding:12px;flex-wrap:wrap}
+.drop--pieno{border-style:solid;border-color:var(--line);background:var(--raised)}
+.drop--pieno .drop__vuoto{display:none}
+.drop--pieno .drop__pieno{display:flex}
+.drop__mini{flex:none;display:flex;align-items:center;justify-content:center;width:72px;height:72px;border-radius:14px;
+  overflow:hidden;background:var(--sunk);color:var(--muted)}
+.drop__mini img{width:100%;height:100%;object-fit:cover}
+.drop--logo .drop__mini img{object-fit:contain;padding:6px}
+.drop__info{flex:1 1 150px;min-width:0;display:flex;flex-direction:column;gap:2px}
+.drop__info b{font-size:15px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drop__info .help{margin:0}
+.drop__azioni{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.drop__azioni label{margin:0}
+.drop [data-drop-annulla],.drop--nuovo [data-drop-rimuovi]{display:none}
+.drop--nuovo [data-drop-annulla]{display:inline-flex}
 .search{display:flex;align-items:center;gap:10px;height:48px;padding:0 18px;border-radius:999px;
   border:1px solid var(--line-strong);background:var(--raised);max-width:320px;margin-bottom:0}
 .search input{border:0;background:none;height:auto;padding:0;min-width:0}
@@ -274,6 +331,7 @@ select{appearance:none;padding-right:44px;
 .guest-bottom{position:sticky;bottom:0;z-index:15;margin-top:28px;padding:12px 0 20px;
   border-top:1px solid var(--line);background:var(--paper);
   display:flex;gap:10px}
+html:has(.guest-bottom){scroll-padding-bottom:96px}
 .guest-bottom .btn{flex:1 1 0;min-width:0;height:52px;font-size:15px;padding:0 16px}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chips a,.chips button{display:inline-flex;align-items:center;height:44px;padding:0 18px;
@@ -311,18 +369,26 @@ select{appearance:none;padding-right:44px;
   display:flex;flex-direction:column}
 .full__photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
   transform-origin:52% 45%;animation:mh-breathe 24s cubic-bezier(.33,0,.2,1) forwards}
+/* Due gradienti, non un velo: scuro in alto dietro al marchio, più scuro in
+   basso dietro a titolo e bottone, la foto libera nel mezzo. Deve reggere
+   qualsiasi foto carichi l'host, anche una facciata quasi bianca. */
 .full__scrim{position:absolute;inset:0;
-  background:linear-gradient(180deg,rgba(23,19,13,.80) 0%,rgba(23,19,13,.58) 12%,
-    rgba(23,19,13,.30) 30%,rgba(23,19,13,.74) 60%,rgba(23,19,13,.96) 100%);
+  background:linear-gradient(180deg,rgba(15,11,7,.62) 0%,rgba(15,11,7,.30) 14%,rgba(15,11,7,0) 28%,
+    rgba(15,11,7,0) 36%,rgba(15,11,7,.55) 54%,rgba(15,11,7,.86) 74%,rgba(15,11,7,.92) 100%);
   animation:mh-veil 1.1s ease-out both}
+.full__stage{text-shadow:0 1px 14px rgba(15,11,7,.45)}
+.full__stage .btn{text-shadow:none}
 .full__stage{position:relative;z-index:2;flex:1 1 auto;display:flex;flex-direction:column;
   justify-content:space-between;gap:28px;padding:28px 24px 30px;max-width:430px;margin:0 auto;width:100%}
 .full h1{font-size:clamp(44px,13vw,54px);line-height:1;color:#fff}
 .full .kicker{color:#e8dcc8;letter-spacing:.14em}
 .full p{color:#e8dcc8;font-size:16px;line-height:24px}
 .full .langbar a{color:#e8dcc8} .full .langbar a.on{color:#fff}
-.full .btn{background:var(--accent);color:var(--on-dark)}
-.full .btn--go .go{background:var(--on-dark);color:var(--accent)}
+/* «Entra» e i bottoni del congedo: il terracotta del marchio, non l'arancio
+   della notte né l'accento della palette, che su una foto non si legge. */
+.full .btn{background:var(--tile-terracotta);color:var(--tile-ink)}
+.full .btn:hover{background:#93370f;color:var(--tile-ink)}
+.full .btn--go .go{background:var(--tile-ink);color:var(--tile-terracotta)}
 .checklist{display:flex;flex-direction:column;gap:8px}
 .checklist li{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:16px;
   background:rgba(246,240,229,.10);font-size:15px;font-weight:500;color:#f6f0e5;list-style:none}
@@ -436,6 +502,14 @@ th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute
   .tiles-2{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 .tiles-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+/* Riquadri 4:3: sul telefono ne entrano quattro interi sopra la barra dei contatti. */
+@media(max-width:560px){ .guest-cover{height:216px} }
+.tiles-2 .tile{aspect-ratio:4/3;min-height:0;gap:8px;padding:14px 15px}
+.tiles-2 .tile b{font-size:18px;line-height:21px}
+
+/* Il simbolo del marchio. */
+.simbolo{flex:none;display:block;color:var(--ink)}
+.simbolo__punto{fill:var(--terracotta)}
 
 /* Scelta della lingua: una pastiglia che si apre, non una pagina in più. */
 .langpick{position:relative}
@@ -464,8 +538,9 @@ body, .card, .panel, .stat, .note, .saying, .rowcard, .place, .tile, .plan,
 .nav, .topbar, .guest-bottom, .band, .preview, .preview__body, .impersonating,
 .trrow, .trrow__head, .trrow__a, .trrow__b, .wizard__side, .wizard__step,
 .langpick__menu, .step, .checklist li, .search, .qr-sheet,
-input[type=text], input[type=email], input[type=password], input[type=tel],
-input[type=search], input[type=number], textarea, select {
+input:not([type]), input[type=text], input[type=email], input[type=password], input[type=tel],
+input[type=search], input[type=number], input[type=time], input[type=date], input[type=url],
+input[type=datetime-local], textarea, select {
   background-image: var(--grana);
   background-repeat: repeat;
   background-size: 128px 128px;
@@ -483,8 +558,9 @@ select {
   background-repeat: no-repeat, no-repeat, repeat;
 }
 /* Le fotografie e le schermate a tutto campo restano pulite. */
+/* (Il velo dello splash, .full__scrim, NON sta qui: il suo sfondo è il gradiente.) */
 .shot, .shot img, .thumb, .thumb img, .preview__shot, .full, .full__photo,
-.full__scrim, .preview__grid i, img { background-image: none; }
+.preview__grid i, img { background-image: none; }
 
 /* E niente sabbia su quello che si preme. Un comando deve staccare dalla
    superficie che lo ospita: liscio sopra il ruvido, si vede che e' un altro
@@ -530,6 +606,44 @@ button, input[type=submit], input[type=button] { background-image: none; }
 .meter{display:inline-flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
 .meter i{display:block;width:120px;height:6px;border-radius:999px;background:var(--line);overflow:hidden;position:relative}
 .meter i b{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:999px}
+
+/* Righe ordinabili (sezioni e luoghi): tutte alte uguali, il nome si tronca,
+   le azioni stanno nel menu ⋯ e non vanno mai a capo. */
+.righe{display:flex;flex-direction:column;gap:8px}
+.riga{display:flex;align-items:center;gap:12px;height:68px;padding:0 10px 0 6px;border-radius:var(--r-lg);
+  background:var(--raised);border:1px solid var(--line);color:var(--ink)}
+.riga--flag{border-color:var(--terracotta)}
+.riga--spenta{background:var(--sunk);border-style:dashed;border-color:var(--line-strong)}
+.riga--spenta .riga__nome b{color:var(--muted)}
+.riga--trascina{opacity:.5}
+.riga--sopra{box-shadow:0 -3px 0 var(--accent)}
+.riga__maniglia{flex:none;display:flex;align-items:center;justify-content:center;width:28px;height:44px;color:var(--line-strong);cursor:grab}
+.riga__maniglia:active{cursor:grabbing}
+.riga__ico{flex:none;display:flex;color:var(--accent)}
+.riga__nome{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px;color:var(--ink)}
+.riga__nome:hover{color:var(--ink)}
+.riga__nome b,.riga__nome .small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.riga__nome b{font-size:16px;font-weight:500;letter-spacing:-.3px}
+.riga .badge{flex:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;line-height:26px}
+.menu-riga{position:relative;flex:none}
+.menu-riga>summary{list-style:none;font-size:20px;line-height:1;border-color:transparent;background:none}
+.menu-riga>summary::-webkit-details-marker{display:none}
+.menu-riga[open]>summary{background:var(--sunk)}
+.menu-riga__lista{position:absolute;right:0;top:48px;z-index:30;display:flex;flex-direction:column;min-width:230px;padding:6px;
+  border-radius:var(--r-lg);background:var(--raised);border:1px solid var(--line);box-shadow:0 12px 34px rgba(35,27,18,.16)}
+.menu-riga__lista .rule{margin:6px 0}
+.menu-riga__voce{display:flex;align-items:center;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:10px;
+  background:none;color:var(--ink);font:inherit;font-size:15px;font-weight:500;text-align:left;cursor:pointer}
+.menu-riga__voce:hover{background:var(--sunk);color:var(--ink)}
+.menu-riga__voce--danger{color:var(--alert)}
+.menu-riga__voce--danger:hover{background:var(--alert-soft);color:var(--alert)}
+@media(max-width:560px){
+  .riga{gap:8px}
+  .riga__maniglia{display:none}
+  .riga{padding-left:12px}
+  .riga .riga__etichetta{display:none}
+}
+@media (hover:none){ .riga__maniglia{display:none} .riga{padding-left:12px} }
 
 /* Il catalogo delle sezioni. */
 .kinds{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
@@ -580,6 +694,24 @@ button, input[type=submit], input[type=button] { background-image: none; }
 .steps-nav a.on .n{background:var(--inverse-fg);color:var(--inverse-bg);border-color:transparent}
 .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:8px}
 
+/* La barra della procedura: uguale in ogni passo. Sul telefono resta
+   incollata in basso, così «Salva e continua» è sempre sotto il pollice. */
+.barra-passo{position:sticky;bottom:0;z-index:12;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin-top:8px;padding:12px 0;border-top:1px solid var(--line);background:var(--paper) var(--grana);background-size:128px 128px}
+.barra-passo__indietro{padding:0 12px 0 4px}
+.barra-passo__destra{display:flex;align-items:center;gap:14px;margin-left:auto}
+.stato{font-size:13.5px;color:var(--muted);white-space:nowrap}
+.stato--ok{color:var(--pine)}
+.stato--ok::before{content:"✓ ";font-weight:700}
+.propbar__dopo{height:36px}
+@media(max-width:560px){
+  .barra-passo{margin-left:-20px;margin-right:-20px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));gap:8px}
+  .barra-passo .btn--go{height:48px;padding-left:18px;font-size:15px}
+  .barra-passo .btn--go .go{width:34px;height:34px}
+  .barra-passo__destra{gap:10px}
+  .barra-passo .stato{font-size:12.5px}
+}
+
 /* Scelta della palette: veri campioni, non nomi. */
 .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .swatch{position:relative;display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:var(--r-lg);border:1px solid var(--line);
@@ -592,8 +724,9 @@ button, input[type=submit], input[type=button] { background-image: none; }
 .tones{display:flex;gap:10px;flex-wrap:wrap}
 .tone{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line-strong);
   background:var(--raised);cursor:pointer;margin:0;font-weight:500}
-.tone input{width:auto;height:auto}
+
 .tone--off{opacity:.45;cursor:not-allowed}
+.tone.scelta{min-height:52px;gap:12px;padding:10px 16px 10px 14px;border-radius:var(--r-md)}
 
 /* Media dell'intestazione. */
 .mediabox{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
@@ -861,3 +994,46 @@ a.device-link:hover .device{transform:translateY(-4px)}
   .stage .shot-pill{left:14px;bottom:14px;height:40px;padding:0 16px;font-size:14px}
   .plan__nome{font-size:32px}
 }
+
+/* ------------------------------------------------ header del sito, piè di pagina */
+.topbar__telefono{display:none;align-items:center;gap:8px}
+.menu-sito{position:relative}
+.menu-sito>summary{list-style:none}
+.menu-sito>summary::-webkit-details-marker{display:none}
+.menu-sito[open]>summary{background:var(--sunk)}
+.menu-sito__pannello{position:absolute;right:0;top:52px;z-index:40;display:flex;flex-direction:column;min-width:230px;padding:8px;
+  border-radius:var(--r-lg);background:var(--raised);border:1px solid var(--line);box-shadow:0 16px 40px rgba(35,27,18,.18)}
+.menu-sito__pannello a{display:flex;align-items:center;min-height:48px;padding:0 14px;border-radius:12px;color:var(--ink);font-weight:500}
+.menu-sito__pannello a:hover{background:var(--sunk);color:var(--ink)}
+.menu-sito__tema{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:6px;padding:8px 6px 2px 14px;
+  border-top:1px solid var(--line);color:var(--muted);font-size:14px;font-weight:500}
+@media(max-width:760px){
+  .topbar--sito .wrap{flex-wrap:nowrap;min-height:64px;gap:12px}
+  .topbar--sito .topbar__nav,.topbar--sito .topbar__azioni{display:none}
+  .topbar--sito .topbar__telefono{display:flex}
+  .topbar--sito .brand{font-size:16px;gap:7px}
+  .topbar--sito .brand .simbolo{width:22px;height:22px}
+}
+@media(max-width:360px){ .topbar--sito .brand span{display:none} }
+
+.piede{padding-bottom:40px}
+.piede__colonne{display:flex;justify-content:space-between;align-items:flex-start;gap:24px 48px;flex-wrap:wrap;padding-top:22px;
+  font-size:14px;line-height:1.5}
+.piede__chi,.piede__contatti{display:flex;flex-direction:column;gap:4px;color:var(--muted)}
+.piede__contatti{align-items:flex-end;text-align:right}
+.piede__marchio{display:inline-flex;align-items:center;gap:8px;color:var(--ink);font-weight:500}
+@media(max-width:560px){ .piede__contatti{align-items:flex-start;text-align:left} }
+
+/* Amministrazione: le funzioni di un piano come etichette leggibili. */
+.etichette{display:flex;flex-wrap:wrap;gap:5px}
+.etichetta{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;background:var(--sunk);
+  border:1px solid var(--line);font-size:12.5px;font-weight:500;white-space:nowrap;color:var(--ink)}
+.nascosti>summary{list-style:none}
+.nascosti>summary::-webkit-details-marker{display:none}
+.nascosti>summary::before{content:"▸ ";color:var(--muted)}
+.nascosti[open]>summary::before{content:"▾ "}
+.device__top .simbolo{color:#231b12}.device__top .simbolo__punto{fill:#b4451f}
+/* La lingua principale è sempre attiva: spunta piena ma neutra, non «spenta». */
+.scelta--fissa input:disabled{opacity:1;cursor:default;background:var(--muted);border-color:var(--muted)}
+.scelta--fissa{cursor:default;border-color:var(--line-strong);box-shadow:none}
+.scelta--fissa:has(input:checked){border-color:var(--line-strong);box-shadow:none}
