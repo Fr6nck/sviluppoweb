@@ -2,7 +2,9 @@
 /* L'elenco delle sezioni aggiuntive e il catalogo da cui aggiungerne.
    Si ordinano trascinando la maniglia, oppure dal menu ⋯ con «Sposta su /
    giù» (tastiera e telefono): tutte e due usano le stesse rotte.
-   Riceve: $prop, $sezioni (solo le aggiuntive), $limite, $attive, $torna ('' | 'procedura'). */
+   Nella procedura la sezione aperta ($aperta) si compila qui, sotto la sua card.
+   Riceve: $prop, $sezioni (solo le aggiuntive), $limite, $attive, $torna ('' | 'procedura'),
+           e nella procedura $aperta (dati dell'editor) e $modifica (luogo in modifica). */
 use function MHW\b;
 use MHW\{Support, Csrf, Icon, SectionCatalog};
 $pid = (int) $prop['id'];
@@ -32,19 +34,22 @@ $n = count($sezioni); ?>
   <?php endif; ?>
   <?php if ($sezioni): ?><div class="righe" data-ordina><?php endif; ?>
   <?php foreach ($sezioni as $i => $s): $on = (int) $s['is_active'] === 1;
-        $modifica = b() . '/pannello/' . $pid . '/sezioni/' . (int) $s['id'] . ($torna === 'procedura' ? '?da=procedura' : ''); ?>
-    <div class="riga <?= $on ? ($s['empty'] ? 'riga--flag' : '') : 'riga--spenta' ?>" data-riga
+        $apertaQui = $torna === 'procedura' && !empty($aperta) && (int) $aperta['s']['id'] === (int) $s['id'];
+        $modificaUrl = $torna === 'procedura'
+            ? b() . '/pannello/' . $pid . '/procedura/sezioni?apri=' . (int) $s['id'] . '#sez-' . (int) $s['id']
+            : b() . '/pannello/' . $pid . '/sezioni/' . (int) $s['id']; ?>
+    <div class="riga <?= $on ? ($s['empty'] ? 'riga--flag' : '') : 'riga--spenta' ?><?= $apertaQui ? ' riga--aperta' : '' ?>" data-riga id="sez-<?= (int) $s['id'] ?>"
          data-azione="<?= b() ?>/pannello/<?= $pid ?>/sezioni/<?= (int) $s['id'] ?>/azione" data-torna="<?= Support::e($torna) ?>">
       <span class="riga__maniglia" aria-hidden="true" title="Trascina per cambiare l'ordine"><?= Icon::svg('grip', 18, 2.6) ?></span>
       <span class="riga__ico"><?= Icon::svg(SectionCatalog::icon($s['kind']), 20) ?></span>
-      <a class="riga__nome" href="<?= $modifica ?>"><b><?= Support::e($s['title']) ?></b></a>
+      <a class="riga__nome" href="<?= $modificaUrl ?>"<?= $apertaQui ? ' aria-current="true"' : '' ?>><b><?= Support::e($s['title']) ?></b></a>
       <?php if (!$on): ?><span class="badge badge--paper">Disattivata</span>
       <?php elseif ($s['empty']): ?><span class="badge badge--terracotta">Da compilare</span>
       <?php else: ?><span class="badge badge--pine">Pronta</span><?php endif; ?>
       <details class="menu-riga">
         <summary class="icon-btn" aria-label="Azioni per <?= Support::e($s['title']) ?>"><span aria-hidden="true">⋯</span></summary>
         <div class="menu-riga__lista">
-          <a class="menu-riga__voce" href="<?= $modifica ?>">Modifica</a>
+          <a class="menu-riga__voce" href="<?= $modificaUrl ?>">Modifica</a>
           <?= $i > 0 ? $azione($s, 'su', 'Sposta su') : '' ?>
           <?= $i < $n - 1 ? $azione($s, 'giu', 'Sposta giù') : '' ?>
           <?= $on ? $azione($s, 'disattiva', 'Disattiva') : $azione($s, 'attiva', 'Attiva') ?>
@@ -54,6 +59,15 @@ $n = count($sezioni); ?>
         </div>
       </details>
     </div>
+    <?php if ($apertaQui): ?>
+      <div class="riga-editor" aria-label="<?= Support::e($s['title']) ?>">
+        <?php (function (array $v) { extract($v); include __DIR__ . '/_sezione_editor.php'; })([
+            'prop' => $prop, 'acc' => $acc, 's' => $aperta['s'], 'titoloSezione' => $aperta['title'], 'dati' => $aperta['dati'],
+            'tdati' => $aperta['tdati'], 'places' => $aperta['places'], 'modifica' => $modifica ?? 0, 'err' => null,
+            'inProcedura' => true, 'procedura' => false]); ?>
+        <p><a class="small" href="<?= b() ?>/pannello/<?= $pid ?>/procedura/sezioni#sez-<?= (int) $s['id'] ?>">Chiudi l'editor</a></p>
+      </div>
+    <?php endif; ?>
   <?php endforeach; ?>
   <?php if ($sezioni): ?></div><?php endif; ?>
 </div>

@@ -8,6 +8,16 @@ $guard = function (): void {
     if (!Installer::installed()) Support::redirect('/installa');
 };
 
+/**
+ * Il piano che l'host ha in mente (prima di pagare): versione in vendita e,
+ * per Portfolio, numero di strutture. Lo usano la registrazione e /piano.
+ */
+$salvaPiano = function (array $acc, int $userId, array $pv, int $q): void {
+    Db::update('accounts', ['intended_package_version_id' => $pv['id'], 'intended_quantity' => $q], 'id = :aid', ['aid' => $acc['id']]);
+    MHW\Entitlements::forget((int) $acc['id']);
+    Auth::audit('plan.intended', $userId, ['package_version_id' => (int) $pv['id'], 'quantity' => $q]);
+};
+
 /** Dove porta "Crea la tua guida" per chi è già dentro: niente seconda registrazione. */
 $doveComincia = function (array $u): string {
     if ($u['role'] === 'admin') return '/admin';
@@ -56,12 +66,17 @@ $r->get('/termini', fn() => View::out('pub/legal', ['doc' => 'termini'], 'layout
 $r->get('/privacy', fn() => View::out('pub/legal', ['doc' => 'privacy'], 'layout/bare'));
 
 // ------------------------------------------------------------------ registrazione
-$r->any('/registrati', function () use ($guard, $doveComincia) {
+$r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano) {
     $guard();
     $piano = (int) ($_GET['piano'] ?? $_POST['piano'] ?? 0);
     // Il numero di strutture scelto (Portfolio) viaggia con il piano fino al checkout.
     $strutture = (int) ($_GET['strutture'] ?? $_POST['strutture'] ?? 0);
     $scelta = $piano ? '/piano?piano=' . $piano . ($strutture > 0 ? '&strutture=' . $strutture : '') : '';
+    // Il piano arrivato dalla landing, se è in vendita e la quantità va bene: si
+    // mostra in alto e, a registrazione fatta, si salva senza ripassare da /piano.
+    $pvScelto = $piano ? Plans::currentVersion($piano) : null;
+    $qScelta = $pvScelto ? Plans::quantity($pvScelto, Plans::perProperty($pvScelto) ? ($strutture ?: null) : 1) : null;
+    if ($qScelta === null) $pvScelto = null;
     // Chi è già dentro non si registra una seconda volta.
     if ($u = Auth::user()) Support::redirect($scelta ?: $doveComincia($u));
 
@@ -72,18 +87,26 @@ $r->any('/registrati', function () use ($guard, $doveComincia) {
             if (!RateLimit::hit('register:' . RateLimit::ip(), 10, 3600)) {
                 throw new RuntimeException('Troppe registrazioni da questa connessione. Riprova tra un\'ora.');
             }
-            if (empty($_POST['termini']) || empty($_POST['privacy'])) {
-                throw new RuntimeException('Per creare l\'account devi accettare i Termini e prendere visione della Privacy.');
+            // Un solo consenso esplicito, sui Termini. La privacy si prende in visione:
+            // la riga sotto il bottone lo dichiara e recordConsent ne salva versione e
+            // data. Formulazione da far verificare al consulente privacy.
+            if (empty($_POST['termini'])) {
+                throw new RuntimeException('Per creare l\'account devi accettare i Termini e condizioni.');
             }
             $u = Auth::register((string) $_POST['email'], (string) $_POST['password'], (string) $_POST['name']);
             Auth::recordConsent((int) $u['user_id']);
             Auth::login((int) $u['user_id']);
             Auth::sendVerification((int) $u['user_id']);
             Support::flash('Account creato. Ti abbiamo scritto per confermare l\'email: intanto puoi preparare la guida.');
+            if ($pvScelto) {
+                $salvaPiano(Auth::account(), (int) $u['user_id'], $pvScelto, $qScelta);
+                Support::redirect('/pannello/nuova');
+            }
             Support::redirect($scelta ?: '/piano');
         } catch (\RuntimeException $e) { $err = $e->getMessage(); }
     }
-    View::out('auth/register', ['err' => $err, 'piano' => $piano, 'strutture' => $strutture, 'vecchi' => $vecchi], 'layout/bare');
+    View::out('auth/register', ['err' => $err, 'piano' => $piano, 'strutture' => $strutture, 'vecchi' => $vecchi,
+                                'pianoScelto' => $pvScelto, 'quantita' => $qScelta], 'layout/bare');
 });
 
 $r->any('/accedi', function () use ($guard, $doveComincia) {
@@ -171,7 +194,7 @@ $r->any('/password/nuova/{token}', function (array $a) {
 });
 
 // ------------------------------------------------------------- scelta del piano
-$r->any('/piano', function () {
+$r->any('/piano', function () use ($salvaPiano) {
     $u = Auth::requireUser();
     if ($u['role'] === 'admin') Support::redirect('/admin');
     $acc = Auth::account();
@@ -188,9 +211,7 @@ $r->any('/piano', function () {
             Support::flash('Indica un numero intero di strutture tra ' . (int) $pv['min_quantity'] . ' e ' . (int) $pv['max_quantity'] . '.', 'err');
             Support::redirect('/piano?piano=' . (int) $pv['id']);
         }
-        Db::update('accounts', ['intended_package_version_id' => $pv['id'], 'intended_quantity' => $q], 'id = :aid', ['aid' => $acc['id']]);
-        MHW\Entitlements::forget((int) $acc['id']);
-        Auth::audit('plan.intended', (int) $u['id'], ['package_version_id' => (int) $pv['id'], 'quantity' => $q]);
+        $salvaPiano($acc, (int) $u['id'], $pv, $q);
         Support::flash('Piano ' . $pv['name'] . (Plans::perProperty($pv) ? ' per ' . $q . ' strutture' : '') . ' scelto. Non paghi niente adesso: solo quando pubblichi.');
         $ha = Db::val('SELECT id FROM properties WHERE account_id = ?', [$acc['id']]);
         Support::redirect($ha ? '/pannello' : '/pannello/nuova');

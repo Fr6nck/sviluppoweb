@@ -1,12 +1,13 @@
 <?php
-/* La procedura guidata: sette passi, ognuno salva da sé. Avanti, indietro,
-   "continua dopo": quello che è scritto resta. A destra l'anteprima vera. */
+/* La procedura guidata: cinque passi, ognuno salva da sé. Avanti, indietro,
+   "continua dopo": quello che è scritto resta. A destra l'anteprima vera.
+   Le lingue in più sono in fondo all'ultimo passo, facoltative. */
 use function MHW\b;
-use MHW\{Support, Csrf, Icon};
+use MHW\{Support, Csrf, Icon, Plans};
 $pid = (int) $prop['id'];
 $chiavi = array_keys($passi);
 $i = array_search($passo, $chiavi, true);
-$fatto = (int) array_search($prop['wizard_step'] ?: 'struttura', $chiavi, true);
+$fatto = $prop['wizard_step'] === 'fatto' ? count($chiavi) : (int) array_search($prop['wizard_step'] ?: 'struttura', $chiavi, true);
 $prec = $i > 0 ? $chiavi[$i - 1] : null;
 $succ = $chiavi[$i + 1] ?? null;
 $title = $passi[$passo] . ' — ' . $prop['name'];
@@ -16,10 +17,17 @@ $avanti = fn(string $testo, string $verso = '') => $verso !== ''
     ? '<a class="btn btn--go" href="' . $verso . '">' . $testo . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></a>'
     : ''; ?>
 
+<?php if ($prop['status'] !== 'published' && !MHW\Auth::isVerified($user)): /* la verifica email, in una riga */ ?>
+  <form method="post" action="<?= b() ?>/verifica/invia" class="verifica-riga"><?= Csrf::field() ?>
+    <span><?= Icon::svg('info', 16) ?><span>Conferma la tua email<span class="verifica-riga__email"> (<?= Support::e($user['email']) ?>)</span> per poter pubblicare.</span></span>
+    <button class="linkbtn">Mandamela di nuovo</button>
+  </form>
+<?php endif; ?>
+
 <nav class="steps-nav" aria-label="Passi della configurazione" style="margin-bottom:28px">
   <?php foreach ($passi as $k => $nome): $j = array_search($k, $chiavi, true); ?>
     <a href="<?= $vai($k) ?>" class="<?= $k === $passo ? 'on' : ($j < $fatto || $j < $i ? 'done' : '') ?>"<?= $k === $passo ? ' aria-current="step"' : '' ?>>
-      <span class="n"><?= $j < $fatto && $k !== $passo ? Icon::svg('check', 12, 2.4) : $j + 1 ?></span><?= Support::e($nome) ?></a>
+      <span class="n"><?= $j < $fatto && $k !== $passo ? Icon::svg('check', 12, 2.4) : $j + 1 ?></span><span class="steps-nav__nome"><?= Support::e($nome) ?></span></a>
   <?php endforeach; ?>
 </nav>
 
@@ -30,14 +38,14 @@ $avanti = fn(string $testo, string $verso = '') => $verso !== ''
 
 <?php switch ($passo):
 case 'struttura': ?>
-      <h1>La tua struttura.</h1>
-      <p class="lead">Nome, orari e contatti: le informazioni che l'ospite cerca per prime.</p>
+      <h1>Struttura e contatti.</h1>
+      <p class="lead">Nome, orari, contatti e la lingua in cui scrivi: le informazioni che l'ospite cerca per prime.</p>
     </div>
-    <?php $dopoPasso = 'checkin'; include __DIR__ . '/_struttura_form.php'; ?>
+    <?php $dopoPasso = 'arrivo'; include __DIR__ . '/_struttura_form.php'; ?>
 <?php break;
 
-case 'checkin': $dati = json_decode((string) $core['data'], true) ?: []; ?>
-      <h1>Check-in &amp; Check-out.</h1>
+case 'arrivo': $dati = json_decode((string) $core['data'], true) ?: []; ?>
+      <h1>Arrivo e partenza.</h1>
       <p class="lead">Come si entra e cosa fare prima di partire. È il cuore della guida ed è sempre incluso, in ogni piano.
         Non scrivere qui codici di porte o cassette: mandali all'ospite in privato.</p>
     </div>
@@ -49,46 +57,22 @@ case 'checkin': $dati = json_decode((string) $core['data'], true) ?: []; ?>
 <?php break;
 
 case 'sezioni': ?>
-      <h1>Scegli le sezioni.</h1>
-      <p class="lead">Aggiungi solo quello che serve davvero ai tuoi ospiti. Potrai cambiare idea quando vuoi: una sezione disattivata tiene i suoi contenuti.</p>
+      <h1>Sezioni.</h1>
+      <p class="lead">Aggiungi quello che serve davvero ai tuoi ospiti: la sezione si apre subito qui sotto, da compilare.
+        Si salva mentre scrivi, e una sezione disattivata tiene i suoi contenuti.</p>
     </div>
     <?php $torna = 'procedura'; include __DIR__ . '/_sezioni.php'; ?>
-    <?php $barraAvanti = $avanti('Salva e continua', $vai('contenuti')); include __DIR__ . '/_barra_passo.php'; ?>
-<?php break;
-
-case 'contenuti': $attiveSez = array_filter($sezioni, fn($s) => (int) $s['is_active'] === 1); ?>
-      <h1>Compila i contenuti.</h1>
-      <p class="lead">Apri ogni sezione e scrivi le informazioni. Si salva mentre scrivi.</p>
-    </div>
-    <div class="stack" style="gap:10px">
-      <?php if (!$attiveSez): ?><p class="note note--quiet">Nessuna sezione aggiuntiva attiva. <a href="<?= $vai('sezioni') ?>">Scegline qualcuna</a>, oppure continua.</p><?php endif; ?>
-      <?php foreach ($attiveSez as $s): ?>
-        <a class="rowcard <?= $s['empty'] ? 'rowcard--flag' : '' ?>" href="<?= b() ?>/pannello/<?= $pid ?>/sezioni/<?= (int) $s['id'] ?>?da=procedura">
-          <span style="color:var(--accent);display:flex"><?= Icon::svg(MHW\SectionCatalog::icon($s['kind']), 20) ?></span>
-          <b class="grow"><?= Support::e($s['title']) ?></b>
-          <?= $s['empty'] ? '<span class="badge badge--terracotta">Da compilare</span>' : '<span class="badge badge--pine">Pronta</span>' ?>
-          <span class="small muted">Apri</span>
-        </a>
-      <?php endforeach; ?>
-    </div>
-    <?php $barraAvanti = $avanti('Salva e continua', $vai('lingue')); include __DIR__ . '/_barra_passo.php'; ?>
-<?php break;
-
-case 'lingue': ?>
-      <h1>Lingue.</h1>
-      <p class="lead">In quali lingue vuoi pubblicare la guida? Le traduzioni le scrivi tu, da Lingue, quando vuoi.</p>
-    </div>
-    <?php $dopoPasso = 'aspetto'; include __DIR__ . '/_lingue_form.php'; ?>
+    <?php $barraAvanti = $avanti('Salva e continua', $vai('aspetto')); include __DIR__ . '/_barra_passo.php'; ?>
 <?php break;
 
 case 'aspetto': ?>
       <h1>Aspetto.</h1>
       <p class="lead">Scegli i colori e carica la copertina. L'anteprima accanto cambia mentre scegli.</p>
     </div>
-    <?php $dopoPasso = 'anteprima'; include __DIR__ . '/_aspetto_form.php'; ?>
+    <?php $dopoPasso = 'pubblica'; include __DIR__ . '/_aspetto_form.php'; ?>
 <?php break;
 
-case 'anteprima': ?>
+case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
       <h1><?= $prop['status'] === 'published' && $online ? 'Pubblica le modifiche.' : 'Anteprima e pubblicazione.' ?></h1>
       <p class="lead">Guarda la guida come la vedranno gli ospiti. Quando ti convince, pubblicala.</p>
     </div>
@@ -106,8 +90,8 @@ case 'anteprima': ?>
       <?php elseif ($piano): ?>
         <div class="spread spread--mid">
           <div class="stack" style="gap:4px"><span class="kicker">Il tuo piano</span>
-            <b style="font-size:22px;font-weight:500"><?= Support::e($piano['name']) ?></b></div>
-          <span style="font-size:26px;font-weight:500"><?= Support::e(Support::money((int) $piano['price_cents'], $piano['currency'])) ?>
+            <b style="font-size:22px;font-weight:500"><?= Support::e($piano['name']) ?><?= Plans::perProperty($piano) ? ' · ' . $quantita . ' strutture' : '' ?></b></div>
+          <span style="font-size:26px;font-weight:500"><?= Support::e(Support::money(Plans::price($piano, Plans::perProperty($piano) ? $quantita : 1), $piano['currency'])) ?>
             <span class="small muted">+ IVA / anno</span></span>
         </div>
         <p class="small muted">Abbonamento annuale con rinnovo automatico, che puoi disattivare quando vuoi. Il pagamento avviene su Stripe;
@@ -121,6 +105,25 @@ case 'anteprima': ?>
       <?php endif; ?>
 
     </div>
+
+    <?php /* Facoltativo: le lingue in più. Le traduzioni non fermano la pubblicazione:
+             dove mancano, l'ospite legge la lingua principale. */
+          $altreLingue = array_diff_key($tutte, [$prop['default_locale'] => 1]); if ($altreLingue): ?>
+      <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/lingue" class="fieldset stack" style="gap:12px"><?= Csrf::field() ?>
+        <span class="legend">Vuoi la guida anche in altre lingue? <span class="small muted" style="font-weight:400">Facoltativo</span></span>
+        <p class="help">Puoi pubblicare anche solo in <?= Support::e($tutte[$prop['default_locale']] ?? $prop['default_locale']) ?>. Le traduzioni le scrivi
+          da <a href="<?= b() ?>/pannello/<?= $pid ?>/lingue">Lingue</a>, quando vuoi: dove mancano, l'ospite legge la lingua principale.</p>
+        <input type="hidden" name="locali[]" value="<?= Support::e($prop['default_locale']) ?>">
+        <div class="scelte">
+          <?php foreach ($altreLingue as $code => $nomeL): $ok = in_array($code, $consentite, true); ?>
+            <label class="scelta"><input type="checkbox" name="locali[]" value="<?= Support::e($code) ?>" <?= in_array($code, $lingueAttive, true) && $ok ? 'checked' : '' ?> <?= $ok ? '' : 'disabled' ?>>
+              <span class="scelta__testo"><?= Support::e($nomeL) ?><?php if (!$ok): ?> <span class="small muted">compresa nel piano Plus</span><?php endif; ?></span></label>
+          <?php endforeach; ?>
+        </div>
+        <div><button class="btn btn--ghost btn--sm" name="dopo" value="pubblica">Salva le lingue</button></div>
+      </form>
+    <?php endif; ?>
+
     <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/pubblica" style="margin:0"><?= Csrf::field() ?>
       <?php $barraAvanti = '<button class="btn btn--go" ' . ($problemi || (!$sub && (!$verificato || !$piano)) ? 'disabled' : '') . '>'
                          . ($sub ? 'Pubblica ora' : 'Attiva e pubblica') . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';

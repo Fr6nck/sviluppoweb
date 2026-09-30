@@ -16,15 +16,16 @@ $def = $prop['default_locale']; ?>
   <?php $altre = array_values(array_filter($lingueAttive, fn($l) => $l !== $def)); if ($altre): ?>
     <div class="stack" style="gap:10px">
       <h2 style="font-size:22px">Traduzioni</h2>
-      <?php foreach ($altre as $l): [$fatte, $tot] = $copertura[$l] ?? [0, 0]; $ok = in_array($l, $consentite, true); ?>
+      <?php foreach ($altre as $l): [$fatte, $tot] = $copertura[$l] ?? [0, 0]; $ok = in_array($l, $consentite, true);
+            $perc = $tot ? (int) floor($fatte / $tot * 100) : 100; ?>
         <a class="rowcard <?= $ok ? '' : 'rowcard--locked' ?>" href="<?= $ok ? b() . '/pannello/' . (int) $prop['id'] . '/lingue/' . Support::e($l) : '#' ?>">
           <span style="color:var(--accent);display:flex"><?= Icon::svg('globe', 20) ?></span>
-          <b class="grow"><?= Support::e($tutte[$l] ?? $l) ?></b>
-          <span class="meter"><i><b style="width:<?= $tot ? (int) round($fatte / $tot * 100) : 0 ?>%"></b></i><?= (int) $fatte ?> su <?= (int) $tot ?> sezioni</span>
+          <b class="grow"><?= Support::e($tutte[$l] ?? $l) ?> <span class="perc"><?= $perc ?>%</span></b>
+          <span class="meter"><i><b style="width:<?= $perc ?>%"></b></i><?= $tot - $fatte ? ($tot - $fatte) . ' camp' . ($tot - $fatte === 1 ? 'o' : 'i') . ' da tradurre' : 'Tutto tradotto' ?></span>
           <span class="small muted"><?= $ok ? 'Traduci' : 'Fuori piano' ?></span>
         </a>
       <?php endforeach; ?>
-      <p class="tiny muted">Dove manca la traduzione, l'ospite legge il testo nella lingua principale.</p>
+      <p class="tiny muted">Le traduzioni non servono per pubblicare: dove mancano, l'ospite legge il testo nella lingua principale.</p>
     </div>
   <?php endif; ?>
 </div>

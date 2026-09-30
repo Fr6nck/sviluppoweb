@@ -260,12 +260,41 @@ capitolo('Registrazione, consensi, verifica');
 $anna = new Browser('anna');
 $r = $anna->get('/registrati?piano=' . pv('essential'));
 prova('Registrazione si apre', $r['code'] === 200 && str_contains($r['body'], 'Cominciamo.'));
+prova('Fase 2 · in alto il piano scelto, con «cambia»', str_contains($r['body'], 'class="chip-piano"') && str_contains($r['body'], 'Piano <b>Essential</b>')
+      && str_contains($r['body'], "87\u{00A0}€ + IVA/anno") && str_contains($r['body'], '>cambia</a>'));
+prova('Fase 2 · «Nome e cognome», password con «Mostra» e barra di robustezza', str_contains($r['body'], 'Nome e cognome') && str_contains($r['body'], 'data-mostra-pw')
+      && str_contains($r['body'], 'data-forza'));
+prova('Fase 2 · una sola casella (Termini), la privacy è una riga sotto il bottone', substr_count($r['body'], 'type="checkbox"') === 1 && !str_contains($r['body'], 'name="privacy"')
+      && str_contains($r['body'], "Creando l'account dichiari di aver letto l'") && strpos($r['body'], 'informativa privacy') > strpos($r['body'], 'Crea l\'account e inizia'));
+$elena = new Browser('elena');
+$r = $elena->get('/registrati');
+prova('Fase 2 · «Crea gratis» generico: nessun piano in alto', !str_contains($r['body'], 'chip-piano'));
+$r = $elena->post('/registrati', ['name' => 'Elena Senza Piano', 'email' => 'elena@prova.test', 'password' => 'ElenaProva123', 'termini' => '1']);
+prova('Fase 2 · …e dopo la registrazione si passa da /piano', $r['code'] === 302 && str_ends_with($r['loc'], '/piano'), $r['loc']);
+$r = $elena->get('/piano');
+prova('Fase 2 · /piano: card intere cliccabili, senza la riga che ripete nome e prezzo', substr_count($r['body'], 'class="pianocard__velo"') >= 3
+      && !str_contains($r['body'], 'class="swatch"') && str_contains($r['body'], 'data-sceglie=')
+      && preg_match('#<div class="plan pianocard[^"]*">(?:(?!<div class="plan pianocard).)*?name="strutture"#s', $r['body']) === 1);
+$r = $elena->post('/piano', ['pv' => pv('plus')]);
+prova('Fase 2 · scelto il piano, alla struttura', $r['code'] === 302 && str_contains($r['loc'], '/pannello/nuova'));
+$elena->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Elena', 'city' => 'Todi']);
+$epid = (int) val("SELECT p.id FROM properties p JOIN accounts a ON a.id = p.account_id JOIN users u ON u.id = a.user_id WHERE u.email = 'elena@prova.test'");
+prova('Fase 2 · nuova struttura: si riprende da «Arrivo e partenza»', val('SELECT wizard_step FROM properties WHERE id = ?', [$epid]) === 'arrivo');
+$r = $elena->modulo("/pannello/$epid/procedura/struttura", "/pannello/$epid/impostazioni", ['name' => 'Casa Elena', 'default_locale' => 'en'], ['Accept: application/json']);
+prova('Fase 2 · la lingua principale si salva (anche col salvataggio automatico)', ($r['code'] === 200) && val('SELECT default_locale FROM properties WHERE id = ?', [$epid]) === 'en'
+      && (bool) val("SELECT 1 FROM property_locales WHERE property_id = ? AND locale = 'en'", [$epid]) && (bool) val("SELECT 1 FROM property_locales WHERE property_id = ? AND locale = 'it'", [$epid]));
+$r = $elena->post("/pannello/$epid/impostazioni", ['name' => 'Casa Elena', 'default_locale' => 'xx'], ['Accept: application/json']);
+prova('…una lingua fuori piano no', $r['code'] === 422 && val('SELECT default_locale FROM properties WHERE id = ?', [$epid]) === 'en');
 $r = $anna->post('/registrati', ['piano' => pv('essential'), 'name' => 'Anna Prova', 'email' => 'anna@prova.test', 'password' => 'AnnaProva123']);
 prova('Senza Termini non si entra', $r['code'] === 200 && str_contains($r['body'], 'accettare i Termini'));
 prova('Senza Termini nessun utente creato', !val("SELECT id FROM users WHERE email = 'anna@prova.test'"));
 $r = $anna->post('/registrati', ['piano' => pv('essential'), 'name' => 'Anna Prova', 'email' => 'anna@prova.test',
                                   'password' => 'AnnaProva123', 'termini' => '1', 'privacy' => '1']);
-prova('Registrazione → scelta del piano', $r['code'] === 302 && str_contains($r['loc'], '/piano?piano=' . pv('essential')));
+prova('Fase 2 · registrazione con il piano → dritti al nome della struttura', $r['code'] === 302 && str_contains($r['loc'], '/pannello/nuova'), $r['loc']);
+prova('…con il piano già salvato', (int) val("SELECT a.intended_package_version_id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = 'anna@prova.test'") === pv('essential'));
+$r = $anna->get('/pannello/nuova');
+prova('Fase 2 · «Piano Essential scelto · non paghi adesso · Cambia»', str_contains($r['body'], 'Piano <b>Essential</b>') && str_contains($r['body'], 'scelto · non paghi adesso')
+      && preg_match('#href="[^"]*/piano">Cambia</a>#', $r['body']) === 1 && str_contains($r['body'], 'Passo 1 di 5'));
 $u = riga("SELECT * FROM users WHERE email = 'anna@prova.test'");
 prova('Consenso ai Termini registrato con versione e data', $u && $u['terms_version'] !== '' && $u['terms_accepted_at'] !== null);
 prova('Presa visione privacy registrata', $u && $u['privacy_version'] !== '' && $u['privacy_accepted_at'] !== null);
@@ -295,16 +324,26 @@ $pid = (int) val('SELECT id FROM properties WHERE account_id = ?', [$acc['id']])
 $prop = riga('SELECT * FROM properties WHERE id = ?', [$pid]);
 prova('Check-in & Check-out creato come nucleo', (int) val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_core = 1', [$pid]) === 1);
 prova('QR creato subito', (bool) val('SELECT token FROM qr_tokens WHERE property_id = ?', [$pid]));
-foreach (array_keys(['struttura' => 1, 'checkin' => 1, 'sezioni' => 1, 'contenuti' => 1, 'lingue' => 1, 'aspetto' => 1, 'anteprima' => 1]) as $passo) {
+foreach (['struttura' => 'Struttura e contatti', 'arrivo' => 'Arrivo e partenza', 'sezioni' => 'Sezioni', 'aspetto' => 'Aspetto', 'pubblica' => 'Anteprima e pubblica'] as $passo => $nomePasso) {
     $r = $anna->get("/pannello/$pid/procedura/$passo");
-    prova("Passo \"$passo\" si apre", $r['code'] === 200 && pulita($r));
+    prova("Passo \"$passo\" si apre", $r['code'] === 200 && pulita($r) && str_contains($r['body'], $nomePasso) && str_contains($r['body'], 'di 5'));
 }
+foreach (['checkin' => 'arrivo', 'contenuti' => 'sezioni', 'lingue' => 'aspetto', 'anteprima' => 'pubblica'] as $vecchio => $nuovo) {
+    $r = $anna->get("/pannello/$pid/procedura/$vecchio");
+    prova("Fase 2 · vecchio indirizzo «{$vecchio}» → 301 a «{$nuovo}»", $r['code'] === 301 && str_ends_with($r['loc'], "/procedura/$nuovo"), $r['code'] . ' ' . $r['loc']);
+}
+$r = $anna->get("/pannello/$pid/procedura/struttura");
+prova('Fase 2 · procedura: una sola navigazione (niente tab), «Esci, continuo dopo»', !str_contains($r['body'], 'aria-label="La guida"') && str_contains($r['body'], 'Esci, continuo dopo')
+      && str_contains($r['body'], 'class="verifica-riga"') && !str_contains($r['body'], 'banner banner--info'));
+prova('Fase 2 · «In che lingua scrivi la guida?» con l\'italiano scelto', str_contains($r['body'], 'In che lingua scrivi la guida?')
+      && preg_match('#name="default_locale" value="it" checked#', $r['body']) === 1);
+prova('Fase 2 · fuori dalla procedura le tab restano', str_contains($anna->get("/pannello/$pid/lingue")['body'], 'aria-label="La guida"'));
 $r = $anna->modulo("/pannello/$pid/procedura/struttura", "/pannello/$pid/impostazioni",
     ['name' => 'Casa Prova', 'city' => 'Lecce', 'region' => 'Puglia', 'checkin_from' => '15:00', 'checkout_by' => '10:00',
-     'host_name' => 'Anna', 'host_phone' => '+39 333 1234567', 'host_whatsapp' => '+39 333 1234567', 'dopo' => 'checkin']);
-prova('Salva e continua porta al passo dopo', $r['code'] === 302 && str_contains($r['loc'], '/procedura/checkin'));
+     'host_name' => 'Anna', 'host_phone' => '+39 333 1234567', 'host_whatsapp' => '+39 333 1234567', 'dopo' => 'arrivo']);
+prova('Salva e continua porta al passo dopo', $r['code'] === 302 && str_contains($r['loc'], '/procedura/arrivo'));
 $core = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$pid]);
-$r = $anna->modulo("/pannello/$pid/procedura/checkin", "/pannello/$pid/sezioni/$core",
+$r = $anna->modulo("/pannello/$pid/procedura/arrivo", "/pannello/$pid/sezioni/$core",
     ['checkin_steps' => ['Il portone è quello verde.', 'Le chiavi te le consegno io.', ''], 'checkin_note' => 'Se arrivi tardi, scrivimi.',
      'checkout_keys' => 'Lascia le chiavi sul tavolo.', 'checkout_waste' => 'Umido nel bidone marrone.', 'checkout_notes' => 'Buon viaggio!',
      'door_code' => '4729', 'dopo' => 'sezioni']);
@@ -325,14 +364,21 @@ foreach (['wifi', 'rules', 'eat', 'parking'] as $k) {
     $r = $anna->post("/pannello/$pid/sezioni", ['kind' => $k, 'torna' => 'procedura']);
     $ids[$k] = (int) val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$pid, $k]);
     prova("Aggiunta $k", $ids[$k] > 0);
+    if ($k === 'wifi') {
+        prova('Fase 2 · «Aggiungi» apre subito l\'editor sotto la card', $r['code'] === 302 && str_contains($r['loc'], "/procedura/sezioni?apri={$ids['wifi']}#sez-{$ids['wifi']}"), $r['loc']);
+        $ed = $anna->get("/pannello/$pid/procedura/sezioni?apri={$ids['wifi']}");
+        prova('…con lo stesso modulo della sezione, nella pagina della procedura', pulita($ed) && str_contains($ed['body'], 'class="riga-editor"')
+              && str_contains($ed['body'], 'Nome della rete') && str_contains($ed['body'], 'name="da" value="procedura"') && str_contains($ed['body'], 'Passo 3 di 5'));
+        $r = $anna->post("/pannello/$pid/sezioni/{$ids['wifi']}", ['da' => 'procedura', 'network' => 'Prima_Rete', 'azione' => 'salva']);
+        prova('…e salvando si resta nella procedura, sulla stessa sezione', $r['code'] === 302 && str_contains($r['loc'], "/procedura/sezioni?apri={$ids['wifi']}"));
+    }
 }
 $r = $anna->post("/pannello/$pid/sezioni", ['kind' => 'transport', 'torna' => 'procedura']);
 $r = $anna->segui($r);
 prova('La quinta sezione è rifiutata dal server', !val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$pid, 'transport']));
 prova('Messaggio di limite elegante', str_contains($r['body'], 'Hai utilizzato tutte le 4 sezioni incluse nel tuo piano') && str_contains($r['body'], 'Scopri Plus'));
 prova('Il contatore dice 4 su 4', str_contains($r['body'], '4 sezioni su 4 utilizzate'));
-prova('Niente maniglie di trascinamento', !str_contains($r['body'], 'grip') && !str_contains($r['body'], '⋮'));
-prova('Ordinamento con Sposta su / giù', str_contains($r['body'], 'Sposta su') && str_contains($r['body'], 'Sposta giù'));
+prova('Ordinamento: maniglia e menu ⋯ con Sposta su / giù', str_contains($r['body'], 'riga__maniglia') && str_contains($r['body'], 'Sposta su') && str_contains($r['body'], 'Sposta giù'));
 $anna->post("/pannello/$pid/sezioni/{$ids['parking']}/azione", ['fai' => 'disattiva', 'torna' => 'procedura']);
 prova('Disattivare libera un posto', (int) val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_core = 0 AND is_active = 1', [$pid]) === 3);
 $anna->get("/pannello/$pid/procedura/sezioni");
@@ -394,6 +440,19 @@ prova('Traduzione manuale salvata', str_contains((string) val("SELECT data FROM 
 prova('Nessuna traduzione automatica chiamata', !is_file("$DOVE/app/storage/logs/translator.log"));
 $r = $anna->get("/pannello/$pid/anteprima/{$ids['wifi']}?l=en");
 prova('Guida in inglese: testo e interfaccia', str_contains($r['body'], 'Restart the router') && str_contains($r['body'], 'Password') && str_contains($r['body'], 'lang="en"'));
+$anna->post("/pannello/$pid/lingue/en", ['s' => [$core => ['checkin_note' => 'If you arrive late, text me.']]]);
+$r = $anna->get("/pannello/$pid/anteprima/$core?l=en");
+prova('Fase 2 · campo non tradotto: l\'ospite legge la lingua principale, campo per campo', str_contains($r['body'], 'If you arrive late, text me.')
+      && str_contains($r['body'], 'Il portone è quello verde.'));
+$r = $anna->get("/pannello/$pid/lingue");
+prova('Fase 2 · Lingue: percentuale per lingua e campi da tradurre', preg_match('#English <span class="perc">(\d+)%</span>#', $r['body'], $mp) === 1 && (int) $mp[1] > 0 && (int) $mp[1] < 100
+      && str_contains($r['body'], 'da tradurre'), $mp[1] ?? '');
+$r = $anna->get("/pannello/$pid/lingue/en");
+prova('Fase 2 · traduzione: i campi mancanti sono evidenziati', str_contains($r['body'], 'da-tradurre') && str_contains($r['body'], 'Da tradurre'));
+$r = $anna->get("/pannello/$pid/procedura/pubblica");
+prova('Fase 2 · «Vuoi la guida anche in altre lingue?» in fondo, facoltativo', str_contains($r['body'], 'Vuoi la guida anche in altre lingue?') && str_contains($r['body'], 'Facoltativo')
+      && preg_match('#name="locali\[\]" value="fr"[^>]*disabled#', $r['body']) === 1);
+prova('Fase 2 · le traduzioni a metà non bloccano la pubblicazione', !str_contains($r['body'], 'Prima di pubblicare') || !preg_match('/tradu/i', (string) (preg_match('#Prima di pubblicare</b>(.*?)</div>#s', $r['body'], $mm) ? $mm[1] : '')));
 
 // ================================================================== ASPETTO
 capitolo('Aspetto e palette');
@@ -434,7 +493,7 @@ capitolo('Pubblicazione e pagamento');
 $slug = val('SELECT slug FROM properties WHERE id = ?', [$pid]);
 $r = $anna->get("/g/$slug");
 prova('Prima di pagare la guida non è online', $r['code'] === 404);
-$r = $anna->modulo("/pannello/$pid/procedura/anteprima", "/pannello/$pid/pubblica", []);
+$r = $anna->modulo("/pannello/$pid/procedura/pubblica", "/pannello/$pid/pubblica", []);
 $r = $anna->segui($r);
 prova('Email non verificata: niente pagamento', str_contains($r['body'], 'Conferma prima la tua email') && (int) val('SELECT COUNT(*) FROM orders WHERE account_id = ?', [$acc['id']]) === 0);
 $link = linkPosta('anna@prova.test', 'verifica');
@@ -443,7 +502,7 @@ prova('Link di verifica funziona', $r['code'] === 302 && val("SELECT email_verif
 $r = $anna->get(substr($link, strpos($link, '/verifica/')));
 prova('Il link di verifica vale una volta sola', $r['code'] === 200 && pulita($r));
 
-$r = $anna->modulo("/pannello/$pid/procedura/anteprima", "/pannello/$pid/pubblica", []);
+$r = $anna->modulo("/pannello/$pid/procedura/pubblica", "/pannello/$pid/pubblica", []);
 prova('Pubblica → Stripe Checkout', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/'));
 $ordine = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$acc['id']]);
 prova('Ordine in attesa, legato alla struttura', $ordine && $ordine['status'] === 'pending' && (int) $ordine['property_id'] === $pid && (int) $ordine['amount_cents'] === 8700);
@@ -623,7 +682,9 @@ $carla = new Browser('carla');
 $r = $carla->get("/registrati?piano=$pp&strutture=3");
 prova('La quantità scelta sulla landing arriva alla registrazione', str_contains($r['body'], 'name="strutture" value="3"'));
 $r = $carla->post('/registrati', ['piano' => $pp, 'strutture' => '3', 'name' => 'Carla Portfolio', 'email' => 'carla@prova.test', 'password' => 'CarlaProva123', 'termini' => '1', 'privacy' => '1']);
-prova('…e dopo la registrazione alla scelta del piano', $r['code'] === 302 && str_contains($r['loc'], "/piano?piano=$pp&strutture=3"));
+prova('…e dopo la registrazione dritti alla struttura, con 3 strutture salvate', $r['code'] === 302 && str_contains($r['loc'], '/pannello/nuova')
+      && (int) val("SELECT a.intended_quantity FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = 'carla@prova.test'") === 3);
+prova('…e l\'avviso dice per quante strutture', str_contains($carla->get('/pannello/nuova')['body'], 'Piano <b>Portfolio</b> per 3 strutture scelto'));
 $r = $carla->get("/piano?piano=$pp&strutture=3");
 prova('…che la mostra già impostata, con il totale (237 €)', preg_match('#name="strutture" type="number"[^>]*value="3"#', $r['body']) === 1 && str_contains($r['body'], "237\u{00A0}€"));
 $cacc = (int) val("SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = 'carla@prova.test'");
@@ -631,7 +692,7 @@ foreach (['1', '2.5', '0', 'tre', '51', '-3', '2e1'] as $x) {
     $r = $carla->post('/piano', ['pv' => $pp, 'strutture' => $x]);
     if (!($r['code'] === 302 && str_contains($r['loc'], "/piano?piano=$pp"))) prova("Quantità «{$x}» rifiutata", false, $r['loc']);
 }
-prova('Quantità non intere o fuori dai limiti rifiutate dal server', (int) val('SELECT COALESCE(intended_package_version_id, 0) FROM accounts WHERE id = ?', [$cacc]) !== $pp
+prova('Quantità non intere o fuori dai limiti rifiutate dal server', (int) val('SELECT intended_quantity FROM accounts WHERE id = ?', [$cacc]) === 3
       && str_contains($carla->get("/piano?piano=$pp")['body'], 'Indica un numero intero di strutture tra 2 e 50.'));
 $r = $carla->post('/piano', ['pv' => $pp, 'strutture' => '3']);
 prova('Portfolio per 3 strutture scelto', $r['code'] === 302 && (int) val('SELECT intended_quantity FROM accounts WHERE id = ?', [$cacc]) === 3
@@ -649,7 +710,7 @@ $link = linkPosta('carla@prova.test', 'verifica');
 $carla->get(substr($link, strpos($link, '/verifica/')));
 $ccore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$c1]);
 $carla->post("/pannello/$c1/sezioni/$ccore", ['checkin_steps' => ['Suona al citofono.']]);
-$r = $carla->modulo("/pannello/$c1/procedura/anteprima", "/pannello/$c1/pubblica", []);
+$r = $carla->modulo("/pannello/$c1/procedura/pubblica", "/pannello/$c1/pubblica", []);
 prova('Pubblica → Stripe Checkout', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/'), $r['loc']);
 $cord = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$cacc]);
 prova('Ordine per 3 strutture: 117 + 2 × 60 = 237 €', $cord && (int) $cord['quantity'] === 3 && (int) $cord['amount_cents'] === 23700);
@@ -728,7 +789,7 @@ $carla->post("/pannello/$c1/riattiva", []);
 prova('Riattivare oltre il limite non si può', val('SELECT archived_at FROM properties WHERE id = ?', [$c1]) !== null);
 $carla->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Sette', 'city' => 'Bari']);
 prova('…né crearne una nuova', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$cacc]) === 5);
-$r = $carla->modulo("/pannello/$c1/procedura/anteprima", "/pannello/$c1/pubblica", []);
+$r = $carla->modulo("/pannello/$c1/procedura/pubblica", "/pannello/$c1/pubblica", []);
 prova('…né pubblicare un\'archiviata', $carla->get('/g/' . val('SELECT slug FROM properties WHERE id = ?', [$c1]))['code'] === 404);
 $nome3 = (string) val('SELECT name FROM properties WHERE id = ?', [$cp[2]]);
 $carla->modulo("/pannello/{$cp[2]}/impostazioni", "/pannello/{$cp[2]}/elimina", ['conferma' => $nome3]);
@@ -760,7 +821,7 @@ prova('Abbonamento manuale Portfolio per 4 strutture: il limite è 4', (int) val
 // ==================================================================== SICUREZZA
 capitolo('Sicurezza: proprietà dei dati, CSRF, amministrazione');
 $bruno->get('/pannello');
-foreach (["/pannello/$pid", "/pannello/$pid/sezioni/$core", "/pannello/$pid/anteprima", "/pannello/$pid/qr.png", "/pannello/$pid/lingue/en", "/pannello/$pid/procedura/checkin"] as $p) {
+foreach (["/pannello/$pid", "/pannello/$pid/sezioni/$core", "/pannello/$pid/anteprima", "/pannello/$pid/qr.png", "/pannello/$pid/lingue/en", "/pannello/$pid/procedura/arrivo"] as $p) {
     $r = $bruno->get($p);
     prova("Un altro cliente non vede $p", $r['code'] === 404);
 }

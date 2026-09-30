@@ -218,6 +218,56 @@ final class Properties
     // ----------------------------------------------------------------- lingue
 
     /** Le lingue da pubblicare: solo quelle del piano, e sempre quella principale. */
+    /**
+     * Quanto è tradotta una lingua, campo per campo: si contano i testi scritti
+     * nella lingua principale (titoli esclusi, che hanno già la traduzione di
+     * catalogo) e quanti di questi hanno la loro versione.
+     * @return array{0:int,1:int} [tradotti, da tradurre in tutto]
+     */
+    public static function translationCoverage(int $propertyId, string $locale): array
+    {
+        $p = Db::one('SELECT default_locale FROM properties WHERE id = ?', [$propertyId]);
+        $pieno = fn($v) => is_array($v) ? (bool) array_filter($v, fn($x) => trim((string) $x) !== '') : trim((string) $v) !== '';
+        $fatti = 0; $tot = 0;
+        foreach (Db::all('SELECT id, kind FROM sections WHERE property_id = ? AND is_active = 1', [$propertyId]) as $s) {
+            $orig = json_decode((string) Db::val('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $p['default_locale']]), true) ?: [];
+            $trad = json_decode((string) Db::val('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $locale]), true) ?: [];
+            foreach (SectionCatalog::fields($s['kind']) as $f => [$tipo]) {
+                if (!SectionCatalog::isTranslated($tipo) || !$pieno($orig[$f] ?? '')) continue;
+                $tot++;
+                if ($pieno($trad[$f] ?? '')) $fatti++;
+            }
+            foreach (Db::all('SELECT id FROM places WHERE section_id = ?', [$s['id']]) as $pl) {
+                $o = Db::one('SELECT * FROM place_translations WHERE place_id = ? AND locale = ?', [$pl['id'], $p['default_locale']]) ?: [];
+                $t = Db::one('SELECT * FROM place_translations WHERE place_id = ? AND locale = ?', [$pl['id'], $locale]) ?: [];
+                foreach (['category', 'description', 'note', 'badge'] as $f) {
+                    if (!$pieno($o[$f] ?? '')) continue;
+                    $tot++;
+                    if ($pieno($t[$f] ?? '')) $fatti++;
+                }
+            }
+        }
+        return [$fatti, $tot];
+    }
+
+    /**
+     * La lingua principale: quella in cui l'host scrive. Deve essere compresa
+     * nel piano. La vecchia resta tra le lingue attive, così i testi già scritti
+     * non spariscono: diventano una traduzione.
+     */
+    public static function setDefaultLocale(int $accountId, int $propertyId, string $locale): void
+    {
+        if (!in_array($locale, Entitlements::allowedLocales($accountId), true)) {
+            throw new \RuntimeException('Il tuo piano non comprende questa lingua.');
+        }
+        Db::tx(function () use ($propertyId, $locale) {
+            Db::update('properties', ['default_locale' => $locale], 'id = :pid', ['pid' => $propertyId]);
+            if (!Db::one('SELECT property_id FROM property_locales WHERE property_id = ? AND locale = ?', [$propertyId, $locale])) {
+                Db::insert('property_locales', ['property_id' => $propertyId, 'locale' => $locale]);
+            }
+        });
+    }
+
     public static function setLocales(int $accountId, int $propertyId, array $want): array
     {
         $p = Db::one('SELECT default_locale FROM properties WHERE id = ?', [$propertyId]);

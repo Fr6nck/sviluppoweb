@@ -70,33 +70,37 @@
      Solo i moduli con data-autosave. Si manda il modulo com'è, senza i file:
      quelli partono solo col bottone. */
   var stato = document.querySelector('[data-stato-salvataggio]');
-  function mostra(t, ok) {
-    if (!stato) return;
-    stato.textContent = t;
-    stato.classList.toggle('stato--ok', !!ok);
+  function mostra(t, ok, dove) {
+    var el = dove || stato;
+    if (!el) return;
+    el.textContent = t;
+    el.classList.toggle('stato--ok', !!ok);
   }
   function salva(form) {
+    // Ogni modulo mostra il suo stato, se ne ha uno (l'editor aperto nella procedura).
+    var qui = form.querySelector('[data-stato-salvataggio]') || stato;
+    var mostraQui = function (t, ok) { mostra(t, ok, qui); };
     var dati = new FormData(form);
     var chiavi = [];
     dati.forEach(function (v, k) { if (v instanceof File) chiavi.push(k); });
     chiavi.forEach(function (k) { dati.delete(k); });
     dati.delete('dopo');
-    mostra('Salvataggio…');
+    mostraQui('Salvataggio…');
     return fetch(form.getAttribute('action') || location.href, {
       method: 'POST', body: dati, credentials: 'same-origin', headers: { 'Accept': 'application/json' }
     }).then(function (r) { return r.json().then(function (j) { return [r.ok, j]; }); })
       .then(function (x) {
-        if (x[0] && x[1].ok) { mostra('Salvato', true); aggiornaAnteprima(); }
-        else mostra(x[1].errore || 'Non salvato: controlla i campi.');
+        if (x[0] && x[1].ok) { mostraQui('Salvato', true); aggiornaAnteprima(); }
+        else mostraQui(x[1].errore || 'Non salvato: controlla i campi.');
       })
-      .catch(function () { mostra('Non salvato: sei offline? Usa il bottone Salva.'); });
+      .catch(function () { mostraQui('Non salvato: sei offline? Usa il bottone Salva.'); });
   }
   var forms = document.querySelectorAll('form[data-autosave]');
   for (var i = 0; i < forms.length; i++) (function (form) {
     var timer = null;
     form.addEventListener('input', function (e) {
       if (e.target && (e.target.type === 'file' || e.target.closest('[data-no-autosave]'))) return;
-      mostra('Modifiche non salvate');
+      mostra('Modifiche non salvate', false, form.querySelector('[data-stato-salvataggio]'));
       clearTimeout(timer);
       timer = setTimeout(function () { salva(form); }, 1200);
     });

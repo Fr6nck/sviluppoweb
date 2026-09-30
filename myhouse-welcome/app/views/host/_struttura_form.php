@@ -1,5 +1,6 @@
 <?php
-/* Nome, luogo, orari, contatti dell'host. Riceve: $prop, $dopoPasso. */
+/* Nome, luogo, orari, contatti dell'host e, nella procedura, la lingua in cui
+   si scrive la guida. Riceve: $prop, $dopoPasso, e se c'è la lingua $tutte e $consentite. */
 use function MHW\b;
 use MHW\{Support, Csrf, Icon};
 $dopoPasso = $dopoPasso ?? '';
@@ -13,6 +14,19 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
       <div class="field" style="margin:0"><label for="region">Zona o regione</label><input type="text" id="region" name="region" maxlength="120" value="<?= $c('region') ?>"></div>
     </div>
   </fieldset>
+  <?php if (isset($consentite, $tutte)): $principale = $prop['default_locale'] ?: 'it'; ?>
+    <fieldset class="fieldset">
+      <legend>In che lingua scrivi la guida?</legend>
+      <p class="help">È la lingua principale: quella in cui scrivi tutti i testi. Le altre lingue sono facoltative e le aggiungi alla fine.
+        Sceglila prima di scrivere: se la cambi dopo, i testi già scritti restano nella lingua in cui li hai scritti.</p>
+      <div class="scelte scelte--riga">
+        <?php foreach ($tutte as $code => $nomeL): if (!in_array($code, $consentite, true)) continue; ?>
+          <label class="scelta"><input type="radio" name="default_locale" value="<?= Support::e($code) ?>" <?= $code === $principale ? 'checked' : '' ?>>
+            <span class="scelta__testo"><?= Support::e($nomeL) ?></span></label>
+        <?php endforeach; ?>
+      </div>
+    </fieldset>
+  <?php endif; ?>
   <fieldset class="fieldset">
     <legend>Orari</legend>
     <div class="grid grid-2">

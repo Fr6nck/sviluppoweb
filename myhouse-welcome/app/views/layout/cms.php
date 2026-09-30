@@ -8,7 +8,10 @@ $u = Auth::user(); $f = Support::flash();
 $admin = ($u['role'] ?? '') === 'admin' && !Auth::isImpersonating();
 $iniziale = mb_strtoupper(mb_substr((string) ($u['name'] ?: $u['email'] ?? '?'), 0, 1));
 $prop = $prop ?? null; $qui = $qui ?? ''; $nav = $nav ?? '';
-$vedeStatistiche = $prop && Entitlements::can((int) $prop['account_id'], 'analytics'); ?>
+$vedeStatistiche = $prop && Entitlements::can((int) $prop['account_id'], 'analytics');
+// Durante la procedura di una guida mai pubblicata si vede una sola navigazione:
+// i passi. Niente tab della struttura, e la verifica email diventa una riga nei passi.
+$soloPassi = $prop && $qui === 'procedura' && $prop['status'] !== 'published'; ?>
 <!doctype html>
 <html lang="it">
 <head>
@@ -35,7 +38,7 @@ $vedeStatistiche = $prop && Entitlements::can((int) $prop['account_id'], 'analyt
     <a class="brand" href="<?= b() ?>/<?= $admin ? 'admin' : 'pannello' ?>"><?= Icon::brand(26) ?><span>myhouse welcome</span></a>
     <?php if ($admin): ?><span class="tag">Amministrazione</span><?php endif; ?>
   </div>
-  <?php if ($u): ?>
+  <?php if ($u && !$soloPassi): ?>
     <nav class="nav" aria-label="Sezioni dell'account">
       <?php if ($admin): ?>
         <?php foreach (['admin' => ['/admin', 'Quadro'], 'clienti' => ['/admin/clienti', 'Clienti'], 'abbonamenti' => ['/admin/abbonamenti', 'Abbonamenti'],
@@ -55,10 +58,12 @@ $vedeStatistiche = $prop && Entitlements::can((int) $prop['account_id'], 'analyt
         <button class="btn btn--ghost btn--sm">Esci</button>
       </form>
     </div>
+  <?php elseif ($u): /* nella procedura: solo il marchio e il tema, i passi fanno il resto */ ?>
+    <?php include __DIR__ . '/_tema-bottone.php'; ?>
   <?php endif; ?>
 </div></header>
 
-<?php if ($u && !$admin && !Auth::isVerified($u)): ?>
+<?php if ($u && !$admin && !Auth::isVerified($u) && !$soloPassi): ?>
 <div class="banner banner--info"><div class="wrap">
   <span>Conferma la tua email (<?= Support::e($u['email']) ?>): puoi preparare la guida, ma per pubblicarla serve la conferma.</span>
   <form method="post" action="<?= b() ?>/verifica/invia"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm">Mandamela di nuovo</button></form>
@@ -70,8 +75,9 @@ $vedeStatistiche = $prop && Entitlements::can((int) $prop['account_id'], 'analyt
   <div class="row" style="gap:14px">
     <span class="propbar__name"><?= Support::e($prop['name']) ?></span>
     <?php if ($qui === 'procedura'): ?>
-      <a class="btn btn--quiet btn--sm propbar__dopo" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>">Continua dopo</a>
+      <a class="btn btn--quiet btn--sm propbar__dopo" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>"><?= $soloPassi ? 'Esci, continuo dopo' : 'Continua dopo' ?></a>
     <?php endif; ?>
+    <?php if (!$soloPassi): ?>
     <nav class="nav" aria-label="La guida">
       <a href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>" class="<?= in_array($qui, ['contenuti', 'procedura'], true) ? 'on' : '' ?>">Contenuti</a>
       <a href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/lingue" class="<?= $qui === 'lingue' ? 'on' : '' ?>">Lingue</a>
@@ -82,11 +88,14 @@ $vedeStatistiche = $prop && Entitlements::can((int) $prop['account_id'], 'analyt
       <?php endif; ?>
       <a href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/impostazioni" class="<?= $qui === 'impostazioni' ? 'on' : '' ?>">Impostazioni</a>
     </nav>
+    <?php endif; ?>
   </div>
+  <?php if (!$soloPassi): ?>
   <div class="row" style="gap:10px">
     <a class="btn btn--ghost btn--sm" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/anteprima" target="_blank" rel="noopener"><?= Icon::svg('eye', 15) ?>Anteprima</a>
-    <a class="btn btn--sm" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/procedura/anteprima">Pubblica</a>
+    <a class="btn btn--sm" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/procedura/pubblica">Pubblica</a>
   </div>
+  <?php endif; ?>
 </div></div>
 <?php endif; ?>
 

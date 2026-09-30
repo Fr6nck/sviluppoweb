@@ -13,17 +13,21 @@ $campo = function (string $name, string $tipo, $orig, $trad, string $etichetta) 
         $n = max(count($orig), count($trad));
         $h = '<fieldset class="fieldset" style="padding:12px"><legend class="small">' . Support::e($etichetta) . '</legend><div class="rows">';
         for ($i = 0; $i < $n; $i++) {
-            $h .= '<div class="stack" style="gap:4px"><span class="orig">' . Support::e((string) ($orig[$i] ?? '')) . '</span>'
+            // Il campo da tradurre si vede: bordo ocra ed etichetta «Da tradurre».
+            $manca = trim((string) ($orig[$i] ?? '')) !== '' && trim((string) ($trad[$i] ?? '')) === '';
+            $h .= '<div class="stack' . ($manca ? ' da-tradurre' : '') . '" style="gap:4px"><span class="orig">' . Support::e((string) ($orig[$i] ?? '')) . '</span>'
                 . '<input type="text" name="' . $name . '[]" value="' . Support::e((string) ($trad[$i] ?? '')) . '" maxlength="600" aria-label="'
-                . Support::e($etichetta) . ', voce ' . ($i + 1) . '"></div>';
+                . Support::e($etichetta) . ', voce ' . ($i + 1) . ($manca ? ', da tradurre' : '') . '"></div>';
         }
         return $h . '</div></fieldset>';
     }
     if (trim((string) $orig) === '' && trim((string) $trad) === '') return '';
+    $manca = trim((string) $orig) !== '' && trim((string) $trad) === '';
     $ctrl = $tipo === 'textarea'
         ? '<textarea id="' . $id . '" name="' . $name . '" rows="3" maxlength="2000">' . Support::e((string) $trad) . '</textarea>'
         : '<input id="' . $id . '" type="text" name="' . $name . '" value="' . Support::e((string) $trad) . '" maxlength="300">';
-    return '<div class="field" style="margin:0"><label for="' . $id . '">' . Support::e($etichetta) . '</label>'
+    return '<div class="field' . ($manca ? ' da-tradurre' : '') . '" style="margin:0"><label for="' . $id . '">' . Support::e($etichetta)
+         . ($manca ? ' <span class="badge badge--ochre">Da tradurre</span>' : '') . '</label>'
          . '<p class="orig" style="margin-bottom:6px">' . Support::e((string) $orig) . '</p>' . $ctrl . '</div>';
 }; ?>
 <div class="stack stack--lg" style="max-width:860px">

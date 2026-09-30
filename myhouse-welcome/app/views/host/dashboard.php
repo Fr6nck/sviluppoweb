@@ -34,7 +34,7 @@ foreach ($sections as $s) { if ((int) $s['is_core'] === 1) $core = $s; else $alt
         <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/pubblica" style="margin:0"><?= Csrf::field() ?>
           <button class="btn btn--go">Pubblica le modifiche <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></button></form>
       <?php else: ?>
-        <a class="btn btn--go" href="<?= b() ?>/pannello/<?= $pid ?>/procedura/<?= $pubblicata ? 'anteprima' : Support::e($prop['wizard_step'] ?: 'struttura') ?>">
+        <a class="btn btn--go" href="<?= b() ?>/pannello/<?= $pid ?>/procedura/<?= $pubblicata || $prop['wizard_step'] === 'fatto' ? 'pubblica' : Support::e($prop['wizard_step'] ?: 'struttura') ?>">
           <?= $pubblicata ? 'Riattiva la guida' : 'Continua la configurazione' ?> <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></a>
       <?php endif; ?>
     </div>

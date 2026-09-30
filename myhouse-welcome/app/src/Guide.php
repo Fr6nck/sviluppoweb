@@ -185,12 +185,22 @@ final class Guide
         return $suo;
     }
 
-    /** I campi tradotti di una sezione: la lingua dell'ospite, poi quella della struttura. */
+    /**
+     * I campi tradotti di una sezione, campo per campo: quello scritto nella
+     * lingua dell'ospite, altrimenti quello della lingua principale. Una
+     * traduzione a metà non fa sparire i campi non ancora tradotti.
+     */
     public static function tdata(array $sec, string $loc, string $default): array
     {
+        $base = $sec['tr'][$default]['data'] ?? [];
+        if (!is_array($base)) $base = [];
         $d = $sec['tr'][$loc]['data'] ?? null;
-        if (is_array($d) && array_filter($d, fn($v) => is_array($v) ? $v : trim((string) $v) !== '')) return $d;
-        return $sec['tr'][$default]['data'] ?? [];
+        if ($loc === $default || !is_array($d)) return $base;
+        foreach ($d as $k => $v) {
+            $pieno = is_array($v) ? (bool) array_filter($v, fn($x) => trim((string) $x) !== '') : trim((string) $v) !== '';
+            if ($pieno) $base[$k] = $v;
+        }
+        return $base;
     }
 
     public static function ptr(array $place, string $loc, string $default): array

@@ -41,6 +41,9 @@ if ($codici > 0 || !$db->query("SELECT 1 FROM schema_migrations WHERE name LIKE 
         return (int) $db->lastInsertId();
     };
     $liberi = [];
+    // Solo da una versione che non ha ancora la 006: dopo, Portfolio 2 e 3 sono già fuori listino.
+    try { if ($db->query("SELECT 1 FROM schema_migrations WHERE name LIKE '006%'")->fetchColumn()) $pv2 = $pv3 = false; }
+    catch (PDOException) { /* versione senza registro delle migrazioni: niente 006 */ }
     if ($pv2) foreach (['p2', 'p3'] as $k) {
         $uid = $copia('users', ['email' => "$k@vecchio.test", 'role' => 'host'] + $db->query("SELECT * FROM users WHERE role <> 'admin' ORDER BY id LIMIT 1")->fetch());
         $liberi[] = $copia('accounts', ['user_id' => $uid, 'intended_package_version_id' => null, 'stripe_customer_id' => ''] + $db->query('SELECT * FROM accounts ORDER BY id LIMIT 1')->fetch());
@@ -54,9 +57,16 @@ if ($codici > 0 || !$db->query("SELECT 1 FROM schema_migrations WHERE name LIKE 
         $db->prepare('INSERT INTO subscriptions (' . implode(', ', array_keys($modello)) . ') VALUES (' . implode(', ', array_fill(0, count($modello), '?')) . ')')->execute(array_values($modello));
         $db->prepare('UPDATE accounts SET intended_package_version_id = ? WHERE id = ?')->execute([$pv3, $p3acc]);
     }
-    prova('Portfolio 2 e 3 nel database vecchio: uno comprato, uno solo scelto', !$pv2 || $p2acc > 0, $pv2 ? '' : 'versione senza Portfolio 2/3');
+    prova('Portfolio 2 e 3 nel database vecchio: uno comprato, uno solo scelto', !$pv2 || $p2acc > 0, $pv2 ? '' : 'non serve per questa versione');
+    // Una struttura ferma a «contenuti» della procedura a sette passi (migrazione 007).
+    $fermaA = false;
+    try {
+        $db->exec("UPDATE properties SET wizard_step = 'contenuti' WHERE id = (SELECT p.id FROM properties p JOIN accounts a ON a.id = p.account_id
+                   JOIN users u ON u.id = a.user_id WHERE u.email LIKE 'lucia@%' ORDER BY p.id LIMIT 1)");
+        $fermaA = true;
+    } catch (PDOException) { /* versione senza procedura guidata */ }
     $f = [
-        'p2acc' => (int) $p2acc, 'p3acc' => (int) $p3acc,
+        'p2acc' => (int) $p2acc, 'p3acc' => (int) $p3acc, 'contenuti' => $fermaA,
         'utenti' => (int) $db->query('SELECT COUNT(*) FROM users')->fetchColumn(),
         'strutture' => $db->query('SELECT id, name, slug, status FROM properties ORDER BY id')->fetchAll(),
         'sezioni' => (int) $db->query('SELECT COUNT(*) FROM sections')->fetchColumn(),
@@ -74,7 +84,7 @@ $r = http("$BASE/");
 prova('La landing si apre (migrazioni al primo accesso)', $r['code'] === 200 && pulita($r['body']));
 $db = pdo();
 $mig = $db->query('SELECT name FROM schema_migrations ORDER BY name')->fetchAll(PDO::FETCH_COLUMN);
-prova('Migrazioni registrate, fino alla 006', count($mig) >= 6 && in_array('006_portfolio_quantita.php', $mig, true), implode(', ', $mig));
+prova('Migrazioni registrate, fino alla 007', count($mig) >= 7 && in_array('007_passi_procedura.php', $mig, true), implode(', ', $mig));
 prova('Nessun utente perso', (int) $db->query('SELECT COUNT(*) FROM users')->fetchColumn() === $f['utenti']);
 prova('Nessuna struttura persa', $db->query('SELECT id, name, slug, status FROM properties ORDER BY id')->fetchAll() == $f['strutture']);
 prova('Nessuna sezione persa (il nucleo può aggiungersi)', (int) $db->query('SELECT COUNT(*) FROM sections')->fetchColumn() >= $f['sezioni']);
@@ -122,7 +132,11 @@ $lucia = (string) $db->query("SELECT email FROM users WHERE email LIKE 'lucia@%'
 $r = http("$BASE/accedi", ['_csrf' => tok($r['body']), 'email' => $lucia, 'password' => 'dimostrazione1']);
 prova('Un cliente di prima entra con la sua password', $r['code'] === 302);
 $pid = $db->query("SELECT p.id FROM properties p JOIN accounts a ON a.id = p.account_id JOIN users u ON u.id = a.user_id WHERE u.email = " . $db->quote($lucia))->fetchColumn();
-foreach (["/pannello", "/pannello/$pid", "/pannello/$pid/lingue", "/pannello/$pid/aspetto", "/pannello/$pid/qr", "/pannello/$pid/procedura/checkin", "/account"] as $p) {
+if ($f['contenuti'] ?? false) prova('Migrazione 007: «contenuti» diventa «sezioni»', $db->query("SELECT wizard_step FROM properties WHERE id = " . (int) $pid)->fetchColumn() === 'sezioni');
+prova('…e nessun passo vecchio rimasto', (int) $db->query("SELECT COUNT(*) FROM properties WHERE wizard_step IN ('checkin', 'contenuti', 'lingue', 'anteprima')")->fetchColumn() === 0);
+$r = http("$BASE/pannello/$pid/procedura/contenuti");
+prova('Il vecchio indirizzo «contenuti» porta a «sezioni» (301)', $r['code'] === 301 && str_ends_with($r['loc'], "/pannello/$pid/procedura/sezioni"), $r['code'] . ' ' . $r['loc']);
+foreach (["/pannello", "/pannello/$pid", "/pannello/$pid/lingue", "/pannello/$pid/aspetto", "/pannello/$pid/qr", "/pannello/$pid/procedura/sezioni", "/pannello/$pid/procedura/pubblica", "/account"] as $p) {
     $r = http("$BASE$p");
     prova("$p si apre", $r['code'] === 200 && pulita($r['body']));
 }

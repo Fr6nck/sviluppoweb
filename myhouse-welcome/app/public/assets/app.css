@@ -1037,3 +1037,60 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .scelta--fissa input:disabled{opacity:1;cursor:default;background:var(--muted);border-color:var(--muted)}
 .scelta--fissa{cursor:default;border-color:var(--line-strong);box-shadow:none}
 .scelta--fissa:has(input:checked){border-color:var(--line-strong);box-shadow:none}
+
+/* ============================================================== Fase 2 */
+/* Registrazione: il piano scelto in vista, la password che si può vedere. */
+.chip-piano{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 22px;
+  padding:10px 16px;border-radius:999px;background:var(--pine-soft);color:var(--ink);font-size:14px}
+.chip-piano span{display:inline-flex;align-items:center;gap:8px}
+.chip-piano svg{color:var(--pine);flex:none}
+.chip-piano a{font-weight:500}
+.pw{position:relative}
+.pw input{padding-right:104px}
+.pw__mostra{position:absolute;right:6px;top:7px;height:40px;padding:0 14px;border:0;border-radius:999px;background:var(--sunk);
+  color:var(--ink);font:inherit;font-size:14px;font-weight:500;cursor:pointer}
+.pw__mostra:hover{background:var(--line)}
+.forza{display:flex;align-items:center;gap:10px;margin-top:8px;min-height:20px}
+.forza i{display:block;width:120px;height:6px;border-radius:999px;background:var(--line);overflow:hidden;flex:none}
+.forza i b{display:block;height:100%;width:0;border-radius:999px;background:var(--alert);transition:width .2s}
+.forza[data-livello="3"] i b{background:var(--ochre)}
+.forza[data-livello="4"] i b,.forza[data-livello="5"] i b{background:var(--pine)}
+@media (prefers-reduced-motion:reduce){.forza i b{transition:none}}
+/* La scelta del piano: tutta la card si preme, il pallino è il radio vero. */
+.pianocard{position:relative;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.pianocard:hover{border-color:var(--line-strong)}
+.pianocard__velo{position:absolute;inset:0;z-index:1;margin:0;border-radius:inherit;cursor:pointer}
+.pianocard__radio{position:absolute;top:26px;right:24px;z-index:3}
+.pianocard__sopra{position:relative;z-index:2}
+.pianocard:has(.pianocard__radio:checked){border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.pianocard .price{display:block}
+.pianocard .quantita input[type=number]{max-width:140px}
+/* Pannello: il piano scelto, detto una volta, con «Cambia». */
+.piano-scelto{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px;
+  border-radius:var(--r-md);background:var(--pine-soft);font-size:15px}
+.piano-scelto span{display:inline-flex;align-items:center;gap:8px}
+.piano-scelto svg{color:var(--pine);flex:none}
+/* Procedura: la verifica email in una riga, sopra i passi. */
+.verifica-riga{display:flex;align-items:center;justify-content:space-between;gap:6px 14px;flex-wrap:wrap;margin:0 0 16px;
+  padding:6px 14px;border-radius:var(--r-md);background:var(--ochre-soft);font-size:14px}
+.verifica-riga>span{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.verifica-riga .linkbtn{min-height:36px;font-size:14px}
+.riga--aperta{border-color:var(--accent);border-bottom-left-radius:6px;border-bottom-right-radius:6px}
+.riga-editor{margin:-4px 0 8px;padding:20px;border:1px solid var(--accent);border-top:0;border-radius:0 0 var(--r-lg) var(--r-lg);
+  background:var(--raised);display:flex;flex-direction:column;gap:18px}
+@media(max-width:560px){ .riga-editor{padding:14px} }
+/* Lingue: la percentuale e i campi ancora da tradurre. */
+.perc{font-size:14px;font-weight:600;color:var(--muted);margin-left:6px}
+.da-tradurre input,.da-tradurre textarea{border-color:var(--ochre);box-shadow:inset 3px 0 0 var(--ochre)}
+.chip-piano__testo>span{display:inline}
+.chip-piano__testo>span b{font-weight:600}
+/* Procedura sul telefono: i passi in una riga, il nome solo per quello in corso. */
+@media(max-width:560px){
+  .steps-nav{flex-wrap:nowrap;gap:2px;overflow-x:auto;scrollbar-width:none;max-width:100%}
+  .steps-nav::-webkit-scrollbar{display:none}
+  .steps-nav a{flex:none;padding:0 4px;min-height:40px;font-size:13.5px}
+  .steps-nav a:not(.on) .steps-nav__nome{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  .steps-nav a.on{padding-right:14px}
+  .verifica-riga__email{display:none}
+  .verifica-riga{padding:4px 12px}
+}

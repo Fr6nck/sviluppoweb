@@ -4,8 +4,12 @@
 use MHW\{Auth, Config, Db, Entitlements, Guide, LimitReached, Log, Media, NotFound, Palette, Plans, Properties,
          Qr, QrExport, SectionCatalog, Stats, Stripe, Subscriptions, Support, View};
 
-const MHW_PASSI = ['struttura' => 'La tua struttura', 'checkin' => 'Check-in & Check-out', 'sezioni' => 'Scegli le sezioni',
-                   'contenuti' => 'Compila i contenuti', 'lingue' => 'Lingue', 'aspetto' => 'Aspetto', 'anteprima' => 'Anteprima'];
+/* La procedura: cinque passi. Le lingue in più stanno in fondo a «Anteprima e
+   pubblica», facoltative: le traduzioni non fermano mai la pubblicazione. */
+const MHW_PASSI = ['struttura' => 'Struttura e contatti', 'arrivo' => 'Arrivo e partenza', 'sezioni' => 'Sezioni',
+                   'aspetto' => 'Aspetto', 'pubblica' => 'Anteprima e pubblica'];
+/** I passi della v1 e dove sono finiti (migrazione 007 e redirect dei vecchi indirizzi). */
+const MHW_PASSI_VECCHI = ['checkin' => 'arrivo', 'contenuti' => 'sezioni', 'lingue' => 'aspetto', 'anteprima' => 'pubblica'];
 
 /** L'account di chi è connesso, per ogni rotta di quest'area. */
 $host = function (): array {
@@ -30,6 +34,27 @@ $mia = function (int $id) use ($host): array {
 $dopo = function (array $p, string $restaQui): string {
     $passo = (string) ($_POST['dopo'] ?? '');
     return isset(MHW_PASSI[$passo]) ? '/pannello/' . $p['id'] . '/procedura/' . $passo : $restaQui;
+};
+
+/** Dall'editor aperto dentro la procedura si torna lì, con la stessa sezione aperta. */
+$tornaSezione = function (array $p, int $sid, string $altrimenti): string {
+    return (string) ($_POST['da'] ?? '') === 'procedura'
+        ? '/pannello/' . $p['id'] . '/procedura/sezioni?apri=' . $sid . '#sez-' . $sid : $altrimenti;
+};
+
+/** Quello che serve all'editor di una sezione: titolo e campi nella lingua principale, luoghi. */
+$datiSezione = function (array $p, array $s): array {
+    $tr = Db::one('SELECT * FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $p['default_locale']]);
+    $places = [];
+    if (SectionCatalog::hasPlaces($s['kind'])) {
+        foreach (Db::all('SELECT * FROM places WHERE section_id = ? ORDER BY position, id', [$s['id']]) as $pl) {
+            $pl['tr'] = Db::one('SELECT * FROM place_translations WHERE place_id = ? AND locale = ?', [$pl['id'], $p['default_locale']])
+                     ?: ['category' => '', 'description' => '', 'note' => '', 'badge' => ''];
+            $places[] = $pl;
+        }
+    }
+    return ['s' => $s, 'title' => $tr['title'] ?? '', 'dati' => json_decode((string) $s['data'], true) ?: [],
+            'tdati' => json_decode((string) ($tr['data'] ?? ''), true) ?: [], 'places' => $places];
 };
 
 /** Una richiesta arrivata dal salvataggio automatico vuole JSON, non un redirect. */
@@ -78,11 +103,15 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $pid = Properties::create((int) $acc['id'], (string) ($_POST['name'] ?? ''), (string) ($_POST['city'] ?? ''), (string) $u['name']);
-            Db::update('properties', ['wizard_step' => 'checkin'], 'id = :pid', ['pid' => $pid]);
+            Db::update('properties', ['wizard_step' => 'arrivo'], 'id = :pid', ['pid' => $pid]);
             Support::redirect('/pannello/' . $pid . '/procedura/struttura');
         } catch (\Throwable $e) { $err = $messaggio($e, 'nuova struttura'); }
     }
-    View::out('host/new_property', ['err' => $err, 'have' => $have, 'max' => $max, 'nav' => 'guide'], 'layout/cms');
+    // Il piano scelto (non ancora pagato), da ricordare in alto con «Cambia».
+    $piano = !Subscriptions::active((int) $acc['id']) && $acc['intended_package_version_id']
+        ? Plans::version((int) $acc['intended_package_version_id']) : null;
+    View::out('host/new_property', ['err' => $err, 'have' => $have, 'max' => $max, 'nav' => 'guide',
+        'piano' => $piano, 'quantita' => (int) ($acc['intended_quantity'] ?? 1)], 'layout/cms');
 });
 
 $r->post('/pannello/{id}/elimina', function (array $a) use ($mia) {
@@ -126,8 +155,10 @@ $r->post('/pannello/{id}/sezioni', function (array $a) use ($mia, $messaggio) {
     $torna = (string) ($_POST['torna'] ?? '') === 'procedura' ? '/pannello/' . $p['id'] . '/procedura/sezioni' : '/pannello/' . $p['id'];
     try {
         $sid = Properties::addSection((int) $acc['id'], (int) $p['id'], (string) ($_POST['kind'] ?? ''));
-        Support::flash(SectionCatalog::title((string) $_POST['kind'], 'it') . ' aggiunta.');
-        Support::redirect($torna === '/pannello/' . $p['id'] ? '/pannello/' . $p['id'] . '/sezioni/' . $sid : $torna);
+        Support::flash(SectionCatalog::title((string) $_POST['kind'], 'it') . ' aggiunta: compilala qui sotto.');
+        // Nella procedura «Aggiungi» apre subito l'editor sotto la card della sezione.
+        Support::redirect($torna === '/pannello/' . $p['id'] ? '/pannello/' . $p['id'] . '/sezioni/' . $sid
+                          : $torna . '?apri=' . $sid . '#sez-' . $sid);
     } catch (LimitReached $e) {
         Support::flash($e->getMessage(), 'limite');
     } catch (\Throwable $e) {
@@ -160,7 +191,7 @@ $r->post('/pannello/{id}/sezioni/{sid}/azione', function (array $a) use ($mia, $
 });
 
 // ---------------------------------------------------------- editor di sezione
-$r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($mia, $contesto, $vuoleJson, $messaggio, $dopo) {
+$r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($mia, $contesto, $vuoleJson, $messaggio, $dopo, $tornaSezione, $datiSezione) {
     [, $acc, $p] = $mia((int) $a['id']);
     try { $s = Properties::section((int) $p['id'], (int) $a['sid']); }
     catch (NotFound) { http_response_code(404); View::out('pub/404', []); }
@@ -193,7 +224,7 @@ $r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($mia, $contesto
             }
             if ($vuoleJson()) Support::json(['ok' => true, 'salvato' => Support::now()]);
             Support::flash('Salvato. Ricordati di pubblicare quando hai finito.');
-            Support::redirect($dopo($p, '/pannello/' . $p['id'] . '/sezioni/' . $s['id']));
+            Support::redirect($tornaSezione($p, (int) $s['id'], $dopo($p, '/pannello/' . $p['id'] . '/sezioni/' . $s['id'])));
         } catch (\Throwable $e) {
             $err = $messaggio($e, 'salva sezione');
             if ($vuoleJson()) Support::json(['ok' => false, 'errore' => $err], 422);
@@ -201,27 +232,17 @@ $r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($mia, $contesto
         $s = Properties::section((int) $p['id'], (int) $s['id']);
     }
 
-    $tr = Db::one('SELECT * FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $p['default_locale']]);
-    $places = [];
-    if (SectionCatalog::hasPlaces($s['kind'])) {
-        foreach (Db::all('SELECT * FROM places WHERE section_id = ? ORDER BY position, id', [$s['id']]) as $pl) {
-            $pl['tr'] = Db::one('SELECT * FROM place_translations WHERE place_id = ? AND locale = ?', [$pl['id'], $p['default_locale']])
-                     ?: ['category' => '', 'description' => '', 'note' => '', 'badge' => ''];
-            $places[] = $pl;
-        }
-    }
-    View::out('host/section', $contesto($acc, $p) + [
-        's' => $s, 'title' => $tr['title'] ?? '', 'dati' => json_decode((string) $s['data'], true) ?: [],
-        'tdati' => json_decode((string) ($tr['data'] ?? ''), true) ?: [], 'places' => $places, 'err' => $err,
+    View::out('host/section', $contesto($acc, $p) + $datiSezione($p, $s) + [
+        'err' => $err,
         'modifica' => (int) ($_GET['luogo'] ?? 0), 'procedura' => (string) ($_GET['da'] ?? '') === 'procedura',
         'qui' => 'contenuti',
     ], 'layout/cms');
 });
 
-$r->post('/pannello/{id}/sezioni/{sid}/luogo', function (array $a) use ($mia, $messaggio) {
+$r->post('/pannello/{id}/sezioni/{sid}/luogo', function (array $a) use ($mia, $messaggio, $tornaSezione) {
     [, $acc, $p] = $mia((int) $a['id']);
     $aid = (int) $acc['id'];
-    $torna = '/pannello/' . $p['id'] . '/sezioni/' . (int) $a['sid'];
+    $torna = $tornaSezione($p, (int) $a['sid'], '/pannello/' . $p['id'] . '/sezioni/' . (int) $a['sid']);
     try {
         $plid = (int) ($_POST['place_id'] ?? 0) ?: null;
         $plid = Properties::savePlace($aid, (int) $p['id'], (int) $a['sid'], $plid, $p['default_locale'], true, $_POST);
@@ -238,7 +259,7 @@ $r->post('/pannello/{id}/sezioni/{sid}/luogo', function (array $a) use ($mia, $m
     Support::redirect($torna);
 });
 
-$r->post('/pannello/{id}/sezioni/{sid}/luogo/{plid}/azione', function (array $a) use ($mia, $messaggio) {
+$r->post('/pannello/{id}/sezioni/{sid}/luogo/{plid}/azione', function (array $a) use ($mia, $messaggio, $tornaSezione) {
     [, $acc, $p] = $mia((int) $a['id']);
     $sid = (int) $a['sid']; $plid = (int) $a['plid'];
     try {
@@ -260,7 +281,7 @@ $r->post('/pannello/{id}/sezioni/{sid}/luogo/{plid}/azione', function (array $a)
         };
     } catch (NotFound) { http_response_code(404); View::out('pub/404', []); }
     catch (\Throwable $e) { Support::flash($messaggio($e, 'azione luogo'), 'err'); }
-    Support::redirect('/pannello/' . $p['id'] . '/sezioni/' . $sid);
+    Support::redirect($tornaSezione($p, $sid, '/pannello/' . $p['id'] . '/sezioni/' . $sid));
 });
 
 // ------------------------------------------------------------------- lingue
@@ -279,17 +300,9 @@ $r->any('/pannello/{id}/lingue', function (array $a) use ($mia, $contesto, $mess
         }
     }
     $attive = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
-    // Quanto è tradotto: sezioni attive con un titolo o un campo nella lingua.
-    $sez = Db::all('SELECT id FROM sections WHERE property_id = ? AND is_active = 1', [$p['id']]);
+    // Quanto è tradotto, campo per campo («English 60%»).
     $copertura = [];
-    foreach ($attive as $l) {
-        $n = 0;
-        foreach ($sez as $s) {
-            $t = Db::one('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $l]);
-            if ($t && array_filter(json_decode((string) $t['data'], true) ?: [])) $n++;
-        }
-        $copertura[$l] = [$n, count($sez)];
-    }
+    foreach ($attive as $l) $copertura[$l] = Properties::translationCoverage((int) $p['id'], $l);
     View::out('host/languages', $contesto($acc, $p) + [
         'err' => $err, 'lingueAttive' => $attive, 'consentite' => Entitlements::allowedLocales((int) $acc['id']),
         'tutte' => Config::get('locales'), 'copertura' => $copertura, 'qui' => 'lingue',
@@ -407,6 +420,9 @@ $r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto,
             ];
             if ($dati['name'] === '') throw new RuntimeException('Il nome non può restare vuoto.');
             Db::update('properties', $dati, 'id = :pid', ['pid' => $p['id']]);
+            // La lingua in cui si scrive la guida (primo passo della procedura).
+            $lingua = (string) ($_POST['default_locale'] ?? '');
+            if ($lingua !== '' && $lingua !== $p['default_locale']) Properties::setDefaultLocale((int) $acc['id'], (int) $p['id'], $lingua);
             if ($vuoleJson()) Support::json(['ok' => true]);
             Support::flash('Impostazioni salvate.');
             Support::redirect($dopo($p, '/pannello/' . $p['id'] . '/impostazioni'));
@@ -419,42 +435,51 @@ $r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto,
 });
 
 // ---------------------------------------------------------- procedura guidata
-$r->get('/pannello/{id}/procedura/{passo}', function (array $a) use ($mia, $contesto) {
+$r->get('/pannello/{id}/procedura/{passo}', function (array $a) use ($mia, $contesto, $datiSezione) {
     [$u, $acc, $p] = $mia((int) $a['id']);
     $passo = (string) $a['passo'];
+    // Gli indirizzi della procedura a sette passi portano al passo nuovo che li contiene.
+    if (isset(MHW_PASSI_VECCHI[$passo])) {
+        header('Location: ' . Support::url('/pannello/' . $p['id'] . '/procedura/' . MHW_PASSI_VECCHI[$passo]), true, 301);
+        exit;
+    }
     if (!isset(MHW_PASSI[$passo])) Support::redirect('/pannello/' . $p['id'] . '/procedura/struttura');
     $indice = array_search($passo, array_keys(MHW_PASSI), true);
     $fatto = array_search($p['wizard_step'] ?: 'struttura', array_keys(MHW_PASSI), true);
-    if ($indice > (int) $fatto) Db::update('properties', ['wizard_step' => $passo], 'id = :pid', ['pid' => $p['id']]);
+    if ($fatto !== false && $indice > (int) $fatto) Db::update('properties', ['wizard_step' => $passo], 'id = :pid', ['pid' => $p['id']]);
 
+    $aid = (int) $acc['id'];
+    $lingue = ['lingueAttive' => array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale'),
+               'consentite' => Entitlements::allowedLocales($aid), 'tutte' => Config::get('locales')];
     $extra = [];
-    if ($passo === 'checkin') {
+    if ($passo === 'struttura') $extra = $lingue;
+    if ($passo === 'arrivo') {
         $core = Db::one('SELECT * FROM sections WHERE property_id = ? AND is_core = 1', [$p['id']]);
         $t = Db::one('SELECT * FROM section_translations WHERE section_id = ? AND locale = ?', [$core['id'], $p['default_locale']]);
         $extra = ['core' => $core, 'tdati' => json_decode((string) ($t['data'] ?? ''), true) ?: []];
     }
-    if (in_array($passo, ['sezioni', 'contenuti'], true)) {
+    if ($passo === 'sezioni') {
         $sez = Db::all('SELECT * FROM sections WHERE property_id = ? AND is_core = 0 ORDER BY position, id', [$p['id']]);
+        $aperta = null;
         foreach ($sez as &$s) {
             $t = Db::one('SELECT title, data FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $p['default_locale']]);
             $s['title'] = $t['title'] ?? SectionCatalog::title($s['kind'], $p['default_locale']);
             $s['empty'] = SectionCatalog::isEmpty($s['kind'], json_decode((string) $s['data'], true) ?: [], json_decode((string) ($t['data'] ?? ''), true) ?: [],
                 (int) Db::val('SELECT COUNT(*) FROM places WHERE section_id = ?', [$s['id']], 0));
+            if ((int) $s['id'] === (int) ($_GET['apri'] ?? 0)) $aperta = $s;
         }
         unset($s);
-        $extra = ['sezioni' => $sez];
-    }
-    if ($passo === 'lingue') {
-        $extra = ['lingueAttive' => array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale'),
-                  'consentite' => Entitlements::allowedLocales((int) $acc['id']), 'tutte' => Config::get('locales')];
+        // La sezione appena aggiunta (o scelta con «Modifica») si compila qui, sotto la sua card.
+        $extra = ['sezioni' => $sez, 'aperta' => $aperta ? $datiSezione($p, Properties::section((int) $p['id'], (int) $aperta['id'])) : null,
+                  'modifica' => (int) ($_GET['luogo'] ?? 0)];
     }
     if ($passo === 'aspetto') {
         $pal = [];
         foreach (Palette::all() as $code => $nome) $pal[$code] = ['nome' => $nome, 'dati' => Palette::get($code), 'toni' => Palette::tones($code), 'css' => Palette::css($code)];
         $extra = ['palette' => $pal];
     }
-    if ($passo === 'anteprima') {
-        $extra = ['problemi' => Guide::problems((int) $acc['id'], (int) $p['id']), 'verificato' => Auth::isVerified($u),
+    if ($passo === 'pubblica') {
+        $extra = $lingue + ['problemi' => Guide::problems($aid, (int) $p['id']), 'verificato' => Auth::isVerified($u),
                   'online' => Subscriptions::propertyOnline($p)];
     }
     View::out('host/wizard', $contesto($acc, $p) + $extra + ['passo' => $passo, 'passi' => MHW_PASSI, 'user' => $u, 'qui' => 'procedura'], 'layout/cms');
@@ -492,7 +517,7 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
     $problemi = Guide::problems($aid, (int) $p['id']);
     if ($problemi) {
         Support::flash('Prima di pubblicare: ' . implode(' ', $problemi), 'err');
-        Support::redirect('/pannello/' . $p['id'] . '/procedura/anteprima');
+        Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
     }
 
     if (Subscriptions::active($aid)) {
@@ -503,7 +528,7 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
 
     if (!Auth::isVerified($u)) {
         Support::flash('Conferma prima la tua email: ti abbiamo scritto a ' . $u['email'] . '. Serve per attivare l\'abbonamento.', 'err');
-        Support::redirect('/pannello/' . $p['id'] . '/procedura/anteprima');
+        Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
     }
     $pv = $acc['intended_package_version_id'] ? Plans::currentVersion((int) $acc['intended_package_version_id']) : null;
     if (!$pv) { Support::flash('Scegli il piano con cui pubblicare.', 'err'); Support::redirect('/piano'); }
@@ -512,12 +537,12 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
         Db::update('accounts', ['intended_package_version_id' => $pv['id']], 'id = :aid', ['aid' => $aid]);
         Entitlements::forget($aid);
         $problemi = Guide::problems($aid, (int) $p['id']);
-        if ($problemi) { Support::flash('Il piano è stato aggiornato: ' . implode(' ', $problemi), 'err'); Support::redirect('/pannello/' . $p['id'] . '/procedura/anteprima'); }
+        if ($problemi) { Support::flash('Il piano è stato aggiornato: ' . implode(' ', $problemi), 'err'); Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica'); }
     }
     if (!Stripe::enabled()) {
         Log::error('Pubblicazione richiesta ma Stripe non è configurato', ['account' => $aid]);
         Support::flash('I pagamenti non sono ancora attivi. La guida resta salvata in bozza: riprova più tardi.', 'err');
-        Support::redirect('/pannello/' . $p['id'] . '/procedura/anteprima');
+        Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
     }
     $pkg = Db::one('SELECT * FROM packages WHERE id = ?', [$pv['package_id']]);
     $quantita = Plans::quantity($pv, (int) ($acc['intended_quantity'] ?? 1)) ?? (int) $pv['min_quantity'];
@@ -532,7 +557,7 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
         Db::update('orders', ['status' => 'failed', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $oid]);
         $codice = Log::exception($e, 'checkout');
         Support::flash('Il pagamento non è disponibile in questo momento. Riprova tra poco (codice ' . $codice . ').', 'err');
-        Support::redirect('/pannello/' . $p['id'] . '/procedura/anteprima');
+        Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
     }
     Support::redirect($url);
 });
