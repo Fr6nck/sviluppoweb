@@ -29,6 +29,75 @@ $elementi = [['home', 'Check-in & Check-out'], ['wifi', 'Wi-Fi'], ['pin', 'Come 
   <?php endif; ?>
 </div>
 
+<?php /* Il tempo che non vedi: il problema riconoscibile, la svolta, i tre
+   momenti del soggiorno, il valore del canone. Niente numeri inventati: le
+   domande sono esempi illustrativi, non testimonianze. I link sono gli stessi
+   della hero ($crea e la demo), nessuna logica nuova. */ ?>
+<section id="il-tempo" class="tempo" aria-labelledby="tempo-titolo">
+  <div class="tempo__intro">
+    <span class="kicker">Il tempo che non vedi</span>
+    <h2 id="tempo-titolo" class="tempo__titolo">Ogni ospite è nuovo.<br>Le domande sono quasi sempre le stesse.</h2>
+    <p class="lead">Un messaggio per il parcheggio. Uno per il Wi-Fi. Un altro per gli orari di partenza. Sono piccole
+      richieste, ma quando si ripetono a ogni soggiorno finiscono per occupare una parte del tuo tempo.</p>
+  </div>
+
+  <div class="tempo__grid">
+    <figure class="tempo__msgs">
+      <ul class="msgs" aria-label="Domande che arrivano spesso">
+        <?php foreach ([['car', 'Ciao! Dove possiamo parcheggiare?'], ['wifi', 'Buongiorno, qual è la password del Wi-Fi?'],
+                        ['clock', 'A che ora dobbiamo lasciare la camera?']] as [$ico, $testo]): ?>
+          <li class="msg">
+            <span class="msg__ico"><?= Icon::svg($ico, 18, 1.6) ?></span>
+            <span class="msg__corpo"><span class="msg__chi">Ospite</span><?= Support::e($testo) ?></span>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+      <figcaption class="tiny muted">Esempi di domande ricorrenti.</figcaption>
+    </figure>
+
+    <div class="tempo__svolta">
+      <h3 class="tempo__h3">Le risposte le prepari una volta. Non devi riscriverle ogni volta.</h3>
+      <p>Con MyHouse Welcome raccogli le informazioni della tua struttura in una guida digitale, accessibile con un semplice
+        link o QR Code.</p>
+      <p>La condividi con gli ospiti, anche prima dell'arrivo. Loro possono consultarla quando ne hanno bisogno, mentre tu
+        puoi aggiornarla quando cambiano le informazioni.</p>
+      <p class="tempo__frase">Meno tempo a ripetere le stesse cose. Più tempo per ciò che conta davvero.</p>
+    </div>
+  </div>
+
+  <div class="momenti">
+    <?php foreach ([["Prima dell'arrivo", 'Ospiti più preparati.', 'Condividi in anticipo orari, indicazioni per raggiungerti e informazioni utili.'],
+                    ['Durante il soggiorno', 'Le risposte sempre a disposizione.', 'Wi-Fi, servizi, regole e consigli possono essere consultati senza doverti chiedere ogni dettaglio.'],
+                    ['Prima della partenza', "Indicazioni chiare fino all'ultimo momento.", 'Orari e istruzioni di check-out aiutano a ridurre dubbi ed equivoci prima di lasciare la struttura.']] as $i => [$quando, $titolo, $testo]): ?>
+      <div class="momento">
+        <span class="kicker"><span class="momento__n"><?= sprintf('%02d', $i + 1) ?></span><?= Support::e($quando) ?></span>
+        <b><?= Support::e($titolo) ?></b>
+        <p class="muted"><?= Support::e($testo) ?></p>
+      </div>
+    <?php endforeach; ?>
+  </div>
+  <p class="tempo__nota muted">Informazioni chiare fin dall'inizio aiutano a prevenire dubbi, richieste dell'ultimo minuto e
+    incomprensioni durante il soggiorno e alla partenza.</p>
+
+  <div class="tempo__valore">
+    <span class="kicker">Un piccolo investimento nell'organizzazione della tua struttura</span>
+    <h3 class="tempo__h3">La guida ha un costo annuale.<br>Le domande arrivano tutto l'anno.</h3>
+    <p>Ogni soggiorno può portare nuove richieste e le stesse spiegazioni da ripetere.</p>
+    <p>Con MyHouse Welcome organizzi le informazioni una volta, le mantieni aggiornate e le rendi disponibili agli ospiti
+      ogni volta che ne hanno bisogno.</p>
+    <p>Anche pochi messaggi in meno, ripetuti nel corso dell'anno, possono tradursi in tempo recuperato.</p>
+    <p class="tempo__frase">Il valore non è soltanto nella guida. È nel tempo che puoi dedicare ad altro.</p>
+  </div>
+
+  <div class="tempo__cta">
+    <div class="row" style="justify-content:center">
+      <a class="btn btn--lg btn--go" href="<?= $crea ?>">Crea gratis la tua guida <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
+      <?php if ($demo): ?><a class="btn btn--lg btn--ghost" href="<?= b() ?>/g/<?= Support::e($demo['slug']) ?>/benvenuto">Guarda come funziona</a><?php endif; ?>
+    </div>
+    <p class="small muted">Configura la tua guida e visualizzala sullo smartphone. Paghi solo quando decidi di pubblicarla.</p>
+  </div>
+</section>
+
 <section style="margin-top:72px" class="split">
   <div class="stack stack--lg">
     <div class="stack stack--sm">

@@ -39,6 +39,9 @@ final class Icon
         'euro'      => '<path d="M17.5 6.5A6.5 6.5 0 0 0 7 11.7 6.5 6.5 0 0 0 17.5 17.5"/><path d="M4.5 10.5h8M4.5 13.5h8"/>',
         'book'      => '<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v18H5.5A1.5 1.5 0 0 1 4 19.5Z"/><path d="M4 17.5h15"/>',
         'chart'     => '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+        'clock'     => '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+        'message'   => '<path d="M20 12a7.5 7.5 0 0 1-11 6.6L4 20l1.4-4.6A7.5 7.5 0 1 1 20 12Z"/>',
+        'car'       => '<path d="M5 16.5V12l1.8-4.6A2 2 0 0 1 8.7 6h6.6a2 2 0 0 1 1.9 1.4L19 12v4.5"/><path d="M4 16.5h16M5 12h14"/><circle cx="8" cy="16.5" r="1.6"/><circle cx="16" cy="16.5" r="1.6"/>',
     ];
 
     public static function svg(string $name, int $size = 20, float $stroke = 1.8, string $class = ''): string

@@ -195,6 +195,12 @@ prova('Niente testi vecchi', !str_contains($r['body'], 'Guardane una vera') && !
 prova('Niente piano Pro in vendita', !preg_match('/>\s*Pro\s*</', $r['body']));
 prova('Sezione QR', str_contains($r['body'], 'Un QR. Tutta la struttura.'));
 prova('I link dei piani portano alla registrazione col piano', str_contains($r['body'], '/registrati?piano=' . pv('essential')));
+$tempo = preg_match('#<section id="il-tempo".*?</section>#s', $r['body'], $m) ? $m[0] : '';
+prova('Sezione "Il tempo che non vedi" presente', $tempo !== '' && str_contains($tempo, 'Ogni ospite è nuovo.'));
+prova('…tra la fotografia e le funzioni', strpos($r['body'], 'shot shot--wide') < strpos($r['body'], 'id="il-tempo"') && strpos($r['body'], 'id="il-tempo"') < strpos($r['body'], 'class="split"'));
+prova('…con le tre domande, la svolta e il valore del canone', substr_count($tempo, 'class="msg"') === 3 && str_contains($tempo, 'Le risposte le prepari una volta.') && str_contains($tempo, 'La guida ha un costo annuale.'));
+prova('…senza numeri di risparmio inventati', !preg_match('/\d+\s*(%|ore|messaggi in meno)|mai più|elimin/i', strip_tags($tempo)));
+prova('…CTA verso la registrazione e verso la demo', str_contains($tempo, '/registrati"') && str_contains($tempo, 'Guarda come funziona') && str_contains($tempo, '/benvenuto'));
 foreach (['/termini', '/privacy'] as $p) { $r = $ospite->get($p); prova("$p si apre", $r['code'] === 200 && pulita($r)); }
 
 // ================================================================= REGISTRAZIONE
@@ -214,6 +220,8 @@ prova('Presa visione privacy registrata', $u && $u['privacy_version'] !== '' && 
 prova('Email non ancora verificata', $u && $u['email_verified_at'] === null);
 prova('Password salvata con hash', $u && str_starts_with($u['password_hash'], '$2y$') || str_starts_with((string) $u['password_hash'], '$argon'));
 prova('Email di verifica spedita', linkPosta('anna@prova.test', 'verifica') !== '');
+$r = $anna->get('/');
+prova('Utente dentro: la CTA della sezione porta al pannello, non alla registrazione', preg_match('#<section id="il-tempo".*?</section>#s', $r['body'], $m) && str_contains($m[0], '/pannello"') && !str_contains($m[0], '/registrati'));
 $r = $anna->get('/registrati?piano=' . pv('plus'));
 prova('Chi è già dentro e clicca un piano non si registra di nuovo', $r['code'] === 302 && str_contains($r['loc'], '/piano?piano=' . pv('plus')));
 $r = $anna->get('/piano?piano=' . pv('essential'));
