@@ -36,10 +36,10 @@ return [
 
     // Dati aziendali del piè di pagina e dei documenti legali (un valore vuoto nasconde la riga).
     // 'legal' => [
-    //     'company'          => 'Blackout',
+    //     'company'          => 'Blackout Agency',
     //     'company_vat'      => '02945910541',
-    //     'company_city'     => '',
-    //     'contact_email'    => 'info@tuodominio.it',
+    //     'company_city'     => 'Via Ariodante Fabretti 17, Perugia',
+    //     'contact_email'    => 'info@myhousewelcome.it',
     //     'contact_phone'    => '+39 392 006 1600',
     //     'contact_whatsapp' => '393920061600',
     // ],

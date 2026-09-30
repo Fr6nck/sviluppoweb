@@ -12,12 +12,12 @@ App PHP 8.1+ per guide digitali degli ospiti (case vacanza, B&B, agriturismi). S
 7. Stile visivo: usa i token e i componenti già in `assets/app.css` (carta, terracotta, pino, ocra, mare; Gloock per i titoli, Onest per il testo). I mockup in `_brief/revisione/revisione.html` sono solo riferimento visivo.
 
 ## Dati aziendali (pubblici, da mettere come valori predefiniti in `app/config.php` → `legal`)
-- Ragione sociale: `Blackout` (valore già presente in `MHW_COMPANY`; **da confermare** la forma esatta)
+- Ragione sociale: `Blackout Agency` (`MHW_COMPANY`, confermata)
 - P.IVA: `02945910541`
 - Telefono: `+39 392 006 1600` — link `tel:+393920061600`
 - WhatsApp: stesso numero — link `https://wa.me/393920061600`
-- Email di contatto: lascia quella attuale in `MHW_CONTACT_EMAIL` e chiedimi conferma
-- Città della sede: chiedimi, non dedurla
+- Email di contatto: `info@myhousewelcome.it` (`MHW_CONTACT_EMAIL`, confermata)
+- Sede: `Via Ariodante Fabretti 17, Perugia` (`MHW_COMPANY_CITY`, confermata)
 
 ## Come lavori
 - Un solo file di fase per sessione (`_brief/claude-code/FASE-N.md`). Leggi solo i file indicati lì; apri altri file solo se servono davvero.
