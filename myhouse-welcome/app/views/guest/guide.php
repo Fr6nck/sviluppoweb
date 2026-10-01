@@ -2,7 +2,6 @@
 $pr = $snap['property']; $def = $pr['default_locale'];
 $title = $pr['name'];
 $toni = ['t-terracotta', 't-sea', 't-pine', 't-ochre'];
-$tel = Support::telHref((string) $pr['host_whatsapp']);
 $copertina = !empty($pr['cover_id']) ? MHW\Media::url((int) $pr['cover_id']) : ($pr['cover_url'] ?? null); ?>
 
 <?php include __DIR__ . '/_top.php'; ?>
@@ -43,19 +42,11 @@ $copertina = !empty($pr['cover_id']) ? MHW\Media::url((int) $pr['cover_id']) : (
 <p style="margin-top:14px;text-align:center">
   <a class="small muted" href="<?= Support::e($base) ?>/commiato?l=<?= Support::e($loc) ?>"><?= Support::e(I18n::t($loc, 'leaving')) ?> &rarr;</a></p>
 
-<?php if ($pr['host_phone'] || $tel): ?>
-  <div class="guest-bottom">
-    <?php if ($pr['host_phone']): ?>
-      <a class="btn btn--ghost" href="tel:<?= Support::e(Support::telHref($pr['host_phone'])) ?>">
-        <?= Icon::svg('phone', 17) ?><?= Support::e($pr['host_name'] ? I18n::t($loc, 'call', $pr['host_name']) : I18n::t($loc, 'call_host')) ?></a>
-    <?php endif; ?>
-    <?php if ($tel): ?>
-      <a class="btn" href="https://wa.me/<?= Support::e(ltrim($tel, '+')) ?>" rel="noopener"><?= Icon::svg('whatsapp', 17) ?><?= Support::e(I18n::t($loc, 'whatsapp')) ?></a>
-    <?php endif; ?>
-  </div>
-<?php endif; ?>
+<?php include __DIR__ . '/_contatti.php'; ?>
 
-<?php if (!empty($snap['published_at'])): ?>
+<?php $cin = trim(preg_replace('/^CIN\s*/i', '', (string) ($pr['cin'] ?? '')));
+      if (!empty($snap['published_at']) || $cin !== ''): /* piè di pagina: aggiornamento e CIN, in piccolo */ ?>
   <p class="tiny muted" style="margin:18px 0 28px;text-align:center">
-    <?= Support::e(I18n::t($loc, 'updated_on', gmdate('d/m/Y', strtotime($snap['published_at']) ?: time()))) ?></p>
+    <?php if (!empty($snap['published_at'])): ?><?= Support::e(I18n::t($loc, 'updated_on', gmdate('d/m/Y', strtotime($snap['published_at']) ?: time()))) ?><?php endif; ?>
+    <?php if ($cin !== ''): ?><?= !empty($snap['published_at']) ? '<br>' : '' ?>CIN <?= Support::e($cin) ?><?php endif; ?></p>
 <?php endif; ?>

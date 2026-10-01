@@ -48,7 +48,28 @@ $campo = function (string $name, string $tipo, $orig, $trad, string $etichetta) 
           <input type="text" id="t<?= $sid ?>" name="s[<?= $sid ?>][title]" maxlength="120" value="<?= Support::e($s['trad']['title']) ?>"
                  placeholder="<?= Support::e(SectionCatalog::title($s['kind'], $loc)) ?>">
         </div>
-        <?php foreach (SectionCatalog::fields($s['kind']) as $f => [$tipo, $etichetta]):
+        <?php foreach (SectionCatalog::fields($s['kind']) as $f => $defC): [$tipo, $etichetta] = $defC;
+              if ($tipo === 'repeater') {
+                  // Riga per riga: l'id nascosto lega la traduzione alla sua riga anche se l'host la sposta.
+                  $comuni = json_decode((string) $s['data'], true)[$f] ?? [];
+                  $righe = SectionCatalog::rows($defC, $comuni, $s['orig']['data'][$f] ?? []);
+                  $tr = [];
+                  foreach ((array) ($s['trad']['data'][$f] ?? []) as $x) if (is_array($x) && isset($x['id'])) $tr[$x['id']] = $x;
+                  $testi = array_filter($defC['sub'], fn($sd) => SectionCatalog::isTranslated($sd[0]));
+                  $h = '';
+                  foreach ($righe as $i => $r) {
+                      $parti = '';
+                      foreach ($testi as $sn => $sd) {
+                          if (trim((string) $r[$sn]) === '' && trim((string) ($tr[$r['id']][$sn] ?? '')) === '') continue;
+                          $parti .= $campo('s[' . $sid . '][' . $f . '][' . $i . '][' . $sn . ']', $sd[0], $r[$sn], $tr[$r['id']][$sn] ?? '', $sd[1]);
+                      }
+                      if ($parti === '') continue;
+                      $h .= '<div class="stack" style="gap:10px;padding-top:8px;border-top:1px solid var(--line)">'
+                          . '<input type="hidden" name="s[' . $sid . '][' . $f . '][' . $i . '][id]" value="' . Support::e($r['id']) . '">' . $parti . '</div>';
+                  }
+                  if ($h !== '') echo '<fieldset class="fieldset" style="padding:12px"><legend class="small">' . Support::e($etichetta) . '</legend>' . $h . '</fieldset>';
+                  continue;
+              }
               if (!SectionCatalog::isTranslated($tipo)) continue;
               echo $campo('s[' . $sid . '][' . $f . ']', $tipo, $s['orig']['data'][$f] ?? '', $s['trad']['data'][$f] ?? '', $etichetta);
         endforeach; ?>

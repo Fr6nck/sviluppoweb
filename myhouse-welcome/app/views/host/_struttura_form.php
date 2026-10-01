@@ -2,16 +2,38 @@
 /* Nome, luogo, orari, contatti dell'host e, nella procedura, la lingua in cui
    si scrive la guida. Riceve: $prop, $dopoPasso, e se c'è la lingua $tutte e $consentite. */
 use function MHW\b;
-use MHW\{Support, Csrf, Icon};
+use MHW\{Support, Csrf, Icon, Db};
 $dopoPasso = $dopoPasso ?? '';
+$tipi = ['' => 'Non indicata', 'casa_vacanza' => 'Casa vacanza', 'bnb' => 'B&B', 'affittacamere' => 'Affittacamere', 'agriturismo' => 'Agriturismo', 'altro' => 'Altro'];
+$contatti = Db::all('SELECT * FROM property_contacts WHERE property_id = ? ORDER BY position, id', [$prop['id']]);
 $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
 <form method="post" action="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/impostazioni" class="stack"<?= $dopoPasso !== '' ? ' data-autosave' : '' ?>><?= Csrf::field() ?>
   <fieldset class="fieldset">
     <legend>La struttura</legend>
     <div class="field" style="margin:0"><label for="name">Nome</label><input type="text" id="name" name="name" required maxlength="120" value="<?= $c('name') ?>"></div>
-    <div class="grid grid-2">
+    <div class="field" style="margin:0"><span class="label">Tipologia</span>
+      <div class="scelte scelte--riga" role="radiogroup" aria-label="Tipologia">
+        <?php foreach ($tipi as $k => $et): ?>
+          <label class="scelta"><input type="radio" name="property_type" value="<?= Support::e($k) ?>" <?= (string) ($prop['property_type'] ?? '') === $k ? 'checked' : '' ?>>
+            <span class="scelta__testo"><?= Support::e($et) ?></span></label>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <div class="field" style="margin:0"><label for="address">Indirizzo</label>
+      <p class="help" style="margin:0 0 6px">Via e numero civico. Precompila «Come arrivare» e il link a Maps: lo scrivi una volta sola.</p>
+      <input type="text" id="address" name="address" maxlength="255" autocomplete="street-address" value="<?= $c('address') ?>"></div>
+    <div class="grid grid-3">
+      <div class="field" style="margin:0"><label for="postal_code">CAP</label><input type="text" id="postal_code" name="postal_code" maxlength="10" inputmode="numeric" autocomplete="postal-code" value="<?= $c('postal_code') ?>"></div>
       <div class="field" style="margin:0"><label for="city">Città</label><input type="text" id="city" name="city" maxlength="120" value="<?= $c('city') ?>"></div>
       <div class="field" style="margin:0"><label for="region">Zona o regione</label><input type="text" id="region" name="region" maxlength="120" value="<?= $c('region') ?>"></div>
+    </div>
+    <div class="grid grid-2">
+      <div class="field" style="margin:0"><label for="cin">CIN <span class="muted">(facoltativo)</span></label>
+        <p class="help" style="margin:0 0 6px">Il codice identificativo nazionale degli affitti brevi: compare in piccolo in fondo alla guida.</p>
+        <input type="text" id="cin" name="cin" maxlength="40" spellcheck="false" placeholder="IT…" value="<?= $c('cin') ?>"></div>
+      <div class="field" style="margin:0"><label for="beds">Posti letto <span class="muted">(facoltativo)</span></label>
+        <p class="help" style="margin:0 0 6px">Quante persone può ospitare la struttura.</p>
+        <input type="number" id="beds" name="beds" min="0" max="999" step="1" inputmode="numeric" value="<?= (int) ($prop['beds'] ?? 0) ?: '' ?>"></div>
     </div>
   </fieldset>
   <?php if (isset($consentite, $tutte)): $principale = $prop['default_locale'] ?: 'it'; ?>
@@ -34,15 +56,17 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
       <div class="field" style="margin:0"><label for="checkout_by">Check-out entro le</label><input id="checkout_by" name="checkout_by" type="time" value="<?= $c('checkout_by') ?>"></div>
     </div>
   </fieldset>
-  <fieldset class="fieldset">
-    <legend>Contatti dell'host</legend>
-    <p class="help">Compaiono nella guida, così l'ospite ti chiama o ti scrive con un tocco.</p>
-    <div class="field" style="margin:0"><label for="host_name">Il tuo nome</label><input type="text" id="host_name" name="host_name" maxlength="120" value="<?= $c('host_name') ?>"></div>
-    <div class="grid grid-2">
-      <div class="field" style="margin:0"><label for="host_phone">Telefono</label><input id="host_phone" name="host_phone" type="tel" maxlength="40" value="<?= $c('host_phone') ?>"></div>
-      <div class="field" style="margin:0"><label for="host_whatsapp">WhatsApp</label><input id="host_whatsapp" name="host_whatsapp" type="tel" maxlength="40" value="<?= $c('host_whatsapp') ?>" placeholder="+39 …"></div>
-    </div>
-  </fieldset>
+  <?php (function (array $rip) { include __DIR__ . '/_ripetitore.php'; })([
+      'name' => 'contacts', 'legend' => 'Chi risponde agli ospiti',
+      'help' => 'Compaiono nella guida, così l\'ospite chiama o scrive con un tocco. Il primo è quello principale: trascina per cambiare l\'ordine.',
+      'sub' => [
+          'name' => ['plain', 'Nome', ''],
+          'role' => ['choice', 'Ruolo', '', 'options' => ['host' => 'Host', 'cohost' => 'Co-host', 'pulizie' => 'Pulizie e chiavi', 'manutenzione' => 'Manutenzione', 'altro' => 'Altro']],
+          'phone' => ['tel', 'Telefono', ''],
+          'whatsapp' => ['check', 'Risponde anche su WhatsApp', ''],
+      ],
+      'rows' => array_map(fn($x) => ['id' => 'c' . $x['id']] + $x, $contatti),
+      'add' => 'Aggiungi un contatto', 'max' => 8]); ?>
   <?php if ($dopoPasso !== ''):
         $barraAvanti = '<button class="btn btn--go" name="dopo" value="' . Support::e($dopoPasso) . '">Salva e continua <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
         include __DIR__ . '/_barra_passo.php';

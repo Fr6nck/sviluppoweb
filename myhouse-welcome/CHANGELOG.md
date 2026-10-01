@@ -1,5 +1,40 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Fase 3, blocco A — Struttura e contatti, arrivo e partenza, Wi-Fi (1 ottobre 2026)
+
+Tre migrazioni (`008`, `009`, `010`), che partono da sole al primo accesso. Prima di caricare, copia `app/storage/`.
+
+**Motore dei campi**
+- Due tipi nuovi nel catalogo: `repeater` (righe con sottocampi, che si aggiungono, si tolgono e si riordinano trascinando o con «Sposta su/giù» da tastiera) e `choice` (una scelta fissa, con etichette tradotte nei file `lang`).
+- Nelle righe ripetibili i sottocampi uguali in ogni lingua (rete, password, telefono) stanno in `sections.data`, i testi in `section_translations.data`. Le due parti si uniscono con un **id di riga stabile**, quindi riordinare o togliere una riga non mescola le traduzioni.
+- Aggiornati editor, pagina di traduzione (riga per riga), percentuali di traduzione e guida ospite (ripiego sulla lingua principale riga per riga).
+- Nuova classe `Conversione`: un'unica conversione dal formato di prima, usata dalle migrazioni, dalle guide già pubblicate (lette al volo nel formato nuovo, senza ripubblicare né riscrivere le istantanee) e dai dati demo. È idempotente e non cancella niente: i vecchi campi restano nel JSON.
+- Istantanee della guida: formato 3.
+
+**R2 · Struttura e contatti** (migrazione 008)
+- Campi nuovi, tutti facoltativi: tipologia, indirizzo, CAP, CIN, posti letto (e coordinate, per ora vuote).
+- Contatti duplicabili, nella tabella nuova `property_contacts`: nome, ruolo (Host, Co-host, Pulizie e chiavi, Manutenzione, Altro), telefono, «risponde anche su WhatsApp». La migrazione copia nome, telefono e WhatsApp di prima. Se telefono e WhatsApp erano due numeri diversi, diventano due righe: nessun numero si perde. Le vecchie colonne restano e restano allineate al primo contatto.
+- Guida ospite: la barra in fondo diventa «Contatta {nome}» e apre un foglio con tutti i contatti (Chiama / WhatsApp). Il CIN compare in piccolo nel piè di pagina.
+- L'indirizzo della struttura precompila «Come arrivare». Se manca il link Maps, la guida ne genera uno di ricerca dall'indirizzo.
+
+**R3 · Arrivo e partenza** (migrazione 009)
+- Arrivo: modalità (self check-in, accoglienza, cassetta delle chiavi), passaggi, arrivo tardivo, documenti da mostrare, imposta di soggiorno (importo per notte, notti massime, esenzioni e pagamento).
+- Partenza: le cinque caselle fisse (chiavi, rifiuti, luci, clima, finestre) diventano la lista ordinabile «Prima di partire», con suggerimenti a un tocco nella lingua della guida (Chiavi, Rifiuti, Luci, Clima, Finestre, Lavastoviglie, Asciugamani). La migrazione converte lingua per lingua, nello stesso ordine, con l'etichetta («Chiavi: …»). Aggiornato anche il congedo.
+
+**R4 · Wi-Fi** (migrazione 010)
+- Più reti: zona, nome della rete, password. La rete di prima diventa la prima riga.
+- Nella guida, per ogni rete: «Copia password» e un **QR Wi-Fi** (`WIFI:T:WPA;S:…;P:…;;`, con `\ ; , : "` protetti), generato con `Qr.php` dentro la pagina, senza richieste in più.
+
+**Correzioni trovate nelle prove d'aggiornamento**
+- La migrazione 005 ripubblica la demo mentre le migrazioni stanno ancora girando. Ora `Guide::build` converte da sé i contenuti e legge i contatti dalle colonne vecchie se la tabella nuova non c'è ancora.
+
+**Database**
+- Le migrazioni nuove scelgono la sintassi giusta per SQLite e per MySQL. L'installazione da zero su MySQL resta **non supportata**: lo schema iniziale (`001`) usa sintassi solo SQLite. Si usa SQLite, come oggi. Da sistemare in un passo a parte, con un MySQL di prova.
+
+**Prove**
+- `giro-completo.php`: 360 controlli (19 nuovi per il blocco A).
+- `aggiornamento.php` controlla che nessun testo, traduzione, dato comune, luogo, foto o numero di telefono si perda, e che guida, congedo e Wi-Fi della demo già pubblicata si leggano nel formato nuovo. Superata partendo da `be97f4a` (la «v1» della revisione), `cb6d0dc` (Fase 2), `d6edc08` e `8f27f4f`.
+
 ## v2 · Fase 2 — Il piano una sola volta, procedura in 5 passi (30 settembre 2026)
 
 Una migrazione: `007_passi_procedura.php` (parte da sola al primo accesso dopo l'aggiornamento).

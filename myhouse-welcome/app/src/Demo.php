@@ -66,6 +66,7 @@ final class Demo
             'is_demo' => 1, 'wizard_step' => 'fatto',
         ], 'id = :pid', ['pid' => $pid]);
         Properties::setLocales($acc, $pid, $d['lingue']);
+        Properties::saveContacts($pid, Conversione::contatti($d['host'], $d['telefono'], $d['telefono']));
         return $pid;
     }
 
@@ -77,6 +78,13 @@ final class Demo
     /** @param array<string,array> $testi lingua => campi */
     private static function scrivi(int $pid, int $sid, array $testi, string $titoloIt = ''): void
     {
+        // Gli esempi sono scritti come li scriverebbe un host; qui si portano al
+        // formato a blocchi, con le stesse regole delle migrazioni.
+        $kind = (string) Db::val('SELECT kind FROM sections WHERE id = ?', [$sid]);
+        if ($kind === 'checkin') foreach ($testi as $loc => $c) $testi[$loc] = Conversione::partenza($c, (string) $loc);
+        if ($kind === 'wifi' && isset($testi['it']['network'])) {
+            $testi['it']['networks'] = [['ssid' => $testi['it']['network'], 'password' => $testi['it']['password'] ?? '', 'zone' => '']];
+        }
         foreach ($testi as $loc => $campi) {
             Properties::saveSection($pid, $sid, $loc, $campi + ['title' => $loc === 'it' ? $titoloIt : ''], $loc === 'it');
         }

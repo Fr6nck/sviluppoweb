@@ -345,7 +345,9 @@ prova('Salva e continua porta al passo dopo', $r['code'] === 302 && str_contains
 $core = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$pid]);
 $r = $anna->modulo("/pannello/$pid/procedura/arrivo", "/pannello/$pid/sezioni/$core",
     ['checkin_steps' => ['Il portone è quello verde.', 'Le chiavi te le consegno io.', ''], 'checkin_note' => 'Se arrivi tardi, scrivimi.',
-     'checkout_keys' => 'Lascia le chiavi sul tavolo.', 'checkout_waste' => 'Umido nel bidone marrone.', 'checkout_notes' => 'Buon viaggio!',
+     'checkout_steps' => ['Lascia le chiavi sul tavolo.', 'Umido nel bidone marrone.'], 'checkout_notes' => 'Buon viaggio!',
+     'arrival_mode' => 'self', 'late_arrival' => 'Dopo le 21 scrivimi prima di partire.', 'documents' => 'Un documento per ogni ospite.',
+     'tax_amount' => '2,00 €', 'tax_max_nights' => '5', 'tax_notes' => 'Sotto i 14 anni esenti. In contanti all\'arrivo.',
      'door_code' => '4729', 'dopo' => 'sezioni']);
 prova('Check-in salvato, avanti alle sezioni', $r['code'] === 302 && str_contains($r['loc'], '/procedura/sezioni'));
 $t = json_decode((string) val('SELECT data FROM section_translations WHERE section_id = ?', [$core]), true);
@@ -395,8 +397,15 @@ $dopo = $pos();
 prova('Sposta su scambia due sezioni', $dopo[0] == $prima[1] && $dopo[1] == $prima[0]);
 
 $r = $anna->modulo("/pannello/$pid/sezioni/{$ids['wifi']}", "/pannello/$pid/sezioni/{$ids['wifi']}",
-    ['title' => 'Wi-Fi', 'network' => 'CasaProva_5G', 'password' => 'mare2026', 'instructions' => 'Riavvia il router se serve.', 'router_location' => 'In salotto.']);
-prova('Wi-Fi salvato', $r['code'] === 302 && json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$ids['wifi']]), true)['network'] === 'CasaProva_5G');
+    ['title' => 'Wi-Fi', 'networks' => [['id' => '', 'zone' => 'Casa principale', 'ssid' => 'CasaProva_5G', 'password' => 'mare;2026'],
+                                        ['id' => '', 'zone' => 'Dependance', 'ssid' => 'Giardino', 'password' => 'fiori,2026'],
+                                        ['id' => '', 'zone' => '', 'ssid' => '', 'password' => '']],
+     'instructions' => 'Riavvia il router se serve.', 'router_location' => 'In salotto.']);
+$reti = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$ids['wifi']]), true)['networks'] ?? [];
+prova('Wi-Fi salvato: due reti, la riga vuota scartata', $r['code'] === 302 && count($reti) === 2 && $reti[0]['ssid'] === 'CasaProva_5G'
+      && preg_match('/^r[0-9a-f]{8}$/', $reti[0]['id']) === 1 && !isset($reti[0]['zone']));
+$zone = json_decode((string) val("SELECT data FROM section_translations WHERE section_id = ? AND locale = 'it'", [$ids['wifi']]), true)['networks'] ?? [];
+prova('Fase 3 · repeater: la zona (testo) sta nelle traduzioni, unita per id', ($zone[1]['id'] ?? '') === $reti[1]['id'] && ($zone[1]['zone'] ?? '') === 'Dependance');
 $r = $anna->get("/pannello/$pid/sezioni/{$ids['wifi']}");
 prova('Editor strutturato (niente mini-sintassi)', pulita($r) && str_contains($r['body'], 'Nome della rete') && !str_contains($r['body'], 'riga vuota'));
 prova('Essential: niente caricamento immagini nelle sezioni', !str_contains($r['body'], 'name="foto"'));
@@ -453,6 +462,66 @@ $r = $anna->get("/pannello/$pid/procedura/pubblica");
 prova('Fase 2 · «Vuoi la guida anche in altre lingue?» in fondo, facoltativo', str_contains($r['body'], 'Vuoi la guida anche in altre lingue?') && str_contains($r['body'], 'Facoltativo')
       && preg_match('#name="locali\[\]" value="fr"[^>]*disabled#', $r['body']) === 1);
 prova('Fase 2 · le traduzioni a metà non bloccano la pubblicazione', !str_contains($r['body'], 'Prima di pubblicare') || !preg_match('/tradu/i', (string) (preg_match('#Prima di pubblicare</b>(.*?)</div>#s', $r['body'], $mm) ? $mm[1] : '')));
+
+// ================================================== FASE 3 · BLOCCO A
+capitolo('Fase 3 · struttura, contatti, arrivo e partenza, Wi-Fi');
+$r = $anna->modulo("/pannello/$pid/procedura/struttura", "/pannello/$pid/impostazioni",
+    ['name' => 'Casa Prova', 'city' => 'Lecce', 'region' => 'Puglia', 'checkin_from' => '15:00', 'checkout_by' => '10:00',
+     'property_type' => 'bnb', 'address' => 'Via San Francesco 12', 'postal_code' => '73100', 'cin' => 'IT075039C2XXXXXXXX', 'beds' => '4',
+     'contacts' => [['id' => '', 'name' => 'Anna Prova', 'role' => 'host', 'phone' => '+39 333 1234567', 'whatsapp' => '1'],
+                    ['id' => '', 'name' => 'Marco', 'role' => 'pulizie', 'phone' => '+39 347 9876543'],
+                    ['id' => '', 'name' => '', 'role' => 'host', 'phone' => '']]]);
+$pr = riga('SELECT * FROM properties WHERE id = ?', [$pid]);
+prova('R2 · tipologia, indirizzo, CAP, CIN e posti letto salvati', $pr['property_type'] === 'bnb' && $pr['address'] === 'Via San Francesco 12' && $pr['postal_code'] === '73100'
+      && $pr['cin'] === 'IT075039C2XXXXXXXX' && (int) $pr['beds'] === 4);
+$cc = righe('SELECT name, role, phone, whatsapp FROM property_contacts WHERE property_id = ? ORDER BY position', [$pid]);
+prova('R2 · due contatti, nell\'ordine, la riga vuota scartata', count($cc) === 2 && $cc[0]['name'] === 'Anna Prova' && (int) $cc[0]['whatsapp'] === 1 && $cc[1]['role'] === 'pulizie' && (int) $cc[1]['whatsapp'] === 0);
+prova('R2 · il primo contatto resta anche nelle colonne di prima', $pr['host_name'] === 'Anna Prova' && $pr['host_whatsapp'] === '+39 333 1234567');
+$r = $anna->get("/pannello/$pid/procedura/struttura");
+prova('R2 · modulo: contatti come righe ripetibili, con Sposta su/giù', str_contains($r['body'], 'Chi risponde agli ospiti') && str_contains($r['body'], 'data-rip-su')
+      && str_contains($r['body'], 'data-rip-modello') && str_contains($r['body'], 'value="Marco"'));
+$r = $anna->get("/pannello/$pid/anteprima");
+prova('R2 · guida: «Contatta Anna» apre il foglio con tutti i contatti', str_contains($r['body'], 'Contatta Anna') && str_contains($r['body'], 'class="contatti-foglio"')
+      && str_contains($r['body'], 'Marco') && str_contains($r['body'], 'Pulizie e chiavi') && substr_count($r['body'], 'https://wa.me/') === 1
+      && str_contains($r['body'], 'href="tel:+393479876543"'));
+prova('R2 · CIN in piccolo nel piè di pagina', str_contains($r['body'], 'CIN IT075039C2XXXXXXXX'));
+prova('R2 · in inglese «Contact Anna» e i ruoli tradotti', str_contains($anna->get("/pannello/$pid/anteprima?l=en")['body'], 'Contact Anna'));
+// L'indirizzo precompila «Come arrivare» (sulla struttura di Elena, piano Plus).
+$elena->modulo("/pannello/$epid/impostazioni", "/pannello/$epid/impostazioni", ['name' => 'Casa Elena', 'address' => 'Via Roma 1', 'postal_code' => '06059', 'city' => 'Todi']);
+$elena->get("/pannello/$epid/procedura/sezioni");
+$elena->post("/pannello/$epid/sezioni", ['kind' => 'arrival', 'torna' => 'procedura']);
+$arr = json_decode((string) val("SELECT data FROM sections WHERE property_id = ? AND kind = 'arrival'", [$epid]), true);
+prova('R2 · l\'indirizzo della struttura precompila «Come arrivare»', ($arr['address'] ?? '') === 'Via Roma 1, 06059 Todi', json_encode($arr));
+
+// Arrivo e partenza
+$r = $anna->get("/pannello/$pid/anteprima/$core");
+prova('R3 · guida: modalità, arrivo tardivo, documenti', str_contains($r['body'], 'Self check-in') && str_contains($r['body'], 'Arrivo tardivo')
+      && str_contains($r['body'], 'Dopo le 21 scrivimi') && str_contains($r['body'], 'Documenti da mostrare'));
+prova('R3 · imposta di soggiorno: importo, notti, esenzioni', str_contains($r['body'], "2,00 € a notte") && str_contains($r['body'], 'Per un massimo di 5 notti.')
+      && str_contains($r['body'], 'Sotto i 14 anni esenti'));
+prova('R3 · partenza come lista', str_contains($r['body'], '<li>Lascia le chiavi sul tavolo.</li>'));
+$r = $anna->get("/pannello/$pid/anteprima/$core?l=en");
+prova('R3 · in inglese le etichette sono tradotte', str_contains($r['body'], 'Tourist tax') && str_contains($r['body'], '2,00 € per night') && str_contains($r['body'], 'Late arrival'));
+$r = $anna->get("/pannello/$pid/procedura/arrivo");
+prova('R3 · editor: suggerimenti a un tocco per «Prima di partire»', str_contains($r['body'], 'data-suggerisci=') && str_contains($r['body'], '+ Lavastoviglie')
+      && str_contains($r['body'], 'data-testo="Avvia la lavastoviglie."') && str_contains($r['body'], 'name="arrival_mode" value="self" checked'));
+
+// Wi-Fi: più reti, QR, riordino con le traduzioni al loro posto
+$r = $anna->get("/pannello/$pid/anteprima/{$ids['wifi']}");
+prova('R4 · due reti, ognuna con zona, password da copiare e QR', str_contains($r['body'], 'Casa principale') && str_contains($r['body'], 'Dependance')
+      && substr_count($r['body'], 'src="data:image/png;base64,') === 2 && str_contains($r['body'], 'data-copia-di="mare;2026"'));
+prova('R4 · la stringa del QR ha i caratteri speciali protetti', str_contains((string) shell_exec('php -r ' . escapeshellarg('require "' . $DOVE . '/app/src/Conversione.php"; echo MHW\Conversione::wifiQr("Casa;5G", "a,b\\\\c");')), 'WIFI:T:WPA;S:Casa\;5G;P:a\,b\\\\c;;'));
+$anna->post("/pannello/$pid/lingue/en", ['s' => [$ids['wifi'] => ['networks' => [['id' => $reti[0]['id'], 'zone' => 'Main house'], ['id' => $reti[1]['id'], 'zone' => 'Annex']]]]]);
+$anna->post("/pannello/$pid/sezioni/{$ids['wifi']}", ['networks' => [
+    ['id' => $reti[1]['id'], 'zone' => 'Dependance', 'ssid' => 'Giardino', 'password' => 'fiori,2026'],
+    ['id' => $reti[0]['id'], 'zone' => 'Casa principale', 'ssid' => 'CasaProva_5G', 'password' => 'mare;2026']]]);
+$r = $anna->get("/pannello/$pid/anteprima/{$ids['wifi']}?l=en");
+prova('R4 · riordinate le reti, le traduzioni restano sulla loro riga', strpos($r['body'], 'Annex') !== false && strpos($r['body'], 'Annex') < strpos($r['body'], 'Main house')
+      && strpos($r['body'], 'Giardino') < strpos($r['body'], 'CasaProva_5G'));
+prova('R4 · la percentuale di traduzione conta le zone', str_contains($anna->get("/pannello/$pid/lingue")['body'], 'English <span class="perc">'));
+$anna->post("/pannello/$pid/sezioni/{$ids['wifi']}", ['networks' => [['id' => $reti[0]['id'], 'zone' => 'Casa principale', 'ssid' => 'CasaProva_5G', 'password' => 'mare;2026']]]);
+$r = $anna->get("/pannello/$pid/anteprima/{$ids['wifi']}?l=en");
+prova('R4 · tolta una rete, sparisce anche dalla traduzione', !str_contains($r['body'], 'Annex') && str_contains($r['body'], 'Main house') && substr_count($r['body'], 'data:image/png') === 1);
 
 // ================================================================== ASPETTO
 capitolo('Aspetto e palette');

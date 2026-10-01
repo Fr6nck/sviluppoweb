@@ -65,14 +65,22 @@ if ($codici > 0 || !$db->query("SELECT 1 FROM schema_migrations WHERE name LIKE 
                    JOIN users u ON u.id = a.user_id WHERE u.email LIKE 'lucia@%' ORDER BY p.id LIMIT 1)");
         $fermaA = true;
     } catch (PDOException) { /* versione senza procedura guidata */ }
+    $con007 = (function () use ($db) { try { return (bool) $db->query("SELECT 1 FROM schema_migrations WHERE name LIKE '007%'")->fetchColumn(); } catch (PDOException) { return false; } })();
     $f = [
-        'p2acc' => (int) $p2acc, 'p3acc' => (int) $p3acc, 'contenuti' => $fermaA,
+        'p2acc' => (int) $p2acc, 'p3acc' => (int) $p3acc, 'contenuti' => $fermaA, 'con007' => $con007,
         'utenti' => (int) $db->query('SELECT COUNT(*) FROM users')->fetchColumn(),
         'strutture' => $db->query('SELECT id, name, slug, status FROM properties ORDER BY id')->fetchAll(),
         'sezioni' => (int) $db->query('SELECT COUNT(*) FROM sections')->fetchColumn(),
         'abbonamenti' => $db->query('SELECT account_id, package_version_id, status FROM subscriptions ORDER BY id')->fetchAll(),
         'diritti' => $db->query('SELECT pf.package_version_id AS pv, f.code, pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id')->fetchAll(),
         'qr' => $db->query('SELECT property_id, token FROM qr_tokens ORDER BY id')->fetchAll(),
+        // Fase 3: tutto quello che le conversioni toccano, per controllare che niente si perda.
+        'testi' => (function () use ($db) { try { return $db->query('SELECT id, section_id, locale, title, data FROM section_translations ORDER BY id')->fetchAll(); } catch (PDOException) { return []; } })(),
+        'datiSezioni' => (function () use ($db) { try { return $db->query('SELECT id, kind, data FROM sections ORDER BY id')->fetchAll(); } catch (PDOException) { return []; } })(),
+        'luoghi' => (function () use ($db) { try { return $db->query('SELECT * FROM places ORDER BY id')->fetchAll(); } catch (PDOException) { return []; } })(),
+        'testiLuoghi' => (function () use ($db) { try { return $db->query('SELECT * FROM place_translations ORDER BY id')->fetchAll(); } catch (PDOException) { return []; } })(),
+        'media' => (function () use ($db) { try { return (int) $db->query('SELECT COUNT(*) FROM media')->fetchColumn(); } catch (PDOException) { return 0; } })(),
+        'host' => (function () use ($db) { try { return $db->query('SELECT id, host_name, host_phone, host_whatsapp FROM properties ORDER BY id')->fetchAll(); } catch (PDOException) { return []; } })(),
     ];
     file_put_contents($foto, json_encode($f));
     exit($falliti ? 1 : 0);
@@ -132,14 +140,76 @@ $lucia = (string) $db->query("SELECT email FROM users WHERE email LIKE 'lucia@%'
 $r = http("$BASE/accedi", ['_csrf' => tok($r['body']), 'email' => $lucia, 'password' => 'dimostrazione1']);
 prova('Un cliente di prima entra con la sua password', $r['code'] === 302);
 $pid = $db->query("SELECT p.id FROM properties p JOIN accounts a ON a.id = p.account_id JOIN users u ON u.id = a.user_id WHERE u.email = " . $db->quote($lucia))->fetchColumn();
-if ($f['contenuti'] ?? false) prova('Migrazione 007: «contenuti» diventa «sezioni»', $db->query("SELECT wizard_step FROM properties WHERE id = " . (int) $pid)->fetchColumn() === 'sezioni');
-prova('…e nessun passo vecchio rimasto', (int) $db->query("SELECT COUNT(*) FROM properties WHERE wizard_step IN ('checkin', 'contenuti', 'lingue', 'anteprima')")->fetchColumn() === 0);
+if (($f['contenuti'] ?? false) && !($f['con007'] ?? false)) prova('Migrazione 007: «contenuti» diventa «sezioni»', $db->query("SELECT wizard_step FROM properties WHERE id = " . (int) $pid)->fetchColumn() === 'sezioni');
+if (!($f['con007'] ?? false)) prova('…e nessun passo vecchio rimasto', (int) $db->query("SELECT COUNT(*) FROM properties WHERE wizard_step IN ('checkin', 'contenuti', 'lingue', 'anteprima')")->fetchColumn() === 0);
 $r = http("$BASE/pannello/$pid/procedura/contenuti");
 prova('Il vecchio indirizzo «contenuti» porta a «sezioni» (301)', $r['code'] === 301 && str_ends_with($r['loc'], "/pannello/$pid/procedura/sezioni"), $r['code'] . ' ' . $r['loc']);
 foreach (["/pannello", "/pannello/$pid", "/pannello/$pid/lingue", "/pannello/$pid/aspetto", "/pannello/$pid/qr", "/pannello/$pid/procedura/sezioni", "/pannello/$pid/procedura/pubblica", "/account"] as $p) {
     $r = http("$BASE$p");
     prova("$p si apre", $r['code'] === 200 && pulita($r['body']));
 }
+// ----------------------------------------------- Fase 3: niente si perde
+$ora = [];
+foreach ($db->query('SELECT id, title, data FROM section_translations')->fetchAll() as $t) $ora[$t['id']] = $t;
+$persi = [];
+foreach ($f['testi'] ?? [] as $t) {
+    $nuovo = $ora[$t['id']] ?? null;
+    if (!$nuovo || $nuovo['title'] !== $t['title']) { $persi[] = "titolo {$t['id']}"; continue; }
+    $vecchi = json_decode((string) $t['data'], true) ?: []; $nuovi = json_decode((string) $nuovo['data'], true) ?: [];
+    foreach ($vecchi as $k => $v) if (($nuovi[$k] ?? null) !== $v) $persi[] = "{$t['id']}:$k";
+}
+prova('Fase 3 · nessun testo né traduzione perso (i vecchi campi restano)', !$persi, implode(', ', array_slice($persi, 0, 6)));
+$oraS = [];
+foreach ($db->query('SELECT id, data FROM sections')->fetchAll() as $x) $oraS[$x['id']] = json_decode((string) $x['data'], true) ?: [];
+$persiS = [];
+foreach ($f['datiSezioni'] ?? [] as $x) foreach ((json_decode((string) $x['data'], true) ?: []) as $k => $v) if (($oraS[$x['id']][$k] ?? null) !== $v) $persiS[] = "{$x['id']}:$k";
+prova('Fase 3 · nessun dato comune perso (reti, indirizzi, link)', !$persiS, implode(', ', $persiS));
+// Le colonne di prima con gli stessi valori (le migrazioni vecchie possono averne aggiunte).
+$uguali = function (array $prima, array $dopo): bool {
+    $perId = []; foreach ($dopo as $x) $perId[$x['id']] = $x;
+    foreach ($prima as $x) foreach ($x as $k => $v) if (!isset($perId[$x['id']]) || (string) ($perId[$x['id']][$k] ?? '') !== (string) $v) return false;
+    return true;
+};
+prova('Fase 3 · luoghi e loro testi invariati', $uguali($f['luoghi'] ?? [], $db->query('SELECT * FROM places')->fetchAll())
+      && $uguali($f['testiLuoghi'] ?? [], $db->query('SELECT * FROM place_translations')->fetchAll()));
+prova('Fase 3 · nessuna foto persa', (int) $db->query('SELECT COUNT(*) FROM media')->fetchColumn() >= (int) ($f['media'] ?? 0));
+$senza = [];
+foreach ($f['host'] ?? [] as $h) {
+    if (trim($h['host_name'] . $h['host_phone'] . $h['host_whatsapp']) === '') continue;
+    $cc = $db->query('SELECT phone FROM property_contacts WHERE property_id = ' . (int) $h['id'])->fetchAll(PDO::FETCH_COLUMN);
+    $numeri = array_filter([trim($h['host_phone']), trim($h['host_whatsapp'])]);
+    if (!$cc || array_diff($numeri, $cc)) $senza[] = $h['id'];
+}
+prova('Fase 3 · contatti copiati da nome, telefono e WhatsApp di prima, nessun numero perso', !$senza, implode(', ', $senza));
+$conv = [];
+foreach ($f['testi'] ?? [] as $t) {
+    $vecchi = json_decode((string) $t['data'], true) ?: [];
+    if (trim((string) ($vecchi['checkout_keys'] ?? '')) === '') continue;
+    $nuovi = json_decode((string) $ora[$t['id']]['data'], true) ?: [];
+    if (!in_array(true, array_map(fn($v) => str_ends_with((string) $v, ': ' . trim($vecchi['checkout_keys'])), (array) ($nuovi['checkout_steps'] ?? [])), true)) $conv[] = $t['id'];
+}
+prova('Fase 3 · partenza: le vecchie caselle sono voci della lista, lingua per lingua', !$conv, implode(', ', $conv));
+$reti = [];
+foreach ($f['datiSezioni'] ?? [] as $x) {
+    $v = json_decode((string) $x['data'], true) ?: [];
+    if ($x['kind'] !== 'wifi' || trim((string) ($v['network'] ?? '')) === '') continue;
+    if (($oraS[$x['id']]['networks'][0]['ssid'] ?? '') !== $v['network'] || ($oraS[$x['id']]['networks'][0]['password'] ?? '') !== (string) ($v['password'] ?? '')) $reti[] = $x['id'];
+}
+prova('Fase 3 · Wi-Fi: la rete di prima è la prima riga', !$reti, implode(', ', $reti));
+// La guida demo pubblicata con il codice vecchio: si legge nel formato nuovo, senza ripubblicare.
+foreach (['it', 'en'] as $l) {
+    $r = http("$BASE/g/$demo?l=$l");
+    prova("Fase 3 · guida demo pubblicata ($l): «Contatta …» dai contatti di prima", $r['code'] === 200 && pulita($r['body']) && preg_match('/(Contatta|Contact) \S+/', $r['body']) === 1);
+    $r = http("$BASE/g/$demo/commiato?l=$l");
+    if (array_filter($f['testi'] ?? [], fn($t) => str_contains((string) $t['data'], 'checkout_keys')))
+    prova("Fase 3 · congedo ($l): la lista di partenza dalle vecchie caselle", $r['code'] === 200 && pulita($r['body']) && preg_match('/(Chiavi|Keys): /', $r['body']) === 1);
+}
+$wifiDemo = $db->query("SELECT s.id FROM sections s JOIN properties p ON p.id = s.property_id WHERE p.slug = " . $db->quote($demo) . " AND s.kind = 'wifi'")->fetchColumn();
+if ($wifiDemo) {
+    $r = http("$BASE/g/$demo/$wifiDemo");
+    prova('Fase 3 · Wi-Fi della demo pubblicata: rete, password e QR', $r['code'] === 200 && pulita($r['body']) && str_contains($r['body'], 'data:image/png;base64,'));
+}
+
 $r = http("$BASE/");
 prova('Una seconda richiesta non ripete le migrazioni', count($db->query('SELECT name FROM schema_migrations')->fetchAll()) === count($mig));
 echo $falliti ? "$falliti prove NON superate.\n" : "Aggiornamento riuscito.\n";

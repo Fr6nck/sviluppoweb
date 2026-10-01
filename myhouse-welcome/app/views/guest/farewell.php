@@ -6,12 +6,12 @@ $pr = $snap['property']; $def = $pr['default_locale'];
 $title = I18n::t($loc, 'farewell_title') . ' — ' . $pr['name'];
 $core = null; foreach ($snap['sections'] as $s) if ($s['kind'] === 'checkin') { $core = $s; break; }
 $t = $core ? Guide::tdata($core, $loc, $def) : [];
-$cose = [];
-foreach (['checkout_keys', 'checkout_waste', 'checkout_lights', 'checkout_climate', 'checkout_windows'] as $k) {
-    if (trim((string) ($t[$k] ?? '')) !== '') $cose[] = [I18n::t($loc, $k), trim((string) $t[$k])];
-}
+// La lista «Prima di partire» (dalla 009 le vecchie caselle fisse sono voci di questa lista).
+$cose = array_values(array_filter(array_map(fn($x) => trim((string) $x), (array) ($t['checkout_steps'] ?? [])), fn($x) => $x !== ''));
 $saluto = trim((string) ($t['checkout_notes'] ?? ''));
-$tel = Support::telHref((string) $pr['host_whatsapp']);
+// WhatsApp: il primo contatto che risponde lì.
+$tel = '';
+foreach ($pr['contacts'] ?? [] as $c) if (!empty($c['whatsapp']) && trim((string) $c['phone']) !== '') { $tel = Support::telHref((string) $c['phone']); break; }
 $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr['cover_url'] ?? null); ?>
 
 <div class="full" id="congedo">
@@ -30,10 +30,10 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
       </div>
       <?php if ($cose): ?>
         <ul class="checklist">
-          <?php foreach ($cose as $i => [$etichetta, $testo]): ?>
+          <?php foreach ($cose as $i => $testo): ?>
             <li class="rise" style="animation-delay:<?= number_format(.70 + $i * .1, 2, '.', '') ?>s;align-items:flex-start">
               <span style="flex:none;color:#6fc48c;margin-top:2px"><?= Icon::svg('check', 18, 2.4) ?></span>
-              <span><strong><?= Support::e($etichetta) ?>.</strong> <?= Support::e($testo) ?></span></li>
+              <span><?= Support::e($testo) ?></span></li>
           <?php endforeach; ?>
         </ul>
       <?php endif; ?>

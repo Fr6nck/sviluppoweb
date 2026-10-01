@@ -10,10 +10,14 @@ namespace MHW;
  * firmati scadono, quindi si calcolano al momento di mostrare la pagina.
  * Le istantanee pubblicate prima (formato 1) si leggono lo stesso: normalize()
  * le porta al formato nuovo in memoria, senza riscriverle.
+ *
+ * Formato 3: contatti duplicabili, dati della struttura (indirizzo, CIN…),
+ * partenza come lista, più reti Wi-Fi. Le istantanee di formato 2 si
+ * convertono al volo con Conversione, la stessa usata dalle migrazioni.
  */
 final class Guide
 {
-    public const FORMAT = 2;
+    public const FORMAT = 3;
 
     // ------------------------------------------------------------ costruzione
 
@@ -57,9 +61,14 @@ final class Guide
                     ];
                 }
             }
+            // Se una migrazione vecchia pubblica prima che girino le conversioni (009, 010…),
+            // l'istantanea esce comunque nel formato nuovo: la conversione è idempotente.
+            $testi = array_map(fn($t) => $t['data'], $tr);
+            [$datiSezione, $testi] = Conversione::sezione((string) $s['kind'], json_decode((string) $s['data'], true) ?: [], $testi);
+            foreach ($testi as $l => $d) $tr[$l]['data'] = $d;
             $sections[] = [
                 'id' => (int) $s['id'], 'kind' => $s['kind'], 'is_core' => (int) $s['is_core'],
-                'data' => json_decode((string) $s['data'], true) ?: [],
+                'data' => $datiSezione,
                 'image_id' => $foto && $s['media_id'] ? (int) $s['media_id'] : null,
                 'pdf_id' => $pdf && $s['pdf_media_id'] ? (int) $s['pdf_media_id'] : null,
                 'tr' => $tr, 'places' => $places,
@@ -72,6 +81,14 @@ final class Guide
                 'id' => (int) $p['id'], 'name' => $p['name'], 'slug' => $p['slug'], 'city' => $p['city'], 'region' => $p['region'],
                 'checkin_from' => $p['checkin_from'], 'checkout_by' => $p['checkout_by'],
                 'host_name' => $p['host_name'], 'host_phone' => $p['host_phone'], 'host_whatsapp' => $p['host_whatsapp'],
+                'property_type' => (string) ($p['property_type'] ?? ''), 'address' => (string) ($p['address'] ?? ''),
+                'postal_code' => (string) ($p['postal_code'] ?? ''), 'cin' => (string) ($p['cin'] ?? ''),
+                // Una migrazione vecchia può pubblicare prima che esista la tabella dei contatti (la 008):
+                // allora i contatti vengono dalle colonne di prima, come per le istantanee vecchie.
+                'contacts' => Migrator::tableExists('property_contacts')
+                    ? array_map(fn($c) => ['name' => $c['name'], 'role' => $c['role'], 'phone' => $c['phone'], 'whatsapp' => (int) $c['whatsapp']],
+                        Db::all('SELECT * FROM property_contacts WHERE property_id = ? ORDER BY position, id', [$propertyId]))
+                    : Conversione::contatti((string) $p['host_name'], (string) $p['host_phone'], (string) $p['host_whatsapp']),
                 'cover_id' => Entitlements::can($acc, 'cover') && $p['cover_media_id'] ? (int) $p['cover_media_id'] : null,
                 'logo_id' => Entitlements::can($acc, 'logo') && $p['logo_media_id'] ? (int) $p['logo_media_id'] : null,
                 'profile_id' => Entitlements::can($acc, 'profile_image') && $p['profile_media_id'] ? (int) $p['profile_media_id'] : null,
@@ -123,10 +140,38 @@ final class Guide
         return ['property' => $p, 'snapshot' => $snap, 'online' => Subscriptions::propertyOnline($p)];
     }
 
-    /** Un'istantanea del formato 1 portata al formato 2, in memoria. */
+    /** Un'istantanea dei formati precedenti portata al formato attuale, in memoria. */
     public static function normalize(array $s): array
     {
-        if (($s['format'] ?? 1) >= 2) return $s;
+        $f = (int) ($s['format'] ?? 1);
+        if ($f >= self::FORMAT) return $s;
+        if ($f < 2) $s = self::daFormato1($s);
+        return self::daFormato2($s);
+    }
+
+    /** Formato 2 → 3: contatti, dati della struttura, partenza a lista, più reti Wi-Fi. */
+    private static function daFormato2(array $s): array
+    {
+        $p = $s['property'] ?? [];
+        $p += ['property_type' => '', 'address' => '', 'postal_code' => '', 'cin' => ''];
+        if (!isset($p['contacts'])) {
+            $p['contacts'] = Conversione::contatti((string) ($p['host_name'] ?? ''), (string) ($p['host_phone'] ?? ''), (string) ($p['host_whatsapp'] ?? ''));
+        }
+        $s['property'] = $p;
+        foreach (($s['sections'] ?? []) as $i => $sec) {
+            $testi = [];
+            foreach (($sec['tr'] ?? []) as $loc => $t) $testi[$loc] = $t['data'] ?? [];
+            [$dati, $testi] = Conversione::sezione((string) $sec['kind'], $sec['data'] ?? [], $testi);
+            $s['sections'][$i]['data'] = $dati;
+            foreach ($testi as $loc => $d) $s['sections'][$i]['tr'][$loc]['data'] = $d;
+        }
+        $s['format'] = self::FORMAT;
+        return $s;
+    }
+
+    /** Formato 1 → 2: i media erano URL, le sezioni testo libero. */
+    private static function daFormato1(array $s): array
+    {
         $par = fn(string $t) => array_values(array_filter(array_map('trim', preg_split('/\R{2,}/', $t) ?: [])));
         $p = $s['property'] ?? [];
         $p += ['id' => 0, 'palette' => Palette::DEFAULT, 'text_tone' => 'scuro', 'is_demo' => 0, 'logo_id' => null, 'profile_id' => null, 'cover_id' => null];
@@ -185,6 +230,14 @@ final class Guide
         return $suo;
     }
 
+    /** Le righe di un repeater nella lingua dell'ospite (ripiego sulla principale, riga per riga). */
+    public static function rows(array $sec, string $field, string $loc, string $default): array
+    {
+        $def = SectionCatalog::field((string) $sec['kind'], $field);
+        if (!$def || $def[0] !== 'repeater') return [];
+        return SectionCatalog::rows($def, $sec['data'][$field] ?? [], $sec['tr'][$default]['data'][$field] ?? [], $sec['tr'][$loc]['data'][$field] ?? []);
+    }
+
     /**
      * I campi tradotti di una sezione, campo per campo: quello scritto nella
      * lingua dell'ospite, altrimenti quello della lingua principale. Una
@@ -221,8 +274,14 @@ final class Guide
         if (!$snap) return 1;
         $ora = self::build($propertyId);
         unset($snap['published_at'], $ora['published_at']);
-        return json_encode($snap['sections']) === json_encode($ora['sections'])
-            && json_encode($snap['property']) === json_encode($ora['property'])
+        // Le istantanee convertite al volo hanno le chiavi in un altro ordine: si confronta il contenuto.
+        $ordina = function (mixed $v) use (&$ordina): mixed {
+            if (!is_array($v)) return $v;
+            if (!array_is_list($v)) ksort($v);
+            return array_map($ordina, $v);
+        };
+        return json_encode($ordina($snap['sections'])) === json_encode($ordina($ora['sections']))
+            && json_encode($ordina($snap['property'])) === json_encode($ordina($ora['property']))
             && $snap['locales'] === $ora['locales'] ? 0 : 1;
     }
 

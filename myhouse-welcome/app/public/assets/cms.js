@@ -6,7 +6,7 @@
   'use strict';
 
   // I bottoni che servono solo con JavaScript compaiono solo con JavaScript.
-  var nascosti = document.querySelectorAll('[data-togli-riga][hidden],[data-aggiungi-riga][hidden],[data-copia][hidden],[data-ricarica-anteprima][hidden]');
+  var nascosti = document.querySelectorAll('[data-togli-riga][hidden],[data-aggiungi-riga][hidden],[data-copia][hidden],[data-ricarica-anteprima][hidden],[data-solo-js][hidden]');
   for (var h = 0; h < nascosti.length; h++) nascosti[h].hidden = false;
 
   /* ---- Righe dei passaggi e degli elenchi -------------------------------- */
@@ -232,6 +232,92 @@
       });
     });
   })(liste[l]);
+
+  /* ---- Righe ripetibili (reti, contatti, …) -------------------------------
+     Aggiungi, togli, sposta su/giù (anche da tastiera) e trascina con la
+     maniglia. L'ordine lo decide la posizione nella pagina: il server legge le
+     righe nell'ordine in cui arrivano. */
+  var cambiato = function (el) { var f = el.closest('form'); if (f) f.dispatchEvent(new Event('input', { bubbles: true })); };
+  var rips = document.querySelectorAll('[data-rip]');
+  for (var q = 0; q < rips.length; q++) (function (rip) {
+    var righe = rip.querySelector('[data-rip-righe]'), modello = rip.querySelector('[data-rip-modello]');
+    var add = rip.querySelector('[data-rip-aggiungi]'), max = parseInt(rip.getAttribute('data-rip-max'), 10) || 30;
+    var tutte = function () { return righe.querySelectorAll('[data-rip-riga]'); };
+    var vuote = righe.querySelectorAll('[data-rip-vuota]');
+    if (tutte().length > vuote.length) for (var v = 0; v < vuote.length; v++) vuote[v].remove();
+    var aggiorna = function () {
+      var n = tutte();
+      add.hidden = n.length >= max;
+      for (var i = 0; i < n.length; i++) {
+        n[i].querySelector('[data-rip-su]').disabled = i === 0;
+        n[i].querySelector('[data-rip-giu]').disabled = i === n.length - 1;
+      }
+    };
+    add.addEventListener('click', function () {
+      var k = 'n' + Date.now().toString(36);
+      var tmp = document.createElement('div');
+      tmp.innerHTML = modello.innerHTML.split('__K__').join(k);
+      var nuova = tmp.firstElementChild;
+      righe.appendChild(nuova); aggiorna();
+      var primo = nuova.querySelector('input:not([type=hidden]),select,textarea');
+      if (primo) primo.focus();
+    });
+    rip.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-rip-su],[data-rip-giu],[data-rip-togli]');
+      if (!b || !rip.contains(b)) return;
+      var r = b.closest('[data-rip-riga]');
+      if (b.hasAttribute('data-rip-togli')) {
+        var dopo = r.nextElementSibling || r.previousElementSibling;
+        r.remove(); aggiorna(); cambiato(rip);
+        if (dopo && dopo.querySelector('[data-rip-togli]')) dopo.querySelector('[data-rip-togli]').focus(); else add.focus();
+        return;
+      }
+      if (b.hasAttribute('data-rip-su') && r.previousElementSibling) righe.insertBefore(r, r.previousElementSibling);
+      if (b.hasAttribute('data-rip-giu') && r.nextElementSibling) righe.insertBefore(r.nextElementSibling, r);
+      aggiorna(); cambiato(rip);
+      if (!b.disabled) b.focus(); else (b.hasAttribute('data-rip-su') ? r.querySelector('[data-rip-giu]') : r.querySelector('[data-rip-su]')).focus();
+    });
+    // Trascinamento dalla maniglia.
+    var presa = null;
+    righe.addEventListener('mousedown', function (e) {
+      var m = e.target.closest('.rip__maniglia'); if (m) m.closest('[data-rip-riga]').draggable = true;
+    });
+    righe.addEventListener('dragstart', function (e) {
+      presa = e.target.closest('[data-rip-riga]'); if (!presa) return;
+      presa.classList.add('riga--trascina'); e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', ''); } catch (err) {}
+    });
+    righe.addEventListener('dragover', function (e) {
+      if (!presa) return; e.preventDefault();
+      var sopra = e.target.closest('[data-rip-riga]');
+      if (!sopra || sopra === presa) return;
+      var box = sopra.getBoundingClientRect();
+      righe.insertBefore(presa, e.clientY > box.top + box.height / 2 ? sopra.nextElementSibling : sopra);
+    });
+    righe.addEventListener('dragend', function () {
+      if (!presa) return;
+      presa.classList.remove('riga--trascina'); presa.draggable = false; presa = null;
+      aggiorna(); cambiato(rip);
+    });
+    add.hidden = false; aggiorna();
+  })(rips[q]);
+
+  /* ---- Suggerimenti a un tocco (lista «Prima di partire») ------------------ */
+  document.addEventListener('click', function (e) {
+    var s = e.target.closest('[data-suggerisci]'); if (!s) return;
+    var box = document.getElementById(s.getAttribute('data-suggerisci'));
+    if (!box) return;
+    var vuota = null, ins = box.querySelectorAll('.r input');
+    for (var i = 0; i < ins.length; i++) if (!ins[i].value.trim()) { vuota = ins[i]; break; }
+    if (!vuota) {
+      var modello = box.querySelector('.r'); if (!modello) return;
+      var nuova = modello.cloneNode(true); vuota = nuova.querySelector('input'); vuota.value = '';
+      box.appendChild(nuova); rinumera(box);
+    }
+    vuota.value = s.getAttribute('data-testo');
+    vuota.focus(); vuota.setSelectionRange(vuota.value.length, vuota.value.length);
+    cambiato(box);
+  });
 
   /* ---- Palette: prova dal vivo nell'anteprima ---------------------------- */
   var scelta = document.querySelector('[data-palette-scelta]');

@@ -14,6 +14,14 @@ namespace MHW;
  *   plain     — una riga uguale in ogni lingua (nome rete, indirizzo)
  *   url       — un indirizzo web, uguale in ogni lingua
  *   secret    — come plain, ma si copia con un tocco (password Wi-Fi)
+ *   choice    — una scelta tra opzioni fisse, uguale in ogni lingua (etichette nei file lang)
+ *   repeater  — righe con sottocampi (più reti Wi-Fi, più contatti…). Ogni riga ha
+ *               un id stabile: i sottocampi uguali in ogni lingua stanno in
+ *               sections.data[campo], quelli da tradurre in section_translations.data[campo],
+ *               e le due parti si uniscono per id. Così riordinare o togliere una riga
+ *               non mescola le traduzioni.
+ *               Sottotipi: text, textarea (tradotti); plain, secret, url, tel, time,
+ *               choice, days, check (uguali in ogni lingua).
  *
  * `places: true` vuol dire che la sezione contiene schede di luoghi.
  * Check-in & Check-out è il nucleo: c'è sempre, non si disattiva e non conta
@@ -25,22 +33,34 @@ final class SectionCatalog
         'checkin' => [
             'icon' => 'home', 'core' => true,
             'intro' => 'Il blocco fondamentale: come si entra e cosa fare prima di partire. È sempre incluso.',
+            // La partenza era fatta di cinque caselle fisse (checkout_keys, _waste, _lights,
+            // _climate, _windows): dalla 009 è una lista ordinabile. I vecchi campi restano
+            // nel JSON ma non si leggono più (Conversione::sezione li porta nella lista).
             'fields' => [
-                'checkin_steps'   => ['steps', 'Come si entra', 'Un passaggio per riga: dove sono le chiavi, come si apre, dove si parcheggia la valigia.'],
-                'checkin_note'    => ['textarea', 'Nota importante', 'Facoltativa. Per esempio: se arrivi dopo le 21, scrivici.'],
-                'checkout_keys'   => ['text', 'Alla partenza — chiavi', 'Dove lasciarle.'],
-                'checkout_waste'  => ['text', 'Alla partenza — rifiuti', 'Cosa fare dei rifiuti.'],
-                'checkout_lights' => ['text', 'Alla partenza — luci', ''],
-                'checkout_climate'=> ['text', 'Alla partenza — climatizzazione', 'Riscaldamento e aria condizionata.'],
-                'checkout_windows'=> ['text', 'Alla partenza — finestre', ''],
+                'arrival_mode'    => ['choice', 'Come si entra', '', 'options' => ['self' => 'Self check-in', 'accoglienza' => 'Ti accolgo io', 'cassetta' => 'Cassetta delle chiavi']],
+                'checkin_steps'   => ['steps', 'Passaggi per entrare', 'Un passaggio per riga: dove sono le chiavi, come si apre, dove si parcheggia la valigia.'],
+                'late_arrival'    => ['textarea', 'Arrivo tardivo', 'Facoltativo. Cosa fare se si arriva tardi, per esempio dopo le 21.'],
+                'documents'       => ['textarea', 'Documenti da mostrare', 'Facoltativo. Per esempio: un documento d\'identità per ogni ospite, per la registrazione obbligatoria.'],
+                'tax_amount'      => ['plain', 'Imposta di soggiorno — importo per notte', 'Facoltativo. Per esempio: 2,00 € a persona.'],
+                'tax_max_nights'  => ['plain', 'Imposta di soggiorno — per quante notti al massimo', 'Facoltativo. Per esempio: 5.'],
+                'tax_notes'       => ['textarea', 'Imposta di soggiorno — esenzioni e pagamento', 'Facoltativo. Per esempio: sotto i 14 anni esenti; in contanti all\'arrivo.'],
+                'checkin_note'    => ['textarea', 'Nota importante', 'Facoltativa.'],
+                'checkout_steps'  => ['steps', 'Prima di partire', 'Una cosa per riga. Tocca un suggerimento per aggiungerlo, poi scrivilo come preferisci.',
+                                      'suggest' => ['keys', 'waste', 'lights', 'climate', 'windows', 'dishwasher', 'towels']],
                 'checkout_notes'  => ['textarea', 'Note finali', 'Un saluto, un\'ultima raccomandazione.'],
             ],
         ],
         'wifi' => [
             'icon' => 'wifi',
+            // Più reti (dalla 010): una riga per rete. La rete singola di prima
+            // (network, password) diventa la prima riga.
             'fields' => [
-                'network'         => ['plain', 'Nome della rete', ''],
-                'password'        => ['secret', 'Password', ''],
+                'networks'        => ['repeater', 'Reti Wi-Fi', 'Una riga per rete: 2,4 e 5 GHz, piano di sopra, dependance…',
+                                      'add' => 'Aggiungi una rete', 'max' => 8, 'sub' => [
+                                          'zone'     => ['text', 'Zona', 'Facoltativa. Per esempio: Casa principale, Dependance.'],
+                                          'ssid'     => ['plain', 'Nome della rete', ''],
+                                          'password' => ['secret', 'Password', ''],
+                                      ]],
                 'instructions'    => ['textarea', 'Istruzioni', 'Facoltative. Cosa fare se la rete non si vede.'],
                 'router_location' => ['text', 'Dove si trova il router', 'Facoltativo.'],
             ],
@@ -131,7 +151,7 @@ final class SectionCatalog
     ];
 
     /** Tipi che non si traducono: vivono in sections.data. */
-    private const PLAIN = ['plain', 'url', 'secret'];
+    private const PLAIN = ['plain', 'url', 'secret', 'choice', 'tel', 'time', 'days', 'check'];
 
     public static function kinds(): array { return array_keys(self::K); }
 
@@ -160,7 +180,61 @@ final class SectionCatalog
     /** @return array<string,array{0:string,1:string,2:string}> campo => [tipo, etichetta, aiuto] */
     public static function fields(string $kind): array { return self::get($kind)['fields']; }
 
-    public static function isTranslated(string $type): bool { return !in_array($type, self::PLAIN, true); }
+    /** Un campo (o sottocampo) da tradurre. Il repeater è misto: si guarda sotto. */
+    public static function isTranslated(string $type): bool { return !in_array($type, self::PLAIN, true) && $type !== 'repeater'; }
+
+    /** La definizione completa di un campo (con 'sub', 'options', 'suggest'…). */
+    public static function field(string $kind, string $name): ?array { return self::fields($kind)[$name] ?? null; }
+
+    /** Un id di riga breve e stabile. */
+    public static function newId(): string { return 'r' . bin2hex(random_bytes(4)); }
+
+    /** Il valore pulito di un (sotto)campo, secondo il tipo. */
+    public static function clean(array $def, mixed $raw): mixed
+    {
+        $type = $def[0];
+        return match ($type) {
+            'url' => Support::safeUrl(mb_substr(trim((string) $raw), 0, 500)),
+            'textarea' => mb_substr(trim((string) $raw), 0, 2000),
+            'choice' => isset($def['options'][(string) $raw]) ? (string) $raw : '',
+            'tel' => mb_substr(trim((string) $raw), 0, 40),
+            'time' => preg_match('/^([01]?\d|2[0-3])[:.][0-5]\d$/', trim((string) $raw)) ? str_pad(str_replace('.', ':', trim((string) $raw)), 5, '0', STR_PAD_LEFT) : '',
+            'days' => array_values(array_unique(array_filter(array_map('intval', (array) $raw), fn($d) => $d >= 1 && $d <= 7))),
+            'check' => !empty($raw) && $raw !== '0' ? '1' : '',
+            'plain', 'secret' => mb_substr(trim((string) $raw), 0, 200),
+            default => mb_substr(trim((string) $raw), 0, 300),
+        };
+    }
+
+    /**
+     * Le righe di un repeater pronte da mostrare: la parte comune nell'ordine
+     * salvato, più i testi della lingua chiesta, e dove mancano quelli della
+     * lingua principale. Le righe tradotte che non esistono più si ignorano.
+     */
+    public static function rows(array $def, mixed $comuni, mixed $principale, mixed $lingua = []): array
+    {
+        $perId = function (mixed $righe): array {
+            $out = [];
+            foreach ((array) $righe as $r) if (is_array($r) && isset($r['id'])) $out[(string) $r['id']] = $r;
+            return $out;
+        };
+        $base = $perId($principale); $tr = $perId($lingua);
+        $out = [];
+        foreach ((array) $comuni as $r) {
+            if (!is_array($r) || !isset($r['id'])) continue;
+            $id = (string) $r['id']; $riga = ['id' => $id];
+            foreach ($def['sub'] as $sn => $sd) {
+                if (self::isTranslated($sd[0])) {
+                    $v = trim((string) ($tr[$id][$sn] ?? ''));
+                    $riga[$sn] = $v !== '' ? $v : trim((string) ($base[$id][$sn] ?? ''));
+                } else {
+                    $riga[$sn] = $r[$sn] ?? ($sd[0] === 'days' ? [] : '');
+                }
+            }
+            $out[] = $riga;
+        }
+        return $out;
+    }
 
     /**
      * Legge un modulo inviato e separa i campi uguali in ogni lingua da quelli
@@ -177,7 +251,30 @@ final class SectionCatalog
             // parziale (una foto, un salvataggio automatico) non cancella il resto.
             if (!array_key_exists($name, $in)) continue;
             $raw = $in[$name];
-            if (in_array($type, ['steps', 'list'], true)) {
+            $def = self::field($kind, $name);
+            if ($type === 'repeater') {
+                // Le righe nell'ordine del modulo. Nella lingua principale una riga
+                // tutta vuota si scarta; nelle traduzioni si tengono tutte le righe.
+                $comune = []; $testi = [];
+                foreach (array_values(is_array($raw) ? $raw : []) as $r) {
+                    if (!is_array($r)) continue;
+                    $id = preg_match('/^r[0-9a-f]{4,16}$/', (string) ($r['id'] ?? '')) ? (string) $r['id'] : self::newId();
+                    $rc = ['id' => $id]; $rt = ['id' => $id]; $piena = false;
+                    foreach ($def['sub'] as $sn => $sd) {
+                        if (!array_key_exists($sn, $r) && !in_array($sd[0], ['check', 'days'], true)) continue;
+                        $v = self::clean($sd, $r[$sn] ?? '');
+                        if (self::isTranslated($sd[0])) $rt[$sn] = $v; else $rc[$sn] = $v;
+                        if (!in_array($sd[0], ['choice', 'check'], true) && $v !== '' && $v !== []) $piena = true;
+                    }
+                    if ($withPlain && !$piena) continue;
+                    $comune[] = $rc; $testi[] = $rt;
+                    if (count($comune) >= ($def['max'] ?? 30)) break;
+                }
+                if ($withPlain) $comuni[$name] = $comune;
+                $tradotti[$name] = $testi;
+            } elseif ($type === 'choice') {
+                if ($withPlain) $comuni[$name] = self::clean($def, $raw);
+            } elseif (in_array($type, ['steps', 'list'], true)) {
                 $righe = is_array($raw) ? $raw : preg_split('/\R/', (string) $raw);
                 $righe = array_values(array_filter(array_map(fn($r) => mb_substr(trim((string) $r), 0, 600), $righe ?: []), fn($r) => $r !== ''));
                 $tradotti[$name] = array_slice($righe, 0, 30);

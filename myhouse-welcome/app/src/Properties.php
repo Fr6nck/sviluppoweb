@@ -32,6 +32,11 @@ final class Properties
                     : "Il tuo piano comprende $max strutture.");
             }
             Db::insert('property_locales', ['property_id' => $pid, 'locale' => 'it']);
+            // Il primo contatto è chi crea la struttura: il numero lo aggiunge dopo.
+            if (trim($hostName) !== '') {
+                Db::insert('property_contacts', ['property_id' => $pid, 'name' => mb_substr(trim($hostName), 0, 120), 'role' => 'host',
+                                                 'phone' => '', 'whatsapp' => 0, 'position' => 0]);
+            }
             Db::insert('qr_tokens', ['property_id' => $pid, 'token' => Support::token(9), 'scans' => 0, 'created_at' => Support::now()]);
             $sid = Db::insert('sections', [
                 'property_id' => $pid, 'kind' => 'checkin', 'icon' => 'checkin', 'color' => 'terracotta',
@@ -42,6 +47,58 @@ final class Properties
                 'body' => '', 'data' => '{}', 'state' => 'reviewed', 'updated_at' => Support::now(),
             ]);
             return $pid;
+        });
+    }
+
+    /** L'indirizzo completo della struttura, in una riga: via, CAP città. */
+    public static function fullAddress(array $p): string
+    {
+        $citta = trim(trim((string) ($p['postal_code'] ?? '')) . ' ' . trim((string) ($p['city'] ?? '')));
+        return implode(', ', array_filter([trim((string) ($p['address'] ?? '')), $citta]));
+    }
+
+    /**
+     * Precompila l'indirizzo di «Come arrivare» con quello della struttura, solo
+     * se è ancora vuoto: quello che l'host ha scritto lì non si tocca.
+     */
+    public static function fillArrivalAddress(int $propertyId): void
+    {
+        $p = Db::one('SELECT * FROM properties WHERE id = ?', [$propertyId]);
+        $ind = $p ? self::fullAddress($p) : '';
+        if ($ind === '' || trim((string) ($p['address'] ?? '')) === '') return;
+        foreach (Db::all("SELECT id, data FROM sections WHERE property_id = ? AND kind = 'arrival'", [$propertyId]) as $s) {
+            $d = json_decode((string) $s['data'], true) ?: [];
+            if (trim((string) ($d['address'] ?? '')) !== '') continue;
+            $d['address'] = $ind;
+            Db::update('sections', ['data' => json_encode($d, JSON_UNESCAPED_UNICODE)], 'id = :sid', ['sid' => $s['id']]);
+        }
+    }
+
+    /**
+     * I contatti della struttura, nell'ordine del modulo. Il primo resta anche in
+     * host_name / host_phone / host_whatsapp, per chi legge ancora quelle colonne.
+     * @param array<int,array> $righe
+     */
+    public static function saveContacts(int $propertyId, array $righe): void
+    {
+        $ruoli = ['host', 'cohost', 'pulizie', 'manutenzione', 'altro'];
+        $puliti = [];
+        foreach (array_values($righe) as $r) {
+            if (!is_array($r)) continue;
+            $c = ['name' => mb_substr(trim((string) ($r['name'] ?? '')), 0, 120),
+                  'role' => in_array($r['role'] ?? '', $ruoli, true) ? (string) $r['role'] : 'altro',
+                  'phone' => mb_substr(trim((string) ($r['phone'] ?? '')), 0, 40),
+                  'whatsapp' => !empty($r['whatsapp']) ? 1 : 0];
+            if ($c['name'] === '' && $c['phone'] === '') continue;
+            $puliti[] = $c;
+            if (count($puliti) >= 8) break;
+        }
+        Db::tx(function () use ($propertyId, $puliti) {
+            Db::run('DELETE FROM property_contacts WHERE property_id = ?', [$propertyId]);
+            foreach ($puliti as $i => $c) Db::insert('property_contacts', $c + ['property_id' => $propertyId, 'position' => $i]);
+            $primo = $puliti[0] ?? ['name' => '', 'phone' => '', 'whatsapp' => 0];
+            Db::update('properties', ['host_name' => $primo['name'], 'host_phone' => $primo['phone'],
+                                      'host_whatsapp' => $primo['whatsapp'] ? $primo['phone'] : ''], 'id = :pid', ['pid' => $propertyId]);
         });
     }
 
@@ -76,6 +133,8 @@ final class Properties
                 'section_id' => $sid, 'locale' => $loc, 'title' => SectionCatalog::title($kind, $loc),
                 'body' => '', 'data' => '{}', 'state' => 'reviewed', 'updated_at' => Support::now(),
             ]);
+            // «Come arrivare» parte dall'indirizzo della struttura: si scrive una volta sola.
+            if ($kind === 'arrival') self::fillArrivalAddress($propertyId);
             self::assertWithinLimit($accountId, $propertyId);
             return $sid;
         });
@@ -232,7 +291,22 @@ final class Properties
         foreach (Db::all('SELECT id, kind FROM sections WHERE property_id = ? AND is_active = 1', [$propertyId]) as $s) {
             $orig = json_decode((string) Db::val('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $p['default_locale']]), true) ?: [];
             $trad = json_decode((string) Db::val('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $locale]), true) ?: [];
-            foreach (SectionCatalog::fields($s['kind']) as $f => [$tipo]) {
+            foreach (SectionCatalog::fields($s['kind']) as $f => $def) {
+                $tipo = $def[0];
+                if ($tipo === 'repeater') {
+                    // Riga per riga, sottocampo per sottocampo.
+                    $tr = [];
+                    foreach ((array) ($trad[$f] ?? []) as $r) if (is_array($r) && isset($r['id'])) $tr[$r['id']] = $r;
+                    foreach ((array) ($orig[$f] ?? []) as $r) {
+                        if (!is_array($r)) continue;
+                        foreach ($def['sub'] as $sn => $sd) {
+                            if (!SectionCatalog::isTranslated($sd[0]) || !$pieno($r[$sn] ?? '')) continue;
+                            $tot++;
+                            if ($pieno($tr[$r['id'] ?? ''][$sn] ?? '')) $fatti++;
+                        }
+                    }
+                    continue;
+                }
                 if (!SectionCatalog::isTranslated($tipo) || !$pieno($orig[$f] ?? '')) continue;
                 $tot++;
                 if ($pieno($trad[$f] ?? '')) $fatti++;

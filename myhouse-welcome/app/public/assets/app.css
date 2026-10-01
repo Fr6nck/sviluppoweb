@@ -1094,3 +1094,46 @@ a.device-link:hover .device{transform:translateY(-4px)}
   .verifica-riga__email{display:none}
   .verifica-riga{padding:4px 12px}
 }
+
+/* ============================================================== Fase 3 */
+/* Righe ripetibili nel pannello: una scheda per riga, comandi a destra. */
+.rip__righe{display:flex;flex-direction:column;gap:10px}
+.rip__riga{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:start;padding:14px 10px 14px 6px;
+  border-radius:var(--r-md);border:1px solid var(--line);background:var(--paper)}
+.rip__maniglia{margin-top:24px}
+.rip__campi{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.rip__campi .field input,.rip__campi .field select{height:48px}
+.rip__check{min-height:48px;align-self:end}
+.rip__azioni{display:flex;flex-direction:column;gap:4px}
+.rip__azioni .icon-btn{width:36px;height:36px}
+.rip__azioni .icon-btn[disabled]{opacity:.35;cursor:default}
+.rip__su{transform:rotate(-90deg)} .rip__giu{transform:rotate(90deg)}
+.rip__giorni{border:0;padding:0;margin:0;grid-column:1 / -1}
+.scelta--mini{min-height:40px;padding:6px 12px 6px 10px;gap:8px;font-size:14px}
+@media(max-width:560px){
+  .rip__riga{grid-template-columns:minmax(0,1fr) auto;padding-left:12px}
+  .rip__maniglia{display:none}
+}
+@media (hover:none){ .rip__maniglia{display:none} .rip__riga{grid-template-columns:minmax(0,1fr) auto;padding-left:12px} }
+/* Suggerimenti a un tocco sotto «Prima di partire». */
+.suggerimenti{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip-sugg{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);
+  background:var(--raised);color:var(--ink);font:inherit;font-size:13.5px;font-weight:500;cursor:pointer}
+.chip-sugg:hover{background:var(--sunk)}
+
+/* Guida ospite: il foglio dei contatti. */
+.contatti-foglio{position:relative;flex:1 1 auto}
+.contatti-foglio>summary{list-style:none}
+.contatti-foglio>summary::-webkit-details-marker{display:none}
+.contatti-foglio__pannello{position:absolute;left:0;right:0;bottom:calc(100% + 12px);z-index:20;display:flex;flex-direction:column;gap:4px;
+  padding:14px;border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line);box-shadow:0 -10px 40px rgba(35,27,18,.18)}
+.contatti-foglio__titolo{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:2px 4px 6px}
+.contatto{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 4px;border-top:1px solid var(--line)}
+.contatto__chi{display:flex;flex-direction:column;min-width:0}
+.contatto__chi b{font-weight:500;font-size:16px}
+.contatto__azioni{display:flex;gap:6px}
+/* Wi-Fi: una scheda per rete, con il QR per collegarsi. */
+.rete__zona{font-family:inherit;font-size:18px;font-weight:600;letter-spacing:-.3px}
+.rete__qr{display:flex;align-items:center;gap:16px;padding-top:4px}
+.rete__qr img{flex:none;width:132px;height:132px;border-radius:12px;background:#fff;padding:6px;image-rendering:pixelated}
+.rete__qr p{color:var(--muted)}

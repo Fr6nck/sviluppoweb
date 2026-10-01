@@ -1,7 +1,7 @@
 <?php
 /** Rotte dell'area host. $r è il Router creato in public/index.php. */
 
-use MHW\{Auth, Config, Db, Entitlements, Guide, LimitReached, Log, Media, NotFound, Palette, Plans, Properties,
+use MHW\{Auth, Config, Conversione, Db, Entitlements, Guide, LimitReached, Log, Media, NotFound, Palette, Plans, Properties,
          Qr, QrExport, SectionCatalog, Stats, Stripe, Subscriptions, Support, View};
 
 /* La procedura: cinque passi. Le lingue in più stanno in fondo a «Anteprima e
@@ -414,12 +414,26 @@ $r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto,
                 'region' => mb_substr(trim((string) ($_POST['region'] ?? '')), 0, 120),
                 'checkin_from' => $ora((string) ($_POST['checkin_from'] ?? ''), $p['checkin_from']),
                 'checkout_by' => $ora((string) ($_POST['checkout_by'] ?? ''), $p['checkout_by']),
-                'host_name' => mb_substr(trim((string) ($_POST['host_name'] ?? '')), 0, 120),
-                'host_phone' => mb_substr(trim((string) ($_POST['host_phone'] ?? '')), 0, 40),
-                'host_whatsapp' => mb_substr(trim((string) ($_POST['host_whatsapp'] ?? '')), 0, 40),
             ];
+            // I campi nuovi della struttura (dalla 008), solo se il modulo li manda.
+            $tipiStruttura = ['', 'casa_vacanza', 'bnb', 'affittacamere', 'agriturismo', 'altro'];
+            if (array_key_exists('property_type', $_POST)) $dati['property_type'] = in_array($_POST['property_type'], $tipiStruttura, true) ? (string) $_POST['property_type'] : '';
+            foreach (['address' => 255, 'postal_code' => 10, 'cin' => 40] as $campo => $max) {
+                if (array_key_exists($campo, $_POST)) $dati[$campo] = mb_substr(trim((string) $_POST[$campo]), 0, $max);
+            }
+            if (array_key_exists('beds', $_POST)) $dati['beds'] = max(0, min(999, (int) $_POST['beds']));
+            // Un modulo vecchio (senza contatti multipli) scrive ancora i tre campi dell'host.
+            foreach (['host_name' => 120, 'host_phone' => 40, 'host_whatsapp' => 40] as $campo => $max) {
+                if (array_key_exists($campo, $_POST)) $dati[$campo] = mb_substr(trim((string) $_POST[$campo]), 0, $max);
+            }
             if ($dati['name'] === '') throw new RuntimeException('Il nome non può restare vuoto.');
             Db::update('properties', $dati, 'id = :pid', ['pid' => $p['id']]);
+            if (isset($_POST['contacts']) && is_array($_POST['contacts'])) Properties::saveContacts((int) $p['id'], $_POST['contacts']);
+            elseif (array_key_exists('host_name', $_POST)) {
+                Properties::saveContacts((int) $p['id'], array_map(fn($c) => $c + ['id' => ''],
+                    Conversione::contatti((string) $dati['host_name'], (string) ($dati['host_phone'] ?? ''), (string) ($dati['host_whatsapp'] ?? ''))));
+            }
+            if (array_key_exists('address', $dati)) Properties::fillArrivalAddress((int) $p['id']);
             // La lingua in cui si scrive la guida (primo passo della procedura).
             $lingua = (string) ($_POST['default_locale'] ?? '');
             if ($lingua !== '' && $lingua !== $p['default_locale']) Properties::setDefaultLocale((int) $acc['id'], (int) $p['id'], $lingua);

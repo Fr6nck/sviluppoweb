@@ -46,39 +46,55 @@ foreach ($snap['sections'] as $s) {
 <?php endif; ?>
 
 <?php /* ---------------------------------------------------------------- Wi-Fi */ ?>
-<?php if ($kind === 'wifi'): ?>
-  <?php if (($d['network'] ?? '') !== '' || ($d['password'] ?? '') !== ''): ?>
-    <div class="panel stack" style="margin-top:20px;gap:18px">
-      <?php if (($d['network'] ?? '') !== ''): ?>
+<?php if ($kind === 'wifi'):
+      // Una scheda per rete: nome, password da copiare, QR per collegarsi senza scrivere.
+      $reti = array_values(array_filter(Guide::rows($sec, 'networks', $loc, $def), fn($r) => trim((string) $r['ssid']) !== '' || trim((string) $r['password']) !== ''));
+      foreach ($reti as $n => $rete): $ssid = trim((string) $rete['ssid']); $pw = trim((string) $rete['password']);
+        $zona = trim((string) $rete['zone']) ?: (count($reti) > 1 ? I18n::t($loc, 'network_n', $n + 1) : ''); ?>
+    <div class="panel stack rete" style="margin-top:20px;gap:18px">
+      <?php if ($zona !== ''): ?><h2 class="rete__zona"><?= Support::e($zona) ?></h2><?php endif; ?>
+      <?php if ($ssid !== ''): ?>
         <div class="stack" style="gap:6px">
           <span class="kicker"><?= Support::e(I18n::t($loc, 'network')) ?></span>
           <div class="copyline">
-            <b><?= Support::e($d['network']) ?></b>
-            <button type="button" class="icon-btn icon-btn--strong" data-copia-di="<?= Support::e($d['network']) ?>"
+            <b><?= Support::e($ssid) ?></b>
+            <button type="button" class="icon-btn icon-btn--strong" data-copia-di="<?= Support::e($ssid) ?>"
                     aria-label="<?= Support::e(I18n::t($loc, 'copy_network')) ?>"><?= Icon::svg('copy', 17) ?></button>
           </div>
         </div>
       <?php endif; ?>
-      <?php if (($d['network'] ?? '') !== '' && ($d['password'] ?? '') !== ''): ?><hr class="rule"><?php endif; ?>
-      <?php if (($d['password'] ?? '') !== ''): ?>
+      <?php if ($ssid !== '' && $pw !== ''): ?><hr class="rule"><?php endif; ?>
+      <?php if ($pw !== ''): ?>
         <div class="stack" style="gap:6px">
           <span class="kicker"><?= Support::e(I18n::t($loc, 'password')) ?></span>
           <div class="copyline">
-            <b class="pw"><?= Support::e($d['password']) ?></b>
-            <button type="button" class="icon-btn icon-btn--accent" data-copia-di="<?= Support::e($d['password']) ?>"
+            <b class="pw"><?= Support::e($pw) ?></b>
+            <button type="button" class="icon-btn icon-btn--accent" data-copia-di="<?= Support::e($pw) ?>"
                     aria-label="<?= Support::e(I18n::t($loc, 'copy_password')) ?>"><?= Icon::svg('copy', 17, 2) ?></button>
           </div>
         </div>
       <?php endif; ?>
+      <?php if ($ssid !== ''): /* il QR Wi-Fi: dentro la pagina, nessuna richiesta in più */ ?>
+        <div class="rete__qr">
+          <img src="data:image/png;base64,<?= base64_encode(MHW\Qr::png(MHW\Conversione::wifiQr($ssid, $pw), 6, 3)) ?>"
+               width="168" height="168" alt="<?= Support::e(I18n::t($loc, 'wifi_qr_alt', $ssid)) ?>">
+          <p class="small"><?= Support::e(I18n::t($loc, 'scan_wifi')) ?></p>
+        </div>
+      <?php endif; ?>
     </div>
-  <?php endif; ?>
+  <?php endforeach; ?>
   <?php if ($val('router_location') !== ''): ?>
     <p class="small muted" style="margin-top:14px"><strong><?= Support::e(I18n::t($loc, 'router')) ?>:</strong> <?= Support::e($val('router_location')) ?></p>
   <?php endif; ?>
   <?php if ($val('instructions') !== ''): ?><p style="margin-top:14px;font-size:16px;line-height:24px;white-space:pre-line"><?= Support::e($val('instructions')) ?></p><?php endif; ?>
 
-<?php /* ------------------------------------------------ check-in e check-out */ ?>
-<?php elseif ($kind === 'checkin'): ?>
+<?php /* ------------------------------------------------ arrivo e partenza */ ?>
+<?php elseif ($kind === 'checkin'):
+      $modo = (string) ($d['arrival_mode'] ?? '');
+      $imposta = trim((string) ($d['tax_amount'] ?? '')); $notti = trim((string) ($d['tax_max_nights'] ?? '')); ?>
+  <?php if ($modo !== '' && I18n::has($loc, 'mode_' . $modo)): ?>
+    <p style="margin-top:16px"><span class="badge badge--sea"><?= Support::e(I18n::t($loc, 'mode_' . $modo)) ?></span></p>
+  <?php endif; ?>
   <div class="stack" style="margin-top:20px;gap:12px">
     <?php foreach ($lista('checkin_steps') as $i => $passo): ?>
       <div class="step"><span class="n"><?= $i + 1 ?></span><p style="white-space:pre-line"><?= Support::e($passo) ?></p></div>
@@ -87,14 +103,25 @@ foreach ($snap['sections'] as $s) {
   <?php if ($val('checkin_note') !== ''): ?>
     <p class="note" style="margin-top:14px"><?= Icon::svg('info', 19) ?><span><?= Support::e($val('checkin_note')) ?></span></p>
   <?php endif; ?>
-  <?php $uscita = array_filter(['checkout_keys', 'checkout_waste', 'checkout_lights', 'checkout_climate', 'checkout_windows'], fn($k) => $val($k) !== ''); ?>
+  <?php foreach (['late_arrival' => 'clock', 'documents' => 'doc'] as $k => $ico): if ($val($k) === '') continue; ?>
+    <div class="stack" style="margin-top:20px;gap:6px">
+      <span class="kicker"><?= Icon::svg($ico, 13) ?> <?= Support::e(I18n::t($loc, $k)) ?></span>
+      <p style="white-space:pre-line;line-height:24px"><?= Support::e($val($k)) ?></p>
+    </div>
+  <?php endforeach; ?>
+  <?php if ($imposta !== '' || $val('tax_notes') !== ''): ?>
+    <div class="panel stack" style="margin-top:20px;gap:6px">
+      <span class="kicker"><?= Icon::svg('euro', 13) ?> <?= Support::e(I18n::t($loc, 'tourist_tax')) ?></span>
+      <?php if ($imposta !== ''): ?><b style="font-size:20px;font-weight:500"><?= Support::e(I18n::t($loc, 'tax_per_night', $imposta)) ?></b><?php endif; ?>
+      <?php if ($notti !== ''): ?><p class="small"><?= Support::e(I18n::t($loc, 'tax_max', $notti)) ?></p><?php endif; ?>
+      <?php if ($val('tax_notes') !== ''): ?><p class="small muted" style="white-space:pre-line"><?= Support::e($val('tax_notes')) ?></p><?php endif; ?>
+    </div>
+  <?php endif; ?>
   <div class="stack" style="margin-top:28px;gap:10px">
     <span class="kicker"><?= Support::e(I18n::t($loc, 'departure')) ?> · <?= Support::e(I18n::t($loc, 'checkout_by', $pr['checkout_by'])) ?></span>
-    <?php if ($uscita): ?>
+    <?php if ($lista('checkout_steps')): ?>
       <ul class="lined">
-        <?php foreach ($uscita as $k): ?>
-          <li><strong><?= Support::e(I18n::t($loc, $k)) ?>.</strong> <?= Support::e($val($k)) ?></li>
-        <?php endforeach; ?>
+        <?php foreach ($lista('checkout_steps') as $voce): ?><li><?= Support::e($voce) ?></li><?php endforeach; ?>
       </ul>
     <?php endif; ?>
     <?php if ($val('checkout_notes') !== ''): ?><p style="white-space:pre-line;line-height:24px"><?= Support::e($val('checkout_notes')) ?></p><?php endif; ?>
