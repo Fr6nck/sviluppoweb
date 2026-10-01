@@ -19,11 +19,22 @@ $host = function (): array {
     return [$u, $acc];
 };
 
-/** La struttura chiesta, se appartiene all'account. Altrimenti non esiste. */
-$mia = function (int $id) use ($host): array {
+/**
+ * La struttura chiesta, se appartiene all'account. Altrimenti non esiste.
+ * Una struttura bloccata (Portfolio non ancora pagato, o oltre la quantità pagata)
+ * non si apre e non si modifica: si torna alle guide con un avviso, non un errore.
+ * Solo eliminarla resta possibile ($ancheBloccata).
+ */
+$mia = function (int $id, bool $ancheBloccata = false) use ($host): array {
     [$u, $acc] = $host();
     $p = Db::one('SELECT * FROM properties WHERE id = ? AND account_id = ?', [$id, $acc['id']]);
     if (!$p) { http_response_code(404); View::out('pub/404', []); }
+    if (!$ancheBloccata && !Entitlements::editable((int) $acc['id'], (int) $p['id'])) {
+        $avviso = $p['name'] . ' si attiva dopo il pagamento: per ora si configura una struttura alla volta.';
+        if (str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json')) Support::json(['ok' => false, 'errore' => $avviso], 423);
+        Support::flash($avviso, 'avviso');
+        Support::redirect('/pannello');
+    }
     return [$u, $acc, $p];
 };
 
@@ -91,34 +102,132 @@ $r->get('/pannello', function () use ($host) {
         'props' => $props, 'acc' => $acc, 'user' => $u, 'sub' => Subscriptions::active((int) $acc['id']),
         'piano' => $gov ? Plans::version($gov) : null,
         'maxProp' => Entitlements::limit((int) $acc['id'], 'properties', 1), 'nav' => 'guide',
+        'bloccate' => Entitlements::lockedIds((int) $acc['id']),
+        // Portfolio pagato e pieno: «Aggiungi una struttura» resta, e porta alla conferma col costo.
+        'aggiungiPagando' => ($s = Subscriptions::active((int) $acc['id'])) && ($v = Plans::version((int) $s['package_version_id'])) && Plans::perProperty($v)
+                             && (int) $s['quantity'] < (int) $v['max_quantity'],
     ], 'layout/cms');
 });
 
+/*
+ * Una struttura nuova. Tre casi:
+ *   - normale: nome e città, e se ce n'è già un'altra si può partire da quella
+ *     («Crea da una struttura esistente», con Copia);
+ *   - Portfolio scelto e non ancora pagato, una struttura già c'è: le altre (fino
+ *     alla quantità scelta) nascono col solo nome e restano bloccate fino al pagamento;
+ *   - Portfolio pagato e pieno: «Aggiungi una struttura» aggiunge una struttura
+ *     all'abbonamento Stripe, dopo una conferma col costo.
+ */
 $r->any('/pannello/nuova', function () use ($host, $messaggio) {
     [$u, $acc] = $host();
-    if (!$acc['intended_package_version_id'] && !Subscriptions::active((int) $acc['id'])) Support::redirect('/piano');
-    $max = Entitlements::limit((int) $acc['id'], 'properties', 1);
-    $have = (int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL', [$acc['id']], 0);
+    $aid = (int) $acc['id'];
+    $sub = Subscriptions::active($aid);
+    if (!$acc['intended_package_version_id'] && !$sub) Support::redirect('/piano');
+    $max = Entitlements::limit($aid, 'properties', 1);
+    $esistenti = Db::all('SELECT id, name, city FROM properties WHERE account_id = ? AND archived_at IS NULL ORDER BY id', [$aid]);
+    $have = count($esistenti);
+    $gov = Subscriptions::governingVersionId($aid);
+    $pv = $gov ? Plans::version($gov) : null;
+    $portfolio = $pv && Plans::perProperty($pv);
+    $modo = 'normale';
+    if ($portfolio && !$sub && !Subscriptions::latest($aid) && $have >= 1 && $have < $max) $modo = 'bloccata';
+    elseif ($portfolio && $sub && $have >= $max) $modo = 'a-pagamento';
+    // Le strutture da cui partire: solo quelle che si possono aprire.
+    $bloccate = Entitlements::lockedIds($aid);
+    $origini = $modo === 'normale' ? array_values(array_filter($esistenti, fn($x) => !in_array((int) $x['id'], $bloccate, true))) : [];
     $err = null;
+    // Quanto costa una struttura in più: il prezzo annuo, e la parte che resta di quest'anno.
+    $costo = null;
+    if ($modo === 'a-pagamento') {
+        $inizio = strtotime((string) $sub['current_period_start']) ?: time(); $fine = strtotime((string) $sub['current_period_end']) ?: time();
+        $quota = $fine > $inizio ? max(0, min(1, ($fine - time()) / ($fine - $inizio))) : 1;
+        $costo = ['anno' => (int) $pv['extra_price_cents'], 'ora' => (int) round((int) $pv['extra_price_cents'] * $quota),
+                  'fine' => (string) $sub['current_period_end'], 'totale' => Plans::price($pv, (int) $sub['quantity'] + 1), 'quantita' => (int) $sub['quantity'] + 1,
+                  'fuori' => (int) $sub['quantity'] + 1 > (int) $pv['max_quantity']];
+    }
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
-            $pid = Properties::create((int) $acc['id'], (string) ($_POST['name'] ?? ''), (string) ($_POST['city'] ?? ''), (string) $u['name']);
+            $nome = (string) ($_POST['name'] ?? '');
+            if ($modo === 'bloccata') {
+                $pid = Properties::create($aid, $nome, (string) ($_POST['city'] ?? ''), (string) $u['name']);
+                Support::flash(trim($nome) . ' creata. Si attiva dopo il pagamento: intanto completa e pubblica la prima.', 'avviso');
+                Support::redirect('/pannello');
+            }
+            if ($modo === 'a-pagamento') {
+                if (($_POST['conferma'] ?? '') !== '1') throw new RuntimeException('Conferma il costo per aggiungere la struttura.');
+                if (trim($nome) === '') throw new RuntimeException('Scrivi il nome della struttura.');
+                if ($costo['fuori']) throw new RuntimeException('Hai raggiunto il numero massimo di strutture del Portfolio: scrivici.');
+                if (!Stripe::enabled()) throw new RuntimeException('I pagamenti non sono attivi in questo momento: non possiamo aggiungere strutture all\'abbonamento. Riprova più tardi.');
+                if ($sub['provider'] !== 'stripe' || $sub['provider_subscription_id'] === '' || $sub['provider_extra_item_id'] === '') {
+                    throw new RuntimeException('Il tuo abbonamento non si modifica da qui: scrivici e aggiungiamo noi la struttura.');
+                }
+                try {
+                    Stripe::addExtraProrated($sub['provider_subscription_id'], $sub['provider_extra_item_id'], (int) $sub['quantity']);
+                } catch (\Throwable $e) {
+                    throw new RuntimeException('Non è stato possibile aggiornare l\'abbonamento adesso (codice ' . Log::exception($e, 'aggiungi struttura') . '). Riprova tra poco.');
+                }
+                $pid = Properties::create($aid, $nome, (string) ($_POST['city'] ?? ''), (string) $u['name'], 1);
+                Auth::audit('subscription.add_property', (int) $u['id'], ['property_id' => $pid, 'quantita' => $costo['quantita']]);
+                Support::flash(trim($nome) . ' aggiunta. Si sblocca appena Stripe conferma il nuovo numero di strutture (di solito pochi secondi).');
+                Support::redirect('/pannello');
+            }
+            // Normale, con la copia facoltativa: struttura e copia nella stessa transazione.
+            $origine = (int) ($_POST['origine'] ?? 0);
+            if ($origine && !in_array($origine, array_map('intval', array_column($origini, 'id')), true)) throw new NotFound('Struttura di origine non trovata.');
+            $pid = Db::tx(function () use ($aid, $u, $nome, $origine) {
+                $pid = Properties::create($aid, $nome, (string) ($_POST['city'] ?? ''), (string) $u['name']);
+                if ($origine) {
+                    $lingua = (string) Db::val('SELECT default_locale FROM properties WHERE id = ?', [$origine], 'it');
+                    MHW\Copia::esegui($aid, $origine, $pid, (array) ($_POST['copia'] ?? []), [], !empty($_POST['copia_aspetto']), !empty($_POST['copia_contatti']));
+                    if ($lingua !== 'it') Properties::setDefaultLocale($aid, $pid, $lingua);
+                }
+                return $pid;
+            });
             Db::update('properties', ['wizard_step' => 'arrivo'], 'id = :pid', ['pid' => $pid]);
+            if ($origine) Support::flash('Struttura creata partendo da ' . Db::val('SELECT name FROM properties WHERE id = ?', [$origine]) . '. Ora le cose di questa casa: indirizzo, arrivo, Wi-Fi.');
             Support::redirect('/pannello/' . $pid . '/procedura/struttura');
-        } catch (\Throwable $e) { $err = $messaggio($e, 'nuova struttura'); }
+        } catch (NotFound) { $err = 'Struttura di origine non trovata.'; }
+        catch (\Throwable $e) { $err = $messaggio($e, 'nuova struttura'); }
     }
     // Il piano scelto (non ancora pagato), da ricordare in alto con «Cambia».
-    $piano = !Subscriptions::active((int) $acc['id']) && $acc['intended_package_version_id']
-        ? Plans::version((int) $acc['intended_package_version_id']) : null;
-    View::out('host/new_property', ['err' => $err, 'have' => $have, 'max' => $max, 'nav' => 'guide',
-        'piano' => $piano, 'quantita' => (int) ($acc['intended_quantity'] ?? 1)], 'layout/cms');
+    $piano = !$sub && $acc['intended_package_version_id'] ? Plans::version((int) $acc['intended_package_version_id']) : null;
+    View::out('host/new_property', ['err' => $err, 'have' => $have, 'max' => $max, 'nav' => 'guide', 'modo' => $modo, 'origini' => $origini,
+        'costo' => $costo, 'pv' => $pv, 'piano' => $piano, 'quantita' => (int) ($acc['intended_quantity'] ?? 1)], 'layout/cms');
+});
+
+/* «Copia sezioni da…» su una struttura esistente (vedi Copia). */
+$r->any('/pannello/{id}/copia', function (array $a) use ($mia, $contesto, $messaggio) {
+    [$u, $acc, $p] = $mia((int) $a['id']);
+    $aid = (int) $acc['id'];
+    $bloccate = Entitlements::lockedIds($aid);
+    $origini = array_values(array_filter(Db::all('SELECT id, name FROM properties WHERE account_id = ? AND id <> ? AND archived_at IS NULL ORDER BY id', [$aid, $p['id']]),
+                                         fn($x) => !in_array((int) $x['id'], $bloccate, true)));
+    if (!$origini) { Support::flash('Non c\'è un\'altra struttura da cui copiare.', 'avviso'); Support::redirect('/pannello/' . $p['id']); }
+    $daId = (int) ($_POST['da'] ?? $_GET['da'] ?? $origini[0]['id']);
+    $da = null; foreach ($origini as $o) if ((int) $o['id'] === $daId) $da = $o;
+    $err = null;
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $da) {
+        try {
+            $esito = MHW\Copia::esegui($aid, (int) $da['id'], (int) $p['id'], (array) ($_POST['copia'] ?? []), (array) ($_POST['esistenti'] ?? []),
+                                       !empty($_POST['copia_aspetto']), !empty($_POST['copia_contatti']));
+            Auth::audit('property.copy', (int) $u['id'], ['da' => (int) $da['id'], 'a' => (int) $p['id']] + $esito);
+            $nomi = fn(array $k) => implode(', ', array_map(fn($x) => SectionCatalog::title($x, 'it'), $k));
+            Support::flash('Copia da ' . $da['name'] . ' fatta.'
+                . ($esito['copiate'] ? ' Copiate: ' . $nomi($esito['copiate']) . '.' : '')
+                . ($esito['sostituite'] ? ' Sostituite: ' . $nomi($esito['sostituite']) . '.' : '')
+                . ($esito['saltate'] ? ' Saltate, perché c\'erano già: ' . $nomi($esito['saltate']) . '.' : ''));
+            Support::redirect('/pannello/' . $p['id']);
+        } catch (\Throwable $e) { $err = $messaggio($e, 'copia'); }
+    }
+    View::out('host/copia', $contesto($acc, $p) + ['origini' => $origini, 'da' => $da, 'err' => $err,
+        'proposta' => $da ? MHW\Copia::proposta((int) $da['id'], (int) $p['id']) : null, 'qui' => 'contenuti'], 'layout/cms');
 });
 
 $r->post('/pannello/{id}/elimina', function (array $a) use ($mia) {
-    [$u, $acc, $p] = $mia((int) $a['id']);
+    [$u, $acc, $p] = $mia((int) $a['id'], true);
     if (trim((string) ($_POST['conferma'] ?? '')) !== $p['name']) {
         Support::flash('Per eliminare scrivi il nome esatto della struttura.', 'err');
-        Support::redirect('/pannello/' . $p['id'] . '/impostazioni');
+        Support::redirect(Entitlements::editable((int) $acc['id'], (int) $p['id']) ? '/pannello/' . $p['id'] . '/impostazioni' : '/pannello');
     }
     foreach (Db::all('SELECT id FROM media WHERE property_id = ?', [$p['id']]) as $m) Media::delete((int) $m['id'], (int) $acc['id']);
     Db::run('DELETE FROM properties WHERE id = ?', [$p['id']]);

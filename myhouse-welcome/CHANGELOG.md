@@ -1,5 +1,61 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Fase 4 — Portfolio: una struttura prima di pagare, poi copia (1 ottobre 2026)
+
+Nessuna migrazione: il blocco si calcola dai dati che ci sono già (piano scelto, abbonamento, quantità, ordine di creazione).
+
+**Una struttura completa prima del pagamento**
+- Con il Portfolio scelto e mai pagato si configura una struttura sola, la prima. Le altre, fino alla quantità scelta, si creano col solo nome e compaiono come card bloccate: «Si attiva dopo il pagamento». Restano eliminabili.
+- Il blocco sta sul server: `Entitlements::lockedIds()` ed `editable()`, controllati da tutte le rotte di una struttura. Questo vale anche per gli URL scritti a mano: pagine, salvataggi, sezioni, luoghi, lingue, aspetto, QR, anteprima, pubblicazione, copia.
+  - Risponde con un avviso e il rimando a «Le mie guide», non con un errore.
+  - Il salvataggio automatico riceve 423 con lo stesso avviso.
+- Chi ha già pagato in passato e ora è scaduto non viene bloccato.
+
+**Sblocco**
+- Al pagamento (webhook firmato di Stripe, o abbonamento manuale dall'amministrazione) si sbloccano tutte le strutture fino alla quantità pagata.
+- «Aggiungi una struttura» oltre la quantità pagata apre una conferma col costo:
+  - 60 € + IVA l'anno;
+  - circa quanto per la parte dell'anno che resta;
+  - il totale dal rinnovo.
+- Confermato, la voce delle strutture aggiuntive su Stripe sale di uno con `proration_behavior=create_prorations`. La struttura nasce bloccata e si sblocca quando il webhook conferma la quantità nuova.
+- Se Stripe non è configurato, o se l'abbonamento è manuale, compare un messaggio chiaro e non si crea niente.
+- Il cambio del numero di strutture da Account & Fatturazione resta com'era: conguaglio fatturato subito (`always_invoice`), applicato solo a pagamento riuscito.
+
+**Crea da una struttura esistente / Copia sezioni da…** (`app/src/Copia.php`)
+- Struttura nuova: scelta facoltativa della struttura di origine e di cosa copiare.
+  - Già spuntati: rifiuti, dove mangiare, cosa visitare, cosa fare, trasporti, emergenze, informazioni utili, regole, servizi, aspetto (palette, logo, tono del testo), contatti.
+  - Non c'è una sezione «servizi extra» nel catalogo, quindi non compare.
+- Mai copiati: indirizzo, CIN, reti Wi-Fi, passaggi di arrivo (Check-in & Check-out), «Come arrivare», foto di copertina, parcheggio.
+- Si copiano anche:
+  - traduzioni, luoghi e loro traduzioni;
+  - le lingue della guida e la lingua principale.
+- Immagini e PDF sono **duplicati** nello storage (disco o S3) con nomi nuovi: le foto della sezione, quelle dei luoghi, le foto e i PDF nelle righe e il logo. Eliminare una struttura non tocca l'altra.
+- Su una struttura che esiste, «Copia sezioni da un'altra struttura»: per ogni sezione che c'è già si sceglie «Saltala» o «Sostituiscila». I file della sezione sostituita si cancellano a copia riuscita.
+- Tutto in una transazione. Se qualcosa fallisce, anche solo per il limite di sezioni del piano, non resta niente a metà: i file già scritti nello storage si tolgono.
+- Lo storage ha un metodo nuovo, `get()`, su disco e su S3.
+
+**Predisposizione (solo commenti, in `Copia.php`)**
+- Libreria dei luoghi a livello di account.
+- Sezioni «collegate», che si aggiornano in tutte le guide.
+
+**Demo**
+- Marco (`marco@esempio.it` / `dimostrazione1`) è un Portfolio per 2 strutture **non ancora pagato**:
+  - B&B Le Rondini è modificabile;
+  - Casa sul Mare c'è col solo nome ed è bloccata.
+- Vale per le installazioni nuove. Le installazioni esistenti non cambiano.
+
+**Prove**
+- `giro-completo.php`: 435 controlli (35 nuovi):
+  - Marco bloccato anche dagli URL scritti a mano;
+  - sblocco dall'admin;
+  - un Portfolio nuovo sbloccato dal webhook;
+  - struttura in più con `create_prorations`;
+  - copia completa da Casa Lucia con file duplicati e guide indipendenti;
+  - «Copia sezioni da…» con saltare e sostituire;
+  - copia annullata senza resti.
+- `aggiornamento.php`: superata da `be97f4a`, `cb6d0dc`, `d6edc08`, `8f27f4f`, `14a9c6e` e `1562635`.
+- Nel browser, a 390 e 1366 px: guide di Marco, avviso, «Crea da una struttura esistente», «Copia sezioni da…», conferma del costo e messaggio senza Stripe.
+
 ## v2 · Fase 3, blocco B — Sezioni strutturate, scheda luogo da Maps, fatturazione (1 ottobre 2026)
 
 Due migrazioni (`011`, `012`), che partono da sole al primo accesso. Prima di caricare, copia `app/storage/`.

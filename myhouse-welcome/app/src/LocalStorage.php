@@ -18,6 +18,13 @@ final class LocalStorage implements Storage
         }
     }
 
+    public function get(string $key): string
+    {
+        $b = @file_get_contents($this->dir . '/' . self::fileName($key));
+        if ($b === false) throw new \RuntimeException('File non trovato nell\'archivio.');
+        return $b;
+    }
+
     public function delete(string $key): void { @unlink($this->dir . '/' . self::fileName($key)); }
 
     public function url(string $key): string

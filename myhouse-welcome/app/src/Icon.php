@@ -63,6 +63,7 @@ final class Icon
         'music'     => '<path d="M9 18V5.5l11-2.5v12.5"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="15.5" r="2.5"/>',
         'train'     => '<rect x="5" y="3" width="14" height="13" rx="3"/><path d="M5 10h14M9 16l-2.5 5M15 16l2.5 5M8.5 19h7"/><path d="M8.5 13h.01M15.5 13h.01"/>',
         'plane'     => '<path d="M10.5 13.5l-6 2v-2L10.5 9V4.5a1.5 1.5 0 0 1 3 0V9l6 4.5v2l-6-2v4l2 1.5v1.5L12 19.5 8.5 20.5V19l2-1.5Z"/>',
+        'lock'      => '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/><path d="M12 14.5v2"/>',
         'ban'       => '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
         'car'       => '<path d="M5 16.5V12l1.8-4.6A2 2 0 0 1 8.7 6h6.6a2 2 0 0 1 1.9 1.4L19 12v4.5"/><path d="M4 16.5h16M5 12h14"/><circle cx="8" cy="16.5" r="1.6"/><circle cx="16" cy="16.5" r="1.6"/>',
     ];

@@ -38,7 +38,8 @@ final class Demo
         return null;
     }
 
-    private static function host(string $nome, string $email, string $pacchetto): array
+    /** @param bool $pagato false = piano scelto ma non ancora pagato (Marco: Portfolio prima del pagamento) */
+    private static function host(string $nome, string $email, string $pacchetto, bool $pagato = true, int $quantita = 1): array
     {
         $u = Auth::register($email, self::PASSWORD, $nome);
         Db::update('users', ['email_verified_at' => Support::now()], 'id = :uid', ['uid' => $u['user_id']]);
@@ -46,13 +47,13 @@ final class Demo
         $pv = (int) Db::val('SELECT pv.id FROM package_versions pv JOIN packages p ON p.id = pv.package_id
                              WHERE p.code = ? AND pv.is_current = 1', [$pacchetto]);
         // Un abbonamento dimostrativo: nessun pagamento, e l'incasso del quadro non lo conta.
-        Db::insert('subscriptions', [
+        if ($pagato) Db::insert('subscriptions', [
             'account_id' => $u['account_id'], 'package_version_id' => $pv, 'status' => 'active',
             'provider' => 'dimostrazione', 'payment_status' => 'dimostrazione',
             'current_period_start' => Support::now(), 'current_period_end' => gmdate('Y-m-d\TH:i:s\Z', strtotime('+1 year')),
             'created_at' => Support::now(), 'updated_at' => Support::now(),
         ]);
-        Db::update('accounts', ['intended_package_version_id' => $pv], 'id = :aid', ['aid' => $u['account_id']]);
+        Db::update('accounts', ['intended_package_version_id' => $pv, 'intended_quantity' => $quantita], 'id = :aid', ['aid' => $u['account_id']]);
         Entitlements::forget((int) $u['account_id']);
         return $u;
     }
@@ -203,8 +204,9 @@ final class Demo
         Guide::publish($pid);
         $creati[] = ['Lucia Ferrante', 'lucia@' . self::DOMINIO, 'Plus', 'Casa Lucia — pubblicata'];
 
-        // ------------------------------------- B&B Le Rondini, Puglia — Portfolio 2
-        $marco = self::host('Marco Bevilacqua', 'marco@' . self::DOMINIO, 'portfolio2');
+        // ------------------- B&B Le Rondini, Puglia — Portfolio per 2 strutture, NON ancora pagato:
+        // si configura una struttura (Le Rondini); la seconda c'è col solo nome, bloccata.
+        $marco = self::host('Marco Bevilacqua', 'marco@' . self::DOMINIO, 'portfolio', false, 2);
         $acc = (int) $marco['account_id'];
         $pid = self::struttura($acc, [
             'nome' => 'B&B Le Rondini', 'citta' => 'Lecce', 'regione' => 'Puglia', 'host' => 'Marco',
@@ -237,13 +239,9 @@ final class Demo
              'instructions' => 'Le strisce bianche sono gratuite, quelle blu a pagamento.']],
             'ztl' => 'Il centro storico è ZTL: non entrare in auto, i varchi hanno le telecamere.']], '');
         Guide::publish($pid);
-        // La seconda struttura del Portfolio, ancora in preparazione.
-        $pid2 = self::struttura($acc, [
-            'nome' => 'Casa sul Mare', 'citta' => 'Otranto', 'regione' => 'Puglia', 'host' => 'Marco',
-            'arrivo' => '15:00', 'partenza' => '10:00', 'telefono' => '+39 0832 000000', 'lingue' => ['it'], 'palette' => 'sabbia',
-        ]);
-        unset($pid2);
-        $creati[] = ['Marco Bevilacqua', 'marco@' . self::DOMINIO, 'Portfolio 2', 'B&B Le Rondini — pubblicata; Casa sul Mare — in bozza'];
+        // La seconda struttura del Portfolio: solo il nome, si attiva dopo il pagamento.
+        Properties::create($acc, 'Casa sul Mare', 'Otranto', 'Marco');
+        $creati[] = ['Marco Bevilacqua', 'marco@' . self::DOMINIO, 'Portfolio · 2 strutture, non pagato', 'B&B Le Rondini — pubblicata (demo); Casa sul Mare — si attiva dopo il pagamento'];
 
         // --------------------------------------------- Il Cortile, Sicilia — Essential
         $agnese = self::host('Agnese Ruta', 'agnese@' . self::DOMINIO, 'essential');

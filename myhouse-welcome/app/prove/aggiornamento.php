@@ -72,7 +72,9 @@ if ($codici > 0 || !$db->query("SELECT 1 FROM schema_migrations WHERE name LIKE 
         $sid0 = $db->query("SELECT s.* FROM sections s JOIN properties p ON p.id = s.property_id JOIN accounts a ON a.id = p.account_id
                             JOIN users u ON u.id = a.user_id WHERE u.email LIKE 'lucia@%' ORDER BY s.id LIMIT 1")->fetch();
         $tr0 = $sid0 ? $db->query('SELECT * FROM section_translations WHERE section_id = ' . (int) $sid0['id'] . ' LIMIT 1')->fetch() : null;
-        if ($sid0 && $tr0 && array_key_exists('data', $sid0) && array_key_exists('data', $tr0)) {
+        // Da una versione che ha già la 011 il formato di prima non c'è più: niente da convertire.
+        $con011 = (function () use ($db) { try { return (bool) $db->query("SELECT 1 FROM schema_migrations WHERE name LIKE '011%'")->fetchColumn(); } catch (PDOException) { return false; } })();
+        if (!$con011 && $sid0 && $tr0 && array_key_exists('data', $sid0) && array_key_exists('data', $tr0)) {
             $vecchie = [
                 'emergency' => [['emergency_number' => '112'], ['it' => ['items' => ['Guardia medica: 075 123456 (notti e festivi)', 'Farmacia di turno: il turno è sulla porta']],
                                                             'en' => ['items' => ['Out-of-hours doctor: 075 123456', 'Duty pharmacy: rota on the door']]]],

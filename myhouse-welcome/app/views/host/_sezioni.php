@@ -98,3 +98,8 @@ $n = count($sezioni); ?>
   </div>
 </div>
 <?php endif; ?>
+
+<?php /* «Copia sezioni da…»: solo se c'è un'altra struttura da cui partire. */
+if ((int) MHW\Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND id <> ? AND archived_at IS NULL', [$prop['account_id'], $pid], 0) > 0): ?>
+  <p style="margin-top:16px"><a class="linkbtn" href="<?= b() ?>/pannello/<?= $pid ?>/copia"><?= Icon::svg('copy', 15) ?> Copia sezioni da un'altra struttura</a></p>
+<?php endif; ?>

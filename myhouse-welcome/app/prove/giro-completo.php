@@ -1067,6 +1067,194 @@ $dario->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'D5', 'city' => 
 prova('Abbonamento manuale Portfolio per 4 strutture: il limite è 4', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$dacc]) === 4
       && (int) val("SELECT quantity FROM subscriptions WHERE account_id = ? AND status = 'active'", [$dacc]) === 4);
 
+// ============================================================ FASE 4 · PORTFOLIO
+capitolo('Fase 4 · Portfolio: una struttura prima di pagare, sblocco, copia');
+$accDi = fn(string $email) => (int) val('SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = ?', [$email]);
+// Marco (demo): Portfolio per 2 strutture, scelto e non pagato.
+$marco = new Browser('marco');
+$marco->get('/accedi');
+$marco->post('/accedi', ['email' => 'marco@esempio.it', 'password' => 'dimostrazione1']);
+$macc = $accDi('marco@esempio.it');
+$rondini = (int) val("SELECT id FROM properties WHERE account_id = ? AND name = 'B&B Le Rondini'", [$macc]);
+$mare = (int) val("SELECT id FROM properties WHERE account_id = ? AND name = 'Casa sul Mare'", [$macc]);
+prova('Demo Marco: Portfolio per 2 strutture, non ancora pagato', $rondini > 0 && $mare > 0 && !val('SELECT id FROM subscriptions WHERE account_id = ?', [$macc])
+      && (int) val('SELECT intended_quantity FROM accounts WHERE id = ?', [$macc]) === 2);
+$r = $marco->get('/pannello');
+prova('Le guide: Le Rondini si apre, Casa sul Mare è una card bloccata «Si attiva dopo il pagamento»', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], "/pannello/$rondini\"") && !str_contains($r['body'], "/pannello/$mare\"") && str_contains($r['body'], 'Si attiva dopo il pagamento')
+      && str_contains($r['body'], 'class="panel stack bloccata"') && !str_contains($r['body'], '$stato') && str_contains($r['body'], 'Online'));
+$fuori = [];
+foreach (["/pannello/$mare", "/pannello/$mare/procedura/struttura", "/pannello/$mare/procedura/sezioni", "/pannello/$mare/anteprima", "/pannello/$mare/impostazioni",
+          "/pannello/$mare/lingue", "/pannello/$mare/qr", "/pannello/$mare/copia", "/pannello/$mare/aspetto"] as $u) {
+    $r = $marco->get($u);
+    if (!($r['code'] === 302 && str_ends_with($r['loc'], '/pannello'))) $fuori[] = "$u {$r['code']}";
+}
+prova('Fase 4 · ogni pagina della struttura bloccata rimanda alle guide (anche a mano)', !$fuori, implode(', ', $fuori));
+$r = $marco->segui($marco->get("/pannello/$mare/procedura/arrivo"));
+prova('…con un avviso, non un errore', $r['code'] === 200 && str_contains($r['body'], 'Casa sul Mare si attiva dopo il pagamento') && !str_contains($r['body'], 'note--err'));
+$mcore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$mare]);
+$marco->post("/pannello/$mare/sezioni", ['kind' => 'rules']);
+$marco->post("/pannello/$mare/impostazioni", ['name' => 'Rinominata', 'city' => 'Lecce']);
+$marco->post("/pannello/$mare/sezioni/$mcore", ['checkin_steps' => ['Scritto a mano.']]);
+$marco->post("/pannello/$mare/pubblica", []);
+$marco->post("/pannello/$mare/copia", ['da' => (string) $rondini, 'copia' => ['eat']]);
+prova('Fase 4 · le modifiche alla struttura bloccata non passano (sezioni, nome, testi, pubblicazione, copia)',
+      (int) val('SELECT COUNT(*) FROM sections WHERE property_id = ?', [$mare]) === 1 && val('SELECT name FROM properties WHERE id = ?', [$mare]) === 'Casa sul Mare'
+      && !str_contains((string) val('SELECT data FROM section_translations WHERE section_id = ?', [$mcore]), 'Scritto a mano') && !val('SELECT id FROM orders WHERE property_id = ?', [$mare]));
+$r = $marco->post("/pannello/$mare/sezioni/$mcore", ['checkin_note' => 'x'], ['Accept: application/json']);
+prova('…e il salvataggio automatico riceve 423 con l\'avviso', $r['code'] === 423 && str_contains($r['body'], 'si attiva dopo il pagamento'));
+prova('Le Rondini si modifica normalmente', $marco->get("/pannello/$rondini")['code'] === 200 && $marco->get("/pannello/$rondini/procedura/sezioni")['code'] === 200);
+// Pagamento simulato con l'abbonamento manuale dall'amministrazione: si sblocca.
+$admin->get('/admin/cliente/' . $macc);
+$admin->post("/admin/cliente/$macc/abbonamento", ['pv' => (string) pv('portfolio'), 'mesi' => '12', 'nota' => 'Pagamento simulato (prova)', 'strutture' => '2']);
+$r = $marco->get("/pannello/$mare");
+prova('Fase 4 · abbonamento manuale dall\'admin: Casa sul Mare si sblocca', $r['code'] === 200 && pulita($r));
+prova('…e nelle guide non è più bloccata', !str_contains($marco->get('/pannello')['body'], 'Si attiva dopo il pagamento'));
+
+// Gino: Portfolio 3 da zero, fino al pagamento con il webhook.
+$gino = new Browser('gino');
+$gino->get('/registrati?piano=' . pv('portfolio') . '&strutture=3');
+$gino->post('/registrati', ['piano' => pv('portfolio'), 'strutture' => '3', 'name' => 'Gino Portfolio', 'email' => 'gino@prova.test', 'password' => 'GinoProva123', 'termini' => '1']);
+$gacc = $accDi('gino@prova.test');
+$r = $gino->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Gino Uno', 'city' => 'Bari']);
+$g1 = (int) val("SELECT id FROM properties WHERE account_id = ? AND name = 'Gino Uno'", [$gacc]);
+prova('Fase 4 · la prima struttura si configura subito', $r['code'] === 302 && str_contains($r['loc'], "/pannello/$g1/procedura/struttura"));
+$r = $gino->get('/pannello/nuova');
+prova('…la seconda chiede solo il nome: si attiva dopo il pagamento', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Per ora basta il nome')
+      && !str_contains($r['body'], 'name="city"') && !str_contains($r['body'], 'Crea da una struttura esistente'));
+$r = $gino->post('/pannello/nuova', ['name' => 'Gino Due']);
+$gino->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Gino Tre']);
+$gino->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Gino Quattro']);
+$gids = array_map('intval', array_column(righe('SELECT id FROM properties WHERE account_id = ? ORDER BY id', [$gacc]), 'id'));
+prova('…create col nome, fino alla quantità scelta (3), e si torna alle guide', $r['code'] === 302 && str_ends_with($r['loc'], '/pannello') && count($gids) === 3);
+prova('…bloccate tutte e due', $gino->get("/pannello/{$gids[1]}")['code'] === 302 && $gino->get("/pannello/{$gids[2]}/procedura/struttura")['code'] === 302);
+$link = linkPosta('gino@prova.test', 'verifica');
+$gino->get(substr($link, strpos($link, '/verifica/')));
+$gino->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Gino Portfolio', 'cf' => 'RSSMRA85T10A562S',
+               'billing_address' => 'Via Roma 3', 'billing_postal' => '70121', 'billing_city' => 'Bari', 'billing_province' => 'BA']);
+$gcore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$g1]);
+$gino->post("/pannello/$g1/sezioni/$gcore", ['checkin_steps' => ['Suona al citofono.']]);
+$r = $gino->modulo("/pannello/$g1/procedura/pubblica", "/pannello/$g1/pubblica", []);
+$gord = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$gacc]);
+prova('Pubblicando la prima: pagamento per 3 strutture', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/') && $gord && (int) $gord['quantity'] === 3);
+file_put_contents("$STRIPE_DIR/extra-sub_prova_gino", '2');
+$r = inviaWebhook(['id' => 'evt_gino_1', 'type' => 'checkout.session.completed', 'data' => ['object' => [
+    'id' => $gord['provider_session_id'], 'mode' => 'subscription', 'payment_status' => 'paid', 'customer' => 'cus_gino',
+    'subscription' => 'sub_prova_gino', 'client_reference_id' => (string) $gord['id'], 'metadata' => ['order_id' => (string) $gord['id'], 'account_id' => (string) $gacc]]]]);
+prova('Fase 4 · webhook di pagamento: le tre strutture si sbloccano', $r['body'] === 'abbonamento-attivato'
+      && $gino->get("/pannello/{$gids[1]}")['code'] === 200 && $gino->get("/pannello/{$gids[2]}/procedura/struttura")['code'] === 200, $r['body']);
+
+// Una struttura oltre la quantità pagata: conferma col costo, poi Stripe con create_prorations.
+$r = $gino->get('/pannello');
+prova('Portfolio pieno: «Aggiungi una struttura» resta', str_contains($r['body'], 'Aggiungi una struttura'));
+$r = $gino->get('/pannello/nuova');
+prova('Fase 4 · conferma con il costo: 60 € l\'anno, la parte che resta di quest\'anno, il totale dal rinnovo', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], 'Ogni struttura in più') && str_contains($r['body'], "60\u{00A0}€") && str_contains($r['body'], 'circa')
+      && str_contains($r['body'], "297\u{00A0}€") && str_contains($r['body'], 'name="conferma"'));
+$prima = count(richiesteStripe());
+$r = $gino->post('/pannello/nuova', ['name' => 'Gino Quattro', 'city' => 'Bari']);
+prova('…senza conferma niente Stripe e niente struttura', count(richiesteStripe()) === $prima && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$gacc]) === 3
+      && str_contains($r['body'], 'Conferma il costo'));
+$r = $gino->post('/pannello/nuova', ['name' => 'Gino Quattro', 'city' => 'Bari', 'conferma' => '1']);
+$mod = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_gino'));
+$mc = end($mod)['corpo'] ?? [];
+$g4 = (int) val("SELECT id FROM properties WHERE account_id = ? AND name = 'Gino Quattro'", [$gacc]);
+prova('Fase 4 · Stripe: la voce delle aggiuntive passa a 3, proration_behavior=create_prorations', ($mc['items'][0]['id'] ?? '') === 'si_extra_sub_prova_gino'
+      && ($mc['items'][0]['quantity'] ?? '') === '3' && ($mc['proration_behavior'] ?? '') === 'create_prorations' && !isset($mc['payment_behavior']), json_encode($mc));
+prova('…la struttura c\'è, bloccata finché Stripe non conferma', $g4 > 0 && $gino->get("/pannello/$g4")['code'] === 302
+      && (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_gino'") === 3);
+inviaWebhook(['id' => 'evt_gino_2', 'type' => 'customer.subscription.updated', 'data' => ['object' => [
+    'id' => 'sub_prova_gino', 'status' => 'active', 'cancel_at_period_end' => false, 'items' => ['data' => [
+        ['id' => 'si_base_sub_prova_gino', 'quantity' => 1, 'current_period_start' => time(), 'current_period_end' => time() + 360 * 86400, 'price' => ['id' => 'price_finto_annuale', 'product' => 'prod_finto_base']],
+        ['id' => 'si_extra_sub_prova_gino', 'quantity' => 3, 'current_period_start' => time(), 'current_period_end' => time() + 360 * 86400, 'price' => ['id' => 'price_finto_extra', 'product' => 'prod_finto_extra']]]]]]]);
+prova('…il webhook porta l\'abbonamento a 4: la quarta si sblocca', (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_gino'") === 4
+      && $gino->get("/pannello/$g4")['code'] === 200);
+
+// Copia completa da Casa Lucia (demo): Lucia passa a un Portfolio per 2 strutture.
+$lucia = new Browser('lucia');
+$lucia->get('/accedi');
+$lucia->post('/accedi', ['email' => 'lucia@esempio.it', 'password' => 'dimostrazione1']);
+$lacc = $accDi('lucia@esempio.it');
+$casa = (int) val("SELECT id FROM properties WHERE account_id = ? AND name = 'Casa Lucia'", [$lacc]);
+db()->prepare("UPDATE properties SET address = 'Via del Teatro 4', cin = 'IT052015C2DEMO', postal_code = '53045' WHERE id = ?")->execute([$casa]);
+$admin->get('/admin/cliente/' . $lacc);
+$admin->post("/admin/cliente/$lacc/abbonamento", ['pv' => (string) pv('portfolio'), 'mesi' => '12', 'nota' => 'Prova della copia', 'strutture' => '2']);
+$r = $lucia->get('/pannello/nuova');
+prova('Fase 4 · «Crea da una struttura esistente»: Casa Lucia, con le sezioni già spuntate', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Crea da una struttura esistente')
+      && str_contains($r['body'], "<option value=\"$casa\">Casa Lucia") && substr_count($r['body'], 'name="copia[]"') === 9
+      && str_contains($r['body'], 'Non si copiano mai: indirizzo, CIN, reti Wi-Fi'));
+$mediaPrima = (int) val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]);
+$r = $lucia->post('/pannello/nuova', ['name' => 'Casa Lucia Due', 'city' => 'Pienza', 'origine' => (string) $casa, 'copia' => ['waste', 'eat', 'visit', 'todo', 'transport', 'emergency', 'info', 'rules', 'services'], 'copia_aspetto' => '1', 'copia_contatti' => '1']);
+$due = (int) val("SELECT id FROM properties WHERE account_id = ? AND name = 'Casa Lucia Due'", [$lacc]);
+preg_match('#note--err" role="alert">([^<]*)#', $r['body'], $em); prova('Copia: struttura creata, si continua dalla procedura', $due > 0 && $r['code'] === 302 && str_contains($r['loc'], "/pannello/$due/procedura/struttura"), $r['loc'] . ' ' . ($em[1] ?? ''));
+$kinds = fn(int $p) => array_column(righe('SELECT kind FROM sections WHERE property_id = ? ORDER BY is_core DESC, position, id', [$p]), 'kind');
+prova('Fase 4 · copiate regole, rifiuti, emergenze, dove mangiare; NON Wi-Fi né i passaggi di arrivo', $kinds($due) === ['checkin', 'rules', 'waste', 'emergency', 'eat']
+      && !str_contains((string) val("SELECT t.data FROM section_translations t JOIN sections s ON s.id = t.section_id WHERE s.property_id = ? AND s.is_core = 1", [$due]), 'portone'),
+      json_encode($kinds($due)));
+$pd = riga('SELECT * FROM properties WHERE id = ?', [$due]); $pc = riga('SELECT * FROM properties WHERE id = ?', [$casa]);
+prova('…né indirizzo, CIN, copertina; sì palette, tono, lingua principale, contatti', $pd['address'] === '' && $pd['cin'] === '' && !$pd['cover_media_id']
+      && $pd['palette'] === $pc['palette'] && $pd['text_tone'] === $pc['text_tone'] && $pd['default_locale'] === $pc['default_locale']
+      && (int) val('SELECT COUNT(*) FROM property_contacts WHERE property_id = ?', [$due]) === (int) val('SELECT COUNT(*) FROM property_contacts WHERE property_id = ?', [$casa]));
+prova('…con le traduzioni e le lingue (en, de)', (int) val("SELECT COUNT(*) FROM section_translations t JOIN sections s ON s.id = t.section_id WHERE s.property_id = ? AND t.locale = 'en'", [$due])
+      === (int) val("SELECT COUNT(*) FROM section_translations t JOIN sections s ON s.id = t.section_id WHERE s.property_id = ? AND s.kind IN ('rules','waste','emergency','eat') AND t.locale = 'en'", [$casa])
+      && (int) val('SELECT COUNT(*) FROM property_locales WHERE property_id = ?', [$due]) === 3);
+$luoghi = fn(int $p) => righe('SELECT pl.* FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ? ORDER BY pl.position, pl.id', [$p]);
+$lo = $luoghi($casa); $lc = $luoghi($due);
+prova('Fase 4 · i luoghi con le loro traduzioni', count($lc) === 3 && array_column($lc, 'name') === array_column($lo, 'name')
+      && (int) val('SELECT COUNT(*) FROM place_translations WHERE place_id = ?', [$lc[0]['id']]) === (int) val('SELECT COUNT(*) FROM place_translations WHERE place_id = ?', [$lo[0]['id']]));
+$mo = riga('SELECT * FROM media WHERE id = ?', [$lo[0]['media_id']]); $mc2 = riga('SELECT * FROM media WHERE id = ?', [$lc[0]['media_id']]);
+prova('Fase 4 · le foto sono duplicate nello storage con nomi nuovi', $mo && $mc2 && $mo['id'] !== $mc2['id'] && $mo['object_key'] !== $mc2['object_key']
+      && (int) $mc2['property_id'] === $due && (int) $mc2['bytes'] === (int) $mo['bytes'] && (int) val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]) === $mediaPrima + 3);
+$immagini = function (Browser $b, string $url): array {
+    $r = $b->get($url);
+    preg_match_all('#<img src="([^"]+)"#', $r['body'], $m);
+    global $BASE;
+    $radice = preg_replace('#^(https?://[^/]+).*$#', '$1', $BASE);   // gli URL relativi hanno già la sottocartella
+    return array_map(fn($u) => $b->get(str_starts_with($u, '/') ? $radice . html_entity_decode($u) : html_entity_decode($u))['code'],
+                     array_values(array_filter($m[1], fn($u) => !str_starts_with($u, 'data:'))));
+};
+$eatDue = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'eat'", [$due]);
+$eatCasa = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'eat'", [$casa]);
+$codici = $immagini($lucia, "/pannello/$due/anteprima/$eatDue");
+prova('…e la guida nuova le mostra', count($codici) === 3 && array_unique($codici) === [200], json_encode($codici));
+// Le due guide sono indipendenti.
+$lucia->post("/pannello/$due/sezioni/$eatDue/luogo", ['place_id' => (string) $lc[0]['id'], 'name' => 'Osteria cambiata', 'maps_url' => (string) $lc[0]['maps_url']]);
+prova('Fase 4 · modificare la copia non tocca l\'originale', val('SELECT name FROM places WHERE id = ?', [$lo[0]['id']]) === 'Osteria del Ponte'
+      && val('SELECT name FROM places WHERE id = ?', [$lc[0]['id']]) === 'Osteria cambiata');
+// «Copia sezioni da…» su una struttura che esiste: le regole si saltano, «dove mangiare» si sostituisce.
+$rulesDue = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'rules'", [$due]);
+$lucia->post("/pannello/$due/sezioni/$rulesDue", ['items' => ['Regola scritta solo qui.']]);
+$r = $lucia->get("/pannello/$due/copia?da=$casa");
+prova('Fase 4 · «Copia sezioni da…»: per le sezioni che ci sono già, Saltala / Sostituiscila', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], 'name="esistenti[rules]" value="salta" checked') && str_contains($r['body'], 'name="esistenti[eat]" value="sostituisci"'));
+$fotoVecchie = array_map('intval', array_column($lc, 'media_id'));
+$r = $lucia->post("/pannello/$due/copia", ['da' => (string) $casa, 'copia' => ['rules', 'eat'], 'esistenti' => ['rules' => 'salta', 'eat' => 'sostituisci']]);
+$lc2 = $luoghi($due);
+prova('…regole saltate (restano quelle scritte qui), «dove mangiare» sostituita come l\'originale', $r['code'] === 302
+      && (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'rules'", [$due]) === 1
+      && str_contains((string) val("SELECT data FROM section_translations WHERE section_id = ? AND locale = 'it'", [$rulesDue]), 'Regola scritta solo qui')
+      && count($lc2) === 3 && $lc2[0]['name'] === 'Osteria del Ponte' && (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'eat'", [$due]) === 1);
+prova('…le foto della sezione sostituita sono cancellate, le nuove sono copie', !val('SELECT COUNT(*) FROM media WHERE id IN (' . implode(',', $fotoVecchie) . ')')
+      && !array_intersect(array_map('intval', array_column($lc2, 'media_id')), array_map('intval', array_column($lo, 'media_id'))));
+// Tutto o niente: con un limite di sezioni che la copia supererebbe, non resta niente a metà.
+$admin->post("/admin/cliente/$lacc/override", ['feature' => 'sections', 'valore' => '3', 'nota' => 'prova']);
+$prima2 = array_column(righe('SELECT id FROM sections WHERE property_id = ? ORDER BY id', [$due]), 'id');
+$mediaPrima = (int) val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]);
+$oggettiPrima = $S3_DIR !== '' && is_dir("$S3_DIR/oggetti") ? count(glob("$S3_DIR/oggetti/*")) : -1;
+$r = $lucia->post("/pannello/$due/copia", ['da' => (string) $casa, 'copia' => ['eat'], 'esistenti' => ['eat' => 'sostituisci']]);
+preg_match('#note--err" role="alert">([^<]*)#', $r['body'], $em);
+prova('Fase 4 · copia che supera il limite del piano: rifiutata, niente a metà (sezioni, foto, file nello storage)', $r['code'] === 200 && str_contains($r['body'], 'sezioni attive')
+      && array_column(righe('SELECT id FROM sections WHERE property_id = ? ORDER BY id', [$due]), 'id') === $prima2
+      && (int) val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]) === $mediaPrima
+      && ($oggettiPrima < 0 || count(glob("$S3_DIR/oggetti/*")) === $oggettiPrima),
+      $r['code'] . ' ' . ($em[1] ?? '') . ' media ' . val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]) . "/$mediaPrima oggetti " . count(glob("$S3_DIR/oggetti/*")) . "/$oggettiPrima");
+$admin->post("/admin/cliente/$lacc/override", ['feature' => 'sections', 'valore' => '']);
+// Eliminare la copia non rompe l'originale.
+$r = $lucia->post("/pannello/$due/elimina", ['conferma' => 'Casa Lucia Due']);
+$codici = $immagini($lucia, "/pannello/$casa/anteprima/$eatCasa");
+prova('Fase 4 · eliminata la copia, l\'originale ha ancora tutte le sue foto e la sua guida', !val('SELECT id FROM properties WHERE id = ?', [$due])
+      && count($codici) === 3 && array_unique($codici) === [200] && $ospite->get('/g/' . $pc['slug'])['code'] === 200, json_encode($codici));
+
 // ==================================================================== SICUREZZA
 capitolo('Sicurezza: proprietà dei dati, CSRF, amministrazione');
 $bruno->get('/pannello');

@@ -39,6 +39,8 @@ final class S3Storage implements Storage
 
     public function delete(string $key): void { $this->request('DELETE', $key, ''); }
 
+    public function get(string $key): string { return $this->request('GET', $key, ''); }
+
     public function url(string $key): string
     {
         if (!empty($this->c['public_base_url'])) return rtrim($this->c['public_base_url'], '/') . '/' . self::encodeKey($key);
@@ -46,7 +48,7 @@ final class S3Storage implements Storage
                              (int) ($this->c['url_ttl'] ?? 3600), gmdate('Ymd\THis\Z'), (string) ($this->c['token'] ?? ''));
     }
 
-    private function request(string $method, string $key, string $body, array $headers = []): void
+    private function request(string $method, string $key, string $body, array $headers = []): string
     {
         $url = $this->objectUrl($key);
         $amz = gmdate('Ymd\THis\Z');
@@ -68,6 +70,7 @@ final class S3Storage implements Storage
             Log::error('S3 ' . $method . ' non riuscito', ['code' => $code, 'err' => $err, 'body' => mb_substr($risposta, 0, 500)]);
             throw new \RuntimeException('Archiviazione dei file non disponibile al momento.');
         }
+        return $risposta;
     }
 
     // ------------------------------------------------------------- SigV4

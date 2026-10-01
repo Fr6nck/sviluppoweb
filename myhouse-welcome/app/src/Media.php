@@ -127,6 +127,36 @@ final class Media
         ]);
     }
 
+    /**
+     * Una copia indipendente di un file già salvato, con una chiave nuova, nello
+     * storage di adesso (copiando una struttura: eliminare l'una non rompe l'altra).
+     * $scritti raccoglie [driver, chiave] di ogni oggetto scritto, per poterlo
+     * togliere se l'operazione intera non va in porto.
+     */
+    public static function duplicate(int $id, int $accountId, int $propertyId, array &$scritti): ?int
+    {
+        $m = Db::one('SELECT * FROM media WHERE id = ? AND account_id = ?', [$id, $accountId]);
+        if (!$m) return null;
+        if ($m['object_key'] !== '') $bytes = Storages::for($m['storage'])->get($m['object_key']);
+        else {
+            $bytes = @file_get_contents(Config::get('uploads_dir') . '/' . basename((string) $m['filename']));
+            if ($bytes === false) throw new \RuntimeException('Un file da copiare non si trova più.');
+        }
+        $ext = pathinfo((string) $m['object_key'] ?: (string) $m['filename'], PATHINFO_EXTENSION) ?: ($m['kind'] === 'pdf' ? 'pdf' : 'jpg');
+        $store = Storages::current();
+        $key = Storages::newKey($accountId, $propertyId, $ext);
+        $nome = preg_replace('/[^A-Za-z0-9._-]+/', '-', pathinfo((string) $m['original_name'], PATHINFO_FILENAME)) ?: 'documento';
+        $store->put($key, $bytes, $m['mime'], $m['kind'] === 'pdf' ? 'inline; filename="' . mb_substr($nome, 0, 60) . '.pdf"' : '');
+        $scritti[] = [$store->name(), $key];
+        return Db::insert('media', [
+            'account_id' => $accountId, 'property_id' => $propertyId,
+            'filename' => $store->name() === 'local' ? LocalStorage::fileName($key) : '',
+            'object_key' => $key, 'storage' => $store->name(), 'kind' => $m['kind'], 'mime' => $m['mime'],
+            'bytes' => strlen($bytes), 'width' => (int) $m['width'], 'height' => (int) $m['height'],
+            'alt' => (string) $m['alt'], 'original_name' => (string) $m['original_name'], 'created_at' => Support::now(),
+        ]);
+    }
+
     /** Un media appartiene a questo account? Da chiedere prima di collegarlo o toglierlo. */
     public static function owned(?int $id, int $accountId): bool
     {

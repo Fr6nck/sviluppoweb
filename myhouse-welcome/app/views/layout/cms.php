@@ -107,7 +107,7 @@ $soloPassi = $prop && $qui === 'procedura' && $prop['status'] !== 'published'; ?
       <a class="btn btn--sm" href="<?= b() ?>/piano">Scopri Plus</a>
     </div>
   <?php else: ?>
-    <p class="note note--<?= $f['kind'] === 'err' ? 'err' : 'ok' ?>" style="margin-bottom:24px" role="status"><?= Support::e($f['msg']) ?></p>
+    <p class="note <?= ['err' => 'note--err', 'avviso' => ''][$f['kind']] ?? 'note--ok' ?>" style="margin-bottom:24px" role="status"><?= Support::e($f['msg']) ?></p>
   <?php endif; ?>
 <?php endif; ?>
 <?= $content ?>

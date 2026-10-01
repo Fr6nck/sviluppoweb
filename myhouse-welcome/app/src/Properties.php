@@ -11,12 +11,13 @@ namespace MHW;
  */
 final class Properties
 {
-    public static function create(int $accountId, string $name, string $city, string $hostName): int
+    /** @param int $oltre strutture in più oltre il limite: solo per quella appena chiesta a Stripe, che resta bloccata fino al webhook */
+    public static function create(int $accountId, string $name, string $city, string $hostName, int $oltre = 0): int
     {
         $name = trim($name);
         if ($name === '') throw new \RuntimeException('Scrivi il nome della struttura.');
         if (mb_strlen($name) > 120) throw new \RuntimeException('Il nome è troppo lungo.');
-        return Db::tx(function () use ($accountId, $name, $city, $hostName) {
+        return Db::tx(function () use ($accountId, $name, $city, $hostName, $oltre) {
             $pid = Db::insert('properties', [
                 'account_id' => $accountId, 'name' => $name, 'slug' => Support::uniqueSlug($name),
                 'city' => mb_substr(trim($city), 0, 120), 'region' => '',
@@ -26,7 +27,7 @@ final class Properties
             ]);
             // Il limite di strutture si verifica a scrittura fatta, come per le sezioni.
             $max = Entitlements::limit($accountId, 'properties', 1);
-            if ((int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL', [$accountId], 0) > $max) {
+            if ((int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL', [$accountId], 0) > $max + max(0, $oltre)) {
                 throw new \RuntimeException($max === 1
                     ? 'Il tuo piano comprende una struttura. Con Portfolio puoi gestirne di più.'
                     : "Il tuo piano comprende $max strutture.");

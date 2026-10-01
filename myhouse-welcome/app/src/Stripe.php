@@ -156,6 +156,18 @@ final class Stripe
                           'mhw-qty-' . $subscriptionId . '-' . $extra . '-' . gmdate('YmdHi'));
     }
 
+    /**
+     * Una struttura in più, aggiunta dal pannello: la voce delle strutture aggiuntive
+     * sale di uno, e la parte dell'anno che resta va sulla prossima fattura
+     * (proration_behavior=create_prorations). Il numero nuovo lo conferma il webhook.
+     */
+    public static function addExtraProrated(string $subscriptionId, string $itemId, int $extra): array
+    {
+        return self::call('POST', 'subscriptions/' . rawurlencode($subscriptionId),
+                          ['items[0][id]' => $itemId, 'items[0][quantity]' => max(0, $extra), 'proration_behavior' => 'create_prorations'],
+                          'mhw-qty-add-' . $subscriptionId . '-' . $extra);
+    }
+
     /** Rinnovo automatico acceso o spento. Il servizio pagato resta fino alla fine del periodo. */
     public static function setCancelAtPeriodEnd(string $subscriptionId, bool $cancel): array
     {

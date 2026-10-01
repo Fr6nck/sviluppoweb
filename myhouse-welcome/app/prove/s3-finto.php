@@ -32,7 +32,9 @@ if (in_array($metodo, ['PUT', 'DELETE'], true)) {
     http_response_code($metodo === 'PUT' ? 200 : 204); exit;
 }
 if ($metodo === 'GET') {
-    if (($_GET['X-Amz-Algorithm'] ?? '') !== 'AWS4-HMAC-SHA256' || !preg_match('/^[0-9a-f]{64}$/', $_GET['X-Amz-Signature'] ?? '')) {
+    // Dal server: firma nell'intestazione, come per PUT e DELETE. Dal browser: URL prefirmato.
+    $prefirmata = ($_GET['X-Amz-Algorithm'] ?? '') === 'AWS4-HMAC-SHA256' && preg_match('/^[0-9a-f]{64}$/', $_GET['X-Amz-Signature'] ?? '');
+    if (!$firmata && !$prefirmata) {
         http_response_code(403); exit('<Error><Code>AccessDenied</Code></Error>');
     }
     if (!is_file($file)) { http_response_code(404); exit('<Error><Code>NoSuchKey</Code></Error>'); }

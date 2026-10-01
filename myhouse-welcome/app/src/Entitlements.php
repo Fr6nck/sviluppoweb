@@ -91,6 +91,37 @@ final class Entitlements
      *
      * @return array<int,string> frasi pronte da mostrare, vuoto se è tutto in regola
      */
+    /**
+     * Le strutture bloccate: esistono (col nome) ma non si modificano finché non sono pagate.
+     *
+     *   - Portfolio scelto e mai pagato: si configura UNA struttura, la prima; le altre,
+     *     fino alla quantità scelta, aspettano il pagamento.
+     *   - Abbonamento attivo: quelle oltre la quantità pagata (una struttura appena
+     *     aggiunta aspetta che il webhook di Stripe confermi la quantità nuova).
+     *   - Chi ha già pagato in passato e ora è scaduto non viene bloccato: le guide
+     *     sono offline, ma i contenuti restano suoi da sistemare.
+     *
+     * Le archiviate non contano. L'ordine è quello di creazione.
+     * @return int[] gli id bloccati
+     */
+    public static function lockedIds(int $accountId): array
+    {
+        $ids = array_map('intval', array_column(Db::all(
+            'SELECT id FROM properties WHERE account_id = ? AND archived_at IS NULL ORDER BY id', [$accountId]), 'id'));
+        if (count($ids) < 2) return [];
+        if (Subscriptions::active($accountId)) return array_slice($ids, max(1, self::limit($accountId, 'properties', 1)));
+        $pv = Subscriptions::governingVersionId($accountId);
+        $versione = $pv ? Db::one('SELECT per_property FROM package_versions WHERE id = ?', [$pv]) : null;
+        if (!$versione || !Plans::perProperty($versione)) return [];
+        if (Subscriptions::latest($accountId)) return [];
+        return array_slice($ids, 1);
+    }
+
+    public static function editable(int $accountId, int $propertyId): bool
+    {
+        return !in_array($propertyId, self::lockedIds($accountId), true);
+    }
+
     /** Quante foto (o quanti PDF) ci sono dentro le righe delle sezioni attive. */
     private static function mediaNelleRighe(int $propertyId, string $kind): int
     {

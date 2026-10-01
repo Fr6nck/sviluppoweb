@@ -14,6 +14,8 @@ interface Storage
 {
     public function put(string $key, string $bytes, string $mime, string $disposition = ''): void;
     public function delete(string $key): void;
+    /** I byte di un oggetto salvato (per duplicarlo, per esempio copiando una struttura). */
+    public function get(string $key): string;
     public function url(string $key): string;
     public function name(): string;
 }
