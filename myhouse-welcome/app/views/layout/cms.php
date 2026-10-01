@@ -23,7 +23,7 @@ $soloPassi = $prop && $qui === 'procedura' && $prop['status'] !== 'published'; ?
 <?php include __DIR__ . '/_icone.php'; ?>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gloock&family=Onest:wght@300..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?= a() ?>/assets/app.css">
+<link rel="stylesheet" href="<?= MHW\av('/assets/app.css') ?>">
 </head>
 <body class="cms">
 <?php if (Auth::isImpersonating()): ?>
@@ -112,6 +112,6 @@ $soloPassi = $prop && $qui === 'procedura' && $prop['status'] !== 'published'; ?
 <?php endif; ?>
 <?= $content ?>
 </main>
-<script src="<?= a() ?>/assets/cms.js" defer></script>
+<script src="<?= MHW\av('/assets/cms.js') ?>" defer></script>
 </body>
 </html>

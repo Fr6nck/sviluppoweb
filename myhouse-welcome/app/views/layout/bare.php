@@ -10,7 +10,7 @@
 <?php include __DIR__ . '/_condivisione.php'; ?>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gloock&family=Onest:wght@300..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?= a() ?>/assets/app.css">
+<link rel="stylesheet" href="<?= MHW\av('/assets/app.css') ?>">
 </head>
 <body class="cms">
 <main class="wrap" style="max-width:<?= Support::e($larghezza ?? '520px') ?>;padding-top:40px;padding-bottom:48px">

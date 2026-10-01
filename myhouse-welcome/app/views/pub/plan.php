@@ -54,7 +54,7 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
   </div>
 </form>
 <?php endif; ?>
-<script src="<?= a() ?>/assets/prezzi.js" defer></script>
+<script src="<?= MHW\av('/assets/prezzi.js') ?>" defer></script>
 <script>
 /* Scrivere il numero di strutture sceglie anche il Portfolio. */
 document.addEventListener('focusin', function (e) {

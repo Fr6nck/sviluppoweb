@@ -190,3 +190,16 @@ function a(string $path = ''): string
     if ($path[0] !== '/') $path = '/' . $path;
     return Support::baseDir() . $path;
 }
+
+/**
+ * Come a(), ma per il foglio di stile e gli script: aggiunge ?v= con la data
+ * del file. Dopo un aggiornamento via FTP il browser (e la cache del server)
+ * prende subito il file nuovo, invece di tenersi quello vecchio.
+ */
+function av(string $path): string
+{
+    if ($path[0] !== '/') $path = '/' . $path;
+    $file = (defined('MHW_PUBLIC') ? MHW_PUBLIC : dirname(__DIR__) . '/public') . $path;
+    $data = is_file($file) ? @filemtime($file) : false;
+    return a($path) . ($data ? '?v=' . $data : '');
+}

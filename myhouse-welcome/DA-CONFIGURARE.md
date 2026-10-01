@@ -64,13 +64,13 @@ Tutte in `assets/foto/`, con **questi nomi esatti**: si caricano sopra le vecchi
 
 | File | Dove | Misura consigliata | Note |
 |---|---|---|---|
-| `scena-qr.jpg` | landing, fascia sotto l'hero | 1200×900 (4:3), JPG, ≤ 300 KB | il QR all'ingresso della casa. Finché manca, compare un riquadro colorato con l'icona. |
-| `scena-ospite.jpg` | idem | 1200×900 | un ospite che apre la guida sul telefono |
-| `scena-host.jpg` | idem | 1200×900 | l'host che aggiorna dal pannello |
+| `scena-qr.jpg` | landing, fascia sotto l'hero | 1200×750 (16:10), JPG, ≤ 300 KB, soggetto al centro | il QR all'ingresso della casa. Finché manca, compare un disegno su fondo colorato. Sul telefono la foto si ritaglia quadrata, al centro. |
+| `scena-ospite.jpg` | idem | 1200×750 | un ospite che apre la guida sul telefono |
+| `scena-host.jpg` | idem | 1200×750 | l'host che aggiorna dal pannello |
 | `borgo.jpg` | il borgo della landing | 2000×924 (circa 2,16:1) | poi **Diagnostica → «Rigenera le foto WebP»** (oppure `php app/tools/foto.php`) |
 | `borgo-telefono.jpg` | il telefono nell'hero | 600×422 | poi rigenera, come sopra |
 | `casa.jpg`, `portone.jpg`, `osteria.jpg`, `caffe.jpg`, `gelato.jpg`, `soggiorno.jpg` | foto della demo | 1600 px sul lato lungo | se le cambi con foto di Spello, ricrea i clienti di esempio |
-| `pannello-1.webp`, `-2`, `-3` | «Inizia in pochi minuti» | 1200×750 | sono schermate vere fatte in locale. Rifalle se il pannello cambia molto. |
+| `pannello-1.webp`, `-2`, `-3` | «Inizia in pochi minuti» | 1200×750 | sono schermate vere fatte in locale (finestra larga 1024 px, la seconda 1200 px per mostrare l'anteprima). Rifalle se il pannello cambia molto. |
 | `og.jpg` | anteprima dei link condivisi | 1200×630 | generata da `strumenti/marchio.php` |
 
 Usa solo foto di cui hai i diritti, e nessun locale reale riconoscibile nella demo.

@@ -1,5 +1,36 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Landing ridisegnata (1 ottobre 2026)
+
+Nessuna migrazione. Si caricano solo file.
+
+- **Stili sempre aggiornati.** Il foglio di stile e gli script si linkano con la data del file (`app.css?v=…`, funzione `av()` in `Support.php`). Dopo un caricamento via FTP il browser e la cache del server prendono subito i file nuovi. Prima potevano restare quelli vecchi, e la landing si vedeva senza stili: scene enormi, FAQ come elenco puntato, elenchi dei piani spezzati una parola per riga.
+- **Hero.**
+  - Il telefono non scende più sopra le scene.
+  - «Guarda la demo» e le lingue IT / EN / DE stanno in un solo gruppo, accanto alla CTA, invece di sembrare un terzo bottone.
+  - Le tre garanzie hanno la spunta.
+- **Scene.**
+  - Senza foto, al posto del riquadro piatto con l'icona c'è un disegno: la targa col QR, il telefono con le sezioni, il pannello con «Pubblica».
+  - Le foto `scena-*.jpg`, quando ci sono, hanno la precedenza come prima.
+  - Sul telefono le scene diventano righe con la miniatura: la pagina è circa il 10% più corta.
+- **Cosa trova l'ospite.** Righe compatte con l'icona colorata, più il link per sfogliare la demo.
+- **Il tempo che non vedi.** Da cinque blocchi a due colonne:
+  - a sinistra problema e soluzione;
+  - a destra le domande degli ospiti e la guida che risponde;
+  - sotto, i due vantaggi e il valore dell'anno con il prezzo.
+  - La frase «Il valore non è soltanto nella guida. È nel tempo che puoi dedicare ad altro.» ha ora uno spazio suo.
+- **La guida che lavora per te.** Fascia scura, con il commiato disegnato usando le etichette vere della guida (recensioni e codice sconto).
+- **Come funziona.**
+  - Tre passi a sinistra e la schermata vera grande a destra, con schede accessibili da tastiera (`assets/landing.js`).
+  - Senza JavaScript i passi sono link e le schermate si vedono tutte.
+  - Le schermate sono rifatte più ingrandite, per essere leggibili.
+- **FAQ.** Titolo a sinistra, con i pulsanti WhatsApp ed email per chi non trova la risposta (dal `config` → `legal`); domande a destra.
+- **Piani.** «Confronta tutti i piani» è un bottone centrato.
+- **Chiusura.** La CTA finale e «chi c'è dietro» (Blackout Agency) nella stessa fascia, invece di una nota sospesa a metà pagina.
+- Menu del sito: in più c'è «Domande».
+- Verificata a 390 e 1366 px, tema chiaro e scuro, senza scorrimento orizzontale.
+- `giro-completo.php`: 484 controlli.
+
 ## v2 · Revisione finale (1 ottobre 2026)
 
 Riletto da capo tutto quello che è cambiato nelle cinque fasi: permessi e blocchi, caricamenti, richieste in uscita, webhook, copia, email, uscite non protette nelle viste, SQL composto a mano. Corretto:

@@ -15,13 +15,13 @@ $u = Auth::user(); $f = Support::flash(); ?>
 <?php include __DIR__ . '/_condivisione.php'; ?>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gloock&family=Onest:wght@300..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?= a() ?>/assets/app.css">
+<link rel="stylesheet" href="<?= MHW\av('/assets/app.css') ?>">
 </head>
 <body>
 <?php $principale = $u
     ? ['href' => b() . '/' . ($u['role'] === 'admin' ? 'admin' : 'pannello'), 'testo' => $u['role'] === 'admin' ? 'Amministrazione' : 'Le mie guide']
     : ['href' => b() . '/registrati', 'testo' => 'Crea gratis'];
-      $voci = [['/#come-funziona', 'Come funziona'], ['/#piani', 'Piani'], ['/#qr', 'Il QR']]; ?>
+      $voci = [['/#come-funziona', 'Come funziona'], ['/#qr', 'Il QR'], ['/#domande', 'Domande'], ['/#piani', 'Piani']]; ?>
 <header class="topbar topbar--sito"><div class="wrap">
   <a class="brand" href="<?= b() ?>/"><?= Icon::brand(26) ?><span>myhouse welcome</span></a>
   <nav class="nav topbar__nav" aria-label="Sito">

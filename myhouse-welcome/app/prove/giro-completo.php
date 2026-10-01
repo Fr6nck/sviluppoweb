@@ -1510,6 +1510,29 @@ prova('Guida inesistente: 404 pulito', $r['code'] === 404 && pulita($r));
 $r = $ospite->get('/pagina/che/non/esiste');
 prova('Pagina inesistente: 404 pulito', $r['code'] === 404 && pulita($r));
 
+// ========================================================== LANDING RIDISEGNATA
+capitolo('Landing ridisegnata');
+$r = $ospite->get('/');
+prova('Foglio di stile e script con la versione (?v=): dopo un aggiornamento FTP il browser prende quelli nuovi',
+      preg_match('#/assets/app\.css\?v=\d+"#', $r['body']) === 1 && preg_match('#/assets/prezzi\.js\?v=\d+"#', $r['body']) === 1
+      && preg_match('#/assets/landing\.js\?v=\d+"#', $r['body']) === 1);
+prova('…anche nella guida ospite e nel pannello', preg_match('#/assets/app\.css\?v=\d+"#', $ospite->get('/g/' . $demo['slug'])['body'] ?? '') === 1
+      || preg_match('#/assets/app\.css\?v=\d+"#', $ospite->get('/accedi')['body']) === 1);
+prova('Hero: demo e lingue in un solo gruppo, accanto alla CTA', preg_match('#<span class="demo-gruppo">.*?Guarda la demo.*?class="demo-lingue"#s', $r['body']) === 1);
+prova('Scene: senza foto un disegno, non un riquadro vuoto', substr_count($r['body'], '<span class="scena__vuota') === 3 && substr_count($r['body'], 'viewBox="0 0 160 100"') === 3);
+prova('Come funziona: tre passi che sono link alle tre schermate vere', substr_count($r['body'], 'class="passo"') === 3
+      && str_contains($r['body'], 'href="#schermata-1"') && str_contains($r['body'], 'id="schermata-3"') && str_contains($r['body'], 'data-passi')
+      && is_file("$DOVE/assets/landing.js") && substr_count($r['body'], '/assets/foto/pannello-') === 3);
+prova('Tempo: la guida risponde alle domande', str_contains($tempo = (preg_match('#<section id="il-tempo".*?</section>#s', $r['body'], $m) ? $m[0] : ''), 'class="risposta"')
+      && substr_count($tempo, 'class="msg"') === 3);
+prova('La frase sul valore, da sola', str_contains($r['body'], 'class="frase"') && str_contains($r['body'], 'È nel tempo che puoi dedicare ad altro.'));
+prova('Guadagno: il commiato disegnato con le etichette vere della guida', str_contains($r['body'], 'class="congedo-mock"')
+      && str_contains($r['body'], 'Ti è piaciuto il soggiorno?') && str_contains($r['body'], 'La prossima volta prenota da noi'));
+prova('FAQ: chi non trova la risposta può scrivere (WhatsApp ed email dal config)', preg_match('#id="domande".*?href="https://wa\.me/393920061600".*?href="mailto:info@myhousewelcome\.it"#s', $r['body']) === 1);
+prova('Chiusura: CTA e «chi c\'è dietro» nella stessa fascia, dopo i piani', preg_match('#<section class="chiusura".*?Crea gratis la tua guida.*?<aside class="chi"#s', $r['body']) === 1
+      && strpos($r['body'], 'id="piani"') < strpos($r['body'], 'class="chiusura"'));
+prova('Menu del sito: c\'è «Domande»', str_contains($r['body'], '/#domande'));
+
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));
