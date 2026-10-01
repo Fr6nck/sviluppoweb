@@ -15,14 +15,30 @@ final class Mappe
 {
     private const SECONDI = 5;
 
-    /** Un indirizzo di Google (maps, il dominio di ogni paese, i link brevi)? */
+    /**
+     * Un indirizzo di Google (maps, il dominio di ogni paese, i link brevi)?
+     * Niente utente, password o porta, niente barre rovesciate, spazi o caratteri
+     * di controllo: sono i trucchi con cui un indirizzo sembra di Google a PHP e
+     * porta altrove per curl.
+     */
     public static function diGoogle(string $url): bool
     {
-        $p = parse_url(trim($url));
+        $url = trim($url);
+        if ($url === '' || strlen($url) > 2000 || preg_match('/[\\\\\s\x00-\x1f\x7f]/', $url)) return false;
+        $p = parse_url($url);
         if (!$p || !in_array(strtolower($p['scheme'] ?? ''), ['http', 'https'], true)) return false;
+        if (isset($p['user']) || isset($p['pass']) || isset($p['port'])) return false;
+        if (str_contains(substr($url, strlen($p['scheme']) + 3, strcspn(substr($url, strlen($p['scheme']) + 3), '/?#')), '@')) return false;
         $host = strtolower($p['host'] ?? '');
         return in_array($host, ['maps.app.goo.gl', 'goo.gl'], true)
             || (bool) preg_match('/(^|\.)google\.(com|[a-z]{2}|com?\.[a-z]{2})$/', $host);
+    }
+
+    /** L'indirizzo ricostruito dai suoi pezzi: curl riceve esattamente quello che si è controllato. */
+    private static function ricostruito(string $url): string
+    {
+        $p = parse_url(trim($url));
+        return 'https://' . strtolower($p['host']) . ($p['path'] ?? '/') . (isset($p['query']) ? '?' . $p['query'] : '');
     }
 
     private static function breve(string $url): bool
@@ -72,7 +88,8 @@ final class Mappe
         for ($salti = 0; $salti < 5; $salti++) {
             $resta = $fine - microtime(true);
             if ($resta <= 0) return null;
-            $ch = curl_init($url);
+            if (!self::diGoogle($url)) return null;
+            $ch = curl_init(self::ricostruito($url));
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true, CURLOPT_HEADER => true, CURLOPT_NOBODY => false,
                 CURLOPT_FOLLOWLOCATION => false, CURLOPT_TIMEOUT_MS => (int) ($resta * 1000), CURLOPT_CONNECTTIMEOUT_MS => (int) ($resta * 1000),

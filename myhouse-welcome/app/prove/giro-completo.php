@@ -1375,6 +1375,19 @@ prova('K6 · nessun cookie sulla guida né sulla landing per chi non è entrato'
 $r = $admin->post('/admin/diagnostica/foto', []);
 prova('V6 · Diagnostica: «Rigenera le foto WebP» con GD', str_contains($admin->segui($r)['body'], 'Foto WebP rigenerate'));
 
+// I file della guida pubblicata: togliendoli dal pannello restano finché non si ripubblica.
+capitolo('Revisione · i file della guida pubblicata');
+$plFoto = riga("SELECT pl.id, pl.media_id, s.id AS sid FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ? AND pl.media_id IS NOT NULL ORDER BY pl.id", [$casa]);
+$lucia->post("/pannello/$casa/sezioni/{$plFoto['sid']}/luogo/{$plFoto['id']}/azione", ['fai' => 'togli-foto']);
+$codici = $immagini($ospite, "/g/$lslug/{$plFoto['sid']}");
+prova('Revisione · tolta la foto dal pannello, la guida pubblicata la mostra ancora', !val('SELECT media_id FROM places WHERE id = ?', [$plFoto['id']])
+      && (bool) val('SELECT id FROM media WHERE id = ?', [$plFoto['media_id']]) && count($codici) === 3 && array_unique($codici) === [200], json_encode($codici));
+db()->prepare('UPDATE media SET created_at = ? WHERE id = ?')->execute([gmdate('Y-m-d\\TH:i:s\\Z', time() - 7200), $plFoto['media_id']]);
+$lucia->post("/pannello/$casa/pubblica", []);
+prova('…ripubblicata la guida, il file non serve più e si cancella', !val('SELECT id FROM media WHERE id = ?', [$plFoto['media_id']])
+      && count($immagini($ospite, "/g/$lslug/{$plFoto['sid']}")) === 2);
+prova('Revisione · un link di Maps che inganna il controllo degli indirizzi non si segue', json_decode($elena->post("/pannello/$epid/mappe", ['url' => 'https://evil.example\\@www.google.com/maps/place/X/@1,1'])['body'], true)['ok'] === false);
+
 // ==================================================================== SICUREZZA
 capitolo('Sicurezza: proprietà dei dati, CSRF, amministrazione');
 $bruno->get('/pannello');

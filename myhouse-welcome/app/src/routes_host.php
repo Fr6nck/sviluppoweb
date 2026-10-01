@@ -156,7 +156,9 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
             }
             if ($modo === 'a-pagamento') {
                 if (($_POST['conferma'] ?? '') !== '1') throw new RuntimeException('Conferma il costo per aggiungere la struttura.');
+                // Tutto quello che può far fallire la creazione si controlla PRIMA di toccare Stripe.
                 if (trim($nome) === '') throw new RuntimeException('Scrivi il nome della struttura.');
+                if (mb_strlen(trim($nome)) > 120) throw new RuntimeException('Il nome è troppo lungo.');
                 if ($costo['fuori']) throw new RuntimeException('Hai raggiunto il numero massimo di strutture del Portfolio: scrivici.');
                 if (!Stripe::enabled()) throw new RuntimeException('I pagamenti non sono attivi in questo momento: non possiamo aggiungere strutture all\'abbonamento. Riprova più tardi.');
                 if ($sub['provider'] !== 'stripe' || $sub['provider_subscription_id'] === '' || $sub['provider_extra_item_id'] === '') {
@@ -314,10 +316,10 @@ $r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($mia, $contesto
         try {
             $cosa = (string) ($_POST['azione'] ?? 'salva');
             if ($cosa === 'togli-foto') {
-                if ($s['media_id']) Media::delete((int) $s['media_id'], $aid);
+                if ($s['media_id']) Media::rilascia((int) $s['media_id'], $aid);
                 Db::update('sections', ['media_id' => null], 'id = :sid', ['sid' => $s['id']]);
             } elseif ($cosa === 'togli-pdf') {
-                if ($s['pdf_media_id']) Media::delete((int) $s['pdf_media_id'], $aid);
+                if ($s['pdf_media_id']) Media::rilascia((int) $s['pdf_media_id'], $aid);
                 Db::update('sections', ['pdf_media_id' => null], 'id = :sid', ['sid' => $s['id']]);
             } else {
                 $post = Properties::saveRowMedia($aid, (int) $p['id'], $s['kind'], $_POST, $_FILES);
@@ -333,13 +335,13 @@ $r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($mia, $contesto
                 if (($_FILES['foto']['error'] ?? 4) !== UPLOAD_ERR_NO_FILE) {
                     if (!Entitlements::can($aid, 'photos')) throw new RuntimeException('Le immagini nelle sezioni sono comprese dal piano Plus.');
                     $mid = Media::storeImage($_FILES['foto'], $aid, (int) $p['id'], (string) ($_POST['title'] ?? ''), 'section');
-                    if ($s['media_id']) Media::delete((int) $s['media_id'], $aid);
+                    if ($s['media_id']) Media::rilascia((int) $s['media_id'], $aid);
                     Db::update('sections', ['media_id' => $mid], 'id = :sid', ['sid' => $s['id']]);
                 }
                 if (($_FILES['pdf']['error'] ?? 4) !== UPLOAD_ERR_NO_FILE) {
                     if (!Entitlements::can($aid, 'pdf')) throw new RuntimeException('I PDF nelle sezioni sono compresi dal piano Plus.');
                     $mid = Media::storePdf($_FILES['pdf'], $aid, (int) $p['id'], (string) ($_POST['title'] ?? ''));
-                    if ($s['pdf_media_id']) Media::delete((int) $s['pdf_media_id'], $aid);
+                    if ($s['pdf_media_id']) Media::rilascia((int) $s['pdf_media_id'], $aid);
                     Db::update('sections', ['pdf_media_id' => $mid], 'id = :sid', ['sid' => $s['id']]);
                 }
             }
@@ -382,7 +384,7 @@ $r->post('/pannello/{id}/sezioni/{sid}/luogo', function (array $a) use ($mia, $m
             if (!Entitlements::can($aid, 'photos')) throw new RuntimeException('Le immagini dei luoghi sono comprese dal piano Plus.');
             $mid = Media::storeImage($_FILES['foto'], $aid, (int) $p['id'], (string) ($_POST['name'] ?? ''), 'place');
             $prima = Db::val('SELECT media_id FROM places WHERE id = ?', [$plid]);
-            if ($prima) Media::delete((int) $prima, $aid);
+            if ($prima) Media::rilascia((int) $prima, $aid);
             Db::update('places', ['media_id' => $mid], 'id = :pid', ['pid' => $plid]);
         }
         Support::flash('Luogo salvato.');
@@ -394,7 +396,9 @@ $r->post('/pannello/{id}/sezioni/{sid}/luogo', function (array $a) use ($mia, $m
 /* Il link di Google Maps incollato nella scheda di un luogo: nome, coordinate e
    minuti a piedi stimati, per compilare il modulo mentre si scrive. */
 $r->post('/pannello/{id}/mappe', function (array $a) use ($mia) {
-    [, , $p] = $mia((int) $a['id']);
+    [, $acc, $p] = $mia((int) $a['id']);
+    // Ogni richiesta può far uscire il server verso Google: un tetto per account.
+    if (!MHW\RateLimit::hit('mappe:' . (int) $acc['id'], 120, 3600)) Support::json(['ok' => false, 'name' => '', 'lat' => null, 'lng' => null, 'walk_minutes' => null], 429);
     $m = Mappe::leggi((string) ($_POST['url'] ?? ''));
     [$plat, $plng] = Mappe::struttura($p);
     Support::json(['ok' => $m['lat'] !== null || $m['name'] !== '', 'name' => $m['name'], 'lat' => $m['lat'], 'lng' => $m['lng'],
@@ -412,11 +416,11 @@ $r->post('/pannello/{id}/sezioni/{sid}/luogo/{plid}/azione', function (array $a)
             'su' => Properties::movePlace((int) $p['id'], $sid, $plid, 'su'),
             'giu' => Properties::movePlace((int) $p['id'], $sid, $plid, 'giu'),
             'elimina' => (function () use ($p, $sid, $plid, $pl, $acc) {
-                if ($pl['media_id']) Media::delete((int) $pl['media_id'], (int) $acc['id']);
+                if ($pl['media_id']) Media::rilascia((int) $pl['media_id'], (int) $acc['id']);
                 Properties::deletePlace((int) $p['id'], $sid, $plid);
             })(),
             'togli-foto' => (function () use ($pl, $acc) {
-                if ($pl['media_id']) Media::delete((int) $pl['media_id'], (int) $acc['id']);
+                if ($pl['media_id']) Media::rilascia((int) $pl['media_id'], (int) $acc['id']);
                 Db::update('places', ['media_id' => null], 'id = :pid', ['pid' => $pl['id']]);
             })(),
             default => throw new RuntimeException('Azione sconosciuta.'),
@@ -511,7 +515,7 @@ $r->any('/pannello/{id}/aspetto', function (array $a) use ($mia, $contesto, $mes
                 $quale = substr($cosa, 6);
                 if (!isset($campi[$quale])) throw new RuntimeException('Azione sconosciuta.');
                 $col = $campi[$quale][0];
-                if ($p[$col]) Media::delete((int) $p[$col], $aid);
+                if ($p[$col]) Media::rilascia((int) $p[$col], $aid);
                 Db::update('properties', [$col => null], 'id = :pid', ['pid' => $p['id']]);
             } else {
                 $pal = (string) ($_POST['palette'] ?? $p['palette']);
@@ -525,7 +529,7 @@ $r->any('/pannello/{id}/aspetto', function (array $a) use ($mia, $contesto, $mes
                     if (($_FILES[$input]['error'] ?? 4) === UPLOAD_ERR_NO_FILE) continue;
                     if (!Entitlements::can($aid, $feature)) throw new RuntimeException("$nome non è compreso nel tuo piano.");
                     $mid = Media::storeImage($_FILES[$input], $aid, (int) $p['id'], $p['name'], $input);
-                    if ($p[$col]) Media::delete((int) $p[$col], $aid);
+                    if ($p[$col]) Media::rilascia((int) $p[$col], $aid);
                     Db::update('properties', [$col => $mid], 'id = :pid', ['pid' => $p['id']]);
                 }
             }

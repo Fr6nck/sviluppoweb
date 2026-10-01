@@ -99,7 +99,8 @@ final class Richiami
                           "la guida di $nome ha l'arrivo, ma ancora nessuna sezione. Wi-Fi, regole della casa, dove mangiare: scegli quelle che servono, si compilano in pochi minuti.",
                           'Scegli le sezioni', $base . 'sezioni'],
             default => ["$nome è quasi pronta",
-                        "la guida di $nome non è ancora online. Guarda l'anteprima come la vedranno gli ospiti e, quando ti convince, pubblicala: paghi solo adesso.",
+                        "la guida di $nome non è ancora online. Guarda l'anteprima come la vedranno gli ospiti e, quando ti convince, pubblicala"
+                        . (Subscriptions::active((int) $p['account_id']) ? ': è già compresa nel tuo abbonamento.' : ': paghi solo quando pubblichi.'),
                         "Guarda l'anteprima e pubblica", $base . 'pubblica'],
         };
     }

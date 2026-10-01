@@ -161,7 +161,7 @@ final class Properties
         $aid = (int) Db::val('SELECT account_id FROM properties WHERE id = ?', [$propertyId], 0);
         $ids = array_merge(array_filter([(int) $s['media_id'], (int) $s['pdf_media_id']]),
                            SectionCatalog::mediaIds($s['kind'], json_decode((string) $s['data'], true) ?: []));
-        foreach (array_unique($ids) as $mid) Media::delete($mid, $aid);
+        foreach (array_unique($ids) as $mid) Media::rilascia($mid, $aid);
     }
 
     /**
@@ -212,7 +212,7 @@ final class Properties
     /** Dopo il salvataggio: cancella i file delle righe che la sezione non usa più. */
     public static function cleanRowMedia(int $accountId, string $kind, array $prima, array $dopo): void
     {
-        foreach (array_diff(SectionCatalog::mediaIds($kind, $prima), SectionCatalog::mediaIds($kind, $dopo)) as $mid) Media::delete($mid, $accountId);
+        foreach (array_diff(SectionCatalog::mediaIds($kind, $prima), SectionCatalog::mediaIds($kind, $dopo)) as $mid) Media::rilascia($mid, $accountId);
     }
 
     /** Sposta su o giù fra le sezioni aggiuntive. Il nucleo resta sempre in testa. */

@@ -205,6 +205,44 @@ final class Media
         return $id ? Db::one('SELECT * FROM media WHERE id = ?', [$id]) : null;
     }
 
+    /**
+     * Un file che il pannello non usa più (foto tolta, sezione eliminata…). Se la
+     * guida PUBBLICATA lo mostra ancora resta dov'è, altrimenti gli ospiti
+     * vedrebbero un'immagine rotta fino alla prossima pubblicazione: lo toglie
+     * pulisciOrfani() quando la guida si ripubblica.
+     */
+    public static function rilascia(int $id, int $accountId): void
+    {
+        $pid = (int) Db::val('SELECT property_id FROM media WHERE id = ? AND account_id = ?', [$id, $accountId], 0);
+        if ($pid && in_array($id, Guide::mediaPubblicati($pid), true)) return;
+        self::delete($id, $accountId);
+    }
+
+    /**
+     * Dopo una pubblicazione: i file della struttura che non usa più nessuno —
+     * né il pannello né la guida appena pubblicata. Solo quelli caricati da più
+     * di un'ora, per non toccare un caricamento ancora in corso.
+     */
+    public static function pulisciOrfani(int $propertyId): int
+    {
+        $p = Db::one('SELECT * FROM properties WHERE id = ?', [$propertyId]);
+        if (!$p) return 0;
+        $usati = array_filter([(int) $p['cover_media_id'], (int) $p['logo_media_id'], (int) ($p['profile_media_id'] ?? 0)]);
+        foreach (Db::all('SELECT id, kind, data, media_id, pdf_media_id FROM sections WHERE property_id = ?', [$propertyId]) as $s) {
+            $usati = array_merge($usati, array_filter([(int) $s['media_id'], (int) $s['pdf_media_id']]),
+                                 SectionCatalog::mediaIds($s['kind'], json_decode((string) $s['data'], true) ?: []));
+            foreach (Db::all('SELECT media_id FROM places WHERE section_id = ? AND media_id IS NOT NULL', [$s['id']]) as $pl) $usati[] = (int) $pl['media_id'];
+        }
+        $usati = array_merge($usati, Guide::mediaPubblicati($propertyId));
+        $n = 0;
+        $prima = gmdate('Y-m-d\TH:i:s\Z', time() - 3600);
+        foreach (Db::all('SELECT id FROM media WHERE property_id = ? AND created_at < ?', [$propertyId, $prima]) as $m) {
+            if (in_array((int) $m['id'], $usati, true)) continue;
+            self::delete((int) $m['id'], (int) $p['account_id']); $n++;
+        }
+        return $n;
+    }
+
     public static function delete(int $id, int $accountId): void
     {
         $m = Db::one('SELECT * FROM media WHERE id = ? AND account_id = ?', [$id, $accountId]);

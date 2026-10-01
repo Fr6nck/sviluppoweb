@@ -374,7 +374,7 @@ $r->post('/admin/diagnostica/foto', function () {
     $admin = Auth::requireAdmin();
     require_once MHW_APP . '/tools/foto.php';
     $esiti = mhw_rigenera_foto(MHW_PUBLIC . '/assets/foto');
-    Auth::audit('tools.foto', (int) $admin['id'], ['esiti' => $esiti]);
+    Auth::audit('tools.foto', null, ['esiti' => $esiti]);
     $falliti = array_filter($esiti, fn($e) => !$e[1]);
     Support::flash($falliti ? 'Non tutte: ' . implode('; ', array_map(fn($e) => $e[0] . ' — ' . $e[2], $falliti))
                             : 'Foto WebP rigenerate: ' . implode(', ', array_column($esiti, 0)) . '.', $falliti ? 'err' : 'ok');
@@ -396,7 +396,7 @@ $r->post('/admin/testimonianze', function () {
     $admin = Auth::requireAdmin();
     try {
         $id = MHW\Testimonianze::salva($_POST, $_FILES['foto'] ?? null);
-        Auth::audit('testimonial.save', (int) $admin['id'], ['id' => $id]);
+        Auth::audit('testimonial.save', null, ['id' => $id]);
         Support::flash('Testimonianza salvata.' . (empty($_POST['visible']) ? ' Non è visibile: spunta «Visibile in landing» quando vuoi mostrarla.' : ''));
     } catch (\Throwable $e) {
         Support::flash($e instanceof \RuntimeException ? $e->getMessage() : 'Non salvata (codice ' . Log::exception($e, 'testimonianze') . ').', 'err');
@@ -407,7 +407,7 @@ $r->post('/admin/testimonianze', function () {
 $r->post('/admin/testimonianze/{tid}/elimina', function (array $a) {
     $admin = Auth::requireAdmin();
     MHW\Testimonianze::elimina((int) $a['tid']);
-    Auth::audit('testimonial.delete', (int) $admin['id'], ['id' => (int) $a['tid']]);
+    Auth::audit('testimonial.delete', null, ['id' => (int) $a['tid']]);
     Support::flash('Testimonianza eliminata.');
     Support::redirect('/admin/testimonianze');
 });

@@ -128,7 +128,33 @@ final class Guide
      * Pubblica una nuova versione. Non controlla il pagamento: chi la chiama
      * (la rotta di pubblicazione, il webhook) lo ha già fatto.
      */
+    /** I file che la guida pubblicata (l'ultima versione) mostra agli ospiti. @return int[] */
+    public static function mediaPubblicati(int $propertyId): array
+    {
+        $snap = self::published($propertyId);
+        if (!$snap) return [];
+        $p = $snap['property'] ?? [];
+        $ids = [(int) ($p['cover_id'] ?? 0), (int) ($p['logo_id'] ?? 0), (int) ($p['profile_id'] ?? 0)];
+        foreach ($snap['sections'] ?? [] as $s) {
+            $ids[] = (int) ($s['image_id'] ?? 0); $ids[] = (int) ($s['pdf_id'] ?? 0);
+            foreach ($s['places'] ?? [] as $pl) $ids[] = (int) ($pl['image_id'] ?? 0);
+            $ids = array_merge($ids, SectionCatalog::mediaIds((string) ($s['kind'] ?? ''), (array) ($s['data'] ?? [])));
+        }
+        return array_values(array_unique(array_filter($ids)));
+    }
+
     public static function publish(int $propertyId): int
+    {
+        $v = self::pubblica($propertyId);
+        // I file tolti nel frattempo e rimasti per la versione di prima, ora non servono più.
+        // Dentro una transazione più grande (il webhook) non si cancella niente: se poi si annullasse, i file sarebbero già spariti.
+        if (!Db::conn()->inTransaction()) {
+            try { Media::pulisciOrfani($propertyId); } catch (\Throwable $e) { Log::exception($e, 'pulizia dei file'); }
+        }
+        return $v;
+    }
+
+    private static function pubblica(int $propertyId): int
     {
         return Db::tx(function () use ($propertyId) {
             $snapshot = self::build($propertyId);

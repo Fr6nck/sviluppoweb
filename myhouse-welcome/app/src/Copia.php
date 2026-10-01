@@ -133,7 +133,7 @@ final class Copia
             throw $e;
         }
         // A copia riuscita, i file delle sezioni sostituite (e del logo di prima) non servono più.
-        foreach (array_unique($daCancellare) as $mid) Media::delete($mid, $accountId);
+        foreach (array_unique($daCancellare) as $mid) Media::rilascia($mid, $accountId);
         return $esito;
     }
 

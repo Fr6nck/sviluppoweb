@@ -1,5 +1,24 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Revisione finale (1 ottobre 2026)
+
+Riletto da capo tutto quello che è cambiato nelle cinque fasi: permessi e blocchi, caricamenti, richieste in uscita, webhook, copia, email, uscite non protette nelle viste, SQL composto a mano. Corretto:
+
+- **File della guida pubblicata.** Togliere dal pannello una foto, un PDF, una sezione o un luogo cancellava subito il file, anche se la guida online lo mostrava ancora: gli ospiti vedevano un'immagine rotta fino alla ripubblicazione. Ora:
+  - il file resta finché la guida pubblicata lo usa (`Media::rilascia`);
+  - alla pubblicazione successiva si tolgono i file che non usa più nessuno (`Media::pulisciOrfani`), solo se caricati da più di un'ora;
+  - dentro la transazione del webhook non si cancella niente.
+  - Prima della v2 queste foto rimanevano per sempre nello storage.
+- **Link di Google Maps.** Un indirizzo come `https://altro.sito\@www.google.com/…` sembrava di Google al controllo, ma curl poteva portare altrove. Ora si rifiutano gli indirizzi con utente, password, porta, barra rovesciata, spazi o caratteri di controllo, e curl riceve l'indirizzo ricostruito dai pezzi già controllati. In più c'è un tetto di 120 letture all'ora per account.
+- **Aggiungi una struttura (Portfolio):** il nome si controlla prima di aggiornare Stripe, così un nome troppo lungo non fa pagare una struttura che poi non nasce.
+- **Email «quasi pronta»:** a chi ha già un abbonamento non dice più «paghi solo quando pubblichi».
+- **Registro di amministrazione:** testimonianze e foto WebP non indicano più l'amministratore come «cliente interessato».
+- Nessun altro problema trovato:
+  - ogni rotta di una struttura passa dal controllo di proprietà e di blocco;
+  - le uscite delle viste nuove sono protette;
+  - l'SQL composto a mano contiene solo numeri interi o costanti.
+- `giro-completo.php`: 473 controlli.
+
 ## v2 · Fase 5 — Vendita, crescita e demo in Umbria (1 ottobre 2026)
 
 Due migrazioni (`013`, `014`), che partono da sole al primo accesso. Prima di caricare, copia `app/storage/`.
