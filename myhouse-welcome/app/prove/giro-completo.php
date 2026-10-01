@@ -1557,6 +1557,26 @@ prova('Scene: ognuna porta dove se ne parla (QR, demo, Come funziona)', substr_c
 prova('Portfolio: − e + accessibili (script, con etichetta)', str_contains((string) file_get_contents("$DOVE/assets/prezzi.js"), "'Una struttura in più'")
       && str_contains((string) file_get_contents("$DOVE/assets/prezzi.js"), "'Una struttura in meno'"));
 
+// ============================================================ PANNELLO RIDISEGNATO
+capitolo('Pannello ridisegnato');
+$luc = new Browser('lucia-pannello');
+$luc->modulo('/accedi', '/accedi', ['email' => 'lucia@esempio.it', 'password' => 'dimostrazione1']);
+$r = $luc->get('/pannello');
+prova('Barra laterale con le voci dell\'account, quella attiva segnata', $r['code'] === 200 && str_contains($r['body'], '<aside class="lato"')
+      && preg_match('#class="lato__voce on" href="[^"]*/pannello" aria-current="page"#', $r['body']) === 1 && str_contains($r['body'], 'Account &amp; Fatturazione'));
+prova('…con il saluto e i numeri veri (online, da finire, piano)', str_contains($r['body'], 'Ciao, Lucia.') && substr_count($r['body'], 'class="cifra ') + substr_count($r['body'], 'class="cifra"') >= 3);
+prova('…«Vai al contenuto» per la tastiera, e il cassetto per il telefono', str_contains($r['body'], 'href="#contenuto"') && str_contains($r['body'], 'id="contenuto"')
+      && str_contains($r['body'], 'class="cassetto"') && str_contains($r['body'], 'aria-label="Chiudi il menu"'));
+$lpid = (int) val("SELECT id FROM properties WHERE account_id = ? AND name = 'Casa Lucia'", [$accDi('lucia@esempio.it')]);
+$r = $luc->get("/pannello/$lpid/aspetto");
+prova('Dentro una guida: il gruppo della guida nella barra, briciole e schede per il telefono', str_contains($r['body'], 'aria-label="La guida"')
+      && preg_match('#class="lato__voce on" href="[^"]*/pannello/' . $lpid . '/aspetto" aria-current="page"#', $r['body']) === 1
+      && str_contains($r['body'], 'aria-label="Sei qui"') && str_contains($r['body'], '<span aria-current="page">Aspetto</span>') && str_contains($r['body'], 'class="schede-guida"'));
+$r = $luc->get("/pannello/$lpid/statistiche");
+prova('Statistiche: l\'anello QR / link con il testo per chi non vede il grafico', preg_match('#class="anello__cerchio" style="--p:\d+" role="img" aria-label="\d+ aperture: \d+ dal QR Code, \d+ dal link"#', $r['body']) === 1);
+$r = $ospite->get('/accedi');
+prova('Senza accesso niente barra laterale', $r['code'] === 200 && !str_contains($r['body'], '<aside class="lato"'));
+
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

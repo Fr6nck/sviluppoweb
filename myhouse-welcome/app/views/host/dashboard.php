@@ -46,11 +46,16 @@ foreach ($sections as $s) { if ((int) $s['is_core'] === 1) $core = $s; else $alt
     <?php endif; ?>
 
     <?php if ($stats): ?>
-      <div class="grid grid-3">
-        <div class="stat"><b><?= (int) $stats['views'] ?></b><span>aperture negli ultimi 30 giorni</span></div>
-        <div class="stat"><b><?= (int) $stats['qr'] ?></b><span>dal QR Code</span></div>
-        <div class="stat"><b style="font-size:22px;line-height:28px;letter-spacing:-.4px"><?= Support::e($stats['sections'][0]['title'] ?? '—') ?></b>
-          <span>la sezione più letta</span></div>
+      <div class="cifre">
+        <a class="cifra" href="<?= b() ?>/pannello/<?= $pid ?>/statistiche">
+          <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('eye', 17) ?></span>Aperture</span><?= Icon::svg('arrow', 18, 2, 'cifra__freccia') ?>
+          <b class="cifra__valore"><?= (int) $stats['views'] ?></b><span class="cifra__nota">negli ultimi 30 giorni</span></a>
+        <div class="cifra cifra--mare">
+          <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('qr', 17) ?></span>Dal QR Code</span>
+          <b class="cifra__valore"><?= (int) $stats['qr'] ?></b><span class="cifra__nota">aperture inquadrando il QR</span></div>
+        <div class="cifra cifra--ocra">
+          <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('book', 17) ?></span>La più letta</span>
+          <b class="cifra__valore cifra__valore--testo"><?= Support::e($stats['sections'][0]['title'] ?? '—') ?></b><span class="cifra__nota">la sezione più aperta</span></div>
       </div>
     <?php endif; ?>
 

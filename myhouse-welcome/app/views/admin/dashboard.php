@@ -2,24 +2,31 @@
 /* Il quadro dell'amministrazione: numeri veri, interrogati adesso.
    Gli abbonamenti manuali e di esempio non contano nell'incasso. */
 use function MHW\b;
-use MHW\{Support, Csrf};
+use MHW\{Support, Csrf, Icon};
 $title = 'Amministrazione'; ?>
 <div class="stack stack--lg">
-  <h1>Quadro.</h1>
+  <div class="saluto" style="margin-bottom:0"><div><h1>Quadro.</h1><p>I numeri di adesso, interrogati al momento. Gli abbonamenti manuali e di esempio non contano nell'incasso.</p></div></div>
 
   <?php foreach ($avvisi as [$t, $d]): ?>
     <div class="note" role="status"><div class="stack" style="gap:4px"><b><?= Support::e($t) ?></b><span class="small"><?= Support::e($d) ?></span></div></div>
   <?php endforeach; ?>
 
-  <div class="grid grid-4">
-    <div class="stat"><b><?= (int) $numeri['clienti'] ?></b><span>clienti registrati</span></div>
-    <div class="stat"><b><?= (int) $numeri['abbonati'] ?></b><span>abbonamenti Stripe attivi</span></div>
-    <div class="stat"><b><?= (int) $numeri['pubblicate'] ?></b><span>guide pubblicate su <?= (int) $numeri['guide'] ?></span></div>
-    <div class="stat"><b><?= Support::e(Support::money($numeri['incassato'])) ?></b><span>incassato con Stripe (IVA esclusa)</span></div>
-    <div class="stat"><b><?= (int) $numeri['aperture'] ?></b><span>aperture delle guide (30 giorni)</span></div>
-    <div class="stat"><b><?= (int) $numeri['in_attesa'] ?></b><span>pagamenti in attesa</span></div>
-    <div class="stat"><b><?= (int) $numeri['rinnovo_off'] ?></b><span>con rinnovo disattivato</span></div>
-    <div class="stat"><b><?= (int) $numeri['falliti'] ?></b><span>rinnovi non riusciti</span></div>
+  <div class="cifre cifre--4">
+    <?php foreach ([['', 'people', 'Clienti', $numeri['clienti'], 'registrati', '/admin/clienti'],
+                    ['cifra--pino', 'card', 'Abbonamenti', $numeri['abbonati'], 'Stripe attivi', '/admin/abbonamenti'],
+                    ['cifra--mare', 'book', 'Guide pubblicate', $numeri['pubblicate'], 'su ' . (int) $numeri['guide'] . ' in tutto', '/admin/guide'],
+                    ['cifra--ocra', 'euro', 'Incassato', Support::money($numeri['incassato']), 'con Stripe, IVA esclusa', null],
+                    ['cifra--carta', 'eye', 'Aperture', $numeri['aperture'], 'delle guide, ultimi 30 giorni', null],
+                    ['cifra--carta', 'clock', 'In attesa', $numeri['in_attesa'], 'pagamenti da confermare', null],
+                    ['cifra--carta', 'ban', 'Rinnovo spento', $numeri['rinnovo_off'], 'abbonamenti che scadono', null],
+                    [$numeri['falliti'] ? 'cifra--rosa' : 'cifra--carta', 'warning', 'Rinnovi falliti', $numeri['falliti'], 'carte da aggiornare', null]] as [$tono, $ico, $et, $val, $nota, $href]):
+          $tag = $href ? 'a' : 'div'; ?>
+      <<?= $tag ?> class="cifra <?= $tono ?>"<?= $href ? ' href="' . b() . $href . '"' : '' ?>>
+        <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg($ico, 17) ?></span><?= $et ?></span>
+        <?php if ($href): ?><?= Icon::svg('arrow', 18, 2, 'cifra__freccia') ?><?php endif; ?>
+        <b class="cifra__valore"><?= Support::e((string) $val) ?></b><span class="cifra__nota"><?= Support::e($nota) ?></span>
+      </<?= $tag ?>>
+    <?php endforeach; ?>
   </div>
 
   <section class="stack" style="gap:10px" aria-labelledby="funnel-titolo">
@@ -58,7 +65,7 @@ $title = 'Amministrazione'; ?>
         <tr><td><?= Support::e(Support::date($o['created_at'])) ?></td>
           <td><a href="<?= b() ?>/admin/cliente/<?= (int) $o['account_id'] ?>"><?= Support::e($o['cliente'] ?: $o['email']) ?></a></td>
           <td><?= Support::e($o['package']) ?></td><td><?= Support::e(Support::money((int) $o['amount_cents'], $o['currency'])) ?></td>
-          <td><?= Support::e($o['status']) ?> <span class="tiny muted"><?= Support::e($o['provider']) ?></span></td></tr>
+          <td><span class="pill pill--<?= ['paid' => 'pine', 'pending' => 'ochre', 'awaiting' => 'sea', 'failed' => 'alert'][$o['status']] ?? '' ?>"><?= Support::e($o['status']) ?></span> <span class="tiny muted"><?= Support::e($o['provider']) ?></span></td></tr>
       <?php endforeach; ?>
       </tbody></table></div>
     <?php endif; ?>

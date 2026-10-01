@@ -1,5 +1,36 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Pannello ridisegnato (1 ottobre 2026)
+
+Nessuna migrazione. Il telaio del pannello (`views/layout/cms.php`) vale per l'area host e per l'amministrazione.
+
+- **Barra laterale scura**, al posto delle due barre orizzontali in alto:
+  - le voci dell'account («Generale» per l'host, «Amministrazione» per lo staff), con l'icona e la voce attiva segnata (`aria-current`);
+  - quando si lavora su una struttura, il suo gruppo: Contenuti, Lingue, Aspetto, QR & Link, Statistiche, Impostazioni, Anteprima, con il pallino dello stato (pubblicata o bozza);
+  - in fondo l'utente, il tema e «Esci».
+- **Tela chiara arrotondata** su fondo sabbia:
+  - in alto le briciole (Le mie guide › Casa Lucia › Aspetto) e le azioni della guida, Anteprima e Pubblica;
+  - l'intestazione resta visibile scorrendo.
+- **Sul telefono:**
+  - la barra diventa un cassetto. È un `<details>`, quindi funziona anche senza JavaScript, e si chiude con Esc, scegliendo una voce o toccando fuori;
+  - le voci della guida diventano schede che scorrono sotto l'intestazione;
+  - Anteprima diventa un'icona, con l'etichetta per i lettori di schermo.
+- **«Vai al contenuto»** per chi usa la tastiera.
+- **Le mie guide:**
+  - il saluto («Ciao, Lucia.»);
+  - tre cartellini pastello con numeri veri: guide online, da finire, il piano con il rinnovo;
+  - le schede delle strutture con la foto, lo stato sopra la foto e le scorciatoie Contenuti, QR e Anteprima;
+  - la scheda tratteggiata «Aggiungi una struttura».
+- **Contenuti:** aperture, QR e sezione più letta su cartellini. Le aperture portano alle Statistiche.
+- **Statistiche:** un anello QR / link con la legenda e il testo per chi non vede il grafico, più i cartellini dei totali.
+- **Quadro dell'amministrazione:**
+  - otto cartellini, e quelli che hanno una pagina portano lì;
+  - gli ordini hanno lo stato in pillole colorate.
+- I colori pastello derivano dalla tavolozza del progetto: rosa terracotta, mare, ocra, pino. Nel tema scuro diventano toni profondi.
+- La procedura di una guida mai pubblicata e le pagine senza accesso restano senza barra, per non distrarre.
+- Le schermate del pannello nella landing («Come funziona») sono rifatte con il pannello nuovo.
+- `giro-completo.php`: 496 controlli.
+
 ## v2 · Landing: le foto delle scene (1 ottobre 2026)
 
 - Le tre scene sotto l'hero hanno le loro foto (fornite dal cliente):

@@ -2,9 +2,9 @@
 /* Statistiche di base (Plus): quante volte si apre la guida, quanto dal QR,
    cosa si legge, in che lingua. Eventi anonimi, niente cookie, niente profili. */
 use function MHW\b;
-use MHW\Support;
+use MHW\{Support, Icon};
 $title = 'Statistiche — ' . $prop['name']; ?>
-<div class="stack stack--lg" style="max-width:860px">
+<div class="stack stack--lg" style="max-width:1040px">
   <div class="stack stack--sm">
     <h1>Statistiche.</h1>
     <p class="muted small">Ultimi 30 giorni. Contiamo le aperture in forma anonima: nessun cookie, nessun dato personale degli ospiti.</p>
@@ -13,9 +13,25 @@ $title = 'Statistiche — ' . $prop['name']; ?>
   <div class="limit"><p style="max-width:560px">Le statistiche di lettura sono comprese dal piano Plus: quante volte si apre la guida,
     quante dal QR, quali sezioni si leggono di più e in quali lingue.</p><a class="btn btn--sm" href="<?= b() ?>/piano">Scopri Plus</a></div>
 <?php else: $max = max(1, ...array_values($stats['series'])); ?>
-  <div class="grid grid-2">
-    <div class="stat"><b><?= (int) $stats['views'] ?></b><span>aperture della guida</span></div>
-    <div class="stat"><b><?= (int) $stats['qr'] ?></b><span>aperture dal QR Code</span></div>
+  <?php $v = (int) $stats['views']; $q = min($v, (int) $stats['qr']); $perc = $v ? (int) round($q / $v * 100) : 0; ?>
+  <div class="statistiche-testa">
+    <div class="panel anello">
+      <div class="anello__cerchio" style="--p:<?= $perc ?>" role="img" aria-label="<?= $v ?> aperture: <?= $q ?> dal QR Code, <?= $v - $q ?> dal link">
+        <span class="anello__centro"><b><?= $v ?></b><span>aperture</span></span>
+      </div>
+      <ul class="legenda">
+        <li><i></i>Dal QR Code<b><?= $q ?></b></li>
+        <li><i></i>Dal link<b><?= $v - $q ?></b></li>
+      </ul>
+    </div>
+    <div class="cifre">
+      <div class="cifra">
+        <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('eye', 17) ?></span>In totale</span>
+        <b class="cifra__valore"><?= $v ?></b><span class="cifra__nota">aperture della guida negli ultimi 30 giorni</span></div>
+      <div class="cifra cifra--mare">
+        <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('qr', 17) ?></span>Aperture dal QR Code</span>
+        <b class="cifra__valore"><?= $q ?></b><span class="cifra__nota"><?= $v ? $perc . '% del totale' : 'nessuna apertura ancora' ?></span></div>
+    </div>
   </div>
   <div class="panel stack">
     <span class="kicker">Aperture al giorno</span>
