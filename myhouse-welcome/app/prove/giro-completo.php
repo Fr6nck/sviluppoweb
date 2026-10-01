@@ -1275,8 +1275,21 @@ prova('K3 · FAQ prima del listino: sei domande in un accordion accessibile', su
       && strpos($r['body'], 'id="domande"') < strpos($r['body'], 'id="piani"'));
 prova('K3 · accanto a «Guarda la demo» la demo in IT / EN / DE', preg_match_all('#href="[^"]+/benvenuto\?l=(it|en|de)" hreflang#', $r['body'], $mm) === 3);
 prova('K3 · nessuna testimonianza: nessun blocco', !str_contains($r['body'], 'Le parole di chi ospita'));
-prova('V6 · tre scene sotto l\'hero, al posto della foto grande; foto mancanti: riquadro con icona', substr_count($r['body'], 'class="scena"') === 3
-      && substr_count($r['body'], 'scena__vuota') === 3 && !str_contains($r['body'], 'class="stage"'));
+prova('V6 · tre scene sotto l\'hero, al posto della foto grande, con le foto vere', substr_count($r['body'], 'class="scena"') === 3
+      && substr_count($r['body'], 'scena__vuota') === 0 && !str_contains($r['body'], 'class="stage"')
+      && str_contains($r['body'], '/assets/foto/scena-qr.jpg') && str_contains($r['body'], '/assets/foto/scena-host-1200.webp'));
+// Una foto che manca: al suo posto il disegno, senza errori; le altre restano.
+rename("$DOVE/assets/foto/scena-host.jpg", "$DOVE/assets/foto/scena-host.jpg.via");
+$senza = $ospite->get('/')['body'];
+rename("$DOVE/assets/foto/scena-host.jpg.via", "$DOVE/assets/foto/scena-host.jpg");
+prova('V6 · foto mancante: riquadro colorato con il disegno, le altre due foto restano', substr_count($senza, '<span class="scena__vuota') === 1
+      && substr_count($senza, 'viewBox="0 0 160 100"') === 1 && !str_contains($senza, 'scena-host-1200.webp') && str_contains($senza, 'scena-ospite-1200.webp'));
+// Un .jpg caricato dopo le WebP vince finché non si rigenerano.
+touch("$DOVE/assets/foto/scena-qr.jpg", time() + 60);
+$nuova = $ospite->get('/')['body'];
+touch("$DOVE/assets/foto/scena-qr.jpg", filemtime("$DOVE/assets/foto/scena-qr-1200.webp"));
+prova('V6 · un .jpg nuovo si vede subito: le WebP più vecchie non lo coprono', !str_contains($nuova, 'scena-qr-1200.webp') && str_contains($nuova, '/assets/foto/scena-qr.jpg')
+      && str_contains($nuova, 'scena-ospite-1200.webp'));
 // Pacchetti: la funzione hide_branding in una versione NUOVA di Plus e Portfolio.
 $hb = (int) val("SELECT id FROM features WHERE code = 'hide_branding'");
 $vers = fn(string $c) => righe('SELECT pv.id, pv.version, pv.is_current, (SELECT value FROM package_features WHERE package_version_id = pv.id AND feature_id = ?) AS hb
@@ -1519,7 +1532,8 @@ prova('Foglio di stile e script con la versione (?v=): dopo un aggiornamento FTP
 prova('…anche nella guida ospite e nel pannello', preg_match('#/assets/app\.css\?v=\d+"#', $ospite->get('/g/' . $demo['slug'])['body'] ?? '') === 1
       || preg_match('#/assets/app\.css\?v=\d+"#', $ospite->get('/accedi')['body']) === 1);
 prova('Hero: demo e lingue in un solo gruppo, accanto alla CTA', preg_match('#<span class="demo-gruppo">.*?Guarda la demo.*?class="demo-lingue"#s', $r['body']) === 1);
-prova('Scene: senza foto un disegno, non un riquadro vuoto', substr_count($r['body'], '<span class="scena__vuota') === 3 && substr_count($r['body'], 'viewBox="0 0 160 100"') === 3);
+prova('Scene: le foto hanno un testo alternativo e la versione piccola per il telefono', substr_count($r['body'], 'sizes="(max-width: 760px) 92px, 380px"') === 3
+      && str_contains($r['body'], 'alt="Un ospite inquadra con il telefono il QR'));
 prova('Come funziona: tre passi che sono link alle tre schermate vere', substr_count($r['body'], 'class="passo"') === 3
       && str_contains($r['body'], 'href="#schermata-1"') && str_contains($r['body'], 'id="schermata-3"') && str_contains($r['body'], 'data-passi')
       && is_file("$DOVE/assets/landing.js") && substr_count($r['body'], '/assets/foto/pannello-') === 3);

@@ -137,12 +137,24 @@ $disegni = [
 ]; ?>
 <section class="scene" aria-label="Come si usa">
   <?php /* Ogni scena porta dove se ne parla: il QR, la demo, i passi nel pannello. */
-  foreach ([['scena-qr.jpg', 'qr', 't-terracotta', 'Il QR all\'ingresso', 'Lo stampi una volta: l\'ospite lo inquadra e la guida si apre.', '#qr'],
-                  ['scena-ospite.jpg', 'ospite', 't-sea', 'L\'ospite trova tutto', 'Wi-Fi, check-in, consigli: nella sua lingua, sul suo telefono.', $demoUrl ?? '#prodotto-titolo'],
-                  ['scena-host.jpg', 'host', 't-pine', 'Tu aggiorni quando vuoi', 'Cambi un orario dal pannello e pubblichi: il QR resta lo stesso.', '#come-funziona']] as [$file, $dis, $tono, $tit, $txt, $dove]):
-        $cie = is_file($cartellaFoto . $file); ?>
+  foreach ([['scena-qr.jpg', 'qr', 't-terracotta', 'Il QR all\'ingresso', 'Lo stampi una volta: l\'ospite lo inquadra e la guida si apre.', '#qr',
+                   'Un ospite inquadra con il telefono il QR in cornice accanto alla porta d\'ingresso', '62% 50%'],
+                  ['scena-ospite.jpg', 'ospite', 't-sea', 'L\'ospite trova tutto', 'Wi-Fi, check-in, consigli: nella sua lingua, sul suo telefono.', $demoUrl ?? '#prodotto-titolo',
+                   'Un\'ospite al tavolo della casa sfoglia la guida sul telefono: Wi-Fi, check-in, parcheggio, dove mangiare', '50% 50%'],
+                  ['scena-host.jpg', 'host', 't-pine', 'Tu aggiorni quando vuoi', 'Cambi un orario dal pannello e pubblichi: il QR resta lo stesso.', '#come-funziona',
+                   'L\'host aggiorna la guida dal portatile, con l\'anteprima sul telefono accanto', '52% 50%']] as [$file, $dis, $tono, $tit, $txt, $dove, $alt, $centro]):
+        $cie = is_file($cartellaFoto . $file);
+        // Le versioni WebP (da tools/foto.php) valgono solo se non sono più vecchie del .jpg:
+        // chi carica un .jpg nuovo lo vede subito, anche prima di rigenerarle.
+        $base = substr($file, 0, -4);
+        $webp = $cie && is_file($cartellaFoto . "$base-600.webp") && is_file($cartellaFoto . "$base-1200.webp")
+             && filemtime($cartellaFoto . "$base-1200.webp") >= filemtime($cartellaFoto . $file); ?>
     <figure class="scena">
-      <?php if ($cie): ?><img src="<?= Support::e(a('/assets/foto/' . $file)) ?>" alt="" loading="lazy" decoding="async" width="800" height="600">
+      <?php if ($cie): ?><picture>
+        <?php if ($webp): ?><source type="image/webp" sizes="(max-width: 760px) 92px, 380px"
+          srcset="<?= Support::e(a("/assets/foto/$base-600.webp")) ?> 600w, <?= Support::e(a("/assets/foto/$base-1200.webp")) ?> 1200w"><?php endif; ?>
+        <img src="<?= Support::e(a('/assets/foto/' . $file)) ?>" alt="<?= Support::e($alt) ?>" loading="lazy" decoding="async" width="1200" height="750" style="object-position:<?= $centro ?>">
+      </picture>
       <?php else: ?><span class="scena__vuota <?= $tono ?>" aria-hidden="true"><svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice"><?= $disegni[$dis] ?></svg></span><?php endif; ?>
       <figcaption><a class="scena__link" href="<?= $dove ?>"><?= $tit ?> <?= Icon::svg('arrow', 15, 2) ?></a><span><?= $txt ?></span></figcaption>
     </figure>

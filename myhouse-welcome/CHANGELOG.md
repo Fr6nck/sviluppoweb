@@ -1,5 +1,18 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Landing: le foto delle scene (1 ottobre 2026)
+
+- Le tre scene sotto l'hero hanno le loro foto (fornite dal cliente):
+  - `scena-qr.jpg`: l'ospite inquadra il QR all'ingresso;
+  - `scena-ospite.jpg`: la guida sul telefono;
+  - `scena-host.jpg`: l'host aggiorna dal portatile.
+  - Ogni foto è a 1200×750, con il testo alternativo e il centro scelto per la miniatura quadrata del telefono.
+- **Versioni WebP più leggere:** `scena-…-1200.webp` e `scena-…-600.webp`, generate da `tools/foto.php` (anche da Diagnostica → «Rigenera le foto WebP»).
+  - Il telefono scarica quella da 600 px (circa 30 KB invece di 120).
+  - Una WebP più vecchia del suo .jpg non si usa: chi carica una foto nuova la vede subito, anche prima di rigenerare.
+- Se una foto manca, al suo posto torna il disegno, come prima.
+- `giro-completo.php`: 490 controlli.
+
 ## v2 · Landing: movimento e interazioni (1 ottobre 2026)
 
 Nessuna migrazione. Cambiano `home.php`, `app.css`, `landing.js` e `prezzi.js`.

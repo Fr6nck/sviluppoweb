@@ -64,9 +64,7 @@ Tutte in `assets/foto/`, con **questi nomi esatti**: si caricano sopra le vecchi
 
 | File | Dove | Misura consigliata | Note |
 |---|---|---|---|
-| `scena-qr.jpg` | landing, fascia sotto l'hero | 1200×750 (16:10), JPG, ≤ 300 KB, soggetto al centro | il QR all'ingresso della casa. Finché manca, compare un disegno su fondo colorato. Sul telefono la foto si ritaglia quadrata, al centro. |
-| `scena-ospite.jpg` | idem | 1200×750 | un ospite che apre la guida sul telefono |
-| `scena-host.jpg` | idem | 1200×750 | l'host che aggiorna dal pannello |
+| `scena-qr.jpg`, `scena-ospite.jpg`, `scena-host.jpg` | landing, fascia sotto l'hero | 1200×750 (16:10), JPG, ≤ 300 KB, soggetto al centro | **già caricate** (le foto che hai fornito). Per cambiarne una, carica il .jpg nuovo con lo stesso nome, poi **Diagnostica → «Rigenera le foto WebP»**: fino ad allora si vede il .jpg. Se una manca, compare un disegno su fondo colorato. Sul telefono la foto si ritaglia quadrata, al centro. |
 | `borgo.jpg` | il borgo della landing | 2000×924 (circa 2,16:1) | poi **Diagnostica → «Rigenera le foto WebP»** (oppure `php app/tools/foto.php`) |
 | `borgo-telefono.jpg` | il telefono nell'hero | 600×422 | poi rigenera, come sopra |
 | `casa.jpg`, `portone.jpg`, `osteria.jpg`, `caffe.jpg`, `gelato.jpg`, `soggiorno.jpg` | foto della demo | 1600 px sul lato lungo | se le cambi con foto di Spello, ricrea i clienti di esempio |

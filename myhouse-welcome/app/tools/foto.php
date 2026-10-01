@@ -4,6 +4,8 @@
  *
  *   borgo.jpg            → borgo-1200.webp (1200 px di larghezza), borgo-2000.webp (2000 px)
  *   borgo-telefono.jpg   → borgo-telefono-600.webp (600 px)
+ *   scena-qr.jpg, scena-ospite.jpg, scena-host.jpg (le tre scene sotto l'hero,
+ *                        facoltative) → scena-…-1200.webp e scena-…-600.webp
  *
  * Per cambiare la foto si carica il .jpg nuovo con lo STESSO nome sopra quello
  * vecchio, poi si avvia questo strumento:
@@ -17,12 +19,18 @@ if (!function_exists('mhw_rigenera_foto')) {
     function mhw_rigenera_foto(string $cartella): array
     {
         $lavori = [['borgo.jpg', 'borgo-1200.webp', 1200], ['borgo.jpg', 'borgo-2000.webp', 2000], ['borgo-telefono.jpg', 'borgo-telefono-600.webp', 600]];
+        // Le scene sono facoltative: se il .jpg non c'è, non è un errore (la landing mostra il disegno).
+        $facoltative = [];
+        foreach (['scena-qr', 'scena-ospite', 'scena-host'] as $sc) {
+            foreach ([1200, 600] as $l) { $lavori[] = ["$sc.jpg", "$sc-$l.webp", $l]; $facoltative["$sc.jpg"] = true; }
+        }
         $esiti = [];
         if (!function_exists('imagewebp')) {
             return [['tutte', false, 'Questo PHP non ha GD con il supporto WebP: chiedi all\'hosting di attivarlo.']];
         }
         foreach ($lavori as [$da, $a, $larghezza]) {
             $sorgente = rtrim($cartella, '/') . '/' . $da;
+            if (isset($facoltative[$da]) && !is_file($sorgente)) continue;
             $img = is_file($sorgente) ? @imagecreatefromjpeg($sorgente) : false;
             if (!$img) { $esiti[] = [$a, false, "manca $da, o non è un JPEG leggibile"]; continue; }
             $w = imagesx($img); $h = imagesy($img);
