@@ -1270,14 +1270,24 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .scena__vuota.t-sea{background:var(--tile-sea)} .scena__vuota.t-pine{background:var(--tile-pine)}
 .scena__vuota svg{display:block;width:100%;height:100%}
 .scena figcaption{display:flex;flex-direction:column;gap:4px;font-size:15px;line-height:22px}
-.scena figcaption b{font-size:17px;font-weight:600;letter-spacing:-.2px}
+.scena{position:relative}
+.scena__link{display:inline-flex;align-items:center;gap:6px;font-size:17px;font-weight:600;letter-spacing:-.2px;color:var(--ink)}
+.scena__link::after{content:"";position:absolute;inset:0;border-radius:var(--r-xl)}
+.scena__link svg{color:var(--accent);opacity:0;transform:translateX(-6px);transition:opacity .4s cubic-bezier(.32,.72,0,1),transform .4s cubic-bezier(.32,.72,0,1)}
+.scena:hover .scena__link,.scena__link:hover{color:var(--ink)}
+.scena:hover .scena__link svg,.scena__link:focus-visible svg{opacity:1;transform:none}
+.scena img,.scena__vuota{transition:transform .6s cubic-bezier(.32,.72,0,1),box-shadow .6s cubic-bezier(.32,.72,0,1)}
+.scena:hover img,.scena:hover .scena__vuota{transform:translateY(-4px);box-shadow:0 24px 40px -28px rgba(35,27,18,.55)}
+.scena__vuota svg{transition:transform .8s cubic-bezier(.32,.72,0,1)}
+.scena:hover .scena__vuota svg{transform:scale(1.05)}
 .scena figcaption span{color:var(--muted)}
 @media(max-width:760px){
   .scene{grid-template-columns:minmax(0,1fr);gap:10px;margin-top:56px}
   .scena{flex-direction:row;align-items:center;gap:16px;padding:8px 16px 8px 8px;border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line)}
   .scena img,.scena__vuota{flex:none;width:92px;aspect-ratio:1;border-radius:var(--r-lg)}
   .scena figcaption{font-size:14px;line-height:20px;gap:2px}
-  .scena figcaption b{font-size:16px}
+  .scena__link{font-size:16px}
+  .scena__link svg{opacity:1;transform:none}
 }
 
 /* Un link con la freccia che si sposta. */
@@ -1389,3 +1399,88 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .confronto{max-width:100%;min-width:0}
 .confronto__tabella{position:relative;width:100%;max-width:calc(100vw - 32px)}
 .confronto__tabella th[scope=row]{white-space:normal;min-width:9rem}
+
+/* ======================================= movimento: comparse e interazioni
+   Le comparse valgono solo con html.anima (la mette lo script in testa alla
+   landing, e mai con «riduci movimento»). Un'unica curva per tutto: parte
+   decisa e si posa piano, come un oggetto con un po' di peso. */
+:root{--molla:cubic-bezier(.32,.72,0,1)}
+.anima :is(.hero2__testo>*,.device-link,.scene>*,.prodotto__testa>*,.features8>*,.tempo__intro>*,.vantaggi>*,.frase__sotto,
+  .guadagno__testo>*,.congedo-mock,.come__testa>*,.passi__lista>*,.passi__schermate,.qrband>.stack>*,.qrband__foglio,.voci .grid>*,
+  .faq__testa>*,.faq__lista>*,#piani .spread>*,.piani>*,.chiusura__testo>*,.chi):not(.comparsa--vista){opacity:0;transform:translateY(28px);filter:blur(6px)}
+.comparsa{transition:opacity .9s var(--molla),transform .9s var(--molla),filter .9s var(--molla);transition-delay:calc(var(--i,0) * 90ms)}
+
+/* Il telefono dell'hero: si inclina verso il puntatore; le sezioni entrano una alla volta. */
+.device{transform:perspective(1400px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .6s var(--molla)}
+a.device-link:hover .device{transform:perspective(1400px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(-4px)}
+.anima .device-link:not(.comparsa--vista) .device__tiles span{opacity:0;transform:scale(.86)}
+.device__tiles span{transition:opacity .6s var(--molla),transform .6s var(--molla)}
+.device__tiles span:nth-child(1){transition-delay:.45s} .device__tiles span:nth-child(2){transition-delay:.55s}
+.device__tiles span:nth-child(3){transition-delay:.65s} .device__tiles span:nth-child(4){transition-delay:.75s}
+
+/* Le domande arrivano una alla volta; la guida «scrive» e poi risponde. */
+.chat--attesa .msg:not(.msg--arrivato),.chat--attesa .risposta:not(.risposta--scrive):not(.risposta--arrivata){opacity:0;transform:translateY(14px) scale(.96)}
+.chat--attesa .msg,.chat--attesa .risposta{transition:opacity .6s var(--molla),transform .6s var(--molla)}
+.risposta{position:relative;transform-origin:100% 100%}
+.risposta--scrive{color:transparent}
+.risposta--scrive .risposta__chi{opacity:0}
+.risposta--scrive::after{content:"";position:absolute;left:18px;top:calc(50% - 4px);width:40px;height:8px;
+  background:radial-gradient(circle 4px,var(--tile-ink) 96%,transparent) 0 0/14px 8px repeat-x;animation:scrive .9s ease-in-out infinite}
+@keyframes scrive{50%{opacity:.3}}
+
+/* La frase: ogni parola si accende quando arriva a metà schermo. */
+.anima .frase__testo .parola{color:color-mix(in srgb,currentColor 24%,transparent);transition:color .8s var(--molla);transition-delay:calc(var(--i,0) * 30ms)}
+.anima .frase__testo .parola--accesa{color:inherit}
+
+/* Come funziona: la barra sotto il passo attivo mentre avanzano da soli; la schermata entra morbida. */
+.passo{position:relative;overflow:hidden}
+.passi--giro .passo[aria-selected="true"]::after{content:"";position:absolute;left:20px;right:20px;bottom:8px;height:3px;border-radius:3px;
+  background:var(--accent);transform-origin:0 50%;animation:avanza 5.2s linear forwards}
+@keyframes avanza{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.anima .schermata:not([hidden]){animation:entra .7s var(--molla)}
+@keyframes entra{from{opacity:0;transform:translateY(10px) scale(.985)}}
+
+/* Il QR: una linea di scansione, due volte, quando compare. */
+.qrband__foglio{position:relative;overflow:hidden}
+.qrband__foglio::after{content:"";position:absolute;left:18px;right:18px;top:24px;height:3px;border-radius:3px;opacity:0;pointer-events:none;
+  background:var(--tile-terracotta);box-shadow:0 0 18px 4px rgba(180,69,31,.45)}
+.anima .qrband__foglio.comparsa--vista::after{animation:scansione 1.5s .7s var(--molla) 2}
+@keyframes scansione{0%{opacity:0;transform:translateY(0)}15%{opacity:1}85%{opacity:1}100%{opacity:0;transform:translateY(176px)}}
+
+/* Pulsanti: si premono davvero; la freccia della CTA si sposta. */
+.btn{transition:background .25s var(--molla),border-color .25s var(--molla),transform .25s var(--molla)}
+.btn:active{transform:scale(.98)}
+.btn--go .go svg{transition:transform .4s var(--molla)}
+.btn--go:hover .go svg{transform:translateX(3px)}
+.link-freccia:active,.demo-gruppo__vai:active,.demo-lingue a:active{transform:scale(.98)}
+
+/* Piani: la card si solleva sotto il puntatore. */
+.piani .plan{transition:transform .6s var(--molla),box-shadow .6s var(--molla)}
+@media (hover:hover){ .piani .plan:hover{transform:translateY(-6px);box-shadow:0 30px 50px -36px rgba(35,27,18,.5)} }
+
+/* Portfolio: − e + ai lati del numero; il prezzo fa un piccolo scatto quando cambia. */
+.passo-num{display:inline-flex;align-items:center;gap:6px}
+.passo-num__btn{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line-strong);background:var(--raised);color:var(--ink);font:inherit;font-size:22px;line-height:1;
+  transition:background .25s var(--molla),transform .25s var(--molla)}
+.passo-num__btn:hover{background:var(--sunk)} .passo-num__btn:active{transform:scale(.94)}
+.passo-num__btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.passo-num input[type=number]{width:84px;text-align:center;-moz-appearance:textfield}
+.passo-num input::-webkit-outer-spin-button,.passo-num input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.plan--dark .passo-num__btn{background:transparent;color:var(--inverse-fg);border-color:rgba(246,240,229,.32)}
+.prezzo--cambia{display:inline-block;animation:scatto .45s var(--molla)}
+@keyframes scatto{40%{transform:translateY(-3px) scale(1.04)}}
+
+/* Header: l'ombra quando la pagina scorre, la sezione che si sta guardando, la barra di lettura. */
+.topbar--sito{transition:box-shadow .4s var(--molla)}
+.topbar--staccata{box-shadow:0 10px 30px -22px rgba(35,27,18,.45)}
+.nav a{transition:background .3s var(--molla),color .3s var(--molla)}
+.nav a.attiva{background:var(--raised);color:var(--ink)}
+.lettura{position:fixed;left:0;right:0;top:0;z-index:30;height:3px;background:var(--accent);transform:scaleX(0);transform-origin:0 50%;pointer-events:none}
+
+@media (prefers-reduced-motion:reduce){
+  .device,.device__tiles span,.btn,.btn--go .go svg,.piani .plan,.passo-num__btn,.scena img,.scena__vuota,.scena__vuota svg,.scena__link svg,.nav a,.topbar--sito{transition:none}
+  .device{transform:none} .piani .plan:hover{transform:none} .scena:hover img,.scena:hover .scena__vuota,.scena:hover .scena__vuota svg{transform:none}
+  .prezzo--cambia,.risposta--scrive::after{animation:none}
+  .lettura{display:none}
+}

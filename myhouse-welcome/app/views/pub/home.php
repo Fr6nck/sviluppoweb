@@ -37,6 +37,16 @@ $elementi = array_map(fn($x) => [MHW\SectionCatalog::icon($x[0]), $x[1]],
     [['checkin', 'Check-in & Check-out'], ['wifi', 'Wi-Fi'], ['arrival', 'Come arrivare'], ['parking', 'Parcheggio'],
      ['services', 'Servizi'], ['rules', 'Regole della casa'], ['eat', 'Dove mangiare'], ['waste', 'Rifiuti e raccolta differenziata']]); ?>
 
+<script>
+/* Prima di disegnare la pagina: se si anima, gli elementi partono già nascosti
+   (niente lampo). Se landing.js non arriva entro 3 secondi, si torna alla
+   pagina ferma: il contenuto non resta mai invisibile. */
+(function (d) {
+  if (!('IntersectionObserver' in window) || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+  d.classList.add('anima');
+  setTimeout(function () { if (!d.classList.contains('anima-pronta')) d.classList.remove('anima'); }, 3000);
+})(document.documentElement);
+</script>
 <section class="hero2">
   <div class="hero2__testo">
     <span class="kicker">La reception digitale per la tua struttura ricettiva</span>
@@ -126,14 +136,15 @@ $disegni = [
         . '<rect x="98" y="70" width="28" height="9" rx="4.5" fill="#b4451f"/><rect x="104" y="73.5" width="16" height="2" rx="1" fill="#fff8f2"/></g>',
 ]; ?>
 <section class="scene" aria-label="Come si usa">
-  <?php foreach ([['scena-qr.jpg', 'qr', 't-terracotta', 'Il QR all\'ingresso', 'Lo stampi una volta: l\'ospite lo inquadra e la guida si apre.'],
-                  ['scena-ospite.jpg', 'ospite', 't-sea', 'L\'ospite trova tutto', 'Wi-Fi, check-in, consigli: nella sua lingua, sul suo telefono.'],
-                  ['scena-host.jpg', 'host', 't-pine', 'Tu aggiorni quando vuoi', 'Cambi un orario dal pannello e pubblichi: il QR resta lo stesso.']] as [$file, $dis, $tono, $tit, $txt]):
+  <?php /* Ogni scena porta dove se ne parla: il QR, la demo, i passi nel pannello. */
+  foreach ([['scena-qr.jpg', 'qr', 't-terracotta', 'Il QR all\'ingresso', 'Lo stampi una volta: l\'ospite lo inquadra e la guida si apre.', '#qr'],
+                  ['scena-ospite.jpg', 'ospite', 't-sea', 'L\'ospite trova tutto', 'Wi-Fi, check-in, consigli: nella sua lingua, sul suo telefono.', $demoUrl ?? '#prodotto-titolo'],
+                  ['scena-host.jpg', 'host', 't-pine', 'Tu aggiorni quando vuoi', 'Cambi un orario dal pannello e pubblichi: il QR resta lo stesso.', '#come-funziona']] as [$file, $dis, $tono, $tit, $txt, $dove]):
         $cie = is_file($cartellaFoto . $file); ?>
     <figure class="scena">
       <?php if ($cie): ?><img src="<?= Support::e(a('/assets/foto/' . $file)) ?>" alt="" loading="lazy" decoding="async" width="800" height="600">
       <?php else: ?><span class="scena__vuota <?= $tono ?>" aria-hidden="true"><svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice"><?= $disegni[$dis] ?></svg></span><?php endif; ?>
-      <figcaption><b><?= $tit ?></b><span><?= $txt ?></span></figcaption>
+      <figcaption><a class="scena__link" href="<?= $dove ?>"><?= $tit ?> <?= Icon::svg('arrow', 15, 2) ?></a><span><?= $txt ?></span></figcaption>
     </figure>
   <?php endforeach; ?>
 </section>

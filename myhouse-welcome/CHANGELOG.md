@@ -1,5 +1,32 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Landing: movimento e interazioni (1 ottobre 2026)
+
+Nessuna migrazione. Cambiano `home.php`, `app.css`, `landing.js` e `prezzi.js`.
+
+- **Comparse allo scorrimento** su tutta la home: ogni blocco entra salendo e mettendosi a fuoco, gli elementi di un gruppo uno dopo l'altro. Usa una sola curva per tutto e IntersectionObserver (nessun ascoltatore di scroll per le comparse).
+- **Hero:** il telefono si inclina verso il puntatore (solo con mouse); le quattro sezioni nel telefono entrano una alla volta.
+- **Il tempo che non vedi:** le domande arrivano una alla volta, la guida «scrive» e poi risponde.
+- **La frase sul valore:** si colora parola per parola mentre la si legge.
+- **Come funziona:** i passi avanzano da soli **un giro**, solo quando la sezione è in vista, con una barra di avanzamento sotto il passo. Si fermano per sempre al primo clic, tasto, passaggio del mouse o fuoco. La schermata entra morbida.
+- **Il QR:** una linea di scansione passa due volte quando compare.
+- **FAQ:** si aprono e si chiudono con un'animazione morbida (restano `<details>` veri).
+- **Piani:**
+  - le card si sollevano sotto il puntatore;
+  - Portfolio ha i pulsanti − e + accanto al numero di strutture (con etichetta per i lettori di schermo, disattivati al minimo e al massimo), anche in `/piano`;
+  - il prezzo fa un piccolo scatto quando cambia.
+- **Scene:** ognuna porta dove se ne parla: il QR alla sezione del QR, l'ospite alla demo, l'host a «Come funziona».
+- **Header:**
+  - un'ombra quando la pagina scorre;
+  - una barra di lettura in alto;
+  - nel menu, la voce della sezione che si sta guardando (`aria-current`).
+- **Pulsanti:** si «premono» (scala 0,98) e la freccia della CTA si sposta.
+- **Sicurezze:**
+  - con «riduci movimento» nel sistema non si anima niente;
+  - senza JavaScript non si nasconde niente: le regole che nascondono valgono solo con `html.anima`, messa da uno script prima del disegno, così non c'è lampo;
+  - se `landing.js` non arriva entro 3 secondi, la pagina torna ferma e completa.
+- `giro-completo.php`: 488 controlli.
+
 ## v2 · Landing ridisegnata (1 ottobre 2026)
 
 Nessuna migrazione. Si caricano solo file.

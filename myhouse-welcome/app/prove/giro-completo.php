@@ -1532,6 +1532,16 @@ prova('FAQ: chi non trova la risposta può scrivere (WhatsApp ed email dal confi
 prova('Chiusura: CTA e «chi c\'è dietro» nella stessa fascia, dopo i piani', preg_match('#<section class="chiusura".*?Crea gratis la tua guida.*?<aside class="chi"#s', $r['body']) === 1
       && strpos($r['body'], 'id="piani"') < strpos($r['body'], 'class="chiusura"'));
 prova('Menu del sito: c\'è «Domande»', str_contains($r['body'], '/#domande'));
+$js = (string) @file_get_contents("$DOVE/assets/landing.js");
+prova('Animazioni: si attivano prima del disegno e mai con «riduci movimento»; senza landing.js entro 3 s la pagina torna ferma',
+      str_contains($r['body'], "d.classList.add('anima')") && str_contains($r['body'], 'prefers-reduced-motion: reduce') && str_contains($r['body'], 'anima-pronta')
+      && str_contains($js, 'prefers-reduced-motion: reduce') && str_contains($js, 'IntersectionObserver'));
+prova('…le comparse sono nel CSS solo sotto html.anima: senza JavaScript non si nasconde niente',
+      preg_match('/^\.anima :is\(/m', (string) file_get_contents("$DOVE/assets/app.css")) === 1 && !preg_match('/^\.comparsa\{[^}]*opacity:0/m', (string) file_get_contents("$DOVE/assets/app.css")));
+prova('Scene: ognuna porta dove se ne parla (QR, demo, Come funziona)', substr_count($r['body'], 'class="scena__link"') === 3
+      && str_contains($r['body'], 'class="scena__link" href="#qr"') && str_contains($r['body'], 'class="scena__link" href="#come-funziona"'));
+prova('Portfolio: − e + accessibili (script, con etichetta)', str_contains((string) file_get_contents("$DOVE/assets/prezzi.js"), "'Una struttura in più'")
+      && str_contains((string) file_get_contents("$DOVE/assets/prezzi.js"), "'Una struttura in meno'"));
 
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";

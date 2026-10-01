@@ -27,5 +27,28 @@
     }
     campo.addEventListener('input', aggiorna);
     aggiorna();
+
+    // − e + ai lati del campo: si scrive ancora a mano, ma col pollice si fa prima.
+    var gruppo = document.createElement('span'); gruppo.className = 'passo-num';
+    campo.parentNode.insertBefore(gruppo, campo);
+    function bottone(segno, testo, delta) {
+      var x = document.createElement('button');
+      x.type = 'button'; x.className = 'passo-num__btn'; x.textContent = segno; x.setAttribute('aria-label', testo);
+      x.addEventListener('click', function () {
+        var q = parseInt(campo.value, 10); if (isNaN(q)) q = min;
+        q = Math.max(min, Math.min(max, q + delta));
+        campo.value = q;
+        campo.dispatchEvent(new Event('input', { bubbles: true }));
+        totale.classList.remove('prezzo--cambia'); void totale.offsetWidth; totale.classList.add('prezzo--cambia');
+      });
+      return x;
+    }
+    var meno = bottone('\u2212', 'Una struttura in meno', -1), piu = bottone('+', 'Una struttura in più', 1);
+    gruppo.appendChild(meno); gruppo.appendChild(campo); gruppo.appendChild(piu);
+    function limiti() {
+      var q = parseInt(campo.value, 10);
+      meno.disabled = !(q > min); piu.disabled = !(q < max);
+    }
+    campo.addEventListener('input', limiti); limiti();
   })(blocchi[i]);
 })();
