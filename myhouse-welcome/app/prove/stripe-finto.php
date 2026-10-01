@@ -61,7 +61,10 @@ $abbonamento = function (string $id) use (&$stato, $ora, $dir, $espandi): array 
     ];
 };
 
-if ($metodo === 'POST' && $percorso === '/v1/customers') $rispondi(['id' => 'cus_finto' . $n, 'object' => 'customer']);
+if ($metodo === 'POST' && $percorso === '/v1/customers') $rispondi(['id' => 'cus_finto' . $n, 'object' => 'customer', 'metadata' => $corpo['metadata'] ?? []]);
+if ($metodo === 'POST' && preg_match('#^/v1/customers/(cus_[A-Za-z0-9_]+)$#', $percorso, $m)) {
+    $rispondi(['id' => $m[1], 'object' => 'customer', 'metadata' => $corpo['metadata'] ?? []]);
+}
 if ($metodo === 'POST' && $percorso === '/v1/checkout/sessions') {
     $rispondi(['id' => 'cs_test_finto' . $n, 'object' => 'checkout.session', 'url' => 'https://checkout.stripe.test/c/pay/cs_test_finto' . $n,
                'mode' => $corpo['mode'] ?? '']);

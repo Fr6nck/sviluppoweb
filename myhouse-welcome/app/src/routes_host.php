@@ -1,7 +1,7 @@
 <?php
 /** Rotte dell'area host. $r è il Router creato in public/index.php. */
 
-use MHW\{Auth, Config, Conversione, Db, Entitlements, Guide, LimitReached, Log, Media, NotFound, Palette, Plans, Properties,
+use MHW\{Auth, Config, Conversione, Db, Entitlements, Guide, LimitReached, Log, Mappe, Media, Migrator, NotFound, Palette, Plans, Properties,
          Qr, QrExport, SectionCatalog, Stats, Stripe, Subscriptions, Support, View};
 
 /* La procedura: cinque passi. Le lingue in più stanno in fondo a «Anteprima e
@@ -208,7 +208,16 @@ $r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($mia, $contesto
                 if ($s['pdf_media_id']) Media::delete((int) $s['pdf_media_id'], $aid);
                 Db::update('sections', ['pdf_media_id' => null], 'id = :sid', ['sid' => $s['id']]);
             } else {
-                Properties::saveSection((int) $p['id'], (int) $s['id'], $p['default_locale'], $_POST, true);
+                $post = Properties::saveRowMedia($aid, (int) $p['id'], $s['kind'], $_POST, $_FILES);
+                Properties::saveSection((int) $p['id'], (int) $s['id'], $p['default_locale'], $post, true);
+                $prima = json_decode((string) $s['data'], true) ?: [];
+                $ora = json_decode((string) Db::val('SELECT data FROM sections WHERE id = ?', [$s['id']], ''), true) ?: [];
+                Properties::cleanRowMedia($aid, $s['kind'], $prima, $ora);
+                // Il link di Maps di «Come arrivare» dà le coordinate della struttura (per i minuti a piedi dei luoghi).
+                if ($s['kind'] === 'arrival' && ($ora['maps_url'] ?? '') !== ($prima['maps_url'] ?? '') && Migrator::columnExists('properties', 'lat')) {
+                    $m = Mappe::leggi((string) ($ora['maps_url'] ?? ''));
+                    Db::update('properties', ['lat' => $m['lat'], 'lng' => $m['lng']], 'id = :pid', ['pid' => $p['id']]);
+                }
                 if (($_FILES['foto']['error'] ?? 4) !== UPLOAD_ERR_NO_FILE) {
                     if (!Entitlements::can($aid, 'photos')) throw new RuntimeException('Le immagini nelle sezioni sono comprese dal piano Plus.');
                     $mid = Media::storeImage($_FILES['foto'], $aid, (int) $p['id'], (string) ($_POST['title'] ?? ''), 'section');
@@ -245,7 +254,18 @@ $r->post('/pannello/{id}/sezioni/{sid}/luogo', function (array $a) use ($mia, $m
     $torna = $tornaSezione($p, (int) $a['sid'], '/pannello/' . $p['id'] . '/sezioni/' . (int) $a['sid']);
     try {
         $plid = (int) ($_POST['place_id'] ?? 0) ?: null;
-        $plid = Properties::savePlace($aid, (int) $p['id'], (int) $a['sid'], $plid, $p['default_locale'], true, $_POST);
+        $in = $_POST;
+        // Dal link di Google Maps: coordinate, e se mancano il nome e i minuti a piedi (una stima).
+        $mapsUrl = trim((string) ($in['maps_url'] ?? ''));
+        $primaUrl = $plid ? (string) Db::val('SELECT maps_url FROM places WHERE id = ?', [$plid], '') : '';
+        if (Migrator::columnExists('places', 'lat') && ($mapsUrl !== $primaUrl || !$plid)) {
+            $m = Mappe::leggi($mapsUrl);
+            $in['lat'] = $m['lat']; $in['lng'] = $m['lng'];
+            if (trim((string) ($in['name'] ?? '')) === '' && $m['name'] !== '') $in['name'] = $m['name'];
+            [$plat, $plng] = Mappe::struttura($p);
+            if ((int) ($in['walk_minutes'] ?? 0) === 0 && ($stima = Mappe::minutiAPiedi($plat, $plng, $m['lat'], $m['lng']))) $in['walk_minutes'] = $stima;
+        }
+        $plid = Properties::savePlace($aid, (int) $p['id'], (int) $a['sid'], $plid, $p['default_locale'], true, $in);
         if (($_FILES['foto']['error'] ?? 4) !== UPLOAD_ERR_NO_FILE) {
             if (!Entitlements::can($aid, 'photos')) throw new RuntimeException('Le immagini dei luoghi sono comprese dal piano Plus.');
             $mid = Media::storeImage($_FILES['foto'], $aid, (int) $p['id'], (string) ($_POST['name'] ?? ''), 'place');
@@ -257,6 +277,16 @@ $r->post('/pannello/{id}/sezioni/{sid}/luogo', function (array $a) use ($mia, $m
     } catch (NotFound) { http_response_code(404); View::out('pub/404', []); }
     catch (\Throwable $e) { Support::flash($messaggio($e, 'salva luogo'), 'err'); }
     Support::redirect($torna);
+});
+
+/* Il link di Google Maps incollato nella scheda di un luogo: nome, coordinate e
+   minuti a piedi stimati, per compilare il modulo mentre si scrive. */
+$r->post('/pannello/{id}/mappe', function (array $a) use ($mia) {
+    [, , $p] = $mia((int) $a['id']);
+    $m = Mappe::leggi((string) ($_POST['url'] ?? ''));
+    [$plat, $plng] = Mappe::struttura($p);
+    Support::json(['ok' => $m['lat'] !== null || $m['name'] !== '', 'name' => $m['name'], 'lat' => $m['lat'], 'lng' => $m['lng'],
+                   'walk_minutes' => Mappe::minutiAPiedi($plat, $plng, $m['lat'], $m['lng'])]);
 });
 
 $r->post('/pannello/{id}/sezioni/{sid}/luogo/{plid}/azione', function (array $a) use ($mia, $messaggio, $tornaSezione) {
@@ -558,6 +588,11 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
         Support::flash('I pagamenti non sono ancora attivi. La guida resta salvata in bozza: riprova più tardi.', 'err');
         Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
     }
+    // Prima del primo pagamento: i dati per la fattura (azienda o privato, P.IVA o codice fiscale, SDI o PEC).
+    if (!MHW\Fatturazione::completa($acc)) {
+        Support::flash('Prima del pagamento servono i dati di fatturazione: li compili una volta sola.', 'err');
+        Support::redirect('/account?torna=' . rawurlencode('/pannello/' . $p['id'] . '/procedura/pubblica') . '#fatturazione');
+    }
     $pkg = Db::one('SELECT * FROM packages WHERE id = ?', [$pv['package_id']]);
     $quantita = Plans::quantity($pv, (int) ($acc['intended_quantity'] ?? 1)) ?? (int) $pv['min_quantity'];
     $oid = Db::insert('orders', [
@@ -616,18 +651,47 @@ $r->get('/pannello/{id}/statistiche', function (array $a) use ($mia, $contesto) 
 });
 
 // ------------------------------------------------------ account e fatturazione
-$r->get('/account', function () use ($host) {
-    [$u, $acc] = $host();
+$paginaAccount = function (array $u, array $acc, array $extra = []): never {
     $ultimo = MHW\Subscriptions::latest((int) $acc['id']);
     $gov = Subscriptions::governingVersionId((int) $acc['id']);
-    View::out('host/account', [
+    // Dopo i dati di fatturazione si torna dove si era (la pubblicazione), solo dentro il pannello.
+    $torna = (string) ($_POST['torna'] ?? $_GET['torna'] ?? '');
+    View::out('host/account', $extra + [
         'user' => $u, 'acc' => $acc, 'sub' => Subscriptions::active((int) $acc['id']), 'ultimo' => $ultimo,
         'piano' => $gov ? Plans::version($gov) : null,
         'ordini' => Db::all('SELECT o.*, pk.name AS package FROM orders o JOIN package_versions pv ON pv.id = o.package_version_id
                              JOIN packages pk ON pk.id = pv.package_id WHERE o.account_id = ? ORDER BY o.id DESC LIMIT 10', [$acc['id']]),
         'portale' => Stripe::enabled() && Config::get('stripe')['customer_portal'] && $acc['stripe_customer_id'] !== '',
+        'fatt' => $acc, 'erroriFatt' => [], 'torna' => preg_match('#^/pannello/\d+/procedura/pubblica$#', $torna) ? $torna : '',
         'nav' => 'account',
     ], 'layout/cms');
+    exit;
+};
+
+$r->get('/account', function () use ($host, $paginaAccount) {
+    [$u, $acc] = $host();
+    $paginaAccount($u, $acc);
+});
+
+/* Dati di fatturazione: si controllano qui (partita IVA, codice fiscale, SDI o PEC)
+   e, se il cliente Stripe esiste già, si aggiornano anche lì. */
+$r->post('/account/fatturazione', function () use ($host, $paginaAccount) {
+    [$u, $acc] = $host();
+    [$dati, $errori] = MHW\Fatturazione::valida($_POST);
+    if ($errori) $paginaAccount($u, $acc, ['fatt' => $dati + $acc, 'erroriFatt' => $errori, 'apriFatt' => true]);
+    Db::update('accounts', $dati, 'id = :aid', ['aid' => $acc['id']]);
+    Auth::audit('account.billing', (int) $u['id'], ['account_id' => (int) $acc['id']]);
+    if (Stripe::enabled()) {
+        try { Stripe::syncCustomer($dati + $acc); }
+        catch (\Throwable $e) { Log::exception($e, 'dati di fatturazione su Stripe'); }
+    }
+    $torna = (string) ($_POST['torna'] ?? '');
+    if (preg_match('#^/pannello/\d+/procedura/pubblica$#', $torna)) {
+        Support::flash('Dati di fatturazione salvati. Ora puoi pubblicare.');
+        Support::redirect($torna);
+    }
+    Support::flash('Dati di fatturazione salvati.');
+    Support::redirect('/account#fatturazione');
 });
 
 $r->post('/account/rinnovo', function () use ($host) {

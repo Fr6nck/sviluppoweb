@@ -91,6 +91,18 @@ final class Entitlements
      *
      * @return array<int,string> frasi pronte da mostrare, vuoto se è tutto in regola
      */
+    /** Quante foto (o quanti PDF) ci sono dentro le righe delle sezioni attive. */
+    private static function mediaNelleRighe(int $propertyId, string $kind): int
+    {
+        $ids = [];
+        foreach (Db::all('SELECT kind, data FROM sections WHERE property_id = ? AND is_active = 1', [$propertyId]) as $s) {
+            $ids = array_merge($ids, SectionCatalog::mediaIds($s['kind'], json_decode((string) $s['data'], true) ?: []));
+        }
+        if (!$ids) return 0;
+        $ids = array_map('intval', array_unique($ids));
+        return (int) Db::val('SELECT COUNT(*) FROM media WHERE kind = ? AND id IN (' . implode(',', $ids) . ')', [$kind], 0);
+    }
+
     public static function violations(int $accountId, int $propertyId): array
     {
         $fuori = [];
@@ -112,10 +124,12 @@ final class Entitlements
             $img = (int) Db::val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_active = 1 AND media_id IS NOT NULL', [$propertyId], 0)
                  + (int) Db::val('SELECT COUNT(*) FROM places pl JOIN sections s ON s.id = pl.section_id
                                   WHERE s.property_id = ? AND s.is_active = 1 AND pl.media_id IS NOT NULL', [$propertyId], 0);
+            $img += self::mediaNelleRighe($propertyId, 'image');
             if ($img) $fuori[] = "Ci sono $img immagini dentro le sezioni: il piano non le comprende. Toglile, oppure passa a Plus.";
         }
         if (!self::can($accountId, 'pdf')) {
-            $pdf = (int) Db::val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_active = 1 AND pdf_media_id IS NOT NULL', [$propertyId], 0);
+            $pdf = (int) Db::val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_active = 1 AND pdf_media_id IS NOT NULL', [$propertyId], 0)
+                 + self::mediaNelleRighe($propertyId, 'pdf');
             if ($pdf) $fuori[] = "Ci sono $pdf PDF dentro le sezioni: il piano non li comprende. Toglili, oppure passa a Plus.";
         }
         if (!self::can($accountId, 'profile_image')) {

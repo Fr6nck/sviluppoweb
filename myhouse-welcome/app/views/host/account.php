@@ -64,6 +64,59 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
     <?php endif; ?>
   </section>
 
+  <?php /* Dati di fatturazione: obbligatori prima del primo pagamento. Vanno a Stripe con il cliente. */
+        $fatt = $fatt ?? $acc; $erroriFatt = $erroriFatt ?? []; $torna = $torna ?? '';
+        $fv = fn(string $k) => Support::e((string) ($fatt[$k] ?? ''));
+        $completi = MHW\Fatturazione::completa($acc);
+        $campoF = function (string $k, string $et, string $tipo = 'text', string $extra = '', string $aiuto = '') use ($fv, $erroriFatt): string {
+            $err = $erroriFatt[$k] ?? '';
+            $desc = trim(($aiuto !== '' ? 'f-' . $k . '-aiuto ' : '') . ($err !== '' ? 'f-' . $k . '-err' : ''));
+            return '<div class="field" style="margin:0"><label for="f-' . $k . '">' . $et . '</label>'
+                . ($aiuto !== '' ? '<p class="help" id="f-' . $k . '-aiuto" style="margin:0 0 6px">' . $aiuto . '</p>' : '')
+                . '<input id="f-' . $k . '" name="' . $k . '" type="' . $tipo . '" value="' . $fv($k) . '" ' . $extra
+                . ($desc !== '' ? ' aria-describedby="' . $desc . '"' : '') . ($err !== '' ? ' aria-invalid="true"' : '') . '>'
+                . ($err !== '' ? '<p class="campo-errore" id="f-' . $k . '-err">' . Support::e($err) . '</p>' : '') . '</div>';
+        }; ?>
+  <section class="panel stack" id="fatturazione">
+    <div class="spread spread--mid">
+      <span class="kicker">Dati di fatturazione</span>
+      <?php if ($completi && ($acc['billing_type'] ?? '') !== ''): ?><span class="badge badge--pine">Completi</span>
+      <?php else: ?><span class="badge badge--ochre">Servono prima del pagamento</span><?php endif; ?>
+    </div>
+    <?php if ($erroriFatt): ?><p class="note note--err" role="alert">Controlla i campi segnati qui sotto.</p><?php endif; ?>
+    <details class="altri-dettagli" style="border:0;padding:0" <?= $erroriFatt || !empty($apriFatt) || $torna !== '' || !$completi ? 'open' : '' ?>>
+      <summary><?= ($acc['billing_name'] ?? '') !== '' ? Support::e($acc['billing_name']) . ' · ' . Support::e(($acc['vat'] ?? '') ?: ($acc['cf'] ?? '')) : 'Compila i dati per la fattura' ?></summary>
+      <form method="post" action="<?= b() ?>/account/fatturazione" class="stack" style="margin-top:14px" novalidate><?= Csrf::field() ?>
+        <?php if ($torna !== ''): ?><input type="hidden" name="torna" value="<?= Support::e($torna) ?>"><?php endif; ?>
+        <fieldset class="fieldset" style="margin:0">
+          <legend>A chi intestiamo la fattura</legend>
+          <div class="scelte scelte--riga">
+            <?php foreach (MHW\Fatturazione::TIPI as $k => $et): ?>
+              <label class="scelta"><input type="radio" name="billing_type" value="<?= $k ?>" <?= ($fatt['billing_type'] ?? '') === $k ? 'checked' : '' ?>
+                <?= isset($erroriFatt['billing_type']) ? 'aria-invalid="true" aria-describedby="f-billing_type-err"' : '' ?>><span class="scelta__testo"><?= $et ?></span></label>
+            <?php endforeach; ?>
+          </div>
+          <?php if (isset($erroriFatt['billing_type'])): ?><p class="campo-errore" id="f-billing_type-err"><?= Support::e($erroriFatt['billing_type']) ?></p><?php endif; ?>
+        </fieldset>
+        <?= $campoF('billing_name', 'Intestatario', 'text', 'maxlength="160" autocomplete="organization"', 'Ragione sociale, oppure nome e cognome.') ?>
+        <div class="grid grid-2">
+          <?= $campoF('vat', 'Partita IVA', 'text', 'maxlength="13" inputmode="numeric" autocomplete="off"', 'Obbligatoria per aziende e professionisti. 11 cifre.') ?>
+          <?= $campoF('cf', 'Codice fiscale', 'text', 'maxlength="16" autocomplete="off" style="text-transform:uppercase"', 'Obbligatorio per i privati. 16 caratteri, o 11 cifre per le società.') ?>
+          <?= $campoF('sdi', 'Codice destinatario SDI', 'text', 'maxlength="7" autocomplete="off" style="text-transform:uppercase"', '7 caratteri. Per aziende e professionisti: questo oppure la PEC.') ?>
+          <?= $campoF('pec', 'PEC', 'email', 'maxlength="190" autocomplete="off"') ?>
+        </div>
+        <?= $campoF('billing_address', 'Indirizzo', 'text', 'maxlength="255" autocomplete="street-address"', 'Via e numero civico.') ?>
+        <div class="grid grid-3">
+          <?= $campoF('billing_postal', 'CAP', 'text', 'maxlength="5" inputmode="numeric" autocomplete="postal-code"') ?>
+          <?= $campoF('billing_city', 'Città', 'text', 'maxlength="120" autocomplete="address-level2"') ?>
+          <?= $campoF('billing_province', 'Provincia', 'text', 'maxlength="2" autocomplete="address-level1" style="text-transform:uppercase"', 'Sigla, per esempio PG.') ?>
+        </div>
+        <p class="small muted">Le fatture le emette Stripe con questi dati. Non li usiamo per nient'altro.</p>
+        <div class="actions"><button class="btn"><?= $torna !== '' ? 'Salva e torna alla pubblicazione' : 'Salva i dati di fatturazione' ?></button></div>
+      </form>
+    </details>
+  </section>
+
   <section class="panel stack">
     <span class="kicker">Il tuo account</span>
     <p><?= Support::e($user['name']) ?> · <?= Support::e($user['email']) ?>

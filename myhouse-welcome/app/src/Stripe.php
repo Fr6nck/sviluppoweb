@@ -44,17 +44,34 @@ final class Stripe
         return $json;
     }
 
-    /** Il cliente Stripe dell'account, creato la prima volta e poi riusato. */
+    /**
+     * Il cliente Stripe dell'account, creato la prima volta e poi riusato.
+     * Porta con sé i dati di fatturazione: intestatario e indirizzo, e come
+     * metadati partita IVA, codice fiscale, SDI e PEC (vat, cf, sdi, pec).
+     */
     public static function ensureCustomer(array $account, array $user): string
     {
-        if (($account['stripe_customer_id'] ?? '') !== '') return $account['stripe_customer_id'];
-        $c = self::call('POST', 'customers', [
+        $dati = Fatturazione::anagrafica($account) + Fatturazione::metadati($account);
+        if (($account['stripe_customer_id'] ?? '') !== '') {
+            self::syncCustomer($account);
+            return $account['stripe_customer_id'];
+        }
+        $c = self::call('POST', 'customers', $dati + [
             'email' => $user['email'], 'name' => $user['name'],
             'metadata[account_id]' => (string) $account['id'],
             'preferred_locales[0]' => 'it',
-        ], 'mhw-customer-account-' . $account['id']);
+        ], 'mhw-customer-account-' . $account['id'] . ($dati ? '-' . substr(md5(serialize($dati)), 0, 10) : ''));
         Db::update('accounts', ['stripe_customer_id' => $c['id']], 'id = :aid', ['aid' => $account['id']]);
         return $c['id'];
+    }
+
+    /** Aggiorna i dati di fatturazione sul cliente Stripe che esiste già. */
+    public static function syncCustomer(array $account): void
+    {
+        $dati = Fatturazione::anagrafica($account) + Fatturazione::metadati($account);
+        if (!$dati || ($account['stripe_customer_id'] ?? '') === '') return;
+        self::call('POST', 'customers/' . rawurlencode($account['stripe_customer_id']), $dati,
+                   'mhw-customer-dati-' . $account['id'] . '-' . substr(md5(serialize($dati)), 0, 10));
     }
 
     /** La sessione di Checkout per un abbonamento annuale. Restituisce l'URL di Stripe. */

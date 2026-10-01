@@ -100,6 +100,10 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
           <div class="note" role="status"><span>Per attivare l'abbonamento conferma prima la tua email (<?= Support::e($user['email']) ?>).</span></div>
           <form method="post" action="<?= b() ?>/verifica/invia" style="margin:0"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm">Mandami di nuovo l'email</button></form>
         <?php endif; ?>
+        <?php if (!MHW\Fatturazione::completa($acc)): ?>
+          <div class="note" role="status"><span>Prima del pagamento servono i dati di fatturazione (P.IVA o codice fiscale, SDI o PEC).
+            <a href="<?= b() ?>/account?torna=<?= rawurlencode('/pannello/' . $pid . '/procedura/pubblica') ?>#fatturazione">Compilali ora</a>.</span></div>
+        <?php endif; ?>
       <?php else: ?>
         <p>Scegli il piano con cui pubblicare. <a href="<?= b() ?>/piano">Vedi i piani</a></p>
       <?php endif; ?>

@@ -9,9 +9,13 @@
      'sub'     => [nome => [tipo, etichetta, aiuto, 'options' => […]]],
      'rows'    => righe già salvate (ognuna con 'id' e i sottocampi),
      'add'     => testo del bottone «Aggiungi…», 'max' => quante righe al massimo,
-   ] */
-use MHW\{Support, Icon};
-$r = $rip + ['help' => '', 'rows' => [], 'add' => 'Aggiungi', 'max' => 30];
+     'presets' => [etichetta => valori] righe pronte da aggiungere con un tocco (emergenze),
+     'foto', 'pdf' => se il piano comprende foto e PDF nelle righe,
+   ]
+   Foto e PDF di una riga: l'id del file salvato viaggia nel campo nascosto, il
+   file nuovo in rip_file[campo][riga][sottocampo], «Togli» in rip_togli[…]. */
+use MHW\{Support, Icon, Media};
+$r = $rip + ['help' => '', 'rows' => [], 'add' => 'Aggiungi', 'max' => 30, 'presets' => [], 'foto' => true, 'pdf' => true];
 $nome = $r['name'];
 $domId = 'rip-' . preg_replace('/[^a-z0-9]+/i', '-', $nome);
 $giorni = [1 => 'Lun', 2 => 'Mar', 3 => 'Mer', 4 => 'Gio', 5 => 'Ven', 6 => 'Sab', 7 => 'Dom'];
@@ -28,7 +32,31 @@ $riga = function (string $k, array $v) use ($r, $nome, $domId, $giorni): string 
         $id = $domId . '-' . $k . '-' . $sn;
         $val = $v[$sn] ?? ($tipo === 'days' ? [] : '');
         $help = $aiuto !== '' ? '<p class="help" style="margin:0 0 6px">' . Support::e($aiuto) . '</p>' : '';
-        if ($tipo === 'check') {
+        if ($tipo === 'image' || $tipo === 'pdf') {
+            $mid = (int) $val; $puoi = $tipo === 'image' ? $r['foto'] : $r['pdf'];
+            if (!$mid && !$puoi) continue;
+            $sub = '[' . Support::e($nome) . '][' . $k . '][' . $sn . ']';
+            $h .= '<div class="field rip__media" style="margin:0"><span class="label">' . Support::e($et) . '</span>'
+                . '<input type="hidden" name="' . $n . '" value="' . ($mid ?: '') . '">';
+            if ($mid) {
+                $url = $tipo === 'image' ? Media::url($mid) : null;
+                $file = $tipo === 'pdf' ? ((Media::row($mid)['original_name'] ?? '') ?: 'Documento') : '';
+                $h .= '<div class="rip__file">' . ($url ? '<img src="' . Support::e($url) . '" alt="">' : Icon::svg('doc', 22))
+                    . '<span class="small">' . Support::e($url ? 'Foto salvata' : $file) . '</span>'
+                    . '<label class="check rip__togli"><input type="checkbox" name="rip_togli' . $sub . '" value="1"> <span>Togli</span></label></div>';
+                if (!$puoi) $h .= '<p class="help">Il tuo piano non comprende ' . ($tipo === 'image' ? 'le foto' : 'i PDF') . ' nelle sezioni: toglilo prima di pubblicare.</p>';
+            }
+            if ($puoi) {
+                // Il selettore del browser parla la lingua del sistema: l'input vero resta (nascosto
+                // alla vista, non alla tastiera) e si mostra un bottone in italiano col nome scelto.
+                $h .= '<div class="rip__carica"><input class="drop__input" id="' . $id . '" type="file" name="rip_file' . $sub . '" accept="'
+                    . ($tipo === 'image' ? 'image/jpeg,image/png,image/webp' : 'application/pdf') . '" aria-describedby="' . $id . '-aiuto ' . $id . '-nome">'
+                    . '<label class="btn btn--ghost btn--sm" for="' . $id . '">' . ($mid ? 'Sostituisci' : 'Scegli ' . ($tipo === 'image' ? 'una foto' : 'un PDF')) . '</label>'
+                    . '<span class="small muted" id="' . $id . '-nome" data-rip-file-nome aria-live="polite">' . ($mid ? '' : 'Nessun file scelto') . '</span></div>'
+                    . '<p class="help" id="' . $id . '-aiuto">' . Support::e($aiuto) . ' ' . ($tipo === 'image' ? 'JPG, PNG o WebP.' : 'Solo PDF.') . ' Si carica col bottone Salva.</p>';
+            }
+            $h .= '</div>';
+        } elseif ($tipo === 'check') {
             $h .= '<label class="check rip__check"><input type="checkbox" name="' . $n . '" value="1"' . ($val ? ' checked' : '') . '> <span>' . Support::e($et) . '</span></label>';
         } elseif ($tipo === 'choice') {
             $h .= '<div class="field" style="margin:0"><label for="' . $id . '">' . Support::e($et) . '</label>' . $help . '<select id="' . $id . '" name="' . $n . '">';
@@ -42,7 +70,7 @@ $riga = function (string $k, array $v) use ($r, $nome, $domId, $giorni): string 
             $h .= '</div></fieldset>';
         } elseif ($tipo === 'textarea') {
             $h .= '<div class="field" style="margin:0"><label for="' . $id . '">' . Support::e($et) . '</label>' . $help
-                . '<textarea id="' . $id . '" name="' . $n . '" rows="2" maxlength="2000">' . Support::e((string) $val) . '</textarea></div>';
+                . '<textarea id="' . $id . '" name="' . $n . '" rows="' . (!empty($sd['lines']) ? 4 : 2) . '" maxlength="2000">' . Support::e((string) $val) . '</textarea></div>';
         } else {
             $t = ['url' => 'url', 'tel' => 'tel', 'time' => 'time'][$tipo] ?? 'text';
             $extra = $tipo === 'secret' ? ' autocomplete="off" spellcheck="false"' : ($tipo === 'url' ? ' placeholder="https://"' : '');
@@ -67,4 +95,12 @@ $riga = function (string $k, array $v) use ($r, $nome, $domId, $giorni): string 
   </div>
   <template data-rip-modello><?= $riga('__K__', []) ?></template>
   <button type="button" class="linkbtn" data-rip-aggiungi hidden><?= Icon::svg('plus', 15, 2) ?> <?= Support::e($r['add']) ?></button>
+  <?php if ($r['presets']): /* righe pronte: si aggiungono già compilate, poi si correggono */ ?>
+    <div class="suggerimenti" data-solo-js hidden>
+      <span class="small muted">Aggiungi al volo:</span>
+      <?php foreach ($r['presets'] as $et => $valori): ?>
+        <button type="button" class="chip-sugg" data-rip-preset="<?= Support::e(json_encode($valori, JSON_UNESCAPED_UNICODE)) ?>">+ <?= Support::e($et) ?></button>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
 </fieldset>

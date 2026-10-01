@@ -180,13 +180,18 @@ foreach ($snap['sections'] as $s) {
 <?php /* ------------------------------------------------ tutte le altre sezioni */ ?>
 <?php else: ?>
   <?php foreach (SectionCatalog::fields($kind) as $campo => [$tipo]): ?>
-    <?php if ($tipo === 'steps' && $lista($campo)): ?>
+    <?php if (in_array($tipo, ['repeater', 'checks', 'toggles', 'time'], true)): include __DIR__ . '/_righe.php'; ?>
+    <?php elseif ($tipo === 'steps' && $lista($campo)): ?>
       <div class="stack" style="margin-top:18px;gap:12px">
         <?php foreach ($lista($campo) as $i => $passo): ?>
           <div class="step"><span class="n"><?= $i + 1 ?></span><p style="white-space:pre-line"><?= Support::e($passo) ?></p></div>
         <?php endforeach; ?>
       </div>
-    <?php elseif ($tipo === 'list' && $lista($campo)): ?>
+    <?php elseif ($tipo === 'list' && $lista($campo)):
+          // In Servizi e Regole la lista viene dopo le dotazioni o le regole principali: ha il suo titolo.
+          $altro = ['services' => !empty($d['amenities']) || !empty($d['manuals']) ? 'other_amenities' : '',
+                    'rules' => !empty($d['flags']) ? 'other_rules' : ''][$kind] ?? ''; ?>
+      <?php if ($altro !== ''): ?><span class="kicker" style="display:block;margin-top:22px"><?= Support::e(I18n::t($loc, $altro)) ?></span><?php endif; ?>
       <ul class="lined" style="margin-top:14px">
         <?php foreach ($lista($campo) as $voce): ?><li><?= Support::e($voce) ?></li><?php endforeach; ?>
       </ul>
@@ -194,7 +199,12 @@ foreach ($snap['sections'] as $s) {
       <p style="margin-top:14px"><?php if (I18n::has($loc, $campo) || I18n::has('en', $campo)): ?><span class="kicker"><?= Support::e(I18n::t($loc, $campo)) ?></span><?php endif; ?>
         <span style="font-size:17px"><?= Support::e($val($campo)) ?></span></p>
     <?php elseif ($tipo === 'textarea' && $val($campo) !== ''): ?>
-      <?php if ($campo === 'note'): ?>
+      <?php if ($campo === 'ztl'): ?>
+        <div class="panel stack" style="margin-top:16px;gap:6px">
+          <span class="kicker"><?= Icon::svg('warning', 13) ?> <?= Support::e(I18n::t($loc, 'ztl')) ?></span>
+          <p style="white-space:pre-line;line-height:23px"><?= Support::e($val($campo)) ?></p>
+        </div>
+      <?php elseif ($campo === 'note'): ?>
         <p class="note" style="margin-top:16px"><?= Icon::svg('info', 19) ?><span style="white-space:pre-line"><?= Support::e($val($campo)) ?></span></p>
       <?php else: ?>
         <p style="margin-top:16px;font-size:16px;line-height:24px;white-space:pre-line"><?= Support::e($val($campo)) ?></p>

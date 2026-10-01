@@ -523,6 +523,147 @@ $anna->post("/pannello/$pid/sezioni/{$ids['wifi']}", ['networks' => [['id' => $r
 $r = $anna->get("/pannello/$pid/anteprima/{$ids['wifi']}?l=en");
 prova('R4 · tolta una rete, sparisce anche dalla traduzione', !str_contains($r['body'], 'Annex') && str_contains($r['body'], 'Main house') && substr_count($r['body'], 'data:image/png') === 1);
 
+// ============================================== FASE 3 · BLOCCO B
+capitolo('Fase 3 · sezioni strutturate, scheda luogo da Maps');
+// Regole (Anna, Essential): interruttori, orari del silenzio, regole aggiuntive.
+$r = $anna->get("/pannello/$pid/sezioni/{$ids['rules']}");
+prova('R5 · regole: per ogni regola Ammesso / Non ammesso / Non indicato, con legenda', pulita($r) && substr_count($r['body'], 'class="interruttore"') === 4
+      && str_contains($r['body'], '<legend class="interruttore__nome">Fumo</legend>') && str_contains($r['body'], 'name="flags[pets]" value="" checked')
+      && str_contains($r['body'], 'type="time"'));
+$anna->post("/pannello/$pid/sezioni/{$ids['rules']}", ['flags' => ['smoking' => 'no', 'pets' => 'si', 'parties' => '', 'visitors' => 'forse', 'altro' => 'si'],
+    'quiet_from' => '22:00', 'quiet_to' => '8.00', 'items' => ['Niente scarpe in casa.']]);
+$rd = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$ids['rules']]), true);
+prova('R5 · salvate solo le regole note, con sì o no; orari normalizzati', ($rd['flags'] ?? null) === ['smoking' => 'no', 'pets' => 'si']
+      && $rd['quiet_from'] === '22:00' && $rd['quiet_to'] === '08:00', json_encode($rd));
+$r = $anna->get("/pannello/$pid/anteprima/{$ids['rules']}");
+prova('R5 · guida: Vietato fumare, Animali ammessi, silenzio, «Altre regole»', str_contains($r['body'], 'Vietato fumare') && str_contains($r['body'], 'Animali ammessi')
+      && !str_contains($r['body'], 'Niente feste') && str_contains($r['body'], 'Silenzio dalle 22:00 alle 08:00') && str_contains($r['body'], 'Altre regole')
+      && str_contains($r['body'], 'Niente scarpe in casa.'));
+prova('R5 · …e in inglese', str_contains($anna->get("/pannello/$pid/anteprima/{$ids['rules']}?l=en")['body'], 'No smoking'));
+
+// Parcheggio (Anna): più possibilità e ZTL; le foto nelle righe non sono nel piano Essential.
+$r = $anna->get("/pannello/$pid/sezioni/{$ids['parking']}");
+prova('R5 · parcheggio: righe ripetibili, senza caricamento foto (Essential)', str_contains($r['body'], 'Aggiungi un parcheggio') && !str_contains($r['body'], 'name="rip_file[options]')
+      && str_contains($r['body'], 'ZTL'));
+$r = $anna->post("/pannello/$pid/sezioni/{$ids['parking']}", ['options[0][id]' => '', 'options[0][type]' => 'privato', 'options[0][name]' => 'Posto in cortile',
+    'options[0][address]' => 'Via San Francesco 12', 'options[0][photo]' => '', 'rip_file[options][0][photo]' => file_(png(), 'image/png'),
+    'ztl' => 'Il centro è ZTL dalle 8 alle 20.']);
+prova('R5 · foto in una riga rifiutata dal server senza il piano Plus', pulita($r) && str_contains($r['body'], 'comprese dal piano Plus')
+      && (int) val("SELECT COUNT(*) FROM media WHERE account_id = ?", [$acc['id']]) === 0);
+$fotoAltrui = (int) val('SELECT media_id FROM sections WHERE media_id IS NOT NULL ORDER BY id LIMIT 1');
+$anna->post("/pannello/$pid/sezioni/{$ids['parking']}", ['options' => [
+    ['id' => '', 'type' => 'privato', 'name' => 'Posto in cortile', 'address' => 'Via San Francesco 12', 'photo' => (string) $fotoAltrui],
+    ['id' => '', 'type' => 'pagamento', 'name' => 'Parcheggio del porto', 'cost' => '1 € l\'ora', 'instructions' => 'Strisce blu.'],
+    ['id' => '', 'type' => '', 'name' => '', 'address' => '']], 'ztl' => 'Il centro è ZTL dalle 8 alle 20.']);
+$pk = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$ids['parking']]), true);
+prova('R5 · due parcheggi (la riga vuota scartata); la foto di un altro account non si aggancia', count($pk['options'] ?? []) === 2 && ($pk['options'][0]['photo'] ?? 'x') === ''
+      && $pk['options'][1]['type'] === 'pagamento', json_encode($pk));
+// Il parcheggio di Anna è disattivato (limite di Essential): per vederlo si scambia per un momento con «Dove mangiare».
+$anna->post("/pannello/$pid/sezioni/{$ids['eat']}/azione", ['fai' => 'disattiva']);
+$anna->post("/pannello/$pid/sezioni/{$ids['parking']}/azione", ['fai' => 'attiva']);
+$r = $anna->get("/pannello/$pid/anteprima/{$ids['parking']}");
+$anna->post("/pannello/$pid/sezioni/{$ids['parking']}/azione", ['fai' => 'disattiva']);
+$anna->post("/pannello/$pid/sezioni/{$ids['eat']}/azione", ['fai' => 'attiva']);
+prova('R5 · guida: tipo, nome, costo, istruzioni, Maps e ZTL', str_contains($r['body'], 'Posto privato') && str_contains($r['body'], 'Parcheggio a pagamento')
+      && str_contains($r['body'], 'Parcheggio del porto') && str_contains($r['body'], '1 € l&#039;ora') && str_contains($r['body'], 'ZTL — zona a traffico limitato')
+      && str_contains($r['body'], 'query=Via+San+Francesco+12') === false && str_contains($r['body'], 'Via%20San%20Francesco%2012'));
+
+// Elena (Plus): servizi con foto e PDF nelle istruzioni, rifiuti, emergenze, come arrivare, luoghi da Maps.
+$eacc = (int) val("SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = 'elena@prova.test'");
+foreach (['services', 'waste', 'emergency', 'eat'] as $k) $elena->post("/pannello/$epid/sezioni", ['kind' => $k]);
+// La guida di Elena è in inglese (lingua principale); le prove leggono anche italiano, tedesco e francese.
+$elena->modulo("/pannello/$epid/lingue", "/pannello/$epid/lingue", ['locali' => ['en', 'it', 'de', 'fr']]);
+$es = []; foreach (['services', 'waste', 'emergency', 'eat', 'arrival'] as $k) $es[$k] = (int) val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$epid, $k]);
+$r = $elena->get("/pannello/$epid/sezioni/{$es['services']}");
+prova('R5 · servizi: 12 dotazioni da spuntare e istruzioni con foto e PDF per riga', substr_count($r['body'], 'name="amenities[]" value="') === 13
+      && str_contains($r['body'], 'name="rip_file[manuals][0][photo]"') && str_contains($r['body'], 'name="rip_file[manuals][0][pdf]"')
+      && str_contains($r['body'], 'name="rip_file[manuals][__K__][photo]"'));
+$elena->post("/pannello/$epid/sezioni/{$es['services']}", ['amenities[0]' => '', 'amenities[1]' => 'washer', 'amenities[2]' => 'ac', 'amenities[3]' => 'jacuzzi',
+    'manuals[0][id]' => '', 'manuals[0][title]' => 'La caldaia', 'manuals[0][steps]' => "Apri lo sportello.\nPremi il tasto rosso.", 'manuals[0][photo]' => '', 'manuals[0][pdf]' => '',
+    'rip_file[manuals][0][photo]' => file_(png(), 'image/png'), 'rip_file[manuals][0][pdf]' => file_(pdfVero(), 'application/pdf', 'caldaia.pdf')]);
+$sv = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$es['services']]), true);
+$man = $sv['manuals'][0] ?? [];
+prova('R5 · dotazioni note salvate; foto e PDF caricati nella riga', ($sv['amenities'] ?? null) === ['washer', 'ac'] && (int) ($man['photo'] ?? 0) > 0 && (int) ($man['pdf'] ?? 0) > 0
+      && val('SELECT kind FROM media WHERE id = ?', [(int) $man['photo']]) === 'image' && val('SELECT kind FROM media WHERE id = ?', [(int) $man['pdf']]) === 'pdf', json_encode($sv));
+$r = $elena->get("/pannello/$epid/anteprima/{$es['services']}?l=it");
+prova('R5 · guida: griglia delle dotazioni con icone, istruzione con passi numerati, foto e PDF', str_contains($r['body'], 'class="dotazioni-ospite"')
+      && str_contains($r['body'], 'Lavatrice') && str_contains($r['body'], 'Aria condizionata') && str_contains($r['body'], 'La caldaia')
+      && str_contains($r['body'], '<span class="n">2</span><p>Premi il tasto rosso.</p>') && str_contains($r['body'], 'Apri il PDF'));
+prova('R5 · …in tedesco le dotazioni tradotte', str_contains($elena->get("/pannello/$epid/anteprima/{$es['services']}?l=de")['body'], 'Waschmaschine'));
+$r = $elena->get("/pannello/$epid/sezioni/{$es['services']}");
+prova('R5 · editor: la foto salvata si vede, con «Togli» e «Sostituisci»', str_contains($r['body'], 'class="rip__file"') && str_contains($r['body'], 'name="rip_togli[manuals][0][photo]"'));
+$fotoMan = (int) $man['photo']; $pdfMan = (int) $man['pdf'];
+$elena->post("/pannello/$epid/sezioni/{$es['services']}", ['amenities' => [''], 'manuals' => [['id' => $man['id'], 'title' => 'La caldaia', 'steps' => 'Apri.', 'photo' => (string) $fotoMan, 'pdf' => (string) $pdfMan]],
+    'rip_togli' => ['manuals' => [0 => ['photo' => '1']]]]);
+$sv = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$es['services']]), true);
+prova('R5 · «Togli» la foto: il file si cancella, il PDF resta; tolte tutte le spunte', ($sv['amenities'] ?? null) === [] && ($sv['manuals'][0]['photo'] ?? 'x') === ''
+      && !val('SELECT id FROM media WHERE id = ?', [$fotoMan]) && val('SELECT id FROM media WHERE id = ?', [$pdfMan]));
+$elena->post("/pannello/$epid/sezioni/{$es['services']}", ['manuals' => [['id' => '', 'title' => '', 'steps' => '', 'photo' => '', 'pdf' => '']]]);
+prova('R5 · tolta la riga, anche il suo PDF si cancella', !val('SELECT id FROM media WHERE id = ?', [$pdfMan]));
+
+// Rifiuti: «Oggi si butta» secondo il giorno di oggi in Italia.
+$oggi = (int) (new DateTimeImmutable('now', new DateTimeZone('Europe/Rome')))->format('N');
+$domani = $oggi % 7 + 1;
+$elena->post("/pannello/$epid/sezioni/{$es['waste']}", ['bins' => [
+    ['id' => '', 'type' => 'umido', 'days' => [(string) $oggi], 'color' => 'marrone', 'label' => '', 'where' => 'In cortile'],
+    ['id' => '', 'type' => 'altro', 'days' => [(string) $domani, '9'], 'color' => '', 'label' => 'Olio esausto', 'where' => ''],
+    ['id' => '', 'type' => 'altro', 'color' => '', 'label' => '', 'where' => '']]]);
+$wd = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$es['waste']]), true);
+prova('R5 · rifiuti: due righe; giorni validi; la riga lasciata su «Altro» senza altro scartata', count($wd['bins'] ?? []) === 2 && $wd['bins'][1]['days'] === [$domani], json_encode($wd));
+$r = $elena->get("/pannello/$epid/anteprima/{$es['waste']}?l=it");
+$nomeGiorno = ['', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato', 'domenica'];
+prova('R5 · guida: «Oggi si butta: Umido», giorni per esteso, colore con etichetta', str_contains($r['body'], 'Oggi si butta: Umido')
+      && str_contains($r['body'], $nomeGiorno[$domani]) && str_contains($r['body'], 'aria-label="Colore del bidone: marrone"') && str_contains($r['body'], 'Olio esausto'));
+prova('R5 · …in inglese', str_contains($elena->get("/pannello/$epid/anteprima/{$es['waste']}?l=en")['body'], 'Today&#039;s collection: Food waste'));
+
+// Emergenze: righe pronte e «Chiama» per riga.
+$r = $elena->get("/pannello/$epid/sezioni/{$es['emergency']}");
+prova('R5 · emergenze: righe pronte (112, guardia medica, farmacia, veterinario) nella lingua della guida', str_contains($r['body'], 'data-rip-preset=') && str_contains($r['body'], '+ Out-of-hours doctor')
+      && str_contains($r['body'], '+ Vet<') && str_contains($r['body'], '&quot;phone&quot;:&quot;112&quot;'));
+$elena->post("/pannello/$epid/sezioni/{$es['emergency']}", ['emergency_number' => '112', 'contacts' => [
+    ['id' => '', 'name' => 'Guardia medica', 'phone' => '075 123456', 'note' => 'Notti e festivi'], ['id' => '', 'name' => 'Farmacia di turno', 'phone' => '', 'note' => 'Turni sulla porta']]]);
+$r = $elena->get("/pannello/$epid/anteprima/{$es['emergency']}?l=it");
+prova('R5 · guida: un «Chiama» per riga con il numero, accessibile', str_contains($r['body'], 'href="tel:075123456"') && str_contains($r['body'], 'aria-label="Chiama Guardia medica"')
+      && str_contains($r['body'], 'Farmacia di turno') && substr_count($r['body'], 'numero__chiama') === 1);
+
+// Come arrivare: una scheda per mezzo; il link di Maps dà le coordinate della casa.
+$elena->post("/pannello/$epid/sezioni/{$es['arrival']}", ['address' => 'Via Roma 1, 06059 Todi', 'maps_url' => 'https://www.google.com/maps/place/Todi/@42.7810,12.4070,17z',
+    'routes' => [['id' => '', 'mode' => 'auto', 'steps' => "Uscita Todi.\nSegui per il centro."], ['id' => '', 'mode' => 'treno', 'steps' => 'Stazione di Ponte Rio, poi autobus.']]]);
+prova('R6 · il link di Maps di «Come arrivare» dà le coordinate della struttura', abs((float) val('SELECT lat FROM properties WHERE id = ?', [$epid]) - 42.781) < 0.0001);
+$r = $elena->get("/pannello/$epid/anteprima/{$es['arrival']}?l=it");
+prova('R5 · guida: una scheda per mezzo, con i passi numerati', substr_count($r['body'], 'class="panel manuale"') === 2 && str_contains($r['body'], 'In auto') && str_contains($r['body'], 'In treno')
+      && str_contains($r['body'], '<span class="n">2</span><p>Segui per il centro.</p>'));
+prova('R5 · …in francese', str_contains($elena->get("/pannello/$epid/anteprima/{$es['arrival']}?l=fr")['body'], 'En voiture'));
+
+// Scheda luogo: il link di Google Maps per primo; nome e minuti a piedi dal link.
+$r = $elena->get("/pannello/$epid/sezioni/{$es['eat']}");
+$posMaps = strpos($r['body'], 'Incolla il link di Google Maps'); $posNome = strpos($r['body'], 'for="pl-name"'); $posAltri = strpos($r['body'], 'Altri dettagli');
+prova('R6 · modulo: prima il link, poi nome, categoria, perché lo consigli, etichetta; il resto in «Altri dettagli» chiuso',
+      $posMaps !== false && $posMaps < $posNome && $posNome < strpos($r['body'], 'Perché lo consigli') && strpos($r['body'], 'for="pl-badge"') < $posAltri
+      && $posAltri < strpos($r['body'], 'for="pl-desc"') && $posAltri < strpos($r['body'], 'for="pl-walk"') && str_contains($r['body'], '<details class="altri-dettagli">')
+      && str_contains($r['body'], 'Stima, modificabile'));
+$link = 'https://www.google.com/maps/place/Trattoria+di+Prova/@42.7830,12.4100,17z/data=!4m6!3m5!8m2!3d42.7832!4d12.4098';
+$j = json_decode($elena->post("/pannello/$epid/mappe", ['url' => $link])['body'], true);
+prova('R6 · dal link: nome, coordinate e minuti a piedi stimati', ($j['name'] ?? '') === 'Trattoria di Prova' && abs(($j['lat'] ?? 0) - 42.7832) < 0.00001 && ($j['walk_minutes'] ?? 0) >= 3 && ($j['walk_minutes'] ?? 0) <= 6, json_encode($j));
+$j = json_decode($elena->post("/pannello/$epid/mappe", ['url' => 'https://example.com/maps/place/Finto/@1,1'])['body'], true);
+prova('R6 · un link che non è di Google non si legge (né si segue)', ($j['ok'] ?? true) === false && ($j['name'] ?? 'x') === '');
+$j = json_decode($elena->post("/pannello/$epid/mappe", ['url' => 'https://maps.app.goo.gl/nonEsiste'])['body'], true);
+prova('R6 · link breve che non porta da nessuna parte: nessun errore, campi vuoti', is_array($j) && ($j['ok'] ?? true) === false);
+prova('R6 · la struttura di un altro non si interroga', $anna->post("/pannello/$epid/mappe", ['url' => $link])['code'] === 404);
+$elena->post("/pannello/$epid/sezioni/{$es['eat']}/luogo", ['place_id' => '0', 'maps_url' => $link, 'name' => '', 'category' => 'Trattoria', 'note' => 'La torta al testo.', 'badge' => '']);
+$pl = riga('SELECT * FROM places WHERE section_id = ?', [$es['eat']]);
+prova('R6 · senza nome il luogo prende quello del link, con coordinate e minuti stimati', $pl && $pl['name'] === 'Trattoria di Prova' && abs((float) $pl['lat'] - 42.7832) < 0.00001
+      && (int) $pl['walk_minutes'] >= 3 && (int) $pl['walk_minutes'] <= 6, json_encode($pl));
+$elena->post("/pannello/$epid/sezioni/{$es['eat']}/luogo", ['place_id' => $pl['id'], 'maps_url' => $link, 'name' => 'Trattoria di Prova', 'walk_minutes' => '12']);
+prova('R6 · la stima si corregge a mano e resta', (int) val('SELECT walk_minutes FROM places WHERE id = ?', [$pl['id']]) === 12);
+
+// La conversione delle voci «una per riga» (usata da migrazione 011 e guide pubblicate).
+$conv = shell_exec('php -r ' . escapeshellarg('spl_autoload_register(fn($c) => require "' . $DOVE . '/app/src/" . substr($c, 4) . ".php");
+    echo json_encode(MHW\Conversione::separaTelefono("Guardia medica: 075 123456 (notti e festivi)")), json_encode(MHW\Conversione::separaTelefono("Emergenze 112")),
+         json_encode(MHW\Conversione::sezione("waste", [], ["it" => ["items" => ["Umido martedì e venerdì"]]], "it")[0]["bins"][0]);'));
+prova('R5 · conversione: nome, telefono e nota separati; tipo e giorni riconosciuti', str_contains((string) $conv, '["Guardia medica","075 123456","notti e festivi"]')
+      && str_contains((string) $conv, '["Emergenze","112",""]') && str_contains((string) $conv, '"type":"umido","days":[2,5]'), (string) $conv);
+
 // ================================================================== ASPETTO
 capitolo('Aspetto e palette');
 $r = $anna->get("/pannello/$pid/aspetto");
@@ -571,8 +712,44 @@ prova('Link di verifica funziona', $r['code'] === 302 && val("SELECT email_verif
 $r = $anna->get(substr($link, strpos($link, '/verifica/')));
 prova('Il link di verifica vale una volta sola', $r['code'] === 200 && pulita($r));
 
+// Fase 3 · R7: prima del primo pagamento, i dati di fatturazione italiani.
+$r = $anna->modulo("/pannello/$pid/procedura/pubblica", "/pannello/$pid/pubblica", []);
+prova('Fase 3 · senza dati di fatturazione niente pagamento: si va all\'account', $r['code'] === 302 && str_contains($r['loc'], '/account?torna=')
+      && (int) val('SELECT COUNT(*) FROM orders WHERE account_id = ?', [$acc['id']]) === 0, $r['loc']);
+$r = $anna->segui($r);
+prova('…con il modulo aperto, ogni campo con la sua etichetta', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Dati di fatturazione')
+      && preg_match('#<details[^>]*open>\s*<summary>#', $r['body']) === 1
+      && count(array_filter(['vat', 'cf', 'sdi', 'pec', 'billing_postal', 'billing_province'], fn($k) => str_contains($r['body'], 'for="f-' . $k . '"'))) === 6);
+$fattura = ['billing_type' => 'azienda', 'billing_name' => 'Anna Prove srl', 'vat' => '12345678901', 'cf' => '', 'sdi' => 'AB12', 'pec' => '',
+            'billing_address' => 'Via delle Prove 1', 'billing_postal' => '0612', 'billing_city' => 'Perugia', 'billing_province' => 'Perugia',
+            'torna' => "/pannello/$pid/procedura/pubblica"];
+$r = $anna->modulo("/account", '/account/fatturazione', $fattura);
+prova('Fase 3 · P.IVA con la cifra di controllo sbagliata, SDI corto, CAP e provincia rifiutati', $r['code'] === 200
+      && str_contains($r['body'], 'Questa partita IVA non torna') && str_contains($r['body'], 'Il codice destinatario è di 7 caratteri')
+      && str_contains($r['body'], 'Il CAP è di 5 cifre') && str_contains($r['body'], 'sigla di 2 lettere')
+      && substr_count($r['body'], 'aria-invalid="true"') >= 4 && val('SELECT vat FROM accounts WHERE id = ?', [$acc['id']]) === '');
+$r = $anna->modulo("/account", '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Anna Prova', 'cf' => 'RSSMRA85T10A562T',
+            'billing_address' => 'Via delle Prove 1', 'billing_postal' => '06121', 'billing_city' => 'Perugia', 'billing_province' => 'PG']);
+prova('…codice fiscale con il carattere di controllo sbagliato rifiutato', str_contains($r['body'], 'Questo codice fiscale non torna'));
+$r = $anna->modulo("/account", '/account/fatturazione', ['billing_type' => 'azienda', 'billing_name' => 'Anna Prove srl', 'vat' => '02945910541', 'cf' => '', 'sdi' => '', 'pec' => '',
+            'billing_address' => 'Via delle Prove 1', 'billing_postal' => '06121', 'billing_city' => 'Perugia', 'billing_province' => 'pg']);
+prova('…azienda senza SDI né PEC rifiutata', str_contains($r['body'], 'Serve il codice destinatario SDI oppure la PEC'));
+$fattura = ['billing_type' => 'azienda', 'billing_name' => 'Anna Prove srl', 'vat' => 'IT 02945910541', 'cf' => '', 'sdi' => 'm5uxcr1', 'pec' => '',
+            'billing_address' => 'Via delle Prove 1', 'billing_postal' => '06121', 'billing_city' => 'Perugia', 'billing_province' => 'pg',
+            'torna' => "/pannello/$pid/procedura/pubblica"];
+$r = $anna->modulo("/account?torna=/pannello/$pid/procedura/pubblica", '/account/fatturazione', $fattura);
+$af = riga('SELECT * FROM accounts WHERE id = ?', [$acc['id']]);
+prova('Fase 3 · dati validi salvati (normalizzati) e si torna alla pubblicazione', $r['code'] === 302 && str_ends_with($r['loc'], "/pannello/$pid/procedura/pubblica")
+      && $af['vat'] === '02945910541' && $af['sdi'] === 'M5UXCR1' && $af['billing_province'] === 'PG' && $af['billing_type'] === 'azienda');
+$r = $anna->modulo("/account", '/account/fatturazione', $fattura + ['torna' => 'https://altrove.example/']);
+prova('…«torna» porta solo dentro il pannello', $r['code'] === 302 && !str_contains($r['loc'], 'altrove'));
+
 $r = $anna->modulo("/pannello/$pid/procedura/pubblica", "/pannello/$pid/pubblica", []);
 prova('Pubblica → Stripe Checkout', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/'));
+$cli = array_values(array_filter(richiesteStripe(), fn($x) => $x['percorso'] === '/v1/customers'));
+$m = end($cli)['corpo']['metadata'] ?? [];
+prova('Fase 3 · cliente Stripe con P.IVA e SDI nei metadati, intestatario e indirizzo', ($m['vat'] ?? '') === '02945910541' && ($m['sdi'] ?? '') === 'M5UXCR1'
+      && !isset($m['pec']) && (end($cli)['corpo']['name'] ?? '') === 'Anna Prove srl' && (end($cli)['corpo']['address']['country'] ?? '') === 'IT');
 $ordine = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$acc['id']]);
 prova('Ordine in attesa, legato alla struttura', $ordine && $ordine['status'] === 'pending' && (int) $ordine['property_id'] === $pid && (int) $ordine['amount_cents'] === 8700);
 $cs = array_values(array_filter(richiesteStripe(), fn($x) => $x['percorso'] === '/v1/checkout/sessions'));
@@ -779,6 +956,9 @@ $link = linkPosta('carla@prova.test', 'verifica');
 $carla->get(substr($link, strpos($link, '/verifica/')));
 $ccore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$c1]);
 $carla->post("/pannello/$c1/sezioni/$ccore", ['checkin_steps' => ['Suona al citofono.']]);
+$carla->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Carla Portfolio', 'cf' => 'RSSMRA85T10A562S',
+               'billing_address' => 'Via Roma 2', 'billing_postal' => '70121', 'billing_city' => 'Bari', 'billing_province' => 'BA']);
+prova('Fase 3 · privato: basta il codice fiscale', val('SELECT cf FROM accounts WHERE id = ?', [$cacc]) === 'RSSMRA85T10A562S');
 $r = $carla->modulo("/pannello/$c1/procedura/pubblica", "/pannello/$c1/pubblica", []);
 prova('Pubblica → Stripe Checkout', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/'), $r['loc']);
 $cord = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$cacc]);

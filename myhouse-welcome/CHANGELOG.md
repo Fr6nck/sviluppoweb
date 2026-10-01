@@ -1,5 +1,61 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Fase 3, blocco B — Sezioni strutturate, scheda luogo da Maps, fatturazione (1 ottobre 2026)
+
+Due migrazioni (`011`, `012`), che partono da sole al primo accesso. Prima di caricare, copia `app/storage/`.
+
+**Motore dei campi**
+- Tipi nuovi: `checks` (più spunte da un elenco fisso), `toggles` (sì / no / non indicato, uno per voce) e `time` (un orario). Nelle righe ripetibili, anche `image` e `pdf`.
+- Foto e PDF nelle righe: si caricano col bottone Salva. Il server controlla che il piano li comprenda (`Entitlements`), aggancia solo file di quella struttura e cancella quelli non più usati (riga tolta, «Togli»). Con la sezione si cancellano anche i suoi file. La pubblicazione segnala le foto e i PDF nelle righe se il piano non li comprende.
+- Il bottone per scegliere il file è in italiano, non quello del browser.
+- Le righe nuove ricevono subito il loro id nel browser, così i salvataggi automatici successivi le riconoscono.
+- Istantanee della guida: formato 4. Le guide pubblicate prima si leggono nel formato nuovo, senza ripubblicarle.
+
+**R5 · Sezioni strutturate** (migrazione 011)
+- Emergenze: righe nome · telefono · nota, con un «Chiama» per riga. Righe pronte a un tocco, nella lingua della guida: 112, guardia medica, farmacia di turno, veterinario.
+- Rifiuti: tipo, giorni della settimana, colore del bidone, dove si trova. In cima alla pagina «Oggi si butta: …», calcolato sul giorno di oggi in Italia (Europe/Rome).
+- Servizi: griglia delle dotazioni con icone (lavatrice, asciugatrice, lavastoviglie, asciugacapelli, ferro, culla, seggiolone, aria condizionata, riscaldamento, TV, macchina del caffè, barbecue). Istruzioni ripetibili con titolo, passaggi, foto e PDF.
+- Regole: fumo, animali, feste e visitatori (ammesso / non ammesso / non indicato), orari del silenzio, regole aggiuntive.
+- Parcheggio: più possibilità (tipo, indirizzo, link Maps, costo, istruzioni, foto) e il campo ZTL.
+- Come arrivare: una scheda per mezzo (auto, treno, aereo, autobus), ognuna con i suoi passaggi.
+- Conversione dei dati di prima, con le vecchie chiavi lasciate nel JSON:
+  - le voci «una per riga» delle emergenze diventano righe, con il telefono separato dal nome («Guardia medica: 075 123456 (notti)» diventa nome, telefono e nota);
+  - le voci dei rifiuti diventano righe col testo intero nella descrizione. Il tipo si riconosce solo se è uno solo; i giorni scritti per esteso si riconoscono sempre;
+  - il parcheggio unico diventa la prima riga;
+  - i passaggi di «Come arrivare» diventano la prima scheda;
+  - le altre lingue si allineano riga per riga a quella principale;
+  - servizi e regole tengono la loro lista come «Altre dotazioni» e «Regole aggiuntive».
+- 65 etichette nuove nella guida ospite, in tutte e 5 le lingue.
+
+**R6 · Scheda luogo**
+- Il primo campo è «Incolla il link di Google Maps». Il server segue i link brevi (`maps.app.goo.gl`): massimo 5 secondi, solo verso indirizzi Google, passando anche dalla pagina del consenso. Dal link prende il nome (`/place/<nome>/`) e le coordinate (`!3d…!4d…`, `@lat,lng`, `q=lat,lng`). Se non riesce, nessun errore.
+- Sempre visibili: link, nome, categoria, «Perché lo consigli», etichetta. Il resto sta in «Altri dettagli», chiuso.
+- Minuti a piedi stimati: distanza in linea d'aria × 1,3, a 4,5 km/h, con l'indicazione «stima, modificabile». Servono le coordinate della casa, che si prendono dal link Maps di «Come arrivare». Nessuna API a pagamento.
+- Colonne `places.lat` e `places.lng` (migrazione 011).
+
+**R7 · Fatturazione italiana** (migrazione 012)
+- Account & Fatturazione ha i dati di fatturazione:
+  - tipo: azienda o professionista, oppure privato;
+  - intestatario;
+  - partita IVA, controllata con la cifra di controllo;
+  - codice fiscale: 16 caratteri col carattere di controllo, oppure 11 cifre per le società;
+  - codice destinatario SDI (7 caratteri) o PEC;
+  - indirizzo, CAP, città, provincia.
+- Gli errori sono indicati campo per campo (`aria-invalid` e messaggio collegato al campo).
+- Sono obbligatori prima del primo pagamento: «Pubblica» porta alla scheda e, salvati i dati, riporta alla pubblicazione.
+- I dati vanno al cliente Stripe come intestatario e indirizzo, più i metadati `vat`, `cf`, `sdi`, `pec`. Se il cliente esiste già, viene aggiornato. L'applicazione non genera fatture.
+
+**Prove**
+- `giro-completo.php`: 400 controlli (40 nuovi).
+- `aggiornamento.php`: emergenze, rifiuti, parcheggio e «Come arrivare» nel formato di prima vengono convertiti senza perdere testo, in italiano e in inglese, e si vedono nell'anteprima. Superata partendo da `be97f4a`, `cb6d0dc`, `d6edc08`, `8f27f4f` e `14a9c6e` (blocco A).
+- Verifica nel browser a 390 e 1366 px:
+  - righe aggiunte, spostate e tolte da tastiera;
+  - righe pronte delle emergenze;
+  - foto in una riga;
+  - nome del luogo preso dal link;
+  - errori della fatturazione;
+  - guida demo in italiano e in inglese, senza scorrimento orizzontale.
+
 ## v2 · Fase 3, blocco A — Struttura e contatti, arrivo e partenza, Wi-Fi (1 ottobre 2026)
 
 Tre migrazioni (`008`, `009`, `010`), che partono da sole al primo accesso. Prima di caricare, copia `app/storage/`.

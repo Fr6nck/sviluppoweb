@@ -253,14 +253,50 @@
         n[i].querySelector('[data-rip-giu]').disabled = i === n.length - 1;
       }
     };
-    add.addEventListener('click', function () {
-      var k = 'n' + Date.now().toString(36);
+    // Ogni riga nuova riceve subito il suo id: così i salvataggi automatici
+    // successivi la riconoscono e le traduzioni restano agganciate.
+    var nuovoId = function () {
+      var b = new Uint8Array(4); (window.crypto || window.msCrypto).getRandomValues(b);
+      return 'r' + Array.prototype.map.call(b, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+    };
+    var daiId = function (r) {
+      var h = r.querySelector('input[type=hidden][name$="[id]"]');
+      if (h && !h.value) h.value = nuovoId();
+    };
+    Array.prototype.forEach.call(tutte(), daiId);
+    var aggiungi = function () {
+      var k = 'n' + Date.now().toString(36) + Math.floor(Math.random() * 1000);
       var tmp = document.createElement('div');
       tmp.innerHTML = modello.innerHTML.split('__K__').join(k);
       var nuova = tmp.firstElementChild;
+      daiId(nuova);
       righe.appendChild(nuova); aggiorna();
-      var primo = nuova.querySelector('input:not([type=hidden]),select,textarea');
+      return nuova;
+    };
+    add.addEventListener('click', function () {
+      var primo = aggiungi().querySelector('input:not([type=hidden]),select,textarea');
       if (primo) primo.focus();
+    });
+    // Righe pronte (Guardia medica, 112…): una riga nuova già compilata, o la riga vuota se c'è.
+    rip.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-rip-preset]'); if (!b) return;
+      var valori = JSON.parse(b.getAttribute('data-rip-preset'));
+      var n = tutte(), r = null;
+      for (var i = 0; i < n.length; i++) {
+        var campi = n[i].querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=file]),textarea');
+        var vuota = true;
+        for (var j = 0; j < campi.length; j++) if (campi[j].value.trim() !== '') vuota = false;
+        if (vuota) { r = n[i]; break; }
+      }
+      if (!r) { if (tutte().length >= max) return; r = aggiungi(); }
+      var primo = null;
+      Object.keys(valori).forEach(function (sub) {
+        var c = r.querySelector('[name$="[' + sub + ']"]');
+        if (c) { c.value = valori[sub]; primo = primo || c; }
+      });
+      cambiato(rip);
+      var tel = r.querySelector('input[type=tel]');
+      (tel && !tel.value ? tel : (primo || r.querySelector('input:not([type=hidden])'))).focus();
     });
     rip.addEventListener('click', function (e) {
       var b = e.target.closest('[data-rip-su],[data-rip-giu],[data-rip-togli]');
@@ -301,6 +337,42 @@
     });
     add.hidden = false; aggiorna();
   })(rips[q]);
+
+  /* ---- Foto e PDF nelle righe: il nome del file scelto accanto al bottone ---- */
+  document.addEventListener('change', function (e) {
+    var inp = e.target; if (!inp.matches || !inp.matches('.rip__carica input[type=file]')) return;
+    var nome = inp.parentNode.querySelector('[data-rip-file-nome]');
+    if (nome) nome.textContent = inp.files && inp.files[0] ? inp.files[0].name + ' — si carica col bottone Salva' : 'Nessun file scelto';
+  });
+
+  /* ---- Scheda luogo: dal link di Google Maps il nome e i minuti a piedi -----
+     Si chiede al server (che segue i link brevi); si compila solo ciò che è
+     ancora vuoto. Se non si ricava niente, nessun errore: si scrive a mano. */
+  var mappe = document.querySelectorAll('[data-mappe]');
+  for (var mq = 0; mq < mappe.length; mq++) (function (inp) {
+    var form = inp.closest('form'), stato = form.querySelector('[data-mappe-stato]'), ultimo = inp.value.trim();
+    var leggi = function () {
+      var url = inp.value.trim();
+      if (url === '' || url === ultimo || !/^https?:\/\//i.test(url)) return;
+      ultimo = url;
+      var dati = new FormData(); dati.append('url', url);
+      var t = form.querySelector('input[name=_csrf]'); if (t) dati.append('_csrf', t.value);
+      if (stato) stato.textContent = 'Leggo il link…';
+      fetch(inp.getAttribute('data-mappe'), { method: 'POST', body: dati, credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          var fatto = [];
+          var nome = form.querySelector('[name=name]'), piedi = form.querySelector('[name=walk_minutes]');
+          if (j.name && nome && nome.value.trim() === '') { nome.value = j.name; fatto.push('il nome'); }
+          if (j.walk_minutes && piedi && !piedi.value) { piedi.value = j.walk_minutes; fatto.push(j.walk_minutes + ' min a piedi (stima, modificabile, in «Altri dettagli»)'); }
+          if (stato) stato.textContent = fatto.length ? 'Dal link: ' + fatto.join(', ') + '.'
+            : (j.ok ? 'Link letto. Il resto scrivilo tu.' : 'Dal link non si ricava niente: scrivi tu nome e dettagli.');
+        })
+        .catch(function () { if (stato) stato.textContent = ''; });
+    };
+    inp.addEventListener('change', leggi);
+    inp.addEventListener('paste', function () { setTimeout(leggi, 0); });
+  })(mappe[mq]);
 
   /* ---- Suggerimenti a un tocco (lista «Prima di partire») ------------------ */
   document.addEventListener('click', function (e) {

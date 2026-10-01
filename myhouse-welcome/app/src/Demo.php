@@ -86,6 +86,14 @@ final class Demo
             $testi['it']['networks'] = [['ssid' => $testi['it']['network'], 'password' => $testi['it']['password'] ?? '', 'zone' => '']];
         }
         foreach ($testi as $loc => $campi) {
+            // Le righe delle altre lingue si agganciano per posizione a quelle appena salvate in italiano.
+            if ($loc !== 'it') {
+                $salvati = json_decode((string) Db::val('SELECT data FROM sections WHERE id = ?', [$sid], ''), true) ?: [];
+                foreach ($campi as $campo => $righe) {
+                    if (!is_array($righe) || !is_array($salvati[$campo] ?? null) || !is_array($righe[0] ?? null)) continue;
+                    foreach ($righe as $i => $r) $campi[$campo][$i]['id'] = $salvati[$campo][$i]['id'] ?? '';
+                }
+            }
             Properties::saveSection($pid, $sid, $loc, $campi + ['title' => $loc === 'it' ? $titoloIt : ''], $loc === 'it');
         }
     }
@@ -139,8 +147,32 @@ final class Demo
 
         $regole = Properties::addSection($acc, $pid, 'rules');
         self::scrivi($pid, $regole, [
-            'it' => ['items' => ['Silenzio dalle 22 alle 8: il borgo dorme presto.', 'Non si fuma in casa.', 'Gli animali sono i benvenuti, chiedici prima.']],
-            'en' => ['items' => ['Quiet hours from 10pm to 8am: the village goes to bed early.', 'No smoking indoors.', 'Pets are welcome, just ask us first.']],
+            'it' => ['flags' => ['smoking' => 'no', 'pets' => 'si', 'parties' => 'no'], 'quiet_from' => '22:00', 'quiet_to' => '08:00',
+                     'items' => ['Il borgo dorme presto: dopo le 22 abbassa la voce anche in cortile.', 'Per gli animali, avvisaci prima di arrivare.']],
+            'en' => ['items' => ['The village goes to bed early: after 10pm keep your voice down in the courtyard too.', 'If you bring a pet, let us know before you arrive.']],
+        ]);
+
+        // Rifiuti ed emergenze: i giorni e i numeri sono di esempio, come la casa.
+        $rifiuti = Properties::addSection($acc, $pid, 'waste');
+        self::scrivi($pid, $rifiuti, [
+            'it' => ['bins' => [
+                        ['type' => 'umido', 'days' => [2, 5], 'color' => 'marrone', 'label' => '', 'where' => 'In cortile, a sinistra del cancello'],
+                        ['type' => 'plastica', 'days' => [3], 'color' => 'giallo', 'label' => 'Lattine insieme alla plastica', 'where' => 'In cortile'],
+                        ['type' => 'carta', 'days' => [4], 'color' => 'blu', 'label' => '', 'where' => 'In cortile'],
+                        ['type' => 'vetro', 'days' => [6], 'color' => 'verde', 'label' => '', 'where' => 'Campana in piazza'],
+                        ['type' => 'indifferenziato', 'days' => [1], 'color' => 'grigio', 'label' => '', 'where' => 'In cortile']],
+                     'note' => 'I bidoni si portano in strada la sera prima.'],
+            'en' => ['bins' => [['where' => 'In the courtyard, left of the gate'], ['label' => 'Cans go with the plastic', 'where' => 'In the courtyard'],
+                                ['where' => 'In the courtyard'], ['where' => 'Bottle bank in the square'], ['where' => 'In the courtyard']],
+                     'note' => 'Put the bins out on the street the evening before.'],
+        ]);
+        $emergenze = Properties::addSection($acc, $pid, 'emergency');
+        self::scrivi($pid, $emergenze, [
+            'it' => ['emergency_number' => '112', 'contacts' => [
+                        ['name' => 'Lucia, per i problemi in casa', 'phone' => '+39 0578 000000', 'note' => 'Dalle 8 alle 22'],
+                        ['name' => 'Farmacia di turno', 'phone' => '', 'note' => 'Il turno è affisso sulla porta di ogni farmacia.']]],
+            'en' => ['contacts' => [['name' => 'Lucia, for anything in the house', 'note' => '8am to 10pm'],
+                                    ['name' => 'Duty pharmacy', 'note' => 'The rota is posted on the door of every pharmacy.']]],
         ]);
 
         $mangiare = Properties::addSection($acc, $pid, 'eat');
@@ -200,8 +232,10 @@ final class Demo
             'maps_url' => 'https://maps.google.com/?q=Torre+dell%27Orso', 'badge' => 'Al mattino presto', 'badge_tone' => 'sea',
         ]);
         $parcheggio = Properties::addSection($acc, $pid, 'parking');
-        self::scrivi($pid, $parcheggio, ['it' => ['parking_type' => 'Parcheggio pubblico gratuito', 'address' => 'Viale Lo Re, Lecce',
-                                                  'instructions' => 'Le strisce bianche sono gratuite, quelle blu a pagamento.']], '');
+        self::scrivi($pid, $parcheggio, ['it' => ['options' => [
+            ['type' => 'pubblico', 'name' => 'Lungo il viale', 'address' => 'Viale Lo Re, Lecce',
+             'instructions' => 'Le strisce bianche sono gratuite, quelle blu a pagamento.']],
+            'ztl' => 'Il centro storico è ZTL: non entrare in auto, i varchi hanno le telecamere.']], '');
         Guide::publish($pid);
         // La seconda struttura del Portfolio, ancora in preparazione.
         $pid2 = self::struttura($acc, [

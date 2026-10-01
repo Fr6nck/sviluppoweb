@@ -5,7 +5,7 @@
    Le righe con sottocampi (repeater) le disegna _ripetitore.php.
    Riceve: $kind, $dati (campi uguali in ogni lingua), $tdati (campi tradotti),
            e se c'è $prop (per i suggerimenti nella lingua della guida). */
-use MHW\{Support, SectionCatalog, I18n};
+use MHW\{Support, SectionCatalog, I18n, Icon};
 $uid = $uid ?? 'c';
 $linguaGuida = $prop['default_locale'] ?? 'it';
 foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
@@ -16,8 +16,48 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
         (function (array $rip) { include __DIR__ . '/_ripetitore.php'; })([
             'name' => $nome, 'legend' => $etichetta, 'help' => $aiuto, 'sub' => $defCampo['sub'],
             'rows' => SectionCatalog::rows($defCampo, $dati[$nome] ?? [], $tdati[$nome] ?? []),
-            'add' => $defCampo['add'] ?? 'Aggiungi', 'max' => $defCampo['max'] ?? 30]);
-    elseif ($tipo === 'choice'): ?>
+            'add' => $defCampo['add'] ?? 'Aggiungi', 'max' => $defCampo['max'] ?? 30,
+            'foto' => $foto ?? true, 'pdf' => $pdf ?? true,
+            // Le righe pronte hanno il nome nella lingua della guida (Guardia medica, Out-of-hours doctor…).
+            'presets' => array_combine(
+                array_map(fn($k) => I18n::t($linguaGuida, $k), array_keys($defCampo['presets'] ?? [])),
+                array_map(fn($k, $v) => ['name' => I18n::t($linguaGuida, $k)] + $v, array_keys($defCampo['presets'] ?? []), $defCampo['presets'] ?? []))]);
+    elseif ($tipo === 'checks'): /* più spunte, con un campo vuoto: così togliere tutte le spunte si salva */ ?>
+  <fieldset class="fieldset">
+    <legend><?= Support::e($etichetta) ?></legend>
+    <?php if ($aiuto !== ''): ?><p class="help"><?= Support::e($aiuto) ?></p><?php endif; ?>
+    <input type="hidden" name="<?= Support::e($nome) ?>[]" value="">
+    <div class="scelte scelte--riga dotazioni">
+      <?php foreach ($defCampo['options'] as $ok => $ol): ?>
+        <label class="scelta scelta--mini"><input type="checkbox" name="<?= Support::e($nome) ?>[]" value="<?= Support::e($ok) ?>" <?= in_array($ok, (array) $valore, true) ? 'checked' : '' ?>>
+          <span><?= Icon::svg(Icon::amenita($ok), 16) ?> <?= Support::e($ol) ?></span></label>
+      <?php endforeach; ?>
+    </div>
+  </fieldset>
+<?php elseif ($tipo === 'toggles'): /* sì / no / non indicato, uno per regola */ ?>
+  <fieldset class="fieldset">
+    <legend><?= Support::e($etichetta) ?></legend>
+    <?php if ($aiuto !== ''): ?><p class="help"><?= Support::e($aiuto) ?></p><?php endif; ?>
+    <div class="stack" style="gap:10px">
+      <?php foreach ($defCampo['options'] as $ok => $ol): $ora = (string) (((array) $valore)[$ok] ?? ''); ?>
+        <fieldset class="interruttore">
+          <legend class="interruttore__nome"><?= Support::e($ol) ?></legend>
+          <div class="scelte scelte--riga">
+            <?php foreach (['si' => 'Ammesso', 'no' => 'Non ammesso', '' => 'Non indicato'] as $tv => $tl): ?>
+              <label class="scelta scelta--mini"><input type="radio" name="<?= Support::e($nome) ?>[<?= Support::e($ok) ?>]" value="<?= $tv ?>" <?= $ora === $tv ? 'checked' : '' ?>><span><?= $tl ?></span></label>
+            <?php endforeach; ?>
+          </div>
+        </fieldset>
+      <?php endforeach; ?>
+    </div>
+  </fieldset>
+<?php elseif ($tipo === 'time'): ?>
+  <div class="field" style="margin:0">
+    <label for="<?= Support::e($id) ?>"><?= Support::e($etichetta) ?></label>
+    <?php if ($aiuto !== ''): ?><p class="help" style="margin:0 0 6px"><?= Support::e($aiuto) ?></p><?php endif; ?>
+    <input id="<?= Support::e($id) ?>" name="<?= Support::e($nome) ?>" type="time" value="<?= Support::e((string) $valore) ?>" style="max-width:10rem">
+  </div>
+<?php elseif ($tipo === 'choice'): ?>
   <fieldset class="fieldset">
     <legend><?= Support::e($etichetta) ?></legend>
     <?php if ($aiuto !== ''): ?><p class="help"><?= Support::e($aiuto) ?></p><?php endif; ?>

@@ -156,6 +156,62 @@ final class Properties
         $s = self::section($propertyId, $sectionId);
         if ((int) $s['is_core'] === 1) throw new \RuntimeException('Check-in & Check-out non si elimina.');
         Db::run('DELETE FROM sections WHERE id = ?', [$sectionId]);
+        // Con la sezione se ne vanno i suoi file: immagine, PDF, foto e PDF delle righe.
+        $aid = (int) Db::val('SELECT account_id FROM properties WHERE id = ?', [$propertyId], 0);
+        $ids = array_merge(array_filter([(int) $s['media_id'], (int) $s['pdf_media_id']]),
+                           SectionCatalog::mediaIds($s['kind'], json_decode((string) $s['data'], true) ?: []));
+        foreach (array_unique($ids) as $mid) Media::delete($mid, $aid);
+    }
+
+    /**
+     * Foto e PDF dentro le righe (istruzioni, parcheggi): prima di salvare la
+     * sezione, carica i file nuovi, toglie quelli spuntati con «Togli» e scarta
+     * gli id che non sono di questa struttura. Restituisce il modulo con gli id
+     * giusti nei campi nascosti; i file non più usati li cancella dopo il
+     * salvataggio cleanRowMedia().
+     */
+    public static function saveRowMedia(int $accountId, int $propertyId, string $kind, array $post, array $files): array
+    {
+        $nuovi = [];
+        try {
+            foreach (SectionCatalog::fields($kind) as $campo => $def) {
+                if ($def[0] !== 'repeater' || !is_array($post[$campo] ?? null)) continue;
+                foreach ($def['sub'] as $sn => $sd) {
+                    if (!in_array($sd[0], ['image', 'pdf'], true)) continue;
+                    foreach ($post[$campo] as $k => $r) {
+                        if (!is_array($r)) continue;
+                        $mid = (int) ($r[$sn] ?? 0);
+                        if ($mid && !Db::one('SELECT id FROM media WHERE id = ? AND account_id = ? AND property_id = ? AND kind = ?',
+                                             [$mid, $accountId, $propertyId, $sd[0]])) $mid = 0;
+                        if (!empty($post['rip_togli'][$campo][$k][$sn])) $mid = 0;
+                        $f = [];
+                        foreach (['name', 'type', 'tmp_name', 'error', 'size'] as $x) $f[$x] = $files['rip_file'][$x][$campo][$k][$sn] ?? null;
+                        if ($f['error'] !== null && (int) $f['error'] !== UPLOAD_ERR_NO_FILE) {
+                            $alt = (string) ($r['title'] ?? $r['name'] ?? '');
+                            if ($sd[0] === 'image') {
+                                if (!Entitlements::can($accountId, 'photos')) throw new \RuntimeException('Le foto nelle sezioni sono comprese dal piano Plus.');
+                                $mid = $nuovi[] = Media::storeImage($f, $accountId, $propertyId, $alt, 'section');
+                            } else {
+                                if (!Entitlements::can($accountId, 'pdf')) throw new \RuntimeException('I PDF nelle sezioni sono compresi dal piano Plus.');
+                                $mid = $nuovi[] = Media::storePdf($f, $accountId, $propertyId, $alt);
+                            }
+                        }
+                        $post[$campo][$k][$sn] = $mid ?: '';
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            foreach ($nuovi as $mid) Media::delete($mid, $accountId);
+            throw $e;
+        }
+        unset($post['rip_togli']);
+        return $post;
+    }
+
+    /** Dopo il salvataggio: cancella i file delle righe che la sezione non usa più. */
+    public static function cleanRowMedia(int $accountId, string $kind, array $prima, array $dopo): void
+    {
+        foreach (array_diff(SectionCatalog::mediaIds($kind, $prima), SectionCatalog::mediaIds($kind, $dopo)) as $mid) Media::delete($mid, $accountId);
     }
 
     /** Sposta su o giù fra le sezioni aggiuntive. Il nucleo resta sempre in testa. */
@@ -235,6 +291,12 @@ final class Properties
                     'drive_minutes' => max(0, min(600, (int) ($in['drive_minutes'] ?? 0))),
                     'badge_tone' => in_array($in['badge_tone'] ?? '', ['pine', 'sea', 'ochre', 'terracotta'], true) ? $in['badge_tone'] : 'pine',
                 ];
+                // Le coordinate (dal link di Google Maps) solo se chi chiama le ha lette.
+                if (array_key_exists('lat', $in) && Migrator::columnExists('places', 'lat')) {
+                    $ok = is_numeric($in['lat'] ?? null) && is_numeric($in['lng'] ?? null) && abs((float) $in['lat']) <= 90 && abs((float) $in['lng']) <= 180;
+                    $comuni['lat'] = $ok ? round((float) $in['lat'], 6) : null;
+                    $comuni['lng'] = $ok ? round((float) $in['lng'], 6) : null;
+                }
                 if ($placeId) Db::update('places', $comuni, 'id = :pid', ['pid' => $placeId]);
                 else {
                     $comuni += ['section_id' => $s['id'], 'category' => '', 'distance' => '', 'note' => '', 'badge' => '',

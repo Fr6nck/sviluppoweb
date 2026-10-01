@@ -46,6 +46,24 @@ final class Icon
         'bus'       => '<rect x="4.5" y="3.5" width="15" height="14" rx="3"/><path d="M4.5 11h15M8 17.5v2.5M16 17.5v2.5"/><path d="M8 14.3h.01M16 14.3h.01"/><path d="M8.5 6.5h7"/>',
         'monument'  => '<path d="M3.5 20.5h17M5 17.5h14"/><path d="M6.5 17.5v-7M10 17.5v-7M14 17.5v-7M17.5 17.5v-7"/><path d="M4 10.5h16L12 4.5 4 10.5Z"/>',
         'compass'   => '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5 5-2Z"/>',
+        // Dotazioni, regole e mezzi (dalla fase 3): stesso tratto delle altre.
+        'dryer'     => '<rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><circle cx="12" cy="13" r="4.5"/><path d="M7 6.5h.01M10 6.5h.01"/><path d="M10 12c1 1 3-1 4 0"/>',
+        'dishwasher'=> '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M4 8h16"/><path d="M7.5 5.5h.01M10.5 5.5h.01"/><path d="M8 13v4M12 12v5M16 13v4"/>',
+        'hairdryer' => '<path d="M14 6.5a5 5 0 1 0 0 10H9"/><path d="M14 6.5h6.5v6H14"/><path d="M9 16.5l-1.5 4.5h3L12 16.5"/>',
+        'iron'      => '<path d="M3 17.5h17V15a6 6 0 0 0-6-6H8"/><path d="M8 9V6.5h9"/><path d="M7 13.5h.01M10.5 13.5h.01"/>',
+        'crib'      => '<path d="M4 4v16M20 4v16M4 9h16M4 17h16"/><path d="M8 9v8M12 9v8M16 9v8"/>',
+        'highchair' => '<path d="M7 3v8h10V3"/><path d="M5.5 11h13"/><path d="M8 11l-2 10M16 11l2 10M7 16.5h10"/>',
+        'snow'      => '<path d="M12 2.5v19M3.8 7.2l16.4 9.6M20.2 7.2L3.8 16.8"/><path d="M9.5 4l2.5 2.5L14.5 4M9.5 20l2.5-2.5 2.5 2.5"/>',
+        'flame'     => '<path d="M12 21a6 6 0 0 0 6-6c0-4-3-6-4-10-2 2-3 4-3 6-1-1-1.5-2-1.5-3C7.5 10 6 12.5 6 15a6 6 0 0 0 6 6Z"/>',
+        'tv'        => '<rect x="3" y="5.5" width="18" height="12" rx="2"/><path d="M8.5 21h7M9 2.5l3 3 3-3"/>',
+        'coffee'    => '<path d="M4.5 9h12v5.5a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5Z"/><path d="M16.5 10.5h1.5a2.5 2.5 0 0 1 0 5h-1.8"/><path d="M8.5 3c-1 1.2 1 2.3 0 3.5M12.5 3c-1 1.2 1 2.3 0 3.5"/>',
+        'grill'     => '<path d="M4 10h16a8 8 0 0 1-16 0Z"/><path d="M8 17.5L6 21.5M16 17.5l2 4M12 18v3.5"/><path d="M9 3c-.8 1.2.8 2.3 0 3.5M15 3c-.8 1.2.8 2.3 0 3.5"/>',
+        'smoke'     => '<rect x="2.5" y="13.5" width="15" height="4" rx="1"/><path d="M14 13.5v4M20 13.5v4M20 10c0-2-2-2-2-4M17 10.5c0-1.5-1.5-1.5-1.5-3"/>',
+        'paw'       => '<circle cx="7" cy="9" r="1.8"/><circle cx="11" cy="5.8" r="1.8"/><circle cx="15.5" cy="6.5" r="1.8"/><circle cx="18" cy="11" r="1.8"/><path d="M8 17.5c0-3 2.2-5.5 4.5-5.5s4 2 4 4.3c0 2.4-1.8 3.2-4 3.2s-4.5.6-4.5-2Z"/>',
+        'music'     => '<path d="M9 18V5.5l11-2.5v12.5"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="15.5" r="2.5"/>',
+        'train'     => '<rect x="5" y="3" width="14" height="13" rx="3"/><path d="M5 10h14M9 16l-2.5 5M15 16l2.5 5M8.5 19h7"/><path d="M8.5 13h.01M15.5 13h.01"/>',
+        'plane'     => '<path d="M10.5 13.5l-6 2v-2L10.5 9V4.5a1.5 1.5 0 0 1 3 0V9l6 4.5v2l-6-2v4l2 1.5v1.5L12 19.5 8.5 20.5V19l2-1.5Z"/>',
+        'ban'       => '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
         'car'       => '<path d="M5 16.5V12l1.8-4.6A2 2 0 0 1 8.7 6h6.6a2 2 0 0 1 1.9 1.4L19 12v4.5"/><path d="M4 16.5h16M5 12h14"/><circle cx="8" cy="16.5" r="1.6"/><circle cx="16" cy="16.5" r="1.6"/>',
     ];
 
@@ -59,6 +77,14 @@ final class Icon
              . ' viewBox="0 0 32 32" fill="none" aria-hidden="true">'
              . '<path d="M6 28V14a10 10 0 0 1 20 0v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>'
              . '<circle class="simbolo__punto" cx="20.5" cy="19" r="2" fill="#b4451f"/></svg>';
+    }
+
+    /** L'icona di una dotazione (Servizi). */
+    public static function amenita(string $chiave): string
+    {
+        return ['washer' => 'washer', 'dryer' => 'dryer', 'dishwasher' => 'dishwasher', 'hairdryer' => 'hairdryer', 'iron' => 'iron',
+                'crib' => 'crib', 'highchair' => 'highchair', 'ac' => 'snow', 'heating' => 'flame', 'tv' => 'tv',
+                'coffee' => 'coffee', 'bbq' => 'grill'][$chiave] ?? 'check';
     }
 
     public static function svg(string $name, int $size = 20, float $stroke = 1.8, string $class = ''): string

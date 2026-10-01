@@ -116,21 +116,34 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
           <form method="post" action="<?= $qui_url ?>/luogo" enctype="multipart/form-data" class="stack" style="margin-top:12px"><?= Csrf::field() ?>
             <?php if ($inProcedura): ?><input type="hidden" name="da" value="procedura"><?php endif; ?>
             <input type="hidden" name="place_id" value="<?= (int) $v['id'] ?>">
+            <?php /* Prima il link di Maps: da lì nome, coordinate e minuti a piedi. Poi solo l'essenziale;
+                     il resto in «Altri dettagli», chiuso. */ ?>
+            <div class="field" style="margin:0"><label for="pl-maps">Incolla il link di Google Maps</label>
+              <p class="help" id="pl-maps-aiuto" style="margin:0 0 6px">Su Google Maps: Condividi → Copia link. Se lasci vuoto il nome, lo prendiamo dal link.</p>
+              <input id="pl-maps" name="maps_url" type="url" maxlength="500" value="<?= Support::e($v['maps_url']) ?>" placeholder="https://maps.app.goo.gl/…"
+                     aria-describedby="pl-maps-aiuto pl-maps-stato" data-mappe="<?= b() ?>/pannello/<?= $pid ?>/mappe">
+              <p class="help" id="pl-maps-stato" data-mappe-stato aria-live="polite"></p></div>
             <div class="grid grid-2">
               <div class="field" style="margin:0"><label for="pl-name">Nome</label>
-                <input type="text" id="pl-name" name="name" required maxlength="160" value="<?= Support::e($v['name']) ?>"></div>
+                <input type="text" id="pl-name" name="name" maxlength="160" value="<?= Support::e($v['name']) ?>"></div>
               <div class="field" style="margin:0"><label for="pl-cat">Categoria</label>
                 <input type="text" id="pl-cat" name="category" maxlength="80" list="categorie" value="<?= Support::e($v['tr']['category']) ?>" placeholder="Trattoria, Bar, Spiaggia…"></div>
             </div>
+            <div class="field" style="margin:0"><label for="pl-note">Perché lo consigli</label>
+              <textarea id="pl-note" name="note" rows="2" maxlength="400" placeholder="Prenota il tavolo in terrazza, al tramonto."><?= Support::e($v['tr']['note']) ?></textarea></div>
+            <div class="field" style="margin:0"><label for="pl-badge">Etichetta</label>
+              <input type="text" id="pl-badge" name="badge" maxlength="80" list="etichette" value="<?= Support::e($v['tr']['badge']) ?>" placeholder="Consigliato dall'host"></div>
+            <details class="altri-dettagli">
+              <summary>Altri dettagli <span class="small muted">— descrizione, indirizzo, minuti, contatti, foto</span></summary>
+              <div class="stack" style="margin-top:14px">
             <div class="field" style="margin:0"><label for="pl-desc">Descrizione</label>
               <textarea id="pl-desc" name="description" rows="2" maxlength="600"><?= Support::e($v['tr']['description']) ?></textarea></div>
             <div class="grid grid-2">
               <div class="field" style="margin:0"><label for="pl-addr">Indirizzo</label>
                 <input type="text" id="pl-addr" name="address" maxlength="255" value="<?= Support::e($v['address']) ?>"></div>
-              <div class="field" style="margin:0"><label for="pl-maps">Link a Google Maps <span class="muted">(facoltativo)</span></label>
-                <input id="pl-maps" name="maps_url" type="url" maxlength="500" value="<?= Support::e($v['maps_url']) ?>" placeholder="https://"></div>
               <div class="field" style="margin:0"><label for="pl-walk">A piedi (minuti)</label>
-                <input id="pl-walk" name="walk_minutes" type="number" min="0" max="600" inputmode="numeric" value="<?= (int) $v['walk_minutes'] ?: '' ?>"></div>
+                <input id="pl-walk" name="walk_minutes" type="number" min="0" max="600" inputmode="numeric" value="<?= (int) $v['walk_minutes'] ?: '' ?>" aria-describedby="pl-walk-aiuto">
+                <p class="help" id="pl-walk-aiuto">Stima, modificabile: dal link di Maps e dalla posizione della casa (in «Come arrivare»), in linea d'aria × 1,3 a passo tranquillo.</p></div>
               <div class="field" style="margin:0"><label for="pl-drive">In auto (minuti)</label>
                 <input id="pl-drive" name="drive_minutes" type="number" min="0" max="600" inputmode="numeric" value="<?= (int) $v['drive_minutes'] ?: '' ?>"></div>
               <div class="field" style="margin:0"><label for="pl-tel">Telefono</label>
@@ -139,11 +152,7 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
                 <input id="pl-web" name="website" type="url" maxlength="500" value="<?= Support::e($v['website']) ?>" placeholder="https://"></div>
               <div class="field" style="margin:0"><label for="pl-book">Link per prenotare</label>
                 <input id="pl-book" name="booking_url" type="url" maxlength="500" value="<?= Support::e($v['booking_url']) ?>" placeholder="https://"></div>
-              <div class="field" style="margin:0"><label for="pl-badge">Etichetta</label>
-                <input type="text" id="pl-badge" name="badge" maxlength="80" list="etichette" value="<?= Support::e($v['tr']['badge']) ?>" placeholder="Consigliato dall'host"></div>
             </div>
-            <div class="field" style="margin:0"><label for="pl-note">Il tuo consiglio</label>
-              <textarea id="pl-note" name="note" rows="2" maxlength="400" placeholder="Prenota il tavolo in terrazza, al tramonto."><?= Support::e($v['tr']['note']) ?></textarea></div>
             <fieldset class="tones scelte scelte--riga" style="border:0;padding:0;margin:0"><legend class="small" style="margin-bottom:6px">Colore dell'etichetta</legend>
               <?php foreach (['pine' => 'Verde', 'sea' => 'Blu', 'ochre' => 'Ocra', 'terracotta' => 'Terracotta'] as $k => $et): ?>
                 <label class="tone scelta"><input type="radio" name="badge_tone" value="<?= $k ?>" <?= $v['badge_tone'] === $k ? 'checked' : '' ?>><span class="badge badge--<?= $k ?>"><?= $et ?></span></label>
@@ -156,6 +165,8 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
                                  'togli' => $vFoto ? 'togli-foto' : '', 'togliNome' => 'fai', 'togliVerso' => $qui_url . '/luogo/' . (int) $v['id'] . '/azione'];
                       include __DIR__ . '/_carica.php'; ?></div>
             <?php endif; ?>
+              </div>
+            </details>
             <div class="actions">
               <button class="btn"><?= $inModifica ? 'Salva il luogo' : 'Aggiungi il luogo' ?></button>
               <?php if ($inModifica): ?><a class="btn btn--quiet" href="<?= $inProcedura ? b() . '/pannello/' . $pid . '/procedura/sezioni?apri=' . $sid . '#sez-' . $sid : $qui_url ?>">Annulla</a><?php endif; ?>

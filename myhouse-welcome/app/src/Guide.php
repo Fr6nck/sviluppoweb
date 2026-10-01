@@ -14,10 +14,13 @@ namespace MHW;
  * Formato 3: contatti duplicabili, dati della struttura (indirizzo, CIN…),
  * partenza come lista, più reti Wi-Fi. Le istantanee di formato 2 si
  * convertono al volo con Conversione, la stessa usata dalle migrazioni.
+ *
+ * Formato 4: emergenze, rifiuti, parcheggio e come arrivare a righe; foto e
+ * PDF anche dentro le righe (servizi, parcheggio). Stessa conversione al volo.
  */
 final class Guide
 {
-    public const FORMAT = 3;
+    public const FORMAT = 4;
 
     // ------------------------------------------------------------ costruzione
 
@@ -64,8 +67,17 @@ final class Guide
             // Se una migrazione vecchia pubblica prima che girino le conversioni (009, 010…),
             // l'istantanea esce comunque nel formato nuovo: la conversione è idempotente.
             $testi = array_map(fn($t) => $t['data'], $tr);
-            [$datiSezione, $testi] = Conversione::sezione((string) $s['kind'], json_decode((string) $s['data'], true) ?: [], $testi);
+            [$datiSezione, $testi] = Conversione::sezione((string) $s['kind'], json_decode((string) $s['data'], true) ?: [], $testi, (string) $p['default_locale']);
             foreach ($testi as $l => $d) $tr[$l]['data'] = $d;
+            // Foto e PDF dentro le righe seguono il piano come quelli della sezione.
+            foreach (SectionCatalog::fields((string) $s['kind']) as $campo => $def) {
+                if ($def[0] !== 'repeater' || !is_array($datiSezione[$campo] ?? null)) continue;
+                foreach ($def['sub'] as $sn => $sd) {
+                    if (($sd[0] === 'image' && !$foto) || ($sd[0] === 'pdf' && !$pdf)) {
+                        foreach ($datiSezione[$campo] as $i => $r) if (is_array($r) && isset($r[$sn])) $datiSezione[$campo][$i][$sn] = '';
+                    }
+                }
+            }
             $sections[] = [
                 'id' => (int) $s['id'], 'kind' => $s['kind'], 'is_core' => (int) $s['is_core'],
                 'data' => $datiSezione,
@@ -146,10 +158,11 @@ final class Guide
         $f = (int) ($s['format'] ?? 1);
         if ($f >= self::FORMAT) return $s;
         if ($f < 2) $s = self::daFormato1($s);
-        return self::daFormato2($s);
+        if ($f < 3) $s = self::daFormato2($s);
+        return self::daFormato3($s);
     }
 
-    /** Formato 2 → 3: contatti, dati della struttura, partenza a lista, più reti Wi-Fi. */
+    /** Formato 2 → 3: contatti e dati della struttura (le sezioni le converte daFormato3). */
     private static function daFormato2(array $s): array
     {
         $p = $s['property'] ?? [];
@@ -158,10 +171,21 @@ final class Guide
             $p['contacts'] = Conversione::contatti((string) ($p['host_name'] ?? ''), (string) ($p['host_phone'] ?? ''), (string) ($p['host_whatsapp'] ?? ''));
         }
         $s['property'] = $p;
+        return $s;
+    }
+
+    /**
+     * Formato 3 → 4 (e 2 → 4): le sezioni passano da Conversione, che è
+     * idempotente — partenza a lista, più reti Wi-Fi, emergenze, rifiuti,
+     * parcheggio e come arrivare a righe.
+     */
+    private static function daFormato3(array $s): array
+    {
+        $principale = (string) ($s['property']['default_locale'] ?? 'it');
         foreach (($s['sections'] ?? []) as $i => $sec) {
             $testi = [];
             foreach (($sec['tr'] ?? []) as $loc => $t) $testi[$loc] = $t['data'] ?? [];
-            [$dati, $testi] = Conversione::sezione((string) $sec['kind'], $sec['data'] ?? [], $testi);
+            [$dati, $testi] = Conversione::sezione((string) $sec['kind'], $sec['data'] ?? [], $testi, $principale);
             $s['sections'][$i]['data'] = $dati;
             foreach ($testi as $loc => $d) $s['sections'][$i]['tr'][$loc]['data'] = $d;
         }
@@ -250,7 +274,7 @@ final class Guide
         $d = $sec['tr'][$loc]['data'] ?? null;
         if ($loc === $default || !is_array($d)) return $base;
         foreach ($d as $k => $v) {
-            $pieno = is_array($v) ? (bool) array_filter($v, fn($x) => trim((string) $x) !== '') : trim((string) $v) !== '';
+            $pieno = is_array($v) ? (bool) array_filter($v, fn($x) => is_array($x) ? (bool) $x : trim((string) $x) !== '') : trim((string) $v) !== '';
             if ($pieno) $base[$k] = $v;
         }
         return $base;

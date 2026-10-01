@@ -65,9 +65,37 @@ if ($codici > 0 || !$db->query("SELECT 1 FROM schema_migrations WHERE name LIKE 
                    JOIN users u ON u.id = a.user_id WHERE u.email LIKE 'lucia@%' ORDER BY p.id LIMIT 1)");
         $fermaA = true;
     } catch (PDOException) { /* versione senza procedura guidata */ }
+    // Fase 3B: sezioni nel formato di prima (voci «una per riga», parcheggio singolo,
+    // passaggi di arrivo), da convertire con la 011. Solo dove le sezioni hanno già i dati a campi.
+    $strutturate = [];
+    try {
+        $sid0 = $db->query("SELECT s.* FROM sections s JOIN properties p ON p.id = s.property_id JOIN accounts a ON a.id = p.account_id
+                            JOIN users u ON u.id = a.user_id WHERE u.email LIKE 'lucia@%' ORDER BY s.id LIMIT 1")->fetch();
+        $tr0 = $sid0 ? $db->query('SELECT * FROM section_translations WHERE section_id = ' . (int) $sid0['id'] . ' LIMIT 1')->fetch() : null;
+        if ($sid0 && $tr0 && array_key_exists('data', $sid0) && array_key_exists('data', $tr0)) {
+            $vecchie = [
+                'emergency' => [['emergency_number' => '112'], ['it' => ['items' => ['Guardia medica: 075 123456 (notti e festivi)', 'Farmacia di turno: il turno è sulla porta']],
+                                                            'en' => ['items' => ['Out-of-hours doctor: 075 123456', 'Duty pharmacy: rota on the door']]]],
+                'waste' => [[], ['it' => ['items' => ['Umido martedì e venerdì', 'Vetro nella campana in piazza'], 'note' => 'Bidoni in cortile.'],
+                                 'en' => ['items' => ['Food waste on Tuesday and Friday']]]],
+                'arrival' => [['address' => 'Via Vecchia 1, Montepulciano', 'maps_url' => ''], ['it' => ['steps' => ['Esci a Chiusi.', 'Segui per Montepulciano.']],
+                                                                                              'en' => ['steps' => ['Exit at Chiusi.']]]],
+                'parking' => [['address' => 'Piazza Grande', 'maps_url' => 'https://maps.google.com/?q=Piazza+Grande'],
+                              ['it' => ['parking_type' => 'Parcheggio pubblico', 'instructions' => 'Strisce bianche gratis.', 'cost' => 'Gratis'],
+                               'en' => ['parking_type' => 'Public car park']]],
+            ];
+            foreach ($vecchie as $kind => [$dati, $testi]) {
+                $sid = $copia('sections', ['kind' => $kind, 'data' => json_encode($dati, JSON_UNESCAPED_UNICODE), 'is_core' => 0, 'is_active' => 1,
+                                           'media_id' => null, 'pdf_media_id' => null, 'position' => 90] + $sid0);
+                foreach ($testi as $loc => $t) $copia('section_translations', ['section_id' => $sid, 'locale' => $loc, 'title' => '', 'data' => json_encode($t, JSON_UNESCAPED_UNICODE)] + $tr0);
+                $strutturate[$kind] = $sid;
+            }
+        }
+    } catch (PDOException $e) { echo '  (sezioni del formato di prima non inserite: ', $e->getMessage(), ")\n"; }
+    prova('Sezioni del formato di prima (emergenze, rifiuti, come arrivare, parcheggio)', count($strutturate) === 4 || !$strutturate, $strutturate ? '' : 'versione senza sezioni a campi');
     $con007 = (function () use ($db) { try { return (bool) $db->query("SELECT 1 FROM schema_migrations WHERE name LIKE '007%'")->fetchColumn(); } catch (PDOException) { return false; } })();
     $f = [
-        'p2acc' => (int) $p2acc, 'p3acc' => (int) $p3acc, 'contenuti' => $fermaA, 'con007' => $con007,
+        'p2acc' => (int) $p2acc, 'p3acc' => (int) $p3acc, 'contenuti' => $fermaA, 'con007' => $con007, 'strutturate' => $strutturate,
         'utenti' => (int) $db->query('SELECT COUNT(*) FROM users')->fetchColumn(),
         'strutture' => $db->query('SELECT id, name, slug, status FROM properties ORDER BY id')->fetchAll(),
         'sezioni' => (int) $db->query('SELECT COUNT(*) FROM sections')->fetchColumn(),
@@ -124,6 +152,7 @@ $demo = $db->query("SELECT slug FROM properties WHERE is_demo = 1 AND status = '
 $r = http("$BASE/g/$demo");
 prova('La guida demo pubblicata si apre', $r['code'] === 200 && pulita($r['body']) && !str_contains($r['body'], '4729'));
 foreach ($db->query("SELECT id FROM sections WHERE property_id = (SELECT id FROM properties WHERE slug = " . $db->quote($demo) . ")")->fetchAll(PDO::FETCH_COLUMN) as $sid) {
+    if (in_array((int) $sid, array_map('intval', $f['strutturate'] ?? []), true)) continue;   // aggiunte dalla prova, non ancora pubblicate
     $r = http("$BASE/g/$demo/$sid");
     if ($r['code'] !== 200 || !pulita($r['body']) || str_contains($r['body'], '4729')) prova("Sezione $sid della demo", false, (string) $r['code']);
 }
@@ -209,6 +238,62 @@ if ($wifiDemo) {
     $r = http("$BASE/g/$demo/$wifiDemo");
     prova('Fase 3 · Wi-Fi della demo pubblicata: rete, password e QR', $r['code'] === 200 && pulita($r['body']) && str_contains($r['body'], 'data:image/png;base64,'));
 }
+
+// ------------------------------- Fase 3B: sezioni strutturate (011) e fatturazione (012)
+$st = $f['strutturate'] ?? [];
+$sezione = function (int $sid) use ($db): array {
+    $d = json_decode((string) $db->query('SELECT data FROM sections WHERE id = ' . $sid)->fetchColumn(), true) ?: [];
+    $t = [];
+    foreach ($db->query('SELECT locale, data FROM section_translations WHERE section_id = ' . $sid)->fetchAll() as $x) $t[$x['locale']] = json_decode((string) $x['data'], true) ?: [];
+    return [$d, $t];
+};
+if ($st) {
+    [$d, $t] = $sezione((int) $st['emergency']);
+    $nomi = array_column($t['it']['contacts'] ?? [], 'name', 'id');
+    prova('Fase 3B · emergenze: le voci sono righe nome · telefono · nota, in ogni lingua', count($d['contacts'] ?? []) === 2 && $d['contacts'][0]['phone'] === '075 123456'
+          && $d['contacts'][1]['phone'] === '' && ($nomi[$d['contacts'][0]['id']] ?? '') === 'Guardia medica' && ($t['it']['contacts'][0]['note'] ?? '') === 'notti e festivi'
+          && ($t['en']['contacts'][0]['name'] ?? '') === 'Out-of-hours doctor' && ($t['en']['contacts'][1]['id'] ?? '') === $d['contacts'][1]['id']
+          && count($t['it']['items'] ?? []) === 2);
+    [$d, $t] = $sezione((int) $st['waste']);
+    prova('Fase 3B · rifiuti: una riga per voce, col testo intero; umido e giorni riconosciuti', count($d['bins'] ?? []) === 2 && $d['bins'][0]['type'] === 'umido'
+          && $d['bins'][0]['days'] === [2, 5] && $d['bins'][1]['type'] === 'vetro' && ($t['it']['bins'][1]['label'] ?? '') === 'Vetro nella campana in piazza'
+          && ($t['en']['bins'][0]['label'] ?? '') === 'Food waste on Tuesday and Friday' && ($t['it']['note'] ?? '') === 'Bidoni in cortile.');
+    [$d, $t] = $sezione((int) $st['arrival']);
+    prova('Fase 3B · come arrivare: i passaggi di prima sono la prima scheda', count($d['routes'] ?? []) === 1 && $d['routes'][0]['mode'] === ''
+          && ($t['it']['routes'][0]['steps'] ?? '') === "Esci a Chiusi.\nSegui per Montepulciano." && ($t['en']['routes'][0]['steps'] ?? '') === 'Exit at Chiusi.'
+          && $d['address'] === 'Via Vecchia 1, Montepulciano');
+    [$d, $t] = $sezione((int) $st['parking']);
+    prova('Fase 3B · parcheggio: quello di prima è la prima riga (tipo, indirizzo, link, costo, istruzioni)', count($d['options'] ?? []) === 1
+          && $d['options'][0]['address'] === 'Piazza Grande' && $d['options'][0]['maps_url'] === 'https://maps.google.com/?q=Piazza+Grande'
+          && ($t['it']['options'][0]['name'] ?? '') === 'Parcheggio pubblico' && ($t['it']['options'][0]['cost'] ?? '') === 'Gratis'
+          && ($t['it']['options'][0]['instructions'] ?? '') === 'Strisce bianche gratis.' && ($t['en']['options'][0]['name'] ?? '') === 'Public car park');
+}
+// Le stesse sezioni nell'anteprima di Lucia (entrata più sopra con la sua password), in italiano e in inglese.
+if ($st) {
+    $pidL = (int) $db->query('SELECT property_id FROM sections WHERE id = ' . (int) $st['emergency'])->fetchColumn();
+    $vedi = fn(string $k, string $l) => http("$BASE/pannello/$pidL/anteprima/{$st[$k]}?l=$l")['body'];
+    $it = [$vedi('emergency', 'it'), $vedi('waste', 'it'), $vedi('arrival', 'it'), $vedi('parking', 'it')];
+    prova('Fase 3B · anteprima (it): «Chiama» guardia medica, umido con i giorni, scheda di arrivo, parcheggio con Maps',
+          str_contains($it[0], 'href="tel:075123456"') && str_contains($it[0], 'aria-label="Chiama Guardia medica"')
+          && str_contains($it[1], 'Umido') && str_contains($it[1], 'martedì, venerdì') && str_contains($it[1], 'Vetro nella campana in piazza')
+          && str_contains($it[2], 'Esci a Chiusi.') && str_contains($it[2], 'Indicazioni')
+          && str_contains($it[3], 'Parcheggio pubblico') && str_contains($it[3], 'Strisce bianche gratis.') && str_contains($it[3], 'maps.google.com/?q=Piazza+Grande'));
+    $en = [$vedi('emergency', 'en'), $vedi('waste', 'en'), $vedi('arrival', 'en')];
+    prova('Fase 3B · anteprima (en): testi e etichette in inglese, riga per riga',
+          str_contains($en[0], 'Out-of-hours doctor') && str_contains($en[1], 'Food waste on Tuesday and Friday') && str_contains($en[1], 'Tuesday, Friday')
+          && str_contains($en[2], 'Exit at Chiusi.') && str_contains($en[2], 'Directions'));
+}
+// Le guide pubblicate prima (parcheggio di Marco nella demo, se c'è) si leggono nel formato nuovo.
+$park = $db->query("SELECT s.id, p.slug FROM sections s JOIN properties p ON p.id = s.property_id
+                    WHERE s.kind = 'parking' AND p.status = 'published' AND s.data LIKE '%Lo Re%' ORDER BY s.id LIMIT 1")->fetch();
+if ($park && str_contains((string) $db->query("SELECT snapshot FROM guide_versions gv JOIN properties p ON p.id = gv.property_id WHERE p.slug = " . $db->quote($park['slug']) . ' ORDER BY gv.version DESC LIMIT 1')->fetchColumn(), 'parking_type')) {
+    $r = http("$BASE/g/{$park['slug']}/{$park['id']}");
+    prova('Fase 3B · parcheggio di una guida pubblicata prima: si legge come riga, con Maps', $r['code'] === 200 && pulita($r['body'])
+          && str_contains($r['body'], 'Parcheggio pubblico gratuito') && str_contains($r['body'], 'Viale Lo Re'));
+}
+$colF = array_filter(['billing_type', 'vat', 'cf', 'sdi', 'pec', 'billing_province'], fn($c) => $db->query("SELECT COUNT(*) FROM pragma_table_info('accounts') WHERE name = '$c'")->fetchColumn());
+prova('Fase 3B · colonne di fatturazione aggiunte, vuote per gli account di prima', count($colF) === 6 && (int) $db->query("SELECT COUNT(*) FROM accounts WHERE billing_type <> ''")->fetchColumn() === 0);
+prova('Fase 3B · coordinate dei luoghi', (int) $db->query("SELECT COUNT(*) FROM pragma_table_info('places') WHERE name IN ('lat', 'lng')")->fetchColumn() === 2);
 
 $r = http("$BASE/");
 prova('Una seconda richiesta non ripete le migrazioni', count($db->query('SELECT name FROM schema_migrations')->fetchAll()) === count($mig));
