@@ -1,5 +1,73 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Fase 5 — Vendita, crescita e demo in Umbria (1 ottobre 2026)
+
+Due migrazioni (`013`, `014`), che partono da sole al primo accesso. Prima di caricare, copia `app/storage/`.
+
+**K1 · Listino**
+- Sotto ogni prezzo annuale c'è l'equivalente mensile («circa 9,75 € al mese», prezzo / 12). Nel Portfolio segue il numero di strutture (`prezzi.js`), in landing e in `/piano`.
+- Essential perde le voci comuni a tutti i piani. Plus e Portfolio partono da «Tutto di Essential, e in più:» e non ripetono le voci già incluse.
+  - Una voce che finisce con i due punti si mostra come titoletto.
+  - I testi restano modificabili dall'admin. La migrazione 013 cambia solo i testi predefiniti.
+- «Confronta tutti i piani»: una tabella chiusa sotto le card, generata dalle funzioni delle versioni in vendita.
+
+**K2 · La guida fa guadagnare l'host**
+- Nelle Impostazioni della struttura c'è il blocco «Dopo il soggiorno», tutto facoltativo:
+  - link alle recensioni (Google, Booking.com, Airbnb, altro);
+  - prenotazione diretta (link al sito e codice sconto).
+- Nel commiato compaiono solo i dati compilati: «Ti è piaciuto il soggiorno?» con un pulsante per piattaforma, e «La prossima volta prenota da noi» con il codice da copiare.
+- I link che non sono indirizzi web si scartano, con un avviso.
+- Nuova sezione **Servizi extra**: righe con titolo, descrizione, prezzo e foto.
+  - Ogni riga ha «Richiedi su WhatsApp» verso il primo contatto, con il messaggio già scritto nella lingua dell'ospite.
+  - Si copia anche con «Crea da una struttura esistente».
+- In landing c'è il blocco «Una prenotazione diretta in più all'anno paga l'abbonamento.»
+
+**K3 · FAQ, demo, testimonianze**
+- FAQ prima del listino, con accordion su `<details>` (tastiera e lettori di schermo). Sono sei domande, con le risposte prese da `LEGGIMI.md`.
+- Accanto a «Guarda la demo» si sceglie la lingua: IT / EN / DE, solo quelle che la demo ha.
+- Admin → Testimonianze: nome, struttura, testo, foto, visibile sì/no, ordine. La foto sta nello storage senza riga in `media`. In landing il blocco compare solo se c'è almeno una testimonianza visibile. Nessuna è inserita d'esempio.
+
+**K4 · Firma nella guida**
+- Nel piè di pagina: «Guida creata con MyHouse Welcome · Crea la tua», con link alla landing e `?ref=guida`.
+- Nuova funzione di pacchetto `hide_branding`. La migrazione 013 crea una **versione nuova** di Plus e di Portfolio, uguale a quella in vendita più la funzione, come fa l'admin.
+  - Le versioni già vendute non cambiano.
+  - Chi aveva scelto Plus o Portfolio senza pagare passa alla versione nuova.
+- Il server nasconde la firma solo se il piano lo comprende, anche se la richiesta viene costruita a mano.
+- Istantanee della guida: formato 5. Quelle pubblicate prima mostrano la firma e nessun blocco del commiato.
+
+**K5 · Email che riportano l'host a finire**
+- I richiami partono:
+  - dopo 1 giorno, se l'arrivo è vuoto;
+  - dopo 3 giorni, se non ci sono sezioni;
+  - dopo 7 giorni, se la guida non è pubblicata;
+  - 30 giorni prima del rinnovo automatico, con le aperture dell'anno.
+- Le finestre non si sovrappongono (1–3, 3–7, 7–21 giorni): una struttura riceve un richiamo per volta, e chi aggiorna con bozze vecchie non riceve una raffica.
+- Niente richiami a strutture bloccate o di esempio.
+- I testi sono brevi, in italiano, con un solo pulsante che porta al passo giusto. Ogni email ha anche la versione HTML.
+- Tabelle nuove:
+  - `email_log`: ogni email una volta sola;
+  - `email_optout`: «non mandarmene più», per tipo, confermato con un bottone perché i programmi che aprono i link in anteprima non disiscrivano nessuno.
+- Nessun cron obbligatorio: un controllo leggero gira dopo le pagine del pannello e della landing, al massimo ogni 15 minuti, con un file di blocco `storage/richiami.lock`. In più c'è `/cron/{token}` con `MHW_CRON_TOKEN`.
+
+**K6 · Funnel senza cookie**
+- Eventi anonimi in `analytics_events`: `landing_view` (i robot non contano), `signup`, `property_created`, `published` (la prima pubblicazione di una guida vera).
+- `analytics_events.property_id` diventa facoltativo. Su SQLite la tabella si ricostruisce senza perdere un evento.
+- Nel Quadro dell'admin: i quattro numeri degli ultimi 30 giorni e la percentuale di passaggio da un passo all'altro.
+
+**V6 · Landing e demo in Umbria**
+- Sotto l'hero, al posto della foto grande, c'è una fascia con tre scene (`scena-qr.jpg`, `scena-ospite.jpg`, `scena-host.jpg`). Le foto non ci sono ancora: ogni card mostra un riquadro colorato con l'icona e si riempie da sola quando carichi i file.
+- In «Inizia in pochi minuti» ci sono tre schermate vere del pannello (`assets/foto/pannello-1…3.webp`, 1200×750): Contenuti, Aspetto con l'anteprima, QR & Link.
+- Casa Lucia si sposta a **Spello (Umbria)**:
+  - locali di fantasia (Osteria dell'Arco con gli strangozzi al tartufo, Bar della Fontana, Gelateria delle Rose);
+  - telefono di esempio con il prefisso 0742;
+  - una sezione Servizi extra d'esempio.
+  - Vale per le installazioni nuove. Le demo già installate restano finché non le ricrei dall'admin.
+- `app/tools/foto.php` rigenera con GD `borgo-1200.webp`, `borgo-2000.webp` e `borgo-telefono-600.webp` dai `.jpg`. Si avvia da riga di comando o dal bottone in Diagnostica.
+
+**Prove**
+- `giro-completo.php`: 470 controlli (35 nuovi). `aggiornamento.php`: superata da `be97f4a` (la v1 della revisione), `cb6d0dc`, `d6edc08`, `8f27f4f`, `14a9c6e`, `1562635`, `74893f6`.
+- Nel browser, a 390 e 1366 px: landing (listino, confronto, FAQ da tastiera, scene, piè di pagina), commiato di Casa Lucia con e senza recensioni, firma.
+
 ## v2 · Fase 4 — Portfolio: una struttura prima di pagare, poi copia (1 ottobre 2026)
 
 Nessuna migrazione: il blocco si calcola dai dati che ci sono già (piano scelto, abbonamento, quantità, ordine di creazione).

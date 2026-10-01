@@ -171,4 +171,18 @@ return [
     'route_aereo'              => 'In aereo',
     'route_autobus'            => 'In autobus',
     'directions'               => 'Indicazioni',
+
+    // Fase 5: firma, recensioni, prenotazione diretta, servizi extra
+    'kind.extras'              => 'Servizi extra',
+    'made_with'                => 'Guida creata con MyHouse Welcome',
+    'create_yours'             => 'Crea la tua',
+    'review_title'             => 'Ti è piaciuto il soggiorno?',
+    'review_lead'              => 'Una recensione aiuta tantissimo chi ospita.',
+    'review_other'             => 'Lascia una recensione',
+    'direct_title'             => 'La prossima volta prenota da noi',
+    'direct_lead'              => 'Prenotando direttamente sul nostro sito hai le condizioni migliori.',
+    'direct_code'              => 'Codice sconto: %s',
+    'direct_book'              => 'Prenota sul nostro sito',
+    'request_whatsapp'         => 'Richiedi su WhatsApp',
+    'extra_message'            => 'Ciao! Vorrei richiedere: %s',
 ];

@@ -10,4 +10,10 @@
         <td><b><?= Support::e($nome) ?></b><br><span class="small muted"><?= Support::e((string) $dett) ?></span></td></tr>
     <?php endforeach; ?>
   </tbody></table></div>
+  <section class="panel stack">
+    <span class="kicker">Foto della landing</span>
+    <p class="small">Hai caricato un nuovo <code>borgo.jpg</code> o <code>borgo-telefono.jpg</code> in <code>assets/foto/</code>? Rigenera le versioni WebP
+      (1200 e 2000 px di larghezza, 600 px per il telefono). Si può fare anche da riga di comando: <code>php app/tools/foto.php</code>.</p>
+    <form method="post" action="<?= MHW\b() ?>/admin/diagnostica/foto" style="margin:0"><?= MHW\Csrf::field() ?><button class="btn btn--ghost btn--sm">Rigenera le foto WebP</button></form>
+  </section>
 </div>

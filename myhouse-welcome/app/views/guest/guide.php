@@ -50,3 +50,7 @@ $copertina = !empty($pr['cover_id']) ? MHW\Media::url((int) $pr['cover_id']) : (
     <?php if (!empty($snap['published_at'])): ?><?= Support::e(I18n::t($loc, 'updated_on', gmdate('d/m/Y', strtotime($snap['published_at']) ?: time()))) ?><?php endif; ?>
     <?php if ($cin !== ''): ?><?= !empty($snap['published_at']) ? '<br>' : '' ?>CIN <?= Support::e($cin) ?><?php endif; ?></p>
 <?php endif; ?>
+<?php if ($pr['branding'] ?? true): /* la firma: un link alla landing, senza cookie; nascondibile con Plus e Portfolio */ ?>
+  <p class="tiny firma"><?= Support::e(I18n::t($loc, 'made_with')) ?> ·
+    <a href="<?= Support::e(Support::baseUrl()) ?>/?ref=guida" rel="noopener" target="_blank"><?= Support::e(I18n::t($loc, 'create_yours')) ?></a></p>
+<?php endif; ?>

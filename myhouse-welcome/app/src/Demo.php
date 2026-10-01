@@ -103,12 +103,13 @@ final class Demo
     {
         $creati = [];
 
-        // ------------------------------------------------ Casa Lucia, Toscana — Plus
+        // -------------------------------------------- Casa Lucia, Spello (Umbria) — Plus
+        // La casa, i locali e i numeri sono di fantasia: la demo lo dichiara.
         $lucia = self::host('Lucia Ferrante', 'lucia@' . self::DOMINIO, 'plus');
         $acc = (int) $lucia['account_id'];
         $pid = self::struttura($acc, [
-            'nome' => 'Casa Lucia', 'citta' => 'Montepulciano', 'regione' => 'Toscana', 'host' => 'Lucia',
-            'arrivo' => '15:00', 'partenza' => '10:30', 'telefono' => '+39 0578 000000',
+            'nome' => 'Casa Lucia', 'citta' => 'Spello', 'regione' => 'Umbria', 'host' => 'Lucia',
+            'arrivo' => '15:00', 'partenza' => '10:30', 'telefono' => '+39 0742 000000',
             'lingue' => ['it', 'en', 'de'], 'palette' => 'terracotta',
         ]);
         Db::update('properties', [
@@ -170,31 +171,43 @@ final class Demo
         $emergenze = Properties::addSection($acc, $pid, 'emergency');
         self::scrivi($pid, $emergenze, [
             'it' => ['emergency_number' => '112', 'contacts' => [
-                        ['name' => 'Lucia, per i problemi in casa', 'phone' => '+39 0578 000000', 'note' => 'Dalle 8 alle 22'],
+                        ['name' => 'Lucia, per i problemi in casa', 'phone' => '+39 0742 000000', 'note' => 'Dalle 8 alle 22'],
                         ['name' => 'Farmacia di turno', 'phone' => '', 'note' => 'Il turno è affisso sulla porta di ogni farmacia.']]],
             'en' => ['contacts' => [['name' => 'Lucia, for anything in the house', 'note' => '8am to 10pm'],
                                     ['name' => 'Duty pharmacy', 'note' => 'The rota is posted on the door of every pharmacy.']]],
         ]);
 
+        // Servizi extra: l'ospite li chiede a Lucia su WhatsApp (prezzi di esempio, come la casa).
+        $extra = Properties::addSection($acc, $pid, 'extras');
+        self::scrivi($pid, $extra, [
+            'it' => ['items' => [
+                        ['title' => 'Transfer dalla stazione', 'description' => 'Ti veniamo a prendere alla stazione di Spello con i bagagli.', 'price' => '15 € a tratta'],
+                        ['title' => 'Colazione in casa', 'description' => 'Pane, marmellate e torta della mattina, lasciati in cucina la sera prima.', 'price' => '8 € a persona']],
+                     'note' => 'Da chiedere almeno un giorno prima.'],
+            'en' => ['items' => [['title' => 'Station transfer', 'description' => 'We pick you up at Spello station, luggage included.'],
+                                 ['title' => 'Breakfast at home', 'description' => 'Bread, jams and the morning cake, left in the kitchen the night before.']],
+                     'note' => 'Please ask at least one day ahead.'],
+        ]);
+
         $mangiare = Properties::addSection($acc, $pid, 'eat');
         self::scrivi($pid, $mangiare, [
             'it' => ['intro' => 'Tre posti a piedi. Li abbiamo provati tutti, più di una volta.',
-                     'host_note' => 'Al Ponte prenota per telefono: non rispondono alle mail, ma rispondono sempre.'],
+                     'host_note' => "All'Arco prenota per telefono: non rispondono alle mail, ma rispondono sempre."],
             'en' => ['intro' => 'Three places within walking distance. We have tried them all, more than once.',
-                     'host_note' => 'Book Al Ponte by phone: they never answer email, but they always pick up.'],
+                     'host_note' => "Book L'Arco by phone: they never answer email, but they always pick up."],
             'de' => ['intro' => 'Drei Lokale zu Fuß. Wir haben sie alle mehr als einmal probiert.'],
         ], 'Dove mangiare e bere');
         foreach ([
-            ['Osteria del Ponte', 'Trattoria', 'Cucina toscana, pici fatti a mano.', 'Via del Ponte 3', 6, 'pine', 'osteria.jpg', 'Tavoli apparecchiati nel vicolo',
+            ['Osteria dell\'Arco', 'Trattoria', 'Cucina umbra, strangozzi al tartufo fatti a mano.', 'Vicolo dell\'Arco 3', 6, 'pine', 'osteria.jpg', 'Tavoli apparecchiati nel vicolo',
              ['it' => 'Perfetto per cena', 'en' => 'Perfect for dinner'], ['en' => 'Trattoria', 'de' => 'Trattoria']],
-            ['Bar Centrale', 'Colazione', 'Cornetti caldi e cappuccino al banco.', 'Piazza Grande 1', 3, 'sea', 'caffe.jpg', 'Una tazzina di espresso sul bancone',
+            ['Bar della Fontana', 'Colazione', 'Cornetti caldi e cappuccino al banco.', 'Piazzetta della Fontana 1', 3, 'sea', 'caffe.jpg', 'Una tazzina di espresso sul bancone',
              ['it' => 'Ideale per colazione', 'en' => 'Ideal for breakfast'], ['en' => 'Breakfast', 'de' => 'Frühstück']],
-            ['Gelateria Marchetti', 'Gelato', 'Il pistacchio vale la camminata in salita.', 'Via di Gracciano 22', 8, 'ochre', 'gelato.jpg', 'Vaschette di gelato dietro il banco',
+            ['Gelateria delle Rose', 'Gelato', 'Il gusto alle rose vale la camminata in salita.', 'Via dei Fiori 22', 8, 'ochre', 'gelato.jpg', 'Vaschette di gelato dietro il banco',
              ['it' => "Consigliato dall'host", 'en' => 'Host favourite'], ['en' => 'Ice cream', 'de' => 'Eis']],
         ] as [$n, $cat, $desc, $ind, $min, $tono, $img, $alt, $badge, $catTr]) {
             $plid = Properties::savePlace($acc, $pid, $mangiare, null, 'it', true, [
-                'name' => $n, 'category' => $cat, 'description' => $desc, 'address' => $ind . ', Montepulciano',
-                'maps_url' => 'https://maps.google.com/?q=' . rawurlencode($ind . ', Montepulciano'),
+                'name' => $n, 'category' => $cat, 'description' => $desc, 'address' => $ind . ', Spello',
+                'maps_url' => 'https://maps.google.com/?q=' . rawurlencode($ind . ', Spello'),
                 'walk_minutes' => $min, 'badge' => $badge['it'], 'badge_tone' => $tono,
             ]);
             Properties::savePlace($acc, $pid, $mangiare, $plid, 'en', false, ['category' => $catTr['en'], 'badge' => $badge['en']]);

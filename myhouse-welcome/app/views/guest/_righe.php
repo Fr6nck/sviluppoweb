@@ -71,6 +71,31 @@ elseif ($tipo === 'checks' && !empty($d[$campo])): ?>
   </div>
 <?php
 
+/* ----------------------------------------------------- servizi extra */
+elseif ($campo === 'items' && $tipo === 'repeater'):
+    $righe = array_filter($righe, fn($r) => $pieno($r, ['title', 'description']));
+    // «Richiedi su WhatsApp»: il primo contatto che risponde lì, con un messaggio già scritto nella lingua dell'ospite.
+    $wa = '';
+    foreach ($snap['property']['contacts'] ?? [] as $c) if (!empty($c['whatsapp']) && trim((string) $c['phone']) !== '') { $wa = ltrim(Support::telHref((string) $c['phone']), '+'); break; }
+    if ($righe): ?>
+  <div class="stack" style="margin-top:18px;gap:12px">
+    <?php foreach ($righe as $r): $foto = (int) ($r['photo'] ?? 0) ? Media::url((int) $r['photo']) : null; $titoloExtra = trim((string) $r['title']); ?>
+      <article class="panel stack extra" style="gap:10px">
+        <?php if ($foto): ?><div class="shot shot--h186"><img src="<?= Support::e($foto) ?>" alt="" loading="lazy" decoding="async"></div><?php endif; ?>
+        <div class="spread spread--mid" style="gap:12px;align-items:baseline">
+          <b style="font-size:18px;font-weight:500"><?= Support::e($titoloExtra) ?></b>
+          <?php if (trim((string) $r['price']) !== ''): ?><span class="extra__prezzo"><?= Support::e($r['price']) ?></span><?php endif; ?>
+        </div>
+        <?php if (trim((string) $r['description']) !== ''): ?><p class="small" style="white-space:pre-line;line-height:21px"><?= Support::e($r['description']) ?></p><?php endif; ?>
+        <?php if ($wa !== '' && $titoloExtra !== ''): ?>
+          <div class="ctas"><a href="https://wa.me/<?= Support::e($wa) ?>?text=<?= rawurlencode(I18n::t($loc, 'extra_message', $titoloExtra)) ?>" rel="noopener" target="_blank"
+             aria-label="<?= Support::e(I18n::t($loc, 'request_whatsapp') . ': ' . $titoloExtra) ?>"><?= Icon::svg('whatsapp', 15) ?><?= Support::e(I18n::t($loc, 'request_whatsapp')) ?></a></div>
+        <?php endif; ?>
+      </article>
+    <?php endforeach; ?>
+  </div>
+<?php endif;
+
 /* ------------------------------------------------- servizi: istruzioni */
 elseif ($campo === 'manuals'):
     $righe = array_filter($righe, fn($r) => $pieno($r, ['title', 'steps', 'photo', 'pdf'])); if ($righe): ?>

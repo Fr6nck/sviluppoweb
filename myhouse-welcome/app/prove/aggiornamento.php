@@ -109,6 +109,16 @@ if ($codici > 0 || !$db->query("SELECT 1 FROM schema_migrations WHERE name LIKE 
         'datiSezioni' => (function () use ($db) { try { return $db->query('SELECT id, kind, data FROM sections ORDER BY id')->fetchAll(); } catch (PDOException) { return []; } })(),
         'luoghi' => (function () use ($db) { try { return $db->query('SELECT * FROM places ORDER BY id')->fetchAll(); } catch (PDOException) { return []; } })(),
         'testiLuoghi' => (function () use ($db) { try { return $db->query('SELECT * FROM place_translations ORDER BY id')->fetchAll(); } catch (PDOException) { return []; } })(),
+        // Le statistiche delle guide vere (la 003 azzera di proposito quelle della demo).
+        // Qualche lettura vera prima dell'aggiornamento: la 014 ricostruisce la tabella e non deve perderne.
+        'eventiSemina' => (function () use ($db) { try {
+            $pid = (int) $db->query('SELECT id FROM properties ORDER BY id LIMIT 1')->fetchColumn();
+            $st = $db->prepare("INSERT INTO analytics_events (property_id, kind, locale, day, created_at) VALUES (?, 'guide_view', 'it', ?, ?)");
+            for ($i = 0; $i < 7; $i++) $st->execute([$pid, gmdate('Y-m-d'), gmdate('Y-m-d\\TH:i:s\\Z')]);
+            return 7; } catch (PDOException) { return 0; } })(),
+        // Tutti gli eventi, se la 003 (che azzera di proposito quelli della demo) è già passata; altrimenti -1.
+        'eventi' => (function () use ($db) { try { return $db->query("SELECT 1 FROM schema_migrations WHERE name LIKE '003%'")->fetchColumn()
+                       ? (int) $db->query('SELECT COUNT(*) FROM analytics_events')->fetchColumn() : -1; } catch (PDOException) { return -1; } })(),
         'media' => (function () use ($db) { try { return (int) $db->query('SELECT COUNT(*) FROM media')->fetchColumn(); } catch (PDOException) { return 0; } })(),
         'host' => (function () use ($db) { try { return $db->query('SELECT id, host_name, host_phone, host_whatsapp FROM properties ORDER BY id')->fetchAll(); } catch (PDOException) { return []; } })(),
     ];
@@ -296,6 +306,23 @@ if ($park && str_contains((string) $db->query("SELECT snapshot FROM guide_versio
 $colF = array_filter(['billing_type', 'vat', 'cf', 'sdi', 'pec', 'billing_province'], fn($c) => $db->query("SELECT COUNT(*) FROM pragma_table_info('accounts') WHERE name = '$c'")->fetchColumn());
 prova('Fase 3B · colonne di fatturazione aggiunte, vuote per gli account di prima', count($colF) === 6 && (int) $db->query("SELECT COUNT(*) FROM accounts WHERE billing_type <> ''")->fetchColumn() === 0);
 prova('Fase 3B · coordinate dei luoghi', (int) $db->query("SELECT COUNT(*) FROM pragma_table_info('places') WHERE name IN ('lat', 'lng')")->fetchColumn() === 2);
+
+// ------------------------- Fase 5: firma (013), crescita (014)
+$eventiOra = (int) $db->query('SELECT COUNT(*) FROM analytics_events WHERE property_id IS NOT NULL')->fetchColumn();
+if (($f['eventi'] ?? -1) >= 0) prova('Fase 5 · nessun evento delle statistiche perso nella ricostruzione della tabella', $eventiOra >= (int) $f['eventi'], $eventiOra . ' / ' . $f['eventi']);
+$nn = $db->query("SELECT \"notnull\" FROM pragma_table_info('analytics_events') WHERE name = 'property_id'")->fetchColumn();
+prova('Fase 5 · eventi del funnel senza struttura ammessi', (string) $nn === '0');
+$hb = (int) $db->query("SELECT id FROM features WHERE code = 'hide_branding'")->fetchColumn();
+$plusOra = $db->query("SELECT pv.id FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = 'plus' AND pv.is_current = 1")->fetchColumn();
+prova('Fase 5 · Plus in vendita con la firma nascondibile, in una versione nuova', $hb > 0
+      && $db->query("SELECT value FROM package_features WHERE package_version_id = " . (int) $plusOra . " AND feature_id = $hb")->fetchColumn() === '1');
+$r = http("$BASE/g/$demo");
+prova('Fase 5 · la guida demo pubblicata prima mostra la firma', $r['code'] === 200 && str_contains($r['body'], 'Guida creata con MyHouse Welcome'));
+$r = http("$BASE/g/$demo/commiato");
+prova('Fase 5 · commiato senza recensioni (non compilate)', $r['code'] === 200 && pulita($r['body']) && !str_contains($r['body'], 'Ti è piaciuto il soggiorno?'));
+$r = http("$BASE/");
+prova('Fase 5 · landing con FAQ, confronto e scene', $r['code'] === 200 && str_contains($r['body'], 'Confronta tutti i piani') && str_contains($r['body'], 'class="faq__voce"'));
+prova('Fase 5 · nessuna email di richiamo partita per le bozze di prima', !is_file("$W/app/storage/logs/mail.log") || !str_contains((string) file_get_contents("$W/app/storage/logs/mail.log"), 'procedura/'));
 
 $r = http("$BASE/");
 prova('Una seconda richiesta non ripete le migrazioni', count($db->query('SELECT name FROM schema_migrations')->fetchAll()) === count($mig));

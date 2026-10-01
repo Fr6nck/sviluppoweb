@@ -38,6 +38,30 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
         </ul>
       <?php endif; ?>
       <?php if ($saluto !== ''): ?><p class="rise" style="animation-delay:1s;white-space:pre-line"><?= Support::e($saluto) ?></p><?php endif; ?>
+      <?php /* Dopo il soggiorno: compaiono solo se l'host li ha compilati. */
+            $recensioni = $pr['reviews'] ?? []; $diretta = $pr['direct'] ?? ['url' => '', 'code' => ''];
+            $piattaforme = ['google' => 'Google', 'booking' => 'Booking.com', 'airbnb' => 'Airbnb', 'other' => I18n::t($loc, 'review_other')]; ?>
+      <?php if ($recensioni): ?>
+        <div class="stack congedo-extra rise" style="gap:10px;animation-delay:1s">
+          <h2 style="font-size:22px;color:#f6f0e5"><?= Support::e(I18n::t($loc, 'review_title')) ?></h2>
+          <p class="small" style="color:#e8dcc8"><?= Support::e(I18n::t($loc, 'review_lead')) ?></p>
+          <div class="ctas"><?php foreach ($piattaforme as $k => $nome): if (empty($recensioni[$k])) continue; ?>
+            <a href="<?= Support::e($recensioni[$k]) ?>" target="_blank" rel="noopener"><?= Icon::svg('message', 15) ?><?= Support::e($nome) ?></a><?php endforeach; ?></div>
+        </div>
+      <?php endif; ?>
+      <?php if (trim((string) $diretta['url']) !== '' || trim((string) $diretta['code']) !== ''): ?>
+        <div class="stack congedo-extra rise" style="gap:10px;animation-delay:1.02s">
+          <h2 style="font-size:22px;color:#f6f0e5"><?= Support::e(I18n::t($loc, 'direct_title')) ?></h2>
+          <p class="small" style="color:#e8dcc8"><?= Support::e(I18n::t($loc, 'direct_lead')) ?></p>
+          <?php if (trim((string) $diretta['code']) !== ''): ?>
+            <p><span class="codice-sconto"><?= Support::e(I18n::t($loc, 'direct_code', $diretta['code'])) ?>
+              <button type="button" class="icon-btn" data-copia-di="<?= Support::e($diretta['code']) ?>" aria-label="<?= Support::e(I18n::t($loc, 'copy')) ?>" hidden><?= Icon::svg('copy', 15) ?></button></span></p>
+          <?php endif; ?>
+          <?php if (trim((string) $diretta['url']) !== ''): ?>
+            <div class="ctas"><a href="<?= Support::e($diretta['url']) ?>" target="_blank" rel="noopener"><?= Icon::svg('globe', 15) ?><?= Support::e(I18n::t($loc, 'direct_book')) ?></a></div>
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
       <div class="stack" style="gap:10px">
         <?php if ($tel): ?>
           <a class="btn btn--lg btn--go rise" style="animation-delay:1.05s" href="https://wa.me/<?= Support::e(ltrim($tel, '+')) ?>" rel="noopener">
@@ -49,3 +73,13 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
     </div>
   </div>
 </div>
+<script>
+/* Copiare il codice sconto: il bottone compare solo se il browser sa copiare. */
+(function () {
+  if (!navigator.clipboard) return;
+  document.querySelectorAll('[data-copia-di]').forEach(function (b) {
+    b.hidden = false;
+    b.addEventListener('click', function () { navigator.clipboard.writeText(b.getAttribute('data-copia-di')); b.setAttribute('aria-label', <?= json_encode(I18n::t($loc, 'copied')) ?>); });
+  });
+})();
+</script>

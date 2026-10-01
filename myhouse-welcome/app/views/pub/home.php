@@ -4,8 +4,11 @@
      prodotto    cosa trova l'ospite
      il tempo    perché conviene al proprietario
      chi         chi c'è dietro
-     come        quanto è semplice cominciare
+     guadagno    la guida che porta prenotazioni dirette e recensioni
+     come        quanto è semplice cominciare (con le schermate vere del pannello)
      QR          come si condivide
+     voci        le testimonianze, solo se l'amministratore ne ha inserite di vere
+     domande     le FAQ
      piani       scegliere
      chiusura    cominciare
    Prezzi, nomi ed elenchi dei piani arrivano dal database (li cambia
@@ -42,7 +45,16 @@ $elementi = array_map(fn($x) => [MHW\SectionCatalog::icon($x[0]), $x[1]],
       parcheggio, regole e consigli locali in un unico link, da condividere anche tramite QR Code.</p>
     <div class="row">
       <a class="btn btn--lg btn--go" href="<?= $crea ?>">Crea gratis la tua guida <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
-      <?php if ($demoUrl): ?><a class="btn btn--lg btn--ghost" href="<?= $demoUrl ?>">Guarda la demo</a><?php endif; ?>
+      <?php if ($demoUrl): ?><a class="btn btn--lg btn--ghost" href="<?= $demoUrl ?>">Guarda la demo</a>
+        <?php /* La demo nella lingua dell'ospite: le lingue che la demo ha davvero, al massimo tre. */
+              $lingueDemo = array_values(array_intersect(['it', 'en', 'de'], array_column(MHW\Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$demo['id']]), 'locale')));
+              $nomiLingue = ['it' => 'italiano', 'en' => 'inglese', 'de' => 'tedesco']; ?>
+        <?php if (count($lingueDemo) > 1): ?>
+          <span class="demo-lingue" role="group" aria-label="Lingua della demo">
+            <?php foreach ($lingueDemo as $l): ?><a href="<?= $demoUrl ?>?l=<?= $l ?>" hreflang="<?= $l ?>" aria-label="Demo in <?= $nomiLingue[$l] ?>"><?= strtoupper($l) ?></a><?php endforeach; ?>
+          </span>
+        <?php endif; ?>
+      <?php endif; ?>
     </div>
     <p class="micro micro--left"><span>Nessuna app</span><span>Anteprima gratuita</span><span>Paghi solo quando pubblichi</span></p>
   </div>
@@ -76,16 +88,22 @@ $elementi = array_map(fn($x) => [MHW\SectionCatalog::icon($x[0]), $x[1]],
   </<?= $tag ?>>
 </section>
 
-<div class="stage">
-  <picture>
-    <source type="image/webp" srcset="<?= Support::e($fotoSet) ?>" sizes="(max-width: 1240px) 100vw, 1160px">
-    <img src="<?= Support::e($fotoJpg) ?>" width="2000" height="924" fetchpriority="high" decoding="async"
-         alt="Facciata in pietra in un borgo medievale, con una scalinata e gerani alle finestre">
-  </picture>
-  <?php if ($demo): ?>
-    <span class="shot-pill"><span class="demo-tag">Demo</span>— <?= Support::e($demo['name']) ?></span>
-  <?php endif; ?>
-</div>
+<?php /* Tre scene al posto della foto grande: il QR all'ingresso, l'ospite, l'host.
+   Le foto si caricano in assets/foto/ con questi nomi; se una manca, la card
+   mostra un riquadro colorato con l'icona, senza errori. */
+$cartellaFoto = (defined('MHW_PUBLIC') ? MHW_PUBLIC : dirname(__DIR__, 2) . '/public') . '/assets/foto/'; ?>
+<section class="scene" aria-label="Come si usa">
+  <?php foreach ([['scena-qr.jpg', 'qr', 't-terracotta', 'Il QR all\'ingresso', 'Lo stampi una volta: l\'ospite lo inquadra e la guida si apre.'],
+                  ['scena-ospite.jpg', 'phone', 't-sea', 'L\'ospite trova tutto', 'Wi-Fi, check-in, consigli: nella sua lingua, sul suo telefono.'],
+                  ['scena-host.jpg', 'home', 't-pine', 'Tu aggiorni quando vuoi', 'Cambi un orario dal pannello e pubblichi: il QR resta lo stesso.']] as [$file, $ico, $tono, $tit, $txt]):
+        $cie = is_file($cartellaFoto . $file); ?>
+    <figure class="scena">
+      <?php if ($cie): ?><img src="<?= Support::e(a('/assets/foto/' . $file)) ?>" alt="" loading="lazy" decoding="async" width="800" height="600">
+      <?php else: ?><span class="scena__vuota <?= $tono ?>" aria-hidden="true"><?= Icon::svg($ico, 40, 1.6) ?></span><?php endif; ?>
+      <figcaption><b><?= $tit ?></b><span><?= $txt ?></span></figcaption>
+    </figure>
+  <?php endforeach; ?>
+</section>
 
 <section class="prodotto" aria-labelledby="prodotto-titolo">
   <div class="prodotto__testa">
@@ -163,6 +181,24 @@ $elementi = array_map(fn($x) => [MHW\SectionCatalog::icon($x[0]), $x[1]],
   </div>
 </section>
 
+<?php /* La guida che fa guadagnare: recensioni, prenotazione diretta, servizi extra. */ ?>
+<section id="guadagno" class="blocco guadagno" aria-labelledby="guadagno-titolo">
+  <div class="stack stack--sm" style="max-width:640px">
+    <span class="kicker">La guida che lavora per te</span>
+    <h2 id="guadagno-titolo" class="h-sezione">Una prenotazione diretta in più all'anno paga l'abbonamento.</h2>
+    <p class="lead">Alla fine del soggiorno la guida saluta l'ospite e gli lascia due inviti: una recensione dove preferisci, e la
+      prossima volta la prenotazione sul tuo sito, con il tuo codice sconto. Senza commissioni.</p>
+  </div>
+  <div class="grid grid-3 guadagno__voci">
+    <div class="vantaggio"><span class="vantaggio__ico"><?= Icon::svg('message', 20, 1.7) ?></span><b>Più recensioni.</b>
+      <p>Google, Booking, Airbnb: un pulsante per ognuno, quando il ricordo è fresco.</p></div>
+    <div class="vantaggio"><span class="vantaggio__ico"><?= Icon::svg('globe', 20, 1.7) ?></span><b>Prenotazioni dirette.</b>
+      <p>«La prossima volta prenota da noi», con il link al tuo sito e il codice sconto.</p></div>
+    <div class="vantaggio"><span class="vantaggio__ico"><?= Icon::svg('euro', 20, 1.7) ?></span><b>Servizi extra.</b>
+      <p>Transfer, colazione, late check-out: l'ospite li chiede con un tocco su WhatsApp.</p></div>
+  </div>
+</section>
+
 <aside class="chi" aria-label="Chi c'è dietro MyHouse Welcome">
   <p class="chi__titolo">Pensata per chi ospita. Sviluppata da chi lavora nel digitale e nell'ospitalità.</p>
   <p class="muted">MyHouse Welcome fa parte delle soluzioni MyHouse di
@@ -175,12 +211,19 @@ $elementi = array_map(fn($x) => [MHW\SectionCatalog::icon($x[0]), $x[1]],
     <h2 id="come-titolo" class="h-sezione">Inizia in pochi minuti.</h2>
   </div>
   <div class="howto">
-    <div class="step-card"><span class="big">01</span><b>Crea la tua guida.</b>
-      <p class="muted">Inserisci le informazioni della struttura e scegli cosa condividere con gli ospiti.</p></div>
-    <div class="step-card"><span class="big">02</span><b>Personalizza e guarda l'anteprima.</b>
-      <p class="muted">Vedi come apparirà la guida sullo smartphone, prima di pubblicarla.</p></div>
-    <div class="step-card"><span class="big">03</span><b>Pubblica e condividi.</b>
-      <p class="muted">Attiva il piano e condividi la guida tramite link o QR Code.</p></div>
+    <?php /* Le schermate vere del pannello (assets/foto/pannello-1…3.webp); se mancano, resta il numero. */
+    foreach ([['01', 'Crea la tua guida.', 'Inserisci le informazioni della struttura e scegli cosa condividere con gli ospiti.', 'Il pannello: i passi della procedura e il modulo della struttura'],
+              ['02', 'Personalizza e guarda l\'anteprima.', 'Vedi come apparirà la guida sullo smartphone, prima di pubblicarla.', 'Il pannello: le sezioni della guida con l\'anteprima'],
+              ['03', 'Pubblica e condividi.', 'Attiva il piano e condividi la guida tramite link o QR Code.', 'Il pannello: il QR Code da stampare e il link da condividere']] as $i => [$n, $tit, $txt, $alt]):
+          $shot = 'pannello-' . ($i + 1) . '.webp'; ?>
+      <div class="step-card">
+        <?php if (is_file($cartellaFoto . $shot)): ?>
+          <img class="step-card__shot" src="<?= Support::e(a('/assets/foto/' . $shot)) ?>" alt="<?= Support::e($alt) ?>" loading="lazy" decoding="async" width="720" height="450">
+          <span class="step-card__n"><?= $n ?></span>
+        <?php else: ?><span class="big"><?= $n ?></span><?php endif; ?>
+        <b><?= $tit ?></b>
+        <p class="muted"><?= $txt ?></p></div>
+    <?php endforeach; ?>
   </div>
 </section>
 
@@ -198,6 +241,42 @@ $elementi = array_map(fn($x) => [MHW\SectionCatalog::icon($x[0]), $x[1]],
     <?= preg_replace('/width="\d+" height="\d+"/', 'width="160" height="160"',
                      MHW\QrExport::svg($demo ? Support::baseUrl() . '/g/' . $demo['slug'] . '/benvenuto' : Support::baseUrl())) ?>
     <p class="small" style="margin-top:10px;color:#231b12"><?= $demo ? 'Inquadra e prova la demo.' : 'Inquadra per la guida' ?></p>
+  </div>
+</section>
+
+<?php if (!empty($testimonianze)): /* solo testimonianze vere, inserite dall'amministratore */ ?>
+<section class="blocco voci" aria-labelledby="voci-titolo">
+  <div class="stack stack--sm"><span class="kicker">Chi la usa</span><h2 id="voci-titolo" class="h-sezione">Le parole di chi ospita.</h2></div>
+  <div class="grid grid-3" style="margin-top:24px">
+    <?php foreach ($testimonianze as $t): ?>
+      <figure class="panel voce">
+        <blockquote><p><?= Support::e($t['body']) ?></p></blockquote>
+        <figcaption>
+          <?php if ($t['foto']): ?><img src="<?= Support::e($t['foto']) ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?>
+          <span><b><?= Support::e($t['name']) ?></b><?php if ($t['property_name'] !== ''): ?><span class="small muted"><?= Support::e($t['property_name']) ?></span><?php endif; ?></span>
+        </figcaption>
+      </figure>
+    <?php endforeach; ?>
+  </div>
+</section>
+<?php endif; ?>
+
+<section id="domande" class="blocco faq" aria-labelledby="faq-titolo">
+  <div class="stack stack--sm"><span class="kicker">Domande</span><h2 id="faq-titolo" class="h-sezione">Prima di cominciare.</h2></div>
+  <div class="faq__lista">
+    <?php foreach ([
+        ['Serve un\'app?', 'No. La guida si apre nel browser del telefono, da un link o dal QR Code. Gli ospiti non scaricano niente, e nemmeno tu: il pannello funziona dal computer e dal telefono.'],
+        ['Cosa succede se non rinnovo?', 'Alla fine del periodo pagato la guida va offline da sola. Niente si cancella: testi, foto e QR restano salvati, e il QR stampato torna a funzionare appena rinnovi.'],
+        ['Posso cambiare i testi dopo aver stampato il QR?', 'Sì, quando vuoi. Il QR Code è permanente: modifichi la guida, pubblichi la nuova versione e chi inquadra il QR stampato vede già quella.'],
+        ['Ricevo fattura?', 'Sì. Prima del primo pagamento inserisci una volta i dati di fatturazione (partita IVA o codice fiscale, codice destinatario SDI o PEC). I documenti di pagamento li trovi in Account & Fatturazione.'],
+        ['Posso disdire?', 'Sì. Disattivi il rinnovo automatico da Account & Fatturazione quando vuoi: la guida resta online fino alla fine del periodo già pagato, poi si ferma. Nessun vincolo.'],
+        ['Gli ospiti vengono tracciati?', 'No. La guida non usa cookie e non compare nei motori di ricerca. Le statistiche di lettura contano solo aperture anonime: nessun indirizzo IP, nessun profilo.'],
+    ] as $i => [$d, $r]): ?>
+      <details class="faq__voce"<?= $i === 0 ? ' open' : '' ?>>
+        <summary><?= Support::e($d) ?><?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
+        <p><?= Support::e($r) ?></p>
+      </details>
+    <?php endforeach; ?>
   </div>
 </section>
 
@@ -237,21 +316,20 @@ $elementi = array_map(fn($x) => [MHW\SectionCatalog::icon($x[0]), $x[1]],
             <p class="plan__regola">Prima struttura <?= Support::e(Support::money((int) $primo['price_cents'], $primo['currency'])) ?>/anno.
               Ogni struttura aggiuntiva +<?= Support::e(Support::money((int) $primo['extra_price_cents'], $primo['currency'])) ?>/anno.</p>
             <span class="price" aria-live="polite"><span data-totale><?= Support::e(Support::money(Plans::price($primo, $minimo), $primo['currency'])) ?></span><small> + IVA / anno</small></span>
-            <ul class="plan__lista">
-              <?php foreach ($p['bullet_list'] as $bl): ?><li><?= Icon::svg('check', 16, 2) ?><span><?= Support::e($bl) ?></span></li><?php endforeach; ?>
-            </ul>
+            <span class="plan__mese">circa <span data-mensile><?= Support::e(Support::money(Plans::monthly(Plans::price($primo, $minimo)), $primo['currency'])) ?></span> al mese</span>
+            <?php $voci = $p['bullet_list']; include __DIR__ . '/_voci_piano.php'; ?>
             <button class="btn <?= $scuro ? '' : 'btn--ghost' ?>"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $nome) ?></button>
           </form>
         <?php else: ?>
           <span class="price"><?= Support::e(Support::money((int) $primo['price_cents'], $primo['currency'])) ?><small> + IVA / anno</small></span>
-          <ul class="plan__lista">
-            <?php foreach ($p['bullet_list'] as $bl): ?><li><?= Icon::svg('check', 16, 2) ?><span><?= Support::e($bl) ?></span></li><?php endforeach; ?>
-          </ul>
+          <span class="plan__mese">circa <?= Support::e(Support::money(Plans::monthly((int) $primo['price_cents']), $primo['currency'])) ?> al mese</span>
+          <?php $voci = $p['bullet_list']; include __DIR__ . '/_voci_piano.php'; ?>
           <a class="btn <?= $scuro ? '' : 'btn--ghost' ?>" href="<?= $vai((int) $p['pv_id']) ?>"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $nome) ?></a>
         <?php endif; ?>
       </div>
     <?php endforeach; ?>
   </div>
+  <?php include __DIR__ . '/_confronto.php'; ?>
   <p class="piani__nota">Abbonamento annuale con rinnovo automatico. Puoi disattivare il rinnovo dal tuo account, mantenendo la
     guida disponibile fino alla scadenza del periodo pagato.</p>
 </section>

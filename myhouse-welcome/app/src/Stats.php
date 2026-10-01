@@ -47,6 +47,39 @@ final class Stats
         ];
     }
 
+    /** I passi del funnel, nell'ordine: chi arriva, chi si registra, chi crea una struttura, chi pubblica. */
+    public const FUNNEL = ['landing_view' => 'Visite alla landing', 'signup' => 'Registrazioni', 'property_created' => 'Strutture create', 'published' => 'Guide pubblicate'];
+
+    /**
+     * Un evento del funnel: anonimo come gli altri — nessun IP, nessun cookie,
+     * nessun identificativo. Solo il tipo e il giorno. I robot non contano.
+     */
+    public static function funnelEvent(string $kind): void
+    {
+        if (!isset(self::FUNNEL[$kind])) return;
+        if ($kind === 'landing_view' && preg_match('/bot|crawl|spider|slurp|preview|monitor|curl|wget|python|headless/i', (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''))) return;
+        try {
+            Db::insert('analytics_events', ['property_id' => null, 'section_id' => null, 'locale' => '', 'kind' => $kind, 'source' => '',
+                                            'day' => Support::today(), 'created_at' => Support::now()]);
+        } catch (\Throwable $e) { Log::exception($e, 'Stats::funnelEvent'); }   // prima della 014 la colonna non accetta il vuoto
+    }
+
+    /**
+     * Il funnel degli ultimi giorni: quanti per passo e la percentuale di passaggio dal passo prima.
+     * @return array<int,array{kind:string,label:string,n:int,perc:?int}>
+     */
+    public static function funnel(int $days = 30): array
+    {
+        $da = gmdate('Y-m-d', strtotime('-' . ($days - 1) . ' days'));
+        $out = []; $prima = null;
+        foreach (self::FUNNEL as $k => $label) {
+            $n = (int) Db::val('SELECT COUNT(*) FROM analytics_events WHERE kind = ? AND day >= ? AND property_id IS NULL', [$k, $da], 0);
+            $out[] = ['kind' => $k, 'label' => $label, 'n' => $n, 'perc' => $prima === null ? null : ($prima > 0 ? (int) round($n * 100 / $prima) : null)];
+            $prima = $n;
+        }
+        return $out;
+    }
+
     /** Il totale delle letture recenti di tutte le guide pubblicate (per il quadro admin). */
     public static function totalViews(int $days = 30): int
     {

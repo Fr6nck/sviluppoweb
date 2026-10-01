@@ -199,17 +199,18 @@ prova('…base e costo aggiuntivo dal listino, totale iniziale 177 €', str_con
 prova('…la quantità va alla registrazione col piano', str_contains($portfolio, '/registrati"') && str_contains($portfolio, 'name="piano" value="' . pv('portfolio') . '"') && str_contains($portfolio, 'Crea gratis con Portfolio'));
 prova('…label esplicita del campo', preg_match('#<label for="([a-z0-9-]+)"[^>]*>Quante strutture#', $portfolio, $mm) === 1 && str_contains($portfolio, 'id="' . $mm[1] . '"'));
 prova('…il totale lo calcola uno script senza prezzi scritti dentro', str_contains($r['body'], '/assets/prezzi.js') && is_file("$DOVE/assets/prezzi.js") && !preg_match('/11700|6000|117|177/', (string) @file_get_contents("$DOVE/assets/prezzi.js")));
-prova('Pricing: "Pannello di controllo" al posto di "CMS", niente frasi finali', !preg_match('/>\s*CMS\s*</', $r['body']) && str_contains($r['body'], 'Pannello di controllo')
+prova('Pricing: niente "CMS", niente frasi finali', !preg_match('/>\s*CMS\s*</', $r['body'])
       && !str_contains($r['body'], 'Meno domande ripetitive, più tempo per accogliere') && !str_contains($r['body'], 'concierge digitale'));
 prova('Piani: headline e descrizioni nuove', str_contains($r['body'], 'Le informazioni importanti, sempre a disposizione.') && str_contains($r['body'], 'Una guida completa, senza limiti di sezioni.')
       && str_contains($r['body'], 'Il Plus per più strutture.') && str_contains($r['body'], 'statistiche distinti per ogni struttura'));
-prova('Plus: foto e PDF spiegati, niente "immagine profilo", badge sobrio', str_contains($r['body'], 'Foto esplicative nelle sezioni') && str_contains($r['body'], 'Possibilità di allegare documenti PDF')
-      && !str_contains($r['body'], 'Immagine profilo') && str_contains($r['body'], 'Più completo') && !str_contains($r['body'], 'Più scelto'));
+$carteListino = substr($r['body'], (int) strpos($r['body'], 'class="grid grid-3 piani"'), (int) strpos($r['body'], 'class="confronto"') - (int) strpos($r['body'], 'class="grid grid-3 piani"'));
+prova('Plus: foto e PDF spiegati, niente "immagine profilo" nelle card, badge sobrio', str_contains($carteListino, 'Foto esplicative nelle sezioni') && str_contains($carteListino, 'Documenti PDF allegati')
+      && !str_contains($carteListino, 'Immagine profilo') && str_contains($r['body'], 'Più completo') && !str_contains($r['body'], 'Più scelto'));
 prova('Nota sul rinnovo automatico sotto i piani', str_contains($r['body'], 'Puoi disattivare il rinnovo dal tuo account'));
-prova('Il prodotto si vede subito: telefono nella hero, prima della foto', strpos($r['body'], 'class="device"') !== false && strpos($r['body'], 'class="device"') < strpos($r['body'], 'class="stage"'));
+prova('Il prodotto si vede subito: telefono nella hero, prima della foto', strpos($r['body'], 'class="device"') !== false && strpos($r['body'], 'class="device"') < strpos($r['body'], 'class="scene"'));
 prova('Il telefono è un link alla demo, con invito', preg_match('#<a class="device-link" href="([^"]+)"#', $r['body'], $mm) === 1 && str_ends_with($mm[1], '/benvenuto') && str_contains($r['body'], 'Scopri come la vedranno i tuoi ospiti'));
 prova('Demo, telefono e QR portano alla stessa demo', isset($mm[1]) && substr_count($r['body'], 'href="' . $mm[1] . '"') >= 2 && str_contains($r['body'], 'Inquadra e prova la demo.'));
-prova('Nuova foto del borgo, anche in WebP', str_contains($r['body'], '/assets/foto/borgo.jpg') && str_contains($r['body'], 'borgo-1200.webp') && str_contains($r['body'], 'borgo-telefono-600.webp'));
+prova('Foto del borgo nel telefono, anche in WebP', str_contains($r['body'], '/assets/foto/borgo-telefono.jpg') && str_contains($r['body'], 'borgo-telefono-600.webp'));
 foreach (['borgo.jpg', 'borgo-1200.webp', 'borgo-2000.webp', 'borgo-telefono.jpg', 'borgo-telefono-600.webp'] as $f) {
     $x = $ospite->get(preg_replace('#/index\.php$#', '', $BASE) . '/assets/foto/' . $f);
     prova("Immagine $f raggiungibile", $x['code'] === 200 && strlen($x['body']) > 10000);
@@ -1181,14 +1182,14 @@ $admin->get('/admin/cliente/' . $lacc);
 $admin->post("/admin/cliente/$lacc/abbonamento", ['pv' => (string) pv('portfolio'), 'mesi' => '12', 'nota' => 'Prova della copia', 'strutture' => '2']);
 $r = $lucia->get('/pannello/nuova');
 prova('Fase 4 · «Crea da una struttura esistente»: Casa Lucia, con le sezioni già spuntate', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Crea da una struttura esistente')
-      && str_contains($r['body'], "<option value=\"$casa\">Casa Lucia") && substr_count($r['body'], 'name="copia[]"') === 9
+      && str_contains($r['body'], "<option value=\"$casa\">Casa Lucia") && substr_count($r['body'], 'name="copia[]"') === 10
       && str_contains($r['body'], 'Non si copiano mai: indirizzo, CIN, reti Wi-Fi'));
 $mediaPrima = (int) val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]);
-$r = $lucia->post('/pannello/nuova', ['name' => 'Casa Lucia Due', 'city' => 'Pienza', 'origine' => (string) $casa, 'copia' => ['waste', 'eat', 'visit', 'todo', 'transport', 'emergency', 'info', 'rules', 'services'], 'copia_aspetto' => '1', 'copia_contatti' => '1']);
+$r = $lucia->post('/pannello/nuova', ['name' => 'Casa Lucia Due', 'city' => 'Pienza', 'origine' => (string) $casa, 'copia' => ['waste', 'eat', 'visit', 'todo', 'transport', 'emergency', 'info', 'rules', 'services', 'extras'], 'copia_aspetto' => '1', 'copia_contatti' => '1']);
 $due = (int) val("SELECT id FROM properties WHERE account_id = ? AND name = 'Casa Lucia Due'", [$lacc]);
 preg_match('#note--err" role="alert">([^<]*)#', $r['body'], $em); prova('Copia: struttura creata, si continua dalla procedura', $due > 0 && $r['code'] === 302 && str_contains($r['loc'], "/pannello/$due/procedura/struttura"), $r['loc'] . ' ' . ($em[1] ?? ''));
 $kinds = fn(int $p) => array_column(righe('SELECT kind FROM sections WHERE property_id = ? ORDER BY is_core DESC, position, id', [$p]), 'kind');
-prova('Fase 4 · copiate regole, rifiuti, emergenze, dove mangiare; NON Wi-Fi né i passaggi di arrivo', $kinds($due) === ['checkin', 'rules', 'waste', 'emergency', 'eat']
+prova('Fase 4 · copiate regole, rifiuti, emergenze, servizi extra, dove mangiare; NON Wi-Fi né i passaggi di arrivo', $kinds($due) === ['checkin', 'rules', 'waste', 'emergency', 'extras', 'eat']
       && !str_contains((string) val("SELECT t.data FROM section_translations t JOIN sections s ON s.id = t.section_id WHERE s.property_id = ? AND s.is_core = 1", [$due]), 'portone'),
       json_encode($kinds($due)));
 $pd = riga('SELECT * FROM properties WHERE id = ?', [$due]); $pc = riga('SELECT * FROM properties WHERE id = ?', [$casa]);
@@ -1196,7 +1197,7 @@ prova('…né indirizzo, CIN, copertina; sì palette, tono, lingua principale, c
       && $pd['palette'] === $pc['palette'] && $pd['text_tone'] === $pc['text_tone'] && $pd['default_locale'] === $pc['default_locale']
       && (int) val('SELECT COUNT(*) FROM property_contacts WHERE property_id = ?', [$due]) === (int) val('SELECT COUNT(*) FROM property_contacts WHERE property_id = ?', [$casa]));
 prova('…con le traduzioni e le lingue (en, de)', (int) val("SELECT COUNT(*) FROM section_translations t JOIN sections s ON s.id = t.section_id WHERE s.property_id = ? AND t.locale = 'en'", [$due])
-      === (int) val("SELECT COUNT(*) FROM section_translations t JOIN sections s ON s.id = t.section_id WHERE s.property_id = ? AND s.kind IN ('rules','waste','emergency','eat') AND t.locale = 'en'", [$casa])
+      === (int) val("SELECT COUNT(*) FROM section_translations t JOIN sections s ON s.id = t.section_id WHERE s.property_id = ? AND s.kind IN ('rules','waste','emergency','extras','eat') AND t.locale = 'en'", [$casa])
       && (int) val('SELECT COUNT(*) FROM property_locales WHERE property_id = ?', [$due]) === 3);
 $luoghi = fn(int $p) => righe('SELECT pl.* FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ? ORDER BY pl.position, pl.id', [$p]);
 $lo = $luoghi($casa); $lc = $luoghi($due);
@@ -1219,7 +1220,7 @@ $codici = $immagini($lucia, "/pannello/$due/anteprima/$eatDue");
 prova('…e la guida nuova le mostra', count($codici) === 3 && array_unique($codici) === [200], json_encode($codici));
 // Le due guide sono indipendenti.
 $lucia->post("/pannello/$due/sezioni/$eatDue/luogo", ['place_id' => (string) $lc[0]['id'], 'name' => 'Osteria cambiata', 'maps_url' => (string) $lc[0]['maps_url']]);
-prova('Fase 4 · modificare la copia non tocca l\'originale', val('SELECT name FROM places WHERE id = ?', [$lo[0]['id']]) === 'Osteria del Ponte'
+prova('Fase 4 · modificare la copia non tocca l\'originale', val('SELECT name FROM places WHERE id = ?', [$lo[0]['id']]) === 'Osteria dell\'Arco'
       && val('SELECT name FROM places WHERE id = ?', [$lc[0]['id']]) === 'Osteria cambiata');
 // «Copia sezioni da…» su una struttura che esiste: le regole si saltano, «dove mangiare» si sostituisce.
 $rulesDue = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'rules'", [$due]);
@@ -1233,7 +1234,7 @@ $lc2 = $luoghi($due);
 prova('…regole saltate (restano quelle scritte qui), «dove mangiare» sostituita come l\'originale', $r['code'] === 302
       && (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'rules'", [$due]) === 1
       && str_contains((string) val("SELECT data FROM section_translations WHERE section_id = ? AND locale = 'it'", [$rulesDue]), 'Regola scritta solo qui')
-      && count($lc2) === 3 && $lc2[0]['name'] === 'Osteria del Ponte' && (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'eat'", [$due]) === 1);
+      && count($lc2) === 3 && $lc2[0]['name'] === 'Osteria dell\'Arco' && (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'eat'", [$due]) === 1);
 prova('…le foto della sezione sostituita sono cancellate, le nuove sono copie', !val('SELECT COUNT(*) FROM media WHERE id IN (' . implode(',', $fotoVecchie) . ')')
       && !array_intersect(array_map('intval', array_column($lc2, 'media_id')), array_map('intval', array_column($lo, 'media_id'))));
 // Tutto o niente: con un limite di sezioni che la copia supererebbe, non resta niente a metà.
@@ -1254,6 +1255,125 @@ $r = $lucia->post("/pannello/$due/elimina", ['conferma' => 'Casa Lucia Due']);
 $codici = $immagini($lucia, "/pannello/$casa/anteprima/$eatCasa");
 prova('Fase 4 · eliminata la copia, l\'originale ha ancora tutte le sue foto e la sua guida', !val('SELECT id FROM properties WHERE id = ?', [$due])
       && count($codici) === 3 && array_unique($codici) === [200] && $ospite->get('/g/' . $pc['slug'])['code'] === 200, json_encode($codici));
+
+// ================================================================= FASE 5
+capitolo('Fase 5 · listino, guida che fa guadagnare, FAQ, firma, email, funnel');
+$posta = fn(string $a) => array_values(array_filter(array_map(fn($l) => json_decode($l, true), file("$DOVE/app/storage/logs/mail.log") ?: []), fn($m) => ($m['to'] ?? '') === $a));
+$r = $ospite->get('/');
+prova('K1 · sotto ogni prezzo l\'equivalente mensile (87/12, 117/12, Portfolio per 2: 177/12)', str_contains($r['body'], "circa 7,25\u{00A0}€ al mese")
+      && str_contains($r['body'], "circa 9,75\u{00A0}€ al mese") && str_contains($r['body'], "<span data-mensile>14,75\u{00A0}€</span> al mese"));
+preg_match_all('#<div class="plan[^"]*">(.*?)(?=<div class="plan[ "]|</div>\s*<details class="confronto")#s', $r['body'], $carte);
+$ess = $carte[1][0] ?? ''; $plus = $carte[1][1] ?? '';
+prova('K1 · Essential senza le voci comuni; Plus da «Tutto di Essential, e in più:» senza ripetere', !str_contains($ess, 'Pannello di controllo') && !str_contains($ess, 'Personalizzazione colori')
+      && str_contains($plus, '<li class="plan__da">Tutto di Essential, e in più:</li>') && !str_contains($plus, 'Logo della struttura'), substr(strip_tags($plus), 0, 200));
+prova('K1 · «Confronta tutti i piani»: tabella dalle funzioni dei pacchetti', str_contains($r['body'], '<summary>Confronta tutti i piani</summary>')
+      && str_contains($r['body'], 'Firma «Guida creata con MyHouse Welcome» nascondibile') && str_contains($r['body'], '<th scope="row">Lingue pubblicabili</th>')
+      && str_contains($r['body'], 'da 2 a 50'));
+prova('K2 · in landing: «Una prenotazione diretta in più all\'anno paga l\'abbonamento.»', str_contains($r['body'], 'Una prenotazione diretta in più all&#039;anno paga l&#039;abbonamento.')
+      || str_contains($r['body'], "Una prenotazione diretta in più all'anno paga l'abbonamento."));
+prova('K3 · FAQ prima del listino: sei domande in un accordion accessibile', substr_count($r['body'], 'class="faq__voce"') === 6 && str_contains($r['body'], 'Gli ospiti vengono tracciati?')
+      && strpos($r['body'], 'id="domande"') < strpos($r['body'], 'id="piani"'));
+prova('K3 · accanto a «Guarda la demo» la demo in IT / EN / DE', preg_match_all('#href="[^"]+/benvenuto\?l=(it|en|de)" hreflang#', $r['body'], $mm) === 3);
+prova('K3 · nessuna testimonianza: nessun blocco', !str_contains($r['body'], 'Le parole di chi ospita'));
+prova('V6 · tre scene sotto l\'hero, al posto della foto grande; foto mancanti: riquadro con icona', substr_count($r['body'], 'class="scena"') === 3
+      && substr_count($r['body'], 'scena__vuota') === 3 && !str_contains($r['body'], 'class="stage"'));
+// Pacchetti: la funzione hide_branding in una versione NUOVA di Plus e Portfolio.
+$hb = (int) val("SELECT id FROM features WHERE code = 'hide_branding'");
+$vers = fn(string $c) => righe('SELECT pv.id, pv.version, pv.is_current, (SELECT value FROM package_features WHERE package_version_id = pv.id AND feature_id = ?) AS hb
+                                FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = ? ORDER BY pv.version', [$hb, $c]);
+$vp = $vers('plus'); $ve = $vers('essential');
+prova('K4 · migrazione: Plus ha una versione nuova con la firma nascondibile, la vecchia resta com\'era', count($vp) >= 2 && end($vp)['hb'] === '1' && (int) end($vp)['is_current'] === 1
+      && $vp[count($vp) - 2]['hb'] !== '1' && end($ve)['hb'] !== '1', json_encode($vp));
+// Testimonianze dall'amministrazione.
+$admin->get('/admin/testimonianze');
+$admin->post('/admin/testimonianze', ['id' => '0', 'name' => 'Persona Di Prova', 'property_name' => 'Struttura di prova', 'body' => 'Testo di prova.', 'position' => '0']);
+prova('K3 · testimonianza nascosta: la landing non la mostra', !str_contains($ospite->get('/')['body'], 'Persona Di Prova'));
+$tid = (int) val("SELECT id FROM testimonials WHERE name = 'Persona Di Prova'");
+$admin->post('/admin/testimonianze', ['id' => (string) $tid, 'name' => 'Persona Di Prova', 'property_name' => 'Struttura di prova', 'body' => 'Testo di prova.', 'visible' => '1', 'position' => '0',
+                                      'foto' => file_(png(200, 200), 'image/png')]);
+$r = $ospite->get('/');
+prova('K3 · visibile: compare il blocco, con la foto', str_contains($r['body'], 'Le parole di chi ospita') && str_contains($r['body'], 'Persona Di Prova') && str_contains($r['body'], 'class="panel voce"')
+      && val('SELECT photo_key FROM testimonials WHERE id = ?', [$tid]) !== '');
+$admin->post("/admin/testimonianze/$tid/elimina", []);
+prova('…ed eliminata sparisce', !str_contains($ospite->get('/')['body'], 'Le parole di chi ospita') && !val('SELECT id FROM testimonials WHERE id = ?', [$tid]));
+
+// La firma nella guida, recensioni e prenotazione diretta nel commiato (Casa Lucia).
+$lslug = (string) val('SELECT slug FROM properties WHERE id = ?', [$casa]);
+$r = $ospite->get("/g/$lslug");
+prova('K4 · firma in fondo alla guida, con il link alla landing e ?ref=guida', str_contains($r['body'], 'Guida creata con MyHouse Welcome') && str_contains($r['body'], '/?ref=guida"'));
+$r = $ospite->get("/g/$lslug/commiato");
+prova('K2 · commiato senza recensioni né prenotazione diretta: nessun blocco', !str_contains($r['body'], 'Ti è piaciuto il soggiorno?') && !str_contains($r['body'], 'prenota da noi'));
+$r = $lucia->get("/pannello/$casa/impostazioni");
+prova('K2 · Impostazioni: recensioni, prenotazione diretta, firma nascondibile (Portfolio)', str_contains($r['body'], 'Dopo il soggiorno.') && str_contains($r['body'], 'name="review_booking"')
+      && str_contains($r['body'], 'name="direct_code"') && str_contains($r['body'], 'name="hide_branding"'));
+$r = $lucia->post("/pannello/$casa/dopo-il-soggiorno", ['review_google' => 'https://g.page/r/esempio/review', 'review_booking' => 'https://www.booking.com/esempio',
+    'review_airbnb' => 'javascript:alert(1)', 'direct_url' => 'https://www.esempio.it/prenota', 'direct_code' => 'TORNA10', 'hide_branding' => '1']);
+$pl = riga('SELECT * FROM properties WHERE id = ?', [$casa]);
+prova('…un link non web resta vuoto, con un avviso', $pl['review_airbnb'] === '' && $pl['review_google'] === 'https://g.page/r/esempio/review' && (int) $pl['hide_branding'] === 1
+      && str_contains($lucia->segui($r)['body'], 'non erano indirizzi web validi'));
+$lucia->post("/pannello/$casa/pubblica", []);
+$r = $ospite->get("/g/$lslug/commiato?l=en");
+prova('K2 · commiato (en): «Did you enjoy your stay?» con Google e Booking, «book with us» con il codice', str_contains($r['body'], 'Did you enjoy your stay?')
+      && str_contains($r['body'], 'href="https://g.page/r/esempio/review"') && str_contains($r['body'], '>Booking.com</a>') && !str_contains($r['body'], '>Airbnb</a>')
+      && str_contains($r['body'], 'Next time, book with us directly') && str_contains($r['body'], 'Discount code: TORNA10') && str_contains($r['body'], 'href="https://www.esempio.it/prenota"'));
+prova('K4 · firma nascosta (piano con hide_branding)', !str_contains($ospite->get("/g/$lslug")['body'], 'Guida creata con MyHouse Welcome'));
+$anna->post("/pannello/$pid/dopo-il-soggiorno", ['hide_branding' => '1']);
+prova('K4 · Essential non può nasconderla, nemmeno a mano', (int) val('SELECT hide_branding FROM properties WHERE id = ?', [$pid]) === 0
+      && str_contains($anna->get("/pannello/$pid/impostazioni")['body'], 'Con Plus e Portfolio puoi nasconderla'));
+$lucia->post("/pannello/$casa/dopo-il-soggiorno", ['review_google' => '', 'review_booking' => '', 'direct_url' => '', 'direct_code' => '']);
+$lucia->post("/pannello/$casa/pubblica", []);
+prova('…tolti i link e ripubblicato: commiato senza blocchi, firma di nuovo visibile', !str_contains($ospite->get("/g/$lslug/commiato")['body'], 'Ti è piaciuto il soggiorno?')
+      && str_contains($ospite->get("/g/$lslug")['body'], 'Guida creata con MyHouse Welcome'));
+// Servizi extra (demo): «Richiedi su WhatsApp» con il messaggio nella lingua dell'ospite.
+$extraSid = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'extras'", [$casa]);
+$r = $ospite->get("/g/$lslug/$extraSid?l=en");
+prova('K2 · Servizi extra: «Request on WhatsApp» col messaggio in inglese', $r['code'] === 200 && str_contains($r['body'], 'Station transfer') && str_contains($r['body'], '15 € a tratta')
+      && str_contains($r['body'], 'https://wa.me/390742000000?text=' . rawurlencode('Hi! I would like to request: Station transfer')) && str_contains($r['body'], 'Request on WhatsApp'));
+
+// K5 · email di richiamo, una volta sola, con il link per smettere.
+$rita = new Browser('rita');
+$rita->get('/registrati?piano=' . pv('plus'));
+$rita->post('/registrati', ['piano' => pv('plus'), 'name' => 'Rita Richiami', 'email' => 'rita@prova.test', 'password' => 'RitaProva1234', 'termini' => '1']);
+$rita->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Rita', 'city' => 'Assisi']);
+$rpid = (int) val("SELECT id FROM properties WHERE name = 'Casa Rita'");
+$indietro = fn(int $giorni) => db()->prepare('UPDATE properties SET created_at = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() - $giorni * 86400 - 600), $rpid]);
+prova('K5 · /cron con un token sbagliato: 404', $ospite->get('/cron/sbagliato')['code'] === 404);
+$cron = fn() => json_decode($ospite->get('/cron/token-finto-per-le-prove')['body'], true);
+$indietro(2); $c1 = $cron();
+$m = $posta('rita@prova.test'); $ult = end($m) ?: [];
+prova('K5 · dopo 1 giorno, arrivo vuoto: «Come si entra a Casa Rita?» con il pulsante giusto', ($c1['email']['arrivo'] ?? 0) >= 1 && str_contains((string) ($ult['subject'] ?? ''), 'Come si entra a Casa Rita?')
+      && str_contains((string) $ult['text'], "/pannello/$rpid/procedura/arrivo") && str_contains((string) $ult['text'], '/email/stop/'), json_encode($c1));
+$prima = count($posta('rita@prova.test')); $cron();
+prova('…una volta sola', count($posta('rita@prova.test')) === $prima);
+$indietro(4); $cron(); $m = $posta('rita@prova.test'); $ult = end($m);
+prova('K5 · dopo 3 giorni senza sezioni', str_contains((string) $ult['subject'], 'aggiungili a Casa Rita') && str_contains((string) $ult['text'], "/pannello/$rpid/procedura/sezioni"));
+$indietro(8); $cron(); $m = $posta('rita@prova.test'); $ult = end($m);
+prova('K5 · dopo 7 giorni non pubblicata', str_contains((string) $ult['subject'], 'Casa Rita è quasi pronta') && str_contains((string) $ult['text'], "/pannello/$rpid/procedura/pubblica"));
+preg_match('#/email/stop/[a-f0-9]+#', (string) $ult['text'], $stop);
+$r = $rita->get($stop[0]);
+prova('K5 · «non mandarmene più» chiede conferma con un bottone (i link aperti in anteprima non disiscrivono)', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], 'promemoria sulla pubblicazione') && !val("SELECT id FROM email_optout WHERE kind = 'pubblica'"));
+$r = $rita->post($stop[0], []);
+prova('…confermato, registrato', str_contains($r['body'], 'Fatto.') && (bool) val("SELECT id FROM email_optout WHERE kind = 'pubblica'"));
+db()->prepare("DELETE FROM email_log WHERE kind = 'pubblica' AND account_id = (SELECT account_id FROM properties WHERE id = ?)")->execute([$rpid]);
+$prima = count($posta('rita@prova.test')); $cron();
+prova('…e quel tipo non riparte più, anche se il registro si svuota', count($posta('rita@prova.test')) === $prima);
+$gsub = (int) val("SELECT id FROM subscriptions WHERE provider_subscription_id = 'sub_prova_gino'");
+db()->prepare('UPDATE subscriptions SET current_period_end = ?, cancel_at_period_end = 0 WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() + 30 * 86400), $gsub]);
+$cron(); $m = $posta('gino@prova.test'); $ult = end($m);
+prova('K5 · 30 giorni prima del rinnovo, con le statistiche dell\'anno', str_contains((string) $ult['subject'], 'Il tuo abbonamento si rinnova il') && str_contains((string) $ult['text'], '/account')
+      && (str_contains((string) $ult['text'], 'aperta') || str_contains((string) $ult['text'], 'aperte') || str_contains((string) $ult['text'], 'non abbiamo ancora registrato aperture')));
+prova('K5 · controllo leggero senza cron: il file di blocco in storage/', is_file("$DOVE/app/storage/richiami.lock"));
+
+// K6 · funnel senza cookie.
+$fn = array_column(righe('SELECT kind, COUNT(*) AS n FROM analytics_events WHERE property_id IS NULL GROUP BY kind'), 'n', 'kind');
+prova('K6 · eventi anonimi: landing_view, signup, property_created, published', ($fn['landing_view'] ?? 0) > 0 && ($fn['signup'] ?? 0) > 0 && ($fn['property_created'] ?? 0) > 0 && ($fn['published'] ?? 0) > 0, json_encode($fn));
+$r = $admin->get('/admin');
+prova('K6 · nel Quadro: ultimi 30 giorni e percentuali di passaggio', str_contains($r['body'], 'Dalla landing alla guida pubblicata') && substr_count($r['body'], 'class="stat"><b>') >= 4
+      && str_contains($r['body'], '% dal passo prima'));
+prova('K6 · nessun cookie sulla guida né sulla landing per chi non è entrato', intestazione($ospite->get("/g/$lslug"), 'Set-Cookie') === '');
+$r = $admin->post('/admin/diagnostica/foto', []);
+prova('V6 · Diagnostica: «Rigenera le foto WebP» con GD', str_contains($admin->segui($r)['body'], 'Foto WebP rigenerate'));
 
 // ==================================================================== SICUREZZA
 capitolo('Sicurezza: proprietà dei dati, CSRF, amministrazione');

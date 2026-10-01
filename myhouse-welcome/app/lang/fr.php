@@ -171,4 +171,18 @@ return [
     'route_aereo'              => 'En avion',
     'route_autobus'            => 'En bus',
     'directions'               => 'Itinéraire',
+
+    // Fase 5: firma, recensioni, prenotazione diretta, servizi extra
+    'kind.extras'              => 'Services en plus',
+    'made_with'                => 'Guide créé avec MyHouse Welcome',
+    'create_yours'             => 'Créez le vôtre',
+    'review_title'             => 'Votre séjour vous a plu ?',
+    'review_lead'              => 'Un avis aide beaucoup votre hôte.',
+    'review_other'             => 'Laisser un avis',
+    'direct_title'             => 'La prochaine fois, réservez chez nous',
+    'direct_lead'              => 'En réservant directement sur notre site, vous avez les meilleures conditions.',
+    'direct_code'              => 'Code de réduction : %s',
+    'direct_book'              => 'Réserver sur notre site',
+    'request_whatsapp'         => 'Demander sur WhatsApp',
+    'extra_message'            => 'Bonjour ! Je voudrais demander : %s',
 ];

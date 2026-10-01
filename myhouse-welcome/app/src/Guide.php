@@ -17,10 +17,13 @@ namespace MHW;
  *
  * Formato 4: emergenze, rifiuti, parcheggio e come arrivare a righe; foto e
  * PDF anche dentro le righe (servizi, parcheggio). Stessa conversione al volo.
+ *
+ * Formato 5: recensioni e prenotazione diretta per il commiato, e la firma
+ * «Guida creata con MyHouse Welcome» (visibile, salvo chi la nasconde col piano).
  */
 final class Guide
 {
-    public const FORMAT = 4;
+    public const FORMAT = 5;
 
     // ------------------------------------------------------------ costruzione
 
@@ -108,6 +111,12 @@ final class Guide
                 'text_tone' => in_array($p['text_tone'], Palette::tones((string) $p['palette']), true) ? $p['text_tone'] : 'scuro',
                 'is_demo' => (int) $p['is_demo'],
                 'default_locale' => $p['default_locale'],
+                // Dopo il soggiorno (dalla 014): solo i link compilati.
+                'reviews' => array_filter(['google' => (string) ($p['review_google'] ?? ''), 'booking' => (string) ($p['review_booking'] ?? ''),
+                                           'airbnb' => (string) ($p['review_airbnb'] ?? ''), 'other' => (string) ($p['review_other'] ?? '')]),
+                'direct' => ['url' => (string) ($p['direct_url'] ?? ''), 'code' => (string) ($p['direct_code'] ?? '')],
+                // La firma si nasconde solo se il piano lo comprende E l'host l'ha chiesto.
+                'branding' => !((int) ($p['hide_branding'] ?? 0) === 1 && Entitlements::can($acc, 'hide_branding')),
             ],
             'locales' => $locales,
             'sections' => $sections,
@@ -130,6 +139,8 @@ final class Guide
                 'published_at' => Support::now(),
             ]);
             Db::update('properties', ['status' => 'published', 'published_at' => Support::now()], 'id = :pid', ['pid' => $propertyId]);
+            // Il funnel conta la prima pubblicazione di una guida vera (non le demo).
+            if ($next === 1 && !(int) Db::val('SELECT is_demo FROM properties WHERE id = ?', [$propertyId], 0)) Stats::funnelEvent('published');
             return $next;
         });
     }
@@ -159,7 +170,16 @@ final class Guide
         if ($f >= self::FORMAT) return $s;
         if ($f < 2) $s = self::daFormato1($s);
         if ($f < 3) $s = self::daFormato2($s);
-        return self::daFormato3($s);
+        if ($f < 4) $s = self::daFormato3($s);
+        return self::daFormato4($s);
+    }
+
+    /** Formato 4 → 5: niente recensioni né prenotazione diretta, firma visibile. */
+    private static function daFormato4(array $s): array
+    {
+        $s['property'] = ($s['property'] ?? []) + ['reviews' => [], 'direct' => ['url' => '', 'code' => ''], 'branding' => true];
+        $s['format'] = self::FORMAT;
+        return $s;
     }
 
     /** Formato 2 → 3: contatti e dati della struttura (le sezioni le converte daFormato3). */

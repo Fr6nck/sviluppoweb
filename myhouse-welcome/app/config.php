@@ -21,6 +21,10 @@ $config = [
     'pretty_urls' => null,
     // I dettagli degli errori si vedono solo con debug acceso. Sempre nei log.
     'debug' => $bool('MHW_DEBUG'),
+    // Il token dell'indirizzo /cron/{token}, da collegare a un cron di cPanel
+    // (facoltativo: senza, le email di richiamo partono lo stesso, controllando
+    // al massimo ogni 15 minuti mentre qualcuno usa il sito). Vuoto = /cron spento.
+    'cron_token' => $env('MHW_CRON_TOKEN'),
 
     'db' => [
         'driver' => $env('MHW_DB_DRIVER', 'sqlite'),

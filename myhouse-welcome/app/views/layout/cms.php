@@ -42,7 +42,7 @@ $soloPassi = $prop && $qui === 'procedura' && $prop['status'] !== 'published'; ?
     <nav class="nav" aria-label="Sezioni dell'account">
       <?php if ($admin): ?>
         <?php foreach (['admin' => ['/admin', 'Quadro'], 'clienti' => ['/admin/clienti', 'Clienti'], 'abbonamenti' => ['/admin/abbonamenti', 'Abbonamenti'],
-                        'guide' => ['/admin/guide', 'Guide'], 'pacchetti' => ['/admin/pacchetti', 'Pacchetti'],
+                        'guide' => ['/admin/guide', 'Guide'], 'pacchetti' => ['/admin/pacchetti', 'Pacchetti'], 'testimonianze' => ['/admin/testimonianze', 'Testimonianze'],
                         'registro' => ['/admin/registro', 'Registro'], 'diagnostica' => ['/admin/diagnostica', 'Diagnostica']] as $k => [$href, $l]): ?>
           <a href="<?= b() . $href ?>" class="<?= $nav === $k ? 'on' : '' ?>"<?= $nav === $k ? ' aria-current="page"' : '' ?>><?= $l ?></a>
         <?php endforeach; ?>

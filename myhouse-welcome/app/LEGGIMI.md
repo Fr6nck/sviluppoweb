@@ -37,7 +37,9 @@ ritorno dal browser non attiva niente.
 | QR | permanente; PNG, SVG e PDF da stampare; link da copiare |
 | Statistiche (Plus) | aperture, aperture dal QR, sezioni più lette, lingue; eventi anonimi, niente cookie |
 | Amministrazione | quadro, clienti, abbonamenti con gli ID Stripe, guide, pacchetti e versioni, eccezioni per cliente, abbonamenti manuali, accesso come cliente tracciato (scade da solo dopo un'ora), registro, diagnostica |
-| Guida ospite | non indicizzabile (`noindex`), nessun cookie, nessun codice di porte o cassette, commiato con le sole istruzioni scritte dall'host |
+| Guida ospite | non indicizzabile (`noindex`), nessun cookie, nessun codice di porte o cassette, commiato con le sole istruzioni scritte dall'host, recensioni e prenotazione diretta se compilate, firma «Guida creata con MyHouse Welcome» (nascondibile con Plus e Portfolio) |
+| Email di richiamo | dopo 1, 3 e 7 giorni se la guida è ferma, 30 giorni prima del rinnovo; una volta sola (`email_log`), con il link per non riceverne più |
+| Funnel | landing → registrazione → struttura → pubblicazione, eventi anonimi senza cookie, nel Quadro dell'admin |
 
 ---
 
@@ -65,6 +67,7 @@ accanto a `config.php`, e riempi solo le voci che servono.
 | `AWS_S3_PUBLIC_URL` | facoltativo: indirizzo di un CDN (CloudFront) davanti al bucket; senza, le immagini usano URL prefirmati |
 | `MHW_TERMS_VERSION`, `MHW_PRIVACY_VERSION` | versione dei testi legali: cambiandola, i nuovi consensi la registrano |
 | `MHW_DEBUG` | `1` solo in sviluppo: mostra i dettagli degli errori |
+| `MHW_CRON_TOKEN` | facoltativo: attiva `/cron/{token}` per un cron di cPanel (`wget -q -O- https://…/cron/IL_TOKEN`, ogni ora). Senza, le email di richiamo partono lo stesso, controllando al massimo ogni 15 minuti mentre qualcuno usa il sito |
 
 ### Stripe, passo per passo
 

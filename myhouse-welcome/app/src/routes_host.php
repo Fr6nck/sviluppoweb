@@ -150,6 +150,7 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
             $nome = (string) ($_POST['name'] ?? '');
             if ($modo === 'bloccata') {
                 $pid = Properties::create($aid, $nome, (string) ($_POST['city'] ?? ''), (string) $u['name']);
+                Stats::funnelEvent('property_created');
                 Support::flash(trim($nome) . ' creata. Si attiva dopo il pagamento: intanto completa e pubblica la prima.', 'avviso');
                 Support::redirect('/pannello');
             }
@@ -167,6 +168,7 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
                     throw new RuntimeException('Non è stato possibile aggiornare l\'abbonamento adesso (codice ' . Log::exception($e, 'aggiungi struttura') . '). Riprova tra poco.');
                 }
                 $pid = Properties::create($aid, $nome, (string) ($_POST['city'] ?? ''), (string) $u['name'], 1);
+                Stats::funnelEvent('property_created');
                 Auth::audit('subscription.add_property', (int) $u['id'], ['property_id' => $pid, 'quantita' => $costo['quantita']]);
                 Support::flash(trim($nome) . ' aggiunta. Si sblocca appena Stripe conferma il nuovo numero di strutture (di solito pochi secondi).');
                 Support::redirect('/pannello');
@@ -184,6 +186,7 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
                 return $pid;
             });
             Db::update('properties', ['wizard_step' => 'arrivo'], 'id = :pid', ['pid' => $pid]);
+            Stats::funnelEvent('property_created');
             if ($origine) Support::flash('Struttura creata partendo da ' . Db::val('SELECT name FROM properties WHERE id = ?', [$origine]) . '. Ora le cose di questa casa: indirizzo, arrivo, Wi-Fi.');
             Support::redirect('/pannello/' . $pid . '/procedura/struttura');
         } catch (NotFound) { $err = 'Struttura di origine non trovata.'; }
@@ -585,6 +588,25 @@ $r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto,
         }
     }
     View::out('host/settings', $contesto($acc, $p) + ['err' => $err, 'qui' => 'impostazioni'], 'layout/cms');
+});
+
+/* Dopo il soggiorno: recensioni, prenotazione diretta, firma della guida.
+   Tutto facoltativo: nel commiato compare solo quello che è compilato. */
+$r->post('/pannello/{id}/dopo-il-soggiorno', function (array $a) use ($mia) {
+    [$u, $acc, $p] = $mia((int) $a['id']);
+    if (!Migrator::columnExists('properties', 'review_google')) Support::redirect('/pannello/' . $p['id'] . '/impostazioni');
+    $url = fn(string $k) => Support::safeUrl(mb_substr(trim((string) ($_POST[$k] ?? '')), 0, 500));
+    $dati = ['review_google' => $url('review_google'), 'review_booking' => $url('review_booking'), 'review_airbnb' => $url('review_airbnb'),
+             'review_other' => $url('review_other'), 'direct_url' => $url('direct_url'),
+             'direct_code' => mb_substr(preg_replace('/\s+/', '', (string) ($_POST['direct_code'] ?? '')), 0, 60),
+             // La firma si nasconde solo se il piano lo comprende (Plus, Portfolio): controllato qui, non solo nel modulo.
+             'hide_branding' => !empty($_POST['hide_branding']) && Entitlements::can((int) $acc['id'], 'hide_branding') ? 1 : 0];
+    $scartati = array_filter(['review_google', 'review_booking', 'review_airbnb', 'review_other', 'direct_url'],
+                             fn($k) => trim((string) ($_POST[$k] ?? '')) !== '' && $dati[$k] === '');
+    Db::update('properties', $dati, 'id = :pid', ['pid' => $p['id']]);
+    Support::flash($scartati ? 'Salvato, ma ' . count($scartati) . ' link non erano indirizzi web validi (cominciano con https://) e sono rimasti vuoti.'
+                             : 'Salvato. Lo vedranno gli ospiti nel commiato quando pubblichi.', $scartati ? 'avviso' : 'ok');
+    Support::redirect('/pannello/' . $p['id'] . '/impostazioni#dopo-il-soggiorno');
 });
 
 // ---------------------------------------------------------- procedura guidata

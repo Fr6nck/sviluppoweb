@@ -107,6 +107,12 @@ if ($ospite) header('X-Robots-Tag: noindex, nofollow, noarchive');
 // funziona in una sottocartella e con o senza index.php nell'indirizzo.
 if ($route !== '/webhook/stripe' && !$ospite) Csrf::check();
 
+// Le email di richiamo (Richiami): un controllo leggero dopo le pagine del pannello e della
+// landing, al massimo ogni 15 minuti. Gira a pagina già mandata: chi naviga non aspetta.
+if (($route === '/' || str_starts_with($route, '/pannello')) && Installer::installed()) {
+    register_shutdown_function([MHW\Richiami::class, 'forse']);
+}
+
 $r = new Router();
 require MHW_APP . '/src/routes_public.php';
 require MHW_APP . '/src/routes_host.php';

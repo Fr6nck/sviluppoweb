@@ -32,6 +32,7 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
         <?php if ($perStruttura): ?>
           <div class="quantita pianocard__sopra" data-quantita data-base="<?= (int) $o['price_cents'] ?>" data-extra="<?= (int) $o['extra_price_cents'] ?>" data-valuta="<?= Support::e($o['currency']) ?>">
             <span class="price"><span data-totale><?= Support::e(Support::money(Plans::price($o, $q), $o['currency'])) ?></span><small> + IVA / anno</small></span>
+            <span class="plan__mese">circa <span data-mensile><?= Support::e(Support::money(Plans::monthly(Plans::price($o, $q)), $o['currency'])) ?></span> al mese</span>
             <label for="strutture-<?= $id ?>" class="plan__label" style="margin:6px 0 0">Quante strutture vuoi gestire?</label>
             <input id="strutture-<?= $id ?>" name="strutture" type="number" inputmode="numeric" step="1" data-sceglie="pv-<?= $id ?>"
                    min="<?= (int) $o['min_quantity'] ?>" max="<?= (int) $o['max_quantity'] ?>" value="<?= $q ?>">
@@ -40,9 +41,10 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
           </div>
         <?php else: ?>
           <span class="price"><?= Support::e(Support::money((int) $o['price_cents'], $o['currency'])) ?><small> + IVA / anno</small></span>
+          <span class="plan__mese">circa <?= Support::e(Support::money(Plans::monthly((int) $o['price_cents']), $o['currency'])) ?> al mese</span>
         <?php endif; ?>
         <p class="muted" style="font-size:15px;line-height:22px"><?= Support::e($o['headline']) ?> <?= Support::e($o['description']) ?></p>
-        <ul class="plan__lista"><?php foreach ($o['bullet_list'] as $bl): ?><li><?= Icon::svg('check', 16, 2) ?><span><?= Support::e($bl) ?></span></li><?php endforeach; ?></ul>
+        <?php $voci = $o['bullet_list']; include dirname(__DIR__) . '/pub/_voci_piano.php'; ?>
       </div>
     <?php endforeach; endforeach; ?>
   </div>

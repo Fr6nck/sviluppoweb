@@ -53,12 +53,14 @@ $r->any('/installa', function () {
 // ------------------------------------------------------------------------ landing
 $r->get('/', function () use ($guard) {
     $guard();
+    MHW\Stats::funnelEvent('landing_view');
     $demo = Db::one("SELECT * FROM properties WHERE is_demo = 1 AND status = 'published' ORDER BY id");
     $copertina = $demo ? Media::url($demo['cover_media_id'] ? (int) $demo['cover_media_id'] : null) : null;
     View::out('pub/home', [
         'offers' => Plans::offers(), 'demo' => $demo,
         'copertina' => $copertina ?: MHW\a('/assets/foto/casa.jpg'),
         'user' => Auth::user(),
+        'testimonianze' => MHW\Testimonianze::visibili(),
     ]);
 });
 
@@ -94,6 +96,7 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano) {
                 throw new RuntimeException('Per creare l\'account devi accettare i Termini e condizioni.');
             }
             $u = Auth::register((string) $_POST['email'], (string) $_POST['password'], (string) $_POST['name']);
+            MHW\Stats::funnelEvent('signup');
             Auth::recordConsent((int) $u['user_id']);
             Auth::login((int) $u['user_id']);
             Auth::sendVerification((int) $u['user_id']);
@@ -363,4 +366,22 @@ $r->get('/qr/{token}.png', function (array $a) {
     if (!$t) { http_response_code(404); exit; }
     header('Content-Type: image/png');
     echo Qr::png(Support::baseUrl() . '/q/' . $t['token'], 8, 4, 640);
+});
+
+// ------------------------------------------------------- email di richiamo
+/* «Non mandarmene più»: il link arriva nell'email. Si conferma con un bottone,
+   così i programmi che aprono i link in anteprima non disiscrivono nessuno. */
+$r->any('/email/stop/{token}', function (array $a) {
+    $riga = MHW\Richiami::daToken((string) $a['token']);
+    if (!$riga) { http_response_code(404); View::out('pub/404', []); }
+    $fatto = false;
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') { MHW\Richiami::smetti((int) $riga['account_id'], (string) $riga['kind']); $fatto = true; }
+    View::out('pub/email_stop', ['tipo' => MHW\Richiami::TIPI[$riga['kind']] ?? 'email', 'fatto' => $fatto], 'layout/bare');
+});
+
+/* Per un cron di cPanel: wget -q -O- https://…/cron/IL_TOKEN (token in MHW_CRON_TOKEN). */
+$r->get('/cron/{token}', function (array $a) {
+    $giusto = (string) Config::get('cron_token');
+    if ($giusto === '' || !hash_equals($giusto, (string) $a['token'])) { http_response_code(404); View::out('pub/404', []); }
+    Support::json(['ok' => true, 'email' => MHW\Richiami::esegui()]);
 });

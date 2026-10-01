@@ -89,6 +89,21 @@ final class SectionCatalog
                 'note'  => ['textarea', 'Nota', 'Facoltativa.'],
             ],
         ],
+        // Servizi extra (fase 5): quello che l'host vende in più — transfer, colazione,
+        // late check-out. Ogni riga ha «Richiedi su WhatsApp» nella guida.
+        'extras' => [
+            'icon' => 'euro',
+            'fields' => [
+                'items' => ['repeater', 'Servizi extra', 'Una riga per servizio: titolo, due righe di descrizione, il prezzo, una foto.',
+                            'add' => 'Aggiungi un servizio', 'max' => 12, 'sub' => [
+                                'title'       => ['text', 'Titolo', 'Per esempio: Transfer dalla stazione.'],
+                                'description' => ['textarea', 'Descrizione', 'Facoltativa.'],
+                                'price'       => ['text', 'Prezzo', 'Facoltativo. Per esempio: 25 € a tratta.'],
+                                'photo'       => ['image', 'Foto', 'Facoltativa.'],
+                            ]],
+                'note' => ['textarea', 'Nota', 'Facoltativa. Per esempio: da richiedere con un giorno di anticipo.'],
+            ],
+        ],
         // Regole (dalla 011): interruttori standard, tradotti da soli; la vecchia lista
         // resta com'era, come «Regole aggiuntive».
         'rules' => [

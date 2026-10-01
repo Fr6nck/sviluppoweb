@@ -37,7 +37,7 @@ $r->get('/admin', function () {
     if (Config::get('storage')['driver'] !== 's3') $avvisi[] = ['I media stanno sul disco', 'In produzione imposta MHW_STORAGE=s3 con bucket e credenziali AWS.'];
     if (Demo::presente()) $avvisi[] = ['Ci sono ancora i clienti di esempio', 'Sono account veri con una password nota. Toglili prima di aprire al pubblico.'];
 
-    View::out('admin/dashboard', ['numeri' => $numeri, 'piani' => $piani, 'ordini' => $ordini, 'avvisi' => $avvisi,
+    View::out('admin/dashboard', ['numeri' => $numeri, 'piani' => $piani, 'ordini' => $ordini, 'avvisi' => $avvisi, 'funnel' => Stats::funnel(30),
                                   'esempi' => Demo::presente(), 'nav' => 'admin'], 'layout/cms');
 });
 
@@ -367,4 +367,47 @@ $r->get('/admin/diagnostica', function () {
     $checks[] = ['Traduzione automatica', true, 'Non attiva, per scelta: le lingue le scrive l\'host.'];
 
     View::out('admin/diagnostics', ['checks' => $checks, 'base' => $base, 'nav' => 'diagnostica'], 'layout/cms');
+});
+
+/* Rigenera le foto WebP del borgo dai .jpg (app/tools/foto.php). */
+$r->post('/admin/diagnostica/foto', function () {
+    $admin = Auth::requireAdmin();
+    require_once MHW_APP . '/tools/foto.php';
+    $esiti = mhw_rigenera_foto(MHW_PUBLIC . '/assets/foto');
+    Auth::audit('tools.foto', (int) $admin['id'], ['esiti' => $esiti]);
+    $falliti = array_filter($esiti, fn($e) => !$e[1]);
+    Support::flash($falliti ? 'Non tutte: ' . implode('; ', array_map(fn($e) => $e[0] . ' — ' . $e[2], $falliti))
+                            : 'Foto WebP rigenerate: ' . implode(', ', array_column($esiti, 0)) . '.', $falliti ? 'err' : 'ok');
+    Support::redirect('/admin/diagnostica');
+});
+
+// ------------------------------------------------------------- testimonianze
+/**
+ * Le testimonianze della landing: le scrive l'amministratore, una per una, con
+ * il consenso di chi parla. Nessuna d'esempio. In landing il blocco compare
+ * solo se almeno una è visibile.
+ */
+$r->get('/admin/testimonianze', function () {
+    Auth::requireAdmin();
+    View::out('admin/testimonials', ['righe' => MHW\Testimonianze::tutte(), 'nav' => 'testimonianze'], 'layout/cms');
+});
+
+$r->post('/admin/testimonianze', function () {
+    $admin = Auth::requireAdmin();
+    try {
+        $id = MHW\Testimonianze::salva($_POST, $_FILES['foto'] ?? null);
+        Auth::audit('testimonial.save', (int) $admin['id'], ['id' => $id]);
+        Support::flash('Testimonianza salvata.' . (empty($_POST['visible']) ? ' Non è visibile: spunta «Visibile in landing» quando vuoi mostrarla.' : ''));
+    } catch (\Throwable $e) {
+        Support::flash($e instanceof \RuntimeException ? $e->getMessage() : 'Non salvata (codice ' . Log::exception($e, 'testimonianze') . ').', 'err');
+    }
+    Support::redirect('/admin/testimonianze');
+});
+
+$r->post('/admin/testimonianze/{tid}/elimina', function (array $a) {
+    $admin = Auth::requireAdmin();
+    MHW\Testimonianze::elimina((int) $a['tid']);
+    Auth::audit('testimonial.delete', (int) $admin['id'], ['id' => (int) $a['tid']]);
+    Support::flash('Testimonianza eliminata.');
+    Support::redirect('/admin/testimonianze');
 });

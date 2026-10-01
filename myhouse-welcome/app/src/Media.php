@@ -31,6 +31,27 @@ final class Media
      */
     public static function storeImage(array $file, int $accountId, ?int $propertyId, string $alt, string $purpose): int
     {
+        [$bytes, $mime, $ext, $w, $h] = self::prepareImage($file, $purpose);
+        return self::save($bytes, $mime, $ext, 'image', $accountId, $propertyId, $alt, (string) ($file['name'] ?? ''), $w, $h);
+    }
+
+    /**
+     * Un'immagine che non appartiene a un cliente (la foto di una testimonianza,
+     * caricata dall'amministratore): stessi controlli, salvata nello storage
+     * senza riga in media. @return array{0:string,1:string} [driver, chiave]
+     */
+    public static function storeFreeImage(array $file, string $cartella): array
+    {
+        [$bytes, $mime, $ext] = self::prepareImage($file, 'section');
+        $store = Storages::current();
+        $key = preg_replace('/[^a-z0-9-]/', '', $cartella) . '/' . gmdate('Y') . '/' . bin2hex(random_bytes(16)) . '.' . $ext;
+        $store->put($key, $bytes, $mime);
+        return [$store->name(), $key];
+    }
+
+    /** Controlla e ridisegna un'immagine caricata. @return array{0:string,1:string,2:string,3:int,4:int} */
+    private static function prepareImage(array $file, string $purpose): array
+    {
         $tmp = self::upload($file);
         $cfg = Config::get('storage');
         if (filesize($tmp) > $cfg['max_image_bytes']) {
@@ -75,8 +96,7 @@ final class Media
         }
         $bytes = (string) ob_get_clean();
         imagedestroy($img);
-
-        return self::save($bytes, $mime, $ext, 'image', $accountId, $propertyId, $alt, (string) ($file['name'] ?? ''), $w, $h);
+        return [$bytes, $mime, $ext, $w, $h];
     }
 
     public static function storePdf(array $file, int $accountId, ?int $propertyId, string $title): int

@@ -18,7 +18,7 @@ cp "$QUI/app/public/web.config" "$BASE/" 2>/dev/null || true
 cp -r "$QUI/app/public/assets" "$BASE/assets"
 
 # Quello che sta dietro: codice, viste, schema, configurazione.
-cp -r "$QUI/app/src" "$QUI/app/views" "$QUI/app/migrations" "$QUI/app/lang" "$BASE/app/"
+cp -r "$QUI/app/src" "$QUI/app/views" "$QUI/app/migrations" "$QUI/app/lang" "$QUI/app/tools" "$BASE/app/"
 cp "$QUI/app/config.php" "$QUI/app/config.local.esempio.php" "$QUI/app/LEGGIMI.md" "$BASE/app/"
 # La cartella app/ sta dentro quella pubblica: la si chiude per Apache e per IIS.
 cp "$QUI/app/app.htaccess" "$BASE/app/.htaccess"

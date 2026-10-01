@@ -22,6 +22,17 @@ $title = 'Amministrazione'; ?>
     <div class="stat"><b><?= (int) $numeri['falliti'] ?></b><span>rinnovi non riusciti</span></div>
   </div>
 
+  <section class="stack" style="gap:10px" aria-labelledby="funnel-titolo">
+    <h2 id="funnel-titolo" style="font-size:22px">Dalla landing alla guida pubblicata <span class="small muted">· ultimi 30 giorni</span></h2>
+    <ol class="funnel">
+      <?php foreach ($funnel as $f): ?>
+        <li class="stat"><b><?= (int) $f['n'] ?></b><span><?= Support::e($f['label']) ?></span>
+          <?php if ($f['perc'] !== null): ?><span class="funnel__perc"><?= (int) $f['perc'] ?>% dal passo prima</span><?php elseif ($f['kind'] !== 'landing_view'): ?><span class="funnel__perc">—</span><?php endif; ?></li>
+      <?php endforeach; ?>
+    </ol>
+    <p class="tiny muted">Eventi anonimi senza cookie: nessun IP, nessun identificativo, i robot non contano. Una persona che ricarica la landing conta due volte.</p>
+  </section>
+
   <section class="stack" style="gap:10px">
     <div class="spread spread--mid"><h2 style="font-size:22px">Listino</h2><a class="small" href="<?= b() ?>/admin/pacchetti">Gestisci pacchetti</a></div>
     <div class="tablewrap"><table class="data">

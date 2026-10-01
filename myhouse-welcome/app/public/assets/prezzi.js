@@ -18,7 +18,12 @@
       var v = campo.value.trim(), q = /^\d+$/.test(v) ? parseInt(v, 10) : NaN;
       var ok = !isNaN(q) && q >= min && q <= max;
       campo.setCustomValidity(ok ? '' : 'Indica un numero intero di strutture tra ' + min + ' e ' + max + '.');
-      if (ok) totale.textContent = soldi(base + (q - 1) * extra, valuta);
+      if (ok) {
+        totale.textContent = soldi(base + (q - 1) * extra, valuta);
+        // L'equivalente mensile: prezzo annuale / 12, arrotondato al centesimo.
+        var mese = b.querySelector('[data-mensile]');
+        if (mese) mese.textContent = soldi(Math.round((base + (q - 1) * extra) / 12), valuta);
+      }
     }
     campo.addEventListener('input', aggiorna);
     aggiorna();

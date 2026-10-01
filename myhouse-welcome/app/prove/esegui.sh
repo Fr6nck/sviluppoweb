@@ -22,7 +22,7 @@ for f in .htaccess web.config controllo.php; do
   [ -f "$RADICE/app/public/$f" ] && cp "$RADICE/app/public/$f" "$W/"
 done
 cp -r "$RADICE/app/public/assets" "$W/assets"
-cp -r "$RADICE/app/src" "$RADICE/app/views" "$RADICE/app/migrations" "$RADICE/app/lang" "$RADICE/app/config.php" "$W/app/"
+cp -r "$RADICE/app/src" "$RADICE/app/views" "$RADICE/app/migrations" "$RADICE/app/lang" "$RADICE/app/tools" "$RADICE/app/config.php" "$W/app/"
 chmod -R 777 "$W/app/storage"
 
 # Il server di prova fa quello che farebbe Apache con mod_rewrite.
@@ -53,6 +53,7 @@ export AWS_ACCESS_KEY_ID=AKIAFINTOPERLEPROVE
 export AWS_SECRET_ACCESS_KEY=segreto-finto-per-le-prove
 export AWS_S3_ENDPOINT="http://127.0.0.1:$PORTA_S3"
 export MAIL_TRANSPORT=log
+export MHW_CRON_TOKEN=token-finto-per-le-prove
 
 php -S "127.0.0.1:$PORTA" -t "$TMP/docroot" "$TMP/docroot/router.php" > "$TMP/server.log" 2>&1 &
 PID=$!

@@ -81,6 +81,38 @@ final class Plans
         return $base + max(0, $quantity - 1) * (int) $pv['extra_price_cents'];
     }
 
+    /** L'equivalente mensile di un prezzo annuale: «circa 9,75 € al mese». */
+    public static function monthly(int $centsAnno): int { return (int) round($centsAnno / 12); }
+
+    /**
+     * La tabella di confronto, generata dalle funzioni delle versioni in vendita:
+     * una riga per funzione compresa in almeno un piano pubblico.
+     * @return array{piani:array,righe:array<int,array{label:string,valori:string[]}>}
+     */
+    public static function comparison(): array
+    {
+        $piani = [];
+        foreach (self::offers() as $of) {
+            $p = $of['options'][0];
+            $p['nome'] = count($of['options']) > 1 ? preg_replace('/\s*\d+$/', '', $of['main']['name']) : $p['name'];
+            $piani[] = $p;
+        }
+        $righe = [];
+        foreach (Db::all('SELECT * FROM features ORDER BY id') as $f) {
+            $valori = []; $qualcuno = false;
+            foreach ($piani as $p) {
+                $v = (string) ($p['features'][$f['code']] ?? $f['default_value']);
+                if ($v !== '0' && $v !== '') $qualcuno = true;
+                if ($f['code'] === 'properties' && self::perProperty($p)) $v = 'da ' . (int) $p['min_quantity'] . ' a ' . (int) $p['max_quantity'];
+                elseif ($v === 'unlimited') $v = 'Illimitate';
+                elseif ($f['kind'] === 'bool') $v = $v !== '0' && $v !== '' ? 'si' : 'no';
+                $valori[] = $v;
+            }
+            if ($qualcuno) $righe[] = ['label' => $f['label'], 'valori' => $valori];
+        }
+        return ['piani' => $piani, 'righe' => $righe];
+    }
+
     public static function priceLabel(int $cents, string $currency = 'EUR'): string
     {
         return Support::money($cents, $currency) . ' + IVA / anno';
