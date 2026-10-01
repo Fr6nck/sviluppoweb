@@ -1,5 +1,14 @@
 # Changelog — MyHouse Welcome
 
+## v2 · La foto di Casa Lucia (1 ottobre 2026)
+
+- Nuova copertina della demo (`assets/foto/casa.jpg`, fornita dal cliente): il portone in legno ad arco tra la pietra e i fiori. Si vede:
+  - sulla schermata di benvenuto della guida (splash);
+  - in testa alla guida;
+  - nel telefono dell'hero della landing (`borgo-telefono.jpg` e la sua WebP, ritagliate dalla stessa foto).
+- Il testo alternativo della copertina della demo è aggiornato.
+- Sul server la demo già creata tiene la foto vecchia, che è salvata nello storage. Per vederla: **Amministrazione → Quadro → «Elimina i clienti di esempio», poi «Crea i clienti di esempio»**.
+
 ## v2 · Pannello ridisegnato (1 ottobre 2026)
 
 Nessuna migrazione. Il telaio del pannello (`views/layout/cms.php`) vale per l'area host e per l'amministrazione.

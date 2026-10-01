@@ -113,7 +113,7 @@ final class Demo
             'lingue' => ['it', 'en', 'de'], 'palette' => 'terracotta',
         ]);
         Db::update('properties', [
-            'cover_media_id' => self::foto('casa.jpg', $acc, $pid, 'La facciata in pietra con la scalinata e i gerani'),
+            'cover_media_id' => self::foto('casa.jpg', $acc, $pid, 'Il portone in legno ad arco, tra la pietra, i fiori rampicanti e i vasi di terracotta'),
         ], 'id = :pid', ['pid' => $pid]);
 
         $core = self::nucleo($pid);
