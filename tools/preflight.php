@@ -307,6 +307,15 @@ $aggiungi(
         : 'C\'è un indirizzo non valido o di prova: correggilo o toglilo (gli altri ricevono lo stesso).'
 );
 
+// ------------------------------------------------------- accesso al sito
+$porta = new \ArcoDelVento\Support\Accesso(
+    new \ArcoDelVento\Storage\JsonStore((string) $config['data']),
+    (string) ($config['accesso']['codice'] ?? '')
+);
+$aggiungi($porta->attivo() ? 'attenzione' : 'ok', 'Accesso',
+    $porta->attivo() ? 'sito chiuso da un codice d\'accesso: chi non lo ha vede solo la pagina del codice' : 'sito aperto a tutti',
+    $porta->attivo() ? 'Va bene in anteprima. Il giorno dell\'apertura: area riservata → Accesso al sito → togli la spunta.' : '');
+
 // ------------------------------------------------------------ pagamento
 // Acceso solo con PAYMENT_PROVIDER=sumup. Con i soldi di mezzo, quello che
 // manca si ferma qui e non davanti a un ospite con la carta in mano.

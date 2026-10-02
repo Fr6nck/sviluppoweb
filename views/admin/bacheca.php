@@ -70,6 +70,17 @@ $iniziali = static function (string $nome): string {
 };
 ?>
 
+<?php if (!empty($sitoChiuso)): ?>
+  <section class="adm-striscia" aria-labelledby="b-accesso">
+    <span class="adm-striscia__icona" aria-hidden="true"><?= icona('chiave', 20) ?></span>
+    <div>
+      <h2 id="b-accesso" class="adm-striscia__titolo">Il sito è chiuso da un codice d'accesso</h2>
+      <p>Chi non ha il codice vede solo la pagina d'accesso, con il sito sfocato dietro. Tu, entrato qui, lo vedi
+         aperto. Si apre a tutti da <a href="<?= e(adminUrl('accesso-sito')) ?>">Accesso al sito</a>.</p>
+    </div>
+  </section>
+<?php endif; ?>
+
 <?php if (!empty($pagamentoAttivo)): ?>
   <section class="adm-striscia adm-striscia--pagamenti" aria-labelledby="b-pagamenti">
     <span class="adm-striscia__icona" aria-hidden="true"><?= icona('chiave', 20) ?></span>

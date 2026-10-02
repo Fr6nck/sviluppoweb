@@ -712,6 +712,22 @@ return [
         'error_text'    => 'Check the fields marked below and try again.',
     ],
 
+    // The access-code page, while the site is in preview.
+    'gate' => [
+        'page_title' => 'Arco del Vento — preview',
+        'eyebrow'    => 'Preview',
+        'title'      => 'The site is about to open',
+        'lead'       => 'To see it now you need the access code.',
+        'label'      => 'Access code',
+        'submit'     => 'Enter',
+        'note'       => 'On this browser the code lasts thirty days.',
+        'wrong'      => 'That code is not right. Check it and try again.',
+        'empty'      => 'Type the access code.',
+        'too_many'   => 'Too many attempts. Try again in a quarter of an hour.',
+        'expired'    => 'The page was left open for a while: type the code again.',
+        'other_lang' => 'Italiano',
+    ],
+
     'privacy' => [
         'seo_title'       => 'Privacy — Arco del Vento',
         'seo_description' => 'What data this site collects, why, for how long, and how to ask for it to '

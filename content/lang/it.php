@@ -723,6 +723,22 @@ return [
     ],
 
     // ---------------------------------------------------------- Privacy
+    // La pagina del codice d'accesso, finché il sito è in anteprima.
+    'gate' => [
+        'page_title' => 'Arco del Vento — anteprima',
+        'eyebrow'    => 'Anteprima',
+        'title'      => 'Il sito sta per aprire',
+        'lead'       => 'Per vederlo adesso serve il codice d’accesso.',
+        'label'      => 'Codice d’accesso',
+        'submit'     => 'Entra',
+        'note'       => 'Su questo browser il codice vale trenta giorni.',
+        'wrong'      => 'Il codice non è giusto. Controlla e riprova.',
+        'empty'      => 'Scrivi il codice d’accesso.',
+        'too_many'   => 'Troppi tentativi. Riprova fra un quarto d’ora.',
+        'expired'    => 'La pagina era rimasta aperta a lungo: scrivi di nuovo il codice.',
+        'other_lang' => 'English',
+    ],
+
     'privacy' => [
         'seo_title'       => 'Privacy — Arco del Vento',
         'seo_description' => 'Quali dati raccoglie questo sito, perché, per quanto tempo e come si '

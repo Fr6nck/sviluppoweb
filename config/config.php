@@ -98,6 +98,14 @@ return [
         'currency'    => Env::get('BOOKING_CURRENCY', 'EUR'),
     ],
 
+    // Il sito chiuso da un codice, per l'anteprima: chi non lo ha vede solo
+    // la pagina d'accesso. Si accende, si spegne e si cambia dall'area
+    // riservata (Accesso al sito); questo è il codice di partenza. Con
+    // SITE_ACCESS_CODE=off nel .env è spento comunque: la via d'uscita via FTP.
+    'accesso' => [
+        'codice' => trim((string) Env::get('SITE_ACCESS_CODE', 'Blackout_2026')),
+    ],
+
     // Il pagamento online. Spento finché PAYMENT_PROVIDER è vuoto o mancano
     // la chiave e il codice esercente: allora la prenotazione resta una
     // richiesta, come prima. Le chiavi stanno solo nel .env, mai nel codice.

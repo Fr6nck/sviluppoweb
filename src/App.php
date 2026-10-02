@@ -254,6 +254,15 @@ final class App
         );
     }
 
+    /** Il sito chiuso da un codice d'accesso, per l'anteprima. */
+    public function accesso(): \ArcoDelVento\Support\Accesso
+    {
+        return $this->services['accesso'] ??= new \ArcoDelVento\Support\Accesso(
+            $this->store(),
+            (string) $this->config('accesso.codice'),
+        );
+    }
+
     /** Il pagamento online è acceso: SumUp scelto, con chiave e codice esercente. */
     public function pagamentoAttivo(): bool
     {

@@ -151,6 +151,8 @@ $rendi = static function (string $indirizzo, string $cartella = '') use ($root):
         // Le pagine come escono dal pacchetto: senza le modifiche e le immagini
         // caricate dall'area riservata su questa macchina.
         $_SERVER['ADV_DATA_DIR'] = sys_get_temp_dir() . '/adv-dati-vuoti-' . getmypid();
+        // Le pagine vere, non la porta del codice d'accesso: è il sito che si controlla.
+        $_SERVER['SITE_ACCESS_CODE'] = 'off';
         ob_start();
         require $root . '/public/index.php';
         $corpo = ob_get_clean();
@@ -302,6 +304,7 @@ $esclusi = [
     'tools/build-photos.php'      => 'strumento da tavolo: vuole GD',
     'tools/build-placeholders.php' => 'strumento da tavolo',
     'tools/build-icone.php'       => 'strumento da tavolo: vuole GD',
+    'tools/build-sipario.mjs'     => 'strumento da tavolo: vuole Node e Playwright',
     'tools/build-release.php'     => 'questo stesso strumento',
 ];
 
@@ -358,8 +361,11 @@ foreach ($daCopiare as $voce) {
         }
         // Un'immagine che nessuna pagina chiede non sale: pesa e, nel caso dei
         // segnaposto delle camere fotografate, racconta una cosa falsa. Il
-        // marchio sale tutto: l'area Immagini ne mostra tutte le misure.
-        if (!$tutto && str_starts_with($relativo, 'public/assets/') && !str_starts_with($relativo, 'public/assets/img/logo/')) {
+        // marchio sale tutto: l'area Immagini ne mostra tutte le misure. E
+        // sale la fotografia sfocata della porta del codice, che le pagine
+        // controllate qui (a porta spenta) non chiedono.
+        if (!$tutto && str_starts_with($relativo, 'public/assets/') && !str_starts_with($relativo, 'public/assets/img/logo/')
+            && !str_starts_with($relativo, 'public/assets/img/sipario/')) {
             $chiave = substr($relativo, strlen('public'));
             if (!isset($riferite[$chiave])) {
                 $scartate[$chiave] = (int) $f->getSize();
@@ -708,7 +714,15 @@ file_put_contents($uscita . '/LEGGIMI-PRIMA.txt', implode(PHP_EOL, [
     '',
     'Quando ricarichi il sito, NON cancellare e NON sovrascrivere la cartella',
     'storage/ sul server: dentro ci sono le modifiche fatte dal pannello e le',
-    'richieste arrivate dal sito.',
+    'richieste arrivate dal sito. Lo stesso per public/assets/media/, le',
+    'immagini caricate dal pannello.',
+    '',
+    'IL SITO SI APRE CON UN CODICE',
+    '',
+    'Finché è in anteprima, chi apre il sito vede solo la pagina del codice.',
+    'Il codice di partenza è Blackout_2026. Si cambia, o si apre il sito a',
+    'tutti, dall\'area riservata: Accesso al sito. Via FTP: la riga',
+    'SITE_ACCESS_CODE=off nel .env lo spegne in ogni caso.',
     '',
     'La procedura completa è in docs/DEPLOY-HOSTINGER.md, dentro lo .zip.',
     '',

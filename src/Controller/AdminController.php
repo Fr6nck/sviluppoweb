@@ -141,6 +141,7 @@ final class AdminController
             $pezzi === ['immagini']                         => $this->images(),
             count($pezzi) === 2 && $pezzi[0] === 'immagini'  => $this->image($request, $pezzi[1]),
             $pezzi === ['posta']                            => $this->mail($request),
+            $pezzi === ['accesso-sito']                     => $this->siteAccess($request),
             $pezzi === ['account']                          => $this->account($request),
             $pezzi === ['ripristina'] && $metodo === 'POST'  => $this->restore($request),
             default                                         => Response::html($this->page('non-trovata', ['titolo' => 'Pagina non trovata']), 404),
@@ -313,6 +314,7 @@ final class AdminController
             'camere'           => $this->app->rooms()->all(),
             'demo'             => (string) $this->app->config('booking.provider') === 'demo',
             'pagamentoAttivo'  => $this->app->pagamentoAttivo(),
+            'sitoChiuso'       => $this->app->accesso()->attivo(),
         ]));
     }
 
@@ -786,6 +788,45 @@ final class AdminController
         $this->flash('ok', 'Domande salvate. Sono già sul sito.');
 
         return Response::redirect($this->url('domande'), 303);
+    }
+
+    // =============================================================== accesso al sito
+
+    /** Il sito chiuso da un codice: acceso o spento, e quale codice. */
+    private function siteAccess(Request $request): Response
+    {
+        $accesso = $this->app->accesso();
+        $dati = static fn (array $extra = []): array => $extra + [
+            'titolo'        => 'Accesso al sito',
+            'sottotitolo'   => 'Il sito chiuso da un codice, finché è in anteprima.',
+            'attivo'        => $accesso->attivo(),
+            'codice'        => $accesso->codice(),
+            'spentoDalFile' => $accesso->spentoDalFile(),
+        ];
+        if (!$request->isPost()) {
+            return Response::html($this->page('accesso-sito', $dati()));
+        }
+
+        $attivo = $this->in($request, 'attivo') === '1';
+        $codice = trim($this->in($request, 'codice'));
+        $errori = [];
+        if ($attivo && $codice === '') {
+            $errori[] = 'Per chiudere il sito serve un codice.';
+        } elseif ($codice !== '' && (mb_strlen($codice) < 4 || mb_strlen($codice) > 60 || preg_match('/[\x00-\x1F]/', $codice) === 1)) {
+            $errori[] = 'Il codice: da 4 a 60 caratteri, su una riga.';
+        }
+        if ($errori !== []) {
+            return Response::html($this->page('accesso-sito', $dati([
+                'errori' => $errori, 'attivo' => $attivo, 'codice' => $codice,
+            ])), 422);
+        }
+
+        $accesso->salva($attivo, $codice !== '' ? $codice : $accesso->codice());
+        $this->flash('ok', $attivo
+            ? 'Salvato: il sito si apre solo con il codice «' . $codice . '».'
+            : 'Salvato: il sito è aperto a tutti.');
+
+        return Response::redirect($this->url('accesso-sito'), 303);
     }
 
     // =============================================================== posta

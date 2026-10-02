@@ -516,3 +516,31 @@ notti risultano occupate a caso: con i pagamenti non va usato.
 - Per spegnere i pagamenti basta svuotare `PAYMENT_PROVIDER`: si torna alle
   richieste, e le prenotazioni già pagate restano nell'area riservata.
 
+---
+
+## 14. Il sito chiuso da un codice (anteprima)
+
+Finché il sito è in anteprima, **chi lo apre vede solo una pagina con il campo
+del codice**, con il sito sfocato dietro. Con il codice giusto — all'inizio
+**`Blackout_2026`**, maiuscole e minuscole non contano — si apre la pagina che
+aveva chiesto, e su quel browser il sito resta aperto trenta giorni.
+
+- È acceso appena carichi il pacchetto: non c'è niente da impostare.
+- **Si spegne, si riaccende e si cambia il codice** dall'area riservata:
+  **Accesso al sito**. Il giorno dell'apertura basta togliere la spunta.
+- Cambiando il codice, chi era già entrato deve scrivere quello nuovo.
+- L'area riservata (`/admin`) non è mai chiusa, e chi ci è entrato vede il sito
+  aperto. Per vedere che cosa vede un visitatore usa una finestra anonima.
+- Dieci codici sbagliati dalla stessa connessione: un quarto d'ora di pausa.
+- Mentre il sito è chiuso, `robots.txt` dice ai motori di ricerca di stare
+  fuori, e ogni pagina porta `noindex`.
+- **Via d'uscita via FTP**: `SITE_ACCESS_CODE=off` nel `.env` spegne il codice in
+  ogni caso, qualunque cosa dica l'area riservata.
+
+Dietro la scheda c'è una **fotografia già sfocata** del sito
+(`public/assets/img/sipario/`), non la pagina vera: nel sorgente o con la
+modalità lettura del browser non si legge niente. Se il sito cambia molto e la
+vuoi rifare: `node tools/build-sipario.mjs http://indirizzo-del-sito-di-prova`
+sulla tua macchina (vuole Node e Playwright, e il sito con `SITE_ACCESS_CODE=off`),
+poi carica i due JPG.
+

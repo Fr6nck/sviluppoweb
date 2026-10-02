@@ -712,3 +712,21 @@ td .adm-dc, span.adm-dc { margin: 0; }
   :root:not([data-tema="chiaro"]) .adm-marchio-scuro { display: none !important; }
   :root:not([data-tema="chiaro"]) .adm-marchio-chiaro { display: block !important; }
 }
+
+/* ============================================================ il sito in anteprima
+   La porta con il codice: la scheda dell'accesso sopra una fotografia del
+   sito già sfocata (tools/build-sipario.mjs). Nessun testo vero dietro. */
+.adm--sipario { --a-velo-sipario: rgb(248 241 227 / .22); background: var(--a-tela); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="chiaro"]) .adm--sipario { --a-velo-sipario: rgb(22 16 13 / .55); }
+}
+.adm-sipario { position: fixed; inset: 0; z-index: 0; overflow: hidden;
+               background: var(--a-crema) url("../img/sipario/sito-1440.jpg") center top / cover no-repeat; }
+.adm-sipario::after { content: ""; position: absolute; inset: 0; background: var(--a-velo-sipario); }
+@media (max-width: 760px) {
+  .adm-sipario { background-image: url("../img/sipario/sito-390.jpg"); }
+}
+.adm--sipario .adm-fuori { position: relative; z-index: 1; }
+.adm--sipario .adm-fuori__scheda { box-shadow: 0 30px 80px -30px rgb(51 29 24 / .55); }
+.adm--sipario .adm-fuori__piede a { padding: 6px 14px; border-radius: 999px; background: var(--a-carta); color: var(--a-testo); text-decoration: none; }
+.adm--sipario .adm-fuori__piede a:hover { text-decoration: underline; }

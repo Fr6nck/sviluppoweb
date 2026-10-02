@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ArcoDelVento\Http;
 
 use ArcoDelVento\App;
+use ArcoDelVento\Controller\AccessController;
 use ArcoDelVento\Controller\AdminController;
 use ArcoDelVento\Controller\BookingController;
 use ArcoDelVento\Controller\ContactController;
@@ -34,16 +35,6 @@ final class Kernel
         $locales = $this->app->config('i18n.available');
         $default = (string) $this->app->config('i18n.default');
 
-        // Le due rotte tecniche non hanno lingua e vengono prima di tutto:
-        // sono generate perché l'indirizzo del sito e l'elenco delle camere
-        // cambiano, e una mappa scritta a mano invecchia in silenzio.
-        if ($request->path === '/sitemap.xml') {
-            return (new SitemapController($this->app))->sitemap();
-        }
-        if ($request->path === '/robots.txt') {
-            return (new SitemapController($this->app))->robots();
-        }
-
         // Le notifiche di SumUp: senza lingua, senza sessione, senza gettone.
         // Non ci si fida del contenuto: dice solo quale pagamento guardare.
         if ($request->path === '/pagamenti/sumup') {
@@ -53,6 +44,22 @@ final class Kernel
         // L'area riservata: fuori dalle lingue del sito, sempre in italiano.
         if ($request->path === '/admin' || str_starts_with($request->path, '/admin/')) {
             return (new AdminController($this->app))->handle($request);
+        }
+
+        // Il sito in anteprima, chiuso da un codice: tutto quello che segue
+        // (pagine, sitemap, robots) passa prima dalla porta.
+        if (($porta = (new AccessController($this->app))->handle($request)) !== null) {
+            return $porta;
+        }
+
+        // Le due rotte tecniche non hanno lingua: sono generate perché
+        // l'indirizzo del sito e l'elenco delle camere cambiano, e una mappa
+        // scritta a mano invecchia in silenzio.
+        if ($request->path === '/sitemap.xml') {
+            return (new SitemapController($this->app))->sitemap();
+        }
+        if ($request->path === '/robots.txt') {
+            return (new SitemapController($this->app))->robots();
         }
 
         // La radice non ha contenuto proprio: porta alla lingua giusta.

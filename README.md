@@ -251,6 +251,25 @@ SumUp   →  ?passo=esito  e  POST /pagamenti/sumup  →  GET /v0.1/checkouts/{i
   nel valore; ogni prenotazione mostra lo stato del pagamento e, se non è
   pagata, il pulsante «Controlla con SumUp».
 
+## Il sito chiuso da un codice
+
+Finché è in anteprima, ogni pagina pubblica (anche `sitemap.xml`; `robots.txt`
+dice `Disallow: /`) risponde con la pagina del codice: la scheda di accesso
+dell'area riservata sopra una fotografia del sito già sfocata. È una porta vera
+e non un velo dipinto: senza il codice il server non manda niente del sito.
+
+- `src/Support/Accesso.php`: acceso o spento e quale codice — prima
+  `SITE_ACCESS_CODE=off` nel `.env` (spento in ogni caso), poi l'area riservata
+  (`storage/data/accesso.json`), altrimenti acceso con `Blackout_2026`.
+- `src/Controller/AccessController.php`: viene subito dopo l'area riservata e le
+  notifiche di SumUp, che restano fuori. Il codice giusto (maiuscole e spazi non
+  contano) dà un cookie firmato con HMAC, HttpOnly, trenta giorni, legato al
+  codice: cambiarlo chiude di nuovo tutti. Gettone anti-CSRF; dieci errori in un
+  quarto d'ora dalla stessa connessione e ci si ferma. Chi è nell'area riservata
+  passa.
+- `views/sipario.php` e `admin.css` (`.adm--sipario`); la fotografia la fa
+  `tools/build-sipario.mjs` (Node e Playwright, sfocata prima di salvarla).
+
 ## E-mail
 
 ```

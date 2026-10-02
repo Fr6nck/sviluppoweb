@@ -111,6 +111,11 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
       <p class="adm-nav__gruppo" aria-hidden="true">Generale</p>
       <ul>
         <li>
+          <a href="<?= e(adminUrl('accesso-sito')) ?>"<?= $attiva === 'accesso-sito' ? ' aria-current="page"' : '' ?>>
+            <?= icona('chiave', 20, 'adm-nav__icona') ?><span class="adm-nav__nome">Accesso al sito</span>
+          </a>
+        </li>
+        <li>
           <a href="<?= e(adminUrl('posta')) ?>"<?= $attiva === 'posta' ? ' aria-current="page"' : '' ?>>
             <?= icona('posta', 20, 'adm-nav__icona') ?><span class="adm-nav__nome">Ricezione e-mail</span>
           </a>
