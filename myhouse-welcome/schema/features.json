@@ -1,0 +1,54 @@
+{
+  "$comment": "The feature registry. Every gate in the product is a key in this file. Adding a gate is a row here plus values in seed-packages.json - never an if-statement. See docs/05.",
+  "version": 1,
+  "features": [
+    { "key": "welcome.properties.max", "name": "Properties", "category": "core", "valueType": "limit", "default": 1, "sortOrder": 10, "visible": true,
+      "description": "How many properties this account can publish guides for.", "limitMessage": "Your package includes {limit} property." },
+
+    { "key": "welcome.languages.max", "name": "Languages", "category": "content", "valueType": "limit", "default": 1, "sortOrder": 20, "visible": true,
+      "description": "How many languages a guide can be published in.", "limitMessage": "Your package includes {limit} language." },
+    { "key": "welcome.languages.auto_translate", "name": "Automatic translation", "category": "content", "valueType": "boolean", "default": false, "sortOrder": 21, "visible": true,
+      "description": "Translate the whole guide automatically, then review before publishing." },
+
+    { "key": "welcome.sections.core", "name": "Core sections", "category": "content", "valueType": "boolean", "default": true, "sortOrder": 30, "visible": false,
+      "description": "Welcome, check-in, Wi-Fi, arrival, parking, rules, check-out, emergency. Always on." },
+    { "key": "welcome.sections.services", "name": "Services and amenities", "category": "content", "valueType": "boolean", "default": false, "sortOrder": 31, "visible": true },
+    { "key": "welcome.sections.appliances", "name": "Appliance instructions", "category": "content", "valueType": "boolean", "default": false, "sortOrder": 32, "visible": true },
+    { "key": "welcome.sections.waste", "name": "Waste and recycling", "category": "content", "valueType": "boolean", "default": false, "sortOrder": 33, "visible": true },
+    { "key": "welcome.sections.transport", "name": "Transport", "category": "content", "valueType": "boolean", "default": false, "sortOrder": 34, "visible": true },
+    { "key": "welcome.sections.recommendations", "name": "Local recommendations", "category": "content", "valueType": "boolean", "default": false, "sortOrder": 35, "visible": true },
+    { "key": "welcome.sections.experiences", "name": "Experiences", "category": "content", "valueType": "boolean", "default": false, "sortOrder": 36, "visible": true },
+    { "key": "welcome.sections.extras", "name": "Extra services", "category": "content", "valueType": "boolean", "default": false, "sortOrder": 37, "visible": true },
+    { "key": "welcome.sections.custom.max", "name": "Your own sections", "category": "content", "valueType": "limit", "default": 0, "sortOrder": 38, "visible": true,
+      "limitMessage": "You've used all {limit} of your own sections." },
+
+    { "key": "welcome.media.images.max", "name": "Photos", "category": "media", "valueType": "limit", "default": 15, "sortOrder": 40, "visible": true,
+      "limitMessage": "You've added {current} photos, which is what your package includes." },
+    { "key": "welcome.media.storage_mb", "name": "Storage", "category": "media", "valueType": "limit", "default": 50, "sortOrder": 41, "visible": true, "unit": "MB" },
+    { "key": "welcome.media.pdf", "name": "PDF files", "category": "media", "valueType": "boolean", "default": false, "sortOrder": 42, "visible": true },
+    { "key": "welcome.media.video_embed", "name": "Video links", "category": "media", "valueType": "boolean", "default": false, "sortOrder": 43, "visible": true,
+      "description": "Embed a YouTube or Vimeo video. Files are never hosted - see docs/12." },
+
+    { "key": "welcome.recommendations.max", "name": "Places you recommend", "category": "content", "valueType": "limit", "default": 0, "sortOrder": 50, "visible": true },
+
+    { "key": "welcome.branding.colors", "name": "Your colours", "category": "branding", "valueType": "boolean", "default": false, "sortOrder": 60, "visible": true },
+    { "key": "welcome.branding.typography", "name": "Typography", "category": "branding", "valueType": "enum", "default": "clean", "sortOrder": 61, "visible": true,
+      "enumOptions": ["clean", "editorial", "warm"] },
+    { "key": "welcome.branding.remove_powered_by", "name": "Remove MyHouse branding", "category": "branding", "valueType": "boolean", "default": false, "sortOrder": 62, "visible": true },
+
+    { "key": "welcome.guide.search", "name": "Search", "category": "guide", "valueType": "boolean", "default": false, "sortOrder": 70, "visible": true },
+    { "key": "welcome.guide.protected_sections", "name": "Sections behind a code", "category": "guide", "valueType": "boolean", "default": false, "sortOrder": 71, "visible": true,
+      "description": "Hide door codes behind a PIN you give the guest. Phase 2." },
+    { "key": "welcome.guide.scheduled_visibility", "name": "Timed information", "category": "guide", "valueType": "boolean", "default": false, "sortOrder": 72, "visible": true,
+      "description": "Show a section only between two dates. Phase 2." },
+
+    { "key": "welcome.analytics.basic", "name": "Visits", "category": "analytics", "valueType": "boolean", "default": true, "sortOrder": 80, "visible": true,
+      "description": "Every host can see that their guide is being read. Only the depth is paid for." },
+    { "key": "welcome.analytics.advanced", "name": "Detailed statistics", "category": "analytics", "valueType": "boolean", "default": false, "sortOrder": 81, "visible": true },
+
+    { "key": "welcome.qr.branded_card", "name": "Printable branded card", "category": "guide", "valueType": "boolean", "default": false, "sortOrder": 90, "visible": true },
+    { "key": "welcome.domain.custom", "name": "Your own web address", "category": "guide", "valueType": "boolean", "default": false, "sortOrder": 91, "visible": true,
+      "description": "Phase 2. The QR code keeps working - see docs/13." },
+    { "key": "welcome.support.priority", "name": "Priority support", "category": "core", "valueType": "boolean", "default": false, "sortOrder": 100, "visible": true }
+  ]
+}

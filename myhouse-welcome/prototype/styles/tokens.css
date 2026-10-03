@@ -1,0 +1,150 @@
+/* =============================================================================
+   MyHouse Welcome — design tokens
+   The literal implementation of docs/19-design-system.md.
+   Every value here is quoted in that document; changing one means changing both.
+   ============================================================================= */
+
+:root {
+  /* ---- neutrals: warm, never grey -------------------------------------- */
+  --mh-surface:         #FAF8F5;
+  --mh-surface-raised:  #FFFFFF;
+  --mh-surface-sunken:  #F2EEE8;
+  --mh-border:          #E7E2DA;
+  --mh-border-strong:   #D5CEC3;
+  --mh-ink:             #15171A;
+  --mh-ink-muted:       #5B6068;
+  /* #676C73, not a lighter grey: this carries real text (help text, metadata,
+     card subtitles) and must clear 4.5:1 on surface, raised AND sunken.
+     Verified 4.99 / 5.29 / 4.58. The earlier #8A9099 only reached 2.78. */
+  --mh-ink-subtle:      #676C73;
+  --mh-ink-inverse:     #FFFFFF;
+
+  /* ---- brand: Cipresso -------------------------------------------------- */
+  --mh-brand-50:   #EFF5F2;
+  --mh-brand-100:  #D6E6DE;
+  --mh-brand-200:  #ADCDBE;
+  --mh-brand-300:  #7FB09C;
+  --mh-brand-400:  #52927B;
+  --mh-brand-500:  #2E7460;
+  --mh-brand-600:  #1F5B4B;   /* primary action — 7.3:1 on surface */
+  --mh-brand-700:  #17473A;
+  --mh-brand-800:  #103228;
+
+  /* ---- accent: Terracotta. Never a primary action ----------------------- */
+  --mh-accent-300: #E8A883;   /* decorative only - never carries text */
+  --mh-accent-500: #C9713F;   /* decorative only - never carries text */
+  --mh-accent-600: #A4582D;   /* the only accent that carries text: 4.53:1 worst case */
+
+  /* ---- semantic ---------------------------------------------------------
+     Each foreground clears 4.5:1 against its own tint AND against all three
+     neutral surfaces, so a chip is legible wherever it is placed. Verified by
+     prototype/contrast-check.mjs. */
+  --mh-success:     #1F7A4D;  --mh-success-bg: #EAF5EF;  --mh-success-br: #BFE0CE;
+  --mh-warning:     #916411;  --mh-warning-bg: #FBF3E2;  --mh-warning-br: #EBD5A6;
+  --mh-danger:      #B3392C;  --mh-danger-bg:  #FBEDEB;  --mh-danger-br:  #EFC4BE;
+  --mh-info:        #24628F;  --mh-info-bg:    #EAF1F7;  --mh-info-br:    #BFD6E8;
+  /* support mode has its own colour, used nowhere else in the product */
+  --mh-support:     #6B3FA0;  --mh-support-bg: #F2ECFA;  --mh-support-br: #D6C2EE;
+
+  /* ---- typography ------------------------------------------------------- */
+  --mh-font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --mh-font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                system-ui, 'Helvetica Neue', Arial, sans-serif;
+  --mh-font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+
+  --mh-text-2xs:  0.75rem;   --mh-lh-2xs:  1rem;
+  --mh-text-xs:   0.8125rem; --mh-lh-xs:   1.125rem;
+  --mh-text-sm:   0.875rem;  --mh-lh-sm:   1.25rem;
+  --mh-text-base: 1rem;      --mh-lh-base: 1.625rem;
+  --mh-text-lg:   1.125rem;  --mh-lh-lg:   1.75rem;
+  --mh-text-xl:   1.25rem;   --mh-lh-xl:   1.75rem;
+  --mh-text-2xl:  1.5rem;    --mh-lh-2xl:  2rem;
+  --mh-text-3xl:  1.875rem;  --mh-lh-3xl:  2.375rem;
+  --mh-text-4xl:  2.375rem;  --mh-lh-4xl:  2.75rem;
+  --mh-text-5xl:  3rem;      --mh-lh-5xl:  3.375rem;
+  --mh-text-6xl:  3.75rem;   --mh-lh-6xl:  4rem;
+
+  /* ---- spacing: 4px base ------------------------------------------------ */
+  --mh-space-0:  0;      --mh-space-1: 0.125rem; --mh-space-2: 0.25rem;
+  --mh-space-3:  0.5rem; --mh-space-4: 0.75rem;  --mh-space-5: 1rem;
+  --mh-space-6:  1.25rem;--mh-space-7: 1.5rem;   --mh-space-8: 2rem;
+  --mh-space-9:  2.5rem; --mh-space-10:3rem;     --mh-space-11:4rem;
+  --mh-space-12: 5rem;   --mh-space-13:6rem;     --mh-space-14:8rem;
+
+  /* ---- radius ----------------------------------------------------------- */
+  --mh-radius-sm:   6px;
+  --mh-radius-md:  10px;
+  --mh-radius-lg:  14px;
+  --mh-radius-xl:  20px;
+  --mh-radius-2xl: 28px;
+  --mh-radius-full: 999px;
+
+  /* ---- elevation: tinted with ink, never pure black --------------------- */
+  --mh-shadow-xs: 0 1px 2px rgba(21,23,26,.05);
+  --mh-shadow-sm: 0 1px 3px rgba(21,23,26,.06), 0 1px 2px rgba(21,23,26,.04);
+  --mh-shadow-md: 0 4px 12px rgba(21,23,26,.07), 0 1px 3px rgba(21,23,26,.04);
+  --mh-shadow-lg: 0 12px 32px rgba(21,23,26,.10), 0 2px 8px rgba(21,23,26,.05);
+
+  /* ---- motion: entering slower than leaving ----------------------------- */
+  --mh-motion-instant: 80ms;
+  --mh-motion-fast:   140ms;
+  --mh-motion-base:   220ms;
+  --mh-motion-slow:   340ms;
+  --mh-ease:      cubic-bezier(.2,.8,.3,1);
+  --mh-ease-sheet:cubic-bezier(.32,.72,0,1);
+
+  /* ---- layout ----------------------------------------------------------- */
+  --mh-measure: 68ch;
+  --mh-measure-guest: 60ch;
+  --mh-sidebar: 248px;
+  --mh-guide-width: 720px;
+
+  --mh-focus: 0 0 0 2px var(--mh-surface), 0 0 0 4px var(--mh-brand-600);
+}
+
+/* Guest guide: bigger base type, bigger radii, host accent applies here only.
+   See docs/19 "The guest guide's own rules". */
+.mh-guest {
+  --mh-text-base: 1.0625rem;
+  --mh-lh-base: 1.7;
+  --mh-radius-card: var(--mh-radius-2xl);
+  --mh-guest-accent: var(--mh-brand-600);
+  --mh-guest-accent-soft: var(--mh-brand-50);
+}
+
+/* Dark mode is for the guest guide only — guests read in bed and in stairwells.
+   Surfaces lift rather than darken; the brand lightens to hold contrast;
+   pure black is never used. */
+@media (prefers-color-scheme: dark) {
+  .mh-guest {
+    --mh-surface:        #14161A;
+    --mh-surface-raised: #1C1F24;
+    --mh-surface-sunken: #23262C;
+    --mh-border:         #2C3037;
+    --mh-border-strong:  #3A3F47;
+    --mh-ink:            #ECEAE6;
+    --mh-ink-muted:      #A8ADB5;
+    --mh-ink-subtle:     #878E98;   /* 5.48 / 5.00 / 4.59 on the dark surfaces */
+    --mh-guest-accent:      #7FB09C;
+    --mh-guest-accent-soft: #1B2A25;
+    --mh-success: #5FBF8C; --mh-success-bg: #14241C;
+    --mh-danger:  #E88A7D; --mh-danger-bg:  #2A1A18;
+    --mh-focus: 0 0 0 2px var(--mh-surface), 0 0 0 4px #7FB09C;
+  }
+}
+
+/* Applied once, globally, at the token level, so no component can forget it. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --mh-motion-instant: 1ms;
+    --mh-motion-fast:    1ms;
+    --mh-motion-base:    1ms;
+    --mh-motion-slow:    1ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}

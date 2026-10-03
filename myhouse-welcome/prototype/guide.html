@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- noindex by default: a welcome guide is a private document containing a home's
+     address, phone number and access instructions. See docs/13 and docs/21. -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#FAF8F5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161A" media="(prefers-color-scheme: dark)">
+<title>Casa San Francesco — Welcome</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231F5B4B'/><path d='M8 17l8-7 8 7v7a1 1 0 01-1 1h-4v-5h-6v5H9a1 1 0 01-1-1z' fill='%23fff'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/app.css">
+<style>
+/* ---------------------------------------------------------------------------
+   The guest guide. Everything readable here is readable with JavaScript off:
+   JS adds the copy buttons, the Wi-Fi QR and the language memory, nothing more.
+   --------------------------------------------------------------------------- */
+body { background: var(--mh-surface); }
+.g { max-width: var(--mh-guide-width); margin: 0 auto; padding-bottom: 5rem; }
+
+.g-cover { position: relative; aspect-ratio: 16/10; background: var(--mh-surface-sunken); overflow: hidden; }
+.g-cover__art { width: 100%; height: 100%; display: block; }
+.g-cover__fade { position: absolute; inset: auto 0 0 0; height: 45%;
+  background: linear-gradient(to top, var(--mh-surface), transparent); }
+
+.g-head { padding: 0 var(--mh-space-6); margin-top: -2.5rem; position: relative; z-index: 2; }
+.g-head__row { display: flex; align-items: flex-end; justify-content: space-between;
+  gap: .75rem; margin-bottom: var(--mh-space-5); flex-wrap: wrap; }
+.g-logo { width: 62px; height: 62px; border-radius: var(--mh-radius-lg); background: var(--mh-surface-raised);
+  border: 1px solid var(--mh-border); box-shadow: var(--mh-shadow-sm); display: grid; place-items: center; flex: none; }
+.g-title { font-family: var(--mh-font-display); font-size: var(--mh-text-4xl); line-height: var(--mh-lh-4xl);
+  letter-spacing: -.02em; margin: var(--mh-space-4) 0 var(--mh-space-3); }
+.g-welcome { color: var(--mh-ink-muted); max-width: var(--mh-measure-guest); line-height: 1.65; }
+
+/* text-based locale switcher — flags are wrong, English is not a flag */
+.g-locales { display: flex; gap: .15rem; background: var(--mh-surface-raised); border: 1px solid var(--mh-border);
+  border-radius: var(--mh-radius-full); padding: 3px; box-shadow: var(--mh-shadow-xs);
+  max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.g-locales::-webkit-scrollbar { display: none; }
+/* On a narrow phone the switcher takes its own line rather than pushing the
+   page sideways. A horizontal scrollbar on a welcome guide is a defect. */
+@media (max-width: 380px) {
+  .g-locales { order: 2; width: 100%; justify-content: flex-start; }
+  .g-logo { order: 1; }
+}
+.g-locales button { min-height: 34px; padding: 0 .7rem; flex: none; border: 0; border-radius: var(--mh-radius-full);
+  background: transparent; font-size: var(--mh-text-xs); font-weight: 600; color: var(--mh-ink-muted); cursor: pointer;
+  transition: background var(--mh-motion-fast) var(--mh-ease); }
+.g-locales button[aria-pressed="true"] { background: var(--mh-guest-accent); color: #fff; }
+
+.g-search { margin: var(--mh-space-7) var(--mh-space-6) 0; position: relative; }
+.g-search input { padding-left: 2.4rem; border-radius: var(--mh-radius-full); }
+.g-search svg { position: absolute; left: .9rem; top: 50%; transform: translateY(-50%); color: var(--mh-ink-subtle); }
+
+/* the grid: two columns on phones, three from 600, four from 900 */
+.g-grid { list-style: none; display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: var(--mh-space-4); padding: var(--mh-space-7) var(--mh-space-6) 0; }
+@media (min-width: 600px) { .g-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 900px) { .g-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.g-card { display: flex; flex-direction: column; gap: .55rem; min-height: 104px; padding: var(--mh-space-5);
+  background: var(--mh-surface-raised); border: 1px solid var(--mh-border); border-radius: var(--mh-radius-card);
+  text-decoration: none; color: inherit; box-shadow: var(--mh-shadow-xs);
+  transition: transform var(--mh-motion-fast) var(--mh-ease), box-shadow var(--mh-motion-fast) var(--mh-ease); }
+.g-card:hover, .g-card:focus-visible { transform: translateY(-2px); box-shadow: var(--mh-shadow-md); }
+.g-card__icon { width: 38px; height: 38px; border-radius: var(--mh-radius-full);
+  background: var(--mh-guest-accent-soft); display: grid; place-items: center; font-size: 18px; }
+.g-card__label { font-weight: 600; font-size: var(--mh-text-sm); line-height: 1.3; }
+.g-card__sub { font-size: var(--mh-text-xs); color: var(--mh-ink-subtle); }
+.g-card--danger { grid-column: 1 / -1; flex-direction: row; align-items: center; min-height: 0; }
+.g-card--danger .g-card__icon { background: var(--mh-danger-bg); }
+.g-card--danger .g-card__label { color: var(--mh-danger); }
+
+/* contact bar, only rendered when the host gave a number */
+.g-contact { position: sticky; bottom: 0; z-index: 20; display: flex; gap: .5rem;
+  padding: var(--mh-space-4) var(--mh-space-6) calc(var(--mh-space-4) + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--mh-surface) 88%, transparent);
+  backdrop-filter: blur(10px); border-top: 1px solid var(--mh-border); margin-top: var(--mh-space-8); }
+.g-contact .btn { flex: 1; }
+
+.g-footer { text-align: center; padding: var(--mh-space-8) var(--mh-space-6) var(--mh-space-6);
+  font-size: var(--mh-text-xs); color: var(--mh-ink-subtle); }
+.g-footer a { color: var(--mh-ink-subtle); }
+
+/* ---- section view --------------------------------------------------------- */
+.g-sec { display: none; }
+.g-sec.is-open { display: block; }
+.g-topbar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: .6rem;
+  padding: var(--mh-space-4) var(--mh-space-5);
+  background: color-mix(in srgb, var(--mh-surface) 90%, transparent);
+  backdrop-filter: blur(10px); border-bottom: 1px solid var(--mh-border); }
+.g-topbar__title { font-weight: 600; font-size: var(--mh-text-base); }
+.g-back { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border: 0;
+  border-radius: var(--mh-radius-full); background: transparent; color: var(--mh-ink); cursor: pointer; }
+.g-back:hover { background: var(--mh-surface-sunken); }
+.g-body { padding: var(--mh-space-7) var(--mh-space-6); max-width: var(--mh-measure-guest); }
+.g-body h2 { font-family: var(--mh-font-display); font-size: var(--mh-text-2xl); margin-bottom: var(--mh-space-5); }
+.g-body p { margin-bottom: var(--mh-space-5); color: var(--mh-ink-muted); }
+
+/* key/value: the value is selectable text, never an image, never masked without
+   a reveal — a screen reader user and a password manager must both reach it */
+.kv { background: var(--mh-surface-raised); border: 1px solid var(--mh-border);
+  border-radius: var(--mh-radius-lg); padding: var(--mh-space-5); margin-bottom: var(--mh-space-4); }
+.kv__k { font-size: var(--mh-text-xs); text-transform: uppercase; letter-spacing: .07em;
+  color: var(--mh-ink-subtle); font-weight: 600; margin-bottom: .3rem; }
+.kv__v { font-size: var(--mh-text-lg); font-weight: 600; word-break: break-word; }
+.kv__v.mh-mono { font-size: var(--mh-text-xl); }
+.kv__row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+
+.g-note { background: var(--mh-surface-sunken); border-radius: var(--mh-radius-lg);
+  padding: var(--mh-space-5); font-size: var(--mh-text-sm); color: var(--mh-ink-muted); line-height: 1.6; }
+
+.g-place { display: flex; gap: var(--mh-space-5); padding: var(--mh-space-5) 0; border-bottom: 1px solid var(--mh-border); }
+.g-place__img { width: 74px; height: 74px; flex: none; border-radius: var(--mh-radius-lg);
+  background: var(--mh-surface-sunken); display: grid; place-items: center; font-size: 26px; }
+.g-place__name { font-weight: 600; display: flex; align-items: center; gap: .4rem; }
+.g-place__meta { font-size: var(--mh-text-xs); color: var(--mh-ink-subtle); margin: .15rem 0 .35rem; }
+.g-place__desc { font-size: var(--mh-text-sm); color: var(--mh-ink-muted); margin-bottom: .5rem; }
+
+.g-next { display: flex; align-items: center; justify-content: space-between;
+  margin: var(--mh-space-8) var(--mh-space-6) 0; padding: var(--mh-space-5);
+  background: var(--mh-surface-raised); border: 1px solid var(--mh-border);
+  border-radius: var(--mh-radius-lg); text-decoration: none; color: inherit; font-weight: 600; font-size: var(--mh-text-sm); }
+
+.g-rules { list-style: none; }
+.g-rules li { display: flex; align-items: flex-start; gap: .6rem; padding: .6rem 0; border-bottom: 1px solid var(--mh-border); }
+.g-rules b { font-weight: 600; }
+
+details.faq { border-bottom: 1px solid var(--mh-border); }
+details.faq summary { padding: var(--mh-space-5) 0; font-weight: 600; cursor: pointer; list-style: none; }
+details.faq summary::-webkit-details-marker { display: none; }
+details.faq summary::after { content: '+'; float: right; color: var(--mh-ink-subtle); }
+details.faq[open] summary::after { content: '\2212'; }
+details.faq p { padding-bottom: var(--mh-space-5); }
+
+.qrbox { width: 152px; height: 152px; margin: var(--mh-space-5) 0; padding: 10px;
+  background: #fff; border-radius: var(--mh-radius-md); border: 1px solid var(--mh-border); }
+
+/* Prototype chrome, not part of the product. It sits at the TOP: at the bottom
+   it covered the guide's own sticky contact bar, which would put Call and
+   WhatsApp out of reach. */
+.proto-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 80;
+  background: var(--mh-ink); color: #fff; font-size: var(--mh-text-xs);
+  padding: .35rem var(--mh-space-5); display: flex; gap: .8rem; align-items: center; justify-content: center; flex-wrap: wrap; }
+.proto-bar a { color: #fff; }
+body { padding-top: 2.1rem; }
+/* the sticky top bar inside a section view must clear it too */
+.g-topbar { top: 2.1rem; }
+</style>
+</head>
+<body class="mh-guest">
+<a class="mh-skip" href="#g-main">Skip to the guide</a>
+
+<!-- ========================= HOME ========================= -->
+<div class="g" id="home">
+  <div class="g-cover">
+    <svg class="g-cover__art" viewBox="0 0 800 500" role="img" aria-label="Casa San Francesco seen from the garden, with olive trees and a terracotta roof">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#CBDCE0"/><stop offset="100%" stop-color="#EDE4D6"/>
+        </linearGradient>
+      </defs>
+      <rect width="800" height="500" fill="url(#sky)"/>
+      <circle cx="640" cy="105" r="42" fill="#F3D9A8"/>
+      <path d="M0 330 Q140 275 300 315 T620 300 T800 330 V500 H0Z" fill="#B7C4A4"/>
+      <path d="M0 380 Q200 345 420 375 T800 385 V500 H0Z" fill="#9DAE89"/>
+      <rect x="250" y="235" width="300" height="175" fill="#EFE7DA"/>
+      <path d="M232 240 L400 140 L568 240 Z" fill="#C0724A"/>
+      <rect x="290" y="285" width="52" height="52" rx="4" fill="#7FA3A8"/>
+      <rect x="458" y="285" width="52" height="52" rx="4" fill="#7FA3A8"/>
+      <rect x="372" y="312" width="56" height="98" rx="4" fill="#8C5A3C"/>
+      <circle cx="145" cy="345" r="48" fill="#8B9E77"/><rect x="139" y="345" width="12" height="60" fill="#7A6A52"/>
+      <circle cx="678" cy="352" r="42" fill="#8B9E77"/><rect x="673" y="352" width="11" height="54" fill="#7A6A52"/>
+    </svg>
+    <div class="g-cover__fade"></div>
+  </div>
+
+  <header class="g-head">
+    <div class="g-head__row">
+      <div class="g-logo" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1F5B4B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
+      </div>
+      <div class="g-locales" role="group" aria-label="Language">
+        <button type="button" data-locale="it-IT" aria-pressed="true">Italiano</button>
+        <button type="button" data-locale="en-GB" aria-pressed="false">English</button>
+        <button type="button" data-locale="de-DE" aria-pressed="false">Deutsch</button>
+      </div>
+    </div>
+    <h1 class="g-title" id="g-name">Casa San Francesco</h1>
+    <p class="g-welcome" id="g-welcome">
+      Welcome, and make yourself at home. Everything you need for your stay is here —
+      if anything is missing, just message me.
+    </p>
+  </header>
+
+  <div class="g-search" id="g-search" hidden>
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <label class="mh-sr" for="g-q">Search this guide</label>
+    <input class="input" id="g-q" type="search" placeholder="Search — Wi-Fi, parking, bins…">
+  </div>
+
+  <main id="g-main">
+    <ul class="g-grid" id="g-grid"></ul>
+  </main>
+
+  <div class="g-contact" id="g-contact" hidden>
+    <a class="btn btn--secondary" href="tel:+390100000000" data-ev="phone">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8.1 9.9a16 16 0 006 6l1.3-1.2a2 2 0 012.1-.5c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z"/></svg>
+      Call
+    </a>
+    <a class="btn btn--secondary" href="https://wa.me/390100000000" data-ev="whatsapp">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 01-12.6 7.3L3 21l2.3-5.3A8.4 8.4 0 1121 11.5z"/></svg>
+      WhatsApp
+    </a>
+  </div>
+
+  <footer class="g-footer" id="g-footer">
+    <p>Powered by <a href="marketing.html">MyHouse</a></p>
+    <p style="margin-top:.4rem">We don't use cookies and we store nothing about you. <a href="../docs/22-privacy-gdpr.md">Privacy</a></p>
+  </footer>
+</div>
+
+<!-- ========================= SECTION VIEW ========================= -->
+<div class="g g-sec" id="section">
+  <div class="g-topbar">
+    <button class="g-back" id="g-back" aria-label="Back to the guide">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <span class="g-topbar__title" id="g-sec-title">Wi-Fi</span>
+  </div>
+  <div class="g-body" id="g-sec-body"></div>
+  <a class="g-next" id="g-next" href="#">
+    <span></span>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+  </a>
+</div>
+
+<div class="proto-bar" id="proto-bar">
+  <span>Prototype</span>
+  <a href="index.html">All screens</a>
+  <a href="dashboard.html">Edit this guide</a>
+  <span class="subtle" style="color:#9aa0a8">Resize to phone width &middot; try dark mode</span>
+</div>
+<script>
+  // When the guide is embedded as the dashboard's live preview, prototype chrome
+  // would appear inside the phone frame. The host should see their guide, not ours.
+  if (window.self !== window.top) document.getElementById('proto-bar').remove();
+</script>
+
+<div id="live" class="mh-sr" role="status" aria-live="polite"></div>
+
+<script src="scripts/store.js"></script>
+<script>
+(function () {
+  'use strict';
+  var S = MHW, c = S.get().content, g = S.get().guide;
+  var live = document.getElementById('live');
+  function say(m) { live.textContent = ''; setTimeout(function () { live.textContent = m; }, 40); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+
+  /* ---- host content, with sensible demo fallbacks ---------------------- */
+  var name   = c.name || 'Casa San Francesco';
+  var hello  = c.welcomeMessage || 'Welcome, and make yourself at home. Everything you need for your stay is here — if anything is missing, just message me.';
+  document.getElementById('g-name').textContent = name;
+  document.getElementById('g-welcome').textContent = hello;
+  document.title = name + ' — Welcome';
+
+  if (c.phone) {
+    var cb = document.getElementById('g-contact');
+    cb.hidden = false;
+    cb.querySelector('[data-ev="phone"]').href = 'tel:' + c.phone.replace(/\s/g, '');
+    cb.querySelector('[data-ev="whatsapp"]').href = 'https://wa.me/' + (c.whatsapp || c.phone).replace(/[^0-9]/g, '');
+  } else {
+    document.getElementById('g-contact').hidden = false;   /* demo default */
+  }
+
+  /* search exists only where the package includes it (docs/09) */
+  if (S.can('welcome.guide.search')) document.getElementById('g-search').hidden = false;
+
+  /* Pro may remove the MyHouse mark */
+  if (S.can('welcome.branding.remove_powered_by')) {
+    document.getElementById('g-footer').firstElementChild.innerHTML =
+      '<span class="subtle">' + esc(name) + '</span>';
+  }
+
+  /* ---- section bodies --------------------------------------------------- */
+  var BODY = {
+    welcome: function () {
+      return '<h2>Welcome</h2><p>' + esc(hello) + '</p>' +
+        (c.hostName ? '<div class="kv"><div class="kv__k">Your host</div><div class="kv__v">' + esc(c.hostName) + '</div></div>' : '');
+    },
+    checkin: function () {
+      var h = '<h2>Check-in</h2>' +
+        '<div class="kv"><div class="kv__k">From</div><div class="kv__v">' + esc(c.checkinTime || '15:00') + '</div></div>';
+      if (c.selfCheckin) {
+        h += '<div class="kv"><div class="kv__k">Keys</div><div class="kv__v">' +
+             esc({ lockbox: 'In the lockbox', key_safe: 'In the key safe', reception: 'At reception',
+                   neighbour: 'With the neighbour', smart_lock: 'Smart lock', handover: 'I hand them over'
+                 }[c.keyLocation] || 'In the lockbox') + '</div></div>';
+        if (c.doorCode) {
+          /* a code is monospace with tabular numerals and wide tracking — a guest
+             is transcribing it into a keypad one character at a time */
+          h += '<div class="kv"><div class="kv__row"><div><div class="kv__k">Code</div>' +
+               '<div class="kv__v mh-mono">' + esc(c.doorCode) + '</div></div>' +
+               '<button class="btn btn--secondary btn--sm" data-copy="' + esc(c.doorCode) + '">Copy</button></div></div>';
+        }
+      }
+      h += '<p>' + esc(c.accessInstructions || 'The lockbox is to the right of the green door, under the letterboxes. Turn the dial to the code, then slide the cover down.') + '</p>';
+      return h;
+    },
+    wifi: function () {
+      if (!c.hasWifi) return '<h2>Wi-Fi</h2><p>There is no Wi-Fi at this property.</p>';
+      var ssid = c.ssid || 'CasaSanFrancesco', pw = c.wifiPassword || 'ulivo2026';
+      return '<h2>Wi-Fi</h2>' +
+        '<div class="kv"><div class="kv__row"><div><div class="kv__k">Network</div>' +
+        '<div class="kv__v mh-mono">' + esc(ssid) + '</div></div>' +
+        '<button class="btn btn--secondary btn--sm" data-copy="' + esc(ssid) + '">Copy</button></div></div>' +
+        '<div class="kv"><div class="kv__row"><div><div class="kv__k">Password</div>' +
+        '<div class="kv__v mh-mono" id="pw" data-real="' + esc(pw) + '">' + '•'.repeat(pw.length) + '</div></div>' +
+        '<div class="row" style="gap:.4rem"><button class="btn btn--ghost btn--sm" id="reveal">Show</button>' +
+        '<button class="btn btn--secondary btn--sm" data-copy="' + esc(pw) + '">Copy</button></div></div></div>' +
+        '<div class="g-note" style="margin-bottom:1rem"><strong>Connect with QR</strong><br>' +
+        'Point your camera at this code and your phone joins the network.' +
+        '<div class="qrbox">' + fakeQr(ssid + pw) + '</div>' +
+        '<span class="xs subtle">Generated in your browser — the password never leaves your phone.</span></div>' +
+        '<p>' + esc(c.wifiInstructions || 'The router is in the hallway cupboard. If it stops working, switch it off for ten seconds and back on.') + '</p>';
+    },
+    arrival: function () {
+      return '<h2>How to arrive</h2>' +
+        '<p><strong>By car.</strong> ' + esc(c.byCar || 'Leave the A10 at Savona, then follow signs for the centre. The last 300 m is a pedestrian street — you can drive in to unload.') + '</p>' +
+        '<p><strong>By train.</strong> ' + esc(c.byTrain || 'Savona station is a 12-minute walk, mostly flat, or a 4-minute taxi.') + '</p>' +
+        '<a class="btn btn--secondary btn--block" href="https://maps.google.com" data-ev="maps">Open in Google Maps</a>';
+    },
+    parking: function () {
+      if (!c.hasParking) return '<h2>Parking</h2><p>There is no parking at the property. The nearest public car park is Piazza del Popolo, about 200 m away.</p>';
+      var kinds = { private: 'Private space', garage: 'Garage', public: 'Public car park', street: 'On the street' };
+      return '<h2>Parking</h2>' +
+        '<div class="kv"><div class="kv__k">Type</div><div class="kv__v">' + esc(kinds[c.parkingType] || 'On the street') + '</div></div>' +
+        '<p>' + esc(c.parkingInstructions || 'Blue lines are paid (1.20 EUR/hour, free after 20:00 and on Sundays). White lines are free but rare. The car park in Piazza del Popolo is 200 m away and costs 8 EUR a day.') + '</p>' +
+        '<a class="btn btn--secondary btn--block" href="https://maps.google.com" data-ev="maps">Open in Google Maps</a>';
+    },
+    services: function () {
+      var list = (c.amenities && c.amenities.length) ? c.amenities
+        : ['kitchen', 'dishwasher', 'washing_machine', 'air_conditioning', 'heating', 'tv', 'terrace', 'linen'];
+      var labels = { kitchen: 'Kitchen', dishwasher: 'Dishwasher', washing_machine: 'Washing machine',
+        dryer: 'Dryer', air_conditioning: 'Air conditioning', heating: 'Heating', tv: 'TV',
+        streaming: 'Netflix', pool: 'Pool', terrace: 'Terrace', garden: 'Garden', bbq: 'Barbecue',
+        crib: 'Cot', high_chair: 'High chair', iron: 'Iron', hairdryer: 'Hairdryer', lift: 'Lift',
+        accessible_entrance: 'Step-free entrance', pets_welcome: 'Pets welcome', workspace: 'Desk',
+        linen: 'Bed linen', towels: 'Towels', safe: 'Safe', parking: 'Parking' };
+      return '<h2>Services</h2><ul class="g-rules">' + list.map(function (a) {
+        return '<li><span aria-hidden="true">✓</span><b>' + esc(labels[a] || a) + '</b></li>';
+      }).join('') + '</ul>';
+    },
+    appliances: function () {
+      return '<h2>Appliances</h2>' +
+        '<details class="faq" open><summary>Induction hob</summary><p>Press and hold the power symbol for two seconds, then choose a ring and set the level with + and −. It only works with magnetic pans — the ones in the drawer all work.</p></details>' +
+        '<details class="faq"><summary>Coffee machine</summary><p>Fill the tank on the right, drop a pod in the top, close the lever and press the small cup for espresso or the large cup for a lungo.</p></details>' +
+        '<details class="faq"><summary>Washing machine</summary><p>It is in the bathroom, behind the door. Programme 3 is a normal 40 degree wash and takes about an hour and a half. Detergent goes in the left compartment.</p></details>' +
+        '<details class="faq"><summary>Air conditioning</summary><p>The remote is on the shelf by the door. Press the power button, then the snowflake for cooling. Please close the windows while it is on, and switch it off when you go out.</p></details>';
+    },
+    rules: function () {
+      var r = c.rules || {}, v = { allowed: 'Allowed', not_allowed: 'Not allowed', ask: 'Please ask me' };
+      return '<h2>House rules</h2><ul class="g-rules">' +
+        '<li><b>Smoking</b><span class="grow"></span><span class="muted">' + esc(v[r.smoking] || 'Not allowed') + '</span></li>' +
+        '<li><b>Pets</b><span class="grow"></span><span class="muted">' + esc(v[r.pets] || 'Please ask me') + '</span></li>' +
+        '<li><b>Parties</b><span class="grow"></span><span class="muted">' + esc(v[r.parties] || 'Not allowed') + '</span></li>' +
+        '<li><b>Quiet hours</b><span class="grow"></span><span class="muted">' + esc(c.quietHours || '22:00 – 08:00') + '</span></li>' +
+        '</ul><div class="g-note" style="margin-top:1rem">The building is old and sound carries. Neighbours are lovely about it if you are lovely about it.</div>';
+    },
+    waste: function () {
+      return '<h2>Waste &amp; recycling</h2>' +
+        '<p>Savona collects separately. The bins are under the stairs, on the left as you go down.</p>' +
+        '<ul class="g-rules">' +
+        '<li><span aria-hidden="true">\u{1F4C4}</span><b>Paper</b><span class="grow"></span><span class="muted">Monday</span></li>' +
+        '<li><span aria-hidden="true">\u{1F9F4}</span><b>Plastic &amp; metal</b><span class="grow"></span><span class="muted">Tuesday, Friday</span></li>' +
+        '<li><span aria-hidden="true">\u{1F34E}</span><b>Food</b><span class="grow"></span><span class="muted">Wednesday, Saturday</span></li>' +
+        '<li><span aria-hidden="true">\u{1F37E}</span><b>Glass</b><span class="grow"></span><span class="muted">Thursday</span></li>' +
+        '<li><span aria-hidden="true">\u{1F5D1}</span><b>Everything else</b><span class="grow"></span><span class="muted">Sunday</span></li>' +
+        '</ul><div class="g-note" style="margin-top:1rem">Bags go out after 20:00 the evening before. If you are not sure, leave it in the kitchen bin and I will sort it.</div>';
+    },
+    eat: function () {
+      var places = (c.places && c.places.length) ? c.places : [
+        { name: 'Trattoria del Porto', cat: 'Restaurant', dist: '400 m', pick: true,  icon: '\u{1F35D}', desc: 'Simple fish, family run. Book in the evening — it fills up.' },
+        { name: 'Bar Aurora',          cat: 'Breakfast',  dist: '120 m', pick: true,  icon: '☕',    desc: 'Where I have my coffee. The focaccia comes out at 8.' },
+        { name: 'Osteria della Rocca', cat: 'Restaurant', dist: '900 m', pick: false, icon: '\u{1F35D}', desc: 'Further up the hill, worth the walk for the view.' },
+        { name: 'Mercato Civico',      cat: 'Market',     dist: '600 m', pick: false, icon: '\u{1F345}', desc: 'Mornings until 13:00, closed Sunday. Best produce in town.' },
+        { name: 'Gelateria Perotti',   cat: 'Gelato',     dist: '350 m', pick: true,  icon: '\u{1F368}', desc: 'The pistachio is the reason. Open until late.' }
+      ];
+      return '<h2>Where to eat</h2>' + places.map(function (p) {
+        return '<div class="g-place"><div class="g-place__img" aria-hidden="true">' + (p.icon || '\u{1F37D}') + '</div>' +
+          '<div class="grow"><div class="g-place__name">' + esc(p.name) +
+          (p.pick ? ' <span class="chip chip--accent">Host’s pick</span>' : '') + '</div>' +
+          '<div class="g-place__meta">' + esc(p.cat || '') + (p.dist ? ' · ' + esc(p.dist) : '') + '</div>' +
+          '<div class="g-place__desc">' + esc(p.desc || '') + '</div>' +
+          '<div class="row" style="gap:.4rem"><a class="btn btn--secondary btn--sm" href="https://maps.google.com" data-ev="maps">Maps</a>' +
+          '<a class="btn btn--ghost btn--sm" href="tel:+390100000000" data-ev="phone">Call</a></div></div></div>';
+      }).join('');
+    },
+    experiences: function () {
+      return '<h2>Experiences</h2>' +
+        '<div class="g-place"><div class="g-place__img" aria-hidden="true">\u{1F6E5}</div><div class="grow">' +
+        '<div class="g-place__name">Boat trip to Bergeggi</div><div class="g-place__meta">Half day · from 45 EUR</div>' +
+        '<div class="g-place__desc">Leaves from the old port at 9:30. Ask for Paolo and say you are staying here.</div></div></div>' +
+        '<div class="g-place"><div class="g-place__img" aria-hidden="true">\u{1F6B2}</div><div class="grow">' +
+        '<div class="g-place__name">E-bike hire</div><div class="g-place__meta">Full day · 30 EUR</div>' +
+        '<div class="g-place__desc">Two bikes in the cellar are yours to use, free. Helmets on the shelf above.</div></div></div>';
+    },
+    checkout: function () {
+      return '<h2>Check-out</h2>' +
+        '<div class="kv"><div class="kv__k">By</div><div class="kv__v">' + esc(c.checkoutTime || '10:00') + '</div></div>' +
+        '<p>' + esc(c.keyReturn || 'Leave the keys in the lockbox and spin the dial. Pull the door firmly behind you — it sticks a little.') + '</p>' +
+        '<ul class="g-rules">' +
+        '<li><span aria-hidden="true">✓</span><b>Take the bins out</b></li>' +
+        '<li><span aria-hidden="true">✓</span><b>Wash up or load the dishwasher</b></li>' +
+        '<li><span aria-hidden="true">✓</span><b>Close the windows and the shutters</b></li>' +
+        '<li><span aria-hidden="true">✓</span><b>Switch the air conditioning off</b></li>' +
+        '</ul><div class="g-note" style="margin-top:1rem">You can leave bags in the hallway cupboard until the evening. Thank you for staying — travel safely.</div>';
+    },
+    emergency: function () {
+      return '<h2>Emergency</h2>' +
+        '<a class="btn btn--danger btn--lg btn--block" href="tel:' + esc(c.emergencyNumber || '112') + '" data-ev="phone" style="margin-bottom:1rem">' +
+        'Call ' + esc(c.emergencyNumber || '112') + ' — emergency services</a>' +
+        '<div class="kv"><div class="kv__row"><div><div class="kv__k">Your host</div>' +
+        '<div class="kv__v">' + esc(c.hostName || 'Marco') + '</div></div>' +
+        '<a class="btn btn--secondary btn--sm" href="tel:' + esc(c.hostEmergency || c.phone || '+390100000000') + '" data-ev="phone">Call</a></div></div>' +
+        '<ul class="g-rules">' +
+        '<li><b>Pharmacy</b><span class="grow"></span><span class="muted">Via Paleocapa 12 · 300 m</span></li>' +
+        '<li><b>Hospital</b><span class="grow"></span><span class="muted">Ospedale San Paolo · 2.4 km</span></li>' +
+        '<li><b>Fire extinguisher</b><span class="grow"></span><span class="muted">Hallway cupboard</span></li>' +
+        '<li><b>Gas valve</b><span class="grow"></span><span class="muted">Under the sink</span></li>' +
+        '<li><b>Fuse box</b><span class="grow"></span><span class="muted">Above the front door</span></li>' +
+        '</ul>';
+    }
+  };
+
+  var SUB = { checkin: 'From ' + (c.checkinTime || '15:00'), wifi: 'Network & password',
+              eat: 'Places I recommend', checkout: 'By ' + (c.checkoutTime || '10:00') };
+
+  /* ---- home grid -------------------------------------------------------- */
+  var visible = S.visibleSections().filter(function (s) { return s.key !== 'emergency'; });
+  var grid = document.getElementById('g-grid');
+
+  grid.innerHTML = visible.map(function (s) {
+    return '<li><a class="g-card" href="#" data-sec="' + esc(s.key) + '">' +
+      '<span class="g-card__icon" aria-hidden="true">' + s.icon + '</span>' +
+      '<span class="g-card__label">' + esc(s.title) + '</span>' +
+      (SUB[s.key] ? '<span class="g-card__sub">' + esc(SUB[s.key]) + '</span>' : '') +
+      '</a></li>';
+  }).join('') +
+  /* emergency is always last, always full width, always present */
+  '<li style="grid-column:1/-1"><a class="g-card g-card--danger" href="#" data-sec="emergency">' +
+  '<span class="g-card__icon" aria-hidden="true">\u{1F6A8}</span>' +
+  '<span class="g-card__label">Emergency</span></a></li>';
+
+  /* ---- navigation ------------------------------------------------------- */
+  var home = document.getElementById('home'), sec = document.getElementById('section');
+  var order = visible.concat([{ key: 'emergency', title: 'Emergency' }]);
+
+  function open(key) {
+    var meta = order.filter(function (s) { return s.key === key; })[0];
+    if (!meta || !BODY[key]) return;
+    document.getElementById('g-sec-title').textContent = meta.title;
+    document.getElementById('g-sec-body').innerHTML = BODY[key]();
+    var i = order.map(function (s) { return s.key; }).indexOf(key);
+    var nxt = order[i + 1];
+    var nextEl = document.getElementById('g-next');
+    if (nxt) { nextEl.hidden = false; nextEl.firstElementChild.textContent = 'Next: ' + nxt.title; nextEl.dataset.sec = nxt.key; }
+    else { nextEl.hidden = true; }
+    home.style.display = 'none'; sec.classList.add('is-open');
+    window.scrollTo(0, 0);
+    document.getElementById('g-back').focus();
+    history.replaceState(null, '', '#' + key);
+  }
+  function back() {
+    sec.classList.remove('is-open'); home.style.display = '';
+    history.replaceState(null, '', '#');
+    window.scrollTo(0, 0);
+  }
+
+  document.addEventListener('click', function (e) {
+    var card = e.target.closest('[data-sec]');
+    if (card) { e.preventDefault(); open(card.dataset.sec); return; }
+    if (e.target.closest('#g-back')) { e.preventDefault(); back(); return; }
+
+    var copy = e.target.closest('[data-copy]');
+    if (copy) {
+      e.preventDefault();
+      var txt = copy.dataset.copy;
+      if (navigator.clipboard) navigator.clipboard.writeText(txt).catch(function(){});
+      var was = copy.textContent; copy.textContent = 'Copied';
+      /* a silent state change is invisible to a screen reader (docs/21) */
+      say('Copied');
+      setTimeout(function () { copy.textContent = was; }, 1600);
+      return;
+    }
+    if (e.target.id === 'reveal') {
+      var pw = document.getElementById('pw');
+      var shown = pw.dataset.shown === '1';
+      pw.textContent = shown ? '•'.repeat(pw.dataset.real.length) : pw.dataset.real;
+      pw.dataset.shown = shown ? '0' : '1';
+      e.target.textContent = shown ? 'Show' : 'Hide';
+      say(shown ? 'Password hidden' : 'Password shown');
+    }
+  });
+
+  /* locale switch — remembered in localStorage, never a cookie (docs/22) */
+  document.querySelector('.g-locales').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-locale]'); if (!b) return;
+    this.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    try { localStorage.setItem('mhw.guest.locale', b.dataset.locale); } catch (err) {}
+    say(b.textContent + ' selected');
+  });
+  try {
+    var saved = localStorage.getItem('mhw.guest.locale');
+    if (saved) {
+      var btn = document.querySelector('[data-locale="' + saved + '"]');
+      if (btn) document.querySelectorAll('[data-locale]').forEach(function (x) {
+        x.setAttribute('aria-pressed', String(x === btn));
+      });
+    }
+  } catch (err) {}
+
+  /* search over section titles and body text, built at publish time in the
+     real product and shipped inside the snapshot (docs/09) */
+  var q = document.getElementById('g-q');
+  if (q) q.addEventListener('input', function () {
+    var term = this.value.trim().toLowerCase();
+    grid.querySelectorAll('li').forEach(function (li) {
+      var a = li.querySelector('[data-sec]'); if (!a) return;
+      var key = a.dataset.sec;
+      var hay = (a.textContent + ' ' + (BODY[key] ? BODY[key]().replace(/<[^>]+>/g, ' ') : '')).toLowerCase();
+      li.hidden = term.length > 0 && hay.indexOf(term) === -1;
+    });
+  });
+
+  if (location.hash && BODY[location.hash.slice(1)]) open(location.hash.slice(1));
+
+  /* A deliberately crude QR stand-in. The real one is generated from a WIFI:
+     string in the browser so the password never reaches a server. */
+  function fakeQr(seed) {
+    var n = 21, cell = 132 / n, s = 0;
+    for (var i = 0; i < seed.length; i++) s = (s * 31 + seed.charCodeAt(i)) >>> 0;
+    function rnd() { s = (s * 1103515245 + 12345) >>> 0; return s / 4294967296; }
+    var out = '<svg viewBox="0 0 132 132" width="132" height="132" role="img" aria-label="QR code that joins the Wi-Fi network">';
+    out += '<rect width="132" height="132" fill="#fff"/>';
+    for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) {
+      var finder = (x < 7 && y < 7) || (x > n - 8 && y < 7) || (x < 7 && y > n - 8);
+      var on = finder
+        ? (x % 6 === 0 || y % 6 === 0 || (x > 1 && x < 5 && y > 1 && y < 5) ||
+           (x > n - 7 && x < n - 2 && y > 1 && y < 5) || (x > 1 && x < 5 && y > n - 7 && y < n - 2))
+        : rnd() > 0.52;
+      if (on) out += '<rect x="' + (x * cell).toFixed(2) + '" y="' + (y * cell).toFixed(2) +
+                     '" width="' + cell.toFixed(2) + '" height="' + cell.toFixed(2) + '" fill="#15171A"/>';
+    }
+    return out + '</svg>';
+  }
+})();
+</script>
+</body>
+</html>
