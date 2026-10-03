@@ -187,6 +187,7 @@ foreach ($snap['sections'] as $s) {
           <div class="step"><span class="n"><?= $i + 1 ?></span><p style="white-space:pre-line"><?= Support::e($passo) ?></p></div>
         <?php endforeach; ?>
       </div>
+    <?php elseif ($kind === 'services' && $campo === 'items'): /* già nell'elenco delle dotazioni */ ?>
     <?php elseif ($tipo === 'list' && $lista($campo)):
           // In Servizi e Regole la lista viene dopo le dotazioni o le regole principali: ha il suo titolo.
           $altro = ['services' => !empty($d['amenities']) || !empty($d['manuals']) ? 'other_amenities' : '',

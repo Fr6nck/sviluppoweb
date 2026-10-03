@@ -1,5 +1,19 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Fase 6A — Campi in linea, silenzio, dotazioni, tipologia (3 ottobre 2026)
+
+Migrazione `015` (`properties.property_type_other`).
+
+- **Righe in linea (tutti i ripetitori).**
+  - In alto maniglia, nome e numero («Parcheggio 1»), poi su / giù / togli in fila.
+  - Sotto, i campi su una griglia di 12 colonne, con la larghezza scritta nel catalogo; sotto i 640 px un campo per riga.
+  - L'aiuto sta sotto il campo. La foto mostra miniatura, «Sostituisci» e «Togli» su una linea.
+  - La password del Wi-Fi ha «Mostra»; la «Zona» compare solo con due o più reti.
+  - Niente compilazione automatica dei gestori di password nelle righe.
+- **Orario del silenzio con interruttore.** Acceso: «Dalle» e «Alle» sulla stessa riga, precompilati 22:00 e 08:00. Spento: gli orari si svuotano e la guida non lo mostra. Le sezioni salvate prima valgono accese se c'era un orario.
+- **Dotazioni.** 35 voci in sei gruppi, dalle tassonomie tradotte nelle 5 lingue (`app/lang/tassonomie/`, `Tassonomie.php`). «Le tue dotazioni» come pillole con «×» e «+ Aggiungi una dotazione»; nella guida, spuntate e scritte a mano stanno in un solo elenco.
+- **Tipologia.** In più Appartamento e Villa o casale, niente più «Non indicata». Con «Altro» compare «Che tipo di struttura è?».
+
 ## v2 · La foto di Casa Lucia (1 ottobre 2026)
 
 - Nuova copertina della demo (`assets/foto/casa.jpg`, fornita dal cliente): il portone in legno ad arco tra la pietra e i fiori. Si vede:

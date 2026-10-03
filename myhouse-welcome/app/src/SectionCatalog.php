@@ -27,6 +27,11 @@ namespace MHW;
  *   toggles   — interruttori sì / no / non indicato (fumo, animali…), uguale in ogni lingua
  *   time      — un orario (hh:mm), uguale in ogni lingua
  *
+ * Nei repeater ogni sottocampo può dire quanto è largo nella riga: 'w' => 3|4|5|6|8|12
+ * colonne su 12 (predefinito 6; textarea, foto, PDF e giorni 12). 'item' è il nome
+ * di una riga («Parcheggio 1»). Un campo con 'se' => altro_campo si vede solo con
+ * quell'interruttore acceso, e al salvataggio si svuota se è spento.
+ *
  * `places: true` vuol dire che la sezione contiene schede di luoghi.
  * Check-in & Check-out è il nucleo: c'è sempre, non si disattiva e non conta
  * nel limite delle sezioni del piano.
@@ -60,10 +65,11 @@ final class SectionCatalog
             // (network, password) diventa la prima riga.
             'fields' => [
                 'networks'        => ['repeater', 'Reti Wi-Fi', 'Una riga per rete: 2,4 e 5 GHz, piano di sopra, dependance…',
-                                      'add' => 'Aggiungi una rete', 'max' => 8, 'sub' => [
-                                          'zone'     => ['text', 'Zona', 'Facoltativa. Per esempio: Casa principale, Dependance.'],
-                                          'ssid'     => ['plain', 'Nome della rete', ''],
-                                          'password' => ['secret', 'Password', ''],
+                                      'add' => 'Aggiungi una rete', 'item' => 'Rete', 'max' => 8, 'sub' => [
+                                          'ssid'     => ['plain', 'Nome della rete', '', 'w' => 6],
+                                          'password' => ['secret', 'Password', '', 'w' => 6],
+                                          // La zona serve solo con due o più reti.
+                                          'zone'     => ['text', 'Zona', 'Facoltativa. Per esempio: Casa principale, Dependance.', 'w' => 12, 'solo_piu' => true],
                                       ]],
                 'instructions'    => ['textarea', 'Istruzioni', 'Facoltative. Cosa fare se la rete non si vede.'],
                 'router_location' => ['text', 'Dove si trova il router', 'Facoltativo.'],
@@ -74,18 +80,17 @@ final class SectionCatalog
         'services' => [
             'icon' => 'washer',
             'fields' => [
-                'amenities' => ['checks', 'Dotazioni', 'Spunta quello che trovano in casa.', 'options' => [
-                    'washer' => 'Lavatrice', 'dryer' => 'Asciugatrice', 'dishwasher' => 'Lavastoviglie', 'hairdryer' => 'Asciugacapelli',
-                    'iron' => 'Ferro da stiro', 'crib' => 'Culla', 'highchair' => 'Seggiolone', 'ac' => 'Aria condizionata',
-                    'heating' => 'Riscaldamento', 'tv' => 'TV', 'coffee' => 'Macchina del caffè', 'bbq' => 'Barbecue']],
+                // Le opzioni arrivano da Tassonomie::DOTAZIONI (fase 6), con le etichette amen_<chiave>.
+                'amenities' => ['checks', 'Dotazioni', 'Spunta quello che trovano in casa.', 'options' => [], 'tassonomia' => 'dotazioni'],
+                // Le dotazioni scritte a mano: nella guida stanno nello stesso elenco di quelle spuntate.
+                'items' => ['list', 'Le tue dotazioni', 'Quelle che non trovi nell\'elenco.', 'pillole' => true, 'add' => 'Aggiungi una dotazione'],
                 'manuals' => ['repeater', 'Istruzioni', 'Come si accende la caldaia, come funziona la lavatrice: titolo, passaggi, una foto, un PDF.',
-                              'add' => 'Aggiungi un\'istruzione', 'max' => 10, 'sub' => [
-                                  'title' => ['text', 'Titolo', 'Per esempio: La caldaia.'],
+                              'add' => 'Aggiungi un\'istruzione', 'item' => 'Istruzione', 'max' => 10, 'sub' => [
+                                  'title' => ['text', 'Titolo', 'Per esempio: La caldaia.', 'w' => 12],
                                   'steps' => ['textarea', 'Passaggi', 'Uno per riga.', 'lines' => true],
                                   'photo' => ['image', 'Foto', 'Facoltativa.'],
                                   'pdf'   => ['pdf', 'PDF', 'Facoltativo. Per esempio il manuale.'],
                               ]],
-                'items' => ['list', 'Altre dotazioni', 'Una per riga.'],
                 'note'  => ['textarea', 'Nota', 'Facoltativa.'],
             ],
         ],
@@ -95,10 +100,10 @@ final class SectionCatalog
             'icon' => 'euro',
             'fields' => [
                 'items' => ['repeater', 'Servizi extra', 'Una riga per servizio: titolo, due righe di descrizione, il prezzo, una foto.',
-                            'add' => 'Aggiungi un servizio', 'max' => 12, 'sub' => [
-                                'title'       => ['text', 'Titolo', 'Per esempio: Transfer dalla stazione.'],
+                            'add' => 'Aggiungi un servizio', 'item' => 'Servizio', 'max' => 12, 'sub' => [
+                                'title'       => ['text', 'Titolo', 'Per esempio: Transfer dalla stazione.', 'w' => 8],
+                                'price'       => ['text', 'Prezzo', 'Facoltativo. Per esempio: 25 € a tratta.', 'w' => 4],
                                 'description' => ['textarea', 'Descrizione', 'Facoltativa.'],
-                                'price'       => ['text', 'Prezzo', 'Facoltativo. Per esempio: 25 € a tratta.'],
                                 'photo'       => ['image', 'Foto', 'Facoltativa.'],
                             ]],
                 'note' => ['textarea', 'Nota', 'Facoltativa. Per esempio: da richiedere con un giorno di anticipo.'],
@@ -111,8 +116,11 @@ final class SectionCatalog
             'fields' => [
                 'flags' => ['toggles', 'Le regole principali', 'Sì, no, o lascia «non indicato».', 'options' => [
                     'smoking' => 'Fumo', 'pets' => 'Animali', 'parties' => 'Feste', 'visitors' => 'Visitatori esterni']],
-                'quiet_from' => ['time', 'Silenzio dalle', 'Facoltativo.'],
-                'quiet_to'   => ['time', 'Silenzio fino alle', 'Facoltativo.'],
+                // Orario del silenzio (fase 6): un interruttore; spento, i due orari si svuotano.
+                // Sulle sezioni salvate prima vale acceso se c'è almeno un orario (si calcola in lettura).
+                'quiet_on'   => ['check', 'Orario del silenzio', 'Spento: nella guida non compare.'],
+                'quiet_from' => ['time', 'Dalle', '', 'se' => 'quiet_on', 'default' => '22:00'],
+                'quiet_to'   => ['time', 'Alle', '', 'se' => 'quiet_on', 'default' => '08:00'],
                 'items' => ['list', 'Regole aggiuntive', 'Una per riga.'],
                 'note'  => ['textarea', 'Nota', 'Facoltativa.'],
             ],
@@ -124,9 +132,9 @@ final class SectionCatalog
                 'address'  => ['plain', 'Indirizzo', ''],
                 'maps_url' => ['url', 'Link a Google Maps', 'Facoltativo. Se manca, si usa l\'indirizzo.'],
                 'routes'   => ['repeater', 'Come arrivare', 'Una scheda per mezzo: in auto, in treno, in aereo, in autobus. L\'ospite legge solo quella che gli serve.',
-                               'add' => 'Aggiungi un mezzo', 'max' => 6, 'sub' => [
-                                   'mode'  => ['choice', 'Mezzo', '', 'options' => ['' => 'Indicazioni', 'auto' => 'In auto', 'treno' => 'In treno', 'aereo' => 'In aereo', 'autobus' => 'In autobus']],
-                                   'steps' => ['textarea', 'Passaggi', 'Uno per riga.', 'lines' => true],
+                               'add' => 'Aggiungi un mezzo', 'item' => 'Mezzo', 'max' => 6, 'sub' => [
+                                   'mode'  => ['choice', 'Mezzo', '', 'w' => 4, 'options' => ['' => 'Indicazioni', 'auto' => 'In auto', 'treno' => 'In treno', 'aereo' => 'In aereo', 'autobus' => 'In autobus']],
+                                   'steps' => ['textarea', 'Passaggi', 'Uno per riga.', 'lines' => true, 'w' => 8],
                                ]],
                 'note'     => ['textarea', 'Nota', 'Facoltativa.'],
             ],
@@ -144,13 +152,13 @@ final class SectionCatalog
             'icon' => 'car',
             'fields' => [
                 'options' => ['repeater', 'Dove parcheggiare', 'Una riga per ogni possibilità: posto privato, parcheggio pubblico, garage…',
-                              'add' => 'Aggiungi un parcheggio', 'max' => 8, 'sub' => [
-                                  'type'         => ['choice', 'Tipo', '', 'options' => ['' => 'Non indicato', 'privato' => 'Privato', 'pubblico' => 'Pubblico gratuito',
+                              'add' => 'Aggiungi un parcheggio', 'item' => 'Parcheggio', 'max' => 8, 'sub' => [
+                                  'type'         => ['choice', 'Tipo', '', 'w' => 4, 'options' => ['' => 'Non indicato', 'privato' => 'Privato', 'pubblico' => 'Pubblico gratuito',
                                                                                          'pagamento' => 'A pagamento', 'garage' => 'Garage', 'strada' => 'In strada']],
-                                  'name'         => ['text', 'Descrizione', 'Per esempio: posto riservato in cortile.'],
-                                  'address'      => ['plain', 'Indirizzo', ''],
-                                  'maps_url'     => ['url', 'Link a Google Maps', 'Facoltativo.'],
-                                  'cost'         => ['text', 'Costo', 'Facoltativo. Per esempio: gratuito, 5 € al giorno.'],
+                                  'name'         => ['text', 'Descrizione', 'Per esempio: posto riservato in cortile.', 'w' => 8],
+                                  'address'      => ['plain', 'Indirizzo', '', 'w' => 6],
+                                  'maps_url'     => ['url', 'Link a Google Maps', 'Facoltativo.', 'w' => 6],
+                                  'cost'         => ['text', 'Costo', 'Facoltativo. Per esempio: gratuito, 5 € al giorno.', 'w' => 4],
                                   'instructions' => ['textarea', 'Istruzioni', ''],
                                   'photo'        => ['image', 'Foto', 'Facoltativa.'],
                               ]],
@@ -163,14 +171,14 @@ final class SectionCatalog
             'icon' => 'bin',
             'fields' => [
                 'bins' => ['repeater', 'Raccolta differenziata', 'Una riga per tipo di rifiuto: i giorni in cui si porta fuori, il colore del bidone, dove si trova.',
-                           'add' => 'Aggiungi un tipo di rifiuto', 'max' => 12, 'sub' => [
-                               'type'  => ['choice', 'Tipo', '', 'options' => ['altro' => 'Altro', 'umido' => 'Umido', 'carta' => 'Carta', 'plastica' => 'Plastica e metalli',
+                           'add' => 'Aggiungi un tipo di rifiuto', 'item' => 'Rifiuto', 'max' => 12, 'sub' => [
+                               'type'  => ['choice', 'Tipo', '', 'w' => 4, 'options' => ['altro' => 'Altro', 'umido' => 'Umido', 'carta' => 'Carta', 'plastica' => 'Plastica e metalli',
                                                                               'vetro' => 'Vetro', 'indifferenziato' => 'Indifferenziato']],
-                               'label' => ['text', 'Descrizione', 'Facoltativa. Per esempio: «lattine insieme alla plastica».'],
-                               'days'  => ['days', 'Giorni in cui si porta fuori', ''],
-                               'color' => ['choice', 'Colore del bidone', '', 'options' => ['' => 'Non indicato', 'marrone' => 'Marrone', 'giallo' => 'Giallo', 'blu' => 'Blu',
+                               'label' => ['text', 'Descrizione', 'Facoltativa. Per esempio: «lattine insieme alla plastica».', 'w' => 8],
+                               'color' => ['choice', 'Colore del bidone', '', 'w' => 4, 'options' => ['' => 'Non indicato', 'marrone' => 'Marrone', 'giallo' => 'Giallo', 'blu' => 'Blu',
                                                                                           'verde' => 'Verde', 'grigio' => 'Grigio', 'bianco' => 'Bianco', 'rosso' => 'Rosso', 'arancione' => 'Arancione']],
-                               'where' => ['text', 'Dove si trova', 'Facoltativo.'],
+                               'where' => ['text', 'Dove si trova', 'Facoltativo.', 'w' => 8],
+                               'days'  => ['days', 'Giorni in cui si porta fuori', ''],
                            ]],
                 'note'  => ['textarea', 'Nota', 'Facoltativa. Dove sono i bidoni.'],
             ],
@@ -202,12 +210,12 @@ final class SectionCatalog
                 'emergency_number' => ['plain', 'Numero unico di emergenza', 'In Italia è il 112.'],
                 // Dalla 011: righe nome · telefono · nota, con un «Chiama» per riga nella guida.
                 'contacts'         => ['repeater', 'Contatti utili', 'Uno per riga: guardia medica, farmacia di turno, il tuo numero per le urgenze.',
-                                       'add' => 'Aggiungi un contatto', 'max' => 15,
+                                       'add' => 'Aggiungi un contatto', 'item' => 'Contatto', 'max' => 15,
                                        'presets' => ['emergency_number' => ['phone' => '112'], 'preset_guardia' => [], 'preset_farmacia' => [], 'preset_veterinario' => []],
                                        'sub' => [
-                                           'name'  => ['text', 'Nome', ''],
-                                           'phone' => ['tel', 'Telefono', ''],
-                                           'note'  => ['text', 'Nota', 'Facoltativa. Orari, indirizzo…'],
+                                           'name'  => ['text', 'Nome', '', 'w' => 5],
+                                           'phone' => ['tel', 'Telefono', '', 'w' => 3],
+                                           'note'  => ['text', 'Nota', 'Facoltativa. Orari, indirizzo…', 'w' => 4],
                                        ]],
                 'note'             => ['textarea', 'Nota', 'Facoltativa.'],
             ],
@@ -236,6 +244,13 @@ final class SectionCatalog
 
     public static function get(string $kind): array { return self::K[$kind] ?? self::K['info']; }
 
+    /** Quanto è largo un sottocampo nella riga, su 12 colonne. */
+    public static function larghezza(array $sd): int
+    {
+        if (isset($sd['w'])) return (int) $sd['w'];
+        return in_array($sd[0], ['textarea', 'image', 'pdf', 'days'], true) ? 12 : 6;
+    }
+
     public static function icon(string $kind): string { return self::get($kind)['icon']; }
 
     public static function hasPlaces(string $kind): bool { return !empty(self::get($kind)['places']); }
@@ -249,7 +264,17 @@ final class SectionCatalog
     }
 
     /** @return array<string,array{0:string,1:string,2:string}> campo => [tipo, etichetta, aiuto] */
-    public static function fields(string $kind): array { return self::get($kind)['fields']; }
+    public static function fields(string $kind): array
+    {
+        $f = self::get($kind)['fields'];
+        // Le opzioni che vengono dalle tassonomie (fase 6), con le etichette italiane del pannello.
+        foreach ($f as $n => $d) {
+            if (($d['tassonomia'] ?? '') === 'dotazioni') {
+                $f[$n]['options'] = array_combine(Tassonomie::dotazioni(), array_map(fn($x) => I18n::t('it', 'amen_' . $x), Tassonomie::dotazioni()));
+            }
+        }
+        return $f;
+    }
 
     /** Un campo (o sottocampo) da tradurre. Il repeater è misto: si guarda sotto. */
     public static function isTranslated(string $type): bool { return !in_array($type, self::PLAIN, true) && $type !== 'repeater'; }
@@ -363,8 +388,8 @@ final class SectionCatalog
                 }
                 if ($withPlain) $comuni[$name] = $comune;
                 $tradotti[$name] = $testi;
-            } elseif (in_array($type, ['choice', 'checks', 'toggles', 'time'], true)) {
-                if ($withPlain) $comuni[$name] = self::clean($def, $raw);
+            } elseif (in_array($type, ['choice', 'checks', 'toggles', 'time', 'check'], true)) {
+                if ($withPlain) $comuni[$name] = self::clean($def, is_array($raw) && $type === 'check' ? end($raw) : $raw);
             } elseif (in_array($type, ['steps', 'list'], true)) {
                 $righe = is_array($raw) ? $raw : preg_split('/\R/', (string) $raw);
                 $righe = array_values(array_filter(array_map(fn($r) => mb_substr(trim((string) $r), 0, 600), $righe ?: []), fn($r) => $r !== ''));
@@ -379,7 +404,22 @@ final class SectionCatalog
                 $tradotti[$name] = mb_substr(trim((string) $raw), 0, 300);
             }
         }
+        // Un campo legato a un interruttore spento si svuota (l'orario del silenzio).
+        foreach (self::fields($kind) as $name => $def) {
+            $se = $def['se'] ?? null;
+            if ($se !== null && array_key_exists($se, $comuni) && $comuni[$se] === '' && array_key_exists($name, $comuni)) $comuni[$name] = '';
+        }
         return [$comuni, $tradotti];
+    }
+
+    /** Un interruttore è acceso? Sulle sezioni di prima (senza l'interruttore) vale acceso se c'è almeno uno dei campi legati. */
+    public static function acceso(string $kind, string $check, array $data): bool
+    {
+        if (array_key_exists($check, $data)) return (string) $data[$check] === '1';
+        foreach (self::fields($kind) as $name => $def) {
+            if (($def['se'] ?? null) === $check && trim((string) ($data[$name] ?? '')) !== '') return true;
+        }
+        return false;
     }
 
     /** Una sezione ha qualcosa da mostrare? (per l'anteprima e la pubblicazione) */

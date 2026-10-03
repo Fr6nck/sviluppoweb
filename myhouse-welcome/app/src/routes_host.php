@@ -562,8 +562,11 @@ $r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto,
                 'checkout_by' => $ora((string) ($_POST['checkout_by'] ?? ''), $p['checkout_by']),
             ];
             // I campi nuovi della struttura (dalla 008), solo se il modulo li manda.
-            $tipiStruttura = ['', 'casa_vacanza', 'bnb', 'affittacamere', 'agriturismo', 'altro'];
-            if (array_key_exists('property_type', $_POST)) $dati['property_type'] = in_array($_POST['property_type'], $tipiStruttura, true) ? (string) $_POST['property_type'] : '';
+            if (array_key_exists('property_type', $_POST)) $dati['property_type'] = isset(Properties::TIPOLOGIE[(string) $_POST['property_type']]) ? (string) $_POST['property_type'] : '';
+            // Con «Altro» si scrive che tipo di struttura è (dalla 015); con le altre tipologie si svuota.
+            if (array_key_exists('property_type_other', $_POST) && Migrator::columnExists('properties', 'property_type_other')) {
+                $dati['property_type_other'] = ($dati['property_type'] ?? $p['property_type']) === 'altro' ? mb_substr(trim((string) $_POST['property_type_other']), 0, 60) : '';
+            }
             foreach (['address' => 255, 'postal_code' => 10, 'cin' => 40] as $campo => $max) {
                 if (array_key_exists($campo, $_POST)) $dati[$campo] = mb_substr(trim((string) $_POST[$campo]), 0, $max);
             }

@@ -19,6 +19,9 @@ final class I18n
         if (!isset(self::$dict[$loc])) {
             $f = MHW_APP . '/lang/' . $loc . '.php';
             self::$dict[$loc] = in_array($loc, self::LOCALES, true) && is_file($f) ? (require $f) : [];
+            // Fase 6: categorie, etichette, dotazioni, modi di muoversi e unità, nelle 5 lingue.
+            $x = MHW_APP . '/lang/tassonomie/' . $loc . '.php';
+            if (self::$dict[$loc] && is_file($x)) self::$dict[$loc] = array_merge(self::$dict[$loc], require $x);
         }
         return self::$dict[$loc];
     }

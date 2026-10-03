@@ -4,7 +4,7 @@
 use function MHW\b;
 use MHW\{Support, Csrf, Icon, Db};
 $dopoPasso = $dopoPasso ?? '';
-$tipi = ['' => 'Non indicata', 'casa_vacanza' => 'Casa vacanza', 'bnb' => 'B&B', 'affittacamere' => 'Affittacamere', 'agriturismo' => 'Agriturismo', 'altro' => 'Altro'];
+$tipi = MHW\Properties::TIPOLOGIE;
 $contatti = Db::all('SELECT * FROM property_contacts WHERE property_id = ? ORDER BY position, id', [$prop['id']]);
 $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
 <form method="post" action="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/impostazioni" class="stack"<?= $dopoPasso !== '' ? ' data-autosave' : '' ?>><?= Csrf::field() ?>
@@ -18,6 +18,12 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
             <span class="scelta__testo"><?= Support::e($et) ?></span></label>
         <?php endforeach; ?>
       </div>
+    </div>
+    <?php /* Con «Altro» si scrive che tipo di struttura è. Senza JavaScript il campo si vede sempre. */ ?>
+    <div class="field" style="margin:0" id="tipo-altro" data-se-altro>
+      <label for="property_type_other">Che tipo di struttura è?</label>
+      <input type="text" id="property_type_other" name="property_type_other" maxlength="60" placeholder="Area camper, glamping, ostello…"
+             value="<?= Support::e((string) ($prop['property_type_other'] ?? '')) ?>">
     </div>
     <div class="field" style="margin:0"><label for="address">Indirizzo</label>
       <p class="help" style="margin:0 0 6px">Via e numero civico. Precompila «Come arrivare» e il link a Maps: lo scrivi una volta sola.</p>
@@ -60,13 +66,13 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
       'name' => 'contacts', 'legend' => 'Chi risponde agli ospiti',
       'help' => 'Compaiono nella guida, così l\'ospite chiama o scrive con un tocco. Il primo è quello principale: trascina per cambiare l\'ordine.',
       'sub' => [
-          'name' => ['plain', 'Nome', ''],
-          'role' => ['choice', 'Ruolo', '', 'options' => ['host' => 'Host', 'cohost' => 'Co-host', 'pulizie' => 'Pulizie e chiavi', 'manutenzione' => 'Manutenzione', 'altro' => 'Altro']],
-          'phone' => ['tel', 'Telefono', ''],
-          'whatsapp' => ['check', 'Risponde anche su WhatsApp', ''],
+          'name' => ['plain', 'Nome', '', 'w' => 5],
+          'phone' => ['tel', 'Telefono', '', 'w' => 3],
+          'role' => ['choice', 'Ruolo', '', 'w' => 4, 'options' => ['host' => 'Host', 'cohost' => 'Co-host', 'pulizie' => 'Pulizie e chiavi', 'manutenzione' => 'Manutenzione', 'altro' => 'Altro']],
+          'whatsapp' => ['check', 'Risponde anche su WhatsApp', '', 'w' => 12],
       ],
       'rows' => array_map(fn($x) => ['id' => 'c' . $x['id']] + $x, $contatti),
-      'add' => 'Aggiungi un contatto', 'max' => 8]); ?>
+      'add' => 'Aggiungi un contatto', 'item' => 'Contatto', 'max' => 8]); ?>
   <?php if ($dopoPasso !== ''):
         $barraAvanti = '<button class="btn btn--go" name="dopo" value="' . Support::e($dopoPasso) . '">Salva e continua <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
         include __DIR__ . '/_barra_passo.php';

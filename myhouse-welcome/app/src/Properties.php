@@ -11,6 +11,18 @@ namespace MHW;
  */
 final class Properties
 {
+    /** Le tipologie della struttura (fase 6: in più Appartamento e Villa o casale; niente più «Non indicata»). */
+    public const TIPOLOGIE = ['casa_vacanza' => 'Casa vacanza', 'appartamento' => 'Appartamento', 'bnb' => 'B&B', 'affittacamere' => 'Affittacamere',
+                              'agriturismo' => 'Agriturismo', 'villa' => 'Villa o casale', 'altro' => 'Altro'];
+
+    /** La tipologia da mostrare: con «Altro» il testo scritto dall'host, se c'è. */
+    public static function tipologia(array $p): string
+    {
+        $t = (string) ($p['property_type'] ?? '');
+        if ($t === 'altro' && trim((string) ($p['property_type_other'] ?? '')) !== '') return trim((string) $p['property_type_other']);
+        return self::TIPOLOGIE[$t] ?? '';
+    }
+
     /** @param int $oltre strutture in più oltre il limite: solo per quella appena chiesta a Stripe, che resta bloccata fino al webhook */
     public static function create(int $accountId, string $name, string $city, string $hostName, int $oltre = 0): int
     {

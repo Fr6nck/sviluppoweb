@@ -60,12 +60,16 @@ elseif ($campo === 'bins'):
 <?php endif;
 
 /* -------------------------------------------------- servizi: dotazioni */
-elseif ($tipo === 'checks' && !empty($d[$campo])): ?>
+elseif ($tipo === 'checks' && (!empty($d[$campo]) || ($kind === 'services' && $lista('items')))):
+    // Le dotazioni spuntate e quelle scritte dall'host stanno nello stesso elenco (fase 6). ?>
   <div class="stack" style="margin-top:18px;gap:10px">
     <span class="kicker"><?= Support::e(I18n::t($loc, 'amenities')) ?></span>
     <ul class="dotazioni-ospite">
-      <?php foreach ((array) $d[$campo] as $k): ?>
+      <?php foreach ((array) ($d[$campo] ?? []) as $k): ?>
         <li><?= Icon::svg(Icon::amenita((string) $k), 20) ?><span><?= Support::e(I18n::t($loc, 'amen_' . $k)) ?></span></li>
+      <?php endforeach; ?>
+      <?php if ($kind === 'services') foreach ($lista('items') as $voce): ?>
+        <li><?= Icon::svg('check', 20) ?><span><?= Support::e($voce) ?></span></li>
       <?php endforeach; ?>
     </ul>
   </div>

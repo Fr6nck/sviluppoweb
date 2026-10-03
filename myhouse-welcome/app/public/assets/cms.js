@@ -251,6 +251,11 @@
       for (var i = 0; i < n.length; i++) {
         n[i].querySelector('[data-rip-su]').disabled = i === 0;
         n[i].querySelector('[data-rip-giu]').disabled = i === n.length - 1;
+        // Il numero nell'intestazione («Parcheggio 2») segue la posizione.
+        var num = n[i].querySelector('[data-rip-num]'); if (num) num.textContent = String(i + 1);
+        // Campi che servono solo con due o più righe (la zona del Wi-Fi).
+        var soloPiu = n[i].querySelectorAll('[data-rip-solo-piu]');
+        for (var j = 0; j < soloPiu.length; j++) soloPiu[j].hidden = n.length < 2;
       }
     };
     // Ogni riga nuova riceve subito il suo id: così i salvataggi automatici
@@ -338,10 +343,53 @@
     add.hidden = false; aggiorna();
   })(rips[q]);
 
+  /* ---- La password del Wi-Fi: coperta, con «Mostra» -------------------------
+     Senza JavaScript resta in chiaro (si scrive meglio); con JavaScript si copre. */
+  var segreti = document.querySelectorAll('input[data-segreto]');
+  var copri = function (inp) {
+    if (inp.dataset.coperto) return; inp.dataset.coperto = '1';
+    var b = inp.parentNode.querySelector('[data-mostra-segreto]'); if (!b) return;
+    inp.type = 'password'; b.hidden = false;
+  };
+  for (var sg = 0; sg < segreti.length; sg++) copri(segreti[sg]);
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-mostra-segreto]'); if (!b) return;
+    var inp = b.parentNode.querySelector('input');
+    var mostra = inp.type === 'password';
+    inp.type = mostra ? 'text' : 'password';
+    b.textContent = mostra ? 'Nascondi' : 'Mostra';
+  });
+  // Le righe aggiunte dopo (dal modello) hanno anche loro la password da coprire.
+  document.addEventListener('focusin', function (e) { if (e.target.matches && e.target.matches('input[data-segreto]')) copri(e.target); });
+
+  /* ---- Interruttori: i campi legati si vedono solo da accesi ----------------
+     (l'orario del silenzio). Accendendo, gli orari vuoti prendono i valori consigliati. */
+  var interruttori = document.querySelectorAll('[data-interruttore]');
+  for (var it = 0; it < interruttori.length; it++) (function (cb) {
+    var box = document.getElementById(cb.getAttribute('data-interruttore')); if (!box) return;
+    var segui = function () {
+      box.hidden = !cb.checked;
+      if (cb.checked) {
+        var pre = box.querySelectorAll('[data-predefinito]');
+        for (var p = 0; p < pre.length; p++) if (!pre[p].value) pre[p].value = pre[p].getAttribute('data-predefinito');
+      }
+    };
+    cb.addEventListener('change', segui); segui();
+  })(interruttori[it]);
+
+  /* ---- Tipologia «Altro»: il campo «Che tipo di struttura è?» ---------------- */
+  var altro = document.querySelector('[data-se-altro]');
+  if (altro) {
+    var tipi = document.querySelectorAll('input[name=property_type]');
+    var seguiTipo = function () { var x = document.querySelector('input[name=property_type]:checked'); altro.hidden = !(x && x.value === 'altro'); };
+    for (var ti = 0; ti < tipi.length; ti++) tipi[ti].addEventListener('change', seguiTipo);
+    seguiTipo();
+  }
+
   /* ---- Foto e PDF nelle righe: il nome del file scelto accanto al bottone ---- */
   document.addEventListener('change', function (e) {
     var inp = e.target; if (!inp.matches || !inp.matches('.rip__carica input[type=file]')) return;
-    var nome = inp.parentNode.querySelector('[data-rip-file-nome]');
+    var nome = inp.closest('.rip__file').querySelector('[data-rip-file-nome]');
     if (nome) nome.textContent = inp.files && inp.files[0] ? inp.files[0].name + ' — si carica col bottone Salva' : 'Nessun file scelto';
   });
 

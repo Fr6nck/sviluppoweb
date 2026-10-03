@@ -96,7 +96,8 @@ final class Guide
                 'id' => (int) $p['id'], 'name' => $p['name'], 'slug' => $p['slug'], 'city' => $p['city'], 'region' => $p['region'],
                 'checkin_from' => $p['checkin_from'], 'checkout_by' => $p['checkout_by'],
                 'host_name' => $p['host_name'], 'host_phone' => $p['host_phone'], 'host_whatsapp' => $p['host_whatsapp'],
-                'property_type' => (string) ($p['property_type'] ?? ''), 'address' => (string) ($p['address'] ?? ''),
+                'property_type' => (string) ($p['property_type'] ?? ''), 'property_type_other' => (string) ($p['property_type_other'] ?? ''),
+                'address' => (string) ($p['address'] ?? ''),
                 'postal_code' => (string) ($p['postal_code'] ?? ''), 'cin' => (string) ($p['cin'] ?? ''),
                 // Una migrazione vecchia può pubblicare prima che esista la tabella dei contatti (la 008):
                 // allora i contatti vengono dalle colonne di prima, come per le istantanee vecchie.

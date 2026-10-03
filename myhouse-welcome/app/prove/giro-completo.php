@@ -576,7 +576,8 @@ foreach (['services', 'waste', 'emergency', 'eat'] as $k) $elena->post("/pannell
 $elena->modulo("/pannello/$epid/lingue", "/pannello/$epid/lingue", ['locali' => ['en', 'it', 'de', 'fr']]);
 $es = []; foreach (['services', 'waste', 'emergency', 'eat', 'arrival'] as $k) $es[$k] = (int) val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$epid, $k]);
 $r = $elena->get("/pannello/$epid/sezioni/{$es['services']}");
-prova('R5 · servizi: 12 dotazioni da spuntare e istruzioni con foto e PDF per riga', substr_count($r['body'], 'name="amenities[]" value="') === 13
+prova('R5 · servizi: le dotazioni da spuntare (35, a gruppi, dalla fase 6) e istruzioni con foto e PDF per riga', substr_count($r['body'], 'name="amenities[]" value="') === 36
+      && str_contains($r['body'], '<p class="dotazioni__gruppo">Cucina</p>')
       && str_contains($r['body'], 'name="rip_file[manuals][0][photo]"') && str_contains($r['body'], 'name="rip_file[manuals][0][pdf]"')
       && str_contains($r['body'], 'name="rip_file[manuals][__K__][photo]"'));
 $elena->post("/pannello/$epid/sezioni/{$es['services']}", ['amenities[0]' => '', 'amenities[1]' => 'washer', 'amenities[2]' => 'ac', 'amenities[3]' => 'jacuzzi',
@@ -584,7 +585,7 @@ $elena->post("/pannello/$epid/sezioni/{$es['services']}", ['amenities[0]' => '',
     'rip_file[manuals][0][photo]' => file_(png(), 'image/png'), 'rip_file[manuals][0][pdf]' => file_(pdfVero(), 'application/pdf', 'caldaia.pdf')]);
 $sv = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$es['services']]), true);
 $man = $sv['manuals'][0] ?? [];
-prova('R5 · dotazioni note salvate; foto e PDF caricati nella riga', ($sv['amenities'] ?? null) === ['washer', 'ac'] && (int) ($man['photo'] ?? 0) > 0 && (int) ($man['pdf'] ?? 0) > 0
+prova('R5 · dotazioni note salvate (nell\'ordine dei gruppi); foto e PDF caricati nella riga', ($sv['amenities'] ?? null) === ['ac', 'washer'] && (int) ($man['photo'] ?? 0) > 0 && (int) ($man['pdf'] ?? 0) > 0
       && val('SELECT kind FROM media WHERE id = ?', [(int) $man['photo']]) === 'image' && val('SELECT kind FROM media WHERE id = ?', [(int) $man['pdf']]) === 'pdf', json_encode($sv));
 $r = $elena->get("/pannello/$epid/anteprima/{$es['services']}?l=it");
 prova('R5 · guida: griglia delle dotazioni con icone, istruzione con passi numerati, foto e PDF', str_contains($r['body'], 'class="dotazioni-ospite"')
@@ -1576,6 +1577,49 @@ $r = $luc->get("/pannello/$lpid/statistiche");
 prova('Statistiche: l\'anello QR / link con il testo per chi non vede il grafico', preg_match('#class="anello__cerchio" style="--p:\d+" role="img" aria-label="\d+ aperture: \d+ dal QR Code, \d+ dal link"#', $r['body']) === 1);
 $r = $ospite->get('/accedi');
 prova('Senza accesso niente barra laterale', $r['code'] === 200 && !str_contains($r['body'], '<aside class="lato"'));
+
+// ================================================================= FASE 6
+capitolo('Fase 6A · campi in linea, silenzio, dotazioni, tipologia');
+prova('6A · tassonomie nelle 5 lingue, unite al dizionario', trim((string) shell_exec('php -r ' . escapeshellarg('define("MHW_APP", "' . $DOVE . '/app"); spl_autoload_register(fn($c) => require "' . $DOVE . '/app/src/" . substr($c, 4) . ".php"); echo MHW\I18n::t("de", "cat.museum"), "|", MHW\I18n::t("es", "amen_pool"), "|", MHW\I18n::t("it", "kind.shop");'))) === 'Museum|Piscina|Negozi e spesa');
+$sez = fn(string $k) => (int) val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$lpid, $k]);
+$r = $luc->get("/pannello/$lpid/sezioni/" . $sez('wifi'));
+prova('6A · Wi-Fi in linea: nome rete e password affiancati, zona in fondo solo con più reti, «Mostra»', $r['code'] === 200
+      && preg_match('#rip__c rip__c--w6"><div class="field"[^>]*><label[^>]*>Nome della rete#', $r['body']) === 1
+      && str_contains($r['body'], 'class="rip__c rip__c--w12" data-rip-solo-piu') && str_contains($r['body'], 'data-segreto') && str_contains($r['body'], 'data-mostra-segreto')
+      && str_contains($r['body'], '<span class="rip__nome">Rete <span data-rip-num>1</span></span>'));
+prova('6A · campi delle righe senza compilazione automatica dei gestori di password', str_contains($r['body'], 'autocomplete="off" data-lpignore="true" data-1p-ignore'));
+$regole = $sez('rules');
+$r = $luc->get("/pannello/$lpid/sezioni/$regole");
+prova('6A · orario del silenzio: interruttore acceso sulle sezioni di prima (c\'erano gli orari), «Dalle» e «Alle» sulla stessa riga', $r['code'] === 200
+      && preg_match('#<input type="checkbox" role="switch" name="quiet_on" value="1" checked#', $r['body']) === 1 && str_contains($r['body'], 'class="grid grid-2 campi-legati"'));
+$luc->post("/pannello/$lpid/sezioni/$regole", ['quiet_on' => '', 'quiet_from' => '22:00', 'quiet_to' => '08:00']);
+$rd = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$regole]), true);
+prova('6A · spento: i due orari si svuotano al salvataggio', ($rd['quiet_on'] ?? null) === '' && ($rd['quiet_from'] ?? null) === '' && ($rd['quiet_to'] ?? null) === '');
+$r = $luc->get("/pannello/$lpid/sezioni/$regole");
+prova('6A · …e riaprendo, l\'interruttore è spento con gli orari consigliati pronti', preg_match('#name="quiet_on" value="1"\s+aria#', $r['body']) === 1 && str_contains($r['body'], 'value="22:00"') && str_contains($r['body'], 'value="08:00"'));
+$luc->post("/pannello/$lpid/sezioni/$regole", ['quiet_on' => '1', 'quiet_from' => '23:00', 'quiet_to' => '07:30']);
+$rd = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$regole]), true);
+prova('6A · acceso: gli orari restano', ($rd['quiet_on'] ?? null) === '1' && ($rd['quiet_from'] ?? null) === '23:00' && ($rd['quiet_to'] ?? null) === '07:30');
+$serv = $sez('services');
+if (!$serv) { $luc->post("/pannello/$lpid/sezioni", ['kind' => 'services']); $serv = $sez('services'); }
+$r = $luc->get("/pannello/$lpid/sezioni/$serv");
+prova('6A · dotazioni a gruppi e «Le tue dotazioni» come pillole', str_contains($r['body'], '<p class="dotazioni__gruppo">Esterni</p>') && str_contains($r['body'], 'class="rows pillole-campo"')
+      && str_contains($r['body'], '+ Aggiungi una dotazione') && str_contains($r['body'], 'value="pool"'));
+$luc->post("/pannello/$lpid/sezioni/$serv", ['amenities' => ['', 'pool', 'washer'], 'items' => ['Giochi da tavolo', '']]);
+$r = $luc->get("/pannello/$lpid/anteprima/$serv");
+prova('6A · nella guida dotazioni spuntate e scritte a mano in un solo elenco', $r['code'] === 200 && preg_match('#<ul class="dotazioni-ospite">.*?Piscina.*?Giochi da tavolo.*?</ul>#s', $r['body']) === 1
+      && !str_contains($r['body'], 'Altre dotazioni'));
+$r = $luc->get("/pannello/$lpid/impostazioni");
+prova('6A · tipologia: Appartamento e Villa o casale, niente «Non indicata», campo per «Altro»', $r['code'] === 200 && str_contains($r['body'], 'Villa o casale')
+      && str_contains($r['body'], 'value="appartamento"') && !str_contains($r['body'], 'Non indicata') && str_contains($r['body'], 'name="property_type_other"')
+      && str_contains($r['body'], 'placeholder="Area camper, glamping, ostello…"'));
+$luc->post("/pannello/$lpid/impostazioni", ['name' => 'Casa Lucia', 'property_type' => 'altro', 'property_type_other' => 'Glamping']);
+$tp = riga('SELECT property_type, property_type_other FROM properties WHERE id = ?', [$lpid]);
+prova('6A · «Altro» con il suo testo (migrazione 015)', ($tp['property_type'] ?? '') === 'altro' && ($tp['property_type_other'] ?? '') === 'Glamping');
+$luc->get("/pannello/$lpid/impostazioni");
+$luc->post("/pannello/$lpid/impostazioni", ['name' => 'Casa Lucia', 'property_type' => 'villa', 'property_type_other' => 'Glamping']);
+$tp = riga('SELECT property_type, property_type_other FROM properties WHERE id = ?', [$lpid]);
+prova('6A · cambiando tipologia il testo di «Altro» si svuota', ($tp['property_type'] ?? '') === 'villa' && ($tp['property_type_other'] ?? 'x') === '');
 
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";
