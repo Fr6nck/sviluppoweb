@@ -21,16 +21,22 @@ namespace MHW;
  *               e le due parti si uniscono per id. Così riordinare o togliere una riga
  *               non mescola le traduzioni.
  *               Sottotipi: text, textarea (tradotti); plain, secret, url, tel, time,
- *               choice, days, check, image, pdf (uguali in ogni lingua; image e pdf
- *               sono id di media, caricati riga per riga).
+ *               choice, days, check, image, pdf, money (uguali in ogni lingua; image e pdf
+ *               sono id di media, caricati riga per riga; money è un importo in euro,
+ *               salvato con la virgola: «1,50»).
  *   checks    — più spunte da un elenco fisso (le dotazioni), uguale in ogni lingua
  *   toggles   — interruttori sì / no / non indicato (fumo, animali…), uguale in ogni lingua
  *   time      — un orario (hh:mm), uguale in ogni lingua
  *
- * Nei repeater ogni sottocampo può dire quanto è largo nella riga: 'w' => 3|4|5|6|8|12
+ * Nei repeater ogni sottocampo può dire quanto è largo nella riga: 'w' => 2|3|4|5|6|8|12
  * colonne su 12 (predefinito 6; textarea, foto, PDF e giorni 12). 'item' è il nome
  * di una riga («Parcheggio 1»). Un campo con 'se' => altro_campo si vede solo con
  * quell'interruttore acceso, e al salvataggio si svuota se è spento.
+ * Nelle righe: 'pillole' => true mostra una scelta come pillole; 'nascosto_con' =>
+ * [campo, [valori]] nasconde il sottocampo (e lo svuota al salvataggio) quando l'altro
+ * campo della riga ha uno di quei valori; 'cifre' => true accetta solo un numero intero.
+ *
+ * 'group' (fase 6C) dice in quale gruppo sta la sezione nella home: casa, arrivo, territorio.
  *
  * `places: true` vuol dire che la sezione contiene schede di luoghi.
  * Check-in & Check-out è il nucleo: c'è sempre, non si disattiva e non conta
@@ -40,7 +46,7 @@ final class SectionCatalog
 {
     private const K = [
         'checkin' => [
-            'icon' => 'home', 'core' => true,
+            'icon' => 'home', 'core' => true, 'group' => 'casa',
             'intro' => 'Il blocco fondamentale: come si entra e cosa fare prima di partire. È sempre incluso.',
             // La partenza era fatta di cinque caselle fisse (checkout_keys, _waste, _lights,
             // _climate, _windows): dalla 009 è una lista ordinabile. I vecchi campi restano
@@ -60,7 +66,7 @@ final class SectionCatalog
             ],
         ],
         'wifi' => [
-            'icon' => 'wifi',
+            'icon' => 'wifi', 'group' => 'casa',
             // Più reti (dalla 010): una riga per rete. La rete singola di prima
             // (network, password) diventa la prima riga.
             'fields' => [
@@ -78,7 +84,7 @@ final class SectionCatalog
         // Servizi (dalla 011): dotazioni da spuntare e istruzioni con foto e PDF. La vecchia
         // lista resta com'era, come «Altre dotazioni».
         'services' => [
-            'icon' => 'washer',
+            'icon' => 'washer', 'group' => 'casa',
             'fields' => [
                 // Le opzioni arrivano da Tassonomie::DOTAZIONI (fase 6), con le etichette amen_<chiave>.
                 'amenities' => ['checks', 'Dotazioni', 'Spunta quello che trovano in casa.', 'options' => [], 'tassonomia' => 'dotazioni'],
@@ -97,13 +103,17 @@ final class SectionCatalog
         // Servizi extra (fase 5): quello che l'host vende in più — transfer, colazione,
         // late check-out. Ogni riga ha «Richiedi su WhatsApp» nella guida.
         'extras' => [
-            'icon' => 'euro',
+            'icon' => 'euro', 'group' => 'casa',
             'fields' => [
-                'items' => ['repeater', 'Servizi extra', 'Una riga per servizio: titolo, due righe di descrizione, il prezzo, una foto.',
+                // Il prezzo (fase 6C): importo e unità uguali in ogni lingua, più una nota tradotta.
+                // Il vecchio «price» scritto a mano resta nel JSON (Conversione::prezziExtra).
+                'items' => ['repeater', 'Servizi extra', 'Una riga per servizio: titolo, prezzo, due righe di descrizione, una foto.',
                             'add' => 'Aggiungi un servizio', 'item' => 'Servizio', 'max' => 12, 'sub' => [
-                                'title'       => ['text', 'Titolo', 'Per esempio: Transfer dalla stazione.', 'w' => 8],
-                                'price'       => ['text', 'Prezzo', 'Facoltativo. Per esempio: 25 € a tratta.', 'w' => 4],
+                                'title'       => ['text', 'Titolo', 'Per esempio: Transfer dalla stazione.', 'w' => 6],
+                                'amount'      => ['money', 'Prezzo', 'Facoltativo.', 'w' => 2],
+                                'unit'        => ['choice', 'Unità', '', 'w' => 4, 'options' => [], 'tassonomia' => 'unita'],
                                 'description' => ['textarea', 'Descrizione', 'Facoltativa.'],
+                                'price_note'  => ['text', 'Nota sul prezzo', 'Facoltativa. Per esempio: gratis sotto i 3 anni.', 'w' => 12],
                                 'photo'       => ['image', 'Foto', 'Facoltativa.'],
                             ]],
                 'note' => ['textarea', 'Nota', 'Facoltativa. Per esempio: da richiedere con un giorno di anticipo.'],
@@ -112,7 +122,7 @@ final class SectionCatalog
         // Regole (dalla 011): interruttori standard, tradotti da soli; la vecchia lista
         // resta com'era, come «Regole aggiuntive».
         'rules' => [
-            'icon' => 'doc',
+            'icon' => 'doc', 'group' => 'casa',
             'fields' => [
                 'flags' => ['toggles', 'Le regole principali', 'Sì, no, o lascia «non indicato».', 'options' => [
                     'smoking' => 'Fumo', 'pets' => 'Animali', 'parties' => 'Feste', 'visitors' => 'Visitatori esterni']],
@@ -127,7 +137,8 @@ final class SectionCatalog
         ],
         // Come arrivare (dalla 011): una scheda per mezzo. I vecchi passaggi diventano la prima scheda.
         'arrival' => [
-            'icon' => 'pin',
+            'icon' => 'pin', 'group' => 'arrivo',
+            'intro' => 'Il viaggio fino alla porta di casa: da dove arriva l\'ospite (autostrada, stazione, aeroporto) e come raggiunge la struttura. Gli spostamenti durante il soggiorno vanno in «Muoversi in zona».',
             'fields' => [
                 'address'  => ['plain', 'Indirizzo', ''],
                 'maps_url' => ['url', 'Link a Google Maps', 'Facoltativo. Se manca, si usa l\'indirizzo.'],
@@ -139,26 +150,44 @@ final class SectionCatalog
                 'note'     => ['textarea', 'Nota', 'Facoltativa.'],
             ],
         ],
+        // Muoversi in zona (fase 6C): una scheda per modo. Il vecchio elenco «uno per riga»
+        // resta nel JSON e diventa schede di tipo «Altro» (Conversione::muoversi).
         'transport' => [
-            'icon' => 'bus',
+            'icon' => 'bus', 'group' => 'arrivo',
+            'intro' => 'Una volta arrivati: come ci si sposta durante il soggiorno. Autobus, taxi, noleggi, navette, scale mobili. Le indicazioni per raggiungere la casa vanno in «Come arrivare».',
             'fields' => [
-                'items' => ['list', 'Come muoversi', 'Uno per riga: autobus, taxi, noleggio bici.'],
+                'options' => ['repeater', 'Come muoversi', 'Una scheda per ogni modo: la linea dell\'autobus, il taxi, chi noleggia le bici.',
+                              'add' => 'Aggiungi una voce', 'item' => 'Voce', 'max' => 12,
+                              // Righe pronte: il tipo è già scelto, il nome si scrive (niente nome precompilato).
+                              'presets' => ['move.taxi' => ['type' => 'taxi'], 'move.bus' => ['type' => 'bus'], 'move.bike_rental' => ['type' => 'bike_rental']], 'preset_nome' => false,
+                              'sub' => [
+                                  'type'  => ['choice', 'Tipo', '', 'w' => 12, 'pillole' => true, 'options' => [], 'tassonomia' => 'muoversi'],
+                                  'name'  => ['text', 'Nome', 'Per esempio: la linea per il centro.', 'w' => 6],
+                                  'phone' => ['tel', 'Telefono', 'Facoltativo.', 'w' => 3],
+                                  'url'   => ['url', 'Sito', 'Facoltativo.', 'w' => 3],
+                                  'where' => ['text', 'Dove si prende', 'Facoltativo. Per esempio: la fermata davanti alla farmacia.', 'w' => 12],
+                                  'note'  => ['textarea', 'Orari, biglietti, costi', 'Facoltativo.'],
+                              ]],
                 'note'  => ['textarea', 'Nota', 'Facoltativa.'],
             ],
         ],
         // Parcheggio (dalla 011): più possibilità, una riga ciascuna, e la ZTL a parte.
         // Il parcheggio di prima (tipo, indirizzo, link, istruzioni, costo) diventa la prima riga.
         'parking' => [
-            'icon' => 'car',
+            'icon' => 'car', 'group' => 'arrivo',
             'fields' => [
                 'options' => ['repeater', 'Dove parcheggiare', 'Una riga per ogni possibilità: posto privato, parcheggio pubblico, garage…',
                               'add' => 'Aggiungi un parcheggio', 'item' => 'Parcheggio', 'max' => 8, 'sub' => [
-                                  'type'         => ['choice', 'Tipo', '', 'w' => 4, 'options' => ['' => 'Non indicato', 'privato' => 'Privato', 'pubblico' => 'Pubblico gratuito',
+                                  'type'         => ['choice', 'Tipo', '', 'w' => 12, 'pillole' => true, 'options' => ['' => 'Non indicato', 'privato' => 'Privato', 'pubblico' => 'Pubblico gratuito',
                                                                                          'pagamento' => 'A pagamento', 'garage' => 'Garage', 'strada' => 'In strada']],
-                                  'name'         => ['text', 'Descrizione', 'Per esempio: posto riservato in cortile.', 'w' => 8],
+                                  'name'         => ['text', 'Nome o descrizione', 'Per esempio: posto riservato in cortile.', 'w' => 6],
                                   'address'      => ['plain', 'Indirizzo', '', 'w' => 6],
                                   'maps_url'     => ['url', 'Link a Google Maps', 'Facoltativo.', 'w' => 6],
-                                  'cost'         => ['text', 'Costo', 'Facoltativo. Per esempio: gratuito, 5 € al giorno.', 'w' => 4],
+                                  // Fase 6C: il costo scritto a mano diventa due importi e una nota (Conversione::costiParcheggio).
+                                  'cost_hour'    => ['money', 'All\'ora', '', 'w' => 3, 'nascosto_con' => ['type', ['privato', 'pubblico']]],
+                                  'cost_day'     => ['money', 'Al giorno', '', 'w' => 3, 'nascosto_con' => ['type', ['privato', 'pubblico']]],
+                                  'cost_note'    => ['text', 'Nota sul costo', 'Facoltativa. Per esempio: gratis la domenica.', 'w' => 8],
+                                  'walk_minutes' => ['plain', 'Minuti a piedi', 'Dalla casa.', 'w' => 4, 'cifre' => true],
                                   'instructions' => ['textarea', 'Istruzioni', ''],
                                   'photo'        => ['image', 'Foto', 'Facoltativa.'],
                               ]],
@@ -168,7 +197,7 @@ final class SectionCatalog
         // Rifiuti (dalla 011): una riga per tipo, con i giorni, il colore del bidone e dove si
         // trova. Le vecchie voci «una per riga» diventano righe col testo nella descrizione.
         'waste' => [
-            'icon' => 'bin',
+            'icon' => 'bin', 'group' => 'casa',
             'fields' => [
                 'bins' => ['repeater', 'Raccolta differenziata', 'Una riga per tipo di rifiuto: i giorni in cui si porta fuori, il colore del bidone, dove si trova.',
                            'add' => 'Aggiungi un tipo di rifiuto', 'item' => 'Rifiuto', 'max' => 12, 'sub' => [
@@ -184,21 +213,21 @@ final class SectionCatalog
             ],
         ],
         'eat' => [
-            'icon' => 'fork', 'places' => true,
+            'icon' => 'fork', 'places' => true, 'group' => 'territorio',
             'fields' => [
                 'intro'     => ['textarea', 'Introduzione', 'Una frase che presenta i tuoi consigli.'],
                 'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo. Compare firmato col tuo nome.'],
             ],
         ],
         'visit' => [
-            'icon' => 'monument', 'places' => true,
+            'icon' => 'monument', 'places' => true, 'group' => 'territorio',
             'fields' => [
                 'intro'     => ['textarea', 'Introduzione', ''],
                 'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo.'],
             ],
         ],
         'todo' => [
-            'icon' => 'compass', 'places' => true,
+            'icon' => 'compass', 'places' => true, 'group' => 'territorio',
             'fields' => [
                 'intro'     => ['textarea', 'Introduzione', ''],
                 'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo.'],
@@ -206,14 +235,14 @@ final class SectionCatalog
         ],
         // Negozi e spesa (fase 6B): alimentari, forno, mercato, farmacia, bancomat.
         'shop' => [
-            'icon' => 'bag', 'places' => true,
+            'icon' => 'bag', 'places' => true, 'group' => 'territorio',
             'fields' => [
                 'intro'     => ['textarea', 'Introduzione', 'Una frase che presenta i tuoi consigli.'],
                 'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo. Compare firmato col tuo nome.'],
             ],
         ],
         'emergency' => [
-            'icon' => 'phone',
+            'icon' => 'phone', 'group' => 'arrivo',
             'fields' => [
                 'emergency_number' => ['plain', 'Numero unico di emergenza', 'In Italia è il 112.'],
                 // Dalla 011: righe nome · telefono · nota, con un «Chiama» per riga nella guida.
@@ -229,7 +258,7 @@ final class SectionCatalog
             ],
         ],
         'info' => [
-            'icon' => 'info',
+            'icon' => 'info', 'group' => 'arrivo',
             'fields' => [
                 'items' => ['list', 'Cose da sapere', 'Una per riga.'],
                 'note'  => ['textarea', 'Nota', 'Facoltativa.'],
@@ -238,7 +267,18 @@ final class SectionCatalog
     ];
 
     /** Tipi che non si traducono: vivono in sections.data. */
-    private const PLAIN = ['plain', 'url', 'secret', 'choice', 'tel', 'time', 'days', 'check', 'checks', 'toggles', 'image', 'pdf'];
+    private const PLAIN = ['plain', 'url', 'secret', 'choice', 'tel', 'time', 'days', 'check', 'checks', 'toggles', 'image', 'pdf', 'money'];
+
+    /** I gruppi della home, nell'ordine in cui si mostrano. */
+    public const GRUPPI = ['casa' => 'La casa', 'arrivo' => 'Arrivare e muoversi', 'territorio' => 'Il territorio'];
+
+    /** I tipi di ogni gruppo, nell'ordine del catalogo. @return array<string,list<string>> */
+    public static function gruppi(): array
+    {
+        $out = array_fill_keys(array_keys(self::GRUPPI), []);
+        foreach (self::K as $k => $d) $out[$d['group'] ?? 'casa'][] = $k;
+        return $out;
+    }
 
     public static function kinds(): array { return array_keys(self::K); }
 
@@ -276,10 +316,18 @@ final class SectionCatalog
     {
         $f = self::get($kind)['fields'];
         // Le opzioni che vengono dalle tassonomie (fase 6), con le etichette italiane del pannello.
+        $opzioni = function (array $d): array {
+            return match ($d['tassonomia'] ?? '') {
+                'dotazioni' => array_combine(Tassonomie::dotazioni(), array_map(fn($x) => I18n::t('it', 'amen_' . $x), Tassonomie::dotazioni())),
+                'muoversi' => array_combine(Tassonomie::MUOVERSI, array_map(fn($x) => I18n::t('it', 'move.' . $x), Tassonomie::MUOVERSI)),
+                // Senza unità il prezzo resta «25 €».
+                'unita' => ['' => 'Nessuna'] + array_combine(Tassonomie::UNITA, array_map(fn($x) => I18n::t('it', 'unit.' . $x), Tassonomie::UNITA)),
+                default => $d['options'] ?? [],
+            };
+        };
         foreach ($f as $n => $d) {
-            if (($d['tassonomia'] ?? '') === 'dotazioni') {
-                $f[$n]['options'] = array_combine(Tassonomie::dotazioni(), array_map(fn($x) => I18n::t('it', 'amen_' . $x), Tassonomie::dotazioni()));
-            }
+            if (isset($d['tassonomia'])) $f[$n]['options'] = $opzioni($d);
+            foreach ($d['sub'] ?? [] as $sn => $sd) if (isset($sd['tassonomia'])) $f[$n]['sub'][$sn]['options'] = $opzioni($sd);
         }
         return $f;
     }
@@ -322,7 +370,8 @@ final class SectionCatalog
             'checks' => array_values(array_intersect(array_keys($def['options']), array_map('strval', (array) $raw))),
             'toggles' => array_filter(array_intersect_key(array_map(fn($v) => in_array($v, ['si', 'no'], true) ? $v : '', (array) $raw), $def['options'])),
             'image', 'pdf' => (int) $raw > 0 ? (int) $raw : '',
-            'plain', 'secret' => mb_substr(trim((string) $raw), 0, 200),
+            'money' => Conversione::importo(trim(str_replace(['€', ' '], '', (string) $raw))),
+            'plain', 'secret' => !empty($def['cifre']) ? substr(preg_replace('/\D/', '', (string) $raw), 0, 3) : mb_substr(trim((string) $raw), 0, 200),
             default => mb_substr(trim((string) $raw), 0, 300),
         };
     }
@@ -389,6 +438,12 @@ final class SectionCatalog
                         // spunta da sola non bastano a fare una riga.
                         if ($sd[0] === 'choice') { if ($v !== '' && $v !== (string) array_key_first($sd['options'])) $piena = true; }
                         elseif ($sd[0] !== 'check' && $v !== '' && $v !== []) $piena = true;
+                    }
+                    // Un sottocampo nascosto dall'altro campo della riga (i costi di un parcheggio privato) si svuota.
+                    foreach ($def['sub'] as $sn => $sd) {
+                        if (!isset($sd['nascosto_con'], $rc[$sn])) continue;
+                        [$altro, $valori] = $sd['nascosto_con'];
+                        if (in_array((string) ($rc[$altro] ?? ''), $valori, true)) $rc[$sn] = '';
                     }
                     if ($withPlain && !$piena) continue;
                     $comune[] = $rc; $testi[] = $rt;

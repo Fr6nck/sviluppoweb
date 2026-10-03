@@ -30,12 +30,17 @@ final class Conversione
         if ($kind === 'checkin') {
             foreach ($testi as $loc => $t) $testi[$loc] = self::partenza($t, (string) $loc);
         }
+        if ($kind === 'parking') {
+            [$dati, $testi] = self::parcheggio($dati, $testi);
+            return self::costiParcheggio($dati, $testi, $principale);
+        }
         return match ($kind) {
             'wifi' => self::wifi($dati, $testi),
             'emergency' => self::emergenze($dati, $testi, $principale),
             'waste' => self::rifiuti($dati, $testi, $principale),
-            'parking' => self::parcheggio($dati, $testi),
             'arrival' => self::percorsi($dati, $testi),
+            'extras' => self::prezziExtra($dati, $testi, $principale),
+            'transport' => self::muoversi($dati, $testi, $principale),
             default => [$dati, $testi],
         };
     }
@@ -172,6 +177,129 @@ final class Conversione
         foreach ($testi as $loc => $t) {
             $t['options'] = [['id' => $id, 'name' => trim((string) ($t['parking_type'] ?? '')), 'cost' => trim((string) ($t['cost'] ?? '')),
                               'instructions' => trim((string) ($t['instructions'] ?? ''))]];
+            $testi[$loc] = $t;
+        }
+        return [$dati, $testi];
+    }
+
+    // ------------------------------------------------------------- fase 6C
+
+    /** «al giorno», «all'ora» in tutte le lingue della guida (anche abbreviati). */
+    private const UNITA_COSTO = [
+        'day'  => '(?:al\s+giorno|a\s+giornata|\/\s*giorno|\/\s*g\b|per\s+day|a\s+day|\/\s*day|par\s+jour|\/\s*jour|pro\s+tag|am\s+tag|\/\s*tag|al\s+d[ií]a|por\s+d[ií]a|\/\s*d[ií]a)',
+        'hour' => "(?:all['’]\\s*ora|l['’]\\s*ora|a\\s+ora|\\/\\s*ora|\\/\\s*h\\b|per\\s+hour|an\\s+hour|\\/\\s*hour|par\\s+heure|\\/\\s*heure|pro\\s+stunde|\\/\\s*std|la\\s+hora|por\\s+hora|\\/\\s*hora)",
+    ];
+
+    /** Un importo scritto a mano («5», «1,5», «2.50») nel formato salvato: virgola, due decimali se ce ne sono. */
+    public static function importo(string $v): string
+    {
+        $v = str_replace(',', '.', trim($v));
+        if (!preg_match('/^\d{1,6}(\.\d{1,2})?$/', $v)) return '';
+        [$i, $d] = array_pad(explode('.', $v), 2, '');
+        return $d === '' ? ltrim($i, '0') ?: '0' : (ltrim($i, '0') ?: '0') . ',' . str_pad($d, 2, '0');
+    }
+
+    /**
+     * Un costo di parcheggio scritto a mano: «5 € al giorno», «€1,50/h», «2 euro all'ora, gratis la notte».
+     * @return array{0:string,1:string,2:string}|null [all'ora, al giorno, il resto] — null se non c'è un importo con l'unità
+     */
+    private static function leggiCosto(string $testo): ?array
+    {
+        $ora = $giorno = ''; $resto = $testo; $trovato = false;
+        foreach (self::UNITA_COSTO as $u => $re) {
+            $num = '(\d{1,6}(?:[.,]\d{1,2})?)';
+            $pat = '/(?:€\s*' . $num . '|' . $num . '\s*(?:€|euro|eur)?)\s*' . $re . '/iu';
+            if (preg_match($pat, $resto, $m)) {
+                $val = self::importo($m[1] !== '' ? $m[1] : $m[2]);
+                if ($val === '') continue;
+                if ($u === 'day') $giorno = $val; else $ora = $val;
+                $resto = str_replace($m[0], '', $resto); $trovato = true;
+            }
+        }
+        if (!$trovato) return null;
+        return [$ora, $giorno, trim($resto, " \t,;.–—-")];
+    }
+
+    /**
+     * Parcheggio (fase 6C): il costo scritto a mano diventa «all'ora» e «al giorno» (importi
+     * uguali in ogni lingua) e «Nota sul costo» (il resto, tradotto). Quello che non si
+     * riconosce va tutto nella nota, in ogni lingua: nessun testo si perde.
+     */
+    public static function costiParcheggio(array $dati, array $testi, string $principale = 'it'): array
+    {
+        $righe = (array) ($dati['options'] ?? []);
+        if (!$righe) return [$dati, $testi];
+        $testoDi = function (string $loc, string $id) use ($testi): ?array {
+            foreach ((array) ($testi[$loc]['options'] ?? []) as $r) if (is_array($r) && (string) ($r['id'] ?? '') === $id) return $r;
+            return null;
+        };
+        foreach ($righe as $i => $r) {
+            if (!is_array($r) || array_key_exists('cost_hour', $r) || array_key_exists('cost_day', $r)) continue;
+            $id = (string) ($r['id'] ?? '');
+            $prima = $testoDi($principale, $id) ?? [];
+            $letto = self::leggiCosto(trim((string) ($prima['cost'] ?? '')));
+            $righe[$i]['cost_hour'] = $letto[0] ?? '';
+            $righe[$i]['cost_day'] = $letto[1] ?? '';
+            foreach ($testi as $loc => $t) {
+                foreach ((array) ($t['options'] ?? []) as $j => $tr) {
+                    if (!is_array($tr) || (string) ($tr['id'] ?? '') !== $id || array_key_exists('cost_note', $tr)) continue;
+                    $suo = trim((string) ($tr['cost'] ?? ''));
+                    $l = $letto ? self::leggiCosto($suo) : null;
+                    $testi[$loc]['options'][$j]['cost_note'] = $l ? $l[2] : $suo;
+                }
+            }
+        }
+        $dati['options'] = $righe;
+        return [$dati, $testi];
+    }
+
+    /**
+     * Servizi extra (fase 6C): «25 €» o «25 € a tratta» diventa importo e unità (uguali in ogni
+     * lingua); qualsiasi altra cosa resta intera in «Nota sul prezzo», in ogni lingua.
+     */
+    public static function prezziExtra(array $dati, array $testi, string $principale = 'it'): array
+    {
+        $righe = (array) ($dati['items'] ?? []);
+        if (!$righe) return [$dati, $testi];
+        foreach ($righe as $i => $r) {
+            if (!is_array($r) || array_key_exists('amount', $r)) continue;
+            $id = (string) ($r['id'] ?? '');
+            $prima = '';
+            foreach ((array) ($testi[$principale]['items'] ?? []) as $tr) if (is_array($tr) && (string) ($tr['id'] ?? '') === $id) $prima = trim((string) ($tr['price'] ?? ''));
+            $importo = $unita = ''; $diviso = false;
+            if (preg_match('/^(?:€\s*(\d{1,6}(?:[.,]\d{1,2})?)|(\d{1,6}(?:[.,]\d{1,2})?)\s*(?:€|euro|eur))\s*(.*)$/iu', $prima, $m)) {
+                $importo = self::importo($m[1] !== '' ? $m[1] : $m[2]);
+                $resto = trim($m[3], " \t,;.–—-·");
+                $unita = $resto === '' ? '' : Tassonomie::chiaveDaTesto('unit.', Tassonomie::UNITA, $resto);
+                $diviso = $importo !== '' && ($resto === '' || $unita !== '');
+            }
+            $righe[$i]['amount'] = $diviso ? $importo : '';
+            $righe[$i]['unit'] = $diviso ? $unita : '';
+            foreach ($testi as $loc => $t) {
+                foreach ((array) ($t['items'] ?? []) as $j => $tr) {
+                    if (!is_array($tr) || (string) ($tr['id'] ?? '') !== $id || array_key_exists('price_note', $tr)) continue;
+                    $testi[$loc]['items'][$j]['price_note'] = $diviso ? '' : trim((string) ($tr['price'] ?? ''));
+                }
+            }
+        }
+        $dati['items'] = $righe;
+        return [$dati, $testi];
+    }
+
+    /** Muoversi in zona (fase 6C): ogni voce del vecchio elenco diventa una scheda di tipo «Altro», col testo nel nome. */
+    public static function muoversi(array $dati, array $testi, string $principale = 'it'): array
+    {
+        if (array_key_exists('options', $dati)) return [$dati, $testi];
+        $guida = self::voci($testi, 'items', $principale);
+        if (!$guida) return [$dati, $testi];
+        [$voci, $lg] = $guida;
+        $ids = [];
+        foreach ($voci as $i => $v) $ids[$i] = self::idRiga('transport', $i, $v);
+        $dati['options'] = array_map(fn($id) => ['id' => $id, 'type' => 'other', 'phone' => '', 'url' => ''], $ids);
+        foreach ($testi as $loc => $t) {
+            $sue = array_values(array_filter(array_map(fn($x) => trim((string) $x), (array) ($t['items'] ?? [])), fn($x) => $x !== ''));
+            $t['options'] = [];
+            foreach ($ids as $i => $id) $t['options'][] = ['id' => $id, 'name' => $loc === $lg ? $voci[$i] : ($sue[$i] ?? ''), 'where' => '', 'note' => ''];
             $testi[$loc] = $t;
         }
         return [$dati, $testi];

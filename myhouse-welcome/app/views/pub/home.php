@@ -32,10 +32,9 @@ $partenza = null;
 foreach ($offers as $of) foreach ($of['options'] as $o) {
     if ($partenza === null || (int) $o['price_cents'] < (int) $partenza['price_cents']) $partenza = $o;
 }
-// Le icone vengono dal catalogo delle sezioni: le stesse del pannello e della guida.
-$elementi = array_map(fn($x) => [MHW\SectionCatalog::icon($x[0]), $x[1]],
-    [['checkin', 'Check-in & Check-out'], ['wifi', 'Wi-Fi'], ['arrival', 'Come arrivare'], ['parking', 'Parcheggio'],
-     ['services', 'Servizi'], ['rules', 'Regole della casa'], ['eat', 'Dove mangiare'], ['waste', 'Rifiuti e raccolta differenziata']]); ?>
+// Tutte le sezioni del catalogo, nei tre gruppi (fase 6C): icone e titoli sono gli stessi del pannello e della guida.
+$gruppiSezioni = MHW\SectionCatalog::gruppi();
+$quanteSezioni = count(MHW\SectionCatalog::kinds()); ?>
 
 <script>
 /* Prima di disegnare la pagina: se si anima, gli elementi partono già nascosti
@@ -165,15 +164,22 @@ $disegni = [
   <div class="prodotto__testa">
     <span class="kicker">La guida</span>
     <h2 id="prodotto-titolo" class="h-sezione">Cosa trova l'ospite.</h2>
-    <p class="muted">Le informazioni del soggiorno, in ordine e sempre sul telefono. Le sezioni le scegli tu, in base al piano.</p>
+    <p class="muted">Le informazioni del soggiorno, in ordine e sempre sul telefono. <?= $quanteSezioni ?> sezioni pronte. Scegli quelle che servono ai tuoi ospiti.</p>
     <?php if ($demoUrl): ?><a class="link-freccia" href="<?= $demoUrl ?>">Sfoglia la guida di <?= Support::e($nomeDemo) ?> <?= Icon::svg('arrow', 16, 2) ?></a><?php endif; ?>
   </div>
-  <ul class="features8">
-    <?php $toni = ['terracotta', 'sea', 'pine', 'ochre'];
-    foreach ($elementi as $i => [$ico, $nome]): ?>
-      <li class="feat feat--<?= $toni[$i % 4] ?>"><span class="ico"><?= Icon::svg($ico, 20, 1.8) ?></span><b><?= Support::e($nome) ?></b></li>
+  <div class="gruppi-sez">
+    <?php $toni = ['casa' => 'terracotta', 'arrivo' => 'sea', 'territorio' => 'pine'];
+    foreach ($gruppiSezioni as $g => $tipi): if (!$tipi) continue; ?>
+      <div class="gruppo-sez">
+        <h3 class="gruppo-sez__titolo" id="gruppo-<?= $g ?>"><?= Support::e(MHW\SectionCatalog::GRUPPI[$g]) ?></h3>
+        <ul class="features8 features8--compatte" aria-labelledby="gruppo-<?= $g ?>">
+          <?php foreach ($tipi as $k): ?>
+            <li class="feat feat--<?= $toni[$g] ?>"><span class="ico"><?= Icon::svg(MHW\SectionCatalog::icon($k), 18, 1.8) ?></span><b><?= Support::e(MHW\SectionCatalog::title($k, 'it')) ?></b></li>
+          <?php endforeach; ?>
+        </ul>
+      </div>
     <?php endforeach; ?>
-  </ul>
+  </div>
 </section>
 
 <?php /* Il tempo che non vedi: a sinistra il problema e la soluzione, a destra

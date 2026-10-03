@@ -1,5 +1,31 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Fase 6C — Parcheggio, prezzi, «Muoversi in zona», home con tutte le sezioni (3 ottobre 2026)
+
+Migrazione `017`. Converte i dati esistenti; i vecchi campi restano nel JSON. Le guide già pubblicate si leggono nel formato 6 (`Guide::FORMAT`).
+
+- **Importi in euro (`money`).** Si scrive solo il numero, con «€» fisso a destra. Accetta virgola o punto; si salva con la virgola («1,50») ed è uguale in ogni lingua.
+- **Parcheggio.**
+  - Il tipo si sceglie a pillole.
+  - Campi: «Nome o descrizione», indirizzo, link a Maps, «All'ora», «Al giorno», «Nota sul costo» (tradotta), «Minuti a piedi».
+  - Con «Privato» o «Pubblico gratuito» i costi spariscono e si svuotano.
+  - Nella guida ogni parcheggio è una scheda con le pillole «€/ora», «€/giorno», «min a piedi» (o «Gratuito») e «Apri Maps».
+- **Servizi extra.** Il prezzo diventa importo e unità (a persona, a tratta, a notte…), più «Nota sul prezzo». Nella guida si legge «25 € · a tratta», con l'unità tradotta.
+- **«Come arrivare» e «Muoversi in zona».**
+  - Ognuna ha un riquadro introduttivo nell'editor, che rimanda all'altra.
+  - Nella guida ognuna ha una riga sotto il titolo.
+  - «Muoversi in zona» è a schede: tipo a pillole, nome, telefono, sito, «Dove si prende», «Orari, biglietti, costi». Ci sono le righe pronte Taxi, Autobus e Noleggio bici. Nella guida ogni scheda ha «Chiama» e «Visita il sito».
+- **Conversione (017).**
+  - «5 € al giorno» e «€1,50/h» diventano importi; il resto del testo va nella nota.
+  - «25 € a tratta» diventa importo e unità.
+  - Il vecchio elenco dei trasporti diventa schede di tipo «Altro».
+  - Quello che non si riconosce resta intero nella nota, in ogni lingua.
+- **Home.**
+  - «Cosa trova l'ospite» mostra tutte le sezioni del catalogo in tre gruppi: «La casa», «Arrivare e muoversi», «Il territorio».
+  - Il numero delle sezioni è contato dal catalogo («15 sezioni pronte»).
+  - A 390 px le sezioni stanno su due colonne compatte.
+- **Demo.** I prezzi degli extra sono nel formato nuovo. Casa Lucia ha «Muoversi in zona», senza nomi di aziende.
+
 ## v2 · Fase 6B — Luoghi con categorie ed etichette tradotte, «Negozi e spesa» (3 ottobre 2026)
 
 Migrazione `016` (`places.category_key`, `places.badge_key`), che converte i dati esistenti.

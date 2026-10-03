@@ -88,8 +88,13 @@ elseif ($campo === 'items' && $tipo === 'repeater'):
         <?php if ($foto): ?><div class="shot shot--h186"><img src="<?= Support::e($foto) ?>" alt="" loading="lazy" decoding="async"></div><?php endif; ?>
         <div class="spread spread--mid" style="gap:12px;align-items:baseline">
           <b style="font-size:18px;font-weight:500"><?= Support::e($titoloExtra) ?></b>
-          <?php if (trim((string) $r['price']) !== ''): ?><span class="extra__prezzo"><?= Support::e($r['price']) ?></span><?php endif; ?>
+          <?php /* Il prezzo (fase 6C): «25 € · a tratta», con l'unità nella lingua dell'ospite. */
+                $prezzo = trim((string) ($r['amount'] ?? '')) !== '' ? $r['amount'] . ' €' : '';
+                $unita = (string) ($r['unit'] ?? '') !== '' ? I18n::t($loc, 'unit.' . $r['unit']) : '';
+                $prezzo = implode(' · ', array_filter([$prezzo, $unita])); ?>
+          <?php if ($prezzo !== ''): ?><span class="extra__prezzo"><?= Support::e($prezzo) ?></span><?php endif; ?>
         </div>
+        <?php if (trim((string) ($r['price_note'] ?? '')) !== ''): ?><p class="small muted"><?= Support::e($r['price_note']) ?></p><?php endif; ?>
         <?php if (trim((string) $r['description']) !== ''): ?><p class="small" style="white-space:pre-line;line-height:21px"><?= Support::e($r['description']) ?></p><?php endif; ?>
         <?php if ($wa !== '' && $titoloExtra !== ''): ?>
           <div class="ctas"><a href="https://wa.me/<?= Support::e($wa) ?>?text=<?= rawurlencode(I18n::t($loc, 'extra_message', $titoloExtra)) ?>" rel="noopener" target="_blank"
@@ -141,17 +146,50 @@ elseif ($campo === 'quiet_from'):
     <span><?= Support::e($da !== '' && $a !== '' ? I18n::t($loc, 'quiet_hours', $da, $a) : ($da !== '' ? I18n::t($loc, 'quiet_from', $da) : I18n::t($loc, 'quiet_to', $a))) ?></span></p>
 <?php endif;
 
+/* ---------------------------------------------- muoversi in zona (6C) */
+elseif ($campo === 'options' && $kind === 'transport'):
+    $righe = array_filter($righe, fn($r) => $pieno($r, ['name', 'phone', 'url', 'where', 'note']));
+    $icone = ['bus' => 'bus', 'taxi' => 'car', 'car_rental' => 'car', 'train' => 'train', 'walk' => 'compass', 'lifts' => 'layers'];
+    if ($righe): ?>
+  <div class="stack" style="margin-top:18px;gap:12px">
+    <?php foreach ($righe as $r): $tipoM = (string) ($r['type'] ?? ''); $nomeM = trim((string) $r['name']); $tel = trim((string) $r['phone']); $sito = trim((string) $r['url']);
+          $etichetta = I18n::t($loc, 'move.' . ($tipoM !== '' ? $tipoM : 'other')); ?>
+      <article class="panel stack" style="gap:8px">
+        <span class="row" style="gap:10px;flex-wrap:nowrap"><?= Icon::svg($icone[$tipoM] ?? 'compass', 19) ?>
+          <b style="font-size:18px;font-weight:500"><?= Support::e($nomeM !== '' ? $nomeM : $etichetta) ?></b></span>
+        <?php if ($nomeM !== '' && $tipoM !== '' && $tipoM !== 'other'): ?><span class="badge badge--sea" style="align-self:flex-start"><?= Support::e($etichetta) ?></span><?php endif; ?>
+        <?php if (trim((string) $r['where']) !== ''): ?><p class="small muted"><?= Icon::svg('pin', 13) ?> <?= Support::e($r['where']) ?></p><?php endif; ?>
+        <?php if (trim((string) $r['note']) !== ''): ?><p class="small" style="white-space:pre-line;line-height:21px"><?= Support::e($r['note']) ?></p><?php endif; ?>
+        <?php if ($tel !== '' || $sito !== ''): ?>
+          <div class="ctas">
+            <?php if ($tel !== ''): ?><a href="tel:<?= Support::e(Support::telHref($tel)) ?>" aria-label="<?= Support::e(I18n::t($loc, 'call', $nomeM !== '' ? $nomeM : $etichetta)) ?>"><?= Icon::svg('phone', 15) ?><?= Support::e(I18n::t($loc, 'call_host')) ?></a><?php endif; ?>
+            <?php if ($sito !== ''): ?><a href="<?= Support::e($sito) ?>" target="_blank" rel="noopener"><?= Icon::svg('external', 15) ?><?= Support::e(I18n::t($loc, 'visit_site')) ?></a><?php endif; ?>
+          </div>
+        <?php endif; ?>
+      </article>
+    <?php endforeach; ?>
+  </div>
+<?php endif;
+
 /* --------------------------------------------------------- parcheggio */
 elseif ($campo === 'options'):
-    $righe = array_filter($righe, fn($r) => $pieno($r, ['type', 'name', 'address', 'maps_url', 'cost', 'instructions', 'photo'])); if ($righe): ?>
+    $righe = array_filter($righe, fn($r) => $pieno($r, ['type', 'name', 'address', 'maps_url', 'cost_hour', 'cost_day', 'cost_note', 'walk_minutes', 'instructions', 'photo'])); if ($righe): ?>
   <div class="stack" style="margin-top:18px;gap:12px">
     <?php foreach ($righe as $r): $u = $maps(trim((string) $r['address']), trim((string) $r['maps_url']));
-          $foto = (int) $r['photo'] ? Media::url((int) $r['photo']) : null; ?>
+          $foto = (int) $r['photo'] ? Media::url((int) $r['photo']) : null;
+          // Le pillole (fase 6C): gratuito per i posti privati e pubblici, altrimenti all'ora e al giorno; i minuti a piedi.
+          $gratis = in_array($r['type'], ['privato', 'pubblico'], true);
+          $pillole = array_filter([
+              $gratis ? I18n::t($loc, 'price.free') : '',
+              !$gratis && trim((string) $r['cost_hour']) !== '' ? I18n::t($loc, 'price.hour', $r['cost_hour']) : '',
+              !$gratis && trim((string) $r['cost_day']) !== '' ? I18n::t($loc, 'price.day', $r['cost_day']) : '',
+              (int) $r['walk_minutes'] > 0 ? I18n::t($loc, 'walk_min', (int) $r['walk_minutes']) : '']); ?>
       <div class="panel stack" style="gap:8px">
         <?php if ($r['type'] !== ''): ?><span class="badge badge--sea" style="align-self:flex-start"><?= Support::e(I18n::t($loc, 'park_' . $r['type'])) ?></span><?php endif; ?>
         <?php if (trim((string) $r['name']) !== ''): ?><b style="font-size:18px;font-weight:500"><?= Support::e($r['name']) ?></b><?php endif; ?>
         <?php if (trim((string) $r['address']) !== ''): ?><p class="small muted"><?= Icon::svg('pin', 13) ?> <?= Support::e($r['address']) ?></p><?php endif; ?>
-        <?php if (trim((string) $r['cost']) !== ''): ?><p class="small"><span class="kicker"><?= Support::e(I18n::t($loc, 'cost')) ?></span> <?= Support::e($r['cost']) ?></p><?php endif; ?>
+        <?php if ($pillole): ?><div class="pillole-ospite"><?php foreach ($pillole as $p): ?><span class="pill-quiet"><?= Support::e($p) ?></span><?php endforeach; ?></div><?php endif; ?>
+        <?php if (trim((string) $r['cost_note']) !== ''): ?><p class="small"><span class="kicker"><?= Support::e(I18n::t($loc, 'cost')) ?></span> <?= Support::e($r['cost_note']) ?></p><?php endif; ?>
         <?php if (trim((string) $r['instructions']) !== ''): ?><p style="white-space:pre-line;line-height:23px"><?= Support::e($r['instructions']) ?></p><?php endif; ?>
         <?php if ($foto): ?><div class="shot shot--h186"><img src="<?= Support::e($foto) ?>" alt="" loading="lazy" decoding="async"></div><?php endif; ?>
         <?php if ($u): ?><div class="ctas"><a href="<?= Support::e($u) ?>" target="_blank" rel="noopener"><?= Icon::svg('pin', 15) ?><?= Support::e(I18n::t($loc, 'open_maps')) ?></a></div><?php endif; ?>

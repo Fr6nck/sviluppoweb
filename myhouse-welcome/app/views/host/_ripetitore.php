@@ -43,7 +43,9 @@ $riga = function (string $k, array $v, int $num = 0) use ($r, $nome, $domId, $gi
         $id = $domId . '-' . $k . '-' . $sn;
         $val = $v[$sn] ?? ($tipo === 'days' ? [] : '');
         $w = MHW\SectionCatalog::larghezza($sd);
-        $c = '<div class="rip__c rip__c--w' . $w . '"' . (!empty($sd['solo_piu']) ? ' data-rip-solo-piu' : '') . '>';
+        // 'nascosto_con': il campo sparisce quando l'altro campo della riga ha uno di quei valori (i costi di un posto privato).
+        $nasc = isset($sd['nascosto_con']) ? ' data-nascosto-con="' . Support::e($sd['nascosto_con'][0]) . '" data-nascosto-valori="' . Support::e(implode(',', $sd['nascosto_con'][1])) . '"' : '';
+        $c = '<div class="rip__c rip__c--w' . $w . '"' . (!empty($sd['solo_piu']) ? ' data-rip-solo-piu' : '') . $nasc . '>';
         $help = $aiuto !== '' ? '<p class="help rip__aiuto" id="' . $id . '-aiuto">' . Support::e($aiuto) . '</p>' : '';
         $desc = $aiuto !== '' ? ' aria-describedby="' . $id . '-aiuto"' : '';
         if ($tipo === 'image' || $tipo === 'pdf') {
@@ -73,6 +75,18 @@ $riga = function (string $k, array $v, int $num = 0) use ($r, $nome, $domId, $gi
             $h .= '</div></div>';
         } elseif ($tipo === 'check') {
             $h .= $c . '<label class="check rip__check"><input type="checkbox" name="' . $n . '" value="1"' . ($val ? ' checked' : '') . '> <span>' . Support::e($et) . '</span></label></div>';
+        } elseif ($tipo === 'choice' && !empty($sd['pillole'])) {
+            // Una scelta a pillole: radio veri, usabili da tastiera con le frecce.
+            $h .= $c . '<fieldset class="rip__pillole"><legend class="small">' . Support::e($et) . '</legend><div class="scelte scelte--riga">';
+            foreach ($sd['options'] as $ok => $ol) {
+                $h .= '<label class="scelta scelta--mini"><input type="radio" name="' . $n . '" value="' . Support::e((string) $ok) . '"' . ((string) $val === (string) $ok ? ' checked' : '') . '><span>' . Support::e($ol) . '</span></label>';
+            }
+            $h .= '</div></fieldset></div>';
+        } elseif ($tipo === 'money') {
+            // Un importo in euro: il simbolo sta fisso a destra, si scrive solo il numero.
+            $h .= $c . '<div class="field" style="margin:0"><label for="' . $id . '">' . Support::e($et) . '<span class="sr-only"> (euro)</span></label>'
+                . '<div class="soldi"><input id="' . $id . '" type="text" inputmode="decimal" name="' . $n . '" value="' . Support::e((string) $val) . '" maxlength="9" pattern="[0-9]{1,6}([.,][0-9]{1,2})?" title="Solo il numero, per esempio 1,50"' . $desc . $no . '>'
+                . '<span class="soldi__euro" aria-hidden="true">€</span></div>' . $help . '</div></div>';
         } elseif ($tipo === 'choice') {
             $h .= $c . '<div class="field" style="margin:0"><label for="' . $id . '">' . Support::e($et) . '</label><select id="' . $id . '" name="' . $n . '"' . $desc . $no . '>';
             foreach ($sd['options'] as $ok => $ol) $h .= '<option value="' . Support::e($ok) . '"' . ((string) $val === (string) $ok ? ' selected' : '') . '>' . Support::e($ol) . '</option>';
@@ -89,11 +103,12 @@ $riga = function (string $k, array $v, int $num = 0) use ($r, $nome, $domId, $gi
         } else {
             $t = ['url' => 'url', 'tel' => 'tel', 'time' => 'time'][$tipo] ?? 'text';
             $extra = $tipo === 'secret' ? ' spellcheck="false" data-segreto' : ($tipo === 'url' ? ' placeholder="https://"' : '');
+            if (!empty($sd['cifre'])) $extra .= ' inputmode="numeric" pattern="[0-9]*"';
             // La password si legge con «Mostra»: senza JavaScript resta in chiaro, che è più comodo da scrivere.
             $mostra = $tipo === 'secret' ? '<button type="button" class="linkbtn rip__mostra" data-mostra-segreto hidden>Mostra</button>' : '';
             $h .= $c . '<div class="field" style="margin:0"><label for="' . $id . '">' . Support::e($et) . '</label>'
                 . ($mostra ? '<div class="rip__segreto">' : '')
-                . '<input id="' . $id . '" type="' . $t . '" name="' . $n . '" value="' . Support::e((string) $val) . '" maxlength="' . ($tipo === 'url' ? 500 : 300) . '"' . $extra . $desc . $no . '>'
+                . '<input id="' . $id . '" type="' . $t . '" name="' . $n . '" value="' . Support::e((string) $val) . '" maxlength="' . ($tipo === 'url' ? 500 : (!empty($sd['cifre']) ? 3 : 300)) . '"' . $extra . $desc . $no . '>'
                 . ($mostra ? $mostra . '</div>' : '') . $help . '</div></div>';
         }
     }

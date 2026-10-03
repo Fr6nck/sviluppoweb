@@ -553,12 +553,15 @@ prova('R5 · foto in una riga rifiutata dal server senza il piano Plus', pulita(
       && (int) val("SELECT COUNT(*) FROM media WHERE account_id = ?", [$acc['id']]) === 0);
 $fotoAltrui = (int) val('SELECT media_id FROM sections WHERE media_id IS NOT NULL ORDER BY id LIMIT 1');
 $anna->post("/pannello/$pid/sezioni/{$ids['parking']}", ['options' => [
-    ['id' => '', 'type' => 'privato', 'name' => 'Posto in cortile', 'address' => 'Via San Francesco 12', 'photo' => (string) $fotoAltrui],
-    ['id' => '', 'type' => 'pagamento', 'name' => 'Parcheggio del porto', 'cost' => '1 € l\'ora', 'instructions' => 'Strisce blu.'],
+    ['id' => '', 'type' => 'privato', 'name' => 'Posto in cortile', 'address' => 'Via San Francesco 12', 'photo' => (string) $fotoAltrui, 'cost_day' => '9'],
+    ['id' => '', 'type' => 'pagamento', 'name' => 'Parcheggio del porto', 'cost_hour' => '1', 'cost_day' => '€ 8.5', 'walk_minutes' => '6 min', 'instructions' => 'Strisce blu.'],
     ['id' => '', 'type' => '', 'name' => '', 'address' => '']], 'ztl' => 'Il centro è ZTL dalle 8 alle 20.']);
 $pk = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$ids['parking']]), true);
 prova('R5 · due parcheggi (la riga vuota scartata); la foto di un altro account non si aggancia', count($pk['options'] ?? []) === 2 && ($pk['options'][0]['photo'] ?? 'x') === ''
       && $pk['options'][1]['type'] === 'pagamento', json_encode($pk));
+prova('6C · parcheggio: importi con la virgola, minuti solo cifre; i costi di un posto privato si svuotano',
+      ($pk['options'][1]['cost_hour'] ?? '') === '1' && ($pk['options'][1]['cost_day'] ?? '') === '8,50' && ($pk['options'][1]['walk_minutes'] ?? '') === '6'
+      && ($pk['options'][0]['cost_day'] ?? 'x') === '', json_encode($pk));
 // Il parcheggio di Anna è disattivato (limite di Essential): per vederlo si scambia per un momento con «Dove mangiare».
 $anna->post("/pannello/$pid/sezioni/{$ids['eat']}/azione", ['fai' => 'disattiva']);
 $anna->post("/pannello/$pid/sezioni/{$ids['parking']}/azione", ['fai' => 'attiva']);
@@ -566,7 +569,8 @@ $r = $anna->get("/pannello/$pid/anteprima/{$ids['parking']}");
 $anna->post("/pannello/$pid/sezioni/{$ids['parking']}/azione", ['fai' => 'disattiva']);
 $anna->post("/pannello/$pid/sezioni/{$ids['eat']}/azione", ['fai' => 'attiva']);
 prova('R5 · guida: tipo, nome, costo, istruzioni, Maps e ZTL', str_contains($r['body'], 'Posto privato') && str_contains($r['body'], 'Parcheggio a pagamento')
-      && str_contains($r['body'], 'Parcheggio del porto') && str_contains($r['body'], '1 € l&#039;ora') && str_contains($r['body'], 'ZTL — zona a traffico limitato')
+      && str_contains($r['body'], 'Parcheggio del porto') && str_contains($r['body'], '1 €/ora') && str_contains($r['body'], '8,50 €/giorno')
+      && str_contains($r['body'], '6 min a piedi') && str_contains($r['body'], '>Gratuito<') && str_contains($r['body'], 'ZTL — zona a traffico limitato')
       && str_contains($r['body'], 'query=Via+San+Francesco+12') === false && str_contains($r['body'], 'Via%20San%20Francesco%2012'));
 
 // Elena (Plus): servizi con foto e PDF nelle istruzioni, rifiuti, emergenze, come arrivare, luoghi da Maps.
@@ -1190,7 +1194,7 @@ $r = $lucia->post('/pannello/nuova', ['name' => 'Casa Lucia Due', 'city' => 'Pie
 $due = (int) val("SELECT id FROM properties WHERE account_id = ? AND name = 'Casa Lucia Due'", [$lacc]);
 preg_match('#note--err" role="alert">([^<]*)#', $r['body'], $em); prova('Copia: struttura creata, si continua dalla procedura', $due > 0 && $r['code'] === 302 && str_contains($r['loc'], "/pannello/$due/procedura/struttura"), $r['loc'] . ' ' . ($em[1] ?? ''));
 $kinds = fn(int $p) => array_column(righe('SELECT kind FROM sections WHERE property_id = ? ORDER BY is_core DESC, position, id', [$p]), 'kind');
-prova('Fase 4 · copiate regole, rifiuti, emergenze, servizi extra, dove mangiare; NON Wi-Fi né i passaggi di arrivo', $kinds($due) === ['checkin', 'rules', 'waste', 'emergency', 'extras', 'eat']
+prova('Fase 4 · copiate regole, rifiuti, emergenze, servizi extra, dove mangiare; NON Wi-Fi né i passaggi di arrivo', $kinds($due) === ['checkin', 'rules', 'waste', 'emergency', 'extras', 'transport', 'eat']
       && !str_contains((string) val("SELECT t.data FROM section_translations t JOIN sections s ON s.id = t.section_id WHERE s.property_id = ? AND s.is_core = 1", [$due]), 'portone'),
       json_encode($kinds($due)));
 $pd = riga('SELECT * FROM properties WHERE id = ?', [$due]); $pc = riga('SELECT * FROM properties WHERE id = ?', [$casa]);
@@ -1198,7 +1202,7 @@ prova('…né indirizzo, CIN, copertina; sì palette, tono, lingua principale, c
       && $pd['palette'] === $pc['palette'] && $pd['text_tone'] === $pc['text_tone'] && $pd['default_locale'] === $pc['default_locale']
       && (int) val('SELECT COUNT(*) FROM property_contacts WHERE property_id = ?', [$due]) === (int) val('SELECT COUNT(*) FROM property_contacts WHERE property_id = ?', [$casa]));
 prova('…con le traduzioni e le lingue (en, de)', (int) val("SELECT COUNT(*) FROM section_translations t JOIN sections s ON s.id = t.section_id WHERE s.property_id = ? AND t.locale = 'en'", [$due])
-      === (int) val("SELECT COUNT(*) FROM section_translations t JOIN sections s ON s.id = t.section_id WHERE s.property_id = ? AND s.kind IN ('rules','waste','emergency','extras','eat') AND t.locale = 'en'", [$casa])
+      === (int) val("SELECT COUNT(*) FROM section_translations t JOIN sections s ON s.id = t.section_id WHERE s.property_id = ? AND s.kind IN ('rules','waste','emergency','extras','transport','eat') AND t.locale = 'en'", [$casa])
       && (int) val('SELECT COUNT(*) FROM property_locales WHERE property_id = ?', [$due]) === 3);
 $luoghi = fn(int $p) => righe("SELECT pl.* FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ? AND s.kind = 'eat' ORDER BY pl.position, pl.id", [$p]);
 $lo = $luoghi($casa); $lc = $luoghi($due);
@@ -1342,7 +1346,7 @@ prova('…tolti i link e ripubblicato: commiato senza blocchi, firma di nuovo vi
 // Servizi extra (demo): «Richiedi su WhatsApp» con il messaggio nella lingua dell'ospite.
 $extraSid = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'extras'", [$casa]);
 $r = $ospite->get("/g/$lslug/$extraSid?l=en");
-prova('K2 · Servizi extra: «Request on WhatsApp» col messaggio in inglese', $r['code'] === 200 && str_contains($r['body'], 'Station transfer') && str_contains($r['body'], '15 € a tratta')
+prova('K2 · Servizi extra: «Request on WhatsApp» col messaggio in inglese', $r['code'] === 200 && str_contains($r['body'], 'Station transfer') && str_contains($r['body'], '15 € · per trip')
       && str_contains($r['body'], 'https://wa.me/390742000000?text=' . rawurlencode('Hi! I would like to request: Station transfer')) && str_contains($r['body'], 'Request on WhatsApp'));
 
 // K5 · email di richiamo, una volta sola, con il link per smettere.
@@ -1657,6 +1661,67 @@ prova('6B · «Altro…» e «Personalizzata…»: si salva il testo e la chiave
 $r = $luc->get("/pannello/$lpid/lingue/en");
 prova('6B · traduzioni: i luoghi con la chiave non chiedono la categoria, «Tradotta automaticamente»', $r['code'] === 200 && str_contains($r['body'], 'Tradotta automaticamente'));
 prova('6B · Negozi e spesa nel catalogo, con la sua icona', str_contains((string) file_get_contents("$DOVE/app/src/SectionCatalog.php"), "'shop' => [") && str_contains((string) file_get_contents("$DOVE/app/src/Icon.php"), "'bag'"));
+
+capitolo('Fase 6C · parcheggio, prezzi, muoversi in zona, home');
+// Le conversioni, chiamate direttamente: costo del parcheggio, prezzo degli extra, vecchio elenco dei trasporti, istantanee del formato 5.
+$codice = '<?php define("MHW_APP", ' . var_export("$DOVE/app", true) . '); spl_autoload_register(fn($c) => require MHW_APP . "/src/" . substr($c, 4) . ".php");
+use MHW\{Conversione, Guide};
+$o = [];
+[$d, $t] = Conversione::sezione("parking", ["options" => [["id" => "r1", "type" => "pagamento"], ["id" => "r2", "type" => ""]]],
+    ["it" => ["options" => [["id" => "r1", "cost" => "2 euro all\'ora, gratis la notte"], ["id" => "r2", "cost" => "da chiedere"]]],
+     "en" => ["options" => [["id" => "r1", "cost" => "€2/hour, free at night"], ["id" => "r2", "cost" => "ask us"]]]], "it");
+$o[] = $d["options"][0]["cost_hour"] === "2" && $d["options"][0]["cost_day"] === "" && $t["it"]["options"][0]["cost_note"] === "gratis la notte"
+    && $t["en"]["options"][0]["cost_note"] === "free at night" && $d["options"][1]["cost_hour"] === "" && $t["it"]["options"][1]["cost_note"] === "da chiedere" && $t["en"]["options"][1]["cost_note"] === "ask us";
+$o[] = Conversione::sezione("parking", $d, $t, "it") === [$d, $t];
+[$d, $t] = Conversione::sezione("extras", ["items" => [["id" => "r1"], ["id" => "r2"], ["id" => "r3"]]],
+    ["it" => ["items" => [["id" => "r1", "price" => "25 € a tratta"], ["id" => "r2", "price" => "12,5 €"], ["id" => "r3", "price" => "da concordare"]]],
+     "en" => ["items" => [["id" => "r1", "price" => "€25 per trip"], ["id" => "r3", "price" => "to be agreed"]]]], "it");
+$o[] = $d["items"][0]["amount"] === "25" && $d["items"][0]["unit"] === "per_trip" && $d["items"][1]["amount"] === "12,50" && $d["items"][1]["unit"] === ""
+    && $d["items"][2]["amount"] === "" && $t["it"]["items"][2]["price_note"] === "da concordare" && $t["en"]["items"][1]["price_note"] === "to be agreed" && $t["en"]["items"][0]["price_note"] === "";
+[$d, $t] = Conversione::sezione("transport", [], ["it" => ["items" => ["Autobus ogni ora", "Taxi in piazza"]], "en" => ["items" => ["Hourly bus", "Taxi in the square"]]], "it");
+$o[] = count($d["options"]) === 2 && $d["options"][0]["type"] === "other" && $t["it"]["options"][1]["name"] === "Taxi in piazza" && $t["en"]["options"][0]["name"] === "Hourly bus"
+    && $t["it"]["options"][0]["id"] === $d["options"][0]["id"] && $t["it"]["items"] === ["Autobus ogni ora", "Taxi in piazza"];
+$snap = Guide::normalize(["format" => 5, "property" => ["default_locale" => "it"], "sections" => [["kind" => "extras", "data" => ["items" => [["id" => "r1"]]], "tr" => ["it" => ["data" => ["items" => [["id" => "r1", "price" => "8 € a persona"]]]]]]]]);
+$o[] = $snap["format"] === Guide::FORMAT && Guide::FORMAT === 6 && $snap["sections"][0]["data"]["items"][0]["amount"] === "8" && $snap["sections"][0]["data"]["items"][0]["unit"] === "per_person";
+echo json_encode($o);';
+$f = tempnam(sys_get_temp_dir(), 'c6'); file_put_contents($f, $codice);
+$esitoConv = json_decode((string) shell_exec('php ' . escapeshellarg($f)), true); unlink($f);
+prova('6C · costo del parcheggio: importo all\'ora e resto nella nota, in ogni lingua; il non riconosciuto intero nella nota', ($esitoConv[0] ?? false) === true, json_encode($esitoConv));
+prova('6C · conversione idempotente', ($esitoConv[1] ?? false) === true);
+prova('6C · prezzo extra: «25 € a tratta» → 25 + a tratta, «12,5 €» → 12,50, il resto in «Nota sul prezzo»', ($esitoConv[2] ?? false) === true);
+prova('6C · muoversi: ogni riga del vecchio elenco diventa una scheda «Altro», nelle due lingue; la vecchia lista resta nel JSON', ($esitoConv[3] ?? false) === true);
+prova('6C · guide pubblicate in formato 5 lette nel formato 6', ($esitoConv[4] ?? false) === true);
+
+$tr = $sez('transport');
+$r = $luc->get("/pannello/$lpid/sezioni/$tr");
+prova('6C · muoversi in zona: riquadro introduttivo, tipo a pillole (radio), righe pronte Taxi / Autobus / Noleggio bici', $r['code'] === 200
+      && str_contains($r['body'], 'class="note note--quiet">Una volta arrivati') && str_contains($r['body'], 'type="radio" name="options[0][type]" value="bus" checked')
+      && str_contains($r['body'], '<legend class="small">Tipo</legend>') && str_contains($r['body'], '+ Taxi o NCC') && str_contains($r['body'], '+ Noleggio bici')
+      && str_contains($r['body'], '&quot;type&quot;:&quot;taxi&quot;') && str_contains($r['body'], 'Orari, biglietti, costi'));
+$dt = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$tr]), true);
+$luc->post("/pannello/$lpid/sezioni/$tr", ['options' => [
+    ['id' => $dt['options'][0]['id'], 'type' => 'taxi', 'name' => 'Taxi dalla stazione', 'phone' => '+39 0742 000001', 'url' => 'https://example.org/taxi', 'where' => '', 'note' => 'Prenota il giorno prima.'],
+    ['id' => '', 'type' => 'nave', 'name' => 'Riga con un tipo inventato', 'phone' => '', 'url' => '', 'where' => '', 'note' => '']]]);
+$dt = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$tr]), true);
+prova('6C · un tipo fuori elenco non passa', ($dt['options'][1]['type'] ?? 'x') === '' && $dt['options'][0]['type'] === 'taxi', json_encode($dt));
+$r = $luc->get("/pannello/$lpid/anteprima/$tr");
+prova('6C · guida: sottotitolo, una scheda per voce con «Chiama» e «Visita il sito»', $r['code'] === 200 && str_contains($r['body'], 'Come spostarsi durante il soggiorno.')
+      && str_contains($r['body'], 'Taxi dalla stazione') && str_contains($r['body'], 'href="tel:+390742000001"') && str_contains($r['body'], 'href="https://example.org/taxi"')
+      && str_contains($r['body'], 'Visita il sito') && str_contains($r['body'], 'Taxi o NCC'));
+$r = $ospite->get("/g/$lslug/$tr?l=en");
+prova('6C · guida pubblicata (demo): «Muoversi in zona» in inglese, con il sottotitolo', $r['code'] === 200 && str_contains($r['body'], 'Bus to Assisi and Foligno')
+      && str_contains($r['body'], 'How to get around during your stay.'));
+$ex = $sez('extras');
+$r = $luc->get("/pannello/$lpid/sezioni/$ex");
+prova('6C · servizi extra: importo con «€» fisso e unità a tendina (a tratta)', $r['code'] === 200 && str_contains($r['body'], 'class="soldi"') && str_contains($r['body'], 'class="soldi__euro" aria-hidden="true">€</span>')
+      && str_contains($r['body'], '<span class="sr-only"> (euro)</span>') && str_contains($r['body'], '<option value="per_trip" selected>a tratta</option>') && str_contains($r['body'], 'Nota sul prezzo'));
+if (!$sez('arrival')) $luc->post("/pannello/$lpid/sezioni", ['kind' => 'arrival']);
+$r = $luc->get("/pannello/$lpid/sezioni/" . $sez('arrival'));
+prova('6C · come arrivare: riquadro che rimanda a «Muoversi in zona»', $r['code'] === 200 && str_contains($r['body'], 'Gli spostamenti durante il soggiorno vanno in «Muoversi in zona».'));
+$r = $ospite->get('/');
+prova('6C · home: tutte le sezioni del catalogo nei tre gruppi, contate', $r['code'] === 200 && str_contains($r['body'], '15 sezioni pronte. Scegli quelle che servono ai tuoi ospiti.')
+      && !str_contains($r['body'], 'in base al piano') && str_contains($r['body'], '>La casa</h3>') && str_contains($r['body'], '>Arrivare e muoversi</h3>')
+      && str_contains($r['body'], '>Il territorio</h3>') && str_contains($r['body'], 'Muoversi in zona') && str_contains($r['body'], 'Negozi e spesa'));
 
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";

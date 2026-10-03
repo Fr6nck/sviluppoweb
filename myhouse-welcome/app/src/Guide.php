@@ -23,7 +23,7 @@ namespace MHW;
  */
 final class Guide
 {
-    public const FORMAT = 5;
+    public const FORMAT = 6;
 
     // ------------------------------------------------------------ costruzione
 
@@ -200,7 +200,27 @@ final class Guide
         if ($f < 2) $s = self::daFormato1($s);
         if ($f < 3) $s = self::daFormato2($s);
         if ($f < 4) $s = self::daFormato3($s);
-        return self::daFormato4($s);
+        if ($f < 5) $s = self::daFormato4($s);
+        return self::daFormato5($s);
+    }
+
+    /**
+     * Formato 5 → 6 (fase 6C): costo del parcheggio in importi e nota, prezzo dei servizi
+     * extra in importo e unità, «Muoversi in zona» a schede. Conversione è idempotente.
+     */
+    private static function daFormato5(array $s): array
+    {
+        $principale = (string) ($s['property']['default_locale'] ?? 'it');
+        foreach (($s['sections'] ?? []) as $i => $sec) {
+            if (!in_array($sec['kind'] ?? '', ['parking', 'extras', 'transport'], true)) continue;
+            $testi = [];
+            foreach (($sec['tr'] ?? []) as $loc => $t) $testi[$loc] = $t['data'] ?? [];
+            [$dati, $testi] = Conversione::sezione((string) $sec['kind'], $sec['data'] ?? [], $testi, $principale);
+            $s['sections'][$i]['data'] = $dati;
+            foreach ($testi as $loc => $d) $s['sections'][$i]['tr'][$loc]['data'] = $d;
+        }
+        $s['format'] = self::FORMAT;
+        return $s;
     }
 
     /** Formato 4 → 5: niente recensioni né prenotazione diretta, firma visibile. */

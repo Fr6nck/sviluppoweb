@@ -39,6 +39,9 @@ foreach ($snap['sections'] as $s) {
     <span class="pill-quiet" style="align-self:flex-start"><?= Icon::svg('moon', 13) ?><?= Support::e(I18n::t($loc, 'night_theme')) ?></span>
   <?php endif; ?>
   <h1 class="guest-title" style="font-size:38px;line-height:38px"><?= Support::e($titolo) ?></h1>
+  <?php if (in_array($kind, ['arrival', 'transport'], true)): /* fase 6C: distingue le due sezioni */ ?>
+    <p class="muted" style="margin-top:6px"><?= Support::e(I18n::t($loc, 'sub.' . $kind)) ?></p>
+  <?php endif; ?>
 </div>
 
 <?php if ($img): ?>

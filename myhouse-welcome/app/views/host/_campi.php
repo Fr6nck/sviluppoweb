@@ -46,7 +46,7 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
             // Le righe pronte hanno il nome nella lingua della guida (Guardia medica, Out-of-hours doctor…).
             'presets' => array_combine(
                 array_map(fn($k) => I18n::t($linguaGuida, $k), array_keys($defCampo['presets'] ?? [])),
-                array_map(fn($k, $v) => ['name' => I18n::t($linguaGuida, $k)] + $v, array_keys($defCampo['presets'] ?? []), $defCampo['presets'] ?? []))]);
+                array_map(fn($k, $v) => ($defCampo['preset_nome'] ?? true) ? ['name' => I18n::t($linguaGuida, $k)] + $v : $v, array_keys($defCampo['presets'] ?? []), $defCampo['presets'] ?? []))]);
     elseif ($tipo === 'checks'): /* più spunte, con un campo vuoto: così togliere tutte le spunte si salva */ ?>
   <fieldset class="fieldset">
     <legend><?= Support::e($etichetta) ?></legend>

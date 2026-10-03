@@ -170,7 +170,8 @@ foreach ($db->query("SELECT id FROM sections WHERE property_id = (SELECT id FROM
 }
 prova('Tutte le sezioni della demo si aprono, senza codici', true);
 $demoCover = $db->query("SELECT m.alt FROM properties p JOIN media m ON m.id = p.cover_media_id WHERE p.slug = " . $db->quote($demo))->fetchColumn();
-prova('Copertina della demo allineata alla foto della landing', $demoCover === 'La facciata in pietra con la scalinata e i gerani', (string) $demoCover);
+// La 005 allinea le demo di prima; una demo installata dopo la nuova copertina (b34de83) ha già il portone.
+prova('Copertina della demo allineata alla foto della landing', in_array($demoCover, ['La facciata in pietra con la scalinata e i gerani', 'Il portone in legno ad arco, tra la pietra, i fiori rampicanti e i vasi di terracotta'], true), (string) $demoCover);
 prova('…le altre strutture tengono la loro copertina', (int) $db->query("SELECT COUNT(*) FROM properties p JOIN media m ON m.id = p.cover_media_id WHERE p.slug <> " . $db->quote($demo) . " AND m.alt = 'La facciata in pietra con la scalinata e i gerani'")->fetchColumn() === 0);
 $snap = $db->query("SELECT snapshot FROM guide_versions g JOIN properties p ON p.id = g.property_id WHERE p.slug = " . $db->quote($demo) . " ORDER BY g.version DESC LIMIT 1")->fetchColumn();
 $cid = $db->query("SELECT cover_media_id FROM properties WHERE slug = " . $db->quote($demo))->fetchColumn();
@@ -192,18 +193,24 @@ foreach (["/pannello", "/pannello/$pid", "/pannello/$pid/lingue", "/pannello/$pi
 // ----------------------------------------------- Fase 3: niente si perde
 $ora = [];
 foreach ($db->query('SELECT id, title, data FROM section_translations')->fetchAll() as $t) $ora[$t['id']] = $t;
+// «Contiene»: ogni chiave di prima c'è ancora col suo valore; le conversioni possono solo aggiungere (dalla 017 le righe hanno campi nuovi).
+$contiene = function (mixed $prima, mixed $dopo) use (&$contiene): bool {
+    if (!is_array($prima) || !is_array($dopo)) return $prima === $dopo;
+    foreach ($prima as $k => $v) if (!array_key_exists($k, $dopo) || !$contiene($v, $dopo[$k])) return false;
+    return true;
+};
 $persi = [];
 foreach ($f['testi'] ?? [] as $t) {
     $nuovo = $ora[$t['id']] ?? null;
     if (!$nuovo || $nuovo['title'] !== $t['title']) { $persi[] = "titolo {$t['id']}"; continue; }
     $vecchi = json_decode((string) $t['data'], true) ?: []; $nuovi = json_decode((string) $nuovo['data'], true) ?: [];
-    foreach ($vecchi as $k => $v) if (($nuovi[$k] ?? null) !== $v) $persi[] = "{$t['id']}:$k";
+    foreach ($vecchi as $k => $v) if (!$contiene($v, $nuovi[$k] ?? null)) $persi[] = "{$t['id']}:$k";
 }
 prova('Fase 3 · nessun testo né traduzione perso (i vecchi campi restano)', !$persi, implode(', ', array_slice($persi, 0, 6)));
 $oraS = [];
 foreach ($db->query('SELECT id, data FROM sections')->fetchAll() as $x) $oraS[$x['id']] = json_decode((string) $x['data'], true) ?: [];
 $persiS = [];
-foreach ($f['datiSezioni'] ?? [] as $x) foreach ((json_decode((string) $x['data'], true) ?: []) as $k => $v) if (($oraS[$x['id']][$k] ?? null) !== $v) $persiS[] = "{$x['id']}:$k";
+foreach ($f['datiSezioni'] ?? [] as $x) foreach ((json_decode((string) $x['data'], true) ?: []) as $k => $v) if (!$contiene($v, $oraS[$x['id']][$k] ?? null)) $persiS[] = "{$x['id']}:$k";
 prova('Fase 3 · nessun dato comune perso (reti, indirizzi, link)', !$persiS, implode(', ', $persiS));
 // Le colonne di prima con gli stessi valori (le migrazioni vecchie possono averne aggiunte).
 $uguali = function (array $prima, array $dopo): bool {
@@ -290,6 +297,8 @@ if ($st) {
           && $d['options'][0]['address'] === 'Piazza Grande' && $d['options'][0]['maps_url'] === 'https://maps.google.com/?q=Piazza+Grande'
           && ($t['it']['options'][0]['name'] ?? '') === 'Parcheggio pubblico' && ($t['it']['options'][0]['cost'] ?? '') === 'Gratis'
           && ($t['it']['options'][0]['instructions'] ?? '') === 'Strisce bianche gratis.' && ($t['en']['options'][0]['name'] ?? '') === 'Public car park');
+    prova('Fase 6C · parcheggio: «Gratis» non è un importo, resta intero in «Nota sul costo»', ($d['options'][0]['cost_hour'] ?? 'x') === '' && ($d['options'][0]['cost_day'] ?? 'x') === ''
+          && ($t['it']['options'][0]['cost_note'] ?? '') === 'Gratis');
 }
 // Le stesse sezioni nell'anteprima di Lucia (entrata più sopra con la sua password), in italiano e in inglese.
 if ($st) {
@@ -341,6 +350,25 @@ $conChiave = (int) $db->query("SELECT COUNT(*) FROM places WHERE category_key <>
 $testiNoti = 0;
 foreach ($f['testiLuoghi'] ?? [] as $v) if (in_array(mb_strtolower(trim((string) $v['category'])), ['trattoria', 'ristorante', 'colazione', 'spiaggia', 'museo', 'bar', 'pizzeria', 'gelateria', 'borgo'], true)) $testiNoti++;
 prova('Fase 6B · categorie riconosciute convertite in chiavi (016), le altre restano testo', $testiNoti === 0 || $conChiave > 0, "$conChiave luoghi con chiave, $testiNoti testi noti prima");
+// Fase 6C (017): nessun prezzo o costo scritto a mano si perde. O è diventato importo, o è intero nella nota; il vecchio campo resta nel JSON.
+$kindDi = []; foreach ($f['datiSezioni'] ?? [] as $v) $kindDi[(int) $v['id']] = $v['kind'];
+$datiOra = []; foreach ($db->query("SELECT id, data FROM sections WHERE kind IN ('extras', 'parking')")->fetchAll() as $v) $datiOra[(int) $v['id']] = json_decode((string) $v['data'], true) ?: [];
+$persi = []; $controllati = 0;
+foreach ($f['testi'] ?? [] as $v) {
+    $k = $kindDi[(int) $v['section_id']] ?? ''; if (!in_array($k, ['extras', 'parking'], true)) continue;
+    [$campo, $vecchio, $nota, $importi] = $k === 'extras' ? ['items', 'price', 'price_note', ['amount']] : ['options', 'cost', 'cost_note', ['cost_hour', 'cost_day']];
+    $ora = json_decode((string) $db->query('SELECT data FROM section_translations WHERE id = ' . (int) $v['id'])->fetchColumn(), true) ?: [];
+    foreach ((array) ((json_decode((string) $v['data'], true) ?: [])[$campo] ?? []) as $riga) {
+        $testo = trim((string) ($riga[$vecchio] ?? '')); if ($testo === '' || !isset($riga['id'])) continue;
+        $controllati++;
+        $dopo = []; foreach ((array) ($ora[$campo] ?? []) as $x) if (($x['id'] ?? null) === $riga['id']) $dopo = $x;
+        $comune = []; foreach ((array) ($datiOra[(int) $v['section_id']][$campo] ?? []) as $x) if (($x['id'] ?? null) === $riga['id']) $comune = $x;
+        $importo = array_filter(array_map(fn($c) => (string) ($comune[$c] ?? ''), $importi));
+        if (($dopo[$vecchio] ?? '') !== ($riga[$vecchio] ?? '') || (!$importo && ($dopo[$nota] ?? '') !== $testo)) $persi[] = $v['locale'] . ': ' . $testo;
+    }
+}
+prova('Fase 6C · prezzi degli extra e costi dei parcheggi: niente testo perso (017)', !$persi, $controllati . ' controllati' . ($persi ? '; persi: ' . implode(' | ', $persi) : ''));
+prova('Fase 6C · migrazione 017 applicata', (bool) $db->query("SELECT 1 FROM schema_migrations WHERE name LIKE '017%'")->fetchColumn());
 $r = http("$BASE/g/$demo");
 prova('Fase 6 · la guida demo pubblicata prima si apre ancora', $r['code'] === 200 && pulita($r['body']));
 

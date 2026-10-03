@@ -181,12 +181,25 @@ final class Demo
         $extra = Properties::addSection($acc, $pid, 'extras');
         self::scrivi($pid, $extra, [
             'it' => ['items' => [
-                        ['title' => 'Transfer dalla stazione', 'description' => 'Ti veniamo a prendere alla stazione di Spello con i bagagli.', 'price' => '15 € a tratta'],
-                        ['title' => 'Colazione in casa', 'description' => 'Pane, marmellate e torta della mattina, lasciati in cucina la sera prima.', 'price' => '8 € a persona']],
+                        ['title' => 'Transfer dalla stazione', 'description' => 'Ti veniamo a prendere alla stazione di Spello con i bagagli.', 'amount' => '15', 'unit' => 'per_trip'],
+                        ['title' => 'Colazione in casa', 'description' => 'Pane, marmellate e torta della mattina, lasciati in cucina la sera prima.', 'amount' => '8', 'unit' => 'per_person']],
                      'note' => 'Da chiedere almeno un giorno prima.'],
             'en' => ['items' => [['title' => 'Station transfer', 'description' => 'We pick you up at Spello station, luggage included.'],
                                  ['title' => 'Breakfast at home', 'description' => 'Bread, jams and the morning cake, left in the kitchen the night before.']],
                      'note' => 'Please ask at least one day ahead.'],
+        ]);
+
+        // Muoversi in zona (fase 6C): una scheda per modo, senza nomi di aziende.
+        $muoversi = Properties::addSection($acc, $pid, 'transport');
+        self::scrivi($pid, $muoversi, [
+            'it' => ['options' => [
+                        ['type' => 'bus', 'name' => 'Autobus per Assisi e Foligno', 'where' => 'La fermata è in piazza, sotto le mura.', 'note' => 'Biglietti in tabaccheria, non a bordo.'],
+                        ['type' => 'walk', 'name' => 'Il centro a piedi', 'note' => 'Le salite sono ripide: scarpe comode.'],
+                        ['type' => 'bike_rental', 'name' => 'Bici elettriche', 'note' => 'Chiedi a Lucia: te ne prenota una per il giorno dopo.']]],
+            'en' => ['options' => [
+                        ['name' => 'Bus to Assisi and Foligno', 'where' => 'The stop is in the square, below the walls.', 'note' => 'Tickets at the tobacconist, not on board.'],
+                        ['name' => 'The old town on foot', 'note' => 'The climbs are steep: comfortable shoes.'],
+                        ['name' => 'E-bikes', 'note' => 'Ask Lucia: she books one for the next day.']]],
         ]);
 
         $mangiare = Properties::addSection($acc, $pid, 'eat');
@@ -261,7 +274,7 @@ final class Demo
         ]);
         $parcheggio = Properties::addSection($acc, $pid, 'parking');
         self::scrivi($pid, $parcheggio, ['it' => ['options' => [
-            ['type' => 'pubblico', 'name' => 'Lungo il viale', 'address' => 'Viale Lo Re, Lecce',
+            ['type' => 'pubblico', 'name' => 'Lungo il viale', 'address' => 'Viale Lo Re, Lecce', 'walk_minutes' => '4',
              'instructions' => 'Le strisce bianche sono gratuite, quelle blu a pagamento.']],
             'ztl' => 'Il centro storico è ZTL: non entrare in auto, i varchi hanno le telecamere.']], '');
         Guide::publish($pid);

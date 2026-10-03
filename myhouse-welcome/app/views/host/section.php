@@ -23,7 +23,7 @@ $intro = SectionCatalog::get($s['kind'])['intro'] ?? ''; ?>
         <?php if ($core): ?><span class="badge badge--sea">Sempre inclusa</span><?php endif; ?>
         <?php if (!$core && (int) $s['is_active'] === 0): ?><span class="badge badge--paper">Disattivata</span><?php endif; ?>
       </div>
-      <?php if ($intro !== ''): ?><p class="muted"><?= Support::e($intro) ?></p><?php endif; ?>
+      <?php if ($intro !== ''): ?><p class="note note--quiet"><?= Support::e($intro) ?></p><?php endif; ?>
     </div>
 
     <?php $inProcedura = false; include __DIR__ . '/_sezione_editor.php'; ?>

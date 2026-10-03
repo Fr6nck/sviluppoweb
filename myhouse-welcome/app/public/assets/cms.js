@@ -245,6 +245,16 @@
     var tutte = function () { return righe.querySelectorAll('[data-rip-riga]'); };
     var vuote = righe.querySelectorAll('[data-rip-vuota]');
     if (tutte().length > vuote.length) for (var v = 0; v < vuote.length; v++) vuote[v].remove();
+    // Campi che spariscono per un valore di un altro campo della riga (i costi di un posto privato).
+    var nascondi = function (r) {
+      var cc = r.querySelectorAll('[data-nascosto-con]');
+      for (var i = 0; i < cc.length; i++) {
+        var nome = cc[i].getAttribute('data-nascosto-con');
+        var scelto = r.querySelector('[name$="[' + nome + ']"]:checked') || r.querySelector('select[name$="[' + nome + ']"]');
+        cc[i].hidden = (cc[i].getAttribute('data-nascosto-valori') || '').split(',').indexOf(scelto ? scelto.value : '') !== -1;
+      }
+    };
+    rip.addEventListener('change', function (e) { var r = e.target.closest('[data-rip-riga]'); if (r) nascondi(r); });
     var aggiorna = function () {
       var n = tutte();
       add.hidden = n.length >= max;
@@ -256,6 +266,7 @@
         // Campi che servono solo con due o più righe (la zona del Wi-Fi).
         var soloPiu = n[i].querySelectorAll('[data-rip-solo-piu]');
         for (var j = 0; j < soloPiu.length; j++) soloPiu[j].hidden = n.length < 2;
+        nascondi(n[i]);
       }
     };
     // Ogni riga nuova riceve subito il suo id: così i salvataggi automatici
@@ -288,7 +299,7 @@
       var valori = JSON.parse(b.getAttribute('data-rip-preset'));
       var n = tutte(), r = null;
       for (var i = 0; i < n.length; i++) {
-        var campi = n[i].querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=file]),textarea');
+        var campi = n[i].querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]),textarea');
         var vuota = true;
         for (var j = 0; j < campi.length; j++) if (campi[j].value.trim() !== '') vuota = false;
         if (vuota) { r = n[i]; break; }
@@ -297,11 +308,14 @@
       var primo = null;
       Object.keys(valori).forEach(function (sub) {
         var c = r.querySelector('[name$="[' + sub + ']"]');
+        // Le pillole sono radio: si spunta quella col valore, non si cambia il valore.
+        if (c && c.type === 'radio') { c = r.querySelector('[name$="[' + sub + ']"][value="' + valori[sub] + '"]'); if (c) c.checked = true; c = null; }
         if (c) { c.value = valori[sub]; primo = primo || c; }
       });
       cambiato(rip);
       var tel = r.querySelector('input[type=tel]');
-      (tel && !tel.value ? tel : (primo || r.querySelector('input:not([type=hidden])'))).focus();
+      // Riga pronta con un nome (Guardia medica): manca il telefono. Con solo il tipo (Taxi): si scrive il nome.
+      (primo ? (tel && !tel.value ? tel : primo) : (r.querySelector('input[type=text],textarea') || r.querySelector('input:not([type=hidden])'))).focus();
     });
     rip.addEventListener('click', function (e) {
       var b = e.target.closest('[data-rip-su],[data-rip-giu],[data-rip-togli]');
