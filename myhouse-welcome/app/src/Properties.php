@@ -287,7 +287,22 @@ final class Properties
         $nome = mb_substr(trim((string) ($in['name'] ?? '')), 0, 160);
         if ($isDefault && $nome === '') throw new \RuntimeException('Scrivi il nome del luogo.');
 
-        return Db::tx(function () use ($s, $placeId, $locale, $isDefault, $in, $nome) {
+        // Categoria ed etichetta (fase 6B): una chiave della sezione, oppure il testo scritto a mano
+        // («Altro…», «Personalizzata…»). null = il modulo non le ha mandate: restano come sono.
+        $catKey = $badgeKey = null;
+        if ($isDefault && Migrator::columnExists('places', 'category_key')) {
+            if (array_key_exists('category_choice', $in)) {
+                $c = (string) $in['category_choice'];
+                $catKey = in_array($c, Tassonomie::categorie($s['kind']), true) ? $c : '';
+                if ($catKey !== '') $in['category'] = '';
+            }
+            if (array_key_exists('badge_choice', $in)) {
+                $c = (string) $in['badge_choice'];
+                $badgeKey = in_array($c, Tassonomie::etichette($s['kind']), true) ? $c : '';
+                if ($badgeKey !== '' || $c === '') $in['badge'] = '';   // «Nessuna»: niente bollino
+            }
+        }
+        return Db::tx(function () use ($s, $placeId, $locale, $isDefault, $in, $nome, $catKey, $badgeKey) {
             if ($placeId) {
                 $pl = Db::one('SELECT * FROM places WHERE id = ? AND section_id = ?', [$placeId, $s['id']]);
                 if (!$pl) throw new NotFound('Luogo non trovato.');
@@ -304,6 +319,8 @@ final class Properties
                     'drive_minutes' => max(0, min(600, (int) ($in['drive_minutes'] ?? 0))),
                     'badge_tone' => in_array($in['badge_tone'] ?? '', ['pine', 'sea', 'ochre', 'terracotta'], true) ? $in['badge_tone'] : 'pine',
                 ];
+                if ($catKey !== null) $comuni['category_key'] = $catKey;
+                if ($badgeKey !== null) $comuni['badge_key'] = $badgeKey;
                 // Le coordinate (dal link di Google Maps) solo se chi chiama le ha lette.
                 if (array_key_exists('lat', $in) && Migrator::columnExists('places', 'lat')) {
                     $ok = is_numeric($in['lat'] ?? null) && is_numeric($in['lng'] ?? null) && abs((float) $in['lat']) <= 90 && abs((float) $in['lng']) <= 180;
@@ -326,6 +343,9 @@ final class Properties
             $esiste = Db::one('SELECT id FROM place_translations WHERE place_id = ? AND locale = ?', [$placeId, $locale]);
             if ($esiste) Db::update('place_translations', $tr, 'id = :tid', ['tid' => $esiste['id']]);
             else Db::insert('place_translations', $tr + ['place_id' => $placeId, 'locale' => $locale]);
+            // Con la chiave il testo scritto a mano non serve più, in nessuna lingua.
+            if ($catKey) Db::run("UPDATE place_translations SET category = '' WHERE place_id = ?", [$placeId]);
+            if ($badgeKey) Db::run("UPDATE place_translations SET badge = '' WHERE place_id = ?", [$placeId]);
             return (int) $placeId;
         });
     }

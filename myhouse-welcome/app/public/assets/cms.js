@@ -377,6 +377,17 @@
     cb.addEventListener('change', segui); segui();
   })(interruttori[it]);
 
+  /* ---- Pillole con «Altro…»: il testo libero si vede solo quando serve ------
+     (categoria ed etichetta del luogo). Senza JavaScript si vede sempre. */
+  var apri = document.querySelectorAll('input[type=radio][data-apre]');
+  for (var ap = 0; ap < apri.length; ap++) (function (r) {
+    var box = document.getElementById(r.getAttribute('data-apre')); if (!box) return;
+    var gruppo = document.querySelectorAll('input[type=radio][name="' + r.name + '"]');
+    var segui = function () { box.hidden = !r.checked; };
+    for (var g = 0; g < gruppo.length; g++) gruppo[g].addEventListener('change', segui);
+    segui();
+  })(apri[ap]);
+
   /* ---- Tipologia «Altro»: il campo «Che tipo di struttura è?» ---------------- */
   var altro = document.querySelector('[data-se-altro]');
   if (altro) {

@@ -204,6 +204,14 @@ final class SectionCatalog
                 'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo.'],
             ],
         ],
+        // Negozi e spesa (fase 6B): alimentari, forno, mercato, farmacia, bancomat.
+        'shop' => [
+            'icon' => 'bag', 'places' => true,
+            'fields' => [
+                'intro'     => ['textarea', 'Introduzione', 'Una frase che presenta i tuoi consigli.'],
+                'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo. Compare firmato col tuo nome.'],
+            ],
+        ],
         'emergency' => [
             'icon' => 'phone',
             'fields' => [

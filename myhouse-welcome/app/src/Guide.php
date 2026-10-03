@@ -62,6 +62,8 @@ final class Guide
                         'maps_url' => $pl['maps_url'], 'phone' => $pl['phone'], 'website' => $pl['website'],
                         'booking_url' => $pl['booking_url'], 'walk_minutes' => (int) $pl['walk_minutes'],
                         'drive_minutes' => (int) $pl['drive_minutes'], 'badge_tone' => $pl['badge_tone'],
+                        // Fase 6B: categoria ed etichetta come chiavi, tradotte da sole (vuote = il testo di prima).
+                        'category_key' => (string) ($pl['category_key'] ?? ''), 'badge_key' => (string) ($pl['badge_key'] ?? ''),
                         'image_id' => $foto && $pl['media_id'] ? (int) $pl['media_id'] : null,
                         'tr' => $ptr,
                     ];
@@ -331,8 +333,11 @@ final class Guide
     {
         $t = $place['tr'][$loc] ?? null;
         $base = $place['tr'][$default] ?? ['category' => '', 'description' => '', 'note' => '', 'badge' => ''];
-        if (!$t) return $base;
-        foreach ($base as $k => $v) if (trim((string) ($t[$k] ?? '')) === '') $t[$k] = $v;
+        if (!$t) $t = $base;
+        else foreach ($base as $k => $v) if (trim((string) ($t[$k] ?? '')) === '') $t[$k] = $v;
+        // Con la chiave, categoria ed etichetta arrivano tradotte nella lingua dell'ospite.
+        if (($place['category_key'] ?? '') !== '') $t['category'] = I18n::t($loc, 'cat.' . $place['category_key']);
+        if (($place['badge_key'] ?? '') !== '') $t['badge'] = I18n::t($loc, 'badge.' . $place['badge_key']);
         return $t;
     }
 

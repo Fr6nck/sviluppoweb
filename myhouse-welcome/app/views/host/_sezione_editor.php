@@ -4,7 +4,7 @@
    Riceve: $prop, $acc, $s, $titoloSezione (titolo nella lingua principale),
    $dati, $tdati, $places, $modifica, $err, $inProcedura. */
 use function MHW\b;
-use MHW\{Support, Csrf, Icon, Media, SectionCatalog, Entitlements};
+use MHW\{Support, Csrf, Icon, Media, SectionCatalog, Entitlements, Tassonomie, I18n};
 $pid = (int) $prop['id']; $sid = (int) $s['id']; $aid = (int) $acc['id'];
 $nome = SectionCatalog::title($s['kind'], $prop['default_locale']);
 $titoloSalvato = Support::e($titoloSezione !== '' ? $titoloSezione : $nome);
@@ -109,6 +109,7 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
 
         <?php $v = $inModifica ?? ['id' => 0, 'name' => '', 'address' => '', 'maps_url' => '', 'phone' => '', 'website' => '', 'booking_url' => '',
                                    'walk_minutes' => 0, 'drive_minutes' => 0, 'badge_tone' => 'pine', 'media_id' => null,
+                                   'category_key' => '', 'badge_key' => '',
                                    'tr' => ['category' => '', 'description' => '', 'note' => '', 'badge' => '']];
               $vFoto = $v['media_id'] ? Media::url((int) $v['media_id']) : null; ?>
         <details id="luogo" class="fieldset" <?= $inModifica || !$places ? 'open' : '' ?>>
@@ -123,16 +124,50 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
               <input id="pl-maps" name="maps_url" type="url" maxlength="500" value="<?= Support::e($v['maps_url']) ?>" placeholder="https://maps.app.goo.gl/…"
                      aria-describedby="pl-maps-aiuto pl-maps-stato" data-mappe="<?= b() ?>/pannello/<?= $pid ?>/mappe">
               <p class="help" id="pl-maps-stato" data-mappe-stato aria-live="polite"></p></div>
-            <div class="grid grid-2">
-              <div class="field" style="margin:0"><label for="pl-name">Nome</label>
-                <input type="text" id="pl-name" name="name" maxlength="160" value="<?= Support::e($v['name']) ?>"></div>
+            <div class="field" style="margin:0"><label for="pl-name">Nome</label>
+              <input type="text" id="pl-name" name="name" maxlength="160" value="<?= Support::e($v['name']) ?>"></div>
+            <?php /* Categoria ed etichetta (fase 6B): pillole con le voci di questa sezione, tradotte da sole
+                     nella guida; «Altro…» e «Personalizzata…» aprono il testo libero. */
+            $cats = Tassonomie::categorie($s['kind']); $tags = Tassonomie::etichette($s['kind']);
+            $ck = (string) ($v['category_key'] ?? ''); $bk = (string) ($v['badge_key'] ?? '');
+            $cTesto = (string) $v['tr']['category']; $bTesto = (string) $v['tr']['badge']; ?>
+            <?php if ($cats): ?>
+              <fieldset class="fieldset scelta-luogo">
+                <legend>Categoria</legend>
+                <div class="scelte scelte--riga">
+                  <?php foreach ($cats as $k): ?>
+                    <label class="scelta scelta--mini"><input type="radio" name="category_choice" value="<?= Support::e($k) ?>" <?= $ck === $k ? 'checked' : '' ?>><span><?= Support::e(I18n::t('it', 'cat.' . $k)) ?></span></label>
+                  <?php endforeach; ?>
+                  <label class="scelta scelta--mini"><input type="radio" name="category_choice" value="__altro" data-apre="pl-cat-box" <?= $ck === '' && $cTesto !== '' ? 'checked' : '' ?>><span>Altro…</span></label>
+                </div>
+                <div class="field" id="pl-cat-box" style="margin:10px 0 0"><label for="pl-cat">Scrivi la categoria</label>
+                  <input type="text" id="pl-cat" name="category" maxlength="80" value="<?= Support::e($cTesto) ?>"></div>
+              </fieldset>
+            <?php else: ?>
               <div class="field" style="margin:0"><label for="pl-cat">Categoria</label>
-                <input type="text" id="pl-cat" name="category" maxlength="80" list="categorie" value="<?= Support::e($v['tr']['category']) ?>" placeholder="Trattoria, Bar, Spiaggia…"></div>
-            </div>
+                <input type="text" id="pl-cat" name="category" maxlength="80" value="<?= Support::e($cTesto) ?>"></div>
+            <?php endif; ?>
             <div class="field" style="margin:0"><label for="pl-note">Perché lo consigli</label>
-              <textarea id="pl-note" name="note" rows="2" maxlength="400" placeholder="Prenota il tavolo in terrazza, al tramonto."><?= Support::e($v['tr']['note']) ?></textarea></div>
-            <div class="field" style="margin:0"><label for="pl-badge">Etichetta</label>
-              <input type="text" id="pl-badge" name="badge" maxlength="80" list="etichette" value="<?= Support::e($v['tr']['badge']) ?>" placeholder="Consigliato dall'host"></div>
+              <textarea id="pl-note" name="note" rows="2" maxlength="400" placeholder="<?= Support::e(Tassonomie::SEGNAPOSTO[$s['kind']] ?? 'Prenota il tavolo in terrazza, al tramonto.') ?>"><?= Support::e($v['tr']['note']) ?></textarea></div>
+            <?php if ($tags): ?>
+              <fieldset class="fieldset scelta-luogo">
+                <legend>In evidenza</legend>
+                <p class="help">Compare come bollino colorato sulla scheda.</p>
+                <div class="scelte scelte--riga">
+                  <label class="scelta scelta--mini"><input type="radio" name="badge_choice" value="" <?= $bk === '' && $bTesto === '' ? 'checked' : '' ?>><span>Nessuna</span></label>
+                  <?php foreach ($tags as $k): ?>
+                    <label class="scelta scelta--mini"><input type="radio" name="badge_choice" value="<?= Support::e($k) ?>" <?= $bk === $k ? 'checked' : '' ?>><span><?= Support::e(I18n::t('it', 'badge.' . $k)) ?></span></label>
+                  <?php endforeach; ?>
+                  <label class="scelta scelta--mini"><input type="radio" name="badge_choice" value="__altra" data-apre="pl-badge-box" <?= $bk === '' && $bTesto !== '' ? 'checked' : '' ?>><span>Personalizzata…</span></label>
+                </div>
+                <div class="field" id="pl-badge-box" style="margin:10px 0 0"><label for="pl-badge">Scrivi l'etichetta</label>
+                  <input type="text" id="pl-badge" name="badge" maxlength="80" value="<?= Support::e($bTesto) ?>"></div>
+              </fieldset>
+            <?php else: ?>
+              <div class="field" style="margin:0"><label for="pl-badge">In evidenza</label>
+                <input type="text" id="pl-badge" name="badge" maxlength="80" value="<?= Support::e($bTesto) ?>" aria-describedby="pl-badge-aiuto">
+                <p class="help" id="pl-badge-aiuto">Compare come bollino colorato sulla scheda.</p></div>
+            <?php endif; ?>
             <details class="altri-dettagli">
               <summary>Altri dettagli <span class="small muted">— descrizione, indirizzo, minuti, contatti, foto</span></summary>
               <div class="stack" style="margin-top:14px">
@@ -178,8 +213,6 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
               <button class="linkbtn" name="fai" value="togli-foto">Togli la foto</button></form>
           <?php endif; ?>
         </details>
-        <datalist id="categorie"><?php foreach (['Ristorante', 'Trattoria', 'Pizzeria', 'Bar', 'Colazione', 'Enoteca', 'Gelateria', 'Spiaggia', 'Museo', 'Borgo', 'Sentiero', 'Mercato'] as $c): ?><option value="<?= $c ?>"><?php endforeach; ?></datalist>
-        <datalist id="etichette"><?php foreach (["Consigliato dall'host", 'Perfetto per cena', 'Ideale per colazione', 'Da non perdere', 'Per famiglie', 'Vista mare'] as $c): ?><option value="<?= Support::e($c) ?>"><?php endforeach; ?></datalist>
       </div>
     <?php endif; ?>
 

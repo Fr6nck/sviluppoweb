@@ -197,22 +197,35 @@ final class Demo
                      'host_note' => "Book L'Arco by phone: they never answer email, but they always pick up."],
             'de' => ['intro' => 'Drei Lokale zu Fuß. Wir haben sie alle mehr als einmal probiert.'],
         ], 'Dove mangiare e bere');
+        // Categoria ed etichetta dalle tassonomie (fase 6B): si traducono da sole in ogni lingua.
         foreach ([
-            ['Osteria dell\'Arco', 'Trattoria', 'Cucina umbra, strangozzi al tartufo fatti a mano.', 'Vicolo dell\'Arco 3', 6, 'pine', 'osteria.jpg', 'Tavoli apparecchiati nel vicolo',
-             ['it' => 'Perfetto per cena', 'en' => 'Perfect for dinner'], ['en' => 'Trattoria', 'de' => 'Trattoria']],
-            ['Bar della Fontana', 'Colazione', 'Cornetti caldi e cappuccino al banco.', 'Piazzetta della Fontana 1', 3, 'sea', 'caffe.jpg', 'Una tazzina di espresso sul bancone',
-             ['it' => 'Ideale per colazione', 'en' => 'Ideal for breakfast'], ['en' => 'Breakfast', 'de' => 'Frühstück']],
-            ['Gelateria delle Rose', 'Gelato', 'Il gusto alle rose vale la camminata in salita.', 'Via dei Fiori 22', 8, 'ochre', 'gelato.jpg', 'Vaschette di gelato dietro il banco',
-             ['it' => "Consigliato dall'host", 'en' => 'Host favourite'], ['en' => 'Ice cream', 'de' => 'Eis']],
-        ] as [$n, $cat, $desc, $ind, $min, $tono, $img, $alt, $badge, $catTr]) {
+            ['Osteria dell\'Arco', 'trattoria', 'Cucina umbra, strangozzi al tartufo fatti a mano.', 'Vicolo dell\'Arco 3', 6, 'pine', 'osteria.jpg', 'Tavoli apparecchiati nel vicolo', 'dinner'],
+            ['Bar della Fontana', 'breakfast', 'Cornetti caldi e cappuccino al banco.', 'Piazzetta della Fontana 1', 3, 'sea', 'caffe.jpg', 'Una tazzina di espresso sul bancone', 'breakfast'],
+            ['Gelateria delle Rose', 'gelato', 'Il gusto alle rose vale la camminata in salita.', 'Via dei Fiori 22', 8, 'ochre', 'gelato.jpg', 'Vaschette di gelato dietro il banco', 'host_pick'],
+        ] as [$n, $cat, $desc, $ind, $min, $tono, $img, $alt, $badge]) {
             $plid = Properties::savePlace($acc, $pid, $mangiare, null, 'it', true, [
-                'name' => $n, 'category' => $cat, 'description' => $desc, 'address' => $ind . ', Spello',
+                'name' => $n, 'category_choice' => $cat, 'description' => $desc, 'address' => $ind . ', Spello',
                 'maps_url' => 'https://maps.google.com/?q=' . rawurlencode($ind . ', Spello'),
-                'walk_minutes' => $min, 'badge' => $badge['it'], 'badge_tone' => $tono,
+                'walk_minutes' => $min, 'badge_choice' => $badge, 'badge_tone' => $tono,
             ]);
-            Properties::savePlace($acc, $pid, $mangiare, $plid, 'en', false, ['category' => $catTr['en'], 'badge' => $badge['en']]);
-            Properties::savePlace($acc, $pid, $mangiare, $plid, 'de', false, ['category' => $catTr['de']]);
             Db::update('places', ['media_id' => self::foto($img, $acc, $pid, $alt)], 'id = :pid', ['pid' => $plid]);
+        }
+        // Negozi e spesa (fase 6B): due negozi con nomi di fantasia.
+        $negozi = Properties::addSection($acc, $pid, 'shop');
+        self::scrivi($pid, $negozi, [
+            'it' => ['intro' => 'Per la spesa non serve la macchina: tutto è a pochi passi, in salita.'],
+            'en' => ['intro' => 'No car needed for groceries: everything is a short walk away, uphill.'],
+            'de' => ['intro' => 'Für den Einkauf braucht man kein Auto: alles ist nur ein paar Schritte entfernt, bergauf.'],
+        ], '');
+        foreach ([
+            ['Alimentari da Rita', 'grocery', 'Formaggi, salumi umbri e la frutta di stagione.', 'Via del Pozzo 7', 4, 'local'],
+            ['Forno del Borgo', 'bakery', 'Pane cotto a legna e torta al testo.', 'Via della Torre 2', 5, 'on_foot'],
+        ] as [$n, $cat, $desc, $ind, $min, $badge]) {
+            Properties::savePlace($acc, $pid, $negozi, null, 'it', true, [
+                'name' => $n, 'category_choice' => $cat, 'description' => $desc, 'address' => $ind . ', Spello',
+                'maps_url' => 'https://maps.google.com/?q=' . rawurlencode($ind . ', Spello'),
+                'walk_minutes' => $min, 'badge_choice' => $badge, 'badge_tone' => 'sea',
+            ]);
         }
         Guide::publish($pid);
         $creati[] = ['Lucia Ferrante', 'lucia@' . self::DOMINIO, 'Plus', 'Casa Lucia — pubblicata'];
@@ -243,7 +256,7 @@ final class Demo
         self::scrivi($pid, $mare, ['it' => ['intro' => "Il mare è a venti minuti di macchina. Vai presto la mattina: dopo le dieci il parcheggio è pieno."],
                                    'en' => ['intro' => 'The sea is twenty minutes by car. Go early: after ten the car park is full.']], 'Il mare');
         Properties::savePlace($acc, $pid, $mare, null, 'it', true, [
-            'name' => "Torre dell'Orso", 'category' => 'Spiaggia', 'drive_minutes' => 20,
+            'name' => "Torre dell'Orso", 'category_choice' => 'beach', 'drive_minutes' => 20,
             'maps_url' => 'https://maps.google.com/?q=Torre+dell%27Orso', 'badge' => 'Al mattino presto', 'badge_tone' => 'sea',
         ]);
         $parcheggio = Properties::addSection($acc, $pid, 'parking');

@@ -1,5 +1,17 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Fase 6B — Luoghi con categorie ed etichette tradotte, «Negozi e spesa» (3 ottobre 2026)
+
+Migrazione `016` (`places.category_key`, `places.badge_key`), che converte i dati esistenti.
+
+- **Categorie ed etichette come chiavi, tradotte da sole.**
+  - Nella scheda del luogo, la categoria si sceglie da pillole con le voci di quella sezione (in «Cosa visitare» non c'è la ristorazione), più «Altro…» per il testo libero.
+  - «Etichetta» diventa «In evidenza», con «Nessuna», le voci della sezione e «Personalizzata…».
+  - Nella guida, nei filtri e nelle traduzioni la voce scelta compare nella lingua dell'ospite; per tradurla non serve niente («Tradotta automaticamente»).
+  - Il segnaposto di «Perché lo consigli» cambia con la sezione.
+- **Conversione.** La 016 riconosce i testi già scritti (in qualunque lingua) e li trasforma in chiavi; quelli non riconosciuti restano come sono. La copia tra strutture porta le chiavi.
+- **Nuova sezione «Negozi e spesa»** (`shop`): alimentari, forno, mercato, farmacia, bancomat… Ha una sua icona e conta nel limite del piano come le altre. Nella demo ci sono due negozi di fantasia.
+
 ## v2 · Fase 6A — Campi in linea, silenzio, dotazioni, tipologia (3 ottobre 2026)
 
 Migrazione `015` (`properties.property_type_other`).

@@ -211,8 +211,19 @@ $uguali = function (array $prima, array $dopo): bool {
     foreach ($prima as $x) foreach ($x as $k => $v) if (!isset($perId[$x['id']]) || (string) ($perId[$x['id']][$k] ?? '') !== (string) $v) return false;
     return true;
 };
-prova('Fase 3 · luoghi e loro testi invariati', $uguali($f['luoghi'] ?? [], $db->query('SELECT * FROM places')->fetchAll())
-      && $uguali($f['testiLuoghi'] ?? [], $db->query('SELECT * FROM place_translations')->fetchAll()));
+// Dalla 016 (fase 6B) categoria ed etichetta riconosciute diventano chiavi e il loro testo si svuota:
+// per quei luoghi il testo vuoto è giusto, per tutti gli altri deve restare com'era.
+$chiaviLuoghi = [];
+foreach ($db->query("SELECT * FROM places")->fetchAll() as $x) $chiaviLuoghi[$x['id']] = ['category' => (string) ($x['category_key'] ?? ''), 'badge' => (string) ($x['badge_key'] ?? '')];
+$testiOra = $db->query('SELECT * FROM place_translations')->fetchAll();
+foreach ($testiOra as &$x) foreach (['category', 'badge'] as $c) {
+    if (($chiaviLuoghi[$x['place_id']][$c] ?? '') !== '' && (string) $x[$c] === '') {
+        foreach ($f['testiLuoghi'] ?? [] as $v) if ($v['id'] === $x['id']) $x[$c] = $v[$c];
+    }
+}
+unset($x);
+prova('Fase 3 · luoghi e loro testi invariati (in 6B le categorie riconosciute diventano chiavi)', $uguali($f['luoghi'] ?? [], $db->query('SELECT * FROM places')->fetchAll())
+      && $uguali($f['testiLuoghi'] ?? [], $testiOra));
 prova('Fase 3 · nessuna foto persa', (int) $db->query('SELECT COUNT(*) FROM media')->fetchColumn() >= (int) ($f['media'] ?? 0));
 $senza = [];
 foreach ($f['host'] ?? [] as $h) {
@@ -323,6 +334,15 @@ prova('Fase 5 · commiato senza recensioni (non compilate)', $r['code'] === 200 
 $r = http("$BASE/");
 prova('Fase 5 · landing con FAQ, confronto e scene', $r['code'] === 200 && str_contains($r['body'], 'Confronta tutti i piani') && str_contains($r['body'], 'class="faq__voce"'));
 prova('Fase 5 · nessuna email di richiamo partita per le bozze di prima', !is_file("$W/app/storage/logs/mail.log") || !str_contains((string) file_get_contents("$W/app/storage/logs/mail.log"), 'procedura/'));
+
+// Fase 6
+prova('Fase 6A · tipologia «Altro» scritta a mano', (int) $db->query("SELECT COUNT(*) FROM pragma_table_info('properties') WHERE name = 'property_type_other'")->fetchColumn() === 1);
+$conChiave = (int) $db->query("SELECT COUNT(*) FROM places WHERE category_key <> ''")->fetchColumn();
+$testiNoti = 0;
+foreach ($f['testiLuoghi'] ?? [] as $v) if (in_array(mb_strtolower(trim((string) $v['category'])), ['trattoria', 'ristorante', 'colazione', 'spiaggia', 'museo', 'bar', 'pizzeria', 'gelateria', 'borgo'], true)) $testiNoti++;
+prova('Fase 6B · categorie riconosciute convertite in chiavi (016), le altre restano testo', $testiNoti === 0 || $conChiave > 0, "$conChiave luoghi con chiave, $testiNoti testi noti prima");
+$r = http("$BASE/g/$demo");
+prova('Fase 6 · la guida demo pubblicata prima si apre ancora', $r['code'] === 200 && pulita($r['body']));
 
 $r = http("$BASE/");
 prova('Una seconda richiesta non ripete le migrazioni', count($db->query('SELECT name FROM schema_migrations')->fetchAll()) === count($mig));

@@ -1183,7 +1183,7 @@ $admin->get('/admin/cliente/' . $lacc);
 $admin->post("/admin/cliente/$lacc/abbonamento", ['pv' => (string) pv('portfolio'), 'mesi' => '12', 'nota' => 'Prova della copia', 'strutture' => '2']);
 $r = $lucia->get('/pannello/nuova');
 prova('Fase 4 · «Crea da una struttura esistente»: Casa Lucia, con le sezioni già spuntate', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Crea da una struttura esistente')
-      && str_contains($r['body'], "<option value=\"$casa\">Casa Lucia") && substr_count($r['body'], 'name="copia[]"') === 10
+      && str_contains($r['body'], "<option value=\"$casa\">Casa Lucia") && substr_count($r['body'], 'name="copia[]"') === 11
       && str_contains($r['body'], 'Non si copiano mai: indirizzo, CIN, reti Wi-Fi'));
 $mediaPrima = (int) val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]);
 $r = $lucia->post('/pannello/nuova', ['name' => 'Casa Lucia Due', 'city' => 'Pienza', 'origine' => (string) $casa, 'copia' => ['waste', 'eat', 'visit', 'todo', 'transport', 'emergency', 'info', 'rules', 'services', 'extras'], 'copia_aspetto' => '1', 'copia_contatti' => '1']);
@@ -1200,9 +1200,10 @@ prova('…né indirizzo, CIN, copertina; sì palette, tono, lingua principale, c
 prova('…con le traduzioni e le lingue (en, de)', (int) val("SELECT COUNT(*) FROM section_translations t JOIN sections s ON s.id = t.section_id WHERE s.property_id = ? AND t.locale = 'en'", [$due])
       === (int) val("SELECT COUNT(*) FROM section_translations t JOIN sections s ON s.id = t.section_id WHERE s.property_id = ? AND s.kind IN ('rules','waste','emergency','extras','eat') AND t.locale = 'en'", [$casa])
       && (int) val('SELECT COUNT(*) FROM property_locales WHERE property_id = ?', [$due]) === 3);
-$luoghi = fn(int $p) => righe('SELECT pl.* FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ? ORDER BY pl.position, pl.id', [$p]);
+$luoghi = fn(int $p) => righe("SELECT pl.* FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ? AND s.kind = 'eat' ORDER BY pl.position, pl.id", [$p]);
 $lo = $luoghi($casa); $lc = $luoghi($due);
-prova('Fase 4 · i luoghi con le loro traduzioni', count($lc) === 3 && array_column($lc, 'name') === array_column($lo, 'name')
+prova('Fase 4 · i luoghi con le loro traduzioni (e, dalla 6B, le chiavi di categoria ed etichetta)', count($lc) === 3 && array_column($lc, 'name') === array_column($lo, 'name')
+      && array_column($lc, 'category_key') === array_column($lo, 'category_key') && in_array('trattoria', array_column($lc, 'category_key'), true)
       && (int) val('SELECT COUNT(*) FROM place_translations WHERE place_id = ?', [$lc[0]['id']]) === (int) val('SELECT COUNT(*) FROM place_translations WHERE place_id = ?', [$lo[0]['id']]));
 $mo = riga('SELECT * FROM media WHERE id = ?', [$lo[0]['media_id']]); $mc2 = riga('SELECT * FROM media WHERE id = ?', [$lc[0]['media_id']]);
 prova('Fase 4 · le foto sono duplicate nello storage con nomi nuovi', $mo && $mc2 && $mo['id'] !== $mc2['id'] && $mo['object_key'] !== $mc2['object_key']
@@ -1620,6 +1621,42 @@ $luc->get("/pannello/$lpid/impostazioni");
 $luc->post("/pannello/$lpid/impostazioni", ['name' => 'Casa Lucia', 'property_type' => 'villa', 'property_type_other' => 'Glamping']);
 $tp = riga('SELECT property_type, property_type_other FROM properties WHERE id = ?', [$lpid]);
 prova('6A · cambiando tipologia il testo di «Altro» si svuota', ($tp['property_type'] ?? '') === 'villa' && ($tp['property_type_other'] ?? 'x') === '');
+
+capitolo('Fase 6B · luoghi: categorie ed etichette tradotte, Negozi e spesa');
+$dslug = $demo['slug'];
+$dsez = fn(string $k) => (int) val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$demo['id'], $k]);
+$per = [];
+foreach (['it' => 'Perfetto per cena', 'en' => 'Perfect for dinner', 'de' => 'Perfekt zum Abendessen'] as $l => $atteso) {
+    $r = $ospite->get("/g/$dslug/" . $dsez('eat') . "?l=$l");
+    $per[$l] = $r['code'] === 200 && str_contains($r['body'], $atteso);
+}
+prova('6B · la guida demo: l\'etichetta cambia lingua da sola (it, en, de)', !in_array(false, $per, true), json_encode($per));
+$r = $ospite->get("/g/$dslug/" . $dsez('shop') . '?l=de');
+prova('6B · «Negozi e spesa» nella demo, con due negozi; categorie in tedesco', $dsez('shop') > 0 && $r['code'] === 200 && str_contains($r['body'], 'Alimentari da Rita')
+      && str_contains($r['body'], 'Forno del Borgo') && str_contains($r['body'], 'Lebensmittelgeschäft'));
+prova('6B · i luoghi della demo hanno le chiavi, senza testo da tradurre', (int) val("SELECT COUNT(*) FROM places WHERE section_id = ? AND category_key <> '' AND badge_key <> ''", [$dsez('eat')]) === 3
+      && (int) val("SELECT COUNT(*) FROM place_translations pt JOIN places pl ON pl.id = pt.place_id WHERE pl.section_id = ? AND (pt.category <> '' OR pt.badge <> '')", [$dsez('eat')]) === 0);
+$luc->get("/pannello/$lpid");
+$luc->post("/pannello/$lpid/sezioni", ['kind' => 'visit']);
+$vis = $sez('visit');
+$r = $luc->get("/pannello/$lpid/sezioni/$vis");
+prova('6B · editor del luogo: pillole della sezione, «Altro…», «In evidenza» con «Nessuna» e «Personalizzata…», niente datalist', $r['code'] === 200
+      && str_contains($r['body'], 'name="category_choice" value="museum"') && !str_contains($r['body'], 'value="restaurant"') && !str_contains($r['body'], 'value="trattoria"')
+      && str_contains($r['body'], 'value="__altro" data-apre="pl-cat-box"') && str_contains($r['body'], '<legend>In evidenza</legend>')
+      && str_contains($r['body'], 'Compare come bollino colorato sulla scheda.') && str_contains($r['body'], '<span>Personalizzata…</span>') && !str_contains($r['body'], '<datalist')
+      && str_contains($r['body'], 'placeholder="Vai la mattina presto'));
+$luc->post("/pannello/$lpid/sezioni/$vis/luogo", ['place_id' => '0', 'name' => 'Pinacoteca', 'category_choice' => 'museum', 'category' => 'scritto prima', 'badge_choice' => 'rainy', 'badge' => '']);
+$pv = riga("SELECT * FROM places WHERE section_id = ? AND name = 'Pinacoteca'", [$vis]);
+$pvt = riga('SELECT * FROM place_translations WHERE place_id = ?', [$pv['id'] ?? 0]);
+prova('6B · scelta dall\'elenco: si salva la chiave e il testo si svuota', ($pv['category_key'] ?? '') === 'museum' && ($pv['badge_key'] ?? '') === 'rainy'
+      && ($pvt['category'] ?? 'x') === '' && ($pvt['badge'] ?? 'x') === '');
+$luc->post("/pannello/$lpid/sezioni/$vis/luogo", ['place_id' => (string) $pv['id'], 'name' => 'Pinacoteca', 'category_choice' => '__altro', 'category' => 'Collezione privata', 'badge_choice' => '__altra', 'badge' => 'Solo il sabato']);
+$pv = riga('SELECT * FROM places WHERE id = ?', [$pv['id']]); $pvt = riga('SELECT * FROM place_translations WHERE place_id = ?', [$pv['id']]);
+prova('6B · «Altro…» e «Personalizzata…»: si salva il testo e la chiave si svuota', $pv['category_key'] === '' && $pv['badge_key'] === ''
+      && $pvt['category'] === 'Collezione privata' && $pvt['badge'] === 'Solo il sabato');
+$r = $luc->get("/pannello/$lpid/lingue/en");
+prova('6B · traduzioni: i luoghi con la chiave non chiedono la categoria, «Tradotta automaticamente»', $r['code'] === 200 && str_contains($r['body'], 'Tradotta automaticamente'));
+prova('6B · Negozi e spesa nel catalogo, con la sua icona', str_contains((string) file_get_contents("$DOVE/app/src/SectionCatalog.php"), "'shop' => [") && str_contains((string) file_get_contents("$DOVE/app/src/Icon.php"), "'bag'"));
 
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";
