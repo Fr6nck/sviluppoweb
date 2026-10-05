@@ -1,5 +1,26 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Vetrina «Casa Checco» con i dati veri di Assisi (6 ottobre 2026)
+
+Nessuna migrazione. La casa, il vicolo, i padroni di casa, i telefoni (075 000 …) e i locali di «Dove mangiare» e «Negozi» restano di fantasia. Tutto il resto viene dalle fonti pubbliche del 2026:
+
+- **Eventi.** Niente più eventi di fantasia. Ci sono il mercato del sabato in Piazza Matteotti (8–13) e le feste che tornano ogni anno, ognuna con la prossima data a partire dal giorno in cui si crea la vetrina:
+  - Calendimaggio, dal primo mercoledì di maggio al sabato;
+  - Festa del Perdono, 1–2 agosto;
+  - Santa Chiara, 11 agosto;
+  - San Rufino, 11–12 agosto;
+  - Festa di San Francesco, 3–4 ottobre.
+- **Locandina.** Ora è quella che la casa ha preparato per il mercato del sabato.
+- **Imposta di soggiorno.** Tariffe 2026 per le locazioni turistiche: 3, 4 o 6 € a notte secondo il prezzo, solo le prime 3 notti, esenti i bambini sotto i 12 anni.
+- **Parcheggi.** Tutti a 2 € l'ora e 14 € al giorno: Matteotti (390 posti), Mojano (con le scale mobili per Santa Chiara) e Porta Nuova. Gratuito: San Giacomo. ZTL: solo carico e scarico, al massimo 60 minuti, con il permesso.
+- **Muoversi e arrivare.** Linea C di Busitalia dalla stazione al capolinea di Piazza Matteotti (1,30 € in tabaccheria, 1,50 € a bordo). Scale mobili di Mojano. Radio Taxi Assisi.
+- **Cosa visitare.** 10 luoghi veri, con orari e prezzi:
+  - anfiteatro romano, Cattedrale di San Rufino, Museo Diocesano, Santa Chiara, Piazza del Comune;
+  - Foro Romano (5 €), Rocca Maggiore (8 €; cumulativo 10 €);
+  - Basilica di San Francesco, San Damiano, Santa Maria degli Angeli.
+- **Cosa fare.** Sentiero 350 per l'Eremo delle Carceri, Bosco di San Francesco del FAI, prati del Subasio, ciclovia Assisi–Spoleto.
+- **Luoghi.** 23 in tutto, con le descrizioni anche in inglese.
+
 ## v2 · Fatture con Adamo dal collegamento Stripe, vetrina «Casa Checco» ad Assisi (6 ottobre 2026)
 
 Nessuna migrazione.

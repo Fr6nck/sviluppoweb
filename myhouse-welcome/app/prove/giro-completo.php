@@ -1856,9 +1856,19 @@ prova('…tutte le sezioni del catalogo compilate (eventi e sezione libera compr
       && !val("SELECT 1 FROM sections WHERE property_id = ? AND is_core = 0 AND data = '{}'", [$vet['id'] ?? 0]), json_encode(array_values($mancano)));
 $evV = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'events'", [$vet['id'] ?? 0]);
 $r = $ospite->get("/g/$vslug/$evV");
-prova('…eventi di fantasia: oggi con la locandina, quello passato non si vede', str_contains($r['body'], 'Jazz sotto le volte') && str_contains($r['body'], 'Locandina: Jazz sotto le volte')
-      && str_contains($r['body'], 'Mercato contadino del sabato') && !str_contains($r['body'], 'Palio dei rioni'));
-prova('…con i luoghi (4 da mangiare, 5 da visitare, 4 da fare, 3 negozi)', (int) val("SELECT COUNT(*) FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ?", [$vet['id'] ?? 0]) === 16);
+prova('…eventi veri di Assisi: il mercato del sabato con la locandina, le feste dell\'anno con la prossima data, niente eventi di fantasia',
+      str_contains($r['body'], 'Mercato del sabato') && str_contains($r['body'], 'Locandina: Mercato del sabato') && str_contains($r['body'], 'Calendimaggio')
+      && str_contains($r['body'], 'Festa di San Francesco') && str_contains($r['body'], 'Festa del Perdono') && !str_contains($r['body'], 'Jazz sotto le volte'));
+$evDati = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$evV]), true);
+$oggiV = (new DateTimeImmutable("now", new DateTimeZone("Europe/Rome")))->format("Y-m-d");
+$dateV = array_filter(array_map(fn($e) => $e['date_to'] ?? $e['date_from'] ?? '', $evDati['events'] ?? []));
+prova('…nessun evento della vetrina è già passato, e San Francesco cade il 3–4 ottobre', $dateV && min($dateV) >= $oggiV
+      && (bool) array_filter($evDati['events'] ?? [], fn($e) => substr((string) $e['date_from'], 5) === '10-03' && substr((string) $e['date_to'], 5) === '10-04'));
+prova('…con i luoghi (4 da mangiare, 10 da visitare, 5 da fare, 4 negozi)', (int) val("SELECT COUNT(*) FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ?", [$vet['id'] ?? 0]) === 23);
+$r = $ospite->get("/g/$vslug/" . (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'parking'", [$vet['id'] ?? 0]));
+$rc = $ospite->get("/g/$vslug/" . (int) val("SELECT id FROM sections WHERE property_id = ? AND is_core = 1", [$vet['id'] ?? 0]));
+prova('…parcheggi e imposta di soggiorno con i dati veri di Assisi (2 € l\'ora, 14 € al giorno; 3 notti al massimo)', str_contains($r['body'], 'Parcheggio Mojano') && str_contains($r['body'], '14')
+      && str_contains($rc['body'], '4 € a persona per notte') && str_contains($rc['body'], 'prime 3 notti'));
 $arrV = json_decode((string) val("SELECT data FROM sections WHERE property_id = ? AND kind = 'arrival'", [$vet['id'] ?? 0]), true);
 prova('…ad Assisi, geolocalizzata in Piazza Matteotti: coordinate della struttura e link di Maps', ($vet['city'] ?? '') === 'Assisi'
       && abs((float) val('SELECT lat FROM properties WHERE id = ?', [$vet['id'] ?? 0]) - 43.07025) < 0.0001 && abs((float) val('SELECT lng FROM properties WHERE id = ?', [$vet['id'] ?? 0]) - 12.61966) < 0.0001

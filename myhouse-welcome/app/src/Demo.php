@@ -102,8 +102,9 @@ final class Demo
     /**
      * La «vetrina»: una guida dimostrativa completa dentro un account vero (per esempio
      * quello dell'agenzia), creata dall'amministrazione: «Casa Checco», ad Assisi, vicino
-     * a Piazza Matteotti. Sulla falsariga di Casa Lucia, con nomi, numeri, indicazioni e
-     * foto diversi (ricavate da quelle della demo), tutti di fantasia: la guida mostra «Demo».
+     * a Piazza Matteotti. Sulla falsariga di Casa Lucia: la casa, il vicolo, i padroni di casa,
+     * i telefoni e i locali sono di fantasia (la guida mostra «Demo»); la città è vera, con
+     * monumenti, musei, parcheggi, autobus, imposta di soggiorno ed eventi ricorrenti di Assisi.
      * is_demo = VETRINA (2): online senza pagamento come le altre demo, ma non occupa
      * il posto di una struttura del piano, e la landing la preferisce come demo.
      * Foto, lingue e luoghi seguono il piano dell'account (serve Plus).
@@ -117,11 +118,13 @@ final class Demo
     public static function vetrina(int $accountId): int
     {
         // «Casa Checco», Assisi: una casa di fantasia in un vicolo di fantasia, a due passi da
-        // Piazza Matteotti. La posizione (link di Maps e coordinate della struttura) è quella
-        // della piazza, presa da OpenStreetMap, non di un portone vero. Locali,
-        // numeri, prezzi ed eventi sono inventati (le date degli eventi partono da oggi); sono
-        // veri solo i monumenti pubblici di «Cosa visitare». Ogni sezione è compilata del tutto,
-        // per far vedere a chi prova la piattaforma tutto quello che una guida può contenere.
+        // Piazza Matteotti. La posizione (link di Maps e coordinate) è quella della piazza, presa
+        // da OpenStreetMap, non di un portone vero. Di fantasia anche i telefoni (075 000 …),
+        // i servizi della casa e i locali di «Dove mangiare» e «Negozi»: non si usano nomi di
+        // locali veri. È vero tutto il resto, preso dalle fonti pubbliche (2026): parcheggi e
+        // tariffe, linea C dell'autobus, imposta di soggiorno, monumenti e musei con orari e
+        // prezzi, sentieri, e gli eventi ricorrenti della città con la prossima data da oggi.
+        // Gli orari cambiano con le stagioni: la guida invita a controllarli.
         $acc = $accountId;
         $tel = '+39 075 000 0000';
         $pid = Properties::create($acc, 'Casa Checco', 'Assisi', 'Francesco', 1);
@@ -150,8 +153,8 @@ final class Demo
                                          'In casa trovi il quaderno con le istruzioni e la mappa della città.'],
                      'late_arrival' => 'Dopo le 21 lasciamo le chiavi in una cassetta con il codice: te lo mandiamo su WhatsApp il giorno stesso, non lo scriviamo qui.',
                      'documents' => 'Un documento d\'identità per ogni ospite, anche per i bambini: serve per la registrazione obbligatoria. Puoi mandarne una foto su WhatsApp prima dell\'arrivo.',
-                     'tax_amount' => '1,50 € a persona (esempio)', 'tax_max_nights' => '5',
-                     'tax_notes' => 'Esenti i bambini sotto i 12 anni. Si paga in contanti all\'arrivo: ti lasciamo la ricevuta.',
+                     'tax_amount' => '4 € a persona per notte', 'tax_max_nights' => '3',
+                     'tax_notes' => 'È l\'imposta di soggiorno del Comune di Assisi per le locazioni turistiche (tariffe 2026): 3 € a notte se il soggiorno costa fino a 60,99 € a notte, 4 € fino a 100,99 €, 6 € oltre. Si paga solo per le prime 3 notti di fila; esenti i bambini sotto i 12 anni. Si paga in contanti all\'arrivo: ti lasciamo la ricevuta.',
                      'checkin_note' => 'Il vicolo è pedonale: con l\'auto non si arriva alla porta. Il parcheggio di Piazza Matteotti è a due minuti: guarda la sezione Parcheggio.',
                      'checkout_steps' => ['Chiavi: lasciale nella ciotola di ceramica sul mobile dell\'ingresso.',
                                           'Rifiuti: porta i sacchetti nei bidoni in fondo al vicolo.',
@@ -165,7 +168,7 @@ final class Demo
                                          'Inside you will find the house notebook and a map of the town.'],
                      'late_arrival' => 'After 9pm we leave the keys in a code box: we send you the code on WhatsApp on the day, we never write it here.',
                      'documents' => 'An ID for every guest, children included: it is required for the mandatory registration. You can send a photo on WhatsApp before you arrive.',
-                     'tax_notes' => 'Children under 12 are exempt. Paid in cash on arrival: we leave you a receipt.',
+                     'tax_notes' => 'This is the Assisi town council tourist tax for holiday rentals (2026 rates): €3 a night if your stay costs up to €60.99 a night, €4 up to €100.99, €6 above that. Only the first 3 consecutive nights are charged; children under 12 are exempt. Paid in cash on arrival: we leave you a receipt.',
                      'checkin_note' => 'The alley is pedestrian: you cannot drive to the door. The Piazza Matteotti car park is two minutes away: see the Parking section.',
                      'checkout_steps' => ['Keys: leave them in the ceramic bowl on the hall cabinet.', 'Rubbish: take the bags to the bins at the end of the alley.',
                                           'Air conditioning and lights: switch them off before leaving.', 'Windows: close the shutters, the wind from Mount Subasio is strong.',
@@ -234,51 +237,58 @@ final class Demo
         self::scrivi($pid, $arrivo, [
             'it' => ['address' => 'Vicolo dei Gerani 3, Assisi (a due passi da Piazza Matteotti)', 'maps_url' => self::CHECCO_MAPS,
                      'routes' => [
-                        ['mode' => 'auto', 'steps' => "Dalla superstrada E45/SS75 esci ad Assisi e segui le indicazioni per il centro e Piazza Matteotti.\nIl centro storico è ZTL: non superare i varchi con le telecamere.\nLascia l'auto nel parcheggio di Piazza Matteotti: da lì sono due minuti a piedi."],
-                        ['mode' => 'treno', 'steps' => "Scendi alla stazione di Assisi, a Santa Maria degli Angeli, nella pianura.\nL'autobus urbano per il centro parte davanti alla stazione: scendi in Piazza Matteotti, in circa venti minuti.\nIn taxi sono una decina di minuti."],
-                        ['mode' => 'aereo', 'steps' => "Dall'aeroporto dell'Umbria sono circa venti minuti in auto o in taxi.\nSe vuoi, prenota il nostro transfer nei Servizi extra."],
-                        ['mode' => 'autobus', 'steps' => "Diversi autobus extraurbani fermano ad Assisi: controlla sul biglietto la fermata più vicina al centro.\nDalla fermata prendi l'autobus urbano per Piazza Matteotti."]],
+                        ['mode' => 'auto', 'steps' => "Dalla superstrada SS75 (Perugia–Foligno) esci ad Assisi e segui le indicazioni per il centro e poi per il parcheggio di Piazza Matteotti, nella parte alta della città.\nIl centro storico è ZTL: non superare i varchi con le telecamere.\nLascia l'auto nel parcheggio di Piazza Matteotti (2 € l'ora, 14 € al giorno): da lì sono due minuti a piedi."],
+                        ['mode' => 'treno', 'steps' => "Scendi alla stazione di Assisi, a Santa Maria degli Angeli, nella pianura.\nDavanti alla stazione prendi l'autobus della linea C di Busitalia: sale al centro storico e ha il capolinea proprio in Piazza Matteotti.\nIl biglietto costa 1,30 € in tabaccheria (anche al bar della stazione) o 1,50 € a bordo.\nIn taxi sono una decina di minuti."],
+                        ['mode' => 'aereo', 'steps' => "L'aeroporto più vicino è quello dell'Umbria, Perugia «San Francesco d'Assisi», a circa venti minuti in auto o in taxi.\nDa Roma Fiumicino conviene il treno per Assisi, cambiando a Roma Termini (e a volte anche a Foligno).\nSe vuoi, prenota il nostro transfer nei Servizi extra."],
+                        ['mode' => 'autobus', 'steps' => "Gli autobus da Perugia arrivano alla stazione di Assisi o in centro: controlla la fermata sul biglietto.\nDalla stazione prendi la linea C fino al capolinea di Piazza Matteotti."]],
                      'note' => 'Per qualsiasi difficoltà chiama Francesco: ti viene incontro in piazza.'],
-            'en' => ['routes' => [['steps' => "Leave the E45/SS75 expressway at the Assisi exit and follow the signs to the centre and Piazza Matteotti.\nThe old town is a restricted traffic zone: do not drive through the camera gates.\nLeave the car in the Piazza Matteotti car park: the house is two minutes away on foot."],
-                                  ['steps' => "Get off at Assisi station, in Santa Maria degli Angeli, down on the plain.\nThe town bus to the centre leaves from outside the station: get off at Piazza Matteotti, about twenty minutes.\nBy taxi it takes about ten minutes."],
-                                  ['steps' => "From Umbria airport it is about twenty minutes by car or taxi.\nIf you like, book our transfer in the Extra services."],
-                                  ['steps' => "Several regional buses stop in Assisi: check the stop nearest the centre on your ticket.\nFrom there take the town bus to Piazza Matteotti."]],
+            'en' => ['routes' => [['steps' => "Leave the SS75 expressway (Perugia–Foligno) at the Assisi exit and follow the signs to the centre, then to the Piazza Matteotti car park, in the upper part of town.\nThe old town is a restricted traffic zone: do not drive through the camera gates.\nLeave the car in the Piazza Matteotti car park (€2 an hour, €14 a day): the house is two minutes away on foot."],
+                                  ['steps' => "Get off at Assisi station, in Santa Maria degli Angeli, down on the plain.\nOutside the station take Busitalia line C: it climbs to the old town and terminates right in Piazza Matteotti.\nTickets cost €1.30 at the tobacconist (also at the station bar) or €1.50 on board.\nBy taxi it takes about ten minutes."],
+                                  ['steps' => "The nearest airport is Umbria's, Perugia «San Francesco d'Assisi», about twenty minutes by car or taxi.\nFrom Rome Fiumicino take the train to Assisi, changing at Roma Termini (and sometimes at Foligno too).\nIf you like, book our transfer in the Extra services."],
+                                  ['steps' => "Buses from Perugia stop at Assisi station or in the centre: check the stop on your ticket.\nFrom the station take line C to the last stop, Piazza Matteotti."]],
                      'note' => 'If you have any trouble, call Francesco: he will meet you in the square.'],
         ], 'Come arrivare');
 
-        // -------- Parcheggio: tipi, costi (di esempio), minuti a piedi, ZTL
+        // -------- Parcheggio: i parcheggi comunali veri, con le tariffe 2026 (2 € l'ora, 14 € al giorno)
         $parcheggio = Properties::addSection($acc, $pid, 'parking');
         self::scrivi($pid, $parcheggio, [
             'it' => ['options' => [
                         ['type' => 'pagamento', 'name' => 'Parcheggio di Piazza Matteotti', 'address' => 'Piazza Matteotti, Assisi', 'maps_url' => self::CHECCO_MAPS,
-                         'cost_hour' => '2', 'cost_day' => '20', 'cost_note' => 'Prezzi di esempio: controlla le tariffe esposte all\'ingresso.', 'walk_minutes' => '2',
-                         'instructions' => "Coperto, sotto la piazza: è il più vicino alla casa.\nSi paga alla cassa automatica prima di riprendere l'auto, anche con la carta."],
-                        ['type' => 'garage', 'name' => 'Garage convenzionato', 'address' => 'Porta Perlici, Assisi', 'cost_day' => '15', 'cost_note' => 'Prezzo riservato agli ospiti: mostra il messaggio di Francesco.', 'walk_minutes' => '6',
-                         'instructions' => 'Posto coperto e custodito. Utile se resti più giorni e non usi l\'auto.'],
-                        ['type' => 'pubblico', 'name' => 'Parcheggio libero fuori dalle mura', 'address' => 'Assisi', 'walk_minutes' => '15',
-                         'instructions' => 'Gratuito ma in salita: comodo solo se non hai bagagli pesanti.']],
-                     'ztl' => 'Il centro storico di Assisi è ZTL, con le telecamere ai varchi. Si entra solo per scaricare i bagagli, e solo se Francesco comunica la tua targa il giorno prima: scrivigliela su WhatsApp.'],
-            'en' => ['options' => [['name' => 'Piazza Matteotti car park', 'cost_note' => 'Example prices: check the rates posted at the entrance.',
-                                    'instructions' => "Covered, under the square: the closest to the house.\nPay at the machine before collecting your car, cards accepted."],
-                                   ['name' => 'Partner garage', 'cost_note' => 'Special price for our guests: show Francesco\'s message.', 'instructions' => 'Covered and staffed. Handy if you stay several days without using the car.'],
-                                   ['name' => 'Free parking outside the walls', 'instructions' => 'Free but uphill: only worth it without heavy luggage.']],
-                     'ztl' => 'The old town of Assisi is a restricted traffic zone, with cameras at the gates. You may only drive in to unload luggage, and only if Francesco registers your plate the day before: send it to him on WhatsApp.'],
+                         'cost_hour' => '2', 'cost_day' => '14', 'cost_note' => 'Tariffe 2026: controlla quelle esposte all\'ingresso, possono cambiare.', 'walk_minutes' => '2',
+                         'instructions' => "Sotto la piazza, 390 posti: è il più vicino alla casa, accanto al Duomo di San Rufino e all'anfiteatro romano.\nSi paga alla cassa automatica prima di riprendere l'auto, anche con la carta."],
+                        ['type' => 'pagamento', 'name' => 'Parcheggio Mojano', 'address' => 'Viale Vittorio Emanuele II, Assisi', 'cost_hour' => '2', 'cost_day' => '14', 'walk_minutes' => '12',
+                         'instructions' => "Se il Matteotti è pieno. Coperto, su tre piani: le scale mobili salgono fino a Piazza Santa Chiara, e da lì alla casa sono otto minuti in salita."],
+                        ['type' => 'pagamento', 'name' => 'Parcheggio Porta Nuova', 'address' => 'Piazza Porta Nuova, Assisi', 'cost_hour' => '2', 'cost_day' => '14', 'walk_minutes' => '12',
+                         'instructions' => 'Aperto giorno e notte, appena fuori dalla porta: si entra in città accanto a Santa Chiara.'],
+                        ['type' => 'pubblico', 'name' => 'Parcheggio gratuito di San Giacomo', 'address' => 'Via Egidio Albornoz, Assisi', 'walk_minutes' => '30',
+                         'instructions' => 'Gratuito, di fronte al cimitero, ma dalla parte opposta della città, vicino alla Basilica di San Francesco: alla casa sono una trentina di minuti a piedi, quasi tutti in salita. Conviene solo senza bagagli.']],
+                     'ztl' => 'Il centro storico di Assisi è ZTL, con le telecamere ai varchi. Si entra solo per scaricare i bagagli, al massimo per 60 minuti, e con il permesso sul cruscotto: Francesco lo chiede per te alla Polizia Locale se gli scrivi la targa su WhatsApp il giorno prima.'],
+            'en' => ['options' => [['name' => 'Piazza Matteotti car park', 'cost_note' => '2026 rates: check the ones posted at the entrance, they may change.',
+                                    'instructions' => "Under the square, 390 spaces: the closest to the house, next to San Rufino cathedral and the Roman amphitheatre.\nPay at the machine before collecting your car, cards accepted."],
+                                   ['name' => 'Mojano car park', 'instructions' => 'If Matteotti is full. Covered, on three floors: the escalators go up to Piazza Santa Chiara, and from there the house is eight minutes uphill.'],
+                                   ['name' => 'Porta Nuova car park', 'instructions' => 'Open day and night, just outside the gate: you walk into town next to Santa Chiara.'],
+                                   ['name' => 'San Giacomo free car park', 'instructions' => 'Free, opposite the cemetery, but on the other side of town, near the Basilica of Saint Francis: the house is about thirty minutes on foot, mostly uphill. Only worth it without luggage.']],
+                     'ztl' => 'The old town of Assisi is a restricted traffic zone, with cameras at the gates. You may only drive in to unload luggage, for 60 minutes at most, with the permit on the dashboard: Francesco requests it from the local police if you send him your plate on WhatsApp the day before.'],
         ], 'Parcheggio');
 
         // -------- Muoversi in zona
         $muoversi = Properties::addSection($acc, $pid, 'transport');
         self::scrivi($pid, $muoversi, [
             'it' => ['options' => [
-                        ['type' => 'walk', 'name' => 'A piedi', 'note' => "Dalla casa: Duomo di San Rufino 3 minuti, Piazza del Comune 8, Basilica di Santa Chiara 6.\nLa Basilica di San Francesco è a venti minuti, in discesa: al ritorno conviene l'autobus."],
-                        ['type' => 'bus', 'name' => 'Autobus urbani', 'where' => 'Fermata in Piazza Matteotti, due minuti a piedi.', 'note' => 'Collegano il centro con la stazione e con Santa Maria degli Angeli. Biglietti in tabaccheria.'],
-                        ['type' => 'taxi', 'name' => 'Taxi', 'phone' => '+39 075 000 0002', 'note' => 'In centro si chiamano per telefono: Francesco ti lascia il numero aggiornato.'],
-                        ['type' => 'bike_rental', 'name' => 'E-bike tra gli uliveti', 'note' => 'Le prenota Francesco: le consegnano a casa la mattina, per la pianura e la ciclabile verso Spello.'],
-                        ['type' => 'car_rental', 'name' => 'Noleggio auto', 'where' => 'Vicino alla stazione, a Santa Maria degli Angeli.', 'note' => 'Comodo per Perugia, Spello e il lago Trasimeno.']]],
-            'en' => ['options' => [['name' => 'On foot', 'note' => "From the house: San Rufino cathedral 3 minutes, Piazza del Comune 8, Basilica of Saint Clare 6.\nThe Basilica of Saint Francis is twenty minutes downhill: take the bus back."],
-                                   ['name' => 'Town buses', 'where' => 'Stop in Piazza Matteotti, two minutes on foot.', 'note' => 'They link the centre with the station and Santa Maria degli Angeli. Tickets at the tobacconist.'],
-                                   ['name' => 'Taxi', 'note' => 'In the centre you call them by phone: Francesco gives you the current number.'],
-                                   ['name' => 'E-bikes through the olive groves', 'note' => 'Francesco books them: delivered in the morning, for the plain and the cycle path to Spello.'],
-                                   ['name' => 'Car hire', 'where' => 'Near the station, in Santa Maria degli Angeli.', 'note' => 'Handy for Perugia, Spello and Lake Trasimeno.']]],
+                        ['type' => 'walk', 'name' => 'A piedi', 'note' => "Dalla casa: Duomo di San Rufino 3 minuti, Basilica di Santa Chiara 8, Piazza del Comune 8, Rocca Maggiore 12.\nLa Basilica di San Francesco è a venticinque minuti, in discesa: al ritorno conviene l'autobus."],
+                        ['type' => 'bus', 'name' => 'Linea C Busitalia', 'where' => 'Capolinea in Piazza Matteotti, due minuti a piedi.', 'url' => 'https://www.fsbusitalia.it',
+                         'note' => "Scende a San Francesco, a Santa Maria degli Angeli e alla stazione, e torna su fino a Piazza Matteotti.\nBiglietto 1,30 € in tabaccheria, 1,50 € a bordo. Gli orari cambiano tra feriali e festivi: controllali sul sito."],
+                        ['type' => 'lifts', 'name' => 'Scale mobili di Mojano', 'where' => 'Dal parcheggio Mojano a Piazza Santa Chiara.', 'note' => 'Utili per risalire senza fatica dalla parte bassa della città.'],
+                        ['type' => 'taxi', 'name' => 'Radio Taxi Assisi', 'phone' => '+39 075 813100', 'note' => 'In centro i taxi si chiamano per telefono.'],
+                        ['type' => 'bike_rental', 'name' => 'E-bike per la pianura', 'note' => 'Le prenota Francesco a Santa Maria degli Angeli: in pianura c\'è la ciclovia verso Spello e Foligno.'],
+                        ['type' => 'car_rental', 'name' => 'Noleggio auto', 'where' => 'A Santa Maria degli Angeli, vicino alla stazione.', 'note' => 'Comodo per Spello, Perugia, Gubbio e il lago Trasimeno.']]],
+            'en' => ['options' => [['name' => 'On foot', 'note' => "From the house: San Rufino cathedral 3 minutes, Basilica of Saint Clare 8, Piazza del Comune 8, Rocca Maggiore 12.\nThe Basilica of Saint Francis is twenty-five minutes downhill: take the bus back."],
+                                   ['name' => 'Busitalia line C', 'where' => 'Last stop in Piazza Matteotti, two minutes on foot.',
+                                    'note' => "It goes down to San Francesco, Santa Maria degli Angeli and the station, and back up to Piazza Matteotti.\nTickets €1.30 at the tobacconist, €1.50 on board. Timetables differ on weekdays and holidays: check them online."],
+                                   ['name' => 'Mojano escalators', 'where' => 'From the Mojano car park to Piazza Santa Chiara.', 'note' => 'Handy for getting back up from the lower part of town without effort.'],
+                                   ['name' => 'Radio Taxi Assisi', 'note' => 'In the centre taxis are called by phone.'],
+                                   ['name' => 'E-bikes for the plain', 'note' => 'Francesco books them in Santa Maria degli Angeli: on the plain there is the cycle route to Spello and Foligno.'],
+                                   ['name' => 'Car hire', 'where' => 'In Santa Maria degli Angeli, near the station.', 'note' => 'Handy for Spello, Perugia, Gubbio and Lake Trasimeno.']]],
         ], 'Muoversi in zona');
 
         // -------- Rifiuti
@@ -332,76 +342,130 @@ final class Demo
                      'items' => ['The wooden column is the original one from the workshop.', 'The kitchen table is made from the old floorboards.', 'The photos in the hallway show the alley in the sixties.']],
         ], 'La storia della casa');
 
-        // -------- Eventi (di fantasia, con le date da oggi): uno oggi con la locandina, uno tra pochi giorni, uno più avanti che torna ogni anno,
-        // un mercato settimanale, uno «a parole» e uno passato (nel pannello mostra «Ripeti nel …», nella guida non si vede).
-        $eventi = Properties::addSection($acc, $pid, 'events');   // gli eventi sono di fantasia, i luoghi veri
-        $locandina = $foto('checco-locandina.jpg', 'Locandina di Jazz sotto le volte');
+        // -------- Eventi: gli appuntamenti veri e ricorrenti di Assisi, con la prossima data da oggi
+        // (se quest'anno sono già passati, quelli dell'anno dopo). La locandina è quella che la
+        // casa ha preparato per il mercato del sabato.
+        $oggi = Eventi::oggi();
+        $prossimo = function (string $da, string $a) use ($oggi): array {
+            $y = (int) substr($oggi, 0, 4);
+            if ("$y-$a" < $oggi) $y++;
+            return ["$y-$da", "$y-$a"];
+        };
+        // Calendimaggio: dal primo mercoledì di maggio al sabato (6–9 maggio 2026, 5–8 maggio 2027).
+        $calendimaggio = function (int $y): array {
+            $mer = (new \DateTimeImmutable("$y-05-01"))->modify('-1 day')->modify('next wednesday');
+            return [$mer->format('Y-m-d'), $mer->modify('+3 days')->format('Y-m-d')];
+        };
+        $cm = $calendimaggio((int) substr($oggi, 0, 4));
+        if ($cm[1] < $oggi) $cm = $calendimaggio((int) substr($oggi, 0, 4) + 1);
+        [$perdono, $santaChiara, $sanRufino, $sanFrancesco] = [$prossimo('08-01', '08-02'), $prossimo('08-11', '08-11'), $prossimo('08-11', '08-12'), $prossimo('10-03', '10-04')];
+        $eventi = Properties::addSection($acc, $pid, 'events');
+        $locandina = $foto('checco-locandina.jpg', 'Locandina del mercato del sabato in Piazza Matteotti');
         self::scrivi($pid, $eventi, [
-            'it' => ['intro' => 'Quello che succede in città mentre sei qui. Gli eventi sono di esempio, come la casa.', 'events' => [
-                        ['name' => 'Jazz sotto le volte', 'cat' => 'music', 'when' => 'day', 'date_from' => $giorno(0), 'time_from' => '21:30', 'place' => 'Piazza Matteotti', 'dist_min' => '2', 'dist_mode' => 'walk',
-                         'price_kind' => 'free', 'recommended' => '1', 'poster' => $locandina, 'description' => 'Un trio jazz suona sotto le volte della piazza. Porta un cuscino: si sta seduti sui gradini.'],
-                        ['name' => 'Mercatino dell\'artigianato', 'cat' => 'market', 'when' => 'range', 'date_from' => $giorno(3), 'date_to' => $giorno(4), 'time_from' => '10:00', 'time_to' => '19:00',
-                         'place' => 'Piazza del Comune', 'dist_min' => '8', 'dist_mode' => 'walk', 'price_kind' => 'free', 'description' => 'Ceramiche, tessuti e legno lavorato a mano dagli artigiani della zona.'],
-                        ['name' => 'Festa d\'autunno nel borgo', 'cat' => 'festival', 'when' => 'range', 'date_from' => $giorno(25), 'date_to' => $giorno(27), 'yearly' => '1', 'place' => 'Centro storico',
-                         'price_kind' => 'paid', 'price' => '5 €', 'url' => 'https://example.org/festa-autunno', 'description' => 'Tre giorni di bancarelle, musica e piatti della tradizione. Il biglietto vale per tutte le sere.'],
-                        ['name' => 'Mercato contadino del sabato', 'cat' => 'market', 'when' => 'weekly', 'days' => [6], 'time_from' => '08:00', 'time_to' => '13:00', 'place' => 'Piazza Matteotti', 'dist_min' => '2', 'dist_mode' => 'walk',
-                         'description' => 'Frutta, verdura, formaggi e olio direttamente dai produttori.'],
-                        ['name' => 'Mostra-mercato dell\'antiquariato', 'cat' => 'exhibition', 'when' => 'other', 'when_text' => 'L\'ultima domenica del mese', 'place' => 'Piazza Santa Chiara', 'dist_min' => '6', 'dist_mode' => 'walk'],
-                        ['name' => 'Rievocazione dei rioni', 'cat' => 'history', 'when' => 'day', 'date_from' => $giorno(-40), 'yearly' => '1', 'place' => 'Piazza del Comune', 'description' => 'Sfilata in costume e sfida tra i rioni della città.']]],
-            'en' => ['intro' => 'What is on in town while you are here. The events are examples, like the house.', 'events' => [
-                        ['name' => 'Jazz under the vaults', 'description' => 'A jazz trio plays under the vaults of the square. Bring a cushion: you sit on the steps.'],
-                        ['name' => 'Craft market', 'description' => 'Ceramics, fabrics and woodwork made by local craftspeople.'],
-                        ['name' => 'Autumn festival in the old town', 'description' => 'Three days of stalls, music and traditional food. One ticket covers every evening.'],
-                        ['name' => 'Saturday farmers\' market', 'description' => 'Fruit, vegetables, cheese and olive oil straight from the producers.'],
-                        ['name' => 'Antiques fair', 'when_text' => 'The last Sunday of the month'],
-                        ['name' => 'Pageant of the districts', 'description' => 'Costume parade and contest between the districts of the town.']]],
+            'it' => ['intro' => 'Gli appuntamenti di Assisi che tornano ogni anno, e il mercato sotto casa. Le date esatte e i programmi escono di anno in anno: controllali sui siti prima di partire.', 'events' => [
+                        ['name' => 'Mercato del sabato', 'cat' => 'market', 'when' => 'weekly', 'days' => [6], 'time_from' => '08:00', 'time_to' => '13:00', 'place' => 'Piazza Matteotti', 'dist_min' => '2', 'dist_mode' => 'walk',
+                         'price_kind' => 'free', 'recommended' => '1', 'poster' => $locandina, 'description' => 'Il mercato settimanale della città alta: frutta, verdura, formaggi, olio e banchi di ogni genere. Si arriva in due minuti, senza prendere l\'auto.'],
+                        ['name' => 'Festa di San Francesco', 'cat' => 'religious', 'when' => 'range', 'date_from' => $sanFrancesco[0], 'date_to' => $sanFrancesco[1], 'yearly' => '1', 'place' => 'Basilica di San Francesco', 'dist_min' => '25', 'dist_mode' => 'walk',
+                         'price_kind' => 'free', 'url' => 'https://www.sanfrancescoassisi.org', 'description' => 'La festa del patrono d\'Italia: il 3 ottobre la sera del Transito, il 4 la messa solenne e l\'accensione della lampada votiva da parte di una regione italiana. Dal 2026 il 4 ottobre è di nuovo festa nazionale: la città si riempie, prenota tutto per tempo.'],
+                        ['name' => 'Calendimaggio', 'cat' => 'history', 'when' => 'range', 'date_from' => $cm[0], 'date_to' => $cm[1], 'yearly' => '1', 'place' => 'Piazza del Comune e centro storico', 'dist_min' => '8', 'dist_mode' => 'walk',
+                         'url' => 'https://www.calendimaggiodiassisi.com', 'description' => 'La festa di primavera: per quattro giorni la Nobilissima Parte de Sopra e la Magnifica Parte de Sotto si sfidano con cortei, scene di vita medievale e canti. Casa Checco è nella Parte de Sopra. Alcuni spettacoli in piazza sono a pagamento.'],
+                        ['name' => 'Festa del Perdono', 'cat' => 'religious', 'when' => 'range', 'date_from' => $perdono[0], 'date_to' => $perdono[1], 'yearly' => '1', 'place' => 'Porziuncola, Santa Maria degli Angeli', 'dist_min' => '15', 'dist_mode' => 'car',
+                         'price_kind' => 'free', 'description' => 'Il Perdono di Assisi, voluto da San Francesco: dal mezzogiorno del 1° agosto alla sera del 2 i pellegrini arrivano alla Porziuncola, dentro la Basilica di Santa Maria degli Angeli. Si scende con la linea C.'],
+                        ['name' => 'Solennità di Santa Chiara', 'cat' => 'religious', 'when' => 'day', 'date_from' => $santaChiara[0], 'yearly' => '1', 'place' => 'Basilica di Santa Chiara', 'dist_min' => '8', 'dist_mode' => 'walk',
+                         'price_kind' => 'free', 'description' => 'La festa di Santa Chiara, nella basilica dove riposa: messe durante tutta la giornata.'],
+                        ['name' => 'Festa di San Rufino, patrono di Assisi', 'cat' => 'religious', 'when' => 'range', 'date_from' => $sanRufino[0], 'date_to' => $sanRufino[1], 'yearly' => '1', 'time_from' => '21:00', 'place' => 'Cattedrale di San Rufino', 'dist_min' => '3', 'dist_mode' => 'walk',
+                         'price_kind' => 'free', 'recommended' => '1', 'description' => 'La sera dell\'11 agosto veglia in cattedrale e processione per le vie della città fino a Piazza del Comune, con la benedizione della città; il 12 il pontificale e, la sera, il concerto in onore del patrono. La cattedrale è a tre minuti da casa.']]],
+            'en' => ['intro' => 'The Assisi events that come back every year, and the market by the house. Exact dates and programmes are announced each year: check the websites before you travel.', 'events' => [
+                        ['name' => 'Saturday market', 'description' => 'The weekly market of the upper town: fruit, vegetables, cheese, olive oil and all sorts of stalls. Two minutes away, no need for the car.'],
+                        ['name' => 'Feast of Saint Francis', 'description' => 'The feast of Italy\'s patron saint: on 3 October the evening of the Transitus, on the 4th the solemn mass and the lighting of the votive lamp by one of the Italian regions. Since 2026, 4 October is a national holiday again: the town fills up, book everything early.'],
+                        ['name' => 'Calendimaggio', 'description' => 'The spring festival: for four days the Nobilissima Parte de Sopra and the Magnifica Parte de Sotto compete with parades, scenes of medieval life and songs. Casa Checco is in the Parte de Sopra. Some shows in the square are ticketed.'],
+                        ['name' => 'Feast of the Pardon', 'description' => 'The Pardon of Assisi, wanted by Saint Francis: from midday on 1 August to the evening of the 2nd pilgrims come to the Porziuncola, inside the Basilica of Santa Maria degli Angeli. Take line C down.'],
+                        ['name' => 'Feast of Saint Clare', 'description' => 'The feast of Saint Clare, in the basilica where she rests: masses throughout the day.'],
+                        ['name' => 'Feast of San Rufino, patron of Assisi', 'description' => 'On the evening of 11 August a vigil in the cathedral and a procession through the streets to Piazza del Comune, with the blessing of the town; on the 12th the solemn mass and, in the evening, a concert for the patron saint. The cathedral is three minutes from the house.']]],
         ], 'Eventi');
 
-        // -------- I luoghi, se il piano li comprende
+        // -------- I luoghi, se il piano li comprende. «Cosa visitare» e «Cosa fare» sono luoghi veri,
+        // con orari e prezzi 2026 delle fonti ufficiali; «Dove mangiare» e «Negozi» sono di fantasia
+        // (niente nomi di locali veri), nel vicolo di fantasia della casa.
         if (Entitlements::can($acc, 'places')) {
+            // [nome, categoria, descrizione, indirizzo, minuti a piedi, etichetta, tono, foto, alt, minuti in auto, altro]
+            // altro: web, tel, nota, en => [description, note]
             $luoghi = function (int $sid, array $elenco) use ($acc, $pid, $foto) {
                 foreach ($elenco as $l) {
+                    $x = $l[10] ?? [];
                     $plid = Properties::savePlace($acc, $pid, $sid, null, 'it', true, [
                         'name' => $l[0], 'category_choice' => $l[1], 'description' => $l[2], 'address' => $l[3] . ', Assisi',
                         'maps_url' => 'https://maps.google.com/?q=' . rawurlencode($l[3] . ', Assisi'),
                         'walk_minutes' => $l[4], 'drive_minutes' => $l[9] ?? '', 'badge_choice' => $l[5], 'badge_tone' => $l[6] ?? 'sea',
+                        'website' => $x['web'] ?? '', 'phone' => $x['tel'] ?? '', 'note' => $x['nota'] ?? '',
                     ]);
+                    if (!empty($x['en'])) Properties::savePlace($acc, $pid, $sid, $plid, 'en', false, ['description' => $x['en'][0], 'note' => $x['en'][1] ?? '']);
                     if (!empty($l[7])) Db::update('places', ['media_id' => $foto($l[7], $l[8])], 'id = :pid', ['pid' => $plid]);
                 }
             };
             $mangiare = Properties::addSection($acc, $pid, 'eat');
-            self::scrivi($pid, $mangiare, ['it' => ['intro' => 'Quattro posti dove andiamo noi, tutti a piedi da casa.', 'host_note' => 'Alla trattoria chiedi gli strangozzi al tartufo: non sono sempre sul menù.'],
-                                           'en' => ['intro' => 'Four places we go to ourselves, all walkable from the house.', 'host_note' => 'At the trattoria, ask for strangozzi with truffle: they are not always on the menu.']], 'Dove mangiare e bere');
+            self::scrivi($pid, $mangiare, ['it' => ['intro' => 'Quattro posti dove andiamo noi, tutti a piedi da casa. Da provare: strangozzi al tartufo, torta al testo e, per dolce, la rocciata.', 'host_note' => 'Alla trattoria chiedi gli strangozzi al tartufo: non sono sempre sul menù.'],
+                                           'en' => ['intro' => 'Four places we go to ourselves, all walkable from the house. Try strangozzi with truffle, torta al testo and, for dessert, rocciata.', 'host_note' => 'At the trattoria, ask for strangozzi with truffle: they are not always on the menu.']], 'Dove mangiare e bere');
             $luoghi($mangiare, [
-                ['Trattoria del Vicolo Stretto', 'trattoria', 'Strangozzi fatti a mano e carne alla brace, in una sala con le volte in pietra.', 'Vicolo dei Gerani 9', 3, 'dinner', 'pine', 'checco-trattoria.jpg', 'Tavoli apparecchiati in un vicolo'],
-                ['Caffè della Fontanella', 'breakfast', 'Cornetti caldi e cappuccino, con i tavolini all\'aperto.', 'Via dei Gerani 2', 2, 'breakfast', 'sea', 'checco-bar.jpg', 'Una tazzina di espresso sul bancone'],
-                ['Gelateria dei Pellegrini', 'gelato', 'Prova il gusto al miele del Subasio e quello all\'olio d\'oliva.', 'Via dei Gerani 12', 5, 'host_pick', 'ochre', 'checco-gelato.jpg', 'Vaschette di gelato colorate'],
-                ['Enoteca Tre Calici', 'wine_bar', 'Vini umbri al bicchiere e taglieri, aperta fino a mezzanotte.', 'Via dei Gerani 15', 4, 'typical', 'pine'],
+                ['Trattoria del Vicolo Stretto', 'trattoria', 'Strangozzi fatti a mano e carne alla brace, in una sala con le volte in pietra.', 'Vicolo dei Gerani 9', 3, 'dinner', 'pine', 'checco-trattoria.jpg', 'Tavoli apparecchiati in un vicolo', null,
+                 ['nota' => 'Chiusa il martedì. La sera conviene prenotare.', 'en' => ['Handmade strangozzi and grilled meat, in a stone-vaulted dining room.', 'Closed on Tuesdays. Book for dinner.']]],
+                ['Caffè della Fontanella', 'breakfast', 'Cornetti caldi e cappuccino, con i tavolini all\'aperto.', 'Vicolo dei Gerani 2', 2, 'breakfast', 'sea', 'checco-bar.jpg', 'Una tazzina di espresso sul bancone', null,
+                 ['nota' => 'Dalle 7 alle 13.', 'en' => ['Warm croissants and cappuccino, with tables outside.', '7am to 1pm.']]],
+                ['Gelateria dei Pellegrini', 'gelato', 'Prova il gusto al miele del Subasio e quello all\'olio d\'oliva.', 'Vicolo dei Gerani 12', 5, 'host_pick', 'ochre', 'checco-gelato.jpg', 'Vaschette di gelato colorate', null,
+                 ['en' => ['Try the Subasio honey and the olive oil flavours.']]],
+                ['Enoteca Tre Calici', 'wine_bar', 'Vini umbri al bicchiere, dal Sagrantino di Montefalco al Grechetto, con taglieri di salumi e formaggi.', 'Vicolo dei Gerani 15', 4, 'typical', 'pine', null, null, null,
+                 ['nota' => 'Aperta fino a mezzanotte.', 'en' => ['Umbrian wines by the glass, from Montefalco Sagrantino to Grechetto, with boards of cured meats and cheese.', 'Open until midnight.']]],
             ]);
             $visitare = Properties::addSection($acc, $pid, 'visit');
-            self::scrivi($pid, $visitare, ['it' => ['intro' => 'Le cose da non perdere, in ordine di distanza da casa.', 'host_note' => 'Sali alla Rocca Maggiore al tramonto: si vede tutta la valle fino a Perugia.'],
-                                           'en' => ['intro' => 'The things not to miss, in order of distance from the house.', 'host_note' => 'Go up to the Rocca Maggiore at sunset: you can see the whole valley as far as Perugia.']], 'Cosa visitare');
+            self::scrivi($pid, $visitare, ['it' => ['intro' => 'Le cose da non perdere, in ordine di distanza da casa. Orari e prezzi sono quelli del 2026: cambiano con le stagioni, controllali prima di andare. Con il biglietto cumulativo (10 €) entri alla Rocca Maggiore, al Foro Romano e alla Pinacoteca.', 'host_note' => 'Sali alla Rocca Maggiore al tramonto: si vede tutta la valle fino a Perugia.'],
+                                           'en' => ['intro' => 'The things not to miss, in order of distance from the house. Opening times and prices are for 2026: they change with the seasons, check before you go. The combined ticket (€10) covers the Rocca Maggiore, the Roman Forum and the Pinacoteca.', 'host_note' => 'Go up to the Rocca Maggiore at sunset: you can see the whole valley as far as Perugia.']], 'Cosa visitare');
             $luoghi($visitare, [
-                ['Duomo di San Rufino', 'church', 'La cattedrale di Assisi, con la facciata romanica: a tre minuti dalla casa.', 'Piazza San Rufino', 3, 'rainy', 'sea'],
-                ['Basilica di Santa Chiara', 'church', 'La basilica in pietra bianca e rosa del Subasio, con la terrazza sulla valle.', 'Piazza Santa Chiara', 6, 'quiet', 'pine'],
-                ['Piazza del Comune e Tempio di Minerva', 'square', 'Il cuore della città, con le colonne del tempio romano.', 'Piazza del Comune', 8, 'free', 'ochre'],
-                ['Rocca Maggiore', 'castle', 'La fortezza in cima alla città, con il panorama su tutta la valle.', 'Via della Rocca', 12, 'view', 'terracotta'],
-                ['Basilica di San Francesco', 'church', 'La basilica con gli affreschi di Giotto: conviene andarci la mattina presto.', 'Piazza Inferiore di San Francesco', 20, 'must_see', 'terracotta'],
+                ['Anfiteatro romano', 'archaeology', 'Non c\'è un\'arena da visitare: le case medievali sono state costruite sopra le gradinate, e la loro curva disegna ancora l\'ovale dell\'anfiteatro. Si vede bene passeggiando tra Piazza Matteotti e Porta Perlici.', 'Via Porta Perlici', 3, 'free', 'ochre', null, null, null,
+                 ['web' => 'https://www.visit-assisi.it', 'en' => ['There is no arena to visit: medieval houses were built on the tiers, and their curve still traces the oval of the amphitheatre. Best seen walking between Piazza Matteotti and Porta Perlici.']]],
+                ['Cattedrale di San Rufino', 'church', 'Il duomo di Assisi, con la facciata romanica e i tre rosoni. Dentro c\'è il fonte dove furono battezzati San Francesco e Santa Chiara.', 'Piazza San Rufino', 3, 'free', 'sea', null, null, null,
+                 ['web' => 'https://www.assisimuseodiocesano.it', 'en' => ['The cathedral of Assisi, with its Romanesque façade and three rose windows. Inside is the font where Saint Francis and Saint Clare were baptised.']]],
+                ['Museo Diocesano e Cripta di San Rufino', 'museum', 'Accanto alla cattedrale: la cripta della chiesa più antica e i dipinti della diocesi. Biglietto 3,50 €.', 'Piazza San Rufino 3', 3, 'rainy', 'pine', null, null, null,
+                 ['web' => 'https://www.assisimuseodiocesano.it', 'tel' => '+39 075 812712', 'nota' => 'Lunedì–venerdì 10–13 e 15–18, sabato 10–18, domenica 11–18.',
+                  'en' => ['Next to the cathedral: the crypt of the older church and the diocese\'s paintings. Ticket €3.50.', 'Monday–Friday 10am–1pm and 3–6pm, Saturday 10am–6pm, Sunday 11am–6pm.']]],
+                ['Basilica di Santa Chiara', 'church', 'In pietra bianca e rosa del Subasio. Dentro c\'è il Crocifisso di San Damiano, quello che parlò a Francesco, e nella cripta riposa Santa Chiara. Dalla piazza davanti, la vista sulla valle.', 'Piazza Santa Chiara', 8, 'view', 'pine', null, null, null,
+                 ['en' => ['Built in the white and pink stone of Mount Subasio. Inside is the San Damiano Crucifix, the one that spoke to Francis, and Saint Clare rests in the crypt. The square in front looks over the valley.']]],
+                ['Piazza del Comune e Tempio di Minerva', 'square', 'Il cuore della città: le sei colonne del tempio romano del I secolo a.C., la Torre del Popolo e la fontana dei tre leoni.', 'Piazza del Comune', 8, 'free', 'ochre', null, null, null,
+                 ['en' => ['The heart of the town: the six columns of the 1st-century BC Roman temple, the Torre del Popolo and the three-lion fountain.']]],
+                ['Foro Romano e Collezione Archeologica', 'museum', 'Sotto Piazza del Comune: si scende dalla cripta di San Niccolò e si cammina sul lastricato del foro romano. Biglietto 5 €, ridotto 3 €.', 'Via Portica 2', 9, 'rainy', 'sea', null, null, null,
+                 ['web' => 'https://www.visit-assisi.it', 'nota' => 'Marzo–giugno, settembre e ottobre 10–18; luglio e agosto 10–19; da novembre a febbraio 10–17, chiuso il martedì.',
+                  'en' => ['Beneath Piazza del Comune: you go down through the crypt of San Niccolò and walk on the paving of the Roman forum. Ticket €5, reduced €3.', 'March–June, September and October 10am–6pm; July and August 10am–7pm; November to February 10am–5pm, closed on Tuesdays.']]],
+                ['Rocca Maggiore', 'castle', 'La fortezza in cima alla città: dai camminamenti si vedono tutta la valle e il Subasio. Biglietto 8 €, ridotto 6 €.', 'Via della Rocca', 12, 'sunset', 'terracotta', null, null, null,
+                 ['web' => 'https://www.visit-assisi.it', 'nota' => 'Marzo e ottobre 10–18; aprile, maggio e settembre 10–19; giugno–agosto 10–20; novembre–febbraio 10–17. La biglietteria chiude 45 minuti prima.',
+                  'en' => ['The fortress at the top of the town: from the walkways you see the whole valley and Mount Subasio. Ticket €8, reduced €6.', 'March and October 10am–6pm; April, May and September 10am–7pm; June–August 10am–8pm; November–February 10am–5pm. Last tickets 45 minutes before closing.']]],
+                ['Basilica di San Francesco', 'church', 'Due chiese una sopra l\'altra: nella superiore le Storie di San Francesco attribuite a Giotto, nell\'inferiore gli affreschi di Cimabue, Simone Martini e Lorenzetti, e la tomba del santo. Ingresso libero.', 'Piazza Inferiore di San Francesco', 25, 'must_see', 'terracotta', null, null, null,
+                 ['web' => 'https://www.sanfrancescoassisi.org', 'nota' => 'Spalle e ginocchia coperte; dentro non si fotografa. La mattina presto c\'è meno gente.',
+                  'en' => ['Two churches one above the other: in the upper one the Life of Saint Francis attributed to Giotto, in the lower one frescoes by Cimabue, Simone Martini and Lorenzetti, and the saint\'s tomb. Free entry.', 'Shoulders and knees covered; no photos inside. Fewer people early in the morning.']]],
+                ['Santuario di San Damiano', 'sanctuary', 'La chiesetta dove Francesco sentì il Crocifisso parlargli e dove Santa Chiara visse con le sorelle: chiostro e dormitorio come allora. Ingresso libero.', 'Via San Damiano', 30, 'quiet', 'pine', null, null, 10,
+                 ['en' => ['The small church where Francis heard the Crucifix speak and where Saint Clare lived with her sisters: cloister and dormitory as they were. Free entry.'], 'nota' => 'Si scende a piedi da Porta Nuova in un quarto d\'ora, tra gli ulivi.']],
+                ['Basilica di Santa Maria degli Angeli e Porziuncola', 'church', 'Nella pianura, la grande basilica che custodisce la Porziuncola, la chiesetta di San Francesco, e la Cappella del Transito dove morì.', 'Piazza Porziuncola, Santa Maria degli Angeli', 0, 'must_see', 'sea', null, null, 15,
+                 ['web' => 'https://www.porziuncola.org', 'nota' => 'Con la linea C dell\'autobus, da Piazza Matteotti.', 'en' => ['Down on the plain, the great basilica that holds the Porziuncola, the little church of Saint Francis, and the Chapel of the Transitus where he died.', 'Take bus line C from Piazza Matteotti.']]],
             ]);
             $fare = Properties::addSection($acc, $pid, 'todo');
-            self::scrivi($pid, $fare, ['it' => ['intro' => 'Per riempire le giornate, in città e intorno.'], 'en' => ['intro' => 'To fill your days, in town and around.']], 'Cosa fare');
+            self::scrivi($pid, $fare, ['it' => ['intro' => 'Per riempire le giornate, in città e sul Subasio, che comincia appena fuori dalle mura.'], 'en' => ['intro' => 'To fill your days, in town and on Mount Subasio, which starts just outside the walls.']], 'Cosa fare');
             $luoghi($fare, [
-                ['Visita guidata della città medievale', 'tour', 'Due ore tra vicoli, chiese e piazze, con una guida.', 'Piazza Matteotti', 2, 'booking', 'sea'],
-                ['Lezione di cucina umbra', 'cooking', 'Tre ore in cucina per imparare strangozzi e torta al testo, e poi mangiarli.', 'Vicolo dei Gerani 9', 3, 'family', 'terracotta'],
-                ['Passeggiata sul Monte Subasio', 'hike', 'Sentieri tra boschi e prati sopra la città: si parte a piedi da Porta Perlici.', 'Porta Perlici', 6, 'half_day', 'pine'],
-                ['Giro in e-bike tra gli uliveti', 'bike', 'Pista ciclabile in pianura verso Spello, tra uliveti e vigne.', 'Santa Maria degli Angeli', 0, 'full_day', 'pine', null, null, 15],
+                ['A piedi all\'Eremo delle Carceri', 'hike', 'Il sentiero 350 parte da Porta Cappuccini e sale nel bosco del Subasio fino all\'eremo dove Francesco si ritirava a pregare: circa 3,5 km e 430 metri di dislivello, un\'ora abbondante all\'andata. Ingresso libero all\'eremo.', 'Porta Cappuccini', 6, 'challenging', 'pine', null, null, null,
+                 ['nota' => 'Scarpe da trekking e acqua: lungo il sentiero non ci sono fontane.', 'en' => ['Trail 350 starts at Porta Cappuccini and climbs through the Subasio woods to the hermitage where Francis withdrew to pray: about 3.5 km and 430 metres of ascent, a good hour up. Free entry to the hermitage.', 'Hiking shoes and water: there are no fountains along the trail.']]],
+                ['Bosco di San Francesco (FAI)', 'hike', 'Un sentiero di circa 1,5 km scende dalla Basilica Superiore nel bosco fino al Tescio, tra il monastero di Santa Croce, un mulino medievale e il Terzo Paradiso di Pistoletto. Biglietto 6 €, ridotto 3 € (6–18 anni), gratis per gli iscritti FAI.', 'Piazza Superiore di San Francesco', 25, 'half_day', 'pine', null, null, null,
+                 ['web' => 'https://fondoambiente.it/luoghi/bosco-di-san-francesco', 'en' => ['A path of about 1.5 km goes down from the Upper Basilica through the woods to the Tescio stream, past the Santa Croce monastery, a medieval mill and Pistoletto\'s Third Paradise. Ticket €6, reduced €3 (ages 6–18), free for FAI members.']]],
+                ['Calendimaggio e vita medievale', 'tour', 'Se non sei qui a maggio, le sedi delle due Parti e i loro vicoli raccontano lo stesso la festa: chiedi all\'ufficio turistico di Piazza del Comune le visite guidate della città medievale.', 'Piazza del Comune', 8, 'booking', 'sea', null, null, null,
+                 ['web' => 'https://www.calendimaggiodiassisi.com', 'en' => ['If you are not here in May, the headquarters of the two Parti and their alleys still tell the story of the festival: ask the tourist office in Piazza del Comune about guided tours of the medieval town.']]],
+                ['Prati del Monte Subasio', 'hike', 'In auto si sale oltre l\'Eremo fino ai prati in cima al monte, a 1.290 metri: passeggiate facili e la vista sulla valle umbra, fino al Trasimeno nelle giornate limpide.', 'Monte Subasio', 0, 'easy', 'pine', null, null, 30,
+                 ['en' => ['By car you drive past the Hermitage to the meadows at the top of the mountain, at 1,290 metres: easy walks and views over the Umbrian valley, as far as Lake Trasimeno on clear days.']]],
+                ['In bici sulla ciclovia Assisi–Spoleto', 'bike', 'In pianura, tra uliveti e campi, verso Spello e Foligno. Le e-bike le prenota Francesco a Santa Maria degli Angeli.', 'Santa Maria degli Angeli', 0, 'full_day', 'sea', null, null, 15,
+                 ['en' => ['On the flat, through olive groves and fields, towards Spello and Foligno. Francesco books e-bikes in Santa Maria degli Angeli.']]],
             ]);
             $negozi = Properties::addSection($acc, $pid, 'shop');
-            self::scrivi($pid, $negozi, ['it' => ['intro' => 'Per la spesa basta scendere di un vicolo.'], 'en' => ['intro' => 'For groceries, just walk down one alley.']], 'Negozi e spesa');
+            self::scrivi($pid, $negozi, ['it' => ['intro' => 'Per la spesa basta scendere di un vicolo. Il sabato mattina c\'è anche il mercato in Piazza Matteotti.'], 'en' => ['intro' => 'For groceries, just walk down one alley. On Saturday mornings there is also the market in Piazza Matteotti.']], 'Negozi e spesa');
             $luoghi($negozi, [
-                ['Bottega di Rosa', 'grocery', 'Salumi, formaggi, pane e il necessario per la colazione.', 'Vicolo dei Gerani 1', 1, 'local'],
-                ['Forno del Subasio', 'bakery', 'Torta al testo calda dalle 11 e rocciata, il dolce di Assisi.', 'Via dei Gerani 6', 3, 'on_foot'],
-                ['Farmacia del centro', 'pharmacy', 'La più vicina a casa.', 'Via dei Gerani 20', 5, 'late'],
+                ['Bottega di Rosa', 'grocery', 'Salumi, formaggi, pane e il necessario per la colazione.', 'Vicolo dei Gerani 1', 1, 'local', 'sea', null, null, null, ['en' => ['Cured meats, cheese, bread and everything for breakfast.']]],
+                ['Forno del Subasio', 'bakery', 'Torta al testo calda dalle 11 e rocciata, il dolce di Assisi con mele, noci e uvetta.', 'Vicolo dei Gerani 6', 3, 'on_foot', 'sea', null, null, null, ['en' => ['Warm torta al testo from 11am and rocciata, the Assisi pastry with apples, walnuts and raisins.']]],
+                ['Mercato del sabato', 'market', 'Il mercato settimanale: frutta, verdura, formaggi e olio dai produttori della zona. Il sabato dalle 8 alle 13.', 'Piazza Matteotti', 2, 'local', 'ochre', null, null, null, ['en' => ['The weekly market: fruit, vegetables, cheese and olive oil from local producers. Saturdays 8am to 1pm.']]],
+                ['Farmacia', 'pharmacy', 'La più vicina è in centro, verso Piazza del Comune: il turno di notte è affisso sulla porta di ogni farmacia.', 'Piazza del Comune', 8, 'late', 'sea', null, null, null, ['en' => ['The nearest one is in the centre, towards Piazza del Comune: the night rota is posted on every pharmacy door.']]],
             ]);
         }
         Guide::publish($pid);
