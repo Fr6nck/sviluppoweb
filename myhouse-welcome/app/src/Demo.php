@@ -101,7 +101,7 @@ final class Demo
 
     /**
      * La «vetrina»: una guida dimostrativa completa dentro un account vero (per esempio
-     * quello dell'agenzia), creata dall'amministrazione: «Casa Checco», a Perugia, vicino
+     * quello dell'agenzia), creata dall'amministrazione: «Casa Checco», ad Assisi, vicino
      * a Piazza Matteotti. Sulla falsariga di Casa Lucia, con nomi, numeri, indicazioni e
      * foto diversi (ricavate da quelle della demo), tutti di fantasia: la guida mostra «Demo».
      * is_demo = VETRINA (2): online senza pagamento come le altre demo, ma non occupa
@@ -109,25 +109,32 @@ final class Demo
      * Foto, lingue e luoghi seguono il piano dell'account (serve Plus).
      */
     public const VETRINA = 2;
+    /** Piazza Matteotti ad Assisi (OpenStreetMap): la posizione della vetrina, non un portone vero. */
+    public const CHECCO_LAT = 43.07025;
+    public const CHECCO_LNG = 12.61966;
+    public const CHECCO_MAPS = 'https://www.google.com/maps/search/?api=1&query=43.07025,12.61966';
 
     public static function vetrina(int $accountId): int
     {
-        // «Casa Checco», Perugia: una casa di fantasia in un vicolo di fantasia, a due passi da
-        // Piazza Matteotti. Il link di Maps porta alla piazza, non a un portone vero. Locali,
+        // «Casa Checco», Assisi: una casa di fantasia in un vicolo di fantasia, a due passi da
+        // Piazza Matteotti. La posizione (link di Maps e coordinate della struttura) è quella
+        // della piazza, presa da OpenStreetMap, non di un portone vero. Locali,
         // numeri, prezzi ed eventi sono inventati (le date degli eventi partono da oggi); sono
         // veri solo i monumenti pubblici di «Cosa visitare». Ogni sezione è compilata del tutto,
         // per far vedere a chi prova la piattaforma tutto quello che una guida può contenere.
         $acc = $accountId;
         $tel = '+39 075 000 0000';
-        $pid = Properties::create($acc, 'Casa Checco', 'Perugia', 'Francesco', 1);
+        $pid = Properties::create($acc, 'Casa Checco', 'Assisi', 'Francesco', 1);
         Db::update('properties', [
-            'region' => 'Umbria', 'address' => 'Vicolo dei Gerani 3', 'postal_code' => '06121',
+            'region' => 'Umbria', 'address' => 'Vicolo dei Gerani 3', 'postal_code' => '06081',
             'checkin_from' => '15:00', 'checkout_by' => '10:30', 'host_phone' => $tel, 'host_whatsapp' => $tel, 'palette' => 'terracotta',
             'is_demo' => self::VETRINA, 'wizard_step' => 'fatto', 'property_type' => 'appartamento',
         ], 'id = :pid', ['pid' => $pid]);
+        // La geolocalizzazione: Piazza Matteotti ad Assisi (serve anche a stimare i minuti a piedi dei luoghi).
+        if (Migrator::columnExists('properties', 'lat')) Db::update('properties', ['lat' => self::CHECCO_LAT, 'lng' => self::CHECCO_LNG], 'id = :pid', ['pid' => $pid]);
         Properties::setLocales($acc, $pid, array_values(array_intersect(['it', 'en', 'de', 'fr', 'es'], Entitlements::allowedLocales($acc))));
         Properties::saveContacts($pid, [['name' => 'Francesco', 'role' => 'host', 'phone' => $tel, 'whatsapp' => 1],
-                                        ['name' => 'Marta', 'role' => 'pulizie', 'phone' => '+39 075 000 0001', 'whatsapp' => 0]]);
+                                        ['name' => 'Marta, per le pulizie', 'role' => 'altro', 'phone' => '+39 075 000 0001', 'whatsapp' => 0]]);
         $foto = fn(string $nome, string $alt) => self::foto($nome, $acc, $pid, $alt);
         Db::update('properties', ['cover_media_id' => $foto('checco-copertina.jpg', 'La scalinata in pietra con i gerani rossi e la porta in legno in cima')], 'id = :pid', ['pid' => $pid]);
         $giorno = fn(int $n) => (new \DateTimeImmutable(Eventi::oggi()))->modify(($n >= 0 ? '+' : '') . $n . ' days')->format('Y-m-d');
@@ -137,34 +144,34 @@ final class Demo
         Db::update('sections', ['media_id' => $foto('checco-ingresso.jpg', 'La porta rossa ad arco con la rosa rampicante sul muro')], 'id = :sid', ['sid' => $core]);
         self::scrivi($pid, $core, [
             'it' => ['arrival_mode' => 'accoglienza',
-                     'checkin_steps' => ['Da Piazza Matteotti prendi la scalinata accanto alla farmacia e scendi fino al primo vicolo a destra.',
+                     'checkin_steps' => ['Da Piazza Matteotti prendi la scalinata accanto alla fontanella e scendi fino al primo vicolo a destra.',
                                          'Casa Checco è la porta rossa ad arco, al numero 3, con la rosa sul muro.',
                                          'Francesco ti aspetta lì con le chiavi: scrivigli su WhatsApp mezz\'ora prima di arrivare.',
-                                         'In casa trovi il quaderno con le istruzioni e la mappa del centro.'],
+                                         'In casa trovi il quaderno con le istruzioni e la mappa della città.'],
                      'late_arrival' => 'Dopo le 21 lasciamo le chiavi in una cassetta con il codice: te lo mandiamo su WhatsApp il giorno stesso, non lo scriviamo qui.',
                      'documents' => 'Un documento d\'identità per ogni ospite, anche per i bambini: serve per la registrazione obbligatoria. Puoi mandarne una foto su WhatsApp prima dell\'arrivo.',
                      'tax_amount' => '1,50 € a persona (esempio)', 'tax_max_nights' => '5',
                      'tax_notes' => 'Esenti i bambini sotto i 12 anni. Si paga in contanti all\'arrivo: ti lasciamo la ricevuta.',
-                     'checkin_note' => 'Il vicolo è pedonale: con l\'auto non si arriva alla porta. Guarda la sezione Parcheggio.',
+                     'checkin_note' => 'Il vicolo è pedonale: con l\'auto non si arriva alla porta. Il parcheggio di Piazza Matteotti è a due minuti: guarda la sezione Parcheggio.',
                      'checkout_steps' => ['Chiavi: lasciale nella ciotola di ceramica sul mobile dell\'ingresso.',
                                           'Rifiuti: porta i sacchetti nei bidoni in fondo al vicolo.',
                                           'Aria condizionata e luci: spegnile prima di uscire.',
-                                          'Finestre: chiudi le persiane, il vento in collina è forte.',
+                                          'Finestre: chiudi le persiane, il vento dal Subasio è forte.',
                                           'Stoviglie: basta metterle in lavastoviglie, la accendiamo noi.'],
                      'checkout_notes' => 'Grazie di aver scelto Casa Checco. Se ti sei trovato bene, una recensione ci aiuta tantissimo.'],
-            'en' => ['checkin_steps' => ['From Piazza Matteotti take the steps next to the pharmacy and go down to the first alley on the right.',
+            'en' => ['checkin_steps' => ['From Piazza Matteotti take the steps next to the drinking fountain and go down to the first alley on the right.',
                                          'Casa Checco is the red arched door at number 3, with the rose on the wall.',
                                          'Francesco will meet you there with the keys: message him on WhatsApp half an hour before you arrive.',
-                                         'Inside you will find the house notebook and a map of the old town.'],
+                                         'Inside you will find the house notebook and a map of the town.'],
                      'late_arrival' => 'After 9pm we leave the keys in a code box: we send you the code on WhatsApp on the day, we never write it here.',
                      'documents' => 'An ID for every guest, children included: it is required for the mandatory registration. You can send a photo on WhatsApp before you arrive.',
                      'tax_notes' => 'Children under 12 are exempt. Paid in cash on arrival: we leave you a receipt.',
-                     'checkin_note' => 'The alley is pedestrian: you cannot drive to the door. See the Parking section.',
+                     'checkin_note' => 'The alley is pedestrian: you cannot drive to the door. The Piazza Matteotti car park is two minutes away: see the Parking section.',
                      'checkout_steps' => ['Keys: leave them in the ceramic bowl on the hall cabinet.', 'Rubbish: take the bags to the bins at the end of the alley.',
-                                          'Air conditioning and lights: switch them off before leaving.', 'Windows: close the shutters, the wind on the hill is strong.',
+                                          'Air conditioning and lights: switch them off before leaving.', 'Windows: close the shutters, the wind from Mount Subasio is strong.',
                                           'Dishes: just load the dishwasher, we will start it.'],
                      'checkout_notes' => 'Thank you for choosing Casa Checco. If you enjoyed your stay, a review helps us a lot.'],
-            'de' => ['checkin_steps' => ['Nehmen Sie von der Piazza Matteotti die Treppe neben der Apotheke bis zur ersten Gasse rechts.',
+            'de' => ['checkin_steps' => ['Nehmen Sie von der Piazza Matteotti die Treppe neben dem Trinkbrunnen bis zur ersten Gasse rechts.',
                                          'Casa Checco ist die rote Bogentür mit der Nummer 3 und der Rose an der Wand.',
                                          'Francesco erwartet Sie dort mit den Schlüsseln: schreiben Sie ihm eine halbe Stunde vorher auf WhatsApp.',
                                          'Im Haus finden Sie das Hausheft und einen Stadtplan.']],
@@ -200,15 +207,15 @@ final class Demo
         $extra = Properties::addSection($acc, $pid, 'extras');
         self::scrivi($pid, $extra, [
             'it' => ['items' => [
-                        ['title' => 'Transfer dalla stazione', 'amount' => '20', 'unit' => 'per_trip', 'description' => 'Ti aspettiamo alla stazione di Perugia con un cartello col tuo nome e ti portiamo fino al parcheggio più vicino a casa.'],
+                        ['title' => 'Transfer dalla stazione', 'amount' => '20', 'unit' => 'per_trip', 'description' => 'Ti aspettiamo alla stazione di Assisi, a Santa Maria degli Angeli, con un cartello col tuo nome e ti portiamo fino al parcheggio di Piazza Matteotti.'],
                         ['title' => 'Cesto della colazione', 'amount' => '9', 'unit' => 'per_person', 'description' => 'Pane, torta al testo, marmellate e frutta di stagione, lasciati in cucina la sera prima.', 'price_note' => 'Gratis per i bambini sotto i 6 anni.'],
                         ['title' => 'Check-out tardivo', 'amount' => '', 'unit' => 'on_request', 'description' => 'Fino alle 14, se la casa non è prenotata quel giorno.'],
-                        ['title' => 'Degustazione di vini umbri', 'amount' => '25', 'unit' => 'per_person', 'description' => 'Quattro vini della zona con salumi e formaggi, a casa, la sera che scegli.']],
+                        ['title' => 'Degustazione di olio e vini umbri', 'amount' => '25', 'unit' => 'per_person', 'description' => 'Olio nuovo degli uliveti del Subasio e tre vini della zona, con salumi e formaggi, a casa, la sera che scegli.']],
                      'note' => 'Si chiedono su WhatsApp, almeno un giorno prima.'],
-            'en' => ['items' => [['title' => 'Station transfer', 'description' => 'We wait for you at Perugia station with your name on a sign and drive you to the car park nearest the house.'],
+            'en' => ['items' => [['title' => 'Station transfer', 'description' => 'We wait for you at Assisi station, in Santa Maria degli Angeli, with your name on a sign and drive you to the Piazza Matteotti car park.'],
                                  ['title' => 'Breakfast basket', 'description' => 'Bread, torta al testo, jams and seasonal fruit, left in the kitchen the night before.', 'price_note' => 'Free for children under 6.'],
                                  ['title' => 'Late check-out', 'description' => 'Until 2pm, if the house is not booked that day.'],
-                                 ['title' => 'Umbrian wine tasting', 'description' => 'Four local wines with cured meats and cheese, at home, on the evening you choose.']],
+                                 ['title' => 'Umbrian olive oil and wine tasting', 'description' => 'New oil from the Subasio olive groves and three local wines, with cured meats and cheese, at home, on the evening you choose.']],
                      'note' => 'Ask on WhatsApp, at least one day ahead.'],
         ], 'Servizi extra');
 
@@ -225,51 +232,53 @@ final class Demo
         // -------- Come arrivare: una scheda per mezzo
         $arrivo = Properties::addSection($acc, $pid, 'arrival');
         self::scrivi($pid, $arrivo, [
-            'it' => ['address' => 'Vicolo dei Gerani 3, Perugia (vicino a Piazza Matteotti)', 'maps_url' => 'https://maps.google.com/?q=Piazza+Matteotti,+Perugia',
+            'it' => ['address' => 'Vicolo dei Gerani 3, Assisi (a due passi da Piazza Matteotti)', 'maps_url' => self::CHECCO_MAPS,
                      'routes' => [
-                        ['mode' => 'auto', 'steps' => "Dalla E45 esci a Perugia e segui le indicazioni per il centro.\nIl centro storico è ZTL: non entrare con l'auto.\nLascia l'auto in uno dei parcheggi della sezione Parcheggio e sali con le scale mobili."],
-                        ['mode' => 'treno', 'steps' => "Scendi alla stazione di Perugia.\nPrendi il minimetrò fino al capolinea in centro.\nDa lì sono dieci minuti a piedi: Piazza Matteotti e poi la scalinata accanto alla farmacia."],
-                        ['mode' => 'aereo', 'steps' => "Dall'aeroporto dell'Umbria ci sono navette e taxi per il centro, circa venti minuti.\nSe vuoi, prenota il nostro transfer nei Servizi extra."],
-                        ['mode' => 'autobus', 'steps' => "Gli autobus extraurbani arrivano al terminal di Piazza Partigiani.\nDa lì prendi le scale mobili fino al centro: dieci minuti in tutto."]],
-                     'note' => 'Per qualsiasi difficoltà chiama Francesco: ti viene incontro.'],
-            'en' => ['routes' => [['steps' => "Leave the E45 at the Perugia exit and follow the signs to the centre.\nThe old town is a restricted traffic zone: do not drive in.\nLeave the car in one of the car parks in the Parking section and take the escalators up."],
-                                  ['steps' => "Get off at Perugia station.\nTake the minimetrò to the last stop in the centre.\nFrom there it is ten minutes on foot: Piazza Matteotti, then the steps next to the pharmacy."],
-                                  ['steps' => "From Umbria airport there are shuttles and taxis to the centre, about twenty minutes.\nIf you like, book our transfer in the Extra services."],
-                                  ['steps' => "Regional buses stop at the Piazza Partigiani terminal.\nFrom there take the escalators up to the centre: ten minutes in all."]],
-                     'note' => 'If you have any trouble, call Francesco: he will come and meet you.'],
+                        ['mode' => 'auto', 'steps' => "Dalla superstrada E45/SS75 esci ad Assisi e segui le indicazioni per il centro e Piazza Matteotti.\nIl centro storico è ZTL: non superare i varchi con le telecamere.\nLascia l'auto nel parcheggio di Piazza Matteotti: da lì sono due minuti a piedi."],
+                        ['mode' => 'treno', 'steps' => "Scendi alla stazione di Assisi, a Santa Maria degli Angeli, nella pianura.\nL'autobus urbano per il centro parte davanti alla stazione: scendi in Piazza Matteotti, in circa venti minuti.\nIn taxi sono una decina di minuti."],
+                        ['mode' => 'aereo', 'steps' => "Dall'aeroporto dell'Umbria sono circa venti minuti in auto o in taxi.\nSe vuoi, prenota il nostro transfer nei Servizi extra."],
+                        ['mode' => 'autobus', 'steps' => "Diversi autobus extraurbani fermano ad Assisi: controlla sul biglietto la fermata più vicina al centro.\nDalla fermata prendi l'autobus urbano per Piazza Matteotti."]],
+                     'note' => 'Per qualsiasi difficoltà chiama Francesco: ti viene incontro in piazza.'],
+            'en' => ['routes' => [['steps' => "Leave the E45/SS75 expressway at the Assisi exit and follow the signs to the centre and Piazza Matteotti.\nThe old town is a restricted traffic zone: do not drive through the camera gates.\nLeave the car in the Piazza Matteotti car park: the house is two minutes away on foot."],
+                                  ['steps' => "Get off at Assisi station, in Santa Maria degli Angeli, down on the plain.\nThe town bus to the centre leaves from outside the station: get off at Piazza Matteotti, about twenty minutes.\nBy taxi it takes about ten minutes."],
+                                  ['steps' => "From Umbria airport it is about twenty minutes by car or taxi.\nIf you like, book our transfer in the Extra services."],
+                                  ['steps' => "Several regional buses stop in Assisi: check the stop nearest the centre on your ticket.\nFrom there take the town bus to Piazza Matteotti."]],
+                     'note' => 'If you have any trouble, call Francesco: he will meet you in the square.'],
         ], 'Come arrivare');
 
-        // -------- Parcheggio: tipi, costi, minuti a piedi, ZTL
+        // -------- Parcheggio: tipi, costi (di esempio), minuti a piedi, ZTL
         $parcheggio = Properties::addSection($acc, $pid, 'parking');
         self::scrivi($pid, $parcheggio, [
             'it' => ['options' => [
-                        ['type' => 'garage', 'name' => 'Garage convenzionato', 'address' => 'Piazza Partigiani, Perugia', 'cost_day' => '15', 'cost_note' => 'Prezzo riservato agli ospiti: mostra il messaggio di Francesco alla cassa.', 'walk_minutes' => '8',
-                         'instructions' => "Coperto e custodito giorno e notte.\nDal garage prendi le scale mobili: arrivi in centro senza salite."],
-                        ['type' => 'pagamento', 'name' => 'Parcheggio multipiano', 'address' => 'Zona stazione, Perugia', 'cost_hour' => '1,80', 'cost_day' => '12', 'walk_minutes' => '6',
-                         'instructions' => 'Si paga all\'uscita, anche con la carta.'],
-                        ['type' => 'strada', 'name' => 'Strisce bianche in periferia', 'address' => 'Via del Tevere, Perugia', 'cost_note' => 'Gratis, ma a venti minuti dal centro: comodo solo per soste lunghe.', 'walk_minutes' => '20',
-                         'instructions' => 'Da lì c\'è l\'autobus per il centro ogni quindici minuti.']],
-                     'ztl' => 'Il centro storico è ZTL tutto il giorno, con le telecamere ai varchi. Si entra solo per scaricare i bagagli, e solo se Francesco comunica la tua targa il giorno prima: scrivigliela su WhatsApp.'],
-            'en' => ['options' => [['name' => 'Partner garage', 'cost_note' => 'Special price for our guests: show Francesco\'s message at the till.', 'instructions' => "Covered and staffed day and night.\nFrom the garage take the escalators: you reach the centre without climbing."],
-                                   ['name' => 'Multi-storey car park', 'instructions' => 'You pay when you leave, cards accepted.'],
-                                   ['name' => 'Free street parking on the outskirts', 'cost_note' => 'Free, but twenty minutes from the centre: only worth it for long stays.', 'instructions' => 'A bus to the centre leaves every fifteen minutes.']],
-                     'ztl' => 'The old town is a restricted traffic zone all day, with cameras at the gates. You may only drive in to unload luggage, and only if Francesco registers your plate the day before: send it to him on WhatsApp.'],
+                        ['type' => 'pagamento', 'name' => 'Parcheggio di Piazza Matteotti', 'address' => 'Piazza Matteotti, Assisi', 'maps_url' => self::CHECCO_MAPS,
+                         'cost_hour' => '2', 'cost_day' => '20', 'cost_note' => 'Prezzi di esempio: controlla le tariffe esposte all\'ingresso.', 'walk_minutes' => '2',
+                         'instructions' => "Coperto, sotto la piazza: è il più vicino alla casa.\nSi paga alla cassa automatica prima di riprendere l'auto, anche con la carta."],
+                        ['type' => 'garage', 'name' => 'Garage convenzionato', 'address' => 'Porta Perlici, Assisi', 'cost_day' => '15', 'cost_note' => 'Prezzo riservato agli ospiti: mostra il messaggio di Francesco.', 'walk_minutes' => '6',
+                         'instructions' => 'Posto coperto e custodito. Utile se resti più giorni e non usi l\'auto.'],
+                        ['type' => 'pubblico', 'name' => 'Parcheggio libero fuori dalle mura', 'address' => 'Assisi', 'walk_minutes' => '15',
+                         'instructions' => 'Gratuito ma in salita: comodo solo se non hai bagagli pesanti.']],
+                     'ztl' => 'Il centro storico di Assisi è ZTL, con le telecamere ai varchi. Si entra solo per scaricare i bagagli, e solo se Francesco comunica la tua targa il giorno prima: scrivigliela su WhatsApp.'],
+            'en' => ['options' => [['name' => 'Piazza Matteotti car park', 'cost_note' => 'Example prices: check the rates posted at the entrance.',
+                                    'instructions' => "Covered, under the square: the closest to the house.\nPay at the machine before collecting your car, cards accepted."],
+                                   ['name' => 'Partner garage', 'cost_note' => 'Special price for our guests: show Francesco\'s message.', 'instructions' => 'Covered and staffed. Handy if you stay several days without using the car.'],
+                                   ['name' => 'Free parking outside the walls', 'instructions' => 'Free but uphill: only worth it without heavy luggage.']],
+                     'ztl' => 'The old town of Assisi is a restricted traffic zone, with cameras at the gates. You may only drive in to unload luggage, and only if Francesco registers your plate the day before: send it to him on WhatsApp.'],
         ], 'Parcheggio');
 
         // -------- Muoversi in zona
         $muoversi = Properties::addSection($acc, $pid, 'transport');
         self::scrivi($pid, $muoversi, [
             'it' => ['options' => [
-                        ['type' => 'lifts', 'name' => 'Scale mobili e minimetrò', 'where' => 'Dai parcheggi e dalla stazione fino al centro.', 'note' => "Le scale mobili sono gratuite.\nIl minimetrò ha un biglietto suo, si compra alle macchinette."],
-                        ['type' => 'bus', 'name' => 'Autobus urbani', 'where' => 'Fermata in Piazza Italia, cinque minuti a piedi.', 'note' => 'Biglietti in tabaccheria o sull\'app; a bordo costano di più.'],
-                        ['type' => 'taxi', 'name' => 'Taxi', 'phone' => '+39 075 000 0002', 'where' => 'Posteggio in Piazza Italia.', 'note' => 'Di sera conviene chiamarlo: Francesco ti lascia il numero aggiornato.'],
-                        ['type' => 'bike_rental', 'name' => 'E-bike per il lago Trasimeno', 'note' => 'Le prenota Francesco: le consegnano a casa la mattina e le ritirano la sera.'],
-                        ['type' => 'walk', 'name' => 'A piedi', 'note' => 'Il centro si gira tutto a piedi: Corso Vannucci, la cattedrale e la Rocca sono a dieci minuti.']]],
-            'en' => ['options' => [['name' => 'Escalators and minimetrò', 'where' => 'From the car parks and the station up to the centre.', 'note' => "The escalators are free.\nThe minimetrò has its own ticket, sold at the machines."],
-                                   ['name' => 'City buses', 'where' => 'Stop in Piazza Italia, five minutes on foot.', 'note' => 'Tickets at the tobacconist or in the app; on board they cost more.'],
-                                   ['name' => 'Taxi', 'where' => 'Taxi rank in Piazza Italia.', 'note' => 'In the evening it is better to call: Francesco gives you the current number.'],
-                                   ['name' => 'E-bikes for Lake Trasimeno', 'note' => 'Francesco books them: they are delivered in the morning and collected in the evening.'],
-                                   ['name' => 'On foot', 'note' => 'The old town is all walkable: Corso Vannucci, the cathedral and the Rocca are ten minutes away.']]],
+                        ['type' => 'walk', 'name' => 'A piedi', 'note' => "Dalla casa: Duomo di San Rufino 3 minuti, Piazza del Comune 8, Basilica di Santa Chiara 6.\nLa Basilica di San Francesco è a venti minuti, in discesa: al ritorno conviene l'autobus."],
+                        ['type' => 'bus', 'name' => 'Autobus urbani', 'where' => 'Fermata in Piazza Matteotti, due minuti a piedi.', 'note' => 'Collegano il centro con la stazione e con Santa Maria degli Angeli. Biglietti in tabaccheria.'],
+                        ['type' => 'taxi', 'name' => 'Taxi', 'phone' => '+39 075 000 0002', 'note' => 'In centro si chiamano per telefono: Francesco ti lascia il numero aggiornato.'],
+                        ['type' => 'bike_rental', 'name' => 'E-bike tra gli uliveti', 'note' => 'Le prenota Francesco: le consegnano a casa la mattina, per la pianura e la ciclabile verso Spello.'],
+                        ['type' => 'car_rental', 'name' => 'Noleggio auto', 'where' => 'Vicino alla stazione, a Santa Maria degli Angeli.', 'note' => 'Comodo per Perugia, Spello e il lago Trasimeno.']]],
+            'en' => ['options' => [['name' => 'On foot', 'note' => "From the house: San Rufino cathedral 3 minutes, Piazza del Comune 8, Basilica of Saint Clare 6.\nThe Basilica of Saint Francis is twenty minutes downhill: take the bus back."],
+                                   ['name' => 'Town buses', 'where' => 'Stop in Piazza Matteotti, two minutes on foot.', 'note' => 'They link the centre with the station and Santa Maria degli Angeli. Tickets at the tobacconist.'],
+                                   ['name' => 'Taxi', 'note' => 'In the centre you call them by phone: Francesco gives you the current number.'],
+                                   ['name' => 'E-bikes through the olive groves', 'note' => 'Francesco books them: delivered in the morning, for the plain and the cycle path to Spello.'],
+                                   ['name' => 'Car hire', 'where' => 'Near the station, in Santa Maria degli Angeli.', 'note' => 'Handy for Perugia, Spello and Lake Trasimeno.']]],
         ], 'Muoversi in zona');
 
         // -------- Rifiuti
@@ -293,23 +302,23 @@ final class Demo
             'it' => ['emergency_number' => '112', 'contacts' => [
                         ['name' => 'Francesco, per la casa', 'phone' => $tel, 'note' => 'Dalle 8 alle 23'],
                         ['name' => 'Guardia medica turistica', 'phone' => '', 'note' => 'Il numero aggiornato è sul foglio appeso in cucina.'],
-                        ['name' => 'Farmacia di turno', 'phone' => '', 'note' => 'Il turno è sulla porta di ogni farmacia; la più vicina è in Piazza Matteotti.'],
+                        ['name' => 'Farmacia di turno', 'phone' => '', 'note' => 'Il turno è affisso sulla porta di ogni farmacia del centro.'],
                         ['name' => 'Veterinario di turno', 'phone' => '', 'note' => 'Chiedi a Francesco: ti dà il numero di quello aperto.']],
-                     'note' => 'Il pronto soccorso è all\'ospedale di Perugia, quindici minuti in auto.'],
+                     'note' => 'Il pronto soccorso è all\'ospedale di Assisi, una decina di minuti in auto.'],
             'en' => ['contacts' => [['name' => 'Francesco, for the house', 'note' => '8am to 11pm'], ['name' => 'Tourist medical service', 'note' => 'The current number is on the sheet in the kitchen.'],
-                                    ['name' => 'Duty pharmacy', 'note' => 'The rota is on every pharmacy door; the nearest one is in Piazza Matteotti.'],
+                                    ['name' => 'Duty pharmacy', 'note' => 'The rota is posted on the door of every pharmacy in the centre.'],
                                     ['name' => 'Duty vet', 'note' => 'Ask Francesco for the one that is open.']],
-                     'note' => 'The emergency department is at Perugia hospital, fifteen minutes by car.'],
+                     'note' => 'The emergency department is at Assisi hospital, about ten minutes by car.'],
         ], 'Emergenze e contatti');
 
         // -------- Informazioni utili
         $info = Properties::addSection($acc, $pid, 'info');
         self::scrivi($pid, $info, [
-            'it' => ['items' => ['I negozi del centro chiudono tra le 13 e le 16, tranne il sabato.', 'L\'acqua del rubinetto è buona da bere.', 'In ottobre il centro si riempie per una grande festa: conviene prenotare i ristoranti.',
-                                 'Il bancomat più vicino è in Piazza Matteotti.'],
+            'it' => ['items' => ['Per entrare nelle basiliche servono spalle e ginocchia coperte.', 'Il centro è tutto in salita e in discesa: scarpe comode.',
+                                 'Molti negozi chiudono tra le 13 e le 15:30.', 'L\'acqua delle fontanelle è buona da bere.', 'Nei giorni di festa la città si riempie: conviene prenotare i ristoranti.'],
                      'note' => 'Nel quaderno in soggiorno ci sono altri consigli scritti dagli ospiti.'],
-            'en' => ['items' => ['Shops in the centre close between 1pm and 4pm, except on Saturdays.', 'Tap water is safe to drink.', 'In October the centre fills up for a big festival: book restaurants ahead.',
-                                 'The nearest cash machine is in Piazza Matteotti.'],
+            'en' => ['items' => ['To enter the basilicas, shoulders and knees must be covered.', 'The town is all uphill and downhill: comfortable shoes.',
+                                 'Many shops close between 1pm and 3:30pm.', 'The water from the public fountains is safe to drink.', 'On feast days the town fills up: book restaurants ahead.'],
                      'note' => 'The notebook in the living room has more tips written by other guests.'],
         ], 'Informazioni utili');
 
@@ -325,27 +334,27 @@ final class Demo
 
         // -------- Eventi (di fantasia, con le date da oggi): uno oggi con la locandina, uno tra pochi giorni, uno più avanti che torna ogni anno,
         // un mercato settimanale, uno «a parole» e uno passato (nel pannello mostra «Ripeti nel …», nella guida non si vede).
-        $eventi = Properties::addSection($acc, $pid, 'events');
+        $eventi = Properties::addSection($acc, $pid, 'events');   // gli eventi sono di fantasia, i luoghi veri
         $locandina = $foto('checco-locandina.jpg', 'Locandina di Jazz sotto le volte');
         self::scrivi($pid, $eventi, [
             'it' => ['intro' => 'Quello che succede in città mentre sei qui. Gli eventi sono di esempio, come la casa.', 'events' => [
                         ['name' => 'Jazz sotto le volte', 'cat' => 'music', 'when' => 'day', 'date_from' => $giorno(0), 'time_from' => '21:30', 'place' => 'Piazza Matteotti', 'dist_min' => '2', 'dist_mode' => 'walk',
                          'price_kind' => 'free', 'recommended' => '1', 'poster' => $locandina, 'description' => 'Un trio jazz suona sotto le volte della piazza. Porta un cuscino: si sta seduti sui gradini.'],
                         ['name' => 'Mercatino dell\'artigianato', 'cat' => 'market', 'when' => 'range', 'date_from' => $giorno(3), 'date_to' => $giorno(4), 'time_from' => '10:00', 'time_to' => '19:00',
-                         'place' => 'Corso Vannucci', 'dist_min' => '6', 'dist_mode' => 'walk', 'price_kind' => 'free', 'description' => 'Ceramiche, tessuti e legno lavorato a mano dagli artigiani della zona.'],
+                         'place' => 'Piazza del Comune', 'dist_min' => '8', 'dist_mode' => 'walk', 'price_kind' => 'free', 'description' => 'Ceramiche, tessuti e legno lavorato a mano dagli artigiani della zona.'],
                         ['name' => 'Festa d\'autunno nel borgo', 'cat' => 'festival', 'when' => 'range', 'date_from' => $giorno(25), 'date_to' => $giorno(27), 'yearly' => '1', 'place' => 'Centro storico',
                          'price_kind' => 'paid', 'price' => '5 €', 'url' => 'https://example.org/festa-autunno', 'description' => 'Tre giorni di bancarelle, musica e piatti della tradizione. Il biglietto vale per tutte le sere.'],
                         ['name' => 'Mercato contadino del sabato', 'cat' => 'market', 'when' => 'weekly', 'days' => [6], 'time_from' => '08:00', 'time_to' => '13:00', 'place' => 'Piazza Matteotti', 'dist_min' => '2', 'dist_mode' => 'walk',
                          'description' => 'Frutta, verdura, formaggi e olio direttamente dai produttori.'],
-                        ['name' => 'Mostra-mercato dell\'antiquariato', 'cat' => 'exhibition', 'when' => 'other', 'when_text' => 'L\'ultima domenica del mese', 'place' => 'Giardini Carducci', 'dist_min' => '10', 'dist_mode' => 'walk'],
-                        ['name' => 'Palio dei rioni', 'cat' => 'history', 'when' => 'day', 'date_from' => $giorno(-40), 'yearly' => '1', 'place' => 'Corso Vannucci', 'description' => 'Sfilata in costume e gara tra i rioni della città.']]],
+                        ['name' => 'Mostra-mercato dell\'antiquariato', 'cat' => 'exhibition', 'when' => 'other', 'when_text' => 'L\'ultima domenica del mese', 'place' => 'Piazza Santa Chiara', 'dist_min' => '6', 'dist_mode' => 'walk'],
+                        ['name' => 'Rievocazione dei rioni', 'cat' => 'history', 'when' => 'day', 'date_from' => $giorno(-40), 'yearly' => '1', 'place' => 'Piazza del Comune', 'description' => 'Sfilata in costume e sfida tra i rioni della città.']]],
             'en' => ['intro' => 'What is on in town while you are here. The events are examples, like the house.', 'events' => [
                         ['name' => 'Jazz under the vaults', 'description' => 'A jazz trio plays under the vaults of the square. Bring a cushion: you sit on the steps.'],
                         ['name' => 'Craft market', 'description' => 'Ceramics, fabrics and woodwork made by local craftspeople.'],
                         ['name' => 'Autumn festival in the old town', 'description' => 'Three days of stalls, music and traditional food. One ticket covers every evening.'],
                         ['name' => 'Saturday farmers\' market', 'description' => 'Fruit, vegetables, cheese and olive oil straight from the producers.'],
                         ['name' => 'Antiques fair', 'when_text' => 'The last Sunday of the month'],
-                        ['name' => 'Palio of the districts', 'description' => 'Costume parade and race between the districts of the town.']]],
+                        ['name' => 'Pageant of the districts', 'description' => 'Costume parade and contest between the districts of the town.']]],
         ], 'Eventi');
 
         // -------- I luoghi, se il piano li comprende
@@ -353,44 +362,46 @@ final class Demo
             $luoghi = function (int $sid, array $elenco) use ($acc, $pid, $foto) {
                 foreach ($elenco as $l) {
                     $plid = Properties::savePlace($acc, $pid, $sid, null, 'it', true, [
-                        'name' => $l[0], 'category_choice' => $l[1], 'description' => $l[2], 'address' => $l[3] . ', Perugia',
-                        'maps_url' => 'https://maps.google.com/?q=' . rawurlencode($l[3] . ', Perugia'),
-                        'walk_minutes' => $l[4], 'badge_choice' => $l[5], 'badge_tone' => $l[6] ?? 'sea',
+                        'name' => $l[0], 'category_choice' => $l[1], 'description' => $l[2], 'address' => $l[3] . ', Assisi',
+                        'maps_url' => 'https://maps.google.com/?q=' . rawurlencode($l[3] . ', Assisi'),
+                        'walk_minutes' => $l[4], 'drive_minutes' => $l[9] ?? '', 'badge_choice' => $l[5], 'badge_tone' => $l[6] ?? 'sea',
                     ]);
                     if (!empty($l[7])) Db::update('places', ['media_id' => $foto($l[7], $l[8])], 'id = :pid', ['pid' => $plid]);
                 }
             };
             $mangiare = Properties::addSection($acc, $pid, 'eat');
-            self::scrivi($pid, $mangiare, ['it' => ['intro' => 'Quattro posti dove andiamo noi, tutti a piedi da casa.', 'host_note' => 'Alla trattoria chiedi il piatto del giorno: non è sul menù.'],
-                                           'en' => ['intro' => 'Four places we go to ourselves, all walkable from the house.', 'host_note' => 'At the trattoria, ask for the dish of the day: it is not on the menu.']], 'Dove mangiare e bere');
+            self::scrivi($pid, $mangiare, ['it' => ['intro' => 'Quattro posti dove andiamo noi, tutti a piedi da casa.', 'host_note' => 'Alla trattoria chiedi gli strangozzi al tartufo: non sono sempre sul menù.'],
+                                           'en' => ['intro' => 'Four places we go to ourselves, all walkable from the house.', 'host_note' => 'At the trattoria, ask for strangozzi with truffle: they are not always on the menu.']], 'Dove mangiare e bere');
             $luoghi($mangiare, [
-                ['Trattoria del Vicolo Stretto', 'trattoria', 'Pasta fatta a mano e carne alla brace, in una sala con le volte in pietra.', 'Via dei Gerani 9', 3, 'dinner', 'pine', 'checco-trattoria.jpg', 'Tavoli apparecchiati in un vicolo'],
-                ['Caffè della Loggia', 'breakfast', 'Cornetti caldi e cappuccino, con i tavolini sulla piazza.', 'Piazza Matteotti', 2, 'breakfast', 'sea', 'checco-bar.jpg', 'Una tazzina di espresso sul bancone'],
-                ['Gelateria del Corso', 'gelato', 'Prova il gusto al cioccolato fondente e quello all\'olio d\'oliva.', 'Corso Vannucci', 6, 'host_pick', 'ochre', 'checco-gelato.jpg', 'Vaschette di gelato colorate'],
+                ['Trattoria del Vicolo Stretto', 'trattoria', 'Strangozzi fatti a mano e carne alla brace, in una sala con le volte in pietra.', 'Vicolo dei Gerani 9', 3, 'dinner', 'pine', 'checco-trattoria.jpg', 'Tavoli apparecchiati in un vicolo'],
+                ['Caffè della Fontanella', 'breakfast', 'Cornetti caldi e cappuccino, con i tavolini all\'aperto.', 'Via dei Gerani 2', 2, 'breakfast', 'sea', 'checco-bar.jpg', 'Una tazzina di espresso sul bancone'],
+                ['Gelateria dei Pellegrini', 'gelato', 'Prova il gusto al miele del Subasio e quello all\'olio d\'oliva.', 'Via dei Gerani 12', 5, 'host_pick', 'ochre', 'checco-gelato.jpg', 'Vaschette di gelato colorate'],
                 ['Enoteca Tre Calici', 'wine_bar', 'Vini umbri al bicchiere e taglieri, aperta fino a mezzanotte.', 'Via dei Gerani 15', 4, 'typical', 'pine'],
             ]);
             $visitare = Properties::addSection($acc, $pid, 'visit');
-            self::scrivi($pid, $visitare, ['it' => ['intro' => 'Le cose da non perdere, in ordine di distanza da casa.', 'host_note' => 'Sali alla terrazza panoramica al tramonto: si vede tutta la valle.'],
-                                           'en' => ['intro' => 'The things not to miss, in order of distance from the house.', 'host_note' => 'Go up to the panoramic terrace at sunset: you can see the whole valley.']], 'Cosa visitare');
+            self::scrivi($pid, $visitare, ['it' => ['intro' => 'Le cose da non perdere, in ordine di distanza da casa.', 'host_note' => 'Sali alla Rocca Maggiore al tramonto: si vede tutta la valle fino a Perugia.'],
+                                           'en' => ['intro' => 'The things not to miss, in order of distance from the house.', 'host_note' => 'Go up to the Rocca Maggiore at sunset: you can see the whole valley as far as Perugia.']], 'Cosa visitare');
             $luoghi($visitare, [
-                ['Fontana Maggiore', 'monument', 'La fontana medievale al centro di Piazza IV Novembre, davanti alla cattedrale.', 'Piazza IV Novembre', 7, 'must_see', 'terracotta'],
-                ['Galleria Nazionale dell\'Umbria', 'museum', 'La grande pinacoteca della regione, dentro il Palazzo dei Priori.', 'Corso Vannucci 19', 6, 'rainy', 'sea'],
-                ['Rocca Paolina', 'castle', 'Le vie medievali rimaste sotto la fortezza: si attraversa scendendo con le scale mobili.', 'Piazza Italia', 8, 'free', 'pine'],
-                ['Terrazza del Mercato Coperto', 'viewpoint', 'Un affaccio sulla valle a pochi passi da casa.', 'Piazza Matteotti', 2, 'sunset', 'ochre'],
+                ['Duomo di San Rufino', 'church', 'La cattedrale di Assisi, con la facciata romanica: a tre minuti dalla casa.', 'Piazza San Rufino', 3, 'rainy', 'sea'],
+                ['Basilica di Santa Chiara', 'church', 'La basilica in pietra bianca e rosa del Subasio, con la terrazza sulla valle.', 'Piazza Santa Chiara', 6, 'quiet', 'pine'],
+                ['Piazza del Comune e Tempio di Minerva', 'square', 'Il cuore della città, con le colonne del tempio romano.', 'Piazza del Comune', 8, 'free', 'ochre'],
+                ['Rocca Maggiore', 'castle', 'La fortezza in cima alla città, con il panorama su tutta la valle.', 'Via della Rocca', 12, 'view', 'terracotta'],
+                ['Basilica di San Francesco', 'church', 'La basilica con gli affreschi di Giotto: conviene andarci la mattina presto.', 'Piazza Inferiore di San Francesco', 20, 'must_see', 'terracotta'],
             ]);
             $fare = Properties::addSection($acc, $pid, 'todo');
-            self::scrivi($pid, $fare, ['it' => ['intro' => 'Per riempire le giornate, dentro e fuori città.'], 'en' => ['intro' => 'To fill your days, in town and out of town.']], 'Cosa fare');
+            self::scrivi($pid, $fare, ['it' => ['intro' => 'Per riempire le giornate, in città e intorno.'], 'en' => ['intro' => 'To fill your days, in town and around.']], 'Cosa fare');
             $luoghi($fare, [
-                ['Passeggiata guidata nella Perugia sotterranea', 'tour', 'Due ore tra pozzi, acquedotti e vie coperte, con una guida.', 'Piazza Italia', 8, 'booking', 'sea'],
-                ['Lezione di pasta fatta a mano', 'cooking', 'Tre ore in cucina per imparare umbricelli e strangozzi, e poi mangiarli.', 'Via dei Gerani 9', 3, 'family', 'terracotta'],
-                ['Giro in e-bike sul lago Trasimeno', 'bike', 'Pista ciclabile in piano lungo il lago, con soste per il bagno in estate.', 'Lago Trasimeno', 45, 'full_day', 'pine'],
+                ['Visita guidata della città medievale', 'tour', 'Due ore tra vicoli, chiese e piazze, con una guida.', 'Piazza Matteotti', 2, 'booking', 'sea'],
+                ['Lezione di cucina umbra', 'cooking', 'Tre ore in cucina per imparare strangozzi e torta al testo, e poi mangiarli.', 'Vicolo dei Gerani 9', 3, 'family', 'terracotta'],
+                ['Passeggiata sul Monte Subasio', 'hike', 'Sentieri tra boschi e prati sopra la città: si parte a piedi da Porta Perlici.', 'Porta Perlici', 6, 'half_day', 'pine'],
+                ['Giro in e-bike tra gli uliveti', 'bike', 'Pista ciclabile in pianura verso Spello, tra uliveti e vigne.', 'Santa Maria degli Angeli', 0, 'full_day', 'pine', null, null, 15],
             ]);
             $negozi = Properties::addSection($acc, $pid, 'shop');
-            self::scrivi($pid, $negozi, ['it' => ['intro' => 'Per la spesa basta scendere in piazza.'], 'en' => ['intro' => 'For groceries, just walk down to the square.']], 'Negozi e spesa');
+            self::scrivi($pid, $negozi, ['it' => ['intro' => 'Per la spesa basta scendere di un vicolo.'], 'en' => ['intro' => 'For groceries, just walk down one alley.']], 'Negozi e spesa');
             $luoghi($negozi, [
-                ['Bottega di Rosa', 'grocery', 'Salumi, formaggi, pane e il necessario per la colazione.', 'Via dei Gerani 1', 1, 'local'],
-                ['Forno di Porta Sole', 'bakery', 'Torta al testo calda dalle 11 e biscotti all\'anice.', 'Via del Sole 4', 5, 'on_foot'],
-                ['Farmacia in piazza', 'pharmacy', 'La più vicina a casa.', 'Piazza Matteotti', 2, 'late'],
+                ['Bottega di Rosa', 'grocery', 'Salumi, formaggi, pane e il necessario per la colazione.', 'Vicolo dei Gerani 1', 1, 'local'],
+                ['Forno del Subasio', 'bakery', 'Torta al testo calda dalle 11 e rocciata, il dolce di Assisi.', 'Via dei Gerani 6', 3, 'on_foot'],
+                ['Farmacia del centro', 'pharmacy', 'La più vicina a casa.', 'Via dei Gerani 20', 5, 'late'],
             ]);
         }
         Guide::publish($pid);

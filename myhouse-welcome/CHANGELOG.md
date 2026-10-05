@@ -1,14 +1,14 @@
 # Changelog — MyHouse Welcome
 
-## v2 · Fatture con Adamo dal collegamento Stripe, vetrina «Casa Checco» (6 ottobre 2026)
+## v2 · Fatture con Adamo dal collegamento Stripe, vetrina «Casa Checco» ad Assisi (6 ottobre 2026)
 
 Nessuna migrazione.
 
 - **Adamo.** Le fatture le crea Adamo dal suo collegamento con Stripe (Impostazioni → Integrazioni → Stripe), senza token: la fase 6F non serve.
   - Il cliente Stripe porta ora i metadati che Adamo legge: `Fiscal_code` (per un'azienda senza codice fiscale, la partita IVA), `Pec` e `Fe_code` (il codice destinatario, oppure `0000000`).
   - La partita IVA di un'azienda va anche come «tax id» del cliente.
-- **Vetrina «Casa Checco».** «Crea la guida vetrina» crea ora «Casa Checco», a Perugia, in un vicolo di fantasia vicino a Piazza Matteotti; il link di Maps porta alla piazza.
-  - Tutte le 17 sezioni sono compilate, comprese le nuove: eventi di fantasia con una locandina disegnata, sezione libera «La storia della casa», parcheggi con prezzi e minuti a piedi, muoversi in zona, servizi extra con unità, due reti Wi-Fi, istruzioni, imposta di soggiorno.
+- **Vetrina «Casa Checco».** «Crea la guida vetrina» crea ora «Casa Checco», ad Assisi, in un vicolo di fantasia vicino a Piazza Matteotti. La struttura è geolocalizzata sulla piazza (43.07025, 12.61966, da OpenStreetMap), con il link di Maps e le coordinate; luoghi, parcheggi e indicazioni sono quelli di Assisi.
+  - Tutte le 17 sezioni sono compilate, comprese le nuove: eventi di fantasia con una locandina disegnata, sezione libera «La storia della casa», parcheggi con prezzi e minuti a piedi, muoversi in zona, servizi extra con unità, due reti Wi-Fi, istruzioni, imposta di soggiorno, 16 luoghi.
   - Le foto sono nuove versioni di quelle della demo: specchiate, ritagliate e con un'altra tonalità (`assets/foto/checco-*.jpg`).
 
 ## v2 · Fase 6E — Codici sconto per il primo anno, con Stripe (6 ottobre 2026)

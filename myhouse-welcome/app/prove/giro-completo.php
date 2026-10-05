@@ -1858,7 +1858,11 @@ $evV = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'even
 $r = $ospite->get("/g/$vslug/$evV");
 prova('…eventi di fantasia: oggi con la locandina, quello passato non si vede', str_contains($r['body'], 'Jazz sotto le volte') && str_contains($r['body'], 'Locandina: Jazz sotto le volte')
       && str_contains($r['body'], 'Mercato contadino del sabato') && !str_contains($r['body'], 'Palio dei rioni'));
-prova('…con i luoghi (4 da mangiare, 4 da visitare, 3 da fare, 3 negozi)', (int) val("SELECT COUNT(*) FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ?", [$vet['id'] ?? 0]) === 14);
+prova('…con i luoghi (4 da mangiare, 5 da visitare, 4 da fare, 3 negozi)', (int) val("SELECT COUNT(*) FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ?", [$vet['id'] ?? 0]) === 16);
+$arrV = json_decode((string) val("SELECT data FROM sections WHERE property_id = ? AND kind = 'arrival'", [$vet['id'] ?? 0]), true);
+prova('…ad Assisi, geolocalizzata in Piazza Matteotti: coordinate della struttura e link di Maps', ($vet['city'] ?? '') === 'Assisi'
+      && abs((float) val('SELECT lat FROM properties WHERE id = ?', [$vet['id'] ?? 0]) - 43.07025) < 0.0001 && abs((float) val('SELECT lng FROM properties WHERE id = ?', [$vet['id'] ?? 0]) - 12.61966) < 0.0001
+      && str_contains((string) ($arrV['maps_url'] ?? ''), 'query=43.07025,12.61966'));
 $r = $admin->post("/admin/cliente/$aacc/vetrina", ['plus' => '1']);
 prova('…una sola vetrina per account', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND is_demo = 2', [$aacc]) === 1);
 $r = $ospite->get('/');
