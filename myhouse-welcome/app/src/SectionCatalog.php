@@ -21,7 +21,7 @@ namespace MHW;
  *               e le due parti si uniscono per id. Così riordinare o togliere una riga
  *               non mescola le traduzioni.
  *               Sottotipi: text, textarea (tradotti); plain, secret, url, tel, time,
- *               choice, days, check, image, pdf, money (uguali in ogni lingua; image e pdf
+ *               choice, days, check, image, pdf, money, date (uguali in ogni lingua; image e pdf
  *               sono id di media, caricati riga per riga; money è un importo in euro,
  *               salvato con la virgola: «1,50»).
  *   checks    — più spunte da un elenco fisso (le dotazioni), uguale in ogni lingua
@@ -35,6 +35,12 @@ namespace MHW;
  * Nelle righe: 'pillole' => true mostra una scelta come pillole; 'nascosto_con' =>
  * [campo, [valori]] nasconde il sottocampo (e lo svuota al salvataggio) quando l'altro
  * campo della riga ha uno di quei valori; 'cifre' => true accetta solo un numero intero.
+ * Fase 6G: 'solo_con' => [campo, [valori]] mostra il sottocampo solo con quei valori (non lo
+ * svuota); 'aiuto_con' => [campo, [valori], testo] un aiuto che compare solo con quei valori;
+ * 'etichetta_se' => [campo, [valore => etichetta]] cambia l'etichetta; 'default' vale per la
+ * riga nuova; 'locandina' => sottocampo PDF: una zona sola per immagine o PDF ('nascosto' su
+ * quel sottocampo: non si disegna da solo). Si mostrano e nascondono con cms.js; senza
+ * JavaScript tutto resta visibile.
  *
  * 'group' (fase 6C) dice in quale gruppo sta la sezione nella home: casa, arrivo, territorio.
  *
@@ -257,6 +263,41 @@ final class SectionCatalog
                 'note'             => ['textarea', 'Nota', 'Facoltativa.'],
             ],
         ],
+        // Eventi (fase 6G): sagre, mercati, concerti. La logica delle date è in Eventi; la guida
+        // filtra quando si mostra (gli eventi passati spariscono da soli). La locandina è una
+        // zona sola, immagine o PDF: l'immagine va in `poster`, il PDF in `poster_pdf`.
+        'events' => [
+            'icon' => 'calendar', 'group' => 'territorio',
+            'intro' => 'Gli eventi passati non si vedono più nella guida. Restano qui finché non li togli.',
+            'fields' => [
+                'intro'  => ['textarea', 'Introduzione', 'Facoltativa.'],
+                'events' => ['repeater', 'Eventi', 'Sagre, mercati, concerti: una scheda per evento, con la locandina.',
+                             'add' => 'Aggiungi un evento', 'item' => 'Evento', 'max' => 40, 'eventi' => true, 'sub' => [
+                    'name'        => ['text', 'Nome', '', 'w' => 8],
+                    'cat'         => ['choice', 'Categoria', '', 'w' => 4, 'options' => [], 'tassonomia' => 'eventi'],
+                    'when'        => ['choice', 'Quando', '', 'w' => 12, 'pillole' => true, 'default' => 'day', 'options' => ['day' => 'Un giorno', 'range' => 'Più giorni', 'weekly' => 'Ogni settimana', 'other' => 'Altro']],   // le chiavi di Eventi::QUANDO
+                    'date_from'   => ['date', 'Dal', '', 'w' => 4, 'etichetta_se' => ['when', ['day' => 'Giorno']],
+                                      'aiuto_con' => ['when', ['weekly', 'other'], 'Facoltativo: da quando a quando.']],
+                    'date_to'     => ['date', 'Al', '', 'w' => 4, 'nascosto_con' => ['when', ['day']],
+                                      'aiuto_con' => ['when', ['weekly', 'other'], 'Facoltativo: da quando a quando.']],
+                    'time_from'   => ['time', 'Dalle', '', 'w' => 2],
+                    'time_to'     => ['time', 'Alle', 'Facoltativo.', 'w' => 2],
+                    'days'        => ['days', 'Giorni', '', 'solo_con' => ['when', ['weekly']]],
+                    'when_text'   => ['text', 'Quando, a parole', 'Per esempio: la seconda domenica del mese.', 'w' => 12, 'solo_con' => ['when', ['other']]],
+                    'yearly'      => ['check', 'Si ripete ogni anno nello stesso periodo', '', 'w' => 12, 'solo_con' => ['when', ['day', 'range']]],
+                    'place'       => ['plain', 'Luogo', '', 'w' => 8],
+                    'dist_min'    => ['plain', 'Minuti', '', 'w' => 2, 'cifre' => true],
+                    'dist_mode'   => ['choice', 'Come', '', 'w' => 2, 'options' => ['walk' => 'a piedi', 'car' => 'in auto']],
+                    'price_kind'  => ['choice', 'Prezzo', '', 'w' => 6, 'options' => ['' => 'Non indicato', 'free' => 'Gratis', 'paid' => 'A pagamento']],
+                    'price'       => ['plain', 'Quanto', 'Per esempio: 5 €.', 'w' => 6, 'solo_con' => ['price_kind', ['paid']]],
+                    'url'         => ['url', 'Sito o biglietti', 'Facoltativo.', 'w' => 12],
+                    'description' => ['textarea', 'Descrizione', 'Facoltativa.'],
+                    'poster'      => ['image', 'Locandina', 'Un\'immagine o un PDF.', 'locandina' => 'poster_pdf'],
+                    'poster_pdf'  => ['pdf', 'Locandina in PDF', '', 'nascosto' => true],
+                    'recommended' => ['check', 'Lo consiglio io', '', 'w' => 12],
+                ]],
+            ],
+        ],
         // Sezione libera (6D · S1): titolo e icona li sceglie l'host, e si aggiunge più volte
         // ('multipla'). Foto e PDF sono quelli di ogni sezione. Nella home non si conta.
         'custom' => [
@@ -280,7 +321,7 @@ final class SectionCatalog
     ];
 
     /** Tipi che non si traducono: vivono in sections.data. */
-    private const PLAIN = ['plain', 'url', 'secret', 'choice', 'tel', 'time', 'days', 'check', 'checks', 'toggles', 'image', 'pdf', 'money'];
+    private const PLAIN = ['plain', 'url', 'secret', 'choice', 'tel', 'time', 'days', 'check', 'checks', 'toggles', 'image', 'pdf', 'money', 'date'];
 
     /** I gruppi della home, nell'ordine in cui si mostrano. */
     public const GRUPPI = ['casa' => 'La casa', 'arrivo' => 'Arrivare e muoversi', 'territorio' => 'Il territorio'];
@@ -347,6 +388,7 @@ final class SectionCatalog
         $opzioni = function (array $d): array {
             return match ($d['tassonomia'] ?? '') {
                 'dotazioni' => array_combine(Tassonomie::dotazioni(), array_map(fn($x) => I18n::t('it', 'amen_' . $x), Tassonomie::dotazioni())),
+                'eventi' => array_combine(Eventi::CATEGORIE, array_map(fn($x) => I18n::t('it', 'evcat.' . $x), Eventi::CATEGORIE)),
                 'muoversi' => array_combine(Tassonomie::MUOVERSI, array_map(fn($x) => I18n::t('it', 'move.' . $x), Tassonomie::MUOVERSI)),
                 // Senza unità il prezzo resta «25 €».
                 'unita' => ['' => 'Nessuna'] + array_combine(Tassonomie::UNITA, array_map(fn($x) => I18n::t('it', 'unit.' . $x), Tassonomie::UNITA)),
@@ -398,6 +440,7 @@ final class SectionCatalog
             'checks' => array_values(array_intersect(array_keys($def['options']), array_map('strval', (array) $raw))),
             'toggles' => array_filter(array_intersect_key(array_map(fn($v) => in_array($v, ['si', 'no'], true) ? $v : '', (array) $raw), $def['options'])),
             'image', 'pdf' => (int) $raw > 0 ? (int) $raw : '',
+            'date' => preg_match('/^\d{4}-\d{2}-\d{2}$/', trim((string) $raw)) && checkdate((int) substr(trim((string) $raw), 5, 2), (int) substr(trim((string) $raw), 8, 2), (int) substr(trim((string) $raw), 0, 4)) ? trim((string) $raw) : '',
             'money' => Conversione::importo(trim(str_replace(['€', ' '], '', (string) $raw))),
             'plain', 'secret' => !empty($def['cifre']) ? substr(preg_replace('/\D/', '', (string) $raw), 0, 3) : mb_substr(trim((string) $raw), 0, 200),
             default => mb_substr(trim((string) $raw), 0, 300),

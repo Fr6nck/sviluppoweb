@@ -341,6 +341,21 @@ $r->get('/g/{slug}/commiato', function (array $a) use ($guida, $telaio) {
     View::out('guest/farewell', $telaio($snap, $loc, Support::url('/g/' . $a['slug'])), 'layout/full');
 });
 
+// «Aggiungi al calendario» di un evento (6G): il file .ics, dall'istantanea pubblicata.
+$r->get('/g/{slug}/evento/{rid}.ics', function (array $a) use ($guida, $nonDisponibile) {
+    [$g, $snap, $loc] = $guida($a['slug']);
+    $riga = null;
+    foreach ($snap['sections'] as $s) {
+        if (($s['kind'] ?? '') !== 'events') continue;
+        foreach (Guide::rows($s, 'events', $loc, $snap['property']['default_locale']) as $ev) if ((string) $ev['id'] === $a['rid']) $riga = $ev;
+    }
+    $ics = $riga ? MHW\Eventi::ics($riga, 'mhw-' . (int) $g['property']['id'] . '-' . $riga['id'] . '@' . (parse_url(Support::baseUrl(), PHP_URL_HOST) ?: 'localhost'), Support::url('/g/' . $a['slug'])) : '';
+    if ($ics === '') $nonDisponibile($loc, false);
+    header('Content-Type: text/calendar; charset=utf-8');
+    header('Content-Disposition: attachment; filename="evento.ics"');
+    echo $ics;
+});
+
 $r->get('/g/{slug}/{sid}', function (array $a) use ($guida, $telaio, $nonDisponibile) {
     [$g, $snap, $loc] = $guida($a['slug']);
     $sec = null;

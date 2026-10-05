@@ -326,6 +326,17 @@ $r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($mia, $contesto
                 Properties::saveSection((int) $p['id'], (int) $s['id'], $p['default_locale'], $post, true);
                 $prima = json_decode((string) $s['data'], true) ?: [];
                 $ora = json_decode((string) Db::val('SELECT data FROM sections WHERE id = ?', [$s['id']], ''), true) ?: [];
+                // «Ripeti nel 2027» (eventi, 6G): dopo il salvataggio, quella riga riparte l'anno dopo, senza locandina.
+                $ripeti = (string) ($_POST['ripeti'] ?? '');
+                if ($s['kind'] === 'events' && $ripeti !== '') {
+                    foreach ((array) ($ora['events'] ?? []) as $i => $ev) {
+                        if (!is_array($ev) || (string) ($ev['id'] ?? '') !== $ripeti) continue;
+                        $ora['events'][$i] = MHW\Eventi::ripeti($ev, MHW\Eventi::oggi());
+                        Db::update('sections', ['data' => json_encode($ora, JSON_UNESCAPED_UNICODE)], 'id = :sid', ['sid' => $s['id']]);   // la locandina tolta la libera cleanRowMedia, qui sotto
+                        $ripetuto = 'Date spostate al ' . substr((string) ($ora['events'][$i]['date_from'] ?? ''), 0, 4) . ': controllale, carica la nuova locandina e pubblica.';
+                        break;
+                    }
+                }
                 Properties::cleanRowMedia($aid, $s['kind'], $prima, $ora);
                 // Il link di Maps di «Come arrivare» dà le coordinate della struttura (per i minuti a piedi dei luoghi).
                 if ($s['kind'] === 'arrival' && ($ora['maps_url'] ?? '') !== ($prima['maps_url'] ?? '') && Migrator::columnExists('properties', 'lat')) {
@@ -346,6 +357,7 @@ $r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($mia, $contesto
                 }
             }
             if ($vuoleJson()) Support::json(['ok' => true, 'salvato' => Support::now()]);
+            if (isset($ripetuto)) { Support::flash($ripetuto); Support::redirect('/pannello/' . $p['id'] . '/sezioni/' . $s['id']); }
             Support::flash('Salvato. Ricordati di pubblicare quando hai finito.');
             Support::redirect($tornaSezione($p, (int) $s['id'], $dopo($p, '/pannello/' . $p['id'] . '/sezioni/' . $s['id'])));
         } catch (\Throwable $e) {

@@ -1169,6 +1169,9 @@ a.device-link:hover .device{transform:translateY(-4px)}
   border:0;border-radius:10px;background:none;color:var(--muted);font:inherit;font-size:14px;text-align:left;cursor:pointer}
 .rip__apri:hover{background:var(--sunk)}
 .rip__testa:has(.rip__apri:not([hidden])) .rip__nome{flex:none}
+/* Eventi (6G): lo stato nell'intestazione della riga; su schermi stretti l'intestazione va a capo. */
+.rip__stato,.rip__ripeti{flex:none}
+@media(max-width:560px){ .rip__testa{flex-wrap:wrap} .rip__testa .rip__apri{order:5;flex-basis:100%;margin:0} }
 .rip__campi[hidden]{display:none}
 .rip__riga--chiusa .rip__apri{justify-content:space-between}
 .rip__riassunto{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
@@ -1304,6 +1307,21 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .benvenuto-msg>summary{cursor:pointer;font-weight:600;min-height:40px;display:flex;align-items:center}
 .benvenuto-msg textarea{width:100%;font:inherit;font-size:15px;line-height:22px}
 .icone-scelta .scelta--mini span{display:inline-flex;align-items:center;gap:6px}
+/* Eventi nella guida (6G): il riquadro della data a sinistra, la locandina larga quanto la scheda. */
+.evento>summary{display:flex;align-items:center;gap:14px;list-style:none;cursor:pointer}
+.evento>summary::-webkit-details-marker{display:none}
+.evento[open] .manuale__freccia{transform:rotate(-90deg)}
+.evento__data{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:56px;min-height:56px;padding:4px;border-radius:14px;background:var(--sunk);text-align:center;line-height:1.1}
+.evento__data b{font-size:17px;font-weight:700}
+.evento__data span{font-size:12px;color:var(--muted)}
+.evento__nome{font-size:17px;font-weight:600}
+.evento__locandina img{display:block;width:100%;max-height:320px;object-fit:contain;border-radius:14px;background:var(--sunk)}
+/* La fascia «Oggi» in cima alla home della guida. */
+.oggi-eventi{display:flex;align-items:center;gap:12px;margin-top:22px;padding:14px 16px;border-radius:16px;background:var(--ink);color:var(--paper)}
+.oggi-eventi:hover{color:var(--paper);opacity:.94}
+.oggi-eventi__chi{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;opacity:.8}
+.oggi-eventi small{display:block;opacity:.8}
+.tile__conta{display:block;font-size:12px;font-weight:500;opacity:.85}
 .pillole-ospite{display:flex;flex-wrap:wrap;gap:6px}
 .pillole-ospite .pill-quiet{color:var(--ink);font-size:13px}
 /* Guida ospite: firma in fondo; commiato con recensioni e prenotazione diretta. */

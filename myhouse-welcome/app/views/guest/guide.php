@@ -1,4 +1,4 @@
-<?php use MHW\{Support, Icon, Guide, SectionCatalog, I18n};
+<?php use MHW\{Support, Icon, Guide, SectionCatalog, I18n, Eventi};
 $pr = $snap['property']; $def = $pr['default_locale'];
 $title = $pr['name'];
 $toni = ['t-terracotta', 't-sea', 't-pine', 't-ochre'];
@@ -24,11 +24,30 @@ $copertina = !empty($pr['cover_id']) ? MHW\Media::url((int) $pr['cover_id']) : (
   </div>
 <?php endif; ?>
 
+<?php /* Eventi (6G): la guida è un'istantanea, le date si guardano adesso. La casella si vede solo
+         se c'è qualcosa nei prossimi due mesi; se c'è un evento oggi, una fascia scura in cima. */
+$eventiDi = [];
+foreach ($snap['sections'] as $s) if (($s['kind'] ?? '') === 'events') $eventiDi[(int) $s['id']] = Guide::rows($s, 'events', $loc, $def);
+$oggiEv = Eventi::oggi();
+foreach ($eventiDi as $sidEv => $righeEv):
+    $diOggi = Eventi::diOggi($righeEv, $oggiEv); if (!$diOggi) continue; $primo = $diOggi[0];
+    $sotto = array_filter([Eventi::orario($primo, $loc), trim((string) ($primo['place'] ?? '')), Eventi::distanza($primo, $loc)]); ?>
+  <a class="oggi-eventi" href="<?= Support::e($base) ?>/<?= $sidEv ?>?l=<?= Support::e($loc) ?>">
+    <?= Icon::svg('calendar', 22, 1.7) ?>
+    <span class="grow"><span class="oggi-eventi__chi"><?= Support::e(I18n::t($loc, 'ev.today')) ?></span>
+      <b style="display:block"><?= Support::e(trim((string) $primo['name'])) ?></b>
+      <?php if ($sotto): ?><small><?= Support::e(implode(' · ', $sotto)) ?></small><?php endif; ?></span>
+    <?php if (count($diOggi) > 1): ?><b>+<?= count($diOggi) - 1 ?></b><?php endif; ?>
+  </a>
+<?php break; endforeach; ?>
+
 <nav class="tiles-2" style="margin-top:22px" aria-label="<?= Support::e($pr['name']) ?>">
-  <?php foreach ($snap['sections'] as $i => $s): ?>
-    <a class="tile <?= $toni[$i % 4] ?>" href="<?= Support::e($base) ?>/<?= (int) $s['id'] ?>?l=<?= Support::e($loc) ?>">
+  <?php $i = 0; foreach ($snap['sections'] as $s):
+        if (isset($eventiDi[(int) $s['id']]) && !Eventi::daMostrare($eventiDi[(int) $s['id']], $oggiEv)) continue;
+        $quanti = isset($eventiDi[(int) $s['id']]) ? Eventi::conta($eventiDi[(int) $s['id']], $oggiEv) : 0; ?>
+    <a class="tile <?= $toni[$i++ % 4] ?>" href="<?= Support::e($base) ?>/<?= (int) $s['id'] ?>?l=<?= Support::e($loc) ?>">
       <?= Icon::svg(SectionCatalog::iconaDi($s['kind'], $s['data'] ?? []), 22, 1.7) ?>
-      <b><?= Support::e(Guide::title($s, $loc, $def)) ?></b>
+      <b><?= Support::e(Guide::title($s, $loc, $def)) ?><?php if ($quanti > 0): ?><span class="tile__conta"><?= Support::e(I18n::t($loc, 'ev.count', $quanti)) ?></span><?php endif; ?></b>
     </a>
   <?php endforeach; ?>
 </nav>

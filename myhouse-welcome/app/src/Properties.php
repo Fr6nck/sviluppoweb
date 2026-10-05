@@ -191,7 +191,35 @@ final class Properties
             foreach (SectionCatalog::fields($kind) as $campo => $def) {
                 if ($def[0] !== 'repeater' || !is_array($post[$campo] ?? null)) continue;
                 foreach ($def['sub'] as $sn => $sd) {
-                    if (!in_array($sd[0], ['image', 'pdf'], true)) continue;
+                    if (!in_array($sd[0], ['image', 'pdf'], true) || !empty($sd['nascosto'])) continue;
+                    // La locandina degli eventi (6G): una zona sola. Un PDF va nel sottocampo compagno
+                    // e svuota l'immagine; un'immagine svuota il PDF; «Togli» li svuota tutti e due.
+                    if (!empty($sd['locandina'])) {
+                        $pn = $sd['locandina'];
+                        foreach ($post[$campo] as $k => $r) {
+                            if (!is_array($r)) continue;
+                            $img = (int) ($r[$sn] ?? 0); $doc = (int) ($r[$pn] ?? 0);
+                            $tuo = fn(int $id, string $tipo) => $id && Db::one('SELECT id FROM media WHERE id = ? AND account_id = ? AND property_id = ? AND kind = ?', [$id, $accountId, $propertyId, $tipo]) ? $id : 0;
+                            $img = $tuo($img, 'image'); $doc = $tuo($doc, 'pdf');
+                            if (!empty($post['rip_togli'][$campo][$k][$sn])) $img = $doc = 0;
+                            $f = [];
+                            foreach (['name', 'type', 'tmp_name', 'error', 'size'] as $x) $f[$x] = $files['rip_file'][$x][$campo][$k][$sn] ?? null;
+                            if ($f['error'] !== null && (int) $f['error'] !== UPLOAD_ERR_NO_FILE) {
+                                $alt = (string) ($r['name'] ?? '');
+                                $testa = is_string($f['tmp_name']) && is_file($f['tmp_name']) ? (string) file_get_contents($f['tmp_name'], false, null, 0, 5) : '';
+                                if ($testa === '%PDF-') {
+                                    if (!Entitlements::can($accountId, 'pdf')) throw new \RuntimeException('I PDF nelle sezioni sono compresi dal piano Plus.');
+                                    $doc = $nuovi[] = Media::storePdf($f, $accountId, $propertyId, $alt); $img = 0;
+                                } else {
+                                    if (!Entitlements::can($accountId, 'photos')) throw new \RuntimeException('Le foto nelle sezioni sono comprese dal piano Plus.');
+                                    $img = $nuovi[] = Media::storeImage($f, $accountId, $propertyId, $alt, 'section'); $doc = 0;
+                                }
+                            }
+                            $post[$campo][$k][$sn] = $img ?: '';
+                            $post[$campo][$k][$pn] = $doc ?: '';
+                        }
+                        continue;
+                    }
                     foreach ($post[$campo] as $k => $r) {
                         if (!is_array($r)) continue;
                         $mid = (int) ($r[$sn] ?? 0);

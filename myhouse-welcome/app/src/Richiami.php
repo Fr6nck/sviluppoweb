@@ -8,6 +8,7 @@ namespace MHW;
  *   sezioni  — dal 3° al 7° giorno, se non c'è nessuna sezione aggiuntiva
  *   pubblica — dal 7° al 21° giorno, se la guida non è pubblicata
  *   rinnovo  — 30 giorni prima del rinnovo automatico (Stripe), con le statistiche dell'anno
+ *   eventi   — (6G) ci sono eventi passati nella guida pubblicata: al massimo una al mese per struttura
  *
  * Le finestre non si sovrappongono: una struttura riceve al massimo un richiamo
  * per volta, e chi aggiorna l'applicazione con bozze vecchie non riceve una
@@ -21,7 +22,8 @@ namespace MHW;
 final class Richiami
 {
     public const TIPI = ['arrivo' => 'promemoria sull\'arrivo', 'sezioni' => 'promemoria sulle sezioni',
-                         'pubblica' => 'promemoria sulla pubblicazione', 'rinnovo' => 'avviso prima del rinnovo'];
+                         'pubblica' => 'promemoria sulla pubblicazione', 'rinnovo' => 'avviso prima del rinnovo',
+                         'eventi' => 'promemoria sugli eventi passati'];
     private const OGNI = 900;   // secondi tra un controllo e l'altro
 
     public static function disponibili(): bool { return Migrator::tableExists('email_log'); }
@@ -75,6 +77,25 @@ final class Richiami
                          [$iso($t + 29 * $giorno), $iso($t + 31 * $giorno), '%@' . Demo::DOMINIO]) as $s) {
             $ref = $s['id'] . '-' . substr((string) $s['current_period_end'], 0, 10);
             if (self::manda((int) $s['account_id'], $s['email'], (string) $s['user_name'], 'rinnovo', $ref, self::testoRinnovo($s))) $fatte['rinnovo']++;
+        }
+
+        // Eventi passati (6G): nella guida non si vedono più; un clic li ripete l'anno dopo.
+        $oggi = Eventi::oggi($t);
+        $def = SectionCatalog::field('events', 'events');
+        foreach (Db::all("SELECT s.id AS sid, s.data, p.id, p.name, p.default_locale, a.id AS acc_id, u.email, u.name AS user_name
+                          FROM sections s JOIN properties p ON p.id = s.property_id JOIN accounts a ON a.id = p.account_id JOIN users u ON u.id = a.user_id
+                          WHERE s.kind = 'events' AND s.is_active = 1 AND p.is_demo = 0 AND p.archived_at IS NULL AND p.status = 'published' AND u.email NOT LIKE ?",
+                         ['%@' . Demo::DOMINIO]) as $e) {
+            $testi = json_decode((string) Db::val('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$e['sid'], $e['default_locale']], ''), true) ?: [];
+            $righe = SectionCatalog::rows($def, (json_decode((string) $e['data'], true) ?: [])['events'] ?? [], $testi['events'] ?? []);
+            $passati = Eventi::passati($righe, $oggi);
+            if (!$passati) continue;
+            $nomi = array_values(array_filter(array_map(fn($r) => trim((string) ($r['name'] ?? '')), $passati)));
+            $n = count($passati);
+            $m = [$n === 1 ? 'Un evento è passato' : "$n eventi sono passati",
+                  ($nomi ? implode(', ', $nomi) . '. ' : '') . 'Non si vedono più nella guida di ' . $e['name'] . ". Se tornano l'anno prossimo, basta un clic.",
+                  'Apri gli eventi', Support::baseUrl() . '/pannello/' . (int) $e['id'] . '/sezioni/' . (int) $e['sid']];
+            if (self::manda((int) $e['acc_id'], $e['email'], (string) $e['user_name'], 'eventi', $e['id'] . '-' . substr($oggi, 0, 7), $m)) $fatte['eventi']++;
         }
         return $fatte;
     }

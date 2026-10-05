@@ -343,6 +343,20 @@ final class Demo
                         ['name' => 'E-bikes', 'note' => 'Ask Lucia: she books one for the next day.']]],
         ]);
 
+        // Eventi (6G): date calcolate dal giorno in cui si crea la demo; nomi generici, di fantasia.
+        $giorno = fn(int $n) => (new \DateTimeImmutable(Eventi::oggi()))->modify(($n >= 0 ? '+' : '') . $n . ' days')->format('Y-m-d');
+        $eventi = Properties::addSection($acc, $pid, 'events');
+        self::scrivi($pid, $eventi, [
+            'it' => ['intro' => 'Quello che succede in paese mentre sei qui.', 'events' => [
+                        ['name' => 'Concerto in piazza', 'cat' => 'music', 'when' => 'day', 'date_from' => $giorno(0), 'time_from' => '21:00', 'place' => 'Piazza della Repubblica', 'dist_min' => '4', 'dist_mode' => 'walk', 'price_kind' => 'free'],
+                        ['name' => 'Festa delle infiorate', 'cat' => 'festival', 'when' => 'range', 'date_from' => $giorno(5), 'date_to' => $giorno(6), 'yearly' => '1', 'place' => 'Centro storico', 'price_kind' => 'free', 'recommended' => '1',
+                         'description' => 'Le vie del centro si coprono di disegni fatti con i petali. Il momento migliore è all\'alba.'],
+                        ['name' => 'Mercato del sabato', 'cat' => 'market', 'when' => 'weekly', 'days' => [6], 'time_from' => '08:00', 'time_to' => '13:00', 'place' => 'Piazza Kennedy', 'dist_min' => '6', 'dist_mode' => 'walk']]],
+            'en' => ['intro' => 'What is on in the village while you are here.', 'events' => [
+                        ['name' => 'Concert in the square'], ['name' => 'Flower carpet festival', 'description' => 'The streets of the old town are covered in designs made of petals. The best time is at dawn.'],
+                        ['name' => 'Saturday market']]],
+        ], '');
+
         $mangiare = Properties::addSection($acc, $pid, 'eat');
         self::scrivi($pid, $mangiare, [
             'it' => ['intro' => 'Tre posti a piedi. Li abbiamo provati tutti, più di una volta.',

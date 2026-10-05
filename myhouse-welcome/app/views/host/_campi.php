@@ -42,7 +42,7 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
             'name' => $nome, 'legend' => $etichetta, 'help' => $aiuto, 'sub' => $defCampo['sub'],
             'rows' => SectionCatalog::rows($defCampo, $dati[$nome] ?? [], $tdati[$nome] ?? []),
             'add' => $defCampo['add'] ?? 'Aggiungi', 'item' => $defCampo['item'] ?? 'Voce', 'max' => $defCampo['max'] ?? 30,
-            'foto' => $foto ?? true, 'pdf' => $pdf ?? true,
+            'foto' => $foto ?? true, 'pdf' => $pdf ?? true, 'eventi' => !empty($defCampo['eventi']),
             // Le righe pronte hanno il nome nella lingua della guida (Guardia medica, Out-of-hours doctor…).
             'presets' => array_combine(
                 array_map(fn($k) => I18n::t($linguaGuida, $k), array_keys($defCampo['presets'] ?? [])),

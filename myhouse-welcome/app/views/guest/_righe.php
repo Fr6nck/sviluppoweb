@@ -2,13 +2,75 @@
 /* I campi a righe e a spunte di una sezione: emergenze, rifiuti, dotazioni e
    istruzioni, regole, parcheggi, come arrivare. Si include da section.php dentro
    il giro dei campi: ci sono $campo, $tipo, $sec, $d, $loc, $def, $maps. */
-use MHW\{Support, Icon, Guide, Media, I18n};
+use MHW\{Support, Icon, Guide, Media, I18n, Eventi};
 $righe = $tipo === 'repeater' ? Guide::rows($sec, $campo, $loc, $def) : [];
 $pieno = fn(array $r, array $chiavi) => (bool) array_filter($chiavi, fn($k) => trim((string) ($r[$k] ?? '')) !== '');
 $giorni = fn(array $gg) => implode(', ', array_map(fn($g) => I18n::t($loc, 'day_' . (int) $g), $gg));
 
+/* --------------------------------------------------------- eventi (6G) */
+if ($campo === 'events'):
+    // L'istantanea è della pubblicazione: le date si filtrano adesso, con il giorno di oggi in Italia.
+    $oggi = Eventi::oggi();
+    $gruppiEv = Eventi::gruppi($righe, $oggi);
+    $tutti = array_merge($gruppiEv['giorni'], $gruppiEv['avanti'], $gruppiEv['ricorrenti']);
+    $catDi = fn(array $r) => (string) ($r['cat'] ?? '') !== '' ? I18n::t($loc, 'evcat.' . $r['cat']) : '';
+    $categorieEv = array_values(array_unique(array_filter(array_map($catDi, $tutti))));
+    $prEv = $snap['property'];
+    $chiConsiglia = '';
+    foreach ($prEv['contacts'] ?? [] as $c) if (trim((string) ($c['phone'] ?? '')) !== '' && trim((string) $c['name']) !== '') { $chiConsiglia = explode(' ', trim((string) $c['name']))[0]; break; }
+    if ($tutti): ?>
+  <?php if (count($categorieEv) >= 2): ?>
+    <div class="chips" style="margin-top:18px">
+      <button type="button" class="on" data-filtro="" aria-pressed="true"><?= Support::e(I18n::t($loc, 'ev.all')) ?></button>
+      <?php foreach ($categorieEv as $c): ?><button type="button" data-filtro="<?= Support::e($c) ?>" aria-pressed="false"><?= Support::e($c) ?></button><?php endforeach; ?>
+    </div>
+  <?php endif; ?>
+  <?php foreach (['giorni' => 'ev.these_days', 'avanti' => 'ev.later', 'ricorrenti' => 'ev.recurring'] as $g => $titoloG): if (!$gruppiEv[$g]) continue; ?>
+    <span class="kicker" style="display:block;margin-top:22px"><?= Support::e(I18n::t($loc, $titoloG)) ?></span>
+    <div class="stack" style="margin-top:10px;gap:10px">
+      <?php foreach ($gruppiEv[$g] as $r):
+            [$grande, $piccola] = Eventi::riquadro($r, $loc) + ['', ''];
+            $meta = array_filter([$catDi($r), Eventi::periodo($r, $loc, $oggi), Eventi::orario($r, $loc), trim((string) ($r['place'] ?? '')), Eventi::distanza($r, $loc)]);
+            $prezzoEv = Eventi::prezzo($r, $loc);
+            $locandina = (int) ($r['poster'] ?? 0) ? Media::url((int) $r['poster']) : null;
+            $locandinaPdf = (int) ($r['poster_pdf'] ?? 0) ? Media::url((int) $r['poster_pdf']) : null;
+            $dove = trim((string) ($r['place'] ?? '')) !== '' ? $maps(trim((string) $r['place']) . ', ' . trim((string) ($prEv['city'] ?? '')), '') : null;
+            $nomeEv = trim((string) $r['name']); ?>
+        <details class="panel evento" data-categoria="<?= Support::e($catDi($r)) ?>">
+          <summary>
+            <?php if ($grande !== ''): ?><span class="evento__data" aria-hidden="true"><b><?= Support::e($grande) ?></b><span><?= Support::e($piccola) ?></span></span><?php endif; ?>
+            <span class="grow stack" style="gap:4px;min-width:0">
+              <b class="evento__nome"><?= Support::e($nomeEv) ?></b>
+              <?php if ($meta): ?><span class="small muted"><?= Support::e(implode(' · ', $meta)) ?></span><?php endif; ?>
+              <?php if ($prezzoEv !== '' || !empty($r['recommended'])): ?>
+                <span class="row" style="gap:6px">
+                  <?php if ($prezzoEv !== ''): ?><span class="badge badge--<?= ($r['price_kind'] ?? '') === 'free' ? 'pine' : 'sea' ?>"><?= Support::e($prezzoEv) ?></span><?php endif; ?>
+                  <?php if (!empty($r['recommended'])): ?><span class="badge badge--ochre"><?= Support::e($chiConsiglia !== '' ? I18n::t($loc, 'ev.recommended', $chiConsiglia) : I18n::t($loc, 'ev.recommended_plain')) ?></span><?php endif; ?>
+                </span>
+              <?php endif; ?>
+            </span>
+            <?= Icon::svg('chevron', 16, 2, 'manuale__freccia') ?>
+          </summary>
+          <div class="stack" style="gap:12px;margin-top:12px">
+            <?php if ($locandina): ?>
+              <a class="evento__locandina" href="<?= Support::e($locandina) ?>" target="_blank" rel="noopener"><img src="<?= Support::e($locandina) ?>" alt="<?= Support::e(I18n::t($loc, 'ev.poster_alt', $nomeEv)) ?>" loading="lazy" decoding="async"></a>
+            <?php endif; ?>
+            <?php if (trim((string) ($r['description'] ?? '')) !== ''): ?><p class="small" style="white-space:pre-line;line-height:21px"><?= Support::e($r['description']) ?></p><?php endif; ?>
+            <div class="ctas">
+              <?php if ($locandinaPdf): ?><a href="<?= Support::e($locandinaPdf) ?>" target="_blank" rel="noopener"><?= Icon::svg('doc', 15) ?><?= Support::e(I18n::t($loc, 'ev.poster')) ?></a><?php endif; ?>
+              <?php if ($dove): ?><a href="<?= Support::e($dove) ?>" target="_blank" rel="noopener"><?= Icon::svg('pin', 15) ?><?= Support::e(I18n::t($loc, 'directions')) ?></a><?php endif; ?>
+              <?php if (!Eventi::ricorrente($r) && isset($base)): ?><a href="<?= Support::e($base) ?>/evento/<?= Support::e((string) $r['id']) ?>.ics"><?= Icon::svg('calendar', 15) ?><?= Support::e(I18n::t($loc, 'ev.calendar')) ?></a><?php endif; ?>
+              <?php if (trim((string) ($r['url'] ?? '')) !== ''): ?><a href="<?= Support::e($r['url']) ?>" target="_blank" rel="noopener"><?= Icon::svg('external', 15) ?><?= Support::e(I18n::t($loc, 'ev.website')) ?></a><?php endif; ?>
+            </div>
+          </div>
+        </details>
+      <?php endforeach; ?>
+    </div>
+  <?php endforeach; ?>
+<?php endif;
+
 /* ----------------------------------------------------------- emergenze */
-if ($campo === 'contacts'):
+elseif ($campo === 'contacts'):
     $righe = array_filter($righe, fn($r) => $pieno($r, ['name', 'phone'])); if ($righe): ?>
   <div class="stack" style="margin-top:16px;gap:10px">
     <?php foreach ($righe as $r): $nome = trim((string) $r['name']); $tel = trim((string) $r['phone']); ?>

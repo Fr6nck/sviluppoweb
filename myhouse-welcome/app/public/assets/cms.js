@@ -255,12 +255,27 @@
     var vuote = righe.querySelectorAll('[data-rip-vuota]');
     if (tutte().length > vuote.length) for (var v = 0; v < vuote.length; v++) vuote[v].remove();
     // Campi che spariscono per un valore di un altro campo della riga (i costi di un posto privato).
+    // Fase 6G: anche il contrario (data-solo-con: si vede solo con quei valori, gli eventi) e
+    // l'etichetta che cambia («Dal» diventa «Giorno» con un evento di un giorno).
     var nascondi = function (r) {
+      var valore = function (nome) {
+        var scelto = r.querySelector('[name$="[' + nome + ']"]:checked') || r.querySelector('select[name$="[' + nome + ']"]');
+        return scelto ? scelto.value : '';
+      };
       var cc = r.querySelectorAll('[data-nascosto-con]');
       for (var i = 0; i < cc.length; i++) {
-        var nome = cc[i].getAttribute('data-nascosto-con');
-        var scelto = r.querySelector('[name$="[' + nome + ']"]:checked') || r.querySelector('select[name$="[' + nome + ']"]');
-        cc[i].hidden = (cc[i].getAttribute('data-nascosto-valori') || '').split(',').indexOf(scelto ? scelto.value : '') !== -1;
+        cc[i].hidden = (cc[i].getAttribute('data-nascosto-valori') || '').split(',').indexOf(valore(cc[i].getAttribute('data-nascosto-con'))) !== -1;
+      }
+      var ss = r.querySelectorAll('[data-solo-con]');
+      for (var j = 0; j < ss.length; j++) {
+        ss[j].hidden = (ss[j].getAttribute('data-solo-valori') || '').split(',').indexOf(valore(ss[j].getAttribute('data-solo-con'))) === -1;
+      }
+      var ee = r.querySelectorAll('[data-etichetta-con]');
+      for (var k = 0; k < ee.length; k++) {
+        var lab = ee[k].querySelector('label'); if (!lab) continue;
+        if (!lab.hasAttribute('data-originale')) lab.setAttribute('data-originale', lab.textContent);
+        var mappa = {}; try { mappa = JSON.parse(ee[k].getAttribute('data-etichette')); } catch (e) {}
+        lab.textContent = mappa[valore(ee[k].getAttribute('data-etichetta-con'))] || lab.getAttribute('data-originale');
       }
     };
     rip.addEventListener('change', function (e) { var r = e.target.closest('[data-rip-riga]'); if (r) nascondi(r); });
@@ -278,7 +293,7 @@
           if (gg.length) parti.push(Array.prototype.map.call(gg, function (g) { return g.parentNode.textContent.trim(); }).join(', '));
           return;
         }
-        el = c.querySelector('input[type=text],input[type=tel],input[type=time],textarea');
+        el = c.querySelector('input[type=text],input[type=tel],input[type=time],input[type=date],textarea');
         if (el && !el.hasAttribute('data-segreto') && el.value.trim() !== '') parti.push(el.value.trim().split('\n')[0] + (c.querySelector('.soldi') ? ' €' : ''));
       });
       return parti.join(' · ');

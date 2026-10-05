@@ -15,8 +15,8 @@
    ]
    Foto e PDF di una riga: l'id del file salvato viaggia nel campo nascosto, il
    file nuovo in rip_file[campo][riga][sottocampo], «Togli» in rip_togli[…]. */
-use MHW\{Support, Icon, Media};
-$r = $rip + ['help' => '', 'rows' => [], 'add' => 'Aggiungi', 'item' => 'Voce', 'max' => 30, 'presets' => [], 'foto' => true, 'pdf' => true];
+use MHW\{Support, Icon, Media, Eventi};
+$r = $rip + ['help' => '', 'rows' => [], 'add' => 'Aggiungi', 'item' => 'Voce', 'max' => 30, 'presets' => [], 'foto' => true, 'pdf' => true, 'eventi' => false];
 $nome = $r['name'];
 $domId = 'rip-' . preg_replace('/[^a-z0-9]+/i', '-', $nome);
 $giorni = [1 => 'Lun', 2 => 'Mar', 3 => 'Mer', 4 => 'Gio', 5 => 'Ven', 6 => 'Sab', 7 => 'Dom'];
@@ -33,8 +33,18 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
     $h = '<div class="rip__riga" data-rip-riga' . ($chiusa ? ' data-rip-chiusa' : '') . '>'
        . '<div class="rip__testa">'
        . '<span class="riga__maniglia rip__maniglia" aria-hidden="true" title="Trascina per cambiare l\'ordine">' . Icon::svg('grip', 18, 2.6) . '</span>'
-       . '<span class="rip__nome">' . Support::e($r['item']) . ' <span data-rip-num>' . ($num ?: '') . '</span></span>'
-       . '<button type="button" class="rip__apri" data-rip-apri aria-expanded="true" aria-controls="' . $campiId . '" hidden>'
+       . '<span class="rip__nome">' . Support::e($r['item']) . ' <span data-rip-num>' . ($num ?: '') . '</span></span>';
+    // Gli eventi (6G): lo stato di ogni evento salvato, e «Ripeti nel 2027» per quelli passati che tornano ogni anno.
+    if ($r['eventi'] && $v && trim((string) ($v['name'] ?? '')) !== '') {
+        [$st, $gg] = Eventi::stato($v, Eventi::oggi());
+        [$testo, $tono] = ['in_corso' => ['In corso', 'pine'], 'tra' => [$gg === 1 ? 'Domani' : 'Tra ' . $gg . ' giorni', 'sea'], 'ricorrente' => ['Ricorrente', 'paper'],
+                           'passato' => ['Passato: nascosto', 'ochre'], 'senza_data' => ['Manca la data', 'alert']][$st] ?? ['', 'paper'];
+        $h .= '<span class="badge badge--' . $tono . ' rip__stato">' . $testo . '</span>';
+        if ($st === 'passato' && !empty($v['yearly'])) {
+            $h .= '<button type="submit" class="btn btn--ghost btn--sm rip__ripeti" name="ripeti" value="' . Support::e((string) ($v['id'] ?? '')) . '">Ripeti nel ' . Eventi::annoDopo($v) . '</button>';
+        }
+    }
+    $h .= '<button type="button" class="rip__apri" data-rip-apri aria-expanded="true" aria-controls="' . $campiId . '" hidden>'
        . '<span class="rip__riassunto" data-rip-riassunto></span><span class="sr-only" data-rip-azione>Comprimi</span>' . Icon::svg('chevron', 16, 2, 'rip__freccia') . '</button>'
        . '<div class="rip__azioni">'
        . '<button type="button" class="icon-btn" data-rip-su aria-label="Sposta su">' . Icon::svg('chevron', 16, 2, 'rip__su') . '</button>'
@@ -47,14 +57,40 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
         [$tipo, $et] = $sd; $aiuto = $sd[2] ?? '';
         $n = Support::e($nome) . '[' . $k . '][' . $sn . ']';
         $id = $domId . '-' . $k . '-' . $sn;
-        $val = $v[$sn] ?? ($tipo === 'days' ? [] : '');
+        if (!empty($sd['nascosto'])) continue;   // lo disegna il suo compagno (il PDF della locandina)
+        // La riga nuova parte dal valore predefinito del catalogo (gli eventi: «Un giorno»).
+        $val = $v[$sn] ?? ($tipo === 'days' ? [] : (!$v && isset($sd['default']) ? $sd['default'] : ''));
         $w = MHW\SectionCatalog::larghezza($sd);
         // 'nascosto_con': il campo sparisce quando l'altro campo della riga ha uno di quei valori (i costi di un posto privato).
         $nasc = isset($sd['nascosto_con']) ? ' data-nascosto-con="' . Support::e($sd['nascosto_con'][0]) . '" data-nascosto-valori="' . Support::e(implode(',', $sd['nascosto_con'][1])) . '"' : '';
+        if (isset($sd['solo_con'])) $nasc .= ' data-solo-con="' . Support::e($sd['solo_con'][0]) . '" data-solo-valori="' . Support::e(implode(',', $sd['solo_con'][1])) . '"';
+        if (isset($sd['etichetta_se'])) $nasc .= ' data-etichetta-con="' . Support::e($sd['etichetta_se'][0]) . '" data-etichette="' . Support::e(json_encode($sd['etichetta_se'][1], JSON_UNESCAPED_UNICODE)) . '"';
         $c = '<div class="rip__c rip__c--w' . $w . '"' . (!empty($sd['solo_piu']) ? ' data-rip-solo-piu' : '') . $nasc . '>';
         $help = $aiuto !== '' ? '<p class="help rip__aiuto" id="' . $id . '-aiuto">' . Support::e($aiuto) . '</p>' : '';
+        if (isset($sd['aiuto_con'])) $help .= '<p class="help rip__aiuto" data-solo-con="' . Support::e($sd['aiuto_con'][0]) . '" data-solo-valori="' . Support::e(implode(',', $sd['aiuto_con'][1])) . '">' . Support::e($sd['aiuto_con'][2]) . '</p>';
         $desc = $aiuto !== '' ? ' aria-describedby="' . $id . '-aiuto"' : '';
-        if ($tipo === 'image' || $tipo === 'pdf') {
+        if ($tipo === 'image' && !empty($sd['locandina'])) {
+            // La locandina: una zona sola, immagine o PDF. Il server mette il file nel sottocampo giusto.
+            $pn = $sd['locandina'];
+            $mid = (int) $val; $pdfId = (int) ($v[$pn] ?? 0); $puoi = $r['foto'] || $r['pdf'];
+            $sub = '[' . Support::e($nome) . '][' . $k . '][' . $sn . ']';
+            $h .= $c . '<div class="field rip__media" style="margin:0"><span class="label">' . Support::e($et) . '</span>'
+                . '<input type="hidden" name="' . $n . '" value="' . ($mid ?: '') . '">'
+                . '<input type="hidden" name="' . Support::e($nome) . '[' . $k . '][' . Support::e($pn) . ']" value="' . ($pdfId ?: '') . '">'
+                . '<div class="rip__file">';
+            if ($mid && ($url = Media::url($mid))) $h .= '<img src="' . Support::e($url) . '" alt="">';
+            elseif ($pdfId) $h .= '<span class="rip__pdf">' . Icon::svg('doc', 22) . '<span class="small">' . Support::e((Media::row($pdfId)['original_name'] ?? '') ?: 'Locandina') . '</span></span>';
+            if ($puoi) {
+                $h .= '<span class="rip__carica"><input class="drop__input" id="' . $id . '" type="file" name="rip_file' . $sub . '" accept="image/jpeg,image/png,image/webp,application/pdf" aria-describedby="' . $id . '-aiuto ' . $id . '-nome">'
+                    . '<label class="btn btn--ghost btn--sm" for="' . $id . '">' . ($mid || $pdfId ? 'Sostituisci' : 'Scegli la locandina') . '</label></span>';
+            }
+            if ($mid || $pdfId) $h .= '<label class="check rip__togli"><input type="checkbox" name="rip_togli' . $sub . '" value="1"> <span>Togli</span></label>';
+            if ($puoi) $h .= '<span class="small muted" id="' . $id . '-nome" data-rip-file-nome aria-live="polite">' . ($mid || $pdfId ? '' : 'Nessun file scelto') . '</span>';
+            $h .= '</div>';
+            $h .= $puoi ? '<p class="help rip__aiuto" id="' . $id . '-aiuto">' . Support::e(trim($aiuto . ' Si carica col bottone Salva.')) . '</p>'
+                        : '<p class="help">Il tuo piano non comprende foto e PDF nelle sezioni.</p>';
+            $h .= '</div></div>';
+        } elseif ($tipo === 'image' || $tipo === 'pdf') {
             $mid = (int) $val; $puoi = $tipo === 'image' ? $r['foto'] : $r['pdf'];
             if (!$mid && !$puoi) continue;
             $sub = '[' . Support::e($nome) . '][' . $k . '][' . $sn . ']';
@@ -107,7 +143,7 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
             $h .= $c . '<div class="field" style="margin:0"><label for="' . $id . '">' . Support::e($et) . '</label>'
                 . '<textarea id="' . $id . '" name="' . $n . '" rows="' . (!empty($sd['lines']) ? 4 : 2) . '" maxlength="2000"' . $desc . $no . '>' . Support::e((string) $val) . '</textarea>' . $help . '</div></div>';
         } else {
-            $t = ['url' => 'url', 'tel' => 'tel', 'time' => 'time'][$tipo] ?? 'text';
+            $t = ['url' => 'url', 'tel' => 'tel', 'time' => 'time', 'date' => 'date'][$tipo] ?? 'text';
             $extra = $tipo === 'secret' ? ' spellcheck="false" data-segreto' : ($tipo === 'url' ? ' placeholder="https://"' : '');
             if (!empty($sd['cifre'])) $extra .= ' inputmode="numeric" pattern="[0-9]*"';
             // La password si legge con «Mostra»: senza JavaScript resta in chiaro, che è più comodo da scrivere.

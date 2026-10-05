@@ -1187,7 +1187,7 @@ $admin->get('/admin/cliente/' . $lacc);
 $admin->post("/admin/cliente/$lacc/abbonamento", ['pv' => (string) pv('portfolio'), 'mesi' => '12', 'nota' => 'Prova della copia', 'strutture' => '2']);
 $r = $lucia->get('/pannello/nuova');
 prova('Fase 4 · «Crea da una struttura esistente»: Casa Lucia, con le sezioni già spuntate', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Crea da una struttura esistente')
-      && str_contains($r['body'], "<option value=\"$casa\">Casa Lucia") && substr_count($r['body'], 'name="copia[]"') === 12
+      && str_contains($r['body'], "<option value=\"$casa\">Casa Lucia") && substr_count($r['body'], 'name="copia[]"') === 13
       && str_contains($r['body'], 'Non si copiano mai: indirizzo, CIN, reti Wi-Fi'));
 $mediaPrima = (int) val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]);
 $r = $lucia->post('/pannello/nuova', ['name' => 'Casa Lucia Due', 'city' => 'Pienza', 'origine' => (string) $casa, 'copia' => ['waste', 'eat', 'visit', 'todo', 'transport', 'emergency', 'info', 'rules', 'services', 'extras'], 'copia_aspetto' => '1', 'copia_contatti' => '1']);
@@ -1719,7 +1719,7 @@ if (!$sez('arrival')) $luc->post("/pannello/$lpid/sezioni", ['kind' => 'arrival'
 $r = $luc->get("/pannello/$lpid/sezioni/" . $sez('arrival'));
 prova('6C · come arrivare: riquadro che rimanda a «Muoversi in zona»', $r['code'] === 200 && str_contains($r['body'], 'Gli spostamenti durante il soggiorno vanno in «Muoversi in zona».'));
 $r = $ospite->get('/');
-prova('6C · home: tutte le sezioni del catalogo nei tre gruppi, contate', $r['code'] === 200 && str_contains($r['body'], '15 sezioni pronte. Scegli quelle che servono ai tuoi ospiti.')
+prova('6C · home: tutte le sezioni del catalogo nei tre gruppi, contate', $r['code'] === 200 && str_contains($r['body'], '16 sezioni pronte. Scegli quelle che servono ai tuoi ospiti.')
       && !str_contains($r['body'], 'in base al piano') && str_contains($r['body'], '>La casa</h3>') && str_contains($r['body'], '>Arrivare e muoversi</h3>')
       && str_contains($r['body'], '>Il territorio</h3>') && str_contains($r['body'], 'Muoversi in zona') && str_contains($r['body'], 'Negozi e spesa'));
 
@@ -1759,7 +1759,58 @@ prova('M2 · QR & Link: messaggio di benvenuto per lingua, col link nella lingua
       && preg_match('#id="benvenuto-en"[^>]*>Hello! Welcome to Casa Lucia\.[^<]*/g/[a-z0-9-]+\?l=en#', $r['body']) === 1
       && str_contains($r['body'], 'data-copia-da="benvenuto-de"') && str_contains($r['body'], 'href="https://wa.me/?text=Ciao%21%20Benvenuti%20a%20Casa%20Lucia.'));
 $r = $ospite->get('/');
-prova('6D · la home conta ancora le sezioni pronte (la libera no)', str_contains($r['body'], '15 sezioni pronte.'));
+prova('6D · la home conta ancora le sezioni pronte (la libera no)', str_contains($r['body'], '16 sezioni pronte.'));
+
+capitolo('Fase 6G · eventi');
+$evSid = $sez('events');
+$lslug6 = (string) val('SELECT slug FROM properties WHERE id = ?', [$lpid]);
+$r = $ospite->get("/g/$lslug6/$evSid");
+prova('6G · guida demo: «In questi giorni» con l\'evento di oggi e quello tra 5 giorni, «Ogni settimana» col mercato', $evSid > 0 && $r['code'] === 200
+      && str_contains($r['body'], 'In questi giorni') && str_contains($r['body'], 'Concerto in piazza') && str_contains($r['body'], 'Festa delle infiorate')
+      && str_contains($r['body'], 'Ogni settimana') && str_contains($r['body'], 'Mercato del sabato') && str_contains($r['body'], 'class="evento__data"')
+      && str_contains($r['body'], 'Consigliato da Lucia') && str_contains($r['body'], 'data-filtro="Musica"'));
+$r = $ospite->get("/g/$lslug6/$evSid?l=de");
+prova('6G · ?l=de: categoria, gruppo e prezzo in tedesco', str_contains($r['body'], 'In diesen Tagen') && str_contains($r['body'], 'Musik') && str_contains($r['body'], 'Kostenlos'));
+$r = $ospite->get("/g/$lslug6");
+prova('6G · home della guida: la fascia «Oggi» e il numero sulla casella', preg_match('#class="oggi-eventi"[^>]*>.*?Oggi.*?Concerto in piazza#s', $r['body']) === 1
+      && str_contains($r['body'], 'class="tile__conta">2 in questi giorni<'));
+$evRighe = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$evSid]), true)['events'] ?? [];
+$ics = $ospite->get("/g/$lslug6/evento/{$evRighe[1]['id']}.ics");
+$icsRic = $ospite->get("/g/$lslug6/evento/{$evRighe[2]['id']}.ics");
+prova('6G · .ics: comincia con BEGIN:VCALENDAR; per un evento ricorrente niente file', $ics['code'] === 200 && str_starts_with($ics['body'], 'BEGIN:VCALENDAR')
+      && str_contains(intestazione($ics, 'Content-Type'), 'text/calendar') && $icsRic['code'] === 404);
+$r = $luc->get("/pannello/$lpid/sezioni/$evSid");
+prova('6G · editor: stato degli eventi, «Quando» a pillole con «Un giorno» per la riga nuova, locandina immagine o PDF', $r['code'] === 200
+      && str_contains($r['body'], 'badge badge--pine rip__stato">In corso<') && str_contains($r['body'], 'rip__stato">Tra 5 giorni<') && str_contains($r['body'], 'rip__stato">Ricorrente<')
+      && preg_match('#name="events\[3\]\[when\]" value="day" checked#', $r['body']) === 1 && str_contains($r['body'], 'accept="image/jpeg,image/png,image/webp,application/pdf"')
+      && str_contains($r['body'], 'data-solo-con="when" data-solo-valori="weekly"') && str_contains($r['body'], 'Gli eventi passati non si vedono più nella guida.'));
+// Un evento passato che torna ogni anno, e uno tra 90 giorni.
+$g = fn(int $n) => (new DateTimeImmutable('now', new DateTimeZone('Europe/Rome')))->modify(($n >= 0 ? '+' : '') . $n . ' days')->format('Y-m-d');
+$righePost = [];
+foreach ($evRighe as $i => $ev) $righePost[] = $ev + ['name' => ['Concerto in piazza', 'Festa delle infiorate', 'Mercato del sabato'][$i]];
+$righePost[] = ['id' => '', 'name' => 'Palio dell\'anno scorso', 'cat' => 'history', 'when' => 'day', 'date_from' => $g(-30), 'yearly' => '1'];
+$righePost[] = ['id' => '', 'name' => 'Rassegna d\'autunno', 'cat' => 'theatre', 'when' => 'day', 'date_from' => $g(90)];
+$luc->post("/pannello/$lpid/sezioni/$evSid", ['events' => $righePost]);
+$r = $luc->get("/pannello/$lpid/sezioni/$evSid");
+$palio = array_values(array_filter(json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$evSid]), true)['events'], fn($x) => ($x['date_from'] ?? '') === $g(-30)))[0] ?? [];
+prova('6G · un evento passato e annuale: «Passato: nascosto» e «Ripeti nel …»', str_contains($r['body'], 'rip__stato">Passato: nascosto<')
+      && str_contains($r['body'], 'name="ripeti" value="' . ($palio['id'] ?? 'x') . '">Ripeti nel ' . ((int) substr($g(-30), 0, 4) + 1) . '<'));
+$rp = $ospite->get("/pannello/$lpid/anteprima/$evSid");
+$rp = $luc->get("/pannello/$lpid/anteprima/$evSid");
+prova('6G · l\'evento passato non si vede nella guida; quello tra 90 giorni è in «Più avanti»', !str_contains($rp['body'], 'Palio dell') && str_contains($rp['body'], 'Più avanti') && str_contains($rp['body'], 'Rassegna d&#039;autunno'));
+$righePost2 = [];
+foreach (json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$evSid]), true)['events'] as $ev) $righePost2[] = $ev + ['name' => 'x'];
+$r = $luc->post("/pannello/$lpid/sezioni/$evSid", ['ripeti' => $palio['id'] ?? '']);
+$dopo = array_values(array_filter(json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$evSid]), true)['events'], fn($x) => ($x['id'] ?? '') === ($palio['id'] ?? '')))[0] ?? [];
+prova('6G · «Ripeti»: date spostate all\'anno dopo, avviso', ($dopo['date_from'] ?? '') > $g(0) && substr((string) ($dopo['date_from'] ?? ''), 5) === substr($g(-30), 5)
+      && str_contains($luc->get("/pannello/$lpid/sezioni/$evSid")['body'], 'controllale, carica la nuova locandina e pubblica'), json_encode($dopo));
+// Solo un evento tra 90 giorni: niente casella nella home della guida.
+$solo = array_values(array_filter(json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$evSid]), true)['events'], fn($x) => ($x['date_from'] ?? '') === $g(90)));
+$luc->post("/pannello/$lpid/sezioni/$evSid", ['events' => [['id' => $solo[0]['id'] ?? '', 'name' => 'Rassegna d\'autunno', 'cat' => 'theatre', 'when' => 'day', 'date_from' => $g(90)]]]);
+$r = $luc->get("/pannello/$lpid/anteprima");
+prova('6G · con il solo evento tra 90 giorni la casella non c\'è', $r['code'] === 200 && !str_contains($r['body'], "/anteprima/$evSid?") && !str_contains($r['body'], 'class="oggi-eventi"'));
+$esitoR = trim((string) shell_exec('php -r ' . escapeshellarg('define("MHW_APP", "' . $DOVE . '/app"); spl_autoload_register(fn($c) => require "' . $DOVE . '/app/src/" . substr($c, 4) . ".php"); echo isset(MHW\Richiami::TIPI["eventi"]) ? "ok" : "no";')));
+prova('6G · promemoria «eventi» tra i richiami (con il «non mandarmi più»)', $esitoR === 'ok');
 
 capitolo('Sito: chi è già registrato, guida vetrina');
 $r = $ospite->get('/');

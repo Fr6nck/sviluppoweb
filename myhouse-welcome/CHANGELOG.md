@@ -1,5 +1,23 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Fase 6G — Sezione «Eventi» con locandina, calendario e promemoria (5 ottobre 2026)
+
+Nessuna migrazione. Nuovi file: `app/src/Eventi.php` (la logica delle date, già pronta) e `app/lang/eventi/` (5 lingue).
+
+- **Nuova sezione `events`.**
+  - Ogni evento ha nome, categoria, «Quando» a pillole (un giorno, più giorni, ogni settimana, altro), date, orari, luogo con i minuti, prezzo, sito e descrizione.
+  - La locandina è una zona sola, per un'immagine o un PDF.
+  - I campi si mostrano e si nascondono secondo «Quando» e «Prezzo». Con «Un giorno», «Dal» diventa «Giorno».
+- **Pannello.**
+  - Ogni evento ha il suo stato: In corso, Tra N giorni, Ricorrente, Passato: nascosto, Manca la data.
+  - Per un evento passato che torna ogni anno c'è «Ripeti nel 2027»: sposta le date e toglie la locandina.
+  - Una volta al mese al massimo, un'email ricorda gli eventi passati (si può disattivare).
+- **Guida.**
+  - Gli eventi si dividono in gruppi «In questi giorni», «Più avanti» e «Ogni settimana», con i filtri per categoria. Quelli passati spariscono da soli: le date si guardano quando la pagina si apre.
+  - Ogni scheda si apre e mostra locandina, Indicazioni, «Aggiungi al calendario» (file `.ics`) e il sito.
+  - In home c'è la fascia scura «Oggi» se c'è un evento oggi. La casella Eventi compare solo se c'è qualcosa nei prossimi 60 giorni, con il numero di quelli in questi giorni.
+  - La demo Casa Lucia ha tre eventi di esempio.
+
 ## v2 · Fase 6D — Sezione libera, righe compresse, messaggio di benvenuto (5 ottobre 2026)
 
 Nessuna migrazione.
