@@ -5,7 +5,7 @@
 use function MHW\b; use MHW\{Support, Media, Icon, Auth};
 $title = 'Le mie guide';
 $attive = array_values(array_filter($props, fn($x) => empty($x['archived_at'])));
-$n = count($attive);
+$n = count(array_filter($attive, fn($x) => (int) $x['is_demo'] < 2));   // la vetrina non conta nel limite
 $bloccate = $bloccate ?? [];
 $puoiAggiungere = $n < $maxProp || !empty($aggiungiPagando);
 $online = count(array_filter($attive, fn($x) => $x['status'] === 'published' && $x['online'] && !in_array((int) $x['id'], $bloccate, true)));

@@ -52,7 +52,7 @@ final class Subscriptions
     {
         if ($property['status'] !== 'published') return false;
         if (!empty($property['archived_at'])) return false;   // archiviata dopo una riduzione del Portfolio
-        if ((int) ($property['is_demo'] ?? 0) === 1) return true;
+        if ((int) ($property['is_demo'] ?? 0) >= 1) return true;   // demo e vetrina (Demo::VETRINA)
         return self::active((int) $property['account_id']) !== null;
     }
 

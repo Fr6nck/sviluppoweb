@@ -99,6 +99,147 @@ final class Demo
         }
     }
 
+    /**
+     * La «vetrina»: una guida dimostrativa completa dentro un account vero (per esempio
+     * quello dell'agenzia), creata dall'amministrazione. Sulla falsariga di Casa Lucia,
+     * con nomi, numeri e indicazioni diversi, tutti di fantasia: la guida mostra «Demo».
+     * is_demo = VETRINA (2): online senza pagamento come le altre demo, ma non occupa
+     * il posto di una struttura del piano, e la landing la preferisce come demo.
+     * Foto, lingue e luoghi seguono il piano dell'account (serve Plus).
+     */
+    public const VETRINA = 2;
+
+    public static function vetrina(int $accountId): int
+    {
+        $acc = $accountId;
+        $pid = Properties::create($acc, 'Casa dei Gerani', 'Bevagna', 'Giulia', 1);
+        Db::update('properties', [
+            'region' => 'Umbria', 'checkin_from' => '16:00', 'checkout_by' => '10:00',
+            'host_phone' => '+39 0742 000111', 'host_whatsapp' => '+39 0742 000111', 'palette' => 'oliva',
+            'is_demo' => self::VETRINA, 'wizard_step' => 'fatto', 'property_type' => 'casa_vacanza',
+        ], 'id = :pid', ['pid' => $pid]);
+        Properties::setLocales($acc, $pid, array_values(array_intersect(['it', 'en'], Entitlements::allowedLocales($acc))));
+        Properties::saveContacts($pid, Conversione::contatti('Giulia', '+39 0742 000111', '+39 0742 000111'));
+        Db::update('properties', [
+            'cover_media_id' => self::foto('borgo.jpg', $acc, $pid, 'La scalinata in pietra con i gerani rossi, tra le case del borgo'),
+        ], 'id = :pid', ['pid' => $pid]);
+
+        $core = self::nucleo($pid);
+        Db::update('sections', ['media_id' => self::foto('soggiorno.jpg', $acc, $pid, 'Il soggiorno con il divano chiaro e la cucina in mattoni')], 'id = :sid', ['sid' => $core]);
+        self::scrivi($pid, $core, [
+            'it' => ['checkin_steps' => ['Sali la scalinata con i gerani: la porta di casa è quella in legno, in cima.',
+                                        'Giulia ti aspetta sul pianerottolo con le chiavi e ti fa vedere la casa.'],
+                     'checkin_note' => 'Arrivi dopo le 20? Scrivi a Giulia su WhatsApp: troviamo un orario.',
+                     'checkout_notes' => 'Grazie di aver scelto Casa dei Gerani. Torna a trovarci!'],
+            'en' => ['checkin_steps' => ['Climb the stone steps with the geraniums: the front door is the wooden one at the top.',
+                                        'Giulia will meet you on the landing with the keys and show you around.'],
+                     'checkin_note' => 'Arriving after 8pm? Message Giulia on WhatsApp and we will find a time.',
+                     'checkout_notes' => 'Thank you for choosing Casa dei Gerani. Come back soon!'],
+        ], 'Check-in & Check-out');
+        // La partenza come lista ordinata (dalla 009): già nel formato nuovo.
+        Properties::saveSection($pid, $core, 'it', ['checkout_steps' => ['Chiavi: lasciale nella ciotola di ceramica accanto alla porta.',
+            'Rifiuti: il vetro va nella campana in fondo alla via.', 'Finestre: chiudi le persiane della camera.']], true);
+
+        $wifi = Properties::addSection($acc, $pid, 'wifi');
+        self::scrivi($pid, $wifi, [
+            'it' => ['network' => 'Gerani_Ospiti', 'password' => 'scalinata2026',
+                     'instructions' => 'Il segnale è più forte in soggiorno. Se cade, spegni il router per trenta secondi.',
+                     'router_location' => 'Sulla libreria del soggiorno, dietro i libri di cucina.'],
+            'en' => ['instructions' => 'The signal is strongest in the living room. If it drops, switch the router off for thirty seconds.',
+                     'router_location' => 'On the living room bookcase, behind the cookbooks.'],
+        ], 'Wi-Fi');
+
+        $regole = Properties::addSection($acc, $pid, 'rules');
+        self::scrivi($pid, $regole, [
+            'it' => ['flags' => ['smoking' => 'no', 'pets' => 'no', 'parties' => 'no', 'visitors' => 'si'], 'quiet_on' => '1', 'quiet_from' => '23:00', 'quiet_to' => '08:30',
+                     'items' => ['La scalinata è di tutti: niente valigie lasciate sui gradini.', 'In cucina c\'è tutto: lascia le stoviglie lavate.']],
+            'en' => ['items' => ['The stone steps are shared: please do not leave luggage on them.', 'The kitchen has everything: please leave the dishes washed.']],
+        ]);
+
+        $rifiuti = Properties::addSection($acc, $pid, 'waste');
+        self::scrivi($pid, $rifiuti, [
+            'it' => ['bins' => [
+                        ['type' => 'umido', 'days' => [1, 4], 'color' => 'marrone', 'label' => '', 'where' => 'Sotto il lavello'],
+                        ['type' => 'plastica', 'days' => [2], 'color' => 'giallo', 'label' => '', 'where' => 'Nello sgabuzzino'],
+                        ['type' => 'carta', 'days' => [5], 'color' => 'blu', 'label' => '', 'where' => 'Nello sgabuzzino'],
+                        ['type' => 'vetro', 'days' => [], 'color' => 'verde', 'label' => 'Quando vuoi', 'where' => 'Campana in fondo alla via']],
+                     'note' => 'I sacchetti si lasciano davanti alla porta entro le 7 del mattino.'],
+            'en' => ['bins' => [['where' => 'Under the sink'], ['where' => 'In the storeroom'], ['where' => 'In the storeroom'],
+                                ['label' => 'Any time', 'where' => 'Bottle bank at the end of the street']],
+                     'note' => 'Leave the bags outside the door by 7am.'],
+        ]);
+
+        $emergenze = Properties::addSection($acc, $pid, 'emergency');
+        self::scrivi($pid, $emergenze, [
+            'it' => ['emergency_number' => '112', 'contacts' => [
+                        ['name' => 'Giulia, per la casa', 'phone' => '+39 0742 000111', 'note' => 'Dalle 9 alle 21'],
+                        ['name' => 'Guardia medica', 'phone' => '', 'note' => 'Il numero è sul foglio appeso in cucina.']]],
+            'en' => ['contacts' => [['name' => 'Giulia, for the house', 'note' => '9am to 9pm'],
+                                    ['name' => 'Out-of-hours doctor', 'note' => 'The number is on the sheet in the kitchen.']]],
+        ]);
+
+        $parcheggio = Properties::addSection($acc, $pid, 'parking');
+        self::scrivi($pid, $parcheggio, ['it' => ['options' => [
+            ['type' => 'pubblico', 'name' => 'Parcheggio fuori dalle mura', 'address' => 'Porta Foligno, Bevagna', 'walk_minutes' => '5',
+             'instructions' => 'Lascia l\'auto fuori dalle mura e sali a piedi: in centro non si parcheggia.']],
+            'ztl' => 'Il centro storico è zona a traffico limitato: con l\'auto puoi solo scaricare i bagagli, in 15 minuti.']], '');
+
+        $extra = Properties::addSection($acc, $pid, 'extras');
+        self::scrivi($pid, $extra, [
+            'it' => ['items' => [
+                        ['title' => 'Cesto della colazione', 'description' => 'Pane, miele e frutta di stagione, lasciati in cucina la sera prima.', 'amount' => '10', 'unit' => 'per_person'],
+                        ['title' => 'Degustazione di olio in casa', 'description' => 'Tre oli della zona da assaggiare con il pane caldo.', 'amount' => '12', 'unit' => 'per_person']],
+                     'note' => 'Da chiedere entro le 18 del giorno prima.'],
+            'en' => ['items' => [['title' => 'Breakfast basket', 'description' => 'Bread, honey and seasonal fruit, left in the kitchen the night before.'],
+                                 ['title' => 'Olive oil tasting at home', 'description' => 'Three local oils to taste with warm bread.']],
+                     'note' => 'Please ask by 6pm the day before.'],
+        ]);
+
+        $muoversi = Properties::addSection($acc, $pid, 'transport');
+        self::scrivi($pid, $muoversi, [
+            'it' => ['options' => [
+                        ['type' => 'bus', 'name' => 'Autobus per Foligno', 'where' => 'La fermata è fuori da Porta Foligno.', 'note' => 'Corse più rare la domenica.'],
+                        ['type' => 'walk', 'name' => 'Il borgo a piedi', 'note' => 'In venti minuti fai il giro delle mura.']]],
+            'en' => ['options' => [
+                        ['name' => 'Bus to Foligno', 'where' => 'The stop is outside Porta Foligno.', 'note' => 'Fewer buses on Sundays.'],
+                        ['name' => 'The village on foot', 'note' => 'The walk around the walls takes twenty minutes.']]],
+        ]);
+
+        // I luoghi solo se il piano li comprende: senza, la guida resta completa nel resto.
+        if (Entitlements::can($acc, 'places')) {
+            $mangiare = Properties::addSection($acc, $pid, 'eat');
+            self::scrivi($pid, $mangiare, [
+                'it' => ['intro' => 'Tre indirizzi a due passi dalla scalinata, scelti da Giulia.'],
+                'en' => ['intro' => 'Three places a short walk from the steps, picked by Giulia.'],
+            ], 'Dove mangiare');
+            foreach ([
+                ['Trattoria delle Tre Arcate', 'trattoria', 'Pasta fatta in casa e carne alla brace.', 'Vicolo delle Arcate 2', 4, 'pine', 'osteria.jpg', 'Tavoli apparecchiati nel vicolo', 'dinner'],
+                ['Caffè del Loggiato', 'breakfast', 'Cappuccino e crostata sotto il loggiato.', 'Piazza del Loggiato 5', 2, 'sea', 'caffe.jpg', 'Una tazzina di espresso sul bancone', 'breakfast'],
+                ['Gelateria Ai Gerani', 'gelato', 'Prova il gusto al miele e noci.', 'Via delle Scale 9', 3, 'ochre', 'gelato.jpg', 'Vaschette di gelato dietro il banco', 'host_pick'],
+            ] as [$n, $cat, $desc, $ind, $min, $tono, $img, $alt, $badge]) {
+                $plid = Properties::savePlace($acc, $pid, $mangiare, null, 'it', true, [
+                    'name' => $n, 'category_choice' => $cat, 'description' => $desc, 'address' => $ind . ', Bevagna',
+                    'maps_url' => 'https://maps.google.com/?q=' . rawurlencode($ind . ', Bevagna'),
+                    'walk_minutes' => $min, 'badge_choice' => $badge, 'badge_tone' => $tono,
+                ]);
+                Db::update('places', ['media_id' => self::foto($img, $acc, $pid, $alt)], 'id = :pid', ['pid' => $plid]);
+            }
+            $negozi = Properties::addSection($acc, $pid, 'shop');
+            self::scrivi($pid, $negozi, ['it' => ['intro' => 'Per la spesa basta scendere la scalinata.'],
+                                         'en' => ['intro' => 'For groceries, just walk down the steps.']], '');
+            foreach ([['Bottega di Anna', 'grocery', 'Salumi, formaggi e verdura dell\'orto.', 'Via delle Scale 3', 1, 'local'],
+                      ['Forno di Piazza', 'bakery', 'Pane casereccio e biscotti all\'anice.', 'Piazza del Loggiato 1', 2, 'on_foot']] as [$n, $cat, $desc, $ind, $min, $badge]) {
+                Properties::savePlace($acc, $pid, $negozi, null, 'it', true, [
+                    'name' => $n, 'category_choice' => $cat, 'description' => $desc, 'address' => $ind . ', Bevagna',
+                    'maps_url' => 'https://maps.google.com/?q=' . rawurlencode($ind . ', Bevagna'),
+                    'walk_minutes' => $min, 'badge_choice' => $badge, 'badge_tone' => 'sea',
+                ]);
+            }
+        }
+        Guide::publish($pid);
+        return $pid;
+    }
+
     public static function popola(): array
     {
         $creati = [];

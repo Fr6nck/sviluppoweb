@@ -1723,6 +1723,47 @@ prova('6C · home: tutte le sezioni del catalogo nei tre gruppi, contate', $r['c
       && !str_contains($r['body'], 'in base al piano') && str_contains($r['body'], '>La casa</h3>') && str_contains($r['body'], '>Arrivare e muoversi</h3>')
       && str_contains($r['body'], '>Il territorio</h3>') && str_contains($r['body'], 'Muoversi in zona') && str_contains($r['body'], 'Negozi e spesa'));
 
+capitolo('Sito: chi è già registrato, guida vetrina');
+$r = $ospite->get('/');
+prova('Fuori: «Accedi» anche nella testata del telefono, nessuna fascia di bentornato', $r['code'] === 200
+      && preg_match('#<div class="topbar__telefono">\s*(?:<\?php[^>]*>)?\s*<a class="btn btn--ghost btn--sm" href="[^"]*/accedi">Accedi</a>#', $r['body']) === 1
+      && !str_contains($r['body'], 'class="bentornato"') && !str_contains($r['body'], 'class="conto'));
+$r = $luc->get('/');
+prova('Dentro: testata con iniziale e nome, menu dell\'account con «Esci»', $r['code'] === 200 && str_contains($r['body'], '<span class="conto__nome">Lucia</span>')
+      && str_contains($r['body'], 'aria-label="Il tuo account: lucia@esempio.it"') && substr_count($r['body'], 'class="conto__avatar" aria-hidden="true">L<') === 2
+      && preg_match('#<form method="post" action="[^"]*/esci"><input type="hidden"[^>]*><button type="submit" class="conto__esci">#', $r['body']) === 1);
+prova('Dentro: in home la fascia «Ciao, Lucia.» con le guide e lo stato', str_contains($r['body'], 'class="bentornato"') && str_contains($r['body'], 'Ciao, Lucia.</h2>')
+      && str_contains($r['body'], 'Sei dentro come <b>lucia@esempio.it</b>') && preg_match('#class="bentornato__guida" href="[^"]*/pannello/' . $lpid . '">.*?Casa Lucia.*?badge badge--pine">Online<#s', $r['body']) === 1
+      && str_contains($r['body'], 'Vai alle tue guide') && !str_contains($r['body'], 'Crea gratis la tua guida'));
+$ag = new Browser('agenzia');
+$ag->get('/registrati');
+$r = $ag->post('/registrati', ['name' => 'Agenzia Prova', 'email' => 'blackout.agency@gmail.com', 'password' => 'AgenziaProva123', 'termini' => '1']);
+$aacc = (int) val("SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = 'blackout.agency@gmail.com'");
+$r = $ag->get('/');
+preg_match('#note--err" role="alert">([^<]*)#', $r['body'], $em);
+prova('Registrato senza guide: «Non hai ancora una guida» e «Crea la tua prima guida»', $aacc > 0 && str_contains($r['body'], 'Ciao, Agenzia.')
+      && str_contains($r['body'], 'Non hai ancora una guida.') && str_contains($r['body'], 'Crea la tua prima guida'), ($em[1] ?? '') . ' ' . $aacc);
+$r = $admin->get("/admin/cliente/$aacc");
+prova('Amministrazione: riquadro «Guida vetrina», con Plus dimostrativo proposto (account senza piano)', $r['code'] === 200 && str_contains($r['body'], 'Crea la guida vetrina')
+      && str_contains($r['body'], 'name="plus" value="1" checked'));
+$r = $admin->post("/admin/cliente/$aacc/vetrina", ['plus' => '1']);
+$vet = riga("SELECT * FROM properties WHERE account_id = ? AND name = 'Casa dei Gerani'", [$aacc]);
+prova('Vetrina creata e pubblicata come demo (is_demo = 2), con Plus dimostrativo', $vet && (int) $vet['is_demo'] === 2 && $vet['status'] === 'published'
+      && (bool) val("SELECT 1 FROM subscriptions WHERE account_id = ? AND status = 'active'", [$aacc]), json_encode($vet));
+$vslug = (string) ($vet['slug'] ?? '');
+$r = $ospite->get("/g/$vslug");
+$ren = $ospite->get("/g/$vslug/" . (int) val("SELECT id FROM sections WHERE property_id = ? AND is_core = 1", [$vet['id'] ?? 0]) . '?l=en');
+prova('…la guida si apre, con «Demo», in italiano e in inglese; nomi diversi da Casa Lucia', $r['code'] === 200 && str_contains($r['body'], 'Casa dei Gerani') && str_contains($r['body'], 'demo-tag')
+      && !str_contains($r['body'], 'Lucia') && $ren['code'] === 200 && str_contains($ren['body'], 'Giulia will meet you on the landing'));
+prova('…con i luoghi (3 da mangiare, 2 negozi) e senza codici di porte', (int) val("SELECT COUNT(*) FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ?", [$vet['id'] ?? 0]) === 5);
+$r = $admin->post("/admin/cliente/$aacc/vetrina", ['plus' => '1']);
+prova('…una sola vetrina per account', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND is_demo = 2', [$aacc]) === 1);
+$r = $ospite->get('/');
+prova('La landing usa la vetrina come demo', str_contains($r['body'], 'Sfoglia la guida di Casa dei Gerani') && str_contains($r['body'], "/g/$vslug/benvenuto"));
+$ag->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'La mia casa vera', 'city' => 'Foligno']);
+prova('La vetrina non occupa il posto del piano: il cliente crea la sua struttura (Plus, una struttura)', (bool) val("SELECT 1 FROM properties WHERE account_id = ? AND name = 'La mia casa vera'", [$aacc])
+      && !str_contains($ag->get('/pannello')['body'], 'class="panel stack bloccata"'));
+
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

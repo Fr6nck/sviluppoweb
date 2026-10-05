@@ -9,7 +9,7 @@ I dettagli tecnici sono in `app/LEGGIMI.md`. Le novità, fase per fase, sono in 
 
 1. Copia sul server **tutto `app/storage/`** e `config.local.php`, se c'è.
 2. Carica il contenuto di `welcomebook/` sopra i file vecchi, **senza toccare `app/storage/`**.
-3. Apri il sito una volta. Le migrazioni `007`–`014` partono da sole.
+3. Apri il sito una volta. Le migrazioni `007`–`017` partono da sole.
 4. In **Amministrazione → Diagnostica** tutte le righe devono essere «OK».
 
 Il database resta **SQLite**. Le migrazioni nuove sono scritte anche per MySQL, ma un'installazione da zero su MySQL non è supportata: lo schema iniziale (`001`) è solo per SQLite.
@@ -57,6 +57,15 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
 - **FAQ** in landing: le sei risposte sono in `app/views/pub/home.php`. Falle rileggere insieme ai punti 6 e 7 qui sotto, soprattutto «Ricevo fattura?».
 - **Termini e Privacy** (`/termini`, `/privacy`): vanno aggiornati con le novità (email di richiamo, dati di fatturazione, funnel anonimo), insieme alla versione in `MHW_TERMS_VERSION` / `MHW_PRIVACY_VERSION`.
 - **Clienti di esempio**: sono account con password nota. Toglili prima di aprire al pubblico (Quadro → «Elimina i clienti di esempio»). Se tieni la demo pubblica, ricreali: la nuova demo è a Spello.
+
+## 4b. La guida vetrina (la demo della landing)
+
+La demo della landing si sposta su un account vero, quello dell'agenzia:
+1. Registrati sul sito con **blackout.agency@gmail.com**, oppure usa l'account se c'è già.
+2. Vai su **Amministrazione → Clienti**, apri quell'account e premi **«Crea la guida vetrina»**. Lascia spuntato «Concedi Plus dimostrativo per 12 mesi»: senza un piano la guida esce senza foto, senza inglese e senza luoghi.
+3. Nasce «Casa dei Gerani», a Bevagna. È sulla falsariga di Casa Lucia, ma nomi, numeri e indicazioni sono diversi e tutti di fantasia. Viene pubblicata subito, con l'etichetta «Demo».
+4. Da quel momento la landing mostra la vetrina come demo. La vetrina non occupa il posto della struttura del piano, e la modifichi dal pannello di quell'account.
+5. Poi togli i clienti di esempio (**Amministrazione → Clienti → «Elimina i clienti di esempio»**). Hanno una password nota. L'eliminazione tocca solo gli account `@esempio.it`, non la vetrina.
 
 ## 5. Foto da caricare
 

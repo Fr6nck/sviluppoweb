@@ -1,5 +1,21 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Sito: chi è già registrato lo vede subito; guida vetrina (5 ottobre 2026)
+
+Nessuna migrazione.
+
+- **Testata del sito.**
+  - Chi è dentro vede la sua iniziale e il nome. Si apre un menu con l'indirizzo email, «Le mie guide», «Account & Fatturazione» ed «Esci»; si chiude toccando fuori o con Esc.
+  - Sul telefono l'iniziale resta in testata. Chi è fuori ha «Accedi» in testata, non solo nel menu.
+- **Home per chi è registrato.**
+  - In cima c'è la fascia «Ciao, Nome.», con l'indirizzo con cui sei dentro.
+  - Mostra fino a tre guide con lo stato vero (Online, Offline, Bozza) e «Vai alle tue guide». Senza guide propone «Crea la tua prima guida».
+  - I pulsanti dell'hero e della chiusura diventano «Vai alle tue guide».
+- **Guida vetrina.**
+  - In Amministrazione → cliente, «Crea la guida vetrina» crea «Casa dei Gerani», una demo completa nell'account di un cliente vero, con dati di fantasia diversi da Casa Lucia.
+  - Si può concedere insieme Plus dimostrativo per 12 mesi.
+  - La vetrina è online come demo, non occupa il posto di una struttura del piano e diventa la demo della landing.
+
 ## v2 · Fase 6C — Parcheggio, prezzi, «Muoversi in zona», home con tutte le sezioni (3 ottobre 2026)
 
 Migrazione `017`. Converte i dati esistenti; i vecchi campi restano nel JSON. Le guide già pubblicate si leggono nel formato 6 (`Guide::FORMAT`).

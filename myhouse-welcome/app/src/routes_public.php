@@ -54,12 +54,20 @@ $r->any('/installa', function () {
 $r->get('/', function () use ($guard) {
     $guard();
     MHW\Stats::funnelEvent('landing_view');
-    $demo = Db::one("SELECT * FROM properties WHERE is_demo = 1 AND status = 'published' ORDER BY id");
+    // La demo della landing: la vetrina creata dall'amministrazione, se c'è; altrimenti quella dei clienti di esempio.
+    $demo = Db::one("SELECT * FROM properties WHERE is_demo >= 1 AND status = 'published' AND archived_at IS NULL ORDER BY is_demo DESC, id");
     $copertina = $demo ? Media::url($demo['cover_media_id'] ? (int) $demo['cover_media_id'] : null) : null;
+    // Chi è già dentro vede in cima le sue guide, con lo stato vero (la fascia «Ciao, …»).
+    $u = Auth::user(); $mie = [];
+    if ($u && $u['role'] !== 'admin' && ($acc = Auth::account())) {
+        $mie = Db::all('SELECT id, account_id, is_demo, name, city, status, wizard_step, archived_at FROM properties WHERE account_id = ? AND archived_at IS NULL ORDER BY id', [$acc['id']]);
+        foreach ($mie as &$pr) $pr['online'] = $pr['status'] === 'published' && MHW\Subscriptions::propertyOnline($pr);
+        unset($pr);
+    }
     View::out('pub/home', [
         'offers' => Plans::offers(), 'demo' => $demo,
         'copertina' => $copertina ?: MHW\a('/assets/foto/casa.jpg'),
-        'user' => Auth::user(),
+        'user' => $u, 'mie' => $mie,
         'testimonianze' => MHW\Testimonianze::visibili(),
     ]);
 });

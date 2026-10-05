@@ -31,6 +31,25 @@ $fonte = ['package' => 'piano pagato', 'intended' => 'piano scelto', 'override' 
     </section>
   </div>
 
+  <?php /* La guida vetrina: una demo completa dentro questo account (nomi e dati di fantasia). */
+        $vetrina = null; foreach ($props as $p) if ((int) $p['is_demo'] === MHW\Demo::VETRINA) $vetrina = $p;
+        $conPiano = (bool) MHW\Subscriptions::active((int) $acc['id']); ?>
+  <section class="panel stack" style="gap:10px" aria-labelledby="vetrina-titolo">
+    <h2 id="vetrina-titolo" style="font-size:22px">Guida vetrina</h2>
+    <?php if ($vetrina): ?>
+      <p class="small">«<?= Support::e($vetrina['name']) ?>» è la guida vetrina di questo account: è online come demo, non conta nel limite di strutture ed è la demo della landing.
+        <a href="<?= b() ?>/g/<?= Support::e($vetrina['slug']) ?>" target="_blank" rel="noopener">Apri la guida</a></p>
+    <?php else: ?>
+      <p class="small">Una guida dimostrativa completa sulla falsariga di Casa Lucia, con nomi, numeri e indicazioni diversi, tutti di fantasia: «Casa dei Gerani», a Bevagna. Si pubblica subito come demo, non occupa il posto di una struttura e diventa la demo della landing. Il cliente la modifica dal suo pannello.</p>
+      <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/vetrina" class="stack" style="gap:10px"><?= Csrf::field() ?>
+        <?php if (!$conPiano): ?>
+          <label class="check"><input type="checkbox" name="plus" value="1" checked> <span>Concedi Plus dimostrativo per 12 mesi: senza un piano la guida esce senza foto, senza inglese e senza luoghi.</span></label>
+        <?php endif; ?>
+        <button class="btn btn--sm" style="align-self:flex-start">Crea la guida vetrina</button>
+      </form>
+    <?php endif; ?>
+  </section>
+
   <section class="stack" style="gap:10px">
     <h2 style="font-size:22px">Strutture e guide</h2>
     <?php if (!$props): ?><p class="small muted">Nessuna struttura.</p><?php else: ?>

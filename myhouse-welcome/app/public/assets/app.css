@@ -1024,8 +1024,43 @@ a.device-link:hover .device{transform:translateY(-4px)}
   border-radius:var(--r-lg);background:var(--raised);border:1px solid var(--line);box-shadow:0 16px 40px rgba(35,27,18,.18)}
 .menu-sito__pannello a{display:flex;align-items:center;min-height:48px;padding:0 14px;border-radius:12px;color:var(--ink);font-weight:500}
 .menu-sito__pannello a:hover{background:var(--sunk);color:var(--ink)}
+.menu-sito__pannello a.menu-sito__primo{background:var(--accent);color:var(--on-dark);margin-bottom:6px}
+.menu-sito__pannello a.menu-sito__primo:hover{background:var(--accent);color:var(--on-dark);filter:brightness(1.05)}
+.topbar__telefono .btn{white-space:nowrap}
+@media(max-width:440px){ .topbar__telefono .solo-largo{display:none} }
 .menu-sito__tema{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:6px;padding:8px 6px 2px 14px;
   border-top:1px solid var(--line);color:var(--muted);font-size:14px;font-weight:500}
+/* L'account in testata (chi è dentro): iniziale e nome, con il suo menu. */
+.conto{position:relative}
+.conto>summary{list-style:none;cursor:pointer}
+.conto>summary::-webkit-details-marker{display:none}
+.conto__chip{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px 0 4px;border-radius:999px;border:1px solid var(--line-strong);background:var(--raised);color:var(--ink);font-size:14px;font-weight:600}
+.conto--corto .conto__chip{padding:0 4px;width:44px;justify-content:center}
+.conto[open]>.conto__chip,.conto__chip:hover{background:var(--sunk)}
+.conto__avatar{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--on-dark);font-size:15px;font-weight:700}
+.conto__freccia{transform:rotate(90deg);color:var(--muted)}
+.conto[open] .conto__freccia{transform:rotate(-90deg)}
+.conto__pannello{position:absolute;right:0;top:52px;z-index:40;display:flex;flex-direction:column;min-width:250px;padding:8px;
+  border-radius:var(--r-lg);background:var(--raised);border:1px solid var(--line);box-shadow:0 16px 40px rgba(35,27,18,.18)}
+.conto__chi{display:flex;flex-direction:column;gap:2px;margin:0 0 6px;padding:8px 14px 12px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+.conto__pannello a,.conto__esci{display:flex;align-items:center;gap:10px;min-height:46px;padding:0 14px;border-radius:12px;color:var(--ink);font:inherit;font-weight:500;
+  background:none;border:0;width:100%;text-align:left;cursor:pointer}
+.conto__pannello a:hover,.conto__esci:hover{background:var(--sunk);color:var(--ink)}
+.conto__pannello form{margin:0}
+/* Home: la fascia di chi è già registrato, sopra l'hero. */
+.bentornato{display:flex;align-items:center;flex-wrap:wrap;gap:16px 24px;margin:18px 0 6px;padding:18px 20px;border-radius:var(--r-xl);
+  background:var(--raised);border:1px solid var(--line-strong);box-shadow:0 10px 30px rgba(35,27,18,.08)}
+.bentornato__chi{display:flex;align-items:center;gap:14px;flex:1 1 260px;min-width:0}
+.bentornato__avatar{flex:none;display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--on-dark);font-size:20px;font-weight:700}
+.bentornato__titolo{margin:0;font-size:24px;line-height:30px}
+.bentornato__chi p{margin:2px 0 0;overflow-wrap:anywhere}
+.bentornato__guide{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px;flex:2 1 320px}
+.bentornato__guide li{flex:1 1 200px;min-width:0}
+.bentornato__guida{display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 12px 8px 14px;border-radius:var(--r-md);background:var(--sunk);color:var(--ink)}
+.bentornato__guida:hover{color:var(--ink);background:var(--line)}
+.bentornato__guida b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bentornato__vuoto{margin:0;flex:2 1 240px}
+@media(max-width:560px){ .bentornato{padding:16px} .bentornato>.btn{width:100%;justify-content:center} }
 @media(max-width:760px){
   .topbar--sito .wrap{flex-wrap:nowrap;min-height:64px;gap:12px}
   .topbar--sito .topbar__nav,.topbar--sito .topbar__azioni{display:none}

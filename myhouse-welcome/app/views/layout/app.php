@@ -21,7 +21,26 @@ $u = Auth::user(); $f = Support::flash(); ?>
 <?php $principale = $u
     ? ['href' => b() . '/' . ($u['role'] === 'admin' ? 'admin' : 'pannello'), 'testo' => $u['role'] === 'admin' ? 'Amministrazione' : 'Le mie guide']
     : ['href' => b() . '/registrati', 'testo' => 'Crea gratis'];
-      $voci = [['/#come-funziona', 'Come funziona'], ['/#qr', 'Il QR'], ['/#domande', 'Domande'], ['/#piani', 'Piani']]; ?>
+      $voci = [['/#come-funziona', 'Come funziona'], ['/#qr', 'Il QR'], ['/#domande', 'Domande'], ['/#piani', 'Piani']];
+      /* Chi è dentro si riconosce subito: l'iniziale e il nome in testata, con il menu
+         dell'account (le guide, i dati, esci). È un <details>: si apre anche senza JavaScript. */
+      $nomeU = $u ? trim((string) ($u['name'] ?? '')) : '';
+      $primoNome = $nomeU !== '' ? explode(' ', $nomeU)[0] : '';
+      $iniziale = $u ? mb_strtoupper(mb_substr($nomeU !== '' ? $nomeU : (string) $u['email'], 0, 1)) : '';
+      $conto = function (bool $soloIniziale) use ($u, $primoNome, $iniziale, $principale): string {
+          if (!$u) return '';
+          $h = '<details class="conto' . ($soloIniziale ? ' conto--corto' : '') . '">'
+             . '<summary class="conto__chip" aria-label="Il tuo account: ' . Support::e($u['email']) . '">'
+             . '<span class="conto__avatar" aria-hidden="true">' . Support::e($iniziale) . '</span>'
+             . ($soloIniziale ? '' : '<span class="conto__nome">' . Support::e($primoNome !== '' ? $primoNome : 'Il tuo account') . '</span>' . Icon::svg('chevron', 14, 2, 'conto__freccia'))
+             . '</summary><div class="conto__pannello">'
+             . '<p class="conto__chi"><span class="small muted">Sei dentro come</span><b>' . Support::e($u['email']) . '</b></p>'
+             . '<a href="' . $principale['href'] . '">' . Icon::svg($u['role'] === 'admin' ? 'sliders' : 'grid', 17) . Support::e($principale['testo']) . '</a>'
+             . ($u['role'] === 'admin' ? '' : '<a href="' . b() . '/account">' . Icon::svg('card', 17) . 'Account &amp; Fatturazione</a>')
+             . '<form method="post" action="' . b() . '/esci">' . Csrf::field() . '<button type="submit" class="conto__esci">' . Icon::svg('logout', 17) . 'Esci</button></form>'
+             . '</div></details>';
+          return $h;
+      }; ?>
 <header class="topbar topbar--sito"><div class="wrap">
   <a class="brand" href="<?= b() ?>/"><?= Icon::brand(26) ?><span>myhouse welcome</span></a>
   <nav class="nav topbar__nav" aria-label="Sito">
@@ -31,13 +50,18 @@ $u = Auth::user(); $f = Support::flash(); ?>
     <?php include __DIR__ . '/_tema-bottone.php'; ?>
     <?php if (!$u): ?><a class="btn btn--ghost btn--sm" href="<?= b() ?>/accedi">Accedi</a><?php endif; ?>
     <a class="btn btn--sm" href="<?= $principale['href'] ?>"><?= $principale['testo'] ?></a>
+    <?= $conto(false) ?>
   </div>
   <?php /* Sul telefono: una riga sola. Il menu è un <details>, quindi si apre anche senza JavaScript. */ ?>
   <div class="topbar__telefono">
-    <a class="btn btn--sm" href="<?= $principale['href'] ?>"><?= $principale['testo'] ?></a>
+    <?php /* Sul telefono stretto resta il pulsante che serve di più: «Accedi» per chi è fuori, l'iniziale per chi è dentro. */ ?>
+    <?php if (!$u): ?><a class="btn btn--ghost btn--sm" href="<?= b() ?>/accedi">Accedi</a><?php endif; ?>
+    <a class="btn btn--sm solo-largo" href="<?= $principale['href'] ?>"><?= $principale['testo'] ?></a>
+    <?= $conto(true) ?>
     <details class="menu-sito">
       <summary class="icon-btn" aria-label="Menu"><?= Icon::svg('menu', 20, 2) ?></summary>
       <nav class="menu-sito__pannello" aria-label="Sito">
+        <a class="menu-sito__primo" href="<?= $principale['href'] ?>"><?= $u ? $principale['testo'] : 'Crea gratis la tua guida' ?></a>
         <?php foreach ($voci as [$h, $t]): ?><a href="<?= b() . $h ?>"><?= $t ?></a><?php endforeach; ?>
         <?php if (!$u): ?><a href="<?= b() ?>/accedi">Accedi</a><?php endif; ?>
         <div class="menu-sito__tema"><span>Tema</span><?php include __DIR__ . '/_tema-bottone.php'; ?></div>
@@ -51,10 +75,15 @@ $u = Auth::user(); $f = Support::flash(); ?>
 </main>
 <?php include __DIR__ . '/_piede.php'; ?>
 <script>
-/* Il menu del telefono si chiude quando si sceglie una voce o si tocca fuori. */
+/* Il menu del telefono e quello dell'account si chiudono quando si sceglie una voce, si tocca fuori o si preme Esc. */
 document.addEventListener('click', function (e) {
-  var m = document.querySelector('.menu-sito[open]');
-  if (m && (!m.contains(e.target) || e.target.closest('a'))) m.open = false;
+  document.querySelectorAll('.menu-sito[open],.conto[open]').forEach(function (m) {
+    if (!m.contains(e.target) || e.target.closest('a')) m.open = false;
+  });
+});
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape') return;
+  document.querySelectorAll('.menu-sito[open],.conto[open]').forEach(function (m) { m.open = false; m.querySelector('summary').focus(); });
 });
 </script>
 </body>

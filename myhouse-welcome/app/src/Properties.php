@@ -39,7 +39,8 @@ final class Properties
             ]);
             // Il limite di strutture si verifica a scrittura fatta, come per le sezioni.
             $max = Entitlements::limit($accountId, 'properties', 1);
-            if ((int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL', [$accountId], 0) > $max + max(0, $oltre)) {
+            // La vetrina (Demo::VETRINA) non occupa il posto di una struttura del piano.
+            if ((int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL AND is_demo < 2', [$accountId], 0) > $max + max(0, $oltre)) {
                 throw new \RuntimeException($max === 1
                     ? 'Il tuo piano comprende una struttura. Con Portfolio puoi gestirne di più.'
                     : "Il tuo piano comprende $max strutture.");

@@ -46,6 +46,38 @@ $quanteSezioni = count(MHW\SectionCatalog::kinds()); ?>
   setTimeout(function () { if (!d.classList.contains('anima-pronta')) d.classList.remove('anima'); }, 3000);
 })(document.documentElement);
 </script>
+<?php /* Chi è già registrato lo vede subito, prima di tutto il resto: il saluto, le sue
+   guide con lo stato vero e il passo successivo. Niente da cercare nel menu. */
+if ($dentro):
+    $mie = $mie ?? [];
+    $nomeU = trim((string) ($user['name'] ?? '')); $primo = $nomeU !== '' ? explode(' ', $nomeU)[0] : '';
+    $admin = ($user['role'] ?? '') === 'admin'; ?>
+<section class="bentornato" aria-labelledby="bentornato-titolo">
+  <div class="bentornato__chi">
+    <span class="bentornato__avatar" aria-hidden="true"><?= Support::e(mb_strtoupper(mb_substr($nomeU !== '' ? $nomeU : (string) $user['email'], 0, 1))) ?></span>
+    <div>
+      <h2 id="bentornato-titolo" class="bentornato__titolo"><?= $primo !== '' ? 'Ciao, ' . Support::e($primo) . '.' : 'Sei dentro.' ?></h2>
+      <p class="small muted">Sei dentro come <b><?= Support::e($user['email']) ?></b><?= $admin ? ' · amministrazione' : '' ?></p>
+    </div>
+  </div>
+  <?php if ($admin): ?>
+    <a class="btn btn--go" href="<?= b() ?>/admin">Vai all'amministrazione <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
+  <?php elseif (!$mie): ?>
+    <p class="bentornato__vuoto">Non hai ancora una guida. Ci vogliono pochi minuti.</p>
+    <a class="btn btn--go" href="<?= b() ?>/pannello">Crea la tua prima guida <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
+  <?php else: ?>
+    <ul class="bentornato__guide" aria-label="Le tue guide">
+      <?php foreach (array_slice($mie, 0, 3) as $g):
+            [$stato, $tono] = $g['online'] ? ['Online', 'pine'] : ($g['status'] === 'published' ? ['Offline', 'alert'] : ['Bozza', 'ochre']); ?>
+        <li><a class="bentornato__guida" href="<?= b() ?>/pannello/<?= (int) $g['id'] ?>">
+          <span class="grow stack" style="gap:2px;min-width:0"><b><?= Support::e($g['name']) ?></b><?php if (trim((string) $g['city']) !== ''): ?><span class="small muted"><?= Support::e($g['city']) ?></span><?php endif; ?></span>
+          <span class="badge badge--<?= $tono ?>"><?= $stato ?></span><?= Icon::svg('chevron', 16, 2) ?></a></li>
+      <?php endforeach; ?>
+    </ul>
+    <a class="btn btn--go" href="<?= b() ?>/pannello"><?= count($mie) > 3 ? 'Tutte le tue ' . count($mie) . ' guide' : 'Vai alle tue guide' ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
+  <?php endif; ?>
+</section>
+<?php endif; ?>
 <section class="hero2">
   <div class="hero2__testo">
     <span class="kicker">La reception digitale per la tua struttura ricettiva</span>
@@ -53,7 +85,7 @@ $quanteSezioni = count(MHW\SectionCatalog::kinds()); ?>
     <p class="hero2__sub">La guida digitale per case vacanza, B&amp;B, affittacamere e agriturismi. Check-in, Wi-Fi,
       parcheggio, regole e consigli locali in un unico link, da condividere anche tramite QR Code.</p>
     <div class="hero2__azioni">
-      <a class="btn btn--lg btn--go" href="<?= $crea ?>">Crea gratis la tua guida <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
+      <a class="btn btn--lg btn--go" href="<?= $crea ?>"><?= $dentro ? 'Vai alle tue guide' : 'Crea gratis la tua guida' ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
       <?php if ($demoUrl): ?>
         <?php /* La demo, e accanto le lingue in cui aprirla: un solo gruppo, non tre bottoni in fila.
                  Le lingue che la demo ha davvero, al massimo tre. */
@@ -433,7 +465,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <h2 id="chiusura-titolo" class="chiusura__titolo">La tua struttura ha tanto da raccontare. Mettilo a disposizione dei tuoi ospiti.</h2>
     <p>Crea la tua guida, personalizzala e guarda il risultato. Decidi soltanto dopo se pubblicarla.</p>
     <div class="row">
-      <a class="btn btn--lg btn--go" href="<?= $crea ?>">Crea gratis la tua guida <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
+      <a class="btn btn--lg btn--go" href="<?= $crea ?>"><?= $dentro ? 'Vai alle tue guide' : 'Crea gratis la tua guida' ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
       <?php if ($demoUrl): ?><a class="btn btn--lg btn--ghost" href="<?= $demoUrl ?>">Guarda la demo</a><?php endif; ?>
     </div>
   </div>

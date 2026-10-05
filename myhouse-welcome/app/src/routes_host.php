@@ -892,7 +892,7 @@ $r->any('/account/strutture', function () use ($host, $portfolioAttivo) {
         Support::flash('Questo abbonamento non si modifica da qui: scrivici e lo aggiorniamo noi.', 'err');
         Support::redirect('/account');
     }
-    $attive = Db::all('SELECT id, name, city, status FROM properties WHERE account_id = ? AND archived_at IS NULL ORDER BY id', [$acc['id']]);
+    $attive = Db::all('SELECT id, name, city, status FROM properties WHERE account_id = ? AND archived_at IS NULL AND is_demo < 2 ORDER BY id', [$acc['id']]);
     $daTogliere = max(0, count($attive) - $n);
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['conferma'] ?? '') === '1') {
@@ -926,7 +926,7 @@ $r->any('/account/strutture', function () use ($host, $portfolioAttivo) {
 $r->post('/pannello/{id}/riattiva', function (array $a) use ($mia) {
     [$u, $acc, $p] = $mia((int) $a['id']);
     $max = Entitlements::limit((int) $acc['id'], 'properties', 1);
-    $attive = (int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL', [$acc['id']], 0);
+    $attive = (int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL AND is_demo < 2', [$acc['id']], 0);
     if ($attive >= $max) {
         Support::flash("Il tuo piano comprende $max struttur" . ($max === 1 ? 'a' : 'e') . ': per riattivarla aumenta il numero di strutture da Account & Fatturazione.', 'err');
     } else {

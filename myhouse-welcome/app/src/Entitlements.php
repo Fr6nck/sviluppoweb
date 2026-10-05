@@ -107,7 +107,7 @@ final class Entitlements
     public static function lockedIds(int $accountId): array
     {
         $ids = array_map('intval', array_column(Db::all(
-            'SELECT id FROM properties WHERE account_id = ? AND archived_at IS NULL ORDER BY id', [$accountId]), 'id'));
+            'SELECT id FROM properties WHERE account_id = ? AND archived_at IS NULL AND is_demo < 2 ORDER BY id', [$accountId]), 'id'));   // la vetrina non si blocca mai
         if (count($ids) < 2) return [];
         if (Subscriptions::active($accountId)) return array_slice($ids, max(1, self::limit($accountId, 'properties', 1)));
         $pv = Subscriptions::governingVersionId($accountId);
@@ -169,7 +169,7 @@ final class Entitlements
             }
         }
         $maxProp = self::limit($accountId, 'properties', 1);
-        $strutture = (int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL', [$accountId], 0);
+        $strutture = (int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL AND is_demo < 2', [$accountId], 0);
         if ($strutture > $maxProp) {
             $fuori[] = "Hai $strutture strutture, il piano ne comprende $maxProp. Scegli Portfolio, oppure eliminane una.";
         }
