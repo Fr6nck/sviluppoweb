@@ -103,12 +103,14 @@ final class Billing
             Db::update('orders', ['status' => 'awaiting', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $orderId]);
             return 'in-attesa-del-pagamento';
         }
-        self::activate($o, $sub ?? ['id' => $s['subscription'] ?? '', 'status' => 'active'], (string) ($s['customer'] ?? ''));
+        // Lo sconto davvero concesso lo dice la sessione (total_details.amount_discount).
+        $sconto = isset($s['total_details']['amount_discount']) ? (int) $s['total_details']['amount_discount'] : null;
+        self::activate($o, $sub ?? ['id' => $s['subscription'] ?? '', 'status' => 'active'], (string) ($s['customer'] ?? ''), $sconto);
         return 'abbonamento-attivato';
     }
 
-    /** Ordine pagato → abbonamento attivo → guida pubblicata. Tutto o niente. */
-    public static function activate(array $order, array $sub, string $customerId): void
+    /** Ordine pagato → abbonamento attivo → guida pubblicata. Tutto o niente. $sconto: lo sconto del primo anno secondo Stripe. */
+    public static function activate(array $order, array $sub, string $customerId, ?int $sconto = null): void
     {
         if ($order['status'] === 'paid') return;
         $acc = (int) $order['account_id'];
@@ -146,6 +148,7 @@ final class Billing
         Db::update('accounts', ['intended_package_version_id' => $order['package_version_id'], 'intended_quantity' => $quantita]
                    + ($customerId !== '' ? ['stripe_customer_id' => $customerId] : []), 'id = :aid', ['aid' => $acc]);
         Db::run('UPDATE package_versions SET sold_count = sold_count + 1 WHERE id = ?', [$order['package_version_id']]);
+        Sconti::registra($order, $sconto);   // un utilizzo per ordine, nella stessa transazione
         Entitlements::forget($acc);
 
         // La guida che aspettava il pagamento va online adesso.

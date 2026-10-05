@@ -26,6 +26,10 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
         <p><span class="badge badge--pine"><span class="dot"></span>Attivo</span>
           <?php if ($fine): ?><span class="small muted"> · si rinnova il <?= Support::e(Support::date($fine)) ?></span><?php endif; ?></p>
       <?php endif; ?>
+      <?php if (($avuto = MHW\Sconti::avuto((int) $acc['id']))): /* lo sconto del primo anno (6E) */ ?>
+        <p class="small">Sconto del primo anno: <b><?= "\u{2212}" . Support::e(Support::money((int) $avuto['discount_cents'])) ?></b> (<?= Support::e($avuto['code']) ?>).
+          <?php if ($fine): ?>Rinnovo a prezzo pieno il <?= Support::e(Support::date($fine)) ?>.<?php endif; ?></p>
+      <?php endif; ?>
       <?php if ($perStruttura && $stripe && ($sub['provider_extra_item_id'] ?? '') !== ''): ?>
         <form method="post" action="<?= b() ?>/account/strutture" class="row" style="gap:10px;align-items:flex-end"><?= Csrf::field() ?>
           <div class="field" style="margin:0"><label for="strutture">Numero di strutture</label>

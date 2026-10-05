@@ -128,6 +128,12 @@ final class Stripe
             }
         }
         if (!empty($cfg['automatic_tax'])) $p['automatic_tax[enabled]'] = 'true';
+        // Il codice sconto del primo anno (6E): il coupon è duration=once, quindi sconta solo la prima fattura.
+        // Niente allow_promotion_codes: il codice si sceglie nel sito, non nel checkout.
+        if (!empty($order['discount_code_id']) && ($c = Sconti::riga((int) $order['discount_code_id'])) && (string) $c['stripe_coupon_id'] !== '') {
+            $p['discounts[0][coupon]'] = $c['stripe_coupon_id'];
+            $meta['discount_code'] = $c['code'];
+        }
         foreach ($meta as $k => $v) { $p["metadata[$k]"] = $v; $p["subscription_data[metadata][$k]"] = $v; }
 
         $res = self::call('POST', 'checkout/sessions', $p, 'mhw-checkout-order-' . $order['id']);

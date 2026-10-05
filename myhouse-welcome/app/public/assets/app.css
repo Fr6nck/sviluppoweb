@@ -666,6 +666,16 @@ button, input[type=submit], input[type=button] { background-image: none; }
 .rows .r input{flex:1 1 auto}
 .linkbtn{align-self:flex-start;background:none;border:0;padding:0;font:inherit;color:var(--accent);cursor:pointer;font-weight:500;min-height:44px}
 .linkbtn:hover{color:var(--accent-hover)}
+/* Codice sconto del primo anno (6E). */
+.sconto>summary{list-style:none;display:inline-flex;align-items:center}
+.sconto>summary::-webkit-details-marker{display:none}
+.sconto__form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin-top:8px}
+.sconto__form .field{flex:1 1 200px}
+.sconto-ok{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:var(--r-md);background:var(--pine-soft);color:var(--ink)}
+.sconto-ok__prezzo s{color:var(--muted)} .sconto-ok__prezzo b{font-size:18px}
+.sconto-ok .linkbtn{min-height:32px}
+.field-error{color:var(--alert);font-size:14px;font-weight:500}
+.sconto-fascia{display:flex;align-items:center;gap:10px;margin:16px 0 0;padding:12px 16px;border-radius:var(--r-md);background:var(--ochre-soft);color:var(--ink);font-weight:500}
 .orig{font-size:14px;color:var(--muted);padding:10px 12px;border-radius:12px;background:var(--sunk);white-space:pre-line}
 
 /* La colonna con il telefono. */

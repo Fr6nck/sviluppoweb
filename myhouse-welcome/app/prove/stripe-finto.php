@@ -81,5 +81,11 @@ if (preg_match('#^/v1/subscriptions/([A-Za-z0-9_]+)$#', $percorso, $m)) {
     }
     $rispondi($abbonamento($m[1]));
 }
+// Coupon (6E): si creano e si cancellano; la prova controlla cosa arriva.
+if ($metodo === 'POST' && $percorso === '/v1/coupons') {
+    $rispondi(['id' => 'coupon_finto' . $n, 'object' => 'coupon', 'duration' => $corpo['duration'] ?? '', 'name' => $corpo['name'] ?? '',
+               'percent_off' => $corpo['percent_off'] ?? null, 'amount_off' => $corpo['amount_off'] ?? null]);
+}
+if ($metodo === 'DELETE' && preg_match('#^/v1/coupons/([A-Za-z0-9_]+)$#', $percorso, $m)) $rispondi(['id' => $m[1], 'object' => 'coupon', 'deleted' => true]);
 if ($metodo === 'POST' && $percorso === '/v1/billing_portal/sessions') $rispondi(['url' => 'https://billing.stripe.test/p/session_' . $n]);
 $rispondi(['error' => ['message' => 'Unrecognized request URL']], 404);

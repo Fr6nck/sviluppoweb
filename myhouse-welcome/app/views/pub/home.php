@@ -46,6 +46,10 @@ $quanteSezioni = array_sum(array_map('count', $gruppiSezioni)); ?>
   setTimeout(function () { if (!d.classList.contains('anima-pronta')) d.classList.remove('anima'); }, 3000);
 })(document.documentElement);
 </script>
+<?php if (!empty($codiceSconto)): /* arrivato da un link con il codice sconto (6E) */ ?>
+  <p class="sconto-fascia" role="status"><?= Icon::svg('check', 18, 2) ?><span>Codice <b><?= Support::e($codiceSconto['code']) ?></b>:
+    <?= Support::e(MHW\Sconti::etichetta($codiceSconto)) ?> sul primo anno, fino al <?= Support::e(implode('/', array_reverse(explode('-', $codiceSconto['valid_until'])))) ?>.</span></p>
+<?php endif; ?>
 <?php /* Chi è già registrato lo vede subito, prima di tutto il resto: il saluto, le sue
    guide con lo stato vero e il passo successivo. Niente da cercare nel menu. */
 if ($dentro):

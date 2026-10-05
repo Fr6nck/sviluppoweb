@@ -1853,6 +1853,108 @@ $ag->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'La mia casa vera',
 prova('La vetrina non occupa il posto del piano: il cliente crea la sua struttura (Plus, una struttura)', (bool) val("SELECT 1 FROM properties WHERE account_id = ? AND name = 'La mia casa vera'", [$aacc])
       && !str_contains($ag->get('/pannello')['body'], 'class="panel stack bloccata"'));
 
+capitolo('Fase 6E · codici sconto del primo anno');
+$oggiR = fn(int $n = 0) => (new DateTimeImmutable('now', new DateTimeZone('Europe/Rome')))->modify(($n >= 0 ? '+' : '') . $n . ' days')->format('Y-m-d');
+$r = $admin->get('/admin/sconti');
+prova('6E · Amministrazione → Codici sconto: voce di menu, cartellini, modulo con «Genera» e anteprima', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], '/admin/sconti" aria-current="page"') && str_contains($r['body'], 'Codici attivi') && str_contains($r['body'], 'data-genera')
+      && preg_match('#name="code"[^>]*value="MHW-[A-HJ-NP-Z2-9]{6}"#', $r['body']) === 1 && str_contains($r['body'], 'data-anteprima-righe'));
+$errori = [];
+foreach ([[['code' => 'AB', 'value' => '20'], 'da 4 a 24 caratteri'], [['code' => 'TROPPO', 'kind' => 'percent', 'value' => '120'], 'da 1 a 100'],
+          [['code' => 'DATESBAGLIATE', 'value' => '10', 'valid_from' => $oggiR(10), 'valid_until' => $oggiR(5)], 'prima di quella di inizio'],
+          [['code' => 'IMPORTOALTO', 'kind' => 'amount', 'value' => '500'], 'minore del prezzo del piano meno caro']] as [$campi, $atteso]) {
+    $admin->post('/admin/sconti', $campi + ['kind' => 'percent', 'valid_from' => $oggiR(), 'valid_until' => $oggiR(30), 'piani' => 'tutti']);
+    $msg = $admin->get('/admin/sconti')['body'];
+    if (!str_contains($msg, $atteso)) $errori[] = $atteso;
+}
+prova('6E · controlli del modulo: lunghezza, percentuale, date, importo', !$errori && !val("SELECT 1 FROM discount_codes WHERE code IN ('TROPPO','DATESBAGLIATE','IMPORTOALTO')"), implode(' | ', $errori));
+$prima = count(richiesteStripe());
+$admin->post('/admin/sconti', ['code' => 'benvenuto20', 'kind' => 'percent', 'value' => '20', 'valid_from' => $oggiR(), 'valid_until' => $oggiR(60), 'max_uses' => '100', 'piani' => 'tutti', 'note' => 'Prova']);
+$bv = riga("SELECT * FROM discount_codes WHERE code = 'BENVENUTO20'");
+$coupon = array_values(array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['percorso'] === '/v1/coupons'))[0] ?? [];
+prova('6E · codice creato (maiuscolo) e coupon su Stripe: una volta sola, 20%, scadenza, limite', $bv && $bv['stripe_coupon_id'] !== ''
+      && ($coupon['corpo']['duration'] ?? '') === 'once' && ($coupon['corpo']['percent_off'] ?? '') === '20' && ($coupon['corpo']['max_redemptions'] ?? '') === '100'
+      && (int) ($coupon['corpo']['redeem_by'] ?? 0) > time() + 59 * 86400 && ($coupon['corpo']['name'] ?? '') === 'BENVENUTO20', json_encode($coupon));
+$r = $admin->get('/admin/sconti');
+prova('6E · in elenco: −20%, 0 / 100, Attivo, «Copia il link»', str_contains($r['body'], "\u{2212}20%") && str_contains($r['body'], '0 / 100')
+      && str_contains($r['body'], 'badge--pine">Attivo<') && str_contains($r['body'], '/?codice=BENVENUTO20'));
+// Codici che non valgono, scritti direttamente: scaduto, futuro, esaurito, di un altro piano, non sincronizzato.
+$cid = fn(string $c, array $x) => db()->prepare('INSERT INTO discount_codes (code, kind, value, valid_from, valid_until, max_uses, packages, note, active, stripe_coupon_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)')
+       ->execute([$c, 'percent', 10, $x[0], $x[1], $x[2] ?? 0, $x[3] ?? '', '', $x[4] ?? 'coupon_prova', gmdate('Y-m-d\TH:i:s\Z')]);
+$cid('SCADUTO1', [$oggiR(-30), $oggiR(-1)]); $cid('FUTURO1', [$oggiR(5), $oggiR(30)]); $cid('ESAURITO1', [$oggiR(-1), $oggiR(30), 1]);
+$cid('SOLOESS', [$oggiR(-1), $oggiR(30), 0, 'essential']); $cid('NONSYNC', [$oggiR(-1), $oggiR(30), 0, '', '']);
+db()->prepare('INSERT INTO discount_redemptions (discount_code_id, account_id, order_id, discount_cents, created_at) VALUES (?, 0, -1, 100, ?)')->execute([(int) val("SELECT id FROM discount_codes WHERE code = 'ESAURITO1'"), gmdate('Y-m-d\TH:i:s\Z')]);
+// Dora arriva da un link con il codice e si registra: il codice è già applicato.
+$dora = new Browser('dora');
+$r = $dora->get('/?codice=benvenuto20');
+prova('6E · link con il codice: in home la fascia «Codice BENVENUTO20: −20% sul primo anno, fino al …»', str_contains($r['body'], 'class="sconto-fascia"')
+      && str_contains($r['body'], "Codice <b>BENVENUTO20</b>:\n    \u{2212}20% sul primo anno, fino al " . implode('/', array_reverse(explode('-', $oggiR(60))))));
+$dora->get('/registrati?piano=' . pv('plus'));
+$dora->post('/registrati', ['piano' => pv('plus'), 'name' => 'Dora Sconto', 'email' => 'dora@prova.test', 'password' => 'DoraProva1234', 'termini' => '1']);
+$dacc = $accDi('dora@prova.test');
+prova('6E · dopo la registrazione il codice è già applicato all\'account', (int) val('SELECT intended_discount_code_id FROM accounts WHERE id = ?', [$dacc]) === (int) $bv['id']);
+$dora->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Dora', 'city' => 'Matera']);
+$dpid = (int) val("SELECT id FROM properties WHERE account_id = ? AND name = 'Casa Dora'", [$dacc]);
+$r = $dora->get("/pannello/$dpid/procedura/pubblica");
+prova('6E · passo «Pubblica»: prezzo pieno barrato, 93,60 € il primo anno, «Dal secondo anno 117 € + IVA», «Togli»', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], "<s class=\"muted\" style=\"font-size:18px\">117\u{00A0}€</s>") && str_contains($r['body'], "93,60\u{00A0}€")
+      && str_contains($r['body'], "Dal secondo anno 117\u{00A0}€ + IVA.") && str_contains($r['body'], '/sconto/togli'));
+$dora->post('/sconto/togli', ['torna' => "/pannello/$dpid/procedura/pubblica"]);
+$r = $dora->get("/pannello/$dpid/procedura/pubblica");
+prova('6E · «Togli»: il codice va via e torna «Hai un codice sconto?»', !val('SELECT intended_discount_code_id FROM accounts WHERE id = ?', [$dacc])
+      && str_contains($r['body'], 'Hai un codice sconto?') && str_contains($r['body'], "117\u{00A0}€"));
+$motivi = [];
+foreach (['NONESISTE' => 'Questo codice non esiste. Controlla di averlo scritto bene.', 'SCADUTO1' => 'Questo codice è scaduto il ' . implode('/', array_reverse(explode('-', $oggiR(-1)))) . '.',
+          'FUTURO1' => 'Questo codice sarà valido dal ' . implode('/', array_reverse(explode('-', $oggiR(5)))) . '.', 'ESAURITO1' => 'Questo codice ha raggiunto il numero massimo di utilizzi.',
+          'SOLOESS' => 'Questo codice non vale per il piano Plus.', 'NONSYNC' => 'Questo codice non è ancora utilizzabile'] as $c => $atteso) {
+    $dora->post('/sconto/applica', ['codice' => $c, 'torna' => "/pannello/$dpid/procedura/pubblica"]);
+    $p = $dora->get("/pannello/$dpid/procedura/pubblica")['body'];
+    if (!str_contains($p, htmlspecialchars($atteso, ENT_QUOTES)) || !preg_match('#role="alert"[^>]*>' . preg_quote(htmlspecialchars(substr($atteso, 0, 20), ENT_QUOTES), '#') . '#', $p)
+        || !str_contains($p, 'value="' . $c . '"')) $motivi[] = $c;
+}
+prova('6E · ogni codice che non vale col suo messaggio, sotto il campo (role="alert"), con il codice ancora scritto', !$motivi, implode(', ', $motivi));
+$dora->post('/sconto/applica', ['codice' => 'benvenuto20', 'torna' => "/pannello/$dpid/procedura/pubblica"]);
+prova('…e con il codice buono si applica (anche scritto minuscolo)', (int) val('SELECT intended_discount_code_id FROM accounts WHERE id = ?', [$dacc]) === (int) $bv['id']);
+// Gino ha già pagato: con l'abbonamento scaduto vede di nuovo i piani, ma il codice non vale.
+db()->prepare("UPDATE subscriptions SET status = 'canceled' WHERE account_id = ?")->execute([$gacc]);
+$gino->post('/sconto/applica', ['codice' => 'BENVENUTO20', 'torna' => '/piano']);
+$r = $gino->get('/piano');
+db()->prepare("UPDATE subscriptions SET status = 'active' WHERE account_id = ? AND provider = 'stripe'")->execute([$gacc]);
+prova('6E · chi ha già pagato un abbonamento: «I codici sconto valgono solo per il primo abbonamento.»', str_contains($r['body'], 'I codici sconto valgono solo per il primo abbonamento.'));
+// Il pagamento con il codice.
+$dora->get(substr($l = linkPosta('dora@prova.test', 'verifica'), strpos($l, '/verifica/')));
+$dora->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Dora Sconto', 'cf' => 'RSSMRA85T10A562S',
+               'billing_address' => 'Via Ridola 1', 'billing_postal' => '75100', 'billing_city' => 'Matera', 'billing_province' => 'MT']);
+$dcore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$dpid]);
+$dora->post("/pannello/$dpid/sezioni/$dcore", ['checkin_steps' => ['Il portone verde.']]);
+$prima = count(richiesteStripe());
+$r = $dora->modulo("/pannello/$dpid/procedura/pubblica", "/pannello/$dpid/pubblica", []);
+$dord = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$dacc]);
+$sess = array_values(array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['percorso'] === '/v1/checkout/sessions'))[0] ?? [];
+prova('6E · ordine col codice (importo pieno), checkout con discounts[0][coupon] e niente allow_promotion_codes', $dord && (int) $dord['discount_code_id'] === (int) $bv['id']
+      && (int) $dord['amount_cents'] === 11700 && ($sess['corpo']['discounts'][0]['coupon'] ?? '') === $bv['stripe_coupon_id']
+      && ($sess['corpo']['metadata']['discount_code'] ?? '') === 'BENVENUTO20' && !isset($sess['corpo']['allow_promotion_codes']), json_encode($sess['corpo'] ?? []));
+$ev = ['id' => 'evt_dora_1', 'type' => 'checkout.session.completed', 'data' => ['object' => [
+    'id' => $dord['provider_session_id'], 'mode' => 'subscription', 'payment_status' => 'paid', 'customer' => 'cus_dora', 'subscription' => 'sub_prova_dora',
+    'client_reference_id' => (string) $dord['id'], 'total_details' => ['amount_discount' => 2340], 'metadata' => ['order_id' => (string) $dord['id'], 'account_id' => (string) $dacc]]]];
+$r = inviaWebhook($ev);
+$r2 = inviaWebhook(['id' => 'evt_dora_1b'] + $ev);
+prova('6E · pagato: un utilizzo con lo sconto di Stripe (23,40 €), anche con il webhook consegnato due volte', $r['body'] === 'abbonamento-attivato'
+      && (int) val('SELECT COUNT(*) FROM discount_redemptions WHERE order_id = ?', [$dord['id']]) === 1
+      && (int) val('SELECT discount_cents FROM discount_redemptions WHERE order_id = ?', [$dord['id']]) === 2340
+      && (int) val('SELECT discount_cents FROM orders WHERE id = ?', [$dord['id']]) === 2340 && !val('SELECT intended_discount_code_id FROM accounts WHERE id = ?', [$dacc]), $r['body'] . ' / ' . $r2['body']);
+$r = $dora->get('/account');
+prova('6E · «Account & Fatturazione»: «Sconto del primo anno: −23,40 € (BENVENUTO20). Rinnovo a prezzo pieno il …»', str_contains($r['body'], "Sconto del primo anno: <b>\u{2212}23,40\u{00A0}€</b> (BENVENUTO20).")
+      && str_contains($r['body'], 'Rinnovo a prezzo pieno il'));
+$r = $admin->get('/admin/sconti/' . $bv['id']);
+prova('6E · dettaglio del codice: coupon su Stripe, utilizzi con cliente, piano e totale', $r['code'] === 200 && str_contains($r['body'], $bv['stripe_coupon_id'])
+      && str_contains($r['body'], 'dora@prova.test') && str_contains($r['body'], '>Plus<') && str_contains($r['body'], "\u{2212}23,40\u{00A0}€"));
+$prima = count(richiesteStripe());
+$admin->post('/admin/sconti/' . $bv['id'] . '/disattiva', []);
+prova('6E · disattivato: il coupon si cancella su Stripe, stato «Disattivato», nel registro', !(int) val('SELECT active FROM discount_codes WHERE id = ?', [$bv['id']])
+      && (bool) array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['metodo'] === 'DELETE' && str_contains($x['percorso'], '/v1/coupons/'))
+      && (bool) val("SELECT 1 FROM audit_log WHERE action = 'discount.disable'") && (bool) val("SELECT 1 FROM audit_log WHERE action = 'discount.create'"));
+
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

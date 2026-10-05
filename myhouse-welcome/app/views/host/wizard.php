@@ -87,13 +87,16 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
       <?php if ($sub): ?>
         <p>Il tuo abbonamento <b><?= Support::e($piano['name'] ?? '') ?></b> è attivo<?= $sub['current_period_end'] ? ' fino al ' . Support::e(Support::date($sub['current_period_end'])) : '' ?>:
           la guida si pubblica subito, senza nuovi pagamenti.</p>
-      <?php elseif ($piano): ?>
+      <?php elseif ($piano): $qSc = Plans::perProperty($piano) ? $quantita : 1; $sc = MHW\Sconti::disponibili() ? MHW\Sconti::applicato($acc, $piano, $qSc) : null; ?>
         <div class="spread spread--mid">
           <div class="stack" style="gap:4px"><span class="kicker">Il tuo piano</span>
             <b style="font-size:22px;font-weight:500"><?= Support::e($piano['name']) ?><?= Plans::perProperty($piano) ? ' · ' . $quantita . ' strutture' : '' ?></b></div>
-          <span style="font-size:26px;font-weight:500"><?= Support::e(Support::money(Plans::price($piano, Plans::perProperty($piano) ? $quantita : 1), $piano['currency'])) ?>
-            <span class="small muted">+ IVA / anno</span></span>
+          <span style="font-size:26px;font-weight:500"><?php if ($sc): ?><s class="muted" style="font-size:18px"><?= Support::e(Support::money($sc['prezzo'], $piano['currency'])) ?></s>
+            <?= Support::e(Support::money($sc['scontato'], $piano['currency'])) ?><span class="small muted"> + IVA il primo anno</span>
+            <?php else: ?><?= Support::e(Support::money(Plans::price($piano, $qSc), $piano['currency'])) ?>
+            <span class="small muted">+ IVA / anno</span><?php endif; ?></span>
         </div>
+        <?php $pv = $piano; $quantita = $qSc; $torna = '/pannello/' . $pid . '/procedura/pubblica'; include __DIR__ . '/_sconto.php'; ?>
         <p class="small muted">Abbonamento annuale con rinnovo automatico, che puoi disattivare quando vuoi. Il pagamento avviene su Stripe;
           la guida va online appena Stripe conferma. <a href="<?= b() ?>/piano">Cambia piano</a></p>
         <?php if (!$verificato): ?>

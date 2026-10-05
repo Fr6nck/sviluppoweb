@@ -1,5 +1,18 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Fase 6E — Codici sconto per il primo anno, con Stripe (6 ottobre 2026)
+
+Migrazione `018`: le tabelle `discount_codes` e `discount_redemptions`, la colonna `accounts.intended_discount_code_id` e le colonne `orders.discount_code_id` e `orders.discount_cents`. Nuova classe `Sconti`.
+
+- **Amministrazione → Codici sconto.**
+  - Il modulo ha codice (con «Genera»), percentuale o importo, validità, utilizzi massimi, piani e nota, con l'anteprima del prezzo per ogni piano.
+  - Ogni codice diventa un coupon Stripe «una volta», che sconta solo il primo anno.
+  - L'elenco mostra stato, utilizzi e «Copia il link»; dal dettaglio si vede chi l'ha usato. Disattivazione e creazione vanno nel registro.
+- **Per l'host.**
+  - «Hai un codice sconto?» compare nel riquadro del piano, al passo «Pubblica» e su `/piano`. Mostra il prezzo barrato e lo sconto del primo anno, oppure il motivo per cui il codice non vale.
+  - Il codice si ricontrolla alla pubblicazione. Lo sconto vero lo dice Stripe e si conta una volta sola anche se il webhook arriva due volte.
+- **Link con il codice.** `/?codice=…` mostra una fascia in home e applica il codice dopo la registrazione. In «Account & Fatturazione» compare lo sconto avuto e la data del rinnovo a prezzo pieno.
+
 ## v2 · Fase 6G — Sezione «Eventi» con locandina, calendario e promemoria (5 ottobre 2026)
 
 Nessuna migrazione. Nuovi file: `app/src/Eventi.php` (la logica delle date, già pronta) e `app/lang/eventi/` (5 lingue).

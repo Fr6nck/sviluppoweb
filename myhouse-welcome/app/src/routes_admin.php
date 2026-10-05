@@ -442,3 +442,76 @@ $r->post('/admin/testimonianze/{tid}/elimina', function (array $a) {
     Support::flash('Testimonianza eliminata.');
     Support::redirect('/admin/testimonianze');
 });
+
+
+// ---------------------------------------------------------- codici sconto (6E)
+/*
+ * I codici del primo anno: si creano qui e diventano coupon Stripe (duration=once).
+ * Dopo la creazione si cambiano solo nota, piani e stato; per valore o date si
+ * disattiva e se ne crea un altro. Creazioni e disattivazioni vanno nel registro.
+ */
+$r->get('/admin/sconti', function () {
+    Auth::requireAdmin();
+    $righe = MHW\Sconti::disponibili() ? Db::all('SELECT * FROM discount_codes ORDER BY id DESC') : [];
+    foreach ($righe as &$c) { $c['stato'] = MHW\Sconti::stato($c); $c['usi'] = MHW\Sconti::utilizzi((int) $c['id']); }
+    unset($c);
+    View::out('admin/sconti', [
+        'righe' => $righe, 'piani' => Plans::public(), 'proposto' => MHW\Sconti::disponibili() ? MHW\Sconti::genera() : '',
+        'cifre' => ['attivi' => count(array_filter($righe, fn($c) => $c['stato'] === 'attivo')),
+                    'usi' => MHW\Sconti::disponibili() ? (int) Db::val('SELECT COUNT(*) FROM discount_redemptions', [], 0) : 0,
+                    'euro' => MHW\Sconti::disponibili() ? (int) Db::val('SELECT COALESCE(SUM(discount_cents), 0) FROM discount_redemptions', [], 0) : 0],
+        'stripe' => Stripe::enabled(), 'vecchi' => $_SESSION['sconto_modulo'] ?? [], 'nav' => 'sconti',
+    ], 'layout/cms');
+    unset($_SESSION['sconto_modulo']);
+});
+
+$r->post('/admin/sconti', function () {
+    Auth::requireAdmin();
+    try {
+        [$id, $sync] = MHW\Sconti::crea($_POST);
+        Auth::audit('discount.create', null, ['id' => $id, 'code' => MHW\Sconti::normalizza((string) $_POST['code'])]);
+        Support::flash($sync ? 'Codice creato e attivo anche su Stripe.' : 'Codice salvato, ma non ancora su Stripe: non si può usare finché non lo sincronizzi.', $sync ? 'ok' : 'err');
+    } catch (\RuntimeException $e) {
+        $_SESSION['sconto_modulo'] = array_intersect_key($_POST, array_flip(['code', 'kind', 'value', 'valid_from', 'valid_until', 'max_uses', 'piani', 'packages', 'note']));
+        Support::flash($e->getMessage(), 'err');
+    }
+    Support::redirect('/admin/sconti');
+});
+
+$r->get('/admin/sconti/{id}', function (array $a) {
+    Auth::requireAdmin();
+    $c = MHW\Sconti::riga((int) $a['id']);
+    if (!$c) { http_response_code(404); View::out('pub/404', []); }
+    $c['stato'] = MHW\Sconti::stato($c);
+    View::out('admin/sconto', [
+        'c' => $c, 'piani' => Plans::public(),
+        'usi' => Db::all('SELECT r.*, u.email, pk.name AS piano FROM discount_redemptions r JOIN accounts a ON a.id = r.account_id JOIN users u ON u.id = a.user_id
+                          JOIN orders o ON o.id = r.order_id JOIN package_versions pv ON pv.id = o.package_version_id JOIN packages pk ON pk.id = pv.package_id
+                          WHERE r.discount_code_id = ? ORDER BY r.id DESC', [$c['id']]),
+        'nav' => 'sconti',
+    ], 'layout/cms');
+});
+
+$r->post('/admin/sconti/{id}/{fai}', function (array $a) {
+    Auth::requireAdmin();
+    $c = MHW\Sconti::riga((int) $a['id']);
+    if (!$c) { http_response_code(404); View::out('pub/404', []); }
+    $torna = ($_POST['torna'] ?? '') === 'dettaglio' ? '/admin/sconti/' . $c['id'] : '/admin/sconti';
+    switch ($a['fai']) {
+        case 'disattiva':
+            MHW\Sconti::disattiva((int) $c['id']);
+            Auth::audit('discount.disable', null, ['id' => (int) $c['id'], 'code' => $c['code']]);
+            Support::flash('Codice ' . $c['code'] . ' disattivato. Chi l\'ha già usato conserva il suo sconto.');
+            break;
+        case 'sincronizza':
+            $ok = MHW\Sconti::sincronizza($c);
+            Support::flash($ok ? 'Codice attivo su Stripe.' : 'Stripe non ha risposto, o non è configurato: riprova più tardi.', $ok ? 'ok' : 'err');
+            break;
+        case 'modifica':
+            MHW\Sconti::aggiorna((int) $c['id'], $_POST);
+            Support::flash('Nota e piani aggiornati.');
+            break;
+        default: http_response_code(404); View::out('pub/404', []);
+    }
+    Support::redirect($torna);
+});

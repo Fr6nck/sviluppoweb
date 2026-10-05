@@ -51,8 +51,17 @@ $r->any('/installa', function () {
 });
 
 // ------------------------------------------------------------------------ landing
-$r->get('/', function () use ($guard) {
+/** Un link con il codice sconto (/?codice=BENVENUTO20, /registrati?codice=…): il codice resta in sessione. */
+$codiceDalLink = function (): ?array {
+    if (isset($_GET['codice']) && is_string($_GET['codice'])) $_SESSION['codice_sconto'] = mb_substr(MHW\Sconti::normalizza($_GET['codice']), 0, 24);
+    $c = (string) ($_SESSION['codice_sconto'] ?? '');
+    if ($c === '') return null;
+    try { return MHW\Sconti::valida($c, null, null); } catch (\RuntimeException) { return null; }
+};
+
+$r->get('/', function () use ($guard, $codiceDalLink) {
     $guard();
+    $codiceSconto = $codiceDalLink();
     MHW\Stats::funnelEvent('landing_view');
     // La demo della landing: la vetrina creata dall'amministrazione, se c'è; altrimenti quella dei clienti di esempio.
     $demo = Db::one("SELECT * FROM properties WHERE is_demo >= 1 AND status = 'published' AND archived_at IS NULL ORDER BY is_demo DESC, id");
@@ -67,7 +76,7 @@ $r->get('/', function () use ($guard) {
     View::out('pub/home', [
         'offers' => Plans::offers(), 'demo' => $demo,
         'copertina' => $copertina ?: MHW\a('/assets/foto/casa.jpg'),
-        'user' => $u, 'mie' => $mie,
+        'user' => $u, 'mie' => $mie, 'codiceSconto' => $codiceSconto,
         'testimonianze' => MHW\Testimonianze::visibili(),
     ]);
 });
@@ -76,8 +85,9 @@ $r->get('/termini', fn() => View::out('pub/legal', ['doc' => 'termini'], 'layout
 $r->get('/privacy', fn() => View::out('pub/legal', ['doc' => 'privacy'], 'layout/bare'));
 
 // ------------------------------------------------------------------ registrazione
-$r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano) {
+$r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $codiceDalLink) {
     $guard();
+    $codiceDalLink();
     $piano = (int) ($_GET['piano'] ?? $_POST['piano'] ?? 0);
     // Il numero di strutture scelto (Portfolio) viaggia con il piano fino al checkout.
     $strutture = (int) ($_GET['strutture'] ?? $_POST['strutture'] ?? 0);
@@ -107,6 +117,13 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano) {
             MHW\Stats::funnelEvent('signup');
             Auth::recordConsent((int) $u['user_id']);
             Auth::login((int) $u['user_id']);
+            // Arrivato da un link con il codice sconto: dopo la registrazione è già applicato all'account.
+            if (($c = (string) ($_SESSION['codice_sconto'] ?? '')) !== '') {
+                try { $riga = MHW\Sconti::valida($c, Auth::account(), null);
+                      Db::update('accounts', ['intended_discount_code_id' => (int) $riga['id']], 'id = :aid', ['aid' => (int) $u['account_id']]); }
+                catch (\RuntimeException) {}
+                unset($_SESSION['codice_sconto']);
+            }
             Auth::sendVerification((int) $u['user_id']);
             Support::flash('Account creato. Ti abbiamo scritto per confermare l\'email: intanto puoi preparare la guida.');
             if ($pvScelto) {
@@ -231,6 +248,7 @@ $r->any('/piano', function () use ($salvaPiano) {
         'offers' => Plans::offers(), 'scelto' => (int) ($acc['intended_package_version_id'] ?? 0),
         'preselezione' => (int) ($_GET['piano'] ?? 0), 'attivo' => $attivo, 'nav' => 'account',
         'strutture' => (int) ($_GET['strutture'] ?? 0) ?: (int) ($acc['intended_quantity'] ?? 0),
+        'acc' => $acc, 'pvScelto' => $acc['intended_package_version_id'] ? Plans::currentVersion((int) $acc['intended_package_version_id']) : null,
     ]);
 });
 

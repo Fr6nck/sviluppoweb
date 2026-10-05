@@ -53,6 +53,10 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
     <span class="small muted">Rinnovo annuale automatico, disattivabile quando vuoi. Prezzi IVA esclusa.</span>
   </div>
 </form>
+<?php /* Il codice sconto del primo anno (6E): fuori dal modulo del piano. */
+      if (isset($acc)) { $pv = $pvScelto ?? null; $quantita = (int) ($acc['intended_quantity'] ?? 1) ?: 1; $torna = '/piano'; ?>
+  <div class="panel stack" style="margin-top:20px;gap:10px;max-width:720px"><?php include dirname(__DIR__) . '/host/_sconto.php'; ?></div>
+<?php } ?>
 <?php endif; ?>
 <script src="<?= MHW\av('/assets/prezzi.js') ?>" defer></script>
 <script>

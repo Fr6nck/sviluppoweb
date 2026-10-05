@@ -745,11 +745,21 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
     }
     $pkg = Db::one('SELECT * FROM packages WHERE id = ?', [$pv['package_id']]);
     $quantita = Plans::quantity($pv, (int) ($acc['intended_quantity'] ?? 1)) ?? (int) $pv['min_quantity'];
+    // Il codice sconto (6E) si rivalida adesso: se non vale più si toglie, si dice perché e non si crea l'ordine.
+    $codiceSconto = null;
+    if (!empty($acc['intended_discount_code_id']) && ($riga = MHW\Sconti::riga((int) $acc['intended_discount_code_id']))) {
+        try { $codiceSconto = MHW\Sconti::valida($riga['code'], $acc, $pv, $quantita); }
+        catch (\RuntimeException $e) {
+            Db::update('accounts', ['intended_discount_code_id' => null], 'id = :aid', ['aid' => $aid]);
+            Support::flash('Il codice ' . $riga['code'] . ' è stato tolto: ' . $e->getMessage() . ' Controlla il prezzo e pubblica di nuovo.', 'err');
+            Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
+        }
+    }
     $oid = Db::insert('orders', [
         'account_id' => $aid, 'package_version_id' => $pv['id'], 'property_id' => $p['id'], 'quantity' => $quantita,
         'amount_cents' => Plans::price($pv, $quantita), 'currency' => $pv['currency'], 'status' => 'pending',
         'provider' => 'stripe', 'provider_session_id' => '', 'created_at' => Support::now(), 'updated_at' => Support::now(),
-    ]);
+    ] + ($codiceSconto ? ['discount_code_id' => (int) $codiceSconto['id']] : []));
     try {
         $url = Stripe::checkoutSubscription(Db::one('SELECT * FROM orders WHERE id = ?', [$oid]), $pv, $pkg, $acc, $u);
     } catch (\Throwable $e) {
@@ -950,4 +960,37 @@ $r->post('/pannello/{id}/riattiva', function (array $a) use ($mia) {
         Support::flash('Struttura riattivata. Se era pubblicata, torna online.');
     }
     Support::redirect('/pannello');
+});
+
+// ------------------------------------------------------------- codici sconto (6E)
+/*
+ * «Hai un codice sconto?» nel riquadro del piano (/piano e passo «Pubblica»).
+ * Un codice valido si salva nell'account e si rivalida alla pubblicazione; uno
+ * non valido torna sotto il campo, con il motivo. Dieci tentativi ogni 15 minuti.
+ */
+$tornaSconto = fn(): string => preg_match('#^/(piano|pannello/\d+/procedura/pubblica)$#', (string) ($_POST['torna'] ?? '')) ? (string) $_POST['torna'] : '/piano';
+
+$r->post('/sconto/applica', function () use ($host, $tornaSconto) {
+    [$u, $acc] = $host();
+    $codice = mb_substr(MHW\Sconti::normalizza((string) ($_POST['codice'] ?? '')), 0, 24);
+    try {
+        if (!MHW\RateLimit::hit('sconto:' . (int) $acc['id'], 10, 900)) throw new RuntimeException('Troppi tentativi: riprova tra un quarto d\'ora.');
+        if ($codice === '') throw new RuntimeException('Scrivi il codice.');
+        $pv = $acc['intended_package_version_id'] ? Plans::currentVersion((int) $acc['intended_package_version_id']) : null;
+        $q = $pv ? (Plans::quantity($pv, (int) ($acc['intended_quantity'] ?? 1)) ?? 1) : 1;
+        $riga = MHW\Sconti::valida($codice, $acc, $pv, $q);
+        Db::update('accounts', ['intended_discount_code_id' => (int) $riga['id']], 'id = :aid', ['aid' => $acc['id']]);
+        Support::flash('Codice ' . $riga['code'] . ' applicato.');
+    } catch (RuntimeException $e) {
+        // Il messaggio torna sotto il campo, con il codice ancora scritto.
+        $_SESSION['sconto_errore'] = ['codice' => $codice, 'msg' => $e->getMessage()];
+    }
+    Support::redirect($tornaSconto());
+});
+
+$r->post('/sconto/togli', function () use ($host, $tornaSconto) {
+    [, $acc] = $host();
+    Db::update('accounts', ['intended_discount_code_id' => null], 'id = :aid', ['aid' => $acc['id']]);
+    Support::flash('Codice sconto tolto.');
+    Support::redirect($tornaSconto());
 });
