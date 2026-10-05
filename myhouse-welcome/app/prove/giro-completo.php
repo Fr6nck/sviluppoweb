@@ -756,6 +756,12 @@ $cli = array_values(array_filter(richiesteStripe(), fn($x) => $x['percorso'] ===
 $m = end($cli)['corpo']['metadata'] ?? [];
 prova('Fase 3 · cliente Stripe con P.IVA e SDI nei metadati, intestatario e indirizzo', ($m['vat'] ?? '') === '02945910541' && ($m['sdi'] ?? '') === 'M5UXCR1'
       && !isset($m['pec']) && (end($cli)['corpo']['name'] ?? '') === 'Anna Prove srl' && (end($cli)['corpo']['address']['country'] ?? '') === 'IT');
+prova('Adamo (collegamento Stripe): Fiscal_code (la P.IVA, senza codice fiscale), Fe_code e la P.IVA come tax id del cliente', ($m['Fiscal_code'] ?? '') === '02945910541'
+      && ($m['Fe_code'] ?? '') === 'M5UXCR1' && !isset($m['Pec']) && (end($cli)['corpo']['tax_id_data'][0]['type'] ?? '') === 'eu_vat'
+      && (end($cli)['corpo']['tax_id_data'][0]['value'] ?? '') === 'IT02945910541', json_encode(end($cli)['corpo'] ?? []));
+$mp = json_decode((string) shell_exec('php -r ' . escapeshellarg('define("MHW_APP", "' . $DOVE . '/app"); spl_autoload_register(fn($c) => require "' . $DOVE . '/app/src/" . substr($c, 4) . ".php"); echo json_encode(MHW\\Fatturazione::metadati(["billing_type" => "privato", "cf" => "rssmra85t10a562s", "sdi" => "", "pec" => "mario@pec.example"]));')), true) ?: [];
+prova('Adamo · privato: codice fiscale, PEC e codice destinatario 0000000', ($mp['metadata[Fiscal_code]'] ?? '') === 'RSSMRA85T10A562S'
+      && ($mp['metadata[Pec]'] ?? '') === 'mario@pec.example' && ($mp['metadata[Fe_code]'] ?? '') === '0000000', json_encode($mp));
 $ordine = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$acc['id']]);
 prova('Ordine in attesa, legato alla struttura', $ordine && $ordine['status'] === 'pending' && (int) $ordine['property_id'] === $pid && (int) $ordine['amount_cents'] === 8700);
 $cs = array_values(array_filter(richiesteStripe(), fn($x) => $x['percorso'] === '/v1/checkout/sessions'));
@@ -1836,19 +1842,27 @@ $r = $admin->get("/admin/cliente/$aacc");
 prova('Amministrazione: riquadro «Guida vetrina», con Plus dimostrativo proposto (account senza piano)', $r['code'] === 200 && str_contains($r['body'], 'Crea la guida vetrina')
       && str_contains($r['body'], 'name="plus" value="1" checked'));
 $r = $admin->post("/admin/cliente/$aacc/vetrina", ['plus' => '1']);
-$vet = riga("SELECT * FROM properties WHERE account_id = ? AND name = 'Casa dei Gerani'", [$aacc]);
+$vet = riga("SELECT * FROM properties WHERE account_id = ? AND name = 'Casa Checco'", [$aacc]);
 prova('Vetrina creata e pubblicata come demo (is_demo = 2), con Plus dimostrativo', $vet && (int) $vet['is_demo'] === 2 && $vet['status'] === 'published'
       && (bool) val("SELECT 1 FROM subscriptions WHERE account_id = ? AND status = 'active'", [$aacc]), json_encode($vet));
 $vslug = (string) ($vet['slug'] ?? '');
 $r = $ospite->get("/g/$vslug");
 $ren = $ospite->get("/g/$vslug/" . (int) val("SELECT id FROM sections WHERE property_id = ? AND is_core = 1", [$vet['id'] ?? 0]) . '?l=en');
-prova('…la guida si apre, con «Demo», in italiano e in inglese; nomi diversi da Casa Lucia', $r['code'] === 200 && str_contains($r['body'], 'Casa dei Gerani') && str_contains($r['body'], 'demo-tag')
-      && !str_contains($r['body'], 'Lucia') && $ren['code'] === 200 && str_contains($ren['body'], 'Giulia will meet you on the landing'));
-prova('…con i luoghi (3 da mangiare, 2 negozi) e senza codici di porte', (int) val("SELECT COUNT(*) FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ?", [$vet['id'] ?? 0]) === 5);
+prova('…la guida si apre, con «Demo», in italiano e in inglese; nomi diversi da Casa Lucia', $r['code'] === 200 && str_contains($r['body'], 'Casa Checco') && str_contains($r['body'], 'demo-tag')
+      && !str_contains($r['body'], 'Lucia') && $ren['code'] === 200 && str_contains($ren['body'], 'Francesco will meet you there with the keys'));
+$kindsV = array_column(righe('SELECT kind FROM sections WHERE property_id = ?', [$vet['id'] ?? 0]), 'kind');
+$mancano = array_diff(['checkin', 'wifi', 'services', 'extras', 'rules', 'arrival', 'transport', 'parking', 'waste', 'eat', 'visit', 'todo', 'shop', 'events', 'custom', 'emergency', 'info'], $kindsV);
+prova('…tutte le sezioni del catalogo compilate (eventi e sezione libera comprese), nessuna vuota', !$mancano
+      && !val("SELECT 1 FROM sections WHERE property_id = ? AND is_core = 0 AND data = '{}'", [$vet['id'] ?? 0]), json_encode(array_values($mancano)));
+$evV = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'events'", [$vet['id'] ?? 0]);
+$r = $ospite->get("/g/$vslug/$evV");
+prova('…eventi di fantasia: oggi con la locandina, quello passato non si vede', str_contains($r['body'], 'Jazz sotto le volte') && str_contains($r['body'], 'Locandina: Jazz sotto le volte')
+      && str_contains($r['body'], 'Mercato contadino del sabato') && !str_contains($r['body'], 'Palio dei rioni'));
+prova('…con i luoghi (4 da mangiare, 4 da visitare, 3 da fare, 3 negozi)', (int) val("SELECT COUNT(*) FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ?", [$vet['id'] ?? 0]) === 14);
 $r = $admin->post("/admin/cliente/$aacc/vetrina", ['plus' => '1']);
 prova('…una sola vetrina per account', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND is_demo = 2', [$aacc]) === 1);
 $r = $ospite->get('/');
-prova('La landing usa la vetrina come demo', str_contains($r['body'], 'Sfoglia la guida di Casa dei Gerani') && str_contains($r['body'], "/g/$vslug/benvenuto"));
+prova('La landing usa la vetrina come demo', str_contains($r['body'], 'Sfoglia la guida di Casa Checco') && str_contains($r['body'], "/g/$vslug/benvenuto"));
 $ag->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'La mia casa vera', 'city' => 'Foligno']);
 prova('La vetrina non occupa il posto del piano: il cliente crea la sua struttura (Plus, una struttura)', (bool) val("SELECT 1 FROM properties WHERE account_id = ? AND name = 'La mia casa vera'", [$aacc])
       && !str_contains($ag->get('/pannello')['body'], 'class="panel stack bloccata"'));

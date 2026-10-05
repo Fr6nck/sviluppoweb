@@ -186,7 +186,7 @@ $r->post('/admin/cliente/{aid}/vetrina', function (array $a) {
         Support::redirect('/admin/cliente/' . $accId);
     }
     Auth::audit('demo.vetrina', $uid, ['property_id' => $pid]);
-    Support::flash('Guida vetrina «Casa dei Gerani» creata e pubblicata. È la demo della landing.');
+    Support::flash('Guida vetrina «Casa Checco» creata e pubblicata. È la demo della landing.');
     Support::redirect('/admin/cliente/' . $accId);
 });
 

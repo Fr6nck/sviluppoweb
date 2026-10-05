@@ -56,6 +56,9 @@ final class Stripe
             self::syncCustomer($account);
             return $account['stripe_customer_id'];
         }
+        // La partita IVA come «tax id» del cliente: Stripe la stampa in fattura e Adamo la legge da lì.
+        $piva = ($account['billing_type'] ?? '') === 'azienda' ? preg_replace('/\D/', '', (string) ($account['vat'] ?? '')) : '';
+        if ($piva !== '') $dati += ['tax_id_data[0][type]' => 'eu_vat', 'tax_id_data[0][value]' => 'IT' . $piva];
         $c = self::call('POST', 'customers', $dati + [
             'email' => $user['email'], 'name' => $user['name'],
             'metadata[account_id]' => (string) $account['id'],

@@ -62,12 +62,22 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
 - **Termini e Privacy** (`/termini`, `/privacy`): vanno aggiornati con le novità (email di richiamo, dati di fatturazione, funnel anonimo), insieme alla versione in `MHW_TERMS_VERSION` / `MHW_PRIVACY_VERSION`.
 - **Clienti di esempio**: sono account con password nota. Toglili prima di aprire al pubblico (Quadro → «Elimina i clienti di esempio»). Se tieni la demo pubblica, ricreali: la nuova demo è a Spello.
 
+## 4a. Fatture con Adamo (collegamento Stripe)
+
+1. In Adamo vai in **Impostazioni → Integrazioni → Stripe** e collega l'account Stripe del sito.
+2. Su Stripe deve esserci l'IVA: Stripe Tax (`STRIPE_AUTOMATIC_TAX=1`), oppure un'aliquota fissa del 22% esclusa. Senza, Adamo fa fatture senza IVA.
+3. Il sito manda già al cliente Stripe i dati che Adamo legge: `Fiscal_code`, `Pec` e `Fe_code` (`0000000` se manca il codice destinatario), e la partita IVA come «tax id».
+4. Fai un pagamento di prova e controlla la fattura in Adamo: codice fiscale, PEC o codice destinatario, importi (anche con un codice sconto).
+5. Ai privati Adamo fa fattura elettronica con il codice fiscale, non una ricevuta: **fallo confermare al commercialista**.
+6. L'invio allo SDI e l'email al cliente si attivano da Adamo.
+7. Non serve nessun token di Adamo nel sito.
+
 ## 4b. La guida vetrina (la demo della landing)
 
 La demo della landing si sposta su un account vero, quello dell'agenzia:
 1. Registrati sul sito con **blackout.agency@gmail.com**, oppure usa l'account se c'è già.
 2. Vai su **Amministrazione → Clienti**, apri quell'account e premi **«Crea la guida vetrina»**. Lascia spuntato «Concedi Plus dimostrativo per 12 mesi»: senza un piano la guida esce senza foto, senza inglese e senza luoghi.
-3. Nasce «Casa dei Gerani», a Bevagna. È sulla falsariga di Casa Lucia, ma nomi, numeri e indicazioni sono diversi e tutti di fantasia. Viene pubblicata subito, con l'etichetta «Demo».
+3. Nasce «Casa Checco», a Perugia, in un vicolo di fantasia vicino a Piazza Matteotti (il link di Maps porta alla piazza, non a un portone vero). Ha tutte le sezioni compilate, comprese quelle nuove (eventi con una locandina, sezione libera, muoversi in zona, parcheggi con i prezzi, servizi extra). Nomi, numeri, prezzi ed eventi sono di fantasia, le foto sono ricavate da quelle della demo; veri sono solo i monumenti di «Cosa visitare». Viene pubblicata subito, con l'etichetta «Demo». Le date degli eventi partono dal giorno in cui la crei.
 4. Da quel momento la landing mostra la vetrina come demo. La vetrina non occupa il posto della struttura del piano, e la modifichi dal pannello di quell'account.
 5. Poi togli i clienti di esempio (**Amministrazione → Clienti → «Elimina i clienti di esempio»**). Hanno una password nota. L'eliminazione tocca solo gli account `@esempio.it`, non la vetrina.
 

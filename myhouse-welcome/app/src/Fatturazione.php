@@ -4,7 +4,10 @@ namespace MHW;
 /**
  * I dati di fatturazione italiani dell'account: si chiedono prima del primo
  * pagamento e vanno a Stripe come metadati del cliente (vat, cf, sdi, pec).
- * Le fatture non le genera l'applicazione.
+ * Le fatture non le genera l'applicazione: le crea Adamo, collegato a Stripe
+ * (Adamo → Impostazioni → Integrazioni → Stripe). Adamo legge dal cliente Stripe
+ * nome, indirizzo e partita IVA, e dai metadati Fiscal_code, Pec e Fe_code:
+ * per questo gli stessi dati partono anche con quei nomi.
  *
  *   azienda — azienda o professionista: partita IVA obbligatoria, codice
  *             fiscale facoltativo (16 caratteri, o 11 cifre per le società),
@@ -103,6 +106,16 @@ final class Fatturazione
         $m = [];
         foreach (['vat', 'cf', 'sdi', 'pec', 'billing_type'] as $k) {
             if (trim((string) ($account[$k] ?? '')) !== '') $m['metadata[' . $k . ']'] = (string) $account[$k];
+        }
+        // Per Adamo (fattura elettronica): codice fiscale (per un'azienda senza, la partita IVA),
+        // PEC, e codice destinatario: senza SDI vale 0000000 (la fattura arriva nel cassetto
+        // fiscale del cliente, o alla PEC se c'è).
+        $tipo = (string) ($account['billing_type'] ?? '');
+        if ($tipo !== '') {
+            $cf = trim((string) ($account['cf'] ?? '')) ?: ($tipo === 'azienda' ? trim((string) ($account['vat'] ?? '')) : '');
+            if ($cf !== '') $m['metadata[Fiscal_code]'] = strtoupper($cf);
+            if (trim((string) ($account['pec'] ?? '')) !== '') $m['metadata[Pec]'] = trim((string) $account['pec']);
+            $m['metadata[Fe_code]'] = trim((string) ($account['sdi'] ?? '')) !== '' ? strtoupper(trim((string) $account['sdi'])) : '0000000';
         }
         return $m;
     }
