@@ -27,7 +27,7 @@ $copertina = !empty($pr['cover_id']) ? MHW\Media::url((int) $pr['cover_id']) : (
 <nav class="tiles-2" style="margin-top:22px" aria-label="<?= Support::e($pr['name']) ?>">
   <?php foreach ($snap['sections'] as $i => $s): ?>
     <a class="tile <?= $toni[$i % 4] ?>" href="<?= Support::e($base) ?>/<?= (int) $s['id'] ?>?l=<?= Support::e($loc) ?>">
-      <?= Icon::svg(SectionCatalog::icon($s['kind']), 22, 1.7) ?>
+      <?= Icon::svg(SectionCatalog::iconaDi($s['kind'], $s['data'] ?? []), 22, 1.7) ?>
       <b><?= Support::e(Guide::title($s, $loc, $def)) ?></b>
     </a>
   <?php endforeach; ?>

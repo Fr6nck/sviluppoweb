@@ -6,7 +6,7 @@
   'use strict';
 
   // I bottoni che servono solo con JavaScript compaiono solo con JavaScript.
-  var nascosti = document.querySelectorAll('[data-togli-riga][hidden],[data-aggiungi-riga][hidden],[data-copia][hidden],[data-ricarica-anteprima][hidden],[data-solo-js][hidden]');
+  var nascosti = document.querySelectorAll('[data-togli-riga][hidden],[data-aggiungi-riga][hidden],[data-copia][hidden],[data-copia-da][hidden],[data-ricarica-anteprima][hidden],[data-solo-js][hidden]');
   for (var h = 0; h < nascosti.length; h++) nascosti[h].hidden = false;
 
   /* ---- Righe dei passaggi e degli elenchi -------------------------------- */
@@ -43,10 +43,12 @@
       if (f) f.dispatchEvent(new Event('input', { bubbles: true }));
       return;
     }
-    var copia = e.target.closest('[data-copia]');
+    var copia = e.target.closest('[data-copia],[data-copia-da]');
     if (copia) {
       e.preventDefault();
-      var testo = copia.getAttribute('data-copia');
+      // data-copia-da: si copia quello che c'è adesso nel campo (il messaggio di benvenuto, magari ritoccato).
+      var da = copia.hasAttribute('data-copia-da') ? document.getElementById(copia.getAttribute('data-copia-da')) : null;
+      var testo = da ? da.value : copia.getAttribute('data-copia');
       var fatto = function () {
         var prima = copia.textContent;
         copia.textContent = copia.getAttribute('data-copiato') || 'Copiato';
@@ -57,6 +59,13 @@
     }
     var ricarica = e.target.closest('[data-ricarica-anteprima]');
     if (ricarica) { e.preventDefault(); aggiornaAnteprima(); }
+  });
+
+  /* ---- Messaggio di benvenuto: «Apri WhatsApp» manda il testo come è adesso. */
+  document.addEventListener('input', function (e) {
+    if (!e.target.hasAttribute || !e.target.hasAttribute('data-benvenuto')) return;
+    var wa = document.querySelector('[data-wa-da="' + e.target.id + '"]');
+    if (wa) wa.href = 'https://wa.me/?text=' + encodeURIComponent(e.target.value);
   });
 
   /* ---- Anteprima nel telefono -------------------------------------------- */
@@ -255,6 +264,45 @@
       }
     };
     rip.addEventListener('change', function (e) { var r = e.target.closest('[data-rip-riga]'); if (r) nascondi(r); });
+    // Righe compresse (6D · X2): la linea di riepilogo con i valori della riga, senza la password.
+    var riassunto = function (r) {
+      var parti = [];
+      Array.prototype.forEach.call(r.querySelectorAll('.rip__c'), function (c) {
+        if (c.hidden || parti.length >= 4) return;
+        var el = c.querySelector('input[type=radio]:checked');
+        if (el) { if (el.value !== '') parti.push(el.parentNode.textContent.trim()); return; }
+        el = c.querySelector('select');
+        if (el) { if (el.value !== '') parti.push(el.options[el.selectedIndex].text); return; }
+        if (c.querySelector('.rip__giorni')) {
+          var gg = c.querySelectorAll('input:checked');
+          if (gg.length) parti.push(Array.prototype.map.call(gg, function (g) { return g.parentNode.textContent.trim(); }).join(', '));
+          return;
+        }
+        el = c.querySelector('input[type=text],input[type=tel],input[type=time],textarea');
+        if (el && !el.hasAttribute('data-segreto') && el.value.trim() !== '') parti.push(el.value.trim().split('\n')[0] + (c.querySelector('.soldi') ? ' €' : ''));
+      });
+      return parti.join(' · ');
+    };
+    var chiudi = function (r, si) {
+      var b = r.querySelector('[data-rip-apri]'), campi = r.querySelector('.rip__campi');
+      if (!b || !campi) return;
+      campi.hidden = si; r.classList.toggle('rip__riga--chiusa', si);
+      b.setAttribute('aria-expanded', si ? 'false' : 'true');
+      b.querySelector('[data-rip-riassunto]').textContent = si ? (riassunto(r) || 'Riga vuota') : '';
+      b.querySelector('[data-rip-azione]').textContent = si ? 'Apri' : 'Comprimi';
+    };
+    Array.prototype.forEach.call(tutte(), function (r) {
+      var b = r.querySelector('[data-rip-apri]'); if (b) b.hidden = false;
+      if (r.hasAttribute('data-rip-chiusa')) { nascondi(r); chiudi(r, true); }
+    });
+    rip.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-rip-apri]'); if (!b || !rip.contains(b)) return;
+      var r = b.closest('[data-rip-riga]'), apri = b.getAttribute('aria-expanded') === 'false';
+      chiudi(r, !apri);
+      if (apri) { var primo = r.querySelector('.rip__campi input:not([type=hidden]),.rip__campi select,.rip__campi textarea'); if (primo) primo.focus(); }
+    });
+    // Un campo non valido dentro una riga compressa: la riga si apre, così il browser può mostrarlo.
+    rip.addEventListener('invalid', function (e) { var r = e.target.closest('[data-rip-riga]'); if (r && r.classList.contains('rip__riga--chiusa')) chiudi(r, false); }, true);
     var aggiorna = function () {
       var n = tutte();
       add.hidden = n.length >= max;
@@ -286,6 +334,7 @@
       tmp.innerHTML = modello.innerHTML.split('__K__').join(k);
       var nuova = tmp.firstElementChild;
       daiId(nuova);
+      var ap = nuova.querySelector('[data-rip-apri]'); if (ap) ap.hidden = false;   // la riga nuova nasce aperta
       righe.appendChild(nuova); aggiorna();
       return nuova;
     };

@@ -24,7 +24,7 @@ $corto = Support::baseUrl() . '/q/' . $qr['token']; ?>
         <a class="btn btn--ghost btn--sm" href="<?= b() ?>/pannello/<?= $pid ?>/qr.svg" download>SVG</a>
         <a class="btn btn--ghost btn--sm" href="<?= b() ?>/pannello/<?= $pid ?>/qr.pdf" download>PDF da stampare</a>
       </div>
-      <p class="help">Il QR resta sempre lo stesso: lo stampi una volta, e ogni volta che aggiorni la guida gli ospiti vedono la versione nuova.
+      <p class="help" style="overflow-wrap:anywhere">Il QR resta sempre lo stesso: lo stampi una volta, e ogni volta che aggiorni la guida gli ospiti vedono la versione nuova.
         Punta a <?= Support::e($corto) ?>.</p>
     </div>
   </div>

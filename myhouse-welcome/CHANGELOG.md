@@ -1,5 +1,27 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Fase 6D — Sezione libera, righe compresse, messaggio di benvenuto (5 ottobre 2026)
+
+Nessuna migrazione.
+
+- **S1 · Sezione libera (`custom`).**
+  - Contiene il titolo scelto dall'host, un'icona fra 12, testo, elenco, foto e PDF.
+  - Si aggiunge più volte: il catalogo la propone sempre.
+  - Si copia tra strutture, con una casella sola per tutte le sezioni libere.
+  - Nella home pubblica non si conta fra le sezioni pronte.
+  - Senza titolo, la guida mostra «Altre informazioni».
+- **X2 · Righe compresse.**
+  - In tutti i ripetitori le righe salvate si mostrano su una linea di riepilogo, che non mostra mai la password del Wi-Fi. Esempio: «Lucia, per i problemi in casa · +39 0742 000000 · Dalle 8 alle 22».
+  - Si aprono con un clic; la riga nuova nasce aperta.
+  - Un campo non valido apre la sua riga. Senza JavaScript le righe restano aperte.
+- **M2 · Messaggio di benvenuto in «QR & Link».**
+  - Una versione per ogni lingua della guida, con il link che apre la guida in quella lingua.
+  - Si può ritoccare prima di usarlo, con «Copia» e «Apri WhatsApp».
+  - Va bene per WhatsApp, Airbnb e Booking.
+- **Parole nuove da far rileggere.**
+  - `kind.custom`: «Altre informazioni» / «More information» / «Autres informations» / «Weitere Informationen» / «Más información».
+  - `welcome_message`: il messaggio di benvenuto nelle 5 lingue, in `app/lang/*.php`.
+
 ## v2 · Sito: chi è già registrato lo vede subito; guida vetrina (5 ottobre 2026)
 
 Nessuna migrazione.

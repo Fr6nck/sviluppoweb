@@ -23,20 +23,26 @@ $giorni = [1 => 'Lun', 2 => 'Mar', 3 => 'Mer', 4 => 'Gio', 5 => 'Ven', 6 => 'Sab
 
 /* Una riga: $k è la chiave nel modulo (l'ordine lo decide la posizione nella pagina).
    In alto maniglia, nome e numero («Parcheggio 1»), e su / giù / togli; sotto i campi,
-   su una griglia di 12 colonne (la larghezza di ogni sottocampo la dice il catalogo). */
-$riga = function (string $k, array $v, int $num = 0) use ($r, $nome, $domId, $giorni): string {
+   su una griglia di 12 colonne (la larghezza di ogni sottocampo la dice il catalogo).
+   Una riga già compilata ($chiusa) con JavaScript si mostra compressa, con una linea di
+   riepilogo («Piazza Matteotti · A pagamento · 18 €»): si apre con un clic. Senza JavaScript
+   resta aperta. La riga nuova nasce aperta. */
+$riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use ($r, $nome, $domId, $giorni): string {
     $no = ' autocomplete="off" data-lpignore="true" data-1p-ignore';   // niente compilazione automatica dei gestori di password
-    $h = '<div class="rip__riga" data-rip-riga>'
+    $campiId = $domId . '-' . $k . '-campi';
+    $h = '<div class="rip__riga" data-rip-riga' . ($chiusa ? ' data-rip-chiusa' : '') . '>'
        . '<div class="rip__testa">'
        . '<span class="riga__maniglia rip__maniglia" aria-hidden="true" title="Trascina per cambiare l\'ordine">' . Icon::svg('grip', 18, 2.6) . '</span>'
        . '<span class="rip__nome">' . Support::e($r['item']) . ' <span data-rip-num>' . ($num ?: '') . '</span></span>'
+       . '<button type="button" class="rip__apri" data-rip-apri aria-expanded="true" aria-controls="' . $campiId . '" hidden>'
+       . '<span class="rip__riassunto" data-rip-riassunto></span><span class="sr-only" data-rip-azione>Comprimi</span>' . Icon::svg('chevron', 16, 2, 'rip__freccia') . '</button>'
        . '<div class="rip__azioni">'
        . '<button type="button" class="icon-btn" data-rip-su aria-label="Sposta su">' . Icon::svg('chevron', 16, 2, 'rip__su') . '</button>'
        . '<button type="button" class="icon-btn" data-rip-giu aria-label="Sposta giù">' . Icon::svg('chevron', 16, 2, 'rip__giu') . '</button>'
        . '<button type="button" class="icon-btn" data-rip-togli aria-label="Togli questa riga">&times;</button>'
        . '</div></div>'
        . '<input type="hidden" name="' . Support::e($nome) . '[' . $k . '][id]" value="' . Support::e((string) ($v['id'] ?? '')) . '">'
-       . '<div class="rip__campi">';
+       . '<div class="rip__campi" id="' . $campiId . '">';
     foreach ($r['sub'] as $sn => $sd) {
         [$tipo, $et] = $sd; $aiuto = $sd[2] ?? '';
         $n = Support::e($nome) . '[' . $k . '][' . $sn . ']';
@@ -119,7 +125,7 @@ $riga = function (string $k, array $v, int $num = 0) use ($r, $nome, $domId, $gi
   <legend><?= Support::e($r['legend']) ?></legend>
   <?php if ($r['help'] !== ''): ?><p class="help"><?= Support::e($r['help']) ?></p><?php endif; ?>
   <div class="rip__righe" data-rip-righe>
-    <?php foreach (array_values($r['rows']) as $i => $v) echo $riga((string) $i, $v, $i + 1); ?>
+    <?php foreach (array_values($r['rows']) as $i => $v) echo $riga((string) $i, $v, $i + 1, true); ?>
     <?php /* Senza JavaScript serve una riga vuota già pronta; con JavaScript si toglie se ce n'è già un'altra. */
           echo str_replace('data-rip-riga', 'data-rip-riga data-rip-vuota', $riga((string) count($r['rows']), [], count($r['rows']) + 1)); ?>
   </div>

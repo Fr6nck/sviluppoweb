@@ -73,6 +73,9 @@ return [
     'kind.emergency'   => 'Emergencies and contacts',
     'kind.visit'       => 'What we recommend seeing',
     'kind.todo'        => 'Things to do',
+    // Il messaggio di benvenuto da mandare all'ospite (QR & Link, 6D · M2): casa, link, host.
+    'welcome_message'  => "Hello! Welcome to %1\$s. Here is the house guide, always up to date: how to get in, the Wi-Fi, parking and our tips for the area.\n%2\$s\nSee you soon, %3\$s",
+    'kind.custom'      => 'More information',
     'kind.info'        => 'Good to know',
 
     // Fase 3: struttura, contatti, arrivo e partenza, Wi-Fi

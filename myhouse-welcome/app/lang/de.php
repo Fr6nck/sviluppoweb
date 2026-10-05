@@ -73,6 +73,9 @@ return [
     'kind.emergency'   => 'Notfälle und Kontakte',
     'kind.visit'       => 'Sehenswertes',
     'kind.todo'        => 'Unternehmungen',
+    // Il messaggio di benvenuto da mandare all'ospite (QR & Link, 6D · M2): casa, link, host.
+    'welcome_message'  => "Hallo! Willkommen in %1\$s. Hier ist der Hausführer, immer aktuell: wie Sie hineinkommen, das WLAN, das Parken und unsere Tipps für die Gegend.\n%2\$s\nBis bald, %3\$s",
+    'kind.custom'      => 'Weitere Informationen',
     'kind.info'        => 'Gut zu wissen',
 
     // Fase 3: struttura, contatti, arrivo e partenza, Wi-Fi

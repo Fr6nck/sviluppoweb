@@ -31,7 +31,7 @@ namespace MHW;
 final class Copia
 {
     /** Le sezioni che si possono copiare, nell'ordine in cui si propongono (tutte già spuntate). */
-    public const SEZIONI = ['waste', 'eat', 'visit', 'todo', 'shop', 'transport', 'emergency', 'info', 'rules', 'services', 'extras'];
+    public const SEZIONI = ['waste', 'eat', 'visit', 'todo', 'shop', 'transport', 'emergency', 'info', 'rules', 'services', 'extras', 'custom'];
     /** Mai copiate: dati della singola casa. */
     public const MAI = ['checkin', 'wifi', 'arrival', 'parking'];
 
@@ -46,6 +46,8 @@ final class Copia
         foreach (Db::all('SELECT s.*, t.title FROM sections s LEFT JOIN section_translations t ON t.section_id = s.id AND t.locale = ?
                           WHERE s.property_id = ? AND s.is_core = 0 ORDER BY s.position, s.id', [$da['default_locale'], $daPid]) as $s) {
             if (!in_array($s['kind'], self::SEZIONI, true)) continue;
+            // Le sezioni libere si copiano tutte insieme: una casella sola.
+            if (SectionCatalog::multipla($s['kind']) && in_array($s['kind'], array_column($sezioni, 'kind'), true)) continue;
             $sezioni[] = ['kind' => $s['kind'], 'titolo' => (string) ($s['title'] ?: SectionCatalog::title($s['kind'], 'it')),
                           'esiste' => $aPid !== null && (bool) Db::val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$aPid, $s['kind']])];
         }

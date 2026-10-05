@@ -34,7 +34,7 @@ foreach ($offers as $of) foreach ($of['options'] as $o) {
 }
 // Tutte le sezioni del catalogo, nei tre gruppi (fase 6C): icone e titoli sono gli stessi del pannello e della guida.
 $gruppiSezioni = MHW\SectionCatalog::gruppi();
-$quanteSezioni = count(MHW\SectionCatalog::kinds()); ?>
+$quanteSezioni = array_sum(array_map('count', $gruppiSezioni)); ?>
 
 <script>
 /* Prima di disegnare la pagina: se si anima, gli elementi partono già nascosti

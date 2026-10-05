@@ -1187,7 +1187,7 @@ $admin->get('/admin/cliente/' . $lacc);
 $admin->post("/admin/cliente/$lacc/abbonamento", ['pv' => (string) pv('portfolio'), 'mesi' => '12', 'nota' => 'Prova della copia', 'strutture' => '2']);
 $r = $lucia->get('/pannello/nuova');
 prova('Fase 4 · «Crea da una struttura esistente»: Casa Lucia, con le sezioni già spuntate', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Crea da una struttura esistente')
-      && str_contains($r['body'], "<option value=\"$casa\">Casa Lucia") && substr_count($r['body'], 'name="copia[]"') === 11
+      && str_contains($r['body'], "<option value=\"$casa\">Casa Lucia") && substr_count($r['body'], 'name="copia[]"') === 12
       && str_contains($r['body'], 'Non si copiano mai: indirizzo, CIN, reti Wi-Fi'));
 $mediaPrima = (int) val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]);
 $r = $lucia->post('/pannello/nuova', ['name' => 'Casa Lucia Due', 'city' => 'Pienza', 'origine' => (string) $casa, 'copia' => ['waste', 'eat', 'visit', 'todo', 'transport', 'emergency', 'info', 'rules', 'services', 'extras'], 'copia_aspetto' => '1', 'copia_contatti' => '1']);
@@ -1722,6 +1722,44 @@ $r = $ospite->get('/');
 prova('6C · home: tutte le sezioni del catalogo nei tre gruppi, contate', $r['code'] === 200 && str_contains($r['body'], '15 sezioni pronte. Scegli quelle che servono ai tuoi ospiti.')
       && !str_contains($r['body'], 'in base al piano') && str_contains($r['body'], '>La casa</h3>') && str_contains($r['body'], '>Arrivare e muoversi</h3>')
       && str_contains($r['body'], '>Il territorio</h3>') && str_contains($r['body'], 'Muoversi in zona') && str_contains($r['body'], 'Negozi e spesa'));
+
+capitolo('Fase 6D · sezione libera, righe compresse, messaggio di benvenuto');
+$luc->get("/pannello/$lpid");
+$luc->post("/pannello/$lpid/sezioni", ['kind' => 'custom']);
+$r = $luc->get("/pannello/$lpid");
+prova('S1 · aggiunta una sezione libera, e il catalogo la propone ancora', (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'custom'", [$lpid]) === 1
+      && str_contains($r['body'], '<b>Sezione libera</b>') && str_contains($r['body'], 'Aggiungi<span class="sr-only"> Sezione libera</span>'));
+$luc->post("/pannello/$lpid/sezioni", ['kind' => 'custom']);
+$liberi = array_column(righe("SELECT id FROM sections WHERE property_id = ? AND kind = 'custom' ORDER BY id", [$lpid]), 'id');
+prova('S1 · …si aggiunge più volte', count($liberi) === 2);
+$r = $luc->get("/pannello/$lpid/sezioni/{$liberi[0]}");
+prova('S1 · editor: riquadro, 12 icone (radio con il disegno), testo ed elenco', $r['code'] === 200 && str_contains($r['body'], 'Per quello che non sta nelle altre sezioni')
+      && substr_count($r['body'], 'type="radio" name="icona"') === 12 && str_contains($r['body'], 'name="icona" value="star" checked') && str_contains($r['body'], '>Testo</label>'));
+$luc->post("/pannello/$lpid/sezioni/{$liberi[0]}", ['title' => 'La piscina', 'icona' => 'sun', 'text' => 'Aperta da giugno a settembre.', 'items' => ['Doccia prima di entrare', 'Niente vetro a bordo vasca']]);
+$luc->post("/pannello/$lpid/sezioni/{$liberi[1]}", ['title' => '', 'icona' => 'razzo', 'text' => 'Una seconda sezione.']);
+$dl = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$liberi[0]]), true);
+$dl2 = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$liberi[1]]), true);
+prova('S1 · icona salvata; una fuori elenco non passa', ($dl['icona'] ?? '') === 'sun' && ($dl2['icona'] ?? 'x') === '');
+$r = $luc->get("/pannello/$lpid/anteprima/{$liberi[0]}");
+$r2 = $luc->get("/pannello/$lpid/anteprima/{$liberi[1]}?l=de");
+prova('S1 · guida: titolo dell\'host, testo ed elenco; senza titolo «Weitere Informationen» in tedesco', $r['code'] === 200 && str_contains($r['body'], 'La piscina')
+      && str_contains($r['body'], 'Aperta da giugno a settembre.') && str_contains($r['body'], '<li>Niente vetro a bordo vasca</li>') && str_contains($r2['body'], 'Weitere Informationen'));
+$r = $luc->get("/pannello/$lpid");
+$sole = '<svg' ; $iconaSole = (string) shell_exec('php -r ' . escapeshellarg('define("MHW_APP", "' . $DOVE . '/app"); spl_autoload_register(fn($c) => require "' . $DOVE . '/app/src/" . substr($c, 4) . ".php"); echo MHW\SectionCatalog::iconaDi("custom", ["icona" => "sun"]), "|", MHW\SectionCatalog::iconaDi("custom", "{}"), "|", MHW\SectionCatalog::iconaDi("wifi", ["icona" => "sun"]);'));
+prova('S1 · l\'icona scelta vale solo per la sezione libera', trim($iconaSole) === 'sun|star|wifi', $iconaSole);
+foreach ($liberi as $x) $luc->post("/pannello/$lpid/sezioni/$x/azione", ['fai' => 'elimina']);
+$r = $luc->get("/pannello/$lpid/sezioni/" . $sez('extras'));
+prova('X2 · righe salvate compresse (con JavaScript), con il riepilogo apribile; la riga vuota no', $r['code'] === 200
+      && preg_match('#<div class="rip__riga" data-rip-riga data-rip-chiusa>#', $r['body']) === 1
+      && str_contains($r['body'], 'class="rip__apri" data-rip-apri aria-expanded="true" aria-controls="rip-items-0-campi" hidden')
+      && str_contains($r['body'], 'class="rip__campi" id="rip-items-0-campi"') && preg_match('#data-rip-riga data-rip-vuota>#', $r['body']) === 1);
+$r = $luc->get("/pannello/$lpid/qr");
+prova('M2 · QR & Link: messaggio di benvenuto per lingua, col link nella lingua giusta, «Copia» e «Apri WhatsApp»', $r['code'] === 200
+      && str_contains($r['body'], 'Messaggio di benvenuto') && preg_match('#id="benvenuto-it"[^>]*>Ciao! Benvenuti a Casa Lucia\.#', $r['body']) === 1
+      && preg_match('#id="benvenuto-en"[^>]*>Hello! Welcome to Casa Lucia\.[^<]*/g/[a-z0-9-]+\?l=en#', $r['body']) === 1
+      && str_contains($r['body'], 'data-copia-da="benvenuto-de"') && str_contains($r['body'], 'href="https://wa.me/?text=Ciao%21%20Benvenuti%20a%20Casa%20Lucia.'));
+$r = $ospite->get('/');
+prova('6D · la home conta ancora le sezioni pronte (la libera no)', str_contains($r['body'], '15 sezioni pronte.'));
 
 capitolo('Sito: chi è già registrato, guida vetrina');
 $r = $ospite->get('/');

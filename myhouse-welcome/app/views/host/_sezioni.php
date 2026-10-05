@@ -12,7 +12,8 @@ $torna = $torna ?? '';
 $illimitate = $limite >= PHP_INT_MAX;
 $pieno = !$illimitate && $attive >= $limite;
 $presenti = array_column($sezioni, 'kind');
-$catalogo = array_values(array_diff(SectionCatalog::selectable(), $presenti));
+// La sezione libera resta sempre nel catalogo: si aggiunge quante volte si vuole.
+$catalogo = array_values(array_filter(SectionCatalog::selectable(), fn($k) => SectionCatalog::multipla($k) || !in_array($k, $presenti, true)));
 $azione = function (array $s, string $fai, string $etichetta, string $classe = 'menu-riga__voce') use ($pid, $torna): string {
     return '<form method="post" action="' . b() . '/pannello/' . $pid . '/sezioni/' . (int) $s['id'] . '/azione" style="margin:0">'
          . Csrf::field() . '<input type="hidden" name="fai" value="' . $fai . '"><input type="hidden" name="torna" value="' . Support::e($torna) . '">'
@@ -41,7 +42,7 @@ $n = count($sezioni); ?>
     <div class="riga <?= $on ? ($s['empty'] ? 'riga--flag' : '') : 'riga--spenta' ?><?= $apertaQui ? ' riga--aperta' : '' ?>" data-riga id="sez-<?= (int) $s['id'] ?>"
          data-azione="<?= b() ?>/pannello/<?= $pid ?>/sezioni/<?= (int) $s['id'] ?>/azione" data-torna="<?= Support::e($torna) ?>">
       <span class="riga__maniglia" aria-hidden="true" title="Trascina per cambiare l'ordine"><?= Icon::svg('grip', 18, 2.6) ?></span>
-      <span class="riga__ico"><?= Icon::svg(SectionCatalog::icon($s['kind']), 20) ?></span>
+      <span class="riga__ico"><?= Icon::svg(SectionCatalog::iconaDi($s['kind'], $s['data'] ?? []), 20) ?></span>
       <a class="riga__nome" href="<?= $modificaUrl ?>"<?= $apertaQui ? ' aria-current="true"' : '' ?>><b><?= Support::e($s['title']) ?></b></a>
       <?php if (!$on): ?><span class="badge badge--paper">Disattivata</span>
       <?php elseif ($s['empty']): ?><span class="badge badge--terracotta">Da compilare</span>
@@ -86,11 +87,11 @@ $n = count($sezioni); ?>
     <?php foreach ($catalogo as $k): ?>
       <div class="kind <?= $pieno ? 'kind--off' : '' ?>">
         <span class="ico"><?= Icon::svg(SectionCatalog::icon($k), 22) ?></span>
-        <b><?= Support::e(SectionCatalog::title($k, 'it')) ?></b>
+        <b><?= Support::e(SectionCatalog::nome($k)) ?></b>
         <?php if (!$pieno): ?>
           <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/sezioni"><?= Csrf::field() ?>
             <input type="hidden" name="kind" value="<?= Support::e($k) ?>"><input type="hidden" name="torna" value="<?= Support::e($torna) ?>">
-            <button class="btn btn--ghost btn--sm"><?= Icon::svg('plus', 15, 2) ?>Aggiungi<span class="sr-only"> <?= Support::e(SectionCatalog::title($k, 'it')) ?></span></button>
+            <button class="btn btn--ghost btn--sm"><?= Icon::svg('plus', 15, 2) ?>Aggiungi<span class="sr-only"> <?= Support::e(SectionCatalog::nome($k)) ?></span></button>
           </form>
         <?php endif; ?>
       </div>

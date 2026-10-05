@@ -257,6 +257,19 @@ final class SectionCatalog
                 'note'             => ['textarea', 'Nota', 'Facoltativa.'],
             ],
         ],
+        // Sezione libera (6D · S1): titolo e icona li sceglie l'host, e si aggiunge più volte
+        // ('multipla'). Foto e PDF sono quelli di ogni sezione. Nella home non si conta.
+        'custom' => [
+            'icon' => 'star', 'group' => 'casa', 'multipla' => true, 'nome' => 'Sezione libera',
+            'intro' => 'Per quello che non sta nelle altre sezioni: la piscina, il giardino, la storia della casa. Scegli il titolo e l\'icona; puoi aggiungerne quante ne vuoi.',
+            'fields' => [
+                'icona' => ['choice', 'Icona', 'Compare nella guida, sulla casella della sezione.', 'icone' => true, 'options' => [
+                    'star' => 'Stella', 'info' => 'Informazione', 'book' => 'Libro', 'key' => 'Chiave', 'sun' => 'Sole', 'moon' => 'Luna',
+                    'coffee' => 'Caffè', 'grill' => 'Barbecue', 'paw' => 'Animali', 'music' => 'Musica', 'people' => 'Persone', 'compass' => 'Bussola']],
+                'text'  => ['textarea', 'Testo', 'Quello che vuoi raccontare.'],
+                'items' => ['list', 'Elenco', 'Facoltativo. Una voce per riga.'],
+            ],
+        ],
         'info' => [
             'icon' => 'info', 'group' => 'arrivo',
             'fields' => [
@@ -272,12 +285,27 @@ final class SectionCatalog
     /** I gruppi della home, nell'ordine in cui si mostrano. */
     public const GRUPPI = ['casa' => 'La casa', 'arrivo' => 'Arrivare e muoversi', 'territorio' => 'Il territorio'];
 
-    /** I tipi di ogni gruppo, nell'ordine del catalogo. @return array<string,list<string>> */
+    /** I tipi di ogni gruppo, nell'ordine del catalogo (la sezione libera no: non è «pronta»). @return array<string,list<string>> */
     public static function gruppi(): array
     {
         $out = array_fill_keys(array_keys(self::GRUPPI), []);
-        foreach (self::K as $k => $d) $out[$d['group'] ?? 'casa'][] = $k;
+        foreach (self::K as $k => $d) if (empty($d['multipla'])) $out[$d['group'] ?? 'casa'][] = $k;
         return $out;
+    }
+
+    /** Si può aggiungere più volte alla stessa struttura? (la sezione libera) */
+    public static function multipla(string $kind): bool { return !empty(self::get($kind)['multipla']); }
+
+    /** Il nome nel pannello («Sezione libera»); per gli altri è il titolo italiano. */
+    public static function nome(string $kind): string { return self::get($kind)['nome'] ?? self::title($kind, 'it'); }
+
+    /** L'icona di una sezione: quella scelta dall'host nella sezione libera, altrimenti quella del tipo. */
+    public static function iconaDi(string $kind, mixed $data = []): string
+    {
+        if (is_string($data)) $data = json_decode($data, true) ?: [];
+        $scelta = (string) (((array) $data)['icona'] ?? '');
+        $opz = self::K[$kind]['fields']['icona']['options'] ?? [];
+        return $scelta !== '' && isset($opz[$scelta]) ? $scelta : self::icon($kind);
     }
 
     public static function kinds(): array { return array_keys(self::K); }
@@ -489,6 +517,7 @@ final class SectionCatalog
     public static function isEmpty(string $kind, array $data, array $tdata, int $places = 0): bool
     {
         if (self::hasPlaces($kind) && $places > 0) return false;
+        unset($data['icona']);   // l'icona da sola non fa una sezione piena
         foreach ($data + $tdata as $v) {
             if (is_array($v) ? count($v) > 0 : trim((string) $v) !== '') return false;
         }

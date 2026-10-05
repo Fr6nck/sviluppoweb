@@ -269,7 +269,7 @@ $r->post('/pannello/{id}/sezioni', function (array $a) use ($mia, $messaggio) {
     $torna = (string) ($_POST['torna'] ?? '') === 'procedura' ? '/pannello/' . $p['id'] . '/procedura/sezioni' : '/pannello/' . $p['id'];
     try {
         $sid = Properties::addSection((int) $acc['id'], (int) $p['id'], (string) ($_POST['kind'] ?? ''));
-        Support::flash(SectionCatalog::title((string) $_POST['kind'], 'it') . ' aggiunta: compilala qui sotto.');
+        Support::flash(SectionCatalog::nome((string) $_POST['kind']) . ' aggiunta: compilala qui sotto.');
         // Nella procedura «Aggiungi» apre subito l'editor sotto la card della sezione.
         Support::redirect($torna === '/pannello/' . $p['id'] ? '/pannello/' . $p['id'] . '/sezioni/' . $sid
                           : $torna . '?apri=' . $sid . '#sez-' . $sid);
@@ -759,7 +759,10 @@ $r->get('/pannello/{id}/pubblicata', function (array $a) use ($mia, $contesto) {
 $r->get('/pannello/{id}/qr', function (array $a) use ($mia, $contesto) {
     [, $acc, $p] = $mia((int) $a['id']);
     $qr = Db::one('SELECT * FROM qr_tokens WHERE property_id = ?', [$p['id']]);
-    View::out('host/qr', $contesto($acc, $p) + ['qr' => $qr, 'online' => Subscriptions::propertyOnline($p), 'qui' => 'qr'], 'layout/cms');
+    // Le lingue della guida, la principale per prima: una versione del messaggio di benvenuto per ognuna.
+    $lingue = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
+    usort($lingue, fn($x, $y) => ($y === $p['default_locale']) <=> ($x === $p['default_locale']) ?: array_search($x, MHW\I18n::LOCALES) <=> array_search($y, MHW\I18n::LOCALES));
+    View::out('host/qr', $contesto($acc, $p) + ['qr' => $qr, 'online' => Subscriptions::propertyOnline($p), 'qui' => 'qr', 'lingue' => $lingue], 'layout/cms');
 });
 
 $r->get('/pannello/{id}/qr.{formato}', function (array $a) use ($mia) {

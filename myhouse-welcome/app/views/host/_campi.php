@@ -87,6 +87,18 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
     <?php if ($aiuto !== ''): ?><p class="help" style="margin:0 0 6px"><?= Support::e($aiuto) ?></p><?php endif; ?>
     <input id="<?= Support::e($id) ?>" name="<?= Support::e($nome) ?>" type="time" value="<?= Support::e((string) $valore) ?>" style="max-width:10rem">
   </div>
+<?php elseif ($tipo === 'choice' && !empty($defCampo['icone'])): /* l'icona della sezione libera: radio veri, con il disegno */
+      $valore = (string) $valore !== '' ? $valore : (string) array_key_first($defCampo['options']); ?>
+  <fieldset class="fieldset">
+    <legend><?= Support::e($etichetta) ?></legend>
+    <?php if ($aiuto !== ''): ?><p class="help"><?= Support::e($aiuto) ?></p><?php endif; ?>
+    <div class="scelte scelte--riga icone-scelta">
+      <?php foreach ($defCampo['options'] as $ok => $ol): ?>
+        <label class="scelta scelta--mini"><input type="radio" name="<?= Support::e($nome) ?>" value="<?= Support::e((string) $ok) ?>" <?= (string) $valore === (string) $ok ? 'checked' : '' ?>>
+          <span><?= Icon::svg((string) $ok, 20, 1.8) ?><?= Support::e($ol) ?></span></label>
+      <?php endforeach; ?>
+    </div>
+  </fieldset>
 <?php elseif ($tipo === 'choice'): ?>
   <fieldset class="fieldset">
     <legend><?= Support::e($etichetta) ?></legend>
