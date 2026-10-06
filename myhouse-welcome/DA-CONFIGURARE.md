@@ -99,7 +99,7 @@ Tutte in `assets/foto/`, con **questi nomi esatti**: si caricano sopra le vecchi
 | `borgo-telefono.jpg` | il telefono nell'hero | 900×633 | **già aggiornata** con il portone di Casa Lucia. Se la cambi, rigenera come sopra |
 | `casa.jpg`, `portone.jpg`, `osteria.jpg`, `caffe.jpg`, `gelato.jpg`, `soggiorno.jpg` | foto della demo | 1600 px sul lato lungo | se le cambi con foto di Spello, ricrea i clienti di esempio |
 | `casa.jpg` | copertina della demo: splash e testa della guida | 1448×1086 | **già aggiornata** (il portone ad arco). Sul server **ricrea i clienti di esempio** per vederla: Quadro → «Elimina…», poi «Crea…» |
-| `pannello-1.webp`, `-2`, `-3` | «Inizia in pochi minuti» | 1200×750 | sono schermate vere fatte in locale (finestra larga 1024 px, la seconda 1200 px per mostrare l'anteprima). Rifalle se il pannello cambia molto. |
+| `pannello-1.webp`, `-2`, `-3` | «Inizia in pochi minuti» | 1200×750 | sono schermate vere del pannello di Casa Checco, fatte in locale (finestra larga 1024 px, la seconda 1200 px per mostrare l'anteprima). Rifalle se il pannello cambia molto. |
 | `og.jpg` | anteprima dei link condivisi | 1200×630 | generata da `strumenti/marchio.php` |
 
 Usa solo foto di cui hai i diritti, e nessun locale reale riconoscibile nella demo.

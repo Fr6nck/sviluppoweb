@@ -25,8 +25,11 @@ $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' : null
 $nomeDemo = $demo['name'] ?? 'Casa Lucia';
 $fotoJpg = a('/assets/foto/borgo.jpg');
 $fotoSet = a('/assets/foto/borgo-1200.webp') . ' 1200w, ' . a('/assets/foto/borgo-2000.webp') . ' 2000w';
-$telefonoJpg = a('/assets/foto/borgo-telefono.jpg');
-$telefonoWebp = a('/assets/foto/borgo-telefono-600.webp');
+// Il telefono mostra la demo vera: con la vetrina (Casa Checco) la sua foto, altrimenti quella di Casa Lucia.
+$vetrina = $demo && (int) $demo['is_demo'] === MHW\Demo::VETRINA;
+$telefonoJpg = a($vetrina ? '/assets/foto/checco-telefono.jpg' : '/assets/foto/borgo-telefono.jpg');
+$telefonoWebp = a($vetrina ? '/assets/foto/checco-telefono-600.webp' : '/assets/foto/borgo-telefono-600.webp');
+$checkinDemo = preg_match('/^\d{2}:\d{2}$/', (string) ($demo['checkin_from'] ?? '')) ? $demo['checkin_from'] : '15:00';
 // Il prezzo di partenza, dal listino: se l'amministratore lo cambia, cambia anche qui.
 $partenza = null;
 foreach ($offers as $of) foreach ($of['options'] as $o) {
@@ -122,7 +125,7 @@ if ($dentro):
           <span class="device__title">Benvenuti<br>a <?= Support::e($nomeDemo) ?>.</span>
           <span class="device__shot"><picture><source srcset="<?= Support::e($telefonoWebp) ?>" type="image/webp">
             <img src="<?= Support::e($telefonoJpg) ?>" alt="" width="600" height="422" loading="eager" decoding="async"></picture>
-            <span class="device__pill"><i></i>Check-in dalle 15:00</span></span>
+            <span class="device__pill"><i></i>Check-in dalle <?= Support::e($checkinDemo) ?></span></span>
           <span class="device__tiles">
             <span class="t-terracotta"><?= Icon::svg('home', 16, 1.8) ?>Check-in &amp; Check-out</span>
             <span class="t-sea"><?= Icon::svg('wifi', 16, 1.8) ?>Wi-Fi</span>

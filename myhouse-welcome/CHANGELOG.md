@@ -1,5 +1,12 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Home con Casa Checco (6 ottobre 2026)
+
+Nessuna migrazione.
+
+- **Telefono della home.** Quando la demo è la vetrina, il telefono mostra Casa Checco: nome, foto (`assets/foto/checco-telefono.jpg` e `checco-telefono-600.webp`) e orario del check-in presi dalla demo. Senza vetrina resta Casa Lucia.
+- **«Inizia in pochi minuti».** Le tre schermate del pannello (`pannello-1…3.webp`) sono rifatte dal pannello di Casa Checco: Contenuti, Aspetto con l'anteprima, QR & Link.
+
 ## v2 · Amministrazione → Impostazioni: Stripe, posta e foto dal pannello (6 ottobre 2026)
 
 Nessuna migrazione.
