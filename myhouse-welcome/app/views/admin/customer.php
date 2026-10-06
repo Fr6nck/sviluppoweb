@@ -5,14 +5,15 @@ use function MHW\b;
 use MHW\{Support, Csrf, Db};
 $title = ($acc['user_name'] ?: $acc['email']) . ' — Cliente';
 $etichette = array_column(Db::all('SELECT code, label FROM features ORDER BY id'), 'label', 'code');
-$fonte = ['package' => 'piano pagato', 'intended' => 'piano scelto', 'override' => 'eccezione', 'default' => 'predefinito']; ?>
+$fonte = ['package' => 'piano pagato', 'intended' => 'piano scelto', 'override' => 'eccezione', 'default' => 'predefinito'];
+include __DIR__ . '/_stati.php'; ?>
 <div class="stack stack--lg">
   <div class="spread">
     <div class="stack stack--sm">
       <a class="small" href="<?= b() ?>/admin/clienti">← Clienti</a>
       <h1><?= Support::e($acc['user_name'] ?: $acc['email']) ?>.</h1>
       <p class="small muted"><?= Support::e($acc['email']) ?> · registrato il <?= Support::e(Support::date($acc['registrato'])) ?> ·
-        <?= $acc['email_verified_at'] ? 'email verificata' : '<b>email non verificata</b>' ?></p>
+        <?= $acc['email_verified_at'] ? 'email confermata' : '<b>email non confermata</b>' ?></p>
     </div>
     <form method="post" action="<?= b() ?>/admin/entra/<?= (int) $acc['user_id'] ?>" style="margin:0"><?= Csrf::field() ?>
       <button class="btn btn--ghost btn--sm">Entra come cliente</button></form>
@@ -26,7 +27,7 @@ $fonte = ['package' => 'piano pagato', 'intended' => 'piano scelto', 'override' 
     </section>
     <section class="panel stack" style="gap:8px">
       <span class="kicker">Stripe</span>
-      <p class="small">Customer: <code><?= Support::e($acc['stripe_customer_id'] ?: '—') ?></code></p>
+      <p class="small">Cliente su Stripe: <code><?= Support::e($acc['stripe_customer_id'] ?: '—') ?></code></p>
       <p class="small">Piano scelto: <?= $acc['intended_package_version_id'] ? 'versione #' . (int) $acc['intended_package_version_id'] : '—' ?></p>
     </section>
   </div>
@@ -77,8 +78,8 @@ $fonte = ['package' => 'piano pagato', 'intended' => 'piano scelto', 'override' 
     <div class="tablewrap"><table class="data">
       <thead><tr><th>Piano</th><th>Stato</th><th>Periodo</th><th>Rinnovo</th><th>Stripe</th></tr></thead>
       <tbody><?php foreach ($subs as $s): ?>
-        <tr><td><?= Support::e($s['package']) ?> <span class="tiny muted">v<?= (int) $s['version'] ?></span><?= (int) ($s['quantity'] ?? 1) > 1 ? ' · ' . (int) $s['quantity'] . ' strutture' : '' ?><br><span class="tiny muted"><?= Support::e($s['provider']) ?></span></td>
-          <td><?= Support::e($s['status']) ?><?= $s['payment_status'] ? '<br><span class="tiny muted">' . Support::e($s['payment_status']) . '</span>' : '' ?></td>
+        <tr><td><?= Support::e($s['package']) ?> <span class="tiny muted">v<?= (int) $s['version'] ?></span><?= (int) ($s['quantity'] ?? 1) > 1 ? ' · ' . (int) $s['quantity'] . ' strutture' : '' ?><br><span class="tiny muted"><?= Support::e($viaPagamento[$s['provider']] ?? $s['provider']) ?></span></td>
+          <td><?= Support::e($statoAbbonamento[$s['status']] ?? $s['status']) ?><?= $s['payment_status'] ? '<br><span class="tiny muted">' . Support::e($statoPagamento[$s['payment_status']] ?? $s['payment_status']) . '</span>' : '' ?></td>
           <td class="small"><?= Support::e(Support::date($s['current_period_start'])) ?> → <?= Support::e(Support::date($s['current_period_end'])) ?></td>
           <td class="small"><?= (int) $s['cancel_at_period_end'] ? 'disattivato' : 'automatico' ?></td>
           <td><code><?= Support::e($s['provider_subscription_id'] ?: '—') ?></code><br><code><?= Support::e($s['provider_price_id'] ?: '') ?></code></td></tr>
@@ -102,7 +103,7 @@ $fonte = ['package' => 'piano pagato', 'intended' => 'piano scelto', 'override' 
 
   <section class="stack" style="gap:10px">
     <h2 style="font-size:22px">Cosa può fare</h2>
-    <p class="small muted">Valore effettivo e da dove arriva. Un'eccezione vale sopra il piano; lasciala vuota per toglierla. 0/1 per no/sì, un numero per i limiti, unlimited per illimitato.</p>
+    <p class="small muted">Per ogni funzione, il valore che vale adesso e da dove arriva. Un'eccezione ha la precedenza sul piano: per toglierla, svuota il campo e salva. Scrivi 1 per sì e 0 per no, un numero per i limiti, unlimited per «senza limite».</p>
     <div class="tablewrap"><table class="data">
       <thead><tr><th>Funzione</th><th>Valore</th><th>Fonte</th><th>Eccezione</th></tr></thead>
       <tbody><?php foreach ($ent as $code => $e): ?>
@@ -111,7 +112,7 @@ $fonte = ['package' => 'piano pagato', 'intended' => 'piano scelto', 'override' 
           <td><form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/override" class="row" style="gap:6px;flex-wrap:nowrap"><?= Csrf::field() ?>
             <input type="hidden" name="feature" value="<?= Support::e($code) ?>">
             <input type="text" name="valore" value="<?= $e['source'] === 'override' ? Support::e($e['value']) : '' ?>" style="width:110px" aria-label="Eccezione per <?= Support::e($code) ?>">
-            <input type="text" name="nota" placeholder="motivo" style="width:140px" aria-label="Motivo">
+            <input type="text" name="nota" placeholder="Motivo" style="width:140px" aria-label="Motivo">
             <button class="btn btn--ghost btn--sm">Salva</button></form></td></tr>
       <?php endforeach; ?></tbody></table></div>
   </section>
@@ -120,10 +121,10 @@ $fonte = ['package' => 'piano pagato', 'intended' => 'piano scelto', 'override' 
     <h2 style="font-size:22px">Ordini</h2>
     <?php if (!$orders): ?><p class="small muted">Nessun ordine.</p><?php else: ?>
     <div class="tablewrap"><table class="data">
-      <thead><tr><th>Data</th><th>Piano</th><th>Importo</th><th>Stato</th><th>Sessione</th></tr></thead>
+      <thead><tr><th>Data</th><th>Piano</th><th>Importo</th><th>Stato</th><th>Sessione Stripe</th></tr></thead>
       <tbody><?php foreach ($orders as $o): ?>
         <tr><td class="small"><?= Support::e(Support::date($o['created_at'])) ?></td><td><?= Support::e($o['package']) ?></td>
-          <td><?= Support::e(Support::money((int) $o['amount_cents'], $o['currency'])) ?></td><td><?= Support::e($o['status']) ?></td>
+          <td><?= Support::e(Support::money((int) $o['amount_cents'], $o['currency'])) ?></td><td><?= Support::e($statoOrdine[$o['status']] ?? $o['status']) ?></td>
           <td><code><?= Support::e($o['provider_session_id'] ?: '—') ?></code></td></tr>
       <?php endforeach; ?></tbody></table></div>
     <?php endif; ?>

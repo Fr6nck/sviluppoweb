@@ -86,7 +86,7 @@ accanto a `config.php`, e riempi solo le voci che servono.
 5. I prezzi: di base l'applicazione descrive a Stripe il prezzo della versione
    del listino (annuale, IVA esclusa). Se preferisci prezzi creati su Stripe,
    crea un prezzo **ricorrente annuale** con lo stesso importo e incolla il suo
-   `price_…` nella nuova versione del pacchetto, da **Amministrazione → Pacchetti**.
+   `price_…` nella nuova versione del piano, da **Amministrazione → Piani**.
 6. Prova tutto in modalità test (`sk_test_…`, carta `4242 4242 4242 4242`) prima
    di passare alle chiavi live.
 

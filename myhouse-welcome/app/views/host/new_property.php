@@ -17,7 +17,7 @@ $modo = $modo ?? 'normale'; $origini = $origini ?? []; ?>
   <form method="post" class="stack"><?= Csrf::field() ?>
     <div class="field" style="margin:0"><label for="name">Nome della struttura</label>
       <input id="name" name="name" type="text" required maxlength="120" placeholder="Per esempio: Casa sul Mare" autofocus></div>
-    <div class="actions"><button class="btn">Crea, si attiva dopo il pagamento</button>
+    <div class="actions"><button class="btn">Crea la struttura</button>
       <a class="btn btn--quiet" href="<?= MHW\b() ?>/pannello">Annulla</a></div>
   </form>
 
@@ -59,7 +59,7 @@ $modo = $modo ?? 'normale'; $origini = $origini ?? []; ?>
   <?php if ($err): ?><p class="note note--err" role="alert"><?= Support::e($err) ?></p><?php endif; ?>
   <?php if ($have >= $max): ?>
     <div class="limit"><p>Hai già <?= (int) $have ?> struttur<?= $have === 1 ? 'a' : 'e' ?>, il massimo del tuo piano.</p>
-      <a class="btn btn--sm" href="<?= MHW\b() ?>/piano">Scopri Portfolio</a></div>
+      <a class="btn btn--sm" href="<?= MHW\b() ?>/piano"><?= $piano && Plans::perProperty($piano) ? 'Cambia il numero di strutture' : 'Scopri Portfolio' ?></a></div>
   <?php else: ?>
     <form method="post" class="stack"><?= Csrf::field() ?>
       <div class="field" style="margin:0"><label for="name">Nome della struttura</label>

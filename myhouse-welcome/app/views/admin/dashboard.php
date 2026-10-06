@@ -3,9 +3,10 @@
    Gli abbonamenti manuali e di esempio non contano nell'incasso. */
 use function MHW\b;
 use MHW\{Support, Csrf, Icon};
-$title = 'Amministrazione'; ?>
+$title = 'Amministrazione';
+include __DIR__ . '/_stati.php'; ?>
 <div class="stack stack--lg">
-  <div class="saluto" style="margin-bottom:0"><div><h1>Quadro.</h1><p>I numeri di adesso, interrogati al momento. Gli abbonamenti manuali e di esempio non contano nell'incasso.</p></div></div>
+  <div class="saluto" style="margin-bottom:0"><div><h1>Quadro.</h1><p>I numeri di adesso, letti dal database in questo momento. Gli abbonamenti manuali e di esempio non contano nell'incasso.</p></div></div>
 
   <?php foreach ($avvisi as $avv): [$t, $d] = $avv; $vai = $avv[2] ?? ''; ?>
     <div class="note avviso" role="status"><div class="stack" style="gap:4px"><b><?= Support::e($t) ?></b><span class="small"><?= Support::e($d) ?></span></div>
@@ -14,12 +15,12 @@ $title = 'Amministrazione'; ?>
 
   <div class="cifre cifre--4">
     <?php foreach ([['', 'people', 'Clienti', $numeri['clienti'], 'registrati', '/admin/clienti'],
-                    ['cifra--pino', 'card', 'Abbonamenti', $numeri['abbonati'], 'Stripe attivi', '/admin/abbonamenti'],
+                    ['cifra--pino', 'card', 'Abbonamenti', $numeri['abbonati'], 'attivi su Stripe', '/admin/abbonamenti'],
                     ['cifra--mare', 'book', 'Guide pubblicate', $numeri['pubblicate'], 'su ' . (int) $numeri['guide'] . ' in tutto', '/admin/guide'],
                     ['cifra--ocra', 'euro', 'Incassato', Support::money($numeri['incassato']), 'con Stripe, IVA esclusa', null],
                     ['cifra--carta', 'eye', 'Aperture', $numeri['aperture'], 'delle guide, ultimi 30 giorni', null],
                     ['cifra--carta', 'clock', 'In attesa', $numeri['in_attesa'], 'pagamenti da confermare', null],
-                    ['cifra--carta', 'ban', 'Rinnovo spento', $numeri['rinnovo_off'], 'abbonamenti che scadono', null],
+                    ['cifra--carta', 'ban', 'Rinnovo disattivato', $numeri['rinnovo_off'], 'abbonamenti che non si rinnovano', null],
                     [$numeri['falliti'] ? 'cifra--rosa' : 'cifra--carta', 'warning', 'Rinnovi falliti', $numeri['falliti'], 'carte da aggiornare', null]] as [$tono, $ico, $et, $val, $nota, $href]):
           $tag = $href ? 'a' : 'div'; ?>
       <<?= $tag ?> class="cifra <?= $tono ?>"<?= $href ? ' href="' . b() . $href . '"' : '' ?>>
@@ -42,14 +43,14 @@ $title = 'Amministrazione'; ?>
   </section>
 
   <section class="stack" style="gap:10px">
-    <div class="spread spread--mid"><h2 style="font-size:22px">Listino</h2><a class="small" href="<?= b() ?>/admin/pacchetti">Gestisci pacchetti</a></div>
+    <div class="spread spread--mid"><h2 style="font-size:22px">Listino</h2><a class="small" href="<?= b() ?>/admin/pacchetti">Gestisci i piani</a></div>
     <div class="tablewrap"><table class="data">
-      <thead><tr><th>Pacchetto</th><th>Versione</th><th>Prezzo</th><th>Stripe Price</th><th>Clienti attivi</th><th>Stato</th></tr></thead>
+      <thead><tr><th>Piano</th><th>Versione</th><th>Prezzo</th><th>Price ID di Stripe</th><th>Clienti attivi</th><th>Stato</th></tr></thead>
       <tbody>
       <?php foreach ($piani as $p): ?>
         <tr><td><?= Support::e($p['name']) ?></td><td>v<?= (int) $p['version'] ?><?= $p['is_current'] ? ' · in vendita' : '' ?></td>
           <td><?= Support::e(Support::money((int) $p['price_cents'], $p['currency'])) ?> + IVA</td>
-          <td><code><?= Support::e($p['stripe_price_id'] ?: '— (prezzo inline)') ?></code></td>
+          <td><code><?= Support::e($p['stripe_price_id'] ?: '— (prezzo della versione)') ?></code></td>
           <td><?= (int) $p['clienti'] ?></td>
           <td><?= !$p['active'] ? 'Disattivato' : ($p['public'] ? 'Pubblico' : 'Nascosto') ?></td></tr>
       <?php endforeach; ?>
@@ -66,7 +67,7 @@ $title = 'Amministrazione'; ?>
         <tr><td><?= Support::e(Support::date($o['created_at'])) ?></td>
           <td><a href="<?= b() ?>/admin/cliente/<?= (int) $o['account_id'] ?>"><?= Support::e($o['cliente'] ?: $o['email']) ?></a></td>
           <td><?= Support::e($o['package']) ?></td><td><?= Support::e(Support::money((int) $o['amount_cents'], $o['currency'])) ?></td>
-          <td><span class="pill pill--<?= ['paid' => 'pine', 'pending' => 'ochre', 'awaiting' => 'sea', 'failed' => 'alert'][$o['status']] ?? '' ?>"><?= Support::e($o['status']) ?></span> <span class="tiny muted"><?= Support::e($o['provider']) ?></span></td></tr>
+          <td><span class="pill pill--<?= ['paid' => 'pine', 'pending' => 'ochre', 'awaiting' => 'sea', 'failed' => 'alert'][$o['status']] ?? '' ?>"><?= Support::e($statoOrdine[$o['status']] ?? $o['status']) ?></span> <span class="tiny muted"><?= Support::e($viaPagamento[$o['provider']] ?? $o['provider']) ?></span></td></tr>
       <?php endforeach; ?>
       </tbody></table></div>
     <?php endif; ?>
@@ -78,7 +79,7 @@ $title = 'Amministrazione'; ?>
       <p class="small">Tre account dimostrativi (dominio esempio.it) con password nota. Servono per provare il prodotto: toglili prima di aprire al pubblico.</p>
       <form method="post" action="<?= b() ?>/admin/dati-esempio"><?= Csrf::field() ?><button class="btn btn--danger btn--sm" name="cosa" value="elimina">Elimina i clienti di esempio</button></form>
     <?php else: ?>
-      <p class="small">Crea tre clienti di prova (Essential, Plus, Portfolio) con la guida di Casa Lucia usata come demo pubblica.</p>
+      <p class="small">Crea tre clienti di esempio (Essential, Plus, Portfolio); la guida di Casa Lucia diventa la demo pubblica.</p>
       <form method="post" action="<?= b() ?>/admin/dati-esempio"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm" name="cosa" value="crea">Crea i clienti di esempio</button></form>
     <?php endif; ?>
   </section>

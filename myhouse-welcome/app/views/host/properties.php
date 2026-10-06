@@ -110,8 +110,8 @@ $nome = $nome !== '' ? explode(' ', $nome)[0] : ''; ?>
         <p style="max-width:620px">Il tuo piano comprende <?= (int) $maxProp ?> strutture. Puoi aggiungerne altre da Account &amp; Fatturazione.</p>
         <a class="btn btn--ghost btn--sm" href="<?= b() ?>/account">Account &amp; Fatturazione</a>
       <?php else: ?>
-        <p style="max-width:620px">Hai scelto un Portfolio per <?= (int) $maxProp ?> strutture. Il cifra lo cambi prima di pagare, dalla scelta del piano.</p>
-        <a class="btn btn--ghost btn--sm" href="<?= b() ?>/piano">Cambia il cifra di strutture</a>
+        <p style="max-width:620px">Hai scelto Portfolio per <?= (int) $maxProp ?> strutture. Il numero lo cambi prima di pagare, dalla scelta del piano.</p>
+        <a class="btn btn--ghost btn--sm" href="<?= b() ?>/piano">Cambia il numero di strutture</a>
       <?php endif; ?>
     <?php endif; ?>
   </div>

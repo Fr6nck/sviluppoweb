@@ -125,7 +125,7 @@ final class Properties
     {
         $max = Entitlements::limit($accountId, 'sections', 4);
         if (self::activeCount($propertyId) > $max) {
-            throw new LimitReached("Hai utilizzato tutte le $max sezioni incluse nel tuo piano. Passa a Plus per aggiungere tutte le sezioni che vuoi.");
+            throw new LimitReached("Hai già $max sezioni attive, il massimo del tuo piano. Passa a Plus per averne quante vuoi, oppure disattivane una per liberare un posto.");
         }
     }
 
@@ -134,7 +134,7 @@ final class Properties
     {
         if (!in_array($kind, SectionCatalog::selectable(), true)) throw new \RuntimeException('Tipo di sezione sconosciuto.');
         if (SectionCatalog::hasPlaces($kind) && !Entitlements::can($accountId, 'places')) {
-            throw new \RuntimeException('I consigli sul posto non sono compresi nel tuo piano.');
+            throw new \RuntimeException('I luoghi consigliati non fanno parte del tuo piano.');
         }
         return Db::tx(function () use ($accountId, $propertyId, $kind) {
             $pos = (int) Db::val('SELECT COALESCE(MAX(position),0)+1 FROM sections WHERE property_id = ?', [$propertyId], 1);
@@ -159,7 +159,7 @@ final class Properties
     {
         Db::tx(function () use ($accountId, $propertyId, $sectionId, $on) {
             $s = self::section($propertyId, $sectionId);
-            if ((int) $s['is_core'] === 1) throw new \RuntimeException('Check-in & Check-out è sempre incluso e non si disattiva.');
+            if ((int) $s['is_core'] === 1) throw new \RuntimeException('Check-in & Check-out è sempre inclusa: non si disattiva.');
             Db::update('sections', ['is_active' => $on ? 1 : 0], 'id = :sid', ['sid' => $sectionId]);
             if ($on) self::assertWithinLimit($accountId, $propertyId);
         });
@@ -208,10 +208,10 @@ final class Properties
                                 $alt = (string) ($r['name'] ?? '');
                                 $testa = is_string($f['tmp_name']) && is_file($f['tmp_name']) ? (string) file_get_contents($f['tmp_name'], false, null, 0, 5) : '';
                                 if ($testa === '%PDF-') {
-                                    if (!Entitlements::can($accountId, 'pdf')) throw new \RuntimeException('I PDF nelle sezioni sono compresi dal piano Plus.');
+                                    if (!Entitlements::can($accountId, 'pdf')) throw new \RuntimeException('I PDF nelle sezioni sono disponibili con il piano Plus.');
                                     $doc = $nuovi[] = Media::storePdf($f, $accountId, $propertyId, $alt); $img = 0;
                                 } else {
-                                    if (!Entitlements::can($accountId, 'photos')) throw new \RuntimeException('Le foto nelle sezioni sono comprese dal piano Plus.');
+                                    if (!Entitlements::can($accountId, 'photos')) throw new \RuntimeException('Le foto nelle sezioni sono disponibili con il piano Plus.');
                                     $img = $nuovi[] = Media::storeImage($f, $accountId, $propertyId, $alt, 'section'); $doc = 0;
                                 }
                             }
@@ -231,10 +231,10 @@ final class Properties
                         if ($f['error'] !== null && (int) $f['error'] !== UPLOAD_ERR_NO_FILE) {
                             $alt = (string) ($r['title'] ?? $r['name'] ?? '');
                             if ($sd[0] === 'image') {
-                                if (!Entitlements::can($accountId, 'photos')) throw new \RuntimeException('Le foto nelle sezioni sono comprese dal piano Plus.');
+                                if (!Entitlements::can($accountId, 'photos')) throw new \RuntimeException('Le foto nelle sezioni sono disponibili con il piano Plus.');
                                 $mid = $nuovi[] = Media::storeImage($f, $accountId, $propertyId, $alt, 'section');
                             } else {
-                                if (!Entitlements::can($accountId, 'pdf')) throw new \RuntimeException('I PDF nelle sezioni sono compresi dal piano Plus.');
+                                if (!Entitlements::can($accountId, 'pdf')) throw new \RuntimeException('I PDF nelle sezioni sono disponibili con il piano Plus.');
                                 $mid = $nuovi[] = Media::storePdf($f, $accountId, $propertyId, $alt);
                             }
                         }

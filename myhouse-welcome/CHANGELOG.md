@@ -1,5 +1,18 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Copy coerente e landing ampliata (6 ottobre 2026)
+
+Migrazione `020`, solo testi: etichette delle funzioni e testi dei piani, cambiati solo dove erano ancora quelli predefiniti. Nessuna tabella nuova, nessuna impostazione nuova. Il dettaglio, con il glossario e le tabelle «prima → dopo», è in `RAPPORTO-COPY.md`.
+
+- **Una parola per ogni cosa.** «Struttura» (non «casa») nel pannello; «piano» (non «pacchetto») anche in amministrazione, dove la voce «Pacchetti» diventa **Piani**; «foto» (non «immagine») per copertina, sezioni, luoghi e profilo; «QR» nel pannello e «QR Code» sulla landing; «Togli» per levare qualcosa, «Elimina» per cancellarlo; «conferma» dell'email (non «verifica»); «Apri l'anteprima»; «Mandami di nuovo l'email».
+- **Check-in & Check-out** è il nome della sezione anche nella procedura (prima il passo si chiamava «Arrivo e partenza»). L'ultimo passo si chiama **Pubblica**; la procedura, dappertutto, «configurazione».
+- **Sezioni.** Ogni sezione ha una spiegazione sotto il titolo, scritta sempre allo stesso modo (a cosa serve all'ospite, poi come compilarla o cosa va altrove), e una riga di presentazione nel catalogo «Aggiungi una sezione». `SectionCatalog`: chiavi `breve` e `intro`, funzioni `breve()` e `facoltativo()`.
+- **Campi.** «(facoltativo)» sta accanto all'etichetta e l'aiuto resta per l'esempio (prima era la prima parola dell'aiuto); «Una riga per…», «Una voce per riga» dappertutto. Le regole della casa si scelgono con le frasi che l'ospite leggerà («Si può fumare» / «Vietato fumare»). In Aspetto, «Testo scuro / chiaro» diventa **Tema chiaro / scuro**. Nei luoghi, «In evidenza» diventa **Etichetta**.
+- **Errori corretti.** «Il cifra lo cambi…» e «Cambia il cifra di strutture»; «Non vuoi più ricevere il avviso…» nelle email; «compresa nel piano Plus» detto del logo; chi ha Portfolio non vede più «Scopri Portfolio» quando ha finito le strutture; «Tradotta automaticamente» accanto a «nessuna traduzione automatica».
+- **Amministrazione.** Stati di ordini e abbonamenti in italiano (`_stati.php`); date dei codici sconto scritte per esteso; «Archivio di foto e PDF».
+- **Landing.** Blocco nuovo **Per chi è** (casa vacanza, B&B e affittacamere, agriturismo, più strutture); terzo vantaggio sulle lingue e fascia del prezzo a tutta larghezza, con l'equivalente al mese; undici domande invece di sei (provarla prima di pagare, tempo, lingue, più strutture, codici della porta); «senza carta di credito» nella chiusura; «Prezzi» nel menu; accanto a «Guarda la demo» le lingue sono IT · EN · FR (prima DE); descrizione per i motori di ricerca riscritta. Nessun numero e nessuna testimonianza inventati.
+- **Immagini.** `scena-host.jpg` (e le due WebP): tolto il codice della cassetta delle chiavi che si leggeva sullo schermo. `pannello-1…3.webp` rifatte con i caratteri veri del sito e i testi nuovi; il QR della terza porta alla demo.
+
 ## v2 · Invita un amico (6 ottobre 2026)
 
 Migrazione `019`: la tabella `referrals`, le colonne `accounts.referral_code` e `accounts.referral_applied_percent`, la colonna `discount_codes.sistema`. Nuova classe `Inviti`. **Spento finché non lo accendi** con `MHW_INVITI=1`.

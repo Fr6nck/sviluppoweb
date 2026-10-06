@@ -1,5 +1,5 @@
 <?php
-/* Palette, testo chiaro o scuro, logo, copertina, immagine profilo.
+/* Palette, tema chiaro o scuro, logo, copertina, foto profilo.
    I campioni sono i colori veri; la variante che non passa il controllo di
    contrasto non si può scegliere.
    Riceve: $prop, $palette, $acc, $dopoPasso. */
@@ -10,9 +10,9 @@ $puoPalette = Entitlements::can($aid, 'palette');
 $scelta = $prop['palette'] ?: 'terracotta';
 $tono = $prop['text_tone'] ?: 'scuro';
 $media = [
-    'cover'   => ['cover_media_id', 'cover', 'Foto di copertina', 'La prima cosa che vedono: la facciata, il cortile, la vista.', false, 'la foto'],
+    'cover'   => ['cover_media_id', 'cover', 'Foto di copertina', 'La prima cosa che gli ospiti vedono: la facciata, il cortile, la vista.', false, 'la foto'],
     'logo'    => ['logo_media_id', 'logo', 'Logo', 'PNG con fondo trasparente, se ce l\'hai.', true, 'il logo'],
-    'profile' => ['profile_media_id', 'profile_image', 'Immagine profilo', 'Una tua foto o quella della struttura, piccola e rotonda.', false, 'l\'immagine'],
+    'profile' => ['profile_media_id', 'profile_image', 'Foto profilo', 'Una tua foto o quella della struttura: nella guida compare piccola e rotonda.', false, 'la foto'],
 ]; ?>
 <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/aspetto" enctype="multipart/form-data" class="stack stack--lg" data-palette-scelta<?= $dopoPasso !== '' ? ' data-autosave' : '' ?>><?= Csrf::field() ?>
   <fieldset class="fieldset">
@@ -33,11 +33,11 @@ $media = [
   </fieldset>
 
   <fieldset class="fieldset">
-    <legend>Testo</legend>
-    <p class="help">Testo scuro su fondo chiaro, oppure testo chiaro su fondo scuro. L'ospite può comunque passare all'altro tema dal suo telefono.</p>
+    <legend>Tema</legend>
+    <p class="help">Il tema con cui si apre la guida: chiaro (testo scuro su fondo chiaro) o scuro (testo chiaro su fondo scuro). L'ospite può comunque passare all'altro dal suo telefono.</p>
     <div class="tones scelte scelte--riga">
       <?php $toniOk = $palette[$scelta]['toni'] ?? ['scuro', 'chiaro'];
-            foreach (['scuro' => 'Testo scuro', 'chiaro' => 'Testo chiaro'] as $k => $et): $ok = in_array($k, $toniOk, true); ?>
+            foreach (['scuro' => 'Tema chiaro', 'chiaro' => 'Tema scuro'] as $k => $et)   /* il valore salvato è il tono del testo */: $ok = in_array($k, $toniOk, true); ?>
         <label class="tone scelta <?= $ok ? '' : 'tone--off' ?>"><input type="radio" name="text_tone" value="<?= $k ?>" <?= $k === $tono && $ok ? 'checked' : '' ?> <?= $ok ? '' : 'disabled' ?>>
           <span class="scelta__testo"><?= $et ?></span></label>
       <?php endforeach; ?>
@@ -47,7 +47,7 @@ $media = [
   <?php foreach ($media as $input => [$col, $feature, $nome, $aiuto, $isLogo, $cosa]):
         $ok = Entitlements::can($aid, $feature); $url = $prop[$col] ? Media::url((int) $prop[$col]) : null;
         if (!$ok && !$url) { ?>
-          <p class="tiny muted"><?= Support::e($nome) ?>: compresa nel piano Plus. <a href="<?= b() ?>/piano">Scopri Plus</a></p>
+          <p class="tiny muted"><?= Support::e($nome) ?>: disponibile con il piano Plus. <a href="<?= b() ?>/piano">Scopri Plus</a></p>
         <?php continue; } ?>
     <fieldset class="fieldset">
       <legend><?= Support::e($nome) ?></legend>
@@ -59,7 +59,7 @@ $media = [
         <div class="mediabox">
           <span class="mediabox__img <?= $isLogo ? 'logo' : '' ?>"><img src="<?= Support::e($url) ?>" alt=""></span>
           <div class="stack" style="gap:8px">
-            <p class="help">Non è compresa nel tuo piano: toglila prima di pubblicare.</p>
+            <p class="help">Non fa parte del tuo piano: per pubblicare, premi «Togli».</p>
             <button class="linkbtn" name="azione" value="togli-<?= $input ?>">Togli</button>
           </div>
         </div>

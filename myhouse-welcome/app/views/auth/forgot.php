@@ -4,7 +4,7 @@
   <p class="note note--ok" style="margin-top:20px" role="status">Se l'indirizzo corrisponde a un account, ti abbiamo scritto
     un link per scegliere una nuova password. Vale un'ora. Controlla anche la posta indesiderata.</p>
 <?php else: ?>
-  <p class="muted" style="margin-top:14px">Scrivi l'email con cui ti sei registrato: ti mandiamo un link.</p>
+  <p class="muted" style="margin-top:14px">Scrivi l'email del tuo account: ti mandiamo un link per sceglierne una nuova.</p>
   <?php if ($err): ?><p class="note note--err" style="margin-top:20px" role="alert"><?= Support::e($err) ?></p><?php endif; ?>
   <form method="post" class="panel stack" style="margin-top:24px"><?= Csrf::field() ?>
     <div class="field" style="margin:0"><label for="email">Email</label>

@@ -54,7 +54,10 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
        . '<input type="hidden" name="' . Support::e($nome) . '[' . $k . '][id]" value="' . Support::e((string) ($v['id'] ?? '')) . '">'
        . '<div class="rip__campi" id="' . $campiId . '">';
     foreach ($r['sub'] as $sn => $sd) {
-        [$tipo, $et] = $sd; $aiuto = $sd[2] ?? '';
+        [$tipo, $et] = $sd;
+        // «Facoltativo.» in testa all'aiuto va accanto all'etichetta: l'aiuto resta per l'esempio.
+        [$fac, $aiuto] = MHW\SectionCatalog::facoltativo((string) ($sd[2] ?? ''));
+        $etH = Support::e($et) . ($fac !== '' ? ' <span class="muted">(' . $fac . ')</span>' : '');
         $n = Support::e($nome) . '[' . $k . '][' . $sn . ']';
         $id = $domId . '-' . $k . '-' . $sn;
         if (!empty($sd['nascosto'])) continue;   // lo disegna il suo compagno (il PDF della locandina)
@@ -74,7 +77,7 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
             $pn = $sd['locandina'];
             $mid = (int) $val; $pdfId = (int) ($v[$pn] ?? 0); $puoi = $r['foto'] || $r['pdf'];
             $sub = '[' . Support::e($nome) . '][' . $k . '][' . $sn . ']';
-            $h .= $c . '<div class="field rip__media" style="margin:0"><span class="label">' . Support::e($et) . '</span>'
+            $h .= $c . '<div class="field rip__media" style="margin:0"><span class="label">' . $etH . '</span>'
                 . '<input type="hidden" name="' . $n . '" value="' . ($mid ?: '') . '">'
                 . '<input type="hidden" name="' . Support::e($nome) . '[' . $k . '][' . Support::e($pn) . ']" value="' . ($pdfId ?: '') . '">'
                 . '<div class="rip__file">';
@@ -87,14 +90,14 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
             if ($mid || $pdfId) $h .= '<label class="check rip__togli"><input type="checkbox" name="rip_togli' . $sub . '" value="1"> <span>Togli</span></label>';
             if ($puoi) $h .= '<span class="small muted" id="' . $id . '-nome" data-rip-file-nome aria-live="polite">' . ($mid || $pdfId ? '' : 'Nessun file scelto') . '</span>';
             $h .= '</div>';
-            $h .= $puoi ? '<p class="help rip__aiuto" id="' . $id . '-aiuto">' . Support::e(trim($aiuto . ' Si carica col bottone Salva.')) . '</p>'
+            $h .= $puoi ? '<p class="help rip__aiuto" id="' . $id . '-aiuto">' . Support::e(trim($aiuto . ' Si carica quando salvi.')) . '</p>'
                         : '<p class="help">Il tuo piano non comprende foto e PDF nelle sezioni.</p>';
             $h .= '</div></div>';
         } elseif ($tipo === 'image' || $tipo === 'pdf') {
             $mid = (int) $val; $puoi = $tipo === 'image' ? $r['foto'] : $r['pdf'];
             if (!$mid && !$puoi) continue;
             $sub = '[' . Support::e($nome) . '][' . $k . '][' . $sn . ']';
-            $h .= $c . '<div class="field rip__media" style="margin:0"><span class="label">' . Support::e($et) . '</span>'
+            $h .= $c . '<div class="field rip__media" style="margin:0"><span class="label">' . $etH . '</span>'
                 . '<input type="hidden" name="' . $n . '" value="' . ($mid ?: '') . '">'
                 . '<div class="rip__file">';
             if ($mid) {
@@ -112,35 +115,35 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
             if ($mid) $h .= '<label class="check rip__togli"><input type="checkbox" name="rip_togli' . $sub . '" value="1"> <span>Togli</span></label>';
             if ($puoi) $h .= '<span class="small muted" id="' . $id . '-nome" data-rip-file-nome aria-live="polite">' . ($mid ? '' : 'Nessun file scelto') . '</span>';
             $h .= '</div>';
-            if (!$puoi) $h .= '<p class="help">Il tuo piano non comprende ' . ($tipo === 'image' ? 'le foto' : 'i PDF') . ' nelle sezioni: toglilo prima di pubblicare.</p>';
-            else $h .= '<p class="help rip__aiuto" id="' . $id . '-aiuto">' . Support::e(trim($aiuto . ' ' . ($tipo === 'image' ? 'JPG, PNG o WebP.' : 'Solo PDF.') . ' Si carica col bottone Salva.')) . '</p>';
+            if (!$puoi) $h .= '<p class="help">Il tuo piano non comprende ' . ($tipo === 'image' ? 'le foto nelle sezioni: toglila' : 'i PDF nelle sezioni: toglilo') . ' prima di pubblicare.</p>';
+            else $h .= '<p class="help rip__aiuto" id="' . $id . '-aiuto">' . Support::e(trim($aiuto . ' ' . ($tipo === 'image' ? 'JPG, PNG o WebP.' : 'Solo PDF.') . ' Si carica quando salvi.')) . '</p>';
             $h .= '</div></div>';
         } elseif ($tipo === 'check') {
             $h .= $c . '<label class="check rip__check"><input type="checkbox" name="' . $n . '" value="1"' . ($val ? ' checked' : '') . '> <span>' . Support::e($et) . '</span></label></div>';
         } elseif ($tipo === 'choice' && !empty($sd['pillole'])) {
             // Una scelta a pillole: radio veri, usabili da tastiera con le frecce.
-            $h .= $c . '<fieldset class="rip__pillole"><legend class="small">' . Support::e($et) . '</legend><div class="scelte scelte--riga">';
+            $h .= $c . '<fieldset class="rip__pillole"><legend class="small">' . $etH . '</legend><div class="scelte scelte--riga">';
             foreach ($sd['options'] as $ok => $ol) {
                 $h .= '<label class="scelta scelta--mini"><input type="radio" name="' . $n . '" value="' . Support::e((string) $ok) . '"' . ((string) $val === (string) $ok ? ' checked' : '') . '><span>' . Support::e($ol) . '</span></label>';
             }
             $h .= '</div></fieldset></div>';
         } elseif ($tipo === 'money') {
             // Un importo in euro: il simbolo sta fisso a destra, si scrive solo il numero.
-            $h .= $c . '<div class="field" style="margin:0"><label for="' . $id . '">' . Support::e($et) . '<span class="sr-only"> (euro)</span></label>'
+            $h .= $c . '<div class="field" style="margin:0"><label for="' . $id . '">' . $etH . '<span class="sr-only"> (euro)</span></label>'
                 . '<div class="soldi"><input id="' . $id . '" type="text" inputmode="decimal" name="' . $n . '" value="' . Support::e((string) $val) . '" maxlength="9" pattern="[0-9]{1,6}([.,][0-9]{1,2})?" title="Solo il numero, per esempio 1,50"' . $desc . $no . '>'
                 . '<span class="soldi__euro" aria-hidden="true">€</span></div>' . $help . '</div></div>';
         } elseif ($tipo === 'choice') {
-            $h .= $c . '<div class="field" style="margin:0"><label for="' . $id . '">' . Support::e($et) . '</label><select id="' . $id . '" name="' . $n . '"' . $desc . $no . '>';
+            $h .= $c . '<div class="field" style="margin:0"><label for="' . $id . '">' . $etH . '</label><select id="' . $id . '" name="' . $n . '"' . $desc . $no . '>';
             foreach ($sd['options'] as $ok => $ol) $h .= '<option value="' . Support::e($ok) . '"' . ((string) $val === (string) $ok ? ' selected' : '') . '>' . Support::e($ol) . '</option>';
             $h .= '</select>' . $help . '</div></div>';
         } elseif ($tipo === 'days') {
-            $h .= $c . '<fieldset class="rip__giorni"><legend class="small">' . Support::e($et) . '</legend><div class="scelte scelte--riga">';
+            $h .= $c . '<fieldset class="rip__giorni"><legend class="small">' . $etH . '</legend><div class="scelte scelte--riga">';
             foreach ($giorni as $gn => $gl) {
                 $h .= '<label class="scelta scelta--mini"><input type="checkbox" name="' . $n . '[]" value="' . $gn . '"' . (in_array($gn, (array) $val, false) ? ' checked' : '') . '><span>' . $gl . '</span></label>';
             }
             $h .= '</div></fieldset></div>';
         } elseif ($tipo === 'textarea') {
-            $h .= $c . '<div class="field" style="margin:0"><label for="' . $id . '">' . Support::e($et) . '</label>'
+            $h .= $c . '<div class="field" style="margin:0"><label for="' . $id . '">' . $etH . '</label>'
                 . '<textarea id="' . $id . '" name="' . $n . '" rows="' . (!empty($sd['lines']) ? 4 : 2) . '" maxlength="2000"' . $desc . $no . '>' . Support::e((string) $val) . '</textarea>' . $help . '</div></div>';
         } else {
             $t = ['url' => 'url', 'tel' => 'tel', 'time' => 'time', 'date' => 'date'][$tipo] ?? 'text';
@@ -148,7 +151,7 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
             if (!empty($sd['cifre'])) $extra .= ' inputmode="numeric" pattern="[0-9]*"';
             // La password si legge con «Mostra»: senza JavaScript resta in chiaro, che è più comodo da scrivere.
             $mostra = $tipo === 'secret' ? '<button type="button" class="linkbtn rip__mostra" data-mostra-segreto hidden>Mostra</button>' : '';
-            $h .= $c . '<div class="field" style="margin:0"><label for="' . $id . '">' . Support::e($et) . '</label>'
+            $h .= $c . '<div class="field" style="margin:0"><label for="' . $id . '">' . $etH . '</label>'
                 . ($mostra ? '<div class="rip__segreto">' : '')
                 . '<input id="' . $id . '" type="' . $t . '" name="' . $n . '" value="' . Support::e((string) $val) . '" maxlength="' . ($tipo === 'url' ? 500 : (!empty($sd['cifre']) ? 3 : 300)) . '"' . $extra . $desc . $no . '>'
                 . ($mostra ? $mostra . '</div>' : '') . $help . '</div></div>';
@@ -169,7 +172,7 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
   <button type="button" class="linkbtn" data-rip-aggiungi hidden><?= Icon::svg('plus', 15, 2) ?> <?= Support::e($r['add']) ?></button>
   <?php if ($r['presets']): /* righe pronte: si aggiungono già compilate, poi si correggono */ ?>
     <div class="suggerimenti" data-solo-js hidden>
-      <span class="small muted">Aggiungi al volo:</span>
+      <span class="small muted">Suggerimenti:</span>
       <?php foreach ($r['presets'] as $et => $valori): ?>
         <button type="button" class="chip-sugg" data-rip-preset="<?= Support::e(json_encode($valori, JSON_UNESCAPED_UNICODE)) ?>">+ <?= Support::e($et) ?></button>
       <?php endforeach; ?>

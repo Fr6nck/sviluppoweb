@@ -22,7 +22,7 @@ $def = $prop['default_locale']; ?>
           <span style="color:var(--accent);display:flex"><?= Icon::svg('globe', 20) ?></span>
           <b class="grow"><?= Support::e($tutte[$l] ?? $l) ?> <span class="perc"><?= $perc ?>%</span></b>
           <span class="meter"><i><b style="width:<?= $perc ?>%"></b></i><?= $tot - $fatte ? ($tot - $fatte) . ' camp' . ($tot - $fatte === 1 ? 'o' : 'i') . ' da tradurre' : 'Tutto tradotto' ?></span>
-          <span class="small muted"><?= $ok ? 'Traduci' : 'Fuori piano' ?></span>
+          <span class="small muted"><?= $ok ? 'Traduci' : 'Non compresa nel piano' ?></span>
         </a>
       <?php endforeach; ?>
       <p class="tiny muted">Le traduzioni non servono per pubblicare: dove mancano, l'ospite legge il testo nella lingua principale.</p>

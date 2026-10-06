@@ -37,17 +37,17 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
 
       <?php if ($foto || $fotoUrl): ?>
         <fieldset class="fieldset">
-          <legend>Immagine della sezione</legend>
+          <legend>Foto della sezione</legend>
           <?php if ($foto):
-                $carica = ['id' => 'carica-foto', 'name' => 'foto', 'accept' => 'image/jpeg,image/png,image/webp', 'cosa' => "l'immagine",
+                $carica = ['id' => 'carica-foto', 'name' => 'foto', 'accept' => 'image/jpeg,image/png,image/webp', 'cosa' => 'la foto',
                            'aiuto' => 'JPG, PNG o WebP, fino a 8 MB.', 'url' => $fotoUrl, 'togli' => 'togli-foto'];
                 include __DIR__ . '/_carica.php';
               else: ?>
             <div class="mediabox">
               <span class="mediabox__img"><img src="<?= Support::e($fotoUrl) ?>" alt=""></span>
               <div class="stack" style="gap:8px">
-                <p class="help">Il tuo piano non comprende le immagini nelle sezioni: toglila prima di pubblicare.</p>
-                <button class="linkbtn" name="azione" value="togli-foto" formnovalidate>Togli l'immagine</button>
+                <p class="help">Il tuo piano non comprende le foto nelle sezioni: toglila prima di pubblicare.</p>
+                <button class="linkbtn" name="azione" value="togli-foto" formnovalidate>Togli la foto</button>
               </div>
             </div>
           <?php endif; ?>
@@ -59,7 +59,7 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
           <legend>PDF allegato</legend>
           <?php if ($pdf):
                 $carica = ['id' => 'carica-pdf', 'name' => 'pdf', 'accept' => 'application/pdf', 'cosa' => 'il PDF',
-                           'aiuto' => 'Per esempio il manuale della caldaia o la mappa del paese. Solo PDF, fino a 10 MB.',
+                           'aiuto' => 'Per esempio: il manuale della caldaia o la mappa del paese. Solo PDF, fino a 10 MB.',
                            'file' => $pdfRow ? ($pdfRow['original_name'] ?: 'Documento') : '', 'togli' => $pdfRow ? 'togli-pdf' : ''];
                 include __DIR__ . '/_carica.php';
               else: ?>
@@ -71,12 +71,12 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
       <?php endif; ?>
 
       <?php if (!$foto && !$core): ?>
-        <p class="tiny muted">Immagini e PDF nelle sezioni sono compresi dal piano Plus. <a href="<?= b() ?>/piano">Scopri Plus</a></p>
+        <p class="tiny muted">Foto e PDF nelle sezioni sono disponibili con il piano Plus. <a href="<?= b() ?>/piano">Scopri Plus</a></p>
       <?php endif; ?>
 
       <div class="actions">
         <button class="btn" name="azione" value="salva">Salva</button>
-        <?php if ($procedura): ?><button class="btn btn--ghost" name="dopo" value="sezioni">Salva e torna alla procedura</button><?php endif; ?>
+        <?php if ($procedura): ?><button class="btn btn--ghost" name="dopo" value="sezioni">Salva e torna alla configurazione</button><?php endif; ?>
         <span class="small muted" data-stato-salvataggio aria-live="polite"></span>
       </div>
     </form>
@@ -154,8 +154,8 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
               <textarea id="pl-note" name="note" rows="2" maxlength="400" placeholder="<?= Support::e(Tassonomie::SEGNAPOSTO[$s['kind']] ?? 'Prenota il tavolo in terrazza, al tramonto.') ?>"><?= Support::e($v['tr']['note']) ?></textarea></div>
             <?php if ($tags): ?>
               <fieldset class="fieldset scelta-luogo">
-                <legend>In evidenza</legend>
-                <p class="help">Compare come bollino colorato sulla scheda.</p>
+                <legend>Etichetta <span class="muted">(facoltativa)</span></legend>
+                <p class="help">Compare sulla scheda del luogo, in un bollino colorato.</p>
                 <div class="scelte scelte--riga">
                   <label class="scelta scelta--mini"><input type="radio" name="badge_choice" value="" <?= $bk === '' && $bTesto === '' ? 'checked' : '' ?>><span>Nessuna</span></label>
                   <?php foreach ($tags as $k): ?>
@@ -167,9 +167,9 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
                   <input type="text" id="pl-badge" name="badge" maxlength="80" value="<?= Support::e($bTesto) ?>"></div>
               </fieldset>
             <?php else: ?>
-              <div class="field" style="margin:0"><label for="pl-badge">In evidenza</label>
+              <div class="field" style="margin:0"><label for="pl-badge">Etichetta <span class="muted">(facoltativa)</span></label>
                 <input type="text" id="pl-badge" name="badge" maxlength="80" value="<?= Support::e($bTesto) ?>" aria-describedby="pl-badge-aiuto">
-                <p class="help" id="pl-badge-aiuto">Compare come bollino colorato sulla scheda.</p></div>
+                <p class="help" id="pl-badge-aiuto">Compare sulla scheda del luogo, in un bollino colorato.</p></div>
             <?php endif; ?>
             <details class="altri-dettagli">
               <summary>Altri dettagli <span class="small muted">— descrizione, indirizzo, minuti, contatti, foto</span></summary>
@@ -179,10 +179,10 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
             <div class="grid grid-2">
               <div class="field" style="margin:0"><label for="pl-addr">Indirizzo</label>
                 <input type="text" id="pl-addr" name="address" maxlength="255" value="<?= Support::e($v['address']) ?>"></div>
-              <div class="field" style="margin:0"><label for="pl-walk">A piedi (minuti)</label>
+              <div class="field" style="margin:0"><label for="pl-walk">Minuti a piedi</label>
                 <input id="pl-walk" name="walk_minutes" type="number" min="0" max="600" inputmode="numeric" value="<?= (int) $v['walk_minutes'] ?: '' ?>" aria-describedby="pl-walk-aiuto">
-                <p class="help" id="pl-walk-aiuto">Stima, modificabile: dal link di Maps e dalla posizione della casa (in «Come arrivare»), in linea d'aria × 1,3 a passo tranquillo.</p></div>
-              <div class="field" style="margin:0"><label for="pl-drive">In auto (minuti)</label>
+                <p class="help" id="pl-walk-aiuto">Dalla struttura. È una stima che puoi correggere: la calcoliamo dal link di Maps del luogo e da quello della struttura, in «Come arrivare».</p></div>
+              <div class="field" style="margin:0"><label for="pl-drive">Minuti in auto</label>
                 <input id="pl-drive" name="drive_minutes" type="number" min="0" max="600" inputmode="numeric" value="<?= (int) $v['drive_minutes'] ?: '' ?>"></div>
               <div class="field" style="margin:0"><label for="pl-tel">Telefono</label>
                 <input id="pl-tel" name="phone" type="tel" maxlength="40" value="<?= Support::e($v['phone']) ?>"></div>

@@ -5,8 +5,8 @@ use function MHW\b; use MHW\{Support, Icon}; $title = 'Stiamo attivando la tua g
 <div class="stack stack--lg" style="max-width:640px" id="attesa" data-stato="<?= Support::e(b()) ?>/pagamento/stato?order=<?= (int) $order['id'] ?>">
   <div class="stack stack--sm">
     <h1 id="titolo">Grazie. Stiamo attivando la tua guida.</h1>
-    <p class="lead" id="testo">Stripe ci sta confermando il pagamento con una notifica firmata: di solito bastano pochi secondi.
-      Puoi restare qui, la pagina si aggiorna da sola.</p>
+    <p class="lead" id="testo">Stiamo aspettando la conferma del pagamento da Stripe: di solito bastano pochi secondi.
+      Resta pure qui: la pagina si aggiorna da sola.</p>
   </div>
   <div class="actions" id="fatto" hidden>
     <a class="btn btn--go" id="vai" href="<?= b() ?>/pannello">Apri la guida <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></a>

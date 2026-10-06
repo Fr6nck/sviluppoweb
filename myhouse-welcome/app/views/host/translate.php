@@ -76,12 +76,12 @@ $campo = function (string $name, string $tipo, $orig, $trad, string $etichetta) 
         <?php foreach ($s['places'] as $pl): $plid = (int) $pl['id']; ?>
           <div class="fieldset">
             <span class="legend"><?= Support::e($pl['name']) ?></span>
-            <?php foreach (['category' => ['text', 'Categoria'], 'description' => ['textarea', 'Descrizione'], 'note' => ['textarea', 'Il tuo consiglio'], 'badge' => ['text', 'In evidenza']] as $f => [$tipo, $et]):
+            <?php foreach (['category' => ['text', 'Categoria'], 'description' => ['textarea', 'Descrizione'], 'note' => ['textarea', 'Perché lo consigli'], 'badge' => ['text', 'Etichetta']] as $f => [$tipo, $et]):
                   // Categoria ed etichetta scelte dall'elenco (fase 6B) si traducono da sole.
                   $chiave = (string) ($pl[$f === 'category' ? 'category_key' : ($f === 'badge' ? 'badge_key' : '')] ?? '');
                   if ($chiave !== '') {
                       echo '<p class="small"><b>' . Support::e($et) . ':</b> ' . Support::e(MHW\I18n::t('it', ($f === 'category' ? 'cat.' : 'badge.') . $chiave))
-                         . ' <span class="muted">— Tradotta automaticamente</span></p>';
+                         . ' <span class="muted">— già tradotta in ogni lingua</span></p>';
                       continue;
                   }
                   echo $campo('pl[' . $plid . '][' . $f . ']', $tipo, $pl['orig'][$f] ?? '', $pl['trad'][$f] ?? '', $et);

@@ -13,13 +13,13 @@ $invTraguardo = Inviti::MASSIMO === 50 ? 'metà prezzo' : 'il ' . Inviti::MASSIM
 if ($invN === 0) {
     $titoloInv = 'Invita un amico: uno sconto per te, uno per lui.';
     $sottoInv = 'Per ogni amico che pubblica la sua guida, il tuo prossimo rinnovo scende del ' . Inviti::PASSO . '%, fino al '
-              . Inviti::MASSIMO . '%. Lui ha il ' . Inviti::AMICO . '% sul primo anno.';
+              . Inviti::MASSIMO . '%. Il tuo amico ha il ' . Inviti::AMICO . '% di sconto sul primo anno.';
 } elseif ($invN < $invMax) {
     $titoloInv = "Sei al \u{2212}" . (int) $inv['percento'] . '% sul prossimo rinnovo.';
     $sottoInv = ($invN === 1 ? '1 amico ha pubblicato la sua guida.' : $invN . ' amici hanno pubblicato la loro guida.')
               . ' Ancora ' . ($invMax - $invN) . ' e arrivi a ' . $invTraguardo . '.';
 } else {
-    $titoloInv = (Inviti::MASSIMO === 50 ? 'Metà prezzo' : "\u{2212}" . Inviti::MASSIMO . '%') . ': sei arrivato al massimo.';
+    $titoloInv = (Inviti::MASSIMO === 50 ? 'Metà prezzo' : "\u{2212}" . Inviti::MASSIMO . '%') . ': hai raggiunto il massimo.';
     $sottoInv = (int) $inv['oltre'] > 0
         ? ($invN + (int) $inv['oltre']) . ' amici hanno pubblicato la loro guida: i primi ' . $invMax . ' contano per il tuo sconto. I prossimi hanno comunque il loro ' . Inviti::AMICO . '%.'
         : $invMax . ' amici hanno pubblicato la loro guida. Puoi continuare a invitare: i tuoi amici hanno sempre il loro ' . Inviti::AMICO . '%.';

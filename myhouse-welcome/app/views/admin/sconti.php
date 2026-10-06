@@ -7,7 +7,7 @@ $title = 'Codici sconto';
 $v = $vecchi + ['code' => $proposto, 'kind' => 'percent', 'value' => '', 'valid_from' => Sconti::oggi(), 'valid_until' => '', 'max_uses' => '', 'piani' => 'tutti', 'packages' => [], 'note' => ''];
 $pillola = ['attivo' => ['Attivo', 'pine'], 'programmato' => ['Programmato', 'sea'], 'scaduto' => ['Scaduto', 'paper'], 'esaurito' => ['Esaurito', 'ochre'],
             'disattivato' => ['Disattivato', 'paper'], 'da_sincronizzare' => ['Da sincronizzare', 'alert']];
-$giorno = fn(string $d) => implode('/', array_reverse(explode('-', $d)));
+$giorno = fn(string $d) => Support::e(Support::date($d));
 $nomiPiani = array_column($piani, 'name', 'code'); ?>
 <div class="stack stack--lg">
   <div class="stack stack--sm">

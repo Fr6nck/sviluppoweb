@@ -102,7 +102,7 @@
         if (x[0] && x[1].ok) { mostraQui('Salvato', true); aggiornaAnteprima(); }
         else mostraQui(x[1].errore || 'Non salvato: controlla i campi.');
       })
-      .catch(function () { mostraQui('Non salvato: sei offline? Usa il bottone Salva.'); });
+      .catch(function () { mostraQui('Non salvato: controlla la connessione, poi premi Salva.'); });
   }
   var forms = document.querySelectorAll('form[data-autosave]');
   for (var i = 0; i < forms.length; i++) (function (form) {
@@ -142,7 +142,7 @@
       if (url) URL.revokeObjectURL(url);
       zona.classList.add('drop--pieno', 'drop--nuovo');
       nome.textContent = f.name;
-      pesoEl.textContent = peso(f.size) + ' · si salva con il bottone';
+      pesoEl.textContent = peso(f.size) + ' · si carica quando salvi';
       if (/^image\//.test(f.type)) {
         url = URL.createObjectURL(f);
         mini.innerHTML = '';
@@ -479,7 +479,7 @@
   document.addEventListener('change', function (e) {
     var inp = e.target; if (!inp.matches || !inp.matches('.rip__carica input[type=file]')) return;
     var nome = inp.closest('.rip__file').querySelector('[data-rip-file-nome]');
-    if (nome) nome.textContent = inp.files && inp.files[0] ? inp.files[0].name + ' — si carica col bottone Salva' : 'Nessun file scelto';
+    if (nome) nome.textContent = inp.files && inp.files[0] ? inp.files[0].name + ' — si carica quando salvi' : 'Nessun file scelto';
   });
 
   /* ---- Scheda luogo: dal link di Google Maps il nome e i minuti a piedi -----

@@ -3,7 +3,7 @@
    scelto decide cosa si può configurare, e si paga solo alla pubblicazione. */
 use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli il piano'; ?>
 <div class="stack stack--sm" style="max-width:720px">
-  <h1>Scegli la soluzione ideale per te.</h1>
+  <h1>Scegli il piano.</h1>
   <p class="lead">Adesso non paghi niente: configuri la guida con le funzioni del piano scelto, e paghi solo quando
     decidi di pubblicarla. Puoi cambiare idea fino a quel momento.</p>
 </div>

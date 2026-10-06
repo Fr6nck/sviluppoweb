@@ -6,8 +6,8 @@ use MHW\{Auth, Config, Conversione, Db, Entitlements, Guide, LimitReached, Log, 
 
 /* La procedura: cinque passi. Le lingue in più stanno in fondo a «Anteprima e
    pubblica», facoltative: le traduzioni non fermano mai la pubblicazione. */
-const MHW_PASSI = ['struttura' => 'Struttura e contatti', 'arrivo' => 'Arrivo e partenza', 'sezioni' => 'Sezioni',
-                   'aspetto' => 'Aspetto', 'pubblica' => 'Anteprima e pubblica'];
+const MHW_PASSI = ['struttura' => 'Struttura e contatti', 'arrivo' => 'Check-in & Check-out', 'sezioni' => 'Sezioni',
+                   'aspetto' => 'Aspetto', 'pubblica' => 'Pubblica'];
 /** I passi della v1 e dove sono finiti (migrazione 007 e redirect dei vecchi indirizzi). */
 const MHW_PASSI_VECCHI = ['checkin' => 'arrivo', 'contenuti' => 'sezioni', 'lingue' => 'aspetto', 'anteprima' => 'pubblica'];
 
@@ -155,7 +155,7 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
                 Support::redirect('/pannello');
             }
             if ($modo === 'a-pagamento') {
-                if (($_POST['conferma'] ?? '') !== '1') throw new RuntimeException('Conferma il costo per aggiungere la struttura.');
+                if (($_POST['conferma'] ?? '') !== '1') throw new RuntimeException('Spunta la conferma per aggiungere la struttura all\'abbonamento.');
                 // Tutto quello che può far fallire la creazione si controlla PRIMA di toccare Stripe.
                 if (trim($nome) === '') throw new RuntimeException('Scrivi il nome della struttura.');
                 if (mb_strlen(trim($nome)) > 120) throw new RuntimeException('Il nome è troppo lungo.');
@@ -189,7 +189,7 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
             });
             Db::update('properties', ['wizard_step' => 'arrivo'], 'id = :pid', ['pid' => $pid]);
             Stats::funnelEvent('property_created');
-            if ($origine) Support::flash('Struttura creata partendo da ' . Db::val('SELECT name FROM properties WHERE id = ?', [$origine]) . '. Ora le cose di questa casa: indirizzo, arrivo, Wi-Fi.');
+            if ($origine) Support::flash('Struttura creata partendo da ' . Db::val('SELECT name FROM properties WHERE id = ?', [$origine]) . '. Ora completa quello che è solo di questa struttura: indirizzo, check-in, Wi-Fi.');
             Support::redirect('/pannello/' . $pid . '/procedura/struttura');
         } catch (NotFound) { $err = 'Struttura di origine non trovata.'; }
         catch (\Throwable $e) { $err = $messaggio($e, 'nuova struttura'); }
@@ -344,13 +344,13 @@ $r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($mia, $contesto
                     Db::update('properties', ['lat' => $m['lat'], 'lng' => $m['lng']], 'id = :pid', ['pid' => $p['id']]);
                 }
                 if (($_FILES['foto']['error'] ?? 4) !== UPLOAD_ERR_NO_FILE) {
-                    if (!Entitlements::can($aid, 'photos')) throw new RuntimeException('Le immagini nelle sezioni sono comprese dal piano Plus.');
+                    if (!Entitlements::can($aid, 'photos')) throw new RuntimeException('Le foto nelle sezioni sono disponibili con il piano Plus.');
                     $mid = Media::storeImage($_FILES['foto'], $aid, (int) $p['id'], (string) ($_POST['title'] ?? ''), 'section');
                     if ($s['media_id']) Media::rilascia((int) $s['media_id'], $aid);
                     Db::update('sections', ['media_id' => $mid], 'id = :sid', ['sid' => $s['id']]);
                 }
                 if (($_FILES['pdf']['error'] ?? 4) !== UPLOAD_ERR_NO_FILE) {
-                    if (!Entitlements::can($aid, 'pdf')) throw new RuntimeException('I PDF nelle sezioni sono compresi dal piano Plus.');
+                    if (!Entitlements::can($aid, 'pdf')) throw new RuntimeException('I PDF nelle sezioni sono disponibili con il piano Plus.');
                     $mid = Media::storePdf($_FILES['pdf'], $aid, (int) $p['id'], (string) ($_POST['title'] ?? ''));
                     if ($s['pdf_media_id']) Media::rilascia((int) $s['pdf_media_id'], $aid);
                     Db::update('sections', ['pdf_media_id' => $mid], 'id = :sid', ['sid' => $s['id']]);
@@ -393,7 +393,7 @@ $r->post('/pannello/{id}/sezioni/{sid}/luogo', function (array $a) use ($mia, $m
         }
         $plid = Properties::savePlace($aid, (int) $p['id'], (int) $a['sid'], $plid, $p['default_locale'], true, $in);
         if (($_FILES['foto']['error'] ?? 4) !== UPLOAD_ERR_NO_FILE) {
-            if (!Entitlements::can($aid, 'photos')) throw new RuntimeException('Le immagini dei luoghi sono comprese dal piano Plus.');
+            if (!Entitlements::can($aid, 'photos')) throw new RuntimeException('Le foto dei luoghi sono disponibili con il piano Plus.');
             $mid = Media::storeImage($_FILES['foto'], $aid, (int) $p['id'], (string) ($_POST['name'] ?? ''), 'place');
             $prima = Db::val('SELECT media_id FROM places WHERE id = ?', [$plid]);
             if ($prima) Media::rilascia((int) $prima, $aid);
@@ -522,7 +522,7 @@ $r->any('/pannello/{id}/aspetto', function (array $a) use ($mia, $contesto, $mes
         try {
             $cosa = (string) ($_POST['azione'] ?? 'salva');
             $campi = ['logo' => ['logo_media_id', 'logo', 'Il logo'], 'cover' => ['cover_media_id', 'cover', 'La foto di copertina'],
-                      'profile' => ['profile_media_id', 'profile_image', "L'immagine profilo"]];
+                      'profile' => ['profile_media_id', 'profile_image', 'La foto profilo']];
             if (str_starts_with($cosa, 'togli-')) {
                 $quale = substr($cosa, 6);
                 if (!isset($campi[$quale])) throw new RuntimeException('Azione sconosciuta.');
@@ -534,12 +534,12 @@ $r->any('/pannello/{id}/aspetto', function (array $a) use ($mia, $contesto, $mes
                 $tono = (string) ($_POST['text_tone'] ?? $p['text_tone']);
                 if (!Palette::exists($pal)) throw new RuntimeException('Palette sconosciuta.');
                 // Un tono che non passa il controllo di contrasto non si salva.
-                if (!Palette::readable($pal, $tono)) throw new RuntimeException('Questa combinazione non è abbastanza leggibile: scegli l\'altra.');
+                if (!Palette::readable($pal, $tono)) throw new RuntimeException('Con questa palette il tema scelto non è abbastanza leggibile: scegli l\'altro.');
                 if (!Entitlements::can($aid, 'palette')) $pal = Palette::DEFAULT;
                 Db::update('properties', ['palette' => $pal, 'text_tone' => $tono], 'id = :pid', ['pid' => $p['id']]);
                 foreach ($campi as $input => [$col, $feature, $nome]) {
                     if (($_FILES[$input]['error'] ?? 4) === UPLOAD_ERR_NO_FILE) continue;
-                    if (!Entitlements::can($aid, $feature)) throw new RuntimeException("$nome non è compreso nel tuo piano.");
+                    if (!Entitlements::can($aid, $feature)) throw new RuntimeException("$nome non fa parte del tuo piano.");
                     $mid = Media::storeImage($_FILES[$input], $aid, (int) $p['id'], $p['name'], $input);
                     if ($p[$col]) Media::rilascia((int) $p[$col], $aid);
                     Db::update('properties', [$col => $mid], 'id = :pid', ['pid' => $p['id']]);
@@ -587,7 +587,7 @@ $r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto,
             foreach (['host_name' => 120, 'host_phone' => 40, 'host_whatsapp' => 40] as $campo => $max) {
                 if (array_key_exists($campo, $_POST)) $dati[$campo] = mb_substr(trim((string) $_POST[$campo]), 0, $max);
             }
-            if ($dati['name'] === '') throw new RuntimeException('Il nome non può restare vuoto.');
+            if ($dati['name'] === '') throw new RuntimeException('Scrivi il nome della struttura.');
             Db::update('properties', $dati, 'id = :pid', ['pid' => $p['id']]);
             if (isset($_POST['contacts']) && is_array($_POST['contacts'])) Properties::saveContacts((int) $p['id'], $_POST['contacts']);
             elseif (array_key_exists('host_name', $_POST)) {
@@ -951,7 +951,7 @@ $r->any('/account/strutture', function () use ($host, $portfolioAttivo) {
         foreach ($scelte as $pid) Db::update('properties', ['archived_at' => Support::now()], 'id = :pid AND account_id = :aid', ['pid' => $pid, 'aid' => $acc['id']]);
         Auth::audit('subscription.quantity', (int) $u['id'], ['da' => $attuale, 'a' => $n, 'archiviate' => $scelte]);
         Support::flash($n > $attuale
-            ? "Richiesta inviata: le strutture diventano $n appena Stripe conferma il pagamento del conguaglio."
+            ? "Richiesta inviata: le strutture diventano $n appena Stripe conferma il pagamento della differenza."
             : "Abbonamento ridotto a $n strutture. La differenza ti viene accreditata sulla prossima fattura."
               . ($scelte ? ' Le strutture scelte sono archiviate: contenuti e QR restano, puoi riattivarle quando vuoi.' : ''));
         Support::redirect('/account');

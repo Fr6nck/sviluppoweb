@@ -17,14 +17,14 @@ $def = $prop['default_locale']; $dopoPasso = $dopoPasso ?? ''; ?>
           <span class="scelta__testo"><?= Support::e($nome) ?> <span class="small muted">lingua principale</span></span>
         <?php else: ?>
           <input type="checkbox" name="locali[]" value="<?= Support::e($code) ?>" <?= $on && $ok ? 'checked' : '' ?> <?= $ok ? '' : 'disabled' ?>>
-          <span class="scelta__testo"><?= Support::e($nome) ?><?php if (!$ok): ?> <span class="small muted">compresa nel piano Plus</span><?php endif; ?>
+          <span class="scelta__testo"><?= Support::e($nome) ?><?php if (!$ok): ?> <span class="small muted">con il piano Plus</span><?php endif; ?>
             <?php if ($on && !$ok): ?> <span class="badge badge--alert">da togliere</span><?php endif; ?></span>
         <?php endif; ?>
       </label>
     <?php endforeach; ?>
     </div>
   </fieldset>
-  <?php if (count($consentite) < count($tutte)): ?><p class="small"><a href="<?= b() ?>/piano">Con Plus: italiano, inglese, francese, tedesco e spagnolo</a></p><?php endif; ?>
+  <?php if (count($consentite) < count($tutte)): ?><p class="small"><a href="<?= b() ?>/piano">Scopri Plus: la guida in 5 lingue (italiano, inglese, francese, tedesco, spagnolo)</a></p><?php endif; ?>
   <?php if ($dopoPasso !== ''):
         $barraAvanti = '<button class="btn btn--go" name="dopo" value="' . Support::e($dopoPasso) . '">Salva e continua <span class="go">' . MHW\Icon::svg('arrow', 18, 2) . '</span></button>';
         include __DIR__ . '/_barra_passo.php';

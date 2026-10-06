@@ -13,6 +13,9 @@ $legati = [];
 foreach (SectionCatalog::fields($kind) as $n => $d) if (isset($d['se'])) $legati[$d['se']][] = $n;
 foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
     [$tipo, $etichetta, $aiuto] = $defCampo;
+    // «Facoltativo.» in testa all'aiuto va accanto all'etichetta: l'aiuto resta per l'esempio.
+    [$fac, $aiuto] = SectionCatalog::facoltativo((string) $aiuto);
+    $facHtml = $fac !== '' ? ' <span class="muted">(' . $fac . ')</span>' : '';
     $id = $uid . '-' . $nome;
     $valore = SectionCatalog::isTranslated($tipo) ? ($tdati[$nome] ?? '') : ($dati[$nome] ?? '');
     if (isset($defCampo['se'])) continue;   // li disegna il loro interruttore
@@ -49,7 +52,7 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
                 array_map(fn($k, $v) => ($defCampo['preset_nome'] ?? true) ? ['name' => I18n::t($linguaGuida, $k)] + $v : $v, array_keys($defCampo['presets'] ?? []), $defCampo['presets'] ?? []))]);
     elseif ($tipo === 'checks'): /* più spunte, con un campo vuoto: così togliere tutte le spunte si salva */ ?>
   <fieldset class="fieldset">
-    <legend><?= Support::e($etichetta) ?></legend>
+    <legend><?= Support::e($etichetta) ?><?= $facHtml ?></legend>
     <?php if ($aiuto !== ''): ?><p class="help"><?= Support::e($aiuto) ?></p><?php endif; ?>
     <input type="hidden" name="<?= Support::e($nome) ?>[]" value="">
     <?php /* Le dotazioni a gruppi (Cucina, Comfort…), con un titoletto: i gruppi si vedono solo qui. */
@@ -64,17 +67,17 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
       </div>
     <?php endforeach; ?>
   </fieldset>
-<?php elseif ($tipo === 'toggles'): /* sì / no / non indicato, uno per regola */ ?>
+<?php elseif ($tipo === 'toggles'): /* una regola per riga: le due frasi che l'ospite può leggere nella guida, oppure «Non indicato» */ ?>
   <fieldset class="fieldset">
-    <legend><?= Support::e($etichetta) ?></legend>
+    <legend><?= Support::e($etichetta) ?><?= $facHtml ?></legend>
     <?php if ($aiuto !== ''): ?><p class="help"><?= Support::e($aiuto) ?></p><?php endif; ?>
     <div class="stack" style="gap:10px">
       <?php foreach ($defCampo['options'] as $ok => $ol): $ora = (string) (((array) $valore)[$ok] ?? ''); ?>
         <fieldset class="interruttore">
           <legend class="interruttore__nome"><?= Support::e($ol) ?></legend>
           <div class="scelte scelte--riga">
-            <?php foreach (['si' => 'Ammesso', 'no' => 'Non ammesso', '' => 'Non indicato'] as $tv => $tl): ?>
-              <label class="scelta scelta--mini"><input type="radio" name="<?= Support::e($nome) ?>[<?= Support::e($ok) ?>]" value="<?= $tv ?>" <?= $ora === $tv ? 'checked' : '' ?>><span><?= $tl ?></span></label>
+            <?php foreach (['si' => I18n::t('it', 'rule_' . $ok . '_si'), 'no' => I18n::t('it', 'rule_' . $ok . '_no'), '' => 'Non indicato'] as $tv => $tl): ?>
+              <label class="scelta scelta--mini"><input type="radio" name="<?= Support::e($nome) ?>[<?= Support::e($ok) ?>]" value="<?= $tv ?>" <?= $ora === $tv ? 'checked' : '' ?>><span><?= Support::e($tl) ?></span></label>
             <?php endforeach; ?>
           </div>
         </fieldset>
@@ -83,14 +86,14 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
   </fieldset>
 <?php elseif ($tipo === 'time'): ?>
   <div class="field" style="margin:0">
-    <label for="<?= Support::e($id) ?>"><?= Support::e($etichetta) ?></label>
+    <label for="<?= Support::e($id) ?>"><?= Support::e($etichetta) ?><?= $facHtml ?></label>
     <?php if ($aiuto !== ''): ?><p class="help" style="margin:0 0 6px"><?= Support::e($aiuto) ?></p><?php endif; ?>
     <input id="<?= Support::e($id) ?>" name="<?= Support::e($nome) ?>" type="time" value="<?= Support::e((string) $valore) ?>" style="max-width:10rem">
   </div>
 <?php elseif ($tipo === 'choice' && !empty($defCampo['icone'])): /* l'icona della sezione libera: radio veri, con il disegno */
       $valore = (string) $valore !== '' ? $valore : (string) array_key_first($defCampo['options']); ?>
   <fieldset class="fieldset">
-    <legend><?= Support::e($etichetta) ?></legend>
+    <legend><?= Support::e($etichetta) ?><?= $facHtml ?></legend>
     <?php if ($aiuto !== ''): ?><p class="help"><?= Support::e($aiuto) ?></p><?php endif; ?>
     <div class="scelte scelte--riga icone-scelta">
       <?php foreach ($defCampo['options'] as $ok => $ol): ?>
@@ -101,7 +104,7 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
   </fieldset>
 <?php elseif ($tipo === 'choice'): ?>
   <fieldset class="fieldset">
-    <legend><?= Support::e($etichetta) ?></legend>
+    <legend><?= Support::e($etichetta) ?><?= $facHtml ?></legend>
     <?php if ($aiuto !== ''): ?><p class="help"><?= Support::e($aiuto) ?></p><?php endif; ?>
     <div class="scelte scelte--riga">
       <?php foreach (['' => 'Non indicato'] + $defCampo['options'] as $ok => $ol): ?>
@@ -114,7 +117,7 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
         $righe = array_values(array_filter((array) $valore, fn($x) => trim((string) $x) !== ''));
         $righe[] = ''; ?>
   <fieldset class="fieldset">
-    <legend><?= Support::e($etichetta) ?></legend>
+    <legend><?= Support::e($etichetta) ?><?= $facHtml ?></legend>
     <?php if ($aiuto !== ''): ?><p class="help"><?= Support::e($aiuto) ?></p><?php endif; ?>
     <div class="rows pillole-campo" id="<?= Support::e($id) ?>">
       <?php foreach ($righe as $i => $riga): ?>
@@ -132,7 +135,7 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
         // Senza JavaScript servono righe vuote già pronte; con JavaScript se ne aggiungono altre.
         $righe = array_merge($righe, array_fill(0, count($righe) ? 1 : 3, '')); ?>
   <fieldset class="fieldset">
-    <legend><?= Support::e($etichetta) ?></legend>
+    <legend><?= Support::e($etichetta) ?><?= $facHtml ?></legend>
     <?php if ($aiuto !== ''): ?><p class="help"><?= Support::e($aiuto) ?></p><?php endif; ?>
     <div class="rows" id="<?= Support::e($id) ?>">
       <?php foreach ($righe as $i => $riga): ?>
@@ -145,7 +148,7 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
       <?php endforeach; ?>
     </div>
     <button type="button" class="linkbtn" data-aggiungi-riga="<?= Support::e($id) ?>" hidden>
-      + <?= $tipo === 'steps' ? 'Aggiungi passaggio' : 'Aggiungi voce' ?></button>
+      + <?= $tipo === 'steps' ? 'Aggiungi un passaggio' : 'Aggiungi una voce' ?></button>
     <?php if (!empty($defCampo['suggest'])): /* suggerimenti a un tocco, nella lingua della guida */ ?>
       <div class="suggerimenti" data-solo-js hidden>
         <span class="small muted">Suggerimenti:</span>
@@ -158,13 +161,13 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
   </fieldset>
 <?php elseif ($tipo === 'textarea'): ?>
   <div class="field" style="margin:0">
-    <label for="<?= Support::e($id) ?>"><?= Support::e($etichetta) ?></label>
+    <label for="<?= Support::e($id) ?>"><?= Support::e($etichetta) ?><?= $facHtml ?></label>
     <?php if ($aiuto !== ''): ?><p class="help" style="margin:0 0 6px"><?= Support::e($aiuto) ?></p><?php endif; ?>
     <textarea id="<?= Support::e($id) ?>" name="<?= Support::e($nome) ?>" rows="3" maxlength="2000"><?= Support::e((string) $valore) ?></textarea>
   </div>
 <?php else: ?>
   <div class="field" style="margin:0">
-    <label for="<?= Support::e($id) ?>"><?= Support::e($etichetta) ?></label>
+    <label for="<?= Support::e($id) ?>"><?= Support::e($etichetta) ?><?= $facHtml ?></label>
     <?php if ($aiuto !== ''): ?><p class="help" style="margin:0 0 6px"><?= Support::e($aiuto) ?></p><?php endif; ?>
     <input id="<?= Support::e($id) ?>" name="<?= Support::e($nome) ?>" value="<?= Support::e((string) $valore) ?>"
            type="<?= $tipo === 'url' ? 'url' : 'text' ?>" maxlength="<?= $tipo === 'url' ? 500 : 300 ?>"

@@ -20,7 +20,7 @@ $avanti = fn(string $testo, string $verso = '') => $verso !== ''
 <?php if ($prop['status'] !== 'published' && !MHW\Auth::isVerified($user)): /* la verifica email, in una riga */ ?>
   <form method="post" action="<?= b() ?>/verifica/invia" class="verifica-riga"><?= Csrf::field() ?>
     <span><?= Icon::svg('info', 16) ?><span>Conferma la tua email<span class="verifica-riga__email"> (<?= Support::e($user['email']) ?>)</span> per poter pubblicare.</span></span>
-    <button class="linkbtn">Mandamela di nuovo</button>
+    <button class="linkbtn">Mandami di nuovo l'email</button>
   </form>
 <?php endif; ?>
 
@@ -45,9 +45,9 @@ case 'struttura': ?>
 <?php break;
 
 case 'arrivo': $dati = json_decode((string) $core['data'], true) ?: []; ?>
-      <h1>Arrivo e partenza.</h1>
-      <p class="lead">Come si entra e cosa fare prima di partire. È il cuore della guida ed è sempre incluso, in ogni piano.
-        Non scrivere qui codici di porte o cassette: mandali all'ospite in privato.</p>
+      <h1>Check-in &amp; Check-out.</h1>
+      <p class="lead">Come si entra e cosa fare prima di partire: è la sezione che l'ospite apre per prima, ed è sempre inclusa, in ogni piano.
+        Non scrivere qui i codici di porte o cassette delle chiavi: mandali all'ospite in privato.</p>
     </div>
     <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/sezioni/<?= (int) $core['id'] ?>" class="stack" data-autosave><?= Csrf::field() ?>
       <?php $kind = 'checkin'; $uid = 'core'; include __DIR__ . '/_campi.php'; ?>
@@ -67,13 +67,13 @@ case 'sezioni': ?>
 
 case 'aspetto': ?>
       <h1>Aspetto.</h1>
-      <p class="lead">Scegli i colori e carica la copertina. L'anteprima accanto cambia mentre scegli.</p>
+      <p class="lead">Colori, logo e foto di copertina. L'anteprima accanto cambia mentre scegli.</p>
     </div>
     <?php $dopoPasso = 'pubblica'; include __DIR__ . '/_aspetto_form.php'; ?>
 <?php break;
 
 case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
-      <h1><?= $prop['status'] === 'published' && $online ? 'Pubblica le modifiche.' : 'Anteprima e pubblicazione.' ?></h1>
+      <h1><?= $prop['status'] === 'published' && $online ? 'Pubblica le modifiche.' : 'Pubblica la guida.' ?></h1>
       <p class="lead">Guarda la guida come la vedranno gli ospiti. Quando ti convince, pubblicala.</p>
     </div>
     <a class="btn btn--ghost phonebtn" href="<?= Support::e(Support::url('/pannello/' . $pid . '/anteprima')) ?>" target="_blank" rel="noopener"><?= Icon::svg('eye', 16) ?>Apri l'anteprima</a>
@@ -124,7 +124,7 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
         <div class="scelte">
           <?php foreach ($altreLingue as $code => $nomeL): $ok = in_array($code, $consentite, true); ?>
             <label class="scelta"><input type="checkbox" name="locali[]" value="<?= Support::e($code) ?>" <?= in_array($code, $lingueAttive, true) && $ok ? 'checked' : '' ?> <?= $ok ? '' : 'disabled' ?>>
-              <span class="scelta__testo"><?= Support::e($nomeL) ?><?php if (!$ok): ?> <span class="small muted">compresa nel piano Plus</span><?php endif; ?></span></label>
+              <span class="scelta__testo"><?= Support::e($nomeL) ?><?php if (!$ok): ?> <span class="small muted">con il piano Plus</span><?php endif; ?></span></label>
           <?php endforeach; ?>
         </div>
         <div><button class="btn btn--ghost btn--sm" name="dopo" value="pubblica">Salva le lingue</button></div>

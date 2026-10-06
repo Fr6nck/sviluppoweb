@@ -25,13 +25,13 @@ $n = count($sezioni); ?>
     <h2 style="font-size:22px">Sezioni aggiuntive</h2>
     <?php if (!$illimitate): ?>
       <span class="meter"><i><b style="width:<?= min(100, (int) round($attive / max(1, $limite) * 100)) ?>%"></b></i>
-        <?= (int) $attive ?> sezion<?= $attive === 1 ? 'e' : 'i' ?> su <?= (int) $limite ?> utilizzat<?= $attive === 1 ? 'a' : 'e' ?></span>
+        <?= (int) $attive ?> su <?= (int) $limite ?> sezioni attive</span>
     <?php else: ?>
       <span class="small muted">Sezioni illimitate con il tuo piano</span>
     <?php endif; ?>
   </div>
   <?php if (!$sezioni): ?>
-    <p class="note note--quiet">Nessuna sezione aggiuntiva, per ora. Scegline qualcuna qui sotto: Wi-Fi e Regole della casa sono le più lette.</p>
+    <p class="note note--quiet">Nessuna sezione aggiuntiva, per ora. Scegline qualcuna qui sotto: di solito si comincia da Wi-Fi e Regole della casa.</p>
   <?php endif; ?>
   <?php if ($sezioni): ?><div class="righe" data-ordina><?php endif; ?>
   <?php foreach ($sezioni as $i => $s): $on = (int) $s['is_active'] === 1;
@@ -78,8 +78,8 @@ $n = count($sezioni); ?>
   <h3 style="font-size:18px">Aggiungi una sezione</h3>
   <?php if ($pieno): ?>
     <div class="limit" role="status">
-      <p style="max-width:620px">Hai utilizzato tutte le <?= (int) $limite ?> sezioni incluse nel tuo piano. Passa a Plus per aggiungere
-        tutte le sezioni che vuoi, oppure disattivane una per liberare un posto.</p>
+      <p style="max-width:620px">Hai già <?= (int) $limite ?> sezioni attive, il massimo del tuo piano. Passa a Plus per averne quante vuoi,
+        oppure disattivane una per liberare un posto.</p>
       <a class="btn btn--sm" href="<?= b() ?>/piano">Scopri Plus</a>
     </div>
   <?php endif; ?>
@@ -88,6 +88,7 @@ $n = count($sezioni); ?>
       <div class="kind <?= $pieno ? 'kind--off' : '' ?>">
         <span class="ico"><?= Icon::svg(SectionCatalog::icon($k), 22) ?></span>
         <b><?= Support::e(SectionCatalog::nome($k)) ?></b>
+        <?php if (($breve = SectionCatalog::breve($k)) !== ''): ?><span class="small muted"><?= Support::e($breve) ?></span><?php endif; ?>
         <?php if (!$pieno): ?>
           <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/sezioni"><?= Csrf::field() ?>
             <input type="hidden" name="kind" value="<?= Support::e($k) ?>"><input type="hidden" name="torna" value="<?= Support::e($torna) ?>">

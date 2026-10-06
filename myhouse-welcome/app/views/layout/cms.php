@@ -23,7 +23,7 @@ $conLato = $u && !$soloPassi;
 // Le voci, una volta sola: servono alla barra e al cassetto del telefono.
 $generale = $admin
   ? [['admin', '/admin', 'Quadro', 'grid'], ['clienti', '/admin/clienti', 'Clienti', 'people'], ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'],
-     ['guide', '/admin/guide', 'Guide', 'book'], ['pacchetti', '/admin/pacchetti', 'Pacchetti', 'layers'], ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star'],
+     ['guide', '/admin/guide', 'Guide', 'book'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'], ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star'],
      ['sconti', '/admin/sconti', 'Codici sconto', 'euro'],
      ['impostazioni', '/admin/impostazioni', 'Impostazioni', 'key'],
      ['registro', '/admin/registro', 'Registro', 'list'], ['diagnostica', '/admin/diagnostica', 'Diagnostica', 'pulse']]
@@ -53,7 +53,7 @@ if ($admin) {
     if ($prop) {
         $briciole[] = [$prop['name'], null];
         foreach ($guida as [$k, , $l]) if ($k === $quiGuida) $briciole[] = [$l, null];
-        if ($qui === 'procedura') $briciole[] = ['Procedura', null];
+        if ($qui === 'procedura') $briciole[] = ['Configurazione', null];
     }
 }
 
@@ -161,7 +161,7 @@ $navigazione = function () use ($admin, $generale, $attiva, $guida, $quiGuida, $
     <?php if (!$admin && !Auth::isVerified($u)): ?>
       <div class="banner banner--info">
         <span><?= Icon::svg('info', 18) ?>Conferma la tua email (<?= Support::e($u['email']) ?>): puoi preparare la guida, ma per pubblicarla serve la conferma.</span>
-        <form method="post" action="<?= b() ?>/verifica/invia"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm">Mandamela di nuovo</button></form>
+        <form method="post" action="<?= b() ?>/verifica/invia"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm">Mandami di nuovo l'email</button></form>
       </div>
     <?php endif; ?>
 <?php else: ?>
@@ -169,7 +169,7 @@ $navigazione = function () use ($admin, $generale, $attiva, $guida, $quiGuida, $
   <a class="brand" href="<?= b() ?>/<?= $u ? ($admin ? 'admin' : 'pannello') : '' ?>"><?= Icon::brand(26) ?><span>myhouse welcome</span></a>
   <div class="row" style="gap:10px">
     <?php if ($soloPassi): ?>
-      <a class="btn btn--quiet btn--sm propbar__dopo" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>">Esci, continuo dopo</a>
+      <a class="btn btn--quiet btn--sm propbar__dopo" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>">Continua dopo</a>
     <?php endif; ?>
     <?php include __DIR__ . '/_tema-bottone.php'; ?>
   </div>

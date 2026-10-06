@@ -32,9 +32,9 @@ $id = Support::e($c['id']); ?>
       <label class="btn btn--ghost btn--sm" for="<?= $id ?>">Sostituisci</label>
       <?php if ($c['togli'] !== ''): ?>
         <button class="btn btn--quiet btn--sm" name="<?= Support::e($c['togliNome']) ?>" value="<?= Support::e($c['togli']) ?>" formnovalidate data-drop-rimuovi
-                <?= $c['togliVerso'] !== '' ? 'formaction="' . Support::e($c['togliVerso']) . '"' : '' ?>>Rimuovi</button>
+                <?= $c['togliVerso'] !== '' ? 'formaction="' . Support::e($c['togliVerso']) . '"' : '' ?>>Togli</button>
       <?php endif; ?>
-      <button type="button" class="btn btn--quiet btn--sm" data-drop-annulla>Rimuovi</button>
+      <button type="button" class="btn btn--quiet btn--sm" data-drop-annulla>Togli</button>
     </span>
   </div>
 </div>

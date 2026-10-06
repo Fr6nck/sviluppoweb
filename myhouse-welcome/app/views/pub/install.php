@@ -10,7 +10,7 @@
   <div class="note note--quiet">
     <label class="check" style="margin:0"><input type="checkbox" name="esempi" value="1" checked> <span>Crea anche la demo e tre clienti di esempio</span></label>
     <p class="tiny muted" style="margin-top:8px">Casa Lucia diventa la demo della landing. I clienti di esempio entrano con la password
-      <strong><?= Support::e(Demo::PASSWORD) ?></strong>: <strong>toglili prima di aprire al pubblico</strong> (Amministrazione → Clienti).</p>
+      <strong><?= Support::e(Demo::PASSWORD) ?></strong>: <strong>toglili prima di aprire al pubblico</strong> (Amministrazione → Quadro).</p>
   </div>
   <button class="btn btn--block">Installa</button>
 </form>

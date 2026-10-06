@@ -23,7 +23,7 @@ $aumento = $n > $attuale; ?>
         <?php foreach ($attive as $p): ?>
           <label class="scelta"><input type="checkbox" name="archivia[]" value="<?= (int) $p['id'] ?>">
             <span><?= Support::e($p['name']) ?><?= $p['city'] ? ' <span class="small muted">· ' . Support::e($p['city']) . '</span>' : '' ?>
-              <?= $p['status'] === 'published' ? '<span class="badge badge--pine">Pubblicata</span>' : '' ?></span></label>
+              <?= $p['status'] === 'published' ? '<span class="badge badge--pine">Online</span>' : '' ?></span></label>
         <?php endforeach; ?>
       </fieldset>
     <?php endif; ?>

@@ -263,7 +263,7 @@ $r->any('/piano', function () use ($salvaPiano) {
     $attivo = Subscriptions::active((int) $acc['id']);
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($attivo) {
-            Support::flash('Hai già un abbonamento attivo: il piano si cambia da Account e fatturazione.', 'err');
+            Support::flash('Hai già un abbonamento attivo: il piano si cambia da Account & Fatturazione.', 'err');
             Support::redirect('/account');
         }
         $pv = Plans::currentVersion((int) ($_POST['pv'] ?? 0));
@@ -451,7 +451,7 @@ $r->any('/email/stop/{token}', function (array $a) {
     if (!$riga) { http_response_code(404); View::out('pub/404', []); }
     $fatto = false;
     if ($_SERVER['REQUEST_METHOD'] === 'POST') { MHW\Richiami::smetti((int) $riga['account_id'], (string) $riga['kind']); $fatto = true; }
-    View::out('pub/email_stop', ['tipo' => MHW\Richiami::TIPI[$riga['kind']] ?? 'email', 'fatto' => $fatto], 'layout/bare');
+    View::out('pub/email_stop', ['tipo' => MHW\Richiami::TIPI[$riga['kind']] ?? 'questa email', 'fatto' => $fatto], 'layout/bare');
 });
 
 /* Per un cron di cPanel: wget -q -O- https://…/cron/IL_TOKEN (token in MHW_CRON_TOKEN). */

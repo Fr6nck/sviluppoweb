@@ -22,7 +22,7 @@ $modulo = function (array $t) {
         <input id="<?= $p ?>-pos" name="position" type="number" min="0" max="999" value="<?= (int) ($t['position'] ?? 0) ?>" style="max-width:8rem"></div>
     </div>
     <div class="row" style="gap:16px">
-      <label class="check"><input type="checkbox" name="visible" value="1" <?= !empty($t['visible']) ? 'checked' : '' ?>> <span>Visibile in landing</span></label>
+      <label class="check"><input type="checkbox" name="visible" value="1" <?= !empty($t['visible']) ? 'checked' : '' ?>> <span>Visibile sulla landing</span></label>
       <?php if (!empty($t['photo_key'])): ?><label class="check"><input type="checkbox" name="togli_foto" value="1"> <span>Togli la foto</span></label><?php endif; ?>
     </div>
     <div class="actions"><button class="btn btn--sm"><?= $id ? 'Salva' : 'Aggiungi la testimonianza' ?></button></div>
@@ -31,7 +31,7 @@ $modulo = function (array $t) {
 <div class="stack stack--lg" style="max-width:820px">
   <div class="stack stack--sm">
     <h1>Testimonianze.</h1>
-    <p class="muted">Compaiono in landing solo quelle segnate come visibili; se non ce n'è nessuna, il blocco non c'è.
+    <p class="muted">Sulla landing compaiono solo quelle segnate come visibili; se non ce n'è nessuna, il blocco non compare.
       Scrivi solo parole vere, con il permesso di chi le ha dette (anche per la foto).</p>
   </div>
   <?php if (!$righe): ?><p class="note note--quiet">Ancora nessuna testimonianza.</p><?php endif; ?>

@@ -46,7 +46,7 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
           <div class="field" style="margin:0"><label for="strutture">Numero di strutture</label>
             <input id="strutture" name="strutture" type="number" inputmode="numeric" step="1" required style="max-width:120px"
                    min="<?= (int) $piano['min_quantity'] ?>" max="<?= (int) $piano['max_quantity'] ?>" value="<?= $q ?>"></div>
-          <button class="btn btn--ghost btn--sm">Cambia</button>
+          <button class="btn btn--ghost btn--sm">Cambia il numero</button>
           <span class="small muted">Prima struttura <?= Support::e(Support::money((int) $piano['price_cents'], $piano['currency'])) ?>, ogni struttura aggiuntiva
             +<?= Support::e(Support::money((int) $piano['extra_price_cents'], $piano['currency'])) ?> / anno.</span>
         </form>
@@ -72,7 +72,7 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
         <?php if ($ultimo['current_period_end']): ?><span class="small muted"> · scaduto il <?= Support::e(Support::date($ultimo['current_period_end'])) ?></span><?php endif; ?></p>
       <p>Le tue guide sono offline, ma niente è stato cancellato. Per rimetterle online ripubblicale: ti chiederemo di riattivare l'abbonamento.</p>
       <div class="actions"><a class="btn" href="<?= b() ?>/pannello">Vai alle mie guide</a>
-        <?php if ($portale): ?><form method="post" action="<?= b() ?>/account/portale" style="margin:0"><?= Csrf::field() ?><button class="btn btn--ghost">Vecchie fatture</button></form><?php endif; ?></div>
+        <?php if ($portale): ?><form method="post" action="<?= b() ?>/account/portale" style="margin:0"><?= Csrf::field() ?><button class="btn btn--ghost">Fatture precedenti</button></form><?php endif; ?></div>
     <?php else: ?>
       <p>Nessun abbonamento attivo. <?= $piano ? 'Stai configurando con il piano <b>' . Support::e($piano['name']) . '</b>: paghi solo quando pubblichi.' : '' ?></p>
       <div class="actions"><a class="btn btn--ghost" href="<?= b() ?>/piano"><?= $piano ? 'Cambia piano' : 'Scegli un piano' ?></a></div>
@@ -136,7 +136,7 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
     <span class="kicker">Il tuo account</span>
     <p><?= Support::e($user['name']) ?> · <?= Support::e($user['email']) ?>
       <?= Auth::isVerified($user) ? '<span class="badge badge--pine">Email confermata</span>' : '<span class="badge badge--ochre">Email da confermare</span>' ?></p>
-    <p class="small muted">Per cambiare la password usa <a href="<?= b() ?>/password/dimenticata">Password dimenticata</a>: ti mandiamo un link.</p>
+    <p class="small muted">Per cambiare la password <a href="<?= b() ?>/password/dimenticata">chiedi un link di recupero</a>: te lo mandiamo per email.</p>
   </section>
 
   <?php if ($ordini): ?>
@@ -149,7 +149,7 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
         <span class="badge badge--<?= $o['status'] === 'paid' ? 'pine' : ($o['status'] === 'failed' ? 'alert' : 'paper') ?>"><?= Support::e($statoOrdine[$o['status']] ?? $o['status']) ?></span>
       </div>
     <?php endforeach; ?>
-    <p class="tiny muted">Le fatture le emette Stripe e le trovi in "Fatture e metodo di pagamento".</p>
+    <p class="tiny muted">Le fatture le emette Stripe e le trovi in «Fatture e metodo di pagamento».</p>
   </section>
   <?php endif; ?>
 </div>

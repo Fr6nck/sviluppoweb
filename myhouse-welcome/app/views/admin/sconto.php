@@ -3,13 +3,13 @@
 use function MHW\b;
 use MHW\{Support, Csrf, Sconti};
 $title = 'Codice ' . $c['code'];
-$giorno = fn(string $d) => implode('/', array_reverse(explode('-', $d)));
+$giorno = fn(string $d) => Support::e(Support::date($d));
 $pillola = ['attivo' => ['Attivo', 'pine'], 'programmato' => ['Programmato', 'sea'], 'scaduto' => ['Scaduto', 'paper'], 'esaurito' => ['Esaurito', 'ochre'],
             'disattivato' => ['Disattivato', 'paper'], 'da_sincronizzare' => ['Da sincronizzare', 'alert']][$c['stato']];
 $scelti = Sconti::pacchetti($c); ?>
 <div class="stack stack--lg" style="max-width:900px">
   <div class="stack stack--sm">
-    <a class="small" href="<?= b() ?>/admin/sconti">Tutti i codici</a>
+    <a class="small" href="<?= b() ?>/admin/sconti">← Codici sconto</a>
     <h1><?= Support::e($c['code']) ?> <span class="badge badge--<?= $pillola[1] ?>"><?= $pillola[0] ?></span></h1>
     <p class="muted"><?= Support::e(Sconti::etichetta($c)) ?> sul primo anno · dal <?= $giorno($c['valid_from']) ?> al <?= $giorno($c['valid_until']) ?>
       · <?= (int) $c['max_uses'] > 0 ? 'al massimo ' . (int) $c['max_uses'] . ' utilizzi' : 'senza limite di utilizzi' ?></p>

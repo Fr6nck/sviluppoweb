@@ -65,7 +65,7 @@ final class Sconti
         return array_values(array_filter(array_map('trim', explode(',', (string) $r['packages']))));
     }
 
-    private static function giorno(string $d): string { return implode('/', array_reverse(explode('-', $d))); }
+    private static function giorno(string $d): string { return Support::date($d); }
 
     /**
      * Il codice vale per questo account e questo piano? Restituisce la riga, oppure

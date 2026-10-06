@@ -1,5 +1,5 @@
 <?php
-/* Amministrazione → Impostazioni: Stripe, posta e archivio delle foto.
+/* Amministrazione → Impostazioni: Stripe, posta e archivio di foto e PDF.
    I segreti non si rimostrano mai; i campi impostati da variabili d'ambiente si vedono e basta. */
 use function MHW\b;
 use MHW\{Support, Csrf, Icon, Impostazioni, Stripe, Config};
@@ -12,12 +12,12 @@ $pronti = [
 $icone = ['stripe' => 'card', 'posta' => 'message', 'archivio' => 'layers'];
 $intro = [
     'stripe'   => 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti preparano la guida ma non possono pagarla.',
-    'posta'    => 'Verifica dell\'email, recupero della password e promemoria. Finché resta «Non spedire», le email finiscono in storage/logs/mail.log.',
-    'archivio' => 'Le foto e i PDF caricati dai clienti. Sul disco del server vanno bene per provare; in produzione meglio Amazon S3. Le foto già caricate restano dove sono e si vedono lo stesso.',
+    'posta'    => 'Conferma dell\'email, recupero della password e promemoria. Finché resta «Non spedire», le email finiscono in storage/logs/mail.log.',
+    'archivio' => 'Le foto e i PDF caricati dai clienti. Sul disco del server vanno bene per provare; in produzione meglio Amazon S3. I file già caricati restano dove sono e si vedono lo stesso.',
 ]; ?>
 <div class="stack stack--lg" style="max-width:860px">
   <div class="saluto" style="margin-bottom:0"><div><h1>Impostazioni.</h1>
-    <p>Pagamenti, posta e archivio delle foto. I valori si salvano solo su questo server, nel file <code>app/config.local.php</code>: non finiscono nel codice né nel pacchetto. Per salvare serve la tua password.</p></div></div>
+    <p>Pagamenti, posta e archivio di foto e PDF. I valori si salvano solo su questo server, nel file <code>app/config.local.php</code>: non finiscono nel codice né nel pacchetto. Per salvare serve la tua password.</p></div></div>
 
   <?php if (!$scrivibile): ?>
     <p class="note note--err" role="alert">La cartella <code>app/</code> non è scrivibile dal sito: puoi vedere le impostazioni ma non salvarle. Dai i permessi di scrittura alla cartella (o al file <code>config.local.php</code>), oppure scrivi il file a mano partendo da <code>config.local.esempio.php</code>.</p>
@@ -47,7 +47,7 @@ $intro = [
     <?php endif; ?>
 
     <?php if (isset($err['_'])): ?><p class="note note--err" role="alert"><?= Support::e($err['_']) ?></p><?php endif; ?>
-    <?php if ($err && !isset($err['_'])): ?><p class="note note--err" role="alert">Non ho salvato niente: correggi i campi segnati qui sotto.</p><?php endif; ?>
+    <?php if ($err && !isset($err['_'])): ?><p class="note note--err" role="alert">Niente è stato salvato: correggi i campi segnati qui sotto.</p><?php endif; ?>
 
     <form method="post" action="<?= b() ?>/admin/impostazioni/<?= $g ?>" class="stack" style="gap:16px" autocomplete="off" novalidate><?= Csrf::field() ?>
       <div class="impostazioni__campi">

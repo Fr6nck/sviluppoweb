@@ -148,7 +148,7 @@ final class Entitlements
         $troppe = array_diff($lingue, $consentite);
         if ($troppe) {
             $nomi = array_map(fn($l) => Config::get('locales')[$l] ?? $l, $troppe);
-            $fuori[] = 'Il piano non comprende: ' . implode(', ', $nomi) . '. Togli queste lingue dalla pubblicazione.';
+            $fuori[] = 'Il piano non comprende: ' . implode(', ', $nomi) . '. Togli queste lingue da quelle della guida.';
         }
 
         if (!self::can($accountId, 'photos')) {
@@ -156,16 +156,16 @@ final class Entitlements
                  + (int) Db::val('SELECT COUNT(*) FROM places pl JOIN sections s ON s.id = pl.section_id
                                   WHERE s.property_id = ? AND s.is_active = 1 AND pl.media_id IS NOT NULL', [$propertyId], 0);
             $img += self::mediaNelleRighe($propertyId, 'image');
-            if ($img) $fuori[] = "Ci sono $img immagini dentro le sezioni: il piano non le comprende. Toglile, oppure passa a Plus.";
+            if ($img) $fuori[] = ($img === 1 ? "C'è 1 foto nelle sezioni: il piano non la comprende. Toglila" : "Ci sono $img foto nelle sezioni: il piano non le comprende. Toglile") . ', oppure passa a Plus.';
         }
         if (!self::can($accountId, 'pdf')) {
             $pdf = (int) Db::val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_active = 1 AND pdf_media_id IS NOT NULL', [$propertyId], 0)
                  + self::mediaNelleRighe($propertyId, 'pdf');
-            if ($pdf) $fuori[] = "Ci sono $pdf PDF dentro le sezioni: il piano non li comprende. Toglili, oppure passa a Plus.";
+            if ($pdf) $fuori[] = ($pdf === 1 ? "C'è 1 PDF nelle sezioni: il piano non lo comprende. Toglilo" : "Ci sono $pdf PDF nelle sezioni: il piano non li comprende. Toglili") . ', oppure passa a Plus.';
         }
         if (!self::can($accountId, 'profile_image')) {
             if (Db::val('SELECT profile_media_id FROM properties WHERE id = ?', [$propertyId])) {
-                $fuori[] = "L'immagine profilo non è compresa nel piano. Toglila, oppure passa a Plus.";
+                $fuori[] = "La foto profilo non è compresa nel piano. Toglila, oppure passa a Plus.";
             }
         }
         $maxProp = self::limit($accountId, 'properties', 1);

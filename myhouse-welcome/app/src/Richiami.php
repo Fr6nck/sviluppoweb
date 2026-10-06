@@ -21,9 +21,9 @@ namespace MHW;
  */
 final class Richiami
 {
-    public const TIPI = ['arrivo' => 'promemoria sull\'arrivo', 'sezioni' => 'promemoria sulle sezioni',
-                         'pubblica' => 'promemoria sulla pubblicazione', 'rinnovo' => 'avviso prima del rinnovo',
-                         'eventi' => 'promemoria sugli eventi passati', 'inviti' => 'promemoria sugli inviti'];
+    public const TIPI = ['arrivo' => 'il promemoria sul check-in', 'sezioni' => 'il promemoria sulle sezioni',
+                         'pubblica' => 'il promemoria sulla pubblicazione', 'rinnovo' => 'l\'avviso prima del rinnovo',
+                         'eventi' => 'il promemoria sugli eventi passati', 'inviti' => 'il promemoria sugli inviti'];   // con l'articolo: «Non vuoi più ricevere …?»
     private const OGNI = 900;   // secondi tra un controllo e l'altro
 
     public static function disponibili(): bool { return Migrator::tableExists('email_log'); }
@@ -115,15 +115,15 @@ final class Richiami
         $nome = $p['name']; $base = Support::baseUrl() . '/pannello/' . (int) $p['id'] . '/procedura/';
         return match ($tipo) {
             'arrivo' => ["Come si entra a $nome?",
-                         "hai cominciato la guida di $nome. Manca la parte che gli ospiti cercano per prima: come si entra, a che ora, dove sono le chiavi. Bastano cinque minuti.",
-                         "Scrivi l'arrivo", $base . 'arrivo'],
+                         "hai cominciato la guida di $nome. Manca la parte che gli ospiti cercano per prima: come si entra, a che ora, dove sono le chiavi. Bastano pochi minuti.",
+                         'Compila Check-in & Check-out', $base . 'arrivo'],
             'sezioni' => ["Wi-Fi, regole, consigli: aggiungili a $nome",
-                          "la guida di $nome ha l'arrivo, ma ancora nessuna sezione. Wi-Fi, regole della casa, dove mangiare: scegli quelle che servono, si compilano in pochi minuti.",
+                          "la guida di $nome ha già Check-in & Check-out, ma ancora nessun'altra sezione. Wi-Fi, regole della casa, dove mangiare: scegli quelle che servono, si compilano in pochi minuti.",
                           'Scegli le sezioni', $base . 'sezioni'],
             default => ["$nome è quasi pronta",
                         "la guida di $nome non è ancora online. Guarda l'anteprima come la vedranno gli ospiti e, quando ti convince, pubblicala"
                         . (Subscriptions::active((int) $p['account_id']) ? ': è già compresa nel tuo abbonamento.' : ': paghi solo quando pubblichi.'),
-                        "Guarda l'anteprima e pubblica", $base . 'pubblica'],
+                        "Apri l'anteprima e pubblica", $base . 'pubblica'],
         };
     }
 
@@ -136,7 +136,7 @@ final class Richiami
         $guide = (int) Db::val("SELECT COUNT(*) FROM properties WHERE account_id = ? AND status = 'published' AND archived_at IS NULL", [$s['account_id']], 0);
         $quando = Support::date((string) $s['current_period_end']);
         $numeri = $aperture > 0
-            ? "In quest'anno " . ($guide === 1 ? 'la tua guida è stata aperta' : "le tue $guide guide sono state aperte") . " $aperture volte" . ($qr > 0 ? ", $qr delle quali dal QR Code" : '') . '.'
+            ? "In quest'anno " . ($guide === 1 ? 'la tua guida è stata aperta' : "le tue $guide guide sono state aperte") . " $aperture volte" . ($qr > 0 ? ", $qr delle quali dal QR" : '') . '.'
             : "Quest'anno non abbiamo ancora registrato aperture: controlla che il QR sia in vista e che il link arrivi agli ospiti prima dell'arrivo.";
         // Invita un amico: lo sconto già guadagnato, oppure come abbassare il rinnovo finché c'è tempo.
         if (Inviti::disponibili()) {
@@ -161,7 +161,7 @@ final class Richiami
         [$oggetto, $corpo, $bottone, $url] = $m;
         $stop = Support::baseUrl() . '/email/stop/' . $token;
         $saluto = 'Ciao' . (trim($nome) !== '' ? ' ' . trim(explode(' ', trim($nome))[0]) : '') . ',';
-        $testo = "$saluto\n\n$corpo\n\n$bottone: $url\n\nMyHouse Welcome\n\n—\nNon vuoi più ricevere il " . self::TIPI[$tipo] . "? $stop";
+        $testo = "$saluto\n\n$corpo\n\n$bottone: $url\n\nMyHouse Welcome\n\n—\nNon vuoi più ricevere " . self::TIPI[$tipo] . "? $stop";
         $e = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
         $html = '<!doctype html><html lang="it"><body style="margin:0;padding:24px;background:#faf5ec;font-family:Arial,sans-serif;color:#231b12">'
               . '<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:16px;padding:28px">'
@@ -169,7 +169,7 @@ final class Richiami
               . '<p style="font-size:16px;line-height:24px;margin:0 0 24px">' . $e($corpo) . '</p>'
               . '<p style="margin:0 0 24px"><a href="' . $e($url) . '" style="display:inline-block;background:#b4451f;color:#fff8f2;text-decoration:none;font-weight:bold;padding:14px 22px;border-radius:999px">' . $e($bottone) . '</a></p>'
               . '<p style="font-size:14px;color:#6a5b48;margin:0">MyHouse Welcome</p></div>'
-              . '<p style="max-width:520px;margin:16px auto 0;font-size:12px;line-height:18px;color:#6a5b48">Non vuoi più ricevere il ' . $e(self::TIPI[$tipo])
+              . '<p style="max-width:520px;margin:16px auto 0;font-size:12px;line-height:18px;color:#6a5b48">Non vuoi più ricevere ' . $e(self::TIPI[$tipo])
               . '? <a href="' . $e($stop) . '" style="color:#6a5b48">Non mandarmene più</a></p></body></html>';
         $ok = Mailer::send($email, $oggetto . ' — MyHouse Welcome', $testo, $html);
         if (!$ok) Db::run('DELETE FROM email_log WHERE token = ?', [$token]);   // si riproverà al prossimo giro

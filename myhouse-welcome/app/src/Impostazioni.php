@@ -39,7 +39,7 @@ final class Impostazioni
             'mail.from_name'  => ['MAIL_FROM_NAME', 'Nome del mittente', 'text', ''],
         ],
         'archivio' => [
-            'storage.driver'             => ['MHW_STORAGE', 'Dove si salvano le foto nuove', 'choice', '', ['s3' => 'Amazon S3 (consigliato in produzione)', 'local' => 'Sul disco del server']],
+            'storage.driver'             => ['MHW_STORAGE', 'Dove si salvano i file nuovi', 'choice', '', ['s3' => 'Amazon S3 (consigliato in produzione)', 'local' => 'Sul disco del server']],
             'storage.s3.region'          => ['AWS_REGION', 'Regione', 'text', 'Per esempio eu-south-1 (Milano).'],
             'storage.s3.bucket'          => ['AWS_S3_BUCKET', 'Bucket', 'text', ''],
             'storage.s3.key'             => ['AWS_ACCESS_KEY_ID', 'Access key ID', 'text', 'Di un utente IAM con s3:PutObject, s3:GetObject e s3:DeleteObject su questo bucket.'],
@@ -48,7 +48,7 @@ final class Impostazioni
         ],
     ];
 
-    public const TITOLI = ['stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio delle foto'];
+    public const TITOLI = ['stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF'];
 
     public static function file(): string { return MHW_APP . '/config.local.php'; }
 
@@ -205,7 +205,7 @@ final class Impostazioni
         $f = self::file();
         $dir = dirname($f);
         if (!is_writable($dir) && !(is_file($f) && is_writable($f))) {
-            throw new \RuntimeException('Non riesco a scrivere app/config.local.php: dai i permessi di scrittura alla cartella app/ (o al file), oppure crealo a mano dal modello config.local.esempio.php.');
+            throw new \RuntimeException('Non si riesce a scrivere app/config.local.php: dai i permessi di scrittura alla cartella app/ (o al file), oppure crealo a mano dal modello config.local.esempio.php.');
         }
         $testo = "<?php\n// Impostazioni di questo server: segreti compresi. Escluso dal repository e dal pacchetto.\n"
                . "// Lo riscrive anche Amministrazione → Impostazioni: i commenti scritti a mano non si conservano\n"
@@ -213,10 +213,10 @@ final class Impostazioni
                . 'return ' . var_export($dati, true) . ";\n";
         if (is_file($f)) @copy($f, $dir . '/config.local.bak.php');
         $tmp = $dir . '/.config.local.' . bin2hex(random_bytes(6)) . '.php';
-        if (@file_put_contents($tmp, $testo, LOCK_EX) === false) throw new \RuntimeException('Non riesco a scrivere nella cartella app/: controlla i permessi.');
+        if (@file_put_contents($tmp, $testo, LOCK_EX) === false) throw new \RuntimeException('Non si riesce a scrivere nella cartella app/: controlla i permessi.');
         @chmod($tmp, 0640);
         if (!@rename($tmp, $f)) {
-            if (@file_put_contents($f, $testo, LOCK_EX) === false) { @unlink($tmp); throw new \RuntimeException('Non riesco a sostituire app/config.local.php: controlla i permessi.'); }
+            if (@file_put_contents($f, $testo, LOCK_EX) === false) { @unlink($tmp); throw new \RuntimeException('Non si riesce a sostituire app/config.local.php: controlla i permessi.'); }
             @unlink($tmp);
         }
         if (function_exists('opcache_invalidate')) @opcache_invalidate($f, true);
@@ -258,7 +258,7 @@ final class Impostazioni
                     return [true, $t === 'log' ? 'La posta è in modalità prova: l\'email è finita in storage/logs/mail.log, non nella casella.' : 'Email di prova spedita a ' . $emailAdmin . ': controlla la casella (anche lo spam).'];
                 case 'archivio':
                     $cfg = Config::get('storage');
-                    if (($cfg['driver'] ?? '') !== 's3') return [true, 'Le foto si salvano sul disco del server: non c\'è niente da collegare.'];
+                    if (($cfg['driver'] ?? '') !== 's3') return [true, 'Foto e PDF si salvano sul disco del server: non c\'è niente da collegare.'];
                     $s3 = new S3Storage($cfg['s3']);
                     $chiave = '_prova/' . bin2hex(random_bytes(8)) . '.txt';
                     $s3->put($chiave, 'prova', 'text/plain');

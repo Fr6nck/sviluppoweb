@@ -7,7 +7,7 @@ $link = Support::baseUrl() . '/g/' . $prop['slug'];
 $corto = Support::baseUrl() . '/q/' . $qr['token']; ?>
 <div class="grid grid-2" style="align-items:start;gap:24px">
   <div class="qr-sheet" style="text-align:center">
-    <img src="<?= b() ?>/qr/<?= Support::e($qr['token']) ?>.png" alt="QR Code della guida di <?= Support::e($prop['name']) ?>" width="280" height="280">
+    <img src="<?= b() ?>/qr/<?= Support::e($qr['token']) ?>.png" alt="QR della guida di <?= Support::e($prop['name']) ?>" width="280" height="280">
     <p class="small" style="margin-top:12px;color:#231b12">Inquadra per aprire la guida</p>
   </div>
   <div class="stack">

@@ -1,20 +1,20 @@
 <?php
-/* Pacchetti e versioni. Cambiare prezzo o funzioni crea una versione nuova:
-   chi ha già comprato resta sulla sua. I testi commerciali si cambiano sul
-   pacchetto e compaiono subito sulla landing. */
+/* Piani e versioni (nel database: pacchetti). Cambiare prezzo o funzioni crea una
+   versione nuova: chi ha già comprato resta sulla sua. I testi commerciali si
+   cambiano sul piano e compaiono subito sulla landing. */
 use function MHW\b;
 use MHW\{Support, Csrf, Plans};
-$title = 'Pacchetti'; ?>
+$title = 'Piani'; ?>
 <div class="stack stack--lg">
   <div class="stack stack--sm">
-    <h1>Pacchetti.</h1>
+    <h1>Piani.</h1>
     <p class="muted small">Prezzi IVA esclusa, annuali. Una versione venduta non si modifica mai: si crea la successiva. Il Price ID di Stripe è facoltativo:
       se manca, il checkout usa il prezzo della versione.</p>
   </div>
 
   <?php
   /* Le funzioni come si leggono: «4 sezioni · 2 lingue · Logo», non «sections=4». */
-  $nomiBrevi = ['photos' => 'Foto nelle sezioni', 'pdf' => 'PDF', 'logo' => 'Logo', 'cover' => 'Copertina', 'profile_image' => 'Immagine profilo',
+  $nomiBrevi = ['photos' => 'Foto nelle sezioni', 'pdf' => 'PDF', 'logo' => 'Logo', 'cover' => 'Copertina', 'profile_image' => 'Foto profilo',
                 'palette' => 'Colori', 'places' => 'Luoghi consigliati', 'analytics' => 'Statistiche', 'branding' => 'Marchio personalizzato'];
   $etichettaDi = array_column($features, 'label', 'code');
   $etichette = function (array $v) use ($nomiBrevi, $etichettaDi): array {

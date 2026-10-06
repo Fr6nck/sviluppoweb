@@ -15,7 +15,7 @@ $title = 'Copia sezioni — ' . $prop['name']; $pid = (int) $prop['id']; ?>
       <select id="da" name="da">
         <?php foreach ($origini as $o): ?><option value="<?= (int) $o['id'] ?>" <?= (int) $o['id'] === (int) ($da['id'] ?? 0) ? 'selected' : '' ?>><?= Support::e($o['name']) ?></option><?php endforeach; ?>
       </select></div>
-    <button class="btn btn--ghost btn--sm">Mostra cosa c'è</button>
+    <button class="btn btn--ghost btn--sm">Mostra le sezioni</button>
   </form>
   <?php if ($da): ?>
     <?php if (!$proposta['sezioni'] && !$proposta['logo'] && !$proposta['contatti']): ?>

@@ -44,6 +44,13 @@ namespace MHW;
  *
  * 'group' (fase 6C) dice in quale gruppo sta la sezione nella home: casa, arrivo, territorio.
  *
+ * Ogni sezione ha due testi per l'host, scritti tutti allo stesso modo:
+ *   'breve' — una riga sotto il nome, nel catalogo «Aggiungi una sezione»: che cosa contiene;
+ *   'intro' — il riquadro sotto il titolo, nell'editor: prima a cosa serve all'ospite, poi come
+ *             compilarla o che cosa va invece in un'altra sezione. Due frasi, tre al massimo.
+ * Negli aiuti dei campi, «Facoltativo.» in testa diventa «(facoltativo)» accanto all'etichetta
+ * (vedi facoltativo()): l'aiuto resta per l'esempio.
+ *
  * `places: true` vuol dire che la sezione contiene schede di luoghi.
  * Check-in & Check-out è il nucleo: c'è sempre, non si disattiva e non conta
  * nel limite delle sezioni del piano.
@@ -53,26 +60,28 @@ final class SectionCatalog
     private const K = [
         'checkin' => [
             'icon' => 'home', 'core' => true, 'group' => 'casa',
-            'intro' => 'Il blocco fondamentale: come si entra e cosa fare prima di partire. È sempre incluso.',
+            'intro' => 'Come si entra, cosa serve all\'arrivo e cosa fare prima di partire: è la sezione che l\'ospite apre per prima, ed è sempre inclusa. Non scrivere qui i codici di porte o cassette delle chiavi: mandali all\'ospite in privato.',
             // La partenza era fatta di cinque caselle fisse (checkout_keys, _waste, _lights,
             // _climate, _windows): dalla 009 è una lista ordinabile. I vecchi campi restano
             // nel JSON ma non si leggono più (Conversione::sezione li porta nella lista).
             'fields' => [
                 'arrival_mode'    => ['choice', 'Come si entra', '', 'options' => ['self' => 'Self check-in', 'accoglienza' => 'Ti accolgo io', 'cassetta' => 'Cassetta delle chiavi']],
-                'checkin_steps'   => ['steps', 'Passaggi per entrare', 'Un passaggio per riga: dove sono le chiavi, come si apre, dove si parcheggia la valigia.'],
+                'checkin_steps'   => ['steps', 'Passaggi per entrare', 'Un passaggio per riga: dove sono le chiavi, come si apre il portone, a che piano si sale.'],
                 'late_arrival'    => ['textarea', 'Arrivo tardivo', 'Facoltativo. Cosa fare se si arriva tardi, per esempio dopo le 21.'],
                 'documents'       => ['textarea', 'Documenti da mostrare', 'Facoltativo. Per esempio: un documento d\'identità per ogni ospite, per la registrazione obbligatoria.'],
                 'tax_amount'      => ['plain', 'Imposta di soggiorno — importo per notte', 'Facoltativo. Per esempio: 2,00 € a persona.'],
                 'tax_max_nights'  => ['plain', 'Imposta di soggiorno — per quante notti al massimo', 'Facoltativo. Per esempio: 5.'],
                 'tax_notes'       => ['textarea', 'Imposta di soggiorno — esenzioni e pagamento', 'Facoltativo. Per esempio: sotto i 14 anni esenti; in contanti all\'arrivo.'],
-                'checkin_note'    => ['textarea', 'Nota importante', 'Facoltativa.'],
-                'checkout_steps'  => ['steps', 'Prima di partire', 'Una cosa per riga. Tocca un suggerimento per aggiungerlo, poi scrivilo come preferisci.',
+                'checkin_note'    => ['textarea', 'Nota importante', 'Facoltativa. Nella guida compare in evidenza, in un riquadro.'],
+                'checkout_steps'  => ['steps', 'Prima di partire', 'Una voce per riga. Tocca un suggerimento per aggiungerlo, poi modificalo come preferisci.',
                                       'suggest' => ['keys', 'waste', 'lights', 'climate', 'windows', 'dishwasher', 'towels']],
-                'checkout_notes'  => ['textarea', 'Note finali', 'Un saluto, un\'ultima raccomandazione.'],
+                'checkout_notes'  => ['textarea', 'Saluto finale', 'Facoltativo. Un grazie, un\'ultima raccomandazione: l\'ospite lo legge quando sta per partire.'],
             ],
         ],
         'wifi' => [
             'icon' => 'wifi', 'group' => 'casa',
+            'breve' => 'Nome della rete e password, da copiare con un tocco.',
+            'intro' => 'Il nome della rete e la password: l\'ospite la copia con un tocco, senza chiedertela. Se hai più reti, aggiungi una riga per ognuna e indica la zona che copre.',
             // Più reti (dalla 010): una riga per rete. La rete singola di prima
             // (network, password) diventa la prima riga.
             'fields' => [
@@ -84,24 +93,26 @@ final class SectionCatalog
                                           'zone'     => ['text', 'Zona', 'Facoltativa. Per esempio: Casa principale, Dependance.', 'w' => 12, 'solo_piu' => true],
                                       ]],
                 'instructions'    => ['textarea', 'Istruzioni', 'Facoltative. Cosa fare se la rete non si vede.'],
-                'router_location' => ['text', 'Dove si trova il router', 'Facoltativo.'],
+                'router_location' => ['text', 'Dove si trova il router', 'Facoltativo. Serve se bisogna spegnerlo e riaccenderlo.'],
             ],
         ],
         // Servizi (dalla 011): dotazioni da spuntare e istruzioni con foto e PDF. La vecchia
         // lista resta com'era, come «Altre dotazioni».
         'services' => [
             'icon' => 'washer', 'group' => 'casa',
+            'breve' => 'Le dotazioni e le istruzioni per usarle.',
+            'intro' => 'Quello che gli ospiti trovano nella struttura e come si usa: spunta le dotazioni e aggiungi le istruzioni per caldaia, lavatrice, piano cottura. I servizi che offri a parte, di solito a pagamento, vanno in «Servizi extra».',
             'fields' => [
                 // Le opzioni arrivano da Tassonomie::DOTAZIONI (fase 6), con le etichette amen_<chiave>.
-                'amenities' => ['checks', 'Dotazioni', 'Spunta quello che trovano in casa.', 'options' => [], 'tassonomia' => 'dotazioni'],
+                'amenities' => ['checks', 'Dotazioni', 'Spunta quello che gli ospiti trovano nella struttura.', 'options' => [], 'tassonomia' => 'dotazioni'],
                 // Le dotazioni scritte a mano: nella guida stanno nello stesso elenco di quelle spuntate.
-                'items' => ['list', 'Le tue dotazioni', 'Quelle che non trovi nell\'elenco.', 'pillole' => true, 'add' => 'Aggiungi una dotazione'],
-                'manuals' => ['repeater', 'Istruzioni', 'Come si accende la caldaia, come funziona la lavatrice: titolo, passaggi, una foto, un PDF.',
+                'items' => ['list', 'Altre dotazioni', 'Quelle che non trovi nell\'elenco qui sopra: nella guida compaiono insieme alle altre.', 'pillole' => true, 'add' => 'Aggiungi una dotazione'],
+                'manuals' => ['repeater', 'Istruzioni', 'Una riga per ogni cosa da spiegare: come si accende la caldaia, come funziona la lavatrice. Titolo, passaggi, una foto, un PDF.',
                               'add' => 'Aggiungi un\'istruzione', 'item' => 'Istruzione', 'max' => 10, 'sub' => [
                                   'title' => ['text', 'Titolo', 'Per esempio: La caldaia.', 'w' => 12],
-                                  'steps' => ['textarea', 'Passaggi', 'Uno per riga.', 'lines' => true],
+                                  'steps' => ['textarea', 'Passaggi', 'Un passaggio per riga.', 'lines' => true],
                                   'photo' => ['image', 'Foto', 'Facoltativa.'],
-                                  'pdf'   => ['pdf', 'PDF', 'Facoltativo. Per esempio il manuale.'],
+                                  'pdf'   => ['pdf', 'PDF', 'Facoltativo. Per esempio: il manuale.'],
                               ]],
                 'note'  => ['textarea', 'Nota', 'Facoltativa.'],
             ],
@@ -110,6 +121,8 @@ final class SectionCatalog
         // late check-out. Ogni riga ha «Richiedi su WhatsApp» nella guida.
         'extras' => [
             'icon' => 'euro', 'group' => 'casa',
+            'breve' => 'Transfer, colazione, late check-out: i servizi a richiesta.',
+            'intro' => 'I servizi che offri in più, di solito a pagamento: transfer, colazione, late check-out. Nella guida ogni servizio ha il pulsante «Richiedi su WhatsApp»: perché compaia, in Impostazioni serve un contatto che risponde su WhatsApp.',
             'fields' => [
                 // Il prezzo (fase 6C): importo e unità uguali in ogni lingua, più una nota tradotta.
                 // Il vecchio «price» scritto a mano resta nel JSON (Conversione::prezziExtra).
@@ -117,7 +130,7 @@ final class SectionCatalog
                             'add' => 'Aggiungi un servizio', 'item' => 'Servizio', 'max' => 12, 'sub' => [
                                 'title'       => ['text', 'Titolo', 'Per esempio: Transfer dalla stazione.', 'w' => 6],
                                 'amount'      => ['money', 'Prezzo', 'Facoltativo.', 'w' => 2],
-                                'unit'        => ['choice', 'Unità', '', 'w' => 4, 'options' => [], 'tassonomia' => 'unita'],
+                                'unit'        => ['choice', 'Unità del prezzo', '', 'w' => 4, 'options' => [], 'tassonomia' => 'unita'],
                                 'description' => ['textarea', 'Descrizione', 'Facoltativa.'],
                                 'price_note'  => ['text', 'Nota sul prezzo', 'Facoltativa. Per esempio: gratis sotto i 3 anni.', 'w' => 12],
                                 'photo'       => ['image', 'Foto', 'Facoltativa.'],
@@ -129,29 +142,32 @@ final class SectionCatalog
         // resta com'era, come «Regole aggiuntive».
         'rules' => [
             'icon' => 'doc', 'group' => 'casa',
+            'breve' => 'Fumo, animali, feste, orario del silenzio.',
+            'intro' => 'Le regole della struttura, dette una volta e con chiarezza: evitano equivoci durante il soggiorno. Scegli le principali tra quelle pronte, che nella guida si traducono da sole, e aggiungi le tue.',
             'fields' => [
-                'flags' => ['toggles', 'Le regole principali', 'Sì, no, o lascia «non indicato».', 'options' => [
+                'flags' => ['toggles', 'Le regole principali', 'Scegli la frase che l\'ospite leggerà nella guida. Con «Non indicato» la regola non compare.', 'options' => [
                     'smoking' => 'Fumo', 'pets' => 'Animali', 'parties' => 'Feste', 'visitors' => 'Visitatori esterni']],
                 // Orario del silenzio (fase 6): un interruttore; spento, i due orari si svuotano.
                 // Sulle sezioni salvate prima vale acceso se c'è almeno un orario (si calcola in lettura).
-                'quiet_on'   => ['check', 'Orario del silenzio', 'Spento: nella guida non compare.'],
+                'quiet_on'   => ['check', 'Indica un orario del silenzio', 'Per esempio dalle 22:00 alle 08:00. Se lo spegni, nella guida non compare.'],
                 'quiet_from' => ['time', 'Dalle', '', 'se' => 'quiet_on', 'default' => '22:00'],
                 'quiet_to'   => ['time', 'Alle', '', 'se' => 'quiet_on', 'default' => '08:00'],
-                'items' => ['list', 'Regole aggiuntive', 'Una per riga.'],
+                'items' => ['list', 'Regole aggiuntive', 'Una regola per riga.'],
                 'note'  => ['textarea', 'Nota', 'Facoltativa.'],
             ],
         ],
         // Come arrivare (dalla 011): una scheda per mezzo. I vecchi passaggi diventano la prima scheda.
         'arrival' => [
             'icon' => 'pin', 'group' => 'arrivo',
-            'intro' => 'Il viaggio fino alla porta di casa: da dove arriva l\'ospite (autostrada, stazione, aeroporto) e come raggiunge la struttura. Gli spostamenti durante il soggiorno vanno in «Muoversi in zona».',
+            'breve' => 'Indirizzo, mappa e indicazioni per ogni mezzo.',
+            'intro' => 'Il viaggio fino alla porta: da dove arriva l\'ospite (autostrada, stazione, aeroporto) e come raggiunge la struttura. Gli spostamenti durante il soggiorno vanno in «Muoversi in zona».',
             'fields' => [
                 'address'  => ['plain', 'Indirizzo', ''],
-                'maps_url' => ['url', 'Link a Google Maps', 'Facoltativo. Se manca, si usa l\'indirizzo.'],
-                'routes'   => ['repeater', 'Come arrivare', 'Una scheda per mezzo: in auto, in treno, in aereo, in autobus. L\'ospite legge solo quella che gli serve.',
+                'maps_url' => ['url', 'Link a Google Maps', 'Facoltativo. Se manca, la mappa si apre sull\'indirizzo.'],
+                'routes'   => ['repeater', 'Indicazioni per mezzo', 'Una riga per mezzo: in auto, in treno, in aereo, in autobus. L\'ospite legge solo quella che gli serve.',
                                'add' => 'Aggiungi un mezzo', 'item' => 'Mezzo', 'max' => 6, 'sub' => [
                                    'mode'  => ['choice', 'Mezzo', '', 'w' => 4, 'options' => ['' => 'Indicazioni', 'auto' => 'In auto', 'treno' => 'In treno', 'aereo' => 'In aereo', 'autobus' => 'In autobus']],
-                                   'steps' => ['textarea', 'Passaggi', 'Uno per riga.', 'lines' => true, 'w' => 8],
+                                   'steps' => ['textarea', 'Passaggi', 'Un passaggio per riga.', 'lines' => true, 'w' => 8],
                                ]],
                 'note'     => ['textarea', 'Nota', 'Facoltativa.'],
             ],
@@ -160,9 +176,10 @@ final class SectionCatalog
         // resta nel JSON e diventa schede di tipo «Altro» (Conversione::muoversi).
         'transport' => [
             'icon' => 'bus', 'group' => 'arrivo',
-            'intro' => 'Una volta arrivati: come ci si sposta durante il soggiorno. Autobus, taxi, noleggi, navette, scale mobili. Le indicazioni per raggiungere la casa vanno in «Come arrivare».',
+            'breve' => 'Autobus, taxi, noleggi e navette durante il soggiorno.',
+            'intro' => 'Come ci si sposta durante il soggiorno: autobus, taxi, noleggi, navette, scale mobili. Le indicazioni per raggiungere la struttura vanno in «Come arrivare».',
             'fields' => [
-                'options' => ['repeater', 'Come muoversi', 'Una scheda per ogni modo: la linea dell\'autobus, il taxi, chi noleggia le bici.',
+                'options' => ['repeater', 'Come muoversi', 'Una riga per ogni modo di muoversi: la linea dell\'autobus, il taxi, chi noleggia le bici.',
                               'add' => 'Aggiungi una voce', 'item' => 'Voce', 'max' => 12,
                               // Righe pronte: il tipo è già scelto, il nome si scrive (niente nome precompilato).
                               'presets' => ['move.taxi' => ['type' => 'taxi'], 'move.bus' => ['type' => 'bus'], 'move.bike_rental' => ['type' => 'bike_rental']], 'preset_nome' => false,
@@ -170,7 +187,7 @@ final class SectionCatalog
                                   'type'  => ['choice', 'Tipo', '', 'w' => 12, 'pillole' => true, 'options' => [], 'tassonomia' => 'muoversi'],
                                   'name'  => ['text', 'Nome', 'Per esempio: la linea per il centro.', 'w' => 6],
                                   'phone' => ['tel', 'Telefono', 'Facoltativo.', 'w' => 3],
-                                  'url'   => ['url', 'Sito', 'Facoltativo.', 'w' => 3],
+                                  'url'   => ['url', 'Sito web', 'Facoltativo.', 'w' => 3],
                                   'where' => ['text', 'Dove si prende', 'Facoltativo. Per esempio: la fermata davanti alla farmacia.', 'w' => 12],
                                   'note'  => ['textarea', 'Orari, biglietti, costi', 'Facoltativo.'],
                               ]],
@@ -181,6 +198,8 @@ final class SectionCatalog
         // Il parcheggio di prima (tipo, indirizzo, link, istruzioni, costo) diventa la prima riga.
         'parking' => [
             'icon' => 'car', 'group' => 'arrivo',
+            'breve' => 'Dove lasciare l\'auto, quanto costa, la ZTL.',
+            'intro' => 'Dove lasciare l\'auto: una riga per ogni possibilità, con il costo e i minuti a piedi dalla struttura. Se c\'è una ZTL, scrivi orari e varchi: eviti le multe ai tuoi ospiti.',
             'fields' => [
                 'options' => ['repeater', 'Dove parcheggiare', 'Una riga per ogni possibilità: posto privato, parcheggio pubblico, garage…',
                               'add' => 'Aggiungi un parcheggio', 'item' => 'Parcheggio', 'max' => 8, 'sub' => [
@@ -190,69 +209,81 @@ final class SectionCatalog
                                   'address'      => ['plain', 'Indirizzo', '', 'w' => 6],
                                   'maps_url'     => ['url', 'Link a Google Maps', 'Facoltativo.', 'w' => 6],
                                   // Fase 6C: il costo scritto a mano diventa due importi e una nota (Conversione::costiParcheggio).
-                                  'cost_hour'    => ['money', 'All\'ora', '', 'w' => 3, 'nascosto_con' => ['type', ['privato', 'pubblico']]],
-                                  'cost_day'     => ['money', 'Al giorno', '', 'w' => 3, 'nascosto_con' => ['type', ['privato', 'pubblico']]],
+                                  'cost_hour'    => ['money', 'Costo all\'ora', '', 'w' => 3, 'nascosto_con' => ['type', ['privato', 'pubblico']]],
+                                  'cost_day'     => ['money', 'Costo al giorno', '', 'w' => 3, 'nascosto_con' => ['type', ['privato', 'pubblico']]],
                                   'cost_note'    => ['text', 'Nota sul costo', 'Facoltativa. Per esempio: gratis la domenica.', 'w' => 8],
-                                  'walk_minutes' => ['plain', 'Minuti a piedi', 'Dalla casa.', 'w' => 4, 'cifre' => true],
-                                  'instructions' => ['textarea', 'Istruzioni', ''],
+                                  'walk_minutes' => ['plain', 'Minuti a piedi', 'Dalla struttura.', 'w' => 4, 'cifre' => true],
+                                  'instructions' => ['textarea', 'Istruzioni', 'Facoltative. Per esempio: il cancello si apre con il telecomando che trovi all\'ingresso.'],
                                   'photo'        => ['image', 'Foto', 'Facoltativa.'],
                               ]],
-                'ztl' => ['textarea', 'ZTL', 'Facoltativo. Orari e varchi della zona a traffico limitato: evita le multe agli ospiti.'],
+                'ztl' => ['textarea', 'ZTL', 'Facoltativo. Orari e varchi della zona a traffico limitato.'],
             ],
         ],
         // Rifiuti (dalla 011): una riga per tipo, con i giorni, il colore del bidone e dove si
         // trova. Le vecchie voci «una per riga» diventano righe col testo nella descrizione.
         'waste' => [
             'icon' => 'bin', 'group' => 'casa',
+            'breve' => 'Giorni di raccolta, colore dei bidoni, dove si trovano.',
+            'intro' => 'Come funziona la raccolta differenziata da te: cosa va dove, in quali giorni e in quale bidone. Chi arriva da fuori non conosce le regole del tuo Comune: qui le trova già pronte.',
             'fields' => [
-                'bins' => ['repeater', 'Raccolta differenziata', 'Una riga per tipo di rifiuto: i giorni in cui si porta fuori, il colore del bidone, dove si trova.',
+                'bins' => ['repeater', 'Raccolta differenziata', 'Una riga per tipo di rifiuto: i giorni di raccolta, il colore del bidone, dove si trova.',
                            'add' => 'Aggiungi un tipo di rifiuto', 'item' => 'Rifiuto', 'max' => 12, 'sub' => [
                                'type'  => ['choice', 'Tipo', '', 'w' => 4, 'options' => ['altro' => 'Altro', 'umido' => 'Umido', 'carta' => 'Carta', 'plastica' => 'Plastica e metalli',
                                                                               'vetro' => 'Vetro', 'indifferenziato' => 'Indifferenziato']],
-                               'label' => ['text', 'Descrizione', 'Facoltativa. Per esempio: «lattine insieme alla plastica».', 'w' => 8],
+                               'label' => ['text', 'Descrizione', 'Facoltativa. Per esempio: lattine insieme alla plastica.', 'w' => 8],
                                'color' => ['choice', 'Colore del bidone', '', 'w' => 4, 'options' => ['' => 'Non indicato', 'marrone' => 'Marrone', 'giallo' => 'Giallo', 'blu' => 'Blu',
                                                                                           'verde' => 'Verde', 'grigio' => 'Grigio', 'bianco' => 'Bianco', 'rosso' => 'Rosso', 'arancione' => 'Arancione']],
                                'where' => ['text', 'Dove si trova', 'Facoltativo.', 'w' => 8],
-                               'days'  => ['days', 'Giorni in cui si porta fuori', ''],
+                               'days'  => ['days', 'Giorni di raccolta', ''],
                            ]],
-                'note'  => ['textarea', 'Nota', 'Facoltativa. Dove sono i bidoni.'],
+                'note'  => ['textarea', 'Nota', 'Facoltativa. Per esempio: dove sono i bidoni del condominio.'],
             ],
         ],
         'eat' => [
             'icon' => 'fork', 'places' => true, 'group' => 'territorio',
+            'breve' => 'Ristoranti, bar e gelaterie che consigli.',
+            'intro' => 'I posti dove mandi i tuoi ospiti a mangiare e a bere. Per ognuno bastano il link di Google Maps e due righe sul perché ti piace: sono i consigli che una ricerca online non dà.',
             'fields' => [
-                'intro'     => ['textarea', 'Introduzione', 'Una frase che presenta i tuoi consigli.'],
-                'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo. Compare firmato col tuo nome.'],
+                'intro'     => ['textarea', 'Introduzione', 'Facoltativa. Una frase che presenta i tuoi consigli.'],
+                'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo. Nella guida compare firmato con il tuo nome.'],
             ],
         ],
         'visit' => [
             'icon' => 'monument', 'places' => true, 'group' => 'territorio',
+            'breve' => 'Monumenti, borghi, musei e panorami.',
+            'intro' => 'I luoghi da vedere: monumenti, borghi, musei, panorami. Per ognuno bastano il link di Google Maps e due righe sul perché vale la visita. Le attività (escursioni, degustazioni, terme) vanno in «Cosa fare».',
             'fields' => [
-                'intro'     => ['textarea', 'Introduzione', ''],
-                'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo.'],
+                'intro'     => ['textarea', 'Introduzione', 'Facoltativa. Una frase che presenta i tuoi consigli.'],
+                'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo. Nella guida compare firmato con il tuo nome.'],
             ],
         ],
         'todo' => [
             'icon' => 'compass', 'places' => true, 'group' => 'territorio',
+            'breve' => 'Escursioni, degustazioni, terme, attività.',
+            'intro' => 'Le esperienze da vivere in zona: escursioni, degustazioni, terme, attività per i bambini. Per ognuna bastano il link di Google Maps e due righe sul perché la consigli. I luoghi da visitare vanno in «Cosa consigliamo di visitare».',
             'fields' => [
-                'intro'     => ['textarea', 'Introduzione', ''],
-                'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo.'],
+                'intro'     => ['textarea', 'Introduzione', 'Facoltativa. Una frase che presenta i tuoi consigli.'],
+                'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo. Nella guida compare firmato con il tuo nome.'],
             ],
         ],
         // Negozi e spesa (fase 6B): alimentari, forno, mercato, farmacia, bancomat.
         'shop' => [
             'icon' => 'bag', 'places' => true, 'group' => 'territorio',
+            'breve' => 'Alimentari, forno, mercato, farmacia, bancomat.',
+            'intro' => 'Dove fare la spesa e trovare quello che serve ogni giorno: alimentari, forno, mercato, farmacia, bancomat. Con un\'etichetta segnali chi è aperto la domenica o fino a tardi.',
             'fields' => [
-                'intro'     => ['textarea', 'Introduzione', 'Una frase che presenta i tuoi consigli.'],
-                'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo. Compare firmato col tuo nome.'],
+                'intro'     => ['textarea', 'Introduzione', 'Facoltativa. Una frase che presenta i tuoi consigli.'],
+                'host_note' => ['textarea', 'Il tuo consiglio personale', 'Facoltativo. Nella guida compare firmato con il tuo nome.'],
             ],
         ],
         'emergency' => [
             'icon' => 'phone', 'group' => 'arrivo',
+            'breve' => 'I numeri utili, da chiamare con un tocco.',
+            'intro' => 'I numeri da avere sotto mano se qualcosa va storto: l\'ospite li chiama con un tocco. Parti dal 112 e aggiungi guardia medica, farmacia e il tuo numero per le urgenze.',
             'fields' => [
                 'emergency_number' => ['plain', 'Numero unico di emergenza', 'In Italia è il 112.'],
                 // Dalla 011: righe nome · telefono · nota, con un «Chiama» per riga nella guida.
-                'contacts'         => ['repeater', 'Contatti utili', 'Uno per riga: guardia medica, farmacia di turno, il tuo numero per le urgenze.',
+                'contacts'         => ['repeater', 'Contatti utili', 'Una riga per contatto: guardia medica, farmacia di turno, il tuo numero per le urgenze.',
                                        'add' => 'Aggiungi un contatto', 'item' => 'Contatto', 'max' => 15,
                                        'presets' => ['emergency_number' => ['phone' => '112'], 'preset_guardia' => [], 'preset_farmacia' => [], 'preset_veterinario' => []],
                                        'sub' => [
@@ -268,10 +299,11 @@ final class SectionCatalog
         // zona sola, immagine o PDF: l'immagine va in `poster`, il PDF in `poster_pdf`.
         'events' => [
             'icon' => 'calendar', 'group' => 'territorio',
-            'intro' => 'Gli eventi passati non si vedono più nella guida. Restano qui finché non li togli.',
+            'breve' => 'Sagre, mercati e concerti, con le date.',
+            'intro' => 'Quello che succede in zona: sagre, mercati, concerti, con la data e la locandina. Gli eventi passati spariscono da soli dalla guida e restano qui finché non li togli; quelli che tornano ogni anno li riproponi con un clic.',
             'fields' => [
                 'intro'  => ['textarea', 'Introduzione', 'Facoltativa.'],
-                'events' => ['repeater', 'Eventi', 'Sagre, mercati, concerti: una scheda per evento, con la locandina.',
+                'events' => ['repeater', 'Eventi', 'Una riga per evento: sagre, mercati, concerti. Con la locandina, se c\'è.',
                              'add' => 'Aggiungi un evento', 'item' => 'Evento', 'max' => 40, 'eventi' => true, 'sub' => [
                     'name'        => ['text', 'Nome', '', 'w' => 8],
                     'cat'         => ['choice', 'Categoria', '', 'w' => 4, 'options' => [], 'tassonomia' => 'eventi'],
@@ -286,10 +318,10 @@ final class SectionCatalog
                     'when_text'   => ['text', 'Quando, a parole', 'Per esempio: la seconda domenica del mese.', 'w' => 12, 'solo_con' => ['when', ['other']]],
                     'yearly'      => ['check', 'Si ripete ogni anno nello stesso periodo', '', 'w' => 12, 'solo_con' => ['when', ['day', 'range']]],
                     'place'       => ['plain', 'Luogo', '', 'w' => 8],
-                    'dist_min'    => ['plain', 'Minuti', '', 'w' => 2, 'cifre' => true],
-                    'dist_mode'   => ['choice', 'Come', '', 'w' => 2, 'options' => ['walk' => 'a piedi', 'car' => 'in auto']],
-                    'price_kind'  => ['choice', 'Prezzo', '', 'w' => 6, 'options' => ['' => 'Non indicato', 'free' => 'Gratis', 'paid' => 'A pagamento']],
-                    'price'       => ['plain', 'Quanto', 'Per esempio: 5 €.', 'w' => 6, 'solo_con' => ['price_kind', ['paid']]],
+                    'dist_min'    => ['plain', 'Distanza (min)', '', 'w' => 2, 'cifre' => true],
+                    'dist_mode'   => ['choice', 'Mezzo', '', 'w' => 2, 'options' => ['walk' => 'a piedi', 'car' => 'in auto']],
+                    'price_kind'  => ['choice', 'Ingresso', '', 'w' => 6, 'options' => ['' => 'Non indicato', 'free' => 'Gratis', 'paid' => 'A pagamento']],
+                    'price'       => ['plain', 'Quanto costa', 'Per esempio: 5 €.', 'w' => 6, 'solo_con' => ['price_kind', ['paid']]],
                     'url'         => ['url', 'Sito o biglietti', 'Facoltativo.', 'w' => 12],
                     'description' => ['textarea', 'Descrizione', 'Facoltativa.'],
                     'poster'      => ['image', 'Locandina', 'Un\'immagine o un PDF.', 'locandina' => 'poster_pdf'],
@@ -302,7 +334,8 @@ final class SectionCatalog
         // ('multipla'). Foto e PDF sono quelli di ogni sezione. Nella home non si conta.
         'custom' => [
             'icon' => 'star', 'group' => 'casa', 'multipla' => true, 'nome' => 'Sezione libera',
-            'intro' => 'Per quello che non sta nelle altre sezioni: la piscina, il giardino, la storia della casa. Scegli il titolo e l\'icona; puoi aggiungerne quante ne vuoi.',
+            'breve' => 'Titolo, icona e testo li scegli tu.',
+            'intro' => 'Per quello che non sta nelle altre sezioni: la piscina, il giardino, la storia del posto. Scegli il titolo e l\'icona; puoi aggiungerne quante ne vuoi.',
             'fields' => [
                 'icona' => ['choice', 'Icona', 'Compare nella guida, sulla casella della sezione.', 'icone' => true, 'options' => [
                     'star' => 'Stella', 'info' => 'Informazione', 'book' => 'Libro', 'key' => 'Chiave', 'sun' => 'Sole', 'moon' => 'Luna',
@@ -313,8 +346,10 @@ final class SectionCatalog
         ],
         'info' => [
             'icon' => 'info', 'group' => 'arrivo',
+            'breve' => 'Avvisi pratici che non stanno altrove.',
+            'intro' => 'Le cose pratiche che è meglio sapere e che non stanno nelle altre sezioni: l\'acqua del rubinetto, il giorno di mercato, il contatore che scatta. Una voce per riga, breve.',
             'fields' => [
-                'items' => ['list', 'Cose da sapere', 'Una per riga.'],
+                'items' => ['list', 'Cose da sapere', 'Una voce per riga.'],
                 'note'  => ['textarea', 'Nota', 'Facoltativa.'],
             ],
         ],
@@ -332,6 +367,20 @@ final class SectionCatalog
         $out = array_fill_keys(array_keys(self::GRUPPI), []);
         foreach (self::K as $k => $d) if (empty($d['multipla'])) $out[$d['group'] ?? 'casa'][] = $k;
         return $out;
+    }
+
+    /** La riga di presentazione nel catalogo «Aggiungi una sezione». */
+    public static function breve(string $kind): string { return (string) (self::get($kind)['breve'] ?? ''); }
+
+    /**
+     * Un aiuto che comincia con «Facoltativo.» (o «Facoltativa.», «Facoltative.»…) si divide in due:
+     * la parola va accanto all'etichetta, tra parentesi, e l'aiuto resta per l'esempio.
+     * @return array{0:string,1:string} [«facoltativo» concordato oppure '', il resto dell'aiuto]
+     */
+    public static function facoltativo(string $aiuto): array
+    {
+        if (preg_match('/^(Facoltativ[oaie])\.\s*(.*)$/su', $aiuto, $m)) return [mb_strtolower($m[1]), $m[2]];
+        return ['', $aiuto];
     }
 
     /** Si può aggiungere più volte alla stessa struttura? (la sezione libera) */

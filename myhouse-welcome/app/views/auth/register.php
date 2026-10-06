@@ -4,7 +4,7 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
   <p class="chip-piano">
     <span class="chip-piano__testo"><?= Icon::svg('check', 15, 2.2) ?><span>Piano <b><?= Support::e($pianoScelto['name']) ?></b><?= Plans::perProperty($pianoScelto) ? ' · ' . (int) $quantita . ' strutture' : '' ?>
       · <?= Support::e(Support::money(Plans::price($pianoScelto, (int) $quantita), $pianoScelto['currency'])) ?> + IVA/anno</span></span>
-    <a href="<?= b() ?>/#piani">cambia</a>
+    <a href="<?= b() ?>/#piani">Cambia</a>
   </p>
 <?php endif; ?>
 <h1>Cominciamo.</h1>

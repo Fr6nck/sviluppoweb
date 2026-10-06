@@ -2,7 +2,7 @@
          pagine pubbliche, mai nella guida degli ospiti. */
 use function MHW\a; use MHW\Support;
 $ogTitolo = $ogTitolo ?? 'MyHouse Welcome · La casa risponde prima che chiedano';
-$ogTesto = $ogTesto ?? 'La reception digitale per case vacanza, B&B, affittacamere e agriturismi. Una guida per gli ospiti in un link e un QR.';
+$ogTesto = $ogTesto ?? 'La guida digitale per case vacanza, B&B, affittacamere e agriturismi: check-in, Wi-Fi e consigli in un link e un QR Code. La crei gratis, paghi solo quando la pubblichi.';
 $origine = (string) preg_replace('#^(https?://[^/]+).*$#', '$1', Support::baseUrl()); ?>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="MyHouse Welcome">

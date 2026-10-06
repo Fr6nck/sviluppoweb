@@ -73,7 +73,7 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
 
 ## 4. Testi da rivedere (Amministrazione)
 
-- **Pacchetti → testo**: titoli, descrizioni ed elenchi. Nell'elenco, una riga che finisce con «:» diventa il titoletto («Tutto di Essential, e in più:»).
+- **Piani → «Testi sulla landing»** (la voce che prima si chiamava «Pacchetti»): titoli, descrizioni ed elenchi. Nell'elenco, una riga che finisce con «:» diventa il titoletto («Tutto di Essential, e in più:»).
 - **Testimonianze**: aggiungine solo di vere, con il permesso scritto della persona, anche per la foto. Finché non ce n'è una visibile, il blocco in landing non compare.
 - **FAQ** in landing: le sei risposte sono in `app/views/pub/home.php`. Falle rileggere insieme ai punti 6 e 7 qui sotto, soprattutto «Ricevo fattura?».
 - **Termini e Privacy** (`/termini`, `/privacy`): vanno aggiornati con le novità (email di richiamo, dati di fatturazione, funnel anonimo), insieme alla versione in `MHW_TERMS_VERSION` / `MHW_PRIVACY_VERSION`.

@@ -34,8 +34,8 @@ $r->get('/admin', function () {
 
     $avvisi = [];
     if (!Stripe::enabled()) $avvisi[] = ['Stripe non è configurato', 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti possono preparare la guida ma non pagarla. Inseriscili nelle Impostazioni.', '/admin/impostazioni#stripe'];
-    if (Config::get('mail')['transport'] === 'log') $avvisi[] = ['La posta non parte', 'Le email di verifica e di recupero password finiscono in storage/logs/mail.log. Imposta il server SMTP nelle Impostazioni.', '/admin/impostazioni#posta'];
-    if (Config::get('storage')['driver'] !== 's3') $avvisi[] = ['I media stanno sul disco', 'In produzione usa Amazon S3: bucket e credenziali si inseriscono nelle Impostazioni.', '/admin/impostazioni#archivio'];
+    if (Config::get('mail')['transport'] === 'log') $avvisi[] = ['La posta non parte', 'Le email di conferma e di recupero della password finiscono in storage/logs/mail.log. Imposta il server SMTP nelle Impostazioni.', '/admin/impostazioni#posta'];
+    if (Config::get('storage')['driver'] !== 's3') $avvisi[] = ['Foto e PDF stanno sul disco del server', 'In produzione usa Amazon S3: bucket e credenziali si inseriscono nelle Impostazioni.', '/admin/impostazioni#archivio'];
     if (Demo::presente()) $avvisi[] = ['Ci sono ancora i clienti di esempio', 'Sono account veri con una password nota. Toglili prima di aprire al pubblico.'];
 
     View::out('admin/dashboard', ['numeri' => $numeri, 'piani' => $piani, 'ordini' => $ordini, 'avvisi' => $avvisi, 'funnel' => Stats::funnel(30),
@@ -125,7 +125,7 @@ $r->post('/admin/cliente/{aid}/override', function (array $a) {
     if (!$f) { http_response_code(404); View::out('pub/404', []); }
     $val = trim((string) ($_POST['valore'] ?? ''));
     if ($val !== '' && !preg_match('/^(\d{1,4}|unlimited)$/', $val)) {
-        Support::flash('Valore non valido: un numero, 0/1 per sì e no, oppure unlimited.', 'err');
+        Support::flash('Valore non valido: scrivi un numero, 1 per sì e 0 per no, oppure unlimited.', 'err');
         Support::redirect('/admin/cliente/' . $accId);
     }
     $uid = (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$accId]);
@@ -329,7 +329,7 @@ $r->post('/admin/pacchetti/{pid}/testo', function (array $a) {
         'public' => !empty($_POST['public']) ? 1 : 0, 'active' => !empty($_POST['active']) ? 1 : 0,
     ], 'id = :pid', ['pid' => $pkg['id']]);
     Auth::audit('package.copy', null, ['package' => $pkg['code']]);
-    Support::flash('Testo di ' . $pkg['name'] . ' aggiornato.');
+    Support::flash('Testi di ' . $pkg['name'] . ' aggiornati.');
     Support::redirect('/admin/pacchetti');
 });
 
@@ -384,14 +384,14 @@ $r->get('/admin/diagnostica', function () {
     $checks[] = ['Indirizzo del webhook', true, 'In Stripe punta il webhook a ' . $base . '/webhook/stripe'];
     $mail = Config::get('mail');
     $checks[] = ['Posta in uscita', $mail['transport'] !== 'log',
-        $mail['transport'] === 'log' ? 'le email finiscono in storage/logs/mail.log: imposta MAIL_TRANSPORT=smtp' : 'trasporto ' . $mail['transport']];
+        $mail['transport'] === 'log' ? 'le email finiscono in storage/logs/mail.log: imposta il server SMTP nelle Impostazioni' : 'trasporto ' . $mail['transport']];
     $st = Config::get('storage');
     $s3ok = false; $s3det = 'MHW_STORAGE non è s3: i file restano sul disco del server';
     if ($st['driver'] === 's3') {
         try { Storages::current(); $s3ok = true; $s3det = 'bucket ' . $st['s3']['bucket'] . ' (' . $st['s3']['region'] . ')'; }
         catch (\Throwable $e) { $s3det = $e->getMessage(); }
     }
-    $checks[] = ['Media su Amazon S3', $s3ok, $s3det];
+    $checks[] = ['Foto e PDF su Amazon S3', $s3ok, $s3det];
     $checks[] = ['HTTPS', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || str_starts_with($base, 'https'),
         'i cookie di sessione diventano "secure" solo su HTTPS'];
     $checks[] = ['Indirizzo pubblico impostato', Config::get('base_url') !== '',
@@ -491,7 +491,7 @@ $r->post('/admin/testimonianze', function () {
     try {
         $id = MHW\Testimonianze::salva($_POST, $_FILES['foto'] ?? null);
         Auth::audit('testimonial.save', null, ['id' => $id]);
-        Support::flash('Testimonianza salvata.' . (empty($_POST['visible']) ? ' Non è visibile: spunta «Visibile in landing» quando vuoi mostrarla.' : ''));
+        Support::flash('Testimonianza salvata.' . (empty($_POST['visible']) ? ' Non è visibile: spunta «Visibile sulla landing» quando vuoi mostrarla.' : ''));
     } catch (\Throwable $e) {
         Support::flash($e instanceof \RuntimeException ? $e->getMessage() : 'Non salvata (codice ' . Log::exception($e, 'testimonianze') . ').', 'err');
     }

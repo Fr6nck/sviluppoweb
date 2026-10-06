@@ -2,7 +2,7 @@
 <div class="stack stack--lg">
   <div class="stack stack--sm"><h1>Registro.</h1>
     <p class="muted small">Le azioni che contano: accessi come cliente, eccezioni, abbonamenti manuali, pubblicazioni, cambi di listino. Ultime 300.</p></div>
-  <?php if (!$righe): ?><p class="muted">Vuoto.</p><?php else: ?>
+  <?php if (!$righe): ?><p class="muted">Ancora nessuna azione registrata.</p><?php else: ?>
   <div class="tablewrap"><table class="data">
     <thead><tr><th>Quando (UTC)</th><th>Chi</th><th>Azione</th><th>Su</th><th>Dettagli</th></tr></thead>
     <tbody><?php foreach ($righe as $l): ?>

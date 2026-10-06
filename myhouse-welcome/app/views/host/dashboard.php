@@ -51,7 +51,7 @@ foreach ($sections as $s) { if ((int) $s['is_core'] === 1) $core = $s; else $alt
           <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('eye', 17) ?></span>Aperture</span><?= Icon::svg('arrow', 18, 2, 'cifra__freccia') ?>
           <b class="cifra__valore"><?= (int) $stats['views'] ?></b><span class="cifra__nota">negli ultimi 30 giorni</span></a>
         <div class="cifra cifra--mare">
-          <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('qr', 17) ?></span>Dal QR Code</span>
+          <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('qr', 17) ?></span>Dal QR</span>
           <b class="cifra__valore"><?= (int) $stats['qr'] ?></b><span class="cifra__nota">aperture inquadrando il QR</span></div>
         <div class="cifra cifra--ocra">
           <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('book', 17) ?></span>La più letta</span>
@@ -74,7 +74,7 @@ foreach ($sections as $s) { if ((int) $s['is_core'] === 1) $core = $s; else $alt
 
     <?php $sezioni = $altre; $torna = ''; include __DIR__ . '/_sezioni.php'; ?>
 
-    <a class="btn btn--ghost phonebtn" href="<?= b() ?>/pannello/<?= $pid ?>/anteprima" target="_blank" rel="noopener"><?= Icon::svg('eye', 16) ?>Guarda l'anteprima</a>
+    <a class="btn btn--ghost phonebtn" href="<?= b() ?>/pannello/<?= $pid ?>/anteprima" target="_blank" rel="noopener"><?= Icon::svg('eye', 16) ?>Apri l'anteprima</a>
   </div>
   <?php include __DIR__ . '/_telefono.php'; ?>
 </div>

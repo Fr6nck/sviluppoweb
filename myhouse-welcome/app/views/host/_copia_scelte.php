@@ -8,8 +8,8 @@ $sezioniOrigine = $sezioniOrigine ?? null;
 $elenco = $sezioniOrigine ?? array_map(fn($k) => ['kind' => $k, 'titolo' => SectionCatalog::title($k, 'it'), 'esiste' => false], Copia::SEZIONI); ?>
 <fieldset class="fieldset" style="margin:0">
   <legend>Cosa copiare</legend>
-  <p class="help">Con le traduzioni, i luoghi, le foto e i PDF (duplicati: le due guide restano indipendenti).
-    <?= $sezioniOrigine === null ? 'Le sezioni che la struttura di origine non ha si ignorano.' : '' ?></p>
+  <p class="help">Ogni sezione si copia con le sue traduzioni, i luoghi, le foto e i PDF. Le due guide restano indipendenti: quello che cambi in una non cambia nell'altra.
+    <?= $sezioniOrigine === null ? 'Le sezioni che la struttura di origine non ha vengono saltate.' : '' ?></p>
   <div class="stack" style="gap:8px">
     <?php foreach ($elenco as $x): $id = 'copia-' . $x['kind']; ?>
       <div class="copia__voce">
@@ -26,8 +26,8 @@ $elenco = $sezioniOrigine ?? array_map(fn($k) => ['kind' => $k, 'titolo' => Sect
         <?php endif; ?>
       </div>
     <?php endforeach; ?>
-    <label class="check"><input type="checkbox" name="copia_aspetto" value="1" checked> <span>Aspetto: palette, logo e tono del testo</span></label>
+    <label class="check"><input type="checkbox" name="copia_aspetto" value="1" checked> <span>Aspetto: palette, tema e logo</span></label>
     <label class="check"><input type="checkbox" name="copia_contatti" value="1" checked> <span>Contatti</span></label>
   </div>
-  <p class="small muted" style="margin-top:10px">Non si copiano mai: indirizzo, CIN, reti Wi-Fi, passaggi di arrivo, foto di copertina, parcheggio.</p>
+  <p class="small muted" style="margin-top:10px">Non si copiano mai, perché sono solo di una struttura: indirizzo, CIN, reti Wi-Fi, passaggi per entrare, foto di copertina, parcheggio.</p>
 </fieldset>

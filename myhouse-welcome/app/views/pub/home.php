@@ -3,6 +3,7 @@
      hero        che cos'è — e il prodotto si vede subito, sul telefono
      scene       come si usa, in tre immagini
      prodotto    cosa trova l'ospite
+     per chi     quattro modi di ospitare: a ognuno il suo uso
      il tempo    perché conviene al proprietario, e la frase sul valore
      guadagno    la guida che porta prenotazioni dirette e recensioni
      come        quanto è semplice cominciare (con le schermate vere del pannello)
@@ -51,7 +52,7 @@ $quanteSezioni = array_sum(array_map('count', $gruppiSezioni)); ?>
 </script>
 <?php if (!empty($codiceSconto)): /* arrivato da un link con il codice sconto (6E) */ ?>
   <p class="sconto-fascia" role="status"><?= Icon::svg('check', 18, 2) ?><span>Codice <b><?= Support::e($codiceSconto['code']) ?></b>:
-    <?= Support::e(MHW\Sconti::etichetta($codiceSconto)) ?> sul primo anno, fino al <?= Support::e(implode('/', array_reverse(explode('-', $codiceSconto['valid_until'])))) ?>.</span></p>
+    <?= Support::e(MHW\Sconti::etichetta($codiceSconto)) ?> sul primo anno, fino al <?= Support::e(Support::date($codiceSconto['valid_until'])) ?>.</span></p>
 <?php endif; ?>
 <?php if (!empty($invitoDi)): /* arrivato dal link di un amico (Invita un amico) */ ?>
   <p class="sconto-fascia" role="status"><?= Icon::svg('check', 18, 2) ?><span><b><?= Support::e($invitoDi) ?> ti ha invitato</b>:
@@ -94,14 +95,14 @@ if ($dentro):
     <span class="kicker">La reception digitale per la tua struttura ricettiva</span>
     <h1 class="display">La casa risponde<br>prima che chiedano.</h1>
     <p class="hero2__sub">La guida digitale per case vacanza, B&amp;B, affittacamere e agriturismi. Check-in, Wi-Fi,
-      parcheggio, regole e consigli locali in un unico link, da condividere anche tramite QR Code.</p>
+      parcheggio, regole e i tuoi consigli sulla zona: tutto in un link, che gli ospiti aprono dal QR Code senza scaricare niente.</p>
     <div class="hero2__azioni">
       <a class="btn btn--lg btn--go" href="<?= $crea ?>"><?= $dentro ? 'Vai alle tue guide' : 'Crea gratis la tua guida' ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
       <?php if ($demoUrl): ?>
         <?php /* La demo, e accanto le lingue in cui aprirla: un solo gruppo, non tre bottoni in fila.
                  Le lingue che la demo ha davvero, al massimo tre. */
-              $lingueDemo = array_values(array_intersect(['it', 'en', 'de'], array_column(MHW\Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$demo['id']]), 'locale')));
-              $nomiLingue = ['it' => 'italiano', 'en' => 'inglese', 'de' => 'tedesco']; ?>
+              $lingueDemo = array_values(array_intersect(['it', 'en', 'fr'], array_column(MHW\Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$demo['id']]), 'locale')));
+              $nomiLingue = ['it' => 'italiano', 'en' => 'inglese', 'fr' => 'francese']; ?>
         <span class="demo-gruppo">
           <a class="demo-gruppo__vai" href="<?= $demoUrl ?>"><?= Icon::svg('eye', 18, 1.8) ?>Guarda la demo</a>
           <?php if (count($lingueDemo) > 1): ?>
@@ -112,7 +113,7 @@ if ($dentro):
         </span>
       <?php endif; ?>
     </div>
-    <p class="micro micro--left hero2__garanzie"><span><?= Icon::svg('check', 15, 2.2) ?>Nessuna app</span><span><?= Icon::svg('check', 15, 2.2) ?>Anteprima gratuita</span><span><?= Icon::svg('check', 15, 2.2) ?>Paghi solo quando pubblichi</span></p>
+    <p class="micro micro--left hero2__garanzie"><span><?= Icon::svg('check', 15, 2.2) ?>Nessuna app da scaricare</span><span><?= Icon::svg('check', 15, 2.2) ?>La crei e la provi gratis</span><span><?= Icon::svg('check', 15, 2.2) ?>Paghi solo quando pubblichi</span></p>
   </div>
 
   <?php /* Il telefono: una schermata della guida disegnata in HTML, sempre nel
@@ -207,7 +208,7 @@ $disegni = [
   <div class="prodotto__testa">
     <span class="kicker">La guida</span>
     <h2 id="prodotto-titolo" class="h-sezione">Cosa trova l'ospite.</h2>
-    <p class="muted">Le informazioni del soggiorno, in ordine e sempre sul telefono. <?= $quanteSezioni ?> sezioni pronte. Scegli quelle che servono ai tuoi ospiti.</p>
+    <p class="muted">Le informazioni del soggiorno, in ordine e sempre sul telefono. <?= $quanteSezioni ?> sezioni pronte da compilare, più le sezioni libere per tutto il resto: scegli quelle che servono ai tuoi ospiti.</p>
     <?php if ($demoUrl): ?><a class="link-freccia" href="<?= $demoUrl ?>">Sfoglia la guida di <?= Support::e($nomeDemo) ?> <?= Icon::svg('arrow', 16, 2) ?></a><?php endif; ?>
   </div>
   <div class="gruppi-sez">
@@ -225,6 +226,29 @@ $disegni = [
   </div>
 </section>
 
+<?php /* Per chi è: quattro modi di ospitare, a ognuno il suo uso della guida. Niente numeri e
+   niente promesse: solo quello che il prodotto fa davvero. */ ?>
+<section id="per-chi" class="blocco" aria-labelledby="perchi-titolo">
+  <div class="come__testa">
+    <span class="kicker">Per chi è</span>
+    <h2 id="perchi-titolo" class="h-sezione">Ogni struttura ha le sue domande.</h2>
+  </div>
+  <div class="vantaggi vantaggi--4">
+    <?php foreach ([
+        ['home', 'Casa vacanza', 'Non ci sei quando arrivano? La guida spiega come si entra, dove si parcheggia e come funziona la casa, a qualsiasi ora.'],
+        ['coffee', 'B&amp;B e affittacamere', 'Colazione, orari, regole: un QR in ogni camera al posto del foglio plastificato, sempre aggiornato.'],
+        ['sun', 'Agriturismo', 'Racconta l\'azienda, le degustazioni e i tuoi prodotti. E accompagna gli ospiti tra sagre, sentieri e cantine dei dintorni.'],
+        ['layers', 'Più strutture', 'Una guida e un QR Code per ogni struttura, dallo stesso account. Quello che vale per tutte lo scrivi una volta e lo copi.'],
+    ] as [$ico, $tit, $txt]): ?>
+      <div class="vantaggio">
+        <span class="vantaggio__ico"><?= Icon::svg($ico, 20, 1.7) ?></span>
+        <b><?= $tit ?></b>
+        <p><?= $txt ?></p>
+      </div>
+    <?php endforeach; ?>
+  </div>
+</section>
+
 <?php /* Il tempo che non vedi: a sinistra il problema e la soluzione, a destra
    le domande che arrivano e la guida che risponde; sotto, due vantaggi e il
    valore dell'anno. Le domande sono esempi; nessun numero. */ ?>
@@ -233,12 +257,12 @@ $disegni = [
     <div class="tempo__intro">
       <span class="kicker">Il tempo che non vedi</span>
       <h2 id="tempo-titolo" class="tempo__titolo">Ogni ospite è nuovo.<br>Le domande sono quasi sempre le stesse.</h2>
-      <p class="lead">Parcheggio, Wi-Fi, orari, regole della casa. Ogni richiesta richiede poco tempo, ma prova a pensare
-        quante volte ripeti le stesse informazioni durante una stagione.</p>
+      <p class="lead">Parcheggio, Wi-Fi, orari, regole della casa. Ogni risposta ti prende un minuto, ma prova a contare
+        quante volte ripeti le stesse cose in una stagione.</p>
       <div class="tempo__svolta">
         <h3 class="tempo__h3">Le risposte sono già nella tua guida.</h3>
-        <p>Con MyHouse Welcome raccogli le informazioni della tua struttura in un unico posto. Le condividi prima
-          dell'arrivo e gli ospiti possono consultarle durante il soggiorno, quando ne hanno bisogno.</p>
+        <p>Con MyHouse Welcome raccogli le informazioni della tua struttura in un'unica guida, che sostituisce il foglio plastificato
+          e i messaggi copiati e incollati. La mandi prima dell'arrivo e gli ospiti la ritrovano durante il soggiorno, quando serve.</p>
       </div>
     </div>
 
@@ -261,18 +285,24 @@ $disegni = [
     <div class="vantaggio">
       <span class="vantaggio__ico"><?= Icon::svg('clock', 20, 1.7) ?></span>
       <b>Più tempo per te.</b>
-      <p>Meno spiegazioni da ripetere a ogni nuovo soggiorno.</p>
+      <p>Le spiegazioni le scrivi una volta: a ogni nuovo soggiorno le ripete la guida, non tu.</p>
     </div>
     <div class="vantaggio">
       <span class="vantaggio__ico"><?= Icon::svg('check', 20, 2) ?></span>
       <b>Meno dubbi all'arrivo.<br>Meno equivoci alla partenza.</b>
-      <p>Indicazioni chiare su orari, regole e informazioni utili aiutano a prevenire dubbi e fraintendimenti.</p>
+      <p>Orari, regole e istruzioni scritti una volta, con chiarezza: l'ospite sa cosa fare, e tu non devi ricordarglielo.</p>
+    </div>
+    <div class="vantaggio">
+      <span class="vantaggio__ico"><?= Icon::svg('globe', 20, 1.7) ?></span>
+      <b>Parla la lingua di chi arriva.</b>
+      <p>La guida si apre da sola nella lingua del telefono dell'ospite. Fino a cinque lingue: italiano, inglese, francese, tedesco, spagnolo.</p>
     </div>
     <div class="tempo__valore">
       <span class="kicker">Il valore dell'abbonamento</span>
       <h3 class="tempo__h3">Un piccolo investimento annuale, utile soggiorno dopo soggiorno.</h3>
       <?php if ($partenza): ?>
-        <p class="tempo__prezzo">Da <?= Support::e(Support::money((int) $partenza['price_cents'], $partenza['currency'])) ?> + IVA all'anno.
+        <p class="tempo__prezzo">Da <?= Support::e(Support::money((int) $partenza['price_cents'], $partenza['currency'])) ?> + IVA all'anno:
+          circa <?= Support::e(Support::money(Plans::monthly((int) $partenza['price_cents']), $partenza['currency'])) ?> al mese.
           <a href="#piani">Vedi i piani</a></p>
       <?php endif; ?>
     </div>
@@ -327,8 +357,8 @@ $disegni = [
      landing.js diventano schede: una schermata grande alla volta. Se le
      schermate mancano, restano i passi numerati. */
   $passi = [['01', 'Crea la tua guida.', 'Inserisci le informazioni della struttura e scegli cosa condividere con gli ospiti.', 'Il pannello: i contenuti della guida, con le sezioni e le statistiche'],
-            ['02', 'Personalizza e guarda l\'anteprima.', 'Vedi come apparirà la guida sullo smartphone, prima di pubblicarla.', 'Il pannello: l\'aspetto della guida, con palette, testo e copertina'],
-            ['03', 'Pubblica e condividi.', 'Attiva il piano e condividi la guida tramite link o QR Code.', 'Il pannello: il QR Code da stampare e il link da condividere']];
+            ['02', 'Personalizza e guarda l\'anteprima.', 'Scegli i colori e la copertina, e guarda la guida sul telefono come la vedranno gli ospiti, prima di pubblicarla.', 'Il pannello: l\'aspetto della guida, con palette, tema e copertina'],
+            ['03', 'Pubblica e condividi.', 'Attivi l\'abbonamento: la guida va online e la condividi con il link o con il QR Code.', 'Il pannello: il QR Code da stampare e il link da condividere']];
   $schermate = array_filter(array_map(fn($i) => is_file($cartellaFoto . 'pannello-' . ($i + 1) . '.webp') ? 'pannello-' . ($i + 1) . '.webp' : null, array_keys($passi))); ?>
   <div class="passi<?= count($schermate) === 3 ? '' : ' passi--senza' ?>"<?= count($schermate) === 3 ? ' data-passi' : '' ?>>
     <ol class="passi__lista">
@@ -356,9 +386,9 @@ $disegni = [
   <div class="stack" style="gap:20px;max-width:540px">
     <h2 id="qr-titolo" class="h-sezione">Un QR. Tutta la struttura.</h2>
     <ul class="spunte">
-      <li><?= Icon::svg('check', 18, 2) ?><span><b>Un solo QR Code, sempre valido.</b>Lo stampi una volta e continui a utilizzarlo.</span></li>
+      <li><?= Icon::svg('check', 18, 2) ?><span><b>Un solo QR Code, sempre valido.</b>Lo stampi una volta e non lo cambi più.</span></li>
       <li><?= Icon::svg('check', 18, 2) ?><span><b>Informazioni sempre aggiornabili.</b>Modifichi la guida e pubblichi la nuova versione senza cambiare il QR.</span></li>
-      <li><?= Icon::svg('check', 18, 2) ?><span><b>Condividi anche prima dell'arrivo.</b>Invia il link via WhatsApp o email.</span></li>
+      <li><?= Icon::svg('check', 18, 2) ?><span><b>Condividi anche prima dell'arrivo.</b>Mandi il link su WhatsApp o per email, con il messaggio di benvenuto già pronto.</span></li>
     </ul>
   </div>
   <div class="qr-sheet qrband__foglio">
@@ -402,11 +432,16 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
   </div>
   <div class="faq__lista">
     <?php foreach ([
+        ['Posso provarla prima di pagare?', 'Sì. Crei l\'account senza carta di credito, prepari la guida e la guardi in anteprima sul telefono, come la vedranno gli ospiti. Paghi solo quando decidi di pubblicarla.'],
         ['Serve un\'app?', 'No. La guida si apre nel browser del telefono, da un link o dal QR Code. Gli ospiti non scaricano niente, e nemmeno tu: il pannello funziona dal computer e dal telefono.'],
-        ['Cosa succede se non rinnovo?', 'Alla fine del periodo pagato la guida va offline da sola. Niente si cancella: testi, foto e QR restano salvati, e il QR stampato torna a funzionare appena rinnovi.'],
+        ['Quanto ci vuole per prepararla?', 'Per cominciare bastano il nome della struttura e la città. Check-in e Wi-Fi si compilano in pochi minuti; il resto lo aggiungi quando vuoi, una sezione alla volta. Si salva mentre scrivi.'],
+        ['In quali lingue la leggono gli ospiti?', 'In italiano e in inglese con Essential; con Plus e Portfolio anche in francese, tedesco e spagnolo. La guida si apre da sola nella lingua del telefono dell\'ospite. Le traduzioni le scrivi tu, accanto al testo originale; i titoli delle sezioni, le categorie e le etichette dei luoghi sono già tradotti.'],
         ['Posso cambiare i testi dopo aver stampato il QR?', 'Sì, quando vuoi. Il QR Code è permanente: modifichi la guida, pubblichi la nuova versione e chi inquadra il QR stampato vede già quella.'],
-        ['Ricevo fattura?', 'Sì. Prima del primo pagamento inserisci una volta i dati di fatturazione (partita IVA o codice fiscale, codice destinatario SDI o PEC). I documenti di pagamento li trovi in Account & Fatturazione.'],
-        ['Posso disdire?', 'Sì. Disattivi il rinnovo automatico da Account & Fatturazione quando vuoi: la guida resta online fino alla fine del periodo già pagato, poi si ferma. Nessun vincolo.'],
+        ['Ho più di una struttura: come funziona?', 'Con Portfolio le gestisci tutte dallo stesso account: ognuna ha la sua guida, il suo QR Code e le sue statistiche. Le sezioni che valgono per tutte, come i ristoranti o le regole, le scrivi una volta e le copi nelle altre.'],
+        ['Posso scrivere nella guida il codice della porta?', 'Meglio di no. La guida si apre da un link, senza password: chi ha il link la legge. Nella guida spieghi come si entra; i codici di porte e cassette delle chiavi mandali all\'ospite in privato, poco prima dell\'arrivo.'],
+        ['Ricevo fattura?', 'Sì. Prima del primo pagamento inserisci una volta i dati di fatturazione (partita IVA o codice fiscale, codice destinatario SDI o PEC). Le fatture le trovi in Account & Fatturazione.'],
+        ['Posso disdire?', 'Sì. Disattivi il rinnovo automatico da Account & Fatturazione quando vuoi: la guida resta online fino alla fine del periodo già pagato, poi va offline. Nessun vincolo.'],
+        ['Cosa succede se non rinnovo?', 'Alla fine del periodo pagato la guida va offline da sola. Niente si cancella: testi, foto e QR restano salvati, e il QR stampato torna a funzionare appena rinnovi.'],
         ['Gli ospiti vengono tracciati?', 'No. La guida non usa cookie e non compare nei motori di ricerca. Le statistiche di lettura contano solo aperture anonime: nessun indirizzo IP, nessun profilo.'],
     ] as $i => [$d, $r]): ?>
       <details class="faq__voce"<?= $i === 0 ? ' open' : '' ?>>
@@ -420,10 +455,10 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
 <section id="piani" class="blocco" aria-labelledby="piani-titolo">
   <div class="spread">
     <div class="stack stack--sm">
-      <span class="kicker">Piani</span>
+      <span class="kicker">Piani e prezzi</span>
       <h2 id="piani-titolo" class="h-sezione">Scegli il piano.</h2>
     </div>
-    <p class="muted" style="max-width:360px;line-height:24px">Crei e provi la guida gratis. Prezzi IVA esclusa.</p>
+    <p class="muted" style="max-width:400px;line-height:24px">Crei e provi la guida gratis, con le funzioni del piano che scegli: paghi solo quando la pubblichi. Prezzi IVA esclusa.</p>
   </div>
 
   <div class="grid grid-3 piani" style="margin-top:28px">
@@ -467,14 +502,14 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <?php endforeach; ?>
   </div>
   <?php include __DIR__ . '/_confronto.php'; ?>
-  <p class="piani__nota">Abbonamento annuale con rinnovo automatico. Puoi disattivare il rinnovo dal tuo account, mantenendo la
-    guida disponibile fino alla scadenza del periodo pagato.</p>
+  <p class="piani__nota">Abbonamento annuale con rinnovo automatico. Puoi disattivare il rinnovo dal tuo account quando vuoi: la guida
+    resta online fino alla fine del periodo già pagato.</p>
 </section>
 
 <section class="chiusura" aria-labelledby="chiusura-titolo">
   <div class="chiusura__testo">
     <h2 id="chiusura-titolo" class="chiusura__titolo">La tua struttura ha tanto da raccontare. Mettilo a disposizione dei tuoi ospiti.</h2>
-    <p>Crea la tua guida, personalizzala e guarda il risultato. Decidi soltanto dopo se pubblicarla.</p>
+    <p>Crea la tua guida, personalizzala e guarda il risultato. Decidi soltanto dopo se pubblicarla: per cominciare non serve la carta di credito.</p>
     <div class="row">
       <a class="btn btn--lg btn--go" href="<?= $crea ?>"><?= $dentro ? 'Vai alle tue guide' : 'Crea gratis la tua guida' ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
       <?php if ($demoUrl): ?><a class="btn btn--lg btn--ghost" href="<?= $demoUrl ?>">Guarda la demo</a><?php endif; ?>

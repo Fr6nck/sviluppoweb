@@ -1,5 +1,5 @@
 <?php
-/* Un pacchetto nell'amministrazione: versioni, testi, nuova versione.
+/* Un piano nell'amministrazione: versioni, testi, nuova versione.
    Riceve: $p (con 'versions'), $features, $etichette (funzione). */
 use function MHW\b;
 use MHW\{Support, Csrf, Plans};
@@ -24,7 +24,7 @@ $cur = null; foreach ($p['versions'] as $v) if ($v['is_current']) $cur = $v; $cu
         <?php endforeach; ?></tbody></table></div>
 
       <details class="fieldset">
-        <summary class="legend" style="cursor:pointer;min-height:32px">Testi della landing</summary>
+        <summary class="legend" style="cursor:pointer;min-height:32px">Testi sulla landing</summary>
         <form method="post" action="<?= b() ?>/admin/pacchetti/<?= (int) $p['id'] ?>/testo" class="stack" style="margin-top:12px"><?= Csrf::field() ?>
           <?php include __DIR__ . '/_testi_pacchetto.php'; ?>
           <div class="actions"><button class="btn btn--sm">Salva i testi</button></div>
@@ -38,16 +38,16 @@ $cur = null; foreach ($p['versions'] as $v) if ($v['is_current']) $cur = $v; $cu
             <div class="field" style="margin:0"><label>Nome</label><input type="text" name="nome" value="<?= Support::e($p['name']) ?>" maxlength="80"></div>
             <div class="field" style="margin:0"><label>Prezzo annuale (€, IVA esclusa)</label>
               <input type="text" name="prezzo" inputmode="decimal" required value="<?= $cur ? Support::e(number_format($cur['price_cents'] / 100, 2, ',', '')) : '' ?>"></div>
-            <div class="field" style="margin:0"><label>Stripe Price ID <span class="muted">(facoltativo)</span></label>
+            <div class="field" style="margin:0"><label>Price ID di Stripe <span class="muted">(facoltativo)</span></label>
               <input type="text" name="stripe_price_id" placeholder="price_…" pattern="price_[A-Za-z0-9]+" value="<?= Support::e($cur['stripe_price_id'] ?? '') ?>"></div>
           </div>
           <?php if ($cur && Plans::perProperty($cur)): ?>
             <div class="grid grid-4">
-              <div class="field" style="margin:0"><label>Struttura aggiuntiva (€/anno)</label>
+              <div class="field" style="margin:0"><label>Ogni struttura aggiuntiva (€/anno, IVA esclusa)</label>
                 <input type="text" name="prezzo_extra" inputmode="decimal" required value="<?= Support::e(number_format($cur['extra_price_cents'] / 100, 2, ',', '')) ?>"></div>
               <div class="field" style="margin:0"><label>Strutture minime</label><input name="min_quantita" type="number" min="1" value="<?= (int) $cur['min_quantity'] ?>"></div>
               <div class="field" style="margin:0"><label>Strutture massime</label><input name="max_quantita" type="number" min="1" value="<?= (int) $cur['max_quantity'] ?>"></div>
-              <div class="field" style="margin:0"><label>Price ID aggiuntive <span class="muted">(facoltativo)</span></label>
+              <div class="field" style="margin:0"><label>Price ID della struttura aggiuntiva <span class="muted">(facoltativo)</span></label>
                 <input type="text" name="stripe_extra_price_id" placeholder="price_…" pattern="price_[A-Za-z0-9]+" value="<?= Support::e($cur['stripe_extra_price_id'] ?? '') ?>"></div>
             </div>
             <p class="small muted">Prezzo = prima struttura + (strutture − 1) × struttura aggiuntiva. Il limite di strutture è la quantità acquistata.</p>
@@ -56,7 +56,7 @@ $cur = null; foreach ($p['versions'] as $v) if ($v['is_current']) $cur = $v; $cu
             <?php foreach ($features as $f): ?>
               <div class="field" style="margin:0"><label class="small" for="f-<?= (int) $p['id'] ?>-<?= Support::e($f['code']) ?>"><?= Support::e($f['label']) ?></label>
                 <input type="text" id="f-<?= (int) $p['id'] ?>-<?= Support::e($f['code']) ?>" name="f[<?= Support::e($f['code']) ?>]" value="<?= Support::e($cur['features'][$f['code']] ?? $f['default_value']) ?>"
-                       pattern="\d{1,4}|unlimited" title="Un numero, 0/1, oppure unlimited"></div>
+                       pattern="\d{1,4}|unlimited" title="Un numero, 1 per sì e 0 per no, oppure unlimited"></div>
             <?php endforeach; ?>
           </div>
           <?php include __DIR__ . '/_testi_pacchetto.php'; ?>

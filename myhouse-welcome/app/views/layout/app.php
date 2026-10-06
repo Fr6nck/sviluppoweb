@@ -9,7 +9,7 @@ $u = Auth::user(); $f = Support::flash(); ?>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= Support::e($title ?? 'MyHouse Welcome') ?></title>
-<meta name="description" content="La reception digitale per case vacanza, B&amp;B, affittacamere e agriturismi. Una guida per gli ospiti in un link e un QR.">
+<meta name="description" content="La guida digitale per case vacanza, B&amp;B, affittacamere e agriturismi: check-in, Wi-Fi e consigli in un link e un QR Code. La crei gratis, paghi solo quando la pubblichi.">
 <?php include __DIR__ . '/_tema.php'; ?>
 <?php include __DIR__ . '/_icone.php'; ?>
 <?php include __DIR__ . '/_condivisione.php'; ?>
@@ -21,7 +21,7 @@ $u = Auth::user(); $f = Support::flash(); ?>
 <?php $principale = $u
     ? ['href' => b() . '/' . ($u['role'] === 'admin' ? 'admin' : 'pannello'), 'testo' => $u['role'] === 'admin' ? 'Amministrazione' : 'Le mie guide']
     : ['href' => b() . '/registrati', 'testo' => 'Crea gratis'];
-      $voci = [['/#come-funziona', 'Come funziona'], ['/#qr', 'Il QR'], ['/#domande', 'Domande'], ['/#piani', 'Piani']];
+      $voci = [['/#come-funziona', 'Come funziona'], ['/#qr', 'Il QR'], ['/#domande', 'Domande'], ['/#piani', 'Prezzi']];
       /* Chi è dentro si riconosce subito: l'iniziale e il nome in testata, con il menu
          dell'account (le guide, i dati, esci). È un <details>: si apre anche senza JavaScript. */
       $nomeU = $u ? trim((string) ($u['name'] ?? '')) : '';
