@@ -54,6 +54,8 @@ export AWS_SECRET_ACCESS_KEY=segreto-finto-per-le-prove
 export AWS_S3_ENDPOINT="http://127.0.0.1:$PORTA_S3"
 export MAIL_TRANSPORT=log
 export MHW_CRON_TOKEN=token-finto-per-le-prove
+# La vetrina automatica nelle prove: un account suo, non quello dell'agenzia (che le prove usano per il pulsante).
+export MHW_VETRINA_EMAIL=vetrina-auto@prova.test
 
 php -S "127.0.0.1:$PORTA" -t "$TMP/docroot" "$TMP/docroot/router.php" > "$TMP/server.log" 2>&1 &
 PID=$!

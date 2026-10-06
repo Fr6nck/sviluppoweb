@@ -25,6 +25,9 @@ $config = [
     // (facoltativo: senza, le email di richiamo partono lo stesso, controllando
     // al massimo ogni 15 minuti mentre qualcuno usa il sito). Vuoto = /cron spento.
     'cron_token' => $env('MHW_CRON_TOKEN'),
+    // L'account in cui la guida vetrina «Casa Checco» si crea da sola, una volta, al primo
+    // aggiornamento (Demo::vetrinaAutomatica). Vuoto = mai: la si crea dall'amministrazione.
+    'vetrina_email' => $env('MHW_VETRINA_EMAIL', 'blackout.agency@gmail.com'),
 
     'db' => [
         'driver' => $env('MHW_DB_DRIVER', 'sqlite'),

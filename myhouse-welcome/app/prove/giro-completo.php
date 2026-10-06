@@ -1983,6 +1983,29 @@ prova('6E · disattivato: il coupon si cancella su Stripe, stato «Disattivato»
       && (bool) array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['metodo'] === 'DELETE' && str_contains($x['percorso'], '/v1/coupons/'))
       && (bool) val("SELECT 1 FROM audit_log WHERE action = 'discount.disable'") && (bool) val("SELECT 1 FROM audit_log WHERE action = 'discount.create'"));
 
+// ================================================================= VETRINA AUTOMATICA
+capitolo('Vetrina automatica e «Rifai la vetrina»');
+$segnoVetrina = $DOVE . '/app/storage/vetrina-automatica.txt';
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");   // le prove registrano molti account dallo stesso indirizzo
+$va = new Browser('vetrina-auto');
+$va->get('/registrati');
+$va->post('/registrati', ['name' => 'Agenzia Automatica', 'email' => 'vetrina-auto@prova.test', 'password' => 'VetrinaProva123', 'termini' => '1']);
+$vaAcc = (int) val("SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = 'vetrina-auto@prova.test'");
+prova('Prima di aprire la landing l\'account non ha la vetrina', $vaAcc > 0 && !val('SELECT id FROM properties WHERE account_id = ? AND is_demo = 2', [$vaAcc]));
+$ospite->get('/');
+$vaV = riga('SELECT * FROM properties WHERE account_id = ? AND is_demo = 2', [$vaAcc]);
+prova('Alla prima apertura della landing Casa Checco si crea da sola nell\'account indicato, pubblicata e con Plus dimostrativo',
+      $vaV && $vaV['name'] === 'Casa Checco' && $vaV['status'] === 'published' && is_file($segnoVetrina) && str_contains((string) file_get_contents($segnoVetrina), 'Casa Checco creata')
+      && (bool) val("SELECT 1 FROM subscriptions WHERE account_id = ? AND status = 'active' AND provider = 'manuale'", [$vaAcc]), (string) @file_get_contents($segnoVetrina));
+$ospite->get('/'); $admin->get('/admin');
+prova('…una volta sola: le visite dopo non ne creano un\'altra', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND is_demo = 2', [$vaAcc]) === 1);
+$r = $admin->get("/admin/cliente/$vaAcc");
+prova('Amministrazione: con la vetrina c\'è «Rifai la vetrina»', str_contains($r['body'], 'Rifai la vetrina') && str_contains($r['body'], 'name="rifai" value="1"'));
+$admin->post("/admin/cliente/$vaAcc/vetrina", ['rifai' => '1']);
+$vaV2 = riga('SELECT * FROM properties WHERE account_id = ? AND is_demo = 2', [$vaAcc]);
+prova('«Rifai la vetrina»: la vecchia si toglie, la nuova è pubblicata, sempre una sola', $vaV2 && (int) $vaV2['id'] !== (int) $vaV['id'] && $vaV2['status'] === 'published'
+      && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND is_demo = 2', [$vaAcc]) === 1 && !val('SELECT 1 FROM properties WHERE id = ?', [$vaV['id']]));
+
 // ================================================================= IMPOSTAZIONI
 capitolo('Amministrazione → Impostazioni (Stripe, posta, archivio delle foto)');
 $fileLocale = $DOVE . '/app/config.local.php';

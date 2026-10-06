@@ -39,6 +39,11 @@ $fonte = ['package' => 'piano pagato', 'intended' => 'piano scelto', 'override' 
     <?php if ($vetrina): ?>
       <p class="small">«<?= Support::e($vetrina['name']) ?>» è la guida vetrina di questo account: è online come demo, non conta nel limite di strutture ed è la demo della landing.
         <a href="<?= b() ?>/g/<?= Support::e($vetrina['slug']) ?>" target="_blank" rel="noopener">Apri la guida</a></p>
+      <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/vetrina" class="stack" style="gap:8px"><?= Csrf::field() ?>
+        <input type="hidden" name="rifai" value="1">
+        <p class="small muted">«Rifai la vetrina» la toglie e ne crea una nuova con i dati aggiornati (eventi con le prossime date, foto, luoghi). Le modifiche fatte a mano sulla vetrina si perdono; le altre strutture dell'account non si toccano.</p>
+        <button class="btn btn--ghost btn--sm" style="align-self:flex-start">Rifai la vetrina</button>
+      </form>
     <?php else: ?>
       <p class="small">Una guida dimostrativa completa sulla falsariga di Casa Lucia, con nomi, numeri, indicazioni e foto diversi, tutti di fantasia: «Casa Checco», ad Assisi, vicino a Piazza Matteotti. Tutte le sezioni sono compilate, eventi compresi. Si pubblica subito come demo, non occupa il posto di una struttura e diventa la demo della landing. Il cliente la modifica dal suo pannello.</p>
       <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/vetrina" class="stack" style="gap:10px"><?= Csrf::field() ?>

@@ -472,6 +472,72 @@ final class Demo
         return $pid;
     }
 
+    /**
+     * Crea la vetrina nell'account: prima, se l'account non ha un abbonamento attivo e $plus è
+     * vero, concede Plus dimostrativo per 12 mesi (senza piano la guida uscirebbe senza foto,
+     * senza inglese e senza luoghi). Se la creazione si interrompe, toglie quello che ha lasciato.
+     */
+    public static function creaVetrina(int $accountId, bool $plus): int
+    {
+        if ($plus && !Subscriptions::active($accountId)) {
+            $pv = (int) Db::val("SELECT pv.id FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = 'plus' AND pv.is_current = 1", [], 0);
+            if ($pv) Billing::grantManual($accountId, $pv, 12, 'Guida vetrina: Plus dimostrativo');
+        }
+        Entitlements::forget($accountId);
+        try {
+            return self::vetrina($accountId);
+        } catch (\Throwable $e) {
+            self::eliminaVetrina($accountId);
+            throw $e;
+        }
+    }
+
+    /** Toglie la vetrina dell'account, con le sue foto. Le altre strutture non si toccano. */
+    public static function eliminaVetrina(int $accountId): int
+    {
+        $n = 0;
+        foreach (Db::all('SELECT id FROM properties WHERE account_id = ? AND is_demo = ?', [$accountId, self::VETRINA]) as $p) {
+            foreach (Db::all('SELECT id FROM media WHERE property_id = ?', [$p['id']]) as $m) Media::delete((int) $m['id'], $accountId);
+            Db::run('DELETE FROM properties WHERE id = ?', [$p['id']]);
+            $n++;
+        }
+        return $n;
+    }
+
+    /**
+     * La vetrina si crea da sola, una volta: nell'account con l'email di config 'vetrina_email'
+     * (MHW_VETRINA_EMAIL), alla prima apertura della landing o del Quadro dopo l'aggiornamento.
+     * Non tocca una vetrina che c'è già. Il file storage/vetrina-automatica.txt dice che è stato
+     * fatto (o perché no): cancellandolo si riprova. Se l'account non esiste ancora, si riprova
+     * alla visita dopo.
+     */
+    public static function vetrinaAutomatica(): void
+    {
+        $email = mb_strtolower(trim((string) Config::get('vetrina_email', '')));
+        $segno = MHW_APP . '/storage/vetrina-automatica.txt';
+        if ($email === '' || is_file($segno)) return;
+        try {
+            $acc = Db::one("SELECT a.id, u.id AS uid FROM users u JOIN accounts a ON a.user_id = u.id WHERE u.email = ? AND u.role = 'host'", [$email]);
+        } catch (\Throwable $e) { return; }
+        if (!$acc) return;
+        $f = @fopen($segno, 'x');   // il primo che arriva: un'altra richiesta nello stesso momento non la crea due volte
+        if (!$f) return;
+        try {
+            if (Db::val('SELECT id FROM properties WHERE account_id = ? AND is_demo = ?', [$acc['id'], self::VETRINA])) {
+                fwrite($f, Support::now() . " c'era già una vetrina: non toccata\n");
+                return;
+            }
+            $pid = self::creaVetrina((int) $acc['id'], true);
+            Auth::audit('demo.vetrina', (int) $acc['uid'], ['property_id' => $pid, 'automatica' => true]);
+            fwrite($f, Support::now() . " Casa Checco creata (struttura $pid)\n");
+        } catch (\Throwable $e) {
+            Log::error('vetrina automatica: ' . $e->getMessage(), ['account' => $acc['id']]);
+            fwrite($f, Support::now() . ' non riuscita: ' . $e->getMessage() . "\n");
+        } finally {
+            fclose($f);
+        }
+    }
+
     public static function popola(): array
     {
         $creati = [];

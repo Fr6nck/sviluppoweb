@@ -10,6 +10,7 @@ use MHW\{Auth, Billing, Config, Db, Demo, Entitlements, Impostazioni, Log, Media
  */
 $r->get('/admin', function () {
     Auth::requireAdmin();
+    Demo::vetrinaAutomatica();
     $numeri = [
         'clienti'    => (int) Db::val("SELECT COUNT(*) FROM users WHERE role = 'host' AND email NOT LIKE ?", ['%@' . Demo::DOMINIO], 0),
         'abbonati'   => (int) Db::val("SELECT COUNT(DISTINCT account_id) FROM subscriptions WHERE status IN ('active','trialing')
@@ -169,24 +170,24 @@ $r->post('/admin/cliente/{aid}/vetrina', function (array $a) {
     $accId = (int) $a['aid'];
     $uid = (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$accId]);
     if (!$uid) { http_response_code(404); View::out('pub/404', []); }
+    // «Rifai»: la vetrina vecchia si toglie e se ne crea una con i dati aggiornati.
+    $rifai = ($_POST['rifai'] ?? '') === '1';
     if (Db::val('SELECT id FROM properties WHERE account_id = ? AND is_demo = ?', [$accId, Demo::VETRINA])) {
-        Support::flash('Questo account ha già una guida vetrina: per rifarla, eliminala dal pannello del cliente.', 'err');
-        Support::redirect('/admin/cliente/' . $accId);
+        if (!$rifai) {
+            Support::flash('Questo account ha già una guida vetrina: usa «Rifai la vetrina» per sostituirla.', 'err');
+            Support::redirect('/admin/cliente/' . $accId);
+        }
+        Demo::eliminaVetrina($accId);
     }
-    if (!Subscriptions::active($accId) && ($_POST['plus'] ?? '') === '1') {
-        $pv = (int) Db::val("SELECT pv.id FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = 'plus' AND pv.is_current = 1", [], 0);
-        if ($pv) Billing::grantManual($accId, $pv, 12, 'Guida vetrina: Plus dimostrativo');
-    }
-    Entitlements::forget($accId);
     try {
-        $pid = Demo::vetrina($accId);
+        $pid = Demo::creaVetrina($accId, ($_POST['plus'] ?? '') === '1');
     } catch (\Throwable $e) {
         Log::error('vetrina: ' . $e->getMessage(), ['account' => $accId]);
         Support::flash('La guida vetrina non è stata creata: ' . $e->getMessage(), 'err');
         Support::redirect('/admin/cliente/' . $accId);
     }
     Auth::audit('demo.vetrina', $uid, ['property_id' => $pid]);
-    Support::flash('Guida vetrina «Casa Checco» creata e pubblicata. È la demo della landing.');
+    Support::flash($rifai ? 'Guida vetrina rifatta con i dati aggiornati e pubblicata.' : 'Guida vetrina «Casa Checco» creata e pubblicata. È la demo della landing.');
     Support::redirect('/admin/cliente/' . $accId);
 });
 

@@ -63,6 +63,7 @@ $r->get('/', function () use ($guard, $codiceDalLink) {
     $guard();
     $codiceSconto = $codiceDalLink();
     MHW\Stats::funnelEvent('landing_view');
+    MHW\Demo::vetrinaAutomatica();   // una volta sola: poi costa un controllo su un file
     // La demo della landing: la vetrina creata dall'amministrazione, se c'è; altrimenti quella dei clienti di esempio.
     $demo = Db::one("SELECT * FROM properties WHERE is_demo >= 1 AND status = 'published' AND archived_at IS NULL ORDER BY is_demo DESC, id");
     $copertina = $demo ? Media::url($demo['cover_media_id'] ? (int) $demo['cover_media_id'] : null) : null;

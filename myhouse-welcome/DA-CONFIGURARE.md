@@ -81,7 +81,14 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
 
 ## 4b. La guida vetrina (la demo della landing)
 
-La demo della landing si sposta su un account vero, quello dell'agenzia:
+La demo della landing si sposta su un account vero, quello dell'agenzia.
+
+**Da questa versione la vetrina si crea da sola.** Alla prima apertura del sito (o del Quadro) dopo il caricamento, Casa Checco nasce nell'account **blackout.agency@gmail.com**, con Plus dimostrativo per 12 mesi se l'account non ha un piano.
+- Succede solo se l'account esiste e non ha già una vetrina. L'esito è scritto in `app/storage/vetrina-automatica.txt`: cancellando quel file si riprova.
+- Per un altro account imposta `MHW_VETRINA_EMAIL`; per spegnere la creazione automatica, lascia la variabile vuota.
+- Se c'era già una vetrina vecchia, in **Amministrazione → Clienti → quell'account** premi **«Rifai la vetrina»**. Toglie la vecchia e ne crea una con i dati aggiornati; le modifiche fatte a mano sulla vetrina si perdono.
+
+A mano, come prima:
 1. Registrati sul sito con **blackout.agency@gmail.com**, oppure usa l'account se c'è già.
 2. Vai su **Amministrazione → Clienti**, apri quell'account e premi **«Crea la guida vetrina»**. Lascia spuntato «Concedi Plus dimostrativo per 12 mesi»: senza un piano la guida esce senza foto, senza inglese e senza luoghi.
 3. Nasce «Casa Checco», ad Assisi, in un vicolo di fantasia vicino a Piazza Matteotti. La posizione (link di Maps e coordinate) è quella della piazza, non di un portone vero. Ha tutte le sezioni compilate, comprese quelle nuove (eventi con una locandina, sezione libera, muoversi in zona, parcheggi con i prezzi, servizi extra). Sono di fantasia la casa, il vicolo, i padroni di casa, i telefoni e i locali di «Dove mangiare» e «Negozi»; le foto sono ricavate da quelle della demo. Sono veri, presi dalle fonti pubbliche del 2026: parcheggi e tariffe, linea C, imposta di soggiorno, monumenti e musei con orari e prezzi, sentieri, mercato del sabato e feste dell'anno. Orari e prezzi cambiano: ricontrollali una volta l'anno. Viene pubblicata subito, con l'etichetta «Demo». Le date degli eventi partono dal giorno in cui la crei.

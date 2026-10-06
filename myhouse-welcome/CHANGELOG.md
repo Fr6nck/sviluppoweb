@@ -1,5 +1,17 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Casa Checco si crea da sola (6 ottobre 2026)
+
+Nessuna migrazione.
+
+- **Vetrina automatica.** Alla prima apertura della landing o del Quadro dopo l'aggiornamento, Casa Checco si crea da sola nell'account `blackout.agency@gmail.com`:
+  - l'account si cambia con `MHW_VETRINA_EMAIL`; vuoto = mai;
+  - con Plus dimostrativo per 12 mesi se l'account non ha un piano;
+  - una volta sola: l'esito resta in `app/storage/vetrina-automatica.txt`;
+  - una vetrina che c'è già non si tocca;
+  - se la creazione si interrompe, quello che è stato creato a metà si toglie.
+- **«Rifai la vetrina».** Nuovo pulsante in Amministrazione → cliente: toglie la vetrina vecchia (con le sue foto) e ne crea una nuova con i dati aggiornati. Le altre strutture dell'account non si toccano.
+
 ## v2 · Home con Casa Checco (6 ottobre 2026)
 
 Nessuna migrazione.
