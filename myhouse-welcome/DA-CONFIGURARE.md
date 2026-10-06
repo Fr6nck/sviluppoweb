@@ -18,6 +18,13 @@ Il database resta **SQLite**. Le migrazioni nuove sono scritte anche per MySQL, 
 
 Si impostano come variabili d'ambiente o in `app/config.local.php`. Il modello è `config.local.esempio.php`.
 
+**Il modo più semplice per Stripe, posta e foto: Amministrazione → Impostazioni.** Inserisci i valori nei tre riquadri, conferma con la tua password e premi «Prova la connessione».
+- I valori si salvano solo sul server, in `app/config.local.php`. La versione precedente resta in `config.local.bak.php`.
+- I segreti non si rivedono più: si vede solo come finiscono.
+- Serve che la cartella `app/` (o il file) sia scrivibile dal sito. Se non lo è, la pagina te lo dice.
+- I campi già impostati come variabili d'ambiente si vedono ma non si cambiano da lì.
+- Se scrivi `config.local.php` a mano, i commenti si perdono al primo salvataggio dal pannello.
+
 | Variabile | Obbligatoria | Note |
 |---|---|---|
 | `MHW_BASE_URL` | **sì** | indirizzo pubblico senza barra finale (es. `https://myhousewelcome.it` o `https://blackout.in/welcomebook`). Finisce nei QR, nelle email e nei link «non mandarmene più». |

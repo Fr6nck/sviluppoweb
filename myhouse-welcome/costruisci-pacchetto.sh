@@ -24,7 +24,7 @@ cp "$QUI/app/config.php" "$QUI/app/config.local.esempio.php" "$QUI/app/LEGGIMI.m
 cp "$QUI/app/app.htaccess" "$BASE/app/.htaccess"
 cp "$QUI/app/app.web.config" "$BASE/app/web.config"
 # Mai nel pacchetto: le prove, i segreti locali, i dati di chi l'ha costruito.
-rm -f "$BASE/app/config.local.php"
+rm -f "$BASE/app/config.local.php" "$BASE/app/config.local.bak.php" "$BASE"/app/.config.local.*.php
 
 # Un segnaposto, perche' l'FTP non carica le cartelle vuote.
 printf 'Questa cartella deve essere scrivibile dal server (755 o 775).\n' \

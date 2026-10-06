@@ -7,8 +7,9 @@ $title = 'Amministrazione'; ?>
 <div class="stack stack--lg">
   <div class="saluto" style="margin-bottom:0"><div><h1>Quadro.</h1><p>I numeri di adesso, interrogati al momento. Gli abbonamenti manuali e di esempio non contano nell'incasso.</p></div></div>
 
-  <?php foreach ($avvisi as [$t, $d]): ?>
-    <div class="note" role="status"><div class="stack" style="gap:4px"><b><?= Support::e($t) ?></b><span class="small"><?= Support::e($d) ?></span></div></div>
+  <?php foreach ($avvisi as $avv): [$t, $d] = $avv; $vai = $avv[2] ?? ''; ?>
+    <div class="note avviso" role="status"><div class="stack" style="gap:4px"><b><?= Support::e($t) ?></b><span class="small"><?= Support::e($d) ?></span></div>
+      <?php if ($vai !== ''): ?><a class="btn btn--sm avviso__vai" href="<?= b() . Support::e($vai) ?>">Imposta ora</a><?php endif; ?></div>
   <?php endforeach; ?>
 
   <div class="cifre cifre--4">

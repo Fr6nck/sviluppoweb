@@ -1983,6 +1983,57 @@ prova('6E · disattivato: il coupon si cancella su Stripe, stato «Disattivato»
       && (bool) array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['metodo'] === 'DELETE' && str_contains($x['percorso'], '/v1/coupons/'))
       && (bool) val("SELECT 1 FROM audit_log WHERE action = 'discount.disable'") && (bool) val("SELECT 1 FROM audit_log WHERE action = 'discount.create'"));
 
+// ================================================================= IMPOSTAZIONI
+capitolo('Amministrazione → Impostazioni (Stripe, posta, archivio delle foto)');
+$fileLocale = $DOVE . '/app/config.local.php';
+@unlink($fileLocale);
+$r = $admin->get('/admin/impostazioni');
+prova('La pagina si apre con i tre riquadri e l\'indirizzo del webhook da copiare', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'id="stripe"')
+      && str_contains($r['body'], 'id="posta"') && str_contains($r['body'], 'id="archivio"') && str_contains($r['body'], '/webhook/stripe'));
+prova('…i campi impostati dal server (variabili d\'ambiente) si vedono bloccati, e nessun segreto compare nella pagina',
+      str_contains($r['body'], 'variabile d\'ambiente <code>STRIPE_SECRET_KEY</code>') && !str_contains($r['body'], 'sk_test_finto_solo_per_le_prove')
+      && !str_contains($r['body'], 'whsec_finto_solo_per_le_prove') && !str_contains($r['body'], 'segreto-finto-per-le-prove'));
+$r = $dora->get('/admin/impostazioni');
+prova('…un cliente non ci entra', $r['code'] === 403);
+$q = $admin->get('/admin');
+prova('Il Quadro porta alle impostazioni dagli avvisi («Imposta ora»)', str_contains($q['body'], '/admin/impostazioni#posta') && str_contains($q['body'], 'Imposta ora'));
+$campiPosta = ['mail__host' => 'smtp.prova.test', 'mail__port' => '587', 'mail__encryption' => 'tls', 'mail__user' => 'noreply@prova.test',
+               'mail__pass' => 'segreto-smtp-di-prova', 'mail__from' => 'noreply@prova.test', 'mail__from_name' => "Casa d'Assisi'; system('id'); //"];
+$r = $admin->post('/admin/impostazioni/posta', $campiPosta + ['password' => 'sbagliata']);
+prova('Senza la password giusta non si salva niente', $r['code'] === 422 && !is_file($fileLocale) && str_contains($r['body'], 'La password non è giusta')
+      && str_contains($r['body'], 'smtp.prova.test') && !str_contains($r['body'], 'segreto-smtp-di-prova'));
+$r = $admin->post('/admin/impostazioni/posta', ['mail__port' => '99999', 'mail__from' => 'non-un-indirizzo'] + $campiPosta + ['password' => 'AdminProva123']);
+prova('…i valori sbagliati si segnalano campo per campo', $r['code'] === 422 && str_contains($r['body'], 'Una porta è un numero tra 1 e 65535')
+      && str_contains($r['body'], 'Questo indirizzo email non sembra valido') && !is_file($fileLocale));
+$r = $admin->post('/admin/impostazioni/posta', $campiPosta + ['password' => 'AdminProva123']);
+$scritto = is_file($fileLocale) ? (static fn() => require $fileLocale)() : [];
+prova('Salvato in app/config.local.php, senza toccare il campo bloccato dal server (MAIL_TRANSPORT)', $r['code'] === 302 && str_contains($r['loc'], '/admin/impostazioni')
+      && ($scritto['mail']['host'] ?? '') === 'smtp.prova.test' && ($scritto['mail']['port'] ?? 0) === 587 && !isset($scritto['mail']['transport'])
+      && ($scritto['mail']['pass'] ?? '') === 'segreto-smtp-di-prova', json_encode(array_diff_key($scritto['mail'] ?? [], ['pass' => 1])));
+prova('…un testo con apici e codice resta solo testo (il file si scrive con var_export)', ($scritto['mail']['from_name'] ?? '') === "Casa d'Assisi'; system('id'); //");
+$r = $admin->segui($r);
+prova('…il segreto non torna mai nella pagina: si vede solo come finisce', str_contains($r['body'], 'impostazioni salvate') && !str_contains($r['body'], 'segreto-smtp-di-prova')
+      && str_contains($r['body'], '… rova'));
+$admin->post('/admin/impostazioni/posta', ['mail__pass' => ''] + $campiPosta + ['password' => 'AdminProva123']);
+$scritto = (static fn() => require $fileLocale)();
+prova('…lasciato vuoto, il segreto resta com\'era; con «Togli» si cancella', ($scritto['mail']['pass'] ?? '') === 'segreto-smtp-di-prova'
+      && (function () use ($admin, $campiPosta, $fileLocale) {
+          $admin->post('/admin/impostazioni/posta', ['mail__pass' => '', 'togli' => ['mail__pass' => '1']] + $campiPosta + ['password' => 'AdminProva123']);
+          $x = (static fn() => require $fileLocale)();
+          return !isset($x['mail']['pass']) && is_file(dirname($fileLocale) . '/config.local.bak.php');
+      })());
+prova('…nel registro c\'è il salvataggio, senza i valori', (bool) val("SELECT 1 FROM audit_log WHERE action = 'impostazioni.posta'")
+      && !val("SELECT 1 FROM audit_log WHERE meta LIKE '%segreto-smtp%'"));
+$r = $admin->post('/admin/impostazioni/archivio', ['storage__s3__public_base_url' => 'http://senza-https.example', 'password' => 'AdminProva123']);
+prova('Archivio: l\'indirizzo pubblico deve essere https', $r['code'] === 422 && str_contains($r['body'], 'con https://'));
+$r = $admin->segui($admin->post('/admin/impostazioni/stripe/prova', []));
+prova('«Prova la connessione» con Stripe: la chiave risponde (modalità di prova)', str_contains($r['body'], 'Stripe risponde') && str_contains($r['body'], 'modalità di prova'));
+$r = $admin->segui($admin->post('/admin/impostazioni/archivio/prova', []));
+prova('…con il bucket: scrittura, lettura e cancellazione', str_contains($r['body'], 'Il bucket risponde'));
+$r = $admin->segui($admin->post('/admin/impostazioni/posta/prova', []));
+prova('…con la posta: in modalità prova l\'email finisce in mail.log', str_contains($r['body'], 'mail.log') && str_contains((string) @file_get_contents($DOVE . '/app/storage/logs/mail.log'), 'Prova della posta di MyHouse Welcome'));
+@unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
+
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

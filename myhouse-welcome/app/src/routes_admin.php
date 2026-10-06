@@ -1,7 +1,7 @@
 <?php
 /** Rotte di amministrazione. $r è il Router creato in public/index.php. */
 
-use MHW\{Auth, Billing, Config, Db, Demo, Entitlements, Log, Media, Plans, Stats, Storages, Stripe, Subscriptions, Support, View};
+use MHW\{Auth, Billing, Config, Db, Demo, Entitlements, Impostazioni, Log, Media, Plans, RateLimit, Stats, Storages, Stripe, Subscriptions, Support, View};
 
 /**
  * Il quadro: quanti clienti, quanto hanno pagato davvero, quanto viene letto
@@ -32,9 +32,9 @@ $r->get('/admin', function () {
          JOIN accounts a ON a.id = o.account_id JOIN users u ON u.id = a.user_id ORDER BY o.id DESC LIMIT 8');
 
     $avvisi = [];
-    if (!Stripe::enabled()) $avvisi[] = ['Stripe non è configurato', 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti possono preparare la guida ma non pagarla.'];
-    if (Config::get('mail')['transport'] === 'log') $avvisi[] = ['La posta non parte', 'Le email di verifica e di recupero password finiscono in storage/logs/mail.log. Configura MAIL_TRANSPORT=smtp.'];
-    if (Config::get('storage')['driver'] !== 's3') $avvisi[] = ['I media stanno sul disco', 'In produzione imposta MHW_STORAGE=s3 con bucket e credenziali AWS.'];
+    if (!Stripe::enabled()) $avvisi[] = ['Stripe non è configurato', 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti possono preparare la guida ma non pagarla. Inseriscili nelle Impostazioni.', '/admin/impostazioni#stripe'];
+    if (Config::get('mail')['transport'] === 'log') $avvisi[] = ['La posta non parte', 'Le email di verifica e di recupero password finiscono in storage/logs/mail.log. Imposta il server SMTP nelle Impostazioni.', '/admin/impostazioni#posta'];
+    if (Config::get('storage')['driver'] !== 's3') $avvisi[] = ['I media stanno sul disco', 'In produzione usa Amazon S3: bucket e credenziali si inseriscono nelle Impostazioni.', '/admin/impostazioni#archivio'];
     if (Demo::presente()) $avvisi[] = ['Ci sono ancora i clienti di esempio', 'Sono account veri con una password nota. Toglili prima di aprire al pubblico.'];
 
     View::out('admin/dashboard', ['numeri' => $numeri, 'piani' => $piani, 'ordini' => $ordini, 'avvisi' => $avvisi, 'funnel' => Stats::funnel(30),
@@ -410,6 +410,68 @@ $r->post('/admin/diagnostica/foto', function () {
     Support::flash($falliti ? 'Non tutte: ' . implode('; ', array_map(fn($e) => $e[0] . ' — ' . $e[2], $falliti))
                             : 'Foto WebP rigenerate: ' . implode(', ', array_column($esiti, 0)) . '.', $falliti ? 'err' : 'ok');
     Support::redirect('/admin/diagnostica');
+});
+
+// -------------------------------------------------------------- impostazioni
+/*
+ * Stripe, posta e archivio delle foto dal pannello (Impostazioni scrive in
+ * app/config.local.php). Ogni salvataggio chiede la password dell'amministratore.
+ */
+$impostazioni = function (array $admin, string $gruppo = '', array $errori = [], array $valori = [], int $codice = 200) {
+    http_response_code($codice);
+    View::out('admin/settings', ['locale' => Impostazioni::locale(), 'gruppo' => $gruppo, 'errori' => $errori, 'valori' => $valori,
+                                 'webhook' => Support::baseUrl() . '/webhook/stripe',
+                                 'scrivibile' => is_writable(MHW_APP) || is_writable(Impostazioni::file()),
+                                 'emailAdmin' => (string) $admin['email'], 'nav' => 'impostazioni'], 'layout/cms');
+};
+
+$r->get('/admin/impostazioni', function () use ($impostazioni) {
+    $impostazioni(Auth::requireAdmin());
+});
+
+$r->post('/admin/impostazioni/{gruppo}', function (array $a) use ($impostazioni) {
+    $admin = Auth::requireAdmin();
+    $gruppo = (string) $a['gruppo'];
+    if (!isset(Impostazioni::GRUPPI[$gruppo])) { http_response_code(404); exit('Non trovato.'); }
+    // Quello che l'amministratore ha scritto, segreti esclusi, per non farglielo riscrivere.
+    $valori = [];
+    foreach (Impostazioni::GRUPPI[$gruppo] as $percorso => $c) {
+        if ($c[2] !== 'secret') $valori[Impostazioni::nome($percorso)] = (string) ($_POST[Impostazioni::nome($percorso)] ?? '');
+    }
+    if (!RateLimit::hit('impostazioni:' . (int) $admin['id'], 10, 900)) {
+        $impostazioni($admin, $gruppo, ['_' => 'Troppi tentativi: riprova tra un quarto d\'ora.'], $valori, 429);
+        return;
+    }
+    $hash = (string) Db::val('SELECT password_hash FROM users WHERE id = ?', [(int) $admin['id']], '');
+    if (!password_verify((string) ($_POST['password'] ?? ''), $hash)) {
+        $impostazioni($admin, $gruppo, ['password' => 'La password non è giusta: le impostazioni non sono state salvate.'], $valori, 422);
+        return;
+    }
+    try {
+        $errori = Impostazioni::salva($gruppo, $_POST);
+    } catch (\RuntimeException $e) {
+        Log::exception($e, 'impostazioni');
+        $impostazioni($admin, $gruppo, ['_' => $e->getMessage()], $valori, 500);
+        return;
+    }
+    if ($errori) { $impostazioni($admin, $gruppo, $errori, $valori, 422); return; }
+    // Nel registro si scrive cosa è cambiato, mai i valori.
+    Auth::audit('impostazioni.' . $gruppo, null, ['campi' => array_keys(Impostazioni::GRUPPI[$gruppo])]);
+    Support::flash(Impostazioni::TITOLI[$gruppo] . ': impostazioni salvate. Ora prova la connessione.');
+    Support::redirect('/admin/impostazioni#' . $gruppo);
+});
+
+$r->post('/admin/impostazioni/{gruppo}/prova', function (array $a) {
+    $admin = Auth::requireAdmin();
+    $gruppo = (string) $a['gruppo'];
+    if (!isset(Impostazioni::GRUPPI[$gruppo])) { http_response_code(404); exit('Non trovato.'); }
+    if (!RateLimit::hit('impostazioni-prova:' . (int) $admin['id'], 10, 900)) {
+        Support::flash('Troppe prove di fila: riprova tra un quarto d\'ora.', 'err');
+        Support::redirect('/admin/impostazioni#' . $gruppo);
+    }
+    [$ok, $msg] = Impostazioni::prova($gruppo, (string) $admin['email']);
+    Support::flash(Impostazioni::TITOLI[$gruppo] . ': ' . $msg, $ok ? 'ok' : 'err');
+    Support::redirect('/admin/impostazioni#' . $gruppo);
 });
 
 // ------------------------------------------------------------- testimonianze

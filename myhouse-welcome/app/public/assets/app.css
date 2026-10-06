@@ -1804,3 +1804,22 @@ main:focus{outline:none}
   background:transparent;color:var(--muted);font-size:18px;cursor:pointer}
 .pillola-r__togli:hover{background:var(--sunk);color:var(--ink)}
 @media (prefers-reduced-motion:reduce){ .interruttore-check input,.interruttore-check input::after{transition:none} }
+
+/* Amministrazione → Impostazioni: Stripe, posta, archivio delle foto. */
+.impostazioni{gap:14px;scroll-margin-top:24px}
+.impostazioni__testa{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.impostazioni__testa h2{font-size:22px;margin:0}
+.impostazioni__ico{display:inline-grid;place-items:center;width:38px;height:38px;border-radius:12px;background:var(--sunk);color:var(--terracotta);flex:none}
+.impostazioni__webhook{padding:14px 16px;border-radius:var(--r-md);background:var(--sunk);display:grid;gap:8px}
+.impostazioni__webhook p{margin:0}
+.impostazioni__url{word-break:break-all;font-size:14px}
+.impostazioni__campi{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px}
+.impostazioni__largo{grid-column:1/-1}
+.impostazioni__campi .field{display:grid;gap:6px;align-content:start}
+.impostazioni__campi .field>label{margin:0}
+.impostazioni__segreto{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.impostazioni__conferma{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;padding-top:16px;border-top:1px solid var(--line)}
+.impostazioni__conferma .field{flex:1 1 240px;display:grid;gap:6px}
+.impostazioni__prova{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0}
+.avviso{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media (max-width:640px){.impostazioni__campi{grid-template-columns:1fr}}

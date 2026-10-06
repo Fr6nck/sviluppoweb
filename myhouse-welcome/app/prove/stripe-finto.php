@@ -61,6 +61,7 @@ $abbonamento = function (string $id) use (&$stato, $ora, $dir, $espandi): array 
     ];
 };
 
+if ($metodo === 'GET' && $percorso === '/v1/balance') $rispondi(['object' => 'balance', 'available' => [], 'pending' => []]);
 if ($metodo === 'POST' && $percorso === '/v1/customers') $rispondi(['id' => 'cus_finto' . $n, 'object' => 'customer', 'metadata' => $corpo['metadata'] ?? []]);
 if ($metodo === 'POST' && preg_match('#^/v1/customers/(cus_[A-Za-z0-9_]+)$#', $percorso, $m)) {
     $rispondi(['id' => $m[1], 'object' => 'customer', 'metadata' => $corpo['metadata'] ?? []]);

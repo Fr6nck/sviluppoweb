@@ -1,5 +1,29 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Amministrazione → Impostazioni: Stripe, posta e foto dal pannello (6 ottobre 2026)
+
+Nessuna migrazione.
+
+- **Nuova pagina Impostazioni** (menu dell'amministrazione), con tre riquadri: Stripe, Posta in uscita, Archivio delle foto.
+  - **Stripe:** chiave segreta, segreto del webhook, Stripe Tax. C'è anche l'indirizzo del webhook da copiare, con l'elenco degli eventi da selezionare.
+  - **Posta:** SMTP, `mail()` o «non spedire»; server, porta, cifratura, utente, password, mittente.
+  - **Archivio:** disco o Amazon S3; regione, bucket, chiavi, indirizzo pubblico.
+- **Dove si salvano.** I valori vanno in `app/config.local.php`, il file che l'app già leggeva. È scritto con `var_export`, quindi un testo con apici resta testo. La versione precedente resta in `config.local.bak.php`, escluso dal repository e dal pacchetto.
+- **Sicurezza.**
+  - Per salvare serve la password dell'amministratore (al massimo 10 tentativi ogni 15 minuti).
+  - I segreti non si rimostrano: si vede solo come finiscono. Un campo lasciato vuoto li conserva, «Togli» li cancella.
+  - I campi impostati da variabili d'ambiente sono bloccati.
+  - Nel registro va solo quale gruppo è stato salvato, mai i valori.
+- **Controlli.** Ogni campo viene controllato prima del salvataggio, insieme alle regole tra campi:
+  - niente SMTP senza server e mittente;
+  - niente S3 senza regione, bucket e chiavi;
+  - niente chiave Stripe senza segreto del webhook.
+- **«Prova la connessione».**
+  - Stripe: chiede il saldo e indica se la chiave è reale o di prova.
+  - Posta: manda un'email di prova all'amministratore.
+  - S3: scrive, legge e cancella un piccolo file.
+- **Quadro.** Gli avvisi «Stripe non è configurato», «La posta non parte» e «I media stanno sul disco» hanno ora il pulsante «Imposta ora».
+
 ## v2 · Vetrina «Casa Checco» con i dati veri di Assisi (6 ottobre 2026)
 
 Nessuna migrazione. La casa, il vicolo, i padroni di casa, i telefoni (075 000 …) e i locali di «Dove mangiare» e «Negozi» restano di fantasia. Tutto il resto viene dalle fonti pubbliche del 2026:
