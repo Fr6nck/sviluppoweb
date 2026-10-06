@@ -8,30 +8,38 @@ use MHW\{Support, Csrf, Sconti, Plans};
 if (!Sconti::disponibili()) return;
 $sc = $sc ?? ($pv ? Sconti::applicato($acc, $pv, $quantita ?? 1) : null);
 $errSconto = $_SESSION['sconto_errore'] ?? null; unset($_SESSION['sconto_errore']);
-$idS = 'sconto-' . substr(md5($torna), 0, 6); ?>
+$idS = 'sconto-' . substr(md5($torna), 0, 6);
+// «Codice X» oppure, per lo sconto di Invita un amico (riga di sistema), «Invito di Lucia».
+$chiSconto = function (array $riga) use ($acc): string {
+    if (!empty($riga['sistema']) && ($i = MHW\Inviti::invitato((int) $acc['id']))) {
+        return '<b>Invito di ' . Support::e(explode(' ', trim((string) $i['referrer_name']))[0]) . '</b>';
+    }
+    return 'Codice <b>' . Support::e($riga['code']) . '</b>';
+};
+$conInviti = MHW\Inviti::disponibili(); ?>
 <?php if ($sc): ?>
   <div class="sconto-ok" role="status">
     <p class="sconto-ok__prezzo" style="margin:0"><s><?= Support::e(Support::money($sc['prezzo'], $pv['currency'] ?? 'EUR')) ?></s>
       <b><?= Support::e(Support::money($sc['scontato'], $pv['currency'] ?? 'EUR')) ?></b> + IVA il primo anno</p>
-    <p style="margin:0">Codice <b><?= Support::e($sc['riga']['code']) ?></b> applicato: <?= Support::e(Sconti::etichetta($sc['riga'])) ?> sul primo anno.
+    <p style="margin:0"><?= $chiSconto($sc['riga']) ?> applicato: <?= Support::e(Sconti::etichetta($sc['riga'])) ?> sul primo anno.
       Dal secondo anno <?= Support::e(Support::money($sc['prezzo'], $pv['currency'] ?? 'EUR')) ?> + IVA.</p>
     <form method="post" action="<?= b() ?>/sconto/togli" style="margin:0"><?= Csrf::field() ?><input type="hidden" name="torna" value="<?= Support::e($torna) ?>">
       <button class="linkbtn">Togli</button></form>
   </div>
 <?php elseif (!$pv && !$errSconto && !empty($acc['intended_discount_code_id']) && ($rigaSc = Sconti::riga((int) $acc['intended_discount_code_id']))): /* piano non ancora scelto */ ?>
   <div class="sconto-ok" role="status">
-    <p style="margin:0">Codice <b><?= Support::e($rigaSc['code']) ?></b> applicato: <?= Support::e(Sconti::etichetta($rigaSc)) ?> sul primo anno, sul piano che scegli.</p>
+    <p style="margin:0"><?= $chiSconto($rigaSc) ?> applicato: <?= Support::e(Sconti::etichetta($rigaSc)) ?> sul primo anno, sul piano che scegli.</p>
     <form method="post" action="<?= b() ?>/sconto/togli" style="margin:0"><?= Csrf::field() ?><input type="hidden" name="torna" value="<?= Support::e($torna) ?>">
       <button class="linkbtn">Togli</button></form>
   </div>
 <?php endif; ?>
 <?php if (!$sc || $errSconto): /* il campo: senza codice applicato, o per mostrare l'errore di un altro codice */ ?>
   <details class="sconto"<?= $errSconto ? ' open' : '' ?>>
-    <summary class="linkbtn">Hai un codice sconto?</summary>
+    <summary class="linkbtn"><?= $conInviti ? 'Hai un codice sconto o un invito?' : 'Hai un codice sconto?' ?></summary>
     <form method="post" action="<?= b() ?>/sconto/applica" class="sconto__form"><?= Csrf::field() ?>
       <input type="hidden" name="torna" value="<?= Support::e($torna) ?>">
       <div class="field" style="margin:0">
-        <label for="<?= $idS ?>">Codice sconto</label>
+        <label for="<?= $idS ?>"><?= $conInviti ? 'Codice sconto o codice di invito' : 'Codice sconto' ?></label>
         <input id="<?= $idS ?>" name="codice" type="text" maxlength="24" autocomplete="off" spellcheck="false" style="text-transform:uppercase"
                value="<?= Support::e($errSconto['codice'] ?? '') ?>"<?= $errSconto ? ' aria-invalid="true" aria-describedby="' . $idS . '-err"' : '' ?>>
       </div>

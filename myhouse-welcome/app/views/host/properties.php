@@ -97,6 +97,8 @@ $nome = $nome !== '' ? explode(' ', $nome)[0] : ''; ?>
   <?php endif; ?>
 </div>
 
+<?php include __DIR__ . '/_invita.php'; /* Invita un amico: la barra e il link, per chi ha un abbonamento attivo */ ?>
+
 <?php if (!$puoiAggiungere && $maxProp < PHP_INT_MAX): ?>
   <div class="limit" style="margin-top:28px">
     <?php if ($maxProp === 1): ?>

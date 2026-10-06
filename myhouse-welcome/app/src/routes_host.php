@@ -836,6 +836,21 @@ $r->get('/account', function () use ($host, $paginaAccount) {
     $paginaAccount($u, $acc);
 });
 
+// ------------------------------------------------------------ Invita un amico
+/* Il link personale, la barra degli inviti e gli amici invitati. Solo per chi può
+   invitare: inviti accesi e abbonamento Stripe attivo. */
+$r->get('/inviti', function () use ($host) {
+    [$u, $acc] = $host();
+    if (!MHW\Inviti::puoInvitare($acc)) {
+        Support::flash('Gli inviti si attivano con il tuo abbonamento: pubblica la guida e potrai invitare i tuoi amici.', 'avviso');
+        Support::redirect('/pannello');
+    }
+    View::out('host/inviti', [
+        'user' => $u, 'acc' => $acc, 'inv' => MHW\Inviti::stato($acc), 'amici' => MHW\Inviti::amici((int) $acc['id']),
+        'codice' => MHW\Inviti::codice($acc), 'nav' => 'inviti',
+    ], 'layout/cms');
+});
+
 /* Dati di fatturazione: si controllano qui (partita IVA, codice fiscale, SDI o PEC)
    e, se il cliente Stripe esiste già, si aggiornano anche lì. */
 $r->post('/account/fatturazione', function () use ($host, $paginaAccount) {
@@ -978,6 +993,11 @@ $r->post('/sconto/applica', function () use ($host, $tornaSconto) {
         if ($codice === '') throw new RuntimeException('Scrivi il codice.');
         $pv = $acc['intended_package_version_id'] ? Plans::currentVersion((int) $acc['intended_package_version_id']) : null;
         $q = $pv ? (Plans::quantity($pv, (int) ($acc['intended_quantity'] ?? 1)) ?? 1) : 1;
+        // Qui si può scrivere anche il codice di invito di un amico (Invita un amico).
+        if (!MHW\Sconti::trova($codice) && ($chi = MHW\Inviti::applicaCodice($acc, $codice)) !== null) {
+            Support::flash('Invito di ' . $chi . ' applicato: −' . MHW\Inviti::AMICO . '% sul primo anno.');
+            Support::redirect($tornaSconto());
+        }
         $riga = MHW\Sconti::valida($codice, $acc, $pv, $q);
         Db::update('accounts', ['intended_discount_code_id' => (int) $riga['id']], 'id = :aid', ['aid' => $acc['id']]);
         Support::flash('Codice ' . $riga['code'] . ' applicato.');

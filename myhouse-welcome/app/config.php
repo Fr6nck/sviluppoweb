@@ -62,6 +62,12 @@ $config = [
         'grace_days' => (int) $env('MHW_GRACE_DAYS', '0'),
     ],
 
+    // Invita un amico: spento finché non lo accendi (MHW_INVITI=1), quando il
+    // regolamento è pronto e hai fatto un giro in modalità test di Stripe.
+    'inviti' => [
+        'attivi' => $bool('MHW_INVITI'),
+    ],
+
     'mail' => [
         // smtp | mail | log. "log" scrive le email in storage/logs/mail.log:
         // per provare senza spedire niente.

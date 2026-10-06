@@ -59,9 +59,36 @@ $codiceDalLink = function (): ?array {
     try { return MHW\Sconti::valida($c, null, null); } catch (\RuntimeException) { return null; }
 };
 
-$r->get('/', function () use ($guard, $codiceDalLink) {
+/**
+ * Invita un amico: il link personale (/i/CODICE) lascia il codice in sessione e
+ * porta alla landing, che mostra chi invita. Chi è già dentro e non ha ancora
+ * pagato resta legato subito all'invito.
+ */
+$chiInvita = function (): ?array {
+    $c = (string) ($_SESSION['invito'] ?? '');
+    if ($c === '' || !($chi = MHW\Inviti::daCodice($c)) || !MHW\Inviti::puoInvitare($chi)) return null;
+    return $chi;
+};
+
+$r->get('/i/{codice}', function (array $a) use ($guard) {
+    $guard();
+    $codice = mb_substr(strtoupper((string) $a['codice']), 0, 12);
+    $_SESSION['invito'] = $codice;
+    if (($u = Auth::user()) && $u['role'] !== 'admin' && ($acc = Auth::account())) {
+        try {
+            $nome = MHW\Inviti::applicaCodice($acc, $codice);
+            if ($nome !== null) Support::flash('Invito di ' . $nome . ' applicato: −' . MHW\Inviti::AMICO . '% sul primo anno.');
+        } catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'avviso'); }
+        unset($_SESSION['invito']);
+        Support::redirect('/pannello');
+    }
+    Support::redirect('/');
+});
+
+$r->get('/', function () use ($guard, $codiceDalLink, $chiInvita) {
     $guard();
     $codiceSconto = $codiceDalLink();
+    $invito = $chiInvita();
     MHW\Stats::funnelEvent('landing_view');
     MHW\Demo::vetrinaAutomatica();   // una volta sola: poi costa un controllo su un file
     // La demo della landing: la vetrina creata dall'amministrazione, se c'è; altrimenti quella dei clienti di esempio.
@@ -78,6 +105,7 @@ $r->get('/', function () use ($guard, $codiceDalLink) {
         'offers' => Plans::offers(), 'demo' => $demo,
         'copertina' => $copertina ?: MHW\a('/assets/foto/casa.jpg'),
         'user' => $u, 'mie' => $mie, 'codiceSconto' => $codiceSconto,
+        'invitoDi' => $invito && !$u ? explode(' ', trim((string) $invito['user_name']))[0] : '',
         'testimonianze' => MHW\Testimonianze::visibili(),
     ]);
 });
@@ -124,6 +152,11 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
                       Db::update('accounts', ['intended_discount_code_id' => (int) $riga['id']], 'id = :aid', ['aid' => (int) $u['account_id']]); }
                 catch (\RuntimeException) {}
                 unset($_SESSION['codice_sconto']);
+            }
+            // Arrivato dal link di un amico (/i/CODICE): resta legato a chi l'ha invitato, con il suo sconto.
+            if (($inv = (string) ($_SESSION['invito'] ?? '')) !== '') {
+                if ($chi = MHW\Inviti::daCodice($inv)) MHW\Inviti::collega(Auth::account(), $chi);
+                unset($_SESSION['invito']);
             }
             Auth::sendVerification((int) $u['user_id']);
             Support::flash('Account creato. Ti abbiamo scritto per confermare l\'email: intanto puoi preparare la guida.');

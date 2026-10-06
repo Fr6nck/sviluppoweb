@@ -76,6 +76,10 @@ final class Sconti
     {
         $r = self::trova($codice);
         if (!$r) throw new \RuntimeException('Questo codice non esiste. Controlla di averlo scritto bene.');
+        // Lo sconto dell'amico (Inviti) è una riga di sistema: vale solo per chi è stato invitato.
+        if (!empty($r['sistema']) && (!$account || !Inviti::invitato((int) $account['id']))) {
+            throw new \RuntimeException('Questo codice non esiste. Controlla di averlo scritto bene.');
+        }
         $oggi = self::oggi();
         if (!(int) $r['active']) throw new \RuntimeException('Questo codice non è più attivo.');
         if ($oggi > $r['valid_until']) throw new \RuntimeException('Questo codice è scaduto il ' . self::giorno($r['valid_until']) . '.');
@@ -130,6 +134,7 @@ final class Sconti
         if ((string) $r['stripe_coupon_id'] !== '' || !Stripe::enabled()) return (string) $r['stripe_coupon_id'] !== '';
         $fine = (new \DateTimeImmutable($r['valid_until'] . ' 23:59:59', new \DateTimeZone('Europe/Rome')))->getTimestamp();
         $p = ['duration' => 'once', 'name' => $r['code'], 'redeem_by' => (string) $fine, 'metadata[discount_code_id]' => (string) $r['id']];
+        if (!empty($r['sistema'])) { unset($p['redeem_by']); $p['name'] = 'Invito di un amico'; }   // la riga degli Inviti non scade
         if ($r['kind'] === 'percent') $p['percent_off'] = (string) (int) $r['value'];
         else { $p['amount_off'] = (string) (int) $r['value']; $p['currency'] = 'eur'; }
         if ((int) $r['max_uses'] > 0) $p['max_redemptions'] = (string) (int) $r['max_uses'];

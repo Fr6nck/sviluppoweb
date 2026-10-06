@@ -30,6 +30,17 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
         <p class="small">Sconto del primo anno: <b><?= "\u{2212}" . Support::e(Support::money((int) $avuto['discount_cents'])) ?></b> (<?= Support::e($avuto['code']) ?>).
           <?php if ($fine): ?>Rinnovo a prezzo pieno il <?= Support::e(Support::date($fine)) ?>.<?php endif; ?></p>
       <?php endif; ?>
+      <?php if ($stripe && MHW\Inviti::puoInvitare($acc) && ($invAcc = MHW\Inviti::stato($acc)) && $invAcc['percento'] > 0): /* lo sconto degli inviti sul prossimo rinnovo */ ?>
+        <div class="sconto-ok" role="status">
+          <p class="sconto-ok__prezzo" style="margin:0"><s><?= Support::e(Support::money((int) $invAcc['prezzo'], $invAcc['valuta'])) ?></s>
+            <b><?= Support::e(Support::money((int) $invAcc['scontato'], $invAcc['valuta'])) ?></b> + IVA al prossimo rinnovo</p>
+          <p style="margin:0">Sconto inviti <b><?= "\u{2212}" . (int) $invAcc['percento'] ?>%</b>:
+            <?= (int) $invAcc['validi'] === 1 ? '1 amico ha pubblicato la sua guida' : (int) $invAcc['validi'] . ' amici hanno pubblicato la loro guida' ?>.
+            Dal rinnovo successivo torni a <?= Support::e(Support::money((int) $invAcc['prezzo'], $invAcc['valuta'])) ?> + IVA.
+            <a href="<?= b() ?>/inviti">Invita altri amici</a></p>
+          <?php if (!$invAcc['automatico']): ?><p class="small" style="margin:0">Il rinnovo automatico è disattivato: lo sconto vale solo sul rinnovo.</p><?php endif; ?>
+        </div>
+      <?php endif; ?>
       <?php if ($perStruttura && $stripe && ($sub['provider_extra_item_id'] ?? '') !== ''): ?>
         <form method="post" action="<?= b() ?>/account/strutture" class="row" style="gap:10px;align-items:flex-end"><?= Csrf::field() ?>
           <div class="field" style="margin:0"><label for="strutture">Numero di strutture</label>

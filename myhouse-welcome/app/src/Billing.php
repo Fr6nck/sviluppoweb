@@ -66,7 +66,7 @@ final class Billing
         }
 
         try {
-            return Db::tx(function () use ($id, $type, $obj, $event, $sub) {
+            $esito = Db::tx(function () use ($id, $type, $obj, $event, $sub) {
                 Db::insert('webhook_events', [
                     'provider' => 'stripe', 'provider_event_id' => $id, 'kind' => $type,
                     'payload' => json_encode($event, JSON_UNESCAPED_UNICODE), 'processed_at' => Support::now(),
@@ -86,6 +86,9 @@ final class Billing
             if (Db::one('SELECT id FROM webhook_events WHERE provider = ? AND provider_event_id = ?', ['stripe', $id])) return 'gia-elaborato';
             throw $e;
         }
+        // Invita un amico: lo sconto su Stripe e l'email partono a transazione chiusa.
+        Inviti::dopoEvento();
+        return $esito;
     }
 
     private static function onCheckoutCompleted(array $s, ?array $sub): string
@@ -149,6 +152,7 @@ final class Billing
                    + ($customerId !== '' ? ['stripe_customer_id' => $customerId] : []), 'id = :aid', ['aid' => $acc]);
         Db::run('UPDATE package_versions SET sold_count = sold_count + 1 WHERE id = ?', [$order['package_version_id']]);
         Sconti::registra($order, $sconto);   // un utilizzo per ordine, nella stessa transazione
+        Inviti::pagato($order);              // se è un amico invitato, l'invito diventa valido
         Entitlements::forget($acc);
 
         // La guida che aspettava il pagamento va online adesso.
@@ -198,6 +202,7 @@ final class Billing
             'updated_at' => Support::now(),
         ], 'id = :sid', ['sid' => $row['id']]);
         Entitlements::forget((int) $row['account_id']);
+        Inviti::fattura($row, $inv);         // un rinnovo scontato chiude gli inviti che lo hanno pagato
         return 'rinnovo-pagato';
     }
 

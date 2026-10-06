@@ -28,6 +28,9 @@ $generale = $admin
      ['impostazioni', '/admin/impostazioni', 'Impostazioni', 'key'],
      ['registro', '/admin/registro', 'Registro', 'list'], ['diagnostica', '/admin/diagnostica', 'Diagnostica', 'pulse']]
   : [['guide', '/pannello', 'Le mie guide', 'grid'], ['account', '/account', 'Account & Fatturazione', 'card']];
+// Invita un amico: la voce c'è solo per chi può invitare; in amministrazione, solo se gli inviti sono accesi.
+if ($admin && MHW\Inviti::disponibili()) array_splice($generale, 7, 0, [['inviti', '/admin/inviti', 'Inviti', 'message']]);
+if (!$admin && $u && ($accLato = Auth::account()) && MHW\Inviti::puoInvitare($accLato)) $generale[] = ['inviti', '/inviti', 'Invita un amico', 'people'];
 $attiva = $admin ? $nav : ($prop ? '' : ($nav ?: 'guide'));
 $guida = [];
 if ($prop) {
@@ -46,7 +49,7 @@ if ($admin) {
     $briciole[] = ['Amministrazione', $nav === 'admin' ? null : '/admin'];
     foreach ($generale as [$k, , $l]) if ($k === $nav && $k !== 'admin') $briciole[] = [$l, null];
 } elseif ($u) {
-    $briciole[] = [$nav === 'account' ? 'Account & Fatturazione' : 'Le mie guide', $prop ? '/pannello' : null];
+    $briciole[] = [['account' => 'Account & Fatturazione', 'inviti' => 'Invita un amico'][$nav] ?? 'Le mie guide', $prop ? '/pannello' : null];
     if ($prop) {
         $briciole[] = [$prop['name'], null];
         foreach ($guida as [$k, , $l]) if ($k === $quiGuida) $briciole[] = [$l, null];

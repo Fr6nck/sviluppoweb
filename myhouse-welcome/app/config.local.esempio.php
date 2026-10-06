@@ -34,6 +34,9 @@ return [
         ],
     ],
 
+    // Invita un amico: acceso solo dopo le prove in modalità test di Stripe.
+    // 'inviti' => ['attivi' => true],
+
     // Dati aziendali del piè di pagina e dei documenti legali (un valore vuoto nasconde la riga).
     // 'legal' => [
     //     'company'          => 'Blackout Agency',

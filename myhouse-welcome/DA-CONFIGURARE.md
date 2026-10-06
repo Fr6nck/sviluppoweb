@@ -60,6 +60,16 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
   - Si creano in **Amministrazione → Codici sconto**. Ognuno diventa un coupon Stripe «una volta», quindi sconta solo il primo anno.
   - I codici creati prima di attivare Stripe restano «da sincronizzare» e non si possono usare: premi «Riprova la sincronizzazione» dall'elenco.
   - Prova in modalità test: crea un codice del 20%, applicalo, paga con `4242 4242 4242 4242`. La prima fattura deve essere scontata e il rinnovo a prezzo pieno.
+- **Invita un amico.**
+  - È spento. Si accende con `MHW_INVITI=1`, oppure con `'inviti' => ['attivi' => true]` in `app/config.local.php`.
+  - Su Stripe non c'è niente da creare a mano: i coupon (`mhw-invito-5` … `mhw-invito-50` e quello dell'amico) nascono da soli. Gli eventi del webhook restano quelli di prima.
+  - Prima di accenderlo in produzione fai queste prove in modalità test:
+    1. Con un cliente che ha già pagato apri «Invita un amico» e copia il link.
+    2. In una finestra anonima apri il link, registrati e paga con `4242 4242 4242 4242`. La fattura dell'amico deve avere il 5% di sconto.
+    3. Su Stripe apri l'abbonamento di chi ha invitato: deve avere il coupon `mhw-invito-5`, e l'anteprima della prossima fattura deve essere scontata.
+    4. Con un orologio di prova di Stripe (test clock) fai arrivare il rinnovo. La fattura deve essere scontata, in «I tuoi inviti» l'amico diventa «Già scontato» e la barra torna a zero.
+    5. Con un Portfolio aggiungi una struttura da Account & Fatturazione (conguaglio subito). Dopo il pagamento il coupon deve essere ancora sull'abbonamento.
+  - Per i Portfolio grandi lo sconto del 50% può superare quello che portano dieci amici: valuta un tetto in euro con `Inviti::TETTO_CENTS`.
 
 ## 4. Testi da rivedere (Amministrazione)
 

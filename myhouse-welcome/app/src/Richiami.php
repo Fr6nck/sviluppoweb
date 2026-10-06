@@ -23,7 +23,7 @@ final class Richiami
 {
     public const TIPI = ['arrivo' => 'promemoria sull\'arrivo', 'sezioni' => 'promemoria sulle sezioni',
                          'pubblica' => 'promemoria sulla pubblicazione', 'rinnovo' => 'avviso prima del rinnovo',
-                         'eventi' => 'promemoria sugli eventi passati'];
+                         'eventi' => 'promemoria sugli eventi passati', 'inviti' => 'promemoria sugli inviti'];
     private const OGNI = 900;   // secondi tra un controllo e l'altro
 
     public static function disponibili(): bool { return Migrator::tableExists('email_log'); }
@@ -97,6 +97,7 @@ final class Richiami
                   'Apri gli eventi', Support::baseUrl() . '/pannello/' . (int) $e['id'] . '/sezioni/' . (int) $e['sid']];
             if (self::manda((int) $e['acc_id'], $e['email'], (string) $e['user_name'], 'eventi', $e['id'] . '-' . substr($oggi, 0, 7), $m)) $fatte['eventi']++;
         }
+        Inviti::inSospeso();   // gli sconti inviti che Stripe non ha ancora preso
         return $fatte;
     }
 
@@ -137,13 +138,20 @@ final class Richiami
         $numeri = $aperture > 0
             ? "In quest'anno " . ($guide === 1 ? 'la tua guida è stata aperta' : "le tue $guide guide sono state aperte") . " $aperture volte" . ($qr > 0 ? ", $qr delle quali dal QR Code" : '') . '.'
             : "Quest'anno non abbiamo ancora registrato aperture: controlla che il QR sia in vista e che il link arrivi agli ospiti prima dell'arrivo.";
+        // Invita un amico: lo sconto già guadagnato, oppure come abbassare il rinnovo finché c'è tempo.
+        if (Inviti::disponibili()) {
+            $inv = Inviti::stato(['id' => (int) $s['account_id']]);
+            $numeri .= $inv['percento'] > 0
+                ? ' Grazie ai tuoi inviti hai il ' . $inv['percento'] . '% di sconto: paghi ' . Support::money($inv['scontato'], $inv['valuta']) . ' + IVA invece di ' . Support::money($inv['prezzo'], $inv['valuta']) . '.'
+                : ' Puoi ancora abbassarlo: ogni amico che pubblica con il tuo invito vale il ' . Inviti::PASSO . '% in meno.';
+        }
         return ["Il tuo abbonamento si rinnova il $quando",
                 "il tuo abbonamento MyHouse Welcome si rinnova da solo il $quando. $numeri Se vuoi cambiare qualcosa, o disattivare il rinnovo, lo fai dal tuo account.",
                 'Vai al tuo account', Support::baseUrl() . '/account'];
     }
 
     /** Manda una volta sola: prima si scrive il registro (indice unico), poi l'email. */
-    private static function manda(int $accountId, string $email, string $nome, string $tipo, string $ref, array $m): bool
+    public static function manda(int $accountId, string $email, string $nome, string $tipo, string $ref, array $m): bool
     {
         if (Db::one('SELECT id FROM email_optout WHERE account_id = ? AND kind = ?', [$accountId, $tipo])) return false;
         if (Db::one('SELECT id FROM email_log WHERE account_id = ? AND kind = ? AND ref = ?', [$accountId, $tipo, $ref])) return false;

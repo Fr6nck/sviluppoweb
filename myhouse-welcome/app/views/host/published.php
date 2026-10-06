@@ -10,4 +10,5 @@
     <a class="btn btn--go" href="<?= b() ?>/g/<?= Support::e($prop['slug']) ?>/benvenuto" target="_blank" rel="noopener">Apri la guida <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></a>
     <a class="btn btn--ghost" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>">Torna ai contenuti</a>
   </div>
+  <?php include __DIR__ . '/_invita.php'; /* il momento migliore per invitare: la guida è appena andata online */ ?>
 </div>

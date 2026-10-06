@@ -1,5 +1,24 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Invita un amico (6 ottobre 2026)
+
+Migrazione `019`: la tabella `referrals`, le colonne `accounts.referral_code` e `accounts.referral_applied_percent`, la colonna `discount_codes.sistema`. Nuova classe `Inviti`. **Spento finché non lo accendi** con `MHW_INVITI=1`.
+
+- **La regola.** Chi ha un abbonamento Stripe attivo ha un link personale (`/i/CODICE`). Chi si registra da lì ha il 5% sul primo anno. Chi ha invitato ha il 5% in meno sul prossimo rinnovo per ogni amico che paga, fino al 50% (10 amici). Dall'undicesimo l'amico ha comunque il suo 5%. Le tre percentuali sono costanti in `Inviti`.
+- **Per chi invita.**
+  - Il riquadro con la barra a dieci tacche, il prezzo del prossimo rinnovo e il link con «Copia», «WhatsApp» ed «Email»: in «Le mie guide», dopo «La tua guida è online» e nella pagina nuova **Invita un amico** (voce nel menu).
+  - In «Account & Fatturazione» compare lo sconto inviti sul prossimo rinnovo.
+  - Un'email per ogni amico che pubblica, e una riga in più nell'avviso dei 30 giorni prima del rinnovo.
+- **Per l'amico.** La landing aperta dal link dice chi lo ha invitato. Dopo la registrazione lo sconto è già applicato («Invito di Lucia»). Il codice di invito si può anche scrivere dove si mette il codice sconto. Non si somma a un altro codice.
+- **Stripe.**
+  - L'amico: una riga «di sistema» in `discount_codes`, quindi lo stesso percorso dei codici sconto.
+  - Chi invita: un coupon «una volta» (`mhw-invito-5` … `mhw-invito-50`) sull'abbonamento, sostituito a ogni amico in più. Sconta il rinnovo e Stripe lo toglie da solo.
+  - Il rinnovo scontato chiude gli inviti e il conto riparte da zero. Se una fattura di conguaglio consuma il coupon, torna sull'abbonamento.
+  - Se Stripe non risponde il webhook passa lo stesso e il giro dei richiami riallinea.
+  - Nessun evento nuovo da aggiungere al webhook.
+- **Amministrazione → Inviti.** Chi ha invitato chi, lo stato di ogni invito e «Annulla». La riga di sistema non compare tra i codici sconto.
+- **Regolamento.** Un testo di partenza al punto 10 dei Termini, visibile solo con gli inviti accesi: va fatto rivedere.
+
 ## v2 · Casa Checco si crea da sola (6 ottobre 2026)
 
 Nessuna migrazione.

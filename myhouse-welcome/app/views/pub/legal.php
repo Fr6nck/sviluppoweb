@@ -46,6 +46,19 @@ $title = $doc === 'termini' ? 'Termini e condizioni' : 'Informativa sulla privac
   <p>[Da completare con un legale: diritto di recesso, rimborsi, chiusura dell'account e cancellazione dei dati.]</p>
   <h2 style="font-size:22px">9. Legge applicabile e foro competente</h2>
   <p>[Da completare con un legale.]</p>
+  <?php if (MHW\Inviti::disponibili()): /* il regolamento di Invita un amico: testo di partenza, da far rivedere */ ?>
+  <h2 style="font-size:22px" id="inviti">10. Invita un amico</h2>
+  <p>Chi ha un abbonamento attivo può invitare altre persone con il proprio link personale. Chi si registra da quel link e
+    attiva il suo primo abbonamento ha uno sconto del <?= MHW\Inviti::AMICO ?>% sul primo anno. Per ogni persona invitata che paga il
+    primo abbonamento, chi ha invitato ha uno sconto del <?= MHW\Inviti::PASSO ?>% sul prezzo del suo prossimo rinnovo annuale, fino a un massimo
+    del <?= MHW\Inviti::MASSIMO ?>% (<?= MHW\Inviti::amiciMassimi() ?> inviti). Gli inviti oltre il massimo non danno altro sconto a chi invita; la persona invitata ha comunque il suo.</p>
+  <p>Lo sconto di chi invita si applica una sola volta, al primo rinnovo automatico successivo; dopo quel rinnovo il conto degli
+    inviti riparte da zero. Non è convertibile in denaro e non si applica senza un rinnovo. Lo sconto della persona invitata non
+    si somma ad altri codici sconto. Non valgono gli inviti a se stessi, ad account con gli stessi dati di fatturazione o a chi
+    ha già avuto un abbonamento. Un invito non conta più se il primo pagamento della persona invitata viene rimborsato.
+    Possiamo modificare o chiudere il programma: gli sconti già maturati restano validi per il rinnovo successivo.</p>
+  <p>[Da far rivedere a un legale e al commercialista prima di accendere gli inviti.]</p>
+  <?php endif; ?>
 </div>
 <?php else: ?>
 <h1 style="margin-top:24px">Informativa sulla privacy</h1>

@@ -58,6 +58,7 @@ accanto a `config.php`, e riempi solo le voci che servono.
 | `STRIPE_WEBHOOK_SECRET` | segreto del webhook (`whsec_…`) |
 | `STRIPE_AUTOMATIC_TAX` | `1` per far calcolare l'IVA a Stripe Tax (va attivato anche su Stripe) |
 | `MHW_GRACE_DAYS` | giorni di tolleranza dopo un rinnovo non riuscito (predefinito 0) |
+| `MHW_INVITI` | `1` accende «Invita un amico» (predefinito: spento). Le regole e le prove da fare prima sono in `DA-CONFIGURARE.md` |
 | `MAIL_TRANSPORT` | `smtp`, `mail` o `log` (predefinito: le email finiscono in `storage/logs/mail.log`) |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS`, `MAIL_ENCRYPTION` | server SMTP (`tls` = STARTTLS sulla 587, `ssl` sulla 465) |
 | `MAIL_FROM`, `MAIL_FROM_NAME` | mittente |

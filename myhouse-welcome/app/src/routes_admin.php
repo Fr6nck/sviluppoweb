@@ -516,6 +516,8 @@ $r->post('/admin/testimonianze/{tid}/elimina', function (array $a) {
 $r->get('/admin/sconti', function () {
     Auth::requireAdmin();
     $righe = MHW\Sconti::disponibili() ? Db::all('SELECT * FROM discount_codes ORDER BY id DESC') : [];
+    // La riga di sistema di Invita un amico non è un codice da gestire a mano: sta in Amministrazione → Inviti.
+    $righe = array_values(array_filter($righe, fn($c) => empty($c['sistema'])));
     foreach ($righe as &$c) { $c['stato'] = MHW\Sconti::stato($c); $c['usi'] = MHW\Sconti::utilizzi((int) $c['id']); }
     unset($c);
     View::out('admin/sconti', [
@@ -560,6 +562,7 @@ $r->post('/admin/sconti/{id}/{fai}', function (array $a) {
     $c = MHW\Sconti::riga((int) $a['id']);
     if (!$c) { http_response_code(404); View::out('pub/404', []); }
     $torna = ($_POST['torna'] ?? '') === 'dettaglio' ? '/admin/sconti/' . $c['id'] : '/admin/sconti';
+    if (!empty($c['sistema'])) { Support::flash('Questo codice è gestito da Invita un amico: non si modifica da qui.', 'err'); Support::redirect('/admin/sconti'); }
     switch ($a['fai']) {
         case 'disattiva':
             MHW\Sconti::disattiva((int) $c['id']);
@@ -577,4 +580,24 @@ $r->post('/admin/sconti/{id}/{fai}', function (array $a) {
         default: http_response_code(404); View::out('pub/404', []);
     }
     Support::redirect($torna);
+});
+
+// ------------------------------------------------------------ Invita un amico
+/* Chi ha invitato chi e in che stato è ogni invito. «Annulla» toglie un invito dal
+   conto (un rimborso, un abuso) e riallinea lo sconto di chi invita su Stripe. */
+$r->get('/admin/inviti', function () {
+    Auth::requireAdmin();
+    $righe = MHW\Migrator::tableExists('referrals') ? Db::all(
+        'SELECT r.*, ur.name AS chi, ur.email AS chi_email, ar.id AS chi_account, uf.name AS amico, uf.email AS amico_email, af.id AS amico_account
+         FROM referrals r JOIN accounts ar ON ar.id = r.referrer_account_id JOIN users ur ON ur.id = ar.user_id
+         JOIN accounts af ON af.id = r.friend_account_id JOIN users uf ON uf.id = af.user_id ORDER BY r.id DESC LIMIT 300') : [];
+    View::out('admin/inviti', ['righe' => $righe, 'attivi' => MHW\Inviti::disponibili(), 'nav' => 'inviti'], 'layout/cms');
+});
+
+$r->post('/admin/inviti/{id}/annulla', function (array $a) {
+    Auth::requireAdmin();
+    MHW\Inviti::annulla((int) $a['id']);
+    Auth::audit('referral.cancel', null, ['id' => (int) $a['id']]);
+    Support::flash('Invito annullato: non conta più per lo sconto.');
+    Support::redirect('/admin/inviti');
 });
