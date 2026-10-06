@@ -75,6 +75,19 @@
     try { f.contentWindow.location.reload(); } catch (e) { f.src = f.src; }
   }
 
+  /* ---- Tastiera aperta (telefono): la barra in basso si toglie di mezzo ----
+     Con il dito si scrive in un campo: la barra fissa non deve coprirlo. */
+  if (window.matchMedia && matchMedia('(pointer: coarse)').matches) {
+    var scrive = function (el) { return el && el.matches && el.matches('input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=submit]):not([type=button]),textarea,select'); };
+    document.addEventListener('focusin', function (e) { if (scrive(e.target)) document.documentElement.classList.add('tastiera'); });
+    document.addEventListener('focusout', function () {
+      setTimeout(function () { if (!scrive(document.activeElement)) document.documentElement.classList.remove('tastiera'); }, 150);
+    });
+  }
+  // La scheda del pannello aperta resta in vista anche quando le schede scorrono di lato.
+  var schedaAttiva = document.querySelector('.schede-guida [aria-current]');
+  if (schedaAttiva && schedaAttiva.scrollIntoView) schedaAttiva.scrollIntoView({ block: 'nearest', inline: 'center' });
+
   /* ---- Salvataggio mentre si scrive ---------------------------------------
      Solo i moduli con data-autosave. Si manda il modulo com'è, senza i file:
      quelli partono solo col bottone. */
@@ -294,6 +307,11 @@
           return;
         }
         el = c.querySelector('input[type=text],input[type=tel],input[type=time],input[type=date],textarea');
+        if (el && el.type === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(el.value)) {   // le date per esteso: «3 ottobre 2027»
+          var d = el.value.split('-');
+          parti.push(parseInt(d[2], 10) + ' ' + ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'][parseInt(d[1], 10) - 1] + ' ' + d[0]);
+          return;
+        }
         if (el && !el.hasAttribute('data-segreto') && el.value.trim() !== '') parti.push(el.value.trim().split('\n')[0] + (c.querySelector('.soldi') ? ' €' : ''));
       });
       return parti.join(' · ');

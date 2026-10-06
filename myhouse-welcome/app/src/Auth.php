@@ -45,9 +45,9 @@ final class Auth
         $name = trim($name);
         if ($name === '') throw new \RuntimeException('Scrivi il tuo nome.');
         if (mb_strlen($name) > 120) throw new \RuntimeException('Il nome è troppo lungo.');
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new \RuntimeException('Questo indirizzo email non è valido.');
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 190) throw new \RuntimeException('Questo indirizzo email non è valido.');
         if (mb_strlen($password) < 8) throw new \RuntimeException('La password deve avere almeno 8 caratteri.');
-        if (mb_strlen($password) > 200) throw new \RuntimeException('La password è troppo lunga.');
+        if (strlen($password) > 72) throw new \RuntimeException('La password può avere al massimo 72 caratteri.');   // oltre, bcrypt la taglierebbe senza dirlo
         if (Db::one('SELECT id FROM users WHERE email = ?', [$email])) {
             throw new \RuntimeException('Esiste già un account con questa email. Accedi, oppure recupera la password.');
         }

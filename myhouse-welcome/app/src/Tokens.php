@@ -10,6 +10,7 @@ final class Tokens
 {
     public const VERIFY = 'verify';
     public const RESET = 'reset';
+    public const EMAIL = 'email';   // conferma dell'email nuova (users.pending_email)
 
     public static function issue(int $userId, string $purpose, int $ttlSeconds): string
     {

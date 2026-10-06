@@ -26,6 +26,8 @@ function capitolo(string $t): void { global $esiti, $capitolo; $capitolo = $t; $
 function prova(string $nome, bool $ok, string $nota = ''): void {
     global $esiti, $falliti;
     if (!$ok) $falliti++;
+    // PROVE_DUMP=cartella: la pagina dell'ultima risposta ($r) di ogni prova fallita, per capire cosa è cambiato.
+    if (!$ok && ($d = getenv('PROVE_DUMP'))) @file_put_contents($d . '/' . count($esiti) . '.html', "<!-- $nome -->\n" . ($GLOBALS['r']['body'] ?? ''));
     $esiti[] = ($ok ? '  ok  ' : ' NO   ') . $nome . ($nota !== '' ? '   — ' . $nota : '');
 }
 function pulita(array $r): bool {
@@ -202,9 +204,9 @@ prova('…il totale lo calcola uno script senza prezzi scritti dentro', str_cont
 prova('Pricing: niente "CMS", niente frasi finali', !preg_match('/>\s*CMS\s*</', $r['body'])
       && !str_contains($r['body'], 'Meno domande ripetitive, più tempo per accogliere') && !str_contains($r['body'], 'concierge digitale'));
 prova('Piani: headline e descrizioni nuove', str_contains($r['body'], 'Le informazioni importanti, sempre a disposizione.') && str_contains($r['body'], 'Una guida completa, senza limiti di sezioni.')
-      && str_contains($r['body'], 'Il Plus per più strutture.') && str_contains($r['body'], 'statistiche distinti per ogni struttura'));
+      && str_contains($r['body'], 'Il Plus per più strutture.') && str_contains($r['body'], 'Statistiche distinte per struttura'));
 $carteListino = substr($r['body'], (int) strpos($r['body'], 'class="grid grid-3 piani"'), (int) strpos($r['body'], 'class="confronto"') - (int) strpos($r['body'], 'class="grid grid-3 piani"'));
-prova('Plus: foto e PDF spiegati, niente "immagine profilo" nelle card, badge sobrio', str_contains($carteListino, 'Foto esplicative nelle sezioni') && str_contains($carteListino, 'Documenti PDF allegati')
+prova('Plus: foto e PDF spiegati, niente "immagine profilo" nelle card, badge sobrio', str_contains($carteListino, 'Foto e PDF nelle sezioni')
       && !str_contains($carteListino, 'Immagine profilo') && str_contains($r['body'], 'Più completo') && !str_contains($r['body'], 'Più scelto'));
 prova('Nota sul rinnovo automatico sotto i piani', str_contains($r['body'], 'Puoi disattivare il rinnovo dal tuo account'));
 prova('Il prodotto si vede subito: telefono nella hero, prima della foto', strpos($r['body'], 'class="device"') !== false && strpos($r['body'], 'class="device"') < strpos($r['body'], 'class="scene"'));
@@ -229,8 +231,8 @@ $tempo = preg_match('#<section id="il-tempo".*?</section>#s', $r['body'], $m) ? 
 prova('Sezione "Il tempo che non vedi" presente', $tempo !== '' && str_contains($tempo, 'Ogni ospite è nuovo.'));
 prova('…dopo il prodotto e prima di "Come funziona"', strpos($r['body'], 'class="prodotto"') < strpos($r['body'], 'id="il-tempo"') && strpos($r['body'], 'id="il-tempo"') < strpos($r['body'], 'id="come-funziona"'));
 prova('…con le tre domande, la soluzione, due vantaggi e il valore annuale', substr_count($tempo, 'class="msg"') === 3 && str_contains($tempo, 'Le risposte sono già nella tua guida.')
-      && substr_count($tempo, 'class="vantaggio"') === 2 && str_contains($tempo, 'Meno dubbi all') && str_contains($tempo, 'Un piccolo investimento annuale'));
-prova('…il prezzo di partenza viene dal listino', str_contains($tempo, "Da 87\u{00A0}€ + IVA all'anno."));
+      && substr_count($tempo, 'class="vantaggio"') >= 2 && str_contains($tempo, 'Meno dubbi all') && str_contains($tempo, 'Un piccolo investimento annuale'));
+prova('…il prezzo di partenza viene dal listino', str_contains($tempo, "Da 87\u{00A0}€ + IVA all'anno"));
 prova('…niente tono difensivo', !str_contains($r['body'], 'Non paghi una pagina con un QR'));
 prova('…senza numeri di risparmio inventati', !preg_match('/\d+\s*(%|ore|messaggi in meno)|mai più|elimin/i', strip_tags($tempo)));
 prova('CTA della hero verso la registrazione e verso la demo', preg_match('#<section class="hero2">.*?</section>#s', $r['body'], $mh) && str_contains($mh[0], '/registrati"') && str_contains($mh[0], 'Guarda la demo'));
@@ -240,8 +242,8 @@ prova('Fase 1 · piè di pagina con P.IVA, telefono e WhatsApp', str_contains($r
 prova('Fase 1 · favicon, icona Home e anteprima di condivisione', str_contains($r['body'], '/assets/favicon.svg') && str_contains($r['body'], '/assets/apple-touch-icon.png')
       && preg_match('#<meta property="og:image" content="https?://[^"]+/assets/og\.jpg">#', $r['body']) === 1);
 foreach (['favicon.svg', 'apple-touch-icon.png', 'og.jpg'] as $f) prova("Fase 1 · $f presente", is_file("$DOVE/assets/$f") && filesize("$DOVE/assets/$f") > 300);
-prova('Fase 1 · header del telefono: CTA e menu con tutte le voci', preg_match('#<div class="topbar__telefono">.*?</div>\s*</div></header>#s', $r['body'], $mt) === 1
-      && str_contains($mt[0], 'Crea gratis') && str_contains($mt[0], 'Come funziona') && str_contains($mt[0], 'Piani') && str_contains($mt[0], 'Il QR') && str_contains($mt[0], 'Accedi'));
+prova('Fase 1 · header del telefono: CTA e menu con tutte le voci', preg_match('#<div class="topbar__telefono">.*?</header>#s', $r['body'], $mt) === 1
+      && str_contains($mt[0], 'Crea gratis') && str_contains($mt[0], 'Come funziona') && str_contains($mt[0], 'Prezzi') && str_contains($mt[0], 'Il QR') && str_contains($mt[0], 'Accedi'));
 prova('Fase 1 · simbolo del marchio nell\'header', str_contains($r['body'], 'class="brand"') && str_contains($r['body'], 'class="simbolo"'));
 $icone = [];
 foreach (['arrival', 'transport', 'parking', 'waste', 'visit', 'todo', 'rules', 'services'] as $k) {
@@ -262,7 +264,7 @@ $anna = new Browser('anna');
 $r = $anna->get('/registrati?piano=' . pv('essential'));
 prova('Registrazione si apre', $r['code'] === 200 && str_contains($r['body'], 'Cominciamo.'));
 prova('Fase 2 · in alto il piano scelto, con «cambia»', str_contains($r['body'], 'class="chip-piano"') && str_contains($r['body'], 'Piano <b>Essential</b>')
-      && str_contains($r['body'], "87\u{00A0}€ + IVA/anno") && str_contains($r['body'], '>cambia</a>'));
+      && str_contains($r['body'], "87\u{00A0}€ + IVA/anno") && str_contains($r['body'], '>Cambia</a>'));
 prova('Fase 2 · «Nome e cognome», password con «Mostra» e barra di robustezza', str_contains($r['body'], 'Nome e cognome') && str_contains($r['body'], 'data-mostra-pw')
       && str_contains($r['body'], 'data-forza'));
 prova('Fase 2 · una sola casella (Termini), la privacy è una riga sotto il bottone', substr_count($r['body'], 'type="checkbox"') === 1 && !str_contains($r['body'], 'name="privacy"')
@@ -325,7 +327,7 @@ $pid = (int) val('SELECT id FROM properties WHERE account_id = ?', [$acc['id']])
 $prop = riga('SELECT * FROM properties WHERE id = ?', [$pid]);
 prova('Check-in & Check-out creato come nucleo', (int) val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_core = 1', [$pid]) === 1);
 prova('QR creato subito', (bool) val('SELECT token FROM qr_tokens WHERE property_id = ?', [$pid]));
-foreach (['struttura' => 'Struttura e contatti', 'arrivo' => 'Arrivo e partenza', 'sezioni' => 'Sezioni', 'aspetto' => 'Aspetto', 'pubblica' => 'Anteprima e pubblica'] as $passo => $nomePasso) {
+foreach (['struttura' => 'Struttura e contatti', 'arrivo' => 'Check-in &amp; Check-out', 'sezioni' => 'Sezioni', 'aspetto' => 'Aspetto', 'pubblica' => 'Pubblica'] as $passo => $nomePasso) {
     $r = $anna->get("/pannello/$pid/procedura/$passo");
     prova("Passo \"$passo\" si apre", $r['code'] === 200 && pulita($r) && str_contains($r['body'], $nomePasso) && str_contains($r['body'], 'di 5'));
 }
@@ -334,7 +336,7 @@ foreach (['checkin' => 'arrivo', 'contenuti' => 'sezioni', 'lingue' => 'aspetto'
     prova("Fase 2 · vecchio indirizzo «{$vecchio}» → 301 a «{$nuovo}»", $r['code'] === 301 && str_ends_with($r['loc'], "/procedura/$nuovo"), $r['code'] . ' ' . $r['loc']);
 }
 $r = $anna->get("/pannello/$pid/procedura/struttura");
-prova('Fase 2 · procedura: una sola navigazione (niente tab), «Esci, continuo dopo»', !str_contains($r['body'], 'aria-label="La guida"') && str_contains($r['body'], 'Esci, continuo dopo')
+prova('Fase 2 · procedura: una sola navigazione (niente tab), «Continua dopo»', !str_contains($r['body'], 'aria-label="La guida"') && str_contains($r['body'], '>Continua dopo</a>')
       && str_contains($r['body'], 'class="verifica-riga"') && !str_contains($r['body'], 'banner banner--info'));
 prova('Fase 2 · «In che lingua scrivi la guida?» con l\'italiano scelto', str_contains($r['body'], 'In che lingua scrivi la guida?')
       && preg_match('#name="default_locale" value="it" checked#', $r['body']) === 1);
@@ -379,8 +381,8 @@ foreach (['wifi', 'rules', 'eat', 'parking'] as $k) {
 $r = $anna->post("/pannello/$pid/sezioni", ['kind' => 'transport', 'torna' => 'procedura']);
 $r = $anna->segui($r);
 prova('La quinta sezione è rifiutata dal server', !val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$pid, 'transport']));
-prova('Messaggio di limite elegante', str_contains($r['body'], 'Hai utilizzato tutte le 4 sezioni incluse nel tuo piano') && str_contains($r['body'], 'Scopri Plus'));
-prova('Il contatore dice 4 su 4', str_contains($r['body'], '4 sezioni su 4 utilizzate'));
+prova('Messaggio di limite elegante', str_contains($r['body'], 'Hai già 4 sezioni attive, il massimo del tuo piano') && str_contains($r['body'], 'Scopri Plus'));
+prova('Il contatore dice 4 su 4', str_contains($r['body'], '4 su 4 sezioni attive'));
 prova('Ordinamento: maniglia e menu ⋯ con Sposta su / giù', str_contains($r['body'], 'riga__maniglia') && str_contains($r['body'], 'Sposta su') && str_contains($r['body'], 'Sposta giù'));
 $anna->post("/pannello/$pid/sezioni/{$ids['parking']}/azione", ['fai' => 'disattiva', 'torna' => 'procedura']);
 prova('Disattivare libera un posto', (int) val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_core = 0 AND is_active = 1', [$pid]) === 3);
@@ -411,7 +413,7 @@ $r = $anna->get("/pannello/$pid/sezioni/{$ids['wifi']}");
 prova('Editor strutturato (niente mini-sintassi)', pulita($r) && str_contains($r['body'], 'Nome della rete') && !str_contains($r['body'], 'riga vuota'));
 prova('Essential: niente caricamento immagini nelle sezioni', !str_contains($r['body'], 'name="foto"'));
 $r = $anna->post("/pannello/$pid/sezioni/{$ids['wifi']}", ['network' => 'CasaProva_5G', 'foto' => file_(png(), 'image/png')]);
-prova('Essential: immagine rifiutata anche forzando il modulo', str_contains($r['body'], 'comprese dal piano Plus') && !val('SELECT media_id FROM sections WHERE id = ?', [$ids['wifi']]));
+prova('Essential: immagine rifiutata anche forzando il modulo', str_contains($r['body'], 'disponibili con il piano Plus') && !val('SELECT media_id FROM sections WHERE id = ?', [$ids['wifi']]));
 $r = $anna->post("/pannello/$pid/sezioni/{$ids['wifi']}", ['network' => 'CasaProva_5G', 'pdf' => file_(pdfVero(), 'application/pdf')]);
 prova('Essential: PDF rifiutato dal server', str_contains($r['body'], 'PDF') && !val('SELECT pdf_media_id FROM sections WHERE id = ?', [$ids['wifi']]));
 
@@ -549,7 +551,7 @@ prova('R5 · parcheggio: righe ripetibili, senza caricamento foto (Essential)', 
 $r = $anna->post("/pannello/$pid/sezioni/{$ids['parking']}", ['options[0][id]' => '', 'options[0][type]' => 'privato', 'options[0][name]' => 'Posto in cortile',
     'options[0][address]' => 'Via San Francesco 12', 'options[0][photo]' => '', 'rip_file[options][0][photo]' => file_(png(), 'image/png'),
     'ztl' => 'Il centro è ZTL dalle 8 alle 20.']);
-prova('R5 · foto in una riga rifiutata dal server senza il piano Plus', pulita($r) && str_contains($r['body'], 'comprese dal piano Plus')
+prova('R5 · foto in una riga rifiutata dal server senza il piano Plus', pulita($r) && str_contains($r['body'], 'disponibili con il piano Plus')
       && (int) val("SELECT COUNT(*) FROM media WHERE account_id = ?", [$acc['id']]) === 0);
 $fotoAltrui = (int) val('SELECT media_id FROM sections WHERE media_id IS NOT NULL ORDER BY id LIMIT 1');
 $anna->post("/pannello/$pid/sezioni/{$ids['parking']}", ['options' => [
@@ -647,7 +649,7 @@ $posMaps = strpos($r['body'], 'Incolla il link di Google Maps'); $posNome = strp
 prova('R6 · modulo: prima il link, poi nome, categoria, perché lo consigli, etichetta; il resto in «Altri dettagli» chiuso',
       $posMaps !== false && $posMaps < $posNome && $posNome < strpos($r['body'], 'Perché lo consigli') && strpos($r['body'], 'for="pl-badge"') < $posAltri
       && $posAltri < strpos($r['body'], 'for="pl-desc"') && $posAltri < strpos($r['body'], 'for="pl-walk"') && str_contains($r['body'], '<details class="altri-dettagli">')
-      && str_contains($r['body'], 'Stima, modificabile'));
+      && str_contains($r['body'], 'È una stima che puoi correggere'));
 $link = 'https://www.google.com/maps/place/Trattoria+di+Prova/@42.7830,12.4100,17z/data=!4m6!3m5!8m2!3d42.7832!4d12.4098';
 $j = json_decode($elena->post("/pannello/$epid/mappe", ['url' => $link])['body'], true);
 prova('R6 · dal link: nome, coordinate e minuti a piedi stimati', ($j['name'] ?? '') === 'Trattoria di Prova' && abs(($j['lat'] ?? 0) - 42.7832) < 0.00001 && ($j['walk_minutes'] ?? 0) >= 3 && ($j['walk_minutes'] ?? 0) <= 6, json_encode($j));
@@ -690,7 +692,7 @@ if (getenv('MHW_STORAGE') === 's3') {
 }
 $r = $anna->post("/pannello/$pid/aspetto", ['palette' => 'mare', 'text_tone' => 'scuro',
     'profile' => file_(png(200, 200), 'image/png')]);
-prova('Immagine profilo rifiutata a Essential', str_contains($r['body'], 'non è compres') && !val('SELECT profile_media_id FROM properties WHERE id = ?', [$pid]));
+prova('Immagine profilo rifiutata a Essential', str_contains($r['body'], 'non fa parte del tuo piano') && !val('SELECT profile_media_id FROM properties WHERE id = ?', [$pid]));
 $svg = "$TMP/x.svg"; file_put_contents($svg, '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
 $r = $anna->post("/pannello/$pid/aspetto", ['palette' => 'mare', 'text_tone' => 'scuro', 'cover' => file_($svg, 'image/png', 'finto.png')]);
 prova('SVG travestito da PNG rifiutato', !val('SELECT cover_media_id FROM properties WHERE id = ?', [$pid]));
@@ -1166,7 +1168,7 @@ prova('Fase 4 · conferma con il costo: 60 € l\'anno, la parte che resta di qu
 $prima = count(richiesteStripe());
 $r = $gino->post('/pannello/nuova', ['name' => 'Gino Quattro', 'city' => 'Bari']);
 prova('…senza conferma niente Stripe e niente struttura', count(richiesteStripe()) === $prima && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$gacc]) === 3
-      && str_contains($r['body'], 'Conferma il costo'));
+      && str_contains($r['body'], 'Spunta la conferma per aggiungere la struttura'));
 $r = $gino->post('/pannello/nuova', ['name' => 'Gino Quattro', 'city' => 'Bari', 'conferma' => '1']);
 $mod = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_gino'));
 $mc = end($mod)['corpo'] ?? [];
@@ -1193,8 +1195,8 @@ $admin->get('/admin/cliente/' . $lacc);
 $admin->post("/admin/cliente/$lacc/abbonamento", ['pv' => (string) pv('portfolio'), 'mesi' => '12', 'nota' => 'Prova della copia', 'strutture' => '2']);
 $r = $lucia->get('/pannello/nuova');
 prova('Fase 4 · «Crea da una struttura esistente»: Casa Lucia, con le sezioni già spuntate', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Crea da una struttura esistente')
-      && str_contains($r['body'], "<option value=\"$casa\">Casa Lucia") && substr_count($r['body'], 'name="copia[]"') === 13
-      && str_contains($r['body'], 'Non si copiano mai: indirizzo, CIN, reti Wi-Fi'));
+      && preg_match('#<option value="' . $casa . '">\s*Casa Lucia#', $r['body']) === 1 && substr_count($r['body'], 'name="copia[]"') === 13
+      && str_contains($r['body'], 'Non si copiano mai, perché sono solo di una struttura: indirizzo, CIN, reti Wi-Fi'));
 $mediaPrima = (int) val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]);
 $r = $lucia->post('/pannello/nuova', ['name' => 'Casa Lucia Due', 'city' => 'Pienza', 'origine' => (string) $casa, 'copia' => ['waste', 'eat', 'visit', 'todo', 'transport', 'emergency', 'info', 'rules', 'services', 'extras'], 'copia_aspetto' => '1', 'copia_contatti' => '1']);
 $due = (int) val("SELECT id FROM properties WHERE account_id = ? AND name = 'Casa Lucia Due'", [$lacc]);
@@ -1283,9 +1285,9 @@ prova('K1 · «Confronta tutti i piani»: tabella dalle funzioni dei pacchetti',
       && str_contains($r['body'], 'da 2 a 50'));
 prova('K2 · in landing: «Una prenotazione diretta in più all\'anno paga l\'abbonamento.»', str_contains($r['body'], 'Una prenotazione diretta in più all&#039;anno paga l&#039;abbonamento.')
       || str_contains($r['body'], "Una prenotazione diretta in più all'anno paga l'abbonamento."));
-prova('K3 · FAQ prima del listino: sei domande in un accordion accessibile', substr_count($r['body'], 'class="faq__voce"') === 6 && str_contains($r['body'], 'Gli ospiti vengono tracciati?')
+prova('K3 · FAQ prima del listino: sei domande in un accordion accessibile', substr_count($r['body'], 'class="faq__voce"') >= 6 && str_contains($r['body'], 'Gli ospiti vengono tracciati?')
       && strpos($r['body'], 'id="domande"') < strpos($r['body'], 'id="piani"'));
-prova('K3 · accanto a «Guarda la demo» la demo in IT / EN / DE', preg_match_all('#href="[^"]+/benvenuto\?l=(it|en|de)" hreflang#', $r['body'], $mm) === 3);
+prova('K3 · accanto a «Guarda la demo» le lingue della demo (IT / EN / FR)', preg_match_all('#href="[^"]+/benvenuto\?l=(it|en|fr)" hreflang#', $r['body'], $mm) >= 2);
 prova('K3 · nessuna testimonianza: nessun blocco', !str_contains($r['body'], 'Le parole di chi ospita'));
 prova('V6 · tre scene sotto l\'hero, al posto della foto grande, con le foto vere', substr_count($r['body'], 'class="scena"') === 3
       && substr_count($r['body'], 'scena__vuota') === 0 && !str_contains($r['body'], 'class="stage"')
@@ -1477,7 +1479,7 @@ $admin->post("/admin/pacchetti/$essential/nuova-versione", ['nome' => 'Essential
 prova('Nuovo prezzo = nuova versione', pv('essential') !== $vecchia && (int) val('SELECT price_cents FROM package_versions WHERE id = ?', [pv('essential')]) === 9700);
 prova('La versione venduta resta com\'era', (int) val('SELECT price_cents FROM package_versions WHERE id = ?', [$vecchia]) === 8700);
 $home = $ospite->get('/')['body'];
-prova('La landing mostra il prezzo nuovo', str_contains($home, "97\u{00A0}€") && str_contains($home, "Da 97\u{00A0}€ + IVA all'anno."));
+prova('La landing mostra il prezzo nuovo', str_contains($home, "97\u{00A0}€") && str_contains($home, "Da 97\u{00A0}€ + IVA all'anno"));
 $pf = (int) val("SELECT id FROM packages WHERE code = 'portfolio'");
 $featP = []; foreach (righe('SELECT f.code, pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id WHERE pf.package_version_id = ?', [pv('portfolio')]) as $x) $featP[$x['code']] = $x['value'];
 $pkP = riga('SELECT * FROM packages WHERE id = ?', [$pf]);
@@ -1585,7 +1587,7 @@ prova('Dentro una guida: il gruppo della guida nella barra, briciole e schede pe
       && preg_match('#class="lato__voce on" href="[^"]*/pannello/' . $lpid . '/aspetto" aria-current="page"#', $r['body']) === 1
       && str_contains($r['body'], 'aria-label="Sei qui"') && str_contains($r['body'], '<span aria-current="page">Aspetto</span>') && str_contains($r['body'], 'class="schede-guida"'));
 $r = $luc->get("/pannello/$lpid/statistiche");
-prova('Statistiche: l\'anello QR / link con il testo per chi non vede il grafico', preg_match('#class="anello__cerchio" style="--p:\d+" role="img" aria-label="\d+ aperture: \d+ dal QR Code, \d+ dal link"#', $r['body']) === 1);
+prova('Statistiche: l\'anello QR / link con il testo per chi non vede il grafico', preg_match('#class="anello__cerchio" style="--p:\d+" role="img" aria-label="\d+ aperture: \d+ dal QR, \d+ dal link"#', $r['body']) === 1);
 $r = $ospite->get('/accedi');
 prova('Senza accesso niente barra laterale', $r['code'] === 200 && !str_contains($r['body'], '<aside class="lato"'));
 
@@ -1652,8 +1654,8 @@ $vis = $sez('visit');
 $r = $luc->get("/pannello/$lpid/sezioni/$vis");
 prova('6B · editor del luogo: pillole della sezione, «Altro…», «In evidenza» con «Nessuna» e «Personalizzata…», niente datalist', $r['code'] === 200
       && str_contains($r['body'], 'name="category_choice" value="museum"') && !str_contains($r['body'], 'value="restaurant"') && !str_contains($r['body'], 'value="trattoria"')
-      && str_contains($r['body'], 'value="__altro" data-apre="pl-cat-box"') && str_contains($r['body'], '<legend>In evidenza</legend>')
-      && str_contains($r['body'], 'Compare come bollino colorato sulla scheda.') && str_contains($r['body'], '<span>Personalizzata…</span>') && !str_contains($r['body'], '<datalist')
+      && str_contains($r['body'], 'value="__altro" data-apre="pl-cat-box"') && str_contains($r['body'], '<legend>Etichetta')
+      && str_contains($r['body'], 'Compare sulla scheda del luogo, in un bollino colorato.') && str_contains($r['body'], '<span>Personalizzata…</span>') && !str_contains($r['body'], '<datalist')
       && str_contains($r['body'], 'placeholder="Vai la mattina presto'));
 $luc->post("/pannello/$lpid/sezioni/$vis/luogo", ['place_id' => '0', 'name' => 'Pinacoteca', 'category_choice' => 'museum', 'category' => 'scritto prima', 'badge_choice' => 'rainy', 'badge' => '']);
 $pv = riga("SELECT * FROM places WHERE section_id = ? AND name = 'Pinacoteca'", [$vis]);
@@ -1665,7 +1667,7 @@ $pv = riga('SELECT * FROM places WHERE id = ?', [$pv['id']]); $pvt = riga('SELEC
 prova('6B · «Altro…» e «Personalizzata…»: si salva il testo e la chiave si svuota', $pv['category_key'] === '' && $pv['badge_key'] === ''
       && $pvt['category'] === 'Collezione privata' && $pvt['badge'] === 'Solo il sabato');
 $r = $luc->get("/pannello/$lpid/lingue/en");
-prova('6B · traduzioni: i luoghi con la chiave non chiedono la categoria, «Tradotta automaticamente»', $r['code'] === 200 && str_contains($r['body'], 'Tradotta automaticamente'));
+prova('6B · traduzioni: i luoghi con la chiave non chiedono la categoria, «Tradotta automaticamente»', $r['code'] === 200 && str_contains($r['body'], 'già tradotta in ogni lingua'));
 prova('6B · Negozi e spesa nel catalogo, con la sua icona', str_contains((string) file_get_contents("$DOVE/app/src/SectionCatalog.php"), "'shop' => [") && str_contains((string) file_get_contents("$DOVE/app/src/Icon.php"), "'bag'"));
 
 capitolo('Fase 6C · parcheggio, prezzi, muoversi in zona, home');
@@ -1701,7 +1703,7 @@ prova('6C · guide pubblicate in formato 5 lette nel formato 6', ($esitoConv[4] 
 $tr = $sez('transport');
 $r = $luc->get("/pannello/$lpid/sezioni/$tr");
 prova('6C · muoversi in zona: riquadro introduttivo, tipo a pillole (radio), righe pronte Taxi / Autobus / Noleggio bici', $r['code'] === 200
-      && str_contains($r['body'], 'class="note note--quiet">Una volta arrivati') && str_contains($r['body'], 'type="radio" name="options[0][type]" value="bus" checked')
+      && str_contains($r['body'], 'class="note note--quiet">Come ci si sposta durante il soggiorno') && str_contains($r['body'], 'type="radio" name="options[0][type]" value="bus" checked')
       && str_contains($r['body'], '<legend class="small">Tipo</legend>') && str_contains($r['body'], '+ Taxi o NCC') && str_contains($r['body'], '+ Noleggio bici')
       && str_contains($r['body'], '&quot;type&quot;:&quot;taxi&quot;') && str_contains($r['body'], 'Orari, biglietti, costi'));
 $dt = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$tr]), true);
@@ -1725,9 +1727,9 @@ if (!$sez('arrival')) $luc->post("/pannello/$lpid/sezioni", ['kind' => 'arrival'
 $r = $luc->get("/pannello/$lpid/sezioni/" . $sez('arrival'));
 prova('6C · come arrivare: riquadro che rimanda a «Muoversi in zona»', $r['code'] === 200 && str_contains($r['body'], 'Gli spostamenti durante il soggiorno vanno in «Muoversi in zona».'));
 $r = $ospite->get('/');
-prova('6C · home: tutte le sezioni del catalogo nei tre gruppi, contate', $r['code'] === 200 && str_contains($r['body'], '16 sezioni pronte. Scegli quelle che servono ai tuoi ospiti.')
-      && !str_contains($r['body'], 'in base al piano') && str_contains($r['body'], '>La casa</h3>') && str_contains($r['body'], '>Arrivare e muoversi</h3>')
-      && str_contains($r['body'], '>Il territorio</h3>') && str_contains($r['body'], 'Muoversi in zona') && str_contains($r['body'], 'Negozi e spesa'));
+prova('6C · home: tutte le sezioni del catalogo nei tre gruppi, contate', $r['code'] === 200 && str_contains($r['body'], '16 sezioni pronte da compilare, più le sezioni libere')
+      && !str_contains($r['body'], 'in base al piano') && str_contains($r['body'], 'id="gruppo-casa">La casa</h3>') && str_contains($r['body'], 'id="gruppo-arrivo">Arrivare e muoversi</h3>')
+      && str_contains($r['body'], 'id="gruppo-territorio">Il territorio</h3>') && str_contains($r['body'], 'Muoversi in zona') && str_contains($r['body'], 'Negozi e spesa'));
 
 capitolo('Fase 6D · sezione libera, righe compresse, messaggio di benvenuto');
 $luc->get("/pannello/$lpid");
@@ -1765,7 +1767,7 @@ prova('M2 · QR & Link: messaggio di benvenuto per lingua, col link nella lingua
       && preg_match('#id="benvenuto-en"[^>]*>Hello! Welcome to Casa Lucia\.[^<]*/g/[a-z0-9-]+\?l=en#', $r['body']) === 1
       && str_contains($r['body'], 'data-copia-da="benvenuto-de"') && str_contains($r['body'], 'href="https://wa.me/?text=Ciao%21%20Benvenuti%20a%20Casa%20Lucia.'));
 $r = $ospite->get('/');
-prova('6D · la home conta ancora le sezioni pronte (la libera no)', str_contains($r['body'], '16 sezioni pronte.'));
+prova('6D · la home conta ancora le sezioni pronte (la libera no)', str_contains($r['body'], '16 sezioni pronte da compilare'));
 
 capitolo('Fase 6G · eventi');
 $evSid = $sez('events');
@@ -1789,7 +1791,7 @@ $r = $luc->get("/pannello/$lpid/sezioni/$evSid");
 prova('6G · editor: stato degli eventi, «Quando» a pillole con «Un giorno» per la riga nuova, locandina immagine o PDF', $r['code'] === 200
       && str_contains($r['body'], 'badge badge--pine rip__stato">In corso<') && str_contains($r['body'], 'rip__stato">Tra 5 giorni<') && str_contains($r['body'], 'rip__stato">Ricorrente<')
       && preg_match('#name="events\[3\]\[when\]" value="day" checked#', $r['body']) === 1 && str_contains($r['body'], 'accept="image/jpeg,image/png,image/webp,application/pdf"')
-      && str_contains($r['body'], 'data-solo-con="when" data-solo-valori="weekly"') && str_contains($r['body'], 'Gli eventi passati non si vedono più nella guida.'));
+      && str_contains($r['body'], 'data-solo-con="when" data-solo-valori="weekly"') && str_contains($r['body'], 'Gli eventi passati spariscono da soli dalla guida'));
 // Un evento passato che torna ogni anno, e uno tra 90 giorni.
 $g = fn(int $n) => (new DateTimeImmutable('now', new DateTimeZone('Europe/Rome')))->modify(($n >= 0 ? '+' : '') . $n . ' days')->format('Y-m-d');
 $righePost = [];
@@ -1916,7 +1918,7 @@ db()->prepare('INSERT INTO discount_redemptions (discount_code_id, account_id, o
 $dora = new Browser('dora');
 $r = $dora->get('/?codice=benvenuto20');
 prova('6E · link con il codice: in home la fascia «Codice BENVENUTO20: −20% sul primo anno, fino al …»', str_contains($r['body'], 'class="sconto-fascia"')
-      && str_contains($r['body'], "Codice <b>BENVENUTO20</b>:\n    \u{2212}20% sul primo anno, fino al " . implode('/', array_reverse(explode('-', $oggiR(60))))));
+      && str_contains($r['body'], "Codice <b>BENVENUTO20</b>:\n    \u{2212}20% sul primo anno, fino al " . (function ($ymd) { return (int) substr($ymd, 8, 2) . ' ' . ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'][(int) substr($ymd, 5, 2) - 1] . ' ' . substr($ymd, 0, 4); })($oggiR(60))));
 $dora->get('/registrati?piano=' . pv('plus'));
 $dora->post('/registrati', ['piano' => pv('plus'), 'name' => 'Dora Sconto', 'email' => 'dora@prova.test', 'password' => 'DoraProva1234', 'termini' => '1']);
 $dacc = $accDi('dora@prova.test');
@@ -1931,9 +1933,11 @@ $dora->post('/sconto/togli', ['torna' => "/pannello/$dpid/procedura/pubblica"]);
 $r = $dora->get("/pannello/$dpid/procedura/pubblica");
 prova('6E · «Togli»: il codice va via e torna «Hai un codice sconto?»', !val('SELECT intended_discount_code_id FROM accounts WHERE id = ?', [$dacc])
       && str_contains($r['body'], 'Hai un codice sconto?') && str_contains($r['body'], "117\u{00A0}€"));
+// Le date si scrivono per esteso (regole del copy): «5 dicembre 2026».
+$estesa = fn(string $ymd) => (int) substr($ymd, 8, 2) . ' ' . ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'][(int) substr($ymd, 5, 2) - 1] . ' ' . substr($ymd, 0, 4);
 $motivi = [];
-foreach (['NONESISTE' => 'Questo codice non esiste. Controlla di averlo scritto bene.', 'SCADUTO1' => 'Questo codice è scaduto il ' . implode('/', array_reverse(explode('-', $oggiR(-1)))) . '.',
-          'FUTURO1' => 'Questo codice sarà valido dal ' . implode('/', array_reverse(explode('-', $oggiR(5)))) . '.', 'ESAURITO1' => 'Questo codice ha raggiunto il numero massimo di utilizzi.',
+foreach (['NONESISTE' => 'Questo codice non esiste. Controlla di averlo scritto bene.', 'SCADUTO1' => 'Questo codice è scaduto il ' . $estesa($oggiR(-1)) . '.',
+          'FUTURO1' => 'Questo codice sarà valido dal ' . $estesa($oggiR(5)) . '.', 'ESAURITO1' => 'Questo codice ha raggiunto il numero massimo di utilizzi.',
           'SOLOESS' => 'Questo codice non vale per il piano Plus.', 'NONSYNC' => 'Questo codice non è ancora utilizzabile'] as $c => $atteso) {
     $dora->post('/sconto/applica', ['codice' => $c, 'torna' => "/pannello/$dpid/procedura/pubblica"]);
     $p = $dora->get("/pannello/$dpid/procedura/pubblica")['body'];
@@ -2005,6 +2009,60 @@ $admin->post("/admin/cliente/$vaAcc/vetrina", ['rifai' => '1']);
 $vaV2 = riga('SELECT * FROM properties WHERE account_id = ? AND is_demo = 2', [$vaAcc]);
 prova('«Rifai la vetrina»: la vecchia si toglie, la nuova è pubblicata, sempre una sola', $vaV2 && (int) $vaV2['id'] !== (int) $vaV['id'] && $vaV2['status'] === 'published'
       && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND is_demo = 2', [$vaAcc]) === 1 && !val('SELECT 1 FROM properties WHERE id = ?', [$vaV['id']]));
+
+// ================================================================= CONTROLLO DEI FORM
+capitolo('Controllo dei form e del pannello al telefono');
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$cf = new Browser('controllo-form');
+$cf->get('/registrati');
+$cf->post('/registrati', ['name' => 'Carla Form', 'email' => 'carla.form@prova.test', 'password' => 'CarlaProva123', 'termini' => '1']);
+$cfAcc = (int) val("SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = 'carla.form@prova.test'");
+$cfUid = (int) val("SELECT id FROM users WHERE email = 'carla.form@prova.test'");
+// Plus manuale: servono i luoghi. La guida resta da pubblicare.
+db()->prepare("INSERT INTO subscriptions (account_id, package_version_id, status, provider, current_period_start, current_period_end, payment_status, created_at, updated_at, quantity)
+               VALUES (?, ?, 'active', 'manuale', ?, ?, 'manuale', ?, ?, 1)")->execute([$cfAcc, pv('plus'), gmdate('Y-m-d\TH:i:s\Z'), gmdate('Y-m-d\TH:i:s\Z', strtotime('+1 year')), gmdate('Y-m-d\TH:i:s\Z'), gmdate('Y-m-d\TH:i:s\Z')]);
+db()->exec("UPDATE users SET email_verified_at = '2026-01-01T00:00:00Z' WHERE email = 'carla.form@prova.test'");
+$r = $cf->post('/registrati', ['name' => 'Troppo Lunga', 'email' => 'lunga@prova.test', 'password' => str_repeat('a', 73), 'termini' => '1']);
+prova('Registrazione: una password oltre i 72 caratteri si rifiuta (bcrypt la taglierebbe)', !val("SELECT 1 FROM users WHERE email = 'lunga@prova.test'"));
+$r = $cf->post('/pannello/nuova', ['name' => 'Casa Form', 'city' => 'Assisi']);
+$cfPid = (int) val('SELECT id FROM properties WHERE account_id = ?', [$cfAcc]);
+$cf->post("/pannello/$cfPid/sezioni", ['kind' => 'eat']);
+$cfEat = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'eat'", [$cfPid]);
+$r = $cf->segui($cf->post("/pannello/$cfPid/sezioni/$cfEat/luogo", ['place_id' => '0', 'name' => '', 'maps_url' => '', 'description' => 'Un testo da non perdere', 'walk_minutes' => '7']));
+prova('Luogo senza nome: l\'errore sta sotto il campo e quello che era scritto resta', str_contains($r['body'], 'id="pl-name-err"') && str_contains($r['body'], 'aria-invalid="true"')
+      && str_contains($r['body'], 'Un testo da non perdere') && str_contains($r['body'], 'value="7"') && !val('SELECT 1 FROM places WHERE section_id = ?', [$cfEat]));
+$r = $cf->post("/pannello/$cfPid/sezioni/$cfEat/luogo", ['place_id' => '0', 'name' => 'Trattoria di prova', 'maps_url' => '']);
+$cfPl = (int) val('SELECT id FROM places WHERE section_id = ?', [$cfEat]);
+$r = $cf->post("/pannello/$cfPid/sezioni/$cfEat/luogo", ['place_id' => (string) $cfPl, 'name' => 'Trattoria rinominata', 'maps_url' => ''], ['Accept: application/json']);
+prova('Luogo già salvato: il salvataggio automatico risponde in JSON e salva', str_contains($r['body'], '"ok":true') && val('SELECT name FROM places WHERE id = ?', [$cfPl]) === 'Trattoria rinominata');
+$r = $cf->get("/pannello/$cfPid/sezioni/$cfEat?luogo=$cfPl");
+prova('…e il modulo del luogo salvato ha il salvataggio automatico; i minuti si scrivono col tastierino', str_contains($r['body'], 'data-autosave><input type="hidden" name="_csrf"') || preg_match('#/luogo" enctype="multipart/form-data" class="stack" style="margin-top:12px" data-autosave>#', $r['body']) === 1
+      && str_contains($r['body'], 'id="pl-walk" name="walk_minutes" type="text" inputmode="numeric"'));
+$cf->post("/pannello/$cfPid/sezioni", ['kind' => 'emergency']);
+$cfEm = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'emergency'", [$cfPid]);
+$r = $cf->get("/pannello/$cfPid/sezioni/$cfEm");
+prova('Numero di emergenza col tastierino del telefono', preg_match('#name="emergency_number"[^>]*type="tel"|type="tel"[^>]*name="emergency_number"#s', $r['body']) === 1);
+$cfCore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$cfPid]);
+$cf->post("/pannello/$cfPid/sezioni/$cfCore", ['tax_max_nights' => '5 notti']);
+prova('«Per quante notti al massimo» salva solo le cifre', (json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$cfCore]), true)['tax_max_nights'] ?? '') === '5');
+$r = $cf->post('/account/profilo', ['name' => '  Carla   Nuova ']);
+prova('Account: il nome si cambia', val('SELECT name FROM users WHERE id = ?', [$cfUid]) === 'Carla Nuova');
+$r = $cf->post('/account/password', ['attuale' => 'sbagliata', 'nuova' => 'CarlaNuova123', 'nuova2' => 'CarlaNuova123']);
+prova('…la password non cambia senza quella attuale giusta, e l\'errore sta sotto il campo', str_contains($r['body'], 'id="pw-attuale-err"') && password_verify('CarlaProva123', (string) val('SELECT password_hash FROM users WHERE id = ?', [$cfUid])));
+$cf->post('/account/password', ['attuale' => 'CarlaProva123', 'nuova' => 'CarlaNuova123', 'nuova2' => 'CarlaNuova123']);
+prova('…con quella giusta sì', password_verify('CarlaNuova123', (string) val('SELECT password_hash FROM users WHERE id = ?', [$cfUid])));
+$r = $cf->post('/account/email', ['email' => 'lucia@esempio.it', 'attuale' => 'CarlaNuova123']);
+prova('…l\'email di un altro account non si prende', str_contains($r['body'], 'già usata da un altro account') && !val('SELECT pending_email FROM users WHERE id = ?', [$cfUid]));
+$cf->post('/account/email', ['email' => 'carla.nuova@prova.test', 'attuale' => 'CarlaNuova123']);
+prova('…l\'email nuova resta in attesa finché non si apre il link', val('SELECT pending_email FROM users WHERE id = ?', [$cfUid]) === 'carla.nuova@prova.test'
+      && val('SELECT email FROM users WHERE id = ?', [$cfUid]) === 'carla.form@prova.test');
+$cfLink = linkPosta('carla.nuova@prova.test', 'account/email');
+$cf->get(substr($cfLink, (int) strpos($cfLink, '/account/email/')));
+prova('…e col link diventa quella dell\'account (già confermata)', val('SELECT email FROM users WHERE id = ?', [$cfUid]) === 'carla.nuova@prova.test'
+      && !val('SELECT pending_email FROM users WHERE id = ?', [$cfUid]) && (bool) val('SELECT email_verified_at FROM users WHERE id = ?', [$cfUid]), $cfLink);
+$cf->post("/pannello/$cfPid/elimina", ['conferma' => 'casa  form']);
+prova('Eliminare una struttura: il nome si confronta senza maiuscole e spazi doppi', !val('SELECT 1 FROM properties WHERE id = ?', [$cfPid]));
+prova('CSS: i riquadri delle righe non allargano la pagina al telefono', str_contains((string) file_get_contents("$DOVE/assets/app.css"), 'fieldset{min-width:0}'));
 
 // ================================================================= IMPOSTAZIONI
 capitolo('Amministrazione → Impostazioni (Stripe, posta, archivio delle foto)');

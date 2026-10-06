@@ -230,7 +230,9 @@ $r->any('/pannello/{id}/copia', function (array $a) use ($mia, $contesto, $messa
 
 $r->post('/pannello/{id}/elimina', function (array $a) use ($mia) {
     [$u, $acc, $p] = $mia((int) $a['id'], true);
-    if (trim((string) ($_POST['conferma'] ?? '')) !== $p['name']) {
+    // Il nome si confronta senza badare a maiuscole e spazi doppi (il telefono mette la maiuscola da solo).
+    $normale = fn(string $x) => mb_strtolower(preg_replace('/\s+/u', ' ', trim($x)) ?? '');
+    if ($normale((string) ($_POST['conferma'] ?? '')) !== $normale((string) $p['name'])) {
         Support::flash('Per eliminare scrivi il nome esatto della struttura.', 'err');
         Support::redirect(Entitlements::editable((int) $acc['id'], (int) $p['id']) ? '/pannello/' . $p['id'] . '/impostazioni' : '/pannello');
     }
@@ -374,7 +376,7 @@ $r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($mia, $contesto
     ], 'layout/cms');
 });
 
-$r->post('/pannello/{id}/sezioni/{sid}/luogo', function (array $a) use ($mia, $messaggio, $tornaSezione) {
+$r->post('/pannello/{id}/sezioni/{sid}/luogo', function (array $a) use ($mia, $messaggio, $tornaSezione, $vuoleJson) {
     [, $acc, $p] = $mia((int) $a['id']);
     $aid = (int) $acc['id'];
     $torna = $tornaSezione($p, (int) $a['sid'], '/pannello/' . $p['id'] . '/sezioni/' . (int) $a['sid']);
@@ -399,9 +401,20 @@ $r->post('/pannello/{id}/sezioni/{sid}/luogo', function (array $a) use ($mia, $m
             if ($prima) Media::rilascia((int) $prima, $aid);
             Db::update('places', ['media_id' => $mid], 'id = :pid', ['pid' => $plid]);
         }
+        if ($vuoleJson()) Support::json(['ok' => true, 'salvato' => Support::now()]);
         Support::flash('Luogo salvato.');
     } catch (NotFound) { http_response_code(404); View::out('pub/404', []); }
-    catch (\Throwable $e) { Support::flash($messaggio($e, 'salva luogo'), 'err'); }
+    catch (\Throwable $e) {
+        if ($vuoleJson()) Support::json(['ok' => false, 'errore' => $messaggio($e, 'salva luogo')], 422);
+        // Il modulo torna com'era, con l'errore accanto al campo: niente di quello che si è scritto va perso.
+        $err = $messaggio($e, 'salva luogo');
+        $_SESSION['luogo_bozza'] = ['sid' => (int) $a['sid'], 'place_id' => (int) ($_POST['place_id'] ?? 0), 'errore' => $err,
+            'campo' => trim((string) ($_POST['name'] ?? '')) === '' && str_contains($err, 'nome') ? 'name' : '',
+            'in' => array_map(fn($v) => is_string($v) ? mb_substr($v, 0, 2000) : '', array_intersect_key($_POST, array_flip(
+                ['name', 'address', 'maps_url', 'phone', 'website', 'booking_url', 'walk_minutes', 'drive_minutes', 'badge_tone',
+                 'category_choice', 'category', 'badge_choice', 'badge', 'description', 'note'])))];
+        $torna .= (str_contains($torna, '?') ? '&' : '?') . 'luogo=' . (int) ($_POST['place_id'] ?? 0) . '#luogo';
+    }
     Support::redirect($torna);
 });
 
@@ -849,6 +862,79 @@ $r->get('/inviti', function () use ($host) {
         'user' => $u, 'acc' => $acc, 'inv' => MHW\Inviti::stato($acc), 'amici' => MHW\Inviti::amici((int) $acc['id']),
         'codice' => MHW\Inviti::codice($acc), 'nav' => 'inviti',
     ], 'layout/cms');
+});
+
+/*
+ * Il tuo account: nome, password ed email. La password e l'email si cambiano solo
+ * con la password attuale; l'email nuova vale dopo il link di conferma, e quella
+ * vecchia riceve un avviso.
+ */
+$r->post('/account/profilo', function () use ($host, $paginaAccount) {
+    [$u, $acc] = $host();
+    $nome = trim(preg_replace('/\s+/u', ' ', (string) ($_POST['name'] ?? '')) ?? '');
+    if ($nome === '' || mb_strlen($nome) > 120) $paginaAccount($u, $acc, ['erroriProfilo' => ['name' => $nome === '' ? 'Scrivi il tuo nome.' : 'Il nome può avere al massimo 120 caratteri.'], 'apri' => 'profilo']);
+    Db::update('users', ['name' => $nome], 'id = :uid', ['uid' => $u['id']]);
+    Auth::audit('account.name', (int) $u['id']);
+    Support::flash('Nome salvato.');
+    Support::redirect('/account#profilo');
+});
+
+$r->post('/account/password', function () use ($host, $paginaAccount) {
+    [$u, $acc] = $host();
+    $errori = [];
+    if (!MHW\RateLimit::hit('password-cambio:' . $u['id'], 8, 900)) $errori['attuale'] = 'Troppi tentativi: riprova tra un quarto d\'ora.';
+    elseif (!password_verify((string) ($_POST['attuale'] ?? ''), (string) Db::val('SELECT password_hash FROM users WHERE id = ?', [$u['id']], ''))) $errori['attuale'] = 'La password attuale non è giusta.';
+    $nuova = (string) ($_POST['nuova'] ?? '');
+    if (mb_strlen($nuova) < 8) $errori['nuova'] = 'La password nuova deve avere almeno 8 caratteri.';
+    elseif (strlen($nuova) > 72) $errori['nuova'] = 'La password nuova può avere al massimo 72 caratteri.';
+    elseif ($nuova !== (string) ($_POST['nuova2'] ?? '')) $errori['nuova2'] = 'Le due password non sono uguali: riscrivile.';
+    if ($errori) $paginaAccount($u, $acc, ['erroriPassword' => $errori, 'apri' => 'password']);
+    Db::update('users', ['password_hash' => password_hash($nuova, PASSWORD_DEFAULT)], 'id = :uid', ['uid' => $u['id']]);
+    session_regenerate_id(true);
+    Auth::audit('account.password', (int) $u['id']);
+    Support::flash('Password cambiata.');
+    Support::redirect('/account#profilo');
+});
+
+$r->post('/account/email', function () use ($host, $paginaAccount) {
+    [$u, $acc] = $host();
+    $email = mb_strtolower(trim((string) ($_POST['email'] ?? '')));
+    $errori = [];
+    if (!MHW\RateLimit::hit('email-cambio:' . $u['id'], 5, 3600)) $errori['email'] = 'Troppi tentativi: riprova tra un\'ora.';
+    elseif (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 190) $errori['email'] = 'Questo indirizzo email non è valido.';
+    elseif ($email === mb_strtolower((string) $u['email'])) $errori['email'] = 'È già la tua email.';
+    elseif (Db::val('SELECT id FROM users WHERE email = ?', [$email])) $errori['email'] = 'Questa email è già usata da un altro account.';
+    if (!$errori && !password_verify((string) ($_POST['attuale'] ?? ''), (string) Db::val('SELECT password_hash FROM users WHERE id = ?', [$u['id']], ''))) $errori['attuale'] = 'La password attuale non è giusta.';
+    if ($errori) $paginaAccount($u, $acc, ['erroriEmail' => $errori, 'apri' => 'email', 'emailNuova' => $email]);
+    Db::update('users', ['pending_email' => $email], 'id = :uid', ['uid' => $u['id']]);
+    $link = Support::baseUrl() . '/account/email/' . MHW\Tokens::issue((int) $u['id'], MHW\Tokens::EMAIL, 48 * 3600);
+    $partita = MHW\Mailer::send($email, 'Conferma la tua nuova email — MyHouse Welcome',
+        "Ciao " . ($u['name'] ?: '') . ",\n\nper usare questo indirizzo nel tuo account MyHouse Welcome apri questo link:\n\n$link\n\n"
+        . "Il link vale 48 ore. Finché non lo apri resta valida l'email di prima.\n\nSe non l'hai chiesto tu, ignora questo messaggio.\n\nMyHouse Welcome");
+    if (!$partita) {
+        Db::update('users', ['pending_email' => null], 'id = :uid', ['uid' => $u['id']]);
+        $paginaAccount($u, $acc, ['erroriEmail' => ['email' => 'Non siamo riusciti a mandare l\'email di conferma: riprova tra poco.'], 'apri' => 'email', 'emailNuova' => $email]);
+    }
+    Auth::audit('account.email_request', (int) $u['id']);
+    Support::flash('Ti abbiamo mandato un link a ' . $email . ': aprilo per confermare la nuova email.');
+    Support::redirect('/account#profilo');
+});
+
+$r->get('/account/email/{token}', function (array $a) {
+    $uid = MHW\Tokens::consume((string) $a['token'], MHW\Tokens::EMAIL);
+    $u = $uid ? Db::one('SELECT * FROM users WHERE id = ?', [$uid]) : null;
+    $nuova = (string) ($u['pending_email'] ?? '');
+    if (!$u || $nuova === '' || Db::val('SELECT id FROM users WHERE email = ? AND id <> ?', [$nuova, $uid])) {
+        Support::flash('Il link non vale più: chiedi di nuovo il cambio dell\'email dal tuo account.', 'err');
+        Support::redirect(Auth::user() ? '/account' : '/accedi');
+    }
+    Db::update('users', ['email' => $nuova, 'pending_email' => null, 'email_verified_at' => Support::now()], 'id = :uid', ['uid' => $uid]);
+    MHW\Mailer::send((string) $u['email'], 'La tua email è cambiata — MyHouse Welcome',
+        "Ciao " . ($u['name'] ?: '') . ",\n\nl'email del tuo account MyHouse Welcome ora è $nuova.\n\n"
+        . "Se non l'hai chiesto tu, scrivici subito rispondendo a questo messaggio.\n\nMyHouse Welcome");
+    Auth::audit('account.email', (int) $uid, ['da' => $u['email']]);
+    Support::flash('Email cambiata: ora accedi con ' . $nuova . '.');
+    Support::redirect(Auth::user() ? '/account' : '/accedi');
 });
 
 /* Dati di fatturazione: si controllano qui (partita IVA, codice fiscale, SDI o PEC)

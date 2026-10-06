@@ -170,7 +170,10 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
     <label for="<?= Support::e($id) ?>"><?= Support::e($etichetta) ?><?= $facHtml ?></label>
     <?php if ($aiuto !== ''): ?><p class="help" style="margin:0 0 6px"><?= Support::e($aiuto) ?></p><?php endif; ?>
     <input id="<?= Support::e($id) ?>" name="<?= Support::e($nome) ?>" value="<?= Support::e((string) $valore) ?>"
-           type="<?= $tipo === 'url' ? 'url' : 'text' ?>" maxlength="<?= $tipo === 'url' ? 500 : 300 ?>"
+           <?php /* Lo stesso limite del server (SectionCatalog::clean e sezione()): 500 i link, 200 i campi semplici, 300 i testi brevi. */ ?>
+           type="<?= $tipo === 'url' ? 'url' : (($defCampo['tastiera'] ?? '') === 'tel' || $tipo === 'tel' ? 'tel' : 'text') ?>"
+           maxlength="<?= $tipo === 'url' ? 500 : (!empty($defCampo['cifre']) ? 3 : (in_array($tipo, ['plain', 'secret', 'tel'], true) ? 200 : 300)) ?>"
+           <?= !empty($defCampo['cifre']) ? 'inputmode="numeric" pattern="[0-9]*"' : '' ?>
            <?= $tipo === 'url' ? 'placeholder="https://"' : '' ?> <?= $tipo === 'secret' ? 'autocomplete="off" spellcheck="false"' : '' ?>>
   </div>
 <?php endif; endforeach; ?>

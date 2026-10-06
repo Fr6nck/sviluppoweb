@@ -70,7 +70,7 @@ final class SectionCatalog
                 'late_arrival'    => ['textarea', 'Arrivo tardivo', 'Facoltativo. Cosa fare se si arriva tardi, per esempio dopo le 21.'],
                 'documents'       => ['textarea', 'Documenti da mostrare', 'Facoltativo. Per esempio: un documento d\'identità per ogni ospite, per la registrazione obbligatoria.'],
                 'tax_amount'      => ['plain', 'Imposta di soggiorno — importo per notte', 'Facoltativo. Per esempio: 2,00 € a persona.'],
-                'tax_max_nights'  => ['plain', 'Imposta di soggiorno — per quante notti al massimo', 'Facoltativo. Per esempio: 5.'],
+                'tax_max_nights'  => ['plain', 'Imposta di soggiorno — per quante notti al massimo', 'Facoltativo. Per esempio: 5.', 'cifre' => true],
                 'tax_notes'       => ['textarea', 'Imposta di soggiorno — esenzioni e pagamento', 'Facoltativo. Per esempio: sotto i 14 anni esenti; in contanti all\'arrivo.'],
                 'checkin_note'    => ['textarea', 'Nota importante', 'Facoltativa. Nella guida compare in evidenza, in un riquadro.'],
                 'checkout_steps'  => ['steps', 'Prima di partire', 'Una voce per riga. Tocca un suggerimento per aggiungerlo, poi modificalo come preferisci.',
@@ -281,7 +281,7 @@ final class SectionCatalog
             'breve' => 'I numeri utili, da chiamare con un tocco.',
             'intro' => 'I numeri da avere sotto mano se qualcosa va storto: l\'ospite li chiama con un tocco. Parti dal 112 e aggiungi guardia medica, farmacia e il tuo numero per le urgenze.',
             'fields' => [
-                'emergency_number' => ['plain', 'Numero unico di emergenza', 'In Italia è il 112.'],
+                'emergency_number' => ['plain', 'Numero unico di emergenza', 'In Italia è il 112.', 'tastiera' => 'tel'],
                 // Dalla 011: righe nome · telefono · nota, con un «Chiama» per riga nella guida.
                 'contacts'         => ['repeater', 'Contatti utili', 'Una riga per contatto: guardia medica, farmacia di turno, il tuo numero per le urgenze.',
                                        'add' => 'Aggiungi un contatto', 'item' => 'Contatto', 'max' => 15,
@@ -580,7 +580,7 @@ final class SectionCatalog
             } elseif ($type === 'url') {
                 if ($withPlain) $comuni[$name] = Support::safeUrl(mb_substr((string) $raw, 0, 500));
             } elseif (in_array($type, self::PLAIN, true)) {
-                if ($withPlain) $comuni[$name] = mb_substr(trim((string) $raw), 0, 200);
+                if ($withPlain) $comuni[$name] = !empty($def['cifre']) ? substr(preg_replace('/\D/', '', (string) $raw), 0, 3) : mb_substr(trim((string) $raw), 0, 200);
             } elseif ($type === 'textarea') {
                 $tradotti[$name] = mb_substr(trim((string) $raw), 0, 2000);
             } else {

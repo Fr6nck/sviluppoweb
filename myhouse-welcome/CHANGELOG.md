@@ -1,5 +1,38 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Form e pannello al telefono (7 ottobre 2026)
+
+Migrazione `021`: la colonna `users.pending_email`, per cambiare l'email dall'account. Solo un'aggiunta.
+
+- **Pannello al telefono e al tablet.**
+  - Nelle sezioni con le righe la pagina non è più larga dello schermo. Prima, a 390 px, arrivava fino a 1.266 px (Servizi extra, Muoversi, Come arrivare, Parcheggio, Eventi, Emergenze, Rifiuti, Wi-Fi, Servizi, Impostazioni) e il telefono rimpiccioliva tutto. La causa era il `fieldset` che contiene le righe.
+  - Le schede del pannello sono alte 44 px e hanno una sfumatura a destra che dice che si scorrono; quella aperta resta in vista.
+  - Bersagli da almeno 44 px: «Sposta su / giù / Togli» delle righe, nomi delle sezioni, «Tutte le sezioni», pillole, passi della configurazione.
+  - Una riga aperta non ha più la fascia vuota in cima: la freccia per chiuderla sta accanto ai bottoni.
+  - La foto di una riga ha la sua zona tratteggiata, come la foto della sezione.
+  - Con la tastiera aperta la barra in basso si toglie di mezzo e non copre il campo.
+  - I testi di benvenuto della pagina QR sono a 16 px: iPhone non ingrandisce più la pagina.
+- **Scheda del luogo.**
+  - Se il salvataggio non riesce, il modulo torna con tutto quello che era scritto e l'errore sta sotto il campo. Prima si perdeva.
+  - «Nome» spiega che serve sempre.
+  - Un luogo già salvato si salva anche mentre si scrive.
+  - I minuti a piedi e in auto si scrivono col tastierino, come nel parcheggio.
+- **Campi.**
+  - Il numero di emergenza ha il tastierino del telefono.
+  - «Per quante notti al massimo» accetta solo cifre.
+  - I campi semplici accettano 200 caratteri, come il server: prima la pagina ne lasciava scrivere 300 e il resto si perdeva.
+  - Nome, indirizzo e città della struttura non si riempiono più con i dati del cliente.
+  - Codice fiscale, SDI, provincia e CIN aprono la tastiera in maiuscolo.
+- **Account.**
+  - Si cambiano il nome, la password (con quella attuale) e l'email.
+  - L'email nuova vale dopo il link di conferma; quella vecchia riceve un avviso.
+  - Se l'email di conferma non parte, il pannello lo dice.
+- **Fatturazione.** I due testi che dicevano «Le fatture le emette Stripe» ora parlano della fattura elettronica e della ricevuta di Stripe.
+- **Password.** Al massimo 72 caratteri, in registrazione, recupero e cambio: oltre, bcrypt le tagliava senza dirlo.
+- **Eliminare una struttura.** Il nome scritto per confermare si confronta senza badare a maiuscole e spazi doppi: il telefono mette la maiuscola da solo.
+- **Righe.** Nel riassunto di una riga chiusa le date sono scritte per esteso («3 ottobre 2027»).
+- **Prove.** Le prove automatiche sono riallineate al copy nuovo e ce ne sono 14 in più: 616 in tutto.
+
 ## v2 · Copy coerente e landing ampliata (6 ottobre 2026)
 
 Migrazione `020`, solo testi: etichette delle funzioni e testi dei piani, cambiati solo dove erano ancora quelli predefiniti. Nessuna tabella nuova, nessuna impostazione nuova. Il dettaglio, con il glossario e le tabelle «prima → dopo», è in `RAPPORTO-COPY.md`.

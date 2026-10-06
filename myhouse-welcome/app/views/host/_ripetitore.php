@@ -153,7 +153,7 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
             $mostra = $tipo === 'secret' ? '<button type="button" class="linkbtn rip__mostra" data-mostra-segreto hidden>Mostra</button>' : '';
             $h .= $c . '<div class="field" style="margin:0"><label for="' . $id . '">' . $etH . '</label>'
                 . ($mostra ? '<div class="rip__segreto">' : '')
-                . '<input id="' . $id . '" type="' . $t . '" name="' . $n . '" value="' . Support::e((string) $val) . '" maxlength="' . ($tipo === 'url' ? 500 : (!empty($sd['cifre']) ? 3 : 300)) . '"' . $extra . $desc . $no . '>'
+                . '<input id="' . $id . '" type="' . $t . '" name="' . $n . '" value="' . Support::e((string) $val) . '" maxlength="' . ($tipo === 'url' ? 500 : (!empty($sd['cifre']) ? 3 : ($tipo === 'tel' ? 40 : (in_array($tipo, ['plain', 'secret'], true) ? 200 : 300)))) . '"' . $extra . $desc . $no . '>'
                 . ($mostra ? $mostra . '</div>' : '') . $help . '</div></div>';
         }
     }

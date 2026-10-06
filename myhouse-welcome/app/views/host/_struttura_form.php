@@ -10,7 +10,7 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
 <form method="post" action="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/impostazioni" class="stack"<?= $dopoPasso !== '' ? ' data-autosave' : '' ?>><?= Csrf::field() ?>
   <fieldset class="fieldset">
     <legend>La struttura</legend>
-    <div class="field" style="margin:0"><label for="name">Nome</label><input type="text" id="name" name="name" required maxlength="120" value="<?= $c('name') ?>"></div>
+    <div class="field" style="margin:0"><label for="name">Nome</label><input type="text" id="name" name="name" required maxlength="120" autocomplete="off" value="<?= $c('name') ?>"></div>
     <div class="field" style="margin:0"><span class="label">Tipologia</span>
       <div class="scelte scelte--riga" role="radiogroup" aria-label="Tipologia">
         <?php foreach ($tipi as $k => $et): ?>
@@ -27,16 +27,16 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
     </div>
     <div class="field" style="margin:0"><label for="address">Indirizzo</label>
       <p class="help" style="margin:0 0 6px">Via e numero civico. Precompila «Come arrivare» e il link a Maps: lo scrivi una volta sola.</p>
-      <input type="text" id="address" name="address" maxlength="255" autocomplete="street-address" value="<?= $c('address') ?>"></div>
+      <input type="text" id="address" name="address" maxlength="255" autocomplete="off" value="<?= $c('address') ?>"></div>
     <div class="grid grid-3">
-      <div class="field" style="margin:0"><label for="postal_code">CAP</label><input type="text" id="postal_code" name="postal_code" maxlength="10" inputmode="numeric" autocomplete="postal-code" value="<?= $c('postal_code') ?>"></div>
-      <div class="field" style="margin:0"><label for="city">Città</label><input type="text" id="city" name="city" maxlength="120" value="<?= $c('city') ?>"></div>
-      <div class="field" style="margin:0"><label for="region">Zona o regione</label><input type="text" id="region" name="region" maxlength="120" value="<?= $c('region') ?>"></div>
+      <div class="field" style="margin:0"><label for="postal_code">CAP</label><input type="text" id="postal_code" name="postal_code" maxlength="10" inputmode="numeric" autocomplete="off" value="<?= $c('postal_code') ?>"></div>
+      <div class="field" style="margin:0"><label for="city">Città</label><input type="text" id="city" name="city" maxlength="120" autocomplete="off" value="<?= $c('city') ?>"></div>
+      <div class="field" style="margin:0"><label for="region">Zona o regione</label><input type="text" id="region" name="region" maxlength="120" autocomplete="off" value="<?= $c('region') ?>"></div>
     </div>
     <div class="grid grid-2">
       <div class="field" style="margin:0"><label for="cin">CIN <span class="muted">(facoltativo)</span></label>
         <p class="help" style="margin:0 0 6px">Il codice identificativo nazionale degli affitti brevi: compare in piccolo in fondo alla guida.</p>
-        <input type="text" id="cin" name="cin" maxlength="40" spellcheck="false" placeholder="IT…" value="<?= $c('cin') ?>"></div>
+        <input type="text" id="cin" name="cin" maxlength="40" spellcheck="false" autocapitalize="characters" autocomplete="off" placeholder="IT…" value="<?= $c('cin') ?>"></div>
       <div class="field" style="margin:0"><label for="beds">Posti letto <span class="muted">(facoltativo)</span></label>
         <p class="help" style="margin:0 0 6px">Quante persone può ospitare la struttura.</p>
         <input type="number" id="beds" name="beds" min="0" max="999" step="1" inputmode="numeric" value="<?= (int) ($prop['beds'] ?? 0) ?: '' ?>"></div>

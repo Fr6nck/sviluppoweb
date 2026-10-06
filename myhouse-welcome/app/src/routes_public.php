@@ -240,6 +240,7 @@ $r->any('/password/nuova/{token}', function (array $a) {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pw = (string) ($_POST['password'] ?? '');
         if (mb_strlen($pw) < 8) $err = 'La password deve avere almeno 8 caratteri.';
+        elseif (strlen($pw) > 72) $err = 'La password può avere al massimo 72 caratteri.';
         elseif ($pw !== (string) ($_POST['password2'] ?? '')) $err = 'Le due password non coincidono.';
         elseif (Tokens::consume($a['token'], Tokens::RESET) !== $uid) $err = 'Il link è già stato usato.';
         else {

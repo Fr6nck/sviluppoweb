@@ -8,9 +8,9 @@
   <?php if ($err): ?><p class="note note--err" style="margin-top:20px" role="alert"><?= Support::e($err) ?></p><?php endif; ?>
   <form method="post" class="panel stack" style="margin-top:24px"><?= Csrf::field() ?>
     <div class="field" style="margin:0"><label for="password">Nuova password <span class="muted">— almeno 8 caratteri</span></label>
-      <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password" autofocus></div>
+      <input id="password" name="password" type="password" required minlength="8" maxlength="72" autocomplete="new-password" autofocus></div>
     <div class="field" style="margin:0"><label for="password2">Ripetila</label>
-      <input id="password2" name="password2" type="password" required minlength="8" autocomplete="new-password"></div>
+      <input id="password2" name="password2" type="password" required minlength="8" maxlength="72" autocomplete="new-password"></div>
     <button class="btn btn--block">Salva la password</button>
   </form>
 <?php endif; ?>

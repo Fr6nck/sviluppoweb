@@ -116,27 +116,65 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
         <?= $campoF('billing_name', 'Intestatario', 'text', 'maxlength="160" autocomplete="organization"', 'Ragione sociale, oppure nome e cognome.') ?>
         <div class="grid grid-2">
           <?= $campoF('vat', 'Partita IVA', 'text', 'maxlength="13" inputmode="numeric" autocomplete="off"', 'Obbligatoria per aziende e professionisti. 11 cifre.') ?>
-          <?= $campoF('cf', 'Codice fiscale', 'text', 'maxlength="16" autocomplete="off" style="text-transform:uppercase"', 'Obbligatorio per i privati. 16 caratteri, o 11 cifre per le società.') ?>
-          <?= $campoF('sdi', 'Codice destinatario SDI', 'text', 'maxlength="7" autocomplete="off" style="text-transform:uppercase"', '7 caratteri. Per aziende e professionisti: questo oppure la PEC.') ?>
+          <?= $campoF('cf', 'Codice fiscale', 'text', 'maxlength="16" autocomplete="off" style="text-transform:uppercase" autocapitalize="characters"', 'Obbligatorio per i privati. 16 caratteri, o 11 cifre per le società.') ?>
+          <?= $campoF('sdi', 'Codice destinatario SDI', 'text', 'maxlength="7" autocomplete="off" style="text-transform:uppercase" autocapitalize="characters"', '7 caratteri. Per aziende e professionisti: questo oppure la PEC.') ?>
           <?= $campoF('pec', 'PEC', 'email', 'maxlength="190" autocomplete="off"') ?>
         </div>
         <?= $campoF('billing_address', 'Indirizzo', 'text', 'maxlength="255" autocomplete="street-address"', 'Via e numero civico.') ?>
         <div class="grid grid-3">
           <?= $campoF('billing_postal', 'CAP', 'text', 'maxlength="5" inputmode="numeric" autocomplete="postal-code"') ?>
           <?= $campoF('billing_city', 'Città', 'text', 'maxlength="120" autocomplete="address-level2"') ?>
-          <?= $campoF('billing_province', 'Provincia', 'text', 'maxlength="2" autocomplete="address-level1" style="text-transform:uppercase"', 'Sigla, per esempio PG.') ?>
+          <?= $campoF('billing_province', 'Provincia', 'text', 'maxlength="2" autocomplete="address-level1" style="text-transform:uppercase" autocapitalize="characters"', 'Sigla, per esempio PG.') ?>
         </div>
-        <p class="small muted">Le fatture le emette Stripe con questi dati. Non li usiamo per nient'altro.</p>
+        <p class="small muted">Con questi dati facciamo la fattura elettronica e la mandiamo allo SDI. Non li usiamo per nient'altro.</p>
         <div class="actions"><button class="btn"><?= $torna !== '' ? 'Salva e torna alla pubblicazione' : 'Salva i dati di fatturazione' ?></button></div>
       </form>
     </details>
   </section>
 
-  <section class="panel stack">
+  <?php /* Il tuo account: nome, password, email. Errori sotto il campo, valori conservati. */
+        $eP = $erroriProfilo ?? []; $ePw = $erroriPassword ?? []; $eE = $erroriEmail ?? []; $apri = $apri ?? '';
+        $err = fn(array $e, string $k, string $id) => isset($e[$k]) ? '<p class="campo-errore" id="' . $id . '-err">' . Support::e($e[$k]) . '</p>' : '';
+        $inv = fn(array $e, string $k, string $id) => isset($e[$k]) ? ' aria-invalid="true" aria-describedby="' . $id . '-err"' : ''; ?>
+  <section class="panel stack" id="profilo">
     <span class="kicker">Il tuo account</span>
-    <p><?= Support::e($user['name']) ?> · <?= Support::e($user['email']) ?>
+    <p><?= Support::e($user['email']) ?>
       <?= Auth::isVerified($user) ? '<span class="badge badge--pine">Email confermata</span>' : '<span class="badge badge--ochre">Email da confermare</span>' ?></p>
-    <p class="small muted">Per cambiare la password <a href="<?= b() ?>/password/dimenticata">chiedi un link di recupero</a>: te lo mandiamo per email.</p>
+    <?php if (!empty($user['pending_email'])): ?>
+      <p class="small muted">In attesa di conferma: <b><?= Support::e($user['pending_email']) ?></b>. Apri il link che ti abbiamo mandato a quell'indirizzo.</p>
+    <?php endif; ?>
+    <form method="post" action="<?= b() ?>/account/profilo" class="row" style="gap:12px;align-items:flex-end;flex-wrap:wrap"><?= Csrf::field() ?>
+      <div class="field" style="margin:0;flex:1 1 220px"><label for="pr-nome">Nome</label>
+        <input id="pr-nome" name="name" type="text" required maxlength="120" autocomplete="name" value="<?= Support::e((string) ($_POST['name'] ?? $user['name'])) ?>"<?= $inv($eP, 'name', 'pr-nome') ?>>
+        <?= $err($eP, 'name', 'pr-nome') ?></div>
+      <button class="btn btn--ghost">Salva il nome</button>
+    </form>
+    <details class="fieldset"<?= $apri === 'password' ? ' open' : '' ?>>
+      <summary class="legend">Cambia la password</summary>
+      <form method="post" action="<?= b() ?>/account/password" class="stack" style="gap:12px;margin-top:12px"><?= Csrf::field() ?>
+        <input type="text" name="username" value="<?= Support::e($user['email']) ?>" autocomplete="username" hidden>
+        <div class="field" style="margin:0"><label for="pw-attuale">Password attuale</label>
+          <input id="pw-attuale" name="attuale" type="password" required autocomplete="current-password"<?= $inv($ePw, 'attuale', 'pw-attuale') ?>><?= $err($ePw, 'attuale', 'pw-attuale') ?></div>
+        <div class="field" style="margin:0"><label for="pw-nuova">Password nuova</label>
+          <p class="help" id="pw-nuova-aiuto" style="margin:0 0 6px">Almeno 8 caratteri.</p>
+          <input id="pw-nuova" name="nuova" type="password" required minlength="8" maxlength="72" autocomplete="new-password" aria-describedby="pw-nuova-aiuto"<?= $inv($ePw, 'nuova', 'pw-nuova') ?>><?= $err($ePw, 'nuova', 'pw-nuova') ?></div>
+        <div class="field" style="margin:0"><label for="pw-nuova2">Ripeti la password nuova</label>
+          <input id="pw-nuova2" name="nuova2" type="password" required minlength="8" maxlength="72" autocomplete="new-password"<?= $inv($ePw, 'nuova2', 'pw-nuova2') ?>><?= $err($ePw, 'nuova2', 'pw-nuova2') ?></div>
+        <div class="actions"><button class="btn">Cambia la password</button></div>
+        <p class="small muted">Non ricordi quella attuale? <a href="<?= b() ?>/password/dimenticata">Chiedi un link di recupero</a>.</p>
+      </form>
+    </details>
+    <details class="fieldset"<?= $apri === 'email' ? ' open' : '' ?>>
+      <summary class="legend">Cambia l'email</summary>
+      <form method="post" action="<?= b() ?>/account/email" class="stack" style="gap:12px;margin-top:12px"><?= Csrf::field() ?>
+        <div class="field" style="margin:0"><label for="em-nuova">Email nuova</label>
+          <p class="help" id="em-nuova-aiuto" style="margin:0 0 6px">Ti mandiamo un link: finché non lo apri, resta valida l'email di adesso.</p>
+          <input id="em-nuova" name="email" type="email" required maxlength="190" autocomplete="email" value="<?= Support::e((string) ($emailNuova ?? '')) ?>" aria-describedby="em-nuova-aiuto<?= isset($eE['email']) ? ' em-nuova-err' : '' ?>"<?= isset($eE['email']) ? ' aria-invalid="true"' : '' ?>><?= $err($eE, 'email', 'em-nuova') ?></div>
+        <div class="field" style="margin:0"><label for="em-attuale">Password attuale</label>
+          <input id="em-attuale" name="attuale" type="password" required autocomplete="current-password"<?= $inv($eE, 'attuale', 'em-attuale') ?>><?= $err($eE, 'attuale', 'em-attuale') ?></div>
+        <div class="actions"><button class="btn">Mandami il link di conferma</button></div>
+      </form>
+    </details>
   </section>
 
   <?php if ($ordini): ?>
@@ -149,7 +187,7 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
         <span class="badge badge--<?= $o['status'] === 'paid' ? 'pine' : ($o['status'] === 'failed' ? 'alert' : 'paper') ?>"><?= Support::e($statoOrdine[$o['status']] ?? $o['status']) ?></span>
       </div>
     <?php endforeach; ?>
-    <p class="tiny muted">Le fatture le emette Stripe e le trovi in «Fatture e metodo di pagamento».</p>
+    <p class="tiny muted">Le ricevute dei pagamenti le trovi in «Fatture e metodo di pagamento»; la fattura elettronica arriva nel tuo cassetto fiscale, o alla PEC o al codice destinatario che hai indicato.</p>
   </section>
   <?php endif; ?>
 </div>

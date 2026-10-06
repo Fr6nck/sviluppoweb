@@ -1319,7 +1319,7 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .extra__prezzo{flex:none;font-weight:600;color:var(--accent)}
 .benvenuto-msg{border-top:1px solid var(--line);padding-top:10px}
 .benvenuto-msg>summary{cursor:pointer;font-weight:600;min-height:40px;display:flex;align-items:center}
-.benvenuto-msg textarea{width:100%;font:inherit;font-size:15px;line-height:22px}
+.benvenuto-msg textarea{width:100%;font:inherit;font-size:16px;line-height:24px}
 .icone-scelta .scelta--mini span{display:inline-flex;align-items:center;gap:6px}
 /* Eventi nella guida (6G): il riquadro della data a sinistra, la locandina larga quanto la scheda. */
 .evento>summary{display:flex;align-items:center;gap:14px;list-style:none;cursor:pointer}
@@ -1852,3 +1852,34 @@ main:focus{outline:none}
 .invito__regole{display:flex;flex-direction:column;gap:10px;padding:20px 22px;border-radius:20px;background:var(--sunk)}
 .invito__regole ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:14px;line-height:21px}
 @media(max-width:560px){ .invito{padding:20px;gap:20px} .invito__titolo{font-size:26px} }
+
+/* Pannello al telefono e al tablet (controllo di ottobre 2026). */
+/* Le righe stanno in un fieldset, che per natura si allarga quanto il testo più lungo: a 390 px la pagina diventava larga fino a 1.266 px. */
+fieldset{min-width:0}
+@media(max-width:560px){ .barra-passo{margin-left:-16px;margin-right:-16px} }
+/* Le schede del pannello: alte 44 px, e una sfumatura a destra dice che si scorrono. */
+@media(max-width:1099px){
+  .schede-guida__voce{height:44px}
+  .schede-guida::after{content:"";position:sticky;right:-16px;flex:none;width:32px;margin-left:-32px;pointer-events:none;
+    background:linear-gradient(to right,transparent,var(--paper))}
+}
+/* Bersagli da almeno 44 px anche dove il disegno resta più piccolo. */
+.rip__azioni .icon-btn{position:relative}
+.rip__azioni .icon-btn::after{content:"";position:absolute;inset:-4px}
+.riga__nome{min-height:44px;justify-content:center}
+.indietro{display:inline-flex;align-items:center;gap:4px;min-height:44px}
+/* Riga aperta al telefono: la freccia per chiuderla sta accanto ai bottoni, senza una fascia vuota. */
+@media(max-width:560px){
+  .rip__riga:not(.rip__riga--chiusa) .rip__testa .rip__apri{order:0;flex:0 0 auto;margin-left:auto;padding:0 6px}
+  .rip__riga:not(.rip__riga--chiusa) .rip__apri .rip__riassunto{display:none}
+}
+/* Con la tastiera aperta la barra in basso si toglie di mezzo: non copre il campo in cui si scrive. */
+.tastiera .barra-passo{display:none}
+/* La foto (o la locandina) di una riga ha la stessa zona tratteggiata della foto della sezione, in piccolo. */
+.rip__file{border:1.5px dashed var(--line-strong);border-radius:var(--r-md);background:var(--sunk);padding:10px 12px}
+/* Al tocco: pillole, righe chiuse, suggerimenti e riquadri da aprire alti almeno 44 px. */
+@media(pointer:coarse){
+  .scelta,.rip__apri,.chip-sugg,.steps-nav a{min-height:44px}
+  summary.legend{min-height:44px;display:flex;align-items:center}
+  .brand{position:relative} .brand::after{content:"";position:absolute;inset:-10px}
+}

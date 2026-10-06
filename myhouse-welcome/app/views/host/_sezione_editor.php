@@ -114,12 +114,26 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
                                    'walk_minutes' => 0, 'drive_minutes' => 0, 'badge_tone' => 'pine', 'media_id' => null,
                                    'category_key' => '', 'badge_key' => '',
                                    'tr' => ['category' => '', 'description' => '', 'note' => '', 'badge' => '']];
+              // Il salvataggio non è riuscito: il modulo torna con quello che era stato scritto e l'errore accanto al campo.
+              $bozza = null;
+              if (($_SESSION['luogo_bozza']['sid'] ?? 0) === (int) $s['id']) { $bozza = $_SESSION['luogo_bozza']; unset($_SESSION['luogo_bozza']); }
+              if ($bozza && (int) $bozza['place_id'] === (int) $v['id']) {
+                  $b = $bozza['in'];
+                  foreach (['name', 'address', 'maps_url', 'phone', 'website', 'booking_url', 'badge_tone'] as $k) if (isset($b[$k])) $v[$k] = $b[$k];
+                  foreach (['walk_minutes', 'drive_minutes'] as $k) if (isset($b[$k])) $v[$k] = (int) $b[$k];
+                  foreach (['description', 'note', 'category', 'badge'] as $k) if (isset($b[$k])) $v['tr'][$k] = $b[$k];
+                  if (isset($b['category_choice'])) $v['category_key'] = in_array($b['category_choice'], ['__altro', ''], true) ? '' : $b['category_choice'];
+                  if (isset($b['badge_choice'])) $v['badge_key'] = in_array($b['badge_choice'], ['__altra', ''], true) ? '' : $b['badge_choice'];
+              } else $bozza = null;
+              $erroreNome = $bozza && $bozza['campo'] === 'name';
               $vFoto = $v['media_id'] ? Media::url((int) $v['media_id']) : null; ?>
-        <details id="luogo" class="fieldset" <?= $inModifica || !$places ? 'open' : '' ?>>
+        <details id="luogo" class="fieldset" <?= $inModifica || !$places || $bozza ? 'open' : '' ?>>
           <summary class="legend" style="cursor:pointer;min-height:32px"><?= $inModifica ? 'Modifica: ' . Support::e($v['name']) : '+ Aggiungi un luogo' ?></summary>
-          <form method="post" action="<?= $qui_url ?>/luogo" enctype="multipart/form-data" class="stack" style="margin-top:12px"><?= Csrf::field() ?>
+          <?php /* Un luogo già salvato si salva anche mentre si scrive; uno nuovo solo col bottone (non nascono doppioni). */ ?>
+          <form method="post" action="<?= $qui_url ?>/luogo" enctype="multipart/form-data" class="stack" style="margin-top:12px"<?= (int) $v['id'] ? ' data-autosave' : '' ?>><?= Csrf::field() ?>
             <?php if ($inProcedura): ?><input type="hidden" name="da" value="procedura"><?php endif; ?>
             <input type="hidden" name="place_id" value="<?= (int) $v['id'] ?>">
+            <?php if ($bozza && !$erroreNome): ?><p class="note note--err" role="alert"><?= Support::e($bozza['errore']) ?></p><?php endif; ?>
             <?php /* Prima il link di Maps: da lì nome, coordinate e minuti a piedi. Poi solo l'essenziale;
                      il resto in «Altri dettagli», chiuso. */ ?>
             <div class="field" style="margin:0"><label for="pl-maps">Incolla il link di Google Maps</label>
@@ -128,7 +142,10 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
                      aria-describedby="pl-maps-aiuto pl-maps-stato" data-mappe="<?= b() ?>/pannello/<?= $pid ?>/mappe">
               <p class="help" id="pl-maps-stato" data-mappe-stato aria-live="polite"></p></div>
             <div class="field" style="margin:0"><label for="pl-name">Nome</label>
-              <input type="text" id="pl-name" name="name" maxlength="160" value="<?= Support::e($v['name']) ?>"></div>
+              <p class="help" id="pl-name-aiuto" style="margin:0 0 6px">Serve sempre: se il link di Maps non lo dà, scrivilo tu.</p>
+              <input type="text" id="pl-name" name="name" maxlength="160" autocomplete="off" value="<?= Support::e($v['name']) ?>"
+                     aria-describedby="pl-name-aiuto<?= $erroreNome ? ' pl-name-err' : '' ?>"<?= $erroreNome ? ' aria-invalid="true" autofocus' : '' ?>>
+              <?php if ($erroreNome): ?><p class="campo-errore" id="pl-name-err"><?= Support::e($bozza['errore']) ?></p><?php endif; ?></div>
             <?php /* Categoria ed etichetta (fase 6B): pillole con le voci di questa sezione, tradotte da sole
                      nella guida; «Altro…» e «Personalizzata…» aprono il testo libero. */
             $cats = Tassonomie::categorie($s['kind']); $tags = Tassonomie::etichette($s['kind']);
@@ -180,10 +197,10 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
               <div class="field" style="margin:0"><label for="pl-addr">Indirizzo</label>
                 <input type="text" id="pl-addr" name="address" maxlength="255" value="<?= Support::e($v['address']) ?>"></div>
               <div class="field" style="margin:0"><label for="pl-walk">Minuti a piedi</label>
-                <input id="pl-walk" name="walk_minutes" type="number" min="0" max="600" inputmode="numeric" value="<?= (int) $v['walk_minutes'] ?: '' ?>" aria-describedby="pl-walk-aiuto">
+                <input id="pl-walk" name="walk_minutes" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" value="<?= (int) $v['walk_minutes'] ?: '' ?>" aria-describedby="pl-walk-aiuto">
                 <p class="help" id="pl-walk-aiuto">Dalla struttura. È una stima che puoi correggere: la calcoliamo dal link di Maps del luogo e da quello della struttura, in «Come arrivare».</p></div>
               <div class="field" style="margin:0"><label for="pl-drive">Minuti in auto</label>
-                <input id="pl-drive" name="drive_minutes" type="number" min="0" max="600" inputmode="numeric" value="<?= (int) $v['drive_minutes'] ?: '' ?>"></div>
+                <input id="pl-drive" name="drive_minutes" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" value="<?= (int) $v['drive_minutes'] ?: '' ?>"></div>
               <div class="field" style="margin:0"><label for="pl-tel">Telefono</label>
                 <input id="pl-tel" name="phone" type="tel" maxlength="40" value="<?= Support::e($v['phone']) ?>"></div>
               <div class="field" style="margin:0"><label for="pl-web">Sito web</label>
@@ -207,6 +224,7 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
             </details>
             <div class="actions">
               <button class="btn"><?= $inModifica ? 'Salva il luogo' : 'Aggiungi il luogo' ?></button>
+              <?php if ((int) $v['id']): ?><span class="small muted" data-stato-salvataggio aria-live="polite"></span><?php endif; ?>
               <?php if ($inModifica): ?><a class="btn btn--quiet" href="<?= $inProcedura ? b() . '/pannello/' . $pid . '/procedura/sezioni?apri=' . $sid . '#sez-' . $sid : $qui_url ?>">Annulla</a><?php endif; ?>
             </div>
           </form>

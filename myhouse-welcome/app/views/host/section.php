@@ -17,7 +17,7 @@ $intro = SectionCatalog::get($s['kind'])['intro'] ?? ''; ?>
 <div class="editor">
   <div class="stack stack--lg">
     <div class="stack stack--sm">
-      <a class="small" href="<?= b() ?>/pannello/<?= $pid ?><?= $procedura ? '/procedura/sezioni' : '' ?>"><?= Icon::svg('back', 14) ?> <?= $procedura ? 'Torna alla configurazione' : 'Tutte le sezioni' ?></a>
+      <a class="small indietro" href="<?= b() ?>/pannello/<?= $pid ?><?= $procedura ? '/procedura/sezioni' : '' ?>"><?= Icon::svg('back', 14) ?> <?= $procedura ? 'Torna alla configurazione' : 'Tutte le sezioni' ?></a>
       <div class="row" style="gap:10px">
         <h1 style="font-size:clamp(28px,3.4vw,38px)"><?= $titoloSalvato ?></h1>
         <?php if ($core): ?><span class="badge badge--sea">Sempre inclusa</span><?php endif; ?>

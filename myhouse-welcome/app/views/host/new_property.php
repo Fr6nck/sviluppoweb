@@ -16,7 +16,7 @@ $modo = $modo ?? 'normale'; $origini = $origini ?? []; ?>
   <?php if ($err): ?><p class="note note--err" role="alert"><?= Support::e($err) ?></p><?php endif; ?>
   <form method="post" class="stack"><?= Csrf::field() ?>
     <div class="field" style="margin:0"><label for="name">Nome della struttura</label>
-      <input id="name" name="name" type="text" required maxlength="120" placeholder="Per esempio: Casa sul Mare" autofocus></div>
+      <input id="name" name="name" type="text" required maxlength="120" autocomplete="off" placeholder="Per esempio: Casa sul Mare" autofocus></div>
     <div class="actions"><button class="btn">Crea la struttura</button>
       <a class="btn btn--quiet" href="<?= MHW\b() ?>/pannello">Annulla</a></div>
   </form>
@@ -40,9 +40,9 @@ $modo = $modo ?? 'normale'; $origini = $origini ?? []; ?>
   <?php else: ?>
     <form method="post" class="stack"><?= Csrf::field() ?>
       <div class="field" style="margin:0"><label for="name">Nome della struttura</label>
-        <input id="name" name="name" type="text" required maxlength="120" placeholder="Per esempio: Casa sul Mare"></div>
+        <input id="name" name="name" type="text" required maxlength="120" autocomplete="off" placeholder="Per esempio: Casa sul Mare"></div>
       <div class="field" style="margin:0"><label for="city">Città</label>
-        <input id="city" name="city" type="text" maxlength="120"></div>
+        <input id="city" name="city" type="text" maxlength="120" autocomplete="off"></div>
       <label class="check"><input type="checkbox" name="conferma" value="1" required> <span>Confermo: aggiungi una struttura all'abbonamento</span></label>
       <div class="actions"><button class="btn btn--go">Aggiungi la struttura <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></button>
         <a class="btn btn--quiet" href="<?= MHW\b() ?>/pannello">Annulla</a></div>
@@ -63,9 +63,9 @@ $modo = $modo ?? 'normale'; $origini = $origini ?? []; ?>
   <?php else: ?>
     <form method="post" class="stack"><?= Csrf::field() ?>
       <div class="field" style="margin:0"><label for="name">Nome della struttura</label>
-        <input id="name" name="name" type="text" required maxlength="120" placeholder="Per esempio: Casa Lucia" autofocus></div>
+        <input id="name" name="name" type="text" required maxlength="120" autocomplete="off" placeholder="Per esempio: Casa Lucia" autofocus></div>
       <div class="field" style="margin:0"><label for="city">Città</label>
-        <input id="city" name="city" type="text" maxlength="120" placeholder="Per esempio: Montepulciano"></div>
+        <input id="city" name="city" type="text" maxlength="120" autocomplete="off" placeholder="Per esempio: Montepulciano"></div>
       <?php if ($origini): /* Crea da una struttura esistente: facoltativo */ ?>
         <details class="fieldset copia" <?= !empty($_POST['origine']) ? 'open' : '' ?>>
           <summary class="legend" style="cursor:pointer;min-height:32px">Crea da una struttura esistente <span class="small muted">(facoltativo)</span></summary>

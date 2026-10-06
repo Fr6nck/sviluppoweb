@@ -16,10 +16,10 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
   <div class="field" style="margin:0"><label for="name">Nome e cognome</label>
     <input id="name" name="name" type="text" required maxlength="120" autocomplete="name" value="<?= Support::e($vecchi['name']) ?>" autofocus></div>
   <div class="field" style="margin:0"><label for="email">Email</label>
-    <input id="email" name="email" type="email" required autocomplete="email" value="<?= Support::e($vecchi['email']) ?>"></div>
+    <input id="email" name="email" type="email" required maxlength="190" autocomplete="email" value="<?= Support::e($vecchi['email']) ?>"></div>
   <div class="field" style="margin:0"><label for="password">Password <span class="muted">— almeno 8 caratteri</span></label>
     <div class="pw">
-      <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password" aria-describedby="pw-forza">
+      <input id="password" name="password" type="password" required minlength="8" maxlength="72" autocomplete="new-password" aria-describedby="pw-forza">
       <button type="button" class="pw__mostra" data-mostra-pw aria-controls="password" aria-pressed="false" hidden>Mostra</button>
     </div>
     <div class="forza" data-forza hidden><i><b></b></i><span id="pw-forza" class="small muted" aria-live="polite"></span></div>
