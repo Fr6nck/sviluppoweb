@@ -22,6 +22,13 @@ Nessuna migrazione.
   - Stripe: chiede il saldo e indica se la chiave è reale o di prova.
   - Posta: manda un'email di prova all'amministratore.
   - S3: scrive, legge e cancella un piccolo file.
+- **Posta: errori spiegati.** Se l'email di prova non parte, «Prova la connessione» mostra la risposta del server di posta e cosa controllare:
+  - utente o password rifiutati (535);
+  - server o porta irraggiungibili;
+  - cifratura (meglio SSL sulla 465);
+  - mittente rifiutato.
+- **Posta: connessione cifrata.** STARTTLS ora chiede esplicitamente TLS 1.2 o 1.3.
+- **Niente riempimento automatico.** Il browser non riempie più da solo i campi delle impostazioni con le credenziali del pannello.
 - **Quadro.** Gli avvisi «Stripe non è configurato», «La posta non parte» e «I media stanno sul disco» hanno ora il pulsante «Imposta ora».
 
 ## v2 · Vetrina «Casa Checco» con i dati veri di Assisi (6 ottobre 2026)

@@ -72,10 +72,10 @@ $intro = [
                 <?php foreach ($opzioni as $k => $et): ?><option value="<?= Support::e($k) ?>" <?= (string) $valore === (string) $k ? 'selected' : '' ?>><?= Support::e($et) ?></option><?php endforeach; ?>
               </select>
             <?php elseif ($tipo === 'secret'): ?>
-              <input type="password" id="<?= $id ?>" name="<?= $n ?>" autocomplete="new-password" spellcheck="false"
+              <input type="password" id="<?= $id ?>" name="<?= $n ?>" autocomplete="new-password" spellcheck="false" data-lpignore="true" data-1p-ignore
                      placeholder="<?= $bloccato ? 'Impostata sul server' : ($attuale !== '' && $attuale !== null ? 'Lascia vuoto per non cambiarla' : '') ?>"<?= $bloccato ? ' disabled' : '' ?><?= $aria ?>>
             <?php else: ?>
-              <input type="<?= ['email' => 'email', 'url' => 'url', 'number' => 'number'][$tipo] ?? 'text' ?>" id="<?= $id ?>" name="<?= $n ?>" value="<?= Support::e($valore) ?>" spellcheck="false"
+              <input type="<?= ['email' => 'email', 'url' => 'url', 'number' => 'number'][$tipo] ?? 'text' ?>" id="<?= $id ?>" name="<?= $n ?>" value="<?= Support::e($valore) ?>" spellcheck="false" autocomplete="off" data-lpignore="true" data-1p-ignore
                      <?= $tipo === 'number' ? 'min="1" max="65535" inputmode="numeric"' : '' ?><?= $bloccato ? ' disabled' : '' ?><?= $aria ?>>
             <?php endif; ?>
           <?php endif; ?>

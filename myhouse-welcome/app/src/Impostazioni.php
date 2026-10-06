@@ -222,6 +222,23 @@ final class Impostazioni
         if (function_exists('opcache_invalidate')) @opcache_invalidate($f, true);
     }
 
+    /** Dalla risposta del server di posta, cosa controllare: in parole semplici, con la risposta originale in fondo. */
+    public static function consiglioPosta(string $errore): string
+    {
+        $e = mb_strtolower($errore);
+        $consiglio = match (true) {
+            $errore === '' => 'Controlla server, porta, cifratura, utente e password.',
+            str_contains($e, 'accesso rifiutato') || preg_match('/\b(535|534|530)\b/', $e) === 1
+                => 'Il server ha rifiutato utente o password. L\'utente è l\'indirizzo completo della casella; riscrivi la password della casella (non quella del pannello) e controlla che il browser non l\'abbia riempita da solo con un\'altra.',
+            str_contains($e, 'connessione a') => 'Il sito non raggiunge il server di posta: controlla nome del server e porta (587 con STARTTLS, 465 con SSL). Se la porta è giusta, l\'hosting potrebbe bloccarla: prova l\'altra.',
+            str_contains($e, 'starttls') || str_contains($e, 'ssl') || str_contains($e, 'crypto') => 'La connessione cifrata non è riuscita: prova SSL sulla porta 465 invece di STARTTLS sulla 587.',
+            preg_match('/\b(550|551|553|554)\b/', $e) === 1 => 'Il server ha rifiutato il mittente o il destinatario: il mittente deve essere la stessa casella dell\'utente (o un suo alias).',
+            preg_match('/\b(421|450|451|452)\b/', $e) === 1 => 'Il server è momentaneamente occupato o ha limitato gli invii: riprova tra qualche minuto.',
+            default => 'Controlla server, porta, cifratura, utente e password.',
+        };
+        return $consiglio . ($errore !== '' ? ' Risposta del server: «' . mb_substr($errore, 0, 300) . '».' : '');
+    }
+
     /**
      * Prova la connessione con la configurazione in uso.
      * @return array{0:bool,1:string} [riuscita, messaggio per l'amministratore]
@@ -237,7 +254,7 @@ final class Impostazioni
                 case 'posta':
                     $t = (string) Config::get('mail')['transport'];
                     $ok = Mailer::send($emailAdmin, 'Prova della posta di MyHouse Welcome', "Se leggi questa email, la posta in uscita funziona.\n\nInviata da Amministrazione → Impostazioni il " . gmdate('d/m/Y H:i') . ' (UTC).');
-                    if (!$ok) return [false, 'L\'email di prova non è partita. Controlla server, porta, cifratura, utente e password; il dettaglio tecnico è in Amministrazione → Registro.'];
+                    if (!$ok) return [false, 'L\'email di prova non è partita. ' . self::consiglioPosta(Mailer::ultimoErrore())];
                     return [true, $t === 'log' ? 'La posta è in modalità prova: l\'email è finita in storage/logs/mail.log, non nella casella.' : 'Email di prova spedita a ' . $emailAdmin . ': controlla la casella (anche lo spam).'];
                 case 'archivio':
                     $cfg = Config::get('storage');

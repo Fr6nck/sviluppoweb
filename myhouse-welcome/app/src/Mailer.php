@@ -16,12 +16,18 @@ namespace MHW;
  */
 final class Mailer
 {
+    /** Il motivo dell'ultimo invio non riuscito (la risposta del server SMTP): per «Prova la connessione». */
+    private static string $ultimoErrore = '';
+
+    public static function ultimoErrore(): string { return self::$ultimoErrore; }
+
     public static function send(string $to, string $subject, string $text, ?string $html = null): bool
     {
         $cfg = Config::get('mail');
         $to = trim($to);
         if (!filter_var($to, FILTER_VALIDATE_EMAIL)) { Log::error('Mailer: destinatario non valido', ['to' => $to]); return false; }
         $subject = self::oneLine($subject);
+        self::$ultimoErrore = '';
 
         try {
             return match ($cfg['transport']) {
@@ -30,7 +36,9 @@ final class Mailer
                 default => self::log($to, $subject, $text),
             };
         } catch (\Throwable $e) {
+            self::$ultimoErrore = $e->getMessage();
             Log::exception($e, 'Mailer');
+            if (is_resource(self::$s)) @fclose(self::$s);
             return false;
         }
     }
@@ -108,7 +116,9 @@ final class Mailer
         self::cmd("EHLO $io", 250);
         if ($cifra === 'tls') {
             self::cmd('STARTTLS', 220);
-            if (!stream_socket_enable_crypto($s, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+            // TLS 1.2 e 1.3 per nome: su alcune versioni di PHP la costante generica sceglie un TLS vecchio che i server rifiutano.
+            $metodi = STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | (defined('STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT') ? STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT : 0);
+            if (!@stream_socket_enable_crypto($s, true, $metodi)) {
                 throw new \RuntimeException('SMTP: STARTTLS non riuscito');
             }
             self::cmd("EHLO $io", 250);
@@ -116,7 +126,9 @@ final class Mailer
         if ((string) $cfg['user'] !== '') {
             self::cmd('AUTH LOGIN', 334);
             self::cmd(base64_encode((string) $cfg['user']), 334);
-            self::cmd(base64_encode((string) $cfg['pass']), 235);
+            // La risposta alla password non va nel messaggio d'errore con il comando: si scrive solo il codice del server.
+            try { self::cmd(base64_encode((string) $cfg['pass']), 235); }
+            catch (\RuntimeException $e) { throw new \RuntimeException('SMTP: accesso rifiutato — ' . preg_replace('/^SMTP: risposta inattesa /', '', $e->getMessage())); }
         }
         self::cmd('MAIL FROM:<' . self::oneLine($cfg['from']) . '>', 250);
         self::cmd('RCPT TO:<' . $to . '>', [250, 251]);
