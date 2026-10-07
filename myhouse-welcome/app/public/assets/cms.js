@@ -177,6 +177,19 @@
     if (box) box.remove();
     campo.focus();
   });
+  // «Anche il tuo sito»: «Non ora» lo nasconde per 30 giorni, solo in questo browser.
+  var invito = document.querySelectorAll('[data-sito-invito]');
+  var nascostoFino = 0;
+  try { nascostoFino = parseInt(localStorage.getItem('mhw-sito-invito') || '0', 10); } catch (e) {}
+  for (var si = 0; si < invito.length; si++) (function (box) {
+    if (nascostoFino > Date.now()) { box.hidden = true; return; }
+    var x = box.querySelector('[data-sito-chiudi]');
+    x.hidden = false;
+    x.addEventListener('click', function () {
+      try { localStorage.setItem('mhw-sito-invito', String(Date.now() + 30 * 86400000)); } catch (e) {}
+      box.hidden = true;
+    });
+  })(invito[si]);
   // Con più di 12 luoghi già scritti, un campo per cercarli.
   var cerche = document.querySelectorAll('[data-gia-cerca]');
   for (var c = 0; c < cerche.length; c++) (function (campo) {

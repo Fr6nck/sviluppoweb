@@ -21,7 +21,7 @@ $u = Auth::user(); $f = Support::flash(); ?>
 <?php $principale = $u
     ? ['href' => b() . '/' . ($u['role'] === 'admin' ? 'admin' : 'pannello'), 'testo' => $u['role'] === 'admin' ? 'Amministrazione' : 'Le mie guide']
     : ['href' => b() . '/registrati', 'testo' => 'Crea gratis'];
-      $voci = [['/#come-funziona', 'Come funziona'], ['/#qr', 'Il QR'], ['/#domande', 'Domande'], ['/#piani', 'Prezzi']];
+      $voci = [['/#come-funziona', 'Come funziona'], ['/#qr', 'Il QR'], ['/#sito', 'Il tuo sito'], ['/#domande', 'Domande'], ['/#piani', 'Prezzi']];
       /* Chi è dentro si riconosce subito: l'iniziale e il nome in testata, con il menu
          dell'account (le guide, i dati, esci). È un <details>: si apre anche senza JavaScript. */
       $nomeU = $u ? trim((string) ($u['name'] ?? '')) : '';

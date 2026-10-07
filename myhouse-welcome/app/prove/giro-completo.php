@@ -2343,6 +2343,18 @@ $pezzi = MHW\Traduttore::pezzi($lungo);
 prova('Un testo oltre i 10.000 byte si spezza in pezzi da 10.000 al massimo, senza perdere niente', count($pezzi) > 2 && max(array_map('strlen', $pezzi)) <= 10000
       && implode('', $pezzi) === $lungo && array_filter($pezzi, fn($p) => !mb_check_encoding($p, 'UTF-8')) === []);
 
+capitolo('Il sito della struttura: sezione della landing e invito nel pannello');
+$r = $ospite->get('/');
+prova('Landing: sezione «Anche il tuo sito» con i tre punti e il contatto WhatsApp con il messaggio già scritto', str_contains($r['body'], 'id="sito"')
+      && str_contains($r['body'], 'Meno commissioni ai portali.') && str_contains($r['body'], 'Più incasso per te.') && str_contains($r['body'], 'Più ospiti diretti.')
+      && str_contains($r['body'], 'la quota che sarebbe andata al portale resta a te') && str_contains($r['body'], 'https://wa.me/393920061600?text=Ciao%2C%20vorrei%20informazioni')
+      && str_contains($r['body'], '/#sito">Il tuo sito</a>'));
+$r = $lucia->get('/pannello');
+prova('Pannello: l\'invito breve, con «Scopri come» verso la landing e «Non ora»', pulita($r) && str_contains($r['body'], 'data-sito-invito')
+      && str_contains($r['body'], '<b>Meno commissioni ai portali. Più incasso per te. Più ospiti diretti.</b>') && str_contains($r['body'], '/#sito">Scopri come')
+      && str_contains($r['body'], 'data-sito-chiudi'));
+prova('…anche nella pagina della guida, sotto le sezioni', str_contains($lucia->get("/pannello/$casa")['body'], 'data-sito-invito'));
+
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

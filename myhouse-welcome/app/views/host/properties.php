@@ -50,6 +50,8 @@ $nome = $nome !== '' ? explode(' ', $nome)[0] : ''; ?>
   </a>
 </div>
 
+<?php include __DIR__ . '/_sito_invito.php'; ?>
+
 <div class="guide-griglia">
   <?php foreach ($props as $pr): $cop = Media::url($pr['cover_media_id'] ? (int) $pr['cover_media_id'] : null);
         if (in_array((int) $pr['id'], $bloccate, true)): /* bloccata: si vede, non si apre */ ?>

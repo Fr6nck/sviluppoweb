@@ -929,6 +929,19 @@ input[type=file]::file-selector-button{height:36px;margin-right:12px;padding:0 1
 .vantaggi>.tempo__valore{grid-column:1/-1}
 .vantaggi--4{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(max-width:1180px){ .vantaggi--4{grid-template-columns:repeat(2,minmax(0,1fr))} }
+/* «Anche il tuo sito»: tre vantaggi e il contatto diretto. */
+.sito-invito{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:14px;align-items:center;margin:24px 0;padding:14px 16px;
+  border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--accent)}
+.sito-invito[hidden]{display:none}
+.sito-invito__ico{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:999px;background:var(--terracotta-soft);color:var(--accent)}
+.sito-invito__testo{margin:0;font-size:15px;line-height:22px;text-wrap:pretty}
+.sito-invito__testo b{display:block;font-weight:600}
+.sito-invito__testo span{color:var(--muted);font-size:14px}
+.sito-invito__vai{white-space:nowrap}
+@media(max-width:640px){ .sito-invito{grid-template-columns:auto minmax(0,1fr) auto} .sito-invito__vai{grid-column:2/-1;justify-self:start} .sito-invito__chiudi{grid-row:1;grid-column:3} }
+.sito__accento{color:var(--accent)}
+.sito__lead{max-width:620px;font-size:17px;line-height:26px;color:var(--muted);text-wrap:pretty}
+.sito__cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:24px}
 .vantaggio{display:flex;flex-direction:column;gap:8px;padding:24px;border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line)}
 .vantaggio__ico{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:999px;
   background:var(--terracotta-soft);color:var(--accent);margin-bottom:4px}

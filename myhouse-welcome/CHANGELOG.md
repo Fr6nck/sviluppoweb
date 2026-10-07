@@ -1,5 +1,16 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Il sito della struttura (7 ottobre 2026)
+
+Nessuna migrazione.
+
+- **Landing: «Anche il tuo sito».** Una sezione nuova subito dopo «La guida che lavora per te», con la voce «Il tuo sito» nel menu. Il titolo è «Meno commissioni ai portali. Più incasso per te. Più ospiti diretti.», seguito da tre riquadri brevi, uno per punto.
+  - «Chiedici il tuo sito» apre WhatsApp con il messaggio già scritto; c'è anche «Scrivici un'email». Usano i contatti di `legal` in `config.php`.
+  - Nessun prezzo: si risponde con una proposta.
+- **Pannello: un invito breve.** In «Le mie guide», sotto i numeri, e nella pagina della guida, sotto le sezioni. Riporta il messaggio diretto, una riga di spiegazione e «Scopri come», che porta alla sezione della landing.
+  - «Non ora» lo nasconde per 30 giorni, solo in quel browser.
+- Icona nuova `percent`. **Prove:** 3 in più, 673 in tutto.
+
 ## v2 · Traduzioni suggerite (7 ottobre 2026)
 
 Migrazione `022`: tabelle `translation_suggestions` e `translation_usage`, colonne `properties.translation_suggest`, `accounts.translation_trial_until` e `accounts.translation_trial_by_admin`. Accende la funzione `auto_translation` in tutte le versioni di Plus e Portfolio, anche quelle già vendute; l'etichetta diventa «Traduzioni suggerite»; i testi di Plus e Portfolio dicono l'omaggio, se sono ancora quelli predefiniti. Solo aggiunte.

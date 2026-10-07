@@ -51,6 +51,7 @@ final class Icon
         'key'       => '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17.5 5.5l2 2M15 8l2 2"/>',
         'qr'        => '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><path d="M14 14h2.5M20.5 14v2.5M14 17.5v3M17.5 20.5h3"/>',
         'people'    => '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.2a3.5 3.5 0 0 1 0 5.6M18 20a6.6 6.6 0 0 0-2-4.7"/>',
+        'percent'   => '<path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/>',
         'euro'      => '<path d="M17.5 6.5A6.5 6.5 0 0 0 7 11.7 6.5 6.5 0 0 0 17.5 17.5"/><path d="M4.5 10.5h8M4.5 13.5h8"/>',
         'book'      => '<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v18H5.5A1.5 1.5 0 0 1 4 19.5Z"/><path d="M4 17.5h15"/>',
         'chart'     => '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
