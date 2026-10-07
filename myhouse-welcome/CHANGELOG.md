@@ -4,9 +4,10 @@
 
 Nessuna migrazione.
 
-- **Landing: «Anche il tuo sito».** Una sezione nuova subito dopo «La guida che lavora per te», con la voce «Il tuo sito» nel menu. Il titolo è «Meno commissioni ai portali. Più incasso per te. Più ospiti diretti.», seguito da tre riquadri brevi, uno per punto.
-  - «Chiedici il tuo sito» apre WhatsApp con il messaggio già scritto; c'è anche «Scrivici un'email». Usano i contatti di `legal` in `config.php`.
+- **Landing: «Anche il tuo sito».** In fondo alla pagina, dopo «La tua struttura ha tanto da raccontare», a tutta larghezza: la foto di un soggiorno (`assets/foto/sito-800.webp`, `sito-1600.webp`, `sito.jpg`) sotto un velo nero al 60%. La voce «Il tuo sito» è l'ultima del menu. Il titolo è «Meno commissioni ai portali. Più incasso per te. Più ospiti diretti.», seguito da tre riquadri brevi, uno per punto.
+  - «Chiedici il tuo sito» porta a https://myhouse.blackout.in (in una scheda nuova); c'è anche «Scrivici un'email», con l'indirizzo di `legal` in `config.php`.
   - Nessun prezzo: si risponde con una proposta.
+  - `body` ha `overflow-x: clip`: la fascia a tutta larghezza non fa scorrere la pagina di lato.
 - **Pannello: un invito breve.** In «Le mie guide», sotto i numeri, e nella pagina della guida, sotto le sezioni. Riporta il messaggio diretto, una riga di spiegazione e «Scopri come», che porta alla sezione della landing.
   - «Non ora» lo nasconde per 30 giorni, solo in quel browser.
 - Icona nuova `percent`. **Prove:** 3 in più, 673 in tutto.

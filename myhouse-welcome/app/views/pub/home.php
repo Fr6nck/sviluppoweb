@@ -347,39 +347,6 @@ $disegni = [
   </div>
 </section>
 
-<?php /* Il sito della struttura: lo realizziamo noi. Tre punti brevi e un contatto diretto
-   (WhatsApp con il messaggio già scritto, oppure email). Nessun prezzo: si fa una proposta. */
-$legaleSito = MHW\Config::get('legal');
-$waSito = preg_replace('/\D/', '', (string) ($legaleSito['contact_whatsapp'] ?? ''));
-$testoSito = rawurlencode('Ciao, vorrei informazioni per il sito della mia struttura.'); ?>
-<section id="sito" class="blocco sito" aria-labelledby="sito-titolo">
-  <div class="come__testa">
-    <span class="kicker">Anche il tuo sito</span>
-    <h2 id="sito-titolo" class="h-sezione">Meno commissioni ai portali.<br>Più incasso per te.<br><span class="sito__accento">Più ospiti diretti.</span></h2>
-    <p class="sito__lead">Oltre alla guida, realizziamo il sito internet della tua struttura: le tue foto, le date libere, la prenotazione diretta.</p>
-  </div>
-  <div class="vantaggi">
-    <?php foreach ([
-        ['percent', 'Meno commissioni ai portali.', 'Sui portali ogni notte venduta ha un costo: una percentuale che va a chi ti ha fatto da intermediario. Sulle prenotazioni che arrivano dal tuo sito l\'intermediario non c\'è, e quella percentuale non la paghi.'],
-        ['euro', 'Più incasso per te.', 'Stessa casa, stessa notte, stesso prezzo. Cambia solo dove viene venduta: se la vendi dal tuo sito, la quota che sarebbe andata al portale resta a te.'],
-        ['people', 'Più ospiti diretti.', 'Il tuo sito è visibile a chiunque cerchi online un alloggio nella tua zona, anche a chi non ti ha mai sentito nominare. Arriva da te, guarda le foto, vede le date libere e prenota. Senza passare da un portale.'],
-    ] as [$ico, $tit, $txt]): ?>
-      <div class="vantaggio">
-        <span class="vantaggio__ico"><?= Icon::svg($ico, 20, 1.7) ?></span>
-        <b><?= Support::e($tit) ?></b>
-        <p><?= Support::e($txt) ?></p>
-      </div>
-    <?php endforeach; ?>
-  </div>
-  <?php if ($waSito !== '' || ($legaleSito['contact_email'] ?? '') !== ''): ?>
-    <div class="sito__cta">
-      <?php if ($waSito !== ''): ?><a class="btn" href="https://wa.me/<?= Support::e($waSito) ?>?text=<?= $testoSito ?>" rel="noopener"><?= Icon::svg('whatsapp', 18, 1.8) ?>Chiedici il tuo sito</a><?php endif; ?>
-      <?php if (($legaleSito['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legaleSito['contact_email']) ?>?subject=<?= rawurlencode('Il sito della mia struttura') ?>"><?= Icon::svg('message', 18, 1.8) ?>Scrivici un'email</a><?php endif; ?>
-      <span class="small muted">Ti rispondiamo con una proposta su misura.</span>
-    </div>
-  <?php endif; ?>
-</section>
-
 <section id="come-funziona" class="blocco" aria-labelledby="come-titolo">
   <div class="come__testa">
     <span class="kicker">Come funziona</span>
@@ -556,6 +523,42 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <p>MyHouse Welcome fa parte delle soluzioni MyHouse di
       <a href="https://blackout.in" rel="noopener" target="_blank">Blackout Agency</a>, dedicate alle esigenze digitali delle strutture ricettive.</p>
   </aside>
+</section>
+
+<?php /* Il sito della struttura: lo realizziamo noi. In fondo alla pagina, a tutta larghezza,
+   con la foto di un soggiorno sotto un velo nero al 60%. Tre punti brevi; «Chiedici il tuo
+   sito» porta a myhouse.blackout.in, l'email resta come seconda strada. Nessun prezzo. */
+$legaleSito = MHW\Config::get('legal'); ?>
+<section id="sito" class="sito" aria-labelledby="sito-titolo">
+  <picture class="sito__foto" aria-hidden="true">
+    <source type="image/webp" srcset="<?= Support::e(a('/assets/foto/sito-800.webp')) ?> 800w, <?= Support::e(a('/assets/foto/sito-1600.webp')) ?> 1600w" sizes="100vw">
+    <img src="<?= Support::e(a('/assets/foto/sito.jpg')) ?>" alt="" loading="lazy" decoding="async" width="1600" height="1067">
+  </picture>
+  <div class="sito__dentro">
+    <div class="come__testa">
+      <span class="kicker">Anche il tuo sito</span>
+      <h2 id="sito-titolo" class="h-sezione">Meno commissioni ai portali.<br>Più incasso per te.<br><span class="sito__accento">Più ospiti diretti.</span></h2>
+      <p class="sito__lead">Oltre alla guida, realizziamo il sito internet della tua struttura: le tue foto, le date libere, la prenotazione diretta.</p>
+    </div>
+    <div class="vantaggi">
+      <?php foreach ([
+          ['percent', 'Meno commissioni ai portali.', 'Sui portali ogni notte venduta ha un costo: una percentuale che va a chi ti ha fatto da intermediario. Sulle prenotazioni che arrivano dal tuo sito l\'intermediario non c\'è, e quella percentuale non la paghi.'],
+          ['euro', 'Più incasso per te.', 'Stessa casa, stessa notte, stesso prezzo. Cambia solo dove viene venduta: se la vendi dal tuo sito, la quota che sarebbe andata al portale resta a te.'],
+          ['people', 'Più ospiti diretti.', 'Il tuo sito è visibile a chiunque cerchi online un alloggio nella tua zona, anche a chi non ti ha mai sentito nominare. Arriva da te, guarda le foto, vede le date libere e prenota. Senza passare da un portale.'],
+      ] as [$ico, $tit, $txt]): ?>
+        <div class="vantaggio">
+          <span class="vantaggio__ico"><?= Icon::svg($ico, 20, 1.7) ?></span>
+          <b><?= Support::e($tit) ?></b>
+          <p><?= Support::e($txt) ?></p>
+        </div>
+      <?php endforeach; ?>
+    </div>
+    <div class="sito__cta">
+      <a class="btn" href="https://myhouse.blackout.in" target="_blank" rel="noopener">Chiedici il tuo sito <?= Icon::svg('external', 16, 1.9) ?></a>
+      <?php if (($legaleSito['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legaleSito['contact_email']) ?>?subject=<?= rawurlencode('Il sito della mia struttura') ?>"><?= Icon::svg('message', 18, 1.8) ?>Scrivici un'email</a><?php endif; ?>
+      <span class="small">Ti rispondiamo con una proposta su misura.</span>
+    </div>
+  </div>
 </section>
 
 <script src="<?= MHW\av('/assets/prezzi.js') ?>" defer></script>

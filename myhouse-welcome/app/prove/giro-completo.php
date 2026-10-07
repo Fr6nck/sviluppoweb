@@ -2345,9 +2345,10 @@ prova('Un testo oltre i 10.000 byte si spezza in pezzi da 10.000 al massimo, sen
 
 capitolo('Il sito della struttura: sezione della landing e invito nel pannello');
 $r = $ospite->get('/');
-prova('Landing: sezione «Anche il tuo sito» con i tre punti e il contatto WhatsApp con il messaggio già scritto', str_contains($r['body'], 'id="sito"')
+prova('Landing: sezione «Anche il tuo sito» in fondo, dopo la chiusura, con la foto, i tre punti e «Chiedici il tuo sito» verso myhouse.blackout.in', str_contains($r['body'], 'id="sito"')
       && str_contains($r['body'], 'Meno commissioni ai portali.') && str_contains($r['body'], 'Più incasso per te.') && str_contains($r['body'], 'Più ospiti diretti.')
-      && str_contains($r['body'], 'la quota che sarebbe andata al portale resta a te') && str_contains($r['body'], 'https://wa.me/393920061600?text=Ciao%2C%20vorrei%20informazioni')
+      && str_contains($r['body'], 'la quota che sarebbe andata al portale resta a te') && str_contains($r['body'], '<a class="btn" href="https://myhouse.blackout.in" target="_blank" rel="noopener">Chiedici il tuo sito')
+      && strpos($r['body'], 'id="sito"') > strpos($r['body'], 'id="chiusura-titolo"') && str_contains($r['body'], '/assets/foto/sito-1600.webp')
       && str_contains($r['body'], '/#sito">Il tuo sito</a>'));
 $r = $lucia->get('/pannello');
 prova('Pannello: l\'invito breve, con «Scopri come» verso la landing e «Non ora»', pulita($r) && str_contains($r['body'], 'data-sito-invito')
