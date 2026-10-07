@@ -1342,7 +1342,7 @@ prova('K2 · in landing: «Una prenotazione diretta in più all\'anno paga l\'ab
       || str_contains($r['body'], "Una prenotazione diretta in più all'anno paga l'abbonamento."));
 prova('K3 · FAQ prima del listino: sei domande in un accordion accessibile', substr_count($r['body'], 'class="faq__voce"') >= 6 && str_contains($r['body'], 'Gli ospiti vengono tracciati?')
       && strpos($r['body'], 'id="domande"') < strpos($r['body'], 'id="piani"'));
-prova('K3 · accanto a «Guarda la demo» le lingue della demo (IT / EN / FR)', preg_match_all('#href="[^"]+/benvenuto\?l=(it|en|fr)" hreflang#', $r['body'], $mm) >= 2);
+prova('K3 · accanto a «Guarda la demo» le lingue della demo (IT / EN / DE)', preg_match_all('#href="[^"]+/benvenuto\?l=(it|en|de)" hreflang#', $r['body'], $mm) >= 2);
 prova('K3 · nessuna testimonianza: nessun blocco', !str_contains($r['body'], 'Le parole di chi ospita'));
 prova('V6 · tre scene sotto l\'hero, al posto della foto grande, con le foto vere', substr_count($r['body'], 'class="scena"') === 3
       && substr_count($r['body'], 'scena__vuota') === 0 && !str_contains($r['body'], 'class="stage"')

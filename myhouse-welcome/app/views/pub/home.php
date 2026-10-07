@@ -101,8 +101,8 @@ if ($dentro):
       <?php if ($demoUrl): ?>
         <?php /* La demo, e accanto le lingue in cui aprirla: un solo gruppo, non tre bottoni in fila.
                  Le lingue che la demo ha davvero, al massimo tre. */
-              $lingueDemo = array_values(array_intersect(['it', 'en', 'fr'], array_column(MHW\Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$demo['id']]), 'locale')));
-              $nomiLingue = ['it' => 'italiano', 'en' => 'inglese', 'fr' => 'francese']; ?>
+              $lingueDemo = array_values(array_intersect(['it', 'en', 'de'], array_column(MHW\Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$demo['id']]), 'locale')));
+              $nomiLingue = ['it' => 'italiano', 'en' => 'inglese', 'de' => 'tedesco']; ?>
         <span class="demo-gruppo">
           <a class="demo-gruppo__vai" href="<?= $demoUrl ?>"><?= Icon::svg('eye', 18, 1.8) ?>Guarda la demo</a>
           <?php if (count($lingueDemo) > 1): ?>

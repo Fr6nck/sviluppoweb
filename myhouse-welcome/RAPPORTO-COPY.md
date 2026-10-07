@@ -112,7 +112,6 @@ Prima solo 5 sezioni su 17 avevano una spiegazione, e nel catalogo «Aggiungi un
 - «Ogni richiesta richiede poco tempo» → «Ogni risposta ti prende un minuto, ma prova a contare quante volte ripeti le stesse cose in una stagione».
 - «smartphone» → «telefono», come nel resto del sito. «Invia il link via WhatsApp o email» → «Mandi il link su WhatsApp o per email, con il messaggio di benvenuto già pronto» (il messaggio pronto esiste, nella pagina QR & Link, e la landing non lo diceva).
 - Fascia del codice sconto: «fino al 04/01/2027» → «fino al 4 gennaio 2027».
-- Accanto a «Guarda la demo» le lingue sono **IT · EN · FR**: il francese al posto del tedesco. La demo resta disponibile anche in tedesco e spagnolo dal selettore della guida.
 - Menu: «Piani» → **«Prezzi»**, la parola che un visitatore cerca. Il blocco si chiama «Piani e prezzi».
 
 ### Ampliato, e con quale idea di marketing

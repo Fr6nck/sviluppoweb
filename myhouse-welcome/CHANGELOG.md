@@ -1,5 +1,10 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Copy coerente, patch 2 (7 ottobre 2026)
+
+Nessuna migrazione. Della `copy-coerente-patch-2` era già tutto integrato tranne una cosa:
+- **Landing:** accanto a «Guarda la demo» le lingue tornano **IT · EN · DE** (erano IT · EN · FR). Il francese e lo spagnolo restano nel selettore della guida demo.
+
 ## v2 · Il sito della struttura (7 ottobre 2026)
 
 Nessuna migrazione.
@@ -91,7 +96,7 @@ Migrazione `020`, solo testi: etichette delle funzioni e testi dei piani, cambia
 - **Campi.** «(facoltativo)» sta accanto all'etichetta e l'aiuto resta per l'esempio (prima era la prima parola dell'aiuto); «Una riga per…», «Una voce per riga» dappertutto. Le regole della casa si scelgono con le frasi che l'ospite leggerà («Si può fumare» / «Vietato fumare»). In Aspetto, «Testo scuro / chiaro» diventa **Tema chiaro / scuro**. Nei luoghi, «In evidenza» diventa **Etichetta**.
 - **Errori corretti.** «Il cifra lo cambi…» e «Cambia il cifra di strutture»; «Non vuoi più ricevere il avviso…» nelle email; «compresa nel piano Plus» detto del logo; chi ha Portfolio non vede più «Scopri Portfolio» quando ha finito le strutture; «Tradotta automaticamente» accanto a «nessuna traduzione automatica».
 - **Amministrazione.** Stati di ordini e abbonamenti in italiano (`_stati.php`); date dei codici sconto scritte per esteso; «Archivio di foto e PDF».
-- **Landing.** Blocco nuovo **Per chi è** (casa vacanza, B&B e affittacamere, agriturismo, più strutture); terzo vantaggio sulle lingue e fascia del prezzo a tutta larghezza, con l'equivalente al mese; undici domande invece di sei (provarla prima di pagare, tempo, lingue, più strutture, codici della porta); «senza carta di credito» nella chiusura; «Prezzi» nel menu; accanto a «Guarda la demo» le lingue sono IT · EN · FR (prima DE); descrizione per i motori di ricerca riscritta. Nessun numero e nessuna testimonianza inventati.
+- **Landing.** Blocco nuovo **Per chi è** (casa vacanza, B&B e affittacamere, agriturismo, più strutture); terzo vantaggio sulle lingue e fascia del prezzo a tutta larghezza, con l'equivalente al mese; undici domande invece di sei (provarla prima di pagare, tempo, lingue, più strutture, codici della porta); «senza carta di credito» nella chiusura; «Prezzi» nel menu; descrizione per i motori di ricerca riscritta. Nessun numero e nessuna testimonianza inventati.
 - **Immagini.** `scena-host.jpg` (e le due WebP): tolto il codice della cassetta delle chiavi che si leggeva sullo schermo. `pannello-1…3.webp` rifatte con i caratteri veri del sito e i testi nuovi; il QR della terza porta alla demo.
 
 ## v2 · Invita un amico (6 ottobre 2026)
