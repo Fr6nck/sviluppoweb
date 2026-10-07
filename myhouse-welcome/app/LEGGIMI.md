@@ -216,8 +216,10 @@ public/                    index.php, .htaccess, web.config, assets/
   è già quella che si comprerà.
 - **Gli ospiti leggono un'istantanea.** Le modifiche si vedono quando l'host
   ripubblica; con l'abbonamento attivo ripubblicare non costa niente.
-- **Niente traduzione automatica.** Le lingue le scrive l'host; dove manca una
-  traduzione l'ospite legge la lingua principale.
+- **Traduzioni suggerite, mai pubblicate da sole.** Le lingue le scrive l'host;
+  con Plus e Portfolio un traduttore automatico (Amazon Translate) propone quelle
+  che mancano e l'host le approva una per una. Finché non sono approvate la guida
+  non le mostra; dove manca una traduzione l'ospite legge la lingua principale.
 - **Niente codici di accesso nella guida.** Si mandano all'ospite in privato.
 
 ---

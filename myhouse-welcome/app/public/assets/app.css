@@ -1222,6 +1222,12 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .gia-altrove .suggerimenti[hidden],.chip-sugg[hidden]{display:none}
 .gia-altrove .chip-sugg{max-width:100%;text-align:left}
 .gia-altrove__cat{margin-left:.3em}
+/* Traduzioni suggerite: sotto il campo, da approvare. */
+.suggerita{display:grid;gap:6px;margin-top:8px;padding:10px 12px;border:1px dashed var(--ochre);border-radius:12px;background:var(--sunk)}
+.suggerita .badge{justify-self:start}
+.suggerita__testo{margin:0;white-space:pre-line;overflow-wrap:anywhere}
+.suggerita__azioni{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.suggerita--rifare{border-color:var(--alert)}
 
 /* Guida ospite: il foglio dei contatti. */
 .contatti-foglio{position:relative;flex:1 1 auto}

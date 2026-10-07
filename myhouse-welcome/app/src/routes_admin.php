@@ -1,7 +1,7 @@
 <?php
 /** Rotte di amministrazione. $r è il Router creato in public/index.php. */
 
-use MHW\{Auth, Billing, Config, Db, Demo, Entitlements, Impostazioni, Log, Media, Plans, RateLimit, Stats, Storages, Stripe, Subscriptions, Support, View};
+use MHW\{Auth, Billing, Config, Db, Demo, Entitlements, Impostazioni, Log, Media, Plans, RateLimit, Stats, Storages, Stripe, Subscriptions, Support, Traduttore, View};
 
 /**
  * Il quadro: quanti clienti, quanto hanno pagato davvero, quanto viene letto
@@ -36,6 +36,8 @@ $r->get('/admin', function () {
     if (!Stripe::enabled()) $avvisi[] = ['Stripe non è configurato', 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti possono preparare la guida ma non pagarla. Inseriscili nelle Impostazioni.', '/admin/impostazioni#stripe'];
     if (Config::get('mail')['transport'] === 'log') $avvisi[] = ['La posta non parte', 'Le email di conferma e di recupero della password finiscono in storage/logs/mail.log. Imposta il server SMTP nelle Impostazioni.', '/admin/impostazioni#posta'];
     if (Config::get('storage')['driver'] !== 's3') $avvisi[] = ['Foto e PDF stanno sul disco del server', 'In produzione usa Amazon S3: bucket e credenziali si inseriscono nelle Impostazioni.', '/admin/impostazioni#archivio'];
+    $usati = Traduttore::usati(); $tetto = Traduttore::tetti()['sito'];
+    if ($tetto > 0 && $usati > $tetto * 0.8) $avvisi[] = ['Traduzioni suggerite oltre l\'80% del tetto del mese', 'Usati ' . number_format($usati, 0, ',', '.') . ' caratteri su ' . number_format($tetto, 0, ',', '.') . ': al tetto le richieste si fermano fino al primo del mese.', '/admin/traduzioni'];
     if (Demo::presente()) $avvisi[] = ['Ci sono ancora i clienti di esempio', 'Sono account veri con una password nota. Toglili prima di aprire al pubblico.'];
 
     View::out('admin/dashboard', ['numeri' => $numeri, 'piani' => $piani, 'ordini' => $ordini, 'avvisi' => $avvisi, 'funnel' => Stats::funnel(30),
@@ -333,6 +335,58 @@ $r->post('/admin/pacchetti/{pid}/testo', function (array $a) {
     Support::redirect('/admin/pacchetti');
 });
 
+// ---------------------------------------------------------------- traduzioni
+/**
+ * Le traduzioni suggerite (Traduttore): consumi e costi stimati del mese, gli
+ * ultimi 12 mesi, chi traduce di più, quanto costerebbe tradurre tutto quello che
+ * manca, e gli anni in omaggio (con la possibilità di allungarli). I costi sono stime.
+ */
+$r->get('/admin/traduzioni', function () {
+    Auth::requireAdmin();
+    $mese = Traduttore::mese();
+    $usati = Traduttore::usati();
+    $gratis = Traduttore::gratuitoAttivo();
+    $mesi = Db::all("SELECT month, SUM(CASE WHEN outcome = 'ok' THEN chars ELSE 0 END) AS chars, SUM(CASE WHEN outcome = 'ok' THEN 1 ELSE 0 END) AS chiamate,
+                            SUM(CASE WHEN outcome = 'errore' THEN 1 ELSE 0 END) AS errori, SUM(CASE WHEN outcome = 'limite' THEN 1 ELSE 0 END) AS limiti
+                     FROM translation_usage GROUP BY month ORDER BY month DESC LIMIT 12");
+    $primi = Db::all("SELECT t.account_id, SUM(t.chars) AS chars, u.email, u.name FROM translation_usage t
+                      LEFT JOIN accounts a ON a.id = t.account_id LEFT JOIN users u ON u.id = a.user_id
+                      WHERE t.month = ? AND t.outcome = 'ok' GROUP BY t.account_id, u.email, u.name ORDER BY chars DESC LIMIT 10", [$mese]);
+    // Previsione: i clienti con le traduzioni suggerite nel piano, e i caratteri ancora da tradurre nelle lingue accese.
+    $clienti = 0; $daTradurre = 0;
+    foreach (Db::all('SELECT DISTINCT account_id FROM properties WHERE is_demo = 0 AND archived_at IS NULL') as $x) {
+        if (!Traduttore::nelPiano((int) $x['account_id'])) continue;
+        $clienti++;
+        foreach (Db::all('SELECT * FROM properties WHERE account_id = ? AND is_demo = 0 AND archived_at IS NULL', [$x['account_id']]) as $p) {
+            foreach (Db::all('SELECT locale FROM property_locales WHERE property_id = ? AND locale <> ?', [$p['id'], $p['default_locale']]) as $l) {
+                foreach (Traduttore::campi($p, $l['locale']) as $c) if ($c['tradotto'] === '') $daTradurre += mb_strlen($c['origine']);
+            }
+        }
+    }
+    $omaggi = Db::all("SELECT a.id, a.translation_trial_until AS fino, a.translation_trial_by_admin AS admin, u.email, u.name FROM accounts a JOIN users u ON u.id = a.user_id
+                       WHERE a.translation_trial_until IS NOT NULL ORDER BY a.translation_trial_until");
+    $errori = Db::all("SELECT t.*, u.email FROM translation_usage t LEFT JOIN accounts a ON a.id = t.account_id LEFT JOIN users u ON u.id = a.user_id
+                       WHERE t.outcome <> 'ok' ORDER BY t.id DESC LIMIT 8");
+    View::out('admin/traduzioni', ['mese' => $mese, 'usati' => $usati, 'tetti' => Traduttore::tetti(), 'gratis' => $gratis, 'mesi' => $mesi, 'primi' => $primi,
+        'clienti' => $clienti, 'daTradurre' => $daTradurre, 'omaggi' => $omaggi, 'errori' => $errori, 'configurato' => Traduttore::configurato(),
+        'config' => Traduttore::config(), 'nav' => 'traduzioni'], 'layout/cms');
+});
+
+/** Allungare (o accorciare) l'anno in omaggio di un account: si sceglie la data di fine. */
+$r->post('/admin/traduzioni/omaggio', function () {
+    $admin = Auth::requireAdmin();
+    $acc = (int) ($_POST['account'] ?? 0);
+    $fino = (string) ($_POST['fino'] ?? '');
+    if (!Db::val('SELECT id FROM accounts WHERE id = ?', [$acc]) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fino) || !checkdate((int) substr($fino, 5, 2), (int) substr($fino, 8, 2), (int) substr($fino, 0, 4))) {
+        Support::flash('Scegli un cliente e una data valida.', 'err');
+        Support::redirect('/admin/traduzioni#omaggi');
+    }
+    Db::update('accounts', ['translation_trial_until' => $fino . 'T23:59:59Z', 'translation_trial_by_admin' => 1], 'id = :aid', ['aid' => $acc]);
+    Auth::audit('translation.trial', (int) $admin['id'], ['account' => $acc, 'fino' => $fino]);
+    Support::flash('Omaggio delle traduzioni suggerite fino al ' . Support::date($fino . 'T12:00:00Z') . '.');
+    Support::redirect('/admin/traduzioni#omaggi');
+});
+
 // --------------------------------------------------------------- diagnostica
 /**
  * Queste voci non sono promesse: il server interroga davvero sé stesso,
@@ -396,7 +450,9 @@ $r->get('/admin/diagnostica', function () {
         'i cookie di sessione diventano "secure" solo su HTTPS'];
     $checks[] = ['Indirizzo pubblico impostato', Config::get('base_url') !== '',
         Config::get('base_url') !== '' ? Config::get('base_url') : 'MHW_BASE_URL vuoto: QR ed email usano l\'indirizzo della richiesta'];
-    $checks[] = ['Traduzione automatica', true, 'Non attiva, per scelta: le lingue le scrive l\'host.'];
+    $checks[] = ['Traduzioni suggerite (Amazon Translate)', MHW\Traduttore::configurato(), MHW\Traduttore::configurato()
+        ? 'Collegate: un traduttore automatico propone, il cliente approva. Consumi in Amministrazione → Traduzioni.'
+        : 'Non collegate: senza chiavi i clienti Plus e Portfolio non ricevono suggerite. Le lingue le scrivono loro.'];
 
     View::out('admin/diagnostics', ['checks' => $checks, 'base' => $base, 'nav' => 'diagnostica'], 'layout/cms');
 });

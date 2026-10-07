@@ -295,7 +295,7 @@ $disegni = [
     <div class="vantaggio">
       <span class="vantaggio__ico"><?= Icon::svg('globe', 20, 1.7) ?></span>
       <b>Parla la lingua di chi arriva.</b>
-      <p>La guida si apre da sola nella lingua del telefono dell'ospite. Fino a cinque lingue: italiano, inglese, francese, tedesco, spagnolo.</p>
+      <p>La guida si apre da sola nella lingua del telefono dell'ospite. Fino a cinque lingue: italiano, inglese, francese, tedesco, spagnolo. Con Plus le traduzioni te le suggerisce un traduttore automatico, e tu le approvi.</p>
     </div>
     <div class="tempo__valore">
       <span class="kicker">Il valore dell'abbonamento</span>
@@ -436,6 +436,8 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
         ['Serve un\'app?', 'No. La guida si apre nel browser del telefono, da un link o dal QR Code. Gli ospiti non scaricano niente, e nemmeno tu: il pannello funziona dal computer e dal telefono.'],
         ['Quanto ci vuole per prepararla?', 'Per cominciare bastano il nome della struttura e la città. Check-in e Wi-Fi si compilano in pochi minuti; il resto lo aggiungi quando vuoi, una sezione alla volta. Si salva mentre scrivi.'],
         ['In quali lingue la leggono gli ospiti?', 'In italiano e in inglese con Essential; con Plus e Portfolio anche in francese, tedesco e spagnolo. La guida si apre da sola nella lingua del telefono dell\'ospite. Le traduzioni le scrivi tu, accanto al testo originale; i titoli delle sezioni, le categorie e le etichette dei luoghi sono già tradotti.'],
+        ['Le traduzioni me le fate voi?', 'Con Plus e Portfolio te le suggerisce un traduttore automatico (Amazon Translate), in omaggio per un anno: tocchi «Suggerisci le traduzioni mancanti» e controlli le proposte una per una. Gli ospiti vedono solo quelle che approvi. Sono suggerite da un traduttore automatico, da approvare: per i testi importanti, falli rileggere a un madrelingua.'],
+        ['Le traduzioni suggerite cambiano quello che ho già scritto?', 'No. Si suggerisce solo dove la traduzione manca: quello che hai tradotto tu non si tocca. Se poi cambi il testo originale, la suggerita va rifatta, e te lo diciamo.'],
         ['Posso cambiare i testi dopo aver stampato il QR?', 'Sì, quando vuoi. Il QR Code è permanente: modifichi la guida, pubblichi la nuova versione e chi inquadra il QR stampato vede già quella.'],
         ['Ho più di una struttura: come funziona?', 'Con Portfolio le gestisci tutte dallo stesso account: ognuna ha la sua guida, il suo QR Code e le sue statistiche. Le sezioni che valgono per tutte, come i ristoranti o le regole, le scrivi una volta e le copi nelle altre.'],
         ['Posso scrivere nella guida il codice della porta?', 'Meglio di no. La guida si apre da un link, senza password: chi ha il link la legge. Nella guida spieghi come si entra; i codici di porte e cassette delle chiavi mandali all\'ospite in privato, poco prima dell\'arrivo.'],

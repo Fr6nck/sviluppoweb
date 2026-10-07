@@ -114,14 +114,16 @@ final class S3Storage implements Storage
 
     /**
      * Firma con le intestazioni. Restituisce le intestazioni da spedire,
-     * Authorization compresa.
+     * Authorization compresa. $service: 's3', oppure 'translate' per le traduzioni
+     * suggerite (Traduttore): fuori da S3 l'intestazione x-amz-content-sha256 non serve.
      */
     public static function signHeaders(string $method, string $url, array $headers, string $payloadHash,
-                                       string $region, string $key, string $secret, string $amzDate, string $token = ''): array
+                                       string $region, string $key, string $secret, string $amzDate, string $token = '', string $service = 's3'): array
     {
         [$path, $host, $query] = self::parts($url);
         $date = substr($amzDate, 0, 8);
-        $h = ['host' => $host, 'x-amz-content-sha256' => $payloadHash, 'x-amz-date' => $amzDate];
+        $h = ['host' => $host, 'x-amz-date' => $amzDate];
+        if ($service === 's3') $h['x-amz-content-sha256'] = $payloadHash;
         if ($token !== '') $h['x-amz-security-token'] = $token;
         foreach ($headers as $k => $v) $h[strtolower($k)] = trim(preg_replace('/\s+/', ' ', (string) $v) ?? '');
         ksort($h, SORT_STRING);
@@ -129,9 +131,9 @@ final class S3Storage implements Storage
         $canonHeaders = ''; foreach ($h as $k => $v) $canonHeaders .= "$k:$v\n";
         $signed = implode(';', array_keys($h));
         $canonical = implode("\n", [$method, $path, self::canonicalQuery($query), $canonHeaders, $signed, $payloadHash]);
-        $scope = "$date/$region/s3/aws4_request";
+        $scope = "$date/$region/$service/aws4_request";
         $toSign = "AWS4-HMAC-SHA256\n$amzDate\n$scope\n" . hash('sha256', $canonical);
-        $sig = self::hmac(self::signingKey($secret, $date, $region), $toSign, false);
+        $sig = self::hmac(self::signingKey($secret, $date, $region, $service), $toSign, false);
 
         $h['authorization'] = "AWS4-HMAC-SHA256 Credential=$key/$scope, SignedHeaders=$signed, Signature=$sig";
         return $h;

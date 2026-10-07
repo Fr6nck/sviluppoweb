@@ -9,7 +9,7 @@ I dettagli tecnici sono in `app/LEGGIMI.md`. Le novità, fase per fase, sono in 
 
 1. Copia sul server **tutto `app/storage/`** e `config.local.php`, se c'è.
 2. Carica il contenuto di `welcomebook/` sopra i file vecchi, **senza toccare `app/storage/`**.
-3. Apri il sito una volta. Le migrazioni `007`–`021` partono da sole.
+3. Apri il sito una volta. Le migrazioni `007`–`022` partono da sole.
 4. In **Amministrazione → Diagnostica** tutte le righe devono essere «OK».
 
 Il database resta **SQLite**. Le migrazioni nuove sono scritte anche per MySQL, ma un'installazione da zero su MySQL non è supportata: lo schema iniziale (`001`) è solo per SQLite.
@@ -105,6 +105,36 @@ A mano, come prima:
 4. Da quel momento la landing mostra la vetrina come demo. La vetrina non occupa il posto della struttura del piano, e la modifichi dal pannello di quell'account.
 5. Poi togli i clienti di esempio (**Amministrazione → Clienti → «Elimina i clienti di esempio»**). Hanno una password nota. L'eliminazione tocca solo gli account `@esempio.it`, non la vetrina.
 
+## 4c. Traduzioni suggerite (Amazon Translate)
+
+Dalla migrazione `022` Plus e Portfolio hanno le traduzioni suggerite, anche chi è già abbonato. Finché non inserisci le chiavi, i clienti possono accenderle ma non ne ricevono: la pagina lo dice.
+
+**Una volta, su AWS:**
+1. **IAM → Utenti → Crea utente**, per esempio `myhousewelcome-translate`, senza accesso alla console.
+2. Aggiungi una policy in linea con il solo permesso necessario:
+   ```json
+   {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": "translate:TranslateText", "Resource": "*"}]}
+   ```
+3. **Credenziali di sicurezza → Crea chiave di accesso** («Applicazione eseguita fuori da AWS»). Copia l'access key ID e la secret access key: la seconda AWS non la rimostra.
+4. **Consigliato per la privacy:** in AWS Organizations, **Policy → Policy di rinuncia ai servizi di IA** (AI services opt-out), crea una policy di rinuncia per Amazon Translate e collegala all'account. Senza, AWS può conservare i testi tradotti per migliorare i suoi servizi. Verificalo con il consulente privacy (punto 7).
+5. **Billing → Budget**: un avviso a pochi dollari al mese, per dormire tranquillo. I tetti del sito fermano comunque le richieste.
+6. **Billing → Piano gratuito**: se l'account AWS è nel primo anno di Amazon Translate, segnati la data di fine (2 milioni di caratteri al mese gratis per 12 mesi dalla prima traduzione).
+
+**Sul sito, in Amministrazione → Impostazioni → Traduzioni:**
+1. Regione `eu-west-1` (Irlanda), oppure un'altra regione europea con Amazon Translate.
+2. Access key ID e secret access key dell'utente del punto 1. Se le lasci vuote si usano quelle dell'archivio S3, ma allora quell'utente deve avere anche `translate:TranslateText`: meglio un utente a parte.
+3. Prezzo (15 dollari per milione di caratteri), cambio dollaro-euro e fine del piano gratuito: servono solo alle stime.
+4. Tetti: 150.000 caratteri al mese per account e 1.900.000 per tutto il sito (sotto i 2 milioni del piano gratuito). Cambiali se vuoi.
+5. La tua password, **Salva**, poi **«Prova la connessione»**: deve rispondere «Benvenuti» → «Welcome» (9 caratteri, nel registro).
+
+**La prova vera, da cliente:**
+1. Con un account Plus (o la vetrina): **Lingue → Accendi le traduzioni suggerite**. Compaiono la spiegazione e «In omaggio fino al…».
+2. Apri una lingua, per esempio English: **«Suggerisci le traduzioni mancanti (N)»**. Sotto ogni campo vuoto compare «Suggerita: da controllare».
+3. Apri la guida in inglese: le suggerite **non** ci sono. Approvane una e ricarica la guida: ora c'è.
+4. In **Amministrazione → Traduzioni** controlla caratteri, costo stimato e omaggio. Sul conto AWS i caratteri compaiono il giorno dopo.
+
+Dal tuo computer, senza toccare il sito: `php prove/firma-translate-botocore.php` (dalla cartella `app/`, con `pip install botocore`) confronta la firma con quella della libreria ufficiale di AWS.
+
 ## 5. Foto da caricare
 
 Tutte in `assets/foto/`, con **questi nomi esatti**: si caricano sopra le vecchie, senza toccare il codice.
@@ -137,6 +167,7 @@ Usa solo foto di cui hai i diritti, e nessun locale reale riconoscibile nella de
 4. **Registrazione**: la formulazione «Creando l'account dichiari di aver letto l'informativa privacy» (annotata nel codice).
 5. **Dati di fatturazione**: P.IVA e codice fiscale sono salvati nell'account e su Stripe. Servono un tempo di conservazione e una voce nell'informativa.
 6. **Registro email** (`email_log`): conserva tipo e data di ogni richiamo. Va deciso il tempo di conservazione.
+7. **Traduzioni suggerite**: i testi della guida di cui il cliente chiede la traduzione vanno ad Amazon Web Services (Amazon Translate, regione impostata in Amministrazione). Nell'informativa c'è una riga tra i fornitori; vanno confermati la nomina di AWS come responsabile e la policy di rinuncia ai servizi di IA (punto 4c). I testi non contengono dati degli ospiti, ma possono contenere nomi e telefoni dell'host. Termini e informativa sono passati alla versione 2026-10.
 
 ## 8. Dieci prove da fare sul server
 

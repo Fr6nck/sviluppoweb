@@ -142,8 +142,20 @@ prova('Gli abbonamenti restano sulla loro versione', array_map(fn($x) => [$x['ac
 $ora = [];
 foreach ($db->query('SELECT pf.package_version_id AS pv, f.code, pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id')->fetchAll() as $x) $ora[$x['pv'] . ':' . $x['code']] = $x['value'];
 $cambiati = [];
-foreach ($f['diritti'] as $x) if (($ora[$x['pv'] . ':' . $x['code']] ?? null) !== $x['value']) $cambiati[] = $x['pv'] . ':' . $x['code'];
-prova('Le versioni vendute tengono tutti i loro diritti', !$cambiati, implode(', ', $cambiati));
+// L'unico cambio voluto (022): le traduzioni suggerite si accendono per Plus e Portfolio, anche già venduti.
+$pvTrad = array_map('intval', $db->query("SELECT v.id FROM package_versions v JOIN packages p ON p.id = v.package_id WHERE p.code IN ('plus', 'portfolio', 'portfolio2', 'portfolio3')")->fetchAll(PDO::FETCH_COLUMN));
+$accese = [];
+foreach ($f['diritti'] as $x) {
+    $adesso = $ora[$x['pv'] . ':' . $x['code']] ?? null;
+    if ($adesso === $x['value']) continue;
+    if ($x['code'] === 'auto_translation' && $adesso === '1' && in_array((int) $x['pv'], $pvTrad, true)) { $accese[] = $x['pv']; continue; }
+    $cambiati[] = $x['pv'] . ':' . $x['code'];
+}
+prova('Le versioni vendute tengono tutti i loro diritti (in più: traduzioni suggerite in Plus e Portfolio)', !$cambiati, implode(', ', $cambiati) . ' · accese in ' . implode(',', $accese));
+$essTrad = $db->query("SELECT pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id JOIN package_versions v ON v.id = pf.package_version_id
+                       JOIN packages p ON p.id = v.package_id WHERE f.code = 'auto_translation' AND p.code = 'essential'")->fetchAll(PDO::FETCH_COLUMN);
+prova('022 · traduzioni suggerite: Essential resta senza, Plus e Portfolio le hanno', !in_array('1', $essTrad, true) && count($accese) > 0
+      && (bool) $db->query("SELECT 1 FROM features WHERE code = 'auto_translation' AND label = 'Traduzioni suggerite'")->fetchColumn());
 prova('Nessun codice porta rimasto', (int) $db->query("SELECT COUNT(*) FROM sections WHERE door_code <> ''")->fetchColumn() === 0);
 prova('Nessun codice porta nelle guide pubblicate', (int) $db->query("SELECT COUNT(*) FROM guide_versions WHERE snapshot LIKE '%door_code%' OR snapshot LIKE '%4729%'")->fetchColumn() === 0);
 $prezzi = $db->query("SELECT p.code, pv.price_cents FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE pv.is_current = 1 AND p.public = 1")->fetchAll(PDO::FETCH_KEY_PAIR);

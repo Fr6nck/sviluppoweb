@@ -2178,6 +2178,171 @@ $r = $admin->segui($admin->post('/admin/impostazioni/posta/prova', []));
 prova('…con la posta: in modalità prova l\'email finisce in mail.log', str_contains($r['body'], 'mail.log') && str_contains((string) @file_get_contents($DOVE . '/app/storage/logs/mail.log'), 'Prova della posta di MyHouse Welcome'));
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
 
+// ================================================================= PUNTO 5
+capitolo('Punto 5 · traduzioni suggerite (Amazon Translate finto, con la firma verificata)');
+$TR_DIR = rtrim($argv[5] ?? '', '/');
+$richiesteTr = fn() => array_values(array_filter(array_map(fn($l) => json_decode($l, true), $TR_DIR !== '' ? (file("$TR_DIR/richieste.jsonl") ?: []) : [])));
+$auto = (int) val("SELECT id FROM features WHERE code = 'auto_translation'");
+$valoreAuto = fn(string $code) => array_unique(array_column(righe('SELECT pf.value FROM package_features pf JOIN package_versions v ON v.id = pf.package_version_id
+    JOIN packages p ON p.id = v.package_id WHERE p.code = ? AND pf.feature_id = ?', [$code, $auto]), 'value'));
+prova('Migrazione 022: traduzioni suggerite accese in tutte le versioni di Plus e Portfolio, spente in Essential', $valoreAuto('plus') === ['1'] && $valoreAuto('portfolio') === ['1']
+      && !in_array('1', $valoreAuto('essential'), true) && val("SELECT label FROM features WHERE id = ?", [$auto]) === 'Traduzioni suggerite');
+prova('…il testo di Plus dice l\'omaggio', str_contains((string) val("SELECT bullets FROM packages WHERE code = 'plus'"), 'Traduzioni suggerite: in omaggio per un anno'));
+$r = $ospite->get('/');
+prova('Landing: confronto dei piani con «Traduzioni suggerite · in omaggio per un anno», e le FAQ', str_contains($r['body'], 'Traduzioni suggerite <span class="small muted">in omaggio per un anno</span>')
+      && str_contains($r['body'], 'Le traduzioni me le fate voi?') && str_contains($r['body'], 'falli rileggere a un madrelingua') && !str_contains($r['body'], 'nessuna traduzione automatica'));
+prova('Termini e privacy parlano delle traduzioni suggerite e di Amazon Translate', str_contains($ospite->get('/termini')['body'], 'Traduzioni suggerite')
+      && str_contains($ospite->get('/privacy')['body'], 'Amazon Translate'));
+
+// Essential: la funzione si vede, spenta, «con il piano Plus».
+$elsa = new Browser('elsa');
+$elsa->get('/registrati?piano=' . pv('essential'));
+$elsa->post('/registrati', ['piano' => pv('essential'), 'name' => 'Elsa Prova', 'email' => 'elsa@prova.test', 'password' => 'ElsaProva123', 'termini' => '1', 'privacy' => '1']);
+$eacc = $accDi('elsa@prova.test');
+$elsa->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Elsa', 'city' => 'Spoleto']);
+$ep = (int) val('SELECT id FROM properties WHERE account_id = ?', [$eacc]);
+$r = $elsa->get("/pannello/$ep/lingue");
+prova('Essential: in Lingue le traduzioni suggerite si vedono spente, «con il piano Plus»', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Traduzioni suggerite')
+      && preg_match('#<input type="checkbox" disabled><span class="scelta__testo">Accendi le traduzioni suggerite <span class="small muted">con il piano Plus#', $r['body']) === 1);
+$elsa->post("/pannello/$ep/lingue/suggerite", ['acceso' => '1']);
+prova('…e non si accendono nemmeno mandando il modulo a mano', (int) val('SELECT translation_suggest FROM properties WHERE id = ?', [$ep]) === 0
+      && !val('SELECT translation_trial_until FROM accounts WHERE id = ?', [$eacc]));
+
+// Lucia (Portfolio): testi da tradurre in inglese, preparati qui.
+$emCasa = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'emergency'", [$casa]);
+$lo = $luoghi($casa);
+$ptIt = fn(int $pl, string $f, string $v) => db()->prepare("UPDATE place_translations SET $f = ? WHERE place_id = ? AND locale = 'it'")->execute([$v, $pl]);
+$ptEn = function (int $pl, string $f, string $v) {
+    if (!val("SELECT id FROM place_translations WHERE place_id = ? AND locale = 'en'", [$pl])) db()->prepare("INSERT INTO place_translations (place_id, locale) VALUES (?, 'en')")->execute([$pl]);
+    db()->prepare("UPDATE place_translations SET $f = ? WHERE place_id = ? AND locale = 'en'")->execute([$v, $pl]);
+};
+$ptIt((int) $lo[0]['id'], 'description', 'Pasta fatta a mano ogni mattina.'); $ptEn((int) $lo[0]['id'], 'description', '');
+$ptIt((int) $lo[1]['id'], 'note', 'Chiedi il tavolo sotto il pergolato.'); $ptEn((int) $lo[1]['id'], 'note', '');
+$ptIt((int) $lo[2]['id'], 'note', 'Chiude il martedì.'); $ptEn((int) $lo[2]['id'], 'note', '');
+$trData = function (int $sid, string $loc, string $campo, string $v) {
+    $d = json_decode((string) val('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$sid, $loc]), true) ?: [];
+    $d[$campo] = $v;
+    db()->prepare('UPDATE section_translations SET data = ? WHERE section_id = ? AND locale = ?')->execute([json_encode($d, JSON_UNESCAPED_UNICODE), $sid, $loc]);
+};
+$trData($emCasa, 'it', 'note', 'Il pronto soccorso più vicino è a Nottola.'); $trData($emCasa, 'en', 'note', '');
+
+$r = $lucia->get("/pannello/$casa/lingue");
+prova('Plus/Portfolio: in Lingue «In omaggio per un anno dalla prima accensione» e il bottone per accenderle', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], 'In omaggio per un anno dalla prima accensione') && str_contains($r['body'], 'Accendi le traduzioni suggerite'));
+$r = $lucia->get("/pannello/$casa/lingue/en");
+prova('…spente, la pagina della lingua manda a Lingue e non chiama il traduttore', str_contains($r['body'], 'Accendi le traduzioni suggerite nella pagina Lingue') && !str_contains($r['body'], 'name="suggerisci"'));
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/suggerite", ['acceso' => '1']));
+$fino = (string) val('SELECT translation_trial_until FROM accounts WHERE id = ?', [$lacc]);
+prova('Accese: parte l\'anno in omaggio (12 mesi) e compare la spiegazione in due righe, con il madrelingua', (int) val('SELECT translation_suggest FROM properties WHERE id = ?', [$casa]) === 1
+      && substr($fino, 0, 10) === gmdate('Y-m-d', strtotime('+12 months')) && str_contains($r['body'], 'Le trovi nella pagina di ogni lingua')
+      && str_contains($r['body'], 'Per i testi importanti, falli rileggere a un madrelingua.') && str_contains($r['body'], 'In omaggio fino al'), $fino);
+$r = $lucia->get("/pannello/$casa/lingue");
+prova('…la spiegazione solo la prima volta', !str_contains($r['body'], 'Le trovi nella pagina di ogni lingua'));
+
+$r = $lucia->get("/pannello/$casa/lingue/en");
+preg_match('#Suggerisci le traduzioni mancanti \((\d+)\)#', $r['body'], $m); $mancanti = (int) ($m[1] ?? 0);
+prova('Pagina della lingua: «Suggerisci le traduzioni mancanti» con il numero, e la nota sul madrelingua', $mancanti >= 4 && pulita($r)
+      && str_contains($r['body'], 'Suggerite da un traduttore automatico, da approvare'), (string) $mancanti);
+$prima = count($richiesteTr());
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['suggerisci' => '1']));
+$nuove = array_slice($richiesteTr(), $prima);
+$sug = righe("SELECT * FROM translation_suggestions WHERE property_id = ? AND locale = 'en'", [$casa]);
+prova('Suggerite: una chiamata per campo, tutte firmate bene (il servizio finto ricalcola la firma), una suggerita per campo', count($sug) === $mancanti
+      && count($nuove) === $mancanti && array_unique(array_column($nuove, 'code')) === [200] && str_contains($r['body'], "$mancanti traduzioni suggerite"),
+      count($sug) . '/' . count($nuove) . ' ' . json_encode(array_unique(array_column($nuove, 'code'))));
+$caratteri = array_sum(array_map(fn($x) => mb_strlen($x['source_text']), $sug));
+prova('…registrate in translation_usage con i caratteri del testo originale', (int) val("SELECT SUM(chars) FROM translation_usage WHERE account_id = ? AND outcome = 'ok'", [$lacc]) === $caratteri
+      && (int) val("SELECT COUNT(*) FROM translation_usage WHERE account_id = ?", [$lacc]) === $mancanti);
+prova('…nella pagina, sotto il campo: «Suggerita: da controllare» con Approva, Modifica, Scarta', substr_count($r['body'], 'Suggerita: da controllare') === $mancanti
+      && str_contains($r['body'], '[en] Pasta fatta a mano ogni mattina.') && str_contains($r['body'], 'name="approva"') && str_contains($r['body'], 'data-modifica="c-')
+      && str_contains($r['body'], 'name="scarta"') && str_contains($r['body'], 'Approva tutte (' . $mancanti . ')'));
+$guidaEn = fn(int $sid) => $lucia->get("/pannello/$casa/anteprima/$sid?l=en")['body'];
+prova('Le suggerite non approvate non entrano mai nella guida', !str_contains($guidaEn($eatCasa), '[en]') && !str_contains($guidaEn($emCasa), '[en]')
+      && !str_contains($lucia->get("/pannello/$casa/anteprima?l=en")['body'], '[en]'));
+
+$idDi = fn(string $tipo, int $id, string $path) => (int) val("SELECT id FROM translation_suggestions WHERE target_type = ? AND target_id = ? AND field_path = ? AND locale = 'en'", [$tipo, $id, $path]);
+// Una traduzione scritta a mano nel frattempo non si sovrascrive.
+$ptEn((int) $lo[0]['id'], 'description', 'Fresh pasta, written by Lucia.');
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['approva' => (string) $idDi('place', (int) $lo[0]['id'], 'description')]));
+prova('Approva su un campo già tradotto a mano: non scrive niente, la suggerita sparisce', str_contains($r['body'], 'Questo testo è già tradotto')
+      && val("SELECT description FROM place_translations WHERE place_id = ? AND locale = 'en'", [$lo[0]['id']]) === 'Fresh pasta, written by Lucia.'
+      && !$idDi('place', (int) $lo[0]['id'], 'description'));
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['approva' => (string) $idDi('place', (int) $lo[1]['id'], 'note')]));
+prova('Approva: diventa la traduzione (e la guida la mostra)', str_contains($r['body'], 'Traduzione approvata')
+      && val("SELECT note FROM place_translations WHERE place_id = ? AND locale = 'en'", [$lo[1]['id']]) === '[en] Chiedi il tavolo sotto il pergolato.'
+      && str_contains($guidaEn($eatCasa), '[en] Chiedi il tavolo sotto il pergolato.'));
+// Il testo originale cambia: la suggerita è da rifare.
+$ptIt((int) $lo[2]['id'], 'note', 'Chiude il martedì e il mercoledì.');
+$r = $lucia->get("/pannello/$casa/lingue/en");
+$id2 = $idDi('place', (int) $lo[2]['id'], 'note');
+prova('Il testo originale cambia: la suggerita è «da rifare», con Rifai', str_contains($r['body'], 'Da rifare: il testo originale è cambiato') && str_contains($r['body'], 'name="rifai" value="' . $id2 . '"'));
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['approva' => (string) $id2]));
+prova('…non si approva', str_contains($r['body'], 'è da rifare') && val("SELECT note FROM place_translations WHERE place_id = ? AND locale = 'en'", [$lo[2]['id']]) === '');
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['rifai' => (string) $id2]));
+prova('…Rifai: suggerita nuova sul testo nuovo', str_contains($r['body'], '[en] Chiude il martedì e il mercoledì.') && !str_contains($r['body'], 'Da rifare'));
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['scarta' => (string) $idDi('place', (int) $lo[2]['id'], 'note')]));
+prova('Scarta: la suggerita sparisce, il campo resta vuoto', str_contains($r['body'], 'Suggerita scartata') && !$idDi('place', (int) $lo[2]['id'], 'note')
+      && val("SELECT note FROM place_translations WHERE place_id = ? AND locale = 'en'", [$lo[2]['id']]) === '');
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['modifica' => (string) $idDi('section', $emCasa, 'note')]));
+prova('Modifica (senza JavaScript): la approva e porta al campo, da correggere', str_contains($r['body'], 'ora correggila nel campo')
+      && (json_decode((string) val("SELECT data FROM section_translations WHERE section_id = ? AND locale = 'en'", [$emCasa]), true)['note'] ?? '') === '[en] Il pronto soccorso più vicino è a Nottola.');
+$restano = (int) val("SELECT COUNT(*) FROM translation_suggestions WHERE property_id = ? AND locale = 'en'", [$casa]);
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['tutte' => '1']));
+prova('Approva tutte', $restano > 0 && str_contains($r['body'], "$restano traduzion") && !val("SELECT COUNT(*) FROM translation_suggestions WHERE property_id = ? AND locale = 'en'", [$casa]), (string) $restano);
+prova('…Lingue conta le suggerite da controllare per lingua (qui nessuna)', !str_contains($lucia->get("/pannello/$casa/lingue")['body'], 'da controllare</span>'));
+
+// I tetti e gli errori, con un config.local.php scritto qui.
+$fileLocale = "$DOVE/app/config.local.php";
+$ptIt((int) $lo[2]['id'], 'note', 'Il martedì è chiuso, ma il mercoledì apre alle sette di sera.');
+file_put_contents($fileLocale, '<?php return ' . var_export(['translate' => ['cap_account' => 20]], true) . ';');
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['suggerisci' => '1']));
+prova('Tetto per account: si ferma, lo dice, e registra la richiesta fermata', str_contains($r['body'], 'hai usato tutte le traduzioni suggerite')
+      && (bool) val("SELECT id FROM translation_usage WHERE account_id = ? AND outcome = 'limite'", [$lacc]) && !$idDi('place', (int) $lo[2]['id'], 'note'));
+file_put_contents($fileLocale, '<?php return ' . var_export(['translate' => ['cap_global' => 30]], true) . ';');
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['suggerisci' => '1']));
+prova('Tetto del sito: si ferma per tutti', str_contains($r['body'], 'Per questo mese le traduzioni suggerite sono finite'));
+file_put_contents($fileLocale, '<?php return ' . var_export(['translate' => ['secret' => 'segreto-sbagliato']], true) . ';');
+$prima = count($richiesteTr());
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['suggerisci' => '1']));
+$ultima = array_slice($richiesteTr(), $prima)[0] ?? [];
+prova('Firma con il segreto sbagliato: Amazon (finto) risponde 403, il cliente legge un messaggio semplice', ($ultima['code'] ?? 0) === 403
+      && str_contains($r['body'], 'Il traduttore automatico non ha risposto') && (bool) val("SELECT id FROM translation_usage WHERE outcome = 'errore' AND error LIKE '%403%'"));
+@unlink($fileLocale);
+
+// Fine dell'omaggio: niente suggerite nuove, quelle approvate restano.
+db()->prepare('UPDATE accounts SET translation_trial_until = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', strtotime('-1 day')), $lacc]);
+$r = $lucia->get("/pannello/$casa/lingue/en");
+prova('Omaggio finito: la pagina lo dice e non offre più «Suggerisci»', str_contains($r['body'], 'anno in omaggio delle traduzioni suggerite è finito il ') && !str_contains($r['body'], 'name="suggerisci"'));
+$prima = count($richiesteTr());
+$lucia->post("/pannello/$casa/lingue/en/suggerite", ['suggerisci' => '1']);
+prova('…anche mandando il modulo a mano: nessuna chiamata', count($richiesteTr()) === $prima);
+prova('…e le approvate restano nella guida', str_contains($guidaEn($eatCasa), '[en] Chiedi il tavolo sotto il pergolato.')
+      && str_contains($lucia->get("/pannello/$casa/lingue")['body'], 'L\'anno in omaggio è finito'));
+
+// Amministrazione → Traduzioni.
+$r = $admin->get('/admin/traduzioni');
+prova('Amministrazione → Traduzioni: mese, 12 mesi, chi traduce di più, previsione, omaggi, la nota sulle stime', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], 'Costo stimato del mese') && str_contains($r['body'], 'Ultimi 12 mesi') && str_contains($r['body'], 'Chi traduce di più')
+      && str_contains($r['body'], 'Previsione') && str_contains($r['body'], 'Anni in omaggio') && str_contains($r['body'], 'fa fede la fattura di AWS')
+      && str_contains($r['body'], 'Lucia') && str_contains($r['body'], 'Finito'));
+$dopo = gmdate('Y-m-d', strtotime('+6 months'));
+$r = $admin->post('/admin/traduzioni/omaggio', ['account' => (string) $lacc, 'fino' => $dopo]);
+prova('…l\'amministratore allunga l\'omaggio: si torna a suggerire', $r['code'] === 302 && (string) val('SELECT translation_trial_until FROM accounts WHERE id = ?', [$lacc]) === $dopo . 'T23:59:59Z'
+      && (int) val('SELECT translation_trial_by_admin FROM accounts WHERE id = ?', [$lacc]) === 1 && str_contains($lucia->get("/pannello/$casa/lingue/en")['body'], 'name="suggerisci"'));
+db()->prepare("INSERT INTO translation_usage (account_id, month, chars, outcome, created_at) VALUES (0, ?, 1600000, 'ok', ?)")->execute([gmdate('Y-m'), gmdate('Y-m-d\TH:i:s\Z')]);
+prova('Quadro: avviso oltre l\'80% del tetto del sito', str_contains($admin->get('/admin')['body'], 'Traduzioni suggerite oltre l&#039;80% del tetto del mese'));
+db()->exec('DELETE FROM translation_usage WHERE chars = 1600000');
+$r = $admin->post('/admin/impostazioni/traduzioni', ['translate__region' => 'irlanda', 'password' => 'AdminProva123']);
+prova('Impostazioni → Traduzioni: la regione si controlla', $r['code'] === 422 && str_contains($r['body'], 'La regione si scrive come eu-west-1'));
+$r = $admin->segui($admin->post('/admin/impostazioni/traduzioni/prova', []));
+prova('…«Prova la connessione» con Amazon Translate', str_contains($r['body'], 'Amazon Translate risponde') && str_contains($r['body'], '[en] Benvenuti'));
+prova('Diagnostica: le traduzioni suggerite risultano collegate', str_contains($admin->get('/admin/diagnostica')['body'], 'Traduzioni suggerite (Amazon Translate)'));
+require_once "$DOVE/app/src/Traduttore.php";
+$lungo = str_repeat("Una frase di prova con gli accenti: è così. ", 300) . "\n" . str_repeat('àèìòù', 1500);
+$pezzi = MHW\Traduttore::pezzi($lungo);
+prova('Un testo oltre i 10.000 byte si spezza in pezzi da 10.000 al massimo, senza perdere niente', count($pezzi) > 2 && max(array_map('strlen', $pezzi)) <= 10000
+      && implode('', $pezzi) === $lungo && array_filter($pezzi, fn($p) => !mb_check_encoding($p, 'UTF-8')) === []);
+
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

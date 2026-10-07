@@ -2,18 +2,20 @@
 /* Amministrazione → Impostazioni: Stripe, posta e archivio di foto e PDF.
    I segreti non si rimostrano mai; i campi impostati da variabili d'ambiente si vedono e basta. */
 use function MHW\b;
-use MHW\{Support, Csrf, Icon, Impostazioni, Stripe, Config};
+use MHW\{Support, Csrf, Icon, Impostazioni, Stripe, Config, Traduttore};
 $title = 'Impostazioni';
 $pronti = [
     'stripe'   => Stripe::enabled(),
     'posta'    => Config::get('mail')['transport'] !== 'log',
     'archivio' => Config::get('storage')['driver'] === 's3',
+    'traduzioni' => Traduttore::configurato(),
 ];
-$icone = ['stripe' => 'card', 'posta' => 'message', 'archivio' => 'layers'];
+$icone = ['stripe' => 'card', 'posta' => 'message', 'archivio' => 'layers', 'traduzioni' => 'globe'];
 $intro = [
     'stripe'   => 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti preparano la guida ma non possono pagarla.',
     'posta'    => 'Conferma dell\'email, recupero della password e promemoria. Finché resta «Non spedire», le email finiscono in storage/logs/mail.log.',
     'archivio' => 'Le foto e i PDF caricati dai clienti. Sul disco del server vanno bene per provare; in produzione meglio Amazon S3. I file già caricati restano dove sono e si vedono lo stesso.',
+    'traduzioni' => 'Le traduzioni suggerite di Plus e Portfolio, con Amazon Translate. Prezzo, cambio e piano gratuito servono solo per le stime di Amministrazione → Traduzioni; i tetti fermano le richieste.',
 ]; ?>
 <div class="stack stack--lg" style="max-width:860px">
   <div class="saluto" style="margin-bottom:0"><div><h1>Impostazioni.</h1>
@@ -61,7 +63,7 @@ $intro = [
             $e = $err[$n] ?? '';
             $descr = trim(($aiuto !== '' ? $id . '-aiuto ' : '') . ($e !== '' ? $idErr($n) : ''));
             $aria = ($descr !== '' ? ' aria-describedby="' . $descr . '"' : '') . ($e !== '' ? ' aria-invalid="true"' : '');
-            $largo = in_array($tipo, ['check'], true) || in_array($percorso, ['mail.transport', 'storage.driver', 'stripe.secret_key', 'stripe.webhook_secret', 'storage.s3.public_base_url', 'storage.s3.secret'], true); ?>
+            $largo = in_array($tipo, ['check'], true) || in_array($percorso, ['mail.transport', 'storage.driver', 'stripe.secret_key', 'stripe.webhook_secret', 'storage.s3.public_base_url', 'storage.s3.secret', 'translate.secret'], true); ?>
         <div class="field<?= $largo ? ' impostazioni__largo' : '' ?>" style="margin:0">
           <?php if ($tipo === 'check'): ?>
             <label class="scelta scelta--mini"><input type="checkbox" id="<?= $id ?>" name="<?= $n ?>" value="1" <?= $valore !== '' ? 'checked' : '' ?><?= $bloccato ? ' disabled' : '' ?><?= $aria ?>><span><?= Support::e($etichetta) ?></span></label>
@@ -75,8 +77,8 @@ $intro = [
               <input type="password" id="<?= $id ?>" name="<?= $n ?>" autocomplete="new-password" spellcheck="false" data-lpignore="true" data-1p-ignore
                      placeholder="<?= $bloccato ? 'Impostata sul server' : ($attuale !== '' && $attuale !== null ? 'Lascia vuoto per non cambiarla' : '') ?>"<?= $bloccato ? ' disabled' : '' ?><?= $aria ?>>
             <?php else: ?>
-              <input type="<?= ['email' => 'email', 'url' => 'url', 'number' => 'number'][$tipo] ?? 'text' ?>" id="<?= $id ?>" name="<?= $n ?>" value="<?= Support::e($valore) ?>" spellcheck="false" autocomplete="off" data-lpignore="true" data-1p-ignore
-                     <?= $tipo === 'number' ? 'min="1" max="65535" inputmode="numeric"' : '' ?><?= $bloccato ? ' disabled' : '' ?><?= $aria ?>>
+              <input type="<?= ['email' => 'email', 'url' => 'url', 'number' => 'number', 'data' => 'date'][$tipo] ?? 'text' ?>" id="<?= $id ?>" name="<?= $n ?>" value="<?= Support::e($valore) ?>" spellcheck="false" autocomplete="off" data-lpignore="true" data-1p-ignore
+                     <?= $tipo === 'number' ? 'min="1" max="65535" inputmode="numeric"' : ($tipo === 'cifra' ? 'inputmode="numeric"' : ($tipo === 'decimale' ? 'inputmode="decimal"' : '')) ?><?= $bloccato ? ' disabled' : '' ?><?= $aria ?>>
             <?php endif; ?>
           <?php endif; ?>
           <?php if ($bloccato): ?>
@@ -102,7 +104,7 @@ $intro = [
     </form>
     <form method="post" action="<?= b() ?>/admin/impostazioni/<?= $g ?>/prova" class="impostazioni__prova"><?= Csrf::field() ?>
       <button class="btn btn--ghost btn--sm"><?= Icon::svg('pulse', 15) ?>Prova la connessione</button>
-      <span class="small muted"><?= $g === 'posta' ? 'Manda un\'email di prova a ' . Support::e($emailAdmin) . '.' : ($g === 'stripe' ? 'Chiede a Stripe se la chiave è valida.' : 'Scrive, legge e cancella un piccolo file nel bucket.') ?></span>
+      <span class="small muted"><?= $g === 'posta' ? 'Manda un\'email di prova a ' . Support::e($emailAdmin) . '.' : ($g === 'stripe' ? 'Chiede a Stripe se la chiave è valida.' : ($g === 'traduzioni' ? 'Fa tradurre una parola: 9 caratteri.' : 'Scrive, legge e cancella un piccolo file nel bucket.')) ?></span>
     </form>
   </section>
   <?php endforeach; ?>

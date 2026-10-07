@@ -163,6 +163,20 @@
       salva(editor).then(function () { form.submit(); });
     });
   })(daAltra[d]);
+  // Traduzioni suggerite: «Modifica» porta il testo nel campo, da correggere; il salvataggio
+  // automatico lo registra come traduzione tua e la suggerita sparisce. Senza JavaScript la approva.
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-modifica]');
+    if (!b) return;
+    var campo = document.getElementById(b.getAttribute('data-modifica'));
+    if (!campo) return;
+    e.preventDefault();
+    campo.value = b.getAttribute('data-testo');
+    campo.dispatchEvent(new Event('input', { bubbles: true }));
+    var box = b.closest('.suggerita');
+    if (box) box.remove();
+    campo.focus();
+  });
   // Con più di 12 luoghi già scritti, un campo per cercarli.
   var cerche = document.querySelectorAll('[data-gia-cerca]');
   for (var c = 0; c < cerche.length; c++) (function (campo) {

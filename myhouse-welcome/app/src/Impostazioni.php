@@ -20,7 +20,7 @@ final class Impostazioni
 {
     /**
      * I campi, per gruppo. [percorso => [variabile d'ambiente, etichetta, tipo, aiuto, opzioni]]
-     * Tipi: text, secret, email, url, number, choice, check.
+     * Tipi: text, secret, email, url, number, choice, check; cifra (intero), decimale, data (AAAA-MM-GG).
      */
     public const GRUPPI = [
         'stripe' => [
@@ -46,9 +46,20 @@ final class Impostazioni
             'storage.s3.secret'          => ['AWS_SECRET_ACCESS_KEY', 'Secret access key', 'secret', ''],
             'storage.s3.public_base_url' => ['AWS_S3_PUBLIC_URL', 'Indirizzo pubblico (CDN)', 'url', 'Facoltativo: solo con CloudFront o un bucket pubblico in lettura. Vuoto = indirizzi firmati a tempo.'],
         ],
+        // Traduzioni suggerite (Traduttore): Amazon Translate, chiamato solo da Plus e Portfolio.
+        'traduzioni' => [
+            'translate.region'                => ['MHW_TRANSLATE_REGION', 'Regione di Amazon Translate', 'text', 'Predefinita eu-west-1 (Irlanda). Non tutte le regioni hanno il servizio.'],
+            'translate.key'                   => ['MHW_TRANSLATE_KEY', 'Access key ID', 'text', 'Di un utente IAM con il solo permesso translate:TranslateText. Vuoto = si usano le chiavi dell\'archivio S3.'],
+            'translate.secret'                => ['MHW_TRANSLATE_SECRET', 'Secret access key', 'secret', ''],
+            'translate.price_usd_per_million' => ['MHW_TRANSLATE_PRICE', 'Prezzo, in dollari per milione di caratteri', 'decimale', 'Il listino di Amazon Translate: 15.'],
+            'translate.usd_eur'               => ['MHW_TRANSLATE_USD_EUR', 'Cambio: quanti euro vale un dollaro', 'decimale', 'Per le stime in euro, per esempio 0,86.'],
+            'translate.free_tier_until'       => ['MHW_TRANSLATE_FREE_UNTIL', 'Fine del piano gratuito di AWS', 'data', '2 milioni di caratteri al mese per 12 mesi dalla prima traduzione. Vuoto = nessun piano gratuito.'],
+            'translate.cap_account'           => ['MHW_TRANSLATE_CAP_ACCOUNT', 'Tetto per account, caratteri al mese', 'cifra', 'Oltre, quel cliente non riceve altre suggerite fino al mese dopo. Predefinito 150.000.'],
+            'translate.cap_global'            => ['MHW_TRANSLATE_CAP_GLOBAL', 'Tetto per tutto il sito, caratteri al mese', 'cifra', 'Predefinito 1.900.000, sotto i 2 milioni del piano gratuito.'],
+        ],
     ];
 
-    public const TITOLI = ['stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF'];
+    public const TITOLI = ['stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni'];
 
     public static function file(): string { return MHW_APP . '/config.local.php'; }
 
@@ -171,10 +182,20 @@ final class Impostazioni
                 $percorso === 'storage.s3.bucket' && !preg_match('/^[a-z0-9][a-z0-9.\-]{1,61}[a-z0-9]$/', $grezzo) => 'Il nome del bucket ha solo lettere minuscole, numeri, punti e trattini.',
                 $percorso === 'storage.s3.key' && !preg_match('/^[A-Z0-9]{16,128}$/', $grezzo) => 'L\'access key ID è fatto di lettere maiuscole e numeri, per esempio AKIA….',
                 $percorso === 'mail.host' && !preg_match('/^[A-Za-z0-9.\-]+$/', $grezzo) => 'Scrivi solo il nome del server, senza http:// né porta.',
+                $percorso === 'translate.region' && !preg_match('/^[a-z]{2}(-[a-z]+)+-\d$/', $grezzo) => 'La regione si scrive come eu-west-1.',
+                $percorso === 'translate.key' && !preg_match('/^[A-Z0-9]{16,128}$/', $grezzo) => 'L\'access key ID è fatto di lettere maiuscole e numeri, per esempio AKIA….',
+                $tipo === 'cifra' && (!ctype_digit(str_replace('.', '', $grezzo)) || (int) str_replace('.', '', $grezzo) < 1 || (int) str_replace('.', '', $grezzo) > 100000000) => 'Scrivi un numero intero, per esempio 150000.',
+                $tipo === 'decimale' && (!preg_match('/^\d{1,6}([.,]\d{1,6})?$/', $grezzo) || (float) str_replace(',', '.', $grezzo) <= 0) => 'Scrivi un numero, per esempio 0,86.',
+                $tipo === 'data' && (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $grezzo) || !checkdate((int) substr($grezzo, 5, 2), (int) substr($grezzo, 8, 2), (int) substr($grezzo, 0, 4))) => 'Scrivi la data come 2027-10-31.',
                 default => '',
             };
             if ($errore !== '') { $errori[$nome] = $errore; continue; }
-            $v = $tipo === 'number' ? (int) $grezzo : $grezzo;
+            $v = match ($tipo) {
+                'number' => (int) $grezzo,
+                'cifra' => (int) str_replace('.', '', $grezzo),
+                'decimale' => str_replace(',', '.', $grezzo),
+                default => $grezzo,
+            };
             if ($grezzo === '') self::togli($nuovo, $percorso); else self::metti($nuovo, $percorso, $v);
             $effettivi[$percorso] = $grezzo === '' ? '' : $v;
         }
@@ -188,6 +209,9 @@ final class Impostazioni
             foreach (['storage.s3.region' => 'Serve la regione.', 'storage.s3.bucket' => 'Serve il bucket.', 'storage.s3.key' => 'Serve l\'access key ID.', 'storage.s3.secret' => 'Serve la secret access key.'] as $p => $msg) {
                 if ((string) ($effettivi[$p] ?? '') === '') $errori[self::nome($p)] = $msg;
             }
+        }
+        if (!$errori && $gruppo === 'traduzioni' && (($effettivi['translate.key'] ?? '') === '') !== (($effettivi['translate.secret'] ?? '') === '')) {
+            $errori[self::nome(($effettivi['translate.key'] ?? '') === '' ? 'translate.key' : 'translate.secret')] = 'Servono tutte e due le chiavi (o nessuna, per usare quelle dell\'archivio S3).';
         }
         if (!$errori && $gruppo === 'stripe' && ($effettivi['stripe.secret_key'] ?? '') !== '' && ($effettivi['stripe.webhook_secret'] ?? '') === '') {
             $errori[self::nome('stripe.webhook_secret')] = 'Serve anche il segreto del webhook: senza, i pagamenti non attivano le guide.';
@@ -265,6 +289,10 @@ final class Impostazioni
                     $letto = $s3->get($chiave);
                     $s3->delete($chiave);
                     return $letto === 'prova' ? [true, 'Il bucket risponde: scrittura, lettura e cancellazione riuscite.'] : [false, 'Il bucket ha accettato il file ma ne ha restituito un altro contenuto.'];
+                case 'traduzioni':
+                    if (!Traduttore::configurato()) return [false, 'Mancano le chiavi: scrivile qui, oppure configura l\'archivio S3 (si usano le sue).'];
+                    $t = Traduttore::prova();
+                    return [true, 'Amazon Translate risponde: «Benvenuti» → «' . $t . '» (9 caratteri, nel registro).' . (!empty(Traduttore::config()['chiavi_s3']) ? ' Sta usando le chiavi dell\'archivio S3.' : '')];
             }
         } catch (\Throwable $e) {
             Log::exception($e, 'impostazioni: prova ' . $gruppo);

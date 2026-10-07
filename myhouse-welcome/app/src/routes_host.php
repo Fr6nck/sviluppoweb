@@ -2,7 +2,7 @@
 /** Rotte dell'area host. $r è il Router creato in public/index.php. */
 
 use MHW\{Auth, Config, Conversione, Db, Entitlements, Guide, LimitReached, Log, Mappe, Media, Migrator, NotFound, Palette, Plans, Properties,
-         Qr, QrExport, SectionCatalog, Stats, Stripe, Subscriptions, Suggerimenti, Support, View};
+         Qr, QrExport, SectionCatalog, Stats, Stripe, Subscriptions, Suggerimenti, Support, Traduttore, View};
 
 /* La procedura: cinque passi. Le lingue in più stanno in fondo a «Anteprima e
    pubblica», facoltative: le traduzioni non fermano mai la pubblicazione. */
@@ -503,10 +503,70 @@ $r->any('/pannello/{id}/lingue', function (array $a) use ($mia, $contesto, $mess
     // Quanto è tradotto, campo per campo («English 60%»).
     $copertura = [];
     foreach ($attive as $l) $copertura[$l] = Properties::translationCoverage((int) $p['id'], $l);
+    $spiegazione = !empty($_SESSION['traduzioni_spiegazione']); unset($_SESSION['traduzioni_spiegazione']);
+    $daControllare = [];
+    foreach (Db::all('SELECT locale, COUNT(*) AS n FROM translation_suggestions WHERE property_id = ? GROUP BY locale', [$p['id']]) as $x) $daControllare[$x['locale']] = (int) $x['n'];
     View::out('host/languages', $contesto($acc, $p) + [
         'err' => $err, 'lingueAttive' => $attive, 'consentite' => Entitlements::allowedLocales((int) $acc['id']),
         'tutte' => Config::get('locales'), 'copertura' => $copertura, 'qui' => 'lingue',
+        'trad' => ['piano' => Traduttore::nelPiano((int) $acc['id']), 'acceso' => !empty($p['translation_suggest']), 'fino' => Traduttore::omaggioFino((int) $acc['id']),
+                   'finito' => Traduttore::omaggioFinito((int) $acc['id']), 'spiegazione' => $spiegazione, 'daControllare' => $daControllare],
     ], 'layout/cms');
+});
+
+/* Traduzioni suggerite (Traduttore): l'interruttore della struttura. La prima
+   accensione nell'account fa partire l'anno in omaggio e mostra la spiegazione. */
+$r->post('/pannello/{id}/lingue/suggerite', function (array $a) use ($mia, $messaggio) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    try {
+        $acceso = (string) ($_POST['acceso'] ?? '') === '1';
+        if (Traduttore::interruttore((int) $acc['id'], (int) $p['id'], $acceso)) $_SESSION['traduzioni_spiegazione'] = true;
+        Support::flash($acceso ? 'Traduzioni suggerite accese per questa struttura.' : 'Traduzioni suggerite spente. Quelle che hai approvato restano.');
+    } catch (\Throwable $e) { Support::flash($messaggio($e, 'traduzioni suggerite'), 'err'); }
+    Support::redirect('/pannello/' . $p['id'] . '/lingue#suggerite');
+});
+
+/* Le suggerite di una lingua: chiederle, approvarle (anche tutte), aprirle per
+   correggerle, scartarle, rifarle quando il testo originale è cambiato. */
+$r->post('/pannello/{id}/lingue/{loc}/suggerite', function (array $a) use ($mia, $messaggio) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    $loc = (string) $a['loc'];
+    $attive = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
+    if ($loc === $p['default_locale'] || !in_array($loc, $attive, true) || !in_array($loc, Entitlements::allowedLocales((int) $acc['id']), true)) {
+        Support::redirect('/pannello/' . $p['id'] . '/lingue');
+    }
+    $torna = '/pannello/' . $p['id'] . '/lingue/' . $loc;
+    $ancora = '#suggerite';
+    try {
+        if (!empty($_POST['suggerisci'])) {
+            [$n, $stop] = Traduttore::suggerisci((int) $acc['id'], $p, $loc);
+            if ($n) Support::flash(($n === 1 ? '1 traduzione suggerita' : "$n traduzioni suggerite") . ': controllale una per una e approvale.' . ($stop !== '' ? ' ' . $stop : ''), $stop !== '' ? 'avviso' : 'ok');
+            else Support::flash($stop !== '' ? $stop : 'Non manca niente da suggerire.', $stop !== '' ? 'err' : 'ok');
+        } elseif (($id = (int) ($_POST['rifai'] ?? 0)) > 0) {
+            $s = Db::one('SELECT * FROM translation_suggestions WHERE id = ? AND property_id = ? AND locale = ?', [$id, $p['id'], $loc]);
+            if ($s) {
+                [$n, $stop] = Traduttore::suggerisci((int) $acc['id'], $p, $loc, [$s['target_type'] . ':' . $s['target_id'] . ':' . $s['field_path']]);
+                Support::flash($n ? 'Suggerita rifatta sul testo nuovo: controllala.' : ($stop ?: 'Non c\'era niente da rifare.'), $n ? 'ok' : 'err');
+            }
+        } elseif (!empty($_POST['tutte'])) {
+            $fatte = 0;
+            foreach (Traduttore::suggerite($p, $loc) as $s) if (!$s['da_rifare'] && Traduttore::approva($p, $loc, (int) $s['id']) === '') $fatte++;
+            Support::flash($fatte ? ($fatte === 1 ? '1 traduzione approvata' : "$fatte traduzioni approvate") . ': ora gli ospiti le vedono.' : 'Niente da approvare.');
+            $ancora = '';
+        } elseif (($id = (int) ($_POST['approva'] ?? $_POST['modifica'] ?? 0)) > 0) {
+            $s = Db::one('SELECT * FROM translation_suggestions WHERE id = ? AND property_id = ?', [$id, $p['id']]);
+            $no = Traduttore::approva($p, $loc, $id);
+            if ($no !== '') Support::flash($no, 'err');
+            elseif (isset($_POST['modifica'])) {
+                Support::flash('Approvata: ora correggila nel campo e salva.');
+                if ($s) $ancora = '#c-' . md5($s['target_type'] . ':' . $s['target_id'] . ':' . $s['field_path']);
+            } else Support::flash('Traduzione approvata: ora gli ospiti la vedono.');
+        } elseif (($id = (int) ($_POST['scarta'] ?? 0)) > 0) {
+            Traduttore::scarta($p, $loc, $id);
+            Support::flash('Suggerita scartata.');
+        }
+    } catch (\Throwable $e) { Support::flash($messaggio($e, 'traduzioni suggerite'), 'err'); }
+    Support::redirect($torna . $ancora);
 });
 
 $r->any('/pannello/{id}/lingue/{loc}', function (array $a) use ($mia, $contesto, $messaggio, $vuoleJson) {
@@ -550,8 +610,14 @@ $r->any('/pannello/{id}/lingue/{loc}', function (array $a) use ($mia, $contesto,
         }
         $sections[] = $s;
     }
+    // Le traduzioni suggerite: quelle da controllare, quante se ne possono ancora chiedere, e se si può.
+    $campiT = Traduttore::campi($p, $loc);
+    $sugg = Traduttore::suggerite($p, $loc, $campiT);
+    $daSuggerire = count(array_filter($campiT, fn($c, $k) => $c['tradotto'] === '' && (!isset($sugg[$k]) || $sugg[$k]['da_rifare']), ARRAY_FILTER_USE_BOTH));
     View::out('host/translate', $contesto($acc, $p) + [
         'loc' => $loc, 'nome' => Config::get('locales')[$loc] ?? $loc, 'sections' => $sections, 'err' => $err, 'qui' => 'lingue',
+        'sugg' => $sugg, 'daSuggerire' => $daSuggerire, 'perche' => Traduttore::perche((int) $acc['id'], $p),
+        'nelPiano' => Traduttore::nelPiano((int) $acc['id']),
     ], 'layout/cms');
 });
 

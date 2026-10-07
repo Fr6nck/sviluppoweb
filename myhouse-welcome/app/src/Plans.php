@@ -108,7 +108,7 @@ final class Plans
                 elseif ($f['kind'] === 'bool') $v = $v !== '0' && $v !== '' ? 'si' : 'no';
                 $valori[] = $v;
             }
-            if ($qualcuno) $righe[] = ['label' => $f['label'], 'valori' => $valori];
+            if ($qualcuno) $righe[] = ['label' => $f['label'], 'code' => $f['code'], 'valori' => $valori];
         }
         return ['piani' => $piani, 'righe' => $righe];
     }

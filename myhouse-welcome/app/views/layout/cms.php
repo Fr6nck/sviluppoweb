@@ -25,6 +25,7 @@ $generale = $admin
   ? [['admin', '/admin', 'Quadro', 'grid'], ['clienti', '/admin/clienti', 'Clienti', 'people'], ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'],
      ['guide', '/admin/guide', 'Guide', 'book'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'], ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star'],
      ['sconti', '/admin/sconti', 'Codici sconto', 'euro'],
+     ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe'],
      ['impostazioni', '/admin/impostazioni', 'Impostazioni', 'key'],
      ['registro', '/admin/registro', 'Registro', 'list'], ['diagnostica', '/admin/diagnostica', 'Diagnostica', 'pulse']]
   : [['guide', '/pannello', 'Le mie guide', 'grid'], ['account', '/account', 'Account & Fatturazione', 'card']];

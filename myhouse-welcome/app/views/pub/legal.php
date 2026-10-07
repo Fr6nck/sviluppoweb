@@ -59,6 +59,12 @@ $title = $doc === 'termini' ? 'Termini e condizioni' : 'Informativa sulla privac
     Possiamo modificare o chiudere il programma: gli sconti già maturati restano validi per il rinnovo successivo.</p>
   <p>[Da far rivedere a un legale e al commercialista prima di accendere gli inviti.]</p>
   <?php endif; ?>
+  <h2 style="font-size:22px" id="traduzioni"><?= MHW\Inviti::disponibili() ? 11 : 10 ?>. Traduzioni suggerite</h2>
+  <p>Con i piani che le comprendono puoi chiedere traduzioni suggerite da un traduttore automatico (Amazon Translate).
+    Sono proposte da controllare: entrano nella guida solo quando le approvi, e da quel momento sono contenuti tuoi come gli altri.
+    Non garantiamo che siano corrette o adatte al tuo testo: per i testi importanti, falle rileggere a un madrelingua.</p>
+  <p>Le traduzioni suggerite sono in omaggio per dodici mesi dalla prima attivazione nel tuo account e possono avere un limite
+    mensile di caratteri. Finito l'omaggio non se ne possono chiedere di nuove; quelle che hai approvato restano nella guida.</p>
 </div>
 <?php else: ?>
 <h1 style="margin-top:24px">Informativa sulla privacy</h1>
@@ -76,7 +82,9 @@ $title = $doc === 'termini' ? 'Termini e condizioni' : 'Informativa sulla privac
     per offrire all'host statistiche di lettura aggregate.</p>
   <h2 style="font-size:22px">Fornitori</h2>
   <p>Pagamenti: Stripe. Archiviazione di immagini e documenti: Amazon Web Services (S3). Invio delle email: il
-    fornitore di posta configurato. [Completare con sedi, garanzie per il trasferimento dei dati e nomine a responsabile.]</p>
+    fornitore di posta configurato. Traduzioni suggerite: Amazon Web Services (Amazon Translate), regione
+    <?= Support::e((string) (MHW\Traduttore::config()['region'] ?? '')) ?>; ricevono solo i testi della guida di cui chiedi la
+    traduzione, quando la chiedi. [Completare con sedi, garanzie per il trasferimento dei dati e nomine a responsabile.]</p>
   <h2 style="font-size:22px">Conservazione</h2>
   <p>[Da completare: tempi di conservazione dei dati dell'account, dei dati di fatturazione e delle statistiche.]</p>
   <h2 style="font-size:22px">I tuoi diritti</h2>

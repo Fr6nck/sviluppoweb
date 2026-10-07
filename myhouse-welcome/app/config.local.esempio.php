@@ -46,4 +46,13 @@ return [
     //     'contact_phone'    => '+39 392 006 1600',
     //     'contact_whatsapp' => '393920061600',
     // ],
+    // Traduzioni suggerite (Amazon Translate): utente IAM con il solo translate:TranslateText.
+    // Si impostano anche da Amministrazione → Impostazioni → Traduzioni.
+    // 'translate' => [
+    //     'region' => 'eu-west-1',
+    //     'key'    => 'AKIA…',
+    //     'secret' => '…',
+    //     'cap_account' => 150000,
+    //     'cap_global'  => 1900000,
+    // ],
 ];

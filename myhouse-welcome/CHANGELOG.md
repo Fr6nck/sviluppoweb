@@ -1,5 +1,23 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Traduzioni suggerite (7 ottobre 2026)
+
+Migrazione `022`: tabelle `translation_suggestions` e `translation_usage`, colonne `properties.translation_suggest`, `accounts.translation_trial_until` e `accounts.translation_trial_by_admin`. Accende la funzione `auto_translation` in tutte le versioni di Plus e Portfolio, anche quelle già vendute; l'etichetta diventa «Traduzioni suggerite»; i testi di Plus e Portfolio dicono l'omaggio, se sono ancora quelli predefiniti. Solo aggiunte.
+
+- **Il traduttore propone, il cliente approva.** Con Plus e Portfolio, nella pagina di ogni lingua c'è «Suggerisci le traduzioni mancanti (N)». Amazon Translate traduce un campo per chiamata; sotto ogni campo vuoto compare «Suggerita: da controllare» con **Approva**, **Modifica** e **Scarta**, e in alto **Approva tutte**.
+  - Le suggerite stanno in una tabella a parte: la guida non le vede finché non sono approvate.
+  - Si suggerisce solo dove la traduzione manca. L'approvazione non scrive se nel frattempo il campo è stato tradotto a mano.
+  - Se il testo originale cambia, la suggerita è «Da rifare», con **Rifai**.
+  - «Modifica» porta il testo nel campo, da correggere: il salvataggio automatico lo registra come traduzione del cliente.
+  - La nota «Per i testi importanti, falli rileggere a un madrelingua» sta nella pagina della lingua e nella spiegazione.
+- **Interruttore per struttura, in Lingue.** La prima accensione nell'account fa partire l'anno in omaggio e mostra la spiegazione in due righe. Finito l'anno non se ne chiedono di nuove; quelle approvate restano. Essential vede la funzione spenta, «con il piano Plus». Nessun prezzo, nessuna promessa oltre l'anno.
+- **Tetti e registro.** Ogni chiamata va in `translation_usage`. Tetti al mese: 150.000 caratteri per account e 1.900.000 per il sito. Al tetto le richieste si fermano e il cliente legge perché.
+- **Amministrazione → Impostazioni → Traduzioni**: regione (predefinita eu-west-1, controllata), chiavi (vuote = quelle di S3), prezzo, cambio, fine del piano gratuito AWS, tetti, «Prova la connessione».
+- **Amministrazione → Traduzioni** (voce nuova): caratteri e costo stimato del mese, ultimi 12 mesi, chi traduce di più, previsione (clienti × caratteri ancora da tradurre, con e senza piano gratuito), anni in omaggio con la data da cambiare, ultime chiamate non riuscite. I costi sono stime. Nel Quadro, un avviso oltre l'80% del tetto del sito. Diagnostica dice se le traduzioni sono collegate.
+- **Firma.** SigV4 di `S3Storage::signHeaders`, con il servizio come parametro (`'s3'` resta il predefinito). Testata contro botocore: `prove/firma-translate-botocore.php`, 6 firme su 6 identiche; quelle S3 restano 8 su 8. Un testo oltre i 10.000 byte si spezza ai paragrafi.
+- **Testi.** Landing: «Parla la lingua di chi arriva» parla delle suggerite, due FAQ nuove; il confronto dei piani dice «in omaggio per un anno». Lingue non dice più «nessuna traduzione automatica». Termini (paragrafo «Traduzioni suggerite») e informativa (Amazon Translate tra i fornitori), versione 2026-10. `LEGGIMI.md` e `DA-CONFIGURARE.md` (§4c: utente IAM, policy, prova reale).
+- **Prove.** Amazon Translate finto (`prove/translate-finto.php`): ricalcola la firma da capo e risponde 403 se è sbagliata. 37 prove nuove (firma, tetti, errori, omaggio, approvazione, guida senza suggerite, Essential, amministrazione): 670 in tutto. La prova di aggiornamento ammette un solo cambio di diritti nelle versioni vendute, `auto_translation` in Plus e Portfolio.
+
 ## v2 · «Già in <struttura>» (7 ottobre 2026)
 
 Nessuna migrazione: si legge dalle sezioni che ci sono già.

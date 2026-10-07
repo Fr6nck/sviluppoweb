@@ -8,7 +8,7 @@ $def = $prop['default_locale']; $dopoPasso = $dopoPasso ?? ''; ?>
 <form method="post" action="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/lingue" class="stack"<?= $dopoPasso !== '' ? ' data-autosave' : '' ?>><?= Csrf::field() ?>
   <fieldset class="fieldset">
     <legend>Lingue della guida</legend>
-    <p class="help">La guida si apre nella lingua del telefono dell'ospite, se è tra queste. Le traduzioni le scrivi tu: nessuna traduzione automatica.</p>
+    <p class="help">La guida si apre nella lingua del telefono dell'ospite, se è tra queste. Le traduzioni le scrivi tu. Con Plus puoi partire da quelle suggerite da un traduttore automatico, da approvare.</p>
     <div class="scelte">
     <?php foreach ($tutte as $code => $nome): $ok = in_array($code, $consentite, true); $on = in_array($code, $lingueAttive, true); ?>
       <label class="scelta<?= $code === $def ? ' scelta--fissa' : '' ?>">

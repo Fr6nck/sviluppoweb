@@ -105,11 +105,27 @@ $config = [
         'max_image_edge'  => 1800,
     ],
 
+    // Traduzioni suggerite (Amazon Translate, TranslateText). Chiavi di un utente IAM con
+    // translate:TranslateText; vuote = si usano quelle dell'archivio S3. Tetti in caratteri al mese.
+    'translate' => [
+        'region'   => $env('MHW_TRANSLATE_REGION', 'eu-west-1'),
+        'key'      => $env('MHW_TRANSLATE_KEY'),
+        'secret'   => $env('MHW_TRANSLATE_SECRET'),
+        // Solo per le prove automatiche (il servizio finto).
+        'endpoint' => $env('MHW_TRANSLATE_ENDPOINT'),
+        'price_usd_per_million' => $env('MHW_TRANSLATE_PRICE', '15'),
+        'usd_eur'        => $env('MHW_TRANSLATE_USD_EUR', '0.86'),
+        // Fine del piano gratuito AWS (2 milioni di caratteri al mese per 12 mesi dalla prima chiamata).
+        'free_tier_until' => $env('MHW_TRANSLATE_FREE_UNTIL'),
+        'cap_account'    => (int) $env('MHW_TRANSLATE_CAP_ACCOUNT', '150000'),
+        'cap_global'     => (int) $env('MHW_TRANSLATE_CAP_GLOBAL', '1900000'),
+    ],
+
     // Le versioni dei documenti legali: cambiatele quando cambia il testo, e ogni
     // accettazione resta legata alla versione che la persona ha letto.
     'legal' => [
-        'terms_version'   => $env('MHW_TERMS_VERSION', '2026-09'),
-        'privacy_version' => $env('MHW_PRIVACY_VERSION', '2026-09'),
+        'terms_version'   => $env('MHW_TERMS_VERSION', '2026-10'),
+        'privacy_version' => $env('MHW_PRIVACY_VERSION', '2026-10'),
         'company'         => $env('MHW_COMPANY', 'Blackout Agency'),
         'contact_email'   => $env('MHW_CONTACT_EMAIL', 'info@myhousewelcome.it'),
         // Dati aziendali mostrati nel piè di pagina e nei documenti legali.
