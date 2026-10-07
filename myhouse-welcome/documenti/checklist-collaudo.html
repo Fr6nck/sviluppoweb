@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>MyHouse Welcome — Checklist di collaudo</title>
+<link rel="stylesheet" href="_stile.css">
+</head>
+<body>
+
+<div class="copertina">
+  <div class="marchio">MyHouse Welcome · v2</div>
+  <h1>Checklist di collaudo</h1>
+  <p>Per il programmatore: controllare che tutto sia configurato bene e che tutto funzioni, sia per chi usa il sito (l'host) sia per l'amministrazione. Si spunta una riga alla volta, nell'ordine. Le prove dei pagamenti si fanno prima in <b>modalità test di Stripe</b>, poi si ripetono in breve con le chiavi live.</p>
+  <div class="meta"><span>Versione del codice: <b>branch claude/tender-mendel-6uq9eq</b></span><span>Migrazioni: <b>007–024</b></span><span>Prove automatiche: <b>713</b></span><span>Aggiornato al <b>7 ottobre 2026</b></span></div>
+</div>
+
+<div class="nota"><b>Come si usa</b>Ogni riga è una prova: fai quello che dice e controlla il risultato scritto sotto in piccolo. Se qualcosa non torna, annota la riga e il riferimento dell'errore (lo trovi in Amministrazione → Anomalie e in <code>app/storage/logs/app.log</code>). Le istruzioni passo passo per Stripe e Adamo sono nell'altro documento, «Configurazione di Stripe e Adamo».</div>
+
+<ol class="indice">
+  <li>Server e caricamento</li><li>Configurazione</li><li>Prove automatiche</li><li>Sito pubblico</li><li>Account dell'host</li>
+  <li>Guida: preparazione</li><li>Dati di fatturazione</li><li>Pagamento e pubblicazione</li><li>Cambio di piano</li><li>Rinnovo, disdetta, portale</li>
+  <li>Codici sconto e «Porta un amico»</li><li>Email automatiche</li><li>Guida dell'ospite</li><li>Amministrazione</li><li>Fatture con Adamo</li><li>Sicurezza e privacy</li><li>Passaggio alle chiavi live</li>
+</ol>
+
+<h2>1. Server e caricamento</h2>
+<ul class="spunte">
+  <li>PHP 8.1 o più recente, con le estensioni <code>pdo_sqlite</code>, <code>curl</code>, <code>gd</code>, <code>fileinfo</code>, <code>mbstring</code>, <code>openssl</code>.<small>Amministrazione → Diagnostica: «Estensione GD» e «Estensione fileinfo» su OK.</small></li>
+  <li>Prima di caricare: copia di sicurezza di <code>app/storage/</code> (database, foto, log) e di <code>app/config.local.php</code>.<small>Sul server questi file non si sovrascrivono mai: lo zip non li contiene.</small></li>
+  <li>Caricato il contenuto di <code>welcomebook/</code> sopra i file vecchi, senza toccare <code>app/storage/</code>.</li>
+  <li>Aperto il sito una volta: le migrazioni fino alla <code>024</code> partono da sole.<small>Una seconda apertura non le ripete. Se compare un errore, il riferimento è nel registro tecnico.</small></li>
+  <li>Il sito risponde in HTTPS e <code>MHW_BASE_URL</code> è l'indirizzo pubblico, senza barra finale.<small>Diagnostica: «HTTPS» e «Indirizzo pubblico impostato» su OK. QR ed email usano questo indirizzo.</small></li>
+  <li>Il database, <code>config.php</code> e i log non si scaricano dal web.<small>Diagnostica: «Database non scaricabile dal web», «config.php non leggibile», «Registro tecnico non leggibile dal web» su OK.</small></li>
+  <li>Cron in cPanel ogni ora: <code>wget -q -O- https://DOMINIO/cron/IL_TOKEN &gt;/dev/null</code><small>Aprendo l'indirizzo a mano risponde <code>{"ok":true,…}</code>; con un token sbagliato 404. Senza cron i promemoria partono comunque, ma solo quando qualcuno usa il sito.</small></li>
+  <li>Amministrazione → Diagnostica: <b>tutte le righe su OK</b>.</li>
+</ul>
+
+<h2>2. Configurazione</h2>
+<p>Stripe, posta, archivio delle foto e traduzioni si impostano da <b>Amministrazione → Impostazioni</b> (con la conferma della password) oppure come variabili d'ambiente. I segreti non si scrivono mai nel codice, nel repository o in chat.</p>
+<table>
+  <tr><th>Cosa</th><th>Variabili</th><th>Come si controlla</th></tr>
+  <tr><td>Indirizzo pubblico</td><td><code>MHW_BASE_URL</code></td><td>Diagnostica</td></tr>
+  <tr><td>Stripe</td><td><code>STRIPE_SECRET_KEY</code>, <code>STRIPE_WEBHOOK_SECRET</code>, <code>STRIPE_AUTOMATIC_TAX=1</code></td><td>Impostazioni → Stripe → «Prova la connessione»</td></tr>
+  <tr><td>Posta (SMTP)</td><td><code>MAIL_TRANSPORT=smtp</code>, <code>MAIL_HOST</code>, <code>MAIL_PORT</code>, <code>MAIL_USER</code>, <code>MAIL_PASS</code>, <code>MAIL_ENCRYPTION</code>, <code>MAIL_FROM</code>, <code>MAIL_FROM_NAME</code></td><td>Impostazioni → Posta → «Prova la connessione»; un'email di prova arriva davvero</td></tr>
+  <tr><td>Foto e PDF su Amazon S3</td><td><code>MHW_STORAGE=s3</code>, <code>AWS_REGION</code>, <code>AWS_S3_BUCKET</code>, <code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code></td><td>Diagnostica: «Foto e PDF su Amazon S3»</td></tr>
+  <tr><td>Traduzioni suggerite</td><td><code>MHW_TRANSLATE_KEY</code>, <code>MHW_TRANSLATE_SECRET</code>, <code>MHW_TRANSLATE_REGION</code></td><td>Impostazioni → Traduzioni → «Prova»; Diagnostica</td></tr>
+  <tr><td>Cron</td><td><code>MHW_CRON_TOKEN</code></td><td><code>/cron/IL_TOKEN</code> risponde ok</td></tr>
+  <tr><td>Porta un amico</td><td><code>MHW_INVITI=1</code> (spento se manca)</td><td>Il menu «Inviti» compare in amministrazione; il riquadro compare in landing</td></tr>
+  <tr><td>Versioni di Termini e Privacy</td><td><code>MHW_TERMS_VERSION</code>, <code>MHW_PRIVACY_VERSION</code></td><td>Scheda cliente → Consensi</td></tr>
+</table>
+<ul class="spunte">
+  <li>Dopo un salvataggio da Impostazioni, in <code>app/</code> c'è <code>config.local.bak.php</code> con la versione precedente.</li>
+  <li>I campi impostati come variabili d'ambiente si vedono ma non si cambiano dal pannello.</li>
+  <li>Clienti di esempio tolti prima di aprire al pubblico (Quadro → «Elimina i clienti di esempio»).<small>Sono account veri con una password nota.</small></li>
+</ul>
+
+<h2>3. Prove automatiche</h2>
+<ul class="spunte">
+  <li>In locale, dalla cartella <code>app/</code>: <code>PORTA=8120 sh prove/esegui.sh</code><small>Deve finire con «Tutte le 713 prove superate». Usa Stripe, S3 e Amazon Translate finti: non tocca niente di vero.</small></li>
+  <li>Aggiornamento da una versione vecchia: <code>sh prove/aggiornamento.sh f048ec5</code><small>Deve finire con «Aggiornamento riuscito».</small></li>
+  <li><code>php -l</code> senza errori sui file PHP cambiati.</li>
+</ul>
+
+<h2>4. Sito pubblico (landing)</h2>
+<p class="piccolo">A 390 px (telefono) e a 1366 px (computer). In nessuna pagina deve comparire lo scorrimento orizzontale.</p>
+<ul class="spunte">
+  <li>Menu: Come funziona, Il QR, Domande, Prezzi, Il tuo sito. Ogni voce porta alla sezione giusta.</li>
+  <li>«Guarda la demo» apre la guida vetrina; il QR della demo, inquadrato, apre la stessa guida.</li>
+  <li>Listino: tre piani con il prezzo annuo + IVA e l'equivalente mensile; il Portfolio ricalcola il totale cambiando il numero di strutture.</li>
+  <li>«Confronta tutti i piani» si apre e si chiude da tastiera.</li>
+  <li>FAQ apribili da tastiera, compresi «Posso cambiare piano dopo?» e «Se scendo di piano perdo qualcosa?».</li>
+  <li>Con <code>MHW_INVITI=1</code>: dopo i piani il riquadro «Porta un amico» (fino al 50%) e due FAQ sugli inviti. Con gli inviti spenti non compare nulla.</li>
+  <li>«Anche il tuo sito», in fondo: foto a tutta larghezza, «Chiedici il tuo sito» apre https://myhouse.blackout.in in una scheda nuova.</li>
+  <li>Piè di pagina: dati di Blackout Agency, Termini, Privacy, contatti WhatsApp ed email funzionanti.</li>
+</ul>
+
+<h2>5. Account dell'host</h2>
+<ul class="spunte">
+  <li>Registrazione con un'email vera: senza accettare Termini e Privacy non si procede.<small>L'email di conferma arriva via SMTP; il link conferma l'indirizzo.</small></li>
+  <li>Accesso, uscita, «Password dimenticata» con il link via email.</li>
+  <li>Troppi tentativi di accesso sbagliati: il sito rallenta e lo dice.</li>
+  <li>Cambio di nome, email (con conferma) e password da Account &amp; Fatturazione.</li>
+  <li>Chi è già registrato e apre la landing vede «Vai alle tue guide» invece di «Crea gratis».</li>
+</ul>
+
+<h2>6. Guida: preparazione</h2>
+<ul class="spunte">
+  <li>Nuova struttura, procedura in 5 passi fino all'anteprima. I dati si salvano mentre si scrive.</li>
+  <li>Impostazioni → «La struttura»: CAP, Città, Zona, CIN e Posti letto allineati, anche a 390 px.</li>
+  <li>Check-in &amp; Check-out, Wi-Fi con più reti (con il QR del Wi-Fi), regole della casa.</li>
+  <li>Luoghi: incollato un link breve di Google Maps (<code>maps.app.goo.gl/…</code>) il nome si compila da solo; «Già in &lt;struttura&gt;» propone i luoghi delle altre strutture.</li>
+  <li>Foto e PDF in una sezione e in una riga (Servizi → Istruzioni). Con S3 i file finiscono nel bucket.<small>Con Essential le foto non sono comprese: il pannello lo dice.</small></li>
+  <li>Eventi: locandina, date, promemoria; un evento passato sparisce dalla guida.</li>
+  <li>Lingue (Plus e Portfolio): attivata l'inglese, «Suggerisci le traduzioni mancanti» propone le traduzioni, si approvano una per una.<small>Solo quelle approvate si vedono nella guida.</small></li>
+  <li>Portfolio: «Crea da una struttura esistente», poi eliminata la struttura d'origine: le foto della copia restano.</li>
+  <li>«Scarica il QR» in PDF (anche PNG e SVG) e stampa: si legge da Android e da iPhone.</li>
+</ul>
+
+<h2>7. Dati di fatturazione</h2>
+<ul class="spunte">
+  <li>«A chi intestiamo la fattura»: <b>Persona fisica</b> mostra Nome e cognome, Codice fiscale, indirizzo; nasconde Partita IVA, SDI e PEC.<small>La nota spiega il cassetto fiscale. L'aiuto del codice fiscale dice «16 caratteri, come sulla tessera sanitaria».</small></li>
+  <li><b>Azienda o professionista</b> mostra Ragione sociale, Partita IVA, Codice fiscale (facoltativo), SDI, PEC, indirizzo.</li>
+  <li>Una persona fisica che aveva scritto P.IVA, SDI o PEC: dopo il salvataggio non restano nel database.</li>
+  <li>Partita IVA o codice fiscale sbagliati: errore accanto al campo, il resto del modulo resta compilato.</li>
+  <li>Il cambio di tipo funziona anche senza JavaScript (la pagina mostra i campi del tipo salvato).</li>
+  <li>Su Stripe (modalità test) il cliente ha nome, indirizzo e i metadati <code>Fiscal_code</code>, <code>Fe_code</code>, <code>Pec</code>; per un'azienda anche la partita IVA come «tax id» <code>IT…</code>.<small>Passando da azienda a persona fisica, su Stripe spariscono P.IVA, SDI e PEC.</small></li>
+</ul>
+
+<h2>8. Pagamento e pubblicazione (modalità test)</h2>
+<ul class="spunte">
+  <li>«Pubblica» senza dati di fatturazione: porta alla scheda dei dati e poi torna alla pubblicazione.</li>
+  <li>Pagamento con <code>4242 4242 4242 4242</code> (data futura, CVC qualsiasi).<small>La guida va online <b>solo quando arriva il webhook</b>. La pagina di attesa si aggiorna da sola.</small></li>
+  <li>Pagamento con autenticazione: <code>4000 0025 0000 3155</code>.</li>
+  <li>Carta rifiutata: <code>4000 0000 0000 9995</code>. La guida resta in bozza, nessun abbonamento.</li>
+  <li>Pagina di Stripe chiusa senza pagare: dopo la scadenza della sessione l'ordine risulta «Scaduto», niente cambia.</li>
+  <li>Su Stripe la fattura ha l'IVA al 22% (Stripe Tax attivo) e l'importo del piano + IVA.</li>
+  <li>Il webhook riconsegnato due volte (Stripe → Webhook → «Invia di nuovo»): nessun doppio abbonamento.</li>
+</ul>
+
+<h2>9. Cambio di piano</h2>
+<ul class="spunte">
+  <li>Account → «Cambia piano»: una scheda per piano, il piano attuale col bordo verde, a 390 px senza scorrimento orizzontale.</li>
+  <li><b>Salire</b> (Plus → Portfolio): la conferma mostra la differenza per i giorni che restano, l'IVA, il totale e il prezzo dal rinnovo. «Vai al pagamento» apre Stripe con <b>solo la differenza</b>.<small>Dopo il pagamento: piano cambiato, data di rinnovo invariata, fattura della differenza tra le fatture del cliente.</small></li>
+  <li>Salire senza dati di fatturazione: porta alla scheda dei dati e poi di nuovo alla conferma.</li>
+  <li>Portfolio, − / + strutture: funziona anche senza JavaScript.</li>
+  <li><b>Scendere</b> (Plus → Essential): oggi niente da pagare; si scelgono le sezioni da tenere; l'elenco «Cosa cambia quel giorno».<small>In Account compare «Dal … passi a …» con «Annulla il cambio».</small></li>
+  <li>Scendere da Portfolio 3 a 2: bisogna scegliere esattamente una struttura da archiviare.</li>
+  <li>«Annulla il cambio»: tutto torna come prima, anche su Stripe.</li>
+  <li>Con un rinnovo non pagato: «Prima sistema il pagamento…». Con un abbonamento dello staff: «scrivici».</li>
+  <li>Portfolio → «Aggiungi una struttura»: stesso giro, conguaglio sui giorni restanti.</li>
+  <li>Al rinnovo con una discesa programmata (orologio di prova, vedi l'altro documento): fattura al prezzo nuovo, strutture archiviate, sezioni oltre il limite spente, email «Da oggi sei su …».</li>
+  <li>Amministrazione → Diagnostica: «Cambi di piano pagati da completare: 0».</li>
+</ul>
+
+<h2>10. Rinnovo, disdetta, portale clienti</h2>
+<ul class="spunte">
+  <li>Account → «Disattiva il rinnovo automatico»: la guida resta online fino alla fine del periodo pagato. «Riattiva il rinnovo automatico» lo rimette.</li>
+  <li>«Fatture e metodo di pagamento» apre il portale di Stripe: fatture, carta, disdetta. Non deve offrire il cambio di piano né la quantità.</li>
+  <li>Rinnovo riuscito (orologio di prova): nuova fattura, nuova data di fine, la guida resta online.</li>
+  <li>Rinnovo non riuscito (carta <code>4000 0000 0000 0341</code> messa come predefinita prima del rinnovo): abbonamento «Rinnovo non riuscito», guida offline (salvo <code>MHW_GRACE_DAYS</code>), compare in Anomalie.</li>
+  <li>Abbonamento terminato su Stripe: la guida va offline; testi, foto e QR restano; rinnovando torna online con lo stesso QR.</li>
+</ul>
+
+<h2>11. Codici sconto e «Porta un amico»</h2>
+<ul class="spunte">
+  <li>Amministrazione → Codici sconto: creato un codice del 20%. Su Stripe nasce il coupon «una volta».</li>
+  <li>Applicato al pagamento: la prima fattura è scontata, il rinnovo a prezzo pieno.</li>
+  <li>Codice scaduto, esaurito o per un altro piano: rifiutato con un messaggio chiaro.</li>
+  <li>Con <code>MHW_INVITI=1</code>: «Invita un amico» mostra il link personale (solo con un abbonamento Stripe attivo).</li>
+  <li>Amico che si registra dal link: 5% sul primo anno; quando paga, chi ha invitato riceve l'email e il suo rinnovo ha il 5% in meno (coupon <code>mhw-invito-5</code> sull'abbonamento).</li>
+  <li>Amico con gli stessi dati di fatturazione di chi invita: invito annullato, non conta.</li>
+  <li>Al rinnovo scontato il conteggio riparte da zero; oltre 10 amici lo sconto resta al 50%.</li>
+</ul>
+
+<h2>12. Email automatiche (promemoria)</h2>
+<ul class="spunte">
+  <li>Bozza con l'arrivo vuoto, dopo 1 giorno: «Come si entra a …?». Dopo 3 giorni senza sezioni, dopo 7 non pubblicata.</li>
+  <li>Abbonamento che si rinnova da solo: avviso 30 giorni prima, con il prezzo (sconto inviti e cambio programmato compresi).</li>
+  <li>Abbonamento che <b>non</b> si rinnova (rinnovo disattivato o dello staff): avviso 30 e 7 giorni prima, poi «La tua guida è offline» il giorno dopo la fine.</li>
+  <li>Eventi passati: un'email al mese per struttura.</li>
+  <li>Ogni email parte una volta sola; il link «Non mandarmene più» funziona e vale per quel tipo.</li>
+  <li>Le email arrivano davvero (non nello spam): mittente, SPF e DKIM del dominio a posto.</li>
+</ul>
+
+<h2>13. Guida dell'ospite</h2>
+<ul class="spunte">
+  <li>Si apre dal link e dal QR, a 390 px, senza app e senza cookie (strumenti del browser → nessun cookie del sito).</li>
+  <li>Non compare nei motori di ricerca: <code>noindex</code> nell'intestazione della pagina.</li>
+  <li>Si apre nella lingua del telefono tra quelle attive; il selettore cambia lingua.</li>
+  <li>Commiato: recensioni e prenotazione diretta come impostati; con Plus la firma si può nascondere.</li>
+  <li>Le statistiche contano le aperture, senza indirizzi IP.</li>
+  <li>Nessun codice di porte o cassette nella guida (il pannello lo sconsiglia).</li>
+</ul>
+
+<h2>14. Amministrazione</h2>
+<ul class="spunte">
+  <li><b>Quadro</b>: clienti, abbonamenti, guide pubblicate, incassato, ricavo annuo ricorrente, rinnovi entro 30 giorni, scadenze senza rinnovo, anomalie. Gli avvisi in cima portano alla pagina giusta.</li>
+  <li><b>Prospetti</b>: ricavo ricorrente e a rischio, rinnovi a 30 e 90 giorni, 12 mesi (registrati, nuovi, incassi da nuovi, cambi e rinnovi, persi), piani, conversione, inviti, codici sconto, traduzioni. «Esporta» scarica un CSV che si apre in Excel.<small>Dopo un pagamento di prova i numeri cambiano. Gli abbonamenti dello staff non sono incassi.</small></li>
+  <li><b>Anomalie</b>: con tutto a posto, solo «Controlli andati bene». Simulando un rinnovo non riuscito compare tra le gravi, con il link al cliente.</li>
+  <li><b>Clienti</b>: ricerca, filtri per stato e per piano, colonna della scadenza, «Esporta CSV», «Entra come cliente» (la sessione finisce da sola dopo un'ora, resta nel registro).</li>
+  <li><b>Scheda cliente</b>: nota interna (il cliente non la vede), fatturazione completa o no, abbonamenti, cambio programmato e ultimo cambio, avvisi mandati, inviti, traduzioni, eccezioni ai limiti del piano, abbonamento manuale, guida vetrina, ordini, registro.</li>
+  <li><b>Scadenze</b>: elenco a 30, 60, 90 o 180 giorni con l'ultimo avviso e il prossimo automatico. «Manda il promemoria» su una riga e su più righe scelte; il testo cambia da solo (rinnovo, scadenza, offline).<small>Un cliente che ha chiesto «non mandarmene più» non lo riceve e l'amministratore lo legge.</small></li>
+  <li><b>Abbonamenti</b> e <b>Guide</b>: elenchi completi, stato online/offline.</li>
+  <li><b>Piani</b>: nuova versione di un piano (i clienti che hanno già pagato restano sulla loro), testi della landing.</li>
+  <li><b>Codici sconto</b>, <b>Inviti</b> (con «Annulla» di un invito), <b>Traduzioni</b> (consumi, costo stimato, tetti, omaggio allungabile), <b>Testimonianze</b> (solo vere, con permesso scritto).</li>
+  <li><b>Impostazioni</b>: Stripe, posta, archivio, traduzioni, con «Prova la connessione».</li>
+  <li><b>Registro</b> e <b>Diagnostica</b>: tutto su OK.</li>
+</ul>
+
+<h2>15. Fatture con Adamo</h2>
+<ul class="spunte">
+  <li>Adamo collegato a Stripe (vedi l'altro documento).</li>
+  <li>Pagamento di prova di un'<b>azienda</b>: in Adamo la fattura ha ragione sociale, P.IVA, codice destinatario (o PEC), indirizzo, imponibile + IVA 22%.</li>
+  <li>Pagamento di prova di una <b>persona fisica</b>: fattura con codice fiscale e codice destinatario <code>0000000</code>.</li>
+  <li>Con un codice sconto: la fattura riporta l'importo scontato.</li>
+  <li>Differenza di un cambio di piano e rinnovo: anche queste fatture arrivano in Adamo.</li>
+  <li>Invio allo SDI ed email al cliente, come impostati in Adamo. Esito «consegnata» in Adamo.</li>
+  <li>Amministrazione → Anomalie: nessun «Cliente pagante senza dati di fatturazione completi».</li>
+</ul>
+
+<h2>16. Sicurezza e privacy</h2>
+<ul class="spunte">
+  <li>Nessun segreto nel repository o nello zip: niente <code>config.local.php</code>, database, log, <code>instance.php</code>.</li>
+  <li>Tutti i moduli rifiutano un invio senza il token CSRF (prova con uno strumento come curl: risposta di errore).</li>
+  <li>Un host non vede le strutture di un altro host cambiando il numero nell'indirizzo (risposta 404).</li>
+  <li>Le pagine di amministrazione rispondono solo all'amministratore.</li>
+  <li>I limiti dei piani sono controllati sul server: un Essential non carica foto nemmeno forzando la richiesta.</li>
+  <li>Cookie di sessione con <code>Secure</code> e <code>HttpOnly</code> in HTTPS.</li>
+  <li>Termini e Privacy aggiornati (versione 2026-10) e riletti dal consulente.</li>
+</ul>
+
+<h2>17. Passaggio alle chiavi live</h2>
+<ul class="spunte">
+  <li>Chiavi live, webhook live con il suo segreto, Stripe Tax live, portale clienti live (le impostazioni di test e live sono separate).</li>
+  <li>Diagnostica tutta su OK con le chiavi live.</li>
+  <li>Un pagamento vero del piano più economico, controllata la fattura in Adamo, poi rimborso da Stripe (e nota di credito in Adamo, se il commercialista la chiede).</li>
+  <li>Clienti di esempio tolti; testimonianze solo vere.</li>
+</ul>
+
+<div class="firma">
+  <div>Collaudo eseguito da</div>
+  <div>Data</div>
+  <div>Esito: <span class="esito"></span></div>
+</div>
+
+</body>
+</html>
