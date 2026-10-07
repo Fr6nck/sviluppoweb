@@ -158,7 +158,8 @@ final class Support
     /** Un numero di telefono per tel: solo cifre e il più iniziale. */
     public static function telHref(string $n): string
     {
-        return preg_replace('/(?!^\+)[^0-9]/', '', trim($n)) ?? '';
+        // Anche i numeri salvati prima, senza prefisso: dall'estero si chiamano solo col +39.
+        return preg_replace('/(?!^\+)[^0-9]/', '', Telefono::normalizza($n)) ?? '';
     }
 
     public static function json_attr(mixed $v): string

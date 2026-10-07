@@ -202,7 +202,7 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
               <div class="field" style="margin:0"><label for="pl-drive">Minuti in auto</label>
                 <input id="pl-drive" name="drive_minutes" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" value="<?= (int) $v['drive_minutes'] ?: '' ?>"></div>
               <div class="field" style="margin:0"><label for="pl-tel">Telefono</label>
-                <input id="pl-tel" name="phone" type="tel" maxlength="40" value="<?= Support::e($v['phone']) ?>"></div>
+                <input id="pl-tel" name="phone" type="tel" maxlength="40" data-prefisso="+39 " placeholder="+39 075 123 4567" autocomplete="off" value="<?= Support::e($v['phone']) ?>"></div>
               <div class="field" style="margin:0"><label for="pl-web">Sito web</label>
                 <input id="pl-web" name="website" type="url" maxlength="500" value="<?= Support::e($v['website']) ?>" placeholder="https://"></div>
               <div class="field" style="margin:0"><label for="pl-book">Link per prenotare</label>

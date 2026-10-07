@@ -75,6 +75,21 @@
     try { f.contentWindow.location.reload(); } catch (e) { f.src = f.src; }
   }
 
+  /* ---- Telefoni col prefisso: un campo vuoto prende «+39 » quando lo tocchi,
+     e se resta solo il prefisso torna vuoto. I numeri brevi (112, 113…) si
+     scrivono cancellando il prefisso; il server li lascia comunque come sono. */
+  document.addEventListener('focusin', function (e) {
+    var el = e.target;
+    if (el && el.matches && el.matches('input[data-prefisso]') && el.value.trim() === '') {
+      el.value = el.getAttribute('data-prefisso');
+      try { el.setSelectionRange(el.value.length, el.value.length); } catch (x) {}
+    }
+  });
+  document.addEventListener('focusout', function (e) {
+    var el = e.target;
+    if (el && el.matches && el.matches('input[data-prefisso]') && el.value.trim() === el.getAttribute('data-prefisso').trim()) el.value = '';
+  });
+
   /* ---- Tastiera aperta (telefono): la barra in basso si toglie di mezzo ----
      Con il dito si scrive in un campo: la barra fissa non deve coprirlo. */
   if (window.matchMedia && matchMedia('(pointer: coarse)').matches) {

@@ -101,7 +101,7 @@ final class Properties
             if (!is_array($r)) continue;
             $c = ['name' => mb_substr(trim((string) ($r['name'] ?? '')), 0, 120),
                   'role' => in_array($r['role'] ?? '', $ruoli, true) ? (string) $r['role'] : 'altro',
-                  'phone' => mb_substr(trim((string) ($r['phone'] ?? '')), 0, 40),
+                  'phone' => mb_substr(Telefono::normalizza((string) ($r['phone'] ?? '')), 0, 40),
                   'whatsapp' => !empty($r['whatsapp']) ? 1 : 0];
             if ($c['name'] === '' && $c['phone'] === '') continue;
             $puliti[] = $c;
@@ -341,7 +341,7 @@ final class Properties
                     'name' => $nome,
                     'address' => mb_substr(trim((string) ($in['address'] ?? '')), 0, 255),
                     'maps_url' => Support::safeUrl((string) ($in['maps_url'] ?? '')),
-                    'phone' => mb_substr(trim((string) ($in['phone'] ?? '')), 0, 40),
+                    'phone' => mb_substr(Telefono::normalizza((string) ($in['phone'] ?? '')), 0, 40),
                     'website' => Support::safeUrl((string) ($in['website'] ?? '')),
                     'booking_url' => Support::safeUrl((string) ($in['booking_url'] ?? '')),
                     'walk_minutes' => max(0, min(600, (int) ($in['walk_minutes'] ?? 0))),

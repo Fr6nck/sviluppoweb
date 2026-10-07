@@ -149,6 +149,8 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
             $t = ['url' => 'url', 'tel' => 'tel', 'time' => 'time', 'date' => 'date'][$tipo] ?? 'text';
             $extra = $tipo === 'secret' ? ' spellcheck="false" data-segreto' : ($tipo === 'url' ? ' placeholder="https://"' : '');
             if (!empty($sd['cifre'])) $extra .= ' inputmode="numeric" pattern="[0-9]*"';
+            // I telefoni col prefisso: toccando un campo vuoto compare +39 (lo sistema anche il server, Telefono::normalizza).
+            if ($tipo === 'tel') $extra .= ' data-prefisso="+39 " placeholder="+39 333 123 4567"';
             // La password si legge con «Mostra»: senza JavaScript resta in chiaro, che è più comodo da scrivere.
             $mostra = $tipo === 'secret' ? '<button type="button" class="linkbtn rip__mostra" data-mostra-segreto hidden>Mostra</button>' : '';
             $h .= $c . '<div class="field" style="margin:0"><label for="' . $id . '">' . $etH . '</label>'

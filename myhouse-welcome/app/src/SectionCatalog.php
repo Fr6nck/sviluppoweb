@@ -482,7 +482,7 @@ final class SectionCatalog
             'url' => Support::safeUrl(mb_substr(trim((string) $raw), 0, 500)),
             'textarea' => mb_substr(trim((string) $raw), 0, 2000),
             'choice' => isset($def['options'][(string) $raw]) ? (string) $raw : '',
-            'tel' => mb_substr(trim((string) $raw), 0, 40),
+            'tel' => mb_substr(Telefono::normalizza((string) $raw), 0, 40),
             'time' => preg_match('/^([01]?\d|2[0-3])[:.][0-5]\d$/', trim((string) $raw)) ? str_pad(str_replace('.', ':', trim((string) $raw)), 5, '0', STR_PAD_LEFT) : '',
             'days' => array_values(array_unique(array_filter(array_map('intval', (array) $raw), fn($d) => $d >= 1 && $d <= 7))),
             'check' => !empty($raw) && $raw !== '0' ? '1' : '',
@@ -580,7 +580,8 @@ final class SectionCatalog
             } elseif ($type === 'url') {
                 if ($withPlain) $comuni[$name] = Support::safeUrl(mb_substr((string) $raw, 0, 500));
             } elseif (in_array($type, self::PLAIN, true)) {
-                if ($withPlain) $comuni[$name] = !empty($def['cifre']) ? substr(preg_replace('/\D/', '', (string) $raw), 0, 3) : mb_substr(trim((string) $raw), 0, 200);
+                if ($withPlain) $comuni[$name] = !empty($def['cifre']) ? substr(preg_replace('/\D/', '', (string) $raw), 0, 3)
+                    : mb_substr(($def['tastiera'] ?? '') === 'tel' ? Telefono::normalizza((string) $raw) : trim((string) $raw), 0, 200);
             } elseif ($type === 'textarea') {
                 $tradotti[$name] = mb_substr(trim((string) $raw), 0, 2000);
             } else {

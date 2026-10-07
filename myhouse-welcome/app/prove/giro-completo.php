@@ -631,7 +631,7 @@ prova('R5 · emergenze: righe pronte (112, guardia medica, farmacia, veterinario
 $elena->post("/pannello/$epid/sezioni/{$es['emergency']}", ['emergency_number' => '112', 'contacts' => [
     ['id' => '', 'name' => 'Guardia medica', 'phone' => '075 123456', 'note' => 'Notti e festivi'], ['id' => '', 'name' => 'Farmacia di turno', 'phone' => '', 'note' => 'Turni sulla porta']]]);
 $r = $elena->get("/pannello/$epid/anteprima/{$es['emergency']}?l=it");
-prova('R5 · guida: un «Chiama» per riga con il numero, accessibile', str_contains($r['body'], 'href="tel:075123456"') && str_contains($r['body'], 'aria-label="Chiama Guardia medica"')
+prova('R5 · guida: un «Chiama» per riga con il numero, accessibile', str_contains($r['body'], 'href="tel:+39075123456"') && str_contains($r['body'], 'aria-label="Chiama Guardia medica"')
       && str_contains($r['body'], 'Farmacia di turno') && substr_count($r['body'], 'numero__chiama') === 1);
 
 // Come arrivare: una scheda per mezzo; il link di Maps dà le coordinate della casa.
@@ -2043,6 +2043,14 @@ $cfEm = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'eme
 $r = $cf->get("/pannello/$cfPid/sezioni/$cfEm");
 prova('Numero di emergenza col tastierino del telefono', preg_match('#name="emergency_number"[^>]*type="tel"|type="tel"[^>]*name="emergency_number"#s', $r['body']) === 1);
 $cfCore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$cfPid]);
+$cf->post("/pannello/$cfPid/sezioni/$cfEm", ['emergency_number' => '113', 'contacts[0][id]' => '', 'contacts[0][name]' => 'Guardia medica', 'contacts[0][phone]' => '075 812712']);
+$emD = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$cfEm]), true);
+prova('Telefoni: il numero breve resta com\'è (113), il fisso italiano prende +39', ($emD['emergency_number'] ?? '') === '113' && ($emD['contacts'][0]['phone'] ?? '') === '+39 075 812712', json_encode($emD));
+$cf->post("/pannello/$cfPid/sezioni/$cfEat/luogo", ['place_id' => (string) $cfPl, 'name' => 'Trattoria rinominata', 'maps_url' => '', 'phone' => '0039 333 1234567']);
+prova('…il cellulare scritto con 0039 diventa +39', val('SELECT phone FROM places WHERE id = ?', [$cfPl]) === '+39 333 1234567');
+$r = $cf->get("/pannello/$cfPid/sezioni/$cfEm");
+prova('…nel pannello i campi telefono propongono il +39', str_contains($r['body'], 'data-prefisso="+39 "') && str_contains($r['body'], 'placeholder="+39 333 123 4567"'));
+prova('…e i link della guida aggiungono il prefisso anche ai numeri salvati prima', (string) shell_exec('php -r ' . escapeshellarg('define("MHW_APP", "' . $DOVE . '/app"); spl_autoload_register(fn($c) => require "' . $DOVE . '/app/src/" . substr($c, 4) . ".php"); echo MHW\\Support::telHref("333 123 4567"), "|", MHW\\Support::telHref("112"), "|", MHW\\Telefono::whatsapp("075 812712");')) === '+393331234567|112|39075812712');
 $cf->post("/pannello/$cfPid/sezioni/$cfCore", ['tax_max_nights' => '5 notti']);
 prova('«Per quante notti al massimo» salva solo le cifre', (json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$cfCore]), true)['tax_max_nights'] ?? '') === '5');
 $r = $cf->post('/account/profilo', ['name' => '  Carla   Nuova ']);

@@ -31,7 +31,12 @@ Migrazione `021`: la colonna `users.pending_email`, per cambiare l'email dall'ac
 - **Password.** Al massimo 72 caratteri, in registrazione, recupero e cambio: oltre, bcrypt le tagliava senza dirlo.
 - **Eliminare una struttura.** Il nome scritto per confermare si confronta senza badare a maiuscole e spazi doppi: il telefono mette la maiuscola da solo.
 - **Righe.** Nel riassunto di una riga chiusa le date sono scritte per esteso («3 ottobre 2027»).
-- **Prove.** Le prove automatiche sono riallineate al copy nuovo e ce ne sono 14 in più: 616 in tutto.
+- **Telefoni col prefisso.**
+  - Toccando un campo telefono vuoto nel pannello compare «+39 »; se resta solo il prefisso, il campo torna vuoto.
+  - Al salvataggio un numero italiano senza prefisso (cellulare con 3, fisso con 0) prende +39, e 0039 diventa +39.
+  - I numeri brevi e speciali restano come sono: 112, 113, 1522, 800….
+  - Nella guida i link «Chiama» e WhatsApp aggiungono il prefisso anche ai numeri salvati prima.
+- **Prove.** Le prove automatiche sono riallineate al copy nuovo e ce ne sono 18 in più: 620 in tutto.
 
 ## v2 · Copy coerente e landing ampliata (6 ottobre 2026)
 
