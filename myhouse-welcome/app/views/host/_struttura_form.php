@@ -28,13 +28,14 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
     <div class="field" style="margin:0"><label for="address">Indirizzo</label>
       <p class="help" style="margin:0 0 6px">Via e numero civico. Precompila «Come arrivare» e il link a Maps: lo scrivi una volta sola.</p>
       <input type="text" id="address" name="address" maxlength="255" autocomplete="off" value="<?= $c('address') ?>"></div>
-    <div class="grid grid-3">
+    <?php /* Una griglia sola a tre colonne: CIN occupa le prime due, così i bordi dei campi
+             sono in colonna con CAP, Città e Zona; i campi stanno in basso, allineati anche
+             quando l'aiuto sopra va a capo su più righe. */ ?>
+    <div class="grid grid-3 campi-allineati">
       <div class="field" style="margin:0"><label for="postal_code">CAP</label><input type="text" id="postal_code" name="postal_code" maxlength="10" inputmode="numeric" autocomplete="off" value="<?= $c('postal_code') ?>"></div>
       <div class="field" style="margin:0"><label for="city">Città</label><input type="text" id="city" name="city" maxlength="120" autocomplete="off" value="<?= $c('city') ?>"></div>
       <div class="field" style="margin:0"><label for="region">Zona o regione</label><input type="text" id="region" name="region" maxlength="120" autocomplete="off" value="<?= $c('region') ?>"></div>
-    </div>
-    <div class="grid grid-2">
-      <div class="field" style="margin:0"><label for="cin">CIN <span class="muted">(facoltativo)</span></label>
+      <div class="field campo-largo" style="margin:0"><label for="cin">CIN <span class="muted">(facoltativo)</span></label>
         <p class="help" style="margin:0 0 6px">Il codice identificativo nazionale degli affitti brevi: compare in piccolo in fondo alla guida.</p>
         <input type="text" id="cin" name="cin" maxlength="40" spellcheck="false" autocapitalize="characters" autocomplete="off" placeholder="IT…" value="<?= $c('cin') ?>"></div>
       <div class="field" style="margin:0"><label for="beds">Posti letto <span class="muted">(facoltativo)</span></label>

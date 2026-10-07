@@ -1,5 +1,12 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Modulo della struttura in linea (7 ottobre 2026)
+
+- **Impostazioni e configurazione → «La struttura».** CAP, Città, Zona, CIN e Posti letto stanno in una griglia sola a tre colonne. Il CIN occupa le prime due colonne, così i bordi dei campi sono in colonna con quelli sopra.
+  - I campi sono allineati in basso anche quando l'aiuto sopra va a capo: prima il campo del CIN stava più in basso di quello dei posti letto.
+  - A due colonne (tablet) «Posti letto» va accanto a «Zona» e il CIN sotto, a tutta riga; al telefono uno sotto l'altro.
+  - Classi nuove `.campi-allineati` e `.campo-largo`.
+
 ## v2 · Copy coerente, patch 2 (7 ottobre 2026)
 
 Nessuna migrazione. Della `copy-coerente-patch-2` era già tutto integrato tranne una cosa:
