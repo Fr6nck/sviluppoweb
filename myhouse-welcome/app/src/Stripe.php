@@ -73,8 +73,24 @@ final class Stripe
     {
         $dati = Fatturazione::anagrafica($account) + Fatturazione::metadati($account);
         if (!$dati || ($account['stripe_customer_id'] ?? '') === '') return;
-        self::call('POST', 'customers/' . rawurlencode($account['stripe_customer_id']), $dati,
-                   'mhw-customer-dati-' . $account['id'] . '-' . substr(md5(serialize($dati)), 0, 10));
+        // Un dato tolto (la PEC, o la partita IVA passando a persona fisica) va tolto anche su Stripe,
+        // altrimenti Adamo legge quello vecchio: un metadato vuoto lo cancella.
+        foreach (['vat', 'cf', 'sdi', 'pec', 'billing_type', 'Fiscal_code', 'Pec', 'Fe_code'] as $k) $dati += ['metadata[' . $k . ']' => ''];
+        $cid = rawurlencode($account['stripe_customer_id']);
+        self::call('POST', 'customers/' . $cid, $dati, 'mhw-customer-dati-' . $account['id'] . '-' . substr(md5(serialize($dati)), 0, 10));
+        // La partita IVA come «tax id»: si aggiunge se un'azienda la inserisce dopo il primo pagamento,
+        // e quella vecchia si toglie se cambia o se il cliente diventa persona fisica.
+        $piva = ($account['billing_type'] ?? '') === 'azienda' ? preg_replace('/\D/', '', (string) ($account['vat'] ?? '')) : '';
+        try {
+            $giusta = $piva !== '' ? 'IT' . $piva : '';
+            $presente = false;
+            foreach ((array) (self::call('GET', 'customers/' . $cid . '/tax_ids', ['limit' => '20'])['data'] ?? []) as $t) {
+                if (($t['type'] ?? '') !== 'eu_vat') continue;
+                if (($t['value'] ?? '') === $giusta) { $presente = true; continue; }
+                self::call('DELETE', 'customers/' . $cid . '/tax_ids/' . rawurlencode((string) $t['id']));
+            }
+            if ($giusta !== '' && !$presente) self::call('POST', 'customers/' . $cid . '/tax_ids', ['type' => 'eu_vat', 'value' => $giusta], 'mhw-taxid-' . $account['id'] . '-' . $piva);
+        } catch (\Throwable $e) { Log::exception($e, 'Stripe: partita IVA del cliente'); }
     }
 
     /** La sessione di Checkout per un abbonamento annuale. Restituisce l'URL di Stripe. */

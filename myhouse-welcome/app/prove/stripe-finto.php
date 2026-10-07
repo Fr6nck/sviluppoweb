@@ -66,6 +66,15 @@ if ($metodo === 'POST' && $percorso === '/v1/customers') $rispondi(['id' => 'cus
 if ($metodo === 'POST' && preg_match('#^/v1/customers/(cus_[A-Za-z0-9_]+)$#', $percorso, $m)) {
     $rispondi(['id' => $m[1], 'object' => 'customer', 'metadata' => $corpo['metadata'] ?? []]);
 }
+// Le partite IVA del cliente (tax id): tenute in un file, per vedere aggiunte e cancellazioni.
+if (preg_match('#^/v1/customers/(cus_[A-Za-z0-9_]+)/tax_ids(?:/([A-Za-z0-9_]+))?$#', $percorso, $m)) {
+    $f = $dir . '/tax_ids.json'; $tutti = is_file($f) ? (json_decode((string) file_get_contents($f), true) ?: []) : [];
+    $suoi = $tutti[$m[1]] ?? [];
+    if ($metodo === 'POST') { $nuovo = ['id' => 'txi_finto' . $n, 'object' => 'tax_id', 'type' => $corpo['type'] ?? '', 'value' => $corpo['value'] ?? '']; $suoi[] = $nuovo; }
+    if ($metodo === 'DELETE') $suoi = array_values(array_filter($suoi, fn($t) => $t['id'] !== ($m[2] ?? '')));
+    $tutti[$m[1]] = $suoi; file_put_contents($f, json_encode($tutti));
+    $rispondi($metodo === 'GET' ? ['object' => 'list', 'data' => $suoi] : ($metodo === 'POST' ? $nuovo : ['id' => $m[2] ?? '', 'deleted' => true]));
+}
 if ($metodo === 'POST' && $percorso === '/v1/checkout/sessions') {
     $rispondi(['id' => 'cs_test_finto' . $n, 'object' => 'checkout.session', 'url' => 'https://checkout.stripe.test/c/pay/cs_test_finto' . $n,
                'mode' => $corpo['mode'] ?? '']);

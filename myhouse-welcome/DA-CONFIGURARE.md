@@ -89,8 +89,8 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
 ## 4a. Fatture con Adamo (collegamento Stripe)
 
 1. In Adamo vai in **Impostazioni → Integrazioni → Stripe** e collega l'account Stripe del sito.
-2. Su Stripe deve esserci l'IVA: Stripe Tax (`STRIPE_AUTOMATIC_TAX=1`), oppure un'aliquota fissa del 22% esclusa. Senza, Adamo fa fatture senza IVA.
-3. Il sito manda già al cliente Stripe i dati che Adamo legge: `Fiscal_code`, `Pec` e `Fe_code` (`0000000` se manca il codice destinatario), e la partita IVA come «tax id».
+2. Su Stripe deve esserci l'IVA, e il sito la applica **solo con Stripe Tax**: attivalo nel pannello di Stripe e poi imposta `STRIPE_AUTOMATIC_TAX=1` (o la casella in Amministrazione → Impostazioni → Stripe). Un'aliquota fissa creata a mano su Stripe il sito non la usa. Senza Stripe Tax, Adamo fa fatture senza IVA.
+3. Il sito manda già al cliente Stripe i dati che Adamo legge: `Fiscal_code`, `Pec` e `Fe_code` (`0000000` se manca il codice destinatario), e la partita IVA come «tax id». Quando il cliente cambia i dati nel sito, si aggiornano anche su Stripe: un dato tolto (la PEC, la partita IVA passando a persona fisica) sparisce anche lì.
 4. Fai un pagamento di prova e controlla la fattura in Adamo: codice fiscale, PEC o codice destinatario, importi (anche con un codice sconto).
 5. Ai privati Adamo fa fattura elettronica con il codice fiscale, non una ricevuta: **fallo confermare al commercialista**.
 6. L'invio allo SDI e l'email al cliente si attivano da Adamo.

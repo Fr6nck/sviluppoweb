@@ -1,5 +1,14 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Dati di fatturazione allineati su Stripe per Adamo (7 ottobre 2026)
+
+Nessuna migrazione.
+
+- Quando il cliente cambia i dati di fatturazione, il cliente Stripe si aggiorna del tutto: i dati tolti (PEC, codice destinatario, partita IVA passando a persona fisica) si cancellano anche su Stripe. Prima restavano quelli vecchi, e Adamo li avrebbe letti.
+- La partita IVA come «tax id» si aggiunge anche se l'azienda la inserisce dopo il primo pagamento, e quella vecchia si toglie se cambia.
+- `DA-CONFIGURARE` §4a corretto: l'IVA il sito la applica solo con Stripe Tax; un'aliquota fissa creata a mano su Stripe non viene usata.
+- **Prove:** 713 in tutto.
+
 ## v2 · Amministrazione: pannello di controllo (7 ottobre 2026)
 
 Migrazione `024`: `accounts.admin_note` e `admin_note_at` (nota interna sul cliente). Solo aggiunte.

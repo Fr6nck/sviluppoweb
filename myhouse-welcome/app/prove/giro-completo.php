@@ -2488,10 +2488,20 @@ prova('6H · in amministrazione l\'ultimo cambio di piano del cliente', str_cont
 $r = $paola->get('/account');
 prova('Fatturazione: «Persona fisica» e i campi dell\'azienda nascosti per chi ha scelto persona fisica', str_contains($r['body'], 'Persona fisica')
       && preg_match('#data-per="azienda" hidden><label for="f-vat"#', $r['body']) === 1 && str_contains($r['body'], 'cassetto fiscale'));
+// Il cliente Stripe segue i dati: la P.IVA come tax id quando arriva, e via tutto quando diventa persona fisica (Adamo legge da lì).
+db()->prepare("UPDATE accounts SET stripe_customer_id = 'cus_paola_prova' WHERE id = ?")->execute([$pacc]);
+$paola->modulo('/account', '/account/fatturazione', ['billing_type' => 'azienda', 'billing_name' => 'Paola Cambio srl', 'vat' => '02945910541', 'cf' => '',
+               'sdi' => 'M5UXCR1', 'pec' => 'paola@pec.example', 'billing_address' => 'Via Roma 1', 'billing_postal' => '06059', 'billing_city' => 'Todi', 'billing_province' => 'PG']);
+$tx = fn() => (json_decode((string) @file_get_contents($GLOBALS['STRIPE_DIR'] . '/tax_ids.json'), true) ?: [])['cus_paola_prova'] ?? [];
+prova('Stripe · un\'azienda che inserisce la P.IVA dopo: diventa tax id del cliente (IT…)', array_column($tx(), 'value') === ['IT02945910541'], json_encode($tx()));
 $paola->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Paola Cambio', 'cf' => 'RSSMRA85T10A562S', 'vat' => '02945910541',
                'sdi' => 'M5UXCR1', 'pec' => 'paola@pec.example', 'billing_address' => 'Via Roma 1', 'billing_postal' => '06059', 'billing_city' => 'Todi', 'billing_province' => 'PG']);
 $fp = riga('SELECT vat, sdi, pec FROM accounts WHERE id = ?', [$pacc]);
 prova('…una persona fisica non salva partita IVA, SDI e PEC', $fp['vat'] === '' && $fp['sdi'] === '' && $fp['pec'] === '');
+$agg = array_values(array_filter(richiesteStripe(), fn($x) => $x['percorso'] === '/v1/customers/cus_paola_prova' && $x['metodo'] === 'POST'));
+$mu = end($agg)['corpo']['metadata'] ?? [];
+prova('…e su Stripe spariscono P.IVA, SDI e PEC (metadati vuoti, tax id tolto): Adamo non legge dati vecchi', ($mu['vat'] ?? null) === '' && ($mu['Pec'] ?? null) === ''
+      && ($mu['pec'] ?? null) === '' && ($mu['Fe_code'] ?? '') === '0000000' && ($mu['Fiscal_code'] ?? '') === 'RSSMRA85T10A562S' && $tx() === [], json_encode($mu));
 
 // Landing: le FAQ del cambio di piano sempre; «Porta un amico» (blocco e FAQ) solo con gli inviti accesi.
 $r = $ospite->get('/');
