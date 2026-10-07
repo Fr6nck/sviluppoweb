@@ -10,7 +10,7 @@ include __DIR__ . '/_stati.php'; ?>
 
   <?php foreach ($avvisi as $avv): [$t, $d] = $avv; $vai = $avv[2] ?? ''; ?>
     <div class="note avviso" role="status"><div class="stack" style="gap:4px"><b><?= Support::e($t) ?></b><span class="small"><?= Support::e($d) ?></span></div>
-      <?php if ($vai !== ''): ?><a class="btn btn--sm avviso__vai" href="<?= b() . Support::e($vai) ?>">Imposta ora</a><?php endif; ?></div>
+      <?php if ($vai !== ''): ?><a class="btn btn--sm avviso__vai" href="<?= b() . Support::e($vai) ?>"><?= Support::e($avv[3] ?? 'Imposta ora') ?></a><?php endif; ?></div>
   <?php endforeach; ?>
 
   <div class="cifre cifre--4">
@@ -21,7 +21,12 @@ include __DIR__ . '/_stati.php'; ?>
                     ['cifra--carta', 'eye', 'Aperture', $numeri['aperture'], 'delle guide, ultimi 30 giorni', null],
                     ['cifra--carta', 'clock', 'In attesa', $numeri['in_attesa'], 'pagamenti da confermare', null],
                     ['cifra--carta', 'ban', 'Rinnovo disattivato', $numeri['rinnovo_off'], 'abbonamenti che non si rinnovano', null],
-                    [$numeri['falliti'] ? 'cifra--rosa' : 'cifra--carta', 'warning', 'Rinnovi falliti', $numeri['falliti'], 'carte da aggiornare', null]] as [$tono, $ico, $et, $val, $nota, $href]):
+                    [$numeri['falliti'] ? 'cifra--rosa' : 'cifra--carta', 'warning', 'Rinnovi falliti', $numeri['falliti'], 'carte da aggiornare', '/admin/anomalie'],
+                    ['cifra--pino', 'chart', 'Ricavo annuo ricorrente', Support::money($numeri['arr']), 'abbonamenti che si rinnovano da soli', '/admin/prospetti'],
+                    ['cifra--mare', 'calendar', 'Rinnovi entro 30 giorni', $numeri['rinnovi30'][0], 'incasso atteso ' . Support::money($numeri['rinnovi30'][1]), '/admin/scadenze?giorni=30'],
+                    [$numeri['scadono30'] ? 'cifra--ocra' : 'cifra--carta', 'clock', 'Scadono senza rinnovo', $numeri['scadono30'], 'entro 30 giorni: da avvisare', '/admin/scadenze?giorni=30'],
+                    [$numeri['anomalie']['alta'] ? 'cifra--rosa' : 'cifra--carta', 'pulse', 'Anomalie', array_sum($numeri['anomalie']),
+                     $numeri['anomalie']['alta'] ? $numeri['anomalie']['alta'] . ' da guardare subito' : 'nessuna urgente', '/admin/anomalie']] as [$tono, $ico, $et, $val, $nota, $href]):
           $tag = $href ? 'a' : 'div'; ?>
       <<?= $tag ?> class="cifra <?= $tono ?>"<?= $href ? ' href="' . b() . $href . '"' : '' ?>>
         <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg($ico, 17) ?></span><?= $et ?></span>

@@ -1,5 +1,19 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Amministrazione: pannello di controllo (7 ottobre 2026)
+
+Migrazione `024`: `accounts.admin_note` e `admin_note_at` (nota interna sul cliente). Solo aggiunte.
+
+- **Quadro:** quattro numeri nuovi (ricavo annuo ricorrente, rinnovi entro 30 giorni con l'incasso atteso, abbonamenti che scadono senza rinnovo, anomalie) e un avviso in cima quando c'è un'anomalia grave.
+- **Prospetti** (`/admin/prospetti`): ricavo annuo ricorrente, ricavo a rischio (rinnovo disattivato), rinnovi attesi a 30 e 90 giorni (con sconti inviti e cambi di piano programmati). Gli ultimi 12 mesi in un grafico e in tabella: registrati, nuovi abbonati, incasso da nuovi, da cambi di piano e da rinnovi (letti dalle fatture del webhook), abbonamenti persi. Poi i piani (clienti, strutture, ricavo), la conversione da registrato ad abbonato, «Porta un amico» (invitati, paganti, sconti dati, chi invita di più), i codici sconto usati e il costo stimato delle traduzioni. Esporta in CSV.
+- **Anomalie** (`/admin/anomalie`): sedici controlli, dal più grave. Tra questi: pagamenti senza abbonamento, cambi di piano pagati e non applicati, rinnovi falliti, rinnovi senza notizie da Stripe, webhook silenzioso, guide pubblicate ma offline, paganti senza dati di fatturazione, errori del sito negli ultimi 7 giorni, codici sconto e sconti inviti non allineati su Stripe, promemoria automatici fermi, abbonamenti dello staff in scadenza, pagamenti abbandonati, email non confermate. Ogni voce dice cosa fare; in fondo i controlli andati bene.
+- **Scadenze** (`/admin/scadenze`): chi si rinnova, chi scade e chi è scaduto da poco (30, 60, 90 o 180 giorni). Per ognuno: importo del rinnovo, ultimo avviso mandato (automatico o a mano) e prossimo automatico. «Manda il promemoria» su una riga o sui clienti scelti; il testo si sceglie da solo (rinnovo, scadenza o «la tua guida è offline»). Esporta in CSV.
+- **Promemoria di scadenza automatici** (nuovo tipo `scadenza` nei Richiami): per gli abbonamenti che non si rinnovano da soli (rinnovo disattivato o attivati dallo staff), 30 e 7 giorni prima e il giorno dopo la fine se la guida è offline. Una volta sola ciascuno, con il link «non mandarmene più». Chi l'ha chiesto non riceve nemmeno quelli a mano: l'amministratore lo legge.
+- **Clienti:** filtri per stato e per piano, colonna della scadenza, esportazione CSV.
+- **Scheda cliente:** nota interna, dati di fatturazione (completi o no), avvisi e promemoria (con «Manda il promemoria adesso» e lo storico delle email), «Porta un amico» (amici, sconto, chi l'ha invitato), traduzioni del mese e omaggio.
+- Menu dell'amministrazione riordinato: Quadro, Prospetti, Anomalie, Clienti, Abbonamenti, Scadenze, Guide, Piani, Codici sconto, Inviti, Traduzioni, Testimonianze, Impostazioni, Registro, Diagnostica.
+- **Prove:** 711 in tutto. L'aggiornamento da `f048ec5` passa con la `024`.
+
 ## v2 · FAQ e «Porta un amico» in landing (7 ottobre 2026)
 
 Nessuna migrazione.

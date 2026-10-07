@@ -22,15 +22,16 @@ $conLato = $u && !$soloPassi;
 
 // Le voci, una volta sola: servono alla barra e al cassetto del telefono.
 $generale = $admin
-  ? [['admin', '/admin', 'Quadro', 'grid'], ['clienti', '/admin/clienti', 'Clienti', 'people'], ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'],
-     ['guide', '/admin/guide', 'Guide', 'book'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'], ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star'],
+  ? [['admin', '/admin', 'Quadro', 'grid'], ['prospetti', '/admin/prospetti', 'Prospetti', 'chart'], ['anomalie', '/admin/anomalie', 'Anomalie', 'warning'],
+     ['clienti', '/admin/clienti', 'Clienti', 'people'], ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'], ['scadenze', '/admin/scadenze', 'Scadenze', 'calendar'],
+     ['guide', '/admin/guide', 'Guide', 'book'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'],
      ['sconti', '/admin/sconti', 'Codici sconto', 'euro'],
-     ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe'],
+     ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe'], ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star'],
      ['impostazioni', '/admin/impostazioni', 'Impostazioni', 'key'],
      ['registro', '/admin/registro', 'Registro', 'list'], ['diagnostica', '/admin/diagnostica', 'Diagnostica', 'pulse']]
   : [['guide', '/pannello', 'Le mie guide', 'grid'], ['account', '/account', 'Account & Fatturazione', 'card']];
 // Invita un amico: la voce c'è solo per chi può invitare; in amministrazione, solo se gli inviti sono accesi.
-if ($admin && MHW\Inviti::disponibili()) array_splice($generale, 7, 0, [['inviti', '/admin/inviti', 'Inviti', 'message']]);
+if ($admin && MHW\Inviti::disponibili()) array_splice($generale, 9, 0, [['inviti', '/admin/inviti', 'Inviti', 'message']]);
 if (!$admin && $u && ($accLato = Auth::account()) && MHW\Inviti::puoInvitare($accLato)) $generale[] = ['inviti', '/inviti', 'Invita un amico', 'people'];
 $attiva = $admin ? $nav : ($prop ? '' : ($nav ?: 'guide'));
 $guida = [];
@@ -66,7 +67,7 @@ $voci = function (array $elenco, string $on, string $classe) {
     }
 };
 $navigazione = function () use ($admin, $generale, $attiva, $guida, $quiGuida, $prop, $statoGuida, $voci, $u, $iniziale) { ?>
-    <nav class="lato__nav" aria-label="<?= $admin ? 'Amministrazione' : 'Sezioni dell\'account' ?>">
+    <nav class="lato__nav<?= $admin ? ' lato__nav--fitta' : '' ?>" aria-label="<?= $admin ? 'Amministrazione' : 'Sezioni dell\'account' ?>">
       <span class="lato__gruppo"><?= $admin ? 'Amministrazione' : 'Generale' ?></span>
       <?php $voci($generale, $attiva, 'lato__voce'); ?>
     </nav>

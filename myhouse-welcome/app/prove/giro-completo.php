@@ -2505,6 +2505,59 @@ prova('Inviti accesi: blocco «Porta un amico» dopo i piani, fino al 50%, dieci
       && str_contains($r['body'], 'fino al <span class="amico__cifra">50%</span>') && substr_count($r['body'], 'class="amico__tacca"') === 10
       && str_contains($r['body'], 'Come funziona «Porta un amico»?') && str_contains($r['body'], 'Quando conta un amico, e cosa succede dopo il rinnovo?'));
 
+// Amministrazione: prospetti, anomalie, scadenze con promemoria automatici e a mano, note, filtri, CSV.
+capitolo('Amministrazione · pannello di controllo');
+$r = $admin->get('/admin');
+prova('Quadro: ricavo annuo ricorrente, rinnovi entro 30 giorni, scadenze senza rinnovo e anomalie', $r['code'] === 200 && str_contains($r['body'], 'Ricavo annuo ricorrente')
+      && str_contains($r['body'], 'Rinnovi entro 30 giorni') && str_contains($r['body'], 'Scadono senza rinnovo') && str_contains($r['body'], '/admin/anomalie'));
+$r = $admin->get('/admin/prospetti');
+prova('Prospetti: 12 mesi, piani con ricavo annuo, conversione', $r['code'] === 200 && substr_count($r['body'], 'class="barre__col"') === 12
+      && str_contains($r['body'], 'Dalla registrazione all') && preg_match('#Ricavo annuo ricorrente.*?cifra__valore">([^<]+)<#s', $r['body'], $mm) === 1 && trim($mm[1]) !== '0 €', $mm[1] ?? '');
+$r = $admin->get('/admin/prospetti?formato=csv');
+prova('…esporta i 12 mesi in CSV (punto e virgola, BOM)', str_starts_with($r['body'], "\xEF\xBB\xBFMese;Registrati;") && substr_count($r['body'], "\n") === 13);
+$psub = (int) val("SELECT id FROM subscriptions WHERE provider_subscription_id = 'sub_prova_paola'");
+db()->prepare("UPDATE subscriptions SET status = 'past_due' WHERE id = ?")->execute([$psub]);
+$r = $admin->get('/admin/anomalie');
+prova('Anomalie: un rinnovo non riuscito compare tra le gravi, con il link al cliente', $r['code'] === 200 && preg_match('#Rinnovi non riusciti.*?Subito.*?/admin/cliente/' . $pacc . '"#s', $r['body']) === 1
+      && str_contains($r['body'], 'Controlli andati bene'));
+db()->prepare("UPDATE subscriptions SET status = 'active' WHERE id = ?")->execute([$psub]);
+prova('…sistemato il rinnovo, la voce va tra i controlli andati bene', !preg_match('#<h2 id="anom-\d+"[^>]*>Rinnovi non riusciti#', $admin->get('/admin/anomalie')['body']));
+
+// Scadenze: l'abbonamento dello staff di Dario finisce tra 7 giorni.
+$daAcc = (int) val("SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = 'dario@prova.test'");
+$dsub = (int) val('SELECT MAX(id) FROM subscriptions WHERE account_id = ?', [$daAcc]);
+db()->prepare("UPDATE subscriptions SET current_period_end = ?, status = 'active' WHERE id = ?")->execute([gmdate('Y-m-d\TH:i:s\Z', time() + 7 * 86400 - 3600), $dsub]);
+$r = $admin->get('/admin/scadenze?giorni=30');
+prova('Scadenze: Dario, «Attivato dallo staff», tra 6 giorni, con il bottone del promemoria', preg_match('#dario@prova\.test.*?Attivato dallo staff.*?name="solo" value="' . $dsub . '"#s', $r['body']) === 1);
+$c = $cron();
+$m = $posta('dario@prova.test'); $ult = end($m) ?: [];
+prova('Promemoria automatico 7 giorni prima: «La tua guida va offline il …», una volta sola', ($c['email']['scadenza'] ?? 0) >= 1 && str_contains((string) ($ult['subject'] ?? ''), 'La tua guida va offline il')
+      && (bool) val("SELECT id FROM email_log WHERE account_id = ? AND kind = 'scadenza' AND ref LIKE ?", [$daAcc, '%-7']), json_encode($c));
+$prima = count($posta('dario@prova.test')); $cron();
+prova('…al giro dopo non riparte', count($posta('dario@prova.test')) === $prima);
+$r = $admin->segui($admin->modulo('/admin/scadenze?giorni=30', '/admin/scadenze/promemoria', ['solo' => (string) $dsub, 'torna' => '/admin/scadenze?giorni=30']));
+prova('Promemoria a mano dalla riga: parte subito, segnato «a mano» e nel registro', str_contains($r['body'], 'Promemoria mandato.') && count($posta('dario@prova.test')) === $prima + 1
+      && str_contains($r['body'], 'a mano') && (bool) val("SELECT id FROM audit_log WHERE action = 'reminder.manual'"));
+db()->prepare("INSERT INTO email_optout (account_id, kind, created_at) VALUES (?, 'scadenza', ?)")->execute([$daAcc, gmdate('Y-m-d\TH:i:s\Z')]);
+$r = $admin->segui($admin->modulo("/admin/cliente/$daAcc", '/admin/scadenze/promemoria', ['solo' => (string) $dsub, 'torna' => "/admin/cliente/$daAcc"]));
+prova('…chi ha chiesto di non ricevere avvisi non lo riceve nemmeno a mano, e l\'amministratore lo legge', str_contains($r['body'], 'ha chiesto di non ricevere') && count($posta('dario@prova.test')) === $prima + 1);
+db()->prepare("DELETE FROM email_optout WHERE account_id = ? AND kind = 'scadenza'")->execute([$daAcc]);
+// Due giorni dopo la fine, senza abbonamento nuovo: «La tua guida è offline».
+db()->prepare('UPDATE subscriptions SET current_period_end = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() - 2 * 86400), $dsub]);
+$cron(); $m = $posta('dario@prova.test'); $ult = end($m) ?: [];
+prova('Il giorno dopo la scadenza: «La tua guida è offline», con il link per rinnovare', str_contains((string) ($ult['subject'] ?? ''), 'La tua guida è offline') && str_contains((string) $ult['text'], '/piano'));
+db()->prepare('UPDATE subscriptions SET current_period_end = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() + 300 * 86400), $dsub]);
+
+// Scheda cliente: nota interna, avvisi mandati, fatturazione.
+$admin->modulo("/admin/cliente/$daAcc", "/admin/cliente/$daAcc/nota", ['nota' => 'Ha chiamato il 3: rinnova a gennaio.']);
+$r = $admin->get("/admin/cliente/$daAcc");
+prova('Nota interna salvata e visibile solo in amministrazione', str_contains($r['body'], 'Ha chiamato il 3: rinnova a gennaio.') && str_contains($r['body'], 'Avvisi e promemoria')
+      && str_contains($r['body'], 'automatica') && !str_contains($dario->get('/account')['body'], 'Ha chiamato il 3'));
+$r = $admin->get('/admin/clienti?stato=attivo');
+prova('Clienti: filtro per stato (solo attivi) e colonna della scadenza', $r['code'] === 200 && str_contains($r['body'], 'Scadenza') && !preg_match('#badge--[a-z]+">(Scaduto|In bozza)#', $r['body']));
+$r = $admin->get('/admin/clienti?formato=csv');
+prova('…esporta i clienti in CSV', str_starts_with($r['body'], "\xEF\xBB\xBFNome;Email;") && str_contains($r['body'], 'dario@prova.test'));
+
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

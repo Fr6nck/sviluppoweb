@@ -19,6 +19,29 @@ include __DIR__ . '/_stati.php'; ?>
       <button class="btn btn--ghost btn--sm">Entra come cliente</button></form>
   </div>
 
+  <?php $completa = MHW\Fatturazione::completa($acc); $tipoF = (string) ($acc['billing_type'] ?? ''); ?>
+  <div class="grid grid-2" style="align-items:start">
+    <section class="panel stack nota-interna" id="nota" style="gap:8px" aria-labelledby="nota-titolo">
+      <span class="kicker" id="nota-titolo">Nota interna</span>
+      <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/nota" class="stack" style="gap:8px"><?= Csrf::field() ?>
+        <label for="nota-testo" class="sr-only">Nota interna sul cliente</label>
+        <textarea id="nota-testo" name="nota" maxlength="4000" placeholder="Telefonate, accordi, solleciti. Il cliente non la vede."><?= Support::e((string) ($acc['admin_note'] ?? '')) ?></textarea>
+        <div class="spread spread--mid"><span class="tiny muted"><?= !empty($acc['admin_note_at']) ? 'Aggiornata il ' . Support::e(Support::date($acc['admin_note_at'])) : 'Solo per l\'amministrazione.' ?></span>
+          <button class="btn btn--ghost btn--sm">Salva la nota</button></div>
+      </form>
+    </section>
+    <section class="panel stack" style="gap:6px" aria-labelledby="fatt-titolo">
+      <div class="spread spread--mid"><span class="kicker" id="fatt-titolo">Fatturazione</span>
+        <span class="badge badge--<?= $completa ? 'pine' : 'ochre' ?>"><?= $completa ? 'Completa' : 'Incompleta' ?></span></div>
+      <?php if (($acc['billing_name'] ?? '') === ''): ?><p class="small muted">Dati non ancora inseriti.</p><?php else: ?>
+        <p class="small" style="margin:0"><b><?= Support::e($acc['billing_name']) ?></b><?= $tipoF !== '' ? ' · ' . Support::e(MHW\Fatturazione::TIPI[$tipoF] ?? $tipoF) : '' ?></p>
+        <p class="small" style="margin:0"><?= ($acc['vat'] ?? '') !== '' ? 'P.IVA ' . Support::e($acc['vat']) . ' · ' : '' ?><?= ($acc['cf'] ?? '') !== '' ? 'CF ' . Support::e($acc['cf']) : '' ?></p>
+        <p class="small" style="margin:0"><?= ($acc['sdi'] ?? '') !== '' ? 'SDI ' . Support::e($acc['sdi']) : '' ?><?= ($acc['pec'] ?? '') !== '' ? ' · PEC ' . Support::e($acc['pec']) : '' ?></p>
+        <p class="small muted" style="margin:0"><?= Support::e(trim(($acc['billing_address'] ?? '') . ', ' . ($acc['billing_postal'] ?? '') . ' ' . ($acc['billing_city'] ?? '') . ' ' . ($acc['billing_province'] ?? ''), ' ,')) ?></p>
+      <?php endif; ?>
+    </section>
+  </div>
+
   <div class="grid grid-2" style="align-items:start">
     <section class="panel stack" style="gap:8px">
       <span class="kicker">Consensi</span>
@@ -108,6 +131,59 @@ include __DIR__ . '/_stati.php'; ?>
       </form>
     </details>
   </section>
+
+  <?php /* Avvisi di rinnovo e scadenza: l'ultimo abbonamento, il promemoria a mano, le email mandate. */
+        $ultimo = $subs[0] ?? null;
+        $nomiEmail = ['arrivo' => 'Check-in da compilare', 'sezioni' => 'Sezioni da aggiungere', 'pubblica' => 'Guida da pubblicare', 'rinnovo' => 'Rinnovo in arrivo',
+                      'scadenza' => 'Scadenza', 'eventi' => 'Eventi passati', 'inviti' => 'Inviti']; ?>
+  <section class="stack" style="gap:10px" id="promemoria" aria-labelledby="prom-titolo">
+    <h2 id="prom-titolo" style="font-size:22px">Avvisi e promemoria</h2>
+    <?php if ($ultimo && $ultimo['provider'] !== 'dimostrazione' && $ultimo['current_period_end'] !== ''): ?>
+      <form method="post" action="<?= b() ?>/admin/scadenze/promemoria" class="panel spread spread--mid" style="gap:12px"><?= Csrf::field() ?>
+        <input type="hidden" name="torna" value="/admin/cliente/<?= (int) $acc['id'] ?>">
+        <span class="small"><?= strtotime((string) $ultimo['current_period_end']) > time() ? 'L\'abbonamento ' . ($ultimo['provider'] === 'stripe' && !(int) $ultimo['cancel_at_period_end'] ? 'si rinnova' : 'finisce') . ' il ' : 'L\'abbonamento è finito il ' ?>
+          <b><?= Support::e(Support::date($ultimo['current_period_end'])) ?></b>. Il promemoria sceglie da solo il testo: rinnovo, scadenza o guida offline.</span>
+        <button class="btn btn--ghost btn--sm" name="solo" value="<?= (int) $ultimo['id'] ?>">Manda il promemoria adesso</button>
+      </form>
+    <?php endif; ?>
+    <?php if ($optout): ?><p class="small">Non vuole ricevere: <?= Support::e(implode(', ', array_map(fn($k) => mb_strtolower($nomiEmail[$k] ?? $k), $optout))) ?>.</p><?php endif; ?>
+    <?php if (!$email): ?><p class="small muted">Nessuna email di promemoria finora.</p><?php else: ?>
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th>Data</th><th>Email</th><th>Come</th></tr></thead>
+      <tbody><?php foreach ($email as $m): ?>
+        <tr><td class="small"><?= Support::e(Support::date($m['sent_at'])) ?></td><td><?= Support::e($nomiEmail[$m['kind']] ?? $m['kind']) ?></td>
+          <td class="small muted"><?= str_starts_with((string) $m['ref'], 'manuale-') ? 'a mano' : 'automatica' ?></td></tr>
+      <?php endforeach; ?></tbody></table></div>
+    <?php endif; ?>
+  </section>
+
+  <?php if ($inviti || $traduzioni): ?>
+  <div class="grid grid-2" style="align-items:start">
+    <?php if ($inviti): $iv = $inviti['stato']; ?>
+      <section class="panel stack" style="gap:8px" aria-labelledby="inv-titolo">
+        <span class="kicker" id="inv-titolo">Porta un amico</span>
+        <p class="small" style="margin:0">Amici che hanno pagato: <b><?= (int) $iv['validi'] ?></b> su <?= (int) $iv['massimo'] ?> · in attesa <?= (int) $iv['in_attesa'] ?>
+          · sconto sul prossimo rinnovo <b><?= (int) $iv['percento'] ?>%</b><?= $iv['sconto'] > 0 ? ' (−' . Support::e(Support::money($iv['sconto'], $iv['valuta'])) . ')' : '' ?></p>
+        <?php if ($inviti['invitato']): ?><p class="small" style="margin:0">Invitato da <b><?= Support::e($inviti['invitato']['referrer_name']) ?></b>.</p><?php endif; ?>
+        <?php if ($inviti['amici']): ?>
+          <ul class="stack small" style="gap:4px;margin:0;padding-left:18px">
+            <?php foreach (array_slice($inviti['amici'], 0, 10) as $f): ?><li><?= Support::e($f['name']) ?> · <?= Support::e(['registrato' => 'in attesa', 'valido' => 'ha pagato', 'usato' => 'sconto già usato', 'oltre' => 'oltre il tetto'][$f['status']] ?? $f['status']) ?></li><?php endforeach; ?>
+          </ul>
+        <?php endif; ?>
+        <a class="small" href="<?= b() ?>/admin/inviti">Tutti gli inviti</a>
+      </section>
+    <?php endif; ?>
+    <?php if ($traduzioni): ?>
+      <section class="panel stack" style="gap:8px" aria-labelledby="tr-titolo">
+        <span class="kicker" id="tr-titolo">Traduzioni suggerite</span>
+        <p class="small" style="margin:0">Questo mese: <b><?= number_format((int) $traduzioni['mese'], 0, ',', '.') ?></b> caratteri,
+          circa <?= number_format(MHW\Traduttore::inEuro(MHW\Traduttore::costoUsd((int) $traduzioni['mese'], false)), 2, ',', '.') ?> € senza piano gratuito AWS.</p>
+        <p class="small" style="margin:0">Omaggio: <?= $traduzioni['omaggio'] ? 'fino al ' . Support::e(Support::date($traduzioni['omaggio'])) : 'non ancora cominciato' ?>.
+          <a href="<?= b() ?>/admin/traduzioni#omaggi">Allungalo</a></p>
+      </section>
+    <?php endif; ?>
+  </div>
+  <?php endif; ?>
 
   <section class="stack" style="gap:10px">
     <h2 style="font-size:22px">Cosa può fare</h2>

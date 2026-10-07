@@ -23,7 +23,8 @@ final class Richiami
 {
     public const TIPI = ['arrivo' => 'il promemoria sul check-in', 'sezioni' => 'il promemoria sulle sezioni',
                          'pubblica' => 'il promemoria sulla pubblicazione', 'rinnovo' => 'l\'avviso prima del rinnovo',
-                         'eventi' => 'il promemoria sugli eventi passati', 'inviti' => 'il promemoria sugli inviti'];   // con l'articolo: «Non vuoi più ricevere …?»
+                         'eventi' => 'il promemoria sugli eventi passati', 'inviti' => 'il promemoria sugli inviti',
+                         'scadenza' => 'l\'avviso prima della scadenza'];   // con l'articolo: «Non vuoi più ricevere …?»
     private const OGNI = 900;   // secondi tra un controllo e l'altro
 
     public static function disponibili(): bool { return Migrator::tableExists('email_log'); }
@@ -77,6 +78,27 @@ final class Richiami
                          [$iso($t + 29 * $giorno), $iso($t + 31 * $giorno), '%@' . Demo::DOMINIO]) as $s) {
             $ref = $s['id'] . '-' . substr((string) $s['current_period_end'], 0, 10);
             if (self::manda((int) $s['account_id'], $s['email'], (string) $s['user_name'], 'rinnovo', $ref, self::testoRinnovo($s))) $fatte['rinnovo']++;
+        }
+
+        // Scadenza: gli abbonamenti che non si rinnovano da soli (rinnovo disattivato, o attivati dallo
+        // staff) avvisano 30 e 7 giorni prima; il giorno dopo la fine, se non è arrivato un abbonamento
+        // nuovo, un'ultima email dice che la guida è offline. Gli abbonamenti di esempio non scrivono.
+        $nonRinnova = "(s.provider <> 'stripe' OR s.cancel_at_period_end = 1 OR s.status = 'canceled') AND s.provider <> 'dimostrazione'";
+        foreach ([30, 7] as $prima) {
+            foreach (Db::all("SELECT s.*, u.email, u.name AS user_name FROM subscriptions s JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id
+                              WHERE s.status IN ('active', 'trialing') AND $nonRinnova AND s.current_period_end > ? AND s.current_period_end <= ? AND u.email NOT LIKE ?",
+                             [$iso($t + ($prima - 1) * $giorno), $iso($t + ($prima + 1) * $giorno), '%@' . Demo::DOMINIO]) as $s) {
+                if (self::continua($s)) continue;
+                $ref = $s['id'] . '-' . substr((string) $s['current_period_end'], 0, 10) . '-' . $prima;
+                if (self::manda((int) $s['account_id'], $s['email'], (string) $s['user_name'], 'scadenza', $ref, self::testoScadenza($s, false))) $fatte['scadenza']++;
+            }
+        }
+        foreach (Db::all("SELECT s.*, u.email, u.name AS user_name FROM subscriptions s JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id
+                          WHERE $nonRinnova AND s.current_period_end <= ? AND s.current_period_end > ? AND u.email NOT LIKE ?",
+                         [$iso($t - $giorno), $iso($t - 4 * $giorno), '%@' . Demo::DOMINIO]) as $s) {
+            if (self::continua($s) || Subscriptions::active((int) $s['account_id'])) continue;
+            $ref = $s['id'] . '-' . substr((string) $s['current_period_end'], 0, 10) . '-offline';
+            if (self::manda((int) $s['account_id'], $s['email'], (string) $s['user_name'], 'scadenza', $ref, self::testoScadenza($s, true))) $fatte['scadenza']++;
         }
 
         // Eventi passati (6G): nella guida non si vedono più; un clic li ripete l'anno dopo.
@@ -155,6 +177,55 @@ final class Richiami
         return ["Il tuo abbonamento si rinnova il $quando",
                 "il tuo abbonamento MyHouse Welcome si rinnova da solo il $quando. $numeri Se vuoi cambiare qualcosa, o disattivare il rinnovo, lo fai dal tuo account.",
                 'Vai al tuo account', Support::baseUrl() . '/account'];
+    }
+
+    /** Dopo questo abbonamento ne è già arrivato un altro, che va oltre: niente avviso di scadenza. */
+    private static function continua(array $s): bool
+    {
+        return (bool) Db::val('SELECT id FROM subscriptions WHERE account_id = ? AND id > ? AND current_period_end > ?',
+                              [$s['account_id'], $s['id'], $s['current_period_end']]);
+    }
+
+    /** L'avviso prima della scadenza (o, a scadenza passata, che la guida è offline). */
+    private static function testoScadenza(array $s, bool $finito): array
+    {
+        $quando = Support::date((string) $s['current_period_end']);
+        $piano = (Plans::version((int) $s['package_version_id']) ?? [])['name'] ?? '';
+        $abb = 'il tuo abbonamento MyHouse Welcome' . ($piano !== '' ? ' ' . $piano : '');
+        if ($finito) {
+            return ['La tua guida è offline',
+                    "$abb è finito il $quando: la guida non si apre più, nemmeno dal QR. Testi, foto e QR sono salvati: appena rinnovi, la guida torna online con lo stesso QR, senza ristampare niente.",
+                    'Rinnova e torna online', Support::baseUrl() . '/piano'];
+        }
+        $stripe = $s['provider'] === 'stripe';
+        $contatto = (string) ((Config::get('legal') ?? [])['contact_email'] ?? '');
+        return ["La tua guida va offline il $quando",
+                "$abb finisce il $quando e non si rinnova da solo. Da quel giorno la guida non si apre più, nemmeno dal QR stampato. Niente si cancella. "
+                . ($stripe ? 'Per restare online riattiva il rinnovo automatico dal tuo account: bastano due clic.'
+                           : 'Per restare online scrivici' . ($contatto !== '' ? " a $contatto" : '') . ': ti diciamo come rinnovare.'),
+                $stripe ? 'Riattiva il rinnovo' : 'Vai al tuo account', Support::baseUrl() . '/account'];
+    }
+
+    /**
+     * Il promemoria mandato a mano dall'amministrazione: l'avviso di rinnovo se l'abbonamento si
+     * rinnova da solo, altrimenti quello di scadenza (o «sei offline», se è già finito).
+     * @return array{0:bool,1:string} [partito, messaggio per l'amministratore]
+     */
+    public static function promemoriaManuale(int $subId): array
+    {
+        if (!self::disponibili()) return [false, 'Manca la tabella dei promemoria: apri il sito una volta per aggiornare il database.'];
+        $s = Db::one('SELECT s.*, u.email, u.name AS user_name FROM subscriptions s JOIN accounts a ON a.id = s.account_id
+                      JOIN users u ON u.id = a.user_id WHERE s.id = ?', [$subId]);
+        if (!$s) return [false, 'Abbonamento non trovato.'];
+        $finito = (string) $s['current_period_end'] !== '' && strtotime((string) $s['current_period_end']) <= time();
+        $automatico = !$finito && $s['provider'] === 'stripe' && (int) $s['cancel_at_period_end'] === 0 && in_array($s['status'], ['active', 'trialing'], true);
+        $tipo = $automatico ? 'rinnovo' : 'scadenza';
+        if (Db::one('SELECT id FROM email_optout WHERE account_id = ? AND kind = ?', [$s['account_id'], $tipo])) {
+            return [false, $s['email'] . ' ha chiesto di non ricevere ' . self::TIPI[$tipo] . ': se serve, scrivigli tu.'];
+        }
+        $ok = self::manda((int) $s['account_id'], (string) $s['email'], (string) $s['user_name'], $tipo,
+                          'manuale-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(3)), $automatico ? self::testoRinnovo($s) : self::testoScadenza($s, $finito));
+        return [$ok, $ok ? 'Promemoria mandato a ' . $s['email'] . '.' : 'L\'email a ' . $s['email'] . ' non è partita: controlla la posta in Impostazioni.'];
     }
 
     /** Manda una volta sola: prima si scrive il registro (indice unico), poi l'email. */

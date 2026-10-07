@@ -1,7 +1,7 @@
 <?php
 /** Rotte di amministrazione. $r è il Router creato in public/index.php. */
 
-use MHW\{Auth, Billing, Config, Db, Demo, Entitlements, Impostazioni, Log, Media, Plans, RateLimit, Stats, Storages, Stripe, Subscriptions, Support, Traduttore, View};
+use MHW\{Auth, Billing, Config, Db, Demo, Entitlements, Gestione, Impostazioni, Inviti, Log, Media, Plans, RateLimit, Richiami, Stats, Storages, Stripe, Subscriptions, Support, Traduttore, View};
 
 /**
  * Il quadro: quanti clienti, quanto hanno pagato davvero, quanto viene letto
@@ -39,6 +39,13 @@ $r->get('/admin', function () {
     $usati = Traduttore::usati(); $tetto = Traduttore::tetti()['sito'];
     if ($tetto > 0 && $usati > $tetto * 0.8) $avvisi[] = ['Traduzioni suggerite oltre l\'80% del tetto del mese', 'Usati ' . number_format($usati, 0, ',', '.') . ' caratteri su ' . number_format($tetto, 0, ',', '.') . ': al tetto le richieste si fermano fino al primo del mese.', '/admin/traduzioni'];
     if (Demo::presente()) $avvisi[] = ['Ci sono ancora i clienti di esempio', 'Sono account veri con una password nota. Toglili prima di aprire al pubblico.'];
+    $anomalie = Gestione::contaAnomalie();
+    if ($anomalie['alta'] > 0) $avvisi[] = ['Ci sono anomalie da guardare subito', $anomalie['alta'] . ($anomalie['alta'] === 1 ? ' controllo segnala' : ' controlli segnalano') . ' pagamenti o rinnovi che non tornano.', '/admin/anomalie', 'Guarda le anomalie'];
+    $adesso = Gestione::adesso();
+    $numeri['arr'] = $adesso['arr'];
+    $numeri['rinnovi30'] = $adesso['rinnovi']['30'];
+    $numeri['scadono30'] = count(array_filter(Gestione::scadenze(30), fn($x) => !$x['automatico'] && !$x['finito']));
+    $numeri['anomalie'] = $anomalie;
 
     View::out('admin/dashboard', ['numeri' => $numeri, 'piani' => $piani, 'ordini' => $ordini, 'avvisi' => $avvisi, 'funnel' => Stats::funnel(30),
                                   'esempi' => Demo::presente(), 'nav' => 'admin'], 'layout/cms');
@@ -69,16 +76,28 @@ $r->get('/admin/clienti', function () {
         $row['strutture'] = count($props);
         $pubbl = count(array_filter($props, fn($p) => $p['status'] === 'published'));
         $row['stato'] = match (true) {
-            (bool) $sub && $sub['status'] === 'past_due' => ['Pagamento non riuscito', 'alert'],
-            (bool) $sub && $pubbl > 0 => ['Attivo', 'pine'],
-            (bool) $sub => ['Pagato, non pubblicato', 'ochre'],
-            !$props => ['Nessuna struttura', 'ochre'],
-            $pubbl > 0 => ['Scaduto (offline)', 'alert'],
-            default => ['In bozza, senza piano pagato', 'ochre'],
+            (bool) $sub && $sub['status'] === 'past_due' => ['Pagamento non riuscito', 'alert', 'fallito'],
+            (bool) $sub && $pubbl > 0 => ['Attivo', 'pine', 'attivo'],
+            (bool) $sub => ['Pagato, non pubblicato', 'ochre', 'pagato'],
+            !$props => ['Nessuna struttura', 'ochre', 'vuoto'],
+            $pubbl > 0 => ['Scaduto (offline)', 'alert', 'scaduto'],
+            default => ['In bozza, senza piano pagato', 'ochre', 'bozza'],
         };
+        $row['scadenza'] = $sub['current_period_end'] ?? '';
+        $row['rinnovo'] = $sub ? ($sub['provider'] !== 'stripe' ? 'staff' : ((int) $sub['cancel_at_period_end'] ? 'disattivato' : 'automatico')) : '';
     }
     unset($row);
-    View::out('admin/customers', ['rows' => $rows, 'cerca' => $cerca, 'esempi' => Demo::presente(), 'nav' => 'clienti'], 'layout/cms');
+    // Filtri: stato e piano. Si applicano dopo il calcolo, perché lo stato non è una colonna.
+    $filtroStato = (string) ($_GET['stato'] ?? ''); $filtroPiano = (string) ($_GET['piano'] ?? '');
+    $piani = array_values(array_unique(array_filter(array_column($rows, 'plan'), fn($p) => $p !== '—')));
+    $rows = array_values(array_filter($rows, fn($x) => ($filtroStato === '' || $x['stato'][2] === $filtroStato) && ($filtroPiano === '' || $x['plan'] === $filtroPiano)));
+    if (($_GET['formato'] ?? '') === 'csv') {
+        Gestione::csv('clienti', ['Nome', 'Email', 'Email confermata', 'Struttura', 'Città', 'Strutture', 'Piano', 'Stato', 'Scadenza', 'Rinnovo', 'Registrato'],
+            array_map(fn($x) => [$x['name'], $x['email'], $x['email_verified_at'] ? 'sì' : 'no', $x['struttura'], $x['citta'], $x['strutture'], $x['plan'],
+                                 $x['stato'][0], $x['scadenza'] ? substr($x['scadenza'], 0, 10) : '', $x['rinnovo'], substr((string) $x['created_at'], 0, 10)], $rows));
+    }
+    View::out('admin/customers', ['rows' => $rows, 'cerca' => $cerca, 'filtroStato' => $filtroStato, 'filtroPiano' => $filtroPiano, 'piani' => $piani,
+                                  'esempi' => Demo::presente(), 'nav' => 'clienti'], 'layout/cms');
 });
 
 $r->post('/admin/entra/{uid}', function (array $a) {
@@ -116,8 +135,25 @@ $r->get('/admin/cliente/{aid}', function (array $a) {
         'versioni' => Db::all('SELECT pv.id, pv.version, pk.name FROM package_versions pv JOIN packages pk ON pk.id = pv.package_id
                                WHERE pv.is_current = 1 ORDER BY pk.sort'),
         'audit' => Db::all('SELECT * FROM audit_log WHERE target_user_id = ? ORDER BY id DESC LIMIT 50', [$acc['user_id']]),
+        'email' => Richiami::disponibili() ? Db::all('SELECT kind, ref, sent_at FROM email_log WHERE account_id = ? ORDER BY sent_at DESC, id DESC LIMIT 20', [$acc['id']]) : [],
+        'optout' => Richiami::disponibili() ? array_column(Db::all('SELECT kind FROM email_optout WHERE account_id = ?', [$acc['id']]), 'kind') : [],
+        'inviti' => Inviti::disponibili() ? ['stato' => Inviti::stato($acc), 'amici' => Inviti::amici((int) $acc['id']), 'invitato' => Inviti::invitato((int) $acc['id'])] : null,
+        'traduzioni' => \MHW\Migrator::tableExists('translation_usage') ? ['mese' => Traduttore::usati((int) $acc['id']), 'omaggio' => Traduttore::omaggioFino((int) $acc['id'])] : null,
         'nav' => 'clienti',
     ], 'layout/cms');
+});
+
+/** La nota interna sul cliente: solo per l'amministrazione, mai mostrata al cliente. */
+$r->post('/admin/cliente/{aid}/nota', function (array $a) {
+    Auth::requireAdmin();
+    $accId = (int) $a['aid'];
+    $uid = (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$accId]);
+    if (!$uid) { http_response_code(404); View::out('pub/404', []); }
+    $nota = mb_substr(trim((string) ($_POST['nota'] ?? '')), 0, 4000);
+    Db::update('accounts', ['admin_note' => $nota, 'admin_note_at' => Support::now()], 'id = :aid', ['aid' => $accId]);
+    Auth::audit('account.note', $uid, ['chars' => mb_strlen($nota)]);
+    Support::flash($nota === '' ? 'Nota tolta.' : 'Nota salvata.');
+    Support::redirect('/admin/cliente/' . $accId . '#nota');
 });
 
 $r->post('/admin/cliente/{aid}/override', function (array $a) {
@@ -385,6 +421,61 @@ $r->post('/admin/traduzioni/omaggio', function () {
     Auth::audit('translation.trial', (int) $admin['id'], ['account' => $acc, 'fino' => $fino]);
     Support::flash('Omaggio delle traduzioni suggerite fino al ' . Support::date($fino . 'T12:00:00Z') . '.');
     Support::redirect('/admin/traduzioni#omaggi');
+});
+
+// ---------------------------------------------------------------- scadenze
+/* Chi scade o si rinnova a breve, con l'ultimo avviso mandato e il prossimo automatico.
+   «Manda il promemoria» parte subito, anche per più clienti insieme. */
+$r->get('/admin/scadenze', function () {
+    Auth::requireAdmin();
+    $giorni = in_array((int) ($_GET['giorni'] ?? 60), [30, 60, 90, 180], true) ? (int) ($_GET['giorni'] ?? 60) : 60;
+    $righe = Gestione::scadenze($giorni);
+    if (($_GET['formato'] ?? '') === 'csv') {
+        Gestione::csv('scadenze', ['Cliente', 'Email', 'Piano', 'Strutture', 'Scadenza', 'Giorni', 'Stato', 'Rinnovo (IVA esclusa)', 'Sconto inviti %', 'Ultimo avviso', 'Avviso a mano'],
+            array_map(fn($x) => [$x['cliente'], $x['email'], $x['piano'], (int) ($x['quantity'] ?? 1), substr((string) $x['current_period_end'], 0, 10), $x['giorni'], $x['stato'][0],
+                                 number_format($x['importo'] / 100, 2, ',', ''), $x['sconto'], $x['avviso'] ? substr((string) $x['avviso']['sent_at'], 0, 10) : '',
+                                 $x['avviso'] && $x['avviso']['manuale'] ? 'sì' : ''], $righe));
+    }
+    $lock = MHW_APP . '/storage/richiami.lock';
+    View::out('admin/scadenze', ['righe' => $righe, 'giorni' => $giorni, 'giro' => is_file($lock) ? gmdate('Y-m-d\TH:i:s\Z', (int) filemtime($lock)) : '',
+                                 'cron' => (string) (Config::get('cron_token') ?? '') !== '', 'nav' => 'scadenze'], 'layout/cms');
+});
+
+$r->post('/admin/scadenze/promemoria', function () {
+    Auth::requireAdmin();
+    // «Manda il promemoria» su una riga manda solo quella; il bottone in fondo, le righe scelte.
+    $ids = isset($_POST['solo']) ? [(int) $_POST['solo']] : array_values(array_unique(array_map('intval', (array) ($_POST['sub'] ?? []))));
+    $torna = preg_match('#^/admin/(scadenze(\?giorni=\d+)?|cliente/\d+)$#', (string) ($_POST['torna'] ?? '')) ? (string) $_POST['torna'] : '/admin/scadenze';
+    if (!$ids) { Support::flash('Scegli almeno un cliente.', 'err'); Support::redirect($torna); }
+    $ok = 0; $no = [];
+    foreach (array_slice($ids, 0, 100) as $id) {
+        [$partito, $msg] = Richiami::promemoriaManuale($id);
+        if ($partito) $ok++; else $no[] = $msg;
+        Auth::audit('reminder.manual', (int) Db::val('SELECT a.user_id FROM subscriptions s JOIN accounts a ON a.id = s.account_id WHERE s.id = ?', [$id], 0) ?: null,
+                    ['subscription' => $id, 'sent' => $partito]);
+    }
+    if (!$no) Support::flash($ok === 1 ? 'Promemoria mandato.' : "Promemoria mandati: $ok.");
+    else Support::flash(($ok ? "Promemoria mandati: $ok. " : '') . 'Non partiti: ' . count($no) . '. ' . implode(' ', array_slice($no, 0, 5)), 'err');
+    Support::redirect($torna);
+});
+
+// ---------------------------------------------------------------- anomalie
+$r->get('/admin/anomalie', function () {
+    Auth::requireAdmin();
+    View::out('admin/anomalie', Gestione::anomalie() + ['nav' => 'anomalie'], 'layout/cms');
+});
+
+// --------------------------------------------------------------- prospetti
+$r->get('/admin/prospetti', function () {
+    Auth::requireAdmin();
+    $mesi = Gestione::mesi();
+    if (($_GET['formato'] ?? '') === 'csv') {
+        $eur = fn(int $c) => number_format($c / 100, 2, ',', '');
+        Gestione::csv('prospetti', ['Mese', 'Registrati', 'Nuovi abbonati', 'Incasso nuovi', 'Incasso cambi di piano', 'Rinnovi', 'Incasso rinnovi', 'Incasso totale', 'Persi'],
+            array_map(fn($m) => [$m['mese'], $m['registrati'], $m['nuovi'], $eur($m['incasso_nuovi']), $eur($m['incasso_cambi']), $m['rinnovi'], $eur($m['incasso_rinnovi']),
+                                 $eur($m['incasso']), $m['persi']], $mesi));
+    }
+    View::out('admin/prospetti', ['mesi' => $mesi, 'adesso' => Gestione::adesso(), 'nav' => 'prospetti'], 'layout/cms');
 });
 
 // --------------------------------------------------------------- diagnostica
