@@ -1,5 +1,16 @@
 # Changelog — MyHouse Welcome
 
+## v2 · FAQ e «Porta un amico» in landing (7 ottobre 2026)
+
+Nessuna migrazione.
+
+- **FAQ nuove:** «Posso cambiare piano dopo?» (salire: differenza fino al rinnovo; scendere: dal rinnovo, oggi niente) e «Se scendo di piano perdo qualcosa?» (niente si cancella, scegli cosa tenere, annullabile). «Ricevo fattura?» ora distingue azienda e persona fisica.
+- **Landing: «Porta un amico».** Dopo i piani, un riquadro ocra: «Più amici porti, meno paghi. Il prossimo anno fino al 50% in meno.», tre passi e una barra di dieci tacche (una per amico, 5% ciascuna). Chi è già dentro va a «Invita un amico», gli altri a creare la guida.
+  - Due FAQ: «Come funziona «Porta un amico»?» e «Quando conta un amico, e cosa succede dopo il rinnovo?» (amico che paga, dati di fatturazione diversi, conteggio che riparte dopo il rinnovo, tetto, niente rimborsi).
+  - Le percentuali vengono da `Inviti` (5%, 5% per amico, tetto 50%): nessun numero scritto nella pagina.
+  - **Compare solo con gli inviti accesi** (`MHW_INVITI=1`): da spenti la landing non promette uno sconto che non c'è.
+- **Prove:** 697 in tutto.
+
 ## v2 · Cambio di piano e fatturazione per tipo (7 ottobre 2026)
 
 Migrazione `023`: colonne `subscriptions.next_package_version_id`, `next_quantity`, `next_choices`, `next_requested_at` e `orders.kind` (predefinito `new`), `from_package_version_id`, `from_quantity`, `applied_at`. Solo aggiunte, SQLite e MySQL.

@@ -2493,6 +2493,18 @@ $paola->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato'
 $fp = riga('SELECT vat, sdi, pec FROM accounts WHERE id = ?', [$pacc]);
 prova('…una persona fisica non salva partita IVA, SDI e PEC', $fp['vat'] === '' && $fp['sdi'] === '' && $fp['pec'] === '');
 
+// Landing: le FAQ del cambio di piano sempre; «Porta un amico» (blocco e FAQ) solo con gli inviti accesi.
+$r = $ospite->get('/');
+prova('FAQ: «Posso cambiare piano dopo?» e «Se scendo di piano perdo qualcosa?»; inviti spenti, niente «Porta un amico»', str_contains($r['body'], 'Posso cambiare piano dopo?')
+      && str_contains($r['body'], 'Se scendo di piano perdo qualcosa?') && !str_contains($r['body'], 'id="amico"') && !str_contains($r['body'], 'Porta un amico'));
+$fileLocale = "$DOVE/app/config.local.php";
+file_put_contents($fileLocale, '<?php return ' . var_export(['inviti' => ['attivi' => true]], true) . ';');
+$r = $ospite->get('/');
+@unlink($fileLocale);
+prova('Inviti accesi: blocco «Porta un amico» dopo i piani, fino al 50%, dieci tacche e due FAQ', preg_match('#id="piani".*id="amico".*class="chiusura"#s', $r['body']) === 1
+      && str_contains($r['body'], 'fino al <span class="amico__cifra">50%</span>') && substr_count($r['body'], 'class="amico__tacca"') === 10
+      && str_contains($r['body'], 'Come funziona «Porta un amico»?') && str_contains($r['body'], 'Quando conta un amico, e cosa succede dopo il rinnovo?'));
+
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

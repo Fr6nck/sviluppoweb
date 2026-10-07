@@ -417,6 +417,7 @@ $disegni = [
 <?php endif; ?>
 
 <?php $legale = MHW\Config::get('legal');
+$inviti = MHW\Inviti::disponibili(); /* «Porta un amico» compare (qui e nelle FAQ) solo se è acceso */
 $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? '')); ?>
 <section id="domande" class="blocco faq" aria-labelledby="faq-titolo">
   <div class="faq__testa">
@@ -431,7 +432,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <?php endif; ?>
   </div>
   <div class="faq__lista">
-    <?php foreach ([
+    <?php foreach (array_merge([
         ['Posso provarla prima di pagare?', 'Sì. Crei l\'account senza carta di credito, prepari la guida e la guardi in anteprima sul telefono, come la vedranno gli ospiti. Paghi solo quando decidi di pubblicarla.'],
         ['Serve un\'app?', 'No. La guida si apre nel browser del telefono, da un link o dal QR Code. Gli ospiti non scaricano niente, e nemmeno tu: il pannello funziona dal computer e dal telefono.'],
         ['Quanto ci vuole per prepararla?', 'Per cominciare bastano il nome della struttura e la città. Check-in e Wi-Fi si compilano in pochi minuti; il resto lo aggiungi quando vuoi, una sezione alla volta. Si salva mentre scrivi.'],
@@ -441,11 +442,17 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
         ['Posso cambiare i testi dopo aver stampato il QR?', 'Sì, quando vuoi. Il QR Code è permanente: modifichi la guida, pubblichi la nuova versione e chi inquadra il QR stampato vede già quella.'],
         ['Ho più di una struttura: come funziona?', 'Con Portfolio le gestisci tutte dallo stesso account: ognuna ha la sua guida, il suo QR Code e le sue statistiche. Le sezioni che valgono per tutte, come i ristoranti o le regole, le scrivi una volta e le copi nelle altre.'],
         ['Posso scrivere nella guida il codice della porta?', 'Meglio di no. La guida si apre da un link, senza password: chi ha il link la legge. Nella guida spieghi come si entra; i codici di porte e cassette delle chiavi mandali all\'ospite in privato, poco prima dell\'arrivo.'],
-        ['Ricevo fattura?', 'Sì. Prima del primo pagamento inserisci una volta i dati di fatturazione (partita IVA o codice fiscale, codice destinatario SDI o PEC). Le fatture le trovi in Account & Fatturazione.'],
+        ['Ricevo fattura?', 'Sì. Prima del primo pagamento inserisci una volta i dati di fatturazione: per un\'azienda o un professionista partita IVA e codice destinatario SDI o PEC, per una persona fisica basta il codice fiscale. Le fatture le trovi in Account & Fatturazione.'],
+        ['Posso cambiare piano dopo?', 'Sì, quando vuoi, da Account & Fatturazione → «Cambia piano». Se sali (da Essential a Plus, da Plus a Portfolio, o aggiungi strutture al Portfolio) paghi oggi solo la differenza per i giorni che restano fino al rinnovo, e il nuovo piano vale appena il pagamento è confermato. La data di rinnovo non cambia. Se scendi, oggi non paghi niente: il cambio parte dal rinnovo e fino ad allora resti sul piano che hai già pagato.'],
+        ['Se scendo di piano perdo qualcosa?', 'Niente si cancella. Prima di confermare scegli quali sezioni tenere e, con Portfolio, quali strutture archiviare, e vedi l\'elenco di cosa la guida non mostrerà più (per esempio le lingue oltre italiano e inglese). Quello che il piano nuovo non comprende resta salvato e torna appena risali. Puoi annullare il cambio fino al giorno prima del rinnovo.'],
+    ], $inviti ? [
+        ['Come funziona «Porta un amico»?', 'Quando la tua guida è pubblicata, in «Invita un amico» trovi il tuo link personale. Chi si registra da quel link ha il ' . MHW\Inviti::AMICO . '% di sconto sul suo primo anno. Per ogni amico che paga il suo abbonamento, il tuo prossimo rinnovo costa il ' . MHW\Inviti::PASSO . '% in meno: con ' . MHW\Inviti::amiciMassimi() . ' amici arrivi al ' . MHW\Inviti::MASSIMO . '%. Lo sconto si applica da solo alla fattura del rinnovo, senza codici da inserire.'],
+        ['Quando conta un amico, e cosa succede dopo il rinnovo?', 'Un amico conta quando paga il suo primo abbonamento, con dati di fatturazione diversi dai tuoi (un\'altra partita IVA o un altro codice fiscale). Finché si è solo registrato, resta «in attesa». Lo sconto vale sul rinnovo successivo: dopo, il conteggio riparte da zero e gli amici nuovi valgono per l\'anno dopo. Oltre i ' . MHW\Inviti::amiciMassimi() . ' amici lo sconto non cresce. Se disattivi il rinnovo automatico, lo sconto non si usa: non diventa un rimborso.'],
+    ] : [], [
         ['Posso disdire?', 'Sì. Disattivi il rinnovo automatico da Account & Fatturazione quando vuoi: la guida resta online fino alla fine del periodo già pagato, poi va offline. Nessun vincolo.'],
         ['Cosa succede se non rinnovo?', 'Alla fine del periodo pagato la guida va offline da sola. Niente si cancella: testi, foto e QR restano salvati, e il QR stampato torna a funzionare appena rinnovi.'],
         ['Gli ospiti vengono tracciati?', 'No. La guida non usa cookie e non compare nei motori di ricerca. Le statistiche di lettura contano solo aperture anonime: nessun indirizzo IP, nessun profilo.'],
-    ] as $i => [$d, $r]): ?>
+    ]) as $i => [$d, $r]): ?>
       <details class="faq__voce"<?= $i === 0 ? ' open' : '' ?>>
         <summary><?= Support::e($d) ?><?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
         <p><?= Support::e($r) ?></p>
@@ -507,6 +514,33 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
   <p class="piani__nota">Abbonamento annuale con rinnovo automatico. Puoi disattivare il rinnovo dal tuo account quando vuoi: la guida
     resta online fino alla fine del periodo già pagato.</p>
 </section>
+
+<?php if ($inviti): /* Porta un amico: le percentuali arrivano da Inviti, nessun numero scritto qui.
+   Sta dopo i piani: chi ha appena scelto vede subito come pagare meno l'anno dopo. */
+      $passi = MHW\Inviti::amiciMassimi(); ?>
+<section id="amico" class="blocco amico" aria-labelledby="amico-titolo">
+  <div class="amico__testo">
+    <span class="kicker">Porta un amico</span>
+    <h2 id="amico-titolo" class="h-sezione">Più amici porti, meno paghi.<br>Il prossimo anno fino al <span class="amico__cifra"><?= MHW\Inviti::MASSIMO ?>%</span> in meno.</h2>
+    <p class="amico__lead">Conosci altri host, B&amp;B o case vacanza? Mandagli il tuo link: loro hanno il <?= MHW\Inviti::AMICO ?>% di sconto sul primo anno, tu il <?= MHW\Inviti::PASSO ?>% in meno sul rinnovo per ogni amico che si abbona.</p>
+    <div class="row">
+      <a class="btn" href="<?= b() . ($dentro ? '/inviti' : '/registrati') ?>"><?= $dentro ? 'Invita un amico' : 'Crea gratis la tua guida' ?></a>
+      <a class="btn btn--ghost" href="#domande">Come funziona</a>
+    </div>
+  </div>
+  <div class="amico__conto">
+    <ol class="amico__passi">
+      <li><b>Pubblichi la tua guida.</b>In «Invita un amico» trovi il tuo link personale.</li>
+      <li><b>L'amico si registra dal link.</b>Ha il <?= MHW\Inviti::AMICO ?>% di sconto sul primo anno, da solo.</li>
+      <li><b>Quando paga, tu risparmi.</b>Il tuo rinnovo costa il <?= MHW\Inviti::PASSO ?>% in meno per ogni amico, fino al <?= MHW\Inviti::MASSIMO ?>%.</li>
+    </ol>
+    <div class="amico__barra" role="img" aria-label="<?= $passi ?> amici: <?= MHW\Inviti::MASSIMO ?>% di sconto sul rinnovo">
+      <?php for ($n = 1; $n <= $passi; $n++): ?><span class="amico__tacca" style="opacity:<?= round(.3 + .7 * $n / $passi, 2) ?>"></span><?php endfor; ?>
+    </div>
+    <div class="amico__scala" aria-hidden="true"><span>1 amico · −<?= MHW\Inviti::PASSO ?>%</span><span><?= $passi ?> amici · −<?= MHW\Inviti::MASSIMO ?>%</span></div>
+  </div>
+</section>
+<?php endif; ?>
 
 <section class="chiusura" aria-labelledby="chiusura-titolo">
   <div class="chiusura__testo">
