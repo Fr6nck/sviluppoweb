@@ -81,7 +81,7 @@ $n = count($sezioni); ?>
     <div class="limit" role="status">
       <p style="max-width:620px">Hai già <?= (int) $limite ?> sezioni attive, il massimo del tuo piano. Passa a Plus per averne quante vuoi,
         oppure disattivane una per liberare un posto.</p>
-      <a class="btn btn--sm" href="<?= b() ?>/piano">Scopri Plus</a>
+      <a class="btn btn--sm" href="<?= b() ?>/piano?passa=plus">Scopri Plus</a>
     </div>
   <?php endif; ?>
   <div class="kinds">

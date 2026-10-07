@@ -11,7 +11,7 @@ $title = 'Statistiche — ' . $prop['name']; ?>
   </div>
 <?php if (!$stats): ?>
   <div class="limit"><p style="max-width:560px">Le statistiche di lettura sono disponibili con il piano Plus: quante volte si apre la guida,
-    quante dal QR, quali sezioni si leggono di più e in quali lingue.</p><a class="btn btn--sm" href="<?= b() ?>/piano">Scopri Plus</a></div>
+    quante dal QR, quali sezioni si leggono di più e in quali lingue.</p><a class="btn btn--sm" href="<?= b() ?>/piano?passa=plus">Scopri Plus</a></div>
 <?php else: $max = max(1, ...array_values($stats['series'])); ?>
   <?php $v = (int) $stats['views']; $q = min($v, (int) $stats['qr']); $perc = $v ? (int) round($q / $v * 100) : 0; ?>
   <div class="statistiche-testa">

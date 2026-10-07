@@ -30,7 +30,7 @@ $def = $prop['default_locale']; ?>
     <?php endif; ?>
     <?php if (!$trad['piano']): ?>
       <label class="scelta scelta--fissa"><input type="checkbox" disabled><span class="scelta__testo">Accendi le traduzioni suggerite <span class="small muted">con il piano Plus</span></span></label>
-      <p class="small" style="margin:0"><a href="<?= b() ?>/piano">Scopri Plus: traduzioni suggerite in omaggio per un anno</a></p>
+      <p class="small" style="margin:0"><a href="<?= b() ?>/piano?passa=plus">Scopri Plus: traduzioni suggerite in omaggio per un anno</a></p>
     <?php else: ?>
       <?php if ($trad['finito']): ?>
         <p class="small" style="margin:0">L'anno in omaggio è finito il <?= Support::e(Support::date((string) $trad['fino'])) ?>: le traduzioni che hai approvato restano, ma non se ne possono chiedere di nuove.</p>

@@ -262,6 +262,11 @@ $r->any('/piano', function () use ($salvaPiano) {
     if ($u['role'] === 'admin') Support::redirect('/admin');
     $acc = Auth::account();
     $attivo = Subscriptions::active((int) $acc['id']);
+    // Chi ha già un abbonamento che si può cambiare va a «Cambia piano» (6H); ?passa=plus porta dritto alla conferma.
+    if ($attivo && $_SERVER['REQUEST_METHOD'] === 'GET' && MHW\CambioAbbonamento::stato((int) $acc['id'])['motivo'] === '') {
+        $passa = preg_replace('/[^a-z0-9_-]/', '', (string) ($_GET['passa'] ?? ''));
+        Support::redirect($passa !== '' && MHW\CambioAbbonamento::versioneDi($passa) ? '/account/piano/conferma?piano=' . $passa : '/account/piano');
+    }
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($attivo) {
             Support::flash('Hai già un abbonamento attivo: il piano si cambia da Account & Fatturazione.', 'err');
@@ -294,7 +299,7 @@ $r->get('/pagamento/ok', function () {
     $o = Db::one('SELECT * FROM orders WHERE id = ? AND account_id = ?', [(int) ($_GET['order'] ?? 0), $acc['id']]);
     if (!$o) Support::redirect('/pannello');
     // Il ritorno dal browser non prova nulla: la pagina aspetta il webhook firmato.
-    View::out('pub/paid', ['order' => $o]);
+    View::out('pub/paid', ['order' => $o, 'piano' => ($o['kind'] ?? 'new') === 'change' ? Plans::version((int) $o['package_version_id']) : null]);
 });
 
 $r->get('/pagamento/stato', function () {
@@ -303,7 +308,7 @@ $r->get('/pagamento/stato', function () {
     $o = Db::one('SELECT * FROM orders WHERE id = ? AND account_id = ?', [(int) ($_GET['order'] ?? 0), $acc['id']]);
     if (!$o) Support::json(['stato' => 'sconosciuto'], 404);
     $p = $o['property_id'] ? Db::one('SELECT slug, status FROM properties WHERE id = ?', [$o['property_id']]) : null;
-    Support::json(['stato' => $o['status'], 'pubblicata' => $p && $p['status'] === 'published',
+    Support::json(['stato' => $o['status'], 'pubblicata' => $p && $p['status'] === 'published', 'applicato' => !empty($o['applied_at']),
                    'guida' => $p ? Support::url('/g/' . $p['slug']) : null]);
 });
 

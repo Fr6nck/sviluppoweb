@@ -12,13 +12,16 @@ namespace MHW;
  *   azienda — azienda o professionista: partita IVA obbligatoria, codice
  *             fiscale facoltativo (16 caratteri, o 11 cifre per le società),
  *             codice destinatario SDI o PEC obbligatori (uno dei due)
- *   privato — codice fiscale obbligatorio (16 caratteri), SDI e PEC facoltativi
+ *   privato — persona fisica: codice fiscale obbligatorio (16 caratteri). Partita
+ *             IVA, SDI e PEC non si chiedono e non si salvano: chi ha la partita IVA
+ *             è un professionista e sceglie l'altro tipo. La fattura arriva nel
+ *             cassetto fiscale (codice destinatario 0000000).
  *
  * Per tutti: intestatario, indirizzo, CAP, città, provincia.
  */
 final class Fatturazione
 {
-    public const TIPI = ['azienda' => 'Azienda o professionista', 'privato' => 'Privato'];
+    public const TIPI = ['privato' => 'Persona fisica', 'azienda' => 'Azienda o professionista'];
     public const CAMPI = ['billing_type', 'billing_name', 'vat', 'cf', 'sdi', 'pec', 'billing_address', 'billing_postal', 'billing_city', 'billing_province'];
 
     /** La partita IVA italiana: 11 cifre, l'ultima di controllo. */
@@ -68,10 +71,12 @@ final class Fatturazione
             'billing_city' => mb_substr(trim((string) ($in['billing_city'] ?? '')), 0, 120),
             'billing_province' => $su('billing_province'),
         ];
+        // Una persona fisica non ha partita IVA, SDI né PEC: quelli scritti prima (con l'altro tipo) non restano.
+        if ($d['billing_type'] === 'privato') { $d['vat'] = ''; $d['sdi'] = ''; $d['pec'] = ''; }
         $e = [];
         if ($d['billing_type'] === '') $e['billing_type'] = 'Scegli se fatturiamo a un\'azienda o a un privato.';
         $azienda = $d['billing_type'] === 'azienda';
-        if ($d['billing_name'] === '') $e['billing_name'] = $azienda ? 'Scrivi la ragione sociale o il tuo nome.' : 'Scrivi nome e cognome.';
+        if ($d['billing_name'] === '') $e['billing_name'] = $azienda ? 'Scrivi la ragione sociale (o nome e cognome, se sei un professionista).' : 'Scrivi nome e cognome.';
         if ($azienda && !self::partitaIvaValida($d['vat'])) {
             $e['vat'] = $d['vat'] === '' ? 'Scrivi la partita IVA.' : 'Questa partita IVA non torna: sono 11 cifre, controlla di averle scritte tutte.';
         } elseif (!$azienda && $d['vat'] !== '' && !self::partitaIvaValida($d['vat'])) {

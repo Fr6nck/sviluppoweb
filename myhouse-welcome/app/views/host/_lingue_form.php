@@ -24,7 +24,7 @@ $def = $prop['default_locale']; $dopoPasso = $dopoPasso ?? ''; ?>
     <?php endforeach; ?>
     </div>
   </fieldset>
-  <?php if (count($consentite) < count($tutte)): ?><p class="small"><a href="<?= b() ?>/piano">Scopri Plus: la guida in 5 lingue (italiano, inglese, francese, tedesco, spagnolo)</a></p><?php endif; ?>
+  <?php if (count($consentite) < count($tutte)): ?><p class="small"><a href="<?= b() ?>/piano?passa=plus">Scopri Plus: la guida in 5 lingue (italiano, inglese, francese, tedesco, spagnolo)</a></p><?php endif; ?>
   <?php if ($dopoPasso !== ''):
         $barraAvanti = '<button class="btn btn--go" name="dopo" value="' . Support::e($dopoPasso) . '">Salva e continua <span class="go">' . MHW\Icon::svg('arrow', 18, 2) . '</span></button>';
         include __DIR__ . '/_barra_passo.php';

@@ -50,10 +50,10 @@ $abbonamento = function (string $id) use (&$stato, $ora, $dir, $espandi): array 
     $stato['subs'][$id] = $s;
     $prodotto = fn(string $pid, string $ruolo) => $espandi ? ['id' => $pid, 'object' => 'product', 'metadata' => ['ruolo' => $ruolo]] : $pid;
     $voci = [['id' => 'si_base_' . $id, 'quantity' => 1, 'current_period_start' => $s['start'], 'current_period_end' => $s['end'],
-              'price' => ['id' => 'price_finto_annuale', 'product' => $prodotto('prod_finto_base', 'base')]]];
+              'price' => ['id' => $s['base_price'] ?? 'price_finto_annuale', 'product' => $prodotto('prod_finto_base', 'base')]]];
     if (($s['extra'] ?? null) !== null) {
         $voci[] = ['id' => 'si_extra_' . $id, 'quantity' => $s['extra'], 'current_period_start' => $s['start'], 'current_period_end' => $s['end'],
-                   'price' => ['id' => 'price_finto_extra', 'product' => $prodotto('prod_finto_extra', 'aggiuntiva')]];
+                   'price' => ['id' => $s['extra_price'] ?? 'price_finto_extra', 'product' => $prodotto('prod_finto_extra', 'aggiuntiva')]];
     }
     return [
         'id' => $id, 'object' => 'subscription', 'status' => $s['status'], 'cancel_at_period_end' => $s['cancel_at_period_end'],
@@ -75,12 +75,28 @@ if (preg_match('#^/v1/subscriptions/([A-Za-z0-9_]+)$#', $percorso, $m)) {
         $abbonamento($m[1]);
         $stato['subs'][$m[1]]['cancel_at_period_end'] = $corpo['cancel_at_period_end'] === 'true';
     }
-    if ($metodo === 'POST' && isset($corpo['items'][0]['id'])) {
+    if ($metodo === 'POST' && isset($corpo['items'])) {
+        // Le voci: la principale (prezzo nuovo) e quella delle strutture aggiuntive (quantità, prezzo, o tolta).
         $abbonamento($m[1]);
-        if ($corpo['items'][0]['id'] !== 'si_extra_' . $m[1]) $rispondi(['error' => ['message' => 'No such subscription item']], 400);
-        $stato['subs'][$m[1]]['extra'] = (int) $corpo['items'][0]['quantity'];
+        foreach ((array) $corpo['items'] as $voce) {
+            $vid = (string) ($voce['id'] ?? '');
+            if ($vid === 'si_base_' . $m[1]) {
+                if (isset($voce['price'])) $stato['subs'][$m[1]]['base_price'] = $voce['price'];
+            } elseif ($vid === 'si_extra_' . $m[1] || ($vid === '' && isset($voce['price']))) {
+                if (($voce['deleted'] ?? '') === 'true') { $stato['subs'][$m[1]]['extra'] = null; continue; }
+                if (isset($voce['quantity'])) $stato['subs'][$m[1]]['extra'] = (int) $voce['quantity'];
+                if (isset($voce['price'])) $stato['subs'][$m[1]]['extra_price'] = $voce['price'];
+            } else {
+                $rispondi(['error' => ['message' => 'No such subscription item']], 400);
+            }
+        }
     }
     $rispondi($abbonamento($m[1]));
+}
+// Price (cambio di piano, 6H): si creano con il prodotto e il suo ruolo.
+if ($metodo === 'POST' && $percorso === '/v1/prices') {
+    $rispondi(['id' => 'price_creato' . $n, 'object' => 'price', 'unit_amount' => (int) ($corpo['unit_amount'] ?? 0),
+               'product' => ['id' => 'prod_creato' . $n, 'metadata' => $corpo['product_data']['metadata'] ?? []]]);
 }
 // Coupon (6E): si creano e si cancellano; la prova controlla cosa arriva.
 if ($metodo === 'POST' && $percorso === '/v1/coupons') {

@@ -1,7 +1,34 @@
 <?php
 /* Il ritorno da Stripe. Il browser non prova niente: questa pagina aspetta il
    webhook firmato e se ne accorge da sola, senza ricaricare. */
-use function MHW\b; use MHW\{Support, Icon}; $title = 'Stiamo attivando la tua guida'; ?>
+use function MHW\b; use MHW\{Support, Icon}; $title = 'Stiamo attivando la tua guida';
+/* Il pagamento della differenza per cambiare piano (6H): stessa attesa, altre parole. */
+if (($order['kind'] ?? 'new') === 'change'):
+  $title = 'Pagamento ricevuto'; $nomePiano = Support::e((string) ($piano['name'] ?? 'il nuovo piano')); ?>
+<div class="stack stack--lg" style="max-width:640px" id="attesa" data-stato="<?= Support::e(b()) ?>/pagamento/stato?order=<?= (int) $order['id'] ?>">
+  <div class="stack stack--sm">
+    <h1 id="titolo"><?= !empty($order['applied_at']) ? 'Pagamento ricevuto. Sei su ' . $nomePiano . '.' : 'Pagamento ricevuto: stiamo attivando ' . $nomePiano . '.' ?></h1>
+    <p class="lead" id="testo"><?= !empty($order['applied_at']) ? 'Le funzioni del nuovo piano sono già attive.' : 'Aspettiamo la conferma da Stripe: di solito bastano pochi secondi. La pagina si aggiorna da sola.' ?></p>
+  </div>
+  <div class="actions"><a class="btn" href="<?= b() ?>/account">Vai al tuo account</a><a class="btn btn--ghost" href="<?= b() ?>/pannello">Le mie guide</a></div>
+</div>
+<script>
+(function () {
+  var box = document.getElementById('attesa'), url = box.getAttribute('data-stato'), giri = 0;
+  function chiedi() {
+    fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.applicato) {
+        document.getElementById('titolo').textContent = <?= json_encode('Pagamento ricevuto. Sei su ' . ($piano['name'] ?? 'il nuovo piano') . '.') ?>;
+        document.getElementById('testo').textContent = 'Le funzioni del nuovo piano sono già attive.';
+        return;
+      }
+      if (++giri < 40) setTimeout(chiedi, giri < 15 ? 2000 : 6000);
+    }).catch(function () { setTimeout(chiedi, 5000); });
+  }
+  <?php if (empty($order['applied_at'])): ?>chiedi();<?php endif; ?>
+})();
+</script>
+<?php return; endif; ?>
 <div class="stack stack--lg" style="max-width:640px" id="attesa" data-stato="<?= Support::e(b()) ?>/pagamento/stato?order=<?= (int) $order['id'] ?>">
   <div class="stack stack--sm">
     <h1 id="titolo">Grazie. Stiamo attivando la tua guida.</h1>

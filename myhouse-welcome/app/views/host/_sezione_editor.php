@@ -73,7 +73,7 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
       <?php endif; ?>
 
       <?php if (!$foto && !$core): ?>
-        <p class="tiny muted">Foto e PDF nelle sezioni sono disponibili con il piano Plus. <a href="<?= b() ?>/piano">Scopri Plus</a></p>
+        <p class="tiny muted">Foto e PDF nelle sezioni sono disponibili con il piano Plus. <a href="<?= b() ?>/piano?passa=plus">Scopri Plus</a></p>
       <?php endif; ?>
 
       <div class="actions">

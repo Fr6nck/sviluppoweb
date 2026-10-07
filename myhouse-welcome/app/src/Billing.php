@@ -64,15 +64,23 @@ final class Billing
         if ($type === 'checkout.session.completed' && !empty($obj['subscription']) && is_string($obj['subscription'])) {
             $sub = Stripe::retrieveSubscription($obj['subscription']);
         }
+        // Cambio di piano pagato (6H): Stripe passa alle voci nuove prima della transazione.
+        $cambio = ['ok' => false, 'sub' => null];
+        if (in_array($type, ['checkout.session.completed', 'checkout.session.async_payment_succeeded'], true) && ($obj['mode'] ?? '') === 'payment'
+            && ($obj['metadata']['kind'] ?? '') === 'change' && in_array($obj['payment_status'] ?? '', ['paid', 'no_payment_required'], true)) {
+            $cambio = CambioAbbonamento::preparaStripe((int) ($obj['metadata']['order_id'] ?? 0));
+        }
 
         try {
-            $esito = Db::tx(function () use ($id, $type, $obj, $event, $sub) {
+            $esito = Db::tx(function () use ($id, $type, $obj, $event, $sub, $cambio) {
                 Db::insert('webhook_events', [
                     'provider' => 'stripe', 'provider_event_id' => $id, 'kind' => $type,
                     'payload' => json_encode($event, JSON_UNESCAPED_UNICODE), 'processed_at' => Support::now(),
                 ]);
                 return match ($type) {
-                    'checkout.session.completed' => self::onCheckoutCompleted($obj, $sub),
+                    'checkout.session.completed' => ($obj['mode'] ?? '') === 'payment' ? self::onChangePaid($obj, $cambio) : self::onCheckoutCompleted($obj, $sub),
+                    'checkout.session.async_payment_succeeded' => self::onChangePaid($obj, $cambio),
+                    'checkout.session.async_payment_failed' => self::onChangeFailed($obj),
                     'checkout.session.expired' => self::onCheckoutExpired($obj),
                     'invoice.paid', 'invoice.payment_succeeded' => self::onInvoicePaid($obj),
                     'invoice.payment_failed' => self::onInvoiceFailed($obj),
@@ -162,6 +170,30 @@ final class Billing
         }
     }
 
+    /** Il pagamento della differenza per salire di piano (6H). */
+    private static function onChangePaid(array $s, array $cambio): string
+    {
+        if (($s['metadata']['kind'] ?? '') !== 'change') return 'non-abbonamento';
+        $o = Db::one("SELECT * FROM orders WHERE id = ? AND kind = 'change'", [(int) ($s['metadata']['order_id'] ?? $s['client_reference_id'] ?? 0)]);
+        if (!$o) return 'ordine-sconosciuto';
+        if ((string) ($s['metadata']['account_id'] ?? '') !== (string) $o['account_id']) {
+            Log::error('Webhook: account non coerente con l\'ordine di cambio', ['order' => $o['id']]);
+            return 'incoerente';
+        }
+        if (!in_array($s['payment_status'] ?? '', ['paid', 'no_payment_required'], true)) {
+            Db::update('orders', ['status' => 'awaiting', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $o['id']]);
+            return 'cambio-in-attesa-del-pagamento';
+        }
+        return CambioAbbonamento::pagato($o, $cambio);
+    }
+
+    private static function onChangeFailed(array $s): string
+    {
+        $orderId = (int) ($s['metadata']['order_id'] ?? $s['client_reference_id'] ?? 0);
+        Db::run("UPDATE orders SET status = 'failed', updated_at = ? WHERE id = ? AND status IN ('pending', 'awaiting')", [Support::now(), $orderId]);
+        return 'cambio-non-pagato';
+    }
+
     private static function onCheckoutExpired(array $s): string
     {
         $orderId = (int) ($s['metadata']['order_id'] ?? $s['client_reference_id'] ?? 0);
@@ -203,6 +235,11 @@ final class Billing
         ], 'id = :sid', ['sid' => $row['id']]);
         Entitlements::forget((int) $row['account_id']);
         Inviti::fattura($row, $inv);         // un rinnovo scontato chiude gli inviti che lo hanno pagato
+        // Discesa programmata (6H): al rinnovo il sito passa al piano nuovo.
+        if (!empty($row['next_package_version_id']) && ($inv['billing_reason'] ?? '') === 'subscription_cycle') {
+            CambioAbbonamento::alRinnovo(Db::one('SELECT * FROM subscriptions WHERE id = ?', [$row['id']]));
+            return 'rinnovo-pagato-con-cambio-di-piano';
+        }
         return 'rinnovo-pagato';
     }
 
@@ -224,7 +261,9 @@ final class Billing
         [$inizio, $fine] = self::period($sub);
         $pv = Db::one('SELECT * FROM package_versions WHERE id = ?', [$row['package_version_id']]) ?: [];
         $quantita = (int) $row['quantity']; $voce = (string) $row['provider_extra_item_id'];
-        if (Plans::perProperty($pv)) {
+        // Con una discesa programmata Stripe ha già le voci nuove: nel sito valgono quelle pagate fino al rinnovo.
+        $programmato = !empty($row['next_package_version_id']);
+        if (Plans::perProperty($pv) && !$programmato) {
             [$daStripe, $voce] = self::quantityFrom($sub, $pv, $voce);
             if ($daStripe !== null) $quantita = $daStripe;
         }
@@ -234,7 +273,7 @@ final class Billing
             'cancel_at_period_end' => !empty($sub['cancel_at_period_end']) ? 1 : 0,
             'current_period_start' => $inizio ?: $row['current_period_start'],
             'current_period_end' => $fine ?: $row['current_period_end'],
-            'provider_price_id' => (string) ($sub['items']['data'][0]['price']['id'] ?? $row['provider_price_id']),
+            'provider_price_id' => $programmato ? (string) $row['provider_price_id'] : (string) ($sub['items']['data'][0]['price']['id'] ?? $row['provider_price_id']),
             'updated_at' => Support::now(),
         ], 'id = :sid', ['sid' => $row['id']]);
         Entitlements::forget((int) $row['account_id']);

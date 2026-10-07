@@ -47,7 +47,7 @@ $media = [
   <?php foreach ($media as $input => [$col, $feature, $nome, $aiuto, $isLogo, $cosa]):
         $ok = Entitlements::can($aid, $feature); $url = $prop[$col] ? Media::url((int) $prop[$col]) : null;
         if (!$ok && !$url) { ?>
-          <p class="tiny muted"><?= Support::e($nome) ?>: disponibile con il piano Plus. <a href="<?= b() ?>/piano">Scopri Plus</a></p>
+          <p class="tiny muted"><?= Support::e($nome) ?>: disponibile con il piano Plus. <a href="<?= b() ?>/piano?passa=plus">Scopri Plus</a></p>
         <?php continue; } ?>
     <fieldset class="fieldset">
       <legend><?= Support::e($nome) ?></legend>

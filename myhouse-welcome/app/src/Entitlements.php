@@ -20,15 +20,36 @@ final class Entitlements
     public static function forAccount(int $accountId): array
     {
         if (isset(self::$cache[$accountId])) return self::$cache[$accountId];
+        $pv = Subscriptions::governingVersionId($accountId);
+        $attivo = Subscriptions::active($accountId);
+        $q = $attivo ? (int) $attivo['quantity'] : (int) Db::val('SELECT intended_quantity FROM accounts WHERE id = ?', [$accountId], 1);
+        return self::$cache[$accountId] = self::calcola($accountId, $pv, $q, $attivo ? 'package' : 'intended');
+    }
 
+    /**
+     * I diritti che l'account AVREBBE con una versione qualsiasi e un numero di strutture
+     * (il cambio di piano mostra così «cosa cambia»). Senza cache, eccezioni manuali comprese.
+     */
+    public static function perVersione(int $accountId, int $pvId, int $quantita): array
+    {
+        return self::calcola($accountId, $pvId, $quantita, 'package');
+    }
+
+    /** Un valore letto da un elenco di diritti: true/false per le funzioni, il numero per i limiti. */
+    public static function valore(array $diritti, string $code, int $default = 0): int
+    {
+        $v = (string) ($diritti[$code]['value'] ?? '');
+        if ($v === '') return $default;
+        return $v === 'unlimited' ? PHP_INT_MAX : (int) $v;
+    }
+
+    private static function calcola(int $accountId, ?int $pv, int $quantita, string $sorgente): array
+    {
         $out = [];
         foreach (Db::all('SELECT code, kind, default_value FROM features') as $f) {
             $out[$f['code']] = ['value' => $f['default_value'], 'kind' => $f['kind'], 'source' => 'default'];
         }
-
-        $pv = Subscriptions::governingVersionId($accountId);
         if ($pv) {
-            $sorgente = Subscriptions::active($accountId) ? 'package' : 'intended';
             foreach (Db::all(
                 'SELECT f.code, pf.value FROM package_features pf
                  JOIN features f ON f.id = pf.feature_id WHERE pf.package_version_id = ?', [$pv]) as $r) {
@@ -38,10 +59,7 @@ final class Entitlements
             // (o, prima di pagare, quelle scelte).
             $versione = Db::one('SELECT * FROM package_versions WHERE id = ?', [$pv]);
             if ($versione && Plans::perProperty($versione) && isset($out['properties'])) {
-                $attivo = Subscriptions::active($accountId);
-                $q = $attivo ? (int) $attivo['quantity']
-                             : (int) Db::val('SELECT intended_quantity FROM accounts WHERE id = ?', [$accountId], 1);
-                $out['properties']['value'] = (string) (Plans::quantity($versione, $q) ?? (int) $versione['min_quantity']);
+                $out['properties']['value'] = (string) (Plans::quantity($versione, $quantita) ?? (int) $versione['min_quantity']);
             }
         }
 
@@ -50,8 +68,7 @@ final class Entitlements
              JOIN features f ON f.id = o.feature_id WHERE o.account_id = ?', [$accountId]) as $r) {
             if (isset($out[$r['code']])) { $out[$r['code']]['value'] = $r['value']; $out[$r['code']]['source'] = 'override'; }
         }
-
-        return self::$cache[$accountId] = $out;
+        return $out;
     }
 
     public static function can(int $accountId, string $code): bool

@@ -183,7 +183,7 @@ $navigazione = function () use ($admin, $generale, $attiva, $guida, $quiGuida, $
   <?php if ($f['kind'] === 'limite'): ?>
     <div class="limit" style="margin-bottom:24px" role="status">
       <p style="max-width:620px"><?= Support::e($f['msg']) ?></p>
-      <a class="btn btn--sm" href="<?= b() ?>/piano">Scopri Plus</a>
+      <a class="btn btn--sm" href="<?= b() ?>/piano?passa=plus">Scopri Plus</a>
     </div>
   <?php else: ?>
     <p class="note <?= ['err' => 'note--err', 'avviso' => ''][$f['kind']] ?? 'note--ok' ?>" style="margin-bottom:24px" role="status"><?= Support::e($f['msg']) ?></p>

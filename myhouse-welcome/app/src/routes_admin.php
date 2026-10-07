@@ -450,6 +450,10 @@ $r->get('/admin/diagnostica', function () {
         'i cookie di sessione diventano "secure" solo su HTTPS'];
     $checks[] = ['Indirizzo pubblico impostato', Config::get('base_url') !== '',
         Config::get('base_url') !== '' ? Config::get('base_url') : 'MHW_BASE_URL vuoto: QR ed email usano l\'indirizzo della richiesta'];
+    $daCompletare = MHW\CambioAbbonamento::inSospeso();
+    $checks[] = ['Cambi di piano pagati da completare: ' . $daCompletare, $daCompletare === 0, $daCompletare === 0
+        ? 'Nessuno: ogni differenza pagata è già applicata, su Stripe e nel sito.'
+        : 'Pagati ma non ancora applicati su Stripe: il sito riprova da solo ogni 15 minuti (o col cron). Se restano, controlla le chiavi di Stripe.'];
     $checks[] = ['Traduzioni suggerite (Amazon Translate)', MHW\Traduttore::configurato(), MHW\Traduttore::configurato()
         ? 'Collegate: un traduttore automatico propone, il cliente approva. Consumi in Amministrazione → Traduzioni.'
         : 'Non collegate: senza chiavi i clienti Plus e Portfolio non ricevono suggerite. Le lingue le scrivono loro.'];

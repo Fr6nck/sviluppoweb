@@ -30,9 +30,9 @@ $modo = $modo ?? 'normale'; $origini = $origini ?? []; ?>
   <?php if ($err): ?><p class="note note--err" role="alert"><?= Support::e($err) ?></p><?php endif; ?>
   <div class="panel stack" style="gap:10px">
     <div class="spread spread--mid"><span>Ogni struttura in più</span><b><?= Support::e(Support::money($costo['anno'], $pv['currency'])) ?> <span class="small muted">+ IVA / anno</span></b></div>
-    <div class="spread spread--mid"><span>Per quest'anno, fino al <?= Support::e(Support::date($costo['fine'])) ?></span>
-      <b>circa <?= Support::e(Support::money($costo['ora'], $pv['currency'])) ?> <span class="small muted">+ IVA</span></b></div>
-    <p class="small muted">Paghi solo la parte dell'anno che resta: Stripe la aggiunge alla prossima fattura. Dal rinnovo l'abbonamento costa
+    <div class="spread spread--mid"><span>Oggi, per i giorni che restano fino al <?= Support::e(Support::date($costo['fine'])) ?></span>
+      <b><?= Support::e(Support::money($costo['ora'], $pv['currency'])) ?> <span class="small muted">+ IVA</span></b></div>
+    <p class="small muted">Paghi la differenza sulla pagina sicura di Stripe: la struttura si sblocca appena il pagamento è confermato. Dal rinnovo l'abbonamento costa
       <?= Support::e(Support::money($costo['totale'], $pv['currency'])) ?> + IVA all'anno.</p>
   </div>
   <?php if ($costo['fuori']): ?>
@@ -44,7 +44,7 @@ $modo = $modo ?? 'normale'; $origini = $origini ?? []; ?>
       <div class="field" style="margin:0"><label for="city">Città</label>
         <input id="city" name="city" type="text" maxlength="120" autocomplete="off"></div>
       <label class="check"><input type="checkbox" name="conferma" value="1" required> <span>Confermo: aggiungi una struttura all'abbonamento</span></label>
-      <div class="actions"><button class="btn btn--go">Aggiungi la struttura <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></button>
+      <div class="actions"><button class="btn btn--go">Aggiungi e vai al pagamento <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></button>
         <a class="btn btn--quiet" href="<?= MHW\b() ?>/pannello">Annulla</a></div>
     </form>
   <?php endif; ?>
@@ -59,7 +59,7 @@ $modo = $modo ?? 'normale'; $origini = $origini ?? []; ?>
   <?php if ($err): ?><p class="note note--err" role="alert"><?= Support::e($err) ?></p><?php endif; ?>
   <?php if ($have >= $max): ?>
     <div class="limit"><p>Hai già <?= (int) $have ?> struttur<?= $have === 1 ? 'a' : 'e' ?>, il massimo del tuo piano.</p>
-      <a class="btn btn--sm" href="<?= MHW\b() ?>/piano"><?= $piano && Plans::perProperty($piano) ? 'Cambia il numero di strutture' : 'Scopri Portfolio' ?></a></div>
+      <a class="btn btn--sm" href="<?= MHW\b() ?>/piano?passa=portfolio"><?= $piano && Plans::perProperty($piano) ? 'Cambia il numero di strutture' : 'Scopri Portfolio' ?></a></div>
   <?php else: ?>
     <form method="post" class="stack"><?= Csrf::field() ?>
       <div class="field" style="margin:0"><label for="name">Nome della struttura</label>

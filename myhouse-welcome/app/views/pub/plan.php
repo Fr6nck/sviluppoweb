@@ -10,7 +10,7 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
 
 <?php if ($attivo): ?>
   <p class="note" style="margin-top:24px"><?= Icon::svg('info', 19) ?><span>Hai già un abbonamento attivo.
-    Per cambiarlo vai in <a href="<?= b() ?>/account">Account &amp; Fatturazione</a>.</span></p>
+    Per cambiarlo vai in <a href="<?= b() ?>/account/piano">Cambia piano</a>.</span></p>
 <?php else: ?>
 <form method="post" style="margin-top:28px"><?= Csrf::field() ?>
   <?php /* Ogni opzione è una card intera che si preme: il pallino in alto a destra è

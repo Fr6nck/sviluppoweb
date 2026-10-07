@@ -2,7 +2,7 @@
 /** Rotte dell'area host. $r è il Router creato in public/index.php. */
 
 use MHW\{Auth, Config, Conversione, Db, Entitlements, Guide, LimitReached, Log, Mappe, Media, Migrator, NotFound, Palette, Plans, Properties,
-         Qr, QrExport, SectionCatalog, Stats, Stripe, Subscriptions, Suggerimenti, Support, Traduttore, View};
+         Qr, QrExport, SectionCatalog, Stats, Stripe, Subscriptions, Suggerimenti, Support, Traduttore, View, CambioAbbonamento, CambioPiano};
 
 /* La procedura: cinque passi. Le lingue in più stanno in fondo a «Anteprima e
    pubblica», facoltative: le traduzioni non fermano mai la pubblicazione. */
@@ -144,8 +144,7 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
     $costo = null;
     if ($modo === 'a-pagamento') {
         $inizio = strtotime((string) $sub['current_period_start']) ?: time(); $fine = strtotime((string) $sub['current_period_end']) ?: time();
-        $quota = $fine > $inizio ? max(0, min(1, ($fine - time()) / ($fine - $inizio))) : 1;
-        $costo = ['anno' => (int) $pv['extra_price_cents'], 'ora' => (int) round((int) $pv['extra_price_cents'] * $quota),
+        $costo = ['anno' => (int) $pv['extra_price_cents'], 'ora' => CambioPiano::conguaglio(Plans::price($pv, (int) $sub['quantity']), Plans::price($pv, (int) $sub['quantity'] + 1), $inizio, $fine, time()),
                   'fine' => (string) $sub['current_period_end'], 'totale' => Plans::price($pv, (int) $sub['quantity'] + 1), 'quantita' => (int) $sub['quantity'] + 1,
                   'fuori' => (int) $sub['quantity'] + 1 > (int) $pv['max_quantity']];
     }
@@ -165,19 +164,21 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
                 if (mb_strlen(trim($nome)) > 120) throw new RuntimeException('Il nome è troppo lungo.');
                 if ($costo['fuori']) throw new RuntimeException('Hai raggiunto il numero massimo di strutture del Portfolio: scrivici.');
                 if (!Stripe::enabled()) throw new RuntimeException('I pagamenti non sono attivi in questo momento: non possiamo aggiungere strutture all\'abbonamento. Riprova più tardi.');
-                if ($sub['provider'] !== 'stripe' || $sub['provider_subscription_id'] === '' || $sub['provider_extra_item_id'] === '') {
-                    throw new RuntimeException('Il tuo abbonamento non si modifica da qui: scrivici e aggiungiamo noi la struttura.');
-                }
-                try {
-                    Stripe::addExtraProrated($sub['provider_subscription_id'], $sub['provider_extra_item_id'], (int) $sub['quantity']);
-                } catch (\Throwable $e) {
-                    throw new RuntimeException('Non è stato possibile aggiornare l\'abbonamento adesso (codice ' . Log::exception($e, 'aggiungi struttura') . '). Riprova tra poco.');
-                }
+                $st = CambioAbbonamento::stato($aid);
+                if ($st['motivo'] !== '') throw new RuntimeException($st['motivo'] === CambioAbbonamento::STAFF ? 'Il tuo abbonamento non si modifica da qui: scrivici e aggiungiamo noi la struttura.' : $st['motivo']);
+                if (!MHW\Fatturazione::completa($acc)) throw new RuntimeException('Prima di pagare la struttura in più servono i dati di fatturazione: compilali in Account & Fatturazione.');
+                // Come ogni salita di piano (6H): la struttura nasce bloccata e si paga oggi la quota fino al rinnovo.
+                $prev = CambioAbbonamento::preventivo($sub, $st['pv'], $pv, $costo['quantita']);
                 $pid = Properties::create($aid, $nome, (string) ($_POST['city'] ?? ''), (string) $u['name'], 1);
                 Stats::funnelEvent('property_created');
                 Auth::audit('subscription.add_property', (int) $u['id'], ['property_id' => $pid, 'quantita' => $costo['quantita']]);
-                Support::flash(trim($nome) . ' aggiunta. Si sblocca appena Stripe conferma il nuovo numero di strutture (di solito pochi secondi).');
-                Support::redirect('/pannello');
+                if ($prev['conguaglio'] === 0) {
+                    CambioAbbonamento::subito($sub, $pv, $costo['quantita']);
+                    Support::flash(trim($nome) . ' aggiunta.');
+                    Support::redirect('/pannello');
+                }
+                $o = CambioAbbonamento::ordine($acc, $sub, $pv, $costo['quantita'], $prev['conguaglio']);
+                Support::redirect(Stripe::checkoutChange($o, CambioAbbonamento::descrizione($pv, (int) $sub['quantity'], $pv, $costo['quantita']), $acc, $u));
             }
             // Normale, con la copia facoltativa: struttura e copia nella stessa transazione.
             $origine = (int) ($_POST['origine'] ?? 0);
@@ -922,7 +923,10 @@ $r->get('/pannello/{id}/statistiche', function (array $a) use ($mia, $contesto) 
 });
 
 // ------------------------------------------------------ account e fatturazione
-$paginaAccount = function (array $u, array $acc, array $extra = []): never {
+/* Dove si torna dopo i dati di fatturazione: la pubblicazione, oppure la conferma di un cambio di piano. */
+$tornaValido = fn(string $t): bool => (bool) preg_match('#^(/pannello/\d+/procedura/pubblica|/account/piano/conferma\?piano=[a-z0-9_-]+(&strutture=\d{1,3})?)$#', $t);
+
+$paginaAccount = function (array $u, array $acc, array $extra = []) use ($tornaValido): never {
     $ultimo = MHW\Subscriptions::latest((int) $acc['id']);
     $gov = Subscriptions::governingVersionId((int) $acc['id']);
     // Dopo i dati di fatturazione si torna dove si era (la pubblicazione), solo dentro il pannello.
@@ -933,7 +937,7 @@ $paginaAccount = function (array $u, array $acc, array $extra = []): never {
         'ordini' => Db::all('SELECT o.*, pk.name AS package FROM orders o JOIN package_versions pv ON pv.id = o.package_version_id
                              JOIN packages pk ON pk.id = pv.package_id WHERE o.account_id = ? ORDER BY o.id DESC LIMIT 10', [$acc['id']]),
         'portale' => Stripe::enabled() && Config::get('stripe')['customer_portal'] && $acc['stripe_customer_id'] !== '',
-        'fatt' => $acc, 'erroriFatt' => [], 'torna' => preg_match('#^/pannello/\d+/procedura/pubblica$#', $torna) ? $torna : '',
+        'fatt' => $acc, 'erroriFatt' => [], 'torna' => $tornaValido($torna) ? $torna : '',
         'nav' => 'account',
     ], 'layout/cms');
     exit;
@@ -1034,7 +1038,7 @@ $r->get('/account/email/{token}', function (array $a) {
 
 /* Dati di fatturazione: si controllano qui (partita IVA, codice fiscale, SDI o PEC)
    e, se il cliente Stripe esiste già, si aggiornano anche lì. */
-$r->post('/account/fatturazione', function () use ($host, $paginaAccount) {
+$r->post('/account/fatturazione', function () use ($host, $paginaAccount, $tornaValido) {
     [$u, $acc] = $host();
     [$dati, $errori] = MHW\Fatturazione::valida($_POST);
     if ($errori) $paginaAccount($u, $acc, ['fatt' => $dati + $acc, 'erroriFatt' => $errori, 'apriFatt' => true]);
@@ -1045,8 +1049,8 @@ $r->post('/account/fatturazione', function () use ($host, $paginaAccount) {
         catch (\Throwable $e) { Log::exception($e, 'dati di fatturazione su Stripe'); }
     }
     $torna = (string) ($_POST['torna'] ?? '');
-    if (preg_match('#^/pannello/\d+/procedura/pubblica$#', $torna)) {
-        Support::flash('Dati di fatturazione salvati. Ora puoi pubblicare.');
+    if ($tornaValido($torna)) {
+        Support::flash(str_starts_with($torna, '/account/piano') ? 'Dati di fatturazione salvati. Ora puoi cambiare piano.' : 'Dati di fatturazione salvati. Ora puoi pubblicare.');
         Support::redirect($torna);
     }
     Support::flash('Dati di fatturazione salvati.');
@@ -1083,6 +1087,111 @@ $r->post('/account/portale', function () use ($host) {
     }
 });
 
+// ------------------------------------------------------------ cambio di piano (6H)
+/*
+ * «Cambia piano» per chi ha già un abbonamento. Salire: si paga oggi la differenza
+ * per i giorni che restano, su Stripe, e il piano nuovo vale al pagamento. Scendere:
+ * niente da pagare né da rimborsare, il cambio parte dal rinnovo. Le regole e i conti
+ * sono in CambioPiano, i passaggi in CambioAbbonamento.
+ */
+$cambioPossibile = function (array $acc): array {
+    $st = CambioAbbonamento::stato((int) $acc['id']);
+    if ($st['motivo'] === 'nessuno') Support::redirect('/piano');
+    return $st;
+};
+/** Il piano scelto e il numero di strutture, ricontrollati: [versione, quantità] oppure null. */
+$sceltaPiano = function (array $st, string $codice, mixed $strutture): ?array {
+    $pv = CambioAbbonamento::versioneDi($codice);
+    if (!$pv) return null;
+    $q = Plans::perProperty($pv)
+        ? Plans::quantity($pv, ($strutture === null || $strutture === '') ? ((string) $st['pv']['code'] === $codice ? (string) $st['quantita'] : '') : $strutture)
+        : 1;
+    return $q === null ? null : [$pv, $q];
+};
+
+$r->get('/account/piano', function () use ($host, $cambioPossibile) {
+    [$u, $acc] = $host();
+    $st = $cambioPossibile($acc);
+    $piani = [];
+    foreach (Plans::public() as $p) {
+        $pv = Plans::version((int) $p['pv_id']);
+        if (!$pv) continue;
+        $min = Plans::perProperty($pv) ? max(1, (int) $pv['min_quantity']) : 1;
+        $q = Plans::perProperty($pv) ? (Plans::quantity($pv, (string) ($_GET['strutture'] ?? '')) ?? ((string) $st['pv']['code'] === (string) $pv['code'] ? $st['quantita'] : $min)) : 1;
+        $piani[] = ['p' => $p, 'pv' => $pv, 'q' => $q, 'prev' => $st['pv'] ? CambioAbbonamento::preventivo($st['sub'], $st['pv'], $pv, $q) : null,
+                    'attuale' => $st['pv'] && (string) $st['pv']['code'] === (string) $pv['code']];
+    }
+    View::out('host/piani', ['user' => $u, 'acc' => $acc, 'st' => $st, 'piani' => $piani, 'nav' => 'account'], 'layout/cms');
+});
+
+$r->any('/account/piano/conferma', function () use ($host, $cambioPossibile, $sceltaPiano) {
+    [$u, $acc] = $host();
+    $st = $cambioPossibile($acc);
+    if ($st['motivo'] !== '') { Support::flash($st['motivo'], 'err'); Support::redirect('/account'); }
+    $codice = (string) ($_POST['piano'] ?? $_GET['piano'] ?? '');
+    $scelta = $sceltaPiano($st, $codice, $_POST['strutture'] ?? $_GET['strutture'] ?? null);
+    if (!$scelta) { Support::flash('Scegli un piano in vendita e un numero di strutture valido.', 'err'); Support::redirect('/account/piano'); }
+    [$pv, $q] = $scelta;
+    $sub = $st['sub'];
+    $prev = CambioAbbonamento::preventivo($sub, $st['pv'], $pv, $q);
+    if ($prev['stesso']) { Support::flash('È già il tuo piano.'); Support::redirect('/account/piano'); }
+    $qui = '/account/piano/conferma?piano=' . rawurlencode($codice) . (Plans::perProperty($pv) ? '&strutture=' . $q : '');
+    $cambia = $prev['tipo'] === CambioPiano::SCENDE ? CambioAbbonamento::cosaCambia((int) $acc['id'], $pv, $q) : null;
+    $err = null;
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        try {
+            if (!Stripe::enabled()) throw new RuntimeException('I pagamenti non sono attivi in questo momento: riprova più tardi.');
+            if ($prev['tipo'] === CambioPiano::SCENDE) {
+                // Le scelte: sezioni da tenere per struttura, strutture da archiviare (esattamente quante servono).
+                $scelte = ['sezioni' => [], 'archivia' => array_values(array_unique(array_map('intval', (array) ($_POST['archivia'] ?? []))))];
+                foreach ($cambia['sezioni'] as $blocco) {
+                    $pid = (int) $blocco['struttura']['id'];
+                    $tenute = array_values(array_intersect(array_map('intval', (array) ($_POST['tieni'][$pid] ?? [])), array_map('intval', array_column($blocco['sezioni'], 'id'))));
+                    if (count($tenute) > $cambia['maxSezioni']) throw new RuntimeException('In ' . $blocco['struttura']['name'] . ' scegli al massimo ' . $cambia['maxSezioni'] . ' sezioni da tenere.');
+                    $scelte['sezioni'][$pid] = $tenute;
+                }
+                $ids = array_map('intval', array_column($cambia['strutture'], 'id'));
+                if ($cambia['daArchiviare'] > 0 && (count($scelte['archivia']) !== $cambia['daArchiviare'] || array_diff($scelte['archivia'], $ids))) {
+                    throw new RuntimeException('Scegli esattamente ' . $cambia['daArchiviare'] . ' struttur' . ($cambia['daArchiviare'] === 1 ? 'a' : 'e') . ' da archiviare.');
+                }
+                CambioAbbonamento::programma($sub, $pv, $q, $scelte);
+                Support::flash('Fatto: dal ' . Support::date($prev['fine']) . ' passi a ' . $pv['name'] . '. Fino ad allora resti su ' . $st['pv']['name'] . '.');
+                Support::redirect('/account');
+            }
+            if ($prev['conguaglio'] === 0) {
+                CambioAbbonamento::subito($sub, $pv, $q);
+                Support::flash('Fatto: ora sei su ' . $pv['name'] . (Plans::perProperty($pv) ? " ($q strutture)" : '') . '.');
+                Support::redirect('/account');
+            }
+            if (!MHW\Fatturazione::completa($acc)) {
+                Support::flash('Prima di pagare servono i dati di fatturazione: poi torni qui.', 'avviso');
+                Support::redirect('/account?torna=' . rawurlencode($qui) . '#fatturazione');
+            }
+            $o = CambioAbbonamento::ordine($acc, $sub, $pv, $q, $prev['conguaglio']);
+            Support::redirect(Stripe::checkoutChange($o, CambioAbbonamento::descrizione($st['pv'], $st['quantita'], $pv, $q), $acc, $u));
+        } catch (\Throwable $e) {
+            $err = $e instanceof RuntimeException && !($e instanceof \PDOException) ? $e->getMessage()
+                 : 'Non è stato possibile cambiare piano adesso (codice ' . Log::exception($e, 'cambio piano') . '). Riprova tra poco.';
+        }
+    }
+    View::out('host/piano_conferma', ['user' => $u, 'acc' => $acc, 'st' => $st, 'pv' => $pv, 'q' => $q, 'prev' => $prev, 'cambia' => $cambia,
+        'codice' => $codice, 'err' => $err, 'iva' => !empty(Config::get('stripe')['automatic_tax']), 'nav' => 'account'], 'layout/cms');
+});
+
+$r->post('/account/piano/annulla', function () use ($host) {
+    [, $acc] = $host();
+    $st = CambioAbbonamento::stato((int) $acc['id']);
+    if (!$st['sub'] || empty($st['sub']['next_package_version_id'])) Support::redirect('/account');
+    try {
+        CambioAbbonamento::annulla($st['sub']);
+        Support::flash('Cambio annullato: resti su ' . $st['pv']['name'] . ' anche dopo il rinnovo.');
+    } catch (\Throwable $e) {
+        Support::flash('Non è stato possibile annullare il cambio adesso (codice ' . Log::exception($e, 'annulla cambio piano') . '). Riprova tra poco.', 'err');
+    }
+    Support::redirect('/account');
+});
+
 // ------------------------------------------------- Portfolio: numero di strutture
 /**
  * Aumento: Stripe fattura subito il conguaglio e applica il cambio solo se il
@@ -1097,51 +1206,11 @@ $portfolioAttivo = function (array $acc): ?array {
     return $pv && Plans::perProperty($pv) ? [$s, $pv] : null;
 };
 
-$r->any('/account/strutture', function () use ($host, $portfolioAttivo) {
-    [$u, $acc] = $host();
-    $pa = $portfolioAttivo($acc);
-    if (!$pa) { Support::flash('Il numero di strutture si cambia solo con un abbonamento Portfolio attivo.', 'err'); Support::redirect('/account'); }
-    [$s, $pv] = $pa;
-    $n = Plans::quantity($pv, (string) ($_POST['strutture'] ?? $_GET['strutture'] ?? ''));
-    if ($n === null) {
-        Support::flash('Indica un numero intero di strutture tra ' . (int) $pv['min_quantity'] . ' e ' . (int) $pv['max_quantity'] . '.', 'err');
-        Support::redirect('/account');
-    }
-    $attuale = (int) $s['quantity'];
-    if ($n === $attuale) { Support::flash('Il tuo abbonamento comprende già ' . $n . ' strutture.'); Support::redirect('/account'); }
-    if ($s['provider'] !== 'stripe' || $s['provider_subscription_id'] === '' || $s['provider_extra_item_id'] === '') {
-        Support::flash('Questo abbonamento non si modifica da qui: scrivici e lo aggiorniamo noi.', 'err');
-        Support::redirect('/account');
-    }
-    $attive = Db::all('SELECT id, name, city, status FROM properties WHERE account_id = ? AND archived_at IS NULL AND is_demo < 2 ORDER BY id', [$acc['id']]);
-    $daTogliere = max(0, count($attive) - $n);
-
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['conferma'] ?? '') === '1') {
-        $scelte = array_values(array_unique(array_map('intval', (array) ($_POST['archivia'] ?? []))));
-        $ids = array_map('intval', array_column($attive, 'id'));
-        if (count($scelte) !== $daTogliere || array_diff($scelte, $ids)) {
-            Support::flash("Scegli esattamente $daTogliere struttur" . ($daTogliere === 1 ? 'a' : 'e') . ' da archiviare.', 'err');
-            Support::redirect('/account/strutture?strutture=' . $n);
-        }
-        try {
-            Stripe::updateExtraQuantity($s['provider_subscription_id'], $s['provider_extra_item_id'], $n - 1, $n > $attuale);
-        } catch (\Throwable $e) {
-            Support::flash('Non è stato possibile cambiare l\'abbonamento adesso (codice ' . Log::exception($e, 'quantita') . ').', 'err');
-            Support::redirect('/account');
-        }
-        foreach ($scelte as $pid) Db::update('properties', ['archived_at' => Support::now()], 'id = :pid AND account_id = :aid', ['pid' => $pid, 'aid' => $acc['id']]);
-        Auth::audit('subscription.quantity', (int) $u['id'], ['da' => $attuale, 'a' => $n, 'archiviate' => $scelte]);
-        Support::flash($n > $attuale
-            ? "Richiesta inviata: le strutture diventano $n appena Stripe conferma il pagamento della differenza."
-            : "Abbonamento ridotto a $n strutture. La differenza ti viene accreditata sulla prossima fattura."
-              . ($scelte ? ' Le strutture scelte sono archiviate: contenuti e QR restano, puoi riattivarle quando vuoi.' : ''));
-        Support::redirect('/account');
-    }
-
-    View::out('host/strutture', [
-        'n' => $n, 'attuale' => $attuale, 'pv' => $pv, 'attive' => $attive, 'daTogliere' => $daTogliere,
-        'nuovo' => Plans::price($pv, $n), 'vecchio' => Plans::price($pv, $attuale), 'nav' => 'account',
-    ], 'layout/cms');
+// Il vecchio «Numero di strutture»: ora è un cambio di piano come gli altri (6H).
+$r->any('/account/strutture', function () use ($host) {
+    $host();
+    $n = (int) ($_POST['strutture'] ?? $_GET['strutture'] ?? 0);
+    Support::redirect('/account/piano/conferma?piano=portfolio' . ($n > 0 ? '&strutture=' . $n : ''));
 });
 
 $r->post('/pannello/{id}/riattiva', function (array $a) use ($mia) {

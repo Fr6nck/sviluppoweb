@@ -1000,52 +1000,101 @@ prova('Guida online dopo il pagamento', $carla->get('/g/' . val('SELECT slug FRO
 $carla->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Quattro', 'city' => 'Bari']);
 prova('Con l\'abbonamento attivo il limite resta 3', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$cacc]) === 3);
 $r = $carla->get('/account');
-prova('Account: Portfolio · 3 strutture, 237 €, e il campo per cambiarle', str_contains($r['body'], 'Portfolio · 3 strutture') && str_contains($r['body'], "237\u{00A0}€") && str_contains($r['body'], 'action="' . preg_replace('#^https?://[^/]+#', '', $BASE) . '/account/strutture"'));
+prova('Account: Portfolio · 3 strutture, 237 €, e «Cambia piano»', str_contains($r['body'], 'Portfolio · 3 strutture') && str_contains($r['body'], "237\u{00A0}€")
+      && str_contains($r['body'], '/account/piano">Cambia piano</a>') && !str_contains($r['body'], 'action="' . preg_replace('#^https?://[^/]+#', '', $BASE) . '/account/strutture"'));
 
-// Aumento: conguaglio pagato subito, quantità nuova solo col webhook.
-$r = $carla->post('/account/strutture', ['strutture' => '5']);
-prova('Aumento a 5: conferma con il nuovo prezzo (357 €)', $r['code'] === 200 && str_contains($r['body'], "237\u{00A0}€ → <b>357\u{00A0}€</b>") && str_contains($r['body'], 'differenza'));
-$r = $carla->post('/account/strutture', ['strutture' => '5', 'conferma' => '1']);
-$mod = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_carla'));
-$mc = end($mod)['corpo'] ?? [];
-prova('Stripe: stessa voce, 4 strutture aggiuntive, conguaglio fatturato subito', ($mc['items'][0]['id'] ?? '') === 'si_extra_sub_prova_carla' && ($mc['items'][0]['quantity'] ?? '') === '4'
-      && ($mc['proration_behavior'] ?? '') === 'always_invoice' && ($mc['payment_behavior'] ?? '') === 'pending_if_incomplete' && (end($mod)['idem'] ?? '') !== '');
-prova('…ma la quantità non cambia prima della conferma', (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === 3);
 $voci = fn(int $extra) => ['data' => [
     ['id' => 'si_base_sub_prova_carla', 'quantity' => 1, 'current_period_start' => time(), 'current_period_end' => time() + 360 * 86400, 'price' => ['id' => 'price_finto_annuale', 'product' => 'prod_finto_base']],
     ['id' => 'si_extra_sub_prova_carla', 'quantity' => $extra, 'current_period_start' => time(), 'current_period_end' => time() + 360 * 86400, 'price' => ['id' => 'price_finto_extra', 'product' => 'prod_finto_extra']]]];
-inviaWebhook(['id' => 'evt_carla_2', 'type' => 'customer.subscription.updated', 'data' => ['object' => [
-    'id' => 'sub_prova_carla', 'status' => 'active', 'cancel_at_period_end' => false, 'items' => $voci(2), 'pending_update' => ['subscription_items' => [['id' => 'si_extra_sub_prova_carla', 'quantity' => 4]]]]]]);
-prova('Pagamento del conguaglio non riuscito: restano 3 strutture', (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === 3);
-inviaWebhook(['id' => 'evt_carla_3', 'type' => 'customer.subscription.updated', 'data' => ['object' => [
-    'id' => 'sub_prova_carla', 'status' => 'active', 'cancel_at_period_end' => false, 'items' => $voci(4)]]]);
-prova('Pagamento confermato dal webhook: 5 strutture', (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === 5);
+// 6H · Salire: si paga oggi la differenza a giorni, il cambio vale col webhook del pagamento.
+$r = $carla->get('/account/piano?strutture=5');
+prova('6H · Cambia piano: Portfolio è «Il tuo piano», con − e + per le strutture, e il conto di oggi per 5', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], 'Il tuo piano') && str_contains($r['body'], 'aria-label="Una struttura in più"') && str_contains($r['body'], 'piano=portfolio&amp;strutture=5')
+      && preg_match('#Oggi <b>[\d,.]+\x{00A0}€</b> \+ IVA, per i \d+ giorni fino al rinnovo#u', $r['body']) === 1);
+$r = $carla->get('/account/strutture?strutture=5');
+prova('6H · il vecchio «Numero di strutture» porta alla conferma del cambio', $r['code'] === 302 && str_contains($r['loc'], '/account/piano/conferma?piano=portfolio&strutture=5'));
+$r = $carla->get('/account/piano/conferma?piano=portfolio&strutture=5');
+prova('6H · conferma della salita: oggi la differenza a giorni, dal rinnovo 357 €, «Vai al pagamento»', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], 'Differenza per i') && str_contains($r['body'], "357\u{00A0}€") && str_contains($r['body'], 'Vai al pagamento')
+      && str_contains($r['body'], 'Paghi sulla pagina sicura di Stripe'));
+$prima = count(richiesteStripe());
+$r = $carla->modulo('/account/piano/conferma?piano=portfolio&strutture=5', '/account/piano/conferma', ['piano' => 'portfolio', 'strutture' => '5']);
+$cambio = riga("SELECT * FROM orders WHERE account_id = ? AND kind = 'change' ORDER BY id DESC", [$cacc]);
+$ses = array_values(array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['percorso'] === '/v1/checkout/sessions'));
+$sc = end($ses)['corpo'] ?? [];
+prova('6H · ordine «change» e pagina di Stripe in modalità pagamento, con la fattura', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/')
+      && $cambio && (int) $cambio['quantity'] === 5 && (int) $cambio['from_quantity'] === 3 && (int) $cambio['amount_cents'] > 0 && (int) $cambio['amount_cents'] <= 12000
+      && ($sc['mode'] ?? '') === 'payment' && ($sc['metadata']['kind'] ?? '') === 'change' && ($sc['invoice_creation']['enabled'] ?? '') === 'true'
+      && (int) ($sc['line_items'][0]['price_data']['unit_amount'] ?? 0) === (int) $cambio['amount_cents']
+      && str_contains((string) ($sc['line_items'][0]['price_data']['product_data']['name'] ?? ''), 'Portfolio da 3 a 5 strutture'), json_encode($sc));
+prova('…nessun addebito sull\'abbonamento e piano invariato finché non arriva il pagamento', !array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['percorso'] === '/v1/subscriptions/sub_prova_carla' && $x['metodo'] === 'POST')
+      && (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === 3);
+$pagaCambio = fn(string $evt, array $o) => inviaWebhook(['id' => $evt, 'type' => 'checkout.session.completed', 'data' => ['object' => [
+    'id' => $o['provider_session_id'], 'mode' => 'payment', 'payment_status' => 'paid', 'customer' => 'cus_carla', 'client_reference_id' => (string) $o['id'],
+    'metadata' => ['order_id' => (string) $o['id'], 'account_id' => (string) $o['account_id'], 'kind' => 'change']]]]);
+$prima = count(richiesteStripe());
+$r = $pagaCambio('evt_carla_cambio_1', $cambio);
+$dopo = array_slice(richiesteStripe(), $prima);
+$mod = array_values(array_filter($dopo, fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_carla'));
+$mc = end($mod)['corpo'] ?? [];
+prova('6H · pagamento confermato: Stripe passa a 4 strutture aggiuntive SENZA proporzioni, nel sito 5 strutture', $r['body'] === 'cambio-applicato'
+      && ($mc['proration_behavior'] ?? '') === 'none' && ($mc['items'][0]['id'] ?? '') === 'si_base_sub_prova_carla' && ($mc['items'][1]['id'] ?? '') === 'si_extra_sub_prova_carla'
+      && ($mc['items'][1]['quantity'] ?? '') === '4' && count(array_filter($dopo, fn($x) => $x['percorso'] === '/v1/prices')) === 2
+      && (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === 5
+      && val('SELECT applied_at FROM orders WHERE id = ?', [$cambio['id']]) !== null && val('SELECT status FROM orders WHERE id = ?', [$cambio['id']]) === 'paid', $r['body'] . ' ' . json_encode($mc));
+$prima = count(richiesteStripe());
+$r = $pagaCambio('evt_carla_cambio_1', $cambio);
+$r2 = $pagaCambio('evt_carla_cambio_1bis', $cambio);
+prova('…lo stesso pagamento consegnato due volte: un cambio solo', $r['body'] === 'gia-elaborato' && $r2['body'] === 'cambio-gia-applicato'
+      && !array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['metodo'] === 'POST') && (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === 5);
+$r = $carla->get('/pagamento/ok?order=' . $cambio['id']);
+prova('…«Pagamento ricevuto. Sei su Portfolio.»', str_contains($r['body'], 'Pagamento ricevuto. Sei su Portfolio.'));
 foreach (['Casa Quattro', 'Casa Cinque', 'Casa Sei'] as $n) $carla->modulo('/pannello/nuova', '/pannello/nuova', ['name' => $n, 'city' => 'Bari']);
 prova('…la quarta e la quinta entrano, la sesta no', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$cacc]) === 5);
 
-// Riduzione: prima si sceglie cosa archiviare; niente si cancella.
+// 6H · Scendere: dal rinnovo, con le strutture da archiviare scelte adesso. Niente si cancella.
 $sezioniPrima = (int) val('SELECT COUNT(*) FROM sections s JOIN properties p ON p.id = s.property_id WHERE p.account_id = ?', [$cacc]);
 $richiestePrima = count(richiesteStripe());
-$r = $carla->post('/account/strutture', ['strutture' => '3']);
-prova('Riduzione a 3: chiede quali 2 strutture archiviare', $r['code'] === 200 && str_contains($r['body'], 'Scegli 2 strutture da archiviare') && substr_count($r['body'], 'name="archivia[]"') === 5);
-$r = $carla->post('/account/strutture', ['strutture' => '3', 'conferma' => '1', 'archivia' => [$c1]]);
-prova('…una sola scelta non basta, e Stripe non viene toccato', str_contains($r['loc'], '/account/strutture?strutture=3') && count(richiesteStripe()) === $richiestePrima
-      && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NOT NULL', [$cacc]) === 0);
+$r = $carla->get('/account/piano/conferma?piano=portfolio&strutture=3');
+prova('6H · discesa a 3: dal rinnovo, oggi niente, e quali 2 strutture archiviare', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Oggi non paghi niente')
+      && str_contains($r['body'], 'Scegli 2 strutture da archiviare') && substr_count($r['body'], 'name="archivia[]"') === 5);
+$conf = fn(array $archivia) => $carla->modulo('/account/piano/conferma?piano=portfolio&strutture=3', '/account/piano/conferma', ['piano' => 'portfolio', 'strutture' => '3', 'archivia' => $archivia]);
+$r = $conf([$c1]);
+prova('…una sola scelta non basta, e Stripe non viene toccato', $r['code'] === 200 && str_contains($r['body'], 'Scegli esattamente 2 strutture') && count(richiesteStripe()) === $richiestePrima);
 $altro = (int) val('SELECT id FROM properties WHERE id NOT IN (SELECT id FROM properties WHERE account_id = ?) LIMIT 1', [$cacc]);
-$r = $carla->post('/account/strutture', ['strutture' => '3', 'conferma' => '1', 'archivia' => [$c1, $altro]]);
+$r = $conf([$c1, $altro]);
 prova('…né una struttura di un altro account', count(richiesteStripe()) === $richiestePrima && val('SELECT archived_at FROM properties WHERE id = ?', [$altro]) === null);
-$r = $carla->post('/account/strutture', ['strutture' => '3', 'conferma' => '1', 'archivia' => [$c1, $cp[1]]]);
+$r = $conf([$c1, $cp[1]]);
 $mod = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_carla'));
 $mc = end($mod)['corpo'] ?? [];
-prova('Stripe: 2 strutture aggiuntive, credito proporzionale', ($mc['items'][0]['quantity'] ?? '') === '2' && ($mc['proration_behavior'] ?? '') === 'create_prorations' && !isset($mc['payment_behavior']));
-prova('Le due strutture scelte sono archiviate, non cancellate', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NOT NULL', [$cacc]) === 2
-      && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$cacc]) === 5
-      && (int) val('SELECT COUNT(*) FROM sections s JOIN properties p ON p.id = s.property_id WHERE p.account_id = ?', [$cacc]) === $sezioniPrima);
-prova('La guida archiviata va offline (il QR resta)', $carla->get('/g/' . val('SELECT slug FROM properties WHERE id = ?', [$c1]))['code'] === 404
-      && (bool) val('SELECT id FROM qr_tokens WHERE property_id = ?', [$c1]));
+$cs = riga("SELECT * FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'");
+prova('6H · programmata: Stripe a 2 aggiuntive senza proporzioni (il rinnovo incasserà 237 €), nel sito restano 5 strutture', ($mc['items'][1]['quantity'] ?? '') === '2'
+      && ($mc['proration_behavior'] ?? '') === 'none' && (int) $cs['quantity'] === 5 && (int) $cs['next_quantity'] === 3
+      && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NOT NULL', [$cacc]) === 0, json_encode($mc));
+$r = $carla->get('/account');
+prova('…Account mostra il cambio programmato, con «Annulla il cambio»', str_contains($r['body'], 'passi a <b>Portfolio · 3 strutture</b>') && str_contains($r['body'], "237\u{00A0}€")
+      && str_contains($r['body'], 'Annulla il cambio'));
 inviaWebhook(['id' => 'evt_carla_4', 'type' => 'customer.subscription.updated', 'data' => ['object' => [
     'id' => 'sub_prova_carla', 'status' => 'active', 'cancel_at_period_end' => false, 'items' => $voci(2)]]]);
-prova('Webhook: 3 strutture', (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === 3);
+prova('…l\'aggiornamento di Stripe non cambia le strutture prima del rinnovo', (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === 5);
+$carla->modulo('/account', '/account/piano/annulla', []);
+$mod = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_carla'));
+prova('6H · «Annulla il cambio»: Stripe torna a 4 aggiuntive, niente più programmato', ((end($mod)['corpo'] ?? [])['items'][1]['quantity'] ?? '') === '4'
+      && val("SELECT next_quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === null);
+$conf([$c1, $cp[1]]);
+$r = inviaWebhook(['id' => 'evt_carla_rinnovo', 'type' => 'invoice.paid', 'data' => ['object' => [
+    'id' => 'in_carla_rinnovo', 'customer' => 'cus_carla', 'subscription' => 'sub_prova_carla', 'billing_reason' => 'subscription_cycle',
+    'lines' => ['data' => [['period' => ['start' => time(), 'end' => time() + 365 * 86400]]]]]]]);
+prova('6H · al rinnovo: 3 strutture, archiviate le due scelte, sezioni e contenuti intatti', $r['body'] === 'rinnovo-pagato-con-cambio-di-piano'
+      && (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === 3
+      && val("SELECT next_quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === null
+      && val('SELECT archived_at FROM properties WHERE id = ?', [$c1]) !== null && val('SELECT archived_at FROM properties WHERE id = ?', [$cp[1]]) !== null
+      && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NOT NULL', [$cacc]) === 2
+      && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$cacc]) === 5
+      && (int) val('SELECT COUNT(*) FROM sections s JOIN properties p ON p.id = s.property_id WHERE p.account_id = ?', [$cacc]) === $sezioniPrima, $r['body']);
+prova('…l\'email «Da oggi sei su Portfolio»', str_contains((string) @file_get_contents("$DOVE/app/storage/logs/mail.log"), 'Da oggi sei su Portfolio'));
+prova('La guida archiviata va offline (il QR resta)', $carla->get('/g/' . val('SELECT slug FROM properties WHERE id = ?', [$c1]))['code'] === 404
+      && (bool) val('SELECT id FROM qr_tokens WHERE property_id = ?', [$c1]));
 $r = $carla->get('/pannello');
 prova('Le guide mostrano le archiviate, con "Riattiva"', str_contains($r['body'], 'Archiviata') && str_contains($r['body'], "/pannello/$c1/riattiva"));
 $carla->post("/pannello/$c1/riattiva", []);
@@ -1158,31 +1207,31 @@ $r = inviaWebhook(['id' => 'evt_gino_1', 'type' => 'checkout.session.completed',
 prova('Fase 4 · webhook di pagamento: le tre strutture si sbloccano', $r['body'] === 'abbonamento-attivato'
       && $gino->get("/pannello/{$gids[1]}")['code'] === 200 && $gino->get("/pannello/{$gids[2]}/procedura/struttura")['code'] === 200, $r['body']);
 
-// Una struttura oltre la quantità pagata: conferma col costo, poi Stripe con create_prorations.
+// Una struttura oltre la quantità pagata (6H): conferma col costo, poi la pagina di Stripe per la differenza.
 $r = $gino->get('/pannello');
 prova('Portfolio pieno: «Aggiungi una struttura» resta', str_contains($r['body'], 'Aggiungi una struttura'));
 $r = $gino->get('/pannello/nuova');
-prova('Fase 4 · conferma con il costo: 60 € l\'anno, la parte che resta di quest\'anno, il totale dal rinnovo', $r['code'] === 200 && pulita($r)
-      && str_contains($r['body'], 'Ogni struttura in più') && str_contains($r['body'], "60\u{00A0}€") && str_contains($r['body'], 'circa')
+prova('Fase 4 · conferma con il costo: 60 € l\'anno, quanto si paga oggi fino al rinnovo, il totale dal rinnovo', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], 'Ogni struttura in più') && str_contains($r['body'], "60\u{00A0}€") && str_contains($r['body'], 'Oggi, per i giorni che restano')
       && str_contains($r['body'], "297\u{00A0}€") && str_contains($r['body'], 'name="conferma"'));
 $prima = count(richiesteStripe());
 $r = $gino->post('/pannello/nuova', ['name' => 'Gino Quattro', 'city' => 'Bari']);
 prova('…senza conferma niente Stripe e niente struttura', count(richiesteStripe()) === $prima && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$gacc]) === 3
       && str_contains($r['body'], 'Spunta la conferma per aggiungere la struttura'));
 $r = $gino->post('/pannello/nuova', ['name' => 'Gino Quattro', 'city' => 'Bari', 'conferma' => '1']);
+$g4 = (int) val("SELECT id FROM properties WHERE account_id = ? AND name = 'Gino Quattro'", [$gacc]);
+$gcambio = riga("SELECT * FROM orders WHERE account_id = ? AND kind = 'change' ORDER BY id DESC", [$gacc]);
+prova('6H · la struttura nasce bloccata e si va a pagare la quota fino al rinnovo (niente addebiti automatici)', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/')
+      && $g4 > 0 && $gino->get("/pannello/$g4")['code'] === 302 && $gcambio && (int) $gcambio['quantity'] === 4
+      && !array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['percorso'] === '/v1/subscriptions/sub_prova_gino' && $x['metodo'] === 'POST'), $r['loc']);
+$r = inviaWebhook(['id' => 'evt_gino_2', 'type' => 'checkout.session.completed', 'data' => ['object' => [
+    'id' => $gcambio['provider_session_id'], 'mode' => 'payment', 'payment_status' => 'paid', 'customer' => 'cus_gino', 'client_reference_id' => (string) $gcambio['id'],
+    'metadata' => ['order_id' => (string) $gcambio['id'], 'account_id' => (string) $gacc, 'kind' => 'change']]]]);
 $mod = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_gino'));
 $mc = end($mod)['corpo'] ?? [];
-$g4 = (int) val("SELECT id FROM properties WHERE account_id = ? AND name = 'Gino Quattro'", [$gacc]);
-prova('Fase 4 · Stripe: la voce delle aggiuntive passa a 3, proration_behavior=create_prorations', ($mc['items'][0]['id'] ?? '') === 'si_extra_sub_prova_gino'
-      && ($mc['items'][0]['quantity'] ?? '') === '3' && ($mc['proration_behavior'] ?? '') === 'create_prorations' && !isset($mc['payment_behavior']), json_encode($mc));
-prova('…la struttura c\'è, bloccata finché Stripe non conferma', $g4 > 0 && $gino->get("/pannello/$g4")['code'] === 302
-      && (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_gino'") === 3);
-inviaWebhook(['id' => 'evt_gino_2', 'type' => 'customer.subscription.updated', 'data' => ['object' => [
-    'id' => 'sub_prova_gino', 'status' => 'active', 'cancel_at_period_end' => false, 'items' => ['data' => [
-        ['id' => 'si_base_sub_prova_gino', 'quantity' => 1, 'current_period_start' => time(), 'current_period_end' => time() + 360 * 86400, 'price' => ['id' => 'price_finto_annuale', 'product' => 'prod_finto_base']],
-        ['id' => 'si_extra_sub_prova_gino', 'quantity' => 3, 'current_period_start' => time(), 'current_period_end' => time() + 360 * 86400, 'price' => ['id' => 'price_finto_extra', 'product' => 'prod_finto_extra']]]]]]]);
-prova('…il webhook porta l\'abbonamento a 4: la quarta si sblocca', (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_gino'") === 4
-      && $gino->get("/pannello/$g4")['code'] === 200);
+prova('…pagata la quota: Stripe a 3 aggiuntive senza proporzioni, abbonamento a 4, la quarta si sblocca', $r['body'] === 'cambio-applicato'
+      && ($mc['items'][1]['quantity'] ?? '') === '3' && ($mc['proration_behavior'] ?? '') === 'none'
+      && (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_gino'") === 4 && $gino->get("/pannello/$g4")['code'] === 200, $r['body'] . json_encode($mc));
 
 // Copia completa da Casa Lucia (demo): Lucia passa a un Portfolio per 2 strutture.
 $lucia = new Browser('lucia');
@@ -2355,6 +2404,94 @@ prova('Pannello: l\'invito breve, con «Scopri come» verso la landing e «Non o
       && str_contains($r['body'], '<b>Meno commissioni ai portali. Più incasso per te. Più ospiti diretti.</b>') && str_contains($r['body'], '/#sito">Scopri come')
       && str_contains($r['body'], 'data-sito-chiudi'));
 prova('…anche nella pagina della guida, sotto le sezioni', str_contains($lucia->get("/pannello/$casa")['body'], 'data-sito-invito'));
+
+// ================================================================= 6H
+capitolo('6H · cambio di piano: Plus → Essential dal rinnovo, Essential → Plus pagando la differenza');
+$paola = new Browser('paola');
+$paola->get('/registrati?piano=' . pv('plus'));
+$paola->post('/registrati', ['piano' => pv('plus'), 'name' => 'Paola Cambio', 'email' => 'paola@prova.test', 'password' => 'PaolaProva123', 'termini' => '1', 'privacy' => '1']);
+$pacc = $accDi('paola@prova.test');
+$paola->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Paola', 'city' => 'Todi']);
+$pp6 = (int) val('SELECT id FROM properties WHERE account_id = ?', [$pacc]);
+db()->prepare("INSERT INTO subscriptions (account_id, package_version_id, status, provider, provider_customer_id, provider_subscription_id, current_period_start,
+    current_period_end, payment_status, created_at, updated_at, quantity) VALUES (?, ?, 'active', 'stripe', 'cus_paola', 'sub_prova_paola', ?, ?, 'paid', ?, ?, 1)")
+    ->execute([$pacc, pv('plus'), gmdate('Y-m-d\TH:i:s\Z', time() - 100 * 86400), gmdate('Y-m-d\TH:i:s\Z', time() + 265 * 86400), gmdate('Y-m-d\TH:i:s\Z'), gmdate('Y-m-d\TH:i:s\Z')]);
+$paola->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Paola Cambio', 'cf' => 'RSSMRA85T10A562S',
+               'billing_address' => 'Via Roma 1', 'billing_postal' => '06059', 'billing_city' => 'Todi', 'billing_province' => 'PG']);
+foreach (['rules', 'eat', 'visit', 'todo', 'emergency', 'waste', 'transport'] as $k) $paola->modulo("/pannello/$pp6", "/pannello/$pp6/sezioni", ['kind' => $k]);
+$attive6 = fn() => (int) val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_core = 0 AND is_active = 1', [$pp6]);
+$paola->modulo("/pannello/$pp6/lingue", "/pannello/$pp6/lingue", ['locali' => ['it', 'en', 'fr']]);
+$core6 = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$pp6]);
+$paola->post("/pannello/$pp6/sezioni/$core6", ['checkin_steps' => ['Le chiavi sono nella cassetta.']]);
+$paola->modulo("/pannello/$pp6/procedura/pubblica", "/pannello/$pp6/pubblica", []);
+$versioni6 = (int) val('SELECT COUNT(*) FROM guide_versions WHERE property_id = ?', [$pp6]);
+prova('6H · preparazione: Plus su Stripe, guida pubblicata, 3 lingue e più di 4 sezioni', $attive6() > 4 && $versioni6 >= 1
+      && (int) val('SELECT COUNT(*) FROM property_locales WHERE property_id = ?', [$pp6]) === 3, $attive6() . ' / ' . $versioni6);
+
+$r = $paola->get('/account/piano');
+prova('6H · Cambia piano: Essential «dal rinnovo», Portfolio «oggi», Plus il piano attuale', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], 'Passa a Essential dal rinnovo') && str_contains($r['body'], 'Il tuo piano') && preg_match('#Oggi <b>[\d,.]+\x{00A0}€</b> \+ IVA#u', $r['body']) === 1);
+$r = $paola->get('/piano?passa=essential');
+prova('6H · per chi è abbonato, /piano porta al cambio di piano (e «?passa=» alla conferma)', $r['code'] === 302 && str_contains($r['loc'], '/account/piano/conferma?piano=essential'));
+$r = $paola->get('/account/piano/conferma?piano=essential');
+prova('6H · conferma della discesa: scegli le 4 sezioni da tenere, e cosa non ci sarà più', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], 'scegli le 4 sezioni da tenere') && substr_count($r['body'], "name=\"tieni[$pp6][]\"") === $attive6()
+      && str_contains($r['body'], 'Foto e PDF nelle sezioni') && str_contains($r['body'], 'Lingue: restano') && str_contains($r['body'], 'Conferma il passaggio a Essential'));
+$sez6 = array_map('intval', array_column(righe('SELECT id FROM sections WHERE property_id = ? AND is_core = 0 AND is_active = 1 ORDER BY position, id', [$pp6]), 'id'));
+$r = $paola->modulo('/account/piano/conferma?piano=essential', '/account/piano/conferma', ['piano' => 'essential', 'tieni' => [$pp6 => array_slice($sez6, 0, 5)]]);
+prova('…tenerne 5 non si può', $r['code'] === 200 && str_contains($r['body'], 'scegli al massimo 4 sezioni'));
+$tengo = [end($sez6), $sez6[count($sez6) - 2]];
+$prima = count(richiesteStripe());
+$r = $paola->modulo('/account/piano/conferma?piano=essential', '/account/piano/conferma', ['piano' => 'essential', 'tieni' => [$pp6 => $tengo]]);
+$mod = array_values(array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_paola'));
+$mc = end($mod)['corpo'] ?? [];
+$ps = riga("SELECT * FROM subscriptions WHERE provider_subscription_id = 'sub_prova_paola'");
+prova('6H · programmata: Stripe al prezzo di Essential dal rinnovo, nel sito resta Plus', $r['code'] === 302 && ($mc['proration_behavior'] ?? '') === 'none'
+      && str_starts_with((string) ($mc['items'][0]['price'] ?? ''), 'price_creato') && (int) $ps['package_version_id'] === pv('plus') && (int) $ps['next_package_version_id'] === pv('essential')
+      && $attive6() === count($sez6), json_encode($mc));
+$r = inviaWebhook(['id' => 'evt_paola_rinnovo', 'type' => 'invoice.paid', 'data' => ['object' => [
+    'id' => 'in_paola_rinnovo', 'customer' => 'cus_paola', 'subscription' => 'sub_prova_paola', 'billing_reason' => 'subscription_cycle',
+    'lines' => ['data' => [['period' => ['start' => time(), 'end' => time() + 365 * 86400]]]]]]]);
+$restano = array_map('intval', array_column(righe('SELECT id FROM sections WHERE property_id = ? AND is_core = 0 AND is_active = 1', [$pp6]), 'id'));
+prova('6H · al rinnovo: Essential, restano attive 4 sezioni comprese le 2 scelte, le altre spente (non cancellate)', $r['body'] === 'rinnovo-pagato-con-cambio-di-piano'
+      && (int) val("SELECT package_version_id FROM subscriptions WHERE provider_subscription_id = 'sub_prova_paola'") === pv('essential')
+      && count($restano) === 4 && !array_diff($tengo, $restano) && (int) val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_core = 0', [$pp6]) === count($sez6), $r['body'] . ' ' . json_encode($restano));
+prova('…il francese esce dalla guida (italiano e inglese restano), la guida è ripubblicata', (int) val('SELECT COUNT(*) FROM property_locales WHERE property_id = ?', [$pp6]) === 2
+      && !val("SELECT 1 FROM property_locales WHERE property_id = ? AND locale = 'fr'", [$pp6]) && (int) val('SELECT COUNT(*) FROM guide_versions WHERE property_id = ?', [$pp6]) === $versioni6 + 1);
+
+// Salire di nuovo: Essential → Plus, la differenza oggi.
+$r = $paola->get('/account/piano/conferma?piano=plus');
+prova('6H · Essential → Plus: oggi la differenza, dal rinnovo il prezzo di Plus', $r['code'] === 200 && str_contains($r['body'], 'Differenza per i') && str_contains($r['body'], 'Vai al pagamento'));
+$r = $paola->modulo('/account/piano/conferma?piano=plus', '/account/piano/conferma', ['piano' => 'plus']);
+$po = riga("SELECT * FROM orders WHERE account_id = ? AND kind = 'change' ORDER BY id DESC", [$pacc]);
+$r2 = inviaWebhook(['id' => 'evt_paola_su', 'type' => 'checkout.session.completed', 'data' => ['object' => [
+    'id' => $po['provider_session_id'], 'mode' => 'payment', 'payment_status' => 'paid', 'customer' => 'cus_paola', 'client_reference_id' => (string) $po['id'],
+    'metadata' => ['order_id' => (string) $po['id'], 'account_id' => (string) $pacc, 'kind' => 'change']]]]);
+prova('…pagato: ora Plus, subito', str_starts_with($r['loc'], 'https://checkout.stripe.test/') && $r2['body'] === 'cambio-applicato'
+      && (int) val("SELECT package_version_id FROM subscriptions WHERE provider_subscription_id = 'sub_prova_paola'") === pv('plus'), $r2['body']);
+// Un checkout chiuso senza pagare non cambia niente.
+$paola->modulo('/account/piano/conferma?piano=portfolio', '/account/piano/conferma', ['piano' => 'portfolio']);
+$pz = riga("SELECT * FROM orders WHERE account_id = ? AND kind = 'change' ORDER BY id DESC", [$pacc]);
+inviaWebhook(['id' => 'evt_paola_scaduto', 'type' => 'checkout.session.expired', 'data' => ['object' => ['id' => $pz['provider_session_id'], 'metadata' => ['order_id' => (string) $pz['id']]]]]);
+prova('6H · checkout chiuso senza pagare: ordine scaduto, piano invariato', (int) $pz['id'] !== (int) $po['id'] && val('SELECT status FROM orders WHERE id = ?', [$pz['id']]) === 'expired'
+      && (int) val("SELECT package_version_id FROM subscriptions WHERE provider_subscription_id = 'sub_prova_paola'") === pv('plus'));
+// Arretrato e abbonamento dello staff.
+db()->prepare("UPDATE subscriptions SET status = 'past_due' WHERE provider_subscription_id = 'sub_prova_paola'")->execute();
+$r = $paola->get('/account/piano/conferma?piano=portfolio');
+prova('6H · con un pagamento in arretrato: prima si sistema quello', $r['code'] === 302 && str_contains($paola->segui($r)['body'], 'Prima sistema il pagamento dell'));
+db()->prepare("UPDATE subscriptions SET status = 'active' WHERE provider_subscription_id = 'sub_prova_paola'")->execute();
+prova('6H · abbonamento attivato a mano: «scrivici»', str_contains($dario->get('/account/piano')['body'], 'attivato dal nostro staff: per cambiarlo scrivici'));
+prova('6H · Diagnostica: cambi di piano pagati da completare: 0', str_contains($admin->get('/admin/diagnostica')['body'], 'Cambi di piano pagati da completare: 0'));
+prova('6H · in amministrazione l\'ultimo cambio di piano del cliente', str_contains($admin->get("/admin/cliente/$pacc")['body'], 'Ultimo cambio di piano'));
+
+// Fatturazione: persona fisica o azienda, con i campi giusti.
+$r = $paola->get('/account');
+prova('Fatturazione: «Persona fisica» e i campi dell\'azienda nascosti per chi ha scelto persona fisica', str_contains($r['body'], 'Persona fisica')
+      && preg_match('#data-per="azienda" hidden><label for="f-vat"#', $r['body']) === 1 && str_contains($r['body'], 'cassetto fiscale'));
+$paola->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Paola Cambio', 'cf' => 'RSSMRA85T10A562S', 'vat' => '02945910541',
+               'sdi' => 'M5UXCR1', 'pec' => 'paola@pec.example', 'billing_address' => 'Via Roma 1', 'billing_postal' => '06059', 'billing_city' => 'Todi', 'billing_province' => 'PG']);
+$fp = riga('SELECT vat, sdi, pec FROM accounts WHERE id = ?', [$pacc]);
+prova('…una persona fisica non salva partita IVA, SDI e PEC', $fp['vat'] === '' && $fp['sdi'] === '' && $fp['pec'] === '');
 
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";

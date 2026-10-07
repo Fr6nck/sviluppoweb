@@ -98,6 +98,7 @@ final class Richiami
             if (self::manda((int) $e['acc_id'], $e['email'], (string) $e['user_name'], 'eventi', $e['id'] . '-' . substr($oggi, 0, 7), $m)) $fatte['eventi']++;
         }
         Inviti::inSospeso();   // gli sconti inviti che Stripe non ha ancora preso
+        try { CambioAbbonamento::applyPendingChanges(); } catch (\Throwable $e) { Log::exception($e, 'cambi di piano in sospeso'); }
         return $fatte;
     }
 
@@ -144,6 +145,12 @@ final class Richiami
             $numeri .= $inv['percento'] > 0
                 ? ' Grazie ai tuoi inviti hai il ' . $inv['percento'] . '% di sconto: paghi ' . Support::money($inv['scontato'], $inv['valuta']) . ' + IVA invece di ' . Support::money($inv['prezzo'], $inv['valuta']) . '.'
                 : ' Puoi ancora abbassarlo: ogni amico che pubblica con il tuo invito vale il ' . Inviti::PASSO . '% in meno.';
+        }
+        // Una discesa programmata (6H): il rinnovo incasserà il prezzo del piano nuovo.
+        if (!empty($s['next_package_version_id']) && ($nuovo = Plans::version((int) $s['next_package_version_id']))) {
+            $q = max(1, (int) ($s['next_quantity'] ?? 1));
+            $numeri .= ' Dal rinnovo passi a ' . $nuovo['name'] . (Plans::perProperty($nuovo) ? " ($q strutture)" : '') . ': '
+                     . Support::money(Plans::price($nuovo, $q), (string) $nuovo['currency']) . ' + IVA.';
         }
         return ["Il tuo abbonamento si rinnova il $quando",
                 "il tuo abbonamento MyHouse Welcome si rinnova da solo il $quando. $numeri Se vuoi cambiare qualcosa, o disattivare il rinnovo, lo fai dal tuo account.",

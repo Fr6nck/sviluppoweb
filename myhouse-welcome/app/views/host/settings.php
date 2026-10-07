@@ -44,7 +44,7 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
       <?php if ($firma): ?>
         <label class="check"><input type="checkbox" name="hide_branding" value="1" <?= (int) $prop['hide_branding'] === 1 ? 'checked' : '' ?>> <span>Nascondi la firma</span></label>
       <?php else: ?>
-        <p class="small">La firma resta visibile con il tuo piano. Con Plus e Portfolio puoi nasconderla. <a href="<?= b() ?>/piano">Vedi i piani</a></p>
+        <p class="small">La firma resta visibile con il tuo piano. Con Plus e Portfolio puoi nasconderla. <a href="<?= b() ?>/piano?passa=plus">Vedi i piani</a></p>
       <?php endif; ?>
     </fieldset>
     <div class="actions"><button class="btn">Salva</button></div>

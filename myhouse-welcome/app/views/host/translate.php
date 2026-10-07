@@ -64,7 +64,7 @@ $campo = function (string $name, string $tipo, $orig, $trad, string $etichetta, 
   <section class="panel stack suggerite" id="suggerite" aria-labelledby="suggerite-titolo">
     <h2 id="suggerite-titolo" style="font-size:20px;margin:0">Traduzioni suggerite</h2>
     <?php if (!($nelPiano ?? false)): ?>
-      <p class="small" style="margin:0">Un traduttore automatico propone le traduzioni che mancano, e tu le approvi: con il piano Plus, in omaggio per un anno. <a href="<?= b() ?>/piano">Scopri Plus</a></p>
+      <p class="small" style="margin:0">Un traduttore automatico propone le traduzioni che mancano, e tu le approvi: con il piano Plus, in omaggio per un anno. <a href="<?= b() ?>/piano?passa=plus">Scopri Plus</a></p>
     <?php elseif ($perche !== ''): ?>
       <p class="small" style="margin:0"><?= Support::e($perche) ?><?php if (empty($prop['translation_suggest'])): ?> <a href="<?= b() ?>/pannello/<?= $pid ?>/lingue#suggerite">Vai a Lingue</a><?php endif; ?></p>
     <?php elseif ($daSuggerire): ?>

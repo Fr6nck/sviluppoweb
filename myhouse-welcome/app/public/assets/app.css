@@ -93,6 +93,16 @@ p{margin:0}
 .campi-allineati>.field{display:flex;flex-direction:column}
 .campi-allineati>.field>:is(input,select,textarea){margin-top:auto}
 .campo-largo{grid-column:span 2}
+/* Cambia piano (6H): scheda del piano attuale col bordo verde, − numero + per le strutture, azione in fondo. */
+.pianocambio{gap:14px}
+.pianocambio--attuale{border:2px solid var(--pine)}
+.pianocambio__quantita{display:flex;align-items:center;gap:10px}
+.pianocambio__quantita b{min-width:2ch;text-align:center;font-size:18px;font-variant-numeric:tabular-nums}
+.pianocambio__azione{margin-top:auto;display:flex;flex-direction:column;gap:10px}
+.pianocambio__azione .btn{margin-top:0}
+.pianoconto__totale{padding-top:10px;border-top:1px solid var(--line)}
+@media(max-width:640px){ .pianocambio__azione .btn,.pianocambio__azione a.btn{width:100%;justify-content:center} }
+.campi-allineati>.field[hidden],[data-per][hidden],[data-per-etichetta][hidden]{display:none}
 .grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
 
 /* ------------------------------------------------------------------ comandi */

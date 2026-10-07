@@ -106,7 +106,7 @@ $nome = $nome !== '' ? explode(' ', $nome)[0] : ''; ?>
     <?php if ($maxProp === 1): ?>
       <p style="max-width:620px">Il tuo piano comprende una struttura. Con Portfolio gestisci più strutture dallo stesso account,
         ognuna con la sua guida e il suo QR.</p>
-      <a class="btn btn--ghost btn--sm" href="<?= b() ?>/piano">Scopri Portfolio</a>
+      <a class="btn btn--ghost btn--sm" href="<?= b() ?>/piano?passa=portfolio">Scopri Portfolio</a>
     <?php else: ?>
       <?php if ($sub): ?>
         <p style="max-width:620px">Il tuo piano comprende <?= (int) $maxProp ?> strutture. Puoi aggiungerne altre da Account &amp; Fatturazione.</p>

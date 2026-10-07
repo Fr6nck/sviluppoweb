@@ -1,5 +1,26 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Cambio di piano e fatturazione per tipo (7 ottobre 2026)
+
+Migrazione `023`: colonne `subscriptions.next_package_version_id`, `next_quantity`, `next_choices`, `next_requested_at` e `orders.kind` (predefinito `new`), `from_package_version_id`, `from_quantity`, `applied_at`. Solo aggiunte, SQLite e MySQL.
+
+- **Account → «Cambia piano»** (`/account/piano`, fase 6H). Una scheda per piano, quella attuale col bordo verde. Su ogni scheda c'è già scritto cosa succede.
+  - **Salire** (Essential → Plus, Plus → Portfolio, più strutture): si paga oggi solo la differenza per i giorni che restano fino al rinnovo, minimo 1 €. La conferma mostra il conto (differenza, IVA se calcolata da Stripe, totale) e il prezzo dal rinnovo, poi «Vai al pagamento» porta alla pagina di Stripe. Il piano cambia solo quando il webhook conferma il pagamento; la data di rinnovo non si sposta. Se mancano i dati di fatturazione si passa prima da lì e poi si torna alla conferma.
+  - **Scendere** (Plus → Essential, meno strutture): oggi non si paga niente e il cambio vale dal rinnovo. Nella conferma si scelgono le sezioni da tenere e le strutture da archiviare, con l'elenco di quello che non si vedrà più (lingue, foto, foto profilo, statistiche, firma, traduzioni suggerite). Niente si cancella. In Account compare «Dal … passi a …» con «Annulla il cambio».
+  - Al rinnovo pagato: strutture archiviate, sezioni oltre il limite spente, lingue non comprese tolte, guide pubblicate ripubblicate, email «Da oggi sei su …».
+  - Il − / + delle strutture del Portfolio funziona anche senza JavaScript.
+  - Non si può cambiare con un rinnovo non pagato («Prima sistema il pagamento…») o con un abbonamento attivato dallo staff («scrivici»).
+- **«Aggiungi una struttura»** del Portfolio usa lo stesso giro: conguaglio sui giorni restanti e pagina di Stripe. Il vecchio modulo «quantità» in Account è sostituito; `/account/strutture` porta alla conferma.
+- I link «Scopri Plus» e «Passa a Portfolio» del pannello vanno a `/piano?passa=…`: chi ha già un abbonamento finisce sulla conferma del cambio, gli altri sulla pagina dei piani.
+- **Stripe.** I prezzi delle versioni nuove dei piani si creano da soli (`ensurePrices`). Il conguaglio è un Checkout `mode=payment` con fattura; l'abbonamento si aggiorna senza proration di Stripe. Eventi webhook nuovi: `checkout.session.async_payment_succeeded` e `checkout.session.async_payment_failed`. Se il pagamento arriva ma l'aggiornamento su Stripe non riesce, il cambio resta «da completare», si ritenta a ogni giro dei richiami e si vede in Diagnostica.
+- **Amministrazione → cliente:** il cambio programmato e l'ultimo cambio fatto. Ogni cambio finisce nel registro (`subscription.change`, `subscription.change_scheduled`).
+- **Dati di fatturazione: persona fisica o azienda.** Si sceglie per primo «A chi intestiamo la fattura».
+  - Persona fisica: nome e cognome, codice fiscale, indirizzo. Partita IVA, codice SDI e PEC non si vedono e non si salvano; una nota spiega che la fattura arriva nel cassetto fiscale.
+  - Azienda o professionista: ragione sociale, partita IVA, codice fiscale facoltativo, SDI o PEC, indirizzo.
+  - Il cambio è immediato con JavaScript; senza, la pagina mostra i campi del tipo salvato.
+- **Non fatto della 6H:** le foto, i PDF e la foto profilo oltre il nuovo piano restano bloccanti come prima (la 6H proponeva di farli diventare avvisi).
+- **Prove:** 695 in tutto (giro Plus ↔ Essential ↔ Portfolio con pagamento, webhook doppio, checkout scaduto, rinnovo non pagato, abbonamento dello staff, fatturazione per tipo). L'aggiornamento da `f048ec5` passa con la `023`.
+
 ## v2 · Modulo della struttura in linea (7 ottobre 2026)
 
 - **Impostazioni e configurazione → «La struttura».** CAP, Città, Zona, CIN e Posti letto stanno in una griglia sola a tre colonne. Il CIN occupa le prime due colonne, così i bordi dei campi sono in colonna con quelli sopra.

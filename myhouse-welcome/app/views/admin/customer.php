@@ -75,6 +75,14 @@ include __DIR__ . '/_stati.php'; ?>
   <section class="stack" style="gap:10px">
     <h2 style="font-size:22px">Abbonamenti</h2>
     <?php if (!$subs): ?><p class="small muted">Nessun abbonamento.</p><?php else: ?>
+    <?php /* Cambio di piano (6H): quello programmato e l'ultimo fatto. */
+          foreach ($subs as $s) if (!empty($s['next_package_version_id']) && ($np = MHW\Plans::version((int) $s['next_package_version_id']))): ?>
+      <p class="note" role="status">Cambio programmato: <b><?= Support::e($np['name']) ?></b><?= (int) ($s['next_quantity'] ?? 1) > 1 ? ' · ' . (int) $s['next_quantity'] . ' strutture' : '' ?> dal <?= Support::e(Support::date($s['current_period_end'])) ?>.</p>
+    <?php endif; ?>
+    <?php if (($ultimoCambio = MHW\Db::one("SELECT created_at, meta FROM audit_log WHERE action = 'subscription.change' AND target_user_id = ? ORDER BY id DESC", [$acc['user_id']]))):
+          $m = json_decode((string) $ultimoCambio['meta'], true) ?: []; $da = MHW\Plans::version((int) ($m['da']['pv'] ?? 0)); $a = MHW\Plans::version((int) ($m['a']['pv'] ?? 0)); ?>
+      <p class="small muted">Ultimo cambio di piano: <?= Support::e(Support::date($ultimoCambio['created_at'])) ?>, da <?= Support::e($da['name'] ?? '?') ?> (<?= (int) ($m['da']['q'] ?? 1) ?>) a <?= Support::e($a['name'] ?? '?') ?> (<?= (int) ($m['a']['q'] ?? 1) ?>)<?= ($m['come'] ?? '') === 'rinnovo' ? ', al rinnovo' : '' ?>.</p>
+    <?php endif; ?>
     <div class="tablewrap"><table class="data">
       <thead><tr><th>Piano</th><th>Stato</th><th>Periodo</th><th>Rinnovo</th><th>Stripe</th></tr></thead>
       <tbody><?php foreach ($subs as $s): ?>

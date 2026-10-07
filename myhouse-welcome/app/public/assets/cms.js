@@ -177,6 +177,37 @@
     if (box) box.remove();
     campo.focus();
   });
+  // Dati di fatturazione: persona fisica o azienda. Si vedono solo i campi del tipo scelto
+  // (data-per) e l'etichetta giusta (data-per-etichetta); senza un tipo, solo i campi comuni.
+  var fatt = document.querySelectorAll('form[data-tipo-fatt]');
+  for (var ft = 0; ft < fatt.length; ft++) (function (form) {
+    function aggiorna() {
+      var scelto = form.querySelector('input[name="billing_type"]:checked');
+      var t = scelto ? scelto.value : '';
+      var campi = form.querySelectorAll('[data-per]');
+      for (var i = 0; i < campi.length; i++) campi[i].hidden = campi[i].getAttribute('data-per') !== t;
+      var et = form.querySelectorAll('[data-per-etichetta]');
+      for (var j = 0; j < et.length; j++) et[j].hidden = et[j].getAttribute('data-per-etichetta') !== t;
+    }
+    form.addEventListener('change', function (e) { if (e.target.name === 'billing_type') aggiorna(); });
+    aggiorna();
+  })(fatt[ft]);
+
+  // Cambio di piano: «scegli le N sezioni da tenere», con il conteggio; raggiunto il numero, le altre si fermano.
+  var gruppi = document.querySelectorAll('[data-conta-max]');
+  for (var gc = 0; gc < gruppi.length; gc++) (function (g) {
+    var max = parseInt(g.getAttribute('data-conta-max'), 10), out = g.querySelector('[data-conta]');
+    var box = g.querySelectorAll('input[type=checkbox]');
+    function conta() {
+      var n = 0;
+      for (var i = 0; i < box.length; i++) if (box[i].checked) n++;
+      for (var j = 0; j < box.length; j++) box[j].disabled = !box[j].checked && n >= max;
+      if (out) out.textContent = n + ' di ' + max + ' scelte.';
+    }
+    g.addEventListener('change', conta);
+    conta();
+  })(gruppi[gc]);
+
   // «Anche il tuo sito»: «Non ora» lo nasconde per 30 giorni, solo in questo browser.
   var invito = document.querySelectorAll('[data-sito-invito]');
   var nascostoFino = 0;

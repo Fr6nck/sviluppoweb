@@ -9,7 +9,7 @@ I dettagli tecnici sono in `app/LEGGIMI.md`. Le novità, fase per fase, sono in 
 
 1. Copia sul server **tutto `app/storage/`** e `config.local.php`, se c'è.
 2. Carica il contenuto di `welcomebook/` sopra i file vecchi, **senza toccare `app/storage/`**.
-3. Apri il sito una volta. Le migrazioni `007`–`022` partono da sole.
+3. Apri il sito una volta. Le migrazioni `007`–`023` partono da sole.
 4. In **Amministrazione → Diagnostica** tutte le righe devono essere «OK».
 
 Il database resta **SQLite**. Le migrazioni nuove sono scritte anche per MySQL, ma un'installazione da zero su MySQL non è supportata: lo schema iniziale (`001`) è solo per SQLite.
@@ -49,12 +49,19 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
 - **Webhook** su `https://TUODOMINIO/webhook/stripe` (oppure `…/index.php/webhook/stripe`). Eventi da inviare:
   - `checkout.session.completed`
   - `checkout.session.expired`
+  - `checkout.session.async_payment_succeeded` e `checkout.session.async_payment_failed` (nuovi: servono ai cambi di piano pagati con bonifico SEPA o altri metodi non immediati)
   - `invoice.paid`
   - `invoice.payment_failed`
   - `customer.subscription.updated`
   - `customer.subscription.deleted`
 - Il webhook non serve solo a pubblicare: sblocca anche le strutture del Portfolio, comprese quelle aggiunte dopo.
-- Attiva il **portale clienti** (fatture, carta, disdetta).
+- Attiva il **portale clienti** (fatture, carta, disdetta). Nel portale **spegni «Cambio di piano» e «Modifica quantità»**: il cambio si fa solo da Account → «Cambia piano», che chiede le scelte e calcola il conguaglio. Se lo lasci acceso, il cliente cambierebbe piano su Stripe senza passare da qui.
+- **Cambio di piano (fase 6H).** Prima di aprirlo ai clienti, in modalità test:
+  1. Un Plus passa a Portfolio con 2 strutture: la pagina di Stripe chiede solo la differenza per i giorni che restano. Dopo il pagamento, in Account il piano è Portfolio e la fattura del conguaglio è tra le fatture del cliente.
+  2. Un Portfolio da 3 scende a 2: oggi non paga niente, sceglie la struttura da archiviare, in Account compare «Dal … passi a …» con «Annulla il cambio».
+  3. Con un orologio di prova di Stripe (test clock) fai arrivare il rinnovo: la fattura è al prezzo nuovo e la struttura scelta è archiviata.
+  - I prezzi Stripe delle versioni nuove dei piani nascono da soli al primo cambio: non serve crearli a mano.
+  - Se un pagamento arriva ma il cambio su Stripe non riesce, in **Diagnostica** compare «Cambi di piano pagati da completare»: si ritenta da solo a ogni giro del cron.
 - Prova tutto in modalità test (`sk_test_…`, carta `4242 4242 4242 4242`) prima di passare alle chiavi live.
 - **Codici sconto (fase 6E).**
   - Si creano in **Amministrazione → Codici sconto**. Ognuno diventa un coupon Stripe «una volta», quindi sconta solo il primo anno.
@@ -68,7 +75,7 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
     2. In una finestra anonima apri il link, registrati e paga con `4242 4242 4242 4242`. La fattura dell'amico deve avere il 5% di sconto.
     3. Su Stripe apri l'abbonamento di chi ha invitato: deve avere il coupon `mhw-invito-5`, e l'anteprima della prossima fattura deve essere scontata.
     4. Con un orologio di prova di Stripe (test clock) fai arrivare il rinnovo. La fattura deve essere scontata, in «I tuoi inviti» l'amico diventa «Già scontato» e la barra torna a zero.
-    5. Con un Portfolio aggiungi una struttura da Account & Fatturazione (conguaglio subito). Dopo il pagamento il coupon deve essere ancora sull'abbonamento.
+    5. Con un Portfolio aggiungi una struttura da Account → «Cambia piano» (conguaglio subito). Dopo il pagamento il coupon deve essere ancora sull'abbonamento.
   - Per i Portfolio grandi lo sconto del 50% può superare quello che portano dieci amici: valuta un tetto in euro con `Inviti::TETTO_CENTS`.
 
 ## 4. Testi da rivedere (Amministrazione)

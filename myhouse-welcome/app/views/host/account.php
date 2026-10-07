@@ -41,18 +41,20 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
           <?php if (!$invAcc['automatico']): ?><p class="small" style="margin:0">Il rinnovo automatico è disattivato: lo sconto vale solo sul rinnovo.</p><?php endif; ?>
         </div>
       <?php endif; ?>
-      <?php if ($perStruttura && $stripe && ($sub['provider_extra_item_id'] ?? '') !== ''): ?>
-        <form method="post" action="<?= b() ?>/account/strutture" class="row" style="gap:10px;align-items:flex-end"><?= Csrf::field() ?>
-          <div class="field" style="margin:0"><label for="strutture">Numero di strutture</label>
-            <input id="strutture" name="strutture" type="number" inputmode="numeric" step="1" required style="max-width:120px"
-                   min="<?= (int) $piano['min_quantity'] ?>" max="<?= (int) $piano['max_quantity'] ?>" value="<?= $q ?>"></div>
-          <button class="btn btn--ghost btn--sm">Cambia il numero</button>
-          <span class="small muted">Prima struttura <?= Support::e(Support::money((int) $piano['price_cents'], $piano['currency'])) ?>, ogni struttura aggiuntiva
-            +<?= Support::e(Support::money((int) $piano['extra_price_cents'], $piano['currency'])) ?> / anno.</span>
-        </form>
+      <?php /* Un passaggio a un piano più economico, programmato per il rinnovo (6H). */
+            if ($stripe && !empty($sub['next_package_version_id']) && ($prossimo = Plans::version((int) $sub['next_package_version_id']))):
+              $qn = max(1, (int) ($sub['next_quantity'] ?? 1)); ?>
+        <div class="note stack" style="display:block" role="status">
+          <p style="margin:0">Dal <?= Support::e(Support::date($fine)) ?> passi a <b><?= Support::e($prossimo['name']) ?><?= Plans::perProperty($prossimo) ? ' · ' . $qn . ' strutture' : '' ?></b>:
+            <?= Support::e(Support::money(Plans::price($prossimo, $qn), $prossimo['currency'])) ?> + IVA / anno.</p>
+          <form method="post" action="<?= b() ?>/account/piano/annulla" class="row" style="gap:10px;align-items:center;margin-top:8px"><?= Csrf::field() ?>
+            <button class="btn btn--ghost btn--sm">Annulla il cambio</button>
+            <span class="small muted">Resti su <?= Support::e($piano['name'] ?? '') ?> anche dopo il rinnovo.</span></form>
+        </div>
       <?php endif; ?>
       <?php if (!$stripe): ?><p class="small muted">Abbonamento attivato dal nostro staff<?= $fine ? ', valido fino al ' . Support::e(Support::date($fine)) : '' ?>.</p><?php endif; ?>
       <div class="actions">
+        <?php if ($stripe && $sub['status'] !== 'past_due'): ?><a class="btn" href="<?= b() ?>/account/piano">Cambia piano</a><?php endif; ?>
         <?php if ($stripe): ?>
           <form method="post" action="<?= b() ?>/account/rinnovo" style="margin:0"><?= Csrf::field() ?>
             <?php if ((int) $sub['cancel_at_period_end'] === 1): ?>
@@ -83,10 +85,16 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
         $fatt = $fatt ?? $acc; $erroriFatt = $erroriFatt ?? []; $torna = $torna ?? '';
         $fv = fn(string $k) => Support::e((string) ($fatt[$k] ?? ''));
         $completi = MHW\Fatturazione::completa($acc);
-        $campoF = function (string $k, string $et, string $tipo = 'text', string $extra = '', string $aiuto = '') use ($fv, $erroriFatt): string {
+        // Persona fisica o azienda: alcuni campi valgono solo per un tipo (data-per). Il tipo scelto decide
+        // cosa si vede subito; con JavaScript cambia al volo. Senza un tipo scelto, si vede tutto.
+        $tipoF = (string) ($fatt['billing_type'] ?? '');
+        $per = fn(string $t) => ' data-per="' . $t . '"' . ($tipoF !== '' && $t !== $tipoF ? ' hidden' : '');
+        $etichetta = fn(array $per) => implode('', array_map(fn($t, $et) => '<span data-per-etichetta="' . $t . '"'
+            . (($tipoF === '' ? $t !== '' : $t !== $tipoF) ? ' hidden' : '') . '>' . $et . '</span>', array_keys($per), $per));
+        $campoF = function (string $k, string $et, string $tipo = 'text', string $extra = '', string $aiuto = '', string $solo = '') use ($fv, $erroriFatt, $per): string {
             $err = $erroriFatt[$k] ?? '';
             $desc = trim(($aiuto !== '' ? 'f-' . $k . '-aiuto ' : '') . ($err !== '' ? 'f-' . $k . '-err' : ''));
-            return '<div class="field" style="margin:0"><label for="f-' . $k . '">' . $et . '</label>'
+            return '<div class="field" style="margin:0"' . ($solo !== '' ? $per($solo) : '') . '><label for="f-' . $k . '">' . $et . '</label>'
                 . ($aiuto !== '' ? '<p class="help" id="f-' . $k . '-aiuto" style="margin:0 0 6px">' . $aiuto . '</p>' : '')
                 . '<input id="f-' . $k . '" name="' . $k . '" type="' . $tipo . '" value="' . $fv($k) . '" ' . $extra
                 . ($desc !== '' ? ' aria-describedby="' . $desc . '"' : '') . ($err !== '' ? ' aria-invalid="true"' : '') . '>'
@@ -101,7 +109,7 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
     <?php if ($erroriFatt): ?><p class="note note--err" role="alert">Controlla i campi segnati qui sotto.</p><?php endif; ?>
     <details class="altri-dettagli" style="border:0;padding:0" <?= $erroriFatt || !empty($apriFatt) || $torna !== '' || !$completi ? 'open' : '' ?>>
       <summary><?= ($acc['billing_name'] ?? '') !== '' ? Support::e($acc['billing_name']) . ' · ' . Support::e(($acc['vat'] ?? '') ?: ($acc['cf'] ?? '')) : 'Compila i dati per la fattura' ?></summary>
-      <form method="post" action="<?= b() ?>/account/fatturazione" class="stack" style="margin-top:14px" novalidate><?= Csrf::field() ?>
+      <form method="post" action="<?= b() ?>/account/fatturazione" class="stack" style="margin-top:14px" novalidate data-tipo-fatt><?= Csrf::field() ?>
         <?php if ($torna !== ''): ?><input type="hidden" name="torna" value="<?= Support::e($torna) ?>"><?php endif; ?>
         <fieldset class="fieldset" style="margin:0">
           <legend>A chi intestiamo la fattura</legend>
@@ -113,13 +121,14 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
           </div>
           <?php if (isset($erroriFatt['billing_type'])): ?><p class="campo-errore" id="f-billing_type-err"><?= Support::e($erroriFatt['billing_type']) ?></p><?php endif; ?>
         </fieldset>
-        <?= $campoF('billing_name', 'Intestatario', 'text', 'maxlength="160" autocomplete="organization"', 'Ragione sociale, oppure nome e cognome.') ?>
-        <div class="grid grid-2">
-          <?= $campoF('vat', 'Partita IVA', 'text', 'maxlength="13" inputmode="numeric" autocomplete="off"', 'Obbligatoria per aziende e professionisti. 11 cifre.') ?>
-          <?= $campoF('cf', 'Codice fiscale', 'text', 'maxlength="16" autocomplete="off" style="text-transform:uppercase" autocapitalize="characters"', 'Obbligatorio per i privati. 16 caratteri, o 11 cifre per le società.') ?>
-          <?= $campoF('sdi', 'Codice destinatario SDI', 'text', 'maxlength="7" autocomplete="off" style="text-transform:uppercase" autocapitalize="characters"', '7 caratteri. Per aziende e professionisti: questo oppure la PEC.') ?>
-          <?= $campoF('pec', 'PEC', 'email', 'maxlength="190" autocomplete="off"') ?>
+        <?= $campoF('billing_name', $etichetta(['' => 'Intestatario', 'privato' => 'Nome e cognome', 'azienda' => 'Ragione sociale']), 'text', 'maxlength="160" autocomplete="name"') ?>
+        <div class="grid grid-2 campi-allineati">
+          <?= $campoF('vat', 'Partita IVA', 'text', 'maxlength="13" inputmode="numeric" autocomplete="off"', '11 cifre.', 'azienda') ?>
+          <?= $campoF('cf', 'Codice fiscale' . $etichetta(['' => '', 'privato' => '', 'azienda' => ' <span class="muted">(facoltativo)</span>']), 'text', 'maxlength="16" autocomplete="off" style="text-transform:uppercase" autocapitalize="characters"', $etichetta(['' => '16 caratteri. Per una società, anche le 11 cifre della partita IVA.', 'privato' => '16 caratteri, come sulla tessera sanitaria.', 'azienda' => '16 caratteri. Per una società, anche le 11 cifre della partita IVA.'])) ?>
+          <?= $campoF('sdi', 'Codice destinatario SDI', 'text', 'maxlength="7" autocomplete="off" style="text-transform:uppercase" autocapitalize="characters"', '7 caratteri. Serve questo oppure la PEC.', 'azienda') ?>
+          <?= $campoF('pec', 'PEC', 'email', 'maxlength="190" autocomplete="off"', 'Se non hai il codice destinatario.', 'azienda') ?>
         </div>
+        <p class="small muted"<?= $per('privato') ?>>Per una persona fisica bastano nome, codice fiscale e indirizzo: la fattura elettronica arriva anche nel tuo cassetto fiscale dell'Agenzia delle Entrate. Hai la partita IVA? Scegli «Azienda o professionista».</p>
         <?= $campoF('billing_address', 'Indirizzo', 'text', 'maxlength="255" autocomplete="street-address"', 'Via e numero civico.') ?>
         <div class="grid grid-3">
           <?= $campoF('billing_postal', 'CAP', 'text', 'maxlength="5" inputmode="numeric" autocomplete="postal-code"') ?>

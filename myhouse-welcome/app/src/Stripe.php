@@ -177,6 +177,83 @@ final class Stripe
                           'mhw-qty-add-' . $subscriptionId . '-' . $extra);
     }
 
+    /**
+     * I Price di Stripe di una versione del listino (cambio di piano, 6H): se mancano si
+     * creano dalla versione e si salvano, così l'abbonamento può puntarci. Il prodotto
+     * porta il metadato ruolo (base / aggiuntiva) che quantityFrom usa per riconoscere le voci.
+     * @return array{0:string,1:string} [Price base, Price della struttura aggiuntiva ('' se il piano non è a strutture)]
+     */
+    public static function ensurePrices(array $pv, array $pkg): array
+    {
+        $crea = function (int $cents, string $ruolo, string $nome) use ($pv, $pkg): string {
+            $r = self::call('POST', 'prices', [
+                'currency' => strtolower((string) $pv['currency']), 'unit_amount' => (string) $cents, 'tax_behavior' => 'exclusive',
+                'recurring[interval]' => 'year', 'product_data[name]' => $nome,
+                'product_data[metadata][package]' => (string) $pkg['code'], 'product_data[metadata][ruolo]' => $ruolo,
+            ], 'mhw-price-' . $pv['id'] . '-' . ($ruolo === 'base' ? 'base' : 'extra'));
+            return (string) $r['id'];
+        };
+        $base = (string) ($pv['stripe_price_id'] ?? '');
+        if ($base === '') {
+            $base = $crea((int) $pv['price_cents'], 'base', 'MyHouse Welcome ' . $pkg['name']);
+            Db::update('package_versions', ['stripe_price_id' => $base], 'id = :id', ['id' => $pv['id']]);
+        }
+        $extra = '';
+        if (Plans::perProperty($pv)) {
+            $extra = (string) ($pv['stripe_extra_price_id'] ?? '');
+            if ($extra === '') {
+                $extra = $crea((int) $pv['extra_price_cents'], 'aggiuntiva', 'MyHouse Welcome ' . $pkg['name'] . ' — struttura aggiuntiva');
+                Db::update('package_versions', ['stripe_extra_price_id' => $extra], 'id = :id', ['id' => $pv['id']]);
+            }
+        }
+        return [$base, $extra];
+    }
+
+    /**
+     * La pagina di pagamento della differenza per salire di piano: un pagamento singolo
+     * (mode=payment) con la sua fattura. IVA, indirizzo e partita IVA come per l'abbonamento.
+     */
+    public static function checkoutChange(array $order, string $descrizione, array $account, array $user): string
+    {
+        $base = Support::baseUrl();
+        $meta = ['order_id' => (string) $order['id'], 'account_id' => (string) $account['id'], 'kind' => 'change'];
+        $p = [
+            'mode' => 'payment',
+            'customer' => self::ensureCustomer($account, $user),
+            'client_reference_id' => (string) $order['id'],
+            'success_url' => $base . '/pagamento/ok?order=' . $order['id'],
+            'cancel_url' => $base . '/account/piano',
+            'locale' => 'it',
+            'line_items[0][quantity]' => 1,
+            'line_items[0][price_data][currency]' => strtolower((string) $order['currency']),
+            'line_items[0][price_data][unit_amount]' => (string) (int) $order['amount_cents'],
+            'line_items[0][price_data][tax_behavior]' => 'exclusive',
+            'line_items[0][price_data][product_data][name]' => $descrizione,
+            'invoice_creation[enabled]' => 'true',
+            'invoice_creation[invoice_data][description]' => $descrizione,
+            'invoice_creation[invoice_data][metadata][order_id]' => (string) $order['id'],
+            'billing_address_collection' => 'required',
+            'tax_id_collection[enabled]' => 'true',
+            'customer_update[address]' => 'auto',
+            'customer_update[name]' => 'auto',
+        ];
+        if (!empty(Config::get('stripe')['automatic_tax'])) $p['automatic_tax[enabled]'] = 'true';
+        foreach ($meta as $k => $v) { $p["metadata[$k]"] = $v; $p["payment_intent_data[metadata][$k]"] = $v; }
+        $res = self::call('POST', 'checkout/sessions', $p, 'mhw-checkout-order-' . $order['id']);
+        Db::update('orders', ['provider_session_id' => $res['id'], 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]);
+        return $res['url'];
+    }
+
+    /**
+     * Porta l'abbonamento alle voci nuove (CambioPiano::voci), SEMPRE senza proporzioni:
+     * la differenza è già stata pagata a parte (salita) o non è dovuta (discesa).
+     */
+    public static function applyChange(string $subscriptionId, array $voci, string $chiave): array
+    {
+        return self::call('POST', 'subscriptions/' . rawurlencode($subscriptionId),
+                          $voci + ['proration_behavior' => 'none', 'expand[0]' => 'items.data.price.product'], $chiave);
+    }
+
     /** Rinnovo automatico acceso o spento. Il servizio pagato resta fino alla fine del periodo. */
     public static function setCancelAtPeriodEnd(string $subscriptionId, bool $cancel): array
     {
