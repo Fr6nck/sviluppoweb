@@ -2,7 +2,7 @@
 /** Rotte dell'area host. $r è il Router creato in public/index.php. */
 
 use MHW\{Auth, Config, Conversione, Db, Entitlements, Guide, LimitReached, Log, Mappe, Media, Migrator, NotFound, Palette, Plans, Properties,
-         Qr, QrExport, SectionCatalog, Stats, Stripe, Subscriptions, Support, View};
+         Qr, QrExport, SectionCatalog, Stats, Stripe, Subscriptions, Suggerimenti, Support, View};
 
 /* La procedura: cinque passi. Le lingue in più stanno in fondo a «Anteprima e
    pubblica», facoltative: le traduzioni non fermano mai la pubblicazione. */
@@ -64,8 +64,12 @@ $datiSezione = function (array $p, array $s): array {
             $places[] = $pl;
         }
     }
+    // «Già in <struttura>»: luoghi e righe scritti nelle altre strutture dello stesso account.
+    $aid = (int) $p['account_id'];
     return ['s' => $s, 'title' => $tr['title'] ?? '', 'dati' => json_decode((string) $s['data'], true) ?: [],
-            'tdati' => json_decode((string) ($tr['data'] ?? ''), true) ?: [], 'places' => $places];
+            'tdati' => json_decode((string) ($tr['data'] ?? ''), true) ?: [], 'places' => $places,
+            'suggLuoghi' => Suggerimenti::luoghi($aid, (int) $p['id'], (int) $s['id'], $s['kind']),
+            'suggRighe' => Suggerimenti::righe($aid, (int) $p['id'], (int) $s['id'], $s['kind'], $p['default_locale'])];
 };
 
 /** Una richiesta arrivata dal salvataggio automatico vuole JSON, non un redirect. */
@@ -415,6 +419,31 @@ $r->post('/pannello/{id}/sezioni/{sid}/luogo', function (array $a) use ($mia, $m
                  'category_choice', 'category', 'badge_choice', 'badge', 'description', 'note'])))];
         $torna .= (str_contains($torna, '?') ? '&' : '?') . 'luogo=' . (int) ($_POST['place_id'] ?? 0) . '#luogo';
     }
+    Support::redirect($torna);
+});
+
+/* «Già in <struttura>»: un luogo o una riga di un'altra struttura dello stesso
+   account, copiati qui con un tocco (Suggerimenti). Si torna con il luogo aperto,
+   da controllare (i minuti in auto restano vuoti). */
+$r->post('/pannello/{id}/sezioni/{sid}/da-altra', function (array $a) use ($mia, $messaggio, $tornaSezione) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    $sid = (int) $a['sid'];
+    $torna = $tornaSezione($p, $sid, '/pannello/' . $p['id'] . '/sezioni/' . $sid);
+    $aggiungi = fn(string $q) => $torna . (str_contains($torna, '?') ? '&' : '?') . $q;
+    try {
+        if (($plid = (int) ($_POST['luogo'] ?? 0)) > 0) {
+            $nuovo = Suggerimenti::copiaLuogo((int) $acc['id'], $p, $sid, $plid);
+            Support::flash('Luogo aggiunto: controlla i minuti e salva se cambi qualcosa.');
+            // Il luogo nuovo si apre nel modulo; nella procedura l'ancora resta quella della sezione.
+            Support::redirect(str_contains($torna, '#') ? str_replace('#', '&luogo=' . $nuovo . '#', $torna) : $aggiungi('luogo=' . $nuovo) . '#luogo');
+        }
+        $parti = explode('|', (string) ($_POST['riga'] ?? ''), 3);
+        if (count($parti) !== 3) throw new NotFound('Riga non trovata.');
+        Suggerimenti::copiaRiga((int) $acc['id'], $p, $sid, $parti[0], (int) $parti[1], $parti[2]);
+        Support::flash('Aggiunto in fondo all\'elenco: controllalo.');
+        if (!str_contains($torna, '#')) $torna .= '#rip-' . preg_replace('/[^a-z0-9]+/i', '-', $parti[0]);
+    } catch (NotFound) { http_response_code(404); View::out('pub/404', []); }
+    catch (\Throwable $e) { Support::flash($messaggio($e, 'copia da altra struttura'), 'err'); }
     Support::redirect($torna);
 });
 

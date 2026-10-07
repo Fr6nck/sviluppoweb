@@ -12,11 +12,13 @@
      'item'    => il nome di una riga («Parcheggio»): l'intestazione dice «Parcheggio 1», «Parcheggio 2»…
      'presets' => [etichetta => valori] righe pronte da aggiungere con un tocco (emergenze),
      'foto', 'pdf' => se il piano comprende foto e PDF nelle righe,
+     'altre'   => righe delle altre strutture dell'account (Suggerimenti::righe), che si copiano
+                  con il modulo esterno 'modulo_altre' (un bottone non può stare in due moduli),
    ]
    Foto e PDF di una riga: l'id del file salvato viaggia nel campo nascosto, il
    file nuovo in rip_file[campo][riga][sottocampo], «Togli» in rip_togli[…]. */
 use MHW\{Support, Icon, Media, Eventi};
-$r = $rip + ['help' => '', 'rows' => [], 'add' => 'Aggiungi', 'item' => 'Voce', 'max' => 30, 'presets' => [], 'foto' => true, 'pdf' => true, 'eventi' => false];
+$r = $rip + ['help' => '', 'rows' => [], 'add' => 'Aggiungi', 'item' => 'Voce', 'max' => 30, 'presets' => [], 'foto' => true, 'pdf' => true, 'eventi' => false, 'altre' => [], 'modulo_altre' => ''];
 $nome = $r['name'];
 $domId = 'rip-' . preg_replace('/[^a-z0-9]+/i', '-', $nome);
 $giorni = [1 => 'Lun', 2 => 'Mar', 3 => 'Mer', 4 => 'Gio', 5 => 'Ven', 6 => 'Sab', 7 => 'Dom'];
@@ -177,6 +179,20 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
       <span class="small muted">Suggerimenti:</span>
       <?php foreach ($r['presets'] as $et => $valori): ?>
         <button type="button" class="chip-sugg" data-rip-preset="<?= Support::e(json_encode($valori, JSON_UNESCAPED_UNICODE)) ?>">+ <?= Support::e($et) ?></button>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
+  <?php if ($r['altre'] && $r['modulo_altre'] !== ''): $gruppi = [];
+        foreach ($r['altre'] as $x) $gruppi[$x['struttura']][] = $x; ?>
+    <div class="gia-altrove" data-gia-altrove>
+      <?php foreach ($gruppi as $struttura => $voci): ?>
+        <div class="suggerimenti">
+          <span class="small muted">Già in <?= Support::e($struttura) ?>:</span>
+          <?php foreach ($voci as $x): ?>
+            <button type="submit" class="chip-sugg" form="<?= Support::e($r['modulo_altre']) ?>" name="riga" data-nome="<?= Support::e(mb_strtolower($x['etichetta'])) ?>"
+                    value="<?= Support::e($nome . '|' . $x['sid'] . '|' . $x['riga']) ?>" aria-label="Aggiungi <?= Support::e($x['etichetta']) ?>, già in <?= Support::e($struttura) ?>">+ <?= Support::e($x['etichetta']) ?></button>
+          <?php endforeach; ?>
+        </div>
       <?php endforeach; ?>
     </div>
   <?php endif; ?>

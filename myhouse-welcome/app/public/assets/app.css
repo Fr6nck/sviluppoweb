@@ -1217,6 +1217,11 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .chip-sugg{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);
   background:var(--raised);color:var(--ink);font:inherit;font-size:13.5px;font-weight:500;cursor:pointer}
 .chip-sugg:hover{background:var(--sunk)}
+/* «Già in <struttura>»: luoghi e righe delle altre strutture dell'account. */
+.gia-altrove{display:grid;gap:10px;margin-top:10px}
+.gia-altrove .suggerimenti[hidden],.chip-sugg[hidden]{display:none}
+.gia-altrove .chip-sugg{max-width:100%;text-align:left}
+.gia-altrove__cat{margin-left:.3em}
 
 /* Guida ospite: il foglio dei contatti. */
 .contatti-foglio{position:relative;flex:1 1 auto}

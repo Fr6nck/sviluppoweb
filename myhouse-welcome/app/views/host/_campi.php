@@ -46,6 +46,8 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
             'rows' => SectionCatalog::rows($defCampo, $dati[$nome] ?? [], $tdati[$nome] ?? []),
             'add' => $defCampo['add'] ?? 'Aggiungi', 'item' => $defCampo['item'] ?? 'Voce', 'max' => $defCampo['max'] ?? 30,
             'foto' => $foto ?? true, 'pdf' => $pdf ?? true, 'eventi' => !empty($defCampo['eventi']),
+            // «Già in <struttura>»: le righe scritte nelle altre strutture, con il modulo che le copia qui.
+            'altre' => $suggRighe[$nome] ?? [], 'modulo_altre' => isset($sid) ? 'da-altra-' . $sid : '',
             // Le righe pronte hanno il nome nella lingua della guida (Guardia medica, Out-of-hours doctor…).
             'presets' => array_combine(
                 array_map(fn($k) => I18n::t($linguaGuida, $k), array_keys($defCampo['presets'] ?? [])),

@@ -1,5 +1,18 @@
 # Changelog — MyHouse Welcome
 
+## v2 · «Già in <struttura>» (7 ottobre 2026)
+
+Nessuna migrazione: si legge dalle sezioni che ci sono già.
+
+- **Riusare quello che hai già scritto.** Chi ha almeno due strutture (non archiviate) trova, nell'editor di una sezione, i luoghi e le righe scritti nelle altre: «Già in Casa Checco: + Enoteca Tre Calici · Enoteca». Un tocco e sono qui.
+  - Si portano testi, traduzioni (nelle lingue di questa guida), categoria, etichetta e colore. La foto, e il PDF di una riga, si duplicano: le due guide restano indipendenti. Senza foto nel piano, la foto non si porta.
+  - I minuti a piedi si ricalcolano dalle coordinate del luogo e della struttura; se mancano restano vuoti. I minuti in auto e le distanze delle righe restano vuoti: dipendono dalla struttura.
+  - Mai in Check-in & Check-out, Wi-Fi, Come arrivare e Parcheggio, che sono solo di quella struttura.
+  - Non si propone quello che c'è già con lo stesso nome. Con più di 12 luoghi compare un campo per cercarli.
+  - Il luogo copiato si apre nel modulo, da controllare; la riga copiata va in fondo all'elenco. Se si stava scrivendo qualcosa, prima si salva.
+  - Funziona nella pagina della sezione e nella configurazione. `Suggerimenti.php`, rotta `POST /pannello/{id}/sezioni/{sid}/da-altra`.
+- **Prove.** 13 in più (anche: un luogo di un altro account non si copia), 633 in tutto.
+
 ## v2 · Form e pannello al telefono (7 ottobre 2026)
 
 Migrazione `021`: la colonna `users.pending_email`, per cambiare l'email dall'account. Solo un'aggiunta.

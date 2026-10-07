@@ -2,7 +2,8 @@
 /* L'editor di una sezione: campi, immagine, PDF, luoghi. Lo usano la pagina
    della sezione e il passo «Sezioni» della procedura, dove si apre sotto la card.
    Riceve: $prop, $acc, $s, $titoloSezione (titolo nella lingua principale),
-   $dati, $tdati, $places, $modifica, $err, $inProcedura. */
+   $dati, $tdati, $places, $modifica, $err, $inProcedura,
+   $suggLuoghi e $suggRighe («Già in <struttura>», da Suggerimenti). */
 use function MHW\b;
 use MHW\{Support, Csrf, Icon, Media, SectionCatalog, Entitlements, Tassonomie, I18n};
 $pid = (int) $prop['id']; $sid = (int) $s['id']; $aid = (int) $acc['id'];
@@ -19,7 +20,8 @@ $inProcedura = $inProcedura ?? false;
 $modificaLuogoUrl = $inProcedura ? b() . '/pannello/' . $pid . '/procedura/sezioni?apri=' . $sid . '&amp;luogo=' : $qui_url . '?luogo=';
 $procedura = $procedura ?? false;
 $inModifica = null;
-foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = $pl; ?>
+foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = $pl;
+$suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
     <?php if ($err): ?><p class="note note--err" role="alert"><?= Support::e($err) ?></p><?php endif; ?>
     <?php /* Nella procedura l'editor si apre sotto la card: il riquadro con l'introduzione sta qui (nella pagina della sezione è sotto il titolo). */
           $introSezione = SectionCatalog::get($s['kind'])['intro'] ?? '';
@@ -81,6 +83,12 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
       </div>
     </form>
 
+    <?php if ($suggLuoghi || $suggRighe): /* «Già in <struttura>»: i bottoni stanno nell'editor, il modulo qui fuori.
+             Con JavaScript prima si salva quello che si è scritto (data-salva-prima). */ ?>
+      <form method="post" action="<?= $qui_url ?>/da-altra" id="da-altra-<?= $sid ?>" data-salva-prima hidden><?= Csrf::field() ?>
+        <?php if ($inProcedura): ?><input type="hidden" name="da" value="procedura"><?php endif; ?></form>
+    <?php endif; ?>
+
     <?php if (SectionCatalog::hasPlaces($s['kind'])): ?>
       <div class="stack" style="gap:12px">
         <h2 style="font-size:22px">I luoghi che consigli</h2>
@@ -109,6 +117,25 @@ foreach ($places as $pl) if ((int) $pl['id'] === (int) $modifica) $inModifica = 
           </div>
         <?php endforeach; ?>
         <?php if ($places): ?></div><?php endif; ?>
+
+        <?php if ($suggLuoghi && !$inModifica): $gruppi = [];
+              foreach ($suggLuoghi as $x) $gruppi[$x['struttura']][] = $x; ?>
+          <div class="gia-altrove" data-gia-altrove>
+            <?php if (count($suggLuoghi) > 12): ?>
+              <div class="field" style="margin:0"><label for="gia-cerca-<?= $sid ?>">Cerca tra i luoghi delle tue altre strutture</label>
+                <input type="search" id="gia-cerca-<?= $sid ?>" data-gia-cerca autocomplete="off" data-no-autosave></div>
+            <?php endif; ?>
+            <?php foreach ($gruppi as $struttura => $voci): ?>
+              <div class="suggerimenti">
+                <span class="small muted">Già in <?= Support::e($struttura) ?>:</span>
+                <?php foreach ($voci as $x): ?>
+                  <button type="submit" class="chip-sugg" form="da-altra-<?= $sid ?>" name="luogo" value="<?= (int) $x['id'] ?>" data-nome="<?= Support::e(mb_strtolower($x['name'])) ?>"
+                          aria-label="Aggiungi <?= Support::e($x['name']) ?>, già in <?= Support::e($struttura) ?>">+ <?= Support::e($x['name']) ?><?php if ($x['categoria'] !== ''): ?><span class="muted gia-altrove__cat">· <?= Support::e($x['categoria']) ?></span><?php endif; ?></button>
+                <?php endforeach; ?>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
 
         <?php $v = $inModifica ?? ['id' => 0, 'name' => '', 'address' => '', 'maps_url' => '', 'phone' => '', 'website' => '', 'booking_url' => '',
                                    'walk_minutes' => 0, 'drive_minutes' => 0, 'badge_tone' => 'pine', 'media_id' => null,

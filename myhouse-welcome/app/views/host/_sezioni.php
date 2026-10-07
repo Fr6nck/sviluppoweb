@@ -65,6 +65,7 @@ $n = count($sezioni); ?>
         <?php (function (array $v) { extract($v); include __DIR__ . '/_sezione_editor.php'; })([
             'prop' => $prop, 'acc' => $acc, 's' => $aperta['s'], 'titoloSezione' => $aperta['title'], 'dati' => $aperta['dati'],
             'tdati' => $aperta['tdati'], 'places' => $aperta['places'], 'modifica' => $modifica ?? 0, 'err' => null,
+            'suggLuoghi' => $aperta['suggLuoghi'], 'suggRighe' => $aperta['suggRighe'],
             'inProcedura' => true, 'procedura' => false]); ?>
         <p><a class="small" href="<?= b() ?>/pannello/<?= $pid ?>/procedura/sezioni#sez-<?= (int) $s['id'] ?>">Chiudi l'editor</a></p>
       </div>

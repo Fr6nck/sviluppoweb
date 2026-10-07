@@ -1264,6 +1264,61 @@ prova('Fase 4 · copia che supera il limite del piano: rifiutata, niente a metà
       && ($oggettiPrima < 0 || count(glob("$S3_DIR/oggetti/*")) === $oggettiPrima),
       $r['code'] . ' ' . ($em[1] ?? '') . ' media ' . val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]) . "/$mediaPrima oggetti " . count(glob("$S3_DIR/oggetti/*")) . "/$oggettiPrima");
 $admin->post("/admin/cliente/$lacc/override", ['feature' => 'sections', 'valore' => '']);
+// Punto 4 · «Già in <struttura>»: luoghi e righe delle altre strutture, da riusare con un tocco.
+$eatDue = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'eat'", [$due]);   // «sostituisci» l'ha rifatta
+$r = $lucia->get("/pannello/$due/sezioni/$eatDue");
+prova('Punto 4 · nessun suggerimento per i luoghi che ci sono già con lo stesso nome', $r['code'] === 200 && pulita($r) && !str_contains($r['body'], 'name="luogo"'));
+$togli = $luoghi($due)[2];
+$lucia->post("/pannello/$due/sezioni/$eatDue/luogo/{$togli['id']}/azione", ['fai' => 'elimina']);
+$fonte = riga('SELECT * FROM places WHERE section_id = ? AND name = ?', [$eatCasa, $togli['name']]);
+db()->prepare('UPDATE places SET lat = 43.0770, lng = 11.6790, walk_minutes = 99, drive_minutes = 7 WHERE id = ?')->execute([$fonte['id']]);
+db()->prepare('UPDATE properties SET lat = 43.0757, lng = 11.6800 WHERE id = ?')->execute([$due]);
+$r = $lucia->get("/pannello/$due/sezioni/$eatDue");
+prova('Punto 4 · tolto un luogo, torna come «Già in Casa Lucia» (un bottone del modulo esterno)', str_contains($r['body'], 'Già in Casa Lucia:')
+      && preg_match('#<button type="submit" class="chip-sugg" form="da-altra-' . $eatDue . '" name="luogo" value="' . $fonte['id'] . '"#', $r['body']) === 1
+      && str_contains($r['body'], 'id="da-altra-' . $eatDue . '" data-salva-prima'));
+$prova4 = $lucia->get("/pannello/$casa/sezioni/$eatCasa");
+prova('…e nell\'altra struttura niente, perché lì ci sono già tutti', !str_contains($prova4['body'], 'name="luogo"'));
+$coreDue = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$due]);
+prova('Punto 4 · mai nelle sezioni che sono solo di una struttura (Check-in & Check-out)', !str_contains($lucia->get("/pannello/$due/sezioni/$coreDue")['body'], 'da-altra-'));
+$mediaPrima = (int) val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]);
+$r = $lucia->post("/pannello/$due/sezioni/$eatDue/da-altra", ['luogo' => (string) $fonte['id']]);
+$nuovo = riga('SELECT * FROM places WHERE section_id = ? AND name = ?', [$eatDue, $togli['name']]);
+prova('Punto 4 · un tocco: il luogo è qui, aperto nel modulo per controllarlo', $r['code'] === 302 && $nuovo && str_ends_with($r['loc'], "/pannello/$due/sezioni/$eatDue?luogo={$nuovo['id']}#luogo"), $r['loc']);
+prova('…con categoria, etichetta, colore e traduzioni', $nuovo['category_key'] === $fonte['category_key'] && $nuovo['badge_key'] === $fonte['badge_key'] && $nuovo['badge_tone'] === $fonte['badge_tone']
+      && (int) val('SELECT COUNT(*) FROM place_translations WHERE place_id = ?', [$nuovo['id']]) === (int) val('SELECT COUNT(*) FROM place_translations WHERE place_id = ?', [$fonte['id']]));
+prova('…minuti a piedi ricalcolati dalla struttura, minuti in auto vuoti', (int) $nuovo['walk_minutes'] > 0 && (int) $nuovo['walk_minutes'] !== 99 && (int) $nuovo['drive_minutes'] === 0, $nuovo['walk_minutes'] . '/' . $nuovo['drive_minutes']);
+$mf = riga('SELECT * FROM media WHERE id = ?', [$fonte['media_id']]); $mn = riga('SELECT * FROM media WHERE id = ?', [$nuovo['media_id']]);
+prova('…la foto è una copia indipendente', $mf && $mn && $mn['id'] !== $mf['id'] && $mn['object_key'] !== $mf['object_key'] && (int) $mn['property_id'] === $due
+      && (int) val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]) === $mediaPrima + 1);
+prova('…e il suggerimento sparisce', !str_contains($lucia->get("/pannello/$due/sezioni/$eatDue")['body'], 'name="luogo"'));
+// Un luogo di un altro account o una sezione di un altro tipo: non si copia.
+$alieno = (int) val("SELECT pl.id FROM places pl JOIN sections s ON s.id = pl.section_id JOIN properties p ON p.id = s.property_id WHERE p.account_id <> ? ORDER BY pl.id LIMIT 1", [$lacc]);
+$quanti = (int) val('SELECT COUNT(*) FROM places WHERE section_id = ?', [$eatDue]);
+$r = $lucia->post("/pannello/$due/sezioni/$eatDue/da-altra", ['luogo' => (string) $alieno]);
+prova('Punto 4 · il luogo di un altro account non si copia (404)', $alieno > 0 && $r['code'] === 404 && (int) val('SELECT COUNT(*) FROM places WHERE section_id = ?', [$eatDue]) === $quanti);
+// Le righe: un contatto utile tolto qui torna come suggerimento, con le traduzioni.
+$emDue = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'emergency'", [$due]);
+$emCasa = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'emergency'", [$casa]);
+$dd = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$emDue]), true);
+$via = array_pop($dd['contacts']);
+db()->prepare('UPDATE sections SET data = ? WHERE id = ?')->execute([json_encode($dd, JSON_UNESCAPED_UNICODE), $emDue]);
+$trIt = json_decode((string) val("SELECT data FROM section_translations WHERE section_id = ? AND locale = 'it'", [$emCasa]), true);
+$nomeVia = '';
+foreach ($trIt['contacts'] ?? [] as $t) if (($t['id'] ?? '') === $via['id']) $nomeVia = (string) ($t['name'] ?? '');
+$r = $lucia->get("/pannello/$due/sezioni/$emDue");
+prova('Punto 4 · righe: il contatto tolto torna come «Già in Casa Lucia» accanto ai suggerimenti', $nomeVia !== '' && pulita($r)
+      && str_contains($r['body'], 'value="contacts|' . $emCasa . '|' . $via['id'] . '"') && str_contains($r['body'], '+ ' . htmlspecialchars($nomeVia, ENT_QUOTES)), $nomeVia);
+$r = $lucia->post("/pannello/$due/sezioni/$emDue/da-altra", ['riga' => "contacts|$emCasa|{$via['id']}"]);
+$dd = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$emDue]), true);
+$ultima = end($dd['contacts']);
+$trEn = json_decode((string) val("SELECT data FROM section_translations WHERE section_id = ? AND locale = 'en'", [$emDue]), true);
+$enUltima = array_values(array_filter($trEn['contacts'] ?? [], fn($t) => ($t['id'] ?? '') === $ultima['id']));
+prova('…un tocco: aggiunto in fondo, con un id nuovo, il telefono e le traduzioni', $r['code'] === 302 && str_ends_with($r['loc'], "/sezioni/$emDue#rip-contacts")
+      && $ultima['id'] !== $via['id'] && ($ultima['phone'] ?? '') === ($via['phone'] ?? '') && count($enUltima) === 1 && ($enUltima[0]['name'] ?? '') !== '', json_encode($ultima));
+$r = $lucia->post("/pannello/$due/sezioni/$emDue/da-altra", ['riga' => "contacts|$emCasa|rnonc'e"]);
+prova('…una riga che non c\'è: 404, niente aggiunto', $r['code'] === 404 && count(json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$emDue]), true)['contacts']) === count($dd['contacts']));
+
 // Eliminare la copia non rompe l'originale.
 $r = $lucia->post("/pannello/$due/elimina", ['conferma' => 'Casa Lucia Due']);
 $codici = $immagini($lucia, "/pannello/$casa/anteprima/$eatCasa");

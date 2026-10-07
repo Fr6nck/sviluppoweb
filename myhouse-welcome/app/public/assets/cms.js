@@ -127,7 +127,7 @@
       method: 'POST', body: dati, credentials: 'same-origin', headers: { 'Accept': 'application/json' }
     }).then(function (r) { return r.json().then(function (j) { return [r.ok, j]; }); })
       .then(function (x) {
-        if (x[0] && x[1].ok) { mostraQui('Salvato', true); aggiornaAnteprima(); }
+        if (x[0] && x[1].ok) { form._sporco = false; mostraQui('Salvato', true); aggiornaAnteprima(); }
         else mostraQui(x[1].errore || 'Non salvato: controlla i campi.');
       })
       .catch(function () { mostraQui('Non salvato: controlla la connessione, poi premi Salva.'); });
@@ -138,10 +138,43 @@
     form.addEventListener('input', function (e) {
       if (e.target && (e.target.type === 'file' || e.target.closest('[data-no-autosave]'))) return;
       mostra('Modifiche non salvate', false, form.querySelector('[data-stato-salvataggio]'));
+      form._sporco = true;
       clearTimeout(timer);
       timer = setTimeout(function () { salva(form); }, 1200);
     });
   })(forms[i]);
+
+  /* ---- «Già in <struttura>» ----------------------------------------------
+     Il modulo che copia un luogo o una riga da un'altra struttura sta subito
+     dopo l'editor: prima di mandarlo si salva quello che si è appena scritto,
+     altrimenti la pagina che si ricarica lo perderebbe. */
+  var daAltra = document.querySelectorAll('form[data-salva-prima]');
+  for (var d = 0; d < daAltra.length; d++) (function (form) {
+    form.addEventListener('submit', function (e) {
+      var editor = form.previousElementSibling;
+      if (!editor || !editor.matches('form[data-autosave]') || !editor._sporco) return;
+      e.preventDefault();
+      var b = e.submitter;
+      if (b && b.name) {
+        var h = document.createElement('input');
+        h.type = 'hidden'; h.name = b.name; h.value = b.value;
+        form.appendChild(h);
+      }
+      salva(editor).then(function () { form.submit(); });
+    });
+  })(daAltra[d]);
+  // Con più di 12 luoghi già scritti, un campo per cercarli.
+  var cerche = document.querySelectorAll('[data-gia-cerca]');
+  for (var c = 0; c < cerche.length; c++) (function (campo) {
+    var box = campo.closest('[data-gia-altrove]');
+    campo.addEventListener('input', function () {
+      var q = campo.value.trim().toLowerCase();
+      var chip = box.querySelectorAll('[data-nome]');
+      for (var j = 0; j < chip.length; j++) chip[j].hidden = q !== '' && chip[j].getAttribute('data-nome').indexOf(q) === -1;
+      var gruppi = box.querySelectorAll('.suggerimenti');
+      for (var g = 0; g < gruppi.length; g++) gruppi[g].hidden = !gruppi[g].querySelector('[data-nome]:not([hidden])');
+    });
+  })(cerche[c]);
 
   /* ---- Caricamento dei file: trascina, anteprima, annulla ----------------
      L'input vero resta dentro la zona; qui si mostra cosa si è scelto e si
