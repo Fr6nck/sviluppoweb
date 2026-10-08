@@ -52,7 +52,13 @@ $testoInvito = 'Uso MyHouse Welcome per la guida digitale della mia struttura. C
       <a class="btn btn--ghost btn--sm" href="https://wa.me/?text=<?= rawurlencode($testoInvito) ?>" target="_blank" rel="noopener"><?= Icon::svg('whatsapp', 15) ?>WhatsApp</a>
       <a class="btn btn--ghost btn--sm" href="mailto:?subject=<?= rawurlencode('Ti invito su MyHouse Welcome') ?>&amp;body=<?= rawurlencode($testoInvito) ?>"><?= Icon::svg('message', 15) ?>Email</a>
     </div>
-    <p class="small muted">Chi si registra da questo link ha il <?= Inviti::AMICO ?>% di sconto sul primo anno.
+    <?php $codiceInv = Inviti::codice($acc); ?>
+    <div class="invito__codice">
+      <span class="small">Oppure il tuo codice</span>
+      <b><?= Support::e($codiceInv) ?></b>
+      <button type="button" class="btn btn--ghost btn--sm" data-copia="<?= Support::e($codiceInv) ?>" data-copiato="Codice copiato" hidden><?= Icon::svg('copy', 15) ?>Copia il codice</button>
+    </div>
+    <p class="small muted">Chi si registra da questo link, o scrive il codice dove si inserisce il codice sconto, ha il <?= Inviti::AMICO ?>% di sconto sul primo anno.
       <?php if (empty($paginaInviti)): ?><a href="<?= b() ?>/inviti">Come funziona</a><?php endif; ?></p>
   </div>
 </section>

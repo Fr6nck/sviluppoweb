@@ -343,6 +343,88 @@ final class Inviti
         ];
     }
 
+    // ------------------------------------------------------------ inviti per email
+
+    /** Quanti indirizzi per invio, e quante email al giorno per account. */
+    public const EMAIL_PER_INVIO = 10;
+    public const EMAIL_AL_GIORNO = 20;
+
+    /** L'impronta di un indirizzo: si conserva questa, non l'indirizzo. */
+    public static function impronta(string $email): string { return hash('sha256', mb_strtolower(trim($email))); }
+
+    /** m•••@gmail.com: quanto basta al cliente per riconoscere a chi ha scritto. */
+    public static function maschera(string $email): string
+    {
+        [$nome, $dominio] = explode('@', mb_strtolower(trim($email)), 2) + ['', ''];
+        return mb_substr($nome, 0, 1) . "\u{2022}\u{2022}\u{2022}@" . $dominio;
+    }
+
+    /**
+     * Il sito manda l'invito agli indirizzi scritti dal cliente (separati da virgole, spazi o a capo).
+     * Salta senza dirlo uno per uno, per non rivelare chi è già cliente: indirizzi non validi, il
+     * proprio, quelli già invitati negli ultimi 30 giorni e chi ha già un account.
+     * @return array{mandati:int,saltati:int,limite:bool,errore:string}
+     */
+    public static function perEmail(array $acc, string $elenco, string $messaggio): array
+    {
+        $esito = ['mandati' => 0, 'saltati' => 0, 'limite' => false, 'errore' => ''];
+        if (!self::puoInvitare($acc) || !Migrator::tableExists('referral_invites')) { $esito['errore'] = 'Gli inviti si attivano con il tuo abbonamento.'; return $esito; }
+        $chi = Db::one('SELECT u.email, u.name FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [(int) $acc['id']]);
+        $indirizzi = array_values(array_unique(array_filter(array_map(fn($x) => mb_strtolower(trim($x)), preg_split('/[\s,;]+/', $elenco) ?: []))));
+        if (!$indirizzi) { $esito['errore'] = 'Scrivi almeno un indirizzo email.'; return $esito; }
+        if (count($indirizzi) > self::EMAIL_PER_INVIO) { $esito['errore'] = 'Al massimo ' . self::EMAIL_PER_INVIO . ' indirizzi per volta.'; return $esito; }
+        $messaggio = mb_substr(trim(preg_replace('/[\x00-\x09\x0B-\x1F\x7F]/u', '', $messaggio) ?? ''), 0, 400);
+        $nome = self::nomeBreve((string) ($chi['name'] ?? ''));
+        $link = self::link($acc); $codice = self::codice($acc);
+        foreach ($indirizzi as $email) {
+            $impronta = self::impronta($email);
+            $salta = !filter_var($email, FILTER_VALIDATE_EMAIL) || $email === mb_strtolower((string) ($chi['email'] ?? ''))
+                || Db::val('SELECT id FROM referral_invites WHERE account_id = ? AND email_hash = ? AND sent_at > ?', [(int) $acc['id'], $impronta, gmdate('Y-m-d\TH:i:s\Z', time() - 30 * 86400)])
+                || Db::val('SELECT id FROM users WHERE LOWER(email) = ?', [$email]);
+            if ($salta) { $esito['saltati']++; continue; }
+            if (!RateLimit::hit('inviti-email:' . (int) $acc['id'], self::EMAIL_AL_GIORNO, 86400)) { $esito['limite'] = true; break; }
+            if (!Mailer::send($email, ...self::testoEmail($nome, $messaggio, $link, $codice))) { $esito['errore'] = 'La posta non è partita: riprova più tardi.'; break; }
+            Db::insert('referral_invites', ['account_id' => (int) $acc['id'], 'email_hash' => $impronta, 'email_mask' => self::maschera($email), 'sent_at' => Support::now()]);
+            $esito['mandati']++;
+        }
+        return $esito;
+    }
+
+    /** [oggetto, testo, html] dell'invito. Il messaggio personale va com'è, protetto. */
+    private static function testoEmail(string $nome, string $messaggio, string $link, string $codice): array
+    {
+        $e = fn(string $x) => htmlspecialchars($x, ENT_QUOTES, 'UTF-8');
+        $oggetto = $nome . ' ti invita su MyHouse Welcome: ' . "\u{2212}" . self::AMICO . '% sul primo anno';
+        $intro = $nome . ' usa MyHouse Welcome per la guida digitale della sua struttura e ti invita a provarla.';
+        $sconto = 'Con il suo invito hai il ' . self::AMICO . '% di sconto sul primo anno. Crei la guida gratis e paghi solo quando la pubblichi.';
+        $piede = 'Ricevi questa email perché ' . $nome . ' ha scritto il tuo indirizzo nel suo pannello. Non lo conserviamo e non ti scriveremo altro.';
+        $testo = "Ciao,\n\n$intro\n\n" . ($messaggio !== '' ? "«{$messaggio}»\n\n" : '') . "$sconto\n\nCrea la tua guida: $link\n\n"
+               . "Oppure scrivi il codice $codice dove si inserisce il codice sconto.\n\nMyHouse Welcome\n\n—\n$piede";
+        $html = '<!doctype html><html lang="it"><body style="margin:0;padding:24px;background:#faf5ec;font-family:Arial,sans-serif;color:#231b12">'
+              . '<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:16px;padding:28px">'
+              . '<p style="font-size:16px;line-height:24px;margin:0 0 14px">Ciao,</p>'
+              . '<p style="font-size:16px;line-height:24px;margin:0 0 14px">' . $e($intro) . '</p>'
+              . ($messaggio !== '' ? '<p style="font-size:16px;line-height:24px;margin:0 0 14px;padding:12px 16px;border-radius:12px;background:#f7e6dc">' . nl2br($e($messaggio)) . '</p>' : '')
+              . '<p style="font-size:16px;line-height:24px;margin:0 0 24px">' . $e($sconto) . '</p>'
+              . '<p style="margin:0 0 20px"><a href="' . $e($link) . '" style="display:inline-block;background:#b4451f;color:#fff8f2;text-decoration:none;font-weight:bold;padding:14px 22px;border-radius:999px">Crea la tua guida</a></p>'
+              . '<p style="font-size:14px;line-height:22px;margin:0 0 20px;color:#6a5b48">Oppure scrivi il codice <b style="color:#231b12;letter-spacing:.08em">' . $e($codice) . '</b> dove si inserisce il codice sconto.</p>'
+              . '<p style="font-size:14px;color:#6a5b48;margin:0">MyHouse Welcome</p></div>'
+              . '<p style="max-width:520px;margin:16px auto 0;font-size:12px;line-height:18px;color:#6a5b48">' . $e($piede) . '</p></body></html>';
+        return [$oggetto, $testo, $html];
+    }
+
+    /** Gli inviti mandati per email, dal più recente: indirizzo mascherato, data, e a che punto è l'amico. */
+    public static function invitiEmail(int $accountId): array
+    {
+        if (!Migrator::tableExists('referral_invites')) return [];
+        $amici = [];
+        foreach (Db::all('SELECT r.status, u.email FROM referrals r JOIN accounts a ON a.id = r.friend_account_id JOIN users u ON u.id = a.user_id WHERE r.referrer_account_id = ?', [$accountId]) as $r) {
+            $amici[self::impronta((string) $r['email'])] = $r['status'];
+        }
+        return array_map(fn($r) => $r + ['stato' => $amici[$r['email_hash']] ?? 'mandato'],
+            Db::all('SELECT email_hash, email_mask, sent_at FROM referral_invites WHERE account_id = ? ORDER BY sent_at DESC, id DESC LIMIT 50', [$accountId]));
+    }
+
     /** Gli amici invitati, dal più recente: nome breve, stato, date. */
     public static function amici(int $accountId): array
     {

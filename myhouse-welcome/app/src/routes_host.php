@@ -953,14 +953,29 @@ $r->get('/account', function () use ($host, $paginaAccount) {
    invitare: inviti accesi e abbonamento Stripe attivo. */
 $r->get('/inviti', function () use ($host) {
     [$u, $acc] = $host();
-    if (!MHW\Inviti::puoInvitare($acc)) {
-        Support::flash('Gli inviti si attivano con il tuo abbonamento: pubblica la guida e potrai invitare i tuoi amici.', 'avviso');
-        Support::redirect('/pannello');
-    }
+    if (!MHW\Inviti::disponibili()) { http_response_code(404); View::out('pub/404', []); }
+    // Chi non può ancora invitare vede la pagina e il motivo, non un rimando.
+    $puo = MHW\Inviti::puoInvitare($acc);
     View::out('host/inviti', [
-        'user' => $u, 'acc' => $acc, 'inv' => MHW\Inviti::stato($acc), 'amici' => MHW\Inviti::amici((int) $acc['id']),
-        'codice' => MHW\Inviti::codice($acc), 'nav' => 'inviti',
+        'user' => $u, 'acc' => $acc, 'puo' => $puo, 'inv' => $puo ? MHW\Inviti::stato($acc) : null,
+        'amici' => $puo ? MHW\Inviti::amici((int) $acc['id']) : [], 'perEmail' => $puo ? MHW\Inviti::invitiEmail((int) $acc['id']) : [],
+        'codice' => $puo ? MHW\Inviti::codice($acc) : '', 'sub' => MHW\Subscriptions::active((int) $acc['id']), 'nav' => 'inviti',
     ], 'layout/cms');
+});
+
+/* L'invito per email: il sito scrive agli indirizzi dati dal cliente, con il suo link e il suo codice. */
+$r->post('/inviti/email', function () use ($host) {
+    [, $acc] = $host();
+    $e = MHW\Inviti::perEmail($acc, (string) ($_POST['email'] ?? ''), (string) ($_POST['messaggio'] ?? ''));
+    $testo = $e['mandati'] === 1 ? 'Invito mandato.' : ($e['mandati'] > 1 ? 'Inviti mandati: ' . $e['mandati'] . '.' : '');
+    if ($e['saltati'] > 0) $testo .= ' ' . ($e['saltati'] === 1 ? 'Un indirizzo non è stato invitato' : $e['saltati'] . ' indirizzi non sono stati invitati')
+        . ': non valido, già invitato negli ultimi 30 giorni o già cliente.';
+    if ($e['limite']) $testo .= ' Hai raggiunto ' . MHW\Inviti::EMAIL_AL_GIORNO . ' inviti per email oggi: gli altri domani.';
+    if ($e['errore'] !== '') $testo .= ' ' . $e['errore'];
+    if ($e['mandati'] === 0 && $e['errore'] === '' && !$e['limite'] && $e['saltati'] > 0) $testo = 'Nessun invito mandato.' . $testo;
+    $_SESSION['invito_email'] = $e['errore'] !== '' && $e['mandati'] === 0 ? ['email' => mb_substr((string) ($_POST['email'] ?? ''), 0, 1000), 'messaggio' => mb_substr((string) ($_POST['messaggio'] ?? ''), 0, 400)] : null;
+    Support::flash(trim($testo), $e['mandati'] > 0 ? 'ok' : 'err');
+    Support::redirect('/inviti#per-email');
 });
 
 /*

@@ -32,7 +32,8 @@ $generale = $admin
   : [['guide', '/pannello', 'Le mie guide', 'grid'], ['account', '/account', 'Account & Fatturazione', 'card']];
 // Invita un amico: la voce c'è solo per chi può invitare; in amministrazione, solo se gli inviti sono accesi.
 if ($admin && MHW\Inviti::disponibili()) array_splice($generale, 9, 0, [['inviti', '/admin/inviti', 'Inviti', 'message']]);
-if (!$admin && $u && ($accLato = Auth::account()) && MHW\Inviti::puoInvitare($accLato)) $generale[] = ['inviti', '/inviti', 'Invita un amico', 'people'];
+// Per i clienti la voce c'è sempre, con gli inviti accesi: chi non può ancora invitare vede il motivo.
+if (!$admin && $u && Auth::account() && MHW\Inviti::disponibili()) $generale[] = ['inviti', '/inviti', 'Invita un amico', 'people'];
 $attiva = $admin ? $nav : ($prop ? '' : ($nav ?: 'guide'));
 $guida = [];
 if ($prop) {

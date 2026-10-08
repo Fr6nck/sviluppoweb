@@ -1,5 +1,19 @@
 # Changelog — MyHouse Welcome
 
+## v2 · «Invita un amico» nel pannello del cliente (8 ottobre 2026)
+
+Migrazione `025`: tabella `referral_invites` (inviti mandati per email: impronta dell'indirizzo, forma mascherata, data). Solo aggiunte.
+
+- **Si accende da Amministrazione → Impostazioni → «Invita un amico»**: una casella, senza toccare `config.local.php` a mano. «Prova i dati salvati» dice se è acceso e quanti clienti possono invitare.
+- **Pagina «Invita un amico» del cliente**, come i programmi di affiliazione:
+  - il link e il **codice** ben visibile, con «Copia il link» e «Copia il codice»; WhatsApp ed email dal proprio programma restano;
+  - **«Invita per email»**: il cliente scrive fino a 10 indirizzi e un messaggio facoltativo, e il sito manda l'invito a nome suo, con link, codice e il 5% per l'amico. Al massimo 20 al giorno, mai due volte allo stesso indirizzo in 30 giorni; chi è già cliente, il proprio indirizzo e quelli non validi si saltano senza dire quali (per non rivelare chi è cliente);
+  - l'elenco degli **inviti mandati per email**, con l'indirizzo mascherato (m•••@gmail.com) e lo stato: invitato, registrato, ha pubblicato. Gli indirizzi non si conservano: solo l'impronta.
+- La voce «Invita un amico» c'è per tutti i clienti quando gli inviti sono accesi: chi non può ancora invitare (senza abbonamento, o con un abbonamento dello staff) vede la pagina e il motivo.
+- Amministrazione → Inviti: il conto degli inviti per email degli ultimi 30 giorni.
+- Impostazioni → Stripe: l'elenco degli eventi del webhook aggiornato (con i due eventi «async» del cambio di piano).
+- **Prove:** 730 in tutto.
+
 ## v2 · Posta in uscita: accesso SMTP più robusto (8 ottobre 2026)
 
 Nessuna migrazione.

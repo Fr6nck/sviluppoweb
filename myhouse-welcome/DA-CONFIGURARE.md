@@ -9,7 +9,7 @@ I dettagli tecnici sono in `app/LEGGIMI.md`. Le novità, fase per fase, sono in 
 
 1. Copia sul server **tutto `app/storage/`** e `config.local.php`, se c'è.
 2. Carica il contenuto di `welcomebook/` sopra i file vecchi, **senza toccare `app/storage/`**.
-3. Apri il sito una volta. Le migrazioni `007`–`024` partono da sole.
+3. Apri il sito una volta. Le migrazioni `007`–`025` partono da sole.
 4. In **Amministrazione → Diagnostica** tutte le righe devono essere «OK».
 
 Il database resta **SQLite**. Le migrazioni nuove sono scritte anche per MySQL, ma un'installazione da zero su MySQL non è supportata: lo schema iniziale (`001`) è solo per SQLite.
@@ -73,7 +73,9 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
   - I codici creati prima di attivare Stripe restano «da sincronizzare» e non si possono usare: premi «Riprova la sincronizzazione» dall'elenco.
   - Prova in modalità test: crea un codice del 20%, applicalo, paga con `4242 4242 4242 4242`. La prima fattura deve essere scontata e il rinnovo a prezzo pieno.
 - **Invita un amico.**
-  - È spento. Si accende con `MHW_INVITI=1`, oppure con `'inviti' => ['attivi' => true]` in `app/config.local.php`.
+  - È spento. Si accende da **Amministrazione → Impostazioni → Invita un amico** (una casella, con la tua password), oppure con `MHW_INVITI=1`.
+  - I clienti trovano «Invita un amico» nel menu: link, codice da copiare e **invito per email** mandato dal sito (fino a 10 indirizzi per volta, 20 al giorno, mai due volte allo stesso indirizzo in 30 giorni). Gli indirizzi degli amici non si conservano: solo un'impronta e la forma mascherata.
+  - Fai rileggere al consulente privacy la frase sull'invito per email in Privacy e Termini (§ inviti): il sito scrive a un indirizzo dato dal cliente, una volta sola.
   - Su Stripe non c'è niente da creare a mano: i coupon (`mhw-invito-5` … `mhw-invito-50` e quello dell'amico) nascono da soli. Gli eventi del webhook restano quelli di prima.
   - Prima di accenderlo in produzione fai queste prove in modalità test:
     1. Con un cliente che ha già pagato apri «Invita un amico» e copia il link.

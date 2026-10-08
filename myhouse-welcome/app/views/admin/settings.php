@@ -9,12 +9,14 @@ $pronti = [
     'posta'    => Config::get('mail')['transport'] !== 'log',
     'archivio' => Config::get('storage')['driver'] === 's3',
     'traduzioni' => Traduttore::configurato(),
+    'inviti' => MHW\Inviti::disponibili(),
 ];
-$icone = ['stripe' => 'card', 'posta' => 'message', 'archivio' => 'layers', 'traduzioni' => 'globe'];
+$icone = ['stripe' => 'card', 'posta' => 'message', 'archivio' => 'layers', 'traduzioni' => 'globe', 'inviti' => 'people'];
 $intro = [
     'stripe'   => 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti preparano la guida ma non possono pagarla.',
     'posta'    => 'Conferma dell\'email, recupero della password e promemoria. Finché resta «Non spedire», le email finiscono in storage/logs/mail.log.',
     'archivio' => 'Le foto e i PDF caricati dai clienti. Sul disco del server vanno bene per provare; in produzione meglio Amazon S3. I file già caricati restano dove sono e si vedono lo stesso.',
+    'inviti' => 'Ogni cliente ha un link e un codice da girare agli amici: l\'amico ha il ' . MHW\Inviti::AMICO . '% sul primo anno, chi invita il ' . MHW\Inviti::PASSO . '% in meno sul rinnovo per ogni amico che paga, fino al ' . MHW\Inviti::MASSIMO . '%.',
     'traduzioni' => 'Le traduzioni suggerite di Plus e Portfolio, con Amazon Translate. Prezzo, cambio e piano gratuito servono solo per le stime di Amministrazione → Traduzioni; i tetti fermano le richieste.',
 ]; ?>
 <div class="stack stack--lg" style="max-width:860px">
@@ -44,7 +46,7 @@ $intro = [
         <p class="small"><b>Indirizzo del webhook</b> da inserire in Stripe → Sviluppatori → Webhook → «Aggiungi endpoint»:</p>
         <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><code class="impostazioni__url"><?= Support::e($webhook) ?></code>
           <button type="button" class="btn btn--ghost btn--sm" data-copia="<?= Support::e($webhook) ?>" data-copiato="Copiato" hidden><?= Icon::svg('copy', 15) ?>Copia</button></div>
-        <p class="small muted">Eventi da selezionare: checkout.session.completed, checkout.session.expired, customer.subscription.created, customer.subscription.updated, customer.subscription.deleted, invoice.paid, invoice.payment_succeeded, invoice.payment_failed. Il segreto di firma che Stripe ti mostra dopo va qui sotto.</p>
+        <p class="small muted">Eventi da selezionare: checkout.session.completed, checkout.session.expired, checkout.session.async_payment_succeeded, checkout.session.async_payment_failed, invoice.paid, invoice.payment_failed, customer.subscription.updated, customer.subscription.deleted. Il segreto di firma che Stripe ti mostra dopo va qui sotto.</p>
       </div>
     <?php endif; ?>
 
@@ -108,7 +110,7 @@ $intro = [
     </form>
     <form method="post" action="<?= b() ?>/admin/impostazioni/<?= $g ?>/prova" class="impostazioni__prova"><?= Csrf::field() ?>
       <button class="btn btn--ghost btn--sm"><?= Icon::svg('pulse', 15) ?>Prova i dati salvati</button>
-      <span class="small muted"><?= $g === 'posta' ? 'Manda un\'email di prova a ' . Support::e($emailAdmin) . '.' : ($g === 'stripe' ? 'Chiede a Stripe se la chiave è valida.' : ($g === 'traduzioni' ? 'Fa tradurre una parola: 9 caratteri.' : 'Scrive, legge e cancella un piccolo file nel bucket.')) ?></span>
+      <span class="small muted"><?= $g === 'posta' ? 'Manda un\'email di prova a ' . Support::e($emailAdmin) . '.' : ($g === 'stripe' ? 'Chiede a Stripe se la chiave è valida.' : ($g === 'traduzioni' ? 'Fa tradurre una parola: 9 caratteri.' : ($g === 'inviti' ? 'Dice se è acceso e quanti clienti possono invitare.' : 'Scrive, legge e cancella un piccolo file nel bucket.'))) ?></span>
     </form>
   </section>
   <?php endforeach; ?>

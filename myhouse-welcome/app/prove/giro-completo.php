@@ -2610,6 +2610,45 @@ $r = $admin->segui($admin->post('/admin/impostazioni/posta/prova', []));
 prova('Password vuota: lo dice subito, senza tentativi sul server', str_contains($r['body'], 'Manca la password della casella') && count($sessioni()) === $prima);
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
 
+// Invita un amico dal pannello del cliente: interruttore in Impostazioni, codice, invito per email.
+capitolo('Invita un amico · pannello del cliente');
+$fileLocale = "$DOVE/app/config.local.php";
+@unlink($fileLocale);
+prova('Inviti spenti: la pagina del cliente non c\'è e la voce non compare nel menu', $paola->get('/inviti')['code'] === 404 && !str_contains($paola->get('/pannello')['body'], 'Invita un amico</'));
+$admin->get('/admin/impostazioni');
+$r = $admin->segui($admin->post('/admin/impostazioni/inviti', ['inviti__attivi' => '1', 'password' => 'AdminProva123']));
+prova('Impostazioni → «Invita un amico»: si accende con una casella, senza toccare config.local.php a mano', str_contains($r['body'], 'impostazioni salvate')
+      && ((require $fileLocale)['inviti']['attivi'] ?? false) === true);
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'impostazioni%'");   // le prove della posta, qui sopra, hanno usato il limite
+$r = $admin->segui($admin->post('/admin/impostazioni/inviti/prova', []));
+prova('…«Prova i dati salvati» dice che è acceso e quanti clienti possono invitare', preg_match('/Acceso: \d+ client/', $r['body']) === 1, preg_match('#<[^>]*role="(?:status|alert)"[^>]*>(.*?)</#s', $r['body'], $fm) ? strip_tags($fm[1]) : substr(strip_tags($r['body']), 0, 300));
+$r = $paola->get('/inviti');
+$codPaola = (string) val('SELECT referral_code FROM accounts WHERE id = ?', [$pacc]);
+prova('Cliente con abbonamento Stripe: voce nel menu, link, codice ben visibile con «Copia il codice», invito per email', $r['code'] === 200
+      && str_contains($r['body'], 'href="' . '/welcomebook/index.php/inviti"') && $codPaola !== '' && str_contains($r['body'], '<b>' . $codPaola . '</b>')
+      && str_contains($r['body'], 'Copia il codice') && str_contains($r['body'], 'action="/welcomebook/index.php/inviti/email"'), $codPaola);
+$prima = count($posta('amico.uno@prova.test'));
+$r = $paola->segui($paola->post('/inviti/email', ['email' => "amico.uno@prova.test, non-valida\npaola@prova.test; dario@prova.test", 'messaggio' => 'Io la uso per la casa di Todi: prova anche tu.']));
+$m = $posta('amico.uno@prova.test'); $ult = end($m) ?: [];
+prova('Invito per email: parte solo all\'amico nuovo, con link, codice e messaggio; gli altri si saltano senza dire chi è già cliente',
+      count($m) === $prima + 1 && str_contains((string) ($ult['subject'] ?? ''), 'ti invita su MyHouse Welcome') && str_contains((string) $ult['text'], '/i/' . $codPaola)
+      && str_contains((string) $ult['text'], 'codice ' . $codPaola) && str_contains((string) $ult['text'], 'Io la uso per la casa di Todi')
+      && str_contains($r['body'], 'Invito mandato.') && str_contains($r['body'], '3 indirizzi non sono stati invitati'), json_encode($ult));
+$riga = riga('SELECT * FROM referral_invites WHERE account_id = ?', [$pacc]);
+prova('…l\'indirizzo non si conserva: solo l\'impronta e la forma mascherata, che il cliente vede nell\'elenco', $riga && $riga['email_mask'] === "a\u{2022}\u{2022}\u{2022}@prova.test"
+      && !str_contains(json_encode($riga), 'amico.uno') && str_contains($r['body'], "a\u{2022}\u{2022}\u{2022}@prova.test") && str_contains($r['body'], 'Invitato'));
+$r = $paola->segui($paola->post('/inviti/email', ['email' => 'amico.uno@prova.test']));
+prova('…lo stesso amico non si invita due volte in 30 giorni', str_contains($r['body'], 'Nessun invito mandato.') && count($posta('amico.uno@prova.test')) === $prima + 1);
+$troppi = implode(',', array_map(fn($i) => "amico$i@prova.test", range(1, 11)));
+$r = $paola->segui($paola->post('/inviti/email', ['email' => $troppi]));
+prova('…al massimo 10 indirizzi per volta, e il modulo resta compilato', str_contains($r['body'], 'Al massimo 10 indirizzi per volta') && str_contains($r['body'], 'amico11@prova.test'));
+$r = $dario->get('/inviti');
+prova('Abbonamento attivato dallo staff: la pagina c\'è e spiega perché non può invitare', $r['code'] === 200 && str_contains($r['body'], 'attivato dal nostro staff') && !str_contains($r['body'], 'Manda l\'invito'));
+$r = $dario->post('/inviti/email', ['email' => 'qualcuno@prova.test']);
+prova('…e non può mandare inviti nemmeno forzando la richiesta', !$posta('qualcuno@prova.test'));
+prova('Amministrazione → Inviti: il conto degli inviti per email', preg_match('#Inviti per email</span><b class="cifra__valore">1<#', $admin->get('/admin/inviti')['body']) === 1);
+@unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
+
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

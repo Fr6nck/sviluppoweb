@@ -12,11 +12,12 @@ $conta = array_count_values(array_column($righe, 'status')); ?>
     <p class="muted small" style="max-width:720px">Invita un amico: <?= Inviti::AMICO ?>% all'amico sul primo anno, <?= Inviti::PASSO ?>% a chi invita sul prossimo rinnovo
       per ogni amico che paga, fino al <?= Inviti::MASSIMO ?>%. Lo sconto di chi invita è un coupon Stripe «una volta» sul suo abbonamento.</p></div>
   <?php if (!$attivi): ?>
-    <p class="note" role="status"><span>Gli inviti sono spenti. Si accendono con <code>MHW_INVITI=1</code> (oppure <code>'inviti' =&gt; ['attivi' =&gt; true]</code>
-      in <code>config.local.php</code>), dopo un giro di prova in modalità test di Stripe.</span></p>
+    <p class="note" role="status"><span>Gli inviti sono spenti. Si accendono da <a href="<?= b() ?>/admin/impostazioni#inviti">Impostazioni → Invita un amico</a>,
+      dopo un giro di prova in modalità test di Stripe.</span></p>
   <?php endif; ?>
   <div class="cifre" aria-label="In breve">
     <div class="cifra cifra--pino"><span class="cifra__testa">Validi</span><b class="cifra__valore"><?= (int) ($conta['valido'] ?? 0) ?></b><span class="cifra__nota">in attesa del prossimo rinnovo</span></div>
+    <div class="cifra cifra--carta"><span class="cifra__testa">Inviti per email</span><b class="cifra__valore"><?= (int) $perEmail ?></b><span class="cifra__nota">mandati dal sito, ultimi 30 giorni</span></div>
     <div class="cifra cifra--ocra"><span class="cifra__testa">In preparazione</span><b class="cifra__valore"><?= (int) ($conta['registrato'] ?? 0) ?></b><span class="cifra__nota">registrati, non ancora paganti</span></div>
     <div class="cifra cifra--mare"><span class="cifra__testa">Già scontati</span><b class="cifra__valore"><?= (int) ($conta['usato'] ?? 0) ?></b><span class="cifra__nota">usati a un rinnovo</span></div>
   </div>

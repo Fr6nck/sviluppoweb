@@ -57,9 +57,13 @@ final class Impostazioni
             'translate.cap_account'           => ['MHW_TRANSLATE_CAP_ACCOUNT', 'Tetto per account, caratteri al mese', 'cifra', 'Oltre, quel cliente non riceve altre suggerite fino al mese dopo. Predefinito 150.000.'],
             'translate.cap_global'            => ['MHW_TRANSLATE_CAP_GLOBAL', 'Tetto per tutto il sito, caratteri al mese', 'cifra', 'Predefinito 1.900.000, sotto i 2 milioni del piano gratuito.'],
         ],
+        // Invita un amico (Inviti): acceso da qui, senza toccare config.local.php a mano.
+        'inviti' => [
+            'inviti.attivi' => ['MHW_INVITI', 'Accendi «Invita un amico»', 'check', 'I clienti con un abbonamento attivo vedono il loro link e il codice, e possono mandare l\'invito per email. Prima di accenderlo con le chiavi live, fai una prova in modalità test di Stripe.'],
+        ],
     ];
 
-    public const TITOLI = ['stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni'];
+    public const TITOLI = ['stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'inviti' => 'Invita un amico'];
 
     public static function file(): string { return MHW_APP . '/config.local.php'; }
 
@@ -321,6 +325,14 @@ final class Impostazioni
                     $letto = $s3->get($chiave);
                     $s3->delete($chiave);
                     return $letto === 'prova' ? [true, 'Il bucket risponde: scrittura, lettura e cancellazione riuscite.'] : [false, 'Il bucket ha accettato il file ma ne ha restituito un altro contenuto.'];
+                case 'inviti':
+                    if (!Inviti::disponibili()) return [false, 'Spento: i clienti non vedono «Invita un amico». Spunta la casella e salva.'];
+                    if (!Stripe::enabled()) return [false, 'Acceso, ma Stripe non è configurato: gli sconti degli inviti passano da Stripe.'];
+                    $n = 0;
+                    foreach (Db::all("SELECT DISTINCT account_id FROM subscriptions WHERE provider = 'stripe' AND status IN ('active','trialing')") as $x) {
+                        if (Inviti::puoInvitare(['id' => (int) $x['account_id']])) $n++;
+                    }
+                    return [true, 'Acceso: ' . $n . ($n === 1 ? ' cliente può' : ' clienti possono') . ' invitare. Chi non ha ancora un abbonamento attivo vede la pagina e il motivo.'];
                 case 'traduzioni':
                     if (!Traduttore::configurato()) return [false, 'Mancano le chiavi: scrivile qui, oppure configura l\'archivio S3 (si usano le sue).'];
                     $t = Traduttore::prova();

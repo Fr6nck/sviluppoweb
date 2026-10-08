@@ -759,7 +759,8 @@ $r->get('/admin/inviti', function () {
         'SELECT r.*, ur.name AS chi, ur.email AS chi_email, ar.id AS chi_account, uf.name AS amico, uf.email AS amico_email, af.id AS amico_account
          FROM referrals r JOIN accounts ar ON ar.id = r.referrer_account_id JOIN users ur ON ur.id = ar.user_id
          JOIN accounts af ON af.id = r.friend_account_id JOIN users uf ON uf.id = af.user_id ORDER BY r.id DESC LIMIT 300') : [];
-    View::out('admin/inviti', ['righe' => $righe, 'attivi' => MHW\Inviti::disponibili(), 'nav' => 'inviti'], 'layout/cms');
+    $perEmail = MHW\Migrator::tableExists('referral_invites') ? (int) Db::val('SELECT COUNT(*) FROM referral_invites WHERE sent_at > ?', [gmdate('Y-m-d\TH:i:s\Z', time() - 30 * 86400)], 0) : 0;
+    View::out('admin/inviti', ['righe' => $righe, 'attivi' => MHW\Inviti::disponibili(), 'perEmail' => $perEmail, 'nav' => 'inviti'], 'layout/cms');
 });
 
 $r->post('/admin/inviti/{id}/annulla', function (array $a) {
