@@ -378,14 +378,14 @@ final class Traduttore
         Db::run('DELETE FROM translation_suggestions WHERE id = ? AND property_id = ? AND locale = ?', [$id, $prop['id'], $loc]);
     }
 
-    /** Scrive un campo tradotto, come se l'avesse scritto il cliente («reviewed»). */
-    private static function scrivi(string $tipo, int $id, string $loc, string $path, string $v): void
+    /** Scrive un campo tradotto, come se l'avesse scritto il cliente («reviewed»). Serve anche alla vetrina (Demo). */
+    public static function scrivi(string $tipo, int $id, string $loc, string $path, string $v): void
     {
         if ($tipo === 'place') {
             if (!isset(self::LUOGO[$path])) return;
             $t = Db::one('SELECT id FROM place_translations WHERE place_id = ? AND locale = ?', [$id, $loc]);
             if ($t) Db::update('place_translations', [$path => $v], 'id = :tid', ['tid' => $t['id']]);
-            else Db::insert('place_translations', ['place_id' => $id, 'locale' => $loc, 'category' => '', 'description' => '', 'note' => '', 'badge' => ''] + [$path => $v]);
+            else Db::insert('place_translations', [$path => $v] + ['place_id' => $id, 'locale' => $loc, 'category' => '', 'description' => '', 'note' => '', 'badge' => '']);
             return;
         }
         $t = Db::one('SELECT * FROM section_translations WHERE section_id = ? AND locale = ?', [$id, $loc]);

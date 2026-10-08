@@ -1,5 +1,27 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Home: «Il tempo delle risposte» e vetrina Casa Checco completa (8 ottobre 2026)
+
+Nessuna migrazione.
+
+- **Home, sezione nuova «Il tempo delle risposte»** (`views/pub/_tempo.php`, dal file fornito, copiato così com'è). Prende il posto del blocco «Il tempo che non vedi», nello stesso punto: tra il prodotto e «Come funziona». In `home.php` cambia solo l'include; CSS e JS non si toccano.
+  - Racconta i minuti di messaggi di una prenotazione tipo e li separa: quelli che restano dell'host e quelli evitabili con una guida.
+  - Il calcolatore lavora su prenotazioni al mese e valore di un'ora. Mostra il tempo risparmiato in un anno, in euro, contro il prezzo del piano di partenza (oggi Essential, 87 € + IVA, letto dal listino).
+  - I numeri di mercato citano fonti di terzi (Enso Connect, Guestar/StayReply, Verto AI, Touch Stay). Le cifre sono quelle del file fornito: **non le ho verificate io**.
+- **Vetrina «Casa Checco» completata** (`Demo::vetrina`):
+  - **Scheda:** CIN di esempio (`IT054001C2DEMO0001`: dice «DEMO», non è un codice vero) e 4 posti letto.
+  - **Recensioni e prenotazione diretta:** i link per le recensioni portano alle pagine di Assisi di Google Maps, Booking e Airbnb, perché la casa non esiste. Il codice sconto per la prossima volta è `CHECCO10`. Nessun link a un sito per prenotare: sarebbe il sito di qualcun altro.
+  - **Riscaldamento e aria condizionata:**
+    - riscaldamento automatico dalle 6:30 alle 9:30 e dalle 17 alle 22:30, a 20 °C, da metà ottobre a metà aprile;
+    - condizionatore libero, consigliato a 26 °C;
+    - il consiglio per risparmiare energia, e una nota sulle mura in pietra.
+  - **Servizi:** al posto delle istruzioni del condizionatore ci sono quelle della macchina del caffè. Una nota rimanda alla sezione nuova.
+  - **Tutte le lingue:** tedesco, francese e spagnolo erano quasi vuoti (148–152 campi su 152 da tradurre). Ora tutti i 160 campi sono tradotti in inglese, tedesco, francese e spagnolo: sezioni, righe, luoghi, eventi. Le traduzioni stanno in `lang/vetrina/{en,de,fr,es}.php`, cercate per testo italiano. Se un testo cambia e lì non c'è, quel campo resta «da tradurre», come per ogni cliente. Tedesco e francese danno del Lei, spagnolo del tu, come il resto della guida.
+- **Correzione nelle traduzioni suggerite:** approvando la traduzione di un luogo in una lingua che per quel luogo non aveva ancora niente, il testo approvato non veniva salvato. Ora sì (`Traduttore::scrivi`, che diventa pubblico per la vetrina).
+- **Prove:** 742 in tutto:
+  - la sezione nuova della home;
+  - la vetrina con scheda, congedo in tedesco, clima anche in francese, macchina del caffè, luoghi in spagnolo e tedesco, e una traduzione per ogni sezione.
+
 ## v2 · Sezione «Riscaldamento e aria condizionata» (8 ottobre 2026)
 
 Nessuna migrazione: è una sezione nuova del catalogo (`clima`), nel gruppo «La casa».

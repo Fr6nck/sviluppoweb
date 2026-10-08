@@ -133,6 +133,15 @@ final class Demo
             'checkin_from' => '15:00', 'checkout_by' => '10:30', 'host_phone' => $tel, 'host_whatsapp' => $tel, 'palette' => 'terracotta',
             'is_demo' => self::VETRINA, 'wizard_step' => 'fatto', 'property_type' => 'appartamento',
         ], 'id = :pid', ['pid' => $pid]);
+        // I dati della scheda: CIN e posti letto di esempio (il CIN dice «DEMO»: non è un codice vero),
+        // i link per le recensioni (le pagine di Assisi delle piattaforme, la casa non esiste) e il codice
+        // sconto per la prossima volta. Niente link a un sito per prenotare: sarebbe di qualcun altro.
+        $campiCasa = ['cin' => 'IT054001C2DEMO0001', 'beds' => 4,
+                      'review_google' => 'https://www.google.com/maps/search/?api=1&query=Piazza+Matteotti+Assisi',
+                      'review_booking' => 'https://www.booking.com/city/it/assisi.it.html',
+                      'review_airbnb' => 'https://www.airbnb.it/assisi-italia/stays', 'direct_code' => 'CHECCO10'];
+        $campiCasa = array_filter($campiCasa, fn($c) => Migrator::columnExists('properties', $c), ARRAY_FILTER_USE_KEY);
+        if ($campiCasa) Db::update('properties', $campiCasa, 'id = :pid', ['pid' => $pid]);
         // La geolocalizzazione: Piazza Matteotti ad Assisi (serve anche a stimare i minuti a piedi dei luoghi).
         if (Migrator::columnExists('properties', 'lat')) Db::update('properties', ['lat' => self::CHECCO_LAT, 'lng' => self::CHECCO_LNG], 'id = :pid', ['pid' => $pid]);
         Properties::setLocales($acc, $pid, array_values(array_intersect(['it', 'en', 'de', 'fr', 'es'], Entitlements::allowedLocales($acc))));
@@ -198,13 +207,34 @@ final class Demo
             'it' => ['amenities' => ['dishwasher', 'oven', 'microwave', 'fridge', 'coffee', 'kettle', 'ac', 'heating', 'tv', 'desk', 'washer', 'iron', 'hairdryer', 'linens', 'towels', 'terrace', 'crib', 'first_aid'],
                      'items' => ['Macchina per il caffè a capsule, con le prime capsule incluse', 'Ombrelli all\'ingresso', 'Adattatori per le prese straniere'],
                      'manuals' => [['title' => 'La lavatrice', 'steps' => "Chiudi l'oblò fino al clic.\nDetersivo nella vaschetta di sinistra.\nGira la manopola su «Cotone 40°» e premi Avvio.\nIl ciclo dura un'ora e mezza: lo stendino è sul terrazzino."],
-                                   ['title' => 'L\'aria condizionata', 'steps' => "Il telecomando è sul comodino.\nPremi ON, poi il fiocco di neve per raffreddare.\n24 gradi bastano: le mura in pietra tengono il fresco.\nSpegnila quando apri le finestre."]],
-                     'note' => 'Lenzuola e asciugamani si cambiano ogni tre notti, o prima se lo chiedi.'],
+                                   ['title' => 'La macchina del caffè', 'steps' => "Riempi il serbatoio d'acqua sul retro.\nAccendi: quando la luce smette di lampeggiare è pronta.\nMetti la capsula, chiudi la leva e premi la tazzina piccola o grande.\nLe capsule usate si buttano nell'indifferenziato."]],
+                     'note' => "Lenzuola e asciugamani si cambiano ogni tre notti, o prima se lo chiedi.\nRiscaldamento e aria condizionata hanno la loro sezione, con gli orari."],
             'en' => ['items' => ['Capsule coffee machine, first capsules included', 'Umbrellas by the door', 'Adapters for foreign plugs'],
                      'manuals' => [['title' => 'The washing machine', 'steps' => "Close the door until it clicks.\nDetergent in the left drawer.\nTurn the dial to «Cotton 40°» and press Start.\nThe cycle takes an hour and a half: the drying rack is on the terrace."],
-                                   ['title' => 'Air conditioning', 'steps' => "The remote is on the bedside table.\nPress ON, then the snowflake to cool.\n24 degrees is enough: the stone walls keep it cool.\nSwitch it off when you open the windows."]],
-                     'note' => 'Sheets and towels are changed every three nights, or sooner if you ask.'],
+                                   ['title' => 'The coffee machine', 'steps' => "Fill the water tank at the back.\nSwitch it on: it is ready when the light stops blinking.\nInsert a capsule, close the lever and press the small or large cup.\nUsed capsules go in the general waste."]],
+                     'note' => "Sheets and towels are changed every three nights, or sooner if you ask.\nHeating and air conditioning have their own section, with the times."],
         ], 'Servizi');
+
+        // -------- Riscaldamento e aria condizionata: il riscaldamento va da solo, il condizionatore lo accende l'ospite
+        $clima = Properties::addSection($acc, $pid, 'clima');
+        self::scrivi($pid, $clima, [
+            'it' => ['heating_mode' => 'auto',
+                     'heating_times' => [['from' => '06:30', 'to' => '09:30', 'days' => []], ['from' => '17:00', 'to' => '22:30', 'days' => []]],
+                     'heating_temp' => '20', 'heating_period' => 'Da metà ottobre a metà aprile, nei giorni freddi.',
+                     'heating_how' => ['La caldaia è nell\'armadio del bagno: non serve toccarla.',
+                                       'Se senti freddo, apri del tutto la manopola del termosifone (numero 5).',
+                                       'Se fa troppo caldo, girala verso 2 invece di aprire la finestra.'],
+                     'ac_mode' => 'libero', 'ac_temp' => '26',
+                     'ac_how' => ['Il telecomando è sul comodino della camera.', 'Premi ON, poi il fiocco di neve per raffreddare.', 'Chiudi le finestre e spegnilo quando esci.'],
+                     'risparmio' => '1',
+                     'note' => 'Le mura in pietra tengono il fresco d\'estate e il caldo d\'inverno: di solito bastano poche ore di condizionatore.'],
+            'en' => ['heating_period' => 'From mid October to mid April, on cold days.',
+                     'heating_how' => ['The boiler is in the bathroom cupboard: no need to touch it.',
+                                       'If you feel cold, open the radiator knob all the way (number 5).',
+                                       'If it is too warm, turn it down to 2 instead of opening the window.'],
+                     'ac_how' => ['The remote is on the bedroom bedside table.', 'Press ON, then the snowflake to cool.', 'Close the windows and switch it off when you go out.'],
+                     'note' => 'The stone walls keep the house cool in summer and warm in winter: a few hours of air conditioning are usually enough.'],
+        ], 'Riscaldamento e aria condizionata');
 
         // -------- Servizi extra, con prezzo e unità
         $extra = Properties::addSection($acc, $pid, 'extras');
@@ -468,8 +498,27 @@ final class Demo
                 ['Farmacia', 'pharmacy', 'La più vicina è in centro, verso Piazza del Comune: il turno di notte è affisso sulla porta di ogni farmacia.', 'Piazza del Comune', 8, 'late', 'sea', null, null, null, ['en' => ['The nearest one is in the centre, towards Piazza del Comune: the night rota is posted on every pharmacy door.']]],
             ]);
         }
+        self::traduciVetrina($pid);
         Guide::publish($pid);
         return $pid;
+    }
+
+    /**
+     * Le altre lingue della vetrina: ogni campo ancora da tradurre prende la traduzione del suo
+     * testo italiano da lang/vetrina/{lingua}.php. Quello che lì non c'è resta da tradurre.
+     */
+    private static function traduciVetrina(int $pid): void
+    {
+        $prop = Db::one('SELECT * FROM properties WHERE id = ?', [$pid]);
+        foreach (Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$pid]) as $l) {
+            $loc = (string) $l['locale'];
+            $f = MHW_APP . '/lang/vetrina/' . $loc . '.php';
+            if ($loc === $prop['default_locale'] || !is_file($f)) continue;
+            $testi = require $f;
+            foreach (Traduttore::campi($prop, $loc) as $c) {
+                if ($c['tradotto'] === '' && isset($testi[$c['origine']])) Traduttore::scrivi($c['tipo'], (int) $c['id'], $loc, $c['path'], $testi[$c['origine']]);
+            }
+        }
     }
 
     /**

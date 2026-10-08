@@ -249,65 +249,7 @@ $disegni = [
   </div>
 </section>
 
-<?php /* Il tempo che non vedi: a sinistra il problema e la soluzione, a destra
-   le domande che arrivano e la guida che risponde; sotto, due vantaggi e il
-   valore dell'anno. Le domande sono esempi; nessun numero. */ ?>
-<section id="il-tempo" class="tempo" aria-labelledby="tempo-titolo">
-  <div class="tempo__grid">
-    <div class="tempo__intro">
-      <span class="kicker">Il tempo che non vedi</span>
-      <h2 id="tempo-titolo" class="tempo__titolo">Ogni ospite è nuovo.<br>Le domande sono quasi sempre le stesse.</h2>
-      <p class="lead">Parcheggio, Wi-Fi, orari, regole della casa. Ogni risposta ti prende un minuto, ma prova a contare
-        quante volte ripeti le stesse cose in una stagione.</p>
-      <div class="tempo__svolta">
-        <h3 class="tempo__h3">Le risposte sono già nella tua guida.</h3>
-        <p>Con MyHouse Welcome raccogli le informazioni della tua struttura in un'unica guida, che sostituisce il foglio plastificato
-          e i messaggi copiati e incollati. La mandi prima dell'arrivo e gli ospiti la ritrovano durante il soggiorno, quando serve.</p>
-      </div>
-    </div>
-
-    <figure class="tempo__msgs">
-      <ul class="msgs" aria-label="Domande che arrivano spesso">
-        <?php foreach ([['car', 'Dove possiamo parcheggiare?'], ['wifi', "Qual è la password del Wi\u{2011}Fi?"],
-                        ['clock', 'A che ora dobbiamo lasciare la camera?']] as [$ico, $testo]): ?>
-          <li class="msg">
-            <span class="msg__ico"><?= Icon::svg($ico, 18, 1.6) ?></span>
-            <span class="msg__corpo"><span class="msg__chi">Ospite</span><?= Support::e($testo) ?></span>
-          </li>
-        <?php endforeach; ?>
-      </ul>
-      <p class="risposta"><span class="risposta__chi"><?= Icon::brand(16) ?>La tua guida</span>Parcheggio, Wi-Fi e orari di partenza: è tutto qui, in ogni momento.</p>
-      <figcaption class="tiny muted">Esempi di domande ricorrenti.</figcaption>
-    </figure>
-  </div>
-
-  <div class="vantaggi">
-    <div class="vantaggio">
-      <span class="vantaggio__ico"><?= Icon::svg('clock', 20, 1.7) ?></span>
-      <b>Più tempo per te.</b>
-      <p>Le spiegazioni le scrivi una volta: a ogni nuovo soggiorno le ripete la guida, non tu.</p>
-    </div>
-    <div class="vantaggio">
-      <span class="vantaggio__ico"><?= Icon::svg('check', 20, 2) ?></span>
-      <b>Meno dubbi all'arrivo.<br>Meno equivoci alla partenza.</b>
-      <p>Orari, regole e istruzioni scritti una volta, con chiarezza: l'ospite sa cosa fare, e tu non devi ricordarglielo.</p>
-    </div>
-    <div class="vantaggio">
-      <span class="vantaggio__ico"><?= Icon::svg('globe', 20, 1.7) ?></span>
-      <b>Parla la lingua di chi arriva.</b>
-      <p>La guida si apre da sola nella lingua del telefono dell'ospite. Fino a cinque lingue: italiano, inglese, francese, tedesco, spagnolo. Con Plus le traduzioni te le suggerisce un traduttore automatico, e tu le approvi.</p>
-    </div>
-    <div class="tempo__valore">
-      <span class="kicker">Il valore dell'abbonamento</span>
-      <h3 class="tempo__h3">Un piccolo investimento annuale, utile soggiorno dopo soggiorno.</h3>
-      <?php if ($partenza): ?>
-        <p class="tempo__prezzo">Da <?= Support::e(Support::money((int) $partenza['price_cents'], $partenza['currency'])) ?> + IVA all'anno:
-          circa <?= Support::e(Support::money(Plans::monthly((int) $partenza['price_cents']), $partenza['currency'])) ?> al mese.
-          <a href="#piani">Vedi i piani</a></p>
-      <?php endif; ?>
-    </div>
-  </div>
-</section>
+<?php include __DIR__ . '/_tempo.php'; ?>
 
 <?php /* La frase grande, da sola: il motivo per cui l'abbonamento vale. */ ?>
 <section class="frase" aria-label="Il valore">

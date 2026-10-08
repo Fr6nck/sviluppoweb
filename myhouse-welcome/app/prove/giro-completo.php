@@ -228,13 +228,12 @@ prova('Niente piano Pro in vendita', !preg_match('/>\s*Pro\s*</', $r['body']));
 prova('Sezione QR', str_contains($r['body'], 'Un QR. Tutta la struttura.'));
 prova('I link dei piani portano alla registrazione col piano', str_contains($r['body'], '/registrati?piano=' . pv('essential')));
 $tempo = preg_match('#<section id="il-tempo".*?</section>#s', $r['body'], $m) ? $m[0] : '';
-prova('Sezione "Il tempo che non vedi" presente', $tempo !== '' && str_contains($tempo, 'Ogni ospite è nuovo.'));
+prova('Sezione «Il tempo delle risposte» presente', $tempo !== '' && str_contains($tempo, 'Il tempo delle risposte') && str_contains($tempo, 'Tempo risparmiato in un anno'));
 prova('…dopo il prodotto e prima di "Come funziona"', strpos($r['body'], 'class="prodotto"') < strpos($r['body'], 'id="il-tempo"') && strpos($r['body'], 'id="il-tempo"') < strpos($r['body'], 'id="come-funziona"'));
-prova('…con le tre domande, la soluzione, due vantaggi e il valore annuale', substr_count($tempo, 'class="msg"') === 3 && str_contains($tempo, 'Le risposte sono già nella tua guida.')
-      && substr_count($tempo, 'class="vantaggio"') >= 2 && str_contains($tempo, 'Meno dubbi all') && str_contains($tempo, 'Un piccolo investimento annuale'));
-prova('…il prezzo di partenza viene dal listino', str_contains($tempo, "Da 87\u{00A0}€ + IVA all'anno"));
-prova('…niente tono difensivo', !str_contains($r['body'], 'Non paghi una pagina con un QR'));
-prova('…senza numeri di risparmio inventati', !preg_match('/\d+\s*(%|ore|messaggi in meno)|mai più|elimin/i', strip_tags($tempo)));
+prova('…quattro cursori veri e i conti di partenza anche senza JavaScript (35 minuti, 228 € l\'anno)', substr_count($tempo, 'type="range"') === 4
+      && str_contains($tempo, '<span data-o="tot">35</span> minuti') && str_contains($tempo, '<span data-o="valore">228</span> €'));
+prova('…il confronto con il prezzo del piano più economico, dal listino', str_contains($tempo, 'data-prezzo="87"') && str_contains($tempo, 'Abbonamento Essential, IVA esclusa') && str_contains($tempo, '+ 141'));
+prova('…con le fonti dei numeri', str_contains($r['body'], 'Stime di aziende del settore, non statistiche ufficiali.'));
 prova('CTA della hero verso la registrazione e verso la demo', preg_match('#<section class="hero2">.*?</section>#s', $r['body'], $mh) && str_contains($mh[0], '/registrati"') && str_contains($mh[0], 'Guarda la demo'));
 prova('Fase 1 · piè di pagina con P.IVA, telefono e WhatsApp', str_contains($r['body'], 'P.IVA 02945910541') && str_contains($r['body'], 'href="tel:+393920061600"')
       && str_contains($r['body'], 'href="https://wa.me/393920061600"') && str_contains($r['body'], 'un progetto Blackout Agency')
@@ -1583,7 +1582,7 @@ $admin->post("/admin/pacchetti/$essential/nuova-versione", ['nome' => 'Essential
 prova('Nuovo prezzo = nuova versione', pv('essential') !== $vecchia && (int) val('SELECT price_cents FROM package_versions WHERE id = ?', [pv('essential')]) === 9700);
 prova('La versione venduta resta com\'era', (int) val('SELECT price_cents FROM package_versions WHERE id = ?', [$vecchia]) === 8700);
 $home = $ospite->get('/')['body'];
-prova('La landing mostra il prezzo nuovo', str_contains($home, "97\u{00A0}€") && str_contains($home, "Da 97\u{00A0}€ + IVA all'anno"));
+prova('La landing mostra il prezzo nuovo', str_contains($home, "97\u{00A0}€") && str_contains($home, 'data-prezzo="97"') && str_contains($home, '− 97 €'));
 $pf = (int) val("SELECT id FROM packages WHERE code = 'portfolio'");
 $featP = []; foreach (righe('SELECT f.code, pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id WHERE pf.package_version_id = ?', [pv('portfolio')]) as $x) $featP[$x['code']] = $x['value'];
 $pkP = riga('SELECT * FROM packages WHERE id = ?', [$pf]);
@@ -1655,8 +1654,8 @@ prova('Scene: le foto hanno un testo alternativo e la versione piccola per il te
 prova('Come funziona: tre passi che sono link alle tre schermate vere', substr_count($r['body'], 'class="passo"') === 3
       && str_contains($r['body'], 'href="#schermata-1"') && str_contains($r['body'], 'id="schermata-3"') && str_contains($r['body'], 'data-passi')
       && is_file("$DOVE/assets/landing.js") && substr_count($r['body'], '/assets/foto/pannello-') === 3);
-prova('Tempo: la guida risponde alle domande', str_contains($tempo = (preg_match('#<section id="il-tempo".*?</section>#s', $r['body'], $m) ? $m[0] : ''), 'class="risposta"')
-      && substr_count($tempo, 'class="msg"') === 3);
+prova('Tempo: le domande evitabili con una guida, accanto alle comunicazioni che restano dell\'host', str_contains($tempo = (preg_match('#<section id="il-tempo".*?</section>#s', $r['body'], $m) ? $m[0] : ''), 'Domande evitabili con una guida')
+      && str_contains($tempo, 'Comunicazioni importanti e necessarie'));
 prova('La frase sul valore, da sola', str_contains($r['body'], 'class="frase"') && str_contains($r['body'], 'È nel tempo che puoi dedicare ad altro.'));
 prova('Guadagno: il commiato disegnato con le etichette vere della guida', str_contains($r['body'], 'class="congedo-mock"')
       && str_contains($r['body'], 'Ti è piaciuto il soggiorno?') && str_contains($r['body'], 'La prossima volta prenota da noi'));
@@ -1957,7 +1956,7 @@ $ren = $ospite->get("/g/$vslug/" . (int) val("SELECT id FROM sections WHERE prop
 prova('…la guida si apre, con «Demo», in italiano e in inglese; nomi diversi da Casa Lucia', $r['code'] === 200 && str_contains($r['body'], 'Casa Checco') && str_contains($r['body'], 'demo-tag')
       && !str_contains($r['body'], 'Lucia') && $ren['code'] === 200 && str_contains($ren['body'], 'Francesco will meet you there with the keys'));
 $kindsV = array_column(righe('SELECT kind FROM sections WHERE property_id = ?', [$vet['id'] ?? 0]), 'kind');
-$mancano = array_diff(['checkin', 'wifi', 'services', 'extras', 'rules', 'arrival', 'transport', 'parking', 'waste', 'eat', 'visit', 'todo', 'shop', 'events', 'custom', 'emergency', 'info'], $kindsV);
+$mancano = array_diff(['checkin', 'wifi', 'services', 'clima', 'extras', 'rules', 'arrival', 'transport', 'parking', 'waste', 'eat', 'visit', 'todo', 'shop', 'events', 'custom', 'emergency', 'info'], $kindsV);
 prova('…tutte le sezioni del catalogo compilate (eventi e sezione libera comprese), nessuna vuota', !$mancano
       && !val("SELECT 1 FROM sections WHERE property_id = ? AND is_core = 0 AND data = '{}'", [$vet['id'] ?? 0]), json_encode(array_values($mancano)));
 $evV = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'events'", [$vet['id'] ?? 0]);
@@ -1979,6 +1978,27 @@ $arrV = json_decode((string) val("SELECT data FROM sections WHERE property_id = 
 prova('…ad Assisi, geolocalizzata in Piazza Matteotti: coordinate della struttura e link di Maps', ($vet['city'] ?? '') === 'Assisi'
       && abs((float) val('SELECT lat FROM properties WHERE id = ?', [$vet['id'] ?? 0]) - 43.07025) < 0.0001 && abs((float) val('SELECT lng FROM properties WHERE id = ?', [$vet['id'] ?? 0]) - 12.61966) < 0.0001
       && str_contains((string) ($arrV['maps_url'] ?? ''), 'query=43.07025,12.61966'));
+prova('…scheda completa: CIN di esempio, 4 posti letto, link per le recensioni e codice sconto (nessun sito di prenotazione inventato)',
+      str_contains((string) ($vet['cin'] ?? ''), 'DEMO') && (int) ($vet['beds'] ?? 0) === 4 && str_contains((string) ($vet['review_booking'] ?? ''), 'booking.com')
+      && ($vet['direct_code'] ?? '') === 'CHECCO10' && ($vet['direct_url'] ?? '') === '');
+$r = $ospite->get("/g/$vslug/commiato?l=de");
+prova('…il congedo in tedesco mostra recensioni e codice sconto', $r['code'] === 200 && str_contains($r['body'], 'CHECCO10') && str_contains($r['body'], 'booking.com/city/it/assisi')
+      && str_contains($r['body'], 'Danke, dass Sie Casa Checco gewählt haben'));
+$clV = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'clima'", [$vet['id'] ?? 0]);
+$r = $ospite->get("/g/$vslug/$clV");
+$rf = $ospite->get("/g/$vslug/$clV?l=fr");
+prova('…riscaldamento automatico (6:30–9:30 e 17–22:30, 20 °C) e condizionatore libero a 26 °C, anche in francese', $r['code'] === 200
+      && str_contains($r['body'], '6:30 – 9:30') && str_contains($r['body'], '17:00 – 22:30') && str_contains($r['body'], '20 °C') && str_contains($r['body'], '26 °C')
+      && str_contains($r['body'], 'clima__energia') && str_contains($rf['body'], 'La chaudière est dans le placard'));
+$r = $ospite->get("/g/$vslug/" . (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'services'", [$vet['id'] ?? 0]));
+prova('…nei Servizi la macchina del caffè al posto del condizionatore (che ha la sua sezione)', str_contains($r['body'], 'La macchina del caffè') && !str_contains($r['body'], 'L&#039;aria condizionata'));
+$visV = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'visit'", [$vet['id'] ?? 0]);
+$r = $ospite->get("/g/$vslug/$visV?l=es"); $rd = $ospite->get("/g/$vslug/$visV?l=de");
+prova('…luoghi tradotti anche in spagnolo e tedesco (descrizioni e note)', str_contains($r['body'], 'La catedral de Asís') && str_contains($rd['body'], 'Der Dom von Assisi')
+      && !str_contains($r['body'], 'Il duomo di Assisi'));
+$daTradurre = 0;
+foreach (['de', 'fr', 'es'] as $lv) $daTradurre += (int) val("SELECT COUNT(*) FROM sections s LEFT JOIN section_translations t ON t.section_id = s.id AND t.locale = ? WHERE s.property_id = ? AND t.id IS NULL", [$lv, $vet['id'] ?? 0]);
+prova('…ogni sezione ha la sua traduzione in tedesco, francese e spagnolo', $daTradurre === 0, (string) $daTradurre);
 $r = $admin->post("/admin/cliente/$aacc/vetrina", ['plus' => '1']);
 prova('…una sola vetrina per account', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND is_demo = 2', [$aacc]) === 1);
 $r = $ospite->get('/');
