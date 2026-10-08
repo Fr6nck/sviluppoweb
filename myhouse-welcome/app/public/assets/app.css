@@ -1984,3 +1984,32 @@ fieldset{min-width:0}
   summary.legend{min-height:44px;display:flex;align-items:center}
   .brand{position:relative} .brand::after{content:"";position:absolute;inset:-10px}
 }
+
+/* Guida dell'ospite: Riscaldamento e aria condizionata. Una scheda per impianto, con lo stato di adesso
+   (verde acceso, grigio spento), le fasce orarie a righe e il riquadro sull'energia. */
+.clima__scheda{display:flex;flex-direction:column;gap:14px}
+.clima__testa{display:flex;align-items:center;gap:12px}
+.clima__ico{flex:none;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px}
+.clima__scheda--caldo .clima__ico{background:var(--terracotta-soft);color:var(--terracotta)}
+.clima__scheda--fresco .clima__ico{background:var(--sea-soft);color:var(--sea)}
+.clima__titolo{font-size:24px;line-height:28px;margin:0}
+.clima__stato{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;margin:0;padding:10px 14px;border-radius:var(--r-md);font-size:15px;line-height:20px}
+.clima__stato--on{background:var(--pine-soft);color:var(--ink)}
+.clima__stato--off{background:var(--sunk);color:var(--ink)}
+.clima__punto{width:10px;height:10px;border-radius:50%;flex:none}
+.clima__stato--on .clima__punto{background:var(--pine);box-shadow:0 0 0 4px rgba(31,107,63,.18)}
+.clima__stato--off .clima__punto{background:var(--line-strong)}
+.clima__frase{margin:0;font-size:16px;line-height:24px}
+.clima__orari{display:flex;flex-direction:column;gap:8px}
+.clima__fasce{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.clima__fasce li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:16px}
+.clima__fasce li:last-child{border-bottom:1px solid var(--line)}
+.clima__fasce li span{color:var(--muted)}
+.clima__fasce li b{font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;line-height:24px}
+.clima__dati{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.clima__temp{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--sunk);font-weight:600;font-size:15px}
+.clima__assente{display:flex;align-items:center;gap:10px;margin:0;padding:12px 16px;border-radius:var(--r-md);background:var(--sunk);color:var(--muted)}
+.clima__energia{padding:18px 20px;border-radius:var(--r-xl);background:var(--ochre-soft)}
+.clima__energia-titolo{display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;margin:0 0 8px}
+.clima__energia p{margin:0 0 8px;font-size:15px;line-height:22px}
+.clima__energia ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px;line-height:22px}

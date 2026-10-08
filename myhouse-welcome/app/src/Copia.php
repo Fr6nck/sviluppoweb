@@ -31,7 +31,7 @@ namespace MHW;
 final class Copia
 {
     /** Le sezioni che si possono copiare, nell'ordine in cui si propongono (tutte già spuntate). */
-    public const SEZIONI = ['waste', 'eat', 'visit', 'todo', 'shop', 'transport', 'emergency', 'info', 'rules', 'services', 'extras', 'events', 'custom'];
+    public const SEZIONI = ['waste', 'eat', 'visit', 'todo', 'shop', 'transport', 'emergency', 'info', 'rules', 'services', 'clima', 'extras', 'events', 'custom'];
     /** Mai copiate: dati della singola casa. */
     public const MAI = ['checkin', 'wifi', 'arrival', 'parking'];
 

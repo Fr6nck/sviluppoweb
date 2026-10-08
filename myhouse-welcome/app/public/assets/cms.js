@@ -689,3 +689,20 @@
   }
 
 })();
+
+/* I campi di una sezione che valgono solo per certi valori di una scelta (Riscaldamento e aria
+   condizionata: gli orari solo «a orari»). Senza JavaScript restano tutti visibili. */
+(function () {
+  var campi = document.querySelectorAll('[data-campo-solo-con]');
+  if (!campi.length) return;
+  var aggiorna = function () {
+    for (var i = 0; i < campi.length; i++) {
+      var c = campi[i], f = c.closest('form') || document;
+      var nome = c.getAttribute('data-campo-solo-con');
+      var scelto = f.querySelector('input[name="' + nome + '"]:checked') || f.querySelector('select[name="' + nome + '"]');
+      c.hidden = (c.getAttribute('data-solo-valori') || '').split(',').indexOf(scelto ? scelto.value : '') === -1;
+    }
+  };
+  document.addEventListener('change', function (e) { if (e.target.name && document.querySelector('[data-campo-solo-con="' + e.target.name + '"]')) aggiorna(); });
+  aggiorna();
+})();

@@ -19,6 +19,9 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
     $id = $uid . '-' . $nome;
     $valore = SectionCatalog::isTranslated($tipo) ? ($tdati[$nome] ?? '') : ($dati[$nome] ?? '');
     if (isset($defCampo['se'])) continue;   // li disegna il loro interruttore
+    // Un campo che vale solo per certi valori di una scelta (il riscaldamento «a orari»): con
+    // JavaScript sparisce quando non serve; senza, resta visibile.
+    if (isset($defCampo['solo_con'])) echo '<div class="campo-solo" data-campo-solo-con="' . Support::e($defCampo['solo_con'][0]) . '" data-solo-valori="' . Support::e(implode(',', $defCampo['solo_con'][1])) . '">';
     if ($tipo === 'check'): /* un interruttore; spento, i campi legati spariscono e al salvataggio si svuotano */
         $acceso = SectionCatalog::acceso($kind, $nome, $dati); ?>
   <div class="field interruttore-campo" style="margin:0">
@@ -178,4 +181,4 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
            <?= !empty($defCampo['cifre']) ? 'inputmode="numeric" pattern="[0-9]*"' : '' ?>
            <?= $tipo === 'url' ? 'placeholder="https://"' : '' ?> <?= $tipo === 'secret' ? 'autocomplete="off" spellcheck="false"' : '' ?>>
   </div>
-<?php endif; endforeach; ?>
+<?php endif; if (isset($defCampo['solo_con'])) echo '</div>'; endforeach; ?>

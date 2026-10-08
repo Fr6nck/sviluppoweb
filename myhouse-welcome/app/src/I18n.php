@@ -22,6 +22,9 @@ final class I18n
             // Fase 6G: le parole degli eventi (categorie, date, «Oggi»…).
             $x = MHW_APP . '/lang/eventi/' . $loc . '.php';
             if (self::$dict[$loc] && is_file($x)) self::$dict[$loc] = array_merge(self::$dict[$loc], require $x);
+            // Riscaldamento e aria condizionata (sezione «clima»).
+            $x = MHW_APP . '/lang/clima/' . $loc . '.php';
+            if (self::$dict[$loc] && is_file($x)) self::$dict[$loc] = array_merge(self::$dict[$loc], require $x);
             // Fase 6: categorie, etichette, dotazioni, modi di muoversi e unità, nelle 5 lingue.
             $x = MHW_APP . '/lang/tassonomie/' . $loc . '.php';
             if (self::$dict[$loc] && is_file($x)) self::$dict[$loc] = array_merge(self::$dict[$loc], require $x);

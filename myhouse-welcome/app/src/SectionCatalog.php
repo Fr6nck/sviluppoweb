@@ -117,6 +117,38 @@ final class SectionCatalog
                 'note'  => ['textarea', 'Nota', 'Facoltativa.'],
             ],
         ],
+        // Riscaldamento e aria condizionata: com'è ogni impianto, gli orari se va da solo, la
+        // temperatura, come si usa. Nella guida l'ospite vede se adesso è acceso e un consiglio
+        // per non sprecare energia (in Italia costa cara). I campi di un impianto compaiono
+        // solo con il modo giusto ('solo_con'); nella guida contano solo quelli del modo scelto.
+        'clima' => [
+            'icon' => 'flame', 'group' => 'casa',
+            'breve' => 'Quando è acceso il riscaldamento, come si usa l\'aria condizionata.',
+            'intro' => 'Dice all\'ospite se riscaldamento e aria condizionata si accendono da soli, a che ora e a che temperatura, oppure come si accendono. Nella guida vede subito se adesso sono accesi, con un consiglio per non sprecare energia.',
+            'fields' => [
+                'heating_mode'   => ['choice', 'Riscaldamento', '', 'options' => ['auto' => 'Si accende da solo, a orari', 'manuale' => 'Lo accende l\'ospite', 'no' => 'Non c\'è']],
+                'heating_times'  => ['repeater', 'Quando è acceso', 'Una riga per ogni fascia: per esempio dalle 6:30 alle 9:00 e dalle 17:00 alle 23:00. Senza giorni vale tutti i giorni.',
+                                     'add' => 'Aggiungi una fascia oraria', 'item' => 'Fascia', 'max' => 8, 'solo_con' => ['heating_mode', ['auto']], 'sub' => [
+                                         'from' => ['time', 'Si accende alle', '', 'w' => 4],
+                                         'to'   => ['time', 'Si spegne alle', '', 'w' => 4],
+                                         'days' => ['days', 'Giorni', 'Facoltativi: vuoto vale tutti i giorni.'],
+                                     ]],
+                'heating_temp'   => ['plain', 'Temperatura (°C)', 'Facoltativa. Quella impostata, o quella che consigli. Per esempio: 20.', 'cifre' => true, 'solo_con' => ['heating_mode', ['auto', 'manuale']]],
+                'heating_period' => ['text', 'Periodo dell\'anno', 'Facoltativo. Per esempio: dal 15 ottobre al 15 aprile.', 'solo_con' => ['heating_mode', ['auto', 'manuale']]],
+                'heating_how'    => ['steps', 'Come si usa', 'Facoltativo. Un passaggio per riga: dov\'è il termostato, come si alza o si abbassa.', 'solo_con' => ['heating_mode', ['auto', 'manuale']]],
+                'ac_mode'        => ['choice', 'Aria condizionata', '', 'options' => ['libero' => 'L\'ospite la accende quando vuole', 'orari' => 'Funziona solo in certi orari', 'no' => 'Non c\'è']],
+                'ac_times'       => ['repeater', 'Quando funziona', 'Una riga per ogni fascia. Senza giorni vale tutti i giorni.',
+                                     'add' => 'Aggiungi una fascia oraria', 'item' => 'Fascia', 'max' => 8, 'solo_con' => ['ac_mode', ['orari']], 'sub' => [
+                                         'from' => ['time', 'Dalle', '', 'w' => 4],
+                                         'to'   => ['time', 'Alle', '', 'w' => 4],
+                                         'days' => ['days', 'Giorni', 'Facoltativi: vuoto vale tutti i giorni.'],
+                                     ]],
+                'ac_temp'        => ['plain', 'Temperatura consigliata (°C)', 'Facoltativa. Per esempio: 26.', 'cifre' => true, 'solo_con' => ['ac_mode', ['libero', 'orari']]],
+                'ac_how'         => ['steps', 'Come si accende', 'Facoltativo. Un passaggio per riga: dov\'è il telecomando, quale tasto premere.', 'solo_con' => ['ac_mode', ['libero', 'orari']]],
+                'risparmio'      => ['check', 'Mostra il consiglio per risparmiare energia', 'Nella guida, due righe gentili: in Italia l\'energia costa cara, finestre chiuse con il clima acceso, spegnere quando si esce.', 'acceso' => true],
+                'note'           => ['textarea', 'Nota', 'Facoltativa.'],
+            ],
+        ],
         // Servizi extra (fase 5): quello che l'host vende in più — transfer, colazione,
         // late check-out. Ogni riga ha «Richiedi su WhatsApp» nella guida.
         'extras' => [
@@ -603,7 +635,8 @@ final class SectionCatalog
         foreach (self::fields($kind) as $name => $def) {
             if (($def['se'] ?? null) === $check && trim((string) ($data[$name] ?? '')) !== '') return true;
         }
-        return false;
+        // Un interruttore può nascere acceso ('acceso' => true): il consiglio sull'energia.
+        return !empty(self::fields($kind)[$check]['acceso']);
     }
 
     /** Una sezione ha qualcosa da mostrare? (per l'anteprima e la pubblicazione) */

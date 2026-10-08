@@ -1,5 +1,21 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Sezione «Riscaldamento e aria condizionata» (8 ottobre 2026)
+
+Nessuna migrazione: è una sezione nuova del catalogo (`clima`), nel gruppo «La casa».
+
+- **Per l'host, due blocchi semplici.** Per ogni impianto si sceglie com'è; poi compaiono solo i campi che servono (con JavaScript; senza, si vedono tutti).
+  - **Riscaldamento:** «Si accende da solo, a orari», «Lo accende l'ospite» o «Non c'è». A orari: una riga per ogni fascia (si accende alle / si spegne alle), con i giorni facoltativi; vuoto vale tutti i giorni. Poi la temperatura, il periodo dell'anno e come si usa il termostato.
+  - **Aria condizionata:** «L'ospite la accende quando vuole» (con un tasto o il telecomando), «Funziona solo in certi orari» o «Non c'è». Poi la temperatura consigliata e come si accende.
+  - **«Mostra il consiglio per risparmiare energia»:** acceso di serie.
+- **Per l'ospite, una scheda per impianto:**
+  - se va a orari, una pastiglia dice subito «Acceso adesso · fino alle 23:00» oppure «Spento adesso · si accende alle 17:00 / domani alle 6:30», con l'ora italiana;
+  - le fasce raggruppate per giorni («tutti i giorni», «lun–ven»), la temperatura («Impostato a 20 °C» o «Temperatura consigliata: 26 °C»), il periodo, i passaggi per usarlo;
+  - un riquadro gentile, «Energia: ogni grado conta». Dice che in Italia l'energia costa molto e chiede tre cose: porte e finestre chiuse con il clima acceso, le temperature dell'host (o 20 °C d'inverno e 26 °C d'estate) e di spegnere quando si esce.
+- Le frasi della guida sono nelle 5 lingue (`lang/clima/`). La sezione si copia tra strutture del Portfolio come le altre.
+- Nell'editor, un campo di sezione può comparire solo con certi valori di una scelta (`solo_con`, come già nelle righe), e un interruttore può nascere acceso (`'acceso' => true`).
+- **Prove:** 737 in tutto, con lo stato «acceso adesso» anche per le fasce che passano la mezzanotte.
+
 ## v2 · «Invita un amico» nel pannello del cliente (8 ottobre 2026)
 
 Migrazione `025`: tabella `referral_invites` (inviti mandati per email: impronta dell'indirizzo, forma mascherata, data). Solo aggiunte.

@@ -180,6 +180,9 @@ foreach ($snap['sections'] as $s) {
     </div>
   <?php endif; ?>
 
+<?php /* ------------------------------- riscaldamento e aria condizionata */ ?>
+<?php elseif ($kind === 'clima'): include __DIR__ . '/_clima.php'; ?>
+
 <?php /* ------------------------------------------------ tutte le altre sezioni */ ?>
 <?php else: ?>
   <?php foreach (SectionCatalog::fields($kind) as $campo => [$tipo]): ?>

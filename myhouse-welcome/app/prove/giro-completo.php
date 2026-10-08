@@ -1244,7 +1244,7 @@ $admin->get('/admin/cliente/' . $lacc);
 $admin->post("/admin/cliente/$lacc/abbonamento", ['pv' => (string) pv('portfolio'), 'mesi' => '12', 'nota' => 'Prova della copia', 'strutture' => '2']);
 $r = $lucia->get('/pannello/nuova');
 prova('Fase 4 · «Crea da una struttura esistente»: Casa Lucia, con le sezioni già spuntate', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Crea da una struttura esistente')
-      && preg_match('#<option value="' . $casa . '">\s*Casa Lucia#', $r['body']) === 1 && substr_count($r['body'], 'name="copia[]"') === 13
+      && preg_match('#<option value="' . $casa . '">\s*Casa Lucia#', $r['body']) === 1 && substr_count($r['body'], 'name="copia[]"') === 14
       && str_contains($r['body'], 'Non si copiano mai, perché sono solo di una struttura: indirizzo, CIN, reti Wi-Fi'));
 $mediaPrima = (int) val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]);
 $r = $lucia->post('/pannello/nuova', ['name' => 'Casa Lucia Due', 'city' => 'Pienza', 'origine' => (string) $casa, 'copia' => ['waste', 'eat', 'visit', 'todo', 'transport', 'emergency', 'info', 'rules', 'services', 'extras'], 'copia_aspetto' => '1', 'copia_contatti' => '1']);
@@ -1831,7 +1831,7 @@ if (!$sez('arrival')) $luc->post("/pannello/$lpid/sezioni", ['kind' => 'arrival'
 $r = $luc->get("/pannello/$lpid/sezioni/" . $sez('arrival'));
 prova('6C · come arrivare: riquadro che rimanda a «Muoversi in zona»', $r['code'] === 200 && str_contains($r['body'], 'Gli spostamenti durante il soggiorno vanno in «Muoversi in zona».'));
 $r = $ospite->get('/');
-prova('6C · home: tutte le sezioni del catalogo nei tre gruppi, contate', $r['code'] === 200 && str_contains($r['body'], '16 sezioni pronte da compilare, più le sezioni libere')
+prova('6C · home: tutte le sezioni del catalogo nei tre gruppi, contate', $r['code'] === 200 && str_contains($r['body'], '17 sezioni pronte da compilare, più le sezioni libere')
       && !str_contains($r['body'], 'in base al piano') && str_contains($r['body'], 'id="gruppo-casa">La casa</h3>') && str_contains($r['body'], 'id="gruppo-arrivo">Arrivare e muoversi</h3>')
       && str_contains($r['body'], 'id="gruppo-territorio">Il territorio</h3>') && str_contains($r['body'], 'Muoversi in zona') && str_contains($r['body'], 'Negozi e spesa'));
 
@@ -1871,7 +1871,7 @@ prova('M2 · QR & Link: messaggio di benvenuto per lingua, col link nella lingua
       && preg_match('#id="benvenuto-en"[^>]*>Hello! Welcome to Casa Lucia\.[^<]*/g/[a-z0-9-]+\?l=en#', $r['body']) === 1
       && str_contains($r['body'], 'data-copia-da="benvenuto-de"') && str_contains($r['body'], 'href="https://wa.me/?text=Ciao%21%20Benvenuti%20a%20Casa%20Lucia.'));
 $r = $ospite->get('/');
-prova('6D · la home conta ancora le sezioni pronte (la libera no)', str_contains($r['body'], '16 sezioni pronte da compilare'));
+prova('6D · la home conta ancora le sezioni pronte (la libera no)', str_contains($r['body'], '17 sezioni pronte da compilare'));
 
 capitolo('Fase 6G · eventi');
 $evSid = $sez('events');
@@ -2648,6 +2648,45 @@ $r = $dario->post('/inviti/email', ['email' => 'qualcuno@prova.test']);
 prova('…e non può mandare inviti nemmeno forzando la richiesta', !$posta('qualcuno@prova.test'));
 prova('Amministrazione → Inviti: il conto degli inviti per email', preg_match('#Inviti per email</span><b class="cifra__valore">1<#', $admin->get('/admin/inviti')['body']) === 1);
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
+
+// Riscaldamento e aria condizionata: orari, stato di adesso, temperatura, consiglio sull'energia.
+capitolo('Riscaldamento e aria condizionata');
+$lucia->get("/pannello/$casa/procedura/sezioni");
+$lucia->post("/pannello/$casa/sezioni", ['kind' => 'clima', 'torna' => 'procedura']);
+$csid = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'clima'", [$casa]);
+$r = $lucia->get("/pannello/$casa/sezioni/$csid");
+prova('Sezione «Riscaldamento e aria condizionata»: si sceglie com\'è ogni impianto, gli orari compaiono solo «a orari»', $csid > 0
+      && str_contains($r['body'], 'Si accende da solo, a orari') && str_contains($r['body'], 'L&#039;ospite la accende quando vuole')
+      && str_contains($r['body'], 'data-campo-solo-con="heating_mode" data-solo-valori="auto"') && str_contains($r['body'], 'Aggiungi una fascia oraria')
+      && preg_match('#name="risparmio" value="1" checked#', $r['body']) === 1);
+$r = $lucia->post("/pannello/$casa/sezioni/$csid", ['heating_mode' => 'auto',
+    'heating_times' => [['id' => '', 'from' => '06:30', 'to' => '09:00'], ['id' => '', 'from' => '17:00', 'to' => '23:00', 'days' => ['1', '2', '3', '4', '5']]],
+    'heating_temp' => '20', 'heating_period' => 'Dal 15 ottobre al 15 aprile', 'heating_how' => [''],
+    'ac_mode' => 'libero', 'ac_temp' => '26', 'ac_how' => ['Il telecomando è sul comodino.', 'Premi ON, poi il fiocco di neve.'], 'risparmio' => '1', 'note' => '']);
+$sd = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$csid]), true) ?: [];
+prova('…salvata: modo, due fasce (una solo dal lunedì al venerdì), temperature', pulita($r) && ($sd['heating_mode'] ?? '') === 'auto' && count($sd['heating_times'] ?? []) === 2
+      && ($sd['heating_times'][1]['days'] ?? []) === [1, 2, 3, 4, 5] && ($sd['ac_temp'] ?? '') === '26', json_encode($sd));
+$r = $lucia->get("/pannello/$casa/anteprima/$csid");
+prova('Guida: stato di adesso (acceso o spento), fasce leggibili, «Impostato a 20 °C», l\'aria condizionata con il telecomando',
+      $r['code'] === 200 && preg_match('#clima__stato--(on|off)#', $r['body']) === 1 && str_contains($r['body'], 'tutti i giorni') && str_contains($r['body'], '6:30 – 9:00')
+      && str_contains($r['body'], 'lun–ven') && str_contains($r['body'], 'Impostato a 20 °C') && str_contains($r['body'], 'Si accende e si spegne da solo')
+      && str_contains($r['body'], 'La accendi tu quando vuoi') && str_contains($r['body'], 'Il telecomando è sul comodino.') && str_contains($r['body'], 'Dal 15 ottobre al 15 aprile'));
+prova('…il consiglio sull\'energia, con le temperature dell\'host', str_contains($r['body'], 'In Italia l&#039;energia costa molto') && str_contains($r['body'], 'D&#039;inverno bastano 20 °C')
+      && str_contains($r['body'], 'D&#039;estate bastano 26 °C'));
+$r = $lucia->get("/pannello/$casa/anteprima/$csid?l=en");
+prova('…in inglese', str_contains($r['body'], 'Heating') && str_contains($r['body'], 'every day') && str_contains($r['body'], 'Set to 20 °C') && preg_match('#(On|Off) now#', $r['body']) === 1);
+$lucia->post("/pannello/$casa/sezioni/$csid", ['heating_mode' => 'manuale', 'heating_temp' => '20', 'ac_mode' => 'no', 'risparmio' => '', 'note' => 'Il termostato è in corridoio.']);
+$r = $lucia->get("/pannello/$casa/anteprima/$csid");
+prova('Riscaldamento acceso dall\'ospite, niente aria condizionata, consiglio spento: niente orari vecchi né stato',
+      str_contains($r['body'], 'Lo accendi tu, quando ti serve.') && str_contains($r['body'], 'Temperatura consigliata: 20 °C') && str_contains($r['body'], 'Non c&#039;è l&#039;aria condizionata.')
+      && !str_contains($r['body'], 'clima__stato') && !str_contains($r['body'], '6:30') && !str_contains($r['body'], 'energia costa') && str_contains($r['body'], 'Il termostato è in corridoio.'));
+$stati = json_decode((string) shell_exec('php -r ' . escapeshellarg('define("MHW_APP", "' . $DOVE . '/app"); spl_autoload_register(fn($c) => require "' . $DOVE . '/app/src/" . substr($c, 4) . ".php");
+  $f = MHW\Clima::fasce([["from" => "17:00", "to" => "23:00"], ["from" => "06:30", "to" => "09:00"], ["from" => "22:00", "to" => "02:00", "days" => ["6"]]]);
+  $t = fn($s) => new DateTimeImmutable($s, new DateTimeZone("Europe/Rome"));
+  echo json_encode(array_map(fn($q) => MHW\Clima::stato($f, $t($q)), ["2026-10-07 07:00", "2026-10-07 12:00", "2026-10-07 23:30", "2026-10-11 01:00"]));')), true) ?: [];
+prova('Stato di adesso: acceso al mattino fino alle 9, spento a mezzogiorno fino alle 17, di notte si riaccende domani, la fascia del sabato notte vale fino alle 2',
+      ($stati[0]['acceso'] ?? null) === true && ($stati[0]['fino'] ?? '') === '09:00' && ($stati[1]['prossima'] ?? '') === '17:00' && ($stati[1]['domani'] ?? true) === false
+      && ($stati[2]['prossima'] ?? '') === '06:30' && ($stati[2]['domani'] ?? false) === true && ($stati[3]['acceso'] ?? null) === true && ($stati[3]['fino'] ?? '') === '02:00', json_encode($stati));
 
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";
