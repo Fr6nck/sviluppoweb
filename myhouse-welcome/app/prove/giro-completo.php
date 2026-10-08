@@ -2568,6 +2568,48 @@ prova('Clienti: filtro per stato (solo attivi) e colonna della scadenza', $r['co
 $r = $admin->get('/admin/clienti?formato=csv');
 prova('…esporta i clienti in CSV', str_starts_with($r['body'], "\xEF\xBB\xBFNome;Email;") && str_contains($r['body'], 'dario@prova.test'));
 
+// Posta: accesso SMTP con LOGIN e PLAIN, errore chiaro, «Prova con questi dati» senza salvare.
+capitolo('Posta in uscita · accesso SMTP');
+$SMTP_DIR = rtrim($argv[6] ?? '', '/'); $SMTP_PORTA = (int) ($argv[7] ?? 0);
+$fileLocale = "$DOVE/app/config.local.php";
+$regoleSmtp = fn(array $r) => file_put_contents("$SMTP_DIR/regole.json", json_encode($r + ['utente' => 'info@prova.test', 'password' => 'Giusta-2026!']));
+$sessioni = fn() => array_map(fn($l) => json_decode($l, true), file("$SMTP_DIR/sessioni.jsonl", FILE_IGNORE_NEW_LINES) ?: []);
+$postaSmtp = fn() => count(file("$SMTP_DIR/posta.jsonl", FILE_IGNORE_NEW_LINES) ?: []);
+// Il server accetta le credenziali giuste solo con PLAIN, anche se offre LOGIN e PLAIN (succede).
+$regoleSmtp(['offre' => ['LOGIN', 'PLAIN'], 'accetta' => ['PLAIN']]);
+file_put_contents($fileLocale, '<?php return ' . var_export(['mail' => ['transport' => 'smtp', 'host' => '127.0.0.1', 'port' => $SMTP_PORTA, 'encryption' => 'none',
+    'user' => 'info@prova.test', 'pass' => 'vecchia', 'from' => 'info@prova.test']], true) . ';');
+$admin->get('/admin/impostazioni');
+$r = $admin->segui($admin->post('/admin/impostazioni/posta/prova', []));
+$s = $sessioni();
+prova('Password salvata sbagliata: l\'errore dice utente, lunghezza della password e metodi provati (LOGIN e PLAIN), mai la password',
+      str_contains($r['body'], 'utente «info@prova.test»') && str_contains($r['body'], 'password di 7 caratteri') && str_contains($r['body'], 'provati LOGIN e PLAIN')
+      && str_contains($r['body'], 'Prova con questi dati') && !str_contains($r['body'], 'vecchia') && array_column($s, 'metodo') === ['LOGIN', 'PLAIN'], json_encode($s));
+$campiSmtp = ['mail__transport' => 'smtp', 'mail__host' => '127.0.0.1', 'mail__port' => (string) $SMTP_PORTA, 'mail__encryption' => 'none', 'mail__user' => 'info@prova.test',
+              'mail__from' => 'info@prova.test', 'mail__from_name' => 'MyHouse Welcome'];
+$prima = count($sessioni());
+$r = $admin->post('/admin/impostazioni/posta/prova', $campiSmtp + ['mail__pass' => 'Giusta-2026!', 'con_dati' => '1', 'password' => 'sbagliata']);
+prova('«Prova con questi dati» senza la password dell\'amministratore: non parte', $r['code'] === 422 && str_contains($r['body'], 'la prova non è partita') && count($sessioni()) === $prima);
+$r = $admin->segui($admin->post('/admin/impostazioni/posta/prova', $campiSmtp + ['mail__pass' => 'Giusta-2026!', 'con_dati' => '1', 'password' => 'AdminProva123']));
+$nuove = array_slice($sessioni(), $prima);
+prova('«Prova con questi dati»: usa la password scritta (LOGIN rifiutato, PLAIN accettato), l\'email parte, ma non salva niente',
+      str_contains($r['body'], 'Email di prova spedita') && str_contains($r['body'], 'non sono ancora salvati') && $postaSmtp() === 1
+      && array_column($nuove, 'ok') === [false, true] && ((require $fileLocale)['mail']['pass'] ?? '') === 'vecchia', json_encode($nuove));
+$admin->post('/admin/impostazioni/posta', $campiSmtp + ['mail__pass' => 'Giusta-2026!', 'password' => 'AdminProva123']);
+$r = $admin->segui($admin->post('/admin/impostazioni/posta/prova', []));
+prova('Salvata, «Prova i dati salvati» riesce; anche le email normali passano con PLAIN', str_contains($r['body'], 'Email di prova spedita') && $postaSmtp() === 2
+      && ((require $fileLocale)['mail']['pass'] ?? '') === 'Giusta-2026!');
+$regoleSmtp(['offre' => ['LOGIN'], 'accetta' => ['LOGIN']]);
+$prima = count($sessioni());
+$r = $admin->segui($admin->post('/admin/impostazioni/posta/prova', []));
+prova('Server che offre solo LOGIN: si usa LOGIN e basta', str_contains($r['body'], 'Email di prova spedita') && array_column(array_slice($sessioni(), $prima), 'metodo') === ['LOGIN']);
+file_put_contents($fileLocale, '<?php return ' . var_export(['mail' => ['transport' => 'smtp', 'host' => '127.0.0.1', 'port' => $SMTP_PORTA, 'encryption' => 'none',
+    'user' => 'info@prova.test', 'pass' => '', 'from' => 'info@prova.test']], true) . ';');
+$prima = count($sessioni());
+$r = $admin->segui($admin->post('/admin/impostazioni/posta/prova', []));
+prova('Password vuota: lo dice subito, senza tentativi sul server', str_contains($r['body'], 'Manca la password della casella') && count($sessioni()) === $prima);
+@unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
+
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

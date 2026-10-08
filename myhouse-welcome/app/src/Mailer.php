@@ -113,7 +113,7 @@ final class Mailer
 
         self::expect(220);
         $io = gethostname() ?: 'localhost';
-        self::cmd("EHLO $io", 250);
+        $ehlo = self::cmd("EHLO $io", 250);
         if ($cifra === 'tls') {
             self::cmd('STARTTLS', 220);
             // TLS 1.2 e 1.3 per nome: su alcune versioni di PHP la costante generica sceglie un TLS vecchio che i server rifiutano.
@@ -121,15 +121,9 @@ final class Mailer
             if (!@stream_socket_enable_crypto($s, true, $metodi)) {
                 throw new \RuntimeException('SMTP: STARTTLS non riuscito');
             }
-            self::cmd("EHLO $io", 250);
+            $ehlo = self::cmd("EHLO $io", 250);
         }
-        if ((string) $cfg['user'] !== '') {
-            self::cmd('AUTH LOGIN', 334);
-            self::cmd(base64_encode((string) $cfg['user']), 334);
-            // La risposta alla password non va nel messaggio d'errore con il comando: si scrive solo il codice del server.
-            try { self::cmd(base64_encode((string) $cfg['pass']), 235); }
-            catch (\RuntimeException $e) { throw new \RuntimeException('SMTP: accesso rifiutato — ' . preg_replace('/^SMTP: risposta inattesa /', '', $e->getMessage())); }
-        }
+        if ((string) $cfg['user'] !== '') self::accedi((string) $cfg['user'], (string) $cfg['pass'], $ehlo);
         self::cmd('MAIL FROM:<' . self::oneLine($cfg['from']) . '>', 250);
         self::cmd('RCPT TO:<' . $to . '>', [250, 251]);
         self::cmd('DATA', 354);
@@ -143,6 +137,37 @@ final class Mailer
         self::cmd('QUIT', 221);
         fclose($s);
         return true;
+    }
+
+    /**
+     * L'accesso alla casella, con i metodi che il server dichiara dopo EHLO (riga «AUTH …»):
+     * LOGIN, come sempre, e PLAIN. Se il primo è rifiutato si prova l'altro, una volta: alcuni
+     * server ne accettano uno solo anche se li elencano tutti e due. Nel messaggio d'errore ci
+     * sono l'utente, la lunghezza della password e i metodi provati; la password mai.
+     */
+    private static function accedi(string $utente, string $pass, string $ehlo): void
+    {
+        if ($pass === '') throw new \RuntimeException('SMTP: accesso rifiutato — manca la password della casella ' . $utente);
+        $offerti = preg_match('/^250[ -]AUTH[ =]([^\r\n]*)/mi', $ehlo, $m) === 1 ? array_map('strtoupper', preg_split('/\s+/', trim($m[1])) ?: []) : [];
+        $metodi = array_values(array_intersect(['LOGIN', 'PLAIN'], $offerti)) ?: ['LOGIN'];
+        $risposta = '';
+        foreach ($metodi as $metodo) {
+            try {
+                if ($metodo === 'PLAIN') {
+                    self::cmd('AUTH PLAIN ' . base64_encode("\0" . $utente . "\0" . $pass), 235);
+                } else {
+                    self::cmd('AUTH LOGIN', 334);
+                    self::cmd(base64_encode($utente), 334);
+                    self::cmd(base64_encode($pass), 235);
+                }
+                return;
+            } catch (\RuntimeException $e) {
+                // Il messaggio contiene solo la risposta del server, mai il comando mandato.
+                $risposta = preg_replace('/^SMTP: risposta inattesa /', '', $e->getMessage());
+            }
+        }
+        throw new \RuntimeException('SMTP: accesso rifiutato — ' . $risposta . ' [utente «' . $utente . '», password di ' . mb_strlen($pass) . ' caratteri, '
+            . (count($metodi) > 1 ? 'provati ' . implode(' e ', $metodi) : 'metodo ' . $metodi[0]) . ($offerti ? '; il server offre ' . implode(' ', $offerti) : '') . ']');
     }
 
     private static function cmd(string $line, int|array $atteso): string

@@ -99,11 +99,15 @@ $intro = [
                  <?= isset($err['password']) ? 'aria-invalid="true" aria-describedby="imp-' . $g . '-password-err"' : '' ?>>
           <?php if (isset($err['password'])): ?><span class="field-error" id="imp-<?= $g ?>-password-err"><?= Support::e($err['password']) ?></span><?php endif; ?>
         </div>
-        <button class="btn"<?= $scrivibile ? '' : ' disabled' ?>>Salva</button>
+        <div class="row" style="gap:8px">
+          <button class="btn"<?= $scrivibile ? '' : ' disabled' ?>>Salva</button>
+          <button class="btn btn--ghost" name="con_dati" value="1" formaction="<?= b() ?>/admin/impostazioni/<?= $g ?>/prova"
+                  title="Usa i dati scritti qui sopra, senza salvarli"><?= Icon::svg('pulse', 15) ?>Prova con questi dati</button>
+        </div>
       </div>
     </form>
     <form method="post" action="<?= b() ?>/admin/impostazioni/<?= $g ?>/prova" class="impostazioni__prova"><?= Csrf::field() ?>
-      <button class="btn btn--ghost btn--sm"><?= Icon::svg('pulse', 15) ?>Prova la connessione</button>
+      <button class="btn btn--ghost btn--sm"><?= Icon::svg('pulse', 15) ?>Prova i dati salvati</button>
       <span class="small muted"><?= $g === 'posta' ? 'Manda un\'email di prova a ' . Support::e($emailAdmin) . '.' : ($g === 'stripe' ? 'Chiede a Stripe se la chiave è valida.' : ($g === 'traduzioni' ? 'Fa tradurre una parola: 9 caratteri.' : 'Scrive, legge e cancella un piccolo file nel bucket.')) ?></span>
     </form>
   </section>

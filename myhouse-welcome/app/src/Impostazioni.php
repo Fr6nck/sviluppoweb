@@ -149,7 +149,38 @@ final class Impostazioni
      */
     public static function salva(string $gruppo, array $in): array
     {
-        if (!isset(self::GRUPPI[$gruppo])) return ['_' => 'Gruppo sconosciuto.'];
+        [$nuovo, , $errori] = self::prepara($gruppo, $in);
+        if ($errori) return $errori;
+        self::scrivi($nuovo);
+        return [];
+    }
+
+    /**
+     * Prova la connessione con i dati scritti nel modulo, senza salvarli: un segreto lasciato vuoto
+     * vale quello salvato. Valgono solo per questa richiesta.
+     * @return array{0:bool,1:string,2:array<string,string>} [riuscita, messaggio, errori per campo]
+     */
+    public static function provaCon(string $gruppo, array $in, string $emailAdmin): array
+    {
+        [, $effettivi, $errori] = self::prepara($gruppo, $in);
+        if ($errori) return [false, '', $errori];
+        $prima = [];
+        foreach ($effettivi as $percorso => $v) {
+            $cima = explode('.', $percorso)[0];
+            $prima[$cima] ??= Config::get($cima);
+            $tutto = [$cima => Config::get($cima)];
+            self::metti($tutto, $percorso, $v);
+            Config::sovrascrivi($cima, $tutto[$cima]);
+        }
+        try { [$ok, $msg] = self::prova($gruppo, $emailAdmin); }
+        finally { foreach ($prima as $cima => $v) Config::sovrascrivi($cima, $v); }
+        return [$ok, $msg, []];
+    }
+
+    /** I valori di un gruppo dal modulo: [config.local.php nuovo, valori in uso per ogni campo, errori]. */
+    private static function prepara(string $gruppo, array $in): array
+    {
+        if (!isset(self::GRUPPI[$gruppo])) return [[], [], ['_' => 'Gruppo sconosciuto.']];
         $locale = self::locale();
         $nuovo = $locale;
         $togli = (array) ($in['togli'] ?? []);
@@ -216,9 +247,7 @@ final class Impostazioni
         if (!$errori && $gruppo === 'stripe' && ($effettivi['stripe.secret_key'] ?? '') !== '' && ($effettivi['stripe.webhook_secret'] ?? '') === '') {
             $errori[self::nome('stripe.webhook_secret')] = 'Serve anche il segreto del webhook: senza, i pagamenti non attivano le guide.';
         }
-        if ($errori) return $errori;
-        self::scrivi($nuovo);
-        return [];
+        return [$nuovo, $effettivi, $errori];
     }
 
     /** Il nome del campo nel modulo: i punti diventano due trattini bassi. */
@@ -252,8 +281,11 @@ final class Impostazioni
         $e = mb_strtolower($errore);
         $consiglio = match (true) {
             $errore === '' => 'Controlla server, porta, cifratura, utente e password.',
+            str_contains($e, 'manca la password') => 'Manca la password della casella: scrivila nel campo «Password della casella» e premi «Prova con questi dati».',
             str_contains($e, 'accesso rifiutato') || preg_match('/\b(535|534|530)\b/', $e) === 1
-                => 'Il server ha rifiutato utente o password. L\'utente è l\'indirizzo completo della casella; riscrivi la password della casella (non quella del pannello) e controlla che il browser non l\'abbia riempita da solo con un\'altra.',
+                => 'Il server ha rifiutato utente o password. Controlla, tra parentesi qui sotto, l\'utente usato: dev\'essere l\'indirizzo completo della casella (per esempio info@tuodominio.it). '
+                 . 'La password è quella della casella, la stessa della webmail, non quella del pannello: riscrivila e premi «Prova con questi dati» (prova senza salvare), poi «Salva». '
+                 . 'Se la webmail entra con la stessa password e qui no, chiedi al fornitore della posta se l\'invio SMTP è attivo per quella casella o se serve una «password per le app».',
             str_contains($e, 'connessione a') => 'Il sito non raggiunge il server di posta: controlla nome del server e porta (587 con STARTTLS, 465 con SSL). Se la porta è giusta, l\'hosting potrebbe bloccarla: prova l\'altra.',
             str_contains($e, 'starttls') || str_contains($e, 'ssl') || str_contains($e, 'crypto') => 'La connessione cifrata non è riuscita: prova SSL sulla porta 465 invece di STARTTLS sulla 587.',
             preg_match('/\b(550|551|553|554)\b/', $e) === 1 => 'Il server ha rifiutato il mittente o il destinatario: il mittente deve essere la stessa casella dell\'utente (o un suo alias).',

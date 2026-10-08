@@ -12,6 +12,9 @@ final class Config
         return self::$data[$key] ?? $default;
     }
 
+    /** Un valore diverso solo per questa richiesta, senza scriverlo da nessuna parte (Impostazioni → «Prova con questi dati»). */
+    public static function sovrascrivi(string $key, mixed $value): void { self::$data[$key] = $value; }
+
     public static function stripeReady(): bool
     {
         $s = self::get('stripe');

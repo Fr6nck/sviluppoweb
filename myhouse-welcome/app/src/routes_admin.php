@@ -613,12 +613,29 @@ $r->post('/admin/impostazioni/{gruppo}', function (array $a) use ($impostazioni)
     Support::redirect('/admin/impostazioni#' . $gruppo);
 });
 
-$r->post('/admin/impostazioni/{gruppo}/prova', function (array $a) {
+$r->post('/admin/impostazioni/{gruppo}/prova', function (array $a) use ($impostazioni) {
     $admin = Auth::requireAdmin();
     $gruppo = (string) $a['gruppo'];
     if (!isset(Impostazioni::GRUPPI[$gruppo])) { http_response_code(404); exit('Non trovato.'); }
     if (!RateLimit::hit('impostazioni-prova:' . (int) $admin['id'], 10, 900)) {
         Support::flash('Troppe prove di fila: riprova tra un quarto d\'ora.', 'err');
+        Support::redirect('/admin/impostazioni#' . $gruppo);
+    }
+    if (!empty($_POST['con_dati'])) {
+        // «Prova con questi dati»: i valori del modulo, senza salvarli. Serve la password dell'amministratore,
+        // come per salvare: altrimenti un segreto salvato si potrebbe mandare a un server scelto da altri.
+        $valori = [];
+        foreach (Impostazioni::GRUPPI[$gruppo] as $percorso => $c) {
+            if ($c[2] !== 'secret') $valori[Impostazioni::nome($percorso)] = (string) ($_POST[Impostazioni::nome($percorso)] ?? '');
+        }
+        $hash = (string) Db::val('SELECT password_hash FROM users WHERE id = ?', [(int) $admin['id']], '');
+        if (!password_verify((string) ($_POST['password'] ?? ''), $hash)) {
+            $impostazioni($admin, $gruppo, ['password' => 'La password non è giusta: la prova non è partita.'], $valori, 422);
+            return;
+        }
+        [$ok, $msg, $errori] = Impostazioni::provaCon($gruppo, $_POST, (string) $admin['email']);
+        if ($errori) { $impostazioni($admin, $gruppo, $errori, $valori, 422); return; }
+        Support::flash(Impostazioni::TITOLI[$gruppo] . ': ' . $msg . ($ok ? ' Questi dati non sono ancora salvati: premi «Salva».' : ''), $ok ? 'ok' : 'err');
         Support::redirect('/admin/impostazioni#' . $gruppo);
     }
     [$ok, $msg] = Impostazioni::prova($gruppo, (string) $admin['email']);

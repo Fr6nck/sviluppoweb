@@ -18,7 +18,7 @@ Il database resta **SQLite**. Le migrazioni nuove sono scritte anche per MySQL, 
 
 Si impostano come variabili d'ambiente o in `app/config.local.php`. Il modello è `config.local.esempio.php`.
 
-**Il modo più semplice per Stripe, posta e foto: Amministrazione → Impostazioni.** Inserisci i valori nei tre riquadri, conferma con la tua password e premi «Prova la connessione».
+**Il modo più semplice per Stripe, posta e foto: Amministrazione → Impostazioni.** Inserisci i valori nei tre riquadri, conferma con la tua password e premi «Prova con questi dati»: prova senza salvare. Se va, premi «Salva». «Prova i dati salvati» prova quelli già in uso.
 - I valori si salvano solo sul server, in `app/config.local.php`. La versione precedente resta in `config.local.bak.php`.
 - I segreti non si rivedono più: si vede solo come finiscono.
 - Serve che la cartella `app/` (o il file) sia scrivibile dal sito. Se non lo è, la pagina te lo dice.
@@ -37,6 +37,11 @@ Si impostano come variabili d'ambiente o in `app/config.local.php`. Il modello �
 | `MHW_GRACE_DAYS` | no | giorni online dopo un rinnovo non riuscito (predefinito 0) |
 | `MHW_TERMS_VERSION`, `MHW_PRIVACY_VERSION` | quando cambi i testi | i consensi nuovi registrano la versione |
 | `MHW_COMPANY`, `MHW_COMPANY_VAT`, `MHW_COMPANY_CITY`, `MHW_CONTACT_EMAIL`, `MHW_CONTACT_PHONE`, `MHW_CONTACT_WHATSAPP` | no | i valori predefiniti sono già quelli confermati di Blackout Agency |
+
+**Se la posta non parte con «535 authentication failed».** Il server rifiuta utente o password. L'errore ora dice quale utente è stato usato, quanti caratteri ha la password e con quali metodi si è provato (LOGIN e PLAIN).
+- L'utente è l'indirizzo completo della casella. La password è quella della casella, la stessa della webmail, non quella del pannello.
+- Scrivila e premi «Prova con questi dati»: prova senza salvare. Prima la prova usava solo la password già salvata.
+- Se la webmail entra e qui no, chiedi al fornitore della posta se l'invio SMTP è attivo per quella casella o se serve una «password per le app».
 
 **Cron (facoltativo).** Le email di richiamo partono anche senza cron, perché il controllo si fa mentre qualcuno usa il sito. Se il sito è poco visitato, aggiungi in cPanel un cron ogni ora:
 
@@ -132,7 +137,7 @@ Dalla migrazione `022` Plus e Portfolio hanno le traduzioni suggerite, anche chi
 2. Access key ID e secret access key dell'utente del punto 1. Se le lasci vuote si usano quelle dell'archivio S3, ma allora quell'utente deve avere anche `translate:TranslateText`: meglio un utente a parte.
 3. Prezzo (15 dollari per milione di caratteri), cambio dollaro-euro e fine del piano gratuito: servono solo alle stime.
 4. Tetti: 150.000 caratteri al mese per account e 1.900.000 per tutto il sito (sotto i 2 milioni del piano gratuito). Cambiali se vuoi.
-5. La tua password, **Salva**, poi **«Prova la connessione»**: deve rispondere «Benvenuti» → «Welcome» (9 caratteri, nel registro).
+5. La tua password, **«Prova con questi dati»**, poi **Salva**: deve rispondere «Benvenuti» → «Welcome» (9 caratteri, nel registro).
 
 **La prova vera, da cliente:**
 1. Con un account Plus (o la vetrina): **Lingue → Accendi le traduzioni suggerite**. Compaiono la spiegazione e «In omaggio fino al…».

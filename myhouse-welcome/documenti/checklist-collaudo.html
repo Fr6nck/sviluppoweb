@@ -39,8 +39,8 @@
 <table>
   <tr><th>Cosa</th><th>Variabili</th><th>Come si controlla</th></tr>
   <tr><td>Indirizzo pubblico</td><td><code>MHW_BASE_URL</code></td><td>Diagnostica</td></tr>
-  <tr><td>Stripe</td><td><code>STRIPE_SECRET_KEY</code>, <code>STRIPE_WEBHOOK_SECRET</code>, <code>STRIPE_AUTOMATIC_TAX=1</code></td><td>Impostazioni → Stripe → «Prova la connessione»</td></tr>
-  <tr><td>Posta (SMTP)</td><td><code>MAIL_TRANSPORT=smtp</code>, <code>MAIL_HOST</code>, <code>MAIL_PORT</code>, <code>MAIL_USER</code>, <code>MAIL_PASS</code>, <code>MAIL_ENCRYPTION</code>, <code>MAIL_FROM</code>, <code>MAIL_FROM_NAME</code></td><td>Impostazioni → Posta → «Prova la connessione»; un'email di prova arriva davvero</td></tr>
+  <tr><td>Stripe</td><td><code>STRIPE_SECRET_KEY</code>, <code>STRIPE_WEBHOOK_SECRET</code>, <code>STRIPE_AUTOMATIC_TAX=1</code></td><td>Impostazioni → Stripe → «Prova con questi dati» (prova senza salvare), poi «Salva»</td></tr>
+  <tr><td>Posta (SMTP)</td><td><code>MAIL_TRANSPORT=smtp</code>, <code>MAIL_HOST</code>, <code>MAIL_PORT</code>, <code>MAIL_USER</code>, <code>MAIL_PASS</code>, <code>MAIL_ENCRYPTION</code>, <code>MAIL_FROM</code>, <code>MAIL_FROM_NAME</code></td><td>Impostazioni → Posta → «Prova con questi dati» (prova senza salvare), poi «Salva»; un'email di prova arriva davvero</td></tr>
   <tr><td>Foto e PDF su Amazon S3</td><td><code>MHW_STORAGE=s3</code>, <code>AWS_REGION</code>, <code>AWS_S3_BUCKET</code>, <code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code></td><td>Diagnostica: «Foto e PDF su Amazon S3»</td></tr>
   <tr><td>Traduzioni suggerite</td><td><code>MHW_TRANSLATE_KEY</code>, <code>MHW_TRANSLATE_SECRET</code>, <code>MHW_TRANSLATE_REGION</code></td><td>Impostazioni → Traduzioni → «Prova»; Diagnostica</td></tr>
   <tr><td>Cron</td><td><code>MHW_CRON_TOKEN</code></td><td><code>/cron/IL_TOKEN</code> risponde ok</td></tr>
@@ -182,7 +182,7 @@
   <li><b>Abbonamenti</b> e <b>Guide</b>: elenchi completi, stato online/offline.</li>
   <li><b>Piani</b>: nuova versione di un piano (i clienti che hanno già pagato restano sulla loro), testi della landing.</li>
   <li><b>Codici sconto</b>, <b>Inviti</b> (con «Annulla» di un invito), <b>Traduzioni</b> (consumi, costo stimato, tetti, omaggio allungabile), <b>Testimonianze</b> (solo vere, con permesso scritto).</li>
-  <li><b>Impostazioni</b>: Stripe, posta, archivio, traduzioni, con «Prova la connessione».</li>
+  <li><b>Impostazioni</b>: Stripe, posta, archivio, traduzioni: «Prova con questi dati» prova senza salvare, «Prova i dati salvati» prova quelli in uso.</li>
   <li><b>Registro</b> e <b>Diagnostica</b>: tutto su OK.</li>
 </ul>
 

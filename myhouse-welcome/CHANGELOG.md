@@ -1,5 +1,14 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Posta in uscita: accesso SMTP più robusto (8 ottobre 2026)
+
+Nessuna migrazione.
+
+- **«Prova con questi dati»** in Amministrazione → Impostazioni: prova la connessione con i dati scritti nel modulo, **senza salvarli** (serve la tua password, come per salvare). Prima la prova usava solo i dati già salvati: chi scriveva la password e premeva «Prova» senza salvare provava quella vecchia, e riceveva «535 authentication failed». Il pulsante sotto ora si chiama «Prova i dati salvati».
+- **Accesso SMTP con LOGIN e PLAIN:** il sito legge i metodi che il server offre; se il primo è rifiutato prova l'altro, una volta. Alcuni server ne accettano uno solo anche se li elencano tutti e due.
+- **Errore più chiaro:** dice l'utente usato, quanti caratteri ha la password e i metodi provati (mai la password). Con la password vuota lo dice subito, senza tentare.
+- **Prove:** 719 in tutto, con un server SMTP finto (`prove/smtp-finto.php`).
+
 ## v2 · Dati di fatturazione allineati su Stripe per Adamo (7 ottobre 2026)
 
 Nessuna migrazione.

@@ -11,13 +11,14 @@ PORTA=${PORTA:-8088}
 PORTA_STRIPE=$((PORTA + 1))
 PORTA_S3=$((PORTA + 2))
 PORTA_TRADUZIONI=$((PORTA + 3))
+PORTA_SMTP=$((PORTA + 4))
 TMP=$(mktemp -d)
 W="$TMP/docroot/welcomebook"
 
-pulisci() { for p in $PID $PID_STRIPE $PID_S3 $PID_TRADUZIONI; do kill "$p" 2>/dev/null || true; done; rm -rf "$TMP"; }
+pulisci() { for p in $PID $PID_STRIPE $PID_S3 $PID_TRADUZIONI $PID_SMTP; do kill "$p" 2>/dev/null || true; done; rm -rf "$TMP"; }
 trap pulisci EXIT
 
-mkdir -p "$W/app/storage/uploads" "$TMP/stripe" "$TMP/s3" "$TMP/translate"
+mkdir -p "$W/app/storage/uploads" "$TMP/stripe" "$TMP/s3" "$TMP/translate" "$TMP/smtp"
 cp "$RADICE/app/public/index.php" "$W/"
 for f in .htaccess web.config controllo.php; do
   [ -f "$RADICE/app/public/$f" ] && cp "$RADICE/app/public/$f" "$W/"
@@ -46,6 +47,9 @@ PID_S3=$!
 TRANSLATE_FINTO_DIR="$TMP/translate" TRANSLATE_FINTO_KEY=AKIATRADUZIONIFINTE TRANSLATE_FINTO_SECRET=segreto-traduzioni-finto \
   php -S "127.0.0.1:$PORTA_TRADUZIONI" "$QUI/translate-finto.php" > "$TMP/translate.log" 2>&1 &
 PID_TRADUZIONI=$!
+# Un server di posta finto, per l'accesso SMTP (LOGIN e PLAIN) e «Prova con questi dati».
+php "$QUI/smtp-finto.php" "$PORTA_SMTP" "$TMP/smtp" > "$TMP/smtp.log" 2>&1 &
+PID_SMTP=$!
 
 export STRIPE_SECRET_KEY=sk_test_finto_solo_per_le_prove
 export STRIPE_WEBHOOK_SECRET=whsec_finto_solo_per_le_prove
@@ -70,7 +74,7 @@ PID=$!
 sleep 2
 
 set +e
-php "$QUI/giro-completo.php" "http://127.0.0.1:$PORTA/welcomebook/index.php" "$W" "$TMP/stripe" "$TMP/s3" "$TMP/translate"
+php "$QUI/giro-completo.php" "http://127.0.0.1:$PORTA/welcomebook/index.php" "$W" "$TMP/stripe" "$TMP/s3" "$TMP/translate" "$TMP/smtp" "$PORTA_SMTP"
 ESITO=$?
 if [ -s "$W/app/storage/logs/app.log" ]; then
   echo; echo "--- registro tecnico dell'applicazione (errori previsti dalle prove inclusi) ---"
