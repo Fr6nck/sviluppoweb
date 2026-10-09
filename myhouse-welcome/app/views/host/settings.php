@@ -52,6 +52,17 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
   </form>
   <?php endif; ?>
 
+  <details class="fieldset" style="margin-top:24px" id="link-guida">
+    <summary class="legend" style="cursor:pointer;min-height:32px">Cambia il link della guida</summary>
+    <form method="post" action="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/link" class="stack" style="margin-top:12px"><?= Csrf::field() ?>
+      <p class="small">Il link di adesso è <b><?= Support::e(Support::baseUrl() . '/g/' . $prop['slug']) ?></b>. Se lo hai mandato a chi non doveva averlo,
+        crea un link nuovo: si forma dal nome della struttura e da quattro caratteri casuali.</p>
+      <p class="note" role="note">Il link vecchio smette di funzionare. Il QR stampato no: continua ad aprire la guida.</p>
+      <label class="check"><input type="checkbox" name="conferma" value="1" required> <span>Ho capito: il link vecchio non funzionerà più</span></label>
+      <div class="actions"><button class="btn btn--ghost">Crea un link nuovo</button></div>
+    </form>
+  </details>
+
   <details class="fieldset" style="margin-top:24px">
     <summary class="legend" style="cursor:pointer;min-height:32px">Elimina la struttura</summary>
     <form method="post" action="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/elimina" class="stack" style="margin-top:12px"><?= Csrf::field() ?>

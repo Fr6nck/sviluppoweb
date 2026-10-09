@@ -25,26 +25,22 @@
   var pagine = f.querySelectorAll('[data-serp-pagina]');
   for (var p = 0; p < pagine.length; p++) serp(pagine[p]);
 
-  // robots.txt: il blocco comune resta com'è, i bot spenti si aggiungono in fondo.
+  // robots.txt: ogni assistente ha il suo blocco; spento diventa «Disallow: /», acceso torna
+  // alle regole delle guide (data-regole, le stesse del server).
   var robots = f.querySelector('[data-robots]');
-  var righe = robots ? robots.textContent.split('\n') : [];
-  var comune = [], sitemap = '';
-  for (var r = 0; r < righe.length; r++) {
-    if (righe[r] === '') break;
-    comune.push(righe[r]);
-  }
-  for (r = 0; r < righe.length; r++) if (righe[r].indexOf('Sitemap:') === 0) sitemap = righe[r];
-  function aggiornaRobots() {
+  function aggiornaRobots(bot, acceso) {
     if (!robots) return;
-    var t = comune.join('\n') + '\n';
-    var bot = f.querySelectorAll('[data-bot]');
-    for (var b = 0; b < bot.length; b++) if (!bot[b].checked) t += '\nUser-agent: ' + bot[b].getAttribute('data-bot') + '\nDisallow: /\n';
-    robots.textContent = t + '\n' + sitemap + '\n';
+    var regole = acceso ? robots.getAttribute('data-regole') : 'Disallow: /\n';
+    var blocchi = robots.textContent.split('\n\n');
+    for (var b = 0; b < blocchi.length; b++) {
+      if (blocchi[b].split('\n')[0] === 'User-agent: ' + bot) blocchi[b] = 'User-agent: ' + bot + '\n' + regole.replace(/\n$/, '');
+    }
+    robots.textContent = blocchi.join('\n\n');
   }
 
   f.addEventListener('input', function (e) {
     for (var i = 0; i < contatori.length; i++) if (contatori[i].getAttribute('data-contatore') === e.target.id) conta(contatori[i]);
     var box = e.target.closest('[data-serp-pagina]'); if (box) serp(box);
   });
-  f.addEventListener('change', function (e) { if (e.target.hasAttribute('data-bot')) aggiornaRobots(); });
+  f.addEventListener('change', function (e) { if (e.target.hasAttribute('data-bot')) aggiornaRobots(e.target.getAttribute('data-bot'), e.target.checked); });
 })();

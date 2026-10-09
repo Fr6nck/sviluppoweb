@@ -99,7 +99,8 @@ header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
 header('X-Frame-Options: SAMEORIGIN');
 // Le guide contengono informazioni operative della casa: non si indicizzano.
-if ($ospite) header('X-Robots-Tag: noindex, nofollow, noarchive');
+// Vale per pagine, immagini e PDF serviti da /media/, e per i QR (6M).
+if ($ospite) header('X-Robots-Tag: ' . Support::ROBOTS_GUIDE);
 
 // Il webhook di Stripe non arriva da un browser e non porta un token di
 // sessione: la sua autenticazione è la firma, verificata dentro la rotta.

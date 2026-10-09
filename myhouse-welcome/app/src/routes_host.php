@@ -242,6 +242,21 @@ $r->any('/pannello/{id}/copia', function (array $a) use ($mia, $contesto, $messa
         'proposta' => $da ? MHW\Copia::proposta((int) $da['id'], (int) $p['id']) : null, 'qui' => 'contenuti'], 'layout/cms');
 });
 
+// «Cambia il link della guida» (6M): slug nuovo con 4 caratteri casuali. Il QR passa dal token
+// (/q/…), che non cambia: quello stampato continua ad aprire la guida.
+$r->post('/pannello/{id}/link', function (array $a) use ($mia) {
+    [$u, , $p] = $mia((int) $a['id']);
+    if (empty($_POST['conferma'])) {
+        Support::flash('Per cambiare il link conferma che il link vecchio smetterà di funzionare.', 'err');
+        Support::redirect('/pannello/' . $p['id'] . '/impostazioni#link-guida');
+    }
+    $nuovo = Support::slugGuida((string) $p['name'], (int) $p['id']);
+    Db::update('properties', ['slug' => $nuovo], 'id = :pid', ['pid' => (int) $p['id']]);
+    Auth::audit('property.link', (int) $u['id'], ['property' => (int) $p['id'], 'prima' => $p['slug'], 'dopo' => $nuovo]);
+    Support::flash('Link nuovo: ' . Support::baseUrl() . '/g/' . $nuovo . '. Il QR stampato continua ad aprire la guida.');
+    Support::redirect('/pannello/' . $p['id'] . '/impostazioni#link-guida');
+});
+
 $r->post('/pannello/{id}/elimina', function (array $a) use ($mia) {
     [$u, $acc, $p] = $mia((int) $a['id'], true);
     // Il nome si confronta senza badare a maiuscole e spazi doppi (il telefono mette la maiuscola da solo).
@@ -797,7 +812,9 @@ $r->get('/pannello/{id}/procedura/{passo}', function (array $a) use ($mia, $cont
     }
     if ($passo === 'pubblica') {
         $extra = $lingue + ['problemi' => Guide::problems($aid, (int) $p['id']), 'verificato' => Auth::isVerified($u),
-                  'online' => Subscriptions::propertyOnline($p)];
+                  'online' => Subscriptions::propertyOnline($p),
+                  // 6M: il riquadro «Nella guida ci sono codici di accesso» si apre dopo «Pubblica».
+                  'codici' => !empty($_GET['codici']) ? MHW\Sicurezza::campiConCodice(Guide::normalize(Guide::build((int) $p['id']))) : []];
     }
     View::out('host/wizard', $contesto($acc, $p) + $extra + ['passo' => $passo, 'passi' => MHW_PASSI, 'user' => $u, 'qui' => 'procedura'], 'layout/cms');
 });
@@ -809,7 +826,7 @@ $anteprima = function (array $a, string $pagina) use ($mia) {
     $loc = in_array($_GET['l'] ?? '', $snap['locales'], true) ? $_GET['l'] : $snap['property']['default_locale'];
     $dati = ['snap' => $snap, 'loc' => $loc, 'base' => Support::url('/pannello/' . $p['id'] . '/anteprima'), 'anteprima' => true,
              'paletteCss' => Palette::css($snap['property']['palette']), 'tema' => Palette::themeFor($snap['property']['text_tone'])];
-    header('X-Robots-Tag: noindex, nofollow');
+    header('X-Robots-Tag: ' . Support::ROBOTS_GUIDE);
     if ($pagina === 'sezione') {
         foreach ($snap['sections'] as $s) if ((string) $s['id'] === (string) $a['sid']) View::out('guest/section', $dati + ['sec' => $s], 'layout/guest');
         Support::redirect('/pannello/' . $p['id'] . '/anteprima');
@@ -835,6 +852,14 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
     if ($problemi) {
         Support::flash('Prima di pubblicare: ' . implode(' ', $problemi), 'err');
         Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
+    }
+    // Codici di accesso (6M): sconsigliati, non vietati. Se ci sono, si pubblica solo con la conferma
+    // «a mio rischio», che vale per questa pubblicazione e resta nel registro (i campi, mai i codici).
+    $codici = MHW\Sicurezza::campiConCodice(Guide::normalize(Guide::build((int) $p['id'])));
+    if ($codici) {
+        if (empty($_POST['codici_ok'])) Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica?codici=1#codici');
+        Auth::audit('guida.codici_confermati', (int) $u['id'], ['property' => (int) $p['id'], 'utente' => (int) $u['id'],
+            'campi' => array_map(fn($c) => $c['sezione'] . ' · ' . $c['campo'] . ' (' . $c['lingua'] . ')', $codici)]);
     }
 
     if (Subscriptions::active($aid)) {

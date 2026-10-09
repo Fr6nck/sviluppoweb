@@ -266,9 +266,50 @@ final class Gestione
         }
         $aggiungi('Guide senza CIN o con CIN ripetuto', 'media', 'Ogni guida è un\'unità ricettiva con il suo CIN. Le guide già online senza CIN restano online, ma per ripubblicarle il CIN serve. Un CIN ripetuto può essere una struttura passata a un altro gestore: verifica con il cliente.', $righe);
 
+        // 18. Foto e PDF delle guide su un indirizzo pubblico del bucket (6M): senza scadenza e senza noindex.
+        $righe = [];
+        if (self::archivioPubblico()) $righe[] = ['Archivio delle foto', self::AVVISO_ARCHIVIO, '/admin/impostazioni'];
+        $aggiungi('Foto e PDF delle guide su un indirizzo pubblico', 'media', 'Le foto e i PDF delle guide devono passare dal sito, che li serve con il blocco per i motori.', $righe);
+
+        // 19. Guide online con un codice di accesso (6M): solo informativo, non si tolgono e non si bloccano.
+        $righe = [];
+        foreach (self::guideConCodici() as $g) {
+            $righe[] = [$g['chi'], '«' . $g['nome'] . '»: ' . ($g['confermato'] ? 'confermata a proprio rischio il ' . Support::date($g['confermato']) : 'pubblicata prima del controllo')
+                        . ' · guida: ' . $g['link'], $g['cliente']];
+        }
+        $aggiungi('Guide pubblicate con un codice di accesso', 'bassa', 'Solo per sapere: l\'host ha scelto di pubblicarle. Non vanno tolte né bloccate; se vuoi, suggerisci di comunicare i codici in privato.', $righe);
+
         $ordine = ['alta' => 0, 'media' => 1, 'bassa' => 2];
         usort($voci, fn($a, $b) => $ordine[$a['gravita']] <=> $ordine[$b['gravita']]);
         return ['voci' => $voci, 'superati' => $superati];
+    }
+
+    /** Il testo dell'avviso sull'indirizzo pubblico del bucket (Impostazioni e Anomalie). */
+    public const AVVISO_ARCHIVIO = 'Foto e PDF delle guide sono raggiungibili senza scadenza e senza il blocco per i motori: lascia vuoto questo campo.';
+
+    /** Foto e PDF su S3 con un indirizzo pubblico: non passano da /media/ e perdono il noindex. */
+    public static function archivioPubblico(): bool
+    {
+        $c = Config::get('storage') ?? [];
+        return ($c['driver'] ?? '') === 's3' && trim((string) ($c['s3']['public_base_url'] ?? '')) !== '';
+    }
+
+    /**
+     * Le guide online che contengono un codice di accesso, con la data dell'ultima conferma «a mio rischio»
+     * (Auth::audit 'guida.codici_confermati'). @return array<int,array{nome:string,chi:string,cliente:string,link:string,confermato:?string}>
+     */
+    public static function guideConCodici(): array
+    {
+        $out = [];
+        foreach (Db::all("SELECT p.id, p.name, p.slug, p.account_id, u.email, u.name AS cliente FROM properties p JOIN accounts a ON a.id = p.account_id
+                          JOIN users u ON u.id = a.user_id WHERE p.status = 'published' AND p.archived_at IS NULL ORDER BY p.id DESC LIMIT 300") as $p) {
+            $snap = Guide::published((int) $p['id']);
+            if (!$snap || !Sicurezza::campiConCodice(Guide::normalize($snap))) continue;
+            $conferma = Db::val("SELECT MAX(created_at) FROM audit_log WHERE action = 'guida.codici_confermati' AND meta LIKE ?", ['%"property":' . (int) $p['id'] . ',%']);
+            $out[] = ['nome' => (string) $p['name'], 'chi' => ($p['cliente'] !== '' ? $p['cliente'] . ' · ' : '') . $p['email'],
+                      'cliente' => '/admin/cliente/' . (int) $p['account_id'], 'link' => Support::baseUrl() . '/g/' . $p['slug'], 'confermato' => $conferma ?: null];
+        }
+        return $out;
     }
 
     /** Quante anomalie per gravità, per il quadro. */

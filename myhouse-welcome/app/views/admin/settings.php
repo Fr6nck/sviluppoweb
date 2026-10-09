@@ -90,6 +90,9 @@ $intro = [
               <label class="scelta scelta--mini"><input type="checkbox" name="togli[<?= $n ?>]" value="1"><span>Togli</span></label></span>
           <?php endif; ?>
           <?php if ($aiuto !== ''): ?><span class="help" id="<?= $id ?>-aiuto"><?= Support::e($aiuto) ?></span><?php endif; ?>
+          <?php if ($percorso === 'storage.s3.public_base_url' && trim((string) $valore) !== ''): /* 6M: i file non passerebbero da /media/ */ ?>
+            <span class="note note--err" role="status"><?= Support::e(MHW\Gestione::AVVISO_ARCHIVIO) ?></span>
+          <?php endif; ?>
           <?php if ($e !== ''): ?><span class="field-error" id="<?= $idErr($n) ?>"><?= Support::e($e) ?></span><?php endif; ?>
         </div>
       <?php endforeach; ?>

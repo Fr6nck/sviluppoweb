@@ -60,7 +60,7 @@ final class Demo
 
     private static function struttura(int $acc, array $d): int
     {
-        $pid = Properties::create($acc, $d['nome'], $d['citta'], $d['host']);
+        $pid = Properties::create($acc, $d['nome'], $d['citta'], $d['host'], 0, false);
         Db::update('properties', [
             'region' => $d['regione'], 'checkin_from' => $d['arrivo'], 'checkout_by' => $d['partenza'],
             'host_phone' => $d['telefono'], 'host_whatsapp' => $d['telefono'], 'palette' => $d['palette'],
@@ -127,7 +127,7 @@ final class Demo
         // Gli orari cambiano con le stagioni: la guida invita a controllarli.
         $acc = $accountId;
         $tel = '+39 075 000 0000';
-        $pid = Properties::create($acc, 'Casa Checco', 'Assisi', 'Francesco', 1);
+        $pid = Properties::create($acc, 'Casa Checco', 'Assisi', 'Francesco', 1, false);
         Db::update('properties', [
             'region' => 'Umbria', 'address' => 'Vicolo dei Gerani 3', 'postal_code' => '06081',
             'checkin_from' => '15:00', 'checkout_by' => '10:30', 'host_phone' => $tel, 'host_whatsapp' => $tel, 'palette' => 'terracotta',
@@ -785,7 +785,7 @@ final class Demo
             'ztl' => 'Il centro storico è ZTL: non entrare in auto, i varchi hanno le telecamere.']], '');
         Guide::publish($pid);
         // La seconda struttura del Portfolio: solo il nome, si attiva dopo il pagamento.
-        Properties::create($acc, 'Casa sul Mare', 'Otranto', 'Marco');
+        Properties::create($acc, 'Casa sul Mare', 'Otranto', 'Marco', 0, false);
         $creati[] = ['Marco Bevilacqua', 'marco@' . self::DOMINIO, 'Portfolio · 2 strutture, non pagato', 'B&B Le Rondini — pubblicata (demo); Casa sul Mare — si attiva dopo il pagamento'];
 
         // --------------------------------------------- Il Cortile, Sicilia — Essential

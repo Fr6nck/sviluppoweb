@@ -28,6 +28,23 @@ final class Support
         }
     }
 
+    /**
+     * L'indirizzo di una guida nuova (6M): nome + «-» + 4 caratteri casuali senza lettere ambigue,
+     * così non si indovina partendo dal nome della struttura (casa-lucia-7k3f).
+     */
+    public static function slugGuida(string $nome, ?int $ignoreId = null): string
+    {
+        $base = self::slug($nome);
+        $alfabeto = 'abcdefghjkmnpqrstuvwxyz23456789';
+        while (true) {
+            $coda = '';
+            for ($i = 0; $i < 4; $i++) $coda .= $alfabeto[random_int(0, strlen($alfabeto) - 1)];
+            $prova = $base . '-' . $coda;
+            $row = Db::one('SELECT id FROM properties WHERE slug = ?', [$prova]);
+            if (!$row || ($ignoreId !== null && (int) $row['id'] === $ignoreId)) return $prova;
+        }
+    }
+
     public static function token(int $bytes = 9): string
     {
         return rtrim(strtr(base64_encode(random_bytes($bytes)), '+/', 'ab'), '=');
@@ -92,6 +109,9 @@ final class Support
         if (str_starts_with($path, '/index.php')) $path = substr($path, strlen('/index.php'));
         return '/' . trim($path, '/');
     }
+
+    /** Le guide (e foto, PDF e QR che contengono) restano fuori da motori e assistenti: intestazione e meta (6M). */
+    public const ROBOTS_GUIDE = 'noindex, nofollow, noarchive, nosnippet, noimageindex';
 
     /** Le pagine degli ospiti: niente sessione, niente cookie, niente indicizzazione. */
     public static function isGuestPath(string $route): bool

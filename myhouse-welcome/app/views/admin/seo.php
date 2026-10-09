@@ -131,7 +131,7 @@ $v = fn(string $k) => Support::e(Seo::get($k)); ?>
         </div>
       </fieldset>
       <div class="field" style="margin:0"><span class="label">robots.txt che ne risulta</span>
-        <pre class="seo-anteprima" data-robots><?= Support::e(Seo::robots()) ?></pre></div>
+        <pre class="seo-anteprima" data-robots data-regole="<?= Support::e(implode('', array_map(fn($x) => "Disallow: $x\n", array_merge(Seo::GUIDE, Seo::ESCLUSI)))) ?>"><?= Support::e(Seo::robots()) ?></pre></div>
     </section>
 
     <section class="panel stack" id="seo-llms" aria-labelledby="seo-llms-titolo">

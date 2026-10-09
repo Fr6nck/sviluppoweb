@@ -131,6 +131,38 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
       </form>
     <?php endif; ?>
 
+    <?php if (!empty($codici)): /* 6M: codici di accesso, conferma a proprio rischio (vale solo per questa pubblicazione) */ ?>
+      <section class="codici-conferma" id="codici" role="alertdialog" aria-labelledby="codici-titolo" aria-describedby="codici-testo" tabindex="-1">
+        <h2 id="codici-titolo"><?= Icon::svg('lock', 20) ?>Nella guida ci sono codici di accesso</h2>
+        <ul class="codici-conferma__campi">
+          <?php foreach ($codici as $c): $dove = $c['lingua'] === $prop['default_locale'] ? '/pannello/' . $pid . '/sezioni/' . $c['sid'] : '/pannello/' . $pid . '/lingue/' . $c['lingua']; ?>
+            <li><span><b><?= Support::e($c['sezione']) ?></b> · <?= Support::e($c['campo']) ?><?= $c['lingua'] !== $prop['default_locale'] ? ' <span class="small muted">(' . Support::e(strtoupper($c['lingua'])) . ')</span>' : '' ?></span>
+              <a href="<?= b() . $dove ?>">Correggi</a></li>
+          <?php endforeach; ?>
+        </ul>
+        <p id="codici-testo">Chi ha il link o il QR della guida può leggerli, anche dopo la partenza, e il link si può inoltrare. Ti consigliamo di toglierli e comunicarli
+          all'ospite in privato. Se pubblichi lo stesso, lo fai a tuo rischio: MyHouse Welcome non risponde dell'uso di questi codici.</p>
+        <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/pubblica" class="stack" style="gap:16px;margin:0" data-codici-conferma><?= Csrf::field() ?>
+          <label class="check"><input type="checkbox" name="codici_ok" value="1" required data-codici-ok> <span>Ho capito, pubblico a mio rischio</span></label>
+          <div class="row" style="gap:12px">
+            <a class="btn" href="<?= b() ?>/pannello/<?= $pid ?>/<?= $codici[0]['lingua'] === $prop['default_locale'] ? 'sezioni/' . $codici[0]['sid'] : 'lingue/' . $codici[0]['lingua'] ?>">Torna a correggere</a>
+            <button class="btn btn--ghost" data-codici-vai disabled>Pubblica lo stesso</button>
+            <?php /* senza JavaScript il bottone resta attivo: la casella è obbligatoria e il server la controlla */ ?>
+            <noscript><style>[data-codici-vai]{display:none}</style><button class="btn btn--ghost">Pubblica lo stesso</button></noscript>
+          </div>
+        </form>
+        <script>
+        (function () {
+          var f = document.querySelector('[data-codici-conferma]'); if (!f) return;
+          var ok = f.querySelector('[data-codici-ok]'), vai = f.querySelector('[data-codici-vai]');
+          var aggiorna = function () { vai.disabled = !ok.checked; };
+          ok.addEventListener('change', aggiorna); aggiorna();
+          document.getElementById('codici').focus();
+        })();
+        </script>
+      </section>
+    <?php endif; ?>
+
     <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/pubblica" style="margin:0"><?= Csrf::field() ?>
       <?php $barraAvanti = '<button class="btn btn--go" ' . ($problemi || (!$sub && (!$verificato || !$piano)) ? 'disabled' : '') . '>'
                          . ($sub ? 'Pubblica ora' : 'Attiva e pubblica') . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';

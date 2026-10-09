@@ -60,15 +60,18 @@ final class Properties
         return self::TIPOLOGIE[$t] ?? '';
     }
 
-    /** @param int $oltre strutture in più oltre il limite: solo per quella appena chiesta a Stripe, che resta bloccata fino al webhook */
-    public static function create(int $accountId, string $name, string $city, string $hostName, int $oltre = 0): int
+    /**
+     * @param int $oltre strutture in più oltre il limite: solo per quella appena chiesta a Stripe, che resta bloccata fino al webhook
+     * @param bool $casuale indirizzo con 4 caratteri casuali (6M); le guide dimostrative restano con il nome solo
+     */
+    public static function create(int $accountId, string $name, string $city, string $hostName, int $oltre = 0, bool $casuale = true): int
     {
         $name = trim($name);
         if ($name === '') throw new \RuntimeException('Scrivi il nome della struttura.');
         if (mb_strlen($name) > 120) throw new \RuntimeException('Il nome è troppo lungo.');
-        return Db::tx(function () use ($accountId, $name, $city, $hostName, $oltre) {
+        return Db::tx(function () use ($accountId, $name, $city, $hostName, $oltre, $casuale) {
             $pid = Db::insert('properties', [
-                'account_id' => $accountId, 'name' => $name, 'slug' => Support::uniqueSlug($name),
+                'account_id' => $accountId, 'name' => $name, 'slug' => $casuale ? Support::slugGuida($name) : Support::uniqueSlug($name),
                 'city' => mb_substr(trim($city), 0, 120), 'region' => '',
                 'host_name' => mb_substr(trim($hostName), 0, 120), 'default_locale' => 'it',
                 'palette' => Palette::DEFAULT, 'text_tone' => 'scuro',

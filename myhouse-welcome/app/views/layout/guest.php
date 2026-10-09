@@ -12,7 +12,7 @@ $temaChiave = 'mhw-tema-ospite'; $temaBase = $tema ?? 'chiaro'; ?>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title><?= Support::e($title ?? 'Guida della casa') ?></title>
-<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="robots" content="<?= Support::ROBOTS_GUIDE ?>">
 <meta name="theme-color" content="<?= $notte ? '#17130d' : '#faf5ec' ?>">
 <?php include __DIR__ . '/_tema.php'; ?>
 <?php include __DIR__ . '/_icone.php'; ?>

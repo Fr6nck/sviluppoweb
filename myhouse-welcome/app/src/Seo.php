@@ -8,7 +8,7 @@ namespace MHW;
  * mancano usano i valori di serie. Da qui escono la testa delle pagine (title, description,
  * robots, canonical, Open Graph, dati strutturati), robots.txt, sitemap.xml e llms.txt.
  * Restano sempre fuori dai motori le guide, il pannello, l'account, l'amministrazione,
- * i pagamenti e i media: robots.txt li esclude e le loro pagine hanno già noindex.
+ * i pagamenti e i media: noindex su pagine e file, e robots.txt chiude le guide agli assistenti AI (6M).
  */
 final class Seo
 {
@@ -30,8 +30,19 @@ final class Seo
         'CCBot' => ['Common Crawl', 'Common Crawl'],
     ];
 
-    /** Le parti che restano sempre fuori dai motori. */
-    public const ESCLUSI = ['/pannello', '/admin', '/account', '/g/', '/q/', '/qr/', '/media/', '/pagamento', '/cron', '/installa', '/inviti', '/i/'];
+    /** Le parti private: fuori per tutti, motori e assistenti. */
+    public const ESCLUSI = ['/pannello', '/admin', '/account', '/pagamento', '/cron', '/installa', '/inviti', '/i/'];
+
+    /**
+     * Le guide (6M). Per i motori NON sono in Disallow: devono poterle leggere per vedere il
+     * noindex, altrimenti potrebbero elencarne l'indirizzo senza averlo letto. Gli assistenti AI
+     * invece non sempre rispettano il noindex, ma rispettano robots.txt: per loro sono chiuse.
+     */
+    public const GUIDE = ['/g/', '/q/', '/qr/', '/media/'];
+
+    /** Gli assistenti AI che ricevono il blocco delle guide (quelli in BOT si possono anche spegnere del tutto). */
+    public const ASSISTENTI = ['GPTBot', 'OAI-SearchBot', 'ChatGPT-User', 'ClaudeBot', 'Claude-User', 'Claude-SearchBot', 'PerplexityBot',
+                               'Perplexity-User', 'Google-Extended', 'Applebot-Extended', 'CCBot', 'Bytespider', 'meta-externalagent'];
 
     public const TITOLO_MIN = 30, TITOLO_MAX = 60, DESCR_MIN = 70, DESCR_MAX = 155, INTRO_MAX = 300;
 
@@ -276,10 +287,11 @@ final class Seo
 
     public static function robots(): string
     {
-        $t = "User-agent: *\n";
-        foreach (self::ESCLUSI as $p) $t .= "Disallow: $p\n";
-        foreach (array_keys(self::BOT) as $b) {
-            if (!self::botAmmesso($b)) $t .= "\nUser-agent: $b\nDisallow: /\n";
+        $regole = fn(array $percorsi) => implode('', array_map(fn($p) => "Disallow: $p\n", $percorsi));
+        $t = "User-agent: *\n" . $regole(self::ESCLUSI);
+        foreach (array_unique(array_merge(self::ASSISTENTI, array_keys(self::BOT))) as $b) {
+            $spento = isset(self::BOT[$b]) && !self::botAmmesso($b);
+            $t .= "\nUser-agent: $b\n" . ($spento ? "Disallow: /\n" : $regole(array_merge(self::GUIDE, self::ESCLUSI)));
         }
         return $t . "\nSitemap: " . self::assoluto('/sitemap.xml') . "\n";
     }

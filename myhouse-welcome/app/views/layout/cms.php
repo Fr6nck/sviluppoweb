@@ -112,7 +112,7 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
+<meta name="robots" content="<?= Support::ROBOTS_GUIDE ?>">
 <title><?= Support::e($title ?? 'MyHouse Welcome') ?></title>
 <?php include __DIR__ . '/_tema.php'; ?>
 <?php include __DIR__ . '/_icone.php'; ?>
@@ -222,5 +222,6 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
 </script>
 <?php endif; ?>
 <script src="<?= MHW\av('/assets/cms.js') ?>" defer></script>
+<script src="<?= MHW\av('/assets/codici.js') ?>" defer></script>
 </body>
 </html>
