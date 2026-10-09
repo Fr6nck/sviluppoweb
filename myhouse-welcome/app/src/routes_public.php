@@ -106,17 +106,33 @@ $r->get('/', function () use ($guard, $codiceDalLink, $chiInvita) {
         'copertina' => $copertina ?: MHW\a('/assets/foto/casa.jpg'),
         'user' => $u, 'mie' => $mie, 'codiceSconto' => $codiceSconto,
         'invitoDi' => $invito && !$u ? explode(' ', trim((string) $invito['user_name']))[0] : '',
-        'testimonianze' => MHW\Testimonianze::visibili(),
+        'testimonianze' => MHW\Testimonianze::visibili(), 'seoPagina' => 'home',
     ]);
 });
 
-$r->get('/termini', fn() => View::out('pub/legal', ['doc' => 'termini'], 'layout/bare'));
-$r->get('/privacy', fn() => View::out('pub/legal', ['doc' => 'privacy'], 'layout/bare'));
+// Tutte le domande frequenti, aperte e con il link diretto a ognuna (/domande#id).
+$r->get('/domande', function () use ($guard) {
+    $guard();
+    View::out('pub/domande', ['faq' => MHW\Faq::tutte(), 'seoPagina' => 'domande']);
+});
+
+$r->get('/termini', fn() => View::out('pub/legal', ['doc' => 'termini', 'seoPagina' => 'termini'], 'layout/bare'));
+$r->get('/privacy', fn() => View::out('pub/legal', ['doc' => 'privacy', 'seoPagina' => 'privacy'], 'layout/bare'));
+
+// I file per motori e assistenti: si rigenerano a ogni richiesta da Amministrazione → SEO e GEO.
+$fileSeo = function (string $tipo, callable $testo) use ($guard): never {
+    $guard();
+    header('Content-Type: ' . $tipo . '; charset=utf-8');
+    echo $testo(); exit;
+};
+$r->get('/robots.txt', fn() => $fileSeo('text/plain', [MHW\Seo::class, 'robots']));
+$r->get('/sitemap.xml', fn() => $fileSeo('application/xml', [MHW\Seo::class, 'sitemap']));
+$r->get('/llms.txt', fn() => $fileSeo('text/plain', [MHW\Seo::class, 'llms']));
 
 // ------------------------------------------------------------------ registrazione
-$r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $codiceDalLink) {
+$r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $codiceDalLink, $chiInvita) {
     $guard();
-    $codiceDalLink();
+    $codiceSconto = $codiceDalLink();
     $piano = (int) ($_GET['piano'] ?? $_POST['piano'] ?? 0);
     // Il numero di strutture scelto (Portfolio) viaggia con il piano fino al checkout.
     $strutture = (int) ($_GET['strutture'] ?? $_POST['strutture'] ?? 0);
@@ -167,8 +183,11 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
             Support::redirect($scelta ?: '/piano');
         } catch (\RuntimeException $e) { $err = $e->getMessage(); }
     }
+    // La stessa fascia della landing: codice sconto dal link o invito di un amico.
+    $invito = $chiInvita();
     View::out('auth/register', ['err' => $err, 'piano' => $piano, 'strutture' => $strutture, 'vecchi' => $vecchi,
-                                'pianoScelto' => $pvScelto, 'quantita' => $qScelta], 'layout/bare');
+                                'pianoScelto' => $pvScelto, 'quantita' => $qScelta, 'codiceSconto' => $codiceSconto,
+                                'invitoDi' => $invito ? explode(' ', trim((string) $invito['user_name']))[0] : ''], 'layout/bare');
 });
 
 $r->any('/accedi', function () use ($guard, $doveComincia) {

@@ -8,11 +8,12 @@ $u = Auth::user(); $f = Support::flash(); ?>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= Support::e($title ?? 'MyHouse Welcome') ?></title>
-<meta name="description" content="La guida digitale per case vacanza, B&amp;B, affittacamere e agriturismi: check-in, Wi-Fi e consigli in un link e un QR Code. La crei gratis, paghi solo quando la pubblichi.">
+<?php /* Titolo, descrizione, robots, canonical, Open Graph e dati strutturati: Amministrazione → SEO e GEO.
+         Le pagine senza $seoPagina (accesso, registrazione…) hanno noindex. */ ?>
+<?= MHW\Seo::head($seoPagina ?? null, $title ?? 'MyHouse Welcome') ?>
 <?php include __DIR__ . '/_tema.php'; ?>
 <?php include __DIR__ . '/_icone.php'; ?>
-<?php include __DIR__ . '/_condivisione.php'; ?>
+<?php if (empty($seoPagina)) include __DIR__ . '/_condivisione.php'; ?>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gloock&family=Onest:wght@300..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= MHW\av('/assets/app.css') ?>">
@@ -21,7 +22,7 @@ $u = Auth::user(); $f = Support::flash(); ?>
 <?php $principale = $u
     ? ['href' => b() . '/' . ($u['role'] === 'admin' ? 'admin' : 'pannello'), 'testo' => $u['role'] === 'admin' ? 'Amministrazione' : 'Le mie guide']
     : ['href' => b() . '/registrati', 'testo' => 'Crea gratis'];
-      $voci = [['/#come-funziona', 'Come funziona'], ['/#qr', 'Il QR'], ['/#domande', 'Domande'], ['/#piani', 'Prezzi'], ['/#sito', 'Il tuo sito']];
+      $voci = [['/#come-funziona', 'Come funziona'], ['/#qr', 'Il QR'], ['/#piani', 'Prezzi'], ['/#domande', 'Domande']];
       /* Chi è dentro si riconosce subito: l'iniziale e il nome in testata, con il menu
          dell'account (le guide, i dati, esci). È un <details>: si apre anche senza JavaScript. */
       $nomeU = $u ? trim((string) ($u['name'] ?? '')) : '';

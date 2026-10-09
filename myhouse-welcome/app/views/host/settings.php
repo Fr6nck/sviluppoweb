@@ -34,8 +34,9 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
       <div class="grid grid-2">
         <div class="field" style="margin:0"><label for="direct_url">Link al sito per prenotare</label>
           <input id="direct_url" name="direct_url" type="url" maxlength="500" placeholder="https://" value="<?= Support::e((string) $prop['direct_url']) ?>"></div>
-        <div class="field" style="margin:0"><label for="direct_code">Codice sconto <span class="muted">(facoltativo)</span></label>
-          <input id="direct_code" name="direct_code" type="text" maxlength="60" autocomplete="off" value="<?= Support::e((string) $prop['direct_code']) ?>"></div>
+        <div class="field" style="margin:0"><label for="direct_code">Codice sconto per chi torna <span class="muted">(facoltativo)</span></label>
+          <p class="help" id="direct-code-aiuto" style="margin:0 0 6px">Lo sconto che dai tu ai tuoi ospiti sul tuo sito.</p>
+          <input id="direct_code" aria-describedby="direct-code-aiuto" name="direct_code" type="text" maxlength="60" autocomplete="off" value="<?= Support::e((string) $prop['direct_code']) ?>"></div>
       </div>
     </fieldset>
     <fieldset class="fieldset">

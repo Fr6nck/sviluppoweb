@@ -16,6 +16,7 @@ $wa = preg_replace('/\D/', '', (string) ($l['contact_whatsapp'] ?? '')); ?>
       <?php if (($l['contact_email'] ?? '') !== ''): ?><a href="mailto:<?= Support::e($l['contact_email']) ?>"><?= Support::e($l['contact_email']) ?></a><?php endif; ?>
       <?php if ($tel !== ''): ?><a href="tel:<?= Support::e($tel) ?>">Tel. <?= Support::e($l['contact_phone']) ?></a><?php endif; ?>
       <?php if ($wa !== ''): ?><a href="https://wa.me/<?= Support::e($wa) ?>" rel="noopener">WhatsApp</a><?php endif; ?>
+      <a href="<?= b() ?>/#sito">Il sito per la tua struttura</a>
       <span><a href="<?= b() ?>/termini">Termini</a> · <a href="<?= b() ?>/privacy">Privacy</a></span>
     </div>
   </div>

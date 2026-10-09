@@ -24,9 +24,10 @@ $r->get('/admin', function () {
         'falliti'    => (int) Db::val("SELECT COUNT(*) FROM subscriptions WHERE status = 'past_due'", [], 0),
     ];
     $piani = Db::all(
-        "SELECT pk.name, pk.public, pk.active, pv.version, pv.price_cents, pv.currency, pv.is_current, pv.stripe_price_id,
+        "SELECT pk.name, pk.public, pk.active, pv.*,
                 (SELECT COUNT(*) FROM subscriptions s WHERE s.package_version_id = pv.id AND s.status IN ('active','trialing')) AS clienti
-         FROM package_versions pv JOIN packages pk ON pk.id = pv.package_id ORDER BY pk.sort, pv.version DESC");
+         FROM package_versions pv JOIN packages pk ON pk.id = pv.package_id
+         WHERE pv.is_current = 1 AND pk.public = 1 AND pk.active = 1 ORDER BY pk.sort, pk.id");
     $ordini = Db::all(
         'SELECT o.*, pk.name AS package, u.email, u.name AS cliente, a.id AS account_id FROM orders o
          JOIN package_versions pv ON pv.id = o.package_version_id JOIN packages pk ON pk.id = pv.package_id
@@ -801,4 +802,65 @@ $r->post('/admin/inviti/{id}/annulla', function (array $a) {
     Auth::audit('referral.cancel', null, ['id' => (int) $a['id']]);
     Support::flash('Invito annullato: non conta più per lo sconto.');
     Support::redirect('/admin/inviti');
+});
+
+// ------------------------------------------------------------ SEO e GEO
+/* Come le pagine pubbliche si presentano a Google e agli assistenti AI. Il controllo si
+   ricalcola a ogni apertura; robots.txt, sitemap.xml e llms.txt si generano a ogni richiesta. */
+$r->get('/admin/seo', function () {
+    Auth::requireAdmin();
+    View::out('admin/seo', ['nav' => 'seo', 'pronta' => MHW\Seo::disponibili()], 'layout/cms');
+});
+
+$r->post('/admin/seo', function () {
+    Auth::requireAdmin();
+    if (!MHW\Seo::disponibili()) { Support::flash('Manca la tabella delle impostazioni SEO: ricarica la pagina per applicare gli aggiornamenti.', 'err'); Support::redirect('/admin/seo'); }
+    $in = fn(string $k, int $max) => mb_substr(trim(str_replace("\r", '', (string) ($_POST[$k] ?? ''))), 0, $max);
+    $dominio = rtrim($in('dominio', 200), '/');
+    if ($dominio !== '' && !preg_match('~^https?://[a-z0-9.-]+(:\d+)?(/[^\s?#]*)?$~i', $dominio)) {
+        Support::flash('Il dominio va scritto per intero, per esempio https://myhousewelcome.it.', 'err'); Support::redirect('/admin/seo#seo-motori');
+    }
+    // Chi incolla tutto il meta di verifica: si tiene solo il codice.
+    $codice = function (string $k) use ($in): string {
+        $v = $in($k, 300);
+        if (preg_match('/content\s*=\s*["\']([^"\']+)["\']/i', $v, $m)) $v = $m[1];
+        return preg_replace('/[^A-Za-z0-9_\-]/', '', $v);
+    };
+    $c = ['dominio' => $dominio, 'gsc' => $codice('gsc'), 'bing' => $codice('bing')];
+    foreach (array_keys(MHW\Seo::PAGINE) as $p) {
+        $c["p.$p.titolo"] = preg_replace('/\s+/', ' ', $in("p_{$p}_titolo", 200));
+        $c["p.$p.descrizione"] = preg_replace('/\s+/', ' ', $in("p_{$p}_descrizione", 400));
+        $c["p.$p.indicizza"] = !empty($_POST["p_{$p}_indicizza"]) ? '1' : '0';
+    }
+    foreach (['nome' => 120, 'venditore' => 160, 'piva' => 20, 'indirizzo' => 200, 'email' => 160, 'telefono' => 40, 'social' => 2000] as $k => $max) {
+        $c["az.$k"] = $in("az_$k", $max);
+    }
+    foreach (array_keys(MHW\Seo::BOT) as $b) $c["bot.$b"] = !empty($_POST['bot'][$b]) ? '1' : '0';
+    $c['llms.intro'] = preg_replace('/\s+/', ' ', $in('llms_intro', MHW\Seo::INTRO_MAX));
+    $c['llms.fatti'] = implode("\n", array_filter(array_map('trim', explode("\n", $in('llms_fatti', 4000)))));
+    // L'immagine per la condivisione: JPG o PNG, ridisegnata come le altre immagini caricate.
+    $vecchia = MHW\Seo::get('og_immagine.file');
+    $file = $_FILES['og_immagine'] ?? null;
+    try {
+        if ($file && ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            $tipo = @getimagesize((string) ($file['tmp_name'] ?? ''))['mime'] ?? '';
+            if (!in_array($tipo, ['image/jpeg', 'image/png'], true)) throw new \RuntimeException('L\'immagine per la condivisione va in JPG o PNG.');
+            [$driver, $key] = Media::storeFreeImage($file, 'seo');
+            $c['og_immagine.file'] = $driver . ':' . $key;
+            $c['og_immagine'] = Storages::for($driver)->url($key);
+        } elseif (!empty($_POST['og_togli'])) {
+            $c['og_immagine.file'] = ''; $c['og_immagine'] = '';
+        }
+    } catch (\RuntimeException $e) {
+        Support::flash($e->getMessage(), 'err'); Support::redirect('/admin/seo#seo-p-home');
+    }
+    if (array_key_exists('og_immagine.file', $c) && $vecchia !== '' && str_contains($vecchia, ':')) {
+        [$d, $k] = explode(':', $vecchia, 2);
+        try { Storages::for($d)->delete($k); } catch (\Throwable $e) { Log::exception($e, 'seo.immagine'); }
+    }
+    $prima = []; foreach (array_keys($c) as $k) $prima[$k] = MHW\Seo::get($k);
+    MHW\Seo::set($c);
+    Auth::audit('seo.save', null, ['cambiate' => array_values(array_keys(array_filter($c, fn($v, $k) => $prima[$k] !== $v, ARRAY_FILTER_USE_BOTH)))]);
+    Support::flash('Salvato. Sitemap, robots.txt e llms.txt sono già aggiornati.');
+    Support::redirect('/admin/seo');
 });

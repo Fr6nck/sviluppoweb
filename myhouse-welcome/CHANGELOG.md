@@ -1,5 +1,36 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 6J rifiniture e 6K «SEO e GEO» (9 ottobre 2026)
+
+Migrazione `029` (tabella `seo_settings`, solo aggiunte; su MySQL la colonna `valore` è `TEXT NOT NULL` senza valore predefinito, che MySQL prima della 8.0.13 non accetta).
+
+**6J · Landing**
+- Demo in IT / EN / FR (compaiono solo le lingue che la vetrina ha davvero).
+- Tolto il blocco doppione «Il valore non è soltanto nella guida…» e il suo CSS.
+- Prezzi prima delle domande (con «Porta un amico», che sta dopo i piani). Menu: Come funziona · Il QR · Prezzi · Domande. «Il sito per la tua struttura» passa nel piè di pagina.
+- FAQ: otto in vista, nell'ordine dato; le altre sotto «Altre domande (N)»; sotto, «Tutte le domande». Testi delle risposte invariati.
+- Schede dei piani senza titoletto e descrizione. Nei piani con le varianti camera: «Varianti camera per B&B e affittacamere: 15 € + IVA l'anno l'una» (da `Varianti::prezzo()`).
+- Fonti della sezione tempo aggiornate. La fascia del codice sconto o dell'invito compare anche in registrazione (stessa vista `_fascia_sconto.php`, dati dalla rotta).
+
+**6J · Pannello**
+- L'invito al sito della struttura resta solo in «Le mie guide», con «Non mostrare più» (POST con CSRF, cookie `mhw_no_sito` per 180 giorni).
+- La scheda «Varianti camera» compare se la struttura ne ha già, o se sono permesse e la tipologia è B&B, affittacamere, agriturismo o altro.
+- «Codice sconto per chi torna (facoltativo)», con l'aiuto «Lo sconto che dai tu ai tuoi ospiti sul tuo sito.». Editor eventi: un solo aiuto, «Facoltativo: il periodo in cui vale.». Demo Casa Lucia: sezione «Wi-Fi».
+
+**6J · Amministrazione e testi legali**
+- Menu in tre gruppi: Vendite, Clienti, Sistema.
+- Quadro → Listino: solo i piani in vendita, Portfolio «127 € + 70 € dalla 2ª», link «Versioni precedenti e piani nascosti».
+- Codici sconto → Anteprima: il Portfolio al prezzo della quantità minima («Portfolio (2 strutture): 197 €»).
+- Privacy → Fornitori: Adamo per la fatturazione elettronica. Termini § 4: cambio di piano, codici sconto (solo il primo anno, un solo sconto per abbonamento, mai sommato a quello di un invito), «Invita un amico» (se attivo), varianti camera. Versioni dei documenti invariate.
+
+**6K · SEO e GEO**
+- Le FAQ stanno in un posto solo (`src/Faq.php`): landing, nuova pagina `/domande` (tutte aperte, ognuna con il suo `id`), dati strutturati e llms.txt.
+- Testa delle pagine (`Seo::head`) nei layout `app` e `bare`: home, domande, termini e privacy con title, description, robots, canonical (solo con il dominio), Open Graph, verifiche Google e Bing (solo home), JSON-LD (Organization, WebSite, SoftwareApplication con un'offerta per piano, FAQPage). Tutte le altre pagine pubbliche hanno `noindex`. I layout `cms`, `full` e `guest` restano com'erano.
+- `/robots.txt`, `/sitemap.xml`, `/llms.txt`, generati a ogni richiesta.
+- Amministrazione → Sistema → «SEO e GEO»: tre riquadri, controllo ricalcolato a ogni apertura, pagine con contatori e anteprima stile Google, immagine per la condivisione, dati dell'azienda e JSON-LD, dominio, verifiche e sei assistenti AI con l'anteprima di robots.txt, llms.txt. Il salvataggio va nel registro (`seo.save`).
+- Corretto: in una tabella che scorre, l'etichetta nascosta «Azioni» allargava la pagina a 390 px (Codici sconto).
+- **Prove:** 801 in tutto, tutte superate. La prova di aggiornamento da `f048ec5` passa.
+
 ## v2 · Listino 2026, «Ideale per» e Vendite per piano (9 ottobre 2026)
 
 Migrazione `028` (solo aggiunte: versioni nuove dei piani e testi).

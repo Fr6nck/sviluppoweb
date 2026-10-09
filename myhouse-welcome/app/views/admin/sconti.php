@@ -85,7 +85,11 @@ $nomiPiani = array_column($piani, 'name', 'code'); ?>
     <div class="note note--quiet" aria-live="polite">
       <b style="display:block;margin-bottom:4px">Anteprima</b>
       <ul class="small" style="margin:0;padding-left:18px" data-anteprima-righe>
-        <?php foreach ($piani as $p): ?><li data-piano="<?= Support::e($p['code']) ?>" data-prezzo="<?= (int) $p['price_cents'] ?>" data-nome="<?= Support::e($p['name']) ?>"><?= Support::e($p['name']) ?>: <?= Support::e(Support::money((int) $p['price_cents'])) ?></li><?php endforeach; ?>
+        <?php foreach ($piani as $p):
+                    // Per i piani a struttura conta il prezzo della quantità minima (Portfolio parte da 2 strutture).
+                    $minimo = Plans::perProperty($p) ? max(1, (int) ($p['min_quantity'] ?? 1)) : 1;
+                    $prezzo = Plans::price($p, $minimo);
+                    $nome = $p['name'] . ($minimo > 1 ? ' (' . $minimo . ' strutture)' : ''); ?><li data-piano="<?= Support::e($p['code']) ?>" data-prezzo="<?= $prezzo ?>" data-nome="<?= Support::e($nome) ?>"><?= Support::e($nome) ?>: <?= Support::e(Support::money($prezzo)) ?></li><?php endforeach; ?>
       </ul>
     </div>
     <div><button class="btn">Crea il codice</button></div>

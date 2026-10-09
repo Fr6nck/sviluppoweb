@@ -4,13 +4,13 @@
      scene       come si usa, in tre immagini
      prodotto    cosa trova l'ospite
      per chi     quattro modi di ospitare: a ognuno il suo uso
-     il tempo    perché conviene al proprietario, e la frase sul valore
+     il tempo    perché conviene al proprietario
      guadagno    la guida che porta prenotazioni dirette e recensioni
      come        quanto è semplice cominciare (con le schermate vere del pannello)
      QR          come si condivide
      voci        le testimonianze, solo se l'amministratore ne ha inserite di vere
-     domande     le FAQ, con il contatto per chi non trova la risposta
-     piani       scegliere
+     piani       scegliere (e, se attivo, «Porta un amico»)
+     domande     le FAQ (le otto principali, poi «Altre domande»), con il contatto per chi non trova la risposta
      chiusura    cominciare, e chi c'è dietro
    Prezzi, nomi ed elenchi dei piani arrivano dal database (li cambia
    l'amministratore): nessun prezzo è scritto qui o nello script. Nessuna
@@ -33,13 +33,9 @@ $telefonoWebp = a($vetrina ? '/assets/foto/checco-telefono-600.webp' : '/assets/
 $checkinDemo = preg_match('/^\d{2}:\d{2}$/', (string) ($demo['checkin_from'] ?? '')) ? $demo['checkin_from'] : '15:00';
 // Il prezzo di partenza, dal listino: se l'amministratore lo cambia, cambia anche qui.
 $partenza = null;
-$portfolioListino = null;
 foreach ($offers as $of) foreach ($of['options'] as $o) {
     if ($partenza === null || (int) $o['price_cents'] < (int) $partenza['price_cents']) $partenza = $o;
-    if (Plans::perProperty($o)) $portfolioListino = $o;
 }
-// Gli scaglioni del Portfolio in una frase, per le FAQ: «la 2ª 60 €, dalla 3ª alla 5ª 50 € l'una, …».
-$scaglioniFaq = $portfolioListino ? implode(', ', array_map(fn($t) => MHW\Plans::tierLabel($t) . ' ' . Support::money($t['cents'], $portfolioListino['currency']) . ($t['a'] === $t['da'] ? '' : " l'una"), MHW\Plans::tiers($portfolioListino))) : '';
 // Tutte le sezioni del catalogo, nei tre gruppi (fase 6C): icone e titoli sono gli stessi del pannello e della guida.
 $gruppiSezioni = MHW\SectionCatalog::gruppi();
 $quanteSezioni = array_sum(array_map('count', $gruppiSezioni)); ?>
@@ -54,14 +50,7 @@ $quanteSezioni = array_sum(array_map('count', $gruppiSezioni)); ?>
   setTimeout(function () { if (!d.classList.contains('anima-pronta')) d.classList.remove('anima'); }, 3000);
 })(document.documentElement);
 </script>
-<?php if (!empty($codiceSconto)): /* arrivato da un link con il codice sconto (6E) */ ?>
-  <p class="sconto-fascia" role="status"><?= Icon::svg('check', 18, 2) ?><span>Codice <b><?= Support::e($codiceSconto['code']) ?></b>:
-    <?= Support::e(MHW\Sconti::etichetta($codiceSconto)) ?> sul primo anno, fino al <?= Support::e(Support::date($codiceSconto['valid_until'])) ?>.</span></p>
-<?php endif; ?>
-<?php if (!empty($invitoDi)): /* arrivato dal link di un amico (Invita un amico) */ ?>
-  <p class="sconto-fascia" role="status"><?= Icon::svg('check', 18, 2) ?><span><b><?= Support::e($invitoDi) ?> ti ha invitato</b>:
-    hai il <?= MHW\Inviti::AMICO ?>% di sconto sul primo anno. Si applica da solo quando crei l'account.</span></p>
-<?php endif; ?>
+<?php include __DIR__ . '/_fascia_sconto.php'; ?>
 <?php /* Chi è già registrato lo vede subito, prima di tutto il resto: il saluto, le sue
    guide con lo stato vero e il passo successivo. Niente da cercare nel menu. */
 if ($dentro):
@@ -105,8 +94,8 @@ if ($dentro):
       <?php if ($demoUrl): ?>
         <?php /* La demo, e accanto le lingue in cui aprirla: un solo gruppo, non tre bottoni in fila.
                  Le lingue che la demo ha davvero, al massimo tre. */
-              $lingueDemo = array_values(array_intersect(['it', 'en', 'de'], array_column(MHW\Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$demo['id']]), 'locale')));
-              $nomiLingue = ['it' => 'italiano', 'en' => 'inglese', 'de' => 'tedesco']; ?>
+              $lingueDemo = array_values(array_intersect(['it', 'en', 'fr'], array_column(MHW\Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$demo['id']]), 'locale')));
+              $nomiLingue = ['it' => 'italiano', 'en' => 'inglese', 'fr' => 'francese']; ?>
         <span class="demo-gruppo">
           <a class="demo-gruppo__vai" href="<?= $demoUrl ?>"><?= Icon::svg('eye', 18, 1.8) ?>Guarda la demo</a>
           <?php if (count($lingueDemo) > 1): ?>
@@ -255,13 +244,6 @@ $disegni = [
 
 <?php include __DIR__ . '/_tempo.php'; ?>
 
-<?php /* La frase grande, da sola: il motivo per cui l'abbonamento vale. */ ?>
-<section class="frase" aria-label="Il valore">
-  <p class="frase__testo">Il valore non è soltanto nella guida.<br><span>È nel tempo che puoi dedicare ad altro.</span></p>
-  <p class="frase__sotto">Organizzi le risposte una volta, le aggiorni quando serve e le rendi disponibili a ogni nuovo ospite.
-    Anche pochi minuti recuperati a ogni soggiorno, nel corso dell'anno, possono fare la differenza.</p>
-</section>
-
 <?php /* La guida che fa guadagnare: recensioni, prenotazione diretta, servizi extra.
    A destra il commiato, disegnato con le stesse etichette della guida vera. */ ?>
 <section id="guadagno" class="guadagno" aria-labelledby="guadagno-titolo">
@@ -365,51 +347,6 @@ $disegni = [
 <?php $legale = MHW\Config::get('legal');
 $inviti = MHW\Inviti::disponibili(); /* «Porta un amico» compare (qui e nelle FAQ) solo se è acceso */
 $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? '')); ?>
-<section id="domande" class="blocco faq" aria-labelledby="faq-titolo">
-  <div class="faq__testa">
-    <span class="kicker">Domande</span>
-    <h2 id="faq-titolo" class="h-sezione">Prima di cominciare.</h2>
-    <?php if (($legale['contact_email'] ?? '') !== '' || $waFaq !== ''): ?>
-      <p class="muted">Non trovi la risposta? Scrivici, ti rispondiamo volentieri.</p>
-      <div class="faq__contatti">
-        <?php if ($waFaq !== ''): ?><a class="btn btn--ghost" href="https://wa.me/<?= Support::e($waFaq) ?>" rel="noopener"><?= Icon::svg('whatsapp', 18, 1.8) ?>WhatsApp</a><?php endif; ?>
-        <?php if (($legale['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legale['contact_email']) ?>"><?= Icon::svg('message', 18, 1.8) ?>Email</a><?php endif; ?>
-      </div>
-    <?php endif; ?>
-  </div>
-  <div class="faq__lista">
-    <?php foreach (array_merge([
-        ['Posso provarla prima di pagare?', 'Sì. Crei l\'account senza carta di credito, prepari la guida e la guardi in anteprima sul telefono, come la vedranno gli ospiti. Paghi solo quando decidi di pubblicarla.'],
-        ['Serve un\'app?', 'No. La guida si apre nel browser del telefono, da un link o dal QR Code. Gli ospiti non scaricano niente, e nemmeno tu: il pannello funziona dal computer e dal telefono.'],
-        ['Quanto ci vuole per prepararla?', 'Per cominciare bastano il nome della struttura e la città. Check-in e Wi-Fi si compilano in pochi minuti; il resto lo aggiungi quando vuoi, una sezione alla volta. Si salva mentre scrivi.'],
-        ['In quali lingue la leggono gli ospiti?', 'In italiano e in inglese con Essential; con Plus e Portfolio anche in francese, tedesco e spagnolo. La guida si apre da sola nella lingua del telefono dell\'ospite. Le traduzioni le scrivi tu, accanto al testo originale; i titoli delle sezioni, le categorie e le etichette dei luoghi sono già tradotti.'],
-        ['Le traduzioni me le fate voi?', 'Con Plus e Portfolio te le suggerisce un traduttore automatico (Amazon Translate), in omaggio per un anno: tocchi «Suggerisci le traduzioni mancanti» e controlli le proposte una per una. Gli ospiti vedono solo quelle che approvi. Sono suggerite da un traduttore automatico, da approvare: per i testi importanti, falli rileggere a un madrelingua.'],
-        ['Le traduzioni suggerite cambiano quello che ho già scritto?', 'No. Si suggerisce solo dove la traduzione manca: quello che hai tradotto tu non si tocca. Se poi cambi il testo originale, la suggerita va rifatta, e te lo diciamo.'],
-        ['Posso cambiare i testi dopo aver stampato il QR?', 'Sì, quando vuoi. Il QR Code non cambia mai, anche se modifichi la guida: pubblichi la nuova versione e chi inquadra il QR stampato vede già quella. Resta valido finché l\'abbonamento è attivo.'],
-        ['Ho più di una struttura: come funziona?', 'Con Portfolio le gestisci tutte dallo stesso account: ognuna ha la sua guida, il suo QR Code e le sue statistiche. Le sezioni che valgono per tutte, come i ristoranti o le regole, le scrivi una volta e le copi nelle altre.'],
-        ...($scaglioniFaq !== '' ? [['Quanto costa ogni struttura con Portfolio?', 'La prima costa ' . Support::money((int) $portfolioListino['price_cents'], $portfolioListino['currency']) . ', come Plus; ' . (count(MHW\Plans::tiers($portfolioListino)) > 1 ? 'poi ogni struttura in più costa meno, a scaglioni: ' . $scaglioniFaq : 'ogni struttura in più costa ' . Support::money(MHW\Plans::unitPrice($portfolioListino, 2), $portfolioListino['currency']) . ', fino a ' . (int) $portfolioListino['max_quantity'] . ' strutture (per di più, scrivici)') . '. Prezzi annuali, IVA esclusa. Nel listino scegli quante strutture ti servono e vedi il totale e quanto costa in media ognuna; dentro il pannello trovi il conto struttura per struttura.']] : []),
-        ['Ho un B&B, un affittacamere o un agriturismo con più camere: mi servono più guide?', 'No. Più camere allo stesso indirizzo e con lo stesso CIN sono una struttura sola: basta una guida. Se alcune camere hanno un Wi-Fi o istruzioni di accesso diverse, con Plus o Portfolio aggiungi una «variante camera» (' . MHW\Support::money(MHW\Varianti::prezzo()) . ' + IVA l\'anno l\'una): ha il suo QR, e chi lo inquadra vede la stessa guida con il Wi-Fi e le istruzioni della sua camera.'],
-        ['Posso mettere più case in una guida sola?', 'No. Una guida corrisponde a un\'unità ricettiva, con il suo indirizzo e il suo CIN, che serve per pubblicare e non può stare su due guide. Per più case o appartamenti c\'è Portfolio: ogni struttura ha la sua guida, e dalla seconda in poi costa meno.'],
-        ['Posso scrivere nella guida il codice della porta?', 'Meglio di no. La guida si apre da un link, senza password: chi ha il link la legge. Nella guida spieghi come si entra; i codici di porte e cassette delle chiavi mandali all\'ospite in privato, poco prima dell\'arrivo.'],
-        ['Ricevo fattura?', 'Sì. Prima del primo pagamento inserisci una volta i dati di fatturazione: per un\'azienda o un professionista partita IVA e codice destinatario SDI o PEC, per una persona fisica basta il codice fiscale. Le fatture le trovi in Account & Fatturazione.'],
-        ['Posso cambiare piano dopo?', 'Sì, quando vuoi, da Account & Fatturazione → «Cambia piano». Se sali (da Essential a Plus, da Plus a Portfolio, o aggiungi strutture al Portfolio) paghi oggi solo la differenza per i giorni che restano fino al rinnovo, e il nuovo piano vale appena il pagamento è confermato. La data di rinnovo non cambia. Se scendi, oggi non paghi niente: il cambio parte dal rinnovo e fino ad allora resti sul piano che hai già pagato.'],
-        ['Se scendo di piano perdo qualcosa?', 'Niente si cancella. Prima di confermare scegli quali sezioni tenere e, con Portfolio, quali strutture archiviare, e vedi l\'elenco di cosa la guida non mostrerà più (per esempio le lingue oltre italiano e inglese). Quello che il piano nuovo non comprende resta salvato e torna appena risali. Puoi annullare il cambio fino al giorno prima del rinnovo.'],
-    ], $inviti ? [
-        ['Come funziona «Porta un amico»?', 'Quando la tua guida è pubblicata, in «Invita un amico» trovi il tuo link personale. Chi si registra da quel link ha il ' . MHW\Inviti::AMICO . '% di sconto sul suo primo anno. Per ogni amico che paga il suo abbonamento, il tuo prossimo rinnovo costa il ' . MHW\Inviti::PASSO . '% in meno: con ' . MHW\Inviti::amiciMassimi() . ' amici arrivi al ' . MHW\Inviti::MASSIMO . '%. Lo sconto si applica da solo alla fattura del rinnovo, senza codici da inserire.'],
-        ['Quando conta un amico, e cosa succede dopo il rinnovo?', 'Un amico conta quando paga il suo primo abbonamento, con dati di fatturazione diversi dai tuoi (un\'altra partita IVA o un altro codice fiscale). Finché si è solo registrato, resta «in attesa». Lo sconto vale sul rinnovo successivo: dopo, il conteggio riparte da zero e gli amici nuovi valgono per l\'anno dopo. Oltre i ' . MHW\Inviti::amiciMassimi() . ' amici lo sconto non cresce. Se disattivi il rinnovo automatico, lo sconto non si usa: non diventa un rimborso.'],
-    ] : [], [
-        ['Posso disdire?', 'Sì. Disattivi il rinnovo automatico da Account & Fatturazione quando vuoi: la guida resta online fino alla fine del periodo già pagato, poi va offline. Nessun vincolo.'],
-        ['Cosa succede se non rinnovo?', 'Alla fine del periodo pagato la guida va offline da sola. Niente si cancella: testi, foto e QR restano salvati, e il QR stampato torna a funzionare appena rinnovi.'],
-        ['Gli ospiti vengono tracciati?', 'No. La guida non usa cookie e non compare nei motori di ricerca. Le statistiche di lettura contano solo aperture anonime: nessun indirizzo IP, nessun profilo.'],
-    ]) as $i => [$d, $r]): ?>
-      <details class="faq__voce"<?= $i === 0 ? ' open' : '' ?>>
-        <summary><?= Support::e($d) ?><?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
-        <p><?= Support::e($r) ?></p>
-      </details>
-    <?php endforeach; ?>
-  </div>
-</section>
-
 <section id="piani" class="blocco" aria-labelledby="piani-titolo">
   <div class="spread">
     <div class="stack stack--sm">
@@ -419,6 +356,9 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <p class="muted" style="max-width:400px;line-height:24px">Crei e provi la guida gratis, con le funzioni del piano che scegli: paghi solo quando la pubblichi. Prezzi IVA esclusa.</p>
   </div>
 
+  <?php /* In fondo alle funzioni dei piani che comprendono le varianti camera (Plus e Portfolio), il loro prezzo. */
+  $vociPiano = fn(array $p) => array_merge($p['bullet_list'], (string) ($p['features']['room_variants'] ?? '0') === '1'
+      ? ['Varianti camera per B&B e affittacamere: ' . Support::money(MHW\Varianti::prezzo()) . " + IVA l'anno l'una"] : []); ?>
   <div class="grid grid-3 piani" style="margin-top:28px">
     <?php foreach ($offers as $of): $p = $of['main']; $famiglia = count($of['options']) > 1;
           $scuro = $p['badge'] !== '';
@@ -433,8 +373,6 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
         <?php if (trim((string) $p['tagline']) !== ''): /* il posizionamento: per chi è indicato */ ?>
           <p class="plan__per"><b>Ideale per</b> <?= Support::e(preg_replace('/^Per /u', '', trim((string) $p['tagline']))) ?></p>
         <?php endif; ?>
-        <span class="plan__headline"><?= Support::e($p['headline']) ?></span>
-        <?php if (trim((string) $p['description']) !== ''): ?><p class="plan__desc"><?= Support::e($p['description']) ?></p><?php endif; ?>
 
         <?php if (Plans::perProperty($primo)): /* Portfolio a quantità: un modulo vero. Senza JavaScript il
                   bottone manda comunque la scelta; lo script calcola solo il totale mostrato,
@@ -449,13 +387,13 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
             <span class="price" aria-live="polite"><span data-totale><?= Support::e(Support::money(Plans::price($primo, $minimo), $primo['currency'])) ?></span><small> + IVA / anno</small></span>
             <span class="plan__mese">circa <span data-mensile><?= Support::e(Support::money(Plans::monthly(Plans::price($primo, $minimo)), $primo['currency'])) ?></span> al mese</span>
             <?php $pvS = $primo; $qS = $minimo; include __DIR__ . '/_scaglioni.php'; ?>
-            <?php $voci = $p['bullet_list']; include __DIR__ . '/_voci_piano.php'; ?>
+            <?php $voci = $vociPiano($p); include __DIR__ . '/_voci_piano.php'; ?>
             <button class="btn <?= $scuro ? '' : 'btn--ghost' ?>"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $nome) ?></button>
           </form>
         <?php else: ?>
           <span class="price"><?= Support::e(Support::money((int) $primo['price_cents'], $primo['currency'])) ?><small> + IVA / anno</small></span>
           <span class="plan__mese">circa <?= Support::e(Support::money(Plans::monthly((int) $primo['price_cents']), $primo['currency'])) ?> al mese</span>
-          <?php $voci = $p['bullet_list']; include __DIR__ . '/_voci_piano.php'; ?>
+          <?php $voci = $vociPiano($p); include __DIR__ . '/_voci_piano.php'; ?>
           <a class="btn <?= $scuro ? '' : 'btn--ghost' ?>" href="<?= $vai((int) $p['pv_id']) ?>"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $nome) ?></a>
         <?php endif; ?>
       </div>
@@ -492,6 +430,44 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
   </div>
 </section>
 <?php endif; ?>
+
+<section id="domande" class="blocco faq" aria-labelledby="faq-titolo">
+  <div class="faq__testa">
+    <span class="kicker">Domande</span>
+    <h2 id="faq-titolo" class="h-sezione">Prima di cominciare.</h2>
+    <?php if (($legale['contact_email'] ?? '') !== '' || $waFaq !== ''): ?>
+      <p class="muted">Non trovi la risposta? Scrivici, ti rispondiamo volentieri.</p>
+      <div class="faq__contatti">
+        <?php if ($waFaq !== ''): ?><a class="btn btn--ghost" href="https://wa.me/<?= Support::e($waFaq) ?>" rel="noopener"><?= Icon::svg('whatsapp', 18, 1.8) ?>WhatsApp</a><?php endif; ?>
+        <?php if (($legale['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legale['contact_email']) ?>"><?= Icon::svg('message', 18, 1.8) ?>Email</a><?php endif; ?>
+      </div>
+    <?php endif; ?>
+  </div>
+  <div class="faq__lista">
+    <?php [$faqVista, $faqAltre] = MHW\Faq::perLanding();
+    foreach ($faqVista as $i => $q): ?>
+      <details class="faq__voce" id="faq-<?= Support::e($q['id']) ?>"<?= $i === 0 ? ' open' : '' ?>>
+        <summary><?= Support::e($q['d']) ?><?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
+        <p><?= Support::e($q['r']) ?></p>
+      </details>
+    <?php endforeach; ?>
+    <?php if ($faqAltre): /* le altre, tutte insieme: si aprono con un tocco */ ?>
+      <details class="faq__voce faq__altre">
+        <summary>Altre domande (<?= count($faqAltre) ?>)<?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
+        <div class="faq__altre-lista">
+          <?php foreach ($faqAltre as $q): ?>
+            <details class="faq__voce" id="faq-<?= Support::e($q['id']) ?>">
+              <summary><?= Support::e($q['d']) ?><?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
+              <p><?= Support::e($q['r']) ?></p>
+            </details>
+          <?php endforeach; ?>
+        </div>
+      </details>
+    <?php endif; ?>
+    <p class="faq__tutte"><a href="<?= b() ?>/domande">Tutte le domande</a></p>
+  </div>
+</section>
+
 
 <section class="chiusura" aria-labelledby="chiusura-titolo">
   <div class="chiusura__testo">

@@ -21,17 +21,18 @@ $soloPassi = $prop && $qui === 'procedura' && $prop['status'] !== 'published';
 $conLato = $u && !$soloPassi;
 
 // Le voci, una volta sola: servono alla barra e al cassetto del telefono.
-$generale = $admin
-  ? [['admin', '/admin', 'Quadro', 'grid'], ['prospetti', '/admin/prospetti', 'Prospetti', 'chart'], ['vendite', '/admin/vendite', 'Vendite per piano', 'layers'], ['anomalie', '/admin/anomalie', 'Anomalie', 'warning'],
-     ['clienti', '/admin/clienti', 'Clienti', 'people'], ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'], ['scadenze', '/admin/scadenze', 'Scadenze', 'calendar'],
-     ['guide', '/admin/guide', 'Guide', 'book'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'],
-     ['sconti', '/admin/sconti', 'Codici sconto', 'euro'],
-     ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe'], ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star'],
-     ['impostazioni', '/admin/impostazioni', 'Impostazioni', 'key'],
-     ['registro', '/admin/registro', 'Registro', 'list'], ['diagnostica', '/admin/diagnostica', 'Diagnostica', 'pulse']]
+// L'amministrazione in tre gruppi: vendite, clienti, sistema (Inviti solo se sono accesi).
+$gruppiAdmin = $admin ? [
+    'Vendite' => array_merge([['admin', '/admin', 'Quadro', 'grid'], ['prospetti', '/admin/prospetti', 'Prospetti', 'chart'], ['vendite', '/admin/vendite', 'Vendite per piano', 'layers'],
+                  ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'], ['scadenze', '/admin/scadenze', 'Scadenze', 'calendar'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'],
+                  ['sconti', '/admin/sconti', 'Codici sconto', 'euro']], MHW\Inviti::disponibili() ? [['inviti', '/admin/inviti', 'Inviti', 'message']] : []),
+    'Clienti' => [['clienti', '/admin/clienti', 'Clienti', 'people'], ['guide', '/admin/guide', 'Guide', 'book'], ['anomalie', '/admin/anomalie', 'Anomalie', 'warning'],
+                  ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe'], ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star']],
+    'Sistema' => [['impostazioni', '/admin/impostazioni', 'Impostazioni', 'key'], ['seo', '/admin/seo', 'SEO e GEO', 'search'],
+                  ['registro', '/admin/registro', 'Registro', 'list'], ['diagnostica', '/admin/diagnostica', 'Diagnostica', 'pulse']],
+] : [];
+$generale = $admin ? array_merge(...array_values($gruppiAdmin))
   : [['guide', '/pannello', 'Le mie guide', 'grid'], ['account', '/account', 'Account & Fatturazione', 'card']];
-// Invita un amico: la voce c'è solo per chi può invitare; in amministrazione, solo se gli inviti sono accesi.
-if ($admin && MHW\Inviti::disponibili()) array_splice($generale, 9, 0, [['inviti', '/admin/inviti', 'Inviti', 'message']]);
 // Per i clienti la voce c'è sempre, con gli inviti accesi: chi non può ancora invitare vede il motivo.
 if (!$admin && $u && Auth::account() && MHW\Inviti::disponibili()) $generale[] = ['inviti', '/inviti', 'Invita un amico', 'people'];
 $attiva = $admin ? $nav : ($prop ? '' : ($nav ?: 'guide'));
@@ -40,8 +41,10 @@ if ($prop) {
     $pid = (int) $prop['id'];
     $guida = [['contenuti', "/pannello/$pid", 'Contenuti', 'doc'], ['lingue', "/pannello/$pid/lingue", 'Lingue', 'globe'],
               ['aspetto', "/pannello/$pid/aspetto", 'Aspetto', 'palette'], ['qr', "/pannello/$pid/qr", 'QR & Link', 'qr']];
-    // Varianti camera: con i piani che le permettono, o se la guida ne ha già.
-    if (MHW\Varianti::permesse((int) $prop['account_id']) || MHW\Varianti::diStruttura($pid)) $guida[] = ['varianti', "/pannello/$pid/varianti", 'Varianti camera', 'key'];
+    // Varianti camera: se la guida ne ha già, oppure se il piano le permette e la struttura ha camere
+    // (B&B, affittacamere, agriturismo, altro). La pagina resta raggiungibile anche senza la scheda.
+    if (MHW\Varianti::diStruttura($pid) || (MHW\Varianti::permesse((int) $prop['account_id'])
+        && in_array((string) ($prop['property_type'] ?? ''), ['bnb', 'affittacamere', 'agriturismo', 'altro'], true))) $guida[] = ['varianti', "/pannello/$pid/varianti", 'Varianti camera', 'key'];
     if ($vedeStatistiche) $guida[] = ['statistiche', "/pannello/$pid/statistiche", 'Statistiche', 'chart'];
     $guida[] = ['impostazioni', "/pannello/$pid/impostazioni", 'Impostazioni', 'sliders'];
 }
@@ -69,11 +72,20 @@ $voci = function (array $elenco, string $on, string $classe) {
            . Icon::svg($ico, 19, 1.8) . '<span>' . Support::e($l) . '</span></a>';
     }
 };
-$navigazione = function () use ($admin, $generale, $attiva, $guida, $quiGuida, $prop, $statoGuida, $voci, $u, $iniziale) { ?>
-    <nav class="lato__nav<?= $admin ? ' lato__nav--fitta' : '' ?>" aria-label="<?= $admin ? 'Amministrazione' : 'Sezioni dell\'account' ?>">
-      <span class="lato__gruppo"><?= $admin ? 'Amministrazione' : 'Generale' ?></span>
+$navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida, $quiGuida, $prop, $statoGuida, $voci, $u, $iniziale) { ?>
+    <?php if ($admin): ?>
+      <?php foreach ($gruppiAdmin as $titoloGruppo => $vociGruppo): ?>
+        <nav class="lato__nav lato__nav--fitta" aria-label="Amministrazione: <?= Support::e(strtolower($titoloGruppo)) ?>">
+          <span class="lato__gruppo"><?= Support::e($titoloGruppo) ?></span>
+          <?php $voci($vociGruppo, $attiva, 'lato__voce'); ?>
+        </nav>
+      <?php endforeach; ?>
+    <?php else: ?>
+    <nav class="lato__nav" aria-label="Sezioni dell'account">
+      <span class="lato__gruppo">Generale</span>
       <?php $voci($generale, $attiva, 'lato__voce'); ?>
     </nav>
+    <?php endif; ?>
     <?php if ($guida): ?>
       <nav class="lato__nav" aria-label="La guida">
         <span class="lato__gruppo lato__gruppo--guida"><span><?= Support::e($prop['name']) ?></span>

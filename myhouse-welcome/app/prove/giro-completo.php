@@ -190,9 +190,36 @@ prova('Il catalogo delle funzioni c\'è', (int) val('SELECT COUNT(*) FROM featur
 prova('Nessun codice porta nel database', (int) val("SELECT COUNT(*) FROM sections WHERE door_code <> ''") === 0);
 prova('Nessun codice porta nelle guide pubblicate', (int) val("SELECT COUNT(*) FROM guide_versions WHERE snapshot LIKE '%door_code%'") === 0);
 
+
+// 6J · 6K · i prezzi del listino di serie (028: 97, 127, 127 + 70), prima che le prove cambino il listino.
+capitolo('6J · 6K · listino di serie: anteprima dei codici, Quadro, llms.txt e dati strutturati');
+$ospite = new Browser('visitatore');
+$r = $admin->get('/admin/sconti');
+prova('6J · anteprima dei codici: Portfolio al prezzo della quantità minima', str_contains($r['body'], 'data-prezzo="19700" data-nome="Portfolio (2 strutture)"')
+      && str_contains($r['body'], "Portfolio (2 strutture): 197\u{00A0}€"));
+$r = $admin->get('/admin');
+prova('6J · Quadro → Listino: solo i piani in vendita, Portfolio «127 € + 70 € dalla 2ª», link alle versioni precedenti', str_contains($r['body'], "127\u{00A0}€ + 70\u{00A0}€ dalla 2ª")
+      && str_contains($r['body'], 'Versioni precedenti e piani nascosti'));
+$r = $ospite->get('/llms.txt');
+prova('llms.txt: introduzione, fatti, piani dal listino (97, 127, 127 + 70), FAQ come link a /domande#id, contatti', $r['code'] === 200
+      && str_starts_with($r['body'], "# MyHouse Welcome\n\n> ") && str_contains($r['body'], '## Fatti chiave') && str_contains($r['body'], '- Essential: 97 €')
+      && str_contains($r['body'], '- Plus: 127 €') && str_contains($r['body'], '- Portfolio: 127 € la prima struttura, poi 70 €') && str_contains($r['body'], '(con 2: 197 €)')
+      && str_contains($r['body'], '/domande#prova)') && str_contains($r['body'], '## Contatti') && str_contains($r['body'], 'info@myhousewelcome.it'));
+$r = $ospite->get('/');
+$ld = preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $r['body'], $mm) ? array_map(fn($j) => json_decode($j, true), $mm[1]) : [];
+$grafo = $ld[0]['@graph'] ?? [];
+$app6k = array_values(array_filter($grafo, fn($x) => ($x['@type'] ?? '') === 'SoftwareApplication'))[0] ?? [];
+prova('Home: title e description di serie, index, niente canonical senza dominio, Open Graph', str_contains($r['body'], '<title>Guida digitale per case vacanza e B&amp;B | MyHouse Welcome</title>')
+      && substr_count($r['body'], '<meta name="description"') === 1 && str_contains($r['body'], '<meta name="robots" content="index, follow">')
+      && !str_contains($r['body'], 'rel="canonical"') && substr_count($r['body'], 'property="og:title"') === 1 && str_contains($r['body'], 'name="twitter:card" content="summary_large_image"'));
+prova('Home: JSON-LD valido, Organization con vatID, tre offerte (97, 127, Portfolio 197) IVA esclusa, FAQPage', count($ld) === 2 && !in_array(null, $ld, true)
+      && in_array('IT02945910541', array_column($grafo, 'vatID'), true) && count($app6k['offers'] ?? []) === 3
+      && array_column($app6k['offers'], 'price') === ['97.00', '127.00', '197.00'] && ($app6k['offers'][2]['priceSpecification']['valueAddedTaxIncluded'] ?? null) === false
+      && ($ld[1]['@type'] ?? '') === 'FAQPage' && count($ld[1]['mainEntity'] ?? []) >= 16);
+$nFaq = count($ld[1]['mainEntity'] ?? []);
+$ospite = new Browser('visitatore');
 // ======================================================================= LANDING
 capitolo('Landing e listino');
-$ospite = new Browser('visitatore');
 $r = $ospite->get('/');
 prova('La landing si apre', $r['code'] === 200 && pulita($r));
 prova('Titolo richiesto', str_contains($r['body'], 'La casa risponde') && str_contains($r['body'], 'prima che chiedano.'));
@@ -217,8 +244,10 @@ prova('…label esplicita del campo', preg_match('#<label for="([a-z0-9-]+)"[^>]
 prova('…il totale lo calcola uno script senza prezzi scritti dentro', str_contains($r['body'], '/assets/prezzi.js') && is_file("$DOVE/assets/prezzi.js") && !preg_match('/11700|6000|117|177/', (string) @file_get_contents("$DOVE/assets/prezzi.js")));
 prova('Pricing: niente "CMS", niente frasi finali', !preg_match('/>\s*CMS\s*</', $r['body'])
       && !str_contains($r['body'], 'Meno domande ripetitive, più tempo per accogliere') && !str_contains($r['body'], 'concierge digitale'));
-prova('Piani: headline e descrizioni nuove', str_contains($r['body'], 'Le informazioni importanti, sempre a disposizione.') && str_contains($r['body'], 'Una guida completa, senza limiti di sezioni.')
-      && str_contains($r['body'], 'Il Plus per più strutture.') && str_contains($r['body'], 'Statistiche distinte per struttura'));
+// 6J · nelle schede della landing restano «Ideale per», prezzo, funzioni e bottone: niente titoletto e descrizione.
+prova('Piani: nelle schede della landing niente headline e descrizione, resta «Ideale per»', !str_contains($r['body'], 'Le informazioni importanti, sempre a disposizione.')
+      && !str_contains($r['body'], 'class="plan__headline"') && !str_contains($r['body'], 'class="plan__desc"')
+      && substr_count($r['body'], 'class="plan__per"') === 3 && str_contains($r['body'], 'Statistiche distinte per struttura'));
 $carteListino = substr($r['body'], (int) strpos($r['body'], 'class="grid grid-3 piani"'), (int) strpos($r['body'], 'class="confronto"') - (int) strpos($r['body'], 'class="grid grid-3 piani"'));
 prova('Plus: foto e PDF spiegati, niente "immagine profilo" nelle card, badge sobrio', str_contains($carteListino, 'Foto e PDF nelle sezioni')
       && !str_contains($carteListino, 'Immagine profilo') && str_contains($r['body'], 'Più completo') && !str_contains($r['body'], 'Più scelto'));
@@ -1404,9 +1433,20 @@ prova('K1 · «Confronta tutti i piani»: tabella dalle funzioni dei pacchetti',
       && str_contains($r['body'], 'da 2 a 10'));
 prova('K2 · in landing: «Una prenotazione diretta in più all\'anno paga l\'abbonamento.»', str_contains($r['body'], 'Una prenotazione diretta in più all&#039;anno paga l&#039;abbonamento.')
       || str_contains($r['body'], "Una prenotazione diretta in più all'anno paga l'abbonamento."));
-prova('K3 · FAQ prima del listino: sei domande in un accordion accessibile', substr_count($r['body'], 'class="faq__voce"') >= 6 && str_contains($r['body'], 'Gli ospiti vengono tracciati?')
-      && strpos($r['body'], 'id="domande"') < strpos($r['body'], 'id="piani"'));
-prova('K3 · accanto a «Guarda la demo» le lingue della demo (IT / EN / DE)', preg_match_all('#href="[^"]+/benvenuto\?l=(it|en|de)" hreflang#', $r['body'], $mm) >= 2);
+// 6J · i prezzi prima delle domande; otto domande in vista, le altre sotto «Altre domande (N)», poi «Tutte le domande».
+$faqLanding = preg_match('#<section id="domande".*?</section>#s', $r['body'], $m) ? $m[0] : '';
+$faqAltre = preg_match('#<details class="faq__voce faq__altre">.*?<div class="faq__altre-lista">(.*?)</div>\s*</details>#s', $faqLanding, $m) ? $m[1] : '';
+prova('6J · FAQ dopo il listino: otto domande in vista nell\'ordine dato, le altre sotto «Altre domande (N)»', strpos($r['body'], 'id="piani"') < strpos($r['body'], 'id="domande"')
+      && substr_count($faqLanding, 'class="faq__voce"') - substr_count($faqAltre, 'class="faq__voce"') === 8
+      && preg_match('#Altre domande \((\d+)\)#', $faqLanding, $mm) === 1 && (int) $mm[1] === substr_count($faqAltre, 'class="faq__voce"') && (int) $mm[1] >= 8
+      && strpos($faqLanding, 'Posso provarla prima di pagare?') < strpos($faqLanding, 'Serve un') && strpos($faqLanding, 'Ricevo fattura?') < strpos($faqLanding, 'Posso disdire?')
+      && strpos($faqLanding, 'Posso disdire?') < strpos($faqLanding, 'Altre domande') && str_contains($faqAltre, 'Gli ospiti vengono tracciati?')
+      && str_contains($faqLanding, '/domande">Tutte le domande</a>'));
+prova('6J · menu della landing: Come funziona · Il QR · Prezzi · Domande (senza «Il tuo sito»)', preg_match('#Come funziona</a>.*?Il QR</a>.*?Prezzi</a>.*?Domande</a>#s', $r['body']) === 1
+      && !str_contains($r['body'], '/#sito">Il tuo sito</a>'));
+// 6J · IT / EN / FR: solo le lingue che la demo ha davvero (quella delle prove non ha il francese).
+prova('K3 · accanto a «Guarda la demo» le lingue della demo (IT / EN / FR, mai DE)', preg_match_all('#href="[^"]+/benvenuto\?l=(it|en|fr)" hreflang#', $r['body'], $mm) >= 2
+      && !preg_match('#benvenuto\?l=de" hreflang#', $r['body']));
 prova('K3 · nessuna testimonianza: nessun blocco', !str_contains($r['body'], 'Le parole di chi ospita'));
 prova('V6 · tre scene sotto l\'hero, al posto della foto grande, con le foto vere', substr_count($r['body'], 'class="scena"') === 3
       && substr_count($r['body'], 'scena__vuota') === 0 && !str_contains($r['body'], 'class="stage"')
@@ -1672,7 +1712,7 @@ prova('Come funziona: tre passi che sono link alle tre schermate vere', substr_c
       && is_file("$DOVE/assets/landing.js") && substr_count($r['body'], '/assets/foto/pannello-') === 3);
 prova('Tempo: le domande evitabili con una guida, accanto alle comunicazioni che restano dell\'host', str_contains($tempo = (preg_match('#<section id="il-tempo".*?</section>#s', $r['body'], $m) ? $m[0] : ''), 'Domande evitabili con una guida')
       && str_contains($tempo, 'Comunicazioni importanti e necessarie'));
-prova('La frase sul valore, da sola', str_contains($r['body'], 'class="frase"') && str_contains($r['body'], 'È nel tempo che puoi dedicare ad altro.'));
+prova('6J · niente blocco doppione «Il valore non è soltanto nella guida»', !str_contains($r['body'], 'class="frase"') && !str_contains($r['body'], 'Il valore non è soltanto nella guida'));
 prova('Guadagno: il commiato disegnato con le etichette vere della guida', str_contains($r['body'], 'class="congedo-mock"')
       && str_contains($r['body'], 'Ti è piaciuto il soggiorno?') && str_contains($r['body'], 'La prossima volta prenota da noi'));
 prova('FAQ: chi non trova la risposta può scrivere (WhatsApp ed email dal config)', preg_match('#id="domande".*?href="https://wa\.me/393920061600".*?href="mailto:info@myhousewelcome\.it"#s', $r['body']) === 1);
@@ -2434,12 +2474,15 @@ prova('Landing: sezione «Anche il tuo sito» in fondo, dopo la chiusura, con la
       && str_contains($r['body'], 'Meno commissioni ai portali.') && str_contains($r['body'], 'Più incasso per te.') && str_contains($r['body'], 'Più ospiti diretti.')
       && str_contains($r['body'], 'la quota che sarebbe andata al portale resta a te') && str_contains($r['body'], '<a class="btn" href="https://myhouse.blackout.in" target="_blank" rel="noopener">Chiedici il tuo sito')
       && strpos($r['body'], 'id="sito"') > strpos($r['body'], 'id="chiusura-titolo"') && str_contains($r['body'], '/assets/foto/sito-1600.webp')
-      && str_contains($r['body'], '/#sito">Il tuo sito</a>'));
+      && str_contains($r['body'], '/#sito">Il sito per la tua struttura</a>'));
 $r = $lucia->get('/pannello');
 prova('Pannello: l\'invito breve, con «Scopri come» verso la landing e «Non ora»', pulita($r) && str_contains($r['body'], 'data-sito-invito')
       && str_contains($r['body'], '<b>Meno commissioni ai portali. Più incasso per te. Più ospiti diretti.</b>') && str_contains($r['body'], '/#sito">Scopri come')
       && str_contains($r['body'], 'data-sito-chiudi'));
-prova('…anche nella pagina della guida, sotto le sezioni', str_contains($lucia->get("/pannello/$casa")['body'], 'data-sito-invito'));
+prova('6J · …solo in «Le mie guide»: non nella pagina della guida', !str_contains($lucia->get("/pannello/$casa")['body'], 'data-sito-invito'));
+$r = $lucia->modulo('/pannello', '/pannello/sito/nascondi', []);
+prova('6J · «Non mostrare più»: cookie mhw_no_sito per 180 giorni e l\'invito non compare più', !str_contains($lucia->get('/pannello')['body'], 'data-sito-invito')
+      && str_contains($lucia->get('/pannello')['body'], 'class="guide-griglia"'));
 
 // ================================================================= 6H
 capitolo('6H · cambio di piano: Plus → Essential dal rinnovo, Essential → Plus pagando la differenza');
@@ -2866,6 +2909,77 @@ prova('Con le varianti non si passa a Essential: prima si tolgono', $r['code'] =
 prova('Essential non ha le varianti, Plus e Portfolio sì', (string) val("SELECT pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id WHERE f.code = 'room_variants' AND pf.package_version_id = ?", [pv('essential')]) === '0'
       && (string) val("SELECT pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id WHERE f.code = 'room_variants' AND pf.package_version_id = ?", [pv('plus')]) === '1'
       && (string) val("SELECT pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id WHERE f.code = 'room_variants' AND pf.package_version_id = ?", [pv('portfolio')]) === '1');
+
+// ================================================================= 6J · rifiniture
+capitolo('6J · rifiniture: registrazione, amministrazione, testi legali');
+$adm6 = new Browser('admin6j');
+$adm6->get('/accedi'); $adm6->post('/accedi', ['email' => 'admin@prova.test', 'password' => 'AdminProva123']);
+$adm6->modulo('/admin/sconti', '/admin/sconti', ['code' => 'FASCIA6J', 'kind' => 'percent', 'value' => '15', 'valid_from' => gmdate('Y-m-d'),
+               'valid_until' => gmdate('Y-m-d', time() + 30 * 86400), 'max_uses' => '', 'piani' => 'tutti', 'note' => '']);
+$r = (new Browser('fascia6j'))->get('/registrati?codice=FASCIA6J');
+prova('6J · /registrati?codice=… mostra la fascia dello sconto, come la landing', $r['code'] === 200 && str_contains($r['body'], 'class="sconto-fascia"') && str_contains($r['body'], 'FASCIA6J'));
+$r = $adm6->get('/admin');
+prova('6J · menu di amministrazione in tre gruppi: Vendite, Clienti, Sistema (con SEO e GEO)', preg_match('#>Vendite<.*?>Clienti<.*?>Sistema<.*?/admin/seo#s', $r['body']) === 1);
+$r = $ospite->get('/termini');
+prova('6J · Termini § 4: cambio di piano, codici sconto (un solo sconto), varianti camera', str_contains($r['body'], 'paghi subito')
+      && str_contains($r['body'], 'I codici sconto valgono solo sul primo anno') && str_contains($r['body'], 'a ogni abbonamento si applica un solo codice')
+      && str_contains($r['body'], 'varianti camera: ognuna costa') && str_contains($r['body'], 'Da completare con un legale: diritto di recesso'));
+$r = $ospite->get('/privacy');
+prova('6J · Privacy → Fornitori: Adamo per la fatturazione elettronica, segnaposto intatti', str_contains($r['body'], 'Fatturazione elettronica: Adamo (app.adamogestionale.it)')
+      && str_contains($r['body'], '[Completare con sedi'));
+
+// ================================================================= 6K · SEO e GEO
+capitolo('6K · SEO e GEO: testa delle pagine, robots.txt, sitemap.xml, llms.txt, /domande');
+$r = $ospite->get('/robots.txt');
+prova('robots.txt: testo, Disallow per guide, pannello e media, CCBot spento di serie, Sitemap in fondo', $r['code'] === 200
+      && str_contains($r['body'], "User-agent: *\nDisallow: /pannello") && str_contains($r['body'], "Disallow: /g/\n") && str_contains($r['body'], "Disallow: /media/\n")
+      && str_contains($r['body'], "User-agent: CCBot\nDisallow: /") && !str_contains($r['body'], 'User-agent: ClaudeBot') && preg_match('#\nSitemap: \S+/sitemap\.xml\n$#', $r['body']) === 1);
+$r = $ospite->get('/sitemap.xml');
+prova('sitemap.xml: le quattro pagine accese, con lastmod', $r['code'] === 200 && substr_count($r['body'], '<url>') === 4 && substr_count($r['body'], '<lastmod>') === 4
+      && str_contains($r['body'], '/domande</loc>') && @simplexml_load_string($r['body']) !== false);
+foreach (['/accedi', '/registrati', '/password'] as $u) {
+    $r = $ospite->get($u);
+    prova("noindex su $u", str_contains($r['body'], '<meta name="robots" content="noindex">') && !str_contains($r['body'], 'application/ld+json'));
+}
+$r = $ospite->get('/');
+$nFaq = preg_match('#"@type":"FAQPage","mainEntity":(\[.*?\])\}</script>#s', $r['body'], $mm) ? count(json_decode($mm[1], true) ?: []) : -1;
+$r = $ospite->get('/domande');
+prova('/domande: titolo, tutte le FAQ aperte con il loro id, i due bottoni, FAQPage', $r['code'] === 200 && pulita($r) && str_contains($r['body'], '>Domande frequenti</h1>')
+      && substr_count($r['body'], 'class="faq__voce" id="') === $nFaq && substr_count($r['body'], '" open>') >= $nFaq
+      && str_contains($r['body'], 'id="tracciamento"') && str_contains($r['body'], 'Crea gratis la tua guida') && str_contains($r['body'], '/#piani">Vedi i prezzi')
+      && str_contains($r['body'], '"@type":"FAQPage"'));
+$r = $adm6->get('/admin/seo');
+prova('/admin/seo: titolo, frase, tre riquadri, avviso sottocartella, controllo e link esterni', $r['code'] === 200 && pulita($r) && str_contains($r['body'], '<h1>SEO e GEO.</h1>')
+      && str_contains($r['body'], 'Controlli superati') && str_contains($r['body'], 'Assistenti AI ammessi') && str_contains($r['body'], '5 su 6')
+      && str_contains($r['body'], 'Il sito è in una sottocartella') && str_contains($r['body'], 'search.google.com/test/rich-results') && str_contains($r['body'], '/assets/seo.js'));
+$campi6k = ['dominio' => 'https://myhousewelcome.it/', 'gsc' => '<meta name="google-site-verification" content="gsc-Prova_1" />', 'bing' => 'BING42',
+            'az_nome' => 'MyHouse Welcome', 'az_piva' => '02945910541', 'az_social' => "https://instagram.com/myhousewelcome\nnon un indirizzo",
+            'llms_intro' => 'Introduzione di prova.', 'llms_fatti' => "Primo fatto.\n\nSecondo fatto.",
+            'bot' => ['GPTBot' => '0', 'OAI-SearchBot' => '1', 'ClaudeBot' => '1', 'PerplexityBot' => '1', 'Google-Extended' => '1', 'CCBot' => '0']];
+foreach (['home', 'domande', 'termini', 'privacy'] as $k) $campi6k += ["p_{$k}_indicizza" => $k === 'termini' ? '0' : '1', "p_{$k}_titolo" => 'Titolo di prova per la pagina ' . $k . ' | MyHouse Welcome',
+                                                                   "p_{$k}_descrizione" => str_repeat('Descrizione di prova della pagina. ', 3)];
+$adm6->modulo('/admin/seo', '/admin/seo', $campi6k);
+prova('/admin/seo: «Salvato…» e il salvataggio nel registro', str_contains($adm6->get('/admin/seo')['body'], 'Salvato. Sitemap, robots.txt e llms.txt sono già aggiornati.')
+      && (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'seo.save'") === 1);
+$r = $ospite->get('/');
+prova('Con il dominio: canonical, og:url, verifiche Google e Bing solo nella home, sameAs dai social', str_contains($r['body'], '<link rel="canonical" href="https://myhousewelcome.it/">')
+      && str_contains($r['body'], '<meta name="google-site-verification" content="gsc-Prova_1">') && str_contains($r['body'], '<meta name="msvalidate.01" content="BING42">')
+      && str_contains($r['body'], '"sameAs":["https://instagram.com/myhousewelcome"]') && !str_contains($ospite->get('/domande')['body'], 'google-site-verification')
+      && str_contains($ospite->get('/domande')['body'], '<link rel="canonical" href="https://myhousewelcome.it/domande">'));
+$r = $ospite->get('/robots.txt');
+prova('robots.txt dopo il salvataggio: GPTBot e CCBot spenti, Sitemap sul dominio', str_contains($r['body'], "User-agent: GPTBot\nDisallow: /") && str_contains($r['body'], "User-agent: CCBot\nDisallow: /")
+      && !str_contains($r['body'], 'User-agent: ClaudeBot') && str_ends_with($r['body'], "Sitemap: https://myhousewelcome.it/sitemap.xml\n"));
+$r = $ospite->get('/sitemap.xml');
+prova('sitemap.xml: termini spento non c\'è più, indirizzi sul dominio', substr_count($r['body'], '<url>') === 3 && !str_contains($r['body'], '/termini<')
+      && str_contains($r['body'], '<loc>https://myhousewelcome.it/privacy</loc>'));
+prova('…e termini ha noindex', str_contains($ospite->get('/termini')['body'], '<meta name="robots" content="noindex">'));
+$r = $ospite->get('/llms.txt');
+prova('llms.txt dopo il salvataggio: introduzione e fatti nuovi, righe vuote tolte', str_contains($r['body'], "> Introduzione di prova.\n") && str_contains($r['body'], "- Primo fatto.\n- Secondo fatto.\n"));
+$r = $adm6->post('/admin/seo', ['dominio' => 'non un dominio'] + $campi6k);
+prova('Dominio scritto male: non si salva e si dice perché', str_contains($adm6->get('/admin/seo')['body'], 'Il dominio va scritto per intero')
+      && (string) val("SELECT valore FROM seo_settings WHERE chiave = 'dominio'") === 'https://myhousewelcome.it');
+$r = (new Browser('anonimo6k'))->post('/admin/seo', $campi6k);
+prova('/admin/seo senza accesso: non si salva', (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'seo.save'") === 1);
 
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";

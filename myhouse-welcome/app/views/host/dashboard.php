@@ -74,8 +74,6 @@ foreach ($sections as $s) { if ((int) $s['is_core'] === 1) $core = $s; else $alt
 
     <?php $sezioni = $altre; $torna = ''; include __DIR__ . '/_sezioni.php'; ?>
 
-    <?php include __DIR__ . '/_sito_invito.php'; ?>
-
     <a class="btn btn--ghost phonebtn" href="<?= b() ?>/pannello/<?= $pid ?>/anteprima" target="_blank" rel="noopener"><?= Icon::svg('eye', 16) ?>Apri l'anteprima</a>
   </div>
   <?php include __DIR__ . '/_telefono.php'; ?>

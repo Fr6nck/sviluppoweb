@@ -1,5 +1,6 @@
 <?php use function MHW\b; use MHW\{Support, Csrf, Plans, Icon}; $title = 'Crea il tuo account';
 $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
+<div class="registrati__fascia"><?php include __DIR__ . '/../pub/_fascia_sconto.php'; ?></div>
 <?php if ($pianoScelto): /* Il piano scelto sulla landing resta in vista: si sa cosa si sta attivando. */ ?>
   <p class="chip-piano">
     <span class="chip-piano__testo"><?= Icon::svg('check', 15, 2.2) ?><span>Piano <b><?= Support::e($pianoScelto['name']) ?></b><?= Plans::perProperty($pianoScelto) ? ' · ' . (int) $quantita . ' strutture' : '' ?>

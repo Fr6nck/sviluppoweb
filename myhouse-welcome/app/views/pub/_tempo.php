@@ -105,7 +105,7 @@ $t2Gg = round($t2Gu / 8 * 2) / 2;
     <div><span class="t2__num">60–70%</span><span>dei messaggi ricevuti dagli host italiani chiede informazioni ripetitive.</span></div>
     <div><span class="t2__num">88,7%</span><span>degli ospiti vuole istruzioni dettagliate su accesso e parcheggio prima di arrivare.</span></div>
   </div>
-  <p class="t2__fonti">35 minuti: stima di MyHouse Welcome su una prenotazione tipo, dentro le stime pubblicate nel 2026 (30–47 minuti: Enso Connect, giugno; Guestar su dati StayReply, maggio). I riferimenti di 16 e 19 minuti sono la nostra ripartizione di quei 35 minuti, coerente con il 60–70% di messaggi ripetitivi rilevato da Verto AI; il tempo risparmiato è un'ipotesi prudente. 60–70%: Verto AI, aprile 2026, conversazioni di gestori italiani. 88,7%: sondaggio Touch Stay tra gli ospiti, 2026. Stime di aziende del settore, non statistiche ufficiali.</p>
+  <p class="t2__fonti">35 minuti: stima di MyHouse Welcome su una prenotazione tipo, dentro le stime pubblicate nel 2026 (stime pubblicate nel 2026 da aziende del settore, tra cui Guestar su dati StayReply). I riferimenti di 16 e 19 minuti sono la nostra ripartizione di quei 35 minuti, coerente con il 60–70% di messaggi ripetitivi rilevato da Verto AI; il tempo risparmiato è un'ipotesi prudente. 60–70%: Verto AI, aprile 2026, conversazioni di gestori italiani. 88,7%: sondaggio Touch Stay tra gli ospiti, 2026. Stime di aziende del settore, non statistiche ufficiali.</p>
 </section>
 
 <style>

@@ -341,9 +341,8 @@ final class SectionCatalog
                     'cat'         => ['choice', 'Categoria', '', 'w' => 4, 'options' => [], 'tassonomia' => 'eventi'],
                     'when'        => ['choice', 'Quando', '', 'w' => 12, 'pillole' => true, 'default' => 'day', 'options' => ['day' => 'Un giorno', 'range' => 'Più giorni', 'weekly' => 'Ogni settimana', 'other' => 'Altro']],   // le chiavi di Eventi::QUANDO
                     'date_from'   => ['date', 'Dal', '', 'w' => 4, 'etichetta_se' => ['when', ['day' => 'Giorno']],
-                                      'aiuto_con' => ['when', ['weekly', 'other'], 'Facoltativo: da quando a quando.']],
-                    'date_to'     => ['date', 'Al', '', 'w' => 4, 'nascosto_con' => ['when', ['day']],
-                                      'aiuto_con' => ['when', ['weekly', 'other'], 'Facoltativo: da quando a quando.']],
+                                      'aiuto_con' => ['when', ['weekly', 'other'], 'Facoltativo: il periodo in cui vale.']],
+                    'date_to'     => ['date', 'Al', '', 'w' => 4, 'nascosto_con' => ['when', ['day']]],
                     'time_from'   => ['time', 'Dalle', '', 'w' => 2],
                     'time_to'     => ['time', 'Alle', 'Facoltativo.', 'w' => 2],
                     'days'        => ['days', 'Giorni', '', 'solo_con' => ['when', ['weekly']]],

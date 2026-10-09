@@ -50,16 +50,19 @@ include __DIR__ . '/_stati.php'; ?>
   <section class="stack" style="gap:10px">
     <div class="spread spread--mid"><h2 style="font-size:22px">Listino</h2><a class="small" href="<?= b() ?>/admin/pacchetti">Gestisci i piani</a></div>
     <div class="tablewrap"><table class="data">
-      <thead><tr><th>Piano</th><th>Versione</th><th>Prezzo</th><th>Price ID di Stripe</th><th>Clienti attivi</th><th>Stato</th></tr></thead>
+      <thead><tr><th>Piano in vendita</th><th>Versione</th><th>Prezzo</th><th>Price ID di Stripe</th><th>Clienti attivi</th></tr></thead>
       <tbody>
-      <?php foreach ($piani as $p): ?>
-        <tr><td><?= Support::e($p['name']) ?></td><td>v<?= (int) $p['version'] ?><?= $p['is_current'] ? ' · in vendita' : '' ?></td>
-          <td><?= Support::e(Support::money((int) $p['price_cents'], $p['currency'])) ?> + IVA</td>
+      <?php foreach ($piani as $p): /* il prezzo come nel listino: Portfolio «127 € + 70 € dalla 2ª» */
+            $tiers = MHW\Plans::tiers($p);
+            $prezzo = Support::money((int) $p['price_cents'], $p['currency'])
+                . (MHW\Plans::perProperty($p) ? (count($tiers) > 1 ? ' + scaglioni dalla 2ª' : ' + ' . Support::money(MHW\Plans::unitPrice($p, 2), $p['currency']) . ' dalla 2ª') : ''); ?>
+        <tr><td><?= Support::e($p['name']) ?></td><td>v<?= (int) $p['version'] ?></td>
+          <td><?= Support::e($prezzo) ?> + IVA</td>
           <td><code><?= Support::e($p['stripe_price_id'] ?: '— (prezzo della versione)') ?></code></td>
-          <td><?= (int) $p['clienti'] ?></td>
-          <td><?= !$p['active'] ? 'Disattivato' : ($p['public'] ? 'Pubblico' : 'Nascosto') ?></td></tr>
+          <td><?= (int) $p['clienti'] ?></td></tr>
       <?php endforeach; ?>
       </tbody></table></div>
+    <a class="small" href="<?= b() ?>/admin/pacchetti">Versioni precedenti e piani nascosti</a>
   </section>
 
   <section class="stack" style="gap:10px">

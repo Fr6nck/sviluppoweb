@@ -694,6 +694,8 @@ button, input[type=submit], input[type=button] { background-image: none; }
 .sconto-ok .linkbtn{min-height:32px}
 .field-error{color:var(--alert);font-size:14px;font-weight:500}
 .sconto-fascia{display:flex;align-items:center;gap:10px;margin:16px 0 0;padding:12px 16px;border-radius:var(--r-md);background:var(--ochre-soft);color:var(--ink);font-weight:500}
+/* in registrazione la fascia sta sopra il titolo: le serve aria sotto (vuota, non occupa spazio) */
+.registrati__fascia:not(:empty){margin:-16px 0 24px}
 .orig{font-size:14px;color:var(--muted);padding:10px 12px;border-radius:12px;background:var(--sunk);white-space:pre-line}
 
 /* La colonna con il telefono. */
@@ -816,7 +818,8 @@ button, input[type=submit], input[type=button] { background-image: none; }
   .features8--compatte .feat .ico{width:28px;height:28px;border-radius:8px} .features8--compatte .feat b{font-size:13px;line-height:17px;letter-spacing:-.1px} }
 
 /* Tabelle dell'amministrazione: dense, leggibili, scorrono sui telefoni. */
-.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--raised)}
+/* position:relative: le etichette .sr-only nelle intestazioni restano dentro lo scorrimento e non allargano la pagina */
+.tablewrap{position:relative;overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--raised)}
 .data{width:100%;border-collapse:collapse;font-size:14px;line-height:1.4}
 .data th{text-align:left;font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);
   padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -974,6 +977,8 @@ input[type=file]::file-selector-button{height:36px;margin-right:12px;padding:0 1
 .sito-invito__testo b{display:block;font-weight:600}
 .sito-invito__testo span{color:var(--muted);font-size:14px}
 .sito-invito__vai{white-space:nowrap}
+.sito-invito__mai{grid-column:2/-1;margin:-10px 0 -8px}
+.sito-invito__mai .linkbtn{color:var(--muted);font-weight:400;min-height:36px}
 @media(max-width:640px){ .sito-invito{grid-template-columns:auto minmax(0,1fr) auto} .sito-invito__vai{grid-column:2/-1;justify-self:start} .sito-invito__chiudi{grid-row:1;grid-column:3} }
 .sito{position:relative;isolation:isolate;margin-top:96px;margin-inline:calc(50% - 50vw);padding:96px 20px;scroll-margin-top:72px;color:#fff;overflow:hidden}
 .sito__foto,.sito__foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
@@ -1484,12 +1489,6 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .link-freccia svg{transition:transform .35s cubic-bezier(.32,.72,0,1)}
 .link-freccia:hover svg{transform:translateX(4px)}
 
-/* La frase sul valore, da sola e grande. */
-.frase{margin:96px auto 0;max-width:860px;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center}
-.frase__testo{font-family:Gloock,Georgia,serif;font-size:clamp(32px,4.8vw,54px);line-height:1.06;letter-spacing:-.6px;text-wrap:balance}
-.frase__testo span{color:var(--accent)}
-.frase__sotto{max-width:600px;font-size:17px;line-height:26px;color:var(--muted);text-wrap:pretty}
-
 /* La guida che fa guadagnare: il rovescio, e il commiato disegnato. */
 .guadagno{margin-top:96px;scroll-margin-top:96px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:56px;align-items:center;
   padding:56px;border-radius:var(--r-2xl);background:var(--inverse-bg);color:var(--inverse-fg)}
@@ -1582,7 +1581,15 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .faq__segno{color:var(--accent)}
 .faq__voce>summary::-webkit-details-marker{display:none}
 .faq__segno{flex:none;transition:transform .2s}
-.faq__voce[open] .faq__segno{transform:rotate(45deg)}
+.faq__voce[open]>summary .faq__segno{transform:rotate(45deg)}
+.faq__altre-lista{border-top:1px solid var(--line);margin-bottom:6px}
+.faq__altre-lista>.faq__voce:last-child{border-bottom:0}
+.faq__altre>summary{color:var(--accent)}
+.faq__tutte{margin:16px 0 0;font-size:15px}
+/* /domande: tutte le domande aperte, con il link diretto a ognuna (la testata è fissa) */
+.domande{margin-top:48px}
+.domande .faq__voce{scroll-margin-top:96px}
+.domande__azioni{margin-top:32px;gap:12px;flex-wrap:wrap}
 .faq__voce p{margin:0 0 18px;max-width:680px;color:var(--muted);font-size:16px;line-height:25px}
 @media (prefers-reduced-motion:reduce){.faq__segno{transition:none}}
 .confronto{max-width:100%;min-width:0}
@@ -1594,7 +1601,7 @@ a.device-link:hover .device{transform:translateY(-4px)}
    landing, e mai con «riduci movimento»). Un'unica curva per tutto: parte
    decisa e si posa piano, come un oggetto con un po' di peso. */
 :root{--molla:cubic-bezier(.32,.72,0,1)}
-.anima :is(.hero2__testo>*,.device-link,.scene>*,.prodotto__testa>*,.features8>*,.tempo__intro>*,.vantaggi>*,.frase__sotto,
+.anima :is(.hero2__testo>*,.device-link,.scene>*,.prodotto__testa>*,.features8>*,.tempo__intro>*,.vantaggi>*,
   .guadagno__testo>*,.congedo-mock,.come__testa>*,.passi__lista>*,.passi__schermate,.qrband>.stack>*,.qrband__foglio,.voci .grid>*,
   .faq__testa>*,.faq__lista>*,#piani .spread>*,.piani>*,.chiusura__testo>*,.chi):not(.comparsa--vista){opacity:0;transform:translateY(28px);filter:blur(6px)}
 .comparsa{transition:opacity .9s var(--molla),transform .9s var(--molla),filter .9s var(--molla);transition-delay:calc(var(--i,0) * 90ms)}
@@ -1616,10 +1623,6 @@ a.device-link:hover .device{transform:perspective(1400px) rotateX(var(--rx,0deg)
 .risposta--scrive::after{content:"";position:absolute;left:18px;top:calc(50% - 4px);width:40px;height:8px;
   background:radial-gradient(circle 4px,var(--tile-ink) 96%,transparent) 0 0/14px 8px repeat-x;animation:scrive .9s ease-in-out infinite}
 @keyframes scrive{50%{opacity:.3}}
-
-/* La frase: ogni parola si accende quando arriva a metà schermo. */
-.anima .frase__testo .parola{color:color-mix(in srgb,currentColor 24%,transparent);transition:color .8s var(--molla);transition-delay:calc(var(--i,0) * 30ms)}
-.anima .frase__testo .parola--accesa{color:inherit}
 
 /* Come funziona: la barra sotto il passo attivo mentre avanzano da soli; la schermata entra morbida. */
 .passo{position:relative;overflow:hidden}
@@ -2070,3 +2073,32 @@ fieldset{min-width:0}
 .viz-barre__valore{grid-column:2;font-size:13px;font-weight:500;color:var(--muted)}
 .viz-tip{position:fixed;z-index:50;pointer-events:none;max-width:260px;padding:6px 10px;border-radius:8px;background:var(--ink);color:var(--paper);font-size:13px;line-height:18px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 @media (max-width:560px){.viz-colonne__mese{font-size:10px}.viz-colonne__col:nth-child(even) .viz-colonne__mese{visibility:hidden}}
+
+/* ======================================= Amministrazione → SEO e GEO */
+.seo-controlli{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.seo-controlli li{display:grid;grid-template-columns:7.5rem minmax(0,1fr) auto;gap:12px;align-items:center;font-size:14px;line-height:20px;
+  padding-bottom:8px;border-bottom:1px solid var(--line)}
+.seo-controlli li:last-child{border-bottom:0;padding-bottom:0}
+.seo-controlli .badge{justify-self:start}
+.seo-pagina{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+.contatore{font-size:12px;line-height:16px;color:var(--muted);font-variant-numeric:tabular-nums}
+.contatore--oltre{color:var(--alert);font-weight:600}
+.serp{display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--paper);overflow-wrap:anywhere}
+.serp__url{font-size:12px;line-height:16px;color:var(--muted)}
+.serp__titolo{font-size:18px;line-height:24px;color:var(--sea)}
+.serp__testo{font-size:14px;line-height:20px;color:var(--ink)}
+.seo-immagine{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.seo-immagine img{width:240px;height:auto;aspect-ratio:1200/630;object-fit:cover;border-radius:var(--r-md);border:1px solid var(--line)}
+.seo-immagine .field{flex:1 1 16rem}
+.seo-bot{display:grid;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));gap:4px 16px}
+.seo-anteprima{margin:0;padding:12px 16px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--sunk);font-size:12px;line-height:16px;
+  white-space:pre-wrap;overflow-wrap:anywhere;max-height:16rem;overflow:auto}
+.seo-anteprima--alta{max-height:28rem}
+.seo-json pre{margin:12px 0 0;padding:12px 16px;border-radius:var(--r-md);background:var(--sunk);font-size:12px;line-height:16px;max-height:24rem;overflow:auto}
+.seo-json summary{cursor:pointer;font-weight:600}
+@media(max-width:760px){
+  .seo-pagina{grid-template-columns:minmax(0,1fr)}
+  .seo-controlli li{grid-template-columns:minmax(0,1fr) auto;gap:4px 12px}
+  .seo-controlli li>span:nth-child(2){grid-column:1;grid-row:2}
+  .seo-controlli li>a{grid-column:2;grid-row:1/3}
+}

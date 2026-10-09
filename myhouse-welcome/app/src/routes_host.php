@@ -122,6 +122,15 @@ $r->get('/pannello', function () use ($host) {
  *   - Portfolio pagato e pieno: «Aggiungi una struttura» aggiunge una struttura
  *     all'abbonamento Stripe, dopo una conferma col costo.
  */
+/* «Non mostrare più» l'invito al sito della struttura: un cookie tecnico del pannello, 180 giorni. */
+$r->post('/pannello/sito/nascondi', function () use ($host) {
+    $host();
+    setcookie('mhw_no_sito', '1', ['expires' => time() + 180 * 86400, 'path' => (MHW\b() ?: '') . '/', 'httponly' => true, 'samesite' => 'Lax',
+                                   'secure' => str_starts_with(Support::baseUrl(), 'https://')]);
+    Support::flash('Fatto: l\'invito al sito non compare più.');
+    Support::redirect('/pannello');
+});
+
 $r->any('/pannello/nuova', function () use ($host, $messaggio) {
     [$u, $acc] = $host();
     $aid = (int) $acc['id'];

@@ -40,6 +40,17 @@ $title = $doc === 'termini' ? 'Termini e condizioni' : 'Informativa sulla privac
     è calcolata al pagamento. Puoi disattivare il rinnovo in qualsiasi momento da Account &amp; Fatturazione: il servizio
     resta attivo fino alla fine del periodo già pagato. Alla scadenza senza rinnovo la guida smette di essere visibile
     agli ospiti; i tuoi contenuti restano conservati nell'account.</p>
+  <p>Puoi cambiare piano da Account &amp; Fatturazione. Se passi a un piano superiore o aggiungi strutture paghi subito
+    solo la differenza per i giorni che restano fino al rinnovo, e la data di rinnovo non cambia. Se passi a un piano
+    inferiore il cambio vale dal rinnovo successivo: fino ad allora resti sul piano già pagato, senza rimborsi.</p>
+  <p>I codici sconto valgono solo sul primo anno del primo abbonamento: dal rinnovo si paga il prezzo pieno del piano.
+    Non si sommano tra loro né con lo sconto di un invito: a ogni abbonamento si applica un solo codice.</p>
+  <?php if (MHW\Inviti::disponibili()): ?>
+  <p>Con «Invita un amico» chi si registra dal link di un cliente ha uno sconto del <?= MHW\Inviti::AMICO ?>% sul primo anno;
+    le condizioni sono al punto 10.</p>
+  <?php endif; ?>
+  <p>Con i piani che le comprendono puoi aggiungere varianti camera: ognuna costa <?= Support::e(Support::money(MHW\Varianti::prezzo())) ?>
+    l'anno, IVA esclusa, oltre al prezzo del piano.</p>
   <h2 style="font-size:22px">5. Modifiche ai piani</h2>
   <p>Le condizioni del piano che hai acquistato restano quelle in vigore al momento dell'acquisto per tutto il periodo
     pagato. Eventuali modifiche al listino si applicano ai nuovi acquisti.</p>
@@ -91,7 +102,8 @@ $title = $doc === 'termini' ? 'Termini e condizioni' : 'Informativa sulla privac
   <p>Pagamenti: Stripe. Archiviazione di immagini e documenti: Amazon Web Services (S3). Invio delle email: il
     fornitore di posta configurato. Traduzioni suggerite: Amazon Web Services (Amazon Translate), regione
     <?= Support::e((string) (MHW\Traduttore::config()['region'] ?? '')) ?>; ricevono solo i testi della guida di cui chiedi la
-    traduzione, quando la chiedi. [Completare con sedi, garanzie per il trasferimento dei dati e nomine a responsabile.]</p>
+    traduzione, quando la chiedi. Fatturazione elettronica: Adamo (app.adamogestionale.it), che riceve da Stripe i dati di
+    fatturazione per emettere le fatture e inviarle allo SDI. [Completare con sedi, garanzie per il trasferimento dei dati e nomine a responsabile.]</p>
   <h2 style="font-size:22px">Conservazione</h2>
   <p>[Da completare: tempi di conservazione dei dati dell'account, dei dati di fatturazione e delle statistiche.]</p>
   <h2 style="font-size:22px">I tuoi diritti</h2>

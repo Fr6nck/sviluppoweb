@@ -102,7 +102,8 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
 
 - **Piani → «Testi sulla landing»** (la voce che prima si chiamava «Pacchetti»): titoli, descrizioni ed elenchi. Nell'elenco, una riga che finisce con «:» diventa il titoletto («Tutto di Essential, e in più:»).
 - **Testimonianze**: aggiungine solo di vere, con il permesso scritto della persona, anche per la foto. Finché non ce n'è una visibile, il blocco in landing non compare.
-- **FAQ** in landing: le sei risposte sono in `app/views/pub/home.php`. Falle rileggere insieme ai punti 6 e 7 qui sotto, soprattutto «Ricevo fattura?».
+- **FAQ**: tutte le domande sono in `app/src/Faq.php` (landing, `/domande`, dati strutturati e llms.txt le leggono da lì). Le otto in vista nella landing sono in `Faq::IN_VISTA`. Falle rileggere insieme ai punti 6 e 7 qui sotto, soprattutto «Ricevo fattura?».
+- **Termini § 4** (cambio di piano, codici sconto, inviti, varianti camera) e **Privacy → Fornitori** (Adamo): testi nuovi, versioni dei documenti **non** cambiate. Dopo la revisione del legale aggiorna `MHW_TERMS_VERSION` / `MHW_PRIVACY_VERSION`.
 - **Termini** (§ 1, «Una guida, un'unità ricettiva»): una guida = un indirizzo e un CIN; eccezione per B&B, affittacamere e agriturismi con più camere allo stesso indirizzo (varianti camera); sospensione dopo avviso se una guida serve più unità. Falla rileggere al consulente. Versione dei Termini: `2026-10-08`.
 - **Termini e Privacy** (`/termini`, `/privacy`): vanno aggiornati con le novità (email di richiamo, dati di fatturazione, funnel anonimo), insieme alla versione in `MHW_TERMS_VERSION` / `MHW_PRIVACY_VERSION`.
 - **Clienti di esempio**: sono account con password nota. Toglili prima di aprire al pubblico (Quadro → «Elimina i clienti di esempio»). Se tieni la demo pubblica, ricreali: la nuova demo è a Spello.
@@ -116,6 +117,16 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
 5. Ai privati Adamo fa fattura elettronica con il codice fiscale, non una ricevuta: **fallo confermare al commercialista**.
 6. L'invio allo SDI e l'email al cliente si attivano da Adamo.
 7. Non serve nessun token di Adamo nel sito.
+
+## 4d. SEO e GEO (Amministrazione → Sistema → SEO e GEO)
+
+1. **Dominio**: scrivi `https://myhousewelcome.it` (senza barra finale) quando il sito è sul suo dominio. Senza dominio non c'è il canonical e sitemap e llms.txt usano l'indirizzo di adesso.
+2. **Il sito deve stare nella radice del dominio**: in una sottocartella (come `/welcomebook`) robots.txt e llms.txt non vengono letti. La pagina lo dice in rosso.
+3. **Search Console e Bing**: crea la proprietà, scegli la verifica con il «tag HTML» e incolla il codice (va bene anche tutto il tag). Poi invia `https://…/sitemap.xml`.
+4. **Immagine per la condivisione**: JPG o PNG 1200 × 630. Finché non la carichi si usa `assets/og.jpg`. Con S3 senza indirizzo pubblico l'indirizzo dell'immagine scade: meglio impostare l'indirizzo pubblico del bucket.
+5. **Assistenti AI**: di serie sono ammessi tutti tranne CCBot (Common Crawl). Decidi tu.
+6. **llms.txt**: rileggi introduzione e fatti chiave; prezzi e FAQ si aggiornano da soli.
+7. Un CDN o una cache del server davanti al sito può tenere per un po' le versioni vecchie di robots.txt, sitemap e llms.txt.
 
 ## 4b. La guida vetrina (la demo della landing)
 
@@ -196,6 +207,7 @@ Usa solo foto di cui hai i diritti, e nessun locale reale riconoscibile nella de
 5. **Dati di fatturazione**: P.IVA e codice fiscale sono salvati nell'account e su Stripe. Servono un tempo di conservazione e una voce nell'informativa.
 6. **Registro email** (`email_log`): conserva tipo e data di ogni richiamo. Va deciso il tempo di conservazione.
 7. **Traduzioni suggerite**: i testi della guida di cui il cliente chiede la traduzione vanno ad Amazon Web Services (Amazon Translate, regione impostata in Amministrazione). Nell'informativa c'è una riga tra i fornitori; vanno confermati la nomina di AWS come responsabile e la policy di rinuncia ai servizi di IA (punto 4c). I testi non contengono dati degli ospiti, ma possono contenere nomi e telefoni dell'host. Termini e informativa sono passati alla versione 2026-10.
+8. **Adamo** è ora tra i fornitori dell'informativa (riceve da Stripe i dati di fatturazione): va confermata la nomina a responsabile.
 
 ## 8. Dieci prove da fare sul server
 

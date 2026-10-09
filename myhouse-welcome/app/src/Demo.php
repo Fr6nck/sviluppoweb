@@ -637,7 +637,7 @@ final class Demo
                      'router_location' => 'In the hallway, above the shelf.'],
             'de' => ['instructions' => 'Wenn das Netz ausfällt, ziehen Sie den Stecker des Routers und stecken ihn nach einer Minute wieder ein.',
                      'router_location' => 'Im Flur, über dem Regal.'],
-        ], 'Wi-Fi e servizi');
+        ], 'Wi-Fi');
 
         $regole = Properties::addSection($acc, $pid, 'rules');
         self::scrivi($pid, $regole, [

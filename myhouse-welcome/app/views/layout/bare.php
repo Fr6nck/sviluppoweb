@@ -4,10 +4,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= Support::e($title ?? 'MyHouse Welcome') ?></title>
+<?php /* Titolo, descrizione, robots, canonical, Open Graph e dati strutturati: Amministrazione → SEO e GEO.
+         Le pagine senza $seoPagina (accesso, registrazione…) hanno noindex. */ ?>
+<?= MHW\Seo::head($seoPagina ?? null, $title ?? 'MyHouse Welcome') ?>
 <?php include __DIR__ . '/_tema.php'; ?>
 <?php include __DIR__ . '/_icone.php'; ?>
-<?php include __DIR__ . '/_condivisione.php'; ?>
+<?php if (empty($seoPagina)) include __DIR__ . '/_condivisione.php'; ?>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gloock&family=Onest:wght@300..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= MHW\av('/assets/app.css') ?>">
