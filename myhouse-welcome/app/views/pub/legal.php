@@ -57,7 +57,8 @@ $title = $doc === 'termini' ? 'Termini e condizioni' : 'Informativa sulla privac
   <h2 style="font-size:22px">6. I tuoi contenuti</h2>
   <p>I testi, le immagini e i documenti che pubblichi restano tuoi. Garantisci di avere il diritto di usarli e che non
     violano diritti di terzi. Non pubblicare nella guida codici di accesso, password di allarmi o altri dati la cui
-    diffusione potrebbe mettere a rischio la sicurezza della struttura.</p>
+    diffusione potrebbe mettere a rischio la sicurezza della struttura. Se decidi comunque di pubblicarli, la piattaforma ti chiede una conferma
+    e lo fai sotto la tua responsabilità.</p>
   <h2 style="font-size:22px">7. Disponibilità</h2>
   <p>Ci impegniamo a mantenere il servizio disponibile, senza poter garantire l'assenza di interruzioni.</p>
   <h2 style="font-size:22px">8. Recesso e chiusura dell'account</h2>

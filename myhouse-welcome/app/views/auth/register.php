@@ -28,6 +28,7 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
   <label class="check" style="align-items:flex-start"><input type="checkbox" name="termini" value="1" required style="margin-top:1px">
     <span>Accetto i <a href="<?= b() ?>/termini" target="_blank" rel="noopener">Termini e condizioni</a></span></label>
   <button class="btn btn--block btn--go">Crea l'account e inizia <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></button>
+  <p class="small muted registrati__riservata"><?= Icon::svg('lock', 14) ?><span>La guida che crei non compare sui motori di ricerca: la vede solo chi ha il link o il QR.</span></p>
   <?php /* Formulazione da far verificare al consulente privacy. */ ?>
   <p class="small muted" style="margin-top:-4px">Creando l'account dichiari di aver letto l'<a href="<?= b() ?>/privacy" target="_blank" rel="noopener">informativa privacy</a>.</p>
 </form>

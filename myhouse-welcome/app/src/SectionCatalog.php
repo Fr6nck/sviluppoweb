@@ -60,7 +60,7 @@ final class SectionCatalog
     private const K = [
         'checkin' => [
             'icon' => 'home', 'core' => true, 'group' => 'casa',
-            'intro' => 'Come si entra, cosa serve all\'arrivo e cosa fare prima di partire: è la sezione che l\'ospite apre per prima, ed è sempre inclusa. Non scrivere qui i codici di porte o cassette delle chiavi: mandali all\'ospite in privato.',
+            'intro' => 'Come si entra, cosa serve all\'arrivo e cosa fare prima di partire. Spiega dove sono le chiavi e come si apre: i codici di porte e cassette è meglio non scriverli qui: comunicali all\'ospite in privato.',
             // La partenza era fatta di cinque caselle fisse (checkout_keys, _waste, _lights,
             // _climate, _windows): dalla 009 è una lista ordinabile. I vecchi campi restano
             // nel JSON ma non si leggono più (Conversione::sezione li porta nella lista).
@@ -101,7 +101,7 @@ final class SectionCatalog
         'services' => [
             'icon' => 'washer', 'group' => 'casa',
             'breve' => 'Le dotazioni e le istruzioni per usarle.',
-            'intro' => 'Quello che gli ospiti trovano nella struttura e come si usa: spunta le dotazioni e aggiungi le istruzioni per caldaia, lavatrice, piano cottura. I servizi che offri a parte, di solito a pagamento, vanno in «Servizi extra».',
+            'intro' => 'Quello che gli ospiti trovano nella struttura e come si usa: spunta le dotazioni e aggiungi le istruzioni per caldaia, lavatrice, piano cottura. I servizi che offri a parte, di solito a pagamento, vanno in «Servizi extra». Della cassaforte spiega come si usa, non il codice.',
             'fields' => [
                 // Le opzioni arrivano da Tassonomie::DOTAZIONI (fase 6), con le etichette amen_<chiave>.
                 'amenities' => ['checks', 'Dotazioni', 'Spunta quello che gli ospiti trovano nella struttura.', 'options' => [], 'tassonomia' => 'dotazioni'],

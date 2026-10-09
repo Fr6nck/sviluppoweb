@@ -41,13 +41,27 @@ case 'struttura': ?>
       <h1>Struttura e contatti.</h1>
       <p class="lead">Nome, orari, contatti e la lingua in cui scrivi: le informazioni che l'ospite cerca per prime.</p>
     </div>
+    <?php if (empty($avvisoLetto)): /* 6M · una volta sola per account: «Ho capito» lo chiude per sempre */ ?>
+      <section class="privacy-nota privacy-nota--prima" aria-labelledby="chi-vede">
+        <?= Icon::svg('lock', 18) ?>
+        <div class="stack" style="gap:8px">
+          <h2 id="chi-vede" style="font-size:18px;line-height:24px;margin:0">Chi vede la tua guida</h2>
+          <p style="margin:0">Solo chi ha il link o inquadra il QR: la guida non compare su Google né negli assistenti AI. Scrivi tutto quello che serve all'ospite.
+            I codici di porte, cassette delle chiavi, casseforti e allarmi ti sconsigliamo di scriverli: comunicali tu, di persona o in privato.</p>
+          <form method="post" action="<?= b() ?>/pannello/avviso-guida" style="margin:0"><?= Csrf::field() ?>
+            <input type="hidden" name="torna" value="<?= Support::e('/pannello/' . $pid . '/procedura/struttura') ?>">
+            <button class="btn btn--sm">Ho capito</button></form>
+        </div>
+      </section>
+    <?php endif; ?>
     <?php $dopoPasso = 'arrivo'; include __DIR__ . '/_struttura_form.php'; ?>
 <?php break;
 
 case 'arrivo': $dati = json_decode((string) $core['data'], true) ?: []; ?>
       <h1>Check-in &amp; Check-out.</h1>
-      <p class="lead">Come si entra e cosa fare prima di partire: è la sezione che l'ospite apre per prima, ed è sempre inclusa, in ogni piano.
-        Non scrivere qui i codici di porte o cassette delle chiavi: mandali all'ospite in privato.</p>
+      <p class="lead">Come si entra, cosa serve all'arrivo e cosa fare prima di partire. Spiega dove sono le chiavi e come si apre: i codici di porte
+        e cassette è meglio non scriverli qui: comunicali all'ospite in privato.</p>
+      <?php include __DIR__ . '/_privacy_nota.php'; ?>
     </div>
     <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/sezioni/<?= (int) $core['id'] ?>" class="stack" data-autosave><?= Csrf::field() ?>
       <?php $kind = 'checkin'; $uid = 'core'; include __DIR__ . '/_campi.php'; ?>
@@ -163,6 +177,7 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
       </section>
     <?php endif; ?>
 
+    <p class="small muted pubblica-riservata"><?= Icon::svg('lock', 14) ?><span>Dopo la pubblicazione la guida è online per chi ha il link o il QR. Non compare nei motori di ricerca.</span></p>
     <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/pubblica" style="margin:0"><?= Csrf::field() ?>
       <?php $barraAvanti = '<button class="btn btn--go" ' . ($problemi || (!$sub && (!$verificato || !$piano)) ? 'disabled' : '') . '>'
                          . ($sub ? 'Pubblica ora' : 'Attiva e pubblica') . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';

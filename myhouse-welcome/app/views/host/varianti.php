@@ -71,6 +71,7 @@ $campi = function (array $v, string $id) use ($lingue, $nomiLingue, $def): void 
         <summary class="linkbtn" style="cursor:pointer">Modifica nome, Wi-Fi e istruzioni</summary>
         <form method="post" action="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/varianti/<?= $vid ?>" class="stack" style="margin-top:12px;gap:12px"><?= Csrf::field() ?>
           <?php $campi($v, 'v' . $vid); ?>
+          <?php $mostra = false; include __DIR__ . '/_codici_variante.php'; ?>
           <div class="actions"><button class="btn btn--sm">Salva la variante</button></div>
         </form>
       </details>
@@ -108,6 +109,7 @@ $campi = function (array $v, string $id) use ($lingue, $nomiLingue, $def): void 
           <label class="check" style="margin-top:4px"><input type="checkbox" name="conferma" value="1" required>
             <span>Aggiungo la variante a <?= Support::e($prezzo) ?> + IVA l'anno<?= $stripe ? ' e pago oggi la parte che resta di quest\'anno' : '' ?>.</span></label>
         </div>
+        <?php $mostra = !empty($codiciVecchi); include __DIR__ . '/_codici_variante.php'; ?>
         <div class="actions"><button class="btn"><?= Icon::svg('plus', 15, 2) ?> Aggiungi la variante</button></div>
       </form>
     </section>

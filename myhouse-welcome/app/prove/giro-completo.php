@@ -2931,9 +2931,14 @@ prova('6J · Privacy → Fornitori: Adamo per la fatturazione elettronica, segna
 // ================================================================= 6K · SEO e GEO
 capitolo('6K · SEO e GEO: testa delle pagine, robots.txt, sitemap.xml, llms.txt, /domande');
 $r = $ospite->get('/robots.txt');
-prova('robots.txt: testo, Disallow per guide, pannello e media, CCBot spento di serie, Sitemap in fondo', $r['code'] === 200
-      && str_contains($r['body'], "User-agent: *\nDisallow: /pannello") && str_contains($r['body'], "Disallow: /g/\n") && str_contains($r['body'], "Disallow: /media/\n")
-      && str_contains($r['body'], "User-agent: CCBot\nDisallow: /") && !str_contains($r['body'], 'User-agent: ClaudeBot') && preg_match('#\nSitemap: \S+/sitemap\.xml\n$#', $r['body']) === 1);
+// 6M: per i motori (*) le guide NON sono in Disallow (devono leggere il noindex); per gli assistenti AI sì.
+$blocco = fn(string $t, string $ua) => preg_match('#(?:^|\n)User-agent: ' . preg_quote($ua, '#') . '\n(.*?)(?:\n\n|\n?$)#s', $t, $mm) ? $mm[1] . "\n" : null;
+prova('robots.txt: per * niente guide in Disallow, /pannello escluso per tutti; GPTBot e ClaudeBot senza guide; CCBot spento di serie; Sitemap in fondo', $r['code'] === 200
+      && str_starts_with($r['body'], "User-agent: *\nDisallow: /pannello\n") && !str_contains((string) $blocco($r['body'], '*'), '/g/')
+      && str_contains((string) $blocco($r['body'], 'GPTBot'), "Disallow: /g/\nDisallow: /q/\nDisallow: /qr/\nDisallow: /media/\nDisallow: /pannello\n")
+      && str_contains((string) $blocco($r['body'], 'ClaudeBot'), "Disallow: /g/\n") && str_contains((string) $blocco($r['body'], 'Claude-User'), "Disallow: /media/\n")
+      && str_contains((string) $blocco($r['body'], 'meta-externalagent'), "Disallow: /qr/\n") && $blocco($r['body'], 'CCBot') === "Disallow: /\n"
+      && preg_match('#\nSitemap: \S+/sitemap\.xml\n$#', $r['body']) === 1, json_encode($blocco($r['body'], 'CCBot')));
 $r = $ospite->get('/sitemap.xml');
 prova('sitemap.xml: le quattro pagine accese, con lastmod', $r['code'] === 200 && substr_count($r['body'], '<url>') === 4 && substr_count($r['body'], '<lastmod>') === 4
       && str_contains($r['body'], '/domande</loc>') && @simplexml_load_string($r['body']) !== false);
@@ -2967,8 +2972,9 @@ prova('Con il dominio: canonical, og:url, verifiche Google e Bing solo nella hom
       && str_contains($r['body'], '"sameAs":["https://instagram.com/myhousewelcome"]') && !str_contains($ospite->get('/domande')['body'], 'google-site-verification')
       && str_contains($ospite->get('/domande')['body'], '<link rel="canonical" href="https://myhousewelcome.it/domande">'));
 $r = $ospite->get('/robots.txt');
-prova('robots.txt dopo il salvataggio: GPTBot e CCBot spenti, Sitemap sul dominio', str_contains($r['body'], "User-agent: GPTBot\nDisallow: /") && str_contains($r['body'], "User-agent: CCBot\nDisallow: /")
-      && !str_contains($r['body'], 'User-agent: ClaudeBot') && str_ends_with($r['body'], "Sitemap: https://myhousewelcome.it/sitemap.xml\n"));
+prova('robots.txt dopo il salvataggio: GPTBot e CCBot spenti del tutto, ClaudeBot solo senza guide, Sitemap sul dominio', $blocco($r['body'], 'GPTBot') === "Disallow: /\n"
+      && $blocco($r['body'], 'CCBot') === "Disallow: /\n" && str_starts_with((string) $blocco($r['body'], 'ClaudeBot'), "Disallow: /g/\n")
+      && str_ends_with($r['body'], "Sitemap: https://myhousewelcome.it/sitemap.xml\n"));
 $r = $ospite->get('/sitemap.xml');
 prova('sitemap.xml: termini spento non c\'è più, indirizzi sul dominio', substr_count($r['body'], '<url>') === 3 && !str_contains($r['body'], '/termini<')
       && str_contains($r['body'], '<loc>https://myhousewelcome.it/privacy</loc>'));
@@ -2980,6 +2986,103 @@ prova('Dominio scritto male: non si salva e si dice perché', str_contains($adm6
       && (string) val("SELECT valore FROM seo_settings WHERE chiave = 'dominio'") === 'https://myhousewelcome.it');
 $r = (new Browser('anonimo6k'))->post('/admin/seo', $campi6k);
 prova('/admin/seo senza accesso: non si salva', (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'seo.save'") === 1);
+
+// ================================================================= 6M · guide private e codici di accesso
+capitolo('6M · guide fuori dai motori e codici di accesso con conferma a proprio rischio');
+require_once "$DOVE/app/src/Sicurezza.php";
+$veri = ['Codice cassetta 4821', 'keybox code 4 8 2 1', 'la cassaforte ha il codice 1234', 'Alarm-PIN 5566', 'code du portail 2580'];
+$falsi = ['Check-in dalle 15:00', 'CAP 06123', 'Codice sconto BENTORNATI', 'chiama il 392 006 1600', 'la cassaforte è nell\'armadio', 'CIN IT054001C2DEMO0001'];
+$sbagliati = array_merge(array_filter($veri, fn($t) => !MHW\Sicurezza::codiceAccesso($t)), array_filter($falsi, fn($t) => MHW\Sicurezza::codiceAccesso($t)));
+prova('Sicurezza::codiceAccesso: vero sui cinque codici del brief, falso sui sei testi innocui', !$sbagliati, implode(' | ', $sbagliati));
+$X = 'X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex';
+$slugL = (string) val('SELECT slug FROM properties WHERE id = ?', [$casa]);
+$r = $ospite->get("/g/$slugL");
+prova('Guida: X-Robots-Tag completo e meta robots uguale', $r['code'] === 200 && stripos($r['head'], $X) !== false
+      && str_contains($r['body'], '<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">'));
+$r = $ospite->get("/g/$slugL/benvenuto");
+prova('…anche la soglia (layout full)', str_contains($r['body'], 'content="noindex, nofollow, noarchive, nosnippet, noimageindex"') && stripos($r['head'], $X) !== false);
+$tokL = (string) val('SELECT token FROM qr_tokens WHERE property_id = ?', [$casa]);
+$r = $ospite->get("/q/$tokL");
+prova('/q/…: X-Robots-Tag completo anche sul rimando del QR', $r['code'] === 302 && stripos($r['head'], $X) !== false);
+prova('/qr/….png: X-Robots-Tag completo sull\'immagine del QR', stripos($ospite->get("/qr/$tokL.png")['head'], $X) !== false);
+// Un PDF e un'immagine serviti da /media/ (nelle prove l'archivio è l'S3 finto: questi due si mettono sul disco a mano).
+@mkdir("$DOVE/app/storage/uploads", 0775, true);
+$fileMedia = [];
+foreach (['prova-6m.pdf' => ['pdf', 'application/pdf', "%PDF-1.4\n%prova\n"], 'prova-6m.png' => ['image', 'image/png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=')]] as $f => [$k, $mime, $bytes]) {
+    file_put_contents("$DOVE/app/storage/uploads/$f", $bytes);
+    db()->prepare("INSERT INTO media (account_id, filename, mime, bytes, kind, storage, object_key, property_id, created_at) VALUES (?, ?, ?, ?, ?, 'local', '', ?, ?)")
+        ->execute([$lacc, $f, $mime, strlen($bytes), $k, $casa, gmdate('Y-m-d\TH:i:s\Z')]);
+    $fileMedia[] = $f;
+}
+$okMedia = $fileMedia ? array_filter(array_map(fn($f) => $ospite->get('/media/' . $f), $fileMedia), fn($x) => $x['code'] === 200 && stripos($x['head'], $X) !== false) : [];
+prova('/media/…: PDF e immagini con X-Robots-Tag completo', count($okMedia) === 2, implode(', ', array_map(fn($f) => $f . ' ' . $ospite->get('/media/' . $f)['code'], $fileMedia)));
+$r = $ospite->get('/sitemap.xml'); $r2 = $ospite->get('/llms.txt'); $r3 = $ospite->get('/');
+prova('Mai elencate: niente /g/ in sitemap, llms.txt e dati strutturati della home', !str_contains($r['body'], '/g/') && !str_contains($r2['body'], '/g/')
+      && !preg_match('#<script type="application/ld\+json">[^<]*/g/#', $r3['body']));
+prova('Guide nuove: indirizzo con 4 caratteri casuali (vetrine e clienti di esempio come prima)', preg_match('#^[a-z0-9-]+-[abcdefghjkmnpqrstuvwxyz23456789]{4}$#', (string) val('SELECT slug FROM properties WHERE id = ?', [$vp])) === 1
+      && (string) val("SELECT slug FROM properties WHERE name = 'Casa Lucia'") === 'casa-lucia', (string) val('SELECT slug FROM properties WHERE id = ?', [$vp]));
+$r = $lucia->get("/pannello/$casa/impostazioni");
+prova('Impostazioni: «Cambia il link della guida» con l\'avviso sul QR', str_contains($r['body'], 'Cambia il link della guida') && str_contains($r['body'], 'Il link vecchio smette di funzionare. Il QR stampato no: continua ad aprire la guida.'));
+$lucia->post("/pannello/$casa/link", []);
+prova('…senza conferma il link non cambia', (string) val('SELECT slug FROM properties WHERE id = ?', [$casa]) === $slugL);
+$lucia->post("/pannello/$casa/link", ['conferma' => '1']);
+$slugN = (string) val('SELECT slug FROM properties WHERE id = ?', [$casa]);
+$r = $ospite->get("/q/$tokL");
+prova('«Cambia il link»: slug nuovo con 4 caratteri, il vecchio in 404, il QR apre la guida nuova, riga nel registro', $slugN !== $slugL
+      && preg_match('#^casa-lucia-[abcdefghjkmnpqrstuvwxyz23456789]{4}$#', $slugN) === 1 && $ospite->get("/g/$slugL")['code'] === 404
+      && str_ends_with($r['loc'], "/g/$slugN/benvenuto") && $ospite->get("/g/$slugN")['code'] === 200
+      && (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'property.link'") === 1, $slugN);
+// Un codice nella guida: alla pubblicazione il riquadro, «Pubblica lo stesso» solo con la casella.
+$coreL = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$casa]);
+$trL = riga("SELECT * FROM section_translations WHERE section_id = ? AND locale = 'it'", [$coreL]);
+$datiL = json_decode((string) $trL['data'], true) ?: []; $datiL['checkin_note'] = 'Il codice della cassetta delle chiavi è 4821.';
+db()->prepare('UPDATE section_translations SET data = ? WHERE id = ?')->execute([json_encode($datiL, JSON_UNESCAPED_UNICODE), $trL['id']]);
+$versioni = (int) val('SELECT COUNT(*) FROM guide_versions WHERE property_id = ?', [$casa]);
+$r = $lucia->post("/pannello/$casa/pubblica", []);
+prova('Pubblicazione con un codice: non pubblica e apre il riquadro di conferma', $r['code'] === 302 && str_contains($r['loc'], '/procedura/pubblica?codici=1')
+      && (int) val('SELECT COUNT(*) FROM guide_versions WHERE property_id = ?', [$casa]) === $versioni, $r['loc']);
+$r = $lucia->get("/pannello/$casa/procedura/pubblica?codici=1");
+prova('…il riquadro: titolo, campo con «Correggi», testo, casella, «Torna a correggere» e «Pubblica lo stesso» disattivo', str_contains($r['body'], 'Nella guida ci sono codici di accesso')
+      && str_contains($r['body'], 'Nota importante') && str_contains($r['body'], '>Correggi</a>') && str_contains($r['body'], 'Ho capito, pubblico a mio rischio')
+      && str_contains($r['body'], 'MyHouse Welcome non risponde dell\'uso di questi codici') && str_contains($r['body'], '>Torna a correggere</a>')
+      && str_contains($r['body'], 'data-codici-vai disabled>Pubblica lo stesso') && !str_contains($r['body'], '4821'));
+prova('…e accanto a Pubblica: la guida non compare nei motori di ricerca', str_contains($r['body'], 'Dopo la pubblicazione la guida è online per chi ha il link o il QR. Non compare nei motori di ricerca.'));
+$r = $lucia->post("/pannello/$casa/pubblica", ['codici_ok' => '1']);
+$conf = riga("SELECT * FROM audit_log WHERE action = 'guida.codici_confermati' ORDER BY id DESC");
+prova('Con la casella la guida si pubblica e il registro ha la conferma (campi, mai il codice)', $r['code'] === 302 && str_contains($r['loc'], '/pubblicata')
+      && (int) val('SELECT COUNT(*) FROM guide_versions WHERE property_id = ?', [$casa]) === $versioni + 1
+      && $conf && str_contains((string) $conf['meta'], '"property":' . $casa . ',') && str_contains((string) $conf['meta'], 'Nota importante') && !str_contains((string) $conf['meta'], '4821'), $r['loc']);
+$r = $lucia->post("/pannello/$casa/pubblica", []);
+prova('…vale solo per quella pubblicazione: alla successiva il riquadro ricompare', str_contains($r['loc'], '?codici=1'));
+$r = $adm6->get('/admin/anomalie');
+prova('Anomalie: «Guide pubblicate con un codice di accesso», con la data della conferma e il link alla guida', str_contains($r['body'], 'Guide pubblicate con un codice di accesso')
+      && str_contains($r['body'], 'confermata a proprio rischio il') && str_contains($r['body'], "/g/$slugN"));
+// Varianti camera: senza la casella non si salva; con la casella si salva e si registra.
+$vidV = (int) val('SELECT id FROM room_variants WHERE property_id = ? AND removed_at IS NULL ORDER BY id', [$vp]);
+$prima = (string) val('SELECT access FROM room_variants WHERE id = ?', [$vidV]);
+$vera->post("/pannello/$vp/varianti/$vidV", ['name' => 'Camera Rosa', 'access' => ['it' => 'La porta della camera ha il codice 2580']]);
+prova('Variante con un codice e senza conferma: non si salva', (string) val('SELECT access FROM room_variants WHERE id = ?', [$vidV]) === $prima);
+$vera->post("/pannello/$vp/varianti/$vidV", ['name' => 'Camera Rosa', 'access' => ['it' => 'La porta della camera ha il codice 2580'], 'codici_ok' => '1']);
+prova('…con «Ho capito, pubblico a mio rischio» si salva e il registro ha la conferma', str_contains((string) val('SELECT access FROM room_variants WHERE id = ?', [$vidV]), '2580')
+      && str_contains((string) val("SELECT meta FROM audit_log WHERE action = 'guida.codici_confermati' ORDER BY id DESC"), '"variante":' . $vidV));
+prova('…e la pagina delle varianti ha il riquadro di conferma', str_contains($vera->get("/pannello/$vp/varianti")['body'], 'data-codici-box'));
+// Gli avvisi nella piattaforma.
+$r = $lucia->get("/pannello/$casa/sezioni/$coreL");
+prova('Editor di sezione: la riga fissa sui codici, e lo script che avvisa mentre si scrive', str_contains($r['body'], 'La guida la legge chi ha il link o il QR. Ti sconsigliamo di scrivere codici di porte, cassette delle chiavi,')
+      && str_contains($r['body'], '/assets/codici.js') && str_contains($r['body'], 'i codici di porte e cassette è meglio non scriverli qui: comunicali all&#039;ospite in privato.'));
+$r = $lucia->get("/pannello/$casa/procedura/struttura");
+prova('Procedura, passo 1: «Chi vede la tua guida» con «Ho capito»', str_contains($r['body'], 'Chi vede la tua guida') && str_contains($r['body'], 'la guida non compare su Google né negli assistenti AI'));
+$lucia->post('/pannello/avviso-guida', ['torna' => "/pannello/$casa/procedura/struttura"]);
+prova('…«Ho capito» lo chiude per sempre (salvato sull\'account)', !str_contains($lucia->get("/pannello/$casa/procedura/struttura")['body'], 'Chi vede la tua guida'));
+$r = (new Browser('reg6m'))->get('/registrati');
+prova('Registrazione: «La guida che crei non compare sui motori di ricerca»', str_contains($r['body'], 'La guida che crei non compare sui motori di ricerca: la vede solo chi ha il link o il QR.'));
+$r = $ospite->get('/domande');
+prova('FAQ: «La mia guida si trova su Google?» subito prima del codice della porta, con la risposta nuova', strpos($r['body'], 'La mia guida si trova su Google?') < strpos($r['body'], 'Posso scrivere nella guida il codice della porta?')
+      && str_contains($r['body'], 'Te lo sconsigliamo. La guida si apre da un link, senza password') && str_contains($r['body'], 'gli assistenti come ChatGPT non la leggono'));
+$r = $ospite->get('/');
+$altreL = preg_match('#<div class="faq__altre-lista">(.*?)</div>\s*</details>#s', $r['body'], $mm) ? $mm[1] : '';
+prova('…nella landing stanno sotto «Altre domande»', str_contains($altreL, 'La mia guida si trova su Google?') && str_contains($altreL, 'Posso scrivere nella guida il codice della porta?'));
+prova('Termini § 6: la conferma sotto la propria responsabilità', str_contains($ospite->get('/termini')['body'], 'Se decidi comunque di pubblicarli, la piattaforma ti chiede una conferma'));
 
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";

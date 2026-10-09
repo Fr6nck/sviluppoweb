@@ -1,5 +1,27 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 6M guide fuori dai motori e codici di accesso (9 ottobre 2026)
+
+Nessuna migrazione.
+
+**Le guide non si trovano (cinque livelli)**
+- Guide, QR e file di `/media/`: `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex`, e lo stesso meta nei layout della guida, nell'anteprima e nel pannello.
+- robots.txt: per i motori (`*`) le guide **non** sono più in `Disallow` (devono leggere il noindex); per 13 assistenti AI (GPTBot, ClaudeBot, PerplexityBot, CCBot…) sì. Un assistente spento in «SEO e GEO» resta `Disallow: /`.
+- Mai in sitemap, llms.txt o dati strutturati (come già era).
+- Guide nuove con indirizzo `nome-xxxx` (4 caratteri casuali); vetrine e clienti di esempio come prima. Impostazioni → «Cambia il link della guida», con conferma e riga nel registro: il QR stampato continua a funzionare.
+- Indirizzo pubblico del bucket S3 compilato: avviso accanto al campo e in Anomalie.
+
+**Codici di accesso: sconsigliati, non vietati**
+- `Sicurezza::codiceAccesso()` (parola di accesso + luogo + 3–8 cifre in 60 caratteri, senza accenti né maiuscole), e la stessa regola in `assets/codici.js`: avviso arancione sotto il campo mentre si scrive, in tutti gli editor e nelle traduzioni. Si salva comunque.
+- Alla pubblicazione, se ci sono codici: riquadro nella pagina con i campi e «Correggi», «Ho capito, pubblico a mio rischio», «Torna a correggere» e «Pubblica lo stesso» (attivo solo con la casella). La conferma va nel registro (`guida.codici_confermati`: campi, mai i codici) e vale per quella pubblicazione.
+- Varianti camera: stesso riquadro al salvataggio; senza la casella non si salva. Traduzioni suggerite: l'avviso sotto la proposta.
+- Amministrazione → Anomalie: «Guide pubblicate con un codice di accesso», con la data della conferma (solo informativo).
+
+**Avvisi, FAQ e Termini**
+- Riga fissa in ogni editor di sezione; Check-in & Check-out e Servizi con i testi nuovi; «Chi vede la tua guida» al passo 1, una volta per account; nota accanto a «Pubblica» e in registrazione.
+- FAQ: nuova «La mia guida si trova su Google?» e risposta nuova sul codice della porta (sotto «Altre domande» e in `/domande`). Termini § 6: la conferma sotto la propria responsabilità (versione invariata).
+- **Prove:** 828 in tutto, tutte superate. La prova di aggiornamento da `f048ec5` passa.
+
 ## v2 · 6J rifiniture e 6K «SEO e GEO» (9 ottobre 2026)
 
 Migrazione `029` (tabella `seo_settings`, solo aggiunte; su MySQL la colonna `valore` è `TEXT NOT NULL` senza valore predefinito, che MySQL prima della 8.0.13 non accetta).

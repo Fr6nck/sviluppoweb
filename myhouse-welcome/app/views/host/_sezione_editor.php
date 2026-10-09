@@ -26,6 +26,7 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
     <?php /* Nella procedura l'editor si apre sotto la card: il riquadro con l'introduzione sta qui (nella pagina della sezione è sotto il titolo). */
           $introSezione = SectionCatalog::get($s['kind'])['intro'] ?? '';
           if ($inProcedura && $introSezione !== ''): ?><p class="note note--quiet"><?= Support::e($introSezione) ?></p><?php endif; ?>
+    <?php if ($inProcedura) include __DIR__ . '/_privacy_nota.php'; ?>
 
     <form method="post" action="<?= $qui_url ?>" enctype="multipart/form-data" class="stack" data-autosave><?= Csrf::field() ?>
       <?php if ($inProcedura): ?><input type="hidden" name="da" value="procedura"><?php endif; ?>

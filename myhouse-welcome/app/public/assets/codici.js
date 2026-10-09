@@ -61,8 +61,17 @@
       el.insertAdjacentElement('afterend', avviso);
     } else if (!c && avviso) avviso.remove();
   }
-  document.addEventListener('input', function (e) { if (e.target.matches('input, textarea')) segna(e.target); });
+  // Varianti camera: il riquadro di conferma compare quando un campo del modulo ha un codice,
+  // e allora la casella diventa obbligatoria (il server la controlla comunque).
+  function riquadro(form) {
+    var box = form && form.querySelector('[data-codici-box]'); if (!box) return;
+    var c = false;
+    form.querySelectorAll('input, textarea').forEach(function (el) { if (controllato(el) && codiceAccesso(el.value)) c = true; });
+    box.hidden = !c;
+    box.querySelector('[data-codici-ok]').required = c;
+  }
+  document.addEventListener('input', function (e) { if (e.target.matches('input, textarea')) { segna(e.target); riquadro(e.target.form); } });
   // Dopo il salvataggio (la bozza non si perde) l'avviso resta sotto il campo.
-  function tutti() { document.querySelectorAll('form input, form textarea').forEach(segna); }
+  function tutti() { document.querySelectorAll('form input, form textarea').forEach(segna); document.querySelectorAll('form').forEach(riquadro); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tutti); else tutti();
 })();

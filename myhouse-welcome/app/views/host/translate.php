@@ -21,8 +21,12 @@ $box = function (string $k) use ($sugg, $loc): string {
              . '<p class="suggerita__testo" lang="' . Support::e($loc) . '">' . $testo . '</p>'
              . '<div class="suggerita__azioni">' . $b('rifai', 'Rifai', 'btn btn--ghost btn--sm') . $b('scarta', 'Scarta', 'linkbtn') . '</div></div>';
     }
+    // 6M: una proposta con un codice di accesso si può approvare, ma lo si dice qui; il riquadro di conferma arriva alla pubblicazione.
+    $codice = MHW\Sicurezza::codiceAccesso((string) $s['text'])
+        ? '<p class="codice-avviso" role="status">' . Icon::svg('lock', 16) . '<span>Qui sembra esserci un codice di accesso. Te lo sconsigliamo: chi ha il link della guida può leggerlo. '
+          . 'Comunicalo all\'ospite di persona o in privato, poco prima dell\'arrivo.</span></p>' : '';
     return '<div class="suggerita"><span class="badge badge--ochre">Suggerita: da controllare</span>'
-         . '<p class="suggerita__testo" lang="' . Support::e($loc) . '">' . $testo . '</p>'
+         . '<p class="suggerita__testo" lang="' . Support::e($loc) . '">' . $testo . '</p>' . $codice
          . '<div class="suggerita__azioni">' . $b('approva', 'Approva', 'btn btn--sm')
          . $b('modifica', 'Modifica', 'btn btn--ghost btn--sm', ' data-modifica="c-' . md5($k) . '" data-testo="' . $testo . '"')
          . $b('scarta', 'Scarta', 'linkbtn') . '</div></div>';

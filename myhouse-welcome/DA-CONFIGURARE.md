@@ -118,16 +118,6 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
 6. L'invio allo SDI e l'email al cliente si attivano da Adamo.
 7. Non serve nessun token di Adamo nel sito.
 
-## 4d. SEO e GEO (Amministrazione → Sistema → SEO e GEO)
-
-1. **Dominio**: scrivi `https://myhousewelcome.it` (senza barra finale) quando il sito è sul suo dominio. Senza dominio non c'è il canonical e sitemap e llms.txt usano l'indirizzo di adesso.
-2. **Il sito deve stare nella radice del dominio**: in una sottocartella (come `/welcomebook`) robots.txt e llms.txt non vengono letti. La pagina lo dice in rosso.
-3. **Search Console e Bing**: crea la proprietà, scegli la verifica con il «tag HTML» e incolla il codice (va bene anche tutto il tag). Poi invia `https://…/sitemap.xml`.
-4. **Immagine per la condivisione**: JPG o PNG 1200 × 630. Finché non la carichi si usa `assets/og.jpg`. Con S3 senza indirizzo pubblico l'indirizzo dell'immagine scade: meglio impostare l'indirizzo pubblico del bucket.
-5. **Assistenti AI**: di serie sono ammessi tutti tranne CCBot (Common Crawl). Decidi tu.
-6. **llms.txt**: rileggi introduzione e fatti chiave; prezzi e FAQ si aggiornano da soli.
-7. Un CDN o una cache del server davanti al sito può tenere per un po' le versioni vecchie di robots.txt, sitemap e llms.txt.
-
 ## 4b. La guida vetrina (la demo della landing)
 
 La demo della landing si sposta su un account vero, quello dell'agenzia.
@@ -173,6 +163,26 @@ Dalla migrazione `022` Plus e Portfolio hanno le traduzioni suggerite, anche chi
 4. In **Amministrazione → Traduzioni** controlla caratteri, costo stimato e omaggio. Sul conto AWS i caratteri compaiono il giorno dopo.
 
 Dal tuo computer, senza toccare il sito: `php prove/firma-translate-botocore.php` (dalla cartella `app/`, con `pip install botocore`) confronta la firma con quella della libreria ufficiale di AWS.
+
+## 4d. SEO e GEO (Amministrazione → Sistema → SEO e GEO)
+
+1. **Dominio**: scrivi `https://myhousewelcome.it` (senza barra finale) quando il sito è sul suo dominio. Senza dominio non c'è il canonical e sitemap e llms.txt usano l'indirizzo di adesso.
+2. **Il sito deve stare nella radice del dominio**: in una sottocartella (come `/welcomebook`) robots.txt e llms.txt non vengono letti. La pagina lo dice in rosso.
+3. **Search Console e Bing**: crea la proprietà, scegli la verifica con il «tag HTML» e incolla il codice (va bene anche tutto il tag). Poi invia `https://…/sitemap.xml`.
+4. **Immagine per la condivisione**: JPG o PNG 1200 × 630. Finché non la carichi si usa `assets/og.jpg`. Con S3 senza indirizzo pubblico l'indirizzo dell'immagine scade: meglio impostare l'indirizzo pubblico del bucket.
+5. **Assistenti AI**: di serie sono ammessi tutti tranne CCBot (Common Crawl). Decidi tu.
+6. **llms.txt**: rileggi introduzione e fatti chiave; prezzi e FAQ si aggiornano da soli.
+7. Un CDN o una cache del server davanti al sito può tenere per un po' le versioni vecchie di robots.txt, sitemap e llms.txt.
+
+## 4e. Guide fuori dai motori
+
+Le guide (`/g/`, `/q/`, `/qr/`, `/media/`) hanno su ogni risposta `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex` e lo stesso meta nella pagina. In robots.txt i motori (`User-agent: *`) **possono** leggerle, perché devono vedere il `noindex`; gli assistenti AI (GPTBot, ClaudeBot, PerplexityBot…) no. Le guide nuove hanno un indirizzo con 4 caratteri casuali (`casa-lucia-7k3f`); quelle già esistenti restano come sono, e il cliente può cambiarlo da Impostazioni → «Cambia il link della guida» (il QR stampato continua a funzionare).
+
+Dopo la messa online:
+1. Cerca su Google `site:tuodominio.it/g/` (e `site:tuodominio.it/q/`): non deve uscire niente.
+2. Se compare qualcosa, in **Search Console → Rimozioni** chiedi la rimozione temporanea dell'indirizzo, e fai lo stesso per le guide della versione v1 su `blackout.in/welcomebookv1` (`site:blackout.in/welcomebookv1`).
+3. In Amministrazione → Impostazioni → archivio lascia **vuoto** «Indirizzo pubblico (CDN)»: con un indirizzo pubblico foto e PDF non passano dal sito e perdono il blocco per i motori (lo segnalano anche le Anomalie).
+4. Le guide con un codice di accesso confermato «a proprio rischio» sono in Amministrazione → Anomalie, solo per informazione.
 
 ## 5. Foto da caricare
 

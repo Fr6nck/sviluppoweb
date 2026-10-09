@@ -242,6 +242,13 @@ $r->any('/pannello/{id}/copia', function (array $a) use ($mia, $contesto, $messa
         'proposta' => $da ? MHW\Copia::proposta((int) $da['id'], (int) $p['id']) : null, 'qui' => 'contenuti'], 'layout/cms');
 });
 
+$r->post('/pannello/avviso-guida', function () use ($host) {
+    [$u] = $host();
+    if (!Db::val("SELECT 1 FROM audit_log WHERE action = 'guida.avviso_letto' AND target_user_id = ?", [(int) $u['id']])) Auth::audit('guida.avviso_letto', (int) $u['id']);
+    $torna = (string) ($_POST['torna'] ?? '');
+    Support::redirect(preg_match('#^/pannello/\d+/procedura/[a-z]+$#', $torna) ? $torna : '/pannello');
+});
+
 // «Cambia il link della guida» (6M): slug nuovo con 4 caratteri casuali. Il QR passa dal token
 // (/q/…), che non cambia: quello stampato continua ad aprire la guida.
 $r->post('/pannello/{id}/link', function (array $a) use ($mia) {
@@ -784,7 +791,8 @@ $r->get('/pannello/{id}/procedura/{passo}', function (array $a) use ($mia, $cont
     $lingue = ['lingueAttive' => array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale'),
                'consentite' => Entitlements::allowedLocales($aid), 'tutte' => Config::get('locales')];
     $extra = [];
-    if ($passo === 'struttura') $extra = $lingue;
+    // 6M · «Chi vede la tua guida»: si chiude per sempre, sull'account (nel registro: nessuna migrazione).
+    if ($passo === 'struttura') $extra = $lingue + ['avvisoLetto' => (bool) Db::val("SELECT 1 FROM audit_log WHERE action = 'guida.avviso_letto' AND target_user_id = ?", [(int) $u['id']])];
     if ($passo === 'arrivo') {
         $core = Db::one('SELECT * FROM sections WHERE property_id = ? AND is_core = 1', [$p['id']]);
         $t = Db::one('SELECT * FROM section_translations WHERE section_id = ? AND locale = ?', [$core['id'], $p['default_locale']]);
@@ -961,7 +969,17 @@ $lingueGuida = function (array $p): array {
     usort($l, fn($x, $y) => ($y === $p['default_locale']) <=> ($x === $p['default_locale']) ?: array_search($x, MHW\I18n::LOCALES) <=> array_search($y, MHW\I18n::LOCALES));
     return $l ?: [(string) $p['default_locale']];
 };
-$r->any('/pannello/{id}/varianti', function (array $a) use ($mia, $contesto, $messaggio, $lingueGuida) {
+/* 6M · codici di accesso in una variante: senza la conferma «a mio rischio» non si salva; con la conferma
+   si registra (i campi, mai i codici). */
+$codiciVariante = function (array $dati, array $u, array $p, ?int $vid): void {
+    $campi = MHW\Sicurezza::campiVariante(['nome' => $dati['name'], 'accesso' => json_decode((string) $dati['access'], true) ?: [],
+                                            'nota' => json_decode((string) $dati['note'], true) ?: []]);
+    if (!$campi) return;
+    if (empty($_POST['codici_ok'])) throw new RuntimeException('Nella variante ci sono codici di accesso: ti consigliamo di toglierli e comunicarli all\'ospite in privato. '
+        . 'Per salvarla lo stesso spunta «Ho capito, pubblico a mio rischio».');
+    Auth::audit('guida.codici_confermati', (int) $u['id'], ['property' => (int) $p['id'], 'utente' => (int) $u['id'], 'variante' => $vid, 'campi' => $campi]);
+};
+$r->any('/pannello/{id}/varianti', function (array $a) use ($mia, $contesto, $messaggio, $lingueGuida, $codiciVariante) {
     [$u, $acc, $p] = $mia((int) $a['id']);
     $aid = (int) $acc['id'];
     $lingue = $lingueGuida($p);
@@ -969,14 +987,18 @@ $r->any('/pannello/{id}/varianti', function (array $a) use ($mia, $contesto, $me
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             if (($_POST['conferma'] ?? '') !== '1') throw new RuntimeException('Spunta la conferma del costo per aggiungere la variante.');
-            $vid = MHW\Varianti::aggiungi($acc, $p, MHW\Varianti::dati($_POST, $lingue));
+            $dati = MHW\Varianti::dati($_POST, $lingue);
+            $codiciVariante($dati, $u, $p, null);
+            $vid = MHW\Varianti::aggiungi($acc, $p, $dati);
             Auth::audit('variant.add', (int) $u['id'], ['property_id' => (int) $p['id'], 'variant_id' => $vid]);
             Support::flash('Variante aggiunta: scarica il suo QR e mettilo in camera.');
             Support::redirect('/pannello/' . $p['id'] . '/varianti#variante-' . $vid);
         } catch (\Throwable $e) { $err = $messaggio($e, 'varianti'); $vecchi = $_POST; }
     }
+    $codiciVecchi = false;
+    if ($vecchi) { try { $codiciVecchi = (bool) MHW\Sicurezza::campiVariante(['nome' => (string) ($vecchi['name'] ?? ''), 'accesso' => (array) ($vecchi['access'] ?? []), 'nota' => (array) ($vecchi['note'] ?? [])]); } catch (\Throwable) {} }
     $sub = Subscriptions::active($aid);
-    View::out('host/varianti', $contesto($acc, $p) + ['qui' => 'varianti', 'err' => $err, 'vecchi' => $vecchi, 'lingue' => $lingue,
+    View::out('host/varianti', $contesto($acc, $p) + ['qui' => 'varianti', 'err' => $err, 'vecchi' => $vecchi, 'lingue' => $lingue, 'codiciVecchi' => $codiciVecchi,
         'varianti' => MHW\Varianti::diStruttura((int) $p['id']), 'permesse' => MHW\Varianti::permesse($aid),
         'stripe' => $sub && $sub['provider'] === 'stripe' && (string) $sub['provider_subscription_id'] !== '',
         'oggi' => $sub ? MHW\Varianti::quotaOggi($sub) : 0, 'fine' => (string) ($sub['current_period_end'] ?? ''),
@@ -987,11 +1009,13 @@ $variante = function (array $p, string $vid): array {
     if (!$v) { Support::flash('Variante non trovata.', 'err'); Support::redirect('/pannello/' . $p['id'] . '/varianti'); }
     return $v;
 };
-$r->post('/pannello/{id}/varianti/{vid}', function (array $a) use ($mia, $messaggio, $lingueGuida, $variante) {
+$r->post('/pannello/{id}/varianti/{vid}', function (array $a) use ($mia, $messaggio, $lingueGuida, $variante, $codiciVariante) {
     [$u, $acc, $p] = $mia((int) $a['id']);
     $v = $variante($p, $a['vid']);
     try {
-        Db::update('room_variants', MHW\Varianti::dati($_POST, $lingueGuida($p)), 'id = :vid', ['vid' => $v['id']]);
+        $dati = MHW\Varianti::dati($_POST, $lingueGuida($p));
+        $codiciVariante($dati, $u, $p, (int) $v['id']);
+        Db::update('room_variants', $dati, 'id = :vid', ['vid' => $v['id']]);
         Support::flash('Variante salvata: la guida la mostra subito, senza ripubblicare.');
     } catch (\Throwable $e) { Support::flash($messaggio($e, 'varianti'), 'err'); }
     Support::redirect('/pannello/' . $p['id'] . '/varianti#variante-' . (int) $v['id']);

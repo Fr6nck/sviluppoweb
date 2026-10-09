@@ -24,6 +24,7 @@ $intro = SectionCatalog::get($s['kind'])['intro'] ?? ''; ?>
         <?php if (!$core && (int) $s['is_active'] === 0): ?><span class="badge badge--paper">Disattivata</span><?php endif; ?>
       </div>
       <?php if ($intro !== ''): ?><p class="note note--quiet"><?= Support::e($intro) ?></p><?php endif; ?>
+      <?php include __DIR__ . '/_privacy_nota.php'; ?>
     </div>
 
     <?php $inProcedura = false; include __DIR__ . '/_sezione_editor.php'; ?>
