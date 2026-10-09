@@ -13,16 +13,31 @@
   for (var i = 0; i < blocchi.length; i++) (function (b) {
     var campo = b.querySelector('input[type=number]'), totale = b.querySelector('[data-totale]');
     var base = parseInt(b.getAttribute('data-base'), 10), extra = parseInt(b.getAttribute('data-extra'), 10);
+    // Gli scaglioni: [[dalla struttura, centesimi], …]; senza, ogni struttura in più costa «extra».
+    var scaglioni = []; try { scaglioni = JSON.parse(b.getAttribute('data-scaglioni') || '[]'); } catch (e) { scaglioni = []; }
+    function prezzo(q) {
+      var tot = base;
+      for (var n = 2; n <= q; n++) {
+        var c = extra;
+        for (var k = 0; k < scaglioni.length; k++) if (n >= scaglioni[k][0]) c = scaglioni[k][1];
+        tot += c;
+      }
+      return tot;
+    }
     var min = parseInt(campo.min, 10), max = parseInt(campo.max, 10), valuta = b.getAttribute('data-valuta') || 'EUR';
     function aggiorna() {
       var v = campo.value.trim(), q = /^\d+$/.test(v) ? parseInt(v, 10) : NaN;
       var ok = !isNaN(q) && q >= min && q <= max;
       campo.setCustomValidity(ok ? '' : 'Indica un numero intero di strutture tra ' + min + ' e ' + max + '.');
       if (ok) {
-        totale.textContent = soldi(base + (q - 1) * extra, valuta);
+        totale.textContent = soldi(prezzo(q), valuta);
         // L'equivalente mensile: prezzo annuale / 12, arrotondato al centesimo.
         var mese = b.querySelector('[data-mensile]');
-        if (mese) mese.textContent = soldi(Math.round((base + (q - 1) * extra) / 12), valuta);
+        if (mese) mese.textContent = soldi(Math.round(prezzo(q) / 12), valuta);
+        // In media a struttura, e quante.
+        var media = b.querySelector('[data-media]'), quante = b.querySelector('[data-quante]');
+        if (media) media.textContent = soldi(Math.round(prezzo(q) / q), valuta);
+        if (quante) quante.textContent = q;
       }
     }
     campo.addEventListener('input', aggiorna);

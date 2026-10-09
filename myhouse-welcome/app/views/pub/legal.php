@@ -22,6 +22,13 @@ $title = $doc === 'termini' ? 'Termini e condizioni' : 'Informativa sulla privac
   <h2 style="font-size:22px">1. Il servizio</h2>
   <p>MyHouse Welcome permette a chi gestisce una struttura ricettiva di creare una guida digitale per i propri ospiti,
     raggiungibile da un link e da un codice QR. Gli ospiti non si registrano e non installano applicazioni.</p>
+  <p id="unita"><b>Una guida, un'unità ricettiva.</b> Ogni guida corrisponde a una sola unità ricettiva: un indirizzo e un CIN
+    (Codice Identificativo Nazionale), che è obbligatorio per pubblicare e non può essere usato da un'altra guida. Una guida non può
+    raccogliere più case, appartamenti o strutture con indirizzi o CIN diversi: per ciascuna serve una guida, per esempio con il piano
+    Portfolio. Fanno eccezione B&amp;B, affittacamere e agriturismi con più camere allo stesso indirizzo e con lo stesso CIN: sono una
+    struttura sola, e le camere con Wi-Fi o istruzioni diverse si gestiscono con le «varianti camera». In ogni guida ogni sezione
+    compare una volta sola, e le sezioni libere sono al massimo tre. Se una guida è usata per più unità ricettive possiamo chiederti
+    di separarla e, se non lo fai, sospenderne la pubblicazione dopo un avviso.</p>
   <h2 style="font-size:22px">2. Account</h2>
   <p>Per usare il servizio crei un account con un indirizzo email che confermi. Sei responsabile della riservatezza
     della password e di ciò che accade con il tuo account.</p>

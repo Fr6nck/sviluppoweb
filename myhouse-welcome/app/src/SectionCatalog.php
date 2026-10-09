@@ -415,6 +415,9 @@ final class SectionCatalog
         return ['', $aiuto];
     }
 
+    /** Sezioni libere al massimo in una guida: una guida è un'unità ricettiva, non un contenitore di case. */
+    public const LIBERE_MAX = 3;
+
     /** Si può aggiungere più volte alla stessa struttura? (la sezione libera) */
     public static function multipla(string $kind): bool { return !empty(self::get($kind)['multipla']); }
 

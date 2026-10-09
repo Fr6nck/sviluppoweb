@@ -9,7 +9,7 @@ I dettagli tecnici sono in `app/LEGGIMI.md`. Le novità, fase per fase, sono in 
 
 1. Copia sul server **tutto `app/storage/`** e `config.local.php`, se c'è.
 2. Carica il contenuto di `welcomebook/` sopra i file vecchi, **senza toccare `app/storage/`**.
-3. Apri il sito una volta. Le migrazioni `007`–`025` partono da sole.
+3. Apri il sito una volta. Le migrazioni `007`–`027` partono da sole.
 4. In **Amministrazione → Diagnostica** tutte le righe devono essere «OK».
 
 Il database resta **SQLite**. Le migrazioni nuove sono scritte anche per MySQL, ma un'installazione da zero su MySQL non è supportata: lo schema iniziale (`001`) è solo per SQLite.
@@ -85,11 +85,23 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
     5. Con un Portfolio aggiungi una struttura da Account → «Cambia piano» (conguaglio subito). Dopo il pagamento il coupon deve essere ancora sull'abbonamento.
   - Per i Portfolio grandi lo sconto del 50% può superare quello che portano dieci amici: valuta un tetto in euro con `Inviti::TETTO_CENTS`.
 
+**Portfolio a scaglioni, varianti camera, CIN (migrazioni 026 e 027).**
+  - La migrazione `026` mette in vendita una **versione nuova del Portfolio**: 1ª struttura al prezzo di Plus, 2ª 60 €, dalla 3ª alla 5ª 50 €, dalla 6ª alla 10ª 40 €, dall'11ª alla 20ª 30 €, oltre la 20ª 25 € (IVA esclusa, all'anno). Gli scaglioni si cambiano in **Amministrazione → Piani → Portfolio → Nuova versione**, campo «Scaglioni» (una riga per scaglione, come `3: 50`).
+  - Su Stripe **non c'è niente da creare**: al primo pagamento il sito crea da solo il Price «struttura aggiuntiva» **a scaglioni** (graduato). Con gli scaglioni lascia vuoto il «Price ID della struttura aggiuntiva»: un Price a prezzo unico creato a mano non saprebbe gli scaglioni.
+  - **Chi ha già un Portfolio** resta sulla sua versione (60 € per ogni struttura in più) fino a quando cambia piano. Se vuoi portarli agli scaglioni, dimmelo: si fa con un cambio di versione al rinnovo.
+  - **Varianti camera**: con Plus e Portfolio, 15 € + IVA l'anno l'una (`MHW_VARIANTE_PREZZO`, in centesimi: `1500`). Il sito crea su Stripe il Price con la chiave `mhw_variante_1500` e aggiunge la voce all'abbonamento; la parte dell'anno che resta si paga subito sulla carta dell'abbonamento, e la variante nasce solo se il pagamento riesce. Gli eventi del webhook restano quelli di prima.
+  - **CIN obbligatorio per pubblicare e unico** su tutta la piattaforma (le vetrine demo no). Le guide già online senza CIN restano online, ma per **ripubblicarle** serve il CIN: avvisa i clienti. In **Anomalie** trovi le guide online senza CIN e i CIN ripetuti.
+  - Prove in modalità test di Stripe:
+    1. Un Portfolio nuovo da 6 strutture: il totale deve essere 117 + 60 + 50 × 3 + 40 = 367 € + IVA, e su Stripe la voce delle strutture aggiuntive deve avere quantità 5 e un Price «graduated».
+    2. Con un Plus pagato apri una guida → **Varianti camera**, aggiungi una camera: su Stripe l'abbonamento ha una voce «variante camera» e c'è una fattura con la quota fino al rinnovo. Togli la variante: la voce scende (credito sulla prossima fattura).
+    3. Con la carta `4000 0000 0000 0341` (addebito rifiutato) la variante non deve nascere.
+
 ## 4. Testi da rivedere (Amministrazione)
 
 - **Piani → «Testi sulla landing»** (la voce che prima si chiamava «Pacchetti»): titoli, descrizioni ed elenchi. Nell'elenco, una riga che finisce con «:» diventa il titoletto («Tutto di Essential, e in più:»).
 - **Testimonianze**: aggiungine solo di vere, con il permesso scritto della persona, anche per la foto. Finché non ce n'è una visibile, il blocco in landing non compare.
 - **FAQ** in landing: le sei risposte sono in `app/views/pub/home.php`. Falle rileggere insieme ai punti 6 e 7 qui sotto, soprattutto «Ricevo fattura?».
+- **Termini** (§ 1, «Una guida, un'unità ricettiva»): una guida = un indirizzo e un CIN; eccezione per B&B, affittacamere e agriturismi con più camere allo stesso indirizzo (varianti camera); sospensione dopo avviso se una guida serve più unità. Falla rileggere al consulente. Versione dei Termini: `2026-10-08`.
 - **Termini e Privacy** (`/termini`, `/privacy`): vanno aggiornati con le novità (email di richiamo, dati di fatturazione, funnel anonimo), insieme alla versione in `MHW_TERMS_VERSION` / `MHW_PRIVACY_VERSION`.
 - **Clienti di esempio**: sono account con password nota. Toglili prima di aprire al pubblico (Quadro → «Elimina i clienti di esempio»). Se tieni la demo pubblica, ricreali: la nuova demo è a Spello.
 

@@ -52,6 +52,11 @@ foreach ($snap['sections'] as $s) {
 <?php if ($kind === 'wifi'):
       // Una scheda per rete: nome, password da copiare, QR per collegarsi senza scrivere.
       $reti = array_values(array_filter(Guide::rows($sec, 'networks', $loc, $def), fn($r) => trim((string) $r['ssid']) !== '' || trim((string) $r['password']) !== ''));
+      // Con il QR di una camera, prima il Wi-Fi della camera; poi gli altri della casa.
+      if (!empty($variante) && trim((string) $variante['wifi_ssid']) !== '') {
+          if ($reti && count($reti) === 1 && trim((string) $reti[0]['zone']) === '') $reti[0]['zone'] = I18n::t($loc, 'room_other_wifi');
+          array_unshift($reti, ['ssid' => $variante['wifi_ssid'], 'password' => $variante['wifi_password'], 'zone' => I18n::t($loc, 'room_wifi') . ' · ' . $variante['name']]);
+      }
       foreach ($reti as $n => $rete): $ssid = trim((string) $rete['ssid']); $pw = trim((string) $rete['password']);
         $zona = trim((string) $rete['zone']) ?: (count($reti) > 1 ? I18n::t($loc, 'network_n', $n + 1) : ''); ?>
     <div class="panel stack rete" style="margin-top:20px;gap:18px">
@@ -97,6 +102,13 @@ foreach ($snap['sections'] as $s) {
       $imposta = trim((string) ($d['tax_amount'] ?? '')); $notti = trim((string) ($d['tax_max_nights'] ?? '')); ?>
   <?php if ($modo !== '' && I18n::has($loc, 'mode_' . $modo)): ?>
     <p style="margin-top:16px"><span class="badge badge--sea"><?= Support::e(I18n::t($loc, 'mode_' . $modo)) ?></span></p>
+  <?php endif; ?>
+  <?php if (!empty($variante) && ($accesso = MHW\Varianti::testo($variante, 'access', $loc, $def)) !== ''): /* la camera del QR */ ?>
+    <div class="camera" style="margin-top:20px">
+      <span class="camera__chi"><?= Icon::svg('key', 16) ?><?= Support::e(I18n::t($loc, 'room_access')) ?></span>
+      <b class="camera__nome"><?= Support::e($variante['name']) ?></b>
+      <p class="camera__nota" style="white-space:pre-line"><?= Support::e($accesso) ?></p>
+    </div>
   <?php endif; ?>
   <div class="stack" style="margin-top:20px;gap:12px">
     <?php foreach ($lista('checkin_steps') as $i => $passo): ?>

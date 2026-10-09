@@ -43,7 +43,7 @@ $n = $stato['n'];
 $ora = time();
 // Portfolio: la prova scrive "extra-<sub>" con le strutture aggiuntive pagate al checkout;
 // l'abbonamento avrà allora una seconda voce, come quello vero.
-$espandi = in_array('items.data.price.product', (array) ($_GET['expand'] ?? []), true);
+$espandi = in_array('items.data.price.product', array_merge((array) ($_GET['expand'] ?? []), (array) ($corpo['expand'] ?? [])), true);
 $abbonamento = function (string $id) use (&$stato, $ora, $dir, $espandi): array {
     $s = $stato['subs'][$id] ?? ['cancel_at_period_end' => false, 'status' => 'active', 'start' => $ora, 'end' => $ora + 365 * 86400,
                                  'extra' => is_file("$dir/extra-$id") ? (int) file_get_contents("$dir/extra-$id") : null];
@@ -51,6 +51,10 @@ $abbonamento = function (string $id) use (&$stato, $ora, $dir, $espandi): array 
     $prodotto = fn(string $pid, string $ruolo) => $espandi ? ['id' => $pid, 'object' => 'product', 'metadata' => ['ruolo' => $ruolo]] : $pid;
     $voci = [['id' => 'si_base_' . $id, 'quantity' => 1, 'current_period_start' => $s['start'], 'current_period_end' => $s['end'],
               'price' => ['id' => $s['base_price'] ?? 'price_finto_annuale', 'product' => $prodotto('prod_finto_base', 'base')]]];
+    if (($s['varianti'] ?? null) !== null) {
+        $voci[] = ['id' => 'si_var_' . $id, 'quantity' => $s['varianti'], 'current_period_start' => $s['start'], 'current_period_end' => $s['end'],
+                   'price' => ['id' => $s['var_price'] ?? 'price_variante', 'product' => $prodotto('prod_finto_variante', 'variante')]];
+    }
     if (($s['extra'] ?? null) !== null) {
         $voci[] = ['id' => 'si_extra_' . $id, 'quantity' => $s['extra'], 'current_period_start' => $s['start'], 'current_period_end' => $s['end'],
                    'price' => ['id' => $s['extra_price'] ?? 'price_finto_extra', 'product' => $prodotto('prod_finto_extra', 'aggiuntiva')]];
@@ -87,8 +91,20 @@ if (preg_match('#^/v1/subscriptions/([A-Za-z0-9_]+)$#', $percorso, $m)) {
     if ($metodo === 'POST' && isset($corpo['items'])) {
         // Le voci: la principale (prezzo nuovo) e quella delle strutture aggiuntive (quantità, prezzo, o tolta).
         $abbonamento($m[1]);
+        // Varianti camera: con il file «rifiuta-variante» il pagamento non riesce e il cambio resta in sospeso.
+        $prima = (array) ($corpo['items'][0] ?? []);
+        $diVariante = str_starts_with((string) ($prima['price'] ?? ''), 'price_variante') || str_starts_with((string) ($prima['id'] ?? ''), 'si_var_');
+        if (($corpo['payment_behavior'] ?? '') === 'pending_if_incomplete' && is_file($dir . '/rifiuta-variante') && $diVariante) {
+            $rispondi($abbonamento($m[1]) + ['pending_update' => ['subscription_items' => $corpo['items']]]);
+        }
         foreach ((array) $corpo['items'] as $voce) {
             $vid = (string) ($voce['id'] ?? '');
+            if ($vid === 'si_var_' . $m[1] || ($vid === '' && str_starts_with((string) ($voce['price'] ?? ''), 'price_variante'))) {
+                if (($voce['deleted'] ?? '') === 'true') { $stato['subs'][$m[1]]['varianti'] = null; continue; }
+                if (isset($voce['quantity'])) $stato['subs'][$m[1]]['varianti'] = (int) $voce['quantity'];
+                if (isset($voce['price'])) $stato['subs'][$m[1]]['var_price'] = $voce['price'];
+                continue;
+            }
             if ($vid === 'si_base_' . $m[1]) {
                 if (isset($voce['price'])) $stato['subs'][$m[1]]['base_price'] = $voce['price'];
             } elseif ($vid === 'si_extra_' . $m[1] || ($vid === '' && isset($voce['price']))) {
@@ -102,7 +118,19 @@ if (preg_match('#^/v1/subscriptions/([A-Za-z0-9_]+)$#', $percorso, $m)) {
     }
     $rispondi($abbonamento($m[1]));
 }
-// Price (cambio di piano, 6H): si creano con il prodotto e il suo ruolo.
+// Price (cambio di piano, 6H): si creano con il prodotto e il suo ruolo. Quelli delle varianti
+// camera hanno una lookup_key e si ritrovano con GET /v1/prices?lookup_keys[]=…
+if ($metodo === 'GET' && $percorso === '/v1/prices') {
+    $chiavi = (array) ($_GET['lookup_keys'] ?? []);
+    $trovati = array_values(array_filter(array_map(fn($k) => $stato['prezzi'][$k] ?? null, $chiavi)));
+    $rispondi(['object' => 'list', 'data' => array_map(fn($id) => ['id' => $id, 'object' => 'price'], $trovati)]);
+}
+if ($metodo === 'POST' && $percorso === '/v1/prices' && (($corpo['product_data']['metadata']['ruolo'] ?? '') === 'variante')) {
+    $id = 'price_variante' . $n;
+    if (($corpo['lookup_key'] ?? '') !== '') $stato['prezzi'][$corpo['lookup_key']] = $id;
+    $rispondi(['id' => $id, 'object' => 'price', 'unit_amount' => (int) ($corpo['unit_amount'] ?? 0), 'lookup_key' => $corpo['lookup_key'] ?? null,
+               'product' => ['id' => 'prod_variante' . $n, 'metadata' => ['ruolo' => 'variante']]]);
+}
 if ($metodo === 'POST' && $percorso === '/v1/prices') {
     $rispondi(['id' => 'price_creato' . $n, 'object' => 'price', 'unit_amount' => (int) ($corpo['unit_amount'] ?? 0),
                'product' => ['id' => 'prod_creato' . $n, 'metadata' => $corpo['product_data']['metadata'] ?? []]]);

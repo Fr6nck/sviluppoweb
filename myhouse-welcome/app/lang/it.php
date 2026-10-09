@@ -186,6 +186,10 @@ return [
     'direct_lead'              => 'Prenotando direttamente sul nostro sito hai le condizioni migliori.',
     'direct_code'              => 'Codice sconto: %s',
     'direct_book'              => 'Prenota sul nostro sito',
+    'room'                     => 'La tua camera',
+    'room_wifi'                => 'Wi-Fi della tua camera',
+    'room_access'              => 'Come entrare in camera',
+    'room_other_wifi'          => 'Gli altri Wi-Fi della casa',
     'request_whatsapp'         => 'Richiedi su WhatsApp',
     'extra_message'            => 'Ciao! Vorrei richiedere: %s',
 ];

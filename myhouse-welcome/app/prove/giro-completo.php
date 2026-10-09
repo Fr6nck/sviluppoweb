@@ -62,9 +62,17 @@ final class Browser
         return $this->post($azione, $data, $h);
     }
 
+    /** Con true (il solito) chi pubblica senza CIN ne riceve uno di prova, unico: il CIN serve per pubblicare. */
+    public static bool $cinAutomatico = true;
+    private static int $cinN = 0;
+
     public function req(string $metodo, string $p, ?array $data, array $h = []): array
     {
         global $BASE;
+        if ($metodo === 'POST' && self::$cinAutomatico && preg_match('#^/pannello/(\d+)/pubblica$#', $p, $mp)) {
+            $st = db()->prepare("UPDATE properties SET cin = ? WHERE id = ? AND cin = ''");
+            $st->execute([sprintf('IT054039C2%08d', ++self::$cinN), (int) $mp[1]]);
+        }
         $url = str_starts_with($p, 'http') ? $p : $BASE . $p;
         $ch = curl_init($url);
         $multipart = $data !== null && (bool) array_filter($data, fn($v) => $v instanceof CURLFile);
@@ -195,7 +203,10 @@ foreach (['87', '117', '177'] as $p) prova("Prezzo $p € dal listino", str_cont
 $portfolio = preg_match('#<form class="plan__scelta".*?</form>#s', $r['body'], $m) ? $m[0] : '';
 prova('Portfolio: campo numerico (min 2, solo interi) al posto del menu', str_contains($portfolio, 'Quante strutture vuoi gestire?') && preg_match('#<input[^>]*name="strutture"[^>]*type="number"[^>]*step="1"[^>]*min="2"[^>]*value="2"#', $portfolio) === 1
       && !str_contains($portfolio, '<select'));
-prova('…regola del prezzo dal listino', str_contains($portfolio, "Prima struttura 117\u{00A0}€/anno.") && str_contains($portfolio, "Ogni struttura aggiuntiva +60\u{00A0}€/anno."));
+prova('…scaglioni dal listino: 1ª 117 €, 2ª 60 €, dalla 3ª alla 5ª 50 €, … oltre la 20ª 25 €, e la media a struttura', str_contains($portfolio, 'Quanto costa ogni struttura')
+      && str_contains($portfolio, "<span>Dalla 3ª alla 5ª</span><b>+50\u{00A0}€") && str_contains($portfolio, "<span>Dall&#039;11ª alla 20ª</span><b>+30\u{00A0}€")
+      && str_contains($portfolio, "<span>Oltre la 20ª</span><b>+25\u{00A0}€") && str_contains($portfolio, 'data-scaglioni="[[2,6000],[3,5000],[6,4000],[11,3000],[21,2500]]"')
+      && str_contains($portfolio, "in media\n    <b data-media>88,50\u{00A0}€</b>"));
 prova('…base e costo aggiuntivo dal listino, totale iniziale 177 €', str_contains($portfolio, 'data-base="11700"') && str_contains($portfolio, 'data-extra="6000"')
       && preg_match("#<span data-totale>177\u{00A0}€</span><small> \+ IVA / anno</small>#u", $portfolio) === 1 && substr_count($portfolio, '+ IVA / anno') === 1);
 prova('…la quantità va alla registrazione col piano', str_contains($portfolio, '/registrati"') && str_contains($portfolio, 'name="piano" value="' . pv('portfolio') . '"') && str_contains($portfolio, 'Crea gratis con Portfolio'));
@@ -945,7 +956,7 @@ prova('…e dopo la registrazione dritti alla struttura, con 3 strutture salvate
       && (int) val("SELECT a.intended_quantity FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = 'carla@prova.test'") === 3);
 prova('…e l\'avviso dice per quante strutture', str_contains($carla->get('/pannello/nuova')['body'], 'Piano <b>Portfolio</b> per 3 strutture scelto'));
 $r = $carla->get("/piano?piano=$pp&strutture=3");
-prova('…che la mostra già impostata, con il totale (237 €)', preg_match('#name="strutture" type="number"[^>]*value="3"#', $r['body']) === 1 && str_contains($r['body'], "237\u{00A0}€"));
+prova('…che la mostra già impostata, con il totale (227 €)', preg_match('#name="strutture" type="number"[^>]*value="3"#', $r['body']) === 1 && str_contains($r['body'], "227\u{00A0}€"));
 $cacc = (int) val("SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = 'carla@prova.test'");
 foreach (['1', '2.5', '0', 'tre', '51', '-3', '2e1'] as $x) {
     $r = $carla->post('/piano', ['pv' => $pp, 'strutture' => $x]);
@@ -975,15 +986,19 @@ prova('Fase 3 · privato: basta il codice fiscale', val('SELECT cf FROM accounts
 $r = $carla->modulo("/pannello/$c1/procedura/pubblica", "/pannello/$c1/pubblica", []);
 prova('Pubblica → Stripe Checkout', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/'), $r['loc']);
 $cord = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$cacc]);
-prova('Ordine per 3 strutture: 117 + 2 × 60 = 237 €', $cord && (int) $cord['quantity'] === 3 && (int) $cord['amount_cents'] === 23700);
+prova('Ordine per 3 strutture: 117 + 60 + 50 = 227 €', $cord && (int) $cord['quantity'] === 3 && (int) $cord['amount_cents'] === 22700);
 $cs = array_values(array_filter(richiesteStripe(), fn($x) => $x['percorso'] === '/v1/checkout/sessions'));
 $c = end($cs)['corpo'] ?? [];
 $li = $c['line_items'] ?? [];
+$prezzoScaglioni = array_values(array_filter(richiesteStripe(), fn($x) => $x['percorso'] === '/v1/prices' && ($x['corpo']['billing_scheme'] ?? '') === 'tiered'));
+$ps = end($prezzoScaglioni)['corpo'] ?? [];
 prova('Checkout: un solo abbonamento annuale con due voci', ($c['mode'] ?? '') === 'subscription' && count($li) === 2
-      && ($li[0]['price_data']['recurring']['interval'] ?? '') === 'year' && ($li[1]['price_data']['recurring']['interval'] ?? '') === 'year');
+      && ($li[0]['price_data']['recurring']['interval'] ?? '') === 'year' && str_starts_with((string) ($li[1]['price'] ?? ''), 'price_creato'));
 prova('…prima struttura 117 € × 1', ($li[0]['quantity'] ?? '') === '1' && ($li[0]['price_data']['unit_amount'] ?? '') === '11700' && ($li[0]['price_data']['tax_behavior'] ?? '') === 'exclusive');
-prova('…strutture aggiuntive 60 € × 2, IVA esclusa', ($li[1]['quantity'] ?? '') === '2' && ($li[1]['price_data']['unit_amount'] ?? '') === '6000' && ($li[1]['price_data']['tax_behavior'] ?? '') === 'exclusive'
-      && ($li[1]['price_data']['product_data']['metadata']['ruolo'] ?? '') === 'aggiuntiva');
+prova('…strutture aggiuntive × 2 con un Price graduato a scaglioni (unità 1: 60 €, 2–4: 50 €, 5–9: 40 €, 10–19: 30 €, poi 25 €), annuale, IVA esclusa', ($li[1]['quantity'] ?? '') === '2'
+      && ($ps['tiers_mode'] ?? '') === 'graduated' && ($ps['recurring']['interval'] ?? '') === 'year' && ($ps['tax_behavior'] ?? '') === 'exclusive'
+      && ($ps['product_data']['metadata']['ruolo'] ?? '') === 'aggiuntiva'
+      && array_map(fn($t) => [$t['up_to'], $t['unit_amount']], $ps['tiers'] ?? []) === [['1', '6000'], ['4', '5000'], ['9', '4000'], ['19', '3000'], ['inf', '2500']], json_encode($ps));
 prova('…quantità nei metadati', ($c['subscription_data']['metadata']['quantity'] ?? '') === '3');
 prova('Prima del pagamento: ancora nessun abbonamento', !val('SELECT id FROM subscriptions WHERE account_id = ?', [$cacc]));
 file_put_contents("$STRIPE_DIR/extra-sub_prova_carla", '2');
@@ -999,7 +1014,8 @@ prova('Guida online dopo il pagamento', $carla->get('/g/' . val('SELECT slug FRO
 $carla->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Quattro', 'city' => 'Bari']);
 prova('Con l\'abbonamento attivo il limite resta 3', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$cacc]) === 3);
 $r = $carla->get('/account');
-prova('Account: Portfolio · 3 strutture, 237 €, e «Cambia piano»', str_contains($r['body'], 'Portfolio · 3 strutture') && str_contains($r['body'], "237\u{00A0}€")
+prova('Account: Portfolio · 3 strutture, 227 €, il costo di ognuna, e «Cambia piano»', str_contains($r['body'], 'Portfolio · 3 strutture') && str_contains($r['body'], "227\u{00A0}€")
+      && str_contains($r['body'], 'Quanto paghi per ogni struttura') && str_contains($r['body'], "In media <b>75,67\u{00A0}€</b>") && str_contains($r['body'], "La 4ª costerebbe 50\u{00A0}€")
       && str_contains($r['body'], '/account/piano">Cambia piano</a>') && !str_contains($r['body'], 'action="' . preg_replace('#^https?://[^/]+#', '', $BASE) . '/account/strutture"'));
 
 $voci = fn(int $extra) => ['data' => [
@@ -1013,8 +1029,8 @@ prova('6H · Cambia piano: Portfolio è «Il tuo piano», con − e + per le str
 $r = $carla->get('/account/strutture?strutture=5');
 prova('6H · il vecchio «Numero di strutture» porta alla conferma del cambio', $r['code'] === 302 && str_contains($r['loc'], '/account/piano/conferma?piano=portfolio&strutture=5'));
 $r = $carla->get('/account/piano/conferma?piano=portfolio&strutture=5');
-prova('6H · conferma della salita: oggi la differenza a giorni, dal rinnovo 357 €, «Vai al pagamento»', $r['code'] === 200 && pulita($r)
-      && str_contains($r['body'], 'Differenza per i') && str_contains($r['body'], "357\u{00A0}€") && str_contains($r['body'], 'Vai al pagamento')
+prova('6H · conferma della salita: oggi la differenza a giorni, dal rinnovo 327 €, «Vai al pagamento»', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], 'Differenza per i') && str_contains($r['body'], "327\u{00A0}€") && str_contains($r['body'], 'Vai al pagamento')
       && str_contains($r['body'], 'Paghi sulla pagina sicura di Stripe'));
 $prima = count(richiesteStripe());
 $r = $carla->modulo('/account/piano/conferma?piano=portfolio&strutture=5', '/account/piano/conferma', ['piano' => 'portfolio', 'strutture' => '5']);
@@ -1038,7 +1054,7 @@ $mod = array_values(array_filter($dopo, fn($x) => $x['metodo'] === 'POST' && $x[
 $mc = end($mod)['corpo'] ?? [];
 prova('6H · pagamento confermato: Stripe passa a 4 strutture aggiuntive SENZA proporzioni, nel sito 5 strutture', $r['body'] === 'cambio-applicato'
       && ($mc['proration_behavior'] ?? '') === 'none' && ($mc['items'][0]['id'] ?? '') === 'si_base_sub_prova_carla' && ($mc['items'][1]['id'] ?? '') === 'si_extra_sub_prova_carla'
-      && ($mc['items'][1]['quantity'] ?? '') === '4' && count(array_filter($dopo, fn($x) => $x['percorso'] === '/v1/prices')) === 2
+      && ($mc['items'][1]['quantity'] ?? '') === '4' && count(array_filter($dopo, fn($x) => $x['percorso'] === '/v1/prices')) === 1
       && (int) val("SELECT quantity FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === 5
       && val('SELECT applied_at FROM orders WHERE id = ?', [$cambio['id']]) !== null && val('SELECT status FROM orders WHERE id = ?', [$cambio['id']]) === 'paid', $r['body'] . ' ' . json_encode($mc));
 $prima = count(richiesteStripe());
@@ -1067,11 +1083,11 @@ $r = $conf([$c1, $cp[1]]);
 $mod = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_carla'));
 $mc = end($mod)['corpo'] ?? [];
 $cs = riga("SELECT * FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'");
-prova('6H · programmata: Stripe a 2 aggiuntive senza proporzioni (il rinnovo incasserà 237 €), nel sito restano 5 strutture', ($mc['items'][1]['quantity'] ?? '') === '2'
+prova('6H · programmata: Stripe a 2 aggiuntive senza proporzioni (il rinnovo incasserà 227 €), nel sito restano 5 strutture', ($mc['items'][1]['quantity'] ?? '') === '2'
       && ($mc['proration_behavior'] ?? '') === 'none' && (int) $cs['quantity'] === 5 && (int) $cs['next_quantity'] === 3
       && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NOT NULL', [$cacc]) === 0, json_encode($mc));
 $r = $carla->get('/account');
-prova('…Account mostra il cambio programmato, con «Annulla il cambio»', str_contains($r['body'], 'passi a <b>Portfolio · 3 strutture</b>') && str_contains($r['body'], "237\u{00A0}€")
+prova('…Account mostra il cambio programmato, con «Annulla il cambio»', str_contains($r['body'], 'passi a <b>Portfolio · 3 strutture</b>') && str_contains($r['body'], "227\u{00A0}€")
       && str_contains($r['body'], 'Annulla il cambio'));
 inviaWebhook(['id' => 'evt_carla_4', 'type' => 'customer.subscription.updated', 'data' => ['object' => [
     'id' => 'sub_prova_carla', 'status' => 'active', 'cancel_at_period_end' => false, 'items' => $voci(2)]]]);
@@ -1210,9 +1226,9 @@ prova('Fase 4 · webhook di pagamento: le tre strutture si sbloccano', $r['body'
 $r = $gino->get('/pannello');
 prova('Portfolio pieno: «Aggiungi una struttura» resta', str_contains($r['body'], 'Aggiungi una struttura'));
 $r = $gino->get('/pannello/nuova');
-prova('Fase 4 · conferma con il costo: 60 € l\'anno, quanto si paga oggi fino al rinnovo, il totale dal rinnovo', $r['code'] === 200 && pulita($r)
-      && str_contains($r['body'], 'Ogni struttura in più') && str_contains($r['body'], "60\u{00A0}€") && str_contains($r['body'], 'Oggi, per i giorni che restano')
-      && str_contains($r['body'], "297\u{00A0}€") && str_contains($r['body'], 'name="conferma"'));
+prova('Fase 4 · conferma con il costo della 4ª struttura (50 € l\'anno, scaglione), quanto si paga oggi fino al rinnovo, il totale dal rinnovo', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], 'La 4ª struttura') && str_contains($r['body'], "50\u{00A0}€") && str_contains($r['body'], 'Oggi, per i giorni che restano')
+      && str_contains($r['body'], "277\u{00A0}€") && str_contains($r['body'], 'name="conferma"'));
 $prima = count(richiesteStripe());
 $r = $gino->post('/pannello/nuova', ['name' => 'Gino Quattro', 'city' => 'Bari']);
 prova('…senza conferma niente Stripe e niente struttura', count(richiesteStripe()) === $prima && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$gacc]) === 3
@@ -2707,6 +2723,136 @@ $stati = json_decode((string) shell_exec('php -r ' . escapeshellarg('define("MHW
 prova('Stato di adesso: acceso al mattino fino alle 9, spento a mezzogiorno fino alle 17, di notte si riaccende domani, la fascia del sabato notte vale fino alle 2',
       ($stati[0]['acceso'] ?? null) === true && ($stati[0]['fino'] ?? '') === '09:00' && ($stati[1]['prossima'] ?? '') === '17:00' && ($stati[1]['domani'] ?? true) === false
       && ($stati[2]['prossima'] ?? '') === '06:30' && ($stati[2]['domani'] ?? false) === true && ($stati[3]['acceso'] ?? null) === true && ($stati[3]['fino'] ?? '') === '02:00', json_encode($stati));
+
+capitolo('Una guida = un\'unità ricettiva: sezioni, CIN, varianti camera; listino e vetrina');
+// Un'altra prova di amministrazione ha messo un Portfolio a prezzo unico: qui si rimettono gli scaglioni dal modulo.
+$pfS = (int) val("SELECT id FROM packages WHERE code = 'portfolio'");
+$pkS = riga('SELECT * FROM packages WHERE id = ?', [$pfS]);
+$featS = []; foreach (righe('SELECT f.code, pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id WHERE pf.package_version_id = ?', [pv('portfolio')]) as $x) $featS[$x['code']] = $x['value'];
+$admin->get('/admin/pacchetti');
+$admin->post("/admin/pacchetti/$pfS/nuova-versione", ['nome' => $pkS['name'], 'prezzo' => '117', 'prezzo_extra' => '60', 'scaglioni' => "3: 50\n6: 40 €\n11: 30\n21: 25,00",
+    'min_quantita' => '2', 'max_quantita' => '50', 'stripe_price_id' => '', 'stripe_extra_price_id' => '', 'f' => $featS, 'headline' => $pkS['headline'], 'tagline' => $pkS['tagline'],
+    'description' => $pkS['description'], 'bullets' => $pkS['bullets'], 'badge' => $pkS['badge'], 'cta_label' => $pkS['cta_label'], 'public' => '1', 'active' => '1']);
+prova('Amministrazione: nuova versione Portfolio con gli scaglioni scritti a mano', json_decode((string) val('SELECT extra_tiers FROM package_versions WHERE id = ?', [pv('portfolio')]), true)
+      === [['da' => 2, 'cents' => 6000], ['da' => 3, 'cents' => 5000], ['da' => 6, 'cents' => 4000], ['da' => 11, 'cents' => 3000], ['da' => 21, 'cents' => 2500]]);
+$r = $admin->post("/admin/pacchetti/$pfS/nuova-versione", ['nome' => $pkS['name'], 'prezzo' => '117', 'prezzo_extra' => '60', 'scaglioni' => "2: 55", 'min_quantita' => '2', 'max_quantita' => '50', 'f' => $featS]);
+prova('…uno scaglione dalla 2ª (o scritto male) non passa', str_contains((string) json_encode(righe('SELECT id FROM package_versions WHERE extra_tiers LIKE ?', ['%5500%'])), '[]'));
+$r = $ospite->get('/');
+prova('Listino e FAQ: il QR «non cambia mai, anche se modifichi la guida», non più «permanente»', str_contains($r['body'], 'Il QR Code non cambia mai, anche se modifichi la guida')
+      && !preg_match('#QR[^<]{0,20}permanent#iu', $r['body']) && !preg_match('#più scelto#iu', $r['body']), $r['code'] . ' ' . substr($r['body'], 0, 200));
+prova('FAQ: B&B e affittacamere con più camere sono una guida sola (varianti camera), più case no, gli scaglioni del Portfolio',
+      str_contains($r['body'], 'Ho un B&amp;B, un affittacamere o un agriturismo con più camere') && str_contains($r['body'], 'variante camera')
+      && str_contains($r['body'], 'Posso mettere più case in una guida sola?') && str_contains($r['body'], "dalla 3ª alla 5ª 50\u{00A0}€ l&#039;una"), (string) $r['code']);
+$r = $ospite->get('/termini');
+prova('Termini: una guida = un\'unità ricettiva, un indirizzo e un CIN, con l\'eccezione delle camere', str_contains($r['body'], "Una guida, un'unità ricettiva.")
+      && str_contains($r['body'], 'B&amp;B, affittacamere e agriturismi con più camere allo stesso indirizzo'), (string) $r['code']);
+$r = $admin->get('/admin/pacchetti');
+prova('Amministrazione → Piani: gli scaglioni del Portfolio si modificano (dalla struttura: prezzo)', str_contains($r['body'], 'name="scaglioni"') && str_contains($r['body'], "3: 50\n6: 40\n11: 30\n21: 25"), $r['code'] . ' ' . ($r['loc'] ?? ''));
+$vetSlug = (string) val('SELECT slug FROM properties WHERE is_demo = 2 ORDER BY id DESC LIMIT 1');
+$r = $ospite->get("/g/$vetSlug");
+prova('Vetrina: la foto profilo (la porta di Casa Checco) sul bottone dei contatti e accanto a Francesco', $vetSlug !== '' && substr_count($r['body'], 'class="contatto__foto') === 2
+      && (bool) val('SELECT profile_media_id FROM properties WHERE slug = ?', [$vetSlug]));
+
+$vera = new Browser('vera');
+$vera->get('/registrati?piano=' . pv('plus'));
+$vera->post('/registrati', ['piano' => pv('plus'), 'name' => 'Vera Camere', 'email' => 'vera@prova.test', 'password' => 'VeraProva1234', 'termini' => '1', 'privacy' => '1']);
+$vacc = $accDi('vera@prova.test');
+$vera->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'B&B Vera', 'city' => 'Spello']);
+$vp = (int) val('SELECT id FROM properties WHERE account_id = ?', [$vacc]);
+db()->prepare("INSERT INTO subscriptions (account_id, package_version_id, status, provider, provider_customer_id, provider_subscription_id, current_period_start,
+    current_period_end, payment_status, created_at, updated_at, quantity) VALUES (?, ?, 'active', 'stripe', 'cus_vera', 'sub_prova_vera', ?, ?, 'paid', ?, ?, 1)")
+    ->execute([$vacc, pv('plus'), gmdate('Y-m-d\TH:i:s\Z', time() - 100 * 86400), gmdate('Y-m-d\TH:i:s\Z', time() + 265 * 86400), gmdate('Y-m-d\TH:i:s\Z'), gmdate('Y-m-d\TH:i:s\Z')]);
+$vera->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Vera Camere', 'cf' => 'RSSMRA85T10A562S',
+               'billing_address' => 'Via Giulia 2', 'billing_postal' => '06038', 'billing_city' => 'Spello', 'billing_province' => 'PG']);
+$vera->modulo("/pannello/$vp", "/pannello/$vp/sezioni", ['kind' => 'wifi']);
+$vera->modulo("/pannello/$vp", "/pannello/$vp/sezioni", ['kind' => 'wifi']);
+prova('Ogni sezione una volta sola: il secondo Wi-Fi non si aggiunge', (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'wifi'", [$vp]) === 1);
+for ($i = 0; $i < 4; $i++) $vera->modulo("/pannello/$vp", "/pannello/$vp/sezioni", ['kind' => 'custom']);
+$r = $vera->get("/pannello/$vp/procedura/sezioni");
+prova('Sezioni libere al massimo 3: la quarta non si aggiunge e il catalogo non la propone più', (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'custom'", [$vp]) === 3
+      && !str_contains($r['body'], 'name="kind" value="custom"') && str_contains($r['body'], 'il massimo per una guida'));
+$vw = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'wifi'", [$vp]);
+$vcore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$vp]);
+$vera->post("/pannello/$vp/sezioni/$vw", ['networks' => [['id' => '', 'ssid' => 'Vera_Casa', 'password' => 'casa-vera-1', 'zone' => '']]]);
+$vera->post("/pannello/$vp/sezioni/$vcore", ['checkin_steps' => ['La chiave della porta di casa è nella cassetta.']]);
+
+Browser::$cinAutomatico = false;
+$r = $vera->segui($vera->modulo("/pannello/$vp/procedura/pubblica", "/pannello/$vp/pubblica", []));
+prova('Senza CIN la guida non si pubblica, e si dice perché', !val('SELECT id FROM guide_versions WHERE property_id = ?', [$vp]) && str_contains($r['body'], 'Manca il CIN'));
+$cinAltrui = (string) val("SELECT cin FROM properties WHERE cin <> '' AND is_demo = 0 AND account_id <> ? ORDER BY id LIMIT 1", [$vacc]);
+$r = $vera->modulo("/pannello/$vp/impostazioni", "/pannello/$vp/impostazioni", ['name' => 'B&B Vera', 'city' => 'Spello', 'cin' => strtolower(substr($cinAltrui, 0, 6)) . ' ' . substr($cinAltrui, 6)]);
+prova('Il CIN di un\'altra guida non si salva (anche scritto in minuscolo e con gli spazi)', $cinAltrui !== '' && (string) val('SELECT cin FROM properties WHERE id = ?', [$vp]) === ''
+      && str_contains($r['body'], 'già usato da un&#039;altra guida'));
+$vera->modulo("/pannello/$vp/impostazioni", "/pannello/$vp/impostazioni", ['name' => 'B&B Vera', 'city' => 'Spello', 'cin' => 'IT123']);
+$r = $vera->segui($vera->modulo("/pannello/$vp/procedura/pubblica", "/pannello/$vp/pubblica", []));
+prova('Un CIN incompleto si salva ma non si pubblica', (string) val('SELECT cin FROM properties WHERE id = ?', [$vp]) === 'IT123' && str_contains($r['body'], 'non sembra completo')
+      && !val('SELECT id FROM guide_versions WHERE property_id = ?', [$vp]));
+$vera->modulo("/pannello/$vp/impostazioni", "/pannello/$vp/impostazioni", ['name' => 'B&B Vera', 'city' => 'Spello', 'cin' => 'cin: it 054050 b4 vera0001']);
+$vera->modulo("/pannello/$vp/procedura/pubblica", "/pannello/$vp/pubblica", []);
+prova('Con un CIN valido (salvato pulito) la guida si pubblica', (string) val('SELECT cin FROM properties WHERE id = ?', [$vp]) === 'IT054050B4VERA0001'
+      && (bool) val('SELECT id FROM guide_versions WHERE property_id = ?', [$vp]));
+Browser::$cinAutomatico = true;
+$altraId = (int) val("SELECT p.id FROM properties p JOIN accounts a ON a.id = p.account_id JOIN users u ON u.id = a.user_id
+                      WHERE p.cin <> '' AND p.is_demo = 0 AND p.archived_at IS NULL AND p.account_id <> ? AND u.email LIKE '%@prova.test' ORDER BY p.id LIMIT 1", [$vacc]);
+$cinPrima = (string) val('SELECT cin FROM properties WHERE id = ?', [$altraId]);
+db()->prepare('UPDATE properties SET cin = ? WHERE id = ?')->execute(['IT054050B4VERA0001', $altraId]);
+$r = $admin->get('/admin/anomalie');
+prova('Anomalie: il CIN ripetuto su due guide si vede', str_contains($r['body'], 'Guide senza CIN o con CIN ripetuto') && str_contains($r['body'], 'ha lo stesso CIN (IT054050B4VERA0001)'), $r['code'] . ' ' . ($r['loc'] ?? ''));
+db()->prepare('UPDATE properties SET cin = ? WHERE id = ?')->execute([$cinPrima, $altraId]);
+
+// Varianti camera
+$r = $vera->get("/pannello/$vp/varianti");
+prova('Varianti camera: nel menu della guida, con prezzo, quota di oggi e conferma', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Varianti camera')
+      && str_contains($r['body'], 'Aggiungi una variante') && str_contains($r['body'], "15\u{00A0}€") && str_contains($r['body'], 'Oggi, per i giorni che restano') && str_contains($r['body'], 'name="conferma"'));
+$prima = count(richiesteStripe());
+$var = ['name' => 'Camera Rosa', 'wifi_ssid' => 'Vera_Rosa', 'wifi_password' => 'rose-rosse-12', 'access' => ['it' => 'Primo piano, porta a sinistra.'], 'note' => ['it' => 'Dalla finestra si vede il Subasio.']];
+$vera->modulo("/pannello/$vp/varianti", "/pannello/$vp/varianti", $var);
+prova('…senza conferma niente Stripe e niente variante', count(richiesteStripe()) === $prima && !val('SELECT id FROM room_variants WHERE property_id = ?', [$vp]));
+$vera->modulo("/pannello/$vp/varianti", "/pannello/$vp/varianti", $var + ['conferma' => '1']);
+$dopo = array_slice(richiesteStripe(), $prima);
+$pv1 = array_values(array_filter($dopo, fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/prices'))[0]['corpo'] ?? [];
+$sv1 = array_values(array_filter($dopo, fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_vera'))[0]['corpo'] ?? [];
+$tokRosa = (string) val("SELECT token FROM room_variants WHERE property_id = ? AND name = 'Camera Rosa'", [$vp]);
+prova('Aggiunta: Price annuale da 15 € (lookup_key, ruolo variante) e voce dell\'abbonamento pagata subito, solo se il pagamento riesce', $tokRosa !== ''
+      && ($pv1['unit_amount'] ?? '') === '1500' && ($pv1['lookup_key'] ?? '') === 'mhw_variante_1500' && ($pv1['recurring']['interval'] ?? '') === 'year'
+      && ($pv1['product_data']['metadata']['ruolo'] ?? '') === 'variante' && str_starts_with((string) ($sv1['items'][0]['price'] ?? ''), 'price_variante')
+      && ($sv1['items'][0]['quantity'] ?? '') === '1' && ($sv1['proration_behavior'] ?? '') === 'always_invoice' && ($sv1['payment_behavior'] ?? '') === 'pending_if_incomplete'
+      && val('SELECT provider_variant_item_id FROM subscriptions WHERE account_id = ?', [$vacc]) === 'si_var_sub_prova_vera', json_encode($sv1));
+$vslug2 = (string) val('SELECT slug FROM properties WHERE id = ?', [$vp]);
+$r = $ospite->get("/q/$tokRosa");
+prova('Il QR della camera apre la guida con la variante', $r['code'] === 302 && str_ends_with($r['loc'], "/g/$vslug2/c/$tokRosa/benvenuto"), $r['loc']);
+$r = $ospite->get("/g/$vslug2/c/$tokRosa");
+prova('…in cima «La tua camera» con nome e nota, e i collegamenti restano nella camera', $r['code'] === 200 && str_contains($r['body'], 'Camera Rosa')
+      && str_contains($r['body'], 'Dalla finestra si vede il Subasio.') && str_contains($r['body'], "/g/$vslug2/c/$tokRosa/$vw"));
+$r = $ospite->get("/g/$vslug2/c/$tokRosa/$vw");
+prova('…il Wi-Fi della camera prima di quello della casa', str_contains($r['body'], 'Wi-Fi della tua camera · Camera Rosa') && str_contains($r['body'], 'rose-rosse-12')
+      && strpos($r['body'], 'Vera_Rosa') < strpos($r['body'], 'Vera_Casa'));
+$r = $ospite->get("/g/$vslug2/c/$tokRosa/$vcore");
+prova('…nel check-in «Come entrare in camera»', str_contains($r['body'], 'Come entrare in camera') && str_contains($r['body'], 'Primo piano, porta a sinistra.'));
+$r = $ospite->get("/g/$vslug2/$vw");
+prova('La guida senza variante non mostra la camera', !str_contains($r['body'], 'Vera_Rosa') && str_contains($r['body'], 'Vera_Casa'));
+$vera->modulo("/pannello/$vp/varianti", "/pannello/$vp/varianti", ['name' => 'Camera Blu', 'wifi_ssid' => 'Vera_Blu', 'conferma' => '1']);
+$sv2 = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_vera'));
+$sv2 = end($sv2)['corpo'] ?? [];
+prova('La seconda variante porta la voce a 2', ($sv2['items'][0]['id'] ?? '') === 'si_var_sub_prova_vera' && ($sv2['items'][0]['quantity'] ?? '') === '2');
+touch("$STRIPE_DIR/rifiuta-variante");
+$r = $vera->modulo("/pannello/$vp/varianti", "/pannello/$vp/varianti", ['name' => 'Camera Verde', 'conferma' => '1']);
+@unlink("$STRIPE_DIR/rifiuta-variante");
+prova('Pagamento rifiutato: la variante non nasce e si dice perché', !val("SELECT id FROM room_variants WHERE name = 'Camera Verde'") && str_contains($r['body'], 'non è andato a buon fine'));
+$blu = riga("SELECT * FROM room_variants WHERE property_id = ? AND name = 'Camera Blu'", [$vp]);
+$vera->modulo("/pannello/$vp/varianti", "/pannello/$vp/varianti/{$blu['id']}/togli", []);
+$sv3 = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_vera'));
+$sv3 = end($sv3)['corpo'] ?? [];
+$r = $ospite->get('/q/' . $blu['token']);
+prova('Togliere una variante: voce a 1 con credito, e il suo QR apre la guida senza variante', ($sv3['items'][0]['quantity'] ?? '') === '1' && ($sv3['proration_behavior'] ?? '') === 'create_prorations'
+      && (bool) val('SELECT removed_at FROM room_variants WHERE id = ?', [$blu['id']]) && str_ends_with($r['loc'], "/g/$vslug2/benvenuto"));
+$r = $vera->get('/account');
+prova('Account: «Varianti camera: 1 × 15 €»', str_contains($r['body'], "Varianti camera: <b>1 × 15\u{00A0}€</b>"));
+$r = $vera->get('/account/piano/conferma?piano=essential');
+prova('Con le varianti non si passa a Essential: prima si tolgono', $r['code'] === 302 && str_ends_with($r['loc'], '/account/piano'));
+prova('Essential non ha le varianti, Plus e Portfolio sì', (string) val("SELECT pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id WHERE f.code = 'room_variants' AND pf.package_version_id = ?", [pv('essential')]) === '0'
+      && (string) val("SELECT pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id WHERE f.code = 'room_variants' AND pf.package_version_id = ?", [pv('plus')]) === '1'
+      && (string) val("SELECT pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id WHERE f.code = 'room_variants' AND pf.package_version_id = ?", [pv('portfolio')]) === '1');
 
 // ================================================================= RIEPILOGO
 echo implode("\n", $esiti), "\n\n";

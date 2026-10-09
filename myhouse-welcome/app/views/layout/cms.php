@@ -40,6 +40,8 @@ if ($prop) {
     $pid = (int) $prop['id'];
     $guida = [['contenuti', "/pannello/$pid", 'Contenuti', 'doc'], ['lingue', "/pannello/$pid/lingue", 'Lingue', 'globe'],
               ['aspetto', "/pannello/$pid/aspetto", 'Aspetto', 'palette'], ['qr', "/pannello/$pid/qr", 'QR & Link', 'qr']];
+    // Varianti camera: con i piani che le permettono, o se la guida ne ha già.
+    if (MHW\Varianti::permesse((int) $prop['account_id']) || MHW\Varianti::diStruttura($pid)) $guida[] = ['varianti', "/pannello/$pid/varianti", 'Varianti camera', 'key'];
     if ($vedeStatistiche) $guida[] = ['statistiche', "/pannello/$pid/statistiche", 'Statistiche', 'chart'];
     $guida[] = ['impostazioni', "/pannello/$pid/impostazioni", 'Impostazioni', 'sliders'];
 }

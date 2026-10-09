@@ -68,7 +68,9 @@ final class CambioPiano
         $base = '';
         foreach ($vociAttuali as $v) {
             $id = (string) ($v['id'] ?? '');
-            if ($id !== '' && $id !== $idVoceExtra) { $base = $id; break; }
+            // La voce principale non è quella delle strutture aggiuntive né quella delle varianti camera.
+            $ruolo = is_array($v['price']['product'] ?? null) ? (string) ($v['price']['product']['metadata']['ruolo'] ?? '') : '';
+            if ($id !== '' && $id !== $idVoceExtra && !in_array($ruolo, ['aggiuntiva', 'variante'], true)) { $base = $id; break; }
         }
         if ($base === '') throw new \RuntimeException('Abbonamento senza la voce principale.');
         $p = ['items[0][id]' => $base, 'items[0][price]' => $prezzoBase, 'items[0][quantity]' => '1'];

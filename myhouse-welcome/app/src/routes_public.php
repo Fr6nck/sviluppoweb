@@ -367,14 +367,20 @@ $guida = function (string $slug) use ($linguaOspite, $nonDisponibile): array {
 };
 
 /** Le variabili che ogni pagina ospite passa al telaio: palette, tema, collegamenti. */
-$telaio = function (array $snap, string $loc, string $base, bool $anteprima = false): array {
+$telaio = function (array $snap, string $loc, string $base, bool $anteprima = false, ?array $variante = null): array {
     $pr = $snap['property'];
-    return ['snap' => $snap, 'loc' => $loc, 'base' => $base, 'anteprima' => $anteprima,
+    return ['snap' => $snap, 'loc' => $loc, 'base' => $base, 'anteprima' => $anteprima, 'variante' => $variante,
             'paletteCss' => Palette::css($pr['palette']), 'tema' => Palette::themeFor($pr['text_tone'])];
 };
 
 $r->get('/q/{token}', function (array $a) use ($nonDisponibile) {
     $t = Db::one('SELECT * FROM qr_tokens WHERE token = ?', [$a['token']]);
+    // Il QR di una variante camera: apre la guida con il Wi-Fi e le istruzioni di quella camera.
+    if (!$t && MHW\Migrator::tableExists('room_variants') && ($v = Db::one('SELECT * FROM room_variants WHERE token = ?', [$a['token']]))) {
+        $p = Db::one('SELECT slug FROM properties WHERE id = ?', [$v['property_id']]);
+        Guide::track((int) $v['property_id'], 'qr_open', null, '', 'qr');
+        Support::redirect('/g/' . $p['slug'] . ($v['removed_at'] ? '' : '/c/' . $v['token']) . '/benvenuto');
+    }
     if (!$t) $nonDisponibile('it', false);
     $p = Db::one('SELECT slug FROM properties WHERE id = ?', [$t['property_id']]);
     Db::run('UPDATE qr_tokens SET scans = scans + 1 WHERE id = ?', [$t['id']]);
@@ -421,6 +427,37 @@ $r->get('/g/{slug}/{sid}', function (array $a) use ($guida, $telaio, $nonDisponi
     if (!$sec) $nonDisponibile($loc, false);
     Guide::track((int) $g['property']['id'], 'section_view', (int) $sec['id'], $loc);
     View::out('guest/section', ['sec' => $sec] + $telaio($snap, $loc, Support::url('/g/' . $a['slug'])), 'layout/guest');
+});
+
+/* Le stesse pagine per una variante camera (/g/{slug}/c/{token}…): la base dei collegamenti
+   porta la variante, così resta in tutte le pagine senza cookie. Una variante tolta o non più
+   compresa nel piano apre la guida normale: un QR stampato in camera non resta mai senza guida. */
+$conVariante = function (array $a) use ($guida): array {
+    [$g, $snap, $loc, $scelta] = $guida($a['slug']);
+    $v = MHW\Varianti::perToken((int) $g['property']['id'], (int) $g['property']['account_id'], (string) $a['tok']);
+    if (!$v) Support::redirect('/g/' . $a['slug']);
+    return [$g, $snap, $loc, $scelta, $v, Support::url('/g/' . $a['slug'] . '/c/' . $v['token'])];
+};
+$r->get('/g/{slug}/c/{tok}', function (array $a) use ($conVariante, $telaio) {
+    [$g, $snap, $loc, , $v, $base] = $conVariante($a);
+    Guide::track((int) $g['property']['id'], 'guide_view', null, $loc);
+    View::out('guest/guide', $telaio($snap, $loc, $base, false, $v), 'layout/guest');
+});
+$r->get('/g/{slug}/c/{tok}/benvenuto', function (array $a) use ($conVariante, $telaio) {
+    [, $snap, $loc, , $v, $base] = $conVariante($a);
+    View::out('guest/splash', $telaio($snap, $loc, $base, false, $v), 'layout/full');
+});
+$r->get('/g/{slug}/c/{tok}/commiato', function (array $a) use ($conVariante, $telaio) {
+    [, $snap, $loc, , $v, $base] = $conVariante($a);
+    View::out('guest/farewell', $telaio($snap, $loc, $base, false, $v), 'layout/full');
+});
+$r->get('/g/{slug}/c/{tok}/{sid}', function (array $a) use ($conVariante, $telaio, $nonDisponibile) {
+    [$g, $snap, $loc, , $v, $base] = $conVariante($a);
+    $sec = null;
+    foreach ($snap['sections'] as $s) if ((string) $s['id'] === $a['sid']) $sec = $s;
+    if (!$sec) $nonDisponibile($loc, false);
+    Guide::track((int) $g['property']['id'], 'section_view', (int) $sec['id'], $loc);
+    View::out('guest/section', ['sec' => $sec] + $telaio($snap, $loc, $base, false, $v), 'layout/guest');
 });
 
 // I file caricati su disco li serve PHP, così restano fuori dalla cartella pubblica.

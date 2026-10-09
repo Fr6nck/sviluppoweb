@@ -68,6 +68,8 @@ final class Gestione
         if (!$pv) return [0, 0];
         $q = max(1, (int) (!empty($s['next_package_version_id']) ? ($s['next_quantity'] ?? 1) : ($s['quantity'] ?? 1)));
         $prezzo = Plans::price($pv, $q);
+        // Le varianti camera sono voci dello stesso abbonamento Stripe: si rinnovano con lui.
+        if ($s['provider'] === 'stripe') $prezzo += Varianti::contaAccount((int) $s['account_id']) * Varianti::prezzo();
         $sconto = Inviti::disponibili() ? Inviti::percento((int) $s['account_id']) : 0;
         return [(int) round($prezzo * (100 - $sconto) / 100), $sconto];
     }
@@ -250,6 +252,19 @@ final class Gestione
             $righe[] = [$chi($r), 'registrato il ' . Support::date($r['created_at']), $cliente($r)];
         }
         $aggiungi('Email non confermate da più di 7 giorni', 'bassa', 'Forse l\'email è finita nello spam, o l\'indirizzo è sbagliato.', $righe);
+
+        // 17. Una guida = un'unità ricettiva: guide online senza CIN, o con lo stesso CIN di un'altra guida.
+        $righe = []; $visti = [];
+        if (Migrator::columnExists('properties', 'cin')) {
+            foreach (Db::all("SELECT p.id, p.name, p.cin, p.account_id, p.status, u.email, u.name AS cliente FROM properties p " . sprintf($utenti, 'p') . "
+                              WHERE p.is_demo = 0 AND p.archived_at IS NULL AND u.email NOT LIKE ? ORDER BY p.id", [self::demo()]) as $r) {
+                $n = Properties::cinNorm((string) $r['cin']);
+                if ($n === '') { if ($r['status'] === 'published') $righe[] = [$chi($r), '«' . $r['name'] . '» è online senza CIN', $cliente($r)]; continue; }
+                if (isset($visti[$n])) $righe[] = [$chi($r), '«' . $r['name'] . '» ha lo stesso CIN (' . $n . ') di «' . $visti[$n] . '»', $cliente($r)];
+                else $visti[$n] = (string) $r['name'];
+            }
+        }
+        $aggiungi('Guide senza CIN o con CIN ripetuto', 'media', 'Ogni guida è un\'unità ricettiva con il suo CIN. Le guide già online senza CIN restano online, ma per ripubblicarle il CIN serve. Un CIN ripetuto può essere una struttura passata a un altro gestore: verifica con il cliente.', $righe);
 
         $ordine = ['alta' => 0, 'media' => 1, 'bassa' => 2];
         usort($voci, fn($a, $b) => $ordine[$a['gravita']] <=> $ordine[$b['gravita']]);

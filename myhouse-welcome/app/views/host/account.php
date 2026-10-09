@@ -18,6 +18,25 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
         <span style="font-size:20px;font-weight:500"><?= Support::e(Support::money($piano ? Plans::price($piano, $q) : 0, $piano['currency'] ?? 'EUR')) ?>
           <span class="small muted">+ IVA / anno</span></span>
       </div>
+      <?php if ($perStruttura && $q > 1): /* Portfolio: quanto costa ognuna delle strutture, nell'ordine in cui sono state create */
+            $bloccateA = MHW\Entitlements::lockedIds((int) $acc['id']);
+            $mie = array_values(array_filter(MHW\Db::all('SELECT id, name FROM properties WHERE account_id = ? AND is_demo = 0 ORDER BY id', [$acc['id']]),
+                                             fn($x) => !in_array((int) $x['id'], $bloccateA, true))); ?>
+        <div class="scaglioni">
+          <p class="scaglioni__titolo">Quanto paghi per ogni struttura, all'anno</p>
+          <ul class="scaglioni__elenco">
+            <?php for ($n = 1; $n <= $q; $n++): ?>
+              <li><span><?= $n ?>ª · <?= isset($mie[$n - 1]) ? Support::e($mie[$n - 1]['name']) : '<span class="muted">ancora da creare</span>' ?></span>
+                <b><?= Support::e(Support::money(Plans::unitPrice($piano, $n), $piano['currency'])) ?></b></li>
+            <?php endfor; ?>
+          </ul>
+          <p class="scaglioni__media">In media <b><?= Support::e(Support::money((int) round(Plans::price($piano, $q) / $q), $piano['currency'])) ?></b> a struttura + IVA.
+            <?php if ($q < (int) $piano['max_quantity']): ?>La <?= $q + 1 ?>ª costerebbe <?= Support::e(Support::money(Plans::unitPrice($piano, $q + 1), $piano['currency'])) ?>.<?php endif; ?></p>
+        </div>
+      <?php endif; ?>
+      <?php if (($nVar = MHW\Varianti::contaAccount((int) $acc['id'])) > 0): ?>
+        <p class="small">Varianti camera: <b><?= $nVar ?> × <?= Support::e(Support::money(MHW\Varianti::prezzo())) ?></b> + IVA / anno<?= $stripe ? ', con l\'abbonamento' : '' ?>.</p>
+      <?php endif; ?>
       <?php if ($sub['status'] === 'past_due'): ?>
         <p class="note note--err">L'ultimo rinnovo non è andato a buon fine. Aggiorna il metodo di pagamento per non andare offline.</p>
       <?php elseif ((int) $sub['cancel_at_period_end'] === 1): ?>

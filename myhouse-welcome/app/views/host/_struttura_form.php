@@ -35,9 +35,9 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
       <div class="field" style="margin:0"><label for="postal_code">CAP</label><input type="text" id="postal_code" name="postal_code" maxlength="10" inputmode="numeric" autocomplete="off" value="<?= $c('postal_code') ?>"></div>
       <div class="field" style="margin:0"><label for="city">Città</label><input type="text" id="city" name="city" maxlength="120" autocomplete="off" value="<?= $c('city') ?>"></div>
       <div class="field" style="margin:0"><label for="region">Zona o regione</label><input type="text" id="region" name="region" maxlength="120" autocomplete="off" value="<?= $c('region') ?>"></div>
-      <div class="field campo-largo" style="margin:0"><label for="cin">CIN <span class="muted">(facoltativo)</span></label>
-        <p class="help" style="margin:0 0 6px">Il codice identificativo nazionale degli affitti brevi: compare in piccolo in fondo alla guida.</p>
-        <input type="text" id="cin" name="cin" maxlength="40" spellcheck="false" autocapitalize="characters" autocomplete="off" placeholder="IT…" value="<?= $c('cin') ?>"></div>
+      <div class="field campo-largo" style="margin:0"><label for="cin">CIN <span class="muted">(serve per pubblicare)</span></label>
+        <p class="help" id="cin-aiuto" style="margin:0 0 6px">Il Codice Identificativo Nazionale della struttura: obbligatorio per legge, compare in piccolo in fondo alla guida. Ogni guida ha il suo CIN.</p>
+        <input type="text" id="cin" name="cin" maxlength="40" spellcheck="false" autocapitalize="characters" autocomplete="off" placeholder="IT…" aria-describedby="cin-aiuto" value="<?= $c('cin') ?>"></div>
       <div class="field" style="margin:0"><label for="beds">Posti letto <span class="muted">(facoltativo)</span></label>
         <p class="help" style="margin:0 0 6px">Quante persone può ospitare la struttura.</p>
         <input type="number" id="beds" name="beds" min="0" max="999" step="1" inputmode="numeric" value="<?= (int) ($prop['beds'] ?? 0) ?: '' ?>"></div>

@@ -68,6 +68,11 @@ $config = [
         'attivi' => $bool('MHW_INVITI'),
     ],
 
+    // Varianti camera (Plus e Portfolio): prezzo annuale di ognuna, IVA esclusa, in centesimi.
+    'varianti' => [
+        'prezzo_cents' => (int) $env('MHW_VARIANTE_PREZZO', '1500'),
+    ],
+
     'mail' => [
         // smtp | mail | log. "log" scrive le email in storage/logs/mail.log:
         // per provare senza spedire niente.
@@ -124,7 +129,7 @@ $config = [
     // Le versioni dei documenti legali: cambiatele quando cambia il testo, e ogni
     // accettazione resta legata alla versione che la persona ha letto.
     'legal' => [
-        'terms_version'   => $env('MHW_TERMS_VERSION', '2026-10'),
+        'terms_version'   => $env('MHW_TERMS_VERSION', '2026-10-08'),
         'privacy_version' => $env('MHW_PRIVACY_VERSION', '2026-10'),
         'company'         => $env('MHW_COMPANY', 'Blackout Agency'),
         'contact_email'   => $env('MHW_CONTACT_EMAIL', 'info@myhousewelcome.it'),

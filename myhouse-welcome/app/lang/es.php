@@ -186,6 +186,10 @@ return [
     'direct_lead'              => 'Reservando directamente en nuestra web tienes las mejores condiciones.',
     'direct_code'              => 'Código de descuento: %s',
     'direct_book'              => 'Reserva en nuestra web',
+    'room'                     => 'Tu habitación',
+    'room_wifi'                => 'Wi-Fi de tu habitación',
+    'room_access'              => 'Cómo entrar en tu habitación',
+    'room_other_wifi'          => 'Los otros Wi-Fi de la casa',
     'request_whatsapp'         => 'Solicitar por WhatsApp',
     'extra_message'            => '¡Hola! Me gustaría solicitar: %s',
 ];

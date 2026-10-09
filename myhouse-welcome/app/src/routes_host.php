@@ -144,7 +144,7 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
     $costo = null;
     if ($modo === 'a-pagamento') {
         $inizio = strtotime((string) $sub['current_period_start']) ?: time(); $fine = strtotime((string) $sub['current_period_end']) ?: time();
-        $costo = ['anno' => (int) $pv['extra_price_cents'], 'ora' => CambioPiano::conguaglio(Plans::price($pv, (int) $sub['quantity']), Plans::price($pv, (int) $sub['quantity'] + 1), $inizio, $fine, time()),
+        $costo = ['anno' => Plans::unitPrice($pv, (int) $sub['quantity'] + 1), 'ora' => CambioPiano::conguaglio(Plans::price($pv, (int) $sub['quantity']), Plans::price($pv, (int) $sub['quantity'] + 1), $inizio, $fine, time()),
                   'fine' => (string) $sub['current_period_end'], 'totale' => Plans::price($pv, (int) $sub['quantity'] + 1), 'quantita' => (int) $sub['quantity'] + 1,
                   'fuori' => (int) $sub['quantity'] + 1 > (int) $pv['max_quantity']];
     }
@@ -692,6 +692,11 @@ $r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto,
                 if (array_key_exists($campo, $_POST)) $dati[$campo] = mb_substr(trim((string) $_POST[$campo]), 0, $max);
             }
             if (array_key_exists('beds', $_POST)) $dati['beds'] = max(0, min(999, (int) $_POST['beds']));
+            // Il CIN si salva in forma pulita, e non può essere quello di un'altra guida (la forma si controlla alla pubblicazione).
+            if (isset($dati['cin'])) {
+                $dati['cin'] = Properties::cinNorm($dati['cin']);
+                if ((int) $p['is_demo'] === 0 && ($altra = Properties::cinInUso($dati['cin'], (int) $p['id']))) throw new RuntimeException(Properties::cinGiaUsato($altra, (int) $acc['id']));
+            }
             // Un modulo vecchio (senza contatti multipli) scrive ancora i tre campi dell'host.
             foreach (['host_name' => 120, 'host_phone' => 40, 'host_whatsapp' => 40] as $campo => $max) {
                 if (array_key_exists($campo, $_POST)) $dati[$campo] = mb_substr(trim((string) $_POST[$campo]), 0, $max);
@@ -910,6 +915,75 @@ $r->get('/pannello/{id}/qr.{formato}', function (array $a) use ($mia) {
                     echo QrExport::svg($url); break;
         case 'pdf': header('Content-Type: application/pdf'); header('Content-Disposition: attachment; filename="' . $nome . '.pdf"');
                     echo QrExport::pdf($url, $p['name']); break;
+        default: http_response_code(404);
+    }
+    exit;
+});
+
+// ----------------------------------------------------------- varianti camera
+/* Camere della stessa struttura con un Wi-Fi o istruzioni diverse: stessa guida, QR e link propri (vedi Varianti). */
+$lingueGuida = function (array $p): array {
+    $l = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
+    usort($l, fn($x, $y) => ($y === $p['default_locale']) <=> ($x === $p['default_locale']) ?: array_search($x, MHW\I18n::LOCALES) <=> array_search($y, MHW\I18n::LOCALES));
+    return $l ?: [(string) $p['default_locale']];
+};
+$r->any('/pannello/{id}/varianti', function (array $a) use ($mia, $contesto, $messaggio, $lingueGuida) {
+    [$u, $acc, $p] = $mia((int) $a['id']);
+    $aid = (int) $acc['id'];
+    $lingue = $lingueGuida($p);
+    $err = null; $vecchi = [];
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        try {
+            if (($_POST['conferma'] ?? '') !== '1') throw new RuntimeException('Spunta la conferma del costo per aggiungere la variante.');
+            $vid = MHW\Varianti::aggiungi($acc, $p, MHW\Varianti::dati($_POST, $lingue));
+            Auth::audit('variant.add', (int) $u['id'], ['property_id' => (int) $p['id'], 'variant_id' => $vid]);
+            Support::flash('Variante aggiunta: scarica il suo QR e mettilo in camera.');
+            Support::redirect('/pannello/' . $p['id'] . '/varianti#variante-' . $vid);
+        } catch (\Throwable $e) { $err = $messaggio($e, 'varianti'); $vecchi = $_POST; }
+    }
+    $sub = Subscriptions::active($aid);
+    View::out('host/varianti', $contesto($acc, $p) + ['qui' => 'varianti', 'err' => $err, 'vecchi' => $vecchi, 'lingue' => $lingue,
+        'varianti' => MHW\Varianti::diStruttura((int) $p['id']), 'permesse' => MHW\Varianti::permesse($aid),
+        'stripe' => $sub && $sub['provider'] === 'stripe' && (string) $sub['provider_subscription_id'] !== '',
+        'oggi' => $sub ? MHW\Varianti::quotaOggi($sub) : 0, 'fine' => (string) ($sub['current_period_end'] ?? ''),
+        'quanteAccount' => MHW\Varianti::contaAccount($aid)], 'layout/cms');
+});
+$variante = function (array $p, string $vid): array {
+    $v = Db::one('SELECT * FROM room_variants WHERE id = ? AND property_id = ? AND removed_at IS NULL', [(int) $vid, $p['id']]);
+    if (!$v) { Support::flash('Variante non trovata.', 'err'); Support::redirect('/pannello/' . $p['id'] . '/varianti'); }
+    return $v;
+};
+$r->post('/pannello/{id}/varianti/{vid}', function (array $a) use ($mia, $messaggio, $lingueGuida, $variante) {
+    [$u, $acc, $p] = $mia((int) $a['id']);
+    $v = $variante($p, $a['vid']);
+    try {
+        Db::update('room_variants', MHW\Varianti::dati($_POST, $lingueGuida($p)), 'id = :vid', ['vid' => $v['id']]);
+        Support::flash('Variante salvata: la guida la mostra subito, senza ripubblicare.');
+    } catch (\Throwable $e) { Support::flash($messaggio($e, 'varianti'), 'err'); }
+    Support::redirect('/pannello/' . $p['id'] . '/varianti#variante-' . (int) $v['id']);
+});
+$r->post('/pannello/{id}/varianti/{vid}/togli', function (array $a) use ($mia, $variante) {
+    [$u, $acc, $p] = $mia((int) $a['id']);
+    $v = $variante($p, $a['vid']);
+    MHW\Varianti::togli($acc, $v);
+    Auth::audit('variant.remove', (int) $u['id'], ['property_id' => (int) $p['id'], 'variant_id' => (int) $v['id']]);
+    Support::flash('«' . $v['name'] . '» tolta. Il suo QR ora apre la guida senza la variante; dal rinnovo non la paghi più.');
+    Support::redirect('/pannello/' . $p['id'] . '/varianti');
+});
+$r->get('/pannello/{id}/varianti/{vid}/qr.{formato}', function (array $a) use ($mia, $variante) {
+    [, , $p] = $mia((int) $a['id']);
+    $v = $variante($p, $a['vid']);
+    $url = Support::baseUrl() . '/q/' . $v['token'];
+    $nome = 'qr-' . $p['slug'] . '-' . (Support::slug((string) $v['name']) ?: 'camera');
+    header_remove('Cache-Control');
+    header('Cache-Control: private, max-age=300');
+    switch ($a['formato']) {
+        case 'png': header('Content-Type: image/png'); header('Content-Disposition: attachment; filename="' . $nome . '.png"');
+                    echo Qr::png($url, 8, 4, 1200); break;
+        case 'svg': header('Content-Type: image/svg+xml'); header('Content-Disposition: attachment; filename="' . $nome . '.svg"');
+                    echo QrExport::svg($url); break;
+        case 'pdf': header('Content-Type: application/pdf'); header('Content-Disposition: attachment; filename="' . $nome . '.pdf"');
+                    echo QrExport::pdf($url, $p['name'] . ' · ' . $v['name']); break;
         default: http_response_code(404);
     }
     exit;
@@ -1150,6 +1224,12 @@ $r->any('/account/piano/conferma', function () use ($host, $cambioPossibile, $sc
     $sub = $st['sub'];
     $prev = CambioAbbonamento::preventivo($sub, $st['pv'], $pv, $q);
     if ($prev['stesso']) { Support::flash('È già il tuo piano.'); Support::redirect('/account/piano'); }
+    // Le varianti camera ci sono solo con Plus e Portfolio: prima di passare a un piano senza, si tolgono.
+    if (($nVar = MHW\Varianti::contaAccount((int) $acc['id'])) > 0
+        && (string) Db::val("SELECT pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id WHERE pf.package_version_id = ? AND f.code = 'room_variants'", [$pv['id']], '0') !== '1') {
+        Support::flash('Con ' . $pv['name'] . ' non ci sono le varianti camera: togli prima ' . ($nVar === 1 ? 'la variante' : 'le ' . $nVar . ' varianti') . ' dalle tue guide (Varianti camera).', 'err');
+        Support::redirect('/account/piano');
+    }
     $qui = '/account/piano/conferma?piano=' . rawurlencode($codice) . (Plans::perProperty($pv) ? '&strutture=' . $q : '');
     $cambia = $prev['tipo'] === CambioPiano::SCENDE ? CambioAbbonamento::cosaCambia((int) $acc['id'], $pv, $q) : null;
     $err = null;

@@ -12,8 +12,9 @@ $torna = $torna ?? '';
 $illimitate = $limite >= PHP_INT_MAX;
 $pieno = !$illimitate && $attive >= $limite;
 $presenti = array_column($sezioni, 'kind');
-// La sezione libera resta sempre nel catalogo: si aggiunge quante volte si vuole.
-$catalogo = array_values(array_filter(SectionCatalog::selectable(), fn($k) => SectionCatalog::multipla($k) || !in_array($k, $presenti, true)));
+// Ogni sezione una volta sola; la sezione libera fino a SectionCatalog::LIBERE_MAX.
+$libere = count(array_filter($presenti, fn($k) => SectionCatalog::multipla($k)));
+$catalogo = array_values(array_filter(SectionCatalog::selectable(), fn($k) => SectionCatalog::multipla($k) ? $libere < SectionCatalog::LIBERE_MAX : !in_array($k, $presenti, true)));
 $azione = function (array $s, string $fai, string $etichetta, string $classe = 'menu-riga__voce') use ($pid, $torna): string {
     return '<form method="post" action="' . b() . '/pannello/' . $pid . '/sezioni/' . (int) $s['id'] . '/azione" style="margin:0">'
          . Csrf::field() . '<input type="hidden" name="fai" value="' . $fai . '"><input type="hidden" name="torna" value="' . Support::e($torna) . '">'
@@ -83,6 +84,9 @@ $n = count($sezioni); ?>
         oppure disattivane una per liberare un posto.</p>
       <a class="btn btn--sm" href="<?= b() ?>/piano?passa=plus">Scopri Plus</a>
     </div>
+  <?php endif; ?>
+  <?php if ($libere >= SectionCatalog::LIBERE_MAX): ?>
+    <p class="small muted">Hai <?= SectionCatalog::LIBERE_MAX ?> sezioni libere, il massimo per una guida. Ogni altra sezione si aggiunge una volta sola: una guida è una casa o una struttura, con il suo indirizzo e il suo CIN.</p>
   <?php endif; ?>
   <div class="kinds">
     <?php foreach ($catalogo as $k): ?>

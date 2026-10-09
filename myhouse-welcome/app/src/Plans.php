@@ -14,7 +14,8 @@ final class Plans
     {
         $rows = Db::all(
             'SELECT p.*, pv.id AS pv_id, pv.version, pv.price_cents, pv.currency, pv.stripe_price_id,
-                    pv.per_property, pv.extra_price_cents, pv.min_quantity, pv.max_quantity
+                    pv.per_property, pv.extra_price_cents, pv.min_quantity, pv.max_quantity'
+            . (Migrator::columnExists('package_versions', 'extra_tiers') ? ', pv.extra_tiers' : '') . '
              FROM packages p JOIN package_versions pv ON pv.package_id = p.id AND pv.is_current = 1
              WHERE p.active = 1 AND p.public = 1 ORDER BY p.sort, p.id');
         foreach ($rows as &$r) {
@@ -73,12 +74,59 @@ final class Plans
         return $q >= $min && $q <= $max ? $q : null;
     }
 
-    /** Il prezzo annuale per una quantità: prima struttura + le altre al prezzo aggiuntivo. */
+    /**
+     * Gli scaglioni del Portfolio: dalla struttura N in poi, ognuna costa tot.
+     * Senza scaglioni (versioni vendute prima) c'è un solo prezzo per struttura aggiuntiva.
+     * @return array<int,array{da:int,a:?int,cents:int}> in ordine; 'a' null = senza limite
+     */
+    public static function tiers(array $pv): array
+    {
+        if (!self::perProperty($pv)) return [];
+        $grezzi = json_decode((string) ($pv['extra_tiers'] ?? ''), true);
+        $t = [];
+        foreach (is_array($grezzi) ? $grezzi : [] as $x) {
+            if (is_array($x) && (int) ($x['da'] ?? 0) >= 2 && (int) ($x['cents'] ?? -1) >= 0) $t[(int) $x['da']] = (int) $x['cents'];
+        }
+        if (!isset($t[2])) $t[2] = (int) $pv['extra_price_cents'];
+        ksort($t);
+        $da = array_keys($t); $out = [];
+        foreach ($da as $i => $n) $out[] = ['da' => $n, 'a' => isset($da[$i + 1]) ? $da[$i + 1] - 1 : null, 'cents' => $t[$n]];
+        return $out;
+    }
+
+    /** Quanto costa all'anno la struttura numero $n (la prima è il prezzo base). */
+    public static function unitPrice(array $pv, int $n): int
+    {
+        if ($n <= 1 || !self::perProperty($pv)) return (int) $pv['price_cents'];
+        $c = 0;
+        foreach (self::tiers($pv) as $t) if ($n >= $t['da']) $c = $t['cents'];
+        return $c;
+    }
+
+    /** Il prezzo annuale per una quantità: prima struttura + le altre, ognuna al prezzo del suo scaglione. */
     public static function price(array $pv, int $quantity = 1): int
     {
         $base = (int) $pv['price_cents'];
         if (!self::perProperty($pv)) return $base;
-        return $base + max(0, $quantity - 1) * (int) $pv['extra_price_cents'];
+        $tot = $base;
+        for ($n = 2; $n <= $quantity; $n++) $tot += self::unitPrice($pv, $n);
+        return $tot;
+    }
+
+    /** Gli scaglioni per il JavaScript del listino: [[da, centesimi], …]. */
+    public static function tiersJson(array $pv): string
+    {
+        return json_encode(array_map(fn($t) => [$t['da'], $t['cents']], self::tiers($pv)));
+    }
+
+    /** «dalla 3ª alla 5ª», «dall'11ª alla 20ª», «oltre la 20ª»: per il listino. */
+    public static function tierLabel(array $t): string
+    {
+        $o = fn(int $n) => $n . 'ª';
+        $dal = fn(int $n) => in_array($n, [8, 11], true) || ($n >= 80 && $n < 90) ? "dall'" . $o($n) : 'dalla ' . $o($n);
+        if ($t['a'] === null) return 'oltre la ' . $o($t['da'] - 1);
+        if ($t['a'] === $t['da']) return $o($t['da']);
+        return $dal($t['da']) . ' alla ' . $o($t['a']);
     }
 
     /** L'equivalente mensile di un prezzo annuale: «circa 9,75 € al mese». */

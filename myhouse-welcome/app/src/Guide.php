@@ -391,6 +391,13 @@ final class Guide
         $p = Db::one('SELECT * FROM properties WHERE id = ?', [$propertyId]);
         if (trim((string) $p['name']) === '') $out[] = 'Manca il nome della struttura.';
         if (!empty($p['archived_at'])) $out[] = 'La struttura è archiviata: riattivala da «Le mie guide» per pubblicarla.';
+        // Il CIN: obbligatorio, con la forma giusta, e di questa guida sola (le vetrine demo no).
+        if ((int) $p['is_demo'] === 0 && array_key_exists('cin', $p)) {
+            $cin = trim((string) $p['cin']);
+            if ($cin === '') $out[] = 'Manca il CIN (Codice Identificativo Nazionale) della struttura: è obbligatorio per legge e identifica la guida. Scrivilo nei dati della struttura.';
+            elseif (!Properties::cinValido($cin)) $out[] = 'Il CIN «' . $cin . '» non sembra completo: comincia con IT seguito dal codice del comune, come IT054001C2XXXXXXXX.';
+            elseif (($altra = Properties::cinInUso($cin, $propertyId))) $out[] = Properties::cinGiaUsato($altra, $accountId);
+        }
         $core = Db::one('SELECT * FROM sections WHERE property_id = ? AND is_core = 1', [$propertyId]);
         $t = $core ? Db::one('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$core['id'], $p['default_locale']]) : null;
         $d = json_decode((string) ($t['data'] ?? ''), true) ?: [];

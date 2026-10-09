@@ -12,6 +12,15 @@ $copertina = !empty($pr['cover_id']) ? MHW\Media::url((int) $pr['cover_id']) : (
 
 <h1 class="guest-title" style="margin-top:22px"><?= Support::e(I18n::t($loc, 'welcome_1')) ?><br><?= Support::e(I18n::t($loc, 'welcome_2', $pr['name'])) ?></h1>
 
+<?php if (!empty($variante)): /* il QR di una camera: il suo nome e la sua nota, in cima */
+      $notaCamera = MHW\Varianti::testo($variante, 'note', $loc, $def); ?>
+  <div class="camera" style="margin-top:16px">
+    <span class="camera__chi"><?= Icon::svg('key', 16) ?><?= Support::e(I18n::t($loc, 'room')) ?></span>
+    <b class="camera__nome"><?= Support::e($variante['name']) ?></b>
+    <?php if ($notaCamera !== ''): ?><p class="camera__nota"><?= Support::e($notaCamera) ?></p><?php endif; ?>
+  </div>
+<?php endif; ?>
+
 <?php if ($copertina): ?>
   <div class="shot shot--h262 guest-cover" style="margin-top:22px">
     <img src="<?= Support::e($copertina) ?>" alt="" fetchpriority="high" decoding="async">

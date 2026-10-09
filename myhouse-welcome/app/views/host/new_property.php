@@ -29,7 +29,7 @@ $modo = $modo ?? 'normale'; $origini = $origini ?? []; ?>
   </div>
   <?php if ($err): ?><p class="note note--err" role="alert"><?= Support::e($err) ?></p><?php endif; ?>
   <div class="panel stack" style="gap:10px">
-    <div class="spread spread--mid"><span>Ogni struttura in più</span><b><?= Support::e(Support::money($costo['anno'], $pv['currency'])) ?> <span class="small muted">+ IVA / anno</span></b></div>
+    <div class="spread spread--mid"><span>La <?= (int) $costo['quantita'] ?>ª struttura</span><b><?= Support::e(Support::money($costo['anno'], $pv['currency'])) ?> <span class="small muted">+ IVA / anno</span></b></div>
     <div class="spread spread--mid"><span>Oggi, per i giorni che restano fino al <?= Support::e(Support::date($costo['fine'])) ?></span>
       <b><?= Support::e(Support::money($costo['ora'], $pv['currency'])) ?> <span class="small muted">+ IVA</span></b></div>
     <p class="small muted">Paghi la differenza sulla pagina sicura di Stripe: la struttura si sblocca appena il pagamento è confermato. Dal rinnovo l'abbonamento costa

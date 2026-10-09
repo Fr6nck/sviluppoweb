@@ -149,6 +149,10 @@ final class Demo
                                         ['name' => 'Marta, per le pulizie', 'role' => 'altro', 'phone' => '+39 075 000 0001', 'whatsapp' => 0]]);
         $foto = fn(string $nome, string $alt) => self::foto($nome, $acc, $pid, $alt);
         Db::update('properties', ['cover_media_id' => $foto('checco-copertina.jpg', 'La scalinata in pietra con i gerani rossi e la porta in legno in cima')], 'id = :pid', ['pid' => $pid]);
+        // La foto profilo è la porta di casa, non un volto: Francesco è di fantasia.
+        if (Migrator::columnExists('properties', 'profile_media_id')) {
+            Db::update('properties', ['profile_media_id' => $foto('checco-profilo.jpg', 'La porta rossa ad arco di Casa Checco')], 'id = :pid', ['pid' => $pid]);
+        }
         $giorno = fn(int $n) => (new \DateTimeImmutable(Eventi::oggi()))->modify(($n >= 0 ? '+' : '') . $n . ' days')->format('Y-m-d');
 
         // -------- Check-in & Check-out

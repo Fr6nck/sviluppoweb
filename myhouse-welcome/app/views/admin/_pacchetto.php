@@ -10,7 +10,7 @@ $cur = null; foreach ($p['versions'] as $v) if ($v['is_current']) $cur = $v; $cu
           <span class="small muted"><code><?= Support::e($p['code']) ?></code><?= $p['family'] ? ' · famiglia ' . Support::e($p['family']) : '' ?>
             · <?= !$p['active'] ? 'disattivato' : ($p['public'] ? 'pubblico' : 'nascosto') ?></span></div>
         <?php if ($cur): ?><span style="font-size:22px;font-weight:500"><?= Support::e(Support::money((int) $cur['price_cents'], $cur['currency'])) ?>
-          <span class="small muted"><?= Plans::perProperty($cur) ? 'prima struttura, +' . Support::e(Support::money((int) $cur['extra_price_cents'], $cur['currency'])) . ' per ogni altra · ' : '' ?>+ IVA / anno · v<?= (int) $cur['version'] ?></span></span><?php endif; ?>
+          <span class="small muted"><?= Plans::perProperty($cur) ? 'prima struttura, poi ' . Support::e(implode(', ', array_map(fn($t) => Plans::tierLabel($t) . ' +' . Support::money($t['cents'], $cur['currency']), Plans::tiers($cur)))) . ' · ' : '' ?>+ IVA / anno · v<?= (int) $cur['version'] ?></span></span><?php endif; ?>
       </div>
 
       <div class="tablewrap"><table class="data">
@@ -50,7 +50,10 @@ $cur = null; foreach ($p['versions'] as $v) if ($v['is_current']) $cur = $v; $cu
               <div class="field" style="margin:0"><label>Price ID della struttura aggiuntiva <span class="muted">(facoltativo)</span></label>
                 <input type="text" name="stripe_extra_price_id" placeholder="price_…" pattern="price_[A-Za-z0-9]+" value="<?= Support::e($cur['stripe_extra_price_id'] ?? '') ?>"></div>
             </div>
-            <p class="small muted">Prezzo = prima struttura + (strutture − 1) × struttura aggiuntiva. Il limite di strutture è la quantità acquistata.</p>
+            <div class="field" style="margin:0"><label for="scaglioni-<?= (int) $p['id'] ?>">Scaglioni <span class="muted">(facoltativi: una riga per scaglione, «dalla struttura: € l'una»)</span></label>
+              <textarea id="scaglioni-<?= (int) $p['id'] ?>" name="scaglioni" rows="4" placeholder="3: 50&#10;6: 40&#10;11: 30&#10;21: 25"><?= Support::e(implode("\n", array_map(fn($t) => $t['da'] . ': ' . rtrim(rtrim(number_format($t['cents'] / 100, 2, ',', ''), '0'), ','), array_slice(Plans::tiers($cur), 1)))) ?></textarea></div>
+            <p class="small muted">Prezzo = prima struttura + ogni altra al prezzo del suo scaglione: la 2ª al prezzo della struttura aggiuntiva, poi quelli scritti qui.
+              Il limite di strutture è la quantità acquistata. Con gli scaglioni lascia vuoto il Price ID della struttura aggiuntiva: il prezzo a scaglioni lo crea il sito su Stripe.</p>
           <?php endif; ?>
           <div class="grid grid-4">
             <?php foreach ($features as $f): ?>

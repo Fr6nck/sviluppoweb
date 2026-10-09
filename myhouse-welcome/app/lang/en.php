@@ -186,6 +186,10 @@ return [
     'direct_lead'              => 'Booking directly on our website gets you the best terms.',
     'direct_code'              => 'Discount code: %s',
     'direct_book'              => 'Book on our website',
+    'room'                     => 'Your room',
+    'room_wifi'                => 'Your room\'s Wi-Fi',
+    'room_access'              => 'How to get into your room',
+    'room_other_wifi'          => 'Other Wi-Fi in the house',
     'request_whatsapp'         => 'Request on WhatsApp',
     'extra_message'            => 'Hi! I would like to request: %s',
 ];

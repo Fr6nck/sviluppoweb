@@ -682,6 +682,7 @@ button, input[type=submit], input[type=button] { background-image: none; }
   display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
 .rows .r input{flex:1 1 auto}
 .linkbtn{align-self:flex-start;background:none;border:0;padding:0;font:inherit;color:var(--accent);cursor:pointer;font-weight:500;min-height:44px}
+.linkbtn--danger{color:var(--danger)}
 .linkbtn:hover{color:var(--accent-hover)}
 /* Codice sconto del primo anno (6E). */
 .sconto>summary{list-style:none;display:inline-flex;align-items:center}
@@ -1296,6 +1297,9 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .contatti-foglio__titolo{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:2px 4px 6px}
 .contatto{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 4px;border-top:1px solid var(--line)}
 .contatto__chi{display:flex;flex-direction:column;min-width:0}
+.contatto__foto{width:44px;height:44px;border-radius:999px;object-fit:cover;flex:none}
+.contatto:has(.contatto__foto) .contatto__chi{flex:1 1 auto}
+.contatto__foto--bottone{width:26px;height:26px;margin:-4px 0;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
 .contatto__chi b{font-weight:500;font-size:16px}
 .contatto__azioni{display:flex;gap:6px}
 /* Wi-Fi: una scheda per rete, con il QR per collegarsi. */
@@ -2013,3 +2017,22 @@ fieldset{min-width:0}
 .clima__energia-titolo{display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;margin:0 0 8px}
 .clima__energia p{margin:0 0 8px;font-size:15px;line-height:22px}
 .clima__energia ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px;line-height:22px}
+
+/* Portfolio: quanto costa ogni struttura (listino e pannello) */
+.scaglioni{border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.scaglioni__titolo{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:0}
+.scaglioni__elenco{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.scaglioni__elenco li{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:14px;line-height:20px;border-top:1px solid var(--line)}
+.scaglioni__elenco li:first-child{border-top:0}
+.scaglioni__elenco b{font-weight:600;white-space:nowrap}
+.scaglioni__elenco small{font-weight:400;color:var(--muted)}
+.scaglioni__media{font-size:14px;line-height:20px;margin:0}
+.plan--dark .scaglioni{border-color:rgba(246,240,229,.16)}
+.plan--dark .scaglioni__elenco li{border-top-color:rgba(246,240,229,.12)}
+.plan--dark .scaglioni__titolo,.plan--dark .scaglioni__elenco small{color:var(--inverse-muted)}
+
+/* La camera di un QR (varianti camera), nella guida dell'ospite */
+.camera{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:16px;background:var(--raised);border:1px solid var(--line);border-left:4px solid var(--accent)}
+.camera__chi{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.camera__nome{font-size:20px;font-weight:500;line-height:26px}
+.camera__nota{margin:2px 0 0;font-size:15px;line-height:22px}

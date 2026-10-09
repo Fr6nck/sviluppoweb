@@ -1,7 +1,7 @@
 <?php
 /** Rotte di amministrazione. $r è il Router creato in public/index.php. */
 
-use MHW\{Auth, Billing, Config, Db, Demo, Entitlements, Gestione, Impostazioni, Inviti, Log, Media, Plans, RateLimit, Richiami, Stats, Storages, Stripe, Subscriptions, Support, Traduttore, View};
+use MHW\{Auth, Billing, Config, Db, Demo, Entitlements, Gestione, Impostazioni, Inviti, Log, Media, Migrator, Plans, RateLimit, Richiami, Stats, Storages, Stripe, Subscriptions, Support, Traduttore, View};
 
 /**
  * Il quadro: quanti clienti, quanto hanno pagato davvero, quanto viene letto
@@ -327,6 +327,21 @@ $r->post('/admin/pacchetti/{pid}/nuova-versione', function (array $a) {
             Support::flash('Controlla prezzo per struttura aggiuntiva, minimo, massimo e Price ID.', 'err'); Support::redirect('/admin/pacchetti');
         }
         $aStruttura = ['per_property' => 1, 'extra_price_cents' => $extra, 'min_quantity' => $min, 'max_quantity' => $max, 'stripe_extra_price_id' => $extraId];
+        // Gli scaglioni: una riga per scaglione, «dalla struttura: prezzo» (per esempio «3: 50»).
+        // La 2ª struttura costa il prezzo della struttura aggiuntiva.
+        if (Migrator::columnExists('package_versions', 'extra_tiers')) {
+            $scaglioni = [];
+            foreach (preg_split('/\R/', trim((string) ($_POST['scaglioni'] ?? ''))) ?: [] as $riga) {
+                if (trim($riga) === '') continue;
+                if (!preg_match('/^\s*(\d{1,3})\s*[:=]\s*(\d{1,6}(?:[.,]\d{1,2})?)\s*(€)?\s*$/u', $riga, $m) || (int) $m[1] < 3) {
+                    Support::flash('Scaglioni: una riga per scaglione, come «3: 50» (dalla 3ª struttura, 50 € l\'una). Si parte dalla 3ª.', 'err'); Support::redirect('/admin/pacchetti');
+                }
+                $scaglioni[(int) $m[1]] = (int) round((float) str_replace(',', '.', $m[2]) * 100);
+            }
+            ksort($scaglioni);
+            $aStruttura['extra_tiers'] = $scaglioni ? json_encode(array_merge([['da' => 2, 'cents' => $extra]],
+                array_map(fn($da, $c) => ['da' => $da, 'cents' => $c], array_keys($scaglioni), $scaglioni))) : '';
+        }
     }
     $vid = Db::tx(function () use ($pkg, $prezzo, $priceId, $aStruttura) {
         $next = (int) Db::val('SELECT COALESCE(MAX(version),0)+1 FROM package_versions WHERE package_id = ?', [$pkg['id']], 1);

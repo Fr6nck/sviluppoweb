@@ -15,6 +15,43 @@ final class Properties
     public const TIPOLOGIE = ['casa_vacanza' => 'Casa vacanza', 'appartamento' => 'Appartamento', 'bnb' => 'B&B', 'affittacamere' => 'Affittacamere',
                               'agriturismo' => 'Agriturismo', 'villa' => 'Villa o casale', 'altro' => 'Altro'];
 
+    // ------------------------------------------------------------------ CIN
+    // Una guida = un'unità ricettiva = un indirizzo e un CIN (Codice Identificativo Nazionale).
+    // Il CIN serve per pubblicare ed è unico in tutta la piattaforma; le vetrine demo sono escluse.
+
+    /** Il CIN come lo si confronta: maiuscolo, senza spazi, trattini o «CIN:» davanti. */
+    public static function cinNorm(string $cin): string
+    {
+        $c = strtoupper(preg_replace('/[\s\-\.\/]+/', '', $cin) ?? '');
+        return (string) preg_replace('/^CIN:?/', '', $c);
+    }
+
+    /** Ha la forma di un CIN: IT, il codice ISTAT del comune (6 cifre) e il resto del codice. */
+    public static function cinValido(string $cin): bool
+    {
+        return (bool) preg_match('/^IT\d{6}[A-Z0-9]{4,12}$/', self::cinNorm($cin));
+    }
+
+    /** L'altra guida (di qualsiasi cliente) che usa già questo CIN, o null. */
+    public static function cinInUso(string $cin, int $tranne): ?array
+    {
+        $n = self::cinNorm($cin);
+        if ($n === '') return null;
+        foreach (Db::all("SELECT id, account_id, name, cin FROM properties WHERE id <> ? AND cin <> '' AND is_demo = 0 AND archived_at IS NULL", [$tranne]) as $p) {
+            if (self::cinNorm((string) $p['cin']) === $n) return $p;
+        }
+        return null;
+    }
+
+    /** Il messaggio quando il CIN è già di un'altra guida. */
+    public static function cinGiaUsato(array $altra, int $accountId): string
+    {
+        $mia = (int) $altra['account_id'] === $accountId;
+        return 'Questo CIN è già usato ' . ($mia ? 'dalla tua guida «' . $altra['name'] . '»' : 'da un\'altra guida su MyHouse Welcome') . '. '
+             . 'Una guida corrisponde a un\'unità ricettiva, con il suo indirizzo e il suo CIN: per più camere della stessa struttura usa le varianti camera.'
+             . ($mia ? '' : ' Se la struttura è tua, scrivici a ' . (string) ((Config::get('legal') ?? [])['contact_email'] ?? '') . ' e lo sistemiamo.');
+    }
+
     /** La tipologia da mostrare: con «Altro» il testo scritto dall'host, se c'è. */
     public static function tipologia(array $p): string
     {
@@ -135,6 +172,15 @@ final class Properties
         if (!in_array($kind, SectionCatalog::selectable(), true)) throw new \RuntimeException('Tipo di sezione sconosciuto.');
         if (SectionCatalog::hasPlaces($kind) && !Entitlements::can($accountId, 'places')) {
             throw new \RuntimeException('I luoghi consigliati non fanno parte del tuo piano.');
+        }
+        // Una guida è un'unità ricettiva: ogni sezione una volta sola (un check-in, un Wi-Fi, un indirizzo),
+        // e poche sezioni libere. Più camere con Wi-Fi o istruzioni diverse sono «varianti camera».
+        $gia = (int) Db::val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = ?', [$propertyId, $kind], 0);
+        if (SectionCatalog::multipla($kind) && $gia >= SectionCatalog::LIBERE_MAX) {
+            throw new LimitReached('Puoi avere al massimo ' . SectionCatalog::LIBERE_MAX . ' sezioni libere in una guida.');
+        }
+        if (!SectionCatalog::multipla($kind) && $gia > 0) {
+            throw new \RuntimeException('«' . SectionCatalog::nome($kind) . '» c\'è già in questa guida: ogni sezione si aggiunge una volta sola. Per camere con Wi-Fi o istruzioni diverse usa le varianti camera.');
         }
         return Db::tx(function () use ($accountId, $propertyId, $kind) {
             $pos = (int) Db::val('SELECT COALESCE(MAX(position),0)+1 FROM sections WHERE property_id = ?', [$propertyId], 1);

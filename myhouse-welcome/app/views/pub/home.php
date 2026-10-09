@@ -33,9 +33,13 @@ $telefonoWebp = a($vetrina ? '/assets/foto/checco-telefono-600.webp' : '/assets/
 $checkinDemo = preg_match('/^\d{2}:\d{2}$/', (string) ($demo['checkin_from'] ?? '')) ? $demo['checkin_from'] : '15:00';
 // Il prezzo di partenza, dal listino: se l'amministratore lo cambia, cambia anche qui.
 $partenza = null;
+$portfolioListino = null;
 foreach ($offers as $of) foreach ($of['options'] as $o) {
     if ($partenza === null || (int) $o['price_cents'] < (int) $partenza['price_cents']) $partenza = $o;
+    if (Plans::perProperty($o)) $portfolioListino = $o;
 }
+// Gli scaglioni del Portfolio in una frase, per le FAQ: «la 2ª 60 €, dalla 3ª alla 5ª 50 € l'una, …».
+$scaglioniFaq = $portfolioListino ? implode(', ', array_map(fn($t) => MHW\Plans::tierLabel($t) . ' ' . Support::money($t['cents'], $portfolioListino['currency']) . ($t['a'] === $t['da'] ? '' : " l'una"), MHW\Plans::tiers($portfolioListino))) : '';
 // Tutte le sezioni del catalogo, nei tre gruppi (fase 6C): icone e titoli sono gli stessi del pannello e della guida.
 $gruppiSezioni = MHW\SectionCatalog::gruppi();
 $quanteSezioni = array_sum(array_map('count', $gruppiSezioni)); ?>
@@ -381,8 +385,11 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
         ['In quali lingue la leggono gli ospiti?', 'In italiano e in inglese con Essential; con Plus e Portfolio anche in francese, tedesco e spagnolo. La guida si apre da sola nella lingua del telefono dell\'ospite. Le traduzioni le scrivi tu, accanto al testo originale; i titoli delle sezioni, le categorie e le etichette dei luoghi sono già tradotti.'],
         ['Le traduzioni me le fate voi?', 'Con Plus e Portfolio te le suggerisce un traduttore automatico (Amazon Translate), in omaggio per un anno: tocchi «Suggerisci le traduzioni mancanti» e controlli le proposte una per una. Gli ospiti vedono solo quelle che approvi. Sono suggerite da un traduttore automatico, da approvare: per i testi importanti, falli rileggere a un madrelingua.'],
         ['Le traduzioni suggerite cambiano quello che ho già scritto?', 'No. Si suggerisce solo dove la traduzione manca: quello che hai tradotto tu non si tocca. Se poi cambi il testo originale, la suggerita va rifatta, e te lo diciamo.'],
-        ['Posso cambiare i testi dopo aver stampato il QR?', 'Sì, quando vuoi. Il QR Code è permanente: modifichi la guida, pubblichi la nuova versione e chi inquadra il QR stampato vede già quella.'],
+        ['Posso cambiare i testi dopo aver stampato il QR?', 'Sì, quando vuoi. Il QR Code non cambia mai, anche se modifichi la guida: pubblichi la nuova versione e chi inquadra il QR stampato vede già quella. Resta valido finché l\'abbonamento è attivo.'],
         ['Ho più di una struttura: come funziona?', 'Con Portfolio le gestisci tutte dallo stesso account: ognuna ha la sua guida, il suo QR Code e le sue statistiche. Le sezioni che valgono per tutte, come i ristoranti o le regole, le scrivi una volta e le copi nelle altre.'],
+        ...($scaglioniFaq !== '' ? [['Quanto costa ogni struttura con Portfolio?', 'La prima costa ' . Support::money((int) $portfolioListino['price_cents'], $portfolioListino['currency']) . ', come Plus; poi ogni struttura in più costa meno, a scaglioni: ' . $scaglioniFaq . '. Prezzi annuali, IVA esclusa. Nel listino scegli quante strutture ti servono e vedi il totale e quanto costa in media ognuna; dentro il pannello trovi il conto struttura per struttura.']] : []),
+        ['Ho un B&B, un affittacamere o un agriturismo con più camere: mi servono più guide?', 'No. Più camere allo stesso indirizzo e con lo stesso CIN sono una struttura sola: basta una guida. Se alcune camere hanno un Wi-Fi o istruzioni di accesso diverse, con Plus o Portfolio aggiungi una «variante camera» (' . MHW\Support::money(MHW\Varianti::prezzo()) . ' + IVA l\'anno l\'una): ha il suo QR, e chi lo inquadra vede la stessa guida con il Wi-Fi e le istruzioni della sua camera.'],
+        ['Posso mettere più case in una guida sola?', 'No. Una guida corrisponde a un\'unità ricettiva, con il suo indirizzo e il suo CIN, che serve per pubblicare e non può stare su due guide. Per più case o appartamenti c\'è Portfolio: ogni struttura ha la sua guida, e dalla seconda in poi costa meno.'],
         ['Posso scrivere nella guida il codice della porta?', 'Meglio di no. La guida si apre da un link, senza password: chi ha il link la legge. Nella guida spieghi come si entra; i codici di porte e cassette delle chiavi mandali all\'ospite in privato, poco prima dell\'arrivo.'],
         ['Ricevo fattura?', 'Sì. Prima del primo pagamento inserisci una volta i dati di fatturazione: per un\'azienda o un professionista partita IVA e codice destinatario SDI o PEC, per una persona fisica basta il codice fiscale. Le fatture le trovi in Account & Fatturazione.'],
         ['Posso cambiare piano dopo?', 'Sì, quando vuoi, da Account & Fatturazione → «Cambia piano». Se sali (da Essential a Plus, da Plus a Portfolio, o aggiungi strutture al Portfolio) paghi oggi solo la differenza per i giorni che restano fino al rinnovo, e il nuovo piano vale appena il pagamento è confermato. La data di rinnovo non cambia. Se scendi, oggi non paghi niente: il cambio parte dal rinnovo e fino ad allora resti sul piano che hai già pagato.'],
@@ -431,15 +438,14 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
                   con base e costo aggiuntivo presi dal listino. */
               $minimo = (int) $primo['min_quantity']; ?>
           <form class="plan__scelta" method="get" action="<?= b() . ($dentro ? '/piano' : '/registrati') ?>" data-portfolio
-                data-quantita data-base="<?= (int) $primo['price_cents'] ?>" data-extra="<?= (int) $primo['extra_price_cents'] ?>" data-valuta="<?= Support::e($primo['currency']) ?>">
+                data-quantita data-base="<?= (int) $primo['price_cents'] ?>" data-extra="<?= (int) $primo['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($primo)) ?>" data-valuta="<?= Support::e($primo['currency']) ?>">
             <input type="hidden" name="piano" value="<?= (int) $primo['pv_id'] ?>">
             <label for="<?= $idSel ?>" class="plan__label">Quante strutture vuoi gestire?</label>
             <input id="<?= $idSel ?>" name="strutture" type="number" inputmode="numeric" step="1" required
                    min="<?= $minimo ?>" max="<?= (int) $primo['max_quantity'] ?>" value="<?= $minimo ?>">
-            <p class="plan__regola">Prima struttura <?= Support::e(Support::money((int) $primo['price_cents'], $primo['currency'])) ?>/anno.
-              Ogni struttura aggiuntiva +<?= Support::e(Support::money((int) $primo['extra_price_cents'], $primo['currency'])) ?>/anno.</p>
             <span class="price" aria-live="polite"><span data-totale><?= Support::e(Support::money(Plans::price($primo, $minimo), $primo['currency'])) ?></span><small> + IVA / anno</small></span>
             <span class="plan__mese">circa <span data-mensile><?= Support::e(Support::money(Plans::monthly(Plans::price($primo, $minimo)), $primo['currency'])) ?></span> al mese</span>
+            <?php $pvS = $primo; $qS = $minimo; include __DIR__ . '/_scaglioni.php'; ?>
             <?php $voci = $p['bullet_list']; include __DIR__ . '/_voci_piano.php'; ?>
             <button class="btn <?= $scuro ? '' : 'btn--ghost' ?>"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $nome) ?></button>
           </form>

@@ -1,5 +1,54 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Una guida = un'unità ricettiva, varianti camera, Portfolio a scaglioni (9 ottobre 2026)
+
+Migrazioni `026` (scaglioni del Portfolio, etichetta e testi del QR) e `027` (varianti camera). Solo aggiunte, SQLite e MySQL.
+
+- **Foto profilo nella vetrina.** Casa Checco ha come foto profilo un ritaglio della sua porta rossa: Francesco è di fantasia, quindi niente volto. La foto profilo (Plus) ora si vede anche sul bottone «Contatta …» e accanto al primo contatto nel foglio dei contatti. Prima compariva solo, piccolissima, in testata e solo senza logo.
+- **Portfolio a scaglioni** (versione nuova, chi ha già un Portfolio resta sulla sua):
+  - la 1ª struttura costa come Plus (117 €), la 2ª 60 €;
+  - dalla 3ª alla 5ª 50 €, dalla 6ª alla 10ª 40 €;
+  - dall'11ª alla 20ª 30 €, oltre la 20ª 25 €.
+  - Su Stripe la voce delle strutture aggiuntive è un Price graduato, creato dal sito. In amministrazione gli scaglioni si scrivono una riga per scaglione (`3: 50`).
+  - L'aggiunta di una struttura mostra il prezzo del suo scaglione («La 4ª struttura: 50 €»).
+- **Quanto costa ogni struttura:**
+  - nel listino (home e /piano), la tabella degli scaglioni e «Con N strutture: in media X € a struttura», che segue il numero scelto;
+  - in Account, per il cliente Portfolio, il conto struttura per struttura (con il nome di ognuna), la media e quanto costerebbe la prossima;
+  - nella FAQ, gli scaglioni in una frase.
+- **Una guida = un'unità ricettiva:**
+  - **Termini**, § 1: un indirizzo e un CIN per guida. Eccezione per B&B, affittacamere e agriturismi con più camere allo stesso indirizzo. Sospensione dopo avviso se una guida serve più unità. Versione dei Termini `2026-10-08`.
+  - **Sezioni**: ogni tipo una volta sola per guida, controllato anche dal server, non solo dal catalogo; sezioni libere al massimo 3, anche copiando da un'altra struttura.
+  - **CIN obbligatorio per pubblicare e unico** su tutta la piattaforma (vetrine demo escluse):
+    - si salva pulito (maiuscolo, senza spazi né «CIN:»);
+    - un CIN già usato da un'altra guida non si salva, e il messaggio spiega le varianti camera e come contattarvi;
+    - un CIN incompleto non si pubblica.
+    - In Anomalie, le guide online senza CIN e i CIN ripetuti.
+  - **FAQ**: «Ho un B&B, un affittacamere o un agriturismo con più camere» (una guida sola, con le varianti) e «Posso mettere più case in una guida sola?» (no: Portfolio).
+- **Varianti camera** (Plus e Portfolio, 15 € + IVA l'anno l'una, `MHW_VARIANTE_PREZZO`):
+  - Nella guida, «Varianti camera» nel menu. Ogni variante ha:
+    - nome, Wi-Fi e password;
+    - «come si entra in camera» e una nota, nelle lingue della guida;
+    - un QR proprio (PDF, PNG, SVG) e un link `/g/…/c/…`.
+  - L'ospite che inquadra il QR della camera vede la stessa guida con:
+    - «La tua camera» in cima;
+    - il Wi-Fi della camera prima di quelli della casa;
+    - nel check-in, «Come entrare in camera».
+  - Le varianti si leggono dal vivo: modificarle non richiede di ripubblicare.
+  - **Pagamento**: voce «variante camera» nell'abbonamento Stripe. La parte dell'anno che resta si paga subito, e la variante nasce solo se il pagamento riesce. Togliendola, credito sulla prossima fattura, e il suo QR riapre la guida normale.
+  - Con un abbonamento dello staff si aggiunge senza pagare.
+  - Non si passa a Essential finché ci sono varianti.
+  - Il rinnovo previsto in amministrazione le conta.
+- **«Consigliato» al posto di «(Il) più scelto»** sull'etichetta di Plus, se c'era.
+- **Il QR «non cambia mai, anche se modifichi la guida»** al posto di «QR permanente», nei testi dei piani e nella FAQ, che ricorda anche che resta valido con l'abbonamento attivo.
+- **Prove:** 770 in tutto. In più:
+  - scaglioni e Price graduato;
+  - conto per struttura;
+  - sezioni uniche e libere al massimo 3;
+  - CIN mancante, ripetuto o incompleto, e la sua anomalia;
+  - varianti: aggiunta, QR, guida della camera, seconda variante, pagamento rifiutato, rimozione, blocco del passaggio a Essential;
+  - foto profilo della vetrina, Termini e FAQ.
+- La prova di aggiornamento da `f048ec5` passa.
+
 ## v2 · Home: «Il tempo delle risposte» e vetrina Casa Checco completa (8 ottobre 2026)
 
 Nessuna migrazione.

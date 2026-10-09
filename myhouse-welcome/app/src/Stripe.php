@@ -132,7 +132,10 @@ final class Stripe
             $p['line_items[0][price_data][product_data][metadata][ruolo]'] = 'base';
         }
         // Portfolio: un solo abbonamento con due voci, la prima struttura e le altre × quantità.
+        // Con gli scaglioni la seconda voce è un Price a scaglioni (graduated), che Checkout
+        // non sa descrivere al volo: si crea su Stripe la prima volta e si riusa.
         if (Plans::perProperty($pv) && $quantita > 1) {
+            if (($pv['stripe_extra_price_id'] ?? '') === '' && count(Plans::tiers($pv)) > 1) $pv['stripe_extra_price_id'] = self::ensureExtraPrice($pv, $pkg);
             $p['line_items[1][quantity]'] = $quantita - 1;
             if (($pv['stripe_extra_price_id'] ?? '') !== '') {
                 $p['line_items[1][price]'] = $pv['stripe_extra_price_id'];
@@ -194,6 +197,53 @@ final class Stripe
     }
 
     /**
+     * Il Price annuale delle varianti camera, al prezzo di config (varianti.prezzo_cents).
+     * Lo si ritrova dalla lookup_key (mhw_variante_<centesimi>); se non c'è si crea, col
+     * prodotto che porta ruolo=variante (così il conteggio delle strutture lo ignora).
+     */
+    public static function variantPrice(): string
+    {
+        $cents = Varianti::prezzo();
+        $chiave = 'mhw_variante_' . $cents;
+        $trovati = self::call('GET', 'prices', ['lookup_keys' => [$chiave], 'active' => 'true', 'limit' => 1]);
+        if (!empty($trovati['data'][0]['id'])) return (string) $trovati['data'][0]['id'];
+        $r = self::call('POST', 'prices', [
+            'currency' => 'eur', 'unit_amount' => (string) $cents, 'tax_behavior' => 'exclusive', 'recurring[interval]' => 'year',
+            'lookup_key' => $chiave, 'product_data[name]' => 'MyHouse Welcome — variante camera',
+            'product_data[metadata][ruolo]' => 'variante',
+        ], 'mhw-price-variante-' . $cents);
+        return (string) $r['id'];
+    }
+
+    /**
+     * Quante varianti camera paga l'abbonamento. In aumento si paga subito la parte dell'anno
+     * che resta (always_invoice) e il cambio vale solo se il pagamento riesce
+     * (pending_if_incomplete: se non riesce, la risposta ha pending_update). In calo,
+     * credito sulla prossima fattura; a zero la voce si toglie.
+     * @param string $itemId la voce delle varianti, '' se non c'è ancora
+     */
+    public static function setVariantQuantity(string $subscriptionId, string $itemId, int $quantita, bool $aumento): array
+    {
+        $p = ['proration_behavior' => $aumento ? 'always_invoice' : 'create_prorations', 'expand' => ['items.data.price.product']];
+        if ($aumento) $p['payment_behavior'] = 'pending_if_incomplete';
+        if ($itemId === '') { $p['items[0][price]'] = self::variantPrice(); $p['items[0][quantity]'] = (string) max(1, $quantita); }
+        elseif ($quantita <= 0) { $p['items[0][id]'] = $itemId; $p['items[0][deleted]'] = 'true'; }
+        else { $p['items[0][id]'] = $itemId; $p['items[0][quantity]'] = (string) $quantita; }
+        return self::call('POST', 'subscriptions/' . rawurlencode($subscriptionId), $p,
+                          'mhw-var-' . $subscriptionId . '-' . $quantita . '-' . gmdate('YmdHi'));
+    }
+
+    /** La voce delle varianti in un abbonamento Stripe (dal prodotto con ruolo=variante), o ''. */
+    public static function variantItem(array $stripeSub): string
+    {
+        foreach ((array) ($stripeSub['items']['data'] ?? []) as $v) {
+            $prodotto = $v['price']['product'] ?? null;
+            if (is_array($prodotto) && ($prodotto['metadata']['ruolo'] ?? '') === 'variante') return (string) ($v['id'] ?? '');
+        }
+        return '';
+    }
+
+    /**
      * I Price di Stripe di una versione del listino (cambio di piano, 6H): se mancano si
      * creano dalla versione e si salvano, così l'abbonamento può puntarci. Il prodotto
      * porta il metadato ruolo (base / aggiuntiva) che quantityFrom usa per riconoscere le voci.
@@ -214,15 +264,35 @@ final class Stripe
             $base = $crea((int) $pv['price_cents'], 'base', 'MyHouse Welcome ' . $pkg['name']);
             Db::update('package_versions', ['stripe_price_id' => $base], 'id = :id', ['id' => $pv['id']]);
         }
-        $extra = '';
-        if (Plans::perProperty($pv)) {
-            $extra = (string) ($pv['stripe_extra_price_id'] ?? '');
-            if ($extra === '') {
-                $extra = $crea((int) $pv['extra_price_cents'], 'aggiuntiva', 'MyHouse Welcome ' . $pkg['name'] . ' — struttura aggiuntiva');
-                Db::update('package_versions', ['stripe_extra_price_id' => $extra], 'id = :id', ['id' => $pv['id']]);
+        return [$base, Plans::perProperty($pv) ? self::ensureExtraPrice($pv, $pkg) : ''];
+    }
+
+    /**
+     * Il Price delle strutture aggiuntive di una versione Portfolio, creato se manca. Con gli
+     * scaglioni è un Price graduato: la quantità della voce è il numero di strutture oltre la
+     * prima, quindi lo scaglione «dalla 3ª alla 5ª» copre le unità dalla 2 alla 4.
+     */
+    public static function ensureExtraPrice(array $pv, array $pkg): string
+    {
+        $extra = (string) ($pv['stripe_extra_price_id'] ?? '');
+        if ($extra !== '') return $extra;
+        $nome = 'MyHouse Welcome ' . $pkg['name'] . ' — struttura aggiuntiva';
+        $p = ['currency' => strtolower((string) $pv['currency']), 'tax_behavior' => 'exclusive', 'recurring[interval]' => 'year',
+              'product_data[name]' => $nome, 'product_data[metadata][package]' => (string) $pkg['code'], 'product_data[metadata][ruolo]' => 'aggiuntiva'];
+        $scaglioni = Plans::tiers($pv);
+        if (count($scaglioni) > 1) {
+            $p['billing_scheme'] = 'tiered'; $p['tiers_mode'] = 'graduated';
+            foreach ($scaglioni as $i => $t) {
+                $p["tiers[$i][up_to]"] = $t['a'] === null ? 'inf' : (string) ($t['a'] - 1);
+                $p["tiers[$i][unit_amount]"] = (string) $t['cents'];
             }
+        } else {
+            $p['unit_amount'] = (string) (int) $pv['extra_price_cents'];
         }
-        return [$base, $extra];
+        $r = self::call('POST', 'prices', $p, 'mhw-price-' . $pv['id'] . '-extra' . (count($scaglioni) > 1 ? '-scaglioni' : ''));
+        $extra = (string) $r['id'];
+        Db::update('package_versions', ['stripe_extra_price_id' => $extra], 'id = :id', ['id' => $pv['id']]);
+        return $extra;
     }
 
     /**
