@@ -1056,6 +1056,10 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .plan__nome{font-family:Gloock,Georgia,serif;font-size:36px;line-height:1;letter-spacing:-.6px}
 .plan__headline{font-size:16px;font-weight:500;line-height:22px;letter-spacing:-.2px;margin-top:-6px}
 .plan--dark .plan__headline{color:var(--inverse-fg)}
+.plan__per{margin:-4px 0 0;font-size:14px;line-height:20px;color:var(--muted)}
+.plan__per b{display:block;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.plan--dark .plan__per{color:var(--inverse-muted)}
+.plan--dark .plan__per b{color:var(--inverse-fg)}
 .plan__da{font-size:16px;font-weight:400;letter-spacing:0}
 .plan__lista{padding-top:18px!important;border-top:1px solid var(--line)}
 .plan--dark .plan__lista{border-top-color:rgba(246,240,229,.16)}
@@ -2036,3 +2040,33 @@ fieldset{min-width:0}
 .camera__chi{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .camera__nome{font-size:20px;font-weight:500;line-height:26px}
 .camera__nota{margin:2px 0 0;font-size:15px;line-height:22px}
+
+/* Grafici dell'amministrazione (Vendite per piano). Colori per piano validati per
+   daltonismo e contrasto sul chiaro e sullo scuro (Essential, Plus, Portfolio). */
+:root{--viz-1:#2a78d6;--viz-2:#eb6834;--viz-3:#1baf7a}
+@media (prefers-color-scheme: dark){:root:not([data-theme="chiaro"]){--viz-1:#3987e5;--viz-2:#d95926;--viz-3:#199e70}}
+:root[data-theme="scuro"]{--viz-1:#3987e5;--viz-2:#d95926;--viz-3:#199e70}
+.viz-filtri{display:flex;gap:6px;flex-wrap:wrap}
+.viz-filtri__voce{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);color:var(--ink);font-size:14px;text-decoration:none}
+.viz-filtri__voce:hover{border-color:var(--line-strong)}
+.viz-filtri__voce.is-attivo{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.viz-legenda{list-style:none;margin:0;padding:0;display:flex;gap:14px;flex-wrap:wrap;font-size:14px;color:var(--ink)}
+.viz-legenda li{display:inline-flex;align-items:center;gap:6px}
+.viz-legenda__segno{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:middle}
+.viz-colonne{position:relative;display:grid;grid-template-columns:repeat(var(--viz-mesi),1fr);align-items:end;gap:4px;height:220px;padding:18px 0 0;border-bottom:1px solid var(--line)}
+.viz-colonne__max{position:absolute;top:0;left:0;line-height:16px}
+.viz-colonne::before{content:"";position:absolute;left:0;right:0;top:18px;border-top:1px solid var(--line)}
+.viz-colonne__col{position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;min-width:0;outline-offset:2px}
+.viz-colonne__col:hover .viz-colonne__pila,.viz-colonne__col:focus .viz-colonne__pila{filter:brightness(1.08)}
+.viz-colonne__pila{display:flex;flex-direction:column;gap:2px;width:min(24px,70%);overflow:hidden;border-radius:4px 4px 0 0}
+.viz-colonne__pezzo{display:block;min-height:3px}
+.viz-colonne__mese{position:absolute;bottom:-22px;font-size:12px;color:var(--muted);white-space:nowrap}
+.viz-colonne{margin-bottom:24px}
+.viz-barre{display:flex;flex-direction:column;gap:12px}
+.viz-barre__riga{display:grid;grid-template-columns:84px 1fr;gap:4px 10px;align-items:center}
+.viz-barre__nome{font-size:14px;color:var(--ink)}
+.viz-barre__pista{display:block;height:16px}
+.viz-barre__barra{display:block;height:100%;border-radius:0 4px 4px 0}
+.viz-barre__valore{grid-column:2;font-size:13px;font-weight:500;color:var(--muted)}
+.viz-tip{position:fixed;z-index:50;pointer-events:none;max-width:260px;padding:6px 10px;border-radius:8px;background:var(--ink);color:var(--paper);font-size:13px;line-height:18px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+@media (max-width:560px){.viz-colonne__mese{font-size:10px}.viz-colonne__col:nth-child(even) .viz-colonne__mese{visibility:hidden}}

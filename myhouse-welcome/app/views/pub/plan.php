@@ -29,6 +29,9 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
           <span class="plan__nome"><?= Support::e($o['name']) ?></span>
           <?php if ($o['badge'] !== ''): ?><span class="badge badge--ochre-strong"><?= Support::e($o['badge']) ?></span><?php endif; ?>
         </div>
+        <?php if (trim((string) $o['tagline']) !== ''): ?>
+          <p class="plan__per"><b>Ideale per</b> <?= Support::e(preg_replace('/^Per /u', '', trim((string) $o['tagline']))) ?></p>
+        <?php endif; ?>
         <?php if ($perStruttura): ?>
           <div class="quantita pianocard__sopra" data-quantita data-base="<?= (int) $o['price_cents'] ?>" data-extra="<?= (int) $o['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($o)) ?>" data-valuta="<?= Support::e($o['currency']) ?>">
             <span class="price"><span data-totale><?= Support::e(Support::money(Plans::price($o, $q), $o['currency'])) ?></span><small> + IVA / anno</small></span>

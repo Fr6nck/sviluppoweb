@@ -22,7 +22,7 @@ $conLato = $u && !$soloPassi;
 
 // Le voci, una volta sola: servono alla barra e al cassetto del telefono.
 $generale = $admin
-  ? [['admin', '/admin', 'Quadro', 'grid'], ['prospetti', '/admin/prospetti', 'Prospetti', 'chart'], ['anomalie', '/admin/anomalie', 'Anomalie', 'warning'],
+  ? [['admin', '/admin', 'Quadro', 'grid'], ['prospetti', '/admin/prospetti', 'Prospetti', 'chart'], ['vendite', '/admin/vendite', 'Vendite per piano', 'layers'], ['anomalie', '/admin/anomalie', 'Anomalie', 'warning'],
      ['clienti', '/admin/clienti', 'Clienti', 'people'], ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'], ['scadenze', '/admin/scadenze', 'Scadenze', 'calendar'],
      ['guide', '/admin/guide', 'Guide', 'book'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'],
      ['sconti', '/admin/sconti', 'Codici sconto', 'euro'],

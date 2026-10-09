@@ -1,5 +1,31 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Listino 2026, «Ideale per» e Vendite per piano (9 ottobre 2026)
+
+Migrazione `028` (solo aggiunte: versioni nuove dei piani e testi).
+
+- **Listino 2026**, come nel file 6I (nuove versioni, con la stessa logica di «Nuova versione» dell'amministrazione):
+  - Essential 97 €, Plus 127 €, Portfolio 127 € + 70 € per ogni struttura in più, da 2 a 10 strutture;
+  - le funzioni incluse si copiano dalla versione in vendita;
+  - i Price ID di Stripe sono vuoti;
+  - chi è già abbonato resta sulla sua versione e rinnova al suo prezzo;
+  - chi aveva solo scelto un piano passa alla versione nuova;
+  - la migrazione è idempotente: se la versione in vendita ha già questi valori non fa niente;
+  - al Portfolio si aggiunge «Più di 10 strutture? Scrivici per un preventivo.».
+- **Gli scaglioni del Portfolio escono dal listino** (prezzo unico 70 €, come da file). Restano disponibili da Amministrazione → Piani. Con un solo prezzo, il listino scrive «Dalla 2ª in poi +70 € l'una» e la FAQ «ogni struttura in più costa 70 €, fino a 10 strutture».
+- **«Ideale per»** sotto il nome di ogni piano, nel listino della landing e nella scelta del piano:
+  - Essential: chi affitta una casa o un appartamento e vuole dare le informazioni essenziali in italiano e inglese;
+  - Plus: B&B, case vacanza e agriturismi con ospiti da tutto il mondo;
+  - Portfolio: chi gestisce da 2 a 10 strutture.
+  - Il testo è nel campo «Ideale per» del pacchetto (prima «Sottotitolo breve», che non compariva).
+- **Amministrazione → Vendite per piano** (nuova voce di menu). Per il periodo scelto (3, 6 o 12 mesi):
+  - nuovi abbonamenti e il piano più scelto, incasso del periodo, abbonamenti attivi oggi per piano, varianti camera attive;
+  - colonne impilate per mese e per piano, con legenda e dettaglio al passaggio o al focus;
+  - barre degli abbonamenti attivi (con le strutture del Portfolio) e dell'incasso per piano;
+  - ultimi 15 acquisti; tabella dei dati ed esportazione CSV.
+  - Colori validati per daltonismo e contrasto, in chiaro e in scuro.
+- **Prove:** 775 in tutto. La prova di aggiornamento da `f048ec5` passa con il listino nuovo.
+
 ## v2 · Una guida = un'unità ricettiva, varianti camera, Portfolio a scaglioni (9 ottobre 2026)
 
 Migrazioni `026` (scaglioni del Portfolio, etichetta e testi del QR) e `027` (varianti camera). Solo aggiunte, SQLite e MySQL.

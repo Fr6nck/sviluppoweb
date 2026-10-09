@@ -493,6 +493,23 @@ $r->get('/admin/prospetti', function () {
     View::out('admin/prospetti', ['mesi' => $mesi, 'adesso' => Gestione::adesso(), 'nav' => 'prospetti'], 'layout/cms');
 });
 
+/* Vendite per piano: che piani si comprano, mese per mese, con grafici e tabella. */
+$r->get('/admin/vendite', function () {
+    Auth::requireAdmin();
+    $mesi = (int) ($_GET['mesi'] ?? 12);
+    if (!in_array($mesi, [3, 6, 12], true)) $mesi = 12;
+    $v = Gestione::vendite($mesi);
+    if (($_GET['formato'] ?? '') === 'csv') {
+        $eur = fn(int $c) => number_format($c / 100, 2, ',', '');
+        $righe = [];
+        foreach ($v['mesi'] as $m) foreach (Gestione::PIANI_VENDITE as $k => $nome) {
+            $righe[] = [$m['mese'], $nome, $m['nuovi'][$k], $m['cambi'][$k], $eur($m['incasso'][$k])];
+        }
+        Gestione::csv('vendite-per-piano', ['Mese', 'Piano', 'Nuovi abbonamenti', 'Cambi di piano verso', 'Incasso'], $righe);
+    }
+    View::out('admin/vendite', ['v' => $v, 'mesi' => $mesi, 'nav' => 'vendite'], 'layout/cms');
+});
+
 // --------------------------------------------------------------- diagnostica
 /**
  * Queste voci non sono promesse: il server interroga davvero sé stesso,

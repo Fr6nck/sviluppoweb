@@ -9,7 +9,7 @@ I dettagli tecnici sono in `app/LEGGIMI.md`. Le novità, fase per fase, sono in 
 
 1. Copia sul server **tutto `app/storage/`** e `config.local.php`, se c'è.
 2. Carica il contenuto di `welcomebook/` sopra i file vecchi, **senza toccare `app/storage/`**.
-3. Apri il sito una volta. Le migrazioni `007`–`027` partono da sole.
+3. Apri il sito una volta. Le migrazioni `007`–`028` partono da sole.
 4. In **Amministrazione → Diagnostica** tutte le righe devono essere «OK».
 
 Il database resta **SQLite**. Le migrazioni nuove sono scritte anche per MySQL, ma un'installazione da zero su MySQL non è supportata: lo schema iniziale (`001`) è solo per SQLite.
@@ -85,16 +85,18 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
     5. Con un Portfolio aggiungi una struttura da Account → «Cambia piano» (conguaglio subito). Dopo il pagamento il coupon deve essere ancora sull'abbonamento.
   - Per i Portfolio grandi lo sconto del 50% può superare quello che portano dieci amici: valuta un tetto in euro con `Inviti::TETTO_CENTS`.
 
-**Portfolio a scaglioni, varianti camera, CIN (migrazioni 026 e 027).**
-  - La migrazione `026` mette in vendita una **versione nuova del Portfolio**: 1ª struttura al prezzo di Plus, 2ª 60 €, dalla 3ª alla 5ª 50 €, dalla 6ª alla 10ª 40 €, dall'11ª alla 20ª 30 €, oltre la 20ª 25 € (IVA esclusa, all'anno). Gli scaglioni si cambiano in **Amministrazione → Piani → Portfolio → Nuova versione**, campo «Scaglioni» (una riga per scaglione, come `3: 50`).
-  - Su Stripe **non c'è niente da creare**: al primo pagamento il sito crea da solo il Price «struttura aggiuntiva» **a scaglioni** (graduato). Con gli scaglioni lascia vuoto il «Price ID della struttura aggiuntiva»: un Price a prezzo unico creato a mano non saprebbe gli scaglioni.
-  - **Chi ha già un Portfolio** resta sulla sua versione (60 € per ogni struttura in più) fino a quando cambia piano. Se vuoi portarli agli scaglioni, dimmelo: si fa con un cambio di versione al rinnovo.
+**Listino 2026 (migrazione 028), varianti camera, CIN (027), scaglioni (026).**
+  - **Prezzi in vendita** (annui, IVA esclusa): Essential 97 €, Plus 127 €, Portfolio 127 € + 70 € per ogni struttura in più, **da 2 a 10 strutture** («Più di 10 strutture? Scrivici per un preventivo.»). Sono versioni nuove: **chi è già abbonato resta sulla sua versione e rinnova al suo prezzo**. I Price ID di Stripe delle versioni nuove sono vuoti: Stripe usa i prezzi del database, non c'è niente da creare.
+  - Sotto il nome di ogni piano, sulla landing e nella scelta del piano, c'è **«Ideale per …»** (il posizionamento). Si cambia in **Amministrazione → Piani → Testi sulla landing**, campo «Ideale per».
+  - **Scaglioni del Portfolio** (prezzo che scende con le strutture): oggi non sono in vendita, ma restano possibili in **Amministrazione → Piani → Portfolio → Nuova versione**, campo «Scaglioni» (una riga per scaglione, come `3: 50`). In quel caso Stripe riceve da solo un Price «graduato»; lascia vuoto il «Price ID della struttura aggiuntiva».
   - **Varianti camera**: con Plus e Portfolio, 15 € + IVA l'anno l'una (`MHW_VARIANTE_PREZZO`, in centesimi: `1500`). Il sito crea su Stripe il Price con la chiave `mhw_variante_1500` e aggiunge la voce all'abbonamento; la parte dell'anno che resta si paga subito sulla carta dell'abbonamento, e la variante nasce solo se il pagamento riesce. Gli eventi del webhook restano quelli di prima.
   - **CIN obbligatorio per pubblicare e unico** su tutta la piattaforma (le vetrine demo no). Le guide già online senza CIN restano online, ma per **ripubblicarle** serve il CIN: avvisa i clienti. In **Anomalie** trovi le guide online senza CIN e i CIN ripetuti.
   - Prove in modalità test di Stripe:
-    1. Un Portfolio nuovo da 6 strutture: il totale deve essere 117 + 60 + 50 × 3 + 40 = 367 € + IVA, e su Stripe la voce delle strutture aggiuntive deve avere quantità 5 e un Price «graduated».
+    1. Un Portfolio nuovo da 6 strutture: il totale deve essere 127 + 70 × 5 = 477 € + IVA, e su Stripe la voce delle strutture aggiuntive deve avere quantità 5 a 70 €.
     2. Con un Plus pagato apri una guida → **Varianti camera**, aggiungi una camera: su Stripe l'abbonamento ha una voce «variante camera» e c'è una fattura con la quota fino al rinnovo. Togli la variante: la voce scende (credito sulla prossima fattura).
     3. Con la carta `4000 0000 0000 0341` (addebito rifiutato) la variante non deve nascere.
+
+**Vendite per piano.** In **Amministrazione → Vendite per piano** vedi che piani si comprano, mese per mese (3, 6 o 12 mesi): colonne per piano, abbonamenti attivi oggi, incasso per piano, ultimi acquisti, con tabella ed esportazione CSV. Contano gli ordini pagati su Stripe; i clienti di esempio sono esclusi e i rinnovi sono in «Prospetti».
 
 ## 4. Testi da rivedere (Amministrazione)
 

@@ -159,10 +159,10 @@ prova('022 · traduzioni suggerite: Essential resta senza, Plus e Portfolio le h
 prova('Nessun codice porta rimasto', (int) $db->query("SELECT COUNT(*) FROM sections WHERE door_code <> ''")->fetchColumn() === 0);
 prova('Nessun codice porta nelle guide pubblicate', (int) $db->query("SELECT COUNT(*) FROM guide_versions WHERE snapshot LIKE '%door_code%' OR snapshot LIKE '%4729%'")->fetchColumn() === 0);
 $prezzi = $db->query("SELECT p.code, pv.price_cents FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE pv.is_current = 1 AND p.public = 1")->fetchAll(PDO::FETCH_KEY_PAIR);
-prova('Listino nuovo in vendita', ($prezzi['essential'] ?? 0) == 8700 && ($prezzi['plus'] ?? 0) == 11700 && ($prezzi['portfolio'] ?? 0) == 11700
+prova('Listino nuovo in vendita', ($prezzi['essential'] ?? 0) == 9700 && ($prezzi['plus'] ?? 0) == 12700 && ($prezzi['portfolio'] ?? 0) == 12700
       && !isset($prezzi['portfolio2']) && !isset($prezzi['portfolio3']), json_encode($prezzi));
 $pf = $db->query("SELECT pv.* FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = 'portfolio' AND pv.is_current = 1")->fetch();
-prova('Portfolio a quantità: 117 € + 60 € per struttura aggiuntiva, da 2', $pf && (int) $pf['per_property'] === 1 && (int) $pf['extra_price_cents'] === 6000 && (int) $pf['min_quantity'] === 2);
+prova('Portfolio a quantità (listino 2026): 127 € + 70 € per struttura aggiuntiva, da 2 a 10', $pf && (int) $pf['per_property'] === 1 && (int) $pf['extra_price_cents'] === 7000 && (int) $pf['min_quantity'] === 2 && (int) $pf['max_quantity'] === 10);
 prova('Portfolio 2 e 3 restano nel database', (int) $db->query("SELECT COUNT(*) FROM packages WHERE code IN ('portfolio2', 'portfolio3')")->fetchColumn() === 2);
 if ($f['p2acc']) {
     $s2 = $db->query("SELECT s.quantity, p.code FROM subscriptions s JOIN package_versions pv ON pv.id = s.package_version_id JOIN packages p ON p.id = pv.package_id

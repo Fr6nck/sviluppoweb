@@ -124,7 +124,7 @@ final class Plans
     {
         $o = fn(int $n) => $n . 'ª';
         $dal = fn(int $n) => in_array($n, [8, 11], true) || ($n >= 80 && $n < 90) ? "dall'" . $o($n) : 'dalla ' . $o($n);
-        if ($t['a'] === null) return 'oltre la ' . $o($t['da'] - 1);
+        if ($t['a'] === null) return $t['da'] === 2 ? 'dalla 2ª in poi' : 'oltre la ' . $o($t['da'] - 1);
         if ($t['a'] === $t['da']) return $o($t['da']);
         return $dal($t['da']) . ' alla ' . $o($t['a']);
     }
