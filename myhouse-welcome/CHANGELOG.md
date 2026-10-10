@@ -1,5 +1,10 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 6N correzione: conferma dei codici nella modifica di una variante (10 ottobre 2026)
+
+- Nel modulo «Modifica nome, Wi-Fi e istruzioni» di una variante camera il riquadro «Nella variante ci sono codici di accesso» è aperto, con la casella obbligatoria, quando la variante salvata contiene già un codice: anche senza JavaScript l'host può confermare e salvare. Prima il riquadro partiva sempre chiuso e, senza JavaScript, il server chiedeva una conferma che non si poteva dare.
+- **Prove:** 831 in tutto, tutte superate (3 nuove per la 6N).
+
 ## v2 · 6M guide fuori dai motori e codici di accesso (9 ottobre 2026)
 
 Nessuna migrazione.

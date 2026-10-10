@@ -3060,12 +3060,26 @@ prova('Anomalie: «Guide pubblicate con un codice di accesso», con la data dell
 // Varianti camera: senza la casella non si salva; con la casella si salva e si registra.
 $vidV = (int) val('SELECT id FROM room_variants WHERE property_id = ? AND removed_at IS NULL ORDER BY id', [$vp]);
 $prima = (string) val('SELECT access FROM room_variants WHERE id = ?', [$vidV]);
+// 6N: il modulo «Modifica» di una variante, come lo manda il server (cioè come si vede senza JavaScript).
+$moduloVariante = function () use ($vera, $vp, $vidV): string {
+    $b = $vera->get("/pannello/$vp/varianti")['body'];
+    return preg_match('#<form[^>]*action="[^"]*/varianti/' . $vidV . '"[^>]*>.*?</form>#s', $b, $mm) ? $mm[0] : '';
+};
+$senza = $moduloVariante();
+prova('6N · variante senza codici: il riquadro della modifica resta chiuso e la casella non è obbligatoria', str_contains($senza, 'data-codici-box hidden')
+      && preg_match('#<input[^>]*data-codici-ok[^>]*required#', $senza) === 0, substr(strip_tags($senza), 0, 120));
 $vera->post("/pannello/$vp/varianti/$vidV", ['name' => 'Camera Rosa', 'access' => ['it' => 'La porta della camera ha il codice 2580']]);
 prova('Variante con un codice e senza conferma: non si salva', (string) val('SELECT access FROM room_variants WHERE id = ?', [$vidV]) === $prima);
 $vera->post("/pannello/$vp/varianti/$vidV", ['name' => 'Camera Rosa', 'access' => ['it' => 'La porta della camera ha il codice 2580'], 'codici_ok' => '1']);
 prova('…con «Ho capito, pubblico a mio rischio» si salva e il registro ha la conferma', str_contains((string) val('SELECT access FROM room_variants WHERE id = ?', [$vidV]), '2580')
       && str_contains((string) val("SELECT meta FROM audit_log WHERE action = 'guida.codici_confermati' ORDER BY id DESC"), '"variante":' . $vidV));
 prova('…e la pagina delle varianti ha il riquadro di conferma', str_contains($vera->get("/pannello/$vp/varianti")['body'], 'data-codici-box'));
+$con = $moduloVariante();
+prova('6N · variante con un codice già salvato: il riquadro della modifica è aperto e la casella obbligatoria, anche senza JavaScript',
+      str_contains($con, 'Nella variante ci sono codici di accesso') && preg_match('#data-codici-box(?! hidden)#', $con) === 1 && !str_contains($con, 'data-codici-box hidden')
+      && preg_match('#<input[^>]*data-codici-ok[^>]*required#', $con) === 1);
+$vera->post("/pannello/$vp/varianti/$vidV", ['name' => 'Camera Rosa', 'access' => ['it' => 'La porta della camera ha il codice 2580'], 'note' => ['it' => 'Colazione alle 8.'], 'codici_ok' => '1']);
+prova('6N · …e con la casella spuntata il salvataggio della modifica funziona', str_contains((string) val('SELECT note FROM room_variants WHERE id = ?', [$vidV]), 'Colazione alle 8.'));
 // Gli avvisi nella piattaforma.
 $r = $lucia->get("/pannello/$casa/sezioni/$coreL");
 prova('Editor di sezione: la riga fissa sui codici, e lo script che avvisa mentre si scrive', str_contains($r['body'], 'La guida la legge chi ha il link o il QR. Ti sconsigliamo di scrivere codici di porte, cassette delle chiavi,')

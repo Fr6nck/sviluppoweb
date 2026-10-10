@@ -71,7 +71,11 @@ $campi = function (array $v, string $id) use ($lingue, $nomiLingue, $def): void 
         <summary class="linkbtn" style="cursor:pointer">Modifica nome, Wi-Fi e istruzioni</summary>
         <form method="post" action="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/varianti/<?= $vid ?>" class="stack" style="margin-top:12px;gap:12px"><?= Csrf::field() ?>
           <?php $campi($v, 'v' . $vid); ?>
-          <?php $mostra = false; include __DIR__ . '/_codici_variante.php'; ?>
+          <?php /* 6N: aperto (e con la casella obbligatoria) se la variante salvata ha già un codice, anche senza JavaScript.
+                   access e note arrivano da room_variants come JSON. */
+                $mostra = MHW\Sicurezza::campiVariante(['nome' => (string) $v['name'], 'accesso' => json_decode((string) $v['access'], true) ?: [],
+                                                       'nota' => json_decode((string) $v['note'], true) ?: []]) !== [];
+                include __DIR__ . '/_codici_variante.php'; ?>
           <div class="actions"><button class="btn btn--sm">Salva la variante</button></div>
         </form>
       </details>
