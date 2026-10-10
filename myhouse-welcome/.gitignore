@@ -1,0 +1,4 @@
+dist/
+app/config.local.php
+app/config.local.bak.php
+app/.config.local.*.php

@@ -1,0 +1,276 @@
+{
+  "$comment": "The onboarding wizard as data. The renderer knows nothing about Wi-Fi or parking - it reads this. An administrator can reorder steps, reword a question or add a field without a deploy. In-flight onboardings keep the version they started on. See docs/07.",
+  "version": "1",
+  "defaultLocale": "it-IT",
+  "operators": ["equals", "notEquals", "in", "notIn", "isEmpty", "isNotEmpty", "gte", "lte", "allOf", "anyOf"],
+  "steps": [
+    {
+      "key": "property",
+      "title": "Your property",
+      "question": "Let's start with the basics.",
+      "help": "This is what guests see at the top of your guide.",
+      "estimatedMinutes": 3,
+      "fields": [
+        { "key": "name", "type": "string", "control": "text", "label": "What's your property called?", "placeholder": "Casa San Francesco", "required": true, "maxLength": 80, "translatable": false },
+        { "key": "property_type", "type": "enum", "control": "select", "label": "What kind of place is it?", "options": ["apartment", "house", "villa", "bnb", "room", "guesthouse", "other"], "default": "apartment", "translatable": false },
+        { "key": "cover_image", "type": "media", "control": "image", "label": "Add a photo of your place", "help": "A wide photo works best. Guests see this first.", "accept": ["image"] },
+        { "key": "logo", "type": "media", "control": "image", "label": "Your logo, if you have one", "accept": ["image"], "optional": true },
+        { "key": "address", "type": "address", "control": "address_map", "label": "Where is it?", "help": "We use this for directions and to work out how far away your recommendations are.", "translatable": false },
+        { "key": "short_description", "type": "text", "control": "textarea", "label": "Describe it in a sentence or two", "maxLength": 300, "translatable": true, "optional": true },
+        { "key": "phone", "type": "phone", "control": "tel", "label": "Phone number guests can call", "translatable": false },
+        { "key": "whatsapp_same", "type": "boolean", "control": "checkbox", "label": "WhatsApp is the same number", "default": true },
+        { "key": "whatsapp", "type": "phone", "control": "tel", "label": "WhatsApp number", "visibleWhen": { "field": "whatsapp_same", "equals": false }, "translatable": false },
+        { "key": "email", "type": "email", "control": "email", "label": "Email address", "translatable": false, "optional": true },
+        { "key": "website", "type": "url", "control": "url", "label": "Website", "translatable": false, "optional": true }
+      ]
+    },
+    {
+      "key": "welcome",
+      "title": "Your welcome",
+      "question": "What would you like to say to your guests?",
+      "help": "A couple of warm sentences. This is the first thing they read.",
+      "estimatedMinutes": 2,
+      "fields": [
+        { "key": "welcome_message", "type": "text", "control": "textarea", "label": "Your welcome message", "placeholder": "Welcome to Casa San Francesco. We hope you feel at home…", "templates": ["warm", "short", "practical"], "maxLength": 800, "translatable": true },
+        { "key": "host_name", "type": "string", "control": "text", "label": "What should guests call you?", "placeholder": "Marco", "maxLength": 60, "translatable": false },
+        { "key": "host_photo", "type": "media", "control": "image", "label": "A photo of you", "help": "Guests trust a face. You can skip this.", "accept": ["image"], "optional": true }
+      ]
+    },
+    {
+      "key": "arrival",
+      "title": "How to arrive",
+      "question": "How do guests get to you?",
+      "estimatedMinutes": 3,
+      "fields": [
+        { "key": "by_car", "type": "text", "control": "textarea", "label": "Arriving by car", "translatable": true, "optional": true },
+        { "key": "by_train", "type": "text", "control": "textarea", "label": "Arriving by train", "translatable": true, "optional": true },
+        { "key": "by_bus", "type": "text", "control": "textarea", "label": "Arriving by bus", "translatable": true, "optional": true, "requiresFeature": "welcome.sections.transport" },
+        { "key": "from_airport", "type": "text", "control": "textarea", "label": "Coming from the airport", "translatable": true, "optional": true },
+        { "key": "transfer_available", "type": "boolean", "control": "yes_no", "label": "Do you offer a transfer?", "default": false },
+        { "key": "transfer_details", "type": "text", "control": "textarea", "label": "Tell guests how it works and what it costs", "visibleWhen": { "field": "transfer_available", "equals": true }, "translatable": true },
+        { "key": "maps_url", "type": "url", "control": "url", "label": "Google Maps link", "prefillFrom": "property.address", "translatable": false },
+        { "key": "arrival_photos", "type": "media", "control": "gallery", "label": "Photos of the way in", "help": "A photo of the front door saves a phone call.", "accept": ["image"], "optional": true }
+      ]
+    },
+    {
+      "key": "parking",
+      "title": "Parking",
+      "question": "Is there somewhere to park?",
+      "estimatedMinutes": 2,
+      "fields": [
+        { "key": "has_parking", "type": "boolean", "control": "yes_no", "label": "Is there somewhere to park?", "default": true },
+        { "key": "parking_type", "type": "enum", "control": "radio", "label": "What kind of parking?", "options": ["private", "garage", "public", "street"], "visibleWhen": { "field": "has_parking", "equals": true }, "translatable": false },
+        { "key": "parking_address", "type": "string", "control": "text", "label": "Where exactly?", "visibleWhen": { "field": "has_parking", "equals": true }, "translatable": false, "optional": true },
+        { "key": "parking_cost", "type": "string", "control": "text", "label": "Does it cost anything?", "visibleWhen": { "allOf": [{ "field": "has_parking", "equals": true }, { "field": "parking_type", "in": ["public", "street", "garage"] }] }, "translatable": true, "optional": true },
+        { "key": "parking_instructions", "type": "text", "control": "textarea", "label": "Anything guests should know?", "visibleWhen": { "field": "has_parking", "equals": true }, "translatable": true, "optional": true },
+        { "key": "parking_maps_url", "type": "url", "control": "url", "label": "Google Maps link to the parking", "visibleWhen": { "field": "has_parking", "equals": true }, "translatable": false, "optional": true },
+        { "key": "parking_photos", "type": "media", "control": "gallery", "label": "Photos", "visibleWhen": { "field": "has_parking", "equals": true }, "accept": ["image"], "optional": true },
+        { "key": "no_parking_advice", "type": "text", "control": "textarea", "label": "Where do you suggest guests park instead?", "visibleWhen": { "field": "has_parking", "equals": false }, "translatable": true, "optional": true }
+      ]
+    },
+    {
+      "key": "checkin",
+      "title": "Check-in",
+      "question": "How do guests get in?",
+      "help": "This is the question guests ask most.",
+      "estimatedMinutes": 4,
+      "fields": [
+        { "key": "checkin_time", "type": "time", "control": "time", "label": "What time can guests check in?", "required": true, "default": "15:00", "translatable": false },
+        { "key": "checkin_flexible", "type": "boolean", "control": "checkbox", "label": "Flexible — I agree it with each guest", "default": false },
+        { "key": "self_checkin", "type": "boolean", "control": "radio_yes_no", "label": "Is it a self check-in?", "optionLabels": { "true": "Yes, guests let themselves in", "false": "No, I meet them" }, "default": true },
+        { "key": "key_location", "type": "enum", "control": "select", "label": "Where are the keys?", "options": ["lockbox", "key_safe", "reception", "neighbour", "smart_lock", "handover"], "visibleWhen": { "field": "self_checkin", "equals": true }, "translatable": false },
+        { "key": "access_instructions", "type": "text", "control": "textarea", "label": "Tell guests how to find and open it", "visibleWhen": { "field": "self_checkin", "equals": true }, "translatable": true },
+        { "key": "door_code", "type": "string", "control": "text", "label": "Door or lockbox code", "visibleWhen": { "field": "self_checkin", "equals": true }, "sensitive": true, "translatable": false, "help": "Stored securely. With Pro you can hide it behind a PIN or show it only near arrival.", "optional": true },
+        { "key": "meeting_instructions", "type": "text", "control": "textarea", "label": "How should guests reach you when they arrive?", "visibleWhen": { "field": "self_checkin", "equals": false }, "translatable": true },
+        { "key": "checkin_photos", "type": "media", "control": "gallery", "label": "Photos of the way in", "accept": ["image"], "optional": true },
+        { "key": "checkin_pdf", "type": "media", "control": "file", "label": "Instructions as a PDF", "accept": ["pdf"], "requiresFeature": "welcome.media.pdf", "optional": true },
+        { "key": "checkin_video", "type": "url", "control": "video_url", "label": "A short video showing the way in", "requiresFeature": "welcome.media.video_embed", "translatable": false, "optional": true },
+        { "key": "late_arrival", "type": "text", "control": "textarea", "label": "What if they arrive late?", "translatable": true, "optional": true }
+      ]
+    },
+    {
+      "key": "wifi",
+      "title": "Wi-Fi",
+      "question": "Do your guests have Wi-Fi?",
+      "estimatedMinutes": 1,
+      "fields": [
+        { "key": "has_wifi", "type": "boolean", "control": "yes_no", "label": "Do your guests have Wi-Fi?", "default": true },
+        { "key": "ssid", "type": "string", "control": "text", "label": "Network name", "placeholder": "Casa San Francesco", "visibleWhen": { "field": "has_wifi", "equals": true }, "maxLength": 64, "translatable": false },
+        { "key": "password", "type": "string", "control": "text", "label": "Password", "visibleWhen": { "field": "has_wifi", "equals": true }, "sensitive": true, "translatable": false, "help": "Guests will be able to copy it with one tap." },
+        { "key": "instructions", "type": "text", "control": "textarea", "label": "Anything else to know?", "placeholder": "The router is in the hallway cupboard…", "visibleWhen": { "field": "has_wifi", "equals": true }, "translatable": true, "maxLength": 600, "optional": true }
+      ]
+    },
+    {
+      "key": "services",
+      "title": "Services and amenities",
+      "question": "What can guests use?",
+      "requiresFeature": "welcome.sections.services",
+      "estimatedMinutes": 2,
+      "fields": [
+        { "key": "amenities", "type": "array", "control": "checkbox_grid", "label": "Tick everything your guests can use", "options": ["kitchen", "dishwasher", "washing_machine", "dryer", "air_conditioning", "heating", "tv", "streaming", "pool", "terrace", "garden", "bbq", "crib", "high_chair", "iron", "hairdryer", "lift", "accessible_entrance", "pets_welcome", "workspace", "linen", "towels", "safe", "parking"], "translatable": false },
+        { "key": "amenity_notes", "type": "object", "control": "per_option_note", "label": "Anything to explain?", "help": "For example: the washing machine is in the cellar.", "translatable": true, "optional": true },
+        { "key": "custom_amenities", "type": "array", "control": "repeater", "label": "Anything else?", "itemFields": [{ "key": "label", "type": "string", "translatable": true }], "optional": true }
+      ]
+    },
+    {
+      "key": "appliances",
+      "title": "Appliances",
+      "question": "Which appliances need explaining?",
+      "help": "The ones guests always ask about: the hob, the coffee machine, the heating.",
+      "requiresFeature": "welcome.sections.appliances",
+      "estimatedMinutes": 4,
+      "repeatable": true,
+      "seedItems": ["Induction hob", "Coffee machine", "Washing machine", "Air conditioning", "Oven"],
+      "fields": [
+        { "key": "items", "type": "array", "control": "repeater", "label": "Appliances", "itemFields": [
+          { "key": "title", "type": "string", "control": "text", "label": "What is it?", "translatable": true },
+          { "key": "description", "type": "text", "control": "textarea", "label": "How does it work?", "translatable": true },
+          { "key": "image", "type": "media", "control": "image", "label": "Photo", "accept": ["image"], "optional": true },
+          { "key": "pdf", "type": "media", "control": "file", "label": "Manual (PDF)", "accept": ["pdf"], "requiresFeature": "welcome.media.pdf", "optional": true },
+          { "key": "video_url", "type": "url", "control": "video_url", "label": "Video", "requiresFeature": "welcome.media.video_embed", "optional": true }
+        ] }
+      ]
+    },
+    {
+      "key": "rules",
+      "title": "House rules",
+      "question": "What should guests know about the house?",
+      "estimatedMinutes": 2,
+      "fields": [
+        { "key": "smoking", "type": "enum", "control": "tri_state", "label": "Smoking", "options": ["allowed", "not_allowed", "ask"], "default": "not_allowed", "translatable": false },
+        { "key": "pets", "type": "enum", "control": "tri_state", "label": "Pets", "options": ["allowed", "not_allowed", "ask"], "default": "ask", "translatable": false },
+        { "key": "parties", "type": "enum", "control": "tri_state", "label": "Parties", "options": ["allowed", "not_allowed", "ask"], "default": "not_allowed", "translatable": false },
+        { "key": "visitors", "type": "enum", "control": "tri_state", "label": "Extra visitors", "options": ["allowed", "not_allowed", "ask"], "default": "ask", "translatable": false },
+        { "key": "quiet_hours", "type": "string", "control": "text", "label": "Quiet hours", "placeholder": "22:00 – 08:00", "translatable": false, "optional": true },
+        { "key": "max_guests", "type": "number", "control": "number", "label": "Maximum number of guests", "min": 1, "max": 30, "translatable": false, "optional": true },
+        { "key": "shoes_off", "type": "boolean", "control": "checkbox", "label": "Please take shoes off indoors", "default": false },
+        { "key": "common_areas", "type": "text", "control": "textarea", "label": "Shared areas", "translatable": true, "optional": true },
+        { "key": "custom_rules", "type": "array", "control": "repeater", "label": "Your own rules", "itemFields": [{ "key": "text", "type": "string", "translatable": true }], "optional": true }
+      ]
+    },
+    {
+      "key": "waste",
+      "title": "Waste and recycling",
+      "question": "How does the rubbish work?",
+      "help": "Guests get this wrong more than anything else. Photos help.",
+      "requiresFeature": "welcome.sections.waste",
+      "estimatedMinutes": 3,
+      "fields": [
+        { "key": "system_type", "type": "enum", "control": "radio", "label": "How is waste collected?", "options": ["separate_collection", "single_bin", "collection_point"], "translatable": false },
+        { "key": "streams", "type": "array", "control": "repeater", "label": "What goes where", "itemFields": [
+          { "key": "stream", "type": "enum", "options": ["paper", "plastic", "glass", "organic", "general"], "translatable": false },
+          { "key": "instructions", "type": "text", "translatable": true },
+          { "key": "collection_day", "type": "enum", "options": ["mon", "tue", "wed", "thu", "fri", "sat", "sun", "any"], "translatable": false }
+        ] },
+        { "key": "bin_location", "type": "text", "control": "textarea", "label": "Where are the bins?", "translatable": true, "optional": true },
+        { "key": "waste_photos", "type": "media", "control": "gallery", "label": "Photos of the bins", "accept": ["image"], "optional": true },
+        { "key": "waste_pdf", "type": "media", "control": "file", "label": "The council's calendar (PDF)", "accept": ["pdf"], "requiresFeature": "welcome.media.pdf", "optional": true }
+      ]
+    },
+    {
+      "key": "checkout",
+      "title": "Check-out",
+      "question": "What should guests do when they leave?",
+      "estimatedMinutes": 2,
+      "fields": [
+        { "key": "checkout_time", "type": "time", "control": "time", "label": "What time should they leave by?", "default": "10:00", "translatable": false },
+        { "key": "key_return", "type": "text", "control": "textarea", "label": "What should they do with the keys?", "translatable": true },
+        { "key": "cleaning_expectations", "type": "array", "control": "checkbox_grid", "label": "Before they go, please could they…", "options": ["strip_beds", "dishes", "rubbish_out", "windows_closed", "heating_off", "lights_off"], "translatable": false, "optional": true },
+        { "key": "luggage_storage", "type": "boolean", "control": "yes_no", "label": "Can they leave luggage after check-out?", "default": false },
+        { "key": "luggage_details", "type": "text", "control": "textarea", "label": "How does that work?", "visibleWhen": { "field": "luggage_storage", "equals": true }, "translatable": true },
+        { "key": "late_checkout", "type": "boolean", "control": "yes_no", "label": "Do you offer late check-out?", "default": false },
+        { "key": "late_checkout_details", "type": "text", "control": "textarea", "label": "Conditions and cost", "visibleWhen": { "field": "late_checkout", "equals": true }, "translatable": true },
+        { "key": "farewell", "type": "text", "control": "textarea", "label": "A goodbye message", "translatable": true, "optional": true }
+      ]
+    },
+    {
+      "key": "emergency",
+      "title": "Safety and emergency",
+      "question": "Who should guests call if something goes wrong?",
+      "estimatedMinutes": 2,
+      "fields": [
+        { "key": "emergency_number", "type": "phone", "control": "tel", "label": "Emergency number", "default": "112", "prefillFromCountry": true, "translatable": false },
+        { "key": "host_emergency", "type": "phone", "control": "tel", "label": "Your number for emergencies", "translatable": false },
+        { "key": "doctor", "type": "string", "control": "text", "label": "Nearest doctor", "translatable": false, "optional": true },
+        { "key": "hospital", "type": "string", "control": "text", "label": "Nearest hospital", "translatable": false, "optional": true },
+        { "key": "pharmacy", "type": "string", "control": "text", "label": "Nearest pharmacy", "translatable": false, "optional": true },
+        { "key": "fire_extinguisher", "type": "string", "control": "text", "label": "Where is the fire extinguisher?", "translatable": true, "optional": true },
+        { "key": "first_aid", "type": "string", "control": "text", "label": "Where is the first aid kit?", "translatable": true, "optional": true },
+        { "key": "gas_valve", "type": "string", "control": "text", "label": "Where is the gas valve?", "translatable": true, "optional": true },
+        { "key": "electrical_panel", "type": "string", "control": "text", "label": "Where is the fuse box?", "translatable": true, "optional": true },
+        { "key": "custom_contacts", "type": "array", "control": "repeater", "label": "Other useful contacts", "itemFields": [
+          { "key": "label", "type": "string", "translatable": true },
+          { "key": "phone", "type": "phone", "translatable": false }
+        ], "optional": true }
+      ]
+    },
+    {
+      "key": "recommendations",
+      "title": "Places you recommend",
+      "question": "Where do you send your guests?",
+      "help": "Paste a Google Maps link and we'll fill in the rest.",
+      "requiresFeature": "welcome.sections.recommendations",
+      "estimatedMinutes": 5,
+      "fields": [
+        { "key": "places", "type": "array", "control": "repeater", "label": "Places", "limitFeature": "welcome.recommendations.max", "itemFields": [
+          { "key": "maps_paste", "type": "url", "control": "maps_paste", "label": "Paste a Google Maps link", "extracts": ["name", "address", "latitude", "longitude", "phone"] },
+          { "key": "name", "type": "string", "control": "text", "label": "Name", "translatable": false },
+          { "key": "category", "type": "enum", "control": "select", "options": ["restaurants", "bars", "breakfast", "supermarkets", "attractions", "experiences", "museums", "shopping", "transport"], "translatable": false },
+          { "key": "short_description", "type": "text", "control": "textarea", "label": "Why do you recommend it?", "maxLength": 240, "translatable": true },
+          { "key": "image", "type": "media", "control": "image", "accept": ["image"], "optional": true },
+          { "key": "phone", "type": "phone", "translatable": false, "optional": true },
+          { "key": "website", "type": "url", "translatable": false, "optional": true },
+          { "key": "price_level", "type": "number", "control": "price_level", "min": 1, "max": 4, "optional": true },
+          { "key": "is_host_pick", "type": "boolean", "control": "checkbox", "label": "One of my favourites", "default": false }
+        ] }
+      ]
+    },
+    {
+      "key": "extras",
+      "title": "Extra services",
+      "question": "Do you offer anything else guests can book?",
+      "requiresFeature": "welcome.sections.extras",
+      "estimatedMinutes": 3,
+      "fields": [
+        { "key": "offers", "type": "array", "control": "repeater", "label": "Extras", "itemFields": [
+          { "key": "type", "type": "enum", "options": ["transfer", "breakfast", "bike_rental", "experience", "late_checkout", "extra_cleaning", "extra_linen", "other"], "translatable": false },
+          { "key": "title", "type": "string", "translatable": true },
+          { "key": "description", "type": "text", "translatable": true },
+          { "key": "price", "type": "string", "translatable": true, "optional": true },
+          { "key": "how_to_book", "type": "text", "translatable": true },
+          { "key": "image", "type": "media", "accept": ["image"], "optional": true }
+        ] }
+      ]
+    },
+    {
+      "key": "languages",
+      "title": "Languages",
+      "question": "Which languages should your guide be in?",
+      "estimatedMinutes": 1,
+      "fields": [
+        { "key": "default_locale", "type": "enum", "control": "select", "label": "You're writing in", "optionsFrom": "locales", "default": "it-IT", "translatable": false },
+        { "key": "additional_locales", "type": "array", "control": "locale_picker", "label": "Guests can also read it in", "optionsFrom": "locales", "limitFeature": "welcome.languages.max", "translatable": false },
+        { "key": "run_auto_translate", "type": "boolean", "control": "checkbox", "label": "Translate everything now, and let me review it", "requiresFeature": "welcome.languages.auto_translate", "default": true }
+      ]
+    },
+    {
+      "key": "preview",
+      "title": "Preview",
+      "question": "Here's what your guests will see.",
+      "control": "device_preview",
+      "estimatedMinutes": 1,
+      "fields": []
+    },
+    {
+      "key": "publish",
+      "title": "Publish",
+      "question": "Ready to go online?",
+      "control": "publish",
+      "estimatedMinutes": 1,
+      "fields": [
+        { "key": "slug", "type": "string", "control": "slug", "label": "Your guide address", "prefix": "welcome.myhouse.it/", "derivedFrom": "property.name", "translatable": false },
+        { "key": "seo_indexable", "type": "boolean", "control": "checkbox", "label": "Let search engines show your guide", "default": false, "help": "Off by default. Your Wi-Fi password and codes are never included in search results." }
+      ]
+    }
+  ]
+}

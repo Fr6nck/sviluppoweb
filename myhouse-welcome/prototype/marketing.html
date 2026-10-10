@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="MyHouse Welcome — a digital welcome guide for your guests. One link, one QR code, no app to install.">
+<title>MyHouse Welcome — everything your guests need, in one place</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231F5B4B'/><path d='M8 17l8-7 8 7v7a1 1 0 01-1 1h-4v-5h-6v5H9a1 1 0 01-1-1z' fill='%23fff'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/app.css">
+<style>
+.nav { position: sticky; top: 0; z-index: 50; background: color-mix(in srgb, var(--mh-surface) 88%, transparent);
+  backdrop-filter: blur(12px); border-bottom: 1px solid var(--mh-border); }
+.nav__in { max-width: 1120px; margin: 0 auto; padding: .8rem var(--mh-space-7); display: flex; align-items: center; gap: var(--mh-space-7); }
+.brand { display: flex; align-items: center; gap: .55rem; text-decoration: none; color: inherit; font-weight: 700; font-size: var(--mh-text-sm); }
+.brand__m { width: 30px; height: 30px; border-radius: 8px; background: var(--mh-brand-600); display: grid; place-items: center; }
+.nav__links { display: flex; gap: var(--mh-space-6); margin-left: auto; align-items: center; }
+/* :not(.btn) matters — a bare `.nav__links a` rule (specificity 0,2,0) beats
+   `.btn--primary` (0,1,0) and silently repainted the CTA's white label grey,
+   which measured 1.25:1. */
+.nav__links a:not(.btn) { font-size: var(--mh-text-sm); font-weight: 500; color: var(--mh-ink-muted); text-decoration: none; }
+.nav__links a:not(.btn):hover { color: var(--mh-ink); }
+@media (max-width: 820px) { .nav__links a:not(.btn) { display: none; } }
+
+section { padding: var(--mh-space-12) 0; }
+.sec-in { max-width: 1120px; margin: 0 auto; padding: 0 var(--mh-space-7); }
+.eyebrow { font-size: var(--mh-text-xs); font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--mh-brand-600); margin-bottom: .7rem; }
+h2.sec-h { font-family: var(--mh-font-display); font-size: var(--mh-text-3xl); line-height: var(--mh-lh-3xl); letter-spacing: -.02em; margin-bottom: var(--mh-space-5); }
+.sec-lede { font-size: var(--mh-text-lg); color: var(--mh-ink-muted); max-width: 58ch; line-height: 1.6; }
+
+/* hero */
+.hero { padding: var(--mh-space-12) 0 var(--mh-space-11); }
+.hero__grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: var(--mh-space-11); align-items: center; }
+@media (max-width: 940px) { .hero__grid { grid-template-columns: 1fr; gap: var(--mh-space-9); } }
+.hero h1 { font-family: var(--mh-font-display); font-size: var(--mh-text-5xl); line-height: 1.08; letter-spacing: -.028em; margin-bottom: var(--mh-space-6); }
+@media (min-width: 1000px) { .hero h1 { font-size: var(--mh-text-6xl); } }
+.hero p.lede { font-size: var(--mh-text-lg); color: var(--mh-ink-muted); line-height: 1.65; max-width: 50ch; margin-bottom: var(--mh-space-8); }
+.hero__cta { display: flex; gap: .7rem; flex-wrap: wrap; align-items: center; }
+.hero__note { font-size: var(--mh-text-xs); color: var(--mh-ink-subtle); margin-top: var(--mh-space-5); }
+.hero__phone { display: flex; justify-content: center; }
+
+/* problem */
+.problem { background: var(--mh-brand-800); color: #EDEAE4; }
+.problem h2.sec-h, .problem .eyebrow { color: #fff; }
+.problem .eyebrow { color: var(--mh-brand-300); }
+.msgs { display: grid; gap: .5rem; max-width: 420px; }
+.msg { background: #17473A; border-radius: 14px 14px 14px 4px; padding: .65rem .85rem; font-size: var(--mh-text-sm); color: #D9E5E0; }
+.msg:nth-child(even) { background: #1F5B4B; }
+.problem__grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--mh-space-11); align-items: center; }
+@media (max-width: 860px) { .problem__grid { grid-template-columns: 1fr; } }
+
+/* steps */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--mh-space-7); margin-top: var(--mh-space-9); counter-reset: s; }
+@media (max-width: 860px) { .steps { grid-template-columns: 1fr; } }
+.step { counter-increment: s; }
+.step::before { content: counter(s); display: grid; place-items: center; width: 34px; height: 34px;
+  border-radius: var(--mh-radius-full); background: var(--mh-brand-50); color: var(--mh-brand-700);
+  font-weight: 700; font-size: var(--mh-text-sm); margin-bottom: var(--mh-space-5); }
+.step h3 { font-size: var(--mh-text-lg); margin-bottom: .4rem; }
+.step p { font-size: var(--mh-text-sm); color: var(--mh-ink-muted); line-height: 1.6; }
+
+/* sections gallery */
+.gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--mh-space-4); margin-top: var(--mh-space-8); }
+.gal div { display: flex; align-items: center; gap: .55rem; padding: .8rem .9rem; background: var(--mh-surface-raised);
+  border: 1px solid var(--mh-border); border-radius: var(--mh-radius-md); font-size: var(--mh-text-sm); font-weight: 500; }
+
+/* pricing */
+.pricing { background: var(--mh-surface-sunken); }
+.plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--mh-space-6); margin-top: var(--mh-space-9); align-items: start; }
+@media (max-width: 900px) { .plans { grid-template-columns: 1fr; max-width: 420px; margin-inline: auto; } }
+.plan { background: var(--mh-surface-raised); border: 1px solid var(--mh-border); border-radius: var(--mh-radius-xl);
+  padding: var(--mh-space-8); box-shadow: var(--mh-shadow-xs); position: relative; }
+.plan--rec { border-color: var(--mh-brand-600); box-shadow: var(--mh-shadow-md); }
+.plan__flag { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); }
+.plan__name { font-family: var(--mh-font-display); font-size: var(--mh-text-2xl); margin-bottom: .3rem; }
+.plan__tag { font-size: var(--mh-text-sm); color: var(--mh-ink-muted); min-height: 2.9em; line-height: 1.5; }
+.plan__price { font-size: var(--mh-text-4xl); font-weight: 700; letter-spacing: -.02em; margin: var(--mh-space-6) 0 .1rem; }
+.plan__once { font-size: var(--mh-text-xs); color: var(--mh-ink-subtle); }
+.plan ul { list-style: none; margin: var(--mh-space-7) 0; display: grid; gap: .55rem; }
+.plan li { display: flex; gap: .5rem; font-size: var(--mh-text-sm); line-height: 1.45; }
+.plan li svg { flex: none; margin-top: 3px; color: var(--mh-brand-600); }
+
+/* faq */
+details.q { border-bottom: 1px solid var(--mh-border); }
+details.q summary { padding: var(--mh-space-6) 0; font-weight: 600; cursor: pointer; list-style: none;
+  display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
+details.q summary::-webkit-details-marker { display: none; }
+details.q summary::after { content: '+'; color: var(--mh-ink-subtle); font-size: 1.3rem; line-height: 1; }
+details.q[open] summary::after { content: '\2212'; }
+details.q p { padding-bottom: var(--mh-space-6); color: var(--mh-ink-muted); font-size: var(--mh-text-sm); line-height: 1.65; max-width: 62ch; }
+
+/* final + footer */
+.final { background: var(--mh-brand-700); color: #fff; text-align: center; }
+.final h2 { font-family: var(--mh-font-display); font-size: var(--mh-text-4xl); line-height: 1.12; margin-bottom: var(--mh-space-5); letter-spacing: -.02em; }
+.final p { color: #C6DAD1; max-width: 46ch; margin: 0 auto var(--mh-space-8); }
+.final .btn--primary { background: #fff; color: var(--mh-brand-700); }
+.final .btn--primary:hover { background: #EFF5F2; }
+footer.site { border-top: 1px solid var(--mh-border); padding: var(--mh-space-9) 0; font-size: var(--mh-text-sm); color: var(--mh-ink-muted); }
+footer.site .sec-in { display: flex; justify-content: space-between; gap: var(--mh-space-7); flex-wrap: wrap; }
+footer.site a { color: var(--mh-ink-muted); text-decoration: none; }
+footer.site a:hover { color: var(--mh-ink); text-decoration: underline; }
+
+/* mini guide preview inside the phone frame */
+.mini { padding: 0 0 1rem; }
+.mini__cover { height: 118px; background: linear-gradient(160deg, #CBDCE0, #EDE4D6); position: relative; }
+.mini__cover::after { content: ''; position: absolute; inset: auto 0 0 0; height: 48px; background: linear-gradient(to top, var(--mh-surface), transparent); }
+.mini__body { padding: 0 1rem; margin-top: -1.1rem; position: relative; }
+.mini__name { font-family: var(--mh-font-display); font-size: 1.35rem; letter-spacing: -.02em; margin: .5rem 0 .3rem; }
+.mini__hello { font-size: .78rem; color: var(--mh-ink-muted); line-height: 1.5; }
+.mini__grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-top: .9rem; }
+.mini__c { background: var(--mh-surface-raised); border: 1px solid var(--mh-border); border-radius: 18px; padding: .65rem; }
+.mini__i { width: 28px; height: 28px; border-radius: 50%; background: var(--mh-brand-50); display: grid; place-items: center; font-size: 14px; margin-bottom: .4rem; }
+.mini__l { font-size: .72rem; font-weight: 600; }
+.proto-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 80; background: var(--mh-ink); color: #fff;
+  font-size: var(--mh-text-xs); padding: .5rem var(--mh-space-5); display: flex; gap: .8rem; align-items: center; justify-content: center; flex-wrap: wrap; }
+.proto-bar a { color: #fff; }
+body { padding-bottom: 2.4rem; }
+</style>
+</head>
+<body>
+<a class="mh-skip" href="#main">Skip to content</a>
+
+<nav class="nav">
+  <div class="nav__in">
+    <a class="brand" href="index.html">
+      <span class="brand__m"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></span>
+      MyHouse <span class="subtle" style="font-weight:500">Welcome</span>
+    </a>
+    <div class="nav__links">
+      <a href="#how">How it works</a>
+      <a href="#pricing">Packages</a>
+      <a href="#faq">Questions</a>
+      <a href="guide.html">See an example</a>
+      <a class="btn btn--primary btn--sm" href="#pricing">Create your Welcome Guide</a>
+    </div>
+  </div>
+</nav>
+
+<main id="main">
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="sec-in hero__grid">
+    <div>
+      <h1>Everything your guests need.<br>In one place.</h1>
+      <p class="lede">
+        A digital welcome guide for your apartment, B&amp;B or holiday home. One
+        link, one QR code, no app to install. Stop sending the same seven
+        WhatsApp messages to every guest.
+      </p>
+      <div class="hero__cta">
+        <a class="btn btn--primary btn--lg" href="#pricing">Create your Welcome Guide</a>
+        <a class="btn btn--secondary btn--lg" href="guide.html">See an example</a>
+      </div>
+      <p class="hero__note">Ready in about 20 minutes. Works on any phone, no app, no login for your guests.</p>
+    </div>
+
+    <div class="hero__phone">
+      <div class="phone">
+        <div class="phone__notch" aria-hidden="true"></div>
+        <div class="phone__screen">
+          <div class="mini" role="img" aria-label="A preview of a guest guide on a phone, showing the property name and a grid of sections">
+            <div class="mini__cover"></div>
+            <div class="mini__body">
+              <div class="mini__name">Casa San Francesco</div>
+              <p class="mini__hello">Welcome, and make yourself at home. Everything you need for your stay is here.</p>
+              <div class="mini__grid">
+                <div class="mini__c"><div class="mini__i">&#128273;</div><div class="mini__l">Check-in</div></div>
+                <div class="mini__c"><div class="mini__i">&#128246;</div><div class="mini__l">Wi-Fi</div></div>
+                <div class="mini__c"><div class="mini__i">&#128663;</div><div class="mini__l">How to arrive</div></div>
+                <div class="mini__c"><div class="mini__i">&#127359;</div><div class="mini__l">Parking</div></div>
+                <div class="mini__c"><div class="mini__i">&#9851;</div><div class="mini__l">Waste</div></div>
+                <div class="mini__c"><div class="mini__i">&#127869;</div><div class="mini__l">Where to eat</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROBLEM ============ -->
+<section class="problem">
+  <div class="sec-in problem__grid">
+    <div>
+      <p class="eyebrow">The problem</p>
+      <h2 class="sec-h">You have written this message a hundred times.</h2>
+      <p style="color:#C6DAD1; line-height:1.7; max-width:48ch">
+        Every booking, the same questions. The guide answers them once, and
+        guests can open it at 23:40 without waking you up.
+      </p>
+    </div>
+    <div class="msgs" aria-label="Example of repeated WhatsApp messages a host sends">
+      <div class="msg">The lockbox is next to the green door, code 4821</div>
+      <div class="msg">Wi-Fi is CasaSanFrancesco, password ulivo2026</div>
+      <div class="msg">Blue lines are paid parking, free after 8pm</div>
+      <div class="msg">The hob only works with magnetic pans!</div>
+      <div class="msg">Plastic goes out Tuesday and Friday evening</div>
+      <div class="msg">Sorry to bother you again, what was the Wi-Fi?</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOW ============ -->
+<section id="how">
+  <div class="sec-in">
+    <p class="eyebrow">How it works</p>
+    <h2 class="sec-h">Three steps, one afternoon.</h2>
+    <div class="steps">
+      <div class="step">
+        <h3>Answer some questions</h3>
+        <p>Not a form — questions about your home. What time is check-in? Is there Wi-Fi? Where do guests park? Skip anything that doesn't apply.</p>
+      </div>
+      <div class="step">
+        <h3>See it as your guests will</h3>
+        <p>A live preview on a phone, next to what you're writing. Change a word, watch it change.</p>
+      </div>
+      <div class="step">
+        <h3>Share the link and the code</h3>
+        <p>You get a web address and a QR code to print. Change your guide whenever you like — the printed code keeps working.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WHAT GUESTS SEE ============ -->
+<section style="background:var(--mh-surface-raised); border-block:1px solid var(--mh-border)">
+  <div class="sec-in">
+    <p class="eyebrow">What guests see</p>
+    <h2 class="sec-h">Answers, in seconds.</h2>
+    <p class="sec-lede">Your guide opens instantly on any phone. No app, no account, no cookie banner.</p>
+    <div class="gal">
+      <div><span aria-hidden="true">&#128075;</span> Welcome</div>
+      <div><span aria-hidden="true">&#128273;</span> Check-in</div>
+      <div><span aria-hidden="true">&#128246;</span> Wi-Fi</div>
+      <div><span aria-hidden="true">&#128663;</span> How to arrive</div>
+      <div><span aria-hidden="true">&#127359;</span> Parking</div>
+      <div><span aria-hidden="true">&#128715;</span> Services</div>
+      <div><span aria-hidden="true">&#128268;</span> Appliances</div>
+      <div><span aria-hidden="true">&#128203;</span> House rules</div>
+      <div><span aria-hidden="true">&#9851;</span> Waste</div>
+      <div><span aria-hidden="true">&#127869;</span> Where to eat</div>
+      <div><span aria-hidden="true">&#128075;</span> Check-out</div>
+      <div><span aria-hidden="true">&#128680;</span> Emergency</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRICING ============ -->
+<section class="pricing" id="pricing">
+  <div class="sec-in">
+    <p class="eyebrow">Packages</p>
+    <h2 class="sec-h">Pay once. It's yours.</h2>
+    <p class="sec-lede">No monthly fee, no per-guest charge. Upgrade any time and keep everything you've written.</p>
+    <div class="plans" id="plans"></div>
+    <p class="xs subtle" style="margin-top:var(--mh-space-7); text-align:center">
+      Prices include VAT. We'll ask for your P.IVA at checkout if you need an invoice.
+    </p>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section id="faq">
+  <div class="sec-in wrap--narrow" style="padding-inline:var(--mh-space-7)">
+    <p class="eyebrow">Questions</p>
+    <h2 class="sec-h">Before you buy.</h2>
+
+    <details class="q" open><summary>Do my guests need to install anything?</summary>
+      <p>No. Your guide is a web page. They tap the link or scan the QR code and it opens — on any phone, any tablet, any computer. There is nothing to download and no account to create.</p></details>
+
+    <details class="q"><summary>What happens to my printed QR code if I change something?</summary>
+      <p>Nothing. The QR code points to a permanent address that we resolve to your current guide. You can rewrite every word, change your guide's web address, even move to your own domain later — the code you printed and stuck on the fridge keeps working.</p></details>
+
+    <details class="q"><summary>I'm not good with computers. Is this going to be hard?</summary>
+      <p>You answer questions about your home, one screen at a time. "What time can guests check in?" "Is there Wi-Fi?" You can skip anything, save and come back later, and do the whole thing from your phone. Most hosts finish in about twenty minutes.</p></details>
+
+    <details class="q"><summary>Can I do it in more than one language?</summary>
+      <p>Yes. Essential covers one language. Plus lets you write in up to five yourself. Pro translates everything automatically and lets you correct it before your guests see it — and a correction you make is never overwritten by a later translation.</p></details>
+
+    <details class="q"><summary>Where do I put the Wi-Fi password and the door code?</summary>
+      <p>In the guide, where guests can copy them with one tap. Wi-Fi gets its own screen with a copy button and a QR code that joins the network. With Pro you can also hide the door code behind a short PIN that you give the guest.</p></details>
+
+    <details class="q"><summary>Can I change my guide after I publish it?</summary>
+      <p>Whenever you like, as often as you like. Changes are saved as you type and go live when you press Publish. Guests always see the published version, so you can edit at three in the morning without anyone seeing a half-finished sentence.</p></details>
+
+    <details class="q"><summary>Do you track my guests?</summary>
+      <p>No. We set no cookies on your guide and store nothing about the people who read it. You can see how many times your guide was opened and which sections were used — that's about the guide, not about your guests.</p></details>
+
+    <details class="q"><summary>I have more than one property.</summary>
+      <p>Pro covers up to five, and you can copy a finished guide to a new property and change the details rather than starting again. If you manage more than five, email us and we'll sort something out.</p></details>
+
+    <details class="q"><summary>What if I want a refund?</summary>
+      <p>Email us within 14 days and we'll refund you. Your guide goes offline but nothing you wrote is deleted — if you come back, it's all still there.</p></details>
+  </div>
+</section>
+
+<!-- ============ FINAL ============ -->
+<section class="final">
+  <div class="sec-in">
+    <h2>Write it once.<br>Answer it never again.</h2>
+    <p>Set up your welcome guide this afternoon, and stop answering the same questions at midnight.</p>
+    <a class="btn btn--primary btn--lg" href="#pricing">Create your Welcome Guide</a>
+  </div>
+</section>
+
+</main>
+
+<footer class="site">
+  <div class="sec-in">
+    <div>
+      <strong>MyHouse Welcome</strong><br>
+      <span class="xs subtle">Part of the MyHouse family of products for small hospitality.</span>
+    </div>
+    <div style="display:flex; gap:var(--mh-space-7); flex-wrap:wrap">
+      <a href="../docs/22-privacy-gdpr.md">Privacy</a>
+      <a href="../docs/22-privacy-gdpr.md">Terms</a>
+      <a href="guide.html">Example guide</a>
+      <a href="index.html">Prototype index</a>
+    </div>
+  </div>
+</footer>
+
+<div class="proto-bar">
+  <span>Prototype</span>
+  <a href="index.html">All screens</a>
+  <span class="subtle" style="color:#9aa0a8">Packages below are rendered from the same definition the product uses</span>
+</div>
+
+<script src="scripts/store.js"></script>
+<script>
+(function () {
+  'use strict';
+  /* The pricing section renders from the package definition, exactly as the
+     real page reads GET /api/public/packages. Adding a fourth package is data.  */
+  var tick = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
+
+  var BULLETS = {
+    essential: ['Welcome message and house rules', 'Check-in, check-out and Wi-Fi',
+                'How to arrive and where to park', 'Emergency contacts', 'Photos',
+                'Your link and QR code', 'One language'],
+    plus:      ['Everything in Essential', 'Services and amenities', 'How the appliances work',
+                'Waste and recycling', 'Restaurants, bars and things to do', 'PDF files and more photos',
+                'Up to 5 languages, written by you', 'Search', 'Your colours'],
+    pro:       ['Everything in Plus', 'Automatic translations you review first', 'Up to 20 languages',
+                'Up to 5 properties', 'Experiences and extra services', 'Videos',
+                'Your branding, without ours', 'Printable branded QR cards', 'Detailed statistics',
+                'Sections behind a code']
+  };
+
+  var html = ['essential', 'plus', 'pro'].map(function (key) {
+    var p = MHW.PACKAGES[key];
+    return '<div class="plan' + (p.recommended ? ' plan--rec' : '') + '">' +
+      (p.recommended ? '<span class="chip chip--brand plan__flag">Most chosen</span>' : '') +
+      '<div class="plan__name">' + p.name + '</div>' +
+      '<p class="plan__tag">' + p.tagline + '</p>' +
+      '<div class="plan__price">' + MHW.money(p.amountCents) + '</div>' +
+      '<div class="plan__once">once, not per month</div>' +
+      '<ul>' + BULLETS[key].map(function (b) {
+        return '<li>' + tick + '<span>' + b + '</span></li>';
+      }).join('') + '</ul>' +
+      '<a class="btn ' + (p.recommended ? 'btn--primary' : 'btn--secondary') +
+      ' btn--block btn--lg" href="checkout.html?package=' + key + '">Choose ' + p.name + '</a>' +
+      '</div>';
+  }).join('');
+
+  document.getElementById('plans').innerHTML = html;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<?php
+/* Un piano nell'amministrazione: versioni, testi, nuova versione.
+   Riceve: $p (con 'versions'), $features, $etichette (funzione). */
+use function MHW\b;
+use MHW\{Support, Csrf, Plans};
+$cur = null; foreach ($p['versions'] as $v) if ($v['is_current']) $cur = $v; $cur ??= $p['versions'][0] ?? null; ?>
+    <section class="panel stack" id="pk-<?= (int) $p['id'] ?>">
+      <div class="spread spread--mid">
+        <div class="stack" style="gap:4px"><b style="font-size:22px;font-weight:500"><?= Support::e($p['name']) ?></b>
+          <span class="small muted"><code><?= Support::e($p['code']) ?></code><?= $p['family'] ? ' · famiglia ' . Support::e($p['family']) : '' ?>
+            · <?= !$p['active'] ? 'disattivato' : ($p['public'] ? 'pubblico' : 'nascosto') ?></span></div>
+        <?php if ($cur): ?><span style="font-size:22px;font-weight:500"><?= Support::e(Support::money((int) $cur['price_cents'], $cur['currency'])) ?>
+          <span class="small muted"><?= Plans::perProperty($cur) ? 'prima struttura, poi ' . Support::e(implode(', ', array_map(fn($t) => Plans::tierLabel($t) . ' +' . Support::money($t['cents'], $cur['currency']), Plans::tiers($cur)))) . ' · ' : '' ?>+ IVA / anno · v<?= (int) $cur['version'] ?></span></span><?php endif; ?>
+      </div>
+
+      <div class="tablewrap"><table class="data">
+        <thead><tr><th>Versione</th><th>Prezzo</th><th>Price ID</th><th>Funzioni</th><th>Attivi</th><th>Venduti</th></tr></thead>
+        <tbody><?php foreach ($p['versions'] as $v): ?>
+          <tr><td>v<?= (int) $v['version'] ?><?= $v['is_current'] ? ' <span class="badge badge--pine">in vendita</span>' : '' ?><br><span class="tiny muted"><?= Support::e(Support::date($v['created_at'])) ?></span></td>
+            <td><?= Support::e(Support::money((int) $v['price_cents'], $v['currency'])) ?></td>
+            <td><code><?= Support::e($v['stripe_price_id'] ?: '—') ?></code></td>
+            <td><span class="etichette"><?php foreach ($etichette($v) as $et): ?><span class="etichetta"><?= Support::e($et) ?></span><?php endforeach; ?></span></td>
+            <td><?= (int) $v['clienti'] ?></td><td><?= (int) $v['sold_count'] ?></td></tr>
+        <?php endforeach; ?></tbody></table></div>
+
+      <details class="fieldset">
+        <summary class="legend" style="cursor:pointer;min-height:32px">Testi sulla landing</summary>
+        <form method="post" action="<?= b() ?>/admin/pacchetti/<?= (int) $p['id'] ?>/testo" class="stack" style="margin-top:12px"><?= Csrf::field() ?>
+          <?php include __DIR__ . '/_testi_pacchetto.php'; ?>
+          <div class="actions"><button class="btn btn--sm">Salva i testi</button></div>
+        </form>
+      </details>
+
+      <details class="fieldset">
+        <summary class="legend" style="cursor:pointer;min-height:32px">Nuova versione (prezzo o funzioni)</summary>
+        <form method="post" action="<?= b() ?>/admin/pacchetti/<?= (int) $p['id'] ?>/nuova-versione" class="stack" style="margin-top:12px"><?= Csrf::field() ?>
+          <div class="grid grid-3">
+            <div class="field" style="margin:0"><label>Nome</label><input type="text" name="nome" value="<?= Support::e($p['name']) ?>" maxlength="80"></div>
+            <div class="field" style="margin:0"><label>Prezzo annuale (€, IVA esclusa)</label>
+              <input type="text" name="prezzo" inputmode="decimal" required value="<?= $cur ? Support::e(number_format($cur['price_cents'] / 100, 2, ',', '')) : '' ?>"></div>
+            <div class="field" style="margin:0"><label>Price ID di Stripe <span class="muted">(facoltativo)</span></label>
+              <input type="text" name="stripe_price_id" placeholder="price_…" pattern="price_[A-Za-z0-9]+" value="<?= Support::e($cur['stripe_price_id'] ?? '') ?>"></div>
+          </div>
+          <?php if ($cur && Plans::perProperty($cur)): ?>
+            <div class="grid grid-4">
+              <div class="field" style="margin:0"><label>Ogni struttura aggiuntiva (€/anno, IVA esclusa)</label>
+                <input type="text" name="prezzo_extra" inputmode="decimal" required value="<?= Support::e(number_format($cur['extra_price_cents'] / 100, 2, ',', '')) ?>"></div>
+              <div class="field" style="margin:0"><label>Strutture minime</label><input name="min_quantita" type="number" min="1" value="<?= (int) $cur['min_quantity'] ?>"></div>
+              <div class="field" style="margin:0"><label>Strutture massime</label><input name="max_quantita" type="number" min="1" value="<?= (int) $cur['max_quantity'] ?>"></div>
+              <div class="field" style="margin:0"><label>Price ID della struttura aggiuntiva <span class="muted">(facoltativo)</span></label>
+                <input type="text" name="stripe_extra_price_id" placeholder="price_…" pattern="price_[A-Za-z0-9]+" value="<?= Support::e($cur['stripe_extra_price_id'] ?? '') ?>"></div>
+            </div>
+            <div class="field" style="margin:0"><label for="scaglioni-<?= (int) $p['id'] ?>">Scaglioni <span class="muted">(facoltativi: una riga per scaglione, «dalla struttura: € l'una»)</span></label>
+              <textarea id="scaglioni-<?= (int) $p['id'] ?>" name="scaglioni" rows="4" placeholder="3: 50&#10;6: 40&#10;11: 30&#10;21: 25"><?= Support::e(implode("\n", array_map(fn($t) => $t['da'] . ': ' . rtrim(rtrim(number_format($t['cents'] / 100, 2, ',', ''), '0'), ','), array_slice(Plans::tiers($cur), 1)))) ?></textarea></div>
+            <p class="small muted">Prezzo = prima struttura + ogni altra al prezzo del suo scaglione: la 2ª al prezzo della struttura aggiuntiva, poi quelli scritti qui.
+              Il limite di strutture è la quantità acquistata. Con gli scaglioni lascia vuoto il Price ID della struttura aggiuntiva: il prezzo a scaglioni lo crea il sito su Stripe.</p>
+          <?php endif; ?>
+          <div class="grid grid-4">
+            <?php foreach ($features as $f): ?>
+              <div class="field" style="margin:0"><label class="small" for="f-<?= (int) $p['id'] ?>-<?= Support::e($f['code']) ?>"><?= Support::e($f['label']) ?></label>
+                <input type="text" id="f-<?= (int) $p['id'] ?>-<?= Support::e($f['code']) ?>" name="f[<?= Support::e($f['code']) ?>]" value="<?= Support::e($cur['features'][$f['code']] ?? $f['default_value']) ?>"
+                       pattern="\d{1,4}|unlimited" title="Un numero, 1 per sì e 0 per no, oppure unlimited"></div>
+            <?php endforeach; ?>
+          </div>
+          <?php include __DIR__ . '/_testi_pacchetto.php'; ?>
+          <p class="small muted">Gli abbonamenti già attivi restano sulla loro versione. Se usi un Price ID, deve essere un prezzo annuale ricorrente creato in Stripe con lo stesso importo.</p>
+          <div class="actions"><button class="btn btn--sm">Crea la versione <?= $cur ? (int) $cur['version'] + 1 : 1 ?></button></div>
+        </form>
+      </details>
+    </section>

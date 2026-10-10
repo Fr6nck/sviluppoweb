@@ -1,0 +1,526 @@
+<?php
+/* La landing. Ogni blocco ha un compito solo:
+     hero        che cos'è — e il prodotto si vede subito, sul telefono
+     scene       come si usa, in tre immagini
+     prodotto    cosa trova l'ospite
+     per chi     quattro modi di ospitare: a ognuno il suo uso
+     il tempo    perché conviene al proprietario
+     guadagno    la guida che porta prenotazioni dirette e recensioni
+     come        quanto è semplice cominciare (con le schermate vere del pannello)
+     QR          come si condivide
+     voci        le testimonianze, solo se l'amministratore ne ha inserite di vere
+     piani       scegliere (e, se attivo, «Porta un amico»)
+     domande     le FAQ (le otto principali, poi «Altre domande»), con il contatto per chi non trova la risposta
+     chiusura    cominciare, e chi c'è dietro
+   Prezzi, nomi ed elenchi dei piani arrivano dal database (li cambia
+   l'amministratore): nessun prezzo è scritto qui o nello script. Nessuna
+   testimonianza e nessun numero inventato: la demo è dichiarata come demo, le
+   domande sono esempi. */
+use function MHW\{a, b};
+use MHW\{Support, Icon, Plans};
+$title = 'MyHouse Welcome — la guida digitale della tua struttura';
+$dentro = !empty($user);
+$vai = fn(int $pv) => b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . $pv;
+$crea = b() . ($dentro ? '/pannello' : '/registrati');
+$demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' : null;
+$nomeDemo = $demo['name'] ?? 'Casa Lucia';
+$fotoJpg = a('/assets/foto/borgo.jpg');
+$fotoSet = a('/assets/foto/borgo-1200.webp') . ' 1200w, ' . a('/assets/foto/borgo-2000.webp') . ' 2000w';
+// Il telefono mostra la demo vera: con la vetrina (Casa Checco) la sua foto, altrimenti quella di Casa Lucia.
+$vetrina = $demo && (int) $demo['is_demo'] === MHW\Demo::VETRINA;
+$telefonoJpg = a($vetrina ? '/assets/foto/checco-telefono.jpg' : '/assets/foto/borgo-telefono.jpg');
+$telefonoWebp = a($vetrina ? '/assets/foto/checco-telefono-600.webp' : '/assets/foto/borgo-telefono-600.webp');
+$checkinDemo = preg_match('/^\d{2}:\d{2}$/', (string) ($demo['checkin_from'] ?? '')) ? $demo['checkin_from'] : '15:00';
+// Il prezzo di partenza, dal listino: se l'amministratore lo cambia, cambia anche qui.
+$partenza = null;
+foreach ($offers as $of) foreach ($of['options'] as $o) {
+    if ($partenza === null || (int) $o['price_cents'] < (int) $partenza['price_cents']) $partenza = $o;
+}
+// Tutte le sezioni del catalogo, nei tre gruppi (fase 6C): icone e titoli sono gli stessi del pannello e della guida.
+$gruppiSezioni = MHW\SectionCatalog::gruppi();
+$quanteSezioni = array_sum(array_map('count', $gruppiSezioni)); ?>
+
+<script>
+/* Prima di disegnare la pagina: se si anima, gli elementi partono già nascosti
+   (niente lampo). Se landing.js non arriva entro 3 secondi, si torna alla
+   pagina ferma: il contenuto non resta mai invisibile. */
+(function (d) {
+  if (!('IntersectionObserver' in window) || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+  d.classList.add('anima');
+  setTimeout(function () { if (!d.classList.contains('anima-pronta')) d.classList.remove('anima'); }, 3000);
+})(document.documentElement);
+</script>
+<?php include __DIR__ . '/_fascia_sconto.php'; ?>
+<?php /* Chi è già registrato lo vede subito, prima di tutto il resto: il saluto, le sue
+   guide con lo stato vero e il passo successivo. Niente da cercare nel menu. */
+if ($dentro):
+    $mie = $mie ?? [];
+    $nomeU = trim((string) ($user['name'] ?? '')); $primo = $nomeU !== '' ? explode(' ', $nomeU)[0] : '';
+    $admin = ($user['role'] ?? '') === 'admin'; ?>
+<section class="bentornato" aria-labelledby="bentornato-titolo">
+  <div class="bentornato__chi">
+    <span class="bentornato__avatar" aria-hidden="true"><?= Support::e(mb_strtoupper(mb_substr($nomeU !== '' ? $nomeU : (string) $user['email'], 0, 1))) ?></span>
+    <div>
+      <h2 id="bentornato-titolo" class="bentornato__titolo"><?= $primo !== '' ? 'Ciao, ' . Support::e($primo) . '.' : 'Sei dentro.' ?></h2>
+      <p class="small muted">Sei dentro come <b><?= Support::e($user['email']) ?></b><?= $admin ? ' · amministrazione' : '' ?></p>
+    </div>
+  </div>
+  <?php if ($admin): ?>
+    <a class="btn btn--go" href="<?= b() ?>/admin">Vai all'amministrazione <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
+  <?php elseif (!$mie): ?>
+    <p class="bentornato__vuoto">Non hai ancora una guida. Ci vogliono pochi minuti.</p>
+    <a class="btn btn--go" href="<?= b() ?>/pannello">Crea la tua prima guida <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
+  <?php else: ?>
+    <ul class="bentornato__guide" aria-label="Le tue guide">
+      <?php foreach (array_slice($mie, 0, 3) as $g):
+            [$stato, $tono] = $g['online'] ? ['Online', 'pine'] : ($g['status'] === 'published' ? ['Offline', 'alert'] : ['Bozza', 'ochre']); ?>
+        <li><a class="bentornato__guida" href="<?= b() ?>/pannello/<?= (int) $g['id'] ?>">
+          <span class="grow stack" style="gap:2px;min-width:0"><b><?= Support::e($g['name']) ?></b><?php if (trim((string) $g['city']) !== ''): ?><span class="small muted"><?= Support::e($g['city']) ?></span><?php endif; ?></span>
+          <span class="badge badge--<?= $tono ?>"><?= $stato ?></span><?= Icon::svg('chevron', 16, 2) ?></a></li>
+      <?php endforeach; ?>
+    </ul>
+    <a class="btn btn--go" href="<?= b() ?>/pannello"><?= count($mie) > 3 ? 'Tutte le tue ' . count($mie) . ' guide' : 'Vai alle tue guide' ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
+  <?php endif; ?>
+</section>
+<?php endif; ?>
+<section class="hero2">
+  <div class="hero2__testo">
+    <span class="kicker">La reception digitale per la tua struttura ricettiva</span>
+    <h1 class="display">La casa risponde<br>prima che chiedano.</h1>
+    <p class="hero2__sub">La guida digitale per case vacanza, B&amp;B, affittacamere e agriturismi. Check-in, Wi-Fi,
+      parcheggio, regole e i tuoi consigli sulla zona: tutto in un link, che gli ospiti aprono dal QR Code senza scaricare niente.</p>
+    <div class="hero2__azioni">
+      <a class="btn btn--lg btn--go" href="<?= $crea ?>"><?= $dentro ? 'Vai alle tue guide' : 'Crea gratis la tua guida' ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
+      <?php if ($demoUrl): ?>
+        <?php /* La demo, e accanto le lingue in cui aprirla: un solo gruppo, non tre bottoni in fila.
+                 Le lingue che la demo ha davvero, al massimo tre. */
+              $lingueDemo = array_values(array_intersect(['it', 'en', 'fr'], array_column(MHW\Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$demo['id']]), 'locale')));
+              $nomiLingue = ['it' => 'italiano', 'en' => 'inglese', 'fr' => 'francese']; ?>
+        <span class="demo-gruppo">
+          <a class="demo-gruppo__vai" href="<?= $demoUrl ?>"><?= Icon::svg('eye', 18, 1.8) ?>Guarda la demo</a>
+          <?php if (count($lingueDemo) > 1): ?>
+            <span class="demo-lingue" role="group" aria-label="Lingua della demo">
+              <?php foreach ($lingueDemo as $l): ?><a href="<?= $demoUrl ?>?l=<?= $l ?>" hreflang="<?= $l ?>" aria-label="Demo in <?= $nomiLingue[$l] ?>"><?= strtoupper($l) ?></a><?php endforeach; ?>
+            </span>
+          <?php endif; ?>
+        </span>
+      <?php endif; ?>
+    </div>
+    <p class="micro micro--left hero2__garanzie"><span><?= Icon::svg('check', 15, 2.2) ?>Nessuna app da scaricare</span><span><?= Icon::svg('check', 15, 2.2) ?>La crei e la provi gratis</span><span><?= Icon::svg('check', 15, 2.2) ?>Paghi solo quando pubblichi</span></p>
+  </div>
+
+  <?php /* Il telefono: una schermata della guida disegnata in HTML, sempre nel
+     tema chiaro della guida. Se c'è la demo, tutto il telefono la apre. */
+  $tag = $demoUrl ? 'a' : 'div'; ?>
+  <<?= $tag ?> class="device-link"<?= $demoUrl ? ' href="' . $demoUrl . '" aria-label="Apri la demo di ' . Support::e($nomeDemo) . ': scopri come la vedranno i tuoi ospiti"' : '' ?>>
+    <span class="device"<?= $demoUrl ? '' : ' role="img" aria-label="La guida di ' . Support::e($nomeDemo) . ' sullo schermo di uno smartphone"' ?>>
+      <span class="device__screen" aria-hidden="true">
+        <span class="device__status"><span>9:41</span><span class="device__island"></span>
+          <span class="device__icons"><i class="sig"></i><i class="bat"></i></span></span>
+        <span class="device__app">
+          <span class="device__top"><?= Icon::brand(24) ?><span><?= Support::e($nomeDemo) ?></span>
+            <?php if ($demo): ?><span class="demo-tag">Demo</span><?php endif; ?></span>
+          <span class="device__title">Benvenuti<br>a <?= Support::e($nomeDemo) ?>.</span>
+          <span class="device__shot"><picture><source srcset="<?= Support::e($telefonoWebp) ?>" type="image/webp">
+            <img src="<?= Support::e($telefonoJpg) ?>" alt="" width="600" height="422" loading="eager" decoding="async"></picture>
+            <span class="device__pill"><i></i>Check-in dalle <?= Support::e($checkinDemo) ?></span></span>
+          <span class="device__tiles">
+            <span class="t-terracotta"><?= Icon::svg('home', 16, 1.8) ?>Check-in &amp; Check-out</span>
+            <span class="t-sea"><?= Icon::svg('wifi', 16, 1.8) ?>Wi-Fi</span>
+            <span class="t-pine"><?= Icon::svg('fork', 16, 1.8) ?>Dove mangiare</span>
+            <span class="t-ochre"><?= Icon::svg(MHW\SectionCatalog::icon('parking'), 16, 1.8) ?>Parcheggio</span>
+          </span>
+        </span>
+        <span class="device__home"></span>
+      </span>
+    </span>
+    <?php if ($demoUrl): ?><span class="device-link__invito">Scopri come la vedranno i tuoi ospiti <?= Icon::svg('arrow', 15, 2) ?></span><?php endif; ?>
+  </<?= $tag ?>>
+</section>
+
+<?php /* Tre scene sotto l'hero: il QR all'ingresso, l'ospite, l'host.
+   Le foto si caricano in assets/foto/ con questi nomi; se una manca, la card
+   mostra un riquadro colorato con un disegno, senza errori. I disegni sono
+   centrati nel riquadro: si ritagliano bene anche quadrati, sul telefono. */
+$cartellaFoto = (defined('MHW_PUBLIC') ? MHW_PUBLIC : dirname(__DIR__, 2) . '/public') . '/assets/foto/';
+$disegni = [
+  // La targa col QR accanto alla porta ad arco.
+  'qr' => '<path d="M50 104V46a30 30 0 0 1 60 0v58" fill="none" stroke="currentColor" stroke-opacity=".3" stroke-width="2"/>'
+        . '<rect x="61" y="27" width="38" height="50" rx="6" fill="#fff8f2"/>'
+        . '<g fill="#231b12"><path d="M66 32h9v9h-9zM85 32h9v9h-9zM66 51h9v9h-9z"/>'
+        . '<path d="M78 32h3v3h-3zM78 38h3v6h-3zM85 44h3v3h-3zM91 44h3v3h-3zM78 47h6v3h-6zM88 50h3v6h-3zM78 53h3v7h-3zM84 56h3v4h-3zM91 57h3v3h-3zM69 44h3v3h-3z"/></g>'
+        . '<g fill="#fff8f2"><path d="M68 34h5v5h-5zM87 34h5v5h-5zM68 53h5v5h-5z"/></g>'
+        . '<g fill="#231b12"><path d="M69.5 35.5h2v2h-2zM88.5 35.5h2v2h-2zM69.5 54.5h2v2h-2z"/></g>'
+        . '<rect x="68" y="66" width="24" height="3" rx="1.5" fill="#b4451f" fill-opacity=".55"/>',
+  // Il telefono dell'ospite con le quattro sezioni.
+  'ospite' => '<rect x="58" y="14" width="44" height="96" rx="9" fill="#231b12"/>'
+        . '<rect x="61.5" y="17.5" width="37" height="89" rx="6.5" fill="#faf5ec"/>'
+        . '<rect x="73" y="20" width="14" height="3.5" rx="1.75" fill="#231b12"/>'
+        . '<rect x="66" y="29" width="20" height="3.5" rx="1.75" fill="#231b12"/><rect x="66" y="35" width="14" height="3.5" rx="1.75" fill="#231b12"/>'
+        . '<rect x="66" y="43" width="28" height="16" rx="4" fill="#e2d7c4"/>'
+        . '<rect x="66" y="62" width="13.5" height="13" rx="3.5" fill="#b4451f"/><rect x="80.5" y="62" width="13.5" height="13" rx="3.5" fill="#1c5a78"/>'
+        . '<rect x="66" y="77" width="13.5" height="13" rx="3.5" fill="#1f6b3f"/><rect x="80.5" y="77" width="13.5" height="13" rx="3.5" fill="#b07d0c"/>',
+  // Il pannello dell'host, con il bottone «Pubblica».
+  'host' => '<g transform="translate(80 53) scale(.92) translate(-80 -53)"><rect x="26" y="20" width="108" height="66" rx="7" fill="#faf5ec"/>'
+        . '<path d="M26 27a7 7 0 0 1 7-7h94a7 7 0 0 1 7 7v4H26z" fill="#e2d7c4"/>'
+        . '<circle cx="33" cy="25.5" r="1.6" fill="#94825f"/><circle cx="38.5" cy="25.5" r="1.6" fill="#94825f"/><circle cx="44" cy="25.5" r="1.6" fill="#94825f"/>'
+        . '<rect x="33" y="38" width="22" height="3" rx="1.5" fill="#231b12"/><rect x="33" y="46" width="18" height="3" rx="1.5" fill="#94825f"/>'
+        . '<rect x="33" y="53" width="20" height="3" rx="1.5" fill="#94825f"/><rect x="33" y="60" width="16" height="3" rx="1.5" fill="#94825f"/>'
+        . '<rect x="64" y="37" width="62" height="11" rx="3" fill="#fff" stroke="#e2d7c4"/><rect x="68" y="41" width="30" height="3" rx="1.5" fill="#6a5b48"/>'
+        . '<rect x="64" y="52" width="62" height="11" rx="3" fill="#fff" stroke="#e2d7c4"/><rect x="68" y="56" width="22" height="3" rx="1.5" fill="#6a5b48"/>'
+        . '<rect x="113" y="54.5" width="9" height="6" rx="3" fill="#1f6b3f"/><circle cx="119" cy="57.5" r="2" fill="#fff"/>'
+        . '<rect x="98" y="70" width="28" height="9" rx="4.5" fill="#b4451f"/><rect x="104" y="73.5" width="16" height="2" rx="1" fill="#fff8f2"/></g>',
+]; ?>
+<section class="scene" aria-label="Come si usa">
+  <?php /* Ogni scena porta dove se ne parla: il QR, la demo, i passi nel pannello. */
+  foreach ([['scena-qr.jpg', 'qr', 't-terracotta', 'Il QR all\'ingresso', 'Lo stampi una volta: l\'ospite lo inquadra e la guida si apre.', '#qr',
+                   'Un ospite inquadra con il telefono il QR in cornice accanto alla porta d\'ingresso', '62% 50%'],
+                  ['scena-ospite.jpg', 'ospite', 't-sea', 'L\'ospite trova tutto', 'Wi-Fi, check-in, consigli: nella sua lingua, sul suo telefono.', $demoUrl ?? '#prodotto-titolo',
+                   'Un\'ospite al tavolo della casa sfoglia la guida sul telefono: Wi-Fi, check-in, parcheggio, dove mangiare', '50% 50%'],
+                  ['scena-host.jpg', 'host', 't-pine', 'Tu aggiorni quando vuoi', 'Cambi un orario dal pannello e pubblichi: il QR resta lo stesso.', '#come-funziona',
+                   'L\'host aggiorna la guida dal portatile, con l\'anteprima sul telefono accanto', '52% 50%']] as [$file, $dis, $tono, $tit, $txt, $dove, $alt, $centro]):
+        $cie = is_file($cartellaFoto . $file);
+        // Le versioni WebP (da tools/foto.php) valgono solo se non sono più vecchie del .jpg:
+        // chi carica un .jpg nuovo lo vede subito, anche prima di rigenerarle.
+        $base = substr($file, 0, -4);
+        $webp = $cie && is_file($cartellaFoto . "$base-600.webp") && is_file($cartellaFoto . "$base-1200.webp")
+             && filemtime($cartellaFoto . "$base-1200.webp") >= filemtime($cartellaFoto . $file); ?>
+    <figure class="scena">
+      <?php if ($cie): ?><picture>
+        <?php if ($webp): ?><source type="image/webp" sizes="(max-width: 760px) 92px, 380px"
+          srcset="<?= Support::e(a("/assets/foto/$base-600.webp")) ?> 600w, <?= Support::e(a("/assets/foto/$base-1200.webp")) ?> 1200w"><?php endif; ?>
+        <img src="<?= Support::e(a('/assets/foto/' . $file)) ?>" alt="<?= Support::e($alt) ?>" loading="lazy" decoding="async" width="1200" height="750" style="object-position:<?= $centro ?>">
+      </picture>
+      <?php else: ?><span class="scena__vuota <?= $tono ?>" aria-hidden="true"><svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice"><?= $disegni[$dis] ?></svg></span><?php endif; ?>
+      <figcaption><a class="scena__link" href="<?= $dove ?>"><?= $tit ?> <?= Icon::svg('arrow', 15, 2) ?></a><span><?= $txt ?></span></figcaption>
+    </figure>
+  <?php endforeach; ?>
+</section>
+
+<section class="prodotto" aria-labelledby="prodotto-titolo">
+  <div class="prodotto__testa">
+    <span class="kicker">La guida</span>
+    <h2 id="prodotto-titolo" class="h-sezione">Cosa trova l'ospite.</h2>
+    <p class="muted">Le informazioni del soggiorno, in ordine e sempre sul telefono. <?= $quanteSezioni ?> sezioni pronte da compilare, più le sezioni libere per tutto il resto: scegli quelle che servono ai tuoi ospiti.</p>
+    <?php if ($demoUrl): ?><a class="link-freccia" href="<?= $demoUrl ?>">Sfoglia la guida di <?= Support::e($nomeDemo) ?> <?= Icon::svg('arrow', 16, 2) ?></a><?php endif; ?>
+  </div>
+  <div class="gruppi-sez">
+    <?php $toni = ['casa' => 'terracotta', 'arrivo' => 'sea', 'territorio' => 'pine'];
+    foreach ($gruppiSezioni as $g => $tipi): if (!$tipi) continue; ?>
+      <div class="gruppo-sez">
+        <h3 class="gruppo-sez__titolo" id="gruppo-<?= $g ?>"><?= Support::e(MHW\SectionCatalog::GRUPPI[$g]) ?></h3>
+        <ul class="features8 features8--compatte" aria-labelledby="gruppo-<?= $g ?>">
+          <?php foreach ($tipi as $k): ?>
+            <li class="feat feat--<?= $toni[$g] ?>"><span class="ico"><?= Icon::svg(MHW\SectionCatalog::icon($k), 18, 1.8) ?></span><b><?= Support::e(MHW\SectionCatalog::title($k, 'it')) ?></b></li>
+          <?php endforeach; ?>
+        </ul>
+      </div>
+    <?php endforeach; ?>
+  </div>
+</section>
+
+<?php /* Per chi è: quattro modi di ospitare, a ognuno il suo uso della guida. Niente numeri e
+   niente promesse: solo quello che il prodotto fa davvero. */ ?>
+<section id="per-chi" class="blocco" aria-labelledby="perchi-titolo">
+  <div class="come__testa">
+    <span class="kicker">Per chi è</span>
+    <h2 id="perchi-titolo" class="h-sezione">Ogni struttura ha le sue domande.</h2>
+  </div>
+  <div class="vantaggi vantaggi--4">
+    <?php foreach ([
+        ['home', 'Casa vacanza', 'Non ci sei quando arrivano? La guida spiega come si entra, dove si parcheggia e come funziona la casa, a qualsiasi ora.'],
+        ['coffee', 'B&amp;B e affittacamere', 'Colazione, orari, regole: un QR in ogni camera al posto del foglio plastificato, sempre aggiornato.'],
+        ['sun', 'Agriturismo', 'Racconta l\'azienda, le degustazioni e i tuoi prodotti. E accompagna gli ospiti tra sagre, sentieri e cantine dei dintorni.'],
+        ['layers', 'Più strutture', 'Una guida e un QR Code per ogni struttura, dallo stesso account. Quello che vale per tutte lo scrivi una volta e lo copi.'],
+    ] as [$ico, $tit, $txt]): ?>
+      <div class="vantaggio">
+        <span class="vantaggio__ico"><?= Icon::svg($ico, 20, 1.7) ?></span>
+        <b><?= $tit ?></b>
+        <p><?= $txt ?></p>
+      </div>
+    <?php endforeach; ?>
+  </div>
+</section>
+
+<?php include __DIR__ . '/_tempo.php'; ?>
+
+<?php /* La guida che fa guadagnare: recensioni, prenotazione diretta, servizi extra.
+   A destra il commiato, disegnato con le stesse etichette della guida vera. */ ?>
+<section id="guadagno" class="guadagno" aria-labelledby="guadagno-titolo">
+  <div class="guadagno__testo">
+    <span class="kicker">La guida che lavora per te</span>
+    <h2 id="guadagno-titolo" class="h-sezione">Una prenotazione diretta in più all'anno paga l'abbonamento.</h2>
+    <p class="guadagno__lead">Alla fine del soggiorno la guida saluta l'ospite e gli lascia due inviti: una recensione dove preferisci, e la
+      prossima volta la prenotazione sul tuo sito, con il tuo codice sconto. Senza commissioni.</p>
+    <ul class="guadagno__voci">
+      <li><span class="guadagno__ico"><?= Icon::svg('message', 18, 1.8) ?></span><span><b>Più recensioni.</b>
+        Google, Booking, Airbnb: un pulsante per ognuno, quando il ricordo è fresco.</span></li>
+      <li><span class="guadagno__ico"><?= Icon::svg('globe', 18, 1.8) ?></span><span><b>Prenotazioni dirette.</b>
+        «La prossima volta prenota da noi», con il link al tuo sito e il codice sconto.</span></li>
+      <li><span class="guadagno__ico"><?= Icon::svg('euro', 18, 1.8) ?></span><span><b>Servizi extra.</b>
+        Transfer, colazione, late check-out: l'ospite li chiede con un tocco su WhatsApp.</span></li>
+    </ul>
+  </div>
+  <div class="congedo-mock" aria-hidden="true">
+    <span class="congedo-mock__kicker"><?= Support::e(MHW\I18n::t('it', 'before_leaving')) ?></span>
+    <span class="congedo-mock__titolo"><?= Support::e(MHW\I18n::t('it', 'farewell_title')) ?></span>
+    <span class="congedo-mock__blocco">
+      <b><?= Support::e(MHW\I18n::t('it', 'review_title')) ?></b>
+      <span class="congedo-mock__bottoni"><span><?= Icon::svg('message', 13) ?>Google</span><span><?= Icon::svg('message', 13) ?>Booking.com</span><span><?= Icon::svg('message', 13) ?>Airbnb</span></span>
+    </span>
+    <span class="congedo-mock__blocco">
+      <b><?= Support::e(MHW\I18n::t('it', 'direct_title')) ?></b>
+      <span class="congedo-mock__codice"><?= Support::e(MHW\I18n::t('it', 'direct_code', 'BENTORNATI')) ?></span>
+    </span>
+  </div>
+</section>
+
+<section id="come-funziona" class="blocco" aria-labelledby="come-titolo">
+  <div class="come__testa">
+    <span class="kicker">Come funziona</span>
+    <h2 id="come-titolo" class="h-sezione">Inizia in pochi minuti.</h2>
+  </div>
+  <?php /* Tre passi e le schermate vere del pannello (assets/foto/pannello-1…3.webp).
+     Senza JavaScript i passi sono link alle schermate, tutte visibili; con
+     landing.js diventano schede: una schermata grande alla volta. Se le
+     schermate mancano, restano i passi numerati. */
+  $passi = [['01', 'Crea la tua guida.', 'Inserisci le informazioni della struttura e scegli cosa condividere con gli ospiti.', 'Il pannello: i contenuti della guida, con le sezioni e le statistiche'],
+            ['02', 'Personalizza e guarda l\'anteprima.', 'Scegli i colori e la copertina, e guarda la guida sul telefono come la vedranno gli ospiti, prima di pubblicarla.', 'Il pannello: l\'aspetto della guida, con palette, tema e copertina'],
+            ['03', 'Pubblica e condividi.', 'Attivi l\'abbonamento: la guida va online e la condividi con il link o con il QR Code.', 'Il pannello: il QR Code da stampare e il link da condividere']];
+  $schermate = array_filter(array_map(fn($i) => is_file($cartellaFoto . 'pannello-' . ($i + 1) . '.webp') ? 'pannello-' . ($i + 1) . '.webp' : null, array_keys($passi))); ?>
+  <div class="passi<?= count($schermate) === 3 ? '' : ' passi--senza' ?>"<?= count($schermate) === 3 ? ' data-passi' : '' ?>>
+    <ol class="passi__lista">
+      <?php foreach ($passi as $i => [$n, $tit, $txt]): ?>
+        <li><a class="passo" id="passo-<?= $i + 1 ?>" href="#schermata-<?= $i + 1 ?>"<?= count($schermate) === 3 ? '' : ' tabindex="-1"' ?>>
+          <span class="passo__n"><?= $n ?></span>
+          <span class="passo__testo"><b><?= $tit ?></b><span><?= $txt ?></span></span></a></li>
+      <?php endforeach; ?>
+    </ol>
+    <?php if (count($schermate) === 3): ?>
+      <div class="passi__schermate">
+        <?php foreach ($passi as $i => [$n, , , $alt]): ?>
+          <figure class="schermata" id="schermata-<?= $i + 1 ?>">
+            <span class="schermata__barra" aria-hidden="true"><i></i><i></i><i></i><span>myhousewelcome.it</span></span>
+            <img src="<?= Support::e(a('/assets/foto/pannello-' . ($i + 1) . '.webp')) ?>" alt="<?= Support::e($alt) ?>"
+                 loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async" width="1200" height="750">
+          </figure>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </div>
+</section>
+
+<section id="qr" class="band qrband" aria-labelledby="qr-titolo">
+  <div class="stack" style="gap:20px;max-width:540px">
+    <h2 id="qr-titolo" class="h-sezione">Un QR. Tutta la struttura.</h2>
+    <ul class="spunte">
+      <li><?= Icon::svg('check', 18, 2) ?><span><b>Un solo QR Code, sempre valido.</b>Lo stampi una volta e non lo cambi più.</span></li>
+      <li><?= Icon::svg('check', 18, 2) ?><span><b>Informazioni sempre aggiornabili.</b>Modifichi la guida e pubblichi la nuova versione senza cambiare il QR.</span></li>
+      <li><?= Icon::svg('check', 18, 2) ?><span><b>Condividi anche prima dell'arrivo.</b>Mandi il link su WhatsApp o per email, con il messaggio di benvenuto già pronto.</span></li>
+    </ul>
+  </div>
+  <div class="qr-sheet qrband__foglio">
+    <?php /* Se c'è la demo, il QR la apre davvero: provalo col telefono. */ ?>
+    <?= preg_replace('/width="\d+" height="\d+"/', 'width="168" height="168"',
+                     MHW\QrExport::svg($demo ? Support::baseUrl() . '/g/' . $demo['slug'] . '/benvenuto' : Support::baseUrl())) ?>
+    <p class="small"><?= $demo ? 'Inquadra e prova la demo.' : 'Inquadra per la guida' ?></p>
+  </div>
+</section>
+
+<?php if (!empty($testimonianze)): /* solo testimonianze vere, inserite dall'amministratore */ ?>
+<section class="blocco voci" aria-labelledby="voci-titolo">
+  <div class="stack stack--sm"><span class="kicker">Chi la usa</span><h2 id="voci-titolo" class="h-sezione">Le parole di chi ospita.</h2></div>
+  <div class="grid grid-3" style="margin-top:24px">
+    <?php foreach ($testimonianze as $t): ?>
+      <figure class="panel voce">
+        <blockquote><p><?= Support::e($t['body']) ?></p></blockquote>
+        <figcaption>
+          <?php if ($t['foto']): ?><img src="<?= Support::e($t['foto']) ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?>
+          <span><b><?= Support::e($t['name']) ?></b><?php if ($t['property_name'] !== ''): ?><span class="small muted"><?= Support::e($t['property_name']) ?></span><?php endif; ?></span>
+        </figcaption>
+      </figure>
+    <?php endforeach; ?>
+  </div>
+</section>
+<?php endif; ?>
+
+<?php $legale = MHW\Config::get('legal');
+$inviti = MHW\Inviti::disponibili(); /* «Porta un amico» compare (qui e nelle FAQ) solo se è acceso */
+$waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? '')); ?>
+<section id="piani" class="blocco" aria-labelledby="piani-titolo">
+  <div class="spread">
+    <div class="stack stack--sm">
+      <span class="kicker">Piani e prezzi</span>
+      <h2 id="piani-titolo" class="h-sezione">Scegli il piano.</h2>
+    </div>
+    <p class="muted" style="max-width:400px;line-height:24px">Crei e provi la guida gratis, con le funzioni del piano che scegli: paghi solo quando la pubblichi. Prezzi IVA esclusa.</p>
+  </div>
+
+  <?php /* In fondo alle funzioni dei piani che comprendono le varianti camera (Plus e Portfolio), il loro prezzo. */
+  $vociPiano = fn(array $p) => array_merge($p['bullet_list'], (string) ($p['features']['room_variants'] ?? '0') === '1'
+      ? ['Varianti camera per B&B e affittacamere: ' . Support::money(MHW\Varianti::prezzo()) . " + IVA l'anno l'una"] : []); ?>
+  <div class="grid grid-3 piani" style="margin-top:28px">
+    <?php foreach ($offers as $of): $p = $of['main']; $famiglia = count($of['options']) > 1;
+          $scuro = $p['badge'] !== '';
+          $nome = $famiglia ? preg_replace('/\s*\d+$/', '', $p['name']) : $p['name'];
+          $primo = $of['options'][0];
+          $idSel = 'strutture-' . Support::slug($nome); ?>
+      <div class="plan <?= $scuro ? 'plan--dark' : '' ?>">
+        <div class="spread spread--mid" style="gap:12px;align-items:center">
+          <span class="plan__nome"><?= Support::e($nome) ?></span>
+          <?php if ($p['badge'] !== ''): ?><span class="badge badge--ochre-strong"><?= Support::e($p['badge']) ?></span><?php endif; ?>
+        </div>
+        <?php if (trim((string) $p['tagline']) !== ''): /* il posizionamento: per chi è indicato */ ?>
+          <p class="plan__per"><b>Ideale per</b> <?= Support::e(preg_replace('/^Per /u', '', trim((string) $p['tagline']))) ?></p>
+        <?php endif; ?>
+
+        <?php if (Plans::perProperty($primo)): /* Portfolio a quantità: un modulo vero. Senza JavaScript il
+                  bottone manda comunque la scelta; lo script calcola solo il totale mostrato,
+                  con base e costo aggiuntivo presi dal listino. */
+              $minimo = (int) $primo['min_quantity']; ?>
+          <form class="plan__scelta" method="get" action="<?= b() . ($dentro ? '/piano' : '/registrati') ?>" data-portfolio
+                data-quantita data-base="<?= (int) $primo['price_cents'] ?>" data-extra="<?= (int) $primo['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($primo)) ?>" data-valuta="<?= Support::e($primo['currency']) ?>">
+            <input type="hidden" name="piano" value="<?= (int) $primo['pv_id'] ?>">
+            <label for="<?= $idSel ?>" class="plan__label">Quante strutture vuoi gestire?</label>
+            <input id="<?= $idSel ?>" name="strutture" type="number" inputmode="numeric" step="1" required
+                   min="<?= $minimo ?>" max="<?= (int) $primo['max_quantity'] ?>" value="<?= $minimo ?>">
+            <span class="price" aria-live="polite"><span data-totale><?= Support::e(Support::money(Plans::price($primo, $minimo), $primo['currency'])) ?></span><small> + IVA / anno</small></span>
+            <span class="plan__mese">circa <span data-mensile><?= Support::e(Support::money(Plans::monthly(Plans::price($primo, $minimo)), $primo['currency'])) ?></span> al mese</span>
+            <?php $pvS = $primo; $qS = $minimo; include __DIR__ . '/_scaglioni.php'; ?>
+            <?php $voci = $vociPiano($p); include __DIR__ . '/_voci_piano.php'; ?>
+            <button class="btn <?= $scuro ? '' : 'btn--ghost' ?>"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $nome) ?></button>
+          </form>
+        <?php else: ?>
+          <span class="price"><?= Support::e(Support::money((int) $primo['price_cents'], $primo['currency'])) ?><small> + IVA / anno</small></span>
+          <span class="plan__mese">circa <?= Support::e(Support::money(Plans::monthly((int) $primo['price_cents']), $primo['currency'])) ?> al mese</span>
+          <?php $voci = $vociPiano($p); include __DIR__ . '/_voci_piano.php'; ?>
+          <a class="btn <?= $scuro ? '' : 'btn--ghost' ?>" href="<?= $vai((int) $p['pv_id']) ?>"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $nome) ?></a>
+        <?php endif; ?>
+      </div>
+    <?php endforeach; ?>
+  </div>
+  <?php include __DIR__ . '/_confronto.php'; ?>
+  <p class="piani__nota">Abbonamento annuale con rinnovo automatico. Puoi disattivare il rinnovo dal tuo account quando vuoi: la guida
+    resta online fino alla fine del periodo già pagato.</p>
+</section>
+
+<?php if ($inviti): /* Porta un amico: le percentuali arrivano da Inviti, nessun numero scritto qui.
+   Sta dopo i piani: chi ha appena scelto vede subito come pagare meno l'anno dopo. */
+      $passi = MHW\Inviti::amiciMassimi(); ?>
+<section id="amico" class="blocco amico" aria-labelledby="amico-titolo">
+  <div class="amico__testo">
+    <span class="kicker">Porta un amico</span>
+    <h2 id="amico-titolo" class="h-sezione">Più amici porti, meno paghi.<br>Il prossimo anno fino al <span class="amico__cifra"><?= MHW\Inviti::MASSIMO ?>%</span> in meno.</h2>
+    <p class="amico__lead">Conosci altri host, B&amp;B o case vacanza? Mandagli il tuo link: loro hanno il <?= MHW\Inviti::AMICO ?>% di sconto sul primo anno, tu il <?= MHW\Inviti::PASSO ?>% in meno sul rinnovo per ogni amico che si abbona.</p>
+    <div class="row">
+      <a class="btn" href="<?= b() . ($dentro ? '/inviti' : '/registrati') ?>"><?= $dentro ? 'Invita un amico' : 'Crea gratis la tua guida' ?></a>
+      <a class="btn btn--ghost" href="#domande">Come funziona</a>
+    </div>
+  </div>
+  <div class="amico__conto">
+    <ol class="amico__passi">
+      <li><b>Pubblichi la tua guida.</b>In «Invita un amico» trovi il tuo link personale.</li>
+      <li><b>L'amico si registra dal link.</b>Ha il <?= MHW\Inviti::AMICO ?>% di sconto sul primo anno, da solo.</li>
+      <li><b>Quando paga, tu risparmi.</b>Il tuo rinnovo costa il <?= MHW\Inviti::PASSO ?>% in meno per ogni amico, fino al <?= MHW\Inviti::MASSIMO ?>%.</li>
+    </ol>
+    <div class="amico__barra" role="img" aria-label="<?= $passi ?> amici: <?= MHW\Inviti::MASSIMO ?>% di sconto sul rinnovo">
+      <?php for ($n = 1; $n <= $passi; $n++): ?><span class="amico__tacca" style="opacity:<?= round(.3 + .7 * $n / $passi, 2) ?>"></span><?php endfor; ?>
+    </div>
+    <div class="amico__scala" aria-hidden="true"><span>1 amico · −<?= MHW\Inviti::PASSO ?>%</span><span><?= $passi ?> amici · −<?= MHW\Inviti::MASSIMO ?>%</span></div>
+  </div>
+</section>
+<?php endif; ?>
+
+<section id="domande" class="blocco faq" aria-labelledby="faq-titolo">
+  <div class="faq__testa">
+    <span class="kicker">Domande</span>
+    <h2 id="faq-titolo" class="h-sezione">Prima di cominciare.</h2>
+    <?php if (($legale['contact_email'] ?? '') !== '' || $waFaq !== ''): ?>
+      <p class="muted">Non trovi la risposta? Scrivici, ti rispondiamo volentieri.</p>
+      <div class="faq__contatti">
+        <?php if ($waFaq !== ''): ?><a class="btn btn--ghost" href="https://wa.me/<?= Support::e($waFaq) ?>" rel="noopener"><?= Icon::svg('whatsapp', 18, 1.8) ?>WhatsApp</a><?php endif; ?>
+        <?php if (($legale['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legale['contact_email']) ?>"><?= Icon::svg('message', 18, 1.8) ?>Email</a><?php endif; ?>
+      </div>
+    <?php endif; ?>
+  </div>
+  <div class="faq__lista">
+    <?php [$faqVista, $faqAltre] = MHW\Faq::perLanding();
+    foreach ($faqVista as $i => $q): ?>
+      <details class="faq__voce" id="faq-<?= Support::e($q['id']) ?>"<?= $i === 0 ? ' open' : '' ?>>
+        <summary><?= Support::e($q['d']) ?><?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
+        <p><?= Support::e($q['r']) ?></p>
+      </details>
+    <?php endforeach; ?>
+    <?php if ($faqAltre): /* le altre, tutte insieme: si aprono con un tocco */ ?>
+      <details class="faq__voce faq__altre">
+        <summary>Altre domande (<?= count($faqAltre) ?>)<?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
+        <div class="faq__altre-lista">
+          <?php foreach ($faqAltre as $q): ?>
+            <details class="faq__voce" id="faq-<?= Support::e($q['id']) ?>">
+              <summary><?= Support::e($q['d']) ?><?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
+              <p><?= Support::e($q['r']) ?></p>
+            </details>
+          <?php endforeach; ?>
+        </div>
+      </details>
+    <?php endif; ?>
+    <p class="faq__tutte"><a href="<?= b() ?>/domande">Tutte le domande</a></p>
+  </div>
+</section>
+
+
+<section class="chiusura" aria-labelledby="chiusura-titolo">
+  <div class="chiusura__testo">
+    <h2 id="chiusura-titolo" class="chiusura__titolo">La tua struttura ha tanto da raccontare. Mettilo a disposizione dei tuoi ospiti.</h2>
+    <p>Crea la tua guida, personalizzala e guarda il risultato. Decidi soltanto dopo se pubblicarla: per cominciare non serve la carta di credito.</p>
+    <div class="row">
+      <a class="btn btn--lg btn--go" href="<?= $crea ?>"><?= $dentro ? 'Vai alle tue guide' : 'Crea gratis la tua guida' ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
+      <?php if ($demoUrl): ?><a class="btn btn--lg btn--ghost" href="<?= $demoUrl ?>">Guarda la demo</a><?php endif; ?>
+    </div>
+  </div>
+  <aside class="chi" aria-label="Chi c'è dietro MyHouse Welcome">
+    <span class="chi__marchio"><?= Icon::brand(28) ?></span>
+    <p class="chi__titolo">Pensata per chi ospita. Sviluppata da chi lavora nel digitale e nell'ospitalità.</p>
+    <p>MyHouse Welcome fa parte delle soluzioni MyHouse di
+      <a href="https://blackout.in" rel="noopener" target="_blank">Blackout Agency</a>, dedicate alle esigenze digitali delle strutture ricettive.</p>
+  </aside>
+</section>
+
+<?php /* Il sito della struttura: lo realizziamo noi. In fondo alla pagina, a tutta larghezza,
+   con la foto di un soggiorno sotto un velo nero al 60%. Tre punti brevi; «Chiedici il tuo
+   sito» porta a myhouse.blackout.in, l'email resta come seconda strada. Nessun prezzo. */
+$legaleSito = MHW\Config::get('legal'); ?>
+<section id="sito" class="sito" aria-labelledby="sito-titolo">
+  <picture class="sito__foto" aria-hidden="true">
+    <source type="image/webp" srcset="<?= Support::e(a('/assets/foto/sito-800.webp')) ?> 800w, <?= Support::e(a('/assets/foto/sito-1600.webp')) ?> 1600w" sizes="100vw">
+    <img src="<?= Support::e(a('/assets/foto/sito.jpg')) ?>" alt="" loading="lazy" decoding="async" width="1600" height="1067">
+  </picture>
+  <div class="sito__dentro">
+    <div class="come__testa">
+      <span class="kicker">Anche il tuo sito</span>
+      <h2 id="sito-titolo" class="h-sezione">Meno commissioni ai portali.<br>Più incasso per te.<br><span class="sito__accento">Più ospiti diretti.</span></h2>
+      <p class="sito__lead">Oltre alla guida, realizziamo il sito internet della tua struttura: le tue foto, le date libere, la prenotazione diretta.</p>
+    </div>
+    <div class="vantaggi">
+      <?php foreach ([
+          ['percent', 'Meno commissioni ai portali.', 'Sui portali ogni notte venduta ha un costo: una percentuale che va a chi ti ha fatto da intermediario. Sulle prenotazioni che arrivano dal tuo sito l\'intermediario non c\'è, e quella percentuale non la paghi.'],
+          ['euro', 'Più incasso per te.', 'Stessa casa, stessa notte, stesso prezzo. Cambia solo dove viene venduta: se la vendi dal tuo sito, la quota che sarebbe andata al portale resta a te.'],
+          ['people', 'Più ospiti diretti.', 'Il tuo sito è visibile a chiunque cerchi online un alloggio nella tua zona, anche a chi non ti ha mai sentito nominare. Arriva da te, guarda le foto, vede le date libere e prenota. Senza passare da un portale.'],
+      ] as [$ico, $tit, $txt]): ?>
+        <div class="vantaggio">
+          <span class="vantaggio__ico"><?= Icon::svg($ico, 20, 1.7) ?></span>
+          <b><?= Support::e($tit) ?></b>
+          <p><?= Support::e($txt) ?></p>
+        </div>
+      <?php endforeach; ?>
+    </div>
+    <div class="sito__cta">
+      <a class="btn" href="https://myhouse.blackout.in" target="_blank" rel="noopener">Chiedici il tuo sito <?= Icon::svg('external', 16, 1.9) ?></a>
+      <?php if (($legaleSito['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legaleSito['contact_email']) ?>?subject=<?= rawurlencode('Il sito della mia struttura') ?>"><?= Icon::svg('message', 18, 1.8) ?>Scrivici un'email</a><?php endif; ?>
+      <span class="small">Ti rispondiamo con una proposta su misura.</span>
+    </div>
+  </div>
+</section>
+
+<script src="<?= MHW\av('/assets/prezzi.js') ?>" defer></script>
+<script src="<?= MHW\av('/assets/landing.js') ?>" defer></script>

@@ -1,0 +1,1076 @@
+// =============================================================================
+// MyHouse Welcome — Prisma schema
+//
+// The application-layer mirror of schema.sql. schema.sql is the source of truth:
+// it carries the CHECK constraints, partial indexes, triggers and row-level
+// security policies that Prisma cannot express, and it is the file that was
+// verified against PostgreSQL 16 (see tests.sql). Migrations are written as SQL
+// and this file is kept in step with them.
+//
+// Unlike schema.sql, this file has NOT been machine-validated - npm was
+// unavailable in the environment it was written in. Run `prisma validate`
+// before relying on it.
+// =============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgcrypto, citext, pg_trgm]
+}
+
+// ============================================================ identity =======
+
+model User {
+  id                String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  email             String    @db.Citext
+  emailVerifiedAt   DateTime? @map("email_verified_at") @db.Timestamptz
+  passwordHash      String?   @map("password_hash") // null between purchase and activation
+  passwordChangedAt DateTime? @map("password_changed_at") @db.Timestamptz
+  fullName          String?   @map("full_name")
+  phone             String?
+  locale            String    @default("it-IT")
+  timezone          String    @default("Europe/Rome")
+  avatarMediaId     String?   @map("avatar_media_id") @db.Uuid
+  status            String    @default("pending") // pending|active|suspended|locked
+  mfaSecret         String?   @map("mfa_secret")
+  mfaEnabledAt      DateTime? @map("mfa_enabled_at") @db.Timestamptz
+  failedLoginCount  Int       @default(0) @map("failed_login_count")
+  lockedUntil       DateTime? @map("locked_until") @db.Timestamptz
+  lastLoginAt       DateTime? @map("last_login_at") @db.Timestamptz
+  lastLoginIp       String?   @map("last_login_ip") @db.Inet
+  termsAcceptedAt   DateTime? @map("terms_accepted_at") @db.Timestamptz
+  marketingOptIn    Boolean   @default(false) @map("marketing_opt_in")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz
+
+  avatar       Media?                  @relation("UserAvatar", fields: [avatarMediaId], references: [id])
+  roles        UserRole[]
+  memberships  AccountMember[]
+  authTokens   AuthToken[]
+  activity     ActivityLog[]
+  impersonations ImpersonationSession[]
+  uploads      Media[]                 @relation("MediaUploader")
+
+  @@unique([email])
+  @@index([status])
+  @@map("users")
+}
+
+model Account {
+  id                  String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  reference           String    @unique // MH-2026-0341
+  name                String
+  type                String    @default("individual") // individual|company
+  legalName           String?   @map("legal_name")
+  vatNumber           String?   @map("vat_number")  // Partita IVA
+  taxCode             String?   @map("tax_code")    // Codice fiscale
+  sdiCode             String?   @map("sdi_code")    // Codice destinatario SDI
+  pecEmail            String?   @map("pec_email") @db.Citext
+  billingEmail        String    @map("billing_email") @db.Citext
+  billingAddressLine1 String?   @map("billing_address_line1")
+  billingAddressLine2 String?   @map("billing_address_line2")
+  billingCity         String?   @map("billing_city")
+  billingPostalCode   String?   @map("billing_postal_code")
+  billingProvince     String?   @map("billing_province")
+  billingCountry      String    @default("IT") @map("billing_country") @db.Char(2)
+  stripeCustomerId    String?   @unique @map("stripe_customer_id")
+  packageVersionId    String?   @map("package_version_id") @db.Uuid
+  status              String    @default("pending") // pending|active|suspended|archived
+  statusReason        String?   @map("status_reason")
+  suspendedAt         DateTime? @map("suspended_at") @db.Timestamptz
+  archivedAt          DateTime? @map("archived_at") @db.Timestamptz
+  activatedAt         DateTime? @map("activated_at") @db.Timestamptz
+  locale              String    @default("it-IT")
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  deletedAt           DateTime? @map("deleted_at") @db.Timestamptz
+
+  packageVersion  PackageVersion?        @relation(fields: [packageVersionId], references: [id])
+  members         AccountMember[]
+  userRoles       UserRole[]
+  properties      Property[]
+  guides          Guide[]
+  orders          Order[]
+  payments        Payment[]
+  invoices        Invoice[]
+  subscriptions   Subscription[]
+  entitlements    Entitlement[]
+  media           Media[]
+  translations    Translation[]
+  notes           AdminNote[]
+  activity        ActivityLog[]
+  impersonations  ImpersonationSession[]
+  onboarding      OnboardingProgress[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@map("accounts")
+}
+
+model Role {
+  id          String  @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  key         String  @unique
+  name        String
+  description String?
+  scope       String // platform|account
+  isSystem    Boolean @default(true) @map("is_system")
+
+  permissions RolePermission[]
+  userRoles   UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  key         String @unique // 'guide.publish'
+  description String
+  domain      String
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+/// account_id NULL means platform scope (MyHouse staff).
+model UserRole {
+  id        String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  roleId    String    @map("role_id") @db.Uuid
+  accountId String?   @map("account_id") @db.Uuid
+  grantedBy String?   @map("granted_by") @db.Uuid
+  grantedAt DateTime  @default(now()) @map("granted_at") @db.Timestamptz
+  expiresAt DateTime? @map("expires_at") @db.Timestamptz
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role    Role     @relation(fields: [roleId], references: [id])
+  account Account? @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([accountId])
+  @@map("user_roles")
+}
+
+model AccountMember {
+  id         String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  accountId  String    @map("account_id") @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  roleKey    String    @map("role_key") // account_owner|account_editor
+  invitedBy  String?   @map("invited_by") @db.Uuid
+  invitedAt  DateTime? @map("invited_at") @db.Timestamptz
+  acceptedAt DateTime? @map("accepted_at") @db.Timestamptz
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account_members")
+}
+
+model AuthToken {
+  id         String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  type       String // activation|email_verification|password_reset|email_change
+  tokenHash  String    @unique @map("token_hash") // SHA-256; the token itself is never stored
+  payload    Json?
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz
+  createdIp  String?   @map("created_ip") @db.Inet
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("auth_tokens")
+}
+
+// ================================================ catalog and entitlements ===
+
+model Feature {
+  id           String  @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  key          String  @unique // 'welcome.languages.max'
+  name         String
+  description  String?
+  category     String
+  valueType    String  @map("value_type") // boolean|limit|enum
+  defaultValue Json    @map("default_value")
+  enumOptions  Json?   @map("enum_options")
+  sortOrder    Int     @default(0) @map("sort_order")
+  isVisible    Boolean @default(true) @map("is_visible")
+
+  packageFeatures PackageFeature[]
+  entitlements    Entitlement[]
+
+  @@map("features")
+}
+
+model Package {
+  id            String   @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  key           String   @unique // essential|plus|pro
+  name          String
+  tagline       String?
+  description   String?
+  sortOrder     Int      @default(0) @map("sort_order")
+  isPublic      Boolean  @default(true) @map("is_public")
+  isRecommended Boolean  @default(false) @map("is_recommended")
+  status        String   @default("active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  versions PackageVersion[]
+
+  @@map("packages")
+}
+
+/// Immutable once sold. is_frozen is enforced by a database trigger - see
+/// schema.sql and docs/05. This is how existing customers keep what they bought.
+model PackageVersion {
+  id              String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  packageId       String    @map("package_id") @db.Uuid
+  version         Int
+  amountCents     BigInt    @map("amount_cents")
+  currency        String    @default("EUR") @db.Char(3)
+  billingInterval String    @default("one_time") @map("billing_interval")
+  stripeProductId String?   @map("stripe_product_id")
+  stripePriceId   String?   @unique @map("stripe_price_id")
+  changelog       String?
+  effectiveFrom   DateTime  @default(now()) @map("effective_from") @db.Timestamptz
+  effectiveTo     DateTime? @map("effective_to") @db.Timestamptz
+  isCurrent       Boolean   @default(false) @map("is_current")
+  isFrozen        Boolean   @default(false) @map("is_frozen")
+  createdBy       String?   @map("created_by") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  package       Package          @relation(fields: [packageId], references: [id])
+  features      PackageFeature[]
+  accounts      Account[]
+  orders        Order[]
+  entitlements  Entitlement[]
+  subscriptions Subscription[]
+
+  @@unique([packageId, version])
+  @@map("package_versions")
+}
+
+model PackageFeature {
+  id               String   @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  packageVersionId String   @map("package_version_id") @db.Uuid
+  featureId        String   @map("feature_id") @db.Uuid
+  valueJson        Json     @map("value_json") // true | 5 | -1 | "editorial"
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  packageVersion PackageVersion @relation(fields: [packageVersionId], references: [id], onDelete: Cascade)
+  feature        Feature        @relation(fields: [featureId], references: [id])
+
+  @@unique([packageVersionId, featureId])
+  @@map("package_features")
+}
+
+/// Resolved grants. Several rows per (account, feature) are expected - package,
+/// override, promo. Resolution order: override > promo > package > feature default.
+model Entitlement {
+  id               String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  accountId        String    @map("account_id") @db.Uuid
+  featureKey       String    @map("feature_key")
+  valueJson        Json      @map("value_json")
+  source           String // package|override|promo|grandfathered
+  packageVersionId String?   @map("package_version_id") @db.Uuid
+  reason           String?
+  grantedBy        String?   @map("granted_by") @db.Uuid
+  startsAt         DateTime  @default(now()) @map("starts_at") @db.Timestamptz
+  endsAt           DateTime? @map("ends_at") @db.Timestamptz
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamptz
+  revokedBy        String?   @map("revoked_by") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  account        Account         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  feature        Feature         @relation(fields: [featureKey], references: [key])
+  packageVersion PackageVersion? @relation(fields: [packageVersionId], references: [id])
+
+  @@index([accountId, featureKey])
+  @@map("entitlements")
+}
+
+// ============================================================ commerce =======
+
+model Order {
+  id                      String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  reference               String    @unique
+  accountId               String?   @map("account_id") @db.Uuid
+  packageVersionId        String    @map("package_version_id") @db.Uuid
+  type                    String    @default("purchase") // purchase|upgrade|manual|renewal
+  status                  String    @default("created")
+  currency                String    @default("EUR") @db.Char(3)
+  subtotalCents           BigInt    @default(0) @map("subtotal_cents")
+  discountCents           BigInt    @default(0) @map("discount_cents")
+  taxCents                BigInt    @default(0) @map("tax_cents")
+  totalCents              BigInt    @default(0) @map("total_cents")
+  discountCodeId          String?   @map("discount_code_id") @db.Uuid
+  paymentProvider         String    @default("stripe") @map("payment_provider")
+  stripeCheckoutSessionId String?   @unique @map("stripe_checkout_session_id")
+  customerEmail           String?   @map("customer_email") @db.Citext
+  customerLocale          String?   @map("customer_locale")
+  manualReason            String?   @map("manual_reason")
+  createdBy               String?   @map("created_by") @db.Uuid
+  placedAt                DateTime  @default(now()) @map("placed_at") @db.Timestamptz
+  completedAt             DateTime? @map("completed_at") @db.Timestamptz
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  account        Account?             @relation(fields: [accountId], references: [id])
+  packageVersion PackageVersion       @relation(fields: [packageVersionId], references: [id])
+  discountCode   DiscountCode?        @relation(fields: [discountCodeId], references: [id])
+  payments       Payment[]
+  invoices       Invoice[]
+  redemptions    DiscountRedemption[]
+  webhookEvents  WebhookEvent[]
+
+  @@index([accountId, placedAt(sort: Desc)])
+  @@index([status, placedAt(sort: Desc)])
+  @@map("orders")
+}
+
+model Payment {
+  id                    String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  orderId               String    @map("order_id") @db.Uuid
+  accountId             String?   @map("account_id") @db.Uuid
+  stripePaymentIntentId String?   @unique @map("stripe_payment_intent_id")
+  stripeChargeId        String?   @map("stripe_charge_id")
+  status                String    @default("pending")
+  amountCents           BigInt    @map("amount_cents")
+  currency              String    @default("EUR") @db.Char(3)
+  refundedAmountCents   BigInt    @default(0) @map("refunded_amount_cents")
+  methodType            String?   @map("method_type")
+  methodBrand           String?   @map("method_brand")
+  methodLast4           String?   @map("method_last4") @db.Char(4)
+  receiptUrl            String?   @map("receipt_url")
+  failureCode           String?   @map("failure_code")
+  failureMessage        String?   @map("failure_message")
+  paidAt                DateTime? @map("paid_at") @db.Timestamptz
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  order   Order    @relation(fields: [orderId], references: [id])
+  account Account? @relation(fields: [accountId], references: [id])
+  refunds Refund[]
+
+  @@index([orderId])
+  @@map("payments")
+}
+
+model Refund {
+  id             String   @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  paymentId      String   @map("payment_id") @db.Uuid
+  stripeRefundId String?  @unique @map("stripe_refund_id")
+  amountCents    BigInt   @map("amount_cents")
+  currency       String   @default("EUR") @db.Char(3)
+  reason         String
+  status         String   @default("pending")
+  initiatedBy    String?  @map("initiated_by") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@map("refunds")
+}
+
+model Invoice {
+  id              String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  accountId       String    @map("account_id") @db.Uuid
+  orderId         String?   @map("order_id") @db.Uuid
+  stripeInvoiceId String?   @unique @map("stripe_invoice_id")
+  number          String?
+  amountCents     BigInt    @map("amount_cents")
+  currency        String    @default("EUR") @db.Char(3)
+  status          String    @default("draft")
+  pdfUrl          String?   @map("pdf_url")
+  hostedUrl       String?   @map("hosted_url")
+  issuedAt        DateTime? @map("issued_at") @db.Timestamptz
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  account Account @relation(fields: [accountId], references: [id])
+  order   Order?  @relation(fields: [orderId], references: [id])
+
+  @@map("invoices")
+}
+
+/// Dormant until recurring packages ship. Present so that enabling them is a
+/// data change and a Stripe mode, not a migration. See docs/06.
+model Subscription {
+  id                   String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  accountId            String    @map("account_id") @db.Uuid
+  packageVersionId     String    @map("package_version_id") @db.Uuid
+  stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
+  status               String    @default("active")
+  currentPeriodStart   DateTime? @map("current_period_start") @db.Timestamptz
+  currentPeriodEnd     DateTime? @map("current_period_end") @db.Timestamptz
+  cancelAtPeriodEnd    Boolean   @default(false) @map("cancel_at_period_end")
+  canceledAt           DateTime? @map("canceled_at") @db.Timestamptz
+  trialEnd             DateTime? @map("trial_end") @db.Timestamptz
+  graceUntil           DateTime? @map("grace_until") @db.Timestamptz
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  account        Account        @relation(fields: [accountId], references: [id])
+  packageVersion PackageVersion @relation(fields: [packageVersionId], references: [id])
+
+  @@map("subscriptions")
+}
+
+model DiscountCode {
+  id                    String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  code                  String
+  description           String?
+  type                  String // percent|amount
+  value                 Int
+  currency              String?   @db.Char(3)
+  stripeCouponId        String?   @map("stripe_coupon_id")
+  stripePromotionCodeId String?   @map("stripe_promotion_code_id")
+  appliesToPackageIds   Json?     @map("applies_to_package_ids")
+  maxRedemptions        Int?      @map("max_redemptions")
+  redeemedCount         Int       @default(0) @map("redeemed_count")
+  startsAt              DateTime? @map("starts_at") @db.Timestamptz
+  endsAt                DateTime? @map("ends_at") @db.Timestamptz
+  status                String    @default("active")
+  createdBy             String?   @map("created_by") @db.Uuid
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  orders      Order[]
+  redemptions DiscountRedemption[]
+
+  @@map("discount_codes")
+}
+
+model DiscountRedemption {
+  id             String   @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  discountCodeId String   @map("discount_code_id") @db.Uuid
+  orderId        String   @map("order_id") @db.Uuid
+  accountId      String?  @map("account_id") @db.Uuid
+  amountCents    BigInt   @map("amount_cents")
+  redeemedAt     DateTime @default(now()) @map("redeemed_at") @db.Timestamptz
+
+  discountCode DiscountCode @relation(fields: [discountCodeId], references: [id])
+  order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([discountCodeId, orderId])
+  @@map("discount_redemptions")
+}
+
+/// The unique index on (provider, providerEventId) IS the idempotency mechanism.
+/// Never remove it. See docs/06.
+model WebhookEvent {
+  id              String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  provider        String    @default("stripe")
+  providerEventId String    @map("provider_event_id")
+  type            String
+  apiVersion      String?   @map("api_version")
+  payload         Json
+  status          String    @default("received")
+  attempts        Int       @default(0)
+  lastError       String?   @map("last_error")
+  relatedOrderId  String?   @map("related_order_id") @db.Uuid
+  receivedAt      DateTime  @default(now()) @map("received_at") @db.Timestamptz
+  processedAt     DateTime? @map("processed_at") @db.Timestamptz
+
+  relatedOrder Order? @relation(fields: [relatedOrderId], references: [id])
+
+  @@unique([provider, providerEventId])
+  @@index([status, receivedAt(sort: Desc)])
+  @@map("webhook_events")
+}
+
+// ============================================================== media =======
+
+model Media {
+  id               String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  accountId        String    @map("account_id") @db.Uuid
+  uploadedBy       String?   @map("uploaded_by") @db.Uuid
+  kind             String // image|pdf
+  originalFilename String    @map("original_filename")
+  storageKey       String    @map("storage_key")
+  mimeType         String    @map("mime_type")
+  detectedMime     String?   @map("detected_mime") // sniffed from magic bytes
+  bytes            BigInt
+  width            Int?
+  height           Int?
+  pageCount        Int?      @map("page_count")
+  checksumSha256   String    @map("checksum_sha256")
+  dominantColor    String?   @map("dominant_color") @db.Char(7)
+  blurPlaceholder  String?   @map("blur_placeholder")
+  altText          String?   @map("alt_text")
+  title            String?
+  focalX           Float?    @map("focal_x")
+  focalY           Float?    @map("focal_y")
+  status           String    @default("uploading")
+  failureReason    String?   @map("failure_reason")
+  scanStatus       String    @default("pending") @map("scan_status")
+  processedAt      DateTime? @map("processed_at") @db.Timestamptz
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz
+
+  account         Account          @relation(fields: [accountId], references: [id])
+  uploader        User?            @relation("MediaUploader", fields: [uploadedBy], references: [id])
+  variants        MediaVariant[]
+  usages          MediaUsage[]
+  avatarOf        User[]           @relation("UserAvatar")
+  propertyLogos   Property[]       @relation("PropertyLogo")
+  propertyCovers  Property[]       @relation("PropertyCover")
+  propertyHosts   Property[]       @relation("PropertyHostPhoto")
+  contentBlocks   ContentBlock[]
+  recommendations Recommendation[]
+
+  @@index([accountId, createdAt(sort: Desc)])
+  @@map("media")
+}
+
+model MediaVariant {
+  id         String   @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  mediaId    String   @map("media_id") @db.Uuid
+  purpose    String // thumb|card|content|cover|cover2x
+  format     String // avif|webp|jpeg
+  width      Int
+  height     Int
+  bytes      BigInt
+  storageKey String   @map("storage_key")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, purpose, format])
+  @@map("media_variants")
+}
+
+/// Written by the same service call that sets a media reference, so it cannot
+/// drift. This is what makes deletion safe and quotas honest. See docs/12.
+model MediaUsage {
+  id         String   @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  mediaId    String   @map("media_id") @db.Uuid
+  accountId  String   @map("account_id") @db.Uuid
+  usableType String   @map("usable_type")
+  usableId   String   @map("usable_id") @db.Uuid
+  field      String
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, usableType, usableId, field])
+  @@index([usableType, usableId])
+  @@map("media_usages")
+}
+
+// ============================================================ content =======
+
+model Locale {
+  code       String  @id
+  name       String
+  nativeName String  @map("native_name")
+  direction  String  @default("ltr")
+  isActive   Boolean @default(true) @map("is_active")
+  sortOrder  Int     @default(0) @map("sort_order")
+
+  guides             Guide[]
+  guideLocales       GuideLocale[]
+  translations       Translation[] @relation("TranslationTarget")
+  translationSources Translation[] @relation("TranslationSource")
+
+  @@map("locales")
+}
+
+model Property {
+  id               String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  accountId        String    @map("account_id") @db.Uuid
+  name             String
+  type             String    @default("apartment")
+  shortDescription String?   @map("short_description")
+  addressLine1     String?   @map("address_line1")
+  addressLine2     String?   @map("address_line2")
+  city             String?
+  postalCode       String?   @map("postal_code")
+  province         String?
+  country          String    @default("IT") @db.Char(2)
+  latitude         Decimal?  @db.Decimal(9, 6)
+  longitude        Decimal?  @db.Decimal(9, 6)
+  timezone         String    @default("Europe/Rome")
+  phone            String?
+  whatsapp         String?
+  email            String?   @db.Citext
+  website          String?
+  hostName         String?   @map("host_name")
+  hostPhotoMediaId String?   @map("host_photo_media_id") @db.Uuid
+  logoMediaId      String?   @map("logo_media_id") @db.Uuid
+  coverMediaId     String?   @map("cover_media_id") @db.Uuid
+  status           String    @default("active")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz
+
+  account    Account              @relation(fields: [accountId], references: [id])
+  hostPhoto  Media?               @relation("PropertyHostPhoto", fields: [hostPhotoMediaId], references: [id])
+  logo       Media?               @relation("PropertyLogo", fields: [logoMediaId], references: [id])
+  cover      Media?               @relation("PropertyCover", fields: [coverMediaId], references: [id])
+  guide      Guide?
+  onboarding OnboardingProgress?
+
+  @@index([accountId])
+  @@map("properties")
+}
+
+model Guide {
+  id                    String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  propertyId            String    @unique @map("property_id") @db.Uuid
+  accountId             String    @map("account_id") @db.Uuid
+  status                String    @default("draft") // draft|published|unpublished
+  defaultLocale         String    @default("it-IT") @map("default_locale")
+  publishedVersionId    String?   @map("published_version_id") @db.Uuid
+  hasUnpublishedChanges Boolean   @default(false) @map("has_unpublished_changes")
+  completionPercent     Int       @default(0) @map("completion_percent") @db.SmallInt
+  searchEnabled         Boolean   @default(false) @map("search_enabled")
+  seoIndexable          Boolean   @default(false) @map("seo_indexable")
+  themeJson             Json      @default("{}") @map("theme_json")
+  brandingJson          Json      @default("{}") @map("branding_json")
+  welcomeMessage        String?   @map("welcome_message")
+  publishedAt           DateTime? @map("published_at") @db.Timestamptz
+  publishedBy           String?   @map("published_by") @db.Uuid
+  unpublishedAt         DateTime? @map("unpublished_at") @db.Timestamptz
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  deletedAt             DateTime? @map("deleted_at") @db.Timestamptz
+
+  property         Property         @relation(fields: [propertyId], references: [id])
+  account          Account          @relation(fields: [accountId], references: [id])
+  locale           Locale           @relation(fields: [defaultLocale], references: [code])
+  publishedVersion GuideVersion?    @relation("PublishedVersion", fields: [publishedVersionId], references: [id])
+  versions         GuideVersion[]   @relation("GuideVersions")
+  sections         GuideSection[]
+  blocks           ContentBlock[]
+  guideLocales     GuideLocale[]
+  recommendations  Recommendation[]
+  publicUrls       PublicUrl[]
+  qrCodes          QrCode[]
+  translations     Translation[]
+  analyticsDaily   AnalyticsDaily[]
+
+  @@index([accountId])
+  @@map("guides")
+}
+
+/// Immutable publish artifact. Serving a guest is one row read. Never updated.
+model GuideVersion {
+  id            String   @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  guideId       String   @map("guide_id") @db.Uuid
+  versionNumber Int      @map("version_number")
+  snapshot      Json
+  locales       String[]
+  byteSize      Int?     @map("byte_size")
+  note          String?
+  publishedBy   String?  @map("published_by") @db.Uuid
+  publishedAt   DateTime @default(now()) @map("published_at") @db.Timestamptz
+
+  guide      Guide   @relation("GuideVersions", fields: [guideId], references: [id], onDelete: Cascade)
+  publishedOn Guide[] @relation("PublishedVersion")
+
+  @@unique([guideId, versionNumber])
+  @@map("guide_versions")
+}
+
+model SectionTemplate {
+  id              String   @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  key             String   @unique
+  name            String
+  icon            String
+  category        String
+  defaultOrder    Int      @default(0) @map("default_order")
+  requiredFeature String?  @map("required_feature")
+  fieldSchema     Json     @map("field_schema")
+  defaultCopy     Json     @default("{}") @map("default_copy")
+  isSystem        Boolean  @default(true) @map("is_system")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  sections GuideSection[]
+
+  @@map("section_templates")
+}
+
+model GuideSection {
+  id                String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  guideId           String    @map("guide_id") @db.Uuid
+  accountId         String    @map("account_id") @db.Uuid
+  sectionTemplateId String?   @map("section_template_id") @db.Uuid
+  key               String
+  type              String    @default("standard") // standard|custom
+  title             String
+  subtitle          String?
+  icon              String    @default("circle")
+  sortOrder         Int       @default(0) @map("sort_order")
+  isEnabled         Boolean   @default(true) @map("is_enabled")
+  isComplete        Boolean   @default(false) @map("is_complete")
+  visibility        String    @default("public") // public|pin_protected|date_window
+  pinHash           String?   @map("pin_hash") // Argon2id; never the PIN itself
+  visibleFrom       DateTime? @map("visible_from") @db.Timestamptz
+  visibleTo         DateTime? @map("visible_to") @db.Timestamptz
+  requiredFeature   String?   @map("required_feature")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz
+
+  guide    Guide            @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  template SectionTemplate? @relation(fields: [sectionTemplateId], references: [id])
+  blocks   ContentBlock[]
+
+  @@unique([guideId, key])
+  @@index([guideId, sortOrder])
+  @@map("guide_sections")
+}
+
+/// `data` is the only varying part - a versioned JSON Schema validates it on
+/// write. Which block, where, and whether it is on stays relational. See docs/14.
+model ContentBlock {
+  id             String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  guideSectionId String    @map("guide_section_id") @db.Uuid
+  guideId        String    @map("guide_id") @db.Uuid
+  accountId      String    @map("account_id") @db.Uuid
+  type           String
+  schemaVersion  Int       @default(1) @map("schema_version") @db.SmallInt
+  sortOrder      Int       @default(0) @map("sort_order")
+  isEnabled      Boolean   @default(true) @map("is_enabled")
+  isSensitive    Boolean   @default(false) @map("is_sensitive")
+  data           Json      @default("{}")
+  mediaId        String?   @map("media_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz
+
+  section GuideSection @relation(fields: [guideSectionId], references: [id], onDelete: Cascade)
+  guide   Guide        @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  media   Media?       @relation(fields: [mediaId], references: [id])
+
+  @@index([guideSectionId, sortOrder])
+  @@map("content_blocks")
+}
+
+model GuideLocale {
+  id                String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  guideId           String    @map("guide_id") @db.Uuid
+  locale            String
+  isDefault         Boolean   @default(false) @map("is_default")
+  isEnabled         Boolean   @default(false) @map("is_enabled")
+  completeness      Int       @default(0) @db.SmallInt
+  fieldsTotal       Int       @default(0) @map("fields_total")
+  fieldsTranslated  Int       @default(0) @map("fields_translated")
+  fieldsStale       Int       @default(0) @map("fields_stale")
+  lastPublishedAt   DateTime? @map("last_published_at") @db.Timestamptz
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  guide      Guide  @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  localeInfo Locale @relation(fields: [locale], references: [code])
+
+  @@unique([guideId, locale])
+  @@map("guide_locales")
+}
+
+model RecommendationCategory {
+  id        String   @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  key       String
+  name      String
+  icon      String   @default("pin")
+  sortOrder Int      @default(0) @map("sort_order")
+  isSystem  Boolean  @default(true) @map("is_system")
+  accountId String?  @map("account_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  recommendations Recommendation[]
+
+  @@map("recommendation_categories")
+}
+
+model Recommendation {
+  id               String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  guideId          String    @map("guide_id") @db.Uuid
+  accountId        String    @map("account_id") @db.Uuid
+  categoryId       String    @map("category_id") @db.Uuid
+  name             String
+  shortDescription String?   @map("short_description")
+  address          String?
+  latitude         Decimal?  @db.Decimal(9, 6)
+  longitude        Decimal?  @db.Decimal(9, 6)
+  mapsUrl          String?   @map("maps_url")
+  phone            String?
+  website          String?
+  distanceMeters   Int?      @map("distance_meters") // computed at publish
+  priceLevel       Int?      @map("price_level") @db.SmallInt
+  mediaId          String?   @map("media_id") @db.Uuid
+  isHostPick       Boolean   @default(false) @map("is_host_pick")
+  isEnabled        Boolean   @default(true) @map("is_enabled")
+  sortOrder        Int       @default(0) @map("sort_order")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz
+
+  guide    Guide                  @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  category RecommendationCategory @relation(fields: [categoryId], references: [id])
+  media    Media?                 @relation(fields: [mediaId], references: [id])
+
+  @@index([guideId, categoryId, sortOrder])
+  @@map("recommendations")
+}
+
+// ========================================================= translation ======
+
+/// Polymorphic, per field path, per locale, with state. A database trigger
+/// refuses to let machine output overwrite reviewed or published work - see
+/// schema.sql and docs/11.
+model Translation {
+  id               String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  accountId        String    @map("account_id") @db.Uuid
+  guideId          String?   @map("guide_id") @db.Uuid
+  translatableType String    @map("translatable_type")
+  translatableId   String    @map("translatable_id") @db.Uuid
+  fieldPath        String    @map("field_path")
+  locale           String
+  sourceLocale     String    @map("source_locale")
+  valueText        String?   @map("value_text")
+  proposedValue    String?   @map("proposed_value")
+  status           String    @default("missing") // missing|machine_translated|reviewed|published
+  sourceHash       String?   @map("source_hash")
+  isStale          Boolean   @default(false) @map("is_stale")
+  isLocked         Boolean   @default(false) @map("is_locked")
+  engine           String?
+  engineMeta       Json?     @map("engine_meta")
+  translatedAt     DateTime? @map("translated_at") @db.Timestamptz
+  reviewedBy       String?   @map("reviewed_by") @db.Uuid
+  reviewedAt       DateTime? @map("reviewed_at") @db.Timestamptz
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  account      Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  guide        Guide?  @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  targetLocale Locale  @relation("TranslationTarget", fields: [locale], references: [code])
+  origin       Locale  @relation("TranslationSource", fields: [sourceLocale], references: [code])
+
+  @@unique([translatableType, translatableId, fieldPath, locale])
+  @@index([translatableType, translatableId, locale])
+  @@index([guideId, locale, status])
+  @@map("translations")
+}
+
+// ========================================================== publishing ======
+
+/// Slug history. Old rows become permanent redirects and are never deleted or
+/// reused. See docs/13.
+model PublicUrl {
+  id           String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  guideId      String    @map("guide_id") @db.Uuid
+  accountId    String    @map("account_id") @db.Uuid
+  host         String    @default("welcome.myhouse.it")
+  slug         String
+  isPrimary    Boolean   @default(true) @map("is_primary")
+  status       String    @default("active") // active|redirect
+  redirectToId String?   @map("redirect_to_id") @db.Uuid
+  verifiedAt   DateTime? @map("verified_at") @db.Timestamptz
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  guide      Guide       @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  redirectTo PublicUrl?  @relation("UrlRedirect", fields: [redirectToId], references: [id])
+  redirects  PublicUrl[] @relation("UrlRedirect")
+
+  @@unique([host, slug])
+  @@map("public_urls")
+}
+
+/// The token is permanent. The QR encodes mh.li/q/<token>, never the guide URL,
+/// so printed codes survive slug changes and custom domains. See docs/13.
+model QrCode {
+  id            String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  guideId       String    @map("guide_id") @db.Uuid
+  accountId     String    @map("account_id") @db.Uuid
+  token         String    @unique
+  label         String?
+  styleJson     Json      @default("{}") @map("style_json")
+  scanCount     BigInt    @default(0) @map("scan_count")
+  lastScannedAt DateTime? @map("last_scanned_at") @db.Timestamptz
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz
+  revokedBy     String?   @map("revoked_by") @db.Uuid
+
+  guide Guide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@map("qr_codes")
+}
+
+// =========================================================== analytics ======
+
+/// Partitioned monthly in schema.sql - Prisma does not model partitioning, so
+/// partition maintenance lives in SQL migrations.
+model AnalyticsDaily {
+  id         String @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  guideId    String @map("guide_id") @db.Uuid
+  accountId  String @map("account_id") @db.Uuid
+  date       DateTime @db.Date
+  metric     String
+  dimension  String?
+  dimension2 String? @map("dimension_2")
+  count      BigInt @default(0)
+
+  guide Guide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@unique([guideId, date, metric, dimension, dimension2])
+  @@index([guideId, date(sort: Desc)])
+  @@map("analytics_daily")
+}
+
+// =========================================================== operations =====
+
+model ActivityLog {
+  id                     String   @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  actorUserId            String?  @map("actor_user_id") @db.Uuid
+  actorType              String   @default("user") // user|admin|system|webhook
+  actorLabel             String?  @map("actor_label") // survives user deletion
+  accountId              String?  @map("account_id") @db.Uuid
+  impersonationSessionId String?  @map("impersonation_session_id") @db.Uuid
+  action                 String
+  subjectType            String?  @map("subject_type")
+  subjectId              String?  @map("subject_id") @db.Uuid
+  subjectLabel           String?  @map("subject_label")
+  changes                Json? // { field: { from, to } }, sensitive values masked
+  reason                 String?
+  ip                     String?  @db.Inet
+  userAgent              String?  @map("user_agent")
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  actor        User?                 @relation(fields: [actorUserId], references: [id])
+  account      Account?              @relation(fields: [accountId], references: [id])
+  impersonation ImpersonationSession? @relation(fields: [impersonationSessionId], references: [id])
+
+  @@index([accountId, createdAt(sort: Desc)])
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("activity_logs")
+}
+
+model ImpersonationSession {
+  id           String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  adminUserId  String    @map("admin_user_id") @db.Uuid
+  accountId    String    @map("account_id") @db.Uuid
+  reason       String
+  startedAt    DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz
+  endedAt      DateTime? @map("ended_at") @db.Timestamptz
+  endedReason  String?   @map("ended_reason")
+  actionsCount Int       @default(0) @map("actions_count")
+  ip           String?   @db.Inet
+  userAgent    String?   @map("user_agent")
+
+  admin    User          @relation(fields: [adminUserId], references: [id])
+  account  Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  activity ActivityLog[]
+
+  @@index([accountId, startedAt(sort: Desc)])
+  @@map("impersonation_sessions")
+}
+
+model AdminNote {
+  id           String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  accountId    String    @map("account_id") @db.Uuid
+  authorUserId String?   @map("author_user_id") @db.Uuid
+  authorLabel  String?   @map("author_label")
+  body         String
+  isPinned     Boolean   @default(false) @map("is_pinned")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, createdAt(sort: Desc)])
+  @@map("admin_notes")
+}
+
+model OnboardingProgress {
+  id             String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  accountId      String    @map("account_id") @db.Uuid
+  propertyId     String?   @unique @map("property_id") @db.Uuid
+  wizardVersion  String    @default("1") @map("wizard_version")
+  currentStep    String    @default("property") @map("current_step")
+  completedSteps String[]  @map("completed_steps")
+  skippedSteps   String[]  @map("skipped_steps")
+  startedAt      DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  completedAt    DateTime? @map("completed_at") @db.Timestamptz
+  lastActiveAt   DateTime  @default(now()) @map("last_active_at") @db.Timestamptz
+  deviceHint     String?   @map("device_hint")
+
+  account  Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_progress")
+}
+
+model Setting {
+  id        String   @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  scope     String // global|account
+  scopeId   String?  @map("scope_id") @db.Uuid
+  key       String
+  valueJson Json     @map("value_json")
+  updatedBy String?  @map("updated_by") @db.Uuid
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@unique([scope, scopeId, key])
+  @@map("settings")
+}
+
+model EmailLog {
+  id                String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  accountId         String?   @map("account_id") @db.Uuid
+  userId            String?   @map("user_id") @db.Uuid
+  templateKey       String    @map("template_key")
+  locale            String
+  toEmail           String    @map("to_email") @db.Citext
+  subject           String?
+  providerMessageId String?   @map("provider_message_id")
+  status            String    @default("queued")
+  error             String?
+  sentAt            DateTime? @map("sent_at") @db.Timestamptz
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([accountId, createdAt(sort: Desc)])
+  @@map("email_log")
+}
+
+model JobDeadLetter {
+  id         String    @id @default(dbgenerated("uuid_generate_v7()")) @db.Uuid
+  queue      String
+  jobName    String    @map("job_name")
+  payload    Json
+  attempts   Int
+  lastError  String?   @map("last_error")
+  failedAt   DateTime  @default(now()) @map("failed_at") @db.Timestamptz
+  requeuedAt DateTime? @map("requeued_at") @db.Timestamptz
+  requeuedBy String?   @map("requeued_by") @db.Uuid
+
+  @@index([queue, failedAt(sort: Desc)])
+  @@map("jobs_dead_letter")
+}
