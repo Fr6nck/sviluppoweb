@@ -42,6 +42,11 @@ schiera "$TMP/vecchia"
 avvia
 php "$QUI/aggiornamento.php" prima "http://127.0.0.1:$PORTA/welcomebook/index.php" "$W"
 ferma
+# Le stesse migrazioni su una copia del database, come le vede PHP prima della 8.4 (vedi php-vecchio.php).
+mkdir -p "$TMP/sim/storage"
+cp -r "$RADICE/app/src" "$RADICE/app/migrations" "$RADICE/app/config.php" "$TMP/sim/"
+cp "$(ls "$W"/app/storage/*.sqlite | head -1)" "$TMP/sim.sqlite"
+php "$QUI/php-vecchio.php" "$TMP/sim" "$TMP/sim.sqlite"
 schiera "$RADICE"
 avvia
 php "$QUI/aggiornamento.php" dopo "http://127.0.0.1:$PORTA/welcomebook/index.php" "$W"

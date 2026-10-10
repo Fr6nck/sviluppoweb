@@ -1,5 +1,11 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Correzione: il sito non si apriva dopo l'aggiornamento (10 ottobre 2026)
+
+- **Causa:** la migrazione `028` (listino 2026) apre una transazione dentro quella che il Migrator apre già con `BEGIN IMMEDIATE`. Con PHP 8.4 PDO se ne accorge; con PHP 8.1–8.3 (quello di molti hosting) no, e SQLite rifiuta la seconda: la migrazione falliva a ogni richiesta e ogni pagina mostrava «Qualcosa non ha funzionato». Il database non era rovinato: resta fermo alla 027, con tutti i dati.
+- **Correzione:** il Migrator segnala a `Db::tx()` la sua transazione, e `Db::tx()` non ne apre un'altra (`src/Db.php`, `src/Migrator.php`). Nessuna migrazione nuova.
+- **Verifica:** sul database del sito (copia) le migrazioni 028 e 029 passano anche simulando PHP prima della 8.4, e i dati restano gli stessi (utenti, strutture, sezioni, foto, abbonamenti). La prova di aggiornamento ora fa girare le migrazioni anche così (`prove/php-vecchio.php`). Prove: 831 superate.
+
 ## v2 · 6N correzione: conferma dei codici nella modifica di una variante (10 ottobre 2026)
 
 - Nel modulo «Modifica nome, Wi-Fi e istruzioni» di una variante camera il riquadro «Nella variante ci sono codici di accesso» è aperto, con la casella obbligatoria, quando la variante salvata contiene già un codice: anche senza JavaScript l'host può confermare e salvare. Prima il riquadro partiva sempre chiuso e, senza JavaScript, il server chiedeva una conferma che non si poteva dare.

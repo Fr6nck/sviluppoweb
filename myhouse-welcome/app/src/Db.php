@@ -94,10 +94,19 @@ final class Db
      * guida, una migrazione che crea un abbonamento — si entra in quella:
      * PDO non annida le transazioni, e l'atomicità la garantisce l'esterna.
      */
+    /**
+     * Una transazione aperta fuori da PDO (le migrazioni su SQLite usano «BEGIN IMMEDIATE»).
+     * Prima di PHP 8.4, PDO::inTransaction() non la vede e beginTransaction() fallirebbe con
+     * «cannot start a transaction within a transaction»: Migrator la segnala qui.
+     */
+    private static int $esterna = 0;
+
+    public static function transazioneEsterna(bool $aperta): void { self::$esterna = max(0, self::$esterna + ($aperta ? 1 : -1)); }
+
     public static function tx(callable $fn): mixed
     {
         $pdo = self::conn();
-        if ($pdo->inTransaction()) return $fn($pdo);
+        if ($pdo->inTransaction() || self::$esterna > 0) return $fn($pdo);
         $pdo->beginTransaction();
         try { $r = $fn($pdo); $pdo->commit(); return $r; }
         catch (\Throwable $e) { $pdo->rollBack(); throw $e; }

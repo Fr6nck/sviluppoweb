@@ -67,7 +67,7 @@ final class Migrator
         // Due richieste contemporanee non devono applicare la stessa migrazione
         // due volte: su SQLite BEGIN IMMEDIATE prende il lucchetto in scrittura
         // subito, e dentro si ricontrolla.
-        if ($sqlite) $pdo->exec('BEGIN IMMEDIATE'); else $pdo->beginTransaction();
+        if ($sqlite) { $pdo->exec('BEGIN IMMEDIATE'); Db::transazioneEsterna(true); } else $pdo->beginTransaction();
         try {
             if (Db::one('SELECT name FROM schema_migrations WHERE name = ?', [$name])) {
                 $pdo->exec($sqlite ? 'COMMIT' : 'COMMIT');
@@ -87,6 +87,8 @@ final class Migrator
             if ($sqlite) { try { $pdo->exec('ROLLBACK'); } catch (\Throwable) {} }
             elseif ($pdo->inTransaction()) $pdo->rollBack();
             throw new \RuntimeException("Migrazione $name non applicata: " . $e->getMessage(), 0, $e);
+        } finally {
+            if ($sqlite) Db::transazioneEsterna(false);
         }
     }
 
