@@ -89,6 +89,10 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
         <?php $voci($guida, $quiGuida, 'lato__voce'); ?>
         <a class="lato__voce" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/anteprima" target="_blank" rel="noopener">
           <?= Icon::svg('eye', 19, 1.8) ?><span>Anteprima</span><?= Icon::svg('external', 14, 1.8, 'lato__fuori') ?></a>
+        <?php if (($esempio = MHW\Demo::esempio(null, (int) ($prop['id'] ?? 0)))): /* 7C: la vetrina, per vedere una guida finita */ ?>
+          <a class="lato__voce" href="<?= Support::e(Support::url($esempio)) ?>" target="_blank" rel="noopener">
+            <?= Icon::svg('book', 19, 1.8) ?><span>Guida di esempio</span><?= Icon::svg('external', 14, 1.8, 'lato__fuori') ?></a>
+        <?php endif; ?>
       </nav>
     <?php endif; ?>
     <div class="lato__piede">
@@ -206,6 +210,21 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
   <?php else: ?>
     <p class="note <?= ['err' => 'note--err', 'avviso' => ''][$f['kind']] ?? 'note--ok' ?>" style="margin-bottom:24px" role="status"><?= Support::e($f['msg']) ?></p>
   <?php endif; ?>
+<?php endif; ?>
+<?php /* 7C · Novità: la prima non ancora chiusa da questo account (non per l'amministrazione). */
+      if ($u && ($u['role'] ?? '') !== 'admin' && ($accN = Auth::account()) && ($novita = MHW\Novita::daMostrare((int) $accN['id'], (string) ($u['created_at'] ?? '')))):
+        $pidN = !empty($prop['id']) ? (int) $prop['id'] : (int) MHW\Db::val('SELECT id FROM properties WHERE account_id = ? AND archived_at IS NULL ORDER BY id', [$accN['id']], 0);
+        $doveN = str_contains((string) $novita['dove'], '{pid}') ? ($pidN ? str_replace('{pid}', (string) $pidN, (string) $novita['dove']) : '') : (string) $novita['dove']; ?>
+  <aside class="novita" aria-labelledby="novita-titolo">
+    <span class="novita__kicker"><span class="dot" aria-hidden="true"></span>Novità</span>
+    <div class="novita__testo"><b id="novita-titolo"><?= Support::e($novita['titolo']) ?></b> <span><?= Support::e($novita['testo']) ?></span></div>
+    <div class="novita__azioni">
+      <?php if ($doveN !== ''): ?><a class="btn btn--sm" href="<?= b() . Support::e($doveN) ?>"<?= str_ends_with($doveN, '/anteprima') ? ' target="_blank" rel="noopener"' : '' ?>>Mostrami dove</a><?php endif; ?>
+      <form method="post" action="<?= b() ?>/pannello/novita/chiudi" style="margin:0"><?= Csrf::field() ?>
+        <input type="hidden" name="novita" value="<?= Support::e($novita['id']) ?>">
+        <button class="icon-btn" aria-label="Chiudi questa novità"><?= Icon::svg('close', 16, 2) ?></button></form>
+    </div>
+  </aside>
 <?php endif; ?>
 <?= $content ?>
 </main>

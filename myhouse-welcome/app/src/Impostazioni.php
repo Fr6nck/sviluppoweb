@@ -379,9 +379,14 @@ final class Impostazioni
                     }
                     return [true, 'Acceso: ' . $n . ($n === 1 ? ' cliente può' : ' clienti possono') . ' invitare. Chi non ha ancora un abbonamento attivo vede la pagina e il motivo.'];
                 case 'traduzioni':
-                    if (!Traduttore::configurato()) return [false, 'Mancano le chiavi: scrivile qui, oppure configura l\'archivio S3 (si usano le sue).'];
-                    $t = Traduttore::prova();
-                    return [true, 'Amazon Translate risponde: «Benvenuti» → «' . $t . '» (9 caratteri, nel registro).' . (!empty(Traduttore::config()['chiavi_s3']) ? ' Sta usando le chiavi dell\'archivio S3.' : '')];
+                    if (!Traduttore::configurato()) return [false, 'Mancano le chiavi: scrivile qui, oppure configura l\'archivio S3 (si usano le sue). Finché mancano, nel pannello i clienti leggono «Le traduzioni non sono disponibili in questo momento».'];
+                    try { $t = Traduttore::prova(); }
+                    catch (\Throwable $e) {   // 7C: il messaggio esatto di AWS, e cosa fare
+                        Log::exception($e, 'impostazioni: prova traduzioni');
+                        $cosa = Traduttore::consiglio($e->getMessage());
+                        return [false, 'La prova non è riuscita. Amazon risponde: «' . $e->getMessage() . '».' . ($cosa !== '' ? ' ' . $cosa : '')];
+                    }
+                    return [true, 'Amazon Translate risponde: «Buongiorno» → «' . $t . '» (10 caratteri, nel registro).' . (!empty(Traduttore::config()['chiavi_s3']) ? ' Sta usando le chiavi dell\'archivio S3.' : '')];
             }
         } catch (\Throwable $e) {
             Log::exception($e, 'impostazioni: prova ' . $gruppo);

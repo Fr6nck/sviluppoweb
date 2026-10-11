@@ -18,5 +18,6 @@ use function MHW\a; use MHW\{Support, I18n}; ?>
 <body style="background:#17130d">
 <?php if (!empty($anteprima)): ?><div class="ribbon"><?= Support::e(I18n::t($loc ?? 'it', 'preview_ribbon')) ?></div><?php endif; ?>
 <?= $content ?>
+<script src="<?= MHW\av('/assets/guida.js') ?>" defer></script>
 </body>
 </html>

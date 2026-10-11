@@ -9,7 +9,7 @@ I dettagli tecnici sono in `app/LEGGIMI.md`. Le novità, fase per fase, sono in 
 
 1. Copia sul server **tutto `app/storage/`** e `config.local.php`, se c'è.
 2. Carica il contenuto di `welcomebook/` sopra i file vecchi, **senza toccare `app/storage/`**.
-3. Apri il sito una volta. Le migrazioni `007`–`028` partono da sole.
+3. Apri il sito una volta. Le migrazioni `007`–`032` partono da sole.
 4. In **Amministrazione → Diagnostica** tutte le righe devono essere «OK».
 
 Il database resta **SQLite**. Le migrazioni nuove sono scritte anche per MySQL, ma un'installazione da zero su MySQL non è supportata: lo schema iniziale (`001`) è solo per SQLite.
@@ -140,6 +140,18 @@ Per ogni abbonamento attivo con la voce delle camere, la toglie con il credito d
 | PEC (`pec`) | `metadata[Pec]` e `metadata[pec]` | PEC |
 
 Da provare con un pagamento di prova: (1) una persona fisica con solo codice fiscale → fattura con `0000000`; (2) un'azienda con P.IVA e SDI; (3) un'azienda con P.IVA e PEC, senza SDI; (4) un cambio di dati dopo il primo pagamento (Account) → in Adamo, alla fattura successiva, i dati nuovi; (5) un codice sconto → importi giusti in fattura. I nomi esatti dei campi di Adamo vanno confermati nella loro integrazione Stripe (sono quelli che Adamo ci ha indicato: `Fiscal_code`, `Pec`, `Fe_code`).
+
+## 4g. Novità della 7A e della 7C
+
+**Indirizzi puliti (7A).** Carica anche il file nascosto `.htaccess` nella cartella principale. Poi in **Amministrazione → Impostazioni → Sito** scrivi l'indirizzo pubblico (`https://…`, senza `/` in fondo) e premi «Prova»: se risponde, accendi «Indirizzi puliti». Se il server non legge `.htaccess` (mod_rewrite spento), gli indirizzi restano con `index.php` e funzionano lo stesso.
+
+**Email (7A).** Perché le email non finiscano in Spam servono **SPF, DKIM e DMARC** sul dominio da cui partono: chiedili all'hosting o configurali nel DNS. Mandati una «Prova della posta» da Impostazioni e controlla anche Spam e Promozioni. Gli HTML di ogni email sono in `app/prove/email/`. L'indirizzo dell'assistenza è `info@welcomemyhouse.it` (Impostazioni → Sito): cambialo lì, non nei testi.
+
+**Conferma dell'email (7A).** Chi si è registrato e non ha mai confermato l'email, al prossimo accesso trova «Controlla la tua email» invece del pannello. Chi entra dall'amministrazione («Entra come cliente») no.
+
+**Traduzioni (7C).** In **Impostazioni → Traduzioni** premi «Prova»: traduce «Buongiorno» e, se non va, mostra il messaggio esatto di Amazon (chiave sconosciuta, firma, permessi, regione) e cosa fare. All'utente IAM serve la policy **TranslateReadOnly** (o `translate:TranslateText`). Sul database del sito che mi hai mandato non c'è nessuna chiamata registrata e l'interruttore era spento su tutte le strutture: dalla 7C il cliente traduce con «Traduci» senza accenderlo.
+
+**Novità (7C).** Le novità per chi ha già la guida sono in `app/lang/novita.php` (una per voce, la prima dell'elenco si vede per prima). Per una novità nuova aggiungi una voce con un `id` mai usato.
 
 ## 4b. La guida vetrina (la demo della landing)
 

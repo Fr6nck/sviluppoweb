@@ -160,6 +160,14 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
 
     </div>
 
+    <?php /* 7C: le lingue con campi da tradurre (non ferma la pubblicazione) */
+          $incomplete = array_filter(array_map(fn($per) => array_sum($per), MHW\Traduttore::mancanti($prop)));
+          if ($incomplete): $nomiLI = MHW\Config::get('locales'); ?>
+      <div class="note" role="status"><div class="stack" style="gap:4px"><b>Lingue da completare</b>
+        <?php foreach ($incomplete as $lm => $quanti): ?>
+          <span><a href="<?= b() ?>/pannello/<?= $pid ?>/lingue/<?= Support::e($lm) ?>"><?= Support::e($nomiLI[$lm] ?? $lm) ?></a>: <?= (int) $quanti ?> camp<?= $quanti === 1 ? 'o' : 'i' ?> da tradurre. Dove manca, l'ospite legge la lingua principale.</span>
+        <?php endforeach; ?></div></div>
+    <?php endif; ?>
     <?php /* Facoltativo: le lingue in più. Le traduzioni non fermano la pubblicazione:
              dove mancano, l'ospite legge la lingua principale. */
           $altreLingue = array_diff_key($tutte, [$prop['default_locale'] => 1]); if ($altreLingue): ?>

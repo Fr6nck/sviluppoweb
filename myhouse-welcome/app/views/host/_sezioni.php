@@ -48,6 +48,19 @@ $n = count($sezioni); ?>
       <?php if (!$on): ?><span class="badge badge--paper">Disattivata</span>
       <?php elseif ($s['empty']): ?><span class="badge badge--terracotta">Da compilare</span>
       <?php else: ?><span class="badge badge--pine">Pronta</span><?php endif; ?>
+      <?php /* 7C · Novità: un campo nuovo ancora vuoto in questa sezione */
+            $tdN = json_decode((string) MHW\Db::val('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $prop['default_locale']], ''), true) ?: [];
+            if ($on && MHW\Novita::campiNuovi((int) $prop['account_id'], (string) $s['kind'], (json_decode((string) ($s['data'] ?? ''), true) ?: []) + $tdN)): ?>
+        <span class="badge badge--ochre novita-pallino"><span class="dot" aria-hidden="true"></span>Nuovo</span>
+      <?php endif; ?>
+      <?php /* 7C: le lingue in cui la sezione non è ancora tradotta, in una sola etichetta ocra («EN da tradurre», «DE, FR da tradurre»):
+               una per lingua, sul telefono, spingerebbe fuori il nome della sezione. Porta alla prima lingua da fare. */
+            $mancantiL = $mancantiL ?? MHW\Traduttore::mancanti($prop);
+            $lingueSez = $on ? array_keys(array_filter($mancantiL, fn($per) => !empty($per[(int) $s['id']]))) : [];
+            if ($lingueSez): ?>
+        <a class="badge badge--ochre etichetta-tradurre" href="<?= b() ?>/pannello/<?= $pid ?>/lingue/<?= Support::e($lingueSez[0]) ?>"
+           title="Da tradurre in: <?= Support::e(implode(', ', array_map('strtoupper', $lingueSez))) ?>"><?= Support::e(implode(', ', array_map('strtoupper', $lingueSez))) ?> da tradurre</a>
+      <?php endif; ?>
       <details class="menu-riga">
         <summary class="icon-btn" aria-label="Azioni per <?= Support::e($s['title']) ?>"><span aria-hidden="true">⋯</span></summary>
         <div class="menu-riga__lista">

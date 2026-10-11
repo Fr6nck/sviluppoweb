@@ -9,11 +9,18 @@ use function MHW\b;
 use MHW\{Support, Csrf, Icon, SectionCatalog};
 $title = $nome . ' — ' . $prop['name'];
 $pid = (int) $prop['id'];
-$sugg = $sugg ?? [];
+$sugg = $sugg ?? []; $cambiati = array_flip($cambiati ?? []);
+$puoTradurre = ($nelPiano ?? false) && ($perche ?? '') === '';
 // La suggerita di un campo: Approva / Modifica / Scarta, oppure Rifai se il testo originale è cambiato.
-$box = function (string $k) use ($sugg, $loc): string {
+// 7C: senza suggerita, «Traduci» (campo mancante) o «Il testo italiano è cambiato» con «Traduci di nuovo».
+$box = function (string $k, bool $manca = true) use ($sugg, $loc, $cambiati, $puoTradurre): string {
     $s = $sugg[$k] ?? null;
-    if (!$s) return '';
+    if (!$s) {
+        $traduci = fn(string $et) => $puoTradurre ? '<button type="submit" form="sugg-f" class="btn btn--ghost btn--sm" name="campo" value="' . Support::e($k) . '">' . Icon::svg('globe', 14) . ' ' . $et . '</button>' : '';
+        if (isset($cambiati[$k])) return '<div class="suggerita suggerita--rifare"><span class="badge badge--alert">Il testo italiano è cambiato</span>'
+            . '<div class="suggerita__azioni">' . $traduci('Traduci di nuovo') . '</div></div>';
+        return $manca && $puoTradurre ? '<div class="traduci-campo">' . $traduci('Traduci') . '</div>' : '';
+    }
     $id = (int) $s['id']; $testo = Support::e((string) $s['text']);
     $b = fn(string $nome, string $et, string $cl, string $extra = '') => '<button type="submit" form="sugg-f" class="' . $cl . '" name="' . $nome . '" value="' . $id . '"' . $extra . '>' . $et . '</button>';
     if ($s['da_rifare']) {
@@ -43,7 +50,7 @@ $campo = function (string $name, string $tipo, $orig, $trad, string $etichetta, 
             $ki = $k !== '' ? "$k.$i" : '';
             $h .= '<div class="stack' . ($manca ? ' da-tradurre' : '') . '" style="gap:4px"><span class="orig">' . Support::e((string) ($orig[$i] ?? '')) . '</span>'
                 . '<input type="text" name="' . $name . '[]" value="' . Support::e((string) ($trad[$i] ?? '')) . '" maxlength="600"' . ($ki !== '' ? ' id="c-' . md5($ki) . '"' : '') . ' aria-label="'
-                . Support::e($etichetta) . ', voce ' . ($i + 1) . ($manca ? ', da tradurre' : '') . '">' . ($ki !== '' && $manca ? $box($ki) : '') . '</div>';
+                . Support::e($etichetta) . ', voce ' . ($i + 1) . ($manca ? ', da tradurre' : '') . '">' . ($ki !== '' ? $box($ki, $manca) : '') . '</div>';
         }
         return $h . '</div></fieldset>';
     }
@@ -54,7 +61,7 @@ $campo = function (string $name, string $tipo, $orig, $trad, string $etichetta, 
         : '<input id="' . $id . '" type="text" name="' . $name . '" value="' . Support::e((string) $trad) . '" maxlength="300">';
     return '<div class="field' . ($manca ? ' da-tradurre' : '') . '" style="margin:0"><label for="' . $id . '">' . Support::e($etichetta)
          . ($manca ? ' <span class="badge badge--ochre">Da tradurre</span>' : '') . '</label>'
-         . '<p class="orig" style="margin-bottom:6px">' . Support::e((string) $orig) . '</p>' . $ctrl . ($k !== '' && $manca ? $box($k) : '') . '</div>';
+         . '<p class="orig" style="margin-bottom:6px">' . Support::e((string) $orig) . '</p>' . $ctrl . ($k !== '' ? $box($k, $manca) : '') . '</div>';
 }; ?>
 <div class="stack stack--lg" style="max-width:860px">
   <div class="stack stack--sm">
@@ -72,7 +79,7 @@ $campo = function (string $name, string $tipo, $orig, $trad, string $etichetta, 
     <?php elseif ($perche !== ''): ?>
       <p class="small" style="margin:0"><?= Support::e($perche) ?><?php if (empty($prop['translation_suggest'])): ?> <a href="<?= b() ?>/pannello/<?= $pid ?>/lingue#suggerite">Vai a Lingue</a><?php endif; ?></p>
     <?php elseif ($daSuggerire): ?>
-      <div class="actions" style="margin:0"><button type="submit" form="sugg-f" class="btn btn--sm" name="suggerisci" value="1"><?= Icon::svg('globe', 15) ?> Suggerisci le traduzioni mancanti (<?= (int) $daSuggerire ?>)</button></div>
+      <div class="actions" style="margin:0"><button type="submit" form="sugg-f" class="btn btn--sm" name="suggerisci" value="1"><?= Icon::svg('globe', 15) ?> Traduci tutti i campi mancanti (<?= (int) $daSuggerire ?>)</button></div>
     <?php else: ?>
       <p class="small" style="margin:0">Non manca niente da suggerire.</p>
     <?php endif; ?>
@@ -93,7 +100,7 @@ $campo = function (string $name, string $tipo, $orig, $trad, string $etichetta, 
           <?php $kt = "section:$sid:title"; ?>
           <input type="text" id="<?= isset($sugg[$kt]) ? 'c-' . md5($kt) : 't' . $sid ?>" name="s[<?= $sid ?>][title]" maxlength="120" value="<?= Support::e($s['trad']['title']) ?>"
                  placeholder="<?= Support::e(SectionCatalog::title($s['kind'], $loc)) ?>">
-          <?= $box($kt) ?>
+          <?= $box($kt, trim((string) $s['trad']['title']) === '' && $titoloOrig !== SectionCatalog::title($s['kind'], $prop['default_locale'])) ?>
         </div>
         <?php foreach (SectionCatalog::fields($s['kind']) as $f => $defC): [$tipo, $etichetta] = $defC;
               if ($tipo === 'repeater') {

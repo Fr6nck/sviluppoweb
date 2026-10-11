@@ -45,7 +45,7 @@ foreach ($snap['sections'] as $s) {
 </div>
 
 <?php if ($img): ?>
-  <div class="shot shot--h186" style="margin-top:20px"><img src="<?= Support::e($img) ?>" alt="" loading="lazy" decoding="async"></div>
+  <div class="shot shot--h186 shot--zoom" style="margin-top:20px"><a href="<?= Support::e($img) ?>" data-zoom aria-label="<?= Support::e(I18n::t($loc, 'zoom')) ?>"><img src="<?= Support::e($img) ?>" alt="" loading="lazy" decoding="async"><span class="shot__lente" aria-hidden="true"><?= Icon::svg('search', 16, 2) ?></span></a></div>
 <?php endif; ?>
 
 <?php /* ---------------------------------------------------------------- Wi-Fi */ ?>
@@ -236,7 +236,7 @@ foreach ($snap['sections'] as $s) {
 <?php endif; ?>
 
 <?php if ($pdf): ?>
-  <div class="ctas" style="margin-top:18px"><a href="<?= Support::e($pdf) ?>" target="_blank" rel="noopener"><?= Icon::svg('doc', 15) ?><?= Support::e(I18n::t($loc, 'open_pdf')) ?></a></div>
+  <a class="btn btn--block btn--ghost pdf-apri" style="margin-top:18px" href="<?= Support::e($pdf) ?>" target="_blank" rel="noopener"><?= Icon::svg('doc', 18) ?><?= Support::e(I18n::t($loc, 'open_pdf')) ?></a>
 <?php endif; ?>
 
 <div class="guest-bottom">

@@ -144,14 +144,18 @@ foreach ($db->query('SELECT pf.package_version_id AS pv, f.code, pf.value FROM p
 $cambiati = [];
 // L'unico cambio voluto (022): le traduzioni suggerite si accendono per Plus e Portfolio, anche già venduti.
 $pvTrad = array_map('intval', $db->query("SELECT v.id FROM package_versions v JOIN packages p ON p.id = v.package_id WHERE p.code IN ('plus', 'portfolio', 'portfolio2', 'portfolio3')")->fetchAll(PDO::FETCH_COLUMN));
+$pvEss = array_map('intval', $db->query("SELECT v.id FROM package_versions v JOIN packages p ON p.id = v.package_id WHERE p.code = 'essential'")->fetchAll(PDO::FETCH_COLUMN));
 $accese = [];
 foreach ($f['diritti'] as $x) {
     $adesso = $ora[$x['pv'] . ':' . $x['code']] ?? null;
     if ($adesso === $x['value']) continue;
     if ($x['code'] === 'auto_translation' && $adesso === '1' && in_array((int) $x['pv'], $pvTrad, true)) { $accese[] = $x['pv']; continue; }
+    // 031 (7B): Essential sale ad almeno 6 sezioni e ha la foto dell'host; le varianti camera escono da tutti i piani.
+    if (in_array((int) $x['pv'], $pvEss, true) && (($x['code'] === 'sections' && $adesso === '6') || ($x['code'] === 'profile_image' && $adesso === '1'))) continue;
+    if ($x['code'] === 'room_variants' && $adesso === '0') continue;
     $cambiati[] = $x['pv'] . ':' . $x['code'];
 }
-prova('Le versioni vendute tengono tutti i loro diritti (in più: traduzioni suggerite in Plus e Portfolio)', !$cambiati, implode(', ', $cambiati) . ' · accese in ' . implode(',', $accese));
+prova('Le versioni vendute tengono tutti i loro diritti (in più: traduzioni suggerite in Plus e Portfolio; 7B: Essential a 6 sezioni con foto host, niente varianti)', !$cambiati, implode(', ', $cambiati) . ' · accese in ' . implode(',', $accese));
 $essTrad = $db->query("SELECT pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id JOIN package_versions v ON v.id = pf.package_version_id
                        JOIN packages p ON p.id = v.package_id WHERE f.code = 'auto_translation' AND p.code = 'essential'")->fetchAll(PDO::FETCH_COLUMN);
 prova('022 · traduzioni suggerite: Essential resta senza, Plus e Portfolio le hanno', !in_array('1', $essTrad, true) && count($accese) > 0

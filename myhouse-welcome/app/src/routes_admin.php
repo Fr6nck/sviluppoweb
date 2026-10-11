@@ -586,9 +586,14 @@ $r->get('/admin/diagnostica', function () {
     $checks[] = ['Cambi di piano pagati da completare: ' . $daCompletare, $daCompletare === 0, $daCompletare === 0
         ? 'Nessuno: ogni differenza pagata è già applicata, su Stripe e nel sito.'
         : 'Pagati ma non ancora applicati su Stripe: il sito riprova da solo ogni 15 minuti (o col cron). Se restano, controlla le chiavi di Stripe.'];
-    $checks[] = ['Traduzioni suggerite (Amazon Translate)', MHW\Traduttore::configurato(), MHW\Traduttore::configurato()
-        ? 'Collegate: un traduttore automatico propone, il cliente approva. Consumi in Amministrazione → Traduzioni.'
-        : 'Non collegate: senza chiavi i clienti Plus e Portfolio non ricevono suggerite. Le lingue le scrivono loro.'];
+    // 7C: con l'esito dell'ultima chiamata ad Amazon, e il messaggio esatto se non è andata.
+    $ultimaT = \MHW\Migrator::tableExists('translation_usage') ? Db::one("SELECT outcome, error, created_at FROM translation_usage WHERE outcome IN ('ok', 'errore') ORDER BY id DESC LIMIT 1") : null;
+    $tradOk = MHW\Traduttore::configurato() && (!$ultimaT || $ultimaT['outcome'] === 'ok');
+    $checks[] = ['Traduzioni suggerite (Amazon Translate)', $tradOk, !MHW\Traduttore::configurato()
+        ? 'Non collegate: senza chiavi i clienti Plus e Portfolio leggono «Le traduzioni non sono disponibili in questo momento». Le chiavi si scrivono in Impostazioni → Traduzioni.'
+        : ($ultimaT && $ultimaT['outcome'] === 'errore'
+            ? 'L\'ultima chiamata (' . Support::date((string) $ultimaT['created_at']) . ') non è riuscita: «' . $ultimaT['error'] . '». ' . MHW\Traduttore::consiglio((string) $ultimaT['error']) . ' Prova di nuovo da Impostazioni → Traduzioni → «Prova».'
+            : 'Collegate: un traduttore automatico propone, il cliente approva. Consumi in Amministrazione → Traduzioni.' . ($ultimaT ? ' Ultima chiamata riuscita: ' . Support::date((string) $ultimaT['created_at']) . '.' : ''))];
 
     View::out('admin/diagnostics', ['checks' => $checks, 'base' => $base, 'nav' => 'diagnostica'], 'layout/cms');
 });

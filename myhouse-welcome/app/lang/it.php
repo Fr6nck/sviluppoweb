@@ -188,4 +188,17 @@ return [
     'direct_book'              => 'Prenota sul nostro sito',
     'request_whatsapp'         => 'Richiedi su WhatsApp',
     'extra_message'            => 'Ciao! Vorrei richiedere: %s',
+    // 7C: la foto dell'host, le stelle del commiato, lo sconto per chi torna, le foto ingrandibili
+    'host_tondo'               => 'Chi ti accoglie: %s',
+    'host_ciao'                => 'Ciao, sono %s',
+    'host_benvenuto'           => 'Casa mia è casa vostra: per qualsiasi cosa, scrivimi.',
+    'host_scrivi'              => 'Scrivi a %s',
+    'rating_q'                 => 'Com\'è andato il soggiorno?',
+    'rating_star'              => '%s su 5',
+    'rating_thanks'            => 'Grazie! Ti va di raccontarlo anche agli altri viaggiatori?',
+    'rating_thanks_solo'       => 'Grazie del tuo voto!',
+    'rating_host'              => 'Vuoi dire qualcosa a %s? Scrivigli',
+    'direct_offer'             => '%s con il codice %s',
+    'copy_code'                => 'Copia il codice',
+    'zoom'                     => 'Ingrandisci la foto',
 ];

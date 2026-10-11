@@ -73,11 +73,11 @@ final class Traduttore
     public static function perche(int $accountId, ?array $prop = null): string
     {
         if (!self::nelPiano($accountId)) return 'Le traduzioni suggerite sono disponibili con il piano Plus.';
-        if ($prop !== null && empty($prop['translation_suggest'])) return 'Accendi le traduzioni suggerite nella pagina Lingue.';
+        // 7C: la traduzione si chiede campo per campo, con un clic: l'interruttore della struttura non serve più per chiederla.
         if (self::omaggioFinito($accountId)) {
             return 'L\'anno in omaggio delle traduzioni suggerite è finito il ' . Support::date((string) self::omaggioFino($accountId)) . ': le traduzioni che hai approvato restano.';
         }
-        if (!self::configurato()) return 'Le traduzioni suggerite non sono ancora attive su questo sito: riprova più tardi.';
+        if (!self::configurato()) return 'Le traduzioni non sono disponibili in questo momento.';
         return '';
     }
 
@@ -179,13 +179,79 @@ final class Traduttore
     public static function prova(): string
     {
         try {
-            $t = self::chiama('Benvenuti', 'it', 'en');
-            self::registra(0, null, 'en', 9, 'ok');
+            $t = self::chiama('Buongiorno', 'it', 'en');
+            self::registra(0, null, 'en', 10, 'ok');
             return $t;
         } catch (\Throwable $e) {
             self::registra(0, null, 'en', 0, 'errore', $e->getMessage());
             throw $e;
         }
+    }
+
+    /** 7C: cosa fare, dato il messaggio esatto di Amazon Translate (per «Prova» e per Diagnostica). */
+    public static function consiglio(string $errore): string
+    {
+        return match (true) {
+            str_contains($errore, 'UnrecognizedClient') => 'La chiave di accesso (Access key ID) non esiste o è stata disattivata: controllala in AWS → IAM → Utenti → Credenziali di sicurezza.',
+            str_contains($errore, 'InvalidSignature') || str_contains($errore, 'SignatureDoesNotMatch') => 'La chiave segreta non corrisponde alla chiave di accesso, oppure l\'orologio del server è sbagliato di più di 5 minuti.',
+            str_contains($errore, 'AccessDenied') => 'La chiave funziona ma non ha il permesso di tradurre: all\'utente IAM serve la policy «TranslateReadOnly» (o il permesso translate:TranslateText).',
+            str_contains($errore, 'SubscriptionRequired') || str_contains($errore, 'OptInRequired') => 'Amazon Translate non è attivo su questo account AWS: attivalo dalla console di AWS.',
+            str_contains($errore, 'Could not resolve') || str_contains($errore, 'resolve host') => 'La regione scritta non esiste o il server non raggiunge Amazon: controlla la regione (per esempio eu-west-1).',
+            str_contains($errore, 'UnsupportedLanguagePair') || str_contains($errore, 'UnsupportedLanguage') => 'La regione scelta non offre questa coppia di lingue: prova eu-west-1 o eu-central-1.',
+            str_contains($errore, 'Throttling') || str_contains($errore, 'LimitExceeded') => 'Troppe richieste in poco tempo: riprova tra un minuto.',
+            str_contains($errore, 'timed out') || str_contains($errore, 'Timeout') => 'Amazon non ha risposto in tempo: riprova, e se si ripete controlla che l\'hosting permetta le connessioni in uscita.',
+            default => '',
+        };
+    }
+
+    /** L'impronta di un testo originale (7C): sha1, per accorgersi quando cambia. */
+    public static function impronta(string $t): string { return sha1(trim($t)); }
+
+    /** Salva l'impronta dell'originale di un campo tradotto (approvato o salvato a mano). */
+    public static function fissa(string $tipo, int $id, string $loc, string $path, string $origine): void
+    {
+        if (!Migrator::tableExists('translation_hashes')) return;
+        $h = self::impronta($origine);
+        $c = Db::one('SELECT id, source_hash FROM translation_hashes WHERE target_type = ? AND target_id = ? AND locale = ? AND field_path = ?', [$tipo, $id, $loc, $path]);
+        if (!$c) Db::insert('translation_hashes', ['target_type' => $tipo, 'target_id' => $id, 'locale' => $loc, 'field_path' => $path, 'source_hash' => $h, 'created_at' => Support::now()]);
+        elseif ($c['source_hash'] !== $h) Db::update('translation_hashes', ['source_hash' => $h, 'created_at' => Support::now()], 'id = :id', ['id' => $c['id']]);
+    }
+
+    /**
+     * Le impronte dei campi tradotti che non l'hanno ancora (tradotti prima della 7C, o salvati a mano), e di quelli
+     * appena cambiati in $prima → $dopo (stesse chiavi di campi()). Così il controllo «testo cambiato» parte da adesso.
+     */
+    public static function fissaImpronte(array $prop, string $loc, array $dopo, array $prima = []): void
+    {
+        if (!Migrator::tableExists('translation_hashes')) return;
+        $hanno = [];
+        foreach (Db::all('SELECT target_type, target_id, field_path FROM translation_hashes WHERE locale = ?', [$loc]) as $h) $hanno[$h['target_type'] . ':' . $h['target_id'] . ':' . $h['field_path']] = true;
+        foreach ($dopo as $k => $c) {
+            if ($c['tradotto'] === '') continue;
+            $cambiataQui = isset($prima[$k]) && $prima[$k]['tradotto'] !== $c['tradotto'];
+            if (!isset($hanno[$k]) || $cambiataQui) self::fissa($c['tipo'], (int) $c['id'], $loc, $c['path'], $c['origine']);
+        }
+    }
+
+    /**
+     * Quanti campi mancano, per lingua e per sezione (7C: «EN da tradurre», «Manca in: …», il passo Pubblica).
+     * @return array<string,array<int,int>> [lingua => [id sezione => campi mancanti]]
+     */
+    public static function mancanti(array $prop): array
+    {
+        $out = [];
+        foreach (Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$prop['id']]) as $l) {
+            $loc = (string) $l['locale'];
+            if ($loc === $prop['default_locale']) continue;
+            $per = [];
+            foreach (self::campi($prop, $loc) as $c) {
+                if ($c['tradotto'] !== '') continue;
+                $sid = $c['tipo'] === 'section' ? $c['id'] : (int) Db::val('SELECT section_id FROM places WHERE id = ?', [$c['id']], 0);
+                $per[$sid] = ($per[$sid] ?? 0) + 1;
+            }
+            $out[$loc] = $per;
+        }
+        return $out;
     }
 
     /** Un testo oltre i 10.000 byte si spezza ai paragrafi (o, se serve, alle frasi). */
@@ -249,9 +315,20 @@ final class Traduttore
     public static function campi(array $prop, string $loc): array
     {
         $out = [];
-        $metti = function (string $tipo, int $id, string $path, string $origine, string $tradotto, int $max) use (&$out) {
+        // 7C: l'impronta del testo originale quando la traduzione è stata approvata o salvata.
+        $impronte = [];
+        if (Migrator::tableExists('translation_hashes')) {
+            foreach (Db::all("SELECT h.target_type, h.target_id, h.field_path, h.source_hash FROM translation_hashes h
+                              WHERE h.locale = ? AND ((h.target_type = 'section' AND h.target_id IN (SELECT id FROM sections WHERE property_id = ?))
+                                 OR (h.target_type = 'place' AND h.target_id IN (SELECT pl.id FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ?)))",
+                             [$loc, $prop['id'], $prop['id']]) as $h) $impronte[$h['target_type'] . ':' . $h['target_id'] . ':' . $h['field_path']] = $h['source_hash'];
+        }
+        $metti = function (string $tipo, int $id, string $path, string $origine, string $tradotto, int $max) use (&$out, $impronte) {
             if (trim($origine) === '') return;
-            $out["$tipo:$id:$path"] = ['tipo' => $tipo, 'id' => $id, 'path' => $path, 'origine' => $origine, 'tradotto' => trim($tradotto), 'max' => $max];
+            $k = "$tipo:$id:$path";
+            $out[$k] = ['tipo' => $tipo, 'id' => $id, 'path' => $path, 'origine' => $origine, 'tradotto' => trim($tradotto), 'max' => $max,
+                        // «Il testo italiano è cambiato»: tradotto, ma l'originale non è più quello di allora.
+                        'cambiato' => trim($tradotto) !== '' && isset($impronte[$k]) && $impronte[$k] !== self::impronta($origine)];
         };
         $base = $prop['default_locale'];
         foreach (Db::all('SELECT * FROM sections WHERE property_id = ? AND is_active = 1 ORDER BY is_core DESC, position, id', [$prop['id']]) as $s) {
@@ -309,7 +386,7 @@ final class Traduttore
         foreach (Db::all('SELECT * FROM translation_suggestions WHERE property_id = ? AND locale = ? ORDER BY id', [$prop['id'], $loc]) as $s) {
             $k = $s['target_type'] . ':' . $s['target_id'] . ':' . $s['field_path'];
             $c = $campi[$k] ?? null;
-            if (!$c || $c['tradotto'] !== '') { Db::run('DELETE FROM translation_suggestions WHERE id = ?', [$s['id']]); continue; }
+            if (!$c || ($c['tradotto'] !== '' && !$c['cambiato'])) { Db::run('DELETE FROM translation_suggestions WHERE id = ?', [$s['id']]); continue; }
             $s['da_rifare'] = $s['source_text'] !== $c['origine'];
             $out[$k] = $s;
         }
@@ -334,7 +411,11 @@ final class Traduttore
         if ($no !== '') return [0, $no];
         @set_time_limit(300);
         $fatte = 0;
-        foreach (self::daSuggerire($prop, $loc) as $k => $c) {
+        // 7C: con $solo (un campo, «Traduci» o «Traduci di nuovo») vale anche un campo tradotto il cui originale è cambiato.
+        $lista = self::daSuggerire($prop, $loc);
+        if ($solo) foreach (self::campi($prop, $loc) as $k => $c) if ($c['cambiato'] && in_array($k, $solo, true)) $lista[$k] = $c;
+        if ($lista && empty($prop['translation_suggest'])) self::interruttore($accountId, (int) $prop['id'], true);   // il clic è il consenso
+        foreach ($lista as $k => $c) {
             if ($solo && !in_array($k, $solo, true)) continue;
             try {
                 $testo = self::traduci($accountId, (int) $prop['id'], $c['origine'], $prop['default_locale'], $loc);
@@ -362,12 +443,13 @@ final class Traduttore
         if (!$s) return 'Questa traduzione suggerita non c\'è più.';
         $k = $s['target_type'] . ':' . $s['target_id'] . ':' . $s['field_path'];
         $c = self::campi($prop, $loc)[$k] ?? null;
-        if (!$c || $c['tradotto'] !== '') { Db::run('DELETE FROM translation_suggestions WHERE id = ?', [$id]); return 'Questo testo è già tradotto: la suggerita è stata tolta.'; }
+        if (!$c || ($c['tradotto'] !== '' && !$c['cambiato'])) { Db::run('DELETE FROM translation_suggestions WHERE id = ?', [$id]); return 'Questo testo è già tradotto: la suggerita è stata tolta.'; }
         if ($s['source_text'] !== $c['origine']) return 'Il testo originale è cambiato: questa suggerita è da rifare.';
         $v = trim($testo ?? (string) $s['text']);
         if ($v === '') return 'La traduzione è vuota.';
         Db::tx(function () use ($s, $loc, $c, $v, $id) {
             self::scrivi($s['target_type'], (int) $s['target_id'], $loc, $s['field_path'], mb_substr($v, 0, $c['max']));
+            self::fissa($s['target_type'], (int) $s['target_id'], $loc, $s['field_path'], $c['origine']);
             Db::run('DELETE FROM translation_suggestions WHERE id = ?', [$id]);
         });
         return '';

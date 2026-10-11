@@ -1555,7 +1555,8 @@ $lslug = (string) val('SELECT slug FROM properties WHERE id = ?', [$casa]);
 $r = $ospite->get("/g/$lslug");
 prova('K4 · firma in fondo alla guida, con il link alla landing e ?ref=guida', str_contains($r['body'], 'Guida creata con MyHouse Welcome') && str_contains($r['body'], '/?ref=guida"'));
 $r = $ospite->get("/g/$lslug/commiato");
-prova('K2 · commiato senza recensioni né prenotazione diretta: nessun blocco', !str_contains($r['body'], 'Ti è piaciuto il soggiorno?') && !str_contains($r['body'], 'prenota da noi'));
+prova('K2 · commiato senza recensioni né prenotazione diretta: le stelle (7C), ma nessun bottone di recensione né «prenota da noi»', str_contains($r['body'], 'class="stelle"')
+      && !preg_match('#data-voto-dopo.*?<div class="ctas">#s', $r['body']) && !str_contains($r['body'], 'prenota da noi'));
 $r = $lucia->get("/pannello/$casa/impostazioni");
 prova('K2 · Impostazioni: recensioni, prenotazione diretta, firma nascondibile (Portfolio)', str_contains($r['body'], 'Dopo il soggiorno.') && str_contains($r['body'], 'name="review_booking"')
       && str_contains($r['body'], 'name="direct_code"') && str_contains($r['body'], 'name="hide_branding"'));
@@ -1566,9 +1567,39 @@ prova('…un link non web resta vuoto, con un avviso', $pl['review_airbnb'] === 
       && str_contains($lucia->segui($r)['body'], 'non erano indirizzi web validi'));
 $lucia->post("/pannello/$casa/pubblica", []);
 $r = $ospite->get("/g/$lslug/commiato?l=en");
-prova('K2 · commiato (en): «Did you enjoy your stay?» con Google e Booking, «book with us» con il codice', str_contains($r['body'], 'Did you enjoy your stay?')
+prova('K2 · commiato (en): «How was your stay?» (7C) con Google e Booking, «book with us» con il codice', str_contains($r['body'], 'How was your stay?')
       && str_contains($r['body'], 'href="https://g.page/r/esempio/review"') && str_contains($r['body'], '>Booking.com</a>') && !str_contains($r['body'], '>Airbnb</a>')
-      && str_contains($r['body'], 'Next time, book with us directly') && str_contains($r['body'], 'Discount code: TORNA10') && str_contains($r['body'], 'href="https://www.esempio.it/prenota"'));
+      && str_contains($r['body'], 'Next time, book with us directly') && str_contains($r['body'], 'Discount code: <b>TORNA10</b>') && str_contains($r['body'], 'href="https://www.esempio.it/prenota"'));
+// 7C · le stelle: le piattaforme a ogni voto, da 1 a 3 anche «Scrivigli»; il voto è un conteggio anonimo.
+prova('7C · commiato: cinque stelle accessibili, i bottoni delle recensioni dopo il voto', substr_count($r['body'], 'class="stella') === 5
+      && str_contains($r['body'], 'aria-label="1 out of 5"') && str_contains($r['body'], 'data-voto-dopo hidden'));
+$votiPrima = (int) val("SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = 'rating_2'", [$casa]);
+$r = $ospite->get("/g/$lslug/commiato?voto=2");
+prova('7C · con 2 stelle (senza JavaScript): grazie, le stesse piattaforme e «Scrivigli»', !str_contains($r['body'], 'data-voto-dopo hidden') && str_contains($r['body'], 'href="https://g.page/r/esempio/review"')
+      && preg_match('#data-voto-basso>\s*<a[^>]*>Vuoi dire qualcosa a #', $r['body']) === 1);
+$r5 = $ospite->get("/g/$lslug/commiato?voto=5");
+prova('…con 5 stelle le stesse piattaforme, senza «Scrivigli»', str_contains($r5['body'], 'href="https://g.page/r/esempio/review"') && str_contains($r5['body'], 'data-voto-basso hidden'));
+$rv = $ospite->get("/g/$lslug/voto/2");
+prova('7C · il voto con JavaScript (/voto/N): 204, e il conteggio anonimo per struttura e voto sale', $rv['code'] === 204
+      && (int) val("SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = 'rating_2'", [$casa]) === $votiPrima + 2
+      && intestazione($rv, 'Set-Cookie') === '');
+prova('…in Statistiche «Voti dei tuoi ospiti»', str_contains($lucia->get("/pannello/$casa/statistiche")['body'], 'Voti dei tuoi ospiti'));
+$lucia->get("/pannello/$casa/impostazioni");
+$lucia->post("/pannello/$casa/dopo-il-soggiorno", ['review_google' => 'https://g.page/r/esempio/review', 'review_booking' => 'https://www.booking.com/esempio',
+    'direct_url' => '', 'direct_code' => 'BENTORNATI', 'direct_discount' => '10%', 'hide_branding' => '1']);
+$r = $lucia->get("/pannello/$casa/impostazioni");
+prova('7C · Recensioni: una scheda per piattaforma con «Prova il link» e «Dove trovo il link?»', substr_count($r['body'], 'class="recensione-scheda"') === 4
+      && str_contains($r['body'], 'Gli ospiti vedono un bottone per ogni link che compili, alla fine del soggiorno.') && str_contains($r['body'], 'Prova il link')
+      && str_contains($r['body'], 'Dove trovo il link?') && str_contains($r['body'], '«Chiedi recensioni»'));
+prova('7C · Sconto per chi torna: aiuto, campo «Sconto», avviso senza link, anteprima della scheda', str_contains($r['body'], 'Il codice lo crei tu sul tuo sito o sul tuo motore di prenotazione')
+      && str_contains($r['body'], 'name="direct_discount"') && preg_match('#data-diretta-avviso>Senza il link al tuo sito#', $r['body']) === 1
+      && str_contains($r['body'], "\u{2212}10% con il codice <b data-diretta-codice>BENTORNATI</b>"));
+$lucia->post("/pannello/$casa/dopo-il-soggiorno", ['review_google' => 'https://g.page/r/esempio/review', 'review_booking' => 'https://www.booking.com/esempio',
+    'direct_url' => 'https://www.esempio.it/prenota', 'direct_code' => 'BENTORNATI', 'direct_discount' => '10%', 'hide_branding' => '1']);
+$lucia->post("/pannello/$casa/pubblica", []);
+$r = $ospite->get("/g/$lslug/commiato?l=de");
+prova('7C · nel commiato (de): «−10% mit dem Code BENTORNATI», «Code kopieren», «Prenota»', str_contains($r['body'], "\u{2212}10% mit dem Code <b>BENTORNATI</b>")
+      && str_contains($r['body'], 'Code kopieren') && str_contains($r['body'], 'href="https://www.esempio.it/prenota"'));
 prova('K4 · firma nascosta (piano con hide_branding)', !str_contains($ospite->get("/g/$lslug")['body'], 'Guida creata con MyHouse Welcome'));
 $anna->post("/pannello/$pid/dopo-il-soggiorno", ['hide_branding' => '1']);
 prova('K4 · Essential non può nasconderla, nemmeno a mano', (int) val('SELECT hide_branding FROM properties WHERE id = ?', [$pid]) === 0
@@ -2497,8 +2528,10 @@ $trData($emCasa, 'it', 'note', 'Il pronto soccorso più vicino è a Nottola.'); 
 $r = $lucia->get("/pannello/$casa/lingue");
 prova('Plus/Portfolio: in Lingue «In omaggio per un anno dalla prima accensione» e il bottone per accenderle', $r['code'] === 200 && pulita($r)
       && str_contains($r['body'], 'In omaggio per un anno dalla prima accensione') && str_contains($r['body'], 'Accendi le traduzioni suggerite'));
+$primaSp = count($richiesteTr());
 $r = $lucia->get("/pannello/$casa/lingue/en");
-prova('…spente, la pagina della lingua manda a Lingue e non chiama il traduttore', str_contains($r['body'], 'Accendi le traduzioni suggerite nella pagina Lingue') && !str_contains($r['body'], 'name="suggerisci"'));
+prova('7C · …spente: nella pagina della lingua «Traduci» campo per campo lo stesso, ma nessuna chiamata finché non si clicca', str_contains($r['body'], 'name="campo" value="')
+      && str_contains($r['body'], 'Traduci tutti i campi mancanti') && count($richiesteTr()) === $primaSp);
 $r = $lucia->segui($lucia->post("/pannello/$casa/lingue/suggerite", ['acceso' => '1']));
 $fino = (string) val('SELECT translation_trial_until FROM accounts WHERE id = ?', [$lacc]);
 prova('Accese: parte l\'anno in omaggio (12 mesi) e compare la spiegazione in due righe, con il madrelingua', (int) val('SELECT translation_suggest FROM properties WHERE id = ?', [$casa]) === 1
@@ -2508,8 +2541,8 @@ $r = $lucia->get("/pannello/$casa/lingue");
 prova('…la spiegazione solo la prima volta', !str_contains($r['body'], 'Le trovi nella pagina di ogni lingua'));
 
 $r = $lucia->get("/pannello/$casa/lingue/en");
-preg_match('#Suggerisci le traduzioni mancanti \((\d+)\)#', $r['body'], $m); $mancanti = (int) ($m[1] ?? 0);
-prova('Pagina della lingua: «Suggerisci le traduzioni mancanti» con il numero, e la nota sul madrelingua', $mancanti >= 4 && pulita($r)
+preg_match('#Traduci tutti i campi mancanti \((\d+)\)#', $r['body'], $m); $mancanti = (int) ($m[1] ?? 0);
+prova('Pagina della lingua: «Traduci tutti i campi mancanti» con il numero, e la nota sul madrelingua', $mancanti >= 4 && pulita($r)
       && str_contains($r['body'], 'Suggerite da un traduttore automatico, da approvare'), (string) $mancanti);
 $prima = count($richiesteTr());
 $r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['suggerisci' => '1']));
@@ -2603,7 +2636,7 @@ db()->exec('DELETE FROM translation_usage WHERE chars = 1600000');
 $r = $admin->post('/admin/impostazioni/traduzioni', ['translate__region' => 'irlanda', 'password' => 'AdminProva123']);
 prova('Impostazioni → Traduzioni: la regione si controlla', $r['code'] === 422 && str_contains($r['body'], 'La regione si scrive come eu-west-1'));
 $r = $admin->segui($admin->post('/admin/impostazioni/traduzioni/prova', []));
-prova('…«Prova la connessione» con Amazon Translate', str_contains($r['body'], 'Amazon Translate risponde') && str_contains($r['body'], '[en] Benvenuti'));
+prova('…«Prova la connessione» con Amazon Translate', str_contains($r['body'], 'Amazon Translate risponde') && str_contains($r['body'], '[en] Buongiorno'));
 prova('Diagnostica: le traduzioni suggerite risultano collegate', str_contains($admin->get('/admin/diagnostica')['body'], 'Traduzioni suggerite (Amazon Translate)'));
 require_once "$DOVE/app/src/Traduttore.php";
 $lungo = str_repeat("Una frase di prova con gli accenti: è così. ", 300) . "\n" . str_repeat('àèìòù', 1500);
@@ -3297,6 +3330,124 @@ $r = $ospite->get('/');
 $altreL = preg_match('#<div class="faq__altre-lista">(.*?)</div>\s*</details>#s', $r['body'], $mm) ? $mm[1] : '';
 prova('…nella landing stanno sotto «Altre domande»', str_contains($altreL, 'La mia guida si trova su Google?') && str_contains($altreL, 'Posso scrivere nella guida il codice della porta?'));
 prova('Termini § 6: la conferma sotto la propria responsabilità', str_contains($ospite->get('/termini')['body'], 'Se decidi comunque di pubblicarli, la piattaforma ti chiede una conferma'));
+
+// ================================================================= 7C
+capitolo('7C · foto dell\'host, foto ingrandibili, QR da stampare, guida di esempio, traduzioni, novità');
+$lslug = (string) val('SELECT slug FROM properties WHERE id = ?', [$casa]);   // le prove della 6M hanno cambiato il link
+// 1 · Il tondo con la foto dell'host, anche con il logo, e il foglio «Chi ti accoglie».
+$lucia->get("/pannello/$casa/aspetto");
+$lucia->post("/pannello/$casa/aspetto", ['palette' => (string) val('SELECT palette FROM properties WHERE id = ?', [$casa]), 'text_tone' => 'scuro',
+    'logo' => file_(png(240, 80), 'image/png'), 'profile' => file_(png(300, 400), 'image/png'),
+    'host_welcome[it]' => 'Benvenuti! Vi aspetto con il caffè.', 'host_welcome[en]' => 'Welcome! Coffee is on me.']);   // multipart: le chiavi per esteso
+$r = $lucia->get("/pannello/$casa/aspetto");
+prova('7C · Aspetto: «Due parole di benvenuto» per lingua (160 caratteri) e l\'aiuto sulla foto', str_contains($r['body'], 'Due parole di benvenuto') && str_contains($r['body'], 'maxlength="160"')
+      && str_contains($r['body'], 'name="host_welcome[en]"') && str_contains($r['body'], 'Una tua foto: gli ospiti vedono chi li accoglie. Il logo è un&#039;altra cosa.'));
+$lucia->post("/pannello/$casa/pubblica", ['codici_ok' => '1']);
+$r = $ospite->get("/g/$lslug?l=en");
+prova('7C · nella guida il tondo dell\'host c\'è anche con il logo, ed è un bottone che apre il foglio', str_contains($r['body'], 'class="logo-guest"')
+      && preg_match('#<button type="button" class="host-tondo" data-host-apri="chi-ti-accoglie" aria-label="Your host: [^"]+"#', $r['body']) === 1
+      && str_contains($r['body'], 'host-tondo__punto') && str_contains($r['body'], '/assets/guida.js'));
+prova('…il foglio: la foto intera, «Hi, I\'m …», il benvenuto in inglese, «Message …»', preg_match('#<dialog class="host-foglio" id="chi-ti-accoglie".*?</dialog>#s', $r['body'], $mm) === 1
+      && str_contains($mm[0], 'class="host-foglio__foto"') && str_contains($mm[0], 'Hi, I&#039;m ') && str_contains($mm[0], 'Welcome! Coffee is on me.')
+      && preg_match('#<a class="btn btn--block" href="(https://wa\.me/|tel:)[^"]+"[^>]*>.*?Message #s', $mm[0]) === 1);
+$r = $ospite->get("/g/$lslug?l=fr");
+prova('…senza il benvenuto in quella lingua, la principale', str_contains($r['body'], 'Benvenuti! Vi aspetto con il caffè.'));
+db()->prepare("UPDATE properties SET host_welcome = NULL WHERE id = ?")->execute([$casa]); $lucia->post("/pannello/$casa/pubblica", ['codici_ok' => '1']);
+prova('…e senza nessun benvenuto, il testo di serie (de)', str_contains($ospite->get("/g/$lslug?l=de")['body'], 'Mein Zuhause ist Ihr Zuhause'));
+
+// 4 · Le foto delle sezioni si ingrandiscono, la copertina no; il PDF ha il bottone grande.
+$infoL = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'rules'", [$casa]) ?: (int) val("SELECT id FROM sections WHERE property_id = ? AND is_core = 0 ORDER BY id", [$casa]);
+$lucia->get("/pannello/$casa/sezioni/$infoL");
+$lucia->post("/pannello/$casa/sezioni/$infoL", ['foto' => file_(png(400, 300), 'image/png')]);
+$lucia->post("/pannello/$casa/pubblica", ['codici_ok' => '1']);
+$r = $ospite->get("/g/$lslug/$infoL");
+prova('7C · la foto della sezione si ingrandisce: link alla foto con data-zoom e la lente', (bool) val('SELECT media_id FROM sections WHERE id = ?', [$infoL])
+      && preg_match('#<div class="shot shot--h186 shot--zoom"[^>]*><a href="[^"]+" data-zoom aria-label="Ingrandisci la foto">#', $r['body']) === 1 && str_contains($r['body'], 'shot__lente'), (string) $r['code']);
+$r = $ospite->get("/g/$lslug");
+prova('…la copertina, il logo e la foto profilo no', !preg_match('#guest-cover.{0,300}data-zoom#s', $r['body']) && !preg_match('#data-zoom[^>]*>\s*<img[^>]*class="logo-guest#', $r['body']));
+
+// 5 · Il QR da stampare: logo, nome, inviti in italiano e inglese, marchio. Quello di Casa Checco in prove/qr-esempio.pdf.
+$r = $lucia->get("/pannello/$casa/qr.pdf");
+prova('7C · PDF del QR: un PDF valido, con il logo (immagine), il nome e i quattro inviti della stessa grandezza', str_starts_with($r['body'], '%PDF-1.4') && str_contains($r['body'], '/Subtype /Image')
+      && str_contains($r['body'], '/DCTDecode') && str_contains($r['body'], '(Inquadra il QR Code) Tj') && str_contains($r['body'], '(The house guide: check-in, Wi-Fi and tips) Tj')
+      && substr_count($r['body'], ' 16 Tf ') === 4 && str_contains($r['body'], '(MyHouse Welcome) Tj') && str_ends_with(rtrim($r['body']), '%%EOF'));
+$r = $lucia->get("/pannello/$casa/qr.svg");
+prova('…e lo stesso foglio in SVG', str_contains($r['body'], '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 840"') && str_contains($r['body'], 'Scan the QR code') && str_contains($r['body'], '<image href="data:image/'));
+$vetAcc = (int) val('SELECT account_id FROM properties WHERE is_demo = 2 ORDER BY id DESC LIMIT 1');
+$vetPid = (int) val('SELECT id FROM properties WHERE is_demo = 2 ORDER BY id DESC LIMIT 1');
+$vetEmail = (string) val('SELECT u.email FROM users u JOIN accounts a ON a.user_id = u.id WHERE a.id = ?', [$vetAcc]);
+if ($vetPid && $vetEmail !== '') {
+    $vetUid = (int) val('SELECT user_id FROM accounts WHERE id = ?', [$vetAcc]);
+    $admin->get('/admin/clienti'); $admin->post("/admin/entra/$vetUid", []);
+    $q = $admin->get("/pannello/$vetPid/qr.pdf");
+    $admin->segui($admin->get('/pannello')); $admin->post('/admin/esci-da-cliente', []);
+    if (str_starts_with($q['body'], '%PDF')) file_put_contents(__DIR__ . '/qr-esempio.pdf', $q['body']);
+    prova('7C · il QR di Casa Checco salvato in prove/qr-esempio.pdf', str_starts_with($q['body'], '%PDF') && str_contains($q['body'], '(Casa Checco) Tj'), (string) $q['code']);
+}
+
+// 6 · La guida di esempio nel pannello.
+$r = $lucia->get("/pannello/$casa/sezioni/$infoL");
+prova('7C · barra laterale: «Guida di esempio» (la vetrina, scheda nuova); editor: «Vedi un esempio» della stessa sezione', str_contains($r['body'], '<span>Guida di esempio</span>')
+      && preg_match('#href="[^"]*/g/[^"/]+/\d+" target="_blank" rel="noopener">.*?Vedi un esempio#s', $r['body']) === 1);
+
+// 7 · Traduzioni: «Traduci» un campo solo, testo cambiato, etichette, «Manca in», passo Pubblica, Prova e Diagnostica.
+$emIt = fn(string $t) => $trData($emCasa, 'it', 'note', $t);
+$emIt('Il pronto soccorso più vicino è a Nottola, 10 minuti in auto.'); $trData($emCasa, 'en', 'note', '');
+db()->prepare("DELETE FROM translation_suggestions WHERE property_id = ? AND locale = 'en'")->execute([$casa]);
+$r = $lucia->get("/pannello/$casa");
+prova('7C · Contenuti: «EN da tradurre» sulla sezione che manca in inglese', preg_match('#href="[^"]*/pannello/' . $casa . '/lingue/[a-z]{2}"[^>]*>[^<]*EN[^<]*da tradurre</a>#', $r['body']) === 1);
+$r = $lucia->get("/pannello/$casa/sezioni/$emCasa");
+prova('7C · editor: «Manca in: EN» con il link alla traduzione', preg_match('#Manca in:\s*(?:<a [^>]+>[A-Z]{2}</a>, )*<a href="[^"]*/lingue/en">EN</a>#', $r['body']) === 1);
+$r = $lucia->get("/pannello/$casa/procedura/pubblica");
+prova('7C · passo Pubblica: le lingue da completare, senza bloccare', str_contains($r['body'], 'Lingue da completare') && str_contains($r['body'], "da tradurre. Dove manca, l'ospite legge la lingua principale."));
+$lucia->get("/pannello/$casa/lingue/en");
+$prima = count($richiesteTr());
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['campo' => "section:$emCasa:note"]));
+prova('7C · «Traduci» di un solo campo: una chiamata e una sola proposta, da confermare', count($richiesteTr()) === $prima + 1
+      && (int) val("SELECT COUNT(*) FROM translation_suggestions WHERE property_id = ? AND locale = 'en'", [$casa]) === 1 && str_contains($r['body'], 'Ecco la traduzione proposta'));
+$lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['approva' => (string) $idDi('section', $emCasa, 'note')]));
+$emIt('Il pronto soccorso più vicino è a Perugia.');
+$r = $lucia->get("/pannello/$casa/lingue/en");
+prova('7C · l\'italiano cambia dopo l\'approvazione: «Il testo italiano è cambiato» con «Traduci di nuovo»', str_contains($r['body'], 'Il testo italiano è cambiato')
+      && preg_match('#name="campo" value="section:' . $emCasa . ':note">[^<]*<svg.*?</svg> Traduci di nuovo#s', $r['body']) === 1);
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['campo' => "section:$emCasa:note"]));
+$nuovaS = (string) val("SELECT text FROM translation_suggestions WHERE target_type = 'section' AND target_id = ? AND field_path = 'note' AND locale = 'en'", [$emCasa]);
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['approva' => (string) $idDi('section', $emCasa, 'note')]));
+$notaEn = (string) (json_decode((string) val("SELECT data FROM section_translations WHERE section_id = ? AND locale = 'en'", [$emCasa]), true)['note'] ?? '');
+$flashA = preg_match('#<p class="note[^"]*"[^>]*role="status">([^<]+)#', $r['body'], $mm) ? $mm[1] : '';
+$r = $lucia->get("/pannello/$casa/lingue/en");
+prova('…«Traduci di nuovo» e approvata: la traduzione nuova, e il segno sparisce', $notaEn === '[en] Il pronto soccorso più vicino è a Perugia.'
+      && !str_contains($r['body'], 'name="campo" value="section:' . $emCasa . ':note"'), "proposta «{$nuovaS}» · salvata «{$notaEn}» · {$flashA} · cambiati " . substr_count($r['body'], 'Il testo italiano è cambiato'));
+$php = 'define("MHW_APP", ' . var_export("$DOVE/app", true) . '); spl_autoload_register(fn($c) => require MHW_APP . "/src/" . substr($c, 4) . ".php"); MHW\Config::load(MHW_APP . "/config.php"); ';
+$vuote = trim((string) shell_exec('MHW_TRANSLATE_KEY= MHW_TRANSLATE_SECRET= AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= php -r ' . escapeshellarg($php . 'echo MHW\Impostazioni::prova("traduzioni", "a@b.it")[1], "|", MHW\Traduttore::perche(1);') . ' 2>&1'));
+prova('7C · «Prova» delle traduzioni con le chiavi vuote: il messaggio chiaro, e nel pannello «non disponibili in questo momento»', str_contains($vuote, 'Mancano le chiavi')
+      && (str_contains($vuote, 'Le traduzioni non sono disponibili in questo momento') || str_contains($vuote, 'piano Plus')), $vuote);
+$sbagliata = trim((string) shell_exec('MHW_TRANSLATE_KEY=AKIASBAGLIATA php -r ' . escapeshellarg($php . 'echo MHW\Impostazioni::prova("traduzioni", "a@b.it")[1];') . ' 2>&1'));
+prova('…con una chiave sbagliata: il messaggio esatto di AWS e cosa fare', str_contains($sbagliata, 'UnrecognizedClientException') && str_contains($sbagliata, 'Chiave sconosciuta')
+      && str_contains($sbagliata, 'Credenziali di sicurezza'), $sbagliata);
+$r = $admin->get('/admin/diagnostica');
+prova('7C · Diagnostica: la riga delle traduzioni con l\'esito esatto dell\'ultima chiamata (qui la chiave sbagliata)', str_contains($r['body'], 'Traduzioni suggerite (Amazon Translate)')
+      && str_contains($r['body'], 'non è riuscita') && str_contains($r['body'], 'UnrecognizedClientException'));
+
+// 8 · Novità: la fascia, una volta per account, e chiusa resta chiusa.
+db()->prepare('UPDATE users SET created_at = ? WHERE email = ?')->execute(['2026-01-01T00:00:00Z', 'lucia@esempio.it']);
+$r = $lucia->get('/pannello');
+prova('7C · Novità: la fascia con «Mostrami dove»', str_contains($r['body'], 'class="novita"') && str_contains($r['body'], 'La tua foto nella guida, anche con Essential')
+      && str_contains($r['body'], '>Mostrami dove</a>'));
+$lucia->post('/pannello/novita/chiudi', ['novita' => '2026-10-host']);
+$r = $lucia->get('/pannello');
+prova('…chiusa, al suo posto la successiva; e la chiusura è per account', !str_contains($r['body'], 'La tua foto nella guida, anche con Essential') && str_contains($r['body'], 'Le stelle nel saluto')
+      && (bool) val("SELECT id FROM novita_viste WHERE novita_id = '2026-10-host' AND account_id = ?", [$accDi('lucia@esempio.it')]));
+foreach (['2026-10-stelle', '2026-10-sconto', '2026-10-foto', '2026-10-traduzioni'] as $nid) $lucia->post('/pannello/novita/chiudi', ['novita' => $nid]);
+prova('…chiuse tutte, niente più fascia', !str_contains($lucia->get('/pannello')['body'], 'class="novita"'));
+// Un campo nuovo (una novità di prova con un campo della sezione Emergenze): «Nuovo» in Contenuti e nell'editor, «Ho visto».
+file_put_contents("$DOVE/app/lang/novita.php", str_replace("return [\n", "return [\n    ['id' => 'prova-campo', 'data' => '2026-10-11', 'titolo' => 'Prova', 'testo' => 'Prova', 'dove' => '/pannello', 'campi' => ['emergency' => ['note_prova']], 'sezioni' => []],\n", (string) file_get_contents("$DOVE/app/lang/novita.php")));
+sleep(3);   // opcache del server di prova rilegge i file ogni 2 secondi
+$lucia->post('/pannello/novita/chiudi', ['novita' => 'prova-campo']);
+$r = $lucia->get("/pannello/$casa");
+prova('7C · campo nuovo vuoto: «Nuovo» con il pallino sulla sezione in Contenuti', preg_match('#id="sez-' . $emCasa . '".*?novita-pallino.*?</div>#s', $r['body']) === 1);
+$lucia->post('/pannello/novita/visto', ['novita' => 'prova-campo:emergency', 'torna' => "/pannello/$casa/sezioni/$emCasa"]);
+prova('…«Ho visto» lo toglie', !preg_match('#id="sez-' . $emCasa . '"[^>]*>(?:(?!id="sez-).)*novita-pallino#s', $lucia->get("/pannello/$casa")['body']));
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

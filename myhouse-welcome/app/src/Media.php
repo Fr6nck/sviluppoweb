@@ -194,6 +194,18 @@ final class Media
         catch (\Throwable $e) { Log::exception($e, 'Media::url'); return null; }
     }
 
+    /** I byte di un file salvato (per il logo nel PDF del QR, 7C), o null se non si trova. */
+    public static function bytes(?int $id): ?string
+    {
+        $m = self::row($id);
+        if (!$m) return null;
+        try {
+            if ($m['object_key'] !== '') return Storages::for($m['storage'])->get($m['object_key']);
+            $b = @file_get_contents(Config::get('uploads_dir') . '/' . basename((string) $m['filename']));
+            return $b === false ? null : $b;
+        } catch (\Throwable $e) { Log::exception($e, 'Media::bytes'); return null; }
+    }
+
     public static function alt(?int $id): string
     {
         if (!$id) return '';

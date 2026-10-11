@@ -12,7 +12,7 @@ $tono = $prop['text_tone'] ?: 'scuro';
 $media = [
     'cover'   => ['cover_media_id', 'cover', 'Foto di copertina', 'La prima cosa che gli ospiti vedono: la facciata, il cortile, la vista.', false, 'la foto'],
     'logo'    => ['logo_media_id', 'logo', 'Logo', 'PNG con fondo trasparente, se ce l\'hai.', true, 'il logo'],
-    'profile' => ['profile_media_id', 'profile_image', 'Foto profilo', 'Una tua foto o quella della struttura: nella guida compare piccola e rotonda.', false, 'la foto'],
+    'profile' => ['profile_media_id', 'profile_image', 'Foto profilo', 'Una tua foto: gli ospiti vedono chi li accoglie. Il logo è un\'altra cosa.', false, 'la foto'],
 ]; ?>
 <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/aspetto" enctype="multipart/form-data" class="stack stack--lg" data-palette-scelta<?= $dopoPasso !== '' ? ' data-autosave' : '' ?>><?= Csrf::field() ?>
   <fieldset class="fieldset">
@@ -62,6 +62,19 @@ $media = [
             <p class="help">Non fa parte del tuo piano: per pubblicare, premi «Togli».</p>
             <button class="linkbtn" name="azione" value="togli-<?= $input ?>">Togli</button>
           </div>
+        </div>
+      <?php endif; ?>
+      <?php if ($input === 'profile' && $ok): /* 7C: le due parole del foglio «Chi ti accoglie», una per lingua della guida */
+            $lingueB = array_column(MHW\Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$pid]), 'locale') ?: [(string) $prop['default_locale']];
+            usort($lingueB, fn($x, $y) => ($y === $prop['default_locale']) <=> ($x === $prop['default_locale']));
+            $benv = json_decode((string) ($prop['host_welcome'] ?? ''), true) ?: [];
+            $nomiL = MHW\Config::get('locales'); ?>
+        <div class="stack" style="gap:10px;margin-top:12px">
+          <?php foreach ($lingueB as $lb): ?>
+            <div class="field" style="margin:0"><label for="benvenuto-<?= Support::e($lb) ?>">Due parole di benvenuto<?= count($lingueB) > 1 ? ' <span class="muted">(' . Support::e($nomiL[$lb] ?? $lb) . ')</span>' : '' ?></label>
+              <?php if ($lb === $lingueB[0]): ?><p class="help" id="benvenuto-aiuto" style="margin:0 0 6px">Facoltativo, al massimo 160 caratteri: le leggono gli ospiti quando toccano la tua foto. Se lo lasci vuoto: «Casa mia è casa vostra: per qualsiasi cosa, scrivimi.»</p><?php endif; ?>
+              <textarea id="benvenuto-<?= Support::e($lb) ?>" name="host_welcome[<?= Support::e($lb) ?>]" rows="2" maxlength="160" aria-describedby="benvenuto-aiuto"><?= Support::e((string) ($benv[$lb] ?? '')) ?></textarea></div>
+          <?php endforeach; ?>
         </div>
       <?php endif; ?>
     </fieldset>

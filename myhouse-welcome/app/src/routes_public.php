@@ -465,8 +465,17 @@ $r->get('/g/{slug}/benvenuto', function (array $a) use ($guida, $telaio) {
 });
 
 $r->get('/g/{slug}/commiato', function (array $a) use ($guida, $telaio) {
-    [, $snap, $loc] = $guida($a['slug']);
-    View::out('guest/farewell', $telaio($snap, $loc, Support::url('/g/' . $a['slug'])), 'layout/full');
+    [$g, $snap, $loc] = $guida($a['slug']);
+    // 7C: le stelle senza JavaScript arrivano qui con ?voto=N (con JavaScript, da /voto/N): solo un conteggio anonimo.
+    $voto = (int) ($_GET['voto'] ?? 0);
+    if ($voto >= 1 && $voto <= 5) Guide::track((int) $g['property']['id'], 'rating_' . $voto, null, $loc);
+    View::out('guest/farewell', ['voto' => $voto >= 1 && $voto <= 5 ? $voto : 0] + $telaio($snap, $loc, Support::url('/g/' . $a['slug'])), 'layout/full');
+});
+$r->get('/g/{slug}/voto/{n}', function (array $a) use ($guida) {
+    [$g, , $loc] = $guida($a['slug']);
+    $n = (int) $a['n'];
+    if ($n >= 1 && $n <= 5) Guide::track((int) $g['property']['id'], 'rating_' . $n, null, $loc);
+    http_response_code(204); exit;
 });
 
 // «Aggiungi al calendario» di un evento (6G): il file .ics, dall'istantanea pubblicata.

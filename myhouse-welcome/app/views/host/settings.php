@@ -1,7 +1,7 @@
 <?php
 /* Impostazioni della struttura e, in fondo, l'eliminazione. */
 use function MHW\b;
-use MHW\{Support, Csrf};
+use MHW\{Support, Csrf, Icon};
 $title = 'Impostazioni — ' . $prop['name']; ?>
 <div class="stack stack--lg" style="max-width:720px">
   <div class="stack stack--sm">
@@ -20,23 +20,52 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
     </div>
     <fieldset class="fieldset">
       <legend>Recensioni</legend>
-      <p class="help">«Ti è piaciuto il soggiorno?» con un pulsante per ogni piattaforma. Incolla il link diretto alla pagina delle recensioni.</p>
-      <div class="grid grid-2">
-        <?php foreach (['review_google' => 'Google', 'review_booking' => 'Booking.com', 'review_airbnb' => 'Airbnb', 'review_other' => 'Altro sito'] as $k => $et): ?>
-          <div class="field" style="margin:0"><label for="<?= $k ?>"><?= $et ?></label>
-            <input id="<?= $k ?>" name="<?= $k ?>" type="url" maxlength="500" placeholder="https://" value="<?= Support::e((string) $prop[$k]) ?>"></div>
+      <p class="help">Gli ospiti vedono un bottone per ogni link che compili, alla fine del soggiorno.</p>
+      <?php /* 7C: una scheda per piattaforma, con «Prova il link» e dove trovarlo. */
+            $piattaforme = [
+              'review_google'  => ['Google', 'search', ['Apri il tuo Profilo dell\'attività su Google (cerca il nome della struttura da loggato).', 'Tocca «Chiedi recensioni» e copia il link che ti dà.']],
+              'review_booking' => ['Booking.com', 'calendar', ['Entra nella Extranet di Booking.com.', 'Vai in «Recensioni ospiti» e copia il link della pagina delle tue recensioni.']],
+              'review_airbnb'  => ['Airbnb', 'home', ['Apri il tuo annuncio su Airbnb.', 'Copia il link dell\'annuncio: le recensioni sono lì.']],
+              'review_other'   => ['Altro sito', 'globe', ['Il sito dove vuoi le recensioni (TripAdvisor, il tuo sito…).', 'Copia il link della pagina dove si scrive la recensione.']],
+            ]; ?>
+      <div class="recensioni-schede">
+        <?php foreach ($piattaforme as $k => [$et, $ico, $dove]): $val = (string) $prop[$k]; ?>
+          <div class="recensione-scheda">
+            <div class="recensione-scheda__testa"><span class="recensione-scheda__ico"><?= Icon::svg($ico, 18) ?></span><label for="<?= $k ?>"><?= $et ?></label></div>
+            <input id="<?= $k ?>" name="<?= $k ?>" type="url" maxlength="500" placeholder="https://" value="<?= Support::e($val) ?>" data-prova-campo>
+            <div class="recensione-scheda__piede">
+              <a class="small" href="<?= Support::e($val !== '' ? $val : '#') ?>" target="_blank" rel="noopener" data-prova-link<?= $val === '' ? ' hidden' : '' ?>>Prova il link</a>
+              <details class="recensione-scheda__dove"><summary class="small">Dove trovo il link?</summary>
+                <ol class="small"><?php foreach ($dove as $riga): ?><li><?= Support::e($riga) ?></li><?php endforeach; ?></ol></details>
+            </div>
+          </div>
         <?php endforeach; ?>
       </div>
     </fieldset>
     <fieldset class="fieldset">
       <legend>Prenotazione diretta</legend>
       <p class="help">«La prossima volta prenota da noi»: il link al tuo sito e, se vuoi, un codice sconto per chi torna.</p>
-      <div class="grid grid-2">
-        <div class="field" style="margin:0"><label for="direct_url">Link al sito per prenotare</label>
-          <input id="direct_url" name="direct_url" type="url" maxlength="500" placeholder="https://" value="<?= Support::e((string) $prop['direct_url']) ?>"></div>
-        <div class="field" style="margin:0"><label for="direct_code">Codice sconto per chi torna <span class="muted">(facoltativo)</span></label>
-          <p class="help" id="direct-code-aiuto" style="margin:0 0 6px">Lo sconto che dai tu ai tuoi ospiti sul tuo sito.</p>
-          <input id="direct_code" aria-describedby="direct-code-aiuto" name="direct_code" type="text" maxlength="60" autocomplete="off" value="<?= Support::e((string) $prop['direct_code']) ?>"></div>
+      <?php $dUrl = (string) $prop['direct_url']; $dCod = (string) $prop['direct_code']; $dSconto = (string) ($prop['direct_discount'] ?? ''); ?>
+      <div class="diretta">
+        <div class="stack" style="gap:12px">
+          <div class="field" style="margin:0"><label for="direct_url">Link al sito per prenotare</label>
+            <input id="direct_url" name="direct_url" type="url" maxlength="500" placeholder="https://" value="<?= Support::e($dUrl) ?>" data-diretta="url"></div>
+          <div class="grid grid-2">
+            <div class="field" style="margin:0"><label for="direct_code">Codice sconto per chi torna <span class="muted">(facoltativo)</span></label>
+              <input id="direct_code" aria-describedby="direct-code-aiuto" name="direct_code" type="text" maxlength="60" autocomplete="off" value="<?= Support::e($dCod) ?>" data-diretta="codice">
+              <p class="help" id="direct-code-aiuto" style="margin:6px 0 0">Il codice lo crei tu sul tuo sito o sul tuo motore di prenotazione; qui lo scrivi perché l'ospite lo veda quando parte.</p></div>
+            <div class="field" style="margin:0"><label for="direct_discount">Sconto <span class="muted">(facoltativo)</span></label>
+              <input id="direct_discount" name="direct_discount" type="text" maxlength="40" autocomplete="off" placeholder="Per esempio 10% o 15 €" value="<?= Support::e($dSconto) ?>" data-diretta="sconto"></div>
+          </div>
+          <p class="note" role="status" data-diretta-avviso<?= $dCod !== '' && $dUrl === '' ? '' : ' hidden' ?>>Senza il link al tuo sito l'ospite non sa dove usarlo.</p>
+        </div>
+        <?php /* L'anteprima della scheda che vede l'ospite nel commiato (in italiano). */ ?>
+        <div class="diretta__anteprima" aria-label="Anteprima: come la vede l'ospite">
+          <span class="tiny muted">Anteprima</span>
+          <b>La prossima volta prenota da noi</b>
+          <span data-diretta-offerta<?= $dCod === '' ? ' hidden' : '' ?>><?= Support::e(($dSconto !== '' ? '−' . ltrim($dSconto, '-−') . ' con il codice ' : 'Con il codice ')) ?><b data-diretta-codice><?= Support::e($dCod) ?></b></span>
+          <span class="diretta__bottoni"><span class="diretta__finto" data-diretta-copia<?= $dCod === '' ? ' hidden' : '' ?>>Copia il codice</span><span class="diretta__finto diretta__finto--pieno">Prenota sul nostro sito</span></span>
+        </div>
       </div>
     </fieldset>
     <fieldset class="fieldset">

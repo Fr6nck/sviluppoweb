@@ -36,7 +36,13 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
         <p class="help" style="margin-top:6px">Se lo lasci com'è, nelle altre lingue compare il titolo già tradotto.</p>
       </div>
 
-      <?php $kind = $s['kind']; $uid = 's' . $sid; include __DIR__ . '/_campi.php'; ?>
+      <?php $kind = $s['kind']; $uid = 's' . $sid;
+            // 7C · Novità: i campi nuovi ancora vuoti, con «Ho visto» (un modulo a parte, fuori da questo).
+            $campiNuovi = MHW\Novita::campiNuovi((int) $prop['account_id'], (string) $kind, $dati + $tdati);
+            if ($campiNuovi && ($idVisto = MHW\Novita::idCampi((string) $kind))): ?>
+        <p class="note note--quiet campo-nuovo__nota">Novità: i campi segnati «Nuovo» sono arrivati da poco.
+          <button type="submit" form="novita-visto-<?= $sid ?>" class="linkbtn" name="novita" value="<?= Support::e($idVisto) ?>">Ho visto</button></p>
+      <?php endif; include __DIR__ . '/_campi.php'; ?>
 
       <?php if ($foto || $fotoUrl): ?>
         <fieldset class="fieldset">
@@ -264,6 +270,9 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
         </details>
       </div>
     <?php endif; ?>
+<?php if (!empty($campiNuovi)): ?>
+  <form method="post" action="<?= b() ?>/pannello/novita/visto" id="novita-visto-<?= $sid ?>" hidden><?= Csrf::field() ?><input type="hidden" name="torna" value="<?= Support::e($inProcedura ? '/pannello/' . $pid . '/procedura/sezioni?apri=' . $sid : '/pannello/' . $pid . '/sezioni/' . $sid) ?>"></form>
+<?php endif; ?>
 <?php if (MHW\Support::contatto() !== ''): /* 7A: problemi e suggerimenti su questa sezione, all'assistenza */ ?>
   <p class="small muted sezione-aiuto"><a href="<?= Support::e(Support::mailto('Problema: ' . $nome, "Struttura: " . $prop['name'] . "\nSezione: " . $nome . "\n\nCosa non va:\n")) ?>">Qualcosa non va in questa sezione? Scrivici</a>
     · <a href="<?= Support::e(Support::mailto('Suggerimento: ' . $nome, "Struttura: " . $prop['name'] . "\nSezione: " . $nome . "\n\nIl mio suggerimento:\n")) ?>">Hai un suggerimento?</a></p>

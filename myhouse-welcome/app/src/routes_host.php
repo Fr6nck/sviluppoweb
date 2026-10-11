@@ -576,6 +576,11 @@ $r->post('/pannello/{id}/lingue/{loc}/suggerite', function (array $a) use ($mia,
             [$n, $stop] = Traduttore::suggerisci((int) $acc['id'], $p, $loc);
             if ($n) Support::flash(($n === 1 ? '1 traduzione suggerita' : "$n traduzioni suggerite") . ': controllale una per una e approvale.' . ($stop !== '' ? ' ' . $stop : ''), $stop !== '' ? 'avviso' : 'ok');
             else Support::flash($stop !== '' ? $stop : 'Non manca niente da suggerire.', $stop !== '' ? 'err' : 'ok');
+        } elseif (($campo = (string) ($_POST['campo'] ?? '')) !== '') {
+            // 7C: «Traduci» un campo solo (o «Traduci di nuovo» se il testo italiano è cambiato): una proposta da confermare.
+            [$n, $stop] = Traduttore::suggerisci((int) $acc['id'], $p, $loc, [$campo]);
+            Support::flash($n ? 'Ecco la traduzione proposta: controllala e approvala.' : ($stop !== '' ? $stop : 'Questo campo non ha niente da tradurre.'), $n ? 'ok' : 'err');
+            $ancora = '#c-' . md5($campo);
         } elseif (($id = (int) ($_POST['rifai'] ?? 0)) > 0) {
             $s = Db::one('SELECT * FROM translation_suggestions WHERE id = ? AND property_id = ? AND locale = ?', [$id, $p['id'], $loc]);
             if ($s) {
@@ -615,6 +620,7 @@ $r->any('/pannello/{id}/lingue/{loc}', function (array $a) use ($mia, $contesto,
     $err = null;
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
+            $primaT = Traduttore::campi($p, $loc);
             foreach ((array) ($_POST['s'] ?? []) as $sid => $campi) {
                 Properties::saveSection((int) $p['id'], (int) $sid, $loc, (array) $campi, false);
             }
@@ -622,6 +628,8 @@ $r->any('/pannello/{id}/lingue/{loc}', function (array $a) use ($mia, $contesto,
                 $sid = (int) Db::val('SELECT section_id FROM places WHERE id = ?', [(int) $plid]);
                 if ($sid) Properties::savePlace((int) $acc['id'], (int) $p['id'], $sid, (int) $plid, $loc, false, (array) $campi);
             }
+            // 7C: l'impronta dell'originale per i campi tradotti adesso, per accorgersi quando l'italiano cambia.
+            Traduttore::fissaImpronte($p, $loc, Traduttore::campi($p, $loc), $primaT);
             if ($vuoleJson()) Support::json(['ok' => true]);
             Support::flash('Traduzione salvata.');
             Support::redirect('/pannello/' . $p['id'] . '/lingue/' . $loc);
@@ -646,11 +654,13 @@ $r->any('/pannello/{id}/lingue/{loc}', function (array $a) use ($mia, $contesto,
     }
     // Le traduzioni suggerite: quelle da controllare, quante se ne possono ancora chiedere, e se si può.
     $campiT = Traduttore::campi($p, $loc);
+    Traduttore::fissaImpronte($p, $loc, $campiT);   // i campi tradotti prima della 7C: il controllo «cambiato» parte da qui
     $sugg = Traduttore::suggerite($p, $loc, $campiT);
     $daSuggerire = count(array_filter($campiT, fn($c, $k) => $c['tradotto'] === '' && (!isset($sugg[$k]) || $sugg[$k]['da_rifare']), ARRAY_FILTER_USE_BOTH));
     View::out('host/translate', $contesto($acc, $p) + [
         'loc' => $loc, 'nome' => Config::get('locales')[$loc] ?? $loc, 'sections' => $sections, 'err' => $err, 'qui' => 'lingue',
         'sugg' => $sugg, 'daSuggerire' => $daSuggerire, 'perche' => Traduttore::perche((int) $acc['id'], $p),
+        'cambiati' => array_keys(array_filter($campiT, fn($c) => $c['cambiato'])),
         'nelPiano' => Traduttore::nelPiano((int) $acc['id']),
     ], 'layout/cms');
 });
@@ -679,6 +689,16 @@ $r->any('/pannello/{id}/aspetto', function (array $a) use ($mia, $contesto, $mes
                 if (!Palette::readable($pal, $tono)) throw new RuntimeException('Con questa palette il tema scelto non è abbastanza leggibile: scegli l\'altro.');
                 if (!Entitlements::can($aid, 'palette')) $pal = Palette::DEFAULT;
                 Db::update('properties', ['palette' => $pal, 'text_tone' => $tono], 'id = :pid', ['pid' => $p['id']]);
+                // 7C: «Due parole di benvenuto», per lingua della guida, al massimo 160 caratteri.
+                if (isset($_POST['host_welcome']) && is_array($_POST['host_welcome']) && Migrator::columnExists('properties', 'host_welcome')) {
+                    $lingueP = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
+                    $benv = [];
+                    foreach ($_POST['host_welcome'] as $l => $t) {
+                        $t = mb_substr(trim(preg_replace('/\s+/u', ' ', (string) $t)), 0, 160);
+                        if ($t !== '' && in_array((string) $l, $lingueP, true)) $benv[(string) $l] = $t;
+                    }
+                    Db::update('properties', ['host_welcome' => $benv ? json_encode($benv, JSON_UNESCAPED_UNICODE) : null], 'id = :pid', ['pid' => $p['id']]);
+                }
                 foreach ($campi as $input => [$col, $feature, $nome]) {
                     if (($_FILES[$input]['error'] ?? 4) === UPLOAD_ERR_NO_FILE) continue;
                     if (!Entitlements::can($aid, $feature)) throw new RuntimeException("$nome non fa parte del tuo piano.");
@@ -765,10 +785,13 @@ $r->post('/pannello/{id}/dopo-il-soggiorno', function (array $a) use ($mia) {
     $dati = ['review_google' => $url('review_google'), 'review_booking' => $url('review_booking'), 'review_airbnb' => $url('review_airbnb'),
              'review_other' => $url('review_other'), 'direct_url' => $url('direct_url'),
              'direct_code' => mb_substr(preg_replace('/\s+/', '', (string) ($_POST['direct_code'] ?? '')), 0, 60),
+             // 7C: lo sconto per chi torna («10%», «15 €»), solo da mostrare.
+             'direct_discount' => mb_substr(trim(preg_replace('/\s+/u', ' ', (string) ($_POST['direct_discount'] ?? ''))), 0, 40),
              // La firma si nasconde solo se il piano lo comprende (Plus, Portfolio): controllato qui, non solo nel modulo.
              'hide_branding' => !empty($_POST['hide_branding']) && Entitlements::can((int) $acc['id'], 'hide_branding') ? 1 : 0];
     $scartati = array_filter(['review_google', 'review_booking', 'review_airbnb', 'review_other', 'direct_url'],
                              fn($k) => trim((string) ($_POST[$k] ?? '')) !== '' && $dati[$k] === '');
+    if (!Migrator::columnExists('properties', 'direct_discount')) unset($dati['direct_discount']);
     Db::update('properties', $dati, 'id = :pid', ['pid' => $p['id']]);
     Support::flash($scartati ? 'Salvato, ma ' . count($scartati) . ' link non erano indirizzi web validi (cominciano con https://) e sono rimasti vuoti.'
                              : 'Salvato. Lo vedranno gli ospiti nel commiato quando pubblichi.', $scartati ? 'avviso' : 'ok');
@@ -946,22 +969,44 @@ $r->get('/pannello/{id}/qr', function (array $a) use ($mia, $contesto) {
 });
 
 $r->get('/pannello/{id}/qr.{formato}', function (array $a) use ($mia) {
-    [, , $p] = $mia((int) $a['id']);
+    [, $acc, $p] = $mia((int) $a['id']);
     $qr = Db::one('SELECT * FROM qr_tokens WHERE property_id = ?', [$p['id']]);
     $url = Support::baseUrl() . '/q/' . $qr['token'];
     $nome = 'qr-' . $p['slug'];
+    // 7C: il foglio da stampare porta il logo della struttura, se c'è e il piano lo comprende.
+    $logoId = $p['logo_media_id'] && Entitlements::can((int) $acc['id'], 'logo') ? (int) $p['logo_media_id'] : null;
+    $logo = in_array($a['formato'], ['pdf', 'svg'], true) && $logoId ? Media::bytes($logoId) : null;
     header_remove('Cache-Control');
     header('Cache-Control: private, max-age=300');
     switch ($a['formato']) {
         case 'png': header('Content-Type: image/png'); header('Content-Disposition: attachment; filename="' . $nome . '.png"');
                     echo Qr::png($url, 8, 4, 1200); break;
         case 'svg': header('Content-Type: image/svg+xml'); header('Content-Disposition: attachment; filename="' . $nome . '.svg"');
-                    echo QrExport::svg($url); break;
+                    echo QrExport::foglioSvg($url, (string) $p['name'], $logo, $logoId ? (string) (Media::row($logoId)['mime'] ?? '') : null); break;
         case 'pdf': header('Content-Type: application/pdf'); header('Content-Disposition: attachment; filename="' . $nome . '.pdf"');
-                    echo QrExport::pdf($url, $p['name']); break;
+                    echo QrExport::pdf($url, (string) $p['name'], $logo); break;
         default: http_response_code(404);
     }
     exit;
+});
+
+// ------------------------------------------------------------------ novità (7C)
+/* La fascia «Novità» si chiude per l'account; «Ho visto» toglie i segni «Nuovo» dei campi di una sezione. */
+$r->post('/pannello/novita/chiudi', function () use ($host) {
+    [, $acc] = $host();
+    $id = (string) ($_POST['novita'] ?? '');
+    if (MHW\Novita::esiste($id)) MHW\Novita::segna((int) $acc['id'], $id);
+    $da = (string) ($_SERVER['HTTP_REFERER'] ?? '');
+    $path = (string) (parse_url($da, PHP_URL_PATH) ?? '');
+    $rel = preg_replace('#^' . preg_quote(Support::base(), '#') . '#', '', $path);
+    Support::redirect(str_starts_with((string) $rel, '/pannello') || str_starts_with((string) $rel, '/account') ? (string) $rel : '/pannello');
+});
+$r->post('/pannello/novita/visto', function () use ($host) {
+    [, $acc] = $host();
+    $id = (string) ($_POST['novita'] ?? '');
+    if (str_contains($id, ':') && MHW\Novita::esiste($id)) MHW\Novita::segna((int) $acc['id'], $id);
+    $torna = (string) ($_POST['torna'] ?? '');
+    Support::redirect(preg_match('#^/pannello/\d+/(sezioni/\d+|procedura/sezioni\?apri=\d+)$#', $torna) ? $torna : '/pannello');
 });
 
 // ------------------------------------------------- vecchi indirizzi delle camere

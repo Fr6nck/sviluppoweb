@@ -47,6 +47,15 @@ $title = 'Statistiche — ' . $prop['name']; ?>
         <div class="hbar"><span><?= Support::e($s['title'] ?: MHW\SectionCatalog::title($s['kind'], 'it')) ?></span><i><b style="width:<?= (int) round($s['n'] / $top * 100) ?>%"></b></i><span><?= (int) $s['n'] ?></span></div>
       <?php endforeach; if (!$stats['sections']): ?><p class="small muted">Ancora nessun dato.</p><?php endif; ?>
     </div>
+    <div class="panel stack"><span class="kicker">Voti dei tuoi ospiti</span>
+      <?php $voti = $stats['voti'] ?? array_fill(1, 5, 0); $totV = array_sum($voti); $topV = max(1, ...array_values($voti)); ?>
+      <?php if ($totV): ?>
+        <p class="small" style="margin:0">Media <b><?= number_format(array_sum(array_map(fn($n, $q) => $n * $q, array_keys($voti), $voti)) / $totV, 1, ',', '') ?></b> su 5, <?= $totV ?> vot<?= $totV === 1 ? 'o' : 'i' ?> nel commiato.</p>
+        <?php for ($n = 5; $n >= 1; $n--): ?>
+          <div class="hbar"><span><?= str_repeat('★', $n) ?></span><i><b style="width:<?= (int) round($voti[$n] / $topV * 100) ?>%"></b></i><span><?= (int) $voti[$n] ?></span></div>
+        <?php endfor; ?>
+      <?php else: ?><p class="small muted">Ancora nessun voto. Gli ospiti votano con le stelle nella pagina di saluto; il voto è anonimo.</p><?php endif; ?>
+    </div>
     <div class="panel stack"><span class="kicker">Lingue</span>
       <?php $tot = max(1, array_sum(array_map(fn($l) => (int) $l['n'], $stats['languages'])));
             $nomi = MHW\Config::get('locales');

@@ -41,8 +41,13 @@ final class Stats
              WHERE property_id = ? AND day >= ? AND kind IN (' . self::in(self::VIEW) . ") AND locale <> ''
              GROUP BY locale ORDER BY n DESC", [$propertyId, $da]);
 
+        // 7C: le stelle del commiato, per voto (anonime).
+        $voti = array_fill(1, 5, 0);
+        foreach (Db::all("SELECT kind, COUNT(*) AS n FROM analytics_events WHERE property_id = ? AND day >= ? AND kind IN ('rating_1', 'rating_2', 'rating_3', 'rating_4', 'rating_5') GROUP BY kind", [$propertyId, $da]) as $r) {
+            $n = (int) substr((string) $r['kind'], 7); if ($n >= 1 && $n <= 5) $voti[$n] = (int) $r['n'];
+        }
         return [
-            'days' => $days, 'views' => $conta(self::VIEW), 'qr' => $conta(self::QR),
+            'days' => $days, 'views' => $conta(self::VIEW), 'qr' => $conta(self::QR), 'voti' => $voti,
             'sections' => $sezioni, 'languages' => $lingue, 'series' => $serie,
         ];
     }

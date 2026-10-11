@@ -147,7 +147,7 @@ elseif ($campo === 'items' && $tipo === 'repeater'):
   <div class="stack" style="margin-top:18px;gap:12px">
     <?php foreach ($righe as $r): $foto = (int) ($r['photo'] ?? 0) ? Media::url((int) $r['photo']) : null; $titoloExtra = trim((string) $r['title']); ?>
       <article class="panel stack extra" style="gap:10px">
-        <?php if ($foto): ?><div class="shot shot--h186"><img src="<?= Support::e($foto) ?>" alt="" loading="lazy" decoding="async"></div><?php endif; ?>
+        <?php if ($foto): ?><div class="shot shot--h186 shot--zoom"><a href="<?= Support::e($foto) ?>" data-zoom aria-label="<?= Support::e(I18n::t($loc, 'zoom')) ?>"><img src="<?= Support::e($foto) ?>" alt="" loading="lazy" decoding="async"><span class="shot__lente" aria-hidden="true"><?= Icon::svg('search', 16, 2) ?></span></a></div><?php endif; ?>
         <div class="spread spread--mid" style="gap:12px;align-items:baseline">
           <b style="font-size:18px;font-weight:500"><?= Support::e($titoloExtra) ?></b>
           <?php /* Il prezzo (fase 6C): «25 € · a tratta», con l'unità nella lingua dell'ospite. */
@@ -178,11 +178,11 @@ elseif ($campo === 'manuals'):
       <details class="panel manuale">
         <summary><b><?= Support::e(trim((string) $r['title']) !== '' ? $r['title'] : I18n::t($loc, 'manuals')) ?></b><?= Icon::svg('chevron', 16, 2, 'manuale__freccia') ?></summary>
         <div class="stack" style="gap:12px;margin-top:12px">
-          <?php if ($foto): ?><div class="shot shot--h186"><img src="<?= Support::e($foto) ?>" alt="" loading="lazy" decoding="async"></div><?php endif; ?>
+          <?php if ($foto): ?><div class="shot shot--h186 shot--zoom"><a href="<?= Support::e($foto) ?>" data-zoom aria-label="<?= Support::e(I18n::t($loc, 'zoom')) ?>"><img src="<?= Support::e($foto) ?>" alt="" loading="lazy" decoding="async"><span class="shot__lente" aria-hidden="true"><?= Icon::svg('search', 16, 2) ?></span></a></div><?php endif; ?>
           <?php foreach ($passi as $i => $passo): ?>
             <div class="step"><span class="n"><?= $i + 1 ?></span><p><?= Support::e($passo) ?></p></div>
           <?php endforeach; ?>
-          <?php if ($doc): ?><div class="ctas"><a href="<?= Support::e($doc) ?>" target="_blank" rel="noopener"><?= Icon::svg('doc', 15) ?><?= Support::e(I18n::t($loc, 'open_pdf')) ?></a></div><?php endif; ?>
+          <?php if ($doc): ?><a class="btn btn--block btn--ghost pdf-apri" href="<?= Support::e($doc) ?>" target="_blank" rel="noopener"><?= Icon::svg('doc', 18) ?><?= Support::e(I18n::t($loc, 'open_pdf')) ?></a><?php endif; ?>
         </div>
       </details>
     <?php endforeach; ?>
@@ -253,7 +253,7 @@ elseif ($campo === 'options'):
         <?php if ($pillole): ?><div class="pillole-ospite"><?php foreach ($pillole as $p): ?><span class="pill-quiet"><?= Support::e($p) ?></span><?php endforeach; ?></div><?php endif; ?>
         <?php if (trim((string) $r['cost_note']) !== ''): ?><p class="small"><span class="kicker"><?= Support::e(I18n::t($loc, 'cost')) ?></span> <?= Support::e($r['cost_note']) ?></p><?php endif; ?>
         <?php if (trim((string) $r['instructions']) !== ''): ?><p style="white-space:pre-line;line-height:23px"><?= Support::e($r['instructions']) ?></p><?php endif; ?>
-        <?php if ($foto): ?><div class="shot shot--h186"><img src="<?= Support::e($foto) ?>" alt="" loading="lazy" decoding="async"></div><?php endif; ?>
+        <?php if ($foto): ?><div class="shot shot--h186 shot--zoom"><a href="<?= Support::e($foto) ?>" data-zoom aria-label="<?= Support::e(I18n::t($loc, 'zoom')) ?>"><img src="<?= Support::e($foto) ?>" alt="" loading="lazy" decoding="async"><span class="shot__lente" aria-hidden="true"><?= Icon::svg('search', 16, 2) ?></span></a></div><?php endif; ?>
         <?php if ($u): ?><div class="ctas"><a href="<?= Support::e($u) ?>" target="_blank" rel="noopener"><?= Icon::svg('pin', 15) ?><?= Support::e(I18n::t($loc, 'open_maps')) ?></a></div><?php endif; ?>
       </div>
     <?php endforeach; ?>

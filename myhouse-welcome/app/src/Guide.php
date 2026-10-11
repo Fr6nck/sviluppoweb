@@ -117,7 +117,9 @@ final class Guide
                 // Dopo il soggiorno (dalla 014): solo i link compilati.
                 'reviews' => array_filter(['google' => (string) ($p['review_google'] ?? ''), 'booking' => (string) ($p['review_booking'] ?? ''),
                                            'airbnb' => (string) ($p['review_airbnb'] ?? ''), 'other' => (string) ($p['review_other'] ?? '')]),
-                'direct' => ['url' => (string) ($p['direct_url'] ?? ''), 'code' => (string) ($p['direct_code'] ?? '')],
+                'direct' => ['url' => (string) ($p['direct_url'] ?? ''), 'code' => (string) ($p['direct_code'] ?? ''), 'discount' => (string) ($p['direct_discount'] ?? '')],
+                // «Due parole di benvenuto» dell'host (7C), per lingua: nel foglio del tondo con la sua foto.
+                'host_welcome' => array_filter(array_map(fn($t) => mb_substr(trim((string) $t), 0, 160), (array) (json_decode((string) ($p['host_welcome'] ?? ''), true) ?: [])), fn($t) => $t !== ''),
                 // La firma si nasconde solo se il piano lo comprende E l'host l'ha chiesto.
                 'branding' => !((int) ($p['hide_branding'] ?? 0) === 1 && Entitlements::can($acc, 'hide_branding')),
             ],
@@ -226,7 +228,8 @@ final class Guide
     /** Formato 4 → 5: niente recensioni né prenotazione diretta, firma visibile. */
     private static function daFormato4(array $s): array
     {
-        $s['property'] = ($s['property'] ?? []) + ['reviews' => [], 'direct' => ['url' => '', 'code' => ''], 'branding' => true];
+        $s['property'] = ($s['property'] ?? []) + ['reviews' => [], 'direct' => ['url' => '', 'code' => ''], 'branding' => true, 'host_welcome' => []];
+        $s['property']['direct'] += ['discount' => ''];
         $s['format'] = self::FORMAT;
         return $s;
     }
@@ -415,7 +418,8 @@ final class Guide
      */
     public static function track(int $propertyId, string $kind, ?int $sectionId = null, string $locale = '', string $source = ''): void
     {
-        if (!in_array($kind, ['guide_view', 'qr_open', 'section_view', 'language_selected'], true)) return;
+        // 7C: rating_1 … rating_5, le stelle del commiato: un conteggio anonimo per struttura e voto.
+        if (!in_array($kind, ['guide_view', 'qr_open', 'section_view', 'language_selected', 'rating_1', 'rating_2', 'rating_3', 'rating_4', 'rating_5'], true)) return;
         try {
             Db::insert('analytics_events', [
                 'property_id' => $propertyId, 'section_id' => $sectionId, 'locale' => substr($locale, 0, 5),

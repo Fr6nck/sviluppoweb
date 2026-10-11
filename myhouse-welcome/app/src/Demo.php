@@ -115,6 +115,20 @@ final class Demo
     public const CHECCO_LNG = 12.61966;
     public const CHECCO_MAPS = 'https://www.google.com/maps/search/?api=1&query=43.07025,12.61966';
 
+    /**
+     * La guida di esempio pubblicata (7C): la vetrina se c'è, altrimenti la demo. È la stessa della landing.
+     * Con $kind: l'indirizzo della sua sezione di quel tipo, se ce l'ha. @return string|null l'indirizzo relativo
+     */
+    public static function esempio(?string $kind = null, int $tranne = 0): ?string
+    {
+        // $tranne: la struttura che si sta guardando, che non fa da esempio a sé stessa.
+        $d = Db::one("SELECT id, slug FROM properties WHERE is_demo >= 1 AND status = 'published' AND archived_at IS NULL AND id <> ? ORDER BY is_demo DESC, id", [$tranne]);
+        if (!$d) return null;
+        if ($kind === null) return '/g/' . $d['slug'];
+        $sid = Db::val('SELECT id FROM sections WHERE property_id = ? AND kind = ? AND is_active = 1 ORDER BY id', [$d['id'], $kind]);
+        return $sid ? '/g/' . $d['slug'] . '/' . (int) $sid : null;
+    }
+
     public static function vetrina(int $accountId): int
     {
         // «Casa Checco», Assisi: una casa di fantasia in un vicolo di fantasia, a due passi da

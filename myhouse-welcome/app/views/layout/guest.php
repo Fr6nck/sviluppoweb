@@ -7,7 +7,7 @@ $notte = ($theme ?? '') === 'night';
 $loc = $loc ?? 'it';
 $temaChiave = 'mhw-tema-ospite'; $temaBase = $tema ?? 'chiaro'; ?>
 <!doctype html>
-<html lang="<?= Support::e($loc) ?>" data-theme="<?= Support::e($temaBase) ?>">
+<html lang="<?= Support::e($loc) ?>" data-theme="<?= Support::e($temaBase) ?>" data-chiudi="<?= Support::e(I18n::t($loc, 'close')) ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -24,5 +24,6 @@ $temaChiave = 'mhw-tema-ospite'; $temaBase = $tema ?? 'chiaro'; ?>
 <body<?= $notte ? ' class="night"' : '' ?>>
 <?php if (!empty($anteprima)): ?><div class="ribbon"><?= Support::e(I18n::t($loc, 'preview_ribbon')) ?></div><?php endif; ?>
 <main class="phone" style="padding-bottom:8px"><?= $content ?></main>
+<script src="<?= MHW\av('/assets/guida.js') ?>" defer></script>
 </body>
 </html>

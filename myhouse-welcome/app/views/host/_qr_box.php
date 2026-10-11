@@ -20,10 +20,11 @@ $corto = Support::baseUrl() . '/q/' . $qr['token']; ?>
     <div class="fieldset">
       <span class="legend">Scarica il QR</span>
       <div class="row" style="gap:8px">
-        <a class="btn btn--ghost btn--sm" href="<?= b() ?>/pannello/<?= $pid ?>/qr.png" download>PNG</a>
-        <a class="btn btn--ghost btn--sm" href="<?= b() ?>/pannello/<?= $pid ?>/qr.svg" download>SVG</a>
-        <a class="btn btn--ghost btn--sm" href="<?= b() ?>/pannello/<?= $pid ?>/qr.pdf" download>PDF da stampare</a>
+        <a class="btn btn--sm" href="<?= b() ?>/pannello/<?= $pid ?>/qr.pdf" download>PDF da stampare</a>
+        <a class="btn btn--ghost btn--sm" href="<?= b() ?>/pannello/<?= $pid ?>/qr.svg" download>SVG da stampare</a>
+        <a class="btn btn--ghost btn--sm" href="<?= b() ?>/pannello/<?= $pid ?>/qr.png" download>PNG (solo il codice)</a>
       </div>
+      <p class="help">Il foglio da stampare ha il logo e il nome della struttura, il QR e l'invito a inquadrarlo in italiano e in inglese. Il PNG è solo il codice, da mettere nelle tue grafiche.</p>
       <p class="help" style="overflow-wrap:anywhere">Il QR resta sempre lo stesso: lo stampi una volta, e ogni volta che aggiorni la guida gli ospiti vedono la versione nuova.
         Punta a <?= Support::e($corto) ?>.</p>
     </div>

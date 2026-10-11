@@ -783,7 +783,7 @@ button, input[type=submit], input[type=button] { background-image: none; }
 .lined li:last-child{border-bottom:0}
 .lined{margin:0;padding:0}
 .ctas{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
-.ctas a{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;
+.ctas a,.ctas button{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;
   border:1px solid var(--line-strong);background:var(--raised);color:var(--ink);font-size:14px;font-weight:500}
 .ctas a:hover{background:var(--sunk);color:var(--ink)}
 .logo-guest{height:30px;width:auto;max-width:120px;object-fit:contain}
@@ -1439,7 +1439,7 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .firma{margin:0 0 28px;text-align:center}
 .firma a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
 .congedo-extra{border-top:1px solid rgba(246,240,229,.2);padding-top:18px}
-.congedo-extra .ctas a{background:rgba(246,240,229,.1);border-color:rgba(246,240,229,.32);color:#f6f0e5}
+.congedo-extra .ctas a,.congedo-extra .ctas button{background:rgba(246,240,229,.1);border-color:rgba(246,240,229,.32);color:#f6f0e5}
 .congedo-extra .ctas a:hover{background:rgba(246,240,229,.18);color:#fff}
 .codice-sconto{display:inline-flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;border-radius:999px;border:1px dashed rgba(246,240,229,.5);color:#f6f0e5;font-weight:600;letter-spacing:.06em}
 .funnel{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
@@ -2155,3 +2155,77 @@ fieldset{min-width:0}
 .passa-piano__conferma>summary::-webkit-details-marker{display:none}
 .passa-piano__conferma[open]{padding:12px;border:1px solid var(--line-strong);border-radius:var(--r-md)}
 .fatt-pubblica{padding-top:16px;border-top:1px solid var(--line)}
+/* 7C · Chi ti accoglie: il tondo con la foto dell'host e il foglio che si apre al tocco. */
+.guest-cover-wrap{position:relative}
+.host-tondo{position:absolute;top:-18px;right:-6px;z-index:2;width:64px;height:64px;padding:0;border-radius:50%;border:3px solid #fff;
+  background:var(--sunk);box-shadow:0 6px 16px rgba(0,0,0,.22);cursor:pointer}
+.host-tondo img{display:block;width:100%;height:100%;border-radius:50%;object-fit:cover}
+.host-tondo__punto{position:absolute;right:1px;bottom:1px;width:13px;height:13px;border-radius:50%;background:#2e9d5b;border:2px solid #fff}
+.host-tondo:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.guest-senza-copertina{align-items:center}
+.guest-senza-copertina .host-tondo{position:relative;top:auto;right:auto;order:2;margin-left:auto}
+.host-foglio{width:min(560px,100%);max-width:100%;margin:auto auto 0;padding:0;border:0;border-radius:26px 26px 0 0;background:var(--raised);color:var(--ink)}
+.host-foglio::backdrop{background:rgba(23,19,13,.5)}
+.host-foglio__dentro{position:relative;padding:14px 16px 20px;display:flex;flex-direction:column;gap:12px}
+.host-foglio__maniglia{width:40px;height:5px;border-radius:9px;background:var(--line);margin:0 auto}
+.host-foglio__chiudi{position:absolute;right:12px;top:10px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--raised);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.host-foglio__foto{display:block;width:100%;height:auto;max-height:60vh;object-fit:contain;border-radius:18px;background:var(--sunk);margin-top:36px}
+.host-foglio__titolo{margin:4px 0 0;font-size:22px;line-height:28px}
+.host-foglio__testo{margin:0;color:var(--muted);font-size:16px;line-height:24px}
+@media(min-width:700px){ .host-foglio{margin:auto;border-radius:26px} .host-foglio__maniglia{display:none} }
+/* 7C · Le foto delle sezioni si ingrandiscono (lente nell'angolo); il PDF si apre con un bottone grande. */
+.shot--zoom a{display:block;height:100%;color:inherit}
+.shot__lente{position:absolute;right:10px;bottom:10px;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:rgba(23,19,13,.62);color:#fff}
+.shot--zoom a:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.zoom-foglio{width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;background:rgba(10,8,5,.94)}
+.zoom-foglio::backdrop{background:rgba(10,8,5,.94)}
+.zoom-foglio__area{width:100%;height:100%;overflow:auto;display:grid;place-items:center;touch-action:pinch-zoom pan-x pan-y}
+.zoom-foglio__area img{max-width:100%;max-height:100dvh;object-fit:contain;transition:transform .2s ease;transform-origin:center}
+.zoom-foglio__area--su img{max-width:none;max-height:none}
+.zoom-foglio__chiudi{position:fixed;top:12px;right:12px;z-index:1;width:48px;height:48px;border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;display:grid;place-items:center;cursor:pointer}
+.pdf-apri{margin-top:12px;height:56px;font-size:17px}
+/* 7C · Recensioni: una scheda per piattaforma. Prenotazione diretta: campi e anteprima della scheda dell'ospite. */
+.recensioni-schede{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.recensione-scheda{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--raised)}
+.recensione-scheda__testa{display:flex;align-items:center;gap:10px}
+.recensione-scheda__testa label{margin:0;font-weight:600}
+.recensione-scheda__ico{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--terracotta-soft);color:var(--accent)}
+.recensione-scheda__piede{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:baseline;justify-content:space-between}
+.recensione-scheda__piede [hidden]{display:none}
+.recensione-scheda__dove ol{margin:6px 0 0;padding-left:18px;color:var(--muted)}
+.diretta{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+.diretta [hidden]{display:none!important}
+.diretta__anteprima{display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:var(--r-md);background:#17130d;color:#f6f0e5}
+.diretta__anteprima .tiny{color:rgba(246,240,229,.7)}
+.diretta__bottoni{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.diretta__finto{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid rgba(246,240,229,.4);font-size:14px}
+.diretta__finto--pieno{background:#b4451f;border-color:#b4451f;color:#fff}
+@media(max-width:760px){ .recensioni-schede,.diretta{grid-template-columns:minmax(0,1fr)} }
+/* 7C · Le stelle del commiato e lo sconto per chi torna. */
+.stelle{display:flex;gap:4px;margin:0}
+.stella{display:grid;place-items:center;width:52px;height:52px;padding:0;border:0;border-radius:12px;background:transparent;cursor:pointer;color:rgba(246,240,229,.45)}
+.stella svg{fill:currentColor}
+.stella--su{color:#f2c14e}
+.stella:hover{color:#f2c14e}
+.stella:focus-visible{outline:3px solid #f2c14e;outline-offset:2px}
+[data-voto-box] [hidden]{display:none!important}
+.codice-offerta{margin:0;color:#f6f0e5;font-size:17px}
+.codice-offerta b{font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em;padding:2px 8px;border-radius:8px;background:rgba(246,240,229,.14)}
+.ctas button{font:inherit;cursor:pointer}
+.ctas button[hidden]{display:none}
+/* 7C · Traduzioni: «EN da tradurre», «Manca in», «Traduci» sotto il campo. */
+.etichetta-tradurre{text-decoration:none}
+.manca-in{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0;color:var(--muted)}
+.traduci-campo{margin-top:6px}
+/* 7C · Novità: la fascia nel pannello, il pallino in Contenuti, il campo nuovo nell'editor. */
+.novita{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px 16px;align-items:center;margin:0 0 24px;padding:14px 16px;
+  border-radius:var(--r-lg);background:var(--ochre-soft,#f9edd2);border:1px solid var(--ochre,#b07d0c);color:var(--ink)}
+.novita__kicker{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#7a5608}
+.novita__kicker .dot{width:8px;height:8px;border-radius:50%;background:var(--ochre,#b07d0c)}
+.novita__testo{font-size:15px;line-height:22px}
+.novita__testo span{color:var(--muted)}
+.novita__azioni{display:flex;align-items:center;gap:8px}
+@media(max-width:640px){ .novita{grid-template-columns:minmax(0,1fr)} }
+.novita-pallino .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:4px}
+.campo-nuovo{position:relative;padding:12px;border:2px solid var(--ochre,#b07d0c);border-radius:var(--r-md)}
+.campo-nuovo__et{position:absolute;top:-11px;right:12px}

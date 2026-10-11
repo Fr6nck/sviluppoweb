@@ -1,5 +1,38 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 7C la guida e l'editor (11 ottobre 2026)
+
+Migrazione `032` (solo aggiunte): `properties.host_welcome`, `properties.direct_discount`, tabelle `translation_hashes` e `novita_viste`.
+
+- **Chi ti accoglie:** la foto profilo compare in un tondo di 64 px a cavallo dell'angolo della copertina (anche con il logo), con il pallino verde; al tocco un `<dialog>` con la foto intera, «Ciao, sono {nome}», le due parole di benvenuto (campo nuovo in Aspetto, 160 caratteri, una per lingua; vuoto = testo di serie in 5 lingue) e «Scrivi a {nome}» (WhatsApp o telefono). Aiuto in Aspetto: «Una tua foto…». Casa Checco usa già `checco-profilo.jpg`.
+- **Recensioni:** in Impostazioni una scheda per piattaforma con «Prova il link» e «Dove trovo il link?». Nel commiato «Com'è andato il soggiorno?» con 5 stelle; dopo il tocco gli stessi bottoni a ogni voto, e da 1 a 3 anche «Vuoi dire qualcosa a {host}? Scrivigli». Se non ci sono link per le recensioni, dopo il voto solo «Grazie del tuo voto!». Il voto è un conteggio anonimo (`rating_N`), in Statistiche «Voti dei tuoi ospiti». Senza JavaScript le stelle ricaricano la pagina.
+- **Sconto per chi torna:** aiuto sotto il codice, campo «Sconto», avviso se manca il link, anteprima della scheda; nel commiato «−10% con il codice …» con «Copia il codice» e «Prenota sul nostro sito», in 5 lingue.
+- **Foto ingrandibili:** le foto delle sezioni e delle righe si aprono in un `<dialog>` a tutto schermo (dita, rotella, doppio clic; ✕, Esc, tocco fuori), con la lente nell'angolo; copertina, logo, foto profilo e miniature no. PDF: bottone grande «Apri il PDF». JavaScript in `assets/guida.js`.
+- **QR da stampare:** PDF e SVG centrati con logo, nome, QR, «Inquadra il QR Code / Scan the QR code» e «La guida della casa… / The house guide…» della stessa grandezza, marchio in basso. Il PNG resta il solo codice. Esempio in `prove/qr-esempio.pdf`.
+- **Guida di esempio:** nella barra laterale e «Vedi un esempio» nell'editor di ogni sezione (la vetrina; non compare nella guida che fa essa stessa da esempio).
+- **Traduzioni:** «Prova» in Impostazioni traduce «Buongiorno» e mostra il messaggio esatto di AWS con cosa fare; Diagnostica mostra l'esito dell'ultima chiamata. Senza chiavi: «Le traduzioni non sono disponibili in questo momento». «Traduci» campo per campo e «Traduci tutti i campi mancanti (N)» senza dover prima accendere l'interruttore (il primo clic lo accende e fa partire l'anno in omaggio); proposte da approvare come prima. Impronta del testo originale: «Il testo italiano è cambiato» con «Traduci di nuovo». «… da tradurre» sulle sezioni in Contenuti, «Manca in: …» nell'editor, lingue da completare nel passo Pubblica.
+- **Novità:** `app/lang/novita.php` e una fascia nel pannello, una per volta, finché non si chiude (per account); i campi nuovi ancora vuoti hanno «Nuovo» in Contenuti e il bordo ocra nell'editor, finché non si compilano o si preme «Ho visto».
+
+## v2 · 7B listino, via le varianti camera, piano prima del pagamento (11 ottobre 2026)
+
+Migrazione `031` (solo valori): Essential con 6 sezioni e foto profilo in tutte le versioni; varianti camera spente ovunque; testi di serie delle schede aggiornati.
+
+- Varianti camera eliminate dal codice; le tabelle restano. I vecchi indirizzi del pannello e i QR delle camere aprono la guida. `app/tools/togli-varianti-stripe.php` toglie la voce dagli abbonamenti Stripe (con `--prova`, conferma, credito, registro).
+- Schede: «6 sezioni aggiuntive», «Foto profilo dell'host», «Tutte le {sezioni} sezioni», testi nuovi per foto/PDF e traduzioni; Portfolio oltre 10 «Chiedi un preventivo»; pannello «Chiedi informazioni».
+- Home: il riquadro del tempo senza confronto col prezzo, «Crea gratis la tua guida» dopo il blocco scuro, bottoni principali pieni (48 px).
+- Registrazione senza piano: «Scegli il tuo piano». Passo Pubblica: «Hai scelto …», «Conferma e paga», «Passa a …» con l'elenco di cosa si perde, dati di fatturazione nella pagina. Account: «Passa a {piano}» o «Chiedi il cambio di piano».
+- «MyHouse Pro · da blackout.in» nel pannello; aiuto sotto il Price ID in Amministrazione → Piani.
+
+## v2 · 7A indirizzi, email, registrazione, assistenza (11 ottobre 2026)
+
+Migrazione `030`: tabella `feedback`.
+
+- Impostazioni → Sito (indirizzo pubblico, indirizzi puliti con «Prova», email di contatto `info@welcomemyhouse.it`), riga in Diagnostica.
+- Tutte le email con lo stesso aspetto (`Mailer::layout`), un HTML per ognuna in `prove/email/`.
+- Registrazione: email ripetuta, password di almeno 10 caratteri e fuori dalle 1.000 più comuni, «Mostra», conferma dell'email prima della guida («Controlla la tua email» con Rimanda e Ho sbagliato indirizzo), aiuto sotto gli errori.
+- «Aiuto» nella barra laterale e «Problema / Suggerimento» sotto ogni sezione.
+- Richiami nuovi: conferma (24 e 72 ore), pagamento (annullato da 2 ore), parere (14 giorni, «Cosa ti ha fermato?» con risposta a un clic, in scheda cliente e in Prospetti).
+
 ## v2 · Correzione: il sito non si apriva dopo l'aggiornamento (10 ottobre 2026)
 
 - **Causa:** la migrazione `028` (listino 2026) apre una transazione dentro quella che il Migrator apre già con `BEGIN IMMEDIATE`. Con PHP 8.4 PDO se ne accorge; con PHP 8.1–8.3 (quello di molti hosting) no, e SQLite rifiuta la seconda: la migrazione falliva a ogni richiesta e ogni pagina mostrava «Qualcosa non ha funzionato». Il database non era rovinato: resta fermo alla 027, con tutti i dati.

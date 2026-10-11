@@ -705,4 +705,27 @@
   };
   document.addEventListener('change', function (e) { if (e.target.name && document.querySelector('[data-campo-solo-con="' + e.target.name + '"]')) aggiorna(); });
   aggiorna();
+
+  // 7C · Recensioni: «Prova il link» segue quello che si scrive nel campo.
+  document.querySelectorAll('[data-prova-campo]').forEach(function (campo) {
+    var link = campo.closest('.recensione-scheda').querySelector('[data-prova-link]');
+    campo.addEventListener('input', function () {
+      var v = campo.value.trim(), ok = /^https?:\/\/\S+\.\S+/.test(v);
+      link.hidden = !ok; if (ok) link.href = v;
+    });
+  });
+  // 7C · Prenotazione diretta: l'anteprima della scheda dell'ospite e l'avviso «senza il link».
+  var dir = document.querySelector('.diretta');
+  if (dir) (function () {
+    var url = dir.querySelector('[data-diretta=url]'), cod = dir.querySelector('[data-diretta=codice]'), sc = dir.querySelector('[data-diretta=sconto]');
+    var off = dir.querySelector('[data-diretta-offerta]'), copia = dir.querySelector('[data-diretta-copia]'), avviso = dir.querySelector('[data-diretta-avviso]');
+    function aggiorna() {
+      var c = cod.value.replace(/\s+/g, ''), s = sc.value.trim().replace(/^[-\u2212]+/, '');
+      off.hidden = copia.hidden = c === '';
+      off.textContent = s !== '' ? '\u2212' + s + ' con il codice ' : 'Con il codice ';
+      var b = document.createElement('b'); b.textContent = c; off.appendChild(b);
+      avviso.hidden = !(c !== '' && url.value.trim() === '');
+    }
+    [url, cod, sc].forEach(function (x) { x.addEventListener('input', aggiorna); });
+  })();
 })();
