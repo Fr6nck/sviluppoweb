@@ -1641,26 +1641,26 @@ $cron();
 prova('7A · conferma: rispetta «non mandarmene più»', count($posta('vera.giusta@prova.test')) === $prima + 1 && (bool) val("SELECT id FROM email_optout WHERE account_id = ? AND kind = 'conferma'", [$vacc]));
 
 db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
-$paola = new Browser('paola');
-$paola->get('/registrati?piano=' . pv('plus'));
-$paola->post('/registrati', ['piano' => pv('plus'), 'name' => 'Paola Pagamento', 'email' => 'paola@prova.test', 'password' => 'PaolaProva123', 'termini' => '1']);
-$paola->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Paola', 'city' => 'Spello']);
-$papid = (int) val("SELECT id FROM properties WHERE name = 'Casa Paola'");
-$paacc = (int) val('SELECT account_id FROM properties WHERE id = ?', [$papid]);
+$pina = new Browser('pina');
+$pina->get('/registrati?piano=' . pv('plus'));
+$pina->post('/registrati', ['piano' => pv('plus'), 'name' => 'Pina Pagamento', 'email' => 'pina@prova.test', 'password' => 'PaolaProva123', 'termini' => '1']);
+$pina->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Pina', 'city' => 'Spello']);
+$pipid = (int) val("SELECT id FROM properties WHERE name = 'Casa Pina'");
+$piacc7 = (int) val('SELECT account_id FROM properties WHERE id = ?', [$pipid]);
 db()->prepare("INSERT INTO orders (account_id, package_version_id, amount_cents, currency, status, provider, provider_session_id, created_at, property_id, updated_at, quantity, kind)
-               VALUES (?, ?, 11700, 'EUR', 'canceled', 'stripe', '', ?, ?, ?, 1, 'new')")->execute([$paacc, pv('plus'), $ieri(1), $papid, $ieri(1)]);
+               VALUES (?, ?, 11700, 'EUR', 'canceled', 'stripe', '', ?, ?, ?, 1, 'new')")->execute([$piacc7, pv('plus'), $ieri(1), $pipid, $ieri(1)]);
 $cron();
-prova('7A · pagamento: annullato da meno di 2 ore, ancora niente', !array_filter($posta('paola@prova.test'), fn($x) => str_contains((string) $x['subject'], 'pronta per andare online')));
-db()->prepare('UPDATE orders SET created_at = ? WHERE account_id = ?')->execute([$ieri(3), $paacc]);
-$cron(); $m = $posta('paola@prova.test'); $ult = end($m) ?: [];
+prova('7A · pagamento: annullato da meno di 2 ore, ancora niente', !array_filter($posta('pina@prova.test'), fn($x) => str_contains((string) $x['subject'], 'pronta per andare online')));
+db()->prepare('UPDATE orders SET created_at = ? WHERE account_id = ?')->execute([$ieri(3), $piacc7]);
+$cron(); $m = $posta('pina@prova.test'); $ult = end($m) ?: [];
 prova('7A · pagamento: dopo 2 ore «La tua guida è pronta per andare online» con piano, prezzo e bottone', str_contains((string) ($ult['subject'] ?? ''), 'La tua guida è pronta per andare online')
-      && str_contains((string) $ult['text'], 'Plus') && str_contains((string) $ult['text'], "117\u{00A0}€ + IVA / anno") && str_contains((string) $ult['text'], "/pannello/$papid/procedura/pubblica"));
-$prima = count($posta('paola@prova.test')); $cron();
-prova('…una volta sola', count($posta('paola@prova.test')) === $prima);
-db()->prepare("INSERT INTO email_optout (account_id, kind, created_at) VALUES (?, 'pagamento', ?)")->execute([$paacc, $ieri(0)]);
-db()->prepare("DELETE FROM email_log WHERE account_id = ? AND kind = 'pagamento'")->execute([$paacc]);
+      && str_contains((string) $ult['text'], 'Plus') && str_contains((string) $ult['text'], "117\u{00A0}€ + IVA / anno") && str_contains((string) $ult['text'], "/pannello/$pipid/procedura/pubblica"));
+$prima = count($posta('pina@prova.test')); $cron();
+prova('…una volta sola', count($posta('pina@prova.test')) === $prima);
+db()->prepare("INSERT INTO email_optout (account_id, kind, created_at) VALUES (?, 'pagamento', ?)")->execute([$piacc7, $ieri(0)]);
+db()->prepare("DELETE FROM email_log WHERE account_id = ? AND kind = 'pagamento'")->execute([$piacc7]);
 $cron();
-prova('7A · pagamento: rispetta «non mandarmene più»', count($posta('paola@prova.test')) === $prima);
+prova('7A · pagamento: rispetta «non mandarmene più»', count($posta('pina@prova.test')) === $prima);
 
 $piero = new Browser('piero');
 $piero->get('/registrati');
@@ -2444,7 +2444,7 @@ prova('«Prova la connessione» con Stripe: la chiave risponde (modalità di pro
 $r = $admin->segui($admin->post('/admin/impostazioni/archivio/prova', []));
 prova('…con il bucket: scrittura, lettura e cancellazione', str_contains($r['body'], 'Il bucket risponde'));
 $r = $admin->segui($admin->post('/admin/impostazioni/posta/prova', []));
-prova('…con la posta: in modalità prova l\'email finisce in mail.log', str_contains($r['body'], 'mail.log') && str_contains((string) @file_get_contents($DOVE . '/app/storage/logs/mail.log'), 'Prova della posta di MyHouse Welcome'));
+prova('…con la posta: in modalità prova l\'email finisce in mail.log', str_contains($r['body'], 'mail.log') && str_contains((string) @file_get_contents($DOVE . '/app/storage/logs/mail.log'), 'Prova della posta — MyHouse Welcome'));
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
 
 // ================================================================= PUNTO 5
