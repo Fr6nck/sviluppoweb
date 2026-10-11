@@ -61,7 +61,7 @@ if (!empty($domande)) {
     $lingua = locale();
     $voci   = [];
     foreach ($domande as $d) {
-        $risposta = str_replace('{dc}', t('common.to_confirm'), (string) ($d['a'][$lingua] ?? $d['a']['it'] ?? ''));
+        $risposta = str_replace('{dc}', t('common.to_confirm'), testoFaq((string) ($d['a'][$lingua] ?? $d['a']['it'] ?? ''), $lingua));
         $voci[]   = [
             '@type'          => 'Question',
             'name'           => (string) ($d['q'][$lingua] ?? $d['q']['it'] ?? ''),

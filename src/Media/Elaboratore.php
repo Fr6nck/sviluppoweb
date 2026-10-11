@@ -30,7 +30,7 @@ final class Elaboratore
     public const FORMATI = [
         '4x3'  => [1200, 800, 140],
         '3x2'  => [1400, 900, 160],
-        '16x9' => [1600, 900, 260],
+        '16x9' => [2200, 900, 380],   // l'apertura della home è quasi a tutto schermo
         '1x1'  => [1000, 700, 120],
         '3x4'  => [1400, 900, 200],
     ];

@@ -64,6 +64,6 @@ $modoTastiera = match ($campo['type']) {
     <p class="adm-aiuto" id="<?= e($id) ?>-aiuto"><?= e($aiuto) ?></p>
   <?php endif; ?>
   <?php if ($campo['type'] !== 'bool' && ($valore === null || $valore === '' || (is_array($valore) && array_filter($valore, static fn ($x) => $x !== null && $x !== '') === []))): ?>
-    <p class="adm-dc">Vuoto: sul sito compare «da confermare».</p>
+    <p class="adm-dc">Vuoto: sul sito non compare, o compare «da confermare».</p>
   <?php endif; ?>
 </div>

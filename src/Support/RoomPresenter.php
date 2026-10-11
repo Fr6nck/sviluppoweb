@@ -49,16 +49,23 @@ final class RoomPresenter
     }
 
     /**
-     * L'esposizione. Dove la fotografia mostra il campanile dalla finestra
-     * non c'è niente da confermare: si vede.
+     * L'esposizione: le camere che non guardano su Piazza San Rufino guardano
+     * sui vicoli di Assisi (indicazione del titolare, ottobre 2026). Una
+     * camera senza vista impostata è quindi «sui vicoli», mai «da confermare».
      *
      * @param array<string,mixed> $room
      */
-    public static function viewLabel(array $room): ?string
+    public static function viewLabel(array $room): string
     {
         $vista = $room['view'] ?? null;
 
-        return is_string($vista) && $vista !== '' ? t('views.' . $vista) : null;
+        return t('views.' . (is_string($vista) && $vista !== '' && $vista !== 'demo' ? $vista : 'vicoli'));
+    }
+
+    /** @param array<string,mixed> $room */
+    public static function hasPiazzaView(array $room): bool
+    {
+        return ($room['view'] ?? null) === 'piazza';
     }
 
     /** @param array<string,mixed> $room */

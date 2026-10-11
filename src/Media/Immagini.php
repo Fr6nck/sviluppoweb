@@ -85,7 +85,7 @@ final class Immagini
                     : 'In apertura della home, a tutta larghezza.',
                 'tipo' => 'foto', 'rapporti' => ['16x9'], 'predefinita' => $predefinita ?? $this->cameraConVista(),
                 'lato' => 900, 'didascalia' => $didascalia, 'alt' => $alt,
-                'consiglio' => 'Orizzontale, almeno 1600 px di larghezza. Il sito la taglia in 16:9 tenendo il centro.',
+                'consiglio' => 'Orizzontale, almeno 2200 px di larghezza. Il sito la taglia in 16:9; poi scegli tu l’inquadratura, qui sotto.',
             ];
         }
 
@@ -129,6 +129,75 @@ final class Immagini
         }
 
         return $posti;
+    }
+
+    // ============================================================ l'inquadratura
+
+    public const ARCHIVIO_INQUADRATURE = 'inquadrature';
+
+    /**
+     * Le foto di cui si sceglie l'inquadratura: quelle dell'apertura della
+     * home, che sul computer sono quasi a tutto schermo e sul telefono
+     * diventano verticali — lì il centro della foto non basta.
+     */
+    public function inquadrabile(string $chiave): bool
+    {
+        return str_starts_with($chiave, 'home.foto-') && $this->posto($chiave) !== null;
+    }
+
+    /**
+     * Punto di fuoco (in percentuale) e ingrandimento, per computer e telefono.
+     *
+     * @return array{x:float,y:float,z:float,mx:float,my:float,mz:float,salvata:bool}
+     */
+    public function inquadratura(string $chiave): array
+    {
+        // La terza foto, la basilica, di partenza guarda un po' più in alto.
+        $y = $chiave === 'home.foto-3' && $this->registrata($chiave) === null ? 38.0 : 60.0;
+        $base = ['x' => 50.0, 'y' => $y, 'z' => 1.0, 'mx' => 50.0, 'my' => $y, 'mz' => 1.0];
+        $salvata = $this->store->read(self::ARCHIVIO_INQUADRATURE)[$chiave] ?? null;
+        if (!is_array($salvata)) {
+            return $base + ['salvata' => false];
+        }
+        foreach ($base as $k => $v) {
+            if (isset($salvata[$k]) && is_numeric($salvata[$k])) {
+                $base[$k] = (float) $salvata[$k];
+            }
+        }
+
+        return $base + ['salvata' => true];
+    }
+
+    /**
+     * Salva l'inquadratura, o la toglie con null. I valori fuori misura si
+     * riportano dentro: 0–100 per il punto, 1–2,5 per l'ingrandimento.
+     *
+     * @param array<string,mixed>|null $valori
+     */
+    public function salvaInquadratura(string $chiave, ?array $valori): void
+    {
+        $this->store->update(self::ARCHIVIO_INQUADRATURE, static function (array $tutte) use ($chiave, $valori): array {
+            if ($valori === null) {
+                unset($tutte[$chiave]);
+                return $tutte;
+            }
+            // Dal modulo arriva testo: un valore che non è un numero vale quello di partenza.
+            $numero = static function (mixed $v, float $predefinito): float {
+                $v = is_scalar($v) ? str_replace(',', '.', trim((string) $v)) : '';
+
+                return is_numeric($v) && is_finite((float) $v) ? (float) $v : $predefinito;
+            };
+            $pulito = [];
+            foreach (['x', 'y', 'mx', 'my'] as $k) {
+                $pulito[$k] = round(max(0.0, min(100.0, $numero($valori[$k] ?? null, 50.0))), 1);
+            }
+            foreach (['z', 'mz'] as $k) {
+                $pulito[$k] = round(max(1.0, min(2.5, $numero($valori[$k] ?? null, 1.0))), 2);
+            }
+            $tutte[$chiave] = $pulito;
+
+            return $tutte;
+        }, true);
     }
 
     /** @return array<string,mixed>|null */

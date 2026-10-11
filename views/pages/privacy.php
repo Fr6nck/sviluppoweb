@@ -27,6 +27,8 @@ $daSegnare = ['who', 'how_long'];   // i punti che il titolare deve completare
 
   <div class="adv-pannello adv-spazio-sopra">
     <?php foreach ($blocchi as $chiave => $blocco): ?>
+      <?php /* Il paragrafo sul pagamento online solo se il pagamento online c'è. */
+            if ($chiave === 'payment' && !\ArcoDelVento\App::instance()->pagamentoAttivo()) { continue; } ?>
       <div class="adv-blocco-testo">
         <h2 class="adv-titolo adv-titolo--s"><?= e($blocco['title']) ?></h2>
         <p class="adv-testo"><?= e($blocco['text']) ?></p>

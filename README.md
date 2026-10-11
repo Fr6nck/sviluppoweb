@@ -513,17 +513,15 @@ nell'informativa privacy.
 
 ## Contenuti da confermare
 
-Il sito non inventa: dove un dato manca lo marca `[da confermare]` e lo mostra
-così all'ospite. Dopo l'intervista al titolare la lista si è accorciata molto
-— restano diciannove campi vuoti su settantotto.
+Il sito non inventa. Dove un dato manca, dal 12 ottobre 2026 la riga
+semplicemente non si mostra — Informazioni, scheda della camera — invece di
+dire «da confermare» a un ospite; il marcatore `[da confermare]` resta solo in
+fondo alla pagina (dati di legge), nei due punti della privacy che il titolare
+deve completare e nelle condizioni di cancellazione mentre non sono scritte.
 
 **Servono per obbligo di legge**:
 
-- **CIN** — il Codice Identificativo Nazionale. Va esposto nel sito e negli
-  annunci: senza, la sanzione parte da 800 €. È il buco più grave. Compare in
-  fondo a ogni pagina come `CIN [da confermare]` accanto alla partita IVA, che
-  invece c'è (03323290548).
-- CIR e REA, se la struttura ne ha
+- CIR e REA, se la struttura ne ha (il **CIN** c'è: IT054001B403008749)
 - il CAP di via Santa Maria delle Rose
 - il testo completo dell'informativa privacy: tempi di conservazione,
   responsabile del trattamento, destinatari dei dati
@@ -537,21 +535,28 @@ niente.
 
 **Servono per primi** — l'ospite li cerca prima di prenotare:
 
-- **orario di check-out**: il check-in è confermato (13:00–20:00, di persona),
-  il check-out no
-- **pagamento, caparra e disdetta**: come si paga, se serve un anticipo, entro
-  quando si annulla senza penale
-- **politica sui bambini**: culle, letti aggiunti, sconti per età
-- **pulizia e cambio biancheria** durante il soggiorno
+- **condizioni di cancellazione**: con il pagamento online sono obbligatorie.
+  Si scrivono nell'area riservata (La struttura → Condizioni di
+  cancellazione); finché mancano il controllo finale non lascia aprire il
+  pagamento. Il pagamento è deciso: tutto online con SumUp, al momento della
+  prenotazione, nessuna caparra.
+- **culle e letti aggiunti** (i bambini sono benvenuti, e sotto l'età di
+  esenzione non pagano la tassa di soggiorno: la riga c'è già)
 - **lingue parlate** dal titolare
 - di quanto sale il soggiorno minimo nei tre periodi di punta
+
+Check-out (10:30), coordinate della casa, tempi a piedi e parcheggio (Piazza
+Matteotti, a pagamento, con il link al sito del gestore invece di un prezzo
+scritto a mano) sono stati confermati a ottobre 2026.
 
 **Servono per la pagina camere**:
 
 - **la fotografia della Camera 01**, la tripla: è la più cara del listino, è
   quella con la vista, ed è l'unica rimasta senza. Il posto è pronto e la
   scheda è completa in tutto il resto.
-- metratura ed esposizione di ciascuna camera (il piano è confermato: secondo)
+- la metratura di ciascuna camera: finché non è scritta nell'area riservata la
+  riga non compare. L'esposizione c'è: le camere che non guardano su Piazza
+  San Rufino stanno «sui vicoli di Assisi».
 - i due scatti che risultano inviati ma non arrivati sul disco:
   `san-rufino-finestra` e `piazza-san-rufino`
 
@@ -559,17 +564,11 @@ niente.
 
 **Utili**:
 
-- coordinate della casa per la mappa (`geo.latitude`, `geo.longitude`)
-- i **tempi a piedi verificati** verso i sei luoghi. Assisi è in salita: una
-  stima piatta presa da una mappa sottostima il percorso, quindi restano vuoti
-  finché qualcuno non li cammina.
 - il **numero e il voto delle recensioni** Booking e Google, che il titolare
   ha dato per «in verifica». Si inseriscono dall'area riservata, sezione «La
   struttura», appena verificati; fino ad allora il blocco non compare:
   meglio assente che approssimato.
 - profili Instagram e Facebook, se esistono
-- prezzo e distanza del parcheggio di via dell'Eremo (quello di piazza
-  Matteotti è confermato: circa 18 € per 24 ore, 200 m)
 
 ---
 

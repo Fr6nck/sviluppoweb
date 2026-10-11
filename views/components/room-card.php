@@ -24,8 +24,11 @@ $href    = R::href($camera, $lingua);
 $massimo = (int) ($camera['occupancy']['max'] ?? 1);
 $vista   = R::viewLabel($camera);
 $tariffa = R::fromRate($camera);
+// Compatta: la scheda della home, dove le cinque camere stanno in una sola
+// schermata. Solo fotografia, nome, tipologia, letti, ospiti e vista.
+$compatta = !empty($compatta);
 ?>
-<article class="adv-camera">
+<article class="adv-camera<?= $compatta ? ' adv-camera--compatta' : '' ?>">
 
   <?php /* La fotografia porta alla camera come il nome, ma fuori dal giro del
            tabulatore: da tastiera il link è uno solo, quello del titolo. */ ?>
@@ -64,6 +67,7 @@ $tariffa = R::fromRate($camera);
             : te('rooms.card.guests_up_to', ['count' => $massimo]) ?></li>
     </ul>
 
+    <?php if (!$compatta): ?>
     <p class="adv-camera__testo"><?= e(R::amenitiesLine($camera, 3)) ?></p>
 
     <div class="adv-camera__piede">
@@ -98,5 +102,6 @@ $tariffa = R::fromRate($camera);
     <?php if (!empty($azione)): ?>
       <div class="adv-camera__azione"><?= $azione ?></div>
     <?php endif; ?>
+    <?php endif; /* !$compatta */ ?>
   </div>
 </article>

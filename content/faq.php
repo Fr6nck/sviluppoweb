@@ -6,7 +6,10 @@
  * un'etichetta di interfaccia, e un cliente che la aggiorna vuole vedere
  * domanda e risposta vicine nelle due lingue.
  *
- * Il segno «{dc}» viene sostituito dal marcatore «da confermare». Lo stesso
+ * I segni fra graffe li riempie il sito con i dati della struttura, così un
+ * orario cambiato nell'area riservata cambia anche qui: {checkout} è l'orario
+ * di check-out, {checkin} la fascia di arrivo. Il segno «{dc}» viene
+ * sostituito dal marcatore «da confermare». Lo stesso
  * testo alimenta il markup e il JSON-LD di schema.org/FAQPage, così la pagina
  * e il dato strutturato dicono la stessa cosa — che è la sola versione che
  * Google accetta.
@@ -47,18 +50,18 @@ return [
     ],
     [
         'id'        => 'check-in',
-        'confirmed' => false,
+        'confirmed' => true,
         'q' => [
             'it' => 'A che ora possiamo arrivare?',
             'en' => 'What time can we arrive?',
         ],
         'a' => [
-            'it' => 'Dalle 13:00 alle 20:00, e ti accoglie Daniele in persona: non c’è una cassetta con '
-                  . 'le chiavi. Se il tuo treno o il tuo volo arrivano fuori da quella fascia, scrivilo '
-                  . 'quando prenoti invece che il giorno stesso. L’orario di check-out è {dc}.',
-            'en' => 'Between 13:00 and 20:00, and Daniele meets you himself: there is no key box. If your '
-                  . 'train or flight gets in outside that window, say so when you book rather than on the '
-                  . 'day. The check-out time is {dc}.',
+            'it' => 'Dalle {checkin}, e ti accoglie Daniele in persona per consegnarti le chiavi. Se il tuo '
+                  . 'treno o il tuo volo arrivano fuori da quella fascia, scrivilo quando prenoti: si trova '
+                  . 'sempre una soluzione. Il check-out è entro le {checkout}.',
+            'en' => 'From {checkin}, and Daniele meets you himself to hand over the keys. If your train or '
+                  . 'flight gets in outside that window, say so when you book: there is always a way. '
+                  . 'Check-out is by {checkout}.',
         ],
     ],
     [
@@ -69,14 +72,12 @@ return [
             'en' => 'Where do we leave the car?',
         ],
         'a' => [
-            'it' => 'In auto non si arriva fino alla porta. Il parcheggio più comodo è Piazza Matteotti, a '
-                  . 'pagamento — circa 18 € per 24 ore — a duecento metri da casa; in alternativa si lascia '
-                  . 'gratis in via dell’Eremo, verso la Porta dei Cappuccini. L’ultimo tratto si fa a piedi, '
-                  . 'quindi conviene una valigia che si porti su qualche scalino.',
-            'en' => 'You cannot drive to the door. The handiest car park is Piazza Matteotti — paid, about '
-                  . '€18 per 24 hours — two hundred metres from the house; otherwise you can park free in '
-                  . 'via dell’Eremo, towards Porta dei Cappuccini. The last stretch is on foot, so pack a '
-                  . 'case you do not mind carrying up a few steps.',
+            'it' => 'In auto non si arriva fino alla porta: si parcheggia in Piazza Matteotti, a pagamento, '
+                  . 'a circa duecento metri da casa. Tariffe e orari aggiornati sono sul sito del gestore, '
+                  . 'nelle informazioni pratiche. L’ultimo tratto si fa a piedi, con qualche scalino.',
+            'en' => 'You cannot drive to the door: you park in Piazza Matteotti, a paid car park about two '
+                  . 'hundred metres from the house. Current prices and hours are on the operator’s website, '
+                  . 'linked in the practical information. The last stretch is on foot, up a few steps.',
         ],
     ],
     [
@@ -87,12 +88,12 @@ return [
             'en' => 'Are there stairs? Is there a lift?',
         ],
         'a' => [
-            'it' => 'Le camere sono al secondo piano e l’ascensore non c’è. Si salgono due rampe: una decina '
-                  . 'di scalini, poi altri tre. Non è una salita lunga, ma va saputa prima da chi ha una '
-                  . 'valigia pesante o un ginocchio che non collabora.',
-            'en' => 'The rooms are on the second floor and there is no lift. It is two flights: about ten '
-                  . 'steps, then three more. It is not a long climb, but it is worth knowing in advance if '
-                  . 'you have a heavy suitcase or an uncooperative knee.',
+            'it' => 'Le camere sono al secondo piano e l’ascensore non c’è: si salgono due rampe, una decina '
+                  . 'di scalini e poi altri tre. Non è una salita lunga, ma è bene saperlo se si viaggia con '
+                  . 'valigie pesanti.',
+            'en' => 'The rooms are on the second floor and there is no lift: two flights, about ten steps '
+                  . 'and then three more. It is not a long climb, but worth knowing if you travel with heavy '
+                  . 'luggage.',
         ],
     ],
     [
@@ -103,13 +104,11 @@ return [
             'en' => 'Is breakfast included?',
         ],
         'a' => [
-            'it' => 'No, e non c’è nemmeno servita a parte: Arco del Vento è un affittacamere, non dà pasti. '
-                  . 'In camera trovi un bollitore, e a pochi passi ci sono i bar del centro. Lo diciamo qui '
-                  . 'perché è una cosa da sapere prima di prenotare, non da scoprire la mattina.',
-            'en' => 'No, and it is not available separately either: Arco del Vento rents rooms and does not '
-                  . 'serve meals. There is a kettle in the room, and the cafés of the old town are a few '
-                  . 'steps away. We say so here because it is something to know before booking, not to '
-                  . 'discover in the morning.',
+            'it' => 'No: Arco del Vento è un affittacamere e non serve pasti. In camera trovi un bollitore, '
+                  . 'e i bar del centro storico sono a pochi passi: Daniele ti dice volentieri i suoi preferiti.',
+            'en' => 'No: Arco del Vento rents rooms and does not serve meals. There is a kettle in the room, '
+                  . 'and the cafés of the old town are a few steps away: Daniele will gladly tell you his '
+                  . 'favourites.',
         ],
     ],
 ];

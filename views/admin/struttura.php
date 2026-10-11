@@ -9,7 +9,7 @@ use ArcoDelVento\Admin\Form;
 use ArcoDelVento\Support\Csrf;
 ?>
 <p class="adm-intro">I dati della casa che compaiono sul sito: contatti, orari, regole, obblighi di legge.
-   Un campo vuoto sul sito diventa «da confermare»: meglio vuoto che sbagliato.</p>
+   Un campo vuoto sul sito non compare, o diventa «da confermare»: meglio vuoto che sbagliato.</p>
 
 <form method="post" action="<?= e(adminUrl('struttura')) ?>" class="adm-modulo" novalidate>
   <?= Csrf::field() ?>

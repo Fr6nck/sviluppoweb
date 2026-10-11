@@ -730,3 +730,97 @@ td .adm-dc, span.adm-dc { margin: 0; }
 .adm--sipario .adm-fuori__scheda { box-shadow: 0 30px 80px -30px rgb(51 29 24 / .55); }
 .adm--sipario .adm-fuori__piede a { padding: 6px 14px; border-radius: 999px; background: var(--a-carta); color: var(--a-testo); text-decoration: none; }
 .adm--sipario .adm-fuori__piede a:hover { text-decoration: underline; }
+
+/* ======================================== testi: famiglie, ricerca, editor */
+.adm-stato--accento { background: var(--a-accento-tenue); color: var(--a-accento-testo); margin-left: 8px; font-size: 12px; font-weight: 600; }
+
+.adm-cerca-testi { max-width: 720px; margin: 0 0 28px; }
+.adm-cerca-testi label { display: block; margin-bottom: 8px; font-weight: 600; }
+.adm-cerca-testi__riga { display: flex; gap: 10px; }
+.adm-cerca-testi__riga input { flex: 1 1 auto; }
+.adm-risultati { margin: -8px 0 32px; padding: 18px 20px; border: 1px solid var(--a-bordo); border-radius: 16px; background: var(--a-carta); }
+.adm-risultati__titolo { margin: 0 0 10px; font-size: 15px; }
+.adm-risultati__lista { list-style: none; margin: 0; padding: 0; }
+.adm-risultati__lista li + li { border-top: 1px solid var(--a-bordo); }
+.adm-risultati__lista a { display: flex; flex-direction: column; gap: 3px; padding: 11px 4px; color: var(--a-testo); text-decoration: none; }
+.adm-risultati__lista a:hover .adm-risultati__testo { text-decoration: underline; }
+.adm-risultati__dove { font-size: 12.5px; font-weight: 600; color: var(--a-accento-testo); }
+.adm-risultati__testo { color: var(--a-tenue); }
+
+.adm-famiglia { margin: 0 0 34px; }
+.adm-famiglia__titolo { margin: 0 0 4px; font-family: var(--font-display); font-size: 22px; font-weight: 400; }
+.adm-famiglia__nota { margin: 0 0 14px; color: var(--a-tenue); }
+.adm-famiglia--servizio .adm-sezioni li { box-shadow: none; background: transparent; }
+.adm-sezioni__descrizione { color: var(--a-testo); font-size: 14px; line-height: 1.45; }
+.adm-sezioni__modificati { color: var(--a-accento-testo); font-weight: 600; }
+
+/* L'editor: campi a sinistra, anteprima a destra quando c'è spazio. */
+.adm-editor { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; align-items: start; }
+.adm-editor--con-anteprima { grid-template-columns: minmax(420px, 1fr) minmax(0, 1.05fr); }
+.adm-editor__barra { position: sticky; top: 0; z-index: 6; display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+                     margin: 0 0 18px; padding: 10px 0; background: var(--a-tela); }
+.adm-editor__etichetta { margin-right: 4px; font-size: 13px; font-weight: 600; color: var(--a-tenue); }
+.adm .adm-pillola { min-height: 36px; padding: 0 14px; border: 1px solid var(--a-bordo-forte); border-radius: 999px; background: var(--a-carta);
+                    color: var(--a-testo); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.adm .adm-pillola[aria-pressed="true"] { border-color: var(--a-accento); background: var(--a-accento); color: #fff; }
+
+.adm-editor[data-lingua="it"] .adm-lingua:not([data-lingua="it"]),
+.adm-editor[data-lingua="en"] .adm-lingua:not([data-lingua="en"]),
+.adm-editor[data-lingua="es"] .adm-lingua:not([data-lingua="es"]) { display: none; }
+.adm-editor:not([data-lingua="tutte"]) .adm-lingua { grid-template-columns: minmax(0, 1fr); }
+.adm-editor:not([data-lingua="tutte"]) .adm-lingua > label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.adm-editor:not([data-lingua="tutte"]) .adm-lingua .adm-originale { grid-column: 1; }
+
+.adm-livello { margin: 0 0 22px; }
+.adm-livello__titolo { margin: 0; font-family: var(--font-display); font-size: 21px; font-weight: 400; }
+.adm-livello__nota { display: block; margin: 4px 0 14px; color: var(--a-tenue); font-size: 14px; }
+.adm-livello--chiuso { padding: 6px 20px 4px; border: 1px solid var(--a-bordo); border-radius: 16px; background: var(--a-tela-2, var(--a-carta)); }
+.adm-livello--chiuso > summary { padding: 12px 0 2px; cursor: pointer; list-style-position: outside; }
+.adm-livello--chiuso > summary .adm-livello__nota { margin-bottom: 8px; }
+.adm-livello--chiuso[open] > summary { margin-bottom: 8px; }
+
+.adm-blocco { margin: 0 0 18px; }
+.adm-blocco__titolo { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; font-size: 12.5px; font-weight: 700;
+                      letter-spacing: .08em; text-transform: uppercase; color: var(--a-accento-testo); }
+.adm-blocco__titolo::after { content: ""; flex: 1 1 auto; height: 1px; background: var(--a-bordo); }
+
+.adm-testo { scroll-margin-top: 80px; transition: box-shadow .2s, border-color .2s; }
+.adm-testo.is-attivo { border-color: var(--a-accento) !important; box-shadow: 0 0 0 3px var(--a-accento-tenue), var(--a-ombra); }
+.adm-testo legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.adm .adm-testo__trova { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 4px 10px; border: 1px solid var(--a-bordo);
+                         border-radius: 999px; background: transparent; color: var(--a-tenue); font: inherit; font-size: 12.5px; cursor: pointer; }
+.adm .adm-testo__trova:hover { border-color: var(--a-accento-chiaro); color: var(--a-accento-testo); }
+.adm-testo__trova.is-assente { opacity: .55; }
+.adm-testo__chiave { margin: 0 0 4px; font: 11.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--a-segnaposto); text-align: right; }
+
+.adm-editor__anteprima { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 10px; height: calc(100vh - 32px);
+                         padding: 12px; border: 1px solid var(--a-bordo); border-radius: 18px; background: var(--a-carta); box-shadow: var(--a-ombra); }
+.adm-anteprima__barra { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.adm-anteprima__comandi { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.adm-anteprima__schermo { position: relative; flex: 1 1 auto; overflow: hidden; border: 1px solid var(--a-bordo); border-radius: 12px; background: #f8f1e3; }
+.adm-anteprima__schermo iframe { position: absolute; top: 0; left: 0; width: 1280px; height: 100%; border: 0; transform-origin: 0 0; }
+.adm-anteprima__schermo.is-telefono { display: flex; justify-content: center; background: var(--a-tela); }
+.adm-anteprima__schermo.is-telefono iframe { position: relative; width: 390px; max-width: 100%; transform: none !important; border-inline: 1px solid var(--a-bordo); }
+.adm-anteprima__nota { margin: 0; color: var(--a-tenue); font-size: 12.5px; line-height: 1.45; }
+
+@media (max-width: 1180px) {
+  .adm-editor--con-anteprima { grid-template-columns: minmax(0, 1fr); }
+  .adm-editor__anteprima { display: none !important; }
+}
+
+/* ------------------------------------------------ l'inquadratura delle foto */
+.adm-inquadra__griglia { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(200px, 1fr); gap: 24px; align-items: start; margin-bottom: 8px; }
+.adm-inquadra__nome { margin: 0 0 8px; font-size: 14px; }
+.adm-inquadra__cornice { position: relative; overflow: hidden; border: 1px solid var(--a-bordo-forte); border-radius: 14px; background: var(--a-tela);
+                         cursor: grab; touch-action: none; user-select: none; }
+.adm-inquadra__cornice:active { cursor: grabbing; }
+.adm-inquadra__cornice:focus-visible { outline: 3px solid var(--a-accento); outline-offset: 3px; }
+.adm-inquadra__cornice--computer { aspect-ratio: 1440 / 860; }
+.adm-inquadra__cornice--telefono { aspect-ratio: 390 / 640; max-width: 260px; }
+.adm-inquadra__cornice img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.adm-inquadra__mirino { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border: 2px solid #fff; border-radius: 50%;
+                        box-shadow: 0 0 0 1px rgb(0 0 0 / .35); pointer-events: none; }
+.adm-inquadra__comandi { display: grid; gap: 6px; margin-top: 12px; }
+.adm-inquadra__comandi label { display: grid; grid-template-columns: 110px minmax(0, 1fr); align-items: center; gap: 10px; font-size: 13.5px; color: var(--a-tenue); }
+.adm-inquadra__comandi input[type="range"] { width: 100%; accent-color: var(--a-accento); }
+@media (max-width: 960px) { .adm-inquadra__griglia { grid-template-columns: minmax(0, 1fr); } }

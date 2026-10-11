@@ -11,7 +11,8 @@ $righe   = $voci;
 $righe[] = ['id' => '', 'confirmed' => true, 'q' => [], 'a' => [], 'nuova' => true];
 ?>
 <p class="adm-intro">Le domande compaiono nella pagina Informazioni e nella home, e Google le legge come domande frequenti.
-   Nella risposta, <code>{dc}</code> diventa il segno «da confermare».</p>
+   Nella risposta puoi scrivere <code>{checkout}</code> e <code>{checkin}</code>: il sito ci mette gli orari di
+   <a href="<?= e(adminUrl('struttura')) ?>">La struttura</a>, così cambiandoli lì cambiano anche qui.</p>
 
 <form method="post" action="<?= e(adminUrl('domande')) ?>" class="adm-modulo" novalidate>
   <?= Csrf::field() ?>

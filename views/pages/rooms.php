@@ -41,12 +41,6 @@ $corridoio = immagine('pagine.corridoio');
       'id'        => 'titolo-elenco',
   ]) ?>
 
-  <?= component('alert', [
-      'tipo'   => 'info',
-      'titolo' => t('rooms.demo_notice_title'),
-      'testo'  => t('rooms.demo_notice_text'),
-  ]) ?>
-
   <ul class="adv-griglia-camere adv-spazio-sopra">
     <?php foreach ($camere as $camera): ?>
       <li><?= component('room-card', ['camera' => $camera]) ?></li>

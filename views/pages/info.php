@@ -38,10 +38,15 @@ $riga = static function (string $chiave, mixed $valore, ?string $etichetta = nul
         $valore = (string) $valore;
     }
 
+    // Un dato che non c'è non si mostra: meglio una riga in meno che un
+    // «da confermare» davanti a un ospite. Si compila dall'area riservata.
+    if ($valore === null || $valore === '') {
+        return;
+    }
     printf(
         '<div class="adv-fatti__riga"><dt>%s</dt><dd>%s</dd></div>',
         $etichetta !== null ? e($etichetta) : te('info.items.' . $chiave),
-        ($valore !== null && $valore !== '') ? e($valore) : daConfermare()
+        e($valore)
     );
 };
 ?>
@@ -82,8 +87,11 @@ $testa = static function (string $sezione, string $icona): string {
         $riga('documents', t('info.known.documents'));
         $riga('contact_hours', $contatti['hours']['from'] . '–' . $contatti['hours']['to']);
         $riga('min_nights', t('info.known.min_nights', ['nights' => (int) $scale['saturday']]));
-        // Il pagamento si sa quando è online; la disdetta quando è scritta
-        // nell'area riservata. Fino ad allora, «da confermare».
+        // Si paga tutto online con SumUp, prenotando: nessuna caparra. La riga
+        // compare quando il pagamento è acceso (PAYMENT_PROVIDER=sumup e le
+        // chiavi nel .env); finché non lo è, la prenotazione resta una
+        // richiesta e la riga non si mostra. La disdetta compare quando è
+        // scritta nell'area riservata (La struttura → Condizioni di cancellazione).
         $cancellazione = $stay['cancellation'] ?? null;
         $riga('payment', \ArcoDelVento\App::instance()->pagamentoAttivo() ? t('info.known.payment_online') : null);
         $riga('cancellation', is_array($cancellazione) ? (string) ($cancellazione[locale()] ?? '') : $cancellazione);
@@ -106,7 +114,7 @@ $testa = static function (string $sezione, string $icona): string {
         $riga('taxi', t('info.known.taxi', ['place' => site('navigation.by_car')]));
         ?>
       </dl>
-      <p class="adv-nota"><?= te('info.known.bus_note') ?> <?= daConfermare() ?></p>
+      <?= component('useful-links') ?>
     </section>
 
     <section class="adv-pannello" aria-labelledby="info-stay">
@@ -120,8 +128,6 @@ $testa = static function (string $sezione, string $icona): string {
         $riga('heating', $stay['heating']);
         $riga('air_conditioning', $stay['air_conditioning']);
         $riga('wifi', t('info.known.wifi', ['speed' => $stay['wifi_speed']]));
-        $riga('cleaning', null);
-        $riga('linen', null);
         $riga('city_tax', t('info.known.city_tax', [
             'amount' => euro((float) $tassa['amount']),
             'nights' => (int) $tassa['max_nights'],
@@ -154,7 +160,7 @@ $testa = static function (string $sezione, string $icona): string {
         $riga('smoking', t('info.known.no_smoking'));
         $riga('pets', $stay['pets']);
         $riga('guest_contact', t('info.known.guest_contact'));
-        $riga('children', null);
+        $riga('children', t('info.known.children', ['age' => (int) $tassa['exempt_under']]));
         ?>
       </dl>
       <p class="adv-nota"><?= te('info.known.remote_work') ?></p>

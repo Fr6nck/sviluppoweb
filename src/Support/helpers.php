@@ -112,6 +112,35 @@ function site(?string $key = null, mixed $default = null): mixed
 }
 
 /**
+ * Una risposta della FAQ con i dati della struttura al loro posto.
+ *
+ * {checkout} e {checkin} vengono dall'area riservata: un orario cambiato lì
+ * cambia anche nelle domande. Le domande salvate prima che esistessero questi
+ * segni dicevano «check-out è {dc}»: se l'orario adesso c'è, lo mettono loro.
+ * Quello che resta {dc} lo trasforma in marcatore chi stampa.
+ */
+function testoFaq(string $testo, ?string $lingua = null): string
+{
+    $lingua  = $lingua ?? locale();
+    $stay    = (array) site('stay', []);
+    $uscita  = (string) ($stay['check_out_by'] ?? '');
+    $da      = (string) ($stay['check_in_from'] ?? '');
+    $a       = (string) ($stay['check_in_to'] ?? '');
+    $arrivo  = $da !== '' && $a !== '' ? $da . ($lingua === 'it' ? ' alle ' : ' to ') . $a : '';
+
+    if ($uscita !== '') {
+        // Con una funzione e non con «${1}orario»: l'orario lo scrive il
+        // pannello, e un «$» o un «\» non devono diventare un riferimento.
+        $testo = preg_replace_callback('/(check-out[^{.]{0,40})\{dc\}/iu', static fn (array $m): string => $m[1] . $uscita, $testo) ?? $testo;
+    }
+
+    return strtr($testo, [
+        '{checkout}' => $uscita !== '' ? $uscita : '{dc}',
+        '{checkin}'  => $arrivo !== '' ? $arrivo : '{dc}',
+    ]);
+}
+
+/**
  * Un valore che il cliente non ha ancora confermato.
  *
  * Tutto ciò che il sito non sa per certo passa da qui, così non c'è modo di
@@ -271,6 +300,8 @@ function partial(string $name, array $data = []): string
 function icona(string $nome, int $misura = 16, string $classe = ''): string
 {
     static $tracciati = [
+        'occhio'     => ['<path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/>', '<circle cx="12" cy="12" r="3"/>'],
+        'mirino'     => ['<circle cx="12" cy="12" r="10"/>', '<path d="M22 12h-4"/>', '<path d="M6 12H2"/>', '<path d="M12 6V2"/>', '<path d="M12 22v-4"/>'],
         'pin'        => ['<path d="M20 10c0 4.99-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 14.99 4 10a8 8 0 0 1 16 0"/>', '<circle cx="12" cy="10" r="3"/>'],
         'freccia-su-destra' => ['<path d="M7 7h10v10"/>', '<path d="M7 17 17 7"/>'],
         'freccia-sinistra'  => ['<path d="m12 19-7-7 7-7"/>', '<path d="M19 12H5"/>'],
@@ -416,6 +447,28 @@ function immagineCredito(array $img, ?string $chiaveOriginale): ?string
     }
 
     return $chiaveOriginale !== null ? t($chiaveOriginale) : null;
+}
+
+/**
+ * Gli attributi con l'inquadratura scelta nell'area riservata per una foto
+ * dell'apertura: li legge site.js e li trasforma in variabili CSS. Vuoto se
+ * nessuno l'ha scelta, così vale quella di partenza del foglio di stile.
+ */
+function attributiInquadratura(string $posto): string
+{
+    $media = App::instance()->media();
+    if (!$media->inquadrabile($posto)) {
+        return '';
+    }
+    $q = $media->inquadratura($posto);
+    if (!$q['salvata']) {
+        return '';
+    }
+
+    return sprintf(
+        ' data-inquadratura data-fuoco-x="%s%%" data-fuoco-y="%s%%" data-zoom="%s" data-fuoco-mx="%s%%" data-fuoco-my="%s%%" data-zoom-m="%s"',
+        $q['x'], $q['y'], $q['z'], $q['mx'], $q['my'], $q['mz']
+    );
 }
 
 /** Se un file statico esiste davvero sotto public/assets/. */

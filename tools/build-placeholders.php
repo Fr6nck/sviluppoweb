@@ -83,7 +83,9 @@ $scritti = 0;
 // Le cinque camere: scheda, elenco, apertura e due di galleria.
 foreach (range(1, 5) as $n) {
     $due       = str_pad((string) $n, 2, '0', STR_PAD_LEFT);
-    $etichetta = 'FOTOGRAFIA DA FORNIRE';
+    // La Camera 01 è l'unica che il sito mostra ancora col segnaposto: davanti
+    // agli ospiti porta il nome della casa, non una nota di lavoro.
+    $etichetta = $n === 1 ? 'ARCO DEL VENTO' : 'FOTOGRAFIA DA FORNIRE';
 
     foreach (['4x3', '3x2', '16x9'] as $formato) {
         [$w, $h] = $formats[$formato];

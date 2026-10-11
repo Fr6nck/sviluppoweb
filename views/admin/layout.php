@@ -138,7 +138,7 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
       <?php if ($daCompletare > 0): ?>
         <p class="adm-promo__titolo">Da completare</p>
         <p class="adm-promo__testo"><strong><?= (int) $daCompletare ?></strong>
-          <?= $daCompletare === 1 ? 'dato manca' : 'dati mancano' ?> sul sito: lì compaiono come «da confermare».</p>
+          <?= $daCompletare === 1 ? 'dato manca' : 'dati mancano' ?> sul sito: lì non compaiono, o compaiono come «da confermare».</p>
         <a class="adm-promo__bottone" href="<?= e(adminUrl()) ?>#da-completare">Completa ora</a>
       <?php else: ?>
         <p class="adm-promo__titolo">Tutto completo</p>

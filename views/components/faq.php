@@ -22,7 +22,7 @@ $lingua = locale();
         <?php
         // Il segno {dc} diventa il marcatore «da confermare». Lo stesso testo
         // alimenta il JSON-LD, così pagina e dato strutturato coincidono.
-        $testo = (string) ($d['a'][$lingua] ?? $d['a']['it']);
+        $testo = testoFaq((string) ($d['a'][$lingua] ?? $d['a']['it']), $lingua);
         $parti = explode('{dc}', $testo);
         foreach ($parti as $k => $parte) {
             echo e($parte);

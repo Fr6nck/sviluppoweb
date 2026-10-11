@@ -80,7 +80,6 @@ $vicolo    = immagine('pagine.vicolo');
 
       <h3 class="adv-titolo adv-titolo--xs adv-spazio-sopra"><?= te('property.building_title') ?></h3>
       <p class="adv-testo adv-testo--sotto"><?= te('property.building_text') ?></p>
-      <p class="adv-nota"><?= te('property.host_more') ?> <?= daConfermare() ?></p>
     </div>
 
     <div class="adv-pannello" data-reveal="lift">

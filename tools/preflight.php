@@ -324,6 +324,11 @@ if (($pagamento['provider'] ?? '') === '') {
     $aggiungi('ok', 'Pagamento', 'pagamento online spento: le prenotazioni restano richieste');
 } elseif ($pagamento['provider'] !== 'sumup') {
     $aggiungi('bloccante', 'Pagamento', 'PAYMENT_PROVIDER = ' . $pagamento['provider'], 'L\'unico valore previsto è sumup (o vuoto, per spegnerlo).');
+} elseif ($inProva && ((string) ($pagamento['sumup']['api_key'] ?? '') === '' || (string) ($pagamento['sumup']['merchant_code'] ?? '') === '')) {
+    // La prova esce con PAYMENT_PROVIDER=sumup come la produzione, ma senza
+    // chiavi: lì il pagamento è spento e non c'è niente da bloccare.
+    $aggiungi('attenzione', 'Pagamento', 'SumUp senza chiave o codice esercente: in prova il pagamento resta spento',
+        'Le prenotazioni restano richieste. Per provare il pagamento vero scrivi SUMUP_API_KEY e SUMUP_MERCHANT_CODE nel .env, e le condizioni di cancellazione in La struttura.');
 } else {
     $chiave = (string) ($pagamento['sumup']['api_key'] ?? '');
     $codice = (string) ($pagamento['sumup']['merchant_code'] ?? '');

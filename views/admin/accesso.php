@@ -14,7 +14,8 @@ use ArcoDelVento\Support\Csrf;
     <input type="password" id="password" name="password" required autocomplete="current-password">
   </div>
   <p><button type="submit" class="adm-bottone">Entra</button></p>
-  <p class="adm-nota">Password dimenticata? Via FTP cancella il file
-     <code>storage/data/admin.json</code> e ricrea l'account con il codice di configurazione del <code>.env</code>.
-     Le modifiche e le richieste non si perdono.</p>
+  <?php /* La procedura di ripristino sta in docs/DEPLOY-HOSTINGER.md: su una
+           pagina pubblica direbbe a chiunque dove stanno i file dell'account. */ ?>
+  <p class="adm-nota">Password dimenticata? Scrivi a chi gestisce il sito: la reimposta senza perdere
+     modifiche e richieste.</p>
 </form>

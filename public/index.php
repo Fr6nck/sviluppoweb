@@ -129,14 +129,15 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Intestazioni di sicurezza. Il sito non carica nulla da domini terzi —
-// caratteri, immagini e fogli di stile sono tutti nostri — quindi la
-// politica può restare stretta senza rompere niente.
+// caratteri, immagini e fogli di stile sono tutti nostri — con una sola
+// eccezione: i riquadri della mappa della home, immagini di OpenStreetMap
+// (Leaflet invece è servito da qui). La politica resta stretta per il resto.
 if (!headers_sent()) {
     header('X-Content-Type-Options: nosniff');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header('X-Frame-Options: SAMEORIGIN');
     header(
-        "Content-Security-Policy: default-src 'self'; img-src 'self' data:; "
+        "Content-Security-Policy: default-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; "
         . "style-src 'self'; font-src 'self'; script-src 'self'; "
         . "form-action 'self'; base-uri 'self'; frame-ancestors 'self'"
     );

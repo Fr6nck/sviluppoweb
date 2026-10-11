@@ -339,6 +339,68 @@
     Array.prototype.forEach.call(barre, function (b) { osservatore.observe(b); });
   })();
 
+  /* ------------------------------------------- l'inquadratura delle foto
+     Punto di fuoco e ingrandimento scelti nell'area riservata arrivano come
+     attributi data-*: la politica di sicurezza non ammette stili scritti nel
+     markup, ma ammette che sia lo script a impostarli. */
+  (function () {
+    var nomi = { fuocoX: '--fuoco-x', fuocoY: '--fuoco-y', fuocoMx: '--fuoco-mx', fuocoMy: '--fuoco-my', zoom: '--zoom', zoomM: '--zoom-m' };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-inquadratura]'), function (el) {
+      Object.keys(nomi).forEach(function (k) {
+        if (el.dataset[k]) el.style.setProperty(nomi[k], el.dataset[k]);
+      });
+    });
+  })();
+
+  /* ------------------------------------------------------------- la mappa
+     Leaflet e il suo foglio di stile si caricano solo quando la mappa sta
+     per entrare nello schermo: chi non scende fin lì non li scarica. */
+  (function () {
+    var el = document.querySelector('[data-mappa]');
+    if (!el || !('IntersectionObserver' in window)) return;
+
+    function avvia() {
+      var L = window.L;
+      if (!L) return;
+      var lat = parseFloat(el.dataset.lat), lng = parseFloat(el.dataset.lng);
+      var mappa = L.map(el, { scrollWheelZoom: false, zoomControl: true, attributionControl: true })
+        .setView([lat, lng], 17);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(mappa);
+      var casa = L.divIcon({ className: '', html: '<div class="adv-segno-mappa"><span></span></div>', iconSize: [38, 38], iconAnchor: [19, 38], popupAnchor: [0, -36] });
+      L.marker([lat, lng], { icon: casa, title: el.dataset.casa, alt: el.dataset.casa }).addTo(mappa).bindPopup(el.dataset.casa);
+      if (el.dataset.parcheggio) {
+        var p = L.divIcon({ className: '', html: '<div class="adv-segno-mappa adv-segno-mappa--p">P</div>', iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -14] });
+        var pl = parseFloat(el.dataset.parcheggioLat), pg = parseFloat(el.dataset.parcheggioLng);
+        L.marker([pl, pg], { icon: p, title: el.dataset.parcheggio, alt: el.dataset.parcheggio }).addTo(mappa).bindPopup(el.dataset.parcheggio);
+        // Casa e parcheggio entrambi in vista, con un po' d'aria attorno.
+        mappa.fitBounds([[lat, lng], [pl, pg]], { padding: [70, 70], maxZoom: 17 });
+      }
+      // Il clic sulla mappa la «sveglia»: poi la rotella zooma.
+      mappa.on('click', function () { mappa.scrollWheelZoom.enable(); });
+      el.classList.add('is-pronta');
+      var contenitore = el.closest('.adv-mappa');
+      if (contenitore) contenitore.classList.add('adv-mappa--viva');
+      window.setTimeout(function () { mappa.invalidateSize(); }, 50);
+    }
+
+    var osservatore = new IntersectionObserver(function (voci) {
+      if (!voci.some(function (v) { return v.isIntersecting; })) return;
+      osservatore.disconnect();
+      var css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = el.dataset.leafletCss;
+      document.head.appendChild(css);
+      var js = document.createElement('script');
+      js.src = el.dataset.leafletJs;
+      js.onload = avvia;
+      document.head.appendChild(js);
+    }, { rootMargin: '400px 0px' });
+    osservatore.observe(el);
+  })();
+
   /* ------------------------------------------------- verso la pagina di SumUp
      Il passaggio al pagamento è una pagina del sito con un pulsante: la
      politica di sicurezza non lascia che il modulo porti direttamente fuori.

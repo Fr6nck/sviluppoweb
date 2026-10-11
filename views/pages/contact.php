@@ -160,6 +160,7 @@ $valore = static fn (string $campo, string $default = ''): string => (string) ($
           <h2 class="adv-titolo adv-titolo--xs"><?= te('contact.how_title') ?></h2>
         </div>
         <p class="adv-testo"><?= te('assisi.moving_text') ?></p>
+        <?= component('useful-links', ['quali' => ['parking', 'bus']]) ?>
         <div class="adv-azioni">
           <a class="adv-link" href="<?= e(url('info')) ?>"><?= te('cta.see_info') ?><?= icona('freccia-su-destra', 13) ?></a>
         </div>

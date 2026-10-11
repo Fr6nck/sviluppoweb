@@ -6,10 +6,8 @@
  * camminando, ciascuno con il link alla mappa; poi San Rufino e come ci si
  * muove.
  *
- * I tempi a piedi restano marcati finché non li verifica qualcuno che li ha
- * camminati. Una mappa incorporata non c'è: le coordinate della casa non
- * erano nel materiale, e un segnaposto messo a occhio manda l'ospite alla
- * porta di un altro.
+ * I tempi a piedi sono indicativi, dalla porta di casa (content/places.php).
+ * Dove a piedi non ha senso — l'Eremo — c'è una frase al posto dei minuti.
  *
  * @var array $luoghi
  */
@@ -67,12 +65,13 @@ $basilica = immagine('pagine.basilica');
       <?= component('index-list', [
           'voci' => array_map(static function (array $luogo): array {
               $nome  = t('places.' . $luogo['id'] . '.name');
+              $frase = 'places.' . $luogo['id'] . '.time';
               $tempo = $luogo['walk_minutes']
-                  ? e($luogo['walk_minutes'] . ' min ' . t('assisi.walk_label'))
-                  : daConfermare();
+                  ? $luogo['walk_minutes'] . ' min ' . t('assisi.walk_label')
+                  : (t($frase) !== $frase ? t($frase) : '');
               return [
                   'etichetta' => $nome,
-                  'nota_html' => e(t('places.' . $luogo['id'] . '.note')) . ' · ' . $tempo,
+                  'nota_html' => e(t('places.' . $luogo['id'] . '.note')) . ($tempo !== '' ? ' · ' . e($tempo) : ''),
                   'href'      => mappa($nome . ', Assisi'),
                   'esterno'   => true,
               ];
@@ -102,7 +101,7 @@ $basilica = immagine('pagine.basilica');
         <h3 class="adv-titolo adv-titolo--xs"><?= te('assisi.moving_title') ?></h3>
       </div>
       <p class="adv-testo"><?= te('assisi.moving_text') ?></p>
-      <p class="adv-nota"><?= te('assisi.moving_note') ?> <?= daConfermare() ?></p>
+      <?= component('useful-links', ['quali' => ['parking', 'bus']]) ?>
       <div class="adv-azioni">
         <a class="adv-link" href="<?= e(url('info')) ?>"><?= te('cta.see_info') ?><?= icona('freccia-su-destra', 13) ?></a>
       </div>

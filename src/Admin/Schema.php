@@ -94,7 +94,11 @@ final class Schema
                 ['path' => 'reviews.google.count', 'label' => 'Google: numero di recensioni', 'type' => 'int', 'min' => 0, 'max' => 100000],
                 ['path' => 'reviews.google.url', 'label' => 'Google: indirizzo della scheda', 'type' => 'url', 'max' => 400],
             ],
-            'Social e mappa' => [
+            'Link utili e mappa' => [
+                ['path' => 'links.parking', 'label' => 'Sito del parcheggio di Piazza Matteotti', 'type' => 'url', 'max' => 400,
+                 'help' => 'Il sito rimanda qui per tariffe e orari, invece di scriverli: cambiano con la stagione.'],
+                ['path' => 'links.bus', 'label' => 'Orari degli autobus di Assisi', 'type' => 'url', 'max' => 400],
+                ['path' => 'links.airlink', 'label' => 'Bus dall’aeroporto (Umbria Airlink)', 'type' => 'url', 'max' => 400],
                 ['path' => 'social.instagram', 'label' => 'Instagram', 'type' => 'url', 'max' => 300],
                 ['path' => 'social.facebook', 'label' => 'Facebook', 'type' => 'url', 'max' => 300],
                 ['path' => 'geo.latitude', 'label' => 'Latitudine della casa', 'type' => 'coord', 'min' => -90, 'max' => 90,
@@ -120,7 +124,7 @@ final class Schema
             ['path' => 'size_sqm', 'label' => 'Metratura, m²', 'type' => 'int', 'min' => 4, 'max' => 200],
             ['path' => 'floor', 'label' => 'Piano', 'type' => 'text', 'max' => 40],
             ['path' => 'view', 'label' => 'Vista', 'type' => 'select',
-             'options' => ['' => 'Nessuna vista particolare', 'piazza' => 'Su Piazza San Rufino e il Duomo']],
+             'options' => ['' => 'Sui vicoli di Assisi', 'piazza' => 'Su Piazza San Rufino e il Duomo']],
         ];
         for ($ospiti = 1; $ospiti <= $occupazioneMassima; $ospiti++) {
             $campi[] = [

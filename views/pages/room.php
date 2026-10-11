@@ -82,14 +82,19 @@ $firma  = count($parole) > 1 && preg_match('/\p{L}/u', (string) end($parole)) ? 
           <dt><?= te('room.meta.layouts') ?></dt>
           <dd><?= e(implode(' · ', array_map(static fn (string $l): string => t('layouts.' . $l), (array) $camera['layouts']))) ?></dd>
         </div>
-        <div class="adv-fatti__riga">
-          <dt><?= te('room.meta.size') ?></dt>
-          <dd><?= $camera['size_sqm'] ? e($camera['size_sqm'] . ' m²') : daConfermare() ?></dd>
-        </div>
-        <div class="adv-fatti__riga">
-          <dt><?= te('room.meta.floor') ?></dt>
-          <dd><?= $camera['floor'] ? e((string) $camera['floor']) : daConfermare() ?></dd>
-        </div>
+        <?php /* Metratura e piano compaiono solo se scritti nell'area riservata. */ ?>
+        <?php if (!empty($camera['size_sqm'])): ?>
+          <div class="adv-fatti__riga">
+            <dt><?= te('room.meta.size') ?></dt>
+            <dd><?= e($camera['size_sqm'] . ' m²') ?></dd>
+          </div>
+        <?php endif; ?>
+        <?php if (!empty($camera['floor'])): ?>
+          <div class="adv-fatti__riga">
+            <dt><?= te('room.meta.floor') ?></dt>
+            <dd><?= e((string) $camera['floor']) ?></dd>
+          </div>
+        <?php endif; ?>
         <div class="adv-fatti__riga">
           <dt><?= te('room.bathroom') ?></dt>
           <dd>
@@ -99,7 +104,7 @@ $firma  = count($parole) > 1 && preg_match('/\p{L}/u', (string) end($parole)) ? 
         </div>
         <div class="adv-fatti__riga">
           <dt><?= te('room.view') ?></dt>
-          <dd><?= $vista !== null ? e($vista) : daConfermare() ?></dd>
+          <dd><?= e((string) $vista) ?></dd>
         </div>
       </dl>
 
@@ -153,14 +158,6 @@ $firma  = count($parole) > 1 && preg_match('/\p{L}/u', (string) end($parole)) ? 
         'misura'    => 's',
         'id'        => 'titolo-galleria',
     ]) ?>
-
-    <?php if (!$foto): ?>
-      <?= component('alert', [
-          'tipo'   => 'avviso',
-          'titolo' => t('rooms.demo_notice_title'),
-          'testo'  => t('room.gallery_note'),
-      ]) ?>
-    <?php endif; ?>
 
     <ul class="adv-galleria adv-spazio-sopra">
       <li>

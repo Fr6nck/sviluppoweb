@@ -8,6 +8,7 @@ use ArcoDelVento\Admin\Cruscotto;
 use ArcoDelVento\Admin\Form;
 use ArcoDelVento\Admin\Inbox;
 use ArcoDelVento\Admin\Schema;
+use ArcoDelVento\Admin\Testi;
 use ArcoDelVento\App;
 use ArcoDelVento\Http\Request;
 use ArcoDelVento\Http\Response;
@@ -18,6 +19,7 @@ use ArcoDelVento\Media\ErroreImmagine;
 use ArcoDelVento\Media\Immagini;
 use ArcoDelVento\Storage\ContentOverrides;
 use ArcoDelVento\Support\Csrf;
+use ArcoDelVento\Support\RoomPresenter;
 
 /**
  * L'area riservata: /admin.
@@ -36,32 +38,6 @@ final class AdminController
 
     /** Gli archivi che si possono riportare a una versione precedente. */
     private const RIPRISTINABILI = ['impostazioni', 'camere', 'testi-it', 'testi-en', 'domande'];
-
-    /** Le sezioni dei testi, con il nome che hanno nel pannello. */
-    private const SEZIONI_TESTI = [
-        'home'      => 'Home',
-        'rooms'     => 'Elenco delle camere',
-        'room'      => 'Scheda di una camera',
-        'property'  => 'La struttura',
-        'assisi'    => 'Assisi',
-        'places'    => 'I luoghi di Assisi',
-        'info'      => 'Informazioni',
-        'book'      => 'Prenotazione',
-        'contact'   => 'Contatti',
-        'footer'    => 'Piè di pagina',
-        'nav'       => 'Menu',
-        'cta'       => 'Pulsanti e inviti',
-        'common'    => 'Parole ricorrenti',
-        'privacy'   => 'Privacy',
-        'not_found' => 'Pagina non trovata',
-        'errors'    => 'Errori dei moduli',
-        'amenities' => 'Servizi delle camere',
-        'room_types' => 'Tipologie di camera',
-        'views'     => 'Viste',
-        'bathroom'  => 'Bagno',
-        'layouts'   => 'Disposizioni dei letti',
-        'beds'      => 'Letti',
-    ];
 
     private readonly Form $form;
 
@@ -135,7 +111,7 @@ final class AdminController
             $pezzi === ['struttura']                        => $this->settings($request),
             $pezzi === ['camere']                           => $this->rooms(),
             count($pezzi) === 2 && $pezzi[0] === 'camere'    => $this->room($request, $pezzi[1]),
-            $pezzi === ['testi']                            => $this->texts(),
+            $pezzi === ['testi']                            => $this->texts($request),
             count($pezzi) === 2 && $pezzi[0] === 'testi'     => $this->textSection($request, $pezzi[1]),
             $pezzi === ['domande']                          => $this->faq($request),
             $pezzi === ['immagini']                         => $this->images(),
@@ -588,34 +564,77 @@ final class AdminController
 
     // =============================================================== testi
 
-    private function texts(): Response
+    private function texts(Request $request): Response
     {
-        $sezioni = [];
-        foreach (self::SEZIONI_TESTI as $chiave => $nome) {
-            $voci = $this->strings($chiave);
+        $store   = $this->app->store();
+        $salvati = [];
+        foreach ($this->form->languages() as $lingua) {
+            $salvati[$lingua] = $store->read('testi-' . $lingua);
+        }
+
+        $famiglie = [];
+        foreach (Testi::FAMIGLIE as $f => [$nome, $descrizione]) {
+            $famiglie[$f] = ['nome' => $nome, 'descrizione' => $descrizione, 'sezioni' => []];
+        }
+        foreach (Testi::SEZIONI as $chiave => $def) {
+            $voci = $this->strings($def['radici']);
             if ($voci === []) {
                 continue;
             }
+            $conta = ['importanti' => 0, 'google' => 0, 'secondari' => 0];
             $modificate = 0;
-            foreach ($this->form->languages() as $lingua) {
-                foreach ($this->app->store()->read('testi-' . $lingua) as $k => $_) {
-                    if (str_starts_with((string) $k, $chiave . '.')) {
+            foreach ($voci as $k) {
+                $conta[Testi::livello($k)]++;
+                foreach ($salvati as $s) {
+                    if (isset($s[$k])) {
                         $modificate++;
+                        break;
                     }
                 }
             }
-            $sezioni[] = ['chiave' => $chiave, 'nome' => $nome, 'voci' => count($voci), 'modificate' => $modificate];
+            $famiglie[$def['famiglia']]['sezioni'][] = $def + [
+                'chiave' => $chiave, 'conta' => $conta, 'voci' => count($voci), 'modificate' => $modificate,
+            ];
         }
 
-        return Response::html($this->page('testi', ['titolo' => 'Testi del sito', 'sezioni' => $sezioni]));
+        // La ricerca: una frase vista sul sito, e dove si cambia.
+        $cerca     = trim((string) ($request->query['cerca'] ?? ''));
+        $risultati = [];
+        if (mb_strlen($cerca) >= 3) {
+            $ago = mb_strtolower($cerca);
+            $tr  = $this->app->translator();
+            foreach (Testi::SEZIONI as $chiave => $def) {
+                foreach ($this->strings($def['radici']) as $k) {
+                    foreach ($this->form->languages() as $lingua) {
+                        $testo = (string) ($salvati[$lingua][$k] ?? Form::get($tr->baseCatalogue($lingua), $k) ?? '');
+                        if ($testo !== '' && str_contains(mb_strtolower(str_replace('|', ' ', $testo)), $ago)) {
+                            $risultati[] = ['sezione' => $chiave, 'nome_sezione' => $def['nome'], 'chiave' => $k,
+                                            'nome' => Testi::nome($k), 'lingua' => $lingua, 'testo' => str_replace('|', ' ', $testo)];
+                            break;
+                        }
+                    }
+                    if (count($risultati) >= 40) {
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        return Response::html($this->page('testi', [
+            'titolo' => 'Testi del sito', 'famiglie' => $famiglie, 'cerca' => $cerca, 'risultati' => $risultati,
+        ]));
     }
 
     private function textSection(Request $request, string $sezione): Response
     {
-        if (!isset(self::SEZIONI_TESTI[$sezione])) {
+        if (isset(Testi::ALIAS[$sezione])) {
+            return Response::redirect($this->url('testi/' . Testi::ALIAS[$sezione]), 301);
+        }
+        $def = Testi::sezione($sezione);
+        if ($def === null) {
             return Response::html($this->page('non-trovata', ['titolo' => 'Sezione non trovata']), 404);
         }
-        $chiavi  = $this->strings($sezione);
+        $chiavi  = $this->strings($def['radici']);
         $lingue  = $this->form->languages();
         $store   = $this->app->store();
         $tr      = $this->app->translator();
@@ -630,9 +649,28 @@ final class AdminController
             }
         }
 
+        // L'anteprima: la pagina del sito in cui questi testi si vedono.
+        $anteprima = [];
+        foreach ($lingue as $lingua) {
+            if ($def['pagina'] === 'room') {
+                $camere = $this->app->rooms()->all();
+                $prima  = null;
+                foreach ($camere as $c) {
+                    if (!empty($c['photographed'])) {
+                        $prima = $c;
+                        break;
+                    }
+                }
+                $prima ??= $camere[0] ?? null;
+                $anteprima[$lingua] = $prima !== null ? RoomPresenter::href($prima, $lingua) : url('rooms', [], [], $lingua);
+            } else {
+                $anteprima[$lingua] = url($def['pagina'], [], [], $lingua);
+            }
+        }
+
         $dati = [
-            'titolo' => 'Testi — ' . self::SEZIONI_TESTI[$sezione], 'sezione' => $sezione,
-            'chiavi' => $chiavi, 'base' => $base, 'modificati' => $modificati,
+            'titolo' => 'Testi — ' . $def['nome'], 'sezione' => $def['chiave'], 'definizione' => $def,
+            'chiavi' => $chiavi, 'base' => $base, 'modificati' => $modificati, 'anteprima' => $anteprima,
             'storico' => array_merge(
                 array_map(static fn (array $v): array => $v + ['nome' => 'testi-it', 'lingua' => 'IT'], $store->history('testi-it')),
                 array_map(static fn (array $v): array => $v + ['nome' => 'testi-en', 'lingua' => 'EN'], $store->history('testi-en')),
@@ -649,6 +687,9 @@ final class AdminController
         foreach ($lingue as $lingua) {
             $salvati = $store->read('testi-' . $lingua);
             foreach ($chiavi as $chiave) {
+                if (!array_key_exists($chiave, (array) ($inviati[$lingua] ?? []))) {
+                    continue;   // un campo che il modulo non ha mandato resta com'è
+                }
                 $testo = trim(preg_replace("/\r\n?/", "\n", (string) ($inviati[$lingua][$chiave] ?? '')) ?? '');
                 $originale = $base[$lingua][$chiave];
                 $dati['modificati'][$lingua][$chiave] = $testo === '' ? null : $testo;
@@ -657,14 +698,14 @@ final class AdminController
                     continue;
                 }
                 if (mb_strlen($testo) > 5000) {
-                    $errori[] = strtoupper($lingua) . ' ' . $chiave . ': al massimo 5000 caratteri.';
+                    $errori[] = strtoupper($lingua) . ' «' . Testi::nome($chiave) . '»: al massimo 5000 caratteri.';
                 }
                 // I segnaposto — :nights, :count — li riempie il sito: se
                 // spariscono, la frase perde il numero.
                 preg_match_all('/:[a-z_]+/', $originale, $m);
                 foreach (array_unique($m[0]) as $segnaposto) {
                     if (!str_contains($testo, $segnaposto)) {
-                        $errori[] = strtoupper($lingua) . ' «' . mb_substr($originale, 0, 40) . '…»: deve contenere ancora '
+                        $errori[] = strtoupper($lingua) . ' «' . Testi::nome($chiave) . '»: deve contenere ancora '
                                   . $segnaposto . ', che il sito sostituisce con il valore.';
                     }
                 }
@@ -683,22 +724,20 @@ final class AdminController
         }
         $this->flash('ok', 'Testi salvati. Sono già sul sito.');
 
-        return Response::redirect($this->url('testi/' . $sezione), 303);
+        return Response::redirect($this->url('testi/' . $def['chiave']), 303);
     }
 
     /**
-     * Le chiavi di testo di una sezione: solo le frasi, non gli elenchi (mesi,
-     * giorni, forme dei letti), che sono parte del funzionamento.
+     * Le chiavi di testo di una o più parti del file di lingua: solo le
+     * frasi, non gli elenchi (mesi, giorni, forme dei letti), che sono parte
+     * del funzionamento.
      *
+     * @param string|list<string> $radici
      * @return list<string>
      */
-    private function strings(string $sezione): array
+    private function strings(string|array $radici): array
     {
         $catalogo = $this->app->translator()->baseCatalogue('it');
-        $radice   = $catalogo[$sezione] ?? null;
-        if (!is_array($radice)) {
-            return [];
-        }
         $out = [];
         $cammina = static function (array $nodo, string $prefisso) use (&$cammina, &$out): void {
             if (array_is_list($nodo)) {
@@ -713,7 +752,11 @@ final class AdminController
                 }
             }
         };
-        $cammina($radice, $sezione);
+        foreach ((array) $radici as $radice) {
+            if (is_array($catalogo[$radice] ?? null)) {
+                $cammina($catalogo[$radice], $radice);
+            }
+        }
 
         return $out;
     }
@@ -955,6 +998,7 @@ final class AdminController
         $dati = fn (array $extra = []): array => [
             'titolo' => (string) $posto['nome'], 'sottotitolo' => (string) $posto['gruppo'], 'chiave' => $chiave, 'posto' => $posto,
             'img' => $media->risolvi($chiave), 'registrata' => $media->registrata($chiave),
+            'inquadrabile' => $media->inquadrabile($chiave), 'inquadratura' => $media->inquadratura($chiave),
         ] + $extra + $this->statoCaricamento();
 
         if (!$request->isPost()) {
@@ -975,6 +1019,11 @@ final class AdminController
                 }
                 if ($errore !== null) {
                     return Response::html($this->page('immagine', $dati(['errori' => [$errore]])), 422);
+                }
+                // Una foto nuova riparte dal centro: il punto scelto per la
+                // vecchia non ha senso sulla nuova.
+                if ($media->inquadrabile($chiave)) {
+                    $media->salvaInquadratura($chiave, null);
                 }
                 $avviso = $media->registrata($chiave)['avviso'] ?? null;
                 $this->flash('ok', 'Immagine caricata: è già sul sito.'
@@ -1005,7 +1054,24 @@ final class AdminController
 
                 return Response::redirect($this->url($ritorno), 303);
 
+            case 'inquadratura':
+                if (!$media->inquadrabile($chiave)) {
+                    return Response::redirect($this->url($ritorno), 303);
+                }
+                if ($this->in($request, 'centra') === '1') {
+                    $media->salvaInquadratura($chiave, null);
+                    $this->flash('ok', 'Inquadratura riportata al centro.');
+                } else {
+                    $media->salvaInquadratura($chiave, (array) ($request->post['q'] ?? []));
+                    $this->flash('ok', 'Inquadratura salvata: è già sul sito.');
+                }
+
+                return Response::redirect($this->url($ritorno) . '#inquadratura', 303);
+
             case 'ripristina':
+                if ($media->inquadrabile($chiave)) {
+                    $media->salvaInquadratura($chiave, null);
+                }
                 $this->flash('ok', $media->ripristina($chiave)
                     ? 'Tornata l\'immagine originale. Il file caricato è stato cancellato.'
                     : 'Questa immagine era già l\'originale.');

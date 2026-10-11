@@ -33,16 +33,17 @@ foreach ($originali as $n => [$alt, $didascalia, $classe]) {
         'alt'        => immagineAlt($img, $alt),
         'didascalia' => (string) immagineCredito($img, $didascalia),
         'classe'     => $img['sostituita'] ? null : $classe,
+        'posto'      => 'home.foto-' . $n,
     ];
 }
 $quinta = immagine('home.foto-5');
 if ($quinta['sostituita']) {
-    $diapositive[] = ['src' => $quinta['src'], 'alt' => (string) $quinta['alt'], 'didascalia' => (string) $quinta['credito']];
+    $diapositive[] = ['src' => $quinta['src'], 'alt' => (string) $quinta['alt'], 'didascalia' => (string) $quinta['credito'], 'posto' => 'home.foto-5'];
 } else {
     foreach ($camere as $unaCamera) {
         // La prima camera fotografata che guarda su San Rufino.
-        if (R::isPhotographed($unaCamera) && R::viewLabel($unaCamera) !== null) {
-            $diapositive[] = ['src' => $unaCamera['images']['hero']['src'], 'alt' => R::alt($unaCamera, $lingua), 'didascalia' => t('home.slides.camera')];
+        if (R::isPhotographed($unaCamera) && R::hasPiazzaView($unaCamera)) {
+            $diapositive[] = ['src' => $unaCamera['images']['hero']['src'], 'alt' => R::alt($unaCamera, $lingua), 'didascalia' => t('home.slides.camera'), 'posto' => 'home.foto-5'];
             break;
         }
     }
@@ -83,7 +84,7 @@ foreach ((array) site('parking_spots', []) as $posto) {
   <div class="adv-diapositive__cornice" data-parallax="hero">
     <?php foreach ($diapositive as $i => $d): ?>
       <figure class="adv-diapositive__foto<?= $i === 0 ? ' is-attiva' : '' ?><?= !empty($d['classe']) ? ' ' . e($d['classe']) : '' ?>"
-              data-diapositiva data-didascalia="<?= e($d['didascalia']) ?>"<?= $i > 0 ? ' aria-hidden="true"' : '' ?>>
+              data-diapositiva data-didascalia="<?= e($d['didascalia']) ?>"<?= $i > 0 ? ' aria-hidden="true"' : '' ?><?= attributiInquadratura((string) ($d['posto'] ?? '')) ?>>
         <?= component('picture', [
             'src'   => $d['src'],
             'alt'   => $d['alt'],
@@ -102,8 +103,7 @@ foreach ((array) site('parking_spots', []) as $posto) {
           aria-label="<?= te('home.slides.next') ?>" data-diapositive-succ><?= icona('freccia-destra', 17) ?></button>
 
   <div class="adv-diapositive__barra">
-    <?php /* Le coordinate sono quelle della città, non della casa. */ ?>
-    <span class="adv-diapositive__coord" aria-hidden="true">43°04′ N &nbsp; 12°37′ E</span>
+    <span aria-hidden="true"></span>
     <p class="adv-diapositive__didascalia" data-diapositive-didascalia><?= e($diapositive[0]['didascalia']) ?></p>
     <div class="adv-diapositive__conta">
       <span aria-hidden="true" data-diapositive-numero>01</span><i aria-hidden="true"></i><span aria-hidden="true"><?= sprintf('%02d', $totale) ?></span>
@@ -133,7 +133,9 @@ foreach ((array) site('parking_spots', []) as $posto) {
 </div>
 
 <?php /* --------------------------------------------------- le camere */ ?>
-<section class="adv-contenuto adv-sezione" id="camere" aria-labelledby="titolo-camere" data-carosello>
+<?php /* Le cinque camere in una sola schermata, senza carosello: su un
+         computer stanno tutte in fila; sul telefono scorrono di lato. */ ?>
+<section class="adv-contenuto adv-contenuto--largo adv-sezione" id="camere" aria-labelledby="titolo-camere">
   <div class="adv-sezione__testa">
     <div>
       <?= occhiello(t('home.rooms.eyebrow')) ?>
@@ -142,22 +144,14 @@ foreach ((array) site('parking_spots', []) as $posto) {
     </div>
     <div class="adv-sezione__controlli">
       <a class="adv-link" href="<?= e(url('rooms')) ?>"><?= te('home.rooms.discover') ?><?= icona('freccia-su-destra', 13) ?></a>
-      <button class="adv-tondo" type="button" aria-label="<?= te('home.rooms.prev') ?>" data-carosello-prec><?= icona('freccia-sinistra', 16) ?></button>
-      <button class="adv-tondo" type="button" aria-label="<?= te('home.rooms.next') ?>" data-carosello-succ><?= icona('freccia-destra', 16) ?></button>
     </div>
   </div>
 
-  <ul class="adv-carosello__traccia" data-carosello-traccia>
+  <ul class="adv-camere-tutte">
     <?php foreach ($camere as $camera): ?>
-      <li><?= component('room-card', ['camera' => $camera]) ?></li>
+      <li><?= component('room-card', ['camera' => $camera, 'compatta' => true, 'sizes' => '(max-width: 760px) 78vw, (max-width: 1100px) 33vw, 260px']) ?></li>
     <?php endforeach; ?>
   </ul>
-
-  <div class="adv-carosello__piede" aria-hidden="true">
-    <span>01 — <?= sprintf('%02d', count($camere)) ?></span>
-    <span class="adv-carosello__barra"><i data-carosello-barra></i></span>
-    <span><?= te('home.rooms.tagline') ?></span>
-  </div>
 </section>
 
 <?php /* ----------------------------------------- il centro storico a piedi */ ?>
@@ -224,8 +218,9 @@ foreach ((array) site('parking_spots', []) as $posto) {
 
   <div class="adv-mappa" id="come-arrivare">
     <div class="adv-mappa__area">
-      <?php /* Un disegno, non una mappa: cerchi concentrici attorno al segno.
-               La mappa vera si apre fuori, con le coordinate giuste. */ ?>
+      <?php /* La mappa vera (OpenStreetMap, con Leaflet servito dal nostro
+               server) si carica quando la sezione arriva sullo schermo. Fino
+               ad allora, e senza JavaScript, resta il disegno dei cerchi. */ ?>
       <svg class="adv-mappa__disegno" viewBox="0 0 1200 380" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
         <g fill="none" stroke="currentColor" stroke-width="1">
           <circle cx="600" cy="150" r="70"/><circle cx="600" cy="150" r="140"/>
@@ -235,12 +230,22 @@ foreach ((array) site('parking_spots', []) as $posto) {
           <path d="M120 0 C 260 120, 420 90, 600 150 S 860 330, 1000 380"/>
         </g>
       </svg>
-      <h3 class="adv-occhiello adv-occhiello--centro"><span class="adv-occhiello__filo" aria-hidden="true"></span><?= te('home.arrive.eyebrow') ?></h3>
-      <?= icona('pin', 30, 'adv-mappa__pin') ?>
-      <p class="adv-mappa__indirizzo"><?= e(site('address.street')) ?> · <?= e(site('address.city')) ?></p>
-      <a class="adv-btn adv-btn--contorno" href="<?= e($mappaCasa) ?>" target="_blank" rel="noopener">
-        <?= te('home.arrive.map') ?><span class="adv-visually-hidden">— <?= te('home.position.new_tab') ?></span><?= icona('freccia-su-destra', 14) ?>
-      </a>
+      <?php if ($lat !== null && $lng !== null && $lat !== '' && $lng !== ''): ?>
+        <div class="adv-mappa__viva" data-mappa role="region" aria-label="<?= te('home.arrive.map_label') ?>"
+             data-lat="<?= e((string) $lat) ?>" data-lng="<?= e((string) $lng) ?>"
+             data-casa="<?= e(site('name') . ' — ' . site('address.street')) ?>"
+             <?php if ($metri): ?>data-parcheggio="<?= e(t('home.arrive.parking_label') . ' — ' . t('home.arrive.parking_value', ['metres' => $metri])) ?>"
+             data-parcheggio-lat="43.07112" data-parcheggio-lng="12.61955"<?php endif; ?>
+             data-leaflet-js="<?= e(asset('vendor/leaflet/leaflet.js')) ?>"
+             data-leaflet-css="<?= e(asset('vendor/leaflet/leaflet.css')) ?>"></div>
+      <?php endif; ?>
+      <div class="adv-mappa__scheda-indirizzo">
+        <h3 class="adv-occhiello"><span class="adv-occhiello__filo" aria-hidden="true"></span><?= te('home.arrive.eyebrow') ?></h3>
+        <p class="adv-mappa__indirizzo"><?= icona('pin', 18, 'adv-mappa__pin') ?><?= e(site('address.street')) ?> · <?= e(site('address.city')) ?></p>
+        <a class="adv-btn adv-btn--contorno" href="<?= e($mappaCasa) ?>" target="_blank" rel="noopener">
+          <?= te('home.arrive.map') ?><span class="adv-visually-hidden">— <?= te('home.position.new_tab') ?></span><?= icona('freccia-su-destra', 14) ?>
+        </a>
+      </div>
     </div>
 
     <ul class="adv-mappa__schede">

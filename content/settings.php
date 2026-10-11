@@ -54,7 +54,7 @@ return [
     'stay' => [
         'check_in_from' => '13:00',
         'check_in_to'   => '20:00',
-        'check_out_by'  => null,         // non fornito
+        'check_out_by'  => '10:30',
         'check_in_kind' => 'in-person',  // accoglienza di persona, quasi sempre
 
         'open_all_year' => true,
@@ -71,10 +71,10 @@ return [
         // Prosa, non numeri: va scritta una volta per lingua. Una frase
         // italiana dentro una pagina inglese sembra un guasto del sito.
         'parking' => [
-            'it' => 'Piazza Matteotti a pagamento (circa 18 € per 24 ore, 200 m) '
-                  . 'oppure gratuito in via dell’Eremo, verso la Porta dei Cappuccini',
-            'en' => 'Piazza Matteotti, paid (about €18 per 24 hours, 200 m), '
-                  . 'or free in via dell’Eremo, towards Porta dei Cappuccini',
+            // Niente prezzi scritti a mano: cambiano con la stagione. Le
+            // tariffe vere sono sul sito del gestore (links.parking).
+            'it' => 'Piazza Matteotti, a pagamento, a circa 200 m da casa',
+            'en' => 'Piazza Matteotti, paid, about 200 m from the house',
         ],
 
         'lift'   => false,
@@ -140,7 +140,7 @@ return [
             ],
         ],
 
-        'languages'     => null,          // non fornito
+        'languages'     => null,          // non fornito: la riga sparisce finché è vuota
         'accessibility' => [
             'it' => 'scale senza ascensore: non adatto a chi ha gravi difficoltà motorie',
             'en' => 'stairs and no lift: not suitable for guests with serious mobility '
@@ -151,7 +151,7 @@ return [
 
     // Identificativi obbligatori per una struttura ricettiva italiana.
     'legal' => [
-        'cin'    => null,                 // non fornito: obbligatorio, va richiesto
+        'cin'    => 'IT054001B403008749',
         'cir'    => null,
         'vat'    => '03323290548',
         'rea'    => null,
@@ -177,10 +177,7 @@ return [
         [
             'id'    => 'matteotti',
             'paid'  => true,
-            'price' => [
-                'it' => 'circa 18 € per 24 ore',
-                'en' => 'about €18 per 24 hours',
-            ],
+            'price' => null,
             'metres' => 200,
         ],
         [
@@ -192,7 +189,16 @@ return [
     ],
 
     // Coordinate della mappa: non si stimano da un indirizzo.
-    'geo' => ['latitude' => null, 'longitude' => null],
+    // La porta di Via Santa Maria delle Rose 1/A.
+    'geo' => ['latitude' => '43.071239', 'longitude' => '12.616717'],
+
+    // I siti ufficiali a cui il sito rimanda invece di copiare orari e prezzi,
+    // che cambiano. Si aggiornano dall'area riservata (La struttura).
+    'links' => [
+        'parking' => 'https://www.sabait.it/it/parcheggio-assisi/parcheggio-saba-matteotti',
+        'bus'     => 'https://www.fsbusitalia.it/it/umbria/orari-linee-umbria/orari-servizi-urbani-umbria.html',
+        'airlink' => 'https://www.fsbusitalia.it/it/turismo/servizi-speciali/umbria-airlink.html',
+    ],
 
     // Recensioni: i numeri dell'intervista sono dichiarati «indicativi, in
     // verifica». Finché lo sono restano qui a null e la sezione non compare:

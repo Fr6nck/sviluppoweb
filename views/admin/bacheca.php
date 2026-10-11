@@ -238,7 +238,7 @@ $iniziali = static function (string $nome): string {
       <?php if ($mancanti === [] && $camereIncomplete === []): ?>
         <p class="adm-tutto"><?= icona('spunta', 18) ?> Tutti i dati ci sono.</p>
       <?php else: ?>
-        <p class="adm-nota">Sul sito questi dati compaiono come «da confermare». Meglio vuoto che sbagliato: riempili quando li hai certi.</p>
+        <p class="adm-nota">Finché sono vuoti, sul sito non compaiono, o compaiono come «da confermare». Meglio vuoto che sbagliato: riempili quando li hai certi.</p>
         <?php
         $compiti = [];
         foreach ($mancanti as $m) {

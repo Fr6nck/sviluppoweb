@@ -142,9 +142,49 @@ final class App
     /** Le impostazioni del sito: indirizzo, contatti, orari — con le modifiche del pannello. */
     public function settings(): array
     {
-        return $this->services['settings'] ??= $this->overrides()->settings(
+        return $this->services['settings'] ??= self::normalizzaTelefoni($this->overrides()->settings(
             require $this->config['content'] . '/settings.php'
-        );
+        ));
+    }
+
+    /**
+     * Un numero salvato come sole cifre («393381777983») si stampa illeggibile
+     * e, peggio, diventa un «tel:» senza il «+»: dal telefono di un ospite
+     * straniero non parte. Qui torna nella forma internazionale, una volta
+     * sola, per tutte le pagine.
+     *
+     * @param array<string,mixed> $s
+     * @return array<string,mixed>
+     */
+    private static function normalizzaTelefoni(array $s): array
+    {
+        foreach (['phone', 'mobile'] as $campo) {
+            $v = $s['contacts'][$campo] ?? null;
+            if (!is_string($v) || $v === '') {
+                continue;
+            }
+            $cifre = preg_replace('/\D/', '', $v) ?? '';
+            if (str_starts_with(ltrim($v), '+')) {
+                $internazionale = $cifre;
+            } elseif (str_starts_with($cifre, '00')) {
+                $internazionale = substr($cifre, 2);
+            } elseif (str_starts_with($cifre, '39') && strlen($cifre) >= 11) {
+                $internazionale = $cifre;
+            } elseif (str_starts_with($cifre, '3') || str_starts_with($cifre, '0')) {
+                $internazionale = '39' . $cifre;   // un numero italiano scritto senza prefisso
+            } else {
+                continue;
+            }
+            if (str_starts_with($internazionale, '39')) {
+                $n = substr($internazionale, 2);
+                // Cellulare: 338 177 7983. Fisso: 075 812 345 6, a gruppi di tre.
+                $s['contacts'][$campo] = '+39 ' . trim(implode(' ', [substr($n, 0, 3), substr($n, 3, 3), substr($n, 6)]));
+            } else {
+                $s['contacts'][$campo] = '+' . $internazionale;
+            }
+        }
+
+        return $s;
     }
 
     /** Le impostazioni come stanno nel file, senza le modifiche del pannello. */

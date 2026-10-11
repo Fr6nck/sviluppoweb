@@ -11,6 +11,8 @@
  * @var bool   $scrivibile
  * @var bool   $gd
  * @var string $limite
+ * @var bool   $inquadrabile
+ * @var array  $inquadratura  x, y, mx, my (percentuali), z, mz (ingrandimento), salvata
  */
 use ArcoDelVento\Support\Csrf;
 
@@ -119,6 +121,47 @@ $chiamaCredito = !empty($posto['didascalia']) ? 'Didascalia' : (!empty($posto['c
     <?php endif; ?>
   </section>
 </div>
+
+<?php if (!empty($inquadrabile) && $vedi !== null && $tipo === 'foto'): $q = $inquadratura; ?>
+  <section class="adm-carta adm-inquadra" id="inquadratura" aria-labelledby="i-inquadra" data-inquadra>
+    <div class="adm-carta__testa">
+      <h2 id="i-inquadra">Inquadratura</h2>
+      <?php if ($q['salvata']): ?><span class="adm-tipo adm-tipo--prenotazione"><?= icona('spunta', 12) ?>Scelta da te</span><?php endif; ?>
+    </div>
+    <p class="adm-intro">Sul computer la foto è quasi a tutto schermo; sul telefono diventa verticale e se ne vede solo una
+       striscia. <strong>Trascina la foto</strong> dentro ciascun riquadro per scegliere che cosa resta in vista, e usa
+       l’ingrandimento per stringere sul soggetto. Quello che vedi qui è quello che vedranno gli ospiti.</p>
+
+    <form method="post" action="<?= e($azione) ?>#inquadratura" class="adm-modulo" novalidate>
+      <?= Csrf::field() ?>
+      <input type="hidden" name="azione" value="inquadratura">
+      <div class="adm-inquadra__griglia">
+        <?php foreach (['' => ['Computer', 'adm-inquadra__cornice--computer'], 'm' => ['Telefono', 'adm-inquadra__cornice--telefono']] as $p => [$nome, $classe]): ?>
+          <div class="adm-inquadra__schermo">
+            <h3 class="adm-inquadra__nome"><?= e($nome) ?></h3>
+            <div class="adm-inquadra__cornice <?= e($classe) ?>" data-inquadra-cornice="<?= e($p) ?>" tabindex="0"
+                 role="application" aria-label="Anteprima <?= e(mb_strtolower($nome)) ?>: trascina per spostare la foto, frecce per spostarla dalla tastiera">
+              <img src="<?= e(asset($vedi)) ?>" alt="" draggable="false">
+              <span class="adm-inquadra__mirino" aria-hidden="true"></span>
+            </div>
+            <div class="adm-inquadra__comandi">
+              <label>Orizzontale <input type="range" min="0" max="100" step="0.5" name="q[<?= e($p) ?>x]" value="<?= e((string) $q[$p . 'x']) ?>" data-q="<?= e($p) ?>x"></label>
+              <label>Verticale <input type="range" min="0" max="100" step="0.5" name="q[<?= e($p) ?>y]" value="<?= e((string) $q[$p . 'y']) ?>" data-q="<?= e($p) ?>y"></label>
+              <label>Ingrandimento <input type="range" min="1" max="2.5" step="0.05" name="q[<?= e($p) ?>z]" value="<?= e((string) $q[$p . 'z']) ?>" data-q="<?= e($p) ?>z"></label>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+      <div class="adm-azioni">
+        <button type="submit" class="adm-bottone"><?= icona('spunta', 16) ?>Salva l’inquadratura</button>
+        <button type="button" class="adm-bottone adm-bottone--piatto" data-inquadra-copia>Telefono come il computer</button>
+        <?php if ($q['salvata']): ?>
+          <button type="submit" name="centra" value="1" class="adm-bottone adm-bottone--piatto"><?= icona('ripristina', 16) ?>Torna al centro</button>
+        <?php endif; ?>
+      </div>
+    </form>
+  </section>
+<?php endif; ?>
 
 <?php if ($conTesti): ?>
   <section class="adm-carta" aria-labelledby="i-testi">

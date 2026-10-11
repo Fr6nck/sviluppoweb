@@ -256,7 +256,9 @@ foreach (array_keys($riferite) as $rif) {
     }
     preg_match_all('#url\(\s*[\'"]?([^\'")]+)[\'"]?\s*\)#', (string) file_get_contents($file), $m);
     foreach ($m[1] as $dentro) {
-        if (str_starts_with($dentro, 'data:')) {
+        // data: è già dentro il foglio; «#default#VML» (Leaflet, per i vecchi
+        // Internet Explorer) è un comportamento, non un file.
+        if (str_starts_with($dentro, 'data:') || str_starts_with($dentro, '#')) {
             continue;
         }
         $assoluto = '/' . ltrim($dentro, '/');
@@ -363,9 +365,10 @@ foreach ($daCopiare as $voce) {
         // segnaposto delle camere fotografate, racconta una cosa falsa. Il
         // marchio sale tutto: l'area Immagini ne mostra tutte le misure. E
         // sale la fotografia sfocata della porta del codice, che le pagine
-        // controllate qui (a porta spenta) non chiedono.
+        // controllate qui (a porta spenta) non chiedono. Le librerie di
+        // vendor/ salgono intere, con la loro licenza.
         if (!$tutto && str_starts_with($relativo, 'public/assets/') && !str_starts_with($relativo, 'public/assets/img/logo/')
-            && !str_starts_with($relativo, 'public/assets/img/sipario/')) {
+            && !str_starts_with($relativo, 'public/assets/img/sipario/') && !str_starts_with($relativo, 'public/assets/vendor/')) {
             $chiave = substr($relativo, strlen('public'));
             if (!isset($riferite[$chiave])) {
                 $scartate[$chiave] = (int) $f->getSize();
@@ -587,7 +590,18 @@ $produzione = [
         bin2hex(random_bytes(16)),
         'Il codice per creare l\'account dell\'area riservata (/admin), la prima volta. Creato l\'account, svuotalo.',
     ],
-    'MAIL_TRANSPORT'       => ['smtp', ''],
+    'BOOKING_PROVIDER' => [
+        'sito',
+        'Il calendario vero del sito. Con il pagamento acceso quello dimostrativo (demo) incasserebbe su date che nessuno ha controllato.',
+    ],
+    'PAYMENT_PROVIDER' => ['sumup', 'Si paga tutto online con SumUp, al momento della prenotazione: nessuna caparra.'],
+    'SUMUP_API_KEY'    => [
+        '',
+        'DA SCRIVERE: la chiave API segreta del conto SumUp (comincia con sup_sk_). Finché questa riga o la '
+        . 'successiva sono vuote il pagamento resta spento — la prenotazione è una richiesta — e il controllo finale si ferma.',
+    ],
+    'SUMUP_MERCHANT_CODE' => ['', 'DA SCRIVERE: il codice esercente del conto SumUp.'],
+    'MAIL_TRANSPORT'       => ['smtp', 'Le conferme di prenotazione e di pagamento partono per e-mail: serve la posta vera.'],
     'MAIL_FROM_ADDRESS'    => [$posta, ''],
     'MAIL_TO_ADDRESS'      => [$posta, ''],   // la spiegazione è già in .env.example
     'MAIL_SMTP_HOST'       => ['smtp.hostinger.com', 'Valido se la casella è su Hostinger. Se è altrove, servono i dati di quel provider.'],
@@ -625,10 +639,13 @@ $scriviEnv($rinominare . '/env-produzione.txt', $produzione, [
     '# Arco del Vento — .env di produzione, per il dominio vero',
     '#',
     '# 1. Scrivi la password della posta (MAIL_SMTP_PASSWORD) e controlla APP_URL.',
-    '# 2. Caricalo nella cartella del sito, accanto a .htaccess.',
-    '# 3. Sul server rinominalo in .env (con il punto davanti, senza .txt).',
+    '# 2. Scrivi la chiave e il codice esercente di SumUp (SUMUP_API_KEY,',
+    '#    SUMUP_MERCHANT_CODE): si paga tutto online, al momento della prenotazione.',
+    '# 3. Caricalo nella cartella del sito, accanto a .htaccess.',
+    '# 4. Sul server rinominalo in .env (con il punto davanti, senza .txt).',
     '#',
-    '# Non mandarlo per e-mail e non metterlo su GitHub: contiene una password.',
+    '# Non mandarlo per e-mail e non metterlo su GitHub: contiene una password',
+    '# e la chiave del conto SumUp.',
 ]);
 
 $fileEnv = ['env-produzione.txt'];
@@ -657,6 +674,14 @@ if ($urlProva !== '') {
         ],
         'MAIL_FROM_ADDRESS' => [$posta, ''],
         'MAIL_TO_ADDRESS'   => [$posta, ''],
+        'BOOKING_PROVIDER'  => ['sito', 'Il calendario vero del sito, lo stesso della produzione.'],
+        'PAYMENT_PROVIDER'  => ['sumup', 'Si paga tutto online con SumUp, al momento della prenotazione: nessuna caparra.'],
+        'SUMUP_API_KEY'     => [
+            '',
+            'In prova lasciale vuote: il pagamento resta spento e la prenotazione è una richiesta. Per provare il '
+            . 'pagamento vero scrivi chiave e codice esercente, metti MAIL_TRANSPORT=smtp (le conferme partono per '
+            . 'e-mail), paga con una tua carta e rimborsa dal pannello di SumUp.',
+        ],
     ];
     $scriviEnv($rinominare . '/env-prova.txt', $prova, [
         '# Arco del Vento — .env della copia di prova: ' . $urlProva,
@@ -696,8 +721,9 @@ file_put_contents($uscita . '/LEGGIMI-PRIMA.txt', implode(PHP_EOL, [
     ] : []),
     '',
     'Il file .env NON è nello .zip, di proposito: contiene la password',
-    'della posta. env-produzione.txt è già compilato con tutto il resto:',
-    'scrivi la password, controlla il dominio, caricalo e rinominalo.',
+    'della posta e la chiave di SumUp. env-produzione.txt è già compilato',
+    'con tutto il resto: scrivi la password della posta, la chiave e il',
+    'codice esercente di SumUp, controlla il dominio, caricalo e rinominalo.',
     '',
     'La cartella del sito è public_html sul dominio vero, oppure la',
     'sottocartella della prova (per esempio public_html/assisiapartment).',

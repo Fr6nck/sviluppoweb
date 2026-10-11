@@ -117,9 +117,11 @@ pannello di Hostinger (*Avanzate → Configurazione PHP → upload_max_filesize*
 l'area Immagini mostra sempre il limite vero.
 
 **Il `.env` non è nello .zip, di proposito**: deve contenere la password della
-posta. `env-produzione.txt` è già compilato con produzione, debug spento,
-dominio ricavato dall'e-mail della struttura, SMTP di Hostinger e un gettone
-casuale per il controllo finale. Manca solo la password della casella: la
+posta e la chiave di SumUp. `env-produzione.txt` è già compilato con
+produzione, debug spento, dominio ricavato dall'e-mail della struttura, SMTP di
+Hostinger, calendario del sito (`BOOKING_PROVIDER=sito`), pagamento SumUp
+(`PAYMENT_PROVIDER=sumup`) e un gettone casuale per il controllo finale.
+Mancano la password della casella e i due dati di SumUp (vedi il punto 13): li
 scrivi, controlli il dominio, lo carichi e lo rinomini.
 
 Prima di scrivere il pacchetto, lo script **rende ogni pagina delle due lingue**
@@ -453,12 +455,19 @@ l'originale in `docs/foto-originali/`, lancia `php tools/build-photos.php`
 
 ## 13. Il pagamento online con SumUp
 
+**La decisione è presa: si paga tutto online, con SumUp, al momento della
+prenotazione. Non c'è caparra.** La tassa di soggiorno resta esclusa e si paga
+all'arrivo.
+
 Acceso, cambia l'ultimo passo della prenotazione: l'ospite scrive **solo nome
 ed e-mail**, spunta le condizioni e paga **l'intero soggiorno** su una pagina
-di SumUp. I dati della carta non passano mai dal sito. Tornato sul sito, legge
-l'esito; se è pagato, a lui arriva la conferma e a te la prenotazione, per
+sicura di SumUp. I dati della carta non passano mai dal sito. Tornato sul sito,
+legge l'esito; se è pagato, gli arriva la conferma e a te la prenotazione, per
 e-mail e nell'area riservata (con la scritta **Pagata** e il codice SumUp).
-Spento, tutto resta com'è: la prenotazione è una richiesta.
+In Informazioni compare la riga **Pagamento** («Online, con carta, al momento
+della prenotazione… Nessuna caparra»), e nella privacy il paragrafo su SumUp.
+Spento — `PAYMENT_PROVIDER` vuoto, o le due righe SumUp vuote — la
+prenotazione è una richiesta e quelle due parti non si vedono.
 
 ### Che cosa serve da SumUp
 
@@ -480,16 +489,29 @@ PAYMENT_PROVIDER=sumup
 SUMUP_API_KEY=sup_sk_…
 SUMUP_MERCHANT_CODE=M…
 BOOKING_PROVIDER=sito
+MAIL_TRANSPORT=smtp
 ```
+
+`env-produzione.txt` e `env-prova.txt` escono dal pacchetto già con
+`PAYMENT_PROVIDER=sumup` e `BOOKING_PROVIDER=sito`: restano da scrivere la
+chiave e il codice esercente. `BOOKING_PROVIDER=sito` è il calendario vero:
+con quello dimostrativo si incasserebbe su date che nessuno ha controllato.
+`MAIL_TRANSPORT=smtp`, con i dati della casella (punto 5), perché le conferme
+di pagamento partono per e-mail.
 
 `APP_URL` deve essere in **https**: SumUp rimanda l'ospite e avvisa il sito a
 quell'indirizzo. `SUMUP_API_URL` resta vuoto (serve solo alle prove in locale).
 
+In prova, con le due righe SumUp vuote, il pagamento resta spento e il
+controllo finale lo segnala soltanto. Sul dominio vero, invece, si ferma.
+
 ### Prima di aprire
 
 1. Area riservata → **La struttura** → **Condizioni di cancellazione**, in
-   italiano e in inglese: chi paga deve saperle prima. Finché mancano, sul sito
-   compaiono come «da confermare» e il controllo finale si ferma.
+   italiano e in inglese: chi paga deve saperle prima. Compaiono prima del
+   pagamento e nella riga **Disdetta** di Informazioni. Finché mancano la riga
+   Disdetta non si vede, nella prenotazione restano «da confermare» e il
+   controllo finale si ferma.
 2. `tools/preflight.php`: la sezione «Pagamento» deve essere tutta a posto.
 3. **Una prenotazione vera con la tua carta**, sulla camera che costa meno;
    controlla che arrivino le due e-mail e che nell'area riservata risulti

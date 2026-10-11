@@ -74,8 +74,8 @@ return [
         'call'         => 'Chiama',
         'see_rooms'    => 'Scopri le camere',
         'see_room'     => 'Guarda la camera',
-        'all_rooms'    => 'Tutte e cinque le camere',
-        'see_assisi'   => 'Assisi a piedi',
+        'all_rooms'    => 'Scopri le camere',
+        'see_assisi'   => 'Cosa vedere a piedi',
         'see_info'     => 'Informazioni pratiche',
         'see_property' => 'Dentro la casa',
         'send'         => 'Invia la richiesta',
@@ -130,8 +130,8 @@ return [
             'eyebrow'  => 'LE CAMERE DELLA CASA',
             'title'    => 'Le cinque camere|della',
             'sign'     => 'casa.',
-            'lead'     => 'Cinque stanze, tutte nella stessa casa. Quello che le distingue sono i letti, '
-                        . 'l’esposizione e quanto ci si sta larghi.',
+            'lead'     => 'Cinque camere con bagno privato, affacciate su Piazza San Rufino o sui vicoli '
+                        . 'di Assisi. Matrimoniali, doppie e una tripla, per viaggiare in due o in famiglia.',
             'discover' => 'Tutte le camere',
             'prev'     => 'Camere precedenti',
             'next'     => 'Camere successive',
@@ -162,10 +162,11 @@ return [
 
         'host' => [
             'eyebrow' => 'CHI TIENE APERTO',
-            'title'   => 'La casa la manda avanti|una',
-            'sign'    => 'persona.',
-            'lead'    => 'Nessuna reception, nessun servizio in camera, nessun numero verde. C’è Daniele, '
-                       . 'che ha aperto nel 2002 e da allora tiene aperto.',
+            'title'   => 'Una casa,|un padrone di',
+            'sign'    => 'casa.',
+            'lead'    => 'Qui non c’è una reception, c’è un padrone di casa. Daniele accoglie i suoi ospiti '
+                       . 'dal 2002: ti consegna le chiavi, ti racconta Assisi e resta raggiungibile per '
+                       . 'tutto il soggiorno.',
             'numbers' => [
                 ['value' => '05',   'name' => 'CAMERE'],
                 ['value' => '2002', 'name' => 'APERTO DAL'],
@@ -175,7 +176,8 @@ return [
 
         'arrive' => [
             'eyebrow'         => 'COME ARRIVARE',
-            'map'             => 'Apri la mappa',
+            'map'             => 'Apri in Google Maps',
+            'map_label'       => 'Mappa: dove si trova la casa',
             'navigator_label' => 'Nel navigatore',
             'parking_label'   => 'Parcheggio',
             'parking_value'   => 'Piazza Matteotti, :metres m',
@@ -221,11 +223,6 @@ return [
         'corridor_caption' => 'La rosa dei venti nel pavimento del corridoio. È la stessa del marchio, '
                             . 'ed era lì prima.',
 
-        'demo_notice_title' => 'Che cosa manca ancora',
-        'demo_notice_text'  => 'Tariffe, tipologie, letti, occupazione e piano sono quelli veri, e le '
-                             . 'fotografie sono della casa. Restano da scrivere le metrature. La Camera 01 '
-                             . '— la tripla — è l’unica ancora senza fotografia.',
-
         'list_title'    => 'Una per',
         'list_sign'     => 'una.',
         'rates_title'   => 'Le tariffe a confronto',
@@ -267,7 +264,6 @@ return [
                            . 'Letti, occupazione, servizi e prenotazione diretta.',
         'eyebrow'       => 'CAMERA',
         'gallery'       => 'La camera',
-        'gallery_note'  => 'Le fotografie di questa camera non sono ancora disponibili.',
         'photo_pending' => 'Questa camera aspetta ancora la sua fotografia.',
         'description'   => 'La camera',
         'characteristics' => 'Caratteristiche',
@@ -315,6 +311,7 @@ return [
     'views' => [
         'demo'       => 'Esposizione da confermare',
         'piazza'     => 'Su Piazza San Rufino e il Duomo',
+        'vicoli'     => 'Sui vicoli di Assisi',
     ],
 
     'amenities' => [
@@ -345,31 +342,30 @@ return [
         'eyebrow' => 'LA STRUTTURA',
         'title'   => 'Una casa, cinque camere,|una',
         'sign'    => 'persona.',
-        'lead'    => 'Arco del Vento è un affittacamere: cinque stanze in una casa di Via Santa Maria delle '
-                   . 'Rose, ad Assisi, affittate una per volta a chi passa. Non è un albergo e non prova a '
-                   . 'sembrarlo.',
+        'lead'    => 'Arco del Vento è un affittacamere: cinque camere in una casa di Via Santa Maria delle '
+                   . 'Rose, nel centro storico di Assisi, con l’accoglienza di chi la abita e la cura di '
+                   . 'chi la apre ai suoi ospiti da più di vent’anni.',
         'image_alt' => 'Segnaposto: la fotografia della casa non è ancora disponibile.',
 
         'what_title' => 'Che cosa vuol dire affittacamere',
-        'what_text'  => 'Vuol dire che le camere sono poche e sono dentro una casa vera, che non c’è un '
-                      . 'bancone all’ingresso e che chi ti apre la porta è la stessa persona che decide come '
-                      . 'si sta. Vuol dire anche che alcune cose che un albergo dà per scontate qui non ci '
-                      . 'sono: le trovi elencate, senza giri di parole, nelle informazioni pratiche.',
+        'what_text'  => 'Vuol dire poche camere dentro una casa vera, e la stessa persona che ti apre la '
+                      . 'porta, ti consiglia dove mangiare e si ricorda di te l’anno dopo. Quello che c’è '
+                      . 'e quello che non c’è — la colazione, l’ascensore — lo trovi scritto con chiarezza '
+                      . 'nelle informazioni pratiche.',
 
         'host_title' => 'Daniele',
         'host_text'  => 'Daniele Pecetta ha aperto Arco del Vento nel 2002 e da allora lo gestisce lui. '
                       . 'Risponde al telefono, consegna le chiavi, tiene in ordine le cinque stanze. '
                       . 'Quando scrivi a questo indirizzo, è lui che legge.',
         'host_role'  => 'TITOLARE · DAL 2002',
-        'host_bio'   => 'Ha aperto l’affittacamere nel 2002 in Via Santa Maria delle Rose e da ventitré anni '
-                      . 'lo tiene aperto di persona: cinque camere, nessun personale, nessuna reception.',
-        'host_more'  => 'Il resto della storia della casa — com’era prima, cosa è stato rifatto e quando',
+        'host_bio'   => 'Ha aperto l’affittacamere nel 2002 in Via Santa Maria delle Rose e da allora '
+                      . 'accoglie di persona gli ospiti delle cinque camere.',
 
         'building_title' => 'L’edificio',
-        'building_text'  => 'Della casa sappiamo che le camere stanno al secondo piano e che ci si arriva per '
-                          . 'due rampe di scale. L’epoca, i materiali, com’era prima di diventare '
-                          . 'affittacamere: questo no, e sono esattamente le cose che un ospite ricorda. '
-                          . 'Vanno raccontate da chi le sa.',
+        'building_text'  => 'Le camere sono al secondo piano di una casa del centro storico, a due passi '
+                          . 'dalla cattedrale di San Rufino: ci si arriva per due rampe di scale. Nel '
+                          . 'corridoio, intarsiata nel parquet, c’è una rosa dei venti: era lì prima di noi, '
+                          . 'ed è diventata il segno di Arco del Vento.',
 
         'city_title' => 'Stare dentro la città',
         'city_text'  => 'Dormire nel centro storico non è come dormire in periferia con la navetta: le '
@@ -390,8 +386,7 @@ return [
         'image_alt' => 'Un vicolo in salita del centro di Assisi, con un campanile in pietra sullo sfondo.',
 
         'places_title' => 'I sei posti che si raggiungono camminando',
-        'places_note'  => 'I tempi a piedi devono essere verificati sul posto prima della pubblicazione. '
-                        . 'Finché non lo sono, restano marcati.',
+        'places_note'  => 'Tempi indicativi a passo tranquillo, dalla porta di casa.',
         'walk_label'   => 'a piedi',
 
         'rufino_title' => 'Perché San Rufino viene prima',
@@ -401,20 +396,20 @@ return [
                         . 'ancora sedere.',
 
         'moving_title' => 'Muoversi',
-        'moving_text'  => 'Il centro si gira interamente a piedi. Chi arriva in treno scende a Santa Maria '
-                        . 'degli Angeli, alla stazione di Assisi, e sale in autobus o in taxi; chi arriva in '
-                        . 'auto lascia la macchina nei parcheggi a valle delle mura e fa l’ultimo tratto a '
-                        . 'piedi o con le scale mobili.',
-        'moving_note'  => 'Linee, orari e parcheggio consigliato per questa casa',
+        'moving_text'  => 'Il centro storico si visita interamente a piedi. In auto si parcheggia in Piazza '
+                        . 'Matteotti, a pagamento, a circa 200 metri dalla casa. In treno si scende alla '
+                        . 'stazione di Assisi, a Santa Maria degli Angeli, e si sale in centro con l’autobus '
+                        . 'fino a Piazza Matteotti, oppure in taxi.',
     ],
 
     'places' => [
-        'san-rufino'   => ['name' => 'Cattedrale di San Rufino',   'note' => 'la cattedrale, e la chiesa del quartiere'],
-        'santa-chiara' => ['name' => 'Basilica di Santa Chiara',    'note' => 'in fondo alla discesa, verso est'],
+        'san-rufino'   => ['name' => 'Cattedrale di San Rufino',   'note' => 'la cattedrale, a pochi passi da casa'],
+        'santa-chiara' => ['name' => 'Basilica di Santa Chiara',    'note' => 'in fondo alla discesa, verso sud'],
         'comune'       => ['name' => 'Piazza del Comune',           'note' => 'il tempio di Minerva e i caffè'],
         'spoliazione'  => ['name' => 'Santuario della Spoliazione',  'note' => 'accanto al vescovado'],
         'san-francesco' => ['name' => 'Basilica di San Francesco',  'note' => 'all’estremità opposta del centro'],
-        'carceri'      => ['name' => 'Eremo delle Carceri',         'note' => 'fuori città, in salita sul Subasio'],
+        'carceri'      => ['name' => 'Eremo delle Carceri',         'note' => 'sul Subasio, circa 4 km in salita',
+                           'time' => 'oltre un’ora a piedi, 10 minuti in taxi'],
     ],
 
     // ------------------------------------------------------- Informazioni
@@ -425,8 +420,8 @@ return [
         'eyebrow' => 'INFORMAZIONI',
         'title'   => 'Quello che significa|stare',
         'sign'    => 'qui.',
-        'lead'    => 'Questa non è la pagina secondaria del sito: è quella che si legge la sera prima di '
-                   . 'partire. Dove un dato manca è segnato, non arrotondato.',
+        'lead'    => 'Tutto quello che serve sapere prima di partire: orari, arrivo, parcheggio e '
+                   . 'regole della casa.',
 
         'notice_title' => 'Perché tanti dati sono segnati',
         'notice_text'  => 'Orari di arrivo, parcheggio, scale, servizi e regole della casa li ha dichiarati '
@@ -479,7 +474,7 @@ return [
             'children'      => 'Bambini',
             'city_tax'      => 'Tassa di soggiorno',
             'min_nights'    => 'Soggiorno minimo',
-            'payment'       => 'Pagamento e caparra',
+            'payment'       => 'Pagamento',
             'cancellation'  => 'Disdetta',
             'languages'     => 'Lingue parlate',
             'accessibility' => 'Accessibilità',
@@ -489,13 +484,18 @@ return [
             'welcome'       => 'Daniele, di persona: consegna le chiavi e mostra la casa.',
             'documents'     => 'Al check-in, oppure mandali prima su WhatsApp e facciamo più in fretta.',
             'min_nights'    => 'Un soggiorno che comprende un sabato dura almeno :nights notti.',
-            'payment_online' => 'Online, con carta, quando prenoti: l’intero soggiorno, su una pagina di SumUp.',
+            'payment_online' => 'Online, con carta, al momento della prenotazione: si paga l’intero soggiorno su una pagina sicura di SumUp. Nessuna caparra.',
+            'children'      => 'Benvenuti. Sotto i :age anni non si paga la tassa di soggiorno.',
             'navigator'     => 'Imposta :place, non l’indirizzo: la via è senza uscita. A piedi l’indirizzo preciso funziona.',
             'car'           => 'In auto non si arriva fino alla porta: si lascia la macchina e si fa l’ultimo tratto a piedi.',
-            'train'         => 'Stazione di Assisi, poi AssisiLink o la linea C fino a Piazza Matteotti.',
-            'plane'         => 'Aeroporto di Perugia, servizio Airlink: circa quattro corse al giorno, arrivo a Piazza Matteotti.',
+            'train'         => 'Stazione di Assisi, poi l’autobus fino a Piazza Matteotti, oppure il taxi.',
+            'plane'         => 'Aeroporto di Perugia, poi il bus Umbria Airlink fino a Piazza Matteotti.',
             'taxi'          => 'Fatti portare a :place.',
-            'bus_note'      => 'Linee, orari aggiornati e il collegamento per l’Eremo delle Carceri',
+            'links_title'   => 'Orari e tariffe aggiornati',
+            'link_parking'  => 'Parcheggio Piazza Matteotti — tariffe e orari',
+            'link_bus'      => 'Autobus urbani di Assisi — linee e orari',
+            'link_airlink'  => 'Umbria Airlink — dall’aeroporto di Perugia',
+            'new_tab'       => 'si apre in una nuova scheda',
             'no_meals'      => 'Non c’è: non serviamo pasti, e nemmeno la colazione.',
             'wifi'          => 'Sì, circa :speed — abbastanza per lavorare.',
             'city_tax'      => ':amount a persona per notte, per le prime :nights notti. Esenti i minori di :age anni. Si paga al check-in.',
@@ -788,9 +788,10 @@ return [
                          . 'compili un modulo e serve a proteggerlo dagli invii falsificati. Non ci sono '
                          . 'cookie di profilazione, non c’è Google Analytics, non ci sono pixel di '
                          . 'piattaforme pubblicitarie. I caratteri tipografici e le immagini sono serviti '
-                         . 'dal nostro server, quindi nessun dominio terzo vede il tuo indirizzo IP '
-                         . 'mentre leggi. Per questo non c’è una finestra di consenso: non ci sarebbe '
-                         . 'niente da consentire.',
+                         . 'dal nostro server. L’unica eccezione è la mappa della home: le sue immagini '
+                         . 'arrivano da OpenStreetMap, che per mostrarle riceve il tuo indirizzo IP, senza '
+                         . 'cookie. Per questo non c’è una finestra di consenso: non ci sarebbe niente da '
+                         . 'consentire.',
             ],
             'rights' => [
                 'title' => 'I tuoi diritti',

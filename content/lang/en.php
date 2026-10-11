@@ -73,8 +73,8 @@ return [
         'call'         => 'Call',
         'see_rooms'    => 'See the rooms',
         'see_room'     => 'See the room',
-        'all_rooms'    => 'All five rooms',
-        'see_assisi'   => 'Assisi on foot',
+        'all_rooms'    => 'Discover the rooms',
+        'see_assisi'   => 'What to see on foot',
         'see_info'     => 'Practical information',
         'see_property' => 'Inside the house',
         'send'         => 'Send the request',
@@ -126,8 +126,7 @@ return [
             'eyebrow'  => 'THE ROOMS OF THE HOUSE',
             'title'    => 'The five rooms|of the',
             'sign'     => 'house.',
-            'lead'     => 'Five rooms, all in the same house. What tells them apart are the beds, which way '
-                        . 'they face and how much space you get.',
+            'lead'     => 'Five rooms with private bathrooms, looking onto Piazza San Rufino or the lanes of Assisi. Doubles, twins and a triple, for couples and families alike.',
             'discover' => 'All the rooms',
             'prev'     => 'Previous rooms',
             'next'     => 'Next rooms',
@@ -158,10 +157,9 @@ return [
 
         'host' => [
             'eyebrow' => 'WHO KEEPS IT OPEN',
-            'title'   => 'The house is run|by one',
-            'sign'    => 'person.',
-            'lead'    => 'No front desk, no room service, no call centre. There is Daniele, who opened in '
-                       . '2002 and has kept it open ever since.',
+            'title'   => 'A house,|a host who is',
+            'sign'    => 'at home.',
+            'lead'    => 'There is no front desk here: there is a host. Daniele has welcomed his guests since 2002 — he hands you the keys, tells you about Assisi and stays within reach for your whole stay.',
             'numbers' => [
                 ['value' => '05',   'name' => 'ROOMS'],
                 ['value' => '2002', 'name' => 'OPEN SINCE'],
@@ -171,7 +169,8 @@ return [
 
         'arrive' => [
             'eyebrow'         => 'GETTING HERE',
-            'map'             => 'Open the map',
+            'map'             => 'Open in Google Maps',
+            'map_label'       => 'Map: where the house is',
             'navigator_label' => 'In the sat nav',
             'parking_label'   => 'Parking',
             'parking_value'   => 'Piazza Matteotti, :metres m',
@@ -216,11 +215,6 @@ return [
         'corridor_caption' => 'The compass rose in the corridor floor. It is the one from the mark, '
                             . 'and it was there first.',
 
-        'demo_notice_title' => 'What is still missing',
-        'demo_notice_text'  => 'Rates, room types, beds, occupancy and floor are the real ones, and the '
-                             . 'photographs are of the house itself. Still to be written: the room sizes. '
-                             . 'Room 01 — the triple — is the only one still without a photograph.',
-
         'list_title'    => 'One by',
         'list_sign'     => 'one.',
         'rates_title'   => 'The rates side by side',
@@ -262,7 +256,6 @@ return [
                            . 'Beds, occupancy, amenities and direct booking.',
         'eyebrow'       => 'ROOM',
         'gallery'       => 'The room',
-        'gallery_note'  => 'Photographs of this room are not available yet.',
         'photo_pending' => 'This room is still waiting for its own photograph.',
         'description'   => 'The room',
         'characteristics' => 'Characteristics',
@@ -310,6 +303,7 @@ return [
     'views' => [
         'demo'       => 'Aspect to be confirmed',
         'piazza'     => 'Onto Piazza San Rufino and the cathedral',
+        'vicoli'     => 'Onto the lanes of Assisi',
     ],
 
     'amenities' => [
@@ -339,31 +333,21 @@ return [
         'eyebrow' => 'THE HOUSE',
         'title'   => 'One house, five rooms,|one',
         'sign'    => 'person.',
-        'lead'    => 'Arco del Vento rents rooms: five of them, in a house on Via Santa Maria delle Rose in '
-                   . 'Assisi, let one at a time to whoever is passing through. It is not a hotel and does '
-                   . 'not try to look like one.',
+        'lead'    => 'Arco del Vento rents guest rooms: five of them, in a house on Via Santa Maria delle Rose in the old town of Assisi, with the welcome of someone who has opened it to guests for more than twenty years.',
         'image_alt' => 'Placeholder: the photograph of the house is not available yet.',
 
         'what_title' => 'What «affittacamere» means',
-        'what_text'  => 'It means the rooms are few and they are inside a real house, that there is no desk '
-                      . 'in the hall, and that whoever opens the door is the same person who decides how '
-                      . 'things are done. It also means some things a hotel takes for granted are not here: '
-                      . 'they are listed, plainly, under practical information.',
+        'what_text'  => 'It means a handful of rooms inside a real house, and the same person who opens the door, tells you where to eat and remembers you the following year. What there is and what there is not — breakfast, a lift — is written down plainly in the practical information.',
 
         'host_title' => 'Daniele',
         'host_text'  => 'Daniele Pecetta opened Arco del Vento in 2002 and has run it himself since. He '
                       . 'answers the phone, hands over the keys and keeps the five rooms in order. When you '
                       . 'write to this address, he is the one reading.',
         'host_role'  => 'OWNER · SINCE 2002',
-        'host_bio'   => 'He opened the guest rooms in 2002 on Via Santa Maria delle Rose and has kept them '
-                      . 'open in person for twenty-three years: five rooms, no staff, no front desk.',
-        'host_more'  => 'The rest of the story of the house — how it was before, what was rebuilt and when',
+        'host_bio'   => 'He opened the guest rooms in 2002 on Via Santa Maria delle Rose and has welcomed the guests of the five rooms himself ever since.',
 
         'building_title' => 'The building',
-        'building_text'  => 'What we know about the house is that the rooms are on the second floor, reached '
-                          . 'by two flights of stairs. Its age, its materials, what it was before it took in '
-                          . 'guests: those we do not, and they are exactly the things a guest remembers. '
-                          . 'They have to be told by whoever knows them.',
+        'building_text'  => 'The rooms are on the second floor of a house in the old town, a few steps from the cathedral of San Rufino, up two flights of stairs. In the corridor a compass rose is inlaid in the parquet: it was there before us, and it became the sign of Arco del Vento.',
 
         'city_title' => 'Staying inside the city',
         'city_text'  => 'Sleeping in the old town is not the same as sleeping out of town with a shuttle: '
@@ -384,8 +368,7 @@ return [
         'image_alt' => 'A steep lane in the old town of Assisi, with a stone bell tower in the background.',
 
         'places_title' => 'The six places you reach on foot',
-        'places_note'  => 'Walking times have to be checked on the ground before publication. Until they '
-                        . 'are, they stay marked.',
+        'places_note'  => 'Approximate times at an easy pace, from the front door.',
         'walk_label'   => 'on foot',
 
         'rufino_title' => 'Why San Rufino comes first',
@@ -395,20 +378,17 @@ return [
                         . 'where you can still sit down.',
 
         'moving_title' => 'Getting around',
-        'moving_text'  => 'The old town is walked end to end. Arriving by train you get off at Santa Maria '
-                        . 'degli Angeli, the station for Assisi, and come up by bus or taxi; arriving by car '
-                        . 'you leave it in the car parks below the walls and do the last stretch on foot or '
-                        . 'by the escalators.',
-        'moving_note'  => 'Lines, timetables and the car park we recommend for this house',
+        'moving_text'  => 'The old town is best seen entirely on foot. By car, you park in Piazza Matteotti, a paid car park about 200 metres from the house. By train, you get off at Assisi station, in Santa Maria degli Angeli, and ride up to Piazza Matteotti by bus, or take a taxi.',
     ],
 
     'places' => [
-        'san-rufino'    => ['name' => 'Cattedrale di San Rufino',    'note' => 'the cathedral, and this quarter’s church'],
-        'santa-chiara'  => ['name' => 'Basilica di Santa Chiara',    'note' => 'down the slope, to the east'],
+        'san-rufino'    => ['name' => 'Cattedrale di San Rufino',    'note' => 'the cathedral, a few steps from the house'],
+        'santa-chiara'  => ['name' => 'Basilica di Santa Chiara',    'note' => 'down the slope, to the south'],
         'comune'        => ['name' => 'Piazza del Comune',           'note' => 'the temple of Minerva and the cafés'],
         'spoliazione'   => ['name' => 'Santuario della Spoliazione', 'note' => 'beside the bishop’s palace'],
         'san-francesco' => ['name' => 'Basilica di San Francesco',   'note' => 'at the far end of the old town'],
-        'carceri'       => ['name' => 'Eremo delle Carceri',         'note' => 'outside town, uphill on Monte Subasio'],
+        'carceri'       => ['name' => 'Eremo delle Carceri',         'note' => 'on Monte Subasio, about 4 km uphill',
+                            'time' => 'over an hour on foot, 10 minutes by taxi'],
     ],
 
     'info' => [
@@ -418,8 +398,7 @@ return [
         'eyebrow' => 'INFORMATION',
         'title'   => 'What staying here|actually',
         'sign'    => 'means.',
-        'lead'    => 'This is not the site’s secondary page: it is the one people read the night before '
-                   . 'they travel. Where a fact is missing it is marked, not rounded off.',
+        'lead'    => 'Everything worth knowing before you leave: times, arrival, parking and house rules.',
 
         'notice_title' => 'Why so much is marked',
         'notice_text'  => 'Arrival times, parking, stairs, amenities and house rules come from Daniele '
@@ -472,7 +451,7 @@ return [
             'children'      => 'Children',
             'city_tax'      => 'City tax',
             'min_nights'    => 'Minimum stay',
-            'payment'       => 'Payment and deposit',
+            'payment'       => 'Payment',
             'cancellation'  => 'Cancellation',
             'languages'     => 'Languages spoken',
             'accessibility' => 'Accessibility',
@@ -482,13 +461,18 @@ return [
             'welcome'       => 'Daniele, in person: he hands over the keys and shows you the house.',
             'documents'     => 'At check-in, or send them ahead on WhatsApp and it goes quicker.',
             'min_nights'    => 'A stay that includes a Saturday night is at least :nights nights.',
-            'payment_online' => 'Online by card when you book: the whole stay, on a SumUp page.',
+            'payment_online' => 'Online by card when you book: the whole stay is paid on a secure SumUp page. No deposit.',
+            'children'      => 'Welcome. Under :age, no tourist tax is due.',
             'navigator'     => 'Set :place, not the street address: the street is a dead end. On foot the exact address works.',
             'car'           => 'You cannot drive right up to the door: you leave the car and walk the last stretch.',
-            'train'         => 'Assisi station, then AssisiLink or line C up to Piazza Matteotti.',
-            'plane'         => 'Perugia airport, Airlink service: about four runs a day, arriving at Piazza Matteotti.',
+            'train'         => 'Assisi station, then the bus up to Piazza Matteotti, or a taxi.',
+            'plane'         => 'Perugia airport, then the Umbria Airlink bus to Piazza Matteotti.',
+            'links_title'   => 'Current timetables and prices',
+            'link_parking'  => 'Piazza Matteotti car park — prices and hours',
+            'link_bus'      => 'Assisi town buses — lines and timetables',
+            'link_airlink'  => 'Umbria Airlink — from Perugia airport',
+            'new_tab'       => 'opens in a new tab',
             'taxi'          => 'Ask to be taken to :place.',
-            'bus_note'      => 'Lines, current timetables and the connection to the Eremo delle Carceri',
             'no_meals'      => 'There is none: we serve no meals, and no breakfast either.',
             'wifi'          => 'Yes, around :speed — enough to work on.',
             'city_tax'      => ':amount per person per night, for the first :nights nights. Under :age are exempt. Paid at check-in.',
@@ -776,8 +760,9 @@ return [
                 'text'  => 'This site uses one cookie, a technical one: it keeps your session open while '
                          . 'you fill in a form and protects that form against forged submissions. There '
                          . 'are no profiling cookies, no Google Analytics, no advertising pixels. The '
-                         . 'typefaces and the images are served from our own server, so no third-party '
-                         . 'domain sees your IP address while you read. That is why there is no consent '
+                         . 'typefaces and the images are served from our own server. The one exception is '
+                         . 'the map on the home page: its images come from OpenStreetMap, which receives '
+                         . 'your IP address to show them, with no cookies. That is why there is no consent '
                          . 'banner: there would be nothing to consent to.',
             ],
             'rights' => [
