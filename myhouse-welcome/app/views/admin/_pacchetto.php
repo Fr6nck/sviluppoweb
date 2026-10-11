@@ -39,7 +39,8 @@ $cur = null; foreach ($p['versions'] as $v) if ($v['is_current']) $cur = $v; $cu
             <div class="field" style="margin:0"><label>Prezzo annuale (€, IVA esclusa)</label>
               <input type="text" name="prezzo" inputmode="decimal" required value="<?= $cur ? Support::e(number_format($cur['price_cents'] / 100, 2, ',', '')) : '' ?>"></div>
             <div class="field" style="margin:0"><label>Price ID di Stripe <span class="muted">(facoltativo)</span></label>
-              <input type="text" name="stripe_price_id" placeholder="price_…" pattern="price_[A-Za-z0-9]+" value="<?= Support::e($cur['stripe_price_id'] ?? '') ?>"></div>
+              <input type="text" name="stripe_price_id" placeholder="price_…" pattern="price_[A-Za-z0-9]+" value="<?= Support::e($cur['stripe_price_id'] ?? '') ?>">
+              <p class="tiny muted" style="margin:4px 0 0">Lascia vuoto: Stripe userà il prezzo scritto qui. Chi è già abbonato resta al suo prezzo fino a quando non cambia piano.</p></div>
           </div>
           <?php if ($cur && Plans::perProperty($cur)): ?>
             <div class="grid grid-4">

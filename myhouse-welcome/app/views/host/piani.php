@@ -48,7 +48,7 @@ $programmato = !empty($sub['next_package_version_id']) ? Plans::version((int) $s
             <p class="small muted" style="margin:0">Non disponibile adesso.</p>
           <?php elseif ($prev['tipo'] === CambioPiano::SCENDE): ?>
             <p class="small" style="margin:0">Dal <?= Support::e(Support::date($fine)) ?>: oggi non paghi niente.</p>
-            <a class="btn btn--ghost" href="<?= Support::e($vai) ?>">Passa a <?= Support::e($pv['name']) ?> dal rinnovo</a>
+            <a class="btn" href="<?= Support::e($vai) ?>">Passa a <?= Support::e($pv['name']) ?> dal rinnovo</a>
           <?php else: ?>
             <p class="small" style="margin:0"><?= $prev['conguaglio'] > 0 ? 'Oggi <b>' . Support::e(Support::money($prev['conguaglio'], (string) $pv['currency'])) . '</b> + IVA, per i ' . (int) $prev['giorni'] . ' giorni fino al rinnovo.' : 'Vale subito, senza pagamento.' ?></p>
             <a class="btn" href="<?= Support::e($vai) ?>">Passa a <?= Support::e($pv['name']) ?><?= $perStruttura && $x['attuale'] ? ' con ' . $q . ' strutture' : '' ?></a>

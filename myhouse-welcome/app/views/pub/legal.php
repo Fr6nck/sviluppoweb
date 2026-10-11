@@ -26,7 +26,7 @@ $title = $doc === 'termini' ? 'Termini e condizioni' : 'Informativa sulla privac
     (Codice Identificativo Nazionale), che è obbligatorio per pubblicare e non può essere usato da un'altra guida. Una guida non può
     raccogliere più case, appartamenti o strutture con indirizzi o CIN diversi: per ciascuna serve una guida, per esempio con il piano
     Portfolio. Fanno eccezione B&amp;B, affittacamere e agriturismi con più camere allo stesso indirizzo e con lo stesso CIN: sono una
-    struttura sola, e le camere con Wi-Fi o istruzioni diverse si gestiscono con le «varianti camera». In ogni guida ogni sezione
+    struttura sola: se le camere hanno reti Wi-Fi diverse, si scrivono nella sezione Wi-Fi, una riga per zona. In ogni guida ogni sezione
     compare una volta sola, e le sezioni libere sono al massimo tre. Se una guida è usata per più unità ricettive possiamo chiederti
     di separarla e, se non lo fai, sospenderne la pubblicazione dopo un avviso.</p>
   <h2 style="font-size:22px">2. Account</h2>
@@ -49,8 +49,6 @@ $title = $doc === 'termini' ? 'Termini e condizioni' : 'Informativa sulla privac
   <p>Con «Invita un amico» chi si registra dal link di un cliente ha uno sconto del <?= MHW\Inviti::AMICO ?>% sul primo anno;
     le condizioni sono al punto 10.</p>
   <?php endif; ?>
-  <p>Con i piani che le comprendono puoi aggiungere varianti camera: ognuna costa <?= Support::e(Support::money(MHW\Varianti::prezzo())) ?>
-    l'anno, IVA esclusa, oltre al prezzo del piano.</p>
   <h2 style="font-size:22px">5. Modifiche ai piani</h2>
   <p>Le condizioni del piano che hai acquistato restano quelle in vigore al momento dell'acquisto per tutto il periodo
     pagato. Eventuali modifiche al listino si applicano ai nuovi acquisti.</p>

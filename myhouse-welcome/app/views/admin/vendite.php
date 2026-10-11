@@ -51,15 +51,13 @@ $barre = function (array $valori, callable $etichetta, string $titolo) use ($pia
     <?php endforeach; ?>
   </nav>
 
-  <div class="cifre cifre--4">
+  <div class="cifre cifre--3">
     <div class="cifra cifra--carta"><span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('people', 17) ?></span>Nuovi abbonamenti</span>
       <b class="cifra__valore"><?= (int) $nuoviTot ?></b><span class="cifra__nota">negli ultimi <?= $mesi ?> mesi<?= $primo ? ' · il più scelto: ' . Support::e($piani[$primo]) . ' (' . $percento($t['nuovi'][$primo], $nuoviTot) . '%)' : '' ?></span></div>
     <div class="cifra cifra--carta"><span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('euro', 17) ?></span>Incasso del periodo</span>
       <b class="cifra__valore"><?= $soldi($incassoTot) ?></b><span class="cifra__nota">nuovi abbonamenti e cambi di piano, senza i rinnovi</span></div>
     <div class="cifra cifra--carta"><span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('layers', 17) ?></span>Abbonamenti attivi oggi</span>
       <b class="cifra__valore"><?= (int) $attiviTot ?></b><span class="cifra__nota"><?= implode(' · ', array_map(fn($k) => $piani[$k] . ' ' . $percento($v['attivi'][$k]['stripe'] + $v['attivi'][$k]['staff'], $attiviTot) . '%', array_keys($piani))) ?></span></div>
-    <div class="cifra cifra--carta"><span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('key', 17) ?></span>Varianti camera</span>
-      <b class="cifra__valore"><?= (int) $v['varianti'] ?></b><span class="cifra__nota">attive oggi, in tutte le guide</span></div>
   </div>
 
   <section class="panel stack" aria-labelledby="mesi-v">

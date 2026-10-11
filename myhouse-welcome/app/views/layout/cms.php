@@ -41,10 +41,6 @@ if ($prop) {
     $pid = (int) $prop['id'];
     $guida = [['contenuti', "/pannello/$pid", 'Contenuti', 'doc'], ['lingue', "/pannello/$pid/lingue", 'Lingue', 'globe'],
               ['aspetto', "/pannello/$pid/aspetto", 'Aspetto', 'palette'], ['qr', "/pannello/$pid/qr", 'QR & Link', 'qr']];
-    // Varianti camera: se la guida ne ha già, oppure se il piano le permette e la struttura ha camere
-    // (B&B, affittacamere, agriturismo, altro). La pagina resta raggiungibile anche senza la scheda.
-    if (MHW\Varianti::diStruttura($pid) || (MHW\Varianti::permesse((int) $prop['account_id'])
-        && in_array((string) ($prop['property_type'] ?? ''), ['bnb', 'affittacamere', 'agriturismo', 'altro'], true))) $guida[] = ['varianti', "/pannello/$pid/varianti", 'Varianti camera', 'key'];
     if ($vedeStatistiche) $guida[] = ['statistiche', "/pannello/$pid/statistiche", 'Statistiche', 'chart'];
     $guida[] = ['impostazioni', "/pannello/$pid/impostazioni", 'Impostazioni', 'sliders'];
 }

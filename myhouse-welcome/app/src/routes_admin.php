@@ -300,7 +300,7 @@ $r->get('/admin/pacchetti', function () {
         unset($v);
     }
     unset($p);
-    View::out('admin/packages', ['packages' => $packages, 'features' => Db::all('SELECT * FROM features ORDER BY id'), 'nav' => 'pacchetti'], 'layout/cms');
+    View::out('admin/packages', ['packages' => $packages, 'features' => Db::all("SELECT * FROM features WHERE code <> 'room_variants' ORDER BY id"), 'nav' => 'pacchetti'], 'layout/cms');
 });
 
 /**
@@ -352,7 +352,7 @@ $r->post('/admin/pacchetti/{pid}/nuova-versione', function (array $a) {
             'package_id' => $pkg['id'], 'version' => $next, 'price_cents' => $prezzo, 'currency' => 'EUR',
             'interval_unit' => 'year', 'is_current' => 1, 'sold_count' => 0, 'stripe_price_id' => $priceId, 'created_at' => Support::now(),
         ] + $aStruttura);
-        foreach (Db::all('SELECT * FROM features ORDER BY id') as $f) {
+        foreach (Db::all("SELECT * FROM features WHERE code <> 'room_variants' ORDER BY id") as $f) {
             $val = trim((string) ($_POST['f'][$f['code']] ?? '0'));
             if (!preg_match('/^(\d{1,4}|unlimited)$/', $val)) $val = '0';
             Db::insert('package_features', ['package_version_id' => $vid, 'feature_id' => $f['id'], 'value' => $val]);

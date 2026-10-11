@@ -400,6 +400,9 @@ final class SectionCatalog
         return $out;
     }
 
+    /** Quante sezioni ci sono nel catalogo (la sezione libera no): il «{sezioni}» delle schede dei piani (7B). */
+    public static function quante(): int { return count(array_merge(...array_values(self::gruppi()))); }
+
     /** La riga di presentazione nel catalogo «Aggiungi una sezione». */
     public static function breve(string $kind): string { return (string) (self::get($kind)['breve'] ?? ''); }
 

@@ -36,7 +36,8 @@ $modo = $modo ?? 'normale'; $origini = $origini ?? []; ?>
       <?= Support::e(Support::money($costo['totale'], $pv['currency'])) ?> + IVA all'anno.</p>
   </div>
   <?php if ($costo['fuori']): ?>
-    <p class="note">Hai raggiunto il numero massimo di strutture del Portfolio. Scrivici e troviamo una soluzione.</p>
+    <div class="limit"><p>Hai raggiunto il numero massimo di strutture del Portfolio (<?= (int) $pv['max_quantity'] ?>). Più di <?= (int) $pv['max_quantity'] ?> strutture? Ti facciamo una proposta.</p>
+      <a class="btn btn--sm" href="<?= Support::e(Support::mailtoPreventivo()) ?>">Chiedi un preventivo</a></div>
   <?php else: ?>
     <form method="post" class="stack"><?= Csrf::field() ?>
       <div class="field" style="margin:0"><label for="name">Nome della struttura</label>

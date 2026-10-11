@@ -19,6 +19,7 @@ $stato = is_file($statoFile) ? json_decode((string) file_get_contents($statoFile
 $metodo = $_SERVER['REQUEST_METHOD'];
 $percorso = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 parse_str((string) file_get_contents('php://input'), $corpo);
+if ($metodo === 'DELETE') $corpo += $_GET;   // i parametri di DELETE arrivano nell'indirizzo
 $chiave = $_SERVER['HTTP_IDEMPOTENCY_KEY'] ?? '';
 $auth = $_SERVER['PHP_AUTH_USER'] ?? '';
 
@@ -139,6 +140,11 @@ if ($metodo === 'POST' && $percorso === '/v1/prices') {
 if ($metodo === 'POST' && $percorso === '/v1/coupons') {
     $rispondi(['id' => 'coupon_finto' . $n, 'object' => 'coupon', 'duration' => $corpo['duration'] ?? '', 'name' => $corpo['name'] ?? '',
                'percent_off' => $corpo['percent_off'] ?? null, 'amount_off' => $corpo['amount_off'] ?? null]);
+}
+// 7B: togliere la vecchia voce delle camere da un abbonamento (tools/togli-varianti-stripe.php).
+if ($metodo === 'DELETE' && preg_match('#^/v1/subscription_items/si_var_([A-Za-z0-9_]+)$#', $percorso, $m)) {
+    $abbonamento($m[1]); $stato['subs'][$m[1]]['varianti'] = null;
+    $rispondi(['id' => 'si_var_' . $m[1], 'object' => 'subscription_item', 'deleted' => true]);
 }
 if ($metodo === 'DELETE' && preg_match('#^/v1/coupons/([A-Za-z0-9_]+)$#', $percorso, $m)) $rispondi(['id' => $m[1], 'object' => 'coupon', 'deleted' => true]);
 if ($metodo === 'POST' && $percorso === '/v1/billing_portal/sessions') $rispondi(['url' => 'https://billing.stripe.test/p/session_' . $n]);

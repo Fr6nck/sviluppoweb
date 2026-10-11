@@ -13,6 +13,12 @@ final class Support
     {
         return 'mailto:' . self::contatto() . '?subject=' . rawurlencode($oggetto) . ($corpo !== '' ? '&body=' . rawurlencode($corpo) : '');
     }
+    /** «Chiedi un preventivo» per più di 10 strutture (7B): oggetto e domande già scritti. */
+    public static function mailtoPreventivo(): string
+    {
+        return self::mailto('Preventivo Portfolio oltre 10 strutture', "Ciao, gestisco più di 10 strutture e vorrei una proposta per MyHouse Welcome.\n\n"
+            . "Quante strutture:\nTipologie (case vacanza, B&B, affittacamere…):\nZona:\nLingue che mi servono:\nCosa mi serve in particolare:\n\nNome e telefono:");
+    }
     public static function today(): string { return gmdate('Y-m-d'); }
 
     public static function e(?string $s): string

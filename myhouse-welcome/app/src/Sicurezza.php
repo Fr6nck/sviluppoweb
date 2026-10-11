@@ -128,12 +128,4 @@ final class Sicurezza
         }
         return $out;
     }
-
-    /** I campi di una variante camera che contengono un codice. @return string[] */
-    public static function campiVariante(array $dati): array
-    {
-        $out = [];
-        foreach (self::testi($dati) as [$percorso, $testo]) if (self::codiceAccesso($testo)) $out[] = $percorso;
-        return array_values(array_unique($out));
-    }
 }

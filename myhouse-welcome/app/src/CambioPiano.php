@@ -68,7 +68,7 @@ final class CambioPiano
         $base = '';
         foreach ($vociAttuali as $v) {
             $id = (string) ($v['id'] ?? '');
-            // La voce principale non è quella delle strutture aggiuntive né quella delle varianti camera.
+            // La voce principale non è quella delle strutture aggiuntive (né la vecchia voce con ruolo=variante, 7B).
             $ruolo = is_array($v['price']['product'] ?? null) ? (string) ($v['price']['product']['metadata']['ruolo'] ?? '') : '';
             if ($id !== '' && $id !== $idVoceExtra && !in_array($ruolo, ['aggiuntiva', 'variante'], true)) { $base = $id; break; }
         }

@@ -25,9 +25,8 @@
    Cosa fa la sezione: per ogni prenotazione mostra il dato di riferimento
    (fisso) e il tempo dell'host (modificabile con un cursore) per le
    comunicazioni necessarie e per le domande evitabili con una guida; poi
-   il valore in euro del tempo risparmiato, confrontato con il prezzo del
-   piano più economico ($partenza, già presente in home.php). Funziona anche
-   senza JavaScript con i valori di partenza.
+   il valore in euro del tempo risparmiato in un anno (7B: senza il confronto
+   con il prezzo del piano). Funziona anche senza JavaScript con i valori di partenza.
    ===================================================================== */
 use MHW\Support;
 $t2 = ['nec' => 16, 'evit' => 19, 'pren' => 6, 'euro' => 20];
@@ -89,14 +88,8 @@ $t2Gg = round($t2Gu / 8 * 2) / 2;
     <div class="t2__risultato" aria-live="polite">
       <span class="t2__kicker t2__kicker--chiaro">Tempo risparmiato in un anno</span>
       <span class="t2__euro"><span data-o="valore"><?= number_format($t2Gu * $t2['euro'], 0, ',', '.') ?></span> €</span>
+      <span class="t2__frase">Il tempo che ti restituisce la guida, in un anno.</span>
       <span class="t2__sotto"><span data-o="oreG"><?= $t2Ore($t2Gu) ?></span> ore, cioè <span data-o="giornate"><?= str_replace('.', ',', (string) $t2Gg) ?> <?= $t2Gg == 1 ? 'giornata' : 'giornate' ?></span> di lavoro, a <span data-o="euro2"><?= $t2['euro'] ?></span> € l'ora</span>
-      <?php if (!empty($partenza)): $t2Prezzo = (int) round((int) $partenza['price_cents'] / 100); $t2Diff = (int) round($t2Gu * $t2['euro']) - $t2Prezzo; ?>
-      <dl class="t2__bilancio" data-prezzo="<?= $t2Prezzo ?>">
-        <div><dt>Valore del tempo risparmiato</dt><dd><span data-o="valore"><?= number_format($t2Gu * $t2['euro'], 0, ',', '.') ?></span> €</dd></div>
-        <div><dt>Abbonamento <?= Support::e($partenza['name'] ?? '') ?>, IVA esclusa</dt><dd>− <?= $t2Prezzo ?> €</dd></div>
-        <div class="t2__diff"><dt>Differenza a tuo favore</dt><dd><span data-o="diff"><?= ($t2Diff < 0 ? '− ' : '+ ') . number_format(abs($t2Diff), 0, ',', '.') ?></span> €</dd></div>
-      </dl>
-      <?php endif; ?>
       <span class="t2__piccolo">Contiamo la metà dei tuoi minuti di domande evitabili: qualche ospite chiederà comunque.</span>
     </div>
   </div>
@@ -149,12 +142,8 @@ $t2Gg = round($t2Gu / 8 * 2) / 2;
 .t2__contesto{margin:0;font-size:14px;color:var(--muted,#6a5b48)}
 .t2__contesto b{color:var(--ink,#231b12)}
 .t2__risultato{background:var(--tile-terracotta,#b4451f);color:var(--tile-ink,#fff8f2);border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:6px;justify-content:center}
+.t2__frase{display:block;margin-top:8px;font-size:17px;line-height:24px;font-weight:600}
 .t2__euro{font-family:Gloock,Georgia,serif;font-size:clamp(56px,7vw,80px);line-height:1;font-variant-numeric:tabular-nums}
-.t2__bilancio{margin:14px 0 0;display:grid;gap:0;border-top:1px solid rgba(255,248,242,.35)}
-.t2__bilancio div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,248,242,.2);font-size:15px}
-.t2__bilancio dt{opacity:.9}
-.t2__bilancio dd{margin:0;white-space:nowrap;font-variant-numeric:tabular-nums}
-.t2__diff{font-size:18px!important;font-weight:600;border-bottom:0!important}
 .t2__sotto,.t2__valore{font-size:18px}
 .t2__valore{margin-top:8px}
 .t2__piccolo{margin-top:6px;font-size:13px;opacity:.85}
@@ -179,8 +168,6 @@ $t2Gg = round($t2Gu / 8 * 2) / 2;
     out('oreAnno', ore(v.pren * tot * 12 / 60)); out('oreEvit', ore(v.pren * v.evit * 12 / 60)); out('oreG', ore(g));
     out('giornate', gg < 1 ? 'meno di una giornata' : String(gg).replace('.', ',') + (gg === 1 ? ' giornata' : ' giornate'));
     out('valore', Math.round(g * v.euro).toLocaleString('it-IT'));
-    var bil = s.querySelector('[data-prezzo]');
-    if (bil) { var d = Math.round(g * v.euro) - Number(bil.getAttribute('data-prezzo')); out('diff', (d < 0 ? '\u2212 ' : '+ ') + Math.abs(d).toLocaleString('it-IT')); }
     s.querySelector('[data-bar="nec"]').style.flexGrow = v.nec;
     s.querySelector('[data-bar="evit"]').style.flexGrow = v.evit;
   }

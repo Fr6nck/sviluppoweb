@@ -39,6 +39,8 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
             <label for="strutture-<?= $id ?>" class="plan__label" style="margin:6px 0 0">Quante strutture vuoi gestire?</label>
             <input id="strutture-<?= $id ?>" name="strutture" type="number" inputmode="numeric" step="1" data-sceglie="pv-<?= $id ?>"
                    min="<?= (int) $o['min_quantity'] ?>" max="<?= (int) $o['max_quantity'] ?>" value="<?= $q ?>">
+            <div class="plan__oltre" data-oltre hidden><p>Più di <?= (int) $o['max_quantity'] ?> strutture? Ti facciamo una proposta.</p>
+              <a class="btn btn--sm" href="<?= Support::e(Support::mailtoPreventivo()) ?>">Chiedi un preventivo</a></div>
             <?php $pvS = $o; $qS = $q; include __DIR__ . '/_scaglioni.php'; ?>
           </div>
         <?php else: ?>

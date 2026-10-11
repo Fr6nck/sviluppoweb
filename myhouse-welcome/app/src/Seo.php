@@ -59,7 +59,7 @@ final class Seo
             'p.home.titolo' => 'Guida digitale per case vacanza e B&B | MyHouse Welcome',
             'p.home.descrizione' => 'La guida digitale per case vacanza, B&B, affittacamere e agriturismi: check-in, Wi-Fi e consigli in un link e un QR Code. La crei gratis, paghi solo quando la pubblichi.',
             'p.domande.titolo' => 'Domande frequenti | MyHouse Welcome',
-            'p.domande.descrizione' => 'Le risposte su MyHouse Welcome: prova gratuita, lingue e traduzioni, più strutture, varianti camera, fattura, cambio di piano e disdetta.',
+            'p.domande.descrizione' => 'Le risposte su MyHouse Welcome: prova gratuita, lingue e traduzioni, più strutture, B&B con più camere, fattura, cambio di piano e disdetta.',
             'p.termini.titolo' => 'Termini e condizioni | MyHouse Welcome',
             'p.termini.descrizione' => 'Le condizioni del servizio MyHouse Welcome: abbonamento annuale, prezzi e rinnovo, cambio di piano, codici sconto e contenuti della guida.',
             'p.privacy.titolo' => 'Informativa sulla privacy | MyHouse Welcome',

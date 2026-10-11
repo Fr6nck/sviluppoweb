@@ -24,7 +24,7 @@ final class Stripe
     {
         $s = Config::get('stripe');
         $url = rtrim((string) $s['api_base'], '/') . '/v1/' . ltrim($path, '/');
-        if ($method === 'GET' && $params) { $url .= '?' . http_build_query($params); $params = []; }
+        if (($method === 'GET' || $method === 'DELETE') && $params) { $url .= '?' . http_build_query($params); $params = []; }   // come le librerie di Stripe
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true, CURLOPT_USERPWD => $s['secret_key'] . ':', CURLOPT_TIMEOUT => 25,
@@ -194,53 +194,6 @@ final class Stripe
         return self::call('POST', 'subscriptions/' . rawurlencode($subscriptionId),
                           ['items[0][id]' => $itemId, 'items[0][quantity]' => max(0, $extra), 'proration_behavior' => 'create_prorations'],
                           'mhw-qty-add-' . $subscriptionId . '-' . $extra);
-    }
-
-    /**
-     * Il Price annuale delle varianti camera, al prezzo di config (varianti.prezzo_cents).
-     * Lo si ritrova dalla lookup_key (mhw_variante_<centesimi>); se non c'è si crea, col
-     * prodotto che porta ruolo=variante (così il conteggio delle strutture lo ignora).
-     */
-    public static function variantPrice(): string
-    {
-        $cents = Varianti::prezzo();
-        $chiave = 'mhw_variante_' . $cents;
-        $trovati = self::call('GET', 'prices', ['lookup_keys' => [$chiave], 'active' => 'true', 'limit' => 1]);
-        if (!empty($trovati['data'][0]['id'])) return (string) $trovati['data'][0]['id'];
-        $r = self::call('POST', 'prices', [
-            'currency' => 'eur', 'unit_amount' => (string) $cents, 'tax_behavior' => 'exclusive', 'recurring[interval]' => 'year',
-            'lookup_key' => $chiave, 'product_data[name]' => 'MyHouse Welcome — variante camera',
-            'product_data[metadata][ruolo]' => 'variante',
-        ], 'mhw-price-variante-' . $cents);
-        return (string) $r['id'];
-    }
-
-    /**
-     * Quante varianti camera paga l'abbonamento. In aumento si paga subito la parte dell'anno
-     * che resta (always_invoice) e il cambio vale solo se il pagamento riesce
-     * (pending_if_incomplete: se non riesce, la risposta ha pending_update). In calo,
-     * credito sulla prossima fattura; a zero la voce si toglie.
-     * @param string $itemId la voce delle varianti, '' se non c'è ancora
-     */
-    public static function setVariantQuantity(string $subscriptionId, string $itemId, int $quantita, bool $aumento): array
-    {
-        $p = ['proration_behavior' => $aumento ? 'always_invoice' : 'create_prorations', 'expand' => ['items.data.price.product']];
-        if ($aumento) $p['payment_behavior'] = 'pending_if_incomplete';
-        if ($itemId === '') { $p['items[0][price]'] = self::variantPrice(); $p['items[0][quantity]'] = (string) max(1, $quantita); }
-        elseif ($quantita <= 0) { $p['items[0][id]'] = $itemId; $p['items[0][deleted]'] = 'true'; }
-        else { $p['items[0][id]'] = $itemId; $p['items[0][quantity]'] = (string) $quantita; }
-        return self::call('POST', 'subscriptions/' . rawurlencode($subscriptionId), $p,
-                          'mhw-var-' . $subscriptionId . '-' . $quantita . '-' . gmdate('YmdHi'));
-    }
-
-    /** La voce delle varianti in un abbonamento Stripe (dal prodotto con ruolo=variante), o ''. */
-    public static function variantItem(array $stripeSub): string
-    {
-        foreach ((array) ($stripeSub['items']['data'] ?? []) as $v) {
-            $prodotto = $v['price']['product'] ?? null;
-            if (is_array($prodotto) && ($prodotto['metadata']['ruolo'] ?? '') === 'variante') return (string) ($v['id'] ?? '');
-        }
-        return '';
     }
 
     /**

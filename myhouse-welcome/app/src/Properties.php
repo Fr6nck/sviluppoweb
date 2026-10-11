@@ -48,7 +48,7 @@ final class Properties
     {
         $mia = (int) $altra['account_id'] === $accountId;
         return 'Questo CIN è già usato ' . ($mia ? 'dalla tua guida «' . $altra['name'] . '»' : 'da un\'altra guida su MyHouse Welcome') . '. '
-             . 'Una guida corrisponde a un\'unità ricettiva, con il suo indirizzo e il suo CIN: per più camere della stessa struttura usa le varianti camera.'
+             . 'Una guida corrisponde a un\'unità ricettiva, con il suo indirizzo e il suo CIN: più camere allo stesso indirizzo e con lo stesso CIN sono una guida sola.'
              . ($mia ? '' : ' Se la struttura è tua, scrivici a ' . (string) ((Config::get('legal') ?? [])['contact_email'] ?? '') . ' e lo sistemiamo.');
     }
 
@@ -177,13 +177,13 @@ final class Properties
             throw new \RuntimeException('I luoghi consigliati non fanno parte del tuo piano.');
         }
         // Una guida è un'unità ricettiva: ogni sezione una volta sola (un check-in, un Wi-Fi, un indirizzo),
-        // e poche sezioni libere. Più camere con Wi-Fi o istruzioni diverse sono «varianti camera».
+        // e poche sezioni libere. Più camere con reti diverse: una riga per zona nella sezione Wi-Fi.
         $gia = (int) Db::val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = ?', [$propertyId, $kind], 0);
         if (SectionCatalog::multipla($kind) && $gia >= SectionCatalog::LIBERE_MAX) {
             throw new LimitReached('Puoi avere al massimo ' . SectionCatalog::LIBERE_MAX . ' sezioni libere in una guida.');
         }
         if (!SectionCatalog::multipla($kind) && $gia > 0) {
-            throw new \RuntimeException('«' . SectionCatalog::nome($kind) . '» c\'è già in questa guida: ogni sezione si aggiunge una volta sola. Per camere con Wi-Fi o istruzioni diverse usa le varianti camera.');
+            throw new \RuntimeException('«' . SectionCatalog::nome($kind) . '» c\'è già in questa guida: ogni sezione si aggiunge una volta sola. Se le camere hanno reti Wi-Fi diverse, nella sezione Wi-Fi aggiungi una riga per ogni zona.');
         }
         return Db::tx(function () use ($accountId, $propertyId, $kind) {
             $pos = (int) Db::val('SELECT COALESCE(MAX(position),0)+1 FROM sections WHERE property_id = ?', [$propertyId], 1);

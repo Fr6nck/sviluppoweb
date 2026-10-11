@@ -4,7 +4,7 @@ namespace MHW;
 /**
  * Le domande frequenti, in un posto solo: le mostrano la landing (le prime otto, poi
  * «Altre domande») e la pagina /domande, e le leggono i dati strutturati (FAQPage) e llms.txt.
- * Le parti che dipendono dal listino (Portfolio, varianti camera, inviti) si calcolano qui.
+ * Le parti che dipendono dal listino (Portfolio, inviti) si calcolano qui.
  */
 final class Faq
 {
@@ -35,7 +35,7 @@ final class Faq
                 . '. Prezzi annuali, IVA esclusa. Nel listino scegli quante strutture ti servono e vedi il totale e quanto costa in media ognuna; dentro il pannello trovi il conto struttura per struttura.'];
         }
         array_push($f,
-            ['bnb-camere', 'Ho un B&B, un affittacamere o un agriturismo con più camere: mi servono più guide?', 'No. Più camere allo stesso indirizzo e con lo stesso CIN sono una struttura sola: basta una guida. Se alcune camere hanno un Wi-Fi o istruzioni di accesso diverse, con Plus o Portfolio aggiungi una «variante camera» (' . Support::money(Varianti::prezzo()) . ' + IVA l\'anno l\'una): ha il suo QR, e chi lo inquadra vede la stessa guida con il Wi-Fi e le istruzioni della sua camera.'],
+            ['bnb-camere', 'Ho un B&B, un affittacamere o un agriturismo con più camere: mi servono più guide?', 'No. Più camere allo stesso indirizzo e con lo stesso CIN sono una struttura sola: basta una guida. Se le camere hanno reti Wi-Fi diverse, nella sezione Wi-Fi aggiungi una riga per ogni zona.'],
             ['piu-case', 'Posso mettere più case in una guida sola?', 'No. Una guida corrisponde a un\'unità ricettiva, con il suo indirizzo e il suo CIN, che serve per pubblicare e non può stare su due guide. Per più case o appartamenti c\'è Portfolio: ogni struttura ha la sua guida, e dalla seconda in poi costa meno.'],
             ['google', 'La mia guida si trova su Google?', 'No, ed è voluto, per la tua privacy e per quella dei tuoi ospiti. La guida contiene l\'indirizzo della casa, come si entra, il Wi-Fi e i tuoi contatti: informazioni utili a chi soggiorna, non a chiunque cerchi online. Per questo non compare su Google né sugli altri motori di ricerca, e gli assistenti come ChatGPT non la leggono: la apre solo chi ha il link o inquadra il QR. Le pagine di MyHouse Welcome che spiegano il servizio, invece, si trovano normalmente.'],
             ['codice-porta', 'Posso scrivere nella guida il codice della porta?', 'Te lo sconsigliamo. La guida si apre da un link, senza password: chi ha il link la legge, e un link si può inoltrare. Un codice scritto lì resterebbe leggibile anche dopo la partenza dell\'ospite, mettendo a rischio la casa e la privacy di chi ci soggiorna dopo. Per questo, se scrivi un codice di porte, cassette delle chiavi, casseforti o allarmi, la piattaforma ti avvisa e prima di pubblicare ti chiede di confermare che lo fai a tuo rischio. Nella guida spieghi come si entra e dove sono le chiavi; il codice lo comunichi all\'ospite di persona o in privato, poco prima dell\'arrivo.'],

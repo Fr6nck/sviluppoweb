@@ -104,7 +104,7 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
       <?php elseif ($piano): $qSc = Plans::perProperty($piano) ? $quantita : 1; $sc = MHW\Sconti::disponibili() ? MHW\Sconti::applicato($acc, $piano, $qSc) : null; ?>
         <div class="spread spread--mid">
           <div class="stack" style="gap:4px"><span class="kicker">Il tuo piano</span>
-            <b style="font-size:22px;font-weight:500"><?= Support::e($piano['name']) ?><?= Plans::perProperty($piano) ? ' · ' . $quantita . ' strutture' : '' ?></b></div>
+            <b style="font-size:22px;font-weight:500">Hai scelto <?= Support::e($piano['name']) ?><?= Plans::perProperty($piano) ? ' · ' . $quantita . ' strutture' : '' ?></b></div>
           <span style="font-size:26px;font-weight:500"><?php if ($sc): ?><s class="muted" style="font-size:18px"><?= Support::e(Support::money($sc['prezzo'], $piano['currency'])) ?></s>
             <?= Support::e(Support::money($sc['scontato'], $piano['currency'])) ?><span class="small muted"> + IVA il primo anno</span>
             <?php else: ?><?= Support::e(Support::money(Plans::price($piano, $qSc), $piano['currency'])) ?>
@@ -112,14 +112,47 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
         </div>
         <?php $pv = $piano; $quantita = $qSc; $torna = '/pannello/' . $pid . '/procedura/pubblica'; include __DIR__ . '/_sconto.php'; ?>
         <p class="small muted">Abbonamento annuale con rinnovo automatico, che puoi disattivare quando vuoi. Il pagamento avviene su Stripe;
-          la guida va online appena Stripe conferma. <a href="<?= b() ?>/piano">Cambia piano</a></p>
+          la guida va online appena Stripe conferma.</p>
+        <?php /* 7B: prima di pagare si può passare a un altro piano, anche più economico; se perde qualcosa che la guida usa, lo si dice prima. */
+              $altriPiani = array_values(array_filter(Plans::public(), fn($o) => (int) $o['id'] !== (int) $piano['package_id']));
+              $nStrutture = (int) MHW\Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL AND is_demo < 2', [$acc['id']], 1);
+              $torna = '/pannello/' . $pid . '/procedura/pubblica'; ?>
+        <?php if ($altriPiani): ?>
+          <div class="passa-piano">
+            <?php foreach ($altriPiani as $o): $qO = Plans::perProperty($o) ? (Plans::quantity($o, (string) max((int) $o['min_quantity'], $nStrutture)) ?? (int) $o['min_quantity']) : 1;
+                  $prezzoO = Plans::price($o, $qO); $menoCaro = $prezzoO < Plans::price($piano, $qSc);
+                  $cambia = $menoCaro ? MHW\CambioAbbonamento::cosaCambia((int) $acc['id'], ['id' => (int) $o['pv_id']] + $o, $qO) : null;
+                  $perdite = $cambia ? array_merge($cambia['perde'],
+                      array_map(fn($x) => '«' . $x['struttura']['name'] . '» ha ' . count($x['sezioni']) . ' sezioni attive: con ' . $o['name'] . ' ne restano ' . $cambia['maxSezioni'] . ', e prima di pubblicare scegli quali.', $cambia['sezioni']),
+                      $cambia['daArchiviare'] ? [$o['name'] . ' comprende ' . $cambia['maxStrutture'] . ' struttur' . ($cambia['maxStrutture'] === 1 ? 'a' : 'e') . ': le altre restano in bozza.'] : []) : [];
+                  $etichettaO = 'Passa a ' . $o['name'] . ' · ' . Support::money($prezzoO, $o['currency']) . ' + IVA / anno';
+                  $modulo = '<form method="post" action="' . b() . '/piano" style="margin:0">' . Csrf::field() . '<input type="hidden" name="pv" value="' . (int) $o['pv_id'] . '">'
+                          . (Plans::perProperty($o) ? '<input type="hidden" name="strutture" value="' . $qO . '">' : '') . '<input type="hidden" name="torna" value="' . Support::e($torna) . '">'; ?>
+              <?php if ($perdite): ?>
+                <details class="passa-piano__conferma">
+                  <summary class="btn btn--ghost btn--sm"><?= Support::e($etichettaO) ?></summary>
+                  <div class="stack" style="gap:8px;margin-top:10px">
+                    <p class="small" style="margin:0"><b>Con <?= Support::e($o['name']) ?> la guida non mostrerà:</b></p>
+                    <ul class="small" style="margin:0;padding-left:18px"><?php foreach ($perdite as $x): ?><li><?= Support::e($x) ?></li><?php endforeach; ?></ul>
+                    <?= $modulo ?><button class="btn btn--sm">Conferma: passa a <?= Support::e($o['name']) ?></button></form>
+                  </div>
+                </details>
+              <?php else: ?>
+                <?= $modulo ?><button class="btn btn--ghost btn--sm"><?= Support::e($etichettaO) ?></button></form>
+              <?php endif; ?>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
         <?php if (!$verificato): ?>
           <div class="note" role="status"><span>Per attivare l'abbonamento conferma prima la tua email (<?= Support::e($user['email']) ?>).</span></div>
           <form method="post" action="<?= b() ?>/verifica/invia" style="margin:0"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm">Mandami di nuovo l'email</button></form>
         <?php endif; ?>
-        <?php if (!MHW\Fatturazione::completa($acc)): ?>
-          <div class="note" role="status"><span>Prima del pagamento servono i dati di fatturazione (P.IVA o codice fiscale, SDI o PEC).
-            <a href="<?= b() ?>/account?torna=<?= rawurlencode('/pannello/' . $pid . '/procedura/pubblica') ?>#fatturazione">Compilali ora</a>.</span></div>
+        <?php if (!MHW\Fatturazione::completa($acc)): /* 7B: lo stesso modulo di Account & Fatturazione, qui, sopra «Conferma e paga». */ ?>
+          <section class="stack fatt-pubblica" id="fatturazione" style="gap:12px" aria-labelledby="fatt-pubblica-titolo">
+            <h2 id="fatt-pubblica-titolo" style="font-size:20px;margin:0">I dati per la fattura</h2>
+            <p class="small muted" style="margin:0">Servono per la fattura o la ricevuta. Potrai cambiarli quando vuoi in Account &amp; Fatturazione.</p>
+            <?php $torna = '/pannello/' . $pid . '/procedura/pubblica'; include __DIR__ . '/_fatturazione_form.php'; ?>
+          </section>
         <?php endif; ?>
       <?php else: ?>
         <p>Scegli il piano con cui pubblicare. <a href="<?= b() ?>/piano">Vedi i piani</a></p>
@@ -141,7 +174,7 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
               <span class="scelta__testo"><?= Support::e($nomeL) ?><?php if (!$ok): ?> <span class="small muted">con il piano Plus</span><?php endif; ?></span></label>
           <?php endforeach; ?>
         </div>
-        <div><button class="btn btn--ghost btn--sm" name="dopo" value="pubblica">Salva le lingue</button></div>
+        <div><button class="btn btn--sm" name="dopo" value="pubblica">Salva le lingue</button></div>
       </form>
     <?php endif; ?>
 
@@ -179,8 +212,8 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
 
     <p class="small muted pubblica-riservata"><?= Icon::svg('lock', 14) ?><span>Dopo la pubblicazione la guida è online per chi ha il link o il QR. Non compare nei motori di ricerca.</span></p>
     <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/pubblica" style="margin:0"><?= Csrf::field() ?>
-      <?php $barraAvanti = '<button class="btn btn--go" ' . ($problemi || (!$sub && (!$verificato || !$piano)) ? 'disabled' : '') . '>'
-                         . ($sub ? 'Pubblica ora' : 'Attiva e pubblica') . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
+      <?php $barraAvanti = '<button class="btn btn--go" ' . ($problemi || (!$sub && (!$verificato || !$piano || !MHW\Fatturazione::completa($acc))) ? 'disabled' : '') . '>'
+                         . ($sub ? 'Pubblica ora' : 'Conferma e paga') . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
             include __DIR__ . '/_barra_passo.php'; ?>
     </form>
 <?php break;

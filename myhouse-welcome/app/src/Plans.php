@@ -146,7 +146,7 @@ final class Plans
             $piani[] = $p;
         }
         $righe = [];
-        foreach (Db::all('SELECT * FROM features ORDER BY id') as $f) {
+        foreach (Db::all("SELECT * FROM features WHERE code <> 'room_variants' ORDER BY id") as $f) {
             $valori = []; $qualcuno = false;
             foreach ($piani as $p) {
                 $v = (string) ($p['features'][$f['code']] ?? $f['default_value']);

@@ -68,11 +68,6 @@ $config = [
         'attivi' => $bool('MHW_INVITI'),
     ],
 
-    // Varianti camera (Plus e Portfolio): prezzo annuale di ognuna, IVA esclusa, in centesimi.
-    'varianti' => [
-        'prezzo_cents' => (int) $env('MHW_VARIANTE_PREZZO', '1500'),
-    ],
-
     'mail' => [
         // smtp | mail | log. "log" scrive le email in storage/logs/mail.log:
         // per provare senza spedire niente.

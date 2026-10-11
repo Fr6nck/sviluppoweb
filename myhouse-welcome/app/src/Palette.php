@@ -3,7 +3,7 @@ namespace MHW;
 
 /**
  * Le palette della guida. Niente selettore di colore libero: sei combinazioni
- * curate, ognuna in due varianti — testo scuro su fondo chiaro, testo chiaro
+ * curate, ognuna in due versioni — testo scuro su fondo chiaro, testo chiaro
  * su fondo scuro.
  *
  * Una variante si può scegliere SOLO se tutte le coppie che contano superano
@@ -108,7 +108,7 @@ final class Palette
         return min(self::pairs($code, $tone)) >= 4.5;
     }
 
-    /** Le varianti scegliibili di una palette. @return string[] */
+    /** Le versioni sceglibili di una palette. @return string[] */
     public static function tones(string $code): array
     {
         return array_values(array_filter(['scuro', 'chiaro'], fn($t) => self::readable($code, $t)));

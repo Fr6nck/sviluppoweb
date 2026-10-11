@@ -122,6 +122,8 @@ p{margin:0}
 .btn--danger:hover{background:var(--alert);color:var(--on-dark);filter:brightness(1.12)}
 .btn--block{width:100%}
 .btn--sm{height:44px;padding:0 18px;font-size:14px}
+/* 7B: le azioni principali, anche piccole, almeno 48 px (le secondarie a contorno restano compatte). */
+.btn--sm:not(.btn--ghost):not(.btn--quiet){height:48px}
 .btn--lg{height:60px;font-size:17px;padding:0 32px}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
 
@@ -968,18 +970,27 @@ input[type=file]::file-selector-button{height:36px;margin-right:12px;padding:0 1
 @media (max-width:860px){.amico{grid-template-columns:minmax(0,1fr);gap:32px;padding:32px 24px}}
 @media (max-width:560px){.amico{margin-inline:-4px;padding:28px 16px}.amico__conto{padding:20px 16px}.amico .row .btn{flex:1 1 100%}}
 
-/* «Anche il tuo sito»: tre vantaggi e il contatto diretto. */
-.sito-invito{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:14px;align-items:center;margin:24px 0;padding:14px 16px;
-  border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--accent)}
+/* «MyHouse Pro · da blackout.in» (7B): fondo nero con grana leggera, accento mattone, testo chiaro. */
+.sito-invito{position:relative;margin:24px 0;padding:28px 28px 20px;border-radius:var(--r-xl);color:#f6f0e5;
+  background-color:#17130d;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.07'/%3E%3C/svg%3E")}
 .sito-invito[hidden]{display:none}
-.sito-invito__ico{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:999px;background:var(--terracotta-soft);color:var(--accent)}
-.sito-invito__testo{margin:0;font-size:15px;line-height:22px;text-wrap:pretty}
-.sito-invito__testo b{display:block;font-weight:600}
-.sito-invito__testo span{color:var(--muted);font-size:14px}
-.sito-invito__vai{white-space:nowrap}
-.sito-invito__mai{grid-column:2/-1;margin:-10px 0 -8px}
-.sito-invito__mai .linkbtn{color:var(--muted);font-weight:400;min-height:36px}
-@media(max-width:640px){ .sito-invito{grid-template-columns:auto minmax(0,1fr) auto} .sito-invito__vai{grid-column:2/-1;justify-self:start} .sito-invito__chiudi{grid-row:1;grid-column:3} }
+.sito-invito__chiudi{position:absolute;top:12px;right:12px;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;
+  border:0;border-radius:999px;background:transparent;color:#f6f0e5;cursor:pointer}
+.sito-invito__chiudi:hover{background:rgba(246,240,229,.12)}
+.sito-invito__chiudi[hidden]{display:none}
+.sito-invito__kicker{display:block;font-size:12px;line-height:16px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#e8a487;padding-right:48px}
+.sito-invito__titolo{margin:8px 0 0;font-family:Gloock,Georgia,serif;font-weight:400;font-size:28px;line-height:34px;color:#fff;padding-right:48px;text-wrap:balance}
+.sito-invito__punti{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px 24px;font-size:15px;line-height:22px}
+.sito-invito__punti li{display:inline-flex;align-items:center;gap:8px}
+.sito-invito__punti svg{flex:none;color:#e8a487}
+.sito-invito__piede{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-top:20px}
+.sito-invito__vai{background:#b4451f;color:#fff}
+.sito-invito__vai:hover{background:#93370f;color:#fff}
+.sito-invito__mai{margin:0}
+.sito-invito__mai .linkbtn{color:rgba(246,240,229,.72);font-weight:400;font-size:13px;min-height:44px}
+.sito-invito__mai .linkbtn:hover{color:#fff}
+@media(max-width:640px){ .sito-invito{padding:24px 16px 16px} .sito-invito__punti{flex-direction:column} .sito-invito__piede{flex-direction:column;align-items:stretch}
+  .sito-invito__vai{width:100%} .sito-invito__mai{align-self:flex-end} }
 .sito{position:relative;isolation:isolate;margin-top:96px;margin-inline:calc(50% - 50vw);padding:96px 20px;scroll-margin-top:72px;color:#fff;overflow:hidden}
 .sito__foto,.sito__foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
 .sito::before{content:"";position:absolute;inset:0;background:rgba(0,0,0,.6);z-index:-1}
@@ -1039,6 +1050,10 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .plan--dark .plan__desc{color:var(--inverse-muted)}
 .plan--dark{border:1px solid color-mix(in srgb,var(--accent) 55%,transparent)}
 .plan__scelta{display:flex;flex-direction:column;gap:18px;flex:1 1 auto}
+/* 7B: oltre il massimo del Portfolio, al posto del prezzo, la proposta su misura. */
+.plan [hidden],.quantita [hidden]{display:none!important}
+.plan__oltre{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:16px;border-radius:16px;background:var(--terracotta-soft);color:var(--ink)}
+.plan__oltre p{margin:0;font-size:16px;line-height:24px;font-weight:600}
 .plan__scelta .btn{margin-top:auto}
 .plan__label{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:-10px}
 .plan__scelta select{height:48px;font-size:16px;border-radius:14px}
@@ -1493,6 +1508,7 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .guadagno{margin-top:96px;scroll-margin-top:96px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:56px;align-items:center;
   padding:56px;border-radius:var(--r-2xl);background:var(--inverse-bg);color:var(--inverse-fg)}
 .guadagno .kicker{color:var(--inverse-muted)}
+.guadagno__cta{margin-top:28px;align-self:flex-start}
 .guadagno__testo{display:flex;flex-direction:column;gap:16px}
 .guadagno__lead{font-size:17px;line-height:26px;color:var(--inverse-muted)}
 .guadagno__voci{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:16px}
@@ -1864,6 +1880,8 @@ a.cifra .cifra__freccia{position:absolute;top:18px;right:18px;opacity:.55}
 .statistiche-testa .cifre{grid-template-columns:minmax(0,1fr)}
 @media(max-width:760px){ .statistiche-testa{grid-template-columns:minmax(0,1fr)} }
 .cifre--4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.cifre--3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:860px){ .cifre--3{grid-template-columns:minmax(0,1fr)} }
 @media(max-width:1100px){ .cifre--4{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media(max-width:480px){ .cifre--4{grid-template-columns:minmax(0,1fr)} }
 .lato .simbolo,.cassetto__pannello .simbolo{color:var(--lato-fg)}
@@ -2038,11 +2056,6 @@ fieldset{min-width:0}
 .plan--dark .scaglioni__elenco li{border-top-color:rgba(246,240,229,.12)}
 .plan--dark .scaglioni__titolo,.plan--dark .scaglioni__elenco small{color:var(--inverse-muted)}
 
-/* La camera di un QR (varianti camera), nella guida dell'ospite */
-.camera{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:16px;background:var(--raised);border:1px solid var(--line);border-left:4px solid var(--accent)}
-.camera__chi{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.camera__nome{font-size:20px;font-weight:500;line-height:26px}
-.camera__nota{margin:2px 0 0;font-size:15px;line-height:22px}
 
 /* Grafici dell'amministrazione (Vendite per piano). Colori per piano validati per
    daltonismo e contrasto sul chiaro e sullo scuro (Essential, Plus, Portfolio). */
@@ -2123,3 +2136,22 @@ fieldset{min-width:0}
 .lato__aiuto:hover{background:var(--lato-velo)}
 .lato__aiuto:focus-visible{outline:2px solid var(--lato-accento);outline-offset:2px}
 .sezione-aiuto{margin:24px 0 0}
+
+/* 7B: «Scegli il tuo piano» nella registrazione senza piano: tre schede compatte, una scelta. */
+.scegli-piano{border:0;margin:0;padding:0;min-width:0}
+.scegli-piano__titolo{font-size:18px;line-height:28px;font-weight:600;padding:0;margin:0 0 4px}
+.scegli-piano__schede{display:grid;gap:8px}
+.scegli-piano__scheda{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:start;margin:0;padding:12px 14px;
+  border:1px solid var(--line-strong);border-radius:var(--r-md);background:var(--raised);cursor:pointer;font-weight:400}
+.scegli-piano__scheda:has(input:checked){border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.scegli-piano__scheda input{margin-top:4px}
+.scegli-piano__testa{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 12px}
+.scegli-piano__testa span{font-size:14px;color:var(--muted)}
+.scegli-piano__scheda ul{grid-column:2;margin:0;padding:0 0 0 16px;font-size:14px;line-height:20px;color:var(--muted)}
+/* 7B: «Passa a …» prima del pagamento, e il modulo di fatturazione nel passo Pubblica. */
+.passa-piano{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+.passa-piano__conferma{flex:1 1 100%}
+.passa-piano__conferma>summary{list-style:none;display:inline-flex}
+.passa-piano__conferma>summary::-webkit-details-marker{display:none}
+.passa-piano__conferma[open]{padding:12px;border:1px solid var(--line-strong);border-radius:var(--r-md)}
+.fatt-pubblica{padding-top:16px;border-top:1px solid var(--line)}

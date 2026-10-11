@@ -68,8 +68,6 @@ final class Gestione
         if (!$pv) return [0, 0];
         $q = max(1, (int) (!empty($s['next_package_version_id']) ? ($s['next_quantity'] ?? 1) : ($s['quantity'] ?? 1)));
         $prezzo = Plans::price($pv, $q);
-        // Le varianti camera sono voci dello stesso abbonamento Stripe: si rinnovano con lui.
-        if ($s['provider'] === 'stripe') $prezzo += Varianti::contaAccount((int) $s['account_id']) * Varianti::prezzo();
         $sconto = Inviti::disponibili() ? Inviti::percento((int) $s['account_id']) : 0;
         return [(int) round($prezzo * (100 - $sconto) / 100), $sconto];
     }
@@ -378,7 +376,7 @@ final class Gestione
             else { $perMese[$m]['nuovi'][$f]++; $totali['nuovi'][$f]++; $totali['strutture'][$f] += max(1, (int) $o['quantity']); }
             $perMese[$m]['incasso'][$f] += (int) $o['amount_cents']; $totali['incasso'][$f] += (int) $o['amount_cents'];
         }
-        // Adesso: abbonamenti attivi per piano (Stripe e staff a parte), strutture e varianti.
+        // Adesso: abbonamenti attivi per piano (Stripe e staff a parte) e strutture.
         $attivi = [];
         foreach (array_keys(self::PIANI_VENDITE) as $k) $attivi[$k] = ['stripe' => 0, 'staff' => 0, 'strutture' => 0];
         foreach (Db::all("SELECT s.provider, s.quantity, s.account_id, p.code FROM subscriptions s
@@ -390,13 +388,11 @@ final class Gestione
             $attivi[$f][$s['provider'] === 'stripe' ? 'stripe' : 'staff']++;
             $attivi[$f]['strutture'] += max(1, (int) $s['quantity']);
         }
-        $varianti = Migrator::tableExists('room_variants') ? (int) Db::val("SELECT COUNT(*) FROM room_variants v JOIN properties p ON p.id = v.property_id
-            JOIN accounts a ON a.id = p.account_id JOIN users u ON u.id = a.user_id WHERE v.removed_at IS NULL AND u.email NOT LIKE ?", [self::demo()], 0) : 0;
         $ultimi = Db::all("SELECT o.id, o.kind, o.amount_cents, o.quantity, o.created_at, o.account_id, p.code, p.name AS piano, u.email, u.name AS cliente
                            FROM orders o JOIN package_versions pv ON pv.id = o.package_version_id JOIN packages p ON p.id = pv.package_id
                            JOIN accounts a ON a.id = o.account_id JOIN users u ON u.id = a.user_id
                            WHERE o.status = 'paid' AND o.provider = 'stripe' AND u.email NOT LIKE ? ORDER BY o.created_at DESC, o.id DESC LIMIT 15", [self::demo()]);
-        return ['mesi' => array_values($perMese), 'totali' => $totali, 'attivi' => $attivi, 'varianti' => $varianti, 'ultimi' => $ultimi];
+        return ['mesi' => array_values($perMese), 'totali' => $totali, 'attivi' => $attivi, 'ultimi' => $ultimi];
     }
 
     /** Gli ultimi 12 mesi (dal più vecchio), con i conti di ogni mese. */

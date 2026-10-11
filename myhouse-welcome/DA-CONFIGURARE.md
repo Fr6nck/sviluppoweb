@@ -85,16 +85,14 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
     5. Con un Portfolio aggiungi una struttura da Account → «Cambia piano» (conguaglio subito). Dopo il pagamento il coupon deve essere ancora sull'abbonamento.
   - Per i Portfolio grandi lo sconto del 50% può superare quello che portano dieci amici: valuta un tetto in euro con `Inviti::TETTO_CENTS`.
 
-**Listino 2026 (migrazione 028), varianti camera, CIN (027), scaglioni (026).**
-  - **Prezzi in vendita** (annui, IVA esclusa): Essential 97 €, Plus 127 €, Portfolio 127 € + 70 € per ogni struttura in più, **da 2 a 10 strutture** («Più di 10 strutture? Scrivici per un preventivo.»). Sono versioni nuove: **chi è già abbonato resta sulla sua versione e rinnova al suo prezzo**. I Price ID di Stripe delle versioni nuove sono vuoti: Stripe usa i prezzi del database, non c'è niente da creare.
+**Listino 2026 (migrazione 028), CIN (027), scaglioni (026).**
+  - **Prezzi in vendita** (annui, IVA esclusa): Essential 97 €, Plus 127 €, Portfolio 127 € + 70 € per ogni struttura in più, **da 2 a 10 strutture** (oltre, il bottone «Chiedi un preventivo», 7B). Sono versioni nuove: **chi è già abbonato resta sulla sua versione e rinnova al suo prezzo**. I Price ID di Stripe delle versioni nuove sono vuoti: Stripe usa i prezzi del database, non c'è niente da creare.
   - Sotto il nome di ogni piano, sulla landing e nella scelta del piano, c'è **«Ideale per …»** (il posizionamento). Si cambia in **Amministrazione → Piani → Testi sulla landing**, campo «Ideale per».
   - **Scaglioni del Portfolio** (prezzo che scende con le strutture): oggi non sono in vendita, ma restano possibili in **Amministrazione → Piani → Portfolio → Nuova versione**, campo «Scaglioni» (una riga per scaglione, come `3: 50`). In quel caso Stripe riceve da solo un Price «graduato»; lascia vuoto il «Price ID della struttura aggiuntiva».
-  - **Varianti camera**: con Plus e Portfolio, 15 € + IVA l'anno l'una (`MHW_VARIANTE_PREZZO`, in centesimi: `1500`). Il sito crea su Stripe il Price con la chiave `mhw_variante_1500` e aggiunge la voce all'abbonamento; la parte dell'anno che resta si paga subito sulla carta dell'abbonamento, e la variante nasce solo se il pagamento riesce. Gli eventi del webhook restano quelli di prima.
+  - **Varianti camera: tolte (7B).** Una struttura, una guida; le reti Wi-Fi diverse si scrivono nella sezione Wi-Fi. `MHW_VARIANTE_PREZZO` non serve più: puoi toglierlo. Vedi «4f» per gli abbonamenti che pagano ancora la voce delle camere.
   - **CIN obbligatorio per pubblicare e unico** su tutta la piattaforma (le vetrine demo no). Le guide già online senza CIN restano online, ma per **ripubblicarle** serve il CIN: avvisa i clienti. In **Anomalie** trovi le guide online senza CIN e i CIN ripetuti.
   - Prove in modalità test di Stripe:
     1. Un Portfolio nuovo da 6 strutture: il totale deve essere 127 + 70 × 5 = 477 € + IVA, e su Stripe la voce delle strutture aggiuntive deve avere quantità 5 a 70 €.
-    2. Con un Plus pagato apri una guida → **Varianti camera**, aggiungi una camera: su Stripe l'abbonamento ha una voce «variante camera» e c'è una fattura con la quota fino al rinnovo. Togli la variante: la voce scende (credito sulla prossima fattura).
-    3. Con la carta `4000 0000 0000 0341` (addebito rifiutato) la variante non deve nascere.
 
 **Vendite per piano.** In **Amministrazione → Vendite per piano** vedi che piani si comprano, mese per mese (3, 6 o 12 mesi): colonne per piano, abbonamenti attivi oggi, incasso per piano, ultimi acquisti, con tabella ed esportazione CSV. Contano gli ordini pagati su Stripe; i clienti di esempio sono esclusi e i rinnovi sono in «Prospetti».
 
@@ -103,8 +101,8 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
 - **Piani → «Testi sulla landing»** (la voce che prima si chiamava «Pacchetti»): titoli, descrizioni ed elenchi. Nell'elenco, una riga che finisce con «:» diventa il titoletto («Tutto di Essential, e in più:»).
 - **Testimonianze**: aggiungine solo di vere, con il permesso scritto della persona, anche per la foto. Finché non ce n'è una visibile, il blocco in landing non compare.
 - **FAQ**: tutte le domande sono in `app/src/Faq.php` (landing, `/domande`, dati strutturati e llms.txt le leggono da lì). Le otto in vista nella landing sono in `Faq::IN_VISTA`. Falle rileggere insieme ai punti 6 e 7 qui sotto, soprattutto «Ricevo fattura?».
-- **Termini § 4** (cambio di piano, codici sconto, inviti, varianti camera) e **Privacy → Fornitori** (Adamo): testi nuovi, versioni dei documenti **non** cambiate. Dopo la revisione del legale aggiorna `MHW_TERMS_VERSION` / `MHW_PRIVACY_VERSION`.
-- **Termini** (§ 1, «Una guida, un'unità ricettiva»): una guida = un indirizzo e un CIN; eccezione per B&B, affittacamere e agriturismi con più camere allo stesso indirizzo (varianti camera); sospensione dopo avviso se una guida serve più unità. Falla rileggere al consulente. Versione dei Termini: `2026-10-08`.
+- **Termini § 4** (cambio di piano, codici sconto, inviti; il capoverso sulle varianti camera è stato tolto nella 7B) e **Privacy → Fornitori** (Adamo): testi nuovi, versioni dei documenti **non** cambiate. Dopo la revisione del legale aggiorna `MHW_TERMS_VERSION` / `MHW_PRIVACY_VERSION`.
+- **Termini** (§ 1, «Una guida, un'unità ricettiva»): una guida = un indirizzo e un CIN; eccezione per B&B, affittacamere e agriturismi con più camere allo stesso indirizzo (reti Wi-Fi diverse nella sezione Wi-Fi, 7B); sospensione dopo avviso se una guida serve più unità. Falla rileggere al consulente. Versione dei Termini: `2026-10-08`.
 - **Termini e Privacy** (`/termini`, `/privacy`): vanno aggiornati con le novità (email di richiamo, dati di fatturazione, funnel anonimo), insieme alla versione in `MHW_TERMS_VERSION` / `MHW_PRIVACY_VERSION`.
 - **Clienti di esempio**: sono account con password nota. Toglili prima di aprire al pubblico (Quadro → «Elimina i clienti di esempio»). Se tieni la demo pubblica, ricreali: la nuova demo è a Spello.
 
@@ -117,6 +115,31 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
 5. Ai privati Adamo fa fattura elettronica con il codice fiscale, non una ricevuta: **fallo confermare al commercialista**.
 6. L'invio allo SDI e l'email al cliente si attivano da Adamo.
 7. Non serve nessun token di Adamo nel sito.
+
+## 4f. Listino 7B: dati di fatturazione, varianti camera, Essential
+
+**Gli abbonamenti che pagano ancora le varianti camera.** Una volta sola, dalla cartella sopra `app/` (via SSH, o dal «Terminale» di cPanel):
+
+    php app/tools/togli-varianti-stripe.php --prova     # elenca soltanto: cliente, quante camere, importo
+    php app/tools/togli-varianti-stripe.php             # chiede conferma (scrivi SI) e toglie
+
+Per ogni abbonamento attivo con la voce delle camere, la toglie con il credito della parte non goduta sulla prossima fattura, azzera la colonna nel database e scrive una riga nel Registro. **Dopo**, su Stripe → Catalogo prodotti, **archivia** il prodotto «MyHouse Welcome — variante camera». Se `--prova` non trova niente, non c'è niente da fare. I QR delle camere già stampati aprono la guida della struttura.
+
+**Essential**: 6 sezioni aggiuntive e foto profilo, anche per chi è già abbonato (migrazione 031). I testi delle schede sono stati aggiornati solo dove erano quelli di serie: controllali in **Amministrazione → Piani → Testi sulla landing** (in Plus, `{sezioni}` diventa il numero di sezioni del catalogo).
+
+**Dati di fatturazione → Adamo.** Il sito li chiede nel passo «Pubblica» prima di «Conferma e paga» (o in Account & Fatturazione) e li manda al cliente Stripe; Adamo li legge da lì:
+
+| Campo del sito | Sul cliente Stripe | Campo di Adamo |
+|---|---|---|
+| Persona fisica / Azienda (`billing_type`) | `metadata[billing_type]` | — (decide quali campi servono) |
+| Nome e cognome / Ragione sociale (`billing_name`) | `name` | Denominazione / Nome |
+| Indirizzo, CAP, Città, Provincia | `address[line1]`, `address[postal_code]`, `address[city]`, `address[state]`, `address[country]=IT` | Indirizzo, CAP, Comune, Provincia, Nazione |
+| Partita IVA (`vat`, solo azienda) | tax id `eu_vat` `IT…` e `metadata[vat]` | Partita IVA |
+| Codice fiscale (`cf`; per un'azienda senza, la P.IVA) | `metadata[Fiscal_code]` e `metadata[cf]` | Codice fiscale |
+| Codice destinatario SDI (`sdi`) | `metadata[Fe_code]` (`0000000` se manca) e `metadata[sdi]` | Codice destinatario |
+| PEC (`pec`) | `metadata[Pec]` e `metadata[pec]` | PEC |
+
+Da provare con un pagamento di prova: (1) una persona fisica con solo codice fiscale → fattura con `0000000`; (2) un'azienda con P.IVA e SDI; (3) un'azienda con P.IVA e PEC, senza SDI; (4) un cambio di dati dopo il primo pagamento (Account) → in Adamo, alla fattura successiva, i dati nuovi; (5) un codice sconto → importi giusti in fattura. I nomi esatti dei campi di Adamo vanno confermati nella loro integrazione Stripe (sono quelli che Adamo ci ha indicato: `Fiscal_code`, `Pec`, `Fe_code`).
 
 ## 4b. La guida vetrina (la demo della landing)
 

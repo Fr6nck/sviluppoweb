@@ -51,6 +51,9 @@
       x.type = 'button'; x.className = 'passo-num__btn'; x.textContent = segno; x.setAttribute('aria-label', testo);
       x.addEventListener('click', function () {
         var q = parseInt(campo.value, 10); if (isNaN(q)) q = min;
+        // 7B: «+» oltre il massimo mostra «Chiedi un preventivo» al posto del prezzo.
+        oltre(delta > 0 && q >= max);
+        if (delta > 0 && q >= max) return;
         q = Math.max(min, Math.min(max, q + delta));
         campo.value = q;
         campo.dispatchEvent(new Event('input', { bubbles: true }));
@@ -58,12 +61,18 @@
       });
       return x;
     }
+    var boxOltre = b.querySelector('[data-oltre]'), prezzi = b.querySelectorAll('.price, .plan__mese');
+    function oltre(si) {
+      if (!boxOltre) return;
+      boxOltre.hidden = !si;
+      for (var k = 0; k < prezzi.length; k++) prezzi[k].hidden = si;
+    }
     var meno = bottone('\u2212', 'Una struttura in meno', -1), piu = bottone('+', 'Una struttura in più', 1);
     gruppo.appendChild(meno); gruppo.appendChild(campo); gruppo.appendChild(piu);
     function limiti() {
       var q = parseInt(campo.value, 10);
-      meno.disabled = !(q > min); piu.disabled = !(q < max);
+      meno.disabled = !(q > min); piu.disabled = !(q < max) && !boxOltre;   // con il preventivo, «+» resta attivo anche al massimo
     }
-    campo.addEventListener('input', limiti); limiti();
+    campo.addEventListener('input', function () { oltre(false); limiti(); }); limiti();
   })(blocchi[i]);
 })();

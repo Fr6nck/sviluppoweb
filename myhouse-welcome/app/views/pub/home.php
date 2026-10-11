@@ -260,6 +260,8 @@ $disegni = [
       <li><span class="guadagno__ico"><?= Icon::svg('euro', 18, 1.8) ?></span><span><b>Servizi extra.</b>
         Transfer, colazione, late check-out: l'ospite li chiede con un tocco su WhatsApp.</span></li>
     </ul>
+    <?php /* 7B: alla fine del blocco scuro, lo stesso bottone dell'hero. */ ?>
+    <a class="btn btn--lg btn--go guadagno__cta" href="<?= $crea ?>"><?= $dentro ? 'Vai alle tue guide' : 'Crea gratis la tua guida' ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
   </div>
   <div class="congedo-mock" aria-hidden="true">
     <span class="congedo-mock__kicker"><?= Support::e(MHW\I18n::t('it', 'before_leaving')) ?></span>
@@ -357,9 +359,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <p class="muted" style="max-width:400px;line-height:24px">Crei e provi la guida gratis, con le funzioni del piano che scegli: paghi solo quando la pubblichi. Prezzi IVA esclusa.</p>
   </div>
 
-  <?php /* In fondo alle funzioni dei piani che comprendono le varianti camera (Plus e Portfolio), il loro prezzo. */
-  $vociPiano = fn(array $p) => array_merge($p['bullet_list'], (string) ($p['features']['room_variants'] ?? '0') === '1'
-      ? ['Varianti camera per B&B e affittacamere: ' . Support::money(MHW\Varianti::prezzo()) . " + IVA l'anno l'una"] : []); ?>
+  <?php $vociPiano = fn(array $p) => $p['bullet_list']; ?>
   <div class="grid grid-3 piani" style="margin-top:28px">
     <?php foreach ($offers as $of): $p = $of['main']; $famiglia = count($of['options']) > 1;
           $scuro = $p['badge'] !== '';
@@ -387,15 +387,17 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
                    min="<?= $minimo ?>" max="<?= (int) $primo['max_quantity'] ?>" value="<?= $minimo ?>">
             <span class="price" aria-live="polite"><span data-totale><?= Support::e(Support::money(Plans::price($primo, $minimo), $primo['currency'])) ?></span><small> + IVA / anno</small></span>
             <span class="plan__mese">circa <span data-mensile><?= Support::e(Support::money(Plans::monthly(Plans::price($primo, $minimo)), $primo['currency'])) ?></span> al mese</span>
+            <div class="plan__oltre" data-oltre hidden><p>Più di <?= (int) $primo['max_quantity'] ?> strutture? Ti facciamo una proposta.</p>
+              <a class="btn btn--sm" href="<?= Support::e(Support::mailtoPreventivo()) ?>">Chiedi un preventivo</a></div>
             <?php $pvS = $primo; $qS = $minimo; include __DIR__ . '/_scaglioni.php'; ?>
             <?php $voci = $vociPiano($p); include __DIR__ . '/_voci_piano.php'; ?>
-            <button class="btn <?= $scuro ? '' : 'btn--ghost' ?>"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $nome) ?></button>
+            <button class="btn"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $nome) ?></button>
           </form>
         <?php else: ?>
           <span class="price"><?= Support::e(Support::money((int) $primo['price_cents'], $primo['currency'])) ?><small> + IVA / anno</small></span>
           <span class="plan__mese">circa <?= Support::e(Support::money(Plans::monthly((int) $primo['price_cents']), $primo['currency'])) ?> al mese</span>
           <?php $voci = $vociPiano($p); include __DIR__ . '/_voci_piano.php'; ?>
-          <a class="btn <?= $scuro ? '' : 'btn--ghost' ?>" href="<?= $vai((int) $p['pv_id']) ?>"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $nome) ?></a>
+          <a class="btn" href="<?= $vai((int) $p['pv_id']) ?>"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $nome) ?></a>
         <?php endif; ?>
       </div>
     <?php endforeach; ?>

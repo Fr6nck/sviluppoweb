@@ -13,7 +13,27 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
 <?php if ($err): ?><p class="note note--err" style="margin-top:20px" role="alert"><?= Support::e($err) ?></p>
   <?php $aiutoEmail = $vecchi['email']; $aiutoPagina = 'Registrazione'; include __DIR__ . '/_aiuto.php'; ?><?php endif; ?>
 <form method="post" class="panel stack" style="margin-top:24px" novalidate><?= Csrf::field() ?>
+  <?php if ($pianoScelto): ?>
   <input type="hidden" name="piano" value="<?= (int) $piano ?>">
+  <?php else: /* 7B: senza un piano dalla landing, si sceglie qui (Plus già scelto); si salva come intended_package_version_id. */
+        $sceglibili = Plans::public(); $giaScelto = (int) $piano;
+        if (!$giaScelto) foreach ($sceglibili as $o) if ($o['code'] === 'plus') $giaScelto = (int) $o['pv_id']; ?>
+  <fieldset class="scegli-piano">
+    <legend class="scegli-piano__titolo">Scegli il tuo piano</legend>
+    <p class="small muted" style="margin:0 0 12px">Non paghi niente finché non decidi di pubblicare. Intanto prepari la guida e la vedi in anteprima, come la vedranno i tuoi ospiti.</p>
+    <div class="scegli-piano__schede">
+      <?php foreach ($sceglibili as $o): $qMin = Plans::quantity($o, null) ?? 1;
+            $voci = array_slice(array_values(array_filter($o['bullet_list'], fn($v) => !str_ends_with($v, ':'))), 0, 3); ?>
+        <label class="scegli-piano__scheda">
+          <input type="radio" name="piano" value="<?= (int) $o['pv_id'] ?>"<?= (int) $o['pv_id'] === $giaScelto ? ' checked' : '' ?> required>
+          <span class="scegli-piano__testa"><b><?= Support::e($o['name']) ?></b>
+            <span><?= Support::e(Support::money(Plans::price($o, $qMin), $o['currency'])) ?> + IVA / anno<?= Plans::perProperty($o) ? ' · ' . $qMin . ' strutture' : '' ?></span></span>
+          <ul><?php foreach ($voci as $v): ?><li><?= Support::e(str_replace('{sezioni}', (string) MHW\SectionCatalog::quante(), $v)) ?></li><?php endforeach; ?></ul>
+        </label>
+      <?php endforeach; ?>
+    </div>
+  </fieldset>
+  <?php endif; ?>
   <?php if (!empty($strutture)): ?><input type="hidden" name="strutture" value="<?= (int) $strutture ?>"><?php endif; ?>
   <div class="field" style="margin:0"><label for="name">Nome e cognome</label>
     <input id="name" name="name" type="text" required maxlength="120" autocomplete="name" value="<?= Support::e($vecchi['name']) ?>" autofocus></div>
