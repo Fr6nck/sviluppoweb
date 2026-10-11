@@ -23,6 +23,8 @@ $esiti = []; $falliti = 0; $capitolo = '';
 
 // ------------------------------------------------------------------ strumenti
 function capitolo(string $t): void { global $esiti, $capitolo; $capitolo = $t; $esiti[] = "\n== $t"; }
+// Se le prove si fermano a metà (errore fatale), gli esiti fin lì si vedono lo stesso.
+register_shutdown_function(function () { global $esiti, $finito; if (empty($finito) && $esiti) { echo implode("\n", $esiti), "\n\n(interrotte)\n"; } });
 function prova(string $nome, bool $ok, string $nota = ''): void {
     global $esiti, $falliti;
     if (!$ok) $falliti++;
@@ -66,9 +68,13 @@ final class Browser
     public static bool $cinAutomatico = true;
     private static int $cinN = 0;
 
+    /** 7A: chi si registra conferma subito l'email (segue il link arrivato per posta), come farebbe una persona. */
+    public static bool $confermaAutomatica = true;
+
     public function req(string $metodo, string $p, ?array $data, array $h = []): array
     {
         global $BASE;
+        if ($metodo === 'POST' && $p === '/registrati' && is_array($data) && !array_key_exists('email2', $data)) $data['email2'] = $data['email'] ?? '';
         if ($metodo === 'POST' && self::$cinAutomatico && preg_match('#^/pannello/(\d+)/pubblica$#', $p, $mp)) {
             $st = db()->prepare("UPDATE properties SET cin = ? WHERE id = ? AND cin = ''");
             $st->execute([sprintf('IT054039C2%08d', ++self::$cinN), (int) $mp[1]]);
@@ -87,6 +93,10 @@ final class Browser
         curl_close($ch);
         $r['head'] = substr($raw, 0, $hs); $r['body'] = substr($raw, $hs);
         if ($t = csrf($r['body'])) $this->csrf = $t;
+        if ($metodo === 'POST' && $p === '/registrati' && self::$confermaAutomatica && $r['code'] === 302 && str_ends_with($r['loc'], '/conferma-email')
+            && ($l = linkPosta(mb_strtolower(trim((string) $data['email'])), 'verifica')) !== '') {
+            $r = $this->get(substr($l, strpos($l, '/verifica/')));
+        }
         return $r;
     }
 
@@ -204,7 +214,7 @@ $r = $ospite->get('/llms.txt');
 prova('llms.txt: introduzione, fatti, piani dal listino (97, 127, 127 + 70), FAQ come link a /domande#id, contatti', $r['code'] === 200
       && str_starts_with($r['body'], "# MyHouse Welcome\n\n> ") && str_contains($r['body'], '## Fatti chiave') && str_contains($r['body'], '- Essential: 97 €')
       && str_contains($r['body'], '- Plus: 127 €') && str_contains($r['body'], '- Portfolio: 127 € la prima struttura, poi 70 €') && str_contains($r['body'], '(con 2: 197 €)')
-      && str_contains($r['body'], '/domande#prova)') && str_contains($r['body'], '## Contatti') && str_contains($r['body'], 'info@myhousewelcome.it'));
+      && str_contains($r['body'], '/domande#prova)') && str_contains($r['body'], '## Contatti') && str_contains($r['body'], 'info@welcomemyhouse.it'));
 $r = $ospite->get('/');
 $ld = preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $r['body'], $mm) ? array_map(fn($j) => json_decode($j, true), $mm[1]) : [];
 $grafo = $ld[0]['@graph'] ?? [];
@@ -280,7 +290,7 @@ prova('…con le fonti dei numeri', str_contains($r['body'], 'Stime di aziende d
 prova('CTA della hero verso la registrazione e verso la demo', preg_match('#<section class="hero2">.*?</section>#s', $r['body'], $mh) && str_contains($mh[0], '/registrati"') && str_contains($mh[0], 'Guarda la demo'));
 prova('Fase 1 · piè di pagina con P.IVA, telefono e WhatsApp', str_contains($r['body'], 'P.IVA 02945910541') && str_contains($r['body'], 'href="tel:+393920061600"')
       && str_contains($r['body'], 'href="https://wa.me/393920061600"') && str_contains($r['body'], 'un progetto Blackout Agency')
-      && str_contains($r['body'], 'Via Ariodante Fabretti 17, Perugia') && str_contains($r['body'], 'href="mailto:info@myhousewelcome.it"'));
+      && str_contains($r['body'], 'Via Ariodante Fabretti 17, Perugia') && str_contains($r['body'], 'href="mailto:info@welcomemyhouse.it"'));
 prova('Fase 1 · favicon, icona Home e anteprima di condivisione', str_contains($r['body'], '/assets/favicon.svg') && str_contains($r['body'], '/assets/apple-touch-icon.png')
       && preg_match('#<meta property="og:image" content="https?://[^"]+/assets/og\.jpg">#', $r['body']) === 1);
 foreach (['favicon.svg', 'apple-touch-icon.png', 'og.jpg'] as $f) prova("Fase 1 · $f presente", is_file("$DOVE/assets/$f") && filesize("$DOVE/assets/$f") > 300);
@@ -343,9 +353,50 @@ prova('Fase 2 · «Piano Essential scelto · non paghi adesso · Cambia»', str_
 $u = riga("SELECT * FROM users WHERE email = 'anna@prova.test'");
 prova('Consenso ai Termini registrato con versione e data', $u && $u['terms_version'] !== '' && $u['terms_accepted_at'] !== null);
 prova('Presa visione privacy registrata', $u && $u['privacy_version'] !== '' && $u['privacy_accepted_at'] !== null);
-prova('Email non ancora verificata', $u && $u['email_verified_at'] === null);
+prova('7A · email confermata dal link arrivato per posta', $u && $u['email_verified_at'] !== null);
 prova('Password salvata con hash', $u && str_starts_with($u['password_hash'], '$2y$') || str_starts_with((string) $u['password_hash'], '$argon'));
 prova('Email di verifica spedita', linkPosta('anna@prova.test', 'verifica') !== '');
+
+// 7A · registrazione: l'email due volte, una password vera, la conferma prima di cominciare.
+Browser::$confermaAutomatica = false;
+$vera = new Browser('vera');
+$PULITO = preg_replace('#/index\.php$#', '', $BASE);
+$vera->get('/registrati');
+$dati7 = ['name' => 'Vera Conferma', 'email' => 'vera@prova.test', 'email2' => 'vera@prova.tst', 'password' => 'VeraProva1234', 'termini' => '1'];
+$r = $vera->post('/registrati', $dati7);
+prova('7A · le due email diverse: rifiutata', $r['code'] === 200 && str_contains($r['body'], 'Le due email non sono uguali') && !val("SELECT id FROM users WHERE email = 'vera@prova.test'"));
+prova('7A · «Ripeti l\'email», «Mostra» la password e l\'aiuto senza la password', str_contains($r['body'], 'name="email2"') && str_contains($r['body'], 'data-mostra-pw')
+      && str_contains($r['body'], 'Aiuto%20con%20l') && str_contains($r['body'], 'vera%40prova.test') && !str_contains($r['body'], 'VeraProva1234'));
+$r = $vera->post('/registrati', ['email2' => 'vera@prova.test', 'password' => 'password123'] + $dati7);
+prova('7A · password tra le più comuni: rifiutata', str_contains($r['body'], 'tra le più usate') && !val("SELECT id FROM users WHERE email = 'vera@prova.test'"));
+$r = $vera->post('/registrati', ['email2' => 'vera@prova.test', 'password' => 'vera@prova.test'] + $dati7);
+prova('7A · password uguale all\'email: rifiutata', str_contains($r['body'], 'uguale alla tua email'));
+$r = $vera->post('/registrati', ['email2' => 'vera@prova.test', 'password' => 'Corta1234'] + $dati7);
+prova('7A · password sotto i 10 caratteri: rifiutata', str_contains($r['body'], 'almeno 10 caratteri'));
+$r = $vera->post("$PULITO/registrati", ['email2' => 'VERA@prova.test'] + $dati7);
+prova('7A · registrata: «Controlla la tua email»', $r['code'] === 302 && str_ends_with($r['loc'], '/conferma-email'), $r['loc']);
+$lv = linkPosta('vera@prova.test', 'verifica');
+prova('7A · indirizzi puliti: il link di conferma è senza index.php', $lv !== '' && str_starts_with($lv, "$PULITO/verifica/") && !str_contains($lv, 'index.php'), $lv);
+$html7 = glob("$DOVE/app/storage/logs/email/*.html") ?: [];
+$ultima = $html7 ? (string) file_get_contents(end($html7)) : '';
+prova('7A · l\'email in HTML: marchio, titolo, un bottone, link in chiaro, aiuto e piede', str_contains($ultima, 'myhouse welcome<span style="color:#b4451f">.</span>')
+      && str_contains($ultima, 'Conferma la tua email') && substr_count($ultima, 'background:#b4451f') === 1 && str_contains($ultima, htmlspecialchars($lv))
+      && str_contains($ultima, 'Hai bisogno di aiuto? Scrivici a') && str_contains($ultima, 'P.IVA'));
+$r = $vera->get('/pannello');
+prova('7A · senza conferma il pannello rimanda a «Controlla la tua email»', $r['code'] === 302 && str_ends_with($r['loc'], '/conferma-email'));
+$vuid = (int) val("SELECT id FROM users WHERE email = 'vera@prova.test'");
+$admin->get('/admin/clienti');
+$r = $admin->post("/admin/entra/$vuid", []);
+$r = $admin->get('/pannello');
+prova('7A · «Entra come cliente» dall\'amministrazione non passa dalla conferma', !($r['code'] === 302 && str_ends_with($r['loc'], '/conferma-email')), $r['code'] . ' ' . $r['loc']);
+$admin->segui($admin->get('/pannello')); $admin->post('/admin/esci-da-cliente', []);
+prova('…e si torna amministratori', $admin->get('/admin')['code'] === 200);
+$r = $vera->get('/conferma-email');
+$vera->post('/conferma-email/cambia', ['email' => 'vera.giusta@prova.test']);
+prova('7A · «Ho sbagliato indirizzo»: cambiato, e la conferma parte al nuovo', val('SELECT email FROM users WHERE id = ?', [$vuid]) === 'vera.giusta@prova.test'
+      && linkPosta('vera.giusta@prova.test', 'verifica') !== '');
+Browser::$confermaAutomatica = true;
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");   // i tentativi sbagliati qui sopra non tolgono posto alle prove dopo
 $r = $anna->get('/');
 prova('Utente dentro: le CTA portano al pannello e alla scelta del piano, non alla registrazione', preg_match('#<section class="hero2">.*?</section>#s', $r['body'], $m) && str_contains($m[0], '/pannello"')
       && !str_contains($r['body'], '/registrati') && str_contains($r['body'], 'action="' . preg_replace('#^https?://[^/]+#', '', $BASE) . '/piano"'));
@@ -379,7 +430,7 @@ foreach (['checkin' => 'arrivo', 'contenuti' => 'sezioni', 'lingue' => 'aspetto'
 }
 $r = $anna->get("/pannello/$pid/procedura/struttura");
 prova('Fase 2 · procedura: una sola navigazione (niente tab), «Continua dopo»', !str_contains($r['body'], 'aria-label="La guida"') && str_contains($r['body'], '>Continua dopo</a>')
-      && str_contains($r['body'], 'class="verifica-riga"') && !str_contains($r['body'], 'banner banner--info'));
+      && !str_contains($r['body'], 'class="verifica-riga"') && !str_contains($r['body'], 'banner banner--info'));   // 7A: chi è qui ha già confermato
 prova('Fase 2 · «In che lingua scrivi la guida?» con l\'italiano scelto', str_contains($r['body'], 'In che lingua scrivi la guida?')
       && preg_match('#name="default_locale" value="it" checked#', $r['body']) === 1);
 prova('Fase 2 · fuori dalla procedura le tab restano', str_contains($anna->get("/pannello/$pid/lingue")['body'], 'aria-label="La guida"'));
@@ -755,10 +806,24 @@ $r = $anna->get("/g/$slug");
 prova('Prima di pagare la guida non è online', $r['code'] === 404);
 $r = $anna->modulo("/pannello/$pid/procedura/pubblica", "/pannello/$pid/pubblica", []);
 $r = $anna->segui($r);
-prova('Email non verificata: niente pagamento', str_contains($r['body'], 'Conferma prima la tua email') && (int) val('SELECT COUNT(*) FROM orders WHERE account_id = ?', [$acc['id']]) === 0);
+// 7A: senza la conferma dell'email il pannello non si apre più (prima si arrivava fino al pagamento).
+db()->exec("UPDATE users SET email_verified_at = NULL WHERE email = 'anna@prova.test'");
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'verifica-attesa:%' OR bucket LIKE 'verify:%'");
+$r = $anna->post("/pannello/$pid/pubblica", []);
+prova('7A · email non confermata: il pannello rimanda a «Controlla la tua email»', $r['code'] === 302 && str_ends_with($r['loc'], '/conferma-email')
+      && (int) val('SELECT COUNT(*) FROM orders WHERE account_id = ?', [$acc['id']]) === 0, $r['loc']);
+$r = $anna->get('/conferma-email');
+prova('7A · «Controlla la tua email»: Spam e Promozioni, Rimanda, Ho sbagliato indirizzo, assistenza', $r['code'] === 200 && str_contains($r['body'], 'Controlla la tua email')
+      && str_contains($r['body'], 'Promozioni') && str_contains($r['body'], 'Rimanda') && str_contains($r['body'], 'Ho sbagliato indirizzo') && str_contains($r['body'], 'mailto:info@welcomemyhouse.it'));
+$r = $anna->segui($anna->post('/verifica/invia', ['torna' => 'conferma']));
+prova('7A · «Rimanda» manda un\'altra conferma', str_contains($r['body'], 'Ti abbiamo mandato di nuovo'));
+$r = $anna->segui($anna->post('/verifica/invia', ['torna' => 'conferma']));
+prova('7A · …ma non prima di 60 secondi', str_contains($r['body'], 'Aspetta qualche secondo') && str_contains($r['body'], 'data-attendi'));
+for ($i = 0; $i < 5; $i++) { db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'verifica-attesa:%'"); $r = $anna->segui($anna->post('/verifica/invia', ['torna' => 'conferma'])); }
+prova('7A · …e al massimo 5 in un\'ora', str_contains($r['body'], 'più volte'));
 $link = linkPosta('anna@prova.test', 'verifica');
 $r = $anna->get(substr($link, strpos($link, '/verifica/')));
-prova('Link di verifica funziona', $r['code'] === 302 && val("SELECT email_verified_at FROM users WHERE email = 'anna@prova.test'") !== null);
+prova('Link di verifica funziona: dentro la procedura, già connessi', $r['code'] === 302 && str_ends_with($r['loc'], '/pannello') && val("SELECT email_verified_at FROM users WHERE email = 'anna@prova.test'") !== null, $r['loc']);
 $r = $anna->get(substr($link, strpos($link, '/verifica/')));
 prova('Il link di verifica vale una volta sola', $r['code'] === 200 && pulita($r));
 
@@ -967,11 +1032,14 @@ prova('Plus: immagine profilo', (bool) val('SELECT profile_media_id FROM propert
 $r = $bruno->get("/pannello/$bpid/statistiche");
 prova('Plus: statistiche di base', $r['code'] === 200 && str_contains($r['body'], 'aperture della guida'));
 prova('Plus: voce Statistiche nel menu', str_contains($bruno->get("/pannello/$bpid")['body'], '/statistiche"'));
-// Plus senza verificare l'email non paga.
+// Plus senza verificare l'email non paga (7A: non entra proprio nel pannello).
 $bcore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$bpid]);
 $bruno->post("/pannello/$bpid/sezioni/$bcore", ['checkin_steps' => ['Suona al citofono.']]);
-$r = $bruno->segui($bruno->post("/pannello/$bpid/pubblica", []));
-prova('Plus non verificato: pubblicazione ferma', str_contains($r['body'], 'Conferma prima la tua email'));
+$bVer = val("SELECT email_verified_at FROM users WHERE email = 'bruno@prova.test'");
+db()->exec("UPDATE users SET email_verified_at = NULL WHERE email = 'bruno@prova.test'");
+$r = $bruno->post("/pannello/$bpid/pubblica", []);
+prova('Plus non verificato: pubblicazione ferma', $r['code'] === 302 && str_ends_with($r['loc'], '/conferma-email') && !val("SELECT o.id FROM orders o JOIN accounts a ON a.id = o.account_id JOIN users u ON u.id = a.user_id WHERE u.email = 'bruno@prova.test'"));
+db()->prepare("UPDATE users SET email_verified_at = ? WHERE email = 'bruno@prova.test'")->execute([$bVer]);
 
 // =================================================================== PORTFOLIO
 capitolo('Portfolio');
@@ -1551,6 +1619,82 @@ prova('K5 · 30 giorni prima del rinnovo, con le statistiche dell\'anno', str_co
       && (str_contains((string) $ult['text'], 'aperta') || str_contains((string) $ult['text'], 'aperte') || str_contains((string) $ult['text'], 'non abbiamo ancora registrato aperture')));
 prova('K5 · controllo leggero senza cron: il file di blocco in storage/', is_file("$DOVE/app/storage/richiami.lock"));
 
+// 7A · i richiami nuovi: conferma, pagamento, parere. Una volta sola, con «non mandarmene più».
+$vacc = (int) val('SELECT id FROM accounts WHERE user_id = ?', [$vuid]);
+$ieri = fn(int $ore) => gmdate('Y-m-d\TH:i:s\Z', time() - $ore * 3600);
+db()->prepare('UPDATE users SET created_at = ? WHERE id = ?')->execute([$ieri(25), $vuid]);
+$cron(); $m = $posta('vera.giusta@prova.test'); $ult = end($m) ?: [];
+prova('7A · conferma: dopo 24 ore «Confermi la tua email?» con un link nuovo', str_contains((string) ($ult['subject'] ?? ''), 'Confermi la tua email?')
+      && str_contains((string) $ult['text'], '/verifica/') && str_contains((string) $ult['text'], '/email/stop/'));
+$prima = count($posta('vera.giusta@prova.test')); $cron();
+prova('…una volta sola', count($posta('vera.giusta@prova.test')) === $prima);
+db()->prepare('UPDATE users SET created_at = ? WHERE id = ?')->execute([$ieri(73), $vuid]);
+db()->prepare("UPDATE email_log SET sent_at = ? WHERE account_id = ? AND kind = 'conferma'")->execute([$ieri(49), $vacc]);
+$cron(); $m = $posta('vera.giusta@prova.test'); $ult = end($m) ?: [];
+prova('7A · conferma: l\'ultima dopo 72 ore', count($m) === $prima + 1 && str_contains((string) $ult['text'], "è l'ultima volta"));
+$cron();
+prova('…e poi basta', count($posta('vera.giusta@prova.test')) === $prima + 1);
+preg_match('#/email/stop/[a-f0-9]+#', (string) $ult['text'], $stop7);
+$vera->get($stop7[0]); $vera->post($stop7[0], []);
+db()->prepare("DELETE FROM email_log WHERE account_id = ? AND kind = 'conferma'")->execute([$vacc]);
+$cron();
+prova('7A · conferma: rispetta «non mandarmene più»', count($posta('vera.giusta@prova.test')) === $prima + 1 && (bool) val("SELECT id FROM email_optout WHERE account_id = ? AND kind = 'conferma'", [$vacc]));
+
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$paola = new Browser('paola');
+$paola->get('/registrati?piano=' . pv('plus'));
+$paola->post('/registrati', ['piano' => pv('plus'), 'name' => 'Paola Pagamento', 'email' => 'paola@prova.test', 'password' => 'PaolaProva123', 'termini' => '1']);
+$paola->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Paola', 'city' => 'Spello']);
+$papid = (int) val("SELECT id FROM properties WHERE name = 'Casa Paola'");
+$paacc = (int) val('SELECT account_id FROM properties WHERE id = ?', [$papid]);
+db()->prepare("INSERT INTO orders (account_id, package_version_id, amount_cents, currency, status, provider, provider_session_id, created_at, property_id, updated_at, quantity, kind)
+               VALUES (?, ?, 11700, 'EUR', 'canceled', 'stripe', '', ?, ?, ?, 1, 'new')")->execute([$paacc, pv('plus'), $ieri(1), $papid, $ieri(1)]);
+$cron();
+prova('7A · pagamento: annullato da meno di 2 ore, ancora niente', !array_filter($posta('paola@prova.test'), fn($x) => str_contains((string) $x['subject'], 'pronta per andare online')));
+db()->prepare('UPDATE orders SET created_at = ? WHERE account_id = ?')->execute([$ieri(3), $paacc]);
+$cron(); $m = $posta('paola@prova.test'); $ult = end($m) ?: [];
+prova('7A · pagamento: dopo 2 ore «La tua guida è pronta per andare online» con piano, prezzo e bottone', str_contains((string) ($ult['subject'] ?? ''), 'La tua guida è pronta per andare online')
+      && str_contains((string) $ult['text'], 'Plus') && str_contains((string) $ult['text'], "117\u{00A0}€ + IVA / anno") && str_contains((string) $ult['text'], "/pannello/$papid/procedura/pubblica"));
+$prima = count($posta('paola@prova.test')); $cron();
+prova('…una volta sola', count($posta('paola@prova.test')) === $prima);
+db()->prepare("INSERT INTO email_optout (account_id, kind, created_at) VALUES (?, 'pagamento', ?)")->execute([$paacc, $ieri(0)]);
+db()->prepare("DELETE FROM email_log WHERE account_id = ? AND kind = 'pagamento'")->execute([$paacc]);
+$cron();
+prova('7A · pagamento: rispetta «non mandarmene più»', count($posta('paola@prova.test')) === $prima);
+
+$piero = new Browser('piero');
+$piero->get('/registrati');
+$piero->post('/registrati', ['name' => 'Piero Parere', 'email' => 'piero@prova.test', 'password' => 'PieroProva123', 'termini' => '1']);
+$piuid = (int) val("SELECT id FROM users WHERE email = 'piero@prova.test'");
+$piacc = (int) val('SELECT id FROM accounts WHERE user_id = ?', [$piuid]);
+db()->prepare('UPDATE users SET created_at = ? WHERE id = ?')->execute([$ieri(13 * 24), $piuid]);
+$cron();
+prova('7A · parere: prima dei 14 giorni niente', !array_filter($posta('piero@prova.test'), fn($x) => str_contains((string) $x['subject'], 'Cosa ti ha fermato?')));
+db()->prepare('UPDATE users SET created_at = ? WHERE id = ?')->execute([$ieri(15 * 24), $piuid]);
+$cron(); $m = $posta('piero@prova.test'); $ult = end($m) ?: [];
+prova('7A · parere: dopo 14 giorni «Cosa ti ha fermato?» con quattro risposte a un clic', str_contains((string) ($ult['subject'] ?? ''), 'Cosa ti ha fermato?')
+      && preg_match_all('#/parere/[a-f0-9]{48}/(prezzo|tempo|funzione|altro)#', (string) $ult['text']) === 4);
+$prima = count($posta('piero@prova.test')); $cron();
+prova('…una volta sola', count($posta('piero@prova.test')) === $prima);
+preg_match('#/parere/[a-f0-9]{48}/#', (string) $ult['text'], $par);
+$r = $ospite->get($par[0] . 'tempo');
+prova('7A · il clic salva la risposta, senza accedere, e chiede «Raccontaci»', $r['code'] === 200 && str_contains($r['body'], 'Raccontaci') && pulita($r)
+      && val('SELECT motivo FROM feedback WHERE account_id = ?', [$piacc]) === 'tempo');
+$ospite->get($par[0] . 'prezzo');
+prova('…un secondo clic subito dopo (i filtri antivirus aprono tutti i link) non cambia il motivo', val('SELECT motivo FROM feedback WHERE account_id = ?', [$piacc]) === 'tempo');
+$r = $ospite->post(rtrim($par[0], '/'), ['motivo' => 'funzione', 'testo' => 'Mi serviva il calendario delle pulizie.']);
+prova('…«Raccontaci» salva motivo e testo', str_contains($r['body'], 'Grazie, ce lo segniamo.') && val('SELECT motivo FROM feedback WHERE account_id = ?', [$piacc]) === 'funzione'
+      && val('SELECT testo FROM feedback WHERE account_id = ?', [$piacc]) === 'Mi serviva il calendario delle pulizie.');
+prova('7A · un motivo inventato o un token sbagliato: 404', $ospite->get($par[0] . 'boh')['code'] === 404 && $ospite->get('/parere/' . str_repeat('a', 48) . '/tempo')['code'] === 404);
+$r = $admin->get("/admin/cliente/$piacc");
+prova('7A · la risposta nella scheda del cliente', str_contains($r['body'], 'Mi mancava una funzione') && str_contains($r['body'], 'calendario delle pulizie'));
+$r = $admin->get('/admin/prospetti');
+prova('7A · Prospetti: il conteggio per motivo', str_contains($r['body'], 'Cosa li ha fermati') && str_contains($r['body'], 'Mi mancava una funzione'));
+db()->prepare("INSERT INTO email_optout (account_id, kind, created_at) VALUES (?, 'parere', ?)")->execute([$piacc, $ieri(0)]);
+db()->prepare("DELETE FROM email_log WHERE account_id = ? AND kind = 'parere'")->execute([$piacc]);
+$cron();
+prova('7A · parere: rispetta «non mandarmene più»', count($posta('piero@prova.test')) === $prima);
+
 // K6 · funnel senza cookie.
 $fn = array_column(righe('SELECT kind, COUNT(*) AS n FROM analytics_events WHERE property_id IS NULL GROUP BY kind'), 'n', 'kind');
 prova('K6 · eventi anonimi: landing_view, signup, property_created, published', ($fn['landing_view'] ?? 0) > 0 && ($fn['signup'] ?? 0) > 0 && ($fn['property_created'] ?? 0) > 0 && ($fn['published'] ?? 0) > 0, json_encode($fn));
@@ -1715,7 +1859,7 @@ prova('Tempo: le domande evitabili con una guida, accanto alle comunicazioni che
 prova('6J · niente blocco doppione «Il valore non è soltanto nella guida»', !str_contains($r['body'], 'class="frase"') && !str_contains($r['body'], 'Il valore non è soltanto nella guida'));
 prova('Guadagno: il commiato disegnato con le etichette vere della guida', str_contains($r['body'], 'class="congedo-mock"')
       && str_contains($r['body'], 'Ti è piaciuto il soggiorno?') && str_contains($r['body'], 'La prossima volta prenota da noi'));
-prova('FAQ: chi non trova la risposta può scrivere (WhatsApp ed email dal config)', preg_match('#id="domande".*?href="https://wa\.me/393920061600".*?href="mailto:info@myhousewelcome\.it"#s', $r['body']) === 1);
+prova('FAQ: chi non trova la risposta può scrivere (WhatsApp ed email dal config)', preg_match('#id="domande".*?href="https://wa\.me/393920061600".*?href="mailto:info@welcomemyhouse\.it"#s', $r['body']) === 1);
 prova('Chiusura: CTA e «chi c\'è dietro» nella stessa fascia, dopo i piani', preg_match('#<section class="chiusura".*?Crea gratis la tua guida.*?<aside class="chi"#s', $r['body']) === 1
       && strpos($r['body'], 'id="piani"') < strpos($r['body'], 'class="chiusura"'));
 prova('Menu del sito: c\'è «Domande»', str_contains($r['body'], '/#domande'));
@@ -2470,9 +2614,9 @@ prova('Un testo oltre i 10.000 byte si spezza in pezzi da 10.000 al massimo, sen
 
 capitolo('Il sito della struttura: sezione della landing e invito nel pannello');
 $r = $ospite->get('/');
-prova('Landing: sezione «Anche il tuo sito» in fondo, dopo la chiusura, con la foto, i tre punti e «Chiedici il tuo sito» verso myhouse.blackout.in', str_contains($r['body'], 'id="sito"')
+prova('Landing: sezione «Anche il tuo sito» in fondo, dopo la chiusura, con la foto, i tre punti e «Chiedici il tuo sito» verso blackout.in/myhouse/', str_contains($r['body'], 'id="sito"')
       && str_contains($r['body'], 'Meno commissioni ai portali.') && str_contains($r['body'], 'Più incasso per te.') && str_contains($r['body'], 'Più ospiti diretti.')
-      && str_contains($r['body'], 'la quota che sarebbe andata al portale resta a te') && str_contains($r['body'], '<a class="btn" href="https://myhouse.blackout.in" target="_blank" rel="noopener">Chiedici il tuo sito')
+      && str_contains($r['body'], 'la quota che sarebbe andata al portale resta a te') && str_contains($r['body'], '<a class="btn" href="https://blackout.in/myhouse/" target="_blank" rel="noopener">Chiedici il tuo sito')
       && strpos($r['body'], 'id="sito"') > strpos($r['body'], 'id="chiusura-titolo"') && str_contains($r['body'], '/assets/foto/sito-1600.webp')
       && str_contains($r['body'], '/#sito">Il sito per la tua struttura</a>'));
 $r = $lucia->get('/pannello');
@@ -2486,6 +2630,7 @@ prova('6J · «Non mostrare più»: cookie mhw_no_sito per 180 giorni e l\'invit
 
 // ================================================================= 6H
 capitolo('6H · cambio di piano: Plus → Essential dal rinnovo, Essential → Plus pagando la differenza');
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
 $paola = new Browser('paola');
 $paola->get('/registrati?piano=' . pv('plus'));
 $paola->post('/registrati', ['piano' => pv('plus'), 'name' => 'Paola Cambio', 'email' => 'paola@prova.test', 'password' => 'PaolaProva123', 'termini' => '1', 'privacy' => '1']);
@@ -3099,7 +3244,7 @@ prova('…nella landing stanno sotto «Altre domande»', str_contains($altreL, '
 prova('Termini § 6: la conferma sotto la propria responsabilità', str_contains($ospite->get('/termini')['body'], 'Se decidi comunque di pubblicarli, la piattaforma ti chiede una conferma'));
 
 // ================================================================= RIEPILOGO
-echo implode("\n", $esiti), "\n\n";
+$finito = true; echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));
 echo $falliti === 0 ? "Tutte le $tot prove superate.\n" : "$falliti prove NON superate su $tot.\n";
 exec('rm -rf ' . escapeshellarg($TMP));

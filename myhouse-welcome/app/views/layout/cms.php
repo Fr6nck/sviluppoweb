@@ -100,6 +100,12 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
         <span class="avatar" aria-hidden="true"><?= Support::e($iniziale) ?></span>
         <span class="lato__chi"><b><?= Support::e($u['name'] ?: 'Il tuo account') ?></b><span><?= Support::e($u['email']) ?></span></span>
       </div>
+      <?php if (!$admin && Support::contatto() !== ''): /* 7A: l'assistenza, con pagina, struttura e account già scritti */
+            $paginaAiuto = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH); ?>
+        <a class="lato__aiuto" href="<?= Support::e(Support::mailto('Assistenza — ' . ($prop['name'] ?? 'MyHouse Welcome'),
+            "Ciao, mi serve aiuto con MyHouse Welcome.\n\nPagina: " . $paginaAiuto . "\nStruttura: " . ($prop['name'] ?? '—') . "\nAccount: " . $u['email'] . "\n\nCosa succede:\n")) ?>">
+          <?= Icon::svg('message', 18, 1.8) ?>Aiuto</a>
+      <?php endif; ?>
       <div class="lato__comandi">
         <?php $etScuro = 'Passa al tema scuro'; $etChiaro = 'Passa al tema chiaro'; include __DIR__ . '/_tema-bottone.php'; ?>
         <form method="post" action="<?= b() ?>/esci" style="margin:0"><?= Csrf::field() ?>

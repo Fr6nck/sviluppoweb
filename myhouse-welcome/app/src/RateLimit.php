@@ -22,6 +22,13 @@ final class RateLimit
         return true;
     }
 
+    /** Quanti secondi mancano perché l'ultimo tentativo esca dalla finestra (0 = si può). */
+    public static function attesa(string $bucket, int $finestra = 60): int
+    {
+        $ultimo = (int) Db::val('SELECT MAX(created_at) FROM rate_limits WHERE bucket = ?', [$bucket], 0);
+        return max(0, $ultimo + $finestra - time());
+    }
+
     public static function clear(string $bucket): void
     {
         Db::run('DELETE FROM rate_limits WHERE bucket = ?', [$bucket]);

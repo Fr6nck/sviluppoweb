@@ -135,7 +135,8 @@ include __DIR__ . '/_stati.php'; ?>
   <?php /* Avvisi di rinnovo e scadenza: l'ultimo abbonamento, il promemoria a mano, le email mandate. */
         $ultimo = $subs[0] ?? null;
         $nomiEmail = ['arrivo' => 'Check-in da compilare', 'sezioni' => 'Sezioni da aggiungere', 'pubblica' => 'Guida da pubblicare', 'rinnovo' => 'Rinnovo in arrivo',
-                      'scadenza' => 'Scadenza', 'eventi' => 'Eventi passati', 'inviti' => 'Inviti']; ?>
+                      'scadenza' => 'Scadenza', 'eventi' => 'Eventi passati', 'inviti' => 'Inviti',
+                      'conferma' => 'Email da confermare', 'pagamento' => 'Pagamento da riprendere', 'parere' => 'Cosa ti ha fermato?']; ?>
   <section class="stack" style="gap:10px" id="promemoria" aria-labelledby="prom-titolo">
     <h2 id="prom-titolo" style="font-size:22px">Avvisi e promemoria</h2>
     <?php if ($ultimo && $ultimo['provider'] !== 'dimostrazione' && $ultimo['current_period_end'] !== ''): ?>
@@ -147,6 +148,14 @@ include __DIR__ . '/_stati.php'; ?>
       </form>
     <?php endif; ?>
     <?php if ($optout): ?><p class="small">Non vuole ricevere: <?= Support::e(implode(', ', array_map(fn($k) => mb_strtolower($nomiEmail[$k] ?? $k), $optout))) ?>.</p><?php endif; ?>
+    <?php if (!empty($parere)): ?>
+      <div class="panel stack" style="gap:6px" id="parere">
+        <span class="kicker">Cosa ti ha fermato?</span>
+        <p class="small" style="margin:0"><b><?= Support::e(MHW\Richiami::MOTIVI[$parere['motivo']] ?? $parere['motivo']) ?></b>
+          <span class="muted">· <?= Support::e(Support::date($parere['updated_at'] ?: $parere['created_at'])) ?></span></p>
+        <?php if (trim((string) $parere['testo']) !== ''): ?><p class="small" style="margin:0;white-space:pre-line"><?= Support::e($parere['testo']) ?></p><?php endif; ?>
+      </div>
+    <?php endif; ?>
     <?php if (!$email): ?><p class="small muted">Nessuna email di promemoria finora.</p><?php else: ?>
     <div class="tablewrap"><table class="data">
       <thead><tr><th>Data</th><th>Email</th><th>Come</th></tr></thead>

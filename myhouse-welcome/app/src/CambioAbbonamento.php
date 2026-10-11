@@ -319,11 +319,15 @@ final class CambioAbbonamento
         $u = Db::one('SELECT u.email, u.name FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [$aid]);
         if ($u) {
             try {
-                Mailer::send((string) $u['email'], 'Da oggi sei su ' . $pv['name'] . ' — MyHouse Welcome',
-                    'Ciao ' . ($u['name'] ?: '') . ",\n\ncome avevi chiesto, con il rinnovo il tuo abbonamento è passato a " . $pv['name']
-                    . (Plans::perProperty($pv) ? " ($q strutture)" : '') . ': ' . Support::money(Plans::price($pv, $q), (string) $pv['currency']) . " + IVA all'anno.\n\n"
-                    . ($cambiato ? "Cosa è cambiato:\n- " . implode("\n- ", $cambiato) . "\n\n" : '')
-                    . "Niente è stato cancellato: se torni a un piano più ricco, ritrovi tutto.\n\n" . Support::baseUrl() . "/account\n\nMyHouse Welcome");
+                $nome = trim(explode(' ', trim((string) $u['name']))[0] ?? '');
+                Mailer::manda((string) $u['email'], 'Da oggi sei su ' . $pv['name'], 'Da oggi sei su ' . $pv['name'],
+                    array_values(array_filter([
+                        'Ciao' . ($nome !== '' ? ' ' . $nome : '') . ', come avevi chiesto, con il rinnovo il tuo abbonamento è passato a ' . $pv['name']
+                        . (Plans::perProperty($pv) ? " ($q strutture)" : '') . ': ' . Support::money(Plans::price($pv, $q), (string) $pv['currency']) . ' + IVA all\'anno.',
+                        $cambiato ? "Cosa è cambiato:\n• " . implode("\n• ", $cambiato) : '',
+                        'Niente è stato cancellato: se torni a un piano più ricco, ritrovi tutto.',
+                    ])),
+                    ['Vai al tuo account', Support::baseUrl() . '/account']);
             } catch (\Throwable $e) { Log::exception($e, 'email cambio piano'); }
         }
         return $cambiato;

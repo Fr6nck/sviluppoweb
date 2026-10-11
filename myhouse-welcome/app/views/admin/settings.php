@@ -5,14 +5,16 @@ use function MHW\b;
 use MHW\{Support, Csrf, Icon, Impostazioni, Stripe, Config, Traduttore};
 $title = 'Impostazioni';
 $pronti = [
+    'sito'     => (string) Config::get('base_url') !== '' && Config::get('pretty_urls') === true,
     'stripe'   => Stripe::enabled(),
     'posta'    => Config::get('mail')['transport'] !== 'log',
     'archivio' => Config::get('storage')['driver'] === 's3',
     'traduzioni' => Traduttore::configurato(),
     'inviti' => MHW\Inviti::disponibili(),
 ];
-$icone = ['stripe' => 'card', 'posta' => 'message', 'archivio' => 'layers', 'traduzioni' => 'globe', 'inviti' => 'people'];
+$icone = ['sito' => 'globe', 'stripe' => 'card', 'posta' => 'message', 'archivio' => 'layers', 'traduzioni' => 'globe', 'inviti' => 'people'];
 $intro = [
+    'sito'     => 'L\'indirizzo pubblico del sito e gli indirizzi senza index.php: valgono per link, email, QR, canonical e sitemap. «Prova» chiede al sito il suo robots.txt: se risponde, il server legge .htaccess e gli indirizzi puliti si possono accendere.',
     'stripe'   => 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti preparano la guida ma non possono pagarla.',
     'posta'    => 'Conferma dell\'email, recupero della password e promemoria. Finché resta «Non spedire», le email finiscono in storage/logs/mail.log.',
     'archivio' => 'Le foto e i PDF caricati dai clienti. Sul disco del server vanno bene per provare; in produzione meglio Amazon S3. I file già caricati restano dove sono e si vedono lo stesso.',

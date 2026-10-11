@@ -82,6 +82,18 @@ $tot = fn(string $k) => array_sum(array_column($mesi, $k)); ?>
         <?php endforeach; ?>
       </ul>
       <a class="small" href="<?= b() ?>/admin">Il percorso dalla landing, nel quadro</a>
+      <?php if ($pareri !== null): $totP = array_sum($pareri); ?>
+        <h3 style="font-size:17px;margin:8px 0 0">Cosa li ha fermati</h3>
+        <?php if (!$totP): ?><p class="small muted" style="margin:0">Ancora nessuna risposta all'email «Cosa ti ha fermato?» (parte 14 giorni dopo la registrazione a chi non ha pubblicato).</p>
+        <?php else: ?>
+          <ul class="conversione">
+            <?php foreach (MHW\Richiami::MOTIVI as $k => $et): $n = (int) ($pareri[$k] ?? 0); ?>
+              <li><span><?= Support::e($et) ?></span><b><?= $n ?> <span class="tiny muted"><?= round($n / $totP * 100) ?>%</span></b>
+                <span class="conversione__barra" aria-hidden="true"><span style="width:<?= round($n / $totP * 100, 1) ?>%"></span></span></li>
+            <?php endforeach; ?>
+          </ul>
+        <?php endif; ?>
+      <?php endif; ?>
     </section>
   </div>
 

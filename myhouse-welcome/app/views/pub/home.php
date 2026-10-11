@@ -321,7 +321,8 @@ $disegni = [
   </div>
   <div class="qr-sheet qrband__foglio">
     <?php /* Se c'è la demo, il QR la apre davvero: provalo col telefono. */ ?>
-    <?= preg_replace('/width="\d+" height="\d+"/', 'width="168" height="168"',
+    <?php /* Dentro la pagina l'SVG va senza la dichiarazione XML (7A): alcuni browser la mostrano come testo. */ ?>
+    <?= preg_replace(['/^<\?xml[^>]*\?>\s*/', '/width="\d+" height="\d+"/'], ['', 'width="168" height="168"'],
                      MHW\QrExport::svg($demo ? Support::baseUrl() . '/g/' . $demo['slug'] . '/benvenuto' : Support::baseUrl())) ?>
     <p class="small"><?= $demo ? 'Inquadra e prova la demo.' : 'Inquadra per la guida' ?></p>
   </div>
@@ -488,7 +489,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
 
 <?php /* Il sito della struttura: lo realizziamo noi. In fondo alla pagina, a tutta larghezza,
    con la foto di un soggiorno sotto un velo nero al 60%. Tre punti brevi; «Chiedici il tuo
-   sito» porta a myhouse.blackout.in, l'email resta come seconda strada. Nessun prezzo. */
+   sito» porta a blackout.in/myhouse/, l'email resta come seconda strada. Nessun prezzo. */
 $legaleSito = MHW\Config::get('legal'); ?>
 <section id="sito" class="sito" aria-labelledby="sito-titolo">
   <picture class="sito__foto" aria-hidden="true">
@@ -515,7 +516,7 @@ $legaleSito = MHW\Config::get('legal'); ?>
       <?php endforeach; ?>
     </div>
     <div class="sito__cta">
-      <a class="btn" href="https://myhouse.blackout.in" target="_blank" rel="noopener">Chiedici il tuo sito <?= Icon::svg('external', 16, 1.9) ?></a>
+      <a class="btn" href="https://blackout.in/myhouse/" target="_blank" rel="noopener">Chiedici il tuo sito <?= Icon::svg('external', 16, 1.9) ?></a>
       <?php if (($legaleSito['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legaleSito['contact_email']) ?>?subject=<?= rawurlencode('Il sito della mia struttura') ?>"><?= Icon::svg('message', 18, 1.8) ?>Scrivici un'email</a><?php endif; ?>
       <span class="small">Ti rispondiamo con una proposta su misura.</span>
     </div>

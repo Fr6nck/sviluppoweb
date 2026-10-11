@@ -138,6 +138,7 @@ $r->get('/admin/cliente/{aid}', function (array $a) {
         'audit' => Db::all('SELECT * FROM audit_log WHERE target_user_id = ? ORDER BY id DESC LIMIT 50', [$acc['user_id']]),
         'email' => Richiami::disponibili() ? Db::all('SELECT kind, ref, sent_at FROM email_log WHERE account_id = ? ORDER BY sent_at DESC, id DESC LIMIT 20', [$acc['id']]) : [],
         'optout' => Richiami::disponibili() ? array_column(Db::all('SELECT kind FROM email_optout WHERE account_id = ?', [$acc['id']]), 'kind') : [],
+        'parere' => \MHW\Migrator::tableExists('feedback') ? Db::one('SELECT * FROM feedback WHERE account_id = ?', [$acc['id']]) : null,
         'inviti' => Inviti::disponibili() ? ['stato' => Inviti::stato($acc), 'amici' => Inviti::amici((int) $acc['id']), 'invitato' => Inviti::invitato((int) $acc['id'])] : null,
         'traduzioni' => \MHW\Migrator::tableExists('translation_usage') ? ['mese' => Traduttore::usati((int) $acc['id']), 'omaggio' => Traduttore::omaggioFino((int) $acc['id'])] : null,
         'nav' => 'clienti',
@@ -491,7 +492,10 @@ $r->get('/admin/prospetti', function () {
             array_map(fn($m) => [$m['mese'], $m['registrati'], $m['nuovi'], $eur($m['incasso_nuovi']), $eur($m['incasso_cambi']), $m['rinnovi'], $eur($m['incasso_rinnovi']),
                                  $eur($m['incasso']), $m['persi']], $mesi));
     }
-    View::out('admin/prospetti', ['mesi' => $mesi, 'adesso' => Gestione::adesso(), 'nav' => 'prospetti'], 'layout/cms');
+    // «Cosa ti ha fermato?» (7A): quante risposte per motivo.
+    $pareri = \MHW\Migrator::tableExists('feedback')
+        ? array_column(Db::all('SELECT motivo, COUNT(*) AS n FROM feedback GROUP BY motivo'), 'n', 'motivo') : null;
+    View::out('admin/prospetti', ['mesi' => $mesi, 'adesso' => Gestione::adesso(), 'pareri' => $pareri, 'nav' => 'prospetti'], 'layout/cms');
 });
 
 /* Vendite per piano: che piani si comprano, mese per mese, con grafici e tabella. */
@@ -572,6 +576,10 @@ $r->get('/admin/diagnostica', function () {
     $checks[] = ['Foto e PDF su Amazon S3', $s3ok, $s3det];
     $checks[] = ['HTTPS', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || str_starts_with($base, 'https'),
         'i cookie di sessione diventano "secure" solo su HTTPS'];
+    [$pulitiOk, $pulitiMsg] = Impostazioni::provaIndirizzi(rtrim((string) Config::get('base_url'), '/'));
+    $checks[] = ['Indirizzi puliti', $pulitiOk, $pulitiOk
+        ? $pulitiMsg . (Config::get('pretty_urls') === true ? ' Accesi in Impostazioni → Sito.' : ' Accendili in Impostazioni → Sito.')
+        : $pulitiMsg . ' Finché non va, gli indirizzi restano con index.php e funzionano lo stesso.'];
     $checks[] = ['Indirizzo pubblico impostato', Config::get('base_url') !== '',
         Config::get('base_url') !== '' ? Config::get('base_url') : 'MHW_BASE_URL vuoto: QR ed email usano l\'indirizzo della richiesta'];
     $daCompletare = MHW\CambioAbbonamento::inSospeso();

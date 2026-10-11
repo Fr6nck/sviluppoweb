@@ -9,6 +9,9 @@ namespace MHW;
  *   pubblica — dal 7° al 21° giorno, se la guida non è pubblicata
  *   rinnovo  — 30 giorni prima del rinnovo automatico (Stripe), con le statistiche dell'anno
  *   eventi   — (6G) ci sono eventi passati nella guida pubblicata: al massimo una al mese per struttura
+ *   conferma — (7A) email non confermata: dopo 24 ore e, l'ultima volta, dopo 72, con un link nuovo
+ *   pagamento — (7A) pagamento iniziato e annullato, e dopo 2 ore ancora nessun abbonamento
+ *   parere   — (7A) 14 giorni dopo la registrazione, mai pubblicato: «Cosa ti ha fermato?»
  *
  * Le finestre non si sovrappongono: una struttura riceve al massimo un richiamo
  * per volta, e chi aggiorna l'applicazione con bozze vecchie non riceve una
@@ -24,7 +27,13 @@ final class Richiami
     public const TIPI = ['arrivo' => 'il promemoria sul check-in', 'sezioni' => 'il promemoria sulle sezioni',
                          'pubblica' => 'il promemoria sulla pubblicazione', 'rinnovo' => 'l\'avviso prima del rinnovo',
                          'eventi' => 'il promemoria sugli eventi passati', 'inviti' => 'il promemoria sugli inviti',
-                         'scadenza' => 'l\'avviso prima della scadenza'];   // con l'articolo: «Non vuoi più ricevere …?»
+                         'scadenza' => 'l\'avviso prima della scadenza',
+                         'conferma' => 'il promemoria sulla conferma dell\'email', 'pagamento' => 'il promemoria sul pagamento',
+                         'parere' => 'la domanda su cosa ti ha fermato'];   // con l'articolo: «Non vuoi più ricevere …?»
+    /** Le risposte a un clic di «Cosa ti ha fermato?» (7A). */
+    public const MOTIVI = ['prezzo' => 'Il prezzo', 'tempo' => 'Non ho avuto tempo', 'funzione' => 'Mi mancava una funzione', 'altro' => 'Altro'];
+    /** I richiami del percorso: uno per volta, mai due a meno di due giorni l'uno dall'altro (7A). */
+    private const PERCORSO = ['arrivo', 'sezioni', 'pubblica', 'conferma', 'pagamento', 'parere'];
     private const OGNI = 900;   // secondi tra un controllo e l'altro
 
     public static function disponibili(): bool { return Migrator::tableExists('email_log'); }
@@ -54,14 +63,42 @@ final class Richiami
         $iso = fn(int $s) => gmdate('Y-m-d\TH:i:s\Z', $s);
         $giorno = 86400;
         $fatte = array_fill_keys(array_keys(self::TIPI), 0);
+        $fuori = '%@' . Demo::DOMINIO;
 
-        $bozze = Db::all("SELECT p.*, a.id AS acc_id, u.email, u.name AS user_name FROM properties p
+        // Conferma (7A): chi non ha confermato l'email dopo 24 ore, e l'ultima volta dopo 72. Fino a 7 giorni:
+        // chi aggiorna l'applicazione non scrive agli iscritti di mesi fa. Il link è nuovo (annulla il vecchio).
+        foreach (Db::all("SELECT u.id AS uid, u.email, u.name AS user_name, u.created_at, a.id AS acc_id FROM users u JOIN accounts a ON a.user_id = u.id
+                          WHERE u.role = 'host' AND u.email_verified_at IS NULL AND u.created_at <= ? AND u.created_at > ? AND u.email NOT LIKE ?",
+                         [$iso($t - $giorno), $iso($t - 7 * $giorno), $fuori]) as $u) {
+            $ref = ($t - (int) strtotime((string) $u['created_at'])) >= 3 * $giorno ? '72' : '24';
+            if (!self::puo((int) $u['acc_id'], 'conferma', $ref, $t)) continue;
+            $link = Support::baseUrl() . '/verifica/' . Tokens::issue((int) $u['uid'], Tokens::VERIFY, 48 * 3600);
+            $m = ['Confermi la tua email?',
+                  ($ref === '72' ? 'è l\'ultima volta che te lo chiediamo: ' : '') . 'il tuo account MyHouse Welcome aspetta solo la conferma dell\'indirizzo. Un clic sul bottone e prepari la tua guida, come la vedranno i tuoi ospiti.',
+                  'Conferma la mia email', $link, 'Il link vale 48 ore. Se non hai creato tu l\'account, ignora questo messaggio.'];
+            if (self::manda((int) $u['acc_id'], $u['email'], (string) $u['user_name'], 'conferma', $ref, $m)) $fatte['conferma']++;
+        }
+
+        // Pagamento (7A): un checkout aperto e annullato (o lasciato a metà) da almeno 2 ore, entro 3 giorni,
+        // e ancora nessun abbonamento. Una volta sola per account.
+        $nuovo = Migrator::columnExists('orders', 'kind') ? " AND o.kind = 'new'" : '';
+        foreach (Db::all("SELECT o.*, u.email, u.name AS user_name FROM orders o JOIN accounts a ON a.id = o.account_id JOIN users u ON u.id = a.user_id
+                          WHERE o.status IN ('pending', 'canceled')$nuovo AND o.created_at <= ? AND o.created_at > ? AND u.email NOT LIKE ?
+                          ORDER BY o.id DESC", [$iso($t - 7200), $iso($t - 3 * $giorno), $fuori]) as $o) {
+            $acc = (int) $o['account_id'];
+            if (!self::puo($acc, 'pagamento', 'primo', $t) || Subscriptions::active($acc)
+                || Db::val("SELECT id FROM orders WHERE account_id = ? AND status = 'paid' AND id > ?", [$acc, $o['id']])) continue;
+            if (self::manda($acc, $o['email'], (string) $o['user_name'], 'pagamento', 'primo', self::testoPagamento($o))) $fatte['pagamento']++;
+        }
+
+        $bozze = Db::all("SELECT p.*, a.id AS acc_id, u.email, u.name AS user_name, u.email_verified_at FROM properties p
                           JOIN accounts a ON a.id = p.account_id JOIN users u ON u.id = a.user_id
                           WHERE p.is_demo = 0 AND p.archived_at IS NULL AND p.status <> 'published'
                             AND p.created_at <= ? AND p.created_at > ? AND u.email NOT LIKE ?",
                          [$iso($t - $giorno), $iso($t - 21 * $giorno), '%@' . Demo::DOMINIO]);
         foreach ($bozze as $p) {
             if (in_array((int) $p['id'], Entitlements::lockedIds((int) $p['acc_id']), true)) continue;
+            if (empty($p['email_verified_at']) || self::recente((int) $p['acc_id'], $t, ['conferma', 'pagamento', 'parere'])) continue;   // c'è già il richiamo giusto
             $eta = ($t - (int) strtotime((string) $p['created_at'])) / $giorno;
             $tipo = null;
             if ($eta < 3) { if (self::arrivoVuoto($p)) $tipo = 'arrivo'; }
@@ -119,9 +156,53 @@ final class Richiami
                   'Apri gli eventi', Support::baseUrl() . '/pannello/' . (int) $e['id'] . '/sezioni/' . (int) $e['sid']];
             if (self::manda((int) $e['acc_id'], $e['email'], (string) $e['user_name'], 'eventi', $e['id'] . '-' . substr($oggi, 0, 7), $m)) $fatte['eventi']++;
         }
+        // Parere (7A): dal 14° al 30° giorno dopo la registrazione, mai pubblicato né abbonato, nessuna bozza
+        // che aspetti ancora «pubblica» (meno di 7 giorni) e nessun altro richiamo del percorso negli ultimi 2 giorni.
+        foreach (Db::all("SELECT a.id AS acc_id, u.email, u.name AS user_name FROM users u JOIN accounts a ON a.user_id = u.id
+                          WHERE u.role = 'host' AND u.email_verified_at IS NOT NULL AND u.created_at <= ? AND u.created_at > ? AND u.email NOT LIKE ?",
+                         [$iso($t - 14 * $giorno), $iso($t - 30 * $giorno), $fuori]) as $u) {
+            $acc = (int) $u['acc_id'];
+            if (!self::puo($acc, 'parere', 'primo', $t)
+                || Db::val("SELECT id FROM properties WHERE account_id = ? AND (published_at <> '' OR status = 'published')", [$acc])
+                || Db::val('SELECT id FROM subscriptions WHERE account_id = ?', [$acc])
+                || Db::val("SELECT id FROM properties WHERE account_id = ? AND archived_at IS NULL AND created_at > ?", [$acc, $iso($t - 7 * $giorno)])) continue;
+            $base = Support::baseUrl() . '/parere/{token}/';
+            $m = ['Cosa ti ha fermato?',
+                  'ti sei iscritto a MyHouse Welcome due settimane fa, ma la guida non è ancora online. Ci aiuti a capire perché? Basta un clic, non serve accedere.',
+                  null, null, null, array_map(fn($k, $v) => [$v, $base . $k], array_keys(self::MOTIVI), self::MOTIVI)];
+            if (self::manda($acc, $u['email'], (string) $u['user_name'], 'parere', 'primo', $m)) $fatte['parere']++;
+        }
+
         Inviti::inSospeso();   // gli sconti inviti che Stripe non ha ancora preso
         try { CambioAbbonamento::applyPendingChanges(); } catch (\Throwable $e) { Log::exception($e, 'cambi di piano in sospeso'); }
         return $fatte;
+    }
+
+    /** Si può mandare? Non c'è il rifiuto, non è già partita e, per il percorso, nessun altro richiamo negli ultimi 2 giorni. */
+    private static function puo(int $accountId, string $tipo, string $ref, int $t): bool
+    {
+        if (Db::one('SELECT id FROM email_optout WHERE account_id = ? AND kind = ?', [$accountId, $tipo])) return false;
+        if (Db::one('SELECT id FROM email_log WHERE account_id = ? AND kind = ? AND ref = ?', [$accountId, $tipo, $ref])) return false;
+        return !self::recente($accountId, $t, self::PERCORSO);
+    }
+
+    /** Uno di questi richiami è partito negli ultimi 2 giorni? */
+    private static function recente(int $accountId, int $t, array $tipi): bool
+    {
+        $segni = implode(',', array_fill(0, count($tipi), '?'));
+        return (bool) Db::val("SELECT id FROM email_log WHERE account_id = ? AND kind IN ($segni) AND sent_at > ?",
+                              array_merge([$accountId], $tipi, [gmdate('Y-m-d\TH:i:s\Z', $t - 2 * 86400)]));
+    }
+
+    private static function testoPagamento(array $o): array
+    {
+        $pv = Plans::version((int) $o['package_version_id']) ?? [];
+        $p = !empty($o['property_id']) ? Db::one('SELECT id, name FROM properties WHERE id = ?', [$o['property_id']]) : null;
+        $prezzo = Support::money((int) $o['amount_cents'], (string) ($o['currency'] ?: 'EUR')) . ' + IVA / anno';
+        return ['La tua guida è pronta per andare online',
+                ($p ? 'la guida di ' . $p['name'] : 'la tua guida') . ' è pronta: manca solo il pagamento, e non ti è stato addebitato niente. '
+                . 'Hai scelto ' . ($pv['name'] ?? 'il tuo piano') . ": $prezzo. Riprendi da dove eri rimasto: un minuto e gli ospiti la aprono dal QR.",
+                'Riprendi e pubblica', Support::baseUrl() . ($p ? '/pannello/' . (int) $p['id'] . '/procedura/pubblica' : '/piano')];
     }
 
     private static function arrivoVuoto(array $p): bool
@@ -236,19 +317,18 @@ final class Richiami
         $token = bin2hex(random_bytes(24));
         try { Db::insert('email_log', ['account_id' => $accountId, 'kind' => $tipo, 'ref' => $ref, 'token' => $token, 'sent_at' => Support::now()]); }
         catch (\Throwable) { return false; }   // un altro processo l'ha appena mandata
+        // [oggetto, testo, bottone, indirizzo, nota?, scelte?]: «{token}» negli indirizzi diventa il token di questa email.
         [$oggetto, $corpo, $bottone, $url] = $m;
+        $nota = $m[4] ?? null;
+        $scelte = array_map(fn($x) => [$x[0], str_replace('{token}', $token, $x[1])], $m[5] ?? []);
+        $tasto = $bottone !== null && $url !== null ? [$bottone, str_replace('{token}', $token, $url)] : null;
         $stop = Support::baseUrl() . '/email/stop/' . $token;
         $saluto = 'Ciao' . (trim($nome) !== '' ? ' ' . trim(explode(' ', trim($nome))[0]) : '') . ',';
-        $testo = "$saluto\n\n$corpo\n\n$bottone: $url\n\nMyHouse Welcome\n\n—\nNon vuoi più ricevere " . self::TIPI[$tipo] . "? $stop";
         $e = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
-        $html = '<!doctype html><html lang="it"><body style="margin:0;padding:24px;background:#faf5ec;font-family:Arial,sans-serif;color:#231b12">'
-              . '<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:16px;padding:28px">'
-              . '<p style="font-size:16px;line-height:24px;margin:0 0 14px">' . $e($saluto) . '</p>'
-              . '<p style="font-size:16px;line-height:24px;margin:0 0 24px">' . $e($corpo) . '</p>'
-              . '<p style="margin:0 0 24px"><a href="' . $e($url) . '" style="display:inline-block;background:#b4451f;color:#fff8f2;text-decoration:none;font-weight:bold;padding:14px 22px;border-radius:999px">' . $e($bottone) . '</a></p>'
-              . '<p style="font-size:14px;color:#6a5b48;margin:0">MyHouse Welcome</p></div>'
-              . '<p style="max-width:520px;margin:16px auto 0;font-size:12px;line-height:18px;color:#6a5b48">Non vuoi più ricevere ' . $e(self::TIPI[$tipo])
-              . '? <a href="' . $e($stop) . '" style="color:#6a5b48">Non mandarmene più</a></p></body></html>';
+        $paragrafi = [$saluto . ' ' . $corpo];
+        $piedeHtml = 'Non vuoi più ricevere ' . $e(self::TIPI[$tipo]) . '? <a href="' . $e($stop) . '" style="color:#6a5b48">Non mandarmene più</a>';
+        $testo = Mailer::testo($oggetto, $paragrafi, $tasto, $nota, 'Non vuoi più ricevere ' . self::TIPI[$tipo] . "? $stop", $scelte);
+        $html = Mailer::layout($oggetto, $paragrafi, $tasto, $nota, $piedeHtml, $scelte);
         $ok = Mailer::send($email, $oggetto . ' — MyHouse Welcome', $testo, $html);
         if (!$ok) Db::run('DELETE FROM email_log WHERE token = ?', [$token]);   // si riproverà al prossimo giro
         return $ok;
@@ -259,6 +339,25 @@ final class Richiami
     {
         if (!preg_match('/^[a-f0-9]{48}$/', $token) || !self::disponibili()) return null;
         return Db::one('SELECT account_id, kind FROM email_log WHERE token = ?', [$token]);
+    }
+
+    /**
+     * La risposta a «Cosa ti ha fermato?»: una riga per account, l'ultima vince. Un clic che arriva meno di
+     * 2 minuti dopo un altro non cambia il motivo (i filtri antivirus aprono tutti i link dell'email insieme);
+     * il testo di «Raccontaci» si salva sempre.
+     */
+    public static function rispondi(int $accountId, string $motivo, ?string $testo = null, bool $clic = false): void
+    {
+        if (!isset(self::MOTIVI[$motivo]) || !Migrator::tableExists('feedback')) return;
+        $c = Db::one('SELECT * FROM feedback WHERE account_id = ?', [$accountId]);
+        $testo = $testo !== null ? mb_substr(trim($testo), 0, 2000) : null;
+        if (!$c) {
+            try { Db::insert('feedback', ['account_id' => $accountId, 'motivo' => $motivo, 'testo' => (string) $testo, 'created_at' => Support::now(), 'updated_at' => Support::now()]); }
+            catch (\Throwable) { }   // due clic insieme: il primo basta
+            return;
+        }
+        if ($clic && time() - (int) strtotime((string) ($c['updated_at'] ?: $c['created_at'])) < 120) return;
+        Db::update('feedback', array_filter(['motivo' => $motivo, 'testo' => $testo, 'updated_at' => Support::now()], fn($v) => $v !== null), 'id = :id', ['id' => $c['id']]);
     }
 
     public static function smetti(int $accountId, string $tipo): void

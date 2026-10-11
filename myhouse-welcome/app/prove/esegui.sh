@@ -76,6 +76,11 @@ sleep 2
 set +e
 php "$QUI/giro-completo.php" "http://127.0.0.1:$PORTA/welcomebook/index.php" "$W" "$TMP/stripe" "$TMP/s3" "$TMP/translate" "$TMP/smtp" "$PORTA_SMTP"
 ESITO=$?
+# PROVE_EMAIL=1: un file HTML per ogni email (l'ultima di ogni oggetto) in prove/email/, da aprire nel browser.
+if [ -n "${PROVE_EMAIL:-}" ] && [ -d "$W/app/storage/logs/email" ]; then
+  mkdir -p "$QUI/email"
+  for f in "$W/app/storage/logs/email"/*.html; do cp "$f" "$QUI/email/$(basename "$f" | sed 's/^[0-9]*-[0-9]*-//')"; done
+fi
 if [ -s "$W/app/storage/logs/app.log" ]; then
   echo; echo "--- registro tecnico dell'applicazione (errori previsti dalle prove inclusi) ---"
   cut -c1-300 "$W/app/storage/logs/app.log" | tail -n 25

@@ -21,6 +21,7 @@ $salvaPiano = function (array $acc, int $userId, array $pv, int $q): void {
 /** Dove porta "Crea la tua guida" per chi è già dentro: niente seconda registrazione. */
 $doveComincia = function (array $u): string {
     if ($u['role'] === 'admin') return '/admin';
+    if (!Auth::isVerified($u)) return '/conferma-email';
     $acc = Db::one('SELECT * FROM accounts WHERE user_id = ?', [$u['id']]);
     if (!$acc['intended_package_version_id'] && !Subscriptions::active((int) $acc['id'])) return '/piano';
     return '/pannello';
@@ -147,7 +148,7 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
 
     $err = null; $vecchi = ['name' => '', 'email' => ''];
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $vecchi = ['name' => (string) ($_POST['name'] ?? ''), 'email' => (string) ($_POST['email'] ?? '')];
+        $vecchi = ['name' => (string) ($_POST['name'] ?? ''), 'email' => (string) ($_POST['email'] ?? ''), 'email2' => (string) ($_POST['email2'] ?? '')];
         try {
             if (!RateLimit::hit('register:' . RateLimit::ip(), 10, 3600)) {
                 throw new RuntimeException('Troppe registrazioni da questa connessione. Riprova tra un\'ora.');
@@ -157,6 +158,10 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
             // data. Formulazione da far verificare al consulente privacy.
             if (empty($_POST['termini'])) {
                 throw new RuntimeException('Per creare l\'account devi accettare i Termini e condizioni.');
+            }
+            // 7A: l'email due volte, per non sbagliarla (incollarla è permesso).
+            if (mb_strtolower(trim($vecchi['email'])) !== mb_strtolower(trim($vecchi['email2']))) {
+                throw new RuntimeException('Le due email non sono uguali: controlla di averla scritta bene.');
             }
             $u = Auth::register((string) $_POST['email'], (string) $_POST['password'], (string) $_POST['name']);
             MHW\Stats::funnelEvent('signup');
@@ -175,12 +180,11 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
                 unset($_SESSION['invito']);
             }
             Auth::sendVerification((int) $u['user_id']);
-            Support::flash('Account creato. Ti abbiamo scritto per confermare l\'email: intanto puoi preparare la guida.');
-            if ($pvScelto) {
-                $salvaPiano(Auth::account(), (int) $u['user_id'], $pvScelto, $qScelta);
-                Support::redirect('/pannello/nuova');
-            }
-            Support::redirect($scelta ?: '/piano');
+            MHW\RateLimit::hit('verifica-attesa:' . (int) $u['user_id'], 1, 60);
+            if ($pvScelto) $salvaPiano(Auth::account(), (int) $u['user_id'], $pvScelto, $qScelta);
+            // 7A: la guida si comincia dopo la conferma dell'email.
+            if ($scelta && !$pvScelto) $_SESSION['dopo_conferma'] = $scelta;
+            Support::redirect('/conferma-email');
         } catch (\RuntimeException $e) { $err = $e->getMessage(); }
     }
     // La stessa fascia della landing: codice sconto dal link o invito di un amico.
@@ -212,27 +216,65 @@ $r->any('/accedi', function () use ($guard, $doveComincia) {
 $r->post('/esci', function () { Auth::logout(); Support::redirect('/'); });
 
 // ------------------------------------------------------------ verifica email
-$r->get('/verifica/{token}', function (array $a) {
+/* Il link di conferma porta dentro la procedura, già connessi (7A): il link è monouso e vale 48 ore. */
+$r->get('/verifica/{token}', function (array $a) use ($doveComincia) {
     $uid = Tokens::consume($a['token'], Tokens::VERIFY);
     if ($uid) {
         Db::update('users', ['email_verified_at' => Support::now()], 'id = :uid AND email_verified_at IS NULL', ['uid' => $uid]);
-        Support::flash('Email confermata. Ora puoi pubblicare la tua guida quando vuoi.');
-        Support::redirect(Auth::user() ? '/pannello' : '/accedi');
+        $chi = Auth::user();
+        if (!$chi || (int) $chi['id'] !== $uid) { if (!Auth::isImpersonating()) Auth::login($uid); }
+        Support::flash('Email confermata: ora prepari la tua guida.');
+        $dopo = (string) ($_SESSION['dopo_conferma'] ?? ''); unset($_SESSION['dopo_conferma']);
+        $u = Db::one('SELECT * FROM users WHERE id = ?', [$uid]);
+        $dove = str_starts_with($dopo, '/piano') ? $dopo : $doveComincia($u);
+        // Dentro la procedura: chi non ha ancora una struttura comincia dal nome.
+        if ($dove === '/pannello' && !Db::val('SELECT p.id FROM properties p JOIN accounts a ON a.id = p.account_id WHERE a.user_id = ? AND p.archived_at IS NULL', [$uid])) $dove = '/pannello/nuova';
+        Support::redirect($dove);
     }
     View::out('auth/verify', ['ok' => false], 'layout/bare');
+});
+
+/** «Controlla la tua email»: chi non ha confermato resta qui (l'amministrazione e «Entra come cliente» no). */
+$r->get('/conferma-email', function () use ($doveComincia) {
+    $u = Auth::requireUser();
+    if (Auth::isVerified($u) || $u['role'] === 'admin') Support::redirect($doveComincia($u));
+    View::out('auth/check_email', ['email' => (string) $u['email'], 'attendi' => RateLimit::attesa('verifica-attesa:' . (int) $u['id'])], 'layout/bare');
+});
+
+/** «Ho sbagliato indirizzo»: si cambia prima della conferma, e parte una conferma nuova. */
+$r->post('/conferma-email/cambia', function () {
+    $u = Auth::requireUser();
+    if (Auth::isVerified($u)) Support::redirect('/pannello');
+    $email = mb_strtolower(trim((string) ($_POST['email'] ?? '')));
+    $err = null;
+    if (!RateLimit::hit('verify:' . $u['id'], 5, 3600)) $err = 'Ti abbiamo già scritto più volte in un\'ora: riprova più tardi.';
+    elseif (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 190) $err = 'Questo indirizzo email non è valido.';
+    elseif ($email === mb_strtolower((string) $u['email'])) $err = 'È lo stesso indirizzo di prima: controlla anche in Spam e Promozioni.';
+    elseif (Db::val('SELECT id FROM users WHERE email = ? AND id <> ?', [$email, $u['id']])) $err = 'Questa email è già usata da un altro account: accedi con quella, oppure recupera la password.';
+    if ($err) View::out('auth/check_email', ['email' => (string) $u['email'], 'attendi' => RateLimit::attesa('verifica-attesa:' . (int) $u['id']), 'err' => $err], 'layout/bare');
+    Db::update('users', ['email' => $email], 'id = :uid', ['uid' => $u['id']]);
+    Auth::audit('account.email_prima_conferma', (int) $u['id'], ['da' => $u['email']]);
+    Auth::sendVerification((int) $u['id']);
+    RateLimit::hit('verifica-attesa:' . (int) $u['id'], 1, 60);
+    Support::flash('Fatto: ti abbiamo scritto a ' . $email . '.');
+    Support::redirect('/conferma-email');
 });
 
 $r->post('/verifica/invia', function () {
     $u = Auth::requireUser();
     if (Auth::isVerified($u)) Support::redirect('/pannello');
-    if (!RateLimit::hit('verify:' . $u['id'], 5, 3600)) {
-        Support::flash('Ti abbiamo già scritto più volte: controlla anche nella posta indesiderata.', 'err');
+    $torna = (string) ($_POST['torna'] ?? '');
+    if (RateLimit::attesa('verifica-attesa:' . (int) $u['id']) > 0) {
+        Support::flash('Aspetta qualche secondo prima di rimandarla.', 'err');
+    } elseif (!RateLimit::hit('verify:' . $u['id'], 5, 3600)) {
+        Support::flash('Ti abbiamo già scritto più volte: controlla anche in Spam e Promozioni, oppure riprova tra un\'ora.', 'err');
     } elseif (Auth::sendVerification((int) $u['id'])) {
+        RateLimit::hit('verifica-attesa:' . (int) $u['id'], 1, 60);
         Support::flash('Ti abbiamo mandato di nuovo l\'email di conferma, a ' . $u['email'] . '.');
     } else {
         Support::flash('L\'email non è partita. Riprova tra poco.', 'err');
     }
-    Support::redirect((string) ($_POST['torna'] ?? '') === 'account' ? '/account' : '/pannello');
+    Support::redirect($torna === 'account' ? '/account' : '/conferma-email');
 });
 
 // --------------------------------------------------------- recupero password
@@ -258,8 +300,9 @@ $r->any('/password/nuova/{token}', function (array $a) {
     $err = null;
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pw = (string) ($_POST['password'] ?? '');
-        if (mb_strlen($pw) < 8) $err = 'La password deve avere almeno 8 caratteri.';
-        elseif (strlen($pw) > 72) $err = 'La password può avere al massimo 72 caratteri.';
+        $chi = Db::one('SELECT email, name FROM users WHERE id = ?', [$uid]) ?? ['email' => '', 'name' => ''];
+        try { Auth::controllaPassword($pw, (string) $chi['email'], (string) $chi['name']); } catch (\RuntimeException $e) { $err = $e->getMessage(); }
+        if ($err !== null) {}
         elseif ($pw !== (string) ($_POST['password2'] ?? '')) $err = 'Le due password non coincidono.';
         elseif (Tokens::consume($a['token'], Tokens::RESET) !== $uid) $err = 'Il link è già stato usato.';
         else {
@@ -279,6 +322,7 @@ $r->any('/password/nuova/{token}', function (array $a) {
 $r->any('/piano', function () use ($salvaPiano) {
     $u = Auth::requireUser();
     if ($u['role'] === 'admin') Support::redirect('/admin');
+    if (!Auth::isVerified($u) && !Auth::isImpersonating()) Support::redirect('/conferma-email');
     $acc = Auth::account();
     $attivo = Subscriptions::active((int) $acc['id']);
     // Chi ha già un abbonamento che si può cambiare va a «Cambia piano» (6H); ?passa=plus porta dritto alla conferma.
@@ -514,6 +558,26 @@ $r->any('/email/stop/{token}', function (array $a) {
     $fatto = false;
     if ($_SERVER['REQUEST_METHOD'] === 'POST') { MHW\Richiami::smetti((int) $riga['account_id'], (string) $riga['kind']); $fatto = true; }
     View::out('pub/email_stop', ['tipo' => MHW\Richiami::TIPI[$riga['kind']] ?? 'questa email', 'fatto' => $fatto], 'layout/bare');
+});
+
+/* «Cosa ti ha fermato?» (7A): il token dell'email fa da firma, non serve accedere. Il clic salva il motivo. */
+$r->get('/parere/{token}/{motivo}', function (array $a) {
+    $riga = MHW\Richiami::daToken((string) $a['token']);
+    $motivo = (string) $a['motivo'];
+    if (!$riga || $riga['kind'] !== 'parere' || !isset(MHW\Richiami::MOTIVI[$motivo])) { http_response_code(404); View::out('pub/404', []); }
+    MHW\Richiami::rispondi((int) $riga['account_id'], $motivo, null, true);
+    $c = Db::one('SELECT * FROM feedback WHERE account_id = ?', [$riga['account_id']]);
+    View::out('pub/parere', ['token' => (string) $a['token'], 'motivo' => (string) ($c['motivo'] ?? $motivo),
+                             'testo' => (string) ($c['testo'] ?? ''), 'salvato' => false], 'layout/bare');
+});
+$r->post('/parere/{token}', function (array $a) {
+    $riga = MHW\Richiami::daToken((string) $a['token']);
+    if (!$riga || $riga['kind'] !== 'parere') { http_response_code(404); View::out('pub/404', []); }
+    if (!RateLimit::hit('parere:' . $riga['account_id'], 10, 3600)) { http_response_code(429); exit('Troppi invii: riprova più tardi.'); }
+    $motivo = (string) ($_POST['motivo'] ?? '');
+    $c = Db::one('SELECT motivo FROM feedback WHERE account_id = ?', [$riga['account_id']]);
+    MHW\Richiami::rispondi((int) $riga['account_id'], isset(MHW\Richiami::MOTIVI[$motivo]) ? $motivo : (string) ($c['motivo'] ?? 'altro'), (string) ($_POST['testo'] ?? ''));
+    View::out('pub/parere', ['token' => (string) $a['token'], 'motivo' => $motivo, 'testo' => '', 'salvato' => true], 'layout/bare');
 });
 
 /* Per un cron di cPanel: wget -q -O- https://…/cron/IL_TOKEN (token in MHW_CRON_TOKEN). */

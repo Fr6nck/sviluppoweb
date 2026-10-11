@@ -4,6 +4,15 @@ namespace MHW;
 final class Support
 {
     public static function now(): string { return gmdate('Y-m-d\TH:i:s\Z'); }
+
+    /** L'indirizzo unico per assistenza, suggerimenti e preventivi (config contatti.email). */
+    public static function contatto(): string { return (string) ((Config::get('contatti') ?? [])['email'] ?? ''); }
+
+    /** Un link mailto: all'assistenza con oggetto e corpo già scritti. */
+    public static function mailto(string $oggetto, string $corpo = ''): string
+    {
+        return 'mailto:' . self::contatto() . '?subject=' . rawurlencode($oggetto) . ($corpo !== '' ? '&body=' . rawurlencode($corpo) : '');
+    }
     public static function today(): string { return gmdate('Y-m-d'); }
 
     public static function e(?string $s): string
@@ -143,7 +152,8 @@ final class Support
     public static function baseUrl(): string
     {
         $cfg = Config::get('base_url');
-        if ($cfg) return rtrim($cfg, '/');
+        // Con l'indirizzo impostato si tiene index.php solo se il sito lo usa (indirizzi puliti spenti e non riconosciuti).
+        if ($cfg) return rtrim($cfg, '/') . (str_ends_with(self::base(), '/index.php') ? '/index.php' : '');
         $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
               || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';

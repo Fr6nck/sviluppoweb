@@ -5,12 +5,12 @@
   <p style="margin-top:20px"><a class="btn" href="<?= b() ?>/password/dimenticata">Chiedine uno nuovo</a></p>
 <?php else: ?>
   <h1>Scegli una nuova password.</h1>
-  <?php if ($err): ?><p class="note note--err" style="margin-top:20px" role="alert"><?= Support::e($err) ?></p><?php endif; ?>
+  <?php if ($err): ?><p class="note note--err" style="margin-top:20px" role="alert"><?= Support::e($err) ?></p>
+    <?php $aiutoEmail = ''; $aiutoPagina = 'Nuova password'; include __DIR__ . '/_aiuto.php'; ?><?php endif; ?>
   <form method="post" class="panel stack" style="margin-top:24px"><?= Csrf::field() ?>
-    <div class="field" style="margin:0"><label for="password">Nuova password <span class="muted">— almeno 8 caratteri</span></label>
-      <input id="password" name="password" type="password" required minlength="8" maxlength="72" autocomplete="new-password" autofocus></div>
-    <div class="field" style="margin:0"><label for="password2">Ripetila</label>
-      <input id="password2" name="password2" type="password" required minlength="8" maxlength="72" autocomplete="new-password"></div>
+    <?php $pwId = 'password'; $pwNome = 'password'; $pwEtichetta = 'Nuova password'; $pwAuto = 'new-password'; $pwNuova = true; $pwFuoco = true; include __DIR__ . '/_pw.php'; ?>
+    <?php $pwId = 'password2'; $pwNome = 'password2'; $pwEtichetta = 'Ripetila'; $pwAuto = 'new-password'; include __DIR__ . '/_pw.php'; ?>
     <button class="btn btn--block">Salva la password</button>
   </form>
 <?php endif; ?>
+<script src="<?= MHW\av('/assets/password.js') ?>" defer></script>

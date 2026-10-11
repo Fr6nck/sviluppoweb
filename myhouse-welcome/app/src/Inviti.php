@@ -398,18 +398,10 @@ final class Inviti
         $intro = $nome . ' usa MyHouse Welcome per la guida digitale della sua struttura e ti invita a provarla.';
         $sconto = 'Con il suo invito hai il ' . self::AMICO . '% di sconto sul primo anno. Crei la guida gratis e paghi solo quando la pubblichi.';
         $piede = 'Ricevi questa email perché ' . $nome . ' ha scritto il tuo indirizzo nel suo pannello. Non lo conserviamo e non ti scriveremo altro.';
-        $testo = "Ciao,\n\n$intro\n\n" . ($messaggio !== '' ? "«{$messaggio}»\n\n" : '') . "$sconto\n\nCrea la tua guida: $link\n\n"
-               . "Oppure scrivi il codice $codice dove si inserisce il codice sconto.\n\nMyHouse Welcome\n\n—\n$piede";
-        $html = '<!doctype html><html lang="it"><body style="margin:0;padding:24px;background:#faf5ec;font-family:Arial,sans-serif;color:#231b12">'
-              . '<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:16px;padding:28px">'
-              . '<p style="font-size:16px;line-height:24px;margin:0 0 14px">Ciao,</p>'
-              . '<p style="font-size:16px;line-height:24px;margin:0 0 14px">' . $e($intro) . '</p>'
-              . ($messaggio !== '' ? '<p style="font-size:16px;line-height:24px;margin:0 0 14px;padding:12px 16px;border-radius:12px;background:#f7e6dc">' . nl2br($e($messaggio)) . '</p>' : '')
-              . '<p style="font-size:16px;line-height:24px;margin:0 0 24px">' . $e($sconto) . '</p>'
-              . '<p style="margin:0 0 20px"><a href="' . $e($link) . '" style="display:inline-block;background:#b4451f;color:#fff8f2;text-decoration:none;font-weight:bold;padding:14px 22px;border-radius:999px">Crea la tua guida</a></p>'
-              . '<p style="font-size:14px;line-height:22px;margin:0 0 20px;color:#6a5b48">Oppure scrivi il codice <b style="color:#231b12;letter-spacing:.08em">' . $e($codice) . '</b> dove si inserisce il codice sconto.</p>'
-              . '<p style="font-size:14px;color:#6a5b48;margin:0">MyHouse Welcome</p></div>'
-              . '<p style="max-width:520px;margin:16px auto 0;font-size:12px;line-height:18px;color:#6a5b48">' . $e($piede) . '</p></body></html>';
+        $paragrafi = array_values(array_filter([$intro, $messaggio !== '' ? '«' . $messaggio . '»' : '', $sconto,
+                                                'Oppure scrivi il codice ' . $codice . ' dove si inserisce il codice sconto.']));
+        $testo = Mailer::testo('Ciao, ' . $nome . ' ti invita', $paragrafi, ['Crea la tua guida', $link], null, $piede);
+        $html = Mailer::layout('Ciao, ' . $nome . ' ti invita', $paragrafi, ['Crea la tua guida', $link], null, $e($piede));
         return [$oggetto, $testo, $html];
     }
 

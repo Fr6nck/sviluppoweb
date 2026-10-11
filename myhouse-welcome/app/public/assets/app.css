@@ -2117,3 +2117,9 @@ fieldset{min-width:0}
 .privacy-nota--prima{padding:16px 20px;background:var(--sea-soft)}
 .registrati__riservata,.pubblica-riservata{display:flex;gap:6px;align-items:flex-start;margin:0}
 .registrati__riservata svg,.pubblica-riservata svg{flex:none;margin-top:3px}
+.aiuto-accesso{margin:8px 0 0}
+/* 7A · assistenza nel pannello */
+.lato__aiuto{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 4px;color:var(--lato-fg);font-size:14px;text-decoration:none;border-radius:8px}
+.lato__aiuto:hover{background:var(--lato-velo)}
+.lato__aiuto:focus-visible{outline:2px solid var(--lato-accento);outline-offset:2px}
+.sezione-aiuto{margin:24px 0 0}

@@ -132,13 +132,20 @@ $config = [
         'terms_version'   => $env('MHW_TERMS_VERSION', '2026-10-08'),
         'privacy_version' => $env('MHW_PRIVACY_VERSION', '2026-10'),
         'company'         => $env('MHW_COMPANY', 'Blackout Agency'),
-        'contact_email'   => $env('MHW_CONTACT_EMAIL', 'info@myhousewelcome.it'),
+        // Di serie è l'indirizzo unico dell'assistenza (contatti.email, qui sotto): vedi in fondo al file.
+        'contact_email'   => '',
         // Dati aziendali mostrati nel piè di pagina e nei documenti legali.
         // Un valore vuoto nasconde la sua riga.
         'company_vat'      => $env('MHW_COMPANY_VAT', '02945910541'),
         'contact_phone'    => $env('MHW_CONTACT_PHONE', '+39 392 006 1600'),
         'contact_whatsapp' => $env('MHW_CONTACT_WHATSAPP', '393920061600'),
         'company_city'     => $env('MHW_COMPANY_CITY', 'Via Ariodante Fabretti 17, Perugia'),
+    ],
+
+    // L'indirizzo unico per assistenza, suggerimenti e preventivi (7A): i mailto del sito e del
+    // pannello e il piede delle email. Si cambia da Amministrazione → Impostazioni → Sito.
+    'contatti' => [
+        'email' => $env('MHW_CONTACT_EMAIL', 'info@welcomemyhouse.it'),
     ],
 
     'uploads_dir' => __DIR__ . '/storage/uploads',
@@ -150,4 +157,6 @@ if (is_file(__DIR__ . '/config.local.php')) {
     $locale = require __DIR__ . '/config.local.php';
     if (is_array($locale)) $config = array_replace_recursive($config, $locale);
 }
+// Un indirizzo solo: il contatto dei documenti legali è quello dell'assistenza, se non è scritto a parte.
+if (($config['legal']['contact_email'] ?? '') === '') $config['legal']['contact_email'] = $config['contatti']['email'];
 return $config;

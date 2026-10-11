@@ -21,6 +21,84 @@ final class Mailer
 
     public static function ultimoErrore(): string { return self::$ultimoErrore; }
 
+    // ------------------------------------------------------------------ email con il marchio (7A)
+
+    /**
+     * L'HTML di un'email con il marchio: sfondo carta, riquadro bianco, «myhouse welcome» in testo,
+     * titolo in serif, un solo bottone mattone con il link in chiaro sotto, nota piccola e piede con
+     * ragione sociale, partita IVA e indirizzo dell'assistenza. Tabelle e stili in linea (Gmail,
+     * Outlook, Apple Mail), niente immagini esterne. I paragrafi sono testo semplice (si escapano);
+     * $piede è HTML già pulito (per esempio il link «non mandarmene più»).
+     * @param array{0:string,1:string}|null $bottone [testo, indirizzo]
+     * @param list<array{0:string,1:string}> $scelte risposte a un clic, link a contorno uno sotto l'altro (7A)
+     */
+    public static function layout(string $titolo, array $paragrafi, ?array $bottone, ?string $nota, ?string $piede, array $scelte = []): string
+    {
+        $e = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+        $l = Config::get('legal') ?? [];
+        $chi = implode(' · ', array_filter([(string) ($l['company'] ?? ''), ($l['company_vat'] ?? '') !== '' ? 'P.IVA ' . $l['company_vat'] : '']));
+        $aiuto = Support::contatto();
+        $anteprima = mb_substr(trim((string) ($paragrafi[0] ?? $titolo)), 0, 140);
+        $font = "font-family:'Helvetica Neue',Helvetica,Arial,sans-serif";
+        $h = '<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+           . '<meta name="color-scheme" content="light"><title>' . $e($titolo) . '</title></head>'
+           . '<body style="margin:0;padding:0;background:#faf5ec;' . $font . ';color:#231b12">'
+           . '<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#faf5ec">' . $e($anteprima) . '</div>'
+           . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#faf5ec"><tr><td align="center" style="padding:24px 12px">'
+           . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px">'
+           . '<tr><td style="padding:0 8px 16px;' . $font . ';font-size:18px;font-weight:600;color:#231b12;letter-spacing:-.01em">myhouse welcome<span style="color:#b4451f">.</span></td></tr>'
+           . '<tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px">'
+           . '<h1 style="margin:0 0 16px;font-family:Gloock,Georgia,\'Times New Roman\',serif;font-weight:400;font-size:28px;line-height:34px;color:#231b12">' . $e($titolo) . '</h1>';
+        foreach ($paragrafi as $p) {
+            $h .= '<p style="margin:0 0 16px;' . $font . ';font-size:16px;line-height:24px;color:#231b12">' . nl2br($e((string) $p)) . '</p>';
+        }
+        if ($bottone) {
+            [$testoB, $url] = $bottone;
+            $h .= '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 12px"><tr>'
+                . '<td style="border-radius:999px;background:#b4451f"><a href="' . $e($url) . '" style="display:inline-block;padding:14px 24px;' . $font
+                . ';font-size:16px;font-weight:600;color:#fff8f2;text-decoration:none;border-radius:999px">' . $e($testoB) . '</a></td></tr></table>'
+                . '<p style="margin:0 0 16px;' . $font . ';font-size:13px;line-height:20px;color:#6a5b48">Se il bottone non si apre, copia questo indirizzo nel browser:<br>'
+                . '<a href="' . $e($url) . '" style="color:#b4451f;word-break:break-all">' . $e($url) . '</a></p>';
+        }
+        foreach ($scelte as [$testoS, $urlS]) {
+            $h .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px"><tr>'
+                . '<td style="border:1px solid #d9cbb6;border-radius:12px"><a href="' . $e($urlS) . '" style="display:block;padding:12px 16px;' . $font
+                . ';font-size:16px;font-weight:600;color:#b4451f;text-decoration:none">' . $e($testoS) . '</a></td></tr></table>';
+        }
+        if ($nota !== null && $nota !== '') $h .= '<p style="margin:16px 0 0;' . $font . ';font-size:13px;line-height:20px;color:#6a5b48">' . $e($nota) . '</p>';
+        $h .= '</td></tr><tr><td style="padding:16px 8px 0;' . $font . ';font-size:12px;line-height:18px;color:#6a5b48">'
+            . ($aiuto !== '' ? 'Hai bisogno di aiuto? Scrivici a <a href="mailto:' . $e($aiuto) . '" style="color:#6a5b48">' . $e($aiuto) . '</a><br>' : '')
+            . ($chi !== '' ? 'MyHouse Welcome · ' . $e($chi) . '<br>' : '')
+            . ($piede !== null && $piede !== '' ? $piede : '')
+            . '</td></tr></table></td></tr></table></body></html>';
+        return $h;
+    }
+
+    /** La versione testo della stessa email. $piede: testo semplice. */
+    public static function testo(string $titolo, array $paragrafi, ?array $bottone, ?string $nota, ?string $piede = null, array $scelte = []): string
+    {
+        $aiuto = Support::contatto();
+        $t = $titolo . "\n\n" . implode("\n\n", array_map('strval', $paragrafi)) . "\n\n";
+        foreach ($scelte as [$testoS, $urlS]) $t .= "- $testoS: $urlS\n";
+        if ($scelte) $t .= "\n";
+        if ($bottone) $t .= $bottone[0] . ': ' . $bottone[1] . "\n\n";
+        if ($nota !== null && $nota !== '') $t .= $nota . "\n\n";
+        $t .= "MyHouse Welcome" . ($aiuto !== '' ? "\nHai bisogno di aiuto? Scrivici a $aiuto" : '');
+        if ($piede !== null && $piede !== '') $t .= "\n\n—\n" . $piede;
+        return $t;
+    }
+
+    /**
+     * Manda un'email con il marchio: HTML (layout) e testo insieme.
+     * @param array{0:string,1:string}|null $bottone
+     * @param array{0:string,1:string}|null $piede [html, testo]
+     */
+    public static function manda(string $to, string $oggetto, string $titolo, array $paragrafi, ?array $bottone = null, ?string $nota = null, ?array $piede = null): bool
+    {
+        return self::send($to, $oggetto . ' — MyHouse Welcome', self::testo($titolo, $paragrafi, $bottone, $nota, $piede[1] ?? null),
+                          self::layout($titolo, $paragrafi, $bottone, $nota, $piede[0] ?? null));
+    }
+
     public static function send(string $to, string $subject, string $text, ?string $html = null): bool
     {
         $cfg = Config::get('mail');
@@ -33,7 +111,7 @@ final class Mailer
             return match ($cfg['transport']) {
                 'smtp'  => self::smtp($cfg, $to, $subject, $text, $html),
                 'mail'  => self::phpMail($cfg, $to, $subject, $text, $html),
-                default => self::log($to, $subject, $text),
+                default => self::log($to, $subject, $text, $html),
             };
         } catch (\Throwable $e) {
             self::$ultimoErrore = $e->getMessage();
@@ -78,10 +156,18 @@ final class Mailer
         return [$headers, $body];
     }
 
-    private static function log(string $to, string $subject, string $text): bool
+    private static function log(string $to, string $subject, string $text, ?string $html = null): bool
     {
         $riga = json_encode(['t' => Support::now(), 'to' => $to, 'subject' => $subject, 'text' => $text],
                             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        // In prova si tiene anche l'HTML, per vederlo nel browser: storage/logs/email/ (fuori dal web come mail.log).
+        if ($html !== null) {
+            $dir = Log::dir() . '/email';
+            if (is_dir($dir) || @mkdir($dir, 0775, true)) {
+                $nome = gmdate('Ymd-His') . '-' . substr(Support::slug(explode(' — ', $subject)[0]), 0, 60) . '.html';
+                @file_put_contents($dir . '/' . $nome, $html, LOCK_EX);
+            }
+        }
         return (bool) @file_put_contents(Log::dir() . '/mail.log', $riga . "\n", FILE_APPEND | LOCK_EX);
     }
 

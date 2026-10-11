@@ -46,8 +46,7 @@ final class Auth
         if ($name === '') throw new \RuntimeException('Scrivi il tuo nome.');
         if (mb_strlen($name) > 120) throw new \RuntimeException('Il nome è troppo lungo.');
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 190) throw new \RuntimeException('Questo indirizzo email non è valido.');
-        if (mb_strlen($password) < 8) throw new \RuntimeException('La password deve avere almeno 8 caratteri.');
-        if (strlen($password) > 72) throw new \RuntimeException('La password può avere al massimo 72 caratteri.');   // oltre, bcrypt la taglierebbe senza dirlo
+        self::controllaPassword($password, $email, $name);
         if (Db::one('SELECT id FROM users WHERE email = ?', [$email])) {
             throw new \RuntimeException('Esiste già un account con questa email. Accedi, oppure recupera la password.');
         }
@@ -78,11 +77,10 @@ final class Auth
         if (!$u || $u['email_verified_at']) return false;
         $token = Tokens::issue($userId, Tokens::VERIFY, 48 * 3600);
         $link = Support::baseUrl() . '/verifica/' . $token;
-        $nome = $u['name'] ?: 'ciao';
-        return Mailer::send($u['email'], 'Conferma la tua email — MyHouse Welcome',
-            "Ciao $nome,\n\nconferma il tuo indirizzo email aprendo questo link:\n\n$link\n\n"
-            . "Il link vale 48 ore. Finché non confermi puoi preparare la guida, ma non pubblicarla.\n\n"
-            . "Se non hai creato tu l'account, ignora questo messaggio.\n\nMyHouse Welcome");
+        $nome = trim(explode(' ', trim((string) $u['name']))[0] ?? '');
+        return Mailer::manda($u['email'], 'Conferma la tua email', 'Conferma la tua email',
+            ['Ciao' . ($nome !== '' ? ' ' . $nome : '') . ', manca un passo: conferma il tuo indirizzo e prepari la tua guida.'],
+            ['Conferma la mia email', $link], 'Il link vale 48 ore. Se non hai creato tu l\'account, ignora questo messaggio.');
     }
 
     public static function sendPasswordReset(string $email): void
@@ -92,10 +90,33 @@ final class Auth
         if (!$u) return;
         $token = Tokens::issue((int) $u['id'], Tokens::RESET, 3600);
         $link = Support::baseUrl() . '/password/nuova/' . $token;
-        Mailer::send($u['email'], 'Scegli una nuova password — MyHouse Welcome',
-            "Ciao,\n\nqualcuno ha chiesto di cambiare la password del tuo account MyHouse Welcome.\n"
-            . "Se sei stato tu, apri questo link entro un'ora:\n\n$link\n\n"
-            . "Se non sei stato tu, ignora questo messaggio: la password resta quella di prima.\n\nMyHouse Welcome");
+        Mailer::manda($u['email'], 'Scegli una nuova password', 'Scegli una nuova password',
+            ['Qualcuno ha chiesto di cambiare la password del tuo account MyHouse Welcome. Se sei stato tu, scegli la nuova password dal bottone qui sotto.',
+             'Se non sei stato tu, ignora questo messaggio: la password resta quella di prima.'],
+            ['Scegli la password', $link], 'Il link scade tra un\'ora.');
+    }
+
+    public const PASSWORD_MIN = 10;
+
+    /**
+     * La password va bene? Almeno 10 caratteri, al massimo 72 byte (oltre, bcrypt la taglierebbe senza
+     * dirlo), non tra le 1.000 più usate (lang/password-comuni.txt), diversa dall'email e dal nome (7A).
+     * Lancia l'errore da mostrare così com'è.
+     */
+    public static function controllaPassword(string $pw, string $email = '', string $nome = ''): void
+    {
+        if (mb_strlen($pw) < self::PASSWORD_MIN) throw new \RuntimeException('La password deve avere almeno ' . self::PASSWORD_MIN . ' caratteri.');
+        if (strlen($pw) > 72) throw new \RuntimeException('La password può avere al massimo 72 caratteri.');
+        $bassa = mb_strtolower($pw);
+        foreach ([$email, $nome] as $x) {
+            if (trim($x) !== '' && $bassa === mb_strtolower(trim($x))) throw new \RuntimeException('La password non può essere uguale alla tua email o al tuo nome.');
+        }
+        static $comuni = null;
+        if ($comuni === null) {
+            $f = MHW_APP . '/lang/password-comuni.txt';
+            $comuni = is_file($f) ? array_flip(array_filter(array_map('trim', file($f) ?: []), fn($r) => $r !== '' && $r[0] !== '#')) : [];
+        }
+        if (isset($comuni[$bassa])) throw new \RuntimeException('Questa password è tra le più usate al mondo: scegline una meno facile da indovinare.');
     }
 
     public static function isVerified(?array $user): bool

@@ -5,7 +5,8 @@
     un link per scegliere una nuova password. Vale un'ora. Controlla anche la posta indesiderata.</p>
 <?php else: ?>
   <p class="muted" style="margin-top:14px">Scrivi l'email del tuo account: ti mandiamo un link per sceglierne una nuova.</p>
-  <?php if ($err): ?><p class="note note--err" style="margin-top:20px" role="alert"><?= Support::e($err) ?></p><?php endif; ?>
+  <?php if ($err): ?><p class="note note--err" style="margin-top:20px" role="alert"><?= Support::e($err) ?></p>
+    <?php $aiutoEmail = (string) ($_POST['email'] ?? ''); $aiutoPagina = 'Password dimenticata'; include __DIR__ . '/_aiuto.php'; ?><?php endif; ?>
   <form method="post" class="panel stack" style="margin-top:24px"><?= Csrf::field() ?>
     <div class="field" style="margin:0"><label for="email">Email</label>
       <input id="email" name="email" type="email" required autocomplete="email" autofocus></div>

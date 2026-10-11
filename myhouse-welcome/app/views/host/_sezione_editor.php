@@ -264,4 +264,7 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
         </details>
       </div>
     <?php endif; ?>
-
+<?php if (MHW\Support::contatto() !== ''): /* 7A: problemi e suggerimenti su questa sezione, all'assistenza */ ?>
+  <p class="small muted sezione-aiuto"><a href="<?= Support::e(Support::mailto('Problema: ' . $nome, "Struttura: " . $prop['name'] . "\nSezione: " . $nome . "\n\nCosa non va:\n")) ?>">Qualcosa non va in questa sezione? Scrivici</a>
+    · <a href="<?= Support::e(Support::mailto('Suggerimento: ' . $nome, "Struttura: " . $prop['name'] . "\nSezione: " . $nome . "\n\nIl mio suggerimento:\n")) ?>">Hai un suggerimento?</a></p>
+<?php endif; ?>

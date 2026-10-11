@@ -23,6 +23,12 @@ final class Impostazioni
      * Tipi: text, secret, email, url, number, choice, check; cifra (intero), decimale, data (AAAA-MM-GG).
      */
     public const GRUPPI = [
+        // 7A: l'indirizzo del sito, gli indirizzi senza index.php e l'indirizzo unico dell'assistenza.
+        'sito' => [
+            'base_url'       => ['MHW_BASE_URL', 'Indirizzo del sito', 'url', 'Per esempio https://welcomemyhouse.it, senza barra finale. È quello che finisce nei QR, nelle email e nei motori di ricerca.'],
+            'pretty_urls'    => ['MHW_PRETTY_URLS', 'Indirizzi puliti, senza index.php', 'check', 'Si accende solo se la prova riesce: il sito chiede a sé stesso robots.txt. Spento, tutto resta come prima.'],
+            'contatti.email' => ['MHW_CONTACT_EMAIL', 'Indirizzo per assistenza, suggerimenti e preventivi', 'email', 'Quello dei bottoni «Scrivici» del sito e del pannello, e del piede delle email. Di serie info@welcomemyhouse.it.'],
+        ],
         'stripe' => [
             'stripe.secret_key'     => ['STRIPE_SECRET_KEY', 'Chiave segreta', 'secret', 'Stripe → Sviluppatori → Chiavi API. Comincia con sk_live_ (o sk_test_ per le prove).'],
             'stripe.webhook_secret' => ['STRIPE_WEBHOOK_SECRET', 'Segreto del webhook', 'secret', 'Stripe → Sviluppatori → Webhook → il tuo endpoint → «Segreto di firma». Comincia con whsec_.'],
@@ -63,7 +69,7 @@ final class Impostazioni
         ],
     ];
 
-    public const TITOLI = ['stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'inviti' => 'Invita un amico'];
+    public const TITOLI = ['sito' => 'Sito', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'inviti' => 'Invita un amico'];
 
     public static function file(): string { return MHW_APP . '/config.local.php'; }
 
@@ -195,6 +201,13 @@ final class Impostazioni
             $nome = self::nome($percorso);
             if (self::origine($percorso, $locale) === 'env') { $effettivi[$percorso] = self::valore($percorso); continue; }
             $grezzo = preg_replace('/[\x00-\x1F\x7F]/', '', trim((string) ($in[$nome] ?? ''))) ?? '';
+            if ($percorso === 'pretty_urls') {
+                // Spento = come prima: il sito decide da solo (null), non «mai».
+                if (empty($in[$nome])) { self::togli($nuovo, $percorso); $effettivi[$percorso] = null; continue; }
+                self::metti($nuovo, $percorso, true);
+                $effettivi[$percorso] = true;
+                continue;
+            }
             if ($tipo === 'check') {
                 $v = !empty($in[$nome]);
                 self::metti($nuovo, $percorso, $v);
@@ -229,7 +242,7 @@ final class Impostazioni
                 'number' => (int) $grezzo,
                 'cifra' => (int) str_replace('.', '', $grezzo),
                 'decimale' => str_replace(',', '.', $grezzo),
-                default => $grezzo,
+                default => $percorso === 'base_url' ? rtrim($grezzo, '/') : $grezzo,
             };
             if ($grezzo === '') self::togli($nuovo, $percorso); else self::metti($nuovo, $percorso, $v);
             $effettivi[$percorso] = $grezzo === '' ? '' : $v;
@@ -247,6 +260,10 @@ final class Impostazioni
         }
         if (!$errori && $gruppo === 'traduzioni' && (($effettivi['translate.key'] ?? '') === '') !== (($effettivi['translate.secret'] ?? '') === '')) {
             $errori[self::nome(($effettivi['translate.key'] ?? '') === '' ? 'translate.key' : 'translate.secret')] = 'Servono tutte e due le chiavi (o nessuna, per usare quelle dell\'archivio S3).';
+        }
+        if (!$errori && $gruppo === 'sito' && ($effettivi['pretty_urls'] ?? null) === true) {
+            [$ok, $msg] = self::provaIndirizzi(rtrim((string) ($effettivi['base_url'] ?? ''), '/'));
+            if (!$ok) $errori[self::nome('pretty_urls')] = $msg;
         }
         if (!$errori && $gruppo === 'stripe' && ($effettivi['stripe.secret_key'] ?? '') !== '' && ($effettivi['stripe.webhook_secret'] ?? '') === '') {
             $errori[self::nome('stripe.webhook_secret')] = 'Serve anche il segreto del webhook: senza, i pagamenti non attivano le guide.';
@@ -299,6 +316,31 @@ final class Impostazioni
         return $consiglio . ($errore !== '' ? ' Risposta del server: «' . mb_substr($errore, 0, 300) . '».' : '');
     }
 
+    public const AVVISO_HTACCESS = 'Il server non legge .htaccess: caricalo nella cartella principale, è un file nascosto, e controlla che il piano di hosting lo permetta';
+
+    /**
+     * Gli indirizzi puliti funzionano? Il sito chiede a sé stesso $base/robots.txt (senza index.php):
+     * risponde 200 solo se il server riscrive gli indirizzi. $base vuoto = l'indirizzo di adesso.
+     * @return array{0:bool,1:string}
+     */
+    public static function provaIndirizzi(string $base = ''): array
+    {
+        if ($base === '') $base = (string) preg_replace('#/index\.php$#', '', Support::baseUrl());
+        $url = rtrim($base, '/') . '/robots.txt';
+        // Il server di prova di PHP (php -S) serve una richiesta per volta: chiedere a sé stesso lo bloccherebbe.
+        if (PHP_SAPI === 'cli-server' && parse_url($url, PHP_URL_HOST) . ':' . parse_url($url, PHP_URL_PORT) === preg_replace('/^\[?([^\]]*)\]?$/', '$1', (string) ($_SERVER['SERVER_NAME'] ?? '')) . ':' . ($_SERVER['SERVER_PORT'] ?? '')) {
+            return [false, 'Con il server di prova di PHP la prova non si può fare: si fa sull\'hosting.'];
+        }
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_TIMEOUT => 5, CURLOPT_FOLLOWLOCATION => false, CURLOPT_NOBODY => false]);
+        $corpo = (string) curl_exec($ch);
+        $codice = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $errore = curl_error($ch);
+        curl_close($ch);
+        if ($codice === 200 && str_contains($corpo, 'User-agent')) return [true, 'Gli indirizzi puliti funzionano: ' . $url . ' risponde.'];
+        return [false, self::AVVISO_HTACCESS . ' (' . $url . ' → ' . ($codice ?: 'nessuna risposta' . ($errore !== '' ? ': ' . $errore : '')) . ').'];
+    }
+
     /**
      * Prova la connessione con la configurazione in uso.
      * @return array{0:bool,1:string} [riuscita, messaggio per l'amministratore]
@@ -307,13 +349,16 @@ final class Impostazioni
     {
         try {
             switch ($gruppo) {
+                case 'sito':
+                    return self::provaIndirizzi(rtrim((string) Config::get('base_url'), '/'));
                 case 'stripe':
                     if (!Stripe::enabled()) return [false, 'Stripe non è ancora configurato: servono la chiave segreta e il segreto del webhook.'];
                     Stripe::call('GET', 'balance');
                     return [true, 'Stripe risponde: la chiave è valida (' . (self::modoStripe() === 'live' ? 'modalità reale' : 'modalità di prova') . '). Il segreto del webhook si verifica al primo pagamento: controlla in Stripe che gli eventi arrivino con esito 200.'];
                 case 'posta':
                     $t = (string) Config::get('mail')['transport'];
-                    $ok = Mailer::send($emailAdmin, 'Prova della posta di MyHouse Welcome', "Se leggi questa email, la posta in uscita funziona.\n\nInviata da Amministrazione → Impostazioni il " . gmdate('d/m/Y H:i') . ' (UTC).');
+                    $ok = Mailer::manda($emailAdmin, 'Prova della posta', 'La posta funziona',
+                        ['Se leggi questa email, la posta in uscita funziona.', 'Inviata da Amministrazione → Impostazioni il ' . gmdate('d/m/Y H:i') . ' (UTC).']);
                     if (!$ok) return [false, 'L\'email di prova non è partita. ' . self::consiglioPosta(Mailer::ultimoErrore())];
                     return [true, $t === 'log' ? 'La posta è in modalità prova: l\'email è finita in storage/logs/mail.log, non nella casella.' : 'Email di prova spedita a ' . $emailAdmin . ': controlla la casella (anche lo spam).'];
                 case 'archivio':

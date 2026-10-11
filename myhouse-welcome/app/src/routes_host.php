@@ -16,6 +16,8 @@ $host = function (): array {
     $u = Auth::requireUser();
     $acc = Auth::account();
     if (!$acc) Support::redirect('/admin');
+    // 7A: la guida si comincia dopo la conferma dell'email («Entra come cliente» passa lo stesso).
+    if (!Auth::isVerified($u) && !Auth::isImpersonating()) Support::redirect('/conferma-email');
     return [$u, $acc];
 };
 
@@ -1131,9 +1133,8 @@ $r->post('/account/password', function () use ($host, $paginaAccount) {
     if (!MHW\RateLimit::hit('password-cambio:' . $u['id'], 8, 900)) $errori['attuale'] = 'Troppi tentativi: riprova tra un quarto d\'ora.';
     elseif (!password_verify((string) ($_POST['attuale'] ?? ''), (string) Db::val('SELECT password_hash FROM users WHERE id = ?', [$u['id']], ''))) $errori['attuale'] = 'La password attuale non è giusta.';
     $nuova = (string) ($_POST['nuova'] ?? '');
-    if (mb_strlen($nuova) < 8) $errori['nuova'] = 'La password nuova deve avere almeno 8 caratteri.';
-    elseif (strlen($nuova) > 72) $errori['nuova'] = 'La password nuova può avere al massimo 72 caratteri.';
-    elseif ($nuova !== (string) ($_POST['nuova2'] ?? '')) $errori['nuova2'] = 'Le due password non sono uguali: riscrivile.';
+    try { Auth::controllaPassword($nuova, (string) $u['email'], (string) $u['name']); } catch (\RuntimeException $e) { $errori['nuova'] = $e->getMessage(); }
+    if (!isset($errori['nuova']) && $nuova !== (string) ($_POST['nuova2'] ?? '')) $errori['nuova2'] = 'Le due password non sono uguali: riscrivile.';
     if ($errori) $paginaAccount($u, $acc, ['erroriPassword' => $errori, 'apri' => 'password']);
     Db::update('users', ['password_hash' => password_hash($nuova, PASSWORD_DEFAULT)], 'id = :uid', ['uid' => $u['id']]);
     session_regenerate_id(true);
@@ -1154,9 +1155,10 @@ $r->post('/account/email', function () use ($host, $paginaAccount) {
     if ($errori) $paginaAccount($u, $acc, ['erroriEmail' => $errori, 'apri' => 'email', 'emailNuova' => $email]);
     Db::update('users', ['pending_email' => $email], 'id = :uid', ['uid' => $u['id']]);
     $link = Support::baseUrl() . '/account/email/' . MHW\Tokens::issue((int) $u['id'], MHW\Tokens::EMAIL, 48 * 3600);
-    $partita = MHW\Mailer::send($email, 'Conferma la tua nuova email — MyHouse Welcome',
-        "Ciao " . ($u['name'] ?: '') . ",\n\nper usare questo indirizzo nel tuo account MyHouse Welcome apri questo link:\n\n$link\n\n"
-        . "Il link vale 48 ore. Finché non lo apri resta valida l'email di prima.\n\nSe non l'hai chiesto tu, ignora questo messaggio.\n\nMyHouse Welcome");
+    $partita = MHW\Mailer::manda($email, 'Conferma la tua nuova email', 'Conferma la tua nuova email',
+        ['Ciao' . (($n = trim(explode(' ', trim((string) $u['name']))[0] ?? '')) !== '' ? ' ' . $n : '') . ', per usare questo indirizzo nel tuo account MyHouse Welcome confermalo dal bottone qui sotto.',
+         'Finché non lo confermi resta valida l\'email di prima.'],
+        ['Conferma la nuova email', $link], 'Il link vale 48 ore. Se non l\'hai chiesto tu, ignora questo messaggio.');
     if (!$partita) {
         Db::update('users', ['pending_email' => null], 'id = :uid', ['uid' => $u['id']]);
         $paginaAccount($u, $acc, ['erroriEmail' => ['email' => 'Non siamo riusciti a mandare l\'email di conferma: riprova tra poco.'], 'apri' => 'email', 'emailNuova' => $email]);
@@ -1175,9 +1177,9 @@ $r->get('/account/email/{token}', function (array $a) {
         Support::redirect(Auth::user() ? '/account' : '/accedi');
     }
     Db::update('users', ['email' => $nuova, 'pending_email' => null, 'email_verified_at' => Support::now()], 'id = :uid', ['uid' => $uid]);
-    MHW\Mailer::send((string) $u['email'], 'La tua email è cambiata — MyHouse Welcome',
-        "Ciao " . ($u['name'] ?: '') . ",\n\nl'email del tuo account MyHouse Welcome ora è $nuova.\n\n"
-        . "Se non l'hai chiesto tu, scrivici subito rispondendo a questo messaggio.\n\nMyHouse Welcome");
+    MHW\Mailer::manda((string) $u['email'], 'La tua email è cambiata', 'La tua email è cambiata',
+        ['Ciao' . (($n = trim(explode(' ', trim((string) $u['name']))[0] ?? '')) !== '' ? ' ' . $n : '') . ', l\'email del tuo account MyHouse Welcome ora è ' . $nuova . '.',
+         'Se non l\'hai chiesto tu, scrivici subito: ' . Support::contatto() . '.']);
     Auth::audit('account.email', (int) $uid, ['da' => $u['email']]);
     Support::flash('Email cambiata: ora accedi con ' . $nuova . '.');
     Support::redirect(Auth::user() ? '/account' : '/accedi');
