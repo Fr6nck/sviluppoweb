@@ -367,13 +367,17 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
           $primo = $of['options'][0];
           $idSel = 'strutture-' . Support::slug($nome); ?>
       <div class="plan <?= $scuro ? 'plan--dark' : '' ?>">
-        <div class="spread spread--mid" style="gap:12px;align-items:center">
-          <span class="plan__nome"><?= Support::e($nome) ?></span>
-          <?php if ($p['badge'] !== ''): ?><span class="badge badge--ochre-strong"><?= Support::e($p['badge']) ?></span><?php endif; ?>
+        <?php /* Le righe della scheda (testa, voci, quantità, prezzo, bottone) sono le stesse nelle tre schede:
+                 con la subgrid di .piani prezzi e bottoni stanno in fondo, alla stessa altezza. */ ?>
+        <div class="plan__testa">
+          <div class="spread spread--mid" style="gap:12px;align-items:center">
+            <span class="plan__nome"><?= Support::e($nome) ?></span>
+            <?php if ($p['badge'] !== ''): ?><span class="badge badge--ochre-strong"><?= Support::e($p['badge']) ?></span><?php endif; ?>
+          </div>
+          <?php if (trim((string) $p['tagline']) !== ''): /* il posizionamento: per chi è indicato */ ?>
+            <p class="plan__per"><b>Ideale per</b> <?= Support::e(preg_replace('/^Per /u', '', trim((string) $p['tagline']))) ?></p>
+          <?php endif; ?>
         </div>
-        <?php if (trim((string) $p['tagline']) !== ''): /* il posizionamento: per chi è indicato */ ?>
-          <p class="plan__per"><b>Ideale per</b> <?= Support::e(preg_replace('/^Per /u', '', trim((string) $p['tagline']))) ?></p>
-        <?php endif; ?>
 
         <?php if (Plans::perProperty($primo)): /* Portfolio a quantità: un modulo vero. Senza JavaScript il
                   bottone manda comunque la scelta; lo script calcola solo il totale mostrato,
@@ -382,21 +386,28 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
           <form class="plan__scelta" method="get" action="<?= b() . ($dentro ? '/piano' : '/registrati') ?>" data-portfolio
                 data-quantita data-base="<?= (int) $primo['price_cents'] ?>" data-extra="<?= (int) $primo['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($primo)) ?>" data-valuta="<?= Support::e($primo['currency']) ?>">
             <input type="hidden" name="piano" value="<?= (int) $primo['pv_id'] ?>">
-            <label for="<?= $idSel ?>" class="plan__label">Quante strutture vuoi gestire?</label>
-            <input id="<?= $idSel ?>" name="strutture" type="number" inputmode="numeric" step="1" required
-                   min="<?= $minimo ?>" max="<?= (int) $primo['max_quantity'] ?>" value="<?= $minimo ?>">
-            <span class="price" aria-live="polite"><span data-totale><?= Support::e(Support::money(Plans::price($primo, $minimo), $primo['currency'])) ?></span><small> + IVA / anno</small></span>
-            <span class="plan__mese">circa <span data-mensile><?= Support::e(Support::money(Plans::monthly(Plans::price($primo, $minimo)), $primo['currency'])) ?></span> al mese</span>
-            <div class="plan__oltre" data-oltre hidden><p>Più di <?= (int) $primo['max_quantity'] ?> strutture? Ti facciamo una proposta.</p>
-              <a class="btn btn--sm" href="<?= Support::e(Support::mailtoPreventivo()) ?>">Chiedi un preventivo</a></div>
-            <?php $pvS = $primo; $qS = $minimo; include __DIR__ . '/_scaglioni.php'; ?>
             <?php $voci = $vociPiano($p); include __DIR__ . '/_voci_piano.php'; ?>
+            <div class="plan__quante">
+              <?php $pvS = $primo; $qS = $minimo; include __DIR__ . '/_scaglioni.php'; ?>
+              <label for="<?= $idSel ?>" class="plan__label">Quante strutture vuoi gestire?</label>
+              <input id="<?= $idSel ?>" name="strutture" type="number" inputmode="numeric" step="1" required
+                     min="<?= $minimo ?>" max="<?= (int) $primo['max_quantity'] ?>" value="<?= $minimo ?>">
+              <div class="plan__oltre" data-oltre hidden><p>Più di <?= (int) $primo['max_quantity'] ?> strutture? Ti facciamo una proposta.</p>
+                <a class="btn btn--sm" href="<?= Support::e(Support::mailtoPreventivo()) ?>">Chiedi un preventivo</a></div>
+            </div>
+            <div class="plan__prezzo">
+              <span class="price" aria-live="polite"><span data-totale><?= Support::e(Support::money(Plans::price($primo, $minimo), $primo['currency'])) ?></span><small> + IVA / anno</small></span>
+              <span class="plan__mese">circa <span data-mensile><?= Support::e(Support::money(Plans::monthly(Plans::price($primo, $minimo)), $primo['currency'])) ?></span> al mese</span>
+            </div>
             <button class="btn"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $nome) ?></button>
           </form>
         <?php else: ?>
-          <span class="price"><?= Support::e(Support::money((int) $primo['price_cents'], $primo['currency'])) ?><small> + IVA / anno</small></span>
-          <span class="plan__mese">circa <?= Support::e(Support::money(Plans::monthly((int) $primo['price_cents']), $primo['currency'])) ?> al mese</span>
           <?php $voci = $vociPiano($p); include __DIR__ . '/_voci_piano.php'; ?>
+          <div class="plan__quante"></div>
+          <div class="plan__prezzo">
+            <span class="price"><?= Support::e(Support::money((int) $primo['price_cents'], $primo['currency'])) ?><small> + IVA / anno</small></span>
+            <span class="plan__mese">circa <?= Support::e(Support::money(Plans::monthly((int) $primo['price_cents']), $primo['currency'])) ?> al mese</span>
+          </div>
           <a class="btn" href="<?= $vai((int) $p['pv_id']) ?>"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $nome) ?></a>
         <?php endif; ?>
       </div>

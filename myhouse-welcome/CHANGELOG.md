@@ -1,5 +1,9 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Schede dei piani: prezzo in fondo (12 ottobre 2026)
+
+- Home (Prezzi) e pagina «Scegli il piano»: prezzo e «circa … al mese» in fondo alla scheda, sopra il bottone, separati da una riga, alla stessa altezza nelle tre schede (CSS subgrid; su telefono le schede sono una sotto l'altra). Nel Portfolio il costo per struttura e «Quante strutture vuoi gestire?» stanno subito sopra il prezzo. Nessuna migrazione.
+
 ## v2 · 7C la guida e l'editor (11 ottobre 2026)
 
 Migrazione `032` (solo aggiunte): `properties.host_welcome`, `properties.direct_discount`, tabelle `translation_hashes` e `novita_viste`.
