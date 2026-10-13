@@ -171,7 +171,7 @@ final class Traduttore
         } catch (\Throwable $e) {
             self::registra($accountId, $propertyId, $a, 0, 'errore', $e->getMessage());
             Log::exception($e, 'traduzione suggerita');
-            throw new \RuntimeException('Il traduttore automatico non ha risposto. Riprova tra qualche minuto.');
+            throw new \RuntimeException('Il traduttore automatico non ha risposto. Riprova tra qualche minuto; se succede ancora, scrivici da «Aiuto».');
         }
     }
 

@@ -38,7 +38,7 @@ $t2Gg = round($t2Gu / 8 * 2) / 2;
 <section id="il-tempo" class="t2" aria-labelledby="t2-titolo">
   <div class="t2__head">
     <span class="t2__kicker">Il tempo delle risposte</span>
-    <h2 id="t2-titolo" class="t2__titolo">L'accoglienza è tua. Le stesse domande, ogni volta, no.</h2>
+    <h2 id="t2-titolo" class="t2__titolo">L'accoglienza resta tua. Rispondere sempre alle stesse domande, no.</h2>
     <p class="t2__lead">Il contatto con l'ospite è la parte più bella di questo lavoro, e una parte resta tua. L'altra è fatta di domande a cui hai già risposto cento volte. Su una prenotazione tipo, i conti sono questi.</p>
   </div>
 
@@ -131,6 +131,7 @@ $t2Gg = round($t2Gu / 8 * 2) / 2;
 .t2__cursore>span{align-items:flex-end}
 .t2__cursore--chiaro{color:var(--muted,#6a5b48)}
 .t2 input[type=range]{width:100%;height:30px;margin:0;accent-color:#ee7a4a;cursor:pointer}
+.t2 input[data-t2="nec"]{accent-color:var(--inverse-fg,#faf5ec)}   /* come la barra in alto: bianco = resta tuo, arancione = evitabile */
 .t2 input[type=range]:focus-visible{outline:2px solid #ee7a4a;outline-offset:3px;border-radius:8px}
 .t2__desc{margin:0;color:var(--inverse-muted,#b6a891)}
 .t2__lista{margin:0;padding:0;list-style:none;display:grid;gap:0}

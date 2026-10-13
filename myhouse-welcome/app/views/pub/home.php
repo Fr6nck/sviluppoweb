@@ -88,7 +88,7 @@ if ($dentro):
     <span class="kicker">La reception digitale per la tua struttura ricettiva</span>
     <h1 class="display">La casa risponde<br>prima che chiedano.</h1>
     <p class="hero2__sub">La guida digitale per case vacanza, B&amp;B, affittacamere e agriturismi. Check-in, Wi-Fi,
-      parcheggio, regole e i tuoi consigli sulla zona: tutto in un link, che gli ospiti aprono dal QR Code senza scaricare niente.</p>
+      parcheggio, regole e i tuoi consigli sulla zona: tutto accessibile tramite QR Code. Senza app da scaricare.</p>
     <div class="hero2__azioni">
       <a class="btn btn--lg btn--go" href="<?= $crea ?>"><?= $dentro ? 'Vai alle tue guide' : 'Crea gratis la tua guida' ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
       <?php if ($demoUrl): ?>
@@ -229,9 +229,9 @@ $disegni = [
   <div class="vantaggi vantaggi--4">
     <?php foreach ([
         ['home', 'Casa vacanza', 'Non ci sei quando arrivano? La guida spiega come si entra, dove si parcheggia e come funziona la casa, a qualsiasi ora.'],
-        ['coffee', 'B&amp;B e affittacamere', 'Colazione, orari, regole: un QR in ogni camera al posto del foglio plastificato, sempre aggiornato.'],
+        ['coffee', 'B&amp;B e affittacamere', 'Colazione, orari, regole: un QR Code sempre aggiornato in ogni camera, al posto del foglio plastificato.'],
         ['sun', 'Agriturismo', 'Racconta l\'azienda, le degustazioni e i tuoi prodotti. E accompagna gli ospiti tra sagre, sentieri e cantine dei dintorni.'],
-        ['layers', 'Più strutture', 'Una guida e un QR Code per ogni struttura, dallo stesso account. Quello che vale per tutte lo scrivi una volta e lo copi.'],
+        ['layers', 'Più strutture', 'Gestisci più strutture? Un QR Code per ognuna, dallo stesso account. Quello che vale per tutte lo scrivi una volta sola e lo incolli.'],
     ] as [$ico, $tit, $txt]): ?>
       <div class="vantaggio">
         <span class="vantaggio__ico"><?= Icon::svg($ico, 20, 1.7) ?></span>
@@ -250,8 +250,8 @@ $disegni = [
   <div class="guadagno__testo">
     <span class="kicker">La guida che lavora per te</span>
     <h2 id="guadagno-titolo" class="h-sezione">Una prenotazione diretta in più all'anno paga l'abbonamento.</h2>
-    <p class="guadagno__lead">Alla fine del soggiorno la guida saluta l'ospite e gli lascia due inviti: una recensione dove preferisci, e la
-      prossima volta la prenotazione sul tuo sito, con il tuo codice sconto. Senza commissioni.</p>
+    <p class="guadagno__lead">Alla fine del soggiorno la guida digitale manda due inviti all'ospite: una recensione sulla piattaforma
+      che preferisci e un codice sconto da usare la prossima volta, direttamente sul tuo sito.</p>
     <ul class="guadagno__voci">
       <li><span class="guadagno__ico"><?= Icon::svg('message', 18, 1.8) ?></span><span><b>Più recensioni.</b>
         Google, Booking, Airbnb: un pulsante per ognuno, quando il ricordo è fresco.</span></li>
@@ -428,7 +428,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <p class="amico__lead">Conosci altri host, B&amp;B o case vacanza? Mandagli il tuo link: loro hanno il <?= MHW\Inviti::AMICO ?>% di sconto sul primo anno, tu il <?= MHW\Inviti::PASSO ?>% in meno sul rinnovo per ogni amico che si abbona.</p>
     <div class="row">
       <a class="btn" href="<?= b() . ($dentro ? '/inviti' : '/registrati') ?>"><?= $dentro ? 'Invita un amico' : 'Crea gratis la tua guida' ?></a>
-      <a class="btn btn--ghost" href="#domande">Come funziona</a>
+      <a class="btn btn--ghost" href="#faq-porta-amico">Come funziona</a>
     </div>
   </div>
   <div class="amico__conto">
@@ -455,6 +455,9 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
         <?php if ($waFaq !== ''): ?><a class="btn btn--ghost" href="https://wa.me/<?= Support::e($waFaq) ?>" rel="noopener"><?= Icon::svg('whatsapp', 18, 1.8) ?>WhatsApp</a><?php endif; ?>
         <?php if (($legale['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legale['contact_email']) ?>"><?= Icon::svg('message', 18, 1.8) ?>Email</a><?php endif; ?>
       </div>
+      <?php if (($legale['contact_email'] ?? '') !== ''): /* chi non ha un programma di posta sul computer lo copia da qui */ ?>
+        <p class="small muted faq__indirizzo">Oppure scrivi a <b><?= Support::e($legale['contact_email']) ?></b></p>
+      <?php endif; ?>
     <?php endif; ?>
   </div>
   <div class="faq__lista">
@@ -531,7 +534,7 @@ $legaleSito = MHW\Config::get('legal'); ?>
     <div class="sito__cta">
       <a class="btn" href="https://blackout.in/myhouse/" target="_blank" rel="noopener">Chiedici il tuo sito <?= Icon::svg('external', 16, 1.9) ?></a>
       <?php if (($legaleSito['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legaleSito['contact_email']) ?>?subject=<?= rawurlencode('Il sito della mia struttura') ?>"><?= Icon::svg('message', 18, 1.8) ?>Scrivici un'email</a><?php endif; ?>
-      <span class="small">Ti rispondiamo con una proposta su misura.</span>
+      <span class="small">Ti rispondiamo con una proposta su misura.<?php if (($legaleSito['contact_email'] ?? '') !== ''): ?> Oppure scrivi a <b><?= Support::e($legaleSito['contact_email']) ?></b>.<?php endif; ?></span>
     </div>
   </div>
 </section>

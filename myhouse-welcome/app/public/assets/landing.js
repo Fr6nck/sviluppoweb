@@ -200,6 +200,17 @@
     scegli(0, false);
   })();
 
+  /* ---------------- un link a una domanda (#faq-…) la apre, anche dentro «Altre domande» */
+  function apriDomanda() {
+    var id = location.hash.slice(1); if (!id) return;
+    var d = document.getElementById(id);
+    if (!d || !d.classList.contains('faq__voce')) return;
+    var sopra = d.parentElement && d.parentElement.closest('details');
+    if (sopra) sopra.open = true;
+    d.open = true;
+  }
+  apriDomanda(); window.addEventListener('hashchange', apriDomanda);
+
   /* ------------------------------------- FAQ: si aprono e si chiudono morbide */
   if (!fermo && 'animate' in HTMLElement.prototype) {
     document.querySelectorAll('.faq__voce').forEach(function (d) {

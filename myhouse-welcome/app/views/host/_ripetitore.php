@@ -17,6 +17,7 @@
    ]
    Foto e PDF di una riga: l'id del file salvato viaggia nel campo nascosto, il
    file nuovo in rip_file[campo][riga][sottocampo], «Togli» in rip_togli[…]. */
+use function MHW\b;
 use MHW\{Support, Icon, Media, Eventi};
 $r = $rip + ['help' => '', 'rows' => [], 'add' => 'Aggiungi', 'item' => 'Voce', 'max' => 30, 'presets' => [], 'foto' => true, 'pdf' => true, 'eventi' => false, 'altre' => [], 'modulo_altre' => ''];
 $nome = $r['name'];
@@ -166,7 +167,12 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
 }; ?>
 <fieldset class="fieldset rip" id="<?= $domId ?>" data-rip data-rip-max="<?= (int) $r['max'] ?>">
   <legend><?= Support::e($r['legend']) ?></legend>
-  <?php if ($r['help'] !== ''): ?><p class="help"><?= Support::e($r['help']) ?></p><?php endif; ?>
+  <?php /* Se le righe prevedono foto o PDF ma il piano non li comprende, l'aiuto non li promette e si rimanda a Plus. */
+        $conMedia = (bool) array_filter($r['sub'], fn($sd) => in_array($sd[0], ['image', 'pdf'], true));
+        $senzaMedia = $conMedia && !$r['foto'] && !$r['pdf'];
+        $aiutoRip = $senzaMedia ? str_replace('Titolo, passaggi, una foto, un PDF.', 'Titolo e passaggi.', $r['help']) : $r['help']; ?>
+  <?php if ($aiutoRip !== ''): ?><p class="help"><?= Support::e($aiutoRip) ?></p><?php endif; ?>
+  <?php if ($senzaMedia): ?><p class="help rip__plus">Vuoi aggiungere foto o PDF? <a href="<?= b() ?>/piano?passa=plus">Scopri il piano Plus</a></p><?php endif; ?>
   <div class="rip__righe" data-rip-righe>
     <?php foreach (array_values($r['rows']) as $i => $v) echo $riga((string) $i, $v, $i + 1, true); ?>
     <?php /* Senza JavaScript serve una riga vuota già pronta; con JavaScript si toglie se ce n'è già un'altra. */

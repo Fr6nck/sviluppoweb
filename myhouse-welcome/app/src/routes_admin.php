@@ -573,6 +573,23 @@ $r->get('/admin/diagnostica', function () {
         try { Storages::current(); $s3ok = true; $s3det = 'bucket ' . $st['s3']['bucket'] . ' (' . $st['s3']['region'] . ')'; }
         catch (\Throwable $e) { $s3det = $e->getMessage(); }
     }
+    // L'ultimo errore S3 nel registro tecnico: quello che un cliente ha visto come «Archiviazione non disponibile».
+    $ultimoS3 = null; $logApp = MHW_APP . '/storage/logs/app.log';
+    if ($st['driver'] === 's3' && is_file($logApp)) {
+        foreach (array_reverse(array_slice(file($logApp) ?: [], -500)) as $riga) {
+            $j = json_decode($riga, true);
+            if (is_array($j) && str_starts_with((string) ($j['msg'] ?? ''), 'S3 ')) { $ultimoS3 = $j; break; }
+        }
+    }
+    if ($ultimoS3) {
+        $dett = 'HTTP ' . (int) ($ultimoS3['ctx']['code'] ?? 0) . (($ultimoS3['ctx']['err'] ?? '') !== '' ? ' · ' . $ultimoS3['ctx']['err'] : '')
+              . (($ultimoS3['ctx']['body'] ?? '') !== '' ? ' · ' . MHW\S3Storage::codiceDi((string) $ultimoS3['ctx']['body']) : '');
+        $cosa = MHW\S3Storage::consiglio($dett);
+        $recente = strtotime((string) ($ultimoS3['t'] ?? '')) > time() - 86400;
+        if ($recente) $s3ok = false;
+        $s3det .= '. Ultimo errore (' . Support::date((string) ($ultimoS3['t'] ?? '')) . '): «' . $dett . '».' . ($cosa !== '' ? ' ' . $cosa : '')
+                . ' Prova da Impostazioni → Archivio → «Prova».';
+    }
     $checks[] = ['Foto e PDF su Amazon S3', $s3ok, $s3det];
     $checks[] = ['HTTPS', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || str_starts_with($base, 'https'),
         'i cookie di sessione diventano "secure" solo su HTTPS'];

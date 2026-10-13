@@ -1616,6 +1616,9 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .faq__contatti{display:flex;gap:8px;flex-wrap:wrap}
 .faq__contatti .btn{height:44px;padding:0 18px;font-size:15px}
 .faq__contatti svg{color:var(--accent)}
+.faq__indirizzo{margin:4px 0 0}
+.faq__indirizzo b{font-weight:600;color:var(--ink);user-select:all}
+.faq__voce{scroll-margin-top:96px}   /* aperta da un link (#faq-…), non finisce sotto la testata */
 .faq__lista{border-top:1px solid var(--line)}
 @media(max-width:900px){ .faq{grid-template-columns:minmax(0,1fr);gap:24px} .faq__testa{position:static} }
 .faq__voce{border-bottom:1px solid var(--line)}

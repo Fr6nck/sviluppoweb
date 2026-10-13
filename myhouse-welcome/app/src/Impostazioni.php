@@ -366,9 +366,16 @@ final class Impostazioni
                     if (($cfg['driver'] ?? '') !== 's3') return [true, 'Foto e PDF si salvano sul disco del server: non c\'è niente da collegare.'];
                     $s3 = new S3Storage($cfg['s3']);
                     $chiave = '_prova/' . bin2hex(random_bytes(8)) . '.txt';
-                    $s3->put($chiave, 'prova', 'text/plain');
-                    $letto = $s3->get($chiave);
-                    $s3->delete($chiave);
+                    try {
+                        $s3->put($chiave, 'prova', 'text/plain');
+                        $letto = $s3->get($chiave);
+                        $s3->delete($chiave);
+                    } catch (\Throwable $e) {   // la risposta esatta di S3, e cosa fare (ai clienti resta «non disponibile al momento»)
+                        Log::exception($e, 'impostazioni: prova archivio');
+                        $dett = S3Storage::$ultimoErrore ?: $e->getMessage();
+                        $cosa = S3Storage::consiglio($dett);
+                        return [false, 'Il bucket non risponde: «' . $dett . '».' . ($cosa !== '' ? ' ' . $cosa : '')];
+                    }
                     return $letto === 'prova' ? [true, 'Il bucket risponde: scrittura, lettura e cancellazione riuscite.'] : [false, 'Il bucket ha accettato il file ma ne ha restituito un altro contenuto.'];
                 case 'inviti':
                     if (!Inviti::disponibili()) return [false, 'Spento: i clienti non vedono «Invita un amico». Spunta la casella e salva.'];

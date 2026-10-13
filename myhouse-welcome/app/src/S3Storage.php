@@ -17,6 +17,33 @@ final class S3Storage implements Storage
 
     public function name(): string { return 's3'; }
 
+    /** L'ultima risposta di S3 che non è andata, per «Prova» in Impostazioni: ai clienti resta il messaggio generico. */
+    public static ?string $ultimoErrore = null;
+
+    /** Il <Code> (e il <Message>) della risposta XML di S3, se c'è; altrimenti l'inizio del corpo. */
+    public static function codiceDi(string $body): string
+    {
+        $c = preg_match('#<Code>([^<]+)</Code>#', $body, $m) ? $m[1] : '';
+        $msg = preg_match('#<Message>([^<]+)</Message>#', $body, $m2) ? html_entity_decode($m2[1]) : '';
+        if ($c !== '') return $c . ($msg !== '' ? ': ' . mb_substr($msg, 0, 160) : '');
+        return mb_substr(trim(strip_tags($body)), 0, 160);
+    }
+
+    /** Cosa fare, dato l'errore di S3 (per «Prova» in Impostazioni e per Diagnostica). */
+    public static function consiglio(string $errore): string
+    {
+        return match (true) {
+            str_contains($errore, 'InvalidAccessKeyId') => 'La chiave di accesso (Access key ID) non esiste o è stata disattivata: controllala in AWS → IAM → Utenti → Credenziali di sicurezza.',
+            str_contains($errore, 'SignatureDoesNotMatch') => 'La chiave segreta non corrisponde alla chiave di accesso, oppure l\'orologio del server è sbagliato di più di 5 minuti.',
+            str_contains($errore, 'NoSuchBucket') => 'Un bucket con questo nome non esiste: controlla il nome lettera per lettera.',
+            str_contains($errore, 'PermanentRedirect') || str_contains($errore, 'AuthorizationHeaderMalformed') || str_contains($errore, 'IllegalLocationConstraint') => 'La regione scritta non è quella del bucket: in AWS → S3 → il bucket → Proprietà leggi la regione (per esempio eu-south-1) e scrivila qui.',
+            str_contains($errore, 'AccessDenied') => 'La chiave funziona ma non può scrivere nel bucket: all\'utente IAM servono s3:PutObject, s3:GetObject e s3:DeleteObject su questo bucket.',
+            str_contains($errore, 'Could not resolve') || str_contains($errore, 'resolve host') || str_contains($errore, 'Failed to connect') || str_contains($errore, 'Connection refused') || str_contains($errore, 'timed out') => 'Il server non raggiunge Amazon: controlla la regione e che l\'hosting permetta le connessioni in uscita (porta 443).',
+            str_contains($errore, 'SSL') || str_contains($errore, 'certificate') => 'Il server non riconosce il certificato di Amazon: i certificati di sistema dell\'hosting sono vecchi (chiedi di aggiornare ca-certificates).',
+            default => '',
+        };
+    }
+
     /** Endpoint personalizzato = stile a percorso; altrimenti host virtuale del bucket. */
     public function objectUrl(string $key): string
     {
@@ -68,6 +95,7 @@ final class S3Storage implements Storage
         curl_close($ch);
         if ($code < 200 || $code >= 300) {
             Log::error('S3 ' . $method . ' non riuscito', ['code' => $code, 'err' => $err, 'body' => mb_substr($risposta, 0, 500)]);
+            self::$ultimoErrore = 'HTTP ' . $code . ($err !== '' ? ' · ' . $err : '') . ($risposta !== '' ? ' · ' . self::codiceDi($risposta) : '');
             throw new \RuntimeException('Archiviazione dei file non disponibile al momento.');
         }
         return $risposta;

@@ -236,6 +236,13 @@ prova('Titolo richiesto', str_contains($r['body'], 'La casa risponde') && str_co
 prova('CTA principale', str_contains($r['body'], 'Crea gratis la tua guida'));
 prova('Demo dichiarata come demo', str_contains($r['body'], 'Guarda la demo') && str_contains($r['body'], 'demo-tag'));
 prova('Microcopy', str_contains($r['body'], 'Paghi solo quando pubblichi'));
+prova('Revisione · sottotitolo immediato, «sempre aggiornato» accanto al QR, «Più strutture» come domanda', str_contains($r['body'], 'tutto accessibile tramite QR Code. Senza app da scaricare.')
+      && str_contains($r['body'], 'un QR Code sempre aggiornato in ogni camera, al posto del foglio plastificato') && str_contains($r['body'], 'Gestisci più strutture? Un QR Code per ognuna'));
+prova('Revisione · «Il tempo delle risposte»: titolo chiaro, cursore di sinistra bianco come la barra', str_contains($r['body'], 'L\'accoglienza resta tua. Rispondere sempre alle stesse domande, no.')
+      && str_contains($r['body'], '.t2 input[data-t2="nec"]{accent-color:var(--inverse-fg'));
+prova('Revisione · «La guida che lavora per te»: i due inviti detti in una frase', str_contains($r['body'], 'manda due inviti all\'ospite: una recensione sulla piattaforma'));
+prova('Revisione · l\'email scritta per esteso accanto ai bottoni «Email» e «Scrivici un\'email»',
+      preg_match('#class="small muted faq__indirizzo">Oppure scrivi a <b>[^<]+@[^<]+</b>#', $r['body']) === 1 && preg_match('#proposta su misura\. Oppure scrivi a <b>[^<]+@[^<]+</b>#', $r['body']) === 1);
 foreach (['97', '127', '197'] as $p) prova("Prezzo $p € dal listino", str_contains($r['body'], $p . "\u{00A0}€"));
 $portfolio = preg_match('#<form class="plan__scelta".*?</form>#s', $r['body'], $m) ? $m[0] : '';
 prova('Portfolio: campo numerico (min 2, solo interi) al posto del menu', str_contains($portfolio, 'Quante strutture vuoi gestire?') && preg_match('#<input[^>]*name="strutture"[^>]*type="number"[^>]*step="1"[^>]*min="2"[^>]*value="2"#', $portfolio) === 1
@@ -641,6 +648,7 @@ prova('R5 · …e in inglese', str_contains($anna->get("/pannello/$pid/anteprima
 $r = $anna->get("/pannello/$pid/sezioni/{$ids['parking']}");
 prova('R5 · parcheggio: righe ripetibili, senza caricamento foto (Essential)', str_contains($r['body'], 'Aggiungi un parcheggio') && !str_contains($r['body'], 'name="rip_file[options]')
       && str_contains($r['body'], 'ZTL'));
+prova('Revisione · Essential: sotto le righe con foto «Vuoi aggiungere foto o PDF? Scopri il piano Plus»', preg_match('#<p class="help rip__plus">Vuoi aggiungere foto o PDF\? <a href="[^"]*/piano\?passa=plus">Scopri il piano Plus</a></p>#', $r['body']) === 1);
 $r = $anna->post("/pannello/$pid/sezioni/{$ids['parking']}", ['options[0][id]' => '', 'options[0][type]' => 'privato', 'options[0][name]' => 'Posto in cortile',
     'options[0][address]' => 'Via San Francesco 12', 'options[0][photo]' => '', 'rip_file[options][0][photo]' => file_(png(), 'image/png'),
     'ztl' => 'Il centro è ZTL dalle 8 alle 20.']);
@@ -675,6 +683,7 @@ foreach (['services', 'waste', 'emergency', 'eat'] as $k) $elena->post("/pannell
 $elena->modulo("/pannello/$epid/lingue", "/pannello/$epid/lingue", ['locali' => ['en', 'it', 'de', 'fr']]);
 $es = []; foreach (['services', 'waste', 'emergency', 'eat', 'arrival'] as $k) $es[$k] = (int) val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$epid, $k]);
 $r = $elena->get("/pannello/$epid/sezioni/{$es['services']}");
+prova('Revisione · Plus: l\'aiuto delle Istruzioni promette foto e PDF, senza l\'invito a Plus', str_contains($r['body'], 'Titolo, passaggi, una foto, un PDF.') && !str_contains($r['body'], 'rip__plus'));
 prova('R5 · servizi: le dotazioni da spuntare (35, a gruppi, dalla fase 6) e istruzioni con foto e PDF per riga', substr_count($r['body'], 'name="amenities[]" value="') === 36
       && str_contains($r['body'], '<p class="dotazioni__gruppo">Cucina</p>')
       && str_contains($r['body'], 'name="rip_file[manuals][0][photo]"') && str_contains($r['body'], 'name="rip_file[manuals][0][pdf]"')
@@ -2770,6 +2779,8 @@ $r = $ospite->get('/');
 prova('Inviti accesi: blocco «Porta un amico» dopo i piani, fino al 50%, dieci tacche e due FAQ', preg_match('#id="piani".*id="amico".*class="chiusura"#s', $r['body']) === 1
       && str_contains($r['body'], 'fino al <span class="amico__cifra">50%</span>') && substr_count($r['body'], 'class="amico__tacca"') === 10
       && str_contains($r['body'], 'Come funziona «Porta un amico»?') && str_contains($r['body'], 'Quando conta un amico, e cosa succede dopo il rinnovo?'));
+prova('Revisione · «Come funziona» di Porta un amico apre quella domanda (sotto «Altre domande»), non le FAQ in generale', str_contains($r['body'], 'href="#faq-porta-amico">Come funziona</a>')
+      && preg_match('#<details class="faq__voce faq__altre">.*?id="faq-porta-amico"#s', $r['body']) === 1 && str_contains((string) file_get_contents("$DOVE/assets/landing.js"), 'function apriDomanda'));
 
 // Amministrazione: prospetti, anomalie, scadenze con promemoria automatici e a mano, note, filtri, CSV.
 capitolo('Amministrazione · pannello di controllo');
@@ -3205,6 +3216,7 @@ foreach (['/accedi', '/registrati', '/password'] as $u) {
 $r = $ospite->get('/');
 $nFaq = preg_match('#"@type":"FAQPage","mainEntity":(\[.*?\])\}</script>#s', $r['body'], $mm) ? count(json_decode($mm[1], true) ?: []) : -1;
 $r = $ospite->get('/domande');
+prova('Revisione · /domande: l\'email scritta per esteso accanto ai bottoni', preg_match('#faq__indirizzo">Oppure scrivi a <b>[^<]+@[^<]+</b>#', $r['body']) === 1);
 prova('/domande: titolo, tutte le FAQ aperte con il loro id, i due bottoni, FAQPage', $r['code'] === 200 && pulita($r) && str_contains($r['body'], '>Domande frequenti</h1>')
       && substr_count($r['body'], 'class="faq__voce" id="') === $nFaq && substr_count($r['body'], '" open>') >= $nFaq
       && str_contains($r['body'], 'id="tracciamento"') && str_contains($r['body'], 'Crea gratis la tua guida') && str_contains($r['body'], '/#piani">Vedi i prezzi')
@@ -3425,6 +3437,13 @@ prova('7C · «Prova» delle traduzioni con le chiavi vuote: il messaggio chiaro
 $sbagliata = trim((string) shell_exec('MHW_TRANSLATE_KEY=AKIASBAGLIATA php -r ' . escapeshellarg($php . 'echo MHW\Impostazioni::prova("traduzioni", "a@b.it")[1];') . ' 2>&1'));
 prova('…con una chiave sbagliata: il messaggio esatto di AWS e cosa fare', str_contains($sbagliata, 'UnrecognizedClientException') && str_contains($sbagliata, 'Chiave sconosciuta')
       && str_contains($sbagliata, 'Credenziali di sicurezza'), $sbagliata);
+$archivioKo = trim((string) shell_exec('MHW_STORAGE=s3 AWS_S3_ENDPOINT=http://127.0.0.1:9 AWS_S3_BUCKET=prova AWS_ACCESS_KEY_ID=AKIAPROVA AWS_SECRET_ACCESS_KEY=segreto php -r '
+    . escapeshellarg($php . 'echo MHW\Impostazioni::prova("archivio", "a@b.it")[1];') . ' 2>&1'));
+prova('Revisione · Impostazioni → Archivio → «Prova» con un bucket irraggiungibile: il motivo vero e cosa fare', str_contains($archivioKo, 'Il bucket non risponde: «HTTP 0')
+      && str_contains($archivioKo, 'connessioni in uscita'), $archivioKo);
+foreach (['Storage', 'S3Storage'] as $cls) require_once "$DOVE/app/src/$cls.php";
+prova('…e l\'XML di S3 si legge: codice e messaggio, con il consiglio giusto', MHW\S3Storage::codiceDi('<Error><Code>SignatureDoesNotMatch</Code><Message>The request signature we calculated does not match</Message></Error>') === 'SignatureDoesNotMatch: The request signature we calculated does not match'
+      && str_contains(MHW\S3Storage::consiglio('HTTP 403 · SignatureDoesNotMatch'), 'chiave segreta') && str_contains(MHW\S3Storage::consiglio('HTTP 301 · PermanentRedirect'), 'regione'));
 $r = $admin->get('/admin/diagnostica');
 prova('7C · Diagnostica: la riga delle traduzioni con l\'esito esatto dell\'ultima chiamata (qui la chiave sbagliata)', str_contains($r['body'], 'Traduzioni suggerite (Amazon Translate)')
       && str_contains($r['body'], 'non è riuscita') && str_contains($r['body'], 'UnrecognizedClientException'));

@@ -1,5 +1,17 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Correzioni dal controllo del sito (13 ottobre 2026)
+
+Nessuna migrazione.
+
+- **Home:** sottotitolo più immediato («…tutto accessibile tramite QR Code. Senza app da scaricare.»); nelle schede «Per chi è», «sempre aggiornato» sta accanto al QR Code e «Più strutture» comincia con «Gestisci più strutture?»; «Il tempo delle risposte» si intitola «L'accoglienza resta tua. Rispondere sempre alle stesse domande, no.» e il cursore delle comunicazioni necessarie è bianco come la barra in alto (l'arancione è il tempo che la guida ti restituisce); sotto «Una prenotazione diretta in più all'anno…» i due inviti sono detti in una frase sola.
+- **Porta un amico:** «Come funziona» apre la domanda «Come funziona «Porta un amico»?» (anche se sta sotto «Altre domande»), non le FAQ in generale.
+- **Email di contatto:** accanto ai bottoni «Email» e «Scrivici un'email» l'indirizzo è scritto per esteso: su un computer senza programma di posta il bottone non apre niente, e così si copia.
+- **Editor, piano Essential:** nelle Istruzioni (e in ogni elenco di righe con foto) l'aiuto non promette più foto e PDF, e c'è «Vuoi aggiungere foto o PDF? Scopri il piano Plus».
+- **Archivio S3:** Impostazioni → Archivio → «Prova» mostra la risposta esatta di Amazon (codice e messaggio) e cosa fare (chiave sconosciuta, segreto, regione, permessi, connessioni in uscita, certificati); la Diagnostica mostra l'ultimo errore S3 registrato, cioè quello che un cliente ha visto come «Archiviazione dei file non disponibile al momento». Ai clienti resta il messaggio generico.
+- **Traduzioni:** il messaggio «Il traduttore automatico non ha risposto» dice anche di scrivere da «Aiuto» se si ripete (nel 99% dei casi è una configurazione da sistemare in Impostazioni → Traduzioni → «Prova»).
+- Già fatti nella 7C, se il controllo li ha visti sul sito vecchio: il QR da stampare con il logo e l'invito alle recensioni con le stelle.
+
 ## v2 · Schede dei piani: prezzo in fondo (12 ottobre 2026)
 
 - Home (Prezzi) e pagina «Scegli il piano»: prezzo e «circa … al mese» in fondo alla scheda, sopra il bottone, separati da una riga, alla stessa altezza nelle tre schede (CSS subgrid; su telefono le schede sono una sotto l'altra). Nel Portfolio il costo per struttura e «Quante strutture vuoi gestire?» stanno subito sopra il prezzo. Nessuna migrazione.
