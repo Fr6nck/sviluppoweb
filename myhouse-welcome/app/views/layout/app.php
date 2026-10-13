@@ -62,7 +62,7 @@ $u = Auth::user(); $f = Support::flash(); ?>
     <details class="menu-sito">
       <summary class="icon-btn" aria-label="Menu"><?= Icon::svg('menu', 20, 2) ?></summary>
       <nav class="menu-sito__pannello" aria-label="Sito">
-        <a class="menu-sito__primo" href="<?= $principale['href'] ?>"><?= $u ? $principale['testo'] : 'Crea gratis la tua guida' ?></a>
+        <a class="menu-sito__primo" href="<?= $principale['href'] ?>"><?= $u ? $principale['testo'] : MHW\TestiSito::html('cta.crea') ?></a>
         <?php foreach ($voci as [$h, $t]): ?><a href="<?= b() . $h ?>"><?= $t ?></a><?php endforeach; ?>
         <?php if (!$u): ?><a href="<?= b() ?>/accedi">Accedi</a><?php endif; ?>
         <div class="menu-sito__tema"><span>Tema</span><?php include __DIR__ . '/_tema-bottone.php'; ?></div>

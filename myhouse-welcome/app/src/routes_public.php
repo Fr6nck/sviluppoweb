@@ -512,6 +512,11 @@ $r->get('/media/{file}', function (array $a) {
     $name = basename($a['file']);
     $m = Db::one('SELECT * FROM media WHERE filename = ?', [$name]);
     $path = Config::get('uploads_dir') . '/' . $name;
+    if (!$m && is_file($path) && preg_match('/^(seo|testimonianze|sito)-\d{4}-[0-9a-f]{32}\.(jpg|jpeg|png|webp)$/', $name)) {
+        // Un'immagine caricata dall'amministrazione (Media::storeFreeImage): nessuna riga in media, nome casuale.
+        $mime = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp'][strtolower(pathinfo($name, PATHINFO_EXTENSION))];
+        $m = ['kind' => 'image', 'mime' => $mime, 'original_name' => $name];
+    }
     if (!$m || !is_file($path)) { http_response_code(404); exit; }
     header_remove('Cache-Control');
     header('Content-Type: ' . ($m['kind'] === 'pdf' ? 'application/pdf' : $m['mime']));

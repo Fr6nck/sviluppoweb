@@ -837,6 +837,54 @@ $r->post('/admin/inviti/{id}/annulla', function (array $a) {
 // ------------------------------------------------------------ SEO e GEO
 /* Come le pagine pubbliche si presentano a Google e agli assistenti AI. Il controllo si
    ricalcola a ogni apertura; robots.txt, sitemap.xml e llms.txt si generano a ogni richiesta. */
+// ------------------------------------------------------------------- testi e foto del sito
+$r->get('/admin/testi', function () {
+    Auth::requireAdmin();
+    View::out('admin/testi', ['nav' => 'testi', 'pronta' => MHW\TestiSito::disponibili()], 'layout/cms');
+});
+
+$r->post('/admin/testi', function () {
+    Auth::requireAdmin();
+    if (!MHW\TestiSito::disponibili()) { Support::flash('Manca la tabella dei testi: ricarica la pagina per applicare gli aggiornamenti.', 'err'); Support::redirect('/admin/testi'); }
+    $c = [];
+    foreach (MHW\TestiSito::catalogo() as $k => [, , $tipo]) {
+        $campo = 't_' . str_replace('.', '_', $k);
+        if (!array_key_exists($campo, $_POST)) continue;
+        $v = trim(str_replace("\r", '', (string) $_POST[$campo]));
+        $v = mb_substr($v, 0, $tipo === 'riga' ? MHW\TestiSito::RIGA_MAX : MHW\TestiSito::AREA_MAX);
+        if ($tipo === 'riga') $v = preg_replace('/\s+/', ' ', $v);
+        $c[$k] = $v;   // vuoto o uguale al testo di serie: TestiSito::set toglie la riga
+    }
+    // Le foto: JPG, PNG o WebP, ridisegnate come le altre immagini caricate; quella vecchia si cancella.
+    $daCancellare = [];
+    try {
+        foreach (array_keys(MHW\TestiSito::IMMAGINI) as $nome) {
+            // Campi file «annidati» (img[telefono]): PHP li mette in $_FILES['img']['error']['telefono'], ecc.
+            $errore = (int) ($_FILES['img']['error'][$nome] ?? UPLOAD_ERR_NO_FILE);
+            $vecchia = MHW\TestiSito::riferimentoImmagine($nome);
+            if ($errore !== UPLOAD_ERR_NO_FILE) {
+                $f = ['name' => $_FILES['img']['name'][$nome] ?? '', 'type' => $_FILES['img']['type'][$nome] ?? '', 'tmp_name' => $_FILES['img']['tmp_name'][$nome] ?? '',
+                      'error' => $errore, 'size' => $_FILES['img']['size'][$nome] ?? 0];
+                [$driver, $key] = Media::storeFreeImage($f, 'sito');
+                $c["img.$nome"] = $driver . ':' . $key;
+                if ($vecchia !== '') $daCancellare[] = $vecchia;
+            } elseif (!empty($_POST['img_togli'][$nome]) && $vecchia !== '') {
+                $c["img.$nome"] = '';
+                $daCancellare[] = $vecchia;
+            }
+        }
+    } catch (\RuntimeException $e) {
+        Support::flash($e->getMessage(), 'err'); Support::redirect('/admin/testi#testi-foto');
+    }
+    $prima = []; foreach (array_keys($c) as $k) $prima[$k] = str_starts_with($k, 'img.') ? MHW\TestiSito::riferimentoImmagine(substr($k, 4)) : MHW\TestiSito::get($k);
+    MHW\TestiSito::set($c);
+    foreach ($daCancellare as $rif) { [$d, $k] = explode(':', $rif, 2); try { Storages::for($d)->delete($k); } catch (\Throwable $e) { Log::exception($e, 'testi.foto'); } }
+    $cambiate = array_values(array_keys(array_filter($c, fn($v, $k) => $prima[$k] !== (str_starts_with($k, 'img.') ? $v : MHW\TestiSito::get($k)), ARRAY_FILTER_USE_BOTH)));
+    Auth::audit('testi.save', null, ['cambiate' => $cambiate]);
+    Support::flash($cambiate ? 'Salvato: la home è già aggiornata.' : 'Niente da cambiare.');
+    Support::redirect('/admin/testi' . (($s = (string) ($_POST['torna'] ?? '')) !== '' && preg_match('/^[a-z-]+$/', $s) ? '#testi-' . $s : ''));
+});
+
 $r->get('/admin/seo', function () {
     Auth::requireAdmin();
     View::out('admin/seo', ['nav' => 'seo', 'pronta' => MHW\Seo::disponibili()], 'layout/cms');

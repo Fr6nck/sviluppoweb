@@ -238,9 +238,9 @@ prova('Demo dichiarata come demo', str_contains($r['body'], 'Guarda la demo') &&
 prova('Microcopy', str_contains($r['body'], 'Paghi solo quando pubblichi'));
 prova('Revisione · sottotitolo immediato, «sempre aggiornato» accanto al QR, «Più strutture» come domanda', str_contains($r['body'], 'tutto accessibile tramite QR Code. Senza app da scaricare.')
       && str_contains($r['body'], 'un QR Code sempre aggiornato in ogni camera, al posto del foglio plastificato') && str_contains($r['body'], 'Gestisci più strutture? Un QR Code per ognuna'));
-prova('Revisione · «Il tempo delle risposte»: titolo chiaro, cursore di sinistra bianco come la barra', str_contains($r['body'], 'L\'accoglienza resta tua. Rispondere sempre alle stesse domande, no.')
+prova('Revisione · «Il tempo delle risposte»: titolo chiaro, cursore di sinistra bianco come la barra', str_contains($r['body'], 'L&#039;accoglienza resta tua. Rispondere sempre alle stesse domande, no.')
       && str_contains($r['body'], '.t2 input[data-t2="nec"]{accent-color:var(--inverse-fg'));
-prova('Revisione · «La guida che lavora per te»: i due inviti detti in una frase', str_contains($r['body'], 'manda due inviti all\'ospite: una recensione sulla piattaforma'));
+prova('Revisione · «La guida che lavora per te»: i due inviti detti in una frase', str_contains($r['body'], 'manda due inviti all&#039;ospite: una recensione sulla piattaforma'));
 prova('Revisione · l\'email scritta per esteso accanto ai bottoni «Email» e «Scrivici un\'email»',
       preg_match('#class="small muted faq__indirizzo">Oppure scrivi a <b>[^<]+@[^<]+</b>#', $r['body']) === 1 && preg_match('#proposta su misura\. Oppure scrivi a <b>[^<]+@[^<]+</b>#', $r['body']) === 1);
 foreach (['97', '127', '197'] as $p) prova("Prezzo $p € dal listino", str_contains($r['body'], $p . "\u{00A0}€"));
@@ -2779,6 +2779,8 @@ $r = $ospite->get('/');
 prova('Inviti accesi: blocco «Porta un amico» dopo i piani, fino al 50%, dieci tacche e due FAQ', preg_match('#id="piani".*id="amico".*class="chiusura"#s', $r['body']) === 1
       && str_contains($r['body'], 'fino al <span class="amico__cifra">50%</span>') && substr_count($r['body'], 'class="amico__tacca"') === 10
       && str_contains($r['body'], 'Come funziona «Porta un amico»?') && str_contains($r['body'], 'Quando conta un amico, e cosa succede dopo il rinnovo?'));
+prova('Testi e foto · le percentuali di «Porta un amico» restano giuste (5%, 50% in evidenza, senza doppio %)', str_contains($r['body'], 'loro hanno il 5% di sconto sul primo anno, tu il 5% in meno')
+      && str_contains($r['body'], 'fino al <span class="amico__cifra">50%</span> in meno.') && !str_contains($r['body'], '%%') && str_contains($r['body'], 'fino al 50%.</li>'));
 prova('Revisione · «Come funziona» di Porta un amico apre quella domanda (sotto «Altre domande»), non le FAQ in generale', str_contains($r['body'], 'href="#faq-porta-amico">Come funziona</a>')
       && preg_match('#<details class="faq__voce faq__altre">.*?id="faq-porta-amico"#s', $r['body']) === 1 && str_contains((string) file_get_contents("$DOVE/assets/landing.js"), 'function apriDomanda'));
 
@@ -3215,6 +3217,55 @@ foreach (['/accedi', '/registrati', '/password'] as $u) {
 }
 $r = $ospite->get('/');
 $nFaq = preg_match('#"@type":"FAQPage","mainEntity":(\[.*?\])\}</script>#s', $r['body'], $mm) ? count(json_decode($mm[1], true) ?: []) : -1;
+// Amministrazione → Sistema → Testi e foto: ogni testo della home si cambia, torna di serie, e le foto si caricano.
+capitolo('Testi e foto del sito');
+$r = $admin->get('/admin/testi');
+prova('Testi e foto: la pagina, con i blocchi nell\'ordine della home e i testi di serie già nei campi', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Testi e foto del sito.')
+      && preg_match('#id="testi-hero".*id="testi-perchi".*id="testi-tempo".*id="testi-faq".*id="testi-sito".*id="testi-foto"#s', $r['body']) === 1
+      && str_contains($r['body'], "La casa risponde\nprima che chiedano.</textarea>") && str_contains($r['body'], 'name="t_perchi_2_testo"') && str_contains($r['body'], 'name="img[telefono]"')
+      && str_contains($r['body'], 'Testi cambiati') && !str_contains($r['body'], 'testi__campo testi__campo--cambiato'), (string) $r['code']);
+$r = $admin->segui($admin->post('/admin/testi', ['t_hero_titolo' => "La casa risponde.\nSempre.", 't_perchi_2_testo' => 'Colazione **alle 8** e [regole](/domande) <script>x</script>',
+    't_hero_garanzie' => "Prima\nSeconda", 't_prodotto_testo' => 'Ci sono {sezioni} sezioni.', 't_cta_crea' => 'Comincia gratis', 'torna' => 'hero']));
+prova('…salvato: titolo su due righe, grassetto e link sicuri, l\'HTML neutralizzato, la lista, il segnaposto, il bottone in tre punti', str_contains($r['body'], 'Salvato: la home è già aggiornata.')
+      && str_contains($r['body'], 'class="badge badge--ochre testi__badge">cambiato</span>') && str_contains($r['body'], 'Di serie: La casa risponde'));
+$h = $ospite->get('/')['body'];
+prova('…e nella home', str_contains($h, "<h1 class=\"display\">La casa risponde.<br>\nSempre.</h1>")
+      && str_contains($h, 'Colazione <b>alle 8</b> e <a href="/domande">regole</a> &lt;script&gt;x&lt;/script&gt;') && !str_contains($h, '<script>x</script>')
+      && preg_match('#hero2__garanzie">(<span>.*?Prima</span>)(<span>.*?Seconda</span>)</p>#s', $h) === 1 && !str_contains($h, 'Nessuna app da scaricare</span>')
+      && preg_match('#Ci sono \d+ sezioni\.#', $h) === 1 && substr_count($h, 'Comincia gratis') === 4 && !str_contains($h, 'Crea gratis la tua guida'), substr_count($h, 'Comincia gratis') . ' bottoni (hero, guadagno, chiusura, menu del telefono)');
+prova('…un testo uguale a quello di serie non si salva (la riga sparisce)', (int) val("SELECT COUNT(*) FROM site_texts") === 5
+      && (bool) val("SELECT chiave FROM site_texts WHERE chiave = 'hero.titolo'"));
+// Le foto: il telefono in cima e lo sfondo di «Anche il tuo sito»; la home le usa al posto di quelle di serie.
+$r = $admin->segui($admin->post('/admin/testi', ['img[telefono]' => file_(png(600, 422), 'image/png'), 'img[sito]' => file_(png(400, 300), 'image/png'), 'torna' => 'foto']));
+$h = $ospite->get('/')['body'];
+$rifTel = (string) val("SELECT valore FROM site_texts WHERE chiave = 'img.telefono'");
+$fileS3Tel = "$S3_DIR/oggetti/mhw-prove__" . str_replace('/', '__', substr($rifTel, 3));
+prova('Testi e foto · le foto caricate: nell\'archivio come le foto delle testimonianze, e nella home al posto di quelle di serie', str_contains($r['body'], '>caricata</span>')
+      && preg_match('#^(s3|local):sito/\d{4}/[0-9a-f]{32}\.(jpg|png|webp)$#', $rifTel) === 1 && str_contains($r['body'], 'Torna alla foto di serie')
+      && !str_contains($h, 'borgo-telefono') && !str_contains($h, 'checco-telefono') && preg_match('#class="device__shot">\s*<img src="[^"]+"#', $h) === 1
+      && !str_contains($h, 'sito-800.webp') && preg_match('#<picture class="sito__foto" aria-hidden="true">\s*<img src="[^"]*sito/#', $h) === 1
+      && (getenv('MHW_STORAGE') !== 's3' || is_file($fileS3Tel)), $rifTel . ' · ' . (is_file($fileS3Tel) ? 'file ok' : 'file assente'));
+// Si torna di serie: campi vuoti e «Torna alla foto di serie»; la foto vecchia sparisce dall'archivio.
+$r = $admin->segui($admin->post('/admin/testi', ['t_hero_titolo' => '', 't_perchi_2_testo' => '', 't_hero_garanzie' => '', 't_prodotto_testo' => '', 't_cta_crea' => '',
+    'img_togli' => ['telefono' => '1', 'sito' => '1']]));
+$h = $ospite->get('/')['body'];
+$cond = ['righe' => (int) val("SELECT COUNT(*) FROM site_texts") === 0, 'h1' => str_contains($h, "<h1 class=\"display\">La casa risponde<br>\nprima che chiedano.</h1>"),
+         'garanzie' => str_contains($h, 'Nessuna app da scaricare</span>'), 'cta' => str_contains($h, 'Crea gratis la tua guida'),
+         'telefono' => str_contains($h, 'borgo-telefono') || str_contains($h, 'checco-telefono'), 'sito' => str_contains($h, 'sito-800.webp'),
+         'admin' => !str_contains($admin->get('/admin/testi')['body'], 'testi__campo testi__campo--cambiato'),
+         'fileS3' => getenv('MHW_STORAGE') !== 's3' || !(clearstatcache(true, $fileS3Tel) ?? is_file($fileS3Tel))];   // is_file() tiene una cache per percorso: va svuotata
+$richS3 = array_values(array_filter(array_map('trim', (array) @file("$S3_DIR/richieste.jsonl")), fn($l) => str_contains($l, 'DELETE') && str_contains($l, 'sito')));
+$logFoto = array_values(array_filter(array_map('trim', (array) @file("$DOVE/app/storage/logs/app.log")), fn($l) => str_contains($l, 'testi.foto')));
+prova('…tutto di serie: tabella vuota, home com\'era, foto vecchie cancellate', !in_array(false, $cond, true),
+      json_encode($cond) . ' · ' . $rifTel . ' · DELETE: ' . implode(' | ', array_map(fn($l) => mb_substr($l, 0, 120), $richS3)) . ' · log: ' . implode(' | ', array_map(fn($l) => mb_substr($l, 0, 300), $logFoto)));
+// /media/{file}: anche un file caricato dall'amministrazione (senza riga in media) si serve, con il tipo giusto.
+$nomeLibero = 'sito-2026-' . bin2hex(random_bytes(16)) . '.png';
+file_put_contents("$DOVE/app/storage/uploads/$nomeLibero", (string) file_get_contents(png(10, 10)));   // png() dà il percorso di un file
+$r = $ospite->get("/media/$nomeLibero");
+prova('Testi e foto · /media serve anche le immagini caricate dall\'amministrazione (archivio su disco): testimonianze, condivisione, foto del sito', $r['code'] === 200
+      && str_starts_with($r['body'], "\x89PNG") && !str_contains($ospite->get('/media/qualcosa-a-caso.png')['body'], 'PNG'), (string) $r['code']);
+@unlink("$DOVE/app/storage/uploads/$nomeLibero");
+
 $r = $ospite->get('/domande');
 prova('Revisione · /domande: l\'email scritta per esteso accanto ai bottoni', preg_match('#faq__indirizzo">Oppure scrivi a <b>[^<]+@[^<]+</b>#', $r['body']) === 1);
 prova('/domande: titolo, tutte le FAQ aperte con il loro id, i due bottoni, FAQPage', $r['code'] === 200 && pulita($r) && str_contains($r['body'], '>Domande frequenti</h1>')

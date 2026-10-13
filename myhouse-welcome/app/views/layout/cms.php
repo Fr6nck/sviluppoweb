@@ -28,7 +28,7 @@ $gruppiAdmin = $admin ? [
                   ['sconti', '/admin/sconti', 'Codici sconto', 'euro']], MHW\Inviti::disponibili() ? [['inviti', '/admin/inviti', 'Inviti', 'message']] : []),
     'Clienti' => [['clienti', '/admin/clienti', 'Clienti', 'people'], ['guide', '/admin/guide', 'Guide', 'book'], ['anomalie', '/admin/anomalie', 'Anomalie', 'warning'],
                   ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe'], ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star']],
-    'Sistema' => [['impostazioni', '/admin/impostazioni', 'Impostazioni', 'key'], ['seo', '/admin/seo', 'SEO e GEO', 'search'],
+    'Sistema' => [['impostazioni', '/admin/impostazioni', 'Impostazioni', 'key'], ['testi', '/admin/testi', 'Testi e foto', 'doc'], ['seo', '/admin/seo', 'SEO e GEO', 'search'],
                   ['registro', '/admin/registro', 'Registro', 'list'], ['diagnostica', '/admin/diagnostica', 'Diagnostica', 'pulse']],
 ] : [];
 $generale = $admin ? array_merge(...array_values($gruppiAdmin))

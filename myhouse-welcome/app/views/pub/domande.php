@@ -10,15 +10,15 @@ $crea = b() . (!empty(MHW\Auth::user()) ? '/pannello' : '/registrati'); ?>
 <section class="blocco faq domande" aria-labelledby="faq-titolo">
   <div class="faq__testa">
     <span class="kicker">Domande</span>
-    <h1 id="faq-titolo" class="h-sezione">Domande frequenti</h1>
+    <h1 id="faq-titolo" class="h-sezione"><?= MHW\TestiSito::html('domande.titolo') ?></h1>
     <?php if (($legale['contact_email'] ?? '') !== '' || $waFaq !== ''): ?>
-      <p class="muted">Non trovi la risposta? Scrivici, ti rispondiamo volentieri.</p>
+      <p class="muted"><?= MHW\TestiSito::html('faq.aiuto') ?></p>
       <div class="faq__contatti">
         <?php if ($waFaq !== ''): ?><a class="btn btn--ghost" href="https://wa.me/<?= Support::e($waFaq) ?>" rel="noopener"><?= Icon::svg('whatsapp', 18, 1.8) ?>WhatsApp</a><?php endif; ?>
         <?php if (($legale['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legale['contact_email']) ?>"><?= Icon::svg('message', 18, 1.8) ?>Email</a><?php endif; ?>
       </div>
       <?php if (($legale['contact_email'] ?? '') !== ''): /* chi non ha un programma di posta sul computer lo copia da qui */ ?>
-        <p class="small muted faq__indirizzo">Oppure scrivi a <b><?= Support::e($legale['contact_email']) ?></b></p>
+        <p class="small muted faq__indirizzo"><?= MHW\TestiSito::html('faq.oppure') ?> <b><?= Support::e($legale['contact_email']) ?></b></p>
       <?php endif; ?>
     <?php endif; ?>
   </div>
@@ -30,7 +30,7 @@ $crea = b() . (!empty(MHW\Auth::user()) ? '/pannello' : '/registrati'); ?>
       </details>
     <?php endforeach; ?>
     <div class="row domande__azioni">
-      <a class="btn" href="<?= $crea ?>">Crea gratis la tua guida</a>
+      <a class="btn" href="<?= $crea ?>"><?= MHW\TestiSito::html('cta.crea') ?></a>
       <a class="btn btn--ghost" href="<?= b() ?>/#piani">Vedi i prezzi</a>
     </div>
   </div>

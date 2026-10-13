@@ -1,5 +1,14 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Amministrazione → Testi e foto del sito (13 ottobre 2026)
+
+Migrazione `033` (solo aggiunte): tabella `site_texts`.
+
+- **Sistema → Testi e foto:** ogni titolo, paragrafo, bottone e scheda della home (118 testi) e l'intestazione di /domande, raggruppati per blocco nell'ordine della pagina. Ogni campo parte dal testo di serie; «Ripristina il testo di serie» e il badge «cambiato» su quelli modificati; un campo lasciato vuoto torna di serie. Si possono usare `**grassetto**` e `[testo](link)`: tutto il resto viene neutralizzato (niente HTML, niente `javascript:`). I segnaposto ({sezioni}, {demo}, {amico}, {passo}, {max}, {tot}) restano calcolati dal programma.
+- **Foto della home:** la schermata nel telefono, le tre scene, le tre schermate di «Come funziona» e lo sfondo di «Anche il tuo sito» si caricano (JPG, PNG, WebP, ridisegnate a 1800 px) e si tolgono («Torna alla foto di serie»); stanno nell'archivio come le foto delle testimonianze. L'immagine di condivisione resta in SEO e GEO.
+- **/media:** serve anche le immagini caricate dall'amministrazione (testimonianze, condivisione, foto del sito) con l'archivio su disco: prima rispondevano 404 perché non hanno una riga in `media`.
+- Domande e risposte, piani, testimonianze e testi legali restano nelle loro pagine.
+
 ## v2 · Correzioni dal controllo del sito (13 ottobre 2026)
 
 Nessuna migrazione.

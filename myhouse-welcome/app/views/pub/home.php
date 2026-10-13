@@ -17,9 +17,12 @@
    testimonianza e nessun numero inventato: la demo è dichiarata come demo, le
    domande sono esempi. */
 use function MHW\{a, b};
-use MHW\{Support, Icon, Plans};
+use MHW\{Support, Icon, Plans, TestiSito};
 $title = 'MyHouse Welcome — la guida digitale della tua struttura';
+/* I testi della pagina: Amministrazione → Sistema → «Testi e foto» (TestiSito); di serie, quelli di sempre. */
+$T = fn(string $k, array $sost = []) => TestiSito::html($k, $sost);
 $dentro = !empty($user);
+$ctaCrea = fn() => $dentro ? 'Vai alle tue guide' : $T('cta.crea');
 $vai = fn(int $pv) => b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . $pv;
 $crea = b() . ($dentro ? '/pannello' : '/registrati');
 $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' : null;
@@ -85,19 +88,18 @@ if ($dentro):
 <?php endif; ?>
 <section class="hero2">
   <div class="hero2__testo">
-    <span class="kicker">La reception digitale per la tua struttura ricettiva</span>
-    <h1 class="display">La casa risponde<br>prima che chiedano.</h1>
-    <p class="hero2__sub">La guida digitale per case vacanza, B&amp;B, affittacamere e agriturismi. Check-in, Wi-Fi,
-      parcheggio, regole e i tuoi consigli sulla zona: tutto accessibile tramite QR Code. Senza app da scaricare.</p>
+    <span class="kicker"><?= $T('hero.kicker') ?></span>
+    <h1 class="display"><?= $T('hero.titolo') ?></h1>
+    <p class="hero2__sub"><?= $T('hero.sotto') ?></p>
     <div class="hero2__azioni">
-      <a class="btn btn--lg btn--go" href="<?= $crea ?>"><?= $dentro ? 'Vai alle tue guide' : 'Crea gratis la tua guida' ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
+      <a class="btn btn--lg btn--go" href="<?= $crea ?>"><?= $ctaCrea() ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
       <?php if ($demoUrl): ?>
         <?php /* La demo, e accanto le lingue in cui aprirla: un solo gruppo, non tre bottoni in fila.
                  Le lingue che la demo ha davvero, al massimo tre. */
               $lingueDemo = array_values(array_intersect(['it', 'en', 'fr'], array_column(MHW\Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$demo['id']]), 'locale')));
               $nomiLingue = ['it' => 'italiano', 'en' => 'inglese', 'fr' => 'francese']; ?>
         <span class="demo-gruppo">
-          <a class="demo-gruppo__vai" href="<?= $demoUrl ?>"><?= Icon::svg('eye', 18, 1.8) ?>Guarda la demo</a>
+          <a class="demo-gruppo__vai" href="<?= $demoUrl ?>"><?= Icon::svg('eye', 18, 1.8) ?><?= $T('cta.demo') ?></a>
           <?php if (count($lingueDemo) > 1): ?>
             <span class="demo-lingue" role="group" aria-label="Lingua della demo">
               <?php foreach ($lingueDemo as $l): ?><a href="<?= $demoUrl ?>?l=<?= $l ?>" hreflang="<?= $l ?>" aria-label="Demo in <?= $nomiLingue[$l] ?>"><?= strtoupper($l) ?></a><?php endforeach; ?>
@@ -106,7 +108,7 @@ if ($dentro):
         </span>
       <?php endif; ?>
     </div>
-    <p class="micro micro--left hero2__garanzie"><span><?= Icon::svg('check', 15, 2.2) ?>Nessuna app da scaricare</span><span><?= Icon::svg('check', 15, 2.2) ?>La crei e la provi gratis</span><span><?= Icon::svg('check', 15, 2.2) ?>Paghi solo quando pubblichi</span></p>
+    <p class="micro micro--left hero2__garanzie"><?php foreach (TestiSito::lista('hero.garanzie') as $g): ?><span><?= Icon::svg('check', 15, 2.2) ?><?= $g ?></span><?php endforeach; ?></p>
   </div>
 
   <?php /* Il telefono: una schermata della guida disegnata in HTML, sempre nel
@@ -121,8 +123,10 @@ if ($dentro):
           <span class="device__top"><?= Icon::brand(24) ?><span><?= Support::e($nomeDemo) ?></span>
             <?php if ($demo): ?><span class="demo-tag">Demo</span><?php endif; ?></span>
           <span class="device__title">Benvenuti<br>a <?= Support::e($nomeDemo) ?>.</span>
-          <span class="device__shot"><picture><source srcset="<?= Support::e($telefonoWebp) ?>" type="image/webp">
-            <img src="<?= Support::e($telefonoJpg) ?>" alt="" width="600" height="422" loading="eager" decoding="async"></picture>
+          <span class="device__shot"><?php $telPers = TestiSito::immagine('telefono'); if ($telPers['caricata']): ?>
+            <img src="<?= Support::e($telPers['url']) ?>" alt="" width="600" height="422" loading="eager" decoding="async">
+            <?php else: ?><picture><source srcset="<?= Support::e($telefonoWebp) ?>" type="image/webp">
+            <img src="<?= Support::e($telefonoJpg) ?>" alt="" width="600" height="422" loading="eager" decoding="async"></picture><?php endif; ?>
             <span class="device__pill"><i></i>Check-in dalle <?= Support::e($checkinDemo) ?></span></span>
           <span class="device__tiles">
             <span class="t-terracotta"><?= Icon::svg('home', 16, 1.8) ?>Check-in &amp; Check-out</span>
@@ -134,7 +138,7 @@ if ($dentro):
         <span class="device__home"></span>
       </span>
     </span>
-    <?php if ($demoUrl): ?><span class="device-link__invito">Scopri come la vedranno i tuoi ospiti <?= Icon::svg('arrow', 15, 2) ?></span><?php endif; ?>
+    <?php if ($demoUrl): ?><span class="device-link__invito"><?= $T('hero.invito') ?> <?= Icon::svg('arrow', 15, 2) ?></span><?php endif; ?>
   </<?= $tag ?>>
 </section>
 
@@ -173,12 +177,10 @@ $disegni = [
 ]; ?>
 <section class="scene" aria-label="Come si usa">
   <?php /* Ogni scena porta dove se ne parla: il QR, la demo, i passi nel pannello. */
-  foreach ([['scena-qr.jpg', 'qr', 't-terracotta', 'Il QR all\'ingresso', 'Lo stampi una volta: l\'ospite lo inquadra e la guida si apre.', '#qr',
-                   'Un ospite inquadra con il telefono il QR in cornice accanto alla porta d\'ingresso', '62% 50%'],
-                  ['scena-ospite.jpg', 'ospite', 't-sea', 'L\'ospite trova tutto', 'Wi-Fi, check-in, consigli: nella sua lingua, sul suo telefono.', $demoUrl ?? '#prodotto-titolo',
-                   'Un\'ospite al tavolo della casa sfoglia la guida sul telefono: Wi-Fi, check-in, parcheggio, dove mangiare', '50% 50%'],
-                  ['scena-host.jpg', 'host', 't-pine', 'Tu aggiorni quando vuoi', 'Cambi un orario dal pannello e pubblichi: il QR resta lo stesso.', '#come-funziona',
-                   'L\'host aggiorna la guida dal portatile, con l\'anteprima sul telefono accanto', '52% 50%']] as [$file, $dis, $tono, $tit, $txt, $dove, $alt, $centro]):
+  foreach ([['scena-qr.jpg', 'qr', 't-terracotta', $T('scena.qr.titolo'), $T('scena.qr.testo'), '#qr', TestiSito::testo('scena.qr.alt'), '62% 50%'],
+                  ['scena-ospite.jpg', 'ospite', 't-sea', $T('scena.ospite.titolo'), $T('scena.ospite.testo'), $demoUrl ?? '#prodotto-titolo', TestiSito::testo('scena.ospite.alt'), '50% 50%'],
+                  ['scena-host.jpg', 'host', 't-pine', $T('scena.host.titolo'), $T('scena.host.testo'), '#come-funziona', TestiSito::testo('scena.host.alt'), '52% 50%']] as [$file, $dis, $tono, $tit, $txt, $dove, $alt, $centro]):
+        $pers = TestiSito::immagine(substr($file, 0, -4));   // la foto caricata dall'amministrazione, se c'è
         $cie = is_file($cartellaFoto . $file);
         // Le versioni WebP (da tools/foto.php) valgono solo se non sono più vecchie del .jpg:
         // chi carica un .jpg nuovo lo vede subito, anche prima di rigenerarle.
@@ -186,10 +188,11 @@ $disegni = [
         $webp = $cie && is_file($cartellaFoto . "$base-600.webp") && is_file($cartellaFoto . "$base-1200.webp")
              && filemtime($cartellaFoto . "$base-1200.webp") >= filemtime($cartellaFoto . $file); ?>
     <figure class="scena">
-      <?php if ($cie): ?><picture>
+      <?php if ($pers['caricata']): ?><picture><img src="<?= Support::e($pers['url']) ?>" alt="<?= $alt ?>" loading="lazy" decoding="async" width="1200" height="750"></picture>
+      <?php elseif ($cie): ?><picture>
         <?php if ($webp): ?><source type="image/webp" sizes="(max-width: 760px) 92px, 380px"
           srcset="<?= Support::e(a("/assets/foto/$base-600.webp")) ?> 600w, <?= Support::e(a("/assets/foto/$base-1200.webp")) ?> 1200w"><?php endif; ?>
-        <img src="<?= Support::e(a('/assets/foto/' . $file)) ?>" alt="<?= Support::e($alt) ?>" loading="lazy" decoding="async" width="1200" height="750" style="object-position:<?= $centro ?>">
+        <img src="<?= Support::e(a('/assets/foto/' . $file)) ?>" alt="<?= $alt ?>" loading="lazy" decoding="async" width="1200" height="750" style="object-position:<?= $centro ?>">
       </picture>
       <?php else: ?><span class="scena__vuota <?= $tono ?>" aria-hidden="true"><svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice"><?= $disegni[$dis] ?></svg></span><?php endif; ?>
       <figcaption><a class="scena__link" href="<?= $dove ?>"><?= $tit ?> <?= Icon::svg('arrow', 15, 2) ?></a><span><?= $txt ?></span></figcaption>
@@ -199,10 +202,10 @@ $disegni = [
 
 <section class="prodotto" aria-labelledby="prodotto-titolo">
   <div class="prodotto__testa">
-    <span class="kicker">La guida</span>
-    <h2 id="prodotto-titolo" class="h-sezione">Cosa trova l'ospite.</h2>
-    <p class="muted">Le informazioni del soggiorno, in ordine e sempre sul telefono. <?= $quanteSezioni ?> sezioni pronte da compilare, più le sezioni libere per tutto il resto: scegli quelle che servono ai tuoi ospiti.</p>
-    <?php if ($demoUrl): ?><a class="link-freccia" href="<?= $demoUrl ?>">Sfoglia la guida di <?= Support::e($nomeDemo) ?> <?= Icon::svg('arrow', 16, 2) ?></a><?php endif; ?>
+    <span class="kicker"><?= $T('prodotto.kicker') ?></span>
+    <h2 id="prodotto-titolo" class="h-sezione"><?= $T('prodotto.titolo') ?></h2>
+    <p class="muted"><?= $T('prodotto.testo', ['sezioni' => $quanteSezioni]) ?></p>
+    <?php if ($demoUrl): ?><a class="link-freccia" href="<?= $demoUrl ?>"><?= $T('prodotto.link', ['demo' => Support::e($nomeDemo)]) ?> <?= Icon::svg('arrow', 16, 2) ?></a><?php endif; ?>
   </div>
   <div class="gruppi-sez">
     <?php $toni = ['casa' => 'terracotta', 'arrivo' => 'sea', 'territorio' => 'pine'];
@@ -223,16 +226,11 @@ $disegni = [
    niente promesse: solo quello che il prodotto fa davvero. */ ?>
 <section id="per-chi" class="blocco" aria-labelledby="perchi-titolo">
   <div class="come__testa">
-    <span class="kicker">Per chi è</span>
-    <h2 id="perchi-titolo" class="h-sezione">Ogni struttura ha le sue domande.</h2>
+    <span class="kicker"><?= $T('perchi.kicker') ?></span>
+    <h2 id="perchi-titolo" class="h-sezione"><?= $T('perchi.titolo') ?></h2>
   </div>
   <div class="vantaggi vantaggi--4">
-    <?php foreach ([
-        ['home', 'Casa vacanza', 'Non ci sei quando arrivano? La guida spiega come si entra, dove si parcheggia e come funziona la casa, a qualsiasi ora.'],
-        ['coffee', 'B&amp;B e affittacamere', 'Colazione, orari, regole: un QR Code sempre aggiornato in ogni camera, al posto del foglio plastificato.'],
-        ['sun', 'Agriturismo', 'Racconta l\'azienda, le degustazioni e i tuoi prodotti. E accompagna gli ospiti tra sagre, sentieri e cantine dei dintorni.'],
-        ['layers', 'Più strutture', 'Gestisci più strutture? Un QR Code per ognuna, dallo stesso account. Quello che vale per tutte lo scrivi una volta sola e lo incolli.'],
-    ] as [$ico, $tit, $txt]): ?>
+    <?php foreach (['home', 'coffee', 'sun', 'layers'] as $i => $ico): $tit = $T('perchi.' . ($i + 1) . '.titolo'); $txt = $T('perchi.' . ($i + 1) . '.testo'); ?>
       <div class="vantaggio">
         <span class="vantaggio__ico"><?= Icon::svg($ico, 20, 1.7) ?></span>
         <b><?= $tit ?></b>
@@ -248,20 +246,17 @@ $disegni = [
    A destra il commiato, disegnato con le stesse etichette della guida vera. */ ?>
 <section id="guadagno" class="guadagno" aria-labelledby="guadagno-titolo">
   <div class="guadagno__testo">
-    <span class="kicker">La guida che lavora per te</span>
-    <h2 id="guadagno-titolo" class="h-sezione">Una prenotazione diretta in più all'anno paga l'abbonamento.</h2>
-    <p class="guadagno__lead">Alla fine del soggiorno la guida digitale manda due inviti all'ospite: una recensione sulla piattaforma
-      che preferisci e un codice sconto da usare la prossima volta, direttamente sul tuo sito.</p>
+    <span class="kicker"><?= $T('guadagno.kicker') ?></span>
+    <h2 id="guadagno-titolo" class="h-sezione"><?= $T('guadagno.titolo') ?></h2>
+    <p class="guadagno__lead"><?= $T('guadagno.lead') ?></p>
     <ul class="guadagno__voci">
-      <li><span class="guadagno__ico"><?= Icon::svg('message', 18, 1.8) ?></span><span><b>Più recensioni.</b>
-        Google, Booking, Airbnb: un pulsante per ognuno, quando il ricordo è fresco.</span></li>
-      <li><span class="guadagno__ico"><?= Icon::svg('globe', 18, 1.8) ?></span><span><b>Prenotazioni dirette.</b>
-        «La prossima volta prenota da noi», con il link al tuo sito e il codice sconto.</span></li>
-      <li><span class="guadagno__ico"><?= Icon::svg('euro', 18, 1.8) ?></span><span><b>Servizi extra.</b>
-        Transfer, colazione, late check-out: l'ospite li chiede con un tocco su WhatsApp.</span></li>
+      <?php foreach (['message', 'globe', 'euro'] as $i => $ico): ?>
+      <li><span class="guadagno__ico"><?= Icon::svg($ico, 18, 1.8) ?></span><span><b><?= $T('guadagno.' . ($i + 1) . '.titolo') ?></b>
+        <?= $T('guadagno.' . ($i + 1) . '.testo') ?></span></li>
+      <?php endforeach; ?>
     </ul>
     <?php /* 7B: alla fine del blocco scuro, lo stesso bottone dell'hero. */ ?>
-    <a class="btn btn--lg btn--go guadagno__cta" href="<?= $crea ?>"><?= $dentro ? 'Vai alle tue guide' : 'Crea gratis la tua guida' ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
+    <a class="btn btn--lg btn--go guadagno__cta" href="<?= $crea ?>"><?= $ctaCrea() ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
   </div>
   <div class="congedo-mock" aria-hidden="true">
     <span class="congedo-mock__kicker"><?= Support::e(MHW\I18n::t('it', 'before_leaving')) ?></span>
@@ -279,17 +274,17 @@ $disegni = [
 
 <section id="come-funziona" class="blocco" aria-labelledby="come-titolo">
   <div class="come__testa">
-    <span class="kicker">Come funziona</span>
-    <h2 id="come-titolo" class="h-sezione">Inizia in pochi minuti.</h2>
+    <span class="kicker"><?= $T('come.kicker') ?></span>
+    <h2 id="come-titolo" class="h-sezione"><?= $T('come.titolo') ?></h2>
   </div>
   <?php /* Tre passi e le schermate vere del pannello (assets/foto/pannello-1…3.webp).
      Senza JavaScript i passi sono link alle schermate, tutte visibili; con
      landing.js diventano schede: una schermata grande alla volta. Se le
      schermate mancano, restano i passi numerati. */
-  $passi = [['01', 'Crea la tua guida.', 'Inserisci le informazioni della struttura e scegli cosa condividere con gli ospiti.', 'Il pannello: i contenuti della guida, con le sezioni e le statistiche'],
-            ['02', 'Personalizza e guarda l\'anteprima.', 'Scegli i colori e la copertina, e guarda la guida sul telefono come la vedranno gli ospiti, prima di pubblicarla.', 'Il pannello: l\'aspetto della guida, con palette, tema e copertina'],
-            ['03', 'Pubblica e condividi.', 'Attivi l\'abbonamento: la guida va online e la condividi con il link o con il QR Code.', 'Il pannello: il QR Code da stampare e il link da condividere']];
-  $schermate = array_filter(array_map(fn($i) => is_file($cartellaFoto . 'pannello-' . ($i + 1) . '.webp') ? 'pannello-' . ($i + 1) . '.webp' : null, array_keys($passi))); ?>
+  $passi = [];
+  foreach (['01', '02', '03'] as $i => $n) $passi[] = [$n, $T('come.' . ($i + 1) . '.titolo'), $T('come.' . ($i + 1) . '.testo'), TestiSito::testo('come.' . ($i + 1) . '.alt')];
+  // Le schermate: quelle caricate dall'amministrazione, altrimenti pannello-N.webp se c'è.
+  $schermate = array_filter(array_map(fn($i) => TestiSito::immagine('pannello-' . ($i + 1))['url'], array_keys($passi))); ?>
   <div class="passi<?= count($schermate) === 3 ? '' : ' passi--senza' ?>"<?= count($schermate) === 3 ? ' data-passi' : '' ?>>
     <ol class="passi__lista">
       <?php foreach ($passi as $i => [$n, $tit, $txt]): ?>
@@ -303,7 +298,7 @@ $disegni = [
         <?php foreach ($passi as $i => [$n, , , $alt]): ?>
           <figure class="schermata" id="schermata-<?= $i + 1 ?>">
             <span class="schermata__barra" aria-hidden="true"><i></i><i></i><i></i><span>myhousewelcome.it</span></span>
-            <img src="<?= Support::e(a('/assets/foto/pannello-' . ($i + 1) . '.webp')) ?>" alt="<?= Support::e($alt) ?>"
+            <img src="<?= Support::e($schermate[$i]) ?>" alt="<?= $alt ?>"
                  loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async" width="1200" height="750">
           </figure>
         <?php endforeach; ?>
@@ -314,11 +309,11 @@ $disegni = [
 
 <section id="qr" class="band qrband" aria-labelledby="qr-titolo">
   <div class="stack" style="gap:20px;max-width:540px">
-    <h2 id="qr-titolo" class="h-sezione">Un QR. Tutta la struttura.</h2>
+    <h2 id="qr-titolo" class="h-sezione"><?= $T('qr.titolo') ?></h2>
     <ul class="spunte">
-      <li><?= Icon::svg('check', 18, 2) ?><span><b>Un solo QR Code, sempre valido.</b>Lo stampi una volta e non lo cambi più.</span></li>
-      <li><?= Icon::svg('check', 18, 2) ?><span><b>Informazioni sempre aggiornabili.</b>Modifichi la guida e pubblichi la nuova versione senza cambiare il QR.</span></li>
-      <li><?= Icon::svg('check', 18, 2) ?><span><b>Condividi anche prima dell'arrivo.</b>Mandi il link su WhatsApp o per email, con il messaggio di benvenuto già pronto.</span></li>
+      <?php foreach ([1, 2, 3] as $i): ?>
+      <li><?= Icon::svg('check', 18, 2) ?><span><b><?= $T("qr.$i.titolo") ?></b><?= $T("qr.$i.testo") ?></span></li>
+      <?php endforeach; ?>
     </ul>
   </div>
   <div class="qr-sheet qrband__foglio">
@@ -332,7 +327,7 @@ $disegni = [
 
 <?php if (!empty($testimonianze)): /* solo testimonianze vere, inserite dall'amministratore */ ?>
 <section class="blocco voci" aria-labelledby="voci-titolo">
-  <div class="stack stack--sm"><span class="kicker">Chi la usa</span><h2 id="voci-titolo" class="h-sezione">Le parole di chi ospita.</h2></div>
+  <div class="stack stack--sm"><span class="kicker"><?= $T('voci.kicker') ?></span><h2 id="voci-titolo" class="h-sezione"><?= $T('voci.titolo') ?></h2></div>
   <div class="grid grid-3" style="margin-top:24px">
     <?php foreach ($testimonianze as $t): ?>
       <figure class="panel voce">
@@ -353,10 +348,10 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
 <section id="piani" class="blocco" aria-labelledby="piani-titolo">
   <div class="spread">
     <div class="stack stack--sm">
-      <span class="kicker">Piani e prezzi</span>
-      <h2 id="piani-titolo" class="h-sezione">Scegli il piano.</h2>
+      <span class="kicker"><?= $T('piani.kicker') ?></span>
+      <h2 id="piani-titolo" class="h-sezione"><?= $T('piani.titolo') ?></h2>
     </div>
-    <p class="muted" style="max-width:400px;line-height:24px">Crei e provi la guida gratis, con le funzioni del piano che scegli: paghi solo quando la pubblichi. Prezzi IVA esclusa.</p>
+    <p class="muted" style="max-width:400px;line-height:24px"><?= $T('piani.lead') ?></p>
   </div>
 
   <?php $vociPiano = fn(array $p) => $p['bullet_list']; ?>
@@ -414,8 +409,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <?php endforeach; ?>
   </div>
   <?php include __DIR__ . '/_confronto.php'; ?>
-  <p class="piani__nota">Abbonamento annuale con rinnovo automatico. Puoi disattivare il rinnovo dal tuo account quando vuoi: la guida
-    resta online fino alla fine del periodo già pagato.</p>
+  <p class="piani__nota"><?= $T('piani.nota') ?></p>
 </section>
 
 <?php if ($inviti): /* Porta un amico: le percentuali arrivano da Inviti, nessun numero scritto qui.
@@ -423,19 +417,19 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
       $passi = MHW\Inviti::amiciMassimi(); ?>
 <section id="amico" class="blocco amico" aria-labelledby="amico-titolo">
   <div class="amico__testo">
-    <span class="kicker">Porta un amico</span>
-    <h2 id="amico-titolo" class="h-sezione">Più amici porti, meno paghi.<br>Il prossimo anno fino al <span class="amico__cifra"><?= MHW\Inviti::MASSIMO ?>%</span> in meno.</h2>
-    <p class="amico__lead">Conosci altri host, B&amp;B o case vacanza? Mandagli il tuo link: loro hanno il <?= MHW\Inviti::AMICO ?>% di sconto sul primo anno, tu il <?= MHW\Inviti::PASSO ?>% in meno sul rinnovo per ogni amico che si abbona.</p>
+    <?php /* Le percentuali arrivano dal programma; nel titolo {max} è in evidenza. */
+          $pct = ['amico' => MHW\Inviti::AMICO . '%', 'passo' => MHW\Inviti::PASSO . '%', 'max' => MHW\Inviti::MASSIMO . '%']; ?>
+    <span class="kicker"><?= $T('amico.kicker') ?></span>
+    <h2 id="amico-titolo" class="h-sezione"><?= $T('amico.titolo', ['max' => '<span class="amico__cifra">' . MHW\Inviti::MASSIMO . '%</span>'] + $pct) ?></h2>
+    <p class="amico__lead"><?= $T('amico.lead', $pct) ?></p>
     <div class="row">
-      <a class="btn" href="<?= b() . ($dentro ? '/inviti' : '/registrati') ?>"><?= $dentro ? 'Invita un amico' : 'Crea gratis la tua guida' ?></a>
-      <a class="btn btn--ghost" href="#faq-porta-amico">Come funziona</a>
+      <a class="btn" href="<?= b() . ($dentro ? '/inviti' : '/registrati') ?>"><?= $dentro ? 'Invita un amico' : $T('cta.crea') ?></a>
+      <a class="btn btn--ghost" href="#faq-porta-amico"><?= $T('amico.bottone') ?></a>
     </div>
   </div>
   <div class="amico__conto">
     <ol class="amico__passi">
-      <li><b>Pubblichi la tua guida.</b>In «Invita un amico» trovi il tuo link personale.</li>
-      <li><b>L'amico si registra dal link.</b>Ha il <?= MHW\Inviti::AMICO ?>% di sconto sul primo anno, da solo.</li>
-      <li><b>Quando paga, tu risparmi.</b>Il tuo rinnovo costa il <?= MHW\Inviti::PASSO ?>% in meno per ogni amico, fino al <?= MHW\Inviti::MASSIMO ?>%.</li>
+      <?php foreach ([1, 2, 3] as $i): ?><li><b><?= $T("amico.$i.titolo", $pct) ?></b><?= $T("amico.$i.testo", $pct) ?></li><?php endforeach; ?>
     </ol>
     <div class="amico__barra" role="img" aria-label="<?= $passi ?> amici: <?= MHW\Inviti::MASSIMO ?>% di sconto sul rinnovo">
       <?php for ($n = 1; $n <= $passi; $n++): ?><span class="amico__tacca" style="opacity:<?= round(.3 + .7 * $n / $passi, 2) ?>"></span><?php endfor; ?>
@@ -447,16 +441,16 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
 
 <section id="domande" class="blocco faq" aria-labelledby="faq-titolo">
   <div class="faq__testa">
-    <span class="kicker">Domande</span>
-    <h2 id="faq-titolo" class="h-sezione">Prima di cominciare.</h2>
+    <span class="kicker"><?= $T('faq.kicker') ?></span>
+    <h2 id="faq-titolo" class="h-sezione"><?= $T('faq.titolo') ?></h2>
     <?php if (($legale['contact_email'] ?? '') !== '' || $waFaq !== ''): ?>
-      <p class="muted">Non trovi la risposta? Scrivici, ti rispondiamo volentieri.</p>
+      <p class="muted"><?= $T('faq.aiuto') ?></p>
       <div class="faq__contatti">
         <?php if ($waFaq !== ''): ?><a class="btn btn--ghost" href="https://wa.me/<?= Support::e($waFaq) ?>" rel="noopener"><?= Icon::svg('whatsapp', 18, 1.8) ?>WhatsApp</a><?php endif; ?>
         <?php if (($legale['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legale['contact_email']) ?>"><?= Icon::svg('message', 18, 1.8) ?>Email</a><?php endif; ?>
       </div>
       <?php if (($legale['contact_email'] ?? '') !== ''): /* chi non ha un programma di posta sul computer lo copia da qui */ ?>
-        <p class="small muted faq__indirizzo">Oppure scrivi a <b><?= Support::e($legale['contact_email']) ?></b></p>
+        <p class="small muted faq__indirizzo"><?= $T('faq.oppure') ?> <b><?= Support::e($legale['contact_email']) ?></b></p>
       <?php endif; ?>
     <?php endif; ?>
   </div>
@@ -470,7 +464,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <?php endforeach; ?>
     <?php if ($faqAltre): /* le altre, tutte insieme: si aprono con un tocco */ ?>
       <details class="faq__voce faq__altre">
-        <summary>Altre domande (<?= count($faqAltre) ?>)<?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
+        <summary><?= $T('faq.altre') ?> (<?= count($faqAltre) ?>)<?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
         <div class="faq__altre-lista">
           <?php foreach ($faqAltre as $q): ?>
             <details class="faq__voce" id="faq-<?= Support::e($q['id']) ?>">
@@ -481,25 +475,24 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
         </div>
       </details>
     <?php endif; ?>
-    <p class="faq__tutte"><a href="<?= b() ?>/domande">Tutte le domande</a></p>
+    <p class="faq__tutte"><a href="<?= b() ?>/domande"><?= $T('faq.tutte') ?></a></p>
   </div>
 </section>
 
 
 <section class="chiusura" aria-labelledby="chiusura-titolo">
   <div class="chiusura__testo">
-    <h2 id="chiusura-titolo" class="chiusura__titolo">La tua struttura ha tanto da raccontare. Mettilo a disposizione dei tuoi ospiti.</h2>
-    <p>Crea la tua guida, personalizzala e guarda il risultato. Decidi soltanto dopo se pubblicarla: per cominciare non serve la carta di credito.</p>
+    <h2 id="chiusura-titolo" class="chiusura__titolo"><?= $T('chiusura.titolo') ?></h2>
+    <p><?= $T('chiusura.testo') ?></p>
     <div class="row">
-      <a class="btn btn--lg btn--go" href="<?= $crea ?>"><?= $dentro ? 'Vai alle tue guide' : 'Crea gratis la tua guida' ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
-      <?php if ($demoUrl): ?><a class="btn btn--lg btn--ghost" href="<?= $demoUrl ?>">Guarda la demo</a><?php endif; ?>
+      <a class="btn btn--lg btn--go" href="<?= $crea ?>"><?= $ctaCrea() ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
+      <?php if ($demoUrl): ?><a class="btn btn--lg btn--ghost" href="<?= $demoUrl ?>"><?= $T('cta.demo') ?></a><?php endif; ?>
     </div>
   </div>
   <aside class="chi" aria-label="Chi c'è dietro MyHouse Welcome">
     <span class="chi__marchio"><?= Icon::brand(28) ?></span>
-    <p class="chi__titolo">Pensata per chi ospita. Sviluppata da chi lavora nel digitale e nell'ospitalità.</p>
-    <p>MyHouse Welcome fa parte delle soluzioni MyHouse di
-      <a href="https://blackout.in" rel="noopener" target="_blank">Blackout Agency</a>, dedicate alle esigenze digitali delle strutture ricettive.</p>
+    <p class="chi__titolo"><?= $T('chi.titolo') ?></p>
+    <p><?= $T('chi.testo') ?></p>
   </aside>
 </section>
 
@@ -508,33 +501,30 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
    sito» porta a blackout.in/myhouse/, l'email resta come seconda strada. Nessun prezzo. */
 $legaleSito = MHW\Config::get('legal'); ?>
 <section id="sito" class="sito" aria-labelledby="sito-titolo">
+  <?php $sitoPers = TestiSito::immagine('sito'); ?>
   <picture class="sito__foto" aria-hidden="true">
-    <source type="image/webp" srcset="<?= Support::e(a('/assets/foto/sito-800.webp')) ?> 800w, <?= Support::e(a('/assets/foto/sito-1600.webp')) ?> 1600w" sizes="100vw">
-    <img src="<?= Support::e(a('/assets/foto/sito.jpg')) ?>" alt="" loading="lazy" decoding="async" width="1600" height="1067">
+    <?php if (!$sitoPers['caricata']): ?><source type="image/webp" srcset="<?= Support::e(a('/assets/foto/sito-800.webp')) ?> 800w, <?= Support::e(a('/assets/foto/sito-1600.webp')) ?> 1600w" sizes="100vw"><?php endif; ?>
+    <img src="<?= Support::e($sitoPers['caricata'] ? $sitoPers['url'] : a('/assets/foto/sito.jpg')) ?>" alt="" loading="lazy" decoding="async" width="1600" height="1067">
   </picture>
   <div class="sito__dentro">
     <div class="come__testa">
-      <span class="kicker">Anche il tuo sito</span>
-      <h2 id="sito-titolo" class="h-sezione">Meno commissioni ai portali.<br>Più incasso per te.<br><span class="sito__accento">Più ospiti diretti.</span></h2>
-      <p class="sito__lead">Oltre alla guida, realizziamo il sito internet della tua struttura: le tue foto, le date libere, la prenotazione diretta.</p>
+      <span class="kicker"><?= $T('sito.kicker') ?></span>
+      <h2 id="sito-titolo" class="h-sezione"><?= $T('sito.titolo') ?><br><span class="sito__accento"><?= $T('sito.accento') ?></span></h2>
+      <p class="sito__lead"><?= $T('sito.lead') ?></p>
     </div>
     <div class="vantaggi">
-      <?php foreach ([
-          ['percent', 'Meno commissioni ai portali.', 'Sui portali ogni notte venduta ha un costo: una percentuale che va a chi ti ha fatto da intermediario. Sulle prenotazioni che arrivano dal tuo sito l\'intermediario non c\'è, e quella percentuale non la paghi.'],
-          ['euro', 'Più incasso per te.', 'Stessa casa, stessa notte, stesso prezzo. Cambia solo dove viene venduta: se la vendi dal tuo sito, la quota che sarebbe andata al portale resta a te.'],
-          ['people', 'Più ospiti diretti.', 'Il tuo sito è visibile a chiunque cerchi online un alloggio nella tua zona, anche a chi non ti ha mai sentito nominare. Arriva da te, guarda le foto, vede le date libere e prenota. Senza passare da un portale.'],
-      ] as [$ico, $tit, $txt]): ?>
+      <?php foreach (['percent', 'euro', 'people'] as $i => $ico): ?>
         <div class="vantaggio">
           <span class="vantaggio__ico"><?= Icon::svg($ico, 20, 1.7) ?></span>
-          <b><?= Support::e($tit) ?></b>
-          <p><?= Support::e($txt) ?></p>
+          <b><?= $T('sito.' . ($i + 1) . '.titolo') ?></b>
+          <p><?= $T('sito.' . ($i + 1) . '.testo') ?></p>
         </div>
       <?php endforeach; ?>
     </div>
     <div class="sito__cta">
-      <a class="btn" href="https://blackout.in/myhouse/" target="_blank" rel="noopener">Chiedici il tuo sito <?= Icon::svg('external', 16, 1.9) ?></a>
+      <a class="btn" href="https://blackout.in/myhouse/" target="_blank" rel="noopener"><?= $T('sito.bottone') ?> <?= Icon::svg('external', 16, 1.9) ?></a>
       <?php if (($legaleSito['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legaleSito['contact_email']) ?>?subject=<?= rawurlencode('Il sito della mia struttura') ?>"><?= Icon::svg('message', 18, 1.8) ?>Scrivici un'email</a><?php endif; ?>
-      <span class="small">Ti rispondiamo con una proposta su misura.<?php if (($legaleSito['contact_email'] ?? '') !== ''): ?> Oppure scrivi a <b><?= Support::e($legaleSito['contact_email']) ?></b>.<?php endif; ?></span>
+      <span class="small"><?= $T('sito.nota') ?><?php if (($legaleSito['contact_email'] ?? '') !== ''): ?> <?= $T('faq.oppure') ?> <b><?= Support::e($legaleSito['contact_email']) ?></b>.<?php endif; ?></span>
     </div>
   </div>
 </section>

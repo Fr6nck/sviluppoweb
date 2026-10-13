@@ -2259,3 +2259,21 @@ fieldset{min-width:0}
 .novita-pallino .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin-right:4px}
 .campo-nuovo{position:relative;padding:12px;border:2px solid var(--ochre,#b07d0c);border-radius:var(--r-md)}
 .campo-nuovo__et{position:absolute;top:-11px;right:12px}
+
+/* Amministrazione → Testi e foto: i blocchi della home nell'ordine della pagina, campo per campo. */
+.testi__indice{display:flex;flex-wrap:wrap;gap:6px}
+.testi__indice a{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:13px;color:var(--ink);text-decoration:none}
+.testi__indice a:hover{border-color:var(--line-strong)}
+.testi__campo{margin:0}
+.testi__campo--cambiato>input,.testi__campo--cambiato>textarea{border-color:var(--ochre);box-shadow:inset 0 0 0 1px var(--ochre)}
+.testi__badge{vertical-align:middle;margin-left:4px}
+.testi__sotto{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 16px;margin-top:4px}
+.testi__sotto .help{margin:0}
+.testi__ripristina{font-size:13px;white-space:nowrap}
+.testi__serie{margin:4px 0 0;padding:8px 10px;border-radius:10px;background:var(--sunk);white-space:pre-line}
+.testi__fotocampo{display:flex;flex-direction:column;gap:6px}
+.testi__fotocampo input[type=file]{display:block;width:100%;max-width:360px}
+.testi__fotocampo .help{margin:0}
+.testi__anteprima{display:block;width:100%;max-width:360px;aspect-ratio:16/10;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:var(--sunk);margin:6px 0 8px}
+.testi__anteprima--vuota{display:flex;align-items:center;justify-content:center;padding:12px;font-size:13px;color:var(--muted);text-align:center}
+.testi .panel{scroll-margin-top:84px}

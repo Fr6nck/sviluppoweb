@@ -153,6 +153,8 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 
 **Foto e PDF (controllo del 13 ottobre).** Nel sito online caricare logo e copertina dà «Archiviazione dei file non disponibile al momento»: non è il piano, è l'archivio S3 che non risponde (chiavi, bucket, regione o connessioni in uscita dell'hosting). Vai in **Amministrazione → Impostazioni → Archivio** e premi «Prova»: ora dice la risposta esatta di Amazon e cosa sistemare. In **Diagnostica** la riga «Foto e PDF su Amazon S3» mostra l'ultimo errore registrato. Finché non va, puoi mettere l'archivio su «disco del server» (le foto stanno in `app/storage/uploads`) e passare a S3 dopo.
 
+**Testi e foto della home.** In **Amministrazione → Sistema → Testi e foto** cambi ogni testo della home e le sue foto; niente da configurare. Dopo l'aggiornamento la tabella è vuota e la home è identica a prima.
+
 **Novità (7C).** Le novità per chi ha già la guida sono in `app/lang/novita.php` (una per voce, la prima dell'elenco si vede per prima). Per una novità nuova aggiungi una voce con un `id` mai usato.
 
 ## 4b. La guida vetrina (la demo della landing)
