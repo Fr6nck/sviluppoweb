@@ -97,6 +97,10 @@ $r->get('/', function () use ($guard, $codiceDalLink, $chiInvita) {
     $copertina = $demo ? Media::url($demo['cover_media_id'] ? (int) $demo['cover_media_id'] : null) : null;
     // Chi è già dentro vede in cima le sue guide, con lo stato vero (la fascia «Ciao, …»).
     $u = Auth::user(); $mie = [];
+    // L'anteprima dal vivo di Amministrazione → Testi e foto: la home come la vede un visitatore,
+    // con i segnaposto (data-testo, data-foto) che lo script dell'anteprima aggiorna mentre si scrive.
+    $anteprimaTesti = ($_GET['anteprima'] ?? '') === 'testi' && $u && ($u['role'] ?? '') === 'admin';
+    if ($anteprimaTesti) { Auth::comeVisitatore(); $u = null; }
     if ($u && $u['role'] !== 'admin' && ($acc = Auth::account())) {
         $mie = Db::all('SELECT id, account_id, is_demo, name, city, status, wizard_step, archived_at FROM properties WHERE account_id = ? AND archived_at IS NULL ORDER BY id', [$acc['id']]);
         foreach ($mie as &$pr) $pr['online'] = $pr['status'] === 'published' && MHW\Subscriptions::propertyOnline($pr);
@@ -107,7 +111,7 @@ $r->get('/', function () use ($guard, $codiceDalLink, $chiInvita) {
         'copertina' => $copertina ?: MHW\a('/assets/foto/casa.jpg'),
         'user' => $u, 'mie' => $mie, 'codiceSconto' => $codiceSconto,
         'invitoDi' => $invito && !$u ? explode(' ', trim((string) $invito['user_name']))[0] : '',
-        'testimonianze' => MHW\Testimonianze::visibili(), 'seoPagina' => 'home',
+        'testimonianze' => MHW\Testimonianze::visibili(), 'seoPagina' => 'home', 'anteprimaTesti' => $anteprimaTesti,
     ]);
 });
 

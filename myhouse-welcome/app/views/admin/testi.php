@@ -37,7 +37,8 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
     <a href="#testi-foto">Foto</a>
   </nav>
 
-  <form method="post" action="<?= b() ?>/admin/testi" enctype="multipart/form-data" class="stack stack--lg" data-testi><?= Csrf::field() ?>
+  <div class="testi__layout">
+  <form method="post" action="<?= b() ?>/admin/testi" enctype="multipart/form-data" class="stack stack--lg testi__modulo" data-testi><?= Csrf::field() ?>
     <input type="hidden" name="torna" value="" data-torna>
     <?php foreach (TestiSito::SEZIONI as $sid => [$nome, $nota]): $campi = $perSezione[$sid] ?? []; if (!$campi) continue; ?>
       <section class="panel stack" id="testi-<?= $sid ?>" aria-labelledby="testi-<?= $sid ?>-titolo">
@@ -47,7 +48,7 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
         </div>
         <?php foreach ($campi as $k => [, $etichetta, $tipo, $serie, $aiuto]):
               $id = 'testo-' . str_replace('.', '-', $k); $valore = TestiSito::get($k); $diverso = $valore !== $serie; ?>
-          <div class="field testi__campo<?= $diverso ? ' testi__campo--cambiato' : '' ?>" data-campo>
+          <div class="field testi__campo<?= $diverso ? ' testi__campo--cambiato' : '' ?>" data-campo data-chiave="<?= Support::e($k) ?>">
             <label for="<?= $id ?>"><?= Support::e($etichetta) ?><?php if ($diverso): ?> <span class="badge badge--ochre testi__badge">cambiato</span><?php endif; ?></label>
             <?php if ($tipo === 'riga'): ?>
               <input id="<?= $id ?>" name="<?= $nomeCampo($k) ?>" type="text" value="<?= Support::e($valore) ?>" maxlength="<?= TestiSito::RIGA_MAX ?>" data-serie="<?= Support::e($serie) ?>">
@@ -73,7 +74,7 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
       <div class="grid grid-2 testi__foto">
         <?php foreach (TestiSito::IMMAGINI as $nome => [$etichetta, $file, $consiglio]):
               $img = TestiSito::immagine($nome); $id = 'foto-' . $nome; ?>
-          <div class="field testi__fotocampo" style="margin:0">
+          <div class="field testi__fotocampo" style="margin:0" data-fotocampo="<?= $nome ?>" data-serie-url="<?= Support::e((string) TestiSito::immagineSerie($nome)) ?>">
             <label for="<?= $id ?>"><?= Support::e($etichetta) ?><?php if ($img['caricata']): ?> <span class="badge badge--ochre testi__badge">caricata</span><?php endif; ?></label>
             <?php if ($img['url']): ?><img class="testi__anteprima" src="<?= Support::e($img['url']) ?>" alt="" loading="lazy">
             <?php else: ?><span class="testi__anteprima testi__anteprima--vuota">Nessuna foto: la home mostra un disegno al suo posto.</span><?php endif; ?>
@@ -86,21 +87,70 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
       <div class="actions"><button class="btn" data-salva="foto">Salva</button></div>
     </section>
   </form>
+
+  <aside class="testi__anteprima-col" aria-label="Anteprima della home">
+    <div class="testi__anteprima-testa">
+      <span class="small"><b>Anteprima dal vivo</b><br>si aggiorna mentre scrivi; vale quando premi «Salva»</span>
+      <span class="testi__viste" role="group" aria-label="Larghezza dell'anteprima">
+        <button type="button" class="btn btn--sm btn--ghost" data-vista="telefono" aria-pressed="true">Telefono</button>
+        <button type="button" class="btn btn--sm btn--ghost" data-vista="computer" aria-pressed="false">Computer</button>
+      </span>
+    </div>
+    <div class="testi__cornice" data-cornice>
+      <iframe src="<?= b() ?>/?anteprima=testi" title="Anteprima della home" data-anteprima></iframe>
+    </div>
+  </aside>
+  </div>
 </div>
 <script>
 /* «Ripristina» riempie il campo con il testo di serie (data-serie); il bottone compare solo se
-   il testo è diverso. «Salva» di un blocco riporta a quel blocco dopo il salvataggio. */
+   il testo è diverso. «Salva» di un blocco riporta a quel blocco dopo il salvataggio.
+   L'anteprima a destra è la home in un iframe (?anteprima=testi): le riceve i testi mentre si
+   scrivono e le foto appena scelte, e scorre al punto che si sta modificando. */
 (function () {
   var form = document.querySelector('[data-testi]'); if (!form) return;
+  var iframe = document.querySelector('[data-anteprima]'), cornice = document.querySelector('[data-cornice]'), pronta = false, coda = [];
+  var manda = function (m) { if (!iframe) return; if (!pronta) { coda.push(m); return; } iframe.contentWindow.postMessage(m, location.origin); };
+  window.addEventListener('message', function (e) {
+    if (e.origin !== location.origin || !e.data || e.data.tipo !== 'pronta') return;
+    pronta = true; coda.forEach(function (m) { iframe.contentWindow.postMessage(m, location.origin); }); coda = [];
+  });
   form.querySelectorAll('[data-campo]').forEach(function (c) {
-    var campo = c.querySelector('input, textarea'), btn = c.querySelector('[data-ripristina]');
+    var campo = c.querySelector('input, textarea'), btn = c.querySelector('[data-ripristina]'), chiave = c.getAttribute('data-chiave');
     if (!campo || !btn) return;
-    var aggiorna = function () { btn.hidden = campo.value === campo.getAttribute('data-serie'); c.classList.toggle('testi__campo--cambiato', !btn.hidden); };
+    var aggiorna = function () {
+      btn.hidden = campo.value === campo.getAttribute('data-serie'); c.classList.toggle('testi__campo--cambiato', !btn.hidden);
+      manda({ tipo: 'testo', chiave: chiave, valore: campo.value.trim() !== '' ? campo.value : campo.getAttribute('data-serie') });
+    };
     campo.addEventListener('input', aggiorna);
+    campo.addEventListener('focus', function () { manda({ tipo: 'vai', chiave: chiave }); });
     btn.addEventListener('click', function () { campo.value = campo.getAttribute('data-serie'); aggiorna(); campo.focus(); });
+  });
+  form.querySelectorAll('[data-fotocampo]').forEach(function (c) {
+    var nome = c.getAttribute('data-fotocampo'), file = c.querySelector('input[type=file]'), togli = c.querySelector('input[type=checkbox]'), serie = c.getAttribute('data-serie-url');
+    if (file) {
+      file.addEventListener('focus', function () { manda({ tipo: 'vai', chiave: nome }); });
+      file.addEventListener('change', function () {
+        var f = file.files && file.files[0]; if (!f || !/^image\//.test(f.type)) return;
+        var r = new FileReader(); r.onload = function () { manda({ tipo: 'foto', nome: nome, url: r.result }); if (togli) togli.checked = false; }; r.readAsDataURL(f);
+      });
+    }
+    if (togli && serie) togli.addEventListener('change', function () { if (togli.checked) { file.value = ''; manda({ tipo: 'foto', nome: nome, url: serie }); } });
   });
   form.querySelectorAll('[data-salva]').forEach(function (b) {
     b.addEventListener('click', function () { form.querySelector('[data-torna]').value = b.getAttribute('data-salva'); });
   });
+  // Telefono (390 px) o computer (1280 px, rimpicciolito per stare nella colonna).
+  var vista = function (quale) {
+    if (!iframe || !cornice) return;
+    document.querySelectorAll('[data-vista]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-vista') === quale ? 'true' : 'false'); });
+    var larga = cornice.clientWidth, alta = cornice.clientHeight;
+    var w = quale === 'computer' ? 1280 : 390, s = Math.min(1, (larga - 2) / w);
+    iframe.style.width = w + 'px'; iframe.style.height = Math.round(alta / s) + 'px'; iframe.style.transform = 'scale(' + s + ')';
+    cornice.setAttribute('data-vista-attiva', quale);
+  };
+  document.querySelectorAll('[data-vista]').forEach(function (b) { b.addEventListener('click', function () { vista(b.getAttribute('data-vista')); }); });
+  window.addEventListener('resize', function () { vista(cornice ? cornice.getAttribute('data-vista-attiva') || 'telefono' : 'telefono'); });
+  vista('telefono');
 })();
 </script>

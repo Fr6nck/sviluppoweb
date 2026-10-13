@@ -302,6 +302,14 @@ final class TestiSito
         return ['url' => $file !== '' && is_file($cartella . $file) ? a('/assets/foto/' . $file) : null, 'caricata' => false];
     }
 
+    /** La foto di serie (assets/foto), anche se ce n'è una caricata: per «Torna alla foto di serie» nell'anteprima. */
+    public static function immagineSerie(string $nome): ?string
+    {
+        $file = self::IMMAGINI[$nome][1] ?? '';
+        $cartella = (defined('MHW_PUBLIC') ? MHW_PUBLIC : dirname(__DIR__) . '/public') . '/assets/foto/';
+        return $file !== '' && is_file($cartella . $file) ? a('/assets/foto/' . $file) : null;
+    }
+
     /** Il riferimento «driver:chiave» della foto caricata, o ''. */
     public static function riferimentoImmagine(string $nome): string { return (string) (self::salvate()['img.' . $nome] ?? ''); }
 }

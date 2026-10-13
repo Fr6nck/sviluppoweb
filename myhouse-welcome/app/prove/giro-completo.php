@@ -3224,6 +3224,14 @@ prova('Testi e foto: la pagina, con i blocchi nell\'ordine della home e i testi 
       && preg_match('#id="testi-hero".*id="testi-perchi".*id="testi-tempo".*id="testi-faq".*id="testi-sito".*id="testi-foto"#s', $r['body']) === 1
       && str_contains($r['body'], "La casa risponde\nprima che chiedano.</textarea>") && str_contains($r['body'], 'name="t_perchi_2_testo"') && str_contains($r['body'], 'name="img[telefono]"')
       && str_contains($r['body'], 'Testi cambiati') && !str_contains($r['body'], 'testi__campo testi__campo--cambiato'), (string) $r['code']);
+prova('…con l\'anteprima dal vivo a destra: la home in un iframe (?anteprima=testi), i campi con la loro chiave, le foto con quella di serie', str_contains($r['body'], 'src="/welcomebook/index.php/?anteprima=testi"')
+      && str_contains($r['body'], 'data-chiave="hero.titolo"') && str_contains($r['body'], 'data-fotocampo="telefono"') && str_contains($r['body'], 'data-vista="computer"'));
+$r = $admin->get('/?anteprima=testi');
+prova('…l\'anteprima: la home come la vede un visitatore, con i segnaposto per testi, elenchi e foto, e lo script', $r['code'] === 200 && !str_contains($r['body'], 'class="bentornato"')
+      && str_contains($r['body'], '<h1 class="display"><span data-testo="hero.titolo">La casa risponde<br>') && str_contains($r['body'], 'data-testo-lista="hero.garanzie"')
+      && str_contains($r['body'], 'data-foto="telefono"') && str_contains($r['body'], 'data-testo="prodotto.testo" data-sost="{&quot;sezioni&quot;:') && str_contains($r['body'], '/assets/anteprima-testi.js'));
+$r = $ospite->get('/?anteprima=testi');
+prova('…ma per un visitatore ?anteprima=testi non cambia niente', $r['code'] === 200 && !str_contains($r['body'], 'data-testo=') && !str_contains($r['body'], 'anteprima-testi.js'));
 $r = $admin->segui($admin->post('/admin/testi', ['t_hero_titolo' => "La casa risponde.\nSempre.", 't_perchi_2_testo' => 'Colazione **alle 8** e [regole](/domande) <script>x</script>',
     't_hero_garanzie' => "Prima\nSeconda", 't_prodotto_testo' => 'Ci sono {sezioni} sezioni.', 't_cta_crea' => 'Comincia gratis', 'torna' => 'hero']));
 prova('…salvato: titolo su due righe, grassetto e link sicuri, l\'HTML neutralizzato, la lista, il segnaposto, il bottone in tre punti', str_contains($r['body'], 'Salvato: la home è già aggiornata.')

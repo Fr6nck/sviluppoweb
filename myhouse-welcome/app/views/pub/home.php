@@ -20,7 +20,12 @@ use function MHW\{a, b};
 use MHW\{Support, Icon, Plans, TestiSito};
 $title = 'MyHouse Welcome — la guida digitale della tua struttura';
 /* I testi della pagina: Amministrazione → Sistema → «Testi e foto» (TestiSito); di serie, quelli di sempre. */
-$T = fn(string $k, array $sost = []) => TestiSito::html($k, $sost);
+$anteprimaTesti = !empty($anteprimaTesti);
+$T = fn(string $k, array $sost = []) => $anteprimaTesti
+    ? '<span data-testo="' . $k . '"' . ($sost ? ' data-sost="' . Support::e(json_encode($sost, JSON_UNESCAPED_UNICODE)) . '"' : '') . '>' . TestiSito::html($k, $sost) . '</span>'
+    : TestiSito::html($k, $sost);
+$L = fn(string $k) => $anteprimaTesti ? ' data-testo-lista="' . $k . '"' : '';   // un elenco (una voce per riga)
+$F = fn(string $n) => $anteprimaTesti ? ' data-foto="' . $n . '"' : '';          // una foto
 $dentro = !empty($user);
 $ctaCrea = fn() => $dentro ? 'Vai alle tue guide' : $T('cta.crea');
 $vai = fn(int $pv) => b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . $pv;
@@ -108,7 +113,7 @@ if ($dentro):
         </span>
       <?php endif; ?>
     </div>
-    <p class="micro micro--left hero2__garanzie"><?php foreach (TestiSito::lista('hero.garanzie') as $g): ?><span><?= Icon::svg('check', 15, 2.2) ?><?= $g ?></span><?php endforeach; ?></p>
+    <p class="micro micro--left hero2__garanzie"<?= $L('hero.garanzie') ?>><?php foreach (TestiSito::lista('hero.garanzie') as $g): ?><span><?= Icon::svg('check', 15, 2.2) ?><?= $g ?></span><?php endforeach; ?></p>
   </div>
 
   <?php /* Il telefono: una schermata della guida disegnata in HTML, sempre nel
@@ -124,9 +129,9 @@ if ($dentro):
             <?php if ($demo): ?><span class="demo-tag">Demo</span><?php endif; ?></span>
           <span class="device__title">Benvenuti<br>a <?= Support::e($nomeDemo) ?>.</span>
           <span class="device__shot"><?php $telPers = TestiSito::immagine('telefono'); if ($telPers['caricata']): ?>
-            <img src="<?= Support::e($telPers['url']) ?>" alt="" width="600" height="422" loading="eager" decoding="async">
+            <img src="<?= Support::e($telPers['url']) ?>" alt="" width="600" height="422" loading="eager" decoding="async"<?= $F('telefono') ?>>
             <?php else: ?><picture><source srcset="<?= Support::e($telefonoWebp) ?>" type="image/webp">
-            <img src="<?= Support::e($telefonoJpg) ?>" alt="" width="600" height="422" loading="eager" decoding="async"></picture><?php endif; ?>
+            <img src="<?= Support::e($telefonoJpg) ?>" alt="" width="600" height="422" loading="eager" decoding="async"<?= $F('telefono') ?>></picture><?php endif; ?>
             <span class="device__pill"><i></i>Check-in dalle <?= Support::e($checkinDemo) ?></span></span>
           <span class="device__tiles">
             <span class="t-terracotta"><?= Icon::svg('home', 16, 1.8) ?>Check-in &amp; Check-out</span>
@@ -188,11 +193,11 @@ $disegni = [
         $webp = $cie && is_file($cartellaFoto . "$base-600.webp") && is_file($cartellaFoto . "$base-1200.webp")
              && filemtime($cartellaFoto . "$base-1200.webp") >= filemtime($cartellaFoto . $file); ?>
     <figure class="scena">
-      <?php if ($pers['caricata']): ?><picture><img src="<?= Support::e($pers['url']) ?>" alt="<?= $alt ?>" loading="lazy" decoding="async" width="1200" height="750"></picture>
+      <?php if ($pers['caricata']): ?><picture><img src="<?= Support::e($pers['url']) ?>" alt="<?= $alt ?>" loading="lazy" decoding="async" width="1200" height="750"<?= $F(substr($file, 0, -4)) ?>></picture>
       <?php elseif ($cie): ?><picture>
         <?php if ($webp): ?><source type="image/webp" sizes="(max-width: 760px) 92px, 380px"
           srcset="<?= Support::e(a("/assets/foto/$base-600.webp")) ?> 600w, <?= Support::e(a("/assets/foto/$base-1200.webp")) ?> 1200w"><?php endif; ?>
-        <img src="<?= Support::e(a('/assets/foto/' . $file)) ?>" alt="<?= $alt ?>" loading="lazy" decoding="async" width="1200" height="750" style="object-position:<?= $centro ?>">
+        <img src="<?= Support::e(a('/assets/foto/' . $file)) ?>" alt="<?= $alt ?>" loading="lazy" decoding="async" width="1200" height="750" style="object-position:<?= $centro ?>"<?= $F(substr($file, 0, -4)) ?>>
       </picture>
       <?php else: ?><span class="scena__vuota <?= $tono ?>" aria-hidden="true"><svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice"><?= $disegni[$dis] ?></svg></span><?php endif; ?>
       <figcaption><a class="scena__link" href="<?= $dove ?>"><?= $tit ?> <?= Icon::svg('arrow', 15, 2) ?></a><span><?= $txt ?></span></figcaption>
@@ -298,7 +303,7 @@ $disegni = [
         <?php foreach ($passi as $i => [$n, , , $alt]): ?>
           <figure class="schermata" id="schermata-<?= $i + 1 ?>">
             <span class="schermata__barra" aria-hidden="true"><i></i><i></i><i></i><span>myhousewelcome.it</span></span>
-            <img src="<?= Support::e($schermate[$i]) ?>" alt="<?= $alt ?>"
+            <img src="<?= Support::e($schermate[$i]) ?>" alt="<?= $alt ?>"<?= $F('pannello-' . ($i + 1)) ?>
                  loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async" width="1200" height="750">
           </figure>
         <?php endforeach; ?>
@@ -504,7 +509,7 @@ $legaleSito = MHW\Config::get('legal'); ?>
   <?php $sitoPers = TestiSito::immagine('sito'); ?>
   <picture class="sito__foto" aria-hidden="true">
     <?php if (!$sitoPers['caricata']): ?><source type="image/webp" srcset="<?= Support::e(a('/assets/foto/sito-800.webp')) ?> 800w, <?= Support::e(a('/assets/foto/sito-1600.webp')) ?> 1600w" sizes="100vw"><?php endif; ?>
-    <img src="<?= Support::e($sitoPers['caricata'] ? $sitoPers['url'] : a('/assets/foto/sito.jpg')) ?>" alt="" loading="lazy" decoding="async" width="1600" height="1067">
+    <img src="<?= Support::e($sitoPers['caricata'] ? $sitoPers['url'] : a('/assets/foto/sito.jpg')) ?>" alt="" loading="lazy" decoding="async" width="1600" height="1067"<?= $F('sito') ?>>
   </picture>
   <div class="sito__dentro">
     <div class="come__testa">
@@ -531,3 +536,6 @@ $legaleSito = MHW\Config::get('legal'); ?>
 
 <script src="<?= MHW\av('/assets/prezzi.js') ?>" defer></script>
 <script src="<?= MHW\av('/assets/landing.js') ?>" defer></script>
+<?php if ($anteprimaTesti): /* dentro l'iframe di Amministrazione → Testi e foto: riceve i testi mentre si scrivono */ ?>
+<script src="<?= MHW\av('/assets/anteprima-testi.js') ?>" defer></script>
+<?php endif; ?>

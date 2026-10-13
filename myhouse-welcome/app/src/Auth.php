@@ -149,8 +149,14 @@ final class Auth
         $_SESSION = []; session_destroy(); session_start(); session_regenerate_id(true);
     }
 
+    /** Per l'anteprima di Amministrazione → Testi e foto: per il resto della richiesta nessuno è dentro (solo lettura). */
+    private static bool $comeVisitatore = false;
+
+    public static function comeVisitatore(): void { self::$comeVisitatore = true; }
+
     public static function user(): ?array
     {
+        if (self::$comeVisitatore) return null;
         if (session_status() !== PHP_SESSION_ACTIVE) return null;
         if (self::isImpersonating() && time() > (int) ($_SESSION['impersonation_until'] ?? 0)) {
             self::stopImpersonating('impersonate.expired');

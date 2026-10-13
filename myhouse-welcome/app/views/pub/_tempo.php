@@ -29,7 +29,8 @@
    con il prezzo del piano). Funziona anche senza JavaScript con i valori di partenza.
    ===================================================================== */
 use MHW\{Support, TestiSito};
-$T = fn(string $k, array $sost = []) => TestiSito::html($k, $sost);
+$T = $T ?? fn(string $k, array $sost = []) => TestiSito::html($k, $sost);
+$L = $L ?? fn(string $k) => '';
 $t2 = ['nec' => 16, 'evit' => 19, 'pren' => 6, 'euro' => 20];
 $t2Ore = fn(float $h): string => $h >= 10 ? (string) round($h) : str_replace('.', ',', (string) round($h, 1));
 $t2Tot = $t2['nec'] + $t2['evit'];
@@ -59,7 +60,7 @@ $t2Gg = round($t2Gu / 8 * 2) / 2;
       <label class="t2__cursore"><span>Il tuo tempo <b class="t2__min"><span data-o="nec"><?= $t2['nec'] ?></span> min</b></span>
         <input type="range" min="5" max="40" step="1" value="<?= $t2['nec'] ?>" data-t2="nec" aria-label="Il tuo tempo per le comunicazioni necessarie, in minuti per prenotazione"></label>
       <p class="t2__desc"><?= $T('tempo.nec.desc') ?></p>
-      <ul class="t2__lista"><?php foreach (TestiSito::lista('tempo.nec.lista') as $v): ?><li><?= $v ?></li><?php endforeach; ?></ul>
+      <ul class="t2__lista"<?= $L('tempo.nec.lista') ?>><?php foreach (TestiSito::lista('tempo.nec.lista') as $v): ?><li><?= $v ?></li><?php endforeach; ?></ul>
     </div>
     <div class="t2__col">
       <div class="t2__testa"><span class="t2__etichetta"><?= $T('tempo.evit.titolo') ?></span>
@@ -67,7 +68,7 @@ $t2Gg = round($t2Gu / 8 * 2) / 2;
       <label class="t2__cursore"><span>Il tuo tempo <b class="t2__min t2__min--acc"><span data-o="evit"><?= $t2['evit'] ?></span> min</b></span>
         <input type="range" min="5" max="60" step="1" value="<?= $t2['evit'] ?>" data-t2="evit" aria-label="Il tuo tempo per le domande evitabili, in minuti per prenotazione"></label>
       <p class="t2__desc"><?= $T('tempo.evit.desc') ?></p>
-      <ul class="t2__lista"><?php foreach (TestiSito::lista('tempo.evit.lista') as $v): ?><li><?= $v ?></li><?php endforeach; ?></ul>
+      <ul class="t2__lista"<?= $L('tempo.evit.lista') ?>><?php foreach (TestiSito::lista('tempo.evit.lista') as $v): ?><li><?= $v ?></li><?php endforeach; ?></ul>
     </div>
   </div>
 
