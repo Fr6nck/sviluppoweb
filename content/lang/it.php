@@ -523,7 +523,7 @@ return [
         'lead'    => 'Quattro passaggi: le date, la camera, i tuoi dati, la richiesta. Non si paga nulla '
                    . 'online e non serve un account.',
         // Con il pagamento online acceso, al posto delle due righe sopra.
-        'lead_pay' => 'Quattro passaggi: le date, la camera, nome ed e-mail, il pagamento su una pagina '
+        'lead_pay' => 'Quattro passaggi: le date, la camera, i tuoi dati, il pagamento su una pagina '
                     . 'sicura di SumUp. Non serve un account.',
         'seo_description_pay' => 'Verifica le date, scegli la camera e prenota pagando online con SumUp: '
                                . 'Arco del Vento, affittacamere in Via Santa Maria delle Rose, ad Assisi.',
@@ -640,6 +640,30 @@ return [
             'error'         => 'Il pagamento non si è potuto avviare. Riprova fra qualche minuto, oppure scrivici: :email.',
             'paid_amount'   => 'Pagato',
             'step'          => 'Pagamento',
+            'phone_help'    => 'Serve solo se c’è da avvisarti di qualcosa prima dell’arrivo.',
+            // I dati per la ricevuta o la fattura: restano sul sito, a SumUp non si passano.
+            'billing' => [
+                'legend'        => 'Dati di fatturazione',
+                'intro'         => 'Servono per la ricevuta o la fattura del soggiorno. Restano a noi: a SumUp non li passiamo.',
+                'address'       => 'Indirizzo',
+                'postcode'      => 'CAP',
+                'city'          => 'Città',
+                'province'      => 'Provincia',
+                'province_help' => 'Solo in Italia: la sigla, per esempio PG.',
+                'country'       => 'Paese',
+                'tax_code'      => 'Codice fiscale',
+                'tax_code_help' => 'Se risiedi in Italia.',
+                'company'       => 'Voglio la fattura intestata a un’azienda',
+                'company_help'  => 'Altrimenti è intestata a te, con i dati qui sopra.',
+                'company_name'  => 'Ragione sociale',
+                'vat'           => 'Partita IVA',
+                'vat_help'      => 'Per un’azienda non italiana, il numero IVA con il prefisso del paese.',
+                'sdi'           => 'Codice destinatario SDI o PEC',
+                'sdi_help'      => 'Per la fattura elettronica di un’azienda italiana. Se non lo sai, lascialo vuoto.',
+            ],
+            // Con PAYMENT_MODE=test: il conto di prova di SumUp, nessun addebito.
+            'test_title'    => 'Pagamento di prova',
+            'test_text'     => 'Il sito è in modalità di prova: SumUp non addebita niente e la prenotazione non è vera. Per provare usa la carta 4200 0000 0000 0091, con una scadenza futura e un CVV qualsiasi.',
         ],
 
         // L'e-mail di conferma all'ospite, nella sua lingua.
@@ -659,6 +683,9 @@ return [
             'address'   => 'Indirizzo',
             'contact'   => 'Per qualsiasi cosa rispondi a questa e-mail, oppure chiama il :phone.',
             'sign'      => 'Arco del Vento, Assisi',
+            'billing'   => 'Dati di fatturazione:',
+            'test_subject' => '[PROVA]',
+            'test_note' => 'PROVA: questa prenotazione è stata fatta con il sito in modalità di prova. Non è stato addebitato niente e la camera non è prenotata.',
         ],
 
         'summary' => [
@@ -760,8 +787,10 @@ return [
                 'title' => 'Che cosa raccogliamo',
                 'text'  => 'Dal modulo dei contatti: nome, e-mail, eventuale telefono e il testo del '
                          . 'messaggio. Dalla richiesta di prenotazione: nome e cognome, e-mail, eventuale '
-                         . 'telefono, paese di residenza, date, camera e le note che scrivi. Nient’altro: '
-                         . 'non ci sono campi nascosti che raccolgono altro.',
+                         . 'telefono, paese di residenza, date, camera e le note che scrivi. Se paghi '
+                         . 'online, anche l’indirizzo di fatturazione e, se li dai, il codice fiscale o i '
+                         . 'dati dell’azienda a cui intestare la fattura. Nient’altro: non ci sono campi '
+                         . 'nascosti che raccolgono altro.',
             ],
             'why' => [
                 'title' => 'Perché',
@@ -812,6 +841,11 @@ return [
     'errors' => [
         'pay_limit'  => 'Troppe pagine di pagamento aperte da questa connessione. Riprova fra un’ora, oppure scrivici: :email.',
         'pay_error'  => 'Il pagamento non si è potuto avviare. Riprova fra qualche minuto, oppure scrivici: :email.',
+        'cap'        => 'Il CAP non torna: in Italia sono cinque cifre.',
+        'provincia'  => 'Scrivi la sigla della provincia: due lettere, per esempio PG.',
+        'codice_fiscale' => 'Il codice fiscale non torna: controlla i 16 caratteri.',
+        'partita_iva' => 'La partita IVA non torna: controlla le cifre.',
+        'sdi_pec'    => 'Scrivi il codice destinatario (sette caratteri) oppure un indirizzo PEC.',
         'required'   => 'Questo campo serve.',
         'email'      => 'Manca la chiocciola o il dominio: controlla l’indirizzo.',
         'too_short'  => 'Scrivi qualche parola in più.',

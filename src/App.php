@@ -121,7 +121,9 @@ final class App
     /** Le richieste arrivate dal sito, per l'area riservata. */
     public function inbox(): \ArcoDelVento\Admin\Inbox
     {
-        return $this->services['inbox'] ??= new \ArcoDelVento\Admin\Inbox($this->store());
+        // Le prenotazioni di prova contano solo finché si è in prova: tornati
+        // ai pagamenti reali non occupano le date e non fanno numero.
+        return $this->services['inbox'] ??= new \ArcoDelVento\Admin\Inbox($this->store(), $this->pagamentoInProva());
     }
 
     /** Le modifiche dell'area riservata, sovrapposte ai file di content/. */
@@ -304,12 +306,42 @@ final class App
         );
     }
 
-    /** Il pagamento online è acceso: SumUp scelto, con chiave e codice esercente. */
+    /**
+     * Il pagamento online è acceso: SumUp scelto, con chiave e codice
+     * esercente della modalità in uso (quelli veri, o quelli di prova).
+     */
     public function pagamentoAttivo(): bool
     {
-        return $this->config('payment.provider') === 'sumup'
-            && (string) $this->config('payment.sumup.api_key') !== ''
-            && (string) $this->config('payment.sumup.merchant_code') !== '';
+        $c = $this->credenzialiSumUp();
+
+        return $this->config('payment.provider') === 'sumup' && $c['api_key'] !== '' && $c['merchant_code'] !== '';
+    }
+
+    /**
+     * Si paga per finta: modalità di prova (PAYMENT_MODE=test), oppure una
+     * chiave di prova messa al posto di quella vera. SumUp non addebita
+     * niente; il sito lo dice a chi prenota e segna le prenotazioni «prova».
+     */
+    public function pagamentoInProva(): bool
+    {
+        return $this->config('payment.mode') === 'test'
+            || \ArcoDelVento\Payment\SumUp::tipoChiave($this->credenzialiSumUp()['api_key']) === 'prova';
+    }
+
+    /**
+     * La chiave e il codice esercente della modalità in uso. In prova solo
+     * quelli del conto di prova: mai, per sbaglio, quelli del conto vero.
+     *
+     * @return array{api_key: string, merchant_code: string}
+     */
+    private function credenzialiSumUp(): array
+    {
+        $prova = $this->config('payment.mode') === 'test';
+
+        return [
+            'api_key'       => (string) $this->config($prova ? 'payment.sumup.test_api_key' : 'payment.sumup.api_key'),
+            'merchant_code' => (string) $this->config($prova ? 'payment.sumup.test_merchant_code' : 'payment.sumup.merchant_code'),
+        ];
     }
 
     /** Il pagamento delle prenotazioni, o null se è spento. */
@@ -319,10 +351,12 @@ final class App
             return null;
         }
 
+        $credenziali = $this->credenzialiSumUp();
+
         return $this->services['pagamenti'] ??= new \ArcoDelVento\Payment\Pagamenti(
             new \ArcoDelVento\Payment\SumUp(
-                (string) $this->config('payment.sumup.api_key'),
-                (string) $this->config('payment.sumup.merchant_code'),
+                $credenziali['api_key'],
+                $credenziali['merchant_code'],
                 (string) $this->config('payment.sumup.api_url'),
             ),
             $this->inbox(),

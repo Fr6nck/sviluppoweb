@@ -446,7 +446,7 @@ final class AdminController
         return Response::html($this->page('bacheca', [
             'titolo'           => 'Bacheca',
             'sottotitolo'      => 'Le richieste arrivate dal sito e quello che resta da fare.',
-            'cruscotto'        => new Cruscotto($richieste),
+            'cruscotto'        => new Cruscotto($richieste, null, $inbox->conProva()),
             'periodo'          => $periodo,
             'ultime'           => array_slice($richieste, 0, 6),
             'mancanti'         => $this->mancanti(),
@@ -454,6 +454,7 @@ final class AdminController
             'camere'           => $this->app->rooms()->all(),
             'demo'             => (string) $this->app->config('booking.provider') === 'demo',
             'pagamentoAttivo'  => $this->app->pagamentoAttivo(),
+            'pagamentoProva'   => $this->app->pagamentoInProva(),
             'sitoChiuso'       => $this->app->accesso()->attivo(),
         ]));
     }
@@ -554,7 +555,7 @@ final class AdminController
             if ($this->in($request, 'azione') === 'verifica') {
                 $pagamenti = $this->app->pagamenti();
                 if ($pagamenti === null) {
-                    $this->flash('errore', 'Il pagamento online è spento: nel file .env mancano PAYMENT_PROVIDER, SUMUP_API_KEY o SUMUP_MERCHANT_CODE.');
+                    $this->flash('errore', 'Il pagamento online è spento: nel file .env mancano PAYMENT_PROVIDER, SUMUP_API_KEY o SUMUP_MERCHANT_CODE (in prova SUMUP_TEST_API_KEY o SUMUP_TEST_MERCHANT_CODE).');
                 } else {
                     $stato = $pagamenti->verifica($id);
                     $this->flash($stato === 'pagato' ? 'ok' : 'errore', 'SumUp dice: ' . match ($stato) {
@@ -593,6 +594,7 @@ final class AdminController
 
         return Response::html($this->page('richiesta', [
             'titolo' => 'Richiesta ' . $id, 'voce' => $voce, 'pagamentoAttivo' => $this->app->pagamentoAttivo(),
+            'pagamentoProva' => $this->app->pagamentoInProva(),
         ]));
     }
 

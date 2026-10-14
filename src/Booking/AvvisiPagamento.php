@@ -33,8 +33,12 @@ final class AvvisiPagamento
         $d = (array) $voce['dati'];
         $p = (array) ($d['pagamento'] ?? []);
         $daControllare = ($p['stato'] ?? '') === 'da controllare';
+        $prova = !empty($p['prova']);
 
-        $righe = [
+        $righe = array_merge($prova ? [
+            'PROVA: pagamento sul conto di prova di SumUp. Nessun addebito vero, la camera non è prenotata.',
+            '',
+        ] : [], [
             $daControllare
                 ? 'ATTENZIONE: SumUp dice che la prenotazione è pagata, ma l\'importo non coincide. Controlla nel pannello di SumUp.'
                 : 'Prenotazione PAGATA dal sito.',
@@ -51,9 +55,18 @@ final class AvvisiPagamento
             '',
             'Ospite:      ' . ($d['nome'] ?? ''),
             'E-mail:      ' . ($d['email'] ?? ''),
+            'Telefono:    ' . (($d['telefono'] ?? '') !== '' ? $d['telefono'] : '—'),
             'Lingua:      ' . ($d['lingua'] ?? ''),
             '',
-        ];
+        ]);
+        $fatturazione = Fatturazione::righe((array) ($d['fatturazione'] ?? []));
+        if (count($fatturazione) > 1) {
+            $righe[] = 'Dati di fatturazione';
+            foreach ($fatturazione as $etichetta => $valore) {
+                $righe[] = str_pad($etichetta . ':', 18) . $valore;
+            }
+            $righe[] = '';
+        }
         if (in_array((string) $this->app->config('booking.provider'), ['demo', 'sito', ''], true)) {
             $righe[] = 'Il calendario del sito non conosce le prenotazioni fatte su Booking o al telefono:';
             $righe[] = 'controlla che le date siano libere. Se non lo sono, rimborsa dal pannello di SumUp';
@@ -64,7 +77,8 @@ final class AvvisiPagamento
 
         $this->app->mailer()->send(new MailMessage(
             to:          $this->app->destinatari(),
-            subject:     sprintf('[Arco del Vento] %s %s — %s, %s',
+            subject:     sprintf('[Arco del Vento] %s%s %s — %s, %s',
+                             $prova ? 'PROVA · ' : '',
                              $daControllare ? 'DA CONTROLLARE' : 'PAGATA',
                              $voce['id'], (string) ($d['camera'] ?? ''), $this->data((string) ($d['arrivo'] ?? ''))),
             body:        implode("\n", $righe),
@@ -99,7 +113,8 @@ final class AvvisiPagamento
         }
         $etichetta = static fn (string $s): string => str_pad($s . ':', 14);
 
-        $righe = [
+        $prova = !empty($p['prova']);
+        $righe = array_merge($prova ? [$t('mail.test_note'), ''] : [], [
             $t('mail.hello', ['name' => (string) ($d['nome'] ?? '')]),
             '',
             $t('mail.intro'),
@@ -113,7 +128,20 @@ final class AvvisiPagamento
             $etichetta($t('mail.paid')) . $this->euro((float) ($p['pagato'] ?? $p['importo'] ?? 0)) . ' (SumUp'
                 . (!empty($p['codice']) ? ', ' . $p['codice'] : '') . ')',
             '',
-        ];
+        ]);
+        // I dati di fatturazione come li ha scritti, così li può controllare.
+        $f = (array) ($d['fatturazione'] ?? []);
+        if (Fatturazione::indirizzo($f) !== '') {
+            $righe[] = $t('mail.billing');
+            if (!empty($f['azienda'])) {
+                $righe[] = '  ' . $f['ragione_sociale'] . ', ' . $t('pay.billing.vat') . ' ' . $f['partita_iva'];
+            }
+            $righe[] = '  ' . Fatturazione::indirizzo($f);
+            if (!empty($f['codice_fiscale'])) {
+                $righe[] = '  ' . $t('pay.billing.tax_code') . ' ' . $f['codice_fiscale'];
+            }
+            $righe[] = '';
+        }
         $tassa = (array) ($stay['city_tax'] ?? []);
         if (!empty($tassa['amount'])) {
             $righe[] = $t('pay.city_tax', [
@@ -139,7 +167,7 @@ final class AvvisiPagamento
         $destinatari = \ArcoDelVento\Mail\MailMessage::indirizzi($this->app->destinatari());
         $this->app->mailer()->send(new MailMessage(
             to:          $email,
-            subject:     $t('mail.subject', ['ref' => (string) $voce['id']]),
+            subject:     ($prova ? $t('mail.test_subject') . ' ' : '') . $t('mail.subject', ['ref' => (string) $voce['id']]),
             body:        implode("\n", $righe),
             fromAddress: (string) $this->app->config('mail.from.address'),
             fromName:    (string) $this->app->config('mail.from.name'),

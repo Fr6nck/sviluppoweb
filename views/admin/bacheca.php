@@ -16,6 +16,7 @@
  * @var list<array<string,mixed>> $camere
  * @var bool  $demo
  * @var bool  $pagamentoAttivo
+ * @var bool  $pagamentoProva  in prova: conto sandbox di SumUp, nessun addebito vero
  */
 
 use ArcoDelVento\Admin\Cruscotto;
@@ -81,7 +82,18 @@ $iniziali = static function (string $nome): string {
   </section>
 <?php endif; ?>
 
-<?php if (!empty($pagamentoAttivo)): ?>
+<?php if (!empty($pagamentoAttivo) && !empty($pagamentoProva)): ?>
+  <section class="adm-striscia adm-striscia--pagamenti" aria-labelledby="b-pagamenti">
+    <span class="adm-striscia__icona" aria-hidden="true"><?= icona('attenzione', 20) ?></span>
+    <div>
+      <h2 id="b-pagamenti" class="adm-striscia__titolo">Il pagamento online è in prova (conto di prova di SumUp)</h2>
+      <p>Nessun addebito vero: chi prenota lo vede scritto, e le prenotazioni fatte così sono segnate «Prova».
+         Alla pagina di SumUp si paga con la carta di prova 4200 0000 0000 0091, una scadenza futura e un CVV qualsiasi.
+         Prima di aprire il sito, la modalità va rimessa su «Reale» in Configurazione: da lì le prenotazioni di prova
+         non occupano più le date e non contano nei numeri.</p>
+    </div>
+  </section>
+<?php elseif (!empty($pagamentoAttivo)): ?>
   <section class="adm-striscia adm-striscia--pagamenti" aria-labelledby="b-pagamenti">
     <span class="adm-striscia__icona" aria-hidden="true"><?= icona('chiave', 20) ?></span>
     <div>
@@ -259,7 +271,7 @@ $prossimi = static function (string $dove, string $classe) use ($nottiCamera, $t
                   <td>
                     <?php if ($v['tipo'] === 'prenotazione'): ?>
                       <span class="adm-tipo adm-tipo--prenotazione"><?= icona('calendario', 13) ?>Prenotazione</span>
-                      <?php if ($pg = \ArcoDelVento\Payment\Pagamenti::etichetta($d)): ?><span class="adm-pagamento adm-pagamento--<?= e($pg['tono']) ?>"><?= e($pg['testo']) ?></span><?php endif; ?>
+                      <?php if ($pg = \ArcoDelVento\Payment\Pagamenti::etichetta($d)): ?><span class="adm-pagamento adm-pagamento--<?= e($pg['tono']) ?>"><?= e($pg['testo']) ?></span><?php if ($pg['prova']): ?><span class="adm-pagamento adm-pagamento--prova">Prova</span><?php endif; ?><?php endif; ?>
                       <span class="adm-tenue"><?= e((string) ($d['camera'] ?? '')) ?> · <?= e(Cruscotto::breve((string) ($d['arrivo'] ?? ''))) ?>–<?= e(Cruscotto::breve((string) ($d['partenza'] ?? ''))) ?></span>
                     <?php else: ?>
                       <span class="adm-tipo"><?= icona('messaggio', 13) ?>Messaggio</span>

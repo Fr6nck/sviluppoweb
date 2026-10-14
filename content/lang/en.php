@@ -499,7 +499,7 @@ return [
         'lead'    => 'Four steps: the dates, the room, your details, the request. Nothing is paid online '
                    . 'and no account is needed.',
         // With online payment on, instead of the two lines above.
-        'lead_pay' => 'Four steps: the dates, the room, name and email, payment on a secure SumUp page. '
+        'lead_pay' => 'Four steps: the dates, the room, your details, payment on a secure SumUp page. '
                     . 'No account needed.',
         'seo_description_pay' => 'Check your dates, choose the room and book paying online with SumUp: Arco del '
                                . 'Vento, guest rooms on Via Santa Maria delle Rose in Assisi.',
@@ -615,6 +615,30 @@ return [
             'error'         => 'The payment could not be started. Try again in a few minutes, or write to us: :email.',
             'paid_amount'   => 'Paid',
             'step'          => 'Payment',
+            'phone_help'    => 'Only in case we need to let you know something before you arrive.',
+            // Details for the receipt or invoice: they stay on the site, SumUp does not get them.
+            'billing' => [
+                'legend'        => 'Billing details',
+                'intro'         => 'Needed for the receipt or invoice for your stay. They stay with us: we do not pass them to SumUp.',
+                'address'       => 'Address',
+                'postcode'      => 'Postcode',
+                'city'          => 'Town or city',
+                'province'      => 'Province',
+                'province_help' => 'Italy only: the two-letter code, for example PG.',
+                'country'       => 'Country',
+                'tax_code'      => 'Italian tax code (codice fiscale)',
+                'tax_code_help' => 'If you live in Italy.',
+                'company'       => 'I want the invoice made out to a company',
+                'company_help'  => 'Otherwise it is made out to you, with the details above.',
+                'company_name'  => 'Company name',
+                'vat'           => 'VAT number',
+                'vat_help'      => 'For a company outside Italy, the VAT number with its country prefix.',
+                'sdi'           => 'SDI recipient code or PEC',
+                'sdi_help'      => 'For the e-invoice of an Italian company. If you do not know it, leave it empty.',
+            ],
+            // With PAYMENT_MODE=test: SumUp's test account, nothing is charged.
+            'test_title'    => 'Test payment',
+            'test_text'     => 'The site is in test mode: SumUp charges nothing and the booking is not real. To try it, use the card 4200 0000 0000 0091 with any future expiry date and any CVV.',
         ],
 
         // The confirmation email to the guest, in their language.
@@ -634,6 +658,9 @@ return [
             'address'   => 'Address',
             'contact'   => 'For anything at all, reply to this email or call :phone.',
             'sign'      => 'Arco del Vento, Assisi',
+            'billing'   => 'Billing details:',
+            'test_subject' => '[TEST]',
+            'test_note' => 'TEST: this booking was made while the site was in test mode. Nothing has been charged and the room is not booked.',
         ],
 
         'summary' => [
@@ -733,8 +760,10 @@ return [
                 'title' => 'What we collect',
                 'text'  => 'From the contact form: name, email, phone if you give one, and the text of '
                          . 'your message. From a booking request: first name and surname, email, phone if '
-                         . 'given, country of residence, dates, room and the notes you write. Nothing '
-                         . 'else: there are no hidden fields collecting anything more.',
+                         . 'given, country of residence, dates, room and the notes you write. If you pay '
+                         . 'online, also your billing address and, if you give them, your Italian tax code '
+                         . 'or the details of the company the invoice is made out to. Nothing else: there '
+                         . 'are no hidden fields collecting anything more.',
             ],
             'why' => [
                 'title' => 'Why',
@@ -783,6 +812,11 @@ return [
     'errors' => [
         'pay_limit'  => 'Too many payment pages opened from this connection. Try again in an hour, or write to us: :email.',
         'pay_error'  => 'The payment could not be started. Try again in a few minutes, or write to us: :email.',
+        'cap'        => 'The postcode does not look right: in Italy it is five digits.',
+        'provincia'  => 'Write the province code: two letters, for example PG.',
+        'codice_fiscale' => 'The tax code does not look right: check the 16 characters.',
+        'partita_iva' => 'The VAT number does not look right: check the digits.',
+        'sdi_pec'    => 'Write the recipient code (seven characters) or a PEC address.',
         'required'   => 'This field is needed.',
         'email'      => 'The @ or the domain is missing: check the address.',
         'too_short'  => 'Write a few words more.',

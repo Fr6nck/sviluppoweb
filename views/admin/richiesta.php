@@ -33,7 +33,7 @@ unset($righe['Totale indicato sul sito']);
 if ($pagamento !== null) {
     $righe = array_slice($righe, 0, 5, true) + [
         'Da pagare' => '€ ' . number_format((float) ($pagamento['importo'] ?? 0), 2, ',', '.'),
-        'Pagamento' => (string) ($etichettaPagamento['testo'] ?? ''),
+        'Pagamento' => (string) ($etichettaPagamento['testo'] ?? '') . (!empty($pagamento['prova']) ? ' · di prova, nessun addebito vero' : ''),
         'Pagato'    => isset($pagamento['pagato']) ? '€ ' . number_format((float) $pagamento['pagato'], 2, ',', '.') . ' il ' . dataOra((string) ($pagamento['pagato_il'] ?? '')) : '',
         'Codice della transazione SumUp' => (string) ($pagamento['codice'] ?? ''),
         'Pagine di pagamento aperte' => (string) count((array) ($pagamento['tentativi'] ?? [])),
@@ -43,6 +43,8 @@ if ($pagamento !== null) {
 }
 $righe = array_filter($righe, static fn ($v, $k): bool => !in_array($k, ['Telefono', 'Paese', 'Note'], true) || ($v !== '' && $v !== null) || $pagamento === null, ARRAY_FILTER_USE_BOTH);
 $telefono = preg_replace('/[^\d+]/', '', (string) ($d['telefono'] ?? ''));
+$fatturazione = is_array($d['fatturazione'] ?? null) ? \ArcoDelVento\Booking\Fatturazione::righe((array) $d['fatturazione']) : [];
+$prova = !empty($pagamento['prova']);
 ?>
 <p class="adm-intro">
   <?= $voce['tipo'] === 'prenotazione' ? 'Richiesta di prenotazione' : 'Messaggio dal modulo contatti' ?>
@@ -59,6 +61,18 @@ $telefono = preg_replace('/[^\d+]/', '', (string) ($d['telefono'] ?? ''));
   <?php endforeach; ?>
 </dl>
 
+<?php if ($fatturazione !== []): ?>
+  <h2 id="r-fatturazione">Dati di fatturazione</h2>
+  <dl class="adm-dati" aria-labelledby="r-fatturazione">
+    <?php foreach ($fatturazione as $etichetta => $valore): ?>
+      <div>
+        <dt><?= e($etichetta) ?></dt>
+        <dd><?= e($valore) ?></dd>
+      </div>
+    <?php endforeach; ?>
+  </dl>
+<?php endif; ?>
+
 <p class="adm-azioni">
   <?php if (!empty($d['email'])): ?>
     <a class="adm-bottone" href="mailto:<?= e((string) $d['email']) ?>?subject=<?= rawurlencode('Arco del Vento — ' . $voce['id']) ?>">Rispondi per e-mail</a>
@@ -70,10 +84,17 @@ $telefono = preg_replace('/[^\d+]/', '', (string) ($d['telefono'] ?? ''));
 </p>
 
 <?php if ($pagamento !== null): ?>
-  <div class="adm-avviso adm-avviso--<?= ($etichettaPagamento['tono'] ?? '') === 'ok' ? 'ok' : 'attenzione' ?>">
-    <?= icona(($etichettaPagamento['tono'] ?? '') === 'ok' ? 'spunta' : 'attenzione', 18, 'adm-avviso__icona') ?>
+  <?php $bene = !$prova && ($etichettaPagamento['tono'] ?? '') === 'ok'; ?>
+  <div class="adm-avviso adm-avviso--<?= $bene ? 'ok' : 'attenzione' ?>">
+    <?= icona($bene ? 'spunta' : 'attenzione', 18, 'adm-avviso__icona') ?>
     <div>
-      <?php if (($pagamento['stato'] ?? '') === 'pagato'): ?>
+      <?php if ($prova): ?>
+        <p><strong>Prenotazione di prova.</strong> È passata dal conto di prova di SumUp: nessun addebito vero, e la
+           camera non è prenotata.
+           <?= !empty($pagamentoProva)
+               ? 'Finché il sito resta in prova occupa le date come una prenotazione vera.'
+               : 'Ora che i pagamenti sono reali non occupa le date e non conta nei numeri: puoi eliminarla qui sotto.' ?></p>
+      <?php elseif (($pagamento['stato'] ?? '') === 'pagato'): ?>
         <p><strong>Pagata su SumUp.</strong> Il calendario del sito non conosce le prenotazioni di Booking: controlla che
            le date siano libere. Se non lo sono, il rimborso si fa dal pannello di SumUp; poi scrivi all'ospite.</p>
       <?php elseif (($pagamento['stato'] ?? '') === 'da controllare'): ?>
@@ -82,7 +103,8 @@ $telefono = preg_replace('/[^\d+]/', '', (string) ($d['telefono'] ?? ''));
         <p><strong>Non ancora pagata.</strong> L'ospite ha aperto la pagina di SumUp ma il pagamento non risulta. Non è una prenotazione:
            le date restano libere. Se credi che abbia pagato, controlla qui sotto.</p>
       <?php endif; ?>
-      <?php if (!empty($pagamentoAttivo) && !in_array($pagamento['stato'] ?? '', ['pagato'], true)): ?>
+      <?php /* Si chiede al conto da cui è partita: una prenotazione di prova al conto di prova, una vera a quello vero. */ ?>
+      <?php if (!empty($pagamentoAttivo) && $prova === !empty($pagamentoProva) && !in_array($pagamento['stato'] ?? '', ['pagato'], true)): ?>
         <form method="post" action="<?= e(adminUrl('richieste/' . rawurlencode((string) $voce['id']))) ?>" class="adm-spazio">
           <?= Csrf::field() ?>
           <input type="hidden" name="azione" value="verifica">

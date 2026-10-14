@@ -112,11 +112,18 @@ return [
     // Il pagamento online. Spento finché PAYMENT_PROVIDER è vuoto o mancano
     // la chiave e il codice esercente: allora la prenotazione resta una
     // richiesta, come prima. Le chiavi stanno solo nel .env, mai nel codice.
+    //
+    // PAYMENT_MODE=test: il sito usa il conto di prova (sandbox) di SumUp,
+    // con le sue chiavi, e dice a chi prenota che non si paga davvero.
+    // Vuoto, o qualunque altro valore: pagamenti reali.
     'payment' => [
         'provider' => strtolower(trim((string) Env::get('PAYMENT_PROVIDER', ''))),
+        'mode'     => in_array(strtolower(trim((string) Env::get('PAYMENT_MODE', ''))), ['test', 'prova'], true) ? 'test' : 'live',
         'sumup'    => [
             'api_key'       => trim((string) Env::get('SUMUP_API_KEY', '')),
             'merchant_code' => trim((string) Env::get('SUMUP_MERCHANT_CODE', '')),
+            'test_api_key'       => trim((string) Env::get('SUMUP_TEST_API_KEY', '')),
+            'test_merchant_code' => trim((string) Env::get('SUMUP_TEST_MERCHANT_CODE', '')),
             // Si cambia solo per le prove, con un finto SumUp in locale.
             'api_url'       => rtrim((string) (Env::get('SUMUP_API_URL', '') ?: 'https://api.sumup.com'), '/'),
         ],

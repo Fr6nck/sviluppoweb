@@ -24,15 +24,16 @@ final class Cruscotto
 
     /**
      * Le pagine di pagamento aperte e abbandonate non sono prenotazioni: non
-     * si contano da nessuna parte.
+     * si contano da nessuna parte. Quelle pagate in prova, solo mentre si è
+     * in prova.
      *
      * @param list<array<string,mixed>> $richieste dalla più recente
      */
-    public function __construct(array $richieste, ?\DateTimeImmutable $oggi = null)
+    public function __construct(array $richieste, ?\DateTimeImmutable $oggi = null, bool $conProva = true)
     {
         $this->richieste = array_values(array_filter(
             $richieste,
-            static fn (array $r): bool => \ArcoDelVento\Payment\Pagamenti::conta((array) ($r['dati'] ?? []))
+            static fn (array $r): bool => \ArcoDelVento\Payment\Pagamenti::conta((array) ($r['dati'] ?? []), $conProva)
         ));
         $this->oggi = ($oggi ?? new \DateTimeImmutable('today'))->setTime(0, 0);
     }

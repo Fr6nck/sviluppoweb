@@ -9,6 +9,7 @@
  *
  * @var string $passo   dates | rooms | details | done — con il pagamento: pay | result
  * @var bool   $pagamento  il pagamento online è acceso
+ * @var bool   $pagamentoProva  in prova: conto sandbox di SumUp, nessun addebito vero
  * @var bool   $calendarioDemo
  * @var \ArcoDelVento\Booking\SearchCriteria|null      $criteri
  * @var \ArcoDelVento\Booking\AvailabilityResult|null  $disponibilita
@@ -66,6 +67,14 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
         'tipo'   => 'avviso',
         'titolo' => t('book.demo_title'),
         'testo'  => t('book.demo_text'),
+    ]) ?>
+  <?php endif; ?>
+
+  <?php if (!empty($pagamentoProva) && in_array($passo, ['details', 'pay', 'result'], true)): ?>
+    <?= component('alert', [
+        'tipo'   => 'avviso',
+        'titolo' => t('book.pay.test_title'),
+        'testo'  => t('book.pay.test_text'),
     ]) ?>
   <?php endif; ?>
 
@@ -204,9 +213,10 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
   <?php elseif ($passo === 'details' && $offerta !== null && $pagamento): ?>
 
     <?php
-    /* Con il pagamento online: nome, e-mail, la spunta sulle condizioni, e
-       il pulsante dice quanto si paga. Le condizioni stanno accanto, prima
-       del pulsante: chi paga deve sapere che cosa succede se annulla. */
+    /* Con il pagamento online: nome, e-mail, i dati di fatturazione, la
+       spunta sulle condizioni, e il pulsante dice quanto si paga. Le
+       condizioni stanno accanto, prima del pulsante: chi paga deve sapere
+       che cosa succede se annulla. */
     $cancellazione = site('stay.cancellation');
     $cancellazione = is_array($cancellazione) ? trim((string) ($cancellazione[$lingua] ?? '')) : trim((string) $cancellazione);
     ?>
@@ -227,13 +237,94 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
               'valore' => $valore('nome'), 'errore' => $errore('nome'),
               'autocomplete' => 'name', 'obbligatorio' => true,
           ]) ?>
+          <div class="adv-modulo__coppia">
+            <?= component('field', [
+                'nome' => 'email', 'tipo' => 'email', 'etichetta' => t('book.pay.email'),
+                'valore' => $valore('email'), 'errore' => $errore('email'),
+                'aiuto' => t('book.pay.email_help'),
+                'autocomplete' => 'email', 'obbligatorio' => true,
+            ]) ?>
+            <?= component('field', [
+                'nome' => 'telefono', 'tipo' => 'tel', 'etichetta' => t('book.details.phone'),
+                'valore' => $valore('telefono'), 'errore' => $errore('telefono'),
+                'aiuto' => t('book.pay.phone_help'),
+                'autocomplete' => 'tel', 'facoltativo' => true,
+            ]) ?>
+          </div>
+        </fieldset>
+
+        <?php /* I dati per la ricevuta o la fattura. Quelli dell'azienda si
+                 vedono solo con la spunta: lo fa il foglio di stile, con
+                 :has(); dove :has() non c'è restano visibili, e senza la
+                 spunta il server li ignora comunque. */ ?>
+        <fieldset class="adv-fattura">
+          <legend><?= te('book.pay.billing.legend') ?></legend>
+          <p class="adv-nota"><?= te('book.pay.billing.intro') ?></p>
+
           <?= component('field', [
-              'nome' => 'email', 'tipo' => 'email', 'etichetta' => t('book.pay.email'),
-              'valore' => $valore('email'), 'errore' => $errore('email'),
-              'aiuto' => t('book.pay.email_help'),
-              'autocomplete' => 'email', 'obbligatorio' => true,
+              'nome' => 'indirizzo', 'etichetta' => t('book.pay.billing.address'),
+              'valore' => $valore('indirizzo'), 'errore' => $errore('indirizzo'),
+              'autocomplete' => 'street-address', 'obbligatorio' => true,
+          ]) ?>
+          <div class="adv-modulo__coppia">
+            <?= component('field', [
+                'nome' => 'cap', 'etichetta' => t('book.pay.billing.postcode'),
+                'valore' => $valore('cap'), 'errore' => $errore('cap'),
+                'autocomplete' => 'postal-code', 'obbligatorio' => true,
+            ]) ?>
+            <?= component('field', [
+                'nome' => 'citta', 'etichetta' => t('book.pay.billing.city'),
+                'valore' => $valore('citta'), 'errore' => $errore('citta'),
+                'autocomplete' => 'address-level2', 'obbligatorio' => true,
+            ]) ?>
+          </div>
+          <div class="adv-modulo__coppia">
+            <?= component('field', [
+                'nome' => 'provincia', 'etichetta' => t('book.pay.billing.province'),
+                'valore' => $valore('provincia'), 'errore' => $errore('provincia'),
+                'aiuto' => t('book.pay.billing.province_help'),
+                'autocomplete' => 'address-level1', 'facoltativo' => true,
+            ]) ?>
+            <?= component('field', [
+                'nome' => 'nazione', 'etichetta' => t('book.pay.billing.country'),
+                'valore' => $valore('nazione'), 'errore' => $errore('nazione'),
+                'autocomplete' => 'country-name', 'obbligatorio' => true,
+            ]) ?>
+          </div>
+          <?= component('field', [
+              'nome' => 'codice_fiscale', 'etichetta' => t('book.pay.billing.tax_code'),
+              'valore' => $valore('codice_fiscale'), 'errore' => $errore('codice_fiscale'),
+              'aiuto' => t('book.pay.billing.tax_code_help'), 'facoltativo' => true,
           ]) ?>
 
+          <div class="adv-modulo__spunta">
+            <input type="checkbox" id="azienda" name="azienda" value="1"
+                   aria-describedby="aiuto-azienda"
+                   <?= $valore('azienda') !== '' ? 'checked' : '' ?>>
+            <label for="azienda"><?= te('book.pay.billing.company') ?></label>
+          </div>
+          <p class="adv-campo__aiuto adv-fattura__nota" id="aiuto-azienda"><?= te('book.pay.billing.company_help') ?></p>
+
+          <div class="adv-fattura__azienda">
+            <?= component('field', [
+                'nome' => 'ragione_sociale', 'etichetta' => t('book.pay.billing.company_name'),
+                'valore' => $valore('ragione_sociale'), 'errore' => $errore('ragione_sociale'),
+                'autocomplete' => 'organization', 'obbligatorio' => true,
+            ]) ?>
+            <?= component('field', [
+                'nome' => 'partita_iva', 'etichetta' => t('book.pay.billing.vat'),
+                'valore' => $valore('partita_iva'), 'errore' => $errore('partita_iva'),
+                'aiuto' => t('book.pay.billing.vat_help'), 'obbligatorio' => true,
+            ]) ?>
+            <?= component('field', [
+                'nome' => 'sdi_pec', 'etichetta' => t('book.pay.billing.sdi'),
+                'valore' => $valore('sdi_pec'), 'errore' => $errore('sdi_pec'),
+                'aiuto' => t('book.pay.billing.sdi_help'), 'facoltativo' => true,
+            ]) ?>
+          </div>
+        </fieldset>
+
+        <div class="adv-modulo__accetta">
           <div class="adv-modulo__spunta">
             <input type="checkbox" id="condizioni" name="condizioni" value="1"
                    <?= $valore('condizioni') !== '' ? 'checked' : '' ?>
@@ -246,7 +337,7 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
           <?php if ($messaggio = $errore('condizioni')): ?>
             <p class="adv-campo__errore" id="err-condizioni"><span aria-hidden="true">&#9888;</span><?= e($messaggio) ?></p>
           <?php endif; ?>
-        </fieldset>
+        </div>
 
         <div>
           <button class="adv-btn adv-btn--primario adv-btn--grande" type="submit"><?= te('book.pay.submit', ['amount' => euro($offerta->total)]) ?><?= icona('freccia-su-destra', 14) ?></button>

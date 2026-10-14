@@ -599,6 +599,7 @@ $produzione = [
         'Il calendario vero del sito. Con il pagamento acceso quello dimostrativo (demo) incasserebbe su date che nessuno ha controllato.',
     ],
     'PAYMENT_PROVIDER' => ['sumup', 'Si paga tutto online con SumUp, al momento della prenotazione: nessuna caparra.'],
+    'PAYMENT_MODE'     => ['', 'Vuoto: pagamenti reali. Sul dominio vero resta vuoto; «test» solo per una prova con il conto di prova di SumUp.'],
     'SUMUP_API_KEY'    => [
         '',
         'DA SCRIVERE: la chiave API segreta del conto SumUp (me.sumup.com → Impostazioni → Per sviluppatori → Toolkit → Chiavi API). Finché questa riga o la '
@@ -684,11 +685,19 @@ if ($urlProva !== '') {
         'MAIL_TO_ADDRESS'   => [$posta, ''],
         'BOOKING_PROVIDER'  => ['sito', 'Il calendario vero del sito, lo stesso della produzione.'],
         'PAYMENT_PROVIDER'  => ['sumup', 'Si paga tutto online con SumUp, al momento della prenotazione: nessuna caparra.'],
+        'PAYMENT_MODE'      => [
+            'test',
+            'Modalità di prova: si paga sul conto di prova di SumUp, con le due chiavi SUMUP_TEST_ qui sotto, e '
+            . 'nessuno paga davvero. Finché sono vuote il pagamento resta spento e la prenotazione è una richiesta.',
+        ],
         'SUMUP_API_KEY'     => [
             '',
-            'In prova lasciale vuote: il pagamento resta spento e la prenotazione è una richiesta. Per provare il '
-            . 'pagamento vero scrivi chiave e codice esercente, metti MAIL_TRANSPORT=smtp (le conferme partono per '
-            . 'e-mail), paga con una tua carta e rimborsa dal pannello di SumUp.',
+            'Le chiavi del conto vero: in prova restano vuote. Si scrivono sul dominio vero, con PAYMENT_MODE vuoto.',
+        ],
+        'SUMUP_TEST_API_KEY' => [
+            '',
+            'La chiave del conto di prova (me.sumup.com → Impostazioni → Per sviluppatori → Sandboxes). Si scrive '
+            . 'anche dall\'area riservata, in Configurazione. Per vedere le e-mail di conferma metti MAIL_TRANSPORT=smtp.',
         ],
     ];
     $scriviEnv($rinominare . '/env-prova.txt', $prova, [

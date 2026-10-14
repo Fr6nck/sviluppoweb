@@ -1330,6 +1330,13 @@ a.adv-tappe__voce:hover .adv-tappe__freccia { transform: translate(3px, -3px); }
 .adv-campo__aiuto { font-size: 14.5px; line-height: 1.6; color: var(--muto); }
 .adv-campo__errore { display: flex; gap: 6px; font-size: 14.5px; line-height: 1.5; color: var(--errore); }
 .adv-modulo__spunta { display: flex; align-items: flex-start; gap: 12px; font-size: 15.5px; line-height: 1.6; }
+.adv-modulo__accetta { display: flex; flex-direction: column; gap: 10px; }
+
+/* I dati di fatturazione: quelli dell'azienda solo con la spunta. Dove
+   :has() non c'è restano visibili, e il server li ignora senza spunta. */
+.adv-fattura__nota { margin-top: -10px; padding-left: 36px; }
+.adv-fattura__azienda { display: flex; flex-direction: column; gap: 18px; padding-left: 18px; border-left: 2px solid var(--filo); }
+.adv-fattura:has(#azienda:not(:checked)) .adv-fattura__azienda { display: none; }
 .adv-modulo__spunta input { flex: none; width: 24px; height: 24px; margin: 0; accent-color: var(--mattone); }
 .adv-esca { position: absolute !important; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 

@@ -459,9 +459,15 @@ l'originale in `docs/foto-originali/`, lancia `php tools/build-photos.php`
 prenotazione. Non c'è caparra.** La tassa di soggiorno resta esclusa e si paga
 all'arrivo.
 
-Acceso, cambia l'ultimo passo della prenotazione: l'ospite scrive **solo nome
-ed e-mail**, spunta le condizioni e paga **l'intero soggiorno** su una pagina
-sicura di SumUp. I dati della carta non passano mai dal sito. Tornato sul sito,
+Acceso, cambia l'ultimo passo della prenotazione: l'ospite scrive nome,
+e-mail, telefono se vuole, e i **dati di fatturazione** (indirizzo, CAP, città,
+paese; il codice fiscale se risiede in Italia; ragione sociale, partita IVA e
+codice SDI o PEC se vuole la fattura intestata a un'azienda), spunta le
+condizioni e paga **l'intero soggiorno** su una pagina sicura di SumUp. I dati
+di fatturazione restano sul sito: si leggono nell'area riservata e nell'e-mail
+della prenotazione, e a SumUp non si passano. Il codice fiscale e la partita
+IVA italiani si controllano già nel modulo (lunghezza e carattere di
+controllo). I dati della carta non passano mai dal sito. Tornato sul sito,
 legge l'esito; se è pagato, gli arriva la conferma e a te la prenotazione, per
 e-mail e nell'area riservata (con la scritta **Pagata** e il codice SumUp).
 In Informazioni compare la riga **Pagamento** («Online, con carta, al momento
@@ -481,10 +487,7 @@ prenotazione è una richiesta e quelle due parti non si vedono.
 - il **codice esercente** (merchant code, di solito una M seguita da lettere e
   cifre): nelle impostazioni del conto, fra i dati dell'attività.
 
-Per provare senza soldi veri, SumUp offre un conto di prova (sandbox), nella
-stessa parte per sviluppatori: la sua chiave e il suo codice esercente si usano
-allo stesso modo. Sul dominio vero il controllo finale vuole la chiave del conto
-vero.
+Per provare senza soldi veri c'è la **modalità di prova** (vedi sotto).
 
 La chiave è come una password del conto: scrivila direttamente nel `.env` sul
 server, non mandarla per e-mail o in chat. Documentazione di SumUp:
@@ -513,6 +516,40 @@ quell'indirizzo. `SUMUP_API_URL` resta vuoto (serve solo alle prove in locale).
 In prova, con le due righe SumUp vuote, il pagamento resta spento e il
 controllo finale lo segnala soltanto. Sul dominio vero, invece, si ferma.
 
+### La modalità di prova
+
+Con `PAYMENT_MODE=test` (in **Configurazione** → Pagamento online → Modalità:
+«Prova») il sito paga sul **conto di prova di SumUp** e nessuno paga davvero.
+Il conto di prova si crea su me.sumup.com → **Impostazioni** → **Per
+sviluppatori** → scheda **Sandboxes**; da quel conto si crea la sua chiave in
+**Chiavi API**. Chiave e codice esercente del conto di prova vanno in
+`SUMUP_TEST_API_KEY` e `SUMUP_TEST_MERCHANT_CODE`: le chiavi del conto vero
+restano dove sono e in prova non si usano mai.
+
+```ini
+PAYMENT_PROVIDER=sumup
+PAYMENT_MODE=test
+SUMUP_TEST_API_KEY=…la chiave del conto di prova…
+SUMUP_TEST_MERCHANT_CODE=M…
+```
+
+In prova:
+
+- chi prenota vede «Pagamento di prova» nel modulo, nella pagina di passaggio a
+  SumUp e nell'esito;
+- alla pagina di SumUp si paga con la carta **4200 0000 0000 0091**, una
+  scadenza futura e un CVV qualsiasi (le carte di prova di SumUp:
+  https://developer.sumup.com/online-payments/testing/). Un importo di 11,00 €
+  dà un pagamento rifiutato;
+- le e-mail hanno **PROVA** nell'oggetto e una riga che lo dice;
+- nell'area riservata la prenotazione ha l'etichetta **Prova**, e la bacheca
+  ricorda che il pagamento è in prova.
+
+Quando torni a «Reale» (`PAYMENT_MODE` vuoto), le prenotazioni di prova restano
+nell'area riservata con la loro etichetta, ma **non occupano più le date** e non
+contano nei numeri della bacheca: si possono eliminare. Sul dominio vero il
+controllo finale si ferma se la modalità è ancora «Prova».
+
 ### Prima di aprire
 
 1. Area riservata → **La struttura** → **Condizioni di cancellazione**, in
@@ -521,9 +558,11 @@ controllo finale lo segnala soltanto. Sul dominio vero, invece, si ferma.
    Disdetta non si vede, nella prenotazione restano «da confermare» e il
    controllo finale si ferma.
 2. `tools/preflight.php`: la sezione «Pagamento» deve essere tutta a posto.
-3. **Una prenotazione vera con la tua carta**, sulla camera che costa meno;
-   controlla che arrivino le due e-mail e che nell'area riservata risulti
-   «Pagata». Poi rimborsala dal pannello di SumUp.
+3. Una prenotazione in **modalità di prova**, per vedere tutto il giro senza
+   soldi veri.
+4. Rimessa la modalità su «Reale», **una prenotazione vera con la tua carta**,
+   sulla camera che costa meno; controlla che arrivino le due e-mail e che
+   nell'area riservata risulti «Pagata». Poi rimborsala dal pannello di SumUp.
 
 ### Il calendario e i rimborsi
 

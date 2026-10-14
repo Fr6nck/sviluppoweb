@@ -219,9 +219,9 @@ sito calcola il caso peggiore (tutti paganti) e lo dice.
 ### Pagamento online (SumUp)
 
 Con `PAYMENT_PROVIDER=sumup`, `SUMUP_API_KEY` e `SUMUP_MERCHANT_CODE` nel
-`.env`, il passo dei dati chiede solo nome ed e-mail e porta a una pagina di
-SumUp (Hosted Checkout): i dati della carta non passano dal sito. I passi per
-accenderlo sono in `docs/DEPLOY-HOSTINGER.md`, sezione 13.
+`.env`, il passo dei dati chiede nome, e-mail e dati di fatturazione e porta a
+una pagina di SumUp (Hosted Checkout): i dati della carta non passano dal sito.
+I passi per accenderlo sono in `docs/DEPLOY-HOSTINGER.md`, sezione 13.
 
 ```
 modulo  →  prenotazione «in attesa» (Inbox)  →  POST /v0.1/checkouts  →  pagina del sito  →  SumUp
@@ -250,6 +250,19 @@ SumUp   →  ?passo=esito  e  POST /pagamenti/sumup  →  GET /v0.1/checkouts/{i
 - Nel pannello le pagine abbandonate non contano fra le nuove, negli arrivi o
   nel valore; ogni prenotazione mostra lo stato del pagamento e, se non è
   pagata, il pulsante «Controlla con SumUp».
+- I dati di fatturazione (`src/Booking/Fatturazione.php`): indirizzo, CAP,
+  città, paese obbligatori; codice fiscale facoltativo; con la spunta
+  «azienda», ragione sociale e partita IVA obbligatorie, codice SDI o PEC
+  facoltativo. Codice fiscale e partita IVA italiani con il carattere di
+  controllo. Stanno in `dati.fatturazione` della prenotazione, nel pannello e
+  nell'e-mail alla struttura; a SumUp non si passano. I campi dell'azienda li
+  mostra la spunta con `:has()`, senza JavaScript.
+- Modalità di prova: `PAYMENT_MODE=test` usa `SUMUP_TEST_API_KEY` e
+  `SUMUP_TEST_MERCHANT_CODE` (il conto sandbox di SumUp), mai le chiavi vere
+  (`App::pagamentoInProva()`). Le prenotazioni nascono con `pagamento.prova`;
+  il sito lo dice a chi prenota, le e-mail hanno PROVA nell'oggetto, il pannello
+  l'etichetta «Prova». Tornati ai pagamenti reali, `Inbox` le esclude da
+  `nottiOccupate()` e dalle nuove, e `Cruscotto` dai numeri.
 
 ## Il sito chiuso da un codice
 

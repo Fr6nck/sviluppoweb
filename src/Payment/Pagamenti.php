@@ -189,22 +189,25 @@ final class Pagamenti
      * È una prenotazione vera? Una richiesta senza pagamento online sì (come
      * prima); con il pagamento, solo se è pagata. Una pagina di SumUp aperta
      * e abbandonata non è una prenotazione: non conta fra le nuove, negli
-     * arrivi o nel valore.
+     * arrivi o nel valore. Una pagata in prova conta solo se $conProva.
      *
      * @param array<string,mixed> $dati i dati di una richiesta
      */
-    public static function conta(array $dati): bool
+    public static function conta(array $dati, bool $conProva = true): bool
     {
         $p = $dati['pagamento'] ?? null;
+        if (!is_array($p)) {
+            return true;
+        }
 
-        return !is_array($p) || in_array($p['stato'] ?? '', [self::PAGATO, self::DA_CONTROLLARE], true);
+        return ($conProva || empty($p['prova'])) && in_array($p['stato'] ?? '', [self::PAGATO, self::DA_CONTROLLARE], true);
     }
 
     /**
      * Lo stato del pagamento come lo mostra il pannello.
      *
      * @param array<string,mixed> $dati
-     * @return array{testo: string, tono: string}|null null se la richiesta non ha pagamento online
+     * @return array{testo: string, tono: string, prova: bool}|null null se la richiesta non ha pagamento online
      */
     public static function etichetta(array $dati): ?array
     {
@@ -216,7 +219,7 @@ final class Pagamenti
         $aperta = (string) (end($tentativi)['creato'] ?? '');
         $ancoraAperta = $aperta !== '' && (time() - (strtotime($aperta) ?: 0)) < 35 * 60;
 
-        return match (true) {
+        return ['prova' => !empty($p['prova'])] + match (true) {
             ($p['stato'] ?? '') === self::PAGATO         => ['testo' => 'Pagata', 'tono' => 'ok'],
             ($p['stato'] ?? '') === self::DA_CONTROLLARE => ['testo' => 'Pagamento da controllare', 'tono' => 'avviso'],
             ($p['stato'] ?? '') === self::IN_ATTESA && $ancoraAperta => ['testo' => 'In pagamento', 'tono' => 'neutro'],

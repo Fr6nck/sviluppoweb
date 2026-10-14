@@ -29,7 +29,12 @@ final class Inbox
         'archiviata' => 'Archiviata',
     ];
 
-    public function __construct(private readonly JsonStore $store)
+    /**
+     * @param bool $conProva le prenotazioni pagate in prova (sandbox di SumUp)
+     *                       occupano le date e contano fra le nuove: sì
+     *                       mentre si prova, no quando si incassa davvero
+     */
+    public function __construct(private readonly JsonStore $store, private readonly bool $conProva = true)
     {
     }
 
@@ -144,7 +149,8 @@ final class Inbox
      * Contano le prenotazioni confermate nell'area riservata, quelle pagate, e
      * quelle con la pagina di pagamento ancora aperta (per mezz'ora, quanto
      * vale la pagina di SumUp): due ospiti non devono pagare la stessa camera
-     * per le stesse notti. Rifiutate e archiviate non contano.
+     * per le stesse notti. Rifiutate e archiviate non contano; quelle di
+     * prova solo mentre si è in prova.
      *
      * @return list<array{id: string, ref: string, arrivo: string, partenza: string}>
      */
@@ -156,6 +162,9 @@ final class Inbox
                 continue;
             }
             $p = (array) ($v['dati']['pagamento'] ?? []);
+            if (!$this->conProva && !empty($p['prova'])) {
+                continue;
+            }
             // Il tempo si conta dall'apertura dell'ultima pagina di pagamento,
             // non dall'ultima verifica: controllare non allunga la tenuta.
             $tentativi = (array) ($p['tentativi'] ?? []);
@@ -186,11 +195,17 @@ final class Inbox
         return count($this->all()) < $prima;
     }
 
+    /** Le prenotazioni di prova contano adesso? */
+    public function conProva(): bool
+    {
+        return $this->conProva;
+    }
+
     public function countNew(): int
     {
         // Un pagamento abbandonato non è una richiesta da leggere.
-        return count(array_filter($this->all(), static fn (array $v): bool => ($v['stato'] ?? '') === 'nuova'
-            && \ArcoDelVento\Payment\Pagamenti::conta((array) ($v['dati'] ?? []))));
+        return count(array_filter($this->all(), fn (array $v): bool => ($v['stato'] ?? '') === 'nuova'
+            && \ArcoDelVento\Payment\Pagamenti::conta((array) ($v['dati'] ?? []), $this->conProva)));
     }
 
     /**

@@ -71,10 +71,17 @@ final class Ambiente
                 'PAYMENT_PROVIDER' => ['nome' => 'Pagamento', 'tipo' => 'scelta', 'predefinito' => '',
                     'opzioni' => ['sumup' => 'SumUp'], 'vuoto' => 'Spento',
                     'aiuto' => 'Acceso solo se ci sono anche la chiave e il codice esercente.'],
+                'PAYMENT_MODE' => ['nome' => 'Modalità', 'tipo' => 'scelta', 'predefinito' => '',
+                    'opzioni' => ['test' => 'Prova: conto di prova di SumUp, nessun addebito'], 'vuoto' => 'Reale: si incassa davvero',
+                    'aiuto' => 'In prova il sito usa la chiave e il codice del conto di prova qui sotto, dice a chi prenota che non si paga davvero e segna le prenotazioni «Prova». Carta di prova: 4200 0000 0000 0091, scadenza futura, CVV qualsiasi.'],
                 'SUMUP_API_KEY' => ['nome' => 'Chiave API segreta di SumUp', 'tipo' => 'segreto',
                     'aiuto' => 'Su me.sumup.com: Impostazioni → Per sviluppatori → Toolkit → Chiavi API → Crea. Quella segreta, non la «Public Key».'],
                 'SUMUP_MERCHANT_CODE' => ['nome' => 'Codice esercente SumUp', 'tipo' => 'testo', 'modello' => '/^[A-Za-z0-9]{3,32}$/',
                     'errore' => 'lettere e cifre, senza spazi', 'aiuto' => 'Nel profilo del conto SumUp.'],
+                'SUMUP_TEST_API_KEY' => ['nome' => 'Chiave API del conto di prova', 'tipo' => 'segreto',
+                    'aiuto' => 'Su me.sumup.com: Impostazioni → Per sviluppatori → scheda Sandboxes: crea il conto di prova. Poi, da quel conto, crea la chiave in Chiavi API. Si usa solo in modalità Prova.'],
+                'SUMUP_TEST_MERCHANT_CODE' => ['nome' => 'Codice esercente del conto di prova', 'tipo' => 'testo', 'modello' => '/^[A-Za-z0-9]{3,32}$/',
+                    'errore' => 'lettere e cifre, senza spazi', 'aiuto' => 'Il codice del conto di prova, non quello del conto vero.'],
                 'SUMUP_API_URL' => ['nome' => 'Indirizzo dell\'API di SumUp', 'tipo' => 'url',
                     'aiuto' => 'Vuoto = https://api.sumup.com. Si cambia solo per le prove in locale.'],
             ],
@@ -626,12 +633,19 @@ final class Ambiente
             $avvisi[] = 'L\'indirizzo del sito non è in https: SumUp e i cookie sicuri lo vogliono.';
         }
         if (strtolower($valore('PAYMENT_PROVIDER')) === 'sumup') {
-            if ($valore('SUMUP_API_KEY') === '' || $valore('SUMUP_MERCHANT_CODE') === '') {
-                $avvisi[] = 'Pagamento SumUp scelto ma spento: mancano la chiave o il codice esercente.';
-            } elseif (\ArcoDelVento\Payment\SumUp::tipoChiave($valore('SUMUP_API_KEY')) === 'pubblica') {
-                $avvisi[] = 'La chiave SumUp sembra la «Public Key»: serve quella segreta, creata in Chiavi API.';
-            } elseif (\ArcoDelVento\Payment\SumUp::tipoChiave($valore('SUMUP_API_KEY')) === 'prova') {
-                $avvisi[] = 'La chiave SumUp è di prova (sandbox): i pagamenti non sono veri. Per incassare serve la chiave del conto vero.';
+            $prova  = in_array(strtolower($valore('PAYMENT_MODE')), ['test', 'prova'], true);
+            $chiave = $valore($prova ? 'SUMUP_TEST_API_KEY' : 'SUMUP_API_KEY');
+            $codice = $valore($prova ? 'SUMUP_TEST_MERCHANT_CODE' : 'SUMUP_MERCHANT_CODE');
+            if ($chiave === '' || $codice === '') {
+                $avvisi[] = $prova
+                    ? 'Modalità di prova scelta, ma mancano la chiave o il codice del conto di prova: il pagamento è spento.'
+                    : 'Pagamento SumUp scelto ma spento: mancano la chiave o il codice esercente.';
+            } elseif (\ArcoDelVento\Payment\SumUp::tipoChiave($chiave) === 'pubblica') {
+                $avvisi[] = 'La chiave SumUp' . ($prova ? ' del conto di prova' : '') . ' sembra la «Public Key»: serve quella segreta, creata in Chiavi API.';
+            } elseif ($prova) {
+                $avvisi[] = 'Pagamenti in prova: nessun addebito vero, e il sito lo dice a chi prenota. Prima di aprire il sito, rimetti la modalità su «Reale».';
+            } elseif (\ArcoDelVento\Payment\SumUp::tipoChiave($chiave) === 'prova') {
+                $avvisi[] = 'La chiave SumUp è di prova (sandbox): i pagamenti non sono veri. Per incassare serve la chiave del conto vero; per provare c\'è la modalità «Prova».';
             }
             if ($valore('BOOKING_PROVIDER') !== 'sito') {
                 $avvisi[] = 'Con il pagamento acceso il calendario dovrebbe essere «sito»: con «' . ($valore('BOOKING_PROVIDER') ?: 'demo') . '» si incasserebbe su date non verificate.';

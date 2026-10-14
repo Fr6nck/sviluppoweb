@@ -335,26 +335,37 @@ $aggiungi($porta->attivo() ? 'attenzione' : 'ok', 'Accesso',
 // Acceso solo con PAYMENT_PROVIDER=sumup. Con i soldi di mezzo, quello che
 // manca si ferma qui e non davanti a un ospite con la carta in mano.
 $pagamento = (array) ($config['payment'] ?? []);
+// PAYMENT_MODE=test: si paga sul conto di prova di SumUp, con le sue chiavi.
+$modoProva = ($pagamento['mode'] ?? 'live') === 'test';
+$nomeChiave = $modoProva ? 'SUMUP_TEST_API_KEY' : 'SUMUP_API_KEY';
+$nomeCodice = $modoProva ? 'SUMUP_TEST_MERCHANT_CODE' : 'SUMUP_MERCHANT_CODE';
+$chiave = (string) ($pagamento['sumup'][$modoProva ? 'test_api_key' : 'api_key'] ?? '');
+$codice = (string) ($pagamento['sumup'][$modoProva ? 'test_merchant_code' : 'merchant_code'] ?? '');
 if (($pagamento['provider'] ?? '') === '') {
     $aggiungi('ok', 'Pagamento', 'pagamento online spento: le prenotazioni restano richieste');
 } elseif ($pagamento['provider'] !== 'sumup') {
     $aggiungi('bloccante', 'Pagamento', 'PAYMENT_PROVIDER = ' . $pagamento['provider'], 'L\'unico valore previsto è sumup (o vuoto, per spegnerlo).');
-} elseif ($inProva && ((string) ($pagamento['sumup']['api_key'] ?? '') === '' || (string) ($pagamento['sumup']['merchant_code'] ?? '') === '')) {
+} elseif ($inProva && ($chiave === '' || $codice === '')) {
     // La prova esce con PAYMENT_PROVIDER=sumup come la produzione, ma senza
     // chiavi: lì il pagamento è spento e non c'è niente da bloccare.
     $aggiungi('attenzione', 'Pagamento', 'SumUp senza chiave o codice esercente: in prova il pagamento resta spento',
-        'Le prenotazioni restano richieste. Per provare il pagamento vero scrivi SUMUP_API_KEY e SUMUP_MERCHANT_CODE nel .env, e le condizioni di cancellazione in La struttura.');
+        'Le prenotazioni restano richieste. Per provare il pagamento scrivi ' . $nomeChiave . ' e ' . $nomeCodice
+        . ($modoProva ? ' (il conto di prova di SumUp)' : '') . ' nel .env o in Configurazione, e le condizioni di cancellazione in La struttura.');
 } else {
-    $chiave = (string) ($pagamento['sumup']['api_key'] ?? '');
-    $codice = (string) ($pagamento['sumup']['merchant_code'] ?? '');
+    if ($modoProva) {
+        $aggiungi($inProva ? 'nota' : 'bloccante', 'Pagamento', 'modalità di prova (PAYMENT_MODE=test): nessun addebito vero',
+            $inProva
+                ? 'Si paga sul conto di prova di SumUp, con la carta 4200 0000 0000 0091, una scadenza futura e un CVV qualsiasi. Il sito lo dice a chi prenota.'
+                : 'Sul dominio vero si incassa davvero: lascia vuoto PAYMENT_MODE (o metti «Reale» in Configurazione) e scrivi le chiavi del conto vero.');
+    }
     $aggiungi($chiave !== '' && $codice !== '' ? 'ok' : 'bloccante', 'Pagamento',
-        'SumUp: chiave ' . ($chiave !== '' ? 'presente' : 'MANCANTE') . ', codice esercente ' . ($codice !== '' ? $codice : 'MANCANTE'),
-        'Nel .env: SUMUP_API_KEY (la chiave API del conto SumUp) e SUMUP_MERCHANT_CODE. Senza, il sito non apre il pagamento.');
+        'SumUp' . ($modoProva ? ', conto di prova' : '') . ': chiave ' . ($chiave !== '' ? 'presente' : 'MANCANTE') . ', codice esercente ' . ($codice !== '' ? $codice : 'MANCANTE'),
+        'Nel .env: ' . $nomeChiave . ' (la chiave API del conto SumUp) e ' . $nomeCodice . '. Senza, il sito non apre il pagamento.');
     $tipoChiave = $chiave !== '' ? \ArcoDelVento\Payment\SumUp::tipoChiave($chiave) : 'segreta';
     if ($tipoChiave === 'pubblica') {
         $aggiungi('bloccante', 'Pagamento', 'la chiave SumUp sembra la «Public Key»',
             'Serve la chiave segreta: su me.sumup.com, Impostazioni → Per sviluppatori → Toolkit → Chiavi API → Crea.');
-    } elseif ($tipoChiave === 'prova') {
+    } elseif ($tipoChiave === 'prova' && !$modoProva) {
         $aggiungi($inProva ? 'nota' : 'bloccante', 'Pagamento', 'la chiave SumUp è di prova (sandbox)',
             'I pagamenti non sono veri. Va bene per provare; sul dominio vero serve la chiave del conto vero.');
     }

@@ -6,6 +6,7 @@ namespace ArcoDelVento\Controller;
 
 use ArcoDelVento\App;
 use ArcoDelVento\Booking\BookingRequest;
+use ArcoDelVento\Booking\Fatturazione;
 use ArcoDelVento\Booking\RoomOffer;
 use ArcoDelVento\Booking\SearchCriteria;
 use ArcoDelVento\Http\Request;
@@ -23,9 +24,9 @@ use ArcoDelVento\Support\Validator;
  *     date e ospiti → camere libere → i tuoi dati → richiesta inviata
  *
  * Con il pagamento online acceso (PAYMENT_PROVIDER=sumup) l'ultimo passo
- * cambia: i dati sono solo nome ed e-mail, e dopo si paga su SumUp.
+ * cambia: nome, e-mail e dati di fatturazione, e dopo si paga su SumUp.
  *
- *     … → nome ed e-mail → pagina di SumUp → esito (pagato, o si riprova)
+ *     … → nome, e-mail, fatturazione → pagina di SumUp → esito (pagato, o si riprova)
  *
  * I primi tre passi vivono negli indirizzi, non nella sessione: /it/prenota
  * ?arrivo=…&partenza=…&ospiti=…&camera=… è un indirizzo che si può salvare,
@@ -232,8 +233,8 @@ final class BookingController
     // ------------------------------------------------ pagamento online
 
     /**
-     * Nome, e-mail, la spunta sulle condizioni: la prenotazione nasce «in
-     * attesa» di pagamento e si apre la pagina di SumUp. Il prezzo è quello
+     * Nome, e-mail, i dati di fatturazione, la spunta sulle condizioni: la
+     * prenotazione nasce «in attesa» di pagamento e si apre la pagina di SumUp. Il prezzo è quello
      * calcolato qui, adesso, dal provider: niente di quello che arriva dal
      * modulo decide l'importo.
      */
@@ -242,7 +243,9 @@ final class BookingController
         $v = new Validator($request->post);
         $v->required('nome')->maxLength('nome', 120)
           ->required('email')->email('email')->maxLength('email', 180)
-          ->accepted('condizioni');
+          ->maxLength('telefono', 40);
+        $fatturazione = Fatturazione::controlla($v);
+        $v->accepted('condizioni');
 
         if ($v->fails()) {
             return $this->stepDetails(
@@ -268,6 +271,8 @@ final class BookingController
             firstName: $v->value('nome'),
             lastName:  '',
             email:     $v->value('email'),
+            phone:     $v->value('telefono'),
+            country:   (string) ($fatturazione['nazione'] ?? ''),
             locale:    $this->app->locale(),
         );
         $riferimento = $this->app->booking()->request($booking)->reference;
@@ -277,7 +282,7 @@ final class BookingController
             'importo'   => round($offer->total, 2),
             'valuta'    => $offer->currency,
             'tentativi' => [],
-        ]);
+        ] + ($this->app->pagamentoInProva() ? ['prova' => true] : []), $fatturazione);
 
         try {
             if (!$salvata) {
@@ -441,8 +446,11 @@ final class BookingController
      * Se non si riesce a salvarla l'ospite non deve accorgersene: l'e-mail è
      * già partita, e l'errore finisce nel registro.
      */
-    /** @param array<string,mixed>|null $pagamento il blocco del pagamento online, se c'è */
-    private function archive(string $reference, BookingRequest $booking, RoomOffer $offer, ?array $pagamento = null): bool
+    /**
+     * @param array<string,mixed>|null $pagamento    il blocco del pagamento online, se c'è
+     * @param array<string,mixed>|null $fatturazione i dati di fatturazione, con il pagamento online
+     */
+    private function archive(string $reference, BookingRequest $booking, RoomOffer $offer, ?array $pagamento = null, ?array $fatturazione = null): bool
     {
         try {
             $this->app->inbox()->add('prenotazione', array_filter([
@@ -461,6 +469,7 @@ final class BookingController
                 'note'      => $booking->notes,
                 'lingua'    => $booking->locale,
                 'pagamento' => $pagamento,
+                'fatturazione' => $fatturazione,
             ], static fn ($v): bool => $v !== null), $reference);
 
             return true;
@@ -533,6 +542,7 @@ final class BookingController
 
         return Response::html($this->app->view()->page($page, $data + [
             'pagamento'      => $this->app->pagamentoAttivo(),
+            'pagamentoProva' => $this->app->pagamentoAttivo() && $this->app->pagamentoInProva(),
             'calendarioDemo' => (string) $this->app->config('booking.provider') === 'demo',
             'pagina'      => 'book',
             'titoloSeo'   => $this->app->translator()->get('book.seo_title'),
