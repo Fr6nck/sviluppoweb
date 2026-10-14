@@ -72,7 +72,7 @@ final class Ambiente
                     'opzioni' => ['sumup' => 'SumUp'], 'vuoto' => 'Spento',
                     'aiuto' => 'Acceso solo se ci sono anche la chiave e il codice esercente.'],
                 'SUMUP_API_KEY' => ['nome' => 'Chiave API segreta di SumUp', 'tipo' => 'segreto',
-                    'aiuto' => 'Dal pannello di SumUp, parte sviluppatori. Comincia con sup_sk_.'],
+                    'aiuto' => 'Su me.sumup.com: Impostazioni → Per sviluppatori → Toolkit → Chiavi API → Crea. Quella segreta, non la «Public Key».'],
                 'SUMUP_MERCHANT_CODE' => ['nome' => 'Codice esercente SumUp', 'tipo' => 'testo', 'modello' => '/^[A-Za-z0-9]{3,32}$/',
                     'errore' => 'lettere e cifre, senza spazi', 'aiuto' => 'Nel profilo del conto SumUp.'],
                 'SUMUP_API_URL' => ['nome' => 'Indirizzo dell\'API di SumUp', 'tipo' => 'url',
@@ -628,8 +628,10 @@ final class Ambiente
         if (strtolower($valore('PAYMENT_PROVIDER')) === 'sumup') {
             if ($valore('SUMUP_API_KEY') === '' || $valore('SUMUP_MERCHANT_CODE') === '') {
                 $avvisi[] = 'Pagamento SumUp scelto ma spento: mancano la chiave o il codice esercente.';
-            } elseif (!str_starts_with($valore('SUMUP_API_KEY'), 'sup_sk_')) {
-                $avvisi[] = 'La chiave SumUp non comincia con sup_sk_: controlla di aver copiato quella segreta, per intero.';
+            } elseif (\ArcoDelVento\Payment\SumUp::tipoChiave($valore('SUMUP_API_KEY')) === 'pubblica') {
+                $avvisi[] = 'La chiave SumUp sembra la «Public Key»: serve quella segreta, creata in Chiavi API.';
+            } elseif (\ArcoDelVento\Payment\SumUp::tipoChiave($valore('SUMUP_API_KEY')) === 'prova') {
+                $avvisi[] = 'La chiave SumUp è di prova (sandbox): i pagamenti non sono veri. Per incassare serve la chiave del conto vero.';
             }
             if ($valore('BOOKING_PROVIDER') !== 'sito') {
                 $avvisi[] = 'Con il pagamento acceso il calendario dovrebbe essere «sito»: con «' . ($valore('BOOKING_PROVIDER') ?: 'demo') . '» si incasserebbe su date non verificate.';

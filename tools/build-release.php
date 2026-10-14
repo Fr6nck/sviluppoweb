@@ -601,7 +601,7 @@ $produzione = [
     'PAYMENT_PROVIDER' => ['sumup', 'Si paga tutto online con SumUp, al momento della prenotazione: nessuna caparra.'],
     'SUMUP_API_KEY'    => [
         '',
-        'DA SCRIVERE: la chiave API segreta del conto SumUp (comincia con sup_sk_). Finché questa riga o la '
+        'DA SCRIVERE: la chiave API segreta del conto SumUp (me.sumup.com → Impostazioni → Per sviluppatori → Toolkit → Chiavi API). Finché questa riga o la '
         . 'successiva sono vuote il pagamento resta spento — la prenotazione è una richiesta — e il controllo finale si ferma.',
     ],
     'SUMUP_MERCHANT_CODE' => ['', 'DA SCRIVERE: il codice esercente del conto SumUp.'],

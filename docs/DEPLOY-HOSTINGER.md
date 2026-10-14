@@ -473,10 +473,18 @@ prenotazione è una richiesta e quelle due parti non si vedono.
 
 - un conto SumUp con i **pagamenti online** attivi (se non lo sono, lo si
   chiede a SumUp);
-- una **chiave API segreta**: si crea nel pannello di SumUp, nella parte per
-  sviluppatori (API keys), e comincia con `sup_sk_`;
-- il **codice esercente** (merchant code), che il pannello di SumUp mostra nel
-  profilo del conto.
+- una **chiave API segreta**: su me.sumup.com, menu del profilo →
+  **Impostazioni** → **Per sviluppatori** → **Toolkit** → **Chiavi API** →
+  **Crea**. Dagli un nome, poi copiala subito: SumUp non la conserva, e se si
+  perde se ne crea un'altra. Non è la «SumUp Public Key» che la pagina mostra
+  già: quella non serve;
+- il **codice esercente** (merchant code, di solito una M seguita da lettere e
+  cifre): nelle impostazioni del conto, fra i dati dell'attività.
+
+Per provare senza soldi veri, SumUp offre un conto di prova (sandbox), nella
+stessa parte per sviluppatori: la sua chiave e il suo codice esercente si usano
+allo stesso modo. Sul dominio vero il controllo finale vuole la chiave del conto
+vero.
 
 La chiave è come una password del conto: scrivila direttamente nel `.env` sul
 server, non mandarla per e-mail o in chat. Documentazione di SumUp:
@@ -486,7 +494,7 @@ https://developer.sumup.com/online-payments/checkouts/hosted-checkout
 
 ```ini
 PAYMENT_PROVIDER=sumup
-SUMUP_API_KEY=sup_sk_…
+SUMUP_API_KEY=…la chiave segreta…
 SUMUP_MERCHANT_CODE=M…
 BOOKING_PROVIDER=sito
 MAIL_TRANSPORT=smtp

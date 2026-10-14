@@ -18,6 +18,25 @@ namespace ArcoDelVento\Payment;
  */
 final class SumUp
 {
+    /**
+     * Che chiave è, a guardarla: «pubblica» (la Public Key del pannello, che
+     * qui non serve), «prova» (di un conto sandbox: i pagamenti non sono
+     * veri) o «segreta». SumUp scrive le chiavi segrete in più forme
+     * (sup_sk_…, sk_live_…): il prefisso da solo non dice se è giusta.
+     *
+     * @return 'pubblica'|'prova'|'segreta'
+     */
+    public static function tipoChiave(string $chiave): string
+    {
+        $c = strtolower(trim($chiave));
+
+        return match (true) {
+            str_starts_with($c, 'pk_') || str_contains($c, '_pk_') => 'pubblica',
+            str_starts_with($c, 'sk_test_') || str_contains($c, '_test_') => 'prova',
+            default => 'segreta',
+        };
+    }
+
     public function __construct(
         private readonly string $apiKey,
         private readonly string $merchantCode,

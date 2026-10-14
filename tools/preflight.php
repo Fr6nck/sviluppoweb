@@ -350,9 +350,13 @@ if (($pagamento['provider'] ?? '') === '') {
     $aggiungi($chiave !== '' && $codice !== '' ? 'ok' : 'bloccante', 'Pagamento',
         'SumUp: chiave ' . ($chiave !== '' ? 'presente' : 'MANCANTE') . ', codice esercente ' . ($codice !== '' ? $codice : 'MANCANTE'),
         'Nel .env: SUMUP_API_KEY (la chiave API del conto SumUp) e SUMUP_MERCHANT_CODE. Senza, il sito non apre il pagamento.');
-    if ($chiave !== '' && !str_starts_with($chiave, 'sup_sk_')) {
-        $aggiungi('attenzione', 'Pagamento', 'la chiave SumUp non comincia con sup_sk_',
-            'Le chiavi API segrete di SumUp cominciano con sup_sk_. Controlla di aver copiato quella giusta, per intero.');
+    $tipoChiave = $chiave !== '' ? \ArcoDelVento\Payment\SumUp::tipoChiave($chiave) : 'segreta';
+    if ($tipoChiave === 'pubblica') {
+        $aggiungi('bloccante', 'Pagamento', 'la chiave SumUp sembra la «Public Key»',
+            'Serve la chiave segreta: su me.sumup.com, Impostazioni → Per sviluppatori → Toolkit → Chiavi API → Crea.');
+    } elseif ($tipoChiave === 'prova') {
+        $aggiungi($inProva ? 'nota' : 'bloccante', 'Pagamento', 'la chiave SumUp è di prova (sandbox)',
+            'I pagamenti non sono veri. Va bene per provare; sul dominio vero serve la chiave del conto vero.');
     }
     $aggiungi(function_exists('curl_init') ? 'ok' : 'bloccante', 'Pagamento', 'estensione cURL ' . (function_exists('curl_init') ? 'presente' : 'ASSENTE'),
         'Serve per parlare con SumUp: chiedi all\'assistenza di Hostinger di attivarla.');
