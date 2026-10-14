@@ -165,7 +165,7 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
       <form class="adm-cerca" role="search" method="get" action="<?= e(adminUrl('richieste')) ?>">
         <label class="adm-visually-hidden" for="adm-cerca">Cerca fra le richieste</label>
         <?= icona('cerca', 18, 'adm-cerca__icona') ?>
-        <input type="search" id="adm-cerca" name="q" placeholder="Cerca un nome, un'e-mail, un riferimento…"
+        <input type="search" id="adm-cerca" name="q" placeholder="Cerca nelle richieste: nome, e-mail, riferimento…"
                value="<?= e((string) ($cerca ?? '')) ?>" autocomplete="off">
       </form>
       <div class="adm-barra__azioni">

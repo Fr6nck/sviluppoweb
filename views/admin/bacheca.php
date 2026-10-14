@@ -103,6 +103,51 @@ $iniziali = static function (string $nome): string {
   </section>
 <?php endif; ?>
 
+<?php
+/* «Prossimi 30 giorni» con gli arrivi: è la cosa più urgente della bacheca.
+   Con due colonne sta a destra; con una sola (sotto i 1440 px: portatili,
+   tablet, telefono) sta subito dopo i numeri in alto, invece che in fondo.
+   Si stampa nei due posti e il foglio di stile ne mostra uno: display:none
+   toglie l'altro anche ai lettori di schermo e al tasto Tab, così l'ordine
+   di lettura è sempre quello che si vede. */
+$prossimi = static function (string $dove, string $classe) use ($nottiCamera, $totCamere, $notti, $oggi, $arrivi): string {
+    ob_start(); ?>
+    <section class="adm-carta <?= e($classe) ?>" aria-labelledby="b-notti-<?= e($dove) ?>">
+      <div class="adm-carta__testa">
+        <h2 id="b-notti-<?= e($dove) ?>">Prossimi 30 giorni</h2>
+      </div>
+      <p class="adm-numero"><?= (int) $nottiCamera ?> <span><?= $nottiCamera === 1 ? 'notte-camera' : 'notti-camera' ?></span></p>
+      <p class="adm-nota">Chieste o confermate dal sito, su <?= $totCamere * 30 ?> (<?= $totCamere ?> camere × 30 notti).
+         Le prenotazioni di Booking qui non ci sono.</p>
+      <div class="adm-linea-cornice"><?= G::linea($notti, max(1, $totCamere), 'g-notti-' . $dove) ?></div>
+      <div class="adm-linea-assi" aria-hidden="true">
+        <span>oggi</span><span><?= e(Cruscotto::breve($oggi->modify('+15 days')->format('Y-m-d'))) ?></span><span><?= e(Cruscotto::breve($oggi->modify('+29 days')->format('Y-m-d'))) ?></span>
+      </div>
+
+      <h3 class="adm-sottotitolo-carta">Prossimi arrivi</h3>
+      <?php if ($arrivi === []): ?>
+        <p class="adm-tenue">Nessun arrivo in programma fra le richieste.</p>
+      <?php else: ?>
+        <ul class="adm-arrivi">
+          <?php foreach ($arrivi as $a): $d = (array) $a['dati']; [$g, $m] = explode(' ', Cruscotto::breve((string) $d['arrivo'])) + ['', '']; ?>
+            <li>
+              <a href="<?= e(adminUrl('richieste/' . rawurlencode((string) $a['id']))) ?>">
+                <span class="adm-data"><strong><?= e($g) ?></strong><?= e($m) ?></span>
+                <span class="adm-arrivi__chi">
+                  <span class="adm-arrivi__nome"><?= e((string) ($d['nome'] ?? '—')) ?></span>
+                  <span class="adm-arrivi__sotto"><?= e((string) ($d['camera'] ?? '')) ?> · <?= (int) ($d['notti'] ?? 0) ?> <?= (int) ($d['notti'] ?? 0) === 1 ? 'notte' : 'notti' ?></span>
+                </span>
+                <span class="adm-stato adm-stato--<?= e((string) $a['stato']) ?>"><?= e(Inbox::STATI[$a['stato']] ?? $a['stato']) ?></span>
+              </a>
+            </li>
+          <?php endforeach; ?>
+        </ul>
+      <?php endif; ?>
+    </section>
+    <?php
+    return (string) ob_get_clean();
+};
+?>
 <div class="adm-bacheca">
   <div class="adm-bacheca__principale">
 
@@ -118,18 +163,21 @@ $iniziali = static function (string $nome): string {
             <p class="adm-scheda__valore"><?= (int) $s['valore'] ?></p>
             <?= G::scintilla($s['serie'], 'adm-scintilla--' . $s['tono'], 'sc-' . $i) ?>
           </div>
-          <p class="adm-scheda__nota">
-            <?php if ($s['variazione'] !== null): $su = $s['variazione'] >= 0; ?>
+          <p class="adm-scheda__nota"><?= e($s['nota']) ?></p>
+          <?php if ($s['variazione'] !== null): $su = $s['variazione'] >= 0; ?>
+            <?php /* Il confronto si scrive per intero: «+150%» da solo sembra parte del numero dei 30 giorni. */ ?>
+            <p class="adm-scheda__nota adm-scheda__confronto">
               <span class="adm-variazione adm-variazione--<?= $su ? 'su' : 'giu' ?>">
                 <?= icona($su ? 'sale' : 'scende', 13) ?><?= ($su ? '+' : '−') . e(number_format(abs($s['variazione']), 0, ',', '.')) ?>%
               </span>
-              <span class="adm-visually-hidden">rispetto ai 30 giorni prima,</span>
-            <?php endif; ?>
-            <?= e($s['nota']) ?>
-          </p>
+              rispetto ai 30 giorni prima
+            </p>
+          <?php endif; ?>
         </li>
       <?php endforeach; ?>
     </ul>
+
+    <?= $prossimi('in-alto', 'adm-solo-stretto') ?>
 
     <section class="adm-carta adm-carta--grafico" aria-labelledby="b-grafico">
       <div class="adm-carta__testa">
@@ -284,38 +332,7 @@ $iniziali = static function (string $nome): string {
   </div>
 
   <aside class="adm-bacheca__lato" aria-label="Arrivi, camere e marchio">
-    <section class="adm-carta" aria-labelledby="b-notti">
-      <div class="adm-carta__testa">
-        <h2 id="b-notti">Prossimi 30 giorni</h2>
-      </div>
-      <p class="adm-numero"><?= (int) $nottiCamera ?> <span><?= $nottiCamera === 1 ? 'notte-camera' : 'notti-camera' ?></span></p>
-      <p class="adm-nota">Chieste o confermate dal sito, su <?= $totCamere * 30 ?> (<?= $totCamere ?> camere × 30 notti).
-         Le prenotazioni di Booking qui non ci sono.</p>
-      <div class="adm-linea-cornice"><?= G::linea($notti, max(1, $totCamere), 'g-notti') ?></div>
-      <div class="adm-linea-assi" aria-hidden="true">
-        <span>oggi</span><span><?= e(Cruscotto::breve($oggi->modify('+15 days')->format('Y-m-d'))) ?></span><span><?= e(Cruscotto::breve($oggi->modify('+29 days')->format('Y-m-d'))) ?></span>
-      </div>
-
-      <h3 class="adm-sottotitolo-carta">Prossimi arrivi</h3>
-      <?php if ($arrivi === []): ?>
-        <p class="adm-tenue">Nessun arrivo in programma fra le richieste.</p>
-      <?php else: ?>
-        <ul class="adm-arrivi">
-          <?php foreach ($arrivi as $a): $d = (array) $a['dati']; [$g, $m] = explode(' ', Cruscotto::breve((string) $d['arrivo'])) + ['', '']; ?>
-            <li>
-              <a href="<?= e(adminUrl('richieste/' . rawurlencode((string) $a['id']))) ?>">
-                <span class="adm-data"><strong><?= e($g) ?></strong><?= e($m) ?></span>
-                <span class="adm-arrivi__chi">
-                  <span class="adm-arrivi__nome"><?= e((string) ($d['nome'] ?? '—')) ?></span>
-                  <span class="adm-arrivi__sotto"><?= e((string) ($d['camera'] ?? '')) ?> · <?= (int) ($d['notti'] ?? 0) ?> <?= (int) ($d['notti'] ?? 0) === 1 ? 'notte' : 'notti' ?></span>
-                </span>
-                <span class="adm-stato adm-stato--<?= e((string) $a['stato']) ?>"><?= e(Inbox::STATI[$a['stato']] ?? $a['stato']) ?></span>
-              </a>
-            </li>
-          <?php endforeach; ?>
-        </ul>
-      <?php endif; ?>
-    </section>
+    <?= $prossimi('lato', 'adm-solo-largo') ?>
 
     <section class="adm-carta" aria-labelledby="b-camere">
       <div class="adm-carta__testa">

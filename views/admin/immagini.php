@@ -16,8 +16,8 @@ foreach ($gruppi as $voci) {
     }
 }
 ?>
-<p class="adm-intro">Il logo, la rosa dei venti e le fotografie del sito. Scegli un'immagine, carica quella nuova:
-   il sito la ritaglia, la alleggerisce e la mette al suo posto. L'originale non si perde: si rimette con un click.</p>
+<p class="adm-intro">Scegli un'immagine e carica quella nuova: il sito la ritaglia, la alleggerisce e la mette al suo
+   posto. L'originale non si perde: si rimette con un click.</p>
 
 <?php if (!$gd || !$scrivibile): ?>
   <div class="adm-avviso adm-avviso--errore" role="alert">

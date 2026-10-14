@@ -20,6 +20,7 @@ $inVendita = (int) $camera['occupancy']['max'];
     <strong>Sul sito si vende fino a <?= $inVendita ?> <?= $inVendita === 1 ? 'ospite' : 'ospiti' ?>:</strong>
     per aprirla a <?= $capienza ?>, scrivi la tariffa per <?= $capienza ?> qui sotto.
   <?php endif; ?>
+  Un campo «Vuoto» sul sito non compare, o diventa «da confermare».
   <a class="adm-link" href="<?= e(url('room', ['slug' => $camera['slug']['it']], [], 'it')) ?>" target="_blank" rel="noopener">Vedi la pagina ↗</a>
 </p>
 
