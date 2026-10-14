@@ -509,6 +509,28 @@ pagina lo dice.
 sole dopo 24 mesi: sono dati personali, e lo stesso periodo va scritto
 nell'informativa privacy.
 
+### Super admin e Configurazione
+
+Un secondo account, separato da quello del gestore: il **super admin**, cioè chi
+ha fatto il sito. È il solo che vede **Configurazione** (`/admin/configurazione`):
+tutte le voci del file `.env`, a gruppi, con un nome da persona e la spiegazione.
+
+- Si crea una volta, su **`/admin/super`**, con il codice `SUPERADMIN_SETUP_TOKEN`
+  del `.env`. Poi quell'indirizzo è il suo accesso; entra anche dal login normale.
+- Per il gestore `/admin/super` e `/admin/configurazione` rispondono 404, come
+  una pagina qualunque che non esiste, e nel menu non c'è niente.
+- `src/Admin/Ambiente.php` conosce ogni voce e la controlla (indirizzi, e-mail,
+  numeri, valori ammessi; mai un a capo, che aggiungerebbe una riga al file).
+- Scrive solo le righe cambiate e lascia il resto com'è, commenti compresi;
+  scrive un file accanto e lo sostituisce, poi rilegge e confronta; prima mette
+  il file com'era in `storage/data/ambiente/` (le ultime dieci versioni, una si
+  rimette con un click). Il registro tiene chi e quali voci, mai i valori.
+- I segreti (password, chiavi, gettoni) non tornano nella pagina: si vede se ci
+  sono e quanto sono lunghi. Ogni salvataggio chiede la password del super admin.
+- Una voce impostata nell'ambiente del server (pannello di Hostinger) vince sul
+  file: si vede, ma da qui non si cambia.
+- Se il sito non può scrivere il `.env`, la pagina si legge soltanto.
+
 ---
 
 ## Contenuti da confermare

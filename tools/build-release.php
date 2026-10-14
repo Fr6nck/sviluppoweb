@@ -590,6 +590,10 @@ $produzione = [
         bin2hex(random_bytes(16)),
         'Il codice per creare l\'account dell\'area riservata (/admin), la prima volta. Creato l\'account, svuotalo.',
     ],
+    'SUPERADMIN_SETUP_TOKEN' => [
+        bin2hex(random_bytes(16)),
+        'Il codice per creare il super admin su /admin/super: l\'account che vede il pannello Configurazione. Creato l\'account, svuotalo.',
+    ],
     'BOOKING_PROVIDER' => [
         'sito',
         'Il calendario vero del sito. Con il pagamento acceso quello dimostrativo (demo) incasserebbe su date che nessuno ha controllato.',
@@ -667,6 +671,10 @@ if ($urlProva !== '') {
             bin2hex(random_bytes(16)),
             'Il codice per creare l\'account dell\'area riservata (/admin), la prima volta. Creato l\'account, svuotalo.',
         ],
+        'SUPERADMIN_SETUP_TOKEN' => [
+            bin2hex(random_bytes(16)),
+            'Il codice per creare il super admin su /admin/super: l\'account che vede il pannello Configurazione. Creato l\'account, svuotalo.',
+        ],
         'MAIL_TRANSPORT' => [
             'log',
             'In prova nessuna e-mail parte: i messaggi dei moduli restano in storage/mail, li leggi via FTP. '
@@ -737,6 +745,12 @@ file_put_contents($uscita . '/LEGGIMI-PRIMA.txt', implode(PHP_EOL, [
     'di creare l\'account e un codice: è la riga ADMIN_SETUP_TOKEN del file',
     'env-prova.txt o env-produzione.txt che hai caricato. Creato l\'account,',
     'quella riga si può svuotare.',
+    '',
+    'IL SUPER ADMIN: il tuo account, separato da quello del gestore. Si crea',
+    'all\'indirizzo del sito seguito da /admin/super, con il codice della riga',
+    'SUPERADMIN_SETUP_TOKEN. È il solo che vede Configurazione: tutte le voci',
+    'del file .env, modificabili dal browser, con le copie di sicurezza. Il',
+    'gestore non vede né il pannello né l\'indirizzo /admin/super.',
     '',
     'Quando ricarichi il sito, NON cancellare e NON sovrascrivere la cartella',
     'storage/ sul server: dentro ci sono le modifiche fatte dal pannello e le',

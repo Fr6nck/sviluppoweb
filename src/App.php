@@ -114,6 +114,7 @@ final class App
         return $this->services['auth'] ??= new \ArcoDelVento\Admin\Auth(
             $this->store(),
             (string) $this->config('admin.setup_token', ''),
+            (string) $this->config('admin.super_token', ''),
         );
     }
 

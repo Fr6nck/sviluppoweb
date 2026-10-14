@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ArcoDelVento\Controller;
 
+use ArcoDelVento\Admin\Ambiente;
+use ArcoDelVento\Admin\Auth;
 use ArcoDelVento\Admin\Cruscotto;
 use ArcoDelVento\Admin\Form;
 use ArcoDelVento\Admin\Inbox;
@@ -86,20 +88,27 @@ final class AdminController
 
         $auth = $this->app->auth();
 
-        // ------------------------------------------------ prima volta e accesso
-        if (!$auth->hasAccount()) {
-            return $this->headers($pezzi === ['configura'] && $metodo === 'POST'
-                ? $this->setup($request)
-                : Response::html($this->page('configura', ['titolo' => 'Prima configurazione', 'disponibile' => $auth->setupAvailable()])));
+        // ------------------------------------------------ la porta del super admin
+        // Un indirizzo che non compare da nessuna parte: per chi non ha il suo
+        // gettone, o non è lui, è una pagina che non esiste.
+        if ($pezzi === ['super']) {
+            return $this->headers($this->superDoor($request));
         }
 
-        if ($pezzi === ['accesso'] && $metodo === 'POST') {
+        // ------------------------------------------------ prima volta e accesso
+        if (!$auth->hasAccount() && $pezzi === ['configura'] && $metodo === 'POST') {
+            return $this->headers($this->setup($request));
+        }
+
+        if ($pezzi === ['accesso'] && $metodo === 'POST' && ($auth->hasAccount() || $auth->hasSuper())) {
             return $this->headers($this->login($request));
         }
 
         $utente = $auth->current();
         if ($utente === null) {
-            return $this->headers(Response::html($this->page('accesso', ['titolo' => 'Accesso'])));
+            return $this->headers($auth->hasAccount()
+                ? Response::html($this->page('accesso', ['titolo' => 'Accesso']))
+                : Response::html($this->page('configura', ['titolo' => 'Prima configurazione', 'disponibile' => $auth->setupAvailable()])));
         }
 
         // ------------------------------------------------ dentro
@@ -120,6 +129,8 @@ final class AdminController
             $pezzi === ['accesso-sito']                     => $this->siteAccess($request),
             $pezzi === ['account']                          => $this->account($request),
             $pezzi === ['ripristina'] && $metodo === 'POST'  => $this->restore($request),
+            // Solo il super admin: per il gestore non esiste, come una pagina qualunque che non c'è.
+            $pezzi === ['configurazione'] && $auth->isSuper() => $this->configuration($request),
             default                                         => Response::html($this->page('non-trovata', ['titolo' => 'Pagina non trovata']), 404),
         };
 
@@ -153,6 +164,8 @@ final class AdminController
         }
         if (!preg_match('/^[a-z0-9._-]{3,40}$/', $utente)) {
             $errori[] = 'Il nome utente: da 3 a 40 caratteri, solo lettere minuscole, cifre, punto, trattino.';
+        } elseif ($auth->nomeOccupato($utente)) {
+            $errori[] = 'Questo nome utente non è disponibile: scegline un altro.';
         }
         $errori = array_merge($errori, $auth->passwordProblems($utente, $password, (string) $this->in($request, 'ripeti', '')));
 
@@ -184,7 +197,8 @@ final class AdminController
         }
 
         $utente = trim((string) $this->in($request, 'utente', ''));
-        if (!$auth->verify($utente, (string) $this->in($request, 'password', ''))) {
+        $ruolo  = $auth->credentials($utente, (string) $this->in($request, 'password', ''));
+        if ($ruolo === null) {
             $auth->recordFailure($ip);
 
             return Response::html($this->page('accesso', [
@@ -195,9 +209,9 @@ final class AdminController
         }
 
         $auth->clearFailures($ip);
-        $auth->login($auth->username());
+        $auth->login($auth->nome($ruolo), $ruolo);
 
-        return Response::redirect($this->url(), 303);
+        return Response::redirect($this->url($ruolo === Auth::SUPER && $this->in($request, 'super') === '1' ? 'configurazione' : ''), 303);
     }
 
     private function logout(): Response
@@ -209,32 +223,182 @@ final class AdminController
 
     private function account(Request $request): Response
     {
-        $auth = $this->app->auth();
+        $auth  = $this->app->auth();
+        $nome  = (string) $auth->current();
+        $ruolo = (string) $auth->role();
         if (!$request->isPost()) {
-            return Response::html($this->page('account', ['titolo' => 'Account', 'utente' => $auth->username()]));
+            return Response::html($this->page('account', ['titolo' => 'Account', 'utente' => $nome]));
         }
 
         $errori = [];
-        if (!$auth->verify($auth->username(), (string) $this->in($request, 'attuale', ''))) {
+        if (!$auth->verifyCurrent((string) $this->in($request, 'attuale', ''))) {
             $auth->recordFailure($this->ip($request));
             $errori[] = 'La password attuale non è giusta.';
         }
         $errori = array_merge($errori, $auth->passwordProblems(
-            $auth->username(),
+            $nome,
             (string) $this->in($request, 'nuova', ''),
             (string) $this->in($request, 'ripeti', '')
         ));
         if ($errori !== []) {
             return Response::html($this->page('account', [
-                'titolo' => 'Account', 'utente' => $auth->username(), 'errori' => $errori,
+                'titolo' => 'Account', 'utente' => $nome, 'errori' => $errori,
             ]), 422);
         }
 
         $auth->changePassword((string) $this->in($request, 'nuova', ''));
-        $auth->login($auth->username());
+        $auth->login($nome, $ruolo);
         $this->flash('ok', 'Password cambiata.');
 
         return Response::redirect($this->url('account'), 303);
+    }
+
+    // =========================================================== super admin
+
+    /**
+     * /admin/super, la porta del super admin. La prima volta crea l'account con
+     * SUPERADMIN_SETUP_TOKEN; poi è il suo accesso, che porta dritto a
+     * Configurazione. Senza gettone e senza account, e per il gestore, è una
+     * pagina che non esiste.
+     */
+    private function superDoor(Request $request): Response
+    {
+        $auth = $this->app->auth();
+        $nonTrovata = fn (): Response => Response::html($this->page('non-trovata', ['titolo' => 'Pagina non trovata']), 404);
+
+        if ($auth->isSuper()) {
+            return Response::redirect($this->url('configurazione'), 303);
+        }
+        if ($auth->current() !== null) {
+            return $nonTrovata();   // il gestore: per lui non c'è
+        }
+        // A chi non è entrato si mostra sempre l'accesso, che ci sia un super
+        // admin o no: la risposta non deve dire se l'account esiste. La
+        // creazione compare solo con il gettone scritto nel .env.
+        if (!$auth->superSetupAvailable()) {
+            return Response::html($this->page('accesso', ['titolo' => 'Accesso', 'portaSuper' => true]));
+        }
+        if (!$request->isPost()) {
+            return Response::html($this->page('super', ['titolo' => 'Super admin']));
+        }
+
+        $ip = $this->ip($request);
+        if ($auth->isLockedOut($ip)) {
+            return Response::html($this->page('super', [
+                'titolo' => 'Super admin', 'errori' => ['Troppi tentativi. Riprova fra ' . $auth->minutesLocked($ip) . ' minuti.'],
+            ]), 429);
+        }
+        $utente   = mb_strtolower(trim($this->in($request, 'utente')));
+        $password = $this->in($request, 'password');
+        $errori   = [];
+        if (!$auth->superSetupTokenValid($this->in($request, 'gettone'))) {
+            $auth->recordFailure($ip);
+            $errori[] = 'Il codice non è giusto. È la riga SUPERADMIN_SETUP_TOKEN del file .env.';
+        }
+        if (!preg_match('/^[a-z0-9._-]{3,40}$/', $utente)) {
+            $errori[] = 'Il nome utente: da 3 a 40 caratteri, solo lettere minuscole, cifre, punto, trattino.';
+        } elseif ($auth->nomeOccupato($utente)) {
+            $errori[] = 'Questo nome è già quello dell\'account del gestore: scegline un altro.';
+        }
+        $errori = array_merge($errori, $auth->passwordProblems($utente, $password, $this->in($request, 'ripeti')));
+        if ($errori !== []) {
+            return Response::html($this->page('super', [
+                'titolo' => 'Super admin', 'errori' => $errori, 'valori' => ['utente' => $utente],
+            ]), 422);
+        }
+
+        $auth->createAccount($utente, $password, Auth::SUPER);
+        $auth->clearFailures($ip);
+        $auth->login($utente, Auth::SUPER);
+        $this->flash('ok', 'Super admin creato. Il codice SUPERADMIN_SETUP_TOKEN non serve più: svuotalo qui sotto, nel gruppo «Area riservata e controlli».');
+
+        return Response::redirect($this->url('configurazione'), 303);
+    }
+
+    // ========================================================= configurazione
+
+    private function ambiente(): Ambiente
+    {
+        return new Ambiente((string) $this->app->config('root') . '/.env', $this->app->store());
+    }
+
+    /**
+     * Il pannello del file .env. Ogni scrittura chiede di nuovo la password
+     * del super admin: è il pannello che può spegnere il sito.
+     */
+    private function configuration(Request $request): Response
+    {
+        $auth = $this->app->auth();
+        $amb  = $this->ambiente();
+        $dati = function (array $extra = []) use ($amb, $auth): array {
+            $nelFile = $amb->valori();
+            $inUso = static fn (string $k): string => Ambiente::daServer($k) ?? ($nelFile[$k] ?? '');
+
+            return $extra + [
+                'titolo'   => 'Configurazione',
+                'ambiente' => $amb,
+                'nelFile'  => $nelFile,
+                'avvisi'   => Ambiente::avvisi($inUso, $auth->hasAccount(), $auth->hasSuper()),
+                'copie'    => $amb->copie(),
+                'registro' => array_slice($amb->registro(), 0, 8),
+                'inviati'  => [],
+            ];
+        };
+
+        if (!$request->isPost()) {
+            return Response::html($this->page('configurazione', $dati()));
+        }
+
+        $errori = [];
+        if (!$auth->verifyCurrent($this->in($request, 'conferma'))) {
+            $auth->recordFailure($this->ip($request));
+            $errori[] = 'La password di conferma non è giusta: non è stato scritto niente.';
+        }
+        if (!$amb->scrivibile()) {
+            $errori[] = 'Il file .env non si può scrivere dal sito: dagli i permessi di scrittura via FTP (644 al file, 755 alla cartella).';
+        }
+        $utente = (string) $auth->current();
+
+        if ($this->in($request, 'azione') === 'ripristina') {
+            if ($errori === []) {
+                try {
+                    if ($amb->ripristina($this->in($request, 'versione'), $utente)) {
+                        $this->flash('ok', 'Rimessa la versione scelta del file .env. Quella di prima è fra le copie, se serve tornare indietro.');
+
+                        return Response::redirect($this->url('configurazione'), 303);
+                    }
+                    $errori[] = 'Quella copia non c\'è più.';
+                } catch (\RuntimeException $e) {
+                    $errori[] = $e->getMessage();
+                }
+            }
+
+            return Response::html($this->page('configurazione', $dati(['errori' => $errori])), 422);
+        }
+
+        $inviati = (array) ($request->post['env'] ?? []);
+        [$cambi, $problemi] = $amb->controlla($inviati, (array) ($request->post['svuota'] ?? []));
+        $errori = array_merge($errori, $problemi);
+        if (isset($cambi['APP_URL']) && $this->in($request, 'conferma_url') !== '1') {
+            $errori[] = 'Stai cambiando l\'indirizzo del sito: spunta la conferma sotto il campo. Se l\'indirizzo è sbagliato, link, fogli di stile e pagamento smettono di funzionare.';
+        }
+        if ($errori !== []) {
+            return Response::html($this->page('configurazione', $dati(['errori' => $errori, 'inviati' => $inviati])), 422);
+        }
+        if ($cambi === []) {
+            $this->flash('ok', 'Nessun valore è cambiato: il file .env è rimasto com\'era.');
+
+            return Response::redirect($this->url('configurazione'), 303);
+        }
+
+        try {
+            $amb->salva($cambi, $utente);
+        } catch (\RuntimeException $e) {
+            return Response::html($this->page('configurazione', $dati(['errori' => [$e->getMessage()], 'inviati' => $inviati])), 500);
+        }
+        $this->flash('ok', 'Salvato nel file .env: ' . implode(', ', array_keys($cambi)) . '. Vale dalla prossima pagina che apri. La versione di prima è fra le copie.');
+
+        return Response::redirect($this->url('configurazione'), 303);
     }
 
     // =============================================================== tema
@@ -1168,6 +1332,7 @@ final class AdminController
         $dati += [
             'flash'  => $flash,
             'utente' => $utente,
+            'super'  => $utente !== null && $this->app->auth()->isSuper(),
             'nuove'  => $utente !== null ? $this->app->inbox()->countNew() : 0,
             'daCompletare' => $utente !== null ? count($this->mancanti()) + count($this->camereIncomplete()) : 0,
             'errori' => [],

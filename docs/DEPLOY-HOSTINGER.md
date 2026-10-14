@@ -566,3 +566,49 @@ vuoi rifare: `node tools/build-sipario.mjs http://indirizzo-del-sito-di-prova`
 sulla tua macchina (vuole Node e Playwright, e il sito con `SITE_ACCESS_CODE=off`),
 poi carica i due JPG.
 
+---
+
+## 15. Il super admin e il pannello Configurazione
+
+Oltre all'account del gestore c'è il **super admin**: il tuo. È il solo che
+vede **Configurazione**, cioè tutte le voci del file `.env` dal browser, senza
+FTP: indirizzo del sito, posta, pagamento SumUp, calendario, codici.
+
+**Crearlo.** Nel `.env` c'è la riga `SUPERADMIN_SETUP_TOKEN` (i file
+`env-produzione.txt` ed `env-prova.txt` del pacchetto la portano già, con un
+codice a caso). Apri l'indirizzo del sito seguito da **`/admin/super`**, scrivi
+quel codice, un nome utente diverso da quello del gestore e una password. Si
+entra dritti in Configurazione. Da lì svuota `SUPERADMIN_SETUP_TOKEN`: non serve
+più.
+
+**Entrare dopo.** Da `/admin/super` (porta dritto a Configurazione) o dal login
+normale di `/admin`: il nome utente dice chi entra.
+
+**Il gestore non lo vede.** Nel suo menu non c'è Configurazione, e
+`/admin/configurazione` e `/admin/super` per lui sono pagine che non esistono.
+
+**Come funziona il pannello.**
+
+- Le voci sono divise in gruppi (sito, pagamento, prenotazioni, posta, codici,
+  titolare, database), con un nome comprensibile e la spiegazione.
+- **Le password e le chiavi non si rivedono**: si vede se ci sono e quanto sono
+  lunghe. Per cambiarne una scrivi quella nuova; lasciata vuota, resta com'è.
+  «Svuota» la cancella.
+- **Ogni salvataggio chiede la tua password**, e cambia solo le righe dei valori
+  cambiati: commenti e righe sconosciute restano come sono.
+- **Prima di scrivere fa una copia** del file com'era (in
+  `storage/data/ambiente/`, le ultime dieci). In fondo alla pagina si rimette
+  una versione precedente con un click.
+- Cambiare **l'indirizzo del sito** chiede una spunta in più: se è sbagliato,
+  link, stili e pagamento smettono di funzionare.
+- In cima, **«Da guardare»** segnala le combinazioni che non vanno: debug
+  acceso in produzione, SumUp senza chiave, posta su `log`, codici rimasti.
+- Una voce impostata nel **pannello di Hostinger** (variabili d'ambiente) vince
+  sul file: si vede, ma da qui non si cambia.
+- Se il sito non può scrivere il `.env`, la pagina si legge soltanto: dai al file
+  i permessi 644 via FTP.
+
+**Password del super admin dimenticata.** Via FTP cancella
+`storage/data/superadmin.json`, rimetti nel `.env` una riga
+`SUPERADMIN_SETUP_TOKEN=` con un codice nuovo (almeno 16 caratteri a caso) e
+rifai la creazione da `/admin/super`. Il `.env` e le sue copie non si toccano.

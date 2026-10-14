@@ -1,9 +1,13 @@
 <?php
-/** @var array $valori */
+/**
+ * @var array $valori
+ * @var bool  $portaSuper  aperta da /admin/super: dopo l'accesso si va a Configurazione
+ */
 use ArcoDelVento\Support\Csrf;
 ?>
 <form method="post" action="<?= e(adminUrl('accesso')) ?>" class="adm-modulo adm-modulo--stretto" novalidate>
   <?= Csrf::field() ?>
+  <?php if (!empty($portaSuper)): ?><input type="hidden" name="super" value="1"><?php endif; ?>
   <div class="adm-campo">
     <label for="utente">Nome utente</label>
     <input type="text" id="utente" name="utente" required autocomplete="username" autocapitalize="none"

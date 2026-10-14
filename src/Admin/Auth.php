@@ -9,8 +9,15 @@ use ArcoDelVento\Storage\JsonStore;
 /**
  * Chi entra nell'area riservata.
  *
- * Un solo account, quello di chi gestisce la casa. La password non sta da
- * nessuna parte in chiaro: in storage/data/admin.json c'è solo il suo hash.
+ * Due account al massimo. Quello di chi gestisce la casa (admin.json), e
+ * quello del super admin (superadmin.json): chi ha fatto il sito, l'unico che
+ * vede il pannello Configurazione, cioè il file .env. Le password non stanno
+ * da nessuna parte in chiaro: nei due file c'è solo il loro hash.
+ *
+ * Il super admin si crea come il primo account, ma con un codice suo,
+ * SUPERADMIN_SETUP_TOKEN, all'indirizzo nascosto /admin/super. Il gestore
+ * della casa non lo vede e non lo trova: per lui quell'indirizzo, come
+ * /admin/configurazione, è una pagina che non esiste.
  *
  * LA PRIMA VOLTA. Finché l'account non esiste, /admin chiede di crearlo — ma
  * solo a chi conosce ADMIN_SETUP_TOKEN, che sta nel file .env. Chi può leggere
@@ -37,19 +44,68 @@ final class Auth
     /** Un hash vero di una password a caso che nessuno conosce: serve solo a spendere lo stesso tempo. */
     private const HASH_FITTIZIO = '$2y$12$pSKasRQ3.CfVSuDfMK5dP.4VP4n4TIveE3X4eE4sel9pQHTEGP95S';
 
+    public const ADMIN = 'admin';
+    public const SUPER = 'super';
+
+    /** Il file di ciascun account, in storage/data. */
+    private const ARCHIVI = [self::ADMIN => 'admin', self::SUPER => 'superadmin'];
+
     public function __construct(
         private readonly JsonStore $store,
         private readonly string $gettoneConfigurazione,
+        private readonly string $gettoneSuper = '',
     ) {
     }
 
     // ------------------------------------------------------------ l'account
 
+    /** L'account di chi gestisce la casa. */
     public function hasAccount(): bool
     {
-        $a = $this->store->read('admin');
+        return $this->esiste(self::ADMIN);
+    }
+
+    /** L'account del super admin. */
+    public function hasSuper(): bool
+    {
+        return $this->esiste(self::SUPER);
+    }
+
+    private function esiste(string $ruolo): bool
+    {
+        $a = $this->store->read(self::ARCHIVI[$ruolo]);
 
         return !empty($a['utente']) && !empty($a['hash']);
+    }
+
+    /** Il super admin si crea solo con il suo gettone, lungo abbastanza. */
+    public function superSetupAvailable(): bool
+    {
+        return !$this->hasSuper() && strlen($this->gettoneSuper) >= 16;
+    }
+
+    public function superSetupTokenValid(string $gettone): bool
+    {
+        return $this->superSetupAvailable() && hash_equals($this->gettoneSuper, $gettone);
+    }
+
+    /** Il nome di un account, o «» se non c'è. */
+    public function nome(string $ruolo): string
+    {
+        return (string) ($this->store->read(self::ARCHIVI[$ruolo])['utente'] ?? '');
+    }
+
+    /** Due account non possono avere lo stesso nome: all'accesso il nome dice chi entra. */
+    public function nomeOccupato(string $utente): bool
+    {
+        foreach (array_keys(self::ARCHIVI) as $ruolo) {
+            $nome = $this->nome($ruolo);
+            if ($nome !== '' && mb_strtolower($nome) === mb_strtolower($utente)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** La creazione dell'account è possibile solo con un gettone lungo abbastanza. */
@@ -80,9 +136,9 @@ final class Auth
         return $problemi;
     }
 
-    public function createAccount(string $utente, string $password): void
+    public function createAccount(string $utente, string $password, string $ruolo = self::ADMIN): void
     {
-        $this->store->write('admin', [
+        $this->store->write(self::ARCHIVI[$ruolo], [
             'utente'     => $utente,
             'hash'       => password_hash($password, PASSWORD_DEFAULT),
             'creato'     => date('c'),
@@ -90,40 +146,62 @@ final class Auth
         ], false);
     }
 
+    /** Cambia la password di chi è dentro. */
     public function changePassword(string $nuova): void
     {
-        $a = $this->store->read('admin');
+        $ruolo = $this->role() ?? self::ADMIN;
+        $a = $this->store->read(self::ARCHIVI[$ruolo]);
         $a['hash']       = password_hash($nuova, PASSWORD_DEFAULT);
         $a['modificato'] = date('c');
-        $this->store->write('admin', $a, false);
+        $this->store->write(self::ARCHIVI[$ruolo], $a, false);
     }
 
+    /** Il nome dell'account di chi gestisce la casa. */
     public function username(): string
     {
-        return (string) ($this->store->read('admin')['utente'] ?? '');
+        return $this->nome(self::ADMIN);
     }
 
-    /** Verifica le credenziali, senza toccare la sessione. */
-    public function verify(string $utente, string $password): bool
+    /**
+     * Di chi sono queste credenziali: ADMIN, SUPER o null. Non tocca la sessione.
+     *
+     * Si calcola sempre un hash, uno solo, anche con un nome che non esiste:
+     * i tempi di risposta non devono dire quali nomi ci sono.
+     */
+    public function credentials(string $utente, string $password): ?string
     {
-        $a = $this->store->read('admin');
-        // Anche con il nome sbagliato si calcola un hash: i tempi di risposta
-        // non devono dire se il nome utente esiste.
-        $hash = (string) ($a['hash'] ?? self::HASH_FITTIZIO);
-        $ok   = password_verify($password, $hash);
+        $chi = null;
+        $hash = self::HASH_FITTIZIO;
+        foreach (self::ARCHIVI as $ruolo => $archivio) {
+            $a = $this->store->read($archivio);
+            if (!empty($a['utente']) && !empty($a['hash']) && hash_equals(mb_strtolower((string) $a['utente']), mb_strtolower($utente))) {
+                $chi  = $ruolo;
+                $hash = (string) $a['hash'];
+                break;
+            }
+        }
 
-        return $ok && hash_equals(mb_strtolower((string) ($a['utente'] ?? '')), mb_strtolower($utente));
+        return password_verify($password, $hash) && $chi !== null ? $chi : null;
+    }
+
+    /** La password di chi è dentro, per le azioni che la chiedono di nuovo. */
+    public function verifyCurrent(string $password): bool
+    {
+        $ruolo = $this->role();
+        $utente = $this->current();
+
+        return $ruolo !== null && $utente !== null && $this->credentials($utente, $password) === $ruolo;
     }
 
     // ------------------------------------------------------------ la sessione
 
-    public function login(string $utente): void
+    public function login(string $utente, string $ruolo = self::ADMIN): void
     {
         // Un identificativo nuovo a ogni ingresso: quello di prima, se qualcuno
         // l'avesse visto, non vale più.
         session_regenerate_id(true);
-        $_SESSION[self::SESSIONE] = ['utente' => $utente, 'dal' => time(), 'ultimo' => time()];
-        $this->salvaAccesso();
+        $_SESSION[self::SESSIONE] = ['utente' => $utente, 'ruolo' => $ruolo, 'dal' => time(), 'ultimo' => time()];
+        $this->salvaAccesso($ruolo);
     }
 
     public function logout(): void
@@ -140,7 +218,12 @@ final class Auth
             return null;
         }
         $adesso = time();
-        if ($adesso - (int) $s['ultimo'] > self::INATTIVITA || $adesso - (int) $s['dal'] > self::DURATA_MASSIMA) {
+        $ruolo  = (string) ($s['ruolo'] ?? self::ADMIN);
+        // L'account deve esserci ancora, con lo stesso nome: se è stato
+        // cancellato via FTP (password dimenticata), la sessione non vale più.
+        $nome = isset(self::ARCHIVI[$ruolo]) ? $this->nome($ruolo) : '';
+        if ($adesso - (int) $s['ultimo'] > self::INATTIVITA || $adesso - (int) $s['dal'] > self::DURATA_MASSIMA
+            || $nome === '' || mb_strtolower($nome) !== mb_strtolower((string) $s['utente'])) {
             unset($_SESSION[self::SESSIONE]);
 
             return null;
@@ -148,6 +231,21 @@ final class Auth
         $_SESSION[self::SESSIONE]['ultimo'] = $adesso;
 
         return (string) $s['utente'];
+    }
+
+    /** ADMIN o SUPER per chi è dentro, null per chi no. */
+    public function role(): ?string
+    {
+        if ($this->current() === null) {
+            return null;
+        }
+
+        return (string) ($_SESSION[self::SESSIONE]['ruolo'] ?? self::ADMIN);
+    }
+
+    public function isSuper(): bool
+    {
+        return $this->role() === self::SUPER;
     }
 
     // ------------------------------------------------------------ i tentativi
@@ -212,10 +310,10 @@ final class Auth
         return substr(hash('sha256', 'adv|' . $ip . '|' . $this->gettoneConfigurazione), 0, 24);
     }
 
-    private function salvaAccesso(): void
+    private function salvaAccesso(string $ruolo): void
     {
-        $a = $this->store->read('admin');
+        $a = $this->store->read(self::ARCHIVI[$ruolo]);
         $a['ultimo_accesso'] = date('c');
-        $this->store->write('admin', $a, false);
+        $this->store->write(self::ARCHIVI[$ruolo], $a, false);
     }
 }

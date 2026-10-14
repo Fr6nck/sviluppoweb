@@ -177,6 +177,21 @@ if ($account) {
             : 'Per creare l\'account serve ADMIN_SETUP_TOKEN nel .env: almeno 16 caratteri a caso.');
 }
 
+$super = is_file($dati . '/superadmin.json')
+    && !empty((json_decode((string) file_get_contents($dati . '/superadmin.json'), true) ?: [])['hash']);
+$gettoneSuper = (string) Env::get('SUPERADMIN_SETUP_TOKEN', '');
+if ($super) {
+    $aggiungi($gettoneSuper === '' ? 'ok' : 'attenzione', 'Area riservata',
+        'super admin creato' . ($gettoneSuper === '' ? '' : ', ma SUPERADMIN_SETUP_TOKEN è ancora nel .env'),
+        'Il codice serve solo la prima volta: svuotalo dal pannello Configurazione o dal .env.');
+} else {
+    $aggiungi('nota', 'Area riservata',
+        'nessun super admin' . (strlen($gettoneSuper) >= 16 ? ': si crea aprendo /admin/super' : ''),
+        strlen($gettoneSuper) >= 16
+            ? 'Il super admin è l\'account che vede Configurazione (il file .env dal browser). Serve il codice SUPERADMIN_SETUP_TOKEN.'
+            : 'Facoltativo. Per avere il pannello Configurazione scrivi SUPERADMIN_SETUP_TOKEN nel .env (almeno 16 caratteri a caso) e apri /admin/super.');
+}
+
 // ------------------------------------------------ cartelle non pubbliche
 $docRoot = realpath((string) ($_SERVER['DOCUMENT_ROOT'] ?? '')) ?: null;
 if ($docRoot !== null) {

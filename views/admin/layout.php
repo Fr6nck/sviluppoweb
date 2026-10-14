@@ -125,6 +125,13 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
             <?= icona('utente', 20, 'adm-nav__icona') ?><span class="adm-nav__nome">Account</span>
           </a>
         </li>
+        <?php if (!empty($super)): /* solo il super admin: il gestore non lo vede */ ?>
+          <li>
+            <a href="<?= e(adminUrl('configurazione')) ?>"<?= $attiva === 'configurazione' ? ' aria-current="page"' : '' ?>>
+              <?= icona('ingranaggio', 20, 'adm-nav__icona') ?><span class="adm-nav__nome">Configurazione</span>
+            </a>
+          </li>
+        <?php endif; ?>
         <li>
           <a href="<?= e($sito) ?>" target="_blank" rel="noopener">
             <?= icona('esterno', 20, 'adm-nav__icona') ?><span class="adm-nav__nome">Vedi il sito</span>
@@ -172,7 +179,7 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
           <span class="adm-profilo__iniziale" aria-hidden="true"><?= e($iniziale) ?></span>
           <span class="adm-profilo__testo" aria-hidden="true">
             <span class="adm-profilo__nome"><?= e((string) $utente) ?></span>
-            <span class="adm-profilo__ruolo">Amministratore</span>
+            <span class="adm-profilo__ruolo"><?= !empty($super) ? 'Super admin' : 'Amministratore' ?></span>
           </span>
         </a>
       </div>

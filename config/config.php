@@ -79,8 +79,11 @@ return [
 
     // L'area riservata. Il gettone serve una volta sola, per creare l'account:
     // chi lo conosce ha già accesso ai file del sito. Dopo, si svuota.
+    // Il secondo gettone crea il super admin, l'account nascosto che vede il
+    // pannello Configurazione (il file .env): si apre /admin/super.
     'admin' => [
         'setup_token' => (string) Env::get('ADMIN_SETUP_TOKEN', ''),
+        'super_token' => (string) Env::get('SUPERADMIN_SETUP_TOKEN', ''),
     ],
 
     'booking' => [
