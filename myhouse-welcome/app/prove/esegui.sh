@@ -81,8 +81,8 @@ if [ -n "${PROVE_EMAIL:-}" ] && [ -d "$W/app/storage/logs/email" ]; then
   mkdir -p "$QUI/email"
   for f in "$W/app/storage/logs/email"/*.html; do cp "$f" "$QUI/email/$(basename "$f" | sed 's/^[0-9]*-[0-9]*-//')"; done
 fi
-if [ -s "$W/app/storage/logs/app.log" ]; then
+if ls "$W"/app/storage/logs/app-*.log >/dev/null 2>&1; then
   echo; echo "--- registro tecnico dell'applicazione (errori previsti dalle prove inclusi) ---"
-  cut -c1-300 "$W/app/storage/logs/app.log" | tail -n 25
+  cat "$W"/app/storage/logs/app-*.log | cut -c1-300 | tail -n 25
 fi
 exit $ESITO

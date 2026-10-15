@@ -129,7 +129,11 @@ final class Auth
         $u = Db::one('SELECT * FROM users WHERE email = ?', [mb_strtolower(trim($email))]);
         // password_verify su un hash finto: costo simile anche quando l'utente non esiste.
         $hash = $u['password_hash'] ?? '$2y$10$usqI0N8kKZ1xJ3l4b5c6ruJ8Q1sT0uV2wX3yZ4aB5cD6eF7gH8iJK';
-        if (!password_verify($password, $hash) || !$u) return false;
+        if (!password_verify($password, $hash) || !$u) {
+            if ($u && $u['role'] === 'admin') Log::accesso('login.fallito', (int) $u['id'], (string) $u['email']);   // 8I
+            return false;
+        }
+        if ($u['role'] === 'admin') Log::accesso('login', (int) $u['id'], (string) $u['email']);
         if (password_needs_rehash($u['password_hash'], PASSWORD_DEFAULT)) {
             Db::update('users', ['password_hash' => password_hash($password, PASSWORD_DEFAULT)], 'id = :uid', ['uid' => $u['id']]);
         }
@@ -146,6 +150,7 @@ final class Auth
 
     public static function logout(): void
     {
+        if (($u = self::user()) && $u['role'] === 'admin' && !self::isImpersonating()) Log::accesso('logout', (int) $u['id'], (string) $u['email']);   // 8I
         $_SESSION = []; session_destroy(); session_start(); session_regenerate_id(true);
     }
 
@@ -195,8 +200,9 @@ final class Auth
         if ($target['role'] === 'admin') { http_response_code(403); exit('Non si entra nell\'account di un altro amministratore.'); }
         Db::insert('audit_log', [
             'actor_user_id' => $admin['id'], 'target_user_id' => $targetUserId,
-            'action' => 'impersonate.start', 'meta' => json_encode(['ip' => RateLimit::ip()]), 'created_at' => Support::now(),
+            'action' => 'impersonate.start', 'meta' => json_encode(['ip' => Log::mascheraIp(RateLimit::ip())]), 'created_at' => Support::now(),
         ]);
+        Log::accesso('impersonate.start', (int) $admin['id'], (string) $admin['email'], ['cliente' => $targetUserId]);
         session_regenerate_id(true);
         $_SESSION['uid'] = $targetUserId;
         $_SESSION['impersonator'] = (int) $admin['id'];
@@ -211,6 +217,7 @@ final class Auth
             'actor_user_id' => $adminId, 'target_user_id' => $_SESSION['uid'] ?? null,
             'action' => $motivo, 'meta' => '', 'created_at' => Support::now(),
         ]);
+        Log::accesso($motivo, (int) $adminId, '', ['cliente' => $_SESSION['uid'] ?? null]);
         session_regenerate_id(true);
         $_SESSION['uid'] = (int) $adminId;
         unset($_SESSION['impersonator'], $_SESSION['impersonation_until']);
@@ -230,6 +237,10 @@ final class Auth
 
     public static function audit(string $action, ?int $targetUserId = null, array $meta = []): void
     {
+        // 8I: le azioni degli amministratori (impostazioni, clienti, piani…) anche nel registro degli accessi.
+        if (($attore = self::actorId()) && ($ad = Db::one('SELECT id, email, role FROM users WHERE id = ?', [$attore])) && $ad['role'] === 'admin') {
+            Log::accesso($action, (int) $ad['id'], (string) $ad['email'], ['cliente' => $targetUserId] + array_intersect_key($meta, array_flip(['campi', 'cambiate', 'file'])));
+        }
         Db::insert('audit_log', [
             'actor_user_id' => self::actorId(), 'target_user_id' => $targetUserId,
             'action' => $action, 'meta' => $meta ? json_encode($meta, JSON_UNESCAPED_UNICODE) : '',

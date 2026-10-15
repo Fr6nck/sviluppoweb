@@ -117,6 +117,13 @@ function db(): PDO
     $pdo = new PDO('sqlite:' . $f, null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
     return $pdo;
 }
+/** 8I: i registri sono un file al giorno (mail-AAAA-MM-GG.log, app-AAAA-MM-GG.log): tutte le righe, dal più vecchio. */
+function righeLog(string $tipo): array {
+    global $DOVE; $f = glob("$DOVE/app/storage/logs/$tipo-????-??-??.log") ?: []; sort($f); $out = [];
+    foreach ($f as $x) foreach (file($x, FILE_IGNORE_NEW_LINES) ?: [] as $l) $out[] = $l;
+    return $out;
+}
+function righePosta(): array { return righeLog('mail'); }
 function val(string $sql, array $a = []): mixed { $s = db()->prepare($sql); $s->execute($a); $v = $s->fetchColumn(); return $v === false ? null : $v; }
 function riga(string $sql, array $a = []): ?array { $s = db()->prepare($sql); $s->execute($a); return $s->fetch() ?: null; }
 function righe(string $sql, array $a = []): array { $s = db()->prepare($sql); $s->execute($a); return $s->fetchAll(); }
@@ -126,7 +133,7 @@ function linkPosta(string $a, string $tipo): string
 {
     global $DOVE;
     $trovato = '';
-    foreach (file("$DOVE/app/storage/logs/mail.log") ?: [] as $l) {
+    foreach (righePosta() ?: [] as $l) {
         $m = json_decode($l, true);
         if (($m['to'] ?? '') === $a && preg_match('#https?://\S+/' . $tipo . '/[A-Za-z0-9_-]+#', (string) $m['text'], $x)) $trovato = $x[0];
     }
@@ -1224,7 +1231,7 @@ prova('6H · al rinnovo: 3 strutture, archiviate le due scelte, sezioni e conten
       && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NOT NULL', [$cacc]) === 2
       && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$cacc]) === 5
       && (int) val('SELECT COUNT(*) FROM sections s JOIN properties p ON p.id = s.property_id WHERE p.account_id = ?', [$cacc]) === $sezioniPrima, $r['body']);
-prova('…l\'email «Da oggi sei su Portfolio»', str_contains((string) @file_get_contents("$DOVE/app/storage/logs/mail.log"), 'Da oggi sei su Portfolio'));
+prova('…l\'email «Da oggi sei su Portfolio»', str_contains((string) implode("\n", righePosta()), 'Da oggi sei su Portfolio'));
 prova('La guida archiviata va offline (il QR resta)', $carla->get('/g/' . val('SELECT slug FROM properties WHERE id = ?', [$c1]))['code'] === 404
       && (bool) val('SELECT id FROM qr_tokens WHERE property_id = ?', [$c1]));
 $r = $carla->get('/pannello');
@@ -1508,7 +1515,7 @@ prova('Fase 4 · eliminata la copia, l\'originale ha ancora tutte le sue foto e 
 
 // ================================================================= FASE 5
 capitolo('Fase 5 · listino, guida che fa guadagnare, FAQ, firma, email, funnel');
-$posta = fn(string $a) => array_values(array_filter(array_map(fn($l) => json_decode($l, true), file("$DOVE/app/storage/logs/mail.log") ?: []), fn($m) => ($m['to'] ?? '') === $a));
+$posta = fn(string $a) => array_values(array_filter(array_map(fn($l) => json_decode($l, true), righePosta() ?: []), fn($m) => ($m['to'] ?? '') === $a));
 $r = $ospite->get('/');
 prova('K1 · sotto ogni prezzo l\'equivalente mensile (97/12, 127/12, Portfolio per 2: 197/12)', str_contains($r['body'], "circa 8,08\u{00A0}€ al mese")
       && str_contains($r['body'], "circa 10,58\u{00A0}€ al mese") && str_contains($r['body'], "<span data-mensile>16,42\u{00A0}€</span> al mese"));
@@ -2556,7 +2563,7 @@ prova('«Prova la connessione» con Stripe: la chiave risponde (modalità di pro
 $r = $admin->segui($admin->post('/admin/impostazioni/archivio/prova', []));
 prova('…con il bucket: scrittura, lettura e cancellazione', str_contains($r['body'], 'Il bucket risponde'));
 $r = $admin->segui($admin->post('/admin/impostazioni/posta/prova', []));
-prova('…con la posta: in modalità prova l\'email finisce in mail.log', str_contains($r['body'], 'mail.log') && str_contains((string) @file_get_contents($DOVE . '/app/storage/logs/mail.log'), 'Prova della posta — MyHouse Welcome'));
+prova('…con la posta: in modalità prova l\'email finisce in mail.log', str_contains($r['body'], 'storage/logs/mail-' . gmdate('Y-m-d') . '.log') && str_contains((string) implode("\n", righePosta()), 'Prova della posta — MyHouse Welcome'));
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
 
 // ================================================================= PUNTO 5
@@ -3365,7 +3372,7 @@ $cond = ['righe' => (int) val("SELECT COUNT(*) FROM site_texts") === 0, 'h1' => 
          'admin' => !str_contains($admin->get('/admin/testi')['body'], 'testi__campo testi__campo--cambiato'),
          'fileS3' => getenv('MHW_STORAGE') !== 's3' || !(clearstatcache(true, $fileS3Tel) ?? is_file($fileS3Tel))];   // is_file() tiene una cache per percorso: va svuotata
 $richS3 = array_values(array_filter(array_map('trim', (array) @file("$S3_DIR/richieste.jsonl")), fn($l) => str_contains($l, 'DELETE') && str_contains($l, 'sito')));
-$logFoto = array_values(array_filter(array_map('trim', (array) @file("$DOVE/app/storage/logs/app.log")), fn($l) => str_contains($l, 'testi.foto')));
+$logFoto = array_values(array_filter(array_map('trim', righeLog('app')), fn($l) => str_contains($l, 'testi.foto')));
 prova('…tutto di serie: tabella vuota, home com\'era, foto vecchie cancellate', !in_array(false, $cond, true),
       json_encode($cond) . ' · ' . $rifTel . ' · DELETE: ' . implode(' | ', array_map(fn($l) => mb_substr($l, 0, 120), $richS3)) . ' · log: ' . implode(' | ', array_map(fn($l) => mb_substr($l, 0, 300), $logFoto)));
 // /media/{file}: anche un file caricato dall'amministrazione (senza riga in media) si serve, con il tipo giusto.
@@ -4504,6 +4511,42 @@ prova('Pannello · Plus in inglese: l\'inglese è una delle lingue di base, con 
 $rI = $bIt->get("/pannello/$pIt/impostazioni");
 prova('Pannello · chi scrive in italiano: in Impostazioni «Scrivi in un\'altra lingua? Ecco come funziona», chiuso; in Lingue niente riquadro',
       str_contains($rI['body'], '<details class="lingua-come"><summary>Scrivi in un&#039;altra lingua? Ecco come funziona</summary>') && !str_contains($bIt->get("/pannello/$pIt/lingue")['body'], 'class="lingua-come'));
+
+capitolo('8I · registri conformi al GDPR: file del giorno, dati ridotti, pulizia, copia su S3');
+$j8i = json_decode((string) shell_exec('php ' . escapeshellarg(__DIR__ . '/registri-8i.php') . ' ' . escapeshellarg($DOVE) . ' ' . escapeshellarg((string) getenv('AWS_S3_ENDPOINT')) . ' 2>&1'), true) ?: [];
+prova('8I · registro tecnico nel file del giorno, con email, IP, telefono, password e chiavi mascherati', !empty($j8i['maschera']['ok']), (string) ($j8i['maschera']['riga'] ?? json_encode($j8i)));
+prova('8I · pulizia: tecnici di 100 giorni via, di 10 no; posta di 8 giorni via, di 3 no; email di prova di 9 giorni via', !empty($j8i['pulizia']['ok']), json_encode($j8i['pulizia'] ?? null));
+prova('8I · accesso di un amministratore in accessi-admin-AAAA-MM-GG.log con IP ed email abbreviati', !empty($j8i['accessi']['ok']));
+$put8i = array_values(array_filter(array_map(fn($l) => json_decode($l, true), file("$S3_DIR/richieste.jsonl", FILE_IGNORE_NEW_LINES) ?: []),
+                     fn($x) => ($x['metodo'] ?? '') === 'PUT' && str_starts_with((string) ($x['percorso'] ?? ''), '/mhw-registri/')));
+prova('8I · copia sul bucket dei registri: tecnici/ e accessi-admin/ con il file del giorno, esito salvato', !empty($j8i['s3']['ok'])
+      && in_array('/mhw-registri/accessi-admin/accessi-admin-' . gmdate('Y-m-d') . '.log', array_column($put8i, 'percorso'), true)
+      && in_array('/mhw-registri/tecnici/app-' . gmdate('Y-m-d') . '.log', array_column($put8i, 'percorso'), true) && !empty($j8i['s3']['stato']['ok']),
+      json_encode([$j8i['s3'] ?? null, array_column($put8i, 'percorso')]));
+prova('8I · registro delle azioni: nessuna riga cancellata, nessun IP in chiaro', !empty($j8i['audit']['ok']), json_encode($j8i['audit'] ?? null));
+prova('8I · limiti ai tentativi: l\'IP diventa un codice di 16 caratteri (chiave in app/storage), nessun IP in chiaro nei nomi', !empty($j8i['ipkey']['ok'])
+      && (int) val("SELECT COUNT(*) FROM rate_limits WHERE bucket LIKE '%127.0.0.1%'") === 0 && (int) val("SELECT COUNT(*) FROM rate_limits WHERE bucket LIKE 'login-ip:%'") > 0);
+$r = $admin->get('/admin/impostazioni');
+prova('8I · Impostazioni → Registri: giorni, bucket, chiavi a parte; spazio, file, «Scarica gli ultimi 7 giorni», «Svuota» con SVUOTA', str_contains($r['body'], 'id="registri"')
+      && str_contains($r['body'], 'Conserva i registri tecnici per … giorni') && str_contains($r['body'], 'Scarica gli ultimi 7 giorni') && str_contains($r['body'], 'Per svuotare, scrivi SVUOTA')
+      && str_contains($r['body'], 's3:PutObject e s3:PutObjectRetention'));
+$z8 = $admin->post('/admin/registri/scarica', []);
+prova('8I · «Scarica»: uno zip con i registri', $z8['code'] === 200 && str_contains($z8['head'], 'application/zip') && str_starts_with($z8['body'], "PK"));
+$admin->post('/admin/registri/svuota', ['conferma' => 'no']);
+$restano8 = count(glob("$DOVE/app/storage/logs/app-*.log") ?: []);
+$admin->post('/admin/registri/svuota', ['conferma' => 'SVUOTA']);
+prova('8I · «Svuota»: senza SVUOTA non tocca niente; con SVUOTA via tecnici e posta, restano gli accessi degli amministratori', $restano8 > 0
+      && count(glob("$DOVE/app/storage/logs/app-*.log") ?: []) <= 1 && count(glob("$DOVE/app/storage/logs/accessi-admin-*.log") ?: []) >= 1
+      && str_contains((string) @file_get_contents("$DOVE/app/storage/logs/accessi-admin-" . gmdate('Y-m-d') . '.log'), 'registri.svuota'), (string) $restano8);
+$r = $admin->post('/admin/impostazioni/registri', ['registri__giorni' => '20', 'password' => 'AdminProva123']);
+prova('8I · i giorni vanno da 30 a 180', str_contains($r['body'], 'Scrivi un numero di giorni tra 30 e 180.'));
+$pr8i = $ospite->get('/privacy')['body'];
+prova('8I · privacy: «Registri tecnici e sicurezza» con legittimo interesse, IP abbreviati, 90 giorni, 24 ore, S3 Milano 6/12 mesi, Matomo 6 mesi',
+      str_contains($pr8i, 'id="registri"') && str_contains($pr8i, 'art. 6.1.f GDPR') && str_contains($pr8i, 'dopo 90 giorni') && str_contains($pr8i, 'dopo 24 ore')
+      && str_contains($pr8i, 'S3, Milano') && str_contains($pr8i, 'per 6 mesi e si eliminano dopo 12 mesi'));
+if ($imp8 = val("SELECT meta FROM audit_log WHERE action = 'impersonate.start' ORDER BY id DESC LIMIT 1")) {
+    prova('8I · entrata nell\'account di un cliente: nel registro delle azioni l\'IP abbreviato', !str_contains((string) $imp8, '127.0.0.1'), (string) $imp8);
+}
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

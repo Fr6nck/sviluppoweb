@@ -1,5 +1,19 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 8I registri (log) conformi al GDPR (15 ottobre 2026)
+
+Nessuna migrazione. Da configurare: DA-CONFIGURARE, «Registri (log) conformi al GDPR».
+
+- **Un file al giorno**, in `app/storage/logs/` (fuori dal web): `app-AAAA-MM-GG.log` (registro tecnico, stesso formato JSON), `mail-AAAA-MM-GG.log` (posta di prova), `accessi-admin-AAAA-MM-GG.log` (nuovo). `Log::file($tipo)` dà il file del giorno; Anomalie, Diagnostica (prova «non leggibile dal web» sul file di oggi, ultimo errore S3 dagli ultimi 7 giorni) e i testi che nominavano `app.log`/`mail.log` sono aggiornati. Al primo giro i vecchi `app.log` e `mail.log` si dividono per giorno (il registro tecnico vecchio viene anche mascherato).
+- **Pulizia automatica** una volta al giorno (giro dei richiami e `/cron`): registri tecnici e accessi dopo **90 giorni** (Impostazioni → Registri, da 30 a 180), posta di prova ed `email/` dopo **7**.
+- **Meno dati personali:** prima di scrivere si mascherano email (`m***@dominio.it`), IP (IPv4 con l'ultimo blocco a 0, IPv6 con i primi 3 gruppi), telefoni (ultime 3 cifre), password, token e chiavi (`[nascosto]`). La posta di prova resta com'è (contiene apposta i link), ma 7 giorni.
+- **Limiti ai tentativi** (`login-ip:`, `register:`, `reset-ip:`, `sito-interesse:`): l'IP diventa un codice (`RateLimit::ipKey()`, HMAC con una chiave generata una volta e tenuta in `app/storage/.chiave-registri`). I limiti funzionano come prima.
+- **Registro delle azioni:** nessuna riga cancellata (alcune servono al funzionamento). Le entrate negli account dei clienti salvano l'IP abbreviato; dopo 12 mesi l'IP si toglie, e quelli già scritti si abbreviano.
+- **Accessi degli amministratori:** accesso riuscito o fallito, uscita, entrata e uscita dagli account dei clienti, cambi di impostazioni e le altre azioni dello staff, con IP ed email abbreviati.
+- **Copia notturna su AWS S3 Milano** dei file del giorno prima (`tecnici/`, `posta/`, `accessi-admin/`), con chiavi a parte che possono solo scrivere; gli accessi degli amministratori con Object Lock Compliance per 180 giorni, messo dal sito file per file. La cancellazione la fa il ciclo di vita del bucket. Esito in Impostazioni → Registri; «Prova» controlla anche che la cancellazione sia rifiutata.
+- **Impostazioni → Registri:** spazio, numero di file, il più vecchio, l'ultima copia su S3; «Scarica gli ultimi 7 giorni» (zip) e «Svuota i registri» (scrivendo SVUOTA; il registro degli accessi degli amministratori resta).
+- **Privacy:** paragrafo «Registri tecnici e sicurezza» (Testi e foto), con base giuridica, IP abbreviati, durate e luogo. `analytics_events` e `interessi_sito` non avevano IP né user agent.
+
 ## v2 · Banner del consenso più leggero (15 ottobre 2026)
 
 Nessuna migrazione.

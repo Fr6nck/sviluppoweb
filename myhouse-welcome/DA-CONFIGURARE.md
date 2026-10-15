@@ -212,6 +212,22 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 2. **Google Analytics 4 e Microsoft Clarity** (facoltativi): incolla l'ID `G-…` e/o l'ID del progetto Clarity. Compare il banner del consenso; partono solo per chi accetta. In GA4 crea gli stessi eventi come «eventi chiave». Rileggi i testi del banner in Testi e foto → «Cookie e consenso» e il paragrafo «Cookie» della privacy (Testi e foto → «Informativa: il paragrafo Cookie»): fallo controllare dal consulente privacy.
 3. **Search Console:** aggiungi il sito in Google Search Console (la verifica è in SEO e GEO → «Verifica Google») e invia la sitemap `https://…/sitemap.xml`.
 
+**Registri (log) conformi al GDPR (8I).** Niente da fare perché funzioni: al primo giro dei richiami (o del `/cron`) i vecchi `app.log` e `mail.log` si dividono per giorno e parte la pulizia. Da configurare:
+1. **Amministrazione → Impostazioni → Registri:** quanti giorni tenere i registri tecnici (di serie 90, da 30 a 180). Lì vedi spazio, file e il più vecchio, e puoi «Scaricare gli ultimi 7 giorni» o «Svuotare» (scrivendo SVUOTA). Il registro degli accessi degli amministratori non si svuota.
+2. **Copia notturna su AWS S3 (Milano)**, con gli accessi degli amministratori inalterabili. In console AWS:
+   - S3 → **Crea bucket** `welcomemyhouse-registri` (o un nome tuo), regione **Europa (Milano) eu-south-1**; **Blocca tutto l'accesso pubblico** acceso; **Crittografia** SSE-S3 (di serie); in «Impostazioni avanzate» **Object Lock: Abilita** (si può solo alla creazione; accende anche il versioning).
+   - Bucket → Proprietà → **Object Lock**: lascia **senza** conservazione predefinita. S3 non permette una regola per cartella: la conservazione **Compliance di 180 giorni** la chiede il sito file per file, solo per quelli in `accessi-admin/` (nessuno, nemmeno l'account principale AWS, li può modificare o cancellare prima).
+   - Bucket → Gestione → **Regole del ciclo di vita**: una regola per il prefisso `tecnici/` e una per `posta/` → «Scadenza delle versioni correnti» dopo **90 giorni** e «Eliminazione definitiva delle versioni non correnti» dopo 1 giorno; una per `accessi-admin/` → dopo **365 giorni** (e versioni non correnti dopo 1 giorno).
+   - IAM → Utenti → **Crea utente** `welcomemyhouse-registri`, senza accesso alla console; Autorizzazioni → «Crea policy in linea» (JSON):
+     `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:PutObject","s3:PutObjectRetention"],"Resource":"arn:aws:s3:::welcomemyhouse-registri/*"}]}`
+     (`PutObjectRetention` serve solo a mettere i 180 giorni sugli accessi: in modalità Compliance si può allungare, mai accorciare. Niente `DeleteObject` né `GetObject`.)
+   - Utente → Credenziali di sicurezza → **Crea chiave di accesso** («Applicazione eseguita al di fuori di AWS»): copia Access key ID e Secret in **Impostazioni → Registri** con bucket e regione, salva e premi **«Prova i dati salvati»**: deve dire che il bucket accetta i file e **rifiuta la cancellazione**.
+   - Costo: centesimi al mese (i primi 12 mesi rientrano nel piano gratuito di S3).
+3. **cPanel → Raw Access:** togli «Archivia i registri» (o tieni solo il mese in corso): i registri di Apache con l'IP completo li conserva l'hosting.
+4. **cPanel → Errors / `error_log` di PHP:** controlla che il file `error_log` non finisca nella cartella pubblica (se c'è, impostalo in `app/storage/logs` o chiedi all'hosting).
+5. **Matomo** (se usato, 8H) → Amministrazione → Privacy: «Anonimizza i dati di tracciamento» a 2 byte e **«Elimina i vecchi dati grezzi» dopo 180 giorni** (i report aggregati restano).
+6. **Registro dei trattamenti:** aggiungi «Registri tecnici e di sicurezza» con queste durate: registri tecnici 90 giorni sul server (o quelli scelti), posta di prova 7 giorni, limiti ai tentativi 24 ore (IP come codice), accessi degli amministratori 6 mesi inalterabili e 12 mesi in tutto su S3 Milano.
+
 ## 4b. La guida vetrina (la demo della landing)
 
 La demo della landing si sposta su un account vero, quello dell'agenzia.

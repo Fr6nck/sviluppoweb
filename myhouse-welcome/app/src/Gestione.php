@@ -201,7 +201,7 @@ final class Gestione
         foreach (array_slice(array_reverse(self::erroriRecenti(7)), 0, 10) as $e) {
             $righe[] = [(string) ($e['msg'] ?? ''), Support::date((string) ($e['t'] ?? '')) . ' · rif. ' . ($e['ref'] ?? ''), ''];
         }
-        $aggiungi('Errori del sito negli ultimi 7 giorni', 'media', 'Il dettaglio è in storage/logs/app.log, con lo stesso riferimento. Gli ultimi dieci, dal più recente.', $righe);
+        $aggiungi('Errori del sito negli ultimi 7 giorni', 'media', 'Il dettaglio è nel registro tecnico del giorno (storage/logs/app-AAAA-MM-GG.log), con lo stesso riferimento. Gli ultimi dieci, dal più recente.', $righe);
 
         // 9. Traduzioni suggerite non riuscite.
         $righe = [];
@@ -343,20 +343,12 @@ final class Gestione
         return $n;
     }
 
-    /** Le righe ERROR del registro tecnico degli ultimi $giorni giorni (lette dalla coda del file). */
+    /** Le righe ERROR del registro tecnico degli ultimi $giorni giorni (8I: dai file del giorno). */
     public static function erroriRecenti(int $giorni): array
     {
-        $file = Log::dir() . '/app.log';
-        if (!is_file($file)) return [];
-        $h = @fopen($file, 'r');
-        if (!$h) return [];
-        $dim = (int) filesize($file);
-        fseek($h, max(0, $dim - 200000));
-        $testo = (string) stream_get_contents($h);
-        fclose($h);
         $da = self::iso(time() - $giorni * self::GIORNO);
         $out = [];
-        foreach (explode("\n", $testo) as $riga) {
+        foreach (Registri::righe('app', $giorni + 1) as $riga) {
             $e = json_decode($riga, true);
             if (is_array($e) && ($e['lvl'] ?? '') === 'ERROR' && (string) ($e['t'] ?? '') >= $da) $out[] = $e;
         }

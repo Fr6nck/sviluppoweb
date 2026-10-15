@@ -37,7 +37,7 @@ $r->get('/admin', function () {
 
     $avvisi = [];
     if (!Stripe::enabled()) $avvisi[] = ['Stripe non è configurato', 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti possono preparare la guida ma non pagarla. Inseriscili nelle Impostazioni.', '/admin/impostazioni#stripe'];
-    if (Config::get('mail')['transport'] === 'log') $avvisi[] = ['La posta non parte', 'Le email di conferma e di recupero della password finiscono in storage/logs/mail.log. Imposta il server SMTP nelle Impostazioni.', '/admin/impostazioni#posta'];
+    if (Config::get('mail')['transport'] === 'log') $avvisi[] = ['La posta non parte', 'Le email di conferma e di recupero della password finiscono nei registri della posta (storage/logs/mail-AAAA-MM-GG.log). Imposta il server SMTP nelle Impostazioni.', '/admin/impostazioni#posta'];
     if (Config::get('storage')['driver'] !== 's3') $avvisi[] = ['Foto e PDF stanno sul disco del server', 'In produzione usa Amazon S3: bucket e credenziali si inseriscono nelle Impostazioni.', '/admin/impostazioni#archivio'];
     $usati = Traduttore::usati(); $tetto = Traduttore::tetti()['sito'];
     if ($tetto > 0 && $usati > $tetto * 0.8) $avvisi[] = ['Traduzioni suggerite oltre l\'80% del tetto del mese', 'Usati ' . number_format($usati, 0, ',', '.') . ' caratteri su ' . number_format($tetto, 0, ',', '.') . ': al tetto le richieste si fermano fino al primo del mese.', '/admin/traduzioni'];
@@ -640,12 +640,14 @@ $r->get('/admin/diagnostica', function () {
         $esce = $res['code'] === 200 && $res['bytes'] > 0;
         $checks[] = ['config.php non leggibile', !$esce, $esce ? 'ATTENZIONE: config.php restituisce contenuto (risposta ' . $res['code'] . '). Controlla che app/.htaccess sia stato caricato.'
             : ($res['code'] === 200 ? 'Non esce nulla.' : 'Il server rifiuta la richiesta (risposta ' . $res['code'] . ').')];
-        foreach (['mail.log' => 'Posta di prova non leggibile dal web (contiene link di accesso)'] as $f => $titolo) {
-            @touch(MHW_APP . '/storage/logs/' . $f);
-            $res = $probe($cartella . '/app/storage/logs/' . $f);
+        // 8I: i registri del giorno (si crea il file, se ancora non c'è, per provarlo davvero).
+        foreach (['mail' => 'Posta di prova non leggibile dal web (contiene link di accesso)'] as $tipoLog => $titolo) {
+            @touch(MHW\Log::file($tipoLog));
+            $res = $probe($cartella . '/app/storage/logs/' . basename(MHW\Log::file($tipoLog)));
             $checks[] = [$titolo, !($res['code'] === 200), $res['code'] === 200 ? 'ATTENZIONE: storage/logs è raggiungibile dal web.' : 'Il server rifiuta la richiesta.'];
         }
-        $res = $probe($cartella . '/app/storage/logs/app.log');
+        @touch(MHW\Log::file('app'));
+        $res = $probe($cartella . '/app/storage/logs/' . basename(MHW\Log::file('app')));
         $checks[] = ['Registro tecnico non leggibile dal web', !($res['code'] === 200 && $res['bytes'] > 0),
             $res['code'] === 200 && $res['bytes'] > 0 ? 'ATTENZIONE: storage/logs è raggiungibile dal web.' : 'Il server rifiuta la richiesta.'];
     }
@@ -658,7 +660,7 @@ $r->get('/admin/diagnostica', function () {
     $checks[] = ['Indirizzo del webhook', true, 'In Stripe punta il webhook a ' . $base . '/webhook/stripe'];
     $mail = Config::get('mail');
     $checks[] = ['Posta in uscita', $mail['transport'] !== 'log',
-        $mail['transport'] === 'log' ? 'le email finiscono in storage/logs/mail.log: imposta il server SMTP nelle Impostazioni' : 'trasporto ' . $mail['transport']];
+        $mail['transport'] === 'log' ? 'le email finiscono nei registri della posta (storage/logs/mail-AAAA-MM-GG.log): imposta il server SMTP nelle Impostazioni' : 'trasporto ' . $mail['transport']];
     $st = Config::get('storage');
     $s3ok = false; $s3det = 'MHW_STORAGE non è s3: i file restano sul disco del server';
     if ($st['driver'] === 's3') {
@@ -666,9 +668,9 @@ $r->get('/admin/diagnostica', function () {
         catch (\Throwable $e) { $s3det = $e->getMessage(); }
     }
     // L'ultimo errore S3 nel registro tecnico: quello che un cliente ha visto come «Archiviazione non disponibile».
-    $ultimoS3 = null; $logApp = MHW_APP . '/storage/logs/app.log';
-    if ($st['driver'] === 's3' && is_file($logApp)) {
-        foreach (array_reverse(array_slice(file($logApp) ?: [], -500)) as $riga) {
+    $ultimoS3 = null;
+    if ($st['driver'] === 's3') {
+        foreach (array_reverse(MHW\Registri::righe('app', 7, 2000)) as $riga) {   // 8I: dai registri degli ultimi 7 giorni
             $j = json_decode($riga, true);
             if (is_array($j) && str_starts_with((string) ($j['msg'] ?? ''), 'S3 ')) { $ultimoS3 = $j; break; }
         }
@@ -771,6 +773,32 @@ $r->post('/admin/impostazioni/{gruppo}', function (array $a) use ($impostazioni)
     Auth::audit('impostazioni.' . $gruppo, null, ['campi' => array_keys(Impostazioni::GRUPPI[$gruppo])]);
     Support::flash(Impostazioni::TITOLI[$gruppo] . ': impostazioni salvate. Ora prova la connessione.');
     Support::redirect('/admin/impostazioni#' . $gruppo);
+});
+
+// 8I · Registri: lo zip degli ultimi 7 giorni e «Svuota» (con conferma). Solo amministratori; CSRF come ogni POST.
+$r->post('/admin/registri/scarica', function () {
+    $admin = Auth::requireAdmin();
+    try { $f = MHW\Registri::zip(7); }
+    catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); Support::redirect('/admin/impostazioni#registri'); }
+    Auth::audit('registri.scarica');
+    header('Content-Type: application/zip');
+    header('Content-Disposition: attachment; filename="registri-' . gmdate('Y-m-d') . '.zip"');
+    header('Content-Length: ' . filesize($f));
+    header('Cache-Control: no-store');
+    readfile($f); @unlink($f);
+    exit;
+});
+
+$r->post('/admin/registri/svuota', function () {
+    $admin = Auth::requireAdmin();
+    if (($_POST['conferma'] ?? '') !== 'SVUOTA') {
+        Support::flash('Per svuotare i registri scrivi SVUOTA nella casella di conferma.', 'err');
+        Support::redirect('/admin/impostazioni#registri');
+    }
+    $n = MHW\Registri::svuota();
+    Auth::audit('registri.svuota', null, ['file' => $n]);
+    Support::flash('Registri svuotati: ' . $n . ' file tolti. Il registro degli accessi degli amministratori resta.');
+    Support::redirect('/admin/impostazioni#registri');
 });
 
 $r->post('/admin/impostazioni/{gruppo}/prova', function (array $a) use ($impostazioni) {

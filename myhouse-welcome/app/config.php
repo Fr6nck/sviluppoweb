@@ -77,6 +77,17 @@ $config = [
         'attivi' => $bool('MHW_INVITI'),
     ],
 
+    // 8I: i registri (log). Quanti giorni restano sul server i registri tecnici (30–180, di serie 90; la posta
+    // di prova 7) e il bucket S3 a parte dove ogni notte va la copia di quelli del giorno prima, con chiavi
+    // che possono solo scrivere. Si cambia da Amministrazione → Impostazioni → Registri.
+    'registri' => [
+        'giorni'  => (int) $env('MHW_REGISTRI_GIORNI', '90'),
+        'bucket'  => $env('MHW_REGISTRI_BUCKET', ''),
+        'regione' => $env('MHW_REGISTRI_REGIONE', 'eu-south-1'),
+        'key'     => $env('MHW_REGISTRI_KEY', ''),
+        'secret'  => $env('MHW_REGISTRI_SECRET', ''),
+    ],
+
     'mail' => [
         // smtp | mail | log. "log" scrive le email in storage/logs/mail.log:
         // per provare senza spedire niente.

@@ -12,15 +12,17 @@ $pronti = [
     'traduzioni' => Traduttore::configurato(),
     'inviti' => MHW\Inviti::disponibili(),
     'portali' => true,   // hanno sempre gli indirizzi di serie
+    'registri' => MHW\Registri::s3Configurato(),
 ];
-$icone = ['sito' => 'globe', 'stripe' => 'card', 'posta' => 'message', 'archivio' => 'layers', 'traduzioni' => 'globe', 'portali' => 'star', 'inviti' => 'people'];
+$icone = ['sito' => 'globe', 'stripe' => 'card', 'posta' => 'message', 'archivio' => 'layers', 'traduzioni' => 'globe', 'portali' => 'star', 'registri' => 'doc', 'inviti' => 'people'];
 $intro = [
     'sito'     => 'L\'indirizzo pubblico del sito e gli indirizzi senza index.php: valgono per link, email, QR, canonical e sitemap. «Prova» chiede al sito una sua pagina senza index.php: se risponde, il server legge .htaccess e gli indirizzi puliti si possono accendere.',
     'stripe'   => 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti preparano la guida ma non possono pagarla.',
-    'posta'    => 'Conferma dell\'email, recupero della password e promemoria. Finché resta «Non spedire», le email finiscono in storage/logs/mail.log.',
+    'posta'    => 'Conferma dell\'email, recupero della password e promemoria. Finché resta «Non spedire», le email finiscono nei registri della posta (storage/logs/mail-AAAA-MM-GG.log, tenuti 7 giorni).',
     'archivio' => 'Le foto e i PDF caricati dai clienti. Sul disco del server vanno bene per provare; in produzione meglio Amazon S3. I file già caricati restano dove sono e si vedono lo stesso.',
     'inviti' => 'Ogni cliente ha un link e un codice da girare agli amici: l\'amico ha il ' . MHW\Inviti::AMICO . '% sul primo anno, chi invita il ' . MHW\Inviti::PASSO . '% in meno sul rinnovo per ogni amico che paga, fino al ' . MHW\Inviti::MASSIMO . '%.',
     'portali' => 'I link che la guida mostra a chi dà 5 stelle, per i portali che l\'host ha spuntato (8B). Google cerca su Maps il nome e la città della struttura; gli altri aprono il sito del portale, dove la recensione si lascia dall\'app o dall\'email che mandano dopo il soggiorno.',
+    'registri' => 'I registri tecnici, della posta di prova e degli accessi degli amministratori, in app/storage/logs (fuori dal web), con email, IP e telefoni abbreviati. Ogni giorno si tolgono quelli più vecchi e, se c\'è il bucket, la copia di quelli di ieri va su S3 (Milano), dove gli accessi degli amministratori non si possono cancellare per 6 mesi.',
     'traduzioni' => 'Le traduzioni suggerite di Plus e Portfolio, con Amazon Translate. Prezzo, cambio e piano gratuito servono solo per le stime di Amministrazione → Traduzioni; i tetti fermano le richieste.',
 ]; ?>
 <div class="stack stack--lg" style="max-width:860px">
@@ -51,6 +53,23 @@ $intro = [
         <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><code class="impostazioni__url"><?= Support::e($webhook) ?></code>
           <button type="button" class="btn btn--ghost btn--sm" data-copia="<?= Support::e($webhook) ?>" data-copiato="Copiato" hidden><?= Icon::svg('copy', 15) ?>Copia</button></div>
         <p class="small muted">Eventi da selezionare: checkout.session.completed, checkout.session.expired, checkout.session.async_payment_succeeded, checkout.session.async_payment_failed, invoice.paid, invoice.payment_failed, customer.subscription.updated, customer.subscription.deleted. Il segreto di firma che Stripe ti mostra dopo va qui sotto.</p>
+      </div>
+    <?php endif; ?>
+
+    <?php if ($g === 'registri'): $infoR = MHW\Registri::info(); $statoR = $infoR['stato']; ?>
+      <div class="impostazioni__webhook registri-info">
+        <p class="small"><b><?= $infoR['byte'] >= 1048576 ? Support::e(number_format($infoR['byte'] / 1048576, 1, ',', '.')) . ' MB' : Support::e(number_format(max(1, (int) ceil($infoR['byte'] / 1024)), 0, ',', '.')) . ' KB' ?></b> in <?= (int) $infoR['file'] ?> file<?= $infoR['vecchio'] ? ' · il più vecchio è del ' . Support::e(Support::date($infoR['vecchio'] . 'T00:00:00Z')) : '' ?>.
+          Restano <?= (int) MHW\Registri::config()['giorni'] ?> giorni (la posta di prova <?= MHW\Registri::GIORNI_POSTA ?>).</p>
+        <p class="small"><?= $statoR ? ($statoR['ok'] ? 'Ultima copia su S3: ' : 'Ultima copia su S3 NON riuscita: ') . Support::e(Support::date((string) $statoR['quando'])) . ' · ' . Support::e((string) $statoR['msg'])
+                                     : (MHW\Registri::s3Configurato() ? 'Nessuna copia su S3 ancora: parte dopo mezzanotte, con il primo giro dei richiami.' : 'Nessun bucket: i registri restano solo sul server.') ?></p>
+        <div class="row" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <form method="post" action="<?= b() ?>/admin/registri/scarica"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm"><?= Icon::svg('doc', 15) ?>Scarica gli ultimi 7 giorni</button></form>
+          <form method="post" action="<?= b() ?>/admin/registri/svuota" class="row" style="gap:8px;align-items:flex-end"><?= Csrf::field() ?>
+            <div class="field" style="margin:0"><label for="registri-conferma" class="small">Per svuotare, scrivi SVUOTA</label>
+              <input id="registri-conferma" name="conferma" type="text" autocomplete="off" spellcheck="false" style="width:9em"></div>
+            <button class="btn btn--ghost btn--sm"><?= Icon::svg('bin', 15) ?>Svuota i registri</button></form>
+        </div>
+        <p class="small muted">«Svuota» toglie i registri tecnici e della posta; il registro degli accessi degli amministratori resta.</p>
       </div>
     <?php endif; ?>
 
@@ -117,7 +136,7 @@ $intro = [
     </form>
     <form method="post" action="<?= b() ?>/admin/impostazioni/<?= $g ?>/prova" class="impostazioni__prova"><?= Csrf::field() ?>
       <button class="btn btn--ghost btn--sm"><?= Icon::svg('pulse', 15) ?>Prova i dati salvati</button>
-      <span class="small muted"><?= $g === 'posta' ? 'Manda un\'email di prova a ' . Support::e($emailAdmin) . '.' : ($g === 'stripe' ? 'Chiede a Stripe se la chiave è valida.' : ($g === 'traduzioni' ? 'Fa tradurre una parola: 9 caratteri.' : ($g === 'inviti' ? 'Dice se è acceso e quanti clienti possono invitare.' : ($g === 'portali' ? 'Mostra i link per una struttura d\'esempio.' : 'Scrive, legge e cancella un piccolo file nel bucket.')))) ?></span>
+      <span class="small muted"><?= $g === 'posta' ? 'Manda un\'email di prova a ' . Support::e($emailAdmin) . '.' : ($g === 'stripe' ? 'Chiede a Stripe se la chiave è valida.' : ($g === 'traduzioni' ? 'Fa tradurre una parola: 9 caratteri.' : ($g === 'inviti' ? 'Dice se è acceso e quanti clienti possono invitare.' : ($g === 'portali' ? 'Mostra i link per una struttura d\'esempio.' : ($g === 'registri' ? 'Carica un file di prova nel bucket e controlla che la cancellazione sia rifiutata.' : 'Scrive, legge e cancella un piccolo file nel bucket.'))))) ?></span>
     </form>
   </section>
   <?php endforeach; ?>

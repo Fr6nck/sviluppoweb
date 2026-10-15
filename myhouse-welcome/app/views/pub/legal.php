@@ -109,6 +109,8 @@ $title = $doc === 'termini' ? 'Termini e condizioni' : 'Informativa sulla privac
   <?php if ($statC['clarity'] !== ''): ?><p><?= MHW\TestiSito::html('cookie.clarity') ?></p><?php endif; ?>
   <?php if (MHW\Statistiche::consensoServe()): ?><p><?= MHW\TestiSito::html('cookie.revoca') ?> <a href="#" data-consenso-apri><?= MHW\TestiSito::html('consenso.preferenze') ?></a></p><?php endif; ?>
   <p><?= MHW\TestiSito::html('cookie.guide') ?></p>
+  <h2 style="font-size:22px" id="registri">Registri tecnici e sicurezza</h2>
+  <p><?= MHW\TestiSito::html('registri.privacy', ['giorni' => (string) MHW\Registri::config()['giorni']]) ?></p>
   <h2 style="font-size:22px">Conservazione</h2>
   <p>[Da completare: tempi di conservazione dei dati dell'account, dei dati di fatturazione e delle statistiche.]</p>
   <h2 style="font-size:22px">I tuoi diritti</h2>

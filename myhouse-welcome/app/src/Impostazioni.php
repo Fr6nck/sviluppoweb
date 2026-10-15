@@ -35,7 +35,7 @@ final class Impostazioni
             'stripe.automatic_tax'  => ['STRIPE_AUTOMATIC_TAX', 'Usa Stripe Tax per calcolare l\'IVA', 'check', 'Solo se Stripe Tax è già attivo nel pannello di Stripe.'],
         ],
         'posta' => [
-            'mail.transport'  => ['MAIL_TRANSPORT', 'Come parte la posta', 'choice', '', ['smtp' => 'Server SMTP (consigliato)', 'mail' => 'Funzione mail() del server', 'log' => 'Non spedire: scrivi in storage/logs/mail.log']],
+            'mail.transport'  => ['MAIL_TRANSPORT', 'Come parte la posta', 'choice', '', ['smtp' => 'Server SMTP (consigliato)', 'mail' => 'Funzione mail() del server', 'log' => 'Non spedire: scrivi nei registri della posta (storage/logs, 7 giorni)']],
             'mail.host'       => ['MAIL_HOST', 'Server SMTP', 'text', 'Per esempio smtp.tuodominio.it: lo trovi nel cPanel, alla voce «Account email».'],
             'mail.port'       => ['MAIL_PORT', 'Porta', 'number', '587 con STARTTLS, 465 con SSL.'],
             'mail.encryption' => ['MAIL_ENCRYPTION', 'Cifratura', 'choice', '', ['tls' => 'STARTTLS (porta 587)', 'ssl' => 'SSL (porta 465)', 'none' => 'Nessuna (sconsigliato)']],
@@ -72,13 +72,21 @@ final class Impostazioni
             'portali.vrbo'    => ['MHW_PORTALE_VRBO', 'VRBO', 'url', 'Di serie https://www.vrbo.com/'],
             'portali.expedia' => ['MHW_PORTALE_EXPEDIA', 'Expedia', 'url', 'Di serie https://www.expedia.it/'],
         ],
+        // 8I: i registri (log) sul server e la copia notturna su un bucket S3 a parte (solo scrittura).
+        'registri' => [
+            'registri.giorni'  => ['MHW_REGISTRI_GIORNI', 'Conserva i registri tecnici per … giorni', 'cifra', 'Di serie 90; da 30 a 180. I registri della posta di prova restano 7 giorni.'],
+            'registri.bucket'  => ['MHW_REGISTRI_BUCKET', 'Bucket dei registri', 'text', 'Un bucket a parte, per esempio welcomemyhouse-registri, con Object Lock (vedi DA-CONFIGURARE). Vuoto = nessuna copia.'],
+            'registri.regione' => ['MHW_REGISTRI_REGIONE', 'Regione', 'text', 'Di serie eu-south-1 (Milano).'],
+            'registri.key'     => ['MHW_REGISTRI_KEY', 'Access key ID', 'text', 'Di un utente IAM a parte (welcomemyhouse-registri) con i SOLI permessi s3:PutObject e s3:PutObjectRetention su questo bucket. Non quelle delle foto.'],
+            'registri.secret'  => ['MHW_REGISTRI_SECRET', 'Secret access key', 'secret', ''],
+        ],
         // Invita un amico (Inviti): acceso da qui, senza toccare config.local.php a mano.
         'inviti' => [
             'inviti.attivi' => ['MHW_INVITI', 'Accendi «Invita un amico»', 'check', 'I clienti con un abbonamento attivo vedono il loro link e il codice, e possono mandare l\'invito per email. Prima di accenderlo con le chiavi live, fai una prova in modalità test di Stripe.'],
         ],
     ];
 
-    public const TITOLI = ['sito' => 'Sito', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'portali' => 'Portali', 'inviti' => 'Invita un amico'];
+    public const TITOLI = ['sito' => 'Sito', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'portali' => 'Portali', 'registri' => 'Registri', 'inviti' => 'Invita un amico'];
 
     public static function file(): string { return MHW_APP . '/config.local.php'; }
 
@@ -241,6 +249,10 @@ final class Impostazioni
                 $percorso === 'mail.host' && !preg_match('/^[A-Za-z0-9.\-]+$/', $grezzo) => 'Scrivi solo il nome del server, senza http:// né porta.',
                 $percorso === 'translate.region' && !preg_match('/^[a-z]{2}(-[a-z]+)+-\d$/', $grezzo) => 'La regione si scrive come eu-west-1.',
                 $percorso === 'translate.key' && !preg_match('/^[A-Z0-9]{16,128}$/', $grezzo) => 'L\'access key ID è fatto di lettere maiuscole e numeri, per esempio AKIA….',
+                $percorso === 'registri.giorni' && (!ctype_digit($grezzo) || (int) $grezzo < 30 || (int) $grezzo > 180) => 'Scrivi un numero di giorni tra 30 e 180.',
+                $percorso === 'registri.regione' && !preg_match('/^[a-z]{2}(-[a-z]+)+-\d$/', $grezzo) => 'La regione si scrive come eu-south-1.',
+                $percorso === 'registri.bucket' && !preg_match('/^[a-z0-9][a-z0-9.\-]{1,61}[a-z0-9]$/', $grezzo) => 'Il nome del bucket ha solo lettere minuscole, numeri, punti e trattini.',
+                $percorso === 'registri.key' && !preg_match('/^[A-Z0-9]{16,128}$/', $grezzo) => 'L\'access key ID è fatto di lettere maiuscole e numeri, per esempio AKIA….',
                 $tipo === 'cifra' && (!ctype_digit(str_replace('.', '', $grezzo)) || (int) str_replace('.', '', $grezzo) < 1 || (int) str_replace('.', '', $grezzo) > 100000000) => 'Scrivi un numero intero, per esempio 150000.',
                 $tipo === 'decimale' && (!preg_match('/^\d{1,6}([.,]\d{1,6})?$/', $grezzo) || (float) str_replace(',', '.', $grezzo) <= 0) => 'Scrivi un numero, per esempio 0,86.',
                 $tipo === 'data' && (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $grezzo) || !checkdate((int) substr($grezzo, 5, 2), (int) substr($grezzo, 8, 2), (int) substr($grezzo, 0, 4))) => 'Scrivi la data come 2027-10-31.',
@@ -269,6 +281,14 @@ final class Impostazioni
         }
         if (!$errori && $gruppo === 'traduzioni' && (($effettivi['translate.key'] ?? '') === '') !== (($effettivi['translate.secret'] ?? '') === '')) {
             $errori[self::nome(($effettivi['translate.key'] ?? '') === '' ? 'translate.key' : 'translate.secret')] = 'Servono tutte e due le chiavi (o nessuna, per usare quelle dell\'archivio S3).';
+        }
+        if (!$errori && $gruppo === 'registri' && ($effettivi['registri.bucket'] ?? '') !== '') {
+            foreach (['registri.key' => 'Serve l\'access key ID.', 'registri.secret' => 'Serve la secret access key.'] as $p => $msg) {
+                if ((string) ($effettivi[$p] ?? '') === '') $errori[self::nome($p)] = $msg;
+            }
+            if (!$errori && ($effettivi['registri.key'] ?? '') === (string) (Config::get('storage')['s3']['key'] ?? '')) {
+                $errori[self::nome('registri.key')] = 'Usa chiavi a parte, che possono solo scrivere nel bucket dei registri: non quelle dell\'archivio delle foto.';
+            }
         }
         if (!$errori && $gruppo === 'sito' && ($effettivi['pretty_urls'] ?? null) === true) {
             [$ok, $msg] = self::provaIndirizzi(rtrim((string) ($effettivi['base_url'] ?? ''), '/'));
@@ -370,7 +390,7 @@ final class Impostazioni
                     $ok = Mailer::manda($emailAdmin, 'Prova della posta', 'La posta funziona',
                         ['Se leggi questa email, la posta in uscita funziona.', 'Inviata da Amministrazione → Impostazioni il ' . gmdate('d/m/Y H:i') . ' (UTC).']);
                     if (!$ok) return [false, 'L\'email di prova non è partita. ' . self::consiglioPosta(Mailer::ultimoErrore())];
-                    return [true, $t === 'log' ? 'La posta è in modalità prova: l\'email è finita in storage/logs/mail.log, non nella casella.' : 'Email di prova spedita a ' . $emailAdmin . ': controlla la casella (anche lo spam).'];
+                    return [true, $t === 'log' ? 'La posta è in modalità prova: l\'email è finita in storage/logs/mail-' . gmdate('Y-m-d') . '.log, non nella casella.' : 'Email di prova spedita a ' . $emailAdmin . ': controlla la casella (anche lo spam).'];
                 case 'archivio':
                     $cfg = Config::get('storage');
                     if (($cfg['driver'] ?? '') !== 's3') return [true, 'Foto e PDF si salvano sul disco del server: non c\'è niente da collegare.'];
@@ -387,6 +407,20 @@ final class Impostazioni
                         return [false, 'Il bucket non risponde: «' . $dett . '».' . ($cosa !== '' ? ' ' . $cosa : '')];
                     }
                     return $letto === 'prova' ? [true, 'Il bucket risponde: scrittura, lettura e cancellazione riuscite.'] : [false, 'Il bucket ha accettato il file ma ne ha restituito un altro contenuto.'];
+                case 'registri':   // 8I: un file di prova nel bucket; e la cancellazione deve essere rifiutata
+                    if (!Registri::s3Configurato()) return [true, 'Nessun bucket per la copia dei registri: restano solo sul server (' . Registri::config()['giorni'] . ' giorni).'];
+                    $c = Registri::config();
+                    $s3 = new S3Storage(['bucket' => $c['bucket'], 'region' => $c['regione'], 'key' => $c['key'], 'secret' => $c['secret']]);
+                    $chiave = 'tecnici/_prova-' . gmdate('Ymd-His') . '.txt';
+                    try { $s3->putRegistro($chiave, 'Prova da Amministrazione → Impostazioni → Registri.'); }
+                    catch (\Throwable $e) {
+                        $dett = S3Storage::$ultimoErrore ?: $e->getMessage();
+                        return [false, 'Il bucket dei registri non accetta il file: «' . $dett . '».' . (($cosa = S3Storage::consiglio($dett)) !== '' ? ' ' . $cosa : '')];
+                    }
+                    try { $s3->delete($chiave); $cancella = true; } catch (\Throwable) { $cancella = false; }
+                    return $cancella
+                        ? [false, 'Il file di prova si è caricato, ma le chiavi possono anche CANCELLARE: togli all\'utente IAM ogni permesso tranne s3:PutObject e s3:PutObjectRetention.']
+                        : [true, 'Il bucket accetta i registri e rifiuta la cancellazione, come deve. Il file di prova (' . $chiave . ') lo toglie il ciclo di vita del bucket.'];
                 case 'inviti':
                     if (!Inviti::disponibili()) return [false, 'Spento: i clienti non vedono «Invita un amico». Spunta la casella e salva.'];
                     if (!Stripe::enabled()) return [false, 'Acceso, ma Stripe non è configurato: gli sconti degli inviti passano da Stripe.'];

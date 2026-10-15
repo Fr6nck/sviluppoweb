@@ -358,7 +358,8 @@ $r = http("$BASE/g/$demo/commiato");
 prova('Fase 5 · commiato senza recensioni (non compilate)', $r['code'] === 200 && pulita($r['body']) && !str_contains($r['body'], 'Ti è piaciuto il soggiorno?'));
 $r = http("$BASE/");
 prova('Fase 5 · landing con FAQ, confronto e scene', $r['code'] === 200 && str_contains($r['body'], 'Confronta tutti i piani') && str_contains($r['body'], 'class="faq__voce"'));
-prova('Fase 5 · nessuna email di richiamo partita per le bozze di prima', !is_file("$W/app/storage/logs/mail.log") || !str_contains((string) file_get_contents("$W/app/storage/logs/mail.log"), 'procedura/'));
+$posta5 = implode("\n", array_map('file_get_contents', array_merge(glob("$W/app/storage/logs/mail-*.log") ?: [], glob("$W/app/storage/logs/mail.log") ?: [])));   // 8I: un file al giorno
+prova('Fase 5 · nessuna email di richiamo partita per le bozze di prima', !str_contains($posta5, 'procedura/'));
 
 // Fase 6
 prova('Fase 6A · tipologia «Altro» scritta a mano', (int) $db->query("SELECT COUNT(*) FROM pragma_table_info('properties') WHERE name = 'property_type_other'")->fetchColumn() === 1);

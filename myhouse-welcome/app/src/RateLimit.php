@@ -36,6 +36,12 @@ final class RateLimit
 
     public static function ip(): string { return (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'); }
 
+    /**
+     * 8I · L'IP come codice, per i nomi dei limiti (login-ip:, register:, reset-ip:, sito-interesse:): lo stesso IP
+     * dà sempre lo stesso codice, ma dal codice non si risale all'IP (HMAC con la chiave dei registri).
+     */
+    public static function ipKey(): string { return substr(hash_hmac('sha256', self::ip(), Registri::chiave()), 0, 16); }
+
     /** Una chiave che non conserva l'email in chiaro. */
     public static function key(string $what, string $value): string
     {

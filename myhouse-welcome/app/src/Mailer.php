@@ -8,7 +8,7 @@ namespace MHW;
  *         autenticazione. È la scelta per la produzione.
  *  mail — la funzione mail() di PHP: funziona su molti hosting condivisi, ma
  *         le email finiscono spesso nello spam.
- *  log  — non spedisce: scrive in storage/logs/mail.log. Per lo sviluppo e
+ *  log  — non spedisce: scrive in storage/logs/mail-AAAA-MM-GG.log (tenuto 7 giorni, 8I). Per lo sviluppo e
  *         per le prove automatiche.
  *
  * Indirizzi e oggetti vengono ripuliti dagli a-capo: un a-capo in un'intestazione
@@ -198,7 +198,7 @@ final class Mailer
     {
         $riga = json_encode(['t' => Support::now(), 'to' => $to, 'subject' => $subject, 'text' => $text],
                             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        // In prova si tiene anche l'HTML, per vederlo nel browser: storage/logs/email/ (fuori dal web come mail.log).
+        // In prova si tiene anche l'HTML, per vederlo nel browser: storage/logs/email/ (fuori dal web come i registri della posta).
         if ($html !== null) {
             $dir = Log::dir() . '/email';
             if (is_dir($dir) || @mkdir($dir, 0775, true)) {
@@ -206,7 +206,7 @@ final class Mailer
                 @file_put_contents($dir . '/' . $nome, $html, LOCK_EX);
             }
         }
-        return (bool) @file_put_contents(Log::dir() . '/mail.log', $riga . "\n", FILE_APPEND | LOCK_EX);
+        return (bool) @file_put_contents(Log::file('mail'), $riga . "\n", FILE_APPEND | LOCK_EX);
     }
 
     private static function phpMail(array $cfg, string $to, string $subject, string $text, ?string $html): bool

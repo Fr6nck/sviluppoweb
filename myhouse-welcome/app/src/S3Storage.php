@@ -64,6 +64,20 @@ final class S3Storage implements Storage
         $this->request('PUT', $key, $bytes, $headers);
     }
 
+    /**
+     * 8I · Un file dei registri sul bucket dei registri: con Content-MD5, che S3 chiede quando il bucket ha Object Lock.
+     * Con $bloccaGiorni il file resta inalterabile (Compliance) fino a quel giorno: nemmeno l'account principale lo cancella.
+     */
+    public function putRegistro(string $key, string $bytes, int $bloccaGiorni = 0): void
+    {
+        $h = ['content-type' => 'text/plain; charset=utf-8', 'content-md5' => base64_encode(md5($bytes, true))];
+        if ($bloccaGiorni > 0) {
+            $h['x-amz-object-lock-mode'] = 'COMPLIANCE';
+            $h['x-amz-object-lock-retain-until-date'] = gmdate('Y-m-d\TH:i:s\Z', time() + $bloccaGiorni * 86400);
+        }
+        $this->request('PUT', $key, $bytes, $h);
+    }
+
     public function delete(string $key): void { $this->request('DELETE', $key, ''); }
 
     public function get(string $key): string { return $this->request('GET', $key, ''); }

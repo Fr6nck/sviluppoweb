@@ -157,7 +157,7 @@ $r->get('/en', fn() => $home('en'));
  */
 $r->post('/sito/interesse', function () use ($guard) {
     $guard();
-    if (MHW\Migrator::tableExists('interessi_sito') && RateLimit::hit('sito-interesse:' . RateLimit::ip(), 20, 3600)) {
+    if (MHW\Migrator::tableExists('interessi_sito') && RateLimit::hit('sito-interesse:' . RateLimit::ipKey(), 20, 3600)) {
         $voci = ['aspetto', 'google', 'dirette', 'altro'];
         $bisogni = array_values(array_intersect($voci, explode(',', (string) ($_POST['bisogni'] ?? ''))));
         $u = Auth::user();
@@ -233,7 +233,7 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $vecchi = ['name' => (string) ($_POST['name'] ?? ''), 'email' => (string) ($_POST['email'] ?? ''), 'email2' => (string) ($_POST['email2'] ?? '')];
         try {
-            if (!RateLimit::hit('register:' . RateLimit::ip(), 10, 3600)) {
+            if (!RateLimit::hit('register:' . RateLimit::ipKey(), 10, 3600)) {
                 throw new RuntimeException('Troppe registrazioni da questa connessione. Riprova tra un\'ora.');
             }
             // Un solo consenso esplicito, sui Termini. La privacy si prende in visione:
@@ -285,7 +285,7 @@ $r->any('/accedi', function () use ($guard, $doveComincia) {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = (string) ($_POST['email'] ?? '');
         $perEmail = RateLimit::key('login', $email);
-        if (!RateLimit::hit('login-ip:' . RateLimit::ip(), 40, 900) || !RateLimit::hit($perEmail, 8, 900)) {
+        if (!RateLimit::hit('login-ip:' . RateLimit::ipKey(), 40, 900) || !RateLimit::hit($perEmail, 8, 900)) {
             $err = 'Troppi tentativi. Aspetta un quarto d\'ora, oppure recupera la password.';
         } elseif (Auth::attempt($email, (string) ($_POST['password'] ?? ''))) {
             RateLimit::clear($perEmail);
@@ -367,7 +367,7 @@ $r->any('/password/dimenticata', function () use ($guard) {
     $inviata = false; $err = null;
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = (string) ($_POST['email'] ?? '');
-        if (!RateLimit::hit('reset-ip:' . RateLimit::ip(), 10, 3600) || !RateLimit::hit(RateLimit::key('reset', $email), 3, 3600)) {
+        if (!RateLimit::hit('reset-ip:' . RateLimit::ipKey(), 10, 3600) || !RateLimit::hit(RateLimit::key('reset', $email), 3, 3600)) {
             $err = 'Troppe richieste. Riprova tra un\'ora.';
         } else {
             Auth::sendPasswordReset($email);
