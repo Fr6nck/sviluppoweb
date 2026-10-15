@@ -114,6 +114,8 @@ final class Demo
     public const CHECCO_LAT = 43.07025;
     public const CHECCO_LNG = 12.61966;
     public const CHECCO_MAPS = 'https://www.google.com/maps/search/?api=1&query=43.07025,12.61966';
+    /** 8F · «Prenota sul nostro sito» nella vetrina: la pagina di MyHouse, il servizio dei siti con la prenotazione diretta. */
+    public const VETRINA_SITO = 'https://blackout.in/myhouse/?da=vetrina';
 
     /**
      * La guida di esempio pubblicata (7C): la vetrina se c'è, altrimenti la demo. È la stessa della landing.
@@ -149,7 +151,7 @@ final class Demo
         ], 'id = :pid', ['pid' => $pid]);
         // I dati della scheda: CIN e posti letto di esempio (il CIN dice «DEMO»: non è un codice vero),
         // i link per le recensioni (le pagine di Assisi delle piattaforme, la casa non esiste) e il codice
-        // sconto per la prossima volta. Niente link a un sito per prenotare: sarebbe di qualcun altro.
+        // sconto per la prossima volta (8F: il link per prenotare è sotto, con lo sconto).
         $campiCasa = ['cin' => 'IT054001C2DEMO0001', 'beds' => 4,
                       'review_google' => 'https://www.google.com/maps/search/?api=1&query=Piazza+Matteotti+Assisi',
                       'review_booking' => 'https://www.booking.com/city/it/assisi.it.html',
@@ -157,18 +159,20 @@ final class Demo
         $campiCasa = array_filter($campiCasa, fn($c) => Migrator::columnExists('properties', $c), ARRAY_FILTER_USE_KEY);
         if ($campiCasa) Db::update('properties', $campiCasa, 'id = :pid', ['pid' => $pid]);
         // 8B: dove si trova (i link li prepara il sistema: per Google nome e città, la casa non esiste) e un social di esempio.
+        // 8F: Google, Booking.com e Airbnb, così con 5 stelle la vetrina mostra i tre bottoni dei portali.
         if (Canali::disponibili()) {
-            Canali::salva($pid, ['portali' => ['google', 'booking', 'airbnb', 'vrbo'], 'social' => ['instagram' => '@casacheccoassisi']]);
+            Canali::salva($pid, ['portali' => ['google', 'booking', 'airbnb'], 'social' => ['instagram' => '@casacheccoassisi']]);
         }
-        // 8D: le due parole di benvenuto nel foglio della foto, lo sconto per chi torna, il sito (senza indirizzo: sarebbe
-        // di qualcun altro), l'email per gli ospiti (di fantasia, come gli indirizzi), i messaggi da mandare su WhatsApp.
+        // 8D: le due parole di benvenuto nel foglio della foto, lo sconto per chi torna, il sito, l'email per gli ospiti
+        // (di fantasia, come gli indirizzi), i messaggi da mandare su WhatsApp. 8F: «Prenota sul nostro sito» porta alla
+        // pagina di MyHouse (la casa non esiste: chi prova la vetrina vede come si fa un sito con la prenotazione diretta).
         $altri = ['host_welcome' => json_encode([
                       'it' => 'Benvenuti! Casa Checco era la casa di mia nonna: spero vi ci sentiate a casa. Per qualsiasi cosa, scrivetemi.',
                       'en' => 'Welcome! Casa Checco was my grandmother\'s house: I hope you feel at home. For anything at all, just message me.',
                       'fr' => 'Bienvenue ! Casa Checco était la maison de ma grand-mère : j\'espère que vous vous y sentirez chez vous. Écrivez-moi pour tout.',
                       'de' => 'Willkommen! Casa Checco war das Haus meiner Großmutter: Fühlen Sie sich wie zu Hause. Schreiben Sie mir bei allen Fragen.',
                       'es' => '¡Bienvenidos! Casa Checco era la casa de mi abuela: espero que os sintáis como en casa. Para cualquier cosa, escribidme.'], JSON_UNESCAPED_UNICODE),
-                  'direct_discount' => '10%', 'has_site' => 1, 'guest_email' => 'ospiti@casachecco.example'];
+                  'direct_url' => self::VETRINA_SITO, 'direct_discount' => '10%', 'has_site' => 1, 'guest_email' => 'ospiti@casachecco.example'];
         $altri = array_filter($altri, fn($c) => Migrator::columnExists('properties', $c), ARRAY_FILTER_USE_KEY);
         if ($altri) Db::update('properties', $altri, 'id = :pid', ['pid' => $pid]);
         if (Messaggi::disponibili()) {

@@ -59,3 +59,5 @@ Ordine: **7D → 8A → 8B → 8C → 8D → 8E → 7F**. La 7E non va più eseg
 | 8E | home e domande in inglese, modificabili da «Testi e foto» | Sonnet |
 
 In `pronti/myhouse/` i due loghi MyHouse e in `pronti/email/` il marchio per le email: Claude Code li copia.
+
+8F (Sonnet): rifiniture dopo il controllo del 15 ottobre (testo «Tornerai da queste parti?», vetrina con portali e codice, «Vedi un esempio» più grande, temperatura centrata, sezione MyHouse su fondo rosso). Va dopo la 8C; se la 8D non è ancora fatta, falla dopo la 8F.

@@ -1,5 +1,17 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 8F rifiniture dopo il controllo del 15 ottobre (15 ottobre 2026)
+
+Nessuna migrazione. Dopo il caricamento: **Amministrazione → Clienti → account della vetrina → «Rifai la vetrina»** (DA-CONFIGURARE).
+
+- **Pagina di saluto:** il blocco della prenotazione diretta diventa «Tornerai da queste parti?» con «La prossima volta prenota direttamente sul nostro sito per ottenere un codice sconto.», nelle nove lingue della guida (it, en, fr, de, es, nl, pt, pt-BR, pl). Codice, «Copia il codice» e «Prenota sul nostro sito» restano. Stesso testo nell'anteprima di Impostazioni → Prenotazione diretta e nella scheda disegnata della home. L'ordine dopo 5 stelle era già quello giusto (grazie → favore → portali → riga sulle app → «Tornerai…» con il codice → Seguici → WhatsApp → Torna alla guida) e ora c'è una prova; con 1–4 stelle il blocco del codice resta.
+- **Vetrina Casa Checco:** portali Google, Booking.com e Airbnb (via VRBO), codice `CHECCO10` con −10%, Instagram e «Prenota sul nostro sito» che porta alla pagina di MyHouse (`blackout.in/myhouse/?da=vetrina`), perché la casa non esiste. Il resto (riscaldamento e aria separati, messaggi, «Due parole di benvenuto») c'era già dalla 8D.
+- **«Vedi un esempio»** nell'editor di ogni sezione (anche nella procedura): 16 px, peso 500, icona 18 px, centrato sulla riga del titolo, area cliccabile di 40 px; sul telefono sotto il titolo, a sinistra.
+- **Temperatura** (riscaldamento e aria condizionata, nella guida e nell'anteprima): la pillola sta al centro della scheda, icona e testo sulla stessa riga; tra il numero e «°C» uno spazio indivisibile, anche nei consigli sull'energia.
+- **Home, «Anche il tuo sito»:** fondo del colore di MyHouse con la grana leggera, senza foto; logo tutto bianco (`assets/myhouse/myhouse-logo-bianco-su-rosso.png`, ricavato dal logo nuovo); kicker e seconda riga del titolo in crema `#ffe3c2`, titolo e testo in bianco, il riquadro «servizio a parte» su `rgba(0,0,0,.18)`. Vale anche per `/en`. In Amministrazione → Testi e foto non c'è più la foto di sfondo di questa sezione.
+- **Colore:** il brief indicava il rosso `#c9240c` (il rosso della porta del logo vecchio); con il logo nuovo la porta è magenta, quindi il fondo è `#b8256a`, il colore del logo nuovo. Contrasto: bianco 5,98:1, crema 4,85:1. Per tornare al rosso basta cambiare `--myhouse-fondo` in `.sito2` (`assets/app.css`): con `#c9240c` il crema resta a 4,55:1.
+- Screenshot in `app/prove/schermate/8f-*.png`.
+
 ## v2 · Il nuovo logo MyHouse (15 ottobre 2026)
 
 Nessuna migrazione.

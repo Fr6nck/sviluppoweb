@@ -72,7 +72,7 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
     </fieldset>
     <fieldset class="fieldset" id="prenotazione-diretta">
       <legend>Prenotazione diretta</legend>
-      <p class="help">«La prossima volta prenota da noi»: compare all'ospite quando parte.</p>
+      <p class="help">«Tornerai da queste parti?»: compare all'ospite nella pagina di saluto, con il codice sconto e il link al tuo sito.</p>
       <?php /* 8B: prima la domanda sul sito, poi i campi giusti (mockup 3 di 3). */
             $dUrl = (string) $prop['direct_url']; $dCod = (string) $prop['direct_code']; $dSconto = (string) ($prop['direct_discount'] ?? '');
             $haSito = array_key_exists('has_site', $prop) && $prop['has_site'] !== null ? (int) $prop['has_site'] : ($dUrl !== '' ? 1 : null); ?>
@@ -100,7 +100,8 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
         <?php /* L'anteprima della scheda che vede l'ospite nel commiato (in italiano). */ ?>
         <div class="diretta__anteprima" aria-label="Anteprima: come la vede l'ospite">
           <span class="tiny muted">Anteprima</span>
-          <b>La prossima volta prenota da noi</b>
+          <b><?= Support::e(MHW\I18n::t('it', 'direct_title')) ?></b>
+          <span class="small"><?= Support::e(MHW\I18n::t('it', 'direct_lead')) ?></span>
           <span data-diretta-offerta<?= $dCod === '' ? ' hidden' : '' ?>><?= Support::e(($dSconto !== '' ? '−' . ltrim($dSconto, '-−') . ' con il codice ' : 'Con il codice ')) ?><b data-diretta-codice><?= Support::e($dCod) ?></b></span>
           <span class="diretta__bottoni"><span class="diretta__finto" data-diretta-copia<?= $dCod === '' ? ' hidden' : '' ?>>Copia il codice</span><span class="diretta__finto diretta__finto--pieno">Prenota sul nostro sito</span></span>
         </div>

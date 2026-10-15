@@ -528,18 +528,14 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
   </aside>
 </section>
 
-<?php /* 8A: «Anche il tuo sito» a domande. Fondo nero con una grana leggera e la foto di sempre molto
-   scurita dietro; a sinistra MyHouse (un servizio a parte), a destra il percorso (pub/_funnel_sito.php):
-   due domande e il contatto, con le risposte nel link, nel messaggio e in Amministrazione → Prospetti. */ ?>
+<?php /* 8A: «Anche il tuo sito» a domande; a sinistra MyHouse (un servizio a parte), a destra il percorso
+   (pub/_funnel_sito.php): due domande e il contatto, con le risposte nel link, nel messaggio e in Amministrazione → Prospetti.
+   8F: la sezione si distingue da tutte le altre: fondo del colore di MyHouse con la grana leggera, niente foto,
+   il logo tutto bianco (la porta colorata sul fondo colorato sparirebbe). La scheda con le domande resta chiara. */ ?>
 <section id="sito" class="sito2" aria-labelledby="sito-titolo">
-  <?php $sitoPers = TestiSito::immagine('sito'); ?>
-  <picture class="sito2__foto">
-    <?php if (!$sitoPers['caricata']): ?><source type="image/webp" srcset="<?= Support::e(a('/assets/foto/sito-800.webp')) ?> 800w, <?= Support::e(a('/assets/foto/sito-1600.webp')) ?> 1600w" sizes="100vw"><?php endif; ?>
-    <img src="<?= Support::e($sitoPers['caricata'] ? $sitoPers['url'] : a('/assets/foto/sito.jpg')) ?>" alt="<?= $sitoPers['caricata'] ? $U('La foto di una struttura ricettiva', 'A photo of a holiday property') : $U('Il soggiorno di una casa vacanza con il soffitto a travi di legno, il tavolo bianco e le sedie rosse', 'The living room of a holiday home with a wooden-beamed ceiling, a white table and red chairs') ?>" loading="lazy" decoding="async" width="1600" height="1067"<?= $F('sito') ?>>
-  </picture>
   <div class="sito2__dentro">
     <div class="sito2__testo">
-      <img class="sito2__logo" src="<?= Support::e(MHW\av('/assets/myhouse/myhouse-logo-bianco.png')) ?>" alt="<?= TestiSito::testo('sito2.logo') ?>" width="168" height="52" loading="lazy">
+      <img class="sito2__logo" src="<?= Support::e(MHW\av('/assets/myhouse/myhouse-logo-bianco-su-rosso.png')) ?>" alt="<?= TestiSito::testo('sito2.logo') ?>" width="168" height="52" loading="lazy">
       <span class="sito2__kicker"><?= $T('sito2.kicker') ?></span>
       <h2 id="sito-titolo" class="sito2__titolo"><?= $T('sito2.titolo') ?><br><span class="sito2__accento"><?= $T('sito2.accento') ?></span></h2>
       <p class="sito2__lead"><?= $T('sito2.lead') ?></p>

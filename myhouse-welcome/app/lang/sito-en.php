@@ -81,7 +81,7 @@ return [
     'guadagno.1.titolo' => 'More reviews.',
     'guadagno.1.testo'  => 'Google, Booking.com, Airbnb: one button for each, while the memory is still fresh.',
     'guadagno.2.titolo' => 'Direct bookings.',
-    'guadagno.2.testo'  => '"Next time, book with us directly", with a link to your website and the discount code.',
+    'guadagno.2.testo'  => '"Coming back this way?", with a link to your website and the discount code.',
     'guadagno.3.titolo' => 'Extra services.',
     'guadagno.3.testo'  => 'Transfers, breakfast, late check-out: guests ask for them with one tap on WhatsApp.',
     // ---- come funziona

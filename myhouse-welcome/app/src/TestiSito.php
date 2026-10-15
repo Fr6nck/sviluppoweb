@@ -33,7 +33,7 @@ final class TestiSito
         'amico'    => ['Porta un amico', 'Compare solo con gli inviti accesi (Impostazioni). Le percentuali arrivano dal programma: {amico} è lo sconto dell\'amico, {passo} quello per ogni amico, {max} il massimo (per esempio 50%).'],
         'faq'      => ['Domande', 'Le domande e le risposte sono nei file (Faq.php); qui l\'intestazione, anche della pagina /domande.'],
         'chiusura' => ['In fondo: comincia, e chi c\'è dietro', ''],
-        'sito'     => ['Anche il tuo sito', 'Il blocco scuro in fondo: un percorso a due domande, poi il contatto (8A). Gli stessi testi nel pannello.'],
+        'sito'     => ['Anche il tuo sito', 'Il blocco del colore di MyHouse in fondo: un percorso a due domande, poi il contatto (8A). Gli stessi testi nel pannello.'],
     ];
 
     /**
@@ -122,7 +122,7 @@ final class TestiSito
             'guadagno.1.titolo' => ['guadagno', 'Voce 1 · titolo', 'riga', 'Più recensioni.', ''],
             'guadagno.1.testo'  => ['guadagno', 'Voce 1 · testo', 'area', 'Google, Booking, Airbnb: un pulsante per ognuno, quando il ricordo è fresco.', ''],
             'guadagno.2.titolo' => ['guadagno', 'Voce 2 · titolo', 'riga', 'Prenotazioni dirette.', ''],
-            'guadagno.2.testo'  => ['guadagno', 'Voce 2 · testo', 'area', '«La prossima volta prenota da noi», con il link al tuo sito e il codice sconto.', ''],
+            'guadagno.2.testo'  => ['guadagno', 'Voce 2 · testo', 'area', '«Tornerai da queste parti?», con il link al tuo sito e il codice sconto.', ''],
             'guadagno.3.titolo' => ['guadagno', 'Voce 3 · titolo', 'riga', 'Servizi extra.', ''],
             'guadagno.3.testo'  => ['guadagno', 'Voce 3 · testo', 'area', 'Transfer, colazione, late check-out: l\'ospite li chiede con un tocco su WhatsApp.', ''],
             // ---- come funziona
@@ -229,7 +229,6 @@ final class TestiSito
         'pannello-1'   => ['Come funziona · schermata del passo 1', 'pannello-1.webp', '1200 × 750 px. Le tre schermate si vedono solo se ci sono tutte e tre.'],
         'pannello-2'   => ['Come funziona · schermata del passo 2', 'pannello-2.webp', ''],
         'pannello-3'   => ['Come funziona · schermata del passo 3', 'pannello-3.webp', ''],
-        'sito'         => ['Lo sfondo di «Anche il tuo sito»', 'sito.jpg', '1600 × 1067 px: sta sotto un velo scuro, va bene una foto d\'ambiente.'],
     ];
 
     private static ?array $salvate = null;

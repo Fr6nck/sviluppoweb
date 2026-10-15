@@ -1594,7 +1594,7 @@ $r0 = $ospite->get("/g/$lslug/commiato?l=en");
 $r = $ospite->get("/g/$lslug/commiato?l=en&voto=5");
 prova('K2 · commiato (en) con 5 stelle: «How was your stay?» (7C) con Google e Booking, «book with us» con il codice', str_contains($r['body'], 'How was your stay?')
       && str_contains($r['body'], 'href="https://www.google.com/maps/search/?api=1&amp;query=Casa%20Lucia') && str_contains($r['body'], '>Booking.com</a>') && !str_contains($r['body'], '>Airbnb</a>')
-      && str_contains($r['body'], 'Next time, book with us directly') && str_contains($r['body'], 'Discount code: <b>TORNA10</b>') && str_contains($r['body'], 'href="https://www.esempio.it/prenota"'));
+      && str_contains($r['body'], 'Coming back this way?') && str_contains($r['body'], 'Discount code: <b>TORNA10</b>') && str_contains($r['body'], 'href="https://www.esempio.it/prenota"'));
 // 8C · le stelle: con 5 i portali spuntati, da 1 a 4 nessun portale ma WhatsApp (ed email); il voto è un conteggio anonimo.
 prova('7C · commiato: cinque stelle accessibili, nessun bottone prima del voto', substr_count($r0['body'], 'class="stella') === 5
       && str_contains($r0['body'], 'aria-label="1 out of 5"') && !str_contains($r0['body'], 'data-voto=') && !str_contains($r0['body'], 'data-portale='));
@@ -1915,7 +1915,7 @@ prova('Tempo: le domande evitabili con una guida, accanto alle comunicazioni che
       && str_contains($tempo, 'Comunicazioni importanti e necessarie'));
 prova('6J · niente blocco doppione «Il valore non è soltanto nella guida»', !str_contains($r['body'], 'class="frase"') && !str_contains($r['body'], 'Il valore non è soltanto nella guida'));
 prova('Guadagno: il commiato disegnato con le etichette vere della guida', str_contains($r['body'], 'class="congedo-mock"')
-      && str_contains($r['body'], 'Com&#039;è andato il soggiorno?') && str_contains($r['body'], 'La prossima volta prenota da noi'));
+      && str_contains($r['body'], 'Com&#039;è andato il soggiorno?') && str_contains($r['body'], 'Tornerai da queste parti?'));
 prova('FAQ: chi non trova la risposta può scrivere (WhatsApp ed email dal config)', preg_match('#id="domande".*?href="https://wa\.me/393920061600".*?href="mailto:assistenza@welcomemyhouse\.it"#s', $r['body']) === 1);
 prova('I bottoni Email: senza programma di posta un riquadro offre Gmail, Outlook e l\'indirizzo copiato (posta.js)', preg_match('#/assets/posta\.js\?v=\d+"#', $r['body']) === 1
       && is_file("$DOVE/assets/posta.js") && str_contains((string) file_get_contents("$DOVE/assets/posta.js"), 'mail.google.com/mail/?view=cm')
@@ -2232,7 +2232,7 @@ prova('8D · vetrina: tutte le sezioni del catalogo (riscaldamento e aria compre
 $vetP = riga('SELECT * FROM properties WHERE id = ?', [$vet['id'] ?? 0]);
 prova('8D · …foto profilo, due parole di benvenuto in 5 lingue, portali e Instagram, sconto, email per gli ospiti, messaggi', !empty($vetP['profile_media_id'])
       && count(json_decode((string) $vetP['host_welcome'], true) ?: []) === 5 && $vetP['direct_discount'] === '10%' && $vetP['guest_email'] !== ''
-      && array_column(righe('SELECT kind FROM property_channels WHERE property_id = ? ORDER BY position', [$vet['id'] ?? 0]), 'kind') === ['google', 'booking', 'airbnb', 'vrbo', 'instagram']
+      && array_column(righe('SELECT kind FROM property_channels WHERE property_id = ? ORDER BY position', [$vet['id'] ?? 0]), 'kind') === ['google', 'booking', 'airbnb', 'instagram']
       && isset((json_decode((string) $vetP['messages'], true) ?: [])['benvenuto']['it'], (json_decode((string) $vetP['messages'], true) ?: [])['saluto']['it']));
 $uscitaV = (string) shell_exec('php ' . escapeshellarg("$DOVE/app/tools/vetrina-mancanti.php") . ' --conta 2>&1');
 prova('8D · tools/vetrina-mancanti.php: 0 in inglese, francese, tedesco e spagnolo', trim($uscitaV) === "EN: 0\nFR: 0\nDE: 0\nES: 0", $uscitaV);
@@ -2261,19 +2261,46 @@ $arrV = json_decode((string) val("SELECT data FROM sections WHERE property_id = 
 prova('…ad Assisi, geolocalizzata in Piazza Matteotti: coordinate della struttura e link di Maps', ($vet['city'] ?? '') === 'Assisi'
       && abs((float) val('SELECT lat FROM properties WHERE id = ?', [$vet['id'] ?? 0]) - 43.07025) < 0.0001 && abs((float) val('SELECT lng FROM properties WHERE id = ?', [$vet['id'] ?? 0]) - 12.61966) < 0.0001
       && str_contains((string) ($arrV['maps_url'] ?? ''), 'query=43.07025,12.61966'));
-prova('…scheda completa: CIN di esempio, 4 posti letto, link per le recensioni e codice sconto (nessun sito di prenotazione inventato)',
+prova('…scheda completa: CIN di esempio, 4 posti letto, link per le recensioni, codice sconto e «Prenota sul nostro sito» verso la pagina di MyHouse (8F)',
       str_contains((string) ($vet['cin'] ?? ''), 'DEMO') && (int) ($vet['beds'] ?? 0) === 4 && str_contains((string) ($vet['review_booking'] ?? ''), 'booking.com')
-      && ($vet['direct_code'] ?? '') === 'CHECCO10' && ($vet['direct_url'] ?? '') === '');
+      && ($vet['direct_code'] ?? '') === 'CHECCO10' && ($vet['direct_url'] ?? '') === 'https://blackout.in/myhouse/?da=vetrina');
 $r = $ospite->get("/g/$vslug/commiato?l=de&voto=5");
 prova('…il congedo in tedesco mostra recensioni (con 5 stelle, 8C) e codice sconto', $r['code'] === 200 && str_contains($r['body'], 'CHECCO10') && str_contains($r['body'], 'href="https://www.booking.com/"')
       && str_contains($r['body'], 'Danke, dass Sie Casa Checco gewählt haben'));
+// 8F · la pagina di saluto della vetrina con 5 stelle: grazie → favore → i tre portali → «Tornerai da queste parti?» con il codice
+// → «Seguici» → WhatsApp → «Torna alla guida», in italiano e in inglese.
+foreach (['it' => ['Tornerai da queste parti?', 'Seguici', 'Torna alla guida'], 'en' => ['Coming back this way?', 'Follow us', 'Back to the guide']] as $l8 => [$torn8, $seg8, $back8]) {
+    $b8 = $ospite->get("/g/$vslug/commiato?l=$l8&voto=5")['body'];
+    $pos8 = ['voto' => strpos($b8, 'data-voto="5"'), 'google' => strpos($b8, 'data-portale="google"'), 'booking' => strpos($b8, 'data-portale="booking"'),
+             'airbnb' => strpos($b8, 'data-portale="airbnb"'), 'torna' => strpos($b8, $torn8), 'codice' => strpos($b8, '<b>CHECCO10</b>'),
+             'seguici' => strpos($b8, $seg8), 'whatsapp' => strpos($b8, 'href="https://wa.me/'), 'guida' => strpos($b8, '>' . $back8 . '</a>')];
+    $crescente8 = !in_array(false, $pos8, true); $prima8 = -1;
+    foreach ($pos8 as $v8) { if ($v8 === false || $v8 <= $prima8) { $crescente8 = false; break; } $prima8 = $v8; }
+    prova("8F · vetrina, saluto ($l8) con 5 stelle: portali Google, Booking.com e Airbnb, poi «$torn8» con CHECCO10, «Seguici», WhatsApp e il ritorno alla guida",
+          $crescente8 && str_contains($b8, 'href="https://blackout.in/myhouse/?da=vetrina"') && !str_contains($b8, 'data-portale="vrbo"') && str_contains($b8, 'instagram.com/casacheccoassisi'),
+          json_encode($pos8));
+}
+$b8 = $ospite->get("/g/$vslug/commiato?l=it&voto=3")['body'];
+prova('8F · …con 3 stelle niente portali, ma «Tornerai da queste parti?» resta (mai nascosto dal voto)', !str_contains($b8, 'data-portale=') && str_contains($b8, 'Tornerai da queste parti?') && str_contains($b8, '<b>CHECCO10</b>'));
+// 8F · il testo nuovo del blocco in tutte le lingue dell'interfaccia della guida (le altre lingue cadono sull'inglese).
+$attese8 = ['it' => 'Tornerai da queste parti?', 'en' => 'Coming back this way?', 'fr' => 'Vous repasserez par ici ?', 'de' => 'Kommen Sie wieder in diese Gegend?',
+            'es' => '¿Volverás por aquí?', 'nl' => 'Kom je nog eens deze kant op?', 'pt' => 'Vai voltar a estes lados?', 'pt-BR' => 'Vai voltar para estes lados?', 'pl' => 'Wrócisz w te strony?'];
+$male8 = [];
+foreach ($attese8 as $l8 => $t8) {
+    $d8 = include "$DOVE/app/lang/$l8.php";
+    if (($d8['direct_title'] ?? '') !== $t8 || !preg_match('/(codice sconto|discount code|code de réduction|Rabattcode|código de descuento|kortingscode|código de desconto|kod rabatowy)/u', (string) ($d8['direct_lead'] ?? ''))) $male8[] = $l8;
+}
+prova('8F · «Tornerai da queste parti?» e «…per ottenere un codice sconto» in tutte e nove le lingue della guida', !$male8, implode(', ', $male8));
+$r = $ospite->get("/g/$vslug/" . (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'riscaldamento'", [$vet['id'] ?? 0]));
+prova('8F · temperatura: «20 °C» con lo spazio indivisibile (non va a capo da solo), pillola al centro della scheda', str_contains($r['body'], "Impostato a 20\u{00A0}°C")
+      && !preg_match('/\d °C/u', $r['body']) && preg_match('/\.clima__temp\{[^}]*align-self:center/', (string) file_get_contents("$DOVE/assets/app.css")) === 1);
 $clV = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'riscaldamento'", [$vet['id'] ?? 0]);
 $arV = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'aria'", [$vet['id'] ?? 0]);
 $r = $ospite->get("/g/$vslug/$clV");
 $rf = $ospite->get("/g/$vslug/$clV?l=fr");
 $ra = $ospite->get("/g/$vslug/$arV");
 prova('…riscaldamento automatico (6:30–9:30 e 17–22:30, 20 °C) e, nella sua sezione, condizionatore libero a 26 °C, anche in francese', $r['code'] === 200
-      && str_contains($r['body'], '6:30 – 9:30') && str_contains($r['body'], '17:00 – 22:30') && str_contains($r['body'], '20 °C') && str_contains($ra['body'], '26 °C')
+      && str_contains($r['body'], '6:30 – 9:30') && str_contains($r['body'], '17:00 – 22:30') && str_contains($r['body'], "20\u{00A0}°C") && str_contains($ra['body'], "26\u{00A0}°C")
       && str_contains($r['body'], 'clima__energia') && str_contains($rf['body'], 'La chaudière est dans le placard'));
 $r = $ospite->get("/g/$vslug/" . (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'services'", [$vet['id'] ?? 0]));
 prova('…nei Servizi la macchina del caffè al posto del condizionatore (che ha la sua sezione)', str_contains($r['body'], 'La macchina del caffè') && !str_contains($r['body'], 'L&#039;aria condizionata'));
@@ -2701,9 +2728,9 @@ prova('Un testo oltre i 10.000 byte si spezza in pezzi da 10.000 al massimo, sen
 
 capitolo('Il sito della struttura: sezione della landing e invito nel pannello');
 $r = $ospite->get('/');
-prova('Landing: sezione «Anche il tuo sito» in fondo, dopo la chiusura, con la foto e il percorso a domande (8A)', str_contains($r['body'], 'id="sito"')
+prova('Landing: sezione «Anche il tuo sito» in fondo, dopo la chiusura, con il percorso a domande (8A) e senza foto dietro (8F)', str_contains($r['body'], 'id="sito"')
       && str_contains($r['body'], 'Il tuo sito li porta da te.') && str_contains($r['body'], 'data-funnel') && str_contains($r['body'], 'https://blackout.in/myhouse/?da=welcome')
-      && strpos($r['body'], 'id="sito"') > strpos($r['body'], 'id="chiusura-titolo"') && str_contains($r['body'], '/assets/foto/sito-1600.webp')
+      && strpos($r['body'], 'id="sito"') > strpos($r['body'], 'id="chiusura-titolo"') && !str_contains($r['body'], 'sito2__foto') && !str_contains($r['body'], '/assets/foto/sito-')
       && str_contains($r['body'], '/#sito">Il sito per la tua struttura</a>'));
 $r = $lucia->get('/pannello');
 prova('Pannello (8B): la domanda «Hai già un sito?», con il percorso verso blackout.in e «Non ora»', pulita($r) && str_contains($r['body'], 'data-sito-invito')
@@ -3007,19 +3034,19 @@ $r = $lucia->get("/pannello/$casa/anteprima/$csid");
 $ra = $lucia->get("/pannello/$casa/anteprima/$asid");
 prova('Guida: stato di adesso (acceso o spento), fasce leggibili, «Impostato a 20 °C»; l\'aria condizionata nella sua pagina, con il telecomando',
       $r['code'] === 200 && preg_match('#clima__stato--(on|off)#', $r['body']) === 1 && str_contains($r['body'], 'tutti i giorni') && str_contains($r['body'], '6:30 – 9:00')
-      && str_contains($r['body'], 'lun–ven') && str_contains($r['body'], 'Impostato a 20 °C') && str_contains($r['body'], 'Si accende e si spegne da solo')
+      && str_contains($r['body'], 'lun–ven') && str_contains($r['body'], "Impostato a 20\u{00A0}°C") && str_contains($r['body'], 'Si accende e si spegne da solo')
       && !str_contains($r['body'], 'La accendi tu quando vuoi') && str_contains($ra['body'], 'La accendi tu quando vuoi') && str_contains($ra['body'], 'Il telecomando è sul comodino.')
       && str_contains($r['body'], 'Dal 15 ottobre al 15 aprile'));
-prova('…il consiglio sull\'energia in tutte e due, con le temperature dell\'host', str_contains($r['body'], 'In Italia l&#039;energia costa molto') && str_contains($r['body'], 'D&#039;inverno bastano 20 °C')
-      && str_contains($ra['body'], 'D&#039;estate bastano 26 °C') && !str_contains($r['body'], 'D&#039;estate bastano'));
+prova('…il consiglio sull\'energia in tutte e due, con le temperature dell\'host', str_contains($r['body'], 'In Italia l&#039;energia costa molto') && str_contains($r['body'], "D&#039;inverno bastano 20\u{00A0}°C")
+      && str_contains($ra['body'], "D&#039;estate bastano 26\u{00A0}°C") && !str_contains($r['body'], 'D&#039;estate bastano'));
 $r = $lucia->get("/pannello/$casa/anteprima/$csid?l=en");
-prova('…in inglese', str_contains($r['body'], 'Heating') && str_contains($r['body'], 'every day') && str_contains($r['body'], 'Set to 20 °C') && preg_match('#(On|Off) now#', $r['body']) === 1);
+prova('…in inglese', str_contains($r['body'], 'Heating') && str_contains($r['body'], 'every day') && str_contains($r['body'], "Set to 20\u{00A0}°C") && preg_match('#(On|Off) now#', $r['body']) === 1);
 $lucia->post("/pannello/$casa/sezioni/$csid", ['heating_mode' => 'manuale', 'heating_temp' => '20', 'risparmio' => '', 'note' => 'Il termostato è in corridoio.']);
 $lucia->post("/pannello/$casa/sezioni/$asid", ['ac_mode' => 'no', 'risparmio' => '']);
 $r = $lucia->get("/pannello/$casa/anteprima/$csid");
 $ra = $lucia->get("/pannello/$casa/anteprima/$asid");
 prova('Riscaldamento acceso dall\'ospite, niente aria condizionata, consiglio spento: niente orari vecchi né stato',
-      str_contains($r['body'], 'Lo accendi tu, quando ti serve.') && str_contains($r['body'], 'Temperatura consigliata: 20 °C') && str_contains($ra['body'], 'Non c&#039;è l&#039;aria condizionata.')
+      str_contains($r['body'], 'Lo accendi tu, quando ti serve.') && str_contains($r['body'], "Temperatura consigliata: 20\u{00A0}°C") && str_contains($ra['body'], 'Non c&#039;è l&#039;aria condizionata.')
       && !str_contains($r['body'], 'clima__stato') && !str_contains($r['body'], '6:30') && !str_contains($r['body'], 'energia costa') && str_contains($r['body'], 'Il termostato è in corridoio.'));
 $stati = json_decode((string) shell_exec('php -r ' . escapeshellarg('define("MHW_APP", "' . $DOVE . '/app"); spl_autoload_register(fn($c) => require "' . $DOVE . '/app/src/" . substr($c, 4) . ".php");
   $f = MHW\Clima::fasce([["from" => "17:00", "to" => "23:00"], ["from" => "06:30", "to" => "09:00"], ["from" => "22:00", "to" => "02:00", "days" => ["6"]]]);
@@ -3305,22 +3332,22 @@ prova('…e nella home', str_contains($h, "<h1 class=\"display\">La casa rispond
 prova('…un testo uguale a quello di serie non si salva (la riga sparisce)', (int) val("SELECT COUNT(*) FROM site_texts") === 5
       && (bool) val("SELECT chiave FROM site_texts WHERE chiave = 'hero.titolo'"));
 // Le foto: il telefono in cima e lo sfondo di «Anche il tuo sito»; la home le usa al posto di quelle di serie.
-$r = $admin->segui($admin->post('/admin/testi', ['img[telefono]' => file_(png(600, 422), 'image/png'), 'img[sito]' => file_(png(400, 300), 'image/png'), 'torna' => 'foto']));
+$r = $admin->segui($admin->post('/admin/testi', ['img[telefono]' => file_(png(600, 422), 'image/png'), 'torna' => 'foto']));
 $h = $ospite->get('/')['body'];
 $rifTel = (string) val("SELECT valore FROM site_texts WHERE chiave = 'img.telefono'");
 $fileS3Tel = "$S3_DIR/oggetti/mhw-prove__" . str_replace('/', '__', substr($rifTel, 3));
 prova('Testi e foto · le foto caricate: nell\'archivio come le foto delle testimonianze, e nella home al posto di quelle di serie', str_contains($r['body'], '>caricata</span>')
       && preg_match('#^(s3|local):sito/\d{4}/[0-9a-f]{32}\.(jpg|png|webp)$#', $rifTel) === 1 && str_contains($r['body'], 'Torna alla foto di serie')
       && !str_contains($h, 'borgo-telefono') && !str_contains($h, 'checco-telefono') && preg_match('#class="device__shot">\s*<img src="[^"]+"#', $h) === 1
-      && !str_contains($h, 'sito-800.webp') && preg_match('#<picture class="sito2__foto">\s*<img src="[^"]*sito/[^"]*" alt="[^"]+"#', $h) === 1
+      && !str_contains($h, 'sito2__foto') && !str_contains($r['body'], 'Lo sfondo di «Anche il tuo sito»')
       && (getenv('MHW_STORAGE') !== 's3' || is_file($fileS3Tel)), $rifTel . ' · ' . (is_file($fileS3Tel) ? 'file ok' : 'file assente'));
 // Si torna di serie: campi vuoti e «Torna alla foto di serie»; la foto vecchia sparisce dall'archivio.
 $r = $admin->segui($admin->post('/admin/testi', ['t_hero_titolo' => '', 't_perchi_2_testo' => '', 't_hero_garanzie' => '', 't_prodotto_testo' => '', 't_cta_crea' => '',
-    'img_togli' => ['telefono' => '1', 'sito' => '1']]));
+    'img_togli' => ['telefono' => '1']]));
 $h = $ospite->get('/')['body'];
 $cond = ['righe' => (int) val("SELECT COUNT(*) FROM site_texts") === 0, 'h1' => str_contains($h, "<h1 class=\"display\">La casa risponde<br>\nprima che chiedano.</h1>"),
          'garanzie' => str_contains($h, 'Nessuna app da scaricare</span>'), 'cta' => str_contains($h, 'Crea gratis la tua guida'),
-         'telefono' => str_contains($h, 'borgo-telefono') || str_contains($h, 'checco-telefono'), 'sito' => str_contains($h, 'sito-800.webp'),
+         'telefono' => str_contains($h, 'borgo-telefono') || str_contains($h, 'checco-telefono'), 'sito' => !str_contains($h, 'sito2__foto'),
          'admin' => !str_contains($admin->get('/admin/testi')['body'], 'testi__campo testi__campo--cambiato'),
          'fileS3' => getenv('MHW_STORAGE') !== 's3' || !(clearstatcache(true, $fileS3Tel) ?? is_file($fileS3Tel))];   // is_file() tiene una cache per percorso: va svuotata
 $richS3 = array_values(array_filter(array_map('trim', (array) @file("$S3_DIR/richieste.jsonl")), fn($l) => str_contains($l, 'DELETE') && str_contains($l, 'sito')));
@@ -3523,6 +3550,10 @@ if ($vetPid && $vetEmail !== '') {
 $r = $lucia->get("/pannello/$casa/sezioni/$infoL");
 prova('7C · barra laterale: «Guida di esempio» (la vetrina, scheda nuova); editor: «Vedi un esempio» della stessa sezione', str_contains($r['body'], '<span>Guida di esempio</span>')
       && preg_match('#href="[^"]*/g/[^"/]+/\d+" target="_blank" rel="noopener">.*?Vedi un esempio#s', $r['body']) === 1);
+prova('8F · «Vedi un esempio»: 16 px, peso 500, icona 18 px, centrato sulla riga del titolo, almeno 40 px di altezza; sul telefono sotto il titolo',
+      str_contains($r['body'], 'class="vedi-esempio"') && preg_match('#class="vedi-esempio"[^>]*><svg width="18" height="18"#', $r['body']) === 1
+      && preg_match('/\.vedi-esempio\{display:inline-flex;align-items:center;gap:6px;margin-left:14px;min-height:40px;font-size:16px;font-weight:500/', (string) file_get_contents("$DOVE/assets/app.css")) === 1
+      && str_contains((string) file_get_contents("$DOVE/assets/app.css"), '@media (max-width:640px){.vedi-esempio{flex-basis:100%;margin-left:0}}'));
 
 // 7 · Traduzioni: «Traduci» un campo solo, testo cambiato, etichette, «Manca in», passo Pubblica, Prova e Diagnostica.
 $emIt = fn(string $t) => $trData($emCasa, 'it', 'note', $t);
@@ -3722,7 +3753,7 @@ prova('…riquadro: in grande il tempo («11 ore»), sotto le giornate, poi gli 
 prova('…le frasi del cursore vengono da «Testi e foto» (nessun «Riferimento» scritto a mano)', str_contains($tempo, 'Riferimento: <b>16 min</b> a prenotazione')
       && substr_count((string) file_get_contents("$DOVE/app/views/pub/_tempo.php"), 'Riferimento:') === 0);
 $sito = preg_match('#<section id="sito".*?</section>#s', $r['body'], $m) ? $m[0] : '';
-prova('8A · «Anche il tuo sito»: logo MyHouse bianco, «un servizio a parte», domanda 1 con Sì / No e i contatti diretti', preg_match('#/assets/myhouse/myhouse-logo-bianco\.png\?v=\d+" alt="MyHouse — Il tuo sito, le tue prenotazioni"#', $sito) === 1
+prova('8A · «Anche il tuo sito»: logo MyHouse tutto bianco (8F), «un servizio a parte», domanda 1 con Sì / No e i contatti diretti', preg_match('#/assets/myhouse/myhouse-logo-bianco-su-rosso\.png\?v=\d+" alt="MyHouse — Il tuo sito, le tue prenotazioni"#', $sito) === 1
       && str_contains($sito, '<b>MyHouse è un servizio a parte</b> di Blackout Agency') && str_contains($sito, 'Hai già un sito per la tua struttura?')
       && str_contains($sito, 'data-ha="si"') && str_contains($sito, 'data-ha="no"') && str_contains($sito, 'Oppure scrivici subito:') && str_contains($sito, 'WhatsApp +39 392 006 1600'));
 prova('…il percorso: scelte di «Sì» (con Altro), i tre punti di «No», i tre bottoni finali e, senza JavaScript, i contatti con il messaggio di serie',
@@ -4050,7 +4081,7 @@ $snapG['sections'][] = ['id' => 999999, 'kind' => 'clima', 'is_core' => 0, 'data
 db()->prepare('UPDATE guide_versions SET snapshot = ? WHERE property_id = ? AND version = (SELECT MAX(version) FROM guide_versions WHERE property_id = ?)')->execute([json_encode($snapG), $gp, $gp]);
 $r = $ospite->get("/g/$gslug/999999?l=de");
 prova('8C · istantanea di prima con «clima»: si vede come prima, riscaldamento e aria nella stessa pagina', $r['code'] === 200 && str_contains($r['body'], 'Heizung und Klimaanlage')
-      && str_contains($r['body'], '19 °C') && str_contains($r['body'], '24 °C'));
+      && str_contains($r['body'], "19\u{00A0}°C") && str_contains($r['body'], "24\u{00A0}°C"));
 $greta->post("/pannello/$gp/pubblica", ['codici_ok' => '1']);
 prova('…e la nuova istantanea è nel formato 8, con riscaldamento e aria', (int) (json_decode((string) val('SELECT snapshot FROM guide_versions WHERE property_id = ? ORDER BY version DESC', [$gp]), true)['format'] ?? 0) === 8);
 $r = $ospite->get('/domande');

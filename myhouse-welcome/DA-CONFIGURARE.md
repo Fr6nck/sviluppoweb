@@ -200,6 +200,8 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 
 **Portoghese del Portogallo e del Brasile.** Niente da configurare: la migrazione `040` parte da sola. Le guide già in portoghese restano «Português (Portugal)»: da adesso le traduzioni suggerite arrivano in portoghese europeo. Chi ha ospiti brasiliani può aggiungere «Português (Brasil)». I testi della guida in brasiliano sono scritti da noi: falli rileggere a un madrelingua, se puoi.
 
+**Rifiniture 8F: rifai la vetrina.** Dopo il caricamento apri **Amministrazione → Clienti → l'account della vetrina → «Rifai la vetrina»**: la vetrina online è quella vecchia. Quella nuova ha i portali Google, Booking.com e Airbnb, la prenotazione diretta con il codice `CHECCO10` (−10%) e Instagram: chi prova la demo e dà 5 stelle vede i bottoni dei portali e, sotto, «Tornerai da queste parti?» con il codice. «Prenota sul nostro sito» porta alla pagina di MyHouse (`https://blackout.in/myhouse/?da=vetrina`), perché Casa Checco non esiste.
+
 ## 4b. La guida vetrina (la demo della landing)
 
 La demo della landing si sposta su un account vero, quello dell'agenzia.

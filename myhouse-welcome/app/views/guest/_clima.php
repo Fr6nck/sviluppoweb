@@ -9,7 +9,9 @@
 use MHW\{Support, Icon, Guide, Clima, I18n};
 $modo = ['heating' => (string) ($d['heating_mode'] ?? ''), 'ac' => (string) ($d['ac_mode'] ?? '')];
 $gradi = fn(string $k) => preg_match('/^\d{1,2}$/', trim((string) ($d[$k] ?? ''))) ? trim((string) $d[$k]) : '';
-$scheda = function (string $chi) use ($sec, $d, $loc, $def, $val, $lista, $modo, $gradi) {
+// 8F · «22 °C» non si spezza: tra il numero e «°C» uno spazio indivisibile, in ogni lingua.
+$unito = fn(string $t) => (string) preg_replace('/(\d)\s+°/u', "\$1\u{00A0}°", $t);
+$scheda = function (string $chi) use ($sec, $d, $loc, $def, $val, $lista, $modo, $gradi, $unito) {
     $m = $modo[$chi];
     if ($m === '') return;
     $caldo = $chi === 'heating';
@@ -55,7 +57,7 @@ $scheda = function (string $chi) use ($sec, $d, $loc, $def, $val, $lista, $modo,
     <?php endif; ?>
     <?php if ($temp !== '' || $periodo !== ''): ?>
       <div class="clima__dati">
-        <?php if ($temp !== ''): ?><span class="clima__temp"><?= Icon::svg($caldo ? 'flame' : 'snow', 15) ?><?= Support::e(I18n::t($loc, $aOrari && $caldo ? 'clima.set_to' : 'clima.recommended', $temp)) ?></span><?php endif; ?>
+        <?php if ($temp !== ''): ?><span class="clima__temp"><?= Icon::svg($caldo ? 'flame' : 'snow', 15) ?><span><?= Support::e($unito(I18n::t($loc, $aOrari && $caldo ? 'clima.set_to' : 'clima.recommended', $temp))) ?></span></span><?php endif; ?>
         <?php if ($periodo !== ''): ?><span class="small"><?= Icon::svg('calendar', 14) ?> <?= Support::e(I18n::t($loc, 'clima.period')) ?>: <?= Support::e($periodo) ?></span><?php endif; ?>
       </div>
     <?php endif; ?>
@@ -81,8 +83,8 @@ $scheda = function (string $chi) use ($sec, $d, $loc, $def, $val, $lista, $modo,
       <p><?= Support::e(I18n::t($loc, 'clima.eco_text')) ?></p>
       <ul>
         <li><?= Support::e(I18n::t($loc, 'clima.eco_windows')) ?></li>
-        <?php if ($haCaldo): ?><li><?= Support::e(I18n::t($loc, 'clima.eco_heat', $gradi('heating_temp') ?: '20')) ?></li><?php endif; ?>
-        <?php if ($haFresco): ?><li><?= Support::e(I18n::t($loc, 'clima.eco_cool', $gradi('ac_temp') ?: '26')) ?></li><?php endif; ?>
+        <?php if ($haCaldo): ?><li><?= Support::e($unito(I18n::t($loc, 'clima.eco_heat', $gradi('heating_temp') ?: '20'))) ?></li><?php endif; ?>
+        <?php if ($haFresco): ?><li><?= Support::e($unito(I18n::t($loc, 'clima.eco_cool', $gradi('ac_temp') ?: '26'))) ?></li><?php endif; ?>
         <li><?= Support::e(I18n::t($loc, 'clima.eco_out')) ?></li>
       </ul>
     </section>

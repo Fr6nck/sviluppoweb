@@ -23,7 +23,7 @@ $intro = SectionCatalog::get($s['kind'])['intro'] ?? ''; ?>
         <?php if ($core): ?><span class="badge badge--sea">Sempre inclusa</span><?php endif; ?>
         <?php if (!$core && (int) $s['is_active'] === 0): ?><span class="badge badge--paper">Disattivata</span><?php endif; ?>
         <?php if (($esempioSez = MHW\Demo::esempio((string) $s['kind'], (int) $prop['id']))): /* 7C: la stessa sezione nella guida di esempio */ ?>
-          <a class="small" href="<?= Support::e(Support::url($esempioSez)) ?>" target="_blank" rel="noopener"><?= Icon::svg('book', 14) ?> Vedi un esempio</a>
+          <a class="vedi-esempio" href="<?= Support::e(Support::url($esempioSez)) ?>" target="_blank" rel="noopener"><?= Icon::svg('book', 18) ?>Vedi un esempio</a>
         <?php endif; ?>
       </div>
       <?php if ($intro !== ''): ?><p class="note note--quiet"><?= Support::e($intro) ?></p><?php endif; ?>
