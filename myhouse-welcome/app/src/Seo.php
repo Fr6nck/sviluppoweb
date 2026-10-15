@@ -80,6 +80,8 @@ final class Seo
         $l = Config::get('legal') ?? [];
         $d = [
             'dominio' => '', 'gsc' => '', 'bing' => '', 'og_immagine' => '', 'og_immagine.file' => '',
+            // 8H · statistiche delle visite (vuoti = spento): Matomo senza cookie, GA4 e Clarity solo con il consenso.
+            'stat.matomo_url' => '', 'stat.matomo_id' => '', 'stat.ga4' => '', 'stat.clarity' => '',
             'p.home.titolo' => 'Guida digitale per case vacanza e B&B | MyHouse Welcome',
             'p.home.descrizione' => 'La guida digitale per case vacanza, B&B, affittacamere e agriturismi: check-in, Wi-Fi e consigli in un link e un QR Code. La crei gratis, paghi solo quando la pubblichi.',
             'p.domande.titolo' => 'Domande frequenti | MyHouse Welcome',

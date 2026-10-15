@@ -248,6 +248,7 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
             }
             $u = Auth::register((string) $_POST['email'], (string) $_POST['password'], (string) $_POST['name']);
             MHW\Stats::funnelEvent('signup');
+            MHW\Statistiche::evento('registrazione');   // 8H: parte dalla pagina seguente («Controlla la tua email»)
             Auth::recordConsent((int) $u['user_id']);
             Auth::login((int) $u['user_id']);
             // Arrivato da un link con il codice sconto: dopo la registrazione è già applicato all'account.
@@ -447,6 +448,12 @@ $r->get('/pagamento/ok', function () {
     $o = Db::one('SELECT * FROM orders WHERE id = ? AND account_id = ?', [(int) ($_GET['order'] ?? 0), $acc['id']]);
     if (!$o) Support::redirect('/pannello');
     // Il ritorno dal browser non prova nulla: la pagina aspetta il webhook firmato.
+    // 8H: l'obiettivo «pagamento» una volta per ordine, con il nome del piano (mai importi).
+    $vistiS = (array) ($_SESSION['mhw_stat_pagati'] ?? []);
+    if (!in_array((int) $o['id'], $vistiS, true)) {
+        $_SESSION['mhw_stat_pagati'] = array_slice(array_merge($vistiS, [(int) $o['id']]), -20);
+        MHW\Statistiche::evento('pagamento', (string) (Plans::version((int) $o['package_version_id'])['name'] ?? ''));
+    }
     View::out('pub/paid', ['order' => $o, 'piano' => ($o['kind'] ?? 'new') === 'change' ? Plans::version((int) $o['package_version_id']) : null]);
 });
 

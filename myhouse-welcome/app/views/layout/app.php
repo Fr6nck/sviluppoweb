@@ -26,8 +26,8 @@ $lingueBottoni = function () use ($coppia, $en): string {
 <?php include __DIR__ . '/_tema.php'; ?>
 <?php include __DIR__ . '/_icone.php'; ?>
 <?php if (empty($seoPagina)) include __DIR__ . '/_condivisione.php'; ?>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gloock&family=Onest:wght@300..800&display=swap" rel="stylesheet">
+<?php /* 8H: i caratteri dal nostro server (assets/fonts): niente richieste a Google; si anticipa solo Onest, il testo. */ ?>
+<link rel="preload" href="<?= MHW\a('/assets/fonts/onest-latin.woff2') ?>" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="<?= MHW\av('/assets/app.css') ?>">
 </head>
 <body>
@@ -104,5 +104,6 @@ document.addEventListener('keydown', function (e) {
   document.querySelectorAll('.menu-sito[open],.conto[open]').forEach(function (m) { m.open = false; m.querySelector('summary').focus(); });
 });
 </script>
+<?php if (MHW\Statistiche::qui()) include __DIR__ . '/_statistiche.php'; /* 8H: solo pagine pubbliche che contano */ ?>
 </body>
 </html>

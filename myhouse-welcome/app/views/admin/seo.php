@@ -134,6 +134,29 @@ $v = fn(string $k) => Support::e(Seo::get($k)); ?>
         <pre class="seo-anteprima" data-robots data-regole="<?= Support::e(implode('', array_map(fn($x) => "Disallow: $x\n", array_merge(Seo::GUIDE, Seo::ESCLUSI)))) ?>"><?= Support::e(Seo::robots()) ?></pre></div>
     </section>
 
+    <?php /* 8H · Statistiche delle visite: vuoti = spento. Solo il sito pubblico, mai guide, pannello e Amministrazione. */ ?>
+    <section class="panel stack" id="seo-statistiche" aria-labelledby="seo-statistiche-titolo">
+      <h2 id="seo-statistiche-titolo" style="font-size:22px">Statistiche delle visite</h2>
+      <p class="small muted" style="margin:0">Solo sul sito pubblico (home, domande, prezzi, pagine per tipologia, registrazione, accesso, pagine legali): mai nelle guide degli ospiti, nel pannello e in Amministrazione. Lascia vuoto per spegnere.</p>
+      <div class="grid grid-2">
+        <div class="field" style="margin:0"><label for="seo-matomo-url">Matomo · indirizzo</label>
+          <input id="seo-matomo-url" name="stat_matomo_url" type="url" placeholder="https://statistiche.welcomemyhouse.it/" value="<?= $v('stat.matomo_url') ?>" aria-describedby="seo-matomo-aiuto"></div>
+        <div class="field" style="margin:0"><label for="seo-matomo-id">Matomo · ID del sito</label>
+          <input id="seo-matomo-id" name="stat_matomo_id" type="text" inputmode="numeric" placeholder="1" value="<?= $v('stat.matomo_id') ?>" aria-describedby="seo-matomo-aiuto"></div>
+      </div>
+      <p class="help" id="seo-matomo-aiuto" style="margin-top:-6px">Senza cookie: conta tutte le visite e non richiede il banner.</p>
+      <div class="grid grid-2">
+        <div class="field" style="margin:0"><label for="seo-ga4">Google Analytics 4 · ID di misurazione</label>
+          <input id="seo-ga4" name="stat_ga4" type="text" placeholder="G-…" value="<?= $v('stat.ga4') ?>" aria-describedby="seo-ga4-aiuto">
+          <p class="help" id="seo-ga4-aiuto">Parte solo dopo il consenso del visitatore.</p></div>
+        <div class="field" style="margin:0"><label for="seo-clarity">Microsoft Clarity · ID del progetto</label>
+          <input id="seo-clarity" name="stat_clarity" type="text" value="<?= $v('stat.clarity') ?>" aria-describedby="seo-clarity-aiuto">
+          <p class="help" id="seo-clarity-aiuto">Mappe di calore e registrazioni; parte solo dopo il consenso.</p></div>
+      </div>
+      <p class="small muted" style="margin:0"><?= MHW\Statistiche::consensoServe() ? 'Con Google Analytics o Clarity il sito mostra il banner del consenso; i testi sono in Testi e foto → «Cookie e consenso».' : 'Senza Google Analytics e Clarity non c\'è nessun banner.' ?>
+        Obiettivi da creare in Matomo (e in GA4) come evento con questo nome: <?= Support::e(implode(', ', array_keys(MHW\Statistiche::OBIETTIVI))) ?>.</p>
+    </section>
+
     <section class="panel stack" id="seo-llms" aria-labelledby="seo-llms-titolo">
       <h2 id="seo-llms-titolo" style="font-size:22px">llms.txt</h2>
       <p class="small muted">Il riassunto del sito per gli assistenti AI. Piani, prezzi e domande vengono dal listino e dalle FAQ.</p>

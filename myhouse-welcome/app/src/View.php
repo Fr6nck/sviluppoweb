@@ -4,6 +4,10 @@ namespace MHW;
 final class View
 {
     private static array $shared = [];
+    /** 8H: la vista della pagina (non delle email o dei pezzi resi da soli): le statistiche contano solo alcune pagine. */
+    private static string $vista = '';
+
+    public static function vista(): string { return self::$vista; }
 
     public static function share(string $k, mixed $v): void { self::$shared[$k] = $v; }
 
@@ -16,6 +20,7 @@ final class View
         $definite = [];
         $content = self::capture($file, $data, $definite);
         if ($layout === null) return $content;
+        self::$vista = $tpl;
 
         // Una vista che imposta $title o $nav lo fa nel proprio scope: senza
         // questo passaggio il layout non li vedrebbe mai e ogni pagina

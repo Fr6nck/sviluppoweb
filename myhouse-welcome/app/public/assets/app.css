@@ -3,6 +3,23 @@
    Gloock sui titoli, Onest su tutto il resto, angoli 8/18/26 e tondo pieno
    su ogni cosa che si preme. Le misure vengono dalle tavole del progetto. */
 
+/* 8H · I caratteri sul nostro server (prima da fonts.googleapis.com: a ogni visita l'indirizzo IP andava a Google).
+   Gloock 400 e Onest variabile 300–800, latino e cirillico; il browser scarica solo i sottoinsiemi che servono. */
+@font-face{font-family:Gloock;font-style:normal;font-weight:400;font-display:swap;src:url("fonts/gloock-latin.woff2") format("woff2");
+  unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:Gloock;font-style:normal;font-weight:400;font-display:swap;src:url("fonts/gloock-latin-ext.woff2") format("woff2");
+  unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:Gloock;font-style:normal;font-weight:400;font-display:swap;src:url("fonts/gloock-cyrillic-ext.woff2") format("woff2");
+  unicode-range:U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F}
+@font-face{font-family:Onest;font-style:normal;font-weight:300 800;font-display:swap;src:url("fonts/onest-latin.woff2") format("woff2");
+  unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:Onest;font-style:normal;font-weight:300 800;font-display:swap;src:url("fonts/onest-latin-ext.woff2") format("woff2");
+  unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:Onest;font-style:normal;font-weight:300 800;font-display:swap;src:url("fonts/onest-cyrillic.woff2") format("woff2");
+  unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:Onest;font-style:normal;font-weight:300 800;font-display:swap;src:url("fonts/onest-cyrillic-ext.woff2") format("woff2");
+  unicode-range:U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F}
+
 /* --------------------------------------------------------------- i due temi
 
    La carta di giorno, la notte di sera. Il tema segue il sistema finche'
@@ -2677,3 +2694,23 @@ fieldset .lingua-come{margin-top:12px}
 .cerchio__passo--ultimo .cerchio__ico{background:#b4451f;color:#fff}
 .cerchio__passo--ultimo{color:#b4451f;font-weight:600}
 @media (max-width:820px){.soddisfatti__scheda{width:100%;max-width:280px;margin:0 auto}}
+
+/* 8H · Il banner del consenso: una barra fissa in basso (non sposta la pagina, non blocca), «Accetta» e
+   «Rifiuta» con lo stesso peso, «Scegli» con due interruttori, la X che vale come rifiuto. */
+.consenso{position:fixed;z-index:70;left:0;right:0;bottom:0;padding:0 12px 12px;pointer-events:none}
+.consenso[hidden]{display:none}
+.consenso__dentro{position:relative;pointer-events:auto;max-width:1120px;margin:0 auto;box-sizing:border-box;padding:16px 52px 16px 20px;
+  display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;background:var(--raised);color:var(--ink);border:1px solid var(--line);
+  border-radius:var(--r-lg);box-shadow:0 12px 32px rgba(35,27,18,.18);font-size:15px;line-height:1.45}
+.consenso__testo{margin:0;flex:1 1 360px}
+.consenso__testo a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+.consenso__scelte{flex-basis:100%;display:flex;flex-direction:column;gap:10px}
+.consenso__scelte[hidden]{display:none}
+.consenso__bottoni{display:flex;flex-wrap:wrap;gap:8px}
+.consenso__bottoni [hidden]{display:none}
+.consenso__pari{min-width:112px;justify-content:center}
+.consenso__x{position:absolute;top:8px;right:8px;width:40px;height:40px;border:0;border-radius:var(--r-sm);background:none;color:var(--muted);font-size:24px;line-height:1;cursor:pointer}
+.consenso__x:hover{background:var(--sunk);color:var(--ink)}
+.consenso__x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:640px){.consenso__dentro{padding:14px 44px 14px 16px}
+  .consenso__bottoni{width:100%;display:grid;grid-template-columns:1fr 1fr}.consenso__bottoni .btn{width:100%;min-width:0;justify-content:center}}

@@ -17,8 +17,8 @@ $temaChiave = 'mhw-tema-ospite'; $temaBase = $tema ?? 'chiaro'; ?>
 <meta name="theme-color" content="<?= $notte ? '#17130d' : '#faf5ec' ?>">
 <?php include __DIR__ . '/_tema.php'; ?>
 <?php include __DIR__ . '/_icone.php'; ?>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gloock&family=Onest:wght@300..800&display=swap" rel="stylesheet">
+<?php /* 8H: i caratteri dal nostro server (assets/fonts): niente richieste a Google; si anticipa solo Onest, il testo. */ ?>
+<link rel="preload" href="<?= MHW\a('/assets/fonts/onest-latin.woff2') ?>" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="<?= MHW\av('/assets/app.css') ?>">
 <?php if (!empty($paletteCss)): ?><style id="palette"><?= $paletteCss ?></style><?php endif; ?>
 </head>

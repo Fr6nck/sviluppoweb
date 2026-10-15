@@ -202,6 +202,16 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 
 **Rifiniture 8F: rifai la vetrina.** Dopo il caricamento apri **Amministrazione → Clienti → l'account della vetrina → «Rifai la vetrina»**: la vetrina online è quella vecchia. Quella nuova ha i portali Google, Booking.com e Airbnb, la prenotazione diretta con il codice `CHECCO10` (−10%) e Instagram: chi prova la demo e dà 5 stelle vede i bottoni dei portali e, sotto, «Tornerai da queste parti?» con il codice. «Prenota sul nostro sito» porta alla pagina di MyHouse (`https://blackout.in/myhouse/?da=vetrina`), perché Casa Checco non esiste.
 
+**Statistiche delle visite (8H).** Tutto da Amministrazione → SEO e GEO → «Statistiche delle visite»; finché i campi sono vuoti non parte niente e non c'è nessun banner.
+1. **Matomo** (consigliato, senza cookie e senza banner): in cPanel → Softaculous installa Matomo su un sottodominio, per esempio `https://statistiche.welcomemyhouse.it/` (con il certificato https). In Matomo:
+   - Amministrazione → Privacy → **Anonimizza i dati di tracciamento**: anonimizzazione dell'IP di **2 byte**;
+   - Amministrazione → Privacy → **disabilita i cookie** di tracciamento (il sito li disabilita già, così vale anche per altri siti);
+   - aggiungi il sito (l'indirizzo pubblico) e copia l'**ID del sito** (di solito 1) e l'indirizzo di Matomo in SEO e GEO;
+   - **Obiettivi** → aggiungi un obiettivo per ognuno di questi nomi, con «Evento» → «Azione dell'evento» → «è esattamente»: `registrazione`, `prova`, `pagamento`, `contatto`, `sito-myhouse`, `vedi-esempio`. La categoria è sempre `obiettivo`; per `pagamento` il nome dell'evento è il piano, per `contatto` il canale (whatsapp, email, telefono).
+   - L'obiettivo `prova` (guida creata) parte dal server verso Matomo: se il server non raggiunge l'indirizzo di Matomo non si conta, il resto funziona lo stesso.
+2. **Google Analytics 4 e Microsoft Clarity** (facoltativi): incolla l'ID `G-…` e/o l'ID del progetto Clarity. Compare il banner del consenso; partono solo per chi accetta. In GA4 crea gli stessi eventi come «eventi chiave». Rileggi i testi del banner in Testi e foto → «Cookie e consenso» e il paragrafo «Cookie» della privacy (Testi e foto → «Informativa: il paragrafo Cookie»): fallo controllare dal consulente privacy.
+3. **Search Console:** aggiungi il sito in Google Search Console (la verifica è in SEO e GEO → «Verifica Google») e invia la sitemap `https://…/sitemap.xml`.
+
 ## 4b. La guida vetrina (la demo della landing)
 
 La demo della landing si sposta su un account vero, quello dell'agenzia.

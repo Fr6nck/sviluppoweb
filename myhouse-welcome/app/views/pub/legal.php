@@ -100,6 +100,15 @@ $title = $doc === 'termini' ? 'Termini e condizioni' : 'Informativa sulla privac
     <?= Support::e((string) (MHW\Traduttore::config()['region'] ?? '')) ?>; ricevono solo i testi della guida di cui chiedi la
     traduzione, quando la chiedi. Fatturazione elettronica: Adamo (app.adamogestionale.it), che riceve da Stripe i dati di
     fatturazione per emettere le fatture e inviarle allo SDI. [Completare con sedi, garanzie per il trasferimento dei dati e nomine a responsabile.]</p>
+  <?php /* 8H · Cookie: i testi in Testi e foto → «Informativa: il paragrafo Cookie»; Matomo, GA4 e Clarity solo se configurati. */
+        $statC = MHW\Statistiche::config(); ?>
+  <h2 style="font-size:22px" id="cookie">Cookie</h2>
+  <p><?= MHW\TestiSito::html('cookie.tecnici') ?></p>
+  <?php if (MHW\Statistiche::matomo()): ?><p><?= MHW\TestiSito::html('cookie.matomo') ?></p><?php endif; ?>
+  <?php if ($statC['ga4'] !== ''): ?><p><?= MHW\TestiSito::html('cookie.ga4') ?></p><?php endif; ?>
+  <?php if ($statC['clarity'] !== ''): ?><p><?= MHW\TestiSito::html('cookie.clarity') ?></p><?php endif; ?>
+  <?php if (MHW\Statistiche::consensoServe()): ?><p><?= MHW\TestiSito::html('cookie.revoca') ?> <a href="#" data-consenso-apri><?= MHW\TestiSito::html('consenso.preferenze') ?></a></p><?php endif; ?>
+  <p><?= MHW\TestiSito::html('cookie.guide') ?></p>
   <h2 style="font-size:22px">Conservazione</h2>
   <p>[Da completare: tempi di conservazione dei dati dell'account, dei dati di fatturazione e delle statistiche.]</p>
   <h2 style="font-size:22px">I tuoi diritti</h2>

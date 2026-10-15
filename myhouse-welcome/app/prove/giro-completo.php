@@ -3395,6 +3395,76 @@ foreach (['home', 'domande', 'termini', 'privacy'] as $k) $campi6k += ["p_{$k}_i
 $adm6->modulo('/admin/seo', '/admin/seo', $campi6k);
 prova('/admin/seo: «Salvato…» e il salvataggio nel registro', str_contains($adm6->get('/admin/seo')['body'], 'Salvato. Sitemap, robots.txt e llms.txt sono già aggiornati')
       && (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'seo.save'") === 1);
+// ------------------------------------------------------------------ 8H · caratteri sul nostro server, statistiche e consenso
+$css8h = (string) file_get_contents("$DOVE/assets/app.css");
+$fontiOk = true;
+foreach (['gloock-latin', 'gloock-latin-ext', 'onest-latin', 'onest-latin-ext', 'onest-cyrillic'] as $f8) $fontiOk = $fontiOk && is_file("$DOVE/assets/fonts/$f8.woff2") && str_contains($css8h, "url(\"fonts/$f8.woff2\")");
+$pag8h = ['/' => $ospite->get('/'), '/domande' => $ospite->get('/domande'), '/privacy' => $ospite->get('/privacy'), '/accedi' => $ospite->get('/accedi'), '/registrati' => $ospite->get('/registrati')];
+prova('8H · caratteri dal nostro server: Gloock e Onest in assets/fonts con font-display: swap, preload di Onest, niente fonts.googleapis.com in nessuna pagina',
+      $fontiOk && substr_count($css8h, 'font-display:swap') >= 7
+      && !array_filter($pag8h, fn($r) => str_contains($r['body'], 'fonts.googleapis') || str_contains($r['body'], 'fonts.gstatic') || !str_contains($r['body'], '/assets/fonts/onest-latin.woff2" as="font" type="font/woff2" crossorigin')));
+prova('8H · senza statistiche configurate: nessuno script di statistica, nessun banner, nessun «Preferenze cookie»',
+      !array_filter($pag8h, fn($r) => str_contains($r['body'], 'mhw-statistiche') || str_contains($r['body'], 'id="consenso"') || str_contains($r['body'], 'data-consenso-apri')));
+// I controlli dei campi: un ID di GA4 sbagliato non si salva (e niente del resto cambia).
+$r = $adm6->segui($adm6->modulo('/admin/seo', '/admin/seo', $campi6k + ['stat_ga4' => 'UA-12345-1']));
+$r2 = $adm6->segui($adm6->modulo('/admin/seo', '/admin/seo', $campi6k + ['stat_matomo_url' => 'http://statistiche.esempio.it', 'stat_matomo_id' => '1']));
+prova('8H · SEO e GEO, «Statistiche delle visite»: i tre strumenti con le note; GA4 senza G- e Matomo senza https:// rifiutati',
+      str_contains($r['body'], 'id="seo-statistiche"') && str_contains($r['body'], 'Senza cookie: conta tutte le visite e non richiede il banner.')
+      && str_contains($r['body'], 'Parte solo dopo il consenso del visitatore.') && str_contains($r['body'], 'Mappe di calore e registrazioni; parte solo dopo il consenso.')
+      && str_contains($r['body'], 'comincia con G-') && str_contains($r2['body'], 'con https://') && (string) val("SELECT valore FROM seo_settings WHERE chiave = 'stat.ga4'") === '');
+// Solo Matomo: lo script sulle pagine pubbliche, mai nelle guide, nel pannello e nelle pagine con un codice nell'indirizzo.
+$adm6->segui($adm6->modulo('/admin/seo', '/admin/seo', $campi6k + ['stat_matomo_url' => 'https://statistiche.esempio.it', 'stat_matomo_id' => '3']));
+$h8 = $ospite->get('/')['body'];
+$j8 = preg_match('#<script type="application/json" id="mhw-statistiche">(.*?)</script>#s', $h8, $m8) ? json_decode($m8[1], true) : null;
+$guida8 = (string) val("SELECT slug FROM properties WHERE is_demo = 2 LIMIT 1");
+prova('8H · solo Matomo: configurazione nella home (indirizzo con la barra, ID), niente banner; le pagine che contano sì, guide, pannello e reimposta password no',
+      ($j8['matomo'] ?? null) === ['url' => 'https://statistiche.esempio.it/', 'id' => '3'] && $j8['ga4'] === null && !str_contains($h8, 'id="consenso"')
+      && str_contains($ospite->get('/domande')['body'], 'mhw-statistiche') && str_contains($ospite->get('/privacy')['body'], 'mhw-statistiche')
+      && str_contains($ospite->get('/accedi')['body'], 'mhw-statistiche')
+      && ($guida8 === '' || !str_contains($ospite->get("/g/$guida8")['body'], 'mhw-statistiche'))
+      && !str_contains($ospite->get('/password/nuova/' . str_repeat('a', 64))['body'], 'mhw-statistiche')
+      && !str_contains($adm6->get('/admin/seo')['body'], 'mhw-statistiche') && !str_contains($lucia->get('/pannello')['body'], 'mhw-statistiche'));
+$js8 = (string) file_get_contents("$DOVE/assets/statistiche.js");
+prova('8H · statistiche.js: Matomo con disableCookies e senza la query; GA4 senza segnali pubblicitari; gli obiettivi con i loro nomi',
+      str_contains($js8, "_paq.push(['disableCookies'])") && !str_contains($js8, 'setDoNotTrack') && !str_contains($js8, 'setUserId')
+      && str_contains($js8, 'allow_google_signals: false') && str_contains($js8, 'allow_ad_personalization_signals: false')
+      && str_contains($js8, "evento('contatto', 'whatsapp')") && str_contains($js8, "evento('sito-myhouse')") && str_contains($js8, "evento('vedi-esempio')"));
+$pr8 = $ospite->get('/privacy')['body'];
+prova('8H · privacy, «Cookie»: cookie tecnici, Matomo (configurato), le guide senza cookie; Google e Clarity no (non configurati)',
+      str_contains($pr8, 'id="cookie"') && str_contains($pr8, 'mhw_consenso') && str_contains($pr8, 'installato sul nostro server')
+      && str_contains($pr8, 'Le guide degli ospiti non usano cookie') && !str_contains($pr8, 'Google Analytics 4') && !str_contains($pr8, 'Microsoft Clarity'));
+// Con GA4 e Clarity: il banner (nascosto finché lo script non decide), Accetta e Rifiuta con lo stesso stile, «Scegli» con due interruttori.
+$adm6->segui($adm6->modulo('/admin/seo', '/admin/seo', $campi6k + ['stat_matomo_url' => 'https://statistiche.esempio.it', 'stat_matomo_id' => '3', 'stat_ga4' => 'g-ab12cd34ef', 'stat_clarity' => 'Abc123xyz']));
+$h8 = $ospite->get('/')['body'];
+prova('8H · con GA4 e Clarity: il banner con il testo dei due strumenti, Rifiuta e Accetta uguali, Scegli con due interruttori spenti, la X e «Preferenze cookie» nel piede',
+      preg_match('#<section class="consenso" id="consenso"[^>]*hidden>#', $h8) === 1
+      && str_contains($h8, 'Usiamo cookie tecnici e, solo con il tuo consenso, strumenti di statistica (Google Analytics) e di analisi dell&#039;uso (Microsoft Clarity) per migliorare il sito.')
+      && str_contains($h8, '<button type="button" class="btn btn--sm consenso__pari" data-consenso-azione="rifiuta">Rifiuta</button>')
+      && str_contains($h8, '<button type="button" class="btn btn--sm consenso__pari" data-consenso-azione="accetta">Accetta</button>')
+      && substr_count($h8, 'data-consenso="') === 2 && !str_contains($h8, 'data-consenso="s" checked') && str_contains($h8, 'aria-label="Chiudi: vale come rifiuto"')
+      && str_contains($h8, 'data-consenso-apri>Preferenze cookie</a>') && str_contains($h8, '"ga4":"G-AB12CD34EF"') && str_contains($h8, '"clarity":"abc123xyz"')
+      && !preg_match('#<script[^>]+(googletagmanager|clarity\.ms)#', $h8));
+$en8 = $ospite->get('/en')['body'];
+prova('8H · …in inglese su /en', str_contains($en8, 'We use technical cookies and, only with your consent, statistics tools (Google Analytics) and usage analysis tools (Microsoft Clarity) to improve the website.')
+      && str_contains($en8, '>Accept</button>') && str_contains($en8, '>Reject</button>') && str_contains($en8, 'data-consenso-apri>Cookie preferences</a>'));
+$pr8 = $ospite->get('/privacy')['body'];
+prova('8H · privacy: con GA4 e Clarity i loro paragrafi (fornitore, cookie, durata, informativa) e come revocare', str_contains($pr8, 'Google Analytics 4') && str_contains($pr8, '_ga e _ga_*')
+      && str_contains($pr8, 'policies.google.com/privacy') && str_contains($pr8, 'Microsoft Clarity') && str_contains($pr8, '_clck (1 anno) e _clsk (1 giorno)')
+      && str_contains($pr8, 'data-consenso-apri>Preferenze cookie</a>'));
+prova('8H · …e mai nelle guide degli ospiti né nel pannello, anche con GA4 e Clarity', ($guida8 === '' || !str_contains($ospite->get("/g/$guida8")['body'], 'consenso'))
+      && !str_contains($lucia->get('/pannello')['body'], 'mhw-statistiche'));
+// Gli obiettivi dal server: la registrazione parte con la pagina «Controlla la tua email».
+Browser::$confermaAutomatica = false;
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$reg8 = new Browser('statistiche8h');
+$reg8->get('/registrati');
+$r = $reg8->segui($reg8->post('/registrati', ['name' => 'Prova Statistiche', 'email' => 'statistiche8h@prova.test', 'password' => 'StatisticheProva123', 'termini' => '1']));
+Browser::$confermaAutomatica = true;
+prova('8H · obiettivo «registrazione»: arriva con la pagina seguente, una volta sola', str_contains($r['body'], '"eventi":[["registrazione",""]]')
+      && !str_contains($reg8->get('/domande')['body'], 'registrazione'));
+// Si torna a spento, per le prove che seguono.
+$adm6->segui($adm6->modulo('/admin/seo', '/admin/seo', $campi6k));
+prova('8H · svuotati i campi: di nuovo nessuno script e nessun banner', !str_contains($ospite->get('/')['body'], 'mhw-statistiche'));
 $r = $ospite->get('/');
 prova('Con il dominio: canonical, og:url, verifiche Google e Bing solo nella home, sameAs dai social', str_contains($r['body'], '<link rel="canonical" href="https://myhousewelcome.it/">')
       && str_contains($r['body'], '<meta name="google-site-verification" content="gsc-Prova_1">') && str_contains($r['body'], '<meta name="msvalidate.01" content="BING42">')

@@ -165,7 +165,7 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
             $nome = (string) ($_POST['name'] ?? '');
             if ($modo === 'bloccata') {
                 $pid = Properties::create($aid, $nome, (string) ($_POST['city'] ?? ''), (string) $u['name']);
-                Stats::funnelEvent('property_created');
+                Stats::funnelEvent('property_created'); MHW\Statistiche::matomoDalServer('prova');
                 Support::flash(trim($nome) . ' creata. Si attiva dopo il pagamento: intanto completa e pubblica la prima.', 'avviso');
                 Support::redirect('/pannello');
             }
@@ -182,7 +182,7 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
                 // Come ogni salita di piano (6H): la struttura nasce bloccata e si paga oggi la quota fino al rinnovo.
                 $prev = CambioAbbonamento::preventivo($sub, $st['pv'], $pv, $costo['quantita']);
                 $pid = Properties::create($aid, $nome, (string) ($_POST['city'] ?? ''), (string) $u['name'], 1);
-                Stats::funnelEvent('property_created');
+                Stats::funnelEvent('property_created'); MHW\Statistiche::matomoDalServer('prova');
                 Auth::audit('subscription.add_property', (int) $u['id'], ['property_id' => $pid, 'quantita' => $costo['quantita']]);
                 if ($prev['conguaglio'] === 0) {
                     CambioAbbonamento::subito($sub, $pv, $costo['quantita']);
@@ -205,7 +205,7 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
                 return $pid;
             });
             Db::update('properties', ['wizard_step' => 'arrivo'], 'id = :pid', ['pid' => $pid]);
-            Stats::funnelEvent('property_created');
+            Stats::funnelEvent('property_created'); MHW\Statistiche::matomoDalServer('prova');
             if ($origine) Support::flash('Struttura creata partendo da ' . Db::val('SELECT name FROM properties WHERE id = ?', [$origine]) . '. Ora completa quello che è solo di questa struttura: indirizzo, check-in, Wi-Fi.');
             Support::redirect('/pannello/' . $pid . '/procedura/struttura');
         } catch (NotFound) { $err = 'Struttura di origine non trovata.'; }

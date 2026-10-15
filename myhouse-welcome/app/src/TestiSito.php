@@ -34,6 +34,8 @@ final class TestiSito
         'amico'    => ['Porta un amico', 'Compare solo con gli inviti accesi (Impostazioni). Le percentuali arrivano dal programma: {amico} è lo sconto dell\'amico, {passo} quello per ogni amico, {max} il massimo (per esempio 50%).'],
         'faq'      => ['Domande', 'Le domande e le risposte sono nei file (Faq.php); qui l\'intestazione, anche della pagina /domande.'],
         'chiusura' => ['In fondo: comincia, e chi c\'è dietro', ''],
+        'consenso' => ['Cookie e consenso', 'Il banner compare solo se in SEO e GEO c\'è Google Analytics o Clarity. Con il solo Matomo (senza cookie) non serve.'],
+        'cookie'   => ['Informativa: il paragrafo «Cookie»', 'Nella pagina /privacy. I paragrafi di Matomo, Google Analytics e Clarity compaiono solo se sono configurati in SEO e GEO.'],
         'sito'     => ['Anche il tuo sito', 'Il blocco del colore di MyHouse in fondo: un percorso a due domande, poi il contatto (8A). Gli stessi testi nel pannello.'],
     ];
 
@@ -230,6 +232,26 @@ final class TestiSito
             'sito2.msg.si'   => ['sito', 'Messaggio · chi ha il sito', 'riga', 'Ho già un sito e vorrei migliorarlo{bisogni}.', '{bisogni}: «: farmi trovare su Google, …» con le scelte, o niente.'],
             'sito2.msg.no'   => ['sito', 'Messaggio · chi non ha il sito', 'riga', 'Non ho ancora un sito per la mia struttura e vorrei crearlo.', ''],
             'sito2.msg.fine' => ['sito', 'Messaggio · ultima frase', 'riga', 'Mi date una proposta?', ''],
+            // ---- 8H · il banner del consenso (solo con Google Analytics o Clarity in SEO e GEO)
+            'consenso.testo'     => ['consenso', 'Testo del banner', 'area', 'Usiamo cookie tecnici e, solo con il tuo consenso, {strumenti} per migliorare il sito.', '{strumenti} diventa da solo «strumenti di statistica (Google Analytics) e di analisi dell\'uso (Microsoft Clarity)», secondo quelli configurati.'],
+            'consenso.link'      => ['consenso', 'Link all\'informativa', 'riga', 'Cookie e privacy', ''],
+            'consenso.accetta'   => ['consenso', 'Bottone «Accetta»', 'riga', 'Accetta', ''],
+            'consenso.rifiuta'   => ['consenso', 'Bottone «Rifiuta»', 'riga', 'Rifiuta', ''],
+            'consenso.scegli'    => ['consenso', 'Bottone «Scegli»', 'riga', 'Scegli', ''],
+            'consenso.salva'     => ['consenso', 'Bottone per salvare le scelte', 'riga', 'Salva le scelte', ''],
+            'consenso.chiudi'    => ['consenso', 'La X (per chi usa un lettore di schermo)', 'riga', 'Chiudi: vale come rifiuto', ''],
+            'consenso.statistiche'      => ['consenso', 'Interruttore · Statistiche', 'riga', 'Statistiche', ''],
+            'consenso.statistiche.nota' => ['consenso', 'Interruttore · Statistiche · spiegazione', 'riga', 'Google Analytics: quante persone visitano il sito e da dove arrivano.', ''],
+            'consenso.analisi'          => ['consenso', 'Interruttore · Analisi dell\'uso', 'riga', 'Analisi dell\'uso', ''],
+            'consenso.analisi.nota'     => ['consenso', 'Interruttore · Analisi dell\'uso · spiegazione', 'riga', 'Microsoft Clarity: mappe di calore e registrazioni delle visite, per capire cosa non è chiaro.', ''],
+            'consenso.preferenze' => ['consenso', 'Link nel piè di pagina', 'riga', 'Preferenze cookie', 'Riapre il banner per cambiare idea.'],
+            // ---- 8H · l'informativa: il paragrafo «Cookie» della pagina /privacy
+            'cookie.tecnici' => ['cookie', 'Cookie tecnici', 'area', 'Il sito usa solo cookie tecnici, che non richiedono il consenso: quello della sessione (mhw_sess), che tiene aperto l\'accesso al pannello e protegge i moduli, e quello che ricorda la tua scelta sui cookie (mhw_consenso, 6 mesi).', ''],
+            'cookie.matomo'  => ['cookie', 'Matomo (compare solo se è configurato)', 'area', 'Per contare le visite usiamo Matomo, installato sul nostro server: non usa cookie, l\'indirizzo IP viene anonimizzato (gli ultimi due byte) e i dati restano da noi, senza passare a terzi.', ''],
+            'cookie.ga4'     => ['cookie', 'Google Analytics (compare solo se è configurato)', 'area', '**Google Analytics 4** (Google Ireland Ltd), solo con il tuo consenso alle «Statistiche»: misura le visite in forma aggregata, senza segnali pubblicitari né personalizzazione degli annunci. Cookie _ga e _ga_*, durata fino a 2 anni. [Informativa di Google](https://policies.google.com/privacy).', ''],
+            'cookie.clarity' => ['cookie', 'Microsoft Clarity (compare solo se è configurato)', 'area', '**Microsoft Clarity** (Microsoft Ireland Operations Ltd), solo con il tuo consenso all\'«Analisi dell\'uso»: mappe di calore e registrazioni delle visite per capire dove il sito non è chiaro; i campi dei moduli sono mascherati. Cookie _clck (1 anno) e _clsk (1 giorno). [Informativa di Microsoft](https://privacy.microsoft.com/privacystatement).', ''],
+            'cookie.revoca'  => ['cookie', 'Come cambiare idea (compare con Google Analytics o Clarity)', 'area', 'Puoi cambiare idea quando vuoi da «Preferenze cookie», in fondo alle pagine del sito: se revochi il consenso, i cookie di Google Analytics e di Clarity vengono cancellati.', ''],
+            'cookie.guide'   => ['cookie', 'Le guide degli ospiti', 'area', 'Le guide degli ospiti non usano cookie né statistiche di terzi: contano solo eventi anonimi per l\'host, come scritto sopra.', ''],
         ];
         return $c;
     }

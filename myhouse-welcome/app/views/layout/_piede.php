@@ -4,7 +4,9 @@ use function MHW\b; use MHW\{Support, Config, LinguaSito};
 $en = LinguaSito::en();
 $l = Config::get('legal');
 $tel = ($l['contact_phone'] ?? '') !== '' ? Support::telHref($l['contact_phone']) : '';
-$wa = preg_replace('/\D/', '', (string) ($l['contact_whatsapp'] ?? '')); ?>
+$wa = preg_replace('/\D/', '', (string) ($l['contact_whatsapp'] ?? ''));
+// 8H: «Preferenze cookie» riapre il banner del consenso; c'è solo dove c'è il banner (Google Analytics o Clarity).
+$prefCookie = MHW\Statistiche::qui() && MHW\Statistiche::consensoServe() ? ' · <a href="#" data-consenso-apri>' . MHW\TestiSito::html('consenso.preferenze') . '</a>' : ''; ?>
 <footer class="wrap piede">
   <hr class="rule">
   <div class="piede__colonne">
@@ -25,9 +27,9 @@ $wa = preg_replace('/\D/', '', (string) ($l['contact_whatsapp'] ?? '')); ?>
       <?php if ($wa !== ''): ?><a href="https://wa.me/<?= Support::e($wa) ?>" rel="noopener">WhatsApp</a><?php endif; ?>
       <a href="<?= b() . ($en ? '/en' : '/') ?>#sito"><?= $en ? 'A website for your property' : 'Il sito per la tua struttura' ?></a>
       <?php if ($en): /* 8E: Termini e Privacy restano in italiano */ ?>
-        <span><a href="<?= b() ?>/termini" hreflang="it">Terms (in Italian)</a> · <a href="<?= b() ?>/privacy" hreflang="it">Privacy (in Italian)</a></span>
+        <span><a href="<?= b() ?>/termini" hreflang="it">Terms (in Italian)</a> · <a href="<?= b() ?>/privacy" hreflang="it">Privacy (in Italian)</a><?= $prefCookie ?></span>
       <?php else: ?>
-        <span><a href="<?= b() ?>/termini">Termini</a> · <a href="<?= b() ?>/privacy">Privacy</a></span>
+        <span><a href="<?= b() ?>/termini">Termini</a> · <a href="<?= b() ?>/privacy">Privacy</a><?= $prefCookie ?></span>
       <?php endif; ?>
     </div>
   </div>

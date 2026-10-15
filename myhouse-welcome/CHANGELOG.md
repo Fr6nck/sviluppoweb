@@ -1,5 +1,19 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 8H statistiche delle visite e consenso ai cookie (15 ottobre 2026)
+
+Nessuna migrazione (le impostazioni nuove stanno nella tabella di SEO e GEO). Da configurare: DA-CONFIGURARE, sezione «Statistiche delle visite».
+
+- **Caratteri sul nostro server:** Gloock e Onest (variabile 300–800, latino e cirillico) in `assets/fonts/`, con `@font-face` e `font-display: swap` in cima ad `app.css` e il `preload` del solo Onest. Tolti `preconnect` e il foglio di `fonts.googleapis.com` dai cinque layout (le email non li usavano): nessuna pagina, guide comprese, chiede più niente a Google. Il sito è identico. `.htaccess` e `web.config` conoscono il tipo `font/woff2`.
+- **Amministrazione → SEO e GEO → «Statistiche delle visite»:** Matomo (indirizzo e ID del sito), Google Analytics 4 (`G-…`), Microsoft Clarity (ID del progetto). Vuoti = spento; i valori sbagliati non si salvano. La verifica di Google e Bing resta dov'era.
+- **Solo sul sito pubblico:** home e `/en`, domande, prezzi, pagine per tipologia, registrazione, accesso, «controlla la tua email», password dimenticata, pagina dopo il pagamento, Termini e Privacy. Mai nelle guide (`/g/…`), negli inviti (`/i/…`), nel pannello, in Amministrazione e nelle pagine con un codice nell'indirizzo (reimposta password, conferma email, link delle email). Agli strumenti va l'indirizzo della pagina senza la parte dopo «?».
+- **Matomo senza cookie** (`disableCookies`, nessun Do Not Track, nessun utente): sempre attivo se configurato, nessun banner.
+- **Obiettivi** (evento con categoria «obiettivo» e azione = nome): `registrazione`, `prova` (guida creata: dal server a Matomo, perché succede nel pannello), `pagamento` (dopo Stripe, una volta per ordine, con il nome del piano), `contatto` (WhatsApp, email, telefono), `sito-myhouse` («Sì» in «Anche il tuo sito»), `vedi-esempio` (apertura della guida di esempio). Vanno anche a GA4, solo con il consenso.
+- **Banner del consenso** (solo con GA4 o Clarity): barra fissa in basso, «Accetta» e «Rifiuta» con lo stesso aspetto, «Scegli» con due interruttori spenti (Statistiche → GA4, Analisi dell'uso → Clarity), la X vale come rifiuto, scorrere non è consenso. Prima della scelta nessuno script di Google o Microsoft. La scelta, anche il rifiuto, sta 6 mesi nel cookie tecnico `mhw_consenso` (SameSite=Lax, Secure in https). «Preferenze cookie» nel piede (in inglese «Cookie preferences») riapre il banner; revocando si cancellano `_ga*`, `_clck` e `_clsk` e la pagina si ricarica. GA4 con `allow_google_signals` e `allow_ad_personalization_signals` spenti. Testi in Testi e foto → «Cookie e consenso», anche in inglese.
+- **Privacy, paragrafo «Cookie»** (`/privacy#cookie`): cookie tecnici, Matomo, GA4 e Clarity (ognuno solo se configurato, con fornitore, cookie, durata e informativa), come revocare, le guide senza cookie. Testi in Testi e foto → «Informativa: il paragrafo Cookie».
+- `/domande` non ha una ricerca: niente `trackSiteSearch`.
+- Screenshot del banner in `app/prove/schermate/8h-consenso-*.png`.
+
 ## v2 · 8G «Più sanno, meglio stanno» nella home (15 ottobre 2026)
 
 Nessuna migrazione, niente da configurare.

@@ -1040,6 +1040,11 @@ $r->post('/admin/seo', function () {
         return preg_replace('/[^A-Za-z0-9_\-]/', '', $v);
     };
     $c = ['dominio' => $dominio, 'gsc' => $codice('gsc'), 'bing' => $codice('bing')];
+    // 8H · statistiche delle visite: si salvano solo se tutti i campi sono giusti.
+    [$stat, $errStat] = MHW\Statistiche::pulisci(['matomo_url' => $in('stat_matomo_url', 300), 'matomo_id' => $in('stat_matomo_id', 10),
+                                                   'ga4' => $in('stat_ga4', 40), 'clarity' => $in('stat_clarity', 40)]);
+    if ($errStat !== '') { Support::flash($errStat, 'err'); Support::redirect('/admin/seo#seo-statistiche'); }
+    $c += $stat;
     foreach (array_keys(MHW\Seo::PAGINE) as $p) {
         $c["p.$p.titolo"] = preg_replace('/\s+/', ' ', $in("p_{$p}_titolo", 200));
         $c["p.$p.descrizione"] = preg_replace('/\s+/', ' ', $in("p_{$p}_descrizione", 400));
