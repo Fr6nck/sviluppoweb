@@ -11,27 +11,29 @@ use MHW\{Auth, Billing, Config, Db, Demo, Entitlements, Gestione, Impostazioni, 
 $r->get('/admin', function () {
     Auth::requireAdmin();
     Demo::vetrinaAutomatica();
+    // 7F: i clienti di prova non entrano nel quadro.
+    $np = fn(string $col) => Gestione::senzaProva($col);
     $numeri = [
-        'clienti'    => (int) Db::val("SELECT COUNT(*) FROM users WHERE role = 'host' AND email NOT LIKE ?", ['%@' . Demo::DOMINIO], 0),
+        'clienti'    => (int) Db::val("SELECT COUNT(*) FROM users WHERE role = 'host' AND email NOT LIKE ?" . Gestione::utentiVeri('id'), ['%@' . Demo::DOMINIO], 0),
         'abbonati'   => (int) Db::val("SELECT COUNT(DISTINCT account_id) FROM subscriptions WHERE status IN ('active','trialing')
-                                        AND provider = 'stripe' AND current_period_end > ?", [Support::now()], 0),
-        'guide'      => (int) Db::val('SELECT COUNT(*) FROM properties WHERE is_demo = 0', [], 0),
-        'pubblicate' => (int) Db::val("SELECT COUNT(*) FROM properties WHERE status = 'published' AND is_demo = 0", [], 0),
+                                        AND provider = 'stripe' AND current_period_end > ?" . $np('account_id'), [Support::now()], 0),
+        'guide'      => (int) Db::val('SELECT COUNT(*) FROM properties WHERE is_demo = 0' . $np('account_id'), [], 0),
+        'pubblicate' => (int) Db::val("SELECT COUNT(*) FROM properties WHERE status = 'published' AND is_demo = 0" . $np('account_id'), [], 0),
         'aperture'   => Stats::totalViews(30),
-        'incassato'  => (int) Db::val("SELECT COALESCE(SUM(amount_cents),0) FROM orders WHERE status = 'paid' AND provider = 'stripe'", [], 0),
-        'in_attesa'  => (int) Db::val("SELECT COUNT(*) FROM orders WHERE status IN ('pending','awaiting')", [], 0),
-        'rinnovo_off'=> (int) Db::val("SELECT COUNT(*) FROM subscriptions WHERE status = 'active' AND cancel_at_period_end = 1", [], 0),
-        'falliti'    => (int) Db::val("SELECT COUNT(*) FROM subscriptions WHERE status = 'past_due'", [], 0),
+        'incassato'  => (int) Db::val("SELECT COALESCE(SUM(amount_cents),0) FROM orders WHERE status = 'paid' AND provider = 'stripe'" . $np('account_id'), [], 0),
+        'in_attesa'  => (int) Db::val("SELECT COUNT(*) FROM orders WHERE status IN ('pending','awaiting')" . $np('account_id'), [], 0),
+        'rinnovo_off'=> (int) Db::val("SELECT COUNT(*) FROM subscriptions WHERE status = 'active' AND cancel_at_period_end = 1" . $np('account_id'), [], 0),
+        'falliti'    => (int) Db::val("SELECT COUNT(*) FROM subscriptions WHERE status = 'past_due'" . $np('account_id'), [], 0),
     ];
     $piani = Db::all(
         "SELECT pk.name, pk.public, pk.active, pv.*,
-                (SELECT COUNT(*) FROM subscriptions s WHERE s.package_version_id = pv.id AND s.status IN ('active','trialing')) AS clienti
+                (SELECT COUNT(*) FROM subscriptions s WHERE s.package_version_id = pv.id AND s.status IN ('active','trialing')" . $np('s.account_id') . ") AS clienti
          FROM package_versions pv JOIN packages pk ON pk.id = pv.package_id
          WHERE pv.is_current = 1 AND pk.public = 1 AND pk.active = 1 ORDER BY pk.sort, pk.id");
     $ordini = Db::all(
         'SELECT o.*, pk.name AS package, u.email, u.name AS cliente, a.id AS account_id FROM orders o
          JOIN package_versions pv ON pv.id = o.package_version_id JOIN packages pk ON pk.id = pv.package_id
-         JOIN accounts a ON a.id = o.account_id JOIN users u ON u.id = a.user_id ORDER BY o.id DESC LIMIT 8');
+         JOIN accounts a ON a.id = o.account_id JOIN users u ON u.id = a.user_id WHERE 1 = 1' . $np('a.id') . ' ORDER BY o.id DESC LIMIT 8');
 
     $avvisi = [];
     if (!Stripe::enabled()) $avvisi[] = ['Stripe non è configurato', 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti possono preparare la guida ma non pagarla. Inseriscili nelle Impostazioni.', '/admin/impostazioni#stripe'];
@@ -56,7 +58,7 @@ $r->get('/admin', function () {
 $r->get('/admin/clienti', function () {
     Auth::requireAdmin();
     $cerca = trim((string) ($_GET['q'] ?? ''));
-    $sql = 'SELECT u.id AS user_id, u.email, u.name, u.created_at, u.email_verified_at, a.id AS account_id
+    $sql = 'SELECT u.id AS user_id, u.email, u.name, u.created_at, u.email_verified_at, a.id AS account_id, ' . Gestione::colonnaProva() . ' AS is_test
             FROM users u JOIN accounts a ON a.user_id = u.id WHERE u.role = ?';
     $args = ['host'];
     if ($cerca !== '') {
@@ -188,15 +190,31 @@ $r->post('/admin/cliente/{aid}/abbonamento', function (array $a) {
     Auth::requireAdmin();
     $accId = (int) $a['aid'];
     if (!Db::one('SELECT id FROM accounts WHERE id = ?', [$accId])) { http_response_code(404); View::out('pub/404', []); }
-    $pv = Db::one('SELECT id FROM package_versions WHERE id = ?', [(int) ($_POST['pv'] ?? 0)]);
-    $mesi = max(1, min(36, (int) ($_POST['mesi'] ?? 12)));
+    $pv = Db::one('SELECT pv.id, pk.name FROM package_versions pv JOIN packages pk ON pk.id = pv.package_id WHERE pv.id = ?', [(int) ($_POST['pv'] ?? 0)]);
+    // 7F: scelte rapide «Gratis 12 mesi» e «Gratis per sempre» (100 anni); «mesi» o nessuna scelta = il numero scritto.
+    $durata = (string) ($_POST['durata'] ?? 'mesi');
+    $mesi = match ($durata) { '12' => 12, 'sempre' => Billing::PER_SEMPRE, default => max(1, min(36, (int) ($_POST['mesi'] ?? 12))) };
     $nota = trim((string) ($_POST['nota'] ?? ''));
     if (!$pv || $nota === '') {
         Support::flash('Scegli un piano e scrivi il motivo: resta nel registro.', 'err');
         Support::redirect('/admin/cliente/' . $accId);
     }
     Billing::grantManual($accId, (int) $pv['id'], $mesi, $nota, max(1, (int) ($_POST['strutture'] ?? 1)));
-    Support::flash("Abbonamento manuale attivo per $mesi mesi. Non compare nell'incasso.");
+    Support::flash($mesi === Billing::PER_SEMPRE ? $pv['name'] . " gratis per sempre. Non compare nell'incasso."
+                                                 : $pv['name'] . " attivo per $mesi mesi. Non compare nell'incasso.");
+    Support::redirect('/admin/cliente/' . $accId);
+});
+
+/* 7F: «Cliente di prova» sì o no. */
+$r->post('/admin/cliente/{aid}/prova', function (array $a) {
+    Auth::requireAdmin();
+    $accId = (int) $a['aid'];
+    $uid = (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$accId]);
+    if (!$uid || !Migrator::columnExists('accounts', 'is_test')) { http_response_code(404); View::out('pub/404', []); }
+    $prova = !empty($_POST['prova']) ? 1 : 0;
+    Db::update('accounts', ['is_test' => $prova], 'id = :aid', ['aid' => $accId]);
+    Auth::audit('account.test', $uid, ['is_test' => $prova]);
+    Support::flash($prova ? 'Segnato come cliente di prova: non entra più nei conti e non riceve richiami automatici.' : 'Non è più un cliente di prova: torna nei conti.');
     Support::redirect('/admin/cliente/' . $accId);
 });
 
@@ -281,20 +299,24 @@ $r->post('/admin/dati-esempio', function () {
 // -------------------------------------------------------------- abbonamenti
 $r->get('/admin/abbonamenti', function () {
     Auth::requireAdmin();
+    // 7F: «Gratuiti» = gli abbonamenti concessi a mano (omaggi, gratis per sempre) e quelli dimostrativi.
+    $gratuiti = ($_GET['filtro'] ?? '') === 'gratuiti';
+    $prova = Migrator::columnExists('accounts', 'is_test') ? 'a.is_test' : '0';
     $subs = Db::all(
-        'SELECT s.*, pk.name AS package, pv.version, pv.price_cents, pv.currency, u.email, u.name AS cliente, a.id AS account_id
+        "SELECT s.*, pk.name AS package, pv.version, pv.price_cents, pv.currency, u.email, u.name AS cliente, a.id AS account_id, $prova AS is_test
          FROM subscriptions s JOIN package_versions pv ON pv.id = s.package_version_id JOIN packages pk ON pk.id = pv.package_id
-         JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id ORDER BY s.id DESC LIMIT 300');
+         JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id"
+        . ($gratuiti ? " WHERE s.provider IN ('manuale', 'dimostrazione')" : '') . ' ORDER BY s.id DESC LIMIT 300');
     foreach ($subs as &$s) $s['valido'] = Subscriptions::valid($s, (int) (Config::get('billing')['grace_days'] ?? 0));
     unset($s);
-    View::out('admin/subscriptions', ['subs' => $subs, 'nav' => 'abbonamenti'], 'layout/cms');
+    View::out('admin/subscriptions', ['subs' => $subs, 'gratuiti' => $gratuiti, 'nav' => 'abbonamenti'], 'layout/cms');
 });
 
 // -------------------------------------------------------------------- guide
 $r->get('/admin/guide', function () {
     Auth::requireAdmin();
     $guide = Db::all(
-        'SELECT p.*, u.email, u.name AS cliente, a.id AS account_id,
+        'SELECT p.*, u.email, u.name AS cliente, a.id AS account_id, ' . Gestione::colonnaProva() . ' AS is_test,
                 (SELECT token FROM qr_tokens q WHERE q.property_id = p.id) AS qr_token,
                 (SELECT scans FROM qr_tokens q WHERE q.property_id = p.id) AS qr_scans,
                 (SELECT MAX(version) FROM guide_versions g WHERE g.property_id = p.id) AS versione
@@ -408,6 +430,7 @@ $r->post('/admin/pacchetti/{pid}/nuova-versione', function (array $a) use ($test
     });
     Auth::audit('package.new_version', null, ['package' => $pkg['code'], 'version_id' => $vid, 'price_cents' => $prezzo]);
     Entitlements::forget();
+    MHW\Seo::scriviFile();   // 7F: i prezzi sono in sitemap (data) e in llms.txt
     Support::flash('Creata una versione nuova di ' . $pkg['name'] . '. Chi era sulla precedente ci resta, con quello che aveva comprato.');
     Support::redirect('/admin/pacchetti');
 });
@@ -424,6 +447,7 @@ $r->post('/admin/pacchetti/{pid}/testo', function (array $a) use ($testiEn) {
         'public' => !empty($_POST['public']) ? 1 : 0, 'active' => !empty($_POST['active']) ? 1 : 0,
     ] + $testiEn(), 'id = :pid', ['pid' => $pkg['id']]);
     Auth::audit('package.copy', null, ['package' => $pkg['code']]);
+    MHW\Seo::scriviFile();   // 7F: le frasi dei piani sono in llms.txt
     Support::flash('Testi di ' . $pkg['name'] . ' aggiornati.');
     Support::redirect('/admin/pacchetti');
 });
@@ -534,11 +558,11 @@ $r->get('/admin/prospetti', function () {
     }
     // «Cosa ti ha fermato?» (7A): quante risposte per motivo.
     $pareri = \MHW\Migrator::tableExists('feedback')
-        ? array_column(Db::all('SELECT motivo, COUNT(*) AS n FROM feedback GROUP BY motivo'), 'n', 'motivo') : null;
+        ? array_column(Db::all('SELECT motivo, COUNT(*) AS n FROM feedback WHERE 1 = 1' . Gestione::senzaProva('account_id') . ' GROUP BY motivo'), 'n', 'motivo') : null;
     // 8A: chi ha completato «Anche il tuo sito» (home e pannello), dal più recente.
     $interessati = \MHW\Migrator::tableExists('interessi_sito')
         ? Db::all('SELECT i.*, u.name AS cliente, u.email FROM interessi_sito i LEFT JOIN accounts a ON a.id = i.account_id LEFT JOIN users u ON u.id = a.user_id
-                   ORDER BY i.id DESC LIMIT 100') : null;
+                   WHERE (i.account_id IS NULL OR 1 = 1' . Gestione::senzaProva('i.account_id') . ') ORDER BY i.id DESC LIMIT 100') : null;
     View::out('admin/prospetti', ['mesi' => $mesi, 'adesso' => Gestione::adesso(), 'pareri' => $pareri, 'interessati' => $interessati, 'nav' => 'prospetti'], 'layout/cms');
 });
 
@@ -557,6 +581,26 @@ $r->get('/admin/vendite', function () {
         Gestione::csv('vendite-per-piano', ['Mese', 'Piano', 'Nuovi abbonamenti', 'Cambi di piano verso', 'Incasso'], $righe);
     }
     View::out('admin/vendite', ['v' => $v, 'mesi' => $mesi, 'nav' => 'vendite'], 'layout/cms');
+});
+
+/* 7F: Vendite → Marketing: guide, percorso, sezioni, lingue, guide più visitate, inviti. Solo lettura, clienti di prova esclusi. */
+$r->get('/admin/marketing', function () {
+    Auth::requireAdmin();
+    $periodo = \MHW\Marketing::periodo((string) ($_GET['periodo'] ?? '90'));
+    $tabelle = \MHW\Marketing::tabelle($periodo);
+    if (($_GET['formato'] ?? '') === 'csv') {
+        $k = (string) ($_GET['tabella'] ?? '');
+        if (!isset($tabelle[$k])) { http_response_code(404); View::out('pub/404', []); }
+        $tab = $tabelle[$k];
+        $col = $tab['colonne']; $cli = $tab['cliente'] ?? null;
+        if ($cli !== null) $col[$cli] = 'Scheda cliente';
+        $righe = array_map(function ($x) use ($cli) {
+            if ($cli !== null) $x[$cli] = Support::baseUrl() . '/admin/cliente/' . (int) $x[$cli];
+            return $x;
+        }, $tab['righe']);
+        Gestione::csv('marketing-' . $k . '-' . $periodo, array_map(fn($c) => $c === '' ? 'Voce' : $c, $col), $righe);
+    }
+    View::out('admin/marketing', ['tabelle' => $tabelle, 'periodo' => $periodo, 'nav' => 'marketing'], 'layout/cms');
 });
 
 // --------------------------------------------------------------- diagnostica
@@ -641,6 +685,11 @@ $r->get('/admin/diagnostica', function () {
     $checks[] = ['Indirizzi puliti', $pulitiOk, $pulitiOk
         ? $pulitiMsg . (Config::get('pretty_urls') === true ? ' Accesi in Impostazioni → Sito.' : ' Accendili in Impostazioni → Sito.')
         : $pulitiMsg . ' Finché non va, gli indirizzi restano con index.php e funzionano lo stesso.'];
+    // 7F: robots.txt, sitemap.xml e llms.txt anche come file veri accanto a index.php.
+    $esitoSeo = MHW\Seo::esitoFile();
+    $checks[] = ['File per motori e assistenti (robots.txt, sitemap.xml, llms.txt)', MHW\Seo::scrivibili() && (!$esitoSeo || $esitoSeo['ok']),
+        !MHW\Seo::scrivibili() ? 'La cartella principale del sito non è scrivibile: i tre file restano solo come pagine, e senza riscrittura degli indirizzi i motori non li trovano.'
+        : ($esitoSeo ? $esitoSeo['msg'] . ' Ultima volta: ' . Support::date($esitoSeo['quando']) . '.' : 'Cartella scrivibile: i file si scrivono al prossimo salvataggio di SEO e GEO.')];
     $checks[] = ['Indirizzo pubblico impostato', Config::get('base_url') !== '',
         Config::get('base_url') !== '' ? Config::get('base_url') : 'MHW_BASE_URL vuoto: QR ed email usano l\'indirizzo della richiesta'];
     $daCompletare = MHW\CambioAbbonamento::inSospeso();
@@ -767,6 +816,7 @@ $r->post('/admin/testimonianze/{tid}/pubblica', function (array $a) {
     $ok = MHW\Testimonianze::pubblica((int) $a['tid']);
     if ($ok) Auth::audit('testimonial.publish', null, ['id' => (int) $a['tid']]);
     Support::flash($ok ? 'Giudizio pubblicato: si vede in home.' : 'Non si può pubblicare: manca il consenso, o è stato ritirato.', $ok ? 'ok' : 'err');
+    MHW\Seo::scriviFile();   // 7F: llms.txt dice se ci sono giudizi pubblicati
     Support::redirect('/admin/testimonianze');
 });
 
@@ -775,6 +825,7 @@ $r->post('/admin/testimonianze/{tid}/rifiuta', function (array $a) {
     MHW\Testimonianze::rifiuta((int) $a['tid']);
     Auth::audit('testimonial.reject', null, ['id' => (int) $a['tid']]);
     Support::flash('Giudizio rifiutato: non si pubblica.');
+    MHW\Seo::scriviFile();   // 7F: llms.txt dice se ci sono giudizi pubblicati
     Support::redirect('/admin/testimonianze');
 });
 
@@ -787,6 +838,7 @@ $r->post('/admin/testimonianze', function () {
     } catch (\Throwable $e) {
         Support::flash($e instanceof \RuntimeException ? $e->getMessage() : 'Non salvata (codice ' . Log::exception($e, 'testimonianze') . ').', 'err');
     }
+    MHW\Seo::scriviFile();   // 7F: llms.txt dice se ci sono giudizi pubblicati
     Support::redirect('/admin/testimonianze');
 });
 
@@ -795,6 +847,7 @@ $r->post('/admin/testimonianze/{tid}/elimina', function (array $a) {
     MHW\Testimonianze::elimina((int) $a['tid']);
     Auth::audit('testimonial.delete', null, ['id' => (int) $a['tid']]);
     Support::flash('Testimonianza eliminata.');
+    MHW\Seo::scriviFile();   // 7F: llms.txt dice se ci sono giudizi pubblicati
     Support::redirect('/admin/testimonianze');
 });
 
@@ -1017,6 +1070,9 @@ $r->post('/admin/seo', function () {
     $prima = []; foreach (array_keys($c) as $k) $prima[$k] = MHW\Seo::get($k);
     MHW\Seo::set($c);
     Auth::audit('seo.save', null, ['cambiate' => array_values(array_keys(array_filter($c, fn($v, $k) => $prima[$k] !== $v, ARRAY_FILTER_USE_BOTH)))]);
-    Support::flash('Salvato. Sitemap, robots.txt e llms.txt sono già aggiornati.');
+    // 7F: anche come file veri accanto a index.php; se la cartella non è scrivibile, lo si dice.
+    [$okFile, $msgFile] = MHW\Seo::scriviFile();
+    Support::flash($okFile ? 'Salvato. Sitemap, robots.txt e llms.txt sono già aggiornati, anche come file nella cartella principale del sito.'
+                           : 'Salvato. Sitemap, robots.txt e llms.txt sono aggiornati, ma: ' . $msgFile, $okFile ? 'ok' : 'err');
     Support::redirect('/admin/seo');
 });

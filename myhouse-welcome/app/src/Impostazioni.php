@@ -26,7 +26,7 @@ final class Impostazioni
         // 7A: l'indirizzo del sito, gli indirizzi senza index.php e l'indirizzo unico dell'assistenza.
         'sito' => [
             'base_url'       => ['MHW_BASE_URL', 'Indirizzo del sito', 'url', 'Per esempio https://welcomemyhouse.it, senza barra finale. È quello che finisce nei QR, nelle email e nei motori di ricerca.'],
-            'pretty_urls'    => ['MHW_PRETTY_URLS', 'Indirizzi puliti, senza index.php', 'check', 'Si accende solo se la prova riesce: il sito chiede a sé stesso robots.txt. Spento, tutto resta come prima.'],
+            'pretty_urls'    => ['MHW_PRETTY_URLS', 'Indirizzi puliti, senza index.php', 'check', 'Si accende solo se la prova riesce: il sito chiede a sé stesso una pagina senza index.php. Spento, tutto resta come prima.'],
             'contatti.email' => ['MHW_CONTACT_EMAIL', 'Indirizzo per assistenza, suggerimenti e preventivi', 'email', 'Quello dei bottoni «Scrivici» del sito e del pannello, e del piede delle email. Di serie info@welcomemyhouse.it.'],
         ],
         'stripe' => [
@@ -328,14 +328,15 @@ final class Impostazioni
     public const AVVISO_HTACCESS = 'Il server non legge .htaccess: caricalo nella cartella principale, è un file nascosto, e controlla che il piano di hosting lo permetta';
 
     /**
-     * Gli indirizzi puliti funzionano? Il sito chiede a sé stesso $base/robots.txt (senza index.php):
+     * Gli indirizzi puliti funzionano? Il sito chiede a sé stesso $base/indirizzi-puliti (senza index.php):
      * risponde 200 solo se il server riscrive gli indirizzi. $base vuoto = l'indirizzo di adesso.
+     * 7F: non più robots.txt, che ora può essere un file vero (Seo::scriviFile) e risponderebbe anche senza riscrittura.
      * @return array{0:bool,1:string}
      */
     public static function provaIndirizzi(string $base = ''): array
     {
         if ($base === '') $base = (string) preg_replace('#/index\.php$#', '', Support::baseUrl());
-        $url = rtrim($base, '/') . '/robots.txt';
+        $url = rtrim($base, '/') . '/indirizzi-puliti';
         // Il server di prova di PHP (php -S) serve una richiesta per volta: chiedere a sé stesso lo bloccherebbe.
         if (PHP_SAPI === 'cli-server' && parse_url($url, PHP_URL_HOST) . ':' . parse_url($url, PHP_URL_PORT) === preg_replace('/^\[?([^\]]*)\]?$/', '$1', (string) ($_SERVER['SERVER_NAME'] ?? '')) . ':' . ($_SERVER['SERVER_PORT'] ?? '')) {
             return [false, 'Con il server di prova di PHP la prova non si può fare: si fa sull\'hosting.'];
@@ -346,7 +347,7 @@ final class Impostazioni
         $codice = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $errore = curl_error($ch);
         curl_close($ch);
-        if ($codice === 200 && str_contains($corpo, 'User-agent')) return [true, 'Gli indirizzi puliti funzionano: ' . $url . ' risponde.'];
+        if ($codice === 200 && str_contains($corpo, Seo::SONDA)) return [true, 'Gli indirizzi puliti funzionano: ' . $url . ' risponde.'];
         return [false, self::AVVISO_HTACCESS . ' (' . $url . ' → ' . ($codice ?: 'nessuna risposta' . ($errore !== '' ? ': ' . $errore : '')) . ').'];
     }
 

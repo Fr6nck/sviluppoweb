@@ -11,13 +11,22 @@ include __DIR__ . '/_stati.php'; ?>
   <div class="spread">
     <div class="stack stack--sm">
       <a class="small" href="<?= b() ?>/admin/clienti">← Clienti</a>
-      <h1><?= Support::e($acc['user_name'] ?: $acc['email']) ?>.</h1>
+      <h1><?= Support::e($acc['user_name'] ?: $acc['email']) ?>.<?php if (!empty($acc['is_test'])): ?> <span class="badge badge--sea" style="vertical-align:middle">Prova</span><?php endif; ?></h1>
       <p class="small muted"><?= Support::e($acc['email']) ?> · registrato il <?= Support::e(Support::date($acc['registrato'])) ?> ·
         <?= $acc['email_verified_at'] ? 'email confermata' : '<b>email non confermata</b>' ?></p>
     </div>
     <form method="post" action="<?= b() ?>/admin/entra/<?= (int) $acc['user_id'] ?>" style="margin:0"><?= Csrf::field() ?>
       <button class="btn btn--ghost btn--sm">Entra come cliente</button></form>
   </div>
+
+  <?php /* 7F: «Cliente di prova»: fuori da Quadro, Vendite, Prospetti, Scadenze e Marketing, niente richiami automatici né richiesta di giudizio. */
+        if (array_key_exists('is_test', $acc)): ?>
+  <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/prova" class="panel spread spread--mid cliente-prova" style="gap:12px;flex-wrap:wrap"><?= Csrf::field() ?>
+    <label class="check" style="margin:0"><input type="checkbox" name="prova" value="1"<?= !empty($acc['is_test']) ? ' checked' : '' ?>>
+      <span><b>Cliente di prova</b><br><span class="small muted">Non entra in Quadro, Vendite, Prospetti, Scadenze e Marketing; non riceve richiami automatici né la richiesta di giudizio. Per i tuoi account di collaudo e per chi usa la piattaforma gratis.</span></span></label>
+    <button class="btn btn--ghost btn--sm">Salva</button>
+  </form>
+  <?php endif; ?>
 
   <?php $completa = MHW\Fatturazione::completa($acc); $tipoF = (string) ($acc['billing_type'] ?? ''); ?>
   <div class="grid grid-2" style="align-items:start">
@@ -123,7 +132,14 @@ include __DIR__ . '/_stati.php'; ?>
     <details class="fieldset">
       <summary class="legend" style="cursor:pointer;min-height:32px">Attiva un abbonamento manuale</summary>
       <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/abbonamento" class="stack" style="margin-top:12px"><?= Csrf::field() ?>
-        <p class="small muted">Per omaggi o pagamenti arrivati per altre vie. Non passa da Stripe, non conta nell'incasso e resta nel registro.</p>
+        <p class="small muted">Per omaggi, clienti gratuiti o pagamenti arrivati per altre vie. Non passa da Stripe, non conta nell'incasso e resta nel registro.</p>
+        <?php /* 7F: le scelte rapide. «Per sempre» è una scadenza lontana (100 anni): niente avvisi di scadenza. */ ?>
+        <fieldset class="fieldset" style="margin:0"><legend class="legend">Durata</legend>
+          <div class="row" style="gap:16px;flex-wrap:wrap">
+            <label class="check"><input type="radio" name="durata" value="12"> <span>Gratis 12 mesi</span></label>
+            <label class="check"><input type="radio" name="durata" value="sempre"> <span>Gratis per sempre</span></label>
+            <label class="check"><input type="radio" name="durata" value="mesi" checked> <span>I mesi scritti qui sotto</span></label>
+          </div></fieldset>
         <div class="grid grid-4">
           <div class="field" style="margin:0"><label for="pv">Piano</label><select id="pv" name="pv">
             <?php foreach ($versioni as $v): ?><option value="<?= (int) $v['id'] ?>"><?= Support::e($v['name']) ?> v<?= (int) $v['version'] ?></option><?php endforeach; ?></select></div>

@@ -17,7 +17,7 @@ namespace MHW;
  * Le finestre non si sovrappongono: una struttura riceve al massimo un richiamo
  * per volta, e chi aggiorna l'applicazione con bozze vecchie non riceve una
  * raffica di email. Ognuna parte una volta sola (email_log), mai alle strutture
- * bloccate o di esempio, mai a chi ha chiesto di non riceverne di quel tipo.
+ * bloccate o di esempio, mai ai clienti di prova (7F), mai a chi ha chiesto di non riceverne di quel tipo.
  *
  * Nessun cron obbligatorio: forse() gira dopo le pagine del pannello e della
  * landing, al massimo ogni 15 minuti (un file di blocco in storage/). In più
@@ -192,6 +192,7 @@ final class Richiami
             }
         }
 
+        Seo::forseFile();      // 7F: una volta al giorno robots.txt, sitemap.xml e llms.txt come file veri
         Inviti::inSospeso();   // gli sconti inviti che Stripe non ha ancora preso
         try { CambioAbbonamento::applyPendingChanges(); } catch (\Throwable $e) { Log::exception($e, 'cambi di piano in sospeso'); }
         return $fatte;
@@ -331,6 +332,8 @@ final class Richiami
     /** Manda una volta sola: prima si scrive il registro (indice unico), poi l'email. */
     public static function manda(int $accountId, string $email, string $nome, string $tipo, string $ref, array $m): bool
     {
+        // 7F: i clienti di prova non ricevono richiami automatici; il promemoria mandato a mano dall'amministrazione sì.
+        if (!str_starts_with($ref, 'manuale-') && self::diProva($accountId)) return false;
         if (Db::one('SELECT id FROM email_optout WHERE account_id = ? AND kind = ?', [$accountId, $tipo])) return false;
         if (Db::one('SELECT id FROM email_log WHERE account_id = ? AND kind = ? AND ref = ?', [$accountId, $tipo, $ref])) return false;
         $token = bin2hex(random_bytes(24));
@@ -351,6 +354,12 @@ final class Richiami
         $ok = Mailer::send($email, $oggetto . ' — MyHouse Welcome', $testo, $html);
         if (!$ok) Db::run('DELETE FROM email_log WHERE token = ?', [$token]);   // si riproverà al prossimo giro
         return $ok;
+    }
+
+    /** È un «Cliente di prova» (7F)? */
+    public static function diProva(int $accountId): bool
+    {
+        return Migrator::columnExists('accounts', 'is_test') && (int) Db::val('SELECT is_test FROM accounts WHERE id = ?', [$accountId], 0) === 1;
     }
 
     /** Il link «non mandarmene più»: l'email di partenza dice account e tipo. */

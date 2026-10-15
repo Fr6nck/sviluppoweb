@@ -2591,3 +2591,37 @@ ol.invito__passi{list-style:none;margin:0;padding:0}
 .linguette-testi a{display:inline-flex;align-items:center;min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--line);color:var(--ink);text-decoration:none;font-weight:500}
 .linguette-testi a[aria-current="page"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .linguette-testi a:focus-visible{outline:3px solid var(--focus,#1c5a78);outline-offset:2px}
+
+/* 7F · Amministrazione → Marketing: tabelle con la barra orizzontale accanto al numero. */
+.marketing__griglia{display:grid;grid-template-columns:1fr;gap:16px}
+@media (min-width:1100px){.marketing__griglia{grid-template-columns:1fr 1fr}.marketing__tabella--larga{grid-column:1 / -1}}
+.marketing__tabella{min-width:0}
+.mk-cella{white-space:nowrap}
+.mk-barra{display:inline-block;vertical-align:middle;width:96px;height:10px;margin-right:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.mk-barra > span{display:block;height:100%;background:var(--viz-1);border-radius:4px}
+@media (max-width:520px){.mk-barra{width:48px}}
+
+/* 7F · Il piè di pagina: «Per chi è», le pagine per tipologia. */
+.piede__perchi{display:flex;flex-direction:column;gap:4px;color:var(--muted)}
+.piede__titolo{color:var(--ink);font-weight:500}
+
+/* 7F · Le pagine per tipologia (/case-vacanza, /bed-and-breakfast, /affittacamere, /agriturismi). */
+.tipo-hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:48px;align-items:center;padding:36px 0 24px}
+.tipo-hero__testo{display:flex;flex-direction:column;gap:20px}
+.tipo-hero__azioni{gap:12px;flex-wrap:wrap}
+.tipo-hero__foto{margin:0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--line);aspect-ratio:4/3}
+.tipo-hero__foto img{display:block;width:100%;height:100%;object-fit:cover}
+.tipo-risposta{display:flex;gap:8px;align-items:flex-start;color:var(--ink)!important}
+.tipo-risposta svg{flex:none;margin-top:4px;color:var(--pine)}
+.tipo-sezioni{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.tipo-sezioni li{display:flex;gap:12px;align-items:flex-start;padding:18px;border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line)}
+.tipo-sezioni li>span:last-child{display:flex;flex-direction:column;gap:4px}
+.tipo-piano{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr);gap:32px;align-items:center;padding:32px}
+.tipo-piano__prezzo{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.tipo-piano__cifra{font-family:Gloock,Georgia,serif;font-size:40px;line-height:1}
+.tipo-fine{display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+@media (max-width:900px){
+  .tipo-hero,.tipo-piano{grid-template-columns:1fr;gap:24px}
+  .tipo-sezioni{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:560px){ .tipo-sezioni{grid-template-columns:1fr} .tipo-piano{padding:20px} }

@@ -21,7 +21,22 @@ final class Seo
         'en-domande' => ['/en/questions', 'Domande in inglese'],
         'termini' => ['/termini', 'Termini e condizioni'],
         'privacy' => ['/privacy', 'Privacy'],
+        // 7F: le pagine per tipologia, solo in italiano (testi in lang/tipologie.php).
+        'case-vacanza' => ['/case-vacanza', 'Per case vacanza'],
+        'bed-and-breakfast' => ['/bed-and-breakfast', 'Per B&B'],
+        'affittacamere' => ['/affittacamere', 'Per affittacamere'],
+        'agriturismi' => ['/agriturismi', 'Per agriturismi'],
     ];
+
+    /** 7F: il gruppo che pubblica MyHouse Welcome (dati strutturati: sameAs e parentOrganization). */
+    public const GRUPPO = 'https://blackout.in';
+
+    /** 7F: i testi delle pagine per tipologia, per chiave (case-vacanza, bed-and-breakfast, affittacamere, agriturismi). */
+    public static function tipologie(): array
+    {
+        static $t = null;
+        return $t ??= (array) require MHW_APP . '/lang/tipologie.php';
+    }
 
     /** Gli assistenti AI: user-agent => [prodotto, azienda]. */
     public const BOT = [
@@ -48,6 +63,12 @@ final class Seo
                                'Perplexity-User', 'Google-Extended', 'Applebot-Extended', 'CCBot', 'Bytespider', 'meta-externalagent'];
 
     public const TITOLO_MIN = 30, TITOLO_MAX = 60, DESCR_MIN = 70, DESCR_MAX = 155, INTRO_MAX = 300;
+
+    /** 7F: i file veri scritti accanto a index.php (nome => metodo che li genera). */
+    public const FILE = ['robots.txt' => 'robots', 'sitemap.xml' => 'sitemap', 'llms.txt' => 'llms'];
+
+    /** 7F: la risposta della rotta /indirizzi-puliti, la sonda di Impostazioni::provaIndirizzi. */
+    public const SONDA = 'MHW indirizzi puliti';
 
     private static ?array $salvate = null;
 
@@ -88,6 +109,7 @@ final class Seo
                 'Le guide degli ospiti non usano cookie e non compaiono nei motori di ricerca.',
             ]),
         ];
+        foreach (self::tipologie() as $k => $tp) { $d["p.$k.titolo"] = $tp['titolo']; $d["p.$k.descrizione"] = $tp['descrizione']; }
         foreach (array_keys(self::PAGINE) as $p) $d["p.$p.indicizza"] = '1';
         foreach (array_keys(self::BOT) as $b) $d["bot.$b"] = $b === 'CCBot' ? '0' : '1';
         return $d;
@@ -141,11 +163,17 @@ final class Seo
     /** Il dominio salvato, senza barra finale. */
     public static function dominio(): string { return rtrim(trim(self::get('dominio')), '/'); }
 
-    /** L'indirizzo assoluto di un percorso: con il dominio, se c'è, altrimenti con quello di adesso. */
+    /**
+     * L'indirizzo assoluto di un percorso: con il dominio, se c'è, altrimenti con quello di adesso.
+     * 7F: con gli indirizzi puliti accesi mai index.php (canonical, og:url, sitemap, robots.txt, llms.txt,
+     * dati strutturati), anche se il dominio salvato lo contiene o la richiesta è arrivata con index.php.
+     */
     public static function assoluto(string $percorso): string
     {
         $d = self::dominio();
-        return ($d !== '' ? $d : Support::baseUrl()) . $percorso;
+        $base = $d !== '' ? $d : Support::baseUrl();
+        if (Config::get('pretty_urls') === true) $base = (string) preg_replace('#/index\.php$#', '', $base);
+        return $base . $percorso;
     }
 
     public static function indicizza(string $pagina): bool { return self::get("p.$pagina.indicizza", '1') === '1'; }
@@ -244,6 +272,13 @@ final class Seo
             $j = json_encode(self::faqPage(str_starts_with($pagina, 'en') ? 'en' : 'it'), $f);
             if ($j !== false) $out[] = $j;
         }
+        // 7F: le pagine per tipologia hanno le loro 4 domande.
+        if (isset(self::tipologie()[$pagina])) {
+            $j = json_encode(['@context' => 'https://schema.org', '@type' => 'FAQPage', 'inLanguage' => 'it-IT',
+                              'mainEntity' => array_map(fn($x) => ['@type' => 'Question', 'name' => $x[0], 'acceptedAnswer' => ['@type' => 'Answer', 'text' => $x[1]]],
+                                                        self::tipologie()[$pagina]['faq'])], $f);
+            if ($j !== false) $out[] = $j;
+        }
         return $out;
     }
 
@@ -260,7 +295,9 @@ final class Seo
             'email' => self::get('az.email'), 'telephone' => self::get('az.telefono'),
             'address' => self::get('az.indirizzo') !== '' ? ['@type' => 'PostalAddress', 'streetAddress' => self::get('az.indirizzo'), 'addressCountry' => 'IT'] : '',
             'logo' => self::conOrigine(a('/assets/apple-touch-icon.png')),
-            'sameAs' => self::social(),
+            'sameAs' => array_values(array_unique(array_merge(self::social(), [self::GRUPPO]))),
+            // 7F: MyHouse Welcome è un progetto di Blackout Agency (blackout.in).
+            'parentOrganization' => ['@type' => 'Organization', 'name' => self::get('az.venditore') !== '' ? self::get('az.venditore') : 'Blackout Agency', 'url' => self::GRUPPO],
         ], fn($v) => $v !== '' && $v !== []);
         if (!is_file(MHW_PUBLIC . '/assets/apple-touch-icon.png')) unset($org['logo']);
         $offerte = [];
@@ -351,6 +388,19 @@ final class Seo
         }
         $t .= "\n## Domande frequenti\n\n";
         foreach (Faq::tutte() as $x) $t .= '- [' . $x['d'] . '](' . self::assoluto('/domande') . '#' . $x['id'] . ")\n";
+        // 7F: le pagine per tipologia.
+        $tipi = array_filter(self::tipologie(), fn($k) => self::indicizza($k), ARRAY_FILTER_USE_KEY);
+        if ($tipi) {
+            $t .= "\n## Per chi è\n\n";
+            foreach ($tipi as $k => $tp) $t .= '- [' . $tp['h1'] . '](' . self::assoluto($tp['percorso']) . ")\n";
+        }
+        // 7F: i giudizi, solo se ce ne sono di pubblicati (mai numeri inventati).
+        $giudizi = Testimonianze::visibili();
+        if ($giudizi) {
+            $media = Testimonianze::media();
+            $t .= "\n## Giudizi\n\n- Sul sito ci sono " . (count($giudizi) === 1 ? '1 testimonianza' : count($giudizi) . ' testimonianze') . ' di host che usano MyHouse Welcome'
+                . ($media ? ', con una media di ' . number_format($media['media'], 1, ',', '') . ' su 5 da ' . $media['n'] . ' giudizi' : '') . ': ' . self::assoluto('/') . "\n";
+        }
         // 8E: la home e le domande in inglese.
         if (self::indicizza('en') || self::indicizza('en-domande')) {
             $t .= "\n## English\n\n";
@@ -363,6 +413,70 @@ final class Seo
         if ($chi !== '') $t .= "- Fornitore: $chi\n";
         foreach (self::social() as $s) $t .= "- $s\n";
         return $t;
+    }
+
+    // ------------------------------------------------------------------ file veri (7F)
+
+    private static function statoFile(): string { return MHW_APP . '/storage/seo-file.json'; }
+
+    /** La cartella principale del sito, accanto a index.php ('' se non si sa: riga di comando senza MHW_PUBLIC). */
+    public static function cartella(): string { return defined('MHW_PUBLIC') ? (string) MHW_PUBLIC : ''; }
+
+    /** Si possono scrivere i tre file? (la cartella, e i file se ci sono già) */
+    public static function scrivibili(): bool
+    {
+        $d = self::cartella();
+        if ($d === '' || !is_dir($d)) return false;
+        foreach (array_keys(self::FILE) as $n) if (is_file("$d/$n") && !is_writable("$d/$n")) return false;
+        return is_writable($d);
+    }
+
+    /**
+     * Scrive robots.txt, sitemap.xml e llms.txt nella cartella principale, così il server li dà anche dove
+     * la riscrittura degli indirizzi non funziona. Chiamata dal salvataggio di «SEO e GEO», dai cambi dei
+     * piani, dalle testimonianze e una volta al giorno dal giro dei Richiami.
+     * $daRichiesta: false (giro automatico) = si scrive solo con il dominio o l'indirizzo pubblico impostati,
+     * perché altrimenti gli indirizzi verrebbero dalla richiesta di chiunque (intestazione Host).
+     * @return array{0:bool,1:string} [riuscito, messaggio]
+     */
+    public static function scriviFile(bool $daRichiesta = true): array
+    {
+        if (!self::disponibili()) return [false, 'Manca la tabella delle impostazioni SEO.'];
+        if (!$daRichiesta && self::dominio() === '' && (string) (Config::get('base_url') ?? '') === '') {
+            return [false, 'Senza dominio né indirizzo pubblico i file si scrivono solo dall\'amministrazione.'];
+        }
+        $d = self::cartella();
+        $errori = [];
+        foreach (self::FILE as $nome => $metodo) {
+            try { $testo = self::$metodo(); } catch (\Throwable $e) { Log::exception($e, "Seo::scriviFile $nome"); $errori[] = $nome; continue; }
+            $f = "$d/$nome";
+            if ($d !== '' && is_file($f) && @file_get_contents($f) === $testo) continue;
+            $tmp = "$f." . bin2hex(random_bytes(4)) . '.tmp';
+            if ($d === '' || @file_put_contents($tmp, $testo, LOCK_EX) === false || !@rename($tmp, $f)) { @unlink($tmp); $errori[] = $nome; }
+            else @chmod($f, 0644);
+        }
+        $ok = !$errori;
+        $msg = $ok ? 'robots.txt, sitemap.xml e llms.txt scritti nella cartella principale del sito.'
+                   : 'Non riesco a scrivere ' . implode(', ', $errori) . ' nella cartella principale del sito (' . ($d ?: '?') . '): rendila scrivibile, oppure i motori li leggono solo dove la riscrittura degli indirizzi funziona.';
+        @file_put_contents(self::statoFile(), json_encode(['quando' => Support::now(), 'ok' => $ok, 'msg' => $msg], JSON_UNESCAPED_UNICODE), LOCK_EX);
+        if (!$ok) Log::error('Seo::scriviFile: ' . $msg);
+        return [$ok, $msg];
+    }
+
+    /** Una volta al giorno (dal giro dei Richiami): riscrive i file se l'ultima volta è di più di 24 ore fa. */
+    public static function forseFile(): void
+    {
+        $f = self::statoFile();
+        if (is_file($f) && time() - (int) @filemtime($f) < 86400) return;
+        try { self::scriviFile(false); } catch (\Throwable $e) { Log::exception($e, 'Seo::forseFile'); }
+    }
+
+    /** L'ultimo esito della scrittura dei file. @return array{quando:string,ok:bool,msg:string}|null */
+    public static function esitoFile(): ?array
+    {
+        $f = self::statoFile();
+        $j = is_file($f) ? json_decode((string) @file_get_contents($f), true) : null;
+        return is_array($j) ? ['quando' => (string) ($j['quando'] ?? ''), 'ok' => !empty($j['ok']), 'msg' => (string) ($j['msg'] ?? '')] : null;
     }
 
     // ------------------------------------------------------------------ controllo
@@ -406,6 +520,12 @@ final class Seo
                             : ['sistema', 'Nessun assistente AI è ammesso: il sito non comparirà nelle loro risposte.', 'seo-motori'];
         $c[] = Support::baseDir() === '' ? ['ok', 'Il sito è nella radice del dominio: robots.txt e llms.txt si trovano.', 'seo-motori']
                                          : ['sistema', 'Il sito è in una sottocartella: robots.txt e llms.txt non vengono letti.', 'seo-motori'];
+        // 7F: i file veri accanto a index.php.
+        $esito = self::esitoFile();
+        $c[] = !self::scrivibili() ? ['sistema', 'La cartella principale del sito non è scrivibile: robots.txt, sitemap.xml e llms.txt non si possono scrivere come file. Dove la riscrittura degli indirizzi non funziona, i motori non li trovano.', 'seo-motori']
+             : ($esito && !$esito['ok'] ? ['sistema', $esito['msg'], 'seo-motori']
+             : ($esito === null ? ['guarda', 'robots.txt, sitemap.xml e llms.txt non sono ancora stati scritti come file: premi «Salva».', 'seo-motori']
+             : ['ok', 'robots.txt, sitemap.xml e llms.txt sono anche file veri nella cartella principale (aggiornati il ' . Support::date($esito['quando']) . ').', 'seo-motori']));
         return array_map(fn($x) => ['stato' => $x[0], 'testo' => $x[1], 'dove' => $x[2]], $c);
     }
 }

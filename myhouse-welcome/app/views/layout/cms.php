@@ -23,7 +23,7 @@ $conLato = $u && !$soloPassi;
 // Le voci, una volta sola: servono alla barra e al cassetto del telefono.
 // L'amministrazione in tre gruppi: vendite, clienti, sistema (Inviti solo se sono accesi).
 $gruppiAdmin = $admin ? [
-    'Vendite' => array_merge([['admin', '/admin', 'Quadro', 'grid'], ['prospetti', '/admin/prospetti', 'Prospetti', 'chart'], ['vendite', '/admin/vendite', 'Vendite per piano', 'layers'],
+    'Vendite' => array_merge([['admin', '/admin', 'Quadro', 'grid'], ['prospetti', '/admin/prospetti', 'Prospetti', 'chart'], ['vendite', '/admin/vendite', 'Vendite per piano', 'layers'], ['marketing', '/admin/marketing', 'Marketing', 'chart'],
                   ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'], ['scadenze', '/admin/scadenze', 'Scadenze', 'calendar'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'],
                   ['sconti', '/admin/sconti', 'Codici sconto', 'euro']], MHW\Inviti::disponibili() ? [['inviti', '/admin/inviti', 'Inviti', 'message']] : []),
     'Clienti' => [['clienti', '/admin/clienti', 'Clienti', 'people'], ['guide', '/admin/guide', 'Guide', 'book'], ['anomalie', '/admin/anomalie', 'Anomalie', 'warning'],

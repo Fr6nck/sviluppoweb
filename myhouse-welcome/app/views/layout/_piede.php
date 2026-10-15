@@ -13,6 +13,12 @@ $wa = preg_replace('/\D/', '', (string) ($l['contact_whatsapp'] ?? '')); ?>
       <?php if (($l['company_vat'] ?? '') !== ''): ?><span><?= $en ? 'VAT no.' : 'P.IVA' ?> <?= Support::e($l['company_vat']) ?></span><?php endif; ?>
       <?php if (($l['company_city'] ?? '') !== ''): ?><span><?= Support::e($l['company_city']) ?></span><?php endif; ?>
     </div>
+    <?php /* 7F: le pagine per tipologia, solo in italiano. */ if (!$en): ?>
+    <nav class="piede__perchi" aria-labelledby="piede-perchi">
+      <span id="piede-perchi" class="piede__titolo">Per chi è</span>
+      <?php foreach (MHW\Seo::tipologie() as $tpP): ?><a href="<?= b() . Support::e($tpP['percorso']) ?>"><?= Support::e($tpP['nome']) ?></a><?php endforeach; ?>
+    </nav>
+    <?php endif; ?>
     <div class="piede__contatti">
       <?php if (($l['contact_email'] ?? '') !== ''): ?><a href="mailto:<?= Support::e($l['contact_email']) ?>"><?= Support::e($l['contact_email']) ?></a><?php endif; ?>
       <?php if ($tel !== ''): ?><a href="tel:<?= Support::e($tel) ?>"><?= $en ? 'Phone' : 'Tel.' ?> <?= Support::e($l['contact_phone']) ?></a><?php endif; ?>

@@ -1135,6 +1135,7 @@ $r->post('/account/giudizio/ritira', function () use ($host) {
     [, $acc] = $host();
     $ok = MHW\Testimonianze::ritira((int) $acc['id']);
     if ($ok) MHW\Auth::audit('testimonial.withdrawn', null, ['account_id' => (int) $acc['id']]);
+    if ($ok) MHW\Seo::scriviFile();   // 7F: llms.txt dice se ci sono giudizi pubblicati
     Support::flash($ok ? 'Consenso ritirato: il tuo giudizio non si vede più sul sito.' : 'Non c\'era un consenso da ritirare.');
     Support::redirect('/account#giudizio');
 });

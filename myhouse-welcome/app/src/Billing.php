@@ -291,6 +291,9 @@ final class Billing
         return 'abbonamento-chiuso';
     }
 
+    /** 7F: «Gratis per sempre» = un abbonamento manuale di 100 anni. */
+    public const PER_SEMPRE = 1200;
+
     /**
      * Un abbonamento concesso a mano dall'amministratore: per demo, omaggi,
      * pagamenti arrivati per altre vie. Resta scritto nel registro.

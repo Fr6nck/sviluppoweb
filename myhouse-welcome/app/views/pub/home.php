@@ -135,9 +135,9 @@ if ($dentro):
             <?php if ($demo): ?><span class="demo-tag">Demo</span><?php endif; ?></span>
           <span class="device__title"><?= Support::e(MHW\I18n::t($locSito, 'welcome_1')) ?><br><?= Support::e(MHW\I18n::t($locSito, 'welcome_2', $nomeDemo)) ?></span>
           <span class="device__shot"><?php $telPers = TestiSito::immagine('telefono'); if ($telPers['caricata']): ?>
-            <img src="<?= Support::e($telPers['url']) ?>" alt="" width="600" height="422" loading="eager" decoding="async"<?= $F('telefono') ?>>
+            <img src="<?= Support::e($telPers['url']) ?>" alt="<?= $U('La copertina della guida di ' . Support::e($nomeDemo) . ' sul telefono', 'The cover of the ' . Support::e($nomeDemo) . ' guide on the phone') ?>" width="600" height="422" loading="eager" decoding="async"<?= $F('telefono') ?>>
             <?php else: ?><picture><source srcset="<?= Support::e($telefonoWebp) ?>" type="image/webp">
-            <img src="<?= Support::e($telefonoJpg) ?>" alt="" width="600" height="422" loading="eager" decoding="async"<?= $F('telefono') ?>></picture><?php endif; ?>
+            <img src="<?= Support::e($telefonoJpg) ?>" alt="<?= $U('La copertina della guida di ' . Support::e($nomeDemo) . ' sul telefono', 'The cover of the ' . Support::e($nomeDemo) . ' guide on the phone') ?>" width="600" height="422" loading="eager" decoding="async"<?= $F('telefono') ?>></picture><?php endif; ?>
             <span class="device__pill"><i></i><?= Support::e(MHW\I18n::t($locSito, 'checkin_from', $checkinDemo)) ?></span></span>
           <?php /* 8D: con la vetrina pubblicata, tutte le sue sezioni (titolo italiano, icona, colore come nella guida),
                    in una griglia che scorre dentro lo schermo; senza vetrina i quattro riquadri di sempre. */
@@ -326,7 +326,7 @@ $disegni = [
           <figure class="schermata" id="schermata-<?= $i + 1 ?>">
             <span class="schermata__barra" aria-hidden="true"><i></i><i></i><i></i><span>myhousewelcome.it</span></span>
             <img src="<?= Support::e($schermate[$i]) ?>" alt="<?= $alt ?>"<?= $F('pannello-' . ($i + 1)) ?>
-                 loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async" width="1200" height="750">
+                 loading="lazy" decoding="async" width="1200" height="750">
           </figure>
         <?php endforeach; ?>
       </div>
@@ -365,7 +365,7 @@ $disegni = [
         <?php if ((int) $t['rating'] > 0): ?><span class="stelline voce__stelle" role="img" aria-label="<?= (int) $t['rating'] ?> <?= $U('su 5', 'out of 5') ?>"><?= str_repeat('★', (int) $t['rating']) . str_repeat('☆', 5 - (int) $t['rating']) ?></span><?php endif; ?>
         <blockquote><p><?= Support::e($t['body']) ?></p></blockquote>
         <figcaption>
-          <?php if ($t['foto']): ?><img src="<?= Support::e($t['foto']) ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?>
+          <?php if ($t['foto']): ?><img src="<?= Support::e($t['foto']) ?>" alt="<?= $U('Foto di ', 'Photo of ') . Support::e($t['name']) ?>" width="44" height="44" loading="lazy"><?php endif; ?>
           <span><b><?= Support::e($t['name']) ?></b><?php if ($t['property_name'] !== ''): ?><span class="small muted"><?= Support::e($t['property_name'] . ($t['city'] !== '' ? ', ' . $t['city'] : '')) ?></span><?php endif; ?></span>
         </figcaption>
       </figure>
@@ -533,9 +533,9 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
    due domande e il contatto, con le risposte nel link, nel messaggio e in Amministrazione → Prospetti. */ ?>
 <section id="sito" class="sito2" aria-labelledby="sito-titolo">
   <?php $sitoPers = TestiSito::immagine('sito'); ?>
-  <picture class="sito2__foto" aria-hidden="true">
+  <picture class="sito2__foto">
     <?php if (!$sitoPers['caricata']): ?><source type="image/webp" srcset="<?= Support::e(a('/assets/foto/sito-800.webp')) ?> 800w, <?= Support::e(a('/assets/foto/sito-1600.webp')) ?> 1600w" sizes="100vw"><?php endif; ?>
-    <img src="<?= Support::e($sitoPers['caricata'] ? $sitoPers['url'] : a('/assets/foto/sito.jpg')) ?>" alt="" loading="lazy" decoding="async" width="1600" height="1067"<?= $F('sito') ?>>
+    <img src="<?= Support::e($sitoPers['caricata'] ? $sitoPers['url'] : a('/assets/foto/sito.jpg')) ?>" alt="<?= $sitoPers['caricata'] ? $U('La foto di una struttura ricettiva', 'A photo of a holiday property') : $U('Il soggiorno di una casa vacanza con il soffitto a travi di legno, il tavolo bianco e le sedie rosse', 'The living room of a holiday home with a wooden-beamed ceiling, a white table and red chairs') ?>" loading="lazy" decoding="async" width="1600" height="1067"<?= $F('sito') ?>>
   </picture>
   <div class="sito2__dentro">
     <div class="sito2__testo">

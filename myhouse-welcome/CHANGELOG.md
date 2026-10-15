@@ -1,5 +1,18 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 7F clienti di prova, Marketing, SEO e GEO, pagine per tipologia (15 ottobre 2026)
+
+Migrazione `039` (solo aggiunte): `accounts.is_test`.
+
+- **Cliente di prova:** interruttore nella scheda cliente. Chi è «di prova» non entra in Quadro, Vendite per piano, Prospetti, Scadenze e Marketing, non riceve richiami automatici né la richiesta di giudizio (il promemoria mandato a mano dall'amministrazione parte lo stesso); etichetta «Prova» in Clienti, Guide e Abbonamenti.
+- **Abbonamento manuale:** scelte rapide «Gratis 12 mesi», «Gratis per sempre» (100 anni, motivo obbligatorio come prima) o un numero di mesi; il messaggio dice il nome del piano. In Abbonamenti il filtro «Gratuiti» (manuali e dimostrativi) e «per sempre» al posto della data.
+- **Vendite → Marketing:** solo lettura, periodo 30 / 90 / 365 giorni / tutto, clienti di esempio e di prova esclusi. Guide per tipologia, piano, regione (dal CAP se non è scritta) e le 10 città; il percorso registrati → email confermata → guida iniziata → pubblicata → pagato con le percentuali, e «Cosa ti ha fermato?»; sezioni più usate e lingue attive delle guide pubblicate; le 20 guide più visitate (aperture e QR) con il link alla scheda cliente; inviti mandati, amici registrati e amici che hanno pagato. Numeri, percentuali e una barra in CSS; «Scarica CSV» per ogni tabella.
+- **File veri per motori e assistenti:** robots.txt, sitemap.xml e llms.txt si scrivono anche nella cartella principale del sito (accanto a index.php) a ogni salvataggio di SEO e GEO, a ogni cambio dei piani, delle testimonianze e una volta al giorno dal giro dei richiami (questo solo con il dominio o l'indirizzo pubblico impostati). Se la cartella non è scrivibile lo dicono SEO e GEO e la Diagnostica. La prova degli indirizzi puliti ora chiede `/indirizzi-puliti` (robots.txt può essere un file vero e risponderebbe sempre).
+- **Mai index.php** in canonical, og:url, sitemap, robots.txt, llms.txt e dati strutturati con gli indirizzi puliti accesi, anche se il dominio salvato lo contiene.
+- **Quattro pagine nuove** (solo in italiano, indicizzabili, in sitemap e in llms.txt): `/case-vacanza`, `/bed-and-breakfast`, `/affittacamere`, `/agriturismi`. Ognuna con il suo titolo, tre problemi tipici con la risposta della guida, le sezioni più utili, il piano consigliato con il prezzo del listino, quattro domande (anche come FAQPage), «Crea gratis la tua guida» e «Guarda la demo». Titoli e descrizioni in SEO e GEO; nel piè di pagina «Per chi è». Testi in `app/lang/tipologie.php`.
+- **Dati strutturati:** Organization con `sameAs` anche https://blackout.in e `parentOrganization` Blackout Agency; offerte del listino nuovo; nessun aggregateRating. llms.txt con la sezione «Per chi è» e una riga sui giudizi solo quando ce ne sono di pubblicati.
+- **Immagini della home:** testo alternativo descrittivo per tutte (telefono, foto delle testimonianze, la foto di «Anche il tuo sito» in fondo), larghezza e altezza, e le schermate del pannello caricate solo quando servono.
+
 ## v2 · 8E la home e le domande in inglese (15 ottobre 2026)
 
 Migrazione `038` (solo aggiunte): testi inglesi dei piani (`packages.tagline_en`, `headline_en`, `description_en`, `bullets_en`, `badge_en`, `cta_label_en`) con i valori di serie; tagline di Essential e Plus allineate alle lingue della 8C, solo dove c'era il testo di serie.

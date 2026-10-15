@@ -3267,7 +3267,7 @@ prova('robots.txt: per * niente guide in Disallow, /pannello escluso per tutti; 
       && str_contains((string) $blocco($r['body'], 'meta-externalagent'), "Disallow: /qr/\n") && $blocco($r['body'], 'CCBot') === "Disallow: /\n"
       && preg_match('#\nSitemap: \S+/sitemap\.xml\n$#', $r['body']) === 1, json_encode($blocco($r['body'], 'CCBot')));
 $r = $ospite->get('/sitemap.xml');
-prova('sitemap.xml: le pagine accese (con le due inglesi della 8E), con lastmod', $r['code'] === 200 && substr_count($r['body'], '<url>') === 6 && substr_count($r['body'], '<lastmod>') === 6
+prova('sitemap.xml: le pagine accese (con le due inglesi della 8E e le quattro per tipologia della 7F), con lastmod', $r['code'] === 200 && substr_count($r['body'], '<url>') === 10 && substr_count($r['body'], '<lastmod>') === 10
       && str_contains($r['body'], '/domande</loc>') && @simplexml_load_string($r['body']) !== false);
 foreach (['/accedi', '/registrati', '/password'] as $u) {
     $r = $ospite->get($u);
@@ -3309,7 +3309,7 @@ $fileS3Tel = "$S3_DIR/oggetti/mhw-prove__" . str_replace('/', '__', substr($rifT
 prova('Testi e foto · le foto caricate: nell\'archivio come le foto delle testimonianze, e nella home al posto di quelle di serie', str_contains($r['body'], '>caricata</span>')
       && preg_match('#^(s3|local):sito/\d{4}/[0-9a-f]{32}\.(jpg|png|webp)$#', $rifTel) === 1 && str_contains($r['body'], 'Torna alla foto di serie')
       && !str_contains($h, 'borgo-telefono') && !str_contains($h, 'checco-telefono') && preg_match('#class="device__shot">\s*<img src="[^"]+"#', $h) === 1
-      && !str_contains($h, 'sito-800.webp') && preg_match('#<picture class="sito2__foto" aria-hidden="true">\s*<img src="[^"]*sito/#', $h) === 1
+      && !str_contains($h, 'sito-800.webp') && preg_match('#<picture class="sito2__foto">\s*<img src="[^"]*sito/[^"]*" alt="[^"]+"#', $h) === 1
       && (getenv('MHW_STORAGE') !== 's3' || is_file($fileS3Tel)), $rifTel . ' · ' . (is_file($fileS3Tel) ? 'file ok' : 'file assente'));
 // Si torna di serie: campi vuoti e «Torna alla foto di serie»; la foto vecchia sparisce dall'archivio.
 $r = $admin->segui($admin->post('/admin/testi', ['t_hero_titolo' => '', 't_perchi_2_testo' => '', 't_hero_garanzie' => '', 't_prodotto_testo' => '', 't_cta_crea' => '',
@@ -3349,12 +3349,12 @@ $campi6k = ['dominio' => 'https://myhousewelcome.it/', 'gsc' => '<meta name="goo
 foreach (['home', 'domande', 'termini', 'privacy'] as $k) $campi6k += ["p_{$k}_indicizza" => $k === 'termini' ? '0' : '1', "p_{$k}_titolo" => 'Titolo di prova per la pagina ' . $k . ' | MyHouse Welcome',
                                                                    "p_{$k}_descrizione" => str_repeat('Descrizione di prova della pagina. ', 3)];
 $adm6->modulo('/admin/seo', '/admin/seo', $campi6k);
-prova('/admin/seo: «Salvato…» e il salvataggio nel registro', str_contains($adm6->get('/admin/seo')['body'], 'Salvato. Sitemap, robots.txt e llms.txt sono già aggiornati.')
+prova('/admin/seo: «Salvato…» e il salvataggio nel registro', str_contains($adm6->get('/admin/seo')['body'], 'Salvato. Sitemap, robots.txt e llms.txt sono già aggiornati')
       && (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'seo.save'") === 1);
 $r = $ospite->get('/');
 prova('Con il dominio: canonical, og:url, verifiche Google e Bing solo nella home, sameAs dai social', str_contains($r['body'], '<link rel="canonical" href="https://myhousewelcome.it/">')
       && str_contains($r['body'], '<meta name="google-site-verification" content="gsc-Prova_1">') && str_contains($r['body'], '<meta name="msvalidate.01" content="BING42">')
-      && str_contains($r['body'], '"sameAs":["https://instagram.com/myhousewelcome"]') && !str_contains($ospite->get('/domande')['body'], 'google-site-verification')
+      && str_contains($r['body'], '"sameAs":["https://instagram.com/myhousewelcome","https://blackout.in"]') && !str_contains($ospite->get('/domande')['body'], 'google-site-verification')
       && str_contains($ospite->get('/domande')['body'], '<link rel="canonical" href="https://myhousewelcome.it/domande">'));
 $r = $ospite->get('/robots.txt');
 prova('robots.txt dopo il salvataggio: GPTBot e CCBot spenti del tutto, ClaudeBot solo senza guide, Sitemap sul dominio', $blocco($r['body'], 'GPTBot') === "Disallow: /\n"
@@ -4030,6 +4030,8 @@ prova('…senza aria condizionata nasce solo «riscaldamento»', val('SELECT kin
       && !val("SELECT 1 FROM sections WHERE property_id = ? AND kind = 'aria' AND id > ?", [$casa8, $cl]) && val("SELECT title FROM section_translations WHERE section_id = ? AND locale = 'it'", [$cl]) === 'Riscaldamento');
 $ariaA = riga("SELECT * FROM sections WHERE property_id = ? AND kind = 'aria' AND id > ?", [$esp, $ca]);
 db()->prepare("UPDATE users SET created_at = '2026-01-01T00:00:00Z' WHERE email = 'ester@prova.test'")->execute();
+// La novità di prova aggiunta più su (prova-campo) verrebbe prima: Ester l'ha già vista.
+db()->prepare("INSERT INTO novita_viste (account_id, novita_id, created_at) VALUES (?, 'prova-campo', ?)")->execute([$esacc, gmdate('Y-m-d\TH:i:s\Z')]);
 prova('…Essential al limite: «aria» nasce disattivata, con i suoi testi, e la novità lo dice', $ariaA && (int) $ariaA['is_active'] === 0
       && ($trG((int) $ariaA['id'], 'de')['ac_how'] ?? []) === ['Taste ON drücken.'] && str_contains(($rNov = $ester->segui($ester->get("/pannello/$esp/impostazioni")))['body'], 'è nata disattivata'),
       json_encode($ariaA ? ['attiva' => $ariaA['is_active'], 'tr' => $trG((int) $ariaA['id'], 'de'), 'pagina' => preg_match('#<title>([^<]*)#', $rNov['body'] ?? '', $mN) ? $mN[1] : '', 'novita' => preg_match('#novita__testo">(.{0,160})#s', $rNov['body'] ?? '', $mN) ? strip_tags($mN[1]) : ''] : null, JSON_UNESCAPED_UNICODE));
@@ -4112,6 +4114,133 @@ $admin->post("/admin/pacchetti/$pPlus/testo", ['tagline' => $pkP['tagline'], 'he
 $r = $ospiteEn->get('/en');
 prova('…cambiati compaiono su /en, non sulla home italiana', str_contains($r['body'], 'hosts who test the English page') && str_contains($r['body'], 'Try Plus now')
       && !str_contains($ospiteEn->get('/')['body'], 'Try Plus now'));
+
+capitolo('7F · clienti di prova, Marketing, SEO e GEO, pagine per tipologia');
+$php7f = 'define("MHW_APP", ' . var_export("$DOVE/app", true) . '); define("MHW_PUBLIC", ' . var_export($DOVE, true) . '); '
+       . 'spl_autoload_register(function ($c) { $f = MHW_APP . "/src/" . substr($c, 4) . ".php"; if (is_file($f)) require $f; }); require MHW_APP . "/src/Support.php"; '
+       . 'MHW\Config::load(MHW_APP . "/config.php"); ';
+$migra39 = $php7f . '$f = require MHW_APP . "/migrations/039_prova_7f.php"; $f(MHW\Db::conn()); echo "fatto";';
+$e39a = trim((string) shell_exec('cd ' . escapeshellarg("$DOVE/app") . ' && php -r ' . escapeshellarg($migra39) . ' 2>&1'));
+$e39b = trim((string) shell_exec('cd ' . escapeshellarg("$DOVE/app") . ' && php -r ' . escapeshellarg($migra39) . ' 2>&1'));
+prova('7F · migrazione 039 due volte senza errori; accounts.is_test di serie 0', $e39a === 'fatto' && $e39b === 'fatto' && (int) val('SELECT COUNT(*) FROM accounts WHERE is_test <> 0') === 0, "$e39a / $e39b");
+
+// Un cliente nuovo (Tobia, a Cascia), poi segnato come «Cliente di prova».
+$tobia = new Browser('tobia');
+$tobia->get('/registrati?piano=' . pv('essential'));
+$tobia->post('/registrati', ['piano' => pv('essential'), 'name' => 'Tobia Collaudo', 'email' => 'tobia@prova.test', 'password' => 'TobiaProva123', 'termini' => '1', 'privacy' => '1']);
+$tobia->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Tobia', 'city' => 'Cascia']);
+$tacc = $accDi('tobia@prova.test');
+db()->prepare("UPDATE properties SET property_type = 'agriturismo' WHERE account_id = ?")->execute([$tacc]);
+$clientiQ = fn() => preg_match('#</span>Clienti</span>.*?<b class="cifra__valore">(\d+)</b>#s', $admin->get('/admin')['body'], $mq) ? (int) $mq[1] : -1;
+$csv7f = function (string $tab, string $periodo = 'tutto') use ($admin): array {
+    $r = $admin->get("/admin/marketing?periodo=$periodo&formato=csv&tabella=$tab");
+    $righe = array_map(fn($l) => str_getcsv($l, ';', '"', ''), array_values(array_filter(explode("\n", preg_replace('/^\xEF\xBB\xBF/', '', $r['body'])), 'strlen')));
+    return ['r' => $r, 'righe' => $righe];
+};
+$registrati = function () use ($csv7f): int { foreach ($csv7f('percorso')['righe'] as $x) if (($x[0] ?? '') === 'Registrati') return (int) $x[1]; return -1; };
+$agriM = fn() => (int) (array_column(array_slice($csv7f('tipologie')['righe'], 1), 1, 0)['Agriturismo'] ?? 0);
+$q1 = $clientiQ(); $m1 = $registrati(); $c1 = $agriM();
+$admin->modulo("/admin/cliente/$tacc", "/admin/cliente/$tacc/prova", ['prova' => '1']);
+$q2 = $clientiQ(); $m2 = $registrati(); $c2 = $agriM();
+prova('7F · «Cliente di prova»: salvato, fuori dal Quadro (clienti −1) e da Marketing (registrati −1, agriturismi −1)',
+      (int) val('SELECT is_test FROM accounts WHERE id = ?', [$tacc]) === 1 && $q2 === $q1 - 1 && $m2 === $m1 - 1 && $c1 >= 1 && $c2 === $c1 - 1, "Quadro {$q1}→{$q2}, Marketing {$m1}→{$m2}, agriturismi {$c1}→{$c2}");
+$r = $admin->get("/admin/cliente/$tacc");
+prova('7F · scheda cliente: interruttore acceso, etichetta «Prova»; negli elenchi Clienti e Guide l\'etichetta «Prova»', str_contains($r['body'], 'name="prova" value="1" checked')
+      && str_contains($r['body'], '<span class="badge badge--sea" style="vertical-align:middle">Prova</span>')
+      && str_contains($admin->get('/admin/clienti?q=tobia')['body'], 'Tobia Collaudo</b></a> <span class="badge badge--sea">Prova</span>')
+      && str_contains($admin->get('/admin/guide')['body'], 'Tobia Collaudo</a> <span class="badge badge--sea">Prova</span>'));
+$esitoR = trim((string) shell_exec('cd ' . escapeshellarg("$DOVE/app") . ' && php -r ' . escapeshellarg($php7f . 'var_export([MHW\Richiami::manda(' . $tacc . ', "tobia@prova.test", "Tobia", "conferma", "prova-7f", ["a", "b", null, null]), MHW\Richiami::diProva(' . $tacc . ')]);') . ' 2>&1'));
+prova('7F · i richiami automatici non partono per i clienti di prova (e niente riga nel registro)', str_replace(["\n", ' '], '', $esitoR) === 'array(0=>false,1=>true,)'
+      && !val("SELECT 1 FROM email_log WHERE account_id = ? AND ref = 'prova-7f'", [$tacc]), $esitoR);
+
+// Gratis per sempre (motivo obbligatorio) e il filtro «Gratuiti».
+$subPrima = (int) val('SELECT COUNT(*) FROM subscriptions WHERE account_id = ?', [$tacc]);
+$admin->modulo("/admin/cliente/$tacc", "/admin/cliente/$tacc/abbonamento", ['pv' => pv('plus'), 'durata' => 'sempre', 'nota' => '', 'strutture' => '1']);
+$senzaMotivo = (int) val('SELECT COUNT(*) FROM subscriptions WHERE account_id = ?', [$tacc]) === $subPrima;
+$admin->modulo("/admin/cliente/$tacc", "/admin/cliente/$tacc/abbonamento", ['pv' => pv('plus'), 'durata' => 'sempre', 'nota' => 'Collaudo 7F', 'strutture' => '1']);
+$subT = riga("SELECT * FROM subscriptions WHERE account_id = ? AND status = 'active' ORDER BY id DESC", [$tacc]);
+$rG = $admin->get('/admin/abbonamenti?filtro=gratuiti');
+prova('7F · «Gratis per sempre»: senza motivo no; con il motivo abbonamento manuale fino al ' . substr((string) ($subT['current_period_end'] ?? ''), 0, 4) . ', in «Gratuiti» con «per sempre» e «Prova»',
+      $senzaMotivo && $subT && $subT['provider'] === 'manuale' && substr((string) $subT['current_period_end'], 0, 4) >= '2120'
+      && str_contains($admin->get("/admin/cliente/$tacc")['body'], 'Gratis per sempre') && str_contains($rG['body'], 'tobia@prova.test') && str_contains($rG['body'], 'per sempre')
+      && !str_contains($rG['body'], 'ester@prova.test') && str_contains($rG['body'], 'aria-current="page">Gratuiti</a>'));
+
+// Marketing: la pagina, le percentuali del percorso e il CSV.
+$rM = $admin->get('/admin/marketing?periodo=365');
+prova('7F · Vendite → Marketing: periodi, le tabelle e «Scarica CSV»', $rM['code'] === 200 && pulita($rM) && str_contains($rM['body'], '<h1>Marketing.</h1>')
+      && str_contains($rM['body'], 'aria-current="page">365 giorni</a>') && str_contains($rM['body'], 'Il percorso') && str_contains($rM['body'], 'Le 20 guide più visitate')
+      && str_contains($rM['body'], 'Le sezioni più usate') && str_contains($rM['body'], 'Inviti') && str_contains($rM['body'], 'tabella=percorso') && str_contains($rM['body'], 'class="mk-barra"'));
+$perc = fn(int $n, int $t) => $t > 0 ? number_format($n * 100 / $t, $n * 100 % $t === 0 ? 0 : 1, ',', '') . '%' : '—';
+$pc = $csv7f('percorso');
+$righeP = array_slice($pc['righe'], 1); $regP = (int) ($righeP[0][1] ?? 0); $coerente = count($righeP) === 5; $prec = null;
+foreach ($righeP as $x) { $n = (int) $x[1]; if ($x[2] !== $perc($n, $regP) || $x[3] !== ($prec === null ? '—' : $perc($n, $prec))) $coerente = false; $prec = $n; }
+$attesi = [(int) val("SELECT COUNT(*) FROM users u JOIN accounts a ON a.user_id = u.id WHERE u.role = 'host' AND u.email NOT LIKE '%@esempio.it' AND a.is_test = 0"),
+           (int) val("SELECT COUNT(*) FROM users u JOIN accounts a ON a.user_id = u.id WHERE u.role = 'host' AND u.email NOT LIKE '%@esempio.it' AND a.is_test = 0 AND u.email_verified_at IS NOT NULL")];
+prova('7F · percorso: registrati e confermati come nel database, percentuali coerenti con i numeri', $coerente && $regP === $attesi[0] && (int) ($righeP[1][1] ?? -1) === $attesi[1],
+      json_encode($righeP) . ' attesi ' . json_encode($attesi));
+prova('7F · CSV: text/csv, BOM, punto e virgola, intestazioni', str_contains($pc['r']['head'], 'text/csv') && str_starts_with($pc['r']['body'], "\xEF\xBB\xBF")
+      && ($pc['righe'][0] ?? []) === ['Passo', 'Persone', '% dei registrati', '% dal passo prima'] && $admin->get('/admin/marketing?formato=csv&tabella=niente')['code'] === 404);
+
+// SEO e GEO: il salvataggio scrive i file veri accanto a index.php.
+$tipi7f = require "$DOVE/app/lang/tipologie.php";
+foreach (['robots.txt', 'sitemap.xml', 'llms.txt'] as $f) @unlink("$DOVE/$f");
+$campi7f = $campi6k;
+foreach (['home', 'domande', 'en', 'en-domande', 'termini', 'privacy'] as $k) $campi7f["p_{$k}_indicizza"] = '1';
+foreach (['en' => 'Digital guest guide for holiday rentals | MyHouse Welcome', 'en-domande' => 'Frequently asked questions | MyHouse Welcome'] as $k => $t)
+    $campi7f += ["p_{$k}_titolo" => $t, "p_{$k}_descrizione" => str_repeat('An English description for the test page. ', 2)];
+foreach ($tipi7f as $k => $tp) $campi7f += ["p_{$k}_indicizza" => '1', "p_{$k}_titolo" => $tp['titolo'], "p_{$k}_descrizione" => $tp['descrizione']];
+$r = $adm6->modulo('/admin/seo', '/admin/seo', $campi7f);
+$fileOk = true;
+foreach (['robots.txt', 'sitemap.xml', 'llms.txt'] as $f) if (!is_file("$DOVE/$f") || (string) file_get_contents("$DOVE/$f") !== $ospite->get('/' . $f)['body']) $fileOk = false;
+prova('7F · salvando «SEO e GEO»: robots.txt, sitemap.xml e llms.txt scritti accanto a index.php, uguali a quelli del sito', $fileOk
+      && str_contains($adm6->segui($r)['body'], 'anche come file nella cartella principale del sito'));
+$sm7 = (string) @file_get_contents("$DOVE/sitemap.xml"); $ll7 = (string) @file_get_contents("$DOVE/llms.txt");
+prova('7F · le quattro pagine in sitemap (10 pagine in tutto) e in llms.txt («Per chi è»)', substr_count($sm7, '<url>') === 10 && @simplexml_load_string($sm7) !== false
+      && count(array_filter($tipi7f, fn($tp) => str_contains($sm7, '<loc>https://myhousewelcome.it' . $tp['percorso'] . '</loc>') && str_contains($ll7, '(https://myhousewelcome.it' . $tp['percorso'] . ')'))) === 4
+      && str_contains($ll7, "## Per chi è"));
+$giudiziPubblicati = (int) val("SELECT COUNT(*) FROM testimonials WHERE visible = 1 AND (account_id IS NULL OR (status = 'pubblicata' AND consent_at IS NOT NULL AND withdrawn_at IS NULL))");
+prova('7F · llms.txt: la riga sui giudizi solo se ce ne sono di pubblicati', ($giudiziPubblicati > 0) === str_contains($ll7, '## Giudizi'), (string) $giudiziPubblicati);
+prova('7F · Diagnostica e SEO e GEO: la riga sui file veri', str_contains($admin->get('/admin/diagnostica')['body'], 'File per motori e assistenti')
+      && str_contains($adm6->get('/admin/seo')['body'], 'sono anche file veri nella cartella principale'));
+prova('7F · la sonda degli indirizzi puliti è una rotta (/indirizzi-puliti), non più robots.txt', str_contains($ospite->get('/indirizzi-puliti')['body'], 'MHW indirizzi puliti'));
+// Con gli indirizzi puliti accesi e senza dominio: mai index.php, anche se la richiesta arriva con index.php.
+$domPrima = (string) val("SELECT valore FROM seo_settings WHERE chiave = 'dominio'");
+db()->exec("UPDATE seo_settings SET valore = '' WHERE chiave = 'dominio'");
+$senzaIdx = trim((string) shell_exec('cd ' . escapeshellarg("$DOVE/app") . ' && php -r ' . escapeshellarg($php7f . '$_SERVER["SCRIPT_NAME"] = "/welcomebook/index.php"; $_SERVER["REQUEST_URI"] = "/welcomebook/index.php/admin/seo"; $_SERVER["HTTP_HOST"] = "esempio.test"; '
+    . 'MHW\Config::sovrascrivi("pretty_urls", true); $t = MHW\Seo::robots() . MHW\Seo::sitemap() . MHW\Seo::llms(); foreach (array_keys(MHW\Seo::PAGINE) as $p) $t .= MHW\Seo::head($p, "x"); '
+    . 'echo substr_count($t, "index.php"), "|", substr_count($t, "esempio.test/welcomebook/");') . ' 2>&1'));
+db()->prepare("UPDATE seo_settings SET valore = ? WHERE chiave = 'dominio'")->execute([$domPrima]);
+prova('7F · indirizzi puliti accesi: nessun index.php in canonical, og:url, sitemap, robots.txt, llms.txt e dati strutturati', preg_match('/^0\|[1-9]\d*$/', $senzaIdx) === 1, $senzaIdx);
+
+// Le quattro pagine per tipologia.
+$titoli7 = []; $ok7 = true; $note7 = [];
+foreach ($tipi7f as $k => $tp) {
+    $r = $ospite->get($tp['percorso']);
+    $titoli7[] = preg_match('#<title>([^<]+)</title>#', $r['body'], $mt) ? $mt[1] : '';
+    $faqJ = null;
+    if (preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $r['body'], $mj)) foreach ($mj[1] as $j) { $d = json_decode($j, true); if (($d['@type'] ?? '') === 'FAQPage') $faqJ = $d; }
+    $buono = $r['code'] === 200 && pulita($r) && str_contains($r['body'], '<link rel="canonical" href="https://myhousewelcome.it' . $tp['percorso'] . '">')
+        && str_contains($r['body'], '<meta name="robots" content="index, follow">') && str_contains($r['body'], '>' . htmlspecialchars($tp['h1']) . '</h1>')
+        && $faqJ && count($faqJ['mainEntity']) === 4 && ($faqJ['mainEntity'][0]['acceptedAnswer']['text'] ?? '') === $tp['faq'][0][1]
+        && substr_count($r['body'], 'class="faq__voce"') === 4 && substr_count($r['body'], 'class="vantaggio"') === 3
+        && str_contains($r['body'], 'Crea gratis la tua guida') && !str_contains($r['body'], 'class="lingua-sito"') && !str_contains($r['body'], 'hreflang=')
+        && str_contains($r['body'], '<html lang="it">') && preg_match('#<img src="[^"]+/assets/foto/[^"]+" alt="[^"]{10,}" width="\d+" height="\d+"#', $r['body']) === 1;
+    $prezzo = (int) val("SELECT pv.price_cents FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = ? AND pv.is_current = 1", [$tp['piano']]);
+    if (!str_contains($r['body'], number_format($prezzo / 100, $prezzo % 100 === 0 ? 0 : 2, ',', '.') . "\u{00A0}€")) $buono = false;
+    if (val("SELECT 1 FROM properties WHERE is_demo >= 1 AND status = 'published' AND archived_at IS NULL") && !str_contains($r['body'], 'Guarda la demo')) $buono = false;
+    if (!$buono) { $ok7 = false; $note7[] = $k; }
+}
+prova('7F · /case-vacanza, /bed-and-breakfast, /affittacamere, /agriturismi: 200, canonical, H1, 3 problemi, 4 FAQ con FAQPage, prezzo dal listino, bottoni, solo italiano', $ok7, implode(', ', $note7));
+prova('7F · titoli tutti diversi (anche da home e domande)', count(array_unique(array_merge($titoli7, [preg_match('#<title>([^<]+)#', $ospite->get('/')['body'], $mt) ? $mt[1] : '']))) === 5, implode(' | ', $titoli7));
+$rH = $ospite->get('/');
+$imgs = preg_match_all('#<img\b[^>]*>#', $rH['body'], $mi) ? $mi[0] : [];
+$senzaAlt = array_filter($imgs, fn($t) => !preg_match('#\balt="[^"]+"#', $t) || !preg_match('#\bwidth="\d+"#', $t) || !preg_match('#\bheight="\d+"#', $t));
+prova('7F · home: tutte le immagini con alt descrittivo, width e height; «Per chi è» nel piè di pagina', $imgs && !$senzaAlt && str_contains($rH['body'], 'id="piede-perchi"')
+      && count(array_filter($tipi7f, fn($tp) => str_contains($rH['body'], $tp['percorso'] . '">' . htmlspecialchars($tp['nome']) . '</a>'))) === 4, implode(' ', array_map(fn($t) => substr($t, 0, 80), $senzaAlt)));
+$org = null;
+if (preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $rH['body'], $mj)) foreach ($mj[1] as $j) foreach ((json_decode($j, true)['@graph'] ?? []) as $n) if (($n['@type'] ?? '') === 'Organization') $org = $n;
+prova('7F · Organization con sameAs blackout.in e parentOrganization; offerte del listino; nessun aggregateRating', $org && in_array('https://blackout.in', $org['sameAs'] ?? [], true)
+      && ($org['parentOrganization']['url'] ?? '') === 'https://blackout.in' && str_contains($rH['body'], '"@type":"Offer"') && !str_contains($rH['body'], 'aggregateRating'));
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

@@ -28,7 +28,7 @@ $v = fn(string $k) => Support::e(Seo::get($k)); ?>
 
   <div class="cifre">
     <?php foreach ([['cifra--pino', 'check', 'Controlli superati', $superati . ' su ' . count($controlli), 'ricalcolati adesso'],
-                    ['cifra--mare', 'search', 'Pagine nei motori', $accese . ' su ' . count(Seo::PAGINE), 'home e domande (anche in inglese), termini, privacy'],
+                    ['cifra--mare', 'search', 'Pagine nei motori', $accese . ' su ' . count(Seo::PAGINE), 'home e domande (anche in inglese), per chi è, termini, privacy'],
                     ['cifra--ocra', 'message', 'Assistenti AI ammessi', $ammessi . ' su ' . count(Seo::BOT), 'da robots.txt']] as [$tono, $ico, $et, $val, $nota]): ?>
       <div class="cifra <?= $tono ?>"><span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg($ico, 17) ?></span><?= $et ?></span>
         <b class="cifra__valore"><?= Support::e($val) ?></b><span class="cifra__nota"><?= Support::e($nota) ?></span></div>

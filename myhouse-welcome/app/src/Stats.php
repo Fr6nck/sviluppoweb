@@ -89,7 +89,7 @@ final class Stats
     public static function totalViews(int $days = 30): int
     {
         return (int) Db::val('SELECT COUNT(*) FROM analytics_events e JOIN properties p ON p.id = e.property_id
-                              WHERE p.is_demo = 0 AND e.day >= ? AND e.kind IN (' . self::in(self::VIEW) . ')',
+                              WHERE p.is_demo = 0 AND e.day >= ? AND e.kind IN (' . self::in(self::VIEW) . ')' . Gestione::senzaProva('p.account_id'),
                              [gmdate('Y-m-d', strtotime('-' . ($days - 1) . ' days'))], 0);
     }
 }

@@ -10,7 +10,8 @@ namespace MHW;
  *             e adesso: ricavo ricorrente, rinnovi attesi, piani, inviti, codici sconto, traduzioni.
  *
  * Tutto è letto dal database nel momento in cui si apre la pagina. I clienti di esempio
- * (dominio Demo::DOMINIO) e gli abbonamenti dimostrativi non entrano nei conti.
+ * (dominio Demo::DOMINIO), i clienti di prova (accounts.is_test, 7F) e gli abbonamenti
+ * dimostrativi non entrano nei conti.
  * Importi in centesimi, IVA esclusa.
  */
 final class Gestione
@@ -20,6 +21,30 @@ final class Gestione
     private static function iso(int $t): string { return gmdate('Y-m-d\TH:i:s\Z', $t); }
 
     private static function demo(): string { return '%@' . Demo::DOMINIO; }
+
+    private static function conProva(): bool
+    {
+        static $c = null;
+        return $c ??= Migrator::columnExists('accounts', 'is_test');
+    }
+
+    /** 7F: « AND $col NOT IN (clienti di prova)», con $col l'id di un account (mai NULL). Vuota prima della migrazione 039. */
+    public static function senzaProva(string $col): string
+    {
+        return self::conProva() ? " AND $col NOT IN (SELECT id FROM accounts WHERE is_test = 1)" : '';
+    }
+
+    /** 7F: la colonna «is_test» per gli elenchi (0 prima della migrazione 039). */
+    public static function colonnaProva(string $alias = 'a'): string
+    {
+        return self::conProva() ? "$alias.is_test" : '0';
+    }
+
+    /** 7F: la stessa condizione per l'id di un utente. */
+    public static function utentiVeri(string $col): string
+    {
+        return self::conProva() ? " AND $col NOT IN (SELECT user_id FROM accounts WHERE is_test = 1)" : '';
+    }
 
     // ------------------------------------------------------------------ scadenze
 
@@ -35,7 +60,7 @@ final class Gestione
              FROM subscriptions s JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id
              JOIN package_versions pv ON pv.id = s.package_version_id JOIN packages pk ON pk.id = pv.package_id
              WHERE s.id = (SELECT MAX(s2.id) FROM subscriptions s2 WHERE s2.account_id = s.account_id)
-               AND s.provider <> 'dimostrazione' AND u.email NOT LIKE ? AND s.current_period_end <> ''
+               AND s.provider <> 'dimostrazione' AND u.email NOT LIKE ?" . self::senzaProva('a.id') . " AND s.current_period_end <> ''
                AND s.current_period_end > ? AND s.current_period_end <= ?
              ORDER BY s.current_period_end, s.id",
             [self::demo(), self::iso($ora - 30 * self::GIORNO), self::iso($ora + $giorni * self::GIORNO)]);
@@ -368,7 +393,7 @@ final class Gestione
         foreach (Db::all("SELECT o.kind, o.amount_cents, o.quantity, o.created_at, p.code FROM orders o
                           JOIN package_versions pv ON pv.id = o.package_version_id JOIN packages p ON p.id = pv.package_id
                           JOIN accounts a ON a.id = o.account_id JOIN users u ON u.id = a.user_id
-                          WHERE o.status = 'paid' AND o.provider = 'stripe' AND o.created_at >= ? AND u.email NOT LIKE ?", [$da, self::demo()]) as $o) {
+                          WHERE o.status = 'paid' AND o.provider = 'stripe' AND o.created_at >= ? AND u.email NOT LIKE ?" . self::senzaProva('a.id'), [$da, self::demo()]) as $o) {
             $m = substr((string) $o['created_at'], 0, 7);
             if (!isset($perMese[$m])) continue;
             $f = self::famigliaPiano((string) $o['code']);
@@ -382,7 +407,7 @@ final class Gestione
         foreach (Db::all("SELECT s.provider, s.quantity, s.account_id, p.code FROM subscriptions s
                           JOIN package_versions pv ON pv.id = s.package_version_id JOIN packages p ON p.id = pv.package_id
                           JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id
-                          WHERE s.status IN ('active','trialing') AND s.provider <> 'dimostrazione' AND u.email NOT LIKE ?", [self::demo()]) as $s) {
+                          WHERE s.status IN ('active','trialing') AND s.provider <> 'dimostrazione' AND u.email NOT LIKE ?" . self::senzaProva('a.id'), [self::demo()]) as $s) {
             $f = self::famigliaPiano((string) $s['code']);
             if (!isset($attivi[$f])) continue;
             $attivi[$f][$s['provider'] === 'stripe' ? 'stripe' : 'staff']++;
@@ -391,7 +416,7 @@ final class Gestione
         $ultimi = Db::all("SELECT o.id, o.kind, o.amount_cents, o.quantity, o.created_at, o.account_id, p.code, p.name AS piano, u.email, u.name AS cliente
                            FROM orders o JOIN package_versions pv ON pv.id = o.package_version_id JOIN packages p ON p.id = pv.package_id
                            JOIN accounts a ON a.id = o.account_id JOIN users u ON u.id = a.user_id
-                           WHERE o.status = 'paid' AND o.provider = 'stripe' AND u.email NOT LIKE ? ORDER BY o.created_at DESC, o.id DESC LIMIT 15", [self::demo()]);
+                           WHERE o.status = 'paid' AND o.provider = 'stripe' AND u.email NOT LIKE ?" . self::senzaProva('a.id') . " ORDER BY o.created_at DESC, o.id DESC LIMIT 15", [self::demo()]);
         return ['mesi' => array_values($perMese), 'totali' => $totali, 'attivi' => $attivi, 'ultimi' => $ultimi];
     }
 
@@ -407,12 +432,12 @@ final class Gestione
         $da = array_key_first($mesi) . '-01';
         $metti = function (string $m, string $k, int $v) use (&$mesi) { if (isset($mesi[$m])) $mesi[$m][$k] += $v; };
 
-        foreach (Db::all("SELECT substr(created_at, 1, 7) AS m, COUNT(*) AS n FROM users WHERE role = 'host' AND email NOT LIKE ? AND created_at >= ? GROUP BY substr(created_at, 1, 7)",
+        foreach (Db::all("SELECT substr(created_at, 1, 7) AS m, COUNT(*) AS n FROM users WHERE role = 'host' AND email NOT LIKE ? AND created_at >= ?" . self::utentiVeri('id') . " GROUP BY substr(created_at, 1, 7)",
                          [self::demo(), $da]) as $r) $metti($r['m'], 'registrati', (int) $r['n']);
-        foreach (Db::all("SELECT MIN(created_at) AS primo FROM orders WHERE status = 'paid' AND provider = 'stripe' AND kind = 'new' GROUP BY account_id") as $r) {
+        foreach (Db::all("SELECT MIN(created_at) AS primo FROM orders WHERE status = 'paid' AND provider = 'stripe' AND kind = 'new'" . self::senzaProva('account_id') . " GROUP BY account_id") as $r) {
             $metti(substr((string) $r['primo'], 0, 7), 'nuovi', 1);
         }
-        foreach (Db::all("SELECT substr(created_at, 1, 7) AS m, kind, SUM(amount_cents) AS c FROM orders WHERE status = 'paid' AND provider = 'stripe' AND created_at >= ?
+        foreach (Db::all("SELECT substr(created_at, 1, 7) AS m, kind, SUM(amount_cents) AS c FROM orders WHERE status = 'paid' AND provider = 'stripe' AND created_at >= ?" . self::senzaProva('account_id') . "
                           GROUP BY substr(created_at, 1, 7), kind", [$da]) as $r) {
             $metti($r['m'], $r['kind'] === 'change' ? 'incasso_cambi' : 'incasso_nuovi', (int) $r['c']);
         }
@@ -427,7 +452,7 @@ final class Gestione
         }
         // Persi: abbonamenti finiti nel mese senza che ne sia arrivato un altro dopo.
         foreach (Db::all("SELECT s.id, s.account_id, s.current_period_end FROM subscriptions s JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id
-                          WHERE s.provider <> 'dimostrazione' AND u.email NOT LIKE ? AND s.current_period_end >= ? AND s.current_period_end < ?
+                          WHERE s.provider <> 'dimostrazione' AND u.email NOT LIKE ?" . self::senzaProva('a.id') . " AND s.current_period_end >= ? AND s.current_period_end < ?
                             AND (s.status NOT IN ('active','trialing') OR s.cancel_at_period_end = 1 OR s.provider <> 'stripe')",
                          [self::demo(), $da, self::iso(time())]) as $r) {
             if (Db::val('SELECT id FROM subscriptions WHERE account_id = ? AND id <> ? AND current_period_end > ?', [$r['account_id'], $r['id'], $r['current_period_end']])) continue;
@@ -444,7 +469,7 @@ final class Gestione
         $ora = time();
         $attivi = Db::all("SELECT s.*, pk.name AS piano, pk.sort FROM subscriptions s JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id
                            JOIN package_versions pv ON pv.id = s.package_version_id JOIN packages pk ON pk.id = pv.package_id
-                           WHERE s.provider = 'stripe' AND s.status IN ('active','trialing') AND s.current_period_end > ? AND u.email NOT LIKE ? ORDER BY pk.sort",
+                           WHERE s.provider = 'stripe' AND s.status IN ('active','trialing') AND s.current_period_end > ? AND u.email NOT LIKE ?" . self::senzaProva('a.id') . " ORDER BY pk.sort",
                           [self::iso($ora), self::demo()]);
         $arr = 0; $aRischio = 0; $piani = []; $rinnovi = ['30' => [0, 0], '90' => [0, 0]];
         foreach ($attivi as $s) {
@@ -460,12 +485,12 @@ final class Gestione
             [$importo] = self::importoRinnovo($s);
             foreach ([30, 90] as $g) if ($giorni <= $g) { $rinnovi[(string) $g][0]++; $rinnovi[(string) $g][1] += $importo; }
         }
-        $manuali = (int) Db::val("SELECT COUNT(DISTINCT account_id) FROM subscriptions WHERE provider = 'manuale' AND status IN ('active','trialing') AND current_period_end > ?", [self::iso($ora)], 0);
+        $manuali = (int) Db::val("SELECT COUNT(DISTINCT account_id) FROM subscriptions WHERE provider = 'manuale' AND status IN ('active','trialing') AND current_period_end > ?" . self::senzaProva('account_id'), [self::iso($ora)], 0);
 
-        $registrati = (int) Db::val("SELECT COUNT(*) FROM users WHERE role = 'host' AND email NOT LIKE ?", [self::demo()], 0);
+        $registrati = (int) Db::val("SELECT COUNT(*) FROM users WHERE role = 'host' AND email NOT LIKE ?" . self::utentiVeri('id'), [self::demo()], 0);
         $conGuida = (int) Db::val("SELECT COUNT(DISTINCT p.account_id) FROM properties p JOIN accounts a ON a.id = p.account_id JOIN users u ON u.id = a.user_id
-                                   WHERE p.is_demo = 0 AND u.email NOT LIKE ?", [self::demo()], 0);
-        $pagato = (int) Db::val("SELECT COUNT(DISTINCT account_id) FROM orders WHERE status = 'paid' AND provider = 'stripe'", [], 0);
+                                   WHERE p.is_demo = 0 AND u.email NOT LIKE ?" . self::senzaProva('a.id'), [self::demo()], 0);
+        $pagato = (int) Db::val("SELECT COUNT(DISTINCT account_id) FROM orders WHERE status = 'paid' AND provider = 'stripe'" . self::senzaProva('account_id'), [], 0);
         $conversione = [['Registrati', $registrati], ['Hanno creato una guida', $conGuida], ['Hanno pagato almeno una volta', $pagato],
                         ['Abbonati adesso', count(array_unique(array_column($attivi, 'account_id')))]];
 

@@ -186,6 +186,18 @@ $r->get('/en/questions', function () use ($guard) {
     View::out('pub/domande', ['faq' => MHW\Faq::tutte('en'), 'seoPagina' => 'en-domande']);
 });
 
+/* 7F: le pagine per tipologia (solo italiano): problemi tipici, sezioni utili, piano consigliato, 4 domande. */
+foreach (MHW\Seo::tipologie() as $chiave => $tipoP) {
+    $r->get($tipoP['percorso'], function () use ($guard, $chiave, $tipoP) {
+        $guard();
+        MHW\Stats::funnelEvent('landing_view');
+        $piano = null;
+        foreach (Plans::public() as $p) if ($p['code'] === $tipoP['piano']) $piano = $p;
+        $demo = Db::one("SELECT id, slug, name FROM properties WHERE is_demo >= 1 AND status = 'published' AND archived_at IS NULL ORDER BY is_demo DESC, id");
+        View::out('pub/tipologia', ['tp' => $tipoP, 'chiave' => $chiave, 'piano' => $piano, 'demo' => $demo, 'user' => Auth::user(), 'seoPagina' => $chiave]);
+    });
+}
+
 $r->get('/termini', fn() => View::out('pub/legal', ['doc' => 'termini', 'seoPagina' => 'termini'], 'layout/bare'));
 $r->get('/privacy', fn() => View::out('pub/legal', ['doc' => 'privacy', 'seoPagina' => 'privacy'], 'layout/bare'));
 
@@ -196,6 +208,8 @@ $fileSeo = function (string $tipo, callable $testo) use ($guard): never {
     echo $testo(); exit;
 };
 $r->get('/robots.txt', fn() => $fileSeo('text/plain', [MHW\Seo::class, 'robots']));
+// 7F: la sonda degli indirizzi puliti (Impostazioni::provaIndirizzi): una rotta che non è mai un file vero.
+$r->get('/indirizzi-puliti', fn() => $fileSeo('text/plain', fn() => MHW\Seo::SONDA . "\n"));
 $r->get('/sitemap.xml', fn() => $fileSeo('application/xml', [MHW\Seo::class, 'sitemap']));
 $r->get('/llms.txt', fn() => $fileSeo('text/plain', [MHW\Seo::class, 'llms']));
 

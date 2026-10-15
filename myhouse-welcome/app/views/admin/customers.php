@@ -29,7 +29,7 @@ $title = 'Clienti'; ?>
     <tbody>
     <?php foreach ($rows as $r): ?>
       <tr>
-        <td><a href="<?= b() ?>/admin/cliente/<?= (int) $r['account_id'] ?>"><b><?= Support::e($r['name'] ?: '—') ?></b></a><br>
+        <td><a href="<?= b() ?>/admin/cliente/<?= (int) $r['account_id'] ?>"><b><?= Support::e($r['name'] ?: '—') ?></b></a><?= !empty($r['is_test']) ? ' <span class="badge badge--sea">Prova</span>' : '' ?><br>
           <span class="small muted"><?= Support::e($r['email']) ?></span><?= $r['email_verified_at'] ? '' : ' <span class="badge badge--ochre">non confermata</span>' ?></td>
         <td><?= Support::e($r['struttura'] ?: '—') ?><?= $r['citta'] ? '<br><span class="small muted">' . Support::e($r['citta']) . '</span>' : '' ?>
           <?= $r['strutture'] > 1 ? '<br><span class="small muted">+' . ($r['strutture'] - 1) . ((int) $r['strutture'] === 2 ? ' altra' : ' altre') . '</span>' : '' ?></td>
