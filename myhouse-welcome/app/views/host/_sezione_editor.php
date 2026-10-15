@@ -79,8 +79,15 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
         </fieldset>
       <?php endif; ?>
 
-      <?php if (!$foto && !$core): ?>
-        <p class="tiny muted">Foto e PDF nelle sezioni sono disponibili con il piano Plus. <a href="<?= b() ?>/piano?passa=plus">Scopri Plus</a></p>
+      <?php if (!$foto && !$core && !$fotoUrl): /* 8B: i bottoni si vedono, con il lucchetto: aprono «Foto e PDF sono compresi in Plus» */ ?>
+        <fieldset class="fieldset">
+          <legend>Foto e PDF della sezione</legend>
+          <div class="row" style="gap:8px">
+            <a class="btn btn--ghost btn--sm btn--lucchetto" href="<?= b() ?>/piano?passa=plus" data-sblocca="foto"><?= Icon::svg('lock', 15, 2) ?>Aggiungi una foto</a>
+            <?php if (!$pdf && !$pdfRow): ?><a class="btn btn--ghost btn--sm btn--lucchetto" href="<?= b() ?>/piano?passa=plus" data-sblocca="foto"><?= Icon::svg('lock', 15, 2) ?>Aggiungi un PDF</a><?php endif; ?>
+          </div>
+          <p class="help" style="margin:0">Foto e PDF nelle sezioni sono compresi nel piano Plus.</p>
+        </fieldset>
       <?php endif; ?>
 
       <div class="actions">

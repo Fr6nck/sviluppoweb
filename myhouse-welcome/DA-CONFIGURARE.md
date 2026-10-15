@@ -157,6 +157,12 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 
 **Novità (7C).** Le novità per chi ha già la guida sono in `app/lang/novita.php` (una per voce, la prima dell'elenco si vede per prima). Per una novità nuova aggiungi una voce con un `id` mai usato.
 
+## 4h. Fase 8 (7D, 8A, 8B, 8C, 8D, 8E, 7F)
+
+**Anteprima del link della guida (8B).** Su WhatsApp, Telegram e Messenger il link della guida mostra la copertina (`/g/…/anteprima.jpg`, 1200×630, con il marchio). WhatsApp tiene in memoria l'anteprima: dopo aver cambiato la copertina, il primo link mandato può mostrare ancora quella vecchia. Basta aspettare qualche ora, o mandare il link con un `?l=it` in fondo.
+
+**Portali (8B).** Gli host spuntano solo dove sono presenti; i link li prepara il sito. Gli indirizzi di partenza (Google Maps, Booking.com, Airbnb, VRBO, Expedia) si cambiano da Amministrazione → Impostazioni → Portali. I link di recensione scritti prima dagli host restano nelle guide già pubblicate finché non ripubblicano.
+
 ## 4b. La guida vetrina (la demo della landing)
 
 La demo della landing si sposta su un account vero, quello dell'agenzia.

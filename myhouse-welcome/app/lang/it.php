@@ -75,6 +75,11 @@ return [
     'kind.todo'        => 'Cosa fare',
     // Il messaggio di benvenuto da mandare all'ospite (QR & Link, 6D · M2): casa, link, host.
     'welcome_message'  => "Ciao! Benvenuti a %1\$s. Qui trovi la guida della casa, sempre aggiornata: come entrare, il Wi-Fi, il parcheggio e i nostri consigli sulla zona.\n%2\$s\nA presto, %3\$s",
+    // 8B: il messaggio di fine soggiorno (QR & Link), con {link} e {host}; i meta dell'anteprima del link della guida.
+    'farewell_message' => 'Ciao! Grazie di aver soggiornato da noi. Se ti sei trovato bene, ci aiuti con una recensione? Qui trovi il link al portale dove hai prenotato: {link} Buon viaggio! {host}',
+    'og_guide_title'   => '%s · La guida della casa',
+    'og_guide_desc'    => 'Check-in, Wi-Fi e consigli per il soggiorno.',
+    'og_review_title'  => '%s · Com\'è andato il soggiorno?',
     'kind.custom'      => 'Altre informazioni',
     'kind.info'        => 'Informazioni utili',
 

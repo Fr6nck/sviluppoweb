@@ -75,6 +75,11 @@ return [
     'kind.todo'        => 'Unternehmungen',
     // Il messaggio di benvenuto da mandare all'ospite (QR & Link, 6D · M2): casa, link, host.
     'welcome_message'  => "Hallo! Willkommen in %1\$s. Hier ist der Hausführer, immer aktuell: wie Sie hineinkommen, das WLAN, das Parken und unsere Tipps für die Gegend.\n%2\$s\nBis bald, %3\$s",
+    // 8B: il messaggio di fine soggiorno (QR & Link), con {link} e {host}; i meta dell'anteprima del link della guida.
+    'farewell_message' => 'Hallo! Danke, dass Sie bei uns zu Gast waren. Wenn es Ihnen gefallen hat, helfen Sie uns mit einer Bewertung? Hier ist der Link zur Seite, auf der Sie gebucht haben: {link} Gute Reise! {host}',
+    'og_guide_title'   => '%s · Der Hausführer',
+    'og_guide_desc'    => 'Check-in, WLAN und Tipps für Ihren Aufenthalt.',
+    'og_review_title'  => '%s · Wie war Ihr Aufenthalt?',
     'kind.custom'      => 'Weitere Informationen',
     'kind.info'        => 'Gut zu wissen',
 

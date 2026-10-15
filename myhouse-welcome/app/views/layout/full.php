@@ -8,6 +8,7 @@ use function MHW\a; use MHW\{Support, I18n}; ?>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title><?= Support::e($title ?? 'MyHouse Welcome') ?></title>
 <meta name="robots" content="<?= Support::ROBOTS_GUIDE ?>">
+<?php include __DIR__ . '/_og_guida.php'; ?>
 <meta name="theme-color" content="#17130d">
 <?php include __DIR__ . '/_icone.php'; ?>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

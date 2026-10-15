@@ -39,8 +39,9 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
       <?php endif; ?>
       <?php if ($saluto !== ''): ?><p class="rise" style="animation-delay:1s;white-space:pre-line"><?= Support::e($saluto) ?></p><?php endif; ?>
       <?php /* Dopo il soggiorno: compaiono solo se l'host li ha compilati. */
-            $recensioni = $pr['reviews'] ?? []; $diretta = $pr['direct'] ?? ['url' => '', 'code' => ''];
-            $piattaforme = ['google' => 'Google', 'booking' => 'Booking.com', 'airbnb' => 'Airbnb', 'other' => I18n::t($loc, 'review_other')]; ?>
+            $diretta = $pr['direct'] ?? ['url' => '', 'code' => ''];
+            // 8B: i portali dove si trova la struttura (istantanea formato 7), con i link già pronti.
+            $portali = array_values(array_filter((array) ($pr['channels'] ?? []), fn($c) => empty($c['social']) && trim((string) ($c['url'] ?? '')) !== '')); ?>
       <?php /* 7C · Com'è andato il soggiorno? Cinque stelle; dopo il tocco i bottoni delle recensioni, uguali per ogni voto
                (filtrare chi recensisce in base al voto è vietato da Google e Booking). Da 1 a 3, in più: «Scrivigli».
                Il voto è solo un conteggio anonimo per struttura (rating_N). Senza JavaScript le stelle ricaricano la pagina. */
@@ -59,11 +60,11 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
           <?php endfor; ?>
         </form>
         <div class="stack" style="gap:10px" data-voto-dopo<?= $voto ? '' : ' hidden' ?>>
-          <?php $conRec = array_filter((array) $recensioni, fn($u) => trim((string) $u) !== ''); /* senza link per le recensioni, solo il grazie */ ?>
+          <?php $conRec = (bool) $portali; /* senza portali, solo il grazie */ ?>
           <p class="small" style="color:#e8dcc8"><?= Support::e(I18n::t($loc, $conRec ? 'rating_thanks' : 'rating_thanks_solo')) ?></p>
           <?php if ($conRec): ?>
-            <div class="ctas"><?php foreach ($piattaforme as $k => $nome): if (empty($recensioni[$k])) continue; ?>
-              <a href="<?= Support::e($recensioni[$k]) ?>" target="_blank" rel="noopener"><?= Icon::svg('message', 15) ?><?= Support::e($nome) ?></a><?php endforeach; ?></div>
+            <div class="ctas"><?php foreach ($portali as $c): ?>
+              <a href="<?= Support::e($c['url']) ?>" target="_blank" rel="noopener"><?= Icon::svg('message', 15) ?><?= Support::e($c['kind'] === 'altro' && ($c['label'] ?? '') === 'Altro sito' ? I18n::t($loc, 'review_other') : $c['label']) ?></a><?php endforeach; ?></div>
           <?php endif; ?>
           <?php if ($scriviF !== ''): ?>
             <p class="small" data-voto-basso<?= $voto >= 1 && $voto <= 3 ? '' : ' hidden' ?>><a href="<?= Support::e($scriviF) ?>" rel="noopener" style="color:#f6f0e5"><?= Support::e(I18n::t($loc, 'rating_host', $nomeF)) ?></a></p>

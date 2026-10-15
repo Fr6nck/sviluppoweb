@@ -40,7 +40,7 @@ final class QrExport
         $qr = (string) preg_replace('/^<\?xml[^>]*\?>\s*/', '', $qr);
         $qr = (string) preg_replace(['/ width="\d+" height="\d+"/', '/<svg /'], ['', '<svg x="140" y="250" width="320" height="320" '], $qr, 1);
         $e = fn(string $s) => htmlspecialchars($s, ENT_QUOTES | ENT_XML1, 'UTF-8');
-        $yNome = 150; $img = '';
+        $yNome = 150; $img = '';   // 8B: sotto il nome la riga piccola, il QR da 250
         if ($logo !== null && $logo !== '' && in_array($logoMime, ['image/png', 'image/jpeg', 'image/webp'], true)) {
             $img = '<image href="data:' . $logoMime . ';base64,' . base64_encode($logo) . '" x="200" y="40" width="200" height="80" preserveAspectRatio="xMidYMid meet"/>';
             $yNome = 170;
@@ -50,10 +50,10 @@ final class QrExport
         return '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
              . '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 840" width="600" height="840">'
              . '<rect width="100%" height="100%" fill="#ffffff"/>' . $img
-             . $t($name, $yNome, 30, '700') . $qr
+             . $t($name, $yNome, 30, '700') . $t(self::SOTTOTITOLO, $yNome + 28, 13, '400', '#6a5b48') . $qr
              . $t(self::INVITI[0], 620, 18, '700') . $t(self::INVITI[1], 646, 18, '700')
              . $t(self::INVITI[2], 684, 18, '400', '#6a5b48') . $t(self::INVITI[3], 710, 18, '400', '#6a5b48')
-             . $t($text, 750, 10, '400', '#6a5b48') . $t('MyHouse Welcome', 805, 11, '700', '#94825f')
+             . $t('MyHouse Welcome', 792, 11, '700', '#94825f') . $t((string) preg_replace('#^https?://#', '', $text), 810, 10, '400', '#6a5b48')
              . '</svg>' . "\n";
     }
 
@@ -76,9 +76,11 @@ final class QrExport
         return $w * $size / 1000;
     }
 
-    /** I quattro inviti sotto il QR: italiano e inglese, della stessa grandezza (7C). */
+    /** I quattro inviti sotto il QR: italiano e inglese, della stessa grandezza (7C, testi della 8B). */
     public const INVITI = ['Inquadra il QR Code', 'Scan the QR code',
-                           'La guida della casa: check-in, Wi-Fi e consigli', 'The house guide: check-in, Wi-Fi and tips'];
+                           'Tutte le informazioni sulla casa, e non solo.', 'All about the house, and more.'];
+    /** La riga piccola sotto il nome (8B). */
+    public const SOTTOTITOLO = 'La guida digitale della casa · Your digital house guide';
 
     /**
      * Il logo pronto per il PDF: JPEG su fondo bianco (la trasparenza del PNG diventa bianca), al massimo
@@ -138,12 +140,14 @@ final class QrExport
         } else $yNome = 720;
         $c .= $scrivi($name, 28, $yNome, true);
         $grigio = '0.416 0.357 0.282';
+        $c .= $scrivi(self::SOTTOTITOLO, 11, $yNome - 24, false, $grigio);
         $c .= $scrivi(self::INVITI[0], 16, 262, true);
         $c .= $scrivi(self::INVITI[1], 16, 240, true);
         $c .= $scrivi(self::INVITI[2], 16, 206, false, $grigio);
         $c .= $scrivi(self::INVITI[3], 16, 184, false, $grigio);
-        $c .= $scrivi($text, 9, 140, false, $grigio);
-        $c .= $scrivi('MyHouse Welcome', 10, 50, true, '0.580 0.510 0.373');
+        // In fondo, piccoli: il marchio e l'indirizzo breve della guida, così come lo genera il sito.
+        $c .= $scrivi('MyHouse Welcome', 10, 62, true, '0.580 0.510 0.373');
+        $c .= $scrivi(preg_replace('#^https?://#', '', $text), 9, 46, false, $grigio);
         $c .= "Q\n";
 
         $obj = [];

@@ -63,13 +63,21 @@ final class Impostazioni
             'translate.cap_account'           => ['MHW_TRANSLATE_CAP_ACCOUNT', 'Tetto per account, caratteri al mese', 'cifra', 'Oltre, quel cliente non riceve altre suggerite fino al mese dopo. Predefinito 150.000.'],
             'translate.cap_global'            => ['MHW_TRANSLATE_CAP_GLOBAL', 'Tetto per tutto il sito, caratteri al mese', 'cifra', 'Predefinito 1.900.000, sotto i 2 milioni del piano gratuito.'],
         ],
+        // 8B: i link dei portali che la guida mostra a chi dà 5 stelle (Canali). Google cerca nome e città.
+        'portali' => [
+            'portali.google'  => ['MHW_PORTALE_GOOGLE', 'Google (cerca su Maps)', 'url', 'In fondo si aggiungono nome e città della struttura. Di serie https://www.google.com/maps/search/?api=1&query='],
+            'portali.booking' => ['MHW_PORTALE_BOOKING', 'Booking.com', 'url', 'Di serie https://www.booking.com/'],
+            'portali.airbnb'  => ['MHW_PORTALE_AIRBNB', 'Airbnb', 'url', 'Di serie https://www.airbnb.it/'],
+            'portali.vrbo'    => ['MHW_PORTALE_VRBO', 'VRBO', 'url', 'Di serie https://www.vrbo.com/'],
+            'portali.expedia' => ['MHW_PORTALE_EXPEDIA', 'Expedia', 'url', 'Di serie https://www.expedia.it/'],
+        ],
         // Invita un amico (Inviti): acceso da qui, senza toccare config.local.php a mano.
         'inviti' => [
             'inviti.attivi' => ['MHW_INVITI', 'Accendi «Invita un amico»', 'check', 'I clienti con un abbonamento attivo vedono il loro link e il codice, e possono mandare l\'invito per email. Prima di accenderlo con le chiavi live, fai una prova in modalità test di Stripe.'],
         ],
     ];
 
-    public const TITOLI = ['sito' => 'Sito', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'inviti' => 'Invita un amico'];
+    public const TITOLI = ['sito' => 'Sito', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'portali' => 'Portali', 'inviti' => 'Invita un amico'];
 
     public static function file(): string { return MHW_APP . '/config.local.php'; }
 
@@ -380,11 +388,21 @@ final class Impostazioni
                 case 'inviti':
                     if (!Inviti::disponibili()) return [false, 'Spento: i clienti non vedono «Invita un amico». Spunta la casella e salva.'];
                     if (!Stripe::enabled()) return [false, 'Acceso, ma Stripe non è configurato: gli sconti degli inviti passano da Stripe.'];
-                    $n = 0;
-                    foreach (Db::all("SELECT DISTINCT account_id FROM subscriptions WHERE provider = 'stripe' AND status IN ('active','trialing')") as $x) {
+                    $n = 0;   // 7D: ogni abbonamento attivo, anche quelli attivati dallo staff (lo sconto si applica a mano)
+                    foreach (Db::all("SELECT DISTINCT account_id FROM subscriptions WHERE status IN ('active','trialing')") as $x) {
                         if (Inviti::puoInvitare(['id' => (int) $x['account_id']])) $n++;
                     }
-                    return [true, 'Acceso: ' . $n . ($n === 1 ? ' cliente può' : ' clienti possono') . ' invitare. Chi non ha ancora un abbonamento attivo vede la pagina e il motivo.'];
+                    return [true, 'Acceso: ' . $n . ($n === 1 ? ' cliente può' : ' clienti possono') . ' invitare. Chi non ha ancora un abbonamento attivo vede la pagina e il motivo. '
+                                . 'Per gli abbonamenti attivati dallo staff lo sconto si applica a mano: lo trovi in Inviti → «Da applicare a mano al rinnovo».'];
+                case 'portali':   // 8B: i link che la guida prepara, con una struttura d'esempio
+                    $p = ['name' => 'Casa Esempio', 'city' => 'Assisi'];
+                    $righe = [];
+                    foreach (Canali::NOTI as $k => $nome) {
+                        $u = Canali::link($k, $p);
+                        if (!preg_match('#^https://#', $u)) return [false, $nome . ': l\'indirizzo deve cominciare con https:// («' . $u . '»).'];
+                        $righe[] = $nome . ' → ' . $u;
+                    }
+                    return [true, 'I link dei portali, per una struttura «Casa Esempio» ad Assisi: ' . implode(' · ', $righe)];
                 case 'traduzioni':
                     if (!Traduttore::configurato()) return [false, 'Mancano le chiavi: scrivile qui, oppure configura l\'archivio S3 (si usano le sue). Finché mancano, nel pannello i clienti leggono «Le traduzioni non sono disponibili in questo momento».'];
                     try { $t = Traduttore::prova(); }

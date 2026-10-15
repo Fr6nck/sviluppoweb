@@ -178,8 +178,9 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
         <input type="hidden" name="locali[]" value="<?= Support::e($prop['default_locale']) ?>">
         <div class="scelte">
           <?php foreach ($altreLingue as $code => $nomeL): $ok = in_array($code, $consentite, true); ?>
-            <label class="scelta"><input type="checkbox" name="locali[]" value="<?= Support::e($code) ?>" <?= in_array($code, $lingueAttive, true) && $ok ? 'checked' : '' ?> <?= $ok ? '' : 'disabled' ?>>
-              <span class="scelta__testo"><?= Support::e($nomeL) ?><?php if (!$ok): ?> <span class="small muted">con il piano Plus</span><?php endif; ?></span></label>
+            <label class="scelta"><?php if ($ok): ?><input type="checkbox" name="locali[]" value="<?= Support::e($code) ?>" <?= in_array($code, $lingueAttive, true) ? 'checked' : '' ?>>
+              <?php else: /* 8B: la casella con il lucchetto apre «Più lingue sono comprese in Plus» */ ?><input type="checkbox" value="<?= Support::e($code) ?>" data-sblocca="lingue"><?php endif; ?>
+              <span class="scelta__testo"><?= Support::e($nomeL) ?><?php if (!$ok): ?> <span class="small muted"><?= MHW\Icon::svg('lock', 13, 2) ?> con il piano Plus</span><?php endif; ?></span></label>
           <?php endforeach; ?>
         </div>
         <div><button class="btn btn--sm" name="dopo" value="pubblica">Salva le lingue</button></div>

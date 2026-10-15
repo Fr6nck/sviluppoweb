@@ -239,9 +239,9 @@ $r->any('/pannello/{id}/copia', function (array $a) use ($mia, $contesto, $messa
                 . ($esito['sostituite'] ? ' Sostituite: ' . $nomi($esito['sostituite']) . '.' : '')
                 . ($esito['saltate'] ? ' Saltate, perché c\'erano già: ' . $nomi($esito['saltate']) . '.' : ''));
             Support::redirect('/pannello/' . $p['id']);
-        } catch (\Throwable $e) { $err = $messaggio($e, 'copia'); }
+        } catch (\Throwable $e) { $err = $messaggio($e, 'copia'); if ($e instanceof MHW\PianoLimite) $sbloccaCopia = $e->funzione; }
     }
-    View::out('host/copia', $contesto($acc, $p) + ['origini' => $origini, 'da' => $da, 'err' => $err,
+    View::out('host/copia', $contesto($acc, $p) + ['origini' => $origini, 'da' => $da, 'err' => $err, 'sblocca' => $sbloccaCopia ?? '',
         'proposta' => $da ? MHW\Copia::proposta((int) $da['id'], (int) $p['id']) : null, 'qui' => 'contenuti'], 'layout/cms');
 });
 
@@ -314,6 +314,8 @@ $r->post('/pannello/{id}/sezioni', function (array $a) use ($mia, $messaggio) {
         // Nella procedura «Aggiungi» apre subito l'editor sotto la card della sezione.
         Support::redirect($torna === '/pannello/' . $p['id'] ? '/pannello/' . $p['id'] . '/sezioni/' . $sid
                           : $torna . '?apri=' . $sid . '#sez-' . $sid);
+    } catch (MHW\PianoLimite $e) {
+        Support::redirect($torna . '?sblocca=' . $e->funzione);   // 8B: la finestra «Passa a Plus», non un errore
     } catch (LimitReached $e) {
         Support::flash($e->getMessage(), 'limite');
     } catch (\Throwable $e) {
@@ -335,6 +337,8 @@ $r->post('/pannello/{id}/sezioni/{sid}/azione', function (array $a) use ($mia, $
             'elimina' => Properties::deleteSection((int) $p['id'], $sid),
             default => throw new RuntimeException('Azione sconosciuta.'),
         };
+    } catch (MHW\PianoLimite $e) {
+        Support::redirect($torna . '?sblocca=' . $e->funzione);
     } catch (LimitReached $e) {
         Support::flash($e->getMessage(), 'limite');
     } catch (NotFound $e) {
@@ -777,26 +781,28 @@ $r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto,
     View::out('host/settings', $contesto($acc, $p) + ['err' => $err, 'qui' => 'impostazioni'], 'layout/cms');
 });
 
-/* Dopo il soggiorno: recensioni, prenotazione diretta, firma della guida.
-   Tutto facoltativo: nel commiato compare solo quello che è compilato. */
+/* Dopo il soggiorno: dove si trova la struttura (8B, portali e social), prenotazione diretta con la
+   domanda sul sito, firma della guida. Tutto facoltativo. I link di recensione non si scrivono più:
+   i portali sono caselle e i link li prepara Canali. */
 $r->post('/pannello/{id}/dopo-il-soggiorno', function (array $a) use ($mia) {
     [$u, $acc, $p] = $mia((int) $a['id']);
     if (!Migrator::columnExists('properties', 'review_google')) Support::redirect('/pannello/' . $p['id'] . '/impostazioni');
     $url = fn(string $k) => Support::safeUrl(mb_substr(trim((string) ($_POST[$k] ?? '')), 0, 500));
-    $dati = ['review_google' => $url('review_google'), 'review_booking' => $url('review_booking'), 'review_airbnb' => $url('review_airbnb'),
-             'review_other' => $url('review_other'), 'direct_url' => $url('direct_url'),
+    $dati = ['direct_url' => $url('direct_url'),
              'direct_code' => mb_substr(preg_replace('/\s+/', '', (string) ($_POST['direct_code'] ?? '')), 0, 60),
              // 7C: lo sconto per chi torna («10%», «15 €»), solo da mostrare.
              'direct_discount' => mb_substr(trim(preg_replace('/\s+/u', ' ', (string) ($_POST['direct_discount'] ?? ''))), 0, 40),
              // La firma si nasconde solo se il piano lo comprende (Plus, Portfolio): controllato qui, non solo nel modulo.
              'hide_branding' => !empty($_POST['hide_branding']) && Entitlements::can((int) $acc['id'], 'hide_branding') ? 1 : 0];
-    $scartati = array_filter(['review_google', 'review_booking', 'review_airbnb', 'review_other', 'direct_url'],
-                             fn($k) => trim((string) ($_POST[$k] ?? '')) !== '' && $dati[$k] === '');
+    // 8B: «Hai un sito dove gli ospiti possono prenotare direttamente?» (1 / 0; senza risposta resta com'era).
+    if (Migrator::columnExists('properties', 'has_site') && in_array($_POST['has_site'] ?? '', ['0', '1'], true)) $dati['has_site'] = (int) $_POST['has_site'];
+    $scartati = trim((string) ($_POST['direct_url'] ?? '')) !== '' && $dati['direct_url'] === '' ? 1 : 0;
     if (!Migrator::columnExists('properties', 'direct_discount')) unset($dati['direct_discount']);
     Db::update('properties', $dati, 'id = :pid', ['pid' => $p['id']]);
-    Support::flash($scartati ? 'Salvato, ma ' . count($scartati) . ' link non erano indirizzi web validi (cominciano con https://) e sono rimasti vuoti.'
-                             : 'Salvato. Lo vedranno gli ospiti nel commiato quando pubblichi.', $scartati ? 'avviso' : 'ok');
-    Support::redirect('/pannello/' . $p['id'] . '/impostazioni#dopo-il-soggiorno');
+    $errori = MHW\Canali::salva((int) $p['id'], $_POST);
+    if ($scartati) array_unshift($errori, 'Il link al sito per prenotare non era un indirizzo web valido (comincia con https://) ed è rimasto vuoto.');
+    Support::flash($errori ? 'Salvato, ma: ' . implode(' ', $errori) : 'Salvato. Lo vedranno gli ospiti quando pubblichi.', $errori ? 'avviso' : 'ok');
+    Support::redirect('/pannello/' . $p['id'] . '/impostazioni#' . ($errori ? 'piattaforme' : 'dopo-il-soggiorno'));
 });
 
 // ---------------------------------------------------------- procedura guidata
@@ -967,6 +973,20 @@ $r->get('/pannello/{id}/qr', function (array $a) use ($mia, $contesto) {
     $lingue = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
     usort($lingue, fn($x, $y) => ($y === $p['default_locale']) <=> ($x === $p['default_locale']) ?: array_search($x, MHW\I18n::LOCALES) <=> array_search($y, MHW\I18n::LOCALES));
     View::out('host/qr', $contesto($acc, $p) + ['qr' => $qr, 'online' => Subscriptions::propertyOnline($p), 'qui' => 'qr', 'lingue' => $lingue], 'layout/cms');
+});
+
+/* 8B: salva (o riporta al testo di serie) un messaggio di QR & Link, per tipo e lingua della guida. */
+$r->post('/pannello/{id}/messaggi', function (array $a) use ($mia) {
+    [, , $p] = $mia((int) $a['id']);
+    $tipo = (string) ($_POST['tipo'] ?? ''); $loc = (string) ($_POST['lingua'] ?? '');
+    $lingue = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
+    if (!isset(MHW\Messaggi::TIPI[$tipo]) || !in_array($loc, array_merge($lingue, [$p['default_locale']]), true)) Support::redirect('/pannello/' . $p['id'] . '/qr');
+    $serie = ($_POST['azione'] ?? '') === 'serie';
+    $testo = $serie ? '' : (string) ($_POST['testo'] ?? '');
+    MHW\Messaggi::salva($p, $tipo, $loc, $testo);
+    $manca = !$serie && trim($testo) !== '' && !str_contains($testo, '{link}');
+    Support::flash($serie ? 'Fatto: torna il testo di serie.' : ($manca ? 'Salvato, ma nel messaggio manca il link: scrivi {link} dove deve comparire.' : 'Messaggio salvato.'), $manca ? 'avviso' : 'ok');
+    Support::redirect('/pannello/' . $p['id'] . '/qr#msg-' . $tipo);
 });
 
 $r->get('/pannello/{id}/qr.{formato}', function (array $a) use ($mia) {

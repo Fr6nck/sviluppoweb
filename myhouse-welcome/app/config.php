@@ -143,6 +143,17 @@ $config = [
         'email' => $env('MHW_CONTACT_EMAIL', 'info@welcomemyhouse.it'),
     ],
 
+    // 8B: gli indirizzi di partenza dei portali per le recensioni. Google cerca nome e città su Maps;
+    // gli altri aprono il sito (lì la recensione si lascia dall'app o dall'email del portale).
+    // Si cambiano da Amministrazione → Impostazioni → Portali.
+    'portali' => [
+        'google'  => $env('MHW_PORTALE_GOOGLE', 'https://www.google.com/maps/search/?api=1&query='),
+        'booking' => $env('MHW_PORTALE_BOOKING', 'https://www.booking.com/'),
+        'airbnb'  => $env('MHW_PORTALE_AIRBNB', 'https://www.airbnb.it/'),
+        'vrbo'    => $env('MHW_PORTALE_VRBO', 'https://www.vrbo.com/'),
+        'expedia' => $env('MHW_PORTALE_EXPEDIA', 'https://www.expedia.it/'),
+    ],
+
     'uploads_dir' => __DIR__ . '/storage/uploads',
     'uploads_url' => '/media',
 ];

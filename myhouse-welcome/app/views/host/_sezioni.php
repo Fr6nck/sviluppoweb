@@ -95,7 +95,7 @@ $n = count($sezioni); ?>
     <div class="limit" role="status">
       <p style="max-width:620px">Hai già <?= (int) $limite ?> sezioni attive, il massimo del tuo piano. Passa a Plus per averne quante vuoi,
         oppure disattivane una per liberare un posto.</p>
-      <a class="btn btn--sm" href="<?= b() ?>/piano?passa=plus">Scopri Plus</a>
+      <a class="btn btn--sm" href="<?= b() ?>/piano?passa=plus" data-sblocca="sezioni">Scopri Plus</a>
     </div>
   <?php endif; ?>
   <?php if ($libere >= SectionCatalog::LIBERE_MAX): ?>
@@ -107,12 +107,11 @@ $n = count($sezioni); ?>
         <span class="ico"><?= Icon::svg(SectionCatalog::icon($k), 22) ?></span>
         <b><?= Support::e(SectionCatalog::nome($k)) ?></b>
         <?php if (($breve = SectionCatalog::breve($k)) !== ''): ?><span class="small muted"><?= Support::e($breve) ?></span><?php endif; ?>
-        <?php if (!$pieno): ?>
-          <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/sezioni"><?= Csrf::field() ?>
-            <input type="hidden" name="kind" value="<?= Support::e($k) ?>"><input type="hidden" name="torna" value="<?= Support::e($torna) ?>">
-            <button class="btn btn--ghost btn--sm"><?= Icon::svg('plus', 15, 2) ?>Aggiungi<span class="sr-only"> <?= Support::e(SectionCatalog::nome($k)) ?></span></button>
-          </form>
-        <?php endif; ?>
+        <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/sezioni"><?= Csrf::field() ?>
+          <input type="hidden" name="kind" value="<?= Support::e($k) ?>"><input type="hidden" name="torna" value="<?= Support::e($torna) ?>">
+          <?php /* 8B: oltre il limite il bottone resta, con il lucchetto, e apre «Con Plus hai tutte le sezioni» */ ?>
+          <button class="btn btn--ghost btn--sm<?= $pieno ? ' btn--lucchetto' : '' ?>"<?= $pieno ? ' data-sblocca="sezioni"' : '' ?>><?= Icon::svg($pieno ? 'lock' : 'plus', 15, 2) ?>Aggiungi<span class="sr-only"> <?= Support::e(SectionCatalog::nome($k)) ?></span></button>
+        </form>
       </div>
     <?php endforeach; ?>
   </div>

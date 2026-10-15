@@ -28,6 +28,8 @@ $nome = $nome !== '' ? explode(' ', $nome)[0] : ''; ?>
   </div>
   <?php if ($puoiAggiungere): ?>
     <a class="btn btn--go" href="<?= b() ?>/pannello/nuova">Aggiungi una struttura <span class="go"><?= Icon::svg('plus', 18, 2) ?></span></a>
+  <?php elseif ($maxProp === 1): /* 8B: senza più strutture nel piano il bottone resta e apre «Più strutture con Portfolio» */ ?>
+    <a class="btn btn--go btn--lucchetto" href="<?= b() ?>/piano?passa=portfolio" data-sblocca="strutture">Aggiungi una struttura <span class="go"><?= Icon::svg('lock', 18, 2) ?></span></a>
   <?php endif; ?>
 </div>
 

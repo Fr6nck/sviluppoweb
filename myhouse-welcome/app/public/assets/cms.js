@@ -71,6 +71,90 @@
     if (em) em.href = em.href.replace(/([?&]body=)[^&]*/, '$1' + encodeURIComponent(e.target.value));
   });
 
+  /* ---- 8B · Impostazioni: i portali si spostano su e giù (l'ordine dei bottoni per l'ospite),
+     le righe «altro portale» si aggiungono e si tolgono, il nome serve solo per «Altro…»,
+     e la domanda sul sito mostra i campi giusti. */
+  document.addEventListener('click', function (e) {
+    var sp = e.target.closest('[data-sposta]');
+    if (sp) {
+      var li = sp.closest('[data-canale-riga]'), su = sp.getAttribute('data-sposta') === 'su';
+      var altro = su ? li.previousElementSibling : li.nextElementSibling;
+      if (altro) { li.parentNode.insertBefore(li, su ? altro : altro.nextSibling); sp.focus(); }
+      return;
+    }
+    var agg = e.target.closest('[data-aggiungi-altro]');
+    if (agg) {
+      var box = agg.closest('[data-canali-altri]'), mod = box.querySelector('[data-modello]');
+      var righe = box.querySelectorAll('[data-canale-altro]'), n = righe.length;
+      var nuova = mod.cloneNode(true); nuova.removeAttribute('data-modello');
+      nuova.querySelectorAll('[name],[id],[for]').forEach(function (el) {
+        ['name', 'id', 'for'].forEach(function (a) { var v = el.getAttribute(a); if (v) el.setAttribute(a, v.replace(/\[\d+\]|-\d+-/g, function (m) { return m[0] === '[' ? '[' + n + ']' : '-' + n + '-'; })); });
+        if (el.tagName === 'INPUT') el.value = ''; if (el.tagName === 'SELECT') el.selectedIndex = 0;
+      });
+      box.insertBefore(nuova, righe[righe.length - 1].nextSibling);
+      altroKind(nuova.querySelector('[data-altro-kind]'));
+      nuova.querySelector('select').focus();
+      return;
+    }
+    var tog = e.target.closest('[data-togli-altro]');
+    if (tog) {
+      var riga = tog.closest('[data-canale-altro]');
+      riga.querySelectorAll('input').forEach(function (i) { i.value = ''; }); riga.querySelector('select').selectedIndex = 0;
+      if (!riga.hasAttribute('data-modello')) riga.remove(); else altroKind(riga.querySelector('[data-altro-kind]'));
+    }
+  });
+  function altroKind(sel) {
+    if (!sel) return;
+    var f = sel.closest('[data-canale-altro]').querySelector('[data-solo-altro]');
+    if (f) f.hidden = sel.value !== 'altro';
+  }
+  document.querySelectorAll('[data-altro-kind]').forEach(altroKind);
+  document.addEventListener('change', function (e) {
+    if (e.target.matches && e.target.matches('[data-altro-kind]')) altroKind(e.target);
+    if (e.target.matches && e.target.matches('[data-ha-sito]')) {
+      var si = e.target.value === '1';
+      document.querySelectorAll('[data-sito-si]').forEach(function (x) { x.hidden = !si; });
+      document.querySelectorAll('[data-sito-no]').forEach(function (x) { x.hidden = si; });
+    }
+  });
+
+  /* ---- 8B · QR & Link: i messaggi per lingua (linguette), il testo pronto con {link} e {host} riempiti,
+     l'anteprima stile WhatsApp, «Copia» e «Apri WhatsApp» con il testo di adesso, l'avviso se manca il link. */
+  function prontoDi(pan) {
+    var t = pan.querySelector('[data-modello]').value;
+    return t.split('{link}').join(pan.getAttribute('data-link')).split('{host}').join(pan.getAttribute('data-host'));
+  }
+  function aggiornaMsg(pan) {
+    var t = prontoDi(pan), esc = t.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+    var a = pan.querySelector('[data-anteprima-msg]');
+    if (a) a.innerHTML = esc.replace(/(https?:\/\/\S+)/g, '<span class="wa-link">$1</span>').replace(/\n/g, '<br>');
+    var wa = pan.querySelector('[data-wa-msg]'); if (wa) wa.href = 'https://wa.me/?text=' + encodeURIComponent(t);
+    var m = pan.querySelector('[data-manca-link]'); if (m) m.hidden = pan.querySelector('[data-modello]').value.indexOf('{link}') !== -1;
+  }
+  document.querySelectorAll('[data-messaggio-box]').forEach(function (box) {
+    var tabs = box.querySelectorAll('[data-linguetta]'), pans = box.querySelectorAll('[data-pannello]');
+    if (tabs.length) pans.forEach(function (p, i) { p.hidden = i > 0; });
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () {
+        tabs.forEach(function (x, j) { x.setAttribute('aria-selected', j === i ? 'true' : 'false'); });
+        pans.forEach(function (p, j) { p.hidden = j !== i; });
+      });
+      t.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        var n = (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length; tabs[n].click(); tabs[n].focus();
+      });
+    });
+    pans.forEach(function (p) { p.querySelector('[data-modello]').addEventListener('input', function () { aggiornaMsg(p); }); });
+  });
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest('[data-copia-msg]'); if (!c) return;
+    var pan = c.closest('[data-pannello]'), prima = c.innerHTML;
+    if (navigator.clipboard) navigator.clipboard.writeText(prontoDi(pan)).then(function () {
+      c.textContent = c.getAttribute('data-copiato'); setTimeout(function () { c.innerHTML = prima; }, 1600);
+    }, function () {});
+  });
+  document.querySelectorAll('[data-copia-msg][hidden]').forEach(function (b) { if (navigator.clipboard) b.hidden = false; });
+
   /* ---- Una casella che si salva da sola (l'anteprima dell'invito): senza JS c'è il bottone «Salva». */
   document.addEventListener('change', function (e) {
     if (e.target.hasAttribute && e.target.hasAttribute('data-invia-subito') && e.target.form) e.target.form.submit();

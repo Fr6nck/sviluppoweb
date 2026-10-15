@@ -23,7 +23,7 @@ namespace MHW;
  */
 final class Guide
 {
-    public const FORMAT = 6;
+    public const FORMAT = 7;
 
     // ------------------------------------------------------------ costruzione
 
@@ -117,7 +117,12 @@ final class Guide
                 // Dopo il soggiorno (dalla 014): solo i link compilati.
                 'reviews' => array_filter(['google' => (string) ($p['review_google'] ?? ''), 'booking' => (string) ($p['review_booking'] ?? ''),
                                            'airbnb' => (string) ($p['review_airbnb'] ?? ''), 'other' => (string) ($p['review_other'] ?? '')]),
-                'direct' => ['url' => (string) ($p['direct_url'] ?? ''), 'code' => (string) ($p['direct_code'] ?? ''), 'discount' => (string) ($p['direct_discount'] ?? '')],
+                // 8B: con «No, non ho un sito» la prenotazione diretta non compare (i campi restano salvati).
+                'direct' => isset($p['has_site']) && $p['has_site'] !== null && (int) $p['has_site'] === 0
+                    ? ['url' => '', 'code' => '', 'discount' => '']
+                    : ['url' => (string) ($p['direct_url'] ?? ''), 'code' => (string) ($p['direct_code'] ?? ''), 'discount' => (string) ($p['direct_discount'] ?? '')],
+                // 8B: dove si trova la struttura, con i link già pronti (portali e social).
+                'channels' => Canali::perGuida($p),
                 // «Due parole di benvenuto» dell'host (7C), per lingua: nel foglio del tondo con la sua foto.
                 'host_welcome' => array_filter(array_map(fn($t) => mb_substr(trim((string) $t), 0, 160), (array) (json_decode((string) ($p['host_welcome'] ?? ''), true) ?: [])), fn($t) => $t !== ''),
                 // La firma si nasconde solo se il piano lo comprende E l'host l'ha chiesto.
@@ -203,7 +208,16 @@ final class Guide
         if ($f < 3) $s = self::daFormato2($s);
         if ($f < 4) $s = self::daFormato3($s);
         if ($f < 5) $s = self::daFormato4($s);
-        return self::daFormato5($s);
+        if ($f < 6) $s = self::daFormato5($s);
+        return self::daFormato6($s);
+    }
+
+    /** Formato 6 → 7 (8B): i link di recensione scritti dall'host diventano canali, con il loro indirizzo. */
+    private static function daFormato6(array $s): array
+    {
+        if (!isset($s['property']['channels'])) $s['property']['channels'] = Canali::daRecensioni((array) ($s['property']['reviews'] ?? []));
+        $s['format'] = self::FORMAT;
+        return $s;
     }
 
     /**

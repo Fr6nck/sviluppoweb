@@ -16,8 +16,12 @@ $def = $prop['default_locale']; $dopoPasso = $dopoPasso ?? ''; ?>
           <input type="checkbox" checked disabled><input type="hidden" name="locali[]" value="<?= Support::e($code) ?>">
           <span class="scelta__testo"><?= Support::e($nome) ?> <span class="small muted">lingua principale</span></span>
         <?php else: ?>
-          <input type="checkbox" name="locali[]" value="<?= Support::e($code) ?>" <?= $on && $ok ? 'checked' : '' ?> <?= $ok ? '' : 'disabled' ?>>
-          <span class="scelta__testo"><?= Support::e($nome) ?><?php if (!$ok): ?> <span class="small muted">con il piano Plus</span><?php endif; ?>
+          <?php if ($ok): ?>
+            <input type="checkbox" name="locali[]" value="<?= Support::e($code) ?>" <?= $on ? 'checked' : '' ?>>
+          <?php else: /* 8B: una lingua che il piano non comprende: la casella apre «Più lingue sono comprese in Plus» */ ?>
+            <input type="checkbox" value="<?= Support::e($code) ?>" data-sblocca="lingue" aria-describedby="lingua-plus-<?= Support::e($code) ?>">
+          <?php endif; ?>
+          <span class="scelta__testo"><?= Support::e($nome) ?><?php if (!$ok): ?> <span class="small muted" id="lingua-plus-<?= Support::e($code) ?>"><?= MHW\Icon::svg('lock', 13, 2) ?> con il piano Plus</span><?php endif; ?>
             <?php if ($on && !$ok): ?> <span class="badge badge--alert">da togliere</span><?php endif; ?></span>
         <?php endif; ?>
       </label>

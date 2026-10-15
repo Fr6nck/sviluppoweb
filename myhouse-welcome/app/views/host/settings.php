@@ -11,41 +11,79 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
   <?php if ($err): ?><p class="note note--err" role="alert"><?= Support::e($err) ?></p><?php endif; ?>
   <?php $dopoPasso = ''; include __DIR__ . '/_struttura_form.php'; ?>
 
-  <?php if (array_key_exists('review_google', $prop)): /* Dopo il soggiorno: recensioni, prenotazione diretta, firma */
+  <?php if (array_key_exists('review_google', $prop)): /* Dopo il soggiorno: dove si trova (8B), prenotazione diretta, firma */
         $firma = MHW\Entitlements::can((int) $acc['id'], 'hide_branding'); ?>
   <form method="post" action="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/dopo-il-soggiorno" class="stack" id="dopo-il-soggiorno" style="margin-top:24px"><?= Csrf::field() ?>
     <div class="stack stack--sm">
       <h2 style="font-size:24px">Dopo il soggiorno.</h2>
-      <p class="muted small">Facoltativo. Nella pagina di saluto, che l'ospite apre da «Stiamo per partire», compare solo quello che compili.</p>
+      <p class="muted small">Facoltativo. Nella pagina di saluto, che l'ospite apre da «Stiamo per partire», e in quella del voto compare solo quello che compili.</p>
     </div>
-    <fieldset class="fieldset">
-      <legend>Recensioni</legend>
-      <p class="help">Gli ospiti vedono un bottone per ogni link che compili, alla fine del soggiorno.</p>
-      <?php /* 7C: una scheda per piattaforma, con «Prova il link» e dove trovarlo. */
-            $piattaforme = [
-              'review_google'  => ['Google', 'search', ['Apri il tuo Profilo dell\'attività su Google (cerca il nome della struttura da loggato).', 'Tocca «Chiedi recensioni» e copia il link che ti dà.']],
-              'review_booking' => ['Booking.com', 'calendar', ['Entra nella Extranet di Booking.com.', 'Vai in «Recensioni ospiti» e copia il link della pagina delle tue recensioni.']],
-              'review_airbnb'  => ['Airbnb', 'home', ['Apri il tuo annuncio su Airbnb.', 'Copia il link dell\'annuncio: le recensioni sono lì.']],
-              'review_other'   => ['Altro sito', 'globe', ['Il sito dove vuoi le recensioni (TripAdvisor, il tuo sito…).', 'Copia il link della pagina dove si scrive la recensione.']],
-            ]; ?>
-      <div class="recensioni-schede">
-        <?php foreach ($piattaforme as $k => [$et, $ico, $dove]): $val = (string) $prop[$k]; ?>
-          <div class="recensione-scheda">
-            <div class="recensione-scheda__testa"><span class="recensione-scheda__ico"><?= Icon::svg($ico, 18) ?></span><label for="<?= $k ?>"><?= $et ?></label></div>
-            <input id="<?= $k ?>" name="<?= $k ?>" type="url" maxlength="500" placeholder="https://" value="<?= Support::e($val) ?>" data-prova-campo>
-            <div class="recensione-scheda__piede">
-              <a class="small" href="<?= Support::e($val !== '' ? $val : '#') ?>" target="_blank" rel="noopener" data-prova-link<?= $val === '' ? ' hidden' : '' ?>>Prova il link</a>
-              <details class="recensione-scheda__dove"><summary class="small">Dove trovo il link?</summary>
-                <ol class="small"><?php foreach ($dove as $riga): ?><li><?= Support::e($riga) ?></li><?php endforeach; ?></ol></details>
-            </div>
+    <?php /* 8B: dove si trova la struttura. L'host spunta i portali; i link li prepara il sistema (Canali). */
+          $canali = MHW\Canali::righe((int) $prop['id']);
+          $spuntati = array_values(array_filter(array_column($canali, 'kind'), fn($k) => isset(MHW\Canali::NOTI[$k])));
+          $ordine = array_merge($spuntati, array_values(array_diff(array_keys(MHW\Canali::NOTI), $spuntati)));
+          $altri = array_values(array_filter($canali, fn($c) => isset(MHW\Canali::ALTRI[$c['kind']])));
+          $social = array_column(array_filter($canali, fn($c) => MHW\Canali::social($c['kind'])), 'url', 'kind');
+          $icoPortale = ['google' => 'search', 'booking' => 'calendar', 'airbnb' => 'home', 'vrbo' => 'home', 'expedia' => 'plane']; ?>
+    <fieldset class="fieldset" id="piattaforme">
+      <legend>Su quali piattaforme si trova la tua struttura?</legend>
+      <p class="help">Spunta i portali dove gli ospiti ti trovano e prenotano. A fine soggiorno, chi ti dà 5 stelle trova i bottoni per lasciarti la recensione: i link li prepariamo noi.</p>
+      <h3 class="canali__titolo">Portali</h3>
+      <ul class="canali" data-canali role="list">
+        <?php foreach ($ordine as $k): $si = in_array($k, $spuntati, true); ?>
+          <li class="canale" data-canale-riga>
+            <label class="canale__scelta"><input type="checkbox" name="portali[]" value="<?= $k ?>" <?= $si ? 'checked' : '' ?>>
+              <span class="canale__ico"><?= Icon::svg($icoPortale[$k], 18) ?></span><span><?= MHW\Canali::NOTI[$k] ?></span></label>
+            <span class="canale__sposta" data-solo-js hidden>
+              <button type="button" class="canale__freccia" data-sposta="su" aria-label="Sposta <?= MHW\Canali::NOTI[$k] ?> più su"><?= Icon::svg('chevron', 16, 2, 'ruota-su') ?></button>
+              <button type="button" class="canale__freccia" data-sposta="giu" aria-label="Sposta <?= MHW\Canali::NOTI[$k] ?> più giù"><?= Icon::svg('chevron', 16, 2, 'ruota-giu') ?></button>
+            </span>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+      <p class="help" style="margin:0">L'ordine è quello dei bottoni che vede l'ospite. Google apre la tua scheda su Maps cercando il nome e la città della struttura.</p>
+      <div class="canali-altri" data-canali-altri>
+        <?php $righeAltri = array_merge($altri, [['kind' => '', 'label' => '', 'url' => '']]);
+        foreach ($righeAltri as $i => $a): $vuota = $a['kind'] === ''; ?>
+          <div class="canale-altro" data-canale-altro<?= $vuota ? ' data-modello' : '' ?>>
+            <div class="field" style="margin:0"><label for="altri-<?= $i ?>-kind">Portale</label>
+              <select id="altri-<?= $i ?>-kind" name="altri[<?= $i ?>][kind]" data-altro-kind>
+                <option value="">Scegli…</option>
+                <?php foreach (MHW\Canali::ALTRI as $ak => $an): ?><option value="<?= $ak ?>"<?= $a['kind'] === $ak ? ' selected' : '' ?>><?= Support::e($an) ?></option><?php endforeach; ?>
+              </select></div>
+            <div class="field" style="margin:0" data-solo-altro><label for="altri-<?= $i ?>-label">Nome del portale</label>
+              <input id="altri-<?= $i ?>-label" name="altri[<?= $i ?>][label]" type="text" maxlength="80" value="<?= Support::e($a['label']) ?>"></div>
+            <div class="field" style="margin:0"><label for="altri-<?= $i ?>-url">Indirizzo della tua scheda</label>
+              <input id="altri-<?= $i ?>-url" name="altri[<?= $i ?>][url]" type="url" maxlength="500" placeholder="https://" value="<?= Support::e($a['url']) ?>"></div>
+            <button type="button" class="linkbtn canale-altro__togli" data-togli-altro data-solo-js hidden>Togli</button>
           </div>
         <?php endforeach; ?>
+        <button type="button" class="btn btn--ghost btn--sm" data-aggiungi-altro data-solo-js hidden><?= Icon::svg('plus', 15, 2) ?>Aggiungi un altro portale</button>
+        <p class="help" style="margin:0">Agoda, Hotels.com, Tripadvisor, Holidu, HomeToGo o un altro: qui l'indirizzo della tua scheda lo scrivi tu (comincia con https://).</p>
       </div>
+      <h3 class="canali__titolo">Social <span class="muted">(facoltativi)</span></h3>
+      <div class="grid grid-3 canali-social">
+        <?php foreach (MHW\Canali::SOCIAL as $sk => $sn): ?>
+          <div class="field" style="margin:0"><label for="social-<?= $sk ?>"><?= Icon::svg($sk, 15) ?> <?= $sn ?></label>
+            <input id="social-<?= $sk ?>" name="social[<?= $sk ?>]" type="text" maxlength="500" placeholder="@nome o https://…" autocomplete="off" value="<?= Support::e((string) ($social[$sk] ?? '')) ?>"></div>
+        <?php endforeach; ?>
+      </div>
+      <p class="help" style="margin:0">Nella pagina di saluto della guida compaiono come «Seguici».</p>
     </fieldset>
-    <fieldset class="fieldset">
+    <fieldset class="fieldset" id="prenotazione-diretta">
       <legend>Prenotazione diretta</legend>
-      <p class="help">«La prossima volta prenota da noi»: il link al tuo sito e, se vuoi, un codice sconto per chi torna.</p>
-      <?php $dUrl = (string) $prop['direct_url']; $dCod = (string) $prop['direct_code']; $dSconto = (string) ($prop['direct_discount'] ?? ''); ?>
+      <p class="help">«La prossima volta prenota da noi»: compare all'ospite quando parte.</p>
+      <?php /* 8B: prima la domanda sul sito, poi i campi giusti (mockup 3 di 3). */
+            $dUrl = (string) $prop['direct_url']; $dCod = (string) $prop['direct_code']; $dSconto = (string) ($prop['direct_discount'] ?? '');
+            $haSito = array_key_exists('has_site', $prop) && $prop['has_site'] !== null ? (int) $prop['has_site'] : ($dUrl !== '' ? 1 : null); ?>
+      <div class="field" style="margin:0">
+        <span class="label" id="ha-sito-domanda">Hai un sito dove gli ospiti possono prenotare direttamente?</span>
+        <div class="pillole-scelta" role="radiogroup" aria-labelledby="ha-sito-domanda">
+          <label class="pillola-scelta"><input type="radio" name="has_site" value="1" <?= $haSito === 1 ? 'checked' : '' ?> data-ha-sito> <span>Sì</span></label>
+          <label class="pillola-scelta"><input type="radio" name="has_site" value="0" <?= $haSito === 0 ? 'checked' : '' ?> data-ha-sito> <span>No</span></label>
+        </div>
+      </div>
+      <div class="stack" style="gap:12px" data-sito-si<?= $haSito === 0 ? ' hidden' : '' ?>>
       <div class="diretta">
         <div class="stack" style="gap:12px">
           <div class="field" style="margin:0"><label for="direct_url">Link al sito per prenotare</label>
@@ -67,6 +105,23 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
           <span class="diretta__bottoni"><span class="diretta__finto" data-diretta-copia<?= $dCod === '' ? ' hidden' : '' ?>>Copia il codice</span><span class="diretta__finto diretta__finto--pieno">Prenota sul nostro sito</span></span>
         </div>
       </div>
+      <div class="striscia-myhouse">
+        <img src="<?= Support::e(MHW\a('/assets/myhouse/myhouse-logo-nero.png')) ?>" alt="MyHouse" width="80" height="26">
+        <span>Vuoi un sito più bello, più visibile su Google o con la prenotazione diretta? Lo miglioriamo noi.</span>
+        <button type="button" class="linkbtn striscia-myhouse__vai" data-funnel-apri="si" data-funnel-dialogo="dlg-sito">Scopri come <?= Icon::svg('external', 14, 2) ?></button>
+      </div>
+      </div>
+      <div class="striscia-myhouse striscia-myhouse--crea" data-sito-no<?= $haSito === 0 ? '' : ' hidden' ?>>
+        <img src="<?= Support::e(MHW\a('/assets/myhouse/myhouse-logo-nero.png')) ?>" alt="MyHouse" width="80" height="26">
+        <span><b>Crealo con noi.</b> Un sito tuo, con la prenotazione diretta: meno commissioni ai portali e ospiti che tornano da te.</span>
+        <?php $waNumero = preg_replace('/\D/', '', (string) ((MHW\Config::get('legal') ?? [])['contact_whatsapp'] ?? ''));
+              $msgSito = 'Ciao, ho una guida MyHouse Welcome per ' . $prop['name'] . '. Non ho ancora un sito per la mia struttura e vorrei crearlo. Mi date una proposta?'; ?>
+        <span class="row striscia-myhouse__bottoni">
+          <button type="button" class="btn btn--sm" data-funnel-apri="no" data-funnel-dialogo="dlg-sito">Voglio una proposta</button>
+          <?php if ($waNumero !== ''): ?><a class="btn btn--ghost btn--sm" href="https://wa.me/<?= Support::e($waNumero) ?>?text=<?= rawurlencode($msgSito) ?>" target="_blank" rel="noopener"><?= Icon::svg('whatsapp', 15) ?>WhatsApp</a><?php endif; ?>
+          <?php if (Support::contatto() !== ''): ?><a class="btn btn--ghost btn--sm" href="<?= Support::e(Support::mailto('Il sito per la mia struttura', $msgSito)) ?>"><?= Icon::svg('message', 15) ?>Email</a><?php endif; ?>
+        </span>
+      </div>
     </fieldset>
     <fieldset class="fieldset">
       <legend>Firma nella guida</legend>
@@ -74,11 +129,19 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
       <?php if ($firma): ?>
         <label class="check"><input type="checkbox" name="hide_branding" value="1" <?= (int) $prop['hide_branding'] === 1 ? 'checked' : '' ?>> <span>Nascondi la firma</span></label>
       <?php else: ?>
-        <p class="small">La firma resta visibile con il tuo piano. Con Plus e Portfolio puoi nasconderla. <a href="<?= b() ?>/piano?passa=plus">Vedi i piani</a></p>
+        <?php /* 8B: la casella c'è, con il lucchetto: apre «Nascondere la firma è compreso in Plus» */ ?>
+        <label class="check"><input type="checkbox" value="1" data-sblocca="firma" aria-describedby="firma-plus"> <span>Nascondi la firma <?= Icon::svg('lock', 13, 2) ?></span></label>
+        <p class="small" id="firma-plus" style="margin:0">La firma resta visibile con il tuo piano. Con Plus e Portfolio puoi nasconderla. <a href="<?= b() ?>/piano?passa=plus" data-sblocca="firma">Vedi i piani</a></p>
       <?php endif; ?>
     </fieldset>
     <div class="actions"><button class="btn">Salva</button></div>
   </form>
+  <?php /* 8B: il percorso «Anche il tuo sito» in una finestra, già al passo giusto. */ ?>
+  <dialog class="funnel-dialogo" id="dlg-sito" aria-label="Il sito per la tua struttura">
+    <button type="button" class="funnel-dialogo__chiudi" data-funnel-chiudi aria-label="Chiudi"><?= Icon::svg('close', 18, 2) ?></button>
+    <?php $funnel = ['da' => 'impostazioni', 'struttura' => (string) $prop['name'], 'compatta' => true, 'id' => 'fs-imp']; include __DIR__ . '/../pub/_funnel_sito.php'; ?>
+  </dialog>
+  <script src="<?= MHW\av('/assets/funnel-sito.js') ?>" defer></script>
   <?php endif; ?>
 
   <details class="fieldset" style="margin-top:24px" id="link-guida">

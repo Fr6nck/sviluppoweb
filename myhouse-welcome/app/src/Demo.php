@@ -156,6 +156,10 @@ final class Demo
                       'review_airbnb' => 'https://www.airbnb.it/assisi-italia/stays', 'direct_code' => 'CHECCO10'];
         $campiCasa = array_filter($campiCasa, fn($c) => Migrator::columnExists('properties', $c), ARRAY_FILTER_USE_KEY);
         if ($campiCasa) Db::update('properties', $campiCasa, 'id = :pid', ['pid' => $pid]);
+        // 8B: dove si trova (i link li prepara il sistema: per Google nome e città, la casa non esiste) e un social di esempio.
+        if (Canali::disponibili()) {
+            Canali::salva($pid, ['portali' => ['google', 'booking', 'airbnb', 'vrbo'], 'social' => ['instagram' => '@casacheccoassisi']]);
+        }
         // La geolocalizzazione: Piazza Matteotti ad Assisi (serve anche a stimare i minuti a piedi dei luoghi).
         if (Migrator::columnExists('properties', 'lat')) Db::update('properties', ['lat' => self::CHECCO_LAT, 'lng' => self::CHECCO_LNG], 'id = :pid', ['pid' => $pid]);
         Properties::setLocales($acc, $pid, array_values(array_intersect(['it', 'en', 'de', 'fr', 'es'], Entitlements::allowedLocales($acc))));

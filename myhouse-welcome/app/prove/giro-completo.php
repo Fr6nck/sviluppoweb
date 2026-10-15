@@ -484,6 +484,9 @@ $r = $anna->post("/pannello/$pid/sezioni", ['kind' => 'transport', 'torna' => 'p
 $r = $anna->segui($r);
 prova('La settima sezione è rifiutata dal server', !val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$pid, 'transport']));
 prova('Messaggio di limite elegante', str_contains($r['body'], 'Hai già 6 sezioni attive, il massimo del tuo piano') && str_contains($r['body'], 'Scopri Plus'));
+prova('8B · …e la finestra «Con Plus hai tutte le sezioni» aperta, non un errore; i bottoni «Aggiungi» con il lucchetto', str_contains($r['body'], 'data-apri="sezioni" open')
+      && str_contains($r['body'], 'Con Plus hai tutte le sezioni') && str_contains($r['body'], 'data-sblocca="sezioni"') && str_contains($r['body'], '/piano?passa=plus">Passa a Plus</a>')
+      && !preg_match('#class="note note--limite#', $r['body']));
 prova('Il contatore dice 6 su 6', str_contains($r['body'], '6 su 6 sezioni attive'));
 prova('Ordinamento: maniglia e menu ⋯ con Sposta su / giù', str_contains($r['body'], 'riga__maniglia') && str_contains($r['body'], 'Sposta su') && str_contains($r['body'], 'Sposta giù'));
 $anna->post("/pannello/$pid/sezioni/{$ids['parking']}/azione", ['fai' => 'disattiva', 'torna' => 'procedura']);
@@ -514,6 +517,8 @@ prova('Fase 3 · repeater: la zona (testo) sta nelle traduzioni, unita per id', 
 $r = $anna->get("/pannello/$pid/sezioni/{$ids['wifi']}");
 prova('Editor strutturato (niente mini-sintassi)', pulita($r) && str_contains($r['body'], 'Nome della rete') && !str_contains($r['body'], 'riga vuota'));
 prova('Essential: niente caricamento immagini nelle sezioni', !str_contains($r['body'], 'name="foto"'));
+prova('8B · …ma i bottoni «Aggiungi una foto» e «Aggiungi un PDF» si vedono, con il lucchetto, e aprono «Foto e PDF sono compresi in Plus»',
+      substr_count($r['body'], 'data-sblocca="foto"') >= 2 && str_contains($r['body'], 'Foto e PDF sono compresi in Plus') && str_contains($r['body'], '/assets/sblocca.js'));
 $r = $anna->post("/pannello/$pid/sezioni/{$ids['wifi']}", ['network' => 'CasaProva_5G', 'foto' => file_(png(), 'image/png')]);
 prova('Essential: immagine rifiutata anche forzando il modulo', str_contains($r['body'], 'disponibili con il piano Plus') && !val('SELECT media_id FROM sections WHERE id = ?', [$ids['wifi']]));
 $r = $anna->post("/pannello/$pid/sezioni/{$ids['wifi']}", ['network' => 'CasaProva_5G', 'pdf' => file_(pdfVero(), 'application/pdf')]);
@@ -547,6 +552,9 @@ $r = $anna->modulo("/pannello/$pid/lingue", "/pannello/$pid/lingue", ['locali' =
 prova('Il francese non è concesso a Essential', str_contains($r['body'], 'non comprende') && !val("SELECT 1 FROM property_locales WHERE property_id = ? AND locale = 'fr'", [$pid]));
 $r = $anna->post("/pannello/$pid/lingue", ['locali' => ['it', 'en']]);
 prova('Inglese attivato', (bool) val("SELECT 1 FROM property_locales WHERE property_id = ? AND locale = 'en'", [$pid]));
+$r = $anna->get("/pannello/$pid/lingue");
+prova('8B · le lingue non comprese hanno la casella con il lucchetto (data-sblocca="lingue"), senza nome: il server non le riceve', str_contains($r['body'], 'data-sblocca="lingue"')
+      && !preg_match('#name="locali\[\]" value="fr"#', $r['body']) && str_contains($r['body'], 'Più lingue sono comprese in Plus'));
 $r = $anna->get("/pannello/$pid/lingue/en");
 prova('Pagina di traduzione affiancata', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'class="orig"'));
 $r = $anna->post("/pannello/$pid/lingue/en", ['s' => [$ids['wifi'] => ['title' => 'Wi-Fi', 'instructions' => 'Restart the router if needed.', 'router_location' => 'In the living room.']]]);
@@ -1569,43 +1577,44 @@ $r = $ospite->get("/g/$lslug/commiato");
 prova('K2 · commiato senza recensioni né prenotazione diretta: le stelle (7C), ma nessun bottone di recensione né «prenota da noi»', str_contains($r['body'], 'class="stelle"')
       && !preg_match('#data-voto-dopo.*?<div class="ctas">#s', $r['body']) && !str_contains($r['body'], 'prenota da noi'));
 $r = $lucia->get("/pannello/$casa/impostazioni");
-prova('K2 · Impostazioni: recensioni, prenotazione diretta, firma nascondibile (Portfolio)', str_contains($r['body'], 'Dopo il soggiorno.') && str_contains($r['body'], 'name="review_booking"')
+prova('K2 · Impostazioni (8B): dove si trova la struttura (portali come caselle, senza indirizzo), prenotazione diretta, firma nascondibile (Portfolio)',
+      str_contains($r['body'], 'Su quali piattaforme si trova la tua struttura?') && str_contains($r['body'], 'name="portali[]" value="google"')
+      && !str_contains($r['body'], 'name="review_booking"') && !str_contains($r['body'], 'Prova il link') && !str_contains($r['body'], 'Dove trovo il link?')
       && str_contains($r['body'], 'name="direct_code"') && str_contains($r['body'], 'name="hide_branding"'));
-$r = $lucia->post("/pannello/$casa/dopo-il-soggiorno", ['review_google' => 'https://g.page/r/esempio/review', 'review_booking' => 'https://www.booking.com/esempio',
-    'review_airbnb' => 'javascript:alert(1)', 'direct_url' => 'https://www.esempio.it/prenota', 'direct_code' => 'TORNA10', 'hide_branding' => '1']);
+$r = $lucia->post("/pannello/$casa/dopo-il-soggiorno", ['portali' => ['google', 'booking'], 'altri' => [['kind' => 'tripadvisor', 'label' => '', 'url' => 'javascript:alert(1)']],
+    'direct_url' => 'https://www.esempio.it/prenota', 'direct_code' => 'TORNA10', 'hide_branding' => '1']);
 $pl = riga('SELECT * FROM properties WHERE id = ?', [$casa]);
-prova('…un link non web resta vuoto, con un avviso', $pl['review_airbnb'] === '' && $pl['review_google'] === 'https://g.page/r/esempio/review' && (int) $pl['hide_branding'] === 1
-      && str_contains($lucia->segui($r)['body'], 'non erano indirizzi web validi'));
+$canaliL = array_column(db()->query("SELECT kind FROM property_channels WHERE property_id = $casa ORDER BY position")->fetchAll(), 'kind');
+prova('…un indirizzo che non è https:// non si salva, con un avviso; i portali spuntati sì, senza indirizzo', $canaliL === ['google', 'booking'] && (int) $pl['hide_branding'] === 1
+      && str_contains($lucia->segui($r)['body'], 'L&#039;indirizzo di Tripadvisor deve cominciare con https://'), json_encode($canaliL));
 $lucia->post("/pannello/$casa/pubblica", []);
 $r = $ospite->get("/g/$lslug/commiato?l=en");
 prova('K2 · commiato (en): «How was your stay?» (7C) con Google e Booking, «book with us» con il codice', str_contains($r['body'], 'How was your stay?')
-      && str_contains($r['body'], 'href="https://g.page/r/esempio/review"') && str_contains($r['body'], '>Booking.com</a>') && !str_contains($r['body'], '>Airbnb</a>')
+      && str_contains($r['body'], 'href="https://www.google.com/maps/search/?api=1&amp;query=Casa%20Lucia') && str_contains($r['body'], '>Booking.com</a>') && !str_contains($r['body'], '>Airbnb</a>')
       && str_contains($r['body'], 'Next time, book with us directly') && str_contains($r['body'], 'Discount code: <b>TORNA10</b>') && str_contains($r['body'], 'href="https://www.esempio.it/prenota"'));
 // 7C · le stelle: le piattaforme a ogni voto, da 1 a 3 anche «Scrivigli»; il voto è un conteggio anonimo.
 prova('7C · commiato: cinque stelle accessibili, i bottoni delle recensioni dopo il voto', substr_count($r['body'], 'class="stella') === 5
       && str_contains($r['body'], 'aria-label="1 out of 5"') && str_contains($r['body'], 'data-voto-dopo hidden'));
 $votiPrima = (int) val("SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = 'rating_2'", [$casa]);
 $r = $ospite->get("/g/$lslug/commiato?voto=2");
-prova('7C · con 2 stelle (senza JavaScript): grazie, le stesse piattaforme e «Scrivigli»', !str_contains($r['body'], 'data-voto-dopo hidden') && str_contains($r['body'], 'href="https://g.page/r/esempio/review"')
+prova('7C · con 2 stelle (senza JavaScript): grazie, le stesse piattaforme e «Scrivigli»', !str_contains($r['body'], 'data-voto-dopo hidden') && str_contains($r['body'], 'google.com/maps/search/')
       && preg_match('#data-voto-basso>\s*<a[^>]*>Vuoi dire qualcosa a #', $r['body']) === 1);
 $r5 = $ospite->get("/g/$lslug/commiato?voto=5");
-prova('…con 5 stelle le stesse piattaforme, senza «Scrivigli»', str_contains($r5['body'], 'href="https://g.page/r/esempio/review"') && str_contains($r5['body'], 'data-voto-basso hidden'));
+prova('…con 5 stelle le stesse piattaforme, senza «Scrivigli»', str_contains($r5['body'], 'google.com/maps/search/') && str_contains($r5['body'], 'data-voto-basso hidden'));
 $rv = $ospite->get("/g/$lslug/voto/2");
 prova('7C · il voto con JavaScript (/voto/N): 204, e il conteggio anonimo per struttura e voto sale', $rv['code'] === 204
       && (int) val("SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = 'rating_2'", [$casa]) === $votiPrima + 2
       && intestazione($rv, 'Set-Cookie') === '');
 prova('…in Statistiche «Voti dei tuoi ospiti»', str_contains($lucia->get("/pannello/$casa/statistiche")['body'], 'Voti dei tuoi ospiti'));
 $lucia->get("/pannello/$casa/impostazioni");
-$lucia->post("/pannello/$casa/dopo-il-soggiorno", ['review_google' => 'https://g.page/r/esempio/review', 'review_booking' => 'https://www.booking.com/esempio',
+$lucia->post("/pannello/$casa/dopo-il-soggiorno", ['portali' => ['google', 'booking'],
     'direct_url' => '', 'direct_code' => 'BENTORNATI', 'direct_discount' => '10%', 'hide_branding' => '1']);
 $r = $lucia->get("/pannello/$casa/impostazioni");
-prova('7C · Recensioni: una scheda per piattaforma con «Prova il link» e «Dove trovo il link?»', substr_count($r['body'], 'class="recensione-scheda"') === 4
-      && str_contains($r['body'], 'Gli ospiti vedono un bottone per ogni link che compili, alla fine del soggiorno.') && str_contains($r['body'], 'Prova il link')
-      && str_contains($r['body'], 'Dove trovo il link?') && str_contains($r['body'], '«Chiedi recensioni»'));
+prova('8B · i portali spuntati restano spuntati, nell\'ordine scelto', preg_match('#value="google" checked.*?value="booking" checked.*?value="airbnb" >#s', $r['body']) === 1);
 prova('7C · Sconto per chi torna: aiuto, campo «Sconto», avviso senza link, anteprima della scheda', str_contains($r['body'], 'Il codice lo crei tu sul tuo sito o sul tuo motore di prenotazione')
       && str_contains($r['body'], 'name="direct_discount"') && preg_match('#data-diretta-avviso>Senza il link al tuo sito#', $r['body']) === 1
       && str_contains($r['body'], "\u{2212}10% con il codice <b data-diretta-codice>BENTORNATI</b>"));
-$lucia->post("/pannello/$casa/dopo-il-soggiorno", ['review_google' => 'https://g.page/r/esempio/review', 'review_booking' => 'https://www.booking.com/esempio',
+$lucia->post("/pannello/$casa/dopo-il-soggiorno", ['portali' => ['google', 'booking'],
     'direct_url' => 'https://www.esempio.it/prenota', 'direct_code' => 'BENTORNATI', 'direct_discount' => '10%', 'hide_branding' => '1']);
 $lucia->post("/pannello/$casa/pubblica", []);
 $r = $ospite->get("/g/$lslug/commiato?l=de");
@@ -1614,8 +1623,9 @@ prova('7C · nel commiato (de): «−10% mit dem Code BENTORNATI», «Code kopie
 prova('K4 · firma nascosta (piano con hide_branding)', !str_contains($ospite->get("/g/$lslug")['body'], 'Guida creata con MyHouse Welcome'));
 $anna->post("/pannello/$pid/dopo-il-soggiorno", ['hide_branding' => '1']);
 prova('K4 · Essential non può nasconderla, nemmeno a mano', (int) val('SELECT hide_branding FROM properties WHERE id = ?', [$pid]) === 0
-      && str_contains($anna->get("/pannello/$pid/impostazioni")['body'], 'Con Plus e Portfolio puoi nasconderla'));
-$lucia->post("/pannello/$casa/dopo-il-soggiorno", ['review_google' => '', 'review_booking' => '', 'direct_url' => '', 'direct_code' => '']);
+      && str_contains($anna->get("/pannello/$pid/impostazioni")['body'], 'Con Plus e Portfolio puoi nasconderla')
+      && str_contains($anna->get("/pannello/$pid/impostazioni")['body'], 'data-sblocca="firma"'));
+$lucia->post("/pannello/$casa/dopo-il-soggiorno", ['direct_url' => '', 'direct_code' => '']);
 $lucia->post("/pannello/$casa/pubblica", []);
 prova('…tolti i link e ripubblicato: commiato senza blocchi, firma di nuovo visibile', !str_contains($ospite->get("/g/$lslug/commiato")['body'], 'Ti è piaciuto il soggiorno?')
       && str_contains($ospite->get("/g/$lslug")['body'], 'Guida creata con MyHouse Welcome'));
@@ -1872,7 +1882,7 @@ foreach (['en' => 'lang="en"', 'de' => 'lang="de"'] as $l => $segno) {
 }
 $r = $ospite->get('/g/' . $demo['slug'] . '/benvenuto');
 prova('Schermata di benvenuto', $r['code'] === 200 && pulita($r));
-prova('Fase 1 · splash: niente og:image né cookie, «Entra» nel terracotta del marchio', !str_contains($r['body'], 'og:image') && intestazione($r, 'Set-Cookie') === ''
+prova('Fase 1 · splash: niente cookie (8B: og:image solo l\'anteprima della guida), «Entra» nel terracotta del marchio', (!str_contains($r['body'], 'og:image') || preg_match('#og:image" content="[^"]+/anteprima\.jpg"#', $r['body']) === 1) && intestazione($r, 'Set-Cookie') === ''
       && str_contains((string) file_get_contents("$DOVE/assets/app.css"), '.full .btn{background:var(--tile-terracotta)'));
 $r = $ospite->get('/g/' . $demo['slug'] . '/commiato');
 prova('Schermata di commiato', $r['code'] === 200 && pulita($r));
@@ -2034,7 +2044,7 @@ $o[] = $d["items"][0]["amount"] === "25" && $d["items"][0]["unit"] === "per_trip
 $o[] = count($d["options"]) === 2 && $d["options"][0]["type"] === "other" && $t["it"]["options"][1]["name"] === "Taxi in piazza" && $t["en"]["options"][0]["name"] === "Hourly bus"
     && $t["it"]["options"][0]["id"] === $d["options"][0]["id"] && $t["it"]["items"] === ["Autobus ogni ora", "Taxi in piazza"];
 $snap = Guide::normalize(["format" => 5, "property" => ["default_locale" => "it"], "sections" => [["kind" => "extras", "data" => ["items" => [["id" => "r1"]]], "tr" => ["it" => ["data" => ["items" => [["id" => "r1", "price" => "8 € a persona"]]]]]]]]);
-$o[] = $snap["format"] === Guide::FORMAT && Guide::FORMAT === 6 && $snap["sections"][0]["data"]["items"][0]["amount"] === "8" && $snap["sections"][0]["data"]["items"][0]["unit"] === "per_person";
+$o[] = $snap["format"] === Guide::FORMAT && Guide::FORMAT >= 6 && $snap["sections"][0]["data"]["items"][0]["amount"] === "8" && $snap["sections"][0]["data"]["items"][0]["unit"] === "per_person";
 echo json_encode($o);';
 $f = tempnam(sys_get_temp_dir(), 'c6'); file_put_contents($f, $codice);
 $esitoConv = json_decode((string) shell_exec('php ' . escapeshellarg($f)), true); unlink($f);
@@ -2106,10 +2116,10 @@ prova('X2 · righe salvate compresse (con JavaScript), con il riepilogo apribile
       && str_contains($r['body'], 'class="rip__apri" data-rip-apri aria-expanded="true" aria-controls="rip-items-0-campi" hidden')
       && str_contains($r['body'], 'class="rip__campi" id="rip-items-0-campi"') && preg_match('#data-rip-riga data-rip-vuota>#', $r['body']) === 1);
 $r = $luc->get("/pannello/$lpid/qr");
-prova('M2 · QR & Link: messaggio di benvenuto per lingua, col link nella lingua giusta, «Copia» e «Apri WhatsApp»', $r['code'] === 200
-      && str_contains($r['body'], 'Messaggio di benvenuto') && preg_match('#id="benvenuto-it"[^>]*>Ciao! Benvenuti a Casa Lucia\.#', $r['body']) === 1
-      && preg_match('#id="benvenuto-en"[^>]*>Hello! Welcome to Casa Lucia\.[^<]*/g/[a-z0-9-]+\?l=en#', $r['body']) === 1
-      && str_contains($r['body'], 'data-copia-da="benvenuto-de"') && str_contains($r['body'], 'href="https://wa.me/?text=Ciao%21%20Benvenuti%20a%20Casa%20Lucia.'));
+prova('M2 · QR & Link (8B): messaggio di benvenuto per lingua come modello con {link}, il link nella lingua giusta, «Copia» e «Apri WhatsApp»', $r['code'] === 200
+      && str_contains($r['body'], 'Messaggio di benvenuto') && preg_match('#id="msg-benvenuto-it"[^>]*>Ciao! Benvenuti a Casa Lucia\.[^<]*\{link\}#', $r['body']) === 1
+      && preg_match('#data-link="[^"]*/g/[a-z0-9-]+\?l=en"#', $r['body']) === 1 && str_contains($r['body'], 'id="msg-benvenuto-en"')
+      && str_contains($r['body'], 'data-copia-msg') && str_contains($r['body'], 'href="https://wa.me/?text=Ciao%21%20Benvenuti%20a%20Casa%20Lucia.'));
 $r = $ospite->get('/');
 prova('6D · la home conta ancora le sezioni pronte (la libera no)', str_contains($r['body'], '17 sezioni pronte da compilare'));
 
@@ -2222,8 +2232,8 @@ prova('…ad Assisi, geolocalizzata in Piazza Matteotti: coordinate della strutt
 prova('…scheda completa: CIN di esempio, 4 posti letto, link per le recensioni e codice sconto (nessun sito di prenotazione inventato)',
       str_contains((string) ($vet['cin'] ?? ''), 'DEMO') && (int) ($vet['beds'] ?? 0) === 4 && str_contains((string) ($vet['review_booking'] ?? ''), 'booking.com')
       && ($vet['direct_code'] ?? '') === 'CHECCO10' && ($vet['direct_url'] ?? '') === '');
-$r = $ospite->get("/g/$vslug/commiato?l=de");
-prova('…il congedo in tedesco mostra recensioni e codice sconto', $r['code'] === 200 && str_contains($r['body'], 'CHECCO10') && str_contains($r['body'], 'booking.com/city/it/assisi')
+$r = $ospite->get("/g/$vslug/commiato?l=de&voto=5");
+prova('…il congedo in tedesco mostra recensioni (con 5 stelle, 8C) e codice sconto', $r['code'] === 200 && str_contains($r['body'], 'CHECCO10') && str_contains($r['body'], 'href="https://www.booking.com/"')
       && str_contains($r['body'], 'Danke, dass Sie Casa Checco gewählt haben'));
 $clV = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'clima'", [$vet['id'] ?? 0]);
 $r = $ospite->get("/g/$vslug/$clV");
@@ -2662,8 +2672,8 @@ prova('Landing: sezione «Anche il tuo sito» in fondo, dopo la chiusura, con la
       && strpos($r['body'], 'id="sito"') > strpos($r['body'], 'id="chiusura-titolo"') && str_contains($r['body'], '/assets/foto/sito-1600.webp')
       && str_contains($r['body'], '/#sito">Il sito per la tua struttura</a>'));
 $r = $lucia->get('/pannello');
-prova('Pannello: l\'invito «MyHouse Pro», con il bottone verso blackout.in e «Non ora»', pulita($r) && str_contains($r['body'], 'data-sito-invito')
-      && str_contains($r['body'], 'Meno commissioni ai portali') && str_contains($r['body'], 'https://blackout.in/myhouse/')
+prova('Pannello (8B): la domanda «Hai già un sito?», con il percorso verso blackout.in e «Non ora»', pulita($r) && str_contains($r['body'], 'data-sito-invito')
+      && str_contains($r['body'], 'Con un sito tuo gli ospiti prenotano senza commissioni') && str_contains($r['body'], 'https://blackout.in/myhouse/?da=welcome')
       && str_contains($r['body'], 'data-sito-chiudi'));
 prova('6J · …solo in «Le mie guide»: non nella pagina della guida', !str_contains($lucia->get("/pannello/$casa")['body'], 'data-sito-invito'));
 $r = $lucia->modulo('/pannello', '/pannello/sito/nascondi', []);
@@ -3176,10 +3186,11 @@ prova('…con un abbonamento dello staff: «Chiedi il cambio di piano» per emai
 $r = $vera->get('/pannello');
 prova('7B · pannello: «Scopri Portfolio» pieno e «Chiedi informazioni» per email', str_contains($r['body'], '<a class="btn btn--sm" href="' . preg_replace('#^https?://[^/]+#', '', $BASE) . '/piano?passa=portfolio">Scopri Portfolio</a>')
       && str_contains($r['body'], 'subject=Informazioni%20su%20Portfolio') && str_contains($r['body'], rawurlencode('Quante strutture vorrei gestire:')) && str_contains($r['body'], '>Chiedi informazioni</a>'));
-prova('7B · «MyHouse Pro · da blackout.in»: titolo, tre punti, bottone verso blackout.in/myhouse/, ✕ e «Non mostrare più»', str_contains($r['body'], 'MyHouse Pro · da blackout.in')
-      && str_contains($r['body'], 'Il tuo sito, con la prenotazione diretta.') && str_contains($r['body'], "Fatto da un'agenzia con oltre 20 anni nel digitale")
-      && str_contains($r['body'], 'href="https://blackout.in/myhouse/" target="_blank" rel="noopener">Scopri MyHouse Pro') && str_contains($r['body'], 'data-sito-chiudi')
-      && str_contains($r['body'], 'Non mostrare più'));
+prova('8B · «Hai già un sito per la tua struttura?»: logo MyHouse bianco, Sì / No che aprono il percorso compatto in un <dialog>, ✕ e «Non mostrare più»',
+      str_contains($r['body'], 'Hai già un sito per la tua struttura?') && str_contains($r['body'], 'myhouse-logo-bianco.png')
+      && str_contains($r['body'], 'data-funnel-apri="si" data-funnel-dialogo="dlg-sito-guide"') && str_contains($r['body'], 'data-funnel-apri="no"')
+      && preg_match('#<dialog class="funnel-dialogo" id="dlg-sito-guide".*?funnel funnel--nojs funnel--compatta.*?data-da="pannello"#s', $r['body']) === 1
+      && str_contains($r['body'], 'data-sito-chiudi') && str_contains($r['body'], 'Non mostrare più'));
 
 // ================================================================= 6J · rifiniture
 capitolo('6J · rifiniture: registrazione, amministrazione, testi legali');
@@ -3442,8 +3453,10 @@ prova('…la copertina, il logo e la foto profilo no', !preg_match('#guest-cover
 // 5 · Il QR da stampare: logo, nome, inviti in italiano e inglese, marchio. Quello di Casa Checco in prove/qr-esempio.pdf.
 $r = $lucia->get("/pannello/$casa/qr.pdf");
 prova('7C · PDF del QR: un PDF valido, con il logo (immagine), il nome e i quattro inviti della stessa grandezza', str_starts_with($r['body'], '%PDF-1.4') && str_contains($r['body'], '/Subtype /Image')
-      && str_contains($r['body'], '/DCTDecode') && str_contains($r['body'], '(Inquadra il QR Code) Tj') && str_contains($r['body'], '(The house guide: check-in, Wi-Fi and tips) Tj')
-      && substr_count($r['body'], ' 16 Tf ') === 4 && str_contains($r['body'], '(MyHouse Welcome) Tj') && str_ends_with(rtrim($r['body']), '%%EOF'));
+      && str_contains($r['body'], '/DCTDecode') && str_contains($r['body'], '(Inquadra il QR Code) Tj') && str_contains($r['body'], '(All about the house, and more.) Tj')
+      && str_contains($r['body'], '(Tutte le informazioni sulla casa, e non solo.) Tj') && str_contains($r['body'], '(La guida digitale della casa ')
+      && substr_count($r['body'], ' 16 Tf ') === 4 && str_contains($r['body'], '(MyHouse Welcome) Tj') && preg_match('#\([a-z0-9.:\-]+[^)]*/q/[A-Za-z0-9]+\) Tj#', $r['body']) === 1
+      && str_ends_with(rtrim($r['body']), '%%EOF'));
 $r = $lucia->get("/pannello/$casa/qr.svg");
 prova('…e lo stesso foglio in SVG', str_contains($r['body'], '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 840"') && str_contains($r['body'], 'Scan the QR code') && str_contains($r['body'], '<image href="data:image/'));
 $vetAcc = (int) val('SELECT account_id FROM properties WHERE is_demo = 2 ORDER BY id DESC LIMIT 1');
@@ -3686,6 +3699,81 @@ $admin->post('/admin/testi', ['t_tempo2_valgono' => 'Fanno {euro} in un anno.', 
 $h = $ospite->get('/')['body'];
 prova('8A · Testi e foto: i testi nuovi (tempo2.*, sito2.*) si cambiano e compaiono in home', str_contains($h, 'Fanno <span data-o="valore">228 €</span> in un anno.') && str_contains($h, 'Prima la guida.<br>'));
 $admin->post('/admin/testi', ['t_tempo2_valgono' => '', 't_sito2_titolo' => '', 'torna' => 'tempo']);
+
+
+capitolo('8B · pannello: dove si trova la struttura, domanda sul sito, messaggi, anteprima del link, finestra del piano, QR');
+$casa8 = (int) val("SELECT id FROM properties WHERE account_id = ? ORDER BY id LIMIT 1", [$accDi('lucia@esempio.it')]);
+$slug8 = (string) val('SELECT slug FROM properties WHERE id = ?', [$casa8]);
+$lucia->get("/pannello/$casa8/impostazioni");
+$r = $lucia->segui($lucia->post("/pannello/$casa8/dopo-il-soggiorno", ['portali' => ['booking', 'google', 'vrbo'],
+    'altri' => [['kind' => 'altro', 'label' => 'Vacanze Umbre', 'url' => 'https://www.vacanzeumbre.example/casa'], ['kind' => 'agoda', 'label' => '', 'url' => 'https://www.agoda.com/casa-lucia']],
+    'social' => ['instagram' => '@casalucia', 'facebook' => 'https://www.facebook.com/casalucia', 'tiktok' => 'non va bene'], 'has_site' => '1', 'direct_url' => 'https://www.esempio.it/prenota']));
+$ch8 = db()->query("SELECT kind, label, url FROM property_channels WHERE property_id = $casa8 ORDER BY position")->fetchAll();
+prova('8B · salvati: i portali nell\'ordine scelto senza indirizzo, «Altro…» con nome e indirizzo, Agoda, Instagram da @nome; TikTok non valido scartato con avviso',
+      array_column($ch8, 'kind') === ['booking', 'google', 'vrbo', 'altro', 'agoda', 'facebook', 'instagram'] && $ch8[0]['url'] === '' && $ch8[3]['label'] === 'Vacanze Umbre'
+      && $ch8[6]['url'] === 'https://www.instagram.com/casalucia' && str_contains($r['body'], 'TikTok: scrivi l&#039;indirizzo'), json_encode($ch8));
+$lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1']);
+$snap8 = json_decode((string) val('SELECT snapshot FROM guide_versions WHERE property_id = ? ORDER BY version DESC', [$casa8]), true);
+$canSnap = array_column($snap8['property']['channels'] ?? [], 'url', 'kind');
+prova('8B · istantanea (formato 7) con channels e i link già costruiti: Google con nome e città, Booking, VRBO dalle Impostazioni', (int) $snap8['format'] >= 7
+      && str_starts_with((string) ($canSnap['google'] ?? ''), 'https://www.google.com/maps/search/?api=1&query=Casa%20Lucia') && ($canSnap['booking'] ?? '') === 'https://www.booking.com/'
+      && ($canSnap['vrbo'] ?? '') === 'https://www.vrbo.com/' && ($canSnap['instagram'] ?? '') === 'https://www.instagram.com/casalucia', json_encode($canSnap));
+// Un'istantanea vecchia (formato 6) con i link di recensione si apre ancora.
+$vecchia = $snap8; $vecchia['format'] = 6; unset($vecchia['property']['channels']); $vecchia['property']['reviews'] = ['google' => 'https://g.page/r/vecchio/review', 'other' => 'https://www.tripadvisor.example/x'];
+db()->prepare('UPDATE guide_versions SET snapshot = ? WHERE property_id = ? AND version = (SELECT MAX(version) FROM guide_versions WHERE property_id = ?)')->execute([json_encode($vecchia), $casa8, $casa8]);
+$r = $ospite->get("/g/$slug8/commiato?voto=5");
+prova('8B · …un\'istantanea vecchia con reviews: i link scritti dall\'host si vedono ancora', $r['code'] === 200 && str_contains($r['body'], 'href="https://g.page/r/vecchio/review"')
+      && str_contains($r['body'], 'https://www.tripadvisor.example/x'));
+$lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1']);
+$r = $lucia->get("/pannello/$casa8/impostazioni");
+prova('8B · «Hai un sito dove gli ospiti possono prenotare?» Sì: i campi e la striscia MyHouse con «Scopri come» (percorso al passo Sì)',
+      str_contains($r['body'], 'name="has_site" value="1" checked') && str_contains($r['body'], 'myhouse-logo-nero.png') && preg_match('#data-sito-si>#', $r['body']) === 1
+      && str_contains($r['body'], 'data-funnel-apri="si" data-funnel-dialogo="dlg-sito"') && preg_match('#data-sito-no hidden#', $r['body']) === 1);
+$lucia->post("/pannello/$casa8/dopo-il-soggiorno", ['portali' => ['booking', 'google'], 'has_site' => '0', 'direct_url' => 'https://www.esempio.it/prenota', 'direct_code' => 'TORNA']);
+$r = $lucia->get("/pannello/$casa8/impostazioni");
+prova('…No: niente campi, «Crealo con noi» con «Voglio una proposta», WhatsApp ed Email; i campi restano salvati', str_contains($r['body'], 'name="has_site" value="0" checked')
+      && preg_match('#data-sito-si hidden#', $r['body']) === 1 && preg_match('#striscia-myhouse--crea" data-sito-no>#', $r['body']) === 1 && str_contains($r['body'], 'Crealo con noi.')
+      && str_contains($r['body'], 'data-funnel-apri="no"') && (string) val('SELECT direct_url FROM properties WHERE id = ?', [$casa8]) === 'https://www.esempio.it/prenota');
+$lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1']);
+prova('…e nella guida la prenotazione diretta non compare', !str_contains($ospite->get("/g/$slug8/commiato")['body'], 'href="https://www.esempio.it/prenota"'));
+$lucia->post("/pannello/$casa8/dopo-il-soggiorno", ['portali' => ['booking', 'google'], 'has_site' => '1', 'direct_url' => 'https://www.esempio.it/prenota', 'direct_code' => '']);
+// I messaggi.
+$r = $lucia->get("/pannello/$casa8/qr");
+prova('8B · QR & Link: i due messaggi con la spiegazione, le linguette, l\'anteprima WhatsApp con la scheda del link', str_contains($r['body'], 'I messaggi da mandare su WhatsApp')
+      && str_contains($r['body'], 'Copia il messaggio nella lingua dell\'ospite') && str_contains($r['body'], 'Messaggio di fine soggiorno') && str_contains($r['body'], 'role="tablist"')
+      && str_contains($r['body'], 'class="wa-fumetto"') && str_contains($r['body'], '/g/' . $slug8 . '/anteprima.jpg') && str_contains($r['body'], 'Com&#039;è andato il soggiorno?'));
+prova('…il messaggio di fine soggiorno di serie porta a /recensione, con {host} riempito', preg_match('#data-link="[^"]*/g/' . preg_quote($slug8) . '/recensione"#', $r['body']) === 1
+      && str_contains($r['body'], 'Ciao! Grazie di aver soggiornato da noi.') && preg_match('#/g/' . preg_quote($slug8) . '/recensione</span> Buon viaggio!#', $r['body']) === 1);
+$lucia->post("/pannello/$casa8/messaggi", ['tipo' => 'saluto', 'lingua' => 'en', 'testo' => "Thanks! Review us here: {link}\n{host}", 'azione' => 'salva']);
+$lucia->post("/pannello/$casa8/messaggi", ['tipo' => 'benvenuto', 'lingua' => 'it', 'testo' => 'Ciao, ecco la guida. A presto, {host}', 'azione' => 'salva']);
+$m8 = json_decode((string) val('SELECT messages FROM properties WHERE id = ?', [$casa8]), true);
+$r = $lucia->segui($lucia->get("/pannello/$casa8/qr"));
+prova('8B · salvati per lingua come modello; senza {link} l\'avviso «Nel messaggio manca il link»', ($m8['saluto']['en'] ?? '') === "Thanks! Review us here: {link}\n{host}"
+      && ($m8['benvenuto']['it'] ?? '') === 'Ciao, ecco la guida. A presto, {host}' && !isset($m8['saluto']['it'])
+      && preg_match('#data-manca-link>Nel messaggio manca il link#', $r['body']) === 1 && str_contains($r['body'], 'Torna al testo di serie'), json_encode($m8));
+$lucia->post("/pannello/$casa8/messaggi", ['tipo' => 'benvenuto', 'lingua' => 'it', 'azione' => 'serie']);
+$m8 = json_decode((string) val('SELECT messages FROM properties WHERE id = ?', [$casa8]), true);
+prova('…«Torna al testo di serie» toglie solo quel messaggio', !isset($m8['benvenuto']) && ($m8['saluto']['en'] ?? '') !== '');
+// L'anteprima del link della guida.
+$r = $ospite->get("/g/$slug8");
+prova('8B · /g/{slug}: og:title «… · La guida della casa», og:description, og:image /anteprima.jpg; noindex resta', str_contains($r['body'], 'property="og:title" content="Casa Lucia · La guida della casa"')
+      && str_contains($r['body'], 'content="Check-in, Wi-Fi e consigli per il soggiorno."') && preg_match('#property="og:image" content="http[^"]+/g/' . preg_quote($slug8) . '/anteprima\.jpg"#', $r['body']) === 1
+      && str_contains($r['body'], '<meta name="robots" content="noindex'));
+prova('…anche benvenuto e commiato', str_contains($ospite->get("/g/$slug8/benvenuto")['body'], '/anteprima.jpg"') && str_contains($ospite->get("/g/$slug8/commiato")['body'], '/anteprima.jpg"'));
+$img = $ospite->get("/g/$slug8/anteprima.jpg");
+$dim = @getimagesizefromstring($img['body']);
+prova('8B · /g/{slug}/anteprima.jpg: JPEG 1200×630, fuori dai motori, salvata in storage/anteprime', $img['code'] === 200 && $dim && $dim[0] === 1200 && $dim[1] === 630 && $dim['mime'] === 'image/jpeg'
+      && stripos($img['head'], 'X-Robots-Tag: noindex') !== false && (bool) glob("$DOVE/app/storage/anteprime/$casa8-guida-*.jpg"), (string) $img['code']);
+// La finestra del piano: «Aggiungi una struttura» con un piano a una struttura.
+$r = $anna->get('/pannello');
+prova('8B · Essential: «Aggiungi una struttura» c\'è, con il lucchetto, e apre «Più strutture con Portfolio» con «Chiedi informazioni»',
+      str_contains($r['body'], 'data-sblocca="strutture"') && str_contains($r['body'], 'Più strutture con Portfolio') && str_contains($r['body'], '/piano?passa=portfolio">Passa a Portfolio</a>')
+      && str_contains($r['body'], 'subject=Informazioni%20su%20Portfolio'));
+prova('8B · FAQ: «Come chiedo una recensione agli ospiti?» e «Traduci tutti i campi mancanti»', str_contains($ospite->get('/domande')['body'], 'Come chiedo una recensione agli ospiti?')
+      && str_contains($ospite->get('/domande')['body'], 'Traduci tutti i campi mancanti'));
+$r = $admin->get('/admin/impostazioni');
+prova('8B · Amministrazione → Impostazioni → Portali: gli indirizzi di partenza, con la prova', str_contains($r['body'], 'id="imp-portali-titolo"') && str_contains($r['body'], 'name="portali__google"')
+      && str_contains($admin->segui($admin->post('/admin/impostazioni/portali/prova', []))['body'], 'Booking.com → https://www.booking.com/'));
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

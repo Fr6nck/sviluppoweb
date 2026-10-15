@@ -11,14 +11,16 @@ $pronti = [
     'archivio' => Config::get('storage')['driver'] === 's3',
     'traduzioni' => Traduttore::configurato(),
     'inviti' => MHW\Inviti::disponibili(),
+    'portali' => true,   // hanno sempre gli indirizzi di serie
 ];
-$icone = ['sito' => 'globe', 'stripe' => 'card', 'posta' => 'message', 'archivio' => 'layers', 'traduzioni' => 'globe', 'inviti' => 'people'];
+$icone = ['sito' => 'globe', 'stripe' => 'card', 'posta' => 'message', 'archivio' => 'layers', 'traduzioni' => 'globe', 'portali' => 'star', 'inviti' => 'people'];
 $intro = [
     'sito'     => 'L\'indirizzo pubblico del sito e gli indirizzi senza index.php: valgono per link, email, QR, canonical e sitemap. «Prova» chiede al sito il suo robots.txt: se risponde, il server legge .htaccess e gli indirizzi puliti si possono accendere.',
     'stripe'   => 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti preparano la guida ma non possono pagarla.',
     'posta'    => 'Conferma dell\'email, recupero della password e promemoria. Finché resta «Non spedire», le email finiscono in storage/logs/mail.log.',
     'archivio' => 'Le foto e i PDF caricati dai clienti. Sul disco del server vanno bene per provare; in produzione meglio Amazon S3. I file già caricati restano dove sono e si vedono lo stesso.',
     'inviti' => 'Ogni cliente ha un link e un codice da girare agli amici: l\'amico ha il ' . MHW\Inviti::AMICO . '% sul primo anno, chi invita il ' . MHW\Inviti::PASSO . '% in meno sul rinnovo per ogni amico che paga, fino al ' . MHW\Inviti::MASSIMO . '%.',
+    'portali' => 'I link che la guida mostra a chi dà 5 stelle, per i portali che l\'host ha spuntato (8B). Google cerca su Maps il nome e la città della struttura; gli altri aprono il sito del portale, dove la recensione si lascia dall\'app o dall\'email che mandano dopo il soggiorno.',
     'traduzioni' => 'Le traduzioni suggerite di Plus e Portfolio, con Amazon Translate. Prezzo, cambio e piano gratuito servono solo per le stime di Amministrazione → Traduzioni; i tetti fermano le richieste.',
 ]; ?>
 <div class="stack stack--lg" style="max-width:860px">
@@ -115,7 +117,7 @@ $intro = [
     </form>
     <form method="post" action="<?= b() ?>/admin/impostazioni/<?= $g ?>/prova" class="impostazioni__prova"><?= Csrf::field() ?>
       <button class="btn btn--ghost btn--sm"><?= Icon::svg('pulse', 15) ?>Prova i dati salvati</button>
-      <span class="small muted"><?= $g === 'posta' ? 'Manda un\'email di prova a ' . Support::e($emailAdmin) . '.' : ($g === 'stripe' ? 'Chiede a Stripe se la chiave è valida.' : ($g === 'traduzioni' ? 'Fa tradurre una parola: 9 caratteri.' : ($g === 'inviti' ? 'Dice se è acceso e quanti clienti possono invitare.' : 'Scrive, legge e cancella un piccolo file nel bucket.'))) ?></span>
+      <span class="small muted"><?= $g === 'posta' ? 'Manda un\'email di prova a ' . Support::e($emailAdmin) . '.' : ($g === 'stripe' ? 'Chiede a Stripe se la chiave è valida.' : ($g === 'traduzioni' ? 'Fa tradurre una parola: 9 caratteri.' : ($g === 'inviti' ? 'Dice se è acceso e quanti clienti possono invitare.' : ($g === 'portali' ? 'Mostra i link per una struttura d\'esempio.' : 'Scrive, legge e cancella un piccolo file nel bucket.')))) ?></span>
     </form>
   </section>
   <?php endforeach; ?>

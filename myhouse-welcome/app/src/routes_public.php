@@ -492,9 +492,13 @@ $guida = function (string $slug) use ($linguaOspite, $nonDisponibile): array {
 };
 
 /** Le variabili che ogni pagina ospite passa al telaio: palette, tema, collegamenti. */
-$telaio = function (array $snap, string $loc, string $base, bool $anteprima = false): array {
+$telaio = function (array $snap, string $loc, string $base, bool $anteprima = false, string $ogTitolo = 'og_guide_title'): array {
     $pr = $snap['property'];
-    return ['snap' => $snap, 'loc' => $loc, 'base' => $base, 'anteprima' => $anteprima,
+    // 8B: i meta dell'anteprima del link, nella lingua principale della guida.
+    $principale = (string) ($pr['default_locale'] ?? 'it');
+    $og = ['titolo' => I18n::t($principale, $ogTitolo, (string) $pr['name']), 'testo' => I18n::t($principale, 'og_guide_desc'),
+           'immagine' => Support::baseUrl() . '/g/' . rawurlencode((string) $pr['slug']) . '/anteprima.jpg'];
+    return ['snap' => $snap, 'loc' => $loc, 'base' => $base, 'anteprima' => $anteprima, 'og' => $og,
             'paletteCss' => Palette::css($pr['palette']), 'tema' => Palette::themeFor($pr['text_tone'])];
 };
 
@@ -536,6 +540,16 @@ $r->get('/g/{slug}/voto/{n}', function (array $a) use ($guida) {
     $n = (int) $a['n'];
     if ($n >= 1 && $n <= 5) Guide::track((int) $g['property']['id'], 'rating_' . $n, null, $loc);
     http_response_code(204); exit;
+});
+
+/* 8B: l'immagine dell'anteprima del link della guida, 1200×630, dalla copertina pubblicata, con la sfumatura e
+   il marchio. Registrata prima di /g/{slug}/{sid}, che altrimenti la prenderebbe. Fuori dai motori (index.php). */
+$r->get('/g/{slug}/anteprima.jpg', function (array $a) use ($guida) {
+    [$g, $snap] = $guida($a['slug']);
+    $pr = $snap['property'];
+    $f = MHW\Anteprima::file(['id' => (int) $g['property']['id'], 'cover_media_id' => $pr['cover_id'] ?? null, 'name' => (string) $pr['name'], 'palette' => (string) $pr['palette']], 'guida');
+    if (!$f) { http_response_code(404); exit; }
+    MHW\Anteprima::manda($f);
 });
 
 // «Aggiungi al calendario» di un evento (6G): il file .ics, dall'istantanea pubblicata.

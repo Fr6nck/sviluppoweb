@@ -165,7 +165,7 @@ final class Properties
     {
         $max = Entitlements::limit($accountId, 'sections', 4);
         if (self::activeCount($propertyId) > $max) {
-            throw new LimitReached("Hai già $max sezioni attive, il massimo del tuo piano. Passa a Plus per averne quante vuoi, oppure disattivane una per liberare un posto.");
+            throw new PianoLimite("Hai già $max sezioni attive, il massimo del tuo piano. Passa a Plus per averne quante vuoi, oppure disattivane una per liberare un posto.", 'sezioni', 'plus');
         }
     }
 

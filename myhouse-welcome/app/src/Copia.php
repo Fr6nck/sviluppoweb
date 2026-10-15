@@ -110,7 +110,7 @@ final class Copia
                 // Il limite delle sezioni del piano vale anche per le copie.
                 $max = Entitlements::limit($accountId, 'sections', 4);
                 $attive = (int) Db::val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_core = 0 AND is_active = 1', [$a['id']], 0);
-                if ($attive > $max) throw new LimitReached("Il piano comprende $max sezioni attive: con questa copia diventerebbero $attive. Togli qualche sezione dalla scelta.");
+                if ($attive > $max) throw new PianoLimite("Il piano comprende $max sezioni attive: con questa copia diventerebbero $attive. Togli qualche sezione dalla scelta.", 'sezioni', 'plus');
 
                 if ($aspetto) {
                     $cambi = ['palette' => $da['palette'], 'text_tone' => $da['text_tone']];

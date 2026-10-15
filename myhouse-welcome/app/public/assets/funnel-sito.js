@@ -84,6 +84,24 @@
     f.funnelVai = function (passo) { f.setAttribute('data-toccato', '1'); stato.ha = passo; mostra(passo); };   // per i bottoni del pannello (8B)
   }
   function tutti() { document.querySelectorAll('[data-funnel]').forEach(avvia); }
+  /* 8B · nel pannello il percorso sta in un <dialog>: i bottoni lo aprono già al passo giusto. */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-funnel-apri]');
+    if (b) {
+      var d = document.getElementById(b.getAttribute('data-funnel-dialogo'));
+      if (!d) return;
+      e.preventDefault();
+      var f = d.querySelector('[data-funnel]'); if (f && !f.funnelVai) avvia(f);
+      if (typeof d.showModal === 'function') d.showModal(); else d.setAttribute('open', '');
+      if (f && f.funnelVai) f.funnelVai(b.getAttribute('data-funnel-apri'));
+      return;
+    }
+    var c = e.target.closest('[data-funnel-chiudi]');
+    if (c) { var dd = c.closest('dialog'); if (dd) { if (dd.close) dd.close(); else dd.removeAttribute('open'); } }
+  });
+  document.addEventListener('click', function (e) {   // un clic fuori dalla finestra la chiude
+    if (e.target.matches && e.target.matches('dialog.funnel-dialogo')) e.target.close();
+  });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tutti); else tutti();
   window.mhwFunnel = { avvia: tutti };
 })();

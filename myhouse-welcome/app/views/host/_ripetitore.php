@@ -98,7 +98,12 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
             $h .= '</div></div>';
         } elseif ($tipo === 'image' || $tipo === 'pdf') {
             $mid = (int) $val; $puoi = $tipo === 'image' ? $r['foto'] : $r['pdf'];
-            if (!$mid && !$puoi) continue;
+            if (!$mid && !$puoi) {   // 8B: il bottone c'è, con il lucchetto: apre «Foto e PDF sono compresi in Plus»
+                $h .= $c . '<div class="field rip__media" style="margin:0"><span class="label">' . $etH . '</span><div class="rip__file">'
+                    . '<a class="btn btn--ghost btn--sm btn--lucchetto" href="' . b() . '/piano?passa=plus" data-sblocca="foto">' . Icon::svg('lock', 15, 2)
+                    . ($tipo === 'image' ? 'Aggiungi una foto' : 'Aggiungi un PDF') . '</a></div></div></div>';
+                continue;
+            }
             $sub = '[' . Support::e($nome) . '][' . $k . '][' . $sn . ']';
             $h .= $c . '<div class="field rip__media" style="margin:0"><span class="label">' . $etH . '</span>'
                 . '<input type="hidden" name="' . $n . '" value="' . ($mid ?: '') . '">'
