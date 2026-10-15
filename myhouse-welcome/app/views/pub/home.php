@@ -17,8 +17,13 @@
    testimonianza e nessun numero inventato: la demo è dichiarata come demo, le
    domande sono esempi. */
 use function MHW\{a, b};
-use MHW\{Support, Icon, Plans, TestiSito};
-$title = 'MyHouse Welcome — la guida digitale della tua struttura';
+use MHW\{Support, Icon, Plans, TestiSito, LinguaSito};
+/* 8E: la stessa pagina in inglese su /en. I testi modificabili arrivano da TestiSito nella lingua giusta,
+   quelli fissi da $U(italiano, inglese); i piani da Plans::inLingua. */
+$U = [LinguaSito::class, 't'];
+$en = LinguaSito::en();
+$locSito = $en ? 'en' : 'it';
+$title = $U('MyHouse Welcome — la guida digitale della tua struttura', 'MyHouse Welcome — the digital guide for your property');
 /* I testi della pagina: Amministrazione → Sistema → «Testi e foto» (TestiSito); di serie, quelli di sempre. */
 $anteprimaTesti = !empty($anteprimaTesti);
 $T = fn(string $k, array $sost = []) => $anteprimaTesti
@@ -27,10 +32,11 @@ $T = fn(string $k, array $sost = []) => $anteprimaTesti
 $L = fn(string $k) => $anteprimaTesti ? ' data-testo-lista="' . $k . '"' : '';   // un elenco (una voce per riga)
 $F = fn(string $n) => $anteprimaTesti ? ' data-foto="' . $n . '"' : '';          // una foto
 $dentro = !empty($user);
-$ctaCrea = fn() => $dentro ? 'Vai alle tue guide' : $T('cta.crea');
-$vai = fn(int $pv) => b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . $pv;
-$crea = b() . ($dentro ? '/pannello' : '/registrati');
-$demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' : null;
+$ctaCrea = fn() => $dentro ? $U('Vai alle tue guide', 'Go to your guides') : $T('cta.crea');
+// 8E: dall'inglese la registrazione riceve ?lang=en (il pannello per ora resta in italiano).
+$vai = fn(int $pv) => b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . $pv . ($en && !$dentro ? '&lang=en' : '');
+$crea = b() . ($dentro ? '/pannello' : '/registrati' . ($en ? '?lang=en' : ''));
+$demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' . ($en ? '?l=en' : '') : null;
 $nomeDemo = $demo['name'] ?? 'Casa Lucia';
 $fotoJpg = a('/assets/foto/borgo.jpg');
 $fotoSet = a('/assets/foto/borgo-1200.webp') . ' 1200w, ' . a('/assets/foto/borgo-2000.webp') . ' 2000w';
@@ -69,25 +75,25 @@ if ($dentro):
   <div class="bentornato__chi">
     <span class="bentornato__avatar" aria-hidden="true"><?= Support::e(mb_strtoupper(mb_substr($nomeU !== '' ? $nomeU : (string) $user['email'], 0, 1))) ?></span>
     <div>
-      <h2 id="bentornato-titolo" class="bentornato__titolo"><?= $primo !== '' ? 'Ciao, ' . Support::e($primo) . '.' : 'Sei dentro.' ?></h2>
-      <p class="small muted">Sei dentro come <b><?= Support::e($user['email']) ?></b><?= $admin ? ' · amministrazione' : '' ?></p>
+      <h2 id="bentornato-titolo" class="bentornato__titolo"><?= $primo !== '' ? $U('Ciao, ', 'Hi, ') . Support::e($primo) . '.' : $U('Sei dentro.', 'You are logged in.') ?></h2>
+      <p class="small muted"><?= $U('Sei dentro come', 'Logged in as') ?> <b><?= Support::e($user['email']) ?></b><?= $admin ? $U(' · amministrazione', ' · admin') : '' ?></p>
     </div>
   </div>
   <?php if ($admin): ?>
-    <a class="btn btn--go" href="<?= b() ?>/admin">Vai all'amministrazione <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
+    <a class="btn btn--go" href="<?= b() ?>/admin"><?= $U('Vai all\'amministrazione', 'Go to admin') ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
   <?php elseif (!$mie): ?>
-    <p class="bentornato__vuoto">Non hai ancora una guida. Ci vogliono pochi minuti.</p>
-    <a class="btn btn--go" href="<?= b() ?>/pannello">Crea la tua prima guida <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
+    <p class="bentornato__vuoto"><?= $U('Non hai ancora una guida. Ci vogliono pochi minuti.', 'You don\'t have a guide yet. It only takes a few minutes.') ?></p>
+    <a class="btn btn--go" href="<?= b() ?>/pannello"><?= $U('Crea la tua prima guida', 'Create your first guide') ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
   <?php else: ?>
-    <ul class="bentornato__guide" aria-label="Le tue guide">
+    <ul class="bentornato__guide" aria-label="<?= $U('Le tue guide', 'Your guides') ?>">
       <?php foreach (array_slice($mie, 0, 3) as $g):
-            [$stato, $tono] = $g['online'] ? ['Online', 'pine'] : ($g['status'] === 'published' ? ['Offline', 'alert'] : ['Bozza', 'ochre']); ?>
+            [$stato, $tono] = $g['online'] ? ['Online', 'pine'] : ($g['status'] === 'published' ? ['Offline', 'alert'] : [$U('Bozza', 'Draft'), 'ochre']); ?>
         <li><a class="bentornato__guida" href="<?= b() ?>/pannello/<?= (int) $g['id'] ?>">
           <span class="grow stack" style="gap:2px;min-width:0"><b><?= Support::e($g['name']) ?></b><?php if (trim((string) $g['city']) !== ''): ?><span class="small muted"><?= Support::e($g['city']) ?></span><?php endif; ?></span>
           <span class="badge badge--<?= $tono ?>"><?= $stato ?></span><?= Icon::svg('chevron', 16, 2) ?></a></li>
       <?php endforeach; ?>
     </ul>
-    <a class="btn btn--go" href="<?= b() ?>/pannello"><?= count($mie) > 3 ? 'Tutte le tue ' . count($mie) . ' guide' : 'Vai alle tue guide' ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
+    <a class="btn btn--go" href="<?= b() ?>/pannello"><?= count($mie) > 3 ? $U('Tutte le tue ' . count($mie) . ' guide', 'All your ' . count($mie) . ' guides') : $U('Vai alle tue guide', 'Go to your guides') ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
   <?php endif; ?>
 </section>
 <?php endif; ?>
@@ -102,12 +108,12 @@ if ($dentro):
         <?php /* La demo, e accanto le lingue in cui aprirla: un solo gruppo, non tre bottoni in fila.
                  Le lingue che la demo ha davvero, al massimo tre. */
               $lingueDemo = array_values(array_intersect(['it', 'en', 'fr'], array_column(MHW\Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$demo['id']]), 'locale')));
-              $nomiLingue = ['it' => 'italiano', 'en' => 'inglese', 'fr' => 'francese']; ?>
+              $nomiLingue = $en ? ['it' => 'Italian', 'en' => 'English', 'fr' => 'French'] : ['it' => 'italiano', 'en' => 'inglese', 'fr' => 'francese']; ?>
         <span class="demo-gruppo">
           <a class="demo-gruppo__vai" href="<?= $demoUrl ?>"><?= Icon::svg('eye', 18, 1.8) ?><?= $T('cta.demo') ?></a>
           <?php if (count($lingueDemo) > 1): ?>
-            <span class="demo-lingue" role="group" aria-label="Lingua della demo">
-              <?php foreach ($lingueDemo as $l): ?><a href="<?= $demoUrl ?>?l=<?= $l ?>" hreflang="<?= $l ?>" aria-label="Demo in <?= $nomiLingue[$l] ?>"><?= strtoupper($l) ?></a><?php endforeach; ?>
+            <span class="demo-lingue" role="group" aria-label="<?= $U('Lingua della demo', 'Demo language') ?>">
+              <?php foreach ($lingueDemo as $l): ?><a href="<?= preg_replace('/\?l=\w+$/', '', $demoUrl) ?>?l=<?= $l ?>" hreflang="<?= $l ?>" aria-label="Demo in <?= $nomiLingue[$l] ?>"><?= strtoupper($l) ?></a><?php endforeach; ?>
             </span>
           <?php endif; ?>
         </span>
@@ -119,25 +125,25 @@ if ($dentro):
   <?php /* Il telefono: una schermata della guida disegnata in HTML, sempre nel
      tema chiaro della guida. Se c'è la demo, tutto il telefono la apre. */
   $tag = $demoUrl ? 'a' : 'div'; ?>
-  <<?= $tag ?> class="device-link"<?= $demoUrl ? ' href="' . $demoUrl . '" aria-label="Apri la demo di ' . Support::e($nomeDemo) . ': scopri come la vedranno i tuoi ospiti"' : '' ?>>
-    <span class="device"<?= $demoUrl ? '' : ' role="img" aria-label="La guida di ' . Support::e($nomeDemo) . ' sullo schermo di uno smartphone"' ?>>
+  <<?= $tag ?> class="device-link"<?= $demoUrl ? ' href="' . $demoUrl . '" aria-label="' . $U('Apri la demo di ' . Support::e($nomeDemo) . ': scopri come la vedranno i tuoi ospiti', 'Open the ' . Support::e($nomeDemo) . ' demo: see it the way your guests will') . '"' : '' ?>>
+    <span class="device"<?= $demoUrl ? '' : ' role="img" aria-label="' . $U('La guida di ' . Support::e($nomeDemo) . ' sullo schermo di uno smartphone', 'The ' . Support::e($nomeDemo) . ' guide on a smartphone screen') . '"' ?>>
       <span class="device__screen" aria-hidden="true">
         <span class="device__status"><span>9:41</span><span class="device__island"></span>
           <span class="device__icons"><i class="sig"></i><i class="bat"></i></span></span>
         <span class="device__app">
           <span class="device__top"><?= Icon::brand(24) ?><span><?= Support::e($nomeDemo) ?></span>
             <?php if ($demo): ?><span class="demo-tag">Demo</span><?php endif; ?></span>
-          <span class="device__title">Benvenuti<br>a <?= Support::e($nomeDemo) ?>.</span>
+          <span class="device__title"><?= Support::e(MHW\I18n::t($locSito, 'welcome_1')) ?><br><?= Support::e(MHW\I18n::t($locSito, 'welcome_2', $nomeDemo)) ?></span>
           <span class="device__shot"><?php $telPers = TestiSito::immagine('telefono'); if ($telPers['caricata']): ?>
             <img src="<?= Support::e($telPers['url']) ?>" alt="" width="600" height="422" loading="eager" decoding="async"<?= $F('telefono') ?>>
             <?php else: ?><picture><source srcset="<?= Support::e($telefonoWebp) ?>" type="image/webp">
             <img src="<?= Support::e($telefonoJpg) ?>" alt="" width="600" height="422" loading="eager" decoding="async"<?= $F('telefono') ?>></picture><?php endif; ?>
-            <span class="device__pill"><i></i>Check-in dalle <?= Support::e($checkinDemo) ?></span></span>
+            <span class="device__pill"><i></i><?= Support::e(MHW\I18n::t($locSito, 'checkin_from', $checkinDemo)) ?></span></span>
           <?php /* 8D: con la vetrina pubblicata, tutte le sue sezioni (titolo italiano, icona, colore come nella guida),
                    in una griglia che scorre dentro lo schermo; senza vetrina i quattro riquadri di sempre. */
                 $sezTel = [];
                 if ($vetrina && ($snapTel = MHW\Guide::published((int) $demo['id']))) {
-                    foreach ($snapTel['sections'] as $sT) $sezTel[] = [MHW\Guide::title($sT, 'it', (string) ($snapTel['property']['default_locale'] ?? 'it')), MHW\SectionCatalog::iconaDi((string) $sT['kind'], $sT['data'] ?? [])];
+                    foreach ($snapTel['sections'] as $sT) $sezTel[] = [MHW\Guide::title($sT, in_array($locSito, $snapTel['locales'] ?? [], true) ? $locSito : 'it', (string) ($snapTel['property']['default_locale'] ?? 'it')), MHW\SectionCatalog::iconaDi((string) $sT['kind'], $sT['data'] ?? [])];
                 }
                 $toniTel = ['t-terracotta', 't-sea', 't-pine', 't-ochre']; ?>
           <?php if ($sezTel): ?>
@@ -148,8 +154,8 @@ if ($dentro):
           <span class="device__tiles">
             <span class="t-terracotta"><?= Icon::svg('home', 16, 1.8) ?>Check-in &amp; Check-out</span>
             <span class="t-sea"><?= Icon::svg('wifi', 16, 1.8) ?>Wi-Fi</span>
-            <span class="t-pine"><?= Icon::svg('fork', 16, 1.8) ?>Dove mangiare</span>
-            <span class="t-ochre"><?= Icon::svg(MHW\SectionCatalog::icon('parking'), 16, 1.8) ?>Parcheggio</span>
+            <span class="t-pine"><?= Icon::svg('fork', 16, 1.8) ?><?= $U('Dove mangiare', 'Where to eat') ?></span>
+            <span class="t-ochre"><?= Icon::svg(MHW\SectionCatalog::icon('parking'), 16, 1.8) ?><?= $U('Parcheggio', 'Parking') ?></span>
           </span>
           <?php endif; ?>
         </span>
@@ -193,7 +199,7 @@ $disegni = [
         . '<rect x="113" y="54.5" width="9" height="6" rx="3" fill="#1f6b3f"/><circle cx="119" cy="57.5" r="2" fill="#fff"/>'
         . '<rect x="98" y="70" width="28" height="9" rx="4.5" fill="#b4451f"/><rect x="104" y="73.5" width="16" height="2" rx="1" fill="#fff8f2"/></g>',
 ]; ?>
-<section class="scene" aria-label="Come si usa">
+<section class="scene" aria-label="<?= $U('Come si usa', 'How it is used') ?>">
   <?php /* Ogni scena porta dove se ne parla: il QR, la demo, i passi nel pannello. */
   foreach ([['scena-qr.jpg', 'qr', 't-terracotta', $T('scena.qr.titolo'), $T('scena.qr.testo'), '#qr', TestiSito::testo('scena.qr.alt'), '62% 50%'],
                   ['scena-ospite.jpg', 'ospite', 't-sea', $T('scena.ospite.titolo'), $T('scena.ospite.testo'), $demoUrl ?? '#prodotto-titolo', TestiSito::testo('scena.ospite.alt'), '50% 50%'],
@@ -229,10 +235,10 @@ $disegni = [
     <?php $toni = ['casa' => 'terracotta', 'arrivo' => 'sea', 'territorio' => 'pine'];
     foreach ($gruppiSezioni as $g => $tipi): if (!$tipi) continue; ?>
       <div class="gruppo-sez">
-        <h3 class="gruppo-sez__titolo" id="gruppo-<?= $g ?>"><?= Support::e(MHW\SectionCatalog::GRUPPI[$g]) ?></h3>
+        <h3 class="gruppo-sez__titolo" id="gruppo-<?= $g ?>"><?= Support::e($en ? (['casa' => 'The house', 'arrivo' => 'Getting here and around', 'territorio' => 'The area'][$g] ?? $g) : MHW\SectionCatalog::GRUPPI[$g]) ?></h3>
         <ul class="features8 features8--compatte" aria-labelledby="gruppo-<?= $g ?>">
           <?php foreach ($tipi as $k): ?>
-            <li class="feat feat--<?= $toni[$g] ?>"><span class="ico"><?= Icon::svg(MHW\SectionCatalog::icon($k), 18, 1.8) ?></span><b><?= Support::e(MHW\SectionCatalog::title($k, 'it')) ?></b></li>
+            <li class="feat feat--<?= $toni[$g] ?>"><span class="ico"><?= Icon::svg(MHW\SectionCatalog::icon($k), 18, 1.8) ?></span><b><?= Support::e(MHW\SectionCatalog::title($k, $locSito)) ?></b></li>
           <?php endforeach; ?>
         </ul>
       </div>
@@ -278,17 +284,17 @@ $disegni = [
   </div>
   <?php /* 8A: la scheda è la pagina di saluto nuova (8C): il voto con 5 stelle piene, il grazie e i portali. */ ?>
   <div class="congedo-mock" aria-hidden="true">
-    <span class="congedo-mock__kicker"><?= Support::e(MHW\I18n::t('it', 'before_leaving')) ?></span>
-    <span class="congedo-mock__titolo"><?= Support::e(MHW\I18n::t('it', 'farewell_title')) ?></span>
+    <span class="congedo-mock__kicker"><?= Support::e(MHW\I18n::t($locSito, 'before_leaving')) ?></span>
+    <span class="congedo-mock__titolo"><?= Support::e(MHW\I18n::t($locSito, 'farewell_title')) ?></span>
     <span class="congedo-mock__blocco">
-      <b><?= Support::e(MHW\I18n::t('it', 'rating_q')) ?></b>
+      <b><?= Support::e(MHW\I18n::t($locSito, 'rating_q')) ?></b>
       <span class="congedo-mock__stelle"><?php for ($i = 0; $i < 5; $i++) echo Icon::svg('star', 26, 1.6); ?></span>
-      <span class="congedo-mock__grazie"><b><?= Support::e(MHW\I18n::t('it', 'rating_happy')) ?></b><?= Support::e(MHW\I18n::t('it', 'rating_favor')) ?></span>
+      <span class="congedo-mock__grazie"><b><?= Support::e(MHW\I18n::t($locSito, 'rating_happy')) ?></b><?= Support::e(MHW\I18n::t($locSito, 'rating_favor')) ?></span>
       <span class="congedo-mock__bottoni"><span><?= Icon::svg('message', 13) ?>Google</span><span><?= Icon::svg('message', 13) ?>Booking.com</span><span><?= Icon::svg('message', 13) ?>Airbnb</span></span>
     </span>
     <span class="congedo-mock__blocco">
-      <b><?= Support::e(MHW\I18n::t('it', 'direct_title')) ?></b>
-      <span class="congedo-mock__codice"><?= Support::e(MHW\I18n::t('it', 'direct_code', 'BENTORNATI')) ?></span>
+      <b><?= Support::e(MHW\I18n::t($locSito, 'direct_title')) ?></b>
+      <span class="congedo-mock__codice"><?= Support::e(MHW\I18n::t($locSito, 'direct_code', $en ? 'WELCOMEBACK' : 'BENTORNATI')) ?></span>
     </span>
   </div>
 </section>
@@ -341,8 +347,8 @@ $disegni = [
     <?php /* Se c'è la demo, il QR la apre davvero: provalo col telefono. */ ?>
     <?php /* Dentro la pagina l'SVG va senza la dichiarazione XML (7A): alcuni browser la mostrano come testo. */ ?>
     <?= preg_replace(['/^<\?xml[^>]*\?>\s*/', '/width="\d+" height="\d+"/'], ['', 'width="168" height="168"'],
-                     MHW\QrExport::svg($demo ? Support::baseUrl() . '/g/' . $demo['slug'] . '/benvenuto' : Support::baseUrl())) ?>
-    <p class="small"><?= $demo ? 'Inquadra e prova la demo.' : 'Inquadra per la guida' ?></p>
+                     MHW\QrExport::svg($demo ? Support::baseUrl() . '/g/' . $demo['slug'] . '/benvenuto' . ($en ? '?l=en' : '') : Support::baseUrl() . ($en ? '/en' : ''))) ?>
+    <p class="small"><?= $demo ? $U('Inquadra e prova la demo.', 'Scan it and try the demo.') : $U('Inquadra per la guida', 'Scan for the guide') ?></p>
   </div>
 </section>
 
@@ -351,12 +357,12 @@ $disegni = [
   <div class="stack stack--sm"><span class="kicker"><?= $T('voci.kicker') ?></span><h2 id="voci-titolo" class="h-sezione"><?= $T('voci.titolo') ?></h2>
     <?php /* 7D: la media solo da 5 giudizi pubblicati in su, e niente aggregateRating nei dati strutturati. */
     if (($mediaVoci = MHW\Testimonianze::media())): ?>
-      <p class="voci__media"><span class="stelline" aria-hidden="true">★</span><b><?= Support::e(str_replace('.', ',', (string) $mediaVoci['media'])) ?> su 5</b> da <?= (int) $mediaVoci['n'] ?> host</p>
+      <p class="voci__media"><span class="stelline" aria-hidden="true">★</span><b><?= Support::e($en ? (string) $mediaVoci['media'] : str_replace('.', ',', (string) $mediaVoci['media'])) ?> <?= $U('su 5', 'out of 5') ?></b> <?= $U('da', 'from') ?> <?= (int) $mediaVoci['n'] ?> host<?= $en ? 's' : '' ?></p>
     <?php endif; ?></div>
   <div class="grid grid-3" style="margin-top:24px">
     <?php foreach ($testimonianze as $t): ?>
       <figure class="panel voce">
-        <?php if ((int) $t['rating'] > 0): ?><span class="stelline voce__stelle" role="img" aria-label="<?= (int) $t['rating'] ?> su 5"><?= str_repeat('★', (int) $t['rating']) . str_repeat('☆', 5 - (int) $t['rating']) ?></span><?php endif; ?>
+        <?php if ((int) $t['rating'] > 0): ?><span class="stelline voce__stelle" role="img" aria-label="<?= (int) $t['rating'] ?> <?= $U('su 5', 'out of 5') ?>"><?= str_repeat('★', (int) $t['rating']) . str_repeat('☆', 5 - (int) $t['rating']) ?></span><?php endif; ?>
         <blockquote><p><?= Support::e($t['body']) ?></p></blockquote>
         <figcaption>
           <?php if ($t['foto']): ?><img src="<?= Support::e($t['foto']) ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?>
@@ -382,7 +388,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
 
   <?php $vociPiano = fn(array $p) => $p['bullet_list']; ?>
   <div class="grid grid-3 piani" style="margin-top:28px">
-    <?php foreach ($offers as $of): $p = $of['main']; $famiglia = count($of['options']) > 1;
+    <?php foreach ($offers as $of): $p = Plans::inLingua($of['main'], $locSito); $famiglia = count($of['options']) > 1;
           $scuro = $p['badge'] !== '';
           $nome = $famiglia ? preg_replace('/\s*\d+$/', '', $p['name']) : $p['name'];
           $primo = $of['options'][0];
@@ -396,7 +402,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
             <?php if ($p['badge'] !== ''): ?><span class="badge badge--ochre-strong"><?= Support::e($p['badge']) ?></span><?php endif; ?>
           </div>
           <?php if (trim((string) $p['tagline']) !== ''): /* il posizionamento: per chi è indicato */ ?>
-            <p class="plan__per"><b>Ideale per</b> <?= Support::e(preg_replace('/^Per /u', '', trim((string) $p['tagline']))) ?></p>
+            <p class="plan__per"><b><?= $U('Ideale per', 'Ideal for') ?></b> <?= Support::e(preg_replace($en ? '/^For /u' : '/^Per /u', '', trim((string) $p['tagline']))) ?></p>
           <?php endif; ?>
         </div>
 
@@ -410,26 +416,26 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
             <?php $voci = $vociPiano($p); include __DIR__ . '/_voci_piano.php'; ?>
             <div class="plan__quante">
               <?php $pvS = $primo; $qS = $minimo; include __DIR__ . '/_scaglioni.php'; ?>
-              <label for="<?= $idSel ?>" class="plan__label">Quante strutture vuoi gestire?</label>
+              <label for="<?= $idSel ?>" class="plan__label"><?= $U('Quante strutture vuoi gestire?', 'How many properties do you manage?') ?></label>
               <input id="<?= $idSel ?>" name="strutture" type="number" inputmode="numeric" step="1" required
                      min="<?= $minimo ?>" max="<?= (int) $primo['max_quantity'] ?>" value="<?= $minimo ?>">
-              <div class="plan__oltre" data-oltre hidden><p>Più di <?= (int) $primo['max_quantity'] ?> strutture? Ti facciamo una proposta.</p>
-                <a class="btn btn--sm" href="<?= Support::e(Support::mailtoPreventivo()) ?>">Chiedi un preventivo</a></div>
+              <div class="plan__oltre" data-oltre hidden><p><?= $U('Più di ' . (int) $primo['max_quantity'] . ' strutture? Ti facciamo una proposta.', 'More than ' . (int) $primo['max_quantity'] . ' properties? We will make you an offer.') ?></p>
+                <a class="btn btn--sm" href="<?= Support::e(Support::mailtoPreventivo()) ?>"><?= $U('Chiedi un preventivo', 'Ask for a quote') ?></a></div>
             </div>
             <div class="plan__prezzo">
-              <span class="price" aria-live="polite"><span data-totale><?= Support::e(Support::money(Plans::price($primo, $minimo), $primo['currency'])) ?></span><small> + IVA / anno</small></span>
-              <span class="plan__mese">circa <span data-mensile><?= Support::e(Support::money(Plans::monthly(Plans::price($primo, $minimo)), $primo['currency'])) ?></span> al mese</span>
+              <span class="price" aria-live="polite"><span data-totale><?= Support::e(Support::money(Plans::price($primo, $minimo), $primo['currency'])) ?></span><small><?= $U(' + IVA / anno', ' + VAT / year') ?></small></span>
+              <span class="plan__mese"><?= $U('circa', 'about') ?> <span data-mensile><?= Support::e(Support::money(Plans::monthly(Plans::price($primo, $minimo)), $primo['currency'])) ?></span> <?= $U('al mese', 'a month') ?></span>
             </div>
-            <button class="btn"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $nome) ?></button>
+            <button class="btn"><?= Support::e($p['cta_label'] ?: $U('Scegli ', 'Choose ') . $nome) ?></button>
           </form>
         <?php else: ?>
           <?php $voci = $vociPiano($p); include __DIR__ . '/_voci_piano.php'; ?>
           <div class="plan__quante"></div>
           <div class="plan__prezzo">
-            <span class="price"><?= Support::e(Support::money((int) $primo['price_cents'], $primo['currency'])) ?><small> + IVA / anno</small></span>
-            <span class="plan__mese">circa <?= Support::e(Support::money(Plans::monthly((int) $primo['price_cents']), $primo['currency'])) ?> al mese</span>
+            <span class="price"><?= Support::e(Support::money((int) $primo['price_cents'], $primo['currency'])) ?><small><?= $U(' + IVA / anno', ' + VAT / year') ?></small></span>
+            <span class="plan__mese"><?= $U('circa', 'about') ?> <?= Support::e(Support::money(Plans::monthly((int) $primo['price_cents']), $primo['currency'])) ?> <?= $U('al mese', 'a month') ?></span>
           </div>
-          <a class="btn" href="<?= $vai((int) $p['pv_id']) ?>"><?= Support::e($p['cta_label'] ?: 'Scegli ' . $nome) ?></a>
+          <a class="btn" href="<?= $vai((int) $p['pv_id']) ?>"><?= Support::e($p['cta_label'] ?: $U('Scegli ', 'Choose ') . $nome) ?></a>
         <?php endif; ?>
       </div>
     <?php endforeach; ?>
@@ -449,7 +455,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <h2 id="amico-titolo" class="h-sezione"><?= $T('amico.titolo', ['max' => '<span class="amico__cifra">' . MHW\Inviti::MASSIMO . '%</span>'] + $pct) ?></h2>
     <p class="amico__lead"><?= $T('amico.lead', $pct) ?></p>
     <div class="row">
-      <a class="btn" href="<?= b() . ($dentro ? '/inviti' : '/registrati') ?>"><?= $dentro ? 'Invita un amico' : $T('cta.crea') ?></a>
+      <a class="btn" href="<?= b() . ($dentro ? '/inviti' : '/registrati' . ($en ? '?lang=en' : '')) ?>"><?= $dentro ? $U('Invita un amico', 'Invite a friend') : $T('cta.crea') ?></a>
       <a class="btn btn--ghost" href="#faq-porta-amico"><?= $T('amico.bottone') ?></a>
     </div>
   </div>
@@ -457,10 +463,10 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <ol class="amico__passi">
       <?php foreach ([1, 2, 3] as $i): ?><li><b><?= $T("amico.$i.titolo", $pct) ?></b><?= $T("amico.$i.testo", $pct) ?></li><?php endforeach; ?>
     </ol>
-    <div class="amico__barra" role="img" aria-label="<?= $passi ?> amici: <?= MHW\Inviti::MASSIMO ?>% di sconto sul rinnovo">
+    <div class="amico__barra" role="img" aria-label="<?= $passi ?> <?= $U('amici', 'friends') ?>: <?= MHW\Inviti::MASSIMO ?>% <?= $U('di sconto sul rinnovo', 'off your renewal') ?>">
       <?php for ($n = 1; $n <= $passi; $n++): ?><span class="amico__tacca" style="opacity:<?= round(.3 + .7 * $n / $passi, 2) ?>"></span><?php endfor; ?>
     </div>
-    <div class="amico__scala" aria-hidden="true"><span>1 amico · −<?= MHW\Inviti::PASSO ?>%</span><span><?= $passi ?> amici · −<?= MHW\Inviti::MASSIMO ?>%</span></div>
+    <div class="amico__scala" aria-hidden="true"><span><?= $U('1 amico', '1 friend') ?> · −<?= MHW\Inviti::PASSO ?>%</span><span><?= $passi ?> <?= $U('amici', 'friends') ?> · −<?= MHW\Inviti::MASSIMO ?>%</span></div>
   </div>
 </section>
 <?php endif; ?>
@@ -501,7 +507,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
         </div>
       </details>
     <?php endif; ?>
-    <p class="faq__tutte"><a href="<?= b() ?>/domande"><?= $T('faq.tutte') ?></a></p>
+    <p class="faq__tutte"><a href="<?= b() . LinguaSito::percorso('/domande') ?>"><?= $T('faq.tutte') ?></a></p>
   </div>
 </section>
 
@@ -515,7 +521,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
       <?php if ($demoUrl): ?><a class="btn btn--lg btn--ghost" href="<?= $demoUrl ?>"><?= $T('cta.demo') ?></a><?php endif; ?>
     </div>
   </div>
-  <aside class="chi" aria-label="Chi c'è dietro MyHouse Welcome">
+  <aside class="chi" aria-label="<?= $U('Chi c\'è dietro MyHouse Welcome', 'Who is behind MyHouse Welcome') ?>">
     <span class="chi__marchio"><?= Icon::brand(28) ?></span>
     <p class="chi__titolo"><?= $T('chi.titolo') ?></p>
     <p><?= $T('chi.testo') ?></p>

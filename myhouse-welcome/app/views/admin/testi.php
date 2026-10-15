@@ -7,6 +7,7 @@ use function MHW\b;
 use MHW\{Support, Csrf, Icon, TestiSito};
 $title = 'Testi e foto';
 $catalogo = TestiSito::catalogo();
+$lingua = ($lingua ?? 'it') === 'en' ? 'en' : 'it';   // 8E: la linguetta (la lingua l'ha già impostata la rotta)
 $cambiati = count(array_filter(array_keys($catalogo), [TestiSito::class, 'cambiato']));
 $fotoCaricate = count(array_filter(array_keys(TestiSito::IMMAGINI), fn($n) => TestiSito::riferimentoImmagine($n) !== ''));
 $perSezione = [];
@@ -21,12 +22,18 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
     <?php if (!$pronta): ?><p class="note note--err" role="status">Manca la tabella dei testi: ricarica la pagina per applicare gli aggiornamenti. Intanto valgono i testi di serie.</p><?php endif; ?>
   </div>
 
+  <?php /* 8E: Italiano / English. Le foto sono le stesse per le due lingue. */ ?>
+  <nav class="linguette-testi" aria-label="Lingua dei testi">
+    <a href="<?= b() ?>/admin/testi"<?= $lingua === 'it' ? ' aria-current="page"' : '' ?>>Italiano</a>
+    <a href="<?= b() ?>/admin/testi?lingua=en"<?= $lingua === 'en' ? ' aria-current="page"' : '' ?>>English</a>
+  </nav>
+  <?php if ($lingua === 'en'): ?><p class="note" role="status" style="margin:0">Stai modificando i testi della home in inglese (<a href="<?= b() ?>/en" target="_blank" rel="noopener">/en</a>) e dell'intestazione di /en/questions. Un campo vuoto torna al testo inglese di serie. Le foto sono le stesse dell'italiano.</p><?php endif; ?>
   <div class="cifre">
     <?php foreach ([['cifra--pino', 'doc', 'Testi cambiati', $cambiati . ' su ' . count($catalogo), 'gli altri sono di serie'],
                     ['cifra--mare', 'drop', 'Foto caricate', $fotoCaricate . ' su ' . count(TestiSito::IMMAGINI), 'le altre sono di serie'],
                     ['cifra--ocra', 'eye', 'La home', 'Apri', 'per vedere il risultato']] as [$tono, $ico, $et, $val, $nota]): ?>
       <div class="cifra <?= $tono ?>"><span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg($ico, 17) ?></span><?= $et ?></span>
-        <?php if ($val === 'Apri'): ?><a class="cifra__valore" href="<?= b() ?>/" target="_blank" rel="noopener">Apri <?= Icon::svg('external', 16, 2) ?></a>
+        <?php if ($val === 'Apri'): ?><a class="cifra__valore" href="<?= b() . ($lingua === 'en' ? '/en' : '/') ?>" target="_blank" rel="noopener">Apri <?= Icon::svg('external', 16, 2) ?></a>
         <?php else: ?><b class="cifra__valore"><?= Support::e($val) ?></b><?php endif; ?>
         <span class="cifra__nota"><?= Support::e($nota) ?></span></div>
     <?php endforeach; ?>
@@ -40,13 +47,14 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
   <div class="testi__layout">
   <form method="post" action="<?= b() ?>/admin/testi" enctype="multipart/form-data" class="stack stack--lg testi__modulo" data-testi><?= Csrf::field() ?>
     <input type="hidden" name="torna" value="" data-torna>
+    <input type="hidden" name="lingua" value="<?= $lingua ?>">
     <?php foreach (TestiSito::SEZIONI as $sid => [$nome, $nota]): $campi = $perSezione[$sid] ?? []; if (!$campi) continue; ?>
       <section class="panel stack" id="testi-<?= $sid ?>" aria-labelledby="testi-<?= $sid ?>-titolo">
         <div class="stack stack--sm">
           <h2 id="testi-<?= $sid ?>-titolo" style="font-size:22px"><?= Support::e($nome) ?></h2>
           <?php if ($nota !== ''): ?><p class="help" style="margin:0"><?= Support::e($nota) ?></p><?php endif; ?>
         </div>
-        <?php foreach ($campi as $k => [, $etichetta, $tipo, $serie, $aiuto]):
+        <?php foreach ($campi as $k => [, $etichetta, $tipo, , $aiuto]): $serie = TestiSito::serie($k, $lingua);
               $id = 'testo-' . str_replace('.', '-', $k); $valore = TestiSito::get($k); $diverso = $valore !== $serie; ?>
           <div class="field testi__campo<?= $diverso ? ' testi__campo--cambiato' : '' ?>" data-campo data-chiave="<?= Support::e($k) ?>">
             <label for="<?= $id ?>"><?= Support::e($etichetta) ?><?php if ($diverso): ?> <span class="badge badge--ochre testi__badge">cambiato</span><?php endif; ?></label>
@@ -97,7 +105,7 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
       </span>
     </div>
     <div class="testi__cornice" data-cornice>
-      <iframe src="<?= b() ?>/?anteprima=testi" title="Anteprima della home" data-anteprima></iframe>
+      <iframe src="<?= b() . ($lingua === 'en' ? '/en' : '/') ?>?anteprima=testi" title="Anteprima della home" data-anteprima></iframe>
     </div>
   </aside>
   </div>

@@ -1,6 +1,11 @@
 <?php use function MHW\b; use MHW\{Support, Csrf, Plans, Icon}; $title = 'Crea il tuo account';
 $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
 <div class="registrati__fascia"><?php include __DIR__ . '/../pub/_fascia_sconto.php'; ?></div>
+<?php /* 8E: chi arriva dalla home inglese (?lang=en): il pannello per ora è in italiano, lo diciamo subito. */
+      $daInglese = ($_GET['lang'] ?? $_POST['lang'] ?? '') === 'en';
+      if ($daInglese): $mailEn = MHW\Support::contatto(); ?>
+  <p class="note registra-en" lang="en" role="note">The dashboard is in Italian for now: we'll help you in English at <a href="mailto:<?= Support::e($mailEn) ?>"><?= Support::e($mailEn) ?></a>.</p>
+<?php endif; ?>
 <?php if ($pianoScelto): /* Il piano scelto sulla landing resta in vista: si sa cosa si sta attivando. */ ?>
   <p class="chip-piano">
     <span class="chip-piano__testo"><?= Icon::svg('check', 15, 2.2) ?><span>Piano <b><?= Support::e($pianoScelto['name']) ?></b><?= Plans::perProperty($pianoScelto) ? ' · ' . (int) $quantita . ' strutture' : '' ?>
@@ -13,6 +18,7 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
 <?php if ($err): ?><p class="note note--err" style="margin-top:20px" role="alert"><?= Support::e($err) ?></p>
   <?php $aiutoEmail = $vecchi['email']; $aiutoPagina = 'Registrazione'; include __DIR__ . '/_aiuto.php'; ?><?php endif; ?>
 <form method="post" class="panel stack" style="margin-top:24px" novalidate><?= Csrf::field() ?>
+  <?php if ($daInglese): ?><input type="hidden" name="lang" value="en"><?php endif; ?>
   <?php if ($pianoScelto): ?>
   <input type="hidden" name="piano" value="<?= (int) $piano ?>">
   <?php else: /* 7B: senza un piano dalla landing, si sceglie qui (Plus già scelto); si salva come intended_package_version_id. */

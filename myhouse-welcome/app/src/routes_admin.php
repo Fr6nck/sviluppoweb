@@ -339,7 +339,16 @@ $r->get('/admin/pacchetti', function () {
  * si toccano, e gli abbonamenti restano agganciati alla loro. Il testo
  * commerciale (titoli, elenco puntato) invece si aggiorna sul pacchetto.
  */
-$r->post('/admin/pacchetti/{pid}/nuova-versione', function (array $a) {
+/* 8E: i testi inglesi della scheda (migrazione 038), solo se il modulo li manda e le colonne ci sono. */
+$testiEn = function (): array {
+    $out = [];
+    if (!Migrator::columnExists('packages', 'tagline_en')) return $out;
+    foreach (['tagline_en' => 250, 'headline_en' => 160, 'description_en' => 600, 'bullets_en' => 3000, 'badge_en' => 40, 'cta_label_en' => 60] as $c => $max) {
+        if (array_key_exists($c, $_POST)) $out[$c] = mb_substr(trim(str_replace("\r", '', (string) $_POST[$c])), 0, $max);
+    }
+    return $out;
+};
+$r->post('/admin/pacchetti/{pid}/nuova-versione', function (array $a) use ($testiEn) {
     Auth::requireAdmin();
     $pkg = Db::one('SELECT * FROM packages WHERE id = ?', [(int) $a['pid']]);
     if (!$pkg) { http_response_code(404); View::out('pub/404', []); }
@@ -376,7 +385,7 @@ $r->post('/admin/pacchetti/{pid}/nuova-versione', function (array $a) {
                 array_map(fn($da, $c) => ['da' => $da, 'cents' => $c], array_keys($scaglioni), $scaglioni))) : '';
         }
     }
-    $vid = Db::tx(function () use ($pkg, $prezzo, $priceId, $aStruttura) {
+    $vid = Db::tx(function () use ($pkg, $prezzo, $priceId, $aStruttura, $testiEn) {
         $next = (int) Db::val('SELECT COALESCE(MAX(version),0)+1 FROM package_versions WHERE package_id = ?', [$pkg['id']], 1);
         Db::run('UPDATE package_versions SET is_current = 0 WHERE package_id = ?', [$pkg['id']]);
         $vid = Db::insert('package_versions', [
@@ -394,7 +403,7 @@ $r->post('/admin/pacchetti/{pid}/nuova-versione', function (array $a) {
             'description' => trim((string) ($_POST['description'] ?? '')), 'bullets' => trim((string) ($_POST['bullets'] ?? '')),
             'badge' => trim((string) ($_POST['badge'] ?? '')), 'cta_label' => trim((string) ($_POST['cta_label'] ?? '')),
             'public' => !empty($_POST['public']) ? 1 : 0, 'active' => !empty($_POST['active']) ? 1 : 0,
-        ], 'id = :pid', ['pid' => $pkg['id']]);
+        ] + $testiEn(), 'id = :pid', ['pid' => $pkg['id']]);
         return $vid;
     });
     Auth::audit('package.new_version', null, ['package' => $pkg['code'], 'version_id' => $vid, 'price_cents' => $prezzo]);
@@ -404,7 +413,7 @@ $r->post('/admin/pacchetti/{pid}/nuova-versione', function (array $a) {
 });
 
 /** Solo il testo commerciale: nessuna versione nuova, i diritti non cambiano. */
-$r->post('/admin/pacchetti/{pid}/testo', function (array $a) {
+$r->post('/admin/pacchetti/{pid}/testo', function (array $a) use ($testiEn) {
     Auth::requireAdmin();
     $pkg = Db::one('SELECT * FROM packages WHERE id = ?', [(int) $a['pid']]);
     if (!$pkg) { http_response_code(404); View::out('pub/404', []); }
@@ -413,7 +422,7 @@ $r->post('/admin/pacchetti/{pid}/testo', function (array $a) {
         'description' => trim((string) ($_POST['description'] ?? '')), 'bullets' => trim((string) ($_POST['bullets'] ?? '')),
         'badge' => trim((string) ($_POST['badge'] ?? '')), 'cta_label' => trim((string) ($_POST['cta_label'] ?? '')),
         'public' => !empty($_POST['public']) ? 1 : 0, 'active' => !empty($_POST['active']) ? 1 : 0,
-    ], 'id = :pid', ['pid' => $pkg['id']]);
+    ] + $testiEn(), 'id = :pid', ['pid' => $pkg['id']]);
     Auth::audit('package.copy', null, ['package' => $pkg['code']]);
     Support::flash('Testi di ' . $pkg['name'] . ' aggiornati.');
     Support::redirect('/admin/pacchetti');
@@ -902,12 +911,17 @@ $r->post('/admin/inviti/{id}/annulla', function (array $a) {
 // ------------------------------------------------------------------- testi e foto del sito
 $r->get('/admin/testi', function () {
     Auth::requireAdmin();
-    View::out('admin/testi', ['nav' => 'testi', 'pronta' => MHW\TestiSito::disponibili()], 'layout/cms');
+    // 8E: la linguetta English mostra e salva i testi di /en (chiavi «en:»); le foto sono le stesse.
+    $lingua = ($_GET['lingua'] ?? '') === 'en' ? 'en' : 'it';
+    MHW\LinguaSito::imposta($lingua);
+    View::out('admin/testi', ['nav' => 'testi', 'pronta' => MHW\TestiSito::disponibili(), 'lingua' => $lingua], 'layout/cms');
 });
 
 $r->post('/admin/testi', function () {
     Auth::requireAdmin();
     if (!MHW\TestiSito::disponibili()) { Support::flash('Manca la tabella dei testi: ricarica la pagina per applicare gli aggiornamenti.', 'err'); Support::redirect('/admin/testi'); }
+    $lingua = ($_POST['lingua'] ?? '') === 'en' ? 'en' : 'it';
+    MHW\LinguaSito::imposta($lingua);
     $c = [];
     foreach (MHW\TestiSito::catalogo() as $k => [, , $tipo]) {
         $campo = 't_' . str_replace('.', '_', $k);
@@ -939,12 +953,14 @@ $r->post('/admin/testi', function () {
         Support::flash($e->getMessage(), 'err'); Support::redirect('/admin/testi#testi-foto');
     }
     $prima = []; foreach (array_keys($c) as $k) $prima[$k] = str_starts_with($k, 'img.') ? MHW\TestiSito::riferimentoImmagine(substr($k, 4)) : MHW\TestiSito::get($k);
-    MHW\TestiSito::set($c);
+    // I testi nella lingua della linguetta; le foto (img.*) valgono per tutte e due.
+    MHW\TestiSito::set(array_filter($c, fn($k) => !str_starts_with($k, 'img.'), ARRAY_FILTER_USE_KEY), $lingua);
+    MHW\TestiSito::set(array_filter($c, fn($k) => str_starts_with($k, 'img.'), ARRAY_FILTER_USE_KEY), 'it');
     foreach ($daCancellare as $rif) { [$d, $k] = explode(':', $rif, 2); try { Storages::for($d)->delete($k); } catch (\Throwable $e) { Log::exception($e, 'testi.foto'); } }
     $cambiate = array_values(array_keys(array_filter($c, fn($v, $k) => $prima[$k] !== (str_starts_with($k, 'img.') ? $v : MHW\TestiSito::get($k)), ARRAY_FILTER_USE_BOTH)));
-    Auth::audit('testi.save', null, ['cambiate' => $cambiate]);
-    Support::flash($cambiate ? 'Salvato: la home è già aggiornata.' : 'Niente da cambiare.');
-    Support::redirect('/admin/testi' . (($s = (string) ($_POST['torna'] ?? '')) !== '' && preg_match('/^[a-z-]+$/', $s) ? '#testi-' . $s : ''));
+    Auth::audit('testi.save', null, ['cambiate' => $cambiate, 'lingua' => $lingua]);
+    Support::flash($cambiate ? ($lingua === 'en' ? 'Salvato: la home inglese (/en) è già aggiornata.' : 'Salvato: la home è già aggiornata.') : 'Niente da cambiare.');
+    Support::redirect('/admin/testi' . ($lingua === 'en' ? '?lingua=en' : '') . (($s = (string) ($_POST['torna'] ?? '')) !== '' && preg_match('/^[a-z-]+$/', $s) ? '#testi-' . $s : ''));
 });
 
 $r->get('/admin/seo', function () {

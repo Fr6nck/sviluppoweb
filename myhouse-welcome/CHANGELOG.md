@@ -1,5 +1,17 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 8E la home e le domande in inglese (15 ottobre 2026)
+
+Migrazione `038` (solo aggiunte): testi inglesi dei piani (`packages.tagline_en`, `headline_en`, `description_en`, `bullets_en`, `badge_en`, `cta_label_en`) con i valori di serie; tagline di Essential e Plus allineate alle lingue della 8C, solo dove c'era il testo di serie.
+
+- **`/en` e `/en/questions`:** stessa impaginazione e stesse sezioni della home e di /domande, in inglese. Prezzi dal listino con «+ VAT / year» e «about … a month»; Termini e Privacy restano in italiano («Terms (in Italian) · Privacy (in Italian)» nel piede).
+- **Interruttore IT / EN** nella barra in alto e nel menu del telefono, solo sulle pagine che esistono nelle due lingue; porta alla stessa pagina nell'altra lingua. `<html lang>`, canonical per lingua, `hreflang` reciproci (`it`, `en`, `x-default` = italiano), `og:locale` `en_GB`; le due pagine inglesi in sitemap e in llms.txt (sezione «English»); dati strutturati con `inLanguage`.
+- **Registrazione:** i bottoni inglesi portano a `/registrati?lang=en`, che avvisa che il pannello per ora è in italiano e dà l'email per l'aiuto in inglese.
+- **Testi e foto:** linguette Italiano / English; i testi inglesi cambiati si salvano con la chiave `en:` + chiave italiana, i valori di serie stanno in `app/lang/sito-en.php`; l'anteprima dal vivo mostra la lingua scelta; le foto sono le stesse.
+- **Domande:** le FAQ inglesi in `app/lang/faq-en.php`, con gli stessi id (le ancore valgono nelle due lingue) e le parti calcolate (prezzi del Portfolio, sconti di «Bring a friend») dal listino.
+- **Piani:** in Amministrazione → Piani, sotto ogni pacchetto, «English» con titolo, frase, descrizione, punti, etichetta e bottone; vuoti, /en mostra l'italiano.
+- **SEO e GEO:** titolo e descrizione per `/en` e `/en/questions` come le altre pagine.
+
 ## v2 · 8D la vetrina Casa Checco completa, in tutte le lingue (15 ottobre 2026)
 
 Nessuna migrazione. Sostituisce la 7E.

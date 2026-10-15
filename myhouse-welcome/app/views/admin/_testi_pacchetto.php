@@ -10,5 +10,22 @@
   <div class="field" style="margin:0"><label>Etichetta in evidenza <span class="muted">(per esempio: Consigliato)</span></label><input type="text" name="badge" maxlength="40" value="<?= Support::e($pp['badge']) ?>"></div>
   <div class="field" style="margin:0"><label>Testo del bottone</label><input type="text" name="cta_label" maxlength="60" value="<?= Support::e($pp['cta_label']) ?>"></div>
 </div>
+<?php if (array_key_exists('tagline_en', $pp)): /* 8E: la scheda in inglese per /en; vuoto = si mostra l'italiano */ ?>
+<details class="pacchetto-en">
+  <summary>English <span class="small muted">· la scheda sulla home inglese (/en); un campo vuoto mostra l'italiano</span></summary>
+  <div class="stack" style="gap:10px;margin-top:10px" lang="en">
+    <div class="grid grid-2">
+      <div class="field" style="margin:0"><label>Title (English)</label><input type="text" name="headline_en" maxlength="160" value="<?= Support::e((string) $pp['headline_en']) ?>"></div>
+      <div class="field" style="margin:0"><label>Ideal for (English) <span class="muted">(starts with «For…»)</span></label><input type="text" name="tagline_en" maxlength="250" value="<?= Support::e((string) $pp['tagline_en']) ?>"></div>
+    </div>
+    <div class="field" style="margin:0"><label>Description (English)</label><textarea name="description_en" rows="2" maxlength="600"><?= Support::e((string) $pp['description_en']) ?></textarea></div>
+    <div class="field" style="margin:0"><label>Bullet list (English) <span class="muted">(one per line; {sezioni} works here too)</span></label><textarea name="bullets_en" rows="5"><?= Support::e((string) $pp['bullets_en']) ?></textarea></div>
+    <div class="grid grid-2">
+      <div class="field" style="margin:0"><label>Badge (English)</label><input type="text" name="badge_en" maxlength="40" value="<?= Support::e((string) $pp['badge_en']) ?>"></div>
+      <div class="field" style="margin:0"><label>Button text (English)</label><input type="text" name="cta_label_en" maxlength="60" value="<?= Support::e((string) $pp['cta_label_en']) ?>"></div>
+    </div>
+  </div>
+</details>
+<?php endif; ?>
 <div class="row"><label class="check"><input type="checkbox" name="public" value="1" <?= $pp['public'] ? 'checked' : '' ?>> Visibile sulla landing</label>
   <label class="check"><input type="checkbox" name="active" value="1" <?= $pp['active'] ? 'checked' : '' ?>> In vendita</label></div>

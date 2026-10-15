@@ -2,14 +2,15 @@
 /* Tutte le domande frequenti (Faq::tutte), aperte, con il link diretto a ognuna: /domande#id.
    Le stesse della landing e dei dati strutturati (FAQPage) e di llms.txt. */
 use function MHW\b;
-use MHW\{Support, Icon, Config};
-$title = 'Domande frequenti · MyHouse Welcome';
+use MHW\{Support, Icon, Config, LinguaSito};
+$enD = LinguaSito::en();
+$title = $enD ? 'Frequently asked questions · MyHouse Welcome' : 'Domande frequenti · MyHouse Welcome';
 $legale = Config::get('legal') ?? [];
 $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
-$crea = b() . (!empty(MHW\Auth::user()) ? '/pannello' : '/registrati'); ?>
+$crea = b() . (!empty(MHW\Auth::user()) ? '/pannello' : '/registrati' . ($enD ? '?lang=en' : '')); ?>
 <section class="blocco faq domande" aria-labelledby="faq-titolo">
   <div class="faq__testa">
-    <span class="kicker">Domande</span>
+    <span class="kicker"><?= $enD ? 'Questions' : 'Domande' ?></span>
     <h1 id="faq-titolo" class="h-sezione"><?= MHW\TestiSito::html('domande.titolo') ?></h1>
     <?php if (($legale['contact_email'] ?? '') !== '' || $waFaq !== ''): ?>
       <p class="muted"><?= MHW\TestiSito::html('faq.aiuto') ?></p>
@@ -31,7 +32,7 @@ $crea = b() . (!empty(MHW\Auth::user()) ? '/pannello' : '/registrati'); ?>
     <?php endforeach; ?>
     <div class="row domande__azioni">
       <a class="btn" href="<?= $crea ?>"><?= MHW\TestiSito::html('cta.crea') ?></a>
-      <a class="btn btn--ghost" href="<?= b() ?>/#piani">Vedi i prezzi</a>
+      <a class="btn btn--ghost" href="<?= b() . ($enD ? '/en' : '/') ?>#piani"><?= $enD ? 'See pricing' : 'Vedi i prezzi' ?></a>
     </div>
   </div>
 </section>

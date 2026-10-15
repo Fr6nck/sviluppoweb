@@ -3168,7 +3168,7 @@ prova('7B · schede: «6 sezioni aggiuntive a scelta» e «Foto profilo dell\'ho
 prova('…foto e PDF (8A), traduzioni e «Ideale per» di Plus con i testi nuovi', str_contains($schede, 'Possibilità di inserire foto e PDF accanto ai testi, per far vedere meglio quello che spieghi')
       && !str_contains($schede, 'la foto del cancello')
       && str_contains($schede, 'Scrivi in italiano, traduciamo noi in inglese, francese, tedesco e spagnolo: tu controlli e confermi. Il primo anno è in omaggio.')
-      && str_contains($schede, 'B&amp;B, case vacanza e agriturismi con ospiti da tutto il mondo: cinque lingue, foto e consigli sul territorio.')
+      && str_contains($schede, 'B&amp;B, case vacanza e agriturismi con ospiti da tutto il mondo: sei lingue, foto e consigli sul territorio.')
       && !str_contains($schede, 'Scrivici per un preventivo'));
 prova('7B · Portfolio oltre 10: «Chiedi un preventivo» con oggetto e domande', str_contains($schede, 'data-oltre hidden') && str_contains($schede, 'Ti facciamo una proposta.')
       && str_contains($schede, 'subject=Preventivo%20Portfolio%20oltre%2010%20strutture') && str_contains($schede, rawurlencode("Quante strutture:\nTipologie (case vacanza, B&B, affittacamere…):"))
@@ -3267,14 +3267,14 @@ prova('robots.txt: per * niente guide in Disallow, /pannello escluso per tutti; 
       && str_contains((string) $blocco($r['body'], 'meta-externalagent'), "Disallow: /qr/\n") && $blocco($r['body'], 'CCBot') === "Disallow: /\n"
       && preg_match('#\nSitemap: \S+/sitemap\.xml\n$#', $r['body']) === 1, json_encode($blocco($r['body'], 'CCBot')));
 $r = $ospite->get('/sitemap.xml');
-prova('sitemap.xml: le quattro pagine accese, con lastmod', $r['code'] === 200 && substr_count($r['body'], '<url>') === 4 && substr_count($r['body'], '<lastmod>') === 4
+prova('sitemap.xml: le pagine accese (con le due inglesi della 8E), con lastmod', $r['code'] === 200 && substr_count($r['body'], '<url>') === 6 && substr_count($r['body'], '<lastmod>') === 6
       && str_contains($r['body'], '/domande</loc>') && @simplexml_load_string($r['body']) !== false);
 foreach (['/accedi', '/registrati', '/password'] as $u) {
     $r = $ospite->get($u);
     prova("noindex su $u", str_contains($r['body'], '<meta name="robots" content="noindex">') && !str_contains($r['body'], 'application/ld+json'));
 }
 $r = $ospite->get('/');
-$nFaq = preg_match('#"@type":"FAQPage","mainEntity":(\[.*?\])\}</script>#s', $r['body'], $mm) ? count(json_decode($mm[1], true) ?: []) : -1;
+$nFaq = preg_match('#"@type":"FAQPage",(?:"inLanguage":"[a-zA-Z-]+",)?"mainEntity":(\[.*?\])\}</script>#s', $r['body'], $mm) ? count(json_decode($mm[1], true) ?: []) : -1;
 // Amministrazione → Sistema → Testi e foto: ogni testo della home si cambia, torna di serie, e le foto si caricano.
 capitolo('Testi e foto del sito');
 $r = $admin->get('/admin/testi');
@@ -4031,7 +4031,8 @@ prova('…senza aria condizionata nasce solo «riscaldamento»', val('SELECT kin
 $ariaA = riga("SELECT * FROM sections WHERE property_id = ? AND kind = 'aria' AND id > ?", [$esp, $ca]);
 db()->prepare("UPDATE users SET created_at = '2026-01-01T00:00:00Z' WHERE email = 'ester@prova.test'")->execute();
 prova('…Essential al limite: «aria» nasce disattivata, con i suoi testi, e la novità lo dice', $ariaA && (int) $ariaA['is_active'] === 0
-      && ($trG((int) $ariaA['id'], 'de')['ac_how'] ?? []) === ['Taste ON drücken.'] && str_contains($ester->segui($ester->get("/pannello/$esp/impostazioni"))['body'], 'è nata disattivata'), json_encode($ariaA ? ['attiva' => $ariaA['is_active']] : null));
+      && ($trG((int) $ariaA['id'], 'de')['ac_how'] ?? []) === ['Taste ON drücken.'] && str_contains(($rNov = $ester->segui($ester->get("/pannello/$esp/impostazioni")))['body'], 'è nata disattivata'),
+      json_encode($ariaA ? ['attiva' => $ariaA['is_active'], 'tr' => $trG((int) $ariaA['id'], 'de'), 'pagina' => preg_match('#<title>([^<]*)#', $rNov['body'] ?? '', $mN) ? $mN[1] : '', 'novita' => preg_match('#novita__testo">(.{0,160})#s', $rNov['body'] ?? '', $mN) ? strip_tags($mN[1]) : ''] : null, JSON_UNESCAPED_UNICODE));
 $conta = fn() => (int) val("SELECT COUNT(*) FROM sections WHERE kind IN ('clima', 'riscaldamento', 'aria')");
 $n1 = $conta();
 $esito2 = trim((string) shell_exec('cd ' . escapeshellarg("$DOVE/app") . ' && php -r ' . escapeshellarg($migra) . ' 2>&1'));
@@ -4053,6 +4054,64 @@ prova('8C · FAQ: «In quali lingue…» con le regole nuove e «Posso scrivere 
 $r = $ospite->get('/');
 prova('8C · listino: «2 lingue: la tua e una a scelta», «6 lingue: …»; nel confronto le lingue in una riga', str_contains($r['body'], '2 lingue: la tua e una a scelta')
       && str_contains($r['body'], '6 lingue: la tua, le altre tra italiano') && str_contains($r['body'], '2: la tua e una a scelta') && !str_contains($r['body'], '>Lingua aggiuntiva<'));
+
+
+capitolo('8E · la home e le domande in inglese');
+// Le pagine inglesi si indicizzano di serie: la prova della 6K le aveva spente salvando SEO e GEO senza i loro campi.
+db()->exec("UPDATE seo_settings SET valore = '1' WHERE chiave IN ('p.en.indicizza', 'p.en-domande.indicizza')");
+$ospiteEn = new Browser('ospite-en');
+$r = $ospiteEn->get('/en'); $rq = $ospiteEn->get('/en/questions');
+prova('8E · /en e /en/questions: 200, <html lang="en">, og:locale en_GB, indicizzabili', $r['code'] === 200 && $rq['code'] === 200 && pulita($r) && pulita($rq)
+      && str_contains($r['body'], '<html lang="en">') && str_contains($rq['body'], '<html lang="en">') && str_contains($r['body'], 'og:locale" content="en_GB"')
+      && str_contains($r['body'], '<meta name="robots" content="index, follow">'));
+$visibile = function (string $h): string {
+    $h = preg_replace(['#<script.*?</script>#s', '#<style.*?</style>#s', '#<svg.*?</svg>#s', '#<head>.*?</head>#s', '#<figure class="schermata".*?</figure>#s'], '', $h);
+    return html_entity_decode(strip_tags((string) $h), ENT_QUOTES, 'UTF-8');
+};
+$itaVisti = array_values(array_filter(['Crea gratis la tua guida', 'Guarda la demo', 'Scegli il piano', 'Domande frequenti', '+ IVA / anno', 'al mese', 'Quante strutture',
+    'Come funziona', 'Prezzi', 'Accedi', 'Cosa trova l\'ospite', 'Il tempo delle risposte', 'Ideale per', 'Tutto di Essential', 'Confronta tutti i piani',
+    'Prima di cominciare', 'Altre domande', 'Posso provarla prima di pagare?', 'Non trovi la risposta', 'Benvenuti'], fn($x) => str_contains($visibile($r['body']), $x) || str_contains($visibile($rq['body']), $x)));
+prova('8E · nessun testo italiano visibile (tranne nomi propri e i link legali)', !$itaVisti && str_contains($r['body'], 'Terms (in Italian)') && str_contains($r['body'], 'Privacy (in Italian)'), implode(' | ', $itaVisti));
+prova('…i testi inglesi ci sono: titolo, piani, domande', str_contains($r['body'], 'Your home answers') && str_contains($r['body'], 'Choose your plan.') && str_contains($r['body'], '+ VAT / year')
+      && str_contains($r['body'], 'Can I try it before I pay?') && str_contains($rq['body'], 'Frequently asked questions'));
+$ri = $ospiteEn->get('/'); $rdi = $ospiteEn->get('/domande');
+prova('8E · interruttore IT / EN nelle due direzioni (home e domande), anche nel menu del telefono', preg_match('#href="[^"]*/en" hreflang="en" lang="en">EN</a>#', $ri['body']) === 1
+      && preg_match('#href="[^"]*/" hreflang="it" lang="it">IT</a>#', $r['body']) === 1 && preg_match('#href="[^"]*/en/questions" hreflang="en" lang="en">EN</a>#', $rdi['body']) === 1
+      && preg_match('#href="[^"]*/domande" hreflang="it" lang="it">IT</a>#', $rq['body']) === 1 && substr_count($r['body'], 'class="lingua-sito"') === 2);
+prova('8E · hreflang reciproci (it, en, x-default = italiano)', str_contains($ri['body'], 'hreflang="en" href="') && str_contains($r['body'], 'hreflang="it" href="')
+      && preg_match('#hreflang="x-default" href="[^"]*/"#', $r['body']) === 1 && preg_match('#hreflang="en" href="[^"]*/en/questions"#', $rdi['body']) === 1
+      && preg_match('#hreflang="it" href="[^"]*/domande"#', $rq['body']) === 1);
+prova('…le pagine solo italiane (Termini) non hanno l\'interruttore', !str_contains($ospiteEn->get('/termini')['body'], 'class="lingua-sito"'));
+preg_match_all('#<details class="faq__voce" id="([a-z0-9-]+)"#', $rdi['body'], $idIt); preg_match_all('#<details class="faq__voce" id="([a-z0-9-]+)"#', $rq['body'], $idEn);
+prova('8E · FAQ con gli stessi id (le ancore funzionano nelle due lingue)', $idIt[1] && $idIt[1] === $idEn[1], count($idIt[1]) . ' / ' . count($idEn[1]));
+$cPlus = (int) val('SELECT price_cents FROM package_versions WHERE id = ?', [pv('plus')]);
+$prezzoPlus = number_format($cPlus / 100, $cPlus % 100 === 0 ? 0 : 2, ',', '.') . "\u{00A0}€";
+prova('8E · prezzi uguali al listino, con «+ VAT / year» e «about … a month»', str_contains($r['body'], htmlspecialchars($prezzoPlus)) && str_contains($r['body'], '<span class="plan__mese">about '));
+prova('8E · «Create your guide for free» porta alla registrazione con ?lang=en, che avvisa del pannello in italiano', preg_match('#href="[^"]*/registrati\?lang=en"#', $r['body']) === 1
+      && str_contains($ospiteEn->get('/registrati?lang=en')['body'], 'The dashboard is in Italian for now'));
+$sm = $ospiteEn->get('/sitemap.xml')['body']; $ll = $ospiteEn->get('/llms.txt')['body'];
+prova('8E · sitemap e llms.txt con le due pagine inglesi (sezione «English»)', preg_match('#<loc>[^<]*/en</loc>#', $sm) === 1 && preg_match('#<loc>[^<]*/en/questions</loc>#', $sm) === 1
+      && str_contains($ll, "## English") && str_contains($ll, '/en/questions)'));
+prova('8E · dati strutturati in inglese: FAQPage e SoftwareApplication con inLanguage en-GB', str_contains($r['body'], '"inLanguage":"en-GB"') && str_contains($rq['body'], '"@type":"FAQPage","inLanguage":"en-GB"'));
+// Testi e foto → English.
+$r = $admin->get('/admin/testi?lingua=en');
+prova('8E · Testi e foto: linguette Italiano / English; in English i testi inglesi e l\'anteprima di /en', str_contains($r['body'], 'class="linguette-testi"') && str_contains($r['body'], 'value="The digital front desk for your holiday rental"')
+      && str_contains($r['body'], '/en?anteprima=testi') && str_contains($r['body'], 'name="lingua" value="en"'));
+$admin->post('/admin/testi', ['lingua' => 'en', 't_hero_kicker' => 'Your digital front desk, in English']);
+prova('8E · un testo cambiato in English compare solo in /en, salvato con la chiave «en:»', str_contains($ospiteEn->get('/en')['body'], 'Your digital front desk, in English')
+      && !str_contains($ospiteEn->get('/')['body'], 'Your digital front desk, in English') && val("SELECT valore FROM site_texts WHERE chiave = 'en:hero.kicker'") === 'Your digital front desk, in English');
+$admin->post('/admin/testi', ['lingua' => 'en', 't_hero_kicker' => '']);
+prova('…e vuoto torna al testo inglese di serie', !val("SELECT 1 FROM site_texts WHERE chiave = 'en:hero.kicker'") && str_contains($ospiteEn->get('/en')['body'], 'The digital front desk for your holiday rental'));
+// Piani → English.
+$pPlus = (int) val("SELECT id FROM packages WHERE code = 'plus'");
+$rPk = $admin->get('/admin/pacchetti');
+prova('8E · Piani: «English» con i testi inglesi di serie della scheda', str_contains($rPk['body'], 'class="pacchetto-en"') && str_contains($rPk['body'], 'name="bullets_en"'));
+$pkP = riga('SELECT * FROM packages WHERE id = ?', [$pPlus]);
+$admin->post("/admin/pacchetti/$pPlus/testo", ['tagline' => $pkP['tagline'], 'headline' => $pkP['headline'], 'description' => $pkP['description'], 'bullets' => $pkP['bullets'],
+    'badge' => $pkP['badge'], 'cta_label' => $pkP['cta_label'], 'public' => '1', 'active' => '1', 'tagline_en' => 'For hosts who test the English page', 'cta_label_en' => 'Try Plus now']);
+$r = $ospiteEn->get('/en');
+prova('…cambiati compaiono su /en, non sulla home italiana', str_contains($r['body'], 'hosts who test the English page') && str_contains($r['body'], 'Try Plus now')
+      && !str_contains($ospiteEn->get('/')['body'], 'Try Plus now'));
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

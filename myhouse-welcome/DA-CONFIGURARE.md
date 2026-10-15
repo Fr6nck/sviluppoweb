@@ -168,6 +168,13 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 - **Lingua in più** (Plus e Portfolio): la caratteristica «Lingua aggiuntiva» si cambia in Amministrazione → Piani. Le traduzioni suggerite verso quella lingua si spengono da Impostazioni → Traduzioni → «Traduci anche la lingua aggiuntiva» (di serie accesa). Amazon Translate copre tutte e nove le lingue.
 - **Email per gli ospiti:** campo facoltativo in Impostazioni di ogni guida; senza, da 1 a 4 stelle l'ospite vede solo WhatsApp.
 
+**La home in inglese (8E).** Niente da configurare: la migrazione `038` parte da sola. Da rileggere:
+- **Amministrazione → Sistema → Testi e foto → English:** i testi inglesi di serie sono scritti da noi; cambiane quanti vuoi. «Ripristina il testo di serie» vale per la lingua scelta.
+- **Amministrazione → Piani → «English»** sotto ogni pacchetto: i testi inglesi delle schede. Se lasci vuoto un campo, /en mostra quello italiano.
+- **Amministrazione → SEO e GEO:** titolo e descrizione di «Home in inglese» e «Domande in inglese».
+- **Email per l'aiuto in inglese:** nella registrazione con `?lang=en` compare l'email di contatto delle Impostazioni (`info@myhousewelcome.it`). Il brief diceva «info@welcomemyhouse.it»: abbiamo usato quella confermata; se è un'altra casella, cambiala in Impostazioni.
+- Termini e Privacy restano in italiano: il piede inglese lo dice.
+
 ## 4b. La guida vetrina (la demo della landing)
 
 La demo della landing si sposta su un account vero, quello dell'agenzia.

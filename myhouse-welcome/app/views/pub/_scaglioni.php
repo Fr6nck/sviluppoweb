@@ -1,15 +1,17 @@
 <?php
 /* Il Portfolio struttura per struttura: la prima, poi gli scaglioni, e quanto costa in media
    ciascuna per il numero scelto (lo aggiorna prezzi.js). Riceve: $pvS (versione), $qS (quantità). */
-use MHW\{Support, Plans}; ?>
+use MHW\{Support, Plans, LinguaSito};
+$enS = LinguaSito::en();
+$ordS = fn(int $n) => $n . (in_array($n % 100, [11, 12, 13], true) ? 'th' : ([1 => 'st', 2 => 'nd', 3 => 'rd'][$n % 10] ?? 'th'));
+$etS = fn(array $t) => $enS ? ($t['a'] === null ? ($t['da'] === 2 ? 'From the 2nd on' : 'Beyond the ' . $ordS($t['da'] - 1)) : ($t['a'] === $t['da'] ? ucfirst($ordS($t['da'])) : 'From the ' . $ordS($t['da']) . ' to the ' . $ordS($t['a']))) : ucfirst(Plans::tierLabel($t)); ?>
 <div class="scaglioni">
-  <p class="scaglioni__titolo">Quanto costa ogni struttura, all'anno</p>
+  <p class="scaglioni__titolo"><?= $enS ? 'What each property costs, per year' : 'Quanto costa ogni struttura, all\'anno' ?></p>
   <ul class="scaglioni__elenco">
-    <li><span>1ª</span><b><?= Support::e(Support::money((int) $pvS['price_cents'], $pvS['currency'])) ?></b></li>
+    <li><span><?= $enS ? '1st' : '1ª' ?></span><b><?= Support::e(Support::money((int) $pvS['price_cents'], $pvS['currency'])) ?></b></li>
     <?php foreach (Plans::tiers($pvS) as $t): ?>
-      <li><span><?= Support::e(ucfirst(Plans::tierLabel($t))) ?></span><b>+<?= Support::e(Support::money($t['cents'], $pvS['currency'])) ?><?php if ($t['a'] !== $t['da']): ?> <small>l'una</small><?php endif; ?></b></li>
+      <li><span><?= Support::e($etS($t)) ?></span><b>+<?= Support::e(Support::money($t['cents'], $pvS['currency'])) ?><?php if ($t['a'] !== $t['da']): ?> <small><?= $enS ? 'each' : 'l\'una' ?></small><?php endif; ?></b></li>
     <?php endforeach; ?>
   </ul>
-  <p class="scaglioni__media">Con <span data-quante><?= (int) $qS ?></span> strutture: in media
-    <b data-media><?= Support::e(Support::money((int) round(Plans::price($pvS, $qS) / max(1, $qS)), $pvS['currency'])) ?></b> a struttura + IVA.</p>
+  <p class="scaglioni__media"><?= $enS ? 'With' : 'Con' ?> <span data-quante><?= (int) $qS ?></span> <?= ($enS ? 'properties: on average' : 'strutture: in media') . "\n" ?>    <b data-media><?= Support::e(Support::money((int) round(Plans::price($pvS, $qS) / max(1, $qS)), $pvS['currency'])) ?></b> <?= $enS ? 'per property + VAT.' : 'a struttura + IVA.' ?></p>
 </div>

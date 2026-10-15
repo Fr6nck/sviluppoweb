@@ -9,6 +9,23 @@ namespace MHW;
  */
 final class Plans
 {
+    /**
+     * 8E: una scheda di piano nella lingua della pagina. In inglese i campi *_en scritti in Amministrazione →
+     * Piani (migrazione 038) sostituiscono quelli italiani; vuoti, resta l'italiano.
+     */
+    public static function inLingua(array $p, string $loc): array
+    {
+        if ($loc !== 'en') return $p;
+        foreach (['tagline', 'headline', 'description', 'badge', 'cta_label'] as $c) {
+            if (trim((string) ($p[$c . '_en'] ?? '')) !== '') $p[$c] = (string) $p[$c . '_en'];
+        }
+        if (trim((string) ($p['bullets_en'] ?? '')) !== '') {
+            $p['bullets'] = (string) $p['bullets_en'];
+            $p['bullet_list'] = array_values(array_filter(array_map('trim', preg_split('/\R/', (string) $p['bullets_en']) ?: [])));
+        }
+        return $p;
+    }
+
     /** @return array<int,array> pacchetti pubblici, ciascuno con la versione corrente */
     public static function public(): array
     {
@@ -137,8 +154,17 @@ final class Plans
      * una riga per funzione compresa in almeno un piano pubblico.
      * @return array{piani:array,righe:array<int,array{label:string,valori:string[]}>}
      */
-    public static function comparison(): array
+    public static function comparison(string $loc = 'it'): array
     {
+        $en = $loc === 'en';
+        // 8E: i nomi delle funzioni in inglese (quelli italiani sono in features.label, modificabili in Amministrazione).
+        $nomiEn = ['sections' => 'Extra sections', 'locales' => 'Languages', 'photos' => 'Photos in sections', 'pdf' => 'PDFs in sections',
+                   'logo' => 'Property logo', 'cover' => 'Cover photo', 'profile_image' => 'Profile photo', 'palette' => 'Custom colours',
+                   'places' => 'Recommended places', 'properties' => 'Properties on the same account', 'analytics' => 'Reading statistics',
+                   'branding' => 'Custom branding (no longer sold)', 'custom_sections' => 'Custom sections', 'auto_translation' => 'Suggested translations',
+                   'protected_content' => 'Protected content', 'advanced_analytics' => 'Advanced statistics', 'video' => 'Video',
+                   'upselling' => 'Selling extra services', 'custom_domain' => 'Custom domain', 'ai_concierge' => 'AI concierge',
+                   'hide_branding' => 'Hideable "Guide created with MyHouse Welcome" signature'];
         $piani = [];
         foreach (self::offers() as $of) {
             $p = $of['options'][0];
@@ -158,14 +184,17 @@ final class Plans
                 if ($v !== '0' && $v !== '') $qualcuno = true;
                 if ($f['code'] === 'locales' && $v !== 'unlimited') {
                     $n = (int) $v; $x = $extraDi($p);
-                    $v = $x > 0 ? ($n + $x) . ': la tua, le altre di base e ' . ($x === 1 ? 'una a scelta tra 9' : "$x a scelta tra 9")
-                                : ($n <= 1 ? '1: la tua' : $n . ': la tua e ' . ($n === 2 ? 'una a scelta' : ($n - 1) . ' a scelta'));
-                } elseif ($f['code'] === 'properties' && self::perProperty($p)) $v = 'da ' . (int) $p['min_quantity'] . ' a ' . (int) $p['max_quantity'];
-                elseif ($v === 'unlimited') $v = 'Illimitate';
+                    $v = $en
+                        ? ($x > 0 ? ($n + $x) . ': yours, the other base languages and ' . ($x === 1 ? 'one of your choice out of 9' : "$x of your choice out of 9")
+                                  : ($n <= 1 ? '1: yours' : $n . ': yours and ' . ($n === 2 ? 'one of your choice' : ($n - 1) . ' of your choice')))
+                        : ($x > 0 ? ($n + $x) . ': la tua, le altre di base e ' . ($x === 1 ? 'una a scelta tra 9' : "$x a scelta tra 9")
+                                  : ($n <= 1 ? '1: la tua' : $n . ': la tua e ' . ($n === 2 ? 'una a scelta' : ($n - 1) . ' a scelta')));
+                } elseif ($f['code'] === 'properties' && self::perProperty($p)) $v = ($en ? 'from ' : 'da ') . (int) $p['min_quantity'] . ($en ? ' to ' : ' a ') . (int) $p['max_quantity'];
+                elseif ($v === 'unlimited') $v = $en ? 'Unlimited' : 'Illimitate';
                 elseif ($f['kind'] === 'bool') $v = $v !== '0' && $v !== '' ? 'si' : 'no';
                 $valori[] = $v;
             }
-            if ($qualcuno) $righe[] = ['label' => $f['label'], 'code' => $f['code'], 'valori' => $valori];
+            if ($qualcuno) $righe[] = ['label' => $en ? ($nomiEn[$f['code']] ?? $f['label']) : $f['label'], 'code' => $f['code'], 'valori' => $valori];
         }
         return ['piani' => $piani, 'righe' => $righe];
     }

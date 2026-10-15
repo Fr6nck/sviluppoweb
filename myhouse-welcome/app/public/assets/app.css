@@ -2579,3 +2579,15 @@ ol.invito__passi{list-style:none;margin:0;padding:0}
 .device:has(.device__tiles--tutte){min-height:0;height:auto}
 .device:has(.device__tiles--tutte) .device__screen{min-height:0}
 .device:has(.device__tiles--tutte) .device__app{overflow:hidden}
+
+/* 8E · L'interruttore IT / EN nella barra in alto e nel menu del telefono. */
+.lingua-sito{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:2px;gap:2px}
+.lingua-sito a{display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:32px;padding:0 8px;border-radius:999px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none}
+.lingua-sito a:hover{color:var(--ink);background:var(--sunk)}
+.lingua-sito a[aria-current="true"]{background:var(--ink);color:var(--paper)}
+.lingua-sito a:focus-visible{outline:3px solid var(--focus,#1c5a78);outline-offset:2px}
+.registra-en{margin:0 0 16px}
+.linguette-testi{display:flex;gap:6px;flex-wrap:wrap}
+.linguette-testi a{display:inline-flex;align-items:center;min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--line);color:var(--ink);text-decoration:none;font-weight:500}
+.linguette-testi a[aria-current="page"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.linguette-testi a:focus-visible{outline:3px solid var(--focus,#1c5a78);outline-offset:2px}

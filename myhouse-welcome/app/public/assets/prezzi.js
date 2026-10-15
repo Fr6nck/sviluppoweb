@@ -4,6 +4,8 @@
    ricalcola e controlla tutto. */
 (function () {
   'use strict';
+  // 8E: sulla home inglese (/en) i messaggi dello script sono in inglese.
+  var en = document.documentElement.lang === 'en';
   function soldi(cents, valuta) {
     var intero = cents % 100 === 0, n = (cents / 100).toFixed(intero ? 0 : 2).split('.');
     n[0] = n[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -28,7 +30,7 @@
     function aggiorna() {
       var v = campo.value.trim(), q = /^\d+$/.test(v) ? parseInt(v, 10) : NaN;
       var ok = !isNaN(q) && q >= min && q <= max;
-      campo.setCustomValidity(ok ? '' : 'Indica un numero intero di strutture tra ' + min + ' e ' + max + '.');
+      campo.setCustomValidity(ok ? '' : (en ? 'Enter a whole number of properties between ' + min + ' and ' + max + '.' : 'Indica un numero intero di strutture tra ' + min + ' e ' + max + '.'));
       if (ok) {
         totale.textContent = soldi(prezzo(q), valuta);
         // L'equivalente mensile: prezzo annuale / 12, arrotondato al centesimo.
@@ -67,7 +69,7 @@
       boxOltre.hidden = !si;
       for (var k = 0; k < prezzi.length; k++) prezzi[k].hidden = si;
     }
-    var meno = bottone('\u2212', 'Una struttura in meno', -1), piu = bottone('+', 'Una struttura in più', 1);
+    var meno = bottone('\u2212', en ? 'One property less' : 'Una struttura in meno', -1), piu = bottone('+', en ? 'One more property' : 'Una struttura in più', 1);
     gruppo.appendChild(meno); gruppo.appendChild(campo); gruppo.appendChild(piu);
     function limiti() {
       var q = parseInt(campo.value, 10);

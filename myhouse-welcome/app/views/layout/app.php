@@ -1,10 +1,22 @@
 <?php
 /* Il telaio del sito pubblico. Chi è già dentro vede "Le mie guide", non
    "Registrati": nessuno si registra due volte. */
-use function MHW\a; use function MHW\b; use MHW\{Auth, Support, Csrf, Icon};
-$u = Auth::user(); $f = Support::flash(); ?>
+use function MHW\a; use function MHW\b; use MHW\{Auth, Support, Csrf, Icon, LinguaSito};
+$u = Auth::user(); $f = Support::flash();
+$U = [LinguaSito::class, 't'];
+$en = LinguaSito::en();
+/* 8E: l'interruttore IT / EN, solo sulle pagine che esistono nelle due lingue (home e domande). */
+$itP = ['home' => '/', 'en' => '/', 'domande' => '/domande', 'en-domande' => '/domande'][$seoPagina ?? ''] ?? null;
+$coppia = $itP !== null ? ['it' => $itP, 'en' => LinguaSito::COPPIE[$itP]] : null;
+if ($en) { $etScuro = 'Switch to dark theme'; $etChiaro = 'Switch to light theme'; }
+$lingueBottoni = function () use ($coppia, $en): string {
+    if (!$coppia) return '';
+    return '<span class="lingua-sito" role="group" aria-label="' . ($en ? 'Language' : 'Lingua') . '">'
+         . '<a href="' . b() . $coppia['it'] . '" hreflang="it" lang="it"' . ($en ? '' : ' aria-current="true"') . '>IT</a>'
+         . '<a href="' . b() . $coppia['en'] . '" hreflang="en" lang="en"' . ($en ? ' aria-current="true"' : '') . '>EN</a></span>';
+}; ?>
 <!doctype html>
-<html lang="it">
+<html lang="<?= $en ? 'en' : 'it' ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -21,8 +33,10 @@ $u = Auth::user(); $f = Support::flash(); ?>
 <body>
 <?php $principale = $u
     ? ['href' => b() . '/' . ($u['role'] === 'admin' ? 'admin' : 'pannello'), 'testo' => $u['role'] === 'admin' ? 'Amministrazione' : 'Le mie guide']
-    : ['href' => b() . '/registrati', 'testo' => 'Crea gratis'];
-      $voci = [['/#come-funziona', 'Come funziona'], ['/#qr', 'Il QR'], ['/#piani', 'Prezzi'], ['/#domande', 'Domande']];
+    : ['href' => b() . '/registrati' . ($en ? '?lang=en' : ''), 'testo' => $U('Crea gratis', 'Start free')];
+      $casa = $en ? '/en' : '/';
+      $voci = [[$casa . '#come-funziona', $U('Come funziona', 'How it works')], [$casa . '#qr', $U('Il QR', 'The QR code')],
+               [$casa . '#piani', $U('Prezzi', 'Pricing')], [$casa . '#domande', $U('Domande', 'Questions')]];
       /* Chi è dentro si riconosce subito: l'iniziale e il nome in testata, con il menu
          dell'account (le guide, i dati, esci). È un <details>: si apre anche senza JavaScript. */
       $nomeU = $u ? trim((string) ($u['name'] ?? '')) : '';
@@ -43,20 +57,21 @@ $u = Auth::user(); $f = Support::flash(); ?>
           return $h;
       }; ?>
 <header class="topbar topbar--sito"><div class="wrap">
-  <a class="brand" href="<?= b() ?>/"><?= Icon::brand(26) ?><span>myhouse welcome</span></a>
+  <a class="brand" href="<?= b() . ($en ? '/en' : '/') ?>"><?= Icon::brand(26) ?><span>myhouse welcome</span></a>
   <nav class="nav topbar__nav" aria-label="Sito">
     <?php foreach ($voci as [$h, $t]): ?><a href="<?= b() . $h ?>"><?= $t ?></a><?php endforeach; ?>
   </nav>
   <div class="row topbar__azioni" style="gap:10px">
+    <?= $lingueBottoni() ?>
     <?php include __DIR__ . '/_tema-bottone.php'; ?>
-    <?php if (!$u): ?><a class="btn btn--ghost btn--sm" href="<?= b() ?>/accedi">Accedi</a><?php endif; ?>
+    <?php if (!$u): ?><a class="btn btn--ghost btn--sm" href="<?= b() ?>/accedi"><?= $U('Accedi', 'Log in') ?></a><?php endif; ?>
     <a class="btn btn--sm" href="<?= $principale['href'] ?>"><?= $principale['testo'] ?></a>
     <?= $conto(false) ?>
   </div>
   <?php /* Sul telefono: una riga sola. Il menu è un <details>, quindi si apre anche senza JavaScript. */ ?>
   <div class="topbar__telefono">
     <?php /* Sul telefono stretto resta il pulsante che serve di più: «Accedi» per chi è fuori, l'iniziale per chi è dentro. */ ?>
-    <?php if (!$u): ?><a class="btn btn--ghost btn--sm" href="<?= b() ?>/accedi">Accedi</a><?php endif; ?>
+    <?php if (!$u): ?><a class="btn btn--ghost btn--sm" href="<?= b() ?>/accedi"><?= $U('Accedi', 'Log in') ?></a><?php endif; ?>
     <a class="btn btn--sm solo-largo" href="<?= $principale['href'] ?>"><?= $principale['testo'] ?></a>
     <?= $conto(true) ?>
     <details class="menu-sito">
@@ -64,8 +79,9 @@ $u = Auth::user(); $f = Support::flash(); ?>
       <nav class="menu-sito__pannello" aria-label="Sito">
         <a class="menu-sito__primo" href="<?= $principale['href'] ?>"><?= $u ? $principale['testo'] : MHW\TestiSito::html('cta.crea') ?></a>
         <?php foreach ($voci as [$h, $t]): ?><a href="<?= b() . $h ?>"><?= $t ?></a><?php endforeach; ?>
-        <?php if (!$u): ?><a href="<?= b() ?>/accedi">Accedi</a><?php endif; ?>
-        <div class="menu-sito__tema"><span>Tema</span><?php include __DIR__ . '/_tema-bottone.php'; ?></div>
+        <?php if (!$u): ?><a href="<?= b() ?>/accedi"><?= $U('Accedi', 'Log in') ?></a><?php endif; ?>
+        <?php if ($coppia): ?><div class="menu-sito__tema"><span><?= $U('Lingua', 'Language') ?></span><?= $lingueBottoni() ?></div><?php endif; ?>
+        <div class="menu-sito__tema"><span><?= $U('Tema', 'Theme') ?></span><?php include __DIR__ . '/_tema-bottone.php'; ?></div>
       </nav>
     </details>
   </div>

@@ -248,29 +248,54 @@ final class TestiSito
 
     public static function reset(): void { self::$salvate = null; }
 
-    /** Il testo grezzo (con i segnaposto e la sintassi): quello salvato, altrimenti quello di serie. */
-    public static function get(string $k): string
+    /**
+     * 8E: la lingua dei testi. In inglese (/en) un testo cambiato dall'amministratore si salva con la chiave
+     * «en:» + chiave (site_texts ha la chiave primaria su «chiave»: niente colonne nuove); quelli di serie
+     * stanno in lang/sito-en.php. Una chiave che lì manca resta in italiano.
+     */
+    private static function lingua(?string $loc): string { return ($loc ?? LinguaSito::get()) === 'en' ? 'en' : 'it'; }
+
+    private static function chiave(string $k, string $loc): string { return $loc === 'en' ? 'en:' . $k : $k; }
+
+    /** @return array<string,string> i testi inglesi di serie */
+    private static function serieEn(): array
     {
+        static $en = null;
+        if ($en === null) { $f = MHW_APP . '/lang/sito-en.php'; $en = is_file($f) ? (array) require $f : []; }
+        return $en;
+    }
+
+    /** Il testo grezzo (con i segnaposto e la sintassi): quello salvato, altrimenti quello di serie. */
+    public static function get(string $k, ?string $loc = null): string
+    {
+        $loc = self::lingua($loc);
         $s = self::salvate();
-        if (isset($s[$k]) && $s[$k] !== '') return $s[$k];
+        $kk = self::chiave($k, $loc);
+        if (isset($s[$kk]) && $s[$kk] !== '') return $s[$kk];
+        return self::serie($k, $loc);
+    }
+
+    public static function serie(string $k, ?string $loc = null): string
+    {
+        if (self::lingua($loc) === 'en' && isset(self::serieEn()[$k])) return (string) self::serieEn()[$k];
         return self::catalogo()[$k][3] ?? '';
     }
 
-    public static function serie(string $k): string { return self::catalogo()[$k][3] ?? ''; }
-
     /** È stato cambiato rispetto al testo di serie? */
-    public static function cambiato(string $k): bool { return self::get($k) !== self::serie($k); }
+    public static function cambiato(string $k, ?string $loc = null): bool { return self::get($k, $loc) !== self::serie($k, $loc); }
 
-    /** Salva: '' (o uguale al testo di serie) toglie la riga, così torna quello di serie. */
-    public static function set(array $coppie): void
+    /** Salva: '' (o uguale al testo di serie) toglie la riga, così torna quello di serie. $loc: 'it' o 'en'. */
+    public static function set(array $coppie, string $loc = 'it'): void
     {
         if (!self::disponibili()) return;
+        $loc = $loc === 'en' ? 'en' : 'it';
         foreach ($coppie as $k => $v) {
             $v = (string) $v;
-            $serie = self::catalogo()[$k][3] ?? null;
-            if ($v === '' || ($serie !== null && $v === $serie)) { Db::run('DELETE FROM site_texts WHERE chiave = ?', [$k]); continue; }
-            if (Db::one('SELECT chiave FROM site_texts WHERE chiave = ?', [$k])) Db::update('site_texts', ['valore' => $v, 'updated_at' => Support::now()], 'chiave = :k', ['k' => $k]);
-            else Db::insert('site_texts', ['chiave' => $k, 'valore' => $v, 'updated_at' => Support::now()]);
+            $serie = isset(self::catalogo()[$k]) ? self::serie($k, $loc) : null;
+            $kk = self::chiave((string) $k, $loc);
+            if ($v === '' || ($serie !== null && $v === $serie)) { Db::run('DELETE FROM site_texts WHERE chiave = ?', [$kk]); continue; }
+            if (Db::one('SELECT chiave FROM site_texts WHERE chiave = ?', [$kk])) Db::update('site_texts', ['valore' => $v, 'updated_at' => Support::now()], 'chiave = :k', ['k' => $kk]);
+            else Db::insert('site_texts', ['chiave' => $kk, 'valore' => $v, 'updated_at' => Support::now()]);
         }
         self::reset();
     }

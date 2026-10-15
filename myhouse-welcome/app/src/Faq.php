@@ -12,8 +12,27 @@ final class Faq
     public const IN_VISTA = ['prova', 'app', 'tempo', 'lingue', 'traduzioni', 'piu-strutture', 'fattura', 'disdire'];
 
     /** @return array<int,array{id:string,d:string,r:string}> nell'ordine di sempre */
-    public static function tutte(): array
+    public static function tutte(?string $loc = null): array
     {
+        // 8E: in inglese le stesse domande, con gli stessi id (lang/faq-en.php); le parti calcolate arrivano da qui.
+        if (($loc ?? LinguaSito::get()) === 'en' && is_file(MHW_APP . '/lang/faq-en.php')) {
+            $it = self::tutte('it');
+            $pfE = null;
+            foreach (Plans::public() as $p) if (Plans::perProperty($p)) $pfE = $p;
+            $m = fn(int $c, string $cur = 'EUR') => '€' . number_format($c / 100, $c % 100 ? 2 : 0, '.', ',');
+            $ord = fn(int $n) => $n . (in_array($n % 100, [11, 12, 13], true) ? 'th' : ([1 => 'st', 2 => 'nd', 3 => 'rd'][$n % 10] ?? 'th'));
+            $tiers = '';
+            if ($pfE && count(Plans::tiers($pfE)) > 1) {
+                $tiers = implode(', ', array_map(fn($t) => ($t['a'] === null ? ($t['da'] === 2 ? 'from the 2nd on' : 'beyond the ' . $ord($t['da'] - 1))
+                    : ($t['a'] === $t['da'] ? 'the ' . $ord($t['da']) : 'from the ' . $ord($t['da']) . ' to the ' . $ord($t['a']))) . ' ' . $m($t['cents']) . ($t['a'] === $t['da'] ? '' : ' each'), Plans::tiers($pfE)));
+            }
+            $en = (require MHW_APP . '/lang/faq-en.php')([
+                'prima' => $pfE ? $m((int) $pfE['price_cents']) : '', 'tiers' => $tiers,
+                'unica' => $pfE ? $m(Plans::unitPrice($pfE, 2)) : '', 'max_q' => $pfE ? (int) $pfE['max_quantity'] : 0,
+                'amico' => Inviti::AMICO, 'passo' => Inviti::PASSO, 'massimo' => Inviti::MASSIMO, 'amici' => Inviti::amiciMassimi(),
+            ]);
+            return array_map(fn($x) => isset($en[$x['id']]) ? ['id' => $x['id'], 'd' => $en[$x['id']][0], 'r' => $en[$x['id']][1]] : $x, $it);
+        }
         $pf = null;
         foreach (Plans::public() as $p) if (Plans::perProperty($p)) $pf = $p;
         $f = [

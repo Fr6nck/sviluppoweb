@@ -117,8 +117,10 @@ $r->get('/i/{codice}/anteprima.jpg', function (array $a) use ($guard) {
     MHW\Anteprima::manda($f);
 });
 
-$r->get('/', function () use ($guard, $codiceDalLink, $chiInvita) {
+/* La home, in italiano su «/» e in inglese su «/en» (8E): stesse sezioni, testi da TestiSito nella lingua giusta. */
+$home = function (string $loc) use ($guard, $codiceDalLink, $chiInvita) {
     $guard();
+    MHW\LinguaSito::imposta($loc);
     $codiceSconto = $codiceDalLink();
     $invito = $chiInvita();
     MHW\Stats::funnelEvent('landing_view');
@@ -142,9 +144,11 @@ $r->get('/', function () use ($guard, $codiceDalLink, $chiInvita) {
         'copertina' => $copertina ?: MHW\a('/assets/foto/casa.jpg'),
         'user' => $u, 'mie' => $mie, 'codiceSconto' => $codiceSconto,
         'invitoDi' => $invito && !$u ? explode(' ', trim((string) $invito['user_name']))[0] : '',
-        'testimonianze' => MHW\Testimonianze::visibili(), 'seoPagina' => 'home', 'anteprimaTesti' => $anteprimaTesti,
+        'testimonianze' => MHW\Testimonianze::visibili(), 'seoPagina' => $loc === 'en' ? 'en' : 'home', 'anteprimaTesti' => $anteprimaTesti,
     ]);
-});
+};
+$r->get('/', fn() => $home('it'));
+$r->get('/en', fn() => $home('en'));
 
 /*
  * 8A: chi completa «Anche il tuo sito» e sceglie come sentirci. Arriva con sendBeacon e il token
@@ -175,6 +179,11 @@ $r->post('/sito/interesse', function () use ($guard) {
 $r->get('/domande', function () use ($guard) {
     $guard();
     View::out('pub/domande', ['faq' => MHW\Faq::tutte(), 'seoPagina' => 'domande']);
+});
+$r->get('/en/questions', function () use ($guard) {
+    $guard();
+    MHW\LinguaSito::imposta('en');
+    View::out('pub/domande', ['faq' => MHW\Faq::tutte('en'), 'seoPagina' => 'en-domande']);
 });
 
 $r->get('/termini', fn() => View::out('pub/legal', ['doc' => 'termini', 'seoPagina' => 'termini'], 'layout/bare'));

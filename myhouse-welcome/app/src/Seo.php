@@ -16,6 +16,9 @@ final class Seo
     public const PAGINE = [
         'home' => ['/', 'Home'],
         'domande' => ['/domande', 'Domande frequenti'],
+        // 8E: la home e le domande in inglese.
+        'en' => ['/en', 'Home in inglese'],
+        'en-domande' => ['/en/questions', 'Domande in inglese'],
         'termini' => ['/termini', 'Termini e condizioni'],
         'privacy' => ['/privacy', 'Privacy'],
     ];
@@ -60,6 +63,10 @@ final class Seo
             'p.home.descrizione' => 'La guida digitale per case vacanza, B&B, affittacamere e agriturismi: check-in, Wi-Fi e consigli in un link e un QR Code. La crei gratis, paghi solo quando la pubblichi.',
             'p.domande.titolo' => 'Domande frequenti | MyHouse Welcome',
             'p.domande.descrizione' => 'Le risposte su MyHouse Welcome: prova gratuita, lingue e traduzioni, più strutture, B&B con più camere, fattura, cambio di piano e disdetta.',
+            'p.en.titolo' => 'Digital guest guide for holiday rentals | MyHouse Welcome',
+            'p.en.descrizione' => 'The digital guide for holiday homes, B&Bs, guesthouses and farm stays: check-in, Wi-Fi and local tips in one link and QR code. Build it free, pay when you publish.',
+            'p.en-domande.titolo' => 'Frequently asked questions | MyHouse Welcome',
+            'p.en-domande.descrizione' => 'Answers about MyHouse Welcome: free trial, languages and translations, several properties, B&Bs with several rooms, invoices, plan changes and cancelling.',
             'p.termini.titolo' => 'Termini e condizioni | MyHouse Welcome',
             'p.termini.descrizione' => 'Le condizioni del servizio MyHouse Welcome: abbonamento annuale, prezzi e rinnovo, cambio di piano, codici sconto e contenuti della guida.',
             'p.privacy.titolo' => 'Informativa sulla privacy | MyHouse Welcome',
@@ -76,7 +83,7 @@ final class Seo
                 'La guida si apre nel browser del telefono, da un link o da un QR Code: gli ospiti non scaricano app.',
                 'L\'host crea e prepara la guida gratis, senza carta di credito; paga solo quando la pubblica.',
                 'I piani sono annuali, con rinnovo automatico che si può disattivare in ogni momento.',
-                'Lingue per gli ospiti: italiano e inglese con Essential; anche francese, tedesco e spagnolo con Plus e Portfolio.',
+                'Lingue per gli ospiti: con Essential la lingua dell\'host e una a scelta; con Plus e Portfolio sei (italiano, inglese, francese, tedesco, spagnolo e una a scelta tra nove).',
                 'Il QR Code stampato non cambia quando si modifica la guida.',
                 'Le guide degli ospiti non usano cookie e non compaiono nei motori di ricerca.',
             ]),
@@ -197,8 +204,16 @@ final class Seo
         if ($descr !== '') $h .= '<meta name="description" content="' . $e($descr) . "\">\n";
         $h .= '<meta name="robots" content="' . (self::indicizza($pagina) ? 'index, follow' : 'noindex') . "\">\n";
         if (self::dominio() !== '') $h .= '<link rel="canonical" href="' . $e(self::dominio() . $percorso) . "\">\n";
+        // 8E: le pagine che esistono nelle due lingue si indicano a vicenda (x-default è l'italiano).
+        $inglese = in_array($pagina, ['en', 'en-domande'], true);
+        $it = $inglese ? LinguaSito::italiano($percorso) : $percorso;
+        if ($it !== null && isset(LinguaSito::COPPIE[$it])) {
+            $h .= '<link rel="alternate" hreflang="it" href="' . $e(self::assoluto($it)) . "\">\n"
+                . '<link rel="alternate" hreflang="en" href="' . $e(self::assoluto(LinguaSito::COPPIE[$it])) . "\">\n"
+                . '<link rel="alternate" hreflang="x-default" href="' . $e(self::assoluto($it)) . "\">\n";
+        }
         $h .= '<meta property="og:type" content="website">' . "\n"
-            . '<meta property="og:locale" content="it_IT">' . "\n"
+            . '<meta property="og:locale" content="' . ($inglese ? 'en_GB' : 'it_IT') . "\">\n"
             . '<meta property="og:site_name" content="' . $e(self::get('az.nome')) . "\">\n"
             . '<meta property="og:title" content="' . $e($titolo) . "\">\n"
             . ($descr !== '' ? '<meta property="og:description" content="' . $e($descr) . "\">\n" : '')
@@ -206,7 +221,7 @@ final class Seo
             . '<meta property="og:image" content="' . $e($img['url']) . "\">\n"
             . ($img['caricata'] ? '' : "<meta property=\"og:image:width\" content=\"1200\">\n<meta property=\"og:image:height\" content=\"630\">\n")
             . '<meta name="twitter:card" content="summary_large_image">' . "\n";
-        if ($pagina === 'home') {
+        if ($pagina === 'home') {   // le verifiche solo sulla home italiana
             if (($g = trim(self::get('gsc'))) !== '') $h .= '<meta name="google-site-verification" content="' . $e($g) . "\">\n";
             if (($b = trim(self::get('bing'))) !== '') $h .= '<meta name="msvalidate.01" content="' . $e($b) . "\">\n";
         }
@@ -221,21 +236,22 @@ final class Seo
     {
         $f = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | $flag;
         $out = [];
-        if ($pagina === 'home') {
-            $j = json_encode(self::grafoHome(), $f);
+        if ($pagina === 'home' || $pagina === 'en') {
+            $j = json_encode(self::grafoHome($pagina === 'en' ? 'en' : 'it'), $f);
             if ($j !== false) $out[] = $j;
         }
-        if ($pagina === 'home' || $pagina === 'domande') {
-            $j = json_encode(self::faqPage(), $f);
+        if (in_array($pagina, ['home', 'domande', 'en', 'en-domande'], true)) {
+            $j = json_encode(self::faqPage(str_starts_with($pagina, 'en') ? 'en' : 'it'), $f);
             if ($j !== false) $out[] = $j;
         }
         return $out;
     }
 
     /** Organization, WebSite e SoftwareApplication con un'offerta per piano pubblico in vendita. */
-    public static function grafoHome(): array
+    public static function grafoHome(string $loc = 'it'): array
     {
         $home = self::assoluto('/');
+        $en = $loc === 'en';
         $org = array_filter([
             '@type' => 'Organization', '@id' => $home . '#organizzazione',
             'name' => self::get('az.nome'), 'url' => $home,
@@ -252,28 +268,28 @@ final class Seo
             $q = Plans::perProperty($p) ? max(1, (int) $p['min_quantity']) : 1;
             $prezzo = number_format(Plans::price($p, $q) / 100, 2, '.', '');
             $offerte[] = [
-                '@type' => 'Offer', 'name' => $p['name'] . ($q > 1 ? ' (' . $q . ' strutture)' : ''),
-                'price' => $prezzo, 'priceCurrency' => 'EUR', 'url' => $home . '#piani',
+                '@type' => 'Offer', 'name' => $p['name'] . ($q > 1 ? ' (' . $q . ($en ? ' properties)' : ' strutture)') : ''),
+                'price' => $prezzo, 'priceCurrency' => 'EUR', 'url' => ($en ? self::assoluto('/en') : $home) . '#piani',
                 'priceSpecification' => ['@type' => 'UnitPriceSpecification', 'price' => $prezzo, 'priceCurrency' => 'EUR',
-                                         'valueAddedTaxIncluded' => false, 'unitText' => 'anno'],
+                                         'valueAddedTaxIncluded' => false, 'unitText' => $en ? 'year' : 'anno'],
             ];
         }
         return ['@context' => 'https://schema.org', '@graph' => [
             $org,
-            ['@type' => 'WebSite', '@id' => $home . '#sito', 'name' => self::get('az.nome'), 'url' => $home, 'inLanguage' => 'it-IT',
+            ['@type' => 'WebSite', '@id' => $home . '#sito', 'name' => self::get('az.nome'), 'url' => $home, 'inLanguage' => ['it-IT', 'en-GB'],
              'publisher' => ['@id' => $home . '#organizzazione']],
-            ['@type' => 'SoftwareApplication', 'name' => self::get('az.nome'), 'url' => $home,
+            ['@type' => 'SoftwareApplication', 'name' => self::get('az.nome'), 'url' => $en ? self::assoluto('/en') : $home, 'inLanguage' => $en ? 'en-GB' : 'it-IT',
              'applicationCategory' => 'BusinessApplication', 'operatingSystem' => 'Web',
-             'description' => self::get('p.home.descrizione'),
+             'description' => self::get($en ? 'p.en.descrizione' : 'p.home.descrizione'),
              'publisher' => ['@id' => $home . '#organizzazione'], 'offers' => $offerte],
         ]];
     }
 
-    public static function faqPage(): array
+    public static function faqPage(string $loc = 'it'): array
     {
-        return ['@context' => 'https://schema.org', '@type' => 'FAQPage',
+        return ['@context' => 'https://schema.org', '@type' => 'FAQPage', 'inLanguage' => $loc === 'en' ? 'en-GB' : 'it-IT',
                 'mainEntity' => array_map(fn($x) => ['@type' => 'Question', 'name' => $x['d'],
-                                                     'acceptedAnswer' => ['@type' => 'Answer', 'text' => $x['r']]], Faq::tutte())];
+                                                     'acceptedAnswer' => ['@type' => 'Answer', 'text' => $x['r']]], Faq::tutte($loc))];
     }
 
     /** Un indirizzo per riga, solo quelli http(s). @return string[] */
@@ -335,6 +351,12 @@ final class Seo
         }
         $t .= "\n## Domande frequenti\n\n";
         foreach (Faq::tutte() as $x) $t .= '- [' . $x['d'] . '](' . self::assoluto('/domande') . '#' . $x['id'] . ")\n";
+        // 8E: la home e le domande in inglese.
+        if (self::indicizza('en') || self::indicizza('en-domande')) {
+            $t .= "\n## English\n\n";
+            if (self::indicizza('en')) $t .= '- [MyHouse Welcome, the digital guest guide](' . self::assoluto('/en') . ")\n";
+            if (self::indicizza('en-domande')) $t .= '- [Frequently asked questions](' . self::assoluto('/en/questions') . ")\n";
+        }
         $t .= "\n## Contatti\n\n- Sito: " . self::assoluto('/') . "\n";
         foreach (['az.email' => 'Email', 'az.telefono' => 'Telefono'] as $k => $n) if (self::get($k) !== '') $t .= "- $n: " . self::get($k) . "\n";
         $chi = implode(', ', array_filter([self::get('az.venditore'), self::get('az.indirizzo'), self::get('az.piva') !== '' ? 'P.IVA ' . self::get('az.piva') : '']));
