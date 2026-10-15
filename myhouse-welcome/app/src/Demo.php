@@ -162,7 +162,7 @@ final class Demo
         }
         // La geolocalizzazione: Piazza Matteotti ad Assisi (serve anche a stimare i minuti a piedi dei luoghi).
         if (Migrator::columnExists('properties', 'lat')) Db::update('properties', ['lat' => self::CHECCO_LAT, 'lng' => self::CHECCO_LNG], 'id = :pid', ['pid' => $pid]);
-        Properties::setLocales($acc, $pid, array_values(array_intersect(['it', 'en', 'de', 'fr', 'es'], Entitlements::allowedLocales($acc))));
+        Properties::setLocales($acc, $pid, Entitlements::regolaLingue(Entitlements::limit($acc, 'locales', 1), Entitlements::limit($acc, 'lingua_extra', 0), 'it', ['it', 'en', 'de', 'fr', 'es']));
         Properties::saveContacts($pid, [['name' => 'Francesco', 'role' => 'host', 'phone' => $tel, 'whatsapp' => 1],
                                         ['name' => 'Marta, per le pulizie', 'role' => 'altro', 'phone' => '+39 075 000 0001', 'whatsapp' => 0]]);
         $foto = fn(string $nome, string $alt) => self::foto($nome, $acc, $pid, $alt);
@@ -230,33 +230,39 @@ final class Demo
                      'items' => ['Macchina per il caffè a capsule, con le prime capsule incluse', 'Ombrelli all\'ingresso', 'Adattatori per le prese straniere'],
                      'manuals' => [['title' => 'La lavatrice', 'steps' => "Chiudi l'oblò fino al clic.\nDetersivo nella vaschetta di sinistra.\nGira la manopola su «Cotone 40°» e premi Avvio.\nIl ciclo dura un'ora e mezza: lo stendino è sul terrazzino."],
                                    ['title' => 'La macchina del caffè', 'steps' => "Riempi il serbatoio d'acqua sul retro.\nAccendi: quando la luce smette di lampeggiare è pronta.\nMetti la capsula, chiudi la leva e premi la tazzina piccola o grande.\nLe capsule usate si buttano nell'indifferenziato."]],
-                     'note' => "Lenzuola e asciugamani si cambiano ogni tre notti, o prima se lo chiedi.\nRiscaldamento e aria condizionata hanno la loro sezione, con gli orari."],
+                     'note' => "Lenzuola e asciugamani si cambiano ogni tre notti, o prima se lo chiedi.\nRiscaldamento e aria condizionata hanno le loro sezioni, con gli orari."],
             'en' => ['items' => ['Capsule coffee machine, first capsules included', 'Umbrellas by the door', 'Adapters for foreign plugs'],
                      'manuals' => [['title' => 'The washing machine', 'steps' => "Close the door until it clicks.\nDetergent in the left drawer.\nTurn the dial to «Cotton 40°» and press Start.\nThe cycle takes an hour and a half: the drying rack is on the terrace."],
                                    ['title' => 'The coffee machine', 'steps' => "Fill the water tank at the back.\nSwitch it on: it is ready when the light stops blinking.\nInsert a capsule, close the lever and press the small or large cup.\nUsed capsules go in the general waste."]],
-                     'note' => "Sheets and towels are changed every three nights, or sooner if you ask.\nHeating and air conditioning have their own section, with the times."],
+                     'note' => "Sheets and towels are changed every three nights, or sooner if you ask.\nHeating and air conditioning have their own sections, with the times."],
         ], 'Servizi');
 
-        // -------- Riscaldamento e aria condizionata: il riscaldamento va da solo, il condizionatore lo accende l'ospite
-        $clima = Properties::addSection($acc, $pid, 'clima');
-        self::scrivi($pid, $clima, [
+        // -------- Riscaldamento e aria condizionata (8C: due sezioni): il riscaldamento va da solo, il condizionatore lo accende l'ospite
+        $caldo = Properties::addSection($acc, $pid, 'riscaldamento');
+        self::scrivi($pid, $caldo, [
             'it' => ['heating_mode' => 'auto',
                      'heating_times' => [['from' => '06:30', 'to' => '09:30', 'days' => []], ['from' => '17:00', 'to' => '22:30', 'days' => []]],
                      'heating_temp' => '20', 'heating_period' => 'Da metà ottobre a metà aprile, nei giorni freddi.',
                      'heating_how' => ['La caldaia è nell\'armadio del bagno: non serve toccarla.',
                                        'Se senti freddo, apri del tutto la manopola del termosifone (numero 5).',
                                        'Se fa troppo caldo, girala verso 2 invece di aprire la finestra.'],
-                     'ac_mode' => 'libero', 'ac_temp' => '26',
-                     'ac_how' => ['Il telecomando è sul comodino della camera.', 'Premi ON, poi il fiocco di neve per raffreddare.', 'Chiudi le finestre e spegnilo quando esci.'],
                      'risparmio' => '1',
-                     'note' => 'Le mura in pietra tengono il fresco d\'estate e il caldo d\'inverno: di solito bastano poche ore di condizionatore.'],
+                     'note' => 'Le mura in pietra tengono il caldo d\'inverno: di solito bastano gli orari impostati.'],
             'en' => ['heating_period' => 'From mid October to mid April, on cold days.',
                      'heating_how' => ['The boiler is in the bathroom cupboard: no need to touch it.',
                                        'If you feel cold, open the radiator knob all the way (number 5).',
                                        'If it is too warm, turn it down to 2 instead of opening the window.'],
-                     'ac_how' => ['The remote is on the bedroom bedside table.', 'Press ON, then the snowflake to cool.', 'Close the windows and switch it off when you go out.'],
-                     'note' => 'The stone walls keep the house cool in summer and warm in winter: a few hours of air conditioning are usually enough.'],
-        ], 'Riscaldamento e aria condizionata');
+                     'note' => 'The stone walls keep the house warm in winter: the set times are usually enough.'],
+        ], 'Riscaldamento');
+        $fresco = Properties::addSection($acc, $pid, 'aria');
+        self::scrivi($pid, $fresco, [
+            'it' => ['ac_mode' => 'libero', 'ac_temp' => '26',
+                     'ac_how' => ['Il telecomando è sul comodino della camera.', 'Premi ON, poi il fiocco di neve per raffreddare.', 'Chiudi le finestre e spegnilo quando esci.'],
+                     'risparmio' => '1',
+                     'note' => 'Le mura in pietra tengono il fresco d\'estate: di solito bastano poche ore di condizionatore.'],
+            'en' => ['ac_how' => ['The remote is on the bedroom bedside table.', 'Press ON, then the snowflake to cool.', 'Close the windows and switch it off when you go out.'],
+                     'note' => 'The stone walls keep the house cool in summer: a few hours of air conditioning are usually enough.'],
+        ], 'Aria condizionata');
 
         // -------- Servizi extra, con prezzo e unità
         $extra = Properties::addSection($acc, $pid, 'extras');

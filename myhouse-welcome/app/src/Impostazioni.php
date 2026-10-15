@@ -61,6 +61,7 @@ final class Impostazioni
             'translate.usd_eur'               => ['MHW_TRANSLATE_USD_EUR', 'Cambio: quanti euro vale un dollaro', 'decimale', 'Per le stime in euro, per esempio 0,86.'],
             'translate.free_tier_until'       => ['MHW_TRANSLATE_FREE_UNTIL', 'Fine del piano gratuito di AWS', 'data', '2 milioni di caratteri al mese per 12 mesi dalla prima traduzione. Vuoto = nessun piano gratuito.'],
             'translate.cap_account'           => ['MHW_TRANSLATE_CAP_ACCOUNT', 'Tetto per account, caratteri al mese', 'cifra', 'Oltre, quel cliente non riceve altre suggerite fino al mese dopo. Predefinito 150.000.'],
+            'translate.extra'                 => ['MHW_TRANSLATE_EXTRA', 'Traduci anche la lingua aggiuntiva', 'check', 'Le traduzioni suggerite anche verso la lingua in più di Plus e Portfolio (olandese, portoghese, giapponese…). Spento, quella lingua si scrive a mano.'],
             'translate.cap_global'            => ['MHW_TRANSLATE_CAP_GLOBAL', 'Tetto per tutto il sito, caratteri al mese', 'cifra', 'Predefinito 1.900.000, sotto i 2 milioni del piano gratuito.'],
         ],
         // 8B: i link dei portali che la guida mostra a chi dà 5 stelle (Canali). Google cerca nome e città.

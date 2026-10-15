@@ -17,24 +17,38 @@
     b.addEventListener('click', function () { apri(d); });
   });
 
-  // Le stelle del commiato: il voto (anonimo) parte senza ricaricare la pagina; poi i bottoni delle recensioni,
-  // uguali per ogni voto, e da 1 a 3 anche «Scrivigli».
-  document.querySelectorAll('form[data-voto-url]').forEach(function (f) {
-    var box = f.closest('[data-voto-box]'), url = f.getAttribute('data-voto-url');
-    f.addEventListener('click', function (e) {
-      var b = e.target.closest('button[name=voto]'); if (!b) return;
-      e.preventDefault();
-      var n = parseInt(b.value, 10);
-      if (url) { try { fetch(url + n, { method: 'GET', keepalive: true, credentials: 'omit' }); } catch (x) {} }
-      f.querySelectorAll('button[name=voto]').forEach(function (s) {
-        s.classList.toggle('stella--su', parseInt(s.value, 10) <= n);
-        if (s === b) s.setAttribute('aria-pressed', 'true'); else s.removeAttribute('aria-pressed');
-      });
-      var dopo = box.querySelector('[data-voto-dopo]'), basso = box.querySelector('[data-voto-basso]');
-      if (dopo) dopo.hidden = false;
-      if (basso) basso.hidden = n > 3;
+  // 8C · «In che lingua vuoi leggerla?»: la scelta si ricorda per questa guida in localStorage (niente cookie).
+  // Con una scelta già fatta la finestra non si apre più; il selettore in alto resta per cambiarla.
+  (function () {
+    var slug = document.documentElement.getAttribute('data-guida');
+    if (!slug) return;
+    var chiave = 'mhw-lingua-' + slug, salvata = null;
+    function scrivi(l) { try { localStorage.setItem(chiave, l); } catch (e) {} }
+    try { salvata = localStorage.getItem(chiave); } catch (e) {}
+    var qs = null; try { qs = new URLSearchParams(location.search); } catch (e) {}
+    if (qs && qs.get('l')) { scrivi(qs.get('l')); salvata = qs.get('l'); }
+    var d = document.getElementById('scegli-lingua');
+    if (!d) return;
+    var corrente = document.documentElement.getAttribute('lang');
+    var link = {};
+    d.querySelectorAll('[data-lingua]').forEach(function (a) { link[a.getAttribute('data-lingua')] = a; });
+    if (salvata && link[salvata]) {
+      if (salvata !== corrente) location.replace(link[salvata].href);
+      return;
+    }
+    var scelta = false;
+    d.addEventListener('click', function (e) {
+      var a = e.target.closest('[data-lingua]'); if (!a) return;
+      scelta = true; scrivi(a.getAttribute('data-lingua'));
+      if (a.getAttribute('data-lingua') === corrente) { e.preventDefault(); d.close(); }
     });
-  });
+    // Chiusa con Esc: vale la lingua che si sta leggendo, e non si richiede più.
+    d.addEventListener('close', function () { if (!scelta) scrivi(corrente); });
+    if (typeof d.showModal === 'function') d.showModal(); else d.setAttribute('open', '');
+    var primo = d.querySelector('[data-lingua]'); if (primo) primo.focus();
+  })();
+
+  // Le stelle (8C, guest/_voto.php) sono un modulo GET: la pagina si ricarica con ?voto=N e mostra il blocco giusto.
 
   // Le foto dentro le sezioni: un tocco apre la foto più grande, con lo zoom delle dita e della rotella.
   var foto = document.querySelectorAll('[data-zoom]');

@@ -20,10 +20,13 @@ namespace MHW;
  *
  * Formato 5: recensioni e prenotazione diretta per il commiato, e la firma
  * «Guida creata con MyHouse Welcome» (visibile, salvo chi la nasconde col piano).
+ *
+ * Formato 8 (8C): l'email per gli ospiti (pagina delle recensioni); riscaldamento e aria
+ * condizionata sono due sezioni. Le istantanee di prima con «clima» si vedono come prima.
  */
 final class Guide
 {
-    public const FORMAT = 7;
+    public const FORMAT = 8;
 
     // ------------------------------------------------------------ costruzione
 
@@ -33,11 +36,9 @@ final class Guide
         if (!$p) throw new \RuntimeException('Struttura inesistente.');
 
         $acc = (int) $p['account_id'];
-        $consentite = Entitlements::allowedLocales($acc);
-        $locales = array_values(array_intersect(
-            array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$propertyId]), 'locale'),
-            $consentite));
-        if (!in_array($p['default_locale'], $locales, true)) array_unshift($locales, $p['default_locale']);
+        // 8C: le lingue attive che il piano lascia (la principale prima, poi nell'ordine del listino).
+        $locales = Entitlements::lingueGuida($acc, (string) $p['default_locale'],
+            array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$propertyId]), 'locale'));
         $foto = Entitlements::can($acc, 'photos');
         $pdf = Entitlements::can($acc, 'pdf');
 
@@ -123,6 +124,8 @@ final class Guide
                     : ['url' => (string) ($p['direct_url'] ?? ''), 'code' => (string) ($p['direct_code'] ?? ''), 'discount' => (string) ($p['direct_discount'] ?? '')],
                 // 8B: dove si trova la struttura, con i link già pronti (portali e social).
                 'channels' => Canali::perGuida($p),
+                // 8C: l'email per gli ospiti, per «Mandaci un'email» da 1 a 4 stelle.
+                'guest_email' => (string) ($p['guest_email'] ?? ''),
                 // «Due parole di benvenuto» dell'host (7C), per lingua: nel foglio del tondo con la sua foto.
                 'host_welcome' => array_filter(array_map(fn($t) => mb_substr(trim((string) $t), 0, 160), (array) (json_decode((string) ($p['host_welcome'] ?? ''), true) ?: [])), fn($t) => $t !== ''),
                 // La firma si nasconde solo se il piano lo comprende E l'host l'ha chiesto.
@@ -209,7 +212,16 @@ final class Guide
         if ($f < 4) $s = self::daFormato3($s);
         if ($f < 5) $s = self::daFormato4($s);
         if ($f < 6) $s = self::daFormato5($s);
-        return self::daFormato6($s);
+        if ($f < 7) $s = self::daFormato6($s);
+        return self::daFormato7($s);
+    }
+
+    /** Formato 7 → 8 (8C): niente email per gli ospiti; la sezione «clima» resta com'era (guest/_clima.php). */
+    private static function daFormato7(array $s): array
+    {
+        $s['property'] = ($s['property'] ?? []) + ['guest_email' => ''];
+        $s['format'] = self::FORMAT;
+        return $s;
     }
 
     /** Formato 6 → 7 (8B): i link di recensione scritti dall'host diventano canali, con il loro indirizzo. */

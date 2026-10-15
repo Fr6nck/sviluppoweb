@@ -220,7 +220,9 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
         $doveN = str_contains((string) $novita['dove'], '{pid}') ? ($pidN ? str_replace('{pid}', (string) $pidN, (string) $novita['dove']) : '') : (string) $novita['dove']; ?>
   <aside class="novita" aria-labelledby="novita-titolo">
     <span class="novita__kicker"><span class="dot" aria-hidden="true"></span>Novità</span>
-    <div class="novita__testo"><b id="novita-titolo"><?= Support::e($novita['titolo']) ?></b> <span><?= Support::e($novita['testo']) ?></span></div>
+    <?php /* 8C: la riga in più se la sezione «Aria condizionata» è nata spenta (migrazione 037, account al limite) */
+          $notaN = !empty($novita['nota_aria']) && MHW\Db::val("SELECT 1 FROM sections s JOIN properties p ON p.id = s.property_id WHERE p.account_id = ? AND s.kind = 'aria' AND s.is_active = 0", [$accN['id']]) ? (string) $novita['nota_aria'] : ''; ?>
+    <div class="novita__testo"><b id="novita-titolo"><?= Support::e($novita['titolo']) ?></b> <span><?= Support::e($novita['testo']) ?></span><?php if ($notaN !== ''): ?> <span class="novita__nota"><?= Support::e($notaN) ?></span><?php endif; ?></div>
     <div class="novita__azioni">
       <?php if ($doveN !== ''): ?><a class="btn btn--sm" href="<?= b() . Support::e($doveN) ?>"<?= str_ends_with($doveN, '/anteprima') ? ' target="_blank" rel="noopener"' : '' ?>>Mostrami dove</a><?php endif; ?>
       <form method="post" action="<?= b() ?>/pannello/novita/chiudi" style="margin:0"><?= Csrf::field() ?>

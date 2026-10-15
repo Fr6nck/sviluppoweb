@@ -43,17 +43,29 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
         <input type="number" id="beds" name="beds" min="0" max="999" step="1" inputmode="numeric" value="<?= (int) ($prop['beds'] ?? 0) ?: '' ?>"></div>
     </div>
   </fieldset>
-  <?php if (isset($consentite, $tutte)): $principale = $prop['default_locale'] ?: 'it'; ?>
-    <fieldset class="fieldset">
+  <?php if (isset($tutte)): $principale = $prop['default_locale'] ?: 'it'; ?>
+    <fieldset class="fieldset" id="lingua-principale">
       <legend>In che lingua scrivi la guida?</legend>
-      <p class="help">È la lingua principale: quella in cui scrivi tutti i testi. Le altre lingue sono facoltative e le aggiungi alla fine.
-        Sceglila prima di scrivere: se la cambi dopo, i testi già scritti restano nella lingua in cui li hai scritti.</p>
+      <p class="help">È la lingua principale: quella in cui scrivi tutti i testi. Di serie è l'italiano; puoi scegliere quella che vuoi.
+        Le altre lingue sono facoltative e le aggiungi alla fine. Sceglila prima di scrivere: se la cambi dopo, i testi già scritti restano nella lingua in cui li hai scritti.</p>
       <div class="scelte scelte--riga">
-        <?php foreach ($tutte as $code => $nomeL): if (!in_array($code, $consentite, true)) continue; ?>
+        <?php foreach ($tutte as $code => $nomeL): if (!MHW\I18n::base($code)) continue; ?>
           <label class="scelta"><input type="radio" name="default_locale" value="<?= Support::e($code) ?>" <?= $code === $principale ? 'checked' : '' ?>>
-            <span class="scelta__testo"><?= Support::e($nomeL) ?></span></label>
+            <span class="scelta__testo" lang="<?= Support::e($code) ?>"><?= Support::e($nomeL) ?></span></label>
         <?php endforeach; ?>
       </div>
+      <?php /* 8C: le lingue aggiuntive come principale (Nederlands, 日本語…): con Plus occupa il posto della lingua in più. */
+            $aggiuntive = array_filter($tutte, fn($c) => !MHW\I18n::base($c), ARRAY_FILTER_USE_KEY); ?>
+      <details class="lingue-altre"<?= isset($aggiuntive[$principale]) ? ' open' : '' ?>>
+        <summary>Un'altra lingua</summary>
+        <div class="scelte scelte--riga" style="margin-top:8px">
+          <?php foreach ($aggiuntive as $code => $nomeL): ?>
+            <label class="scelta"><input type="radio" name="default_locale" value="<?= Support::e($code) ?>" <?= $code === $principale ? 'checked' : '' ?>>
+              <span class="scelta__testo" lang="<?= Support::e($code) ?>"><?= Support::e($nomeL) ?></span></label>
+          <?php endforeach; ?>
+        </div>
+        <p class="small muted" style="margin:8px 0 0">I bottoni e i titoli della guida sono tradotti in olandese, portoghese e polacco; per le altre lingue l'ospite li legge in inglese, i tuoi testi restano come li scrivi.</p>
+      </details>
     </fieldset>
   <?php endif; ?>
   <fieldset class="fieldset">
@@ -74,6 +86,13 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
       ],
       'rows' => array_map(fn($x) => ['id' => 'c' . $x['id']] + $x, $contatti),
       'add' => 'Aggiungi un contatto', 'item' => 'Contatto', 'max' => 8]); ?>
+  <?php if (array_key_exists('guest_email', $prop)): /* 8C: il bottone «Mandaci un'email» della pagina delle recensioni (da 1 a 4 stelle) */ ?>
+    <div class="field" style="max-width:420px">
+      <label for="guest_email">Email per gli ospiti <span class="muted">(facoltativa)</span></label>
+      <p class="help" id="guest-email-aiuto" style="margin:0 0 6px">Dove ti scrive un ospite che vuole dirti cosa migliorare. Senza, nella pagina delle recensioni c'è solo WhatsApp.</p>
+      <input type="email" id="guest_email" name="guest_email" maxlength="190" autocomplete="email" aria-describedby="guest-email-aiuto" value="<?= Support::e((string) ($prop['guest_email'] ?? '')) ?>">
+    </div>
+  <?php endif; ?>
   <?php if ($dopoPasso !== ''):
         $barraAvanti = '<button class="btn btn--go" name="dopo" value="' . Support::e($dopoPasso) . '">Salva e continua <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
         include __DIR__ . '/_barra_passo.php';

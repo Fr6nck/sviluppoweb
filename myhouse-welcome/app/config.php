@@ -40,9 +40,12 @@ $config = [
         ],
     ],
 
-    // Lingue della guida, nell'ordine del listino: Essential ne pubblica due
-    // (italiano e inglese), gli altri piani cinque.
-    'locales' => ['it' => 'Italiano', 'en' => 'English', 'fr' => 'Français', 'de' => 'Deutsch', 'es' => 'Español'],
+    // Lingue della guida, col nome nativo: prima le cinque di base (I18n::BASE), poi le aggiuntive
+    // (8C). Le regole per piano sono in Entitlements::regolaLingue: Essential la principale e una a
+    // scelta, Plus e Portfolio la principale, le altre di base e una aggiuntiva.
+    'locales' => ['it' => 'Italiano', 'en' => 'English', 'fr' => 'Français', 'de' => 'Deutsch', 'es' => 'Español',
+                  'nl' => 'Nederlands', 'pt' => 'Português', 'pl' => 'Polski', 'ru' => 'Русский', 'zh' => '中文',
+                  'ja' => '日本語', 'sv' => 'Svenska', 'da' => 'Dansk', 'cs' => 'Čeština'],
 
     'stripe' => [
         'secret_key'      => $env('STRIPE_SECRET_KEY'),
@@ -119,6 +122,8 @@ $config = [
         'free_tier_until' => $env('MHW_TRANSLATE_FREE_UNTIL'),
         'cap_account'    => (int) $env('MHW_TRANSLATE_CAP_ACCOUNT', '150000'),
         'cap_global'     => (int) $env('MHW_TRANSLATE_CAP_GLOBAL', '1900000'),
+        // 8C: suggerire anche la lingua aggiuntiva (nl, pt, ja…). Spento, quella lingua si scrive a mano.
+        'extra'          => $bool('MHW_TRANSLATE_EXTRA', true),
     ],
 
     // Le versioni dei documenti legali: cambiatele quando cambia il testo, e ogni

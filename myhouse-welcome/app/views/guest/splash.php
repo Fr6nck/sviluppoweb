@@ -5,6 +5,7 @@ $dentro = $base . '?l=' . $loc;
 $luogo = trim($pr['city'] . ($pr['region'] ? ', ' . $pr['region'] : ''));
 $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr['cover_url'] ?? null); ?>
 
+<?php $coda = '/benvenuto'; include __DIR__ . '/_scegli_lingua.php'; /* 8C: «Scegli la lingua» alla prima apertura */ ?>
 <div class="full" id="soglia">
   <?php if ($copertina): ?><img class="full__photo" src="<?= Support::e($copertina) ?>" alt="" fetchpriority="high"><?php endif; ?>
   <div class="full__scrim"></div>

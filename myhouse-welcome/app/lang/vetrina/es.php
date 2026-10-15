@@ -162,4 +162,8 @@ return [
     'Casa Checco è la porta rossa ad arco, al numero 3, con la rosa sul muro.' => 'Casa Checco es la puerta roja en arco, en el número 3, con el rosal en la pared.',
     'Francesco ti aspetta lì con le chiavi: scrivigli su WhatsApp mezz\'ora prima di arrivare.' => 'Francesco te espera allí con las llaves: escríbele por WhatsApp media hora antes de llegar.',
     'In casa trovi il quaderno con le istruzioni e la mappa della città.' => 'En casa encontrarás el cuaderno con las instrucciones y el mapa de la ciudad.',
+    // 8C: riscaldamento e aria condizionata in due sezioni
+    "Lenzuola e asciugamani si cambiano ogni tre notti, o prima se lo chiedi.\nRiscaldamento e aria condizionata hanno le loro sezioni, con gli orari." => "Las sábanas y las toallas se cambian cada tres noches, o antes si lo pides.\nLa calefacción y el aire acondicionado tienen sus propias secciones, con los horarios.",
+    'Le mura in pietra tengono il caldo d\'inverno: di solito bastano gli orari impostati.' => 'Los muros de piedra mantienen el calor en invierno: normalmente bastan los horarios programados.',
+    'Le mura in pietra tengono il fresco d\'estate: di solito bastano poche ore di condizionatore.' => 'Los muros de piedra mantienen la casa fresca en verano: normalmente bastan unas pocas horas de aire acondicionado.',
 ];

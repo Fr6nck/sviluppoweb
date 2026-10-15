@@ -1,5 +1,7 @@
 <?php
-/* Riscaldamento e aria condizionata, nella guida dell'ospite: una scheda per impianto.
+/* Riscaldamento e aria condizionata, nella guida dell'ospite: una scheda per impianto. Dalla 8C sono due
+   sezioni («riscaldamento» con i campi heating_*, «aria» con i campi ac_*): ognuna ha solo i suoi campi e
+   mostra solo la sua scheda; la vecchia «clima» delle istantanee di prima le mostra tutte e due.
    Se va da solo, si vede subito se adesso è acceso (ora italiana) e le fasce orarie;
    se lo accende l'ospite, come si fa. In fondo il consiglio per non sprecare energia.
    Contano solo i campi del modo scelto: quelli rimasti da un modo precedente non si vedono.

@@ -8,10 +8,20 @@ namespace MHW;
  * "Copia", "Chiama", "Prima di andare", i nomi delle sezioni di catalogo.
  * Ogni stringa sta in lang/{it,en,fr,de,es}.php; se in una lingua manca,
  * si ripiega sull'inglese e poi sull'italiano, mai su una chiave nuda.
+ *
+ * 8C: alle cinque lingue di base (BASE) si aggiungono le aggiuntive (EXTRA). L'interfaccia è
+ * tradotta per nl, pt e pl (lang/{nl,pt,pl}.php); per le altre vale l'inglese, mentre i testi
+ * dell'host restano nella loro lingua.
  */
 final class I18n
 {
-    public const LOCALES = ['it', 'en', 'fr', 'de', 'es'];
+    /** Le cinque lingue di base, nell'ordine del listino. */
+    public const BASE = ['it', 'en', 'fr', 'de', 'es'];
+    /** Le lingue aggiuntive (una a scelta con Plus e Portfolio, o la seconda di Essential). */
+    public const EXTRA = ['nl', 'pt', 'pl', 'ru', 'zh', 'ja', 'sv', 'da', 'cs'];
+    public const LOCALES = [...self::BASE, ...self::EXTRA];
+
+    public static function base(string $loc): bool { return in_array($loc, self::BASE, true); }
     private static array $dict = [];
 
     private static function load(string $loc): array

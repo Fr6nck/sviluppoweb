@@ -1,6 +1,9 @@
 <?php
-/* Riscaldamento e aria condizionata (sezione «clima»): le parole della guida dell'ospite. */
+/* Riscaldamento e aria condizionata (sezioni «riscaldamento» e «aria», e la vecchia «clima»): le parole della guida dell'ospite. */
 return [
+    // 8C: due sezioni, ognuna col suo titolo («kind.clima» resta per le istantanee di prima)
+    'kind.riscaldamento' => 'Calefacción',
+    'kind.aria' => 'Aire acondicionado',
     'kind.clima' => 'Calefacción y aire acondicionado',
     'clima.heating' => 'Calefacción',
     'clima.ac' => 'Aire acondicionado',

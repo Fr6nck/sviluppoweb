@@ -242,10 +242,12 @@ final class CambioAbbonamento
         }
         $perde = [];
         $lingueOra = Entitlements::valore($ora, 'locales', 1); $lingueDopo = Entitlements::valore($dopo, 'locales', 1);
-        if ($lingueDopo < $lingueOra) {
-            $tutte = Config::get('locales');
-            $restano = array_slice(array_values($tutte), 0, max(1, $lingueDopo));
-            $perde[] = 'Lingue: restano ' . implode(' e ', $restano) . '. Le traduzioni nelle altre restano salvate, ma la guida non le mostra.';
+        $extraOra = Entitlements::valore($ora, 'lingua_extra', 0); $extraDopo = Entitlements::valore($dopo, 'lingua_extra', 0);
+        if ($lingueDopo < $lingueOra || $extraDopo < $extraOra) {
+            // 8C: con Essential restano la lingua principale e una seconda (la prima nell'ordine del listino).
+            $perde[] = $extraDopo <= 0 && $lingueDopo <= 2
+                ? 'Lingue: restano la lingua principale e una seconda. Le traduzioni nelle altre restano salvate, ma la guida non le mostra.'
+                : 'Lingue: restano ' . $lingueDopo . ' lingue di base' . ($extraDopo > 0 ? ' e ' . ($extraDopo === 1 ? 'una lingua in più' : $extraDopo . ' lingue in più') : '') . '. Le traduzioni nelle altre restano salvate, ma la guida non le mostra.';
         }
         $funzioni = ['photos' => 'Foto e PDF nelle sezioni: restano salvati, la guida non li mostra.', 'profile_image' => 'Foto profilo: resta salvata, la guida non la mostra.',
                      'analytics' => 'Statistiche di lettura.', 'hide_branding' => 'La firma «Guida creata con MyHouse Welcome» torna visibile.',
@@ -293,10 +295,14 @@ final class CambioAbbonamento
         if ($spente) $cambiato[] = ($spente === 1 ? 'Una sezione è stata disattivata' : "$spente sezioni sono state disattivate") . ': restano salvate, le riattivi quando vuoi.';
         // Lingue non comprese: escono dalla guida (la principale resta).
         $nLingue = Entitlements::valore($dopo, 'locales', 1);
-        $tutte = array_keys(Config::get('locales'));
-        $consentite = $nLingue >= count($tutte) ? $tutte : array_slice($tutte, 0, max(1, $nLingue));
+        $nExtra = Entitlements::valore($dopo, 'lingua_extra', 0);
+        $ordine = array_keys(Config::get('locales'));
         $tolte = 0;
         foreach (Db::all('SELECT id, default_locale FROM properties WHERE account_id = ?', [$aid]) as $p) {
+            // 8C: le regole del piano nuovo sulla lingua principale di ogni struttura (Entitlements::regolaLingue).
+            $attive = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
+            usort($attive, fn($x, $y) => array_search($x, $ordine, true) <=> array_search($y, $ordine, true));
+            $consentite = Entitlements::regolaLingue($nLingue, $nExtra, (string) $p['default_locale'], $attive);
             foreach (Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]) as $l) {
                 if ($l['locale'] === $p['default_locale'] || in_array($l['locale'], $consentite, true)) continue;
                 Db::run('DELETE FROM property_locales WHERE property_id = ? AND locale = ?', [$p['id'], $l['locale']]);

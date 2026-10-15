@@ -57,6 +57,35 @@ namespace MHW;
  */
 final class SectionCatalog
 {
+    /** I campi del riscaldamento, dell'aria condizionata e quelli comuni (8C: due sezioni, più la vecchia «clima»). */
+    private const CAMPI_CALDO = [
+        'heating_mode'   => ['choice', 'Riscaldamento', '', 'options' => ['auto' => 'Si accende da solo, a orari', 'manuale' => 'Lo accende l\'ospite', 'no' => 'Non c\'è']],
+        'heating_times'  => ['repeater', 'Quando è acceso', 'Una riga per ogni fascia: per esempio dalle 6:30 alle 9:00 e dalle 17:00 alle 23:00. Senza giorni vale tutti i giorni.',
+                             'add' => 'Aggiungi una fascia oraria', 'item' => 'Fascia', 'max' => 8, 'solo_con' => ['heating_mode', ['auto']], 'sub' => [
+                                 'from' => ['time', 'Si accende alle', '', 'w' => 4],
+                                 'to'   => ['time', 'Si spegne alle', '', 'w' => 4],
+                                 'days' => ['days', 'Giorni', 'Facoltativi: vuoto vale tutti i giorni.'],
+                             ]],
+        'heating_temp'   => ['plain', 'Temperatura (°C)', 'Facoltativa. Quella impostata, o quella che consigli. Per esempio: 20.', 'cifre' => true, 'solo_con' => ['heating_mode', ['auto', 'manuale']]],
+        'heating_period' => ['text', 'Periodo dell\'anno', 'Facoltativo. Per esempio: dal 15 ottobre al 15 aprile.', 'solo_con' => ['heating_mode', ['auto', 'manuale']]],
+        'heating_how'    => ['steps', 'Come si usa', 'Facoltativo. Un passaggio per riga: dov\'è il termostato, come si alza o si abbassa.', 'solo_con' => ['heating_mode', ['auto', 'manuale']]],
+    ];
+    private const CAMPI_FRESCO = [
+        'ac_mode'        => ['choice', 'Aria condizionata', '', 'options' => ['libero' => 'L\'ospite la accende quando vuole', 'orari' => 'Funziona solo in certi orari', 'no' => 'Non c\'è']],
+        'ac_times'       => ['repeater', 'Quando funziona', 'Una riga per ogni fascia. Senza giorni vale tutti i giorni.',
+                             'add' => 'Aggiungi una fascia oraria', 'item' => 'Fascia', 'max' => 8, 'solo_con' => ['ac_mode', ['orari']], 'sub' => [
+                                 'from' => ['time', 'Dalle', '', 'w' => 4],
+                                 'to'   => ['time', 'Alle', '', 'w' => 4],
+                                 'days' => ['days', 'Giorni', 'Facoltativi: vuoto vale tutti i giorni.'],
+                             ]],
+        'ac_temp'        => ['plain', 'Temperatura consigliata (°C)', 'Facoltativa. Per esempio: 26.', 'cifre' => true, 'solo_con' => ['ac_mode', ['libero', 'orari']]],
+        'ac_how'         => ['steps', 'Come si accende', 'Facoltativo. Un passaggio per riga: dov\'è il telecomando, quale tasto premere.', 'solo_con' => ['ac_mode', ['libero', 'orari']]],
+    ];
+    private const CAMPI_CLIMA = [
+        'risparmio'      => ['check', 'Mostra il consiglio per risparmiare energia', 'Nella guida, due righe gentili: in Italia l\'energia costa cara, finestre chiuse con l\'impianto acceso, spegnere quando si esce.', 'acceso' => true],
+        'note'           => ['textarea', 'Nota', 'Facoltativa.'],
+    ];
+
     private const K = [
         'checkin' => [
             'icon' => 'home', 'core' => true, 'group' => 'casa',
@@ -117,37 +146,29 @@ final class SectionCatalog
                 'note'  => ['textarea', 'Nota', 'Facoltativa.'],
             ],
         ],
-        // Riscaldamento e aria condizionata: com'è ogni impianto, gli orari se va da solo, la
-        // temperatura, come si usa. Nella guida l'ospite vede se adesso è acceso e un consiglio
-        // per non sprecare energia (in Italia costa cara). I campi di un impianto compaiono
-        // solo con il modo giusto ('solo_con'); nella guida contano solo quelli del modo scelto.
-        'clima' => [
+        // Riscaldamento e aria condizionata (8C): due sezioni, ognuna con i suoi campi, la sua introduzione
+        // e la sua scheda nella guida (stato «acceso adesso», orari, consiglio per il risparmio: guest/_clima.php).
+        // I campi di un impianto compaiono solo con il modo giusto ('solo_con').
+        'riscaldamento' => [
             'icon' => 'flame', 'group' => 'casa',
+            'breve' => 'Quando è acceso il riscaldamento, a che temperatura, come si regola.',
+            'intro' => 'Dice all\'ospite se il riscaldamento si accende da solo, a che ora e a che temperatura, oppure come si accende. Nella guida vede subito se adesso è acceso, con un consiglio per non sprecare energia.',
+            'fields' => [...self::CAMPI_CALDO, ...self::CAMPI_CLIMA],
+        ],
+        'aria' => [
+            'icon' => 'snow', 'group' => 'casa',
+            'breve' => 'Come si accende l\'aria condizionata, quando funziona, a che temperatura.',
+            'intro' => 'Dice all\'ospite come si accende l\'aria condizionata, oppure in che orari funziona, e la temperatura consigliata. Nella guida vede subito se adesso è accesa, con un consiglio per non sprecare energia.',
+            'fields' => [...self::CAMPI_FRESCO, ...self::CAMPI_CLIMA],
+        ],
+        // La vecchia sezione unica «clima» (fino alla 8B): nascosta, non si sceglie e non conta in «N sezioni».
+        // Restano le definizioni per le istantanee già pubblicate (guest/section.php la mostra come prima);
+        // la migrazione 037 la divide in «riscaldamento» e «aria».
+        'clima' => [
+            'icon' => 'flame', 'group' => 'casa', 'nascosta' => true,
             'breve' => 'Quando è acceso il riscaldamento, come si usa l\'aria condizionata.',
             'intro' => 'Dice all\'ospite se riscaldamento e aria condizionata si accendono da soli, a che ora e a che temperatura, oppure come si accendono. Nella guida vede subito se adesso sono accesi, con un consiglio per non sprecare energia.',
-            'fields' => [
-                'heating_mode'   => ['choice', 'Riscaldamento', '', 'options' => ['auto' => 'Si accende da solo, a orari', 'manuale' => 'Lo accende l\'ospite', 'no' => 'Non c\'è']],
-                'heating_times'  => ['repeater', 'Quando è acceso', 'Una riga per ogni fascia: per esempio dalle 6:30 alle 9:00 e dalle 17:00 alle 23:00. Senza giorni vale tutti i giorni.',
-                                     'add' => 'Aggiungi una fascia oraria', 'item' => 'Fascia', 'max' => 8, 'solo_con' => ['heating_mode', ['auto']], 'sub' => [
-                                         'from' => ['time', 'Si accende alle', '', 'w' => 4],
-                                         'to'   => ['time', 'Si spegne alle', '', 'w' => 4],
-                                         'days' => ['days', 'Giorni', 'Facoltativi: vuoto vale tutti i giorni.'],
-                                     ]],
-                'heating_temp'   => ['plain', 'Temperatura (°C)', 'Facoltativa. Quella impostata, o quella che consigli. Per esempio: 20.', 'cifre' => true, 'solo_con' => ['heating_mode', ['auto', 'manuale']]],
-                'heating_period' => ['text', 'Periodo dell\'anno', 'Facoltativo. Per esempio: dal 15 ottobre al 15 aprile.', 'solo_con' => ['heating_mode', ['auto', 'manuale']]],
-                'heating_how'    => ['steps', 'Come si usa', 'Facoltativo. Un passaggio per riga: dov\'è il termostato, come si alza o si abbassa.', 'solo_con' => ['heating_mode', ['auto', 'manuale']]],
-                'ac_mode'        => ['choice', 'Aria condizionata', '', 'options' => ['libero' => 'L\'ospite la accende quando vuole', 'orari' => 'Funziona solo in certi orari', 'no' => 'Non c\'è']],
-                'ac_times'       => ['repeater', 'Quando funziona', 'Una riga per ogni fascia. Senza giorni vale tutti i giorni.',
-                                     'add' => 'Aggiungi una fascia oraria', 'item' => 'Fascia', 'max' => 8, 'solo_con' => ['ac_mode', ['orari']], 'sub' => [
-                                         'from' => ['time', 'Dalle', '', 'w' => 4],
-                                         'to'   => ['time', 'Alle', '', 'w' => 4],
-                                         'days' => ['days', 'Giorni', 'Facoltativi: vuoto vale tutti i giorni.'],
-                                     ]],
-                'ac_temp'        => ['plain', 'Temperatura consigliata (°C)', 'Facoltativa. Per esempio: 26.', 'cifre' => true, 'solo_con' => ['ac_mode', ['libero', 'orari']]],
-                'ac_how'         => ['steps', 'Come si accende', 'Facoltativo. Un passaggio per riga: dov\'è il telecomando, quale tasto premere.', 'solo_con' => ['ac_mode', ['libero', 'orari']]],
-                'risparmio'      => ['check', 'Mostra il consiglio per risparmiare energia', 'Nella guida, due righe gentili: in Italia l\'energia costa cara, finestre chiuse con il clima acceso, spegnere quando si esce.', 'acceso' => true],
-                'note'           => ['textarea', 'Nota', 'Facoltativa.'],
-            ],
+            'fields' => [...self::CAMPI_CALDO, ...self::CAMPI_FRESCO, ...self::CAMPI_CLIMA],
         ],
         // Servizi extra (fase 5): quello che l'host vende in più — transfer, colazione,
         // late check-out. Ogni riga ha «Richiedi su WhatsApp» nella guida.
@@ -396,7 +417,7 @@ final class SectionCatalog
     public static function gruppi(): array
     {
         $out = array_fill_keys(array_keys(self::GRUPPI), []);
-        foreach (self::K as $k => $d) if (empty($d['multipla'])) $out[$d['group'] ?? 'casa'][] = $k;
+        foreach (self::K as $k => $d) if (empty($d['multipla']) && empty($d['nascosta'])) $out[$d['group'] ?? 'casa'][] = $k;
         return $out;
     }
 
@@ -437,11 +458,14 @@ final class SectionCatalog
 
     public static function kinds(): array { return array_keys(self::K); }
 
-    /** I tipi selezionabili, cioè tutti tranne il nucleo. */
+    /** I tipi selezionabili, cioè tutti tranne il nucleo e quelli nascosti (la vecchia «clima», 8C). */
     public static function selectable(): array
     {
-        return array_values(array_filter(self::kinds(), fn($k) => empty(self::K[$k]['core'])));
+        return array_values(array_filter(self::kinds(), fn($k) => empty(self::K[$k]['core']) && empty(self::K[$k]['nascosta'])));
     }
+
+    /** Un tipo che non si sceglie più ma serve alle istantanee già pubblicate (la vecchia «clima»). */
+    public static function nascosta(string $kind): bool { return !empty(self::K[$kind]['nascosta']); }
 
     public static function exists(string $kind): bool { return isset(self::K[$kind]); }
 

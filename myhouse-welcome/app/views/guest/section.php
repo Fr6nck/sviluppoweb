@@ -180,8 +180,8 @@ foreach ($snap['sections'] as $s) {
     </div>
   <?php endif; ?>
 
-<?php /* ------------------------------- riscaldamento e aria condizionata */ ?>
-<?php elseif ($kind === 'clima'): include __DIR__ . '/_clima.php'; ?>
+<?php /* ------------------------------- riscaldamento e aria condizionata (8C: due sezioni; «clima» per le istantanee di prima) */ ?>
+<?php elseif (in_array($kind, ['riscaldamento', 'aria', 'clima'], true)): include __DIR__ . '/_clima.php'; ?>
 
 <?php /* ------------------------------------------------ tutte le altre sezioni */ ?>
 <?php else: ?>

@@ -39,37 +39,11 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
       <?php endif; ?>
       <?php if ($saluto !== ''): ?><p class="rise" style="animation-delay:1s;white-space:pre-line"><?= Support::e($saluto) ?></p><?php endif; ?>
       <?php /* Dopo il soggiorno: compaiono solo se l'host li ha compilati. */
-            $diretta = $pr['direct'] ?? ['url' => '', 'code' => ''];
-            // 8B: i portali dove si trova la struttura (istantanea formato 7), con i link già pronti.
-            $portali = array_values(array_filter((array) ($pr['channels'] ?? []), fn($c) => empty($c['social']) && trim((string) ($c['url'] ?? '')) !== '')); ?>
-      <?php /* 7C · Com'è andato il soggiorno? Cinque stelle; dopo il tocco i bottoni delle recensioni, uguali per ogni voto
-               (filtrare chi recensisce in base al voto è vietato da Google e Booking). Da 1 a 3, in più: «Scrivigli».
-               Il voto è solo un conteggio anonimo per struttura (rating_N). Senza JavaScript le stelle ricaricano la pagina. */
-            $voto = (int) ($voto ?? 0) ?: min(5, max(0, (int) ($_GET['voto'] ?? 0)));
-            $contattiF = array_values(array_filter($pr['contacts'] ?? [], fn($c) => trim((string) ($c['phone'] ?? '')) !== ''));
-            $nomeF = trim((string) ($contattiF[0]['name'] ?? '')) ?: trim((string) ($pr['host_name'] ?? ''));
-            $nomeF = $nomeF !== '' ? explode(' ', $nomeF)[0] : $pr['name'];
-            $scriviF = $contattiF ? (!empty($contattiF[0]['whatsapp']) ? 'https://wa.me/' . ltrim(Support::telHref((string) $contattiF[0]['phone']), '+') : 'tel:' . Support::telHref((string) $contattiF[0]['phone'])) : ''; ?>
-      <div class="stack congedo-extra rise" style="gap:10px;animation-delay:1s" data-voto-box>
-        <h2 style="font-size:22px;color:#f6f0e5"><?= Support::e(I18n::t($loc, 'rating_q')) ?></h2>
-        <form method="get" action="<?= Support::e($base) ?>/commiato#voto" class="stelle" id="voto" data-voto-url="<?= empty($anteprima) ? Support::e($base) . '/voto/' : '' ?>">
-          <input type="hidden" name="l" value="<?= Support::e($loc) ?>">
-          <?php for ($n = 1; $n <= 5; $n++): ?>
-            <button class="stella<?= $voto >= $n ? ' stella--su' : '' ?>" name="voto" value="<?= $n ?>" aria-label="<?= Support::e(I18n::t($loc, 'rating_star', (string) $n)) ?>"<?= $voto === $n ? ' aria-pressed="true"' : '' ?>>
-              <svg width="36" height="36" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4L2.8 9.5l6.4-.8z"/></svg></button>
-          <?php endfor; ?>
-        </form>
-        <div class="stack" style="gap:10px" data-voto-dopo<?= $voto ? '' : ' hidden' ?>>
-          <?php $conRec = (bool) $portali; /* senza portali, solo il grazie */ ?>
-          <p class="small" style="color:#e8dcc8"><?= Support::e(I18n::t($loc, $conRec ? 'rating_thanks' : 'rating_thanks_solo')) ?></p>
-          <?php if ($conRec): ?>
-            <div class="ctas"><?php foreach ($portali as $c): ?>
-              <a href="<?= Support::e($c['url']) ?>" target="_blank" rel="noopener"><?= Icon::svg('message', 15) ?><?= Support::e($c['kind'] === 'altro' && ($c['label'] ?? '') === 'Altro sito' ? I18n::t($loc, 'review_other') : $c['label']) ?></a><?php endforeach; ?></div>
-          <?php endif; ?>
-          <?php if ($scriviF !== ''): ?>
-            <p class="small" data-voto-basso<?= $voto >= 1 && $voto <= 3 ? '' : ' hidden' ?>><a href="<?= Support::e($scriviF) ?>" rel="noopener" style="color:#f6f0e5"><?= Support::e(I18n::t($loc, 'rating_host', $nomeF)) ?></a></p>
-          <?php endif; ?>
-        </div>
+            $diretta = $pr['direct'] ?? ['url' => '', 'code' => '']; ?>
+      <?php /* 8C · Com'è andato il soggiorno? Lo stesso blocco della pagina delle recensioni (guest/_voto.php):
+               con 5 stelle i portali spuntati dall'host, da 1 a 4 nessun portale ma WhatsApp ed email. */ ?>
+      <div class="congedo-extra rise" style="animation-delay:1s">
+        <?php $azione = $base . '/commiato'; $chiaro = true; include __DIR__ . '/_voto.php'; ?>
       </div>
       <?php if (trim((string) $diretta['url']) !== '' || trim((string) $diretta['code']) !== ''):
             $scontoF = trim((string) ($diretta['discount'] ?? '')); $codiceF = trim((string) $diretta['code']); ?>
@@ -85,6 +59,13 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
           <?php elseif (trim((string) $diretta['url']) !== ''): ?>
             <div class="ctas"><a href="<?= Support::e($diretta['url']) ?>" target="_blank" rel="noopener"><?= Icon::svg('globe', 15) ?><?= Support::e(I18n::t($loc, 'direct_book')) ?></a></div>
           <?php endif; ?>
+        </div>
+      <?php endif; ?>
+      <?php $socialF = array_values(array_filter((array) ($pr['channels'] ?? []), fn($c) => !empty($c['social']) && trim((string) ($c['url'] ?? '')) !== ''));
+            if ($socialF): /* 8C: «Seguici», con le icone dei social della struttura */ ?>
+        <div class="seguici rise" style="animation-delay:1.04s">
+          <span class="small" style="color:#e8dcc8"><?= Support::e(I18n::t($loc, 'follow_us')) ?></span>
+          <?php foreach ($socialF as $c): ?><a href="<?= Support::e($c['url']) ?>" target="_blank" rel="noopener" aria-label="<?= Support::e($c['label']) ?>"><?= Icon::svg((string) $c['kind'], 20, 1.8) ?></a><?php endforeach; ?>
         </div>
       <?php endif; ?>
       <div class="stack" style="gap:10px">

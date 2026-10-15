@@ -30,8 +30,8 @@ namespace MHW;
  */
 final class Copia
 {
-    /** Le sezioni che si possono copiare, nell'ordine in cui si propongono (tutte già spuntate). */
-    public const SEZIONI = ['waste', 'eat', 'visit', 'todo', 'shop', 'transport', 'emergency', 'info', 'rules', 'services', 'clima', 'extras', 'events', 'custom'];
+    /** Le sezioni che si possono copiare, nell'ordine in cui si propongono (tutte già spuntate). 8C: «clima» è diventata due. */
+    public const SEZIONI = ['waste', 'eat', 'visit', 'todo', 'shop', 'transport', 'emergency', 'info', 'rules', 'services', 'riscaldamento', 'aria', 'extras', 'events', 'custom'];
     /** Mai copiate: dati della singola casa. */
     public const MAI = ['checkin', 'wifi', 'arrival', 'parking'];
 
@@ -125,12 +125,13 @@ final class Copia
                     if ($righe) Properties::saveContacts((int) $a['id'], $righe);
                 }
                 // Le traduzioni copiate servono nelle lingue della guida: si aggiungono quelle che il piano permette.
-                $consentite = Entitlements::allowedLocales($accountId);
-                foreach (Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$da['id']]) as $l) {
-                    if (in_array($l['locale'], $consentite, true)
-                        && !Db::val('SELECT 1 FROM property_locales WHERE property_id = ? AND locale = ?', [$a['id'], $l['locale']])) {
-                        Db::insert('property_locales', ['property_id' => $a['id'], 'locale' => $l['locale']]);
-                    }
+                // 8C: con le regole del piano sulla lingua principale della struttura di arrivo.
+                $giaQui = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$a['id']]), 'locale');
+                $daLi = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$da['id']]), 'locale');
+                $principaleA = (string) Db::val('SELECT default_locale FROM properties WHERE id = ?', [$a['id']], 'it');
+                foreach (Entitlements::regolaLingue(Entitlements::limit($accountId, 'locales', 1), Entitlements::limit($accountId, 'lingua_extra', 0),
+                                                    $principaleA, array_merge($giaQui, $daLi)) as $l) {
+                    if (!in_array($l, $giaQui, true)) Db::insert('property_locales', ['property_id' => $a['id'], 'locale' => $l]);
                 }
                 return $out;
             });

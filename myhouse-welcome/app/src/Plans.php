@@ -146,12 +146,21 @@ final class Plans
             $piani[] = $p;
         }
         $righe = [];
-        foreach (Db::all("SELECT * FROM features WHERE code <> 'room_variants' ORDER BY id") as $f) {
+        // 8C: la lingua in più sta nella riga delle lingue («2: la tua e una a scelta», «6: …»), non in una riga sua.
+        $extraDi = function (array $p): int {
+            $x = (string) ($p['features']['lingua_extra'] ?? '0');
+            return $x === 'unlimited' ? 9 : (int) $x;
+        };
+        foreach (Db::all("SELECT * FROM features WHERE code NOT IN ('room_variants', 'lingua_extra') ORDER BY id") as $f) {
             $valori = []; $qualcuno = false;
             foreach ($piani as $p) {
                 $v = (string) ($p['features'][$f['code']] ?? $f['default_value']);
                 if ($v !== '0' && $v !== '') $qualcuno = true;
-                if ($f['code'] === 'properties' && self::perProperty($p)) $v = 'da ' . (int) $p['min_quantity'] . ' a ' . (int) $p['max_quantity'];
+                if ($f['code'] === 'locales' && $v !== 'unlimited') {
+                    $n = (int) $v; $x = $extraDi($p);
+                    $v = $x > 0 ? ($n + $x) . ': la tua, le altre di base e ' . ($x === 1 ? 'una a scelta tra 9' : "$x a scelta tra 9")
+                                : ($n <= 1 ? '1: la tua' : $n . ': la tua e ' . ($n === 2 ? 'una a scelta' : ($n - 1) . ' a scelta'));
+                } elseif ($f['code'] === 'properties' && self::perProperty($p)) $v = 'da ' . (int) $p['min_quantity'] . ' a ' . (int) $p['max_quantity'];
                 elseif ($v === 'unlimited') $v = 'Illimitate';
                 elseif ($f['kind'] === 'bool') $v = $v !== '0' && $v !== '' ? 'si' : 'no';
                 $valori[] = $v;

@@ -498,31 +498,41 @@ final class Properties
     }
 
     /**
-     * La lingua principale: quella in cui l'host scrive. Deve essere compresa
-     * nel piano. La vecchia resta tra le lingue attive, così i testi già scritti
-     * non spariscono: diventano una traduzione.
+     * La lingua principale: quella in cui l'host scrive, scelta tra tutte (8C, di serie italiano).
+     * La vecchia resta tra le lingue attive, così i testi già scritti non spariscono: diventano una
+     * traduzione. Se così le lingue sono più di quelle del piano, escono le ultime (i testi restano salvati).
      */
     public static function setDefaultLocale(int $accountId, int $propertyId, string $locale): void
     {
-        if (!in_array($locale, Entitlements::allowedLocales($accountId), true)) {
-            throw new \RuntimeException('Il tuo piano non comprende questa lingua.');
-        }
-        Db::tx(function () use ($propertyId, $locale) {
+        if (!array_key_exists($locale, Config::get('locales'))) throw new \RuntimeException('Questa lingua non c\'è.');
+        Db::tx(function () use ($accountId, $propertyId, $locale) {
+            $prima = (string) Db::val('SELECT default_locale FROM properties WHERE id = ?', [$propertyId], 'it');
+            $attive = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$propertyId]), 'locale');
+            $ordine = array_keys(Config::get('locales'));
+            usort($attive, fn($a, $b) => array_search($a, $ordine, true) <=> array_search($b, $ordine, true));
+            $tenute = Entitlements::regolaLingue(Entitlements::limit($accountId, 'locales', 1), Entitlements::limit($accountId, 'lingua_extra', 0),
+                                                 $locale, array_merge([$prima], $attive));
             Db::update('properties', ['default_locale' => $locale], 'id = :pid', ['pid' => $propertyId]);
-            if (!Db::one('SELECT property_id FROM property_locales WHERE property_id = ? AND locale = ?', [$propertyId, $locale])) {
-                Db::insert('property_locales', ['property_id' => $propertyId, 'locale' => $locale]);
-            }
+            Db::run('DELETE FROM property_locales WHERE property_id = ?', [$propertyId]);
+            foreach ($tenute as $l) Db::insert('property_locales', ['property_id' => $propertyId, 'locale' => $l]);
         });
     }
 
+    /** Le lingue della guida. Fuori dalle regole del piano (Entitlements::regolaLingue): si rifiuta, niente si salva. */
     public static function setLocales(int $accountId, int $propertyId, array $want): array
     {
         $p = Db::one('SELECT default_locale FROM properties WHERE id = ?', [$propertyId]);
-        $consentite = Entitlements::allowedLocales($accountId);
-        $chieste = array_values(array_unique(array_filter($want, 'is_string')));
-        $fuori = array_diff($chieste, $consentite);
-        if ($fuori) throw new \RuntimeException('Il tuo piano non comprende queste lingue.');
-        if (!in_array($p['default_locale'], $chieste, true)) $chieste[] = $p['default_locale'];
+        $note = array_keys(Config::get('locales'));
+        $chieste = array_values(array_unique(array_filter($want, fn($l) => is_string($l) && in_array($l, $note, true))));
+        if (!in_array($p['default_locale'], $chieste, true)) array_unshift($chieste, $p['default_locale']);
+        $tenute = Entitlements::regolaLingue(Entitlements::limit($accountId, 'locales', 1), Entitlements::limit($accountId, 'lingua_extra', 0),
+                                             (string) $p['default_locale'], $chieste);
+        if (count($tenute) < count($chieste)) {
+            if (Entitlements::limit($accountId, 'lingua_extra', 0) > 0) {
+                throw new \RuntimeException('Il tuo piano comprende la lingua principale, le altre lingue di base e una lingua aggiuntiva: togline una.');
+            }
+            throw new PianoLimite('Il tuo piano comprende ' . Entitlements::limit($accountId, 'locales', 1) . ' lingue in tutto: la principale e una a scelta.', 'lingue', 'plus');
+        }
         Db::tx(function () use ($propertyId, $chieste) {
             Db::run('DELETE FROM property_locales WHERE property_id = ?', [$propertyId]);
             foreach ($chieste as $l) Db::insert('property_locales', ['property_id' => $propertyId, 'locale' => $l]);

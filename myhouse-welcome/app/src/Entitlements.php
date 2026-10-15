@@ -91,15 +91,51 @@ final class Entitlements
     }
 
     /**
-     * Le lingue che questo account può davvero pubblicare, nell'ordine del
-     * listino: italiano, inglese, francese, tedesco, spagnolo. Essential ne ha
-     * due — italiano e inglese — gli altri piani cinque.
+     * Le regole delle lingue (8C), senza database: quali lingue di $lingue restano nella guida.
+     *   $n     — la caratteristica «locales» (Essential 2, Plus 5);
+     *   $extra — la caratteristica «lingua_extra» (Plus e Portfolio 1, Essential 0).
+     * Con $extra = 0 contano solo le lingue in tutto (la principale e, con Essential, una seconda a
+     * scelta tra tutte, di base o aggiuntiva). Con $extra > 0 le lingue di base sono al massimo $n e le
+     * aggiuntive al massimo $extra: una principale aggiuntiva (per esempio nl) occupa lei quel posto.
+     * La principale c'è sempre; le altre si tengono nell'ordine in cui arrivano.
+     * @return string[]
      */
-    public static function allowedLocales(int $accountId): array
+    public static function regolaLingue(int $n, int $extra, string $principale, array $lingue): array
     {
-        $all = array_keys(Config::get('locales'));
-        $n = self::limit($accountId, 'locales', 1);
-        return $n >= count($all) ? $all : array_slice($all, 0, max(1, $n));
+        $note = array_keys(Config::get('locales'));
+        $out = [$principale]; $base = I18n::base($principale) ? 1 : 0; $agg = 1 - $base;
+        foreach ($lingue as $l) {
+            if (!is_string($l) || $l === $principale || in_array($l, $out, true) || !in_array($l, $note, true)) continue;
+            if ($extra <= 0) {
+                if (count($out) >= max(1, $n)) break;
+                $out[] = $l;
+            } elseif (I18n::base($l)) {
+                if ($base < max(1, $n)) { $out[] = $l; $base++; }
+            } elseif ($agg < $extra) { $out[] = $l; $agg++; }
+        }
+        return $out;
+    }
+
+    /** Le lingue di una guida che il piano dell'account lascia pubblicare, nell'ordine del listino. */
+    public static function lingueGuida(int $accountId, string $principale, array $lingue): array
+    {
+        $ordine = array_keys(Config::get('locales'));
+        usort($lingue, fn($a, $b) => array_search($a, $ordine, true) <=> array_search($b, $ordine, true));
+        return self::regolaLingue(self::limit($accountId, 'locales', 1), self::limit($accountId, 'lingua_extra', 0), $principale, $lingue);
+    }
+
+    /**
+     * Le lingue che questo account può pubblicare. Con una struttura: quelle delle sue lingue attive che
+     * il piano lascia (lingueGuida). Senza: tutte quelle che si possono scegliere (dalla 8C la lingua
+     * principale è libera e la seconda di Essential si sceglie tra tutte; i limiti li applica lingueGuida).
+     */
+    public static function allowedLocales(int $accountId, ?array $p = null): array
+    {
+        if ($p !== null && isset($p['id'], $p['default_locale'])) {
+            $attive = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [(int) $p['id']]), 'locale');
+            return self::lingueGuida($accountId, (string) $p['default_locale'], $attive);
+        }
+        return array_keys(Config::get('locales'));
     }
 
     /**
@@ -160,9 +196,9 @@ final class Entitlements
             $fuori[] = "Hai $attive sezioni attive, il piano ne comprende $maxSez. Disattivane " . ($attive - $maxSez) . '.';
         }
 
-        $consentite = self::allowedLocales($accountId);
         $lingue = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$propertyId]), 'locale');
-        $troppe = array_diff($lingue, $consentite);
+        $principaleP = (string) Db::val('SELECT default_locale FROM properties WHERE id = ?', [$propertyId], 'it');
+        $troppe = array_diff($lingue, self::lingueGuida($accountId, $principaleP, $lingue));
         if ($troppe) {
             $nomi = array_map(fn($l) => Config::get('locales')[$l] ?? $l, $troppe);
             $fuori[] = 'Il piano non comprende: ' . implode(', ', $nomi) . '. Togli queste lingue da quelle della guida.';

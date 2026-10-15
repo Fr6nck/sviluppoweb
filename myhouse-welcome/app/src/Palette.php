@@ -15,43 +15,44 @@ final class Palette
 {
     public const DEFAULT = 'terracotta';
 
-    /** tile_ink: il colore del testo sopra ciascuno dei quattro riquadri. */
+    /** tile_ink: il colore del testo sopra ciascuno dei quattro riquadri. 8C: quattro colori ben distinti per
+        palette; testo chiaro (≥ 4,5:1) sui primi tre, l'ink della palette (≥ 5:1) sul quarto. */
     private const P = [
         'terracotta' => [
             'label' => 'Terracotta',
             'scuro'  => ['bg' => '#faf5ec', 'surface' => '#ffffff', 'sunk' => '#f1e9db', 'ink' => '#231b12', 'muted' => '#6a5b48', 'line' => '#e2d7c4', 'accent' => '#b4451f', 'on_accent' => '#fff8f2'],
             'chiaro' => ['bg' => '#17130d', 'surface' => '#2e261c', 'sunk' => '#201a13', 'ink' => '#f6f0e5', 'muted' => '#b6a891', 'line' => '#3d3327', 'accent' => '#ee7a4a', 'on_accent' => '#1c1008'],
-            'tiles' => ['#b4451f', '#1c5a78', '#1f6b3f', '#b07d0c'], 'tile_ink' => ['#fff8f2', '#fff8f2', '#fff8f2', '#231b12'],
+            'tiles' => ['#b4451f', '#1c5a78', '#1f6b3f', '#c08a14'], 'tile_ink' => ['#fff8f2', '#fff8f2', '#fff8f2', '#231b12'],
         ],
         'sabbia' => [
             'label' => 'Sabbia',
             'scuro'  => ['bg' => '#f6f0e4', 'surface' => '#fffdf8', 'sunk' => '#ece3d2', 'ink' => '#2b2419', 'muted' => '#645945', 'line' => '#e0d5c0', 'accent' => '#7a5c24', 'on_accent' => '#fffaf0'],
             'chiaro' => ['bg' => '#1a1712', 'surface' => '#2b261e', 'sunk' => '#221e18', 'ink' => '#f3ecdf', 'muted' => '#b9ad98', 'line' => '#3b3428', 'accent' => '#d8b77a', 'on_accent' => '#1a1712'],
-            'tiles' => ['#7a5c24', '#56614f', '#7a5a44', '#cdb88e'], 'tile_ink' => ['#fffaf0', '#fffaf0', '#fffaf0', '#2b2419'],
+            'tiles' => ['#8c5a2e', '#2f6f73', '#6e5a8a', '#c8a86b'], 'tile_ink' => ['#fffaf0', '#fffaf0', '#fffaf0', '#2b2419'],
         ],
         'oliva' => [
             'label' => 'Oliva',
             'scuro'  => ['bg' => '#f4f3ea', 'surface' => '#fffffa', 'sunk' => '#e9e8da', 'ink' => '#1f2418', 'muted' => '#56604a', 'line' => '#dcdcc9', 'accent' => '#4d5d33', 'on_accent' => '#fbfdf5'],
             'chiaro' => ['bg' => '#141710', 'surface' => '#242a1c', 'sunk' => '#1c2116', 'ink' => '#eef0e4', 'muted' => '#adb39c', 'line' => '#343c28', 'accent' => '#a9bf7e', 'on_accent' => '#141710'],
-            'tiles' => ['#4d5d33', '#735f33', '#3a5650', '#b3b77c'], 'tile_ink' => ['#fbfdf5', '#fbfdf5', '#fbfdf5', '#1f2418'],
+            'tiles' => ['#556b2f', '#a0522d', '#2e5e6e', '#c9b458'], 'tile_ink' => ['#fbfdf5', '#fbfdf5', '#fbfdf5', '#1f2418'],
         ],
         'mare' => [
             'label' => 'Mare',
             'scuro'  => ['bg' => '#f1f5f6', 'surface' => '#ffffff', 'sunk' => '#e3ebee', 'ink' => '#14232b', 'muted' => '#4c5e67', 'line' => '#d3dfe3', 'accent' => '#1c5a78', 'on_accent' => '#f5fbfd'],
             'chiaro' => ['bg' => '#0f171b', 'surface' => '#1b2730', 'sunk' => '#152026', 'ink' => '#e9f1f4', 'muted' => '#9fb3bc', 'line' => '#2a3a44', 'accent' => '#74bcd9', 'on_accent' => '#0f171b'],
-            'tiles' => ['#1c5a78', '#2a6b69', '#3d5a80', '#d9a35c'], 'tile_ink' => ['#f5fbfd', '#f5fbfd', '#f5fbfd', '#14232b'],
+            'tiles' => ['#1c5a78', '#2a7f62', '#b84f34', '#e0b04a'], 'tile_ink' => ['#f5fbfd', '#f5fbfd', '#f5fbfd', '#14232b'],
         ],
         'borgogna' => [
             'label' => 'Borgogna',
             'scuro'  => ['bg' => '#f8f1ee', 'surface' => '#fffbfa', 'sunk' => '#efe3de', 'ink' => '#2a1618', 'muted' => '#684c4e', 'line' => '#e6d6d1', 'accent' => '#7b2331', 'on_accent' => '#fff6f5'],
             'chiaro' => ['bg' => '#1a1012', 'surface' => '#2c1c1f', 'sunk' => '#221619', 'ink' => '#f5e9e8', 'muted' => '#c2a6a6', 'line' => '#3e2a2d', 'accent' => '#e08a95', 'on_accent' => '#1a1012'],
-            'tiles' => ['#7b2331', '#8f4125', '#4b3a5c', '#cfa566'], 'tile_ink' => ['#fff6f5', '#fff6f5', '#fff6f5', '#2a1618'],
+            'tiles' => ['#7b2331', '#2f5d50', '#4b3a6e', '#d4a259'], 'tile_ink' => ['#fff6f5', '#fff6f5', '#fff6f5', '#2a1618'],
         ],
         'grafite' => [
             'label' => 'Grafite',
             'scuro'  => ['bg' => '#f3f3f1', 'surface' => '#ffffff', 'sunk' => '#e7e7e3', 'ink' => '#1b1c1e', 'muted' => '#55575c', 'line' => '#dadad6', 'accent' => '#2f3338', 'on_accent' => '#f6f6f4'],
             'chiaro' => ['bg' => '#121315', 'surface' => '#202226', 'sunk' => '#191a1d', 'ink' => '#eeeeec', 'muted' => '#a9abaf', 'line' => '#303338', 'accent' => '#d9d6cf', 'on_accent' => '#121315'],
-            'tiles' => ['#2f3338', '#4c5560', '#6a5f55', '#bcb7ac'], 'tile_ink' => ['#f6f6f4', '#f6f6f4', '#f6f6f4', '#1b1c1e'],
+            'tiles' => ['#2f3338', '#3f6e8c', '#9c4a2f', '#c9c2b4'], 'tile_ink' => ['#f6f6f4', '#f6f6f4', '#f6f6f4', '#1b1c1e'],
         ],
     ];
 

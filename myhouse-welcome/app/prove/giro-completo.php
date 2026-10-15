@@ -547,14 +547,16 @@ prova('Commiato: solo le istruzioni dell\'host', $r['code'] === 200 && str_conta
 prova('Anteprima non indicizzabile', stripos(intestazione($r, 'X-Robots-Tag'), 'noindex') !== false);
 
 // ================================================================== LINGUE
-capitolo('Lingue (Essential: italiano e inglese)');
+capitolo('Lingue (Essential: la principale e una a scelta)');
 $r = $anna->modulo("/pannello/$pid/lingue", "/pannello/$pid/lingue", ['locali' => ['it', 'en', 'fr']]);
-prova('Il francese non è concesso a Essential', str_contains($r['body'], 'non comprende') && !val("SELECT 1 FROM property_locales WHERE property_id = ? AND locale = 'fr'", [$pid]));
+prova('8C · una terza lingua non è concessa a Essential: si apre la finestra di Plus', str_contains($r['body'], '2 lingue in tutto') && str_contains($r['body'], 'data-apri="lingue"')
+      && !val("SELECT 1 FROM property_locales WHERE property_id = ? AND locale = 'fr'", [$pid]));
 $r = $anna->post("/pannello/$pid/lingue", ['locali' => ['it', 'en']]);
 prova('Inglese attivato', (bool) val("SELECT 1 FROM property_locales WHERE property_id = ? AND locale = 'en'", [$pid]));
 $r = $anna->get("/pannello/$pid/lingue");
-prova('8B · le lingue non comprese hanno la casella con il lucchetto (data-sblocca="lingue"), senza nome: il server non le riceve', str_contains($r['body'], 'data-sblocca="lingue"')
-      && !preg_match('#name="locali\[\]" value="fr"#', $r['body']) && str_contains($r['body'], 'Più lingue sono comprese in Plus'));
+prova('8C · Essential: la seconda lingua è una scelta sola tra tutte (anche le aggiuntive), e «Più lingue con Plus» apre la finestra', str_contains($r['body'], 'data-sblocca="lingue"')
+      && preg_match('#type="radio" name="locali\[\]" value="fr"#', $r['body']) === 1 && preg_match('#type="radio" name="locali\[\]" value="ja"#', $r['body']) === 1
+      && preg_match('#type="radio" name="locali\[\]" value="en" checked#', $r['body']) === 1 && str_contains($r['body'], 'Più lingue sono comprese in Plus'));
 $r = $anna->get("/pannello/$pid/lingue/en");
 prova('Pagina di traduzione affiancata', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'class="orig"'));
 $r = $anna->post("/pannello/$pid/lingue/en", ['s' => [$ids['wifi'] => ['title' => 'Wi-Fi', 'instructions' => 'Restart the router if needed.', 'router_location' => 'In the living room.']]]);
@@ -573,7 +575,7 @@ $r = $anna->get("/pannello/$pid/lingue/en");
 prova('Fase 2 · traduzione: i campi mancanti sono evidenziati', str_contains($r['body'], 'da-tradurre') && str_contains($r['body'], 'Da tradurre'));
 $r = $anna->get("/pannello/$pid/procedura/pubblica");
 prova('Fase 2 · «Vuoi la guida anche in altre lingue?» in fondo, facoltativo', str_contains($r['body'], 'Vuoi la guida anche in altre lingue?') && str_contains($r['body'], 'Facoltativo')
-      && preg_match('#name="locali\[\]" value="fr"[^>]*disabled#', $r['body']) === 1);
+      && preg_match('#type="radio" name="locali\[\]" value="fr"#', $r['body']) === 1);
 prova('Fase 2 · le traduzioni a metà non bloccano la pubblicazione', !str_contains($r['body'], 'Prima di pubblicare') || !preg_match('/tradu/i', (string) (preg_match('#Prima di pubblicare</b>(.*?)</div>#s', $r['body'], $mm) ? $mm[1] : '')));
 
 // ================================================== FASE 3 · BLOCCO A
@@ -1374,7 +1376,7 @@ $admin->get('/admin/cliente/' . $lacc);
 $admin->post("/admin/cliente/$lacc/abbonamento", ['pv' => (string) pv('portfolio'), 'mesi' => '12', 'nota' => 'Prova della copia', 'strutture' => '2']);
 $r = $lucia->get('/pannello/nuova');
 prova('Fase 4 · «Crea da una struttura esistente»: Casa Lucia, con le sezioni già spuntate', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Crea da una struttura esistente')
-      && preg_match('#<option value="' . $casa . '">\s*Casa Lucia#', $r['body']) === 1 && substr_count($r['body'], 'name="copia[]"') === 14
+      && preg_match('#<option value="' . $casa . '">\s*Casa Lucia#', $r['body']) === 1 && substr_count($r['body'], 'name="copia[]"') === 15
       && str_contains($r['body'], 'Non si copiano mai, perché sono solo di una struttura: indirizzo, CIN, reti Wi-Fi'));
 $mediaPrima = (int) val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]);
 $r = $lucia->post('/pannello/nuova', ['name' => 'Casa Lucia Due', 'city' => 'Pienza', 'origine' => (string) $casa, 'copia' => ['waste', 'eat', 'visit', 'todo', 'transport', 'emergency', 'info', 'rules', 'services', 'extras'], 'copia_aspetto' => '1', 'copia_contatti' => '1']);
@@ -1575,7 +1577,7 @@ $r = $ospite->get("/g/$lslug");
 prova('K4 · firma in fondo alla guida, con il link alla landing e ?ref=guida', str_contains($r['body'], 'Guida creata con MyHouse Welcome') && str_contains($r['body'], '/?ref=guida"'));
 $r = $ospite->get("/g/$lslug/commiato");
 prova('K2 · commiato senza recensioni né prenotazione diretta: le stelle (7C), ma nessun bottone di recensione né «prenota da noi»', str_contains($r['body'], 'class="stelle"')
-      && !preg_match('#data-voto-dopo.*?<div class="ctas">#s', $r['body']) && !str_contains($r['body'], 'prenota da noi'));
+      && !str_contains($r['body'], 'data-portale=') && !str_contains($r['body'], 'prenota da noi'));
 $r = $lucia->get("/pannello/$casa/impostazioni");
 prova('K2 · Impostazioni (8B): dove si trova la struttura (portali come caselle, senza indirizzo), prenotazione diretta, firma nascondibile (Portfolio)',
       str_contains($r['body'], 'Su quali piattaforme si trova la tua struttura?') && str_contains($r['body'], 'name="portali[]" value="google"')
@@ -1588,19 +1590,23 @@ $canaliL = array_column(db()->query("SELECT kind FROM property_channels WHERE pr
 prova('…un indirizzo che non è https:// non si salva, con un avviso; i portali spuntati sì, senza indirizzo', $canaliL === ['google', 'booking'] && (int) $pl['hide_branding'] === 1
       && str_contains($lucia->segui($r)['body'], 'L&#039;indirizzo di Tripadvisor deve cominciare con https://'), json_encode($canaliL));
 $lucia->post("/pannello/$casa/pubblica", []);
-$r = $ospite->get("/g/$lslug/commiato?l=en");
-prova('K2 · commiato (en): «How was your stay?» (7C) con Google e Booking, «book with us» con il codice', str_contains($r['body'], 'How was your stay?')
+$r0 = $ospite->get("/g/$lslug/commiato?l=en");
+$r = $ospite->get("/g/$lslug/commiato?l=en&voto=5");
+prova('K2 · commiato (en) con 5 stelle: «How was your stay?» (7C) con Google e Booking, «book with us» con il codice', str_contains($r['body'], 'How was your stay?')
       && str_contains($r['body'], 'href="https://www.google.com/maps/search/?api=1&amp;query=Casa%20Lucia') && str_contains($r['body'], '>Booking.com</a>') && !str_contains($r['body'], '>Airbnb</a>')
       && str_contains($r['body'], 'Next time, book with us directly') && str_contains($r['body'], 'Discount code: <b>TORNA10</b>') && str_contains($r['body'], 'href="https://www.esempio.it/prenota"'));
-// 7C · le stelle: le piattaforme a ogni voto, da 1 a 3 anche «Scrivigli»; il voto è un conteggio anonimo.
-prova('7C · commiato: cinque stelle accessibili, i bottoni delle recensioni dopo il voto', substr_count($r['body'], 'class="stella') === 5
-      && str_contains($r['body'], 'aria-label="1 out of 5"') && str_contains($r['body'], 'data-voto-dopo hidden'));
+// 8C · le stelle: con 5 i portali spuntati, da 1 a 4 nessun portale ma WhatsApp (ed email); il voto è un conteggio anonimo.
+prova('7C · commiato: cinque stelle accessibili, nessun bottone prima del voto', substr_count($r0['body'], 'class="stella') === 5
+      && str_contains($r0['body'], 'aria-label="1 out of 5"') && !str_contains($r0['body'], 'data-voto=') && !str_contains($r0['body'], 'data-portale='));
 $votiPrima = (int) val("SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = 'rating_2'", [$casa]);
 $r = $ospite->get("/g/$lslug/commiato?voto=2");
-prova('7C · con 2 stelle (senza JavaScript): grazie, le stesse piattaforme e «Scrivigli»', !str_contains($r['body'], 'data-voto-dopo hidden') && str_contains($r['body'], 'google.com/maps/search/')
-      && preg_match('#data-voto-basso>\s*<a[^>]*>Vuoi dire qualcosa a #', $r['body']) === 1);
+prova('8C · con 2 stelle (senza JavaScript): «Grazie della sincerità», WhatsApp con il messaggio pronto, nessun link ai portali', str_contains($r['body'], 'data-voto="basso"')
+      && str_contains($r['body'], 'Grazie della sincerità.') && str_contains($r['body'], 'Scrivici su WhatsApp') && str_contains($r['body'], '?text=Ciao%20')
+      && !str_contains($r['body'], 'google.com/maps/search/') && !str_contains($r['body'], 'data-portale=') && !str_contains($r['body'], 'Mandaci un&#039;email')
+      && !str_contains($r['body'], 'Ti va di raccontarlo') && !str_contains($r['body'], 'Vuoi dire qualcosa'));
 $r5 = $ospite->get("/g/$lslug/commiato?voto=5");
-prova('…con 5 stelle le stesse piattaforme, senza «Scrivigli»', str_contains($r5['body'], 'google.com/maps/search/') && str_contains($r5['body'], 'data-voto-basso hidden'));
+prova('…con 5 stelle i portali, senza WhatsApp per il suggerimento', str_contains($r5['body'], 'google.com/maps/search/') && str_contains($r5['body'], 'data-voto="5"')
+      && str_contains($r5['body'], 'Siamo felici che ti sia trovato bene!') && !str_contains($r5['body'], 'Scrivici su WhatsApp'));
 $rv = $ospite->get("/g/$lslug/voto/2");
 prova('7C · il voto con JavaScript (/voto/N): 204, e il conteggio anonimo per struttura e voto sale', $rv['code'] === 204
       && (int) val("SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = 'rating_2'", [$casa]) === $votiPrima + 2
@@ -2081,7 +2087,7 @@ if (!$sez('arrival')) $luc->post("/pannello/$lpid/sezioni", ['kind' => 'arrival'
 $r = $luc->get("/pannello/$lpid/sezioni/" . $sez('arrival'));
 prova('6C · come arrivare: riquadro che rimanda a «Muoversi in zona»', $r['code'] === 200 && str_contains($r['body'], 'Gli spostamenti durante il soggiorno vanno in «Muoversi in zona».'));
 $r = $ospite->get('/');
-prova('6C · home: tutte le sezioni del catalogo nei tre gruppi, contate', $r['code'] === 200 && str_contains($r['body'], '17 sezioni pronte da compilare, più le sezioni libere')
+prova('6C · home: tutte le sezioni del catalogo nei tre gruppi, contate', $r['code'] === 200 && str_contains($r['body'], '18 sezioni pronte da compilare, più le sezioni libere')
       && !str_contains($r['body'], 'in base al piano') && str_contains($r['body'], 'id="gruppo-casa">La casa</h3>') && str_contains($r['body'], 'id="gruppo-arrivo">Arrivare e muoversi</h3>')
       && str_contains($r['body'], 'id="gruppo-territorio">Il territorio</h3>') && str_contains($r['body'], 'Muoversi in zona') && str_contains($r['body'], 'Negozi e spesa'));
 
@@ -2121,7 +2127,7 @@ prova('M2 · QR & Link (8B): messaggio di benvenuto per lingua come modello con 
       && preg_match('#data-link="[^"]*/g/[a-z0-9-]+\?l=en"#', $r['body']) === 1 && str_contains($r['body'], 'id="msg-benvenuto-en"')
       && str_contains($r['body'], 'data-copia-msg') && str_contains($r['body'], 'href="https://wa.me/?text=Ciao%21%20Benvenuti%20a%20Casa%20Lucia.'));
 $r = $ospite->get('/');
-prova('6D · la home conta ancora le sezioni pronte (la libera no)', str_contains($r['body'], '17 sezioni pronte da compilare'));
+prova('6D · la home conta ancora le sezioni pronte (la libera no)', str_contains($r['body'], '18 sezioni pronte da compilare'));
 
 capitolo('Fase 6G · eventi');
 $evSid = $sez('events');
@@ -2207,7 +2213,7 @@ $ren = $ospite->get("/g/$vslug/" . (int) val("SELECT id FROM sections WHERE prop
 prova('…la guida si apre, con «Demo», in italiano e in inglese; nomi diversi da Casa Lucia', $r['code'] === 200 && str_contains($r['body'], 'Casa Checco') && str_contains($r['body'], 'demo-tag')
       && !str_contains($r['body'], 'Lucia') && $ren['code'] === 200 && str_contains($ren['body'], 'Francesco will meet you there with the keys'));
 $kindsV = array_column(righe('SELECT kind FROM sections WHERE property_id = ?', [$vet['id'] ?? 0]), 'kind');
-$mancano = array_diff(['checkin', 'wifi', 'services', 'clima', 'extras', 'rules', 'arrival', 'transport', 'parking', 'waste', 'eat', 'visit', 'todo', 'shop', 'events', 'custom', 'emergency', 'info'], $kindsV);
+$mancano = array_diff(['checkin', 'wifi', 'services', 'riscaldamento', 'aria', 'extras', 'rules', 'arrival', 'transport', 'parking', 'waste', 'eat', 'visit', 'todo', 'shop', 'events', 'custom', 'emergency', 'info'], $kindsV);
 prova('…tutte le sezioni del catalogo compilate (eventi e sezione libera comprese), nessuna vuota', !$mancano
       && !val("SELECT 1 FROM sections WHERE property_id = ? AND is_core = 0 AND data = '{}'", [$vet['id'] ?? 0]), json_encode(array_values($mancano)));
 $evV = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'events'", [$vet['id'] ?? 0]);
@@ -2235,11 +2241,13 @@ prova('…scheda completa: CIN di esempio, 4 posti letto, link per le recensioni
 $r = $ospite->get("/g/$vslug/commiato?l=de&voto=5");
 prova('…il congedo in tedesco mostra recensioni (con 5 stelle, 8C) e codice sconto', $r['code'] === 200 && str_contains($r['body'], 'CHECCO10') && str_contains($r['body'], 'href="https://www.booking.com/"')
       && str_contains($r['body'], 'Danke, dass Sie Casa Checco gewählt haben'));
-$clV = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'clima'", [$vet['id'] ?? 0]);
+$clV = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'riscaldamento'", [$vet['id'] ?? 0]);
+$arV = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'aria'", [$vet['id'] ?? 0]);
 $r = $ospite->get("/g/$vslug/$clV");
 $rf = $ospite->get("/g/$vslug/$clV?l=fr");
-prova('…riscaldamento automatico (6:30–9:30 e 17–22:30, 20 °C) e condizionatore libero a 26 °C, anche in francese', $r['code'] === 200
-      && str_contains($r['body'], '6:30 – 9:30') && str_contains($r['body'], '17:00 – 22:30') && str_contains($r['body'], '20 °C') && str_contains($r['body'], '26 °C')
+$ra = $ospite->get("/g/$vslug/$arV");
+prova('…riscaldamento automatico (6:30–9:30 e 17–22:30, 20 °C) e, nella sua sezione, condizionatore libero a 26 °C, anche in francese', $r['code'] === 200
+      && str_contains($r['body'], '6:30 – 9:30') && str_contains($r['body'], '17:00 – 22:30') && str_contains($r['body'], '20 °C') && str_contains($ra['body'], '26 °C')
       && str_contains($r['body'], 'clima__energia') && str_contains($rf['body'], 'La chaudière est dans le placard'));
 $r = $ospite->get("/g/$vslug/" . (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'services'", [$vet['id'] ?? 0]));
 prova('…nei Servizi la macchina del caffè al posto del condizionatore (che ha la sua sezione)', str_contains($r['body'], 'La macchina del caffè') && !str_contains($r['body'], 'L&#039;aria condizionata'));
@@ -2942,36 +2950,50 @@ prova('7D · abbonamento attivato dallo staff: può invitare, con il messaggio p
 prova('Amministrazione → Inviti: il conto degli inviti per email', preg_match('#Inviti per email</span><b class="cifra__valore">1<#', $admin->get('/admin/inviti')['body']) === 1);
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
 
-// Riscaldamento e aria condizionata: orari, stato di adesso, temperatura, consiglio sull'energia.
+// Riscaldamento e aria condizionata (8C: due sezioni): orari, stato di adesso, temperatura, consiglio sull'energia.
 capitolo('Riscaldamento e aria condizionata');
 $lucia->get("/pannello/$casa/procedura/sezioni");
+$r = $lucia->get("/pannello/$casa/procedura/sezioni");
+prova('8C · nel catalogo «Riscaldamento» e «Aria condizionata», non più la sezione unica', str_contains($r['body'], 'value="riscaldamento"') && str_contains($r['body'], 'value="aria"')
+      && !str_contains($r['body'], 'value="clima"'));
 $lucia->post("/pannello/$casa/sezioni", ['kind' => 'clima', 'torna' => 'procedura']);
-$csid = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'clima'", [$casa]);
+prova('…la vecchia «clima» non si aggiunge più', !val("SELECT 1 FROM sections WHERE property_id = ? AND kind = 'clima'", [$casa]));
+$lucia->post("/pannello/$casa/sezioni", ['kind' => 'riscaldamento', 'torna' => 'procedura']);
+$lucia->post("/pannello/$casa/sezioni", ['kind' => 'aria', 'torna' => 'procedura']);
+$csid = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'riscaldamento'", [$casa]);
+$asid = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'aria'", [$casa]);
 $r = $lucia->get("/pannello/$casa/sezioni/$csid");
-prova('Sezione «Riscaldamento e aria condizionata»: si sceglie com\'è ogni impianto, gli orari compaiono solo «a orari»', $csid > 0
-      && str_contains($r['body'], 'Si accende da solo, a orari') && str_contains($r['body'], 'L&#039;ospite la accende quando vuole')
+$ra = $lucia->get("/pannello/$casa/sezioni/$asid");
+prova('Sezione «Riscaldamento»: com\'è l\'impianto, gli orari compaiono solo «a orari»; «Aria condizionata» ha i suoi campi', $csid > 0 && $asid > 0
+      && str_contains($r['body'], 'Si accende da solo, a orari') && !str_contains($r['body'], 'L&#039;ospite la accende quando vuole')
       && str_contains($r['body'], 'data-campo-solo-con="heating_mode" data-solo-valori="auto"') && str_contains($r['body'], 'Aggiungi una fascia oraria')
-      && preg_match('#name="risparmio" value="1" checked#', $r['body']) === 1);
+      && preg_match('#name="risparmio" value="1" checked#', $r['body']) === 1
+      && str_contains($ra['body'], 'L&#039;ospite la accende quando vuole') && !str_contains($ra['body'], 'Si accende da solo, a orari'));
 $r = $lucia->post("/pannello/$casa/sezioni/$csid", ['heating_mode' => 'auto',
     'heating_times' => [['id' => '', 'from' => '06:30', 'to' => '09:00'], ['id' => '', 'from' => '17:00', 'to' => '23:00', 'days' => ['1', '2', '3', '4', '5']]],
-    'heating_temp' => '20', 'heating_period' => 'Dal 15 ottobre al 15 aprile', 'heating_how' => [''],
-    'ac_mode' => 'libero', 'ac_temp' => '26', 'ac_how' => ['Il telecomando è sul comodino.', 'Premi ON, poi il fiocco di neve.'], 'risparmio' => '1', 'note' => '']);
+    'heating_temp' => '20', 'heating_period' => 'Dal 15 ottobre al 15 aprile', 'heating_how' => [''], 'risparmio' => '1', 'note' => '']);
+$lucia->post("/pannello/$casa/sezioni/$asid", ['ac_mode' => 'libero', 'ac_temp' => '26', 'ac_how' => ['Il telecomando è sul comodino.', 'Premi ON, poi il fiocco di neve.'], 'risparmio' => '1', 'note' => '']);
 $sd = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$csid]), true) ?: [];
-prova('…salvata: modo, due fasce (una solo dal lunedì al venerdì), temperature', pulita($r) && ($sd['heating_mode'] ?? '') === 'auto' && count($sd['heating_times'] ?? []) === 2
-      && ($sd['heating_times'][1]['days'] ?? []) === [1, 2, 3, 4, 5] && ($sd['ac_temp'] ?? '') === '26', json_encode($sd));
+$sa = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$asid]), true) ?: [];
+prova('…salvate: modo, due fasce (una solo dal lunedì al venerdì), temperature, ognuna nella sua sezione', pulita($r) && ($sd['heating_mode'] ?? '') === 'auto' && count($sd['heating_times'] ?? []) === 2
+      && ($sd['heating_times'][1]['days'] ?? []) === [1, 2, 3, 4, 5] && ($sa['ac_temp'] ?? '') === '26' && !isset($sd['ac_temp']) && !isset($sa['heating_mode']), json_encode([$sd, $sa]));
 $r = $lucia->get("/pannello/$casa/anteprima/$csid");
-prova('Guida: stato di adesso (acceso o spento), fasce leggibili, «Impostato a 20 °C», l\'aria condizionata con il telecomando',
+$ra = $lucia->get("/pannello/$casa/anteprima/$asid");
+prova('Guida: stato di adesso (acceso o spento), fasce leggibili, «Impostato a 20 °C»; l\'aria condizionata nella sua pagina, con il telecomando',
       $r['code'] === 200 && preg_match('#clima__stato--(on|off)#', $r['body']) === 1 && str_contains($r['body'], 'tutti i giorni') && str_contains($r['body'], '6:30 – 9:00')
       && str_contains($r['body'], 'lun–ven') && str_contains($r['body'], 'Impostato a 20 °C') && str_contains($r['body'], 'Si accende e si spegne da solo')
-      && str_contains($r['body'], 'La accendi tu quando vuoi') && str_contains($r['body'], 'Il telecomando è sul comodino.') && str_contains($r['body'], 'Dal 15 ottobre al 15 aprile'));
-prova('…il consiglio sull\'energia, con le temperature dell\'host', str_contains($r['body'], 'In Italia l&#039;energia costa molto') && str_contains($r['body'], 'D&#039;inverno bastano 20 °C')
-      && str_contains($r['body'], 'D&#039;estate bastano 26 °C'));
+      && !str_contains($r['body'], 'La accendi tu quando vuoi') && str_contains($ra['body'], 'La accendi tu quando vuoi') && str_contains($ra['body'], 'Il telecomando è sul comodino.')
+      && str_contains($r['body'], 'Dal 15 ottobre al 15 aprile'));
+prova('…il consiglio sull\'energia in tutte e due, con le temperature dell\'host', str_contains($r['body'], 'In Italia l&#039;energia costa molto') && str_contains($r['body'], 'D&#039;inverno bastano 20 °C')
+      && str_contains($ra['body'], 'D&#039;estate bastano 26 °C') && !str_contains($r['body'], 'D&#039;estate bastano'));
 $r = $lucia->get("/pannello/$casa/anteprima/$csid?l=en");
 prova('…in inglese', str_contains($r['body'], 'Heating') && str_contains($r['body'], 'every day') && str_contains($r['body'], 'Set to 20 °C') && preg_match('#(On|Off) now#', $r['body']) === 1);
-$lucia->post("/pannello/$casa/sezioni/$csid", ['heating_mode' => 'manuale', 'heating_temp' => '20', 'ac_mode' => 'no', 'risparmio' => '', 'note' => 'Il termostato è in corridoio.']);
+$lucia->post("/pannello/$casa/sezioni/$csid", ['heating_mode' => 'manuale', 'heating_temp' => '20', 'risparmio' => '', 'note' => 'Il termostato è in corridoio.']);
+$lucia->post("/pannello/$casa/sezioni/$asid", ['ac_mode' => 'no', 'risparmio' => '']);
 $r = $lucia->get("/pannello/$casa/anteprima/$csid");
+$ra = $lucia->get("/pannello/$casa/anteprima/$asid");
 prova('Riscaldamento acceso dall\'ospite, niente aria condizionata, consiglio spento: niente orari vecchi né stato',
-      str_contains($r['body'], 'Lo accendi tu, quando ti serve.') && str_contains($r['body'], 'Temperatura consigliata: 20 °C') && str_contains($r['body'], 'Non c&#039;è l&#039;aria condizionata.')
+      str_contains($r['body'], 'Lo accendi tu, quando ti serve.') && str_contains($r['body'], 'Temperatura consigliata: 20 °C') && str_contains($ra['body'], 'Non c&#039;è l&#039;aria condizionata.')
       && !str_contains($r['body'], 'clima__stato') && !str_contains($r['body'], '6:30') && !str_contains($r['body'], 'energia costa') && str_contains($r['body'], 'Il termostato è in corridoio.'));
 $stati = json_decode((string) shell_exec('php -r ' . escapeshellarg('define("MHW_APP", "' . $DOVE . '/app"); spl_autoload_register(fn($c) => require "' . $DOVE . '/app/src/" . substr($c, 4) . ".php");
   $f = MHW\Clima::fasce([["from" => "17:00", "to" => "23:00"], ["from" => "06:30", "to" => "09:00"], ["from" => "22:00", "to" => "02:00", "days" => ["6"]]]);
@@ -3525,6 +3547,9 @@ prova('7C · Diagnostica: la riga delle traduzioni con l\'esito esatto dell\'ult
 // 8 · Novità: la fascia, una volta per account, e chiusa resta chiusa.
 db()->prepare('UPDATE users SET created_at = ? WHERE email = ?')->execute(['2026-01-01T00:00:00Z', 'lucia@esempio.it']);
 $r = $lucia->get('/pannello');
+prova('8C · Novità: la prima è «Riscaldamento e aria condizionata ora sono due sezioni»', str_contains($r['body'], 'Riscaldamento e aria condizionata ora sono due sezioni'));
+foreach (['2026-10-clima', '2026-10-lingue', '2026-10-portali'] as $nid) $lucia->post('/pannello/novita/chiudi', ['novita' => $nid]);
+$r = $lucia->get('/pannello');
 prova('7C · Novità: la fascia con «Mostrami dove»', str_contains($r['body'], 'class="novita"') && str_contains($r['body'], 'La tua foto nella guida, anche con Essential')
       && str_contains($r['body'], '>Mostrami dove</a>'));
 $lucia->post('/pannello/novita/chiudi', ['novita' => '2026-10-host']);
@@ -3774,6 +3799,237 @@ prova('8B · FAQ: «Come chiedo una recensione agli ospiti?» e «Traduci tutti 
 $r = $admin->get('/admin/impostazioni');
 prova('8B · Amministrazione → Impostazioni → Portali: gli indirizzi di partenza, con la prova', str_contains($r['body'], 'id="imp-portali-titolo"') && str_contains($r['body'], 'name="portali__google"')
       && str_contains($admin->segui($admin->post('/admin/impostazioni/portali/prova', []))['body'], 'Booking.com → https://www.booking.com/'));
+
+
+capitolo('8C · guida: pagina delle recensioni, scelta della lingua, «Stiamo per partire», palette, riscaldamento e aria, lingue');
+// La pagina delle recensioni, sulla guida di Lucia (portali Booking e Google dalla 8B).
+$lucia->post("/pannello/$casa8/dopo-il-soggiorno", ['portali' => ['booking', 'google'], 'social' => ['instagram' => '@casalucia'], 'has_site' => '1', 'direct_url' => 'https://www.esempio.it/prenota', 'direct_code' => '']);
+$lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1']);
+$r = $ospite->get("/g/$slug8/recensione");
+prova('8C · /g/{slug}/recensione: 200, noindex, copertina e nome, «Com\'è andato il soggiorno?» con 5 stelle, og:title delle recensioni', $r['code'] === 200
+      && str_contains($r['body'], '<meta name="robots" content="noindex') && stripos(intestazione($r, 'X-Robots-Tag'), 'noindex') !== false
+      && str_contains($r['body'], 'class="recensione__nome">Casa Lucia') && substr_count($r['body'], 'class="stella') === 5
+      && str_contains($r['body'], 'property="og:title" content="Casa Lucia · Com&#039;è andato il soggiorno?"') && !str_contains($r['body'], 'data-portale='));
+$votiR = (int) val("SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = 'rating_5'", [$casa8]);
+$r = $ospite->get("/g/$slug8/recensione?voto=5");
+prova('8C · 5 stelle: il grazie, il favore, i bottoni dei portali spuntati con i link del sistema e la riga sull\'app; il voto si conta',
+      str_contains($r['body'], 'Siamo felici che ti sia trovato bene!') && str_contains($r['body'], 'Ti chiediamo un piccolo favore')
+      && str_contains($r['body'], 'href="https://www.booking.com/" target="_blank" rel="noopener" data-portale="booking"')
+      && str_contains($r['body'], 'data-portale="google"') && str_contains($r['body'], 'dall&#039;app o dall&#039;email')
+      && (int) val("SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = 'rating_5'", [$casa8]) === $votiR + 1);
+$lucia->get("/pannello/$casa8/impostazioni");
+$r = $lucia->post("/pannello/$casa8/impostazioni", ['name' => 'Casa Lucia', 'guest_email' => 'non-una-email']);
+prova('8C · «Email per gli ospiti» in Impostazioni: un indirizzo sbagliato non si salva', str_contains($lucia->segui($r)['body'], 'L&#039;email per gli ospiti non sembra giusta')
+      || str_contains($r['body'], 'L&#039;email per gli ospiti non sembra giusta'));
+$lucia->post("/pannello/$casa8/impostazioni", ['name' => 'Casa Lucia', 'guest_email' => 'ospiti@casalucia.example']);
+prova('…uno giusto sì', val('SELECT guest_email FROM properties WHERE id = ?', [$casa8]) === 'ospiti@casalucia.example'
+      && str_contains($lucia->get("/pannello/$casa8/impostazioni")['body'], 'value="ospiti@casalucia.example"'));
+$lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1']);
+$r = $ospite->get("/g/$slug8/recensione?voto=4&l=en");
+prova('8C · 4 stelle (en): niente link ai portali nella pagina; «Thank you for your honesty», WhatsApp con il messaggio e l\'email per gli ospiti',
+      str_contains($r['body'], 'Thank you for your honesty.') && str_contains($r['body'], 'Message us on WhatsApp') && str_contains($r['body'], '?text=Hi%20')
+      && str_contains($r['body'], 'href="mailto:ospiti@casalucia.example?subject=My%20stay%20at%20Casa%20Lucia"')
+      && !str_contains($r['body'], 'booking.com') && !str_contains($r['body'], 'google.com/maps') && !str_contains($r['body'], 'data-portale='));
+$r = $ospite->get("/g/$slug8/commiato?voto=5");
+prova('8C · saluto: lo stesso blocco, e «Seguici» con Instagram sotto la prenotazione diretta', str_contains($r['body'], 'data-voto="5"') && str_contains($r['body'], 'class="seguici')
+      && str_contains($r['body'], 'href="https://www.instagram.com/casalucia"') && strpos($r['body'], 'class="seguici') > strpos($r['body'], 'https://www.esempio.it/prenota'));
+$votiR = (int) val("SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = 'rating_5'", [$casa8]);
+$r = $lucia->get("/pannello/$casa8/anteprima/recensione?voto=5");
+prova('…e l\'anteprima nel pannello, senza contare il voto', $r['code'] === 200 && str_contains($r['body'], 'data-voto="5"')
+      && (int) val("SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = 'rating_5'", [$casa8]) === $votiR);
+
+// La home della guida: «Stiamo per partire», riquadri, scelta della lingua.
+$r = $ospite->get("/g/$slug8", ['Accept-Language: de-DE,de;q=0.9,en;q=0.5']);
+$lingueL = json_decode((string) val('SELECT snapshot FROM guide_versions WHERE property_id = ? ORDER BY version DESC', [$casa8]), true)['locales'] ?? [];
+prova('8C · «Stiamo per partire» è un riquadro largo, con la riga sotto, verso il saluto', preg_match('#<a class="partenza" href="[^"]*/commiato\?l=[a-z]{2}">#', $r['body']) === 1
+      && str_contains($r['body'], 'class="partenza__testo"') && (str_contains($r['body'], 'Cosa fare prima di uscire') || str_contains($r['body'], 'Was vor der Abreise')));
+prova('8C · riquadri: icone da 30 px, titolo in .tile__titolo che non spezza le parole col trattino', preg_match('#<a class="tile [^"]*"[^>]*>\s*<svg width="30" height="30"#', $r['body']) === 1
+      && str_contains($r['body'], '<span class="tile__titolo">') && str_contains($r['body'], '<span class="nowrap">Check-in</span>'));
+$primaLingua = preg_match('#<a class="scegli-lingua__lingua[^"]*" href="[^"]*"\s+data-lingua="([a-z]{2})"#', $r['body'], $mL) ? $mL[1] : '';
+prova('8C · alla prima apertura senza ?l=: la finestra «Scegli la lingua» con le lingue della guida, nel nome nativo, quella del telefono in cima ed evidenziata',
+      count($lingueL) > 1 && str_contains($r['body'], 'id="scegli-lingua"') && substr_count($r['body'], 'data-lingua="') === count($lingueL)
+      && (in_array('de', $lingueL, true) ? $primaLingua === 'de' && str_contains($r['body'], 'scegli-lingua__lingua--telefono') && str_contains($r['body'], 'Sprache wählen') : $primaLingua !== '')
+      && str_contains($r['body'], 'data-guida="' . $slug8 . '"'), json_encode($lingueL) . ' ' . $primaLingua);
+prova('…con ?l= nell\'indirizzo non c\'è, e nemmeno nell\'anteprima del pannello', !str_contains($ospite->get("/g/$slug8?l=it")['body'], 'id="scegli-lingua"')
+      && !str_contains($lucia->get("/pannello/$casa8/anteprima")['body'], 'id="scegli-lingua"'));
+prova('…c\'è anche nella pagina di benvenuto; il conteggio language_selected resta', str_contains($ospite->get("/g/$slug8/benvenuto")['body'], 'id="scegli-lingua"')
+      && (bool) val("SELECT 1 FROM analytics_events WHERE property_id = ? AND kind = 'language_selected'", [$casa8]) === (bool) val("SELECT 1 FROM analytics_events WHERE property_id = ? AND kind = 'language_selected'", [$casa8]));
+$js = (string) @file_get_contents("$DOVE/assets/guida.js");
+prova('…guida.js ricorda la scelta in localStorage per guida (mhw-lingua-slug), senza cookie', str_contains($js, "'mhw-lingua-' + slug") && str_contains($js, 'localStorage.setItem')
+      && !str_contains($js, 'document.cookie'));
+
+// Palette: quattro colori ben distinti, contrasti calcolati.
+$pal = json_decode((string) shell_exec('php -r ' . escapeshellarg('define("MHW_APP", "' . $DOVE . '/app"); spl_autoload_register(fn($c) => require "' . $DOVE . '/app/src/" . substr($c, 4) . ".php");
+  $out = []; foreach (array_keys(MHW\Palette::all()) as $c) $out[$c] = MHW\Palette::get($c); echo json_encode($out);')), true) ?: [];
+$lum = function (string $h): float { $h = ltrim($h, '#'); $c = array_map(fn($x) => ($v = hexdec($x) / 255) <= 0.03928 ? $v / 12.92 : (($v + 0.055) / 1.055) ** 2.4, str_split($h, 2));
+    return 0.2126 * $c[0] + 0.7152 * $c[1] + 0.0722 * $c[2]; };
+$contr = fn(string $a, string $b) => (max($lum($a), $lum($b)) + 0.05) / (min($lum($a), $lum($b)) + 0.05);
+// La distanza tra due colori come la vede l'occhio: CIE L*a*b*, ΔE 1976.
+$lab = function (string $h): array {
+    $c = array_map(fn($x) => ($v = hexdec($x) / 255) <= 0.04045 ? $v / 12.92 : (($v + 0.055) / 1.055) ** 2.4, str_split(ltrim($h, '#'), 2));
+    $xyz = [(0.4124 * $c[0] + 0.3576 * $c[1] + 0.1805 * $c[2]) / 0.95047, 0.2126 * $c[0] + 0.7152 * $c[1] + 0.0722 * $c[2], (0.0193 * $c[0] + 0.1192 * $c[1] + 0.9505 * $c[2]) / 1.08883];
+    $f = array_map(fn($t) => $t > 0.008856 ? $t ** (1 / 3) : 7.787 * $t + 16 / 116, $xyz);
+    return [116 * $f[1] - 16, 500 * ($f[0] - $f[1]), 200 * ($f[1] - $f[2])];
+};
+$attesi = ['terracotta' => ['#b4451f', '#1c5a78', '#1f6b3f', '#c08a14'], 'sabbia' => ['#8c5a2e', '#2f6f73', '#6e5a8a', '#c8a86b'], 'oliva' => ['#556b2f', '#a0522d', '#2e5e6e', '#c9b458'],
+           'mare' => ['#1c5a78', '#2a7f62', '#b84f34', '#e0b04a'], 'borgogna' => ['#7b2331', '#2f5d50', '#4b3a6e', '#d4a259'], 'grafite' => ['#2f3338', '#3f6e8c', '#9c4a2f', '#c9c2b4']];
+$male = [];
+foreach ($attesi as $c => $tiles) {
+    $p = $pal[$c] ?? [];
+    if (($p['tiles'] ?? []) !== $tiles) { $male[] = "$c: colori"; continue; }
+    for ($i = 0; $i < 3; $i++) if ($contr($p['tile_ink'][$i], $tiles[$i]) < 4.5) $male[] = "$c: testo chiaro sul riquadro " . ($i + 1) . ' ' . round($contr($p['tile_ink'][$i], $tiles[$i]), 2);
+    if ($contr($p['scuro']['ink'], $tiles[3]) < 5) $male[] = "$c: testo scuro sul quarto " . round($contr($p['scuro']['ink'], $tiles[3]), 2);
+    for ($i = 0; $i < 4; $i++) for ($j = $i + 1; $j < 4; $j++) {
+        $dE = sqrt(array_sum(array_map(fn($x, $y) => ($x - $y) ** 2, $lab($tiles[$i]), $lab($tiles[$j]))));
+        if ($dE < 20) $male[] = "$c: riquadri " . ($i + 1) . ' e ' . ($j + 1) . ' troppo vicini (ΔE ' . round($dE) . ')';
+    }
+}
+prova('8C · palette: i quattro colori del brief, testo chiaro ≥ 4,5:1 sui primi tre, testo scuro ≥ 5:1 sul quarto, colori lontani tra loro', $pal && !$male, implode('; ', $male));
+
+// Lingue: Plus con la lingua principale tedesca, una lingua in più, traduzioni suggerite da «de».
+$greta = new Browser('greta');
+$greta->get('/registrati?piano=' . pv('plus'));
+$greta->post('/registrati', ['piano' => pv('plus'), 'name' => 'Greta Lingue', 'email' => 'greta@prova.test', 'password' => 'GretaProva123', 'termini' => '1', 'privacy' => '1']);
+$gacc = $accDi('greta@prova.test');
+db()->prepare('UPDATE users SET email_verified_at = ? WHERE email = ?')->execute([gmdate('Y-m-d\TH:i:s\Z'), 'greta@prova.test']);
+$greta->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Haus Greta', 'city' => 'Spello']);
+$gp = (int) val('SELECT id FROM properties WHERE account_id = ?', [$gacc]);
+db()->prepare("INSERT INTO subscriptions (account_id, package_version_id, status, provider, provider_customer_id, provider_subscription_id, current_period_start,
+    current_period_end, payment_status, created_at, updated_at, quantity) VALUES (?, ?, 'active', 'stripe', 'cus_greta', 'sub_prova_greta', ?, ?, 'paid', ?, ?, 1)")
+    ->execute([$gacc, pv('plus'), gmdate('Y-m-d\TH:i:s\Z', time() - 10 * 86400), gmdate('Y-m-d\TH:i:s\Z', time() + 355 * 86400), gmdate('Y-m-d\TH:i:s\Z'), gmdate('Y-m-d\TH:i:s\Z')]);
+$greta->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Greta Lingue', 'cf' => 'RSSMRA85T10A562S',
+               'billing_address' => 'Via Roma 1', 'billing_postal' => '06038', 'billing_city' => 'Spello', 'billing_province' => 'PG']);
+$r = $greta->get("/pannello/$gp/procedura/struttura");
+prova('8C · «In che lingua scrivi la guida?»: le cinque di base e «Un\'altra lingua» con i nomi nativi, di serie italiano', preg_match('#name="default_locale" value="it" checked#', $r['body']) === 1
+      && str_contains($r['body'], 'Un\'altra lingua') && str_contains($r['body'], '>Nederlands<') && str_contains($r['body'], '>日本語<') && str_contains($r['body'], '>Čeština<'));
+$greta->modulo("/pannello/$gp/procedura/struttura", "/pannello/$gp/impostazioni", ['name' => 'Haus Greta', 'default_locale' => 'de', 'cin' => 'IT054050C2GRETA001']);
+prova('…la guida si scrive in tedesco', val('SELECT default_locale FROM properties WHERE id = ?', [$gp]) === 'de');
+$greta->post("/pannello/$gp/lingue", ['locali' => ['de']]);
+$gcore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$gp]);
+$greta->post("/pannello/$gp/sezioni/$gcore", ['checkin_steps' => ['Die Schlüssel liegen im Kasten neben der Tür.'], 'checkin_note' => 'Bei später Ankunft bitte eine Nachricht schicken.']);
+$greta->post("/pannello/$gp/pubblica", ['codici_ok' => '1']);
+$r = $ospite->get("/g/" . val('SELECT slug FROM properties WHERE id = ?', [$gp]), ['Accept-Language: it']);
+$gslug = (string) val('SELECT slug FROM properties WHERE id = ?', [$gp]);
+prova('8C · una lingua sola: la guida in tedesco, senza la finestra della lingua', $r['code'] === 200 && str_contains($r['body'], 'lang="de"') && str_contains($r['body'], 'Willkommen')
+      && !str_contains($r['body'], 'id="scegli-lingua"'), (string) $r['code']);
+$r = $greta->get("/pannello/$gp/lingue");
+prova('8C · Plus: le lingue di base come caselle e «Una lingua in più» come scelta sola', preg_match('#type="checkbox" name="locali\[\]" value="it"#', $r['body']) === 1
+      && preg_match('#type="radio" name="locali\[\]" value="nl"#', $r['body']) === 1 && str_contains($r['body'], 'Una lingua in più') && !str_contains($r['body'], 'value="de" checked disabled'));
+$r = $greta->post("/pannello/$gp/lingue", ['locali' => ['de', 'it', 'nl', 'ja']]);
+prova('…due lingue in più: rifiutato, niente salvato', !val("SELECT 1 FROM property_locales WHERE property_id = ? AND locale = 'nl'", [$gp])
+      && str_contains($greta->segui($r)['body'] . $r['body'], 'una lingua aggiuntiva'));
+$greta->post("/pannello/$gp/lingue", ['locali' => ['de', 'it', 'en', 'fr', 'es', 'nl']]);
+prova('…sei lingue: la principale, le altre quattro di base e il nederlandese', array_column(righe('SELECT locale FROM property_locales WHERE property_id = ? ORDER BY locale', [$gp]), 'locale') === ['de', 'en', 'es', 'fr', 'it', 'nl']);
+$prima = count($richiesteTr());
+$greta->segui($greta->post("/pannello/$gp/lingue/it/suggerite", ['suggerisci' => '1']));
+$greta->segui($greta->post("/pannello/$gp/lingue/nl/suggerite", ['suggerisci' => '1']));
+$nuove = array_slice($richiesteTr(), $prima);
+prova('8C · traduzioni suggerite dal tedesco verso l\'italiano e verso la lingua in più (nl)', $nuove && !array_filter($nuove, fn($q) => ($q['da'] ?? '') !== 'de')
+      && (bool) array_filter($nuove, fn($q) => ($q['a'] ?? '') === 'it') && (bool) array_filter($nuove, fn($q) => ($q['a'] ?? '') === 'nl')
+      && (bool) val("SELECT 1 FROM translation_suggestions WHERE property_id = ? AND locale = 'nl' AND text LIKE '[nl] Die Schlüssel%'", [$gp]), json_encode($nuove));
+$greta->post("/pannello/$gp/lingue/nl/suggerite", ['tutte' => '1']);
+$greta->post("/pannello/$gp/lingue/it/suggerite", ['tutte' => '1']);
+$greta->post("/pannello/$gp/pubblica", ['codici_ok' => '1']);
+$r = $ospite->get("/g/$gslug/$gcore?l=nl");
+prova('8C · guida in olandese: interfaccia olandese e il testo tradotto', str_contains($r['body'], 'lang="nl"') && str_contains($r['body'], '[nl] Die Schlüssel') && str_contains($r['body'], 'Terug naar de gids'));
+$r = $ospite->get("/g/$gslug?l=it");
+prova('…in italiano, con la finestra della lingua che ora c\'è (senza ?l=) e i nomi nativi', str_contains($r['body'], 'Benvenuti') && str_contains($ospite->get("/g/$gslug")['body'], '>Nederlands</a>'));
+$greta->post("/pannello/$gp/lingue", ['locali' => ['de', 'it', 'ja']]);
+$greta->post("/pannello/$gp/lingue/ja", ['s' => [$gcore => ['checkin_note' => '遅く到着する場合はメッセージをください。']]]);
+$greta->post("/pannello/$gp/pubblica", ['codici_ok' => '1']);
+$r = $ospite->get("/g/$gslug/$gcore?l=ja");
+prova('8C · lingua in più giapponese: interfaccia in inglese, il testo dell\'host in giapponese', str_contains($r['body'], 'lang="ja"') && str_contains($r['body'], 'Back to the guide')
+      && str_contains($r['body'], '遅く到着する場合はメッセージをください。'));
+file_put_contents("$DOVE/app/config.local.php", '<?php return ' . var_export(['translate' => ['extra' => false]], true) . ';');
+$prima = count($richiesteTr());
+$r = $greta->segui($greta->post("/pannello/$gp/lingue/ja/suggerite", ['suggerisci' => '1']));
+$rIt = $greta->segui($greta->post("/pannello/$gp/lingue/it/suggerite", ['campo' => "section:$gcore:checkin_note"]));
+prova('8C · «Traduci anche la lingua aggiuntiva» spento: niente suggerite verso il giapponese (si scrive a mano), l\'italiano sì', str_contains($r['body'], 'scrivila a mano')
+      && !array_filter(array_slice($richiesteTr(), $prima), fn($q) => ($q['a'] ?? '') === 'ja'));
+@unlink("$DOVE/app/config.local.php");
+$r = $admin->get('/admin/impostazioni');
+prova('…l\'interruttore è in Amministrazione → Impostazioni → Traduzioni', str_contains($r['body'], 'Traduci anche la lingua aggiuntiva'));
+
+// Essential: la principale tedesca, una seconda a scelta (giapponese), la terza no (un cliente Essential nuovo).
+$ester = new Browser('ester');
+$ester->get('/registrati?piano=' . pv('essential'));
+$ester->post('/registrati', ['piano' => pv('essential'), 'name' => 'Ester Essenziale', 'email' => 'ester@prova.test', 'password' => 'EsterProva123', 'termini' => '1', 'privacy' => '1']);
+$esacc = $accDi('ester@prova.test');
+$ester->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Ester', 'city' => 'Gubbio']);
+$esp = (int) val('SELECT id FROM properties WHERE account_id = ?', [$esacc]);
+db()->prepare("INSERT INTO subscriptions (account_id, package_version_id, status, provider, provider_customer_id, provider_subscription_id, current_period_start,
+    current_period_end, payment_status, created_at, updated_at, quantity) VALUES (?, ?, 'active', 'stripe', 'cus_ester', 'sub_prova_ester', ?, ?, 'paid', ?, ?, 1)")
+    ->execute([$esacc, pv('essential'), gmdate('Y-m-d\TH:i:s\Z', time() - 10 * 86400), gmdate('Y-m-d\TH:i:s\Z', time() + 355 * 86400), gmdate('Y-m-d\TH:i:s\Z'), gmdate('Y-m-d\TH:i:s\Z')]);
+$ester->modulo("/pannello/$esp/procedura/struttura", "/pannello/$esp/impostazioni", ['name' => 'Casa Ester', 'default_locale' => 'de']);
+$ester->post("/pannello/$esp/lingue", ['locali' => ['de', 'ja']]);
+$lingueA = array_column(righe('SELECT locale FROM property_locales WHERE property_id = ? ORDER BY locale', [$esp]), 'locale');
+prova('8C · Essential con principale de e seconda ja', val('SELECT default_locale FROM properties WHERE id = ?', [$esp]) === 'de' && $lingueA === ['de', 'ja'], json_encode($lingueA));
+$r = $ester->post("/pannello/$esp/lingue", ['locali' => ['de', 'ja', 'it']]);
+$lingueA = array_column(righe('SELECT locale FROM property_locales WHERE property_id = ? ORDER BY locale', [$esp]), 'locale');
+prova('…una terza rifiutata, con la finestra di Plus', $lingueA === ['de', 'ja'] && str_contains($r['body'], 'data-apri="lingue"'), json_encode($lingueA));
+
+// Riscaldamento e aria condizionata: la migrazione 037 su sezioni «clima» (con e senza aria condizionata; Essential al limite).
+$nuovaClima = function (int $prop, array $dati, array $tr, int $attiva = 1) {
+    $pos = (int) val('SELECT COALESCE(MAX(position),0)+1 FROM sections WHERE property_id = ?', [$prop]);
+    db()->prepare("INSERT INTO sections (property_id, kind, icon, color, position, is_core, is_active, data, created_at) VALUES (?, 'clima', 'clima', 'terracotta', ?, 0, ?, ?, ?)")
+        ->execute([$prop, $pos, $attiva, json_encode($dati), gmdate('Y-m-d\TH:i:s\Z')]);
+    $sid = (int) db()->lastInsertId();
+    foreach ($tr as $l => [$tit, $d]) db()->prepare("INSERT INTO section_translations (section_id, locale, title, body, data, state, updated_at) VALUES (?, ?, ?, '', ?, 'reviewed', ?)")
+        ->execute([$sid, $l, $tit, json_encode($d), gmdate('Y-m-d\TH:i:s\Z')]);
+    return $sid;
+};
+// Greta (Plus): con aria condizionata, testi in tedesco e italiano.
+$cg = $nuovaClima($gp, ['heating_mode' => 'auto', 'heating_times' => [['id' => 'r1', 'from' => '06:00', 'to' => '09:00', 'days' => []]], 'heating_temp' => '21', 'ac_mode' => 'libero', 'ac_temp' => '25', 'risparmio' => '1'],
+    ['de' => ['Heizung und Klimaanlage', ['heating_how' => ['Thermostat im Flur.'], 'ac_how' => ['Fernbedienung auf dem Nachttisch.'], 'note' => 'Bitte Fenster schließen.']],
+     'it' => ['', ['heating_how' => ['Termostato nel corridoio.'], 'ac_how' => ['Telecomando sul comodino.']]]]);
+// Lucia (Portfolio): senza aria condizionata.
+$cl = $nuovaClima($casa8, ['heating_mode' => 'manuale', 'heating_temp' => '20', 'ac_mode' => 'no'], ['it' => ['Riscaldamento e aria condizionata', ['heating_how' => ['Accendi la caldaia.']]]]);
+// Ester (Essential): al limite di sezioni.
+$maxA = (int) val("SELECT pf.value FROM package_features pf JOIN features f ON f.id = pf.feature_id WHERE f.code = 'sections' AND pf.package_version_id = ?", [pv('essential')]);
+$ca = $nuovaClima($esp, ['heating_mode' => 'auto', 'ac_mode' => 'orari', 'ac_times' => [['id' => 'r2', 'from' => '14:00', 'to' => '18:00', 'days' => []]]], ['de' => ['', ['ac_how' => ['Taste ON drücken.']]]]);
+while ((int) val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_core = 0 AND is_active = 1', [$esp]) < $maxA) {
+    db()->prepare("INSERT INTO sections (property_id, kind, icon, color, position, is_core, is_active, data, created_at) VALUES (?, 'custom', 'custom', 'terracotta', 99, 0, 1, '{}', ?)")->execute([$esp, gmdate('Y-m-d\TH:i:s\Z')]);
+}
+db()->prepare("UPDATE sections SET is_active = 0 WHERE property_id = ? AND is_active = 1 AND is_core = 0 AND id NOT IN (SELECT id FROM (SELECT id FROM sections WHERE property_id = ? AND is_core = 0 AND is_active = 1 ORDER BY id DESC LIMIT $maxA) x)")->execute([$esp, $esp]);
+$posG = (int) val('SELECT position FROM sections WHERE id = ?', [$cg]);
+$migra = 'define("MHW_APP", ' . var_export("$DOVE/app", true) . '); spl_autoload_register(fn($c) => require MHW_APP . "/src/" . substr($c, 4) . ".php"); '
+       . 'MHW\Config::load(MHW_APP . "/config.php"); $f = require MHW_APP . "/migrations/037_guida_8c.php"; $f(MHW\Db::conn()); echo "fatto";';
+$esito = trim((string) shell_exec('cd ' . escapeshellarg("$DOVE/app") . ' && php -r ' . escapeshellarg($migra) . ' 2>&1'));
+$ariaG = riga("SELECT * FROM sections WHERE property_id = ? AND kind = 'aria' AND id > ?", [$gp, $cg]);
+$trG = fn(int $s, string $l) => json_decode((string) val('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$s, $l]), true) ?: [];
+prova('8C · migrazione: «clima» diventa «riscaldamento» (stesso id, testi heating_* e nota); con l\'aria condizionata nasce «aria» subito dopo, con ac_* e traduzioni',
+      $esito === 'fatto' && val('SELECT kind FROM sections WHERE id = ?', [$cg]) === 'riscaldamento' && $ariaG && (int) $ariaG['position'] === $posG + 1 && (int) $ariaG['is_active'] === 1
+      && ($trG($cg, 'de')['heating_how'] ?? []) === ['Thermostat im Flur.'] && ($trG($cg, 'de')['note'] ?? '') === 'Bitte Fenster schließen.' && !isset($trG($cg, 'de')['ac_how'])
+      && ($trG((int) $ariaG['id'], 'de')['ac_how'] ?? []) === ['Fernbedienung auf dem Nachttisch.'] && ($trG((int) $ariaG['id'], 'it')['ac_how'] ?? []) === ['Telecomando sul comodino.']
+      && (json_decode((string) $ariaG['data'], true)['ac_temp'] ?? '') === '25' && !isset(json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$cg]), true)['ac_temp'])
+      && val("SELECT title FROM section_translations WHERE section_id = ? AND locale = 'de'", [$cg]) === 'Heizung', $esito);
+prova('…senza aria condizionata nasce solo «riscaldamento»', val('SELECT kind FROM sections WHERE id = ?', [$cl]) === 'riscaldamento'
+      && !val("SELECT 1 FROM sections WHERE property_id = ? AND kind = 'aria' AND id > ?", [$casa8, $cl]) && val("SELECT title FROM section_translations WHERE section_id = ? AND locale = 'it'", [$cl]) === 'Riscaldamento');
+$ariaA = riga("SELECT * FROM sections WHERE property_id = ? AND kind = 'aria' AND id > ?", [$esp, $ca]);
+db()->prepare("UPDATE users SET created_at = '2026-01-01T00:00:00Z' WHERE email = 'ester@prova.test'")->execute();
+prova('…Essential al limite: «aria» nasce disattivata, con i suoi testi, e la novità lo dice', $ariaA && (int) $ariaA['is_active'] === 0
+      && ($trG((int) $ariaA['id'], 'de')['ac_how'] ?? []) === ['Taste ON drücken.'] && str_contains($ester->get("/pannello/$esp")['body'], 'è nata disattivata'));
+$conta = fn() => (int) val("SELECT COUNT(*) FROM sections WHERE kind IN ('clima', 'riscaldamento', 'aria')");
+$n1 = $conta();
+$esito2 = trim((string) shell_exec('cd ' . escapeshellarg("$DOVE/app") . ' && php -r ' . escapeshellarg($migra) . ' 2>&1'));
+prova('…una seconda esecuzione non cambia niente', $esito2 === 'fatto' && $conta() === $n1 && !val("SELECT 1 FROM sections WHERE kind = 'clima'"));
+// Un'istantanea pubblicata prima, con la sezione unica, si vede come prima.
+$snapG = json_decode((string) val('SELECT snapshot FROM guide_versions WHERE property_id = ? ORDER BY version DESC', [$gp]), true);
+$snapG['format'] = 7; unset($snapG['property']['guest_email']);
+$snapG['sections'][] = ['id' => 999999, 'kind' => 'clima', 'is_core' => 0, 'data' => ['heating_mode' => 'manuale', 'heating_temp' => '19', 'ac_mode' => 'libero', 'ac_temp' => '24'],
+                        'image_id' => null, 'pdf_id' => null, 'tr' => ['de' => ['title' => '', 'data' => []]], 'places' => []];
+db()->prepare('UPDATE guide_versions SET snapshot = ? WHERE property_id = ? AND version = (SELECT MAX(version) FROM guide_versions WHERE property_id = ?)')->execute([json_encode($snapG), $gp, $gp]);
+$r = $ospite->get("/g/$gslug/999999?l=de");
+prova('8C · istantanea di prima con «clima»: si vede come prima, riscaldamento e aria nella stessa pagina', $r['code'] === 200 && str_contains($r['body'], 'Heizung und Klimaanlage')
+      && str_contains($r['body'], '19 °C') && str_contains($r['body'], '24 °C'));
+$greta->post("/pannello/$gp/pubblica", ['codici_ok' => '1']);
+prova('…e la nuova istantanea è nel formato 8, con riscaldamento e aria', (int) (json_decode((string) val('SELECT snapshot FROM guide_versions WHERE property_id = ? ORDER BY version DESC', [$gp]), true)['format'] ?? 0) === 8);
+$r = $ospite->get('/domande');
+prova('8C · FAQ: «In quali lingue…» con le regole nuove e «Posso scrivere la guida in un\'altra lingua?»', str_contains($r['body'], 'la tua e una a scelta')
+      && str_contains($r['body'], 'Posso scrivere la guida in un&#039;altra lingua?'));
+$r = $ospite->get('/');
+prova('8C · listino: «2 lingue: la tua e una a scelta», «6 lingue: …»; nel confronto le lingue in una riga', str_contains($r['body'], '2 lingue: la tua e una a scelta')
+      && str_contains($r['body'], '6 lingue: la tua, le altre tra italiano') && str_contains($r['body'], '2: la tua e una a scelta') && !str_contains($r['body'], '>Lingua aggiuntiva<'));
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

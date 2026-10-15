@@ -1,5 +1,40 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 8C la guida dell'ospite: recensioni, lingua, «Stiamo per partire», palette, riscaldamento e aria, lingue (15 ottobre 2026)
+
+Migrazione `037` (solo aggiunte e conversioni): `properties.guest_email`, caratteristica `lingua_extra` (Plus e Portfolio 1), sezioni `clima` divise in `riscaldamento` e `aria`, testi di serie dei piani sulle lingue. Istantanee in formato 8.
+
+- **Pagina delle recensioni** `/g/{slug}/recensione` (il link del messaggio di fine soggiorno): copertina piccola, nome, «Com'è andato il soggiorno?» e 5 stelle, noindex, nelle lingue della guida, anteprima anche nel pannello. **5 stelle:** il grazie, il favore e i bottoni dei portali spuntati dall'host, con la riga sull'app di Booking.com, Airbnb, VRBO ed Expedia. **Da 1 a 4:** nessun link ai portali; «Grazie della sincerità», «Scrivici su WhatsApp» con il messaggio pronto e «Mandaci un'email» se c'è l'«Email per gli ospiti» (campo nuovo in Impostazioni → Chi risponde agli ospiti). Lo stesso blocco nella pagina di saluto, dove compare anche «Seguici» con i social. Il voto resta un conteggio anonimo; tolti «Ti va di raccontarlo…» e «Vuoi dire qualcosa a…».
+- **«Stiamo per partire»:** un riquadro largo del colore d'accento, con la valigia, la riga «Cosa fare prima di uscire, e un saluto» e la freccia (5 lingue).
+- **Riquadri:** icone da 30 px; i titoli non spezzano le parole col trattino («Check-in & Check-out»), al massimo tre righe, e se sono lunghi scendono fino a 15 px. Verificato senza sovrapposizioni con i titoli tedeschi (`prove/schermate/8c-riquadri-de-390.png`).
+- **Palette:** quattro colori ben distinti in ognuna, come da brief; testo chiaro ≥ 4,5:1 sui primi tre, scuro ≥ 5:1 sul quarto (prova automatica che calcola i contrasti).
+- **Riscaldamento e Aria condizionata:** due sezioni, ognuna con titolo, introduzione, editor e pagina sua (stato «acceso adesso», orari, consiglio per il risparmio). La migrazione trasforma ogni `clima` in `riscaldamento` (stesso id e testi) e, se l'aria condizionata c'è, crea `aria` subito dopo con i suoi campi e traduzioni; se la struttura è al limite di sezioni del piano nasce disattivata e la novità lo dice. La vecchia `clima` resta nascosta per le istantanee già pubblicate. Vetrina, Copia e catalogo aggiornati.
+- **Lingue:** la lingua principale si sceglie tra tutte (di serie italiano). Essential: la principale e una seconda a scelta tra tutte. Plus e Portfolio: la principale, le altre lingue di base e una lingua in più tra Nederlands, Português, Polski, Русский, 中文, 日本語, Svenska, Dansk, Čeština (una principale aggiuntiva occupa quel posto). Interfaccia della guida tradotta in olandese, portoghese e polacco (con categorie, riscaldamento ed eventi); per le altre in inglese. Le regole sono in `Entitlements::regolaLingue` e valgono anche al cambio di piano. Traduzioni suggerite anche verso la lingua in più, con l'interruttore «Traduci anche la lingua aggiuntiva» in Impostazioni → Traduzioni.
+- **«Scegli la lingua»:** alla prima apertura di una guida con più lingue, senza `?l=`, una finestra (a tutto schermo sul telefono) con le lingue nel nome nativo e quella del telefono in cima; la scelta si ricorda in `localStorage` per quella guida (niente cookie) e non si richiede più.
+- **Testi:** schede dei piani «2 lingue: la tua e una a scelta» e «6 lingue: …» (solo dove c'era il testo di serie), una riga sola per le lingue in «Confronta tutti i piani», FAQ «In quali lingue…» aggiornata e nuova «Posso scrivere la guida in un'altra lingua?», tre novità nel pannello.
+
+## v2 · 8B il pannello: piattaforme, sito, messaggi, anteprima del link, finestra del piano (15 ottobre 2026)
+
+Migrazione `036`: tabella `property_channels` (i link di recensione scritti dagli host diventano canali), `properties.has_site`, `properties.messages`. Istantanee in formato 7.
+
+- **Su quali piattaforme si trova la tua struttura?** Portali da spuntare (Google, Booking.com, Airbnb, VRBO, Expedia: i link li prepara il sito), altri siti con nome e indirizzo, social (Instagram, Facebook, TikTok). Indirizzi di partenza in Amministrazione → Impostazioni → Portali.
+- **Hai un sito per prenotare?** Sì/No in Impostazioni e nel riquadro di «Le mie guide», con il percorso a domande della home; con «No» la prenotazione diretta non compare nella guida.
+- **QR & Link:** messaggio di benvenuto e di fine soggiorno per lingua, modificabili, con l'anteprima stile WhatsApp; il secondo porta alla pagina delle recensioni.
+- **Anteprima del link della guida:** og:title, og:description e `/g/{slug}/anteprima.jpg` (1200×630 dalla copertina).
+- **«… è compresa in Plus / Portfolio»:** una finestra al posto degli errori quando si tocca una funzione del piano superiore (foto, sezioni, lingue, firma, strutture); i limiti restano controllati sul server.
+
+## v2 · 8A la home (14 ottobre 2026)
+
+Migrazione `035`: tabella `interessi_sito`; voce su foto e PDF nelle schede dei piani.
+
+- «Il tempo» con le ore e gli euro in evidenza; «Anche il tuo sito» come percorso a domande (Sì / No, cosa ti serve, come sentirci), riusato nel pannello; «Interessati a MyHouse» in Amministrazione → Prospetti; scheda con le stelle nella home; email con il marchio al centro e i social nel piè di pagina.
+
+## v2 · 7D Invita un amico per tutti, anteprima del link, giudizi dei clienti (14 ottobre 2026)
+
+Migrazione `034`.
+
+- «Invita un amico» per ogni abbonamento attivo; pagina `/i/{codice}` con l'immagine di anteprima; giudizi dei clienti con consenso, da approvare in Amministrazione, ritirabili dall'account.
+
 ## v2 · Amministrazione → Testi e foto del sito (13 ottobre 2026)
 
 Migrazione `033` (solo aggiunte): tabella `site_texts`.

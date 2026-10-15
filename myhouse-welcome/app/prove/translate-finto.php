@@ -16,7 +16,8 @@ $h = [];
 foreach (getallheaders() as $k => $v) $h[strtolower($k)] = trim((string) $v);
 $rispondi = function (int $code, array $dati) use ($dir, $corpo, $h) {
     file_put_contents($dir . '/richieste.jsonl', json_encode(['code' => $code, 'byte' => strlen($corpo), 'target' => $h['x-amz-target'] ?? '',
-        'testo' => json_decode($corpo, true)['Text'] ?? null]) . "\n", FILE_APPEND);
+        'testo' => json_decode($corpo, true)['Text'] ?? null, 'da' => json_decode($corpo, true)['SourceLanguageCode'] ?? null,
+        'a' => json_decode($corpo, true)['TargetLanguageCode'] ?? null]) . "\n", FILE_APPEND);
     http_response_code($code);
     header('Content-Type: application/x-amz-json-1.1');
     exit(json_encode($dati, JSON_UNESCAPED_UNICODE));

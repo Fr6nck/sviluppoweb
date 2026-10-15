@@ -21,7 +21,7 @@ $nSez = SectionCatalog::quante();
 $varianti = [
     'foto' => ['plus', 'Foto e PDF sono compresi in Plus', ['Foto e PDF accanto ai testi, in ogni sezione e nelle righe', "Tutte le $nSez sezioni, senza limite", 'Le statistiche di lettura della guida']],
     'sezioni' => ['plus', 'Con Plus hai tutte le sezioni', ["Tutte le $nSez sezioni del catalogo, senza limite", 'Foto e PDF accanto ai testi', 'La guida in più lingue, con le traduzioni suggerite']],
-    'lingue' => ['plus', 'Più lingue sono comprese in Plus', ['Le lingue di base della guida e una lingua in più a scelta', 'Le traduzioni suggerite, da controllare e confermare', "Tutte le $nSez sezioni, con foto e PDF"]],
+    'lingue' => ['plus', 'Più lingue sono comprese in Plus', ['Sei lingue: la tua, le altre tra italiano, inglese, francese, tedesco e spagnolo, e una a scelta tra 9', 'Le traduzioni suggerite, da controllare e confermare', "Tutte le $nSez sezioni, con foto e PDF"]],
     'firma' => ['plus', 'Nascondere la firma è compreso in Plus', ['La guida senza «Guida creata con MyHouse Welcome»', "Tutte le $nSez sezioni, con foto e PDF", 'La guida in più lingue, con le traduzioni suggerite']],
     'strutture' => ['portfolio', 'Più strutture con Portfolio', ['Più strutture dallo stesso account, ognuna con la sua guida e il suo QR', 'Tutto quello che c\'è in Plus', 'Le sezioni si copiano da una struttura all\'altra']],
 ];

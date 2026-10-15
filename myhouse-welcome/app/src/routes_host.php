@@ -535,6 +535,7 @@ $r->any('/pannello/{id}/lingue', function (array $a) use ($mia, $contesto, $mess
             Support::redirect($dopo($p, '/pannello/' . $p['id'] . '/lingue'));
         } catch (\Throwable $e) {
             $err = $messaggio($e, 'lingue');
+            if ($e instanceof MHW\PianoLimite) $sbloccaL = $e->funzione;   // 8B: la finestra «Più lingue sono comprese in Plus»
             if ($vuoleJson()) Support::json(['ok' => false, 'errore' => $err], 422);
         }
     }
@@ -546,7 +547,7 @@ $r->any('/pannello/{id}/lingue', function (array $a) use ($mia, $contesto, $mess
     $daControllare = [];
     foreach (Db::all('SELECT locale, COUNT(*) AS n FROM translation_suggestions WHERE property_id = ? GROUP BY locale', [$p['id']]) as $x) $daControllare[$x['locale']] = (int) $x['n'];
     View::out('host/languages', $contesto($acc, $p) + [
-        'err' => $err, 'lingueAttive' => $attive, 'consentite' => Entitlements::allowedLocales((int) $acc['id']),
+        'err' => $err, 'lingueAttive' => $attive, 'consentite' => Entitlements::allowedLocales((int) $acc['id'], $p), 'sblocca' => $sbloccaL ?? null,
         'tutte' => Config::get('locales'), 'copertura' => $copertura, 'qui' => 'lingue',
         'trad' => ['piano' => Traduttore::nelPiano((int) $acc['id']), 'acceso' => !empty($p['translation_suggest']), 'fino' => Traduttore::omaggioFino((int) $acc['id']),
                    'finito' => Traduttore::omaggioFinito((int) $acc['id']), 'spiegazione' => $spiegazione, 'daControllare' => $daControllare],
@@ -571,7 +572,7 @@ $r->post('/pannello/{id}/lingue/{loc}/suggerite', function (array $a) use ($mia,
     [, $acc, $p] = $mia((int) $a['id']);
     $loc = (string) $a['loc'];
     $attive = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
-    if ($loc === $p['default_locale'] || !in_array($loc, $attive, true) || !in_array($loc, Entitlements::allowedLocales((int) $acc['id']), true)) {
+    if ($loc === $p['default_locale'] || !in_array($loc, $attive, true) || !in_array($loc, Entitlements::allowedLocales((int) $acc['id'], $p), true)) {
         Support::redirect('/pannello/' . $p['id'] . '/lingue');
     }
     $torna = '/pannello/' . $p['id'] . '/lingue/' . $loc;
@@ -618,7 +619,7 @@ $r->any('/pannello/{id}/lingue/{loc}', function (array $a) use ($mia, $contesto,
     $loc = (string) $a['loc'];
     $attive = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
     if ($loc === $p['default_locale']) Support::redirect('/pannello/' . $p['id']);
-    if (!in_array($loc, $attive, true) || !in_array($loc, Entitlements::allowedLocales((int) $acc['id']), true)) {
+    if (!in_array($loc, $attive, true) || !in_array($loc, Entitlements::allowedLocales((int) $acc['id'], $p), true)) {
         Support::flash('Prima attiva questa lingua: deve essere compresa nel tuo piano.', 'err');
         Support::redirect('/pannello/' . $p['id'] . '/lingue');
     }
@@ -664,7 +665,7 @@ $r->any('/pannello/{id}/lingue/{loc}', function (array $a) use ($mia, $contesto,
     $daSuggerire = count(array_filter($campiT, fn($c, $k) => $c['tradotto'] === '' && (!isset($sugg[$k]) || $sugg[$k]['da_rifare']), ARRAY_FILTER_USE_BOTH));
     View::out('host/translate', $contesto($acc, $p) + [
         'loc' => $loc, 'nome' => Config::get('locales')[$loc] ?? $loc, 'sections' => $sections, 'err' => $err, 'qui' => 'lingue',
-        'sugg' => $sugg, 'daSuggerire' => $daSuggerire, 'perche' => Traduttore::perche((int) $acc['id'], $p),
+        'sugg' => $sugg, 'daSuggerire' => $daSuggerire, 'perche' => Traduttore::perche((int) $acc['id'], $p, $loc),
         'cambiati' => array_keys(array_filter($campiT, fn($c) => $c['cambiato'])),
         'nelPiano' => Traduttore::nelPiano((int) $acc['id']),
     ], 'layout/cms');
@@ -750,6 +751,12 @@ $r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto,
                 if (array_key_exists($campo, $_POST)) $dati[$campo] = mb_substr(trim((string) $_POST[$campo]), 0, $max);
             }
             if (array_key_exists('beds', $_POST)) $dati['beds'] = max(0, min(999, (int) $_POST['beds']));
+            // 8C: l'email per gli ospiti (facoltativa): il bottone «Mandaci un'email» della pagina delle recensioni.
+            if (array_key_exists('guest_email', $_POST) && Migrator::columnExists('properties', 'guest_email')) {
+                $em = mb_substr(trim((string) $_POST['guest_email']), 0, 190);
+                if ($em !== '' && !filter_var($em, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('L\'email per gli ospiti non sembra giusta: controllala, oppure lasciala vuota.');
+                $dati['guest_email'] = $em;
+            }
             // Il CIN si salva in forma pulita, e non può essere quello di un'altra guida (la forma si controlla alla pubblicazione).
             if (isset($dati['cin'])) {
                 $dati['cin'] = Properties::cinNorm($dati['cin']);
@@ -778,7 +785,7 @@ $r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto,
             if ($vuoleJson()) Support::json(['ok' => false, 'errore' => $err], 422);
         }
     }
-    View::out('host/settings', $contesto($acc, $p) + ['err' => $err, 'qui' => 'impostazioni'], 'layout/cms');
+    View::out('host/settings', $contesto($acc, $p) + ['err' => $err, 'qui' => 'impostazioni', 'tutte' => Config::get('locales')], 'layout/cms');
 });
 
 /* Dopo il soggiorno: dove si trova la struttura (8B, portali e social), prenotazione diretta con la
@@ -821,7 +828,7 @@ $r->get('/pannello/{id}/procedura/{passo}', function (array $a) use ($mia, $cont
 
     $aid = (int) $acc['id'];
     $lingue = ['lingueAttive' => array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale'),
-               'consentite' => Entitlements::allowedLocales($aid), 'tutte' => Config::get('locales')];
+               'consentite' => Entitlements::allowedLocales($aid, $p), 'tutte' => Config::get('locales')];
     $extra = [];
     // 6M · «Chi vede la tua guida»: si chiude per sempre, sull'account (nel registro: nessuna migrazione).
     if ($passo === 'struttura') $extra = $lingue + ['avvisoLetto' => (bool) Db::val("SELECT 1 FROM audit_log WHERE action = 'guida.avviso_letto' AND target_user_id = ?", [(int) $u['id']])];
@@ -871,12 +878,13 @@ $anteprima = function (array $a, string $pagina) use ($mia) {
         foreach ($snap['sections'] as $s) if ((string) $s['id'] === (string) $a['sid']) View::out('guest/section', $dati + ['sec' => $s], 'layout/guest');
         Support::redirect('/pannello/' . $p['id'] . '/anteprima');
     }
-    View::out(['home' => 'guest/guide', 'benvenuto' => 'guest/splash', 'commiato' => 'guest/farewell'][$pagina], $dati,
-              $pagina === 'home' ? 'layout/guest' : 'layout/full');
+    View::out(['home' => 'guest/guide', 'benvenuto' => 'guest/splash', 'commiato' => 'guest/farewell', 'recensione' => 'guest/review'][$pagina], $dati,
+              in_array($pagina, ['home', 'recensione'], true) ? 'layout/guest' : 'layout/full');
 };
 $r->get('/pannello/{id}/anteprima', fn(array $a) => $anteprima($a, 'home'));
 $r->get('/pannello/{id}/anteprima/benvenuto', fn(array $a) => $anteprima($a, 'benvenuto'));
 $r->get('/pannello/{id}/anteprima/commiato', fn(array $a) => $anteprima($a, 'commiato'));
+$r->get('/pannello/{id}/anteprima/recensione', fn(array $a) => $anteprima($a, 'recensione'));   // 8C
 $r->get('/pannello/{id}/anteprima/{sid}', fn(array $a) => $anteprima($a, 'sezione'));
 
 // ---------------------------------------------------------------- pubblica

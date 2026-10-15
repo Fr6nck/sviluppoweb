@@ -535,6 +535,15 @@ $r->get('/g/{slug}/commiato', function (array $a) use ($guida, $telaio) {
     if ($voto >= 1 && $voto <= 5) Guide::track((int) $g['property']['id'], 'rating_' . $voto, null, $loc);
     View::out('guest/farewell', ['voto' => $voto >= 1 && $voto <= 5 ? $voto : 0] + $telaio($snap, $loc, Support::url('/g/' . $a['slug'])), 'layout/full');
 });
+/* 8C: la pagina delle recensioni, il link del messaggio di fine soggiorno. Le stelle senza JavaScript tornano qui
+   con ?voto=N: lo stesso conteggio anonimo della pagina di saluto. Registrata prima di /g/{slug}/{sid}. */
+$r->get('/g/{slug}/recensione', function (array $a) use ($guida, $telaio) {
+    [$g, $snap, $loc] = $guida($a['slug']);
+    $voto = (int) ($_GET['voto'] ?? 0);
+    if ($voto >= 1 && $voto <= 5) Guide::track((int) $g['property']['id'], 'rating_' . $voto, null, $loc);
+    View::out('guest/review', ['voto' => $voto >= 1 && $voto <= 5 ? $voto : 0]
+        + $telaio($snap, $loc, Support::url('/g/' . $a['slug']), false, 'og_review_title'), 'layout/guest');
+});
 $r->get('/g/{slug}/voto/{n}', function (array $a) use ($guida) {
     [$g, , $loc] = $guida($a['slug']);
     $n = (int) $a['n'];

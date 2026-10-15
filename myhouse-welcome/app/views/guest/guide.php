@@ -5,6 +5,7 @@ $toni = ['t-terracotta', 't-sea', 't-pine', 't-ochre'];
 $copertina = !empty($pr['cover_id']) ? MHW\Media::url((int) $pr['cover_id']) : ($pr['cover_url'] ?? null); ?>
 
 <?php include __DIR__ . '/_top.php'; ?>
+<?php $coda = ''; include __DIR__ . '/_scegli_lingua.php'; /* 8C: «Scegli la lingua» alla prima apertura */ ?>
 
 <?php if (!empty($pr['is_demo'])): ?>
   <p class="small muted" style="margin-top:14px"><?= Support::e(I18n::t($loc, 'demo_note')) ?></p>
@@ -49,9 +50,13 @@ foreach ($eventiDi as $sidEv => $righeEv):
   <?php $i = 0; foreach ($snap['sections'] as $s):
         if (isset($eventiDi[(int) $s['id']]) && !Eventi::daMostrare($eventiDi[(int) $s['id']], $oggiEv)) continue;
         $quanti = isset($eventiDi[(int) $s['id']]) ? Eventi::conta($eventiDi[(int) $s['id']], $oggiEv) : 0; ?>
-    <a class="tile <?= $toni[$i++ % 4] ?>" href="<?= Support::e($base) ?>/<?= (int) $s['id'] ?>?l=<?= Support::e($loc) ?>">
-      <?= Icon::svg(SectionCatalog::iconaDi($s['kind'], $s['data'] ?? []), 22, 1.7) ?>
-      <b><?= Support::e(Guide::title($s, $loc, $def)) ?><?php if ($quanti > 0): ?><span class="tile__conta"><?= Support::e(I18n::t($loc, 'ev.count', $quanti)) ?></span><?php endif; ?></b>
+    <?php /* 8C: icona da 30 px; il titolo non spezza mai le parole (le parole con il trattino restano intere)
+             e, se è lungo, scende fino a 15 px invece di sovrapporsi all'icona. */
+          $tTit = Guide::title($s, $loc, $def);
+          $tHtml = preg_replace('/(\S*-\S*)/u', '<span class="nowrap">$1</span>', Support::e($tTit)); ?>
+    <a class="tile <?= $toni[$i++ % 4] ?><?= mb_strlen($tTit) > 20 ? ' tile--lungo' : '' ?>" href="<?= Support::e($base) ?>/<?= (int) $s['id'] ?>?l=<?= Support::e($loc) ?>">
+      <?= Icon::svg(SectionCatalog::iconaDi($s['kind'], $s['data'] ?? []), 30, 1.6) ?>
+      <b><span class="tile__titolo"><?= $tHtml ?></span><?php if ($quanti > 0): ?><span class="tile__conta"><?= Support::e(I18n::t($loc, 'ev.count', $quanti)) ?></span><?php endif; ?></b>
     </a>
   <?php endforeach; ?>
 </nav>
@@ -62,8 +67,12 @@ foreach ($eventiDi as $sidEv => $righeEv):
     <?= Support::e(I18n::t($loc, 'checkout_by', $pr['checkout_by'])) ?></p>
 <?php endif; ?>
 
-<p style="margin-top:14px;text-align:center">
-  <a class="small muted" href="<?= Support::e($base) ?>/commiato?l=<?= Support::e($loc) ?>"><?= Support::e(I18n::t($loc, 'leaving')) ?> &rarr;</a></p>
+<?php /* 8C: «Stiamo per partire» ben visibile: un riquadro largo come la griglia, del colore d'accento, tutto cliccabile. */ ?>
+<a class="partenza" href="<?= Support::e($base) ?>/commiato?l=<?= Support::e($loc) ?>">
+  <span class="partenza__ico"><?= Icon::svg('suitcase', 30, 1.6) ?></span>
+  <span class="partenza__testo"><b><?= Support::e(I18n::t($loc, 'leaving')) ?></b><small><?= Support::e(I18n::t($loc, 'leaving_sub')) ?></small></span>
+  <?= Icon::svg('arrow', 22, 2, 'partenza__freccia') ?>
+</a>
 
 <?php include __DIR__ . '/_contatti.php'; ?>
 

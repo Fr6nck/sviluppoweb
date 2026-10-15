@@ -53,6 +53,9 @@ final class Traduttore
 
     public static function nelPiano(int $accountId): bool { return Entitlements::can($accountId, 'auto_translation'); }
 
+    /** 8C: «Traduci anche la lingua aggiuntiva» (Amministrazione → Impostazioni → Traduzioni), di serie acceso. */
+    public static function linguaExtra(): bool { return (bool) (Config::get('translate', [])['extra'] ?? true); }
+
     public static function omaggioFino(int $accountId): ?string
     {
         if (!Migrator::columnExists('accounts', 'translation_trial_until')) return null;
@@ -70,9 +73,11 @@ final class Traduttore
      * Perché qui non si può chiedere una traduzione: '' = si può.
      * $prop serve per l'interruttore della struttura.
      */
-    public static function perche(int $accountId, ?array $prop = null): string
+    public static function perche(int $accountId, ?array $prop = null, ?string $loc = null): string
     {
         if (!self::nelPiano($accountId)) return 'Le traduzioni suggerite sono disponibili con il piano Plus.';
+        // 8C: la lingua aggiuntiva (nl, ja…) si suggerisce solo se l'amministrazione lo lascia (Impostazioni → Traduzioni).
+        if ($loc !== null && !I18n::base($loc) && !self::linguaExtra()) return 'Per questa lingua le traduzioni suggerite non ci sono: scrivila a mano, accanto al testo originale.';
         // 7C: la traduzione si chiede campo per campo, con un clic: l'interruttore della struttura non serve più per chiederla.
         if (self::omaggioFinito($accountId)) {
             return 'L\'anno in omaggio delle traduzioni suggerite è finito il ' . Support::date((string) self::omaggioFino($accountId)) . ': le traduzioni che hai approvato restano.';
@@ -407,7 +412,7 @@ final class Traduttore
      */
     public static function suggerisci(int $accountId, array $prop, string $loc, array $solo = []): array
     {
-        $no = self::perche($accountId, $prop);
+        $no = self::perche($accountId, $prop, $loc);
         if ($no !== '') return [0, $no];
         @set_time_limit(300);
         $fatte = 0;

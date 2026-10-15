@@ -158,4 +158,8 @@ return [
     'Torta al testo calda dalle 11 e rocciata, il dolce di Assisi con mele, noci e uvetta.' => 'Warme Torta al testo ab 11 Uhr und Rocciata, das Gebäck aus Assisi mit Äpfeln, Walnüssen und Rosinen.',
     'Il mercato settimanale: frutta, verdura, formaggi e olio dai produttori della zona. Il sabato dalle 8 alle 13.' => 'Der Wochenmarkt: Obst, Gemüse, Käse und Olivenöl von Erzeugern aus der Gegend. Samstags von 8 bis 13 Uhr.',
     'La più vicina è in centro, verso Piazza del Comune: il turno di notte è affisso sulla porta di ogni farmacia.' => 'Die nächste ist im Zentrum, Richtung Piazza del Comune: Der Nachtdienst hängt an der Tür jeder Apotheke aus.',
+    // 8C: riscaldamento e aria condizionata in due sezioni
+    "Lenzuola e asciugamani si cambiano ogni tre notti, o prima se lo chiedi.\nRiscaldamento e aria condizionata hanno le loro sezioni, con gli orari." => "Bettwäsche und Handtücher wechseln wir alle drei Nächte, oder früher, wenn Sie möchten.\nHeizung und Klimaanlage haben eigene Abschnitte, mit den Zeiten.",
+    'Le mura in pietra tengono il caldo d\'inverno: di solito bastano gli orari impostati.' => 'Die Steinmauern halten das Haus im Winter warm: Meist reichen die eingestellten Zeiten.',
+    'Le mura in pietra tengono il fresco d\'estate: di solito bastano poche ore di condizionatore.' => 'Die Steinmauern halten das Haus im Sommer kühl: Meist reichen wenige Stunden Klimaanlage.',
 ];

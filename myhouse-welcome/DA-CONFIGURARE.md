@@ -163,6 +163,11 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 
 **Portali (8B).** Gli host spuntano solo dove sono presenti; i link li prepara il sito. Gli indirizzi di partenza (Google Maps, Booking.com, Airbnb, VRBO, Expedia) si cambiano da Amministrazione → Impostazioni → Portali. I link di recensione scritti prima dagli host restano nelle guide già pubblicate finché non ripubblicano.
 
+**Recensioni e lingue (8C).** Niente da configurare: la migrazione `037` parte da sola. Da sapere:
+- **Riscaldamento e aria condizionata** ora sono due sezioni. Le guide già pubblicate restano come sono finché l'host non ripubblica. Chi era al limite di sezioni del piano trova «Aria condizionata» disattivata, con la novità che glielo spiega.
+- **Lingua in più** (Plus e Portfolio): la caratteristica «Lingua aggiuntiva» si cambia in Amministrazione → Piani. Le traduzioni suggerite verso quella lingua si spengono da Impostazioni → Traduzioni → «Traduci anche la lingua aggiuntiva» (di serie accesa). Amazon Translate copre tutte e nove le lingue.
+- **Email per gli ospiti:** campo facoltativo in Impostazioni di ogni guida; senza, da 1 a 4 stelle l'ospite vede solo WhatsApp.
+
 ## 4b. La guida vetrina (la demo della landing)
 
 La demo della landing si sposta su un account vero, quello dell'agenzia.

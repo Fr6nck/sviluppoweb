@@ -12,6 +12,17 @@
  *   sezioni — [tipi di sezione nuovi]: «Nuovo» nel catalogo «Aggiungi una sezione»
  */
 return [
+    // 8C. «nota_aria»: la riga in più per chi ha una sezione «Aria condizionata» nata spenta (migrazione 037).
+    ['id' => '2026-10-clima', 'data' => '2026-10-15', 'titolo' => 'Riscaldamento e aria condizionata ora sono due sezioni',
+     'testo' => 'Ognuna ha la sua pagina nella guida, con lo stato «acceso adesso», gli orari e il consiglio per non sprecare energia. I tuoi testi sono già al loro posto.',
+     'nota_aria' => 'La sezione «Aria condizionata» è nata disattivata perché eri al limite di sezioni del tuo piano: attivala in Contenuti, al posto di un\'altra, oppure passa a Plus.',
+     'dove' => '/pannello/{pid}', 'campi' => [], 'sezioni' => ['riscaldamento', 'aria']],
+    ['id' => '2026-10-lingue', 'data' => '2026-10-15', 'titolo' => 'Lingua principale a scelta e una lingua in più',
+     'testo' => 'Puoi scrivere la guida nella lingua che vuoi. Con Plus e Portfolio, oltre alle lingue di base, ne aggiungi una a scelta tra olandese, portoghese, polacco, russo, cinese, giapponese, svedese, danese e ceco.',
+     'dove' => '/pannello/{pid}/lingue', 'campi' => [], 'sezioni' => []],
+    ['id' => '2026-10-portali', 'data' => '2026-10-15', 'titolo' => 'Su quali piattaforme sei presente: spunta i portali, ai link pensiamo noi',
+     'testo' => 'In Impostazioni spunti Booking.com, Airbnb, Google e gli altri: a chi dà 5 stelle mostriamo i bottoni per la recensione, con i link già pronti.',
+     'dove' => '/pannello/{pid}/impostazioni#piattaforme', 'campi' => [], 'sezioni' => []],
     ['id' => '2026-10-host', 'data' => '2026-10-11', 'titolo' => 'La tua foto nella guida, anche con Essential',
      'testo' => 'La foto profilo ora compare in un tondo sopra la copertina: toccandola, gli ospiti leggono le tue due parole di benvenuto e ti scrivono.',
      'dove' => '/pannello/{pid}/aspetto', 'campi' => [], 'sezioni' => []],
