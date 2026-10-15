@@ -2276,7 +2276,7 @@ foreach (['it' => ['Tornerai da queste parti?', 'Seguici', 'Torna alla guida'], 
              'seguici' => strpos($b8, $seg8), 'whatsapp' => strpos($b8, 'href="https://wa.me/'), 'guida' => strpos($b8, '>' . $back8 . '</a>')];
     $crescente8 = !in_array(false, $pos8, true); $prima8 = -1;
     foreach ($pos8 as $v8) { if ($v8 === false || $v8 <= $prima8) { $crescente8 = false; break; } $prima8 = $v8; }
-    prova("8F · vetrina, saluto ($l8) con 5 stelle: portali Google, Booking.com e Airbnb, poi «$torn8» con CHECCO10, «Seguici», WhatsApp e il ritorno alla guida",
+    prova("8F · vetrina, saluto ($l8) con 5 stelle: portali Google, Booking.com e Airbnb, poi «{$torn8}» con CHECCO10, «Seguici», WhatsApp e il ritorno alla guida",
           $crescente8 && str_contains($b8, 'href="https://blackout.in/myhouse/?da=vetrina"') && !str_contains($b8, 'data-portale="vrbo"') && str_contains($b8, 'instagram.com/casacheccoassisi'),
           json_encode($pos8));
 }
