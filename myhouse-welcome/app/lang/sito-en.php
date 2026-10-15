@@ -27,7 +27,7 @@ return [
     // ---- cosa trova l'ospite
     'prodotto.kicker' => 'The guide',
     'prodotto.titolo' => 'What your guests find.',
-    'prodotto.testo'  => 'Everything about their stay, neatly organised and always on their phone. {sezioni} ready-made sections to fill in, plus free-form sections for everything else: pick the ones your guests need.',
+    'prodotto.testo'  => 'Everything about their stay, neatly organised and always on their phone, in their own language. {sezioni} ready-made sections to fill in, plus free-form sections for everything else: pick the ones your guests need.',
     'prodotto.link'   => 'Browse the {demo} guide',
     // ---- per chi è
     'perchi.kicker'   => 'Who it is for',
@@ -88,10 +88,10 @@ return [
     'come.kicker'   => 'How it works',
     'come.titolo'   => 'Get started in minutes.',
     'come.1.titolo' => 'Create your guide.',
-    'come.1.testo'  => 'Add your property details and choose what to share with your guests.',
+    'come.1.testo'  => 'Add your property details, choose the language you write in (it doesn\'t have to be Italian) and what to share with your guests.',
     'come.1.alt'    => 'The dashboard: the guide contents, with sections and statistics',
     'come.2.titolo' => 'Customise it and preview it.',
-    'come.2.testo'  => 'Choose the colours and the cover photo, and see the guide on a phone exactly as your guests will, before you publish it.',
+    'come.2.testo'  => 'Choose the colours and the cover photo, add your guests\' languages (with Plus we suggest the translations, starting from your language) and see the guide on a phone exactly as your guests will, before you publish it.',
     'come.2.alt'    => 'The dashboard: the look of the guide, with palette, theme and cover photo',
     'come.3.titolo' => 'Publish and share.',
     'come.3.testo'  => 'Start your subscription: the guide goes live and you share it by link or QR code.',

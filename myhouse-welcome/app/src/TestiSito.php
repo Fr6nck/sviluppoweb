@@ -67,7 +67,7 @@ final class TestiSito
             // ---- prodotto
             'prodotto.kicker' => ['prodotto', 'Riga sopra il titolo', 'riga', 'La guida', ''],
             'prodotto.titolo' => ['prodotto', 'Titolo', 'riga', 'Cosa trova l\'ospite.', ''],
-            'prodotto.testo'  => ['prodotto', 'Testo', 'area', 'Le informazioni del soggiorno, in ordine e sempre sul telefono. {sezioni} sezioni pronte da compilare, più le sezioni libere per tutto il resto: scegli quelle che servono ai tuoi ospiti.', '{sezioni} diventa il numero di sezioni del catalogo.'],
+            'prodotto.testo'  => ['prodotto', 'Testo', 'area', 'Le informazioni del soggiorno, in ordine e sempre sul telefono, nella lingua dell\'ospite. {sezioni} sezioni pronte da compilare, più le sezioni libere per tutto il resto: scegli quelle che servono ai tuoi ospiti.', '{sezioni} diventa il numero di sezioni del catalogo.'],
             'prodotto.link'   => ['prodotto', 'Link alla demo', 'riga', 'Sfoglia la guida di {demo}', '{demo} è il nome della guida dimostrativa.'],
             // ---- per chi è
             'perchi.kicker'   => ['perchi', 'Riga sopra il titolo', 'riga', 'Per chi è', ''],
@@ -129,10 +129,10 @@ final class TestiSito
             'come.kicker'   => ['come', 'Riga sopra il titolo', 'riga', 'Come funziona', ''],
             'come.titolo'   => ['come', 'Titolo', 'riga', 'Inizia in pochi minuti.', ''],
             'come.1.titolo' => ['come', 'Passo 1 · titolo', 'riga', 'Crea la tua guida.', ''],
-            'come.1.testo'  => ['come', 'Passo 1 · testo', 'area', 'Inserisci le informazioni della struttura e scegli cosa condividere con gli ospiti.', ''],
+            'come.1.testo'  => ['come', 'Passo 1 · testo', 'area', 'Inserisci le informazioni della struttura, scegli la lingua in cui scrivi (non per forza l\'italiano) e cosa condividere con gli ospiti.', ''],
             'come.1.alt'    => ['come', 'Passo 1 · descrizione della schermata', 'riga', 'Il pannello: i contenuti della guida, con le sezioni e le statistiche', ''],
             'come.2.titolo' => ['come', 'Passo 2 · titolo', 'riga', 'Personalizza e guarda l\'anteprima.', ''],
-            'come.2.testo'  => ['come', 'Passo 2 · testo', 'area', 'Scegli i colori e la copertina, e guarda la guida sul telefono come la vedranno gli ospiti, prima di pubblicarla.', ''],
+            'come.2.testo'  => ['come', 'Passo 2 · testo', 'area', 'Scegli i colori e la copertina, aggiungi le lingue degli ospiti (con Plus le traduzioni te le suggeriamo noi, partendo dalla tua lingua) e guarda la guida sul telefono come la vedranno gli ospiti, prima di pubblicarla.', ''],
             'come.2.alt'    => ['come', 'Passo 2 · descrizione della schermata', 'riga', 'Il pannello: l\'aspetto della guida, con palette, tema e copertina', ''],
             'come.3.titolo' => ['come', 'Passo 3 · titolo', 'riga', 'Pubblica e condividi.', ''],
             'come.3.testo'  => ['come', 'Passo 3 · testo', 'area', 'Attivi l\'abbonamento: la guida va online e la condividi con il link o con il QR Code.', ''],

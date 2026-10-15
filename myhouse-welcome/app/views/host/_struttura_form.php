@@ -66,6 +66,8 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
         </div>
         <p class="small muted" style="margin:8px 0 0">I bottoni e i titoli della guida sono tradotti in olandese, portoghese (del Portogallo e del Brasile) e polacco; per le altre lingue l'ospite li legge in inglese, i tuoi testi restano come li scrivi.</p>
       </details>
+      <?php /* Come funziona se la guida non è in italiano: per la lingua scelta, o la versione per «la tua lingua». */
+            if (!empty($prop['account_id'])) { $comeGenerico = $principale === 'it'; include __DIR__ . '/_lingua_come.php'; } ?>
     </fieldset>
   <?php endif; ?>
   <fieldset class="fieldset">

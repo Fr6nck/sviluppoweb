@@ -2625,3 +2625,10 @@ ol.invito__passi{list-style:none;margin:0;padding:0}
   .tipo-sezioni{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:560px){ .tipo-sezioni{grid-template-columns:1fr} .tipo-piano{padding:20px} }
+
+/* Lingua principale diversa dall'italiano: «ecco come funziona» (Lingue, Impostazioni, procedura). */
+.lingua-come{border:1px solid var(--line);border-radius:var(--r-lg,14px);background:var(--raised);padding:14px 16px}
+.lingua-come summary{cursor:pointer;font-weight:600;min-height:32px;display:flex;align-items:center}
+.lingua-come__titolo{font-size:18px;margin:0 0 8px}
+.lingua-come__voci{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px;line-height:1.5}
+fieldset .lingua-come{margin-top:12px}

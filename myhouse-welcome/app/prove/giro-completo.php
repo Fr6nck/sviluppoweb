@@ -3167,7 +3167,7 @@ prova('7B · schede: «6 sezioni aggiuntive a scelta» e «Foto profilo dell\'ho
       && !str_contains($schede, 'Sezioni illimitate') && !preg_match('#[Vv]arianti#', $schede));
 prova('…foto e PDF (8A), traduzioni e «Ideale per» di Plus con i testi nuovi', str_contains($schede, 'Possibilità di inserire foto e PDF accanto ai testi, per far vedere meglio quello che spieghi')
       && !str_contains($schede, 'la foto del cancello')
-      && str_contains($schede, 'Scrivi in italiano, traduciamo noi in inglese, francese, tedesco e spagnolo: tu controlli e confermi. Il primo anno è in omaggio.')
+      && str_contains($schede, 'Scrivi nella tua lingua, traduciamo noi nelle altre: tu controlli e confermi. Il primo anno è in omaggio.') && !str_contains($schede, 'Scrivi in italiano')
       && str_contains($schede, 'B&amp;B, case vacanza e agriturismi con ospiti da tutto il mondo: sei lingue, foto e consigli sul territorio.')
       && !str_contains($schede, 'Scrivici per un preventivo'));
 prova('7B · Portfolio oltre 10: «Chiedi un preventivo» con oggetto e domande', str_contains($schede, 'data-oltre hidden') && str_contains($schede, 'Ti facciamo una proposta.')
@@ -4356,6 +4356,33 @@ $slugPP = (string) val('SELECT slug FROM properties WHERE id = ?', [$pPP]);
 prova('Portoghese · una guida con le due varianti: pt-BR al telefono brasiliano, pt al telefono portoghese',
       $pxLingue($pPP) === ['pt', 'pt-BR'] && val('SELECT status FROM properties WHERE id = ?', [$pPP]) === 'published' && str_contains($pxOspite->get("/g/$slugPP", ['Accept-Language: pt-BR,pt;q=0.9'])['body'], '<html lang="pt-BR"')
       && str_contains($pxOspite->get("/g/$slugPP", ['Accept-Language: pt-PT,pt;q=0.9'])['body'], '<html lang="pt"'), json_encode($pxLingue($pPP)));
+
+// La lingua principale spiegata: home, domande, schede dei piani, e il «come funziona» nel pannello.
+capitolo('Lingua principale · spiegata in home, nelle domande, nei piani e nel pannello');
+$rH = $pxOspite->get('/');
+prova('Home: la guida nella lingua dell\'ospite, «scegli la lingua in cui scrivi» e le traduzioni suggerite dalla tua lingua',
+      str_contains($rH['body'], 'nella lingua dell&#039;ospite') && str_contains($rH['body'], 'scegli la lingua in cui scrivi (non per forza l&#039;italiano)')
+      && str_contains($rH['body'], 'partendo dalla tua lingua') && str_contains($pxOspite->get('/en')['body'], 'choose the language you write in'));
+$rD = $pxOspite->get('/domande');
+prova('Domande: «Posso scrivere la guida in un\'altra lingua?» spiega piani, lingua in più, bottoni e pannello (anche in inglese)',
+      str_contains($rD['body'], 'occupa il posto della lingua in più e hai tutte e cinque le lingue di base') && str_contains($rD['body'], 'Il pannello resta in italiano')
+      && str_contains($pxOspite->get('/en/questions')['body'], 'it takes the place of the extra language'));
+prova('Piani: nessuna scheda dice più «Scrivi in italiano»', !str_contains($rH['body'], 'Scrivi in italiano') && str_contains($rH['body'], 'Scrivi nella tua lingua, traduciamo noi nelle altre'));
+[$bJa, , $pJa] = $pxHost('plus', 'ja', '-come');
+$rJ = $bJa->get("/pannello/$pJa/lingue");
+prova('Pannello · Plus in giapponese: «Scrivi la guida in giapponese: ecco come funziona», lingua in più, traduzioni dal giapponese, bottoni in inglese',
+      str_contains($rJ['body'], 'Scrivi la guida in giapponese: ecco come funziona') && str_contains($rJ['body'], 'Il giapponese occupa il posto della lingua in più')
+      && str_contains($rJ['body'], 'partendo dal giapponese') && str_contains($rJ['body'], 'in giapponese non sono tradotti: l\'ospite li legge in inglese'));
+[$bDe, , $pDe] = $pxHost('essential', 'de', '-come');
+$rE = $bDe->get("/pannello/$pDe/lingue");
+prova('Pannello · Essential in tedesco: il tedesco e una seconda lingua, traduzioni a mano, bottoni già in tedesco', str_contains($rE['body'], 'Scrivi la guida in tedesco')
+      && str_contains($rE['body'], 'Il tuo piano comprende il tedesco e una seconda lingua') && str_contains($rE['body'], 'Le scrivi tu') && str_contains($rE['body'], 'sono già in tedesco'));
+[$bEn, , $pEn] = $pxHost('plus', 'en', '-come');
+prova('Pannello · Plus in inglese: l\'inglese è una delle lingue di base, con le altre quattro e una in più', str_contains($bEn->get("/pannello/$pEn/lingue")['body'], 'L&#039;inglese è una delle cinque lingue di base'));
+[$bIt, , $pIt] = $pxHost('plus', 'it', '-come');
+$rI = $bIt->get("/pannello/$pIt/impostazioni");
+prova('Pannello · chi scrive in italiano: in Impostazioni «Scrivi in un\'altra lingua? Ecco come funziona», chiuso; in Lingue niente riquadro',
+      str_contains($rI['body'], '<details class="lingua-come"><summary>Scrivi in un&#039;altra lingua? Ecco come funziona</summary>') && !str_contains($bIt->get("/pannello/$pIt/lingue")['body'], 'class="lingua-come'));
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

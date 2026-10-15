@@ -27,6 +27,16 @@ final class I18n
      */
     private const AWS = ['pt' => 'pt-PT', 'pt-BR' => 'pt'];
 
+    /** I nomi delle lingue in italiano, per il pannello e l'amministrazione. */
+    public const NOMI_IT = ['it' => 'italiano', 'en' => 'inglese', 'fr' => 'francese', 'de' => 'tedesco', 'es' => 'spagnolo',
+                            'nl' => 'olandese', 'pt' => 'portoghese del Portogallo', 'pt-BR' => 'portoghese del Brasile', 'pl' => 'polacco',
+                            'ru' => 'russo', 'zh' => 'cinese', 'ja' => 'giapponese', 'sv' => 'svedese', 'da' => 'danese', 'cs' => 'ceco'];
+
+    public static function nomeIt(string $loc): string { return self::NOMI_IT[$loc] ?? $loc; }
+
+    /** I bottoni e i titoli della guida sono tradotti in questa lingua? (altrimenti l'ospite li legge in inglese) */
+    public static function interfaccia(string $loc): bool { return in_array($loc, self::LOCALES, true) && is_file(MHW_APP . '/lang/' . $loc . '.php'); }
+
     public static function aws(string $loc): string { return self::AWS[$loc] ?? $loc; }
 
     /**

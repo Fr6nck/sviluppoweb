@@ -1,5 +1,13 @@
 # Changelog — MyHouse Welcome
 
+## v2 · La lingua principale spiegata ovunque (15 ottobre 2026)
+
+Migrazione `041`: nelle schede di Plus e Portfolio «Scrivi in italiano, traduciamo noi in inglese, francese, tedesco e spagnolo…» diventa «Scrivi nella tua lingua, traduciamo noi nelle altre…» (solo dove c'è ancora il testo di serie).
+
+- **Pannello:** il riquadro «Scrivi la guida in … : ecco come funziona» nella pagina Lingue, per chi non scrive in italiano, e accanto a «In che lingua scrivi la guida?» (chiuso, «Scrivi in un'altra lingua? Ecco come funziona», per chi scrive in italiano). Dice, secondo la lingua e il piano: dove restano i testi, quali altre lingue si hanno (Essential: la sua e una seconda; Plus e Portfolio: lingua di base o lingua in più), da dove partono le traduzioni suggerite o che si scrivono a mano, se i bottoni della guida sono tradotti o in inglese, che il pannello resta in italiano.
+- **Home:** «nella lingua dell'ospite», «scegli la lingua in cui scrivi (non per forza l'italiano)» e «con Plus le traduzioni te le suggeriamo noi, partendo dalla tua lingua»; lo stesso in /en.
+- **Domande:** «Posso scrivere la guida in un'altra lingua?» spiega tutto questo, in italiano e in inglese.
+
 ## v2 · Il portoghese del Portogallo e del Brasile (15 ottobre 2026)
 
 Migrazione `040` (nessuna colonna nuova): le schede dei piani di serie passano da «una a scelta tra 9» a «tra 10».

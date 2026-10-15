@@ -10,6 +10,8 @@ $def = $prop['default_locale']; ?>
     <p class="lead">Scegli in quali lingue pubblicare la guida e scrivi le traduzioni, sezione per sezione, accanto al testo originale.</p>
   </div>
   <?php if ($err): ?><p class="note note--err" role="alert"><?= Support::e($err) ?></p><?php endif; ?>
+  <?php /* Chi non scrive in italiano: come funzionano lingue, traduzioni e bottoni della guida. */
+        if ($def !== 'it') include __DIR__ . '/_lingua_come.php'; ?>
 
   <?php $dopoPasso = ''; include __DIR__ . '/_lingue_form.php'; ?>
 
