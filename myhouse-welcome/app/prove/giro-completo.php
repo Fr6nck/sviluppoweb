@@ -3331,6 +3331,20 @@ prova('…e nella home', str_contains($h, "<h1 class=\"display\">La casa rispond
       && preg_match('#Ci sono \d+ sezioni\.#', $h) === 1 && substr_count($h, 'Comincia gratis') === 4 && !str_contains($h, 'Crea gratis la tua guida'), substr_count($h, 'Comincia gratis') . ' bottoni (hero, guadagno, chiusura, menu del telefono)');
 prova('…un testo uguale a quello di serie non si salva (la riga sparisce)', (int) val("SELECT COUNT(*) FROM site_texts") === 5
       && (bool) val("SELECT chiave FROM site_texts WHERE chiave = 'hero.titolo'"));
+// 8G · «Più sanno, meglio stanno»: tra le tre scene e «Cosa trova l'ospite», con i testi in Testi e foto (anche in inglese).
+$h8g = $ospite->get('/')['body'];
+$p8g = ['scene' => strpos($h8g, '<section class="scene"'), 'sezione' => strpos($h8g, 'id="recensioni-positive"'), 'prodotto' => strpos($h8g, 'id="prodotto-titolo"')];
+prova('8G · home: «Più sanno, meglio stanno.» tra le scene e «Cosa trova l\'ospite», stesso riquadro del QR, quattro passi e la didascalia',
+      !in_array(false, $p8g, true) && $p8g['scene'] < $p8g['sezione'] && $p8g['sezione'] < $p8g['prodotto']
+      && preg_match('#<section id="recensioni-positive" class="band qrband soddisfatti"[^>]*>.*?Più sanno, meglio stanno\..*?Nessun dubbio, nessuno stress\..*?Ospite sereno, recensione a 5 stelle\..*?Più stelle, più prenotazioni\..*?class="qr-sheet qrband__foglio soddisfatti__scheda".*?Informazioni chiare.*?Ospite sereno.*?★★★★★.*?Recensione a 5 stelle.*?cerchio__passo--ultimo.*?Nuove prenotazioni.*?Il circolo che riempie il calendario\.#s', $h8g) === 1,
+      json_encode($p8g));
+$h8gEn = $ospite->get('/en')['body'];
+prova('8G · …in inglese su /en', str_contains($h8gEn, 'The more they know, the better they stay.') && str_contains($h8gEn, 'More stars, more bookings.') && str_contains($h8gEn, 'The cycle that fills your calendar.'));
+$admin->segui($admin->post('/admin/testi', ['t_soddisfatti_titolo' => 'Ospiti informati, ospiti contenti.']));
+$cambiato8g = str_contains($ospite->get('/')['body'], 'Ospiti informati, ospiti contenti.') && str_contains($admin->get('/admin/testi')['body'], 'Più sanno, meglio stanno');
+$admin->segui($admin->post('/admin/testi', ['t_soddisfatti_titolo' => '']));
+prova('8G · …il titolo si cambia da Testi e foto (e si torna a quello di serie)', $cambiato8g && str_contains($ospite->get('/')['body'], 'Più sanno, meglio stanno.')
+      && !val("SELECT chiave FROM site_texts WHERE chiave = 'soddisfatti.titolo'"));
 // Le foto: il telefono in cima e lo sfondo di «Anche il tuo sito»; la home le usa al posto di quelle di serie.
 $r = $admin->segui($admin->post('/admin/testi', ['img[telefono]' => file_(png(600, 422), 'image/png'), 'torna' => 'foto']));
 $h = $ospite->get('/')['body'];

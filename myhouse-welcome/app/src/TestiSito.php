@@ -22,6 +22,7 @@ final class TestiSito
     public const SEZIONI = [
         'hero'     => ['In cima alla pagina', 'Titolo, sottotitolo e bottoni: la prima cosa che si legge.'],
         'scene'    => ['Le tre scene', 'Le tre foto sotto il titolo: il QR, l\'ospite, l\'host. Le foto si cambiano in fondo a questa pagina.'],
+        'soddisfatti' => ['Più sanno, meglio stanno', 'Informazioni → recensioni → prenotazioni (8G): tre punti e la scheda con i quattro passi, tra le scene e «Cosa trova l\'ospite».'],
         'prodotto' => ['Cosa trova l\'ospite', ''],
         'perchi'   => ['Per chi è', 'Le quattro schede: casa vacanza, B&B, agriturismo, più strutture.'],
         'tempo'    => ['Il tempo delle risposte', 'I numeri (16, 19 minuti…) restano quelli: qui si cambiano i testi intorno.'],
@@ -65,6 +66,19 @@ final class TestiSito
             'scena.host.testo'    => ['scene', 'Terza scena · testo', 'area', 'Cambi un orario dal pannello e pubblichi: il QR resta lo stesso.', ''],
             'scena.host.alt'      => ['scene', 'Terza scena · descrizione della foto', 'riga', 'L\'host aggiorna la guida dal portatile, con l\'anteprima sul telefono accanto', ''],
             // ---- prodotto
+            // ---- 8G · Più sanno, meglio stanno
+            'soddisfatti.titolo'   => ['soddisfatti', 'Titolo', 'riga', 'Più sanno, meglio stanno.', ''],
+            'soddisfatti.1.titolo' => ['soddisfatti', 'Punto 1 · in grassetto', 'riga', 'Nessun dubbio, nessuno stress.', ''],
+            'soddisfatti.1.testo'  => ['soddisfatti', 'Punto 1 · testo', 'riga', 'Tutte le risposte, prima ancora di chiederle.', ''],
+            'soddisfatti.2.titolo' => ['soddisfatti', 'Punto 2 · in grassetto', 'riga', 'Ospite sereno, recensione a 5 stelle.', ''],
+            'soddisfatti.2.testo'  => ['soddisfatti', 'Punto 2 · testo', 'riga', 'Chi si sente accolto lo racconta.', ''],
+            'soddisfatti.3.titolo' => ['soddisfatti', 'Punto 3 · in grassetto', 'riga', 'Più stelle, più prenotazioni.', ''],
+            'soddisfatti.3.testo'  => ['soddisfatti', 'Punto 3 · testo', 'riga', 'Su Booking, Airbnb e Google la differenza si vede.', ''],
+            'soddisfatti.passo.1'  => ['soddisfatti', 'Scheda · primo passo', 'riga', 'Informazioni chiare', ''],
+            'soddisfatti.passo.2'  => ['soddisfatti', 'Scheda · secondo passo', 'riga', 'Ospite sereno', ''],
+            'soddisfatti.passo.3'  => ['soddisfatti', 'Scheda · terzo passo (con le cinque stelle)', 'riga', 'Recensione a 5 stelle', ''],
+            'soddisfatti.passo.4'  => ['soddisfatti', 'Scheda · ultimo passo (nel colore d\'accento)', 'riga', 'Nuove prenotazioni', ''],
+            'soddisfatti.didascalia' => ['soddisfatti', 'Didascalia sotto la scheda', 'riga', 'Il circolo che riempie il calendario.', ''],
             'prodotto.kicker' => ['prodotto', 'Riga sopra il titolo', 'riga', 'La guida', ''],
             'prodotto.titolo' => ['prodotto', 'Titolo', 'riga', 'Cosa trova l\'ospite.', ''],
             'prodotto.testo'  => ['prodotto', 'Testo', 'area', 'Le informazioni del soggiorno, in ordine e sempre sul telefono, nella lingua dell\'ospite. {sezioni} sezioni pronte da compilare, più le sezioni libere per tutto il resto: scegli quelle che servono ai tuoi ospiti.', '{sezioni} diventa il numero di sezioni del catalogo.'],

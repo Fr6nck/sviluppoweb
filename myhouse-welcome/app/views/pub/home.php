@@ -224,6 +224,30 @@ $disegni = [
   <?php endforeach; ?>
 </section>
 
+<?php /* 8G · «Più sanno, meglio stanno»: informazioni → ospite sereno → recensione → prenotazioni. Lo stesso riquadro di
+   «Un QR. Tutta la struttura.» (band qrband, spunte, foglio bianco); al posto del QR una scheda disegnata in HTML,
+   senza numeri né recensioni inventate. Tutti i testi in Testi e foto (soddisfatti.*). */ ?>
+<section id="recensioni-positive" class="band qrband soddisfatti" aria-labelledby="soddisfatti-titolo">
+  <div class="stack" style="gap:20px;max-width:540px">
+    <h2 id="soddisfatti-titolo" class="h-sezione"><?= $T('soddisfatti.titolo') ?></h2>
+    <ul class="spunte">
+      <?php foreach ([1, 2, 3] as $i): ?>
+      <li><?= Icon::svg('check', 18, 2) ?><span><b><?= $T("soddisfatti.$i.titolo") ?></b><?= $T("soddisfatti.$i.testo") ?></span></li>
+      <?php endforeach; ?>
+    </ul>
+  </div>
+  <figure class="qr-sheet qrband__foglio soddisfatti__scheda">
+    <ol class="cerchio">
+      <li class="cerchio__passo"><span class="cerchio__ico" aria-hidden="true"><?= Icon::svg('book', 18) ?></span><span><?= $T('soddisfatti.passo.1') ?></span></li>
+      <li class="cerchio__passo"><span class="cerchio__ico" aria-hidden="true"><?= Icon::svg('home', 18) ?></span><span><?= $T('soddisfatti.passo.2') ?></span></li>
+      <li class="cerchio__passo cerchio__passo--stelle"><span class="cerchio__ico" aria-hidden="true"><?= Icon::svg('star', 18) ?></span>
+        <span><span class="cerchio__stelle" aria-hidden="true">★★★★★</span><?= $T('soddisfatti.passo.3') ?></span></li>
+      <li class="cerchio__passo cerchio__passo--ultimo"><span class="cerchio__ico" aria-hidden="true"><?= Icon::svg('calendar', 18) ?></span><span><?= $T('soddisfatti.passo.4') ?></span></li>
+    </ol>
+    <figcaption class="small"><?= $T('soddisfatti.didascalia') ?></figcaption>
+  </figure>
+</section>
+
 <section class="prodotto" aria-labelledby="prodotto-titolo">
   <div class="prodotto__testa">
     <span class="kicker"><?= $T('prodotto.kicker') ?></span>

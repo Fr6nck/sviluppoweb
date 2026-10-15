@@ -1,5 +1,14 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 8G «Più sanno, meglio stanno» nella home (15 ottobre 2026)
+
+Nessuna migrazione, niente da configurare.
+
+- **Sezione nuova** (`id="recensioni-positive"`) tra le tre scene e «Cosa trova l'ospite.»: lo stesso riquadro di «Un QR. Tutta la struttura.» (fondo sabbia, titolo grande, tre punti con la spunta, scheda bianca a destra; sul telefono la scheda va sotto i punti).
+- **La scheda:** quattro passi disegnati in HTML, con un'icona tonda e una freccia sottile tra l'uno e l'altro: «Informazioni chiare» → «Ospite sereno» → cinque stelle ocra e «Recensione a 5 stelle» → «Nuove prenotazioni» (nel colore d'accento). Sotto: «Il circolo che riempie il calendario.». Nessun numero e nessuna recensione inventata.
+- **Testi:** tutti in Amministrazione → Testi e foto, gruppo «Più sanno, meglio stanno» (chiavi `soddisfatti.*`), anche in inglese per `/en`.
+- Screenshot in `app/prove/schermate/8g-soddisfatti-390.png` e `-1280.png`.
+
 ## v2 · 8F rifiniture dopo il controllo del 15 ottobre (15 ottobre 2026)
 
 Nessuna migrazione. Dopo il caricamento: **Amministrazione → Clienti → account della vetrina → «Rifai la vetrina»** (DA-CONFIGURARE).
