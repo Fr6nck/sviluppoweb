@@ -1,5 +1,11 @@
 <?php
 // MyHouse Welcome — configurazione.
+
+// Aperto direttamente dal web (non da index.php): non risponde niente.
+if (PHP_SAPI !== 'cli' && isset($_SERVER['SCRIPT_FILENAME']) && realpath((string) $_SERVER['SCRIPT_FILENAME']) === __FILE__) {
+    http_response_code(404);
+    exit;
+}
 //
 // Nessun segreto va scritto qui dentro: chiavi Stripe, credenziali AWS e
 // password di posta si leggono dalle variabili d'ambiente. Su un hosting che

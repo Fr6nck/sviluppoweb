@@ -626,7 +626,7 @@ $r->get('/admin/diagnostica', function () {
 
     $inWebroot = str_starts_with(realpath(MHW_APP) ?: '', realpath($_SERVER['DOCUMENT_ROOT'] ?? '') ?: "\0");
     $checks[] = ['Applicazione fuori dalla cartella pubblica', !$inWebroot,
-        $inWebroot ? "L'applicazione sta dentro la cartella pubblica: la protezione dipende da .htaccess, che non tutti i server leggono."
+        $inWebroot ? "L'applicazione sta dentro la cartella pubblica: la protezione dipende da .htaccess, che non tutti i server leggono. Se le righe qui sotto sono «OK» i file sono protetti; per toglierli del tutto dal web segui DA-CONFIGURARE → «L'applicazione fuori dalla cartella pubblica»."
                    : 'Niente del codice è raggiungibile dal web.'];
     if ($inWebroot) {
         $dbFile = basename(\MHW\Db::sqlitePath(Config::get('db')['sqlite_path']));
@@ -634,8 +634,12 @@ $r->get('/admin/diagnostica', function () {
         $esposto = $res['code'] === 200 && $res['bytes'] > 0;
         $checks[] = ['Database non scaricabile dal web', !$esposto,
             $esposto ? 'ATTENZIONE: il database risponde dal web. Sposta la cartella app/ sopra la radice pubblica.' : 'Il server rifiuta la richiesta.'];
+        // Il server può rifiutare (403/404, con la sua pagina d'errore) oppure eseguirlo: config.php non stampa niente.
+        // Solo un 200 con del testo vuol dire che il contenuto esce davvero.
         $res = $probe($cartella . '/app/config.php');
-        $checks[] = ['config.php non leggibile', $res['bytes'] === 0, $res['bytes'] === 0 ? 'Non esce nulla.' : 'ATTENZIONE: config.php restituisce contenuto.'];
+        $esce = $res['code'] === 200 && $res['bytes'] > 0;
+        $checks[] = ['config.php non leggibile', !$esce, $esce ? 'ATTENZIONE: config.php restituisce contenuto (risposta ' . $res['code'] . '). Controlla che app/.htaccess sia stato caricato.'
+            : ($res['code'] === 200 ? 'Non esce nulla.' : 'Il server rifiuta la richiesta (risposta ' . $res['code'] . ').')];
         foreach (['mail.log' => 'Posta di prova non leggibile dal web (contiene link di accesso)'] as $f => $titolo) {
             @touch(MHW_APP . '/storage/logs/' . $f);
             $res = $probe($cartella . '/app/storage/logs/' . $f);

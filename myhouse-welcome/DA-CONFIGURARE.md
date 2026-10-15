@@ -14,6 +14,23 @@ I dettagli tecnici sono in `app/LEGGIMI.md`. Le novità, fase per fase, sono in 
 
 Il database resta **SQLite**. Le migrazioni nuove sono scritte anche per MySQL, ma un'installazione da zero su MySQL non è supportata: lo schema iniziale (`001`) è solo per SQLite.
 
+## 1b. L'applicazione fuori dalla cartella pubblica (consigliato)
+
+Diagnostica dice «NO · Applicazione fuori dalla cartella pubblica» quando la cartella `app/` sta dentro la cartella del sito (per esempio `public_html/app/`). Se le righe sotto (database, config.php, posta, registro) sono «OK», i file sono già protetti da `.htaccess`. Spostarla fuori li toglie del tutto dal web, anche se un giorno `.htaccess` smettesse di funzionare. `index.php` trova l'applicazione da solo in tutte e due le disposizioni.
+
+Prima: copia di sicurezza di tutta la cartella del sito, con `app/storage/` e `app/config.local.php`.
+
+**Se nel pannello dell'hosting puoi scegliere la cartella del dominio** (cPanel → Domini → la «radice del documento»):
+1. Crea una cartella fuori da `public_html`, per esempio `/home/TUOUTENTE/welcomemyhouse/`.
+2. Sposta lì dentro **il contenuto** di `public_html/app/`: `config.php`, `config.local.php`, `src/`, `views/`, `lang/`, `migrations/`, `tools/`, `storage/` (database e foto compresi).
+3. Crea `/home/TUOUTENTE/welcomemyhouse/public/` e sposta lì `index.php`, `assets/`, `.htaccess`, `web.config` e, se ci sono, `robots.txt`, `sitemap.xml`, `llms.txt`.
+4. Nel pannello dell'hosting imposta la radice del documento di welcomemyhouse.it su `/home/TUOUTENTE/welcomemyhouse/public`.
+5. Apri il sito e poi Diagnostica: «Applicazione fuori dalla cartella pubblica» diventa «OK».
+
+**Se la cartella del dominio è fissa** (`public_html`): sposta il contenuto di `public_html/app/` direttamente nella cartella sopra, `/home/TUOUTENTE/`, accanto a `public_html`, e lascia in `public_html` solo `index.php`, `assets/`, `.htaccess`, `web.config` e i tre file per i motori. Funziona allo stesso modo, ma mescola i file dell'applicazione con quelli della tua cartella principale: la prima strada è più ordinata.
+
+Per i prossimi aggiornamenti, con questa disposizione: il contenuto di `welcomebook/app/` dello zip va nella cartella dell'applicazione, il resto di `welcomebook/` nella cartella pubblica. Mai sovrascrivere `storage/` e `config.local.php`.
+
 ## 2. Variabili
 
 Si impostano come variabili d'ambiente o in `app/config.local.php`. Il modello è `config.local.esempio.php`.

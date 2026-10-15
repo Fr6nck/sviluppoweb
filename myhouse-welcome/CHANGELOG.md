@@ -1,5 +1,13 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Diagnostica: config.php e l'applicazione fuori dalla cartella pubblica (15 ottobre 2026)
+
+Nessuna migrazione.
+
+- **«config.php non leggibile»:** il controllo contava i byte della risposta senza guardare il codice, così la pagina d'errore del server (403 o 404, cioè file protetto) risultava «contenuto». Ora è «NO» solo con una risposta 200 che contiene testo, e dice il codice ricevuto.
+- **config.php** aperto direttamente dal web risponde 404, vuoto, anche dove `.htaccess` non è letto.
+- **«Applicazione fuori dalla cartella pubblica»:** il messaggio rimanda ai passi in DA-CONFIGURARE (sezione 1b). Verificato che la disposizione con l'applicazione sopra la cartella pubblica si installa e funziona.
+
 ## v2 · La lingua principale spiegata ovunque (15 ottobre 2026)
 
 Migrazione `041`: nelle schede di Plus e Portfolio «Scrivi in italiano, traduciamo noi in inglese, francese, tedesco e spagnolo…» diventa «Scrivi nella tua lingua, traduciamo noi nelle altre…» (solo dove c'è ancora il testo di serie).
