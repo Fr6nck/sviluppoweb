@@ -24,11 +24,13 @@ final class Mailer
     // ------------------------------------------------------------------ email con il marchio (7A)
 
     /**
-     * L'HTML di un'email con il marchio: sfondo carta, riquadro bianco, «myhouse welcome» in testo,
-     * titolo in serif, un solo bottone mattone con il link in chiaro sotto, nota piccola e piede con
-     * ragione sociale, partita IVA e indirizzo dell'assistenza. Tabelle e stili in linea (Gmail,
-     * Outlook, Apple Mail), niente immagini esterne. I paragrafi sono testo semplice (si escapano);
-     * $piede è HTML già pulito (per esempio il link «non mandarmene più»).
+     * L'HTML di un'email con il marchio (8A: impaginazione dei grandi servizi). Tutto centrato: in alto
+     * il marchio come immagine (assets/email/marchio-email.png, 282×42; con le immagini bloccate resta
+     * l'alt «myhouse welcome»), il titolo in serif, il testo largo al massimo 440 px, UN bottone pieno con
+     * il link in chiaro sotto, la nota piccola. Sotto una riga sottile il piede: ragione sociale, partita
+     * IVA e indirizzo, poi Assistenza · Privacy · Termini, e a destra le icone social solo se in «SEO e
+     * GEO» ci sono gli indirizzi. Tabelle e stili in linea (Gmail, Outlook, Apple Mail). I paragrafi sono
+     * testo semplice (si escapano); $piede è HTML già pulito (per esempio «non mandarmene più»).
      * @param array{0:string,1:string}|null $bottone [testo, indirizzo]
      * @param list<array{0:string,1:string}> $scelte risposte a un clic, link a contorno uno sotto l'altro (7A)
      */
@@ -36,42 +38,78 @@ final class Mailer
     {
         $e = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
         $l = Config::get('legal') ?? [];
-        $chi = implode(' · ', array_filter([(string) ($l['company'] ?? ''), ($l['company_vat'] ?? '') !== '' ? 'P.IVA ' . $l['company_vat'] : '']));
+        $chi = implode(' · ', array_filter([(string) ($l['company'] ?? ''), ($l['company_vat'] ?? '') !== '' ? 'P.IVA ' . $l['company_vat'] : '', (string) ($l['company_city'] ?? '')]));
         $aiuto = Support::contatto();
+        $radice = Support::radice();
+        $sito = Support::baseUrl();
         $anteprima = mb_substr(trim((string) ($paragrafi[0] ?? $titolo)), 0, 140);
         $font = "font-family:'Helvetica Neue',Helvetica,Arial,sans-serif";
+        $serif = "font-family:Gloock,Georgia,'Times New Roman',serif";
+        $grigio = '#6a5b48';
         $h = '<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
            . '<meta name="color-scheme" content="light"><title>' . $e($titolo) . '</title></head>'
            . '<body style="margin:0;padding:0;background:#faf5ec;' . $font . ';color:#231b12">'
            . '<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#faf5ec">' . $e($anteprima) . '</div>'
-           . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#faf5ec"><tr><td align="center" style="padding:24px 12px">'
-           . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px">'
-           . '<tr><td style="padding:0 8px 16px;' . $font . ';font-size:18px;font-weight:600;color:#231b12;letter-spacing:-.01em">myhouse welcome<span style="color:#b4451f">.</span></td></tr>'
-           . '<tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px">'
-           . '<h1 style="margin:0 0 16px;font-family:Gloock,Georgia,\'Times New Roman\',serif;font-weight:400;font-size:28px;line-height:34px;color:#231b12">' . $e($titolo) . '</h1>';
+           . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#faf5ec"><tr><td align="center" style="padding:32px 12px">'
+           . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:#ffffff;border-radius:16px">'
+           . '<tr><td align="center" style="padding:40px 28px 8px">'
+           . '<img src="' . $e($radice . '/assets/email/marchio-email.png') . '" width="282" height="42" alt="myhouse welcome" '
+           . 'style="display:block;width:282px;max-width:100%;height:auto;border:0;' . $font . ';font-size:22px;font-weight:600;color:#231b12">'
+           . '</td></tr>'
+           . '<tr><td align="center" style="padding:32px 28px 0">'
+           . '<h1 style="margin:0 auto 20px;max-width:440px;' . $serif . ';font-weight:400;font-size:30px;line-height:36px;color:#231b12;text-align:center">' . $e($titolo) . '</h1>';
         foreach ($paragrafi as $p) {
-            $h .= '<p style="margin:0 0 16px;' . $font . ';font-size:16px;line-height:24px;color:#231b12">' . nl2br($e((string) $p)) . '</p>';
+            $h .= '<p style="margin:0 auto 16px;max-width:440px;' . $font . ';font-size:16px;line-height:24px;color:#231b12;text-align:center">' . nl2br($e((string) $p)) . '</p>';
         }
         if ($bottone) {
             [$testoB, $url] = $bottone;
-            $h .= '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 12px"><tr>'
-                . '<td style="border-radius:999px;background:#b4451f"><a href="' . $e($url) . '" style="display:inline-block;padding:14px 24px;' . $font
+            $h .= '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:12px auto 12px"><tr>'
+                . '<td align="center" style="border-radius:999px;background:#b4451f"><a href="' . $e($url) . '" style="display:inline-block;padding:15px 30px;' . $font
                 . ';font-size:16px;font-weight:600;color:#fff8f2;text-decoration:none;border-radius:999px">' . $e($testoB) . '</a></td></tr></table>'
-                . '<p style="margin:0 0 16px;' . $font . ';font-size:13px;line-height:20px;color:#6a5b48">Se il bottone non si apre, copia questo indirizzo nel browser:<br>'
-                . '<a href="' . $e($url) . '" style="color:#b4451f;word-break:break-all">' . $e($url) . '</a></p>';
+                . '<p style="margin:0 auto 8px;max-width:440px;' . $font . ';font-size:12px;line-height:18px;color:' . $grigio . ';text-align:center">Se il bottone non si apre, copia questo indirizzo nel browser:<br>'
+                . '<a href="' . $e($url) . '" style="color:' . $grigio . ';word-break:break-all">' . $e($url) . '</a></p>';
         }
         foreach ($scelte as [$testoS, $urlS]) {
-            $h .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px"><tr>'
-                . '<td style="border:1px solid #d9cbb6;border-radius:12px"><a href="' . $e($urlS) . '" style="display:block;padding:12px 16px;' . $font
-                . ';font-size:16px;font-weight:600;color:#b4451f;text-decoration:none">' . $e($testoS) . '</a></td></tr></table>';
+            $h .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 8px;max-width:440px"><tr>'
+                . '<td align="center" style="border:1px solid #d9cbb6;border-radius:12px"><a href="' . $e($urlS) . '" style="display:block;padding:12px 16px;' . $font
+                . ';font-size:16px;font-weight:600;color:#b4451f;text-decoration:none;text-align:center">' . $e($testoS) . '</a></td></tr></table>';
         }
-        if ($nota !== null && $nota !== '') $h .= '<p style="margin:16px 0 0;' . $font . ';font-size:13px;line-height:20px;color:#6a5b48">' . $e($nota) . '</p>';
-        $h .= '</td></tr><tr><td style="padding:16px 8px 0;' . $font . ';font-size:12px;line-height:18px;color:#6a5b48">'
-            . ($aiuto !== '' ? 'Hai bisogno di aiuto? Scrivici a <a href="mailto:' . $e($aiuto) . '" style="color:#6a5b48">' . $e($aiuto) . '</a><br>' : '')
-            . ($chi !== '' ? 'MyHouse Welcome · ' . $e($chi) . '<br>' : '')
-            . ($piede !== null && $piede !== '' ? $piede : '')
+        if ($nota !== null && $nota !== '') $h .= '<p style="margin:16px auto 0;max-width:440px;' . $font . ';font-size:13px;line-height:20px;color:' . $grigio . ';text-align:center">' . $e($nota) . '</p>';
+        $h .= '</td></tr><tr><td style="padding:32px 28px 0"><div style="border-top:1px solid #e9e0d0;height:1px;line-height:1px;font-size:1px">&nbsp;</div></td></tr>';
+
+        // Il piede: a sinistra chi siamo e i link, a destra le icone social (solo quelle che ci sono).
+        $link = fn(string $t, string $u) => '<a href="' . $e($u) . '" style="color:' . $grigio . ';text-decoration:underline">' . $e($t) . '</a>';
+        $voci = array_filter([$aiuto !== '' ? $link('Assistenza', 'mailto:' . $aiuto) : '', $link('Privacy', $sito . '/privacy'), $link('Termini', $sito . '/termini')]);
+        $icone = '';
+        foreach (self::social() as [$nome, $u]) {
+            $icone .= '<a href="' . $e($u) . '" style="display:inline-block;margin-left:8px;text-decoration:none"><img src="' . $e($radice . '/assets/email/social-' . $nome . '.png')
+                    . '" width="28" height="28" alt="' . $e(ucfirst($nome)) . '" style="display:block;border:0;' . $font . ';font-size:11px;color:' . $grigio . '"></a>';
+        }
+        $h .= '<tr><td style="padding:20px 28px 32px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
+            . '<td valign="top" style="' . $font . ';font-size:12px;line-height:18px;color:' . $grigio . ';text-align:left">'
+            . ($chi !== '' ? $e($chi) . '<br>' : '') . implode(' · ', $voci)
+            . '</td>' . ($icone !== '' ? '<td valign="top" align="right" style="white-space:nowrap;padding-left:12px">' . $icone . '</td>' : '') . '</tr></table>'
+            . ($piede !== null && $piede !== '' ? '<p style="margin:16px 0 0;' . $font . ';font-size:12px;line-height:18px;color:' . $grigio . '">' . $piede . '</p>' : '')
             . '</td></tr></table></td></tr></table></body></html>';
         return $h;
+    }
+
+    /** Le icone del piede: [nome dell'icona, indirizzo] dagli indirizzi di «SEO e GEO». */
+    private static function social(): array
+    {
+        $out = [];
+        try { $elenco = Seo::social(); } catch (\Throwable) { return []; }
+        foreach ($elenco as $u) {
+            $host = strtolower((string) parse_url($u, PHP_URL_HOST));
+            $nome = match (true) {
+                str_contains($host, 'instagram') => 'instagram', str_contains($host, 'facebook') || $host === 'fb.com' => 'facebook',
+                str_contains($host, 'tiktok') => 'tiktok', str_contains($host, 'linkedin') => 'linkedin',
+                str_contains($host, 'youtube') || $host === 'youtu.be' => 'youtube', $host === 'x.com' || str_contains($host, 'twitter') => 'x',
+                default => 'web',
+            };
+            $out[] = [$nome, $u];
+        }
+        return array_slice($out, 0, 6);
     }
 
     /** La versione testo della stessa email. $piede: testo semplice. */

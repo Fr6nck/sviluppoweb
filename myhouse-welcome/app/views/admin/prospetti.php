@@ -133,5 +133,28 @@ $tot = fn(string $k) => array_sum(array_column($mesi, $k)); ?>
         <a class="small" href="<?= b() ?>/admin/traduzioni">Consumi, tetti e omaggi delle traduzioni</a>
       <?php endif; ?>
     </section>
+
+    <?php if ($interessati !== null): /* 8A: «Anche il tuo sito», da richiamare */
+          $bisLabel = ['aspetto' => 'Aspetto più bello', 'google' => 'Trovarsi su Google', 'dirette' => 'Più prenotazioni dirette', 'altro' => 'Altro'];
+          $canLabel = ['scopri' => 'Scopri MyHouse', 'whatsapp' => 'WhatsApp', 'email' => 'Email'];
+          $daLabel = ['home' => 'Home', 'pannello' => 'Le mie guide', 'impostazioni' => 'Impostazioni']; ?>
+    <section class="panel stack" aria-labelledby="myhouse-titolo">
+      <h2 id="myhouse-titolo" style="font-size:22px;margin:0">Interessati a MyHouse</h2>
+      <p class="small muted" style="margin:0">Chi ha risposto alle domande di «Anche il tuo sito» e ha scelto come sentirci. Anche se poi non ha scritto: da richiamare.</p>
+      <?php if (!$interessati): ?><p class="small muted" style="margin:0">Ancora nessuno.</p><?php else: ?>
+      <div class="tablewrap"><table class="data">
+        <thead><tr><th scope="col">Data</th><th scope="col">Ha un sito</th><th scope="col">Cosa vuole</th><th scope="col">Canale</th><th scope="col">Da</th><th scope="col">Cliente</th></tr></thead>
+        <tbody><?php foreach ($interessati as $i): ?>
+          <tr><td class="small"><?= Support::e(Support::date($i['created_at'])) ?></td>
+            <td><?= ['si' => 'Sì', 'no' => 'No'][$i['ha_sito']] ?? '—' ?></td>
+            <td class="small"><?= Support::e(implode(', ', array_map(fn($b) => $bisLabel[$b] ?? $b, array_filter(explode(',', (string) $i['bisogni']))))) ?: '—' ?>
+              <?php if ($i['altro'] !== ''): ?><br><span class="muted">«<?= Support::e($i['altro']) ?>»</span><?php endif; ?></td>
+            <td><?= Support::e($canLabel[$i['canale']] ?? $i['canale']) ?></td>
+            <td class="small"><?= Support::e($daLabel[$i['da']] ?? $i['da']) ?></td>
+            <td class="small"><?php if ($i['account_id']): ?><a href="<?= b() ?>/admin/cliente/<?= (int) $i['account_id'] ?>"><?= Support::e($i['cliente'] ?: $i['email']) ?></a><?php else: ?><span class="muted">Visitatore</span><?php endif; ?></td></tr>
+        <?php endforeach; ?></tbody></table></div>
+      <?php endif; ?>
+    </section>
+    <?php endif; ?>
   </div>
 </div>

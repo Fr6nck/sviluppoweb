@@ -197,6 +197,8 @@ return [
     'rating_star'              => '%s de 5',
     'rating_thanks'            => '¡Gracias! ¿Te apetece contarlo también a otros viajeros?',
     'rating_thanks_solo'       => '¡Gracias por tu valoración!',
+    'rating_happy'             => '¡Nos alegra mucho que te hayas sentido a gusto! 😊',
+    'rating_favor'             => 'Te pedimos un pequeño favor: deja una reseña en la web donde reservaste. Para nosotros es muy importante.',
     'rating_host'              => '¿Quieres decirle algo a %s? Escríbele',
     'direct_offer'             => '%s con el código %s',
     'copy_code'                => 'Copiar el código',

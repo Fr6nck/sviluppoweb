@@ -146,6 +146,31 @@ $r->get('/', function () use ($guard, $codiceDalLink, $chiInvita) {
     ]);
 });
 
+/*
+ * 8A: chi completa «Anche il tuo sito» e sceglie come sentirci. Arriva con sendBeacon e il token
+ * CSRF della pagina; un limite per connessione; l'account solo se chi clicca è dentro (nessun dato
+ * personale dei visitatori). Risponde 204: la pagina non aspetta niente.
+ */
+$r->post('/sito/interesse', function () use ($guard) {
+    $guard();
+    if (MHW\Migrator::tableExists('interessi_sito') && RateLimit::hit('sito-interesse:' . RateLimit::ip(), 20, 3600)) {
+        $voci = ['aspetto', 'google', 'dirette', 'altro'];
+        $bisogni = array_values(array_intersect($voci, explode(',', (string) ($_POST['bisogni'] ?? ''))));
+        $u = Auth::user();
+        $acc = $u && $u['role'] !== 'admin' ? Auth::account() : null;
+        Db::insert('interessi_sito', [
+            'account_id' => $acc ? (int) $acc['id'] : null,
+            'ha_sito' => in_array($_POST['ha_sito'] ?? '', ['si', 'no'], true) ? $_POST['ha_sito'] : '',
+            'bisogni' => implode(',', $bisogni),
+            'altro' => mb_substr(trim(preg_replace('/[\x00-\x1F\x7F]/u', ' ', (string) ($_POST['altro'] ?? '')) ?? ''), 0, 200),
+            'canale' => in_array($_POST['canale'] ?? '', ['scopri', 'whatsapp', 'email'], true) ? $_POST['canale'] : '',
+            'da' => in_array($_POST['da'] ?? '', ['home', 'pannello', 'impostazioni'], true) ? $_POST['da'] : 'home',
+            'created_at' => Support::now(),
+        ]);
+    }
+    http_response_code(204); exit;
+});
+
 // Tutte le domande frequenti, aperte e con il link diretto a ognuna (/domande#id).
 $r->get('/domande', function () use ($guard) {
     $guard();

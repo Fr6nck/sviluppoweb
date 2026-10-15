@@ -197,6 +197,8 @@ return [
     'rating_star'              => '%s out of 5',
     'rating_thanks'            => 'Thank you! Would you like to tell other travellers too?',
     'rating_thanks_solo'       => 'Thank you for your rating!',
+    'rating_happy'             => 'We\'re so glad you enjoyed your stay! 😊',
+    'rating_favor'             => 'A small favour: please leave a review on the site where you booked. It really means a lot to us.',
     'rating_host'              => 'Anything you\'d like to tell %s? Send a message',
     'direct_offer'             => '%s with the code %s',
     'copy_code'                => 'Copy the code',

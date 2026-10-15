@@ -31,13 +31,31 @@
 use MHW\{Support, TestiSito};
 $T = $T ?? fn(string $k, array $sost = []) => TestiSito::html($k, $sost);
 $L = $L ?? fn(string $k) => '';
+/* 8A: anche le frasi del cursore e del riquadro arancione stanno in «Testi e foto» (tempo2.*); quelle che
+   cambia lo script gli arrivano come attributi data- (la 8E le traduce). */
 $t2 = ['nec' => 16, 'evit' => 19, 'pren' => 6, 'euro' => 20];
-$t2Ore = fn(float $h): string => $h >= 10 ? (string) round($h) : str_replace('.', ',', (string) round($h, 1));
+$t2Fmt = trim(TestiSito::testo('tempo2.formato')) ?: 'it-IT';
+$t2En = str_starts_with(strtolower($t2Fmt), 'en');
+$t2Ore = fn(float $h): string => $h >= 10 ? (string) round($h) : ($t2En ? (string) round($h, 1) : str_replace('.', ',', (string) round($h, 1)));
+$t2Eur = fn(float $n): string => $t2En ? '€' . number_format($n, 0, '.', ',') : number_format($n, 0, ',', '.') . ' €';
 $t2Tot = $t2['nec'] + $t2['evit'];
 $t2Gu = $t2['pren'] * ($t2['evit'] / 2) * 12 / 60;
 $t2Gg = round($t2Gu / 8 * 2) / 2;
+$t2GgTesto = $t2Gg < 1 ? TestiSito::testo('tempo2.meno') : TestiSito::testo($t2Gg == 1 ? 'tempo2.giornata' : 'tempo2.giornate', ['n' => $t2En ? (string) $t2Gg : str_replace('.', ',', (string) $t2Gg)]);
+$lucchetto = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+$colonna = function (string $k, int $rif, int $max) use ($T, $L, $t2, $lucchetto): void { ?>
+    <div class="t2__col">
+      <span class="t2__etichetta"><?= $T("tempo.$k.titolo") ?></span>
+      <p class="t2__desc"><?= $T("tempo.$k.desc") ?></p>
+      <ul class="t2__lista"<?= $L("tempo.$k.lista") ?>><?php foreach (TestiSito::lista("tempo.$k.lista") as $v): ?><li><?= $v ?></li><?php endforeach; ?></ul>
+      <span class="t2__rif"><?= $lucchetto ?><?= $T('tempo2.rif', ['min' => (string) $rif]) ?></span>
+      <label class="t2__cursore"><span><?= $T('tempo2.tuo') ?> <b class="t2__min<?= $k === 'evit' ? ' t2__min--acc' : '' ?>"><?= $T('tempo2.minuti', ['n' => '<span data-o="' . $k . '">' . $t2[$k] . '</span>']) ?></b></span>
+        <input type="range" min="5" max="<?= $max ?>" step="1" value="<?= $t2[$k] ?>" data-t2="<?= $k ?>" aria-label="<?= TestiSito::testo("tempo2.aria.$k") ?>"></label>
+    </div>
+<?php };
 ?>
-<section id="il-tempo" class="t2" aria-labelledby="t2-titolo">
+<section id="il-tempo" class="t2" aria-labelledby="t2-titolo" data-formato="<?= Support::e($t2Fmt) ?>"
+         data-giornate="<?= TestiSito::testo('tempo2.giornate') ?>" data-giornata="<?= TestiSito::testo('tempo2.giornata') ?>" data-meno="<?= TestiSito::testo('tempo2.meno') ?>">
   <div class="t2__head">
     <span class="t2__kicker"><?= $T('tempo.kicker') ?></span>
     <h2 id="t2-titolo" class="t2__titolo"><?= $T('tempo.titolo') ?></h2>
@@ -53,23 +71,9 @@ $t2Gg = round($t2Gu / 8 * 2) / 2;
     </div>
   </div>
 
+  <?php /* 8A: in ogni colonna titolo → frase → i 4 esempi → riferimento → il tuo tempo (subgrid di 5 righe). */ ?>
   <div class="t2__colonne">
-    <div class="t2__col">
-      <div class="t2__testa"><span class="t2__etichetta"><?= $T('tempo.nec.titolo') ?></span>
-        <span class="t2__rif"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Riferimento: <b>16 min</b> a prenotazione</span></div>
-      <label class="t2__cursore"><span>Il tuo tempo <b class="t2__min"><span data-o="nec"><?= $t2['nec'] ?></span> min</b></span>
-        <input type="range" min="5" max="40" step="1" value="<?= $t2['nec'] ?>" data-t2="nec" aria-label="Il tuo tempo per le comunicazioni necessarie, in minuti per prenotazione"></label>
-      <p class="t2__desc"><?= $T('tempo.nec.desc') ?></p>
-      <ul class="t2__lista"<?= $L('tempo.nec.lista') ?>><?php foreach (TestiSito::lista('tempo.nec.lista') as $v): ?><li><?= $v ?></li><?php endforeach; ?></ul>
-    </div>
-    <div class="t2__col">
-      <div class="t2__testa"><span class="t2__etichetta"><?= $T('tempo.evit.titolo') ?></span>
-        <span class="t2__rif"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Riferimento: <b>19 min</b> a prenotazione</span></div>
-      <label class="t2__cursore"><span>Il tuo tempo <b class="t2__min t2__min--acc"><span data-o="evit"><?= $t2['evit'] ?></span> min</b></span>
-        <input type="range" min="5" max="60" step="1" value="<?= $t2['evit'] ?>" data-t2="evit" aria-label="Il tuo tempo per le domande evitabili, in minuti per prenotazione"></label>
-      <p class="t2__desc"><?= $T('tempo.evit.desc') ?></p>
-      <ul class="t2__lista"<?= $L('tempo.evit.lista') ?>><?php foreach (TestiSito::lista('tempo.evit.lista') as $v): ?><li><?= $v ?></li><?php endforeach; ?></ul>
-    </div>
+    <?php $colonna('nec', 16, 60); $colonna('evit', 19, 60); ?>
   </div>
 
   <div class="t2__conto">
@@ -77,15 +81,16 @@ $t2Gg = round($t2Gu / 8 * 2) / 2;
       <span class="t2__conto-titolo"><?= $T('tempo.conto.titolo') ?></span>
       <label class="t2__cursore t2__cursore--chiaro"><span><?= $T('tempo.conto.pren') ?> <b data-o="pren"><?= $t2['pren'] ?></b></span>
         <input type="range" min="1" max="30" step="1" value="<?= $t2['pren'] ?>" data-t2="pren"></label>
-      <label class="t2__cursore t2__cursore--chiaro"><span><?= $T('tempo.conto.ora') ?> <b><span data-o="euro"><?= $t2['euro'] ?></span> €</b></span>
+      <label class="t2__cursore t2__cursore--chiaro"><span><?= $T('tempo.conto.ora') ?> <b data-o="euroOra"><?= $t2Eur($t2['euro']) ?></b></span>
         <input type="range" min="10" max="50" step="1" value="<?= $t2['euro'] ?>" data-t2="euro"></label>
-      <p class="t2__contesto">Oggi, in un anno: <b><span data-o="oreAnno"><?= $t2Ore($t2['pren'] * $t2Tot * 12 / 60) ?></span> ore</b> di messaggi, di cui <span data-o="oreEvit"><?= $t2Ore($t2['pren'] * $t2['evit'] * 12 / 60) ?></span> di domande evitabili.</p>
+      <p class="t2__contesto"><?= $T('tempo2.contesto', ['ore' => '<span data-o="oreAnno">' . $t2Ore($t2['pren'] * $t2Tot * 12 / 60) . '</span>', 'evit' => '<span data-o="oreEvit">' . $t2Ore($t2['pren'] * $t2['evit'] * 12 / 60) . '</span>']) ?></p>
     </div>
+    <?php /* 8A: in grande il tempo, sotto le giornate; gli euro in grassetto alla grandezza del testo. */ ?>
     <div class="t2__risultato" aria-live="polite">
       <span class="t2__kicker t2__kicker--chiaro"><?= $T('tempo.risultato.kicker') ?></span>
-      <span class="t2__euro"><span data-o="valore"><?= number_format($t2Gu * $t2['euro'], 0, ',', '.') ?></span> €</span>
-      <span class="t2__frase"><?= $T('tempo.risultato.frase') ?></span>
-      <span class="t2__sotto"><span data-o="oreG"><?= $t2Ore($t2Gu) ?></span> ore, cioè <span data-o="giornate"><?= str_replace('.', ',', (string) $t2Gg) ?> <?= $t2Gg == 1 ? 'giornata' : 'giornate' ?></span> di lavoro, a <span data-o="euro2"><?= $t2['euro'] ?></span> € l'ora</span>
+      <span class="t2__ore"><?= $T('tempo2.ore', ['ore' => '<span data-o="oreG">' . $t2Ore($t2Gu) . '</span>']) ?></span>
+      <span class="t2__giornate" data-o="giornate"><?= $t2GgTesto ?></span>
+      <b class="t2__valgono"><?= $T('tempo2.valgono', ['euro' => '<span data-o="valore">' . $t2Eur($t2Gu * $t2['euro']) . '</span>', 'ora' => '<span data-o="euro2">' . $t2Eur($t2['euro']) . '</span>']) ?></b>
       <span class="t2__piccolo"><?= $T('tempo.risultato.piccolo') ?></span>
     </div>
   </div>
@@ -113,8 +118,7 @@ $t2Gg = round($t2Gu / 8 * 2) / 2;
 .t2__barra-nec{background:var(--inverse-fg,#faf5ec)}
 .t2__barra-evit{background:#ee7a4a}
 .t2__colonne{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));column-gap:40px;row-gap:12px}
-.t2__col{display:grid;grid-row:span 4;grid-template-rows:subgrid;gap:12px;border-top:1px solid rgba(250,245,236,.18);padding-top:18px}
-.t2__testa{display:flex;flex-direction:column;gap:8px}
+.t2__col{display:grid;grid-row:span 5;grid-template-rows:subgrid;gap:12px;border-top:1px solid rgba(250,245,236,.18);padding-top:18px;align-items:start}
 .t2__rif{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:5px 10px;border-radius:8px;background:rgba(250,245,236,.08);color:var(--inverse-muted,#b6a891);font-size:13px}
 .t2__rif b{color:var(--inverse-fg,#faf5ec);font-weight:600}
 .t2__min{font-family:Gloock,Georgia,serif;font-weight:400;font-size:40px;line-height:1;color:var(--inverse-fg,#faf5ec);font-variant-numeric:tabular-nums}
@@ -139,8 +143,9 @@ $t2Gg = round($t2Gu / 8 * 2) / 2;
 .t2__contesto{margin:0;font-size:14px;color:var(--muted,#6a5b48)}
 .t2__contesto b{color:var(--ink,#231b12)}
 .t2__risultato{background:var(--tile-terracotta,#b4451f);color:var(--tile-ink,#fff8f2);border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:6px;justify-content:center}
-.t2__frase{display:block;margin-top:8px;font-size:17px;line-height:24px;font-weight:600}
-.t2__euro{font-family:Gloock,Georgia,serif;font-size:clamp(56px,7vw,80px);line-height:1;font-variant-numeric:tabular-nums}
+.t2__ore{font-family:Gloock,Georgia,serif;font-size:clamp(56px,7vw,80px);line-height:1;font-variant-numeric:tabular-nums}
+.t2__giornate{font-size:15px;opacity:.9}
+.t2__valgono{display:block;margin-top:12px;font-size:16px;line-height:24px;font-weight:700}
 .t2__sotto,.t2__valore{font-size:18px}
 .t2__valore{margin-top:8px}
 .t2__piccolo{margin-top:6px;font-size:13px;opacity:.85}
@@ -157,14 +162,18 @@ $t2Gg = round($t2Gu / 8 * 2) / 2;
 (function () {
   var s = document.getElementById('il-tempo'); if (!s) return;
   var v = { nec: 16, evit: 19, pren: 6, euro: 20 };
-  var ore = function (h) { return h >= 10 ? String(Math.round(h)) : String(Math.round(h * 10) / 10).replace('.', ','); };
+  var fmt = s.getAttribute('data-formato') || 'it-IT';
+  var num = function (n, dec) { return n.toLocaleString(fmt, { maximumFractionDigits: dec }); };
+  var ore = function (h) { return h >= 10 ? num(Math.round(h), 0) : num(Math.round(h * 10) / 10, 1); };
+  var eur = function (n) { return n.toLocaleString(fmt, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }); };
   var out = function (k, t) { s.querySelectorAll('[data-o="' + k + '"]').forEach(function (e) { e.textContent = t; }); };
   function ricalcola() {
     var tot = v.nec + v.evit, g = v.pren * (v.evit / 2) * 12 / 60, gg = Math.round(g / 8 * 2) / 2;
-    out('nec', v.nec); out('evit', v.evit); out('tot', tot); out('pren', v.pren); out('euro', v.euro); out('euro2', v.euro);
+    out('nec', v.nec); out('evit', v.evit); out('tot', tot); out('pren', v.pren);
+    out('euroOra', eur(v.euro)); out('euro2', eur(v.euro));
     out('oreAnno', ore(v.pren * tot * 12 / 60)); out('oreEvit', ore(v.pren * v.evit * 12 / 60)); out('oreG', ore(g));
-    out('giornate', gg < 1 ? 'meno di una giornata' : String(gg).replace('.', ',') + (gg === 1 ? ' giornata' : ' giornate'));
-    out('valore', Math.round(g * v.euro).toLocaleString('it-IT'));
+    out('giornate', gg < 1 ? s.getAttribute('data-meno') : s.getAttribute(gg === 1 ? 'data-giornata' : 'data-giornate').split('{n}').join(num(gg, 1)));
+    out('valore', eur(Math.round(g * v.euro)));
     s.querySelector('[data-bar="nec"]').style.flexGrow = v.nec;
     s.querySelector('[data-bar="evit"]').style.flexGrow = v.evit;
   }

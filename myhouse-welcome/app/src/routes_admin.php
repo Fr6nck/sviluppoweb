@@ -495,7 +495,11 @@ $r->get('/admin/prospetti', function () {
     // «Cosa ti ha fermato?» (7A): quante risposte per motivo.
     $pareri = \MHW\Migrator::tableExists('feedback')
         ? array_column(Db::all('SELECT motivo, COUNT(*) AS n FROM feedback GROUP BY motivo'), 'n', 'motivo') : null;
-    View::out('admin/prospetti', ['mesi' => $mesi, 'adesso' => Gestione::adesso(), 'pareri' => $pareri, 'nav' => 'prospetti'], 'layout/cms');
+    // 8A: chi ha completato «Anche il tuo sito» (home e pannello), dal più recente.
+    $interessati = \MHW\Migrator::tableExists('interessi_sito')
+        ? Db::all('SELECT i.*, u.name AS cliente, u.email FROM interessi_sito i LEFT JOIN accounts a ON a.id = i.account_id LEFT JOIN users u ON u.id = a.user_id
+                   ORDER BY i.id DESC LIMIT 100') : null;
+    View::out('admin/prospetti', ['mesi' => $mesi, 'adesso' => Gestione::adesso(), 'pareri' => $pareri, 'interessati' => $interessati, 'nav' => 'prospetti'], 'layout/cms');
 });
 
 /* Vendite per piano: che piani si comprano, mese per mese, con grafici e tabella. */

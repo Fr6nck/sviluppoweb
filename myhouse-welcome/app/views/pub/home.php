@@ -263,11 +263,14 @@ $disegni = [
     <?php /* 7B: alla fine del blocco scuro, lo stesso bottone dell'hero. */ ?>
     <a class="btn btn--lg btn--go guadagno__cta" href="<?= $crea ?>"><?= $ctaCrea() ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
   </div>
+  <?php /* 8A: la scheda è la pagina di saluto nuova (8C): il voto con 5 stelle piene, il grazie e i portali. */ ?>
   <div class="congedo-mock" aria-hidden="true">
     <span class="congedo-mock__kicker"><?= Support::e(MHW\I18n::t('it', 'before_leaving')) ?></span>
     <span class="congedo-mock__titolo"><?= Support::e(MHW\I18n::t('it', 'farewell_title')) ?></span>
     <span class="congedo-mock__blocco">
-      <b><?= Support::e(MHW\I18n::t('it', 'review_title')) ?></b>
+      <b><?= Support::e(MHW\I18n::t('it', 'rating_q')) ?></b>
+      <span class="congedo-mock__stelle"><?php for ($i = 0; $i < 5; $i++) echo Icon::svg('star', 26, 1.6); ?></span>
+      <span class="congedo-mock__grazie"><b><?= Support::e(MHW\I18n::t('it', 'rating_happy')) ?></b><?= Support::e(MHW\I18n::t('it', 'rating_favor')) ?></span>
       <span class="congedo-mock__bottoni"><span><?= Icon::svg('message', 13) ?>Google</span><span><?= Icon::svg('message', 13) ?>Booking.com</span><span><?= Icon::svg('message', 13) ?>Airbnb</span></span>
     </span>
     <span class="congedo-mock__blocco">
@@ -506,38 +509,29 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
   </aside>
 </section>
 
-<?php /* Il sito della struttura: lo realizziamo noi. In fondo alla pagina, a tutta larghezza,
-   con la foto di un soggiorno sotto un velo nero al 60%. Tre punti brevi; «Chiedici il tuo
-   sito» porta a blackout.in/myhouse/, l'email resta come seconda strada. Nessun prezzo. */
-$legaleSito = MHW\Config::get('legal'); ?>
-<section id="sito" class="sito" aria-labelledby="sito-titolo">
+<?php /* 8A: «Anche il tuo sito» a domande. Fondo nero con una grana leggera e la foto di sempre molto
+   scurita dietro; a sinistra MyHouse (un servizio a parte), a destra il percorso (pub/_funnel_sito.php):
+   due domande e il contatto, con le risposte nel link, nel messaggio e in Amministrazione → Prospetti. */ ?>
+<section id="sito" class="sito2" aria-labelledby="sito-titolo">
   <?php $sitoPers = TestiSito::immagine('sito'); ?>
-  <picture class="sito__foto" aria-hidden="true">
+  <picture class="sito2__foto" aria-hidden="true">
     <?php if (!$sitoPers['caricata']): ?><source type="image/webp" srcset="<?= Support::e(a('/assets/foto/sito-800.webp')) ?> 800w, <?= Support::e(a('/assets/foto/sito-1600.webp')) ?> 1600w" sizes="100vw"><?php endif; ?>
     <img src="<?= Support::e($sitoPers['caricata'] ? $sitoPers['url'] : a('/assets/foto/sito.jpg')) ?>" alt="" loading="lazy" decoding="async" width="1600" height="1067"<?= $F('sito') ?>>
   </picture>
-  <div class="sito__dentro">
-    <div class="come__testa">
-      <span class="kicker"><?= $T('sito.kicker') ?></span>
-      <h2 id="sito-titolo" class="h-sezione"><?= $T('sito.titolo') ?><br><span class="sito__accento"><?= $T('sito.accento') ?></span></h2>
-      <p class="sito__lead"><?= $T('sito.lead') ?></p>
+  <div class="sito2__dentro">
+    <div class="sito2__testo">
+      <img class="sito2__logo" src="<?= Support::e(a('/assets/myhouse/myhouse-logo-bianco.png')) ?>" alt="<?= TestiSito::testo('sito2.logo') ?>" width="160" height="52" loading="lazy">
+      <span class="sito2__kicker"><?= $T('sito2.kicker') ?></span>
+      <h2 id="sito-titolo" class="sito2__titolo"><?= $T('sito2.titolo') ?><br><span class="sito2__accento"><?= $T('sito2.accento') ?></span></h2>
+      <p class="sito2__lead"><?= $T('sito2.lead') ?></p>
+      <p class="sito2__avviso"><?= Icon::svg('info', 16, 2) ?><span><?= $T('sito2.avviso') ?></span></p>
     </div>
-    <div class="vantaggi">
-      <?php foreach (['percent', 'euro', 'people'] as $i => $ico): ?>
-        <div class="vantaggio">
-          <span class="vantaggio__ico"><?= Icon::svg($ico, 20, 1.7) ?></span>
-          <b><?= $T('sito.' . ($i + 1) . '.titolo') ?></b>
-          <p><?= $T('sito.' . ($i + 1) . '.testo') ?></p>
-        </div>
-      <?php endforeach; ?>
-    </div>
-    <div class="sito__cta">
-      <a class="btn" href="https://blackout.in/myhouse/" target="_blank" rel="noopener"><?= $T('sito.bottone') ?> <?= Icon::svg('external', 16, 1.9) ?></a>
-      <?php if (($legaleSito['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legaleSito['contact_email']) ?>?subject=<?= rawurlencode('Il sito della mia struttura') ?>"><?= Icon::svg('message', 18, 1.8) ?>Scrivici un'email</a><?php endif; ?>
-      <span class="small"><?= $T('sito.nota') ?><?php if (($legaleSito['contact_email'] ?? '') !== ''): ?> <?= $T('faq.oppure') ?> <b><?= Support::e($legaleSito['contact_email']) ?></b>.<?php endif; ?></span>
+    <div class="sito2__scheda">
+      <?php $funnel = ['da' => 'home', 'id' => 'fs-home']; include __DIR__ . '/_funnel_sito.php'; ?>
     </div>
   </div>
 </section>
+<script src="<?= MHW\av('/assets/funnel-sito.js') ?>" defer></script>
 
 <script src="<?= MHW\av('/assets/prezzi.js') ?>" defer></script>
 <script src="<?= MHW\av('/assets/landing.js') ?>" defer></script>

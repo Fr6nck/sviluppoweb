@@ -166,6 +166,19 @@ final class Support
         return ($https ? 'https://' : 'http://') . $host . self::base();
     }
 
+    /**
+     * L'indirizzo assoluto della cartella dei file (8A): per le immagini delle email e delle
+     * anteprime. Mai con /index.php, anche quando gli indirizzi puliti sono spenti: lì ci sono i
+     * file veri (assets/), non le rotte.
+     */
+    public static function radice(): string
+    {
+        $cfg = (string) (Config::get('base_url') ?? '');
+        if ($cfg !== '') return rtrim(preg_replace('#/index\.php/?$#', '', rtrim($cfg, '/')) ?? '', '/');
+        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+        return ($https ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? 'localhost') . self::baseDir();
+    }
+
     /** 87 €, 117,50 € — il simbolo dopo, come si scrive in italiano. */
     public static function money(int $cents, string $currency = 'EUR'): string
     {

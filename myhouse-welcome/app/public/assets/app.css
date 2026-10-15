@@ -1554,6 +1554,10 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .congedo-mock__bottoni{display:flex;flex-wrap:wrap;gap:6px}
 .congedo-mock__bottoni span{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:999px;
   border:1px solid rgba(246,240,229,.32);background:rgba(246,240,229,.1);font-size:13px;font-weight:500}
+.congedo-mock__stelle{display:flex;gap:4px;color:#e0b04a}
+.congedo-mock__stelle svg{fill:currentColor}
+.congedo-mock__grazie{display:flex;flex-direction:column;gap:4px;font-size:14px;line-height:20px;color:#e8dcc8}
+.congedo-mock__grazie b{font-family:inherit;font-weight:600;font-size:15px;line-height:21px;color:#fff}
 .congedo-mock__codice{align-self:flex-start;padding:8px 14px;border-radius:999px;border:1px dashed rgba(246,240,229,.5);
   font-size:14px;font-weight:600;letter-spacing:.06em}
 @media(max-width:900px){
@@ -2349,3 +2353,60 @@ ol.invito__passi{list-style:none;margin:0;padding:0}
 .voce__stelle{font-size:18px}
 .voci__media{display:flex;align-items:center;gap:6px;margin:4px 0 0;font-size:16px}
 @media (max-width:560px){ ol.invito__passi .invito__passo{flex-direction:row;align-items:flex-start;gap:12px;padding:14px 16px} ol.invito__passi .invito__passo i{flex:none} }
+
+/* 8A · «Anche il tuo sito» a domande: fondo nero con grana, MyHouse a sinistra, il percorso a destra.
+   Il componente .funnel è lo stesso del pannello (8B, variante compatta). */
+.sito2{position:relative;isolation:isolate;margin-top:96px;margin-inline:calc(50% - 50vw);padding:88px 20px;scroll-margin-top:72px;color:#f6efe4;overflow:hidden;background:#17130d}
+.sito2::before{content:"";position:absolute;inset:0;z-index:-1;opacity:.12;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.sito2__foto,.sito2__foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;opacity:.14;filter:grayscale(.3)}
+.sito2__dentro{position:relative;max-width:1120px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;align-items:center}
+.sito2__testo{display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+.sito2__logo{height:52px;width:auto}
+.sito2__kicker{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#ee7a4a}
+.sito2__titolo{font-family:Gloock,Georgia,serif;font-weight:400;font-size:clamp(32px,4vw,44px);line-height:1.12;color:#fff;text-wrap:balance;margin:0}
+.sito2__accento{color:#ee7a4a}
+.sito2__lead{margin:0;font-size:17px;line-height:26px;color:rgba(246,239,228,.86);max-width:520px}
+.sito2__avviso{display:flex;gap:10px;align-items:flex-start;margin:4px 0 0;padding:14px 16px;border-radius:16px;border:1px solid rgba(246,239,228,.16);background:rgba(246,239,228,.06);font-size:14px;line-height:21px;color:rgba(246,239,228,.82);max-width:520px}
+.sito2__avviso svg{flex:none;margin-top:2px}
+.sito2__avviso b{color:#fff}
+.sito2__scheda{border-radius:28px;background:#f8f3ea;color:#231b12;padding:28px;min-height:340px;display:flex;flex-direction:column}
+@media (max-width:900px){ .sito2{padding:64px 16px} .sito2__dentro{grid-template-columns:1fr;gap:32px} .sito2__scheda{padding:22px;min-height:0} }
+
+.funnel{display:flex;flex-direction:column;gap:0;color:#231b12}
+.funnel__passo,.funnel__senza-js{display:flex;flex-direction:column;gap:14px}
+.funnel__passo[hidden]{display:none}
+.funnel--nojs .funnel__passo{display:none}
+.funnel:not(.funnel--nojs) .funnel__senza-js{display:none}
+.funnel__conta{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#6a5b48}
+.funnel__domanda{margin:0;font-family:Gloock,Georgia,serif;font-weight:400;font-size:26px;line-height:32px;color:#231b12;outline:0}
+.funnel__scelte{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.funnel__scelta{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:16px 18px;border-radius:16px;border:1px solid #e2d7c4;background:#fff;color:#231b12;text-align:left;font:inherit;cursor:pointer;transition:border-color .2s,box-shadow .2s,transform .2s cubic-bezier(.32,.72,0,1)}
+.funnel__scelta b{font-size:16px;font-weight:600}
+.funnel__scelta span{font-size:14px;color:#6a5b48}
+.funnel__scelta:hover{border-color:#b4451f;box-shadow:0 0 0 1px #b4451f}
+.funnel__scelta:active{transform:scale(.98)}
+.funnel__scelta:focus-visible,.funnel__pillola:has(input:focus-visible),.funnel__indietro:focus-visible{outline:2px solid #1c5a78;outline-offset:2px}
+.funnel__subito{margin:4px 0 0;font-size:13px;line-height:20px;color:#6a5b48}
+.funnel__subito a{color:#b4451f}
+.funnel__pillole{display:flex;flex-wrap:wrap;gap:8px}
+.funnel__pillola{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:8px 14px;border-radius:999px;border:1px solid #e2d7c4;background:#fff;cursor:pointer;font-size:15px}
+.funnel__pillola input{accent-color:#b4451f;margin:0}
+.funnel__pillola:has(input:checked){border-color:#231b12;background:#231b12;color:#fff}
+.funnel__altro{display:flex;flex-direction:column;gap:6px;font-size:14px}
+.funnel__altro[hidden]{display:none}
+.funnel__altro input{min-height:44px;padding:8px 14px;border-radius:12px;border:1px solid #e2d7c4;background:#fff;font:inherit;color:#231b12}
+.funnel__punti{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.funnel__punti li{display:flex;gap:10px;align-items:flex-start;font-size:15px;line-height:22px}
+.funnel__punti svg{flex:none;margin-top:3px;color:#1f6b3f}
+.funnel__azioni{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:4px;flex-wrap:wrap}
+.funnel__indietro{align-self:flex-start;border:0;background:none;padding:8px 0;font:inherit;font-size:14px;color:#6a5b48;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.funnel__avanti{margin-left:auto}
+.funnel__messaggio{margin:0;padding:14px 16px;border-radius:14px;background:#efe6d6;font-size:15px;line-height:22px;color:#231b12}
+.funnel__contatti{display:flex;flex-wrap:wrap;gap:10px}
+.funnel__wa{background:#1f8f4e;border-color:#1f8f4e;color:#fff}
+.funnel__wa:hover{background:#18763f}
+.funnel .btn--ghost{background:#fff;color:#231b12;border-color:#d8ccb7}
+.funnel__nota{margin:0;font-size:13px;color:#6a5b48}
+@media (max-width:480px){ .funnel__scelte{grid-template-columns:1fr} .funnel__domanda{font-size:23px;line-height:29px} }
+.funnel--compatta .funnel__domanda{font-size:22px;line-height:28px}

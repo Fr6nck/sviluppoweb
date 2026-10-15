@@ -12,9 +12,6 @@ $chi = implode(' · ', array_filter([
 $contatti = implode(' · ', array_filter([$l['contact_email'], ($l['contact_phone'] ?? '') !== '' ? 'Tel. ' . $l['contact_phone'] : '']));
 $larghezza = '760px';
 $title = $doc === 'termini' ? 'Termini e condizioni' : 'Informativa sulla privacy'; ?>
-<p class="note" role="note"><span><strong>Testo di partenza.</strong> Prima di aprire le vendite questo documento va rivisto
-  da un legale.</span></p>
-
 <?php if ($doc === 'termini'): ?>
 <h1 style="margin-top:24px">Termini e condizioni</h1>
 <p class="small muted" style="margin-top:8px">Versione <?= Support::e($l['terms_version']) ?> · Fornitore: <?= Support::e($chi) ?> · <?= Support::e($contatti) ?></p>

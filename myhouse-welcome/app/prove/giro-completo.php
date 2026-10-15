@@ -242,7 +242,7 @@ prova('Revisione · «Il tempo delle risposte»: titolo chiaro, cursore di sinis
       && str_contains($r['body'], '.t2 input[data-t2="nec"]{accent-color:var(--inverse-fg'));
 prova('Revisione · «La guida che lavora per te»: i due inviti detti in una frase', str_contains($r['body'], 'manda due inviti all&#039;ospite: una recensione sulla piattaforma'));
 prova('Revisione · l\'email scritta per esteso accanto ai bottoni «Email» e «Scrivici un\'email»',
-      preg_match('#class="small muted faq__indirizzo">Oppure scrivi a <b>[^<]+@[^<]+</b>#', $r['body']) === 1 && preg_match('#proposta su misura\. Oppure scrivi a <b>[^<]+@[^<]+</b>#', $r['body']) === 1);
+      preg_match('#class="small muted faq__indirizzo">Oppure scrivi a <b>[^<]+@[^<]+</b>#', $r['body']) === 1 && preg_match('#Oppure scrivici subito:\s*<a href="mailto:[^"]+">[^<]+@[^<]+</a>#', $r['body']) === 1);
 foreach (['97', '127', '197'] as $p) prova("Prezzo $p € dal listino", str_contains($r['body'], $p . "\u{00A0}€"));
 $portfolio = preg_match('#<form class="plan__scelta".*?</form>#s', $r['body'], $m) ? $m[0] : '';
 prova('Portfolio: campo numerico (min 2, solo interi) al posto del menu', str_contains($portfolio, 'Quante strutture vuoi gestire?') && preg_match('#<input[^>]*name="strutture"[^>]*type="number"[^>]*step="1"[^>]*min="2"[^>]*value="2"#', $portfolio) === 1
@@ -266,7 +266,7 @@ prova('Piani: nelle schede della landing niente headline e descrizione, resta «
       && !str_contains($r['body'], 'class="plan__headline"') && !str_contains($r['body'], 'class="plan__desc"')
       && substr_count($r['body'], 'class="plan__per"') === 3 && str_contains($r['body'], 'Statistiche distinte per struttura'));
 $carteListino = substr($r['body'], (int) strpos($r['body'], 'class="grid grid-3 piani"'), (int) strpos($r['body'], 'class="confronto"') - (int) strpos($r['body'], 'class="grid grid-3 piani"'));
-prova('Plus: foto e PDF spiegati, niente "immagine profilo" nelle card, badge sobrio', str_contains($carteListino, 'Foto e PDF dentro le sezioni')
+prova('Plus: foto e PDF spiegati, niente "immagine profilo" nelle card, badge sobrio', str_contains($carteListino, 'Possibilità di inserire foto e PDF accanto ai testi')
       && !str_contains($carteListino, 'Immagine profilo') && str_contains($r['body'], 'Più completo') && !str_contains($r['body'], 'Più scelto'));
 prova('Nota sul rinnovo automatico sotto i piani', str_contains($r['body'], 'Puoi disattivare il rinnovo dal tuo account'));
 prova('Il prodotto si vede subito: telefono nella hero, prima della foto', strpos($r['body'], 'class="device"') !== false && strpos($r['body'], 'class="device"') < strpos($r['body'], 'class="scene"'));
@@ -291,8 +291,8 @@ $tempo = preg_match('#<section id="il-tempo".*?</section>#s', $r['body'], $m) ? 
 prova('Sezione «Il tempo delle risposte» presente', $tempo !== '' && str_contains($tempo, 'Il tempo delle risposte') && str_contains($tempo, 'Tempo risparmiato in un anno'));
 prova('…dopo il prodotto e prima di "Come funziona"', strpos($r['body'], 'class="prodotto"') < strpos($r['body'], 'id="il-tempo"') && strpos($r['body'], 'id="il-tempo"') < strpos($r['body'], 'id="come-funziona"'));
 prova('…quattro cursori veri e i conti di partenza anche senza JavaScript (35 minuti, 228 € l\'anno)', substr_count($tempo, 'type="range"') === 4
-      && str_contains($tempo, '<span data-o="tot">35</span> minuti') && str_contains($tempo, '<span data-o="valore">228</span> €'));
-prova('7B · …senza il confronto con il prezzo del piano: resta il valore del tempo', !str_contains($tempo, 'data-prezzo=') && !str_contains($tempo, 'Abbonamento Essential, IVA esclusa') && str_contains($tempo, 'Il tempo che ti restituisce la guida, in un anno.'));
+      && str_contains($tempo, '<span data-o="tot">35</span> minuti') && str_contains($tempo, '<span data-o="valore">228 €</span>'));
+prova('7B · …senza il confronto con il prezzo del piano: resta il valore del tempo', !str_contains($tempo, 'data-prezzo=') && !str_contains($tempo, 'Abbonamento Essential, IVA esclusa') && str_contains($tempo, 'Valgono <span data-o="valore">228 €</span> del tuo tempo'));
 prova('…con le fonti dei numeri', str_contains($r['body'], 'Stime di aziende del settore, non statistiche ufficiali.'));
 prova('CTA della hero verso la registrazione e verso la demo', preg_match('#<section class="hero2">.*?</section>#s', $r['body'], $mh) && str_contains($mh[0], '/registrati"') && str_contains($mh[0], 'Guarda la demo'));
 prova('Fase 1 · piè di pagina con P.IVA, telefono e WhatsApp', str_contains($r['body'], 'P.IVA 02945910541') && str_contains($r['body'], 'href="tel:+393920061600"')
@@ -386,9 +386,11 @@ $lv = linkPosta('vera@prova.test', 'verifica');
 prova('7A · indirizzi puliti: il link di conferma è senza index.php', $lv !== '' && str_starts_with($lv, "$PULITO/verifica/") && !str_contains($lv, 'index.php'), $lv);
 $html7 = glob("$DOVE/app/storage/logs/email/*.html") ?: [];
 $ultima = $html7 ? (string) file_get_contents(end($html7)) : '';
-prova('7A · l\'email in HTML: marchio, titolo, un bottone, link in chiaro, aiuto e piede', str_contains($ultima, 'myhouse welcome<span style="color:#b4451f">.</span>')
+prova('8A · l\'email in HTML: marchio come immagine (senza index.php), titolo e testo centrati, un bottone, link in chiaro, piede con P.IVA e link',
+      preg_match('#<img src="http[^"]+/assets/email/marchio-email\.png" width="282" height="42" alt="myhouse welcome"#', $ultima) === 1
+      && !preg_match('#index\.php/assets/email#', $ultima) && str_contains($ultima, 'font-size:30px;line-height:36px;color:#231b12;text-align:center')
       && str_contains($ultima, 'Conferma la tua email') && substr_count($ultima, 'background:#b4451f') === 1 && str_contains($ultima, htmlspecialchars($lv))
-      && str_contains($ultima, 'Hai bisogno di aiuto? Scrivici a') && str_contains($ultima, 'P.IVA'));
+      && str_contains($ultima, '>Assistenza</a>') && str_contains($ultima, '/privacy"') && str_contains($ultima, 'P.IVA') && !str_contains($ultima, 'social-'));
 $r = $vera->get('/pannello');
 prova('7A · senza conferma il pannello rimanda a «Controlla la tua email»', $r['code'] === 302 && str_ends_with($r['loc'], '/conferma-email'));
 $vuid = (int) val("SELECT id FROM users WHERE email = 'vera@prova.test'");
@@ -1897,7 +1899,7 @@ prova('Tempo: le domande evitabili con una guida, accanto alle comunicazioni che
       && str_contains($tempo, 'Comunicazioni importanti e necessarie'));
 prova('6J · niente blocco doppione «Il valore non è soltanto nella guida»', !str_contains($r['body'], 'class="frase"') && !str_contains($r['body'], 'Il valore non è soltanto nella guida'));
 prova('Guadagno: il commiato disegnato con le etichette vere della guida', str_contains($r['body'], 'class="congedo-mock"')
-      && str_contains($r['body'], 'Ti è piaciuto il soggiorno?') && str_contains($r['body'], 'La prossima volta prenota da noi'));
+      && str_contains($r['body'], 'Com&#039;è andato il soggiorno?') && str_contains($r['body'], 'La prossima volta prenota da noi'));
 prova('FAQ: chi non trova la risposta può scrivere (WhatsApp ed email dal config)', preg_match('#id="domande".*?href="https://wa\.me/393920061600".*?href="mailto:info@welcomemyhouse\.it"#s', $r['body']) === 1);
 prova('Chiusura: CTA e «chi c\'è dietro» nella stessa fascia, dopo i piani', preg_match('#<section class="chiusura".*?Crea gratis la tua guida.*?<aside class="chi"#s', $r['body']) === 1
       && strpos($r['body'], 'id="piani"') < strpos($r['body'], 'class="chiusura"'));
@@ -2655,9 +2657,8 @@ prova('Un testo oltre i 10.000 byte si spezza in pezzi da 10.000 al massimo, sen
 
 capitolo('Il sito della struttura: sezione della landing e invito nel pannello');
 $r = $ospite->get('/');
-prova('Landing: sezione «Anche il tuo sito» in fondo, dopo la chiusura, con la foto, i tre punti e «Chiedici il tuo sito» verso blackout.in/myhouse/', str_contains($r['body'], 'id="sito"')
-      && str_contains($r['body'], 'Meno commissioni ai portali.') && str_contains($r['body'], 'Più incasso per te.') && str_contains($r['body'], 'Più ospiti diretti.')
-      && str_contains($r['body'], 'la quota che sarebbe andata al portale resta a te') && str_contains($r['body'], '<a class="btn" href="https://blackout.in/myhouse/" target="_blank" rel="noopener">Chiedici il tuo sito')
+prova('Landing: sezione «Anche il tuo sito» in fondo, dopo la chiusura, con la foto e il percorso a domande (8A)', str_contains($r['body'], 'id="sito"')
+      && str_contains($r['body'], 'Il tuo sito li porta da te.') && str_contains($r['body'], 'data-funnel') && str_contains($r['body'], 'https://blackout.in/myhouse/?da=welcome')
       && strpos($r['body'], 'id="sito"') > strpos($r['body'], 'id="chiusura-titolo"') && str_contains($r['body'], '/assets/foto/sito-1600.webp')
       && str_contains($r['body'], '/#sito">Il sito per la tua struttura</a>'));
 $r = $lucia->get('/pannello');
@@ -3109,7 +3110,8 @@ $schede = preg_match('#<section id="piani".*?</section>#s', $r['body'], $mm) ? $
 prova('7B · schede: «6 sezioni aggiuntive a scelta» e «Foto profilo dell\'host» in Essential, «Tutte le N sezioni» in Plus', str_contains($schede, '6 sezioni aggiuntive a scelta')
       && str_contains($schede, 'Foto profilo dell&#039;host') && preg_match('#Tutte le \d+ sezioni#', $schede) === 1 && !str_contains($schede, '{sezioni}')
       && !str_contains($schede, 'Sezioni illimitate') && !preg_match('#[Vv]arianti#', $schede));
-prova('…foto e PDF, traduzioni e «Ideale per» di Plus con i testi nuovi', str_contains($schede, 'Foto e PDF dentro le sezioni: la foto del cancello, le istruzioni della lavatrice')
+prova('…foto e PDF (8A), traduzioni e «Ideale per» di Plus con i testi nuovi', str_contains($schede, 'Possibilità di inserire foto e PDF accanto ai testi, per far vedere meglio quello che spieghi')
+      && !str_contains($schede, 'la foto del cancello')
       && str_contains($schede, 'Scrivi in italiano, traduciamo noi in inglese, francese, tedesco e spagnolo: tu controlli e confermi. Il primo anno è in omaggio.')
       && str_contains($schede, 'B&amp;B, case vacanza e agriturismi con ospiti da tutto il mondo: cinque lingue, foto e consigli sul territorio.')
       && !str_contains($schede, 'Scrivici per un preventivo'));
@@ -3118,8 +3120,8 @@ prova('7B · Portfolio oltre 10: «Chiedi un preventivo» con oggetto e domande'
       && str_contains($schede, '>Chiedi un preventivo</a>'));
 prova('7B · nelle schede i bottoni sono tutti pieni (nessun «Crea gratis» a contorno)', preg_match_all('#class="btn btn--ghost"[^>]*>Crea gratis#', $schede) === 0);
 $tempo7 = preg_match('#<section[^>]*class="t2[^"]*".*?</section>#s', $r['body'], $mm) ? $mm[0] : $r['body'];
-prova('7B · tempo risparmiato: senza «Abbonamento …, IVA esclusa» e «Differenza», con la frase nuova', !str_contains($r['body'], 'IVA esclusa</dt>') && !str_contains($r['body'], 'Differenza a tuo favore')
-      && str_contains($r['body'], 'Il tempo che ti restituisce la guida, in un anno.'));
+prova('7B · tempo risparmiato: senza «Abbonamento …, IVA esclusa» e «Differenza», con il valore del tempo (8A)', !str_contains($r['body'], 'IVA esclusa</dt>') && !str_contains($r['body'], 'Differenza a tuo favore')
+      && str_contains($r['body'], 'class="t2__valgono"'));
 $guad = preg_match('#<section id="guadagno".*?</section>#s', $r['body'], $mm) ? $mm[0] : '';
 prova('7B · «Crea gratis la tua guida» dopo «Servizi extra», come il bottone dell\'hero', strpos($guad, 'Crea gratis la tua guida') > strpos($guad, 'Servizi extra.') && str_contains($guad, 'btn btn--lg btn--go guadagno__cta'));
 $r = $admin->get('/admin/pacchetti');
@@ -3251,7 +3253,7 @@ $fileS3Tel = "$S3_DIR/oggetti/mhw-prove__" . str_replace('/', '__', substr($rifT
 prova('Testi e foto · le foto caricate: nell\'archivio come le foto delle testimonianze, e nella home al posto di quelle di serie', str_contains($r['body'], '>caricata</span>')
       && preg_match('#^(s3|local):sito/\d{4}/[0-9a-f]{32}\.(jpg|png|webp)$#', $rifTel) === 1 && str_contains($r['body'], 'Torna alla foto di serie')
       && !str_contains($h, 'borgo-telefono') && !str_contains($h, 'checco-telefono') && preg_match('#class="device__shot">\s*<img src="[^"]+"#', $h) === 1
-      && !str_contains($h, 'sito-800.webp') && preg_match('#<picture class="sito__foto" aria-hidden="true">\s*<img src="[^"]*sito/#', $h) === 1
+      && !str_contains($h, 'sito-800.webp') && preg_match('#<picture class="sito2__foto" aria-hidden="true">\s*<img src="[^"]*sito/#', $h) === 1
       && (getenv('MHW_STORAGE') !== 's3' || is_file($fileS3Tel)), $rifTel . ' · ' . (is_file($fileS3Tel) ? 'file ok' : 'file assente'));
 // Si torna di serie: campi vuoti e «Torna alla foto di serie»; la foto vecchia sparisce dall'archivio.
 $r = $admin->segui($admin->post('/admin/testi', ['t_hero_titolo' => '', 't_perchi_2_testo' => '', 't_hero_garanzie' => '', 't_prodotto_testo' => '', 't_cta_crea' => '',
@@ -3641,6 +3643,49 @@ $m = $posta('info@welcomemyhouse.it'); $ult = end($m) ?: [];
 prova('7D · da 1 a 3 stelle: «Ti scriviamo» e un\'email a noi con il giudizio', count($m) === $prima + 1 && str_contains((string) ($ult['subject'] ?? ''), 'Giudizio da 2/5')
       && str_contains((string) $ult['text'], 'stampare tutta la guida'), json_encode($ult['subject'] ?? null));
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
+
+
+capitolo('8A · home: il tempo, «Anche il tuo sito» a domande, la scheda con le stelle, testi ed email');
+$r = $ospite->get('/');
+$tempo = preg_match('#<section id="il-tempo".*?</section>#s', $r['body'], $m) ? $m[0] : '';
+prova('8A · tempo: in ogni colonna titolo → frase → esempi → riferimento → cursore; il cursore delle necessarie arriva a 60',
+      preg_match('#t2__etichetta.*?t2__desc.*?t2__lista.*?t2__rif.*?t2__cursore#s', $tempo) === 1 && str_contains($tempo, 'min="5" max="60" step="1" value="16" data-t2="nec"')
+      && str_contains($r['body'], 'grid-row:span 5'));
+prova('…riquadro: in grande il tempo («11 ore»), sotto le giornate, poi gli euro in grassetto piccolo; niente cifra in euro grande',
+      str_contains($tempo, '<span class="t2__ore"><span data-o="oreG">11</span> ore</span>') && str_contains($tempo, 'cioè 1,5 giornate di lavoro')
+      && str_contains($tempo, '<b class="t2__valgono">Valgono <span data-o="valore">228 €</span> del tuo tempo, a <span data-o="euro2">20 €</span> l&#039;ora.</b>')
+      && !str_contains($tempo, 't2__euro') && str_contains($tempo, 'data-formato="it-IT"') && str_contains($tempo, 'data-giornate="cioè {n} giornate di lavoro"'));
+prova('…le frasi del cursore vengono da «Testi e foto» (nessun «Riferimento» scritto a mano)', str_contains($tempo, 'Riferimento: <b>16 min</b> a prenotazione')
+      && substr_count((string) file_get_contents("$DOVE/app/views/pub/_tempo.php"), 'Riferimento:') === 0);
+$sito = preg_match('#<section id="sito".*?</section>#s', $r['body'], $m) ? $m[0] : '';
+prova('8A · «Anche il tuo sito»: logo MyHouse bianco, «un servizio a parte», domanda 1 con Sì / No e i contatti diretti', str_contains($sito, '/assets/myhouse/myhouse-logo-bianco.png" alt="MyHouse — Il tuo sito, le tue prenotazioni"')
+      && str_contains($sito, '<b>MyHouse è un servizio a parte</b> di Blackout Agency') && str_contains($sito, 'Hai già un sito per la tua struttura?')
+      && str_contains($sito, 'data-ha="si"') && str_contains($sito, 'data-ha="no"') && str_contains($sito, 'Oppure scrivici subito:') && str_contains($sito, 'WhatsApp +39 392 006 1600'));
+prova('…il percorso: scelte di «Sì» (con Altro), i tre punti di «No», i tre bottoni finali e, senza JavaScript, i contatti con il messaggio di serie',
+      substr_count($sito, 'data-bisogno') === 4 && str_contains($sito, 'Raccontaci in due parole') && str_contains($sito, 'Prenotazione e pagamento sul tuo sito, senza commissioni')
+      && str_contains($sito, 'data-canale="scopri"') && str_contains($sito, 'data-canale="whatsapp"') && str_contains($sito, 'data-canale="email"')
+      && str_contains($sito, 'funnel funnel--nojs') && str_contains($sito, 'wa.me/393920061600?text=' . rawurlencode('Ciao, ho una struttura ricettiva. Mi date una proposta?'))
+      && str_contains($sito, 'data-msg-si="Ho già un sito e vorrei migliorarlo{bisogni}."') && str_contains($r['body'], '/assets/funnel-sito.js'));
+$tok = preg_match('#data-csrf="([a-f0-9]+)"#', $r['body'], $mt) ? $mt[1] : '';
+$x = $ospite->post('/sito/interesse', ['_csrf' => $tok, 'ha_sito' => 'si', 'bisogni' => 'google,dirette,inventato', 'altro' => '', 'canale' => 'whatsapp', 'da' => 'home']);
+$riga = riga('SELECT * FROM interessi_sito ORDER BY id DESC LIMIT 1');
+prova('8A · POST /sito/interesse: 204, la riga con risposte e canale (solo voci note), senza account per un visitatore', $x['code'] === 204 && $riga
+      && $riga['ha_sito'] === 'si' && $riga['bisogni'] === 'google,dirette' && $riga['canale'] === 'whatsapp' && $riga['da'] === 'home' && $riga['account_id'] === null, json_encode($riga));
+$x = $ospite->post('/sito/interesse', ['ha_sito' => 'no', 'canale' => 'email'], [], false);
+prova('…senza il token CSRF niente riga', $x['code'] !== 204 && (int) val('SELECT COUNT(*) FROM interessi_sito') === 1);
+$r = $admin->get('/admin/prospetti');
+prova('8A · Prospetti: «Interessati a MyHouse» con data, risposte e canale', str_contains($r['body'], 'Interessati a MyHouse') && str_contains($r['body'], 'Trovarsi su Google, Più prenotazioni dirette')
+      && str_contains($r['body'], '<td>WhatsApp</td>') && str_contains($r['body'], 'Visitatore'));
+$guad = preg_match('#<section id="guadagno".*?</section>#s', $ospite->get('/')['body'], $mm) ? $mm[0] : '';
+prova('8A · la scheda a destra: «Com\'è andato il soggiorno?», 5 stelle piene, il grazie, la richiesta e i tre portali, poi BENTORNATI',
+      str_contains($guad, 'Com&#039;è andato il soggiorno?') && substr_count(preg_match('#congedo-mock__stelle">(.*?)</span>#s', $guad, $st) ? $st[1] : '', '<svg') === 5
+      && str_contains($guad, 'Siamo felici che ti sia trovato bene! 😊') && str_contains($guad, 'Ti chiediamo un piccolo favore') && str_contains($guad, 'Booking.com') && str_contains($guad, 'BENTORNATI'));
+prova('8A · Termini e Privacy senza «Testo di partenza»', !str_contains($ospite->get('/termini')['body'], 'Testo di partenza') && !str_contains($ospite->get('/privacy')['body'], 'Testo di partenza'));
+$admin->get('/admin/testi');
+$admin->post('/admin/testi', ['t_tempo2_valgono' => 'Fanno {euro} in un anno.', 't_sito2_titolo' => 'Prima la guida.', 'torna' => 'tempo']);
+$h = $ospite->get('/')['body'];
+prova('8A · Testi e foto: i testi nuovi (tempo2.*, sito2.*) si cambiano e compaiono in home', str_contains($h, 'Fanno <span data-o="valore">228 €</span> in un anno.') && str_contains($h, 'Prima la guida.<br>'));
+$admin->post('/admin/testi', ['t_tempo2_valgono' => '', 't_sito2_titolo' => '', 'torna' => 'tempo']);
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";
