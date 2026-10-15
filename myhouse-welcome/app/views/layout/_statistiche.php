@@ -14,7 +14,7 @@ $datiS = ['matomo' => Statistiche::matomo() ? ['url' => $cS['matomo_url'], 'id' 
 <?php if (Statistiche::consensoServe()): ?>
 <section class="consenso" id="consenso" aria-labelledby="consenso-testo" hidden>
   <div class="consenso__dentro">
-    <p class="consenso__testo" id="consenso-testo"><?= TestiSito::html('consenso.testo', ['strumenti' => Support::e(Statistiche::strumenti(LinguaSito::en()))]) ?>
+    <p class="consenso__testo" id="consenso-testo"><?= TestiSito::html('consenso.testo', ['finalita' => Support::e(Statistiche::finalita(LinguaSito::en())), 'strumenti' => Support::e(Statistiche::strumenti(LinguaSito::en()))]) ?>
       <a href="<?= b() ?>/privacy#cookie"><?= TestiSito::html('consenso.link') ?></a></p>
     <div class="consenso__scelte" id="consenso-scelte" hidden>
       <?php if ($cS['ga4'] !== ''): ?>

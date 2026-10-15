@@ -100,7 +100,19 @@ final class Statistiche
         } catch (\Throwable $e) { Log::exception($e, 'Statistiche::matomoDalServer'); }
     }
 
-    /** Il pezzo variabile del testo del banner: quali strumenti, secondo quelli configurati. */
+    /**
+     * Il pezzo variabile del testo del banner: le finalità, senza i nomi dei fornitori (primo livello dell'informativa,
+     * linee guida del Garante 2021); i nomi stanno in «Scegli» e nella pagina /privacy.
+     */
+    public static function finalita(bool $en): string
+    {
+        $c = self::config();
+        $s = $c['ga4'] !== ''; $a = $c['clarity'] !== '';
+        if ($en) return $s && $a ? 'statistics and usage analysis cookies' : ($s ? 'statistics cookies' : 'usage analysis cookies');
+        return $s && $a ? 'cookie di statistica e di analisi dell\'uso' : ($s ? 'cookie di statistica' : 'cookie di analisi dell\'uso');
+    }
+
+    /** Come finalita(), ma con i nomi degli strumenti (per chi li vuole anche nel banner: {strumenti}). */
     public static function strumenti(bool $en): string
     {
         $c = self::config(); $v = [];

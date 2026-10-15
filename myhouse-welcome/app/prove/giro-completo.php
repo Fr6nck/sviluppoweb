@@ -3436,16 +3436,18 @@ prova('8H · privacy, «Cookie»: cookie tecnici, Matomo (configurato), le guide
 // Con GA4 e Clarity: il banner (nascosto finché lo script non decide), Accetta e Rifiuta con lo stesso stile, «Scegli» con due interruttori.
 $adm6->segui($adm6->modulo('/admin/seo', '/admin/seo', $campi6k + ['stat_matomo_url' => 'https://statistiche.esempio.it', 'stat_matomo_id' => '3', 'stat_ga4' => 'g-ab12cd34ef', 'stat_clarity' => 'Abc123xyz']));
 $h8 = $ospite->get('/')['body'];
-prova('8H · con GA4 e Clarity: il banner con il testo dei due strumenti, Rifiuta e Accetta uguali, Scegli con due interruttori spenti, la X e «Preferenze cookie» nel piede',
+prova('8H · con GA4 e Clarity: il banner con le finalità (i nomi dei fornitori in «Scegli» e nell\'informativa), Rifiuta e Accetta uguali, Scegli con due interruttori spenti, la X e «Preferenze cookie» nel piede',
       preg_match('#<section class="consenso" id="consenso"[^>]*hidden>#', $h8) === 1
-      && str_contains($h8, 'Usiamo cookie tecnici e, solo con il tuo consenso, strumenti di statistica (Google Analytics) e di analisi dell&#039;uso (Microsoft Clarity) per migliorare il sito.')
+      && str_contains($h8, 'Usiamo cookie tecnici e, solo con il tuo consenso, cookie di statistica e di analisi dell&#039;uso per migliorare il sito.')
+      && preg_match('#<p class="consenso__testo".*?</p>#s', $h8, $t8) === 1 && !str_contains($t8[0], 'Google') && !str_contains($t8[0], 'Microsoft')
+      && str_contains($h8, 'Google Analytics: quante persone visitano il sito') && str_contains($h8, 'Microsoft Clarity: mappe di calore')
       && str_contains($h8, '<button type="button" class="btn btn--sm consenso__pari" data-consenso-azione="rifiuta">Rifiuta</button>')
       && str_contains($h8, '<button type="button" class="btn btn--sm consenso__pari" data-consenso-azione="accetta">Accetta</button>')
       && substr_count($h8, 'data-consenso="') === 2 && !str_contains($h8, 'data-consenso="s" checked') && str_contains($h8, 'aria-label="Chiudi: vale come rifiuto"')
       && str_contains($h8, 'data-consenso-apri>Preferenze cookie</a>') && str_contains($h8, '"ga4":"G-AB12CD34EF"') && str_contains($h8, '"clarity":"abc123xyz"')
       && !preg_match('#<script[^>]+(googletagmanager|clarity\.ms)#', $h8));
 $en8 = $ospite->get('/en')['body'];
-prova('8H · …in inglese su /en', str_contains($en8, 'We use technical cookies and, only with your consent, statistics tools (Google Analytics) and usage analysis tools (Microsoft Clarity) to improve the website.')
+prova('8H · …in inglese su /en', str_contains($en8, 'We use technical cookies and, only with your consent, statistics and usage analysis cookies to improve the website.')
       && str_contains($en8, '>Accept</button>') && str_contains($en8, '>Reject</button>') && str_contains($en8, 'data-consenso-apri>Cookie preferences</a>'));
 $pr8 = $ospite->get('/privacy')['body'];
 prova('8H · privacy: con GA4 e Clarity i loro paragrafi (fornitore, cookie, durata, informativa) e come revocare', str_contains($pr8, 'Google Analytics 4') && str_contains($pr8, '_ga e _ga_*')

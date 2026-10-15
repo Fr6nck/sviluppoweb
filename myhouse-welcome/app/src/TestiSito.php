@@ -233,7 +233,7 @@ final class TestiSito
             'sito2.msg.no'   => ['sito', 'Messaggio · chi non ha il sito', 'riga', 'Non ho ancora un sito per la mia struttura e vorrei crearlo.', ''],
             'sito2.msg.fine' => ['sito', 'Messaggio · ultima frase', 'riga', 'Mi date una proposta?', ''],
             // ---- 8H · il banner del consenso (solo con Google Analytics o Clarity in SEO e GEO)
-            'consenso.testo'     => ['consenso', 'Testo del banner', 'area', 'Usiamo cookie tecnici e, solo con il tuo consenso, {strumenti} per migliorare il sito.', '{strumenti} diventa da solo «strumenti di statistica (Google Analytics) e di analisi dell\'uso (Microsoft Clarity)», secondo quelli configurati.'],
+            'consenso.testo'     => ['consenso', 'Testo del banner', 'area', 'Usiamo cookie tecnici e, solo con il tuo consenso, {finalita} per migliorare il sito.', '{finalita} diventa da solo «cookie di statistica e di analisi dell\'uso» (o solo una delle due), secondo gli strumenti configurati. I nomi dei fornitori sono in «Scegli» e nell\'informativa; se li vuoi anche qui, usa {strumenti}.'],
             'consenso.link'      => ['consenso', 'Link all\'informativa', 'riga', 'Cookie e privacy', ''],
             'consenso.accetta'   => ['consenso', 'Bottone «Accetta»', 'riga', 'Accetta', ''],
             'consenso.rifiuta'   => ['consenso', 'Bottone «Rifiuta»', 'riga', 'Rifiuta', ''],

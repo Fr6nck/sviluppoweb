@@ -1,5 +1,13 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Banner del consenso più leggero (15 ottobre 2026)
+
+Nessuna migrazione.
+
+- **Testo corto, con le finalità e senza i nomi:** «Usiamo cookie tecnici e, solo con il tuo consenso, cookie di statistica e di analisi dell'uso per migliorare il sito. Cookie e privacy» (in inglese «…statistics and usage analysis cookies…»). Con un solo strumento configurato dice solo la sua finalità. I nomi dei fornitori (Google Analytics, Microsoft Clarity) restano in «Scegli», accanto a ogni interruttore, e nel paragrafo «Cookie» della privacy: è l'informativa a due livelli delle linee guida del Garante (2021). In Testi e foto il segnaposto è `{finalita}`; chi vuole i nomi anche nel banner può usare `{strumenti}`.
+- **Su computer un riquadro compatto in basso a sinistra** (420 px) al posto della barra larga; sul telefono resta la barra in basso. «Accetta» e «Rifiuta» restano uguali, la X vale come rifiuto, niente script prima della scelta.
+- Le FAQ non cambiano: parlano delle guide degli ospiti, che restano senza cookie.
+
 ## v2 · 8H statistiche delle visite e consenso ai cookie (15 ottobre 2026)
 
 Nessuna migrazione (le impostazioni nuove stanno nella tabella di SEO e GEO). Da configurare: DA-CONFIGURARE, sezione «Statistiche delle visite».

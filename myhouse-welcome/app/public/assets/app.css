@@ -2703,6 +2703,9 @@ fieldset .lingua-come{margin-top:12px}
   display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;background:var(--raised);color:var(--ink);border:1px solid var(--line);
   border-radius:var(--r-lg);box-shadow:0 12px 32px rgba(35,27,18,.18);font-size:15px;line-height:1.45}
 .consenso__testo{margin:0;flex:1 1 360px}
+/* su computer: un riquadro compatto in basso a sinistra, che lascia libera la pagina */
+@media (min-width:900px){.consenso{right:auto;padding:0 0 16px 16px}.consenso__dentro{width:420px;max-width:calc(100vw - 32px);padding:18px 48px 18px 20px}
+  .consenso__testo{flex-basis:100%}.consenso__bottoni{width:100%}.consenso__pari{flex:1 1 0;min-width:0}}
 .consenso__testo a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
 .consenso__scelte{flex-basis:100%;display:flex;flex-direction:column;gap:10px}
 .consenso__scelte[hidden]{display:none}

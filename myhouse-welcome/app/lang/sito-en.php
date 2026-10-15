@@ -25,7 +25,7 @@ return [
     'scena.host.testo'    => 'Change a time in the dashboard and publish: the QR code stays the same.',
     'scena.host.alt'      => 'The host updates the guide on a laptop, with the phone preview alongside',
     // ---- cosa trova l'ospite
-    'consenso.testo'     => 'We use technical cookies and, only with your consent, {strumenti} to improve the website.',
+    'consenso.testo'     => 'We use technical cookies and, only with your consent, {finalita} to improve the website.',
     'consenso.link'      => 'Cookies and privacy',
     'consenso.accetta'   => 'Accept',
     'consenso.rifiuta'   => 'Reject',
