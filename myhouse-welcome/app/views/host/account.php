@@ -172,6 +172,24 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
   </section>
 
   <?php if ($ordini): ?>
+  <?php if (!empty($giudizio)): /* 7D: il giudizio sulla piattaforma e il consenso, ritirabile */ ?>
+  <section class="panel stack" id="giudizio" aria-labelledby="giudizio-titolo" style="gap:10px">
+    <h2 id="giudizio-titolo" style="font-size:22px;margin:0">Il tuo giudizio su MyHouse Welcome</h2>
+    <p style="margin:0"><span class="stelline" aria-label="<?= (int) $giudizio['rating'] ?> su 5"><?= str_repeat('★', (int) $giudizio['rating']) . str_repeat('☆', 5 - (int) $giudizio['rating']) ?></span>
+      «<?= Support::e($giudizio['body']) ?>»</p>
+    <?php if (!empty($giudizio['withdrawn_at'])): ?>
+      <p class="small muted" style="margin:0">Hai ritirato il consenso il <?= Support::e(Support::date($giudizio['withdrawn_at'])) ?>: il giudizio non si vede sul sito.</p>
+    <?php elseif (!empty($giudizio['consent_at'])): ?>
+      <p class="small muted" style="margin:0"><?= $giudizio['status'] === 'pubblicata' ? 'È pubblicato sul sito.' : 'Ci hai dato il consenso a pubblicarlo.' ?>
+        Consenso dato il <?= Support::e(Support::date($giudizio['consent_at'])) ?>.</p>
+      <form method="post" action="<?= b() ?>/account/giudizio/ritira" style="margin:0"><?= MHW\Csrf::field() ?>
+        <button class="btn btn--ghost btn--sm">Ritira il consenso</button></form>
+    <?php else: ?>
+      <p class="small muted" style="margin:0">Senza il consenso resta tra noi: non lo pubblichiamo.</p>
+    <?php endif; ?>
+  </section>
+  <?php endif; ?>
+
   <section class="stack" style="gap:10px">
     <h2 style="font-size:22px">Pagamenti</h2>
     <?php foreach ($ordini as $o): ?>

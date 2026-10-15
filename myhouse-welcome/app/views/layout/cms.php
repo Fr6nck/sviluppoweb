@@ -34,7 +34,8 @@ $gruppiAdmin = $admin ? [
 $generale = $admin ? array_merge(...array_values($gruppiAdmin))
   : [['guide', '/pannello', 'Le mie guide', 'grid'], ['account', '/account', 'Account & Fatturazione', 'card']];
 // Per i clienti la voce c'è sempre, con gli inviti accesi: chi non può ancora invitare vede il motivo.
-if (!$admin && $u && Auth::account() && MHW\Inviti::disponibili()) $generale[] = ['inviti', '/inviti', 'Invita un amico', 'people'];
+// 7D: con l'etichetta colorata degli sconti (all'amico / a te).
+if (!$admin && $u && Auth::account() && MHW\Inviti::disponibili()) $generale[] = ['inviti', '/inviti', 'Invita un amico', 'people', "\u{2212}" . MHW\Inviti::AMICO . "% / \u{2212}" . MHW\Inviti::PASSO . '%'];
 $attiva = $admin ? $nav : ($prop ? '' : ($nav ?: 'guide'));
 $guida = [];
 if ($prop) {
@@ -62,10 +63,12 @@ if ($admin) {
 }
 
 $voci = function (array $elenco, string $on, string $classe) {
-    foreach ($elenco as [$k, $href, $l, $ico]) {
+    foreach ($elenco as $voce) {
+        [$k, $href, $l, $ico] = $voce; $etichetta = (string) ($voce[4] ?? '');
         $si = $k === $on;
         echo '<a class="' . $classe . ($si ? ' on' : '') . '" href="' . b() . Support::e($href) . '"' . ($si ? ' aria-current="page"' : '') . '>'
-           . Icon::svg($ico, 19, 1.8) . '<span>' . Support::e($l) . '</span></a>';
+           . Icon::svg($ico, 19, 1.8) . '<span>' . Support::e($l) . '</span>'
+           . ($etichetta !== '' ? '<em class="lato__etichetta" title="Sconto per il tuo amico / per te">' . Support::e($etichetta) . '</em>' : '') . '</a>';
     }
 };
 $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida, $quiGuida, $prop, $statoGuida, $voci, $u, $iniziale) { ?>

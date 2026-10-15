@@ -714,7 +714,24 @@ $r->post('/admin/impostazioni/{gruppo}/prova', function (array $a) use ($imposta
  */
 $r->get('/admin/testimonianze', function () {
     Auth::requireAdmin();
-    View::out('admin/testimonials', ['righe' => MHW\Testimonianze::tutte(), 'nav' => 'testimonianze'], 'layout/cms');
+    View::out('admin/testimonials', ['righe' => MHW\Testimonianze::tutte(), 'giudizi' => MHW\Testimonianze::giudiziClienti(), 'nav' => 'testimonianze'], 'layout/cms');
+});
+
+/* 7D: i giudizi dei clienti. «Pubblica» solo con il consenso; «Rifiuta» li toglie dalla coda. */
+$r->post('/admin/testimonianze/{tid}/pubblica', function (array $a) {
+    Auth::requireAdmin();
+    $ok = MHW\Testimonianze::pubblica((int) $a['tid']);
+    if ($ok) Auth::audit('testimonial.publish', null, ['id' => (int) $a['tid']]);
+    Support::flash($ok ? 'Giudizio pubblicato: si vede in home.' : 'Non si può pubblicare: manca il consenso, o è stato ritirato.', $ok ? 'ok' : 'err');
+    Support::redirect('/admin/testimonianze');
+});
+
+$r->post('/admin/testimonianze/{tid}/rifiuta', function (array $a) {
+    Auth::requireAdmin();
+    MHW\Testimonianze::rifiuta((int) $a['tid']);
+    Auth::audit('testimonial.reject', null, ['id' => (int) $a['tid']]);
+    Support::flash('Giudizio rifiutato: non si pubblica.');
+    Support::redirect('/admin/testimonianze');
 });
 
 $r->post('/admin/testimonianze', function () {
@@ -823,7 +840,17 @@ $r->get('/admin/inviti', function () {
          FROM referrals r JOIN accounts ar ON ar.id = r.referrer_account_id JOIN users ur ON ur.id = ar.user_id
          JOIN accounts af ON af.id = r.friend_account_id JOIN users uf ON uf.id = af.user_id ORDER BY r.id DESC LIMIT 300') : [];
     $perEmail = MHW\Migrator::tableExists('referral_invites') ? (int) Db::val('SELECT COUNT(*) FROM referral_invites WHERE sent_at > ?', [gmdate('Y-m-d\TH:i:s\Z', time() - 30 * 86400)], 0) : 0;
-    View::out('admin/inviti', ['righe' => $righe, 'attivi' => MHW\Inviti::disponibili(), 'perEmail' => $perEmail, 'nav' => 'inviti'], 'layout/cms');
+    View::out('admin/inviti', ['righe' => $righe, 'attivi' => MHW\Inviti::disponibili(), 'perEmail' => $perEmail,
+                               'aMano' => MHW\Inviti::daApplicareAMano(), 'nav' => 'inviti'], 'layout/cms');
+});
+
+/* 7D: lo sconto inviti di un abbonamento dello staff, applicato a mano al rinnovo: gli inviti si chiudono. */
+$r->post('/admin/inviti/applicato/{aid}', function (array $a) {
+    Auth::requireAdmin();
+    $n = MHW\Inviti::applicatoAMano((int) $a['aid']);
+    Auth::audit('referral.manual_applied', null, ['account_id' => (int) $a['aid'], 'inviti' => $n]);
+    Support::flash('Fatto: ' . $n . ' invit' . ($n === 1 ? 'o chiuso' : 'i chiusi') . ' come «già scontato».');
+    Support::redirect('/admin/inviti');
 });
 
 $r->post('/admin/inviti/{id}/annulla', function (array $a) {

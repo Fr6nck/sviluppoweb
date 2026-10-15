@@ -34,6 +34,38 @@ $modulo = function (array $t) {
     <p class="muted">Sulla landing compaiono solo quelle segnate come visibili; se non ce n'è nessuna, il blocco non compare.
       Scrivi solo parole vere, con il permesso di chi le ha dette (anche per la foto).</p>
   </div>
+  <?php $giudizi = $giudizi ?? []; $attesa = array_filter($giudizi, fn($g) => $g['status'] === 'in_attesa'); ?>
+  <section class="stack" aria-labelledby="giudizi-titolo" style="gap:12px">
+    <h2 id="giudizi-titolo" style="font-size:22px">Giudizi dei clienti <?php if ($attesa): ?><span class="badge badge--ochre"><?= count($attesa) ?> in attesa</span><?php endif; ?></h2>
+    <p class="small muted" style="margin:0">Arrivano dal pannello («Ti sta piacendo MyHouse Welcome?»). Si pubblicano solo quelli con il consenso;
+      se il cliente lo ritira, il giudizio sparisce subito dalla home. In home la media compare da <?= Testimonianze::MEDIA_DA ?> giudizi pubblicati.</p>
+    <?php if (!$giudizi): ?><p class="note note--quiet">Ancora nessun giudizio.</p><?php endif; ?>
+    <?php foreach ($giudizi as $g):
+          $ritirato = !empty($g['withdrawn_at']); $consenso = !empty($g['consent_at']) && !$ritirato;
+          [$tono, $et] = $ritirato ? ['alert', 'Consenso ritirato'] : match ($g['status']) {
+              'pubblicata' => ['pine', 'Pubblicato'], 'rifiutata' => ['paper', 'Rifiutato'], default => ['ochre', 'In attesa'] }; ?>
+      <article class="panel stack giudizio-admin" style="gap:8px">
+        <div class="row" style="gap:10px;flex-wrap:wrap">
+          <span class="stelline" aria-label="<?= (int) $g['rating'] ?> su 5"><?= str_repeat('★', (int) $g['rating']) . str_repeat('☆', 5 - (int) $g['rating']) ?></span>
+          <b><?= Support::e($g['name']) ?></b><span class="small muted"><?= Support::e(trim($g['property_name'] . ($g['city'] !== '' ? ', ' . $g['city'] : ''), ', ')) ?></span>
+          <span class="badge badge--<?= $tono ?>"><?= $et ?></span>
+          <span class="tiny muted"><?= Support::e(Support::date($g['created_at'])) ?> · <a href="<?= b() ?>/admin/cliente/<?= (int) $g['account_id'] ?>"><?= Support::e((string) $g['email']) ?></a></span>
+        </div>
+        <p style="margin:0">«<?= Support::e($g['body']) ?>»</p>
+        <p class="tiny muted" style="margin:0">Foto: <?= Support::e(Testimonianze::FOTO[$g['photo_source']] ?? 'Nessuna foto') ?>.
+          <?= $consenso ? 'Consenso del ' . Support::e(Support::date($g['consent_at'])) . ': «' . Support::e((string) $g['consent_text']) . '»' : ($ritirato ? '' : 'Senza consenso: non si può pubblicare.') ?></p>
+        <?php if ($g['status'] !== 'pubblicata' && !$ritirato): ?>
+          <div class="row" style="gap:8px">
+            <?php if ($consenso): ?><form method="post" action="<?= b() ?>/admin/testimonianze/<?= (int) $g['id'] ?>/pubblica" style="margin:0"><?= Csrf::field() ?><button class="btn btn--sm">Pubblica</button></form><?php endif; ?>
+            <?php if ($g['status'] !== 'rifiutata'): ?><form method="post" action="<?= b() ?>/admin/testimonianze/<?= (int) $g['id'] ?>/rifiuta" style="margin:0"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm">Rifiuta</button></form><?php endif; ?>
+          </div>
+        <?php elseif ($g['status'] === 'pubblicata' && !$ritirato): ?>
+          <form method="post" action="<?= b() ?>/admin/testimonianze/<?= (int) $g['id'] ?>/rifiuta" style="margin:0"><?= Csrf::field() ?><button class="linkbtn">Togli dalla home</button></form>
+        <?php endif; ?>
+      </article>
+    <?php endforeach; ?>
+  </section>
+  <h2 style="font-size:22px">Scritte da noi</h2>
   <?php if (!$righe): ?><p class="note note--quiet">Ancora nessuna testimonianza.</p><?php endif; ?>
   <?php foreach ($righe as $t): $foto = Testimonianze::foto($t); ?>
     <details class="fieldset">

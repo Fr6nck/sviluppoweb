@@ -66,6 +66,14 @@
     if (!e.target.hasAttribute || !e.target.hasAttribute('data-benvenuto')) return;
     var wa = document.querySelector('[data-wa-da="' + e.target.id + '"]');
     if (wa) wa.href = 'https://wa.me/?text=' + encodeURIComponent(e.target.value);
+    // 7D: anche l'email parte con il testo di adesso (l'oggetto resta).
+    var em = document.querySelector('[data-mail-da="' + e.target.id + '"]');
+    if (em) em.href = em.href.replace(/([?&]body=)[^&]*/, '$1' + encodeURIComponent(e.target.value));
+  });
+
+  /* ---- Una casella che si salva da sola (l'anteprima dell'invito): senza JS c'è il bottone «Salva». */
+  document.addEventListener('change', function (e) {
+    if (e.target.hasAttribute && e.target.hasAttribute('data-invia-subito') && e.target.form) e.target.form.submit();
   });
 
   /* ---- Anteprima nel telefono -------------------------------------------- */

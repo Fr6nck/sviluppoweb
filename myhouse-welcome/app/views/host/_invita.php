@@ -1,7 +1,7 @@
 <?php
 /* Invita un amico: il riquadro con la barra degli inviti e il link da mandare.
    Riceve $acc e, se c'è già, $inv (Inviti::stato). Si vede solo a chi può invitare:
-   inviti accesi e abbonamento Stripe attivo. Lo includono «Le mie guide»,
+   inviti accesi e un abbonamento attivo, di qualsiasi tipo (7D). Lo includono «Le mie guide»,
    «La tua guida è online» e la pagina /inviti ($paginaInviti). */
 use function MHW\b;
 use MHW\{Support, Icon, Inviti};
@@ -24,8 +24,7 @@ if ($invN === 0) {
         ? ($invN + (int) $inv['oltre']) . ' amici hanno pubblicato la loro guida: i primi ' . $invMax . ' contano per il tuo sconto. I prossimi hanno comunque il loro ' . Inviti::AMICO . '%.'
         : $invMax . ' amici hanno pubblicato la loro guida. Puoi continuare a invitare: i tuoi amici hanno sempre il loro ' . Inviti::AMICO . '%.';
 }
-$testoInvito = 'Uso MyHouse Welcome per la guida digitale della mia struttura. Con questo link hai il ' . Inviti::AMICO
-             . '% di sconto sul primo anno: ' . $linkInvito; ?>
+$testoInvito = Inviti::messaggio($acc);   /* 7D: lo stesso messaggio pronto della pagina «Invita un amico» */ ?>
 <section class="invito" aria-labelledby="invito-titolo">
   <div class="invito__testo">
     <span class="kicker">Invita un amico</span>
@@ -39,7 +38,9 @@ $testoInvito = 'Uso MyHouse Welcome per la guida digitale della mia struttura. C
     <?php if ((int) $inv['percento'] > 0 && (int) $inv['prezzo'] > 0): ?>
       <p><?= $inv['rinnovo'] !== '' ? 'Il ' . Support::e(Support::date($inv['rinnovo'])) . ' paghi' : 'Al rinnovo paghi' ?>
         <b><?= Support::e(Support::money((int) $inv['scontato'], $inv['valuta'])) ?> + IVA</b> invece di <?= Support::e(Support::money((int) $inv['prezzo'], $inv['valuta'])) ?>.</p>
-      <?php if (!$inv['automatico']): ?>
+      <?php if (!empty($inv['a_mano'])): ?>
+        <p class="small">Il tuo abbonamento è stato attivato dal nostro staff: lo sconto lo applichiamo noi al rinnovo.</p>
+      <?php elseif (!$inv['automatico']): ?>
         <p class="small">Il rinnovo automatico è disattivato: lo sconto vale solo sul rinnovo. <a href="<?= b() ?>/account">Riattivalo</a></p>
       <?php endif; ?>
     <?php endif; ?>
@@ -49,8 +50,10 @@ $testoInvito = 'Uso MyHouse Welcome per la guida digitale della mia struttura. C
     <code><?= Support::e(preg_replace('#^https?://#', '', $linkInvito)) ?></code>
     <div class="row" style="gap:8px">
       <button type="button" class="btn btn--sm" data-copia="<?= Support::e($linkInvito) ?>" data-copiato="Link copiato" hidden><?= Icon::svg('copy', 15) ?>Copia il link</button>
+      <?php if (empty($paginaInviti)): /* nella pagina «Invita un amico» ci sono già, sotto il messaggio pronto */ ?>
       <a class="btn btn--ghost btn--sm" href="https://wa.me/?text=<?= rawurlencode($testoInvito) ?>" target="_blank" rel="noopener"><?= Icon::svg('whatsapp', 15) ?>WhatsApp</a>
       <a class="btn btn--ghost btn--sm" href="mailto:?subject=<?= rawurlencode('Ti invito su MyHouse Welcome') ?>&amp;body=<?= rawurlencode($testoInvito) ?>"><?= Icon::svg('message', 15) ?>Email</a>
+      <?php endif; ?>
     </div>
     <?php $codiceInv = Inviti::codice($acc); ?>
     <div class="invito__codice">

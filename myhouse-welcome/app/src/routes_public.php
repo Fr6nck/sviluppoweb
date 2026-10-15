@@ -71,6 +71,11 @@ $chiInvita = function (): ?array {
     return $chi;
 };
 
+/*
+ * 7D: il link diventa una pagina (noindex) con l'anteprima sicura della guida di chi invita:
+ * copertina, nome, città e i nomi delle sezioni, mai i contenuti. Con la casella «Mostra la
+ * copertina…» spenta, la pagina e l'anteprima di WhatsApp sono generiche.
+ */
 $r->get('/i/{codice}', function (array $a) use ($guard) {
     $guard();
     $codice = mb_substr(strtoupper((string) $a['codice']), 0, 12);
@@ -83,7 +88,33 @@ $r->get('/i/{codice}', function (array $a) use ($guard) {
         unset($_SESSION['invito']);
         Support::redirect('/pannello');
     }
-    Support::redirect('/');
+    $chi = MHW\Inviti::daCodice($codice);
+    if (!$chi || !MHW\Inviti::puoInvitare($chi)) Support::redirect('/');
+    $mostra = MHW\Inviti::anteprimaAccesa($chi);
+    $p = $mostra ? MHW\Inviti::strutturaDi((int) $chi['id']) : null;
+    $sezioni = [];
+    if ($p && ($snap = MHW\Guide::published((int) $p['id']))) {
+        $loc = (string) ($snap['property']['default_locale'] ?? 'it');
+        foreach ($snap['sections'] as $sec) $sezioni[] = ['kind' => (string) $sec['kind'], 'titolo' => MHW\Guide::title($sec, $loc, $loc)];
+    }
+    View::out('pub/invito', [
+        'chi' => $chi, 'nome' => explode(' ', trim((string) $chi['user_name']))[0] ?: 'Un host', 'codice' => $codice,
+        'p' => $p, 'sezioni' => $sezioni, 'copertina' => $p && $p['cover_media_id'] ? Media::url((int) $p['cover_media_id']) : null,
+        'esempio' => MHW\Demo::esempio(null, $p ? (int) $p['id'] : 0),
+        'ogTitolo' => $p ? $p['name'] . ' usa MyHouse Welcome' : null,
+        'ogTesto' => 'Con questo invito hai il ' . MHW\Inviti::AMICO . '% di sconto sul primo anno.',
+        'ogImmagine' => $p && $p['cover_media_id'] ? Support::baseUrl() . '/i/' . rawurlencode($codice) . '/anteprima.jpg' : null,
+    ]);
+});
+
+/* L'immagine dell'anteprima dell'invito: solo la copertina di chi invita, 1200×630, fuori dai motori. */
+$r->get('/i/{codice}/anteprima.jpg', function (array $a) use ($guard) {
+    $guard();
+    $chi = MHW\Inviti::daCodice((string) $a['codice']);
+    $p = $chi && MHW\Inviti::puoInvitare($chi) && MHW\Inviti::anteprimaAccesa($chi) ? MHW\Inviti::strutturaDi((int) $chi['id']) : null;
+    $f = $p && $p['cover_media_id'] ? MHW\Anteprima::file($p, 'invito') : null;
+    if (!$f) { http_response_code(404); header('X-Robots-Tag: ' . Support::ROBOTS_GUIDE); exit; }
+    MHW\Anteprima::manda($f);
 });
 
 $r->get('/', function () use ($guard, $codiceDalLink, $chiInvita) {

@@ -2925,9 +2925,9 @@ $troppi = implode(',', array_map(fn($i) => "amico$i@prova.test", range(1, 11)));
 $r = $paola->segui($paola->post('/inviti/email', ['email' => $troppi]));
 prova('…al massimo 10 indirizzi per volta, e il modulo resta compilato', str_contains($r['body'], 'Al massimo 10 indirizzi per volta') && str_contains($r['body'], 'amico11@prova.test'));
 $r = $dario->get('/inviti');
-prova('Abbonamento attivato dallo staff: la pagina c\'è e spiega perché non può invitare', $r['code'] === 200 && str_contains($r['body'], 'attivato dal nostro staff') && !str_contains($r['body'], 'Manda l\'invito'));
-$r = $dario->post('/inviti/email', ['email' => 'qualcuno@prova.test']);
-prova('…e non può mandare inviti nemmeno forzando la richiesta', !$posta('qualcuno@prova.test'));
+$codDario = (string) val('SELECT referral_code FROM accounts WHERE id = ?', [$accDi('dario@prova.test')]);
+prova('7D · abbonamento attivato dallo staff: può invitare, con il messaggio pronto, il link e il codice', $r['code'] === 200 && str_contains($r['body'], 'Il messaggio pronto')
+      && $codDario !== '' && str_contains($r['body'], '/i/' . $codDario) && str_contains($r['body'], 'il codice è ' . $codDario) && str_contains($r['body'], 'Manda l\'invito'));
 prova('Amministrazione → Inviti: il conto degli inviti per email', preg_match('#Inviti per email</span><b class="cifra__valore">1<#', $admin->get('/admin/inviti')['body']) === 1);
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
 
@@ -3526,6 +3526,121 @@ $r = $lucia->get("/pannello/$casa");
 prova('7C · campo nuovo vuoto: «Nuovo» con il pallino sulla sezione in Contenuti', preg_match('#id="sez-' . $emCasa . '".*?novita-pallino.*?</div>#s', $r['body']) === 1);
 $lucia->post('/pannello/novita/visto', ['novita' => 'prova-campo:emergency', 'torna' => "/pannello/$casa/sezioni/$emCasa"]);
 prova('…«Ho visto» lo toglie', !preg_match('#id="sez-' . $emCasa . '"[^>]*>(?:(?!id="sez-).)*novita-pallino#s', $lucia->get("/pannello/$casa")['body']));
+
+
+capitolo('7D · Invita un amico per tutti, anteprima del link, giudizi dei clienti');
+$admin->get('/admin/impostazioni');
+$admin->segui($admin->post('/admin/impostazioni/inviti', ['inviti__attivi' => '1', 'password' => 'AdminProva123']));
+$pacc = $accDi('paola@prova.test'); $darioAcc = $accDi('dario@prova.test'); $pp6 = (int) val('SELECT id FROM properties WHERE account_id = ? ORDER BY id', [$pacc]);
+$codP = (string) val('SELECT referral_code FROM accounts WHERE id = ?', [$pacc]);
+db()->prepare("UPDATE properties SET address = 'Via Segretissima 7', status = 'published' WHERE id = ?")->execute([$pp6]);
+$r = $paola->get('/inviti');
+prova('7D · barra laterale: «Invita un amico» con l\'etichetta −5% / −5%', str_contains($r['body'], '<span>Invita un amico</span><em class="lato__etichetta"') && str_contains($r['body'], "\u{2212}5% / \u{2212}5%"));
+prova('…in alto «Come funziona» in tre passi, poi il messaggio pronto con struttura, link e codice, e la casella dell\'anteprima',
+      strpos($r['body'], 'Come funziona') < strpos($r['body'], 'Il messaggio pronto') && str_contains($r['body'], 'Ciao! Per Casa Paola uso MyHouse Welcome')
+      && str_contains($r['body'], 'Con questo link hai il 5% di sconto sul primo anno, il codice è ' . $codP . '.') && str_contains($r['body'], 'data-wa-da="inv-messaggio"')
+      && str_contains($r['body'], 'name="mostra" value="1" checked') && str_contains($r['body'], 'Mostra la copertina e il nome della mia struttura'));
+$paola->post("/pannello/$pp6/aspetto", ['palette' => 'terracotta', 'text_tone' => 'scuro', 'cover' => file_(png(1600, 900), 'image/png')]);
+$visit = new Browser('visitatore7d');
+$r = $visit->get('/i/' . $codP);
+prova('7D · /i/CODICE è una pagina: chi invita, struttura e città, i riquadri delle sezioni, i due bottoni, noindex', $r['code'] === 200
+      && str_contains($r['body'], 'Paola usa MyHouse Welcome per Casa Paola, a Todi.') && str_contains($r['body'], 'invito-pagina__riquadri')
+      && str_contains($r['body'], 'Crea la tua guida con il 5% di sconto') && str_contains($r['body'], 'Guarda una guida completa') && str_contains($r['body'], '<meta name="robots" content="noindex">'), (string) $r['code']);
+prova('…senza indirizzo, Wi-Fi, contatti o istruzioni', !str_contains($r['body'], 'Via Segretissima') && !str_contains($r['body'], 'Le chiavi sono nella cassetta') && !str_contains($r['body'], 'RSSMRA85T10A562S'));
+prova('…og:title, og:description e og:image della copertina', str_contains($r['body'], '<meta property="og:title" content="Casa Paola usa MyHouse Welcome">')
+      && str_contains($r['body'], 'content="Con questo invito hai il 5% di sconto sul primo anno."') && preg_match('#<meta property="og:image" content="http[^"]+/i/' . $codP . '/anteprima\.jpg">#', $r['body']) === 1);
+$img = $visit->get('/i/' . $codP . '/anteprima.jpg');
+$dim = @getimagesizefromstring($img['body']);
+prova('…l\'immagine: JPEG 1200×630 fuori dai motori', $img['code'] === 200 && $dim && $dim[0] === 1200 && $dim[1] === 630 && $dim['mime'] === 'image/jpeg'
+      && stripos($img['head'], 'X-Robots-Tag: noindex') !== false, json_encode($dim));
+$paola->post('/inviti/anteprima', ['mostra' => '0']);
+$r = $visit->get('/i/' . $codP);
+prova('7D · casella spenta: anteprima generica, senza la struttura', $r['code'] === 200 && !str_contains($r['body'], 'Casa Paola') && str_contains($r['body'], '/assets/og.jpg')
+      && $visit->get('/i/' . $codP . '/anteprima.jpg')['code'] === 404);
+$paola->post('/inviti/anteprima', ['mostra' => '1']);
+// L'amico si registra dal link e pubblica: «Chi è entrato» con il risparmio.
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$visit->get('/registrati');
+$visit->post('/registrati', ['name' => 'Bruno Amico', 'email' => 'bruno7d@prova.test', 'email2' => 'bruno7d@prova.test', 'password' => 'BrunoProva1234', 'termini' => '1']);
+$bacc = $accDi('bruno7d@prova.test');
+prova('7D · l\'amico registrato dal link è legato all\'invito', (string) val('SELECT status FROM referrals WHERE friend_account_id = ?', [$bacc]) === 'registrato');
+$r = $paola->get('/inviti');
+prova('…«Chi è entrato»: solo il nome e «Si è registrato»', str_contains($r['body'], 'Chi è entrato') && preg_match('#<b>Bruno</b>.*?Si è registrato#s', $r['body']) === 1 && !str_contains($r['body'], 'Bruno Amico'));
+db()->prepare("UPDATE referrals SET status = 'valido', qualified_at = ? WHERE friend_account_id = ?")->execute([gmdate('Y-m-d\TH:i:s\Z'), $bacc]);
+$r = $paola->get('/inviti');
+prova('…ha pubblicato: «Ti ha fatto risparmiare» e in cima «Finora hai risparmiato … sul prossimo rinnovo»', str_contains($r['body'], 'Ha pubblicato la guida')
+      && preg_match('#Ti ha fatto risparmiare <b>[\d,.]+\x{00A0}€</b>#u', $r['body']) === 1 && preg_match('#Finora hai risparmiato <b>[\d,.]+\x{00A0}€</b> sul prossimo rinnovo#u', $r['body']) === 1);
+// Lo sconto di chi ha un abbonamento dello staff: da applicare a mano.
+$admin->get('/admin/cliente/' . $darioAcc);   // un abbonamento dello staff nuovo: quello di prima potrebbe essere scaduto nelle prove delle scadenze
+$admin->post("/admin/cliente/$darioAcc/abbonamento", ['pv' => pv('plus'), 'mesi' => '12', 'nota' => 'Prova 7D']);
+db()->prepare("INSERT INTO referrals (referrer_account_id, friend_account_id, status, created_at, qualified_at) VALUES (?, ?, 'valido', ?, ?)")
+    ->execute([$darioAcc, $accDi('rita@prova.test'), gmdate('Y-m-d\TH:i:s\Z'), gmdate('Y-m-d\TH:i:s\Z')]);
+$r = $admin->get('/admin/inviti');
+prova('7D · Amministrazione → Inviti: «Da applicare a mano al rinnovo» con l\'importo, per l\'abbonamento dello staff', str_contains($r['body'], 'Da applicare a mano al rinnovo')
+      && preg_match('#dario@prova\.test.*?−5%</b> · [\d,.]+\x{00A0}€#us', $r['body']) === 1);
+$admin->post("/admin/inviti/applicato/$darioAcc", []);
+prova('…«Applicato» chiude gli inviti come già scontati', (int) val("SELECT COUNT(*) FROM referrals WHERE referrer_account_id = ? AND status = 'usato' AND used_ref = 'manuale'", [$darioAcc]) === 1
+      && !str_contains($admin->get('/admin/inviti')['body'], 'Da applicare a mano al rinnovo'));
+$r = $dario->get('/inviti');
+prova('…e dario vede che lo sconto lo applichiamo noi (regole)', str_contains($r['body'], 'lo applichiamo noi al rinnovo'));
+
+// Giudizi dei clienti.
+db()->prepare('UPDATE properties SET published_at = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() - 20 * 86400), $pp6]);
+prova('7D · giudizio: prima dei 30 giorni dalla pubblicazione il riquadro non c\'è', !str_contains($paola->get('/pannello')['body'], 'Ti sta piacendo MyHouse Welcome?'));
+db()->prepare('UPDATE properties SET published_at = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() - 32 * 86400), $pp6]);
+$r = $paola->get('/pannello');
+prova('…dopo 30 giorni sì, con il bottone verso il modulo', str_contains($r['body'], 'Ti sta piacendo MyHouse Welcome?') && str_contains($r['body'], '/giudizio">Dai il tuo giudizio'));
+$paola->post('/giudizio/chiudi', []);
+prova('…chiuso non c\'è', !str_contains($paola->get('/pannello')['body'], 'Ti sta piacendo MyHouse Welcome?'));
+db()->prepare('UPDATE accounts SET giudizio_chiuso_at = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() - 61 * 86400), $pacc]);
+prova('…torna dopo 60 giorni', str_contains($paola->get('/pannello')['body'], 'Ti sta piacendo MyHouse Welcome?'));
+$paola->post('/giudizio/chiudi', []);
+db()->prepare('UPDATE accounts SET giudizio_chiuso_at = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() - 200 * 86400), $pacc]);
+prova('…una volta sola: chiuso due volte non torna più', !str_contains($paola->get('/pannello')['body'], 'Ti sta piacendo MyHouse Welcome?'));
+$prima = count($posta('paola@prova.test')); $cron();
+$m = $posta('paola@prova.test'); $ult = end($m) ?: [];
+prova('7D · email «Ti sta piacendo MyHouse Welcome?» a 30 giorni, una volta sola', count($m) === $prima + 1 && str_contains((string) ($ult['subject'] ?? ''), 'Ti sta piacendo MyHouse Welcome?')
+      && str_contains((string) $ult['text'], '/giudizio'), json_encode($ult['subject'] ?? null));
+$cron();
+prova('…non si ripete', count($posta('paola@prova.test')) === $prima + 1);
+$r = $paola->get('/giudizio');
+prova('7D · modulo: 5 stelle obbligatorie, testo 20–400, scelta della foto con la copertina, consenso con il testo intero', $r['code'] === 200 && substr_count($r['body'], 'name="rating"') === 5
+      && str_contains($r['body'], 'minlength="20" maxlength="400"') && str_contains($r['body'], 'value="copertina"') && str_contains($r['body'], 'Il link della mia guida non viene pubblicato.'));
+$r = $paola->post('/giudizio', ['rating' => '5', 'body' => 'Corto', 'photo_source' => 'copertina']);
+prova('…testo troppo corto: errore, niente salvato', str_contains($r['body'], 'almeno 20 caratteri') && !val('SELECT id FROM testimonials WHERE account_id = ?', [$pacc]));
+$r = $paola->post('/giudizio', ['rating' => '5', 'body' => 'Gli ospiti non mi chiedono più il Wi-Fi alle undici di sera.', 'photo_source' => 'copertina']);
+$gid = (int) val('SELECT id FROM testimonials WHERE account_id = ?', [$pacc]);
+prova('…senza consenso: arriva solo a noi, «in_attesa», e non si può pubblicare', $gid > 0 && str_contains($r['body'], 'Resta tra noi')
+      && (string) val('SELECT status FROM testimonials WHERE id = ?', [$gid]) === 'in_attesa' && val('SELECT consent_at FROM testimonials WHERE id = ?', [$gid]) === null);
+$admin->post("/admin/testimonianze/$gid/pubblica", []);
+prova('…Pubblica senza consenso: rifiutato', (string) val('SELECT status FROM testimonials WHERE id = ?', [$gid]) === 'in_attesa' && !str_contains($ospite->get('/')['body'], 'alle undici di sera'));
+$r = $admin->get('/admin/testimonianze');
+prova('7D · Amministrazione → Testimonianze: i giudizi in attesa in cima, «Senza consenso»', strpos($r['body'], 'Giudizi dei clienti') < strpos($r['body'], 'Scritte da noi') && str_contains($r['body'], 'Senza consenso: non si può pubblicare.'));
+$paola->post('/giudizio', ['rating' => '5', 'body' => 'Gli ospiti non mi chiedono più il Wi-Fi alle undici di sera.', 'photo_source' => 'copertina', 'consenso' => '1']);
+prova('…con il consenso: salvato con il testo del consenso', str_contains((string) val('SELECT consent_text FROM testimonials WHERE id = ?', [$gid]), 'Posso ritirare il consenso quando voglio'));
+$admin->post("/admin/testimonianze/$gid/pubblica", []);
+$r = $ospite->get('/');
+prova('7D · pubblicato: in home con le stelle, il nome (senza cognome), struttura e città, la foto', str_contains($r['body'], 'alle undici di sera') && str_contains($r['body'], 'aria-label="5 su 5"')
+      && preg_match('#<b>Paola</b><span class="small muted">Casa Paola, Todi</span>#', $r['body']) === 1 && !str_contains($r['body'], 'Paola Cambio'));
+prova('…con meno di 5 giudizi niente media, e mai aggregateRating', !str_contains($r['body'], 'voci__media') && !str_contains($r['body'], 'aggregateRating'));
+$ins = db()->prepare("INSERT INTO testimonials (name, property_name, body, photo_storage, photo_key, visible, position, created_at, account_id, rating, photo_source, status, consent_at, consent_text)
+                      VALUES (?, 'Casa', 'Testo di prova per la media dei giudizi.', '', '', 1, 0, ?, ?, ?, 'nessuna', 'pubblicata', ?, 'x')");
+foreach ([4, 5, 4, 5] as $i => $v) $ins->execute(['Host' . $i, gmdate('Y-m-d\TH:i:s\Z'), 900000 + $i, $v, gmdate('Y-m-d\TH:i:s\Z')]);
+$r = $ospite->get('/');
+prova('7D · da 5 giudizi pubblicati: «4,6 su 5 da 5 host»', str_contains($r['body'], '4,6 su 5</b> da 5 host') && !str_contains($r['body'], 'aggregateRating'));
+db()->exec('DELETE FROM testimonials WHERE account_id >= 900000');
+$r = $paola->get('/account');
+prova('7D · Account: il giudizio con «Ritira il consenso»', str_contains($r['body'], 'Il tuo giudizio su MyHouse Welcome') && str_contains($r['body'], 'Ritira il consenso'));
+$paola->post('/account/giudizio/ritira', []);
+prova('…ritirato: sparisce subito dalla home', !str_contains($ospite->get('/')['body'], 'alle undici di sera') && val('SELECT withdrawn_at FROM testimonials WHERE id = ?', [$gid]) !== null);
+$admin->post("/admin/testimonianze/$gid/pubblica", []);
+prova('…e l\'amministrazione non lo può ripubblicare', !str_contains($ospite->get('/')['body'], 'alle undici di sera'));
+$prima = count($posta('info@welcomemyhouse.it'));
+$paola->post('/giudizio', ['rating' => '2', 'body' => 'Mi manca la possibilità di stampare tutta la guida.', 'photo_source' => 'nessuna']);
+$m = $posta('info@welcomemyhouse.it'); $ult = end($m) ?: [];
+prova('7D · da 1 a 3 stelle: «Ti scriviamo» e un\'email a noi con il giudizio', count($m) === $prima + 1 && str_contains((string) ($ult['subject'] ?? ''), 'Giudizio da 2/5')
+      && str_contains((string) $ult['text'], 'stampare tutta la guida'), json_encode($ult['subject'] ?? null));
+@unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

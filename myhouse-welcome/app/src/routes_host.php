@@ -109,6 +109,7 @@ $r->get('/pannello', function () use ($host) {
         'piano' => $gov ? Plans::version($gov) : null,
         'maxProp' => Entitlements::limit((int) $acc['id'], 'properties', 1), 'nav' => 'guide',
         'bloccate' => Entitlements::lockedIds((int) $acc['id']),
+        'chiediGiudizio' => MHW\Testimonianze::daChiedere($acc),
         // Portfolio pagato e pieno: «Aggiungi una struttura» resta, e porta alla conferma col costo.
         'aggiungiPagando' => ($s = Subscriptions::active((int) $acc['id'])) && ($v = Plans::version((int) $s['package_version_id'])) && Plans::perProperty($v)
                              && (int) $s['quantity'] < (int) $v['max_quantity'],
@@ -1039,6 +1040,7 @@ $paginaAccount = function (array $u, array $acc, array $extra = []) use ($tornaV
                              JOIN packages pk ON pk.id = pv.package_id WHERE o.account_id = ? ORDER BY o.id DESC LIMIT 10', [$acc['id']]),
         'portale' => Stripe::enabled() && Config::get('stripe')['customer_portal'] && $acc['stripe_customer_id'] !== '',
         'fatt' => $acc, 'erroriFatt' => [], 'torna' => $tornaValido($torna) ? $torna : '',
+        'giudizio' => MHW\Testimonianze::diAccount((int) $acc['id']),
         'nav' => 'account',
     ], 'layout/cms');
     exit;
@@ -1050,18 +1052,63 @@ $r->get('/account', function () use ($host, $paginaAccount) {
 });
 
 // ------------------------------------------------------------ Invita un amico
-/* Il link personale, la barra degli inviti e gli amici invitati. Solo per chi può
-   invitare: inviti accesi e abbonamento Stripe attivo. */
+/* Il link personale, la barra degli inviti e gli amici invitati. Per chi ha un abbonamento
+   attivo, di qualsiasi tipo (7D); gli altri vedono come funziona e il bottone verso «Pubblica». */
 $r->get('/inviti', function () use ($host) {
     [$u, $acc] = $host();
     if (!MHW\Inviti::disponibili()) { http_response_code(404); View::out('pub/404', []); }
     // Chi non può ancora invitare vede la pagina e il motivo, non un rimando.
     $puo = MHW\Inviti::puoInvitare($acc);
+    $prima = Db::one('SELECT id, status FROM properties WHERE account_id = ? AND archived_at IS NULL ORDER BY id LIMIT 1', [(int) $acc['id']]);
     View::out('host/inviti', [
         'user' => $u, 'acc' => $acc, 'puo' => $puo, 'inv' => $puo ? MHW\Inviti::stato($acc) : null,
-        'amici' => $puo ? MHW\Inviti::amici((int) $acc['id']) : [], 'perEmail' => $puo ? MHW\Inviti::invitiEmail((int) $acc['id']) : [],
+        'entrati' => $puo ? MHW\Inviti::entrati($acc) : [], 'perEmail' => $puo ? MHW\Inviti::invitiEmail((int) $acc['id']) : [],
         'codice' => $puo ? MHW\Inviti::codice($acc) : '', 'sub' => MHW\Subscriptions::active((int) $acc['id']), 'nav' => 'inviti',
+        'messaggio' => $puo ? MHW\Inviti::messaggio($acc) : '', 'anteprima' => MHW\Inviti::anteprimaAccesa($acc),
+        'pubblica' => $prima ? '/pannello/' . (int) $prima['id'] . '/procedura/pubblica' : '/pannello/nuova',
     ], 'layout/cms');
+});
+
+/* La casella dell'anteprima dell'invito: copertina e nome della struttura, oppure un'anteprima generica. */
+$r->post('/inviti/anteprima', function () use ($host) {
+    [, $acc] = $host();
+    if (MHW\Migrator::columnExists('accounts', 'invite_preview')) {
+        Db::update('accounts', ['invite_preview' => !empty($_POST['mostra']) ? 1 : 0], 'id = :aid', ['aid' => (int) $acc['id']]);
+    }
+    Support::flash(!empty($_POST['mostra']) ? 'L\'anteprima dell\'invito mostra la tua copertina e il nome della struttura.' : 'L\'anteprima dell\'invito è generica.');
+    Support::redirect('/inviti');
+});
+
+// ------------------------------------------------------- giudizi sulla piattaforma (7D)
+/* «Ti sta piacendo MyHouse Welcome?»: voto, due righe per un altro host, foto e consenso.
+   Senza consenso il giudizio resta a noi; da 1 a 3 stelle ci scriviamo. */
+$r->any('/giudizio', function () use ($host) {
+    [$u, $acc] = $host();
+    if (!MHW\Testimonianze::giudizi()) { http_response_code(404); View::out('pub/404', []); }
+    $err = null; $fatto = null; $vecchi = $_POST;
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        try {
+            if (!MHW\RateLimit::hit('giudizio:' . (int) $acc['id'], 10, 3600)) throw new \RuntimeException('Troppi invii: riprova tra un\'ora.');
+            $fatto = MHW\Testimonianze::salvaGiudizio($acc, $u, $_POST);
+        } catch (\RuntimeException $e) { $err = $e->getMessage(); }
+    }
+    View::out('host/giudizio', ['user' => $u, 'acc' => $acc, 'err' => $err, 'fatto' => $fatto, 'vecchi' => $fatto ? [] : $vecchi,
+        'p' => MHW\Testimonianze::struttura((int) $acc['id']), 'gia' => MHW\Testimonianze::diAccount((int) $acc['id']), 'nav' => 'guide'], 'layout/cms');
+});
+
+$r->post('/giudizio/chiudi', function () use ($host) {
+    [, $acc] = $host();
+    MHW\Testimonianze::chiudiRichiesta((int) $acc['id']);
+    Support::redirect('/pannello');
+});
+
+/* «Ritira il consenso» da Account & Fatturazione: la testimonianza sparisce subito dalla home. */
+$r->post('/account/giudizio/ritira', function () use ($host) {
+    [, $acc] = $host();
+    $ok = MHW\Testimonianze::ritira((int) $acc['id']);
+    if ($ok) MHW\Auth::audit('testimonial.withdrawn', null, ['account_id' => (int) $acc['id']]);
+    Support::flash($ok ? 'Consenso ritirato: il tuo giudizio non si vede più sul sito.' : 'Non c\'era un consenso da ritirare.');
+    Support::redirect('/account#giudizio');
 });
 
 /* L'invito per email: il sito scrive agli indirizzi dati dal cliente, con il suo link e il suo codice. */

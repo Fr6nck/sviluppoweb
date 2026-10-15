@@ -332,14 +332,19 @@ $disegni = [
 
 <?php if (!empty($testimonianze)): /* solo testimonianze vere, inserite dall'amministratore */ ?>
 <section class="blocco voci" aria-labelledby="voci-titolo">
-  <div class="stack stack--sm"><span class="kicker"><?= $T('voci.kicker') ?></span><h2 id="voci-titolo" class="h-sezione"><?= $T('voci.titolo') ?></h2></div>
+  <div class="stack stack--sm"><span class="kicker"><?= $T('voci.kicker') ?></span><h2 id="voci-titolo" class="h-sezione"><?= $T('voci.titolo') ?></h2>
+    <?php /* 7D: la media solo da 5 giudizi pubblicati in su, e niente aggregateRating nei dati strutturati. */
+    if (($mediaVoci = MHW\Testimonianze::media())): ?>
+      <p class="voci__media"><span class="stelline" aria-hidden="true">★</span><b><?= Support::e(str_replace('.', ',', (string) $mediaVoci['media'])) ?> su 5</b> da <?= (int) $mediaVoci['n'] ?> host</p>
+    <?php endif; ?></div>
   <div class="grid grid-3" style="margin-top:24px">
     <?php foreach ($testimonianze as $t): ?>
       <figure class="panel voce">
+        <?php if ((int) $t['rating'] > 0): ?><span class="stelline voce__stelle" role="img" aria-label="<?= (int) $t['rating'] ?> su 5"><?= str_repeat('★', (int) $t['rating']) . str_repeat('☆', 5 - (int) $t['rating']) ?></span><?php endif; ?>
         <blockquote><p><?= Support::e($t['body']) ?></p></blockquote>
         <figcaption>
           <?php if ($t['foto']): ?><img src="<?= Support::e($t['foto']) ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?>
-          <span><b><?= Support::e($t['name']) ?></b><?php if ($t['property_name'] !== ''): ?><span class="small muted"><?= Support::e($t['property_name']) ?></span><?php endif; ?></span>
+          <span><b><?= Support::e($t['name']) ?></b><?php if ($t['property_name'] !== ''): ?><span class="small muted"><?= Support::e($t['property_name'] . ($t['city'] !== '' ? ', ' . $t['city'] : '')) ?></span><?php endif; ?></span>
         </figcaption>
       </figure>
     <?php endforeach; ?>

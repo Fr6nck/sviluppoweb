@@ -46,12 +46,49 @@ final class Inviti
 
     public static function amiciMassimi(): int { return intdiv(self::MASSIMO, self::PASSO); }
 
-    /** Invita chi ha un abbonamento Stripe attivo: è lì che si applica lo sconto. */
+    /**
+     * Invita chi ha un abbonamento attivo, di qualsiasi tipo (7D). Con Stripe lo sconto va da solo
+     * sull'abbonamento; con un abbonamento attivato dallo staff si registra e l'amministrazione lo
+     * applica a mano al rinnovo (aMano). Gli abbonamenti di esempio no: non si rinnovano.
+     */
     public static function puoInvitare(array $acc): bool
     {
         if (!self::disponibili()) return false;
         $s = Subscriptions::active((int) $acc['id']);
-        return $s !== null && $s['provider'] === 'stripe' && (string) $s['provider_subscription_id'] !== '';
+        return $s !== null && $s['provider'] !== 'dimostrazione';
+    }
+
+    /** Lo sconto di chi invita va applicato a mano: l'abbonamento non è su Stripe. */
+    public static function aMano(int $accountId): bool
+    {
+        $s = Subscriptions::active($accountId);
+        return $s !== null && ($s['provider'] !== 'stripe' || (string) $s['provider_subscription_id'] === '');
+    }
+
+    /**
+     * La guida di chi invita, per l'anteprima dell'invito (/i/CODICE): la prima pubblicata, non
+     * archiviata. Solo i campi che si possono mostrare: nome, città, copertina, slug.
+     */
+    public static function strutturaDi(int $accountId): ?array
+    {
+        return Db::one("SELECT id, account_id, name, city, cover_media_id, slug, palette FROM properties
+                        WHERE account_id = ? AND archived_at IS NULL AND status = 'published' ORDER BY is_demo, id LIMIT 1", [$accountId]);
+    }
+
+    /** L'anteprima dell'invito mostra copertina e nome della struttura? (casella in «Invita un amico», di serie sì) */
+    public static function anteprimaAccesa(array $acc): bool
+    {
+        if (!Migrator::columnExists('accounts', 'invite_preview')) return true;
+        return (int) Db::val('SELECT invite_preview FROM accounts WHERE id = ?', [(int) $acc['id']], 1) === 1;
+    }
+
+    /** Il messaggio pronto da mandare (7D), con struttura, link e codice già scritti. */
+    public static function messaggio(array $acc): string
+    {
+        $p = self::strutturaDi((int) $acc['id']);
+        return 'Ciao! Per ' . ($p ? $p['name'] : 'la mia struttura') . ' uso MyHouse Welcome: gli ospiti hanno check-in, Wi-Fi e consigli in un link e un QR, '
+             . 'e mi fanno molte meno domande. Guarda com\'è la mia: ' . self::link($acc) . '. Con questo link hai il ' . self::AMICO
+             . '% di sconto sul primo anno, il codice è ' . self::codice($acc) . '.';
     }
 
     // ------------------------------------------------------------ codice e link
@@ -340,7 +377,66 @@ final class Inviti
             'prezzo' => $prezzo, 'sconto' => $sconto, 'scontato' => $prezzo - $sconto, 'valuta' => (string) ($pv['currency'] ?? 'EUR'),
             'rinnovo' => (string) ($s['current_period_end'] ?? ''),
             'automatico' => $s !== null && (int) $s['cancel_at_period_end'] === 0,
+            'a_mano' => $s !== null && ($s['provider'] !== 'stripe' || (string) $s['provider_subscription_id'] === ''),
         ];
+    }
+
+    /**
+     * «Chi è entrato» (7D): per ogni amico il nome (solo il nome; senza, l'email mascherata), la sua
+     * struttura, lo stato e quanto ha fatto risparmiare sul prossimo rinnovo (il PASSO% del prezzo
+     * del tuo rinnovo, solo per gli inviti che contano adesso).
+     */
+    public static function entrati(array $acc): array
+    {
+        $aid = (int) $acc['id'];
+        $st = self::stato($acc);
+        $passo = (int) round($st['prezzo'] * self::PASSO / 100);
+        $righe = Db::all("SELECT r.id, r.status, r.created_at, r.qualified_at, r.friend_account_id, u.name, u.email,
+                                 (SELECT p.name FROM properties p WHERE p.account_id = r.friend_account_id AND p.archived_at IS NULL ORDER BY p.id LIMIT 1) AS struttura
+                          FROM referrals r JOIN accounts a ON a.id = r.friend_account_id JOIN users u ON u.id = a.user_id
+                          WHERE r.referrer_account_id = ? AND r.status <> 'annullato' ORDER BY r.id DESC LIMIT 50", [$aid]);
+        $out = [];
+        foreach ($righe as $r) {
+            $nome = trim((string) $r['name']);
+            $pubblicato = in_array($r['status'], ['valido', 'oltre', 'usato'], true);
+            $out[] = [
+                'nome' => $nome !== '' ? (preg_split('/\s+/', $nome)[0] ?? $nome) : self::maschera((string) $r['email']),
+                'struttura' => (string) ($r['struttura'] ?? ''),
+                'stato' => $pubblicato ? 'Ha pubblicato la guida' : 'Si è registrato',
+                'pubblicato' => $pubblicato, 'status' => (string) $r['status'],
+                'data' => (string) ($pubblicato ? ($r['qualified_at'] ?: $r['created_at']) : $r['created_at']),
+                'risparmio' => $r['status'] === 'valido' ? $passo : 0,
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * Per l'amministrazione: chi ha uno sconto inviti da applicare a mano al rinnovo (abbonamento
+     * attivato dallo staff), con la percentuale e l'importo calcolati sul prezzo del rinnovo.
+     */
+    public static function daApplicareAMano(): array
+    {
+        if (!self::disponibili()) return [];
+        $out = [];
+        foreach (Db::all("SELECT DISTINCT r.referrer_account_id AS id FROM referrals r WHERE r.status = 'valido'") as $x) {
+            $aid = (int) $x['id'];
+            if (!self::aMano($aid)) continue;
+            $u = Db::one('SELECT u.name, u.email FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [$aid]) ?: [];
+            $out[] = ['account_id' => $aid, 'nome' => (string) ($u['name'] ?? ''), 'email' => (string) ($u['email'] ?? '')] + self::stato(['id' => $aid]);
+        }
+        return $out;
+    }
+
+    /** L'amministrazione ha applicato a mano lo sconto al rinnovo: gli inviti che contavano si chiudono. */
+    public static function applicatoAMano(int $accountId): int
+    {
+        $n = 0;
+        foreach (Db::all("SELECT id FROM referrals WHERE referrer_account_id = ? AND status IN ('valido', 'oltre')", [$accountId]) as $r) {
+            Db::update('referrals', ['status' => 'usato', 'used_at' => Support::now(), 'used_ref' => 'manuale'], 'id = :id', ['id' => $r['id']]);
+            $n++;
+        }
+        return $n;
     }
 
     // ------------------------------------------------------------ inviti per email

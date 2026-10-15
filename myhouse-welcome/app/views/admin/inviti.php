@@ -21,6 +21,21 @@ $conta = array_count_values(array_column($righe, 'status')); ?>
     <div class="cifra cifra--ocra"><span class="cifra__testa">In preparazione</span><b class="cifra__valore"><?= (int) ($conta['registrato'] ?? 0) ?></b><span class="cifra__nota">registrati, non ancora paganti</span></div>
     <div class="cifra cifra--mare"><span class="cifra__testa">Già scontati</span><b class="cifra__valore"><?= (int) ($conta['usato'] ?? 0) ?></b><span class="cifra__nota">usati a un rinnovo</span></div>
   </div>
+  <?php if (!empty($aMano)): /* 7D: chi ha un abbonamento dello staff: lo sconto non va su Stripe */ ?>
+  <section class="panel stack" aria-labelledby="amano-titolo" style="gap:10px">
+    <h2 id="amano-titolo" style="font-size:20px;margin:0">Da applicare a mano al rinnovo</h2>
+    <p class="small muted" style="margin:0">Abbonamenti attivati dallo staff: lo sconto di chi invita si applica al rinnovo, a mano. Poi segnalo come applicato.</p>
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th>Cliente</th><th>Amici validi</th><th>Sconto</th><th>Rinnovo</th><th></th></tr></thead>
+      <tbody><?php foreach ($aMano as $m): ?>
+        <tr><td><a href="<?= b() ?>/admin/cliente/<?= (int) $m['account_id'] ?>"><?= Support::e($m['nome'] ?: $m['email']) ?></a><br><span class="tiny muted"><?= Support::e($m['email']) ?></span></td>
+          <td><?= (int) $m['validi'] ?></td>
+          <td><b>−<?= (int) $m['percento'] ?>%</b><?= (int) $m['sconto'] > 0 ? ' · ' . Support::e(Support::money((int) $m['sconto'], $m['valuta'])) . ' su ' . Support::e(Support::money((int) $m['prezzo'], $m['valuta'])) : '' ?></td>
+          <td class="small"><?= Support::e(Support::date($m['rinnovo'])) ?></td>
+          <td><form method="post" action="<?= b() ?>/admin/inviti/applicato/<?= (int) $m['account_id'] ?>" style="margin:0"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm">Applicato</button></form></td></tr>
+      <?php endforeach; ?></tbody></table></div>
+  </section>
+  <?php endif; ?>
   <?php if (!$righe): ?><p class="muted">Nessun invito.</p><?php else: ?>
   <div class="tablewrap"><table class="data">
     <thead><tr><th>Chi invita</th><th>Amico</th><th>Stato</th><th>Registrato</th><th>Ha pagato</th><th></th></tr></thead>

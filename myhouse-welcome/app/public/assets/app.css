@@ -2290,3 +2290,62 @@ fieldset{min-width:0}
   .testi__layout{grid-template-columns:minmax(0,1.15fr) minmax(360px,.85fr)}
   .testi__anteprima-col{display:flex}
 }
+
+/* 7D · Invita un amico: etichetta nella barra, pagina /i/CODICE, messaggio pronto, «Chi è entrato».
+   Giudizi dei clienti: riquadro in «Le mie guide», modulo con le stelle, stelle in home. */
+.lato__voce:has(.lato__etichetta){gap:10px;padding-right:8px}
+.lato__etichetta{margin-left:auto;flex:none;padding:1px 6px;border-radius:999px;background:var(--terracotta);color:#fff8f2;font-size:10.5px;letter-spacing:-.2px;font-weight:600;font-style:normal;line-height:16px;white-space:nowrap;font-variant-numeric:tabular-nums}
+ol.invito__passi{list-style:none;margin:0;padding:0}
+.invito__passo>span{font-size:15px;line-height:22px}
+.invito-messaggio textarea{min-height:120px}
+.invito-anteprima{display:flex;flex-direction:column;gap:6px;padding-top:12px;border-top:1px solid var(--line)}
+.invito-risparmio{display:flex;align-items:center;gap:8px;margin:0;padding:12px 16px;border-radius:var(--r-md);background:var(--pine-soft,#e3efe6);color:var(--ink);font-size:15px}
+.invito-risparmio svg{color:var(--pine,#1f6b3f);flex:none}
+.invito-entrati{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.invito-entrati .rowcard{flex-wrap:wrap}
+.invito-entrati__euro b{color:var(--pine,#1f6b3f)}
+.invito-pagina{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:40px;align-items:start}
+@media (min-width:861px){ .invito-pagina__testo{position:sticky;top:110px;padding-top:24px} }
+.invito-pagina__testo h1{text-wrap:balance}
+.invito-pagina__bottoni{gap:12px;flex-wrap:wrap}
+.invito-pagina__scheda{margin:0;display:flex;flex-direction:column;gap:12px;padding:12px;border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line);box-shadow:0 18px 40px -24px rgba(35,27,18,.35)}
+.invito-pagina__foto{aspect-ratio:1200/630;border-radius:calc(var(--r-xl) - 12px);overflow:hidden;background:var(--sunk)}
+.invito-pagina__foto img{width:100%;height:100%;object-fit:cover;display:block}
+.invito-pagina__vuota{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#fff}
+.invito-pagina__nome{display:flex;flex-direction:column;gap:2px;padding:0 4px}
+.invito-pagina__nome b{font-family:var(--serif,Gloock,serif);font-weight:400;font-size:24px;line-height:28px}
+.invito-pagina__riquadri{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.invito-pagina__riquadri li{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:12px;min-height:64px;font-size:14px;font-weight:500;line-height:18px}
+.invito-pagina__nota{display:flex;align-items:center;gap:6px;margin:0;padding:0 4px}
+@media (max-width:860px){ .invito-pagina{grid-template-columns:1fr;gap:28px} }
+.giudizio-invito{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:12px 20px;margin:24px 0 0;padding:18px 52px 18px 20px;border-radius:var(--r-lg);background:var(--ochre-soft,#f6ead0);border:1px solid var(--line)}
+.giudizio-invito__stelle{display:inline-flex;gap:2px;color:#b07d0c}
+.giudizio-invito__stelle svg{fill:currentColor}
+.giudizio-invito__testo{flex:1 1 260px;min-width:0}
+.giudizio-invito__testo h2{margin:0;font-size:20px;line-height:26px}
+.giudizio-invito__testo p{margin:2px 0 0}
+.giudizio-invito__chiudi{position:absolute;top:8px;right:8px;margin:0}
+.giudizio-invito__x{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:0;border-radius:999px;background:transparent;color:var(--muted);cursor:pointer}
+.giudizio-invito__x:hover{background:rgba(0,0,0,.06);color:var(--ink)}
+.giudizio-invito__x:focus-visible{outline:2px solid var(--focus,#1c5a78);outline-offset:2px}
+.stelle-scelta,.giudizio-foto{border:0;margin:0;padding:0;min-width:0}
+.stelle-scelta legend,.giudizio-foto legend{font-weight:500;margin-bottom:8px;padding:0}
+.stelle-scelta__fila{display:inline-flex;flex-direction:row-reverse;gap:4px}
+.stelle-scelta__fila label{display:inline-flex;padding:4px;border-radius:10px;color:#b07d0c;cursor:pointer}
+.stelle-scelta__fila label svg{fill:transparent;transition:fill .15s}
+.stelle-scelta__fila input:checked ~ label svg,.stelle-scelta__fila label:hover svg,.stelle-scelta__fila label:hover ~ label svg{fill:currentColor}
+.stelle-scelta__fila input:focus-visible + label{outline:2px solid var(--focus,#1c5a78);outline-offset:2px}
+.giudizio-foto__scelte{display:flex;flex-wrap:wrap;gap:10px}
+.giudizio-foto__scelta{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 12px;border-radius:var(--r-md);border:1px solid var(--line);cursor:pointer;min-width:120px;text-align:center}
+.giudizio-foto__scelta:has(input:checked){border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.giudizio-foto__scelta input{accent-color:var(--terracotta)}
+.giudizio-foto__img{display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;overflow:hidden;background:var(--sunk);color:var(--muted)}
+.giudizio-foto__img img{width:100%;height:100%;object-fit:cover}
+.giudizio-foto__img--copertina{border-radius:12px}
+.giudizio-consenso span{font-size:14px;line-height:21px}
+.giudizio-grazie__ico{display:inline-flex;width:52px;height:52px;align-items:center;justify-content:center;border-radius:50%;background:var(--ochre-soft,#f6ead0);color:#b07d0c}
+.giudizio-grazie__ico svg{fill:currentColor}
+.stelline{color:#b07d0c;letter-spacing:2px;font-size:16px}
+.voce__stelle{font-size:18px}
+.voci__media{display:flex;align-items:center;gap:6px;margin:4px 0 0;font-size:16px}
+@media (max-width:560px){ ol.invito__passi .invito__passo{flex-direction:row;align-items:flex-start;gap:12px;padding:14px 16px} ol.invito__passi .invito__passo i{flex:none} }

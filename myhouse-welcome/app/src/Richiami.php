@@ -12,6 +12,7 @@ namespace MHW;
  *   conferma — (7A) email non confermata: dopo 24 ore e, l'ultima volta, dopo 72, con un link nuovo
  *   pagamento — (7A) pagamento iniziato e annullato, e dopo 2 ore ancora nessun abbonamento
  *   parere   — (7A) 14 giorni dopo la registrazione, mai pubblicato: «Cosa ti ha fermato?»
+ *   giudizio — (7D) dal 30° al 40° giorno dopo la prima pubblicazione, una volta sola: «Ti sta piacendo?»
  *
  * Le finestre non si sovrappongono: una struttura riceve al massimo un richiamo
  * per volta, e chi aggiorna l'applicazione con bozze vecchie non riceve una
@@ -29,7 +30,8 @@ final class Richiami
                          'eventi' => 'il promemoria sugli eventi passati', 'inviti' => 'il promemoria sugli inviti',
                          'scadenza' => 'l\'avviso prima della scadenza',
                          'conferma' => 'il promemoria sulla conferma dell\'email', 'pagamento' => 'il promemoria sul pagamento',
-                         'parere' => 'la domanda su cosa ti ha fermato'];   // con l'articolo: «Non vuoi più ricevere …?»
+                         'parere' => 'la domanda su cosa ti ha fermato',
+                         'giudizio' => 'la richiesta di un giudizio su MyHouse Welcome'];   // con l'articolo: «Non vuoi più ricevere …?»
     /** Le risposte a un clic di «Cosa ti ha fermato?» (7A). */
     public const MOTIVI = ['prezzo' => 'Il prezzo', 'tempo' => 'Non ho avuto tempo', 'funzione' => 'Mi mancava una funzione', 'altro' => 'Altro'];
     /** I richiami del percorso: uno per volta, mai due a meno di due giorni l'uno dall'altro (7A). */
@@ -171,6 +173,23 @@ final class Richiami
                   'ti sei iscritto a MyHouse Welcome due settimane fa, ma la guida non è ancora online. Ci aiuti a capire perché? Basta un clic, non serve accedere.',
                   null, null, null, array_map(fn($k, $v) => [$v, $base . $k], array_keys(self::MOTIVI), self::MOTIVI)];
             if (self::manda($acc, $u['email'], (string) $u['user_name'], 'parere', 'primo', $m)) $fatte['parere']++;
+        }
+
+        // Giudizio (7D): dal 30° al 40° giorno dopo la prima pubblicazione, una volta sola, se non l'ha già dato.
+        // La finestra di 10 giorni: chi aggiorna l'applicazione non scrive a tutti i clienti di mesi fa.
+        if (Testimonianze::giudizi()) {
+            $prova = Migrator::columnExists('accounts', 'is_test') ? ' AND a.is_test = 0' : '';
+            foreach (Db::all("SELECT a.id AS acc_id, u.email, u.name AS user_name, MIN(p.published_at) AS prima FROM accounts a JOIN users u ON u.id = a.user_id
+                              JOIN properties p ON p.account_id = a.id WHERE p.is_demo = 0 AND p.published_at IS NOT NULL AND p.published_at <> '' AND u.email NOT LIKE ?$prova
+                              GROUP BY a.id, u.email, u.name", [$fuori]) as $g) {
+                $quando = (int) strtotime((string) $g['prima']);
+                if ($t - $quando < Testimonianze::DOPO_GIORNI * $giorno || $t - $quando > (Testimonianze::DOPO_GIORNI + 10) * $giorno) continue;
+                if (Testimonianze::diAccount((int) $g['acc_id'])) continue;
+                $m = ['Ti sta piacendo MyHouse Welcome?',
+                      'la tua guida è online da un mese. Ci dici com\'è andata? Bastano un voto e due righe per un altro host che sta decidendo se provarla. Se vuoi, con il tuo consenso, le pubblichiamo sul sito.',
+                      'Dai il tuo giudizio', Support::baseUrl() . '/giudizio'];
+                if (self::manda((int) $g['acc_id'], $g['email'], (string) $g['user_name'], 'giudizio', 'primo', $m)) $fatte['giudizio']++;
+            }
         }
 
         Inviti::inSospeso();   // gli sconti inviti che Stripe non ha ancora preso

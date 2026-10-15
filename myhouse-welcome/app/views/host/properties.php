@@ -50,6 +50,8 @@ $nome = $nome !== '' ? explode(' ', $nome)[0] : ''; ?>
   </a>
 </div>
 
+<?php include __DIR__ . '/_giudizio_invito.php'; /* 7D: «Ti sta piacendo MyHouse Welcome?» */ ?>
+
 <?php include __DIR__ . '/_sito_invito.php'; ?>
 
 <div class="guide-griglia">
