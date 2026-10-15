@@ -3235,7 +3235,7 @@ $r = $vera->get('/pannello');
 prova('7B · pannello: «Scopri Portfolio» pieno e «Chiedi informazioni» per email', str_contains($r['body'], '<a class="btn btn--sm" href="' . preg_replace('#^https?://[^/]+#', '', $BASE) . '/piano?passa=portfolio">Scopri Portfolio</a>')
       && str_contains($r['body'], 'subject=Informazioni%20su%20Portfolio') && str_contains($r['body'], rawurlencode('Quante strutture vorrei gestire:')) && str_contains($r['body'], '>Chiedi informazioni</a>'));
 prova('8B · «Hai già un sito per la tua struttura?»: logo MyHouse bianco, Sì / No che aprono il percorso compatto in un <dialog>, ✕ e «Non mostrare più»',
-      str_contains($r['body'], 'Hai già un sito per la tua struttura?') && str_contains($r['body'], 'myhouse-logo-bianco.png')
+      str_contains($r['body'], 'Hai già un sito per la tua struttura?') && str_contains($r['body'], 'myhouse-logo-bianco-breve.png?v=')
       && str_contains($r['body'], 'data-funnel-apri="si" data-funnel-dialogo="dlg-sito-guide"') && str_contains($r['body'], 'data-funnel-apri="no"')
       && preg_match('#<dialog class="funnel-dialogo" id="dlg-sito-guide".*?funnel funnel--nojs funnel--compatta.*?data-da="pannello"#s', $r['body']) === 1
       && str_contains($r['body'], 'data-sito-chiudi') && str_contains($r['body'], 'Non mostrare più'));
@@ -3722,7 +3722,7 @@ prova('…riquadro: in grande il tempo («11 ore»), sotto le giornate, poi gli 
 prova('…le frasi del cursore vengono da «Testi e foto» (nessun «Riferimento» scritto a mano)', str_contains($tempo, 'Riferimento: <b>16 min</b> a prenotazione')
       && substr_count((string) file_get_contents("$DOVE/app/views/pub/_tempo.php"), 'Riferimento:') === 0);
 $sito = preg_match('#<section id="sito".*?</section>#s', $r['body'], $m) ? $m[0] : '';
-prova('8A · «Anche il tuo sito»: logo MyHouse bianco, «un servizio a parte», domanda 1 con Sì / No e i contatti diretti', str_contains($sito, '/assets/myhouse/myhouse-logo-bianco.png" alt="MyHouse — Il tuo sito, le tue prenotazioni"')
+prova('8A · «Anche il tuo sito»: logo MyHouse bianco, «un servizio a parte», domanda 1 con Sì / No e i contatti diretti', preg_match('#/assets/myhouse/myhouse-logo-bianco\.png\?v=\d+" alt="MyHouse — Il tuo sito, le tue prenotazioni"#', $sito) === 1
       && str_contains($sito, '<b>MyHouse è un servizio a parte</b> di Blackout Agency') && str_contains($sito, 'Hai già un sito per la tua struttura?')
       && str_contains($sito, 'data-ha="si"') && str_contains($sito, 'data-ha="no"') && str_contains($sito, 'Oppure scrivici subito:') && str_contains($sito, 'WhatsApp +39 392 006 1600'));
 prova('…il percorso: scelte di «Sì» (con Altro), i tre punti di «No», i tre bottoni finali e, senza JavaScript, i contatti con il messaggio di serie',
@@ -3778,7 +3778,7 @@ prova('8B · …un\'istantanea vecchia con reviews: i link scritti dall\'host si
 $lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1']);
 $r = $lucia->get("/pannello/$casa8/impostazioni");
 prova('8B · «Hai un sito dove gli ospiti possono prenotare?» Sì: i campi e la striscia MyHouse con «Scopri come» (percorso al passo Sì)',
-      str_contains($r['body'], 'name="has_site" value="1" checked') && str_contains($r['body'], 'myhouse-logo-nero.png') && preg_match('#data-sito-si>#', $r['body']) === 1
+      str_contains($r['body'], 'name="has_site" value="1" checked') && str_contains($r['body'], 'myhouse-logo-nero-breve.png?v=') && preg_match('#data-sito-si>#', $r['body']) === 1
       && str_contains($r['body'], 'data-funnel-apri="si" data-funnel-dialogo="dlg-sito"') && preg_match('#data-sito-no hidden#', $r['body']) === 1);
 $lucia->post("/pannello/$casa8/dopo-il-soggiorno", ['portali' => ['booking', 'google'], 'has_site' => '0', 'direct_url' => 'https://www.esempio.it/prenota', 'direct_code' => 'TORNA']);
 $r = $lucia->get("/pannello/$casa8/impostazioni");

@@ -13,7 +13,7 @@ foreach ($props ?? [] as $pp) if (empty($pp['archived_at']) && (int) ($pp['is_de
 $haSitoBox = $primaSito && array_key_exists('has_site', $primaSito) && $primaSito['has_site'] !== null ? ((int) $primaSito['has_site'] === 1 ? 'si' : 'no') : ''; ?>
 <aside class="sito-invito sito-invito--domanda" data-sito-invito aria-labelledby="sito-invito-titolo">
   <button type="button" class="sito-invito__chiudi" data-sito-chiudi aria-label="Non ora: nascondi per 30 giorni" hidden><?= Icon::svg('close', 18, 2) ?></button>
-  <img class="sito-invito__logo" src="<?= Support::e(a('/assets/myhouse/myhouse-logo-bianco.png')) ?>" alt="MyHouse" width="98" height="32">
+  <img class="sito-invito__logo" src="<?= Support::e(MHW\av('/assets/myhouse/myhouse-logo-bianco-breve.png')) ?>" alt="MyHouse" width="140" height="32">
   <div class="sito-invito__testo">
     <h2 class="sito-invito__titolo" id="sito-invito-titolo">Hai già un sito per la tua struttura?</h2>
     <p>Con un sito tuo gli ospiti prenotano senza commissioni. Ti aiutiamo a farlo o a migliorarlo.</p>

@@ -106,13 +106,13 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
         </div>
       </div>
       <div class="striscia-myhouse">
-        <img src="<?= Support::e(MHW\a('/assets/myhouse/myhouse-logo-nero.png')) ?>" alt="MyHouse" width="80" height="26">
+        <img src="<?= Support::e(MHW\av('/assets/myhouse/myhouse-logo-nero-breve.png')) ?>" alt="MyHouse" width="114" height="26">
         <span>Vuoi un sito più bello, più visibile su Google o con la prenotazione diretta? Lo miglioriamo noi.</span>
         <button type="button" class="linkbtn striscia-myhouse__vai" data-funnel-apri="si" data-funnel-dialogo="dlg-sito">Scopri come <?= Icon::svg('external', 14, 2) ?></button>
       </div>
       </div>
       <div class="striscia-myhouse striscia-myhouse--crea" data-sito-no<?= $haSito === 0 ? '' : ' hidden' ?>>
-        <img src="<?= Support::e(MHW\a('/assets/myhouse/myhouse-logo-nero.png')) ?>" alt="MyHouse" width="80" height="26">
+        <img src="<?= Support::e(MHW\av('/assets/myhouse/myhouse-logo-nero-breve.png')) ?>" alt="MyHouse" width="114" height="26">
         <span><b>Crealo con noi.</b> Un sito tuo, con la prenotazione diretta: meno commissioni ai portali e ospiti che tornano da te.</span>
         <?php $waNumero = preg_replace('/\D/', '', (string) ((MHW\Config::get('legal') ?? [])['contact_whatsapp'] ?? ''));
               $msgSito = 'Ciao, ho una guida MyHouse Welcome per ' . $prop['name'] . '. Non ho ancora un sito per la mia struttura e vorrei crearlo. Mi date una proposta?'; ?>

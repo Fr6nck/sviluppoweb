@@ -1,5 +1,12 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Il nuovo logo MyHouse (15 ottobre 2026)
+
+Nessuna migrazione.
+
+- **Logo MyHouse** (il servizio dei siti, non la guida) sostituito con quello nuovo: casa con porta magenta. Nella home («Anche il tuo sito», sfondo scuro) c'è la versione bianca con «Il tuo sito, le tue prenotazioni»; nel pannello («Hai già un sito per la tua struttura?») e in Impostazioni della struttura (le strisce «Lo miglioriamo noi» e «Crealo con noi») la versione senza frase, che a quell'altezza resta leggibile.
+- I file sono in `assets/myhouse/` (`myhouse-logo-bianco.png`, `myhouse-logo-nero.png`, `myhouse-logo-bianco-breve.png`, `myhouse-logo-nero-breve.png`) e ora hanno `?v=` nell'indirizzo, così il browser non tiene in memoria il logo vecchio.
+
 ## v2 · I bottoni «Email» funzionano anche senza programma di posta (15 ottobre 2026)
 
 Nessuna migrazione.

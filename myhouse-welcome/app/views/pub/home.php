@@ -539,7 +539,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
   </picture>
   <div class="sito2__dentro">
     <div class="sito2__testo">
-      <img class="sito2__logo" src="<?= Support::e(a('/assets/myhouse/myhouse-logo-bianco.png')) ?>" alt="<?= TestiSito::testo('sito2.logo') ?>" width="160" height="52" loading="lazy">
+      <img class="sito2__logo" src="<?= Support::e(MHW\av('/assets/myhouse/myhouse-logo-bianco.png')) ?>" alt="<?= TestiSito::testo('sito2.logo') ?>" width="168" height="52" loading="lazy">
       <span class="sito2__kicker"><?= $T('sito2.kicker') ?></span>
       <h2 id="sito-titolo" class="sito2__titolo"><?= $T('sito2.titolo') ?><br><span class="sito2__accento"><?= $T('sito2.accento') ?></span></h2>
       <p class="sito2__lead"><?= $T('sito2.lead') ?></p>
