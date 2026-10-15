@@ -172,6 +172,8 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 
 La demo della landing si sposta su un account vero, quello dell'agenzia.
 
+**Dopo l'aggiornamento della fase 8 (8D): premi «Rifai la vetrina».** La vetrina online è stata creata prima delle sezioni nuove (Riscaldamento e Aria condizionata separate, piattaforme, messaggi, email per gli ospiti): in **Amministrazione → Clienti → account della vetrina** premi **«Rifai la vetrina»**. La nuova ha tutte le sezioni del catalogo compilate e tradotte in inglese, francese, tedesco e spagnolo, e il telefono della home mostra tutte le sue sezioni. Se invece vuoi tenere le modifiche fatte a mano, usa **«Completa le traduzioni della vetrina»**: scrive solo i campi ancora vuoti nelle altre lingue e ripubblica. Per controllare, dalla riga di comando: `php app/tools/vetrina-mancanti.php` (deve dare 0 in tutte e quattro le lingue).
+
 **Da questa versione la vetrina si crea da sola.** Alla prima apertura del sito (o del Quadro) dopo il caricamento, Casa Checco nasce nell'account **blackout.agency@gmail.com**, con Plus dimostrativo per 12 mesi se l'account non ha un piano.
 - Succede solo se l'account esiste e non ha già una vetrina. L'esito è scritto in `app/storage/vetrina-automatica.txt`: cancellando quel file si riprova.
 - Per un altro account imposta `MHW_VETRINA_EMAIL`; per spegnere la creazione automatica, lascia la variabile vuota.

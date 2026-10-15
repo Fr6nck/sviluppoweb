@@ -166,4 +166,8 @@ return [
     "Lenzuola e asciugamani si cambiano ogni tre notti, o prima se lo chiedi.\nRiscaldamento e aria condizionata hanno le loro sezioni, con gli orari." => "Las sábanas y las toallas se cambian cada tres noches, o antes si lo pides.\nLa calefacción y el aire acondicionado tienen sus propias secciones, con los horarios.",
     'Le mura in pietra tengono il caldo d\'inverno: di solito bastano gli orari impostati.' => 'Los muros de piedra mantienen el calor en invierno: normalmente bastan los horarios programados.',
     'Le mura in pietra tengono il fresco d\'estate: di solito bastano poche ore di condizionatore.' => 'Los muros de piedra mantienen la casa fresca en verano: normalmente bastan unas pocas horas de aire acondicionado.',
+    // 8D: le note che mancavano
+    'In centro storico si gira a piedi: i vicoli sono ripidi, conviene avere scarpe comode.' => 'En el casco antiguo todo se recorre a pie: las callejuelas son empinadas, conviene llevar calzado cómodo.',
+    'Il mio consiglio: sali all\'Eremo la mattina presto, quando il bosco è fresco e c\'è silenzio.' => 'Mi consejo: sube a la Ermita temprano por la mañana, cuando el bosque está fresco y en silencio.',
+    'La rocciata del Forno del Subasio è la merenda che portiamo sempre a chi viene a trovarci.' => 'La rocciata del Forno del Subasio es la merienda que siempre llevamos a los amigos que vienen a vernos.',
 ];

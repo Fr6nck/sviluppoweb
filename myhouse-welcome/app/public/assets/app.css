@@ -2568,3 +2568,14 @@ ol.invito__passi{list-style:none;margin:0;padding:0}
 .lingue-altre summary{cursor:pointer;font-weight:500;min-height:44px;display:flex;align-items:center;gap:6px}
 .lingue-altre summary:focus-visible{outline:3px solid var(--focus,#1c5a78);outline-offset:2px;border-radius:8px}
 .novita__nota{display:block;margin-top:4px;font-weight:500}
+
+/* 8D · Il telefono della home: tutte le sezioni della vetrina, in una griglia che scorre dentro lo
+   schermo, senza barra, con una sfumatura in basso. */
+.device__tiles--tutte{flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start;padding-bottom:36px;
+  scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;
+  -webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 56px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 56px),transparent)}
+.device__tiles--tutte::-webkit-scrollbar{display:none}
+.device__tiles--tutte span{height:76px;flex:none}
+.device:has(.device__tiles--tutte){min-height:0;height:auto}
+.device:has(.device__tiles--tutte) .device__screen{min-height:0}
+.device:has(.device__tiles--tutte) .device__app{overflow:hidden}

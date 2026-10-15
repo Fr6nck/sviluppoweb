@@ -160,6 +160,23 @@ final class Demo
         if (Canali::disponibili()) {
             Canali::salva($pid, ['portali' => ['google', 'booking', 'airbnb', 'vrbo'], 'social' => ['instagram' => '@casacheccoassisi']]);
         }
+        // 8D: le due parole di benvenuto nel foglio della foto, lo sconto per chi torna, il sito (senza indirizzo: sarebbe
+        // di qualcun altro), l'email per gli ospiti (di fantasia, come gli indirizzi), i messaggi da mandare su WhatsApp.
+        $altri = ['host_welcome' => json_encode([
+                      'it' => 'Benvenuti! Casa Checco era la casa di mia nonna: spero vi ci sentiate a casa. Per qualsiasi cosa, scrivetemi.',
+                      'en' => 'Welcome! Casa Checco was my grandmother\'s house: I hope you feel at home. For anything at all, just message me.',
+                      'fr' => 'Bienvenue ! Casa Checco était la maison de ma grand-mère : j\'espère que vous vous y sentirez chez vous. Écrivez-moi pour tout.',
+                      'de' => 'Willkommen! Casa Checco war das Haus meiner Großmutter: Fühlen Sie sich wie zu Hause. Schreiben Sie mir bei allen Fragen.',
+                      'es' => '¡Bienvenidos! Casa Checco era la casa de mi abuela: espero que os sintáis como en casa. Para cualquier cosa, escribidme.'], JSON_UNESCAPED_UNICODE),
+                  'direct_discount' => '10%', 'has_site' => 1, 'guest_email' => 'ospiti@casachecco.example'];
+        $altri = array_filter($altri, fn($c) => Migrator::columnExists('properties', $c), ARRAY_FILTER_USE_KEY);
+        if ($altri) Db::update('properties', $altri, 'id = :pid', ['pid' => $pid]);
+        if (Messaggi::disponibili()) {
+            $pr = Db::one('SELECT * FROM properties WHERE id = ?', [$pid]);
+            Messaggi::salva($pr, 'benvenuto', 'it', "Ciao! Benvenuti a Casa Checco. Qui c'è la guida della casa: come arrivare in Piazza Matteotti, il Wi-Fi, dove parcheggiare e i nostri posti preferiti di Assisi.\n{link}\nA presto, {host}");
+            $pr = Db::one('SELECT * FROM properties WHERE id = ?', [$pid]);
+            Messaggi::salva($pr, 'saluto', 'it', "Grazie di essere stati da noi! Se Assisi vi è piaciuta, ci lasciate un voto? Ci vuole un minuto: {link}\nBuon viaggio, {host}");
+        }
         // La geolocalizzazione: Piazza Matteotti ad Assisi (serve anche a stimare i minuti a piedi dei luoghi).
         if (Migrator::columnExists('properties', 'lat')) Db::update('properties', ['lat' => self::CHECCO_LAT, 'lng' => self::CHECCO_LNG], 'id = :pid', ['pid' => $pid]);
         Properties::setLocales($acc, $pid, Entitlements::regolaLingue(Entitlements::limit($acc, 'locales', 1), Entitlements::limit($acc, 'lingua_extra', 0), 'it', ['it', 'en', 'de', 'fr', 'es']));
@@ -339,14 +356,16 @@ final class Demo
                         ['type' => 'lifts', 'name' => 'Scale mobili di Mojano', 'where' => 'Dal parcheggio Mojano a Piazza Santa Chiara.', 'note' => 'Utili per risalire senza fatica dalla parte bassa della città.'],
                         ['type' => 'taxi', 'name' => 'Radio Taxi Assisi', 'phone' => '+39 075 813100', 'note' => 'In centro i taxi si chiamano per telefono.'],
                         ['type' => 'bike_rental', 'name' => 'E-bike per la pianura', 'note' => 'Le prenota Francesco a Santa Maria degli Angeli: in pianura c\'è la ciclovia verso Spello e Foligno.'],
-                        ['type' => 'car_rental', 'name' => 'Noleggio auto', 'where' => 'A Santa Maria degli Angeli, vicino alla stazione.', 'note' => 'Comodo per Spello, Perugia, Gubbio e il lago Trasimeno.']]],
+                        ['type' => 'car_rental', 'name' => 'Noleggio auto', 'where' => 'A Santa Maria degli Angeli, vicino alla stazione.', 'note' => 'Comodo per Spello, Perugia, Gubbio e il lago Trasimeno.']],
+                     'note' => 'In centro storico si gira a piedi: i vicoli sono ripidi, conviene avere scarpe comode.'],
             'en' => ['options' => [['name' => 'On foot', 'note' => "From the house: San Rufino cathedral 3 minutes, Basilica of Saint Clare 8, Piazza del Comune 8, Rocca Maggiore 12.\nThe Basilica of Saint Francis is twenty-five minutes downhill: take the bus back."],
                                    ['name' => 'Busitalia line C', 'where' => 'Last stop in Piazza Matteotti, two minutes on foot.',
                                     'note' => "It goes down to San Francesco, Santa Maria degli Angeli and the station, and back up to Piazza Matteotti.\nTickets €1.30 at the tobacconist, €1.50 on board. Timetables differ on weekdays and holidays: check them online."],
                                    ['name' => 'Mojano escalators', 'where' => 'From the Mojano car park to Piazza Santa Chiara.', 'note' => 'Handy for getting back up from the lower part of town without effort.'],
                                    ['name' => 'Radio Taxi Assisi', 'note' => 'In the centre taxis are called by phone.'],
                                    ['name' => 'E-bikes for the plain', 'note' => 'Francesco books them in Santa Maria degli Angeli: on the plain there is the cycle route to Spello and Foligno.'],
-                                   ['name' => 'Car hire', 'where' => 'In Santa Maria degli Angeli, near the station.', 'note' => 'Handy for Spello, Perugia, Gubbio and Lake Trasimeno.']]],
+                                   ['name' => 'Car hire', 'where' => 'In Santa Maria degli Angeli, near the station.', 'note' => 'Handy for Spello, Perugia, Gubbio and Lake Trasimeno.']],
+                     'note' => 'In the old town you get around on foot: the alleys are steep, comfortable shoes help.'],
         ], 'Muoversi in zona');
 
         // -------- Rifiuti
@@ -504,7 +523,10 @@ final class Demo
                  ['web' => 'https://www.porziuncola.org', 'nota' => 'Con la linea C dell\'autobus, da Piazza Matteotti.', 'en' => ['Down on the plain, the great basilica that holds the Porziuncola, the little church of Saint Francis, and the Chapel of the Transitus where he died.', 'Take bus line C from Piazza Matteotti.']]],
             ]);
             $fare = Properties::addSection($acc, $pid, 'todo');
-            self::scrivi($pid, $fare, ['it' => ['intro' => 'Per riempire le giornate, in città e sul Subasio, che comincia appena fuori dalle mura.'], 'en' => ['intro' => 'To fill your days, in town and on Mount Subasio, which starts just outside the walls.']], 'Cosa fare');
+            self::scrivi($pid, $fare, ['it' => ['intro' => 'Per riempire le giornate, in città e sul Subasio, che comincia appena fuori dalle mura.',
+                                                'host_note' => 'Il mio consiglio: sali all\'Eremo la mattina presto, quando il bosco è fresco e c\'è silenzio.'],
+                                       'en' => ['intro' => 'To fill your days, in town and on Mount Subasio, which starts just outside the walls.',
+                                                'host_note' => 'My tip: walk up to the Hermitage early in the morning, when the woods are cool and quiet.']], 'Cosa fare');
             $luoghi($fare, [
                 ['A piedi all\'Eremo delle Carceri', 'hike', 'Il sentiero 350 parte da Porta Cappuccini e sale nel bosco del Subasio fino all\'eremo dove Francesco si ritirava a pregare: circa 3,5 km e 430 metri di dislivello, un\'ora abbondante all\'andata. Ingresso libero all\'eremo.', 'Porta Cappuccini', 6, 'challenging', 'pine', null, null, null,
                  ['nota' => 'Scarpe da trekking e acqua: lungo il sentiero non ci sono fontane.', 'en' => ['Trail 350 starts at Porta Cappuccini and climbs through the Subasio woods to the hermitage where Francis withdrew to pray: about 3.5 km and 430 metres of ascent, a good hour up. Free entry to the hermitage.', 'Hiking shoes and water: there are no fountains along the trail.']]],
@@ -518,7 +540,10 @@ final class Demo
                  ['en' => ['On the flat, through olive groves and fields, towards Spello and Foligno. Francesco books e-bikes in Santa Maria degli Angeli.']]],
             ]);
             $negozi = Properties::addSection($acc, $pid, 'shop');
-            self::scrivi($pid, $negozi, ['it' => ['intro' => 'Per la spesa basta scendere di un vicolo. Il sabato mattina c\'è anche il mercato in Piazza Matteotti.'], 'en' => ['intro' => 'For groceries, just walk down one alley. On Saturday mornings there is also the market in Piazza Matteotti.']], 'Negozi e spesa');
+            self::scrivi($pid, $negozi, ['it' => ['intro' => 'Per la spesa basta scendere di un vicolo. Il sabato mattina c\'è anche il mercato in Piazza Matteotti.',
+                                                  'host_note' => 'La rocciata del Forno del Subasio è la merenda che portiamo sempre a chi viene a trovarci.'],
+                                         'en' => ['intro' => 'For groceries, just walk down one alley. On Saturday mornings there is also the market in Piazza Matteotti.',
+                                                  'host_note' => 'The rocciata from Forno del Subasio is the treat we always bring to friends who visit us.']], 'Negozi e spesa');
             $luoghi($negozi, [
                 ['Bottega di Rosa', 'grocery', 'Salumi, formaggi, pane e il necessario per la colazione.', 'Vicolo dei Gerani 1', 1, 'local', 'sea', null, null, null, ['en' => ['Cured meats, cheese, bread and everything for breakfast.']]],
                 ['Forno del Subasio', 'bakery', 'Torta al testo calda dalle 11 e rocciata, il dolce di Assisi con mele, noci e uvetta.', 'Vicolo dei Gerani 6', 3, 'on_foot', 'sea', null, null, null, ['en' => ['Warm torta al testo from 11am and rocciata, the Assisi pastry with apples, walnuts and raisins.']]],
@@ -534,8 +559,9 @@ final class Demo
     /**
      * Le altre lingue della vetrina: ogni campo ancora da tradurre prende la traduzione del suo
      * testo italiano da lang/vetrina/{lingua}.php. Quello che lì non c'è resta da tradurre.
+     * 8D: pubblica, per «Completa le traduzioni della vetrina» in Amministrazione (scrive solo i campi vuoti).
      */
-    private static function traduciVetrina(int $pid): void
+    public static function traduciVetrina(int $pid): void
     {
         $prop = Db::one('SELECT * FROM properties WHERE id = ?', [$pid]);
         foreach (Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$pid]) as $l) {

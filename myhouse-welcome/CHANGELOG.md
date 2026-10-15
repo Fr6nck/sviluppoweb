@@ -1,5 +1,14 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 8D la vetrina Casa Checco completa, in tutte le lingue (15 ottobre 2026)
+
+Nessuna migrazione. Sostituisce la 7E.
+
+- **Tutto compilato:** ogni sezione del catalogo, Riscaldamento e Aria condizionata comprese, con ogni campo (tranne gli orari dell'aria condizionata, che con «la accende l'ospite» non valgono); due parole di benvenuto in 5 lingue, sconto per chi torna (10% con CHECCO10), email per gli ospiti di fantasia, messaggi di benvenuto e di fine soggiorno, portali e Instagram.
+- **Tutte le lingue:** `app/tools/vetrina-mancanti.php` crea la vetrina su un database di prova e conta i campi senza traduzione: 0 in inglese, francese, tedesco e spagnolo.
+- **Il telefono della home** mostra tutte le sezioni della vetrina pubblicata (titolo, icona, colore), in una griglia che scorre dentro lo schermo con una sfumatura in basso; senza vetrina restano i quattro riquadri.
+- **Amministrazione → Clienti:** accanto a «Rifai la vetrina», «Completa le traduzioni della vetrina» scrive solo i campi vuoti nelle altre lingue e ripubblica.
+
 ## v2 · 8C la guida dell'ospite: recensioni, lingua, «Stiamo per partire», palette, riscaldamento e aria, lingue (15 ottobre 2026)
 
 Migrazione `037` (solo aggiunte e conversioni): `properties.guest_email`, caratteristica `lingua_extra` (Plus e Portfolio 1), sezioni `clima` divise in `riscaldamento` e `aria`, testi di serie dei piani sulle lingue. Istantanee in formato 8.

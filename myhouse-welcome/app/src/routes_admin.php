@@ -231,6 +231,37 @@ $r->post('/admin/cliente/{aid}/vetrina', function (array $a) {
     Support::redirect('/admin/cliente/' . $accId);
 });
 
+/* 8D: «Completa le traduzioni della vetrina»: i campi ancora vuoti nelle altre lingue prendono le traduzioni di
+   lang/vetrina/{lingua}.php (quelli già scritti non si toccano), poi la vetrina si ripubblica. */
+$r->post('/admin/cliente/{aid}/vetrina/traduzioni', function (array $a) {
+    Auth::requireAdmin();
+    $accId = (int) $a['aid'];
+    $pid = (int) Db::val('SELECT id FROM properties WHERE account_id = ? AND is_demo = ?', [$accId, Demo::VETRINA], 0);
+    if (!$pid) { Support::flash('Questo account non ha una guida vetrina.', 'err'); Support::redirect('/admin/cliente/' . $accId); }
+    $prop = Db::one('SELECT * FROM properties WHERE id = ?', [$pid]);
+    $conta = function () use ($prop): int {
+        $n = 0;
+        foreach (Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$prop['id']]) as $l) {
+            if ($l['locale'] === $prop['default_locale']) continue;
+            $n += count(array_filter(MHW\Traduttore::campi($prop, (string) $l['locale']), fn($c) => $c['tradotto'] === ''));
+        }
+        return $n;
+    };
+    $prima = $conta();
+    try {
+        Demo::traduciVetrina($pid);
+        MHW\Guide::publish($pid);
+    } catch (\Throwable $e) {
+        Log::error('vetrina traduzioni: ' . $e->getMessage(), ['account' => $accId]);
+        Support::flash('Le traduzioni non sono state completate: ' . $e->getMessage(), 'err');
+        Support::redirect('/admin/cliente/' . $accId);
+    }
+    $dopo = $conta();
+    Auth::audit('demo.vetrina_traduzioni', (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$accId]), ['property_id' => $pid, 'scritte' => $prima - $dopo]);
+    Support::flash(($prima - $dopo) . ' campi tradotti e vetrina ripubblicata.' . ($dopo ? " Ne restano $dopo senza traduzione: per quelli usa «Rifai la vetrina»." : ''));
+    Support::redirect('/admin/cliente/' . $accId);
+});
+
 $r->post('/admin/dati-esempio', function () {
     Auth::requireAdmin();
     if (($_POST['cosa'] ?? '') === 'elimina') {

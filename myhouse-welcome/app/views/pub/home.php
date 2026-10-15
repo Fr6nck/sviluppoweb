@@ -133,12 +133,25 @@ if ($dentro):
             <?php else: ?><picture><source srcset="<?= Support::e($telefonoWebp) ?>" type="image/webp">
             <img src="<?= Support::e($telefonoJpg) ?>" alt="" width="600" height="422" loading="eager" decoding="async"<?= $F('telefono') ?>></picture><?php endif; ?>
             <span class="device__pill"><i></i>Check-in dalle <?= Support::e($checkinDemo) ?></span></span>
+          <?php /* 8D: con la vetrina pubblicata, tutte le sue sezioni (titolo italiano, icona, colore come nella guida),
+                   in una griglia che scorre dentro lo schermo; senza vetrina i quattro riquadri di sempre. */
+                $sezTel = [];
+                if ($vetrina && ($snapTel = MHW\Guide::published((int) $demo['id']))) {
+                    foreach ($snapTel['sections'] as $sT) $sezTel[] = [MHW\Guide::title($sT, 'it', (string) ($snapTel['property']['default_locale'] ?? 'it')), MHW\SectionCatalog::iconaDi((string) $sT['kind'], $sT['data'] ?? [])];
+                }
+                $toniTel = ['t-terracotta', 't-sea', 't-pine', 't-ochre']; ?>
+          <?php if ($sezTel): ?>
+            <span class="device__tiles device__tiles--tutte" data-sezioni="<?= count($sezTel) ?>">
+              <?php foreach ($sezTel as $iT => [$titT, $icoT]): ?><span class="<?= $toniTel[$iT % 4] ?>"><?= Icon::svg($icoT, 16, 1.8) ?><?= Support::e($titT) ?></span><?php endforeach; ?>
+            </span>
+          <?php else: ?>
           <span class="device__tiles">
             <span class="t-terracotta"><?= Icon::svg('home', 16, 1.8) ?>Check-in &amp; Check-out</span>
             <span class="t-sea"><?= Icon::svg('wifi', 16, 1.8) ?>Wi-Fi</span>
             <span class="t-pine"><?= Icon::svg('fork', 16, 1.8) ?>Dove mangiare</span>
             <span class="t-ochre"><?= Icon::svg(MHW\SectionCatalog::icon('parking'), 16, 1.8) ?>Parcheggio</span>
           </span>
+          <?php endif; ?>
         </span>
         <span class="device__home"></span>
       </span>

@@ -2216,6 +2216,29 @@ $kindsV = array_column(righe('SELECT kind FROM sections WHERE property_id = ?', 
 $mancano = array_diff(['checkin', 'wifi', 'services', 'riscaldamento', 'aria', 'extras', 'rules', 'arrival', 'transport', 'parking', 'waste', 'eat', 'visit', 'todo', 'shop', 'events', 'custom', 'emergency', 'info'], $kindsV);
 prova('…tutte le sezioni del catalogo compilate (eventi e sezione libera comprese), nessuna vuota', !$mancano
       && !val("SELECT 1 FROM sections WHERE property_id = ? AND is_core = 0 AND data = '{}'", [$vet['id'] ?? 0]), json_encode(array_values($mancano)));
+// 8D: ogni campo di ogni sezione (tranne gli orari dell'aria condizionata, che con «la accende l'ospite» non valgono),
+// foto profilo, due parole di benvenuto, portali, Instagram, sconto, email per gli ospiti, messaggi; tutte le lingue.
+$vuotiV = [];
+foreach (righe('SELECT * FROM sections WHERE property_id = ?', [$vet['id'] ?? 0]) as $sV) {
+    $dV = json_decode((string) $sV['data'], true) ?: [];
+    $tV = json_decode((string) val("SELECT data FROM section_translations WHERE section_id = ? AND locale = 'it'", [$sV['id']]), true) ?: [];
+    $campiV = json_decode((string) shell_exec('php -r ' . escapeshellarg('define("MHW_APP", "' . $DOVE . '/app"); spl_autoload_register(fn($c) => require "' . $DOVE . '/app/src/" . substr($c, 4) . ".php"); echo json_encode(array_keys(MHW\SectionCatalog::fields("' . $sV['kind'] . '")));')), true) ?: [];
+    foreach ($campiV as $fV) { $vV = $dV[$fV] ?? $tV[$fV] ?? null; if (($vV === null || $vV === '' || $vV === []) && !($sV['kind'] === 'aria' && $fV === 'ac_times')) $vuotiV[] = $sV['kind'] . '.' . $fV; }
+}
+prova('8D · vetrina: tutte le sezioni del catalogo (riscaldamento e aria comprese) e ogni campo compilato', !$vuotiV && !array_diff(['riscaldamento', 'aria', 'custom', 'events', 'shop'], $kindsV), implode(', ', $vuotiV));
+$vetP = riga('SELECT * FROM properties WHERE id = ?', [$vet['id'] ?? 0]);
+prova('8D · …foto profilo, due parole di benvenuto in 5 lingue, portali e Instagram, sconto, email per gli ospiti, messaggi', !empty($vetP['profile_media_id'])
+      && count(json_decode((string) $vetP['host_welcome'], true) ?: []) === 5 && $vetP['direct_discount'] === '10%' && $vetP['guest_email'] !== ''
+      && array_column(righe('SELECT kind FROM property_channels WHERE property_id = ? ORDER BY position', [$vet['id'] ?? 0]), 'kind') === ['google', 'booking', 'airbnb', 'vrbo', 'instagram']
+      && isset((json_decode((string) $vetP['messages'], true) ?: [])['benvenuto']['it'], (json_decode((string) $vetP['messages'], true) ?: [])['saluto']['it']));
+$uscitaV = (string) shell_exec('php ' . escapeshellarg("$DOVE/app/tools/vetrina-mancanti.php") . ' --conta 2>&1');
+prova('8D · tools/vetrina-mancanti.php: 0 in inglese, francese, tedesco e spagnolo', trim($uscitaV) === "EN: 0\nFR: 0\nDE: 0\nES: 0", $uscitaV);
+$r = $ospite->get("/g/$vslug?l=de");
+prova('8D · /g/casa-checco?l=de senza titoli italiani', $r['code'] === 200 && !preg_match('#>(Cosa visitare|La storia della casa|Eventi|Dove mangiare e bere|Negozi e spesa|Cosa fare|Riscaldamento|Aria condizionata)<#', $r['body'])
+      && str_contains($r['body'], 'Heizung') && str_contains($r['body'], 'Klimaanlage'));
+$r = $ospite->get('/');
+prova('8D · home: il telefono mostra tutte le sezioni della vetrina, nella griglia che scorre', str_contains($r['body'], 'device__tiles--tutte')
+      && str_contains($r['body'], 'data-sezioni="' . (int) val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_active = 1', [$vet['id'] ?? 0]) . '"'));
 $evV = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'events'", [$vet['id'] ?? 0]);
 $r = $ospite->get("/g/$vslug/$evV");
 prova('…eventi veri di Assisi: il mercato del sabato con la locandina, le feste dell\'anno con la prossima data, niente eventi di fantasia',
@@ -4008,7 +4031,7 @@ prova('…senza aria condizionata nasce solo «riscaldamento»', val('SELECT kin
 $ariaA = riga("SELECT * FROM sections WHERE property_id = ? AND kind = 'aria' AND id > ?", [$esp, $ca]);
 db()->prepare("UPDATE users SET created_at = '2026-01-01T00:00:00Z' WHERE email = 'ester@prova.test'")->execute();
 prova('…Essential al limite: «aria» nasce disattivata, con i suoi testi, e la novità lo dice', $ariaA && (int) $ariaA['is_active'] === 0
-      && ($trG((int) $ariaA['id'], 'de')['ac_how'] ?? []) === ['Taste ON drücken.'] && str_contains($ester->get("/pannello/$esp")['body'], 'è nata disattivata'));
+      && ($trG((int) $ariaA['id'], 'de')['ac_how'] ?? []) === ['Taste ON drücken.'] && str_contains($ester->segui($ester->get("/pannello/$esp/impostazioni"))['body'], 'è nata disattivata'), json_encode($ariaA ? ['attiva' => $ariaA['is_active']] : null));
 $conta = fn() => (int) val("SELECT COUNT(*) FROM sections WHERE kind IN ('clima', 'riscaldamento', 'aria')");
 $n1 = $conta();
 $esito2 = trim((string) shell_exec('cd ' . escapeshellarg("$DOVE/app") . ' && php -r ' . escapeshellarg($migra) . ' 2>&1'));
