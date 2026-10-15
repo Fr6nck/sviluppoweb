@@ -4242,6 +4242,98 @@ if (preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $rH[
 prova('7F · Organization con sameAs blackout.in e parentOrganization; offerte del listino; nessun aggregateRating', $org && in_array('https://blackout.in', $org['sameAs'] ?? [], true)
       && ($org['parentOrganization']['url'] ?? '') === 'https://blackout.in' && str_contains($rH['body'], '"@type":"Offer"') && !str_contains($rH['body'], 'aggregateRating'));
 
+// ===================================================== LINGUA PRINCIPALE OPZIONALE
+// Chi scrive la guida in una lingua fuori dalle cinque di base (olandese, portoghese, polacco, russo, cinese,
+// giapponese, svedese, danese, ceco). Essential: la sua lingua e una seconda, nessuna chiamata ad Amazon Translate.
+// Plus: la sua lingua al posto della «lingua in più», le cinque di base, e le traduzioni suggerite partono dalla sua lingua.
+capitolo('Lingua principale opzionale · ognuna delle nove, con Essential e con Plus');
+$pxTesti = ['nl' => 'De sleutels liggen in het kastje naast de deur.', 'pt' => 'As chaves estão na caixa ao lado da porta.',
+            'pl' => 'Klucze są w skrzynce obok drzwi.', 'ru' => 'Ключи лежат в ящике рядом с дверью.', 'zh' => '钥匙在门旁边的盒子里。',
+            'ja' => '鍵はドアの横の箱に入っています。', 'sv' => 'Nycklarna ligger i lådan bredvid dörren.', 'da' => 'Nøglerne ligger i kassen ved siden af døren.',
+            'cs' => 'Klíče jsou ve schránce vedle dveří.'];
+$pxTr = fn() => array_values(array_filter(array_map(fn($l) => json_decode($l, true), $TR_DIR !== '' && is_file("$TR_DIR/richieste.jsonl") ? (file("$TR_DIR/richieste.jsonl") ?: []) : [])));
+$pxLingue = fn(int $p) => array_column(righe('SELECT locale FROM property_locales WHERE property_id = ? ORDER BY locale', [$p]), 'locale');
+$pxOspite = new Browser('ospite-lingua-opzionale');
+$pxN = 0;
+/** Un host nuovo con il piano $piano, abbonamento attivo, che scrive la guida nella lingua $l. @return [Browser, account, struttura, sezione arrivo, «Un'altra lingua» la offre] */
+$pxHost = function (string $piano, string $l) use (&$pxN, $pxTesti): array {
+    $pxN++;
+    $email = "lingua-$piano-$l@prova.test";
+    $b = new Browser("lingua-$piano-$l");
+    db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");   // 18 registrazioni dallo stesso indirizzo: il limite è 10 l'ora
+    $b->get('/registrati?piano=' . pv($piano));
+    $b->post('/registrati', ['piano' => pv($piano), 'name' => "Host $l $piano", 'email' => $email, 'password' => 'LinguaProva12345', 'termini' => '1', 'privacy' => '1']);
+    $acc = (int) val('SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = ?', [$email]);
+    $b->modulo('/pannello/nuova', '/pannello/nuova', ['name' => "Casa $l $piano", 'city' => 'Montefalco']);
+    $p = (int) val('SELECT id FROM properties WHERE account_id = ? ORDER BY id', [$acc]);
+    db()->prepare("INSERT INTO subscriptions (account_id, package_version_id, status, provider, provider_customer_id, provider_subscription_id, current_period_start,
+        current_period_end, payment_status, created_at, updated_at, quantity) VALUES (?, ?, 'active', 'stripe', ?, ?, ?, ?, 'paid', ?, ?, 1)")
+        ->execute([$acc, pv($piano), "cus_lingua_$pxN", "sub_lingua_$pxN", gmdate('Y-m-d\TH:i:s\Z', time() - 86400), gmdate('Y-m-d\TH:i:s\Z', time() + 360 * 86400), gmdate('Y-m-d\TH:i:s\Z'), gmdate('Y-m-d\TH:i:s\Z')]);
+    $b->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => "Host $l", 'cf' => 'RSSMRA85T10A562S',
+               'billing_address' => 'Via Roma 1', 'billing_postal' => '06036', 'billing_city' => 'Montefalco', 'billing_province' => 'PG']);
+    $offre = preg_match('#name="default_locale" value="' . $l . '"#', $b->get("/pannello/$p/procedura/struttura")['body']) === 1;
+    $b->modulo("/pannello/$p/procedura/struttura", "/pannello/$p/impostazioni", ['name' => "Casa $l $piano", 'default_locale' => $l, 'cin' => sprintf('IT054030C2LIN%05d', $pxN)]);
+    $core = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$p]);
+    return [$b, $acc, $p, $core, $offre];
+};
+$pxEss = []; $pxPlus = [];
+foreach ($pxTesti as $l => $testo) {
+    // Essential: la lingua opzionale e l'italiano; una terza no; niente Amazon Translate.
+    [$b, $acc, $p, $core, $offre] = $pxHost('essential', $l);
+    $b->post("/pannello/$p/lingue", ['locali' => [$l, 'it']]);
+    $b->post("/pannello/$p/lingue", ['locali' => [$l, 'it', 'en']]);
+    $b->post("/pannello/$p/sezioni/$core", ['checkin_steps' => [$testo]]);
+    $n0 = count($pxTr());
+    $rS = $b->segui($b->post("/pannello/$p/lingue/it/suggerite", ['suggerisci' => '1']));
+    $b->post("/pannello/$p/pubblica", ['codici_ok' => '1']);
+    $slug = (string) val('SELECT slug FROM properties WHERE id = ?', [$p]);
+    $rG = $pxOspite->get("/g/$slug/$core?l=$l");
+    $err = [];
+    if (!$offre) $err[] = 'non offerta';
+    if (val('SELECT default_locale FROM properties WHERE id = ?', [$p]) !== $l) $err[] = 'principale';
+    $att = [$l, 'it']; sort($att);
+    if ($pxLingue($p) !== $att) $err[] = 'lingue ' . implode(',', $pxLingue($p));
+    if (count($pxTr()) !== $n0 || !str_contains($rS['body'], 'disponibili con il piano Plus')) $err[] = 'AWS chiamato';
+    if (val('SELECT status FROM properties WHERE id = ?', [$p]) !== 'published') $err[] = 'non pubblicata';
+    if ($rG['code'] !== 200 || !str_contains($rG['body'], '<html lang="' . $l . '"') || !str_contains($rG['body'], htmlspecialchars($testo))) $err[] = 'guida ' . $rG['code'];
+    $pxEss[$l] = $err;
+
+    // Plus: la lingua opzionale e le cinque di base; l'olandese (o il portoghese) in più no; le suggerite partono dalla lingua opzionale.
+    [$b, $acc, $p, $core, $offre] = $pxHost('plus', $l);
+    $altra = $l === 'nl' ? 'pt' : 'nl';
+    $b->post("/pannello/$p/lingue", ['locali' => [$l, 'it', 'en', 'fr', 'de', 'es']]);
+    $b->post("/pannello/$p/lingue", ['locali' => [$l, 'it', 'en', 'fr', 'de', 'es', $altra]]);
+    $b->post("/pannello/$p/sezioni/$core", ['checkin_steps' => [$testo]]);
+    $b->segui($b->post("/pannello/$p/lingue/suggerite", ['acceso' => '1']));
+    $n1 = count($pxTr());
+    foreach (['it', 'en'] as $a) {
+        $b->segui($b->post("/pannello/$p/lingue/$a/suggerite", ['suggerisci' => '1']));
+        $b->segui($b->post("/pannello/$p/lingue/$a/suggerite", ['tutte' => '1']));
+    }
+    $chiamate = array_slice($pxTr(), $n1);
+    $b->post("/pannello/$p/pubblica", ['codici_ok' => '1']);
+    $slug = (string) val('SELECT slug FROM properties WHERE id = ?', [$p]);
+    $rL = $pxOspite->get("/g/$slug/$core?l=$l"); $rI = $pxOspite->get("/g/$slug/$core?l=it"); $rE = $pxOspite->get("/g/$slug/$core?l=en");
+    $err = [];
+    if (!$offre) $err[] = 'non offerta';
+    $att = [$l, 'it', 'en', 'fr', 'de', 'es']; sort($att);
+    if ($pxLingue($p) !== $att) $err[] = 'lingue ' . implode(',', $pxLingue($p));
+    $coppie = array_values(array_unique(array_map(fn($x) => ($x['da'] ?? '?') . '>' . ($x['a'] ?? '?') . ':' . ($x['code'] ?? 0), $chiamate))); sort($coppie);
+    if ($coppie !== ["$l>en:200", "$l>it:200"] || !in_array($testo, array_column($chiamate, 'testo'), true)) $err[] = 'AWS ' . implode(',', $coppie);
+    if (val('SELECT status FROM properties WHERE id = ?', [$p]) !== 'published') $err[] = 'non pubblicata';
+    if (!str_contains($rL['body'], '<html lang="' . $l . '"') || !str_contains($rL['body'], htmlspecialchars($testo))) $err[] = 'guida ' . $l;
+    if (!str_contains($rI['body'], htmlspecialchars("[it] $testo")) || !str_contains($rE['body'], htmlspecialchars("[en] $testo"))) $err[] = 'traduzioni nella guida';
+    if (!((int) val("SELECT COALESCE(SUM(chars),0) FROM translation_usage WHERE account_id = ? AND outcome = 'ok'", [$acc]) > 0)) $err[] = 'consumo';
+    $pxPlus[$l] = $err;
+}
+$pxNote = fn(array $x) => implode(' · ', array_map(fn($l, $e) => "$l: " . implode(', ', $e), array_keys(array_filter($x)), array_filter($x)));
+prova('Essential · per ognuna delle nove lingue opzionali come principale: si sceglie, si aggiunge l\'italiano (una terza no), nessuna chiamata ad Amazon Translate, guida pubblicata nella sua lingua',
+      !array_filter($pxEss), $pxNote($pxEss));
+prova('Plus · per ognuna delle nove: la lingua opzionale più le cinque di base (una seconda opzionale no), suggerite di Amazon Translate dalla lingua principale verso italiano e inglese, approvate e nella guida',
+      !array_filter($pxPlus), $pxNote($pxPlus));
+prova('…Amazon Translate ha ricevuto ogni lingua opzionale come lingua di partenza', count(array_intersect(array_keys($pxTesti), array_unique(array_column($pxTr(), 'da')))) === 9,
+      implode(',', array_unique(array_column($pxTr(), 'da'))));
+
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));
