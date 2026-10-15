@@ -18,8 +18,35 @@ final class I18n
     /** Le cinque lingue di base, nell'ordine del listino. */
     public const BASE = ['it', 'en', 'fr', 'de', 'es'];
     /** Le lingue aggiuntive (una a scelta con Plus e Portfolio, o la seconda di Essential). */
-    public const EXTRA = ['nl', 'pt', 'pl', 'ru', 'zh', 'ja', 'sv', 'da', 'cs'];
+    public const EXTRA = ['nl', 'pt', 'pt-BR', 'pl', 'ru', 'zh', 'ja', 'sv', 'da', 'cs'];
     public const LOCALES = [...self::BASE, ...self::EXTRA];
+
+    /**
+     * Il codice per Amazon Translate, quando non è lo stesso: «pt» per Amazon è il portoghese del Brasile,
+     * quello del Portogallo è «pt-PT». Da noi «pt» è il Portogallo e «pt-BR» il Brasile.
+     */
+    private const AWS = ['pt' => 'pt-PT', 'pt-BR' => 'pt'];
+
+    public static function aws(string $loc): string { return self::AWS[$loc] ?? $loc; }
+
+    /**
+     * La lingua del telefono tra quelle $disponibili, da una voce di Accept-Language («pt-BR;q=0.9»):
+     * prima la variante esatta (pt-BR), poi la lingua (pt), poi un'altra variante della stessa lingua.
+     */
+    public static function dalTelefono(string $parte, array $disponibili): ?string
+    {
+        $tag = strtolower(trim(explode(';', $parte)[0]));
+        if ($tag === '') return null;
+        $base = substr($tag, 0, 2);
+        $trova = function (string $cerca) use ($disponibili): ?string {
+            foreach ($disponibili as $l) if (strtolower((string) $l) === $cerca) return (string) $l;
+            return null;
+        };
+        if (($l = $trova($tag)) !== null) return $l;
+        if (($l = $trova($base)) !== null) return $l;
+        foreach ($disponibili as $l) if (str_starts_with(strtolower((string) $l), $base . '-')) return (string) $l;
+        return null;
+    }
 
     public static function base(string $loc): bool { return in_array($loc, self::BASE, true); }
     private static array $dict = [];

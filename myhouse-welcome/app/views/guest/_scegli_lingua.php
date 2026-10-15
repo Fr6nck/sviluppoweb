@@ -12,10 +12,9 @@ $nomiSL = Config::get('locales');
 // La lingua del telefono: la prima di Accept-Language che la guida ha; il titolo nella prima in assoluto.
 $telefono = ''; $titoloSL = '';
 foreach (explode(',', (string) ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '')) as $parte) {
-    $l = strtolower(substr(trim($parte), 0, 2));
-    if ($l === '') continue;
-    if ($titoloSL === '') $titoloSL = $l;
-    if ($telefono === '' && in_array($l, $snap['locales'], true)) $telefono = $l;
+    if (trim($parte) === '') continue;
+    if ($titoloSL === '') $titoloSL = I18n::dalTelefono($parte, I18n::LOCALES) ?? strtolower(substr(trim($parte), 0, 2));
+    if ($telefono === '') $telefono = I18n::dalTelefono($parte, $snap['locales']) ?? '';
 }
 $titoloSL = in_array($titoloSL, I18n::LOCALES, true) ? $titoloSL : $loc;
 $lingueSL = $snap['locales'];

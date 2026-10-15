@@ -64,7 +64,7 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
               <span class="scelta__testo" lang="<?= Support::e($code) ?>"><?= Support::e($nomeL) ?></span></label>
           <?php endforeach; ?>
         </div>
-        <p class="small muted" style="margin:8px 0 0">I bottoni e i titoli della guida sono tradotti in olandese, portoghese e polacco; per le altre lingue l'ospite li legge in inglese, i tuoi testi restano come li scrivi.</p>
+        <p class="small muted" style="margin:8px 0 0">I bottoni e i titoli della guida sono tradotti in olandese, portoghese (del Portogallo e del Brasile) e polacco; per le altre lingue l'ospite li legge in inglese, i tuoi testi restano come li scrivi.</p>
       </details>
     </fieldset>
   <?php endif; ?>

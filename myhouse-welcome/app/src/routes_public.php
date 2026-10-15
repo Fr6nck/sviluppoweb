@@ -495,8 +495,8 @@ $linguaOspite = function (array $snap): array {
     $chiesta = (string) ($_GET['l'] ?? '');
     if (in_array($chiesta, $snap['locales'], true)) return [$chiesta, true];
     foreach (explode(',', (string) ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '')) as $parte) {
-        $l = strtolower(substr(trim($parte), 0, 2));
-        if (in_array($l, $snap['locales'], true)) return [$l, false];
+        // pt-BR trova il portoghese del Brasile, pt-PT (o pt) quello del Portogallo.
+        if (($l = I18n::dalTelefono($parte, $snap['locales'])) !== null) return [$l, false];
     }
     return [$snap['property']['default_locale'], false];
 };

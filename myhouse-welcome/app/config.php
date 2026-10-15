@@ -44,7 +44,7 @@ $config = [
     // (8C). Le regole per piano sono in Entitlements::regolaLingue: Essential la principale e una a
     // scelta, Plus e Portfolio la principale, le altre di base e una aggiuntiva.
     'locales' => ['it' => 'Italiano', 'en' => 'English', 'fr' => 'Français', 'de' => 'Deutsch', 'es' => 'Español',
-                  'nl' => 'Nederlands', 'pt' => 'Português', 'pl' => 'Polski', 'ru' => 'Русский', 'zh' => '中文',
+                  'nl' => 'Nederlands', 'pt' => 'Português (Portugal)', 'pt-BR' => 'Português (Brasil)', 'pl' => 'Polski', 'ru' => 'Русский', 'zh' => '中文',
                   'ja' => '日本語', 'sv' => 'Svenska', 'da' => 'Dansk', 'cs' => 'Čeština'],
 
     'stripe' => [

@@ -170,7 +170,8 @@ final class Traduttore
         }
         try {
             $fuori = [];
-            foreach (self::pezzi($testo) as $pezzo) $fuori[] = trim($pezzo) === '' ? $pezzo : self::chiama($pezzo, $da, $a);
+            // I codici di Amazon: il portoghese del Portogallo è pt-PT, quello del Brasile pt (I18n::aws).
+            foreach (self::pezzi($testo) as $pezzo) $fuori[] = trim($pezzo) === '' ? $pezzo : self::chiama($pezzo, I18n::aws($da), I18n::aws($a));
             self::registra($accountId, $propertyId, $a, $n, 'ok');
             return implode('', $fuori);
         } catch (\Throwable $e) {

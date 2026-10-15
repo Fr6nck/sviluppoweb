@@ -1,5 +1,15 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Il portoghese del Portogallo e del Brasile (15 ottobre 2026)
+
+Migrazione `040` (nessuna colonna nuova): le schede dei piani di serie passano da «una a scelta tra 9» a «tra 10».
+
+- **Due varianti:** «Português (Portugal)» (codice `pt`, quello che c'era: i testi della guida erano già del Portogallo) e «Português (Brasil)» (`pt-BR`, nuovo, con i bottoni, le categorie, il riscaldamento e gli eventi scritti alla brasiliana). Le lingue in più sono dieci.
+- **Amazon Translate:** per il Portogallo ora riceve `pt-PT` (prima riceveva `pt`, cioè il brasiliano: i bottoni erano europei e le traduzioni suggerite brasiliane); per il Brasile `pt`.
+- **La lingua del telefono:** si legge la variante intera (`pt-BR`, `pt-PT`), poi la lingua (`pt`), poi l'altra variante della stessa lingua; vale per la lingua con cui si apre la guida e per quella in cima alla finestra «Scegli la lingua».
+- **Testi:** domande frequenti (italiano e inglese), schede e confronto dei piani, finestra di Plus, llms.txt, novità, Marketing.
+- **Prove:** ognuna delle dieci lingue opzionali come lingua principale, con Essential (nessuna chiamata ad Amazon) e con Plus (suggerite dalla lingua principale), più le due varianti del portoghese nella guida e al telefono.
+
 ## v2 · 7F clienti di prova, Marketing, SEO e GEO, pagine per tipologia (15 ottobre 2026)
 
 Migrazione `039` (solo aggiunte): `accounts.is_test`.

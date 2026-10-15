@@ -18,7 +18,7 @@ return [
      'nota_aria' => 'La sezione «Aria condizionata» è nata disattivata perché eri al limite di sezioni del tuo piano: attivala in Contenuti, al posto di un\'altra, oppure passa a Plus.',
      'dove' => '/pannello/{pid}', 'campi' => [], 'sezioni' => ['riscaldamento', 'aria']],
     ['id' => '2026-10-lingue', 'data' => '2026-10-15', 'titolo' => 'Lingua principale a scelta e una lingua in più',
-     'testo' => 'Puoi scrivere la guida nella lingua che vuoi. Con Plus e Portfolio, oltre alle lingue di base, ne aggiungi una a scelta tra olandese, portoghese, polacco, russo, cinese, giapponese, svedese, danese e ceco.',
+     'testo' => 'Puoi scrivere la guida nella lingua che vuoi. Con Plus e Portfolio, oltre alle lingue di base, ne aggiungi una a scelta tra olandese, portoghese (del Portogallo o del Brasile), polacco, russo, cinese, giapponese, svedese, danese e ceco.',
      'dove' => '/pannello/{pid}/lingue', 'campi' => [], 'sezioni' => []],
     ['id' => '2026-10-portali', 'data' => '2026-10-15', 'titolo' => 'Su quali piattaforme sei presente: spunta i portali, ai link pensiamo noi',
      'testo' => 'In Impostazioni spunti Booking.com, Airbnb, Google e gli altri: a chi dà 5 stelle mostriamo i bottoni per la recensione, con i link già pronti.',

@@ -185,9 +185,9 @@ final class Plans
                 if ($f['code'] === 'locales' && $v !== 'unlimited') {
                     $n = (int) $v; $x = $extraDi($p);
                     $v = $en
-                        ? ($x > 0 ? ($n + $x) . ': yours, the other base languages and ' . ($x === 1 ? 'one of your choice out of 9' : "$x of your choice out of 9")
+                        ? ($x > 0 ? ($n + $x) . ': yours, the other base languages and ' . ($x === 1 ? 'one of your choice out of ' . count(I18n::EXTRA) : "$x of your choice out of " . count(I18n::EXTRA))
                                   : ($n <= 1 ? '1: yours' : $n . ': yours and ' . ($n === 2 ? 'one of your choice' : ($n - 1) . ' of your choice')))
-                        : ($x > 0 ? ($n + $x) . ': la tua, le altre di base e ' . ($x === 1 ? 'una a scelta tra 9' : "$x a scelta tra 9")
+                        : ($x > 0 ? ($n + $x) . ': la tua, le altre di base e ' . ($x === 1 ? 'una a scelta tra ' . count(I18n::EXTRA) : "$x a scelta tra " . count(I18n::EXTRA))
                                   : ($n <= 1 ? '1: la tua' : $n . ': la tua e ' . ($n === 2 ? 'una a scelta' : ($n - 1) . ' a scelta')));
                 } elseif ($f['code'] === 'properties' && self::perProperty($p)) $v = ($en ? 'from ' : 'da ') . (int) $p['min_quantity'] . ($en ? ' to ' : ' a ') . (int) $p['max_quantity'];
                 elseif ($v === 'unlimited') $v = $en ? 'Unlimited' : 'Illimitate';

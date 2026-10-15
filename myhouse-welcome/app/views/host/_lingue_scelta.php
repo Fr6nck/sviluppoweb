@@ -63,5 +63,5 @@ $nessuna = fn(array $gruppo) => !array_filter(array_keys($gruppo), $attivaS); ?>
     <p class="help" style="margin:0">Fino a <?= $xS ?> lingue in più.</p>
     <div class="scelte"><?php foreach ($aggS as $code => $nome) $casella($code, $nome, 'checkbox'); ?></div>
   <?php endif; ?>
-  <p class="small muted" style="margin:0">I bottoni e i titoli della guida sono tradotti in olandese, portoghese e polacco; per le altre lingue in più l'ospite li legge in inglese.</p>
+  <p class="small muted" style="margin:0">I bottoni e i titoli della guida sono tradotti in olandese, portoghese (del Portogallo e del Brasile) e polacco; per le altre lingue in più l'ospite li legge in inglese.</p>
 <?php endif; ?>

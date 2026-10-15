@@ -4243,11 +4243,12 @@ prova('7F · Organization con sameAs blackout.in e parentOrganization; offerte d
       && ($org['parentOrganization']['url'] ?? '') === 'https://blackout.in' && str_contains($rH['body'], '"@type":"Offer"') && !str_contains($rH['body'], 'aggregateRating'));
 
 // ===================================================== LINGUA PRINCIPALE OPZIONALE
-// Chi scrive la guida in una lingua fuori dalle cinque di base (olandese, portoghese, polacco, russo, cinese,
-// giapponese, svedese, danese, ceco). Essential: la sua lingua e una seconda, nessuna chiamata ad Amazon Translate.
+// Chi scrive la guida in una lingua fuori dalle cinque di base (olandese, portoghese del Portogallo e del Brasile,
+// polacco, russo, cinese, giapponese, svedese, danese, ceco). Essential: la sua lingua e una seconda, nessuna chiamata ad Amazon Translate.
 // Plus: la sua lingua al posto della «lingua in più», le cinque di base, e le traduzioni suggerite partono dalla sua lingua.
-capitolo('Lingua principale opzionale · ognuna delle nove, con Essential e con Plus');
+capitolo('Lingua principale opzionale · ognuna delle dieci, con Essential e con Plus');
 $pxTesti = ['nl' => 'De sleutels liggen in het kastje naast de deur.', 'pt' => 'As chaves estão na caixa ao lado da porta.',
+            'pt-BR' => 'As chaves ficam na caixinha do lado da porta.',
             'pl' => 'Klucze są w skrzynce obok drzwi.', 'ru' => 'Ключи лежат в ящике рядом с дверью.', 'zh' => '钥匙在门旁边的盒子里。',
             'ja' => '鍵はドアの横の箱に入っています。', 'sv' => 'Nycklarna ligger i lådan bredvid dörren.', 'da' => 'Nøglerne ligger i kassen ved siden af døren.',
             'cs' => 'Klíče jsou ve schránce vedle dveří.'];
@@ -4256,10 +4257,10 @@ $pxLingue = fn(int $p) => array_column(righe('SELECT locale FROM property_locale
 $pxOspite = new Browser('ospite-lingua-opzionale');
 $pxN = 0;
 /** Un host nuovo con il piano $piano, abbonamento attivo, che scrive la guida nella lingua $l. @return [Browser, account, struttura, sezione arrivo, «Un'altra lingua» la offre] */
-$pxHost = function (string $piano, string $l) use (&$pxN, $pxTesti): array {
+$pxHost = function (string $piano, string $l, string $chi = '') use (&$pxN, $pxTesti): array {
     $pxN++;
-    $email = "lingua-$piano-$l@prova.test";
-    $b = new Browser("lingua-$piano-$l");
+    $email = strtolower("lingua-$piano-$l$chi@prova.test");   // la registrazione scrive l'email in minuscolo (pt-BR)
+    $b = new Browser("lingua-$piano-$l-" . $pxN);
     db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");   // 18 registrazioni dallo stesso indirizzo: il limite è 10 l'ora
     $b->get('/registrati?piano=' . pv($piano));
     $b->post('/registrati', ['piano' => pv($piano), 'name' => "Host $l $piano", 'email' => $email, 'password' => 'LinguaProva12345', 'termini' => '1', 'privacy' => '1']);
@@ -4276,7 +4277,9 @@ $pxHost = function (string $piano, string $l) use (&$pxN, $pxTesti): array {
     $core = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$p]);
     return [$b, $acc, $p, $core, $offre];
 };
-$pxEss = []; $pxPlus = [];
+$pxEss = []; $pxPlus = []; $pxGuide = [];
+// Il codice che riceve Amazon Translate: il nostro «pt» (Portogallo) è pt-PT, il nostro «pt-BR» (Brasile) è pt.
+$pxAws = fn(string $l) => ['pt' => 'pt-PT', 'pt-BR' => 'pt'][$l] ?? $l;
 foreach ($pxTesti as $l => $testo) {
     // Essential: la lingua opzionale e l'italiano; una terza no; niente Amazon Translate.
     [$b, $acc, $p, $core, $offre] = $pxHost('essential', $l);
@@ -4319,7 +4322,8 @@ foreach ($pxTesti as $l => $testo) {
     $att = [$l, 'it', 'en', 'fr', 'de', 'es']; sort($att);
     if ($pxLingue($p) !== $att) $err[] = 'lingue ' . implode(',', $pxLingue($p));
     $coppie = array_values(array_unique(array_map(fn($x) => ($x['da'] ?? '?') . '>' . ($x['a'] ?? '?') . ':' . ($x['code'] ?? 0), $chiamate))); sort($coppie);
-    if ($coppie !== ["$l>en:200", "$l>it:200"] || !in_array($testo, array_column($chiamate, 'testo'), true)) $err[] = 'AWS ' . implode(',', $coppie);
+    if ($coppie !== [$pxAws($l) . '>en:200', $pxAws($l) . '>it:200'] || !in_array($testo, array_column($chiamate, 'testo'), true)) $err[] = 'AWS ' . implode(',', $coppie);
+    $pxGuide[$l] = [$slug, $core];
     if (val('SELECT status FROM properties WHERE id = ?', [$p]) !== 'published') $err[] = 'non pubblicata';
     if (!str_contains($rL['body'], '<html lang="' . $l . '"') || !str_contains($rL['body'], htmlspecialchars($testo))) $err[] = 'guida ' . $l;
     if (!str_contains($rI['body'], htmlspecialchars("[it] $testo")) || !str_contains($rE['body'], htmlspecialchars("[en] $testo"))) $err[] = 'traduzioni nella guida';
@@ -4327,12 +4331,31 @@ foreach ($pxTesti as $l => $testo) {
     $pxPlus[$l] = $err;
 }
 $pxNote = fn(array $x) => implode(' · ', array_map(fn($l, $e) => "$l: " . implode(', ', $e), array_keys(array_filter($x)), array_filter($x)));
-prova('Essential · per ognuna delle nove lingue opzionali come principale: si sceglie, si aggiunge l\'italiano (una terza no), nessuna chiamata ad Amazon Translate, guida pubblicata nella sua lingua',
+prova('Essential · per ognuna delle dieci lingue opzionali come principale: si sceglie, si aggiunge l\'italiano (una terza no), nessuna chiamata ad Amazon Translate, guida pubblicata nella sua lingua',
       !array_filter($pxEss), $pxNote($pxEss));
-prova('Plus · per ognuna delle nove: la lingua opzionale più le cinque di base (una seconda opzionale no), suggerite di Amazon Translate dalla lingua principale verso italiano e inglese, approvate e nella guida',
+prova('Plus · per ognuna delle dieci: la lingua opzionale più le cinque di base (una seconda opzionale no), suggerite di Amazon Translate dalla lingua principale verso italiano e inglese, approvate e nella guida',
       !array_filter($pxPlus), $pxNote($pxPlus));
-prova('…Amazon Translate ha ricevuto ogni lingua opzionale come lingua di partenza', count(array_intersect(array_keys($pxTesti), array_unique(array_column($pxTr(), 'da')))) === 9,
-      implode(',', array_unique(array_column($pxTr(), 'da'))));
+prova('…Amazon Translate ha ricevuto ogni lingua opzionale come lingua di partenza (pt-PT per il Portogallo, pt per il Brasile)',
+      count(array_intersect(array_map($pxAws, array_keys($pxTesti)), array_unique(array_column($pxTr(), 'da')))) === 10, implode(',', array_unique(array_column($pxTr(), 'da'))));
+// Le due varianti del portoghese nella guida: le parole giuste e la lingua del telefono.
+[$slugPT] = $pxGuide['pt']; [$slugBR] = $pxGuide['pt-BR'];
+$rPT = $pxOspite->get("/g/$slugPT?l=pt"); $rBR = $pxOspite->get("/g/$slugBR?l=pt-BR");
+prova('Portoghese · la guida del Portogallo con le parole del Portogallo («até às»), quella del Brasile con le sue («até as»)',
+      str_contains($rPT['body'], '<html lang="pt"') && str_contains($rPT['body'], 'Check-out até às') && str_contains($rBR['body'], '<html lang="pt-BR"') && str_contains($rBR['body'], 'Check-out até as'));
+$rTel = $pxOspite->get("/g/$slugBR", ['Accept-Language: pt-PT,pt;q=0.9,en;q=0.8']);
+$rTel2 = $pxOspite->get("/g/$slugPT", ['Accept-Language: pt-BR,pt;q=0.9']);
+prova('Portoghese · un telefono del Portogallo apre in brasiliano la guida che ha solo il Brasile (e viceversa), con quella lingua in cima alla scelta',
+      str_contains($rTel['body'], '<html lang="pt-BR"') && str_contains($rTel['body'], 'scegli-lingua__lingua--telefono" href=') && str_contains($rTel['body'], '>Português (Brasil)</a>')
+      && str_contains($rTel2['body'], '<html lang="pt"') && str_contains($rTel2['body'], '>Português (Portugal)</a>'));
+// Essential: il Portogallo come principale e il Brasile come seconda; il telefono sceglie la variante giusta.
+[$bPP, , $pPP, $corePP] = $pxHost('essential', 'pt', '-due');
+$bPP->post("/pannello/$pPP/lingue", ['locali' => ['pt', 'pt-BR']]);
+$bPP->post("/pannello/$pPP/sezioni/$corePP", ['checkin_steps' => [$pxTesti['pt']]]);
+$bPP->post("/pannello/$pPP/pubblica", ['codici_ok' => '1']);
+$slugPP = (string) val('SELECT slug FROM properties WHERE id = ?', [$pPP]);
+prova('Portoghese · una guida con le due varianti: pt-BR al telefono brasiliano, pt al telefono portoghese',
+      $pxLingue($pPP) === ['pt', 'pt-BR'] && val('SELECT status FROM properties WHERE id = ?', [$pPP]) === 'published' && str_contains($pxOspite->get("/g/$slugPP", ['Accept-Language: pt-BR,pt;q=0.9'])['body'], '<html lang="pt-BR"')
+      && str_contains($pxOspite->get("/g/$slugPP", ['Accept-Language: pt-PT,pt;q=0.9'])['body'], '<html lang="pt"'), json_encode($pxLingue($pPP)));
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

@@ -20,7 +20,7 @@ final class Marketing
     public const PERIODI = ['30' => '30 giorni', '90' => '90 giorni', '365' => '365 giorni', 'tutto' => 'Tutto'];
 
     public const LINGUE = ['it' => 'Italiano', 'en' => 'Inglese', 'fr' => 'Francese', 'de' => 'Tedesco', 'es' => 'Spagnolo',
-                           'nl' => 'Olandese', 'pt' => 'Portoghese', 'pl' => 'Polacco', 'ru' => 'Russo', 'zh' => 'Cinese',
+                           'nl' => 'Olandese', 'pt' => 'Portoghese (Portogallo)', 'pt-BR' => 'Portoghese (Brasile)', 'pl' => 'Polacco', 'ru' => 'Russo', 'zh' => 'Cinese',
                            'ja' => 'Giapponese', 'sv' => 'Svedese', 'da' => 'Danese', 'cs' => 'Ceco'];
 
     /** Le prime due cifre del CAP → la regione (la provincia si deduce dal CAP, la regione dalla provincia). */

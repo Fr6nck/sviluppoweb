@@ -104,7 +104,7 @@ final class Seo
                 'La guida si apre nel browser del telefono, da un link o da un QR Code: gli ospiti non scaricano app.',
                 'L\'host crea e prepara la guida gratis, senza carta di credito; paga solo quando la pubblica.',
                 'I piani sono annuali, con rinnovo automatico che si può disattivare in ogni momento.',
-                'Lingue per gli ospiti: con Essential la lingua dell\'host e una a scelta; con Plus e Portfolio sei (italiano, inglese, francese, tedesco, spagnolo e una a scelta tra nove).',
+                'Lingue per gli ospiti: con Essential la lingua dell\'host e una a scelta; con Plus e Portfolio sei (italiano, inglese, francese, tedesco, spagnolo e una a scelta tra dieci, tra cui il portoghese del Portogallo e quello del Brasile).',
                 'Il QR Code stampato non cambia quando si modifica la guida.',
                 'Le guide degli ospiti non usano cookie e non compaiono nei motori di ricerca.',
             ]),

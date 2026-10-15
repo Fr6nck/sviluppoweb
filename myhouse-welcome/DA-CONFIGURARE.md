@@ -9,7 +9,7 @@ I dettagli tecnici sono in `app/LEGGIMI.md`. Le novità, fase per fase, sono in 
 
 1. Copia sul server **tutto `app/storage/`** e `config.local.php`, se c'è.
 2. Carica il contenuto di `welcomebook/` sopra i file vecchi, **senza toccare `app/storage/`**.
-3. Apri il sito una volta. Le migrazioni `007`–`039` partono da sole.
+3. Apri il sito una volta. Le migrazioni `007`–`040` partono da sole.
 4. In **Amministrazione → Diagnostica** tutte le righe devono essere «OK».
 
 Il database resta **SQLite**. Le migrazioni nuove sono scritte anche per MySQL, ma un'installazione da zero su MySQL non è supportata: lo schema iniziale (`001`) è solo per SQLite.
@@ -180,6 +180,8 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 - **La cartella principale del sito deve essere scrivibile** dal sito (accanto a `index.php`), perché robots.txt, sitemap.xml e llms.txt si scrivono anche come file. Dopo il caricamento apri **SEO e GEO** e premi **«Salva»**: la riga «file veri» deve diventare verde. Non caricare mai quei tre file a mano: li riscrive il sito.
 - **Imposta il dominio** in SEO e GEO (o l'indirizzo pubblico in Impostazioni): senza, il rinnovo giornaliero dei tre file non parte, per sicurezza.
 - **Rileggi le quattro pagine per tipologia** (`/case-vacanza`, `/bed-and-breakfast`, `/affittacamere`, `/agriturismi`): i testi sono in `app/lang/tipologie.php`, titoli e descrizioni per Google in SEO e GEO.
+
+**Portoghese del Portogallo e del Brasile.** Niente da configurare: la migrazione `040` parte da sola. Le guide già in portoghese restano «Português (Portugal)»: da adesso le traduzioni suggerite arrivano in portoghese europeo. Chi ha ospiti brasiliani può aggiungere «Português (Brasil)». I testi della guida in brasiliano sono scritti da noi: falli rileggere a un madrelingua, se puoi.
 
 ## 4b. La guida vetrina (la demo della landing)
 
