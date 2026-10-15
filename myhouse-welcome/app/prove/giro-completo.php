@@ -214,7 +214,7 @@ $r = $ospite->get('/llms.txt');
 prova('llms.txt: introduzione, fatti, piani dal listino (97, 127, 127 + 70), FAQ come link a /domande#id, contatti', $r['code'] === 200
       && str_starts_with($r['body'], "# MyHouse Welcome\n\n> ") && str_contains($r['body'], '## Fatti chiave') && str_contains($r['body'], '- Essential: 97 €')
       && str_contains($r['body'], '- Plus: 127 €') && str_contains($r['body'], '- Portfolio: 127 € la prima struttura, poi 70 €') && str_contains($r['body'], '(con 2: 197 €)')
-      && str_contains($r['body'], '/domande#prova)') && str_contains($r['body'], '## Contatti') && str_contains($r['body'], 'info@welcomemyhouse.it'));
+      && str_contains($r['body'], '/domande#prova)') && str_contains($r['body'], '## Contatti') && str_contains($r['body'], 'assistenza@welcomemyhouse.it'));
 $r = $ospite->get('/');
 $ld = preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $r['body'], $mm) ? array_map(fn($j) => json_decode($j, true), $mm[1]) : [];
 $grafo = $ld[0]['@graph'] ?? [];
@@ -297,7 +297,7 @@ prova('…con le fonti dei numeri', str_contains($r['body'], 'Stime di aziende d
 prova('CTA della hero verso la registrazione e verso la demo', preg_match('#<section class="hero2">.*?</section>#s', $r['body'], $mh) && str_contains($mh[0], '/registrati"') && str_contains($mh[0], 'Guarda la demo'));
 prova('Fase 1 · piè di pagina con P.IVA, telefono e WhatsApp', str_contains($r['body'], 'P.IVA 02945910541') && str_contains($r['body'], 'href="tel:+393920061600"')
       && str_contains($r['body'], 'href="https://wa.me/393920061600"') && str_contains($r['body'], 'un progetto Blackout Agency')
-      && str_contains($r['body'], 'Via Ariodante Fabretti 17, Perugia') && str_contains($r['body'], 'href="mailto:info@welcomemyhouse.it"'));
+      && str_contains($r['body'], 'Via Ariodante Fabretti 17, Perugia') && str_contains($r['body'], 'href="mailto:assistenza@welcomemyhouse.it"'));
 prova('Fase 1 · favicon, icona Home e anteprima di condivisione', str_contains($r['body'], '/assets/favicon.svg') && str_contains($r['body'], '/assets/apple-touch-icon.png')
       && preg_match('#<meta property="og:image" content="https?://[^"]+/assets/og\.jpg">#', $r['body']) === 1);
 foreach (['favicon.svg', 'apple-touch-icon.png', 'og.jpg'] as $f) prova("Fase 1 · $f presente", is_file("$DOVE/assets/$f") && filesize("$DOVE/assets/$f") > 300);
@@ -835,7 +835,7 @@ prova('7A · email non confermata: il pannello rimanda a «Controlla la tua emai
       && (int) val('SELECT COUNT(*) FROM orders WHERE account_id = ?', [$acc['id']]) === 0, $r['loc']);
 $r = $anna->get('/conferma-email');
 prova('7A · «Controlla la tua email»: Spam e Promozioni, Rimanda, Ho sbagliato indirizzo, assistenza', $r['code'] === 200 && str_contains($r['body'], 'Controlla la tua email')
-      && str_contains($r['body'], 'Promozioni') && str_contains($r['body'], 'Rimanda') && str_contains($r['body'], 'Ho sbagliato indirizzo') && str_contains($r['body'], 'mailto:info@welcomemyhouse.it'));
+      && str_contains($r['body'], 'Promozioni') && str_contains($r['body'], 'Rimanda') && str_contains($r['body'], 'Ho sbagliato indirizzo') && str_contains($r['body'], 'mailto:assistenza@welcomemyhouse.it'));
 $r = $anna->segui($anna->post('/verifica/invia', ['torna' => 'conferma']));
 prova('7A · «Rimanda» manda un\'altra conferma', str_contains($r['body'], 'Ti abbiamo mandato di nuovo'));
 $r = $anna->segui($anna->post('/verifica/invia', ['torna' => 'conferma']));
@@ -1916,7 +1916,10 @@ prova('Tempo: le domande evitabili con una guida, accanto alle comunicazioni che
 prova('6J · niente blocco doppione «Il valore non è soltanto nella guida»', !str_contains($r['body'], 'class="frase"') && !str_contains($r['body'], 'Il valore non è soltanto nella guida'));
 prova('Guadagno: il commiato disegnato con le etichette vere della guida', str_contains($r['body'], 'class="congedo-mock"')
       && str_contains($r['body'], 'Com&#039;è andato il soggiorno?') && str_contains($r['body'], 'La prossima volta prenota da noi'));
-prova('FAQ: chi non trova la risposta può scrivere (WhatsApp ed email dal config)', preg_match('#id="domande".*?href="https://wa\.me/393920061600".*?href="mailto:info@welcomemyhouse\.it"#s', $r['body']) === 1);
+prova('FAQ: chi non trova la risposta può scrivere (WhatsApp ed email dal config)', preg_match('#id="domande".*?href="https://wa\.me/393920061600".*?href="mailto:assistenza@welcomemyhouse\.it"#s', $r['body']) === 1);
+prova('I bottoni Email: senza programma di posta un riquadro offre Gmail, Outlook e l\'indirizzo copiato (posta.js)', preg_match('#/assets/posta\.js\?v=\d+"#', $r['body']) === 1
+      && is_file("$DOVE/assets/posta.js") && str_contains((string) file_get_contents("$DOVE/assets/posta.js"), 'mail.google.com/mail/?view=cm')
+      && str_contains((string) file_get_contents("$DOVE/assets/posta.js"), 'outlook.live.com') && !str_contains((string) file_get_contents("$DOVE/assets/posta.js"), 'preventDefault'));
 prova('Chiusura: CTA e «chi c\'è dietro» nella stessa fascia, dopo i piani', preg_match('#<section class="chiusura".*?Crea gratis la tua guida.*?<aside class="chi"#s', $r['body']) === 1
       && strpos($r['body'], 'id="piani"') < strpos($r['body'], 'class="chiusura"'));
 prova('Menu del sito: c\'è «Domande»', str_contains($r['body'], '/#domande'));
@@ -3698,9 +3701,9 @@ $paola->post('/account/giudizio/ritira', []);
 prova('…ritirato: sparisce subito dalla home', !str_contains($ospite->get('/')['body'], 'alle undici di sera') && val('SELECT withdrawn_at FROM testimonials WHERE id = ?', [$gid]) !== null);
 $admin->post("/admin/testimonianze/$gid/pubblica", []);
 prova('…e l\'amministrazione non lo può ripubblicare', !str_contains($ospite->get('/')['body'], 'alle undici di sera'));
-$prima = count($posta('info@welcomemyhouse.it'));
+$prima = count($posta('assistenza@welcomemyhouse.it'));
 $paola->post('/giudizio', ['rating' => '2', 'body' => 'Mi manca la possibilità di stampare tutta la guida.', 'photo_source' => 'nessuna']);
-$m = $posta('info@welcomemyhouse.it'); $ult = end($m) ?: [];
+$m = $posta('assistenza@welcomemyhouse.it'); $ult = end($m) ?: [];
 prova('7D · da 1 a 3 stelle: «Ti scriviamo» e un\'email a noi con il giudizio', count($m) === $prima + 1 && str_contains((string) ($ult['subject'] ?? ''), 'Giudizio da 2/5')
       && str_contains((string) $ult['text'], 'stampare tutta la guida'), json_encode($ult['subject'] ?? null));
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');

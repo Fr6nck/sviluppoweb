@@ -91,6 +91,7 @@ $lingueBottoni = function () use ($coppia, $en): string {
 <?= $content ?>
 </main>
 <?php include __DIR__ . '/_piede.php'; ?>
+<script src="<?= MHW\av('/assets/posta.js') ?>" defer></script>
 <script>
 /* Il menu del telefono e quello dell'account si chiudono quando si sceglie una voce, si tocca fuori o si preme Esc. */
 document.addEventListener('click', function (e) {

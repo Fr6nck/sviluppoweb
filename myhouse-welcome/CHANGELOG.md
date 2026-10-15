@@ -1,5 +1,12 @@
 # Changelog — MyHouse Welcome
 
+## v2 · I bottoni «Email» funzionano anche senza programma di posta (15 ottobre 2026)
+
+Nessuna migrazione.
+
+- **Indirizzo:** l'email di serie per assistenza, suggerimenti e preventivi è `assistenza@welcomemyhouse.it` (prima `info@welcomemyhouse.it`). Vale per tutti i link `mailto:` del sito e del pannello, il piede del sito e delle email, /domande, llms.txt. Se in Amministrazione → Impostazioni → Sito (o in `MHW_CONTACT_EMAIL`) c'è un altro indirizzo, vince quello: sul sito pubblicato c'è già `assistenza@welcomemyhouse.it`.
+- **Perché sembravano rotti:** i link erano giusti e niente li bloccava, ma su un computer senza un programma di posta impostato (per esempio Chrome su Windows con Gmail nel browser) il clic su un `mailto:` non apre niente. Ora il link resta `mailto:assistenza@welcomemyhouse.it` (sul telefono e con Outlook o Mail si apre come prima) e in più, al clic, compare un riquadro in basso con «Scrivi con Gmail», «Scrivi con Outlook» e l'indirizzo, già copiato negli appunti; oggetto e messaggio, dove ci sono (preventivo, «Anche il tuo sito»), passano anche a Gmail e Outlook. Si chiude con × o Esc, da solo dopo 15 secondi. In italiano e, su /en, in inglese. Vale anche nel pannello.
+
 ## v2 · Diagnostica: config.php e l'applicazione fuori dalla cartella pubblica (15 ottobre 2026)
 
 Nessuna migrazione.

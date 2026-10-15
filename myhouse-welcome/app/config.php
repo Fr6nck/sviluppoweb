@@ -151,7 +151,7 @@ $config = [
     // L'indirizzo unico per assistenza, suggerimenti e preventivi (7A): i mailto del sito e del
     // pannello e il piede delle email. Si cambia da Amministrazione → Impostazioni → Sito.
     'contatti' => [
-        'email' => $env('MHW_CONTACT_EMAIL', 'info@welcomemyhouse.it'),
+        'email' => $env('MHW_CONTACT_EMAIL', 'assistenza@welcomemyhouse.it'),
     ],
 
     // 8B: gli indirizzi di partenza dei portali per le recensioni. Google cerca nome e città su Maps;

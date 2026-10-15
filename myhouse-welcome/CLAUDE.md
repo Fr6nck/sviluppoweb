@@ -16,7 +16,7 @@ App PHP 8.1+ per guide digitali degli ospiti (case vacanza, B&B, agriturismi). S
 - P.IVA: `02945910541`
 - Telefono: `+39 392 006 1600` — link `tel:+393920061600`
 - WhatsApp: stesso numero — link `https://wa.me/393920061600`
-- Email di contatto: `info@myhousewelcome.it` (`MHW_CONTACT_EMAIL`, confermata)
+- Email di contatto: `assistenza@welcomemyhouse.it` (`MHW_CONTACT_EMAIL`, confermata: è quella di tutti i `mailto:`)
 - Sede: `Via Ariodante Fabretti 17, Perugia` (`MHW_COMPANY_CITY`, confermata)
 
 ## Come lavori

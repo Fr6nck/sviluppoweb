@@ -189,7 +189,7 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 - **Amministrazione → Sistema → Testi e foto → English:** i testi inglesi di serie sono scritti da noi; cambiane quanti vuoi. «Ripristina il testo di serie» vale per la lingua scelta.
 - **Amministrazione → Piani → «English»** sotto ogni pacchetto: i testi inglesi delle schede. Se lasci vuoto un campo, /en mostra quello italiano.
 - **Amministrazione → SEO e GEO:** titolo e descrizione di «Home in inglese» e «Domande in inglese».
-- **Email per l'aiuto in inglese:** nella registrazione con `?lang=en` compare l'email di contatto delle Impostazioni (di serie `info@welcomemyhouse.it`).
+- **Email per l'aiuto in inglese:** nella registrazione con `?lang=en` compare l'email di contatto delle Impostazioni (di serie `assistenza@welcomemyhouse.it`).
 - Termini e Privacy restano in italiano: il piede inglese lo dice.
 
 **Clienti di prova, Marketing, SEO (7F).** La migrazione `039` parte da sola. Da fare:

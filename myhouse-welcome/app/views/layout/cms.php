@@ -248,6 +248,7 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
 </script>
 <?php endif; ?>
 <script src="<?= MHW\av('/assets/cms.js') ?>" defer></script>
+<script src="<?= MHW\av('/assets/posta.js') ?>" defer></script>
 <?php if ($u && !$admin && Auth::account()) include __DIR__ . '/../host/_sblocca.php'; /* 8B: «Passa a Plus/Portfolio», una finestra al posto dell'errore */ ?>
 <script src="<?= MHW\av('/assets/codici.js') ?>" defer></script>
 </body>

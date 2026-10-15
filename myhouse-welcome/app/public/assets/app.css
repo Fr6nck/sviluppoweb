@@ -2632,3 +2632,15 @@ ol.invito__passi{list-style:none;margin:0;padding:0}
 .lingua-come__titolo{font-size:18px;margin:0 0 8px}
 .lingua-come__voci{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px;line-height:1.5}
 fieldset .lingua-come{margin-top:12px}
+
+/* I bottoni «Email» senza programma di posta (assets/posta.js): il riquadro con Gmail, Outlook e l'indirizzo. */
+.posta-aiuto{position:fixed;z-index:60;left:50%;bottom:16px;transform:translateX(-50%);width:min(440px,calc(100% - 32px));
+  box-sizing:border-box;padding:16px 44px 16px 16px;background:var(--raised);color:var(--ink);border:1px solid var(--line);
+  border-radius:var(--r-lg);box-shadow:0 12px 32px rgba(35,27,18,.18);font-size:15px;line-height:1.45}
+.posta-aiuto p{margin:0 0 12px}
+.posta-aiuto b{display:inline-block;font-weight:600;user-select:all;overflow-wrap:anywhere}
+.posta-aiuto__azioni{display:flex;gap:8px;flex-wrap:wrap}
+.posta-aiuto__x{position:absolute;top:8px;right:8px;width:32px;height:32px;border:0;border-radius:var(--r-sm);background:none;
+  color:var(--muted);font-size:22px;line-height:1;cursor:pointer}
+.posta-aiuto__x:hover{background:var(--sunk);color:var(--ink)}
+.posta-aiuto__x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}

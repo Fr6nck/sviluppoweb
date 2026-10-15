@@ -42,7 +42,7 @@ return [
     //     'company'          => 'Blackout Agency',
     //     'company_vat'      => '02945910541',
     //     'company_city'     => 'Via Ariodante Fabretti 17, Perugia',
-    //     'contact_email'    => 'info@myhousewelcome.it',
+    //     'contact_email'    => 'assistenza@welcomemyhouse.it',
     //     'contact_phone'    => '+39 392 006 1600',
     //     'contact_whatsapp' => '393920061600',
     // ],
