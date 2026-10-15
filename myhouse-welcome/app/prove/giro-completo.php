@@ -3483,8 +3483,9 @@ prova('llms.txt dopo il salvataggio: introduzione e fatti nuovi, righe vuote tol
 $r = $adm6->post('/admin/seo', ['dominio' => 'non un dominio'] + $campi6k);
 prova('Dominio scritto male: non si salva e si dice perché', str_contains($adm6->get('/admin/seo')['body'], 'Il dominio va scritto per intero')
       && (string) val("SELECT valore FROM seo_settings WHERE chiave = 'dominio'") === 'https://myhousewelcome.it');
+$salvSeo = (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'seo.save'");   // 8H: le prove delle statistiche salvano anche loro
 $r = (new Browser('anonimo6k'))->post('/admin/seo', $campi6k);
-prova('/admin/seo senza accesso: non si salva', (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'seo.save'") === 1);
+prova('/admin/seo senza accesso: non si salva', (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'seo.save'") === $salvSeo);
 
 // ================================================================= 6M · guide private e codici di accesso
 capitolo('6M · guide fuori dai motori e codici di accesso con conferma a proprio rischio');
