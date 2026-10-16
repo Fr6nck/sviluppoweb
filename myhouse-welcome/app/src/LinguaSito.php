@@ -3,14 +3,14 @@ namespace MHW;
 
 /**
  * 8E — La lingua del sito pubblico: italiano (di serie) o inglese, solo per la home e le domande
- * (/en, /en/questions). Pannello, registrazione, Termini e Privacy restano in italiano.
+ * (/en, /en/questions) e (8J) i documenti legali (/en/terms, /en/privacy, /en/dpa). Pannello e registrazione restano in italiano.
  * La rotta inglese chiama imposta('en'); le viste leggono t() per i testi fissi, TestiSito per
  * quelli modificabili, Faq::tutte() per le domande, Plans::inLingua() per le schede dei piani.
  */
 final class LinguaSito
 {
     /** Le pagine che esistono nelle due lingue: percorso italiano => percorso inglese. */
-    public const COPPIE = ['/' => '/en', '/domande' => '/en/questions'];
+    public const COPPIE = ['/' => '/en', '/domande' => '/en/questions', '/termini' => '/en/terms', '/privacy' => '/en/privacy', '/dpa' => '/en/dpa'];
 
     private static string $loc = 'it';
 

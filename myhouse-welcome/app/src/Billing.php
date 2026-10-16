@@ -129,6 +129,13 @@ final class Billing
         $price = (string) ($sub['items']['data'][0]['price']['id'] ?? '');
 
         Db::update('orders', ['status' => 'paid', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]);
+        // 8J: chi acquista (impresa o consumatore) viene dall'ordine; in un cambio di piano resta quello dell'abbonamento di prima.
+        $acquirente = [];
+        if (Migrator::columnExists('subscriptions', 'acquirente')) {
+            $prima = Db::one("SELECT acquirente, recesso_rinuncia FROM subscriptions WHERE account_id = ? AND acquirente <> '' ORDER BY id DESC", [$acc]);
+            if (($order['acquirente'] ?? '') !== '') $acquirente = ['acquirente' => $order['acquirente'], 'recesso_rinuncia' => (int) $order['recesso_rinuncia']];
+            elseif ($prima) $acquirente = ['acquirente' => $prima['acquirente'], 'recesso_rinuncia' => (int) $prima['recesso_rinuncia']];
+        }
         // Un piano nuovo sostituisce il precedente.
         Db::run('UPDATE subscriptions SET status = ?, updated_at = ? WHERE account_id = ? AND status IN (?, ?)',
                 ['replaced', Support::now(), $acc, 'active', 'trialing']);
@@ -152,7 +159,7 @@ final class Billing
             'cancel_at_period_end' => !empty($sub['cancel_at_period_end']) ? 1 : 0,
             'payment_status' => 'paid', 'updated_at' => Support::now(),
             'quantity' => $quantita, 'provider_extra_item_id' => $voceExtra,
-        ];
+        ] + $acquirente;
         if ($esistente) Db::update('subscriptions', $riga, 'id = :sid', ['sid' => $esistente['id']]);
         else Db::insert('subscriptions', $riga + ['created_at' => Support::now()]);
 

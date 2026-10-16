@@ -27,7 +27,7 @@ final class Impostazioni
         'sito' => [
             'base_url'       => ['MHW_BASE_URL', 'Indirizzo del sito', 'url', 'Per esempio https://welcomemyhouse.it, senza barra finale. È quello che finisce nei QR, nelle email e nei motori di ricerca.'],
             'pretty_urls'    => ['MHW_PRETTY_URLS', 'Indirizzi puliti, senza index.php', 'check', 'Si accende solo se la prova riesce: il sito chiede a sé stesso una pagina senza index.php. Spento, tutto resta come prima.'],
-            'contatti.email' => ['MHW_CONTACT_EMAIL', 'Indirizzo per assistenza, suggerimenti e preventivi', 'email', 'Quello dei bottoni «Scrivici» del sito e del pannello, e del piede delle email. Di serie info@welcomemyhouse.it.'],
+            'contatti.email' => ['MHW_CONTACT_EMAIL', 'Indirizzo per assistenza, suggerimenti e preventivi', 'email', 'Quello dei bottoni «Scrivici» del sito e del pannello, e del piede delle email. Di serie assistenza@welcomemyhouse.it. È anche l\'indirizzo per i diritti privacy.'],
         ],
         'stripe' => [
             'stripe.secret_key'     => ['STRIPE_SECRET_KEY', 'Chiave segreta', 'secret', 'Stripe → Sviluppatori → Chiavi API. Comincia con sk_live_ (o sk_test_ per le prove).'],
@@ -80,13 +80,27 @@ final class Impostazioni
             'registri.key'     => ['MHW_REGISTRI_KEY', 'Access key ID', 'text', 'Di un utente IAM a parte (welcomemyhouse-registri) con i SOLI permessi s3:PutObject e s3:PutObjectRetention su questo bucket. Non quelle delle foto.'],
             'registri.secret'  => ['MHW_REGISTRI_SECRET', 'Secret access key', 'secret', ''],
         ],
+        // 8J: il titolare del trattamento (piè di pagina, documenti legali, email, dati strutturati) e le versioni dei documenti.
+        'legale' => [
+            'legal.company'         => ['MHW_COMPANY', 'Ragione sociale', 'text', 'Di serie City Up S.r.l. È il titolare del trattamento e il fornitore del servizio.'],
+            'legal.company_legal'   => ['MHW_COMPANY_LEGAL', 'Riga completa per i documenti', 'text', 'Ragione sociale, P.IVA e C.F., REA: compare in Termini, Privacy e DPA.'],
+            'legal.company_vat'     => ['MHW_COMPANY_VAT', 'Partita IVA', 'text', '11 cifre, senza IT.'],
+            'legal.company_city'    => ['MHW_COMPANY_CITY', 'Sede legale', 'text', 'Per esempio Via Ariodante Fabretti 15, 06123 Perugia (PG).'],
+            'legal.company_pec'     => ['MHW_COMPANY_PEC', 'PEC', 'email', ''],
+            'legal.company_site'    => ['MHW_COMPANY_SITE', 'Sito della società', 'url', 'Di serie https://www.cityup.eu'],
+            'legal.contact_phone'   => ['MHW_CONTACT_PHONE', 'Telefono', 'text', 'Come si legge, per esempio +39 392 006 1600.'],
+            'legal.contact_whatsapp' => ['MHW_CONTACT_WHATSAPP', 'WhatsApp', 'text', 'Solo cifre, con il prefisso senza +, per esempio 393920061600.'],
+            'legal.terms_version'   => ['MHW_TERMS_VERSION', 'Versione dei Termini (data da cui valgono)', 'data', 'Cambiala quando cambi il testo dei Termini in Testi e foto → Documenti legali. Una data futura (almeno 30 giorni) manda l\'avviso ai clienti; a quella data compare la finestra «Accetto».'],
+            'legal.privacy_version' => ['MHW_PRIVACY_VERSION', 'Versione dell\'Informativa privacy', 'data', 'Come sopra, per l\'informativa.'],
+            'legal.dpa_version'     => ['MHW_DPA_VERSION', 'Versione dell\'Accordo sul trattamento dei dati (DPA)', 'data', 'Come sopra, per il DPA (Allegato A dei Termini).'],
+        ],
         // Invita un amico (Inviti): acceso da qui, senza toccare config.local.php a mano.
         'inviti' => [
             'inviti.attivi' => ['MHW_INVITI', 'Accendi «Invita un amico»', 'check', 'I clienti con un abbonamento attivo vedono il loro link e il codice, e possono mandare l\'invito per email. Prima di accenderlo con le chiavi live, fai una prova in modalità test di Stripe.'],
         ],
     ];
 
-    public const TITOLI = ['sito' => 'Sito', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'portali' => 'Portali', 'registri' => 'Registri', 'inviti' => 'Invita un amico'];
+    public const TITOLI = ['sito' => 'Sito', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'portali' => 'Portali', 'registri' => 'Registri', 'legale' => 'Titolare e documenti legali', 'inviti' => 'Invita un amico'];
 
     public static function file(): string { return MHW_APP . '/config.local.php'; }
 
@@ -253,6 +267,8 @@ final class Impostazioni
                 $percorso === 'registri.regione' && !preg_match('/^[a-z]{2}(-[a-z]+)+-\d$/', $grezzo) => 'La regione si scrive come eu-south-1.',
                 $percorso === 'registri.bucket' && !preg_match('/^[a-z0-9][a-z0-9.\-]{1,61}[a-z0-9]$/', $grezzo) => 'Il nome del bucket ha solo lettere minuscole, numeri, punti e trattini.',
                 $percorso === 'registri.key' && !preg_match('/^[A-Z0-9]{16,128}$/', $grezzo) => 'L\'access key ID è fatto di lettere maiuscole e numeri, per esempio AKIA….',
+                $percorso === 'legal.company_vat' && !preg_match('/^\d{11}$/', $grezzo) => 'La partita IVA italiana è fatta di 11 cifre (senza IT).',
+                $percorso === 'legal.contact_whatsapp' && !preg_match('/^\d{8,15}$/', $grezzo) => 'Scrivi solo le cifre, con il prefisso del paese e senza +, per esempio 393920061600.',
                 $tipo === 'cifra' && (!ctype_digit(str_replace('.', '', $grezzo)) || (int) str_replace('.', '', $grezzo) < 1 || (int) str_replace('.', '', $grezzo) > 100000000) => 'Scrivi un numero intero, per esempio 150000.',
                 $tipo === 'decimale' && (!preg_match('/^\d{1,6}([.,]\d{1,6})?$/', $grezzo) || (float) str_replace(',', '.', $grezzo) <= 0) => 'Scrivi un numero, per esempio 0,86.',
                 $tipo === 'data' && (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $grezzo) || !checkdate((int) substr($grezzo, 5, 2), (int) substr($grezzo, 8, 2), (int) substr($grezzo, 0, 4))) => 'Scrivi la data come 2027-10-31.',
@@ -430,6 +446,12 @@ final class Impostazioni
                     }
                     return [true, 'Acceso: ' . $n . ($n === 1 ? ' cliente può' : ' clienti possono') . ' invitare. Chi non ha ancora un abbonamento attivo vede la pagina e il motivo. '
                                 . 'Per gli abbonamenti attivati dallo staff lo sconto si applica a mano: lo trovi in Inviti → «Da applicare a mano al rinnovo».'];
+                case 'legale':   // 8J: come si presenta il titolare, e le versioni in vigore
+                    $l = Config::get('legal');
+                    $versioni = Legale::versioni();
+                    $stato = [];
+                    foreach (Legale::DOCUMENTI as $d => [$nome]) $stato[] = $nome . ' ' . Support::date($versioni[$d]) . (Legale::futura($versioni[$d]) ? ' (dal ' . Support::date($versioni[$d]) . ': avviso in corso)' : '');
+                    return [true, 'Piè di pagina: «' . Legale::rigaTitolare() . '». Versioni: ' . implode(' · ', $stato) . '. Da accettare di nuovo: ' . Legale::daRiaccettare() . ' clienti.'];
                 case 'portali':   // 8B: i link che la guida prepara, con una struttura d'esempio
                     $p = ['name' => 'Casa Esempio', 'city' => 'Assisi'];
                     $righe = [];

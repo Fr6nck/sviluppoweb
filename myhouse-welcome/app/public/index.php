@@ -108,6 +108,9 @@ if ($ospite) header('X-Robots-Tag: ' . Support::ROBOTS_GUIDE);
 // funziona in una sottocartella e con o senza index.php nell'indirizzo.
 if ($route !== '/webhook/stripe' && !$ospite) Csrf::check();
 
+// 8J: chi deve ancora accettare i Termini, l'Informativa o il DPA aggiornati può solo consultare il pannello.
+if (!$ospite && Installer::installed()) MHW\Legale::solaLettura($route);
+
 // Le email di richiamo (Richiami): un controllo leggero dopo le pagine del pannello e della
 // landing, al massimo ogni 15 minuti. Gira a pagina già mandata: chi naviga non aspetta.
 if (($route === '/' || str_starts_with($route, '/pannello')) && Installer::installed()) {

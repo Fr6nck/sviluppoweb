@@ -22,7 +22,9 @@ $bisogni = ['aspetto' => 'sito2.b.aspetto', 'google' => 'sito2.b.google', 'diret
 $id = preg_replace('/[^a-z0-9-]/', '', (string) $fn['id']) ?: 'fs';
 // Il messaggio di serie (senza JavaScript): la prima frase e la domanda finale.
 $msgSerie = html_entity_decode($inizio . ' ' . $tx('sito2.msg.fine'), ENT_QUOTES, 'UTF-8');
-$scopri = 'https://blackout.in/myhouse/?da=welcome'; ?>
+$scopri = 'https://blackout.in/myhouse/?da=welcome';
+// 8J: le risposte vanno a Blackout Agency: lo dice la riga sotto i bottoni, con il link all'informativa.
+$linkPrivacy = '<a href="' . b() . MHW\LinguaSito::percorso('/privacy') . '#trattamento-8">' . (MHW\LinguaSito::en() ? 'Privacy policy' : 'Informativa privacy') . '</a>'; ?>
 <div class="funnel funnel--nojs<?= $fn['compatta'] ? ' funnel--compatta' : '' ?>" data-funnel data-da="<?= Support::e($fn['da']) ?>"
      data-passo-iniziale="<?= in_array($fn['passo'], ['si', 'no'], true) ? $fn['passo'] : '' ?>"
      data-url="<?= b() ?>/sito/interesse" data-csrf="<?= Support::e(Csrf::token()) ?>" data-scopri="<?= Support::e($scopri) ?>"
@@ -81,6 +83,7 @@ $scopri = 'https://blackout.in/myhouse/?da=welcome'; ?>
       <?php if ($email !== ''): ?><a class="btn btn--ghost funnel__email" href="mailto:<?= Support::e($email) ?>" data-canale="email"><?= Icon::svg('message', 17) ?><?= $Tf('sito2.email') ?></a><?php endif; ?>
     </div>
     <p class="funnel__nota"><?= $Tf('sito2.risposta') ?></p>
+    <p class="funnel__nota funnel__privacy small"><?= $Tf('sito2.privacy', ['informativa' => $linkPrivacy]) ?></p>
     <button type="button" class="funnel__indietro" data-vai="2"><?= $Tf('sito2.indietro') ?></button>
   </div>
 
@@ -93,5 +96,6 @@ $scopri = 'https://blackout.in/myhouse/?da=welcome'; ?>
       <?php if ($email !== ''): ?><a class="btn btn--ghost funnel__email" href="mailto:<?= Support::e($email) ?>?subject=<?= rawurlencode(html_entity_decode($tx('sito2.oggetto'), ENT_QUOTES, 'UTF-8')) ?>&amp;body=<?= rawurlencode($msgSerie) ?>"><?= Icon::svg('message', 17) ?><?= $Tf('sito2.email') ?></a><?php endif; ?>
     </div>
     <p class="funnel__nota"><?= $Tf('sito2.risposta') ?></p>
+    <p class="funnel__nota funnel__privacy small"><?= $Tf('sito2.privacy', ['informativa' => $linkPrivacy]) ?></p>
   </div>
 </div>

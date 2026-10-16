@@ -1,5 +1,24 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 8J Termini, Privacy e DPA conformi al GDPR, titolare City Up S.r.l. (15 ottobre 2026)
+
+Migrazione **042**. Da configurare: DA-CONFIGURARE, «Termini, Privacy, DPA e titolare (8J)». Testi di partenza: da far rivedere da un legale.
+
+- **Titolare: City Up S.r.l.** (P.IVA e C.F. 03793880547, REA PG-352001, Via Ariodante Fabretti 15, 06123 Perugia, PEC cityup@pec.it) al posto di Blackout Agency in `config.php → legal`, piè di pagina del sito e delle email («City Up S.r.l. · P.IVA … · PEC …»), dati strutturati (parentOrganization con www.cityup.eu), SEO e GEO (la 042 aggiorna i vecchi valori di serie), documenti. Nuovo gruppo **Impostazioni → Titolare e documenti legali** (anche le versioni). Blackout Agency resta solo come chi realizza i siti MyHouse: nel percorso «Anche il tuo sito» una riga dice che le risposte vanno a loro.
+- **Termini e condizioni** riscritti: 16 punti con indice (definizioni, una guida per unità, 18 anni, prova, rinnovo con avviso, mancato pagamento, **recesso impresa/consumatore**, contenuti, ruoli privacy, responsabilità, sospensione e chiusura, Invita un amico, traduzioni, modifiche con 30 giorni di preavviso, legge e foro di Perugia, contatti), Allegato A (DPA) e **Allegato B, modulo di recesso** (con «Compila e manda per email»).
+- **Informativa privacy** (artt. 13–14): 12 trattamenti, ognuno in una tabella (dati, finalità, base giuridica, conservazione, destinatari), fornitori con sede, trasferimenti extra-UE, minori, diritti, cookie (8H), modifiche, titolare, nessun DPO. Il fornitore della posta viene dall'impostazione.
+- **Accordo sul trattamento dei dati** (art. 28) in `/dpa`: istruzioni, riservatezza, misure di sicurezza, sub-responsabili con 30 giorni di preavviso, violazioni entro 48 ore, cancellazione, verifiche.
+- **In inglese**: `/en/terms`, `/en/privacy`, `/en/dpa`, con canonical e hreflang, nella sitemap; piè di pagina con Termini · Privacy · DPA nella lingua della pagina.
+- I testi si cambiano da **Testi e foto → Documenti legali** (italiano e inglese), con i segnaposto dei dati del titolare; `lang/legale.php` tiene quelli di serie. Ogni testo in vigore si archivia da solo (`legal_versions`): «Versioni precedenti» in fondo alle pagine (`?versione=…`, noindex) e in Testi e foto. I Termini del 2026-10-08 e la Privacy 2026-10 sono già nell'archivio.
+- **Versioni e ri-accettazione**: le versioni sono date (di serie 2026-10-15). Alla registrazione si accettano Termini, Privacy e DPA (`users.dpa_version`, `legal_acceptances`, una riga per documento). Versione cambiata: nel pannello la finestra «Abbiamo aggiornato i Termini e l'Informativa» con le novità in tre righe e «Accetto»; finché non accetta il pannello è in sola lettura (niente moduli, tranne «Accetto» ed «Esci»); mai durante l'accesso dell'assistenza. Versione con data futura: una riga nel pannello e la finestra a quella data. Email di avviso ai clienti con un abbonamento attivo, **una sola volta** per combinazione di versioni, dal giro dei richiami e da `/cron`.
+- **Registrazione**: una sola casella, non spuntata, «Accetto i Termini e l'Accordo sul trattamento dei dati e ho letto l'Informativa privacy», con i tre link.
+- **Checkout**: «Chi acquista?» impresa/professionista o privato; per il privato la casella obbligatoria «Chiedo che il servizio inizi subito…». Salvata nell'ordine e nell'abbonamento (`acquirente`, `recesso_rinuncia`; nel cambio di piano resta quella di prima) e visibile in Amministrazione → cliente (anche il DPA accettato e «Da accettare»).
+- Sotto l'email per gli ospiti e i contatti della guida: «Questo contatto compare nella guida e nella pagina delle recensioni: assicurati di poterlo pubblicare».
+- **Account**: «Documenti accettati e accessi dell'assistenza» (data, ora e chi è entrato nell'account).
+- Tempi dell'informativa applicati dal sito: risposte di «Anche il tuo sito» cancellate dopo 12 mesi, email cifrate degli inviti dopo 24 (giro giornaliero dei registri).
+- `_brief/REGISTRO-TRATTAMENTI.md`: il registro dei trattamenti (art. 30) e l'elenco dei fornitori con i loro DPA. Documento interno.
+- Non fatto (manca la 6L): download dei dati e chiusura dell'account dal pannello, cancellazione automatica degli account inattivi, backup cifrati. I testi dicono di scrivere all'assistenza.
+
 ## v2 · 8I registri (log) conformi al GDPR (15 ottobre 2026)
 
 Nessuna migrazione. Da configurare: DA-CONFIGURARE, «Registri (log) conformi al GDPR».

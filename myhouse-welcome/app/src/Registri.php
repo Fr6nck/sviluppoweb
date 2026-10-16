@@ -99,9 +99,22 @@ final class Registri
         try { self::dividiVecchi(); } catch (\Throwable $e) { Log::exception($e, 'registri: file vecchi'); }
         try { self::pulisci(); } catch (\Throwable $e) { Log::exception($e, 'registri: pulizia'); }
         try { self::pulisciAudit(); } catch (\Throwable $e) { Log::exception($e, 'registri: registro delle azioni'); }
+        try { self::pulisciDati(); } catch (\Throwable $e) { Log::exception($e, 'registri: dati scaduti'); }
         if (self::s3Configurato()) {
             try { self::caricaS3(gmdate('Y-m-d', time() - 86400)); } catch (\Throwable $e) { Log::exception($e, 'registri: copia su S3'); }
         }
+    }
+
+    /**
+     * 8J · I tempi dell'informativa privacy che il sito applica da solo: le risposte di «Anche il tuo sito» dopo 12 mesi,
+     * le email (cifrate) degli inviti dopo 24 mesi.
+     */
+    public static function pulisciDati(?int $adesso = null): void
+    {
+        $t = $adesso ?? time();
+        $iso = fn(int $s) => gmdate('Y-m-d\TH:i:s\Z', $s);
+        if (Migrator::tableExists('interessi_sito')) Db::run('DELETE FROM interessi_sito WHERE created_at < ?', [$iso(strtotime('-12 months', $t))]);
+        if (Migrator::tableExists('referral_invites')) Db::run('DELETE FROM referral_invites WHERE sent_at < ?', [$iso(strtotime('-24 months', $t))]);
     }
 
     /** Una volta: app.log e mail.log di prima della 8I divisi nei file del giorno, secondo la data di ogni riga. */

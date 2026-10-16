@@ -37,8 +37,7 @@ final class Mailer
     public static function layout(string $titolo, array $paragrafi, ?array $bottone, ?string $nota, ?string $piede, array $scelte = []): string
     {
         $e = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
-        $l = Config::get('legal') ?? [];
-        $chi = implode(' · ', array_filter([(string) ($l['company'] ?? ''), ($l['company_vat'] ?? '') !== '' ? 'P.IVA ' . $l['company_vat'] : '', (string) ($l['company_city'] ?? '')]));
+        $chi = Legale::rigaTitolare();   // 8J: il titolare, con la PEC
         $aiuto = Support::contatto();
         $radice = Support::radice();
         $sito = Support::baseUrl();

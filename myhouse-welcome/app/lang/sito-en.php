@@ -159,7 +159,7 @@ return [
     'chiusura.titolo' => 'Your property has so much to tell. Share it with your guests.',
     'chiusura.testo'  => 'Create your guide, customise it and see how it looks. Only then decide whether to publish it: you don\'t need a credit card to get started.',
     'chi.titolo'      => 'Designed for hosts. Built by people who work in digital and in hospitality.',
-    'chi.testo'       => 'MyHouse Welcome is part of the MyHouse solutions by [Blackout Agency](https://blackout.in), built for the digital needs of hospitality businesses.',
+    'chi.testo'       => 'MyHouse Welcome is a service by City Up S.r.l. (Perugia), built for the digital needs of hospitality businesses. MyHouse websites are made by [Blackout Agency](https://blackout.in).',
     // ---- anche il tuo sito
     'sito2.kicker'      => 'Another service, from the same team',
     'sito2.titolo'      => 'The guide welcomes your guests.',
@@ -192,6 +192,7 @@ return [
     'sito2.whatsapp'    => 'WhatsApp',
     'sito2.email'       => 'Email',
     'sito2.risposta'    => 'We will reply with a tailored proposal, with no obligation.',
+    'sito2.privacy'     => 'We share your answers and contact details with **Blackout Agency** (blackout.in), the company that builds MyHouse websites: they will get back to you. {informativa}',
     'sito2.oggetto'     => 'A website for my property',
     'sito2.msg.home'    => 'Hello, I run a holiday rental.',
     'sito2.msg.pannello'=> 'Hello, I have a MyHouse Welcome guide for {struttura}.',

@@ -169,6 +169,24 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
         <div class="actions"><button class="btn">Mandami il link di conferma</button></div>
       </form>
     </details>
+    <?php /* 8J · i documenti accettati e gli accessi dell'assistenza al tuo account (ognuno registrato: data e chi) */
+          $accessiA = MHW\Db::all("SELECT l.created_at, u.name FROM audit_log l LEFT JOIN users u ON u.id = l.actor_user_id
+                                   WHERE l.action = 'impersonate.start' AND l.target_user_id = ? ORDER BY l.id DESC LIMIT 20", [(int) $user['id']]); ?>
+    <details class="fieldset" id="privacy-account">
+      <summary class="legend">Documenti accettati e accessi dell'assistenza</summary>
+      <div class="stack" style="gap:8px;margin-top:12px">
+        <p class="small">Hai accettato i <a href="<?= b() ?>/termini">Termini</a> (versione <?= Support::e(($user['terms_version'] ?? '') ?: '—') ?>),
+          l'<a href="<?= b() ?>/dpa">Accordo sul trattamento dei dati</a> (versione <?= Support::e(($user['dpa_version'] ?? '') ?: '—') ?>)
+          e letto l'<a href="<?= b() ?>/privacy">Informativa privacy</a> (versione <?= Support::e(($user['privacy_version'] ?? '') ?: '—') ?>).
+          Per una copia dei tuoi dati o per chiudere l'account scrivi a <a href="mailto:<?= Support::e(Support::contatto()) ?>"><?= Support::e(Support::contatto()) ?></a>.</p>
+        <?php if ($accessiA): ?>
+          <p class="small" style="margin:0"><b>Accessi dell'assistenza al tuo account</b></p>
+          <ul class="small" style="margin:0">
+            <?php foreach ($accessiA as $x): ?><li><?= Support::e(Support::date($x['created_at'])) ?>, ore <?= Support::e(gmdate('H:i', (int) strtotime((string) $x['created_at']))) ?> UTC · <?= Support::e(trim(explode(' ', trim((string) $x['name']))[0] ?? '') ?: 'amministratore') ?></li><?php endforeach; ?>
+          </ul>
+        <?php else: ?><p class="small muted" style="margin:0">L'assistenza non è mai entrata nel tuo account. Se succede, lo trovi scritto qui.</p><?php endif; ?>
+      </div>
+    </details>
   </section>
 
   <?php if ($ordini): ?>

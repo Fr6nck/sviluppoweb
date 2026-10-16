@@ -198,8 +198,20 @@ foreach (MHW\Seo::tipologie() as $chiave => $tipoP) {
     });
 }
 
-$r->get('/termini', fn() => View::out('pub/legal', ['doc' => 'termini', 'seoPagina' => 'termini'], 'layout/bare'));
-$r->get('/privacy', fn() => View::out('pub/legal', ['doc' => 'privacy', 'seoPagina' => 'privacy'], 'layout/bare'));
+// 8J · Termini, Privacy e DPA, in italiano e in inglese. ?versione=AAAA-MM-GG mostra una versione archiviata (noindex).
+foreach (MHW\Legale::DOCUMENTI as $docL => [, , $pItL, $pEnL]) {
+    foreach (['it' => $pItL, 'en' => $pEnL] as $locL => $percorsoL) {
+        $r->get($percorsoL, function () use ($docL, $locL) {
+            MHW\LinguaSito::imposta($locL);
+            $v = (string) ($_GET['versione'] ?? '');
+            if ($v !== '' && preg_match('/^[0-9-]{4,20}$/', $v) && $v !== MHW\Legale::versioni()[$docL] && ($vecchia = MHW\Legale::archiviata($docL, $v, $locL))) {
+                View::out('pub/legal', ['doc' => $docL, 'archiviata' => $vecchia], 'layout/bare');
+                return;
+            }
+            View::out('pub/legal', ['doc' => $docL, 'seoPagina' => ($locL === 'en' ? 'en-' : '') . $docL], 'layout/bare');
+        });
+    }
+}
 
 // I file per motori e assistenti: si rigenerano a ogni richiesta da Amministrazione → SEO e GEO.
 $fileSeo = function (string $tipo, callable $testo) use ($guard): never {
@@ -236,11 +248,10 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
             if (!RateLimit::hit('register:' . RateLimit::ipKey(), 10, 3600)) {
                 throw new RuntimeException('Troppe registrazioni da questa connessione. Riprova tra un\'ora.');
             }
-            // Un solo consenso esplicito, sui Termini. La privacy si prende in visione:
-            // la riga sotto il bottone lo dichiara e recordConsent ne salva versione e
-            // data. Formulazione da far verificare al consulente privacy.
+            // 8J: una sola casella, obbligatoria e non spuntata: Termini e Accordo sul trattamento dei dati accettati,
+            // Informativa letta. recordConsent ne salva le tre versioni e la data (users e legal_acceptances).
             if (empty($_POST['termini'])) {
-                throw new RuntimeException('Per creare l\'account devi accettare i Termini e condizioni.');
+                throw new RuntimeException('Per creare l\'account devi accettare i Termini e l\'Accordo sul trattamento dei dati, dopo aver letto l\'Informativa privacy.');
             }
             // 7A: l'email due volte, per non sbagliarla (incollarla è permesso).
             if (mb_strtolower(trim($vecchi['email'])) !== mb_strtolower(trim($vecchi['email2']))) {
@@ -298,6 +309,17 @@ $r->any('/accedi', function () use ($guard, $doveComincia) {
 });
 
 $r->post('/esci', function () { Auth::logout(); Support::redirect('/'); });
+
+// 8J · «Accetto» i Termini, l'Informativa e il DPA aggiornati (la finestra nel pannello). Mai al posto del cliente.
+$r->post('/legale/accetta', function () {
+    $u = Auth::requireUser();
+    if (Auth::isImpersonating()) { Support::flash('Durante l\'accesso dell\'assistenza non si accettano i documenti al posto del cliente.', 'err'); Support::redirect('/pannello'); }
+    MHW\Legale::accetta((int) $u['id'], 'riaccettazione');
+    Auth::audit('legale.accettati', (int) $u['id'], MHW\Legale::versioni());
+    Support::flash('Grazie: hai accettato i documenti aggiornati. Puoi continuare a lavorare sulle tue guide.');
+    $torna = Support::routePath((string) (parse_url((string) ($_SERVER['HTTP_REFERER'] ?? ''), PHP_URL_PATH) ?: ''));
+    Support::redirect(preg_match('#^/(pannello|account|piano)#', $torna) ? $torna : '/pannello');
+});
 
 // ------------------------------------------------------------ verifica email
 /* Il link di conferma porta dentro la procedura, già connessi (7A): il link è monouso e vale 48 ore. */

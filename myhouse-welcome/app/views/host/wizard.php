@@ -214,6 +214,32 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
 
     <p class="small muted pubblica-riservata"><?= Icon::svg('lock', 14) ?><span>Dopo la pubblicazione la guida è online per chi ha il link o il QR. Non compare nei motori di ricerca.</span></p>
     <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/pubblica" style="margin:0"><?= Csrf::field() ?>
+      <?php if (!$sub && $piano): /* 8J · chi acquista, prima del primo pagamento: impresa o privato (con la richiesta di iniziare subito) */
+            $acqS = (array) ($_SESSION['acquisto'] ?? []); ?>
+        <fieldset class="fieldset stack acquisto" id="acquisto" style="gap:10px;margin:0 0 16px">
+          <legend class="legend">Chi acquista?</legend>
+          <label class="check"><input type="radio" name="acquirente" value="impresa" required data-acquirente<?= ($acqS['acquirente'] ?? '') === 'impresa' ? ' checked' : '' ?>>
+            <span>Acquisto per la mia attività ricettiva (impresa o professionista)</span></label>
+          <label class="check"><input type="radio" name="acquirente" value="consumatore" required data-acquirente<?= ($acqS['acquirente'] ?? '') === 'consumatore' ? ' checked' : '' ?>>
+            <span>Acquisto come privato</span></label>
+          <div class="acquisto__privato stack" style="gap:6px" data-acquisto-privato>
+            <label class="check" style="align-items:flex-start"><input type="checkbox" name="recesso_rinuncia" value="1" data-recesso style="margin-top:1px"<?= !empty($acqS['rinuncia']) ? ' checked' : '' ?>>
+              <span>Chiedo che il servizio inizi subito e so che, pubblicata la guida, perdo il diritto di recesso per il periodo già goduto</span></label>
+            <p class="help" style="margin:0">Solo per i privati, ed è obbligatoria per pubblicare subito. Come privato hai 14 giorni per recedere: <a href="<?= b() ?>/termini#recesso" target="_blank" rel="noopener">come funziona</a>.</p>
+          </div>
+        </fieldset>
+        <script>
+        (function () {
+          var f = document.getElementById('acquisto'); if (!f) return;
+          var priv = f.querySelector('[data-acquisto-privato]'), c = f.querySelector('[data-recesso]');
+          var aggiorna = function () {
+            var x = f.querySelector('[data-acquirente]:checked'), p = !!x && x.value === 'consumatore';
+            priv.hidden = !p; c.required = p; if (!p) c.checked = false;
+          };
+          f.addEventListener('change', aggiorna); aggiorna();
+        })();
+        </script>
+      <?php endif; ?>
       <?php $barraAvanti = '<button class="btn btn--go" ' . ($problemi || (!$sub && (!$verificato || !$piano || !MHW\Fatturazione::completa($acc))) ? 'disabled' : '') . '>'
                          . ($sub ? 'Pubblica ora' : 'Conferma e paga') . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
             include __DIR__ . '/_barra_passo.php'; ?>

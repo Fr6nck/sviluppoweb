@@ -21,6 +21,11 @@ final class Seo
         'en-domande' => ['/en/questions', 'Domande in inglese'],
         'termini' => ['/termini', 'Termini e condizioni'],
         'privacy' => ['/privacy', 'Privacy'],
+        // 8J: l'Accordo sul trattamento dei dati e i documenti legali in inglese.
+        'dpa' => ['/dpa', 'Accordo sul trattamento dei dati'],
+        'en-termini' => ['/en/terms', 'Termini in inglese'],
+        'en-privacy' => ['/en/privacy', 'Privacy in inglese'],
+        'en-dpa' => ['/en/dpa', 'Accordo sul trattamento dei dati in inglese'],
         // 7F: le pagine per tipologia, solo in italiano (testi in lang/tipologie.php).
         'case-vacanza' => ['/case-vacanza', 'Per case vacanza'],
         'bed-and-breakfast' => ['/bed-and-breakfast', 'Per B&B'],
@@ -28,7 +33,7 @@ final class Seo
         'agriturismi' => ['/agriturismi', 'Per agriturismi'],
     ];
 
-    /** 7F: il gruppo che pubblica MyHouse Welcome (dati strutturati: sameAs e parentOrganization). */
+    /** 7F: Blackout Agency, che realizza i siti MyHouse (8J: non più nei dati strutturati: lì c'è il titolare, City Up S.r.l.). */
     public const GRUPPO = 'https://blackout.in';
 
     /** 7F: i testi delle pagine per tipologia, per chiave (case-vacanza, bed-and-breakfast, affittacamere, agriturismi). */
@@ -93,7 +98,15 @@ final class Seo
             'p.termini.titolo' => 'Termini e condizioni | MyHouse Welcome',
             'p.termini.descrizione' => 'Le condizioni del servizio MyHouse Welcome: abbonamento annuale, prezzi e rinnovo, cambio di piano, codici sconto e contenuti della guida.',
             'p.privacy.titolo' => 'Informativa sulla privacy | MyHouse Welcome',
-            'p.privacy.descrizione' => 'Come MyHouse Welcome tratta i dati di host e ospiti: quali dati raccoglie, perché, con quali fornitori e quali sono i tuoi diritti.',
+            'p.privacy.descrizione' => 'Come MyHouse Welcome tratta i dati di host e ospiti: quali dati raccoglie, perché, per quanto tempo, con quali fornitori e i tuoi diritti.',
+            'p.dpa.titolo' => 'Accordo sul trattamento dei dati | MyHouse Welcome',
+            'p.dpa.descrizione' => 'L\'accordo sul trattamento dei dati (art. 28 GDPR) tra MyHouse Welcome e gli host: istruzioni, sicurezza, sub-responsabili, violazioni e cancellazione.',
+            'p.en-termini.titolo' => 'Terms and conditions | MyHouse Welcome',
+            'p.en-termini.descrizione' => 'The terms of the MyHouse Welcome service: yearly subscription, prices and renewal, withdrawal, plan changes, your content and liability.',
+            'p.en-privacy.titolo' => 'Privacy policy | MyHouse Welcome',
+            'p.en-privacy.descrizione' => 'How MyHouse Welcome processes the data of hosts and guests: which data, why, for how long, with which providers, and your rights.',
+            'p.en-dpa.titolo' => 'Data processing agreement | MyHouse Welcome',
+            'p.en-dpa.descrizione' => 'The data processing agreement (art. 28 GDPR) between MyHouse Welcome and hosts: instructions, security, sub-processors, breaches and deletion.',
             'az.nome' => 'MyHouse Welcome',
             'az.venditore' => (string) ($l['company'] ?? ''),
             'az.piva' => (string) ($l['company_vat'] ?? ''),
@@ -235,7 +248,7 @@ final class Seo
         $h .= '<meta name="robots" content="' . (self::indicizza($pagina) ? 'index, follow' : 'noindex') . "\">\n";
         if (self::dominio() !== '') $h .= '<link rel="canonical" href="' . $e(self::dominio() . $percorso) . "\">\n";
         // 8E: le pagine che esistono nelle due lingue si indicano a vicenda (x-default è l'italiano).
-        $inglese = in_array($pagina, ['en', 'en-domande'], true);
+        $inglese = $pagina === 'en' || str_starts_with($pagina, 'en-');
         $it = $inglese ? LinguaSito::italiano($percorso) : $percorso;
         if ($it !== null && isset(LinguaSito::COPPIE[$it])) {
             $h .= '<link rel="alternate" hreflang="it" href="' . $e(self::assoluto($it)) . "\">\n"
@@ -297,9 +310,10 @@ final class Seo
             'email' => self::get('az.email'), 'telephone' => self::get('az.telefono'),
             'address' => self::get('az.indirizzo') !== '' ? ['@type' => 'PostalAddress', 'streetAddress' => self::get('az.indirizzo'), 'addressCountry' => 'IT'] : '',
             'logo' => self::conOrigine(a('/assets/apple-touch-icon.png')),
-            'sameAs' => array_values(array_unique(array_merge(self::social(), [self::GRUPPO]))),
-            // 7F: MyHouse Welcome è un progetto di Blackout Agency (blackout.in).
-            'parentOrganization' => ['@type' => 'Organization', 'name' => self::get('az.venditore') !== '' ? self::get('az.venditore') : 'Blackout Agency', 'url' => self::GRUPPO],
+            'sameAs' => self::social(),
+            // 8J: MyHouse Welcome è un servizio del titolare (City Up S.r.l.), con il suo sito.
+            'parentOrganization' => array_filter(['@type' => 'Organization', 'name' => self::get('az.venditore') !== '' ? self::get('az.venditore') : (string) ((Config::get('legal') ?? [])['company'] ?? ''),
+                                                  'url' => (string) ((Config::get('legal') ?? [])['company_site'] ?? '')]),
         ], fn($v) => $v !== '' && $v !== []);
         if (!is_file(MHW_PUBLIC . '/assets/apple-touch-icon.png')) unset($org['logo']);
         $offerte = [];
@@ -360,7 +374,8 @@ final class Seo
         $x = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
         foreach (self::PAGINE as $k => [$percorso]) {
             if (!self::indicizza($k)) continue;
-            $mod = $data(match ($k) { 'termini' => (string) ($l['terms_version'] ?? ''), 'privacy' => (string) ($l['privacy_version'] ?? ''), default => $altre });
+            $mod = $data(match ($k) { 'termini', 'en-termini' => (string) ($l['terms_version'] ?? ''), 'privacy', 'en-privacy' => (string) ($l['privacy_version'] ?? ''),
+                                      'dpa', 'en-dpa' => (string) ($l['dpa_version'] ?? ''), default => $altre });
             $x .= '  <url><loc>' . htmlspecialchars(self::assoluto($percorso), ENT_XML1) . '</loc>' . ($mod !== '' ? "<lastmod>$mod</lastmod>" : '') . "</url>\n";
         }
         return $x . "</urlset>\n";

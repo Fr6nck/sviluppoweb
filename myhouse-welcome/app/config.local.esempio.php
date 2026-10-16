@@ -37,14 +37,21 @@ return [
     // Invita un amico: acceso solo dopo le prove in modalità test di Stripe.
     // 'inviti' => ['attivi' => true],
 
-    // Dati aziendali del piè di pagina e dei documenti legali (un valore vuoto nasconde la riga).
+    // Il titolare e i dati aziendali del piè di pagina e dei documenti legali (un valore vuoto nasconde la riga).
+    // Si cambiano anche da Amministrazione → Impostazioni → Titolare e documenti legali.
     // 'legal' => [
-    //     'company'          => 'Blackout Agency',
-    //     'company_vat'      => '02945910541',
-    //     'company_city'     => 'Via Ariodante Fabretti 17, Perugia',
+    //     'company'          => 'City Up S.r.l.',
+    //     'company_legal'    => 'City Up S.r.l. — P.IVA e C.F. 03793880547 — REA PG-352001',
+    //     'company_vat'      => '03793880547',
+    //     'company_city'     => 'Via Ariodante Fabretti 15, 06123 Perugia (PG)',
+    //     'company_pec'      => 'cityup@pec.it',
+    //     'company_site'     => 'https://www.cityup.eu',
     //     'contact_email'    => 'assistenza@welcomemyhouse.it',
     //     'contact_phone'    => '+39 392 006 1600',
     //     'contact_whatsapp' => '393920061600',
+    //     'terms_version'    => '2026-10-15',
+    //     'privacy_version'  => '2026-10-15',
+    //     'dpa_version'      => '2026-10-15',
     // ],
     // Traduzioni suggerite (Amazon Translate): utente IAM con il solo translate:TranslateText.
     // Si impostano anche da Amministrazione → Impostazioni → Traduzioni.

@@ -56,6 +56,9 @@ include __DIR__ . '/_stati.php'; ?>
       <span class="kicker">Consensi</span>
       <p class="small">Termini: versione <?= Support::e($acc['terms_version'] ?: '—') ?>, accettati il <?= Support::e(Support::date($acc['terms_accepted_at'] ?? '')) ?: '—' ?></p>
       <p class="small">Privacy: versione <?= Support::e($acc['privacy_version'] ?: '—') ?>, presa visione il <?= Support::e(Support::date($acc['privacy_accepted_at'] ?? '')) ?: '—' ?></p>
+      <?php /* 8J: l'Accordo sul trattamento dei dati (Allegato A), e se deve ancora accettare la versione in vigore */ ?>
+      <p class="small">Accordo sul trattamento dei dati: versione <?= Support::e(($acc['dpa_version'] ?? '') ?: '—') ?>, accettato il <?= Support::e(Support::date($acc['dpa_accepted_at'] ?? '')) ?: '—' ?></p>
+      <?php if (MHW\Legale::daAccettare(['role' => 'host'] + $acc)): ?><p class="small"><span class="badge badge--alert">Da accettare</span> le versioni in vigore: al prossimo accesso vede la finestra, e fino ad allora il pannello è in sola lettura.</p><?php endif; ?>
     </section>
     <section class="panel stack" style="gap:8px">
       <span class="kicker">Stripe</span>
@@ -120,12 +123,13 @@ include __DIR__ . '/_stati.php'; ?>
       <p class="small muted">Ultimo cambio di piano: <?= Support::e(Support::date($ultimoCambio['created_at'])) ?>, da <?= Support::e($da['name'] ?? '?') ?> (<?= (int) ($m['da']['q'] ?? 1) ?>) a <?= Support::e($a['name'] ?? '?') ?> (<?= (int) ($m['a']['q'] ?? 1) ?>)<?= ($m['come'] ?? '') === 'rinnovo' ? ', al rinnovo' : '' ?>.</p>
     <?php endif; ?>
     <div class="tablewrap"><table class="data">
-      <thead><tr><th>Piano</th><th>Stato</th><th>Periodo</th><th>Rinnovo</th><th>Stripe</th></tr></thead>
+      <thead><tr><th>Piano</th><th>Stato</th><th>Periodo</th><th>Rinnovo</th><th>Acquirente</th><th>Stripe</th></tr></thead>
       <tbody><?php foreach ($subs as $s): ?>
         <tr><td><?= Support::e($s['package']) ?> <span class="tiny muted">v<?= (int) $s['version'] ?></span><?= (int) ($s['quantity'] ?? 1) > 1 ? ' · ' . (int) $s['quantity'] . ' strutture' : '' ?><br><span class="tiny muted"><?= Support::e($viaPagamento[$s['provider']] ?? $s['provider']) ?></span></td>
           <td><?= Support::e($statoAbbonamento[$s['status']] ?? $s['status']) ?><?= $s['payment_status'] ? '<br><span class="tiny muted">' . Support::e($statoPagamento[$s['payment_status']] ?? $s['payment_status']) . '</span>' : '' ?></td>
           <td class="small"><?= Support::e(Support::date($s['current_period_start'])) ?> → <?= Support::e(Support::date($s['current_period_end'])) ?></td>
           <td class="small"><?= (int) $s['cancel_at_period_end'] ? 'disattivato' : 'automatico' ?></td>
+          <td class="small"><?= match ($s['acquirente'] ?? '') { 'impresa' => 'Impresa o professionista', 'consumatore' => 'Privato (consumatore)<br><span class="tiny muted">' . ((int) ($s['recesso_rinuncia'] ?? 0) ? 'ha chiesto l\'avvio subito' : 'senza richiesta di avvio subito') . '</span>', default => '—' } ?></td>
           <td><code><?= Support::e($s['provider_subscription_id'] ?: '—') ?></code><br><code><?= Support::e($s['provider_price_id'] ?: '') ?></code></td></tr>
       <?php endforeach; ?></tbody></table></div>
     <?php endif; ?>

@@ -195,6 +195,7 @@ function pv(string $codice): int
 
 // ================================================================= INSTALLAZIONE
 capitolo('Installazione');
+const MHW_VERSIONE_LEGALE = '2026-10-15';   // 8J: le versioni di serie di Termini, Privacy e DPA
 $admin = new Browser('admin');
 $r = $admin->get('/');
 prova('Senza installazione si va a /installa', $r['code'] === 302 && str_contains($r['loc'], '/installa'));
@@ -230,7 +231,7 @@ prova('Home: title e description di serie, index, niente canonical senza dominio
       && substr_count($r['body'], '<meta name="description"') === 1 && str_contains($r['body'], '<meta name="robots" content="index, follow">')
       && !str_contains($r['body'], 'rel="canonical"') && substr_count($r['body'], 'property="og:title"') === 1 && str_contains($r['body'], 'name="twitter:card" content="summary_large_image"'));
 prova('Home: JSON-LD valido, Organization con vatID, tre offerte (97, 127, Portfolio 197) IVA esclusa, FAQPage', count($ld) === 2 && !in_array(null, $ld, true)
-      && in_array('IT02945910541', array_column($grafo, 'vatID'), true) && count($app6k['offers'] ?? []) === 3
+      && in_array('IT03793880547', array_column($grafo, 'vatID'), true) && count($app6k['offers'] ?? []) === 3
       && array_column($app6k['offers'], 'price') === ['97.00', '127.00', '197.00'] && ($app6k['offers'][2]['priceSpecification']['valueAddedTaxIncluded'] ?? null) === false
       && ($ld[1]['@type'] ?? '') === 'FAQPage' && count($ld[1]['mainEntity'] ?? []) >= 16);
 $nFaq = count($ld[1]['mainEntity'] ?? []);
@@ -302,9 +303,10 @@ prova('…quattro cursori veri e i conti di partenza anche senza JavaScript (35 
 prova('7B · …senza il confronto con il prezzo del piano: resta il valore del tempo', !str_contains($tempo, 'data-prezzo=') && !str_contains($tempo, 'Abbonamento Essential, IVA esclusa') && str_contains($tempo, 'Valgono <span data-o="valore">228 €</span> del tuo tempo'));
 prova('…con le fonti dei numeri', str_contains($r['body'], 'Stime di aziende del settore, non statistiche ufficiali.'));
 prova('CTA della hero verso la registrazione e verso la demo', preg_match('#<section class="hero2">.*?</section>#s', $r['body'], $mh) && str_contains($mh[0], '/registrati"') && str_contains($mh[0], 'Guarda la demo'));
-prova('Fase 1 · piè di pagina con P.IVA, telefono e WhatsApp', str_contains($r['body'], 'P.IVA 02945910541') && str_contains($r['body'], 'href="tel:+393920061600"')
-      && str_contains($r['body'], 'href="https://wa.me/393920061600"') && str_contains($r['body'], 'un progetto Blackout Agency')
-      && str_contains($r['body'], 'Via Ariodante Fabretti 17, Perugia') && str_contains($r['body'], 'href="mailto:assistenza@welcomemyhouse.it"'));
+prova('Fase 1 · piè di pagina con il titolare (8J: City Up S.r.l., P.IVA, sede, PEC), telefono e WhatsApp',
+      str_contains($r['body'], 'City Up S.r.l. · P.IVA 03793880547 · Via Ariodante Fabretti 15, 06123 Perugia (PG) · PEC cityup@pec.it') && str_contains($r['body'], 'href="tel:+393920061600"')
+      && str_contains($r['body'], 'href="https://wa.me/393920061600"') && !str_contains($r['body'], 'un progetto Blackout Agency')
+      && str_contains($r['body'], 'href="mailto:assistenza@welcomemyhouse.it"'));
 prova('Fase 1 · favicon, icona Home e anteprima di condivisione', str_contains($r['body'], '/assets/favicon.svg') && str_contains($r['body'], '/assets/apple-touch-icon.png')
       && preg_match('#<meta property="og:image" content="https?://[^"]+/assets/og\.jpg">#', $r['body']) === 1);
 foreach (['favicon.svg', 'apple-touch-icon.png', 'og.jpg'] as $f) prova("Fase 1 · $f presente", is_file("$DOVE/assets/$f") && filesize("$DOVE/assets/$f") > 300);
@@ -333,8 +335,9 @@ prova('Fase 2 · in alto il piano scelto, con «cambia»', str_contains($r['body
       && str_contains($r['body'], "97\u{00A0}€ + IVA/anno") && str_contains($r['body'], '>Cambia</a>'));
 prova('Fase 2 · «Nome e cognome», password con «Mostra» e barra di robustezza', str_contains($r['body'], 'Nome e cognome') && str_contains($r['body'], 'data-mostra-pw')
       && str_contains($r['body'], 'data-forza'));
-prova('Fase 2 · una sola casella (Termini), la privacy è una riga sotto il bottone', substr_count($r['body'], 'type="checkbox"') === 1 && !str_contains($r['body'], 'name="privacy"')
-      && str_contains($r['body'], "Creando l'account dichiari di aver letto l'") && strpos($r['body'], 'informativa privacy') > strpos($r['body'], 'Crea l\'account e inizia'));
+prova('8J · una sola casella, non spuntata: Termini, Accordo sul trattamento dei dati e Informativa letta, con i tre link', substr_count($r['body'], 'type="checkbox"') === 1 && !str_contains($r['body'], 'name="privacy"')
+      && str_contains($r['body'], "e ho letto l'") && str_contains($r['body'], '/dpa"') && str_contains($r['body'], '/termini"') && str_contains($r['body'], '/privacy"')
+      && !preg_match('/name="termini"[^>]*checked/', $r['body']) && !str_contains($r['body'], 'marketing'));
 $elena = new Browser('elena');
 $r = $elena->get('/registrati');
 prova('Fase 2 · «Crea gratis» generico: nessun piano in alto', !str_contains($r['body'], 'chip-piano'));
@@ -832,12 +835,12 @@ capitolo('Pubblicazione e pagamento');
 $slug = val('SELECT slug FROM properties WHERE id = ?', [$pid]);
 $r = $anna->get("/g/$slug");
 prova('Prima di pagare la guida non è online', $r['code'] === 404);
-$r = $anna->modulo("/pannello/$pid/procedura/pubblica", "/pannello/$pid/pubblica", []);
+$r = $anna->modulo("/pannello/$pid/procedura/pubblica", "/pannello/$pid/pubblica", ['acquirente' => 'impresa']);
 $r = $anna->segui($r);
 // 7A: senza la conferma dell'email il pannello non si apre più (prima si arrivava fino al pagamento).
 db()->exec("UPDATE users SET email_verified_at = NULL WHERE email = 'anna@prova.test'");
 db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'verifica-attesa:%' OR bucket LIKE 'verify:%'");
-$r = $anna->post("/pannello/$pid/pubblica", []);
+$r = $anna->post("/pannello/$pid/pubblica", ['acquirente' => 'impresa']);
 prova('7A · email non confermata: il pannello rimanda a «Controlla la tua email»', $r['code'] === 302 && str_ends_with($r['loc'], '/conferma-email')
       && (int) val('SELECT COUNT(*) FROM orders WHERE account_id = ?', [$acc['id']]) === 0, $r['loc']);
 $r = $anna->get('/conferma-email');
@@ -856,7 +859,7 @@ $r = $anna->get(substr($link, strpos($link, '/verifica/')));
 prova('Il link di verifica vale una volta sola', $r['code'] === 200 && pulita($r));
 
 // Fase 3 · R7: prima del primo pagamento, i dati di fatturazione italiani.
-$r = $anna->modulo("/pannello/$pid/procedura/pubblica", "/pannello/$pid/pubblica", []);
+$r = $anna->modulo("/pannello/$pid/procedura/pubblica", "/pannello/$pid/pubblica", ['acquirente' => 'impresa']);
 prova('Fase 3 · senza dati di fatturazione niente pagamento (7B: si resta nel passo Pubblica)', $r['code'] === 302 && str_contains($r['loc'], "/pannello/$pid/procedura/pubblica#fatturazione")
       && (int) val('SELECT COUNT(*) FROM orders WHERE account_id = ?', [$acc['id']]) === 0, $r['loc']);
 $r = $anna->segui($r);
@@ -886,7 +889,19 @@ prova('Fase 3 · dati validi salvati (normalizzati) e si torna alla pubblicazion
 $r = $anna->modulo("/account", '/account/fatturazione', $fattura + ['torna' => 'https://altrove.example/']);
 prova('…«torna» porta solo dentro il pannello', $r['code'] === 302 && !str_contains($r['loc'], 'altrove'));
 
-$r = $anna->modulo("/pannello/$pid/procedura/pubblica", "/pannello/$pid/pubblica", []);
+// 8J · chi acquista: senza scelta, o da privato senza la richiesta di iniziare subito, niente ordine.
+$ordini8j = (int) val('SELECT COUNT(*) FROM orders WHERE account_id = ?', [$acc['id']]);
+$r = $anna->get("/pannello/$pid/procedura/pubblica");
+prova('8J · passo Pubblica: «Chi acquista?» (impresa o privato) e la casella «inizia subito» per il privato', str_contains($r['body'], 'id="acquisto"')
+      && str_contains($r['body'], 'value="impresa"') && str_contains($r['body'], 'value="consumatore"') && str_contains($r['body'], 'name="recesso_rinuncia"')
+      && str_contains($r['body'], 'perdo il diritto di recesso per il periodo già goduto'));
+$r = $anna->post("/pannello/$pid/pubblica", ['acquirente' => '']);
+prova('8J · senza scelta: niente ordine, si torna a «Chi acquista?»', $r['code'] === 302 && str_contains($r['loc'], '#acquisto')
+      && (int) val('SELECT COUNT(*) FROM orders WHERE account_id = ?', [$acc['id']]) === $ordini8j, $r['loc']);
+$r = $anna->post("/pannello/$pid/pubblica", ['acquirente' => 'consumatore']);
+prova('8J · privato senza la richiesta di iniziare subito: niente ordine', $r['code'] === 302 && str_contains($r['loc'], '#acquisto')
+      && (int) val('SELECT COUNT(*) FROM orders WHERE account_id = ?', [$acc['id']]) === $ordini8j && str_contains($anna->segui($r)['body'], 'spunta la seconda casella'));
+$r = $anna->modulo("/pannello/$pid/procedura/pubblica", "/pannello/$pid/pubblica", ['acquirente' => 'impresa']);
 prova('Pubblica → Stripe Checkout', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/'));
 $cli = array_values(array_filter(richiesteStripe(), fn($x) => $x['percorso'] === '/v1/customers'));
 $m = end($cli)['corpo']['metadata'] ?? [];
@@ -900,6 +915,7 @@ prova('Adamo · privato: codice fiscale, PEC e codice destinatario 0000000', ($m
       && ($mp['metadata[Pec]'] ?? '') === 'mario@pec.example' && ($mp['metadata[Fe_code]'] ?? '') === '0000000', json_encode($mp));
 $ordine = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$acc['id']]);
 prova('Ordine in attesa, legato alla struttura', $ordine && $ordine['status'] === 'pending' && (int) $ordine['property_id'] === $pid && (int) $ordine['amount_cents'] === 9700);
+prova('8J · l\'ordine ricorda chi acquista (impresa, nessuna rinuncia)', ($ordine['acquirente'] ?? '') === 'impresa' && (int) ($ordine['recesso_rinuncia'] ?? 1) === 0);
 $cs = array_values(array_filter(richiesteStripe(), fn($x) => $x['percorso'] === '/v1/checkout/sessions'));
 $c = end($cs)['corpo'] ?? [];
 prova('Checkout in modalità abbonamento', ($c['mode'] ?? '') === 'subscription');
@@ -933,6 +949,10 @@ prova('Webhook firmato accettato (senza CSRF né sessione)', $r['code'] === 200 
 $sub = riga("SELECT * FROM subscriptions WHERE provider_subscription_id = 'sub_prova_anna'");
 prova('Abbonamento attivo con periodo e price', $sub && $sub['status'] === 'active' && $sub['current_period_end'] > gmdate('Y-m-d', strtotime('+360 days')) && $sub['provider_price_id'] === 'price_finto_annuale');
 prova('Ordine pagato', val('SELECT status FROM orders WHERE id = ?', [$ordine['id']]) === 'paid');
+prova('8J · l\'abbonamento ricorda chi acquista (dall\'ordine)', ($sub['acquirente'] ?? '') === 'impresa');
+$r = $admin->get('/admin/cliente/' . $acc['id']);
+prova('8J · Amministrazione → cliente: «Impresa o professionista» e l\'Accordo sul trattamento dei dati accettato', str_contains($r['body'], 'Impresa o professionista')
+      && str_contains($r['body'], 'Accordo sul trattamento dei dati: versione ' . MHW_VERSIONE_LEGALE));
 $r = $anna->get("/g/$slug");
 prova('Guida online dopo il webhook', $r['code'] === 200 && pulita($r));
 prova('Guida non indicizzabile', stripos(intestazione($r, 'X-Robots-Tag'), 'noindex') !== false && str_contains($r['body'], 'noindex'));
@@ -965,7 +985,7 @@ $anna->modulo("/pannello/$pid/sezioni/{$ids['rules']}", "/pannello/$pid/sezioni/
 $ordini = (int) val('SELECT COUNT(*) FROM orders WHERE account_id = ?', [$acc['id']]);
 $r = $anna->get("/pannello/$pid");
 prova('Il pannello segnala le modifiche non pubblicate', str_contains($r['body'], 'modifiche non ancora pubblicate'));
-$r = $anna->post("/pannello/$pid/pubblica", []);
+$r = $anna->post("/pannello/$pid/pubblica", ['acquirente' => 'impresa']);
 prova('Ripubblicare con abbonamento attivo non passa da Stripe', $r['code'] === 302 && str_contains($r['loc'], '/pubblicata') && (int) val('SELECT COUNT(*) FROM orders WHERE account_id = ?', [$acc['id']]) === $ordini);
 prova('Nuova versione della guida', (int) val('SELECT MAX(version) FROM guide_versions WHERE property_id = ?', [$pid]) === 2);
 prova('Gli ospiti vedono la modifica', str_contains($anna->get("/g/$slug/{$ids['rules']}")['body'], 'Silenzio dopo le 23.'));
@@ -1019,13 +1039,13 @@ $r = inviaWebhook(['id' => 'evt_prova_8', 'type' => 'checkout.session.completed'
 prova('Checkout con account incoerente: rifiutato', $r['body'] === 'incoerente');
 
 // Ripubblicare dopo la chiusura passa di nuovo da Stripe.
-$r = $anna->post("/pannello/$pid/pubblica", []);
+$r = $anna->post("/pannello/$pid/pubblica", ['acquirente' => 'impresa']);
 prova('Senza abbonamento, ripubblicare richiede un nuovo pagamento', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/'));
 $o2 = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$acc['id']]);
 $r = $anna->get('/pagamento/annullato?order=' . $o2['id']);
 prova('Pagamento annullato: bozza intatta, ordine annullato', val('SELECT status FROM orders WHERE id = ?', [$o2['id']]) === 'canceled' && val('SELECT status FROM properties WHERE id = ?', [$pid]) === 'published');
 file_put_contents("$STRIPE_DIR/guasto", '1');
-$r = $anna->segui($anna->post("/pannello/$pid/pubblica", []));
+$r = $anna->segui($anna->post("/pannello/$pid/pubblica", ['acquirente' => 'impresa']));
 @unlink("$STRIPE_DIR/guasto");
 prova('Stripe irraggiungibile: messaggio umano con codice, nessun dettaglio tecnico', str_contains($r['body'], 'Il pagamento non è disponibile in questo momento') && !str_contains($r['body'], 'Simulated outage'));
 
@@ -1064,7 +1084,7 @@ $bcore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 
 $bruno->post("/pannello/$bpid/sezioni/$bcore", ['checkin_steps' => ['Suona al citofono.']]);
 $bVer = val("SELECT email_verified_at FROM users WHERE email = 'bruno@prova.test'");
 db()->exec("UPDATE users SET email_verified_at = NULL WHERE email = 'bruno@prova.test'");
-$r = $bruno->post("/pannello/$bpid/pubblica", []);
+$r = $bruno->post("/pannello/$bpid/pubblica", ['acquirente' => 'impresa']);
 prova('Plus non verificato: pubblicazione ferma', $r['code'] === 302 && str_ends_with($r['loc'], '/conferma-email') && !val("SELECT o.id FROM orders o JOIN accounts a ON a.id = o.account_id JOIN users u ON u.id = a.user_id WHERE u.email = 'bruno@prova.test'"));
 db()->prepare("UPDATE users SET email_verified_at = ? WHERE email = 'bruno@prova.test'")->execute([$bVer]);
 
@@ -1110,7 +1130,7 @@ $carla->post("/pannello/$c1/sezioni/$ccore", ['checkin_steps' => ['Suona al cito
 $carla->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Carla Portfolio', 'cf' => 'RSSMRA85T10A562S',
                'billing_address' => 'Via Roma 2', 'billing_postal' => '70121', 'billing_city' => 'Bari', 'billing_province' => 'BA']);
 prova('Fase 3 · privato: basta il codice fiscale', val('SELECT cf FROM accounts WHERE id = ?', [$cacc]) === 'RSSMRA85T10A562S');
-$r = $carla->modulo("/pannello/$c1/procedura/pubblica", "/pannello/$c1/pubblica", []);
+$r = $carla->modulo("/pannello/$c1/procedura/pubblica", "/pannello/$c1/pubblica", ['acquirente' => 'impresa']);
 prova('Pubblica → Stripe Checkout', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/'), $r['loc']);
 $cord = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$cacc]);
 prova('Ordine per 3 strutture: 127 + 2 × 70 = 267 €', $cord && (int) $cord['quantity'] === 3 && (int) $cord['amount_cents'] === 26700);
@@ -1240,7 +1260,7 @@ $carla->post("/pannello/$c1/riattiva", []);
 prova('Riattivare oltre il limite non si può', val('SELECT archived_at FROM properties WHERE id = ?', [$c1]) !== null);
 $carla->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Sette', 'city' => 'Bari']);
 prova('…né crearne una nuova', (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ?', [$cacc]) === 5);
-$r = $carla->modulo("/pannello/$c1/procedura/pubblica", "/pannello/$c1/pubblica", []);
+$r = $carla->modulo("/pannello/$c1/procedura/pubblica", "/pannello/$c1/pubblica", ['acquirente' => 'impresa']);
 prova('…né pubblicare un\'archiviata', $carla->get('/g/' . val('SELECT slug FROM properties WHERE id = ?', [$c1]))['code'] === 404);
 $nome3 = (string) val('SELECT name FROM properties WHERE id = ?', [$cp[2]]);
 $carla->modulo("/pannello/{$cp[2]}/impostazioni", "/pannello/{$cp[2]}/elimina", ['conferma' => $nome3]);
@@ -1298,7 +1318,7 @@ $mcore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 
 $marco->post("/pannello/$mare/sezioni", ['kind' => 'rules']);
 $marco->post("/pannello/$mare/impostazioni", ['name' => 'Rinominata', 'city' => 'Lecce']);
 $marco->post("/pannello/$mare/sezioni/$mcore", ['checkin_steps' => ['Scritto a mano.']]);
-$marco->post("/pannello/$mare/pubblica", []);
+$marco->post("/pannello/$mare/pubblica", ['acquirente' => 'impresa']);
 $marco->post("/pannello/$mare/copia", ['da' => (string) $rondini, 'copia' => ['eat']]);
 prova('Fase 4 · le modifiche alla struttura bloccata non passano (sezioni, nome, testi, pubblicazione, copia)',
       (int) val('SELECT COUNT(*) FROM sections WHERE property_id = ?', [$mare]) === 1 && val('SELECT name FROM properties WHERE id = ?', [$mare]) === 'Casa sul Mare'
@@ -1336,7 +1356,7 @@ $gino->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato',
                'billing_address' => 'Via Roma 3', 'billing_postal' => '70121', 'billing_city' => 'Bari', 'billing_province' => 'BA']);
 $gcore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$g1]);
 $gino->post("/pannello/$g1/sezioni/$gcore", ['checkin_steps' => ['Suona al citofono.']]);
-$r = $gino->modulo("/pannello/$g1/procedura/pubblica", "/pannello/$g1/pubblica", []);
+$r = $gino->modulo("/pannello/$g1/procedura/pubblica", "/pannello/$g1/pubblica", ['acquirente' => 'impresa']);
 $gord = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$gacc]);
 prova('Pubblicando la prima: pagamento per 3 strutture', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/') && $gord && (int) $gord['quantity'] === 3);
 file_put_contents("$STRIPE_DIR/extra-sub_prova_gino", '2');
@@ -1596,7 +1616,7 @@ $pl = riga('SELECT * FROM properties WHERE id = ?', [$casa]);
 $canaliL = array_column(db()->query("SELECT kind FROM property_channels WHERE property_id = $casa ORDER BY position")->fetchAll(), 'kind');
 prova('…un indirizzo che non è https:// non si salva, con un avviso; i portali spuntati sì, senza indirizzo', $canaliL === ['google', 'booking'] && (int) $pl['hide_branding'] === 1
       && str_contains($lucia->segui($r)['body'], 'L&#039;indirizzo di Tripadvisor deve cominciare con https://'), json_encode($canaliL));
-$lucia->post("/pannello/$casa/pubblica", []);
+$lucia->post("/pannello/$casa/pubblica", ['acquirente' => 'impresa']);
 $r0 = $ospite->get("/g/$lslug/commiato?l=en");
 $r = $ospite->get("/g/$lslug/commiato?l=en&voto=5");
 prova('K2 · commiato (en) con 5 stelle: «How was your stay?» (7C) con Google e Booking, «book with us» con il codice', str_contains($r['body'], 'How was your stay?')
@@ -1629,7 +1649,7 @@ prova('7C · Sconto per chi torna: aiuto, campo «Sconto», avviso senza link, a
       && str_contains($r['body'], "\u{2212}10% con il codice <b data-diretta-codice>BENTORNATI</b>"));
 $lucia->post("/pannello/$casa/dopo-il-soggiorno", ['portali' => ['google', 'booking'],
     'direct_url' => 'https://www.esempio.it/prenota', 'direct_code' => 'BENTORNATI', 'direct_discount' => '10%', 'hide_branding' => '1']);
-$lucia->post("/pannello/$casa/pubblica", []);
+$lucia->post("/pannello/$casa/pubblica", ['acquirente' => 'impresa']);
 $r = $ospite->get("/g/$lslug/commiato?l=de");
 prova('7C · nel commiato (de): «−10% mit dem Code BENTORNATI», «Code kopieren», «Prenota»', str_contains($r['body'], "\u{2212}10% mit dem Code <b>BENTORNATI</b>")
       && str_contains($r['body'], 'Code kopieren') && str_contains($r['body'], 'href="https://www.esempio.it/prenota"'));
@@ -1639,7 +1659,7 @@ prova('K4 · Essential non può nasconderla, nemmeno a mano', (int) val('SELECT 
       && str_contains($anna->get("/pannello/$pid/impostazioni")['body'], 'Con Plus e Portfolio puoi nasconderla')
       && str_contains($anna->get("/pannello/$pid/impostazioni")['body'], 'data-sblocca="firma"'));
 $lucia->post("/pannello/$casa/dopo-il-soggiorno", ['direct_url' => '', 'direct_code' => '']);
-$lucia->post("/pannello/$casa/pubblica", []);
+$lucia->post("/pannello/$casa/pubblica", ['acquirente' => 'impresa']);
 prova('…tolti i link e ripubblicato: commiato senza blocchi, firma di nuovo visibile', !str_contains($ospite->get("/g/$lslug/commiato")['body'], 'Ti è piaciuto il soggiorno?')
       && str_contains($ospite->get("/g/$lslug")['body'], 'Guida creata con MyHouse Welcome'));
 // Servizi extra (demo): «Richiedi su WhatsApp» con il messaggio nella lingua dell'ospite.
@@ -1777,7 +1797,7 @@ $codici = $immagini($ospite, "/g/$lslug/{$plFoto['sid']}");
 prova('Revisione · tolta la foto dal pannello, la guida pubblicata la mostra ancora', !val('SELECT media_id FROM places WHERE id = ?', [$plFoto['id']])
       && (bool) val('SELECT id FROM media WHERE id = ?', [$plFoto['media_id']]) && count($codici) === 3 && array_unique($codici) === [200], json_encode($codici));
 db()->prepare('UPDATE media SET created_at = ? WHERE id = ?')->execute([gmdate('Y-m-d\\TH:i:s\\Z', time() - 7200), $plFoto['media_id']]);
-$lucia->post("/pannello/$casa/pubblica", []);
+$lucia->post("/pannello/$casa/pubblica", ['acquirente' => 'impresa']);
 prova('…ripubblicata la guida, il file non serve più e si cancella', !val('SELECT id FROM media WHERE id = ?', [$plFoto['media_id']])
       && count($immagini($ospite, "/g/$lslug/{$plFoto['sid']}")) === 2);
 prova('Revisione · un link di Maps che inganna il controllo degli indirizzi non si segue', json_decode($elena->post("/pannello/$epid/mappe", ['url' => 'https://evil.example\\@www.google.com/maps/place/X/@1,1'])['body'], true)['ok'] === false);
@@ -1791,7 +1811,7 @@ foreach (["/pannello/$pid", "/pannello/$pid/sezioni/$core", "/pannello/$pid/ante
 }
 $r = $bruno->post("/pannello/$pid/sezioni/$core", ['checkin_note' => 'ciao']);
 prova('Un altro cliente non scrive nelle sezioni altrui', $r['code'] === 404 && !str_contains((string) val('SELECT data FROM section_translations WHERE section_id = ?', [$core]), 'ciao'));
-$r = $bruno->post("/pannello/$pid/pubblica", []);
+$r = $bruno->post("/pannello/$pid/pubblica", ['acquirente' => 'impresa']);
 prova('Un altro cliente non pubblica la guida altrui', $r['code'] === 404);
 $r = $bruno->post("/pannello/$bpid/sezioni/$core/azione", ['fai' => 'elimina']);
 prova('Sezione di un\'altra struttura: non trovata', (bool) val('SELECT id FROM sections WHERE id = ?', [$core]));
@@ -2403,7 +2423,7 @@ $dora->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato',
 $dcore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$dpid]);
 $dora->post("/pannello/$dpid/sezioni/$dcore", ['checkin_steps' => ['Il portone verde.']]);
 $prima = count(richiesteStripe());
-$r = $dora->modulo("/pannello/$dpid/procedura/pubblica", "/pannello/$dpid/pubblica", []);
+$r = $dora->modulo("/pannello/$dpid/procedura/pubblica", "/pannello/$dpid/pubblica", ['acquirente' => 'impresa']);
 $dord = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$dacc]);
 $sess = array_values(array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['percorso'] === '/v1/checkout/sessions'))[0] ?? [];
 prova('6E · ordine col codice (importo pieno), checkout con discounts[0][coupon] e niente allow_promotion_codes', $dord && (int) $dord['discount_code_id'] === (int) $bv['id']
@@ -2767,7 +2787,7 @@ $attive6 = fn() => (int) val('SELECT COUNT(*) FROM sections WHERE property_id = 
 $paola->modulo("/pannello/$pp6/lingue", "/pannello/$pp6/lingue", ['locali' => ['it', 'en', 'fr']]);
 $core6 = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$pp6]);
 $paola->post("/pannello/$pp6/sezioni/$core6", ['checkin_steps' => ['Le chiavi sono nella cassetta.']]);
-$paola->modulo("/pannello/$pp6/procedura/pubblica", "/pannello/$pp6/pubblica", []);
+$paola->modulo("/pannello/$pp6/procedura/pubblica", "/pannello/$pp6/pubblica", ['acquirente' => 'impresa']);
 $versioni6 = (int) val('SELECT COUNT(*) FROM guide_versions WHERE property_id = ?', [$pp6]);
 prova('6H · preparazione: Plus su Stripe, guida pubblicata, 3 lingue e più di 6 sezioni', $attive6() > 6 && $versioni6 >= 1
       && (int) val('SELECT COUNT(*) FROM property_locales WHERE property_id = ?', [$pp6]) === 3, $attive6() . ' / ' . $versioni6);
@@ -3083,7 +3103,7 @@ prova('FAQ: B&B e affittacamere con più camere sono una guida sola (7B: reti di
       str_contains($r['body'], 'Ho un B&amp;B, un affittacamere o un agriturismo con più camere') && str_contains($r['body'], 'nella sezione Wi-Fi aggiungi una riga per ogni zona') && !str_contains($r['body'], 'variante camera')
       && str_contains($r['body'], 'Posso mettere più case in una guida sola?') && str_contains($r['body'], "dalla 3ª alla 5ª 50\u{00A0}€ l&#039;una"), (string) $r['code']);
 $r = $ospite->get('/termini');
-prova('Termini: una guida = un\'unità ricettiva, un indirizzo e un CIN, con l\'eccezione delle camere', str_contains($r['body'], "Una guida, un'unità ricettiva.")
+prova('Termini: una guida = un\'unità ricettiva, un indirizzo e un CIN, con l\'eccezione delle camere', str_contains($r['body'], 'Una guida, un&#039;unità ricettiva.')
       && str_contains($r['body'], 'B&amp;B, affittacamere e agriturismi con più camere allo stesso indirizzo'), (string) $r['code']);
 $r = $admin->get('/admin/pacchetti');
 prova('Amministrazione → Piani: gli scaglioni del Portfolio si modificano (dalla struttura: prezzo)', str_contains($r['body'], 'name="scaglioni"') && str_contains($r['body'], "3: 50\n6: 40\n11: 30\n21: 25"), $r['code'] . ' ' . ($r['loc'] ?? ''));
@@ -3116,18 +3136,18 @@ $vera->post("/pannello/$vp/sezioni/$vw", ['networks' => [['id' => '', 'ssid' => 
 $vera->post("/pannello/$vp/sezioni/$vcore", ['checkin_steps' => ['La chiave della porta di casa è nella cassetta.']]);
 
 Browser::$cinAutomatico = false;
-$r = $vera->segui($vera->modulo("/pannello/$vp/procedura/pubblica", "/pannello/$vp/pubblica", []));
+$r = $vera->segui($vera->modulo("/pannello/$vp/procedura/pubblica", "/pannello/$vp/pubblica", ['acquirente' => 'impresa']));
 prova('Senza CIN la guida non si pubblica, e si dice perché', !val('SELECT id FROM guide_versions WHERE property_id = ?', [$vp]) && str_contains($r['body'], 'Manca il CIN'));
 $cinAltrui = (string) val("SELECT cin FROM properties WHERE cin <> '' AND is_demo = 0 AND account_id <> ? ORDER BY id LIMIT 1", [$vacc]);
 $r = $vera->modulo("/pannello/$vp/impostazioni", "/pannello/$vp/impostazioni", ['name' => 'B&B Vera', 'city' => 'Spello', 'cin' => strtolower(substr($cinAltrui, 0, 6)) . ' ' . substr($cinAltrui, 6)]);
 prova('Il CIN di un\'altra guida non si salva (anche scritto in minuscolo e con gli spazi)', $cinAltrui !== '' && (string) val('SELECT cin FROM properties WHERE id = ?', [$vp]) === ''
       && str_contains($r['body'], 'già usato da un&#039;altra guida'));
 $vera->modulo("/pannello/$vp/impostazioni", "/pannello/$vp/impostazioni", ['name' => 'B&B Vera', 'city' => 'Spello', 'cin' => 'IT123']);
-$r = $vera->segui($vera->modulo("/pannello/$vp/procedura/pubblica", "/pannello/$vp/pubblica", []));
+$r = $vera->segui($vera->modulo("/pannello/$vp/procedura/pubblica", "/pannello/$vp/pubblica", ['acquirente' => 'impresa']));
 prova('Un CIN incompleto si salva ma non si pubblica', (string) val('SELECT cin FROM properties WHERE id = ?', [$vp]) === 'IT123' && str_contains($r['body'], 'non sembra completo')
       && !val('SELECT id FROM guide_versions WHERE property_id = ?', [$vp]));
 $vera->modulo("/pannello/$vp/impostazioni", "/pannello/$vp/impostazioni", ['name' => 'B&B Vera', 'city' => 'Spello', 'cin' => 'cin: it 054050 b4 vera0001']);
-$vera->modulo("/pannello/$vp/procedura/pubblica", "/pannello/$vp/pubblica", []);
+$vera->modulo("/pannello/$vp/procedura/pubblica", "/pannello/$vp/pubblica", ['acquirente' => 'impresa']);
 prova('Con un CIN valido (salvato pulito) la guida si pubblica', (string) val('SELECT cin FROM properties WHERE id = ?', [$vp]) === 'IT054050B4VERA0001'
       && (bool) val('SELECT id FROM guide_versions WHERE property_id = ?', [$vp]));
 Browser::$cinAutomatico = true;
@@ -3247,7 +3267,7 @@ prova('…passando a Essential, prima l\'elenco di cosa la guida non mostrerà',
 prova('7B · i dati di fatturazione nel passo Pubblica, gli stessi di Account', str_contains($r['body'], 'Servono per la fattura o la ricevuta. Potrai cambiarli quando vuoi in Account &amp; Fatturazione.')
       && str_contains($r['body'], 'name="billing_type"') && str_contains($r['body'], 'action="' . preg_replace('#^https?://[^/]+#', '', $BASE) . '/account/fatturazione"')
       && str_contains($r['body'], 'name="torna" value="/pannello/' . $lp . '/procedura/pubblica"'));
-$r = $lea->post("/pannello/$lp/pubblica", []);
+$r = $lea->post("/pannello/$lp/pubblica", ['acquirente' => 'impresa']);
 prova('…senza i dati non si paga: si resta nel passo Pubblica', $r['code'] === 302 && str_contains($r['loc'], "/pannello/$lp/procedura/pubblica#fatturazione") && !val('SELECT id FROM orders WHERE account_id = ?', [$lacc]));
 $r = $lea->post('/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Lea Sceglie', 'cf' => 'RSSMRA85T10A562S', 'billing_address' => 'Via Roma 3',
     'billing_postal' => '06031', 'billing_city' => 'Bevagna', 'billing_province' => 'PG', 'torna' => "/pannello/$lp/procedura/pubblica"]);
@@ -3287,10 +3307,10 @@ prova('6J · menu di amministrazione in tre gruppi: Vendite, Clienti, Sistema (c
 $r = $ospite->get('/termini');
 prova('6J · Termini § 4: cambio di piano, codici sconto (un solo sconto); 7B: niente più capoverso sulle varianti', str_contains($r['body'], 'paghi subito')
       && str_contains($r['body'], 'I codici sconto valgono solo sul primo anno') && str_contains($r['body'], 'a ogni abbonamento si applica un solo codice')
-      && !str_contains($r['body'], 'varianti camera') && str_contains($r['body'], 'Da completare con un legale: diritto di recesso'));
+      && !str_contains($r['body'], 'varianti camera') && !str_contains($r['body'], 'Da completare') && str_contains($r['body'], 'id="recesso"'));
 $r = $ospite->get('/privacy');
-prova('6J · Privacy → Fornitori: Adamo per la fatturazione elettronica, segnaposto intatti', str_contains($r['body'], 'Fatturazione elettronica: Adamo (app.adamogestionale.it)')
-      && str_contains($r['body'], '[Completare con sedi'));
+prova('6J · Privacy → Fornitori: Adamo per la fatturazione elettronica (8J: con sedi e garanzie, niente segnaposto)', str_contains($r['body'], '<b>Adamo</b> (Italia): fatturazione elettronica')
+      && !str_contains($r['body'], '[Completare') && !preg_match('/\{[a-z_]+\}/', $r['body']));
 
 // ================================================================= 6K · SEO e GEO
 capitolo('6K · SEO e GEO: testa delle pagine, robots.txt, sitemap.xml, llms.txt, /domande');
@@ -3304,7 +3324,7 @@ prova('robots.txt: per * niente guide in Disallow, /pannello escluso per tutti; 
       && str_contains((string) $blocco($r['body'], 'meta-externalagent'), "Disallow: /qr/\n") && $blocco($r['body'], 'CCBot') === "Disallow: /\n"
       && preg_match('#\nSitemap: \S+/sitemap\.xml\n$#', $r['body']) === 1, json_encode($blocco($r['body'], 'CCBot')));
 $r = $ospite->get('/sitemap.xml');
-prova('sitemap.xml: le pagine accese (con le due inglesi della 8E e le quattro per tipologia della 7F), con lastmod', $r['code'] === 200 && substr_count($r['body'], '<url>') === 10 && substr_count($r['body'], '<lastmod>') === 10
+prova('sitemap.xml: le pagine accese (con le due inglesi della 8E, le quattro per tipologia della 7F e le quattro legali della 8J), con lastmod', $r['code'] === 200 && substr_count($r['body'], '<url>') === 14 && substr_count($r['body'], '<lastmod>') === 14
       && str_contains($r['body'], '/domande</loc>') && @simplexml_load_string($r['body']) !== false);
 foreach (['/accedi', '/registrati', '/password'] as $u) {
     $r = $ospite->get($u);
@@ -3439,7 +3459,7 @@ prova('8H · statistiche.js: Matomo con disableCookies e senza la query; GA4 sen
 $pr8 = $ospite->get('/privacy')['body'];
 prova('8H · privacy, «Cookie»: cookie tecnici, Matomo (configurato), le guide senza cookie; Google e Clarity no (non configurati)',
       str_contains($pr8, 'id="cookie"') && str_contains($pr8, 'mhw_consenso') && str_contains($pr8, 'installato sul nostro server')
-      && str_contains($pr8, 'Le guide degli ospiti non usano cookie') && !str_contains($pr8, 'Google Analytics 4') && !str_contains($pr8, 'Microsoft Clarity'));
+      && str_contains($pr8, 'Le guide degli ospiti non usano cookie') && !str_contains($pr8, 'Google Analytics 4') && !str_contains($pr8, '_clck (1 anno)'));
 // Con GA4 e Clarity: il banner (nascosto finché lo script non decide), Accetta e Rifiuta con lo stesso stile, «Scegli» con due interruttori.
 $adm6->segui($adm6->modulo('/admin/seo', '/admin/seo', $campi6k + ['stat_matomo_url' => 'https://statistiche.esempio.it', 'stat_matomo_id' => '3', 'stat_ga4' => 'g-ab12cd34ef', 'stat_clarity' => 'Abc123xyz']));
 $h8 = $ospite->get('/')['body'];
@@ -3477,7 +3497,7 @@ prova('8H · svuotati i campi: di nuovo nessuno script e nessun banner', !str_co
 $r = $ospite->get('/');
 prova('Con il dominio: canonical, og:url, verifiche Google e Bing solo nella home, sameAs dai social', str_contains($r['body'], '<link rel="canonical" href="https://myhousewelcome.it/">')
       && str_contains($r['body'], '<meta name="google-site-verification" content="gsc-Prova_1">') && str_contains($r['body'], '<meta name="msvalidate.01" content="BING42">')
-      && str_contains($r['body'], '"sameAs":["https://instagram.com/myhousewelcome","https://blackout.in"]') && !str_contains($ospite->get('/domande')['body'], 'google-site-verification')
+      && str_contains($r['body'], '"sameAs":["https://instagram.com/myhousewelcome"]') && !str_contains($ospite->get('/domande')['body'], 'google-site-verification')
       && str_contains($ospite->get('/domande')['body'], '<link rel="canonical" href="https://myhousewelcome.it/domande">'));
 $r = $ospite->get('/robots.txt');
 prova('robots.txt dopo il salvataggio: GPTBot e CCBot spenti del tutto, ClaudeBot solo senza guide, Sitemap sul dominio', $blocco($r['body'], 'GPTBot') === "Disallow: /\n"
@@ -3547,7 +3567,7 @@ $trL = riga("SELECT * FROM section_translations WHERE section_id = ? AND locale 
 $datiL = json_decode((string) $trL['data'], true) ?: []; $datiL['checkin_note'] = 'Il codice della cassetta delle chiavi è 4821.';
 db()->prepare('UPDATE section_translations SET data = ? WHERE id = ?')->execute([json_encode($datiL, JSON_UNESCAPED_UNICODE), $trL['id']]);
 $versioni = (int) val('SELECT COUNT(*) FROM guide_versions WHERE property_id = ?', [$casa]);
-$r = $lucia->post("/pannello/$casa/pubblica", []);
+$r = $lucia->post("/pannello/$casa/pubblica", ['acquirente' => 'impresa']);
 prova('Pubblicazione con un codice: non pubblica e apre il riquadro di conferma', $r['code'] === 302 && str_contains($r['loc'], '/procedura/pubblica?codici=1')
       && (int) val('SELECT COUNT(*) FROM guide_versions WHERE property_id = ?', [$casa]) === $versioni, $r['loc']);
 $r = $lucia->get("/pannello/$casa/procedura/pubblica?codici=1");
@@ -3556,12 +3576,12 @@ prova('…il riquadro: titolo, campo con «Correggi», testo, casella, «Torna a
       && str_contains($r['body'], 'MyHouse Welcome non risponde dell\'uso di questi codici') && str_contains($r['body'], '>Torna a correggere</a>')
       && str_contains($r['body'], 'data-codici-vai disabled>Pubblica lo stesso') && !str_contains($r['body'], '4821'));
 prova('…e accanto a Pubblica: la guida non compare nei motori di ricerca', str_contains($r['body'], 'Dopo la pubblicazione la guida è online per chi ha il link o il QR. Non compare nei motori di ricerca.'));
-$r = $lucia->post("/pannello/$casa/pubblica", ['codici_ok' => '1']);
+$r = $lucia->post("/pannello/$casa/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
 $conf = riga("SELECT * FROM audit_log WHERE action = 'guida.codici_confermati' ORDER BY id DESC");
 prova('Con la casella la guida si pubblica e il registro ha la conferma (campi, mai il codice)', $r['code'] === 302 && str_contains($r['loc'], '/pubblicata')
       && (int) val('SELECT COUNT(*) FROM guide_versions WHERE property_id = ?', [$casa]) === $versioni + 1
       && $conf && str_contains((string) $conf['meta'], '"property":' . $casa . ',') && str_contains((string) $conf['meta'], 'Nota importante') && !str_contains((string) $conf['meta'], '4821'), $r['loc']);
-$r = $lucia->post("/pannello/$casa/pubblica", []);
+$r = $lucia->post("/pannello/$casa/pubblica", ['acquirente' => 'impresa']);
 prova('…vale solo per quella pubblicazione: alla successiva il riquadro ricompare', str_contains($r['loc'], '?codici=1'));
 $r = $adm6->get('/admin/anomalie');
 prova('Anomalie: «Guide pubblicate con un codice di accesso», con la data della conferma e il link alla guida', str_contains($r['body'], 'Guide pubblicate con un codice di accesso')
@@ -3595,7 +3615,7 @@ $lucia->post("/pannello/$casa/aspetto", ['palette' => (string) val('SELECT palet
 $r = $lucia->get("/pannello/$casa/aspetto");
 prova('7C · Aspetto: «Due parole di benvenuto» per lingua (160 caratteri) e l\'aiuto sulla foto', str_contains($r['body'], 'Due parole di benvenuto') && str_contains($r['body'], 'maxlength="160"')
       && str_contains($r['body'], 'name="host_welcome[en]"') && str_contains($r['body'], 'Una tua foto: gli ospiti vedono chi li accoglie. Il logo è un&#039;altra cosa.'));
-$lucia->post("/pannello/$casa/pubblica", ['codici_ok' => '1']);
+$lucia->post("/pannello/$casa/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
 $r = $ospite->get("/g/$lslug?l=en");
 prova('7C · nella guida il tondo dell\'host c\'è anche con il logo, ed è un bottone che apre il foglio', str_contains($r['body'], 'class="logo-guest"')
       && preg_match('#<button type="button" class="host-tondo" data-host-apri="chi-ti-accoglie" aria-label="Your host: [^"]+"#', $r['body']) === 1
@@ -3605,14 +3625,14 @@ prova('…il foglio: la foto intera, «Hi, I\'m …», il benvenuto in inglese, 
       && preg_match('#<a class="btn btn--block" href="(https://wa\.me/|tel:)[^"]+"[^>]*>.*?Message #s', $mm[0]) === 1);
 $r = $ospite->get("/g/$lslug?l=fr");
 prova('…senza il benvenuto in quella lingua, la principale', str_contains($r['body'], 'Benvenuti! Vi aspetto con il caffè.'));
-db()->prepare("UPDATE properties SET host_welcome = NULL WHERE id = ?")->execute([$casa]); $lucia->post("/pannello/$casa/pubblica", ['codici_ok' => '1']);
+db()->prepare("UPDATE properties SET host_welcome = NULL WHERE id = ?")->execute([$casa]); $lucia->post("/pannello/$casa/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
 prova('…e senza nessun benvenuto, il testo di serie (de)', str_contains($ospite->get("/g/$lslug?l=de")['body'], 'Mein Zuhause ist Ihr Zuhause'));
 
 // 4 · Le foto delle sezioni si ingrandiscono, la copertina no; il PDF ha il bottone grande.
 $infoL = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'rules'", [$casa]) ?: (int) val("SELECT id FROM sections WHERE property_id = ? AND is_core = 0 ORDER BY id", [$casa]);
 $lucia->get("/pannello/$casa/sezioni/$infoL");
 $lucia->post("/pannello/$casa/sezioni/$infoL", ['foto' => file_(png(400, 300), 'image/png')]);
-$lucia->post("/pannello/$casa/pubblica", ['codici_ok' => '1']);
+$lucia->post("/pannello/$casa/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
 $r = $ospite->get("/g/$lslug/$infoL");
 prova('7C · la foto della sezione si ingrandisce: link alla foto con data-zoom e la lente', (bool) val('SELECT media_id FROM sections WHERE id = ?', [$infoL])
       && preg_match('#<div class="shot shot--h186 shot--zoom"[^>]*><a href="[^"]+" data-zoom aria-label="Ingrandisci la foto">#', $r['body']) === 1 && str_contains($r['body'], 'shot__lente'), (string) $r['code']);
@@ -3888,7 +3908,7 @@ $ch8 = db()->query("SELECT kind, label, url FROM property_channels WHERE propert
 prova('8B · salvati: i portali nell\'ordine scelto senza indirizzo, «Altro…» con nome e indirizzo, Agoda, Instagram da @nome; TikTok non valido scartato con avviso',
       array_column($ch8, 'kind') === ['booking', 'google', 'vrbo', 'altro', 'agoda', 'facebook', 'instagram'] && $ch8[0]['url'] === '' && $ch8[3]['label'] === 'Vacanze Umbre'
       && $ch8[6]['url'] === 'https://www.instagram.com/casalucia' && str_contains($r['body'], 'TikTok: scrivi l&#039;indirizzo'), json_encode($ch8));
-$lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1']);
+$lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
 $snap8 = json_decode((string) val('SELECT snapshot FROM guide_versions WHERE property_id = ? ORDER BY version DESC', [$casa8]), true);
 $canSnap = array_column($snap8['property']['channels'] ?? [], 'url', 'kind');
 prova('8B · istantanea (formato 7) con channels e i link già costruiti: Google con nome e città, Booking, VRBO dalle Impostazioni', (int) $snap8['format'] >= 7
@@ -3900,7 +3920,7 @@ db()->prepare('UPDATE guide_versions SET snapshot = ? WHERE property_id = ? AND 
 $r = $ospite->get("/g/$slug8/commiato?voto=5");
 prova('8B · …un\'istantanea vecchia con reviews: i link scritti dall\'host si vedono ancora', $r['code'] === 200 && str_contains($r['body'], 'href="https://g.page/r/vecchio/review"')
       && str_contains($r['body'], 'https://www.tripadvisor.example/x'));
-$lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1']);
+$lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
 $r = $lucia->get("/pannello/$casa8/impostazioni");
 prova('8B · «Hai un sito dove gli ospiti possono prenotare?» Sì: i campi e la striscia MyHouse con «Scopri come» (percorso al passo Sì)',
       str_contains($r['body'], 'name="has_site" value="1" checked') && str_contains($r['body'], 'myhouse-logo-nero-breve.png?v=') && preg_match('#data-sito-si>#', $r['body']) === 1
@@ -3910,7 +3930,7 @@ $r = $lucia->get("/pannello/$casa8/impostazioni");
 prova('…No: niente campi, «Crealo con noi» con «Voglio una proposta», WhatsApp ed Email; i campi restano salvati', str_contains($r['body'], 'name="has_site" value="0" checked')
       && preg_match('#data-sito-si hidden#', $r['body']) === 1 && preg_match('#striscia-myhouse--crea" data-sito-no>#', $r['body']) === 1 && str_contains($r['body'], 'Crealo con noi.')
       && str_contains($r['body'], 'data-funnel-apri="no"') && (string) val('SELECT direct_url FROM properties WHERE id = ?', [$casa8]) === 'https://www.esempio.it/prenota');
-$lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1']);
+$lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
 prova('…e nella guida la prenotazione diretta non compare', !str_contains($ospite->get("/g/$slug8/commiato")['body'], 'href="https://www.esempio.it/prenota"'));
 $lucia->post("/pannello/$casa8/dopo-il-soggiorno", ['portali' => ['booking', 'google'], 'has_site' => '1', 'direct_url' => 'https://www.esempio.it/prenota', 'direct_code' => '']);
 // I messaggi.
@@ -3955,7 +3975,7 @@ prova('8B · Amministrazione → Impostazioni → Portali: gli indirizzi di part
 capitolo('8C · guida: pagina delle recensioni, scelta della lingua, «Stiamo per partire», palette, riscaldamento e aria, lingue');
 // La pagina delle recensioni, sulla guida di Lucia (portali Booking e Google dalla 8B).
 $lucia->post("/pannello/$casa8/dopo-il-soggiorno", ['portali' => ['booking', 'google'], 'social' => ['instagram' => '@casalucia'], 'has_site' => '1', 'direct_url' => 'https://www.esempio.it/prenota', 'direct_code' => '']);
-$lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1']);
+$lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
 $r = $ospite->get("/g/$slug8/recensione");
 prova('8C · /g/{slug}/recensione: 200, noindex, copertina e nome, «Com\'è andato il soggiorno?» con 5 stelle, og:title delle recensioni', $r['code'] === 200
       && str_contains($r['body'], '<meta name="robots" content="noindex') && stripos(intestazione($r, 'X-Robots-Tag'), 'noindex') !== false
@@ -3975,7 +3995,7 @@ prova('8C · «Email per gli ospiti» in Impostazioni: un indirizzo sbagliato no
 $lucia->post("/pannello/$casa8/impostazioni", ['name' => 'Casa Lucia', 'guest_email' => 'ospiti@casalucia.example']);
 prova('…uno giusto sì', val('SELECT guest_email FROM properties WHERE id = ?', [$casa8]) === 'ospiti@casalucia.example'
       && str_contains($lucia->get("/pannello/$casa8/impostazioni")['body'], 'value="ospiti@casalucia.example"'));
-$lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1']);
+$lucia->post("/pannello/$casa8/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
 $r = $ospite->get("/g/$slug8/recensione?voto=4&l=en");
 prova('8C · 4 stelle (en): niente link ai portali nella pagina; «Thank you for your honesty», WhatsApp con il messaggio e l\'email per gli ospiti',
       str_contains($r['body'], 'Thank you for your honesty.') && str_contains($r['body'], 'Message us on WhatsApp') && str_contains($r['body'], '?text=Hi%20')
@@ -4058,7 +4078,7 @@ prova('…la guida si scrive in tedesco', val('SELECT default_locale FROM proper
 $greta->post("/pannello/$gp/lingue", ['locali' => ['de']]);
 $gcore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$gp]);
 $greta->post("/pannello/$gp/sezioni/$gcore", ['checkin_steps' => ['Die Schlüssel liegen im Kasten neben der Tür.'], 'checkin_note' => 'Bei später Ankunft bitte eine Nachricht schicken.']);
-$greta->post("/pannello/$gp/pubblica", ['codici_ok' => '1']);
+$greta->post("/pannello/$gp/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
 $r = $ospite->get("/g/" . val('SELECT slug FROM properties WHERE id = ?', [$gp]), ['Accept-Language: it']);
 $gslug = (string) val('SELECT slug FROM properties WHERE id = ?', [$gp]);
 prova('8C · una lingua sola: la guida in tedesco, senza la finestra della lingua', $r['code'] === 200 && str_contains($r['body'], 'lang="de"') && str_contains($r['body'], 'Willkommen')
@@ -4080,14 +4100,14 @@ prova('8C · traduzioni suggerite dal tedesco verso l\'italiano e verso la lingu
       && (bool) val("SELECT 1 FROM translation_suggestions WHERE property_id = ? AND locale = 'nl' AND text LIKE '[nl] Die Schlüssel%'", [$gp]), json_encode($nuove));
 $greta->post("/pannello/$gp/lingue/nl/suggerite", ['tutte' => '1']);
 $greta->post("/pannello/$gp/lingue/it/suggerite", ['tutte' => '1']);
-$greta->post("/pannello/$gp/pubblica", ['codici_ok' => '1']);
+$greta->post("/pannello/$gp/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
 $r = $ospite->get("/g/$gslug/$gcore?l=nl");
 prova('8C · guida in olandese: interfaccia olandese e il testo tradotto', str_contains($r['body'], 'lang="nl"') && str_contains($r['body'], '[nl] Die Schlüssel') && str_contains($r['body'], 'Terug naar de gids'));
 $r = $ospite->get("/g/$gslug?l=it");
 prova('…in italiano, con la finestra della lingua che ora c\'è (senza ?l=) e i nomi nativi', str_contains($r['body'], 'Benvenuti') && str_contains($ospite->get("/g/$gslug")['body'], '>Nederlands</a>'));
 $greta->post("/pannello/$gp/lingue", ['locali' => ['de', 'it', 'ja']]);
 $greta->post("/pannello/$gp/lingue/ja", ['s' => [$gcore => ['checkin_note' => '遅く到着する場合はメッセージをください。']]]);
-$greta->post("/pannello/$gp/pubblica", ['codici_ok' => '1']);
+$greta->post("/pannello/$gp/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
 $r = $ospite->get("/g/$gslug/$gcore?l=ja");
 prova('8C · lingua in più giapponese: interfaccia in inglese, il testo dell\'host in giapponese', str_contains($r['body'], 'lang="ja"') && str_contains($r['body'], 'Back to the guide')
       && str_contains($r['body'], '遅く到着する場合はメッセージをください。'));
@@ -4176,7 +4196,7 @@ db()->prepare('UPDATE guide_versions SET snapshot = ? WHERE property_id = ? AND 
 $r = $ospite->get("/g/$gslug/999999?l=de");
 prova('8C · istantanea di prima con «clima»: si vede come prima, riscaldamento e aria nella stessa pagina', $r['code'] === 200 && str_contains($r['body'], 'Heizung und Klimaanlage')
       && str_contains($r['body'], "19\u{00A0}°C") && str_contains($r['body'], "24\u{00A0}°C"));
-$greta->post("/pannello/$gp/pubblica", ['codici_ok' => '1']);
+$greta->post("/pannello/$gp/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
 prova('…e la nuova istantanea è nel formato 8, con riscaldamento e aria', (int) (json_decode((string) val('SELECT snapshot FROM guide_versions WHERE property_id = ? ORDER BY version DESC', [$gp]), true)['format'] ?? 0) === 8);
 $r = $ospite->get('/domande');
 prova('8C · FAQ: «In quali lingue…» con le regole nuove e «Posso scrivere la guida in un\'altra lingua?»', str_contains($r['body'], 'la tua e una a scelta')
@@ -4201,7 +4221,7 @@ $visibile = function (string $h): string {
 $itaVisti = array_values(array_filter(['Crea gratis la tua guida', 'Guarda la demo', 'Scegli il piano', 'Domande frequenti', '+ IVA / anno', 'al mese', 'Quante strutture',
     'Come funziona', 'Prezzi', 'Accedi', 'Cosa trova l\'ospite', 'Il tempo delle risposte', 'Ideale per', 'Tutto di Essential', 'Confronta tutti i piani',
     'Prima di cominciare', 'Altre domande', 'Posso provarla prima di pagare?', 'Non trovi la risposta', 'Benvenuti'], fn($x) => str_contains($visibile($r['body']), $x) || str_contains($visibile($rq['body']), $x)));
-prova('8E · nessun testo italiano visibile (tranne nomi propri e i link legali)', !$itaVisti && str_contains($r['body'], 'Terms (in Italian)') && str_contains($r['body'], 'Privacy (in Italian)'), implode(' | ', $itaVisti));
+prova('8E · nessun testo italiano visibile (tranne nomi propri); 8J: Terms, Privacy e DPA in inglese', !$itaVisti && str_contains($r['body'], '/en/terms">Terms</a>') && str_contains($r['body'], '/en/privacy">Privacy</a>') && str_contains($r['body'], '/en/dpa">DPA</a>'), implode(' | ', $itaVisti));
 prova('…i testi inglesi ci sono: titolo, piani, domande', str_contains($r['body'], 'Your home answers') && str_contains($r['body'], 'Choose your plan.') && str_contains($r['body'], '+ VAT / year')
       && str_contains($r['body'], 'Can I try it before I pay?') && str_contains($rq['body'], 'Frequently asked questions'));
 $ri = $ospiteEn->get('/'); $rdi = $ospiteEn->get('/domande');
@@ -4313,7 +4333,7 @@ prova('7F · CSV: text/csv, BOM, punto e virgola, intestazioni', str_contains($p
 $tipi7f = require "$DOVE/app/lang/tipologie.php";
 foreach (['robots.txt', 'sitemap.xml', 'llms.txt'] as $f) @unlink("$DOVE/$f");
 $campi7f = $campi6k;
-foreach (['home', 'domande', 'en', 'en-domande', 'termini', 'privacy'] as $k) $campi7f["p_{$k}_indicizza"] = '1';
+foreach (['home', 'domande', 'en', 'en-domande', 'termini', 'privacy', 'dpa', 'en-termini', 'en-privacy', 'en-dpa'] as $k) $campi7f["p_{$k}_indicizza"] = '1';
 foreach (['en' => 'Digital guest guide for holiday rentals | MyHouse Welcome', 'en-domande' => 'Frequently asked questions | MyHouse Welcome'] as $k => $t)
     $campi7f += ["p_{$k}_titolo" => $t, "p_{$k}_descrizione" => str_repeat('An English description for the test page. ', 2)];
 foreach ($tipi7f as $k => $tp) $campi7f += ["p_{$k}_indicizza" => '1', "p_{$k}_titolo" => $tp['titolo'], "p_{$k}_descrizione" => $tp['descrizione']];
@@ -4323,7 +4343,7 @@ foreach (['robots.txt', 'sitemap.xml', 'llms.txt'] as $f) if (!is_file("$DOVE/$f
 prova('7F · salvando «SEO e GEO»: robots.txt, sitemap.xml e llms.txt scritti accanto a index.php, uguali a quelli del sito', $fileOk
       && str_contains($adm6->segui($r)['body'], 'anche come file nella cartella principale del sito'));
 $sm7 = (string) @file_get_contents("$DOVE/sitemap.xml"); $ll7 = (string) @file_get_contents("$DOVE/llms.txt");
-prova('7F · le quattro pagine in sitemap (10 pagine in tutto) e in llms.txt («Per chi è»)', substr_count($sm7, '<url>') === 10 && @simplexml_load_string($sm7) !== false
+prova('7F · le quattro pagine in sitemap (14 pagine in tutto con le legali della 8J) e in llms.txt («Per chi è»)', substr_count($sm7, '<url>') === 14 && @simplexml_load_string($sm7) !== false
       && count(array_filter($tipi7f, fn($tp) => str_contains($sm7, '<loc>https://myhousewelcome.it' . $tp['percorso'] . '</loc>') && str_contains($ll7, '(https://myhousewelcome.it' . $tp['percorso'] . ')'))) === 4
       && str_contains($ll7, "## Per chi è"));
 $giudiziPubblicati = (int) val("SELECT COUNT(*) FROM testimonials WHERE visible = 1 AND (account_id IS NULL OR (status = 'pubblicata' AND consent_at IS NOT NULL AND withdrawn_at IS NULL))");
@@ -4367,8 +4387,8 @@ prova('7F · home: tutte le immagini con alt descrittivo, width e height; «Per 
       && count(array_filter($tipi7f, fn($tp) => str_contains($rH['body'], $tp['percorso'] . '">' . htmlspecialchars($tp['nome']) . '</a>'))) === 4, implode(' ', array_map(fn($t) => substr($t, 0, 80), $senzaAlt)));
 $org = null;
 if (preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $rH['body'], $mj)) foreach ($mj[1] as $j) foreach ((json_decode($j, true)['@graph'] ?? []) as $n) if (($n['@type'] ?? '') === 'Organization') $org = $n;
-prova('7F · Organization con sameAs blackout.in e parentOrganization; offerte del listino; nessun aggregateRating', $org && in_array('https://blackout.in', $org['sameAs'] ?? [], true)
-      && ($org['parentOrganization']['url'] ?? '') === 'https://blackout.in' && str_contains($rH['body'], '"@type":"Offer"') && !str_contains($rH['body'], 'aggregateRating'));
+prova('7F · Organization con parentOrganization (8J: il titolare, City Up S.r.l., www.cityup.eu); offerte del listino; nessun aggregateRating', $org && !in_array('https://blackout.in', $org['sameAs'] ?? [], true)
+      && ($org['parentOrganization']['url'] ?? '') === 'https://www.cityup.eu' && ($org['parentOrganization']['name'] ?? '') !== '' && str_contains($rH['body'], '"@type":"Offer"') && !str_contains($rH['body'], 'aggregateRating'));
 
 // ===================================================== LINGUA PRINCIPALE OPZIONALE
 // Chi scrive la guida in una lingua fuori dalle cinque di base (olandese, portoghese del Portogallo e del Brasile,
@@ -4416,7 +4436,7 @@ foreach ($pxTesti as $l => $testo) {
     $b->post("/pannello/$p/sezioni/$core", ['checkin_steps' => [$testo]]);
     $n0 = count($pxTr());
     $rS = $b->segui($b->post("/pannello/$p/lingue/it/suggerite", ['suggerisci' => '1']));
-    $b->post("/pannello/$p/pubblica", ['codici_ok' => '1']);
+    $b->post("/pannello/$p/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
     $slug = (string) val('SELECT slug FROM properties WHERE id = ?', [$p]);
     $rG = $pxOspite->get("/g/$slug/$core?l=$l");
     $err = [];
@@ -4442,7 +4462,7 @@ foreach ($pxTesti as $l => $testo) {
         $b->segui($b->post("/pannello/$p/lingue/$a/suggerite", ['tutte' => '1']));
     }
     $chiamate = array_slice($pxTr(), $n1);
-    $b->post("/pannello/$p/pubblica", ['codici_ok' => '1']);
+    $b->post("/pannello/$p/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
     $slug = (string) val('SELECT slug FROM properties WHERE id = ?', [$p]);
     $rL = $pxOspite->get("/g/$slug/$core?l=$l"); $rI = $pxOspite->get("/g/$slug/$core?l=it"); $rE = $pxOspite->get("/g/$slug/$core?l=en");
     $err = [];
@@ -4479,7 +4499,7 @@ prova('Portoghese · un telefono del Portogallo apre in brasiliano la guida che 
 [$bPP, , $pPP, $corePP] = $pxHost('essential', 'pt', '-due');
 $bPP->post("/pannello/$pPP/lingue", ['locali' => ['pt', 'pt-BR']]);
 $bPP->post("/pannello/$pPP/sezioni/$corePP", ['checkin_steps' => [$pxTesti['pt']]]);
-$bPP->post("/pannello/$pPP/pubblica", ['codici_ok' => '1']);
+$bPP->post("/pannello/$pPP/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
 $slugPP = (string) val('SELECT slug FROM properties WHERE id = ?', [$pPP]);
 prova('Portoghese · una guida con le due varianti: pt-BR al telefono brasiliano, pt al telefono portoghese',
       $pxLingue($pPP) === ['pt', 'pt-BR'] && val('SELECT status FROM properties WHERE id = ?', [$pPP]) === 'published' && str_contains($pxOspite->get("/g/$slugPP", ['Accept-Language: pt-BR,pt;q=0.9'])['body'], '<html lang="pt-BR"')
@@ -4541,12 +4561,143 @@ prova('8I · «Svuota»: senza SVUOTA non tocca niente; con SVUOTA via tecnici e
 $r = $admin->post('/admin/impostazioni/registri', ['registri__giorni' => '20', 'password' => 'AdminProva123']);
 prova('8I · i giorni vanno da 30 a 180', str_contains($r['body'], 'Scrivi un numero di giorni tra 30 e 180.'));
 $pr8i = $ospite->get('/privacy')['body'];
-prova('8I · privacy: «Registri tecnici e sicurezza» con legittimo interesse, IP abbreviati, 90 giorni, 24 ore, S3 Milano 6/12 mesi, Matomo 6 mesi',
-      str_contains($pr8i, 'id="registri"') && str_contains($pr8i, 'art. 6.1.f GDPR') && str_contains($pr8i, 'dopo 90 giorni') && str_contains($pr8i, 'dopo 24 ore')
-      && str_contains($pr8i, 'S3, Milano') && str_contains($pr8i, 'per 6 mesi e si eliminano dopo 12 mesi'));
+prova('8I · privacy: «Registri tecnici e di sicurezza» (8J: trattamento 10) con legittimo interesse, IP abbreviati, 90 giorni, 24 ore, S3 Milano 6/12 mesi, Matomo 6 mesi',
+      str_contains($pr8i, 'id="registri"') && str_contains($pr8i, 'art. 6.1.f') && str_contains($pr8i, 'Registri tecnici 90 giorni') && str_contains($pr8i, 'accesso 24 ore')
+      && str_contains($pr8i, 'S3, Milano') && str_contains($pr8i, 'inalterabile per 6 mesi') && str_contains($pr8i, 'dopo 12 mesi') && str_contains($pr8i, 'dati grezzi 6 mesi'));
 if ($imp8 = val("SELECT meta FROM audit_log WHERE action = 'impersonate.start' ORDER BY id DESC LIMIT 1")) {
     prova('8I · entrata nell\'account di un cliente: nel registro delle azioni l\'IP abbreviato', !str_contains((string) $imp8, '127.0.0.1'), (string) $imp8);
 }
+
+// ================================================================= 8J
+capitolo('8J · titolare City Up, Termini, Privacy e DPA (IT/EN), ri-accettazione, checkout');
+$pag8j = [];
+foreach (['/termini', '/privacy', '/dpa', '/en/terms', '/en/privacy', '/en/dpa'] as $p8) $pag8j[$p8] = $ospite->get($p8);
+prova('8J · /termini, /privacy, /dpa e /en/terms, /en/privacy, /en/dpa: 200, pulite, con canonical e hreflang it/en/x-default',
+      count(array_filter($pag8j, fn($r) => $r['code'] === 200 && pulita($r))) === 6
+      && count(array_filter($pag8j, fn($r, $p8) => str_contains($r['body'], '<link rel="canonical" href="https://myhousewelcome.it' . $p8 . '">'), ARRAY_FILTER_USE_BOTH)) === 6
+      && count(array_filter($pag8j, fn($r) => str_contains($r['body'], 'hreflang="it" href="https://myhousewelcome.it/') && str_contains($r['body'], 'hreflang="en" href="https://myhousewelcome.it/en/')
+                                       && str_contains($r['body'], 'hreflang="x-default"'))) === 6,
+      implode(' ', array_map(fn($r) => $r['code'], $pag8j)));
+prova('8J · le pagine inglesi in inglese (lang="en"), con i link a Terms, Privacy e DPA e alla versione italiana', str_contains($pag8j['/en/terms']['body'], '<html lang="en">')
+      && str_contains($pag8j['/en/terms']['body'], 'Right of withdrawal') && str_contains($pag8j['/en/privacy']['body'], 'Your rights') && str_contains($pag8j['/en/dpa']['body'], 'Sub-processors')
+      && str_contains($pag8j['/en/terms']['body'], '/en/dpa">DPA</a>') && str_contains($pag8j['/en/terms']['body'], '>Versione italiana</a>'));
+$tutte8j = implode("\n", array_map(fn($r) => $r['body'], $pag8j));
+prova('8J · nessun «[Da completare» né «[Da far rivedere», nessuna vecchia P.IVA; titolare City Up con P.IVA, REA, sede e PEC', !str_contains($tutte8j, '[Da completare')
+      && !str_contains($tutte8j, '[Da far rivedere') && !str_contains($tutte8j, '02945910541') && str_contains($tutte8j, 'City Up S.r.l. — P.IVA e C.F. 03793880547 — REA PG-352001')
+      && str_contains($tutte8j, 'Via Ariodante Fabretti 15, 06123 Perugia (PG)') && str_contains($tutte8j, 'cityup@pec.it'));
+prova('8J · Blackout Agency non è il titolare: niente nei Termini e nel DPA; nell\'informativa solo come destinatario di «Anche il tuo sito»',
+      !str_contains($pag8j['/termini']['body'], 'Blackout') && !str_contains($pag8j['/dpa']['body'], 'Blackout') && str_contains($pag8j['/privacy']['body'], 'Titolare: City Up S.r.l.')
+      && preg_match('#id="trattamento-8".*?Blackout Agency.*?</section>#s', $pag8j['/privacy']['body']) === 1 && str_contains($pag8j['/privacy']['body'], 'titolare autonomo'));
+$sorgenti8j = '';
+foreach (['src', 'views', 'lang'] as $c8) foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator("$DOVE/app/$c8", FilesystemIterator::SKIP_DOTS)) as $f8) $sorgenti8j .= file_get_contents((string) $f8);
+$sorgenti8j .= file_get_contents("$DOVE/app/config.php");
+prova('8J · nel codice nessuna vecchia P.IVA né «Blackout Agency» come ragione sociale di serie', !str_contains($sorgenti8j, '02945910541') && !str_contains($sorgenti8j, "'Blackout Agency')")
+      && !str_contains($sorgenti8j, 'un progetto Blackout'));
+prova('8J · Termini: 16 punti con indice, recesso impresa/consumatore, 18 anni, foro di Perugia, modulo di recesso; Privacy: 12 trattamenti in tabella, fornitori, diritti, nessun DPO',
+      substr_count($pag8j['/termini']['body'], 'class="legale__parte"') === 18 && str_contains($pag8j['/termini']['body'], 'id="recesso"') && str_contains($pag8j['/termini']['body'], 'almeno 18 anni')
+      && str_contains($pag8j['/termini']['body'], 'foro di Perugia') && str_contains($pag8j['/termini']['body'], 'id="modulo-recesso"') && str_contains($pag8j['/termini']['body'], 'Compila e manda il modulo per email')
+      && substr_count($pag8j['/privacy']['body'], 'class="legale__tabella"') === 12 && str_contains($pag8j['/privacy']['body'], 'Hostinger') && str_contains($pag8j['/privacy']['body'], 'Stripe Payments Europe')
+      && str_contains($pag8j['/privacy']['body'], 'Non è stato nominato un responsabile della protezione dei dati') && str_contains($pag8j['/privacy']['body'], 'entro 30 giorni')
+      && str_contains($pag8j['/dpa']['body'], 'entro 48 ore') && str_contains($pag8j['/dpa']['body'], 'almeno 30 giorni'));
+prova('8J · la posta in uscita nell\'informativa viene dall\'impostazione (qui: modalità prova)', str_contains($pag8j['/privacy']['body'], 'posta in uscita</b>: '));
+prova('8J · «Versioni precedenti»: i Termini del 2026-10-08 archiviati, leggibili e non indicizzati', str_contains($pag8j['/termini']['body'], 'Versioni precedenti')
+      && str_contains($ospite->get('/termini?versione=2026-10-08')['body'], 'non più in vigore') && str_contains($ospite->get('/termini?versione=2026-10-08')['body'], 'name="robots" content="noindex"'));
+$home8j = $ospite->get('/')['body'];
+prova('8J · piè di pagina: Termini, Privacy, DPA; «Anche il tuo sito» dice che le risposte vanno a Blackout Agency', str_contains($home8j, '/dpa">Accordo dati (DPA)</a>')
+      && str_contains($home8j, 'la società che realizza i siti MyHouse') && str_contains($home8j, '/privacy#trattamento-8"'));
+prova('8J · sitemap con /dpa e le pagine inglesi', str_contains($r8j = $ospite->get('/sitemap.xml')['body'], '/dpa</loc>') && str_contains($r8j, '/en/terms</loc><lastmod>' . MHW_VERSIONE_LEGALE));
+
+// Registrazione: la casella è obbligatoria; con la casella, accettate le tre versioni.
+$irene = new Browser('irene');
+$irene->get('/registrati?piano=' . pv('plus'));
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$r = $irene->post('/registrati', ['piano' => pv('plus'), 'name' => 'Irene Legale', 'email' => 'irene@prova.test', 'email2' => 'irene@prova.test', 'password' => 'IreneProva12345']);
+prova('8J · registrazione senza la casella: rifiutata, nessun account', str_contains($r['body'], 'devi accettare i Termini e l&#039;Accordo sul trattamento dei dati')
+      && !val("SELECT id FROM users WHERE email = 'irene@prova.test'"));
+$irene->post('/registrati', ['piano' => pv('plus'), 'name' => 'Irene Legale', 'email' => 'irene@prova.test', 'password' => 'IreneProva12345', 'termini' => '1']);
+$u8 = riga("SELECT * FROM users WHERE email = 'irene@prova.test'");
+prova('8J · con la casella: Termini, Privacy e DPA accettati nella versione in vigore, una riga per documento', $u8 && $u8['terms_version'] === MHW_VERSIONE_LEGALE
+      && $u8['privacy_version'] === MHW_VERSIONE_LEGALE && $u8['dpa_version'] === MHW_VERSIONE_LEGALE && $u8['dpa_accepted_at'] !== null
+      && (int) val("SELECT COUNT(*) FROM legal_acceptances WHERE user_id = ? AND modo = 'registrazione'", [$u8['id']]) === 3);
+$acc8 = (int) val('SELECT id FROM accounts WHERE user_id = ?', [$u8['id']]);
+$irene->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Irene', 'city' => 'Spello']);
+$p8 = (int) val('SELECT id FROM properties WHERE account_id = ?', [$acc8]);
+$r = $irene->get("/pannello/$p8/procedura/struttura");
+prova('8J · sotto l\'email per gli ospiti e i contatti: «assicurati di poterlo pubblicare»', str_contains($r['body'], 'Questo contatto compare nella guida e nella pagina delle recensioni: assicurati di poterlo pubblicare')
+      && str_contains($r['body'], 'assicurati di poterli pubblicare'));
+prova('8J · nessuna finestra per chi ha già accettato', !str_contains($irene->get('/pannello')['body'], 'Abbiamo aggiornato i Termini'));
+
+// Una versione nuova in vigore: finestra, pannello in sola lettura, poi «Accetto».
+db()->prepare("UPDATE users SET terms_version = '2026-10-08', privacy_version = '2026-10', dpa_version = NULL WHERE id = ?")->execute([$u8['id']]);
+$r = $irene->get('/pannello');
+prova('8J · versione cambiata: al primo accesso la finestra «Abbiamo aggiornato i Termini e l\'Informativa», con le novità, i link e «Accetto»',
+      str_contains($r['body'], "Abbiamo aggiornato i Termini e l'Informativa") && str_contains($r['body'], 'City Up S.r.l. (Perugia)') && str_contains($r['body'], '/legale/accetta')
+      && str_contains($r['body'], '/dpa"'));
+$r = $irene->post('/account/profilo', ['name' => 'Irene Cambiata']);
+prova('8J · finché non accetta il pannello è in sola lettura: il modulo non salva e lo dice', $r['code'] === 302 && val('SELECT name FROM users WHERE id = ?', [$u8['id']]) === 'Irene Legale'
+      && str_contains($irene->segui($r)['body'], 'finché non li accetti puoi solo consultare'));
+$r = $irene->post('/legale/accetta', []);
+$u8 = riga('SELECT * FROM users WHERE id = ?', [$u8['id']]);
+prova('8J · «Accetto»: versioni aggiornate, tre righe «riaccettazione», nel registro delle azioni', $u8['terms_version'] === MHW_VERSIONE_LEGALE && $u8['dpa_version'] === MHW_VERSIONE_LEGALE
+      && (int) val("SELECT COUNT(*) FROM legal_acceptances WHERE user_id = ? AND modo = 'riaccettazione'", [$u8['id']]) === 3
+      && (bool) val("SELECT id FROM audit_log WHERE action = 'legale.accettati' AND target_user_id = ?", [$u8['id']]));
+$irene->post('/account/profilo', ['name' => 'Irene Cambiata']);
+prova('8J · …e dopo tutto torna normale', val('SELECT name FROM users WHERE id = ?', [$u8['id']]) === 'Irene Cambiata' && !str_contains($irene->get('/pannello')['body'], 'Abbiamo aggiornato'));
+// L'assistenza non vede la finestra e non accetta al posto del cliente.
+db()->prepare("UPDATE users SET terms_version = '2026-10-08' WHERE id = ?")->execute([$u8['id']]);
+$admin->post('/admin/entra/' . $u8['id'], []);
+$r = $admin->get('/pannello');
+$admin->post('/legale/accetta', []);
+prova('8J · durante l\'accesso dell\'assistenza: niente finestra, e «Accetto» non vale', !str_contains($r['body'], 'Abbiamo aggiornato i Termini')
+      && val('SELECT terms_version FROM users WHERE id = ?', [$u8['id']]) === '2026-10-08');
+$admin->post('/admin/esci-da-cliente', []);
+prova('8J · Account: documenti accettati e accessi dell\'assistenza (data e chi)', str_contains($r8a = $irene->get('/account')['body'], "Accessi dell'assistenza al tuo account")
+      && str_contains($r8a, 'UTC ·') && str_contains($r8a, 'versione ' . MHW_VERSIONE_LEGALE));
+
+// L'email di avviso: ai clienti con un abbonamento attivo, una volta sola per combinazione di versioni.
+db()->prepare("INSERT INTO subscriptions (account_id, package_version_id, status, provider, provider_customer_id, provider_subscription_id, current_period_start,
+    current_period_end, payment_status, created_at, updated_at, quantity) VALUES (?, ?, 'active', 'stripe', 'cus_irene', 'sub_irene', ?, ?, 'paid', ?, ?, 1)")
+    ->execute([$acc8, pv('plus'), gmdate('Y-m-d\TH:i:s\Z', time() - 86400), gmdate('Y-m-d\TH:i:s\Z', time() + 360 * 86400), gmdate('Y-m-d\TH:i:s\Z'), gmdate('Y-m-d\TH:i:s\Z')]);
+$avvisi8 = fn() => count(array_filter(righePosta(), fn($l) => str_contains($l, 'irene@prova.test') && str_contains($l, 'Aggiornamento dei Termini')));
+$cron();
+$primo8 = $avvisi8();
+$cron(); $cron();
+prova('8J · email «Abbiamo aggiornato i documenti legali» a chi ha un abbonamento attivo e non ha accettato: una volta sola', $primo8 === 1 && $avvisi8() === 1, (string) $avvisi8());
+
+// Impostazioni → Titolare e documenti legali; una versione annunciata per il futuro.
+$r = $admin->get('/admin/impostazioni');
+prova('8J · Impostazioni → «Titolare e documenti legali»: ragione sociale, P.IVA, sede, PEC, sito, versioni', str_contains($r['body'], 'Titolare e documenti legali')
+      && str_contains($r['body'], 'name="legal__company_pec"') && str_contains($r['body'], 'name="legal__dpa_version"'));
+$r = $admin->post('/admin/impostazioni/legale', ['legal__company_vat' => '123', 'password' => 'AdminProva123']);
+prova('8J · la P.IVA ha 11 cifre', str_contains($r['body'], 'La partita IVA italiana è fatta di 11 cifre'));
+$futura8 = gmdate('Y-m-d', time() + 40 * 86400);
+$admin->post('/admin/impostazioni/legale', ['legal__terms_version' => $futura8, 'password' => 'AdminProva123']);
+db()->prepare("UPDATE users SET terms_version = ?, privacy_version = ?, dpa_version = ? WHERE id = ?")->execute([MHW_VERSIONE_LEGALE, MHW_VERSIONE_LEGALE, MHW_VERSIONE_LEGALE, $u8['id']]);
+$r = $irene->get('/pannello');
+prova('8J · versione annunciata (tra 40 giorni): nel pannello la riga «cambiano», niente finestra, si lavora', str_contains($r['body'], 'cambiano') && !str_contains($r['body'], 'Abbiamo aggiornato i Termini')
+      && ($irene->post('/account/profilo', ['name' => 'Irene Legale'])['code'] === 302) && val('SELECT name FROM users WHERE id = ?', [$u8['id']]) === 'Irene Legale');
+$cron();
+prova('8J · …e l\'email di preavviso parte, una volta, con la data', $avvisi8() === 2 && count(array_filter(righePosta(), fn($l) => str_contains($l, 'irene@prova.test') && str_contains($l, 'cambiano i Termini'))) >= 1);
+$r = $ospite->get('/termini');
+prova('8J · la pagina dice da quando vale; la versione di prima resta tra le precedenti', str_contains($r['body'], 'in vigore dal') && str_contains($r['body'], '?versione=' . MHW_VERSIONE_LEGALE)
+      && str_contains($ospite->get('/termini?versione=' . MHW_VERSIONE_LEGALE)['body'], 'non più in vigore'));
+$admin->post('/admin/impostazioni/legale', ['legal__terms_version' => '', 'password' => 'AdminProva123']);
+prova('8J · versione vuota = quella di serie', !str_contains($ospite->get('/termini')['body'], 'in vigore dal'));
+
+// Testi e foto → Documenti legali.
+$r = $admin->get('/admin/testi?doc=legali');
+prova('8J · Testi e foto → «Documenti legali»: Termini, Privacy, Cookie, DPA e novità, con le versioni archiviate; senza la home', str_contains($r['body'], 'name="t_termini_7_testo"')
+      && str_contains($r['body'], 'name="t_privacy_t8_testo"') && str_contains($r['body'], 'name="t_dpa_9_testo"') && str_contains($r['body'], 'name="t_legale_novita"')
+      && str_contains($r['body'], 'Versioni archiviate') && !str_contains($r['body'], 'name="t_hero_titolo"') && !str_contains($r['body'], '<iframe'));
+$r = $admin->post('/admin/testi', ['legali' => '1', 'lingua' => 'it', 't_termini_16_testo' => "{titolare_completo}, {sede}. Scrivici: {email}."]);
+prova('8J · un testo legale cambiato si vede subito, con l\'invito a cambiare la versione', str_contains($ospite->get('/termini')['body'], 'Perugia (PG). Scrivici:')
+      && str_contains($admin->segui($r)['body'], 'cambia la versione'));
+$admin->post('/admin/testi', ['legali' => '1', 'lingua' => 'it', 't_termini_16_testo' => '']);
+$v8 = (int) val('SELECT COUNT(*) FROM legal_versions'); $a8 = (int) val('SELECT COUNT(*) FROM legal_acceptances');
+$m8 = shell_exec('php -r ' . escapeshellarg('define("MHW_APP", "' . $DOVE . '/app"); define("MHW_PUBLIC", "' . $DOVE . '"); spl_autoload_register(fn($c) => require "' . $DOVE . '/app/src/" . substr($c, 4) . ".php");
+    MHW\Config::load("' . $DOVE . '/app/config.php"); $f = require "' . $DOVE . '/app/migrations/042_legale_8j.php"; $f(MHW\Db::conn()); echo "fatto";') . ' 2>&1');
+prova('8J · migrazione 042 una seconda volta: niente cambia', trim((string) $m8) === 'fatto' && (int) val('SELECT COUNT(*) FROM legal_versions') === $v8
+      && (int) val('SELECT COUNT(*) FROM legal_acceptances') === $a8, (string) $m8);
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

@@ -49,12 +49,12 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
     <input id="email2" name="email2" type="email" required maxlength="190" autocomplete="email" value="<?= Support::e($vecchi['email2'] ?? '') ?>" data-ripeti="email" aria-describedby="email2-diversa">
     <p class="field-error" id="email2-diversa" hidden>Le due email non sono uguali.</p></div>
   <?php $pwId = 'password'; $pwNome = 'password'; $pwEtichetta = 'Password'; $pwAuto = 'new-password'; $pwNuova = true; include __DIR__ . '/_pw.php'; ?>
+  <?php /* 8J: una sola casella, non spuntata: Termini, Accordo sul trattamento dei dati (Allegato A) e presa visione dell'Informativa. Niente consenso marketing. */ ?>
   <label class="check" style="align-items:flex-start"><input type="checkbox" name="termini" value="1" required style="margin-top:1px">
-    <span>Accetto i <a href="<?= b() ?>/termini" target="_blank" rel="noopener">Termini e condizioni</a></span></label>
+    <span>Accetto i <a href="<?= b() ?>/termini" target="_blank" rel="noopener">Termini</a> e l'<a href="<?= b() ?>/dpa" target="_blank" rel="noopener">Accordo sul trattamento dei dati</a>
+      e ho letto l'<a href="<?= b() ?>/privacy" target="_blank" rel="noopener">Informativa privacy</a></span></label>
   <button class="btn btn--block btn--go">Crea l'account e inizia <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></button>
   <p class="small muted registrati__riservata"><?= Icon::svg('lock', 14) ?><span>La guida che crei non compare sui motori di ricerca: la vede solo chi ha il link o il QR.</span></p>
-  <?php /* Formulazione da far verificare al consulente privacy. */ ?>
-  <p class="small muted" style="margin-top:-4px">Creando l'account dichiari di aver letto l'<a href="<?= b() ?>/privacy" target="_blank" rel="noopener">informativa privacy</a>.</p>
 </form>
 <p class="muted small" style="margin-top:20px">Hai già un account? <a href="<?= b() ?>/accedi">Accedi</a>.</p>
 <script src="<?= MHW\av('/assets/password.js') ?>" defer></script>

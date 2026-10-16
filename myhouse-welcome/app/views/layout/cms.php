@@ -231,6 +231,11 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
     </div>
   </aside>
 <?php endif; ?>
+<?php /* 8J · Termini, Informativa o DPA da (ri)accettare: la finestra (o la riga, se valgono da una data futura). Mai per l'assistenza. */
+      if ($u && !Auth::isImpersonating() && (($daAccettare = MHW\Legale::daAccettare($u)) || ($annunciati = MHW\Legale::annunciati($u)))) {
+          $annunciati = $annunciati ?? [];
+          include __DIR__ . '/../host/_legale_finestra.php';
+      } ?>
 <?= $content ?>
 </main>
 <?php if ($conLato): ?>

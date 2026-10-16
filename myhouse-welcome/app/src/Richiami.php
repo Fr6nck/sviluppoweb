@@ -194,6 +194,7 @@ final class Richiami
 
         Seo::forseFile();      // 7F: una volta al giorno robots.txt, sitemap.xml e llms.txt come file veri
         Registri::giornaliero();   // 8I: una volta al giorno pulizia dei registri e copia di quelli di ieri su S3
+        try { Legale::avvisa(); } catch (\Throwable $e) { Log::exception($e, 'avviso dei documenti legali'); }   // 8J: una volta per versione
         Inviti::inSospeso();   // gli sconti inviti che Stripe non ha ancora preso
         try { CambioAbbonamento::applyPendingChanges(); } catch (\Throwable $e) { Log::exception($e, 'cambi di piano in sospeso'); }
         return $fatte;

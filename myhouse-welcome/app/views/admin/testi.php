@@ -6,8 +6,13 @@
 use function MHW\b;
 use MHW\{Support, Csrf, Icon, TestiSito};
 $title = 'Testi e foto';
-$catalogo = TestiSito::catalogo();
 $lingua = ($lingua ?? 'it') === 'en' ? 'en' : 'it';   // 8E: la linguetta (la lingua l'ha già impostata la rotta)
+$legali = !empty($legali);   // 8J: la linguetta «Documenti legali»
+$sezioni = array_filter(TestiSito::SEZIONI, fn($sid) => in_array($sid, TestiSito::SEZIONI_LEGALI, true) === $legali, ARRAY_FILTER_USE_KEY);
+$catalogo = array_filter(TestiSito::catalogo(), fn($d) => isset($sezioni[$d[0]]));
+// In inglese la novità del pannello non c'è (il pannello è in italiano).
+if ($lingua === 'en') unset($catalogo['legale.novita']);
+$qs = fn(array $x) => ($q = http_build_query(array_filter($x))) !== '' ? '?' . $q : '';
 $cambiati = count(array_filter(array_keys($catalogo), [TestiSito::class, 'cambiato']));
 $fotoCaricate = count(array_filter(array_keys(TestiSito::IMMAGINI), fn($n) => TestiSito::riferimentoImmagine($n) !== ''));
 $perSezione = [];
@@ -23,11 +28,18 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
   </div>
 
   <?php /* 8E: Italiano / English. Le foto sono le stesse per le due lingue. */ ?>
-  <nav class="linguette-testi" aria-label="Lingua dei testi">
-    <a href="<?= b() ?>/admin/testi"<?= $lingua === 'it' ? ' aria-current="page"' : '' ?>>Italiano</a>
-    <a href="<?= b() ?>/admin/testi?lingua=en"<?= $lingua === 'en' ? ' aria-current="page"' : '' ?>>English</a>
+  <nav class="linguette-testi" aria-label="Pagine">
+    <a href="<?= b() ?>/admin/testi<?= $qs(['lingua' => $lingua === 'en' ? 'en' : '']) ?>"<?= !$legali ? ' aria-current="page"' : '' ?>>Home e domande</a>
+    <a href="<?= b() ?>/admin/testi<?= $qs(['lingua' => $lingua === 'en' ? 'en' : '', 'doc' => 'legali']) ?>"<?= $legali ? ' aria-current="page"' : '' ?>>Documenti legali</a>
   </nav>
-  <?php if ($lingua === 'en'): ?><p class="note" role="status" style="margin:0">Stai modificando i testi della home in inglese (<a href="<?= b() ?>/en" target="_blank" rel="noopener">/en</a>) e dell'intestazione di /en/questions. Un campo vuoto torna al testo inglese di serie. Le foto sono le stesse dell'italiano.</p><?php endif; ?>
+  <nav class="linguette-testi" aria-label="Lingua dei testi">
+    <a href="<?= b() ?>/admin/testi<?= $qs(['doc' => $legali ? 'legali' : '']) ?>"<?= $lingua === 'it' ? ' aria-current="page"' : '' ?>>Italiano</a>
+    <a href="<?= b() ?>/admin/testi<?= $qs(['lingua' => 'en', 'doc' => $legali ? 'legali' : '']) ?>"<?= $lingua === 'en' ? ' aria-current="page"' : '' ?>>English</a>
+  </nav>
+  <?php if ($legali): ?><p class="note" role="status" style="margin:0">Termini e condizioni, Informativa sulla privacy e Accordo sul trattamento dei dati<?= $lingua === 'en' ? ', in inglese (/en/terms, /en/privacy, /en/dpa)' : '' ?>.
+    Una riga vuota fa un paragrafo nuovo, «- » all'inizio della riga un elenco, «| Voce | testo» una riga di tabella. Dopo una modifica sostanziale cambia la versione in
+    <a href="<?= b() ?>/admin/impostazioni#legale">Impostazioni → Titolare e documenti legali</a>: i clienti ricevono l'avviso e accettano di nuovo. Testi di partenza: falli rivedere da un legale.</p><?php endif; ?>
+  <?php if ($lingua === 'en' && !$legali): ?><p class="note" role="status" style="margin:0">Stai modificando i testi della home in inglese (<a href="<?= b() ?>/en" target="_blank" rel="noopener">/en</a>) e dell'intestazione di /en/questions. Un campo vuoto torna al testo inglese di serie. Le foto sono le stesse dell'italiano.</p><?php endif; ?>
   <div class="cifre">
     <?php foreach ([['cifra--pino', 'doc', 'Testi cambiati', $cambiati . ' su ' . count($catalogo), 'gli altri sono di serie'],
                     ['cifra--mare', 'drop', 'Foto caricate', $fotoCaricate . ' su ' . count(TestiSito::IMMAGINI), 'le altre sono di serie'],
@@ -40,15 +52,16 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
   </div>
 
   <nav class="testi__indice" aria-label="Blocchi della pagina">
-    <?php foreach (TestiSito::SEZIONI as $sid => [$nome]): ?><a href="#testi-<?= $sid ?>"><?= Support::e($nome) ?></a><?php endforeach; ?>
-    <a href="#testi-foto">Foto</a>
+    <?php foreach ($sezioni as $sid => [$nome]): ?><a href="#testi-<?= $sid ?>"><?= Support::e($nome) ?></a><?php endforeach; ?>
+    <?php if (!$legali): ?><a href="#testi-foto">Foto</a><?php endif; ?>
   </nav>
 
   <div class="testi__layout">
   <form method="post" action="<?= b() ?>/admin/testi" enctype="multipart/form-data" class="stack stack--lg testi__modulo" data-testi><?= Csrf::field() ?>
     <input type="hidden" name="torna" value="" data-torna>
     <input type="hidden" name="lingua" value="<?= $lingua ?>">
-    <?php foreach (TestiSito::SEZIONI as $sid => [$nome, $nota]): $campi = $perSezione[$sid] ?? []; if (!$campi) continue; ?>
+    <?php if ($legali): ?><input type="hidden" name="legali" value="1"><?php endif; ?>
+    <?php foreach ($sezioni as $sid => [$nome, $nota]): $campi = $perSezione[$sid] ?? []; if (!$campi) continue; ?>
       <section class="panel stack" id="testi-<?= $sid ?>" aria-labelledby="testi-<?= $sid ?>-titolo">
         <div class="stack stack--sm">
           <h2 id="testi-<?= $sid ?>-titolo" style="font-size:22px"><?= Support::e($nome) ?></h2>
@@ -61,7 +74,7 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
             <?php if ($tipo === 'riga'): ?>
               <input id="<?= $id ?>" name="<?= $nomeCampo($k) ?>" type="text" value="<?= Support::e($valore) ?>" maxlength="<?= TestiSito::RIGA_MAX ?>" data-serie="<?= Support::e($serie) ?>">
             <?php else: ?>
-              <textarea id="<?= $id ?>" name="<?= $nomeCampo($k) ?>" rows="<?= max(2, min(6, substr_count($serie, "\n") + 1 + (int) (mb_strlen($serie) / 110))) ?>" maxlength="<?= TestiSito::AREA_MAX ?>" data-serie="<?= Support::e($serie) ?>"><?= Support::e($valore) ?></textarea>
+              <textarea id="<?= $id ?>" name="<?= $nomeCampo($k) ?>" rows="<?= max(2, min($tipo === 'lungo' ? 18 : 6, substr_count($serie, "\n") + 1 + (int) (mb_strlen($serie) / 110))) ?>" maxlength="<?= $tipo === 'lungo' ? TestiSito::LUNGO_MAX : TestiSito::AREA_MAX ?>" data-serie="<?= Support::e($serie) ?>"><?= Support::e($valore) ?></textarea>
             <?php endif; ?>
             <div class="testi__sotto">
               <?php if ($aiuto !== ''): ?><span class="help"><?= Support::e($aiuto) ?></span><?php endif; ?>
@@ -74,6 +87,7 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
       </section>
     <?php endforeach; ?>
 
+    <?php if (!$legali): ?>
     <section class="panel stack" id="testi-foto" aria-labelledby="testi-foto-titolo">
       <div class="stack stack--sm">
         <h2 id="testi-foto-titolo" style="font-size:22px">Foto</h2>
@@ -94,8 +108,28 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
       </div>
       <div class="actions"><button class="btn" data-salva="foto">Salva</button></div>
     </section>
+    <?php endif; ?>
   </form>
 
+  <?php if ($legali): /* 8J: al posto dell'anteprima, i documenti e le versioni archiviate (sola lettura) */ ?>
+  <aside class="testi__anteprima-col testi__legali" aria-label="Documenti e versioni">
+    <div class="panel stack" style="gap:10px">
+      <b>I documenti</b>
+      <?php foreach (MHW\Legale::DOCUMENTI as $d => [$nomeD, , $pIt, $pEn]): ?>
+        <p class="small" style="margin:0"><?= Support::e($nomeD) ?>: <a href="<?= b() . $pIt ?>" target="_blank" rel="noopener">italiano</a> · <a href="<?= b() . $pEn ?>" target="_blank" rel="noopener">inglese</a>
+          <br><span class="muted">Versione in vigore: <?= Support::e(MHW\Legale::versioni()[$d]) ?></span></p>
+      <?php endforeach; ?>
+      <b>Versioni archiviate</b>
+      <?php $arch = []; foreach (array_keys(MHW\Legale::DOCUMENTI) as $d) foreach (MHW\Legale::precedenti($d) as $p) $arch[] = [$d, $p];
+            if (!$arch): ?><p class="small muted" style="margin:0">Nessuna: quando cambi la versione, il testo di prima resta qui, in sola lettura.</p>
+      <?php else: ?><ul class="small" style="margin:0">
+        <?php foreach ($arch as [$d, $p]): $pDoc = MHW\Legale::DOCUMENTI[$d][$p['locale'] === 'en' ? 3 : 2]; ?>
+          <li><a href="<?= b() . $pDoc ?>?versione=<?= rawurlencode((string) $p['version']) ?>" target="_blank" rel="noopener"><?= Support::e(MHW\Legale::DOCUMENTI[$d][0]) ?> · <?= Support::e((string) $p['version']) ?> (<?= Support::e(strtoupper((string) $p['locale'])) ?>)</a></li>
+        <?php endforeach; ?></ul>
+      <?php endif; ?>
+    </div>
+  </aside>
+  <?php else: ?>
   <aside class="testi__anteprima-col" aria-label="Anteprima della home">
     <div class="testi__anteprima-testa">
       <span class="small"><b>Anteprima dal vivo</b><br>si aggiorna mentre scrivi; vale quando premi «Salva»</span>
@@ -108,6 +142,7 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
       <iframe src="<?= b() . ($lingua === 'en' ? '/en' : '/') ?>?anteprima=testi" title="Anteprima della home" data-anteprima></iframe>
     </div>
   </aside>
+  <?php endif; ?>
   </div>
 </div>
 <script>

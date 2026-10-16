@@ -12,12 +12,13 @@ App PHP 8.1+ per guide digitali degli ospiti (case vacanza, B&B, agriturismi). S
 7. Stile visivo: usa i token e i componenti già in `assets/app.css` (carta, terracotta, pino, ocra, mare; Gloock per i titoli, Onest per il testo). I mockup in `_brief/revisione/revisione.html` sono solo riferimento visivo.
 
 ## Dati aziendali (pubblici, da mettere come valori predefiniti in `app/config.php` → `legal`)
-- Ragione sociale: `Blackout Agency` (`MHW_COMPANY`, confermata)
-- P.IVA: `02945910541`
+- Titolare e fornitore del servizio (8J): `City Up S.r.l.` (`MHW_COMPANY`) — «City Up S.r.l. — P.IVA e C.F. 03793880547 — REA PG-352001» (`MHW_COMPANY_LEGAL`)
+- P.IVA: `03793880547` · PEC `cityup@pec.it` · sito `https://www.cityup.eu`
+- Blackout Agency (blackout.in) resta solo come chi realizza i siti MyHouse («Anche il tuo sito»), destinatario delle risposte di quel percorso.
 - Telefono: `+39 392 006 1600` — link `tel:+393920061600`
 - WhatsApp: stesso numero — link `https://wa.me/393920061600`
 - Email di contatto: `assistenza@welcomemyhouse.it` (`MHW_CONTACT_EMAIL`, confermata: è quella di tutti i `mailto:`)
-- Sede: `Via Ariodante Fabretti 17, Perugia` (`MHW_COMPANY_CITY`, confermata)
+- Sede: `Via Ariodante Fabretti 15, 06123 Perugia (PG)` (`MHW_COMPANY_CITY`)
 
 ## Come lavori
 - Un solo file di fase per sessione (`_brief/claude-code/FASE-N.md`). Leggi solo i file indicati lì; apri altri file solo se servono davvero.

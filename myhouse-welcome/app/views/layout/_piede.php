@@ -11,9 +11,9 @@ $prefCookie = MHW\Statistiche::qui() && MHW\Statistiche::consensoServe() ? ' · 
   <hr class="rule">
   <div class="piede__colonne">
     <div class="piede__chi">
-      <span class="piede__marchio"><?= MHW\Icon::brand(22) ?>MyHouse Welcome<?= ($l['company'] ?? '') !== '' ? ($en ? ' · a project by ' : ' · un progetto ') . Support::e($l['company']) : '' ?></span>
-      <?php if (($l['company_vat'] ?? '') !== ''): ?><span><?= $en ? 'VAT no.' : 'P.IVA' ?> <?= Support::e($l['company_vat']) ?></span><?php endif; ?>
-      <?php if (($l['company_city'] ?? '') !== ''): ?><span><?= Support::e($l['company_city']) ?></span><?php endif; ?>
+      <span class="piede__marchio"><?= MHW\Icon::brand(22) ?>MyHouse Welcome</span>
+      <?php /* 8J: chi fornisce il servizio (art. 2250 c.c., D.Lgs. 70/2003): ragione sociale, P.IVA, sede, PEC. */ ?>
+      <span class="piede__titolare"><?= Support::e(MHW\Legale::rigaTitolare($en)) ?></span>
     </div>
     <?php /* 7F: le pagine per tipologia, solo in italiano. */ if (!$en): ?>
     <nav class="piede__perchi" aria-labelledby="piede-perchi">
@@ -26,11 +26,8 @@ $prefCookie = MHW\Statistiche::qui() && MHW\Statistiche::consensoServe() ? ' · 
       <?php if ($tel !== ''): ?><a href="tel:<?= Support::e($tel) ?>"><?= $en ? 'Phone' : 'Tel.' ?> <?= Support::e($l['contact_phone']) ?></a><?php endif; ?>
       <?php if ($wa !== ''): ?><a href="https://wa.me/<?= Support::e($wa) ?>" rel="noopener">WhatsApp</a><?php endif; ?>
       <a href="<?= b() . ($en ? '/en' : '/') ?>#sito"><?= $en ? 'A website for your property' : 'Il sito per la tua struttura' ?></a>
-      <?php if ($en): /* 8E: Termini e Privacy restano in italiano */ ?>
-        <span><a href="<?= b() ?>/termini" hreflang="it">Terms (in Italian)</a> · <a href="<?= b() ?>/privacy" hreflang="it">Privacy (in Italian)</a><?= $prefCookie ?></span>
-      <?php else: ?>
-        <span><a href="<?= b() ?>/termini">Termini</a> · <a href="<?= b() ?>/privacy">Privacy</a><?= $prefCookie ?></span>
-      <?php endif; ?>
+      <?php /* 8J: Termini, Privacy e Accordo sul trattamento dei dati, nella lingua della pagina */ ?>
+      <span><a href="<?= b() . LinguaSito::percorso('/termini') ?>"><?= $en ? 'Terms' : 'Termini' ?></a> · <a href="<?= b() . LinguaSito::percorso('/privacy') ?>">Privacy</a> · <a href="<?= b() . LinguaSito::percorso('/dpa') ?>"><?= $en ? 'DPA' : 'Accordo dati (DPA)' ?></a><?= $prefCookie ?></span>
     </div>
   </div>
 </footer>

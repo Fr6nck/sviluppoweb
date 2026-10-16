@@ -79,7 +79,7 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
   </fieldset>
   <?php (function (array $rip) { include __DIR__ . '/_ripetitore.php'; })([
       'name' => 'contacts', 'legend' => 'Chi risponde agli ospiti',
-      'help' => 'Compaiono nella guida, così l\'ospite chiama o scrive con un tocco. Il primo è quello principale: trascina per cambiare l\'ordine.',
+      'help' => 'Compaiono nella guida, così l\'ospite chiama o scrive con un tocco. Il primo è quello principale: trascina per cambiare l\'ordine. Questi contatti compaiono nella guida e nella pagina delle recensioni: assicurati di poterli pubblicare.',
       'sub' => [
           'name' => ['plain', 'Nome', '', 'w' => 5],
           'phone' => ['tel', 'Telefono', '', 'w' => 3],
@@ -92,7 +92,8 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
     <div class="field" style="max-width:420px">
       <label for="guest_email">Email per gli ospiti <span class="muted">(facoltativa)</span></label>
       <p class="help" id="guest-email-aiuto" style="margin:0 0 6px">Dove ti scrive un ospite che vuole dirti cosa migliorare. Senza, nella pagina delle recensioni c'è solo WhatsApp.</p>
-      <input type="email" id="guest_email" name="guest_email" maxlength="190" autocomplete="email" aria-describedby="guest-email-aiuto" value="<?= Support::e((string) ($prop['guest_email'] ?? '')) ?>">
+      <input type="email" id="guest_email" name="guest_email" maxlength="190" autocomplete="email" aria-describedby="guest-email-aiuto guest-email-pubblico" value="<?= Support::e((string) ($prop['guest_email'] ?? '')) ?>">
+      <p class="help" id="guest-email-pubblico" style="margin:6px 0 0">Questo contatto compare nella guida e nella pagina delle recensioni: assicurati di poterlo pubblicare.</p>
     </div>
   <?php endif; ?>
   <?php if ($dopoPasso !== ''):

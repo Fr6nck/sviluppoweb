@@ -144,19 +144,28 @@ $config = [
     ],
 
     // Le versioni dei documenti legali: cambiatele quando cambia il testo, e ogni
-    // accettazione resta legata alla versione che la persona ha letto.
+    // accettazione resta legata alla versione che la persona ha letto (8J: anche il DPA).
+    // La versione è una data (AAAA-MM-GG): quella da cui il testo vale. Se è nel futuro, i clienti
+    // ricevono l'avviso (email una volta sola e riga nel pannello) e la finestra «Accetto» arriva a quella data.
+    // Si cambiano da Amministrazione → Impostazioni → Titolare e documenti legali.
     'legal' => [
-        'terms_version'   => $env('MHW_TERMS_VERSION', '2026-10-08'),
-        'privacy_version' => $env('MHW_PRIVACY_VERSION', '2026-10'),
-        'company'         => $env('MHW_COMPANY', 'Blackout Agency'),
+        'terms_version'   => $env('MHW_TERMS_VERSION', '2026-10-15'),
+        'privacy_version' => $env('MHW_PRIVACY_VERSION', '2026-10-15'),
+        'dpa_version'     => $env('MHW_DPA_VERSION', '2026-10-15'),
+        // 8J: il titolare del trattamento e fornitore del servizio.
+        'company'         => $env('MHW_COMPANY', 'City Up S.r.l.'),
+        'company_legal'   => $env('MHW_COMPANY_LEGAL', 'City Up S.r.l. — P.IVA e C.F. 03793880547 — REA PG-352001'),
         // Di serie è l'indirizzo unico dell'assistenza (contatti.email, qui sotto): vedi in fondo al file.
+        // È anche l'indirizzo per i diritti privacy.
         'contact_email'   => '',
         // Dati aziendali mostrati nel piè di pagina e nei documenti legali.
         // Un valore vuoto nasconde la sua riga.
-        'company_vat'      => $env('MHW_COMPANY_VAT', '02945910541'),
+        'company_vat'      => $env('MHW_COMPANY_VAT', '03793880547'),
         'contact_phone'    => $env('MHW_CONTACT_PHONE', '+39 392 006 1600'),
         'contact_whatsapp' => $env('MHW_CONTACT_WHATSAPP', '393920061600'),
-        'company_city'     => $env('MHW_COMPANY_CITY', 'Via Ariodante Fabretti 17, Perugia'),
+        'company_city'     => $env('MHW_COMPANY_CITY', 'Via Ariodante Fabretti 15, 06123 Perugia (PG)'),
+        'company_pec'      => $env('MHW_COMPANY_PEC', 'cityup@pec.it'),
+        'company_site'     => $env('MHW_COMPANY_SITE', 'https://www.cityup.eu'),
     ],
 
     // L'indirizzo unico per assistenza, suggerimenti e preventivi (7A): i mailto del sito e del

@@ -16,7 +16,10 @@ namespace MHW;
  */
 final class TestiSito
 {
-    public const RIGA_MAX = 200, AREA_MAX = 3000;
+    public const RIGA_MAX = 200, AREA_MAX = 3000, LUNGO_MAX = 8000;   // lungo: i paragrafi dei documenti legali (8J)
+
+    /** 8J: le sezioni dei documenti legali, nella linguetta «Documenti legali» di Testi e foto (le altre sono della home). */
+    public const SEZIONI_LEGALI = ['termini', 'privacy', 'cookie', 'dpa', 'legale'];
 
     /** Le sezioni della pagina di amministrazione, nell'ordine della home. */
     public const SEZIONI = [
@@ -35,7 +38,12 @@ final class TestiSito
         'faq'      => ['Domande', 'Le domande e le risposte sono nei file (Faq.php); qui l\'intestazione, anche della pagina /domande.'],
         'chiusura' => ['In fondo: comincia, e chi c\'è dietro', ''],
         'consenso' => ['Cookie e consenso', 'Il banner compare solo se in SEO e GEO c\'è Google Analytics o Clarity. Con il solo Matomo (senza cookie) non serve.'],
+        // 8J · i documenti legali (lang/legale.php). Una riga vuota = un paragrafo nuovo; «- » = elenco; «| Dati | …» = riga di tabella.
+        'termini'  => ['Termini e condizioni', 'La pagina /termini (e /en/terms). Quando cambi un testo in modo sostanziale, cambia anche la versione in Impostazioni → Titolare e documenti legali: i clienti ricevono l\'avviso e accettano di nuovo. Segnaposto: {titolare}, {titolare_completo}, {sede}, {pec}, {email}, {telefono}, {sito_titolare}, {link_privacy}, {link_dpa}, {link_modulo}, {amico}, {passo}, {max}, {amici}.'],
+        'privacy'  => ['Informativa sulla privacy', 'La pagina /privacy (e /en/privacy). Ogni trattamento è una tabella: una riga per voce, «| Voce | testo». Segnaposto in più: {posta} (il fornitore della posta, dall\'impostazione), {regione_traduzioni}, {giorni_registri}.'],
         'cookie'   => ['Informativa: il paragrafo «Cookie»', 'Nella pagina /privacy. I paragrafi di Matomo, Google Analytics e Clarity compaiono solo se sono configurati in SEO e GEO.'],
+        'dpa'      => ['Accordo sul trattamento dei dati (DPA)', 'La pagina /dpa (e /en/dpa): l\'Allegato A dei Termini, che l\'host accetta alla registrazione.'],
+        'legale'   => ['Aggiornamenti dei documenti', 'Le novità in tre righe: nella finestra «Abbiamo aggiornato i Termini e l\'Informativa» del pannello e nell\'email di avviso. Solo in italiano (il pannello è in italiano).'],
         'sito'     => ['Anche il tuo sito', 'Il blocco del colore di MyHouse in fondo: un percorso a due domande, poi il contatto (8A). Gli stessi testi nel pannello.'],
     ];
 
@@ -192,7 +200,7 @@ final class TestiSito
             'chiusura.titolo' => ['chiusura', 'Titolo', 'area', 'La tua struttura ha tanto da raccontare. Mettilo a disposizione dei tuoi ospiti.', ''],
             'chiusura.testo'  => ['chiusura', 'Testo', 'area', 'Crea la tua guida, personalizzala e guarda il risultato. Decidi soltanto dopo se pubblicarla: per cominciare non serve la carta di credito.', ''],
             'chi.titolo'      => ['chiusura', 'Riquadro «chi c\'è dietro» · titolo', 'area', 'Pensata per chi ospita. Sviluppata da chi lavora nel digitale e nell\'ospitalità.', ''],
-            'chi.testo'       => ['chiusura', 'Riquadro «chi c\'è dietro» · testo', 'area', 'MyHouse Welcome fa parte delle soluzioni MyHouse di [Blackout Agency](https://blackout.in), dedicate alle esigenze digitali delle strutture ricettive.', ''],
+            'chi.testo'       => ['chiusura', 'Riquadro «chi c\'è dietro» · testo', 'area', 'MyHouse Welcome è un servizio di City Up S.r.l. (Perugia), dedicato alle esigenze digitali delle strutture ricettive. I siti MyHouse li realizza [Blackout Agency](https://blackout.in).', ''],
             // ---- anche il tuo sito
             // 8A: «Anche il tuo sito» diventa un percorso a domande (chiavi nuove: i testi del blocco di prima non servono più).
             'sito2.kicker'   => ['sito', 'Riga sopra il titolo', 'riga', 'Un altro servizio, dallo stesso team', ''],
@@ -226,6 +234,7 @@ final class TestiSito
             'sito2.whatsapp' => ['sito', 'Passo 3 · bottone WhatsApp', 'riga', 'WhatsApp', ''],
             'sito2.email'    => ['sito', 'Passo 3 · bottone Email', 'riga', 'Email', ''],
             'sito2.risposta' => ['sito', 'Passo 3 · nota in fondo', 'riga', 'Ti rispondiamo con una proposta su misura, senza impegno.', ''],
+            'sito2.privacy'  => ['sito', 'Passo 3 · a chi vanno le risposte', 'area', 'Le risposte e il contatto li condividiamo con **Blackout Agency** (blackout.in), la società che realizza i siti MyHouse: ti ricontatta lei. {informativa}', '8J. {informativa} diventa il link all\'informativa privacy.'],
             'sito2.oggetto'  => ['sito', 'Oggetto dell\'email', 'riga', 'Il sito per la mia struttura', ''],
             'sito2.msg.home' => ['sito', 'Messaggio · prima frase (home)', 'riga', 'Ciao, ho una struttura ricettiva.', ''],
             'sito2.msg.pannello' => ['sito', 'Messaggio · prima frase (pannello)', 'riga', 'Ciao, ho una guida MyHouse Welcome per {struttura}.', '{struttura}: il nome della struttura.'],
@@ -251,11 +260,33 @@ final class TestiSito
             'cookie.ga4'     => ['cookie', 'Google Analytics (compare solo se è configurato)', 'area', '**Google Analytics 4** (Google Ireland Ltd), solo con il tuo consenso alle «Statistiche»: misura le visite in forma aggregata, senza segnali pubblicitari né personalizzazione degli annunci. Cookie _ga e _ga_*, durata fino a 2 anni. [Informativa di Google](https://policies.google.com/privacy).', ''],
             'cookie.clarity' => ['cookie', 'Microsoft Clarity (compare solo se è configurato)', 'area', '**Microsoft Clarity** (Microsoft Ireland Operations Ltd), solo con il tuo consenso all\'«Analisi dell\'uso»: mappe di calore e registrazioni delle visite per capire dove il sito non è chiaro; i campi dei moduli sono mascherati. Cookie _clck (1 anno) e _clsk (1 giorno). [Informativa di Microsoft](https://privacy.microsoft.com/privacystatement).', ''],
             'cookie.revoca'  => ['cookie', 'Come cambiare idea (compare con Google Analytics o Clarity)', 'area', 'Puoi cambiare idea quando vuoi da «Preferenze cookie», in fondo alle pagine del sito: se revochi il consenso, i cookie di Google Analytics e di Clarity vengono cancellati.', ''],
-            // ---- 8I · l'informativa: il paragrafo «Registri tecnici e sicurezza» ({giorni} = i giorni di Impostazioni → Registri)
-            'registri.privacy' => ['cookie', 'Registri tecnici e sicurezza', 'area', 'Per la sicurezza e il buon funzionamento del servizio (legittimo interesse, art. 6.1.f GDPR) registriamo gli errori del sito, i tentativi di accesso e le azioni di amministrazione. Gli indirizzi IP, le email e i numeri di telefono finiscono nei registri abbreviati; per i limiti ai tentativi di accesso l\'IP diventa un codice da cui non si risale all\'indirizzo, e si cancella dopo 24 ore. I registri stanno sul nostro server, nell\'Unione europea, e si cancellano dopo {giorni} giorni. Gli accessi degli amministratori si copiano anche su Amazon Web Services (S3, Milano), dove non si possono modificare né cancellare per 6 mesi e si eliminano dopo 12 mesi. Le statistiche delle visite (Matomo, se attivo) conservano i dati grezzi per 6 mesi.', ''],
             'cookie.guide'   => ['cookie', 'Le guide degli ospiti', 'area', 'Le guide degli ospiti non usano cookie né statistiche di terzi: contano solo eventi anonimi per l\'host, come scritto sopra.', ''],
         ];
+        // 8J · i documenti legali: testi di serie in lang/legale.php; sezione, tipo ed etichetta vengono dalla chiave.
+        $leg = self::legale();
+        foreach ($leg['it'] ?? [] as $k => $v) {
+            [$sez, $parte] = array_pad(explode('.', $k, 3), 2, '');
+            $ultima = substr($k, strrpos($k, '.') + 1);
+            $tipo = $k === 'legale.novita' ? 'lista' : ($ultima === 'titolo' ? 'riga' : 'lungo');
+            $nome = ctype_digit($parte) ? 'Punto ' . $parte : (preg_match('/^t(\d+)$/', $parte, $m) ? 'Trattamento ' . $m[1] : ($parte === 'b' ? 'Allegato B' : ucfirst($parte)));
+            $titolo = $leg['it'][$sez . '.' . $parte . '.titolo'] ?? '';
+            $etichetta = match (true) {
+                $k === 'legale.novita' => 'Le novità, una per riga (tre)',
+                $ultima === 'intro' => 'Introduzione, in cima',
+                $ultima === 'titolo' => $nome . ' · titolo',
+                default => $nome . ' · testo' . ($titolo !== '' ? ' («' . $titolo . '»)' : ''),
+            };
+            $c[$k] = [$sez, $etichetta, $tipo, $v, ''];
+        }
         return $c;
+    }
+
+    /** 8J · lang/legale.php: ['it' => [...], 'en' => [...]]. */
+    private static function legale(): array
+    {
+        static $l = null;
+        if ($l === null) { $f = MHW_APP . '/lang/legale.php'; $l = is_file($f) ? (array) require $f : []; }
+        return $l;
     }
 
     /** Le foto della home: nome => [etichetta, file di serie in assets/foto, consiglio]. */
@@ -298,7 +329,7 @@ final class TestiSito
     private static function serieEn(): array
     {
         static $en = null;
-        if ($en === null) { $f = MHW_APP . '/lang/sito-en.php'; $en = is_file($f) ? (array) require $f : []; }
+        if ($en === null) { $f = MHW_APP . '/lang/sito-en.php'; $en = (is_file($f) ? (array) require $f : []) + (self::legale()['en'] ?? []); }
         return $en;
     }
 

@@ -9,7 +9,7 @@ I dettagli tecnici sono in `app/LEGGIMI.md`. Le novità, fase per fase, sono in 
 
 1. Copia sul server **tutto `app/storage/`** e `config.local.php`, se c'è.
 2. Carica il contenuto di `welcomebook/` sopra i file vecchi, **senza toccare `app/storage/`**.
-3. Apri il sito una volta. Le migrazioni `007`–`041` partono da sole.
+3. Apri il sito una volta. Le migrazioni `007`–`042` partono da sole.
 4. In **Amministrazione → Diagnostica** tutte le righe devono essere «OK».
 
 Il database resta **SQLite**. Le migrazioni nuove sono scritte anche per MySQL, ma un'installazione da zero su MySQL non è supportata: lo schema iniziale (`001`) è solo per SQLite.
@@ -52,8 +52,8 @@ Si impostano come variabili d'ambiente o in `app/config.local.php`. Il modello �
 | `AWS_S3_PUBLIC_URL` | no | un CDN davanti al bucket |
 | `MHW_CRON_TOKEN` | no | una stringa lunga a caso. Attiva `/cron/IL_TOKEN`. |
 | `MHW_GRACE_DAYS` | no | giorni online dopo un rinnovo non riuscito (predefinito 0) |
-| `MHW_TERMS_VERSION`, `MHW_PRIVACY_VERSION` | quando cambi i testi | i consensi nuovi registrano la versione |
-| `MHW_COMPANY`, `MHW_COMPANY_VAT`, `MHW_COMPANY_CITY`, `MHW_CONTACT_EMAIL`, `MHW_CONTACT_PHONE`, `MHW_CONTACT_WHATSAPP` | no | i valori predefiniti sono già quelli confermati di Blackout Agency |
+| `MHW_TERMS_VERSION`, `MHW_PRIVACY_VERSION`, `MHW_DPA_VERSION` | quando cambi i testi | date AAAA-MM-GG (8J); meglio da Impostazioni → Titolare e documenti legali |
+| `MHW_COMPANY`, `MHW_COMPANY_LEGAL`, `MHW_COMPANY_VAT`, `MHW_COMPANY_CITY`, `MHW_COMPANY_PEC`, `MHW_COMPANY_SITE`, `MHW_CONTACT_EMAIL`, `MHW_CONTACT_PHONE`, `MHW_CONTACT_WHATSAPP` | no | 8J: di serie il titolare City Up S.r.l.; si cambiano da Impostazioni → Titolare e documenti legali |
 
 **Se la posta non parte con «535 authentication failed».** Il server rifiuta utente o password. L'errore ora dice quale utente è stato usato, quanti caratteri ha la password e con quali metodi si è provato (LOGIN e PLAIN).
 - L'utente è l'indirizzo completo della casella. La password è quella della casella, la stessa della webmail, non quella del pannello.
@@ -325,15 +325,28 @@ Usa solo foto di cui hai i diritti, e nessun locale reale riconoscibile nella de
 1. **Email di richiamo**: vanno a chi si è registrato, anche se non ha ancora confermato l'email. Ognuna ha il link «non mandarmene più» per quel tipo. Bisogna confermare la base giuridica (legittimo interesse / esecuzione del servizio) e il testo dell'informativa. Se serve, si limitano ai soli indirizzi confermati: è una riga di codice.
 2. **Funnel e statistiche**: eventi anonimi, senza cookie, IP o identificativi. Va confermato che non serve un banner.
 3. **Testimonianze**: consenso scritto per nome, testo e foto. La foto si toglie dall'admin in qualsiasi momento.
-4. **Registrazione**: la formulazione «Creando l'account dichiari di aver letto l'informativa privacy» (annotata nel codice).
+4. **Registrazione** (8J): una casella sola, non spuntata, «Accetto i Termini e l'Accordo sul trattamento dei dati e ho letto l'Informativa privacy».
 5. **Dati di fatturazione**: P.IVA e codice fiscale sono salvati nell'account e su Stripe. Servono un tempo di conservazione e una voce nell'informativa.
 6. **Registro email** (`email_log`): conserva tipo e data di ogni richiamo. Va deciso il tempo di conservazione.
 7. **Traduzioni suggerite**: i testi della guida di cui il cliente chiede la traduzione vanno ad Amazon Web Services (Amazon Translate, regione impostata in Amministrazione). Nell'informativa c'è una riga tra i fornitori; vanno confermati la nomina di AWS come responsabile e la policy di rinuncia ai servizi di IA (punto 4c). I testi non contengono dati degli ospiti, ma possono contenere nomi e telefoni dell'host. Termini e informativa sono passati alla versione 2026-10.
 8. **Adamo** è ora tra i fornitori dell'informativa (riceve da Stripe i dati di fatturazione): va confermata la nomina a responsabile.
 
+## 7b. Termini, Privacy, DPA e titolare (8J)
+
+I testi sono **di partenza, scritti sul servizio come funziona davvero**: prima di pubblicarli falli rivedere da un legale (Termini e recesso) e dal consulente privacy (informativa, DPA, registro dei trattamenti).
+
+1. **Titolare.** Amministrazione → Impostazioni → **Titolare e documenti legali**: ragione sociale, riga completa (P.IVA, C.F., REA), sede, PEC, sito. Di serie City Up S.r.l. Se `config.local.php` sul server ha ancora un blocco `'legal'` con Blackout Agency, salva una volta questo gruppo (o togli quel blocco): vale quello che c'è lì. Anche Amministrazione → SEO e GEO → «L'azienda»: la migrazione 042 aggiorna i campi solo se avevano i vecchi valori di serie.
+2. **Testi.** Testi e foto → linguetta **Documenti legali** (italiano e inglese): Termini (16 punti e modulo di recesso), Informativa (12 trattamenti in tabella, fornitori, trasferimenti, diritti, cookie), DPA, le tre novità della finestra. La versione inglese dice che in caso di dubbio prevale l'italiano.
+3. **Versioni.** Dopo una modifica sostanziale cambia la data in Impostazioni → Titolare e documenti legali. **Mettila almeno 30 giorni avanti**: i clienti con un abbonamento attivo ricevono subito un'email (una volta) e una riga nel pannello; a quella data compare la finestra «Accetto» e, finché non accettano, il pannello è in sola lettura. Il testo di prima resta in «Versioni precedenti». Una data già arrivata fa comparire subito la finestra (come in questo rilascio: le versioni sono al 15 ottobre 2026, quindi **tutti i clienti attuali** al prossimo accesso accettano i nuovi documenti e ricevono l'email).
+4. **Stripe**, per quello che scrivono i Termini: in Impostazioni → Fatturazione → Recupero dei ricavi, **3 tentativi in 14 giorni**, poi **annulla l'abbonamento**; accendi le email ai clienti per i pagamenti non riusciti.
+5. **Fornitori.** Firma (o accetta online) i DPA di Hostinger, AWS, Stripe e Adamo e conservali; l'elenco con i link è in `_brief/REGISTRO-TRATTAMENTI.md` (documento interno, non va sul sito: completalo e tienilo aggiornato).
+6. **Non ancora nel codice** (fase 6L): download dei dati e chiusura dell'account dal pannello, cancellazione automatica degli account inattivi a 24 mesi con avviso a 30 giorni, backup cifrati. I testi oggi dicono di scrivere all'assistenza: fino alla 6L queste richieste si fanno a mano, entro 30 giorni.
+7. **ODR.** La piattaforma europea ODR è stata chiusa il 20 luglio 2025: i Termini lo dicono e rimandano agli organismi ADR. Se vuoi indicare un organismo ADR preciso, aggiungilo al punto 15.
+8. **Email dei diritti.** I testi usano l'indirizzo dell'assistenza (Impostazioni → Sito), oggi assistenza@welcomemyhouse.it.
+
 ## 8. Dieci prove da fare sul server
 
-1. Apri la landing a 390 px e da computer: listino col prezzo mensile, «Confronta tutti i piani», FAQ apribili da tastiera, fascia delle scene, piè di pagina con i dati di Blackout Agency.
+1. Apri la landing a 390 px e da computer: listino col prezzo mensile, «Confronta tutti i piani», FAQ apribili da tastiera, fascia delle scene, piè di pagina con i dati di City Up S.r.l. (P.IVA, sede, PEC) e i link Termini · Privacy · DPA.
 2. Registrati con un'email vera, conferma il link arrivato **via SMTP**, crea una struttura e completa la procedura fino all'anteprima.
 3. Prova «Pubblica» senza dati di fatturazione (deve portarti alla scheda), poi compilali e paga in **modalità test di Stripe**. La guida va online solo quando arriva il webhook.
 4. Inquadra il QR stampato (PDF) con due telefoni diversi, Android e iPhone: si apre la guida. Inquadra anche il QR del Wi-Fi.

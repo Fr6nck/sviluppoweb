@@ -62,13 +62,10 @@ final class Auth
     }
 
     /** Termini e privacy: la versione letta e il momento, per ciascuno. */
+    /** Le versioni di Termini, Informativa e (8J) DPA accettate alla registrazione: in users e in legal_acceptances. */
     public static function recordConsent(int $userId): void
     {
-        $legal = Config::get('legal');
-        Db::update('users', [
-            'terms_version' => $legal['terms_version'], 'terms_accepted_at' => Support::now(),
-            'privacy_version' => $legal['privacy_version'], 'privacy_accepted_at' => Support::now(),
-        ], 'id = :uid', ['uid' => $userId]);
+        Legale::accetta($userId, 'registrazione');
     }
 
     public static function sendVerification(int $userId): bool

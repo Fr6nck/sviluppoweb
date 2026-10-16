@@ -118,7 +118,7 @@ $r->post('/admin/esci-da-cliente', function () {
 $r->get('/admin/cliente/{aid}', function (array $a) {
     Auth::requireAdmin();
     $acc = Db::one('SELECT a.*, u.email, u.name AS user_name, u.id AS user_id, u.email_verified_at, u.terms_version,
-                           u.terms_accepted_at, u.privacy_version, u.privacy_accepted_at, u.created_at AS registrato
+                           u.terms_accepted_at, u.privacy_version, u.privacy_accepted_at, u.dpa_version, u.dpa_accepted_at, u.created_at AS registrato
                     FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [(int) $a['aid']]);
     if (!$acc) { http_response_code(404); View::out('pub/404', []); }
     $props = Db::all('SELECT * FROM properties WHERE account_id = ? ORDER BY id', [$acc['id']]);
@@ -999,7 +999,9 @@ $r->get('/admin/testi', function () {
     // 8E: la linguetta English mostra e salva i testi di /en (chiavi «en:»); le foto sono le stesse.
     $lingua = ($_GET['lingua'] ?? '') === 'en' ? 'en' : 'it';
     MHW\LinguaSito::imposta($lingua);
-    View::out('admin/testi', ['nav' => 'testi', 'pronta' => MHW\TestiSito::disponibili(), 'lingua' => $lingua], 'layout/cms');
+    // 8J: la linguetta «Documenti legali» (Termini, Privacy, DPA, novità), in italiano e in inglese.
+    $legali = ($_GET['doc'] ?? '') === 'legali';
+    View::out('admin/testi', ['nav' => 'testi', 'pronta' => MHW\TestiSito::disponibili(), 'lingua' => $lingua, 'legali' => $legali], 'layout/cms');
 });
 
 $r->post('/admin/testi', function () {
@@ -1012,7 +1014,7 @@ $r->post('/admin/testi', function () {
         $campo = 't_' . str_replace('.', '_', $k);
         if (!array_key_exists($campo, $_POST)) continue;
         $v = trim(str_replace("\r", '', (string) $_POST[$campo]));
-        $v = mb_substr($v, 0, $tipo === 'riga' ? MHW\TestiSito::RIGA_MAX : MHW\TestiSito::AREA_MAX);
+        $v = mb_substr($v, 0, $tipo === 'riga' ? MHW\TestiSito::RIGA_MAX : ($tipo === 'lungo' ? MHW\TestiSito::LUNGO_MAX : MHW\TestiSito::AREA_MAX));
         if ($tipo === 'riga') $v = preg_replace('/\s+/', ' ', $v);
         $c[$k] = $v;   // vuoto o uguale al testo di serie: TestiSito::set toglie la riga
     }
@@ -1044,8 +1046,13 @@ $r->post('/admin/testi', function () {
     foreach ($daCancellare as $rif) { [$d, $k] = explode(':', $rif, 2); try { Storages::for($d)->delete($k); } catch (\Throwable $e) { Log::exception($e, 'testi.foto'); } }
     $cambiate = array_values(array_keys(array_filter($c, fn($v, $k) => $prima[$k] !== (str_starts_with($k, 'img.') ? $v : MHW\TestiSito::get($k)), ARRAY_FILTER_USE_BOTH)));
     Auth::audit('testi.save', null, ['cambiate' => $cambiate, 'lingua' => $lingua]);
-    Support::flash($cambiate ? ($lingua === 'en' ? 'Salvato: la home inglese (/en) è già aggiornata.' : 'Salvato: la home è già aggiornata.') : 'Niente da cambiare.');
-    Support::redirect('/admin/testi' . ($lingua === 'en' ? '?lingua=en' : '') . (($s = (string) ($_POST['torna'] ?? '')) !== '' && preg_match('/^[a-z-]+$/', $s) ? '#testi-' . $s : ''));
+    $legali = !empty($_POST['legali']);
+    $legaliCambiati = array_filter($cambiate, fn($k) => in_array(explode('.', $k)[0], MHW\TestiSito::SEZIONI_LEGALI, true));
+    Support::flash(!$cambiate ? 'Niente da cambiare.' : ($legaliCambiati
+        ? 'Salvato: i documenti legali sono già aggiornati. Se la modifica è sostanziale, cambia la versione in Impostazioni → Titolare e documenti legali: i clienti ricevono l\'avviso e accettano di nuovo.'
+        : ($lingua === 'en' ? 'Salvato: la home inglese (/en) è già aggiornata.' : 'Salvato: la home è già aggiornata.')));
+    $q = array_filter(['lingua' => $lingua === 'en' ? 'en' : null, 'doc' => $legali ? 'legali' : null]);
+    Support::redirect('/admin/testi' . ($q ? '?' . http_build_query($q) : '') . (($s = (string) ($_POST['torna'] ?? '')) !== '' && preg_match('/^[a-z-]+$/', $s) ? '#testi-' . $s : ''));
 });
 
 $r->get('/admin/seo', function () {

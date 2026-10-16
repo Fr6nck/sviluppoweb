@@ -896,6 +896,8 @@ $r->get('/pannello/{id}/anteprima/{sid}', fn(array $a) => $anteprima($a, 'sezion
 $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
     [$u, $acc, $p] = $mia((int) $a['id']);
     $aid = (int) $acc['id'];
+    // 8J: la scelta «chi acquista» resta in sessione, per la conferma dei codici di accesso che ripassa da qui.
+    if (isset($_POST['acquirente'])) $_SESSION['acquisto'] = ['acquirente' => (string) $_POST['acquirente'], 'rinuncia' => !empty($_POST['recesso_rinuncia'])];
     $problemi = Guide::problems($aid, (int) $p['id']);
     if ($problemi) {
         Support::flash('Prima di pubblicare: ' . implode(' ', $problemi), 'err');
@@ -939,6 +941,18 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
         Support::flash('Prima del pagamento servono i dati di fatturazione: li compili una volta sola, qui sotto.', 'err');
         Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica#fatturazione');
     }
+    // 8J · chi acquista: impresa o professionista (nessun recesso di legge) oppure consumatore, che per far partire
+    // subito il servizio deve chiederlo espressamente (art. 59 del Codice del Consumo). Si salva con l'ordine e poi con l'abbonamento.
+    $acquisto = (array) ($_SESSION['acquisto'] ?? []);
+    $acquirente = (string) ($acquisto['acquirente'] ?? '');
+    if (!in_array($acquirente, ['impresa', 'consumatore'], true)) {
+        Support::flash('Prima del pagamento indica chi acquista: la tua attività ricettiva (impresa o professionista) oppure un privato.', 'err');
+        Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica#acquisto');
+    }
+    if ($acquirente === 'consumatore' && empty($acquisto['rinuncia'])) {
+        Support::flash('Come privato, per pubblicare subito la guida serve la tua richiesta che il servizio inizi subito: spunta la seconda casella.', 'err');
+        Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica#acquisto');
+    }
     $pkg = Db::one('SELECT * FROM packages WHERE id = ?', [$pv['package_id']]);
     $quantita = Plans::quantity($pv, (int) ($acc['intended_quantity'] ?? 1)) ?? (int) $pv['min_quantity'];
     // Il codice sconto (6E) si rivalida adesso: se non vale più si toglie, si dice perché e non si crea l'ordine.
@@ -955,7 +969,9 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
         'account_id' => $aid, 'package_version_id' => $pv['id'], 'property_id' => $p['id'], 'quantity' => $quantita,
         'amount_cents' => Plans::price($pv, $quantita), 'currency' => $pv['currency'], 'status' => 'pending',
         'provider' => 'stripe', 'provider_session_id' => '', 'created_at' => Support::now(), 'updated_at' => Support::now(),
-    ] + ($codiceSconto ? ['discount_code_id' => (int) $codiceSconto['id']] : []));
+    ] + ($codiceSconto ? ['discount_code_id' => (int) $codiceSconto['id']] : [])
+      + (Migrator::columnExists('orders', 'acquirente') ? ['acquirente' => $acquirente, 'recesso_rinuncia' => $acquirente === 'consumatore' ? 1 : 0] : []));
+    unset($_SESSION['acquisto']);
     try {
         $url = Stripe::checkoutSubscription(Db::one('SELECT * FROM orders WHERE id = ?', [$oid]), $pv, $pkg, $acc, $u);
     } catch (\Throwable $e) {
