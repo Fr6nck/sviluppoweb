@@ -220,11 +220,114 @@ final class Sconti
         if ($centesimi === null) {
             $pv = Db::one('SELECT * FROM package_versions WHERE id = ?', [(int) $order['package_version_id']]) ?: [];
             $centesimi = $pv ? self::calcola($r, Plans::price($pv, max(1, (int) ($order['quantity'] ?? 1)))) : 0;
+        } elseif (($order['sconti'] ?? '') !== '' && !empty($r['sistema'])) {
+            // 9A · Coupon combinato (invito + giudizio): all'invito spetta la sua parte, in proporzione ai percenti.
+            $parti = []; $totale = 0;
+            foreach (explode(',', (string) $order['sconti']) as $pezzo) { [$t, $n] = array_pad(explode(':', $pezzo, 2), 2, '0'); $parti[$t] = (int) $n; $totale += (int) $n; }
+            if ($totale > 0 && isset($parti['invito'])) $centesimi = (int) round($centesimi * $parti['invito'] / $totale);
         }
         Db::insert('discount_redemptions', ['discount_code_id' => $r['id'], 'account_id' => (int) $order['account_id'], 'order_id' => (int) $order['id'],
                                             'discount_cents' => $centesimi, 'created_at' => Support::now()]);
         Db::update('orders', ['discount_cents' => $centesimi], 'id = :oid', ['oid' => $order['id']]);
         Db::update('accounts', ['intended_discount_code_id' => null], 'id = :aid', ['aid' => $order['account_id']]);
+    }
+
+    // ------------------------------------------------------------ 9A · gli sconti del primo anno, sommati
+
+    /**
+     * 9A · Gli sconti «di sistema» che spettano all'account sul primo anno: l'invito di un amico (Inviti) e il
+     * giudizio con sconto (Giudizi, 9B). Si sommano tra loro. @return list<array{tipo:string,nome:string,percento:int}>
+     */
+    public static function sistema(?array $acc): array
+    {
+        $out = [];
+        if ($acc && Inviti::disponibili() && ($i = Inviti::invitato((int) $acc['id'])) && $i['status'] === 'registrato'
+            && !Db::one("SELECT id FROM orders WHERE account_id = ? AND status = 'paid'", [(int) $acc['id']])) {
+            $out[] = ['tipo' => 'invito', 'nome' => 'Invito di ' . (explode(' ', trim((string) $i['referrer_name']))[0] ?: 'un amico'), 'percento' => Inviti::AMICO];
+        }
+        if ($acc && ($g = Giudizi::scontoDiSistema($acc))) $out[] = $g;
+        return $out;
+    }
+
+    /**
+     * 9A · Il conto del primo anno per un piano e una quantità: prezzo pieno, una riga per ogni sconto, totale.
+     * Gli sconti di sistema si sommano (percentuale sul totale, arrotondata una volta sola, come Stripe); un codice
+     * sconto scritto a mano non si somma a niente: vale il più alto, e il riepilogo lo dice (nota).
+     * $sistemaExtra: sconti di sistema noti dalla pagina (il visitatore arrivato da un invito, prima dell'account).
+     * @return array{prezzo:int,righe:list<array{tipo:string,nome:string,percento:int,cents:int}>,sconto:int,totale:int,percento:int,
+     *               manuale:?array,scelta:string,nota:string,sistema:list<array>}
+     */
+    public static function riepilogo(array $pv, int $q, ?array $acc, array $sistemaExtra = []): array
+    {
+        $prezzo = Plans::price($pv, max(1, $q));
+        $sistema = array_merge(self::sistema($acc), $sistemaExtra);
+        $visti = []; $sistema = array_values(array_filter($sistema, function ($s) use (&$visti) { if (isset($visti[$s['tipo']])) return false; $visti[$s['tipo']] = 1; return true; }));
+        $percento = min(100, array_sum(array_column($sistema, 'percento')));
+        $scontoSistema = $percento > 0 ? max(0, min((int) round($prezzo * $percento / 100), $prezzo - 100)) : 0;
+        $manuale = null; $scontoManuale = 0;
+        if ($acc && self::disponibili() && !empty($acc['intended_discount_code_id']) && ($r = self::riga((int) $acc['intended_discount_code_id'])) && empty($r['sistema'])) {
+            try { self::valida($r['code'], $acc, $pv, $q); $manuale = $r; $scontoManuale = self::calcola($r, $prezzo); } catch (\RuntimeException) { $manuale = null; }
+        }
+        $righe = []; $nota = ''; $scelta = 'nessuna';
+        if ($manuale && $scontoManuale > $scontoSistema) {
+            $scelta = 'manuale';
+            $righe[] = ['tipo' => 'codice', 'nome' => 'Codice ' . $manuale['code'], 'percento' => $manuale['kind'] === 'percent' ? (int) $manuale['value'] : 0, 'cents' => $scontoManuale];
+            if ($sistema) $nota = 'Il codice ' . $manuale['code'] . ' non si somma agli altri sconti: vale il più alto.';
+            $sconto = $scontoManuale;
+        } elseif ($sistema) {
+            $scelta = 'sistema';
+            $resto = $scontoSistema;
+            foreach ($sistema as $i => $s) {
+                $c = $i === count($sistema) - 1 ? $resto : (int) round($prezzo * $s['percento'] / 100);
+                $resto -= $c;
+                $righe[] = $s + ['cents' => $c];
+            }
+            if ($manuale) $nota = 'Il codice ' . $manuale['code'] . ' non si somma agli altri sconti e vale meno: non si applica.';
+            $sconto = $scontoSistema;
+        } else {
+            $sconto = 0;
+        }
+        return ['prezzo' => $prezzo, 'righe' => $righe, 'sconto' => $sconto, 'totale' => $prezzo - $sconto,
+                'percento' => $scelta === 'sistema' ? $percento : ($scelta === 'manuale' && $manuale['kind'] === 'percent' ? (int) $manuale['value'] : 0),
+                'manuale' => $manuale, 'scelta' => $scelta, 'nota' => $nota, 'sistema' => $sistema];
+    }
+
+    /**
+     * 9A · Cosa passare a Stripe per il conto di riepilogo(): il coupon (uno solo: Checkout non ne prende di più),
+     * la riga di discount_codes da registrare come usata (il codice, o la riga di sistema dell'invito) e la
+     * composizione degli sconti per i metadati («invito:5,giudizio:5»). Chiama Stripe solo se serve il coupon combinato.
+     * @return array{coupon:string,discount_code_id:?int,sconti:string}
+     */
+    public static function perStripe(array $riep): array
+    {
+        $vuoto = ['coupon' => '', 'discount_code_id' => null, 'sconti' => ''];
+        if ($riep['scelta'] === 'manuale') {
+            $r = $riep['manuale'];
+            return ['coupon' => (string) $r['stripe_coupon_id'], 'discount_code_id' => (int) $r['id'], 'sconti' => 'codice:' . $r['code']];
+        }
+        if ($riep['scelta'] !== 'sistema' || $riep['percento'] <= 0) return $vuoto;
+        $sconti = implode(',', array_map(fn($s) => $s['tipo'] . ':' . $s['percento'], $riep['sistema']));
+        $invito = null;
+        foreach ($riep['sistema'] as $s) if ($s['tipo'] === 'invito') $invito = Inviti::codiceAmico();
+        $coupon = '';
+        if (count($riep['sistema']) === 1) {
+            $coupon = $riep['sistema'][0]['tipo'] === 'invito' ? (string) ($invito['stripe_coupon_id'] ?? '') : Giudizi::coupon($riep['percento']);
+        } else {
+            $coupon = self::couponCombinato($riep['percento']);
+        }
+        return ['coupon' => $coupon, 'discount_code_id' => $invito ? (int) $invito['id'] : null, 'sconti' => $sconti];
+    }
+
+    /** 9A · Il coupon «Sconti primo anno» di una percentuale somma: id fisso, una volta sola, creato se manca. */
+    public static function couponCombinato(int $percento): string
+    {
+        if (!Stripe::enabled()) return '';
+        $id = 'mhw-primo-anno-' . $percento;
+        try { Stripe::call('GET', 'coupons/' . rawurlencode($id)); }
+        catch (\RuntimeException) {
+            Stripe::call('POST', 'coupons', ['id' => $id, 'percent_off' => (string) $percento, 'duration' => 'once', 'name' => 'Sconti primo anno'], 'mhw-coupon-' . $id);
+        }
+        return $id;
     }
 
     /** Lo sconto avuto dall'account, per «Account & Fatturazione». */

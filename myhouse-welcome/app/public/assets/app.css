@@ -125,7 +125,19 @@ p{margin:0}
 /* ------------------------------------------------------------------ comandi */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;
   padding:0 26px;border:0;border-radius:999px;background:var(--accent);color:var(--on-dark);
-  font:inherit;font-weight:500;letter-spacing:-.3px;cursor:pointer;text-align:center}
+  font:inherit;font-weight:500;letter-spacing:-.3px;cursor:pointer;text-align:center;white-space:nowrap}
+/* 9C · nelle tabelle e nelle righe i bottoni non si restringono: se lo spazio manca scorre il contenitore (.tablewrap), mai la pagina.
+   Sotto i 400 px la testata del pannello stringe i bottoni («Continua dopo», «Pubblica») per non far scorrere la pagina;
+   i testi lunghi delle anomalie vanno a capo; i campi file non escono dal loro riquadro. */
+@media (max-width:400px){.tela__testa{gap:8px}.tela__azioni{gap:4px;flex-wrap:wrap;min-width:0}.tela__azioni .btn{height:44px;padding:0 10px;font-size:14px}.tela__azioni .btn--ghost{width:40px}.tela__azioni .icon-btn{width:40px;height:40px}
+  .barra-passo{gap:6px}.barra-passo__destra{gap:8px;min-width:0}.barra-passo .stato{display:none}.barra-passo .btn--go{height:44px;padding-left:14px;font-size:14px}.barra-passo .btn--go .go{width:30px;height:30px}.barra-passo__indietro{padding:0 8px 0 2px}}
+.anomalia__righe li span{min-width:0;overflow-wrap:anywhere}
+input[type=file]{max-width:100%;box-sizing:border-box}
+.badge{white-space:nowrap}
+.seo-immagine .field{min-width:0}
+.data .btn,.rowcard .btn,.row .btn{flex:none;min-width:max-content}
+.btn__corto{display:none}
+@media (max-width:640px){.btn__corto{display:inline}.btn__lungo{display:none}}
 .btn:hover{background:var(--accent-hover);color:var(--on-dark)}
 .btn--ghost{background:var(--raised);color:var(--ink);border:1px solid var(--line-strong)}
 .btn--ghost:hover{background:var(--sunk);color:var(--ink)}
@@ -1071,6 +1083,66 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .plan [hidden],.quantita [hidden]{display:none!important}
 .plan__oltre{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:16px;border-radius:16px;background:var(--terracotta-soft);color:var(--ink)}
 .plan__oltre p{margin:0;font-size:16px;line-height:24px;font-weight:600}
+/* 9A · prezzo barrato e riga dello sconto nelle schede; il riquadro del preventivo oltre il massimo del Portfolio;
+   il riepilogo del primo anno nel passo «Pubblica»; il codice di invito in registrazione. */
+.price--barrato{font-size:18px;color:var(--muted)} .price--barrato s{text-decoration:line-through}
+.plan__sconto-riga{display:block;font-size:14px;line-height:20px;font-weight:600;color:var(--pine)}
+.plan--dark .plan__sconto-riga{color:var(--sunk)}
+.reg-prezzo s{color:var(--muted)} .reg-prezzo b{font-weight:600}
+.reg-prezzo__sconto{display:inline-block;margin-left:4px;padding:1px 8px;border-radius:999px;background:var(--pine-soft);color:var(--pine);font-size:13px;font-weight:600}
+.preventivo{margin-top:24px;padding:20px;border-radius:var(--r-lg);background:var(--terracotta-soft);color:var(--ink);scroll-margin-top:90px}
+.preventivo__titolo{margin:0;font-family:var(--font-titoli,'Gloock',serif);font-weight:400;font-size:24px;line-height:32px}
+.preventivo__lead{margin:6px 0 0;line-height:24px}
+.preventivo__form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.preventivo__form .preventivo__messaggio,.preventivo__form .preventivo__errore,.preventivo__form .preventivo__azioni{grid-column:1/-1}
+.preventivo__azioni{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.preventivo__ok{display:flex;align-items:flex-start;gap:10px;margin:0;line-height:24px;font-weight:500}
+.preventivo__ok svg{flex:none;margin-top:2px;color:var(--pine)}
+@media (max-width:640px){.preventivo__form{grid-template-columns:1fr}}
+.riepilogo{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:var(--r-md);background:var(--sunk)}
+.riepilogo__riga{display:flex;justify-content:space-between;gap:12px;line-height:24px}
+.riepilogo__riga--sconto{color:var(--pine)} .riepilogo__riga--sconto b{font-weight:600}
+.riepilogo__riga--totale{padding-top:6px;border-top:1px solid var(--line);font-size:18px} .riepilogo__riga--totale b{font-weight:600}
+.riepilogo__riga--totale small{font-size:13px;font-weight:400;color:var(--muted)}
+.invito-ok{display:flex;align-items:center;gap:6px;margin:6px 0 0;color:var(--pine);font-weight:600;font-size:14px;line-height:20px}
+/* 9B · il giudizio con lo sconto: casella al pagamento, riquadro del pannello con gli stati, chip delle immagini,
+   la sezione «Cosa dicono di noi» in home (schede senza link, scorrimento orizzontale su telefono), l'interruttore «In home». */
+.giudizio-sconto .legend{display:flex;align-items:center;gap:8px}
+.giudizio-sconto__spiega{line-height:20px}
+.giudizio-invito__stato{display:inline-block;padding:2px 10px;border-radius:999px;background:var(--pine-soft);color:var(--pine);font-size:13px;font-weight:600;margin-bottom:4px}
+.giudizio-invito__partecipo{flex:1 1 100%;display:flex;flex-direction:column;gap:10px;margin:0;padding-top:4px}
+.giudizio-invito--invito{align-items:flex-start}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;border:1px solid var(--line);border-radius:999px;background:var(--raised);cursor:pointer;font-size:14px;line-height:20px}
+.chip img{width:28px;height:28px;border-radius:50%;object-fit:cover}
+.chip input{accent-color:var(--pine);margin:0}
+.chip:has(input:checked){border-color:var(--pine);background:var(--pine-soft)}
+.giudizio-partecipo{padding:12px 14px;border-radius:var(--r-md);background:var(--ochre-soft)}
+.dicono__schede{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:28px}
+.dicono__scheda{min-width:0}
+.dicono-scheda{margin:0;display:flex;flex-direction:column;height:100%;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--raised);overflow:hidden;cursor:default;user-select:text}
+.dicono-scheda__cop{position:relative;aspect-ratio:16/9;background:var(--sunk)}
+.dicono-scheda__cop>img{width:100%;height:100%;object-fit:cover;display:block}
+.dicono-scheda__logo{position:absolute;left:16px;bottom:-22px;width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.14);padding:6px}
+.dicono-scheda__logo img{max-width:100%;max-height:100%;object-fit:contain}
+.dicono-scheda--senza-copertina .dicono-scheda__cop{aspect-ratio:auto;height:44px;background:transparent}
+.dicono-scheda__corpo{display:flex;flex-direction:column;gap:12px;padding:30px 20px 20px;flex:1}
+.dicono-scheda__voto{color:var(--ochre);letter-spacing:2px;font-size:18px}
+.dicono-scheda blockquote{margin:0;flex:1} .dicono-scheda blockquote p{margin:0;font-size:17px;line-height:26px}
+.dicono-scheda__chi{display:flex;align-items:center;gap:12px}
+.dicono-scheda__chi img,.dicono-scheda__iniziale{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none}
+.dicono-scheda__iniziale{display:inline-flex;align-items:center;justify-content:center;background:var(--terracotta-soft);color:var(--terracotta);font-weight:600}
+.dicono-scheda__chi>span{display:flex;flex-direction:column;min-width:0}
+.dicono__nota{margin:20px 0 0;font-size:13px;line-height:20px;color:var(--muted);max-width:760px}
+@media (max-width:900px){.dicono__schede{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 16px 12px;margin:24px -16px 0;-webkit-overflow-scrolling:touch}
+  .dicono__scheda{flex:0 0 min(84vw,340px);scroll-snap-align:start}}
+.int-home{display:inline-flex;align-items:center;gap:8px;border:0;padding:0;background:transparent;cursor:pointer;color:var(--ink);font:inherit;min-height:36px}
+.int-home__pallina{position:relative;width:40px;height:22px;border-radius:999px;background:var(--line-strong);transition:background .15s;flex:none}
+.int-home__pallina::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}
+.int-home--on .int-home__pallina{background:var(--pine)} .int-home--on .int-home__pallina::after{transform:translateX(18px)}
+.int-home:focus-visible{outline:2px solid var(--focus,#1c5a78);outline-offset:2px;border-radius:999px}
+.giudizi-tabella td{vertical-align:top}
+.invito-campo input[readonly]{background:var(--sunk);letter-spacing:.06em;font-weight:600}
 .plan__scelta .btn{margin-top:auto}
 .plan__label{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:-10px}
 .plan__scelta select{height:48px;font-size:16px;border-radius:14px}

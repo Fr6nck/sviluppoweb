@@ -131,6 +131,27 @@ final class Demo
         return $sid ? '/g/' . $d['slug'] . '/' . (int) $sid : null;
     }
 
+    /**
+     * 9C · L'indirizzo della vetrina è sempre /g/casa-checco: se lo slug è preso da una struttura di esempio o archiviata,
+     * quella prende un altro slug; se è di un cliente vero, la vetrina tiene quello con il numero (lo dice «Rifai la vetrina»).
+     */
+    public static function slugVetrina(int $pid): void
+    {
+        $voluto = 'casa-checco';
+        $occupante = Db::one('SELECT id, is_demo, archived_at FROM properties WHERE slug = ? AND id <> ?', [$voluto, $pid]);
+        if ($occupante && ((int) $occupante['is_demo'] > 0 || $occupante['archived_at'] !== null)) {
+            Db::update('properties', ['slug' => Support::uniqueSlug('casa-checco-prima', (int) $occupante['id'])], 'id = :id', ['id' => (int) $occupante['id']]);
+            $occupante = null;
+        }
+        if (!$occupante) Db::update('properties', ['slug' => $voluto], 'id = :pid', ['pid' => $pid]);
+    }
+
+    /** La vetrina attuale (pubblicata, non archiviata), o null. */
+    public static function vetrinaAttuale(): ?array
+    {
+        return Db::one("SELECT id, slug FROM properties WHERE is_demo = ? AND status = 'published' AND archived_at IS NULL ORDER BY id DESC", [self::VETRINA]);
+    }
+
     public static function vetrina(int $accountId): int
     {
         // «Casa Checco», Assisi: una casa di fantasia in un vicolo di fantasia, a due passi da
@@ -144,6 +165,7 @@ final class Demo
         $acc = $accountId;
         $tel = '+39 075 000 0000';
         $pid = Properties::create($acc, 'Casa Checco', 'Assisi', 'Francesco', 1, false);
+        self::slugVetrina($pid);   // 9C: sempre /g/casa-checco, se non è di un cliente vero
         Db::update('properties', [
             'region' => 'Umbria', 'address' => 'Vicolo dei Gerani 3', 'postal_code' => '06081',
             'checkin_from' => '15:00', 'checkout_by' => '10:30', 'host_phone' => $tel, 'host_whatsapp' => $tel, 'palette' => 'terracotta',

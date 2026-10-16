@@ -137,10 +137,12 @@ final class Plans
     }
 
     /** «dalla 3ª alla 5ª», «dall'11ª alla 20ª», «oltre la 20ª»: per il listino. */
-    public static function tierLabel(array $t): string
+    public static function tierLabel(array $t, int $max = 0): string
     {
         $o = fn(int $n) => $n . 'ª';
         $dal = fn(int $n) => in_array($n, [8, 11], true) || ($n >= 80 && $n < 90) ? "dall'" . $o($n) : 'dalla ' . $o($n);
+        // 9A: l'ultimo scaglione arriva al massimo del listino («dalla 6ª alla 10ª»), se lo si conosce.
+        if ($t['a'] === null && $max > $t['da']) $t['a'] = $max;
         if ($t['a'] === null) return $t['da'] === 2 ? 'dalla 2ª in poi' : 'oltre la ' . $o($t['da'] - 1);
         if ($t['a'] === $t['da']) return $o($t['da']);
         return $dal($t['da']) . ' alla ' . $o($t['a']);

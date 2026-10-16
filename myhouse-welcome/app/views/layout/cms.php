@@ -25,9 +25,10 @@ $conLato = $u && !$soloPassi;
 $gruppiAdmin = $admin ? [
     'Vendite' => array_merge([['admin', '/admin', 'Quadro', 'grid'], ['prospetti', '/admin/prospetti', 'Prospetti', 'chart'], ['vendite', '/admin/vendite', 'Vendite per piano', 'layers'], ['marketing', '/admin/marketing', 'Marketing', 'chart'],
                   ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'], ['scadenze', '/admin/scadenze', 'Scadenze', 'calendar'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'],
-                  ['sconti', '/admin/sconti', 'Codici sconto', 'euro']], MHW\Inviti::disponibili() ? [['inviti', '/admin/inviti', 'Inviti', 'message']] : []),
+                  ['sconti', '/admin/sconti', 'Codici sconto', 'euro']], MHW\Inviti::disponibili() ? [['inviti', '/admin/inviti', 'Inviti', 'message']] : [],
+                  MHW\Preventivi::disponibili() ? [['preventivi', '/admin/preventivi', 'Preventivi', 'message']] : []),
     'Clienti' => [['clienti', '/admin/clienti', 'Clienti', 'people'], ['guide', '/admin/guide', 'Guide', 'book'], ['anomalie', '/admin/anomalie', 'Anomalie', 'warning'],
-                  ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe'], ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star']],
+                  ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe'], ['giudizi', '/admin/giudizi', 'Giudizi', 'star'], ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star']],
     'Sistema' => [['impostazioni', '/admin/impostazioni', 'Impostazioni', 'key'], ['testi', '/admin/testi', 'Testi e foto', 'doc'], ['seo', '/admin/seo', 'SEO e GEO', 'search'],
                   ['registro', '/admin/registro', 'Registro', 'list'], ['diagnostica', '/admin/diagnostica', 'Diagnostica', 'pulse']],
 ] : [];

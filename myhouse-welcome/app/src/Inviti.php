@@ -291,6 +291,7 @@ final class Inviti
             // Nelle API recenti il coupon sta in source.coupon, in quelle vecchie in coupon.
             $c = $d['coupon'] ?? ($d['source']['coupon'] ?? '');
             $cid = is_array($c) ? (string) ($c['id'] ?? '') : (string) $c;
+            // 9B: il coupon del giudizio (mhw-giudizio-N) e ogni altro sconto restano com'erano: si tocca solo quello degli inviti.
             if (str_starts_with($cid, self::COUPON)) $presente = $cid; else $tieni[] = (string) ($d['id'] ?? '');
         }
         $coupon = $voluto > 0 ? self::coupon($voluto, $s) : '';

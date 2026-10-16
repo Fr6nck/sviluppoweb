@@ -6,10 +6,22 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
       if ($daInglese): $mailEn = MHW\Support::contatto(); ?>
   <p class="note registra-en" lang="en" role="note">The dashboard is in Italian for now: we'll help you in English at <a href="mailto:<?= Support::e($mailEn) ?>"><?= Support::e($mailEn) ?></a>.</p>
 <?php endif; ?>
+<?php /* 9A · Gli sconti che valgono per chi si registra (l'invito dal link o dal codice): prezzo barrato. */
+      $scontoInvito = $scontoInvito ?? []; $invitoCodice = $invitoCodice ?? ''; $oltre = $oltre ?? 0; $pianoOltre = $pianoOltre ?? null;
+      $contoReg = fn(array $o, int $q) => MHW\Sconti::disponibili() && $scontoInvito ? MHW\Sconti::riepilogo($o, $q, null, $scontoInvito) : null;
+      $prezzoReg = function (array $o, int $q) use ($contoReg): string {
+          $r = $contoReg($o, $q);
+          if (!$r || $r['sconto'] <= 0) return '<span class="reg-prezzo" data-pieno="' . Plans::price($o, $q) . '" data-valuta="' . Support::e($o['currency']) . '">' . Support::e(Support::money(Plans::price($o, $q), $o['currency'])) . '</span> + IVA / anno';
+          return '<span class="reg-prezzo" data-pieno="' . $r['prezzo'] . '" data-valuta="' . Support::e($o['currency']) . '"><s>' . Support::e(Support::money($r['prezzo'], $o['currency'])) . '</s> <b>' . Support::e(Support::money($r['totale'], $o['currency'])) . '</b></span> + IVA il primo anno'
+               . ' <span class="reg-prezzo__sconto">−' . (int) $r['percento'] . '% primo anno</span>';
+      }; ?>
+<?php if ($oltre && $pianoOltre): /* 9A · più strutture del massimo: il preventivo, non un piano */ ?>
+  <?php $pvP = $pianoOltre; $qP = $oltre; $tornaP = '/registrati?piano=' . (int) $piano . '&strutture=' . (int) $oltre; include __DIR__ . '/../pub/_preventivo.php'; ?>
+<?php endif; ?>
 <?php if ($pianoScelto): /* Il piano scelto sulla landing resta in vista: si sa cosa si sta attivando. */ ?>
   <p class="chip-piano">
     <span class="chip-piano__testo"><?= Icon::svg('check', 15, 2.2) ?><span>Piano <b><?= Support::e($pianoScelto['name']) ?></b><?= Plans::perProperty($pianoScelto) ? ' · ' . (int) $quantita . ' strutture' : '' ?>
-      · <?= Support::e(Support::money(Plans::price($pianoScelto, (int) $quantita), $pianoScelto['currency'])) ?> + IVA/anno</span></span>
+      · <?= $prezzoReg($pianoScelto, (int) $quantita) ?></span></span>
     <a href="<?= b() ?>/#piani">Cambia</a>
   </p>
 <?php endif; ?>
@@ -17,7 +29,7 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
 <p class="muted" style="margin-top:14px;line-height:24px">Configuri la guida gratis. Paghi solo quando la pubblichi.</p>
 <?php if ($err): ?><p class="note note--err" style="margin-top:20px" role="alert"><?= Support::e($err) ?></p>
   <?php $aiutoEmail = $vecchi['email']; $aiutoPagina = 'Registrazione'; include __DIR__ . '/_aiuto.php'; ?><?php endif; ?>
-<form method="post" class="panel stack" style="margin-top:24px" novalidate><?= Csrf::field() ?>
+<form method="post" class="panel stack" style="margin-top:24px" novalidate data-base="<?= b() ?>"><?= Csrf::field() ?>
   <?php if ($daInglese): ?><input type="hidden" name="lang" value="en"><?php endif; ?>
   <?php if ($pianoScelto): ?>
   <input type="hidden" name="piano" value="<?= (int) $piano ?>">
@@ -33,14 +45,33 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
         <label class="scegli-piano__scheda">
           <input type="radio" name="piano" value="<?= (int) $o['pv_id'] ?>"<?= (int) $o['pv_id'] === $giaScelto ? ' checked' : '' ?> required>
           <span class="scegli-piano__testa"><b><?= Support::e($o['name']) ?></b>
-            <span><?= Support::e(Support::money(Plans::price($o, $qMin), $o['currency'])) ?> + IVA / anno<?= Plans::perProperty($o) ? ' · ' . $qMin . ' strutture' : '' ?></span></span>
+            <span><?= $prezzoReg($o, $qMin) ?><?= Plans::perProperty($o) ? ' · ' . $qMin . ' strutture' : '' ?></span></span>
           <ul><?php foreach ($voci as $v): ?><li><?= Support::e(str_replace('{sezioni}', (string) MHW\SectionCatalog::quante(), $v)) ?></li><?php endforeach; ?></ul>
         </label>
       <?php endforeach; ?>
     </div>
   </fieldset>
   <?php endif; ?>
-  <?php if (!empty($strutture)): ?><input type="hidden" name="strutture" value="<?= (int) $strutture ?>"><?php endif; ?>
+  <?php if (!empty($strutture) && !$oltre): ?><input type="hidden" name="strutture" value="<?= (int) $strutture ?>"><?php endif; ?>
+  <?php if (MHW\Inviti::disponibili()): /* 9A · il codice di invito: dal link (sola lettura) o da scrivere, con «Applica» */ ?>
+    <?php if ($invitoCodice !== ''): ?>
+      <div class="field invito-campo" style="margin:0"><label for="codice_invito">Codice di invito</label>
+        <input id="codice_invito" name="codice_invito" type="text" value="<?= Support::e($invitoCodice) ?>" readonly aria-describedby="invito-ok">
+        <p class="invito-ok" id="invito-ok" role="status"><?= Icon::svg('check', 16, 2.4) ?><span>Codice di <?= Support::e($invitoDi) ?>: <?= MHW\Inviti::AMICO ?>% sul primo anno</span></p></div>
+    <?php else: ?>
+      <details class="sconto invito-campo" data-invito<?= $vecchi['codice_invito'] !== '' ? ' open' : '' ?>>
+        <summary class="linkbtn">Hai un codice di invito?</summary>
+        <div class="sconto__form">
+          <div class="field" style="margin:0"><label for="codice_invito">Codice di invito</label>
+            <input id="codice_invito" name="codice_invito" type="text" maxlength="12" autocomplete="off" spellcheck="false" style="text-transform:uppercase"
+                   value="<?= Support::e($vecchi['codice_invito']) ?>" aria-describedby="invito-err invito-ok"></div>
+          <button type="button" class="btn btn--ghost btn--sm" data-invito-applica>Applica</button>
+          <p class="field-error" id="invito-err" role="alert" style="flex-basis:100%;margin:0" hidden></p>
+          <p class="invito-ok" id="invito-ok" role="status" style="flex-basis:100%" <?= $scontoInvito ? '' : 'hidden' ?>><?= Icon::svg('check', 16, 2.4) ?><span><?= $scontoInvito ? 'Codice di ' . Support::e($invitoDi ?: $scontoInvito[0]['nome']) . ': ' . MHW\Inviti::AMICO . '% sul primo anno' : '' ?></span></p>
+        </div>
+      </details>
+    <?php endif; ?>
+  <?php endif; ?>
   <div class="field" style="margin:0"><label for="name">Nome e cognome</label>
     <input id="name" name="name" type="text" required maxlength="120" autocomplete="name" value="<?= Support::e($vecchi['name']) ?>" autofocus></div>
   <div class="field" style="margin:0"><label for="email">Email</label>
@@ -58,3 +89,47 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
 </form>
 <p class="muted small" style="margin-top:20px">Hai già un account? <a href="<?= b() ?>/accedi">Accedi</a>.</p>
 <script src="<?= MHW\av('/assets/password.js') ?>" defer></script>
+<?php if (MHW\Inviti::disponibili() && $invitoCodice === ''): /* 9A · «Applica»: controlla il codice senza ricaricare e barra i prezzi delle schede */ ?>
+<script>
+(function () {
+  var box = document.querySelector('[data-invito]'); if (!box) return;
+  var campo = box.querySelector('input[name=codice_invito]'), btn = box.querySelector('[data-invito-applica]');
+  var err = box.querySelector('#invito-err'), ok = box.querySelector('#invito-ok'), form = campo.form;
+  function soldi(cents, valuta) {
+    var intero = cents % 100 === 0, n = (cents / 100).toFixed(intero ? 0 : 2).split('.');
+    n[0] = n[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return n.join(',') + '\u00a0' + (valuta === 'EUR' ? '€' : valuta);
+  }
+  function barra(pct) {
+    var prezzi = document.querySelectorAll('.reg-prezzo');
+    for (var i = 0; i < prezzi.length; i++) {
+      var pieno = parseInt(prezzi[i].getAttribute('data-pieno'), 10), v = prezzi[i].getAttribute('data-valuta') || 'EUR';
+      var sconto = Math.min(Math.round(pieno * pct / 100), pieno - 100);
+      prezzi[i].innerHTML = '<s>' + soldi(pieno, v) + '</s> <b>' + soldi(pieno - sconto, v) + '</b>';
+      var dopo = prezzi[i].nextSibling;
+      if (dopo && dopo.nodeType === 3) dopo.textContent = ' + IVA il primo anno ';
+      if (!prezzi[i].parentNode.querySelector('.reg-prezzo__sconto')) {
+        var r = document.createElement('span'); r.className = 'reg-prezzo__sconto'; r.textContent = '−' + pct + '% primo anno';
+        prezzi[i].parentNode.insertBefore(r, prezzi[i].nextSibling ? prezzi[i].nextSibling.nextSibling : null);
+      }
+    }
+  }
+  btn.addEventListener('click', function () {
+    var codice = campo.value.trim().toUpperCase(); campo.value = codice;
+    err.hidden = true; ok.hidden = true;
+    if (codice === '') { err.textContent = 'Scrivi il codice.'; err.hidden = false; return; }
+    var fd = new FormData(); fd.append('codice', codice); fd.append('_csrf', form.querySelector('input[name=_csrf]').value);
+    btn.disabled = true;
+    fetch(form.getAttribute('data-base') + '/invito/verifica', { method: 'POST', body: fd, headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.ok) { ok.querySelector('span').textContent = 'Codice di ' + j.nome + ': ' + j.percento + '% sul primo anno'; ok.hidden = false; barra(j.percento); }
+        else { err.textContent = j.errore || 'Questo codice non esiste o non è più attivo. Controlla con chi te l\'ha dato.'; err.hidden = false; }
+      })
+      .catch(function () { err.textContent = 'Non riesco a controllare il codice adesso: lo verifichiamo quando crei l\'account.'; err.hidden = false; })
+      .then(function () { btn.disabled = false; });
+  });
+  campo.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); btn.click(); } });
+})();
+</script>
+<?php endif; ?>

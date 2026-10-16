@@ -128,6 +128,16 @@ Se sei un consumatore, per ogni controversia è competente il giudice del luogo 
 
 In tutti gli altri casi è competente in via esclusiva il **foro di Perugia**.
 T,
+'termini.17.titolo' => 'Giudizio con sconto',
+'termini.17.testo' => <<<'T'
+«Ti piace MyHouse Welcome?» è il programma con cui chi ha un account può avere uno sconto del {giudizio}% lasciando un giudizio sul Servizio. Si aderisce con **una sola casella**, prima del pagamento oppure dal pannello. Con quella casella ti impegni a lasciare, dopo aver pubblicato la guida, un voto da 1 a 5 con un breve commento, e accetti che il giudizio possa essere mostrato nella home del sito con il tuo nome (senza cognome), il nome e la città della struttura e le immagini che scegli tu tra copertina, foto e logo, senza alcun link alla tua guida.
+
+- **Lo sconto non dipende dal voto**: vale anche con una stella. Chi aderisce prima del primo pagamento ha lo sconto sul primo anno; chi aderisce dopo ha lo sconto sul rinnovo annuale successivo, una volta lasciato il giudizio. Si somma allo sconto di «Invita un amico»; non si somma a un codice sconto (vale il più alto).
+- **La pubblicazione è a nostra discrezione**: non abbiamo l'obbligo di mostrare il giudizio e possiamo toglierlo dalla home in qualsiasi momento. Il giudizio si può modificare finché non è in home.
+- **Puoi ritirare il giudizio quando vuoi** da Account & Fatturazione: sparisce subito dalla home. Lo sconto già avuto resta tuo; quello promesso sul rinnovo decade se ritiri il giudizio prima del rinnovo.
+- Possiamo chiudere il programma per i nuovi clienti in qualsiasi momento: gli sconti già promessi restano validi.
+- Sono esclusi gli account di prova e di dimostrazione.
+T,
 'termini.16.titolo' => 'Contatti e titolare',
 'termini.16.testo' => <<<'T'
 {titolare_completo}, {sede}. PEC {pec} · email {email} · telefono {telefono} · {sito_titolare}.
@@ -197,11 +207,11 @@ T,
 T,
 'privacy.t6.titolo' => 'Giudizi e pareri dei clienti',
 'privacy.t6.testo' => <<<'T'
-| Dati | Il voto, il giudizio, il nome (senza cognome), la struttura, la città e la foto scelta, se lasci un giudizio su MyHouse Welcome; la risposta alla domanda «Cosa ti ha fermato?», se rispondi.
-| Finalità | Pubblicare sul sito i giudizi dei clienti; capire cosa migliorare.
-| Base giuridica | Per la pubblicazione, il tuo consenso (art. 6.1.a), che puoi ritirare quando vuoi da Account & Fatturazione: il giudizio sparisce subito dal sito. Per i pareri, il nostro legittimo interesse (art. 6.1.f).
-| Conservazione | I giudizi fino alla revoca del consenso; i pareri come l'account.
-| Destinatari | I visitatori del sito, solo per i giudizi pubblicati.
+| Dati | Il voto, il giudizio, il nome (senza cognome), il nome e la città della struttura e le immagini che scegli (copertina, foto, logo), se aderisci al programma «Ti piace MyHouse Welcome?» e lasci un giudizio; la risposta alla domanda «Cosa ti ha fermato?», se rispondi.
+| Finalità | Mostrare nella home del sito i giudizi dei clienti che hanno aderito al programma (con lo sconto, qualunque sia il voto); capire cosa migliorare.
+| Base giuridica | Per il giudizio e la sua pubblicazione, il contratto (art. 6.1.b): l'adesione al programma, con la casella che accetti prima del pagamento o dal pannello (Termini, «Giudizio con sconto»). Puoi ritirare il giudizio quando vuoi da Account & Fatturazione: sparisce subito dal sito. Per i pareri, il nostro legittimo interesse (art. 6.1.f).
+| Conservazione | I giudizi fino al ritiro o alla chiusura dell'account; i pareri come l'account.
+| Destinatari | I visitatori del sito, solo per i giudizi mostrati in home. Nessun link alla tua guida.
 T,
 'privacy.t7.titolo' => 'Statistiche di lettura delle guide',
 'privacy.t7.testo' => <<<'T'
@@ -250,6 +260,14 @@ T,
 | Base giuridica | Legittimo interesse (art. 6.1.f).
 | Garanzie | Ogni accesso è registrato (data, ora, chi) e lo vedi in Account & Fatturazione. L'accesso dura al massimo un'ora.
 | Conservazione | La traccia degli accessi come l'account; l'indirizzo IP abbreviato, cancellato dopo 12 mesi.
+T,
+'privacy.t13.titolo' => 'Richieste di preventivo',
+'privacy.t13.testo' => <<<'T'
+| Dati | Nome, email, telefono (se lo scrivi), numero di strutture e quello che ci scrivi nel modulo «Chiedi il preventivo» (per più di 10 strutture).
+| Finalità | Prepararti una proposta su misura e ricontattarti.
+| Base giuridica | Misure precontrattuali su tua richiesta (art. 6.1.b).
+| Conservazione | 12 mesi dalla richiesta, poi la cancelliamo.
+| Destinatari | Il fornitore dell'hosting e quello della posta.
 T,
 'privacy.fornitori.titolo' => 'Destinatari e fornitori',
 'privacy.fornitori.testo' => <<<'T'
@@ -477,6 +495,16 @@ If you are a consumer, the court of your place of residence or domicile has juri
 
 In all other cases the **courts of Perugia** (Italy) have exclusive jurisdiction.
 T,
+'termini.17.titolo' => 'Review with discount',
+'termini.17.testo' => <<<'T'
+"Do you like MyHouse Welcome?" is the programme through which an account holder can get a {giudizio}% discount by leaving a review of the Service. You join with **a single checkbox**, before payment or from the dashboard. With that checkbox you undertake to leave, after publishing your guide, a rating from 1 to 5 with a short comment, and you accept that the review may be shown on the website's home page with your first name (no surname), the name and town of the property and the images you choose among cover, photo and logo, with no link to your guide.
+
+- **The discount does not depend on the rating**: it applies even with one star. Whoever joins before the first payment gets the discount on the first year; whoever joins later gets it on the next yearly renewal, once the review is left. It adds up with the "Invite a friend" discount; it cannot be combined with a discount code (the higher one applies).
+- **Publication is at our discretion**: we have no obligation to show the review and we may remove it from the home page at any time. The review can be edited until it is on the home page.
+- **You can withdraw the review at any time** from Account & Billing: it disappears from the home page immediately. A discount already received stays yours; the one promised on the renewal lapses if you withdraw the review before the renewal.
+- We may close the programme to new customers at any time: discounts already promised remain valid.
+- Trial and demo accounts are excluded.
+T,
 'termini.16.titolo' => 'Contact details and provider',
 'termini.16.testo' => <<<'T'
 {titolare_completo}, {sede}, Italy. Certified email (PEC) {pec} · email {email} · phone {telefono} · {sito_titolare}.
@@ -546,11 +574,11 @@ T,
 T,
 'privacy.t6.titolo' => 'Customer reviews and feedback',
 'privacy.t6.testo' => <<<'T'
-| Data | Rating, review, first name (without surname), property, town and chosen photo, if you leave a review of MyHouse Welcome; your answer to "What stopped you?", if you reply.
-| Purpose | Publishing customer reviews on the website; understanding what to improve.
-| Legal basis | For publication, your consent (art. 6.1.a), which you can withdraw at any time from Account & Billing: the review disappears from the website immediately. For feedback, our legitimate interest (art. 6.1.f).
-| Retention | Reviews until consent is withdrawn; feedback same as the account.
-| Recipients | Website visitors, for published reviews only.
+| Data | Rating, review, first name (no surname), name and town of the property and the images you choose (cover, photo, logo), if you join the "Do you like MyHouse Welcome?" programme and leave a review; your answer to "What stopped you?", if you reply.
+| Purpose | Showing on the website's home page the reviews of customers who joined the programme (with the discount, whatever the rating); understanding what to improve.
+| Legal basis | For the review and its publication, the contract (art. 6.1.b): joining the programme, with the checkbox you accept before payment or from the dashboard (Terms, "Review with discount"). You can withdraw the review at any time from Account & Billing: it disappears from the website immediately. For feedback, our legitimate interest (art. 6.1.f).
+| Retention | Reviews until withdrawn or until the account is closed; feedback same as the account.
+| Recipients | Website visitors, for reviews shown on the home page only. No link to your guide.
 T,
 'privacy.t7.titolo' => 'Guide reading statistics',
 'privacy.t7.testo' => <<<'T'
@@ -599,6 +627,14 @@ T,
 | Legal basis | Legitimate interest (art. 6.1.f).
 | Safeguards | Every access is logged (date, time, who) and you can see it in Account & Billing. Access lasts one hour at most.
 | Retention | The access log, same as the account; the shortened IP address, deleted after 12 months.
+T,
+'privacy.t13.titolo' => 'Quote requests',
+'privacy.t13.testo' => <<<'T'
+| Data | Name, email, phone (if you give it), number of properties and what you write in the "Ask for a quote" form (for more than 10 properties).
+| Purpose | Preparing a tailored offer and getting back to you.
+| Legal basis | Pre-contractual steps at your request (art. 6.1.b).
+| Retention | 12 months from the request, then we delete it.
+| Recipients | The hosting provider and the email provider.
 T,
 'privacy.fornitori.titolo' => 'Recipients and providers',
 'privacy.fornitori.testo' => <<<'T'

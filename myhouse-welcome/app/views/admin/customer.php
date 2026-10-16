@@ -16,7 +16,7 @@ include __DIR__ . '/_stati.php'; ?>
         <?= $acc['email_verified_at'] ? 'email confermata' : '<b>email non confermata</b>' ?></p>
     </div>
     <form method="post" action="<?= b() ?>/admin/entra/<?= (int) $acc['user_id'] ?>" style="margin:0"><?= Csrf::field() ?>
-      <button class="btn btn--ghost btn--sm">Entra come cliente</button></form>
+      <button class="btn btn--ghost btn--sm" aria-label="Entra come cliente"><span class="btn__lungo">Entra come cliente</span><span class="btn__corto" aria-hidden="true">Entra</span></button></form>
   </div>
 
   <?php /* 7F: «Cliente di prova»: fuori da Quadro, Vendite, Prospetti, Scadenze e Marketing, niente richiami automatici né richiesta di giudizio. */
@@ -73,8 +73,12 @@ include __DIR__ . '/_stati.php'; ?>
   <section class="panel stack" style="gap:10px" aria-labelledby="vetrina-titolo">
     <h2 id="vetrina-titolo" style="font-size:22px">Guida vetrina</h2>
     <?php if ($vetrina): ?>
-      <p class="small">«<?= Support::e($vetrina['name']) ?>» è la guida vetrina di questo account: è online come demo, non conta nel limite di strutture ed è la demo della landing.
-        <a href="<?= b() ?>/g/<?= Support::e($vetrina['slug']) ?>" target="_blank" rel="noopener">Apri la guida</a></p>
+      <p class="small">«<?= Support::e($vetrina['name']) ?>» è la guida vetrina di questo account: è online come demo, non conta nel limite di strutture ed è la demo della landing.</p>
+      <?php /* 9C: l'indirizzo attuale (sempre da Support::baseUrl), con «Apri» e «Copia». */ $urlV = Support::baseUrl() . '/g/' . $vetrina['slug']; ?>
+      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><code class="impostazioni__url"><?= Support::e($urlV) ?></code>
+        <a class="btn btn--ghost btn--sm" href="<?= Support::e($urlV) ?>" target="_blank" rel="noopener">Apri</a>
+        <button type="button" class="btn btn--ghost btn--sm" data-copia="<?= Support::e($urlV) ?>" data-copiato="Copiato" hidden><?= MHW\Icon::svg('copy', 15) ?>Copia</button></div>
+      <?php if ($vetrina['slug'] !== 'casa-checco'): ?><p class="small muted" style="margin:0">/g/casa-checco è la guida di un cliente vero: la vetrina tiene questo indirizzo.</p><?php endif; ?>
       <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/vetrina" class="stack" style="gap:8px"><?= Csrf::field() ?>
         <input type="hidden" name="rifai" value="1">
         <p class="small muted">«Rifai la vetrina» la toglie e ne crea una nuova con i dati aggiornati (eventi con le prossime date, foto, luoghi). Le modifiche fatte a mano sulla vetrina si perdono; le altre strutture dell'account non si toccano.</p>

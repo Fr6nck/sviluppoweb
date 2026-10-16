@@ -42,6 +42,15 @@ $r->get('/admin', function () {
     $usati = Traduttore::usati(); $tetto = Traduttore::tetti()['sito'];
     if ($tetto > 0 && $usati > $tetto * 0.8) $avvisi[] = ['Traduzioni suggerite oltre l\'80% del tetto del mese', 'Usati ' . number_format($usati, 0, ',', '.') . ' caratteri su ' . number_format($tetto, 0, ',', '.') . ': al tetto le richieste si fermano fino al primo del mese.', '/admin/traduzioni'];
     if (Demo::presente()) $avvisi[] = ['Ci sono ancora i clienti di esempio', 'Sono account veri con una password nota. Toglili prima di aprire al pubblico.'];
+    // 9C · Senza base_url i link e le icone nelle email partite dal cron (senza un browser) puntano a localhost.
+    if ((string) Config::get('base_url') === '') $avvisi[] = ['Indirizzo del sito non impostato', 'Senza «Indirizzo pubblico del sito» i link e le icone nelle email mandate dal cron puntano a localhost (il marchio è incorporato e si vede comunque). Impostalo in Sito.', '/admin/impostazioni#sito'];
+    // 9A · I controlli sui prezzi di Stripe prima del Checkout: un errore ferma i pagamenti di quella versione.
+    foreach (Stripe::esitiVerifica() as $pvId => $esito) {
+        if (empty($esito['ok'])) $avvisi[] = ['Prezzi su Stripe diversi dal listino', 'Il pagamento della versione ' . (int) $pvId . ' è fermo: ' . (string) ($esito['errore'] ?? '') . ' Correggi i Price su Stripe o svuota i Price ID nella versione (Piani): il sito li ricrea alla prossima vendita.', '/admin/pacchetti', 'Apri i piani'];
+    }
+    if (MHW\Preventivi::disponibili() && ($nuovi = (int) Db::val("SELECT COUNT(*) FROM preventivi WHERE stato = 'nuovo'", [], 0)) > 0) {
+        $avvisi[] = ['Richieste di preventivo da rispondere', $nuovi . ($nuovi === 1 ? ' richiesta nuova' : ' richieste nuove') . ' per più di 10 strutture: la promessa è una risposta entro un giorno lavorativo.', '/admin/preventivi', 'Apri i preventivi'];
+    }
     $anomalie = Gestione::contaAnomalie();
     if ($anomalie['alta'] > 0) $avvisi[] = ['Ci sono anomalie da guardare subito', $anomalie['alta'] . ($anomalie['alta'] === 1 ? ' controllo segnala' : ' controlli segnalano') . ' pagamenti o rinnovi che non tornano.', '/admin/anomalie', 'Guarda le anomalie'];
     $adesso = Gestione::adesso();
@@ -245,7 +254,10 @@ $r->post('/admin/cliente/{aid}/vetrina', function (array $a) {
         Support::redirect('/admin/cliente/' . $accId);
     }
     Auth::audit('demo.vetrina', $uid, ['property_id' => $pid]);
-    Support::flash($rifai ? 'Guida vetrina rifatta con i dati aggiornati e pubblicata.' : 'Guida vetrina «Casa Checco» creata e pubblicata. È la demo della landing.');
+    // 9C: l'indirizzo nel messaggio; se non è /g/casa-checco è perché quello è di un cliente vero.
+    $slugV = (string) Db::val('SELECT slug FROM properties WHERE id = ?', [$pid], '');
+    $dove = ' Indirizzo: ' . Support::baseUrl() . '/g/' . $slugV . ($slugV !== 'casa-checco' ? ' (/g/casa-checco è la guida di un cliente vero: resta sua).' : '.');
+    Support::flash(($rifai ? 'Guida vetrina rifatta con i dati aggiornati e pubblicata.' : 'Guida vetrina «Casa Checco» creata e pubblicata. È la demo della landing.') . $dove);
     Support::redirect('/admin/cliente/' . $accId);
 });
 
@@ -407,6 +419,18 @@ $r->post('/admin/pacchetti/{pid}/nuova-versione', function (array $a) use ($test
                 array_map(fn($da, $c) => ['da' => $da, 'cents' => $c], array_keys($scaglioni), $scaglioni))) : '';
         }
     }
+    // 9A · Un Price ID si tiene solo se l'importo (e gli scaglioni, per la voce aggiuntiva) è identico alla versione da cui
+    // viene: altrimenti su Stripe si pagherebbero i vecchi importi. Svuotato, il Price nuovo lo crea il sito alla prima vendita.
+    $cambiati = [];
+    if ($priceId !== '' && $corrente && ($priceId !== (string) $corrente['stripe_price_id'] || (int) $corrente['price_cents'] !== $prezzo)) {
+        if ($priceId === (string) $corrente['stripe_price_id']) { $priceId = ''; $cambiati[] = 'base'; }
+    }
+    if ($aStruttura['stripe_extra_price_id'] !== '' && $corrente && $aStruttura['stripe_extra_price_id'] === (string) $corrente['stripe_extra_price_id']) {
+        $stessi = (int) $corrente['extra_price_cents'] === (int) $aStruttura['extra_price_cents']
+            && Plans::tiers($corrente) === Plans::tiers($aStruttura + ['price_cents' => $prezzo]);
+        if (!$stessi) { $aStruttura['stripe_extra_price_id'] = ''; $cambiati[] = 'struttura aggiuntiva'; }
+    }
+    $avvisoPrezzo = $cambiati ? ' Prezzo cambiato (' . implode(', ', $cambiati) . '): il Price di Stripe sarà creato nuovo.' : '';
     $vid = Db::tx(function () use ($pkg, $prezzo, $priceId, $aStruttura, $testiEn) {
         $next = (int) Db::val('SELECT COALESCE(MAX(version),0)+1 FROM package_versions WHERE package_id = ?', [$pkg['id']], 1);
         Db::run('UPDATE package_versions SET is_current = 0 WHERE package_id = ?', [$pkg['id']]);
@@ -431,7 +455,7 @@ $r->post('/admin/pacchetti/{pid}/nuova-versione', function (array $a) use ($test
     Auth::audit('package.new_version', null, ['package' => $pkg['code'], 'version_id' => $vid, 'price_cents' => $prezzo]);
     Entitlements::forget();
     MHW\Seo::scriviFile();   // 7F: i prezzi sono in sitemap (data) e in llms.txt
-    Support::flash('Creata una versione nuova di ' . $pkg['name'] . '. Chi era sulla precedente ci resta, con quello che aveva comprato.');
+    Support::flash('Creata una versione nuova di ' . $pkg['name'] . '. Chi era sulla precedente ci resta, con quello che aveva comprato.' . $avvisoPrezzo);
     Support::redirect('/admin/pacchetti');
 });
 
@@ -837,9 +861,37 @@ $r->post('/admin/impostazioni/{gruppo}/prova', function (array $a) use ($imposta
  * il consenso di chi parla. Nessuna d'esempio. In landing il blocco compare
  * solo se almeno una è visibile.
  */
+// ------------------------------------------------------------- 9B · giudizi con sconto
+$r->get('/admin/giudizi', function () {
+    Auth::requireAdmin();
+    $filtro = in_array($_GET['filtro'] ?? '', ['da_valutare', 'in_home', 'ritirati'], true) ? (string) $_GET['filtro'] : 'tutti';
+    $righe = MHW\Testimonianze::giudiziClienti($filtro);
+    foreach ($righe as &$g) $g['immagini'] = MHW\Giudizi::immagini($g);
+    unset($g);
+    View::out('admin/giudizi', ['righe' => $righe, 'filtro' => $filtro, 'nav' => 'giudizi',
+        'inHome' => MHW\Giudizi::disponibili() ? (int) Db::val('SELECT COUNT(*) FROM testimonials WHERE account_id IS NOT NULL AND home_visible = 1 AND withdrawn_at IS NULL', [], 0) : 0,
+        'aderiti' => MHW\Giudizi::disponibili() ? (int) Db::val('SELECT COUNT(*) FROM accounts WHERE giudizio_adesione IS NOT NULL', [], 0) : 0], 'layout/cms');
+});
+$r->post('/admin/giudizi/{tid}/home', function (array $a) {
+    Auth::requireAdmin();
+    $si = !empty($_POST['si']);
+    $ok = MHW\Testimonianze::inHome((int) $a['tid'], $si);
+    if ($ok) { Auth::audit($si ? 'testimonial.published' : 'testimonial.unpublished', null, ['id' => (int) $a['tid']]); MHW\Seo::scriviFile(); }
+    Support::flash($ok ? ($si ? 'Giudizio in home.' : 'Giudizio tolto dalla home.') : 'Questo giudizio non si può mettere in home (senza adesione o ritirato).', $ok ? 'ok' : 'err');
+    Support::redirect('/admin/giudizi' . (($_POST['filtro'] ?? '') !== '' ? '?filtro=' . rawurlencode((string) $_POST['filtro']) : ''));
+});
+$r->post('/admin/giudizi/{tid}/elimina', function (array $a) {
+    Auth::requireAdmin();
+    $t = Db::one('SELECT * FROM testimonials WHERE id = ? AND account_id IS NOT NULL', [(int) $a['tid']]);
+    if ($t) { MHW\Testimonianze::elimina((int) $t['id']); Auth::audit('testimonial.delete', null, ['id' => (int) $t['id']]); MHW\Seo::scriviFile(); }
+    Support::flash($t ? 'Giudizio eliminato.' : 'Giudizio non trovato.', $t ? 'ok' : 'err');
+    Support::redirect('/admin/giudizi');
+});
+
 $r->get('/admin/testimonianze', function () {
     Auth::requireAdmin();
-    View::out('admin/testimonials', ['righe' => MHW\Testimonianze::tutte(), 'giudizi' => MHW\Testimonianze::giudiziClienti(), 'nav' => 'testimonianze'], 'layout/cms');
+    // 9B: i giudizi dei clienti hanno la loro pagina (Clienti → Giudizi); qui restano solo quelle scritte da noi.
+    View::out('admin/testimonials', ['righe' => MHW\Testimonianze::tutte(), 'giudizi' => MHW\Giudizi::disponibili() ? [] : MHW\Testimonianze::giudiziClienti(), 'nav' => 'testimonianze'], 'layout/cms');
 });
 
 /* 7D: i giudizi dei clienti. «Pubblica» solo con il consenso; «Rifiuta» li toglie dalla coda. */
@@ -890,6 +942,23 @@ $r->post('/admin/testimonianze/{tid}/elimina', function (array $a) {
  * Dopo la creazione si cambiano solo nota, piani e stato; per valore o date si
  * disattiva e se ne crea un altro. Creazioni e disattivazioni vanno nel registro.
  */
+// ------------------------------------------------------------- 9A · preventivi oltre il massimo del Portfolio
+$r->get('/admin/preventivi', function () {
+    Auth::requireAdmin();
+    View::out('admin/preventivi', ['righe' => MHW\Preventivi::tutte(), 'attivi' => MHW\Preventivi::disponibili(), 'nav' => 'preventivi'], 'layout/cms');
+});
+$r->post('/admin/preventivi/{id}/stato', function (array $a) {
+    Auth::requireAdmin();
+    $riga = MHW\Preventivi::disponibili() ? Db::one('SELECT * FROM preventivi WHERE id = ?', [(int) $a['id']]) : null;
+    if (!$riga) { http_response_code(404); View::out('pub/404', []); }
+    try {
+        MHW\Preventivi::cambiaStato((int) $riga['id'], (string) ($_POST['stato'] ?? ''));
+        Auth::audit('preventivo.stato', null, ['id' => (int) $riga['id'], 'stato' => (string) $_POST['stato']]);
+        Support::flash('Richiesta #' . (int) $riga['id'] . ': ' . MHW\Preventivi::STATI[(string) $_POST['stato']] . '.');
+    } catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
+    Support::redirect('/admin/preventivi');
+});
+
 $r->get('/admin/sconti', function () {
     Auth::requireAdmin();
     $righe = MHW\Sconti::disponibili() ? Db::all('SELECT * FROM discount_codes ORDER BY id DESC') : [];

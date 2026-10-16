@@ -93,6 +93,7 @@ final class Legale
             'link_dpa' => '<a href="' . $b . ($en ? '/en/dpa' : '/dpa') . '">' . ($en ? 'Data processing agreement' : 'Accordo sul trattamento dei dati') . '</a>',
             'link_modulo' => '<a href="' . $b . ($en ? '/en/terms' : '/termini') . '#modulo-recesso">' . ($en ? 'model withdrawal form' : 'modulo tipo di recesso') . '</a>',
             'amico' => (string) Inviti::AMICO, 'passo' => (string) Inviti::PASSO, 'max' => (string) Inviti::MASSIMO, 'amici' => (string) Inviti::amiciMassimi(),
+            'giudizio' => (string) Giudizi::percentuale(),   // 9B
             'regione_traduzioni' => $e((string) (Traduttore::config()['region'] ?? 'eu-west-1')),
             'giorni_registri' => (string) Registri::config()['giorni'],
             'posta' => $e($posta),

@@ -183,14 +183,47 @@ final class Mailer
             $headers[] = 'Content-Transfer-Encoding: base64';
             $body = chunk_split(base64_encode($text));
         } else {
-            $headers[] = 'Content-Type: multipart/alternative; boundary="' . $confine . '"';
-            $body = "--$confine\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n"
+            // 9C · Il marchio viaggia dentro l'email (multipart/related, Content-ID «marchio»): si vede anche con le immagini
+            // esterne bloccate. Le icone social restano esterne (piccole, facoltative). Niente marchio nel file: come prima.
+            [$html, $marchio] = self::incorporaMarchio($html);
+            $alternativa = "--$confine\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n"
                   . chunk_split(base64_encode($text))
                   . "--$confine\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n"
                   . chunk_split(base64_encode($html))
                   . "--$confine--\r\n";
+            if ($marchio === null) {
+                $headers[] = 'Content-Type: multipart/alternative; boundary="' . $confine . '"';
+                $body = $alternativa;
+            } else {
+                $esterno = 'mhw-rel-' . bin2hex(random_bytes(12));
+                $headers[] = 'Content-Type: multipart/related; type="multipart/alternative"; boundary="' . $esterno . '"';
+                $body = "--$esterno\r\nContent-Type: multipart/alternative; boundary=\"$confine\"\r\n\r\n" . $alternativa
+                      . "--$esterno\r\nContent-Type: image/png; name=\"marchio-email.png\"\r\nContent-Transfer-Encoding: base64\r\n"
+                      . "Content-ID: <marchio>\r\nContent-Disposition: inline; filename=\"marchio-email.png\"\r\n\r\n"
+                      . chunk_split(base64_encode($marchio)) . "--$esterno--\r\n";
+            }
         }
         return [$headers, $body];
+    }
+
+    /** Il file del marchio delle email (assets/email/marchio-email.png), se c'è. */
+    public static function fileMarchio(): string
+    {
+        $f = defined('MHW_PUBLIC') ? MHW_PUBLIC . '/assets/email/marchio-email.png' : dirname(MHW_APP) . '/assets/email/marchio-email.png';
+        return is_file($f) ? $f : '';
+    }
+
+    /**
+     * 9C · Sostituisce l'indirizzo esterno del marchio con «cid:marchio» e dà i byte del PNG da allegare in linea.
+     * Senza il file (o senza il marchio nell'HTML) l'HTML resta com'è. @return array{0:string,1:?string}
+     */
+    public static function incorporaMarchio(string $html): array
+    {
+        $f = self::fileMarchio();
+        if ($f === '' || !str_contains($html, '/assets/email/marchio-email.png')) return [$html, null];
+        $bytes = (string) @file_get_contents($f);
+        if ($bytes === '' || strlen($bytes) > 60000) return [$html, null];   // un marchio enorme non va nelle email
+        return [preg_replace('#src="[^"]*/assets/email/marchio-email\.png"#', 'src="cid:marchio"', $html) ?? $html, $bytes];
     }
 
     private static function log(string $to, string $subject, string $text, ?string $html = null): bool
@@ -201,8 +234,12 @@ final class Mailer
         if ($html !== null) {
             $dir = Log::dir() . '/email';
             if (is_dir($dir) || @mkdir($dir, 0775, true)) {
-                $nome = gmdate('Ymd-His') . '-' . substr(Support::slug(explode(' — ', $subject)[0]), 0, 60) . '.html';
-                @file_put_contents($dir . '/' . $nome, $html, LOCK_EX);
+                $nome = gmdate('Ymd-His') . '-' . substr(Support::slug(explode(' — ', $subject)[0]), 0, 60);
+                // 9C: l'HTML come parte nell'email (con «cid:marchio») e il messaggio intero (.eml), con il marchio in linea.
+                [$htmlCid] = self::incorporaMarchio($html);
+                @file_put_contents($dir . '/' . $nome . '.html', $htmlCid, LOCK_EX);
+                [$h, $b] = self::message(Config::get('mail'), $to, $subject, $text, $html);
+                @file_put_contents($dir . '/' . $nome . '.eml', implode("\r\n", $h) . "\r\n\r\n" . $b, LOCK_EX);
             }
         }
         return (bool) @file_put_contents(Log::file('mail'), $riga . "\n", FILE_APPEND | LOCK_EX);

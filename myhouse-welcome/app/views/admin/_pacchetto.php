@@ -10,7 +10,7 @@ $cur = null; foreach ($p['versions'] as $v) if ($v['is_current']) $cur = $v; $cu
           <span class="small muted"><code><?= Support::e($p['code']) ?></code><?= $p['family'] ? ' · famiglia ' . Support::e($p['family']) : '' ?>
             · <?= !$p['active'] ? 'disattivato' : ($p['public'] ? 'pubblico' : 'nascosto') ?></span></div>
         <?php if ($cur): ?><span style="font-size:22px;font-weight:500"><?= Support::e(Support::money((int) $cur['price_cents'], $cur['currency'])) ?>
-          <span class="small muted"><?= Plans::perProperty($cur) ? 'prima struttura, poi ' . Support::e(implode(', ', array_map(fn($t) => Plans::tierLabel($t) . ' +' . Support::money($t['cents'], $cur['currency']), Plans::tiers($cur)))) . ' · ' : '' ?>+ IVA / anno · v<?= (int) $cur['version'] ?></span></span><?php endif; ?>
+          <span class="small muted"><?= Plans::perProperty($cur) ? 'prima struttura, poi ' . Support::e(implode(', ', array_map(fn($t) => Plans::tierLabel($t, (int) $cur['max_quantity']) . ' +' . Support::money($t['cents'], $cur['currency']), Plans::tiers($cur)))) . ' · ' : '' ?>+ IVA / anno · v<?= (int) $cur['version'] ?></span></span><?php endif; ?>
       </div>
 
       <div class="tablewrap"><table class="data">

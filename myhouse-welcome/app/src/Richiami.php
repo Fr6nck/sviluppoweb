@@ -183,7 +183,7 @@ final class Richiami
                               JOIN properties p ON p.account_id = a.id WHERE p.is_demo = 0 AND p.published_at IS NOT NULL AND p.published_at <> '' AND u.email NOT LIKE ?$prova
                               GROUP BY a.id, u.email, u.name", [$fuori]) as $g) {
                 $quando = (int) strtotime((string) $g['prima']);
-                if ($t - $quando < Testimonianze::DOPO_GIORNI * $giorno || $t - $quando > (Testimonianze::DOPO_GIORNI + 10) * $giorno) continue;
+                if ($t - $quando < Testimonianze::RICHIAMO_GIORNI * $giorno || $t - $quando > (Testimonianze::RICHIAMO_GIORNI + 10) * $giorno) continue;
                 if (Testimonianze::diAccount((int) $g['acc_id'])) continue;
                 $m = ['Ti sta piacendo MyHouse Welcome?',
                       'la tua guida è online da un mese. Ci dici com\'è andata? Bastano un voto e due righe per un altro host che sta decidendo se provarla. Se vuoi, con il tuo consenso, le pubblichiamo sul sito.',

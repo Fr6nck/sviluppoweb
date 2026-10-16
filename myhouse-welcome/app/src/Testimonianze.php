@@ -19,8 +19,12 @@ final class Testimonianze
         . 'il nome e la città della struttura e la foto scelta. Il link della mia guida non viene pubblicato. '
         . 'Posso ritirare il consenso quando voglio da Account & Fatturazione.';
     public const FOTO = ['profilo' => 'La tua foto profilo', 'copertina' => 'La copertina della guida', 'nessuna' => 'Nessuna foto'];
-    /** Giorni dopo la prima pubblicazione per chiedere il giudizio, e dopo quanti torna il riquadro chiuso. */
-    public const DOPO_GIORNI = 30;
+    /** 9B · Le immagini che il cliente sceglie di mostrare in home (chip del modulo). */
+    public const IMMAGINI = ['show_cover' => 'Copertina', 'show_photo' => 'La mia foto', 'show_logo' => 'Logo della struttura'];
+    /** Giorni dopo la prima pubblicazione per chiedere il giudizio (9B: il riquadro c'è dal primo accesso, il modulo dopo la
+        pubblicazione; l'email di richiamo resta a 30 giorni), e dopo quanti torna il riquadro chiuso. */
+    public const DOPO_GIORNI = 0;
+    public const RICHIAMO_GIORNI = 30;
     public const RITORNO_GIORNI = 60;
     /** La media in home si mostra solo da questo numero di giudizi pubblicati. */
     public const MEDIA_DA = 5;
@@ -44,8 +48,10 @@ final class Testimonianze
     public static function visibili(): array
     {
         if (!self::disponibili()) return [];
+        // 9B: i giudizi dei clienti hanno la loro sezione in home («Cosa dicono di noi», Giudizi::perHome); qui restano quelle scritte da noi.
         $dove = self::giudizi()
-            ? "visible = 1 AND (account_id IS NULL OR (status = 'pubblicata' AND consent_at IS NOT NULL AND withdrawn_at IS NULL))"
+            ? (Migrator::columnExists('testimonials', 'home_visible') ? 'visible = 1 AND account_id IS NULL'
+               : "visible = 1 AND (account_id IS NULL OR (status = 'pubblicata' AND consent_at IS NOT NULL AND withdrawn_at IS NULL))")
             : 'visible = 1';
         $out = [];
         foreach (Db::all("SELECT * FROM testimonials WHERE $dove ORDER BY position, id") as $t) {
@@ -61,7 +67,8 @@ final class Testimonianze
     public static function media(): ?array
     {
         if (!self::giudizi()) return null;
-        $r = Db::one("SELECT COUNT(*) AS n, AVG(rating) AS m FROM testimonials WHERE visible = 1 AND account_id IS NOT NULL AND status = 'pubblicata'
+        $inHome = Migrator::columnExists('testimonials', 'home_visible') ? 'home_visible = 1' : "visible = 1 AND status = 'pubblicata'";
+        $r = Db::one("SELECT COUNT(*) AS n, AVG(rating) AS m FROM testimonials WHERE $inHome AND account_id IS NOT NULL
                       AND consent_at IS NOT NULL AND withdrawn_at IS NULL AND rating BETWEEN 1 AND 5");
         $n = (int) ($r['n'] ?? 0);
         return $n >= self::MEDIA_DA ? ['media' => round((float) $r['m'], 1), 'n' => $n] : null;
@@ -156,8 +163,12 @@ final class Testimonianze
         if (!empty($acc['is_test'])) return false;   // 7F: i clienti di prova non ricevono la richiesta
         $t = $adesso ?? time();
         $aid = (int) $acc['id'];
-        $prima = self::primaPubblicazione($aid);
-        if ($prima === null || $t - $prima < self::DOPO_GIORNI * 86400 || self::diAccount($aid)) return false;
+        // 9B: il riquadro c'è dal primo accesso (spiega il programma); la pubblicazione serve solo per mandare il giudizio.
+        if (Giudizi::disponibili()) { if (self::diAccount($aid) || Giudizi::escluso($acc)) return false; }
+        else {
+            $prima = self::primaPubblicazione($aid);
+            if ($prima === null || $t - $prima < self::DOPO_GIORNI * 86400 || self::diAccount($aid)) return false;
+        }
         $r = Db::one('SELECT giudizio_chiuso_at, giudizio_chiusure FROM accounts WHERE id = ?', [$aid]) ?: [];
         $n = (int) ($r['giudizio_chiusure'] ?? 0);
         if ($n === 0) return true;
@@ -188,23 +199,45 @@ final class Testimonianze
         if (mb_strlen($testo) > 400) throw new \RuntimeException('Al massimo 400 caratteri.');
         if (!isset(self::FOTO[$foto])) $foto = 'nessuna';
         $gia = self::diAccount($aid);
-        if ($gia && $gia['status'] === 'pubblicata' && $gia['withdrawn_at'] === null) throw new \RuntimeException('Il tuo giudizio è già pubblicato. Grazie!');
+        $programma = Giudizi::disponibili();
+        if ($programma) {
+            // 9B: si modifica finché non è in home; dopo, solo ritirare. Il giudizio va mandato dopo la prima pubblicazione.
+            if ($gia && !empty($gia['home_visible']) && $gia['withdrawn_at'] === null) throw new \RuntimeException('Il tuo giudizio è già nella nostra home: puoi solo ritirarlo, da Account & Fatturazione.');
+            if (self::primaPubblicazione($aid) === null) throw new \RuntimeException('Il giudizio si lascia dopo aver pubblicato la guida.');
+            // «Partecipo» spuntato nel modulo: l'adesione dal pannello (una sola casella, la stessa del pagamento).
+            if (!empty($in['partecipo']) && Giudizi::puoAderire($acc)) { Giudizi::aderisci($acc, 'pannello'); $acc = Db::one('SELECT * FROM accounts WHERE id = ?', [$aid]) ?: $acc; }
+        } elseif ($gia && $gia['status'] === 'pubblicata' && $gia['withdrawn_at'] === null) {
+            throw new \RuntimeException('Il tuo giudizio è già pubblicato. Grazie!');
+        }
         $p = self::struttura($aid);
-        $consenso = !empty($in['consenso']);
+        // 9B: la pubblicazione è parte dell'adesione al programma (base: contratto), non un consenso a parte.
+        $consenso = $programma ? !empty($acc['giudizio_adesione']) : !empty($in['consenso']);
+        $testoConsenso = $programma ? (($acc['giudizio_adesione'] ?? '') === 'pannello' ? Giudizi::casellaBreve() : Giudizi::casella()) : self::CONSENSO;
         $nome = trim((string) ($u['name'] ?? ''));
         $dati = [
             'account_id' => $aid, 'property_id' => $p ? (int) $p['id'] : null,
             'name' => mb_substr($nome !== '' ? (preg_split('/\s+/', $nome)[0] ?? $nome) : 'Un host', 0, 120),
             'property_name' => mb_substr((string) ($p['name'] ?? ''), 0, 160), 'city' => mb_substr((string) ($p['city'] ?? ''), 0, 120),
             'body' => $testo, 'rating' => $voto, 'photo_source' => $foto, 'status' => 'in_attesa', 'visible' => 0,
-            'consent_at' => $consenso ? Support::now() : null, 'consent_text' => $consenso ? self::CONSENSO : null, 'withdrawn_at' => null,
+            'consent_at' => $consenso ? ($programma && !empty($acc['giudizio_adesione_at']) ? (string) $acc['giudizio_adesione_at'] : Support::now()) : null,
+            'consent_text' => $consenso ? $testoConsenso : null, 'withdrawn_at' => null,
             'photo_storage' => '', 'photo_key' => '', 'position' => 0,
         ];
-        if ($gia && $gia['status'] === 'in_attesa') { Db::update('testimonials', $dati, 'id = :tid', ['tid' => (int) $gia['id']]); $id = (int) $gia['id']; }
-        else $id = Db::insert('testimonials', $dati + ['created_at' => Support::now()]);
+        if ($programma) {
+            // Le immagini scelte (chip): solo quelle che esistono nella guida. Senza il modulo nuovo (vecchi invii) resta photo_source.
+            $ha = $p ? Db::one('SELECT profile_media_id, cover_media_id, logo_media_id FROM properties WHERE id = ?', [(int) $p['id']]) : null;
+            $dati['show_cover'] = !empty($in['show_cover']) && !empty($ha['cover_media_id']) ? 1 : 0;
+            $dati['show_photo'] = !empty($in['show_photo']) && !empty($ha['profile_media_id']) ? 1 : 0;
+            $dati['show_logo'] = !empty($in['show_logo']) && !empty($ha['logo_media_id']) ? 1 : 0;
+            $dati['home_visible'] = 0;
+        }
+        if ($gia && ($programma ? empty($gia['home_visible']) : $gia['status'] === 'in_attesa')) {
+            Db::update('testimonials', $dati, 'id = :tid', ['tid' => (int) $gia['id']]); $id = (int) $gia['id'];
+        } else $id = Db::insert('testimonials', $dati + ['created_at' => Support::now()]);
         Auth::audit('testimonial.submitted', null, ['account_id' => $aid, 'rating' => $voto, 'consent' => $consenso]);
         if ($voto <= 3) self::avvisaNoi($u, $dati);
-        return ['id' => $id, 'rating' => $voto, 'consenso' => $consenso];
+        if ($programma) Giudizi::dopoGiudizio($acc);   // chi ha aderito dal pannello: lo sconto sul prossimo rinnovo (coupon)
+        return ['id' => $id, 'rating' => $voto, 'consenso' => $consenso, 'aderito' => !empty($acc['giudizio_adesione'])];
     }
 
     /** Da 1 a 3 stelle: il giudizio arriva anche all'indirizzo di contatto, per rispondere. */
@@ -217,7 +250,7 @@ final class Testimonianze
             '«' . $d['body'] . '»',
             'Chi: ' . trim((string) ($u['name'] ?? '')) . ' · ' . (string) ($u['email'] ?? '') . ($d['property_name'] !== '' ? ' · ' . $d['property_name'] . ($d['city'] !== '' ? ', ' . $d['city'] : '') : ''),
         ];
-        $link = Support::baseUrl() . '/admin/testimonianze';
+        $link = Support::baseUrl() . (Giudizi::disponibili() ? '/admin/giudizi' : '/admin/testimonianze');
         try {
             Mailer::send($a, 'Giudizio da ' . $d['rating'] . '/5: da richiamare', Mailer::testo('Un giudizio da richiamare', $paragrafi, ['Apri le testimonianze', $link], null),
                          Mailer::layout('Un giudizio da richiamare', $paragrafi, ['Apri le testimonianze', $link], null, null));
@@ -229,28 +262,51 @@ final class Testimonianze
     {
         $t = Db::one('SELECT * FROM testimonials WHERE id = ? AND account_id IS NOT NULL', [$id]);
         if (!$t || empty($t['consent_at']) || !empty($t['withdrawn_at'])) return false;
-        Db::update('testimonials', ['status' => 'pubblicata', 'visible' => 1], 'id = :tid', ['tid' => $id]);
+        $dati = ['status' => 'pubblicata', 'visible' => 1];
+        if (Migrator::columnExists('testimonials', 'home_visible')) $dati += ['home_visible' => 1, 'published_at' => $t['published_at'] ?: Support::now()];   // 9B: in home
+        Db::update('testimonials', $dati, 'id = :tid', ['tid' => $id]);
         return true;
     }
 
     public static function rifiuta(int $id): void
     {
-        Db::run("UPDATE testimonials SET status = 'rifiutata', visible = 0 WHERE id = ? AND account_id IS NOT NULL", [$id]);
+        $home = Migrator::columnExists('testimonials', 'home_visible') ? ', home_visible = 0' : '';
+        Db::run("UPDATE testimonials SET status = 'rifiutata', visible = 0$home WHERE id = ? AND account_id IS NOT NULL", [$id]);
+    }
+
+    /** 9B · Dall'amministrazione: in home sì o no (l'interruttore). Solo con l'adesione e non ritirato. */
+    public static function inHome(int $id, bool $si): bool
+    {
+        $t = Db::one('SELECT * FROM testimonials WHERE id = ? AND account_id IS NOT NULL', [$id]);
+        if (!$t || !Migrator::columnExists('testimonials', 'home_visible')) return false;
+        if ($si && (empty($t['consent_at']) || !empty($t['withdrawn_at']))) return false;
+        Db::update('testimonials', $si ? ['home_visible' => 1, 'status' => 'pubblicata', 'visible' => 1, 'published_at' => $t['published_at'] ?: Support::now()]
+                                       : ['home_visible' => 0, 'status' => $t['status'] === 'pubblicata' ? 'in_attesa' : $t['status'], 'visible' => 0], 'id = :tid', ['tid' => $id]);
+        return true;
     }
 
     /** Il cliente ritira il consenso: il giudizio sparisce subito dalla home e non si ripubblica. */
     public static function ritira(int $accountId): bool
     {
         if (!self::giudizi()) return false;
-        $n = Db::run("UPDATE testimonials SET withdrawn_at = ?, visible = 0 WHERE account_id = ? AND consent_at IS NOT NULL AND withdrawn_at IS NULL", [Support::now(), $accountId]);
+        $home = Migrator::columnExists('testimonials', 'home_visible') ? ', home_visible = 0' : '';
+        $n = Db::run("UPDATE testimonials SET withdrawn_at = ?, visible = 0$home WHERE account_id = ? AND withdrawn_at IS NULL", [Support::now(), $accountId]);
         return $n > 0;
     }
 
     /** I giudizi dei clienti per l'amministrazione: prima quelli in attesa. */
-    public static function giudiziClienti(): array
+    public static function giudiziClienti(string $filtro = 'tutti'): array
     {
         if (!self::giudizi()) return [];
-        return Db::all("SELECT t.*, u.email FROM testimonials t LEFT JOIN accounts a ON a.id = t.account_id LEFT JOIN users u ON u.id = a.user_id
-                        WHERE t.account_id IS NOT NULL ORDER BY CASE t.status WHEN 'in_attesa' THEN 0 ELSE 1 END, t.id DESC LIMIT 200");
+        $home = Migrator::columnExists('testimonials', 'home_visible');
+        $dove = match ($filtro) {
+            'da_valutare' => $home ? ' AND t.home_visible = 0 AND t.withdrawn_at IS NULL AND t.consent_at IS NOT NULL' : " AND t.status = 'in_attesa'",
+            'in_home' => $home ? ' AND t.home_visible = 1 AND t.withdrawn_at IS NULL' : " AND t.status = 'pubblicata'",
+            'ritirati' => ' AND t.withdrawn_at IS NOT NULL',
+            default => '',
+        };
+        $acc = $home ? ', a.giudizio_adesione, a.giudizio_adesione_at, a.giudizio_sconto_stato, a.giudizio_sconto_at' : '';
+        return Db::all("SELECT t.*, u.email$acc FROM testimonials t LEFT JOIN accounts a ON a.id = t.account_id LEFT JOIN users u ON u.id = a.user_id
+                        WHERE t.account_id IS NOT NULL$dove ORDER BY CASE t.status WHEN 'in_attesa' THEN 0 ELSE 1 END, t.id DESC LIMIT 200");
     }
 }

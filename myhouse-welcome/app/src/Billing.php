@@ -168,6 +168,7 @@ final class Billing
         Db::run('UPDATE package_versions SET sold_count = sold_count + 1 WHERE id = ?', [$order['package_version_id']]);
         Sconti::registra($order, $sconto);   // un utilizzo per ordine, nella stessa transazione
         Inviti::pagato($order);              // se è un amico invitato, l'invito diventa valido
+        Giudizi::pagato($order);             // 9B: lo sconto del giudizio sul primo anno è stato applicato
         Entitlements::forget($acc);
 
         // La guida che aspettava il pagamento va online adesso.
@@ -242,6 +243,7 @@ final class Billing
         ], 'id = :sid', ['sid' => $row['id']]);
         Entitlements::forget((int) $row['account_id']);
         Inviti::fattura($row, $inv);         // un rinnovo scontato chiude gli inviti che lo hanno pagato
+        Giudizi::fattura($row, $inv);        // 9B: un rinnovo scontato chiude lo sconto del giudizio promesso sul rinnovo
         // Discesa programmata (6H): al rinnovo il sito passa al piano nuovo.
         if (!empty($row['next_package_version_id']) && ($inv['billing_reason'] ?? '') === 'subscription_cycle') {
             CambioAbbonamento::alRinnovo(Db::one('SELECT * FROM subscriptions WHERE id = ?', [$row['id']]));

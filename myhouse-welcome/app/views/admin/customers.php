@@ -38,7 +38,7 @@ $title = 'Clienti'; ?>
         <td class="small"><?= $r['scadenza'] !== '' ? Support::e(Support::date($r['scadenza'])) . '<br><span class="tiny muted">' . Support::e(['automatico' => 'si rinnova', 'disattivato' => 'non si rinnova', 'staff' => 'dallo staff'][$r['rinnovo']] ?? '') . '</span>' : '—' ?></td>
         <td class="small"><?= Support::e(Support::date($r['created_at'])) ?></td>
         <td><form method="post" action="<?= b() ?>/admin/entra/<?= (int) $r['user_id'] ?>"><?= Csrf::field() ?>
-          <button class="btn btn--ghost btn--sm" title="Apre il pannello con l'account del cliente: l'accesso resta nel registro">Entra come cliente</button></form></td>
+          <button class="btn btn--ghost btn--sm" aria-label="Entra come cliente" title="Apre il pannello con l'account del cliente: l'accesso resta nel registro"><span class="btn__lungo">Entra come cliente</span><span class="btn__corto" aria-hidden="true">Entra</span></button></form></td>
       </tr>
     <?php endforeach; ?>
     </tbody></table></div>

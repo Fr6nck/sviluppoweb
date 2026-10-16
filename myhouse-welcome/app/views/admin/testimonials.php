@@ -35,6 +35,9 @@ $modulo = function (array $t) {
       Scrivi solo parole vere, con il permesso di chi le ha dette (anche per la foto).</p>
   </div>
   <?php $giudizi = $giudizi ?? []; $attesa = array_filter($giudizi, fn($g) => $g['status'] === 'in_attesa'); ?>
+  <?php if (MHW\Giudizi::disponibili()): /* 9B: i giudizi dei clienti stanno in Clienti → Giudizi */ ?>
+    <p class="note" role="status"><span>I giudizi dei clienti (con lo sconto) sono in <a href="<?= b() ?>/admin/giudizi">Clienti → Giudizi</a>: lì decidi quali mettere in home.</span></p>
+  <?php else: ?>
   <section class="stack" aria-labelledby="giudizi-titolo" style="gap:12px">
     <h2 id="giudizi-titolo" style="font-size:22px">Giudizi dei clienti <?php if ($attesa): ?><span class="badge badge--ochre"><?= count($attesa) ?> in attesa</span><?php endif; ?></h2>
     <p class="small muted" style="margin:0">Arrivano dal pannello («Ti sta piacendo MyHouse Welcome?»). Si pubblicano solo quelli con il consenso;
@@ -65,6 +68,7 @@ $modulo = function (array $t) {
       </article>
     <?php endforeach; ?>
   </section>
+  <?php endif; ?>
   <h2 style="font-size:22px">Scritte da noi</h2>
   <?php if (!$righe): ?><p class="note note--quiet">Ancora nessuna testimonianza.</p><?php endif; ?>
   <?php foreach ($righe as $t): $foto = Testimonianze::foto($t); ?>

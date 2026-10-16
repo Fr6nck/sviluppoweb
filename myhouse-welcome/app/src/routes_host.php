@@ -110,6 +110,7 @@ $r->get('/pannello', function () use ($host) {
         'maxProp' => Entitlements::limit((int) $acc['id'], 'properties', 1), 'nav' => 'guide',
         'bloccate' => Entitlements::lockedIds((int) $acc['id']),
         'chiediGiudizio' => MHW\Testimonianze::daChiedere($acc),
+        'giudizioRiquadro' => MHW\Giudizi::disponibili() ? MHW\Giudizi::riquadro($acc) : null,   // 9B: lo stato del programma
         // Portfolio pagato e pieno: «Aggiungi una struttura» resta, e porta alla conferma col costo.
         'aggiungiPagando' => ($s = Subscriptions::active((int) $acc['id'])) && ($v = Plans::version((int) $s['package_version_id'])) && Plans::perProperty($v)
                              && (int) $s['quantity'] < (int) $v['max_quantity'],
@@ -965,19 +966,33 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
             Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
         }
     }
-    $oid = Db::insert('orders', [
-        'account_id' => $aid, 'package_version_id' => $pv['id'], 'property_id' => $p['id'], 'quantity' => $quantita,
-        'amount_cents' => Plans::price($pv, $quantita), 'currency' => $pv['currency'], 'status' => 'pending',
-        'provider' => 'stripe', 'provider_session_id' => '', 'created_at' => Support::now(), 'updated_at' => Support::now(),
-    ] + ($codiceSconto ? ['discount_code_id' => (int) $codiceSconto['id']] : [])
-      + (Migrator::columnExists('orders', 'acquirente') ? ['acquirente' => $acquirente, 'recesso_rinuncia' => $acquirente === 'consumatore' ? 1 : 0] : []));
-    unset($_SESSION['acquisto']);
+    // 9B · La casella del giudizio con lo sconto, nella stessa pagina: spuntata aderisce (al pagamento), tolta rinuncia (finché è solo promesso).
+    if (MHW\Giudizi::attivo()) {
+        if (!empty($_POST['giudizio_adesione'])) MHW\Giudizi::aderisci($acc, 'pagamento');
+        elseif (array_key_exists('giudizio_casella', $_POST)) MHW\Giudizi::rinuncia($acc);
+        $acc = Auth::account();
+    }
+    // 9A · Il conto del primo anno: gli sconti di sistema (invito, giudizio) sommati, o il codice scritto a mano se vale di più.
+    // Un solo coupon va a Stripe; la composizione resta nell'ordine (sconti) per il webhook.
+    $oid = 0;
     try {
-        $url = Stripe::checkoutSubscription(Db::one('SELECT * FROM orders WHERE id = ?', [$oid]), $pv, $pkg, $acc, $u);
+        $riep = MHW\Sconti::riepilogo($pv, $quantita, $acc);
+        $sc = MHW\Sconti::perStripe($riep);
+        $oid = Db::insert('orders', [
+            'account_id' => $aid, 'package_version_id' => $pv['id'], 'property_id' => $p['id'], 'quantity' => $quantita,
+            'amount_cents' => $riep['prezzo'], 'currency' => $pv['currency'], 'status' => 'pending',
+            'provider' => 'stripe', 'provider_session_id' => '', 'created_at' => Support::now(), 'updated_at' => Support::now(),
+        ] + ($sc['discount_code_id'] ? ['discount_code_id' => $sc['discount_code_id']] : ($codiceSconto ? ['discount_code_id' => (int) $codiceSconto['id']] : []))
+          + (Migrator::columnExists('orders', 'sconti') ? ['sconti' => $sc['sconti']] : [])
+          + (Migrator::columnExists('orders', 'acquirente') ? ['acquirente' => $acquirente, 'recesso_rinuncia' => $acquirente === 'consumatore' ? 1 : 0] : []));
+        unset($_SESSION['acquisto']);
+        $url = Stripe::checkoutSubscription(Db::one('SELECT * FROM orders WHERE id = ?', [$oid]), $pv, $pkg, $acc, $u, $riep);
     } catch (\Throwable $e) {
-        Db::update('orders', ['status' => 'failed', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $oid]);
+        if ($oid) Db::update('orders', ['status' => 'failed', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $oid]);
         $codice = Log::exception($e, 'checkout');
-        Support::flash('Il pagamento non è disponibile in questo momento. Riprova tra poco (codice ' . $codice . ').', 'err');
+        // 9A · I due controlli sui prezzi di Stripe (verificaPrezzi, controllaSessione) fermano il pagamento: lo si dice senza codice.
+        Support::flash($e instanceof MHW\PrezziNonCoerenti ? 'Il pagamento non è disponibile in questo momento, ti avvisiamo noi.'
+                       : 'Il pagamento non è disponibile in questo momento. Riprova tra poco (codice ' . $codice . ').', 'err');
         Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
     }
     Support::redirect($url);
@@ -1085,6 +1100,7 @@ $paginaAccount = function (array $u, array $acc, array $extra = []) use ($tornaV
         'portale' => Stripe::enabled() && Config::get('stripe')['customer_portal'] && $acc['stripe_customer_id'] !== '',
         'fatt' => $acc, 'erroriFatt' => [], 'torna' => $tornaValido($torna) ? $torna : '',
         'giudizio' => MHW\Testimonianze::diAccount((int) $acc['id']),
+        'giudizioRiquadro' => MHW\Giudizi::disponibili() ? MHW\Giudizi::riquadro($acc) : null,   // 9B
         'nav' => 'account',
     ], 'layout/cms');
     exit;
@@ -1136,8 +1152,14 @@ $r->any('/giudizio', function () use ($host) {
             $fatto = MHW\Testimonianze::salvaGiudizio($acc, $u, $_POST);
         } catch (\RuntimeException $e) { $err = $e->getMessage(); }
     }
+    // 9B: dopo l'invio l'account può essere cambiato (adesione dal modulo); il giudizio già dato precompila il modulo, finché non è in home.
+    $acc = Auth::account();
+    $gia = MHW\Testimonianze::diAccount((int) $acc['id']);
+    if (!$fatto && $_SERVER['REQUEST_METHOD'] !== 'POST' && $gia && MHW\Giudizi::disponibili() && empty($gia['home_visible']) && $gia['withdrawn_at'] === null) {
+        $vecchi = ['rating' => $gia['rating'], 'body' => $gia['body'], 'show_cover' => $gia['show_cover'], 'show_photo' => $gia['show_photo'], 'show_logo' => $gia['show_logo'], 'modifica' => 1];
+    }
     View::out('host/giudizio', ['user' => $u, 'acc' => $acc, 'err' => $err, 'fatto' => $fatto, 'vecchi' => $fatto ? [] : $vecchi,
-        'p' => MHW\Testimonianze::struttura((int) $acc['id']), 'gia' => MHW\Testimonianze::diAccount((int) $acc['id']), 'nav' => 'guide'], 'layout/cms');
+        'p' => MHW\Testimonianze::struttura((int) $acc['id']), 'gia' => $gia, 'riquadro' => MHW\Giudizi::disponibili() ? MHW\Giudizi::riquadro($acc) : null, 'nav' => 'guide'], 'layout/cms');
 });
 
 $r->post('/giudizio/chiudi', function () use ($host) {
@@ -1146,13 +1168,36 @@ $r->post('/giudizio/chiudi', function () use ($host) {
     Support::redirect('/pannello');
 });
 
-/* «Ritira il consenso» da Account & Fatturazione: la testimonianza sparisce subito dalla home. */
+/* 9B · «Partecipo» dal riquadro del pannello: l'adesione dal pannello (lo sconto sul rinnovo, dopo il giudizio). */
+$r->post('/giudizio/partecipo', function () use ($host) {
+    [, $acc] = $host();
+    if (empty($_POST['partecipo'])) { Support::flash('Per partecipare spunta la casella.', 'err'); Support::redirect('/pannello'); }
+    if (!MHW\Giudizi::puoAderire($acc)) { Support::flash('Il programma non è disponibile per questo account.', 'err'); Support::redirect('/pannello'); }
+    MHW\Giudizi::aderisci($acc, 'pannello');
+    $pubblicata = MHW\Testimonianze::primaPubblicazione((int) $acc['id']) !== null;
+    Support::flash('Grazie! ' . ($pubblicata ? 'Ora lascia il tuo giudizio: lo sconto si applica al prossimo rinnovo.' : 'Quando avrai pubblicato la guida potrai lasciare il giudizio: lo sconto si applica al rinnovo successivo.'));
+    Support::redirect($pubblicata ? '/giudizio' : '/pannello');
+});
+
+/* 9B · La casella al pagamento, salvata subito (dallo script del passo «Pubblica», o dal modulo senza JavaScript). */
+$r->post('/giudizio/adesione', function () use ($host) {
+    [, $acc] = $host();
+    $torna = preg_match('#^/pannello/\d+/procedura/pubblica$#', (string) ($_POST['torna'] ?? '')) ? (string) $_POST['torna'] : '/pannello';
+    if (MHW\Giudizi::attivo()) {
+        if (!empty($_POST['giudizio_adesione'])) MHW\Giudizi::aderisci($acc, 'pagamento'); else MHW\Giudizi::rinuncia($acc);
+    }
+    if (str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json')) Support::json(['ok' => true, 'aderito' => !empty(Auth::account()['giudizio_adesione'])]);
+    Support::redirect($torna . '#giudizio-sconto');
+});
+
+/* «Ritira il giudizio» da Account & Fatturazione: sparisce subito dalla home; lo sconto già avuto resta, quello promesso sul rinnovo decade (9B). */
 $r->post('/account/giudizio/ritira', function () use ($host) {
     [, $acc] = $host();
     $ok = MHW\Testimonianze::ritira((int) $acc['id']);
     if ($ok) MHW\Auth::audit('testimonial.withdrawn', null, ['account_id' => (int) $acc['id']]);
+    if ($ok) MHW\Giudizi::ritirato($acc);
     if ($ok) MHW\Seo::scriviFile();   // 7F: llms.txt dice se ci sono giudizi pubblicati
-    Support::flash($ok ? 'Consenso ritirato: il tuo giudizio non si vede più sul sito.' : 'Non c\'era un consenso da ritirare.');
+    Support::flash($ok ? 'Giudizio ritirato: non si vede più sul sito.' : 'Non c\'era un giudizio da ritirare.');
     Support::redirect('/account#giudizio');
 });
 
@@ -1441,7 +1486,7 @@ $r->post('/pannello/{id}/riattiva', function (array $a) use ($mia) {
  * Un codice valido si salva nell'account e si rivalida alla pubblicazione; uno
  * non valido torna sotto il campo, con il motivo. Dieci tentativi ogni 15 minuti.
  */
-$tornaSconto = fn(): string => preg_match('#^/(piano|pannello/\d+/procedura/pubblica)$#', (string) ($_POST['torna'] ?? '')) ? (string) $_POST['torna'] : '/piano';
+$tornaSconto = fn(): string => preg_match('#^/(piano|account|pannello/\d+/procedura/pubblica)$#', (string) ($_POST['torna'] ?? '')) ? (string) $_POST['torna'] : '/piano';
 
 $r->post('/sconto/applica', function () use ($host, $tornaSconto) {
     [$u, $acc] = $host();

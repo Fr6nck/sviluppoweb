@@ -194,6 +194,47 @@ final class Media
         catch (\Throwable $e) { Log::exception($e, 'Media::url'); return null; }
     }
 
+    /**
+     * 9B · L'indirizzo di una versione ridotta (lato massimo $max px) di un'immagine, servita da /img/{id}/{max}
+     * e tenuta in cache in storage/cache/ridotte. Senza GD, o se non è un'immagine, l'originale.
+     */
+    public static function ridotta(?int $id, int $max = 800): ?string
+    {
+        if (!$id) return null;
+        if (!function_exists('imagecreatefromstring')) return self::url($id);
+        $max = max(80, min(1600, $max));
+        return Support::url('/img/' . $id . '/' . $max);
+    }
+
+    /** I byte della versione ridotta (JPEG o PNG per i loghi trasparenti): dalla cache, o creata adesso. @return array{0:string,1:string}|null [bytes, mime] */
+    public static function ridottaBytes(int $id, int $max = 800): ?array
+    {
+        $max = max(80, min(1600, $max));
+        $m = self::row($id);
+        if (!$m) return null;
+        $dir = MHW_APP . '/storage/cache/ridotte';
+        $png = str_contains((string) ($m['mime'] ?? ''), 'png');
+        $file = $dir . '/' . $id . '-' . $max . ($png ? '.png' : '.jpg');
+        if (is_file($file)) return [(string) file_get_contents($file), $png ? 'image/png' : 'image/jpeg'];
+        $bytes = self::bytes($id);
+        if ($bytes === null || !function_exists('imagecreatefromstring')) return null;
+        $src = @imagecreatefromstring($bytes);
+        if (!$src) return [$bytes, (string) ($m['mime'] ?? 'image/jpeg')];
+        $w = imagesx($src); $h = imagesy($src);
+        $scala = min(1, $max / max(1, max($w, $h)));
+        $nw = max(1, (int) round($w * $scala)); $nh = max(1, (int) round($h * $scala));
+        $dst = imagecreatetruecolor($nw, $nh);
+        if ($png) { imagealphablending($dst, false); imagesavealpha($dst, true); imagefill($dst, 0, 0, imagecolorallocatealpha($dst, 0, 0, 0, 127)); }
+        imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+        ob_start();
+        if ($png) imagepng($dst, null, 7); else imagejpeg($dst, null, 82);
+        $out = (string) ob_get_clean();
+        imagedestroy($src); imagedestroy($dst);
+        if (!is_dir($dir)) @mkdir($dir, 0775, true);
+        @file_put_contents($file, $out);
+        return [$out, $png ? 'image/png' : 'image/jpeg'];
+    }
+
     /** I byte di un file salvato (per il logo nel PDF del QR, 7C), o null se non si trova. */
     public static function bytes(?int $id): ?string
     {

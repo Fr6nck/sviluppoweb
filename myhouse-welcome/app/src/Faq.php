@@ -49,9 +49,9 @@ final class Faq
         ];
         if ($pf) {
             $tiers = Plans::tiers($pf);
-            $f[] = ['costo-portfolio', 'Quanto costa ogni struttura con Portfolio?', 'La prima costa ' . Support::money((int) $pf['price_cents'], $pf['currency']) . ', come Plus; '
+            $f[] = ['costo-portfolio', 'Quanto costa ogni struttura con Portfolio?', 'La prima costa ' . Support::money((int) $pf['price_cents'], $pf['currency']) . '; '
                 . (count($tiers) > 1
-                    ? 'poi ogni struttura in più costa meno, a scaglioni: ' . implode(', ', array_map(fn($t) => Plans::tierLabel($t) . ' ' . Support::money($t['cents'], $pf['currency']) . ($t['a'] === $t['da'] ? '' : " l'una"), $tiers))
+                    ? 'poi ogni struttura in più costa meno, a scaglioni: ' . implode(', ', array_map(fn($t) => Plans::tierLabel($t, (int) $pf['max_quantity']) . ' ' . Support::money($t['cents'], $pf['currency']) . ($t['a'] === $t['da'] ? '' : " l'una"), $tiers))
                     : 'ogni struttura in più costa ' . Support::money(Plans::unitPrice($pf, 2), $pf['currency']) . ', fino a ' . (int) $pf['max_quantity'] . ' strutture (per di più, scrivici)')
                 . '. Prezzi annuali, IVA esclusa. Nel listino scegli quante strutture ti servono e vedi il totale e quanto costa in media ognuna; dentro il pannello trovi il conto struttura per struttura.'];
         }

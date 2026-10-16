@@ -26,24 +26,38 @@
       }
       return tot;
     }
+    // 9A: il massimo del listino (data-max-prezzo) e quello del campo (999): oltre il primo niente prezzo,
+    // si apre il riquadro del preventivo e il bottone del piano si spegne. Il server rifiuta comunque l'ordine.
     var min = parseInt(campo.min, 10), max = parseInt(campo.max, 10), valuta = b.getAttribute('data-valuta') || 'EUR';
+    var maxPrezzo = parseInt(campo.getAttribute('data-max-prezzo') || campo.max, 10);
+    var preventivo = document.querySelector('[data-preventivo]');
+    // 9A: lo sconto del primo anno che vale per chi guarda (invito, giudizio, codice): prezzo barrato e scontato.
+    var scontoPct = parseInt(b.getAttribute('data-sconto') || '0', 10), scontoFisso = parseInt(b.getAttribute('data-sconto-fisso') || '0', 10);
+    function scontato(tot) {
+      var sc = scontoPct > 0 ? Math.round(tot * scontoPct / 100) : scontoFisso;
+      return tot - Math.max(0, Math.min(sc, tot - 100));
+    }
     function aggiorna() {
       var v = campo.value.trim(), q = /^\d+$/.test(v) ? parseInt(v, 10) : NaN;
       var ok = !isNaN(q) && q >= min && q <= max;
       campo.setCustomValidity(ok ? '' : (en ? 'Enter a whole number of properties between ' + min + ' and ' + max + '.' : 'Indica un numero intero di strutture tra ' + min + ' e ' + max + '.'));
       if (ok) {
-        totale.textContent = soldi(prezzo(q), valuta);
+        var tot = prezzo(q);
+        totale.textContent = soldi(scontoPct > 0 || scontoFisso > 0 ? scontato(tot) : tot, valuta);
+        var pieno = b.querySelector('[data-pieno]'), pienoPoi = b.querySelector('[data-pieno-poi]');
+        if (pieno) pieno.textContent = soldi(tot, valuta);
+        if (pienoPoi) pienoPoi.textContent = soldi(tot, valuta);
         // L'equivalente mensile: prezzo annuale / 12, arrotondato al centesimo.
         var mese = b.querySelector('[data-mensile]');
-        if (mese) mese.textContent = soldi(Math.round(prezzo(q) / 12), valuta);
+        if (mese) mese.textContent = soldi(Math.round(tot / 12), valuta);
         // In media a struttura, e quante.
         var media = b.querySelector('[data-media]'), quante = b.querySelector('[data-quante]');
-        if (media) media.textContent = soldi(Math.round(prezzo(q) / q), valuta);
+        if (media) media.textContent = soldi(Math.round(tot / q), valuta);
         if (quante) quante.textContent = q;
+        oltre(q > maxPrezzo, q);
       }
     }
     campo.addEventListener('input', aggiorna);
-    aggiorna();
 
     // − e + ai lati del campo: si scrive ancora a mano, ma col pollice si fa prima.
     var gruppo = document.createElement('span'); gruppo.className = 'passo-num';
@@ -53,9 +67,6 @@
       x.type = 'button'; x.className = 'passo-num__btn'; x.textContent = segno; x.setAttribute('aria-label', testo);
       x.addEventListener('click', function () {
         var q = parseInt(campo.value, 10); if (isNaN(q)) q = min;
-        // 7B: «+» oltre il massimo mostra «Chiedi un preventivo» al posto del prezzo.
-        oltre(delta > 0 && q >= max);
-        if (delta > 0 && q >= max) return;
         q = Math.max(min, Math.min(max, q + delta));
         campo.value = q;
         campo.dispatchEvent(new Event('input', { bubbles: true }));
@@ -63,18 +74,34 @@
       });
       return x;
     }
-    var boxOltre = b.querySelector('[data-oltre]'), prezzi = b.querySelectorAll('.price, .plan__mese');
-    function oltre(si) {
-      if (!boxOltre) return;
-      boxOltre.hidden = !si;
+    // 9A: oltre il massimo del listino sparisce il prezzo, resta «Ti facciamo una proposta su misura», il bottone
+    // del piano si spegne e il riquadro del preventivo (fuori dalle schede) si apre con il numero già scritto.
+    var boxOltre = b.querySelector('[data-oltre]'), prezzi = b.querySelectorAll('.price, .plan__mese, .plan__sconto-riga, .scaglioni__media');
+    var modulo = campo.form, radio = campo.getAttribute('data-sceglie') ? document.getElementById(campo.getAttribute('data-sceglie')) : null;
+    var invio = modulo ? modulo.querySelectorAll('button:not([type=button]), input[type=submit]') : [];
+    function oltre(si, q) {
+      if (boxOltre) boxOltre.hidden = !si;
       for (var k = 0; k < prezzi.length; k++) prezzi[k].hidden = si;
+      var blocca = si && (!radio || radio.checked);
+      for (var j = 0; j < invio.length; j++) { if (blocca) invio[j].setAttribute('disabled', ''); else invio[j].removeAttribute('disabled'); }
+      if (preventivo && si) {
+        preventivo.hidden = false;
+        var n = preventivo.querySelector('[data-preventivo-n]'), campoN = preventivo.querySelector('[data-preventivo-strutture]');
+        if (n) n.textContent = q;
+        if (campoN) campoN.value = q;
+      } else if (preventivo && !si && preventivo.getAttribute('data-aperto') !== '1') {
+        preventivo.hidden = true;
+      }
     }
+    if (preventivo && !preventivo.hidden) preventivo.setAttribute('data-aperto', '1');   // aperto dal server: resta
+    if (radio && modulo) modulo.addEventListener('change', function () { aggiorna(); });
+    aggiorna();
     var meno = bottone('\u2212', en ? 'One property less' : 'Una struttura in meno', -1), piu = bottone('+', en ? 'One more property' : 'Una struttura in più', 1);
     gruppo.appendChild(meno); gruppo.appendChild(campo); gruppo.appendChild(piu);
     function limiti() {
       var q = parseInt(campo.value, 10);
-      meno.disabled = !(q > min); piu.disabled = !(q < max) && !boxOltre;   // con il preventivo, «+» resta attivo anche al massimo
+      meno.disabled = !(q > min); piu.disabled = !(q < max);
     }
-    campo.addEventListener('input', function () { oltre(false); limiti(); }); limiti();
+    campo.addEventListener('input', limiti); limiti();
   })(blocchi[i]);
 })();

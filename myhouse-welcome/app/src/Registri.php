@@ -115,6 +115,7 @@ final class Registri
         $iso = fn(int $s) => gmdate('Y-m-d\TH:i:s\Z', $s);
         if (Migrator::tableExists('interessi_sito')) Db::run('DELETE FROM interessi_sito WHERE created_at < ?', [$iso(strtotime('-12 months', $t))]);
         if (Migrator::tableExists('referral_invites')) Db::run('DELETE FROM referral_invites WHERE sent_at < ?', [$iso(strtotime('-24 months', $t))]);
+        if (Migrator::tableExists('preventivi')) Db::run('DELETE FROM preventivi WHERE created_at < ?', [$iso(strtotime('-12 months', $t))]);   // 9A
     }
 
     /** Una volta: app.log e mail.log di prima della 8I divisi nei file del giorno, secondo la data di ogni riga. */

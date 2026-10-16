@@ -101,16 +101,20 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
       <?php if ($sub): ?>
         <p>Il tuo abbonamento <b><?= Support::e($piano['name'] ?? '') ?></b> è attivo<?= $sub['current_period_end'] ? ' fino al ' . Support::e(Support::date($sub['current_period_end'])) : '' ?>:
           la guida si pubblica subito, senza nuovi pagamenti.</p>
-      <?php elseif ($piano): $qSc = Plans::perProperty($piano) ? $quantita : 1; $sc = MHW\Sconti::disponibili() ? MHW\Sconti::applicato($acc, $piano, $qSc) : null; ?>
+      <?php elseif ($piano): $qSc = Plans::perProperty($piano) ? $quantita : 1;
+            /* 9A · Il conto del primo anno: sconti di sistema sommati (invito, giudizio) o il codice scritto a mano. */
+            $riep = MHW\Sconti::disponibili() ? MHW\Sconti::riepilogo($piano, $qSc, $acc) : null; $sc = $riep && $riep['sconto'] > 0 ? $riep : null; ?>
         <div class="spread spread--mid">
           <div class="stack" style="gap:4px"><span class="kicker">Il tuo piano</span>
             <b style="font-size:22px;font-weight:500">Hai scelto <?= Support::e($piano['name']) ?><?= Plans::perProperty($piano) ? ' · ' . $quantita . ' strutture' : '' ?></b></div>
           <span style="font-size:26px;font-weight:500"><?php if ($sc): ?><s class="muted" style="font-size:18px"><?= Support::e(Support::money($sc['prezzo'], $piano['currency'])) ?></s>
-            <?= Support::e(Support::money($sc['scontato'], $piano['currency'])) ?><span class="small muted"> + IVA il primo anno</span>
+            <?= Support::e(Support::money($sc['totale'], $piano['currency'])) ?><span class="small muted"> + IVA il primo anno</span>
             <?php else: ?><?= Support::e(Support::money(Plans::price($piano, $qSc), $piano['currency'])) ?>
             <span class="small muted">+ IVA / anno</span><?php endif; ?></span>
         </div>
-        <?php $pv = $piano; $quantita = $qSc; $torna = '/pannello/' . $pid . '/procedura/pubblica'; include __DIR__ . '/_sconto.php'; ?>
+        <?php if ($sc): ?><p class="plan__sconto-riga" style="margin:0">−<?= $sc['percento'] > 0 ? (int) $sc['percento'] . '%' : Support::e(Support::money($sc['sconto'], $piano['currency'])) ?> primo anno</p><?php endif; ?>
+        <?php if ($riep): $pv = $piano; $quantita = $qSc; include __DIR__ . '/_riepilogo.php'; endif; ?>
+        <?php $pv = $piano; $quantita = $qSc; $torna = '/pannello/' . $pid . '/procedura/pubblica'; $soloCampo = true; include __DIR__ . '/_sconto.php'; ?>
         <p class="small muted">Abbonamento annuale con rinnovo automatico, che puoi disattivare quando vuoi. Il pagamento avviene su Stripe;
           la guida va online appena Stripe conferma.</p>
         <?php /* 7B: prima di pagare si può passare a un altro piano, anche più economico; se perde qualcosa che la guida usa, lo si dice prima. */
@@ -213,7 +217,7 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
     <?php endif; ?>
 
     <p class="small muted pubblica-riservata"><?= Icon::svg('lock', 14) ?><span>Dopo la pubblicazione la guida è online per chi ha il link o il QR. Non compare nei motori di ricerca.</span></p>
-    <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/pubblica" style="margin:0"><?= Csrf::field() ?>
+    <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/pubblica" style="margin:0" data-base="<?= b() ?>"><?= Csrf::field() ?>
       <?php if (!$sub && $piano): /* 8J · chi acquista, prima del primo pagamento: impresa o privato (con la richiesta di iniziare subito) */
             $acqS = (array) ($_SESSION['acquisto'] ?? []); ?>
         <fieldset class="fieldset stack acquisto" id="acquisto" style="gap:10px;margin:0 0 16px">
@@ -228,6 +232,33 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
             <p class="help" style="margin:0">Solo per i privati, ed è obbligatoria per pubblicare subito. Come privato hai 14 giorni per recedere: <a href="<?= b() ?>/termini#recesso" target="_blank" rel="noopener">come funziona</a>.</p>
           </div>
         </fieldset>
+        <?php /* 9B · «Ti piace MyHouse Welcome?»: una sola casella, mai pre-spuntata, solo con l'interruttore acceso e se non ha mai aderito
+                 (o ha aderito al pagamento e non ha ancora pagato: la si può togliere). Lo spiegone sotto, sempre visibile. */
+              $giudizioPuo = MHW\Giudizi::attivo() && (MHW\Giudizi::puoAderire($acc) || (($acc['giudizio_adesione'] ?? '') === 'pagamento' && ($acc['giudizio_sconto_stato'] ?? '') === 'promesso'));
+              if ($giudizioPuo): $giudizioSi = ($acc['giudizio_adesione'] ?? '') === 'pagamento'; ?>
+          <fieldset class="fieldset stack giudizio-sconto" id="giudizio-sconto" style="gap:8px;margin:0 0 16px" data-giudizio-sconto data-torna="/pannello/<?= $pid ?>/procedura/pubblica">
+            <legend class="legend">Ti piace MyHouse Welcome? <span class="badge badge--pine">−<?= MHW\Giudizi::percentuale() ?>%</span></legend>
+            <input type="hidden" name="giudizio_casella" value="1">
+            <label class="check" style="align-items:flex-start"><input type="checkbox" name="giudizio_adesione" value="1" data-giudizio-casella style="margin-top:1px"<?= $giudizioSi ? ' checked' : '' ?>>
+              <span><b>Sì, voglio il <?= MHW\Giudizi::percentuale() ?>% in più: lascerò un giudizio.</b> <?= Support::e(preg_replace('/^Sì, voglio il \d+% in più: lascerò un giudizio\. /', '', MHW\Giudizi::casella())) ?></span></label>
+            <p class="help giudizio-sconto__spiega" style="margin:0"><?= Support::e(MHW\Giudizi::spiegone()) ?> Regole complete nei <a href="<?= b() ?>/termini#giudizio-sconto" target="_blank" rel="noopener">Termini</a>, punto «Giudizio con sconto».</p>
+            <noscript><button class="btn btn--ghost btn--sm" formaction="<?= b() ?>/giudizio/adesione" formmethod="post" name="torna" value="/pannello/<?= $pid ?>/procedura/pubblica">Aggiorna il riepilogo</button></noscript>
+          </fieldset>
+          <script>
+          /* Spuntata o tolta: si salva subito e la pagina si ricarica con il riepilogo aggiornato (senza JavaScript: «Aggiorna il riepilogo», o all'invio). */
+          (function () {
+            var f = document.querySelector('[data-giudizio-sconto]'), c = f && f.querySelector('[data-giudizio-casella]'); if (!c) return;
+            c.addEventListener('change', function () {
+              var fd = new FormData(); fd.append('_csrf', f.closest('form').querySelector('input[name=_csrf]').value); fd.append('torna', f.getAttribute('data-torna'));
+              if (c.checked) fd.append('giudizio_adesione', '1');
+              c.disabled = true;
+              fetch(f.closest('form').getAttribute('data-base') + '/giudizio/adesione', { method: 'POST', body: fd, headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+                .then(function () { location.reload(); })
+                .catch(function () { c.disabled = false; });
+            });
+          })();
+          </script>
+        <?php endif; ?>
         <script>
         (function () {
           var f = document.getElementById('acquisto'); if (!f) return;

@@ -37,18 +37,23 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
         </div>
         <?php $voci = $o['bullet_list']; include dirname(__DIR__) . '/pub/_voci_piano.php'; ?>
         <?php /* Come nella home: quantità e prezzo in fondo, alla stessa altezza nelle tre schede. */ ?>
+        <?php /* 9A · Gli sconti che valgono per l'account (invito, giudizio, codice): prezzo barrato e primo anno. */
+              $riepO = MHW\Sconti::disponibili() ? MHW\Sconti::riepilogo($o, $q, $acc) : null; $scO = $riepO && $riepO['sconto'] > 0 ? $riepO : null;
+              $attrSconto = $scO ? ($scO['percento'] > 0 ? ' data-sconto="' . (int) $scO['percento'] . '"' : ' data-sconto-fisso="' . (int) $scO['sconto'] . '"') : ''; ?>
         <?php if ($perStruttura): ?>
-          <div class="quantita pianocard__sopra plan__piede" data-quantita data-base="<?= (int) $o['price_cents'] ?>" data-extra="<?= (int) $o['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($o)) ?>" data-valuta="<?= Support::e($o['currency']) ?>">
+          <div class="quantita pianocard__sopra plan__piede" data-quantita data-base="<?= (int) $o['price_cents'] ?>" data-extra="<?= (int) $o['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($o)) ?>" data-valuta="<?= Support::e($o['currency']) ?>"<?= $attrSconto ?>>
             <div class="plan__quante">
               <?php $pvS = $o; $qS = $q; include __DIR__ . '/_scaglioni.php'; ?>
               <label for="strutture-<?= $id ?>" class="plan__label">Quante strutture vuoi gestire?</label>
               <input id="strutture-<?= $id ?>" name="strutture" type="number" inputmode="numeric" step="1" data-sceglie="pv-<?= $id ?>"
-                     min="<?= (int) $o['min_quantity'] ?>" max="<?= (int) $o['max_quantity'] ?>" value="<?= $q ?>">
-              <div class="plan__oltre" data-oltre hidden><p>Più di <?= (int) $o['max_quantity'] ?> strutture? Ti facciamo una proposta.</p>
-                <a class="btn btn--sm" href="<?= Support::e(Support::mailtoPreventivo()) ?>">Chiedi un preventivo</a></div>
+                     min="<?= (int) $o['min_quantity'] ?>" max="999" data-max-prezzo="<?= (int) $o['max_quantity'] ?>" value="<?= $q ?>">
+              <div class="plan__oltre" data-oltre hidden><p>Più di <?= (int) $o['max_quantity'] ?> strutture? Ti facciamo una proposta su misura.</p>
+                <a class="btn btn--sm" href="#preventivo">Chiedi il preventivo</a></div>
             </div>
             <div class="plan__prezzo">
-              <span class="price"><span data-totale><?= Support::e(Support::money(Plans::price($o, $q), $o['currency'])) ?></span><small> + IVA / anno</small></span>
+              <?php if ($scO): ?><span class="price price--barrato"><s data-pieno><?= Support::e(Support::money($scO['prezzo'], $o['currency'])) ?></s></span><?php endif; ?>
+              <span class="price"><span data-totale><?= Support::e(Support::money($scO ? $scO['totale'] : Plans::price($o, $q), $o['currency'])) ?></span><small> + IVA<?= $scO ? ' il primo anno' : ' / anno' ?></small></span>
+              <?php if ($scO): ?><span class="plan__sconto-riga">−<?= $scO['percento'] > 0 ? (int) $scO['percento'] . '%' : Support::e(Support::money($scO['sconto'], $o['currency'])) ?> primo anno · poi <span data-pieno-poi><?= Support::e(Support::money($scO['prezzo'], $o['currency'])) ?></span></span><?php endif; ?>
               <span class="plan__mese">circa <span data-mensile><?= Support::e(Support::money(Plans::monthly(Plans::price($o, $q)), $o['currency'])) ?></span> al mese</span>
             </div>
           </div>
@@ -56,7 +61,9 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
           <div class="plan__piede">
             <div class="plan__quante"></div>
             <div class="plan__prezzo">
-              <span class="price"><?= Support::e(Support::money((int) $o['price_cents'], $o['currency'])) ?><small> + IVA / anno</small></span>
+              <?php if ($scO): ?><span class="price price--barrato"><s><?= Support::e(Support::money($scO['prezzo'], $o['currency'])) ?></s></span><?php endif; ?>
+              <span class="price"><?= Support::e(Support::money($scO ? $scO['totale'] : (int) $o['price_cents'], $o['currency'])) ?><small> + IVA<?= $scO ? ' il primo anno' : ' / anno' ?></small></span>
+              <?php if ($scO): ?><span class="plan__sconto-riga">−<?= $scO['percento'] > 0 ? (int) $scO['percento'] . '%' : Support::e(Support::money($scO['sconto'], $o['currency'])) ?> primo anno · poi <?= Support::e(Support::money($scO['prezzo'], $o['currency'])) ?></span><?php endif; ?>
               <span class="plan__mese">circa <?= Support::e(Support::money(Plans::monthly((int) $o['price_cents']), $o['currency'])) ?> al mese</span>
             </div>
           </div>
@@ -69,6 +76,8 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
     <span class="small muted">Rinnovo annuale automatico, disattivabile quando vuoi. Prezzi IVA esclusa.</span>
   </div>
 </form>
+<?php /* 9A · Il riquadro del preventivo, oltre il massimo del Portfolio: fuori dal modulo del piano. */
+      foreach ($offers as $of) foreach ($of['options'] as $oP) if (Plans::perProperty($oP)) { $pvP = $oP; $qP = $strutture; $tornaP = '/piano' . ($strutture ? '?piano=' . (int) $oP['pv_id'] . '&strutture=' . (int) $strutture : ''); include __DIR__ . '/_preventivo.php'; break 2; } ?>
 <?php /* Il codice sconto del primo anno (6E): fuori dal modulo del piano. */
       if (isset($acc)) { $pv = $pvScelto ?? null; $quantita = (int) ($acc['intended_quantity'] ?? 1) ?: 1; $torna = '/piano'; ?>
   <div class="panel stack" style="margin-top:20px;gap:10px;max-width:720px"><?php include dirname(__DIR__) . '/host/_sconto.php'; ?></div>

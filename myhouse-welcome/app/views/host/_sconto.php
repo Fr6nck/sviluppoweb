@@ -1,39 +1,44 @@
 <?php
-/* Il codice sconto del primo anno (6E), nel riquadro del piano. Riceve $acc, $pv (il piano,
-   può mancare), $quantita, $torna ('/piano' o il passo «Pubblica») e, se c'è già, $sc (Sconti::applicato).
-   Codice applicato: il messaggio e «Togli». Altrimenti «Hai un codice sconto?» apre il campo;
-   un codice non valido torna qui sotto il campo, con il motivo, e il campo resta compilato. */
+/* Il codice sconto del primo anno (6E) e, dalla 9A, tutti gli sconti che valgono per l'account: nel riquadro
+   del piano (/piano e passo «Pubblica»). Riceve $acc, $pv (il piano, può mancare), $quantita, $torna e,
+   se la pagina l'ha già calcolato, $riep (Sconti::riepilogo). Con $soloCampo il conto lo mostra la pagina
+   (il riepilogo del passo «Pubblica») e qui resta solo il campo.
+   Gli sconti di sistema (invito di un amico, giudizio) non si tolgono: un codice scritto a mano sì. Un codice
+   non valido torna qui sotto il campo, con il motivo, e il campo resta compilato. */
 use function MHW\b;
 use MHW\{Support, Csrf, Sconti, Plans};
 if (!Sconti::disponibili()) return;
-$sc = $sc ?? ($pv ? Sconti::applicato($acc, $pv, $quantita ?? 1) : null);
+$riep = $riep ?? ($pv ? Sconti::riepilogo($pv, (int) ($quantita ?? 1), $acc) : null);
+$soloCampo = $soloCampo ?? false;
 $errSconto = $_SESSION['sconto_errore'] ?? null; unset($_SESSION['sconto_errore']);
 $idS = 'sconto-' . substr(md5($torna), 0, 6);
-// «Codice X» oppure, per lo sconto di Invita un amico (riga di sistema), «Invito di Lucia».
-$chiSconto = function (array $riga) use ($acc): string {
-    if (!empty($riga['sistema']) && ($i = MHW\Inviti::invitato((int) $acc['id']))) {
-        return '<b>Invito di ' . Support::e(explode(' ', trim((string) $i['referrer_name']))[0]) . '</b>';
-    }
-    return 'Codice <b>' . Support::e($riga['code']) . '</b>';
-};
-$conInviti = MHW\Inviti::disponibili(); ?>
-<?php if ($sc): ?>
+$val = (string) ($pv['currency'] ?? 'EUR');
+$conInviti = MHW\Inviti::disponibili();
+// Il codice scritto a mano che vale (o varrebbe) e si può togliere; gli sconti di sistema senza piano scelto.
+$manuale = $riep['manuale'] ?? (!$pv && !empty($acc['intended_discount_code_id']) ? Sconti::riga((int) $acc['intended_discount_code_id']) : null);
+if ($manuale && !empty($manuale['sistema'])) $manuale = null;
+$sistema = $riep['sistema'] ?? Sconti::sistema($acc);
+$togli = fn() => '<form method="post" action="' . b() . '/sconto/togli" style="margin:0">' . Csrf::field() . '<input type="hidden" name="torna" value="' . Support::e($torna) . '"><button class="linkbtn">Togli</button></form>'; ?>
+<?php if (!$soloCampo && $riep && $riep['sconto'] > 0): ?>
   <div class="sconto-ok" role="status">
-    <p class="sconto-ok__prezzo" style="margin:0"><s><?= Support::e(Support::money($sc['prezzo'], $pv['currency'] ?? 'EUR')) ?></s>
-      <b><?= Support::e(Support::money($sc['scontato'], $pv['currency'] ?? 'EUR')) ?></b> + IVA il primo anno</p>
-    <p style="margin:0"><?= $chiSconto($sc['riga']) ?> applicato: <?= Support::e(Sconti::etichetta($sc['riga'])) ?> sul primo anno.
-      Dal secondo anno <?= Support::e(Support::money($sc['prezzo'], $pv['currency'] ?? 'EUR')) ?> + IVA.</p>
-    <form method="post" action="<?= b() ?>/sconto/togli" style="margin:0"><?= Csrf::field() ?><input type="hidden" name="torna" value="<?= Support::e($torna) ?>">
-      <button class="linkbtn">Togli</button></form>
+    <p class="sconto-ok__prezzo" style="margin:0"><s><?= Support::e(Support::money($riep['prezzo'], $val)) ?></s>
+      <b><?= Support::e(Support::money($riep['totale'], $val)) ?></b> + IVA il primo anno</p>
+    <?php foreach ($riep['righe'] as $rr): ?>
+      <p style="margin:0"><b><?= Support::e($rr['nome']) ?></b>: <?= $rr['percento'] > 0 ? '−' . (int) $rr['percento'] . '%' : '−' . Support::e(Support::money((int) $rr['cents'], $val)) ?> sul primo anno.</p>
+    <?php endforeach; ?>
+    <p style="margin:0">Dal secondo anno <?= Support::e(Support::money($riep['prezzo'], $val)) ?> + IVA.</p>
+    <?php if ($riep['nota'] !== ''): ?><p class="small" style="margin:0"><?= Support::e($riep['nota']) ?></p><?php endif; ?>
+    <?php if ($manuale): echo $togli(); endif; ?>
   </div>
-<?php elseif (!$pv && !$errSconto && !empty($acc['intended_discount_code_id']) && ($rigaSc = Sconti::riga((int) $acc['intended_discount_code_id']))): /* piano non ancora scelto */ ?>
+<?php elseif (!$soloCampo && !$pv && ($manuale || $sistema)): /* piano non ancora scelto */ ?>
   <div class="sconto-ok" role="status">
-    <p style="margin:0"><?= $chiSconto($rigaSc) ?> applicato: <?= Support::e(Sconti::etichetta($rigaSc)) ?> sul primo anno, sul piano che scegli.</p>
-    <form method="post" action="<?= b() ?>/sconto/togli" style="margin:0"><?= Csrf::field() ?><input type="hidden" name="torna" value="<?= Support::e($torna) ?>">
-      <button class="linkbtn">Togli</button></form>
+    <?php foreach ($sistema as $s): ?><p style="margin:0"><b><?= Support::e($s['nome']) ?></b>: −<?= (int) $s['percento'] ?>% sul primo anno, sul piano che scegli.</p><?php endforeach; ?>
+    <?php if ($manuale): ?><p style="margin:0">Codice <b><?= Support::e($manuale['code']) ?></b> applicato: <?= Support::e(Sconti::etichetta($manuale)) ?> sul primo anno, sul piano che scegli.<?= $sistema ? ' Non si somma agli altri sconti: vale il più alto.' : '' ?></p><?= $togli() ?><?php endif; ?>
   </div>
+<?php elseif ($soloCampo && $manuale): ?>
+  <div class="row" style="gap:10px;align-items:center"><span class="small">Codice <b><?= Support::e($manuale['code']) ?></b> applicato.</span><?= $togli() ?></div>
 <?php endif; ?>
-<?php if (!$sc || $errSconto): /* il campo: senza codice applicato, o per mostrare l'errore di un altro codice */ ?>
+<?php if (!$manuale || $errSconto): /* il campo: senza codice scritto a mano, o per mostrare l'errore di un altro codice */ ?>
   <details class="sconto"<?= $errSconto ? ' open' : '' ?>>
     <summary class="linkbtn"><?= $conInviti ? 'Hai un codice sconto o un invito?' : 'Hai un codice sconto?' ?></summary>
     <form method="post" action="<?= b() ?>/sconto/applica" class="sconto__form"><?= Csrf::field() ?>

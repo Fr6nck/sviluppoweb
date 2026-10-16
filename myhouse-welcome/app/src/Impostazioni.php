@@ -98,9 +98,15 @@ final class Impostazioni
         'inviti' => [
             'inviti.attivi' => ['MHW_INVITI', 'Accendi «Invita un amico»', 'check', 'I clienti con un abbonamento attivo vedono il loro link e il codice, e possono mandare l\'invito per email. Prima di accenderlo con le chiavi live, fai una prova in modalità test di Stripe.'],
         ],
+        // 9B · Giudizi con sconto: l'interruttore per i nuovi clienti, la percentuale e la sezione in home.
+        'giudizi' => [
+            'giudizi.sconto_attivo' => ['MHW_GIUDIZI_SCONTO', 'Sconto per i nuovi clienti che lasciano un giudizio', 'check', 'Acceso: la casella «Sì, voglio il 5% in più» prima del pagamento e «Partecipo» nel pannello. Spento: spariscono per chi non ha ancora aderito; chi ha già aderito conserva lo sconto promesso.'],
+            'giudizi.percentuale'   => ['MHW_GIUDIZI_PERCENTO', 'Percentuale dello sconto', 'text', 'Da 1 a 20. Di serie 5. Vale per chi aderisce da adesso in poi.'],
+            'giudizi.home'          => ['MHW_GIUDIZI_HOME', 'Sezione «Cosa dicono di noi» in home', 'check', 'La sezione compare solo se c\'è almeno un giudizio messo in home (Clienti → Giudizi).'],
+        ],
     ];
 
-    public const TITOLI = ['sito' => 'Sito', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'portali' => 'Portali', 'registri' => 'Registri', 'legale' => 'Titolare e documenti legali', 'inviti' => 'Invita un amico'];
+    public const TITOLI = ['sito' => 'Sito', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'portali' => 'Portali', 'registri' => 'Registri', 'legale' => 'Titolare e documenti legali', 'inviti' => 'Invita un amico', 'giudizi' => 'Giudizi con sconto'];
 
     public static function file(): string { return MHW_APP . '/config.local.php'; }
 
@@ -264,6 +270,7 @@ final class Impostazioni
                 $percorso === 'translate.region' && !preg_match('/^[a-z]{2}(-[a-z]+)+-\d$/', $grezzo) => 'La regione si scrive come eu-west-1.',
                 $percorso === 'translate.key' && !preg_match('/^[A-Z0-9]{16,128}$/', $grezzo) => 'L\'access key ID è fatto di lettere maiuscole e numeri, per esempio AKIA….',
                 $percorso === 'registri.giorni' && (!ctype_digit($grezzo) || (int) $grezzo < 30 || (int) $grezzo > 180) => 'Scrivi un numero di giorni tra 30 e 180.',
+                $percorso === 'giudizi.percentuale' && (!ctype_digit($grezzo) || (int) $grezzo < 1 || (int) $grezzo > 20) => 'La percentuale va da 1 a 20.',
                 $percorso === 'registri.regione' && !preg_match('/^[a-z]{2}(-[a-z]+)+-\d$/', $grezzo) => 'La regione si scrive come eu-south-1.',
                 $percorso === 'registri.bucket' && !preg_match('/^[a-z0-9][a-z0-9.\-]{1,61}[a-z0-9]$/', $grezzo) => 'Il nome del bucket ha solo lettere minuscole, numeri, punti e trattini.',
                 $percorso === 'registri.key' && !preg_match('/^[A-Z0-9]{16,128}$/', $grezzo) => 'L\'access key ID è fatto di lettere maiuscole e numeri, per esempio AKIA….',
@@ -397,6 +404,11 @@ final class Impostazioni
             switch ($gruppo) {
                 case 'sito':
                     return self::provaIndirizzi(rtrim((string) Config::get('base_url'), '/'));
+                case 'giudizi':
+                    $inHome = Giudizi::disponibili() ? (int) Db::val('SELECT COUNT(*) FROM testimonials WHERE account_id IS NOT NULL AND home_visible = 1 AND withdrawn_at IS NULL', [], 0) : 0;
+                    $aderiti = Giudizi::disponibili() ? (int) Db::val('SELECT COUNT(*) FROM accounts WHERE giudizio_adesione IS NOT NULL', [], 0) : 0;
+                    return [true, (Giudizi::attivo() ? 'Sconto acceso: ' . Giudizi::percentuale() . '%.' : 'Sconto spento per i nuovi clienti.') . ' ' . $aderiti . ' clienti hanno aderito; '
+                                  . $inHome . ' giudizi in home' . (Giudizi::homeAccesa() ? '.' : ' (sezione spenta).')];
                 case 'stripe':
                     if (!Stripe::enabled()) return [false, 'Stripe non è ancora configurato: servono la chiave segreta e il segreto del webhook.'];
                     Stripe::call('GET', 'balance');

@@ -27,6 +27,7 @@ final class TestiSito
         'scene'    => ['Le tre scene', 'Le tre foto sotto il titolo: il QR, l\'ospite, l\'host. Le foto si cambiano in fondo a questa pagina.'],
         'soddisfatti' => ['Più sanno, meglio stanno', 'Informazioni → recensioni → prenotazioni (8G): tre punti e la scheda con i quattro passi, tra le scene e «Cosa trova l\'ospite».'],
         'prodotto' => ['Cosa trova l\'ospite', ''],
+        'dicono'   => ['Cosa dicono di noi', 'I giudizi dei clienti che abbiamo messo in home (Clienti → Giudizi): la sezione compare solo se ce n\'è almeno uno. La nota in fondo è obbligatoria: si può cambiare, non togliere (vuota, torna quella di serie).'],
         'perchi'   => ['Per chi è', 'Le quattro schede: casa vacanza, B&B, agriturismo, più strutture.'],
         'tempo'    => ['Il tempo delle risposte', 'I numeri (16, 19 minuti…) restano quelli: qui si cambiano i testi intorno.'],
         'guadagno' => ['La guida che lavora per te', ''],
@@ -172,6 +173,11 @@ final class TestiSito
             // ---- chi la usa
             'voci.kicker' => ['voci', 'Riga sopra il titolo', 'riga', 'Chi la usa', ''],
             'voci.titolo' => ['voci', 'Titolo', 'riga', 'Le parole di chi ospita.', ''],
+            // ---- cosa dicono di noi (9B)
+            'dicono.kicker' => ['dicono', 'Riga sopra il titolo', 'riga', 'Cosa dicono di noi', ''],
+            'dicono.titolo' => ['dicono', 'Titolo', 'riga', 'Host veri, ospiti più sereni.', ''],
+            'dicono.sotto'  => ['dicono', 'Testo sotto il titolo', 'riga', 'Le parole di chi usa MyHouse Welcome ogni giorno.', ''],
+            'dicono.nota'   => ['dicono', 'Nota in fondo (obbligatoria)', 'area', 'Giudizi di clienti che hanno aderito al programma: chi lascia un giudizio riceve uno sconto del {giudizio}%, qualunque voto dia. Pubblicati con il loro accordo, senza link alle loro guide.', '{giudizio} è la percentuale dello sconto (Impostazioni). Non si può togliere.'],
             // ---- piani
             'piani.kicker' => ['piani', 'Riga sopra il titolo', 'riga', 'Piani e prezzi', ''],
             'piani.titolo' => ['piani', 'Titolo', 'riga', 'Scegli il piano.', ''],

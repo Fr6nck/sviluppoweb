@@ -237,14 +237,26 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
     // mostra in alto e, a registrazione fatta, si salva senza ripassare da /piano.
     $pvScelto = $piano ? Plans::currentVersion($piano) : null;
     $qScelta = $pvScelto ? Plans::quantity($pvScelto, Plans::perProperty($pvScelto) ? ($strutture ?: null) : 1) : null;
+    // 9A · Più strutture del massimo del Portfolio: niente piano, si chiede il preventivo (riquadro in cima).
+    $oltre = $pvScelto && Plans::perProperty($pvScelto) && $strutture > (int) $pvScelto['max_quantity'] ? $strutture : 0;
+    $pianoOltre = $oltre ? $pvScelto : null;   // la versione serve al riquadro del preventivo, anche se non si compra
     if ($qScelta === null) $pvScelto = null;
     // Chi è già dentro non si registra una seconda volta.
     if ($u = Auth::user()) Support::redirect($scelta ?: $doveComincia($u));
 
-    $err = null; $vecchi = ['name' => '', 'email' => ''];
+    // 9A · Il codice di invito: dal link /i/CODICE (in sessione, campo in sola lettura) o scritto a mano nel modulo.
+    $invitoLink = (string) ($_SESSION['invito'] ?? '');
+    if ($invitoLink !== '' && !(($chiL = MHW\Inviti::daCodice($invitoLink)) && MHW\Inviti::puoInvitare($chiL))) { $invitoLink = ''; unset($_SESSION['invito']); }
+    $err = null; $vecchi = ['name' => '', 'email' => '', 'codice_invito' => ''];
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $vecchi = ['name' => (string) ($_POST['name'] ?? ''), 'email' => (string) ($_POST['email'] ?? ''), 'email2' => (string) ($_POST['email2'] ?? '')];
+        $vecchi = ['name' => (string) ($_POST['name'] ?? ''), 'email' => (string) ($_POST['email'] ?? ''), 'email2' => (string) ($_POST['email2'] ?? ''),
+                   'codice_invito' => strtoupper(trim((string) ($_POST['codice_invito'] ?? '')))];
         try {
+            // 9A · Un codice di invito scritto a mano si controlla prima di creare l'account: se non vale, si corregge.
+            $codiceAMano = $invitoLink === '' ? $vecchi['codice_invito'] : '';
+            if ($codiceAMano !== '' && !(($chiM = MHW\Inviti::daCodice($codiceAMano)) && MHW\Inviti::puoInvitare($chiM))) {
+                throw new RuntimeException('Questo codice non esiste o non è più attivo. Controlla con chi te l\'ha dato.');
+            }
             if (!RateLimit::hit('register:' . RateLimit::ipKey(), 10, 3600)) {
                 throw new RuntimeException('Troppe registrazioni da questa connessione. Riprova tra un\'ora.');
             }
@@ -273,6 +285,10 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
             if (($inv = (string) ($_SESSION['invito'] ?? '')) !== '') {
                 if ($chi = MHW\Inviti::daCodice($inv)) MHW\Inviti::collega(Auth::account(), $chi);
                 unset($_SESSION['invito']);
+            } elseif ($codiceAMano !== '') {
+                // 9A · Il codice scritto nel modulo: gli stessi controlli di chi lo scrive nel pannello.
+                try { MHW\Inviti::applicaCodice(Auth::account(), $codiceAMano); }
+                catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'avviso'); }
             }
             Auth::sendVerification((int) $u['user_id']);
             MHW\RateLimit::hit('verifica-attesa:' . (int) $u['user_id'], 1, 60);
@@ -284,9 +300,14 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
     }
     // La stessa fascia della landing: codice sconto dal link o invito di un amico.
     $invito = $chiInvita();
+    // 9A · Lo sconto dell'invito, per i prezzi barrati: dal link, oppure dal codice scritto a mano se vale.
+    $chiScritto = $invito || $vecchi['codice_invito'] === '' ? null : MHW\Inviti::daCodice($vecchi['codice_invito']);
+    if ($chiScritto && !MHW\Inviti::puoInvitare($chiScritto)) $chiScritto = null;
+    $nomeInvito = $invito ? explode(' ', trim((string) $invito['user_name']))[0] : ($chiScritto ? explode(' ', trim((string) $chiScritto['user_name']))[0] : '');
     View::out('auth/register', ['err' => $err, 'piano' => $piano, 'strutture' => $strutture, 'vecchi' => $vecchi,
                                 'pianoScelto' => $pvScelto, 'quantita' => $qScelta, 'codiceSconto' => $codiceSconto,
-                                'invitoDi' => $invito ? explode(' ', trim((string) $invito['user_name']))[0] : ''], 'layout/bare');
+                                'invitoDi' => $invito ? $nomeInvito : '', 'invitoCodice' => $invitoLink, 'oltre' => $oltre, 'pianoOltre' => $pianoOltre,
+                                'scontoInvito' => $nomeInvito !== '' ? [['tipo' => 'invito', 'nome' => 'Invito di ' . $nomeInvito, 'percento' => MHW\Inviti::AMICO]] : []], 'layout/bare');
 });
 
 $r->any('/accedi', function () use ($guard, $doveComincia) {
@@ -424,6 +445,36 @@ $r->any('/password/nuova/{token}', function (array $a) {
     View::out('auth/reset', ['valido' => true, 'err' => $err, 'token' => $a['token']], 'layout/bare');
 });
 
+// ------------------------------------------------------------- 9A · preventivo oltre il massimo del Portfolio
+/*
+ * «N strutture? Ti facciamo una proposta su misura»: il modulo nella home, in /piano e in registrazione.
+ * Funziona anche senza JavaScript. Si torna alla pagina di partenza con l'esito nel riquadro.
+ */
+$r->post('/preventivo', function () {
+    $torna = (string) ($_POST['torna'] ?? '/');
+    if (!preg_match('#^/(en|piano|registrati)?(\?[a-z0-9=&_-]*)?$#i', $torna)) $torna = '/';
+    $u = Auth::user();
+    $acc = $u && $u['role'] !== 'admin' ? Auth::account() : null;
+    $lingua = str_starts_with($torna, '/en') ? 'en' : 'it';
+    try {
+        MHW\Preventivi::salva($_POST, $acc, $lingua);
+        $_SESSION['preventivo_ok'] = (int) ($_POST['strutture'] ?? 0);
+        if (str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json')) Support::json(['ok' => true]);
+    } catch (\RuntimeException $e) {
+        if (str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json')) Support::json(['ok' => false, 'errore' => $e->getMessage()], 422);
+        $_SESSION['preventivo_errore'] = ['msg' => $e->getMessage()] + array_map(fn($v) => is_string($v) ? mb_substr($v, 0, 2000) : '', array_intersect_key($_POST, array_flip(['nome', 'email', 'telefono', 'messaggio', 'strutture'])));
+    }
+    Support::redirect($torna . '#preventivo');
+});
+
+/* 9A · «Applica» accanto al codice di invito in registrazione: dice se il codice vale e di chi è. */
+$r->post('/invito/verifica', function () {
+    if (!RateLimit::hit('invito-verifica:' . RateLimit::ipKey(), 20, 900)) Support::json(['ok' => false, 'errore' => 'Troppi tentativi: riprova tra un quarto d\'ora.'], 429);
+    $chi = MHW\Inviti::daCodice((string) ($_POST['codice'] ?? ''));
+    if (!$chi || !MHW\Inviti::puoInvitare($chi)) Support::json(['ok' => false, 'errore' => 'Questo codice non esiste o non è più attivo. Controlla con chi te l\'ha dato.'], 404);
+    Support::json(['ok' => true, 'nome' => explode(' ', trim((string) $chi['user_name']))[0] ?: 'un amico', 'percento' => MHW\Inviti::AMICO]);
+});
+
 // ------------------------------------------------------------- scelta del piano
 $r->any('/piano', function () use ($salvaPiano) {
     $u = Auth::requireUser();
@@ -445,6 +496,8 @@ $r->any('/piano', function () use ($salvaPiano) {
         if (!$pv) { Support::flash('Scegli uno dei piani in elenco.', 'err'); Support::redirect('/piano'); }
         $q = Plans::quantity($pv, Plans::perProperty($pv) ? (string) ($_POST['strutture'] ?? '') : 1);
         if ($q === null) {
+            // 9A · Oltre il massimo non si compra: si chiede il preventivo (il riquadro si apre già compilato).
+            if (Plans::perProperty($pv) && (int) ($_POST['strutture'] ?? 0) > (int) $pv['max_quantity']) Support::redirect('/piano?piano=' . (int) $pv['id'] . '&strutture=' . (int) $_POST['strutture'] . '#preventivo');
             Support::flash('Indica un numero intero di strutture tra ' . (int) $pv['min_quantity'] . ' e ' . (int) $pv['max_quantity'] . '.', 'err');
             Support::redirect('/piano?piano=' . (int) $pv['id']);
         }
@@ -537,6 +590,13 @@ $nonDisponibile = function (string $loc, bool $esiste): never {
 
 $guida = function (string $slug) use ($linguaOspite, $nonDisponibile): array {
     $g = Guide::bySlug($slug);
+    // 9C: i vecchi indirizzi della vetrina (casa-checco-N delle vetrine rifatte) portano a quella attuale, con un 301.
+    if (!$g && preg_match('/^casa-checco(-[a-z0-9-]+)?$/', $slug) && ($v = MHW\Demo::vetrinaAttuale()) && $v['slug'] !== $slug) {
+        $percorso = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+        $nuovo = preg_replace('#/g/' . preg_quote($slug, '#') . '(?=/|$)#', '/g/' . $v['slug'], $percorso, 1);
+        header('Location: ' . ($nuovo !== null && $nuovo !== $percorso ? $nuovo : Support::url('/g/' . $v['slug'])), true, 301);
+        exit;
+    }
     if (!$g) $nonDisponibile('it', false);
     [$loc, $scelta] = $linguaOspite($g['snapshot']);
     if (!$g['online']) $nonDisponibile($loc, true);
@@ -643,6 +703,17 @@ $r->get('/g/{slug}/c/{tok}/{pagina}', fn(array $a) => Support::redirect('/g/' . 
 
 // I file caricati su disco li serve PHP, così restano fuori dalla cartella pubblica.
 // (Con S3 gli URL puntano direttamente al bucket o al CDN.)
+/* 9B · Un'immagine ridotta (lato massimo in px) per le schede della home: dalla cache o creata al volo. */
+$r->get('/img/{id}/{max}', function (array $a) {
+    $ris = MHW\Media::ridottaBytes((int) $a['id'], (int) $a['max']);
+    if (!$ris) { http_response_code(404); exit; }
+    header_remove('Cache-Control');
+    header('Content-Type: ' . $ris[1]);
+    header('Cache-Control: public, max-age=604800');
+    header('X-Content-Type-Options: nosniff');
+    echo $ris[0]; exit;
+});
+
 $r->get('/media/{file}', function (array $a) {
     $name = basename($a['file']);
     $m = Db::one('SELECT * FROM media WHERE filename = ?', [$name]);

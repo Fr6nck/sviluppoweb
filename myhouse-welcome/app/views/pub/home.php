@@ -272,6 +272,25 @@ $disegni = [
 
 <?php /* Per chi è: quattro modi di ospitare, a ognuno il suo uso della guida. Niente numeri e
    niente promesse: solo quello che il prodotto fa davvero. */ ?>
+<?php /* 9B · «Cosa dicono di noi»: i giudizi dei clienti che hanno aderito al programma e che abbiamo messo in home (Giudizi::perHome).
+   Compare solo se ce n'è almeno uno. Nessun link e nessuna area toccabile verso le guide; la nota in fondo è obbligatoria. */
+      $dicono = MHW\Giudizi::perHome(); if ($dicono): ?>
+<section id="cosa-dicono" class="blocco dicono" aria-labelledby="dicono-titolo">
+  <div class="stack stack--sm" style="max-width:640px">
+    <span class="kicker"><?= $T('dicono.kicker') ?></span>
+    <h2 id="dicono-titolo" class="h-sezione"><?= $T('dicono.titolo') ?></h2>
+    <p class="muted" style="line-height:24px"><?= $T('dicono.sotto') ?></p>
+    <?php if (($mediaDicono = MHW\Testimonianze::media())): ?>
+      <p class="voci__media"><span class="stelline" aria-hidden="true">★</span><b><?= Support::e($en ? (string) $mediaDicono['media'] : str_replace('.', ',', (string) $mediaDicono['media'])) ?> <?= $U('su 5', 'out of 5') ?></b> <?= $U('da', 'from') ?> <?= (int) $mediaDicono['n'] ?> host<?= $en ? 's' : '' ?></p>
+    <?php endif; ?>
+  </div>
+  <div class="dicono__schede" role="list">
+    <?php foreach ($dicono as $g): ?><div role="listitem" class="dicono__scheda"><?php include __DIR__ . '/_dicono_scheda.php'; ?></div><?php endforeach; ?>
+  </div>
+  <p class="dicono__nota"><?= $T('dicono.nota', ['giudizio' => MHW\Giudizi::percentuale()]) ?></p>
+</section>
+<?php endif; ?>
+
 <section id="per-chi" class="blocco" aria-labelledby="perchi-titolo">
   <div class="come__testa">
     <span class="kicker"><?= $T('perchi.kicker') ?></span>
@@ -441,10 +460,12 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
             <div class="plan__quante">
               <?php $pvS = $primo; $qS = $minimo; include __DIR__ . '/_scaglioni.php'; ?>
               <label for="<?= $idSel ?>" class="plan__label"><?= $U('Quante strutture vuoi gestire?', 'How many properties do you manage?') ?></label>
+              <?php /* 9A: si può scrivere fino a 999; oltre il massimo del listino (data-max-prezzo) il prezzo sparisce e
+                       si apre il riquadro del preventivo sotto le schede. Il server rifiuta comunque un ordine oltre il massimo. */ ?>
               <input id="<?= $idSel ?>" name="strutture" type="number" inputmode="numeric" step="1" required
-                     min="<?= $minimo ?>" max="<?= (int) $primo['max_quantity'] ?>" value="<?= $minimo ?>">
-              <div class="plan__oltre" data-oltre hidden><p><?= $U('Più di ' . (int) $primo['max_quantity'] . ' strutture? Ti facciamo una proposta.', 'More than ' . (int) $primo['max_quantity'] . ' properties? We will make you an offer.') ?></p>
-                <a class="btn btn--sm" href="<?= Support::e(Support::mailtoPreventivo()) ?>"><?= $U('Chiedi un preventivo', 'Ask for a quote') ?></a></div>
+                     min="<?= $minimo ?>" max="999" data-max-prezzo="<?= (int) $primo['max_quantity'] ?>" value="<?= $minimo ?>">
+              <div class="plan__oltre" data-oltre hidden><p><?= $U('Più di ' . (int) $primo['max_quantity'] . ' strutture? Ti facciamo una proposta su misura.', 'More than ' . (int) $primo['max_quantity'] . ' properties? We will make you a tailored offer.') ?></p>
+                <a class="btn btn--sm" href="#preventivo"><?= $U('Chiedi il preventivo', 'Ask for a quote') ?></a></div>
             </div>
             <div class="plan__prezzo">
               <span class="price" aria-live="polite"><span data-totale><?= Support::e(Support::money(Plans::price($primo, $minimo), $primo['currency'])) ?></span><small><?= $U(' + IVA / anno', ' + VAT / year') ?></small></span>
@@ -464,6 +485,8 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
       </div>
     <?php endforeach; ?>
   </div>
+  <?php /* 9A · Il riquadro del preventivo, sotto le schede: si apre oltre il massimo del Portfolio. */
+        foreach ($offers as $of) foreach ($of['options'] as $oP) if (Plans::perProperty($oP)) { $pvP = $oP; $qP = 0; $tornaP = $en ? '/en' : '/'; include __DIR__ . '/_preventivo.php'; break 2; } ?>
   <?php include __DIR__ . '/_confronto.php'; ?>
   <p class="piani__nota"><?= $T('piani.nota') ?></p>
 </section>

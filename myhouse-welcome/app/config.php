@@ -76,6 +76,12 @@ $config = [
     'inviti' => [
         'attivi' => $bool('MHW_INVITI'),
     ],
+    // 9B · «Ti piace MyHouse Welcome?»: lo sconto per chi lascia un giudizio (di serie acceso, 5%) e la sezione in home.
+    'giudizi' => [
+        'sconto_attivo' => $bool('MHW_GIUDIZI_SCONTO', true),
+        'percentuale'   => (int) $env('MHW_GIUDIZI_PERCENTO', '5'),
+        'home'          => $bool('MHW_GIUDIZI_HOME', true),
+    ],
 
     // 8I: i registri (log). Quanti giorni restano sul server i registri tecnici (30–180, di serie 90; la posta
     // di prova 7) e il bucket S3 a parte dove ogni notte va la copia di quelli del giorno prima, con chiavi
@@ -149,8 +155,8 @@ $config = [
     // ricevono l'avviso (email una volta sola e riga nel pannello) e la finestra «Accetto» arriva a quella data.
     // Si cambiano da Amministrazione → Impostazioni → Titolare e documenti legali.
     'legal' => [
-        'terms_version'   => $env('MHW_TERMS_VERSION', '2026-10-15'),
-        'privacy_version' => $env('MHW_PRIVACY_VERSION', '2026-10-15'),
+        'terms_version'   => $env('MHW_TERMS_VERSION', '2026-10-16'),   // 9B: punto «Giudizio con sconto»
+        'privacy_version' => $env('MHW_PRIVACY_VERSION', '2026-10-16'),   // 9A/9B: preventivi, giudizi
         'dpa_version'     => $env('MHW_DPA_VERSION', '2026-10-15'),
         // 8J: il titolare del trattamento e fornitore del servizio.
         'company'         => $env('MHW_COMPANY', 'City Up S.r.l.'),

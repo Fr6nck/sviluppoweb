@@ -393,7 +393,7 @@ final class Seo
             $riga = '- ' . $p['name'] . ': ';
             if (Plans::perProperty($p)) {
                 $riga .= $m((int) $p['price_cents']) . ' la prima struttura, poi '
-                    . implode('; ', array_map(fn($x) => $m($x['cents']) . ' ' . Plans::tierLabel($x), Plans::tiers($p)))
+                    . implode('; ', array_map(fn($x) => $m($x['cents']) . ' ' . Plans::tierLabel($x, (int) $p['max_quantity']), Plans::tiers($p)))
                     . ' per ogni struttura in più; da ' . (int) $p['min_quantity'] . ' a ' . (int) $p['max_quantity'] . ' strutture'
                     . ' (con ' . (int) $p['min_quantity'] . ': ' . $m(Plans::price($p, max(1, (int) $p['min_quantity']))) . ')';
             } else {

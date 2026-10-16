@@ -131,6 +131,11 @@ return [
     // ---- voci
     'voci.kicker' => 'Who uses it',
     'voci.titolo' => 'In our hosts\' words.',
+    // ---- what our customers say (9B)
+    'dicono.kicker' => 'What our customers say',
+    'dicono.titolo' => 'Real hosts, calmer guests.',
+    'dicono.sotto'  => 'The words of people who use MyHouse Welcome every day.',
+    'dicono.nota'   => 'Reviews by customers who joined the programme: whoever leaves a review gets a {giudizio}% discount, whatever the rating. Published with their agreement, with no link to their guides.',
     // ---- piani
     'piani.kicker' => 'Plans and pricing',
     'piani.titolo' => 'Choose your plan.',

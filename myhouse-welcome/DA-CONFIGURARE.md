@@ -228,6 +228,25 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 5. **Matomo** (se usato, 8H) → Amministrazione → Privacy: «Anonimizza i dati di tracciamento» a 2 byte e **«Elimina i vecchi dati grezzi» dopo 180 giorni** (i report aggregati restano).
 6. **Registro dei trattamenti:** aggiungi «Registri tecnici e di sicurezza» con queste durate: registri tecnici 90 giorni sul server (o quelli scelti), posta di prova 7 giorni, limiti ai tentativi 24 ore (IP come codice), accessi degli amministratori 6 mesi inalterabili e 12 mesi in tutto su S3 Milano.
 
+## 4i. Fase 9 (9A, 9B, 9C)
+
+**9A · Portfolio progressivo e controlli Stripe**
+- La migrazione **043** crea la versione nuova del Portfolio (117 € + 60/50/40 a scaglioni, da 2 a 10) con i Price ID vuoti: il sito crea i Price nuovi su Stripe alla prima vendita (il Price graduato della struttura aggiuntiva ha `up_to` 1, 4, inf). Chi ha già un Portfolio resta sulla sua versione.
+- **Prima di andare online** (e dopo ogni cambio di listino), con le chiavi di **prova** (`sk_test_`) in `config.local.php` o nelle variabili: `php app/tools/verifica-stripe.php`. Crea una sessione di Checkout per Essential, Plus e Portfolio da 2 a 10, con e senza il 5%, fa i due controlli e la fa scadere; tutte le righe devono dire «ok». Con la chiave viva si rifiuta.
+- Se nel Quadro compare «Prezzi su Stripe diversi dal listino», il pagamento di quella versione è fermo: correggi i Price su Stripe oppure svuota i Price ID della versione in Vendite → Piani (nuova versione con gli stessi importi: i Price ID si tengono solo se importo e scaglioni sono identici).
+- Le richieste di **preventivo** (più di 10 strutture) arrivano all'indirizzo di contatto (`MHW_CONTACT_EMAIL`) e in Amministrazione → Vendite → Preventivi: la promessa è una risposta entro un giorno lavorativo. Si cancellano dopo 12 mesi.
+
+**9B · Giudizio con sconto**
+- La migrazione **044** aggiunge gli stati dell'adesione e delle immagini scelte. Di serie: sconto **acceso**, **5%**, sezione «Cosa dicono di noi» accesa (Impostazioni → Giudizi con sconto; variabili `MHW_GIUDIZI_SCONTO`, `MHW_GIUDIZI_PERCENTO`, `MHW_GIUDIZI_HOME`). Spento, la casella al pagamento e «Partecipo» spariscono per chi non ha ancora aderito.
+- I giudizi vanno in home solo quando li accendi in **Clienti → Giudizi** («In home»). I giudizi già pubblicati con il consenso (7D) sono rimasti in home.
+- **Termini e Privacy sono cambiati** (punto 17 «Giudizio con sconto»; trattamento «Giudizi e pareri dei clienti» su base contratto): versioni di serie **2026-10-16** (`MHW_TERMS_VERSION`, `MHW_PRIVACY_VERSION`); il DPA resta 2026-10-15. I clienti con un abbonamento ricevono l'avviso e ri-accettano al primo accesso. Se hai cambiato i testi legali da Testi e foto, rileggi il punto 17 e il trattamento 6 (e in inglese). Da far rivedere a un legale: il programma è una recensione incentivata (direttiva Omnibus): lo sconto non dipende dal voto ed è scritto ovunque.
+- Il coupon Stripe `mhw-giudizio-5` (una volta) e `mhw-primo-anno-N` (invito + giudizio) li crea il sito; non vanno creati a mano.
+
+**9C · Email, telefono, vetrina**
+- Il marchio ora viaggia **dentro** le email (`cid:marchio`): si vede anche con le immagini esterne bloccate. Imposta comunque `base_url` (Impostazioni → Sito): i link e le icone social delle email mandate dal cron (senza un browser) lo usano; se è vuoto il Quadro lo segnala.
+- Per Gmail e Outlook: **SPF, DKIM e DMARC** sul dominio del mittente (`MAIL_FROM`): sono quelli che tengono le email fuori dallo spam e fanno mostrare le immagini esterne (le icone social). Senza, il marchio incorporato si vede lo stesso.
+- La vetrina «Casa Checco» ha sempre l'indirizzo `/g/casa-checco` (con «Indirizzi puliti» spenti, `/index.php/g/casa-checco`); i vecchi `/g/casa-checco-2`… rispondono con un 301. L'indirizzo attuale, con «Apri» e «Copia», è in Amministrazione → scheda del cliente della vetrina. Se `/g/casa-checco` fosse di un cliente vero, la vetrina tiene il numero e la scheda lo dice.
+
 ## 4b. La guida vetrina (la demo della landing)
 
 La demo della landing si sposta su un account vero, quello dell'agenzia.
