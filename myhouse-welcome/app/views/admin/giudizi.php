@@ -23,6 +23,23 @@ $pct = Giudizi::percentuale(); ?>
       <span class="cifra__nota"><?= Giudizi::homeAccesa() ? 'giudizi mostrati in «Cosa dicono di noi»' : 'sezione spenta (Impostazioni)' ?></span></div>
   </div>
 
+  <?php /* 9B · Gli interruttori del programma, qui (le stesse voci di Impostazioni → Giudizi con sconto): acceso, percentuale, quando si applica, sezione in home. */
+        $qG = Giudizi::quando(); ?>
+  <form method="post" action="<?= b() ?>/admin/giudizi/impostazioni" class="panel giudizi-programma" id="programma" aria-labelledby="programma-titolo"><?= Csrf::field() ?>
+    <h2 id="programma-titolo" class="sr-only">Il programma</h2>
+    <label class="scelta scelta--mini"><input type="checkbox" name="giudizi__sconto_attivo" value="1"<?= Giudizi::attivo() ? ' checked' : '' ?>><span>Sconto del <?= $pct ?>% per i nuovi clienti <b><?= Giudizi::attivo() ? 'attivo' : 'spento' ?></b></span></label>
+    <div class="field giudizi-programma__campo" style="margin:0"><label for="gp-percentuale">Percentuale</label><input id="gp-percentuale" name="giudizi__percentuale" type="text" inputmode="numeric" value="<?= $pct ?>" style="width:5em"></div>
+    <div class="field giudizi-programma__campo" style="margin:0"><label for="gp-quando">Sconto applicato</label>
+      <select id="gp-quando" name="giudizi__sconto_quando" aria-describedby="gp-quando-aiuto">
+        <option value="adesione"<?= $qG === 'adesione' ? ' selected' : '' ?>>all'adesione (anche se il giudizio arriva dopo)</option>
+        <option value="giudizio"<?= $qG === 'giudizio' ? ' selected' : '' ?>>solo dopo il giudizio</option>
+      </select></div>
+    <label class="scelta scelta--mini"><input type="checkbox" name="giudizi__home" value="1"<?= Giudizi::homeAccesa() ? ' checked' : '' ?>><span>Sezione in home <b><?= Giudizi::homeAccesa() ? 'visibile' : 'spenta' ?></b> (<?= (int) $inHome ?> pubblicati)</span></label>
+    <div class="field giudizi-programma__campo" style="margin:0"><label for="gp-password">La tua password, per confermare</label><input id="gp-password" name="password" type="password" autocomplete="current-password" required style="width:12em"></div>
+    <button class="btn btn--sm">Salva</button>
+    <p class="help" id="gp-quando-aiuto" style="flex-basis:100%;margin:0">«All'adesione»: chi spunta la casella al pagamento ha lo sconto sul primo addebito, anche se il giudizio arriva dopo. «Solo dopo il giudizio»: lo sconto parte quando il giudizio è stato inviato, sul primo addebito se arriva prima (per esempio durante i mesi di un codice omaggio), altrimenti sul rinnovo. Vale per chi aderisce da adesso in poi.</p>
+  </form>
+
   <nav class="row" style="gap:6px;flex-wrap:wrap" aria-label="Filtri">
     <?php foreach ($filtri as $k => $et): ?><a class="btn btn--sm <?= $filtro === $k ? '' : 'btn--ghost' ?>" href="<?= b() ?>/admin/giudizi<?= $k === 'tutti' ? '' : '?filtro=' . $k ?>" <?= $filtro === $k ? 'aria-current="page"' : '' ?>><?= $et ?></a><?php endforeach; ?>
   </nav>

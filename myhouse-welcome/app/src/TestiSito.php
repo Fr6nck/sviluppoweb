@@ -46,6 +46,8 @@ final class TestiSito
         'dpa'      => ['Accordo sul trattamento dei dati (DPA)', 'La pagina /dpa (e /en/dpa): l\'Allegato A dei Termini, che l\'host accetta alla registrazione.'],
         'legale'   => ['Aggiornamenti dei documenti', 'Le novità in tre righe: nella finestra «Abbiamo aggiornato i Termini e l\'Informativa» del pannello e nell\'email di avviso. Solo in italiano (il pannello è in italiano).'],
         'sito'     => ['Anche il tuo sito', 'Il blocco del colore di MyHouse in fondo: un percorso a due domande, poi il contatto (8A). Gli stessi testi nel pannello.'],
+        // 9D · il messaggio pronto dei codici omaggio (Vendite → Codici omaggio: WhatsApp, email, copia)
+        'omaggio'  => ['Codici omaggio', 'Il messaggio pronto da mandare con un codice omaggio (Vendite → Codici omaggio). Segnaposto: {mesi}, {link}, {codice}, {scadenza}.'],
     ];
 
     /**
@@ -177,6 +179,7 @@ final class TestiSito
             'dicono.kicker' => ['dicono', 'Riga sopra il titolo', 'riga', 'Cosa dicono di noi', ''],
             'dicono.titolo' => ['dicono', 'Titolo', 'riga', 'Host veri, ospiti più sereni.', ''],
             'dicono.sotto'  => ['dicono', 'Testo sotto il titolo', 'riga', 'Le parole di chi usa MyHouse Welcome ogni giorno.', ''],
+            'omaggio.messaggio' => ['omaggio', 'Messaggio con il codice omaggio', 'area', 'Ciao! Ti abbiamo riservato {mesi} mesi gratis di MyHouse Welcome, la guida digitale per i tuoi ospiti. Vai su {link}, crea la guida e inserisci la carta: oggi non paghi nulla, il primo addebito è tra {mesi} mesi, e prima ti avvisiamo. Il codice {codice} vale fino al {scadenza}.', 'Lo manda l\'amministrazione su WhatsApp o per email: {mesi}, {link}, {codice} e {scadenza} si compilano da soli.'],
             'dicono.nota'   => ['dicono', 'Nota in fondo (obbligatoria)', 'area', 'Giudizi di clienti che hanno aderito al programma: chi lascia un giudizio riceve uno sconto del {giudizio}%, qualunque voto dia. Pubblicati con il loro accordo, senza link alle loro guide.', '{giudizio} è la percentuale dello sconto (Impostazioni). Non si può togliere.'],
             // ---- piani
             'piani.kicker' => ['piani', 'Riga sopra il titolo', 'riga', 'Piani e prezzi', ''],

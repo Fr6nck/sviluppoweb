@@ -39,6 +39,24 @@ final class Giudizi
         return self::disponibili() && !empty((Config::get('giudizi') ?? [])['home']);
     }
 
+    /**
+     * 9B · Quando si applica lo sconto (Impostazioni → Giudizi): «adesione» = al primo addebito se ha spuntato la casella,
+     * anche se il giudizio arriva dopo; «giudizio» = solo dopo il giudizio inviato (al primo addebito se arriva prima,
+     * per esempio nei mesi di un codice omaggio, altrimenti al rinnovo).
+     */
+    public static function quando(): string
+    {
+        return ((Config::get('giudizi') ?? [])['sconto_quando'] ?? 'adesione') === 'giudizio' ? 'giudizio' : 'adesione';
+    }
+
+    /** La riga in più sotto la casella quando lo sconto arriva solo dopo il giudizio. */
+    public static function spiegaQuando(): string
+    {
+        return self::quando() === 'giudizio'
+            ? 'Lo sconto parte quando hai lasciato il giudizio: sul primo addebito se lo lasci prima, altrimenti sul rinnovo successivo.'
+            : '';
+    }
+
     /** Lo sconto del programma, in percento (Impostazioni → Giudizi; di serie 5). */
     public static function percentuale(): int
     {
@@ -105,7 +123,9 @@ final class Giudizi
     {
         if (!self::disponibili() || empty($acc['giudizio_adesione'])) return null;
         $stato = (string) ($acc['giudizio_sconto_stato'] ?? '');
-        $vale = ($acc['giudizio_adesione'] === 'pagamento' && $stato === 'promesso') || $stato === 'da_applicare_rinnovo';
+        // «Solo dopo il giudizio»: la casella al pagamento promette lo sconto, ma sul primo addebito lo si ha solo con il giudizio già inviato.
+        $conGiudizio = self::quando() === 'adesione' || (($g = Testimonianze::diAccount((int) $acc['id'])) && $g['withdrawn_at'] === null);
+        $vale = ($acc['giudizio_adesione'] === 'pagamento' && $stato === 'promesso' && $conGiudizio) || $stato === 'da_applicare_rinnovo';
         return $vale ? ['tipo' => 'giudizio', 'nome' => 'Giudizio', 'percento' => self::percentuale()] : null;
     }
 
@@ -113,6 +133,8 @@ final class Giudizi
     public static function pagato(array $order): void
     {
         if (!self::disponibili() || !str_contains((string) ($order['sconti'] ?? ''), 'giudizio:')) return;
+        // 9D · Con un codice omaggio il primo addebito è alla fine dei mesi gratis: lo segna la fattura (fattura()), non il Checkout.
+        if (!empty($order['codice_omaggio_id'])) return;
         Db::update('accounts', ['giudizio_sconto_stato' => 'applicato_primo_anno', 'giudizio_sconto_at' => Support::now()], 'id = :aid', ['aid' => (int) $order['account_id']]);
     }
 
@@ -122,7 +144,12 @@ final class Giudizi
      */
     public static function dopoGiudizio(array $acc): void
     {
-        if (!self::disponibili() || ($acc['giudizio_adesione'] ?? '') !== 'pannello' || ($acc['giudizio_sconto_stato'] ?? '') !== 'promesso') return;
+        if (!self::disponibili() || ($acc['giudizio_sconto_stato'] ?? '') !== 'promesso') return;
+        $adesione = (string) ($acc['giudizio_adesione'] ?? '');
+        // Adesione al pagamento con «solo dopo il giudizio»: finché non ha pagato lo sconto resta promesso (andrà sul primo
+        // addebito come sconto di sistema); con un abbonamento già attivo (o in omaggio) va sul prossimo addebito, col coupon.
+        if ($adesione === 'pagamento' && (self::quando() !== 'giudizio' || !Subscriptions::active((int) $acc['id']))) return;
+        if ($adesione !== 'pagamento' && $adesione !== 'pannello') return;
         Db::update('accounts', ['giudizio_sconto_stato' => 'da_applicare_rinnovo'], 'id = :aid', ['aid' => (int) $acc['id']]);
         try { self::aggiungiCoupon((int) $acc['id']); } catch (\Throwable $e) { Log::exception($e, 'giudizi: coupon sul rinnovo'); }
     }
@@ -190,12 +217,16 @@ final class Giudizi
     {
         if (!self::disponibili() || ($inv['billing_reason'] ?? '') !== 'subscription_cycle') return;
         $aid = (int) $sub['account_id'];
-        if ((string) Db::val('SELECT giudizio_sconto_stato FROM accounts WHERE id = ?', [$aid], '') !== 'da_applicare_rinnovo') return;
+        $a = Db::one('SELECT giudizio_adesione, giudizio_sconto_stato FROM accounts WHERE id = ?', [$aid]) ?: [];
+        $stato = (string) ($a['giudizio_sconto_stato'] ?? '');
+        // 9D · Il primo addebito dopo i mesi gratis: lo sconto promesso al pagamento (coupon sulla prima fattura) è applicato al primo anno.
+        $primoAddebito = $stato === 'promesso' && ($a['giudizio_adesione'] ?? '') === 'pagamento' && !empty($sub['omaggio_fino']);
+        if ($stato !== 'da_applicare_rinnovo' && !$primoAddebito) return;
         $sconto = 0;
         foreach ((array) ($inv['total_discount_amounts'] ?? []) as $d) $sconto += (int) ($d['amount'] ?? 0);
         if ($sconto === 0 && isset($inv['subtotal'], $inv['total_excluding_tax'])) $sconto = max(0, (int) $inv['subtotal'] - (int) $inv['total_excluding_tax']);
-        if ($sconto <= 0) { Log::error('Giudizi: rinnovo senza lo sconto atteso', ['account' => $aid, 'invoice' => (string) ($inv['id'] ?? '')]); return; }
-        Db::update('accounts', ['giudizio_sconto_stato' => 'applicato_rinnovo', 'giudizio_sconto_at' => Support::now()], 'id = :aid', ['aid' => $aid]);
+        if ($sconto <= 0) { if (!$primoAddebito) Log::error('Giudizi: rinnovo senza lo sconto atteso', ['account' => $aid, 'invoice' => (string) ($inv['id'] ?? '')]); return; }
+        Db::update('accounts', ['giudizio_sconto_stato' => $primoAddebito ? 'applicato_primo_anno' : 'applicato_rinnovo', 'giudizio_sconto_at' => Support::now()], 'id = :aid', ['aid' => $aid]);
     }
 
     /** Il cliente ritira il giudizio: lo sconto già avuto resta, quello promesso sul rinnovo decade. */
@@ -220,7 +251,10 @@ final class Giudizi
     {
         $p = self::percentuale() . '%';
         return match ((string) ($acc['giudizio_sconto_stato'] ?? 'nessuno')) {
-            'promesso' => ($acc['giudizio_adesione'] ?? '') === 'pagamento' ? $p . ' sul primo anno, al pagamento' : $p . ' sul prossimo rinnovo, dopo il giudizio',
+            'promesso' => ($acc['giudizio_adesione'] ?? '') === 'pagamento'
+                ? (self::quando() === 'giudizio' ? $p . ' dopo il giudizio: sul primo addebito o sul rinnovo'
+                   : ((($s = Subscriptions::active((int) $acc['id'])) && !empty($s['omaggio_fino'])) ? $p . ' sul primo addebito del ' . Support::date((string) $s['omaggio_fino']) : $p . ' sul primo anno, al pagamento'))
+                : $p . ' sul prossimo rinnovo, dopo il giudizio',
             'applicato_primo_anno' => $p . ' già applicato al primo anno',
             'da_applicare_rinnovo' => ($r = self::prossimoRinnovo((int) $acc['id'])) ? $p . ' sul rinnovo del ' . Support::date($r) : $p . ' sul prossimo pagamento',
             'applicato_rinnovo' => $p . ' applicato al rinnovo' . (!empty($acc['giudizio_sconto_at']) ? ' del ' . Support::date($acc['giudizio_sconto_at']) : ''),

@@ -109,14 +109,17 @@ final class Richiami
             if ($tipo && self::manda((int) $p['acc_id'], $p['email'], (string) $p['user_name'], $tipo, (string) $p['id'], self::testo($tipo, $p))) $fatte[$tipo]++;
         }
 
-        // Rinnovo: abbonamenti Stripe col rinnovo automatico, tra 29 e 31 giorni.
-        foreach (Db::all("SELECT s.*, u.email, u.name AS user_name FROM subscriptions s JOIN accounts a ON a.id = s.account_id
-                          JOIN users u ON u.id = a.user_id
-                          WHERE s.status IN ('active', 'trialing') AND s.provider = 'stripe' AND s.cancel_at_period_end = 0
-                            AND s.current_period_end > ? AND s.current_period_end <= ? AND u.email NOT LIKE ?",
-                         [$iso($t + 29 * $giorno), $iso($t + 31 * $giorno), '%@' . Demo::DOMINIO]) as $s) {
-            $ref = $s['id'] . '-' . substr((string) $s['current_period_end'], 0, 10);
-            if (self::manda((int) $s['account_id'], $s['email'], (string) $s['user_name'], 'rinnovo', $ref, self::testoRinnovo($s))) $fatte['rinnovo']++;
+        // Rinnovo (9D): abbonamenti Stripe col rinnovo automatico (anche in omaggio), a 30 e a 7 giorni dall'addebito.
+        // Quello a 7 giorni è dovuto prima di un addebito e parte anche a chi ha disattivato gli avvisi (manda()).
+        foreach ([30, 7] as $prima) {
+            foreach (Db::all("SELECT s.*, u.email, u.name AS user_name FROM subscriptions s JOIN accounts a ON a.id = s.account_id
+                              JOIN users u ON u.id = a.user_id
+                              WHERE s.status IN ('active', 'trialing') AND s.provider = 'stripe' AND s.cancel_at_period_end = 0
+                                AND s.current_period_end > ? AND s.current_period_end <= ? AND u.email NOT LIKE ?",
+                             [$iso($t + ($prima - 1) * $giorno), $iso($t + ($prima + 1) * $giorno), '%@' . Demo::DOMINIO]) as $s) {
+                $ref = $s['id'] . '-' . substr((string) $s['current_period_end'], 0, 10) . ($prima === 7 ? '-7' : '');
+                if (self::manda((int) $s['account_id'], $s['email'], (string) $s['user_name'], 'rinnovo', $ref, self::testoRinnovo($s, $prima))) $fatte['rinnovo']++;
+            }
         }
 
         // Scadenza: gli abbonamenti che non si rinnovano da soli (rinnovo disattivato, o attivati dallo
@@ -253,33 +256,95 @@ final class Richiami
         };
     }
 
-    private static function testoRinnovo(array $s): array
+    /**
+     * 9D · Quanto si pagherà al prossimo addebito: da Stripe (fattura imminente: sconti e IVA veri), altrimenti dal listino
+     * con gli sconti noti (inviti, giudizio, piano programmato). @return array{netto:int,sconto:int,percento:int,piano:string,quantita:int,valuta:string,stripe:bool}
+     */
+    public static function prossimoAddebito(array $s): array
+    {
+        $pvId = (int) (!empty($s['next_package_version_id']) ? $s['next_package_version_id'] : $s['package_version_id']);
+        $pv = Plans::version($pvId) ?? [];
+        $q = max(1, (int) (!empty($s['next_package_version_id']) ? ($s['next_quantity'] ?? 1) : ($s['quantity'] ?? 1)));
+        $listino = $pv ? Plans::price($pv, $q) : 0;
+        [$netto, $percento] = Gestione::importoRinnovo($s);
+        $sconto = max(0, $listino - $netto);
+        $daStripe = false;
+        if ($s['provider'] === 'stripe' && (string) ($s['provider_subscription_id'] ?? '') !== '' && Stripe::enabled()) {
+            $f = Stripe::prossimaFattura((string) $s['provider_subscription_id']);
+            if ($f && $f['netto'] > 0) { $netto = $f['netto']; $sconto = $f['sconto']; $daStripe = true; $percento = $listino > 0 ? (int) round($sconto * 100 / $listino) : 0; }
+        }
+        return ['netto' => $netto, 'sconto' => $sconto, 'percento' => $percento, 'piano' => (string) ($pv['name'] ?? ''), 'quantita' => $q,
+                'valuta' => (string) ($pv['currency'] ?? 'EUR'), 'stripe' => $daStripe, 'listino' => $listino];
+    }
+
+    /** «sulla carta che termina con 4242», oppure «sul tuo metodo di pagamento». */
+    private static function carta(array $s): string
+    {
+        $l4 = (string) ($s['card_last4'] ?? '');
+        return $l4 !== '' ? "sulla carta che termina con $l4" : 'sul tuo metodo di pagamento';
+    }
+
+    /** 9D · L'avviso prima dell'addebito, a 30 o a 7 giorni: rinnovo automatico, oppure fine dei mesi gratis di un omaggio. */
+    private static function testoRinnovo(array $s, int $prima = 30): array
+    {
+        $quando = Support::date((string) $s['current_period_end']);
+        $a = self::prossimoAddebito($s);
+        $importo = Support::money($a['netto'], $a['valuta']) . ' + IVA';
+        $piano = $a['piano'] . ($a['quantita'] > 1 ? ' (' . $a['quantita'] . ' strutture)' : '');
+        $omaggio = !empty($s['omaggio_fino']) && $s['status'] === 'trialing';
+        $sconti = $a['sconto'] > 0 ? ' Hai uno sconto del ' . $a['percento'] . '%: pagherai ' . $importo . ' invece di ' . Support::money($a['listino'], $a['valuta']) . ' + IVA.' : '';
+        if ($omaggio) {
+            $corpo = "la tua prova gratuita finisce il $quando: da quel giorno parte l'abbonamento $piano a $importo l'anno, " . self::carta($s) . ". Non devi fare nulla.$sconti "
+                   . "Se non vuoi continuare, disattiva il rinnovo da Account & Fatturazione entro il $quando: fino a quel giorno la guida resta online e non ti addebitiamo nulla.";
+            $oggetto = $prima === 7 ? "Tra 7 giorni finisce la tua prova gratuita" : "La tua prova gratuita finisce il $quando";
+        } else {
+            $corpo = "il tuo abbonamento $piano si rinnova il $quando: addebiteremo $importo " . self::carta($s) . ". Non devi fare nulla.$sconti "
+                   . "Se non vuoi rinnovare, disattiva il rinnovo da Account & Fatturazione entro il $quando: la guida resta online fino a quel giorno e non ti addebitiamo nulla.";
+            $oggetto = $prima === 7 ? 'Tra 7 giorni rinnoviamo il tuo abbonamento' : "Il tuo abbonamento si rinnova il $quando";
+        }
+        // Una discesa programmata (6H): l'avviso dice già il piano e l'importo nuovi (prossimoAddebito li usa); qui solo la frase.
+        if (!empty($s['next_package_version_id'])) $corpo .= ' Come avevi chiesto, dal rinnovo passi a ' . $piano . '.';
+        // A 30 giorni, per chi rinnova, restano le statistiche dell'anno (K5) e la spinta a invitare un amico.
+        if ($prima === 30 && !$omaggio) $corpo .= ' ' . self::numeriDellAnno($s, $a);
+        return [$oggetto, $corpo, 'Vai ad Account & Fatturazione', Support::baseUrl() . '/account'];
+    }
+
+    /** K5 · Le aperture dell'anno (e dal QR) con, se ci sono gli inviti, lo sconto già guadagnato o come abbassare il rinnovo. */
+    private static function numeriDellAnno(array $s, array $a): string
     {
         $da = gmdate('Y-m-d', strtotime('-1 year'));
         $conta = fn(string $k) => (int) Db::val("SELECT COUNT(*) FROM analytics_events e JOIN properties p ON p.id = e.property_id
                                                  WHERE p.account_id = ? AND e.day >= ? AND e.kind IN ($k)", [$s['account_id'], $da], 0);
         $aperture = $conta("'guide_view','open'"); $qr = $conta("'qr_open','qr'");
         $guide = (int) Db::val("SELECT COUNT(*) FROM properties WHERE account_id = ? AND status = 'published' AND archived_at IS NULL", [$s['account_id']], 0);
-        $quando = Support::date((string) $s['current_period_end']);
         $numeri = $aperture > 0
             ? "In quest'anno " . ($guide === 1 ? 'la tua guida è stata aperta' : "le tue $guide guide sono state aperte") . " $aperture volte" . ($qr > 0 ? ", $qr delle quali dal QR" : '') . '.'
             : "Quest'anno non abbiamo ancora registrato aperture: controlla che il QR sia in vista e che il link arrivi agli ospiti prima dell'arrivo.";
-        // Invita un amico: lo sconto già guadagnato, oppure come abbassare il rinnovo finché c'è tempo.
-        if (Inviti::disponibili()) {
-            $inv = Inviti::stato(['id' => (int) $s['account_id']]);
-            $numeri .= $inv['percento'] > 0
-                ? ' Grazie ai tuoi inviti hai il ' . $inv['percento'] . '% di sconto: paghi ' . Support::money($inv['scontato'], $inv['valuta']) . ' + IVA invece di ' . Support::money($inv['prezzo'], $inv['valuta']) . '.'
-                : ' Puoi ancora abbassarlo: ogni amico che pubblica con il tuo invito vale il ' . Inviti::PASSO . '% in meno.';
-        }
-        // Una discesa programmata (6H): il rinnovo incasserà il prezzo del piano nuovo.
-        if (!empty($s['next_package_version_id']) && ($nuovo = Plans::version((int) $s['next_package_version_id']))) {
-            $q = max(1, (int) ($s['next_quantity'] ?? 1));
-            $numeri .= ' Dal rinnovo passi a ' . $nuovo['name'] . (Plans::perProperty($nuovo) ? " ($q strutture)" : '') . ': '
-                     . Support::money(Plans::price($nuovo, $q), (string) $nuovo['currency']) . ' + IVA.';
-        }
-        return ["Il tuo abbonamento si rinnova il $quando",
-                "il tuo abbonamento MyHouse Welcome si rinnova da solo il $quando. $numeri Se vuoi cambiare qualcosa, o disattivare il rinnovo, lo fai dal tuo account.",
-                'Vai al tuo account', Support::baseUrl() . '/account'];
+        if (Inviti::disponibili() && $a['sconto'] <= 0) $numeri .= ' Puoi ancora abbassare il rinnovo: ogni amico che pubblica con il tuo invito vale il ' . Inviti::PASSO . '% in meno.';
+        return $numeri;
+    }
+
+    /**
+     * 9D · La fascia in cima al Quadro e ad Account & Fatturazione, dagli stessi 30 giorni: rinnovo, fine dell'omaggio
+     * o scadenza senza rinnovo. A 7 giorni in evidenza. Null se non c'è niente da dire. Chiudibile per 24 ore (cookie).
+     * @return ?array{tipo:string,giorni:int,data:string,importo:string,piano:string,carta:string,evidenza:bool,sub:array,automatico:bool}
+     */
+    public static function fascia(array $acc, ?array $sub = null): ?array
+    {
+        $s = $sub ?? Subscriptions::active((int) $acc['id']);
+        if (!$s || $s['provider'] === 'dimostrazione' || (string) $s['current_period_end'] === '') return null;
+        $fine = (int) strtotime((string) $s['current_period_end']);
+        $giorni = (int) round(($fine - time()) / 86400);   // ai giorni interi: «7 giorni» anche con qualche ora in più, come l'email
+        if ($giorni > 30 || $giorni < 0) return null;
+        $automatico = $s['provider'] === 'stripe' && (int) $s['cancel_at_period_end'] === 0 && in_array($s['status'], ['active', 'trialing'], true);
+        $tipo = $automatico ? (!empty($s['omaggio_fino']) && $s['status'] === 'trialing' ? 'omaggio' : 'rinnovo') : 'scadenza';
+        $a = $automatico ? self::prossimoAddebito($s) : ['netto' => 0, 'valuta' => 'EUR', 'piano' => (string) ((Plans::version((int) $s['package_version_id']) ?? [])['name'] ?? ''), 'quantita' => max(1, (int) $s['quantity'])];
+        $l4 = (string) ($s['card_last4'] ?? '');
+        return ['tipo' => $tipo, 'giorni' => $giorni, 'data' => Support::date((string) $s['current_period_end']),
+                'importo' => $automatico ? Support::money($a['netto'], $a['valuta']) . ' + IVA' : '',
+                'piano' => $a['piano'] . ($a['quantita'] > 1 ? ' · ' . $a['quantita'] . ' strutture' : ''),
+                'carta' => $l4 !== '' ? 'carta •••• ' . $l4 : '', 'evidenza' => $giorni <= 7, 'sub' => $s, 'automatico' => $automatico,
+                'chiave' => 'mhw_fascia_' . (int) $s['id'] . '_' . substr((string) $s['current_period_end'], 0, 10)];
     }
 
     /** Dopo questo abbonamento ne è già arrivato un altro, che va oltre: niente avviso di scadenza. */
@@ -323,11 +388,12 @@ final class Richiami
         $finito = (string) $s['current_period_end'] !== '' && strtotime((string) $s['current_period_end']) <= time();
         $automatico = !$finito && $s['provider'] === 'stripe' && (int) $s['cancel_at_period_end'] === 0 && in_array($s['status'], ['active', 'trialing'], true);
         $tipo = $automatico ? 'rinnovo' : 'scadenza';
+        $giorniR = $automatico ? (int) ceil((strtotime((string) $s['current_period_end']) - time()) / 86400) : 30;
         if (Db::one('SELECT id FROM email_optout WHERE account_id = ? AND kind = ?', [$s['account_id'], $tipo])) {
             return [false, $s['email'] . ' ha chiesto di non ricevere ' . self::TIPI[$tipo] . ': se serve, scrivigli tu.'];
         }
         $ok = self::manda((int) $s['account_id'], (string) $s['email'], (string) $s['user_name'], $tipo,
-                          'manuale-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(3)), $automatico ? self::testoRinnovo($s) : self::testoScadenza($s, $finito));
+                          'manuale-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(3)), $automatico ? self::testoRinnovo($s, $giorniR <= 7 ? 7 : 30) : self::testoScadenza($s, $finito));
         return [$ok, $ok ? 'Promemoria mandato a ' . $s['email'] . '.' : 'L\'email a ' . $s['email'] . ' non è partita: controlla la posta in Impostazioni.'];
     }
 
@@ -336,7 +402,9 @@ final class Richiami
     {
         // 7F: i clienti di prova non ricevono richiami automatici; il promemoria mandato a mano dall'amministrazione sì.
         if (!str_starts_with($ref, 'manuale-') && self::diProva($accountId)) return false;
-        if (Db::one('SELECT id FROM email_optout WHERE account_id = ? AND kind = ?', [$accountId, $tipo])) return false;
+        // 9D · L'avviso a 7 giorni dall'addebito (rinnovo, ref «-7») è dovuto: parte anche a chi ha disattivato gli avvisi.
+        $dovuta = $tipo === 'rinnovo' && str_ends_with($ref, '-7');
+        if (!$dovuta && Db::one('SELECT id FROM email_optout WHERE account_id = ? AND kind = ?', [$accountId, $tipo])) return false;
         if (Db::one('SELECT id FROM email_log WHERE account_id = ? AND kind = ? AND ref = ?', [$accountId, $tipo, $ref])) return false;
         $token = bin2hex(random_bytes(24));
         try { Db::insert('email_log', ['account_id' => $accountId, 'kind' => $tipo, 'ref' => $ref, 'token' => $token, 'sent_at' => Support::now()]); }
@@ -350,8 +418,10 @@ final class Richiami
         $saluto = 'Ciao' . (trim($nome) !== '' ? ' ' . trim(explode(' ', trim($nome))[0]) : '') . ',';
         $e = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
         $paragrafi = [$saluto . ' ' . $corpo];
-        $piedeHtml = 'Non vuoi più ricevere ' . $e(self::TIPI[$tipo]) . '? <a href="' . $e($stop) . '" style="color:#6a5b48">Non mandarmene più</a>';
-        $testo = Mailer::testo($oggetto, $paragrafi, $tasto, $nota, 'Non vuoi più ricevere ' . self::TIPI[$tipo] . "? $stop", $scelte);
+        $piedeHtml = $dovuta ? 'Questo avviso è dovuto prima di un addebito e non si può disattivare.'
+                   : 'Non vuoi più ricevere ' . $e(self::TIPI[$tipo]) . '? <a href="' . $e($stop) . '" style="color:#6a5b48">Non mandarmene più</a>';
+        $piedeTesto = $dovuta ? 'Questo avviso è dovuto prima di un addebito e non si può disattivare.' : 'Non vuoi più ricevere ' . self::TIPI[$tipo] . "? $stop";
+        $testo = Mailer::testo($oggetto, $paragrafi, $tasto, $nota, $piedeTesto, $scelte);
         $html = Mailer::layout($oggetto, $paragrafi, $tasto, $nota, $piedeHtml, $scelte);
         $ok = Mailer::send($email, $oggetto . ' — MyHouse Welcome', $testo, $html);
         if (!$ok) Db::run('DELETE FROM email_log WHERE token = ?', [$token]);   // si riproverà al prossimo giro

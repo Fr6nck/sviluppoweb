@@ -228,7 +228,7 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 5. **Matomo** (se usato, 8H) → Amministrazione → Privacy: «Anonimizza i dati di tracciamento» a 2 byte e **«Elimina i vecchi dati grezzi» dopo 180 giorni** (i report aggregati restano).
 6. **Registro dei trattamenti:** aggiungi «Registri tecnici e di sicurezza» con queste durate: registri tecnici 90 giorni sul server (o quelli scelti), posta di prova 7 giorni, limiti ai tentativi 24 ore (IP come codice), accessi degli amministratori 6 mesi inalterabili e 12 mesi in tutto su S3 Milano.
 
-## 4i. Fase 9 (9A, 9B, 9C)
+## 4i. Fase 9 (9A, 9B, 9C, 9D, 9E)
 
 **9A · Portfolio progressivo e controlli Stripe**
 - La migrazione **043** crea la versione nuova del Portfolio (117 € + 60/50/40 a scaglioni, da 2 a 10) con i Price ID vuoti: il sito crea i Price nuovi su Stripe alla prima vendita (il Price graduato della struttura aggiuntiva ha `up_to` 1, 4, inf). Chi ha già un Portfolio resta sulla sua versione.
@@ -246,6 +246,23 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 - Il marchio ora viaggia **dentro** le email (`cid:marchio`): si vede anche con le immagini esterne bloccate. Imposta comunque `base_url` (Impostazioni → Sito): i link e le icone social delle email mandate dal cron (senza un browser) lo usano; se è vuoto il Quadro lo segnala.
 - Per Gmail e Outlook: **SPF, DKIM e DMARC** sul dominio del mittente (`MAIL_FROM`): sono quelli che tengono le email fuori dallo spam e fanno mostrare le immagini esterne (le icone social). Senza, il marchio incorporato si vede lo stesso.
 - La vetrina «Casa Checco» ha sempre l'indirizzo `/g/casa-checco` (con «Indirizzi puliti» spenti, `/index.php/g/casa-checco`); i vecchi `/g/casa-checco-2`… rispondono con un 301. L'indirizzo attuale, con «Apri» e «Copia», è in Amministrazione → scheda del cliente della vetrina. Se `/g/casa-checco` fosse di un cliente vero, la vetrina tiene il numero e la scheda lo dice.
+
+**9B-bis · Quando si applica lo sconto del giudizio**
+- Amministrazione → Giudizi (riquadro in alto, con la tua password) o Impostazioni → Giudizi con sconto → «Quando si applica lo sconto»: di serie **all'adesione** (chi spunta la casella al pagamento ha il 5% sul primo addebito, anche se il giudizio arriva dopo). Se preferisci fidarti meno, **solo dopo il giudizio**: lo sconto parte quando il giudizio è stato inviato (sul primo addebito se arriva prima, altrimenti sul rinnovo). Variabile d'ambiente: `MHW_GIUDIZI_QUANDO=adesione|giudizio`.
+
+**9D · Codici omaggio e avvisi prima dell'addebito**
+- La migrazione **045** parte da sola al primo accesso (tabelle `codici_omaggio` e `rimborsi`, colonne nuove). Niente da fare a mano.
+- **In Stripe** (Dashboard → Impostazioni → Abbonamenti ed email, o Billing → Settings): **spegni** le email automatiche di Stripe «Prova in scadenza» (*trial ending*) e «Rinnovo imminente» (*upcoming renewal*): gli avvisi a 30 e 7 giorni li manda il sito, con il nostro testo e il nostro marchio. **Accendi** Smart Retries (Billing → Settings → Manage failed payments) per i rinnovi non riusciti.
+- **Webhook**: aggiungi all'endpoint di Stripe gli eventi `customer.subscription.trial_will_end` (solo registro) e `charge.refunded` (9E: conferma dei rimborsi). Gli altri sono gli stessi di prima.
+- **Codici omaggio**: Amministrazione → Vendite → Codici omaggio → «Nuovo codice» (mesi 1–12, scadenza di serie 14 giorni, nota interna). Il codice appena creato ha i bottoni **WhatsApp**, **Email** e **Copia il link** (`/omaggio/XXXXX`). Il testo del messaggio si cambia in Testi e foto → «Codici omaggio». Un codice non ancora usato si annulla dalla stessa pagina.
+- Il cliente in omaggio inserisce la carta al Checkout (Stripe chiede il metodo di pagamento anche a 0 €): su Stripe l'abbonamento è «in prova» (*trialing*) fino alla data del primo addebito. Chi disattiva il rinnovo prima non paga nulla.
+- **Prova con le chiavi di test**: `php app/tools/verifica-stripe.php` ora prova anche i casi «omaggio 1, 6 e 12 mesi» con e senza lo sconto del giudizio: tutte le righe devono dire «ok» (sessione a 0 € oggi). Poi, sempre in test: un codice da 3 mesi → `/omaggio/CODICE` → registrazione → Checkout 0 € con carta `4242…` → la guida è online, in Clienti il cliente ha «Omaggio fino al …». Con un *test clock* di Stripe a fine omaggio: la fattura parte con l'eventuale sconto del giudizio e Adamo la riceve come oggi.
+- Gli avvisi a **7 giorni** partono anche a chi ha chiesto di non ricevere gli avvisi di rinnovo (sono dovuti prima di un addebito): lo dice il piè dell'email.
+- **Termini** (punti 5 «Rinnovo automatico», 17, nuovo 18 «Codice omaggio») e **Privacy** (t2: ultime 4 cifre della carta) sono cambiati: le versioni di serie restano 2026-10-16 (le stesse della 9B, pubblicate insieme). Da far rivedere da un legale, come il resto dei documenti.
+
+**9E · Azioni sul cliente (scheda cliente)**
+- Niente da configurare. Ogni azione chiede il motivo (resta nel registro) e manda un'email al cliente. Per i **rimborsi** serve Stripe configurato: il rimborso parte da Stripe (`refunds`), il cliente lo vede sulla carta in 5–10 giorni; la **nota di credito la fai tu in Adamo** (il sito te lo ricorda nel messaggio di esito). Il rimborso non ferma l'abbonamento: se serve, «Ferma il rinnovo».
+- **Password provvisoria**: la vedi una sola volta nella scheda del cliente (12 caratteri, due parole e quattro cifre), vale 48 ore; comunicala al telefono, mai per email. Al primo accesso il cliente deve sceglierne una nuova. Scaduta, usa «Manda il link per reimpostarla».
 
 ## 4b. La guida vetrina (la demo della landing)
 

@@ -7,7 +7,7 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
   <p class="note registra-en" lang="en" role="note">The dashboard is in Italian for now: we'll help you in English at <a href="mailto:<?= Support::e($mailEn) ?>"><?= Support::e($mailEn) ?></a>.</p>
 <?php endif; ?>
 <?php /* 9A · Gli sconti che valgono per chi si registra (l'invito dal link o dal codice): prezzo barrato. */
-      $scontoInvito = $scontoInvito ?? []; $invitoCodice = $invitoCodice ?? ''; $oltre = $oltre ?? 0; $pianoOltre = $pianoOltre ?? null;
+      $scontoInvito = $scontoInvito ?? []; $invitoCodice = $invitoCodice ?? ''; $oltre = $oltre ?? 0; $pianoOltre = $pianoOltre ?? null; $omaggio = $omaggio ?? null;
       $contoReg = fn(array $o, int $q) => MHW\Sconti::disponibili() && $scontoInvito ? MHW\Sconti::riepilogo($o, $q, null, $scontoInvito) : null;
       $prezzoReg = function (array $o, int $q) use ($contoReg): string {
           $r = $contoReg($o, $q);
@@ -24,6 +24,10 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
       · <?= $prezzoReg($pianoScelto, (int) $quantita) ?></span></span>
     <a href="<?= b() ?>/#piani">Cambia</a>
   </p>
+<?php endif; ?>
+<?php if ($omaggio): /* 9D · dal link di un codice omaggio: il banner con i mesi gratis e la scadenza del codice */ ?>
+  <div class="omaggio-banner" role="status"><b>Hai <?= (int) $omaggio['mesi'] ?> mesi gratis.</b> Il codice è già inserito e vale fino al <?= Support::e(Support::date($omaggio['scade_il'])) ?>.
+    Oggi non paghi nulla: il primo addebito è il <?= Support::e(Support::date(MHW\Omaggi::fineIso((int) $omaggio['mesi']))) ?>.</div>
 <?php endif; ?>
 <h1>Cominciamo.</h1>
 <p class="muted" style="margin-top:14px;line-height:24px">Configuri la guida gratis. Paghi solo quando la pubblichi.</p>
@@ -53,17 +57,21 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
   </fieldset>
   <?php endif; ?>
   <?php if (!empty($strutture) && !$oltre): ?><input type="hidden" name="strutture" value="<?= (int) $strutture ?>"><?php endif; ?>
-  <?php if (MHW\Inviti::disponibili()): /* 9A · il codice di invito: dal link (sola lettura) o da scrivere, con «Applica» */ ?>
+  <?php $omaggiOk = MHW\Omaggi::disponibili(); if ($omaggio): /* 9D · il codice omaggio dal link: già scritto, in sola lettura */ ?>
+    <div class="field invito-campo" style="margin:0"><label for="codice_invito">Codice di invito o omaggio</label>
+      <input id="codice_invito" name="codice_invito" type="text" value="<?= Support::e($omaggio['codice']) ?>" readonly aria-describedby="invito-ok">
+      <p class="invito-ok" id="invito-ok" role="status"><?= Icon::svg('check', 16, 2.4) ?><span><?= (int) $omaggio['mesi'] ?> mesi gratis · primo addebito il <?= Support::e(Support::date(MHW\Omaggi::fineIso((int) $omaggio['mesi']))) ?></span></p></div>
+  <?php elseif (MHW\Inviti::disponibili() || $omaggiOk): /* 9A · il codice di invito: dal link (sola lettura) o da scrivere, con «Applica»; 9D: nello stesso campo anche un codice omaggio */ ?>
     <?php if ($invitoCodice !== ''): ?>
       <div class="field invito-campo" style="margin:0"><label for="codice_invito">Codice di invito</label>
         <input id="codice_invito" name="codice_invito" type="text" value="<?= Support::e($invitoCodice) ?>" readonly aria-describedby="invito-ok">
         <p class="invito-ok" id="invito-ok" role="status"><?= Icon::svg('check', 16, 2.4) ?><span>Codice di <?= Support::e($invitoDi) ?>: <?= MHW\Inviti::AMICO ?>% sul primo anno</span></p></div>
     <?php else: ?>
       <details class="sconto invito-campo" data-invito<?= $vecchi['codice_invito'] !== '' ? ' open' : '' ?>>
-        <summary class="linkbtn">Hai un codice di invito?</summary>
+        <summary class="linkbtn"><?= $omaggiOk && MHW\Inviti::disponibili() ? 'Hai un codice di invito o omaggio?' : ($omaggiOk ? 'Hai un codice omaggio?' : 'Hai un codice di invito?') ?></summary>
         <div class="sconto__form">
-          <div class="field" style="margin:0"><label for="codice_invito">Codice di invito</label>
-            <input id="codice_invito" name="codice_invito" type="text" maxlength="12" autocomplete="off" spellcheck="false" style="text-transform:uppercase"
+          <div class="field" style="margin:0"><label for="codice_invito"><?= $omaggiOk && MHW\Inviti::disponibili() ? 'Codice di invito o omaggio' : ($omaggiOk ? 'Codice omaggio' : 'Codice di invito') ?></label>
+            <input id="codice_invito" name="codice_invito" type="text" maxlength="14" autocomplete="off" spellcheck="false" style="text-transform:uppercase"
                    value="<?= Support::e($vecchi['codice_invito']) ?>" aria-describedby="invito-err invito-ok"></div>
           <button type="button" class="btn btn--ghost btn--sm" data-invito-applica>Applica</button>
           <p class="field-error" id="invito-err" role="alert" style="flex-basis:100%;margin:0" hidden></p>
@@ -123,7 +131,8 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
     fetch(form.getAttribute('data-base') + '/invito/verifica', { method: 'POST', body: fd, headers: { Accept: 'application/json' }, credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
       .then(function (j) {
-        if (j.ok) { ok.querySelector('span').textContent = 'Codice di ' + j.nome + ': ' + j.percento + '% sul primo anno'; ok.hidden = false; barra(j.percento); }
+        if (j.ok && j.tipo === 'omaggio') { ok.querySelector('span').textContent = j.mesi + ' mesi gratis · primo addebito il ' + j.primo_addebito; ok.hidden = false; }
+        else if (j.ok) { ok.querySelector('span').textContent = 'Codice di ' + j.nome + ': ' + j.percento + '% sul primo anno'; ok.hidden = false; barra(j.percento); }
         else { err.textContent = j.errore || 'Questo codice non esiste o non è più attivo. Controlla con chi te l\'ha dato.'; err.hidden = false; }
       })
       .catch(function () { err.textContent = 'Non riesco a controllare il codice adesso: lo verifichiamo quando crei l\'account.'; err.hidden = false; })

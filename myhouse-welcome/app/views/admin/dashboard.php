@@ -25,6 +25,7 @@ include __DIR__ . '/_stati.php'; ?>
                     ['cifra--pino', 'chart', 'Ricavo annuo ricorrente', Support::money($numeri['arr']), 'abbonamenti che si rinnovano da soli', '/admin/prospetti'],
                     ['cifra--mare', 'calendar', 'Rinnovi entro 30 giorni', $numeri['rinnovi30'][0], 'incasso atteso ' . Support::money($numeri['rinnovi30'][1]), '/admin/scadenze?giorni=30'],
                     [$numeri['scadono30'] ? 'cifra--ocra' : 'cifra--carta', 'clock', 'Scadono senza rinnovo', $numeri['scadono30'], 'entro 30 giorni: da avvisare', '/admin/scadenze?giorni=30'],
+                    [$numeri['omaggio']['in_omaggio'] ? 'cifra--mare' : 'cifra--carta', 'card', 'Clienti in omaggio', $numeri['omaggio']['in_omaggio'], 'primo addebito entro 30 giorni: ' . (int) $numeri['omaggio']['addebito_vicino'], '/admin/clienti?stato=omaggio'],
                     [$numeri['anomalie']['alta'] ? 'cifra--rosa' : 'cifra--carta', 'pulse', 'Anomalie', array_sum($numeri['anomalie']),
                      $numeri['anomalie']['alta'] ? $numeri['anomalie']['alta'] . ' da guardare subito' : 'nessuna urgente', '/admin/anomalie']] as [$tono, $ico, $et, $val, $nota, $href]):
           $tag = $href ? 'a' : 'div'; ?>

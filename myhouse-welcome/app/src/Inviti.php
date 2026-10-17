@@ -163,6 +163,7 @@ final class Inviti
     {
         $aid = (int) $amico['id']; $rid = (int) $chiInvita['id'];
         if ($aid === $rid || !self::puoInvitare($chiInvita)) return false;
+        if (Omaggi::daUsare($amico)) return false;   // 9D: omaggio e invito si escludono, vale l'omaggio
         if (Db::one('SELECT id FROM referrals WHERE friend_account_id = ?', [$aid])) return false;
         if (Db::one("SELECT id FROM orders WHERE account_id = ? AND status = 'paid'", [$aid])) return false;
         Db::insert('referrals', ['referrer_account_id' => $rid, 'friend_account_id' => $aid, 'status' => 'registrato', 'created_at' => Support::now()]);
@@ -185,6 +186,7 @@ final class Inviti
         if (!$chi) return null;
         $aid = (int) $amico['id'];
         if ((int) $chi['id'] === $aid) throw new \RuntimeException('Questo è il tuo codice di invito: è per i tuoi amici.');
+        if (Omaggi::daUsare($amico)) throw new \RuntimeException('Hai già un codice omaggio: non si somma a un invito.');   // 9D
         $gia = Db::one('SELECT * FROM referrals WHERE friend_account_id = ?', [$aid]);
         if ($gia && ((int) $gia['referrer_account_id'] !== (int) $chi['id'] || $gia['status'] !== 'registrato')) {
             throw new \RuntimeException('Hai già usato un invito.');

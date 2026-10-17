@@ -14,7 +14,7 @@ $title = 'Clienti'; ?>
     <div class="field" style="margin:0"><label for="c-stato">Stato</label>
       <select id="c-stato" name="stato"><option value="">Tutti</option>
         <?php foreach (['attivo' => 'Attivo', 'pagato' => 'Pagato, non pubblicato', 'fallito' => 'Pagamento non riuscito', 'scaduto' => 'Scaduto (offline)',
-                        'bozza' => 'In bozza, senza piano pagato', 'vuoto' => 'Nessuna struttura'] as $k => $et): ?>
+                        'bozza' => 'In bozza, senza piano pagato', 'vuoto' => 'Nessuna struttura', 'omaggio' => 'In omaggio (mesi gratis)'] as $k => $et): ?>
           <option value="<?= $k ?>"<?= $filtroStato === $k ? ' selected' : '' ?>><?= Support::e($et) ?></option><?php endforeach; ?></select></div>
     <div class="field" style="margin:0"><label for="c-piano">Piano</label>
       <select id="c-piano" name="piano"><option value="">Tutti</option>
@@ -25,7 +25,7 @@ $title = 'Clienti'; ?>
   <?php if ($rows): ?><p class="small muted" style="margin:0"><?= count($rows) ?> client<?= count($rows) === 1 ? 'e' : 'i' ?></p><?php endif; ?>
   <?php if (!$rows): ?><p class="muted">Nessun cliente<?= $cerca !== '' ? ' per questa ricerca' : '' ?>.</p><?php else: ?>
   <div class="tablewrap"><table class="data">
-    <thead><tr><th>Cliente</th><th>Struttura</th><th>Piano</th><th>Stato</th><th>Scadenza</th><th>Registrato</th><th></th></tr></thead>
+    <thead><tr><th>Cliente</th><th>Struttura</th><th>Piano</th><th>Stato</th><th>Scadenza</th><th>Omaggio fino al</th><th>Registrato</th><th></th></tr></thead>
     <tbody>
     <?php foreach ($rows as $r): ?>
       <tr>
@@ -36,6 +36,7 @@ $title = 'Clienti'; ?>
         <td><?= Support::e($r['plan']) ?><?= $r['plan_version'] ? ' <span class="tiny muted">v' . (int) $r['plan_version'] . '</span>' : '' ?></td>
         <td><span class="badge badge--<?= $r['stato'][1] ?>"><?= Support::e($r['stato'][0]) ?></span></td>
         <td class="small"><?= $r['scadenza'] !== '' ? Support::e(Support::date($r['scadenza'])) . '<br><span class="tiny muted">' . Support::e(['automatico' => 'si rinnova', 'disattivato' => 'non si rinnova', 'staff' => 'dallo staff'][$r['rinnovo']] ?? '') . '</span>' : '—' ?></td>
+        <td class="small"><?= $r['omaggio'] !== '' ? Support::e(Support::date($r['omaggio'])) : '<span class="muted">—</span>' ?></td>
         <td class="small"><?= Support::e(Support::date($r['created_at'])) ?></td>
         <td><form method="post" action="<?= b() ?>/admin/entra/<?= (int) $r['user_id'] ?>"><?= Csrf::field() ?>
           <button class="btn btn--ghost btn--sm" aria-label="Entra come cliente" title="Apre il pannello con l'account del cliente: l'accesso resta nel registro"><span class="btn__lungo">Entra come cliente</span><span class="btn__corto" aria-hidden="true">Entra</span></button></form></td>

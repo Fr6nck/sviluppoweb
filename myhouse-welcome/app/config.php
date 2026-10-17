@@ -81,6 +81,9 @@ $config = [
         'sconto_attivo' => $bool('MHW_GIUDIZI_SCONTO', true),
         'percentuale'   => (int) $env('MHW_GIUDIZI_PERCENTO', '5'),
         'home'          => $bool('MHW_GIUDIZI_HOME', true),
+        // Quando si applica: «adesione» (al primo addebito se ha spuntato la casella, anche se il giudizio arriva
+        // dopo) oppure «giudizio» (solo dopo il giudizio inviato: al primo addebito se arriva prima, altrimenti al rinnovo).
+        'sconto_quando' => $env('MHW_GIUDIZI_QUANDO', 'adesione') === 'giudizio' ? 'giudizio' : 'adesione',
     ],
 
     // 8I: i registri (log). Quanti giorni restano sul server i registri tecnici (30–180, di serie 90; la posta

@@ -103,16 +103,22 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
           la guida si pubblica subito, senza nuovi pagamenti.</p>
       <?php elseif ($piano): $qSc = Plans::perProperty($piano) ? $quantita : 1;
             /* 9A · Il conto del primo anno: sconti di sistema sommati (invito, giudizio) o il codice scritto a mano. */
-            $riep = MHW\Sconti::disponibili() ? MHW\Sconti::riepilogo($piano, $qSc, $acc) : null; $sc = $riep && $riep['sconto'] > 0 ? $riep : null; ?>
+            $riep = MHW\Sconti::disponibili() ? MHW\Sconti::riepilogo($piano, $qSc, $acc) : null; $sc = $riep && $riep['sconto'] > 0 ? $riep : null;
+            $om = $riep['omaggio'] ?? null; $dataOm = $om ? Support::date(gmdate('Y-m-d\TH:i:s\Z', $om['fine'])) : ''; ?>
         <div class="spread spread--mid">
           <div class="stack" style="gap:4px"><span class="kicker">Il tuo piano</span>
             <b style="font-size:22px;font-weight:500">Hai scelto <?= Support::e($piano['name']) ?><?= Plans::perProperty($piano) ? ' · ' . $quantita . ' strutture' : '' ?></b></div>
-          <span style="font-size:26px;font-weight:500"><?php if ($sc): ?><s class="muted" style="font-size:18px"><?= Support::e(Support::money($sc['prezzo'], $piano['currency'])) ?></s>
+          <span style="font-size:26px;font-weight:500"><?php if ($om): /* 9D · con il codice omaggio oggi si paga 0 € */ ?>0&nbsp;€<span class="small muted"> oggi</span>
+            <?php elseif ($sc): ?><s class="muted" style="font-size:18px"><?= Support::e(Support::money($sc['prezzo'], $piano['currency'])) ?></s>
             <?= Support::e(Support::money($sc['totale'], $piano['currency'])) ?><span class="small muted"> + IVA il primo anno</span>
             <?php else: ?><?= Support::e(Support::money(Plans::price($piano, $qSc), $piano['currency'])) ?>
             <span class="small muted">+ IVA / anno</span><?php endif; ?></span>
         </div>
-        <?php if ($sc): ?><p class="plan__sconto-riga" style="margin:0">−<?= $sc['percento'] > 0 ? (int) $sc['percento'] . '%' : Support::e(Support::money($sc['sconto'], $piano['currency'])) ?> primo anno</p><?php endif; ?>
+        <?php if ($sc && !$om): ?><p class="plan__sconto-riga" style="margin:0">−<?= $sc['percento'] > 0 ? (int) $sc['percento'] . '%' : Support::e(Support::money($sc['sconto'], $piano['currency'])) ?> primo anno</p><?php endif; ?>
+        <?php if ($om): ?>
+          <div class="spiega omaggio-spiega" role="status"><b>Oggi paghi 0 €.</b> I tuoi primi <b><?= (int) $om['mesi'] ?> mesi sono gratis</b>: il primo addebito di <b><?= Support::e(Support::money($riep['totale'], $piano['currency'])) ?> + IVA</b> sarà il <b><?= Support::e($dataOm) ?></b>.
+            Prima ti avvisiamo due volte, per email e nel pannello, 30 e 7 giorni prima. Puoi disattivare il rinnovo quando vuoi da Account &amp; Fatturazione: fino al <?= Support::e($dataOm) ?> la guida resta online e non paghi nulla; senza disattivazione l'abbonamento parte da solo.</div>
+        <?php endif; ?>
         <?php if ($riep): $pv = $piano; $quantita = $qSc; include __DIR__ . '/_riepilogo.php'; endif; ?>
         <?php $pv = $piano; $quantita = $qSc; $torna = '/pannello/' . $pid . '/procedura/pubblica'; $soloCampo = true; include __DIR__ . '/_sconto.php'; ?>
         <p class="small muted">Abbonamento annuale con rinnovo automatico, che puoi disattivare quando vuoi. Il pagamento avviene su Stripe;
@@ -241,7 +247,7 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
             <input type="hidden" name="giudizio_casella" value="1">
             <label class="check" style="align-items:flex-start"><input type="checkbox" name="giudizio_adesione" value="1" data-giudizio-casella style="margin-top:1px"<?= $giudizioSi ? ' checked' : '' ?>>
               <span><b>Sì, voglio il <?= MHW\Giudizi::percentuale() ?>% in più: lascerò un giudizio.</b> <?= Support::e(preg_replace('/^Sì, voglio il \d+% in più: lascerò un giudizio\. /', '', MHW\Giudizi::casella())) ?></span></label>
-            <p class="help giudizio-sconto__spiega" style="margin:0"><?= Support::e(MHW\Giudizi::spiegone()) ?> Regole complete nei <a href="<?= b() ?>/termini#giudizio-sconto" target="_blank" rel="noopener">Termini</a>, punto «Giudizio con sconto».</p>
+            <p class="help giudizio-sconto__spiega" style="margin:0"><?= Support::e(trim(MHW\Giudizi::spiegaQuando() . ' ' . MHW\Giudizi::spiegone())) ?> Regole complete nei <a href="<?= b() ?>/termini#giudizio-sconto" target="_blank" rel="noopener">Termini</a>, punto «Giudizio con sconto».</p>
             <noscript><button class="btn btn--ghost btn--sm" formaction="<?= b() ?>/giudizio/adesione" formmethod="post" name="torna" value="/pannello/<?= $pid ?>/procedura/pubblica">Aggiorna il riepilogo</button></noscript>
           </fieldset>
           <script>
@@ -271,8 +277,11 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
         })();
         </script>
       <?php endif; ?>
-      <?php $barraAvanti = '<button class="btn btn--go" ' . ($problemi || (!$sub && (!$verificato || !$piano || !MHW\Fatturazione::completa($acc))) ? 'disabled' : '') . '>'
-                         . ($sub ? 'Pubblica ora' : 'Conferma e paga') . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
+      <?php /* 9D · con l'omaggio l'obbligo di pagare sta sul bottone (art. 65 Codice del Consumo): «0 € oggi, X € + IVA il …» */
+            $omB = !$sub && $piano && !empty($riep['omaggio']) ? $riep : null;
+            $etichettaB = $sub ? 'Pubblica ora' : ($omB ? 'Inserisci la carta e pubblica <small class="btn__sotto">0 € oggi · ' . Support::e(Support::money($omB['totale'], $piano['currency'])) . ' + IVA il ' . Support::e(Support::date(gmdate('Y-m-d\TH:i:s\Z', $omB['omaggio']['fine']))) . '</small>' : 'Conferma e paga');
+            $barraAvanti = '<button class="btn btn--go' . ($omB ? ' btn--due-righe' : '') . '" ' . ($problemi || (!$sub && (!$verificato || !$piano || !MHW\Fatturazione::completa($acc))) ? 'disabled' : '') . '>'
+                         . $etichettaB . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
             include __DIR__ . '/_barra_passo.php'; ?>
     </form>
 <?php break;

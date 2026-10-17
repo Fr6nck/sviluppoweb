@@ -208,6 +208,19 @@ final class Marketing
                                                                         ['Amici che hanno pagato', $paganti, self::perc($paganti, $registrati)]],
                             'barra' => 1, 'totale' => max(1, $mandati, $registrati, $paganti)];
         }
+        // ---------------------------------------------------------------- 9D · codici omaggio
+        if (Migrator::tableExists('codici_omaggio')) {
+            $creati = (int) Db::val('SELECT COUNT(*) FROM codici_omaggio c WHERE 1 = 1' . $dal('c.created_at'), [], 0);
+            $usati = (int) Db::val('SELECT COUNT(*) FROM codici_omaggio c WHERE c.usato_at IS NOT NULL' . Gestione::senzaProva('c.usato_da_account_id') . $dal('c.usato_at'), [], 0);
+            // Diventati paganti: i mesi gratis sono finiti e l'abbonamento è ancora attivo (il primo addebito è passato).
+            $paganti = (int) Db::val("SELECT COUNT(DISTINCT s.account_id) FROM subscriptions s JOIN codici_omaggio c ON c.usato_da_account_id = s.account_id
+                                      WHERE s.omaggio_fino IS NOT NULL AND s.omaggio_fino <= ? AND s.status = 'active'" . Gestione::senzaProva('s.account_id') . $dal('c.usato_at'), [Support::now()], 0);
+            $t['omaggi'] = ['titolo' => 'Codici omaggio', 'nota' => 'Codici creati, codici usati (abbonamento partito con i mesi gratis) e clienti diventati paganti alla fine dell\'omaggio, nel periodo.',
+                            'colonne' => ['', 'Quanti', '%'], 'righe' => [['Codici creati', $creati, '—'],
+                                                                        ['Codici usati', $usati, $creati > 0 ? self::perc($usati, $creati) : '—'],
+                                                                        ['Diventati paganti', $paganti, $usati > 0 ? self::perc($paganti, $usati) : '—']],
+                            'barra' => 1, 'totale' => max(1, $creati, $usati, $paganti)];
+        }
         return $t;
     }
 }

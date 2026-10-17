@@ -72,6 +72,26 @@ $chiInvita = function (): ?array {
 };
 
 /*
+ * 9D · Il link di un codice omaggio (/omaggio/XXXXX, o con il prefisso): il codice resta in sessione, toglie un eventuale
+ * invito in sessione e porta alla registrazione con il banner «Hai N mesi gratis». Chi è già dentro e non ha pagato
+ * lo prende subito (Account & Fatturazione).
+ */
+$r->get('/omaggio/{codice}', function (array $a) use ($guard) {
+    $guard();
+    $codice = MHW\Omaggi::normalizza((string) $a['codice']);
+    if (($u = Auth::user()) && $u['role'] !== 'admin' && ($acc = Auth::account())) {
+        try { $c = MHW\Omaggi::valida($codice, $acc); MHW\Omaggi::applica($acc, $c); Support::flash('Codice omaggio applicato: ' . (int) $c['mesi'] . ' mesi gratis, primo addebito il ' . Support::date(MHW\Omaggi::fineIso((int) $c['mesi'])) . '.'); }
+        catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'avviso'); }
+        Support::redirect('/account');
+    }
+    try { MHW\Omaggi::valida($codice, null); }
+    catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); Support::redirect('/'); }
+    $_SESSION['omaggio'] = $codice;
+    unset($_SESSION['invito']);
+    Support::redirect('/registrati');
+});
+
+/*
  * 7D: il link diventa una pagina (noindex) con l'anteprima sicura della guida di chi invita:
  * copertina, nome, città e i nomi delle sezioni, mai i contenuti. Con la casella «Mostra la
  * copertina…» spenta, la pagina e l'anteprima di WhatsApp sono generiche.
@@ -247,13 +267,21 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
     // 9A · Il codice di invito: dal link /i/CODICE (in sessione, campo in sola lettura) o scritto a mano nel modulo.
     $invitoLink = (string) ($_SESSION['invito'] ?? '');
     if ($invitoLink !== '' && !(($chiL = MHW\Inviti::daCodice($invitoLink)) && MHW\Inviti::puoInvitare($chiL))) { $invitoLink = ''; unset($_SESSION['invito']); }
+    // 9D · Il codice omaggio dal link (/omaggio/XXXXX): vale lui, l'invito no.
+    $omaggioLink = null;
+    if (($codO = (string) ($_SESSION['omaggio'] ?? '')) !== '') {
+        try { $omaggioLink = MHW\Omaggi::valida($codO, null); $invitoLink = ''; } catch (\RuntimeException) { unset($_SESSION['omaggio']); }
+    }
     $err = null; $vecchi = ['name' => '', 'email' => '', 'codice_invito' => ''];
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $vecchi = ['name' => (string) ($_POST['name'] ?? ''), 'email' => (string) ($_POST['email'] ?? ''), 'email2' => (string) ($_POST['email2'] ?? ''),
                    'codice_invito' => strtoupper(trim((string) ($_POST['codice_invito'] ?? '')))];
         try {
             // 9A · Un codice di invito scritto a mano si controlla prima di creare l'account: se non vale, si corregge.
-            $codiceAMano = $invitoLink === '' ? $vecchi['codice_invito'] : '';
+            // 9D · Nello stesso campo si può scrivere un codice omaggio (prefisso OMAGGIO-): si controlla con le sue regole.
+            $codiceAMano = $invitoLink === '' && !$omaggioLink ? $vecchi['codice_invito'] : '';
+            $omaggioAMano = null;
+            if ($codiceAMano !== '' && MHW\Omaggi::sembra($codiceAMano)) { $omaggioAMano = MHW\Omaggi::valida($codiceAMano, null); $codiceAMano = ''; }
             if ($codiceAMano !== '' && !(($chiM = MHW\Inviti::daCodice($codiceAMano)) && MHW\Inviti::puoInvitare($chiM))) {
                 throw new RuntimeException('Questo codice non esiste o non è più attivo. Controlla con chi te l\'ha dato.');
             }
@@ -281,6 +309,12 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
                 catch (\RuntimeException) {}
                 unset($_SESSION['codice_sconto']);
             }
+            // 9D · Il codice omaggio (dal link o scritto a mano) si prenota all'account: niente invito.
+            if ($omaggioLink || $omaggioAMano) {
+                try { MHW\Omaggi::applica(Auth::account(), MHW\Omaggi::valida((string) ($omaggioLink ?? $omaggioAMano)['codice'], Auth::account())); }
+                catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'avviso'); }
+                unset($_SESSION['omaggio'], $_SESSION['invito']);
+            }
             // Arrivato dal link di un amico (/i/CODICE): resta legato a chi l'ha invitato, con il suo sconto.
             if (($inv = (string) ($_SESSION['invito'] ?? '')) !== '') {
                 if ($chi = MHW\Inviti::daCodice($inv)) MHW\Inviti::collega(Auth::account(), $chi);
@@ -304,9 +338,10 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
     $chiScritto = $invito || $vecchi['codice_invito'] === '' ? null : MHW\Inviti::daCodice($vecchi['codice_invito']);
     if ($chiScritto && !MHW\Inviti::puoInvitare($chiScritto)) $chiScritto = null;
     $nomeInvito = $invito ? explode(' ', trim((string) $invito['user_name']))[0] : ($chiScritto ? explode(' ', trim((string) $chiScritto['user_name']))[0] : '');
+    if ($omaggioLink) $nomeInvito = '';
     View::out('auth/register', ['err' => $err, 'piano' => $piano, 'strutture' => $strutture, 'vecchi' => $vecchi,
-                                'pianoScelto' => $pvScelto, 'quantita' => $qScelta, 'codiceSconto' => $codiceSconto,
-                                'invitoDi' => $invito ? $nomeInvito : '', 'invitoCodice' => $invitoLink, 'oltre' => $oltre, 'pianoOltre' => $pianoOltre,
+                                'pianoScelto' => $pvScelto, 'quantita' => $qScelta, 'codiceSconto' => $codiceSconto, 'omaggio' => $omaggioLink,
+                                'invitoDi' => $invito && !$omaggioLink ? $nomeInvito : '', 'invitoCodice' => $invitoLink, 'oltre' => $oltre, 'pianoOltre' => $pianoOltre,
                                 'scontoInvito' => $nomeInvito !== '' ? [['tipo' => 'invito', 'nome' => 'Invito di ' . $nomeInvito, 'percento' => MHW\Inviti::AMICO]] : []], 'layout/bare');
 });
 
@@ -321,7 +356,14 @@ $r->any('/accedi', function () use ($guard, $doveComincia) {
             $err = 'Troppi tentativi. Aspetta un quarto d\'ora, oppure recupera la password.';
         } elseif (Auth::attempt($email, (string) ($_POST['password'] ?? ''))) {
             RateLimit::clear($perEmail);
-            Support::redirect($doveComincia(Auth::user()));
+            // 9E · Una password provvisoria (impostata dall'amministrazione) vale 48 ore e va cambiata al primo accesso.
+            $uL = Auth::user();
+            if (!empty($uL['password_temp_until']) && strtotime((string) $uL['password_temp_until']) < time()) {
+                Auth::logout();
+                $err = 'La password provvisoria è scaduta: chiedi un link per reimpostarla.';
+            } else {
+                Support::redirect(!empty($uL['must_change_password']) ? '/password/cambia' : $doveComincia($uL));
+            }
         } else {
             $err = 'Email o password non corrispondono.';
         }
@@ -445,6 +487,27 @@ $r->any('/password/nuova/{token}', function (array $a) {
     View::out('auth/reset', ['valido' => true, 'err' => $err, 'token' => $a['token']], 'layout/bare');
 });
 
+/* 9E · Dopo una password provvisoria: si può solo scegliere la password nuova, poi si entra. */
+$r->any('/password/cambia', function () use ($doveComincia) {
+    $u = Auth::requireUser();
+    if (empty($u['must_change_password'])) Support::redirect($doveComincia($u));
+    $err = null;
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $pw = (string) ($_POST['password'] ?? '');
+        try { Auth::controllaPassword($pw, (string) $u['email'], (string) $u['name']); } catch (\RuntimeException $e) { $err = $e->getMessage(); }
+        if ($err === null && $pw !== (string) ($_POST['password2'] ?? '')) $err = 'Le due password non coincidono.';
+        if ($err === null && password_verify($pw, (string) $u['password_hash'])) $err = 'Scegli una password diversa da quella provvisoria.';
+        if ($err === null) {
+            Db::update('users', ['password_hash' => password_hash($pw, PASSWORD_DEFAULT), 'must_change_password' => 0, 'password_temp_until' => null], 'id = :uid', ['uid' => (int) $u['id']]);
+            session_regenerate_id(true);
+            Auth::audit('password.changed_after_temp', (int) $u['id']);
+            Support::flash('Password cambiata: da adesso entri con quella nuova.');
+            Support::redirect($doveComincia(Db::one('SELECT * FROM users WHERE id = ?', [(int) $u['id']]) ?: $u));
+        }
+    }
+    View::out('auth/cambia', ['err' => $err, 'user' => $u], 'layout/bare');
+});
+
 // ------------------------------------------------------------- 9A · preventivo oltre il massimo del Portfolio
 /*
  * «N strutture? Ti facciamo una proposta su misura»: il modulo nella home, in /piano e in registrazione.
@@ -470,6 +533,12 @@ $r->post('/preventivo', function () {
 /* 9A · «Applica» accanto al codice di invito in registrazione: dice se il codice vale e di chi è. */
 $r->post('/invito/verifica', function () {
     if (!RateLimit::hit('invito-verifica:' . RateLimit::ipKey(), 20, 900)) Support::json(['ok' => false, 'errore' => 'Troppi tentativi: riprova tra un quarto d\'ora.'], 429);
+    // 9D · Un codice omaggio nello stesso campo: mesi gratis e primo addebito.
+    if (MHW\Omaggi::sembra((string) ($_POST['codice'] ?? ''))) {
+        try { $c = MHW\Omaggi::valida((string) $_POST['codice'], Auth::account()); }
+        catch (\RuntimeException $e) { Support::json(['ok' => false, 'errore' => $e->getMessage()], 404); }
+        Support::json(['ok' => true, 'tipo' => 'omaggio', 'mesi' => (int) $c['mesi'], 'primo_addebito' => Support::date(MHW\Omaggi::fineIso((int) $c['mesi'])), 'scadenza' => Support::date((string) $c['scade_il'])]);
+    }
     $chi = MHW\Inviti::daCodice((string) ($_POST['codice'] ?? ''));
     if (!$chi || !MHW\Inviti::puoInvitare($chi)) Support::json(['ok' => false, 'errore' => 'Questo codice non esiste o non è più attivo. Controlla con chi te l\'ha dato.'], 404);
     Support::json(['ok' => true, 'nome' => explode(' ', trim((string) $chi['user_name']))[0] ?: 'un amico', 'percento' => MHW\Inviti::AMICO]);

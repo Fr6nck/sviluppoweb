@@ -102,6 +102,8 @@ final class Impostazioni
         'giudizi' => [
             'giudizi.sconto_attivo' => ['MHW_GIUDIZI_SCONTO', 'Sconto per i nuovi clienti che lasciano un giudizio', 'check', 'Acceso: la casella «Sì, voglio il 5% in più» prima del pagamento e «Partecipo» nel pannello. Spento: spariscono per chi non ha ancora aderito; chi ha già aderito conserva lo sconto promesso.'],
             'giudizi.percentuale'   => ['MHW_GIUDIZI_PERCENTO', 'Percentuale dello sconto', 'text', 'Da 1 a 20. Di serie 5. Vale per chi aderisce da adesso in poi.'],
+            'giudizi.sconto_quando' => ['MHW_GIUDIZI_QUANDO', 'Quando si applica lo sconto', 'choice', 'All\'adesione: chi spunta la casella al pagamento ha lo sconto sul primo addebito, anche se il giudizio arriva dopo (si fida). Solo dopo il giudizio: lo sconto parte quando il giudizio è stato inviato, sul primo addebito se arriva prima (per esempio durante i mesi di un codice omaggio), altrimenti sul rinnovo.',
+                                        ['adesione' => 'All\'adesione (anche se il giudizio arriva dopo)', 'giudizio' => 'Solo dopo il giudizio inviato']],
             'giudizi.home'          => ['MHW_GIUDIZI_HOME', 'Sezione «Cosa dicono di noi» in home', 'check', 'La sezione compare solo se c\'è almeno un giudizio messo in home (Clienti → Giudizi).'],
         ],
     ];
@@ -407,7 +409,7 @@ final class Impostazioni
                 case 'giudizi':
                     $inHome = Giudizi::disponibili() ? (int) Db::val('SELECT COUNT(*) FROM testimonials WHERE account_id IS NOT NULL AND home_visible = 1 AND withdrawn_at IS NULL', [], 0) : 0;
                     $aderiti = Giudizi::disponibili() ? (int) Db::val('SELECT COUNT(*) FROM accounts WHERE giudizio_adesione IS NOT NULL', [], 0) : 0;
-                    return [true, (Giudizi::attivo() ? 'Sconto acceso: ' . Giudizi::percentuale() . '%.' : 'Sconto spento per i nuovi clienti.') . ' ' . $aderiti . ' clienti hanno aderito; '
+                    return [true, (Giudizi::attivo() ? 'Sconto acceso: ' . Giudizi::percentuale() . '%, applicato ' . (Giudizi::quando() === 'giudizio' ? 'solo dopo il giudizio' : 'all\'adesione') . '.' : 'Sconto spento per i nuovi clienti.') . ' ' . $aderiti . ' clienti hanno aderito; '
                                   . $inHome . ' giudizi in home' . (Giudizi::homeAccesa() ? '.' : ' (sezione spenta).')];
                 case 'stripe':
                     if (!Stripe::enabled()) return [false, 'Stripe non è ancora configurato: servono la chiave segreta e il segreto del webhook.'];

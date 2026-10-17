@@ -5,7 +5,7 @@
 use function MHW\b;
 use MHW\{Support, Marketing};
 $title = 'Marketing';
-$ordine = ['percorso', 'motivi', 'tipologie', 'piani', 'regioni', 'citta', 'sezioni', 'lingue', 'visitate', 'inviti']; ?>
+$ordine = ['percorso', 'motivi', 'tipologie', 'piani', 'regioni', 'citta', 'sezioni', 'lingue', 'visitate', 'inviti', 'omaggi']; ?>
 <div class="stack stack--lg marketing">
   <div class="stack stack--sm">
     <h1>Marketing.</h1>

@@ -18,6 +18,8 @@ $host = function (): array {
     if (!$acc) Support::redirect('/admin');
     // 7A: la guida si comincia dopo la conferma dell'email («Entra come cliente» passa lo stesso).
     if (!Auth::isVerified($u) && !Auth::isImpersonating()) Support::redirect('/conferma-email');
+    // 9E: con una password provvisoria si può solo sceglierne una nuova.
+    if (!empty($u['must_change_password']) && !Auth::isImpersonating()) Support::redirect('/password/cambia');
     return [$u, $acc];
 };
 
@@ -984,6 +986,7 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
             'provider' => 'stripe', 'provider_session_id' => '', 'created_at' => Support::now(), 'updated_at' => Support::now(),
         ] + ($sc['discount_code_id'] ? ['discount_code_id' => $sc['discount_code_id']] : ($codiceSconto ? ['discount_code_id' => (int) $codiceSconto['id']] : []))
           + (Migrator::columnExists('orders', 'sconti') ? ['sconti' => $sc['sconti']] : [])
+          + (!empty($riep['omaggio']) && Migrator::columnExists('orders', 'codice_omaggio_id') ? ['codice_omaggio_id' => (int) $riep['omaggio']['id']] : [])   // 9D
           + (Migrator::columnExists('orders', 'acquirente') ? ['acquirente' => $acquirente, 'recesso_rinuncia' => $acquirente === 'consumatore' ? 1 : 0] : []));
         unset($_SESSION['acquisto']);
         $url = Stripe::checkoutSubscription(Db::one('SELECT * FROM orders WHERE id = ?', [$oid]), $pv, $pkg, $acc, $u, $riep);
@@ -1061,6 +1064,14 @@ $r->post('/pannello/novita/chiudi', function () use ($host) {
     $rel = preg_replace('#^' . preg_quote(Support::base(), '#') . '#', '', $path);
     Support::redirect(str_starts_with((string) $rel, '/pannello') || str_starts_with((string) $rel, '/account') ? (string) $rel : '/pannello');
 });
+/* 9D · La fascia del rinnovo (o della fine dell'omaggio) in cima al Quadro e ad Account: «Chiudi» la nasconde per 24 ore. */
+$r->post('/pannello/avviso-rinnovo/chiudi', function () use ($host) {
+    [, $acc] = $host();
+    $f = MHW\Richiami::fascia($acc);
+    if ($f) setcookie($f['chiave'], '1', ['expires' => time() + 86400, 'path' => Support::baseDir() . '/', 'httponly' => true, 'samesite' => 'Lax', 'secure' => Auth::httpsAttivo()]);
+    Support::redirect(preg_match('#^/(pannello|account)$#', (string) ($_POST['torna'] ?? '')) ? (string) $_POST['torna'] : '/pannello');
+});
+
 $r->post('/pannello/novita/visto', function () use ($host) {
     [, $acc] = $host();
     $id = (string) ($_POST['novita'] ?? '');
@@ -1496,6 +1507,13 @@ $r->post('/sconto/applica', function () use ($host, $tornaSconto) {
         if ($codice === '') throw new RuntimeException('Scrivi il codice.');
         $pv = $acc['intended_package_version_id'] ? Plans::currentVersion((int) $acc['intended_package_version_id']) : null;
         $q = $pv ? (Plans::quantity($pv, (int) ($acc['intended_quantity'] ?? 1)) ?? 1) : 1;
+        // 9D · Un codice omaggio (prefisso OMAGGIO-): si prenota all'account, l'invito decade.
+        if (MHW\Omaggi::sembra($codice)) {
+            $c = MHW\Omaggi::valida($codice, $acc);
+            MHW\Omaggi::applica($acc, $c);
+            Support::flash('Codice omaggio applicato: ' . (int) $c['mesi'] . ' mesi gratis, primo addebito il ' . Support::date(MHW\Omaggi::fineIso((int) $c['mesi'])) . '.');
+            Support::redirect($tornaSconto());
+        }
         // Qui si può scrivere anche il codice di invito di un amico (Invita un amico).
         if (!MHW\Sconti::trova($codice) && ($chi = MHW\Inviti::applicaCodice($acc, $codice)) !== null) {
             Support::flash('Invito di ' . $chi . ' applicato: −' . MHW\Inviti::AMICO . '% sul primo anno.');

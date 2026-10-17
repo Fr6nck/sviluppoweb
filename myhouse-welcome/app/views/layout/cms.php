@@ -25,7 +25,8 @@ $conLato = $u && !$soloPassi;
 $gruppiAdmin = $admin ? [
     'Vendite' => array_merge([['admin', '/admin', 'Quadro', 'grid'], ['prospetti', '/admin/prospetti', 'Prospetti', 'chart'], ['vendite', '/admin/vendite', 'Vendite per piano', 'layers'], ['marketing', '/admin/marketing', 'Marketing', 'chart'],
                   ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'], ['scadenze', '/admin/scadenze', 'Scadenze', 'calendar'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'],
-                  ['sconti', '/admin/sconti', 'Codici sconto', 'euro']], MHW\Inviti::disponibili() ? [['inviti', '/admin/inviti', 'Inviti', 'message']] : [],
+                  ['sconti', '/admin/sconti', 'Codici sconto', 'euro']], MHW\Omaggi::disponibili() ? [['omaggi', '/admin/omaggi', 'Codici omaggio', 'card']] : [],
+                  MHW\Inviti::disponibili() ? [['inviti', '/admin/inviti', 'Inviti', 'message']] : [],
                   MHW\Preventivi::disponibili() ? [['preventivi', '/admin/preventivi', 'Preventivi', 'message']] : []),
     'Clienti' => [['clienti', '/admin/clienti', 'Clienti', 'people'], ['guide', '/admin/guide', 'Guide', 'book'], ['anomalie', '/admin/anomalie', 'Anomalie', 'warning'],
                   ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe'], ['giudizi', '/admin/giudizi', 'Giudizi', 'star'], ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star']],
@@ -189,6 +190,28 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
       <div class="banner banner--info">
         <span><?= Icon::svg('info', 18) ?>Conferma la tua email (<?= Support::e($u['email']) ?>): puoi preparare la guida, ma per pubblicarla serve la conferma.</span>
         <form method="post" action="<?= b() ?>/verifica/invia"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm">Mandami di nuovo l'email</button></form>
+      </div>
+    <?php endif; ?>
+    <?php /* 9D · La fascia dei 30 giorni prima dell'addebito (o della scadenza), nel Quadro e in Account: a 7 giorni in evidenza; «Chiudi» per 24 ore. */
+          if (!$admin && in_array($nav, ['guide', 'account'], true) && !$prop && ($accF = Auth::account()) && ($fascia = MHW\Richiami::fascia($accF)) && empty($_COOKIE[$fascia['chiave']])): ?>
+      <div class="fascia fascia--<?= $fascia['tipo'] ?><?= $fascia['evidenza'] ? ' fascia--evidenza' : '' ?>" role="status">
+        <span class="fascia__testo">
+          <?php if ($fascia['tipo'] === 'omaggio'): ?>
+            <b>La tua prova gratuita finisce il <?= Support::e($fascia['data']) ?>.</b> Da quel giorno parte <?= Support::e($fascia['piano']) ?> a <?= Support::e($fascia['importo']) ?> l'anno<?= $fascia['carta'] !== '' ? ', sulla ' . Support::e($fascia['carta']) : '' ?>. Fino ad allora non paghi nulla.
+          <?php elseif ($fascia['tipo'] === 'rinnovo' && $fascia['evidenza']): ?>
+            <b>Tra <?= (int) $fascia['giorni'] ?> giorni, il <?= Support::e($fascia['data']) ?>,</b> addebitiamo <?= Support::e($fascia['importo']) ?> per il rinnovo di <?= Support::e($fascia['piano']) ?><?= $fascia['carta'] !== '' ? ' sulla ' . Support::e($fascia['carta']) : '' ?>. Se non vuoi rinnovare, disattivalo entro quella data: la guida resta online fino al <?= Support::e($fascia['data']) ?>.
+          <?php elseif ($fascia['tipo'] === 'rinnovo'): ?>
+            <b>Rinnovo il <?= Support::e($fascia['data']) ?></b> · <?= Support::e($fascia['piano']) ?> · <?= Support::e($fascia['importo']) ?><?= $fascia['carta'] !== '' ? ' sulla ' . Support::e($fascia['carta']) : '' ?>. Non devi fare nulla.
+          <?php else: ?>
+            <b>L'abbonamento scade il <?= Support::e($fascia['data']) ?> e non si rinnova.</b> Nessun addebito. Dopo quella data la guida non sarà più visibile.
+          <?php endif; ?>
+        </span>
+        <span class="fascia__azioni">
+          <?php if ($fascia['sub']['provider'] === 'stripe' && $fascia['sub']['provider_subscription_id'] !== ''): ?>
+            <form method="post" action="<?= b() ?>/account/rinnovo" style="margin:0"><?= Csrf::field() ?><button class="btn btn--sm<?= $fascia['evidenza'] && $fascia['automatico'] ? '' : ' btn--ghost' ?>" name="rinnovo" value="<?= $fascia['automatico'] ? 'no' : 'si' ?>"><?= $fascia['automatico'] ? 'Disattiva il rinnovo' : 'Riattiva il rinnovo' ?></button></form>
+          <?php endif; ?>
+          <form method="post" action="<?= b() ?>/pannello/avviso-rinnovo/chiudi" style="margin:0"><?= Csrf::field() ?><input type="hidden" name="torna" value="/<?= $nav === 'account' ? 'account' : 'pannello' ?>"><button class="btn btn--quiet btn--sm" aria-label="Chiudi l'avviso per 24 ore">Chiudi</button></form>
+        </span>
       </div>
     <?php endif; ?>
 <?php else: ?>

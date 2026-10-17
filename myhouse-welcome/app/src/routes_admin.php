@@ -53,6 +53,8 @@ $r->get('/admin', function () {
     }
     $anomalie = Gestione::contaAnomalie();
     if ($anomalie['alta'] > 0) $avvisi[] = ['Ci sono anomalie da guardare subito', $anomalie['alta'] . ($anomalie['alta'] === 1 ? ' controllo segnala' : ' controlli segnalano') . ' pagamenti o rinnovi che non tornano.', '/admin/anomalie', 'Guarda le anomalie'];
+    // 9D · I clienti in omaggio e quelli il cui primo addebito è vicino.
+    $numeri['omaggio'] = MHW\Omaggi::numeri(30);
     $adesso = Gestione::adesso();
     $numeri['arr'] = $adesso['arr'];
     $numeri['rinnovi30'] = $adesso['rinnovi']['30'];
@@ -97,16 +99,18 @@ $r->get('/admin/clienti', function () {
         };
         $row['scadenza'] = $sub['current_period_end'] ?? '';
         $row['rinnovo'] = $sub ? ($sub['provider'] !== 'stripe' ? 'staff' : ((int) $sub['cancel_at_period_end'] ? 'disattivato' : 'automatico')) : '';
+        // 9D · in omaggio: fino a quando (poi parte l'addebito)
+        $row['omaggio'] = $sub && ($sub['status'] ?? '') === 'trialing' && !empty($sub['omaggio_fino']) ? (string) $sub['omaggio_fino'] : '';
     }
     unset($row);
     // Filtri: stato e piano. Si applicano dopo il calcolo, perché lo stato non è una colonna.
     $filtroStato = (string) ($_GET['stato'] ?? ''); $filtroPiano = (string) ($_GET['piano'] ?? '');
     $piani = array_values(array_unique(array_filter(array_column($rows, 'plan'), fn($p) => $p !== '—')));
-    $rows = array_values(array_filter($rows, fn($x) => ($filtroStato === '' || $x['stato'][2] === $filtroStato) && ($filtroPiano === '' || $x['plan'] === $filtroPiano)));
+    $rows = array_values(array_filter($rows, fn($x) => ($filtroStato === '' || ($filtroStato === 'omaggio' ? $x['omaggio'] !== '' : $x['stato'][2] === $filtroStato)) && ($filtroPiano === '' || $x['plan'] === $filtroPiano)));
     if (($_GET['formato'] ?? '') === 'csv') {
-        Gestione::csv('clienti', ['Nome', 'Email', 'Email confermata', 'Struttura', 'Città', 'Strutture', 'Piano', 'Stato', 'Scadenza', 'Rinnovo', 'Registrato'],
+        Gestione::csv('clienti', ['Nome', 'Email', 'Email confermata', 'Struttura', 'Città', 'Strutture', 'Piano', 'Stato', 'Scadenza', 'Rinnovo', 'Omaggio fino al', 'Registrato'],
             array_map(fn($x) => [$x['name'], $x['email'], $x['email_verified_at'] ? 'sì' : 'no', $x['struttura'], $x['citta'], $x['strutture'], $x['plan'],
-                                 $x['stato'][0], $x['scadenza'] ? substr($x['scadenza'], 0, 10) : '', $x['rinnovo'], substr((string) $x['created_at'], 0, 10)], $rows));
+                                 $x['stato'][0], $x['scadenza'] ? substr($x['scadenza'], 0, 10) : '', $x['rinnovo'], $x['omaggio'] ? substr($x['omaggio'], 0, 10) : '', substr((string) $x['created_at'], 0, 10)], $rows));
     }
     View::out('admin/customers', ['rows' => $rows, 'cerca' => $cerca, 'filtroStato' => $filtroStato, 'filtroPiano' => $filtroPiano, 'piani' => $piani,
                                   'esempi' => Demo::presente(), 'nav' => 'clienti'], 'layout/cms');
@@ -126,8 +130,9 @@ $r->post('/admin/esci-da-cliente', function () {
 
 $r->get('/admin/cliente/{aid}', function (array $a) {
     Auth::requireAdmin();
+    $pwTemp = Migrator::columnExists('users', 'must_change_password') ? ', u.must_change_password, u.password_temp_until' : '';   // 9E
     $acc = Db::one('SELECT a.*, u.email, u.name AS user_name, u.id AS user_id, u.email_verified_at, u.terms_version,
-                           u.terms_accepted_at, u.privacy_version, u.privacy_accepted_at, u.dpa_version, u.dpa_accepted_at, u.created_at AS registrato
+                           u.terms_accepted_at, u.privacy_version, u.privacy_accepted_at, u.dpa_version, u.dpa_accepted_at, u.created_at AS registrato' . $pwTemp . '
                     FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [(int) $a['aid']]);
     if (!$acc) { http_response_code(404); View::out('pub/404', []); }
     $props = Db::all('SELECT * FROM properties WHERE account_id = ? ORDER BY id', [$acc['id']]);
@@ -152,8 +157,66 @@ $r->get('/admin/cliente/{aid}', function (array $a) {
         'parere' => \MHW\Migrator::tableExists('feedback') ? Db::one('SELECT * FROM feedback WHERE account_id = ?', [$acc['id']]) : null,
         'inviti' => Inviti::disponibili() ? ['stato' => Inviti::stato($acc), 'amici' => Inviti::amici((int) $acc['id']), 'invitato' => Inviti::invitato((int) $acc['id'])] : null,
         'traduzioni' => \MHW\Migrator::tableExists('translation_usage') ? ['mese' => Traduttore::usati((int) $acc['id']), 'omaggio' => Traduttore::omaggioFino((int) $acc['id'])] : null,
+        // 9E · i riquadri nuovi: l'anteprima di un cambio (dai parametri), le fatture pagate, i piani in vendita
+        'cambio' => (function () use ($acc) {
+            if (($_GET['cambio'] ?? '') === '') return null;
+            try { return ['ok' => true] + MHW\AzioniCliente::anteprimaCambio((int) $acc['id'], (string) $_GET['cambio'], $_GET['strutture'] ?? null) + ['modo' => (string) ($_GET['modo'] ?? 'subito'), 'motivo' => (string) ($_GET['motivo'] ?? '')]; }
+            catch (\RuntimeException $e) { return ['ok' => false, 'errore' => $e->getMessage()]; }
+        })(),
+        'fatture' => MHW\AzioniCliente::fatture($acc),
+        'pianiVendita' => Plans::public(),
+        'omaggio' => MHW\Omaggi::prenotato($acc),
         'nav' => 'clienti',
     ], 'layout/cms');
+});
+
+// ------------------------------------------------------------------- 9E · le azioni sul cliente
+/* Ferma o riattiva il rinnovo automatico: come lo fa il cliente, con il motivo nel registro e l'email. */
+$r->post('/admin/cliente/{aid}/rinnovo', function (array $a) {
+    Auth::requireAdmin();
+    $accId = (int) $a['aid'];
+    try { Support::flash(MHW\AzioniCliente::rinnovo($accId, ($_POST['ferma'] ?? '') === '1', trim((string) ($_POST['motivo'] ?? '')))); }
+    catch (\Throwable $e) { Support::flash($e instanceof \RuntimeException && !($e instanceof \PDOException) ? $e->getMessage() : 'Non è stato possibile (codice ' . Log::exception($e, 'admin rinnovo') . ').', 'err'); }
+    Support::redirect('/admin/cliente/' . $accId . '#abbonamento');
+});
+
+/* Cambia il pacchetto: «anteprima» rimanda alla scheda con il conto; «conferma» fa il cambio (subito con conguaglio, o dal rinnovo). */
+$r->post('/admin/cliente/{aid}/cambio', function (array $a) {
+    Auth::requireAdmin();
+    $accId = (int) $a['aid'];
+    $codice = (string) ($_POST['piano'] ?? ''); $strutture = $_POST['strutture'] ?? null; $modo = ($_POST['modo'] ?? '') === 'rinnovo' ? 'rinnovo' : 'subito';
+    $motivo = trim((string) ($_POST['motivo'] ?? ''));
+    if (($_POST['passo'] ?? '') !== 'conferma') {
+        Support::redirect('/admin/cliente/' . $accId . '?' . http_build_query(['cambio' => $codice, 'strutture' => $strutture, 'modo' => $modo, 'motivo' => $motivo]) . '#cambio');
+    }
+    try {
+        Support::flash($modo === 'rinnovo' ? MHW\AzioniCliente::cambiaDalRinnovo($accId, $codice, $strutture, $motivo) : MHW\AzioniCliente::cambiaSubito($accId, $codice, $strutture, $motivo));
+    } catch (\Throwable $e) {
+        Support::flash($e instanceof \RuntimeException && !($e instanceof \PDOException) ? $e->getMessage() : 'Non è stato possibile cambiare piano (codice ' . Log::exception($e, 'admin cambio piano') . ').', 'err');
+        Support::redirect('/admin/cliente/' . $accId . '?' . http_build_query(['cambio' => $codice, 'strutture' => $strutture, 'modo' => $modo, 'motivo' => $motivo]) . '#cambio');
+    }
+    Support::redirect('/admin/cliente/' . $accId . '#abbonamento');
+});
+
+/* Rimborso da Stripe, totale o parziale, con il motivo. Non tocca l'abbonamento. */
+$r->post('/admin/cliente/{aid}/rimborso', function (array $a) {
+    $admin = Auth::requireAdmin();
+    $accId = (int) $a['aid'];
+    try { Support::flash(MHW\AzioniCliente::rimborsa($accId, (string) ($_POST['invoice'] ?? ''), (string) ($_POST['importo'] ?? ''), (string) ($_POST['motivo'] ?? ''), (string) ($_POST['testo'] ?? ''), (int) $admin['id'])); }
+    catch (\Throwable $e) { Support::flash($e instanceof \RuntimeException && !($e instanceof \PDOException) ? $e->getMessage() : 'Il rimborso non è partito (codice ' . Log::exception($e, 'admin rimborso') . ').', 'err'); }
+    Support::redirect('/admin/cliente/' . $accId . '#fatture');
+});
+
+/* Password: il link per reimpostarla, oppure una provvisoria (mostrata una sola volta, 48 ore, da cambiare al primo accesso). */
+$r->post('/admin/cliente/{aid}/password/{cosa}', function (array $a) {
+    Auth::requireAdmin();
+    $accId = (int) $a['aid'];
+    try {
+        if ($a['cosa'] === 'link') { Support::flash(MHW\AzioniCliente::linkReset($accId)); }
+        elseif ($a['cosa'] === 'provvisoria') { $_SESSION['pw_provvisoria'] = MHW\AzioniCliente::passwordProvvisoria($accId); Support::flash('Password provvisoria impostata: la vedi qui sotto una sola volta. Vale 48 ore; al primo accesso il cliente deve sceglierne una nuova. Il cliente ha ricevuto un\'email di avviso.'); }
+        else { http_response_code(404); View::out('pub/404', []); }
+    } catch (\Throwable $e) { Support::flash($e instanceof \RuntimeException && !($e instanceof \PDOException) ? $e->getMessage() : 'Non è stato possibile (codice ' . Log::exception($e, 'admin password') . ').', 'err'); }
+    Support::redirect('/admin/cliente/' . $accId . '#accesso');
 });
 
 /** La nota interna sul cliente: solo per l'amministrazione, mai mostrata al cliente. */
@@ -886,6 +949,45 @@ $r->post('/admin/giudizi/{tid}/elimina', function (array $a) {
     if ($t) { MHW\Testimonianze::elimina((int) $t['id']); Auth::audit('testimonial.delete', null, ['id' => (int) $t['id']]); MHW\Seo::scriviFile(); }
     Support::flash($t ? 'Giudizio eliminato.' : 'Giudizio non trovato.', $t ? 'ok' : 'err');
     Support::redirect('/admin/giudizi');
+});
+
+/* 9B · Gli interruttori del programma dalla pagina Giudizi (le stesse impostazioni di Impostazioni → Giudizi con sconto). */
+$r->post('/admin/giudizi/impostazioni', function () {
+    $admin = Auth::requireAdmin();
+    $hash = (string) Db::val('SELECT password_hash FROM users WHERE id = ?', [(int) $admin['id']], '');
+    if (!password_verify((string) ($_POST['password'] ?? ''), $hash)) { Support::flash('La password non è giusta: niente è stato salvato.', 'err'); Support::redirect('/admin/giudizi#programma'); }
+    try { $errori = Impostazioni::salva('giudizi', $_POST); }
+    catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); Support::redirect('/admin/giudizi#programma'); }
+    if ($errori) { Support::flash(implode(' ', $errori), 'err'); Support::redirect('/admin/giudizi#programma'); }
+    Auth::audit('impostazioni.giudizi', null, ['campi' => array_keys(Impostazioni::GRUPPI['giudizi'])]);
+    Support::flash('Programma aggiornato.');
+    Support::redirect('/admin/giudizi#programma');
+});
+
+// ------------------------------------------------------------------- 9D · codici omaggio
+$r->get('/admin/omaggi', function () {
+    Auth::requireAdmin();
+    if (!MHW\Omaggi::disponibili()) { http_response_code(404); View::out('pub/404', []); }
+    $righe = MHW\Omaggi::tutti();
+    $nuovo = isset($_GET['nuovo']) ? MHW\Omaggi::riga((int) $_GET['nuovo']) : null;
+    View::out('admin/omaggi', ['righe' => $righe, 'nuovo' => $nuovo, 'vecchi' => $_SESSION['omaggio_vecchi'] ?? [], 'numeri' => MHW\Omaggi::numeri(30),
+                               'scadenzaSerie' => gmdate('Y-m-d', strtotime(MHW\Omaggi::oggi() . ' +' . MHW\Omaggi::GIORNI . ' days')), 'nav' => 'omaggi'], 'layout/cms');
+    unset($_SESSION['omaggio_vecchi']);
+});
+$r->post('/admin/omaggi', function () {
+    $admin = Auth::requireAdmin();
+    try { $id = MHW\Omaggi::crea($_POST, (int) $admin['id']); }
+    catch (\RuntimeException $e) { $_SESSION['omaggio_vecchi'] = $_POST; Support::flash($e->getMessage(), 'err'); Support::redirect('/admin/omaggi#nuovo'); }
+    $c = MHW\Omaggi::riga($id);
+    Auth::audit('omaggio.creato', null, ['codice' => (string) $c['codice'], 'mesi' => (int) $c['mesi'], 'scade_il' => (string) $c['scade_il'], 'nota' => (string) $c['nota']]);
+    Support::flash('Codice ' . $c['codice'] . ' creato: ' . (int) $c['mesi'] . ' mesi gratis, da usare entro il ' . Support::date($c['scade_il']) . '. Mandalo con uno dei bottoni.');
+    Support::redirect('/admin/omaggi?nuovo=' . $id);
+});
+$r->post('/admin/omaggi/{id}/annulla', function (array $a) {
+    Auth::requireAdmin();
+    try { MHW\Omaggi::annulla((int) $a['id']); Auth::audit('omaggio.annullato', null, ['id' => (int) $a['id']]); Support::flash('Codice annullato: non si applica più, nemmeno se era prenotato.'); }
+    catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
+    Support::redirect('/admin/omaggi');
 });
 
 $r->get('/admin/testimonianze', function () {

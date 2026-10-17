@@ -241,7 +241,9 @@ final class Sconti
     public static function sistema(?array $acc): array
     {
         $out = [];
-        if ($acc && Inviti::disponibili() && ($i = Inviti::invitato((int) $acc['id'])) && $i['status'] === 'registrato'
+        // 9D · Con un codice omaggio lo sconto dell'invito non si applica (omaggio e invito si escludono); il giudizio resta.
+        $omaggio = $acc ? Omaggi::daUsare($acc) : null;
+        if ($acc && !$omaggio && Inviti::disponibili() && ($i = Inviti::invitato((int) $acc['id'])) && $i['status'] === 'registrato'
             && !Db::one("SELECT id FROM orders WHERE account_id = ? AND status = 'paid'", [(int) $acc['id']])) {
             $out[] = ['tipo' => 'invito', 'nome' => 'Invito di ' . (explode(' ', trim((string) $i['referrer_name']))[0] ?: 'un amico'), 'percento' => Inviti::AMICO];
         }
@@ -254,18 +256,22 @@ final class Sconti
      * Gli sconti di sistema si sommano (percentuale sul totale, arrotondata una volta sola, come Stripe); un codice
      * sconto scritto a mano non si somma a niente: vale il più alto, e il riepilogo lo dice (nota).
      * $sistemaExtra: sconti di sistema noti dalla pagina (il visitatore arrivato da un invito, prima dell'account).
+     * 9D · Con un codice omaggio ('omaggio': codice, mesi, fine): oggi si paga 0 €, il totale del primo anno è quello del
+     * primo addebito alla fine dei mesi gratis; vale solo lo sconto del giudizio, niente invito né codici scritti a mano.
      * @return array{prezzo:int,righe:list<array{tipo:string,nome:string,percento:int,cents:int}>,sconto:int,totale:int,percento:int,
-     *               manuale:?array,scelta:string,nota:string,sistema:list<array>}
+     *               manuale:?array,scelta:string,nota:string,sistema:list<array>,omaggio:?array}
      */
     public static function riepilogo(array $pv, int $q, ?array $acc, array $sistemaExtra = []): array
     {
         $prezzo = Plans::price($pv, max(1, $q));
-        $sistema = array_merge(self::sistema($acc), $sistemaExtra);
+        $omaggio = $acc ? Omaggi::daUsare($acc) : null;
+        $sistema = array_merge(self::sistema($acc), $omaggio ? [] : $sistemaExtra);
+        if ($omaggio) $sistema = array_values(array_filter($sistema, fn($s) => $s['tipo'] === 'giudizio'));
         $visti = []; $sistema = array_values(array_filter($sistema, function ($s) use (&$visti) { if (isset($visti[$s['tipo']])) return false; $visti[$s['tipo']] = 1; return true; }));
         $percento = min(100, array_sum(array_column($sistema, 'percento')));
         $scontoSistema = $percento > 0 ? max(0, min((int) round($prezzo * $percento / 100), $prezzo - 100)) : 0;
         $manuale = null; $scontoManuale = 0;
-        if ($acc && self::disponibili() && !empty($acc['intended_discount_code_id']) && ($r = self::riga((int) $acc['intended_discount_code_id'])) && empty($r['sistema'])) {
+        if (!$omaggio && $acc && self::disponibili() && !empty($acc['intended_discount_code_id']) && ($r = self::riga((int) $acc['intended_discount_code_id'])) && empty($r['sistema'])) {
             try { self::valida($r['code'], $acc, $pv, $q); $manuale = $r; $scontoManuale = self::calcola($r, $prezzo); } catch (\RuntimeException) { $manuale = null; }
         }
         $righe = []; $nota = ''; $scelta = 'nessuna';
@@ -287,9 +293,11 @@ final class Sconti
         } else {
             $sconto = 0;
         }
+        if ($omaggio && $acc && !empty($acc['intended_discount_code_id'])) $nota = 'Con il codice omaggio non si applicano altri codici sconto né l\'invito di un amico.';
         return ['prezzo' => $prezzo, 'righe' => $righe, 'sconto' => $sconto, 'totale' => $prezzo - $sconto,
                 'percento' => $scelta === 'sistema' ? $percento : ($scelta === 'manuale' && $manuale['kind'] === 'percent' ? (int) $manuale['value'] : 0),
-                'manuale' => $manuale, 'scelta' => $scelta, 'nota' => $nota, 'sistema' => $sistema];
+                'manuale' => $manuale, 'scelta' => $scelta, 'nota' => $nota, 'sistema' => $sistema,
+                'omaggio' => $omaggio ? ['id' => (int) $omaggio['id'], 'codice' => (string) $omaggio['codice'], 'mesi' => (int) $omaggio['mesi'], 'fine' => Omaggi::fine((int) $omaggio['mesi'])] : null];
     }
 
     /**

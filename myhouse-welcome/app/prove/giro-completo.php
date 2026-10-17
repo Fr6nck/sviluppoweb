@@ -2400,7 +2400,7 @@ prova('6E · passo «Pubblica»: prezzo pieno barrato, 101,60 € il primo anno,
 $dora->post('/sconto/togli', ['torna' => "/pannello/$dpid/procedura/pubblica"]);
 $r = $dora->get("/pannello/$dpid/procedura/pubblica");
 prova('6E · «Togli»: il codice va via e torna «Hai un codice sconto?»', !val('SELECT intended_discount_code_id FROM accounts WHERE id = ?', [$dacc])
-      && str_contains($r['body'], 'Hai un codice sconto?') && str_contains($r['body'], "127\u{00A0}€"));
+      && str_contains($r['body'], 'Hai un codice sconto o un codice omaggio?') && str_contains($r['body'], "127\u{00A0}€"));
 // Le date si scrivono per esteso (regole del copy): «5 dicembre 2026».
 $estesa = fn(string $ymd) => (int) substr($ymd, 8, 2) . ' ' . ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'][(int) substr($ymd, 5, 2) - 1] . ' ' . substr($ymd, 0, 4);
 $motivi = [];
@@ -4616,8 +4616,8 @@ foreach (['src', 'views', 'lang'] as $c8) foreach (new RecursiveIteratorIterator
 $sorgenti8j .= file_get_contents("$DOVE/app/config.php");
 prova('8J · nel codice nessuna vecchia P.IVA né «Blackout Agency» come ragione sociale di serie', !str_contains($sorgenti8j, '02945910541') && !str_contains($sorgenti8j, "'Blackout Agency')")
       && !str_contains($sorgenti8j, 'un progetto Blackout'));
-prova('8J · Termini: 17 punti con indice (9B: giudizio con sconto), recesso impresa/consumatore, 18 anni, foro di Perugia, modulo di recesso; Privacy: 13 trattamenti in tabella (9A: preventivi), fornitori, diritti, nessun DPO',
-      substr_count($pag8j['/termini']['body'], 'class="legale__parte"') === 19 && str_contains($pag8j['/termini']['body'], 'id="recesso"') && str_contains($pag8j['/termini']['body'], 'almeno 18 anni')
+prova('8J · Termini: 18 punti con indice (9B giudizio con sconto, 9D codice omaggio), recesso impresa/consumatore, 18 anni, foro di Perugia, modulo di recesso; Privacy: 13 trattamenti in tabella (9A: preventivi), fornitori, diritti, nessun DPO',
+      substr_count($pag8j['/termini']['body'], 'class="legale__parte"') === 20 && str_contains($pag8j['/termini']['body'], 'id="recesso"') && str_contains($pag8j['/termini']['body'], 'almeno 18 anni')
       && str_contains($pag8j['/termini']['body'], 'foro di Perugia') && str_contains($pag8j['/termini']['body'], 'id="modulo-recesso"') && str_contains($pag8j['/termini']['body'], 'Compila e manda il modulo per email')
       && substr_count($pag8j['/privacy']['body'], 'class="legale__tabella"') === 13 && str_contains($pag8j['/privacy']['body'], 'Hostinger') && str_contains($pag8j['/privacy']['body'], 'Stripe Payments Europe')
       && str_contains($pag8j['/privacy']['body'], 'Non è stato nominato un responsabile della protezione dei dati') && str_contains($pag8j['/privacy']['body'], 'entro 30 giorni')
@@ -4837,7 +4837,7 @@ $paolaAcc9 = $accDi('paola@prova.test');
 db()->prepare("UPDATE subscriptions SET status = 'active', cancel_at_period_end = 0, current_period_end = ? WHERE provider_subscription_id = 'sub_prova_paola'")->execute([gmdate('Y-m-d\TH:i:s\Z', time() + 300 * 86400)]);
 $nina = new Browser('nina9a');
 $r = $nina->get('/registrati');
-prova('9A · registrazione senza link: campo facoltativo «Hai un codice di invito?» con «Applica», nessun prezzo barrato', str_contains($r['body'], 'Hai un codice di invito?')
+prova('9A · registrazione senza link: campo facoltativo «Hai un codice di invito?» con «Applica», nessun prezzo barrato', str_contains($r['body'], 'Hai un codice di invito o omaggio?')
       && str_contains($r['body'], 'name="codice_invito"') && str_contains($r['body'], 'data-invito-applica') && !str_contains($r['body'], 'name="codice_invito" type="text" value="') && !str_contains($r['body'], 'class="reg-prezzo"><s>'));
 $r = $nina->post('/invito/verifica', ['codice' => 'ZZZZZZ'], ['Accept: application/json']);
 $j = json_decode($r['body'], true);
@@ -4885,13 +4885,13 @@ $ncore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 
 $nina->post("/pannello/$pn/sezioni/$ncore", ['checkin_steps' => ['Suona al citofono.']]);
 $r = $nina->get('/account');
 prova('9A · Account & Fatturazione prima del pagamento: l\'invito e il campo «Hai un codice sconto o un invito?»', str_contains($r['body'], '<b>Invito di Paola</b>: −5% sul primo anno')
-      && str_contains($r['body'], 'Hai un codice sconto o un invito?') && str_contains($r['body'], 'name="torna" value="/account"'));
+      && str_contains($r['body'], 'Hai un codice sconto, un invito o un codice omaggio?') && str_contains($r['body'], 'name="torna" value="/account"'));
 $r = $nina->get("/pannello/$pn/procedura/pubblica");
 prova('9A · passo Pubblica: prezzo barrato, riga verde −5%, riepilogo (prezzo pieno, invito −8,85 €, totale 168,15 €, dal secondo anno 177 €), solo il campo del codice',
       str_contains($r['body'], "style=\"font-size:18px\">177\u{00A0}€</s>") && str_contains($r['body'], "168,15\u{00A0}€<span class=\"small muted\"> + IVA il primo anno")
       && str_contains($r['body'], '<p class="plan__sconto-riga" style="margin:0">−5% primo anno</p>') && str_contains($r['body'], "Portfolio · 2 strutture</span><b>177\u{00A0}€</b>")
       && str_contains($r['body'], "Invito di Paola · −5% primo anno</span><b>−8,85\u{00A0}€</b>") && str_contains($r['body'], "Totale primo anno</span><b>168,15\u{00A0}€ <small>+ IVA</small></b>")
-      && str_contains($r['body'], "Dal secondo anno 177\u{00A0}€ + IVA: gli sconti valgono solo sul primo anno.") && str_contains($r['body'], 'Hai un codice sconto o un invito?')
+      && str_contains($r['body'], "Dal secondo anno 177\u{00A0}€ + IVA: gli sconti valgono solo sul primo anno.") && str_contains($r['body'], 'Hai un codice sconto, un invito o un codice omaggio?')
       && !str_contains($r['body'], '/sconto/togli'));
 // Un codice scritto a mano non si somma: vale il più alto, e il riepilogo lo dice.
 $admin->get('/admin/sconti');
@@ -5117,6 +5117,286 @@ prova('9B · interruttore spento: nessuna casella al pagamento, riquadro «Racco
       && str_contains($ugo->get('/account')['body'], '5% già applicato al primo anno') && !str_contains($vera->get('/giudizio')['body'], 'name="partecipo"'));
 $admin->post('/admin/impostazioni/giudizi', ['giudizi__sconto_attivo' => '1', 'giudizi__percentuale' => '5', 'giudizi__home' => '1', 'password' => 'AdminProva123']);
 prova('9B · riacceso: la casella torna', str_contains($vera->get("/pannello/$pvv/procedura/pubblica")['body'], 'id="giudizio-sconto"'));
+// ================================================================= 9B-bis
+// Le date come le scrive Support::date («17 ottobre 2026»), senza caricare le classi dell'app.
+function dataIt(string $iso): string {
+    $t = strtotime($iso);
+    $mesi = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+    return (int) gmdate('j', $t) . ' ' . $mesi[(int) gmdate('n', $t) - 1] . ' ' . gmdate('Y', $t);
+}
+capitolo('9B-bis · «Quando si applica lo sconto» del giudizio: all\'adesione o solo dopo il giudizio');
+$admin->get('/admin/giudizi');
+$r = $admin->post('/admin/giudizi/impostazioni', ['giudizi__sconto_attivo' => '1', 'giudizi__percentuale' => '5', 'giudizi__sconto_quando' => 'giudizio', 'giudizi__home' => '1', 'password' => 'AdminProva123']);
+$g9 = $admin->get('/admin/giudizi')['body'];
+prova('9B-bis · Amministrazione → Giudizi: il riquadro del programma salva «solo dopo il giudizio» (config.local.php) e lo mostra scelto', $r['code'] === 302 && str_contains($g9, '<option value="giudizio" selected')
+      && $php9('echo MHW\Giudizi::quando();') === 'giudizio' && str_contains($g9, 'Programma aggiornato.'));
+prova('9B-bis · con la password sbagliata niente si salva', str_contains($admin->segui($admin->post('/admin/giudizi/impostazioni', ['giudizi__sconto_quando' => 'adesione', 'password' => 'no']))['body'], 'La password non è giusta')
+      && $php9('echo MHW\Giudizi::quando();') === 'giudizio');
+// Teo aderisce al pagamento: con «solo dopo il giudizio» il riepilogo non ha ancora la riga, e lo dice.
+$teo = new Browser('teo9b');
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$teo->get('/registrati?piano=' . pv('plus'));
+$teo->post('/registrati', ['piano' => pv('plus'), 'name' => 'Teo Dopo', 'email' => 'teo9b@prova.test', 'email2' => 'teo9b@prova.test', 'password' => 'TeoProva12345', 'termini' => '1']);
+$tacc = $accDi('teo9b@prova.test');
+$linkT = linkPosta('teo9b@prova.test', 'verifica'); $teo->get(substr($linkT, strpos($linkT, '/verifica/')));
+$teo->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Teo', 'city' => 'Foligno']);
+$pt = (int) val('SELECT id FROM properties WHERE account_id = ? ORDER BY id', [$tacc]);
+$teo->post('/giudizio/adesione', ['giudizio_adesione' => '1', 'torna' => "/pannello/$pt/procedura/pubblica"]);
+$r = $teo->get("/pannello/$pt/procedura/pubblica");
+prova('9B-bis · «solo dopo il giudizio»: la casella spuntata promette lo sconto ma il riepilogo resta a 127 €, con la riga che spiega quando parte',
+      (string) val('SELECT giudizio_sconto_stato FROM accounts WHERE id = ?', [$tacc]) === 'promesso' && !str_contains($r['body'], 'Giudizio · ')
+      && str_contains($r['body'], "Totale primo anno</span><b>127\u{00A0}€") && str_contains($r['body'], 'Lo sconto parte quando hai lasciato il giudizio')
+      && str_contains($teo->get('/account')['body'], '5% dopo il giudizio: sul primo addebito o sul rinnovo'));
+$admin->get('/admin/giudizi');
+$admin->post('/admin/giudizi/impostazioni', ['giudizi__sconto_attivo' => '1', 'giudizi__percentuale' => '5', 'giudizi__sconto_quando' => 'adesione', 'giudizi__home' => '1', 'password' => 'AdminProva123']);
+$r = $teo->get("/pannello/$pt/procedura/pubblica");
+prova('9B-bis · tornati «all\'adesione»: la riga «Giudizio · −5%» e 120,65 € compaiono subito', str_contains($r['body'], "Giudizio · −5% primo anno</span><b>−6,35\u{00A0}€</b>") && str_contains($r['body'], "Totale primo anno</span><b>120,65\u{00A0}€"));
+
+// ================================================================= 9D
+capitolo('9D · codici omaggio: mesi gratis con la carta, avvisi a 30 e 7 giorni, Termini, Amministrazione');
+$m9d = $php9('$f = require "' . $DOVE . '/app/migrations/045_omaggio_9d.php"; $f(MHW\Db::conn()); echo "fatto";');
+prova('9D · migrazione 045 una seconda volta: niente cambia', $m9d === 'fatto' && (bool) val("SELECT 1 FROM schema_migrations WHERE name LIKE '045%'"), $m9d);
+// L'amministrazione crea un codice da 3 mesi: la pagina con i tre bottoni e il messaggio pronto.
+$admin->get('/admin/omaggi');
+$r = $admin->post('/admin/omaggi', ['mesi' => '3', 'scade_il' => '', 'nota' => 'Tester 9D']);
+$cod9d = riga('SELECT * FROM codici_omaggio ORDER BY id DESC');
+$pg = $admin->segui($r)['body'];
+prova('9D · Vendite → Codici omaggio: codice OMAGGIO-XXXXX creato (3 mesi, scade tra 14 giorni), con WhatsApp, Email, Copia il link e il messaggio con {mesi} {link} {codice} {scadenza}',
+      $r['code'] === 302 && $cod9d && preg_match('/^OMAGGIO-[A-HJ-NP-Z2-9]{5}$/', (string) $cod9d['codice']) === 1 && (int) $cod9d['mesi'] === 3
+      && $cod9d['scade_il'] === gmdate('Y-m-d', strtotime('+14 days')) && str_contains($pg, 'wa.me/?text=') && str_contains($pg, 'mailto:?subject=') && str_contains($pg, 'data-copia="')
+      && str_contains($pg, 'Ti abbiamo riservato 3 mesi gratis') && str_contains($pg, 'Il codice ' . $cod9d['codice'] . ' vale fino al ' . dataIt($cod9d['scade_il']))
+      && preg_match('#/admin/omaggi"[^>]*>(?:<svg.*?</svg>)?\s*(?:<span>)?Codici omaggio<#s', $pg) === 1, json_encode($cod9d));
+prova('9D · i mesi fuori da 1–12 e la scadenza passata sono rifiutati', str_contains($admin->segui($admin->post('/admin/omaggi', ['mesi' => '13', 'nota' => 'x']))['body'], 'I mesi gratis vanno da 1 a 12')
+      && str_contains($admin->segui($admin->post('/admin/omaggi', ['mesi' => '2', 'scade_il' => '2020-01-01']))['body'], 'La data di scadenza è già passata'));
+// Ida arriva dal link: la registrazione con il banner e il campo in sola lettura.
+$ida = new Browser('ida9d');
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$ida->get('/i/' . $codP9);   // prima da un invito di Paola: il link dell'omaggio lo scavalca
+$r = $ida->get('/omaggio/' . substr($cod9d['codice'], 8));
+$reg = $ida->get('/registrati')['body'];
+$fine9d = (new DateTimeImmutable('today', new DateTimeZone('UTC')))->modify('+3 months')->getTimestamp();
+prova('9D · /omaggio/XXXXX: il codice in sessione (l\'invito no), registrazione con il banner «Hai 3 mesi gratis» e il campo in sola lettura', $r['code'] === 302 && str_ends_with($r['loc'], '/registrati')
+      && str_contains($reg, '<b>Hai 3 mesi gratis.</b>') && str_contains($reg, 'value="' . $cod9d['codice'] . '" readonly') && str_contains($reg, 'primo addebito il ' . dataIt(gmdate('Y-m-d\TH:i:s\Z', $fine9d)))
+      && !str_contains($reg, 'Codice di Paola'));
+$ida->post('/registrati', ['piano' => pv('plus'), 'name' => 'Ida Omaggio', 'email' => 'ida9d@prova.test', 'email2' => 'ida9d@prova.test', 'password' => 'IdaProva12345', 'termini' => '1']);
+$iacc = $accDi('ida9d@prova.test');
+prova('9D · registrata: il codice è prenotato all\'account, nessun invito', $iacc > 0 && (int) val('SELECT codice_omaggio_id FROM accounts WHERE id = ?', [$iacc]) === (int) $cod9d['id']
+      && !val('SELECT id FROM referrals WHERE friend_account_id = ?', [$iacc]));
+$linkI = linkPosta('ida9d@prova.test', 'verifica'); $ida->get(substr($linkI, strpos($linkI, '/verifica/')));
+$ida->modulo('/account', '/sconto/applica', ['codice' => $codP9, 'torna' => '/account']);
+$r = $ida->get('/account');
+prova('9D · un codice di invito dopo l\'omaggio: «Hai già un codice omaggio: non si somma a un invito»; in Account i mesi gratis e il primo addebito',
+      str_contains($r['body'], 'Hai già un codice omaggio: non si somma a un invito.') && str_contains($r['body'], '<b>Codice omaggio ' . $cod9d['codice'] . '</b>: 3 mesi gratis')
+      && !val('SELECT id FROM referrals WHERE friend_account_id = ?', [$iacc]));
+// Leo: prima l'invito di Paola, poi un codice omaggio scritto a mano in Account: l'invito si chiude come «omaggio».
+$admin->get('/admin/omaggi'); $admin->post('/admin/omaggi', ['mesi' => '6', 'scade_il' => '', 'nota' => 'Leo']);
+$cod2 = riga('SELECT * FROM codici_omaggio ORDER BY id DESC');
+$leo = new Browser('leo9d');
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$leo->get('/i/' . $codP9); $leo->get('/registrati');
+$leo->post('/registrati', ['piano' => pv('plus'), 'name' => 'Leo Invitato', 'email' => 'leo9d@prova.test', 'email2' => 'leo9d@prova.test', 'password' => 'LeoProva12345', 'termini' => '1']);
+$lacc = $accDi('leo9d@prova.test');
+$linkL = linkPosta('leo9d@prova.test', 'verifica'); $leo->get(substr($linkL, strpos($linkL, '/verifica/')));
+$primaRef = (string) val('SELECT status FROM referrals WHERE friend_account_id = ?', [$lacc]);
+$leo->modulo('/account', '/sconto/applica', ['codice' => strtolower((string) $cod2['codice']), 'torna' => '/account']);
+prova('9D · Leo arrivato da un invito scrive un codice omaggio a mano (anche minuscolo): vale l\'omaggio, l\'invito di Paola si chiude come «omaggio» e lo sconto dell\'amico decade',
+      $primaRef === 'registrato' && (string) val('SELECT status FROM referrals WHERE friend_account_id = ?', [$lacc]) === 'omaggio' && (int) val('SELECT codice_omaggio_id FROM accounts WHERE id = ?', [$lacc]) === (int) $cod2['id']
+      && val('SELECT intended_discount_code_id FROM accounts WHERE id = ?', [$lacc]) === null && !str_contains($leo->get('/account')['body'], 'Invito di Paola'));
+$ida->modulo('/account', '/sconto/applica', ['codice' => (string) $cod2['codice'], 'torna' => '/account']);
+prova('9D · un codice prenotato a un altro: «già stato usato»', str_contains($ida->get('/account')['body'], 'Questo codice omaggio è già stato usato.'));
+db()->prepare("INSERT INTO codici_omaggio (codice, mesi, scade_il, nota, creato_da, created_at) VALUES ('OMAGGIO-VECC9', 2, ?, 'scaduto', 1, ?)")->execute([gmdate('Y-m-d', strtotime('-1 day')), gmdate('Y-m-d\TH:i:s\Z')]);
+prova('9D · un codice scaduto: «scaduto il …»; uno inesistente: «non esiste»', str_contains($ida->segui($ida->post('/sconto/applica', ['codice' => 'OMAGGIO-VECC9', 'torna' => '/account']))['body'], 'è scaduto il ' . dataIt(gmdate('Y-m-d', strtotime('-1 day'))))
+      && str_contains($ida->segui($ida->post('/sconto/applica', ['codice' => 'OMAGGIO-ZZZZZ', 'torna' => '/account']))['body'], 'Questo codice omaggio non esiste o non è più attivo'));
+// Un codice libero (quello di Ida è già prenotato a lei): la verifica dal modulo di registrazione.
+$admin->get('/admin/omaggi'); $admin->post('/admin/omaggi', ['mesi' => '3', 'scade_il' => '', 'nota' => 'verifica']);
+$codV9d = riga('SELECT * FROM codici_omaggio ORDER BY id DESC');
+prova('9D · POST /invito/verifica con un codice omaggio: mesi e primo addebito (per la registrazione senza ricaricare)', ($vis9d = new Browser('vis9d')) && $vis9d->get('/registrati') && ($j = json_decode($vis9d->post('/invito/verifica', ['codice' => $codV9d['codice']], ['Accept: application/json'])['body'] ?? '', true))
+      && ($j['ok'] ?? false) && ($j['tipo'] ?? '') === 'omaggio' && ($j['mesi'] ?? 0) === 3, json_encode($j ?? null));
+// Il Checkout di Ida: 0 € oggi, trial_end, carta obbligatoria, solo il coupon del giudizio.
+$ida->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Ida', 'city' => 'Orvieto']);
+$pi = (int) val('SELECT id FROM properties WHERE account_id = ? ORDER BY id', [$iacc]);
+db()->prepare("UPDATE properties SET cin = 'IT054039C2IDA9D001' WHERE id = ?")->execute([$pi]);
+$icore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$pi]);
+$ida->post("/pannello/$pi/sezioni/$icore", ['checkin_steps' => ['Citofono.']]);
+$ida->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Ida Omaggio', 'cf' => 'MRORSS85T41D612D', 'billing_address' => 'Via Ida 1', 'billing_postal' => '05018', 'billing_city' => 'Orvieto', 'billing_province' => 'TR']);
+$r = $ida->get("/pannello/$pi/procedura/pubblica");
+$dataFine9d = dataIt(gmdate('Y-m-d\TH:i:s\Z', $fine9d));
+prova('9D · passo Pubblica con l\'omaggio: «Oggi paghi 0 €», 3 mesi gratis, primo addebito di 127 € + IVA il …, riepilogo con «Oggi 0 €» e il bottone «Inserisci la carta e pubblica · 0 € oggi, 127 € + IVA il …»',
+      str_contains($r['body'], '<b>Oggi paghi 0 €.</b> I tuoi primi <b>3 mesi sono gratis</b>') && str_contains($r['body'], "primo addebito di <b>127\u{00A0}€ + IVA</b> sarà il <b>$dataFine9d</b>")
+      && str_contains($r['body'], '<span>Oggi</span><b>0&nbsp;€</b>') && str_contains($r['body'], "<span>Il $dataFine9d</span><b>127\u{00A0}€ <small>+ IVA</small>")
+      && str_contains($r['body'], "Inserisci la carta e pubblica <small class=\"btn__sotto\">0 € oggi · 127\u{00A0}€ + IVA il $dataFine9d") && str_contains($r['body'], 'Codice omaggio ' . $cod9d['codice']));
+@unlink("$DOVE/app/storage/.prezzi-stripe.json");
+$prima9d = count(richiesteStripe());
+$r = $ida->modulo("/pannello/$pi/procedura/pubblica", "/pannello/$pi/pubblica", ['acquirente' => 'impresa', 'giudizio_casella' => '1', 'giudizio_adesione' => '1']);
+$ordI = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$iacc]);
+$sesI = array_values(array_filter(array_slice(richiesteStripe(), $prima9d), fn($x) => $x['percorso'] === '/v1/checkout/sessions' && $x['metodo'] === 'POST'))[0]['corpo'] ?? [];
+$statoI = json_decode((string) file_get_contents("$STRIPE_DIR/stato.json"), true);
+prova('9D · Checkout: trial_end = mezzanotte UTC di oggi + 3 mesi, carta obbligatoria (payment_method_collection=always, missing_payment_method=cancel), solo il coupon del giudizio, metadati omaggio, sessione a 0 €, ordine con il codice',
+      $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/') && (string) ($sesI['subscription_data']['trial_end'] ?? '') === (string) $fine9d
+      && ($sesI['payment_method_collection'] ?? '') === 'always' && ($sesI['subscription_data']['trial_settings']['end_behavior']['missing_payment_method'] ?? '') === 'cancel'
+      && count($sesI['discounts'] ?? []) === 1 && ($sesI['discounts'][0]['coupon'] ?? '') === 'mhw-giudizio-5' && ($sesI['metadata']['omaggio_codice'] ?? '') === $cod9d['codice'] && ($sesI['metadata']['omaggio_mesi'] ?? '') === '3'
+      && ($sesI['metadata']['sconti'] ?? '') === 'giudizio:5' && (int) ($statoI['sessioni'][$ordI['provider_session_id']]['amount_total'] ?? -1) === 0
+      && (int) $ordI['codice_omaggio_id'] === (int) $cod9d['id'] && (int) $ordI['amount_cents'] === 12700 && $ordI['status'] === 'pending', json_encode([$sesI['subscription_data'] ?? null, $sesI['discounts'] ?? null]));
+// Il webhook: l'abbonamento nasce «trialing», la guida va online, il codice si brucia, la carta si ricorda.
+$statoI['subs']['sub_ida9d'] = ['cancel_at_period_end' => false, 'status' => 'trialing', 'start' => time(), 'end' => $fine9d, 'trial_end' => $fine9d, 'extra' => null, 'discounts' => ['mhw-giudizio-5'], 'last4' => '4242'];
+file_put_contents("$STRIPE_DIR/stato.json", json_encode($statoI));
+$r = inviaWebhook(['id' => 'evt_ida9d_ok', 'type' => 'checkout.session.completed', 'data' => ['object' => ['id' => $ordI['provider_session_id'], 'mode' => 'subscription', 'payment_status' => 'paid',
+    'subscription' => 'sub_ida9d', 'customer' => 'cus_ida9d', 'metadata' => ['order_id' => (string) $ordI['id'], 'account_id' => (string) $iacc], 'total_details' => ['amount_discount' => 0]]]]);
+$subI = riga('SELECT * FROM subscriptions WHERE account_id = ? ORDER BY id DESC', [$iacc]);
+$cod9d = riga('SELECT * FROM codici_omaggio WHERE id = ?', [$cod9d['id']]);
+$ia = riga('SELECT * FROM accounts WHERE id = ?', [$iacc]);
+prova('9D · webhook: abbonamento «trialing» fino a fine omaggio, guida online, codice bruciato (usato da Ida), carta 4242, sconto del giudizio ancora «promesso» (si applica alla prima fattura)',
+      str_starts_with($r['body'], 'abbonamento-attivato') && $subI['status'] === 'trialing' && substr((string) $subI['current_period_end'], 0, 10) === gmdate('Y-m-d', $fine9d)
+      && substr((string) $subI['omaggio_fino'], 0, 10) === gmdate('Y-m-d', $fine9d) && $subI['card_last4'] === '4242' && $cod9d['usato_at'] !== null && (int) $cod9d['usato_da_account_id'] === $iacc
+      && (string) val('SELECT status FROM properties WHERE id = ?', [$pi]) === 'published' && ($ia['giudizio_sconto_stato'] ?? '') === 'promesso', $r['body']);
+$r = $ida->get('/account');
+prova('9D · Account: «In omaggio · Omaggio fino al … · poi 120,65 € + IVA l\'anno», carta •••• 4242, «Disattiva il rinnovo» con «fino al … la guida resta online e non paghi nulla»',
+      str_contains($r['body'], 'In omaggio') && str_contains($r['body'], "Omaggio fino al <b>$dataFine9d</b>") && str_contains($r['body'], "poi 120,65\u{00A0}€ + IVA l'anno")
+      && str_contains($r['body'], 'carta •••• 4242') && str_contains($r['body'], 'name="rinnovo" value="no">Disattiva il rinnovo</button>') && str_contains($r['body'], "Fino al $dataFine9d la guida resta online e non paghi nulla"));
+prova('9D · lo stesso codice da chi ha già pagato: «solo per i nuovi clienti»; da un altro: «già stato usato»; il link /omaggio da loggato rimanda ad Account',
+      str_contains($ida->segui($ida->get('/omaggio/' . substr($cod9d['codice'], 8)))['body'], 'vale solo per i nuovi clienti')
+      && str_contains($leo->segui($leo->post('/sconto/applica', ['codice' => $cod9d['codice'], 'torna' => '/account']))['body'], 'Questo codice omaggio è già stato usato.'));
+prova('9D · Clienti: colonna «Omaggio fino al» e il filtro «In omaggio»; Quadro: «Clienti in omaggio»', str_contains($cl = $admin->get('/admin/clienti?stato=omaggio')['body'], 'Ida Omaggio') && str_contains($cl, $dataFine9d) && !str_contains($cl, 'Leo Invitato')
+      && preg_match('#Clienti in omaggio</span>.*?<b class="cifra__valore">1</b>#s', $admin->get('/admin')['body']) === 1);
+prova('9D · Marketing: la tabella «Codici omaggio» (creati, usati, diventati paganti)', str_contains($mk = $admin->get('/admin/marketing?periodo=30')['body'], 'id="mk-omaggi"') && str_contains($mk, 'Codici usati'));
+// Gli avvisi: a 7 giorni dalla fine dell'omaggio (importo da Stripe), anche con gli avvisi disattivati; a 30 giorni no.
+db()->prepare("INSERT INTO email_optout (account_id, kind, created_at) VALUES (?, 'rinnovo', ?)")->execute([$iacc, gmdate('Y-m-d\TH:i:s\Z')]);
+$fra7 = gmdate('Y-m-d\TH:i:s\Z', time() + 7 * 86400 + 1800);
+db()->prepare('UPDATE subscriptions SET current_period_end = ?, omaggio_fino = ? WHERE id = ?')->execute([$fra7, $fra7, $subI['id']]);
+$statoI = json_decode((string) file_get_contents("$STRIPE_DIR/stato.json"), true);
+$statoI['upcoming']['sub_ida9d'] = ['subtotal' => 12700, 'total_excluding_tax' => 12065, 'total' => 14719, 'total_discount_amounts' => [['amount' => 635]]];
+file_put_contents("$STRIPE_DIR/stato.json", json_encode($statoI));
+$primaPosta = count(righePosta() ?: []);
+$cron9d = $cron();
+$posta9d = array_values(array_filter(array_map(fn($l) => json_decode($l, true), array_slice(righePosta() ?: [], $primaPosta)), fn($m) => ($m['to'] ?? '') === 'ida9d@prova.test'));
+$m7 = $posta9d[0] ?? [];
+prova('9D · a 7 giorni dalla fine dell\'omaggio: l\'email «Tra 7 giorni finisce la tua prova gratuita» con piano, 120,65 € + IVA da Stripe, carta 4242, parte anche con gli avvisi disattivati e lo dice nel piè',
+      ($cron9d['email']['rinnovo'] ?? 0) >= 1 && count($posta9d) === 1 && str_contains((string) ($m7['subject'] ?? ''), 'Tra 7 giorni finisce la tua prova gratuita')
+      && str_contains((string) ($m7['text'] ?? ''), "la tua prova gratuita finisce il " . dataIt($fra7) . ": da quel giorno parte l'abbonamento Plus a 120,65\u{00A0}€ + IVA l'anno, sulla carta che termina con 4242")
+      && str_contains((string) ($m7['text'] ?? ''), 'Hai uno sconto del 5%') && str_contains((string) ($m7['text'] ?? ''), 'non si può disattivare')
+      && (string) val("SELECT ref FROM email_log WHERE account_id = ? AND kind = 'rinnovo' ORDER BY id DESC", [$iacc]) === $subI['id'] . '-' . substr($fra7, 0, 10) . '-7', json_encode($m7));
+$r = $ida->get('/pannello');
+prova('9D · nel pannello la fascia in evidenza: «La tua prova gratuita finisce il …», 120,65 € + IVA, carta •••• 4242, «Disattiva il rinnovo»; «Chiudi» la nasconde per 24 ore (cookie)',
+      preg_match('/class="fascia fascia--omaggio fascia--evidenza"/', $r['body']) === 1 && str_contains($r['body'], 'La tua prova gratuita finisce il ' . dataIt($fra7)) && str_contains($r['body'], "120,65\u{00A0}€ + IVA")
+      && str_contains($r['body'], 'carta •••• 4242') && str_contains($r['body'], '>Disattiva il rinnovo</button>') && str_contains($ida->get('/account')['body'], 'fascia--evidenza')
+      && $ida->post('/pannello/avviso-rinnovo/chiudi', ['torna' => '/pannello'])['code'] === 302 && !str_contains($ida->get('/pannello')['body'], 'class="fascia'));
+$fra30 = gmdate('Y-m-d\TH:i:s\Z', time() + 30 * 86400 + 1800);
+db()->prepare('UPDATE subscriptions SET current_period_end = ?, omaggio_fino = ? WHERE id = ?')->execute([$fra30, $fra30, $subI['id']]);
+$primaPosta = count(righePosta() ?: []); $cron();
+prova('9D · a 30 giorni, con gli avvisi disattivati, l\'email non parte (solo quella a 7 è dovuta)', count(array_filter(array_map(fn($l) => json_decode($l, true), array_slice(righePosta() ?: [], $primaPosta)), fn($m) => ($m['to'] ?? '') === 'ida9d@prova.test')) === 0);
+db()->prepare("DELETE FROM email_optout WHERE account_id = ? AND kind = 'rinnovo'")->execute([$iacc]);
+$primaPosta = count(righePosta() ?: []); $cron();
+$m30 = array_values(array_filter(array_map(fn($l) => json_decode($l, true), array_slice(righePosta() ?: [], $primaPosta)), fn($m) => ($m['to'] ?? '') === 'ida9d@prova.test'))[0] ?? [];
+prova('9D · riattivati gli avvisi: a 30 giorni parte «La tua prova gratuita finisce il …», con il link per non riceverne più', str_contains((string) ($m30['subject'] ?? ''), 'La tua prova gratuita finisce il') && str_contains((string) ($m30['text'] ?? ''), '/email/stop/'));
+$fra30p = gmdate('Y-m-d\TH:i:s\Z', time() + 30 * 86400 + 1800);
+// Ugo (abbonamento normale, 9B): anche lui riceve l'avviso a 7 giorni dal rinnovo.
+$subU9 = riga('SELECT * FROM subscriptions WHERE account_id = ? ORDER BY id DESC', [$uacc]);
+db()->prepare('UPDATE subscriptions SET current_period_end = ?, cancel_at_period_end = 0, status = ? WHERE id = ?')->execute([$fra7, 'active', $subU9['id']]);
+$primaPosta = count(righePosta() ?: []); $cron();
+$mU = array_values(array_filter(array_map(fn($l) => json_decode($l, true), array_slice(righePosta() ?: [], $primaPosta)), fn($m) => ($m['to'] ?? '') === 'ugo9b@prova.test'))[0] ?? [];
+prova('9D · per tutti: Ugo a 7 giorni dal rinnovo riceve «Tra 7 giorni rinnoviamo il tuo abbonamento» con l\'importo e «disattiva il rinnovo entro il …»', str_contains((string) ($mU['subject'] ?? ''), 'Tra 7 giorni rinnoviamo il tuo abbonamento')
+      && str_contains((string) ($mU['text'] ?? ''), 'il tuo abbonamento Plus si rinnova il ' . dataIt($fra7) . ': addebiteremo') && str_contains((string) ($mU['text'] ?? ''), 'disattiva il rinnovo da Account & Fatturazione entro il'), json_encode($mU));
+// La fine dell'omaggio: la prima fattura con lo sconto del giudizio.
+db()->prepare('UPDATE subscriptions SET current_period_end = ?, omaggio_fino = ? WHERE id = ?')->execute([$fine9d ? gmdate('Y-m-d\TH:i:s\Z', $fine9d) : $fra30, gmdate('Y-m-d\TH:i:s\Z', $fine9d), $subI['id']]);
+$r = inviaWebhook(['id' => 'evt_ida9d_fattura', 'type' => 'invoice.paid', 'data' => ['object' => ['id' => 'in_ida9d_1', 'customer' => 'cus_ida9d', 'subscription' => 'sub_ida9d', 'billing_reason' => 'subscription_cycle',
+    'subtotal' => 12700, 'total_excluding_tax' => 12065, 'total_discount_amounts' => [['amount' => 635]], 'lines' => ['data' => [['period' => ['start' => $fine9d, 'end' => $fine9d + 365 * 86400], 'price' => ['id' => 'price_finto_annuale']]]]]]]);
+$ia = riga('SELECT * FROM accounts WHERE id = ?', [$iacc]);
+prova('9D · la prima fattura a fine omaggio: abbonamento attivo per un anno, lo sconto del giudizio «applicato al primo anno»', str_starts_with($r['body'], 'rinnovo-pagato')
+      && (string) val('SELECT status FROM subscriptions WHERE id = ?', [$subI['id']]) === 'active' && ($ia['giudizio_sconto_stato'] ?? '') === 'applicato_primo_anno', $r['body']);
+prova('9D · trial_will_end: solo nel registro', str_starts_with(inviaWebhook(['id' => 'evt_ida9d_twe', 'type' => 'customer.subscription.trial_will_end', 'data' => ['object' => ['id' => 'sub_ida9d', 'trial_end' => $fine9d]]])['body'], 'fine-omaggio-in-arrivo')
+      && (bool) val("SELECT id FROM audit_log WHERE action = 'subscription.trial_will_end'"));
+// Annulla un codice prenotato: non vale più nemmeno per Leo.
+$admin->get('/admin/omaggi'); $admin->post('/admin/omaggi/' . (int) $cod2['id'] . '/annulla', []);
+prova('9D · «Annulla» un codice prenotato: annullato, e all\'account di Leo non resta', (string) riga('SELECT annullato_at FROM codici_omaggio WHERE id = ?', [$cod2['id']])['annullato_at'] !== '' && val('SELECT codice_omaggio_id FROM accounts WHERE id = ?', [$lacc]) === null
+      && str_contains($admin->segui($admin->post('/admin/omaggi/' . (int) $cod9d['id'] . '/annulla', []))['body'], 'già stato usato'));
+prova('9D · Termini: punto 5 «Rinnovo automatico» (30 e 7 giorni), punto 17 «una sola volta», punto 18 «Codice omaggio» dopo il 17; in inglese «Gift code»; Privacy: le ultime 4 cifre della carta',
+      str_contains($t9d = $ospite->get('/termini')['body'], '<b>Rinnovo automatico.</b>') && str_contains($t9d, 'id="codice-omaggio"') && str_contains($t9d, '18. Codice omaggio')
+      && strpos($t9d, 'id="giudizio-sconto-t"') < strpos($t9d, 'id="codice-omaggio-t"') && strpos($t9d, 'id="codice-omaggio-t"') < strpos($t9d, 'id="traduzioni-t"') && str_contains($t9d, '<b>una sola volta</b>')
+      && str_contains($ospite->get('/en/terms')['body'], '18. Gift code') && str_contains($ospite->get('/privacy')['body'], 'solo le ultime 4 cifre'));
+
+// ================================================================= 9E
+capitolo('9E · scheda cliente: ferma il rinnovo, cambia il pacchetto, rimborsi, password provvisoria');
+$statoI = json_decode((string) file_get_contents("$STRIPE_DIR/stato.json"), true);
+$statoI['invoices']['cus_ida9d'] = [['id' => 'in_ida9d_1', 'number' => 'F-9D-001', 'created' => time() - 3600, 'subtotal' => 12065, 'total_excluding_tax' => 12065, 'total' => 14719, 'currency' => 'eur', 'payment_intent' => 'pi_ida9d_1', 'status' => 'paid']];
+file_put_contents("$STRIPE_DIR/stato.json", json_encode($statoI));
+db()->prepare("UPDATE accounts SET stripe_customer_id = 'cus_ida9d' WHERE id = ?")->execute([$iacc]);
+$sc = $admin->get("/admin/cliente/$iacc")['body'];
+prova('9E · la scheda cliente: riquadri Abbonamento (Ferma il rinnovo), Cambia il pacchetto, Fatture e rimborsi (F-9D-001), Accesso', str_contains($sc, '>Ferma il rinnovo</button>') && str_contains($sc, 'id="cambio"')
+      && str_contains($sc, 'F-9D-001') && str_contains($sc, 'Conferma il rimborso') && str_contains($sc, 'Imposta una password provvisoria') && str_contains($sc, 'Manda il link per reimpostarla'));
+prova('9E · senza motivo niente si ferma', str_contains($admin->segui($admin->post("/admin/cliente/$iacc/rinnovo", ['ferma' => '1', 'motivo' => '']))['body'], 'Scrivi il motivo') && (int) val('SELECT cancel_at_period_end FROM subscriptions WHERE id = ?', [$subI['id']]) === 0);
+$primaPosta = count(righePosta() ?: []);
+$r = $admin->segui($admin->post("/admin/cliente/$iacc/rinnovo", ['ferma' => '1', 'motivo' => 'chiesto per telefono']));
+$mF = array_values(array_filter(array_map(fn($l) => json_decode($l, true), array_slice(righePosta() ?: [], $primaPosta)), fn($m) => ($m['to'] ?? '') === 'ida9d@prova.test'))[0] ?? [];
+$statoI = json_decode((string) file_get_contents("$STRIPE_DIR/stato.json"), true);
+prova('9E · «Ferma il rinnovo»: cancel_at_period_end su Stripe e nel database, motivo nel registro, email al cliente «non si rinnoverà»; poi «Riattiva»',
+      str_contains($r['body'], 'Rinnovo fermato') && (int) val('SELECT cancel_at_period_end FROM subscriptions WHERE id = ?', [$subI['id']]) === 1 && ($statoI['subs']['sub_ida9d']['cancel_at_period_end'] ?? null) === true
+      && str_contains((string) val("SELECT meta FROM audit_log WHERE action = 'admin.renewal_off' ORDER BY id DESC"), 'chiesto per telefono') && str_contains((string) ($mF['subject'] ?? ''), 'non si rinnover')
+      && str_contains($admin->segui($admin->post("/admin/cliente/$iacc/rinnovo", ['ferma' => '0', 'motivo' => 'ci ha ripensato']))['body'], 'Rinnovo riattivato') && (int) val('SELECT cancel_at_period_end FROM subscriptions WHERE id = ?', [$subI['id']]) === 0, json_encode($mF));
+// Cambio del pacchetto: anteprima, poi subito con conguaglio (sale) e dal rinnovo (scende).
+$r = $admin->post("/admin/cliente/$iacc/cambio", ['piano' => 'portfolio', 'strutture' => '2', 'passo' => 'anteprima', 'modo' => 'subito', 'motivo' => 'telefono']);
+$an = $admin->get("/admin/cliente/$iacc?cambio=portfolio&strutture=2&modo=subito&motivo=telefono")['body'];
+prova('9E · «Anteprima» del cambio a Portfolio 2: i due modi con il conguaglio per i giorni che restano e il prezzo dal rinnovo meno gli sconti', $r['code'] === 302 && str_contains($r['loc'], 'cambio=portfolio')
+      && str_contains($an, '<b>Subito, con conguaglio</b>') && preg_match('#paga la differenza \(\d+(,\d+)?\s€ \+ IVA per i \d+ giorni che restano\)#u', $an) === 1 && str_contains($an, '<b>Dal rinnovo</b>') && str_contains($an, "177\u{00A0}€ + IVA"));
+$primaPosta = count(righePosta() ?: []);
+$r = $admin->segui($admin->post("/admin/cliente/$iacc/cambio", ['piano' => 'portfolio', 'strutture' => '2', 'passo' => 'conferma', 'modo' => 'subito', 'motivo' => 'telefono']));
+$ordC = riga("SELECT * FROM orders WHERE account_id = ? AND kind = 'change' ORDER BY id DESC", [$iacc]);
+$mC = array_values(array_filter(array_map(fn($l) => json_decode($l, true), array_slice(righePosta() ?: [], $primaPosta)), fn($m) => ($m['to'] ?? '') === 'ida9d@prova.test'))[0] ?? [];
+prova('9E · «Subito, con conguaglio»: l\'ordine di cambio (6H) e l\'email con il link di pagamento della differenza; niente addebito senza il clic del cliente', str_contains($r['body'], 'Ordine preparato')
+      && $ordC && $ordC['status'] === 'pending' && (int) $ordC['amount_cents'] > 0 && str_contains((string) ($mC['text'] ?? ''), 'https://checkout.stripe.test/') && str_contains((string) ($mC['text'] ?? ''), 'Niente viene addebitato sulla tua carta senza il tuo clic')
+      && (bool) val("SELECT id FROM audit_log WHERE action = 'admin.plan_change_requested'"), json_encode($mC));
+$primaPosta = count(righePosta() ?: []);
+$r = $admin->segui($admin->post("/admin/cliente/$iacc/cambio", ['piano' => 'essential', 'strutture' => '1', 'passo' => 'conferma', 'modo' => 'rinnovo', 'motivo' => 'vuole spendere meno']));
+$subI = riga('SELECT * FROM subscriptions WHERE id = ?', [$subI['id']]);
+$mR = array_values(array_filter(array_map(fn($l) => json_decode($l, true), array_slice(righePosta() ?: [], $primaPosta)), fn($m) => ($m['to'] ?? '') === 'ida9d@prova.test'))[0] ?? [];
+prova('9E · «Dal rinnovo» verso Essential: cambio programmato (next_*), l\'email dice piano e importo nuovi, e l\'avviso di rinnovo li userà', str_contains($r['body'], 'Programmato: dal') && (int) $subI['next_package_version_id'] === pv('essential')
+      && str_contains((string) ($mR['subject'] ?? ''), 'passi a Essential') && (bool) val("SELECT id FROM audit_log WHERE action = 'admin.plan_change_scheduled'")
+      && str_contains($admin->get("/admin/cliente/$iacc")['body'], 'Cambio programmato: <b>Essential</b>'), json_encode($mR));
+// Rimborso parziale da Stripe, poi il webhook che lo conferma.
+prova('9E · un rimborso oltre il totale della fattura è rifiutato', str_contains($admin->segui($admin->post("/admin/cliente/$iacc/rimborso", ['invoice' => 'in_ida9d_1', 'importo' => '999', 'motivo' => 'duplicate']))['body'], 'importo va da 0,01 a'));
+$primaPosta = count(righePosta() ?: []); $primaS = count(richiesteStripe());
+$r = $admin->segui($admin->post("/admin/cliente/$iacc/rimborso", ['invoice' => 'in_ida9d_1', 'importo' => '38,20', 'motivo' => 'other', 'testo' => 'errore nostro sul conguaglio']));
+$rimb = riga('SELECT * FROM rimborsi ORDER BY id DESC');
+$reqR = array_values(array_filter(array_slice(richiesteStripe(), $primaS), fn($x) => $x['percorso'] === '/v1/refunds'))[0] ?? [];
+$mRb = array_values(array_filter(array_map(fn($l) => json_decode($l, true), array_slice(righePosta() ?: [], $primaPosta)), fn($m) => ($m['to'] ?? '') === 'ida9d@prova.test'))[0] ?? [];
+prova('9E · rimborso parziale di 38,20 €: POST refunds con il payment_intent della fattura e la chiave di idempotenza mhw-refund-{invoice}-{cents}, riga in rimborsi, motivo nel registro, email con importo e 5–10 giorni, «nota di credito in Adamo»',
+      str_contains($r['body'], 'Rimborso di 38,20') && str_contains($r['body'], 'Nota di credito da fare in Adamo') && $rimb && (int) $rimb['amount_cents'] === 3820 && $rimb['motivo'] === 'other' && $rimb['stato'] === 'richiesto'
+      && ($reqR['corpo']['payment_intent'] ?? '') === 'pi_ida9d_1' && ($reqR['corpo']['amount'] ?? '') === '3820' && ($reqR['idem'] ?? '') === 'mhw-refund-in_ida9d_1-3820'
+      && str_contains((string) val("SELECT meta FROM audit_log WHERE action = 'refund.requested' ORDER BY id DESC"), 'errore nostro') && str_contains((string) ($mRb['text'] ?? ''), "38,20\u{00A0}€") && str_contains((string) ($mRb['text'] ?? ''), '5–10 giorni')
+      && str_contains($admin->get("/admin/cliente/$iacc")['body'], 'Rimborsata 38,20'), json_encode([$reqR['corpo'] ?? null, $reqR['idem'] ?? null]));
+$r = inviaWebhook(['id' => 'evt_ida9d_refund', 'type' => 'charge.refunded', 'data' => ['object' => ['id' => 'ch_pi_ida9d_1', 'invoice' => 'in_ida9d_1', 'customer' => 'cus_ida9d', 'amount_refunded' => 3820]]]);
+prova('9E · webhook charge.refunded: la riga è confermata e resta nel registro; l\'abbonamento non è cambiato', str_starts_with($r['body'], 'rimborso-confermato') && (string) val('SELECT stato FROM rimborsi WHERE id = ?', [$rimb['id']]) === 'confermato'
+      && (bool) val("SELECT id FROM audit_log WHERE action = 'refund.confirmed'") && (string) val('SELECT status FROM subscriptions WHERE id = ?', [$subI['id']]) === 'active');
+// Password: il link e la provvisoria.
+$r = $admin->segui($admin->post("/admin/cliente/$iacc/password/link", []));
+prova('9E · «Manda il link per reimpostare la password»: lo stesso flusso di «Password dimenticata», nel registro', str_contains($r['body'], 'Link mandato a ida9d@prova.test') && linkPosta('ida9d@prova.test', 'password/nuova') !== '' && (bool) val("SELECT id FROM audit_log WHERE action = 'admin.password_link'"));
+$hashPrima = (string) val('SELECT password_hash FROM users WHERE email = ?', ['ida9d@prova.test']);
+$primaPosta = count(righePosta() ?: []);
+$r = $admin->segui($admin->post("/admin/cliente/$iacc/password/provvisoria", []));
+preg_match('/class="pw-provvisoria">([^<]+)</', $r['body'], $mp); $pwT = $mp[1] ?? '';
+$uI = riga('SELECT * FROM users WHERE email = ?', ['ida9d@prova.test']);
+$mP = array_values(array_filter(array_map(fn($l) => json_decode($l, true), array_slice(righePosta() ?: [], $primaPosta)), fn($m) => ($m['to'] ?? '') === 'ida9d@prova.test'))[0] ?? [];
+prova('9E · password provvisoria: 12 caratteri leggibili, mostrata una sola volta, valida 48 ore, da cambiare al primo accesso; nel database solo l\'hash; nel registro solo il fatto; email al cliente',
+      preg_match('/^[a-z]+-[a-z]+-\d{4}$/', $pwT) === 1 && !str_contains($admin->get("/admin/cliente/$iacc")['body'], 'pw-provvisoria') && (int) $uI['must_change_password'] === 1
+      && abs(strtotime((string) $uI['password_temp_until']) - time() - 48 * 3600) < 120 && $uI['password_hash'] !== $hashPrima && password_verify($pwT, (string) $uI['password_hash'])
+      && !str_contains((string) val("SELECT meta FROM audit_log WHERE action = 'admin.password_temp' ORDER BY id DESC"), $pwT) && str_contains((string) ($mP['text'] ?? ''), 'password provvisoria') && !str_contains((string) ($mP['text'] ?? ''), $pwT), $pwT);
+$ida2 = new Browser('ida9d-2');
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'login%'");
+$ida2->get('/accedi');
+$r = $ida2->post('/accedi', ['email' => 'ida9d@prova.test', 'password' => $pwT]);
+prova('9E · con la provvisoria si entra ma si va solo a «Scegli la tua password»: il pannello rimanda lì', $r['code'] === 302 && str_ends_with($r['loc'], '/password/cambia') && str_ends_with($ida2->get('/pannello')['loc'], '/password/cambia')
+      && str_contains($ida2->get('/password/cambia')['body'], 'Scegli la tua password'));
+$r = $ida2->post('/password/cambia', ['password' => $pwT, 'password2' => $pwT]);
+prova('9E · la stessa provvisoria come password nuova è rifiutata', $r['code'] === 200 && str_contains($r['body'], 'diversa da quella provvisoria'));
+$r = $ida2->post('/password/cambia', ['password' => 'IdaNuova123456', 'password2' => 'IdaNuova123456']);
+$uI = riga('SELECT * FROM users WHERE email = ?', ['ida9d@prova.test']);
+prova('9E · password nuova salvata: si entra nel pannello, i segni della provvisoria spariscono', $r['code'] === 302 && (int) $uI['must_change_password'] === 0 && $uI['password_temp_until'] === null
+      && $ida2->get('/pannello')['code'] === 200 && (bool) val("SELECT id FROM audit_log WHERE action = 'password.changed_after_temp'"));
+db()->prepare("UPDATE users SET must_change_password = 1, password_temp_until = ? WHERE id = ?")->execute(['2020-01-01T00:00:00Z', $uI['id']]);
+$ida3 = new Browser('ida9d-3'); $ida3->get('/accedi');
+$r = $ida3->post('/accedi', ['email' => 'ida9d@prova.test', 'password' => 'IdaNuova123456']);
+prova('9E · una provvisoria scaduta (48 ore) è rifiutata all\'accesso: vale solo il link', $r['code'] === 200 && str_contains($r['body'], 'La password provvisoria è scaduta'));
+db()->prepare("UPDATE users SET must_change_password = 0, password_temp_until = NULL WHERE id = ?")->execute([$uI['id']]);
+
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
 
 // ================================================================= RIEPILOGO

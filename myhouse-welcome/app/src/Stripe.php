@@ -215,11 +215,13 @@ final class Stripe
      * la sessione si fa scadere e si lancia l'errore: nessuno paga una cifra diversa da quella mostrata.
      * @throws \RuntimeException
      */
-    public static function controllaSessione(string $id, int $prezzo, int $totale): array
+    public static function controllaSessione(string $id, int $prezzo, int $totale, bool $omaggio = false): array
     {
         $s = self::call('GET', 'checkout/sessions/' . rawurlencode($id));
         $sub = (int) ($s['amount_subtotal'] ?? -1);
         $tot = (int) ($s['amount_total'] ?? -1) - (int) ($s['total_details']['amount_tax'] ?? 0);
+        // 9D · Con i mesi gratis oggi non si paga niente: la sessione deve dire 0 (l'imponibile Stripe lo dà a 0 o al listino).
+        if ($omaggio) { $totale = 0; if ($sub === 0) $prezzo = 0; }
         if ($sub !== $prezzo || $tot !== $totale) {
             try { self::call('POST', 'checkout/sessions/' . rawurlencode($id) . '/expire'); } catch (\Throwable $e) { Log::exception($e, 'Stripe: sessione da far scadere'); }
             throw new PrezziNonCoerenti("Checkout con importi diversi dal listino: imponibile $sub (atteso $prezzo), totale senza IVA $tot (atteso $totale). Sessione $id fatta scadere.");
@@ -270,11 +272,22 @@ final class Stripe
             $p['discounts[0][coupon]'] = $c['stripe_coupon_id'];
             $meta['discount_code'] = $c['code'];
         }
+        // 9D · Codice omaggio: i primi mesi gratis (trial_end a mezzanotte UTC di oggi + N mesi), carta obbligatoria,
+        // abbonamento cancellato se alla fine manca il metodo di pagamento. Il coupon (solo quello del giudizio, una
+        // volta) Stripe lo applica alla prima fattura, cioè quella di fine omaggio.
+        $omaggio = $riepilogo['omaggio'] ?? null;
+        if ($omaggio) {
+            $p['subscription_data[trial_end]'] = (string) $omaggio['fine'];
+            $p['payment_method_collection'] = 'always';
+            $p['subscription_data[trial_settings][end_behavior][missing_payment_method]'] = 'cancel';
+            $meta['omaggio_codice'] = (string) $omaggio['codice'];
+            $meta['omaggio_mesi'] = (string) $omaggio['mesi'];
+        }
         foreach ($meta as $k => $v) { $p["metadata[$k]"] = $v; $p["subscription_data[metadata][$k]"] = $v; }
 
         $res = self::call('POST', 'checkout/sessions', $p, 'mhw-checkout-order-' . $order['id']);
         Db::update('orders', ['provider_session_id' => $res['id'], 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]);
-        self::controllaSessione((string) $res['id'], $riepilogo['prezzo'], isset($p['discounts[0][coupon]']) ? $riepilogo['totale'] : $riepilogo['prezzo']);
+        self::controllaSessione((string) $res['id'], $riepilogo['prezzo'], isset($p['discounts[0][coupon]']) ? $riepilogo['totale'] : $riepilogo['prezzo'], $omaggio !== null);
         return $res['url'];
     }
 
@@ -282,7 +295,7 @@ final class Stripe
      * 9A · Per tools/verifica-stripe.php (solo chiavi di prova): una sessione di Checkout senza cliente né ordine, con
      * lo sconto in percento voluto, controllata nei due modi e fatta scadere. @return array{ok:bool,errore:string,sessione:string}
      */
-    public static function sessioneDiProva(array $pv, array $pkg, int $quantita, int $percento): array
+    public static function sessioneDiProva(array $pv, array $pkg, int $quantita, int $percento, int $mesiOmaggio = 0): array
     {
         try {
             [$voci, $pv] = self::vociCheckout($pv, $pkg, $quantita);
@@ -292,8 +305,14 @@ final class Stripe
             $p = ['mode' => 'subscription', 'success_url' => 'https://example.com/ok', 'cancel_url' => 'https://example.com/no',
                   'billing_address_collection' => 'required', 'tax_id_collection[enabled]' => 'true'] + $voci;
             if ($percento > 0) $p['discounts[0][coupon]'] = Sconti::couponCombinato($percento);
+            // 9D · Con l'omaggio: trial_end, carta obbligatoria, e la sessione deve uscire a 0 €.
+            if ($mesiOmaggio > 0) {
+                $p['subscription_data[trial_end]'] = (string) Omaggi::fine($mesiOmaggio);
+                $p['payment_method_collection'] = 'always';
+                $p['subscription_data[trial_settings][end_behavior][missing_payment_method]'] = 'cancel';
+            }
             $res = self::call('POST', 'checkout/sessions', $p);
-            self::controllaSessione((string) $res['id'], $prezzo, $prezzo - $sconto);
+            self::controllaSessione((string) $res['id'], $prezzo, $prezzo - $sconto, $mesiOmaggio > 0);
             self::call('POST', 'checkout/sessions/' . rawurlencode((string) $res['id']) . '/expire');
             return ['ok' => true, 'errore' => '', 'sessione' => (string) $res['id']];
         } catch (\Throwable $e) {
@@ -303,8 +322,58 @@ final class Stripe
 
     public static function retrieveSubscription(string $id): array
     {
-        // Con il prodotto espanso si riconosce la voce "struttura aggiuntiva".
-        return self::call('GET', 'subscriptions/' . rawurlencode($id), ['expand' => ['items.data.price.product']]);
+        // Con il prodotto espanso si riconosce la voce "struttura aggiuntiva"; 9D: la carta, per le ultime 4 cifre negli avvisi.
+        return self::call('GET', 'subscriptions/' . rawurlencode($id), ['expand' => ['items.data.price.product', 'default_payment_method']]);
+    }
+
+    /**
+     * 9D · Le ultime 4 cifre della carta dell'abbonamento: dal metodo di pagamento dell'abbonamento, altrimenti da quello
+     * predefinito del cliente. Vuoto se non si sa (si scriverà «sul tuo metodo di pagamento»). Rete: solo se serve.
+     */
+    public static function ultime4(array $sub, string $customerId = ''): string
+    {
+        $pm = $sub['default_payment_method'] ?? null;
+        if (is_array($pm) && ($pm['card']['last4'] ?? '') !== '') return (string) $pm['card']['last4'];
+        try {
+            if (is_string($pm) && $pm !== '') { $o = self::call('GET', 'payment_methods/' . rawurlencode($pm)); return (string) ($o['card']['last4'] ?? ''); }
+            if ($customerId !== '') {
+                $c = self::call('GET', 'customers/' . rawurlencode($customerId), ['expand' => ['invoice_settings.default_payment_method']]);
+                $cpm = $c['invoice_settings']['default_payment_method'] ?? null;
+                if (is_array($cpm)) return (string) ($cpm['card']['last4'] ?? '');
+            }
+        } catch (\Throwable $e) { Log::exception($e, 'Stripe: ultime 4 cifre della carta'); }
+        return '';
+    }
+
+    /**
+     * 9D · Quanto Stripe addebiterà al prossimo rinnovo (fattura imminente): [imponibile IVA esclusa, sconti, totale con IVA],
+     * oppure null se Stripe non risponde (si usa il listino con gli sconti noti).
+     */
+    public static function prossimaFattura(string $subscriptionId): ?array
+    {
+        try {
+            $inv = self::call('GET', 'invoices/upcoming', ['subscription' => $subscriptionId]);
+        } catch (\Throwable $e) { Log::exception($e, 'Stripe: fattura imminente'); return null; }
+        $sconto = 0;
+        foreach ((array) ($inv['total_discount_amounts'] ?? []) as $d) $sconto += (int) ($d['amount'] ?? 0);
+        $netto = isset($inv['total_excluding_tax']) ? (int) $inv['total_excluding_tax'] : (int) ($inv['subtotal'] ?? 0) - $sconto;
+        return ['netto' => $netto, 'sconto' => $sconto, 'totale' => (int) ($inv['total'] ?? $netto), 'subtotal' => (int) ($inv['subtotal'] ?? 0)];
+    }
+
+    /** 9E · Un rimborso, totale o parziale, dal payment intent di una fattura pagata (idempotente per fattura e importo). */
+    public static function rimborsa(string $paymentIntent, int $cents, string $motivo, string $invoiceId): array
+    {
+        $p = ['payment_intent' => $paymentIntent, 'metadata[invoice]' => $invoiceId];
+        if ($cents > 0) $p['amount'] = (string) $cents;
+        if (in_array($motivo, ['duplicate', 'requested_by_customer', 'fraudulent'], true)) $p['reason'] = $motivo;
+        return self::call('POST', 'refunds', $p, 'mhw-refund-' . $invoiceId . '-' . $cents);
+    }
+
+    /** 9E · Le ultime fatture pagate di un cliente, dalla più recente. */
+    public static function fatturePagate(string $customerId, int $max = 12): array
+    {
+        $r = self::call('GET', 'invoices', ['customer' => $customerId, 'status' => 'paid', 'limit' => (string) $max]);
+        return (array) ($r['data'] ?? []);
     }
 
     /**

@@ -31,9 +31,9 @@ if (!empty($archiviata)): /* una versione vecchia, così com'era */ ?>
 // Le parti del documento: [id, titolo, chiave del testo]
 $parti = [];
 if ($doc === 'termini') {
-    $ancore = [2 => 'unita', 7 => 'recesso', 9 => 'ruoli', 12 => 'inviti', 13 => 'traduzioni', 17 => 'giudizio-sconto'];
-    // 9B: il punto 17 «Giudizio con sconto» sta dopo «Invita un amico» (12), con il suo numero; gli altri non cambiano numero.
-    foreach ([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 17, 13, 14, 15, 16] as $i) $parti[] = [$ancore[$i] ?? 'termini-' . $i, $i . '. ' . TestiSito::html("termini.$i.titolo"), "termini.$i.testo"];
+    $ancore = [2 => 'unita', 5 => 'rinnovo', 7 => 'recesso', 9 => 'ruoli', 12 => 'inviti', 13 => 'traduzioni', 17 => 'giudizio-sconto', 18 => 'codice-omaggio'];
+    // 9B/9D: i punti 17 «Giudizio con sconto» e 18 «Codice omaggio» stanno dopo «Invita un amico» (12), con il loro numero; gli altri non cambiano numero.
+    foreach ([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 17, 18, 13, 14, 15, 16] as $i) $parti[] = [$ancore[$i] ?? 'termini-' . $i, $i . '. ' . TestiSito::html("termini.$i.titolo"), "termini.$i.testo"];
     $parti[] = ['allegato-a', $U('Allegato A · Accordo sul trattamento dei dati', 'Annex A · Data processing agreement'), null];
     $parti[] = ['modulo-recesso', TestiSito::html('termini.b.titolo'), 'termini.b.testo'];
 } elseif ($doc === 'privacy') {

@@ -48,7 +48,7 @@ Puoi creare e configurare la guida gratuitamente, senza carta di credito, e vede
 T,
 'termini.5.titolo' => 'Abbonamento, prezzi e rinnovo',
 'termini.5.testo' => <<<'T'
-I piani sono annuali e si rinnovano automaticamente alla scadenza. Ti avvisiamo per email almeno 15 giorni prima di ogni rinnovo. I prezzi sono indicati IVA esclusa; l'imposta è calcolata al pagamento. Puoi disattivare il rinnovo in qualsiasi momento da Account & Fatturazione: il servizio resta attivo fino alla fine del periodo già pagato.
+**Rinnovo automatico.** L'abbonamento è annuale e, salvo disattivazione, si rinnova automaticamente alla scadenza per un altro anno, con addebito sul metodo di pagamento registrato. Ti avvisiamo per email e nel pannello 30 e 7 giorni prima. Puoi disattivare il rinnovo in qualsiasi momento da Account & Fatturazione: il servizio resta attivo fino alla fine del periodo pagato e non ti viene addebitato altro. I prezzi sono indicati IVA esclusa; l'imposta è calcolata al pagamento.
 
 Puoi cambiare piano da Account & Fatturazione. Se passi a un piano superiore o aggiungi strutture paghi subito solo la differenza per i giorni che restano fino al rinnovo, e la data di rinnovo non cambia. Se passi a un piano inferiore il cambio vale dal rinnovo successivo: fino ad allora resti sul piano già pagato, senza rimborsi.
 
@@ -132,11 +132,17 @@ T,
 'termini.17.testo' => <<<'T'
 «Ti piace MyHouse Welcome?» è il programma con cui chi ha un account può avere uno sconto del {giudizio}% lasciando un giudizio sul Servizio. Si aderisce con **una sola casella**, prima del pagamento oppure dal pannello. Con quella casella ti impegni a lasciare, dopo aver pubblicato la guida, un voto da 1 a 5 con un breve commento, e accetti che il giudizio possa essere mostrato nella home del sito con il tuo nome (senza cognome), il nome e la città della struttura e le immagini che scegli tu tra copertina, foto e logo, senza alcun link alla tua guida.
 
-- **Lo sconto non dipende dal voto**: vale anche con una stella. Chi aderisce prima del primo pagamento ha lo sconto sul primo anno; chi aderisce dopo ha lo sconto sul rinnovo annuale successivo, una volta lasciato il giudizio. Si somma allo sconto di «Invita un amico»; non si somma a un codice sconto (vale il più alto).
+- **Lo sconto non dipende dal voto**: vale anche con una stella. Chi aderisce prima del primo pagamento ha lo sconto sul primo addebito; chi aderisce dopo ha lo sconto sul rinnovo annuale successivo, una volta lasciato il giudizio. Lo sconto del giudizio si ha **una sola volta** per account. Si somma allo sconto di «Invita un amico» e vale anche con un codice omaggio (sul primo addebito, alla fine dei mesi gratis); non si somma a un codice sconto (vale il più alto).
 - **La pubblicazione è a nostra discrezione**: non abbiamo l'obbligo di mostrare il giudizio e possiamo toglierlo dalla home in qualsiasi momento. Il giudizio si può modificare finché non è in home.
 - **Puoi ritirare il giudizio quando vuoi** da Account & Fatturazione: sparisce subito dalla home. Lo sconto già avuto resta tuo; quello promesso sul rinnovo decade se ritiri il giudizio prima del rinnovo.
 - Possiamo chiudere il programma per i nuovi clienti in qualsiasi momento: gli sconti già promessi restano validi.
 - Sono esclusi gli account di prova e di dimostrazione.
+T,
+'termini.18.titolo' => 'Codice omaggio',
+'termini.18.testo' => <<<'T'
+Con un codice omaggio i primi mesi indicati sono gratuiti. Registri comunque un metodo di pagamento e, al termine dei mesi gratuiti, l'abbonamento parte automaticamente al prezzo del piano scelto, con gli stessi avvisi per email e nel pannello 30 e 7 giorni prima dell'addebito. Disattivando il rinnovo prima della fine del periodo gratuito non ti viene addebitato nulla: la guida resta online fino a quella data, poi non è più visibile agli ospiti.
+
+Il codice vale per una sola persona, solo per il primo abbonamento, entro la data indicata, e non si somma allo sconto «Invita un amico» (punto 12): se l'account è arrivato da un invito e usa un codice omaggio, vale l'omaggio e l'invito non viene conteggiato. Lo sconto del giudizio (punto 17) resta valido e si applica al primo addebito. Possiamo annullare un codice non ancora usato in qualsiasi momento.
 T,
 'termini.16.titolo' => 'Contatti e titolare',
 'termini.16.testo' => <<<'T'
@@ -174,7 +180,7 @@ T,
 T,
 'privacy.t2.titolo' => 'Pagamenti e fatturazione',
 'privacy.t2.testo' => <<<'T'
-| Dati | Dati di fatturazione (nome o ragione sociale, indirizzo, partita IVA o codice fiscale, codice SDI o PEC), piano, importi, date e stato dei pagamenti, la scelta «impresa» o «privato» fatta prima del pagamento. I dati della carta li tratta solo Stripe: noi non li vediamo.
+| Dati | Dati di fatturazione (nome o ragione sociale, indirizzo, partita IVA o codice fiscale, codice SDI o PEC), piano, importi, date e stato dei pagamenti, la scelta «impresa» o «privato» fatta prima del pagamento, un eventuale codice omaggio. I dati della carta li tratta solo Stripe: noi riceviamo da Stripe solo le ultime 4 cifre, per scrivertele negli avvisi prima di un addebito.
 | Finalità | Incassare l'abbonamento, emettere le fatture, adempiere agli obblighi fiscali e contabili.
 | Base giuridica | Esecuzione del contratto (art. 6.1.b) e obbligo di legge (art. 6.1.c).
 | Conservazione | 10 anni dall'ultima registrazione (art. 2220 del codice civile).
@@ -415,7 +421,7 @@ You can create and set up the guide for free, without a credit card, and preview
 T,
 'termini.5.titolo' => 'Subscription, prices and renewal',
 'termini.5.testo' => <<<'T'
-Plans are yearly and renew automatically at the end of the period. We notify you by email at least 15 days before each renewal. Prices are shown excluding VAT; tax is calculated at checkout. You can turn off renewal at any time from Account & Billing: the service stays active until the end of the period already paid.
+**Automatic renewal.** The subscription is yearly and, unless you turn renewal off, it renews automatically at the end of the period for another year, charged to the payment method on file. We notify you by email and in the dashboard 30 and 7 days before. You can turn off renewal at any time from Account & Billing: the service stays active until the end of the period paid and nothing else is charged. Prices are shown excluding VAT; tax is calculated at checkout.
 
 You can change plan from Account & Billing. If you move to a higher plan or add properties you pay straight away only the difference for the days left until renewal, and the renewal date does not change. If you move to a lower plan the change applies from the next renewal: until then you keep the plan already paid, without refunds.
 
@@ -499,11 +505,17 @@ T,
 'termini.17.testo' => <<<'T'
 "Do you like MyHouse Welcome?" is the programme through which an account holder can get a {giudizio}% discount by leaving a review of the Service. You join with **a single checkbox**, before payment or from the dashboard. With that checkbox you undertake to leave, after publishing your guide, a rating from 1 to 5 with a short comment, and you accept that the review may be shown on the website's home page with your first name (no surname), the name and town of the property and the images you choose among cover, photo and logo, with no link to your guide.
 
-- **The discount does not depend on the rating**: it applies even with one star. Whoever joins before the first payment gets the discount on the first year; whoever joins later gets it on the next yearly renewal, once the review is left. It adds up with the "Invite a friend" discount; it cannot be combined with a discount code (the higher one applies).
+- **The discount does not depend on the rating**: it applies even with one star. Whoever joins before the first payment gets the discount on the first charge; whoever joins later gets it on the next yearly renewal, once the review is left. The review discount is granted **once only** per account. It adds up with the "Invite a friend" discount and also applies with a gift code (on the first charge, at the end of the free months); it cannot be combined with a discount code (the higher one applies).
 - **Publication is at our discretion**: we have no obligation to show the review and we may remove it from the home page at any time. The review can be edited until it is on the home page.
 - **You can withdraw the review at any time** from Account & Billing: it disappears from the home page immediately. A discount already received stays yours; the one promised on the renewal lapses if you withdraw the review before the renewal.
 - We may close the programme to new customers at any time: discounts already promised remain valid.
 - Trial and demo accounts are excluded.
+T,
+'termini.18.titolo' => 'Gift code',
+'termini.18.testo' => <<<'T'
+With a gift code the first months indicated are free. You still register a payment method and, at the end of the free months, the subscription starts automatically at the price of the chosen plan, with the same notices by email and in the dashboard 30 and 7 days before the charge. If you turn off renewal before the end of the free period nothing is charged: the guide stays online until that date, then it is no longer visible to guests.
+
+The code is valid for one person only, for the first subscription only, by the date indicated, and cannot be combined with the "Invite a friend" discount (section 12): if the account came from an invitation and uses a gift code, the gift code applies and the invitation is not counted. The review discount (section 17) remains valid and applies to the first charge. We may cancel an unused code at any time.
 T,
 'termini.16.titolo' => 'Contact details and provider',
 'termini.16.testo' => <<<'T'
@@ -541,7 +553,7 @@ T,
 T,
 'privacy.t2.titolo' => 'Payments and invoicing',
 'privacy.t2.testo' => <<<'T'
-| Data | Billing details (name or company name, address, VAT number or tax code, SDI code or PEC), plan, amounts, dates and status of payments, the "business" or "private individual" choice made before payment. Card details are processed only by Stripe: we never see them.
+| Data | Billing details (name or company name, address, VAT number or tax code, SDI code or PEC), plan, amounts, dates and status of payments, the "business" or "private individual" choice made before payment, any gift code. Card details are processed only by Stripe: we only receive from Stripe the last 4 digits, to show them in the notices before a charge.
 | Purpose | Collecting the subscription, issuing invoices, meeting tax and accounting obligations.
 | Legal basis | Performance of the contract (art. 6.1.b) and legal obligation (art. 6.1.c).
 | Retention | 10 years from the last entry (art. 2220 of the Italian Civil Code).

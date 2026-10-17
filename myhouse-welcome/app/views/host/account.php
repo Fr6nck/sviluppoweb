@@ -34,10 +34,14 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
             <?php if ($q < (int) $piano['max_quantity']): ?>La <?= $q + 1 ?>ª costerebbe <?= Support::e(Support::money(Plans::unitPrice($piano, $q + 1), $piano['currency'])) ?>.<?php endif; ?></p>
         </div>
       <?php endif; ?>
+      <?php $inOmaggio = $sub['status'] === 'trialing' && !empty($sub['omaggio_fino']); /* 9D · i mesi gratis di un codice omaggio */ ?>
       <?php if ($sub['status'] === 'past_due'): ?>
         <p class="note note--err">L'ultimo rinnovo non è andato a buon fine. Aggiorna il metodo di pagamento per non andare offline.</p>
       <?php elseif ((int) $sub['cancel_at_period_end'] === 1): ?>
-        <p class="note">Rinnovo automatico disattivato. La guida resta online fino al <b><?= Support::e(Support::date($fine)) ?></b>, poi va offline: i contenuti restano salvati.</p>
+        <p class="note">Rinnovo automatico disattivato. La guida resta online fino al <b><?= Support::e(Support::date($fine)) ?></b>, poi va offline<?= $inOmaggio ? ' e non paghi nulla' : '' ?>: i contenuti restano salvati.</p>
+      <?php elseif ($inOmaggio): $addOm = MHW\Richiami::prossimoAddebito($sub); ?>
+        <p><span class="badge badge--pine"><span class="dot"></span>In omaggio</span>
+          <span class="small"> · Omaggio fino al <b><?= Support::e(Support::date($fine)) ?></b> · poi <?= Support::e(Support::money($addOm['netto'], $addOm['valuta'])) ?> + IVA l'anno<?= $addOm['sconto'] > 0 ? ' (il primo addebito con il ' . (int) $addOm['percento'] . '% di sconto)' : '' ?><?= ($sub['card_last4'] ?? '') !== '' ? ', sulla carta •••• ' . Support::e($sub['card_last4']) : '' ?>.</span></p>
       <?php else: ?>
         <p><span class="badge badge--pine"><span class="dot"></span>Attivo</span>
           <?php if ($fine): ?><span class="small muted"> · si rinnova il <?= Support::e(Support::date($fine)) ?></span><?php endif; ?></p>
@@ -89,7 +93,8 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
             <?php if ((int) $sub['cancel_at_period_end'] === 1): ?>
               <button class="btn" name="rinnovo" value="si">Riattiva il rinnovo automatico</button>
             <?php else: ?>
-              <button class="btn btn--ghost" name="rinnovo" value="no">Disattiva il rinnovo automatico</button>
+              <button class="btn btn--ghost" name="rinnovo" value="no">Disattiva il rinnovo</button>
+              <?php if ($inOmaggio): ?><span class="small muted" style="align-self:center">Fino al <?= Support::e(Support::date($fine)) ?> la guida resta online e non paghi nulla.</span><?php endif; ?>
             <?php endif; ?>
           </form>
         <?php endif; ?>

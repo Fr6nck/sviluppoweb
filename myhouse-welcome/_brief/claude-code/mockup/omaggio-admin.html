@@ -1,0 +1,125 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Codice omaggio e Amministrazione</title>
+<style>
+:root{--paper:#faf5ec;--sabbia:#efe7da;--ink:#231b12;--muted:#6a5b48;--line:#e2d7c4;--acc:#b4451f;--ocra:#d49a1e;--ok:#2f6b3f;--warn:#fbefd4}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);font-family:Onest,"Helvetica Neue",Arial,sans-serif;color:var(--ink);padding:40px 16px 80px}
+.wrap{max-width:1120px;margin:0 auto}.nota{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:56px 0 14px}.nota:first-child{margin-top:0}
+h2,h3{font-family:Gloock,Georgia,serif;font-weight:400;margin:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start}@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px}
+.banner{background:var(--warn);border-radius:12px;padding:12px 14px;font-size:14px;line-height:20px;margin-bottom:16px}
+label.f{display:block;font-size:13.5px;font-weight:600;margin:14px 0 6px}input.t,select.t{width:100%;height:44px;border:1px solid #c9bca6;border-radius:10px;padding:0 12px;font:inherit;background:#fff}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 20px;border-radius:999px;background:var(--acc);color:#fff;border:0;font:inherit;font-weight:600;white-space:nowrap;gap:8px}
+.btn.ghost{background:#fff;color:var(--ink);border:1.5px solid #8a7b65}.btn.sm{height:36px;padding:0 14px;font-size:13px}.btn.red{background:#fff;color:#a12a1a;border:1.5px solid #a12a1a}
+.spiega{background:var(--sabbia);border-radius:12px;padding:12px 14px;font-size:13px;line-height:19px;color:#4a3d2c}
+.riepilogo{border-top:1px solid var(--line);margin-top:14px;padding-top:12px;font-size:14px}.riga{display:flex;justify-content:space-between;padding:3px 0}.riga.sc{color:var(--ok)}.riga.tot{font-weight:700;font-size:16px;border-top:1px dashed var(--line);margin-top:6px;padding-top:8px}
+.check{display:grid;grid-template-columns:20px 1fr;gap:10px;font-size:14px;line-height:20px;margin:12px 0}.box{width:18px;height:18px;border:1.5px solid #8a7b65;border-radius:5px;margin-top:1px}.box.si{background:var(--acc);border-color:var(--acc)}
+.stato{display:inline-flex;gap:6px;align-items:center;border-radius:999px;padding:5px 11px;font-size:12.5px;font-weight:600}.stato.ok{background:#e7f1e9;color:var(--ok)}.stato.att{background:var(--warn);color:#7a4b00}.stato.off{background:#eee8dd;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+code{background:#f3ece0;padding:2px 6px;border-radius:6px;font-size:13px}
+.fascia{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-radius:14px;padding:12px 16px;font-size:14px;margin-bottom:12px}
+.fascia.g30{background:var(--sabbia)}.fascia.g7{background:var(--acc);color:#fff}.fascia.g7 .btn{background:#fff;color:var(--acc)}
+.mail{max-width:520px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:16px;padding:32px 28px;text-align:center}
+.mail h3{font-size:26px;margin-bottom:10px}.mail p{font-size:14.5px;line-height:22px;margin:0 0 12px}.mail .pie{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;margin-top:20px}
+.wa{display:inline-flex;align-items:center;gap:8px}.wa i{width:18px;height:18px;border-radius:50%;background:#25d366;display:inline-block}
+.sez{display:grid;gap:14px}.sez .card{padding:18px}.sez h3{font-size:19px;margin-bottom:6px}.sez p.d{font-size:13.5px;color:var(--muted);margin:0 0 10px;line-height:19px}
+.tel{max-width:390px}
+</style></head><body><div class="wrap">
+
+<p class="nota">1 · Amministrazione → Vendite → Codici omaggio</p>
+<div class="grid">
+<div class="card">
+  <h3 style="font-size:22px;margin-bottom:4px">Nuovo codice omaggio</h3>
+  <p style="margin:0;font-size:13.5px;color:var(--muted)">Una persona sola, solo nuovi clienti. Si brucia al pagamento. Non si somma allo sconto «Invita un amico».</p>
+  <div class="row"><div><label class="f">Mesi gratis</label><select class="t"><option>3 mesi</option></select></div><div><label class="f">Da usare entro</label><input class="t" value="30 ottobre 2026 (14 giorni)"></div></div>
+  <label class="f">Nota interna</label><input class="t" value="Tester – B&B Rocca, Gubbio (conosciuto a fiera)">
+  <button class="btn" style="margin-top:16px">Crea il codice</button>
+</div>
+<div class="card">
+  <span class="stato ok">Valido fino al 30 ottobre</span>
+  <h3 style="font-size:30px;margin:10px 0 4px;letter-spacing:1px">OMAGGIO-3K7F2</h3>
+  <p style="margin:0 0 12px;font-size:14px;color:var(--muted)">3 mesi gratis · link: <code>welcomemyhouse.it/omaggio/3K7F2</code></p>
+  <div class="row" style="margin-bottom:14px"><button class="btn sm wa"><i></i>Manda su WhatsApp</button><button class="btn sm ghost">Manda per email</button><button class="btn sm ghost">Copia il link</button></div>
+  <div class="spiega">Ciao! Ti abbiamo riservato <b>3 mesi gratis</b> di MyHouse Welcome, la guida digitale per i tuoi ospiti. Vai su welcomemyhouse.it/omaggio/3K7F2, crea la guida e inserisci la carta: oggi non paghi nulla, il primo addebito è tra 3 mesi, e prima ti avvisiamo. Il codice OMAGGIO-3K7F2 vale fino al 30 ottobre.</div>
+  <p style="font-size:12.5px;color:var(--muted);margin:10px 0 0">Testo modificabile da «Testi e foto».</p>
+</div>
+</div>
+<div class="card" style="margin-top:28px">
+  <table><thead><tr><th>Codice</th><th>Mesi</th><th>Nota</th><th>Scade</th><th>Stato</th><th></th></tr></thead><tbody>
+  <tr><td><code>OMAGGIO-3K7F2</code></td><td>3</td><td>Tester – B&amp;B Rocca</td><td>30 ott</td><td><span class="stato ok">Valido</span></td><td><button class="btn sm ghost">WhatsApp</button> <button class="btn sm red">Annulla</button></td></tr>
+  <tr><td><code>OMAGGIO-9QW4M</code></td><td>6</td><td>Daniele, Anfiteatro</td><td>20 ott</td><td><span class="stato att">Usato da Daniele il 14 ott · 1° addebito 14 apr 2027</span></td><td></td></tr>
+  <tr><td><code>OMAGGIO-2HT8N</code></td><td>12</td><td>Agenzia Todi</td><td>10 ott</td><td><span class="stato off">Scaduto</span></td><td></td></tr>
+  </tbody></table>
+</div>
+
+<p class="nota">2 · Il cliente: registrazione dal link e passo «Pubblica»</p>
+<div class="grid">
+<div class="card">
+  <div class="banner"><b>Hai 3 mesi gratis.</b> Il codice è già inserito e vale fino al 30 ottobre. Oggi non paghi nulla: il primo addebito è il 16 gennaio 2027.</div>
+  <label class="f" style="margin-top:0">Codice di invito o omaggio</label>
+  <input class="t" value="OMAGGIO-3K7F2" readonly>
+  <div style="color:var(--ok);font-size:13px;margin-top:6px">✓ 3 mesi gratis · primo addebito il 16 gennaio 2027</div>
+  <p style="font-size:13px;color:var(--muted);margin:14px 0 0">Senza link: lo scrivi a mano nello stesso campo del codice di invito. Un codice omaggio e un invito non si sommano: vale l'omaggio. Lo sconto del giudizio (5%) invece resta.</p>
+</div>
+<div class="card">
+  <h3 style="font-size:22px;margin-bottom:6px">Riepilogo</h3>
+  <p style="margin:0;color:var(--muted);font-size:14px">Plus · 1 struttura · annuale</p>
+  <div class="check"><span class="box si"></span><span>Ho letto e accetto i <u>Termini</u>, l'<u>Accordo sul trattamento dei dati</u> e l'<u>Informativa privacy</u>.</span></div>
+  <div class="check"><span class="box si"></span><span><b>Sì, voglio il 5% in più: lascerò un giudizio.</b> …</span></div>
+  <div class="spiega"><b style="color:var(--ink);font-size:14px">Oggi paghi 0 €.</b> I tuoi primi 3 mesi sono gratis: il primo addebito di <b>120,65 € + IVA</b> sarà il <b>16 gennaio 2027</b>. Prima ti avvisiamo due volte, per email e nel pannello, 30 e 7 giorni prima. Puoi disattivare il rinnovo quando vuoi da Account &amp; Fatturazione: fino al 16 gennaio la guida resta online e non paghi nulla; senza disattivazione l'abbonamento parte da solo.</div>
+  <div class="riepilogo">
+    <div class="riga"><span>Plus, primo anno</span><span>127,00 €</span></div>
+    <div class="riga sc"><span>Giudizio −5%</span><span>−6,35 €</span></div>
+    <div class="riga sc"><span>Codice omaggio</span><span>3 mesi gratis</span></div>
+    <div class="riga tot"><span>Oggi</span><span>0 €</span></div>
+    <div class="riga" style="font-weight:600"><span>Il 16 gennaio 2027</span><span>120,65 € + IVA</span></div>
+  </div>
+  <button class="btn" style="width:100%;margin-top:14px;flex-direction:column;height:auto;padding:12px 20px;line-height:18px">Inserisci la carta e pubblica<span style="font-weight:400;font-size:12.5px;opacity:.9">0 € oggi · 120,65 € + IVA il 16 gennaio 2027</span></button>
+</div>
+</div>
+
+<p class="nota">3 · Pannello del cliente: le fasce a 30 e a 7 giorni (Quadro e Account & Fatturazione)</p>
+<div class="card">
+  <div class="fascia g30"><span><b>Rinnovo il 16 novembre</b> · Plus · 127 € + IVA sulla carta •••• 4242. Non devi fare nulla.</span><span><button class="btn sm ghost">Disattiva il rinnovo</button> <button class="btn sm ghost" style="border:0">Chiudi</button></span></div>
+  <div class="fascia g7"><span><b>Tra 7 giorni, il 16 novembre,</b> addebitiamo 127 € + IVA per il rinnovo di Plus. Se non vuoi rinnovare, disattivalo entro quella data: la guida resta online fino al 16 novembre.</span><span><button class="btn sm">Disattiva il rinnovo</button></span></div>
+  <div class="fascia g30"><span><b>La tua prova gratuita finisce il 16 gennaio 2027.</b> Da quel giorno parte Plus a 120,65 € + IVA il primo anno. Fino ad allora non paghi nulla.</span><span><button class="btn sm ghost">Disattiva il rinnovo</button></span></div>
+  <div class="fascia g30" style="margin:0"><span><b>L'abbonamento scade il 16 novembre e non si rinnova.</b> Nessun addebito. Dopo quella data la guida non sarà più visibile.</span><span><button class="btn sm ghost">Riattiva il rinnovo</button></span></div>
+</div>
+
+<p class="nota">4 · Email a 7 giorni (uguale per tutti; chi è in omaggio legge «la prova gratuita finisce»)</p>
+<div class="mail">
+  <div style="font-weight:700;margin-bottom:18px">myhouse welcome</div>
+  <h3>Tra 7 giorni rinnoviamo il tuo abbonamento</h3>
+  <p>Ciao Daniele, il tuo abbonamento <b>Plus</b> si rinnova il <b>16 novembre 2026</b>: addebiteremo <b>120,65 € + IVA</b> (hai uno sconto del 5% per gli inviti) sulla carta che termina con <b>4242</b>. Non devi fare nulla.</p>
+  <p>Se non vuoi rinnovare, disattiva il rinnovo da Account &amp; Fatturazione entro il 16 novembre: la guida resta online fino a quel giorno e non ti addebitiamo nulla.</p>
+  <button class="btn">Vai ad Account &amp; Fatturazione</button>
+  <div class="pie">Questo avviso è dovuto prima di un addebito e non si può disattivare.<br>City Up S.r.l. · P.IVA 03793880547 · Via Ariodante Fabretti 15, 06123 Perugia · PEC cityup@pec.it</div>
+</div>
+
+<p class="nota">5 · Amministrazione → scheda cliente: i riquadri nuovi della 9E</p>
+<div class="sez">
+<div class="grid">
+  <div class="card"><h3>Abbonamento</h3><p class="d">Plus · attivo · rinnovo automatico il 16 novembre 2026 · 127 € + IVA</p>
+    <div class="row"><button class="btn sm ghost">Ferma il rinnovo</button></div>
+    <p class="d" style="margin-top:10px">Resta attivo fino al 16 novembre, poi la guida va offline. Nessun addebito. Il cliente riceve un'email.</p></div>
+  <div class="card"><h3>Cambia il pacchetto</h3><p class="d">Per chi non ci riesce da solo. Anteprima prima di confermare.</p>
+    <div class="row"><select class="t"><option>Portfolio · 3 strutture</option></select></div>
+    <div class="check" style="margin:10px 0 4px"><span class="box si"></span><span><b>Subito, con conguaglio</b>: il cliente riceve il link e paga la differenza (38,20 € + IVA per i 141 giorni che restano). Il cambio parte quando paga.</span></div>
+    <div class="check" style="margin:0 0 10px"><span class="box"></span><span><b>Dal rinnovo</b> (16 novembre): paga 227 € + IVA meno gli sconti maturati (inviti 5%, giudizio 5%) = 204,30 € + IVA.</span></div>
+    <label class="f" style="margin-top:4px">Motivo (resta nel registro)</label><input class="t" placeholder="Es. chiesto per telefono il 16/10">
+    <button class="btn sm" style="margin-top:12px">Conferma e avvisa il cliente</button></div>
+</div>
+<div class="grid">
+  <div class="card"><h3>Fatture e rimborsi</h3>
+    <table><thead><tr><th>Data</th><th>Importo</th><th>Stato</th><th></th></tr></thead><tbody>
+    <tr><td>16 nov 2025</td><td>127,00 € + IVA</td><td>Pagata</td><td><button class="btn sm ghost">Rimborsa</button></td></tr>
+    <tr><td>3 mar 2026</td><td>38,20 € + IVA</td><td><span class="stato att">Rimborsata 38,20 €</span></td><td></td></tr>
+    </tbody></table>
+    <div class="spiega" style="margin-top:12px">Rimborsa <input class="t" value="127,00" style="width:110px;height:34px;display:inline-block"> € · Motivo <select class="t" style="width:200px;height:34px;display:inline-block"><option>Errore nostro</option></select><br><span style="font-size:12.5px">Il rimborso non ferma l'abbonamento. Nota di credito da fare in Adamo.</span><br><button class="btn sm red" style="margin-top:8px">Conferma il rimborso</button></div></div>
+  <div class="card"><h3>Accesso</h3><p class="d">La password non si vede mai.</p>
+    <div class="row"><button class="btn sm ghost">Manda il link per reimpostarla</button><button class="btn sm ghost">Imposta una password provvisoria</button></div>
+    <div class="spiega" style="margin-top:12px">Password provvisoria: <b style="font-size:16px;letter-spacing:1px">tavolo-ruota-7392</b><br><span style="font-size:12.5px">Mostrata solo adesso. Vale 48 ore; al primo accesso il cliente deve sceglierne una nuova. Il cliente ha ricevuto un'email di avviso.</span></div></div>
+</div>
+</div>
+</div></body></html>

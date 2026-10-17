@@ -63,10 +63,14 @@ $abbonamento = function (string $id) use (&$stato, $ora, $dir, $espandi): array 
     // 9B: gli sconti dell'abbonamento (coupon degli inviti, del giudizio…), come li scrive il sito con discounts[].
     $sconti = [];
     foreach ((array) ($s['discounts'] ?? []) as $i => $d) $sconti[] = ['id' => 'di_' . $id . '_' . $i, 'object' => 'discount', 'coupon' => ['id' => $d, 'object' => 'coupon']];
-    return [
+    // 9D: la carta (ultime 4 cifre) e la fine dei mesi gratis, se la prova li ha scritti nello stato.
+    $out = [
         'id' => $id, 'object' => 'subscription', 'status' => $s['status'], 'cancel_at_period_end' => $s['cancel_at_period_end'],
         'items' => ['data' => $voci], 'discounts' => $sconti,
+        'default_payment_method' => ['id' => 'pm_finto_' . $id, 'object' => 'payment_method', 'card' => ['last4' => $s['last4'] ?? '4242']],
     ];
+    if (!empty($s['trial_end'])) $out['trial_end'] = (int) $s['trial_end'];
+    return $out;
 };
 
 if ($metodo === 'GET' && $percorso === '/v1/balance') $rispondi(['object' => 'balance', 'available' => [], 'pending' => []]);
@@ -111,9 +115,13 @@ if ($metodo === 'POST' && $percorso === '/v1/checkout/sessions') {
     }
     // Con il file «importo-sbagliato» la sessione esce con un totale diverso (per la prova del secondo controllo).
     if (is_file($dir . '/importo-sbagliato')) $sconto += 100;
+    // 9D: con i mesi gratis (subscription_data[trial_end]) oggi non si paga niente: come Stripe, imponibile e totale a 0.
+    $trial = (int) ($corpo['subscription_data']['trial_end'] ?? 0);
+    if ($trial > 0 && !is_file($dir . '/importo-sbagliato')) { $sub = 0; $sconto = 0; }
     $sessione = ['id' => 'cs_test_finto' . $n, 'object' => 'checkout.session', 'url' => 'https://checkout.stripe.test/c/pay/cs_test_finto' . $n,
                  'mode' => $corpo['mode'] ?? '', 'status' => 'open', 'amount_subtotal' => $sub, 'amount_total' => $sub - $sconto,
-                 'total_details' => ['amount_discount' => $sconto, 'amount_tax' => 0], 'metadata' => $corpo['metadata'] ?? []];
+                 'total_details' => ['amount_discount' => $sconto, 'amount_tax' => 0], 'metadata' => $corpo['metadata'] ?? [],
+                 'trial_end' => $trial ?: null, 'payment_method_collection' => $corpo['payment_method_collection'] ?? 'if_required'];
     $stato['sessioni']['cs_test_finto' . $n] = $sessione;
     $rispondi($sessione);
 }
@@ -167,6 +175,28 @@ if (preg_match('#^/v1/subscriptions/([A-Za-z0-9_]+)$#', $percorso, $m)) {
         }
     }
     $rispondi($abbonamento($m[1]));
+}
+// 9D: la fattura imminente di un abbonamento (importo del prossimo addebito): la prova la scrive in stato['upcoming'][sub].
+if ($metodo === 'GET' && $percorso === '/v1/invoices/upcoming') {
+    $sid = (string) ($_GET['subscription'] ?? '');
+    if (!isset($stato['upcoming'][$sid])) $rispondi(['error' => ['message' => 'No upcoming invoices for subscription: ' . $sid]], 404);
+    $rispondi(['object' => 'invoice', 'subscription' => $sid] + $stato['upcoming'][$sid]);
+}
+// 9E: le fatture pagate di un cliente (stato['invoices'][cus]) e i rimborsi.
+if ($metodo === 'GET' && $percorso === '/v1/invoices') {
+    $cus = (string) ($_GET['customer'] ?? '');
+    $rispondi(['object' => 'list', 'data' => array_values((array) ($stato['invoices'][$cus] ?? []))]);
+}
+if ($metodo === 'POST' && $percorso === '/v1/refunds') {
+    if (is_file($dir . '/rifiuta-rimborso')) $rispondi(['error' => ['message' => 'Charge has already been refunded.']], 400);
+    $r = ['id' => 're_finto' . $n, 'object' => 'refund', 'payment_intent' => $corpo['payment_intent'] ?? '', 'amount' => (int) ($corpo['amount'] ?? 0),
+          'charge' => 'ch_' . ($corpo['payment_intent'] ?? 'finto'), 'reason' => $corpo['reason'] ?? null, 'status' => 'pending', 'metadata' => $corpo['metadata'] ?? []];
+    $stato['refunds'][] = $r;
+    $rispondi($r);
+}
+if ($metodo === 'GET' && preg_match('#^/v1/payment_methods/([A-Za-z0-9_]+)$#', $percorso, $m)) $rispondi(['id' => $m[1], 'object' => 'payment_method', 'card' => ['last4' => '4242']]);
+if ($metodo === 'GET' && preg_match('#^/v1/customers/(cus_[A-Za-z0-9_]+)$#', $percorso, $m)) {
+    $rispondi(['id' => $m[1], 'object' => 'customer', 'invoice_settings' => ['default_payment_method' => ['id' => 'pm_cus_' . $m[1], 'object' => 'payment_method', 'card' => ['last4' => '4242']]]]);
 }
 // Price (cambio di piano, 6H): si creano con il prodotto e il suo ruolo. Quelli delle varianti
 // camera hanno una lookup_key e si ritrovano con GET /v1/prices?lookup_keys[]=…

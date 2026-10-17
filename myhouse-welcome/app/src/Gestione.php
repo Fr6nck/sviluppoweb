@@ -94,6 +94,12 @@ final class Gestione
         $q = max(1, (int) (!empty($s['next_package_version_id']) ? ($s['next_quantity'] ?? 1) : ($s['quantity'] ?? 1)));
         $prezzo = Plans::price($pv, $q);
         $sconto = Inviti::disponibili() ? Inviti::percento((int) $s['account_id']) : 0;
+        // 9B · Lo sconto del giudizio promesso sul prossimo addebito (coupon «una volta» sull'abbonamento) si somma a quello degli inviti.
+        if (Giudizi::disponibili()) {
+            $g = Db::one('SELECT giudizio_adesione, giudizio_sconto_stato FROM accounts WHERE id = ?', [(int) $s['account_id']]) ?: [];
+            $promessoOmaggio = ($g['giudizio_sconto_stato'] ?? '') === 'promesso' && ($g['giudizio_adesione'] ?? '') === 'pagamento' && !empty($s['omaggio_fino']) && Giudizi::quando() === 'adesione';
+            if (($g['giudizio_sconto_stato'] ?? '') === 'da_applicare_rinnovo' || $promessoOmaggio) $sconto = min(100, $sconto + Giudizi::percentuale());
+        }
         return [(int) round($prezzo * (100 - $sconto) / 100), $sconto];
     }
 
@@ -111,7 +117,7 @@ final class Gestione
     private static function prossimoAvviso(array $r, int $ora): ?string
     {
         $fine = (int) strtotime((string) $r['current_period_end']);
-        $tappe = $r['automatico'] ? [$fine - 30 * self::GIORNO]
+        $tappe = $r['automatico'] ? [$fine - 30 * self::GIORNO, $fine - 7 * self::GIORNO]   // 9D: anche a 7 giorni
                : (in_array($r['status'], ['active', 'trialing', 'canceled'], true) && $r['provider'] !== 'dimostrazione'
                   ? [$fine - 30 * self::GIORNO, $fine - 7 * self::GIORNO, $fine + self::GIORNO] : []);
         foreach ($tappe as $t) if ($t > $ora - self::GIORNO) return self::iso(max($t, $ora));

@@ -18,7 +18,15 @@ $conInviti = MHW\Inviti::disponibili();
 $manuale = $riep['manuale'] ?? (!$pv && !empty($acc['intended_discount_code_id']) ? Sconti::riga((int) $acc['intended_discount_code_id']) : null);
 if ($manuale && !empty($manuale['sistema'])) $manuale = null;
 $sistema = $riep['sistema'] ?? Sconti::sistema($acc);
-$togli = fn() => '<form method="post" action="' . b() . '/sconto/togli" style="margin:0">' . Csrf::field() . '<input type="hidden" name="torna" value="' . Support::e($torna) . '"><button class="linkbtn">Togli</button></form>'; ?>
+$togli = fn() => '<form method="post" action="' . b() . '/sconto/togli" style="margin:0">' . Csrf::field() . '<input type="hidden" name="torna" value="' . Support::e($torna) . '"><button class="linkbtn">Togli</button></form>';
+$omaggioS = MHW\Omaggi::daUsare($acc);   // 9D · il codice omaggio prenotato: mesi gratis e primo addebito ?>
+<?php if ($omaggioS && !$soloCampo): ?>
+  <div class="sconto-ok" role="status">
+    <p style="margin:0"><b>Codice omaggio <?= Support::e($omaggioS['codice']) ?></b>: <?= (int) $omaggioS['mesi'] ?> mesi gratis, primo addebito il <?= Support::e(Support::date(MHW\Omaggi::fineIso((int) $omaggioS['mesi']))) ?>. Un codice omaggio e un invito non si sommano: vale l'omaggio.</p>
+  </div>
+<?php elseif ($omaggioS): ?>
+  <p class="small" style="margin:0">Codice omaggio <b><?= Support::e($omaggioS['codice']) ?></b> applicato: <?= (int) $omaggioS['mesi'] ?> mesi gratis.</p>
+<?php endif; ?>
 <?php if (!$soloCampo && $riep && $riep['sconto'] > 0): ?>
   <div class="sconto-ok" role="status">
     <p class="sconto-ok__prezzo" style="margin:0"><s><?= Support::e(Support::money($riep['prezzo'], $val)) ?></s>
@@ -40,11 +48,11 @@ $togli = fn() => '<form method="post" action="' . b() . '/sconto/togli" style="m
 <?php endif; ?>
 <?php if (!$manuale || $errSconto): /* il campo: senza codice scritto a mano, o per mostrare l'errore di un altro codice */ ?>
   <details class="sconto"<?= $errSconto ? ' open' : '' ?>>
-    <summary class="linkbtn"><?= $conInviti ? 'Hai un codice sconto o un invito?' : 'Hai un codice sconto?' ?></summary>
+    <summary class="linkbtn"><?= $conInviti ? 'Hai un codice sconto, un invito o un codice omaggio?' : 'Hai un codice sconto o un codice omaggio?' ?></summary>
     <form method="post" action="<?= b() ?>/sconto/applica" class="sconto__form"><?= Csrf::field() ?>
       <input type="hidden" name="torna" value="<?= Support::e($torna) ?>">
       <div class="field" style="margin:0">
-        <label for="<?= $idS ?>"><?= $conInviti ? 'Codice sconto o codice di invito' : 'Codice sconto' ?></label>
+        <label for="<?= $idS ?>"><?= $conInviti ? 'Codice sconto, di invito o omaggio' : 'Codice sconto o omaggio' ?></label>
         <input id="<?= $idS ?>" name="codice" type="text" maxlength="24" autocomplete="off" spellcheck="false" style="text-transform:uppercase"
                value="<?= Support::e($errSconto['codice'] ?? '') ?>"<?= $errSconto ? ' aria-invalid="true" aria-describedby="' . $idS . '-err"' : '' ?>>
       </div>
