@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>MyHouse Welcome — prototype</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231F5B4B'/><path d='M8 17l8-7 8 7v7a1 1 0 01-1 1h-4v-5h-6v5H9a1 1 0 01-1-1z' fill='%23fff'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/app.css">
+<style>
+  .hub { max-width: 940px; margin: 0 auto; padding: var(--mh-space-12) var(--mh-space-7) var(--mh-space-13); }
+  .hub__mark { display:flex; align-items:center; gap:.65rem; margin-bottom: var(--mh-space-9); }
+  .hub__logo { width:38px; height:38px; border-radius:10px; background:var(--mh-brand-600); display:grid; place-items:center; }
+  .hub h1 { font-family: var(--mh-font-display); font-size: var(--mh-text-4xl); line-height: var(--mh-lh-4xl); letter-spacing:-.02em; margin-bottom:.6rem; }
+  .hub__lede { font-size: var(--mh-text-lg); color: var(--mh-ink-muted); max-width: 58ch; line-height:1.6; }
+  .screens { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap: var(--mh-space-5); margin-top: var(--mh-space-9); }
+  .screen {
+    display:block; padding: var(--mh-space-6); text-decoration:none; color:inherit;
+    background: var(--mh-surface-raised); border:1px solid var(--mh-border);
+    border-radius: var(--mh-radius-lg); box-shadow: var(--mh-shadow-xs);
+    transition: box-shadow var(--mh-motion-fast) var(--mh-ease), border-color var(--mh-motion-fast) var(--mh-ease), transform var(--mh-motion-fast) var(--mh-ease);
+  }
+  .screen:hover { box-shadow: var(--mh-shadow-md); border-color: var(--mh-border-strong); transform: translateY(-2px); }
+  .screen__n { font-family: var(--mh-font-mono); font-size: var(--mh-text-2xs); color: var(--mh-brand-600); font-weight:700; letter-spacing:.08em; }
+  .screen__t { font-size: var(--mh-text-lg); font-weight:600; margin:.35rem 0 .3rem; }
+  .screen__d { font-size: var(--mh-text-sm); color: var(--mh-ink-muted); line-height:1.5; }
+  .hub__sec { margin-top: var(--mh-space-11); }
+  .hub__sec h2 { font-size: var(--mh-text-sm); text-transform:uppercase; letter-spacing:.08em; color: var(--mh-ink-subtle); margin-bottom: var(--mh-space-5); }
+  .pkgpick { display:flex; gap:.5rem; flex-wrap:wrap; }
+  .pkgpick button { cursor:pointer; }
+  .pkgpick .is-on { border-color: var(--mh-brand-600); background: var(--mh-brand-50); color: var(--mh-brand-700); box-shadow: inset 0 0 0 1px var(--mh-brand-600); }
+  .doclist { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:.4rem; }
+  .doclist a { font-size: var(--mh-text-sm); color: var(--mh-ink-muted); text-decoration:none; padding:.3rem 0; }
+  .doclist a:hover { color: var(--mh-brand-600); text-decoration:underline; }
+</style>
+</head>
+<body>
+<a class="mh-skip" href="#main">Skip to content</a>
+<div class="hub" id="main">
+
+  <div class="hub__mark">
+    <div class="hub__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
+    </div>
+    <div>
+      <strong style="font-size:var(--mh-text-sm)">MyHouse</strong>
+      <span class="subtle" style="font-size:var(--mh-text-sm)"> Welcome</span>
+    </div>
+  </div>
+
+  <h1>Interactive prototype</h1>
+  <p class="hub__lede">
+    Every surface of the product, clickable and connected. What you type in the
+    onboarding wizard appears in the dashboard, in the live preview and in the
+    guest guide — the prototype shares one state, exactly as the real product
+    shares one database.
+  </p>
+
+  <div class="hub__sec">
+    <h2>Try it as</h2>
+    <div class="pkgpick" id="pkgpick" role="group" aria-label="Choose a package to explore with">
+      <button class="btn btn--secondary" data-pkg="essential">Essential</button>
+      <button class="btn btn--secondary" data-pkg="plus">Plus</button>
+      <button class="btn btn--secondary" data-pkg="pro">Pro</button>
+      <button class="btn btn--ghost" id="reset">Reset the prototype</button>
+    </div>
+    <p class="xs subtle" style="margin-top:.6rem">
+      Changing this changes what every screen offers — gated sections, language
+      limits, PDF uploads, analytics depth. Nothing in the prototype asks
+      “which package is this?”; it asks the entitlement.
+    </p>
+  </div>
+
+  <div class="screens">
+    <a class="screen" href="marketing.html">
+      <div class="screen__n">01</div>
+      <div class="screen__t">Marketing site</div>
+      <div class="screen__d">Home, how it works, packages read from the same definition the product uses, FAQ.</div>
+    </a>
+    <a class="screen" href="checkout.html">
+      <div class="screen__n">02</div>
+      <div class="screen__t">Checkout &amp; activation</div>
+      <div class="screen__d">Stripe hand-off, the webhook race, setting a password, the first-login screen.</div>
+    </a>
+    <a class="screen" href="onboarding.html">
+      <div class="screen__n">03</div>
+      <div class="screen__t">Onboarding wizard</div>
+      <div class="screen__d">Conditional questions, autosave, progress, skip — driven by the wizard schema.</div>
+    </a>
+    <a class="screen" href="dashboard.html">
+      <div class="screen__n">04</div>
+      <div class="screen__t">Client dashboard</div>
+      <div class="screen__d">Home, the section editor with a live phone preview, languages, QR, statistics.</div>
+    </a>
+    <a class="screen" href="guide.html">
+      <div class="screen__n">05</div>
+      <div class="screen__t">Guest guide</div>
+      <div class="screen__d">The public, mobile-first guide. Try it at phone width, and in dark mode.</div>
+    </a>
+    <a class="screen" href="admin.html">
+      <div class="screen__n">06</div>
+      <div class="screen__t">Admin console</div>
+      <div class="screen__d">Customers, orders, packages as data, support mode with its own colour.</div>
+    </a>
+    <a class="screen" href="design-system.html">
+      <div class="screen__n">07</div>
+      <div class="screen__t">Design system</div>
+      <div class="screen__d">Tokens, components and states — the literal implementation of document 19.</div>
+    </a>
+  </div>
+
+  <div class="hub__sec">
+    <h2>The specification</h2>
+    <div class="doclist">
+      <a href="../docs/01-product-vision.md">01 Product vision</a>
+      <a href="../docs/02-roles-and-permissions.md">02 Roles &amp; permissions</a>
+      <a href="../docs/03-information-architecture.md">03 Information architecture</a>
+      <a href="../docs/04-user-journeys.md">04 User journeys</a>
+      <a href="../docs/05-packages-and-entitlements.md">05 Packages &amp; entitlements</a>
+      <a href="../docs/06-billing-stripe.md">06 Billing &amp; Stripe</a>
+      <a href="../docs/07-onboarding-wizard.md">07 Onboarding wizard</a>
+      <a href="../docs/08-client-dashboard.md">08 Client dashboard</a>
+      <a href="../docs/09-guest-guide.md">09 Guest guide</a>
+      <a href="../docs/10-admin-console.md">10 Admin console</a>
+      <a href="../docs/11-multilingual.md">11 Multilingual</a>
+      <a href="../docs/12-media-pipeline.md">12 Media pipeline</a>
+      <a href="../docs/13-urls-slugs-qr.md">13 URLs, slugs &amp; QR</a>
+      <a href="../docs/14-data-model.md">14 Data model</a>
+      <a href="../docs/15-backend-architecture.md">15 Backend architecture</a>
+      <a href="../docs/16-api-reference.md">16 API reference</a>
+      <a href="../docs/17-auth-and-security.md">17 Auth &amp; security</a>
+      <a href="../docs/18-analytics.md">18 Analytics</a>
+      <a href="../docs/19-design-system.md">19 Design system</a>
+      <a href="../docs/20-content-states-and-copy.md">20 Content &amp; copy</a>
+      <a href="../docs/21-accessibility-and-performance.md">21 A11y &amp; performance</a>
+      <a href="../docs/22-privacy-gdpr.md">22 Privacy &amp; GDPR</a>
+      <a href="../docs/23-roadmap.md">23 Roadmap</a>
+      <a href="../docs/24-decision-log.md">24 Decision log</a>
+      <a href="../schema/schema.sql">schema.sql</a>
+      <a href="../schema/tests.sql">tests.sql</a>
+      <a href="../schema/wizard-schema.json">wizard-schema.json</a>
+    </div>
+  </div>
+</div>
+
+<script src="scripts/store.js"></script>
+<script>
+(function () {
+  var pick = document.getElementById('pkgpick');
+  function paint() {
+    var cur = MHW.get().packageKey;
+    pick.querySelectorAll('[data-pkg]').forEach(function (b) {
+      b.classList.toggle('is-on', b.dataset.pkg === cur);
+      b.setAttribute('aria-pressed', String(b.dataset.pkg === cur));
+    });
+  }
+  pick.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-pkg]');
+    if (b) { MHW.set({ packageKey: b.dataset.pkg }); paint(); }
+  });
+  document.getElementById('reset').addEventListener('click', function () {
+    MHW.reset(); paint();
+  });
+  paint();
+})();
+</script>
+</body>
+</html>

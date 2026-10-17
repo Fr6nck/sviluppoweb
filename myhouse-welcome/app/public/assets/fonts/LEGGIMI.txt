@@ -1,0 +1,9 @@
+Caratteri del sito, serviti dal nostro server (8H): nessuna richiesta a Google a ogni visita.
+
+  Gloock 400            gloock-latin, gloock-latin-ext, gloock-cyrillic-ext
+  Onest 300–800 (variabile)  onest-latin, onest-latin-ext, onest-cyrillic, onest-cyrillic-ext
+
+Scaricati da Google Fonts con i loro intervalli di caratteri (unicode-range): il browser carica
+solo i file che servono alla pagina. I @font-face sono in cima ad assets/app.css.
+
+Licenza: SIL Open Font License 1.1 (OFL-gloock.txt, OFL-onest.txt).

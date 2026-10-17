@@ -1,0 +1,18 @@
+# Fase 9 — come si esegue
+
+1. Copia i cinque file `9A.md … 9E.md` in `_brief/claude-code/` del progetto e i due mockup in `_brief/claude-code/mockup/`.
+2. Apri i mockup nel browser (Claude Code non li legge): `giudizi-sconto.html` (9A, 9B) e `omaggio-admin.html` (9D, 9E).
+3. Una sessione nuova di Claude Code per ogni file, in quest'ordine, con il modello indicato:
+
+| Ordine | File | Modello | Messaggio da scrivere a Claude Code |
+|---|---|---|---|
+| 1 | 9A | Opus | Leggi `_brief/claude-code/9A.md` ed eseguilo. |
+| 2 | 9B | Opus | Leggi `_brief/claude-code/9B.md` ed eseguilo. |
+| 3 | 9C | Sonnet | Leggi `_brief/claude-code/9C.md` ed eseguilo. |
+| 4 | 9D | Opus | Leggi `_brief/claude-code/9D.md` ed eseguilo. |
+| 5 | 9E | Opus | Leggi `_brief/claude-code/9E.md` ed eseguilo. |
+
+La 9C non dipende dalle altre: si può fare anche prima. Prima della fase 9 devono essere già eseguite 6L, 8H, 8I e 8J (la 9D e la 9E toccano Termini e Stripe).
+
+4. Dopo la 9A e dopo la 9D lancia `php tools/verifica-stripe.php` con le chiavi di **test** di Stripe: tutte le righe devono dire «ok».
+5. Leggi `DA-CONFIGURARE.md` alla fine: ci sono le impostazioni da fare tu in Stripe (email automatiche spente, Smart Retries accese) e i codici omaggio da creare in Amministrazione.

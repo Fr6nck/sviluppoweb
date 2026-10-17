@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin — MyHouse Welcome</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2315171A'/><path d='M8 17l8-7 8 7v7a1 1 0 01-1 1h-4v-5h-6v5H9a1 1 0 01-1-1z' fill='%23fff'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/app.css">
+<style>
+/* Same tokens as the host dashboard, one step tighter. The density difference
+   between the two surfaces is a multiplier, not a second design system. */
+:root { --ad-pad: var(--mh-space-6); }
+.app { display: grid; grid-template-columns: 224px 1fr; min-height: 100vh; }
+@media (max-width: 1023px) { .app { grid-template-columns: 1fr; } }
+
+.side { border-right: 1px solid var(--mh-border); background: var(--mh-surface-raised);
+  padding: var(--mh-space-5) var(--mh-space-4); position: sticky; top: 26px;
+  height: calc(100vh - 26px); overflow-y: auto; }
+@media (max-width: 1023px) { .side { position: static; height: auto; } }
+.side__brand { display: flex; align-items: center; gap: .5rem; font-weight: 700; font-size: var(--mh-text-xs);
+  margin-bottom: var(--mh-space-6); text-decoration: none; color: inherit; letter-spacing: .02em; }
+.side__m { width: 24px; height: 24px; border-radius: 6px; background: var(--mh-ink); display: grid; place-items: center; }
+.nav-i { display: flex; align-items: center; gap: .55rem; padding: .42rem .6rem; border-radius: var(--mh-radius-sm);
+  font-size: var(--mh-text-sm); color: var(--mh-ink-muted); background: none; border: 0; width: 100%;
+  text-align: left; cursor: pointer; margin-bottom: 1px; }
+.nav-i:hover { background: var(--mh-surface-sunken); color: var(--mh-ink); }
+.nav-i.is-on { background: var(--mh-ink); color: #fff; font-weight: 600; }
+.nav-g { font-size: 10px; text-transform: uppercase; letter-spacing: .09em; color: var(--mh-ink-subtle);
+  font-weight: 700; padding: var(--mh-space-5) .6rem .3rem; }
+
+.main { min-width: 0; padding: var(--mh-space-7) var(--mh-space-7) 4rem; }
+.page { display: none; } .page.is-on { display: block; }
+h1.ph { font-size: var(--mh-text-xl); margin-bottom: .2rem; }
+.psub { color: var(--mh-ink-muted); font-size: var(--mh-text-sm); margin-bottom: var(--mh-space-7); }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(152px, 1fr)); gap: var(--mh-space-4); margin-bottom: var(--mh-space-7); }
+.kpi { background: var(--mh-surface-raised); border: 1px solid var(--mh-border); border-radius: var(--mh-radius-md); padding: var(--mh-space-5); }
+.kpi__k { font-size: var(--mh-text-xs); color: var(--mh-ink-muted); font-weight: 600; }
+.kpi__v { font-size: var(--mh-text-2xl); font-weight: 700; letter-spacing: -.02em; margin-top: .25rem; }
+.kpi__d { font-size: var(--mh-text-xs); margin-top: .2rem; }
+.up { color: var(--mh-success); } .down { color: var(--mh-danger); }
+
+/* "Needs attention" is the point of the admin home: a queue, not a report */
+.attn { background: var(--mh-surface-raised); border: 1px solid var(--mh-border); border-radius: var(--mh-radius-md);
+  margin-bottom: var(--mh-space-7); overflow: hidden; }
+.attn__h { padding: .65rem var(--mh-space-5); border-bottom: 1px solid var(--mh-border);
+  font-size: var(--mh-text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--mh-ink-muted);
+  background: var(--mh-surface-sunken); }
+.attn a { display: flex; align-items: center; gap: .6rem; padding: .6rem var(--mh-space-5);
+  border-bottom: 1px solid var(--mh-border); font-size: var(--mh-text-sm); text-decoration: none; color: var(--mh-ink); }
+.attn a:last-child { border-bottom: 0; }
+.attn a:hover { background: var(--mh-surface); }
+.attn .grow { color: var(--mh-ink); }
+.attn .go { color: var(--mh-ink-subtle); font-size: var(--mh-text-xs); }
+
+.bars { display: grid; gap: .45rem; }
+.bar-row { display: flex; align-items: center; gap: .6rem; font-size: var(--mh-text-sm); }
+.bar-row span:first-child { min-width: 86px; }
+.bar-row .num { min-width: 34px; text-align: right; color: var(--mh-ink-muted); font-size: var(--mh-text-xs); }
+
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--mh-space-6); margin-bottom: var(--mh-space-7); }
+@media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
+
+.toolbar { display: flex; gap: .5rem; margin-bottom: var(--mh-space-5); flex-wrap: wrap; align-items: center; }
+.toolbar .input { max-width: 300px; min-height: 36px; }
+
+/* customer detail: one page, five blocks, one action rail. No tabs — staff on a
+   support call should not hunt. */
+.detail { display: grid; grid-template-columns: 1fr 250px; gap: var(--mh-space-7); align-items: start; }
+@media (max-width: 1100px) { .detail { grid-template-columns: 1fr; } }
+.block { background: var(--mh-surface-raised); border: 1px solid var(--mh-border);
+  border-radius: var(--mh-radius-md); margin-bottom: var(--mh-space-5); }
+.block__h { padding: .55rem var(--mh-space-5); border-bottom: 1px solid var(--mh-border);
+  font-size: var(--mh-text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--mh-ink-muted); }
+.block__b { padding: var(--mh-space-5); }
+.dl { display: grid; grid-template-columns: 148px 1fr; gap: .4rem 1rem; font-size: var(--mh-text-sm); }
+.dl dt { color: var(--mh-ink-muted); } .dl dd { margin: 0; }
+.rail { position: sticky; top: calc(26px + var(--mh-space-7)); }
+.rail button, .rail a { display: block; width: 100%; text-align: left; margin-bottom: .3rem; }
+
+.warn-act { color: var(--mh-danger) !important; }
+.tl { list-style: none; font-size: var(--mh-text-sm); }
+.tl li { display: flex; gap: .7rem; padding: .45rem 0; border-bottom: 1px solid var(--mh-border); }
+.tl li:last-child { border: 0; }
+.tl time { color: var(--mh-ink-subtle); font-size: var(--mh-text-xs); min-width: 92px; }
+
+/* modal */
+.mbd { position: fixed; inset: 0; background: rgba(21,23,26,.4); z-index: 80; display: none; }
+.mbd.is-on { display: grid; place-items: center; padding: var(--mh-space-5); }
+.modal { background: var(--mh-surface-raised); border-radius: var(--mh-radius-xl); max-width: 460px; width: 100%;
+  box-shadow: var(--mh-shadow-lg); animation: pop var(--mh-motion-base) var(--mh-ease); }
+@keyframes pop { from { opacity: 0; transform: scale(.97) translateY(6px); } }
+.modal__b { padding: var(--mh-space-7); }
+
+.proto-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 95; background: var(--mh-ink); color: #fff;
+  font-size: var(--mh-text-xs); padding: .35rem var(--mh-space-5); display: flex; gap: .8rem; justify-content: center; flex-wrap: wrap; }
+.proto-bar a { color: #fff; }
+body { padding-top: 26px; }
+</style>
+</head>
+<!-- data-stages: one <h1> per page; only one page is in the accessibility tree
+     at a time, because the others are display:none. -->
+<body data-stages>
+<a class="mh-skip" href="#main">Skip to content</a>
+
+<div class="proto-bar">
+  <span>Prototype &middot; admin console</span>
+  <a href="index.html">All screens</a><a href="dashboard.html">Host view</a>
+</div>
+
+<div class="app">
+  <nav class="side" aria-label="Admin">
+    <a class="side__brand" href="index.html">
+      <span class="side__m"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></span>
+      MyHouse admin
+    </a>
+    <button class="nav-i is-on" data-go="dash">Dashboard</button>
+    <button class="nav-i" data-go="customers">Customers</button>
+    <button class="nav-i" data-go="orders">Orders</button>
+    <button class="nav-i" data-go="packages">Packages</button>
+    <div class="nav-g">Content</div>
+    <button class="nav-i" data-go="templates">Templates</button>
+    <button class="nav-i" data-go="locales">Languages</button>
+    <div class="nav-g">System</div>
+    <button class="nav-i" data-go="audit">Audit log</button>
+    <button class="nav-i" data-go="webhooks">Webhooks</button>
+  </nav>
+
+  <main class="main" id="main">
+
+    <!-- ---------- DASHBOARD ---------- -->
+    <section class="page is-on" id="p-dash" aria-labelledby="h-dash">
+      <h1 class="ph" id="h-dash">Dashboard</h1>
+      <p class="psub">Last 30 days</p>
+
+      <div class="kpis">
+        <div class="kpi"><div class="kpi__k">Customers</div><div class="kpi__v num">341</div><div class="kpi__d up">+23</div></div>
+        <div class="kpi"><div class="kpi__k">Active guides</div><div class="kpi__v num">287</div><div class="kpi__d up">+19</div></div>
+        <div class="kpi"><div class="kpi__k">Drafts</div><div class="kpi__v num">41</div><div class="kpi__d down">&minus;4</div></div>
+        <div class="kpi"><div class="kpi__k">New this month</div><div class="kpi__v num">23</div><div class="kpi__d">&euro;2,140</div></div>
+        <div class="kpi"><div class="kpi__k">This year</div><div class="kpi__v num">&euro;18,490</div><div class="kpi__d up">+12%</div></div>
+      </div>
+
+      <!-- the alert queue, not the KPIs, is why staff open this page -->
+      <div class="attn">
+        <div class="attn__h">Needs attention</div>
+        <a href="#" data-go="customers"><span aria-hidden="true">&#9888;</span>
+          <span class="grow"><strong>4 accounts</strong> paid but never activated (over 7 days)</span>
+          <span class="go">View &rsaquo;</span></a>
+        <a href="#" data-go="webhooks"><span aria-hidden="true">&#9888;</span>
+          <span class="grow"><strong>2 Stripe webhooks</strong> failed and are in the dead-letter queue</span>
+          <span class="go">View &rsaquo;</span></a>
+        <a href="#" data-go="customers"><span aria-hidden="true">&#9888;</span>
+          <span class="grow"><strong>7 guides</strong> stuck below 30% completion for over 14 days</span>
+          <span class="go">View &rsaquo;</span></a>
+        <a href="#" data-go="customers"><span aria-hidden="true">&#9888;</span>
+          <span class="grow"><strong>1 media file</strong> failed its safety scan and is quarantined</span>
+          <span class="go">View &rsaquo;</span></a>
+      </div>
+
+      <div class="two">
+        <div class="block"><div class="block__h">Packages</div><div class="block__b">
+          <div class="bars">
+            <div class="bar-row"><span>Essential</span><span class="progress grow"><span class="progress__bar" style="display:block;width:100%"></span></span><span class="num">142</span></div>
+            <div class="bar-row"><span>Plus</span><span class="progress grow"><span class="progress__bar" style="display:block;width:83%"></span></span><span class="num">118</span></div>
+            <div class="bar-row"><span>Pro</span><span class="progress grow"><span class="progress__bar" style="display:block;width:57%"></span></span><span class="num">81</span></div>
+          </div>
+        </div></div>
+        <div class="block"><div class="block__h">Onboarding drop-off</div><div class="block__b">
+          <p class="xs muted" style="margin-bottom:.7rem">Which question is too hard to answer &mdash; the most valuable number we collect.</p>
+          <div class="bars">
+            <div class="bar-row"><span>Property</span><span class="progress grow"><span class="progress__bar" style="display:block;width:98%"></span></span><span class="num">98%</span></div>
+            <div class="bar-row"><span>Check-in</span><span class="progress grow"><span class="progress__bar" style="display:block;width:91%"></span></span><span class="num">91%</span></div>
+            <div class="bar-row"><span>Appliances</span><span class="progress grow"><span class="progress__bar" style="display:block;width:62%;background:var(--mh-warning)"></span></span><span class="num">62%</span></div>
+            <div class="bar-row"><span>Places</span><span class="progress grow"><span class="progress__bar" style="display:block;width:54%;background:var(--mh-warning)"></span></span><span class="num">54%</span></div>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="block"><div class="block__h">Recent customers</div>
+        <div class="table__wrap" style="border:0;border-radius:0">
+          <table class="table">
+            <thead><tr><th>Customer</th><th>Property</th><th>Package</th><th>Status</th><th>Completion</th><th>Last activity</th></tr></thead>
+            <tbody id="recent"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- CUSTOMERS ---------- -->
+    <section class="page" id="p-customers" aria-labelledby="h-cust">
+      <h1 class="ph" id="h-cust">Customers</h1>
+      <p class="psub">341 accounts. Every filter is a URL &mdash; staff paste these to each other.</p>
+      <div class="toolbar">
+        <label class="mh-sr" for="q">Search customers</label>
+        <input class="input" id="q" type="search" placeholder="Name, email, company, P.IVA, property or address&hellip;">
+        <button class="btn btn--secondary btn--sm">Status</button>
+        <button class="btn btn--secondary btn--sm">Package</button>
+        <button class="btn btn--secondary btn--sm">Never activated</button>
+        <button class="btn btn--ghost btn--sm">Export CSV</button>
+      </div>
+      <div class="table__wrap">
+        <table class="table">
+          <thead><tr><th>Customer</th><th>Property</th><th>Package</th><th>Status</th><th>Completion</th><th>Revenue</th><th>Last activity</th></tr></thead>
+          <tbody id="clist"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---------- CUSTOMER DETAIL ---------- -->
+    <section class="page" id="p-detail" aria-labelledby="h-det">
+      <button class="btn btn--ghost btn--sm" data-go="customers" style="margin-bottom:.6rem">&lsaquo; All customers</button>
+      <h1 class="ph" id="h-det">Marco Bianchi</h1>
+      <p class="psub">MH-2026-0341 &middot; created 2 September 2026 &middot; last login 2 hours ago</p>
+
+      <div class="detail">
+        <div>
+          <div class="block"><div class="block__h">Customer</div><div class="block__b">
+            <dl class="dl">
+              <dt>Email</dt><dd>marco@example.com</dd>
+              <dt>Phone</dt><dd>+39 010 000 0000</dd>
+              <dt>Company</dt><dd>Bianchi Marco &mdash; ditta individuale</dd>
+              <dt>P.IVA</dt><dd class="mh-mono">IT01234567890</dd>
+              <dt>Codice fiscale</dt><dd class="mh-mono">BNCMRC80A01D969X</dd>
+              <dt>SDI</dt><dd class="mh-mono">0000000</dd>
+              <dt>Status</dt><dd><span class="chip chip--success"><span class="dot dot--live"></span> Active</span></dd>
+            </dl>
+          </div></div>
+
+          <div class="block"><div class="block__h">Purchase</div><div class="block__b">
+            <dl class="dl">
+              <dt>Package</dt><dd>Plus <span class="chip">v2</span></dd>
+              <dt>Price</dt><dd>&euro;99.00 &middot; discount BENVENUTO20 &minus;&euro;19.80</dd>
+              <dt>Paid</dt><dd>2 September 2026, 11:42</dd>
+              <dt>Payment</dt><dd><span class="chip chip--success">Succeeded</span> Visa &bull;&bull;&bull;&bull;4242</dd>
+              <dt>Stripe</dt><dd><a href="#" class="mh-mono xs">pi_3Q8kLm2eZvKYlo2C1aBcDeFg</a></dd>
+              <dt>Invoice</dt><dd><a href="#">MH-2026-0412.pdf</a></dd>
+            </dl>
+          </div></div>
+
+          <div class="block"><div class="block__h">Guide</div><div class="block__b">
+            <dl class="dl">
+              <dt>Property</dt><dd>Casa San Francesco &middot; Savona</dd>
+              <dt>Status</dt><dd><span class="chip chip--success">Published</span> v7 &middot; 18 Sept 2026</dd>
+              <dt>Completion</dt><dd>85%</dd>
+              <dt>Languages</dt><dd>Italiano (original), English</dd>
+              <dt>Address</dt><dd><a href="guide.html" class="mh-mono xs">welcome.myhouse.it/casa-san-francesco</a></dd>
+              <dt>QR token</dt><dd class="mh-mono xs">7f3a9c2b <span class="subtle">(permanent)</span></dd>
+            </dl>
+          </div></div>
+
+          <div class="block"><div class="block__h">Activity &amp; notes</div><div class="block__b">
+            <ul class="tl">
+              <li><time>18 Sep 14:07</time><span>Check-in updated <span class="chip" style="background:var(--mh-support-bg);color:var(--mh-support)">by support &middot; Giulia</span></span></li>
+              <li><time>18 Sep 09:12</time><span>Wi-Fi password changed</span></li>
+              <li><time>17 Sep 19:44</time><span>Guide published &mdash; version 7</span></li>
+              <li><time>12 Sep 10:05</time><span>English translation reviewed (54 items)</span></li>
+              <li><time>02 Sep 11:43</time><span>Account activated</span></li>
+              <li><time>02 Sep 11:42</time><span>Order paid &mdash; Plus v2 &euro;79.20</span></li>
+            </ul>
+          </div></div>
+        </div>
+
+        <aside class="rail">
+          <div class="block"><div class="block__h">Actions</div><div class="block__b" style="padding:.6rem">
+            <button class="btn btn--primary btn--sm" id="assist">Assist customer</button>
+            <button class="btn btn--ghost btn--sm">Change package</button>
+            <button class="btn btn--ghost btn--sm">Grant a feature</button>
+            <button class="btn btn--ghost btn--sm">Resend welcome email</button>
+            <button class="btn btn--ghost btn--sm">Reset onboarding</button>
+            <a class="btn btn--ghost btn--sm" href="guide.html">Preview guide</a>
+            <button class="btn btn--ghost btn--sm" id="regen">Regenerate QR</button>
+            <button class="btn btn--ghost btn--sm warn-act" id="refund">Refund</button>
+            <button class="btn btn--ghost btn--sm warn-act">Suspend</button>
+            <button class="btn btn--ghost btn--sm warn-act">Archive account</button>
+          </div></div>
+          <p class="xs subtle" style="padding:0 .3rem">
+            Every action here writes to the audit log with the actor, the before
+            and after, and the reason. There is no admin path that skips it.
+          </p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ---------- ORDERS ---------- -->
+    <section class="page" id="p-orders" aria-labelledby="h-ord">
+      <h1 class="ph" id="h-ord">Orders</h1>
+      <p class="psub">Reconciled against Stripe nightly. Drift is reported before a customer tells us.</p>
+      <div class="table__wrap">
+        <table class="table">
+          <thead><tr><th>Date</th><th>Customer</th><th>Package</th><th>Amount</th><th>Discount</th><th>Status</th><th>Stripe</th></tr></thead>
+          <tbody id="olist"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---------- PACKAGES ---------- -->
+    <section class="page" id="p-packages" aria-labelledby="h-pkg">
+      <h1 class="ph" id="h-pkg">Packages</h1>
+      <p class="psub">Packages are data. Changing what Plus includes is editing rows, not shipping code.</p>
+      <div class="table__wrap" style="margin-bottom:var(--mh-space-7)">
+        <table class="table">
+          <thead><tr><th>Package</th><th>Current version</th><th>Price</th><th>Visibility</th><th>Customers</th><th></th></tr></thead>
+          <tbody id="plist"></tbody>
+        </table>
+      </div>
+
+      <div class="block"><div class="block__h">Plus &mdash; version 2</div><div class="block__b">
+        <div class="alert alert--warning" style="margin-bottom:var(--mh-space-5)">
+          <span aria-hidden="true">&#128274;</span>
+          <div class="alert__body">
+            <strong>In use by 118 customers &mdash; read-only</strong>
+            A version that has been sold can never change. That is enforced by a
+            database trigger, not by a convention. To change the price or the
+            features, create a new version.
+          </div>
+        </div>
+        <div class="dl" style="grid-template-columns:260px 1fr">
+          <dt class="mh-mono xs">welcome.properties.max</dt><dd>1</dd>
+          <dt class="mh-mono xs">welcome.languages.max</dt><dd>5</dd>
+          <dt class="mh-mono xs">welcome.sections.services</dt><dd>&#10003;</dd>
+          <dt class="mh-mono xs">welcome.sections.appliances</dt><dd>&#10003;</dd>
+          <dt class="mh-mono xs">welcome.media.pdf</dt><dd>&#10003;</dd>
+          <dt class="mh-mono xs">welcome.media.storage_mb</dt><dd>400</dd>
+          <dt class="mh-mono xs">welcome.guide.search</dt><dd>&#10003;</dd>
+          <dt class="mh-mono xs">welcome.analytics.advanced</dt><dd>&mdash;</dd>
+        </div>
+        <button class="btn btn--secondary btn--sm" style="margin-top:var(--mh-space-5)" id="newver">Create version 3 from this</button>
+      </div></div>
+    </section>
+
+    <!-- ---------- TEMPLATES ---------- -->
+    <section class="page" id="p-templates" aria-labelledby="h-tpl">
+      <h1 class="ph" id="h-tpl">Section templates</h1>
+      <p class="psub">The catalogue that seeds every new guide. Changes affect new guides only.</p>
+      <div class="table__wrap">
+        <table class="table">
+          <thead><tr><th>Key</th><th>Name</th><th>Category</th><th>Order</th><th>Requires</th><th>Used by</th></tr></thead>
+          <tbody id="tlist"></tbody>
+        </table>
+      </div>
+      <p class="xs subtle" style="margin-top:var(--mh-space-5)">
+        &ldquo;Propagate to existing guides&rdquo; adds sections that are missing.
+        It never overwrites content a host has edited.
+      </p>
+    </section>
+
+    <!-- ---------- LOCALES ---------- -->
+    <section class="page" id="p-locales" aria-labelledby="h-loc">
+      <h1 class="ph" id="h-loc">Languages</h1>
+      <p class="psub">A table, not an enum. Adding Polish is an insert.</p>
+      <div class="table__wrap">
+        <table class="table">
+          <thead><tr><th>Code</th><th>Name</th><th>Native</th><th>Active</th><th>Guides using it</th></tr></thead>
+          <tbody id="llist"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---------- AUDIT ---------- -->
+    <section class="page" id="p-audit" aria-labelledby="h-aud">
+      <h1 class="ph" id="h-aud">Audit log</h1>
+      <p class="psub">Every administrator action, with the actor, the reason and the impersonation session.</p>
+      <div class="table__wrap">
+        <table class="table">
+          <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Subject</th><th>Reason</th></tr></thead>
+          <tbody id="alist"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---------- WEBHOOKS ---------- -->
+    <section class="page" id="p-webhooks" aria-labelledby="h-wh">
+      <h1 class="ph" id="h-wh">Stripe webhooks</h1>
+      <p class="psub">Deduplicated on the event ID. Handlers are idempotent, so replay is always safe.</p>
+      <div class="table__wrap">
+        <table class="table">
+          <thead><tr><th>Received</th><th>Event</th><th>Type</th><th>Status</th><th>Attempts</th><th></th></tr></thead>
+          <tbody id="wlist"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ---------- ASSIST MODAL ---------- -->
+<div class="mbd" id="mbd">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-t">
+    <div class="modal__b">
+      <h2 id="m-t" style="font-size:var(--mh-text-lg); margin-bottom:.4rem">Assist Marco Bianchi</h2>
+      <p class="small muted" style="margin-bottom:var(--mh-space-6)">
+        The customer will see that MyHouse support made these changes. Every action is recorded.
+      </p>
+      <div class="field">
+        <label class="field__label" for="reason">Why are you assisting this customer?</label>
+        <textarea class="textarea" id="reason" placeholder="Customer called &mdash; can&rsquo;t upload the check-in photos from their iPhone"></textarea>
+        <p class="field__error" id="reason-err" hidden>A reason is required. It appears in the audit log.</p>
+      </div>
+      <div class="field">
+        <label class="field__label" for="dur">Session length</label>
+        <select class="select" id="dur">
+          <option>30 minutes</option><option selected>60 minutes</option><option>2 hours</option>
+        </select>
+      </div>
+      <div class="row" style="justify-content:flex-end; gap:.5rem">
+        <button class="btn btn--ghost" id="m-cancel">Cancel</button>
+        <button class="btn btn--primary" id="m-start">Start assisting</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="live" class="mh-sr" role="status" aria-live="polite"></div>
+
+<script src="scripts/store.js"></script>
+<script>
+(function () {
+  'use strict';
+  var live = document.getElementById('live');
+  function say(m) { live.textContent = ''; setTimeout(function () { live.textContent = m; }, 40); }
+
+  /* ---- demo data ---- */
+  var CUSTOMERS = [
+    ['Marco Bianchi', 'Casa San Francesco', 'Plus', 'live', 85, '€79', '2h ago'],
+    ['Elena Rossi', 'Villa Aurora', 'Pro', 'live', 100, '€179', '5h ago'],
+    ['Studio Mare srl', '—', 'Plus', 'draft', 12, '€99', '1d ago'],
+    ['Luca Ferrari', 'Il Glicine', 'Essential', 'live', 72, '€49', '2d ago'],
+    ['Giulia Conti', 'Ai Tre Ulivi', 'Pro', 'live', 96, '€179', '2d ago'],
+    ['B&B La Rocca', 'La Rocca', 'Plus', 'live', 88, '€99', '3d ago'],
+    ['Andrea Moretti', 'Appartamento Centro', 'Essential', 'pending', 0, '€49', '8d ago'],
+    ['Sara Greco', 'Casa del Mare', 'Plus', 'live', 64, '€99', '9d ago']
+  ];
+  var ST = { live: ['success', 'Live'], draft: ['', 'Draft'], pending: ['warning', 'Never activated'] };
+
+  function row(c, withRevenue) {
+    var s = ST[c[3]];
+    return '<tr style="cursor:pointer" data-go="detail"><td><strong>' + c[0] + '</strong></td><td>' + c[1] + '</td>' +
+      '<td><span class="chip">' + c[2] + '</span></td>' +
+      '<td><span class="chip ' + (s[0] ? 'chip--' + s[0] : '') + '">' + s[1] + '</span></td>' +
+      '<td class="num">' + c[4] + '%</td>' +
+      (withRevenue ? '<td class="num">' + c[5] + '</td>' : '') +
+      '<td class="muted">' + c[6] + '</td></tr>';
+  }
+  document.getElementById('recent').innerHTML = CUSTOMERS.slice(0, 5).map(function (c) { return row(c, false); }).join('');
+  document.getElementById('clist').innerHTML = CUSTOMERS.map(function (c) { return row(c, true); }).join('');
+
+  document.getElementById('olist').innerHTML = [
+    ['18 Sep', 'Sara Greco', 'Plus v2', '€99.00', '—', 'success', 'Paid', 'pi_3Q8k…'],
+    ['16 Sep', 'Giulia Conti', 'Pro v4', '€179.00', '—', 'success', 'Paid', 'pi_3Q7j…'],
+    ['14 Sep', 'Andrea Moretti', 'Essential v3', '€49.00', '—', 'warning', 'Paid, never activated', 'pi_3Q6h…'],
+    ['11 Sep', 'B&B La Rocca', 'Plus v2', '€99.00', '—', 'success', 'Paid', 'pi_3Q5g…'],
+    ['08 Sep', 'Paolo Neri', 'Plus v2', '€99.00', '—', 'danger', 'Refunded', 'pi_3Q4f…'],
+    ['02 Sep', 'Marco Bianchi', 'Plus v2', '€79.20', 'BENVENUTO20', 'success', 'Paid', 'pi_3Q3e…']
+  ].map(function (o) {
+    return '<tr><td class="muted">' + o[0] + '</td><td><strong>' + o[1] + '</strong></td><td>' + o[2] + '</td>' +
+      '<td class="num">' + o[3] + '</td><td class="muted xs">' + o[4] + '</td>' +
+      '<td><span class="chip chip--' + o[5] + '">' + o[6] + '</span></td>' +
+      '<td><a href="#" class="mh-mono xs">' + o[7] + '</a></td></tr>';
+  }).join('');
+
+  document.getElementById('plist').innerHTML = [
+    ['Essential', 'v3', '€49', 'Public', 142],
+    ['Plus', 'v2', '€99', 'Public · Recommended', 118],
+    ['Pro', 'v4', '€179', 'Public', 81],
+    ['Legacy Base', 'v1', '€39', 'Hidden', 9]
+  ].map(function (p) {
+    return '<tr><td><strong>' + p[0] + '</strong></td><td><span class="chip">' + p[1] + '</span></td>' +
+      '<td class="num">' + p[2] + '</td><td class="muted">' + p[3] + '</td><td class="num">' + p[4] + '</td>' +
+      '<td><button class="btn btn--ghost btn--sm">Open</button></td></tr>';
+  }).join('');
+
+  document.getElementById('tlist').innerHTML = [
+    ['welcome', 'Welcome', 'arrival', 100, '—', 341],
+    ['checkin', 'Check-in', 'arrival', 200, '—', 341],
+    ['wifi', 'Wi-Fi', 'stay', 300, '—', 339],
+    ['parking', 'Parking', 'arrival', 400, '—', 298],
+    ['services', 'Services', 'stay', 500, 'welcome.sections.services', 199],
+    ['appliances', 'Appliances', 'stay', 600, 'welcome.sections.appliances', 174],
+    ['waste', 'Waste &amp; recycling', 'stay', 700, 'welcome.sections.waste', 188],
+    ['eat', 'Where to eat', 'local', 800, 'welcome.sections.recommendations', 165]
+  ].map(function (t) {
+    return '<tr><td class="mh-mono xs">' + t[0] + '</td><td><strong>' + t[1] + '</strong></td>' +
+      '<td class="muted">' + t[2] + '</td><td class="num">' + t[3] + '</td>' +
+      '<td class="mh-mono xs muted">' + t[4] + '</td><td class="num">' + t[5] + '</td></tr>';
+  }).join('');
+
+  document.getElementById('llist').innerHTML = [
+    ['it-IT', 'Italian', 'Italiano', 341], ['en-GB', 'English', 'English', 287],
+    ['de-DE', 'German', 'Deutsch', 96], ['fr-FR', 'French', 'Français', 74],
+    ['es-ES', 'Spanish', 'Español', 41], ['nl-NL', 'Dutch', 'Nederlands', 18]
+  ].map(function (l) {
+    return '<tr><td class="mh-mono xs">' + l[0] + '</td><td>' + l[1] + '</td><td>' + l[2] + '</td>' +
+      '<td><span class="chip chip--success">Active</span></td><td class="num">' + l[3] + '</td></tr>';
+  }).join('');
+
+  document.getElementById('alist').innerHTML = [
+    ['18 Sep 14:07', 'Giulia (support)', 'guide.section.update', 'Casa San Francesco — Check-in', 'Customer called — can’t upload photos from iPhone'],
+    ['18 Sep 14:02', 'Giulia (support)', 'account.impersonate.start', 'MH-2026-0341', 'Customer called — can’t upload photos from iPhone'],
+    ['17 Sep 16:20', 'Francesco (super admin)', 'package.version.create', 'Plus v3 (draft)', 'Adding search to Plus'],
+    ['15 Sep 11:03', 'Francesco (super admin)', 'order.refund', 'MH-O-2026-00388', 'Customer bought twice by mistake'],
+    ['14 Sep 09:41', 'system', 'billing.reconcile', '7 days', '—'],
+    ['12 Sep 17:55', 'Francesco (super admin)', 'entitlement.override', 'MH-2026-0298 — languages.max = 5', 'Goodwill after the 9 Sept outage. Ends 31 Dec.']
+  ].map(function (a) {
+    return '<tr><td class="muted xs">' + a[0] + '</td><td><strong>' + a[1] + '</strong></td>' +
+      '<td class="mh-mono xs">' + a[2] + '</td><td>' + a[3] + '</td><td class="muted xs">' + a[4] + '</td></tr>';
+  }).join('');
+
+  document.getElementById('wlist').innerHTML = [
+    ['18 Sep 11:42', 'evt_3Q8kLm…', 'checkout.session.completed', 'success', 'Processed', 1],
+    ['18 Sep 11:42', 'evt_3Q8kLn…', 'payment_intent.succeeded', 'success', 'Processed', 1],
+    ['16 Sep 09:15', 'evt_3Q7jKp…', 'invoice.paid', 'success', 'Processed', 1],
+    ['15 Sep 11:04', 'evt_3Q6hJo…', 'charge.refunded', 'success', 'Processed', 1],
+    ['14 Sep 22:31', 'evt_3Q5gIn…', 'checkout.session.completed', 'danger', 'Failed', 5],
+    ['14 Sep 22:30', 'evt_3Q5gIm…', 'customer.subscription.created', '', 'Ignored', 0]
+  ].map(function (w) {
+    return '<tr><td class="muted xs">' + w[0] + '</td><td class="mh-mono xs">' + w[1] + '</td>' +
+      '<td class="mh-mono xs">' + w[2] + '</td>' +
+      '<td><span class="chip ' + (w[3] ? 'chip--' + w[3] : '') + '">' + w[4] + '</span></td>' +
+      '<td class="num">' + w[5] + '</td>' +
+      '<td>' + (w[4] === 'Failed' ? '<button class="btn btn--secondary btn--sm">Replay</button>' : '') + '</td></tr>';
+  }).join('');
+
+  /* ---- navigation ---- */
+  function go(k) {
+    document.querySelectorAll('.page').forEach(function (p) { p.classList.toggle('is-on', p.id === 'p-' + k); });
+    document.querySelectorAll('.nav-i').forEach(function (b) { b.classList.toggle('is-on', b.dataset.go === k); });
+    window.scrollTo(0, 0);
+  }
+  document.addEventListener('click', function (e) {
+    var g = e.target.closest('[data-go]');
+    if (g) { e.preventDefault(); go(g.dataset.go); }
+  });
+
+  /* ---- assist: a reason is required, not optional ---- */
+  var mbd = document.getElementById('mbd');
+  document.getElementById('assist').addEventListener('click', function () {
+    mbd.classList.add('is-on');
+    document.getElementById('reason').focus();
+  });
+  document.getElementById('m-cancel').addEventListener('click', function () { mbd.classList.remove('is-on'); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') mbd.classList.remove('is-on');
+  });
+  document.getElementById('m-start').addEventListener('click', function () {
+    var r = document.getElementById('reason');
+    if (!r.value.trim()) {
+      document.getElementById('reason-err').hidden = false;
+      r.setAttribute('aria-invalid', 'true'); r.focus();
+      say('A reason is required'); return;
+    }
+    MHW.set({ impersonating: true });
+    say('Support session started');
+    location.href = 'dashboard.html';
+  });
+
+  /* ---- destructive actions state their consequence, in the customer's terms ---- */
+  document.getElementById('regen').addEventListener('click', function () {
+    alert('Regenerate the QR code?\n\n' +
+      'Casa San Francesco’s printed QR codes will stop working. Anyone who ' +
+      'scans an old card will reach a page that no longer exists.\n\n' +
+      'The guide address is unaffected.\n\nType REGENERATE to confirm.');
+  });
+  document.getElementById('refund').addEventListener('click', function () {
+    alert('Refund €79.20 to Marco Bianchi?\n\n' +
+      'Casa San Francesco’s guide will go offline and the public address will ' +
+      'return a 404.\n\nNothing is deleted — content, photos and translations are ' +
+      'kept, and reactivation is one click.\n\nA reason is required.');
+  });
+  document.getElementById('newver').addEventListener('click', function () {
+    alert('Create Plus version 3\n\n' +
+      'Version 2 stays exactly as it is for the 118 customers who bought it.\n\n' +
+      'Version 3 starts as a copy that you can edit, and applies to new purchases ' +
+      'once you publish it.\n\nTo move existing customers onto it, use Migrate — ' +
+      'which shows you who gains what and who loses what first, and grandfathers ' +
+      'every loss by default.');
+  });
+
+  document.getElementById('q').addEventListener('input', function () {
+    var t = this.value.toLowerCase();
+    document.querySelectorAll('#clist tr').forEach(function (tr) {
+      tr.hidden = t.length > 0 && tr.textContent.toLowerCase().indexOf(t) === -1;
+    });
+  });
+})();
+</script>
+</body>
+</html>

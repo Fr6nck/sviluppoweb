@@ -1,0 +1,361 @@
+<?php
+/* La scheda di un cliente: chi è, cosa ha comprato (versione compresa),
+   cosa può fare e perché, le sue guide, i pagamenti, il registro. */
+use function MHW\b;
+use MHW\{Support, Csrf, Db};
+$title = ($acc['user_name'] ?: $acc['email']) . ' — Cliente';
+$etichette = array_column(Db::all('SELECT code, label FROM features ORDER BY id'), 'label', 'code');
+$fonte = ['package' => 'piano pagato', 'intended' => 'piano scelto', 'override' => 'eccezione', 'default' => 'predefinito'];
+include __DIR__ . '/_stati.php'; ?>
+<div class="stack stack--lg">
+  <div class="spread">
+    <div class="stack stack--sm">
+      <a class="small" href="<?= b() ?>/admin/clienti">← Clienti</a>
+      <h1><?= Support::e($acc['user_name'] ?: $acc['email']) ?>.<?php if (!empty($acc['is_test'])): ?> <span class="badge badge--sea" style="vertical-align:middle">Prova</span><?php endif; ?></h1>
+      <p class="small muted"><?= Support::e($acc['email']) ?> · registrato il <?= Support::e(Support::date($acc['registrato'])) ?> ·
+        <?= $acc['email_verified_at'] ? 'email confermata' : '<b>email non confermata</b>' ?></p>
+    </div>
+    <form method="post" action="<?= b() ?>/admin/entra/<?= (int) $acc['user_id'] ?>" style="margin:0"><?= Csrf::field() ?>
+      <button class="btn btn--ghost btn--sm" aria-label="Entra come cliente"><span class="btn__lungo">Entra come cliente</span><span class="btn__corto" aria-hidden="true">Entra</span></button></form>
+  </div>
+
+  <?php /* 7F: «Cliente di prova»: fuori da Quadro, Vendite, Prospetti, Scadenze e Marketing, niente richiami automatici né richiesta di giudizio. */
+        if (array_key_exists('is_test', $acc)): ?>
+  <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/prova" class="panel spread spread--mid cliente-prova" style="gap:12px;flex-wrap:wrap"><?= Csrf::field() ?>
+    <label class="check" style="margin:0"><input type="checkbox" name="prova" value="1"<?= !empty($acc['is_test']) ? ' checked' : '' ?>>
+      <span><b>Cliente di prova</b><br><span class="small muted">Non entra in Quadro, Vendite, Prospetti, Scadenze e Marketing; non riceve richiami automatici né la richiesta di giudizio. Per i tuoi account di collaudo e per chi usa la piattaforma gratis.</span></span></label>
+    <button class="btn btn--ghost btn--sm">Salva</button>
+  </form>
+  <?php endif; ?>
+
+  <?php $completa = MHW\Fatturazione::completa($acc); $tipoF = (string) ($acc['billing_type'] ?? ''); ?>
+  <div class="grid grid-2" style="align-items:start">
+    <section class="panel stack nota-interna" id="nota" style="gap:8px" aria-labelledby="nota-titolo">
+      <span class="kicker" id="nota-titolo">Nota interna</span>
+      <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/nota" class="stack" style="gap:8px"><?= Csrf::field() ?>
+        <label for="nota-testo" class="sr-only">Nota interna sul cliente</label>
+        <textarea id="nota-testo" name="nota" maxlength="4000" placeholder="Telefonate, accordi, solleciti. Il cliente non la vede."><?= Support::e((string) ($acc['admin_note'] ?? '')) ?></textarea>
+        <div class="spread spread--mid"><span class="tiny muted"><?= !empty($acc['admin_note_at']) ? 'Aggiornata il ' . Support::e(Support::date($acc['admin_note_at'])) : 'Solo per l\'amministrazione.' ?></span>
+          <button class="btn btn--ghost btn--sm">Salva la nota</button></div>
+      </form>
+    </section>
+    <section class="panel stack" style="gap:6px" aria-labelledby="fatt-titolo">
+      <div class="spread spread--mid"><span class="kicker" id="fatt-titolo">Fatturazione</span>
+        <span class="badge badge--<?= $completa ? 'pine' : 'ochre' ?>"><?= $completa ? 'Completa' : 'Incompleta' ?></span></div>
+      <?php if (($acc['billing_name'] ?? '') === ''): ?><p class="small muted">Dati non ancora inseriti.</p><?php else: ?>
+        <p class="small" style="margin:0"><b><?= Support::e($acc['billing_name']) ?></b><?= $tipoF !== '' ? ' · ' . Support::e(MHW\Fatturazione::TIPI[$tipoF] ?? $tipoF) : '' ?></p>
+        <p class="small" style="margin:0"><?= ($acc['vat'] ?? '') !== '' ? 'P.IVA ' . Support::e($acc['vat']) . ' · ' : '' ?><?= ($acc['cf'] ?? '') !== '' ? 'CF ' . Support::e($acc['cf']) : '' ?></p>
+        <p class="small" style="margin:0"><?= ($acc['sdi'] ?? '') !== '' ? 'SDI ' . Support::e($acc['sdi']) : '' ?><?= ($acc['pec'] ?? '') !== '' ? ' · PEC ' . Support::e($acc['pec']) : '' ?></p>
+        <p class="small muted" style="margin:0"><?= Support::e(trim(($acc['billing_address'] ?? '') . ', ' . ($acc['billing_postal'] ?? '') . ' ' . ($acc['billing_city'] ?? '') . ' ' . ($acc['billing_province'] ?? ''), ' ,')) ?></p>
+      <?php endif; ?>
+    </section>
+  </div>
+
+  <div class="grid grid-2" style="align-items:start">
+    <section class="panel stack" style="gap:8px">
+      <span class="kicker">Consensi</span>
+      <p class="small">Termini: versione <?= Support::e($acc['terms_version'] ?: '—') ?>, accettati il <?= Support::e(Support::date($acc['terms_accepted_at'] ?? '')) ?: '—' ?></p>
+      <p class="small">Privacy: versione <?= Support::e($acc['privacy_version'] ?: '—') ?>, presa visione il <?= Support::e(Support::date($acc['privacy_accepted_at'] ?? '')) ?: '—' ?></p>
+      <?php /* 8J: l'Accordo sul trattamento dei dati (Allegato A), e se deve ancora accettare la versione in vigore */ ?>
+      <p class="small">Accordo sul trattamento dei dati: versione <?= Support::e(($acc['dpa_version'] ?? '') ?: '—') ?>, accettato il <?= Support::e(Support::date($acc['dpa_accepted_at'] ?? '')) ?: '—' ?></p>
+      <?php if (MHW\Legale::daAccettare(['role' => 'host'] + $acc)): ?><p class="small"><span class="badge badge--alert">Da accettare</span> le versioni in vigore: al prossimo accesso vede la finestra, e fino ad allora il pannello è in sola lettura.</p><?php endif; ?>
+    </section>
+    <section class="panel stack" style="gap:8px">
+      <span class="kicker">Stripe</span>
+      <p class="small">Cliente su Stripe: <code><?= Support::e($acc['stripe_customer_id'] ?: '—') ?></code></p>
+      <p class="small">Piano scelto: <?= $acc['intended_package_version_id'] ? 'versione #' . (int) $acc['intended_package_version_id'] : '—' ?></p>
+      <?php if (!empty($omaggio)): /* 9D · il codice omaggio prenotato o usato */ ?>
+        <p class="small">Codice omaggio: <code><?= Support::e($omaggio['codice']) ?></code> · <?= (int) $omaggio['mesi'] ?> mesi<?= !empty($omaggio['usato_at']) ? ', usato il ' . Support::e(Support::date($omaggio['usato_at'])) : ', prenotato (vale fino al ' . Support::e(Support::date($omaggio['scade_il'])) . ')' ?></p>
+      <?php endif; ?>
+    </section>
+  </div>
+
+  <?php /* La guida vetrina: una demo completa dentro questo account (nomi e dati di fantasia). */
+        $vetrina = null; foreach ($props as $p) if ((int) $p['is_demo'] === MHW\Demo::VETRINA) $vetrina = $p;
+        $conPiano = (bool) MHW\Subscriptions::active((int) $acc['id']); ?>
+  <section class="panel stack" style="gap:10px" aria-labelledby="vetrina-titolo">
+    <h2 id="vetrina-titolo" style="font-size:22px">Guida vetrina</h2>
+    <?php if ($vetrina): ?>
+      <p class="small">«<?= Support::e($vetrina['name']) ?>» è la guida vetrina di questo account: è online come demo, non conta nel limite di strutture ed è la demo della landing.</p>
+      <?php /* 9C: l'indirizzo attuale (sempre da Support::baseUrl), con «Apri» e «Copia». */ $urlV = Support::baseUrl() . '/g/' . $vetrina['slug']; ?>
+      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><code class="impostazioni__url"><?= Support::e($urlV) ?></code>
+        <a class="btn btn--ghost btn--sm" href="<?= Support::e($urlV) ?>" target="_blank" rel="noopener">Apri</a>
+        <button type="button" class="btn btn--ghost btn--sm" data-copia="<?= Support::e($urlV) ?>" data-copiato="Copiato" hidden><?= MHW\Icon::svg('copy', 15) ?>Copia</button></div>
+      <?php if ($vetrina['slug'] !== 'casa-checco'): ?><p class="small muted" style="margin:0">/g/casa-checco è la guida di un cliente vero: la vetrina tiene questo indirizzo.</p><?php endif; ?>
+      <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/vetrina" class="stack" style="gap:8px"><?= Csrf::field() ?>
+        <input type="hidden" name="rifai" value="1">
+        <p class="small muted">«Rifai la vetrina» la toglie e ne crea una nuova con i dati aggiornati (eventi con le prossime date, foto, luoghi). Le modifiche fatte a mano sulla vetrina si perdono; le altre strutture dell'account non si toccano.</p>
+        <button class="btn btn--ghost btn--sm" style="align-self:flex-start">Rifai la vetrina</button>
+      </form>
+      <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/vetrina/traduzioni" class="stack" style="gap:8px"><?= Csrf::field() ?>
+        <p class="small muted">«Completa le traduzioni della vetrina» scrive solo i campi ancora vuoti in inglese, francese, tedesco e spagnolo, senza toccare il resto, e ripubblica.</p>
+        <button class="btn btn--ghost btn--sm" style="align-self:flex-start">Completa le traduzioni della vetrina</button>
+      </form>
+    <?php else: ?>
+      <p class="small">Una guida dimostrativa completa sulla falsariga di Casa Lucia, con nomi, numeri, indicazioni e foto diversi, tutti di fantasia: «Casa Checco», ad Assisi, vicino a Piazza Matteotti. Tutte le sezioni sono compilate, eventi compresi. Si pubblica subito come demo, non occupa il posto di una struttura e diventa la demo della landing. Il cliente la modifica dal suo pannello.</p>
+      <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/vetrina" class="stack" style="gap:10px"><?= Csrf::field() ?>
+        <?php if (!$conPiano): ?>
+          <label class="check"><input type="checkbox" name="plus" value="1" checked> <span>Concedi Plus dimostrativo per 12 mesi: senza un piano la guida esce senza foto, senza inglese e senza luoghi.</span></label>
+        <?php endif; ?>
+        <button class="btn btn--sm" style="align-self:flex-start">Crea la guida vetrina</button>
+      </form>
+    <?php endif; ?>
+  </section>
+
+  <?php /* 9E · Le azioni sul cliente: fermare il rinnovo, cambiare il pacchetto, rimborsare, password. Ogni azione: motivo nel registro ed email al cliente. */
+        $subAtt = MHW\Subscriptions::active((int) $acc['id']); $stripeAtt = $subAtt && $subAtt['provider'] === 'stripe' && $subAtt['provider_subscription_id'] !== '';
+        $pianoAtt = $subAtt ? MHW\Plans::version((int) $subAtt['package_version_id']) : null; $qAtt = max(1, (int) ($subAtt['quantity'] ?? 1));
+        $inOmaggioA = $subAtt && $subAtt['status'] === 'trialing' && !empty($subAtt['omaggio_fino']); ?>
+  <div class="grid grid-2" style="align-items:start" id="abbonamento">
+    <section class="panel stack" style="gap:8px" aria-labelledby="abb-titolo">
+      <h2 id="abb-titolo" style="font-size:19px;margin:0">Abbonamento</h2>
+      <?php if (!$subAtt): ?><p class="small muted" style="margin:0">Nessun abbonamento attivo: qui sotto puoi attivarne uno a mano.</p>
+      <?php else: $addA = $stripeAtt && !(int) $subAtt['cancel_at_period_end'] ? MHW\Richiami::prossimoAddebito($subAtt) : null; ?>
+        <p class="small" style="margin:0"><?= Support::e($pianoAtt['name'] ?? '') ?><?= $qAtt > 1 ? ' · ' . $qAtt . ' strutture' : '' ?> · <?= $inOmaggioA ? 'in omaggio fino al ' . Support::e(Support::date($subAtt['omaggio_fino'])) : Support::e($statoAbbonamento[$subAtt['status']] ?? $subAtt['status']) ?>
+          · <?= (int) $subAtt['cancel_at_period_end'] ? 'rinnovo fermato: finisce il ' . Support::e(Support::date($subAtt['current_period_end'])) : ($stripeAtt ? ($inOmaggioA ? 'primo addebito' : 'rinnovo automatico') . ' il ' . Support::e(Support::date($subAtt['current_period_end'])) . ($addA ? ' · ' . Support::e(Support::money($addA['netto'], $addA['valuta'])) . ' + IVA' : '') : 'attivato dallo staff fino al ' . Support::e(Support::date($subAtt['current_period_end']))) ?>
+          <?= ($subAtt['card_last4'] ?? '') !== '' ? ' · carta •••• ' . Support::e($subAtt['card_last4']) : '' ?></p>
+        <?php if ($stripeAtt): ?>
+          <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/rinnovo" class="row" style="gap:8px;flex-wrap:wrap;align-items:flex-end"><?= Csrf::field() ?>
+            <input type="hidden" name="ferma" value="<?= (int) $subAtt['cancel_at_period_end'] ? '0' : '1' ?>">
+            <div class="field" style="margin:0;flex:1 1 180px"><label for="rin-motivo" class="small">Motivo (resta nel registro)</label><input id="rin-motivo" name="motivo" type="text" required maxlength="200" placeholder="Es. chiesto per telefono il <?= gmdate('d/m') ?>"></div>
+            <button class="btn btn--ghost btn--sm"><?= (int) $subAtt['cancel_at_period_end'] ? 'Riattiva il rinnovo' : 'Ferma il rinnovo' ?></button>
+          </form>
+          <p class="small muted" style="margin:0"><?= (int) $subAtt['cancel_at_period_end'] ? 'Riattivando, il prossimo addebito è il ' . Support::e(Support::date($subAtt['current_period_end'])) . '. Il cliente riceve un\'email.' : 'Resta attivo fino al ' . Support::e(Support::date($subAtt['current_period_end'])) . ', poi la guida va offline. Nessun addebito. Il cliente riceve un\'email.' ?></p>
+        <?php endif; ?>
+      <?php endif; ?>
+    </section>
+    <section class="panel stack" style="gap:8px" id="cambio" aria-labelledby="cambio-titolo">
+      <h2 id="cambio-titolo" style="font-size:19px;margin:0">Cambia il pacchetto</h2>
+      <?php if (!$stripeAtt): ?><p class="small muted" style="margin:0">Solo per un abbonamento Stripe attivo (quelli dallo staff si cambiano con «Attiva un abbonamento manuale»).</p>
+      <?php else: $cb = $cambio ?? null; $ok = $cb && !empty($cb['ok']); ?>
+        <p class="small muted" style="margin:0">Per chi non ci riesce da solo. Anteprima prima di confermare.</p>
+        <?php if ($cb && !$ok): ?><p class="note note--err" role="alert" style="margin:0"><?= Support::e($cb['errore']) ?></p><?php endif; ?>
+        <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/cambio" class="stack" style="gap:8px"><?= Csrf::field() ?>
+          <div class="row" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
+            <div class="field" style="margin:0;flex:1 1 160px"><label for="cb-piano" class="small">Piano</label>
+              <select id="cb-piano" name="piano"><?php foreach ($pianiVendita as $o): ?><option value="<?= Support::e($o['code']) ?>"<?= ($cb['pv']['code'] ?? '') === $o['code'] ? ' selected' : '' ?>><?= Support::e($o['name']) ?></option><?php endforeach; ?></select></div>
+            <div class="field" style="margin:0;width:7em"><label for="cb-strutture" class="small">Strutture</label><input id="cb-strutture" name="strutture" type="number" min="1" max="10" value="<?= (int) ($cb['q'] ?? $qAtt) ?>"></div>
+            <button class="btn btn--ghost btn--sm" name="passo" value="anteprima">Anteprima</button>
+          </div>
+          <?php if ($ok): $pr = $cb['prev']; $sale = $pr['tipo'] !== MHW\CambioPiano::SCENDE; ?>
+            <div class="stack" style="gap:6px">
+              <?php if ($sale && $pr['conguaglio'] > 0): ?>
+                <label class="check" style="align-items:flex-start"><input type="radio" name="modo" value="subito"<?= $cb['modo'] !== 'rinnovo' ? ' checked' : '' ?>><span><b>Subito, con conguaglio</b>: il cliente riceve il link e paga la differenza (<?= Support::e(Support::money($pr['conguaglio'], (string) $cb['pv']['currency'])) ?> + IVA per i <?= (int) $pr['giorni'] ?> giorni che restano). Il cambio parte quando paga.</span></label>
+              <?php elseif ($sale): ?>
+                <label class="check" style="align-items:flex-start"><input type="radio" name="modo" value="subito"<?= $cb['modo'] !== 'rinnovo' ? ' checked' : '' ?>><span><b>Subito</b>: nessuna differenza da pagare.</span></label>
+              <?php else: ?>
+                <p class="small muted" style="margin:0">Scendere di piano si fa dal rinnovo: niente rimborsi, nessun addebito.</p>
+              <?php endif; ?>
+              <label class="check" style="align-items:flex-start"><input type="radio" name="modo" value="rinnovo"<?= $cb['modo'] === 'rinnovo' || !$sale ? ' checked' : '' ?>><span><b>Dal rinnovo</b> (<?= Support::e(Support::date($pr['fine'])) ?>): paga <?= Support::e(Support::money($cb['addebito']['listino'], (string) $cb['pv']['currency'])) ?> + IVA<?= $cb['addebito']['percento'] > 0 ? ' meno gli sconti maturati (' . (int) $cb['addebito']['percento'] . '%) = ' . Support::e(Support::money($cb['addebito']['netto'], (string) $cb['pv']['currency'])) . ' + IVA' : '' ?>.</span></label>
+              <?php if (!empty($cb['cambia']['perde'])): ?><p class="small muted" style="margin:0">Cosa perde: <?= Support::e(implode(' ', $cb['cambia']['perde'])) ?></p><?php endif; ?>
+            </div>
+            <div class="field" style="margin:0"><label for="cb-motivo" class="small">Motivo (resta nel registro)</label><input id="cb-motivo" name="motivo" type="text" required maxlength="200" value="<?= Support::e((string) $cb['motivo']) ?>" placeholder="Es. chiesto per telefono il <?= gmdate('d/m') ?>"></div>
+            <div class="actions"><button class="btn btn--sm" name="passo" value="conferma">Conferma e avvisa il cliente</button></div>
+          <?php endif; ?>
+        </form>
+      <?php endif; ?>
+    </section>
+  </div>
+  <div class="grid grid-2" style="align-items:start">
+    <section class="panel stack" style="gap:8px" id="fatture" aria-labelledby="fatt2-titolo">
+      <h2 id="fatt2-titolo" style="font-size:19px;margin:0">Fatture e rimborsi</h2>
+      <?php if (!$fatture): ?><p class="small muted" style="margin:0"><?= MHW\Stripe::enabled() && $acc['stripe_customer_id'] !== '' ? 'Nessuna fattura pagata su Stripe.' : 'Nessun cliente Stripe ancora.' ?></p>
+      <?php else: ?>
+        <div class="tablewrap"><table class="data"><thead><tr><th>Data</th><th>Fattura</th><th>Importo</th><th>Stato</th></tr></thead><tbody>
+          <?php foreach ($fatture as $f): ?>
+            <tr><td class="small"><?= Support::e(Support::date($f['data'])) ?></td><td><code><?= Support::e($f['numero']) ?></code></td>
+              <td><?= Support::e(Support::money($f['netto'], $f['valuta'])) ?> + IVA</td>
+              <td class="small"><?= $f['rimborsato'] > 0 ? '<span class="badge badge--ochre">Rimborsata ' . Support::e(Support::money($f['rimborsato'], $f['valuta'])) . '</span>' : 'Pagata' ?></td></tr>
+          <?php endforeach; ?></tbody></table></div>
+        <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/rimborso" class="spiega stack" style="gap:8px" onsubmit="return confirm('Confermi il rimborso su Stripe?')"><?= Csrf::field() ?>
+          <div class="row" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
+            <div class="field" style="margin:0;flex:1 1 200px"><label for="rb-inv" class="small">Fattura</label>
+              <select id="rb-inv" name="invoice"><?php foreach ($fatture as $f): ?><option value="<?= Support::e($f['id']) ?>"><?= Support::e($f['numero']) ?> · <?= Support::e(Support::money($f['totale'], $f['valuta'])) ?> con IVA</option><?php endforeach; ?></select></div>
+            <div class="field" style="margin:0;width:8em"><label for="rb-importo" class="small">Rimborsa €</label><input id="rb-importo" name="importo" type="text" inputmode="decimal" placeholder="tutto"></div>
+            <div class="field" style="margin:0;flex:1 1 160px"><label for="rb-motivo" class="small">Motivo</label>
+              <select id="rb-motivo" name="motivo"><?php foreach (MHW\AzioniCliente::MOTIVI_RIMBORSO as $k => $et): ?><option value="<?= $k ?>"><?= Support::e($et) ?></option><?php endforeach; ?></select></div>
+          </div>
+          <div class="field" style="margin:0"><label for="rb-testo" class="small">Dettaglio (obbligatorio con «altro»)</label><input id="rb-testo" name="testo" type="text" maxlength="255"></div>
+          <p class="tiny muted" style="margin:0">Il rimborso non ferma l'abbonamento. Nota di credito da fare in Adamo. Il cliente riceve un'email con importo e tempi (5–10 giorni).</p>
+          <div class="actions"><button class="btn btn--sm btn--danger">Conferma il rimborso</button></div>
+        </form>
+      <?php endif; ?>
+    </section>
+    <section class="panel stack" style="gap:8px" id="accesso" aria-labelledby="acc-titolo">
+      <h2 id="acc-titolo" style="font-size:19px;margin:0">Accesso</h2>
+      <p class="small muted" style="margin:0">La password non si vede mai. Il link vale un'ora; la provvisoria 48 ore e va cambiata al primo accesso.</p>
+      <div class="row" style="gap:8px;flex-wrap:wrap">
+        <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/password/link" style="margin:0"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm">Manda il link per reimpostarla</button></form>
+        <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/password/provvisoria" style="margin:0" onsubmit="return confirm('Impostare una password provvisoria? Quella attuale smette di valere.')"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm">Imposta una password provvisoria</button></form>
+      </div>
+      <?php if (!empty($_SESSION['pw_provvisoria'])): $pwP = (string) $_SESSION['pw_provvisoria']; unset($_SESSION['pw_provvisoria']); ?>
+        <div class="spiega" role="status">Password provvisoria: <b class="pw-provvisoria"><?= Support::e($pwP) ?></b><br><span class="small">Mostrata solo adesso. Vale 48 ore; al primo accesso il cliente deve sceglierne una nuova. Il cliente ha ricevuto un'email di avviso.</span></div>
+      <?php endif; ?>
+      <?php if (!empty($acc['must_change_password']) || !empty($acc['password_temp_until'])): ?>
+        <p class="small muted" style="margin:0"><?= !empty($acc['must_change_password']) ? 'Password provvisoria in corso' : '' ?><?= !empty($acc['password_temp_until']) ? ' (valida fino al ' . Support::e(Support::date($acc['password_temp_until'])) . ')' : '' ?>.</p>
+      <?php endif; ?>
+    </section>
+  </div>
+
+  <section class="stack" style="gap:10px">
+    <h2 style="font-size:22px">Strutture e guide</h2>
+    <?php if (!$props): ?><p class="small muted">Nessuna struttura.</p><?php else: ?>
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th>Struttura</th><th>Guida</th><th>Lingue</th><th>QR</th><th>Pubblicata</th></tr></thead>
+      <tbody><?php foreach ($props as $p): ?>
+        <tr><td><b><?= Support::e($p['name']) ?></b><br><span class="small muted"><?= Support::e($p['city']) ?></span></td>
+          <td><?= $p['status'] === 'published' ? ($p['online'] ? '<span class="badge badge--pine">Online</span>' : '<span class="badge badge--alert">Offline</span>') : '<span class="badge badge--ochre">Bozza</span>' ?>
+            <br><a class="small" href="<?= b() ?>/g/<?= Support::e($p['slug']) ?>" target="_blank" rel="noopener">/g/<?= Support::e($p['slug']) ?></a></td>
+          <td><?= Support::e($p['lingue']) ?></td>
+          <td><code><?= Support::e($p['qr']['token'] ?? '—') ?></code></td>
+          <td class="small"><?= Support::e(Support::date($p['published_at'] ?? '')) ?: '—' ?></td></tr>
+      <?php endforeach; ?></tbody></table></div>
+    <?php endif; ?>
+  </section>
+
+  <section class="stack" style="gap:10px">
+    <h2 style="font-size:22px">Abbonamenti</h2>
+    <?php if (!$subs): ?><p class="small muted">Nessun abbonamento.</p><?php else: ?>
+    <?php /* Cambio di piano (6H): quello programmato e l'ultimo fatto. */
+          foreach ($subs as $s) if (!empty($s['next_package_version_id']) && ($np = MHW\Plans::version((int) $s['next_package_version_id']))): ?>
+      <p class="note" role="status">Cambio programmato: <b><?= Support::e($np['name']) ?></b><?= (int) ($s['next_quantity'] ?? 1) > 1 ? ' · ' . (int) $s['next_quantity'] . ' strutture' : '' ?> dal <?= Support::e(Support::date($s['current_period_end'])) ?>.</p>
+    <?php endif; ?>
+    <?php if (($ultimoCambio = MHW\Db::one("SELECT created_at, meta FROM audit_log WHERE action = 'subscription.change' AND target_user_id = ? ORDER BY id DESC", [$acc['user_id']]))):
+          $m = json_decode((string) $ultimoCambio['meta'], true) ?: []; $da = MHW\Plans::version((int) ($m['da']['pv'] ?? 0)); $a = MHW\Plans::version((int) ($m['a']['pv'] ?? 0)); ?>
+      <p class="small muted">Ultimo cambio di piano: <?= Support::e(Support::date($ultimoCambio['created_at'])) ?>, da <?= Support::e($da['name'] ?? '?') ?> (<?= (int) ($m['da']['q'] ?? 1) ?>) a <?= Support::e($a['name'] ?? '?') ?> (<?= (int) ($m['a']['q'] ?? 1) ?>)<?= ($m['come'] ?? '') === 'rinnovo' ? ', al rinnovo' : '' ?>.</p>
+    <?php endif; ?>
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th>Piano</th><th>Stato</th><th>Periodo</th><th>Rinnovo</th><th>Acquirente</th><th>Stripe</th></tr></thead>
+      <tbody><?php foreach ($subs as $s): ?>
+        <tr><td><?= Support::e($s['package']) ?> <span class="tiny muted">v<?= (int) $s['version'] ?></span><?= (int) ($s['quantity'] ?? 1) > 1 ? ' · ' . (int) $s['quantity'] . ' strutture' : '' ?><br><span class="tiny muted"><?= Support::e($viaPagamento[$s['provider']] ?? $s['provider']) ?></span></td>
+          <td><?= Support::e($statoAbbonamento[$s['status']] ?? $s['status']) ?><?= $s['payment_status'] ? '<br><span class="tiny muted">' . Support::e($statoPagamento[$s['payment_status']] ?? $s['payment_status']) . '</span>' : '' ?></td>
+          <td class="small"><?= Support::e(Support::date($s['current_period_start'])) ?> → <?= Support::e(Support::date($s['current_period_end'])) ?></td>
+          <td class="small"><?= (int) $s['cancel_at_period_end'] ? 'disattivato' : 'automatico' ?></td>
+          <td class="small"><?= match ($s['acquirente'] ?? '') { 'impresa' => 'Impresa o professionista', 'consumatore' => 'Privato (consumatore)<br><span class="tiny muted">' . ((int) ($s['recesso_rinuncia'] ?? 0) ? 'ha chiesto l\'avvio subito' : 'senza richiesta di avvio subito') . '</span>', default => '—' } ?></td>
+          <td><code><?= Support::e($s['provider_subscription_id'] ?: '—') ?></code><br><code><?= Support::e($s['provider_price_id'] ?: '') ?></code></td></tr>
+      <?php endforeach; ?></tbody></table></div>
+    <?php endif; ?>
+    <details class="fieldset">
+      <summary class="legend" style="cursor:pointer;min-height:32px">Attiva un abbonamento manuale</summary>
+      <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/abbonamento" class="stack" style="margin-top:12px"><?= Csrf::field() ?>
+        <p class="small muted">Per omaggi, clienti gratuiti o pagamenti arrivati per altre vie. Non passa da Stripe, non conta nell'incasso e resta nel registro.</p>
+        <?php /* 7F: le scelte rapide. «Per sempre» è una scadenza lontana (100 anni): niente avvisi di scadenza. */ ?>
+        <fieldset class="fieldset" style="margin:0"><legend class="legend">Durata</legend>
+          <div class="row" style="gap:16px;flex-wrap:wrap">
+            <label class="check"><input type="radio" name="durata" value="12"> <span>Gratis 12 mesi</span></label>
+            <label class="check"><input type="radio" name="durata" value="sempre"> <span>Gratis per sempre</span></label>
+            <label class="check"><input type="radio" name="durata" value="mesi" checked> <span>I mesi scritti qui sotto</span></label>
+          </div></fieldset>
+        <div class="grid grid-4">
+          <div class="field" style="margin:0"><label for="pv">Piano</label><select id="pv" name="pv">
+            <?php foreach ($versioni as $v): ?><option value="<?= (int) $v['id'] ?>"><?= Support::e($v['name']) ?> v<?= (int) $v['version'] ?></option><?php endforeach; ?></select></div>
+          <div class="field" style="margin:0"><label for="mesi">Mesi</label><input id="mesi" name="mesi" type="number" min="1" max="36" value="12"></div>
+          <div class="field" style="margin:0"><label for="strutture">Strutture <span class="muted">(Portfolio)</span></label><input id="strutture" name="strutture" type="number" min="1" max="500" value="2"></div>
+          <div class="field" style="margin:0"><label for="nota">Motivo</label><input type="text" id="nota" name="nota" required maxlength="200"></div>
+        </div>
+        <div class="actions"><button class="btn btn--sm">Attiva</button></div>
+      </form>
+    </details>
+  </section>
+
+  <?php /* Avvisi di rinnovo e scadenza: l'ultimo abbonamento, il promemoria a mano, le email mandate. */
+        $ultimo = $subs[0] ?? null;
+        $nomiEmail = ['arrivo' => 'Check-in da compilare', 'sezioni' => 'Sezioni da aggiungere', 'pubblica' => 'Guida da pubblicare', 'rinnovo' => 'Rinnovo in arrivo',
+                      'scadenza' => 'Scadenza', 'eventi' => 'Eventi passati', 'inviti' => 'Inviti',
+                      'conferma' => 'Email da confermare', 'pagamento' => 'Pagamento da riprendere', 'parere' => 'Cosa ti ha fermato?']; ?>
+  <section class="stack" style="gap:10px" id="promemoria" aria-labelledby="prom-titolo">
+    <h2 id="prom-titolo" style="font-size:22px">Avvisi e promemoria</h2>
+    <?php if ($ultimo && $ultimo['provider'] !== 'dimostrazione' && $ultimo['current_period_end'] !== ''): ?>
+      <form method="post" action="<?= b() ?>/admin/scadenze/promemoria" class="panel spread spread--mid" style="gap:12px"><?= Csrf::field() ?>
+        <input type="hidden" name="torna" value="/admin/cliente/<?= (int) $acc['id'] ?>">
+        <span class="small"><?= strtotime((string) $ultimo['current_period_end']) > time() ? 'L\'abbonamento ' . ($ultimo['provider'] === 'stripe' && !(int) $ultimo['cancel_at_period_end'] ? 'si rinnova' : 'finisce') . ' il ' : 'L\'abbonamento è finito il ' ?>
+          <b><?= Support::e(Support::date($ultimo['current_period_end'])) ?></b>. Il promemoria sceglie da solo il testo: rinnovo, scadenza o guida offline.</span>
+        <button class="btn btn--ghost btn--sm" name="solo" value="<?= (int) $ultimo['id'] ?>">Manda il promemoria adesso</button>
+      </form>
+    <?php endif; ?>
+    <?php if ($optout): ?><p class="small">Non vuole ricevere: <?= Support::e(implode(', ', array_map(fn($k) => mb_strtolower($nomiEmail[$k] ?? $k), $optout))) ?>.</p><?php endif; ?>
+    <?php if (!empty($parere)): ?>
+      <div class="panel stack" style="gap:6px" id="parere">
+        <span class="kicker">Cosa ti ha fermato?</span>
+        <p class="small" style="margin:0"><b><?= Support::e(MHW\Richiami::MOTIVI[$parere['motivo']] ?? $parere['motivo']) ?></b>
+          <span class="muted">· <?= Support::e(Support::date($parere['updated_at'] ?: $parere['created_at'])) ?></span></p>
+        <?php if (trim((string) $parere['testo']) !== ''): ?><p class="small" style="margin:0;white-space:pre-line"><?= Support::e($parere['testo']) ?></p><?php endif; ?>
+      </div>
+    <?php endif; ?>
+    <?php if (!$email): ?><p class="small muted">Nessuna email di promemoria finora.</p><?php else: ?>
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th>Data</th><th>Email</th><th>Come</th></tr></thead>
+      <tbody><?php foreach ($email as $m): ?>
+        <tr><td class="small"><?= Support::e(Support::date($m['sent_at'])) ?></td><td><?= Support::e($nomiEmail[$m['kind']] ?? $m['kind']) ?></td>
+          <td class="small muted"><?= str_starts_with((string) $m['ref'], 'manuale-') ? 'a mano' : 'automatica' ?></td></tr>
+      <?php endforeach; ?></tbody></table></div>
+    <?php endif; ?>
+  </section>
+
+  <?php if ($inviti || $traduzioni): ?>
+  <div class="grid grid-2" style="align-items:start">
+    <?php if ($inviti): $iv = $inviti['stato']; ?>
+      <section class="panel stack" style="gap:8px" aria-labelledby="inv-titolo">
+        <span class="kicker" id="inv-titolo">Porta un amico</span>
+        <p class="small" style="margin:0">Amici che hanno pagato: <b><?= (int) $iv['validi'] ?></b> su <?= (int) $iv['massimo'] ?> · in attesa <?= (int) $iv['in_attesa'] ?>
+          · sconto sul prossimo rinnovo <b><?= (int) $iv['percento'] ?>%</b><?= $iv['sconto'] > 0 ? ' (−' . Support::e(Support::money($iv['sconto'], $iv['valuta'])) . ')' : '' ?></p>
+        <?php if ($inviti['invitato']): ?><p class="small" style="margin:0">Invitato da <b><?= Support::e($inviti['invitato']['referrer_name']) ?></b>.</p><?php endif; ?>
+        <?php if ($inviti['amici']): ?>
+          <ul class="stack small" style="gap:4px;margin:0;padding-left:18px">
+            <?php foreach (array_slice($inviti['amici'], 0, 10) as $f): ?><li><?= Support::e($f['name']) ?> · <?= Support::e(['registrato' => 'in attesa', 'valido' => 'ha pagato', 'usato' => 'sconto già usato', 'oltre' => 'oltre il tetto'][$f['status']] ?? $f['status']) ?></li><?php endforeach; ?>
+          </ul>
+        <?php endif; ?>
+        <a class="small" href="<?= b() ?>/admin/inviti">Tutti gli inviti</a>
+      </section>
+    <?php endif; ?>
+    <?php if ($traduzioni): ?>
+      <section class="panel stack" style="gap:8px" aria-labelledby="tr-titolo">
+        <span class="kicker" id="tr-titolo">Traduzioni suggerite</span>
+        <p class="small" style="margin:0">Questo mese: <b><?= number_format((int) $traduzioni['mese'], 0, ',', '.') ?></b> caratteri,
+          circa <?= number_format(MHW\Traduttore::inEuro(MHW\Traduttore::costoUsd((int) $traduzioni['mese'], false)), 2, ',', '.') ?> € senza piano gratuito AWS.</p>
+        <p class="small" style="margin:0">Omaggio: <?= $traduzioni['omaggio'] ? 'fino al ' . Support::e(Support::date($traduzioni['omaggio'])) : 'non ancora cominciato' ?>.
+          <a href="<?= b() ?>/admin/traduzioni#omaggi">Allungalo</a></p>
+      </section>
+    <?php endif; ?>
+  </div>
+  <?php endif; ?>
+
+  <section class="stack" style="gap:10px">
+    <h2 style="font-size:22px">Cosa può fare</h2>
+    <p class="small muted">Per ogni funzione, il valore che vale adesso e da dove arriva. Un'eccezione ha la precedenza sul piano: per toglierla, svuota il campo e salva. Scrivi 1 per sì e 0 per no, un numero per i limiti, unlimited per «senza limite».</p>
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th>Funzione</th><th>Valore</th><th>Fonte</th><th>Eccezione</th></tr></thead>
+      <tbody><?php foreach ($ent as $code => $e): ?>
+        <tr><td><?= Support::e($etichette[$code] ?? $code) ?><br><code class="tiny muted"><?= Support::e($code) ?></code></td>
+          <td><b><?= Support::e($e['value']) ?></b></td><td class="small"><?= Support::e($fonte[$e['source']] ?? $e['source']) ?></td>
+          <td><form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/override" class="row" style="gap:6px;flex-wrap:nowrap"><?= Csrf::field() ?>
+            <input type="hidden" name="feature" value="<?= Support::e($code) ?>">
+            <input type="text" name="valore" value="<?= $e['source'] === 'override' ? Support::e($e['value']) : '' ?>" style="width:110px" aria-label="Eccezione per <?= Support::e($code) ?>">
+            <input type="text" name="nota" placeholder="Motivo" style="width:140px" aria-label="Motivo">
+            <button class="btn btn--ghost btn--sm">Salva</button></form></td></tr>
+      <?php endforeach; ?></tbody></table></div>
+  </section>
+
+  <section class="stack" style="gap:10px">
+    <h2 style="font-size:22px">Ordini</h2>
+    <?php if (!$orders): ?><p class="small muted">Nessun ordine.</p><?php else: ?>
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th>Data</th><th>Piano</th><th>Importo</th><th>Stato</th><th>Sessione Stripe</th></tr></thead>
+      <tbody><?php foreach ($orders as $o): ?>
+        <tr><td class="small"><?= Support::e(Support::date($o['created_at'])) ?></td><td><?= Support::e($o['package']) ?></td>
+          <td><?= Support::e(Support::money((int) $o['amount_cents'], $o['currency'])) ?></td><td><?= Support::e($statoOrdine[$o['status']] ?? $o['status']) ?></td>
+          <td><code><?= Support::e($o['provider_session_id'] ?: '—') ?></code></td></tr>
+      <?php endforeach; ?></tbody></table></div>
+    <?php endif; ?>
+  </section>
+
+  <section class="stack" style="gap:10px">
+    <h2 style="font-size:22px">Registro</h2>
+    <?php if (!$audit): ?><p class="small muted">Niente da segnalare.</p><?php else: ?>
+    <div class="tablewrap"><table class="data"><tbody><?php foreach ($audit as $l): ?>
+      <tr><td class="small" style="white-space:nowrap"><?= Support::e(str_replace(['T', 'Z'], [' ', ''], $l['created_at'])) ?></td><td><code><?= Support::e($l['action']) ?></code></td>
+        <td class="small muted"><?= Support::e($l['meta']) ?></td></tr>
+    <?php endforeach; ?></tbody></table></div>
+    <?php endif; ?>
+  </section>
+</div>
