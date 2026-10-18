@@ -178,8 +178,11 @@ final class Omaggi
     /** Il messaggio pronto da mandare (Testi e foto → omaggio.messaggio), con mesi, link, codice e scadenza. */
     public static function messaggio(array $c): string
     {
-        return TestiSito::testo('omaggio.messaggio', ['mesi' => (string) (int) $c['mesi'], 'link' => preg_replace('#^https?://#', '', self::link($c)),
-                                                       'codice' => (string) $c['codice'], 'scadenza' => Support::date((string) $c['scade_il'])]);
+        $t = TestiSito::testo('omaggio.messaggio', ['mesi' => (string) (int) $c['mesi'], 'link' => preg_replace('#^https?://#', '', self::link($c)),
+                                                     'codice' => (string) $c['codice'], 'scadenza' => Support::date((string) $c['scade_il']), 'email' => Support::commerciale()]);
+        // 9H · La firma con l'email commerciale, se il testo di Testi e foto non la scrive già ({email}).
+        $c = Support::commerciale();
+        return $c !== '' && !str_contains($t, $c) ? rtrim($t) . "\n\nMyHouse Welcome · " . $c : $t;
     }
 
     /** Per l'amministrazione: tutti i codici, con chi li ha usati. */

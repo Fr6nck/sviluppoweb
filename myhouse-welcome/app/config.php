@@ -178,13 +178,17 @@ $config = [
         'company_site'     => $env('MHW_COMPANY_SITE', 'https://www.cityup.eu'),
     ],
 
-    // Gli indirizzi a cui scrivono clienti e visitatori (7A, 9H). Si cambiano da Amministrazione → Impostazioni → Sito.
-    //  - email: l'assistenza (clienti, privacy, avvisi del sito, piede delle email, Reply-To di serie);
-    //  - commerciale: preventivi e marketing (preventivi oltre il Portfolio, «Anche il tuo sito», inviti).
-    //    Vuoto = vale l'email assistenza (Support::commerciale()).
+    // Gli indirizzi email del sito (7A, 9H). Si cambiano da Amministrazione → Impostazioni → Indirizzi email.
+    //  - email: l'assistenza (clienti, privacy, avvisi del sito, piede delle email, Reply-To di serie). Unica casella vera.
+    //  - commerciale: MyHouse siti («Anche il tuo sito»), preventivi, convenzioni e codici omaggio.
+    //  - newsletter: mittente di newsletter e campagne (Brevo). Il sito non manda email da qui.
+    //  - amministrazione: fatture, ricevute, pagamenti, rinnovi e rimborsi (Reply-To delle email di pagamento).
+    //  Gli ultimi tre, vuoti, valgono l'email assistenza (Support::commerciale(), newsletter(), amministrazione()).
     'contatti' => [
-        'email'       => $env('MHW_CONTACT_EMAIL', 'assistenza@welcomemyhouse.it'),
-        'commerciale' => $env('MHW_COMMERCIAL_EMAIL', 'commerciale@welcomemyhouse.it'),
+        'email'           => $env('MHW_CONTACT_EMAIL', 'assistenza@welcomemyhouse.it'),
+        'commerciale'     => $env('MHW_COMMERCIAL_EMAIL', 'commerciale@welcomemyhouse.it'),
+        'newsletter'      => $env('MHW_NEWSLETTER_EMAIL', 'news@welcomemyhouse.it'),
+        'amministrazione' => $env('MHW_BILLING_EMAIL', 'amministrazione@welcomemyhouse.it'),
     ],
 
     // 8B: gli indirizzi di partenza dei portali per le recensioni. Google cerca nome e città su Maps;

@@ -29,7 +29,7 @@ final class Anteprima
         if (!function_exists('imagecreatetruecolor') || !in_array($tipo, ['invito', 'guida'], true)) return null;
         $pid = (int) ($p['id'] ?? 0);
         if ($pid <= 0) return null;
-        $firma = substr(sha1(implode('|', [(int) ($p['cover_media_id'] ?? 0), (string) ($p['name'] ?? ''), (string) ($p['palette'] ?? ''), $tipo, self::VERSIONE])), 0, 12);
+        $firma = substr(sha1(implode('|', [(int) ($p['cover_media_id'] ?? 0), (string) ($p['name'] ?? ''), (string) ($p['palette'] ?? ''), (int) ($p['photos_bw'] ?? 0), $tipo, self::VERSIONE])), 0, 12);
         $dir = self::cartella();
         if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) return null;
         $f = "$dir/$pid-$tipo-$firma.jpg";
@@ -71,6 +71,8 @@ final class Anteprima
             $cw = (int) round(self::L / $scala); $ch = (int) round(self::A / $scala);
             imagecopyresampled($img, $foto, 0, 0, (int) (($w - $cw) / 2), (int) (($h - $ch) / 2), self::L, self::A, $cw, $ch);
             imagedestroy($foto);
+            // 9J · «Bianco e nero» con «Foto in bianco e nero»: anche l'anteprima del link in scala di grigi.
+            if (($p['palette'] ?? '') === 'monocromo' && !empty($p['photos_bw'])) imagefilter($img, IMG_FILTER_GRAYSCALE);
         }
         if ($tipo === 'guida') {
             // Sfumatura scura in basso (ultimo 45%), poi il marchio.

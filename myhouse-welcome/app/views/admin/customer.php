@@ -19,6 +19,30 @@ include __DIR__ . '/_stati.php'; ?>
       <button class="btn btn--ghost btn--sm" aria-label="Entra come cliente"><span class="btn__lungo">Entra come cliente</span><span class="btn__corto" aria-hidden="true">Entra</span></button></form>
   </div>
 
+  <?php /* 9I · I tre livelli di codici, con «Copia»; quello trovato con «Cerca» in evidenza. */
+        if (!empty($codici)): $ev = (string) ($evidenzia ?? ''); $copia = fn(string $c) => '<button type="button" class="btn btn--ghost btn--sm" data-copia="' . Support::e($c) . '" data-copiato="Copiato" hidden>Copia</button>'; ?>
+  <section class="panel stack codici-cliente" style="gap:10px" aria-labelledby="codici-titolo">
+    <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><span class="kicker" id="codici-titolo">Codice cliente</span>
+      <code class="codici-cliente__codice"><?= Support::e($codici['cliente']) ?></code><?= $copia($codici['cliente']) ?></div>
+    <?php if ($codici['strutture']): ?>
+      <div class="stack" style="gap:4px"><span class="small muted">Strutture</span>
+        <?php foreach ($codici['strutture'] as $cs): $idEv = 'struttura-' . $cs['id']; ?>
+          <div class="row codici-cliente__riga<?= $ev === $idEv ? ' codici-cliente__riga--evidenza' : '' ?>" id="<?= $idEv ?>" style="gap:8px;align-items:center;flex-wrap:wrap">
+            <code><?= Support::e($cs['code']) ?></code><span class="small"><?= Support::e($cs['name']) ?></span><?= $copia($cs['code']) ?></div>
+        <?php endforeach; ?></div>
+    <?php endif; ?>
+    <?php if ($codici['pagamenti']): $statiO = ['paid' => 'pagato', 'pending' => 'in attesa', 'awaiting' => 'in verifica', 'failed' => 'non riuscito', 'canceled' => 'annullato', 'expired' => 'scaduto']; ?>
+      <details class="stack" style="gap:4px"<?= str_starts_with($ev, 'pagamento-') ? ' open' : '' ?>><summary class="small muted">Pagamenti (<?= count($codici['pagamenti']) ?>)</summary>
+        <?php foreach ($codici['pagamenti'] as $cp): $idEv = 'pagamento-' . $cp['codice']; ?>
+          <div class="row codici-cliente__riga<?= $ev === $idEv ? ' codici-cliente__riga--evidenza' : '' ?>" id="<?= Support::e($idEv) ?>" style="gap:8px;align-items:center;flex-wrap:wrap">
+            <code><?= Support::e($cp['codice']) ?></code>
+            <span class="small"><?= $cp['order_id'] ? ($cp['kind'] === 'change' ? 'Conguaglio' : 'Ordine') . ' · ' . Support::e(Support::money((int) $cp['amount_cents'], (string) $cp['currency'])) . ' · ' . Support::e($statiO[$cp['status']] ?? (string) $cp['status'])
+                                                 : 'Rinnovo · fattura ' . Support::e((string) $cp['invoice_id']) ?> · <?= Support::e(Support::date((string) $cp['created_at'])) ?></span><?= $copia($cp['codice']) ?></div>
+        <?php endforeach; ?></details>
+    <?php endif; ?>
+  </section>
+  <?php endif; ?>
+
   <?php /* 7F: «Cliente di prova»: fuori da Quadro, Vendite, Prospetti, Scadenze e Marketing, niente richiami automatici né richiesta di giudizio. */
         if (array_key_exists('is_test', $acc)): ?>
   <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/prova" class="panel spread spread--mid cliente-prova" style="gap:12px;flex-wrap:wrap"><?= Csrf::field() ?>
@@ -163,7 +187,7 @@ include __DIR__ . '/_stati.php'; ?>
       <?php else: ?>
         <div class="tablewrap"><table class="data"><thead><tr><th>Data</th><th>Fattura</th><th>Importo</th><th>Stato</th></tr></thead><tbody>
           <?php foreach ($fatture as $f): ?>
-            <tr><td class="small"><?= Support::e(Support::date($f['data'])) ?></td><td><code><?= Support::e($f['numero']) ?></code></td>
+            <tr><td class="small"><?= Support::e(Support::date($f['data'])) ?></td><td><code><?= Support::e($f['numero']) ?></code><?php if (($cpF = MHW\Codici::perFattura((string) $f['id'])) !== ''): ?><br><span class="tiny muted"><?= Support::e($cpF) ?></span><?php endif; ?></td>
               <td><?= Support::e(Support::money($f['netto'], $f['valuta'])) ?> + IVA</td>
               <td class="small"><?= $f['rimborsato'] > 0 ? '<span class="badge badge--ochre">Rimborsata ' . Support::e(Support::money($f['rimborsato'], $f['valuta'])) . '</span>' : 'Pagata' ?></td></tr>
           <?php endforeach; ?></tbody></table></div>

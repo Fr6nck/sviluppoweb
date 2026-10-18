@@ -746,6 +746,10 @@ $r->any('/pannello/{id}/aspetto', function (array $a) use ($mia, $contesto, $mes
                 if (!Palette::readable($pal, $tono)) throw new RuntimeException('Con questa palette il tema scelto non è abbastanza leggibile: scegli l\'altro.');
                 if (!Entitlements::can($aid, 'palette')) $pal = Palette::DEFAULT;
                 Db::update('properties', ['palette' => $pal, 'text_tone' => $tono], 'id = :pid', ['pid' => $p['id']]);
+                // 9J · «Foto in bianco e nero»: solo con la palette «Bianco e nero» (con un'altra palette si spegne).
+                if (Migrator::columnExists('properties', 'photos_bw')) {
+                    Db::update('properties', ['photos_bw' => $pal === 'monocromo' && !empty($_POST['photos_bw']) ? 1 : 0], 'id = :pid', ['pid' => $p['id']]);
+                }
                 // 7C: «Due parole di benvenuto», per lingua della guida, al massimo 160 caratteri.
                 if (isset($_POST['host_welcome']) && is_array($_POST['host_welcome']) && Migrator::columnExists('properties', 'host_welcome')) {
                     $lingueP = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
@@ -1042,6 +1046,7 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
           + (!empty($riep['omaggio']) && Migrator::columnExists('orders', 'codice_omaggio_id') ? ['codice_omaggio_id' => (int) $riep['omaggio']['id']] : [])   // 9D
           + (Migrator::columnExists('orders', 'acquirente') ? ['acquirente' => $acquirente, 'recesso_rinuncia' => $acquirente === 'consumatore' ? 1 : 0] : []));
         unset($_SESSION['acquisto']);
+        MHW\Codici::pagamento($oid);   // 9I: il codice del pagamento prima di Stripe (va nei metadati)
         $url = Stripe::checkoutSubscription(Db::one('SELECT * FROM orders WHERE id = ?', [$oid]), $pv, $pkg, $acc, $u, $riep);
     } catch (\Throwable $e) {
         if ($oid) Db::update('orders', ['status' => 'failed', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $oid]);

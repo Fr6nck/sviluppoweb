@@ -22,9 +22,12 @@ final class AzioniCliente
         return 'Ciao' . ($n !== '' ? ' ' . $n : '');
     }
 
-    private static function email(array $u, string $oggetto, array $paragrafi, ?array $bottone = null): void
+    /** $pagamento (9H): rinnovo, piano, rimborso → la frase sulle fatture e il Reply-To all'email amministrazione; la password no. */
+    private static function email(array $u, string $oggetto, array $paragrafi, ?array $bottone = null, bool $pagamento = true): void
     {
-        try { Mailer::manda((string) $u['email'], $oggetto, $oggetto, $paragrafi, $bottone ?? ['Vai ad Account & Fatturazione', Support::baseUrl() . '/account']); }
+        if ($pagamento) $paragrafi[] = Support::fraseFatture();
+        $invio = fn() => Mailer::manda((string) $u['email'], $oggetto, $oggetto, $paragrafi, $bottone ?? ['Vai ad Account & Fatturazione', Support::baseUrl() . '/account']);
+        try { $pagamento ? Mailer::diPagamento($invio) : $invio(); }
         catch (\Throwable $e) { Log::exception($e, 'email al cliente (amministrazione)'); }
     }
 
@@ -168,7 +171,8 @@ final class AzioniCliente
         $r = Stripe::rimborsa($f['payment_intent'], $cents, $motivo, $invoiceId);
         $id = Db::insert('rimborsi', ['account_id' => $accountId, 'invoice_id' => $invoiceId, 'charge_id' => (string) ($r['charge'] ?? ''), 'refund_id' => (string) ($r['id'] ?? ''),
                                       'amount_cents' => $cents, 'motivo' => $motivo, 'testo' => mb_substr(trim($testo), 0, 255), 'stato' => ($r['status'] ?? '') === 'succeeded' ? 'confermato' : 'richiesto',
-                                      'creato_da' => $adminId, 'created_at' => Support::now(), 'confermato_at' => ($r['status'] ?? '') === 'succeeded' ? Support::now() : null]);
+                                      'creato_da' => $adminId, 'created_at' => Support::now(), 'confermato_at' => ($r['status'] ?? '') === 'succeeded' ? Support::now() : null]
+                                     + (Migrator::columnExists('rimborsi', 'code') ? ['code' => Codici::pagamentoFattura($accountId, $invoiceId)] : []));   // 9I: il pagamento rimborsato
         Auth::audit('refund.requested', (int) $u['id'], ['rimborso' => $id, 'invoice' => $invoiceId, 'amount' => $cents, 'motivo' => $motivo, 'testo' => mb_substr(trim($testo), 0, 255)]);
         self::email($u, 'Ti abbiamo rimborsato ' . Support::money($cents, $f['valuta']), [
             self::nome($u) . ', abbiamo disposto un rimborso di ' . Support::money($cents, $f['valuta']) . ' sulla fattura ' . $f['numero'] . ' di MyHouse Welcome.',
@@ -211,7 +215,7 @@ final class AzioniCliente
         Auth::audit('admin.password_temp', (int) $u['id']);
         self::email($u, 'Una password provvisoria per il tuo account', [
             self::nome($u) . ', un amministratore ha impostato una password provvisoria per il tuo account MyHouse Welcome, su tua richiesta. Vale 48 ore: al primo accesso ti chiediamo di sceglierne una nuova.',
-            'Se non sei stato tu a chiederla, scrivici subito' . (Support::contatto() !== '' ? ' a ' . Support::contatto() : '') . '.'], ['Accedi', Support::baseUrl() . '/accedi']);
+            'Se non sei stato tu a chiederla, scrivici subito' . (Support::contatto() !== '' ? ' a ' . Support::contatto() : '') . '.'], ['Accedi', Support::baseUrl() . '/accedi'], false);
         return $pw;
     }
 }

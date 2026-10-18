@@ -806,7 +806,7 @@ prova('R5 · conversione: nome, telefono e nota separati; tipo e giorni riconosc
 // ================================================================== ASPETTO
 capitolo('Aspetto e palette');
 $r = $anna->get("/pannello/$pid/aspetto");
-prova('Aspetto con i campioni', $r['code'] === 200 && pulita($r) && substr_count($r['body'], 'class="swatch"') === 6);
+prova('Aspetto con i campioni', $r['code'] === 200 && pulita($r) && substr_count($r['body'], 'class="swatch"') === 7);   // 9J: sette palette
 $anna->post("/pannello/$pid/aspetto", ['palette' => 'mare', 'text_tone' => 'scuro']);
 prova('Palette salvata', val('SELECT palette FROM properties WHERE id = ?', [$pid]) === 'mare');
 $anna->post("/pannello/$pid/aspetto", ['palette' => 'inventata', 'text_tone' => 'scuro']);
@@ -3297,10 +3297,10 @@ prova('7B · Account: «Passa a {piano}» per gli altri piani, nel flusso del ca
       && str_contains($r['body'], '/account/piano/conferma?piano=portfolio&amp;strutture=2"') && !str_contains($r['body'], 'Varianti camera'));
 $r = $dario->get('/account');
 prova('…con un abbonamento dello staff: «Chiedi il cambio di piano» per email', str_contains($r['body'], '>Chiedi il cambio di piano</a>')
-      && str_contains($r['body'], 'subject=' . rawurlencode('Cambio piano — dario@prova.test')));
+      && str_contains($r['body'], rawurlencode('Cambio piano — dario@prova.test')));
 $r = $vera->get('/pannello');
 prova('7B · pannello: «Scopri Portfolio» pieno e «Chiedi informazioni» per email', str_contains($r['body'], '<a class="btn btn--sm" href="' . preg_replace('#^https?://[^/]+#', '', $BASE) . '/piano?passa=portfolio">Scopri Portfolio</a>')
-      && str_contains($r['body'], 'subject=Informazioni%20su%20Portfolio') && str_contains($r['body'], rawurlencode('Quante strutture vorrei gestire:')) && str_contains($r['body'], '>Chiedi informazioni</a>'));
+      && str_contains($r['body'], 'Informazioni%20su%20Portfolio') && str_contains($r['body'], rawurlencode('Quante strutture vorrei gestire:')) && str_contains($r['body'], '>Chiedi informazioni</a>'));
 prova('8B · «Hai già un sito per la tua struttura?»: logo MyHouse bianco, Sì / No che aprono il percorso compatto in un <dialog>; senza ✕ né «Non mostrare più» (9F)',
       str_contains($r['body'], 'Hai già un sito per la tua struttura?') && str_contains($r['body'], 'myhouse-logo-bianco-breve.png?v=')
       && str_contains($r['body'], 'data-funnel-apri="si" data-funnel-dialogo="dlg-sito-guide"') && str_contains($r['body'], 'data-funnel-apri="no"')
@@ -3992,7 +3992,7 @@ prova('8B · /g/{slug}/anteprima.jpg: JPEG 1200×630, fuori dai motori, salvata 
 $r = $anna->get('/pannello');
 prova('8B · Essential: «Aggiungi una struttura» c\'è, con il lucchetto, e apre «Più strutture con Portfolio» con «Chiedi informazioni»',
       str_contains($r['body'], 'data-sblocca="strutture"') && str_contains($r['body'], 'Più strutture con Portfolio') && str_contains($r['body'], '/piano?passa=portfolio">Passa a Portfolio</a>')
-      && str_contains($r['body'], 'subject=Informazioni%20su%20Portfolio'));
+      && str_contains($r['body'], 'Informazioni%20su%20Portfolio'));
 prova('8B · FAQ: «Come chiedo una recensione agli ospiti?» e «Traduci tutti i campi mancanti»', str_contains($ospite->get('/domande')['body'], 'Come chiedo una recensione agli ospiti?')
       && str_contains($ospite->get('/domande')['body'], 'Traduci tutti i campi mancanti'));
 $r = $admin->get('/admin/impostazioni');
@@ -5170,9 +5170,11 @@ $cod9d = riga('SELECT * FROM codici_omaggio ORDER BY id DESC');
 $pg = $admin->segui($r)['body'];
 prova('9D · Vendite → Codici omaggio: codice OMAGGIO-XXXXX creato (3 mesi, scade tra 14 giorni), con WhatsApp, Email, Copia il link e il messaggio con {mesi} {link} {codice} {scadenza}',
       $r['code'] === 302 && $cod9d && preg_match('/^OMAGGIO-[A-HJ-NP-Z2-9]{5}$/', (string) $cod9d['codice']) === 1 && (int) $cod9d['mesi'] === 3
-      && $cod9d['scade_il'] === gmdate('Y-m-d', strtotime('+14 days')) && str_contains($pg, 'wa.me/?text=') && str_contains($pg, 'mailto:?subject=') && str_contains($pg, 'data-copia="')
+      && in_array($cod9d['scade_il'], [gmdate('Y-m-d', strtotime('+14 days')), (new DateTimeImmutable('+14 days', new DateTimeZone('Europe/Rome')))->format('Y-m-d')], true) && str_contains($pg, 'wa.me/?text=')   // a cavallo della mezzanotte vale l'ora italiana && str_contains($pg, 'mailto:?subject=') && str_contains($pg, 'data-copia="')
       && str_contains($pg, 'Ti abbiamo riservato 3 mesi gratis') && str_contains($pg, 'Il codice ' . $cod9d['codice'] . ' vale fino al ' . dataIt($cod9d['scade_il']))
-      && preg_match('#/admin/omaggi"[^>]*>(?:<svg.*?</svg>)?\s*(?:<span>)?Codici omaggio<#s', $pg) === 1, json_encode($cod9d));
+      && preg_match('#/admin/omaggi"[^>]*>(?:<svg.*?</svg>)?\s*(?:<span>)?Codici omaggio<#s', $pg) === 1,
+      json_encode([$r['code'], $r['loc'] ?? '', str_contains($pg, 'wa.me/?text='), str_contains($pg, 'mailto:?subject='), str_contains($pg, 'data-copia="'), str_contains($pg, 'Ti abbiamo riservato 3 mesi gratis'),
+                   str_contains($pg, 'Il codice ' . ($cod9d['codice'] ?? '') . ' vale fino al ' . dataIt((string) ($cod9d['scade_il'] ?? ''))), preg_match('#/admin/omaggi"[^>]*>(?:<svg.*?</svg>)?\s*(?:<span>)?Codici omaggio<#s', $pg), $cod9d['scade_il'] ?? '', gmdate('Y-m-d', strtotime('+14 days'))]));
 prova('9D · i mesi fuori da 1–12 e la scadenza passata sono rifiutati', str_contains($admin->segui($admin->post('/admin/omaggi', ['mesi' => '13', 'nota' => 'x']))['body'], 'I mesi gratis vanno da 1 a 12')
       && str_contains($admin->segui($admin->post('/admin/omaggi', ['mesi' => '2', 'scade_il' => '2020-01-01']))['body'], 'La data di scadenza è già passata'));
 // Ida arriva dal link: la registrazione con il banner e il campo in sola lettura.
@@ -5406,7 +5408,7 @@ db()->prepare("UPDATE users SET must_change_password = 0, password_temp_until = 
 
 // ================================================================= 9H
 $lacc9 = $accDi('lucia@esempio.it');   // più su $lacc è stato riassegnato (Lea): qui serve l'account di Lucia
-capitolo('9H · posta: mittente assistenza@, preventivi e marketing su commerciale@, mittente salvato corretto una volta, niente indirizzi scritti a mano');
+capitolo('9H · posta: quattro indirizzi (assistenza, commerciale, news, amministrazione), mittente salvato corretto una volta, niente indirizzi scritti a mano');
 @unlink($fileLocale);
 $emlPer = function (string $a) use ($DOVE): string {   // l'ultima email (intera, con le intestazioni) mandata a $a
     $tutti = glob("$DOVE/app/storage/logs/email/*.eml") ?: []; sort($tutti);
@@ -5432,16 +5434,43 @@ prova('9H · un preventivo oltre 10 strutture arriva a commerciale@ (Reply-To ch
 $r = $ospite->get('/');
 prova('9H · «Anche il tuo sito»: le risposte per email (passo 3) e «Oppure scrivici subito» vanno a commerciale@', str_contains($r['body'], 'data-email="commerciale@welcomemyhouse.it"')
       && str_contains($r['body'], 'mailto:commerciale@welcomemyhouse.it?subject=') && str_contains($r['body'], 'Il sito per la tua struttura'));
+$prS = count($posta('commerciale@welcomemyhouse.it'));
+$vis9h->get('/');
+$vis9h->post('/sito/interesse', ['ha_sito' => 'no', 'bisogni' => 'google,dirette', 'canale' => 'email', 'da' => 'home']);
+$notS = $posta('commerciale@welcomemyhouse.it');
+prova('9H · «Anche il tuo sito»: la notifica a noi va a commerciale@, con le risposte e senza dati del visitatore; oggetto del mailto «MyHouse siti: informazioni»', count($notS) === $prS + 1
+      && str_contains((string) end($notS)['subject'], 'MyHouse siti: una risposta') && str_contains((string) end($notS)['text'], 'più visibile su Google, prenotazioni dirette')
+      && str_contains((string) end($notS)['text'], 'Visitatore del sito') && str_contains($ospite->get('/')['body'], 'mailto:commerciale@welcomemyhouse.it?subject=MyHouse%20siti%3A%20informazioni'));
+// Le email di pagamento: Reply-To amministrazione@ e la frase sulle fatture; il pagamento fallito avvisa amministrazione@.
+$subL9 = (int) val("SELECT s.id FROM subscriptions s JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id WHERE s.provider = 'stripe' AND s.provider_subscription_id <> '' AND u.email NOT LIKE '%@esempio.it' ORDER BY s.id DESC LIMIT 1");
+$emR9 = (string) val('SELECT u.email FROM subscriptions s JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id WHERE s.id = ?', [$subL9]);
+db()->prepare("DELETE FROM email_optout WHERE account_id = (SELECT account_id FROM subscriptions WHERE id = ?)")->execute([$subL9]);
+$prom9 = $php9('echo json_encode(MHW\Richiami::promemoriaManuale(' . $subL9 . '));');
+$emlR = $emlPer($emR9); $txtR = (string) (end($posta($emR9))['text'] ?? '');
+prova('9H · avviso di rinnovo/scadenza: From assistenza@, Reply-To amministrazione@, e «Per domande su fatture e pagamenti: amministrazione@…»', $subL9 > 0 && str_contains($prom9, 'true')
+      && str_contains($emlR, 'From: MyHouse Welcome <assistenza@welcomemyhouse.it>') && str_contains($emlR, 'Reply-To: <amministrazione@welcomemyhouse.it>')
+      && str_contains($txtR, 'Per domande su fatture e pagamenti: amministrazione@welcomemyhouse.it.'), $prom9 . ' ' . $subL9);
+$prA = count($posta('amministrazione@welcomemyhouse.it'));
+$falli9 = $php9('$s = MHW\Db::one("SELECT * FROM subscriptions WHERE id = ' . $subL9 . '"); $r = new ReflectionMethod(MHW\Billing::class, "onInvoiceFailed"); $r->setAccessible(true); echo $r->invoke(null, ["id" => "in_prova9h", "subscription" => $s["provider_subscription_id"], "amount_due" => 14900, "currency" => "eur"]); MHW\Db::update("subscriptions", ["payment_status" => $s["payment_status"], "status" => $s["status"]], "id = :i", ["i" => $s["id"]]);');
+$notA = $posta('amministrazione@welcomemyhouse.it');
+prova('9H · pagamento fallito simulato: l\'avviso a noi va ad amministrazione@', $falli9 === 'pagamento-fallito' && count($notA) === $prA + 1 && str_contains((string) end($notA)['subject'], 'Pagamento non riuscito'), $falli9);
+$rI9 = $admin->get('/admin/impostazioni');
+prova('9H · Impostazioni → «Indirizzi email»: assistenza, commerciale, newsletter, amministrazione; Termini con l\'indirizzo per la fatturazione; Account con «Domande su fatture e pagamenti?»',
+      str_contains($rI9['body'], 'Indirizzi email</h2>') && str_contains($rI9['body'], 'name="contatti__newsletter"') && str_contains($rI9['body'], 'name="contatti__amministrazione"')
+      && str_contains($ospite->get('/termini')['body'], 'Per le questioni di fatturazione e pagamento scrivi a <a href="mailto:amministrazione@welcomemyhouse.it">')
+      && str_contains($lucia->get('/account')['body'], 'Domande su fatture e pagamenti? Scrivi a') && str_contains($lucia->get('/account')['body'], '?subject=') && !str_contains($ospite->get('/')['body'], 'news@welcomemyhouse.it'));
 prova('9H · «Chiedi un preventivo» (mailto) a commerciale@; l\'assistenza resta nel piede e nei documenti legali', str_contains($php9('echo MHW\Support::mailtoPreventivo();'), 'mailto:commerciale@welcomemyhouse.it?subject=Preventivo')
       && str_contains($ospite->get('/privacy')['body'], 'assistenza@welcomemyhouse.it'));
 // Il giudizio basso resta all'assistenza (prova 7D più su): qui il codice che lo manda.
 prova('9H · un giudizio da 1 a 3 stelle arriva all\'assistenza (Testimonianze usa Support::contatto())', preg_match('#\$a = Support::contatto\(\);.{0,1600}Mailer::send\(\$a, \'Giudizio da #s', (string) file_get_contents("$DOVE/app/src/Testimonianze.php")) === 1);
 // Email commerciale vuota: tutto all'assistenza.
-file_put_contents($fileLocale, '<?php return ' . var_export(['contatti' => ['commerciale' => '']], true) . ';');
+file_put_contents($fileLocale, '<?php return ' . var_export(['contatti' => ['commerciale' => '', 'newsletter' => '', 'amministrazione' => '']], true) . ';');
 db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'preventivo:%'");
 sleep(3);   // opcache del server di prova: config.local.php appena scritto
 $vis9h->modulo('/', '/preventivo', ['torna' => '/', 'nome' => 'Olga Prova', 'email' => 'olga9h@prova.test', 'strutture' => (string) $nP9h2]);
 $emlA = $emlPer('assistenza@welcomemyhouse.it');
+$vuoti9 = $php9('echo MHW\Support::commerciale(), "|", MHW\Support::newsletter(), "|", MHW\Support::amministrazione();');
+prova('9H · con commerciale, newsletter e amministrazione vuote tutto va all\'assistenza (Impostazioni li salva vuoti)', $vuoti9 === str_repeat('assistenza@welcomemyhouse.it|', 2) . 'assistenza@welcomemyhouse.it', $vuoti9);
 prova('9H · con l\'email commerciale vuota il preventivo e «Anche il tuo sito» vanno all\'assistenza', str_contains((string) (end($posta('assistenza@welcomemyhouse.it'))['subject'] ?? ''), 'Richiesta di preventivo: ' . $nP9h2 . ' strutture') && str_contains($emlA, 'Reply-To: <olga9h@prova.test>')
       && str_contains($ospite->get('/')['body'], 'data-email="assistenza@welcomemyhouse.it"') && str_contains($emlPer('olga9h@prova.test'), 'Reply-To: <assistenza@welcomemyhouse.it>'));
 // Il mittente salvato noreply@myhouse.it si corregge una volta sola, con il messaggio in Gestione e la riga nel registro.
@@ -5493,8 +5522,8 @@ prova('9F · migrazione 046 una seconda volta: niente cambia', $m46 === 'fatto' 
       && (bool) riga("SELECT 1 FROM pragma_table_info('properties') WHERE name = 'province'") && (bool) riga("SELECT 1 FROM pragma_table_info('translation_cache') WHERE name = 'hash'"), $m46);
 $css9f = (string) file_get_contents("$DOVE/assets/app.css");
 $contrasti = json_decode($php9('$o = []; foreach (array_keys(MHW\Palette::all()) as $c) { $p = MHW\Palette::get($c); $o[$c] = [round(MHW\Palette::contrast($p["scuro"]["ink"], "#ffffff"), 1), round(MHW\Palette::contrast($p["scuro"]["on_accent"], $p["scuro"]["accent"]), 1)]; } echo json_encode($o);'), true) ?: [];
-prova('9F·1 · «Scegli la lingua»: bottoni bianchi con il testo scuro della palette (≥ 7:1) e la lingua del telefono sull\'accento pieno (≥ 4,5:1), uguali nei due temi, per tutte e 6 le palette',
-      count($contrasti) === 6 && min(array_column($contrasti, 0)) >= 7 && min(array_column($contrasti, 1)) >= 4.5
+prova('9F·1 · «Scegli la lingua»: bottoni bianchi con il testo scuro della palette (≥ 7:1) e la lingua del telefono sull\'accento pieno (≥ 4,5:1), uguali nei due temi, per tutte le palette (7 dalla 9J)',
+      count($contrasti) === 7 && min(array_column($contrasti, 0)) >= 7 && min(array_column($contrasti, 1)) >= 4.5
       && str_contains($css9f, '.scegli-lingua__lingua{') && str_contains($css9f, 'background:var(--scelta-fondo,#fff);color:var(--scelta-ink,#231b12)')
       && str_contains($php9('echo MHW\Palette::css("mare");'), '--scelta-fondo:#ffffff;--scelta-ink:#14232b;--scelta-accento:#1c5a78'), json_encode($contrasti));
 $vet9f = riga("SELECT id, slug FROM properties WHERE is_demo = 2 AND status = 'published' AND archived_at IS NULL ORDER BY id");   // la stessa scelta di Demo::esempio
@@ -5621,8 +5650,8 @@ $php9('MHW\Properties::setDefaultLocale(' . $lacc9 . ', ' . $casa . ', "pl");');
 $r = $lucia->get("/pannello/$casa/procedura/struttura");
 prova('9F·11 · lingua principale polacca: la procedura è in inglese (passi, titoli, etichette), la lingua è la prima cosa del primo passo, con Essential/Plus spiegati e «Your language isn\'t listed? Write to us»',
       str_contains($r['body'], '<h1>Property and contacts.</h1>') && str_contains($r['body'], '>Check-in &amp; Check-out</span>') && str_contains($r['body'], 'Which language do you write the guide in?')
-      && strpos($r['body'], 'Which language do you write the guide in?') < strpos($r['body'], '<legend>The property</legend>') && str_contains($r['body'], 'With Essential') && str_contains($r['body'], 'Your language isn\'t listed?')
-      && str_contains($r['body'], 'mailto:assistenza@welcomemyhouse.it?subject=Lingua%20mancante') && str_contains($r['body'], 'Dashboard language: <b>English</b>') && str_contains($r['body'], '>My guides</span>'));
+      && strpos($r['body'], 'Which language do you write the guide in?') < strpos($r['body'], '<legend>The property') && str_contains($r['body'], 'With Essential') && str_contains($r['body'], 'Your language isn\'t listed?')
+      && str_contains($r['body'], 'mailto:assistenza@welcomemyhouse.it?subject=') && str_contains($r['body'], '%20Lingua%20mancante') && str_contains($r['body'], 'Dashboard language: <b>English</b>') && str_contains($r['body'], '>My guides</span>'));
 $r = $lucia->get("/pannello/$casa/sezioni/$emCasa");
 prova('9F·11 · l\'editor delle sezioni in inglese: etichette e aiuti dal catalogo tradotto, «Optional» spezzato come «Facoltativo»', str_contains($r['body'], 'Single emergency number') && str_contains($r['body'], 'Useful contacts')
       && str_contains($r['body'], '>Save</button>') && str_contains($r['body'], '(optional)') && !str_contains($r['body'], 'Numero unico di emergenza'));
@@ -5687,7 +5716,7 @@ prova('9G·1 · tetto annuale raggiunto: «Hai usato le traduzioni suggerite di 
       && (bool) val("SELECT id FROM translation_usage WHERE account_id = ? AND outcome IN ('avviso80', 'avviso100')", [$lacc9]), json_encode([array_column($postaT, 'subject'), $usatiL, $php9('echo json_encode(MHW\Traduttore::contatore(' . $lacc9 . '));'), $php9('$s = MHW\Subscriptions::active(' . $lacc9 . '); echo json_encode($s ? [$s["status"], $s["current_period_start"], $s["current_period_end"]] : null);')]));
 db()->prepare('UPDATE accounts SET translate_cap_override = ? WHERE id = ?')->execute([$usatiL, $lacc9]);   // il tetto proprio ai caratteri usati: 100%
 $r = $lucia->get("/pannello/$casa/lingue/en");
-prova('9G·5 · nella pagina della lingua il contatore è al 100% con il link all\'assistenza, e Lingue dice «Limite dell\'anno raggiunto»; niente «Traduci»', str_contains($r['body'], 'tradu-contatore--finito') && str_contains($r['body'], 'mailto:assistenza@welcomemyhouse.it?subject=Traduzioni%20suggerite')
+prova('9G·5 · nella pagina della lingua il contatore è al 100% con il link all\'assistenza, e Lingue dice «Limite dell\'anno raggiunto»; niente «Traduci»', str_contains($r['body'], 'tradu-contatore--finito') && str_contains($r['body'], 'mailto:assistenza@welcomemyhouse.it?subject=') && str_contains($r['body'], 'Traduzioni%20suggerite%3A%20riattivazione')
       && !str_contains($r['body'], 'name="suggerisci"') && str_contains($lucia->get("/pannello/$casa/lingue")['body'], 'Limite dell\'anno raggiunto'));
 $r = $admin->get("/admin/cliente/$lacc9");
 prova('9G·1 · scheda del cliente: «Traduzioni: N / M caratteri quest\'anno», «Aggiungi 250.000» e il tetto personale', preg_match('#Traduzioni: <b>[\d.]+ / [\d.]+</b> caratteri quest\'anno#', $r['body']) === 1 && str_contains($r['body'], 'Aggiungi 250.000')
@@ -5708,6 +5737,111 @@ prova('9G·5 · Vendite → Traduzioni: per mese con gli esiti (ok, dalla memori
 db()->prepare("INSERT INTO translation_cache (hash, da, a, chars, testo_tradotto, hits, created_at) VALUES ('vecchia-mai-usata', 'it', 'en', 5, 'x', 0, ?)")->execute(['2025-01-01T00:00:00Z']);
 $cron();
 prova('9G·3 · pulizia: le righe della memoria mai riusate da 12 mesi spariscono con il cron', !val("SELECT id FROM translation_cache WHERE hash = 'vecchia-mai-usata'"));
+
+// ================================================================= 9J
+capitolo('9J · palette «Bianco e nero»: chiara e scura, colori della guida in grigio, foto in bianco e nero, le altre palette uguali');
+$p9j = json_decode($php9('echo json_encode([MHW\Palette::readable("monocromo", "scuro"), MHW\Palette::readable("monocromo", "chiaro"), round(min(MHW\Palette::pairs("monocromo", "scuro")), 2), round(min(MHW\Palette::pairs("monocromo", "chiaro")), 2), array_keys(MHW\Palette::all()), MHW\Palette::css("terracotta"), MHW\Palette::css("monocromo")]);'), true) ?: [];
+prova('9J · «Bianco e nero» leggibile nelle due versioni (tutte le coppie ≥ 5,7:1), prima di Grafite', ($p9j[0] ?? false) === true && ($p9j[1] ?? false) === true && ($p9j[2] ?? 0) >= 5.7 && ($p9j[3] ?? 0) >= 5.7
+      && array_search('monocromo', $p9j[4] ?? []) === array_search('grafite', $p9j[4] ?? []) - 1, json_encode(array_slice($p9j, 0, 5)));
+prova('9J · solo «Bianco e nero» ridefinisce i colori fissi (ocra, mare, bordo dei riquadri, lente, pagine a tutto schermo); Terracotta no', str_contains((string) ($p9j[6] ?? ''), '--ochre:#d9d9d9;') && str_contains((string) ($p9j[6] ?? ''), '--tile-bordo:1px solid #2e2e2e;')
+      && str_contains((string) ($p9j[6] ?? ''), '--full-fondo:#0d0d0d;') && !str_contains((string) ($p9j[5] ?? 'x--ochre'), '--ochre') && !str_contains((string) ($p9j[5] ?? '--tile-bordo'), '--tile-bordo'));
+$cssApp = (string) file_get_contents("$DOVE/assets/app.css");
+prova('9J · CSS: i colori scritti a mano diventano variabili con lo stesso valore di serie (le altre sei palette non cambiano)', str_contains($cssApp, 'border:1px solid var(--scelta-bordo,rgba(35,27,18,.28))') && str_contains($cssApp, 'background:var(--full-fondo,#17130d)')
+      && str_contains($cssApp, '.tile{border:var(--tile-bordo,0)}') && str_contains($cssApp, '.foto-bn img:not(.logo-guest):not([src^="data:"]){filter:grayscale(1)}'));
+// Un cliente nuovo con Plus scelto (le palette sono comprese): Aspetto, salvataggio e anteprima della guida.
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$vale = new Browser('vale9j');
+$vale->get('/registrati?piano=' . pv('plus'));
+$vale->post('/registrati', ['piano' => pv('plus'), 'name' => 'Vale Bianconero', 'email' => 'vale9j@prova.test', 'email2' => 'vale9j@prova.test', 'password' => 'ValeProva12345', 'termini' => '1', 'privacy' => '1']);
+$vale->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Vale', 'city' => 'Orvieto']);
+$vp9 = (int) val('SELECT p.id FROM properties p JOIN accounts a ON a.id = p.account_id JOIN users u ON u.id = a.user_id WHERE u.email = ?', ['vale9j@prova.test']);
+$r = $vale->get("/pannello/$vp9/aspetto");
+prova('9J · Aspetto: la scheda «Bianco e nero», la riga che la spiega e «Foto in bianco e nero» (visibili solo con questa palette)', $vp9 > 0 && str_contains($r['body'], 'value="monocromo"') && str_contains($r['body'], 'Bianco e nero')
+      && str_contains($r['body'], 'Elegante e sobria: ideale se le foto della casa parlano da sole.') && str_contains($r['body'], 'name="photos_bw"') && str_contains($r['body'], 'data-solo-palette="monocromo"'));
+$rS9 = $vale->segui($vale->post("/pannello/$vp9/aspetto", ['palette' => 'monocromo', 'text_tone' => 'chiaro', 'photos_bw' => '1']));
+$r = $vale->get("/pannello/$vp9/anteprima");
+$snap9j = json_decode($php9('echo json_encode(MHW\Guide::normalize(MHW\Guide::build(' . $vp9 . '))["property"]);'), true) ?: [];
+prova('9J · guida con «Bianco e nero» scura e le foto in bianco e nero: <html class="palette-monocromo foto-bn">, nell\'istantanea photos_bw = 1', (int) val('SELECT photos_bw FROM properties WHERE id = ?', [$vp9]) === 1
+      && str_contains($r['body'], 'class="palette-monocromo foto-bn"') && str_contains($r['body'], 'data-theme="scuro"') && (int) ($snap9j['photos_bw'] ?? 0) === 1 && str_contains($r['body'], '--tile-bordo:'),
+      json_encode([val('SELECT palette FROM properties WHERE id = ?', [$vp9]), preg_match('#<html[^>]*>#', $r['body'], $mH) ? $mH[0] : '', preg_match('#class="note[^"]*"[^>]*>([^<]*)#', $rS9['body'], $mF) ? $mF[1] : '']));
+$vale->post("/pannello/$vp9/aspetto", ['palette' => 'mare', 'text_tone' => 'scuro', 'photos_bw' => '1']);
+prova('9J · con un\'altra palette «Foto in bianco e nero» si spegne', (int) val('SELECT photos_bw FROM properties WHERE id = ?', [$vp9]) === 0 && val('SELECT palette FROM properties WHERE id = ?', [$vp9]) === 'mare');
+prova('9J · migrazione 047: properties.photos_bw', (bool) val("SELECT 1 FROM schema_migrations WHERE name LIKE '047%'"));
+
+// ================================================================= 9I
+capitolo('9I · codice cliente, struttura e pagamento; ricerca unica in Amministrazione');
+$c9 = json_decode($php9('echo json_encode(["acc" => (int) MHW\Db::val("SELECT COUNT(*) FROM accounts WHERE code IS NULL OR code = \'\'"), "prop" => (int) MHW\Db::val("SELECT COUNT(*) FROM properties WHERE code IS NULL OR code = \'\'"),
+    "ordini" => (int) MHW\Db::val("SELECT COUNT(*) FROM orders WHERE status = \'paid\' AND (code IS NULL OR code = \'\')"), "dup" => (int) MHW\Db::val("SELECT COUNT(*) - COUNT(DISTINCT codice) FROM codici_usati"),
+    "forma" => (int) MHW\Db::val("SELECT COUNT(*) FROM accounts WHERE code NOT LIKE \'MW-_____\'")]);'), true) ?: [];
+prova('9I · tutti gli account, le strutture e gli ordini pagati hanno un codice, nella forma giusta, senza doppioni', $c9 === ['acc' => 0, 'prop' => 0, 'ordini' => 0, 'dup' => 0, 'forma' => 0], json_encode($c9));
+$prima9i = $php9('echo md5(json_encode(MHW\Db::all("SELECT id, code FROM accounts ORDER BY id")) . json_encode(MHW\Db::all("SELECT id, code FROM properties ORDER BY id")));');
+$php9('$f = require "' . $DOVE . '/app/migrations/048_codici_9i.php"; $f(MHW\Db::conn());');
+prova('9I · migrazione 048 una seconda volta: i codici restano quelli', $prima9i === $php9('echo md5(json_encode(MHW\Db::all("SELECT id, code FROM accounts ORDER BY id")) . json_encode(MHW\Db::all("SELECT id, code FROM properties ORDER BY id")));'));
+$norm9 = $php9('echo json_encode(array_map([MHW\Codici::class, "normalizza"], ["mw 7k4p2", "MW7K4P2", "mw-7k4p2-01", "MW-7K4P2-2026-1", "mw7k4p2 2026 12", "casa"]));');
+prova('9I · normalizza: «mw 7k4p2», «MW7K4P2», struttura e pagamento scritti male', $norm9 === '["MW-7K4P2","MW-7K4P2","MW-7K4P2-01","MW-7K4P2-2026-1","MW-7K4P2-2026-12",""]', $norm9);
+// Registrazione: il codice subito
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$nina = new Browser('nina9i');
+$nina->get('/registrati?piano=' . pv('plus'));
+$nina->post('/registrati', ['piano' => pv('plus'), 'name' => 'Nina Codice', 'email' => 'nina9i@prova.test', 'email2' => 'nina9i@prova.test', 'password' => 'NinaProva12345', 'termini' => '1', 'privacy' => '1']);
+$ninaAcc = $accDi('nina9i@prova.test'); $ninaCod = (string) val('SELECT code FROM accounts WHERE id = ?', [$ninaAcc]);
+$rN = $nina->get('/account');
+prova('9I · alla registrazione il codice cliente c\'è già, e in Account & Fatturazione «Il tuo codice cliente» con «Copia»', $ninaAcc > 0 && preg_match('/^MW-[23456789A-HJ-NP-Z]{5}$/', $ninaCod) === 1
+      && str_contains($rN['body'], 'Il tuo codice cliente') && str_contains($rN['body'], 'data-copia="' . $ninaCod . '"') && str_contains($rN['body'], 'Tienilo a portata di mano quando scrivi all\'assistenza.'), $ninaCod . ' ' . $rN['code'] . ' ' . (preg_match('#<title>([^<]*)#', $rN['body'], $mT) ? $mT[1] : ''));
+$nina->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Nina', 'city' => 'Gubbio']);
+$ninaP = (int) val('SELECT id FROM properties WHERE account_id = ?', [$ninaAcc]);
+prova('9I · la struttura nuova ha il codice cliente + 01, e si vede in piccolo in «Struttura e contatti»', (string) val('SELECT code FROM properties WHERE id = ?', [$ninaP]) === $ninaCod . '-01'
+      && str_contains($nina->get("/pannello/$ninaP/procedura/struttura")['body'], 'codice-struttura">' . $ninaCod . '-01<'));
+prova('9I · i mailto dell\'assistenza dal pannello hanno «[codice] …» nell\'oggetto', str_contains($rN['body'], 'subject=' . rawurlencode('[' . $ninaCod . ']')));
+// Le email al cliente con il codice nel piede; l'invito a un amico no.
+$php9('MHW\Mailer::manda("nina9i@prova.test", "Prova del piede 9I", "Prova", ["Ciao"]); MHW\Mailer::manda("amico9i@prova.test", "Prova amico 9I", "Prova", ["Ciao"]);');
+$pN = array_values(array_filter(array_map(fn($l) => json_decode($l, true), righePosta()), fn($m) => str_starts_with((string) ($m['subject'] ?? ''), 'Prova del piede 9I') || str_starts_with((string) ($m['subject'] ?? ''), 'Prova amico 9I')));
+prova('9I · le email a un cliente hanno «Codice cliente …» nel piede; quelle a chi non è cliente (un amico invitato) no', count($pN) === 2 && str_contains((string) $pN[0]['text'], 'Codice cliente ' . $ninaCod) && !str_contains((string) $pN[1]['text'], 'Codice cliente'));
+// Ricerca
+$lc9 = (string) val('SELECT code FROM accounts WHERE id = ?', [$lacc9]); $pc9 = (string) val('SELECT code FROM properties WHERE id = ?', [$casa]);
+$r = $admin->get('/admin/cerca?q=' . rawurlencode(strtolower(str_replace('-', ' ', $lc9))));
+prova('9I · «Cerca» con il codice cliente scritto minuscolo e con lo spazio: un risultato, apre la scheda', $r['code'] === 302 && str_ends_with((string) $r['loc'], '/admin/cliente/' . $lacc9), $r['code'] . ' ' . $r['loc']);
+$r = $admin->get('/admin/cerca?q=' . rawurlencode($pc9));
+prova('9I · …con il codice struttura: la scheda con la struttura in evidenza', $r['code'] === 302 && str_contains((string) $r['loc'], '/admin/cliente/' . $lacc9 . '?evidenzia=struttura-' . $casa)
+      && str_contains($admin->get('/admin/cliente/' . $lacc9 . '?evidenzia=struttura-' . $casa)['body'], 'codici-cliente__riga--evidenza" id="struttura-' . $casa . '"'));
+$cin9 = (string) val('SELECT cin FROM properties WHERE id = ?', [$casa]); $slug9 = (string) val('SELECT slug FROM properties WHERE id = ?', [$casa]);
+$tel9 = (string) val("SELECT host_phone FROM properties WHERE id = ?", [$casa]);
+$trova9 = fn(string $q) => json_decode($php9('echo json_encode(array_column(MHW\Codici::trova(' . var_export($q, true) . '), "account_id"));'), true) ?: [];
+$cus9 = (string) val("SELECT stripe_customer_id FROM accounts WHERE stripe_customer_id <> '' ORDER BY id LIMIT 1"); $cusAcc = (int) val('SELECT id FROM accounts WHERE stripe_customer_id = ?', [$cus9]);
+prova('9I · si trova anche per email, CIN, URL della guida, telefono senza prefisso e cliente Stripe (cus_…)', in_array($lacc9, $trova9('lucia@esempio'), true)
+      && ($cin9 === '' || in_array($lacc9, $trova9(strtolower($cin9)), true)) && in_array($lacc9, $trova9('https://www.welcomemyhouse.it/g/' . $slug9 . '?l=en'), true)
+      && ($tel9 === '' || in_array($lacc9, $trova9((string) preg_replace('/^\+39\s*/', '', $tel9)), true)) && ($cus9 === '' || in_array($cusAcc, $trova9($cus9), true)),
+      json_encode([$cin9, $tel9, $cus9]));
+$r = $admin->get('/admin/cerca?q=' . rawurlencode('@prova.test'));
+prova('9I · più risultati: l\'elenco con nome, email, codice, piano, stato e perché', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'clienti con «@prova.test»') && str_contains($r['body'], 'trovato per email') && str_contains($r['body'], '<code>MW-'));
+$r = $admin->get('/admin/cerca?q=' . rawurlencode('zzz-nessuno-9i'));
+prova('9I · nessun risultato: «Nessun cliente con “…”»', str_contains($r['body'], 'Nessun cliente con «zzz-nessuno-9i»'));
+prova('9I · la ricerca resta nel registro, senza il testo se è un\'email', (bool) val("SELECT id FROM audit_log WHERE action = 'admin.search' AND meta LIKE '%un indirizzo email%'") && !val("SELECT id FROM audit_log WHERE action = 'admin.search' AND meta LIKE '%@prova.test%'"));
+$rA = $admin->get('/admin/clienti?q=' . rawurlencode($lc9));
+prova('9I · «Cerca» in ogni pagina di Amministrazione (con «/»), e Clienti usa la stessa ricerca, con la colonna «Codice»', str_contains($admin->get('/admin/impostazioni')['body'], 'data-cerca-admin')
+      && str_contains($rA['body'], '<th>Codice</th>') && str_contains($rA['body'], '<code>' . $lc9 . '</code>') && substr_count($rA['body'], 'admin/entra/') === 1
+      && str_contains((string) file_get_contents("$DOVE/assets/cms.js"), "e.key !== '/'"));
+// Stripe: i codici nei metadati del Checkout, e i rinnovi con il loro codice pagamento.
+$ck9 = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/checkout/sessions' && isset($x['corpo']['subscription_data'])));
+$ult9 = end($ck9)['corpo'] ?? [];
+prova('9I · Checkout: codice_cliente, codice_pagamento e codice_struttura nei metadati della sessione e dell\'abbonamento; la causale «Codice cliente … · Pagamento …»',
+      preg_match('/^MW-\w{5}$/', (string) ($ult9['metadata']['codice_cliente'] ?? '')) === 1 && preg_match('/^MW-\w{5}-\d{4}-\d+$/', (string) ($ult9['subscription_data']['metadata']['codice_pagamento'] ?? '')) === 1
+      && str_starts_with((string) ($ult9['subscription_data']['description'] ?? ''), 'Codice cliente MW-'), json_encode(['m' => $ult9['metadata'] ?? null, 'd' => $ult9['subscription_data']['description'] ?? null]));
+$subL9i = (int) val("SELECT id FROM subscriptions WHERE provider = 'stripe' AND provider_subscription_id <> '' ORDER BY id DESC LIMIT 1");
+$accR9 = (int) val('SELECT account_id FROM subscriptions WHERE id = ?', [$subL9i]); $codAccR9 = (string) val('SELECT code FROM accounts WHERE id = ?', [$accR9]);
+$rinn9 = $php9('$s = MHW\Db::one("SELECT * FROM subscriptions WHERE id = ' . $subL9i . '"); $r = new ReflectionMethod(MHW\Billing::class, "onInvoicePaid"); $r->setAccessible(true); echo $r->invoke(null, ["id" => "in_rinnovo9i", "subscription" => $s["provider_subscription_id"], "billing_reason" => "subscription_cycle", "created" => time(), "lines" => ["data" => []]]);');
+$codR = (string) val("SELECT codice FROM codici_usati WHERE invoice_id = 'in_rinnovo9i'");
+$metaR = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/invoices/in_rinnovo9i'));
+prova('9I · rinnovo: un codice pagamento nuovo (MW-…-anno-n), scritto nei metadati della fattura Stripe e nella scheda del cliente', $subL9i > 0 && str_starts_with($codR, $codAccR9 . '-' . gmdate('Y') . '-')
+      && ($metaR[0]['corpo']['metadata']['codice_pagamento'] ?? '') === $codR && str_contains($admin->get('/admin/cliente/' . $accR9)['body'], $codR), $rinn9 . ' ' . $codR . ' ' . json_encode($metaR[0]['corpo'] ?? null));
+$prova9tool = (string) shell_exec('cd ' . escapeshellarg("$DOVE/app") . ' && php tools/stripe-codici.php 2>&1');
+prova('9I · tools/stripe-codici.php: a vuoto dice quali clienti Stripe riceveranno il codice', str_contains($prova9tool, 'Prova a vuoto') && ($cus9 === '' || str_contains($prova9tool, $cus9 . ' → MW-')), substr($prova9tool, 0, 200));
+$php9('MHW\Log::error("prova del registro 9I", ["account" => ' . $lacc9 . ']);');
+prova('9I · nei registri tecnici le righe con un account portano codice_cliente', str_contains(implode("\n", righeLog('app')), '"codice_cliente":"' . $lc9 . '"'));
+$r = $admin->get('/admin/omaggi');
+prova('9I · il codice cliente cliccabile accanto ai nomi (Preventivi, Giudizi, Codici omaggio, Traduzioni)', str_contains((string) file_get_contents("$DOVE/app/views/admin/preventivi.php"), 'Codici::link(')
+      && str_contains((string) file_get_contents("$DOVE/app/views/admin/giudizi.php"), 'Codici::link(') && str_contains((string) file_get_contents("$DOVE/app/views/admin/traduzioni.php"), 'Codici::link(')
+      && $r['code'] === 200 && pulita($r));
 
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
 

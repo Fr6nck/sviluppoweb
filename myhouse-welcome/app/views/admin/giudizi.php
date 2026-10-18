@@ -51,7 +51,7 @@ $pct = Giudizi::percentuale(); ?>
                  $scelte = array_keys(array_filter(['Copertina' => !empty($g['show_cover']), 'Foto' => !empty($g['show_photo']), 'Logo' => !empty($g['show_logo'])])); ?>
       <tr>
         <td><b><?= Support::e($g['name']) ?></b><br><span class="small muted"><?= Support::e(trim($g['property_name'] . ($g['city'] !== '' ? ' · ' . $g['city'] : ''), ' ·')) ?></span>
-          <br><a class="tiny" href="<?= b() ?>/admin/cliente/<?= (int) $g['account_id'] ?>"><?= Support::e((string) $g['email']) ?></a></td>
+          <br><a class="tiny" href="<?= b() ?>/admin/cliente/<?= (int) $g['account_id'] ?>"><?= Support::e((string) $g['email']) ?></a> <span class="tiny"><?= MHW\Codici::link((int) $g['account_id']) ?></span></td>
         <td><span class="stelline" aria-label="<?= (int) $g['rating'] ?> su 5"><?= str_repeat('★', (int) $g['rating']) . str_repeat('☆', 5 - (int) $g['rating']) ?></span></td>
         <td class="small" style="max-width:320px"><details><summary style="cursor:pointer"><?= Support::e(mb_strimwidth((string) $g['body'], 0, 70, '…')) ?></summary><p style="margin:6px 0 0">«<?= Support::e($g['body']) ?>»</p>
             <p class="tiny muted" style="margin:6px 0 0"><?= Support::e(Support::date($g['created_at'])) ?><?= $ritirato ? ' · ritirato il ' . Support::e(Support::date($g['withdrawn_at'])) : '' ?></p></details></td>

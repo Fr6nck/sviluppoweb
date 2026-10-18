@@ -6,7 +6,7 @@
  *
  * Come si scrive (Legale::blocchi): una riga vuota separa i paragrafi; le righe che cominciano con «- » fanno un
  * elenco; quelle che cominciano con «| » una tabella a due colonne («| Dati | …»). Dentro: **grassetto**, [testo](link),
- * e i segnaposto: {titolare}, {titolare_completo}, {sede}, {pec}, {email}, {telefono}, {sito_titolare},
+ * e i segnaposto: {titolare}, {titolare_completo}, {sede}, {pec}, {email}, {email_fatture} (9H), {telefono}, {sito_titolare},
  * {link_termini}, {link_privacy}, {link_dpa}, {link_modulo}, {amico}, {passo}, {max}, {amici}, {regione_traduzioni},
  * {giorni_registri}, {posta}.
  *
@@ -60,7 +60,7 @@ I pagamenti avvengono con Stripe (Stripe Payments Europe Ltd). I dati della cart
 
 Se il pagamento del rinnovo non riesce, Stripe riprova fino a 3 volte in 14 giorni e ti avvisa per email. Se nessun tentativo riesce, l'abbonamento termina e la guida torna non visibile agli ospiti. I tuoi contenuti restano nell'account per 24 mesi: puoi ripubblicare la guida attivando di nuovo un abbonamento.
 
-Per ogni pagamento emettiamo la fattura elettronica, inviata tramite il Sistema di Interscambio (SDI) con il nostro gestionale di fatturazione (Adamo), con i dati di fatturazione che inserisci nel pannello.
+Per ogni pagamento emettiamo la fattura elettronica, inviata tramite il Sistema di Interscambio (SDI) con il nostro gestionale di fatturazione (Adamo), con i dati di fatturazione che inserisci nel pannello. Per le questioni di fatturazione e pagamento scrivi a {email_fatture}.
 T,
 'termini.7.titolo' => 'Recesso',
 'termini.7.testo' => <<<'T'
@@ -433,7 +433,7 @@ Payments are processed by Stripe (Stripe Payments Europe Ltd). Card details are 
 
 If a renewal payment fails, Stripe retries up to 3 times within 14 days and notifies you by email. If no attempt succeeds, the subscription ends and the guide is no longer visible to guests. Your content stays in the account for 24 months: you can publish the guide again by activating a new subscription.
 
-For every payment we issue an Italian electronic invoice, sent through the Exchange System (SDI) with our invoicing software (Adamo), using the billing details you enter in the dashboard.
+For every payment we issue an Italian electronic invoice, sent through the Exchange System (SDI) with our invoicing software (Adamo), using the billing details you enter in the dashboard. For billing and payment questions write to {email_fatture}.
 T,
 'termini.7.titolo' => 'Right of withdrawal',
 'termini.7.testo' => <<<'T'

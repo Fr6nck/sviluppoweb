@@ -187,6 +187,11 @@ if ($metodo === 'GET' && $percorso === '/v1/invoices') {
     $cus = (string) ($_GET['customer'] ?? '');
     $rispondi(['object' => 'list', 'data' => array_values((array) ($stato['invoices'][$cus] ?? []))]);
 }
+// 9I: i metadati scritti su una fattura (codice cliente e codice pagamento dei rinnovi): restano in stato['fatture_meta'][id].
+if ($metodo === 'POST' && preg_match('#^/v1/invoices/(in_[A-Za-z0-9_]+)$#', $percorso, $mI)) {
+    $stato['fatture_meta'][$mI[1]] = array_merge((array) ($stato['fatture_meta'][$mI[1]] ?? []), (array) ($corpo['metadata'] ?? []));
+    $rispondi(['id' => $mI[1], 'object' => 'invoice', 'metadata' => $stato['fatture_meta'][$mI[1]]]);
+}
 if ($metodo === 'POST' && $percorso === '/v1/refunds') {
     if (is_file($dir . '/rifiuta-rimborso')) $rispondi(['error' => ['message' => 'Charge has already been refunded.']], 400);
     $r = ['id' => 're_finto' . $n, 'object' => 'refund', 'payment_intent' => $corpo['payment_intent'] ?? '', 'amount' => (int) ($corpo['amount'] ?? 0),

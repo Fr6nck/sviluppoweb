@@ -264,17 +264,31 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 - Niente da configurare. Ogni azione chiede il motivo (resta nel registro) e manda un'email al cliente. Per i **rimborsi** serve Stripe configurato: il rimborso parte da Stripe (`refunds`), il cliente lo vede sulla carta in 5–10 giorni; la **nota di credito la fai tu in Adamo** (il sito te lo ricorda nel messaggio di esito). Il rimborso non ferma l'abbonamento: se serve, «Ferma il rinnovo».
 - **Password provvisoria**: la vedi una sola volta nella scheda del cliente (12 caratteri, due parole e quattro cifre), vale 48 ore; comunicala al telefono, mai per email. Al primo accesso il cliente deve sceglierne una nuova. Scaduta, usa «Manda il link per reimpostarla».
 
-## 4j. Fase 9 ter (9F, 9G, 9H)
+## 4j. Fase 9 ter (9F, 9G, 9H, 9I, 9J)
 
-**9H · Posta: due indirizzi, assistenza@ e commerciale@**
-- **Su Hostinger** crea la casella **assistenza@welcomemyhouse.it** e inseriscila in Amministrazione → Impostazioni → **Posta** (server SMTP, porta, utente, password, mittente = la casella stessa), poi premi **«Prova»**. È il mittente di tutte le email automatiche (`noreply@` non esiste).
-- Crea **commerciale@welcomemyhouse.it** come casella, oppure come alias che inoltra ad assistenza@. Alias consigliati: **privacy@** e **amministrazione@** → assistenza@; **admin@** → la tua email personale; **dmarc@** → admin@ (riceve i rapporti DMARC).
-- Nel DNS di welcomemyhouse.it attiva **SPF**, **DKIM** e **DMARC** (Hostinger li propone nel pannello della posta; nel record DMARC metti `rua=mailto:dmarc@welcomemyhouse.it`): senza, le email finiscono nello spam.
-- **Mittente salvato vecchio**: al primo caricamento dopo l'aggiornamento, se in Impostazioni → Posta il mittente era `noreply@myhouse.it` o un indirizzo di un altro dominio, diventa da solo assistenza@ (una volta sola). La prima volta che apri **Gestione** lo leggi nel messaggio in alto; resta nel registro e la versione di prima delle impostazioni è in `app/config.local.bak.php`. Se il mittente arriva da una variabile d'ambiente (`MAIL_FROM`), non si tocca: cambiala nel pannello dell'hosting.
-- **Impostazioni → Sito**: «Email assistenza» (clienti, privacy, avvisi del sito, Reply-To di tutte le email) ed **«Email commerciale (preventivi e marketing)»**, di serie commerciale@. Vuota = tutto va all'assistenza.
-- **Cosa arriva a commerciale@**: le richieste di preventivo oltre il Portfolio (la conferma al cliente parte da assistenza@ con Reply-To commerciale@), il bottone «Chiedi un preventivo», le risposte di «Anche il tuo sito» (anche «Oppure scrivici subito»), le risposte agli inviti degli amici. **Tutto il resto** (assistenza, FAQ, piè di pagina, documenti legali, diritti privacy, giudizi, pagamenti, rimborsi, traduzioni, Gestione) resta su assistenza@.
-- **Codici omaggio**: «Manda per email» apre il tuo programma di posta (non parte dal sito). Scrivi da commerciale@, così le risposte arrivano lì.
-- **Vetrina**: `vetrina_email` di serie è ora **vetrina@welcomemyhouse.it** (non riceve email: i Richiami lo saltano). La vetrina che c'è già resta dov'è; serve solo se un giorno la ricrei da zero (vedi «4b»).
+**9H · Email: quattro indirizzi, ognuno al suo posto**
+
+| Indirizzo | Tipo | A cosa serve |
+|---|---|---|
+| assistenza@welcomemyhouse.it | casella vera | Clienti, privacy, avvisi interni. Mittente di tutte le email del sito. Unico indirizzo nel piè di pagina. |
+| commerciale@welcomemyhouse.it | alias → assistenza@ | MyHouse siti («Anche il tuo sito»), preventivi, convenzioni, codici omaggio. |
+| news@welcomemyhouse.it | alias → assistenza@ | Mittente di newsletter e campagne (Brevo). Il sito non manda email da qui. |
+| amministrazione@welcomemyhouse.it | alias → assistenza@ | Fatture, ricevute, pagamenti, rinnovi, rimborsi. |
+
+Su **Hostinger** (è la nota «Email per il tecnico» in `_brief/claude-code/email-per-il-tecnico.md`):
+1. Casella **assistenza@welcomemyhouse.it** con password forte. I dati SMTP (server, porta, cifratura, utente, password) li inserisci tu in **Amministrazione → Impostazioni → Posta**, poi premi **«Prova»**. La password non va scritta in chat né nel repository.
+2. Alias (solo inoltro) verso assistenza@: **commerciale@**, **news@**, **amministrazione@**. Manda un'email di prova a ciascuno.
+3. DNS: **SPF** di Hostinger, **DKIM** attivo, **DMARC** `_dmarc.welcomemyhouse.it` → `v=DMARC1; p=none` (dopo un mese senza problemi `p=quarantine`).
+4. **Brevo**, quando parte la newsletter: mittente news@welcomemyhouse.it, dominio verificato con il record DKIM di Brevo.
+5. Nella casella assistenza@: una regola o etichetta per destinatario (commerciale, news, amministrazione) per separare la posta.
+
+Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro campi hanno già questi valori. Commerciale, newsletter e amministrazione vuoti = tutto va all'assistenza.
+- **Mittente salvato vecchio**: al primo caricamento dopo l'aggiornamento, se in Impostazioni → Posta il mittente era `noreply@myhouse.it` o di un altro dominio, diventa da solo assistenza@ (una volta sola). La prima volta che apri **Gestione** lo leggi in alto; resta nel registro e la versione di prima delle impostazioni è in `app/config.local.bak.php`. Un mittente da variabile d'ambiente (`MAIL_FROM`) non si tocca.
+- **Dove arriva cosa**: preventivi e risposte di «Anche il tuo sito» a commerciale@ (la conferma al cliente parte da assistenza@ con `Reply-To` commerciale@); le email di rinnovo, scadenza, cambio piano e rimborso partono da assistenza@ con `Reply-To` amministrazione@ e la riga «Per domande su fatture e pagamenti: amministrazione@…»; gli avvisi a noi su pagamenti falliti e rimborsi confermati vanno ad amministrazione@; tutto il resto all'assistenza.
+- **Stripe** → Impostazioni → Dettagli pubblici dell'attività: **email di assistenza = amministrazione@welcomemyhouse.it** (compare su ricevute e fatture Stripe). Stripe → Email ai clienti: **ricevute accese**, «rinnovo imminente» e «fine prova» spente (le mandiamo noi, 9D).
+- **Adamo**: imposta amministrazione@welcomemyhouse.it come email del mittente e di contatto sulle fatture.
+- **Codici omaggio**: «Manda per email» apre il tuo programma di posta (non parte dal sito): scrivi da commerciale@. Il messaggio ha già la firma «MyHouse Welcome · commerciale@…».
+- **Vetrina**: `vetrina_email` di serie è **vetrina@welcomemyhouse.it** (non riceve email: i Richiami lo saltano). La vetrina che c'è già resta dov'è.
 
 **9F · Rifiniture**
 - **Vetrina**: la migrazione 046 aggiunge i portali e «PG · Umbria» alla vetrina pubblicata e la ripubblica. Controlla il saluto finale di Casa Checco (le tre stelle con Google, Booking e Airbnb) e, se hai cambiato la vetrina a mano, dal pannello di quell'account **Lingue → Regione/Provincia** e **Pubblica** di nuovo. In alto nella vetrina c'è «Questa è una guida di esempio · Torna al sito · Crea la tua guida».
@@ -288,6 +302,15 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 - **Chi finisce i caratteri** vede «Hai usato le traduzioni suggerite di quest'anno… scrivici» e tu ricevi un'email all'80% e al 100%: in **Amministrazione → Clienti → scheda** premi **«Aggiungi 250.000»** con una nota (resta nel registro), oppure scrivi un tetto personale. Nessuna configurazione su AWS o Stripe: il tetto è solo nostro.
 - **Vendite → Traduzioni**: la pagina nuova con gli esiti per mese e la memoria delle frasi. La memoria si pulisce da sola con il cron (righe mai riusate da 12 mesi).
 - Niente da fare per il «primo anno in omaggio»: non esiste più, le traduzioni sono comprese in Plus e Portfolio entro il tetto.
+
+**9I · Codici cliente, struttura e pagamento; «Cerca»**
+- Niente da configurare sul sito: alla prima apertura dopo l'aggiornamento la migrazione **048** dà un codice a tutti i clienti (`MW-7K4P2`), a tutte le strutture (`MW-7K4P2-01`) e agli ordini pagati (`MW-7K4P2-2026-1`). I codici non cambiano e non si riusano.
+- **Stripe, una volta sola**: dalla cartella del sito, `php app/tools/stripe-codici.php` (prova a vuoto: elenca), poi con le chiavi di **test** `php app/tools/stripe-codici.php --scrivi`, e infine con quelle vive `php app/tools/stripe-codici.php --scrivi --live`. Scrive `codice_cliente` sui clienti Stripe che ci sono già; quelli nuovi lo ricevono da soli.
+- **Adamo**: la causale della fattura la prende da Stripe. Gli abbonamenti nuovi hanno la descrizione «Codice cliente MW-… · Pagamento MW-…», i conguagli la hanno nella descrizione della fattura, i rinnovi nei metadati (`codice_cliente`, `codice_pagamento`). In Adamo → Integrazioni → Stripe controlla che descrizione o metadati finiscano nella causale; se Adamo non legge i metadati, il codice del rinnovo lo trovi nella scheda del cliente.
+- **Cerca** (in alto in ogni pagina di Amministrazione, tasto **/**): codice cliente, struttura o pagamento anche scritti male, email, nome, telefono senza +39, struttura, città, CIN, indirizzo della guida, partita IVA, codice fiscale, ID di Stripe (`cus_`, `sub_`, `in_`, `pi_`, `ch_`, `cs_`), codice sconto, omaggio o d'invito. Il numero della fattura Adamo non si trova: il sito non lo salva.
+
+**9J · Palette «Bianco e nero»**
+- Niente da configurare: in **Aspetto** c'è la settima palette, chiara e scura, con la casella «Foto in bianco e nero». La migrazione **047** aggiunge la colonna della casella. Le altre sei palette restano identiche.
 
 ## 4b. La guida vetrina (la demo della landing)
 

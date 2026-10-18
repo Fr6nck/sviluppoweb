@@ -14,10 +14,10 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
           $demoS = !empty($pr['is_demo']); $hostSito = (string) parse_url(Support::baseUrl(), PHP_URL_HOST) ?: 'welcomemyhouse.it'; ?>
     <<?= $demoS ? 'a href="' . Support::e(Support::baseUrl()) . '/" title="' . Support::e(I18n::t($loc, 'demo_back_title', $hostSito)) . '" style="color:inherit;text-decoration:none"' : 'div' ?> class="rise row" style="gap:10px;animation-delay:.1s">
       <svg class="mh-arch arch" width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-        <path d="M6 28V14a10 10 0 0 1 20 0v14" stroke="#f6f0e5" stroke-width="2.2" stroke-linecap="round"></path>
+        <path d="M6 28V14a10 10 0 0 1 20 0v14" stroke="currentColor" style="color:var(--full-ink,#f6f0e5)" stroke-width="2.2" stroke-linecap="round"></path>
         <circle cx="20.5" cy="19" r="1.9" fill="#ee7a4a"></circle>
       </svg>
-      <span style="font-size:14px;font-weight:500;letter-spacing:-.2px;color:#f6f0e5">myhouse welcome</span>
+      <span style="font-size:14px;font-weight:500;letter-spacing:-.2px;color:var(--full-ink,#f6f0e5)">myhouse welcome</span>
       <?php if ($demoS): ?><span class="demo-tag"><?= Support::e(I18n::t($loc, 'demo_badge')) ?></span><?php endif; ?>
     </<?= $demoS ? 'a' : 'div' ?>>
     <div class="stack" style="gap:24px">

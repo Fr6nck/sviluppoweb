@@ -780,12 +780,21 @@
       if (!tono) {
         for (var j = 0; j < radio.length; j++) if (!radio[j].disabled) { radio[j].checked = true; tono = radio[j]; break; }
       }
+      // 9J · La riga e la casella di «Bianco e nero» solo con quella palette.
+      var soloBn = scelta.querySelectorAll('[data-solo-palette]');
+      for (var k = 0; k < soloBn.length; k++) soloBn[k].hidden = soloBn[k].getAttribute('data-solo-palette') !== pal.value;
+      var bn = scelta.querySelector('input[name="photos_bw"]');
       var f = document.querySelector('.phoneframe iframe');
       if (!f) return;
       try {
         var doc = f.contentWindow.document;
         var st = doc.getElementById('palette');
         if (st) st.textContent = css;
+        // 9J · le classi della palette (bordo dei riquadri, pillole) e le foto in bianco e nero nell'anteprima
+        var cl = doc.documentElement.classList;
+        for (var c = cl.length - 1; c >= 0; c--) if (cl[c].indexOf('palette-') === 0) cl.remove(cl[c]);
+        cl.add('palette-' + pal.value);
+        cl.toggle('foto-bn', pal.value === 'monocromo' && !!(bn && bn.checked));
         // "testo scuro" = fondo chiaro = tema chiaro
         doc.documentElement.setAttribute('data-theme', tono && tono.value === 'chiaro' ? 'scuro' : 'chiaro');
       } catch (e) {}
@@ -986,4 +995,17 @@
     }
     btn.addEventListener('click', function () { avvia(null); });
   })(traduSez[ts]);
+})();
+
+/* 9I · «/» apre «Cerca» in Amministrazione (fuori dai campi di testo). */
+(function () {
+  'use strict';
+  var campo = document.querySelector('[data-cerca-admin]');
+  if (!campo) return;
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+    var t = e.target, tag = t && t.tagName ? t.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || (t && t.isContentEditable)) return;
+    e.preventDefault(); campo.focus(); campo.select();
+  });
 })();

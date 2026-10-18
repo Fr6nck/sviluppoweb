@@ -9,6 +9,15 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
 <div class="stack stack--lg" style="max-width:820px">
   <h1><?= t('Account &amp; Fatturazione.') ?></h1>
 
+  <?php /* 9I · Il codice cliente: da tenere a portata di mano quando si scrive all'assistenza. */
+        if (($codCli = MHW\Codici::cliente((int) $acc['id'])) !== ''): ?>
+    <section class="panel codice-cliente" aria-labelledby="codice-cliente-titolo">
+      <p style="margin:0" id="codice-cliente-titolo"><?= t('Il tuo codice cliente') ?> <b class="codice-cliente__codice" data-codice-cliente><?= Support::e($codCli) ?></b>
+        <button type="button" class="btn btn--ghost btn--sm" data-copia="<?= Support::e($codCli) ?>" data-copiato="<?= t('Copiato') ?>" hidden><?= MHW\Icon::svg('copy', 15) ?><?= t('Copia') ?></button></p>
+      <p class="small muted" style="margin:0"><?= t('Tienilo a portata di mano quando scrivi all\'assistenza.') ?></p>
+    </section>
+  <?php endif; ?>
+
   <section class="panel stack">
     <span class="kicker"><?= t('Abbonamento') ?></span>
     <?php if ($sub): ?>
@@ -141,6 +150,11 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
       <summary><?= ($acc['billing_name'] ?? '') !== '' ? Support::e($acc['billing_name']) . ' · ' . Support::e(($acc['vat'] ?? '') ?: ($acc['cf'] ?? '')) : 'Compila i dati per la fattura' ?></summary>
       <?= $moduloFatt ?>
     </details>
+    <?php /* 9H · Le domande su fatture e pagamenti vanno all'email amministrazione (9I: con il codice cliente nell'oggetto). */
+          $ammin = Support::amministrazione(); if ($ammin !== ''): $codFatt = (string) ($acc['code'] ?? ''); ?>
+      <p class="small muted" style="margin:0" id="fatture-domande"><?= t('Domande su fatture e pagamenti? Scrivi a') ?>
+        <a href="mailto:<?= Support::e($ammin) ?>?subject=<?= rawurlencode(($codFatt !== '' ? '[' . $codFatt . '] ' : '') . 'Fatturazione') ?>"><?= Support::e($ammin) ?></a>.</p>
+    <?php endif; ?>
   </section>
 
   <?php /* Il tuo account: nome, password, email. Errori sotto il campo, valori conservati. */
@@ -276,7 +290,7 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
   <section class="stack" style="gap:10px">
     <h2 style="font-size:22px">Pagamenti</h2>
     <?php foreach ($ordini as $o): ?>
-      <div class="rowcard"><b class="grow"><?= Support::e($o['package']) ?></b>
+      <div class="rowcard"><b class="grow"><?= Support::e($o['package']) ?><?php if (($o['code'] ?? '') !== ''): ?> <span class="small muted codice-pagamento"><?= Support::e($o['code']) ?></span><?php endif; ?></b>
         <span class="small muted"><?= Support::e(Support::date($o['created_at'])) ?></span>
         <span><?= Support::e(Support::money((int) $o['amount_cents'], $o['currency'])) ?> <span class="small muted">+ IVA</span></span>
         <span class="badge badge--<?= $o['status'] === 'paid' ? 'pine' : ($o['status'] === 'failed' ? 'alert' : 'paper') ?>"><?= Support::e($statoOrdine[$o['status']] ?? $o['status']) ?></span>

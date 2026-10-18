@@ -2,8 +2,8 @@
 namespace MHW;
 
 /**
- * Le palette della guida. Niente selettore di colore libero: sei combinazioni
- * curate, ognuna in due versioni — testo scuro su fondo chiaro, testo chiaro
+ * Le palette della guida. Niente selettore di colore libero: sette combinazioni
+ * curate (9J: «Bianco e nero»), ognuna in due versioni — testo scuro su fondo chiaro, testo chiaro
  * su fondo scuro.
  *
  * Una variante si può scegliere SOLO se tutte le coppie che contano superano
@@ -48,6 +48,22 @@ final class Palette
             'chiaro' => ['bg' => '#1a1012', 'surface' => '#2c1c1f', 'sunk' => '#221619', 'ink' => '#f5e9e8', 'muted' => '#c2a6a6', 'line' => '#3e2a2d', 'accent' => '#e08a95', 'on_accent' => '#1a1012'],
             'tiles' => ['#7b2331', '#2f5d50', '#4b3a6e', '#d4a259'], 'tile_ink' => ['#fff6f5', '#fff6f5', '#fff6f5', '#2a1618'],
         ],
+        // 9J · Bianco e nero: tutte le coppie ≥ 5,7:1. 'extra' ridefinisce, solo per questa palette, i colori della guida
+        // che non vengono dalla palette (bollino DEMO, pillole ocra e mare) in grigi; verde e rosso di significato restano.
+        // tile_bordo: il bordo di 1 px dei riquadri, che sul fondo quasi uguale altrimenti non si staccano.
+        'monocromo' => [
+            'label' => 'Bianco e nero',
+            'scuro'  => ['bg' => '#f5f5f4', 'surface' => '#ffffff', 'sunk' => '#ebebea', 'ink' => '#111111', 'muted' => '#5c5c5c', 'line' => '#dcdcdc', 'accent' => '#111111', 'on_accent' => '#ffffff'],
+            'chiaro' => ['bg' => '#0d0d0d', 'surface' => '#1c1c1c', 'sunk' => '#151515', 'ink' => '#f2f2f2', 'muted' => '#a3a3a3', 'line' => '#2e2e2e', 'accent' => '#f2f2f2', 'on_accent' => '#0d0d0d'],
+            'tiles' => ['#1c1c1c', '#3d3d3d', '#666666', '#d9d9d9'], 'tile_ink' => ['#ffffff', '#ffffff', '#ffffff', '#111111'],
+            'extra' => [
+                'scuro'  => ['ochre' => '#d9d9d9', 'ochre-soft' => '#ebebea', 'sea' => '#111111', 'sea-soft' => '#ebebea', 'tile-bordo' => '1px solid #dcdcdc', 'scelta-bordo' => 'rgba(17,17,17,.28)', 'lente-fondo' => 'rgba(13,13,13,.62)',
+                             'full-fondo' => '#0d0d0d', 'full-ink' => '#f2f2f2', 'full-tenue' => '#e0e0e0'],
+                'chiaro' => ['ochre' => '#d9d9d9', 'ochre-soft' => '#1c1c1c', 'sea' => '#f2f2f2', 'sea-soft' => '#2e2e2e', 'tile-bordo' => '1px solid #2e2e2e', 'scelta-bordo' => 'rgba(17,17,17,.28)', 'lente-fondo' => 'rgba(13,13,13,.62)',
+                             'full-fondo' => '#0d0d0d', 'full-ink' => '#f2f2f2', 'full-tenue' => '#e0e0e0'],
+            ],
+            'descrizione' => 'Elegante e sobria: ideale se le foto della casa parlano da sole.',
+        ],
         'grafite' => [
             'label' => 'Grafite',
             'scuro'  => ['bg' => '#f3f3f1', 'surface' => '#ffffff', 'sunk' => '#e7e7e3', 'ink' => '#1b1c1e', 'muted' => '#55575c', 'line' => '#dadad6', 'accent' => '#2f3338', 'on_accent' => '#f6f6f4'],
@@ -63,6 +79,16 @@ final class Palette
     }
 
     public static function exists(string $code): bool { return isset(self::P[$code]); }
+
+    /** 9J · La riga sotto la scheda della palette in Aspetto ('' se non c'è). */
+    public static function descrizione(string $code): string { return (string) (self::P[$code]['descrizione'] ?? ''); }
+
+    /** 9J · Le classi dell'<html> della guida: palette-{codice} e, con «Bianco e nero» e la casella accesa, foto-bn. */
+    public static function classi(array $property): string
+    {
+        $code = self::exists((string) ($property['palette'] ?? '')) ? (string) $property['palette'] : self::DEFAULT;
+        return 'palette-' . $code . ($code === 'monocromo' && !empty($property['photos_bw']) ? ' foto-bn' : '');
+    }
 
     public static function get(string $code): array { return self::P[$code] ?? self::P[self::DEFAULT]; }
 
@@ -123,7 +149,7 @@ final class Palette
     public static function css(string $code): string
     {
         $p = self::get($code);
-        $blocco = function (array $v) use ($p): string {
+        $blocco = function (array $v, string $tono) use ($p): string {
             $r = "--paper:{$v['bg']};--raised:{$v['surface']};--sunk:{$v['sunk']};--ink:{$v['ink']};"
                . "--muted:{$v['muted']};--line:{$v['line']};--line-strong:{$v['muted']};"
                . "--terracotta:{$v['accent']};--accent:{$v['accent']};--accent-hover:{$v['accent']};--on-dark:{$v['on_accent']};"
@@ -134,10 +160,11 @@ final class Palette
             // 9F · «Scegli la lingua»: bottoni bianchi con il testo scuro della palette e la lingua del telefono sull'accento pieno
             // della variante chiara, in TUTTI E DUE i temi: mai testo chiaro su chiaro.
             $r .= "--scelta-fondo:#ffffff;--scelta-ink:{$p['scuro']['ink']};--scelta-accento:{$p['scuro']['accent']};--scelta-su-accento:{$p['scuro']['on_accent']};";
+            foreach (($p['extra'][$tono] ?? []) as $k => $val) $r .= "--$k:$val;";   // 9J
             return $r;
         };
-        $css = ':root[data-theme="chiaro"]{' . $blocco($p['scuro']) . 'color-scheme:light}';
-        $css .= ':root[data-theme="scuro"],.night{' . $blocco($p['chiaro']) . 'color-scheme:dark}';
+        $css = ':root[data-theme="chiaro"]{' . $blocco($p['scuro'], 'scuro') . 'color-scheme:light}';
+        $css .= ':root[data-theme="scuro"],.night{' . $blocco($p['chiaro'], 'chiaro') . 'color-scheme:dark}';
         return $css;
     }
 

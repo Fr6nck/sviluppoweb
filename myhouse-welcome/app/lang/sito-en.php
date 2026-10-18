@@ -205,7 +205,7 @@ return [
     'sito2.email'       => 'Email',
     'sito2.risposta'    => 'We will reply with a tailored proposal, with no obligation.',
     'sito2.privacy'     => 'We share your answers and contact details with **Blackout Agency** (blackout.in), the company that builds MyHouse websites: they will get back to you. {informativa}',
-    'sito2.oggetto'     => 'A website for my property',
+    'sito2.oggetto'     => 'MyHouse websites: information',
     'sito2.msg.home'    => 'Hello, I run a holiday rental.',
     'sito2.msg.pannello'=> 'Hello, I have a MyHouse Welcome guide for {struttura}.',
     'sito2.msg.si'      => 'I already have a website and I\'d like to improve it{bisogni}.',

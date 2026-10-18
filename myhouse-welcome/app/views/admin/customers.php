@@ -25,12 +25,13 @@ $title = 'Clienti'; ?>
   <?php if ($rows): ?><p class="small muted" style="margin:0"><?= count($rows) ?> client<?= count($rows) === 1 ? 'e' : 'i' ?></p><?php endif; ?>
   <?php if (!$rows): ?><p class="muted">Nessun cliente<?= $cerca !== '' ? ' per questa ricerca' : '' ?>.</p><?php else: ?>
   <div class="tablewrap"><table class="data">
-    <thead><tr><th>Cliente</th><th>Struttura</th><th>Piano</th><th>Stato</th><th>Scadenza</th><th>Omaggio fino al</th><th>Registrato</th><th></th></tr></thead>
+    <thead><tr><th>Cliente</th><th>Codice</th><th>Struttura</th><th>Piano</th><th>Stato</th><th>Scadenza</th><th>Omaggio fino al</th><th>Registrato</th><th></th></tr></thead>
     <tbody>
     <?php foreach ($rows as $r): ?>
       <tr>
         <td><a href="<?= b() ?>/admin/cliente/<?= (int) $r['account_id'] ?>"><b><?= Support::e($r['name'] ?: '—') ?></b></a><?= !empty($r['is_test']) ? ' <span class="badge badge--sea">Prova</span>' : '' ?><br>
           <span class="small muted"><?= Support::e($r['email']) ?></span><?= $r['email_verified_at'] ? '' : ' <span class="badge badge--ochre">non confermata</span>' ?></td>
+        <td class="small"><code><?= Support::e((string) ($r['code'] ?? '')) ?></code></td>
         <td><?= Support::e($r['struttura'] ?: '—') ?><?= $r['citta'] ? '<br><span class="small muted">' . Support::e($r['citta']) . '</span>' : '' ?>
           <?= $r['strutture'] > 1 ? '<br><span class="small muted">+' . ($r['strutture'] - 1) . ((int) $r['strutture'] === 2 ? ' altra' : ' altre') . '</span>' : '' ?></td>
         <td><?= Support::e($r['plan']) ?><?= $r['plan_version'] ? ' <span class="tiny muted">v' . (int) $r['plan_version'] . '</span>' : '' ?></td>

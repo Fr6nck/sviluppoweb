@@ -65,7 +65,7 @@ $oggi = Support::now(); $tra30 = gmdate('Y-m-d\TH:i:s\Z', strtotime('+30 days'))
       <thead><tr><th>Cliente</th><th>Caratteri</th><th>Del suo tetto</th></tr></thead>
       <tbody>
       <?php foreach ($primi as $x): $aid = (int) $x['account_id']; ?>
-        <tr><td><?php if ($aid): ?><a href="<?= b() ?>/admin/cliente/<?= $aid ?>"><?= Support::e($x['name'] ?: $x['email']) ?></a> <span class="small muted"><?= Support::e((string) $x['email']) ?></span>
+        <tr><td><?php if ($aid): ?><a href="<?= b() ?>/admin/cliente/<?= $aid ?>"><?= Support::e($x['name'] ?: $x['email']) ?></a> <span class="small"><?= MHW\Codici::link($aid) ?></span> <span class="small muted"><?= Support::e((string) $x['email']) ?></span>
                 <?php else: ?><span class="muted">Prove dalle Impostazioni</span><?php endif; ?></td>
           <td><?= $n((int) $x['chars']) ?></td><td><?= $aid && $tetti['account'] ? (int) floor($x['chars'] / $tetti['account'] * 100) . '%' : '—' ?></td></tr>
       <?php endforeach; ?>
@@ -82,7 +82,7 @@ $oggi = Support::now(); $tra30 = gmdate('Y-m-d\TH:i:s\Z', strtotime('+30 days'))
       <thead><tr><th>Cliente</th><th>Caratteri (12 mesi)</th><th>Anno in corso</th><th>Si azzera il</th></tr></thead>
       <tbody>
       <?php foreach ($anno as $x): $ct = $x['contatore']; ?>
-        <tr><td><a href="<?= b() ?>/admin/cliente/<?= (int) $x['account_id'] ?>"><?= Support::e($x['name'] ?: $x['email']) ?></a> <span class="small muted"><?= Support::e((string) $x['email']) ?></span></td>
+        <tr><td><a href="<?= b() ?>/admin/cliente/<?= (int) $x['account_id'] ?>"><?= Support::e($x['name'] ?: $x['email']) ?></a> <span class="small"><?= MHW\Codici::link((int) $x['account_id']) ?></span> <span class="small muted"><?= Support::e((string) $x['email']) ?></span></td>
           <td><?= $n((int) $x['chars']) ?></td>
           <td><?= $n((int) $ct['usati']) ?> su <?= $n((int) $ct['tetto']) ?> <span class="badge badge--<?= $ct['finito'] ? 'paper' : ($ct['basso'] ? 'ochre' : 'pine') ?>"><?= (int) $ct['percento'] ?>%</span></td>
           <td><?= Support::e(Support::date($ct['azzera'])) ?></td></tr>

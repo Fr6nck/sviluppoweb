@@ -191,6 +191,18 @@ $r->post('/sito/interesse', function () use ($guard) {
             'da' => in_array($_POST['da'] ?? '', ['home', 'pannello', 'impostazioni'], true) ? $_POST['da'] : 'home',
             'created_at' => Support::now(),
         ]);
+        // 9H · La notifica a noi va all'email commerciale (MyHouse siti). Niente dati del visitatore: solo le risposte.
+        $etichette = ['aspetto' => 'più bello', 'google' => 'più visibile su Google', 'dirette' => 'prenotazioni dirette', 'altro' => 'altro'];
+        $canali = ['scopri' => 'ha aperto «Scopri MyHouse»', 'whatsapp' => 'scrive su WhatsApp', 'email' => 'scrive per email'];
+        $chi = $acc ? Db::one('SELECT u.name, u.email FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [(int) $acc['id']]) : null;
+        try {
+            MHW\Mailer::manda(Support::commerciale(), 'MyHouse siti: una risposta da «Anche il tuo sito»', 'Una risposta da «Anche il tuo sito»', array_values(array_filter([
+                'Ha già un sito: ' . (['si' => 'sì', 'no' => 'no'][$_POST['ha_sito'] ?? ''] ?? 'non detto') . '.',
+                $bisogni ? 'Cosa vuole: ' . implode(', ', array_map(fn($b) => $etichette[$b], $bisogni)) . '.' : '',
+                ($canali[$_POST['canale'] ?? ''] ?? '') !== '' ? 'Poi: ' . $canali[$_POST['canale']] . '.' : '',
+                $chi ? 'Cliente: ' . trim((string) $chi['name']) . ' · ' . (string) $chi['email'] . '.' : 'Visitatore del sito (nessun dato personale).',
+            ])), ['Apri i prospetti', Support::baseUrl() . '/admin/prospetti']);
+        } catch (\Throwable $e) { MHW\Log::exception($e, 'notifica «Anche il tuo sito»'); }
     }
     http_response_code(204); exit;
 });

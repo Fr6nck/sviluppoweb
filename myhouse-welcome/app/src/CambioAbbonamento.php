@@ -142,6 +142,7 @@ final class CambioAbbonamento
             'quantity' => $q, 'kind' => 'change', 'from_package_version_id' => (int) $sub['package_version_id'], 'from_quantity' => (int) $sub['quantity'],
             'created_at' => Support::now(), 'updated_at' => Support::now(),
         ]);
+        Codici::pagamento($id);   // 9I: il conguaglio ha il suo codice pagamento
         return Db::one('SELECT * FROM orders WHERE id = ?', [$id]);
     }
 
@@ -326,14 +327,15 @@ final class CambioAbbonamento
         if ($u) {
             try {
                 $nome = trim(explode(' ', trim((string) $u['name']))[0] ?? '');
-                Mailer::manda((string) $u['email'], 'Da oggi sei su ' . $pv['name'], 'Da oggi sei su ' . $pv['name'],
+                Mailer::diPagamento(fn() => Mailer::manda((string) $u['email'], 'Da oggi sei su ' . $pv['name'], 'Da oggi sei su ' . $pv['name'],
                     array_values(array_filter([
                         'Ciao' . ($nome !== '' ? ' ' . $nome : '') . ', come avevi chiesto, con il rinnovo il tuo abbonamento è passato a ' . $pv['name']
                         . (Plans::perProperty($pv) ? " ($q strutture)" : '') . ': ' . Support::money(Plans::price($pv, $q), (string) $pv['currency']) . ' + IVA all\'anno.',
                         $cambiato ? "Cosa è cambiato:\n• " . implode("\n• ", $cambiato) : '',
                         'Niente è stato cancellato: se torni a un piano più ricco, ritrovi tutto.',
+                        Support::fraseFatture(),   // 9H
                     ])),
-                    ['Vai al tuo account', Support::baseUrl() . '/account']);
+                    ['Vai al tuo account', Support::baseUrl() . '/account']));   // 9H: Reply-To amministrazione
             } catch (\Throwable $e) { Log::exception($e, 'email cambio piano'); }
         }
         return $cambiato;

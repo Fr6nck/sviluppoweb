@@ -135,7 +135,7 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
 <a class="salta" href="#contenuto"><?= t('Vai al contenuto') ?></a>
 <?php if (Auth::isImpersonating()): ?>
 <div class="impersonating"><div class="wrap">
-  <span>Stai guardando l'applicazione con l'account di un cliente. La sessione finisce da sola entro un'ora.</span>
+  <span>Stai guardando l'applicazione con l'account di un cliente<?php if (($accI = Auth::account()) && ($codI = MHW\Codici::cliente((int) $accI['id'])) !== ''): ?> · <b><?= Support::e($codI) ?></b><?php endif; ?>. La sessione finisce da sola entro un'ora.</span>
   <form method="post" action="<?= b() ?>/admin/esci-da-cliente"><?= Csrf::field() ?><button class="btn">Torna al mio account</button></form>
 </div></div>
 <?php endif; ?>
@@ -169,6 +169,13 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
           <?php if ($href): ?><a href="<?= b() . $href ?>"><?= Support::e($l) ?></a><?php else: ?><span<?= $i === count($briciole) - 1 ? ' aria-current="page"' : '' ?>><?= Support::e($l) ?></span><?php endif; ?>
         <?php endforeach; ?>
       </nav>
+      <?php if ($admin): /* 9I · la ricerca unica, in ogni pagina; «/» la apre da tastiera */ ?>
+        <form class="cerca-admin" role="search" method="get" action="<?= b() ?>/admin/cerca">
+          <label for="cerca-admin" class="sr-only">Cerca un cliente: codice, email, telefono, CIN, Stripe…</label>
+          <input id="cerca-admin" name="q" type="search" placeholder="Cerca: codice, email, telefono, CIN…" value="<?= Support::e($nav === 'clienti' && isset($q) && is_string($q) ? $q : '') ?>" autocomplete="off" spellcheck="false" data-cerca-admin aria-keyshortcuts="/">
+          <kbd class="cerca-admin__tasto" aria-hidden="true">/</kbd>
+        </form>
+      <?php endif; ?>
       <?php if ($prop): ?>
         <div class="tela__azioni">
           <?php if ($qui === 'procedura'): ?>

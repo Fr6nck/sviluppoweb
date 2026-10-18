@@ -16,8 +16,8 @@ $waV = null; foreach ($contattiV as $c) if (!empty($c['whatsapp'])) { $waV = $c;
 $nomeHost = trim((string) ($waV['name'] ?? '')) ?: trim((string) ($pr['host_name'] ?? ''));
 $nomeHost = $nomeHost !== '' ? explode(' ', $nomeHost)[0] : (string) $pr['name'];
 $emailOspiti = trim((string) ($pr['guest_email'] ?? ''));
-$col = !empty($chiaro) ? '#f6f0e5' : 'var(--ink)';
-$colTenue = !empty($chiaro) ? '#e8dcc8' : 'var(--muted)'; ?>
+$col = !empty($chiaro) ? 'var(--full-ink,#f6f0e5)' : 'var(--ink)';
+$colTenue = !empty($chiaro) ? 'var(--full-tenue,#e8dcc8)' : 'var(--muted)'; ?>
 <div class="stack voto-box<?= empty($chiaro) ? ' voto-box--carta' : '' ?>" style="gap:12px" id="voto">
   <h2 class="voto-box__titolo" style="color:<?= $col ?>"><?= Support::e(I18n::t($loc, 'rating_q')) ?></h2>
   <form method="get" action="<?= Support::e($azione) ?>#voto" class="stelle">

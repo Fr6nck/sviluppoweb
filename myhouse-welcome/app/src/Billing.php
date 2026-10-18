@@ -172,6 +172,8 @@ final class Billing
             'payment_status' => 'paid', 'updated_at' => Support::now(),
             'quantity' => $quantita, 'provider_extra_item_id' => $voceExtra,
         ] + $acquirente + $omaggio;
+        // 9I · L'abbonamento porta il codice dell'ordine che l'ha creato.
+        if (Migrator::columnExists('subscriptions', 'code') && ($codP = Codici::pagamento((int) $order['id'])) !== '') $riga['code'] = $codP;
         if ($esistente) Db::update('subscriptions', $riga, 'id = :sid', ['sid' => $esistente['id']]);
         else Db::insert('subscriptions', $riga + ['created_at' => Support::now()]);
 
@@ -259,6 +261,14 @@ final class Billing
             if ($l4 !== '') Db::update('subscriptions', ['card_last4' => $l4], 'id = :sid', ['sid' => $row['id']]);
         }
         Entitlements::forget((int) $row['account_id']);
+        // 9I · Un rinnovo o un conguaglio senza ordine: il suo codice pagamento, scritto anche nei metadati della fattura Stripe.
+        if (in_array($inv['billing_reason'] ?? '', ['subscription_cycle', 'subscription_update'], true) && ($inv['id'] ?? '') !== '') {
+            $codF = Codici::pagamentoFattura((int) $row['account_id'], (string) $inv['id'], self::iso($inv['created'] ?? null) ?: Support::now());
+            if ($codF !== '' && Stripe::enabled()) {
+                try { Stripe::metadatiFattura((string) $inv['id'], ['codice_cliente' => Codici::cliente((int) $row['account_id']), 'codice_pagamento' => $codF]); }
+                catch (\Throwable $e) { Log::exception($e, 'codice pagamento sulla fattura di rinnovo'); }
+            }
+        }
         Inviti::fattura($row, $inv);         // un rinnovo scontato chiude gli inviti che lo hanno pagato
         Giudizi::fattura($row, $inv);        // 9B: un rinnovo scontato chiude lo sconto del giudizio promesso sul rinnovo
         // Discesa programmata (6H): al rinnovo il sito passa al piano nuovo.
@@ -277,6 +287,13 @@ final class Billing
         Db::update('subscriptions', ['payment_status' => 'failed', 'status' => 'past_due', 'updated_at' => Support::now()],
                    'id = :sid', ['sid' => $row['id']]);
         Entitlements::forget((int) $row['account_id']);
+        // 9H · L'avviso a noi va all'email amministrazione (al cliente scrive Stripe, con i suoi tentativi).
+        $u = Db::one('SELECT u.name, u.email FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [(int) $row['account_id']]) ?: ['name' => '', 'email' => ''];
+        Mailer::avvisaAmministrazione('Pagamento non riuscito: ' . (trim((string) $u['name']) ?: (string) $u['email']), [
+            'Il pagamento di un rinnovo non è riuscito. Stripe riprova da solo e avvisa il cliente.',
+            'Cliente: ' . trim((string) $u['name']) . ' · ' . (string) $u['email'] . ' (account ' . (int) $row['account_id'] . ').',
+            'Fattura Stripe: ' . (string) ($inv['id'] ?? '—') . ' · importo ' . Support::money((int) ($inv['amount_due'] ?? 0), strtoupper((string) ($inv['currency'] ?? 'eur'))) . '.'],
+            ['Apri la scheda del cliente', Support::baseUrl() . '/admin/cliente/' . (int) $row['account_id']]);
         return 'pagamento-fallito';
     }
 
@@ -334,6 +351,13 @@ final class Billing
         if ($riga) Db::update('rimborsi', ['stato' => 'confermato', 'confermato_at' => Support::now(), 'charge_id' => (string) ($charge['id'] ?? $riga['charge_id'])], 'id = :id', ['id' => (int) $riga['id']]);
         $uid = $aid ? (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$aid], 0) : 0;
         Auth::audit('refund.confirmed', $uid ?: null, ['charge' => (string) ($charge['id'] ?? ''), 'invoice' => $invoice, 'amount_refunded' => $cents]);
+        // 9H · A noi, all'email amministrazione: la nota di credito si fa in Adamo.
+        $u = $uid ? (Db::one('SELECT name, email FROM users WHERE id = ?', [$uid]) ?: ['name' => '', 'email' => '']) : ['name' => '', 'email' => ''];
+        Mailer::avvisaAmministrazione('Rimborso confermato da Stripe: ' . Support::money($cents, strtoupper((string) ($charge['currency'] ?? 'eur'))), [
+            'Stripe ha confermato un rimborso. Ricordati la nota di credito in Adamo.',
+            'Cliente: ' . (trim((string) $u['name']) . ' · ' . (string) $u['email']) . ($aid ? ' (account ' . $aid . ')' : '') . '.',
+            'Addebito: ' . (string) ($charge['id'] ?? '—') . ($invoice !== '' ? ' · fattura ' . $invoice : '') . '.'],
+            $aid ? ['Apri la scheda del cliente', Support::baseUrl() . '/admin/cliente/' . $aid] : null);
         return 'rimborso-confermato';
     }
 

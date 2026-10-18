@@ -7,7 +7,7 @@ $notte = ($theme ?? '') === 'night';
 $loc = $loc ?? 'it';
 $temaChiave = 'mhw-tema-ospite'; $temaBase = $tema ?? 'chiaro'; ?>
 <!doctype html>
-<html lang="<?= Support::e($loc) ?>" data-theme="<?= Support::e($temaBase) ?>" data-chiudi="<?= Support::e(I18n::t($loc, 'close')) ?>"<?= isset($snap['property']['slug']) && empty($anteprima) ? ' data-guida="' . Support::e((string) $snap['property']['slug']) . '"' : '' ?>>
+<html lang="<?= Support::e($loc) ?>" class="<?= Support::e(MHW\Palette::classi($snap['property'] ?? [])) ?>" data-theme="<?= Support::e($temaBase) ?>" data-chiudi="<?= Support::e(I18n::t($loc, 'close')) ?>"<?= isset($snap['property']['slug']) && empty($anteprima) ? ' data-guida="' . Support::e((string) $snap['property']['slug']) . '"' : '' ?>>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">

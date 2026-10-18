@@ -65,7 +65,7 @@ $bottoni = function (array $c) {
         <td data-l="Nota" class="small"><?= Support::e($c['nota']) ?></td>
         <td data-l="Scade" class="small"><?= Support::e(Support::date($c['scade_il'])) ?></td>
         <td data-l="Stato"><span class="badge badge--<?= $tono ?>"><?= $st ?><?= $c['stato'] === 'usato' ? ' il ' . Support::e(Support::date($c['usato_at'])) : '' ?></span>
-          <?php if ($c['stato'] === 'usato'): ?><br><span class="tiny muted"><a href="<?= b() ?>/admin/cliente/<?= (int) $c['usato_da_account_id'] ?>"><?= Support::e(trim(explode(' ', trim((string) $c['usato_da_nome']))[0] ?? '') ?: $c['usato_da_email']) ?></a><?= !empty($c['omaggio_fino']) ? ' · 1° addebito ' . Support::e(Support::date($c['omaggio_fino'])) : '' ?></span><?php endif; ?></td>
+          <?php if ($c['stato'] === 'usato'): ?><br><span class="tiny muted"><?= ($lkO = MHW\Codici::link((int) $c['usato_da_account_id'])) !== '' ? 'usato da ' . $lkO . ' · ' : '' ?><a href="<?= b() ?>/admin/cliente/<?= (int) $c['usato_da_account_id'] ?>"><?= Support::e(trim(explode(' ', trim((string) $c['usato_da_nome']))[0] ?? '') ?: $c['usato_da_email']) ?></a><?= !empty($c['omaggio_fino']) ? ' · 1° addebito ' . Support::e(Support::date($c['omaggio_fino'])) : '' ?></span><?php endif; ?></td>
         <td class="az"><?php if ($c['stato'] === 'valido'): ?><div class="row" style="gap:6px;flex-wrap:wrap"><?= $bottoni($c) ?>
           <form method="post" action="<?= b() ?>/admin/omaggi/<?= (int) $c['id'] ?>/annulla" style="margin:0" onsubmit="return confirm('Annullare questo codice? Non si potrà più usare.')"><?= Csrf::field() ?><button class="btn btn--sm btn--danger">Annulla</button></form></div><?php endif; ?></td></tr>
     <?php endforeach; ?></tbody></table></div>

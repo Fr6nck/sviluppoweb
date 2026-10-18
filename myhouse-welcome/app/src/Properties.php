@@ -86,6 +86,7 @@ final class Properties
                     : "Il tuo piano comprende $max strutture.");
             }
             Db::insert('property_locales', ['property_id' => $pid, 'locale' => 'it']);
+            Codici::struttura($pid);   // 9I
             // Il primo contatto è chi crea la struttura: il numero lo aggiunge dopo.
             if (trim($hostName) !== '') {
                 Db::insert('property_contacts', ['property_id' => $pid, 'name' => mb_substr(trim($hostName), 0, 120), 'role' => 'host',

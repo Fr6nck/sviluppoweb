@@ -181,7 +181,7 @@ final class TestiSito
             'dicono.kicker' => ['dicono', 'Riga sopra il titolo', 'riga', 'Cosa dicono di noi', ''],
             'dicono.titolo' => ['dicono', 'Titolo', 'riga', 'Host veri, ospiti più sereni.', ''],
             'dicono.sotto'  => ['dicono', 'Testo sotto il titolo', 'riga', 'Le parole di chi usa MyHouse Welcome ogni giorno.', ''],
-            'omaggio.messaggio' => ['omaggio', 'Messaggio con il codice omaggio', 'area', 'Ciao! Ti abbiamo riservato {mesi} mesi gratis di MyHouse Welcome, la guida digitale per i tuoi ospiti. Vai su {link}, crea la guida e inserisci la carta: oggi non paghi nulla, il primo addebito è tra {mesi} mesi, e prima ti avvisiamo. Il codice {codice} vale fino al {scadenza}.', 'Lo manda l\'amministrazione su WhatsApp o per email: {mesi}, {link}, {codice} e {scadenza} si compilano da soli.'],
+            'omaggio.messaggio' => ['omaggio', 'Messaggio con il codice omaggio', 'area', 'Ciao! Ti abbiamo riservato {mesi} mesi gratis di MyHouse Welcome, la guida digitale per i tuoi ospiti. Vai su {link}, crea la guida e inserisci la carta: oggi non paghi nulla, il primo addebito è tra {mesi} mesi, e prima ti avvisiamo. Il codice {codice} vale fino al {scadenza}.', 'Lo manda l\'amministrazione su WhatsApp o per email: {mesi}, {link}, {codice}, {scadenza} ed {email} (l\'email commerciale) si compilano da soli. Se il testo non contiene l\'email commerciale, in fondo si aggiunge la firma «MyHouse Welcome · commerciale@…».'],
             'dicono.nota'   => ['dicono', 'Nota in fondo (obbligatoria)', 'area', 'Giudizi di clienti che hanno aderito al programma: chi lascia un giudizio riceve uno sconto del {giudizio}%, qualunque voto dia. Pubblicati con il loro accordo, senza link alle loro guide.', '{giudizio} è la percentuale dello sconto (Impostazioni). Non si può togliere.'],
             // ---- piani
             'piani.kicker' => ['piani', 'Riga sopra il titolo', 'riga', 'Piani e prezzi', ''],
@@ -255,7 +255,7 @@ final class TestiSito
             'sito2.email'    => ['sito', 'Passo 3 · bottone Email', 'riga', 'Email', ''],
             'sito2.risposta' => ['sito', 'Passo 3 · nota in fondo', 'riga', 'Ti rispondiamo con una proposta su misura, senza impegno.', ''],
             'sito2.privacy'  => ['sito', 'Passo 3 · a chi vanno le risposte', 'area', 'Le risposte e il contatto li condividiamo con **Blackout Agency** (blackout.in), la società che realizza i siti MyHouse: ti ricontatta lei. {informativa}', '8J. {informativa} diventa il link all\'informativa privacy.'],
-            'sito2.oggetto'  => ['sito', 'Oggetto dell\'email', 'riga', 'Il sito per la mia struttura', ''],
+            'sito2.oggetto'  => ['sito', 'Oggetto dell\'email', 'riga', 'MyHouse siti: informazioni', 'Arriva all\'email commerciale (9H).'],
             'sito2.msg.home' => ['sito', 'Messaggio · prima frase (home)', 'riga', 'Ciao, ho una struttura ricettiva.', ''],
             'sito2.msg.pannello' => ['sito', 'Messaggio · prima frase (pannello)', 'riga', 'Ciao, ho una guida MyHouse Welcome per {struttura}.', '{struttura}: il nome della struttura.'],
             'sito2.msg.si'   => ['sito', 'Messaggio · chi ha il sito', 'riga', 'Ho già un sito e vorrei migliorarlo{bisogni}.', '{bisogni}: «: farmi trovare su Google, …» con le scelte, o niente.'],

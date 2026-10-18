@@ -46,7 +46,7 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
     </fieldset>
   <?php endif; ?>
   <fieldset class="fieldset">
-    <legend><?= t('La struttura') ?></legend>
+    <legend><?= t('La struttura') ?><?php if (!empty($prop['id']) && ($codS = MHW\Codici::struttura((int) $prop['id'])) !== ''): ?> <span class="small muted codice-struttura"><?= Support::e($codS) ?></span><?php endif; ?></legend>
     <div class="field" style="margin:0"><label for="name"><?= t('Nome') ?></label><input type="text" id="name" name="name" required maxlength="120" autocomplete="off" value="<?= $c('name') ?>"></div>
     <div class="field" style="margin:0"><span class="label"><?= t('Tipologia') ?></span>
       <div class="scelte scelte--riga" role="radiogroup" aria-label="<?= t('Tipologia') ?>">

@@ -74,15 +74,41 @@ $r->get('/admin', function () {
 });
 
 // ------------------------------------------------------------------- clienti
+/* 9I · «Cerca» in ogni pagina di Amministrazione: un risultato apre la scheda, più risultati un elenco con il perché. */
+$r->get('/admin/cerca', function () {
+    Auth::requireAdmin();
+    $q = trim(mb_substr((string) ($_GET['q'] ?? ''), 0, 200));
+    $ris = $q !== '' ? MHW\Codici::trova($q) : [];
+    // Nel registro la ricerca, ma non il testo se contiene un'email (privacy).
+    if ($q !== '') Auth::audit('admin.search', null, ['q' => str_contains($q, '@') ? '(un indirizzo email)' : mb_substr($q, 0, 80), 'risultati' => count($ris)]);
+    if (count($ris) === 1) {
+        $ev = (string) $ris[0]['evidenzia'];
+        Support::redirect('/admin/cliente/' . (int) $ris[0]['account_id'] . ($ev !== '' ? '?evidenzia=' . rawurlencode($ev) . '#' . $ev : ''));
+    }
+    $righe = [];
+    foreach ($ris as $x) {
+        $c = Db::one('SELECT a.id, a.' . (MHW\Codici::disponibili() ? 'code' : 'id AS code') . ', u.name, u.email FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [$x['account_id']]);
+        if (!$c) continue;
+        $sub = Subscriptions::active((int) $c['id']);
+        $gov = Subscriptions::governingVersionId((int) $c['id']);
+        $righe[] = $c + ['perche' => $x['perche'], 'evidenzia' => $x['evidenzia'], 'piano' => $gov ? (Plans::version($gov)['name'] ?? '—') : '—',
+                         'stato' => $sub ? ($sub['status'] === 'past_due' ? 'Pagamento non riuscito' : ($sub['status'] === 'trialing' ? 'In omaggio' : 'Attivo')) : 'Senza abbonamento attivo'];
+    }
+    View::out('admin/cerca', ['q' => $q, 'righe' => $righe, 'nav' => 'clienti'], 'layout/cms');
+});
+
 $r->get('/admin/clienti', function () {
     Auth::requireAdmin();
     $cerca = trim((string) ($_GET['q'] ?? ''));
-    $sql = 'SELECT u.id AS user_id, u.email, u.name, u.created_at, u.email_verified_at, a.id AS account_id, ' . Gestione::colonnaProva() . ' AS is_test
+    $sql = 'SELECT u.id AS user_id, u.email, u.name, u.created_at, u.email_verified_at, a.id AS account_id, ' . Gestione::colonnaProva() . ' AS is_test'
+         . (MHW\Codici::disponibili() ? ', a.code' : ", '' AS code") . '
             FROM users u JOIN accounts a ON a.user_id = u.id WHERE u.role = ?';
     $args = ['host'];
     if ($cerca !== '') {
-        $sql .= ' AND (u.name LIKE ? OR u.email LIKE ? OR EXISTS (SELECT 1 FROM properties p WHERE p.account_id = a.id AND p.name LIKE ?))';
-        array_push($args, "%$cerca%", "%$cerca%", "%$cerca%");
+        // 9I · La stessa ricerca di «Cerca» (codici, email, telefono, CIN, Stripe…), non più solo nome, email e struttura.
+        $idsC = array_map(fn($x) => (int) $x['account_id'], MHW\Codici::trova($cerca, 300));
+        $sql .= $idsC ? ' AND a.id IN (' . implode(',', array_fill(0, count($idsC), '?')) . ')' : ' AND 1 = 0';
+        array_push($args, ...$idsC);
     }
     $rows = Db::all($sql . ' ORDER BY u.id DESC LIMIT 300', $args);
     foreach ($rows as &$row) {
@@ -150,7 +176,16 @@ $r->get('/admin/cliente/{aid}', function (array $a) {
         $p['qr'] = Db::one('SELECT token, scans FROM qr_tokens WHERE property_id = ?', [$p['id']]);
     }
     unset($p);
+    // 9I · I codici: cliente, strutture, pagamenti (ordini e rinnovi senza ordine), con quello cercato in evidenza.
+    $codici = null;
+    if (MHW\Codici::disponibili()) {
+        $codici = ['cliente' => MHW\Codici::cliente((int) $acc['id']), 'strutture' => [], 'pagamenti' => []];
+        foreach ($props as $pC) $codici['strutture'][] = ['id' => (int) $pC['id'], 'code' => MHW\Codici::struttura((int) $pC['id']), 'name' => (string) $pC['name']];
+        $codici['pagamenti'] = Db::all("SELECT c.codice, c.order_id, c.invoice_id, c.created_at, o.amount_cents, o.currency, o.status, o.kind
+                                        FROM codici_usati c LEFT JOIN orders o ON o.id = c.order_id WHERE c.livello = 'pagamento' AND c.account_id = ? ORDER BY c.id DESC LIMIT 60", [$acc['id']]);
+    }
     View::out('admin/customer', [
+        'codici' => $codici, 'evidenzia' => preg_replace('/[^A-Za-z0-9-]/', '', (string) ($_GET['evidenzia'] ?? '')),
         'acc' => $acc, 'props' => $props,
         'subs' => Db::all('SELECT s.*, pk.name AS package, pv.version FROM subscriptions s JOIN package_versions pv ON pv.id = s.package_version_id
                            JOIN packages pk ON pk.id = pv.package_id WHERE s.account_id = ? ORDER BY s.id DESC', [$acc['id']]),

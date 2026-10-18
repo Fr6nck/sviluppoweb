@@ -19,8 +19,8 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
   <div class="full__scrim" style="background:linear-gradient(180deg,rgba(23,19,13,.70) 0%,rgba(23,19,13,.42) 24%,rgba(23,19,13,.82) 58%,rgba(23,19,13,.97) 100%)"></div>
   <div class="full__stage">
     <div class="rise" style="display:flex;align-items:center;justify-content:space-between;gap:12px;animation-delay:.1s">
-      <span style="font-size:14px;font-weight:500;letter-spacing:-.2px;color:#f6f0e5"><?= Support::e($pr['name']) ?></span>
-      <span class="pill-quiet" style="border-color:rgba(246,240,229,.32);color:#f6f0e5"><?= Support::e(I18n::t($loc, 'checkout_by', $pr['checkout_by'])) ?></span>
+      <span style="font-size:14px;font-weight:500;letter-spacing:-.2px;color:var(--full-ink,#f6f0e5)"><?= Support::e($pr['name']) ?></span>
+      <span class="pill-quiet" style="border-color:color-mix(in srgb,var(--full-ink,#f6f0e5) 32%,transparent);color:var(--full-ink,#f6f0e5)"><?= Support::e(I18n::t($loc, 'checkout_by', $pr['checkout_by'])) ?></span>
     </div>
     <div class="stack" style="gap:24px">
       <div class="stack" style="gap:12px">
@@ -48,8 +48,8 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
       <?php if (trim((string) $diretta['url']) !== '' || trim((string) $diretta['code']) !== ''):
             $scontoF = trim((string) ($diretta['discount'] ?? '')); $codiceF = trim((string) $diretta['code']); ?>
         <div class="stack congedo-extra rise" style="gap:10px;animation-delay:1.02s">
-          <h2 style="font-size:22px;color:#f6f0e5"><?= Support::e(I18n::t($loc, 'direct_title')) ?></h2>
-          <p class="small" style="color:#e8dcc8"><?= Support::e(I18n::t($loc, 'direct_lead')) ?></p>
+          <h2 style="font-size:22px;color:var(--full-ink,#f6f0e5)"><?= Support::e(I18n::t($loc, 'direct_title')) ?></h2>
+          <p class="small" style="color:var(--full-tenue,#e8dcc8)"><?= Support::e(I18n::t($loc, 'direct_lead')) ?></p>
           <?php if ($codiceF !== ''): /* 7C: «−10% con il codice BENTORNATI», «Copia il codice» */ ?>
             <p class="codice-offerta"><?= $scontoF !== '' ? Support::e(I18n::t($loc, 'direct_offer', "\u{2212}" . ltrim($scontoF, "-\u{2212} "), '')) : Support::e(I18n::t($loc, 'direct_code', '')) ?><b><?= Support::e($codiceF) ?></b></p>
             <div class="ctas">
@@ -64,7 +64,7 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
       <?php $socialF = array_values(array_filter((array) ($pr['channels'] ?? []), fn($c) => !empty($c['social']) && trim((string) ($c['url'] ?? '')) !== ''));
             if ($socialF): /* 8C: «Seguici», con le icone dei social della struttura */ ?>
         <div class="seguici rise" style="animation-delay:1.04s">
-          <span class="small" style="color:#e8dcc8"><?= Support::e(I18n::t($loc, 'follow_us')) ?></span>
+          <span class="small" style="color:var(--full-tenue,#e8dcc8)"><?= Support::e(I18n::t($loc, 'follow_us')) ?></span>
           <?php foreach ($socialF as $c): ?><a href="<?= Support::e($c['url']) ?>" target="_blank" rel="noopener" aria-label="<?= Support::e($c['label']) ?>"><?= Icon::svg((string) $c['kind'], 20, 1.8) ?></a><?php endforeach; ?>
         </div>
       <?php endif; ?>
@@ -73,7 +73,7 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
           <a class="btn btn--lg btn--go rise" style="animation-delay:1.05s" href="https://wa.me/<?= Support::e(ltrim($tel, '+')) ?>" rel="noopener">
             <?= Support::e(I18n::t($loc, 'whatsapp')) ?> <span class="go"><?= Icon::svg('whatsapp', 19, 2) ?></span></a>
         <?php endif; ?>
-        <a class="rise" style="display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:999px;color:#e8dcc8;font-size:15px;font-weight:500;animation-delay:1.1s"
+        <a class="rise" style="display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:999px;color:var(--full-tenue,#e8dcc8);font-size:15px;font-weight:500;animation-delay:1.1s"
            href="<?= Support::e($base) ?>?l=<?= Support::e($loc) ?>"><?= Support::e(I18n::t($loc, 'farewell_back')) ?></a>
       </div>
     </div>

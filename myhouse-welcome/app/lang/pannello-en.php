@@ -115,4 +115,8 @@ return [
     'Lingua del pannello' => 'Dashboard language', 'Italiano' => 'Italian', 'Di serie' => 'Default', 'English' => 'English', 'Di serie: quella della lingua principale della guida (inglese se non scrivi in italiano).' => 'Default: follows the guide\'s main language (English if you do not write in Italian).',
     'Cambia piano' => 'Change plan', 'Scegli un piano' => 'Choose a plan', 'Disattiva il rinnovo' => 'Turn off renewal', 'Riattiva il rinnovo automatico' => 'Turn automatic renewal back on',
     'Fatture e metodo di pagamento' => 'Invoices and payment method', 'Vai alle mie guide' => 'Go to my guides',
+    // 9H
+    'Domande su fatture e pagamenti? Scrivi a' => 'Questions about invoices and payments? Write to',
+    // 9I
+    'Il tuo codice cliente' => 'Your customer code', 'Tienilo a portata di mano quando scrivi all\'assistenza.' => 'Keep it handy when you write to support.', 'Copiato' => 'Copied', 'Copia' => 'Copy',
 ];

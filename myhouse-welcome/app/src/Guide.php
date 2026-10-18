@@ -114,6 +114,7 @@ final class Guide
                 'profile_id' => Entitlements::can($acc, 'profile_image') && $p['profile_media_id'] ? (int) $p['profile_media_id'] : null,
                 'palette' => Palette::exists((string) $p['palette']) ? $p['palette'] : Palette::DEFAULT,
                 'text_tone' => in_array($p['text_tone'], Palette::tones((string) $p['palette']), true) ? $p['text_tone'] : 'scuro',
+                'photos_bw' => (int) ($p['photos_bw'] ?? 0) === 1 && $p['palette'] === 'monocromo' ? 1 : 0,   // 9J
                 'is_demo' => (int) $p['is_demo'],
                 'default_locale' => $p['default_locale'],
                 // Dopo il soggiorno (dalla 014): solo i link compilati.

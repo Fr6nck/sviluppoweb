@@ -1,5 +1,38 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 9I Codice cliente, codice struttura e codice pagamento; «Cerca» in Amministrazione (18 ottobre 2026)
+
+Migrazione **048**: `accounts.code`, `properties.code`, `orders.code` (uniche), `subscriptions.code`, `rimborsi.code`, registro `codici_usati`; i codici per tutti gli account, tutte le strutture (anche archiviate e la vetrina) e gli ordini pagati. Classe `Codici`. Da configurare: DA-CONFIGURARE, «4j» (comando una tantum per Stripe, Adamo).
+
+- **I tre codici**: cliente `MW-7K4P2` (5 caratteri senza 0, O, 1, I), struttura `MW-7K4P2-01` (in ordine di creazione), pagamento `MW-7K4P2-2026-1` (anno e progressivo dell'anno per quel cliente). Mai cambiano, mai si riusano: ogni codice resta nel registro `codici_usati`, anche quando il record si cancella. Si generano alla registrazione, alla struttura nuova, all'ordine (anche il conguaglio); l'abbonamento porta il codice dell'ordine che l'ha creato; i rinnovi e i conguagli senza ordine hanno il loro codice nel registro con l'id della fattura Stripe; il rimborso porta il codice del pagamento rimborsato.
+- **Pannello**: Account & Fatturazione → «Il tuo codice cliente MW-…» con «Copia»; il codice di ogni pagamento; il codice della struttura in piccolo accanto a «La struttura»; i mailto dell'assistenza con «[MW-…] …» nell'oggetto; «Domande su fatture e pagamenti?» con «[MW-…] Fatturazione».
+- **Email**: «Codice cliente MW-…» nel piede delle email a un cliente (non a chi non è cliente, come gli amici invitati, né alla vetrina).
+- **Amministrazione**: colonna «Codice» in Clienti; nella scheda cliente i tre livelli con «Copia» (strutture e pagamenti, con quello cercato in evidenza); il codice cliccabile accanto al nome in Preventivi, Giudizi, Codici omaggio («usato da MW-…»), Traduzioni; il codice del rinnovo accanto alla fattura; la barra «Stai guardando con l'account di un cliente» mostra il codice.
+- **«Cerca»** in alto in ogni pagina di Amministrazione (tasto **/**), `GET /admin/cerca`: codici scritti male (`Codici::normalizza`: «mw 7k4p2», «MW7K4P2»), email (anche in attesa e PEC), nome e intestatario, telefono (solo cifre, anche senza +39), nome della struttura, città, CIN, indirizzo della guida o URL intero, partita IVA e codice fiscale, ID di Stripe (`cus_`, `sub_`, `cs_`, `in_`, `pi_`, `ch_`, `re_`), codice sconto, omaggio o d'invito usato. Un risultato apre la scheda (con la struttura o il pagamento in evidenza), più risultati un elenco con «perché», nessuno «Nessun cliente con “…”». Query con parametri, uguaglianza su codici e ID, al massimo 50; nel registro `admin.search` senza il testo se contiene un'email. Clienti usa la stessa ricerca.
+- **Stripe**: `metadata[codice_cliente]` sul cliente (alla creazione e a ogni aggiornamento dei dati di fatturazione); `codice_cliente`, `codice_pagamento`, `codice_struttura` nei metadati di Checkout, abbonamento e pagamento; la descrizione dell'abbonamento e della fattura del conguaglio «Codice cliente … · Pagamento …» (la causale che legge Adamo); sulle fatture di rinnovo i metadati con il codice nuovo (`invoice.paid`). `tools/stripe-codici.php`: scrive il codice sui clienti Stripe che esistono già (a vuoto, poi `--scrivi`, con le chiavi vive anche `--live`).
+- **Registri**: ogni riga di `app-*.log` con un account in gioco (nel contesto o il cliente collegato) porta `codice_cliente`, non mascherato.
+- Non fatto, perché nel codice non c'è: il riepilogo di chiusura dell'account (oggi si chiede per email) e la ricerca per numero di fattura Adamo (il sito non lo salva).
+- Screenshot in `prove/schermate/9i-*.png`.
+
+## v2 · 9J Palette «Bianco e nero» (18 ottobre 2026)
+
+Migrazione **047**: `properties.photos_bw`.
+
+- **Settima palette** «Bianco e nero» (`monocromo`, prima di Grafite), chiara e scura, tutte le coppie ≥ 5,7:1. In Aspetto con la riga «Elegante e sobria: ideale se le foto della casa parlano da sole.», disponibile come le altre palette.
+- **Davvero monocromatica**: i colori della guida che non venivano dalla palette (bollino DEMO, pillole ocra e mare come «Ti accogliamo di persona», bordo dei bottoni della lingua, lente sulle foto, fondo e testi delle pagine a tutto schermo) ora sono variabili con lo stesso valore di prima; solo «Bianco e nero» le ridefinisce in grigio (`Palette::P[…]['extra']`). Restano a colori solo il verde e il rosso di significato. Controllato con Playwright su tutte le pagine della vetrina, chiara e scura.
+- I riquadri con un bordo di 1 px della palette (`--tile-bordo`, solo per questa palette); la pillola del check-in con il testo della palette e il pallino verde.
+- **«Foto in bianco e nero»** (casella in Aspetto, solo con questa palette, di serie spenta): copertina, foto delle sezioni e dei luoghi, foto profilo in scala di grigi nella guida (non il logo né il QR); entra nell'istantanea; anche l'anteprima del link (OG). L'`<html>` della guida ha `palette-{codice}` e `foto-bn`.
+- Le altre sei palette identiche a prima: confronto pixel per pixel con la versione precedente (Terracotta chiara e scura, Mare). Screenshot in `prove/schermate/9j-*.png`.
+
+## v2 · 9H ter Email: quattro indirizzi (18 ottobre 2026)
+
+Nessuna migrazione. Da configurare: DA-CONFIGURARE, «4j», blocco 9H (Hostinger, Stripe, Adamo, Brevo).
+
+- **Amministrazione → Impostazioni → Indirizzi email**: assistenza, commerciale, newsletter (news@, il sito non la usa per inviare), amministrazione; gli ultimi tre vuoti valgono l'assistenza. `Support::newsletter()`, `Support::amministrazione()`, `Support::fraseFatture()`.
+- **amministrazione@**: le email di rinnovo, scadenza, pagamento in sospeso, cambio piano, conguaglio e rimborso hanno `Reply-To` amministrazione@ (`Mailer::diPagamento`) e la riga «Per domande su fatture e pagamenti: amministrazione@…»; gli avvisi a noi su pagamenti falliti (`invoice.payment_failed`) e rimborsi confermati (`charge.refunded`) vanno ad amministrazione@ (`Mailer::avvisaAmministrazione`); Account & Fatturazione «Domande su fatture e pagamenti? Scrivi a amministrazione@…»; Termini, punto 6, «Per le questioni di fatturazione e pagamento scrivi a …» (segnaposto `{email_fatture}`, italiano e inglese).
+- **commerciale@**: in più la notifica a noi delle risposte di «Anche il tuo sito» (con le risposte, senza dati del visitatore), l'oggetto del mailto «MyHouse siti: informazioni», la firma dei messaggi dei codici omaggio.
+- La password provvisoria non è un'email di pagamento: `Reply-To` assistenza.
+
 ## v2 · 9H bis Posta: assistenza@ e commerciale@ (18 ottobre 2026)
 
 Nessuna migrazione: sono impostazioni. Da configurare: DA-CONFIGURARE, «4j», blocco 9H.

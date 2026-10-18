@@ -422,12 +422,16 @@ final class Richiami
         $saluto = 'Ciao' . (trim($nome) !== '' ? ' ' . trim(explode(' ', trim($nome))[0]) : '') . ',';
         $e = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
         $paragrafi = [$saluto . ' ' . $corpo];
+        // 9H · Le email di pagamento: la frase sulle fatture e il Reply-To all'email amministrazione.
+        $pagamento = in_array($tipo, ['rinnovo', 'scadenza', 'pagamento'], true);
+        if ($pagamento) $paragrafi[] = Support::fraseFatture();
         $piedeHtml = $dovuta ? 'Questo avviso è dovuto prima di un addebito e non si può disattivare.'
                    : 'Non vuoi più ricevere ' . $e(self::TIPI[$tipo]) . '? <a href="' . $e($stop) . '" style="color:#6a5b48">Non mandarmene più</a>';
         $piedeTesto = $dovuta ? 'Questo avviso è dovuto prima di un addebito e non si può disattivare.' : 'Non vuoi più ricevere ' . self::TIPI[$tipo] . "? $stop";
         $testo = Mailer::testo($oggetto, $paragrafi, $tasto, $nota, $piedeTesto, $scelte);
         $html = Mailer::layout($oggetto, $paragrafi, $tasto, $nota, $piedeHtml, $scelte);
-        $ok = Mailer::send($email, $oggetto . ' — MyHouse Welcome', $testo, $html);
+        $invio = fn() => Mailer::send($email, $oggetto . ' — MyHouse Welcome', $testo, $html);
+        $ok = $pagamento ? Mailer::diPagamento($invio) : $invio();
         if (!$ok) Db::run('DELETE FROM email_log WHERE token = ?', [$token]);   // si riproverà al prossimo giro
         return $ok;
     }

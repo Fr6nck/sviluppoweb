@@ -102,11 +102,33 @@ final class Log
         return $c;
     }
 
+    /**
+     * 9I · Il codice cliente dell'account in gioco: dal contesto (account, account_id, acc, aid) o dal cliente collegato.
+     * Mai un errore da qui: se il database non risponde, la riga si scrive senza.
+     */
+    private static function codiceCliente(array $context): string
+    {
+        static $dentro = false;
+        if ($dentro) return '';
+        $dentro = true;
+        try {
+            $aid = 0;
+            foreach (['account', 'account_id', 'acc', 'aid'] as $k) if (isset($context[$k]) && is_numeric($context[$k])) { $aid = (int) $context[$k]; break; }
+            if (!$aid && session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['uid'])) {
+                $aid = (int) Db::val("SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.id = ? AND u.role = 'host'", [(int) $_SESSION['uid']], 0);
+            }
+            return $aid > 0 && Codici::disponibili() ? (string) Db::val('SELECT code FROM accounts WHERE id = ?', [$aid], '') : '';
+        } catch (\Throwable) { return ''; }
+        finally { $dentro = false; }
+    }
+
     private static function write(string $level, string $message, array $context): string
     {
         $ref = strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+        $ctx = $context ? self::mascheraTutto($context) : [];
+        if (($cod = self::codiceCliente($context)) !== '') $ctx['codice_cliente'] = $cod;   // 9I: non è un dato personale, non si maschera
         $riga = json_encode(['t' => Support::now(), 'lvl' => $level, 'ref' => $ref, 'msg' => self::maschera($message)]
-                            + ($context ? ['ctx' => self::mascheraTutto($context)] : []),
+                            + ($ctx ? ['ctx' => $ctx] : []),
                             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         @file_put_contents(self::file('app'), $riga . "\n", FILE_APPEND | LOCK_EX);
         return $ref;

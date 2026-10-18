@@ -23,7 +23,7 @@ $conta = array_count_values(array_column($righe, 'stato')); ?>
       <tr><td class="small"><?= Support::e(Support::date($r['created_at'])) ?><?= $r['lingua'] === 'en' ? '<br><span class="tiny muted">in inglese</span>' : '' ?></td>
         <td><b><?= Support::e($r['nome']) ?></b><br><a class="small" href="mailto:<?= Support::e($r['email']) ?>?subject=<?= $oggetto ?>"><?= Support::e($r['email']) ?></a>
           <?php if ($r['telefono'] !== ''): ?><br><a class="small" href="tel:<?= Support::e(preg_replace('/[^\d+]/', '', $r['telefono'])) ?>"><?= Support::e($r['telefono']) ?></a><?php endif; ?>
-          <?php if ($r['account_id']): ?><br><a class="tiny" href="<?= b() ?>/admin/cliente/<?= (int) $r['account_id'] ?>">cliente #<?= (int) $r['account_id'] ?></a><?php endif; ?></td>
+          <?php if ($r['account_id']): ?><br><span class="tiny"><?= MHW\Codici::link((int) $r['account_id']) ?: '<a href="' . b() . '/admin/cliente/' . (int) $r['account_id'] . '">cliente #' . (int) $r['account_id'] . '</a>' ?></span><?php endif; ?></td>
         <td><b><?= (int) $r['strutture'] ?></b></td>
         <td class="small" style="max-width:360px;white-space:pre-line"><?= Support::e((string) $r['messaggio']) ?: '<span class="muted">—</span>' ?></td>
         <td><span class="badge badge--<?= $pillola[$r['stato']] ?? 'paper' ?>"><?= Support::e(Preventivi::STATI[$r['stato']] ?? $r['stato']) ?></span></td>

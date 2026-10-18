@@ -30,6 +30,14 @@ $media = [
         </label>
       <?php endforeach; ?>
     </div>
+    <?php /* 9J · «Bianco e nero»: la riga che la spiega e la casella «Foto in bianco e nero», visibili solo con questa palette. */ ?>
+    <div class="palette-bn stack" style="gap:8px" data-solo-palette="monocromo"<?= $scelta === 'monocromo' ? '' : ' hidden' ?>>
+      <p class="help" style="margin:0"><?= Support::e(MHW\Palette::descrizione('monocromo')) ?></p>
+      <?php if (MHW\Migrator::columnExists('properties', 'photos_bw')): ?>
+        <label class="check"><input type="checkbox" name="photos_bw" value="1" <?= !empty($prop['photos_bw']) ? 'checked' : '' ?>>
+          <span>Foto in bianco e nero <span class="small muted">copertina, foto delle sezioni, dei luoghi e foto profilo, solo nella guida</span></span></label>
+      <?php endif; ?>
+    </div>
   </fieldset>
 
   <fieldset class="fieldset">

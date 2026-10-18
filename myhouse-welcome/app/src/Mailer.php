@@ -21,6 +21,20 @@ final class Mailer
 
     public static function ultimoErrore(): string { return self::$ultimoErrore; }
 
+    /** 9I · Il posto della riga «Codice cliente …» nel piede: send() la scrive se il destinatario è un cliente, se no la toglie. */
+    private const SEGNO_CODICE = '<!--codice-cliente-->';
+
+    /** 9I · Il codice cliente del destinatario, se è un cliente (non la vetrina, non un amico invitato, non noi). */
+    private static function codiceDi(string $to): string
+    {
+        try {
+            if (!Codici::disponibili()) return '';
+            $to = mb_strtolower(trim($to));
+            if ($to === '' || $to === mb_strtolower(trim((string) Config::get('vetrina_email', '')))) return '';
+            return (string) Db::val("SELECT a.code FROM users u JOIN accounts a ON a.user_id = u.id WHERE LOWER(u.email) = ? AND u.role = 'host'", [$to], '');
+        } catch (\Throwable) { return ''; }
+    }
+
     /** 9H · Il Reply-To degli invii in corso, se non è quello di serie (l'email assistenza). */
     private static ?string $rispondiA = null;
 
@@ -33,6 +47,18 @@ final class Mailer
         $prima = self::$rispondiA;
         self::$rispondiA = $indirizzo;
         try { return $invio(); } finally { self::$rispondiA = $prima; }
+    }
+
+    /** 9H · Un'email di pagamento (rinnovo, scadenza, cambio piano, rimborso): Reply-To all'email amministrazione. */
+    public static function diPagamento(callable $invio): mixed { return self::conRispostaA(Support::amministrazione(), $invio); }
+
+    /** 9H · Un avviso interno a noi sui pagamenti (fallito, rimborso): all'email amministrazione. Non blocca mai chi lo chiama. */
+    public static function avvisaAmministrazione(string $oggetto, array $paragrafi, ?array $bottone = null): void
+    {
+        $a = Support::amministrazione();
+        if ($a === '') return;
+        try { self::manda($a, $oggetto, $oggetto, $paragrafi, $bottone); }
+        catch (\Throwable $e) { Log::exception($e, 'avviso all\'amministrazione'); }
     }
 
     // ------------------------------------------------------------------ email con il marchio (7A)
@@ -100,7 +126,7 @@ final class Mailer
         }
         $h .= '<tr><td style="padding:20px 28px 32px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
             . '<td valign="top" style="' . $font . ';font-size:12px;line-height:18px;color:' . $grigio . ';text-align:left">'
-            . ($chi !== '' ? $e($chi) . '<br>' : '') . implode(' · ', $voci)
+            . ($chi !== '' ? $e($chi) . '<br>' : '') . implode(' · ', $voci) . self::SEGNO_CODICE
             . '</td>' . ($icone !== '' ? '<td valign="top" align="right" style="white-space:nowrap;padding-left:12px">' . $icone . '</td>' : '') . '</tr></table>'
             . ($piede !== null && $piede !== '' ? '<p style="margin:16px 0 0;' . $font . ';font-size:12px;line-height:18px;color:' . $grigio . '">' . $piede . '</p>' : '')
             . '</td></tr></table></td></tr></table></body></html>';
@@ -134,7 +160,7 @@ final class Mailer
         if ($scelte) $t .= "\n";
         if ($bottone) $t .= $bottone[0] . ': ' . $bottone[1] . "\n\n";
         if ($nota !== null && $nota !== '') $t .= $nota . "\n\n";
-        $t .= "MyHouse Welcome" . ($aiuto !== '' ? "\nHai bisogno di aiuto? Scrivici a $aiuto" : '');
+        $t .= "MyHouse Welcome" . ($aiuto !== '' ? "\nHai bisogno di aiuto? Scrivici a $aiuto" : '') . self::SEGNO_CODICE;
         if ($piede !== null && $piede !== '') $t .= "\n\n—\n" . $piede;
         return $t;
     }
@@ -170,6 +196,10 @@ final class Mailer
         if (!filter_var($to, FILTER_VALIDATE_EMAIL)) { Log::error('Mailer: destinatario non valido', ['to' => $to]); return false; }
         $subject = self::oneLine($subject);
         self::$ultimoErrore = '';
+        // 9I · «Codice cliente MW-…» nel piede delle email a un cliente.
+        $cod = self::codiceDi($to);
+        $text = str_replace(self::SEGNO_CODICE, $cod !== '' ? "\nCodice cliente $cod" : '', $text);
+        if ($html !== null) $html = str_replace(self::SEGNO_CODICE, $cod !== '' ? '<br>Codice cliente ' . htmlspecialchars($cod, ENT_QUOTES, 'UTF-8') : '', $html);
 
         try {
             return match ($cfg['transport']) {

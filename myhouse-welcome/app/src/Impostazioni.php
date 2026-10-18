@@ -27,9 +27,13 @@ final class Impostazioni
         'sito' => [
             'base_url'       => ['MHW_BASE_URL', 'Indirizzo del sito', 'url', 'Per esempio https://welcomemyhouse.it, senza barra finale. È quello che finisce nei QR, nelle email e nei motori di ricerca.'],
             'pretty_urls'    => ['MHW_PRETTY_URLS', 'Indirizzi puliti, senza index.php', 'check', 'Si accende solo se la prova riesce: il sito chiede a sé stesso una pagina senza index.php. Spento, tutto resta come prima.'],
-            'contatti.email' => ['MHW_CONTACT_EMAIL', 'Email assistenza', 'email', 'Clienti, assistenza, privacy e avvisi del sito: i bottoni «Scrivici», il piede e il Reply-To delle email. È anche l\'indirizzo per i diritti privacy.'],
-            // 9H · preventivi e marketing; vuota = vale l'email assistenza.
-            'contatti.commerciale' => ['MHW_COMMERCIAL_EMAIL', 'Email commerciale (preventivi e marketing)', 'email', 'Riceve le richieste di preventivo e le risposte di «Anche il tuo sito»; è il Reply-To delle conferme dei preventivi e degli inviti. Vuota = vale l\'email assistenza.'],
+        ],
+        // 9H · Gli indirizzi email del sito, uno per ogni cosa. Gli ultimi tre, vuoti, valgono l'email assistenza.
+        'indirizzi' => [
+            'contatti.email'           => ['MHW_CONTACT_EMAIL', 'Email assistenza', 'email', 'Assistenza clienti, domande, privacy e diritti GDPR, avvisi interni. Unico indirizzo nel piè di pagina pubblico; Reply-To di tutte le email, salvo quelle di pagamento e dei preventivi.'],
+            'contatti.commerciale'     => ['MHW_COMMERCIAL_EMAIL', 'Email commerciale', 'email', 'Informazioni su MyHouse siti, preventivi, convenzioni. Riceve i preventivi e le risposte di «Anche il tuo sito»; Reply-To delle conferme dei preventivi e degli inviti. Vuota = l\'email assistenza.'],
+            'contatti.newsletter'      => ['MHW_NEWSLETTER_EMAIL', 'Email newsletter', 'email', 'Mittente di newsletter e campagne (Brevo). Il sito non la usa per inviare. Vuota = l\'email assistenza.'],
+            'contatti.amministrazione' => ['MHW_BILLING_EMAIL', 'Email amministrazione', 'email', 'Fatture, ricevute, pagamenti e rimborsi: Reply-To delle email di rinnovo, scadenza, cambio piano e rimborso, e avvisi a noi su pagamenti falliti e rimborsi. Vuota = l\'email assistenza.'],
         ],
         'stripe' => [
             'stripe.secret_key'     => ['STRIPE_SECRET_KEY', 'Chiave segreta', 'secret', 'Stripe → Sviluppatori → Chiavi API. Comincia con sk_live_ (o sk_test_ per le prove).'],
@@ -113,7 +117,7 @@ final class Impostazioni
     /** 9H · Il vecchio mittente di serie (dominio sbagliato): se è ancora salvato, correggiMittente lo sostituisce. */
     public const MITTENTE_VECCHIO = 'noreply@myhouse.it';
 
-    public const TITOLI = ['sito' => 'Sito', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'portali' => 'Portali', 'registri' => 'Registri', 'legale' => 'Titolare e documenti legali', 'inviti' => 'Invita un amico', 'giudizi' => 'Giudizi con sconto'];
+    public const TITOLI = ['sito' => 'Sito', 'indirizzi' => 'Indirizzi email', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'portali' => 'Portali', 'registri' => 'Registri', 'legale' => 'Titolare e documenti legali', 'inviti' => 'Invita un amico', 'giudizi' => 'Giudizi con sconto'];
 
     public static function file(): string { return MHW_APP . '/config.local.php'; }
 
@@ -262,8 +266,8 @@ final class Impostazioni
                 if (!empty($togli[$nome])) { self::togli($nuovo, $percorso); $effettivi[$percorso] = ''; continue; }
                 if ($grezzo === '') { $effettivi[$percorso] = (string) self::valore($percorso); continue; }   // vuoto = resta com'è
             }
-            // 9H · L'email commerciale vuota è una scelta (vale l'assistenza): si salva vuota, non torna al valore di serie.
-            if ($percorso === 'contatti.commerciale' && $grezzo === '') { self::metti($nuovo, $percorso, ''); $effettivi[$percorso] = ''; continue; }
+            // 9H · Commerciale, newsletter e amministrazione vuote sono una scelta (vale l'assistenza): si salvano vuote, non tornano al valore di serie.
+            if (in_array($percorso, ['contatti.commerciale', 'contatti.newsletter', 'contatti.amministrazione'], true) && $grezzo === '') { self::metti($nuovo, $percorso, ''); $effettivi[$percorso] = ''; continue; }
             $errore = match (true) {
                 $grezzo === '' => '',
                 $percorso === 'stripe.secret_key' && !preg_match('/^sk_(live|test)_[A-Za-z0-9_]{10,}$/', $grezzo) => 'La chiave segreta comincia con sk_live_ (o sk_test_). Non usare la chiave pubblicabile pk_.',
@@ -459,6 +463,9 @@ final class Impostazioni
             switch ($gruppo) {
                 case 'sito':
                     return self::provaIndirizzi(rtrim((string) Config::get('base_url'), '/'));
+                case 'indirizzi':
+                    return [true, 'Assistenza: ' . Support::contatto() . ' · Commerciale: ' . Support::commerciale() . ' · Newsletter: ' . Support::newsletter()
+                                . ' · Amministrazione: ' . Support::amministrazione() . '. Mittente delle email: ' . (string) (Config::get('mail')['from'] ?? '') . '.'];
                 case 'giudizi':
                     $inHome = Giudizi::disponibili() ? (int) Db::val('SELECT COUNT(*) FROM testimonials WHERE account_id IS NOT NULL AND home_visible = 1 AND withdrawn_at IS NULL', [], 0) : 0;
                     $aderiti = Giudizi::disponibili() ? (int) Db::val('SELECT COUNT(*) FROM accounts WHERE giudizio_adesione IS NOT NULL', [], 0) : 0;

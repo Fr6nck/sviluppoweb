@@ -49,6 +49,22 @@ final class Stripe
      * Porta con sé i dati di fatturazione: intestatario e indirizzo, e come
      * metadati partita IVA, codice fiscale, SDI e PEC (vat, cf, sdi, pec).
      */
+    /** 9I · I codici di un ordine per i metadati di Stripe (vuoti spariscono). */
+    private static function codici(array $order): array
+    {
+        $aid = (int) ($order['account_id'] ?? 0);
+        return array_filter(['codice_cliente' => Codici::cliente($aid), 'codice_pagamento' => Codici::pagamento((int) ($order['id'] ?? 0)),
+                             'codice_struttura' => Codici::strutture($aid)], fn($v) => $v !== '');
+    }
+
+    /** 9I · Metadati su una fattura (anche pagata: Stripe lascia cambiare i metadati). */
+    public static function metadatiFattura(string $invoiceId, array $meta): array
+    {
+        $p = [];
+        foreach ($meta as $k => $v) if ((string) $v !== '') $p["metadata[$k]"] = (string) $v;
+        return $p ? self::call('POST', 'invoices/' . rawurlencode($invoiceId), $p, 'mhw-fattura-codici-' . $invoiceId . '-' . substr(md5(serialize($p)), 0, 8)) : [];
+    }
+
     public static function ensureCustomer(array $account, array $user): string
     {
         $dati = Fatturazione::anagrafica($account) + Fatturazione::metadati($account);
@@ -62,6 +78,7 @@ final class Stripe
         $c = self::call('POST', 'customers', $dati + [
             'email' => $user['email'], 'name' => $user['name'],
             'metadata[account_id]' => (string) $account['id'],
+            'metadata[codice_cliente]' => Codici::cliente((int) $account['id']),   // 9I
             'preferred_locales[0]' => 'it',
         ], 'mhw-customer-account-' . $account['id'] . ($dati ? '-' . substr(md5(serialize($dati)), 0, 10) : ''));
         Db::update('accounts', ['stripe_customer_id' => $c['id']], 'id = :aid', ['aid' => $account['id']]);
@@ -76,6 +93,7 @@ final class Stripe
         // Un dato tolto (la PEC, o la partita IVA passando a persona fisica) va tolto anche su Stripe,
         // altrimenti Adamo legge quello vecchio: un metadato vuoto lo cancella.
         foreach (['vat', 'cf', 'sdi', 'pec', 'billing_type', 'Fiscal_code', 'Pec', 'Fe_code'] as $k) $dati += ['metadata[' . $k . ']' => ''];
+        if (($codC = Codici::cliente((int) $account['id'])) !== '') $dati['metadata[codice_cliente]'] = $codC;   // 9I
         $cid = rawurlencode($account['stripe_customer_id']);
         self::call('POST', 'customers/' . $cid, $dati, 'mhw-customer-dati-' . $account['id'] . '-' . substr(md5(serialize($dati)), 0, 10));
         // La partita IVA come «tax id»: si aggiunge se un'azienda la inserisce dopo il primo pagamento,
@@ -283,6 +301,9 @@ final class Stripe
             $meta['omaggio_codice'] = (string) $omaggio['codice'];
             $meta['omaggio_mesi'] = (string) $omaggio['mesi'];
         }
+        // 9I · I codici: cliente, pagamento (questo ordine), strutture; la descrizione dell'abbonamento è la causale che legge Adamo.
+        $meta += self::codici($order);
+        if (($meta['codice_pagamento'] ?? '') !== '') $p['subscription_data[description]'] = 'Codice cliente ' . $meta['codice_cliente'] . ' · Pagamento ' . $meta['codice_pagamento'];
         foreach ($meta as $k => $v) { $p["metadata[$k]"] = $v; $p["subscription_data[metadata][$k]"] = $v; }
 
         $res = self::call('POST', 'checkout/sessions', $p, 'mhw-checkout-order-' . $order['id']);
@@ -484,6 +505,12 @@ final class Stripe
             'customer_update[name]' => 'auto',
         ];
         if (!empty(Config::get('stripe')['automatic_tax'])) $p['automatic_tax[enabled]'] = 'true';
+        // 9I · I codici nei metadati di Checkout, del pagamento e della fattura, e nella causale (descrizione della fattura).
+        $meta += self::codici($order);
+        if (($meta['codice_pagamento'] ?? '') !== '') {
+            $p['invoice_creation[invoice_data][description]'] .= ' · Codice cliente ' . $meta['codice_cliente'] . ' · Pagamento ' . $meta['codice_pagamento'];
+            foreach (['codice_cliente', 'codice_pagamento', 'codice_struttura'] as $k) if (($meta[$k] ?? '') !== '') $p["invoice_creation[invoice_data][metadata][$k]"] = $meta[$k];
+        }
         foreach ($meta as $k => $v) { $p["metadata[$k]"] = $v; $p["payment_intent_data[metadata][$k]"] = $v; }
         $res = self::call('POST', 'checkout/sessions', $p, 'mhw-checkout-order-' . $order['id']);
         Db::update('orders', ['provider_session_id' => $res['id'], 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]);

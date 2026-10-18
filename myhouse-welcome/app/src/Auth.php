@@ -57,6 +57,7 @@ final class Auth
                 'name' => $name, 'role' => 'host', 'created_at' => Support::now(),
             ]);
             $aid = Db::insert('accounts', ['user_id' => $uid, 'name' => $name, 'created_at' => Support::now()]);
+            Codici::cliente($aid);   // 9I: il codice cliente subito, visibile dal primo accesso
             return ['user_id' => $uid, 'account_id' => $aid];
         });
     }

@@ -6,6 +6,7 @@ use MHW\{Support, Csrf, Icon, Impostazioni, Stripe, Config, Traduttore};
 $title = 'Impostazioni';
 $pronti = [
     'sito'     => (string) Config::get('base_url') !== '' && Config::get('pretty_urls') === true,
+    'indirizzi' => MHW\Support::contatto() !== '',
     'stripe'   => Stripe::enabled(),
     'posta'    => Config::get('mail')['transport'] !== 'log',
     'archivio' => Config::get('storage')['driver'] === 's3',
@@ -16,9 +17,10 @@ $pronti = [
     'registri' => MHW\Registri::s3Configurato(),
     'legale' => (string) (Config::get('legal')['company'] ?? '') !== '' && (string) (Config::get('legal')['company_vat'] ?? '') !== '',
 ];
-$icone = ['sito' => 'globe', 'stripe' => 'card', 'posta' => 'message', 'archivio' => 'layers', 'traduzioni' => 'globe', 'portali' => 'star', 'registri' => 'doc', 'legale' => 'doc', 'inviti' => 'people', 'giudizi' => 'star'];
+$icone = ['sito' => 'globe', 'indirizzi' => 'message', 'stripe' => 'card', 'posta' => 'message', 'archivio' => 'layers', 'traduzioni' => 'globe', 'portali' => 'star', 'registri' => 'doc', 'legale' => 'doc', 'inviti' => 'people', 'giudizi' => 'star'];
 $intro = [
     'sito'     => 'L\'indirizzo pubblico del sito e gli indirizzi senza index.php: valgono per link, email, QR, canonical e sitemap. «Prova» chiede al sito una sua pagina senza index.php: se risponde, il server legge .htaccess e gli indirizzi puliti si possono accendere.',
+    'indirizzi' => 'Quattro indirizzi, ognuno al suo posto (9H). Tutte le email del sito partono dal mittente di Posta; qui decidi a chi arrivano le risposte e chi riceve gli avvisi. Commerciale, newsletter e amministrazione possono essere alias che inoltrano all\'assistenza.',
     'stripe'   => 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti preparano la guida ma non possono pagarla.',
     'posta'    => 'Conferma dell\'email, recupero della password e promemoria. Finché resta «Non spedire», le email finiscono nei registri della posta (storage/logs/mail-AAAA-MM-GG.log, tenuti 7 giorni).',
     'archivio' => 'Le foto e i PDF caricati dai clienti. Sul disco del server vanno bene per provare; in produzione meglio Amazon S3. I file già caricati restano dove sono e si vedono lo stesso.',
@@ -140,7 +142,7 @@ $intro = [
     </form>
     <form method="post" action="<?= b() ?>/admin/impostazioni/<?= $g ?>/prova" class="impostazioni__prova"><?= Csrf::field() ?>
       <button class="btn btn--ghost btn--sm"><?= Icon::svg('pulse', 15) ?>Prova i dati salvati</button>
-      <span class="small muted"><?= $g === 'posta' ? 'Manda un\'email di prova a ' . Support::e($emailAdmin) . '.' : ($g === 'stripe' ? 'Chiede a Stripe se la chiave è valida.' : ($g === 'traduzioni' ? 'Fa tradurre una parola: 9 caratteri.' : ($g === 'inviti' ? 'Dice se è acceso e quanti clienti possono invitare.' : ($g === 'portali' ? 'Mostra i link per una struttura d\'esempio.' : ($g === 'registri' ? 'Carica un file di prova nel bucket e controlla che la cancellazione sia rifiutata.' : ($g === 'legale' ? 'Mostra la riga del titolare, le versioni in vigore e quanti clienti devono ancora accettarle.' : ($g === 'giudizi' ? 'Dice se lo sconto è acceso, quanti hanno aderito e quanti giudizi sono in home.' : 'Scrive, legge e cancella un piccolo file nel bucket.'))))))) ?></span>
+      <span class="small muted"><?= $g === 'posta' ? 'Manda un\'email di prova a ' . Support::e($emailAdmin) . '.' : ($g === 'stripe' ? 'Chiede a Stripe se la chiave è valida.' : ($g === 'traduzioni' ? 'Fa tradurre una parola: 9 caratteri.' : ($g === 'inviti' ? 'Dice se è acceso e quanti clienti possono invitare.' : ($g === 'portali' ? 'Mostra i link per una struttura d\'esempio.' : ($g === 'registri' ? 'Carica un file di prova nel bucket e controlla che la cancellazione sia rifiutata.' : ($g === 'legale' ? 'Mostra la riga del titolare, le versioni in vigore e quanti clienti devono ancora accettarle.' : ($g === 'giudizi' ? 'Dice se lo sconto è acceso, quanti hanno aderito e quanti giudizi sono in home.' : ($g === 'indirizzi' ? 'Mostra dove va ciascun indirizzo adesso.' : 'Scrive, legge e cancella un piccolo file nel bucket.')))))))) ?></span>
     </form>
   </section>
   <?php endforeach; ?>

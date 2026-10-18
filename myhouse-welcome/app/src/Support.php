@@ -8,11 +8,26 @@ final class Support
     /** L'indirizzo unico per assistenza, suggerimenti e preventivi (config contatti.email). */
     public static function contatto(): string { return (string) ((Config::get('contatti') ?? [])['email'] ?? ''); }
 
-    /** 9H · L'email commerciale (preventivi e marketing). Vuota o non valida = l'email assistenza. */
-    public static function commerciale(): string
+    /** 9H · Uno degli indirizzi del sito (contatti.*): vuoto o non valido = l'email assistenza. */
+    private static function indirizzo(string $chiave): string
     {
-        $c = trim((string) ((Config::get('contatti') ?? [])['commerciale'] ?? ''));
+        $c = trim((string) ((Config::get('contatti') ?? [])[$chiave] ?? ''));
         return filter_var($c, FILTER_VALIDATE_EMAIL) ? $c : self::contatto();
+    }
+
+    /** 9H · MyHouse siti, preventivi, convenzioni e codici omaggio. */
+    public static function commerciale(): string { return self::indirizzo('commerciale'); }
+
+    /** 9H · Il mittente di newsletter e campagne (Brevo): il sito non manda email da qui. */
+    public static function newsletter(): string { return self::indirizzo('newsletter'); }
+
+    /** 9H · Fatture, ricevute, pagamenti, rinnovi e rimborsi. */
+    public static function amministrazione(): string { return self::indirizzo('amministrazione'); }
+
+    /** 9H · La frase delle email di pagamento: dove scrivere per fatture e pagamenti. */
+    public static function fraseFatture(bool $en = false): string
+    {
+        return ($en ? 'Questions about invoices and payments: ' : 'Per domande su fatture e pagamenti: ') . self::amministrazione() . '.';
     }
 
     /** 9H · Un link mailto: all'email commerciale con oggetto e corpo già scritti. */
@@ -24,7 +39,19 @@ final class Support
     /** Un link mailto: all'assistenza con oggetto e corpo già scritti. */
     public static function mailto(string $oggetto, string $corpo = ''): string
     {
+        // 9I · «[MW-7K4P2] …»: chi risponde riconosce subito il cliente.
+        $cod = self::codiceCollegato();
+        if ($cod !== '' && !str_contains($oggetto, $cod)) $oggetto = '[' . $cod . '] ' . $oggetto;
         return 'mailto:' . self::contatto() . '?subject=' . rawurlencode($oggetto) . ($corpo !== '' ? '&body=' . rawurlencode($corpo) : '');
+    }
+
+    /** 9I · Il codice del cliente collegato (anche se è l'amministrazione che guarda con il suo account); '' altrimenti. */
+    public static function codiceCollegato(): string
+    {
+        try {
+            if (session_status() !== PHP_SESSION_ACTIVE || empty($_SESSION['uid']) || !Codici::disponibili()) return '';
+            return (string) Db::val("SELECT a.code FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.id = ? AND u.role = 'host'", [(int) $_SESSION['uid']], '');
+        } catch (\Throwable) { return ''; }
     }
     /** «Chiedi un preventivo» per più di 10 strutture (7B): oggetto e domande già scritti. */
     public static function mailtoPreventivo(): string

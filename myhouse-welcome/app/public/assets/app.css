@@ -410,7 +410,7 @@ html:has(.guest-bottom){scroll-padding-bottom:96px}
   border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:500;color:var(--muted)}
 
 /* ------------------------------------------------- soglia e congedo (a tutto schermo) */
-.full{position:relative;min-height:100svh;overflow:hidden;background:#17130d;color:#f6f0e5;
+.full{position:relative;min-height:100svh;overflow:hidden;background:var(--full-fondo,#17130d);color:var(--full-ink,#f6f0e5);
   display:flex;flex-direction:column}
 .full__photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
   transform-origin:52% 45%;animation:mh-breathe 24s cubic-bezier(.33,0,.2,1) forwards}
@@ -426,9 +426,9 @@ html:has(.guest-bottom){scroll-padding-bottom:96px}
 .full__stage{position:relative;z-index:2;flex:1 1 auto;display:flex;flex-direction:column;
   justify-content:space-between;gap:28px;padding:28px 24px 30px;max-width:430px;margin:0 auto;width:100%}
 .full h1{font-size:clamp(44px,13vw,54px);line-height:1;color:#fff}
-.full .kicker{color:#e8dcc8;letter-spacing:.14em}
-.full p{color:#e8dcc8;font-size:16px;line-height:24px}
-.full .langbar a{color:#e8dcc8} .full .langbar a.on{color:#fff}
+.full .kicker{color:var(--full-tenue,#e8dcc8);letter-spacing:.14em}
+.full p{color:var(--full-tenue,#e8dcc8);font-size:16px;line-height:24px}
+.full .langbar a{color:var(--full-tenue,#e8dcc8)} .full .langbar a.on{color:#fff}
 /* «Entra» e i bottoni del congedo: il terracotta del marchio, non l'arancio
    della notte né l'accento della palette, che su una foto non si legge. */
 .full .btn{background:var(--tile-terracotta);color:var(--tile-ink)}
@@ -2308,7 +2308,7 @@ fieldset{min-width:0}
 @media(min-width:700px){ .host-foglio{margin:auto;border-radius:26px} .host-foglio__maniglia{display:none} }
 /* 7C · Le foto delle sezioni si ingrandiscono (lente nell'angolo); il PDF si apre con un bottone grande. */
 .shot--zoom a{display:block;height:100%;color:inherit}
-.shot__lente{position:absolute;right:10px;bottom:10px;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:rgba(23,19,13,.62);color:#fff}
+.shot__lente{position:absolute;right:10px;bottom:10px;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--lente-fondo,rgba(23,19,13,.62));color:#fff}
 .shot--zoom a:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
 .zoom-foglio{width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;background:rgba(10,8,5,.94)}
 .zoom-foglio::backdrop{background:rgba(10,8,5,.94)}
@@ -2702,7 +2702,7 @@ ol.invito__passi{list-style:none;margin:0;padding:0}
 .scegli-lingua__elenco{display:flex;flex-direction:column;gap:8px}
 /* 9F · ogni lingua su un bottone bianco con testo scuro (≥ 7:1), bordo sottile; quella del telefono sull'accento pieno con testo
    chiaro. I colori arrivano dalla palette (--scelta-*) e sono gli stessi nei due temi: mai testo chiaro su fondo chiaro. */
-.scegli-lingua__lingua{display:flex;align-items:center;min-height:56px;padding:0 20px;border-radius:16px;border:1px solid rgba(35,27,18,.28);background:var(--scelta-fondo,#fff);color:var(--scelta-ink,#231b12);font-size:18px;font-weight:500;text-decoration:none}
+.scegli-lingua__lingua{display:flex;align-items:center;min-height:56px;padding:0 20px;border-radius:16px;border:1px solid var(--scelta-bordo,rgba(35,27,18,.28));background:var(--scelta-fondo,#fff);color:var(--scelta-ink,#231b12);font-size:18px;font-weight:500;text-decoration:none}
 .scegli-lingua__lingua:hover{filter:brightness(.96)}
 .scegli-lingua__lingua:focus-visible{outline:3px solid var(--scelta-accento,#b4451f);outline-offset:2px}
 .scegli-lingua__lingua--telefono{background:var(--scelta-accento,#b4451f);border-color:var(--scelta-accento,#b4451f);color:var(--scelta-su-accento,#fff8f2)}
@@ -2713,7 +2713,7 @@ ol.invito__passi{list-style:none;margin:0;padding:0}
 .demo-tag--link:hover{filter:brightness(1.08)}
 .demo-riga{margin:0;font-size:13px;line-height:20px;text-align:center;color:var(--muted)}
 .demo-riga a{color:inherit;text-decoration:underline;text-underline-offset:3px}
-.demo-riga--chiara{color:#e8dcc8}
+.demo-riga--chiara{color:var(--full-tenue,#e8dcc8)}
 .demo-riga--chiara a{color:#f6f0e5}
 @media (max-width:600px){
   .scegli-lingua{width:100%;max-width:none;height:100%;max-height:none;margin:0;border-radius:0}
@@ -2916,3 +2916,27 @@ body.con-finestra{overflow:hidden}
   table.resp td.az{grid-column:1/-1;padding-top:6px}
   table.resp td.az:empty{display:none}
 }
+
+/* 9J · «Bianco e nero»: i riquadri con il bordo della palette (--tile-bordo esiste solo per questa palette), la pillola
+   del check-in con il testo della palette e il pallino verde (significato: si entra da quest'ora), le foto in scala di
+   grigi se l'host accende «Foto in bianco e nero» (non il logo né il QR del Wi-Fi). Le altre palette non cambiano. */
+.tile{border:var(--tile-bordo,0)}
+.palette-monocromo .badge--pine{background:var(--raised);color:var(--ink)}
+.palette-monocromo .badge--pine .dot{background:var(--pine)}
+.foto-bn img:not(.logo-guest):not([src^="data:"]){filter:grayscale(1)}
+
+/* 9I · Il codice cliente in Account; i codici di struttura e pagamento in piccolo. */
+.codice-cliente{display:flex;flex-direction:column;gap:6px;padding:16px 20px}
+.codice-cliente p:first-child{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.codice-cliente__codice{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:18px;letter-spacing:.5px}
+.codice-pagamento,.codice-struttura{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:400;letter-spacing:.3px}
+
+/* 9I · «Cerca» in testata (Amministrazione) e i codici nella scheda cliente. */
+.cerca-admin{position:relative;margin-left:auto;flex:0 1 300px;min-width:0}
+.cerca-admin input{width:100%;height:38px;padding:0 34px 0 12px;font-size:14px}
+.cerca-admin__tasto{position:absolute;right:10px;top:50%;transform:translateY(-50%);font:12px/1 ui-monospace,Menlo,Consolas,monospace;padding:3px 6px;border:1px solid var(--line);border-radius:6px;color:var(--muted)}
+@media (max-width:640px){.cerca-admin{flex-basis:100%;order:3;margin-left:0}.cerca-admin__tasto{display:none}}
+.codici-cliente code,.codici-cliente__codice{font-family:ui-monospace,Menlo,Consolas,monospace}
+.codici-cliente__codice{font-size:18px}
+.codici-cliente__riga{padding:4px 8px;border-radius:var(--r-sm)}
+.codici-cliente__riga--evidenza{background:var(--ochre-soft);outline:2px solid var(--ochre)}

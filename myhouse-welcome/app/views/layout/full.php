@@ -2,7 +2,7 @@
          sopra una fotografia scura, ma i bottoni prendono l'accento della palette. */
 use function MHW\a; use MHW\{Support, I18n}; ?>
 <!doctype html>
-<html lang="<?= Support::e($loc ?? 'it') ?>" data-theme="scuro"<?= isset($snap['property']['slug']) && empty($anteprima) ? ' data-guida="' . Support::e((string) $snap['property']['slug']) . '"' : '' ?>>
+<html lang="<?= Support::e($loc ?? 'it') ?>" class="<?= Support::e(MHW\Palette::classi($snap['property'] ?? [])) ?>" data-theme="scuro"<?= isset($snap['property']['slug']) && empty($anteprima) ? ' data-guida="' . Support::e((string) $snap['property']['slug']) . '"' : '' ?>>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">

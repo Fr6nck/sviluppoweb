@@ -86,6 +86,7 @@ final class Legale
             'sede' => $e($l['company_city'] ?? ''),
             'pec' => $pec !== '' ? '<a href="mailto:' . $e($pec) . '">' . $e($pec) . '</a>' : '',
             'email' => $email !== '' ? '<a href="mailto:' . $e($email) . '">' . $e($email) . '</a>' : '',
+            'email_fatture' => ($f = Support::amministrazione()) !== '' ? '<a href="mailto:' . $e($f) . '">' . $e($f) . '</a>' : '',   // 9H
             'telefono' => $e($l['contact_phone'] ?? ''),
             'sito_titolare' => $sito !== '' ? '<a href="' . $e($sito) . '" rel="noopener" target="_blank">' . $e(preg_replace('#^https?://#', '', $sito)) . '</a>' : '',
             'link_termini' => '<a href="' . $b . ($en ? '/en/terms' : '/termini') . '">' . ($en ? 'Terms and conditions' : 'Termini e condizioni') . '</a>',
