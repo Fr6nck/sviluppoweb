@@ -4789,14 +4789,14 @@ prova('9A · /en: tabella in inglese (From the 6th to the 10th) e riquadro del p
 $posta9 = fn(string $a) => array_values(array_filter(array_map(fn($l) => json_decode($l, true), righePosta() ?: []), fn($m) => ($m['to'] ?? '') === $a));
 db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'preventivo:%'");
 $vis9 = new Browser('visitatore9a');
-$nAss9 = count($posta9('assistenza@welcomemyhouse.it'));
+$nAss9 = count($posta9('commerciale@welcomemyhouse.it'));   // 9H: i preventivi all'email commerciale
 $r = $vis9->modulo('/', '/preventivo', ['torna' => '/', 'nome' => 'Giulia Verdi', 'email' => 'giulia9a@prova.test', 'telefono' => '+39 333 1234567', 'strutture' => '14', 'messaggio' => 'Gestiamo 14 appartamenti a Perugia.']);
 $prev9 = riga("SELECT * FROM preventivi WHERE email = 'giulia9a@prova.test' ORDER BY id DESC");
 prova('9A · «Chiedi il preventivo» senza JavaScript: salvato (stato «nuovo», senza account), si torna al riquadro con la conferma', $r['code'] === 302 && str_ends_with((string) $r['loc'], '/#preventivo')
       && $prev9 && (int) $prev9['strutture'] === 14 && $prev9['stato'] === 'nuovo' && $prev9['telefono'] === '+39 333 1234567' && $prev9['lingua'] === 'it' && $prev9['account_id'] === null
       && str_contains($vis9->get('/')['body'], 'Abbiamo ricevuto la richiesta per <b>14 strutture</b>: ti rispondiamo entro un giorno lavorativo'), $r['code'] . ' ' . $r['loc'] . ' ' . json_encode($prev9) . ' ' . substr(strip_tags($r['body']), 0, 200));
-$ass9 = $posta9('assistenza@welcomemyhouse.it'); $g9 = $posta9('giulia9a@prova.test');
-prova('9A · due email: all\'assistenza con tutti i dati e il link all\'amministrazione, a chi ha scritto la conferma', count($ass9) === $nAss9 + 1
+$ass9 = $posta9('commerciale@welcomemyhouse.it'); $g9 = $posta9('giulia9a@prova.test');
+prova('9A · due email: all\'email commerciale (9H) con tutti i dati e il link all\'amministrazione, a chi ha scritto la conferma', count($ass9) === $nAss9 + 1
       && str_contains((string) end($ass9)['subject'], 'Richiesta di preventivo: 14 strutture') && str_contains((string) end($ass9)['text'], 'giulia9a@prova.test')
       && str_contains((string) end($ass9)['text'], 'Gestiamo 14 appartamenti a Perugia.') && str_contains((string) end($ass9)['text'], '/admin/preventivi')
       && count($g9) === 1 && str_contains((string) $g9[0]['subject'], 'Abbiamo ricevuto la richiesta per 14 strutture') && str_contains((string) $g9[0]['text'], 'entro un giorno lavorativo'));
@@ -5406,19 +5406,85 @@ db()->prepare("UPDATE users SET must_change_password = 0, password_temp_until = 
 
 // ================================================================= 9H
 $lacc9 = $accDi('lucia@esempio.it');   // più su $lacc è stato riassegnato (Lea): qui serve l'account di Lucia
-capitolo('9H · posta: mittente assistenza@welcomemyhouse.it, Reply-To all\'assistenza, avviso in Gestione, niente indirizzi scritti a mano');
+capitolo('9H · posta: mittente assistenza@, preventivi e marketing su commerciale@, mittente salvato corretto una volta, niente indirizzi scritti a mano');
 @unlink($fileLocale);
+$emlPer = function (string $a) use ($DOVE): string {   // l'ultima email (intera, con le intestazioni) mandata a $a
+    $tutti = glob("$DOVE/app/storage/logs/email/*.eml") ?: []; sort($tutti);
+    // L'intestazione To: a inizio riga (non «Reply-To: <…>», che la contiene).
+    foreach (array_reverse($tutti) as $f) { $t = (string) file_get_contents($f); if (preg_match('/^To: <' . preg_quote($a, '/') . '>\r?$/m', $t)) return $t; }
+    return '';
+};
 $ospite->get('/password/dimenticata'); $ospite->post('/password/dimenticata', ['email' => 'lucia@esempio.it']);
-$emlTutti = glob("$DOVE/app/storage/logs/email/*.eml") ?: []; sort($emlTutti);
-$eml = $emlTutti ? (string) file_get_contents(end($emlTutti)) : '';
+$eml = $emlPer('lucia@esempio.it');
 prova('9H · un\'email automatica parte da assistenza@welcomemyhouse.it (MAIL_FROM di serie) con Reply-To all\'assistenza', str_contains($eml, 'From: MyHouse Welcome <assistenza@welcomemyhouse.it>')
       && str_contains($eml, 'Reply-To: <assistenza@welcomemyhouse.it>'), substr($eml, 0, 200));
+// Preventivo oltre il Portfolio: a commerciale@ (Reply-To chi scrive); la conferma da assistenza@ con Reply-To commerciale@.
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'preventivo:%'");
+$vis9h = new Browser('visitatore9h');
+$daQ9h = (int) $php9('echo MHW\Preventivi::daQuante();');   // la soglia di adesso (le prove di prima cambiano gli scaglioni)
+$nP9h = $daQ9h + 5; $nP9h2 = $daQ9h + 6;
+$rP9h = $vis9h->modulo('/', '/preventivo', ['torna' => '/', 'nome' => 'Nora Prova', 'email' => 'nora9h@prova.test', 'strutture' => (string) $nP9h]);
+$emlC = $emlPer('commerciale@welcomemyhouse.it'); $emlN = $emlPer('nora9h@prova.test');
+prova('9H · un preventivo oltre 10 strutture arriva a commerciale@ (Reply-To chi l\'ha chiesto); la conferma parte da assistenza@ con Reply-To commerciale@',
+      str_contains((string) (end($posta('commerciale@welcomemyhouse.it'))['subject'] ?? ''), 'Richiesta di preventivo: ' . $nP9h . ' strutture') && str_contains($emlC, 'Reply-To: <nora9h@prova.test>')
+      && str_contains($emlN, 'From: MyHouse Welcome <assistenza@welcomemyhouse.it>') && str_contains($emlN, 'Reply-To: <commerciale@welcomemyhouse.it>'),
+      $rP9h['code'] . ' ' . ($rP9h['loc'] ?? '') . ' soglia ' . $daQ9h . ' ' . json_encode(end($posta('commerciale@welcomemyhouse.it'))['subject'] ?? null));
+$r = $ospite->get('/');
+prova('9H · «Anche il tuo sito»: le risposte per email (passo 3) e «Oppure scrivici subito» vanno a commerciale@', str_contains($r['body'], 'data-email="commerciale@welcomemyhouse.it"')
+      && str_contains($r['body'], 'mailto:commerciale@welcomemyhouse.it?subject=') && str_contains($r['body'], 'Il sito per la tua struttura'));
+prova('9H · «Chiedi un preventivo» (mailto) a commerciale@; l\'assistenza resta nel piede e nei documenti legali', str_contains($php9('echo MHW\Support::mailtoPreventivo();'), 'mailto:commerciale@welcomemyhouse.it?subject=Preventivo')
+      && str_contains($ospite->get('/privacy')['body'], 'assistenza@welcomemyhouse.it'));
+// Il giudizio basso resta all'assistenza (prova 7D più su): qui il codice che lo manda.
+prova('9H · un giudizio da 1 a 3 stelle arriva all\'assistenza (Testimonianze usa Support::contatto())', preg_match('#\$a = Support::contatto\(\);.{0,1600}Mailer::send\(\$a, \'Giudizio da #s', (string) file_get_contents("$DOVE/app/src/Testimonianze.php")) === 1);
+// Email commerciale vuota: tutto all'assistenza.
+file_put_contents($fileLocale, '<?php return ' . var_export(['contatti' => ['commerciale' => '']], true) . ';');
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'preventivo:%'");
+sleep(3);   // opcache del server di prova: config.local.php appena scritto
+$vis9h->modulo('/', '/preventivo', ['torna' => '/', 'nome' => 'Olga Prova', 'email' => 'olga9h@prova.test', 'strutture' => (string) $nP9h2]);
+$emlA = $emlPer('assistenza@welcomemyhouse.it');
+prova('9H · con l\'email commerciale vuota il preventivo e «Anche il tuo sito» vanno all\'assistenza', str_contains((string) (end($posta('assistenza@welcomemyhouse.it'))['subject'] ?? ''), 'Richiesta di preventivo: ' . $nP9h2 . ' strutture') && str_contains($emlA, 'Reply-To: <olga9h@prova.test>')
+      && str_contains($ospite->get('/')['body'], 'data-email="assistenza@welcomemyhouse.it"') && str_contains($emlPer('olga9h@prova.test'), 'Reply-To: <assistenza@welcomemyhouse.it>'));
+// Il mittente salvato noreply@myhouse.it si corregge una volta sola, con il messaggio in Gestione e la riga nel registro.
+file_put_contents($fileLocale, '<?php return ' . var_export(['mail' => ['from' => 'noreply@myhouse.it']], true) . ';');
+@unlink("$DOVE/app/storage/mittente-9h.txt");
+sleep(3);   // opcache del server di prova rilegge i file ogni 2 secondi
+$ospite->get('/');
+$dopoM = (string) file_get_contents($fileLocale);
+prova('9H · il mittente salvato noreply@myhouse.it diventa assistenza@welcomemyhouse.it alla prima richiesta, con la copia in config.local.bak.php e la riga nel registro',
+      str_contains($dopoM, "'from' => 'assistenza@welcomemyhouse.it'") && is_file(dirname($fileLocale) . '/config.local.bak.php')
+      && str_contains((string) @file_get_contents("$DOVE/app/storage/mittente-9h.txt"), 'Il mittente delle email era noreply@myhouse.it')
+      && (bool) val("SELECT id FROM audit_log WHERE action = 'settings.mail_from' AND meta LIKE '%noreply@myhouse.it%'"), $dopoM);
+$g1 = $admin->get('/admin')['body']; $g2 = $admin->get('/admin')['body'];
+prova('9H · …Gestione lo dice una volta sola, nel messaggio di esito', str_contains($g1, 'Il mittente delle email era noreply@myhouse.it: ora è assistenza@welcomemyhouse.it') && !str_contains($g2, 'Il mittente delle email era'));
+file_put_contents($fileLocale, '<?php return ' . var_export(['mail' => ['from' => 'noreply@myhouse.it']], true) . ';');
+sleep(3);
+$ospite->get('/');
+prova('9H · …e una volta sola: rimesso a mano, resta com\'è (lo segnala l\'avviso di Gestione)', str_contains((string) file_get_contents($fileLocale), "'from' => 'noreply@myhouse.it'"));
+@unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
 // Cambiare base_url sposta il percorso del cookie di sessione (si esce): il controllo si prova direttamente, la pagina con il mittente di serie.
 $fuoriD = $php9('echo json_encode([MHW\Mailer::mittenteFuoriDominio("noreply@altrodominio.test", "https://www.welcomemyhouse.it"), MHW\Mailer::mittenteFuoriDominio("assistenza@welcomemyhouse.it", "https://www.welcomemyhouse.it"), MHW\Mailer::mittenteFuoriDominio("Assistenza@WelcomeMyHouse.it", "https://welcomemyhouse.it/sito"), MHW\Mailer::mittenteFuoriDominio("assistenza@welcomemyhouse.it", "http://127.0.0.1:8300"), MHW\Mailer::mittenteFuoriDominio("", "https://www.welcomemyhouse.it")]);');
 prova('9H · Gestione: «Il mittente delle email non è sul dominio del sito» con un mittente su un altro dominio (non con un IP o un mittente vuoto)', $fuoriD === '[true,false,false,false,false]', $fuoriD);
 prova('9H · …e non c\'è con il mittente di serie', !str_contains($admin->get('/admin')['body'], 'Il mittente delle email non è sul dominio del sito'));
-$aMano = trim((string) shell_exec('grep -rln "assistenza@welcomemyhouse.it\|noreply@myhouse.it" ' . escapeshellarg("$DOVE/app/src") . ' ' . escapeshellarg("$DOVE/app/views") . ' 2>/dev/null | grep -v "src/Impostazioni.php"'));
-prova('9H · nessun indirizzo email scritto a mano in src/ e views/ (solo i valori di serie in config.php e gli aiuti di Impostazioni)', $aMano === '', $aMano);
+// L'account della vetrina non riceve i richiami.
+$vetR = $php9('MHW\Config::sovrascrivi("vetrina_email", "vetrina@welcomemyhouse.it"); echo json_encode(MHW\Richiami::manda(999999, "Vetrina@WelcomeMyHouse.it", "Vetrina", "conferma", "prova-9h", ["x", "y", null, ""]));');
+prova('9H · vetrina_email di serie vetrina@welcomemyhouse.it, esclusa dai Richiami', $vetR === 'false' && str_contains((string) file_get_contents("$DOVE/app/config.php"), "'MHW_VETRINA_EMAIL', 'vetrina@welcomemyhouse.it'"), $vetR);
+// Nessun indirizzo scritto a mano: solo i valori di serie in config.php, gli esempi e il vecchio mittente da correggere.
+$aMano = [];
+foreach (['src', 'views', 'lang'] as $dirA) {
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator("$DOVE/app/$dirA", FilesystemIterator::SKIP_DOTS));
+    foreach ($it as $fA) {
+        if (!str_ends_with((string) $fA, '.php')) continue;
+        foreach (file((string) $fA) ?: [] as $nA => $rigaA) {
+            if (str_contains($rigaA, 'MITTENTE_VECCHIO =')) continue;
+            if (!preg_match_all('/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[a-z]{2,}/', $rigaA, $mA)) continue;
+            foreach ($mA[0] as $ind) {
+                if (preg_match('/@(esempio\.it|tuodominio\.it|.*\.example|.*\.test|.*\.prova)$/', $ind)) continue;
+                $aMano[] = substr((string) $fA, strlen("$DOVE/app/")) . ':' . ($nA + 1) . ' ' . $ind;
+            }
+        }
+    }
+}
+prova('9H · nessun indirizzo email scritto a mano in src/, views/ e lang/ (solo i valori di serie in config.php)', !$aMano, implode(' · ', array_slice($aMano, 0, 5)));
 
 // ================================================================= 9F
 capitolo('9F · guida: dialogo della lingua leggibile, vetrina con il link al sito e i portali a 5 stelle, regione e provincia');

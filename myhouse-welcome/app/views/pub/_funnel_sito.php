@@ -14,7 +14,7 @@ use MHW\{Support, Icon, Csrf, Config, TestiSito};
 $fn = ($funnel ?? []) + ['da' => 'home', 'struttura' => '', 'passo' => '', 'compatta' => false, 'id' => 'fs'];
 $Tf = $T ?? fn(string $k, array $sost = []) => TestiSito::html($k, $sost);
 $tx = fn(string $k, array $sost = []) => TestiSito::testo($k, $sost);
-$email = Support::contatto();
+$email = Support::commerciale();   // 9H: preventivi e marketing (vuota = l'assistenza)
 $waNum = preg_replace('/\D/', '', (string) ((Config::get('legal') ?? [])['contact_whatsapp'] ?? ''));
 $telVisto = (string) ((Config::get('legal') ?? [])['contact_phone'] ?? '');
 $inizio = $fn['struttura'] !== '' ? $tx('sito2.msg.pannello', ['struttura' => Support::e($fn['struttura'])]) : $tx('sito2.msg.home');

@@ -33,7 +33,7 @@ $config = [
     'cron_token' => $env('MHW_CRON_TOKEN'),
     // L'account in cui la guida vetrina «Casa Checco» si crea da sola, una volta, al primo
     // aggiornamento (Demo::vetrinaAutomatica). Vuoto = mai: la si crea dall'amministrazione.
-    'vetrina_email' => $env('MHW_VETRINA_EMAIL', 'blackout.agency@gmail.com'),
+    'vetrina_email' => $env('MHW_VETRINA_EMAIL', 'vetrina@welcomemyhouse.it'),   // 9H: non riceve email (esclusa dai Richiami)
 
     'db' => [
         'driver' => $env('MHW_DB_DRIVER', 'sqlite'),
@@ -178,10 +178,13 @@ $config = [
         'company_site'     => $env('MHW_COMPANY_SITE', 'https://www.cityup.eu'),
     ],
 
-    // L'indirizzo unico per assistenza, suggerimenti e preventivi (7A): i mailto del sito e del
-    // pannello e il piede delle email. Si cambia da Amministrazione → Impostazioni → Sito.
+    // Gli indirizzi a cui scrivono clienti e visitatori (7A, 9H). Si cambiano da Amministrazione → Impostazioni → Sito.
+    //  - email: l'assistenza (clienti, privacy, avvisi del sito, piede delle email, Reply-To di serie);
+    //  - commerciale: preventivi e marketing (preventivi oltre il Portfolio, «Anche il tuo sito», inviti).
+    //    Vuoto = vale l'email assistenza (Support::commerciale()).
     'contatti' => [
-        'email' => $env('MHW_CONTACT_EMAIL', 'assistenza@welcomemyhouse.it'),
+        'email'       => $env('MHW_CONTACT_EMAIL', 'assistenza@welcomemyhouse.it'),
+        'commerciale' => $env('MHW_COMMERCIAL_EMAIL', 'commerciale@welcomemyhouse.it'),
     ],
 
     // 8B: gli indirizzi di partenza dei portali per le recensioni. Google cerca nome e città su Maps;

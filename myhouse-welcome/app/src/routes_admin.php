@@ -11,6 +11,7 @@ use MHW\{Auth, Billing, Config, Db, Demo, Entitlements, Gestione, Impostazioni, 
 $r->get('/admin', function () {
     Auth::requireAdmin();
     Demo::vetrinaAutomatica();
+    if (($esitoM = MHW\Impostazioni::esitoMittente()) !== '') Support::flash($esitoM);   // 9H, una volta sola
     // 7F: i clienti di prova non entrano nel quadro.
     $np = fn(string $col) => Gestione::senzaProva($col);
     $numeri = [

@@ -25,7 +25,9 @@ code{background:#f3ece0;padding:2px 6px;border-radius:6px;font-size:13px}
 .wa{display:inline-flex;align-items:center;gap:8px}.wa i{width:18px;height:18px;border-radius:50%;background:#25d366;display:inline-block}
 .sez{display:grid;gap:14px}.sez .card{padding:18px}.sez h3{font-size:19px;margin-bottom:6px}.sez p.d{font-size:13.5px;color:var(--muted);margin:0 0 10px;line-height:19px}
 .tel{max-width:390px}
-</style></head><body><div class="wrap">
+
+@media(max-width:700px){table.resp thead{display:none}table.resp tr{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--line)}table.resp td{display:block;padding:2px 0;border:0}table.resp td[data-l]::before{content:attr(data-l);display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}table.resp td.az{grid-column:1/-1;display:flex;gap:8px;padding-top:6px}table.resp td.az:empty{display:none}}
+.stato{white-space:nowrap}</style></head><body><div class="wrap">
 
 <p class="nota">1 · Amministrazione → Vendite → Codici omaggio</p>
 <div class="grid">
@@ -46,10 +48,10 @@ code{background:#f3ece0;padding:2px 6px;border-radius:6px;font-size:13px}
 </div>
 </div>
 <div class="card" style="margin-top:28px">
-  <table><thead><tr><th>Codice</th><th>Mesi</th><th>Nota</th><th>Scade</th><th>Stato</th><th></th></tr></thead><tbody>
-  <tr><td><code>OMAGGIO-3K7F2</code></td><td>3</td><td>Tester – B&amp;B Rocca</td><td>30 ott</td><td><span class="stato ok">Valido</span></td><td><button class="btn sm ghost">WhatsApp</button> <button class="btn sm red">Annulla</button></td></tr>
-  <tr><td><code>OMAGGIO-9QW4M</code></td><td>6</td><td>Daniele, Anfiteatro</td><td>20 ott</td><td><span class="stato att">Usato da Daniele il 14 ott · 1° addebito 14 apr 2027</span></td><td></td></tr>
-  <tr><td><code>OMAGGIO-2HT8N</code></td><td>12</td><td>Agenzia Todi</td><td>10 ott</td><td><span class="stato off">Scaduto</span></td><td></td></tr>
+  <table class="resp"><thead><tr><th>Codice</th><th>Mesi</th><th>Nota</th><th>Scade</th><th>Stato</th><th></th></tr></thead><tbody>
+  <tr><td data-l="Codice"><code>OMAGGIO-3K7F2</code></td><td data-l="Mesi">3</td><td data-l="Nota">Tester – B&amp;B Rocca</td><td data-l="Scade">30 ott</td><td data-l="Stato"><span class="stato ok">Valido</span></td><td class="az"><button class="btn sm ghost">WhatsApp</button> <button class="btn sm red">Annulla</button></td></tr>
+  <tr><td data-l="Codice"><code>OMAGGIO-9QW4M</code></td><td data-l="Mesi">6</td><td data-l="Nota">Daniele, Anfiteatro</td><td data-l="Scade">20 ott</td><td data-l="Stato"><span class="stato att">Usato il 14 ott</span><br><span style="font-size:12.5px;color:var(--muted)">Daniele · 1° addebito 14 apr 2027</span></td><td class="az"></td></tr>
+  <tr><td data-l="Codice"><code>OMAGGIO-2HT8N</code></td><td data-l="Mesi">12</td><td data-l="Nota">Agenzia Todi</td><td data-l="Scade">10 ott</td><td data-l="Stato"><span class="stato off">Scaduto</span></td><td class="az"></td></tr>
   </tbody></table>
 </div>
 

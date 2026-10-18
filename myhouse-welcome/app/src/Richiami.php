@@ -403,6 +403,9 @@ final class Richiami
     {
         // 7F: i clienti di prova non ricevono richiami automatici; il promemoria mandato a mano dall'amministrazione sì.
         if (!str_starts_with($ref, 'manuale-') && self::diProva($accountId)) return false;
+        // 9H · L'account della vetrina (vetrina_email in config.php) non riceve email.
+        $vetrinaE = mb_strtolower(trim((string) Config::get('vetrina_email', '')));
+        if ($vetrinaE !== '' && mb_strtolower(trim($email)) === $vetrinaE) return false;
         // 9D · L'avviso a 7 giorni dall'addebito (rinnovo, ref «-7») è dovuto: parte anche a chi ha disattivato gli avvisi.
         $dovuta = $tipo === 'rinnovo' && str_ends_with($ref, '-7');
         if (!$dovuta && Db::one('SELECT id FROM email_optout WHERE account_id = ? AND kind = ?', [$accountId, $tipo])) return false;

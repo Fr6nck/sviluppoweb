@@ -490,7 +490,8 @@ final class Inviti
                 || Db::val('SELECT id FROM users WHERE LOWER(email) = ?', [$email]);
             if ($salta) { $esito['saltati']++; continue; }
             if (!RateLimit::hit('inviti-email:' . (int) $acc['id'], self::EMAIL_AL_GIORNO, 86400)) { $esito['limite'] = true; break; }
-            if (!Mailer::send($email, ...self::testoEmail($nome, $messaggio, $link, $codice))) { $esito['errore'] = 'La posta non è partita: riprova più tardi.'; break; }
+            // 9H · Chi riceve l'invito è un possibile cliente: se risponde, la risposta va all'email commerciale.
+            if (!Mailer::conRispostaA(Support::commerciale(), fn() => Mailer::send($email, ...self::testoEmail($nome, $messaggio, $link, $codice)))) { $esito['errore'] = 'La posta non è partita: riprova più tardi.'; break; }
             Db::insert('referral_invites', ['account_id' => (int) $acc['id'], 'email_hash' => $impronta, 'email_mask' => self::maschera($email), 'sent_at' => Support::now()]);
             $esito['mandati']++;
         }

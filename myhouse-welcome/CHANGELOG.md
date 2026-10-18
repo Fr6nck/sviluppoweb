@@ -1,5 +1,18 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 9H bis Posta: assistenza@ e commerciale@ (18 ottobre 2026)
+
+Nessuna migrazione: sono impostazioni. Da configurare: DA-CONFIGURARE, «4j», blocco 9H.
+
+- **Due indirizzi** (Impostazioni → Sito): «Email assistenza» (`contatti.email`) e **«Email commerciale (preventivi e marketing)»** (`contatti.commerciale`, `MHW_COMMERCIAL_EMAIL`, di serie commerciale@welcomemyhouse.it; vuota = l'assistenza). `Support::commerciale()` e `Support::mailtoCommerciale()` accanto a `Support::contatto()`.
+- **A commerciale@**: le richieste di preventivo oltre il Portfolio (a noi con `Reply-To` chi l'ha chiesto; la conferma al cliente da assistenza@ con `Reply-To` commerciale@, anche in inglese), il mailto «Chiedi un preventivo» (`mailtoPreventivo`), le risposte di «Anche il tuo sito» e «Oppure scrivici subito», le risposte agli inviti degli amici (`Reply-To`). Tutto il resto resta sull'assistenza.
+- **Mailer::conRispostaA**: un `Reply-To` diverso per un invio, poi torna quello di serie (l'assistenza).
+- **Mittente salvato corretto una volta** (`Impostazioni::correggiMittente`, dopo le migrazioni): se in `config.local.php` il mittente è `noreply@myhouse.it` o sta su un altro dominio, diventa l'email assistenza; copia in `config.local.bak.php`, riga `settings.mail_from` nel registro, segno in `storage/mittente-9h.txt`, messaggio in Gestione alla prima apertura. Un mittente da variabile d'ambiente non si tocca; con `base_url` su un IP o localhost si corregge solo `noreply@myhouse.it`.
+- Aiuto del campo «Mittente»: «Deve essere una casella vera del dominio del sito, con l'SMTP qui sotto: di serie l'email assistenza». Gli aiuti di Impostazioni non scrivono più indirizzi.
+- `vetrina_email` di serie **vetrina@welcomemyhouse.it** (prima blackout.agency@gmail.com), esclusa dai Richiami (`Richiami::manda`). La vetrina già creata non si sposta.
+- Nessun indirizzo email scritto a mano in `src/`, `views/` e `lang/` fuori dai valori di serie di `config.php` e dagli esempi (lo controlla la prova 9H).
+- La tabella dei codici omaggio del mockup aggiornato (schede sotto 700 px, «Usato il …» con il nome e il primo addebito sotto) era già così dalla 9D: nessuna modifica.
+
 ## v2 · 9F Rifiniture della guida e del pannello, Regione e Provincia, pannello in inglese (18 ottobre 2026)
 
 Migrazione **046** (con la 9G): `properties.province`, `accounts.translate_cap_override`, `users.panel_lang`, tabella `translation_cache`; le vetrine pubblicate ricevono i portali (Google, Booking, Airbnb, Instagram) e «PG · Umbria» se mancano, e vengono ripubblicate. Da configurare: DA-CONFIGURARE, «Fase 9 ter».

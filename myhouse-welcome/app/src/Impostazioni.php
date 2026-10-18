@@ -27,7 +27,9 @@ final class Impostazioni
         'sito' => [
             'base_url'       => ['MHW_BASE_URL', 'Indirizzo del sito', 'url', 'Per esempio https://welcomemyhouse.it, senza barra finale. È quello che finisce nei QR, nelle email e nei motori di ricerca.'],
             'pretty_urls'    => ['MHW_PRETTY_URLS', 'Indirizzi puliti, senza index.php', 'check', 'Si accende solo se la prova riesce: il sito chiede a sé stesso una pagina senza index.php. Spento, tutto resta come prima.'],
-            'contatti.email' => ['MHW_CONTACT_EMAIL', 'Indirizzo per assistenza, suggerimenti e preventivi', 'email', 'Quello dei bottoni «Scrivici» del sito e del pannello, e del piede delle email. Di serie assistenza@welcomemyhouse.it. È anche l\'indirizzo per i diritti privacy.'],
+            'contatti.email' => ['MHW_CONTACT_EMAIL', 'Email assistenza', 'email', 'Clienti, assistenza, privacy e avvisi del sito: i bottoni «Scrivici», il piede e il Reply-To delle email. È anche l\'indirizzo per i diritti privacy.'],
+            // 9H · preventivi e marketing; vuota = vale l'email assistenza.
+            'contatti.commerciale' => ['MHW_COMMERCIAL_EMAIL', 'Email commerciale (preventivi e marketing)', 'email', 'Riceve le richieste di preventivo e le risposte di «Anche il tuo sito»; è il Reply-To delle conferme dei preventivi e degli inviti. Vuota = vale l\'email assistenza.'],
         ],
         'stripe' => [
             'stripe.secret_key'     => ['STRIPE_SECRET_KEY', 'Chiave segreta', 'secret', 'Stripe → Sviluppatori → Chiavi API. Comincia con sk_live_ (o sk_test_ per le prove).'],
@@ -41,7 +43,7 @@ final class Impostazioni
             'mail.encryption' => ['MAIL_ENCRYPTION', 'Cifratura', 'choice', '', ['tls' => 'STARTTLS (porta 587)', 'ssl' => 'SSL (porta 465)', 'none' => 'Nessuna (sconsigliato)']],
             'mail.user'       => ['MAIL_USER', 'Utente', 'text', 'Di solito l\'indirizzo email completo.'],
             'mail.pass'       => ['MAIL_PASS', 'Password della casella', 'secret', ''],
-            'mail.from'       => ['MAIL_FROM', 'Mittente', 'email', 'L\'indirizzo che vedono i clienti: per ora assistenza@welcomemyhouse.it per tutto (9H), sul dominio del sito, con SPF, DKIM e DMARC attivi. Meglio se è la stessa casella dell\'utente. Le risposte arrivano sempre all\'indirizzo di assistenza (Sito).'],
+            'mail.from'       => ['MAIL_FROM', 'Mittente', 'email', 'Deve essere una casella vera del dominio del sito, con l\'SMTP qui sotto: di serie l\'email assistenza. Le risposte arrivano all\'email assistenza (Sito).'],
             'mail.from_name'  => ['MAIL_FROM_NAME', 'Nome del mittente', 'text', ''],
         ],
         'archivio' => [
@@ -107,6 +109,9 @@ final class Impostazioni
             'giudizi.home'          => ['MHW_GIUDIZI_HOME', 'Sezione «Cosa dicono di noi» in home', 'check', 'La sezione compare solo se c\'è almeno un giudizio messo in home (Clienti → Giudizi).'],
         ],
     ];
+
+    /** 9H · Il vecchio mittente di serie (dominio sbagliato): se è ancora salvato, correggiMittente lo sostituisce. */
+    public const MITTENTE_VECCHIO = 'noreply@myhouse.it';
 
     public const TITOLI = ['sito' => 'Sito', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'portali' => 'Portali', 'registri' => 'Registri', 'legale' => 'Titolare e documenti legali', 'inviti' => 'Invita un amico', 'giudizi' => 'Giudizi con sconto'];
 
@@ -257,6 +262,8 @@ final class Impostazioni
                 if (!empty($togli[$nome])) { self::togli($nuovo, $percorso); $effettivi[$percorso] = ''; continue; }
                 if ($grezzo === '') { $effettivi[$percorso] = (string) self::valore($percorso); continue; }   // vuoto = resta com'è
             }
+            // 9H · L'email commerciale vuota è una scelta (vale l'assistenza): si salva vuota, non torna al valore di serie.
+            if ($percorso === 'contatti.commerciale' && $grezzo === '') { self::metti($nuovo, $percorso, ''); $effettivi[$percorso] = ''; continue; }
             $errore = match (true) {
                 $grezzo === '' => '',
                 $percorso === 'stripe.secret_key' && !preg_match('/^sk_(live|test)_[A-Za-z0-9_]{10,}$/', $grezzo) => 'La chiave segreta comincia con sk_live_ (o sk_test_). Non usare la chiave pubblicabile pk_.',
@@ -327,6 +334,52 @@ final class Impostazioni
 
     /** Il nome del campo nel modulo: i punti diventano due trattini bassi. */
     public static function nome(string $percorso): string { return str_replace('.', '__', $percorso); }
+
+    /**
+     * 9H · Una volta sola, alla prima richiesta dopo l'aggiornamento: se in config.local.php il mittente salvato è
+     * il vecchio di serie (MITTENTE_VECCHIO) o sta su un dominio diverso da quello del sito, diventa l'email assistenza. Un mittente
+     * dato da una variabile d'ambiente non si tocca (comanda il server). Il file storage/mittente-9h.txt dice che è
+     * stato fatto, con l'esito; la prima volta che un amministratore apre Gestione lo legge nel messaggio di esito.
+     */
+    public static function correggiMittente(): void
+    {
+        $segno = MHW_APP . '/storage/mittente-9h.txt';
+        if (is_file($segno)) return;
+        $f = @fopen($segno, 'x');   // il primo che arriva
+        if (!$f) return;
+        try {
+            $locale = self::locale();
+            $salvato = strtolower(trim((string) (self::prendi($locale, 'mail.from') ?? '')));
+            $nuovo = Support::contatto();
+            if ($salvato === '' || !filter_var($nuovo, FILTER_VALIDATE_EMAIL)
+                || ($salvato !== self::MITTENTE_VECCHIO && !Mailer::mittenteFuoriDominio($salvato))) {
+                fwrite($f, Support::now() . " niente da correggere\n");
+                return;
+            }
+            self::metti($locale, 'mail.from', $nuovo);
+            self::scrivi($locale);
+            Config::sovrascrivi('mail', ['from' => $nuovo] + (array) Config::get('mail'));
+            $msg = 'Il mittente delle email era ' . $salvato . ': ora è ' . $nuovo . ' (9H). La versione precedente delle impostazioni è in config.local.bak.php.';
+            fwrite($f, Support::now() . ' ' . $msg . "\n");
+            Auth::audit('settings.mail_from', null, ['prima' => $salvato, 'dopo' => $nuovo, 'automatico' => true]);
+            Log::info('9H: mittente corretto', ['prima' => $salvato, 'dopo' => $nuovo]);
+        } catch (\Throwable $e) {
+            fwrite($f, Support::now() . ' non riuscita: ' . $e->getMessage() . "\n");
+            Log::error('9H: correzione del mittente non riuscita: ' . $e->getMessage());
+        } finally {
+            fclose($f);
+        }
+    }
+
+    /** 9H · Il messaggio della correzione del mittente, una volta sola (poi il file lo segna come letto). */
+    public static function esitoMittente(): string
+    {
+        $segno = MHW_APP . '/storage/mittente-9h.txt';
+        $t = is_file($segno) ? (string) @file_get_contents($segno) : '';
+        if ($t === '' || str_contains($t, 'letto da un amministratore') || !str_contains($t, 'Il mittente delle email era')) return '';
+        @file_put_contents($segno, Support::now() . " letto da un amministratore\n", FILE_APPEND);
+        return trim((string) preg_replace('/^\S+ /', '', trim(strtok($t, "\n") ?: '')));
+    }
 
     private static function scrivi(array $dati): void
     {

@@ -21,6 +21,20 @@ final class Mailer
 
     public static function ultimoErrore(): string { return self::$ultimoErrore; }
 
+    /** 9H · Il Reply-To degli invii in corso, se non è quello di serie (l'email assistenza). */
+    private static ?string $rispondiA = null;
+
+    /**
+     * 9H · Esegue $invio con un altro Reply-To (per esempio l'email commerciale per i preventivi e gli inviti),
+     * poi torna a quello di serie anche se qualcosa va storto.
+     */
+    public static function conRispostaA(string $indirizzo, callable $invio): mixed
+    {
+        $prima = self::$rispondiA;
+        self::$rispondiA = $indirizzo;
+        try { return $invio(); } finally { self::$rispondiA = $prima; }
+    }
+
     // ------------------------------------------------------------------ email con il marchio (7A)
 
     /**
@@ -192,7 +206,8 @@ final class Mailer
             'MIME-Version: 1.0',
         ];
         // 9H · Chi risponde a un'email automatica scrive all'assistenza (Impostazioni → Sito), qualunque sia il mittente.
-        $risposte = filter_var(Support::contatto(), FILTER_VALIDATE_EMAIL) ? self::oneLine(Support::contatto()) : '';
+        $rispondi = self::$rispondiA ?? Support::contatto();
+        $risposte = filter_var($rispondi, FILTER_VALIDATE_EMAIL) ? self::oneLine($rispondi) : '';
         if ($risposte !== '') $headers[] = 'Reply-To: <' . $risposte . '>';
         if ($html === null) {
             $headers[] = 'Content-Type: text/plain; charset=UTF-8';

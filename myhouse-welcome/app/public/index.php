@@ -83,6 +83,8 @@ Config::load(MHW_APP . '/config.php');
 // applicano da sole alla prima richiesta. Quando non c'è niente di nuovo
 // costa la lettura di un file.
 if (!Migrator::upToDate() && Installer::installed()) Migrator::run();
+// 9H: una volta sola, un mittente salvato fuori dal dominio del sito diventa l'email assistenza (costa un controllo su un file).
+if (Installer::installed()) MHW\Impostazioni::correggiMittente();
 
 $route = Support::routePath();
 $ospite = Support::isGuestPath($route);

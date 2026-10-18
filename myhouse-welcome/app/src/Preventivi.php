@@ -27,7 +27,7 @@ final class Preventivi
      */
     public static function salva(array $in, ?array $acc, string $lingua = 'it'): int
     {
-        if (!self::disponibili()) throw new \RuntimeException('Le richieste di preventivo non sono ancora attive: scrivici a ' . Support::contatto() . '.');
+        if (!self::disponibili()) throw new \RuntimeException('Le richieste di preventivo non sono ancora attive: scrivici a ' . Support::commerciale() . '.');
         if (!RateLimit::hit('preventivo:' . RateLimit::ipKey(), 5, 3600)) throw new \RuntimeException('Troppe richieste da questa connessione: riprova tra un\'ora.');
         $nome = mb_substr(trim(preg_replace('/\s+/u', ' ', (string) ($in['nome'] ?? ''))), 0, 120);
         $email = mb_strtolower(trim((string) ($in['email'] ?? '')));
@@ -44,26 +44,31 @@ final class Preventivi
             'account_id' => $acc ? (int) $acc['id'] : null, 'nome' => $nome, 'email' => $email, 'telefono' => $telefono,
             'strutture' => $strutture, 'messaggio' => $messaggio, 'lingua' => $en ? 'en' : 'it', 'stato' => 'nuovo', 'created_at' => Support::now(),
         ]);
-        // All'assistenza: tutti i dati. A chi ha scritto: la conferma, nella sua lingua.
+        // 9H · All'email commerciale: tutti i dati. A chi ha scritto: la conferma, nella sua lingua, dal mittente di sempre
+        // (assistenza@) con il Reply-To commerciale: se risponde, la risposta arriva a chi segue il preventivo.
         $righe = ['Nome: ' . $nome, 'Email: ' . $email, 'Telefono: ' . ($telefono !== '' ? $telefono : '—'), 'Strutture: ' . $strutture,
                   'Lingua: ' . ($en ? 'inglese' : 'italiano'), 'Account: ' . ($acc ? '#' . (int) $acc['id'] : 'nessuno (visitatore)')];
         if ($messaggio !== '') $righe[] = 'Messaggio: ' . $messaggio;
-        if (Support::contatto() !== '') {
-            Mailer::manda(Support::contatto(), 'Richiesta di preventivo: ' . $strutture . ' strutture', 'Nuova richiesta di preventivo',
+        $commerciale = Support::commerciale();
+        if ($commerciale !== '') {
+            // Il Reply-To è chi ha chiesto il preventivo: «Rispondi» gli scrive direttamente.
+            Mailer::conRispostaA($email, fn() => Mailer::manda($commerciale, 'Richiesta di preventivo: ' . $strutture . ' strutture', 'Nuova richiesta di preventivo',
                           ['Qualcuno ha chiesto una proposta per ' . $strutture . ' strutture.', implode("\n", $righe)],
-                          ['Apri in Amministrazione', Support::baseUrl() . '/admin/preventivi'], 'Rispondi direttamente a ' . $email . '.');
+                          ['Apri in Amministrazione', Support::baseUrl() . '/admin/preventivi'], 'Rispondi direttamente a ' . $email . '.'));
         }
-        if ($en) {
-            Mailer::manda($email, 'We received your request for ' . $strutture . ' properties', 'Thanks, ' . explode(' ', $nome)[0] . '.',
-                          ['We received your request for a quote for ' . $strutture . ' properties: we will get back to you within one working day with a tailored proposal.',
-                           'If you want to add anything in the meantime, just reply to this email.'],
-                          null, null, ['MyHouse Welcome · ' . Support::contatto(), 'MyHouse Welcome · ' . Support::contatto()]);
-        } else {
-            Mailer::manda($email, 'Abbiamo ricevuto la richiesta per ' . $strutture . ' strutture', 'Grazie, ' . explode(' ', $nome)[0] . '.',
-                          ['Abbiamo ricevuto la richiesta di preventivo per ' . $strutture . ' strutture: ti rispondiamo entro un giorno lavorativo con una proposta su misura.',
-                           'Se nel frattempo vuoi aggiungere qualcosa, rispondi a questa email.'],
-                          null, null, ['MyHouse Welcome · ' . Support::contatto(), 'MyHouse Welcome · ' . Support::contatto()]);
-        }
+        Mailer::conRispostaA($commerciale, function () use ($en, $email, $nome, $strutture, $commerciale) {
+            if ($en) {
+                Mailer::manda($email, 'We received your request for ' . $strutture . ' properties', 'Thanks, ' . explode(' ', $nome)[0] . '.',
+                              ['We received your request for a quote for ' . $strutture . ' properties: we will get back to you within one working day with a tailored proposal.',
+                               'If you want to add anything in the meantime, just reply to this email.'],
+                              null, null, ['MyHouse Welcome · ' . $commerciale, 'MyHouse Welcome · ' . $commerciale]);
+            } else {
+                Mailer::manda($email, 'Abbiamo ricevuto la richiesta per ' . $strutture . ' strutture', 'Grazie, ' . explode(' ', $nome)[0] . '.',
+                              ['Abbiamo ricevuto la richiesta di preventivo per ' . $strutture . ' strutture: ti rispondiamo entro un giorno lavorativo con una proposta su misura.',
+                               'Se nel frattempo vuoi aggiungere qualcosa, rispondi a questa email.'],
+                              null, null, ['MyHouse Welcome · ' . $commerciale, 'MyHouse Welcome · ' . $commerciale]);
+            }
+        });
         Log::info('Preventivo: richiesta salvata', ['id' => $id, 'strutture' => $strutture]);
         return $id;
     }
