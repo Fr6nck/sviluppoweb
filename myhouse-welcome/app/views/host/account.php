@@ -1,16 +1,16 @@
 <?php
 /* Account & Fatturazione: piano, prezzo, stato, rinnovo, scadenza. */
-use function MHW\b;
+use function MHW\b; use function MHW\t;
 use MHW\{Support, Csrf, Auth, Plans};
-$title = 'Account & Fatturazione';
+$title = t('Account & Fatturazione');
 $stripe = $sub && $sub['provider'] === 'stripe' && $sub['provider_subscription_id'] !== '';
 $fine = $sub['current_period_end'] ?? ($ultimo['current_period_end'] ?? '');
 $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' => 'Pagato', 'failed' => 'Non riuscito', 'canceled' => 'Annullato', 'expired' => 'Scaduto']; ?>
 <div class="stack stack--lg" style="max-width:820px">
-  <h1>Account &amp; Fatturazione.</h1>
+  <h1><?= t('Account &amp; Fatturazione.') ?></h1>
 
   <section class="panel stack">
-    <span class="kicker">Abbonamento</span>
+    <span class="kicker"><?= t('Abbonamento') ?></span>
     <?php if ($sub): ?>
       <?php $perStruttura = $piano && Plans::perProperty($piano); $q = (int) ($sub['quantity'] ?? 1); ?>
       <div class="spread spread--mid">
@@ -122,9 +122,17 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
   <?php /* Dati di fatturazione: obbligatori prima del primo pagamento. Vanno a Stripe con il cliente. */
         $torna = $torna ?? '';
         ob_start(); include __DIR__ . '/_fatturazione_form.php'; $moduloFatt = ob_get_clean(); ?>
+  <?php /* 9G · Traduzioni suggerite: il contatore dell'anno, solo con il piano che le comprende */
+        if (MHW\Migrator::tableExists('translation_usage') && MHW\Traduttore::nelPiano((int) $acc['id'])): ?>
+  <section class="panel stack" id="traduzioni" style="gap:10px">
+    <span class="kicker"><?= t('Traduzioni suggerite') ?></span>
+    <?php $annoT = MHW\Traduttore::contatore((int) $acc['id']); include __DIR__ . '/_traduzioni_contatore.php'; ?>
+    <p class="small muted" style="margin:0"><?= t('Comprese nel tuo piano entro un limite annuale di caratteri, per tutte le tue guide. Le chiedi dalla pagina di ogni lingua.') ?></p>
+  </section>
+  <?php endif; ?>
   <section class="panel stack" id="fatturazione">
     <div class="spread spread--mid">
-      <span class="kicker">Dati di fatturazione</span>
+      <span class="kicker"><?= t('Dati di fatturazione') ?></span>
       <?php if ($completi && ($acc['billing_type'] ?? '') !== ''): ?><span class="badge badge--pine">Completi</span>
       <?php else: ?><span class="badge badge--ochre">Servono prima del pagamento</span><?php endif; ?>
     </div>
@@ -140,49 +148,61 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
         $err = fn(array $e, string $k, string $id) => isset($e[$k]) ? '<p class="campo-errore" id="' . $id . '-err">' . Support::e($e[$k]) . '</p>' : '';
         $inv = fn(array $e, string $k, string $id) => isset($e[$k]) ? ' aria-invalid="true" aria-describedby="' . $id . '-err"' : ''; ?>
   <section class="panel stack" id="profilo">
-    <span class="kicker">Il tuo account</span>
+    <span class="kicker"><?= t('Il tuo account') ?></span>
     <p><?= Support::e($user['email']) ?>
       <?= Auth::isVerified($user) ? '<span class="badge badge--pine">Email confermata</span>' : '<span class="badge badge--ochre">Email da confermare</span>' ?></p>
     <?php if (!empty($user['pending_email'])): ?>
       <p class="small muted">In attesa di conferma: <b><?= Support::e($user['pending_email']) ?></b>. Apri il link che ti abbiamo mandato a quell'indirizzo.</p>
     <?php endif; ?>
     <form method="post" action="<?= b() ?>/account/profilo" class="row" style="gap:12px;align-items:flex-end;flex-wrap:wrap"><?= Csrf::field() ?>
-      <div class="field" style="margin:0;flex:1 1 220px"><label for="pr-nome">Nome</label>
+      <div class="field" style="margin:0;flex:1 1 220px"><label for="pr-nome"><?= t('Nome') ?></label>
         <input id="pr-nome" name="name" type="text" required maxlength="120" autocomplete="name" value="<?= Support::e((string) ($_POST['name'] ?? $user['name'])) ?>"<?= $inv($eP, 'name', 'pr-nome') ?>>
         <?= $err($eP, 'name', 'pr-nome') ?></div>
-      <button class="btn">Salva il nome</button>
+      <button class="btn"><?= t('Salva il nome') ?></button>
     </form>
     <details class="fieldset"<?= $apri === 'password' ? ' open' : '' ?>>
-      <summary class="legend">Cambia la password</summary>
+      <summary class="legend"><?= t('Cambia la password') ?></summary>
       <form method="post" action="<?= b() ?>/account/password" class="stack" style="gap:12px;margin-top:12px"><?= Csrf::field() ?>
         <input type="text" name="username" value="<?= Support::e($user['email']) ?>" autocomplete="username" hidden>
-        <div class="field" style="margin:0"><label for="pw-attuale">Password attuale</label>
+        <div class="field" style="margin:0"><label for="pw-attuale"><?= t('Password attuale') ?></label>
           <input id="pw-attuale" name="attuale" type="password" required autocomplete="current-password"<?= $inv($ePw, 'attuale', 'pw-attuale') ?>><?= $err($ePw, 'attuale', 'pw-attuale') ?></div>
-        <div class="field" style="margin:0"><label for="pw-nuova">Password nuova</label>
-          <p class="help" id="pw-nuova-aiuto" style="margin:0 0 6px">Almeno 8 caratteri.</p>
+        <div class="field" style="margin:0"><label for="pw-nuova"><?= t('Password nuova') ?></label>
+          <p class="help" id="pw-nuova-aiuto" style="margin:0 0 6px"><?= t('Almeno 8 caratteri.') ?></p>
           <input id="pw-nuova" name="nuova" type="password" required minlength="8" maxlength="72" autocomplete="new-password" aria-describedby="pw-nuova-aiuto"<?= $inv($ePw, 'nuova', 'pw-nuova') ?>><?= $err($ePw, 'nuova', 'pw-nuova') ?></div>
-        <div class="field" style="margin:0"><label for="pw-nuova2">Ripeti la password nuova</label>
+        <div class="field" style="margin:0"><label for="pw-nuova2"><?= t('Ripeti la password nuova') ?></label>
           <input id="pw-nuova2" name="nuova2" type="password" required minlength="8" maxlength="72" autocomplete="new-password"<?= $inv($ePw, 'nuova2', 'pw-nuova2') ?>><?= $err($ePw, 'nuova2', 'pw-nuova2') ?></div>
-        <div class="actions"><button class="btn">Cambia la password</button></div>
-        <p class="small muted">Non ricordi quella attuale? <a href="<?= b() ?>/password/dimenticata">Chiedi un link di recupero</a>.</p>
+        <div class="actions"><button class="btn"><?= t('Cambia la password') ?></button></div>
+        <p class="small muted"><?= t('Non ricordi quella attuale?') ?> <a href="<?= b() ?>/password/dimenticata"><?= t('Chiedi un link di recupero') ?></a>.</p>
       </form>
     </details>
     <details class="fieldset"<?= $apri === 'email' ? ' open' : '' ?>>
-      <summary class="legend">Cambia l'email</summary>
+      <summary class="legend"><?= t('Cambia l\'email') ?></summary>
       <form method="post" action="<?= b() ?>/account/email" class="stack" style="gap:12px;margin-top:12px"><?= Csrf::field() ?>
-        <div class="field" style="margin:0"><label for="em-nuova">Email nuova</label>
-          <p class="help" id="em-nuova-aiuto" style="margin:0 0 6px">Ti mandiamo un link: finché non lo apri, resta valida l'email di adesso.</p>
+        <div class="field" style="margin:0"><label for="em-nuova"><?= t('Email nuova') ?></label>
+          <p class="help" id="em-nuova-aiuto" style="margin:0 0 6px"><?= t('Ti mandiamo un link: finché non lo apri, resta valida l\'email di adesso.') ?></p>
           <input id="em-nuova" name="email" type="email" required maxlength="190" autocomplete="email" value="<?= Support::e((string) ($emailNuova ?? '')) ?>" aria-describedby="em-nuova-aiuto<?= isset($eE['email']) ? ' em-nuova-err' : '' ?>"<?= isset($eE['email']) ? ' aria-invalid="true"' : '' ?>><?= $err($eE, 'email', 'em-nuova') ?></div>
-        <div class="field" style="margin:0"><label for="em-attuale">Password attuale</label>
+        <div class="field" style="margin:0"><label for="em-attuale"><?= t('Password attuale') ?></label>
           <input id="em-attuale" name="attuale" type="password" required autocomplete="current-password"<?= $inv($eE, 'attuale', 'em-attuale') ?>><?= $err($eE, 'attuale', 'em-attuale') ?></div>
-        <div class="actions"><button class="btn">Mandami il link di conferma</button></div>
+        <div class="actions"><button class="btn"><?= t('Mandami il link di conferma') ?></button></div>
       </form>
     </details>
     <?php /* 8J · i documenti accettati e gli accessi dell'assistenza al tuo account (ognuno registrato: data e chi) */
           $accessiA = MHW\Db::all("SELECT l.created_at, u.name FROM audit_log l LEFT JOIN users u ON u.id = l.actor_user_id
                                    WHERE l.action = 'impersonate.start' AND l.target_user_id = ? ORDER BY l.id DESC LIMIT 20", [(int) $user['id']]); ?>
+    <?php /* 9F·11 · «Pannello in: Italiano / English»: di serie dalla lingua principale della guida (users.panel_lang) */
+          $pl = (string) ($user['panel_lang'] ?? ''); ?>
+    <form method="post" action="<?= b() ?>/account/pannello-lingua" class="field" style="margin:0" id="pannello-lingua"><?= Csrf::field() ?>
+      <span class="label" id="pannello-lingua-et"><?= t('Lingua del pannello') ?></span>
+      <div class="scelte scelte--riga" role="radiogroup" aria-labelledby="pannello-lingua-et">
+        <label class="scelta"><input type="radio" name="pannello_lingua" value="it" <?= $pl === 'it' ? 'checked' : '' ?>><span class="scelta__testo"><?= t('Italiano') ?></span></label>
+        <label class="scelta"><input type="radio" name="pannello_lingua" value="en" <?= $pl === 'en' ? 'checked' : '' ?>><span class="scelta__testo">English</span></label>
+        <label class="scelta"><input type="radio" name="pannello_lingua" value="" <?= $pl === '' ? 'checked' : '' ?>><span class="scelta__testo"><?= t('Di serie') ?></span></label>
+      </div>
+      <p class="help" style="margin:6px 0 0"><?= t('Di serie: quella della lingua principale della guida (inglese se non scrivi in italiano).') ?></p>
+      <div class="actions" style="margin-top:8px"><button class="btn btn--ghost btn--sm"><?= t('Salva') ?></button></div>
+    </form>
     <details class="fieldset" id="privacy-account">
-      <summary class="legend">Documenti accettati e accessi dell'assistenza</summary>
+      <summary class="legend"><?= t('Documenti accettati e accessi dell\'assistenza') ?></summary>
       <div class="stack" style="gap:8px;margin-top:12px">
         <p class="small">Hai accettato i <a href="<?= b() ?>/termini">Termini</a> (versione <?= Support::e(($user['terms_version'] ?? '') ?: '—') ?>),
           l'<a href="<?= b() ?>/dpa">Accordo sul trattamento dei dati</a> (versione <?= Support::e(($user['dpa_version'] ?? '') ?: '—') ?>)

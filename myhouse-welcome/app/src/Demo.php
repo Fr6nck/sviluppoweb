@@ -66,6 +66,7 @@ final class Demo
             'host_phone' => $d['telefono'], 'host_whatsapp' => $d['telefono'], 'palette' => $d['palette'],
             'is_demo' => 1, 'wizard_step' => 'fatto',
         ], 'id = :pid', ['pid' => $pid]);
+        if (!empty($d['provincia']) && Migrator::columnExists('properties', 'province')) Db::update('properties', ['province' => $d['provincia']], 'id = :pid', ['pid' => $pid]);
         Properties::setLocales($acc, $pid, $d['lingue']);
         Properties::saveContacts($pid, Conversione::contatti($d['host'], $d['telefono'], $d['telefono']));
         return $pid;
@@ -174,7 +175,7 @@ final class Demo
         // I dati della scheda: CIN e posti letto di esempio (il CIN dice «DEMO»: non è un codice vero),
         // i link per le recensioni (le pagine di Assisi delle piattaforme, la casa non esiste) e il codice
         // sconto per la prossima volta (8F: il link per prenotare è sotto, con lo sconto).
-        $campiCasa = ['cin' => 'IT054001C2DEMO0001', 'beds' => 4,
+        $campiCasa = ['cin' => 'IT054001C2DEMO0001', 'beds' => 4, 'province' => 'PG',   // 9F · Assisi · Perugia · Umbria
                       'review_google' => 'https://www.google.com/maps/search/?api=1&query=Piazza+Matteotti+Assisi',
                       'review_booking' => 'https://www.booking.com/city/it/assisi.it.html',
                       'review_airbnb' => 'https://www.airbnb.it/assisi-italia/stays', 'direct_code' => 'CHECCO10'];
@@ -676,7 +677,7 @@ final class Demo
         $lucia = self::host('Lucia Ferrante', 'lucia@' . self::DOMINIO, 'plus');
         $acc = (int) $lucia['account_id'];
         $pid = self::struttura($acc, [
-            'nome' => 'Casa Lucia', 'citta' => 'Spello', 'regione' => 'Umbria', 'host' => 'Lucia',
+            'nome' => 'Casa Lucia', 'citta' => 'Spello', 'regione' => 'Umbria', 'provincia' => 'PG', 'host' => 'Lucia',
             'arrivo' => '15:00', 'partenza' => '10:30', 'telefono' => '+39 0742 000000',
             'lingue' => ['it', 'en', 'de'], 'palette' => 'terracotta',
         ]);
@@ -830,7 +831,7 @@ final class Demo
         $marco = self::host('Marco Bevilacqua', 'marco@' . self::DOMINIO, 'portfolio', false, 2);
         $acc = (int) $marco['account_id'];
         $pid = self::struttura($acc, [
-            'nome' => 'B&B Le Rondini', 'citta' => 'Lecce', 'regione' => 'Puglia', 'host' => 'Marco',
+            'nome' => 'B&B Le Rondini', 'citta' => 'Lecce', 'regione' => 'Puglia', 'provincia' => 'LE', 'host' => 'Marco',
             'arrivo' => '14:00', 'partenza' => '11:00', 'telefono' => '+39 0832 000000',
             'lingue' => ['it', 'en', 'es'], 'palette' => 'mare',
         ]);
@@ -868,7 +869,7 @@ final class Demo
         $agnese = self::host('Agnese Ruta', 'agnese@' . self::DOMINIO, 'essential');
         $acc = (int) $agnese['account_id'];
         $pid = self::struttura($acc, [
-            'nome' => 'Il Cortile', 'citta' => 'Ortigia', 'regione' => 'Sicilia', 'host' => 'Agnese',
+            'nome' => 'Il Cortile', 'citta' => 'Ortigia', 'regione' => 'Sicilia', 'provincia' => 'SR', 'host' => 'Agnese',
             'arrivo' => '16:00', 'partenza' => '10:00', 'telefono' => '+39 0931 000000', 'lingue' => ['it'], 'palette' => 'oliva',
         ]);
         self::scrivi($pid, self::nucleo($pid), ['it' => ['checkin_steps' => ['Sto ancora scrivendo questa parte.']]], 'Check-in & Check-out');

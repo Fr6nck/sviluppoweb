@@ -229,6 +229,9 @@ function u(string $path = '/'): string { return Support::url($path); }
 /** Solo il prefisso della sottocartella: '' oppure '/welcomebook'. */
 function b(): string { return Support::base(); }
 
+/** 9F·11 · Un testo del pannello nella lingua del pannello (italiano, o inglese per chi scrive la guida in un'altra lingua). */
+function t(string $it, ?string $en = null): string { return Pannello::t($it, $en); }
+
 /**
  * Per i FILE veri (il foglio di stile, le immagini fisse): mai index.php
  * davanti. Senza argomenti restituisce solo il prefisso, come b(), cosi'

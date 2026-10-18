@@ -5,7 +5,7 @@
    Nella procedura la sezione aperta ($aperta) si compila qui, sotto la sua card.
    Riceve: $prop, $sezioni (solo le aggiuntive), $limite, $attive, $torna ('' | 'procedura'),
            e nella procedura $aperta (dati dell'editor) e $modifica (luogo in modifica). */
-use function MHW\b;
+use function MHW\b; use function MHW\t;
 use MHW\{Support, Csrf, Icon, SectionCatalog};
 $pid = (int) $prop['id'];
 $torna = $torna ?? '';
@@ -23,16 +23,16 @@ $azione = function (array $s, string $fai, string $etichetta, string $classe = '
 $n = count($sezioni); ?>
 <div class="stack" style="gap:10px">
   <div class="spread spread--mid">
-    <h2 style="font-size:22px">Sezioni aggiuntive</h2>
+    <h2 style="font-size:22px"><?= t('Sezioni aggiuntive') ?></h2>
     <?php if (!$illimitate): ?>
       <span class="meter"><i><b style="width:<?= min(100, (int) round($attive / max(1, $limite) * 100)) ?>%"></b></i>
-        <?= (int) $attive ?> su <?= (int) $limite ?> sezioni attive</span>
+        <?= (int) $attive ?> <?= t('su') ?> <?= (int) $limite ?> <?= t('sezioni attive') ?></span>
     <?php else: ?>
-      <span class="small muted">Sezioni illimitate con il tuo piano</span>
+      <span class="small muted"><?= t('Sezioni illimitate con il tuo piano') ?></span>
     <?php endif; ?>
   </div>
   <?php if (!$sezioni): ?>
-    <p class="note note--quiet">Nessuna sezione aggiuntiva, per ora. Scegline qualcuna qui sotto: di solito si comincia da Wi-Fi e Regole della casa.</p>
+    <p class="note note--quiet"><?= t('Nessuna sezione aggiuntiva, per ora. Scegline qualcuna qui sotto: di solito si comincia da Wi-Fi e Regole della casa.') ?></p>
   <?php endif; ?>
   <?php if ($sezioni): ?><div class="righe" data-ordina><?php endif; ?>
   <?php foreach ($sezioni as $i => $s): $on = (int) $s['is_active'] === 1;
@@ -45,9 +45,9 @@ $n = count($sezioni); ?>
       <span class="riga__maniglia" aria-hidden="true" title="Trascina per cambiare l'ordine"><?= Icon::svg('grip', 18, 2.6) ?></span>
       <span class="riga__ico"><?= Icon::svg(SectionCatalog::iconaDi($s['kind'], $s['data'] ?? []), 20) ?></span>
       <a class="riga__nome" href="<?= $modificaUrl ?>"<?= $apertaQui ? ' aria-current="true"' : '' ?>><b><?= Support::e($s['title']) ?></b></a>
-      <?php if (!$on): ?><span class="badge badge--paper">Disattivata</span>
-      <?php elseif ($s['empty']): ?><span class="badge badge--terracotta">Da compilare</span>
-      <?php else: ?><span class="badge badge--pine">Pronta</span><?php endif; ?>
+      <?php if (!$on): ?><span class="badge badge--paper"><?= t('Disattivata') ?></span>
+      <?php elseif ($s['empty']): ?><span class="badge badge--terracotta"><?= t('Da compilare') ?></span>
+      <?php else: ?><span class="badge badge--pine"><?= t('Pronta') ?></span><?php endif; ?>
       <?php /* 7C · Novità: un campo nuovo ancora vuoto in questa sezione */
             $tdN = json_decode((string) MHW\Db::val('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $prop['default_locale']], ''), true) ?: [];
             if ($on && MHW\Novita::campiNuovi((int) $prop['account_id'], (string) $s['kind'], (json_decode((string) ($s['data'] ?? ''), true) ?: []) + $tdN)): ?>
@@ -64,13 +64,13 @@ $n = count($sezioni); ?>
       <details class="menu-riga">
         <summary class="icon-btn" aria-label="Azioni per <?= Support::e($s['title']) ?>"><span aria-hidden="true">⋯</span></summary>
         <div class="menu-riga__lista">
-          <a class="menu-riga__voce" href="<?= $modificaUrl ?>">Modifica</a>
-          <?= $i > 0 ? $azione($s, 'su', 'Sposta su') : '' ?>
-          <?= $i < $n - 1 ? $azione($s, 'giu', 'Sposta giù') : '' ?>
-          <?= $on ? $azione($s, 'disattiva', 'Disattiva') : $azione($s, 'attiva', 'Attiva') ?>
+          <a class="menu-riga__voce" href="<?= $modificaUrl ?>"><?= t('Modifica') ?></a>
+          <?= $i > 0 ? $azione($s, 'su', t('Sposta su')) : '' ?>
+          <?= $i < $n - 1 ? $azione($s, 'giu', t('Sposta giù')) : '' ?>
+          <?= $on ? $azione($s, 'disattiva', t('Disattiva')) : $azione($s, 'attiva', t('Attiva')) ?>
           <hr class="rule">
-          <p class="tiny muted" style="padding:4px 12px">Eliminare cancella anche contenuti e traduzioni. Per toglierla solo dalla guida, disattivala.</p>
-          <?= $azione($s, 'elimina', 'Elimina', 'menu-riga__voce menu-riga__voce--danger') ?>
+          <p class="tiny muted" style="padding:4px 12px"><?= t('Eliminare cancella anche contenuti e traduzioni. Per toglierla solo dalla guida, disattivala.') ?></p>
+          <?= $azione($s, 'elimina', t('Elimina'), 'menu-riga__voce menu-riga__voce--danger') ?>
         </div>
       </details>
     </div>
@@ -81,7 +81,7 @@ $n = count($sezioni); ?>
             'tdati' => $aperta['tdati'], 'places' => $aperta['places'], 'modifica' => $modifica ?? 0, 'err' => null,
             'suggLuoghi' => $aperta['suggLuoghi'], 'suggRighe' => $aperta['suggRighe'],
             'inProcedura' => true, 'procedura' => false]); ?>
-        <p><a class="small" href="<?= b() ?>/pannello/<?= $pid ?>/procedura/sezioni#sez-<?= (int) $s['id'] ?>">Chiudi l'editor</a></p>
+        <p><a class="small" href="<?= b() ?>/pannello/<?= $pid ?>/procedura/sezioni#sez-<?= (int) $s['id'] ?>"><?= t('Chiudi l\'editor') ?></a></p>
       </div>
     <?php endif; ?>
   <?php endforeach; ?>
@@ -90,7 +90,7 @@ $n = count($sezioni); ?>
 
 <?php if ($catalogo): ?>
 <div class="stack" style="gap:12px;margin-top:8px">
-  <h3 style="font-size:18px">Aggiungi una sezione</h3>
+  <h3 style="font-size:18px"><?= t('Aggiungi una sezione') ?></h3>
   <?php if ($pieno): ?>
     <div class="limit" role="status">
       <p style="max-width:620px">Hai già <?= (int) $limite ?> sezioni attive, il massimo del tuo piano. Passa a Plus per averne quante vuoi,
@@ -99,7 +99,7 @@ $n = count($sezioni); ?>
     </div>
   <?php endif; ?>
   <?php if ($libere >= SectionCatalog::LIBERE_MAX): ?>
-    <p class="small muted">Hai <?= SectionCatalog::LIBERE_MAX ?> sezioni libere, il massimo per una guida. Ogni altra sezione si aggiunge una volta sola: una guida è una casa o una struttura, con il suo indirizzo e il suo CIN.</p>
+    <p class="small muted"><?= t('Hai già la sezione libera') ?><?= $libere > 1 ? ' (' . $libere . ')' : '' ?><?= t(': in una guida ce n\'è una. Ogni altra sezione si aggiunge una volta sola: una guida è una casa o una struttura, con il suo indirizzo e il suo CIN.') ?></p>
   <?php endif; ?>
   <div class="kinds">
     <?php foreach ($catalogo as $k): ?>
@@ -110,7 +110,7 @@ $n = count($sezioni); ?>
         <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/sezioni"><?= Csrf::field() ?>
           <input type="hidden" name="kind" value="<?= Support::e($k) ?>"><input type="hidden" name="torna" value="<?= Support::e($torna) ?>">
           <?php /* 8B: oltre il limite il bottone resta, con il lucchetto, e apre «Con Plus hai tutte le sezioni» */ ?>
-          <button class="btn btn--ghost btn--sm<?= $pieno ? ' btn--lucchetto' : '' ?>"<?= $pieno ? ' data-sblocca="sezioni"' : '' ?>><?= Icon::svg($pieno ? 'lock' : 'plus', 15, 2) ?>Aggiungi<span class="sr-only"> <?= Support::e(SectionCatalog::nome($k)) ?></span></button>
+          <button class="btn btn--ghost btn--sm<?= $pieno ? ' btn--lucchetto' : '' ?>"<?= $pieno ? ' data-sblocca="sezioni"' : '' ?>><?= Icon::svg($pieno ? 'lock' : 'plus', 15, 2) ?><?= t('Aggiungi') ?><span class="sr-only"> <?= Support::e(SectionCatalog::nome($k)) ?></span></button>
         </form>
       </div>
     <?php endforeach; ?>

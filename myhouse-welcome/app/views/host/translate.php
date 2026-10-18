@@ -32,7 +32,8 @@ $box = function (string $k, bool $manca = true) use ($sugg, $loc, $cambiati, $pu
     $codice = MHW\Sicurezza::codiceAccesso((string) $s['text'])
         ? '<p class="codice-avviso" role="status">' . Icon::svg('lock', 16) . '<span>Qui sembra esserci un codice di accesso. Te lo sconsigliamo: chi ha il link della guida può leggerlo. '
           . 'Comunicalo all\'ospite di persona o in privato, poco prima dell\'arrivo.</span></p>' : '';
-    return '<div class="suggerita"><span class="badge badge--ochre">Suggerita: da controllare</span>'
+    // 9G: se il campo aveva già una traduzione e l'originale è cambiato, la suggerita la sostituisce: «Aggiornata: da ricontrollare».
+    return '<div class="suggerita"><span class="badge badge--ochre">' . (!empty($s['aggiornata']) ? 'Aggiornata: da ricontrollare' : 'Suggerita: da controllare') . '</span>'
          . '<p class="suggerita__testo" lang="' . Support::e($loc) . '">' . $testo . '</p>' . $codice
          . '<div class="suggerita__azioni">' . $b('approva', 'Approva', 'btn btn--sm')
          . $b('modifica', 'Modifica', 'btn btn--ghost btn--sm', ' data-modifica="c-' . md5($k) . '" data-testo="' . $testo . '"')
@@ -75,11 +76,16 @@ $campo = function (string $name, string $tipo, $orig, $trad, string $etichetta, 
   <section class="panel stack suggerite" id="suggerite" aria-labelledby="suggerite-titolo">
     <h2 id="suggerite-titolo" style="font-size:20px;margin:0">Traduzioni suggerite</h2>
     <?php if (!($nelPiano ?? false)): ?>
-      <p class="small" style="margin:0">Un traduttore automatico propone le traduzioni che mancano, e tu le approvi: con il piano Plus, in omaggio per un anno. <a href="<?= b() ?>/piano?passa=plus">Scopri Plus</a></p>
+      <p class="small" style="margin:0">Un traduttore automatico propone le traduzioni che mancano, e tu le approvi: comprese in Plus e Portfolio, entro un limite annuale di caratteri. <a href="<?= b() ?>/piano?passa=plus">Scopri Plus</a></p>
+    <?php elseif (!empty($anno) && $anno['finito']): /* 9G · il tetto annuale: a mano, oppure all'assistenza */ ?>
+      <?php $annoT = $anno; include __DIR__ . '/_traduzioni_contatore.php'; ?>
     <?php elseif ($perche !== ''): ?>
       <p class="small" style="margin:0"><?= Support::e($perche) ?><?php if (empty($prop['translation_suggest'])): ?> <a href="<?= b() ?>/pannello/<?= $pid ?>/lingue#suggerite">Vai a Lingue</a><?php endif; ?></p>
-    <?php elseif ($daSuggerire): ?>
-      <div class="actions" style="margin:0"><button type="submit" form="sugg-f" class="btn btn--sm" name="suggerisci" value="1"><?= Icon::svg('globe', 15) ?> Traduci tutti i campi mancanti (<?= (int) $daSuggerire ?>)</button></div>
+    <?php elseif ($daSuggerire): /* 9F · con JavaScript: un gruppo di campi per volta, la barra «12 di 30 testi», i campi che compaiono (cms.js) */ ?>
+      <div class="actions" style="margin:0" data-traduci data-url="<?= b() ?>/pannello/<?= $pid ?>/lingue/<?= Support::e($loc) ?>/suggerite.json" data-lingua="<?= Support::e(ucfirst(MHW\I18n::nomeIt($loc))) ?>" data-csrf="<?= Support::e(Csrf::token()) ?>">
+        <button type="submit" form="sugg-f" class="btn btn--sm" name="suggerisci" value="1" data-traduci-tutti><?= Icon::svg('globe', 15) ?> <span data-traduci-etichetta>Traduci tutti i campi mancanti (<?= (int) $daSuggerire ?>)</span></button>
+      </div>
+      <div class="traduci-stato" data-traduci-stato hidden role="status" aria-live="polite"><span class="traduci-stato__barra"><i></i></span><p class="small" data-traduci-testo style="margin:0"></p></div>
     <?php else: ?>
       <p class="small" style="margin:0">Non manca niente da suggerire.</p>
     <?php endif; ?>
@@ -87,6 +93,7 @@ $campo = function (string $name, string $tipo, $orig, $trad, string $etichetta, 
       <div class="actions" style="margin:0"><span class="small"><b><?= $pronte ?></b> suggerit<?= $pronte === 1 ? 'a' : 'e' ?> da controllare, qui sotto.</span>
         <button type="submit" form="sugg-f" class="btn btn--ghost btn--sm" name="tutte" value="1">Approva tutte (<?= $pronte ?>)</button></div>
     <?php endif; ?>
+    <?php if (!empty($anno) && !$anno['finito']): ?><?php $annoT = $anno; include __DIR__ . '/_traduzioni_contatore.php'; ?><?php endif; ?>
     <p class="tiny muted" style="margin:0">Suggerite da un traduttore automatico, da approvare: finché non le approvi, gli ospiti non le vedono. Per i testi importanti, falli rileggere a un madrelingua.</p>
   </section>
 
@@ -95,10 +102,10 @@ $campo = function (string $name, string $tipo, $orig, $trad, string $etichetta, 
           $titoloOrig = $s['orig']['title'] ?: SectionCatalog::title($s['kind'], $prop['default_locale']); ?>
       <section class="panel stack">
         <div class="field" style="margin:0">
-          <label for="t<?= $sid ?>"><span class="kicker">Titolo</span></label>
-          <p class="orig" style="margin-bottom:6px"><?= Support::e($titoloOrig) ?></p>
           <?php $kt = "section:$sid:title"; ?>
-          <input type="text" id="<?= isset($sugg[$kt]) ? 'c-' . md5($kt) : 't' . $sid ?>" name="s[<?= $sid ?>][title]" maxlength="120" value="<?= Support::e($s['trad']['title']) ?>"
+          <label for="c-<?= md5($kt) ?>"><span class="kicker">Titolo</span></label>
+          <p class="orig" style="margin-bottom:6px"><?= Support::e($titoloOrig) ?></p>
+          <input type="text" id="c-<?= md5($kt) ?>" name="s[<?= $sid ?>][title]" maxlength="120" value="<?= Support::e($s['trad']['title']) ?>"
                  placeholder="<?= Support::e(SectionCatalog::title($s['kind'], $loc)) ?>">
           <?= $box($kt, trim((string) $s['trad']['title']) === '' && $titoloOrig !== SectionCatalog::title($s['kind'], $prop['default_locale'])) ?>
         </div>

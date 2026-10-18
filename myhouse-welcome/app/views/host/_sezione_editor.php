@@ -4,7 +4,7 @@
    Riceve: $prop, $acc, $s, $titoloSezione (titolo nella lingua principale),
    $dati, $tdati, $places, $modifica, $err, $inProcedura,
    $suggLuoghi e $suggRighe («Già in <struttura>», da Suggerimenti). */
-use function MHW\b;
+use function MHW\b; use function MHW\t;
 use MHW\{Support, Csrf, Icon, Media, SectionCatalog, Entitlements, Tassonomie, I18n};
 $pid = (int) $prop['id']; $sid = (int) $s['id']; $aid = (int) $acc['id'];
 $nome = SectionCatalog::title($s['kind'], $prop['default_locale']);
@@ -31,9 +31,9 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
     <form method="post" action="<?= $qui_url ?>" enctype="multipart/form-data" class="stack" data-autosave><?= Csrf::field() ?>
       <?php if ($inProcedura): ?><input type="hidden" name="da" value="procedura"><?php endif; ?>
       <div class="field" style="margin:0">
-        <label for="title">Titolo nella guida</label>
+        <label for="title"><?= t('Titolo nella guida') ?></label>
         <input id="title" name="title" type="text" maxlength="120" value="<?= $titoloSalvato ?>" placeholder="<?= Support::e($nome) ?>">
-        <p class="help" style="margin-top:6px">Se lo lasci com'è, nelle altre lingue compare il titolo già tradotto.</p>
+        <p class="help" style="margin-top:6px"><?= t('Se lo lasci com\'è, nelle altre lingue compare il titolo già tradotto.') ?></p>
       </div>
 
       <?php $kind = $s['kind']; $uid = 's' . $sid;
@@ -46,7 +46,7 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
 
       <?php if ($foto || $fotoUrl): ?>
         <fieldset class="fieldset">
-          <legend>Foto della sezione</legend>
+          <legend><?= t('Foto della sezione') ?></legend>
           <?php if ($foto):
                 $carica = ['id' => 'carica-foto', 'name' => 'foto', 'accept' => 'image/jpeg,image/png,image/webp', 'cosa' => 'la foto',
                            'aiuto' => 'JPG, PNG o WebP, fino a 8 MB.', 'url' => $fotoUrl, 'togli' => 'togli-foto'];
@@ -55,8 +55,8 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
             <div class="mediabox">
               <span class="mediabox__img"><img src="<?= Support::e($fotoUrl) ?>" alt=""></span>
               <div class="stack" style="gap:8px">
-                <p class="help">Il tuo piano non comprende le foto nelle sezioni: toglila prima di pubblicare.</p>
-                <button class="linkbtn" name="azione" value="togli-foto" formnovalidate>Togli la foto</button>
+                <p class="help"><?= t('Il tuo piano non comprende le foto nelle sezioni: toglila prima di pubblicare.') ?></p>
+                <button class="linkbtn" name="azione" value="togli-foto" formnovalidate><?= t('Togli la foto') ?></button>
               </div>
             </div>
           <?php endif; ?>
@@ -65,34 +65,34 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
 
       <?php if ($pdf || $pdfRow): ?>
         <fieldset class="fieldset">
-          <legend>PDF allegato</legend>
+          <legend><?= t('PDF allegato') ?></legend>
           <?php if ($pdf):
                 $carica = ['id' => 'carica-pdf', 'name' => 'pdf', 'accept' => 'application/pdf', 'cosa' => 'il PDF',
-                           'aiuto' => 'Per esempio: il manuale della caldaia o la mappa del paese. Solo PDF, fino a 10 MB.',
+                           'aiuto' => t('Per esempio: il manuale della caldaia o la mappa del paese. Solo PDF, fino a 10 MB.'),
                            'file' => $pdfRow ? ($pdfRow['original_name'] ?: 'Documento') : '', 'togli' => $pdfRow ? 'togli-pdf' : ''];
                 include __DIR__ . '/_carica.php';
               else: ?>
             <?php if ($pdfRow): ?><p class="small"><?= Icon::svg('doc', 15) ?> <?= Support::e($pdfRow['original_name'] ?: 'Documento') ?></p><?php endif; ?>
-            <p class="help">Il tuo piano non comprende i PDF: toglilo prima di pubblicare.</p>
-            <?php if ($pdfRow): ?><button class="linkbtn" name="azione" value="togli-pdf" formnovalidate>Togli il PDF</button><?php endif; ?>
+            <p class="help"><?= t('Il tuo piano non comprende i PDF: toglilo prima di pubblicare.') ?></p>
+            <?php if ($pdfRow): ?><button class="linkbtn" name="azione" value="togli-pdf" formnovalidate><?= t('Togli il PDF') ?></button><?php endif; ?>
           <?php endif; ?>
         </fieldset>
       <?php endif; ?>
 
       <?php if (!$foto && !$core && !$fotoUrl): /* 8B: i bottoni si vedono, con il lucchetto: aprono «Foto e PDF sono compresi in Plus» */ ?>
         <fieldset class="fieldset">
-          <legend>Foto e PDF della sezione</legend>
+          <legend><?= t('Foto e PDF della sezione') ?></legend>
           <div class="row" style="gap:8px">
             <a class="btn btn--ghost btn--sm btn--lucchetto" href="<?= b() ?>/piano?passa=plus" data-sblocca="foto"><?= Icon::svg('lock', 15, 2) ?>Aggiungi una foto</a>
             <?php if (!$pdf && !$pdfRow): ?><a class="btn btn--ghost btn--sm btn--lucchetto" href="<?= b() ?>/piano?passa=plus" data-sblocca="foto"><?= Icon::svg('lock', 15, 2) ?>Aggiungi un PDF</a><?php endif; ?>
           </div>
-          <p class="help" style="margin:0">Foto e PDF nelle sezioni sono compresi nel piano Plus.</p>
+          <p class="help" style="margin:0"><?= t('Foto e PDF nelle sezioni sono compresi nel piano Plus.') ?></p>
         </fieldset>
       <?php endif; ?>
 
       <div class="actions">
-        <button class="btn" name="azione" value="salva">Salva</button>
-        <?php if ($procedura): ?><button class="btn btn--ghost" name="dopo" value="sezioni">Salva e torna alla configurazione</button><?php endif; ?>
+        <button class="btn" name="azione" value="salva"><?= t('Salva') ?></button>
+        <?php if ($procedura): ?><button class="btn btn--ghost" name="dopo" value="sezioni"><?= t('Salva e torna alla configurazione') ?></button><?php endif; ?>
         <span class="small muted" data-stato-salvataggio aria-live="polite"></span>
       </div>
     </form>
@@ -105,8 +105,8 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
 
     <?php if (SectionCatalog::hasPlaces($s['kind'])): ?>
       <div class="stack" style="gap:12px">
-        <h2 style="font-size:22px">I luoghi che consigli</h2>
-        <?php if (!$places): ?><p class="note note--quiet">Ancora nessun luogo. Aggiungi il primo qui sotto: nome, indirizzo e due righe su perché ti piace.</p><?php endif; ?>
+        <h2 style="font-size:22px"><?= t('I luoghi che consigli') ?></h2>
+        <?php if (!$places): ?><p class="note note--quiet"><?= t('Ancora nessun luogo. Aggiungi il primo qui sotto: nome, indirizzo e due righe su perché ti piace.') ?></p><?php endif; ?>
         <?php if ($places): ?><div class="righe" data-ordina><?php endif; ?>
         <?php foreach ($places as $i => $pl): $azioneLuogo = $qui_url . '/luogo/' . (int) $pl['id'] . '/azione';
               $modificaLuogo = $modificaLuogoUrl . (int) $pl['id'] . ($procedura ? '&amp;da=procedura' : '') . '#luogo'; ?>
@@ -118,14 +118,14 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
             <details class="menu-riga">
               <summary class="icon-btn" aria-label="Azioni per <?= Support::e($pl['name']) ?>"><span aria-hidden="true">⋯</span></summary>
               <div class="menu-riga__lista">
-                <a class="menu-riga__voce" href="<?= $modificaLuogo ?>">Modifica</a>
-                <?php foreach (array_filter(['su' => $i > 0 ? 'Sposta su' : '', 'giu' => $i < count($places) - 1 ? 'Sposta giù' : '']) as $fai => $et): ?>
+                <a class="menu-riga__voce" href="<?= $modificaLuogo ?>"><?= t('Modifica') ?></a>
+                <?php foreach (array_filter(['su' => $i > 0 ? t('Sposta su') : '', 'giu' => $i < count($places) - 1 ? t('Sposta giù') : '']) as $fai => $et): ?>
                   <form method="post" action="<?= $azioneLuogo ?>" style="margin:0"><?= Csrf::field() ?><?= $inProcedura ? '<input type="hidden" name="da" value="procedura">' : '' ?>
                     <button class="menu-riga__voce" name="fai" value="<?= $fai ?>"><?= $et ?></button></form>
                 <?php endforeach; ?>
                 <hr class="rule">
                 <form method="post" action="<?= $azioneLuogo ?>" style="margin:0"><?= Csrf::field() ?><?= $inProcedura ? '<input type="hidden" name="da" value="procedura">' : '' ?>
-                  <button class="menu-riga__voce menu-riga__voce--danger" name="fai" value="elimina">Elimina</button></form>
+                  <button class="menu-riga__voce menu-riga__voce--danger" name="fai" value="elimina"><?= t('Elimina') ?></button></form>
               </div>
             </details>
           </div>
@@ -136,7 +136,7 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
               foreach ($suggLuoghi as $x) $gruppi[$x['struttura']][] = $x; ?>
           <div class="gia-altrove" data-gia-altrove>
             <?php if (count($suggLuoghi) > 12): ?>
-              <div class="field" style="margin:0"><label for="gia-cerca-<?= $sid ?>">Cerca tra i luoghi delle tue altre strutture</label>
+              <div class="field" style="margin:0"><label for="gia-cerca-<?= $sid ?>"><?= t('Cerca tra i luoghi delle tue altre strutture') ?></label>
                 <input type="search" id="gia-cerca-<?= $sid ?>" data-gia-cerca autocomplete="off" data-no-autosave></div>
             <?php endif; ?>
             <?php foreach ($gruppi as $struttura => $voci): ?>
@@ -169,7 +169,7 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
               $erroreNome = $bozza && $bozza['campo'] === 'name';
               $vFoto = $v['media_id'] ? Media::url((int) $v['media_id']) : null; ?>
         <details id="luogo" class="fieldset" <?= $inModifica || !$places || $bozza ? 'open' : '' ?>>
-          <summary class="legend" style="cursor:pointer;min-height:32px"><?= $inModifica ? 'Modifica: ' . Support::e($v['name']) : '+ Aggiungi un luogo' ?></summary>
+          <summary class="legend" style="cursor:pointer;min-height:32px"><?= $inModifica ? t('Modifica: ') . Support::e($v['name']) : t('+ Aggiungi un luogo') ?></summary>
           <?php /* Un luogo già salvato si salva anche mentre si scrive; uno nuovo solo col bottone (non nascono doppioni). */ ?>
           <form method="post" action="<?= $qui_url ?>/luogo" enctype="multipart/form-data" class="stack" style="margin-top:12px"<?= (int) $v['id'] ? ' data-autosave' : '' ?>><?= Csrf::field() ?>
             <?php if ($inProcedura): ?><input type="hidden" name="da" value="procedura"><?php endif; ?>
@@ -177,13 +177,13 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
             <?php if ($bozza && !$erroreNome): ?><p class="note note--err" role="alert"><?= Support::e($bozza['errore']) ?></p><?php endif; ?>
             <?php /* Prima il link di Maps: da lì nome, coordinate e minuti a piedi. Poi solo l'essenziale;
                      il resto in «Altri dettagli», chiuso. */ ?>
-            <div class="field" style="margin:0"><label for="pl-maps">Incolla il link di Google Maps</label>
-              <p class="help" id="pl-maps-aiuto" style="margin:0 0 6px">Su Google Maps: Condividi → Copia link. Se lasci vuoto il nome, lo prendiamo dal link.</p>
+            <div class="field" style="margin:0"><label for="pl-maps"><?= t('Incolla il link di Google Maps') ?></label>
+              <p class="help" id="pl-maps-aiuto" style="margin:0 0 6px"><?= t('Su Google Maps: Condividi → Copia link. Se lasci vuoto il nome, lo prendiamo dal link.') ?></p>
               <input id="pl-maps" name="maps_url" type="url" maxlength="500" value="<?= Support::e($v['maps_url']) ?>" placeholder="https://maps.app.goo.gl/…"
                      aria-describedby="pl-maps-aiuto pl-maps-stato" data-mappe="<?= b() ?>/pannello/<?= $pid ?>/mappe">
               <p class="help" id="pl-maps-stato" data-mappe-stato aria-live="polite"></p></div>
-            <div class="field" style="margin:0"><label for="pl-name">Nome</label>
-              <p class="help" id="pl-name-aiuto" style="margin:0 0 6px">Serve sempre: se il link di Maps non lo dà, scrivilo tu.</p>
+            <div class="field" style="margin:0"><label for="pl-name"><?= t('Nome') ?></label>
+              <p class="help" id="pl-name-aiuto" style="margin:0 0 6px"><?= t('Serve sempre: se il link di Maps non lo dà, scrivilo tu.') ?></p>
               <input type="text" id="pl-name" name="name" maxlength="160" autocomplete="off" value="<?= Support::e($v['name']) ?>"
                      aria-describedby="pl-name-aiuto<?= $erroreNome ? ' pl-name-err' : '' ?>"<?= $erroreNome ? ' aria-invalid="true" autofocus' : '' ?>>
               <?php if ($erroreNome): ?><p class="campo-errore" id="pl-name-err"><?= Support::e($bozza['errore']) ?></p><?php endif; ?></div>
@@ -194,26 +194,26 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
             $cTesto = (string) $v['tr']['category']; $bTesto = (string) $v['tr']['badge']; ?>
             <?php if ($cats): ?>
               <fieldset class="fieldset scelta-luogo">
-                <legend>Categoria</legend>
+                <legend><?= t('Categoria') ?></legend>
                 <div class="scelte scelte--riga">
                   <?php foreach ($cats as $k): ?>
                     <label class="scelta scelta--mini"><input type="radio" name="category_choice" value="<?= Support::e($k) ?>" <?= $ck === $k ? 'checked' : '' ?>><span><?= Support::e(I18n::t('it', 'cat.' . $k)) ?></span></label>
                   <?php endforeach; ?>
                   <label class="scelta scelta--mini"><input type="radio" name="category_choice" value="__altro" data-apre="pl-cat-box" <?= $ck === '' && $cTesto !== '' ? 'checked' : '' ?>><span>Altro…</span></label>
                 </div>
-                <div class="field" id="pl-cat-box" style="margin:10px 0 0"><label for="pl-cat">Scrivi la categoria</label>
+                <div class="field" id="pl-cat-box" style="margin:10px 0 0"><label for="pl-cat"><?= t('Scrivi la categoria') ?></label>
                   <input type="text" id="pl-cat" name="category" maxlength="80" value="<?= Support::e($cTesto) ?>"></div>
               </fieldset>
             <?php else: ?>
-              <div class="field" style="margin:0"><label for="pl-cat">Categoria</label>
+              <div class="field" style="margin:0"><label for="pl-cat"><?= t('Categoria') ?></label>
                 <input type="text" id="pl-cat" name="category" maxlength="80" value="<?= Support::e($cTesto) ?>"></div>
             <?php endif; ?>
-            <div class="field" style="margin:0"><label for="pl-note">Perché lo consigli</label>
+            <div class="field" style="margin:0"><label for="pl-note"><?= t('Perché lo consigli') ?></label>
               <textarea id="pl-note" name="note" rows="2" maxlength="400" placeholder="<?= Support::e(Tassonomie::SEGNAPOSTO[$s['kind']] ?? 'Prenota il tavolo in terrazza, al tramonto.') ?>"><?= Support::e($v['tr']['note']) ?></textarea></div>
             <?php if ($tags): ?>
               <fieldset class="fieldset scelta-luogo">
-                <legend>Etichetta <span class="muted">(facoltativa)</span></legend>
-                <p class="help">Compare sulla scheda del luogo, in un bollino colorato.</p>
+                <legend><?= t('Etichetta') ?> <span class="muted"><?= t('(facoltativa)') ?></span></legend>
+                <p class="help"><?= t('Compare sulla scheda del luogo, in un bollino colorato.') ?></p>
                 <div class="scelte scelte--riga">
                   <label class="scelta scelta--mini"><input type="radio" name="badge_choice" value="" <?= $bk === '' && $bTesto === '' ? 'checked' : '' ?>><span>Nessuna</span></label>
                   <?php foreach ($tags as $k): ?>

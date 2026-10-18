@@ -1015,6 +1015,11 @@ input[type=file]::file-selector-button{height:36px;margin-right:12px;padding:0 1
 .sito-invito__piede{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-top:20px}
 .sito-invito__vai{background:#b4451f;color:#fff}
 .sito-invito__vai:hover{background:#93370f;color:#fff}
+/* 9F · il riquadro non si chiude: dopo «Sì» o «No» diventa compatto («Hai già risposto: vuoi cambiare?») */
+.sito-invito--compatto{padding:18px 22px 16px}
+.sito-invito--compatto .sito-invito__titolo{font-size:20px;line-height:26px;margin-top:4px}
+.sito-invito--compatto .sito-invito__testo p{margin:4px 0 0;font-size:14px;line-height:20px}
+.sito-invito__risposta{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#e8a487;margin:0}
 .sito-invito__mai{margin:0}
 .sito-invito__mai .linkbtn{color:rgba(246,240,229,.72);font-weight:400;font-size:13px;min-height:44px}
 .sito-invito__mai .linkbtn:hover{color:#fff}
@@ -2321,15 +2326,19 @@ fieldset{min-width:0}
 .recensione-scheda__piede{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:baseline;justify-content:space-between}
 .recensione-scheda__piede [hidden]{display:none}
 .recensione-scheda__dove ol{margin:6px 0 0;padding-left:18px;color:var(--muted)}
-.diretta{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+/* 9F · da 900 px due colonne uguali, allineate in alto e alte uguali (l'anteprima si stira); su telefono in colonna. */
+.diretta{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:stretch}
+@media(min-width:900px){ .diretta{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} }
 .diretta [hidden]{display:none!important}
-.diretta__anteprima{display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:var(--r-md);background:#17130d;color:#f6f0e5}
+.diretta__campi .field input{width:100%}
+.diretta__codice{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:12px;align-items:end}
+.diretta__anteprima{display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:var(--r-md);background:#17130d;color:#f6f0e5;align-self:stretch;justify-content:center}
 .diretta__anteprima .tiny{color:rgba(246,240,229,.7)}
 .diretta__anteprima .small{color:#e8dcc8}
 .diretta__bottoni{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .diretta__finto{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid rgba(246,240,229,.4);font-size:14px}
 .diretta__finto--pieno{background:#b4451f;border-color:#b4451f;color:#fff}
-@media(max-width:760px){ .recensioni-schede,.diretta{grid-template-columns:minmax(0,1fr)} }
+@media(max-width:760px){ .recensioni-schede{grid-template-columns:minmax(0,1fr)} }
 /* 7C · Le stelle del commiato e lo sconto per chi torna. */
 .stelle{display:flex;gap:4px;margin:0}
 .stella{display:grid;place-items:center;width:52px;height:52px;padding:0;border:0;border-radius:12px;background:transparent;cursor:pointer;color:rgba(246,240,229,.45)}
@@ -2352,6 +2361,45 @@ fieldset{min-width:0}
 .novita__kicker{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#7a5608}
 .novita__kicker .dot{width:8px;height:8px;border-radius:50%;background:var(--ochre,#b07d0c)}
 .novita__testo{font-size:15px;line-height:22px}
+.novita__tutte{font-size:13px;color:var(--muted);white-space:nowrap}
+/* 9G · il contatore delle traduzioni suggerite dell'anno */
+/* 9F · Traduzione in corso: bottone con il cerchio che gira, barra che avanza per lingua o per testo, Fatto (verde) ed errore (giallo);
+   i campi tradotti compaiono con una sfumatura di 400 ms dal fondo chiaro al normale. Con prefers-reduced-motion niente animazioni. */
+.traduci-sezione{display:grid;gap:8px;margin-top:8px}
+.traduci-sezione[hidden]{display:none}
+.traduci-stato{display:grid;gap:6px;margin-top:6px}
+.traduci-stato[hidden]{display:none}
+.traduci-stato__barra{display:block;height:8px;border-radius:999px;background:var(--sunk);overflow:hidden}
+.traduci-stato__barra i{display:block;height:100%;width:0;border-radius:999px;background:var(--accent);transition:width .3s ease}
+.traduci-stato--ok .traduci-stato__barra i{background:var(--pine)}
+.traduci-stato--ok p{color:var(--pine);font-weight:600}
+.traduci-stato--err .traduci-stato__barra i{background:var(--ochre)}
+.traduci-stato--err p{color:var(--ochre);font-weight:600}
+.btn[aria-busy="true"]{opacity:.65;cursor:wait}
+.spin{display:inline-block;width:14px;height:14px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:mhw-gira 1s linear infinite;vertical-align:-2px}
+@keyframes mhw-gira{to{transform:rotate(360deg)}}
+.traduci-esito{display:grid;gap:6px}
+.traduci-esito:empty{display:none}
+.traduci-esito .campo{border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:14px;line-height:20px;background:var(--raised)}
+.traduci-esito .campo small{display:block;color:var(--muted);font-size:12px}
+.traduci-esito .campo--manca{color:var(--muted)}
+.traduci-esito__lingua{font-size:13px;color:var(--muted);margin:4px 0 0}
+.campo--nuovo,.suggerita--nuova{animation:mhw-compare .4s ease forwards}
+@keyframes mhw-compare{from{background:var(--terracotta-soft)}to{background:var(--raised)}}
+@media (prefers-reduced-motion:reduce){ .spin{animation:none} .campo--nuovo,.suggerita--nuova{animation:none} .traduci-stato__barra i{transition:none} }
+.lingua-come__esempi{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+@media(max-width:700px){ .lingua-come__esempi{grid-template-columns:1fr} }
+.lingua-come__esempi div{background:var(--sunk);border-radius:12px;padding:12px 14px;font-size:14px;line-height:20px}
+.lingua-come__esempi b{display:block;margin-bottom:4px}
+.tradu-contatore{display:grid;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--sunk)}
+.tradu-contatore__barra{width:100%}
+.tradu-contatore--basso{border-color:var(--ochre)}
+.tradu-contatore--basso .meter i b{background:var(--ochre)}
+.tradu-contatore--finito{border-color:var(--alert)}
+.tradu-contatore--finito .meter i b{background:var(--alert)}
+.novita-elenco{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.novita-elenco li{padding:14px 16px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--raised)}
+.novita-elenco time{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .novita__testo span{color:var(--muted)}
 .novita__azioni{display:flex;align-items:center;gap:8px}
 @media(max-width:640px){ .novita{grid-template-columns:minmax(0,1fr)} }
@@ -2652,11 +2700,21 @@ ol.invito__passi{list-style:none;margin:0;padding:0}
 .scegli-lingua__casa{margin:0;font-size:14px;line-height:20px;color:var(--muted,#6b6157)}
 .scegli-lingua__titolo{margin:0 0 8px;font-size:30px;line-height:36px}
 .scegli-lingua__elenco{display:flex;flex-direction:column;gap:8px}
-.scegli-lingua__lingua{display:flex;align-items:center;min-height:56px;padding:0 20px;border-radius:16px;border:1px solid var(--line,#e2d8c8);background:var(--card,#fff);color:inherit;font-size:18px;font-weight:500;text-decoration:none}
-.scegli-lingua__lingua:hover{background:var(--sunk,#f1e9dc)}
-.scegli-lingua__lingua:focus-visible{outline:3px solid var(--accent,#b4451f);outline-offset:2px}
-.scegli-lingua__lingua--telefono{background:var(--accent,#b4451f);border-color:var(--accent,#b4451f);color:var(--on-dark,#fff8f2)}
-.scegli-lingua__lingua--telefono:hover{background:var(--accent,#b4451f);filter:brightness(1.06)}
+/* 9F · ogni lingua su un bottone bianco con testo scuro (≥ 7:1), bordo sottile; quella del telefono sull'accento pieno con testo
+   chiaro. I colori arrivano dalla palette (--scelta-*) e sono gli stessi nei due temi: mai testo chiaro su fondo chiaro. */
+.scegli-lingua__lingua{display:flex;align-items:center;min-height:56px;padding:0 20px;border-radius:16px;border:1px solid rgba(35,27,18,.28);background:var(--scelta-fondo,#fff);color:var(--scelta-ink,#231b12);font-size:18px;font-weight:500;text-decoration:none}
+.scegli-lingua__lingua:hover{filter:brightness(.96)}
+.scegli-lingua__lingua:focus-visible{outline:3px solid var(--scelta-accento,#b4451f);outline-offset:2px}
+.scegli-lingua__lingua--telefono{background:var(--scelta-accento,#b4451f);border-color:var(--scelta-accento,#b4451f);color:var(--scelta-su-accento,#fff8f2)}
+.scegli-lingua__lingua--telefono:hover{filter:brightness(1.06)}
+.scegli-lingua__lingua--telefono:focus-visible{outline-color:var(--scelta-ink,#231b12)}
+/* 9F · la vetrina: marchio cliccabile e la riga «Questa è una guida di esempio · Torna al sito · Crea la tua guida» */
+.demo-tag--link{text-decoration:none}
+.demo-tag--link:hover{filter:brightness(1.08)}
+.demo-riga{margin:0;font-size:13px;line-height:20px;text-align:center;color:var(--muted)}
+.demo-riga a{color:inherit;text-decoration:underline;text-underline-offset:3px}
+.demo-riga--chiara{color:#e8dcc8}
+.demo-riga--chiara a{color:#f6f0e5}
 @media (max-width:600px){
   .scegli-lingua{width:100%;max-width:none;height:100%;max-height:none;margin:0;border-radius:0}
   .scegli-lingua__dentro{min-height:100%;justify-content:center;padding:32px 20px}

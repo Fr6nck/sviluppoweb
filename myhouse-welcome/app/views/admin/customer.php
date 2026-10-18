@@ -308,13 +308,23 @@ include __DIR__ . '/_stati.php'; ?>
         <a class="small" href="<?= b() ?>/admin/inviti">Tutti gli inviti</a>
       </section>
     <?php endif; ?>
-    <?php if ($traduzioni): ?>
-      <section class="panel stack" style="gap:8px" aria-labelledby="tr-titolo">
+    <?php if ($traduzioni): $annoC = $traduzioni['anno']; $nC = fn(int $x) => number_format($x, 0, ',', '.'); ?>
+      <section class="panel stack" id="traduzioni" style="gap:8px" aria-labelledby="tr-titolo">
         <span class="kicker" id="tr-titolo">Traduzioni suggerite</span>
-        <p class="small" style="margin:0">Questo mese: <b><?= number_format((int) $traduzioni['mese'], 0, ',', '.') ?></b> caratteri,
-          circa <?= number_format(MHW\Traduttore::inEuro(MHW\Traduttore::costoUsd((int) $traduzioni['mese'], false)), 2, ',', '.') ?> € senza piano gratuito AWS.</p>
-        <p class="small" style="margin:0">Omaggio: <?= $traduzioni['omaggio'] ? 'fino al ' . Support::e(Support::date($traduzioni['omaggio'])) : 'non ancora cominciato' ?>.
-          <a href="<?= b() ?>/admin/traduzioni#omaggi">Allungalo</a></p>
+        <?php /* 9G · «Traduzioni: 123.000 / 500.000 caratteri quest'anno», «Aggiungi 250.000» con la nota, il tetto personale */ ?>
+        <p class="small" style="margin:0">Traduzioni: <b><?= $nC((int) $annoC['usati']) ?> / <?= $nC((int) $annoC['tetto']) ?></b> caratteri quest'anno (<?= (int) $annoC['percento'] ?>%, si azzera il <?= Support::e(Support::date($annoC['azzera'])) ?>)<?= $traduzioni['nelPiano'] ? '' : ' · <span class="muted">il piano non le comprende</span>' ?>.
+          Questo mese <?= $nC((int) $traduzioni['mese']) ?> caratteri, circa <?= number_format(MHW\Traduttore::inEuro(MHW\Traduttore::costoUsd((int) $traduzioni['mese'], false)), 2, ',', '.') ?> € senza piano gratuito AWS.</p>
+        <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/traduzioni/tetto" class="stack" style="gap:8px"><?= Csrf::field() ?>
+          <div class="field" style="margin:0"><label for="tr-nota">Nota <span class="muted">(obbligatoria, resta nel registro)</span></label>
+            <input id="tr-nota" name="nota" type="text" maxlength="255" placeholder="Per esempio: ha chiesto di riattivarle, guida grande"></div>
+          <div class="row" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
+            <button class="btn btn--sm" name="aggiungi" value="1">Aggiungi <?= $nC(MHW\Traduttore::AGGIUNTA) ?></button>
+            <div class="field" style="margin:0;max-width:12rem"><label for="tr-tetto" class="small">Tetto personale <span class="muted">(vuoto = di serie)</span></label>
+              <input id="tr-tetto" name="tetto" type="text" inputmode="numeric" value="<?= $traduzioni['override'] !== null ? (int) $traduzioni['override'] : '' ?>"></div>
+            <button class="btn btn--ghost btn--sm" name="salva" value="1">Salva il tetto</button>
+          </div>
+        </form>
+        <a class="small" href="<?= b() ?>/admin/traduzioni">Tutte le traduzioni</a>
       </section>
     <?php endif; ?>
   </div>

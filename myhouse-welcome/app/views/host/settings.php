@@ -84,17 +84,19 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
         </div>
       </div>
       <div class="stack" style="gap:12px" data-sito-si<?= $haSito === 0 ? ' hidden' : '' ?>>
+      <?php /* 9F · da 900 px in su due colonne 6/6 allineate in alto, campi a tutta larghezza; «Codice sconto» e «Sconto» sulla
+               stessa riga (3/2) con l'aiuto del codice sotto tutti e due; l'anteprima alta quanto i campi. Su telefono in colonna. */ ?>
       <div class="diretta">
-        <div class="stack" style="gap:12px">
+        <div class="stack diretta__campi" style="gap:12px">
           <div class="field" style="margin:0"><label for="direct_url">Link al sito per prenotare</label>
             <input id="direct_url" name="direct_url" type="url" maxlength="500" placeholder="https://" value="<?= Support::e($dUrl) ?>" data-diretta="url"></div>
-          <div class="grid grid-2">
-            <div class="field" style="margin:0"><label for="direct_code">Codice sconto per chi torna <span class="muted">(facoltativo)</span></label>
-              <input id="direct_code" aria-describedby="direct-code-aiuto" name="direct_code" type="text" maxlength="60" autocomplete="off" value="<?= Support::e($dCod) ?>" data-diretta="codice">
-              <p class="help" id="direct-code-aiuto" style="margin:6px 0 0">Il codice lo crei tu sul tuo sito o sul tuo motore di prenotazione; qui lo scrivi perché l'ospite lo veda quando parte.</p></div>
+          <div class="diretta__codice">
+            <div class="field" style="margin:0"><label for="direct_code">Codice sconto <span class="muted">(facoltativo)</span></label>
+              <input id="direct_code" aria-describedby="direct-code-aiuto" name="direct_code" type="text" maxlength="60" autocomplete="off" value="<?= Support::e($dCod) ?>" data-diretta="codice"></div>
             <div class="field" style="margin:0"><label for="direct_discount">Sconto <span class="muted">(facoltativo)</span></label>
-              <input id="direct_discount" name="direct_discount" type="text" maxlength="40" autocomplete="off" placeholder="Per esempio 10% o 15 €" value="<?= Support::e($dSconto) ?>" data-diretta="sconto"></div>
+              <input id="direct_discount" name="direct_discount" type="text" maxlength="40" autocomplete="off" placeholder="10% o 15 €" value="<?= Support::e($dSconto) ?>" data-diretta="sconto"></div>
           </div>
+          <p class="help" id="direct-code-aiuto" style="margin:-4px 0 0">Il codice per chi torna lo crei tu sul tuo sito o sul tuo motore di prenotazione; qui lo scrivi perché l'ospite lo veda quando parte.</p>
           <p class="note" role="status" data-diretta-avviso<?= $dCod !== '' && $dUrl === '' ? '' : ' hidden' ?>>Senza il link al tuo sito l'ospite non sa dove usarlo.</p>
         </div>
         <?php /* L'anteprima della scheda che vede l'ospite nel commiato (in italiano). */ ?>

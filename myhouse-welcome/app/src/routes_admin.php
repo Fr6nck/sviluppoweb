@@ -38,9 +38,16 @@ $r->get('/admin', function () {
     $avvisi = [];
     if (!Stripe::enabled()) $avvisi[] = ['Stripe non è configurato', 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti possono preparare la guida ma non pagarla. Inseriscili nelle Impostazioni.', '/admin/impostazioni#stripe'];
     if (Config::get('mail')['transport'] === 'log') $avvisi[] = ['La posta non parte', 'Le email di conferma e di recupero della password finiscono nei registri della posta (storage/logs/mail-AAAA-MM-GG.log). Imposta il server SMTP nelle Impostazioni.', '/admin/impostazioni#posta'];
+    // 9H · Il mittente delle email deve stare sul dominio del sito (SPF/DKIM): altrimenti spam o rifiuto.
+    $mittente = (string) (Config::get('mail')['from'] ?? ''); $dominioSito = (string) parse_url((string) Config::get('base_url'), PHP_URL_HOST);
+    if (MHW\Mailer::mittenteFuoriDominio()) {
+        $avvisi[] = ['Il mittente delle email non è sul dominio del sito', 'Le email partono da ' . $mittente . ' ma il sito è su ' . $dominioSito . ': senza SPF e DKIM del dominio del mittente rischiano lo spam o il rifiuto. Usa ' . Support::contatto() . ' (Impostazioni → Posta).', '/admin/impostazioni#posta'];
+    }
     if (Config::get('storage')['driver'] !== 's3') $avvisi[] = ['Foto e PDF stanno sul disco del server', 'In produzione usa Amazon S3: bucket e credenziali si inseriscono nelle Impostazioni.', '/admin/impostazioni#archivio'];
     $usati = Traduttore::usati(); $tetto = Traduttore::tetti()['sito'];
     if ($tetto > 0 && $usati > $tetto * 0.8) $avvisi[] = ['Traduzioni suggerite oltre l\'80% del tetto del mese', 'Usati ' . number_format($usati, 0, ',', '.') . ' caratteri su ' . number_format($tetto, 0, ',', '.') . ': al tetto le richieste si fermano fino al primo del mese.', '/admin/traduzioni'];
+    // 9F · «Guida di esempio» nel pannello preferisce la vetrina: se non c'è, mostra Casa di Lucia (un cliente di esempio).
+    if (Demo::esempio() !== null && !Demo::vetrinaAttuale()) $avvisi[] = ['La guida di esempio è quella dei clienti di esempio: rifai la vetrina', 'Il link «Guida di esempio» del pannello apre una guida dei clienti di esempio perché non c\'è una vetrina pubblicata. Dalla scheda del cliente della vetrina usa «Rifai la vetrina» (o cancella storage/vetrina-automatica.txt per ricrearla da sola).'];
     if (Demo::presente()) $avvisi[] = ['Ci sono ancora i clienti di esempio', 'Sono account veri con una password nota. Toglili prima di aprire al pubblico.'];
     // 9C · Senza base_url i link e le icone nelle email partite dal cron (senza un browser) puntano a localhost.
     if ((string) Config::get('base_url') === '') $avvisi[] = ['Indirizzo del sito non impostato', 'Senza «Indirizzo pubblico del sito» i link e le icone nelle email mandate dal cron puntano a localhost (il marchio è incorporato e si vede comunque). Impostalo in Sito.', '/admin/impostazioni#sito'];
@@ -156,7 +163,10 @@ $r->get('/admin/cliente/{aid}', function (array $a) {
         'optout' => Richiami::disponibili() ? array_column(Db::all('SELECT kind FROM email_optout WHERE account_id = ?', [$acc['id']]), 'kind') : [],
         'parere' => \MHW\Migrator::tableExists('feedback') ? Db::one('SELECT * FROM feedback WHERE account_id = ?', [$acc['id']]) : null,
         'inviti' => Inviti::disponibili() ? ['stato' => Inviti::stato($acc), 'amici' => Inviti::amici((int) $acc['id']), 'invitato' => Inviti::invitato((int) $acc['id'])] : null,
-        'traduzioni' => \MHW\Migrator::tableExists('translation_usage') ? ['mese' => Traduttore::usati((int) $acc['id']), 'omaggio' => Traduttore::omaggioFino((int) $acc['id'])] : null,
+        // 9G · il contatore dell'anno, il tetto personale e «Aggiungi 250.000»
+        'traduzioni' => \MHW\Migrator::tableExists('translation_usage') ? ['mese' => Traduttore::usati((int) $acc['id']), 'anno' => Traduttore::contatore((int) $acc['id']),
+                                                                             'override' => \MHW\Migrator::columnExists('accounts', 'translate_cap_override') ? $acc['translate_cap_override'] : null,
+                                                                             'nelPiano' => Traduttore::nelPiano((int) $acc['id'])] : null,
         // 9E · i riquadri nuovi: l'anteprima di un cambio (dai parametri), le fatture pagate, i piani in vendita
         'cambio' => (function () use ($acc) {
             if (($_GET['cambio'] ?? '') === '') return null;
@@ -178,6 +188,31 @@ $r->post('/admin/cliente/{aid}/rinnovo', function (array $a) {
     try { Support::flash(MHW\AzioniCliente::rinnovo($accId, ($_POST['ferma'] ?? '') === '1', trim((string) ($_POST['motivo'] ?? '')))); }
     catch (\Throwable $e) { Support::flash($e instanceof \RuntimeException && !($e instanceof \PDOException) ? $e->getMessage() : 'Non è stato possibile (codice ' . Log::exception($e, 'admin rinnovo') . ').', 'err'); }
     Support::redirect('/admin/cliente/' . $accId . '#abbonamento');
+});
+
+/* 9G · Il tetto annuale delle traduzioni di un cliente: «Aggiungi 250.000» (nota obbligatoria) o un tetto personale. Nel registro. */
+$r->post('/admin/cliente/{aid}/traduzioni/tetto', function (array $a) {
+    $admin = Auth::requireAdmin();
+    $accId = (int) $a['aid'];
+    $acc = Db::one('SELECT * FROM accounts WHERE id = ?', [$accId]);
+    if (!$acc) { http_response_code(404); View::out('pub/404', []); }
+    $nota = trim((string) ($_POST['nota'] ?? ''));
+    try {
+        if (($_POST['aggiungi'] ?? '') === '1') {
+            if ($nota === '') throw new RuntimeException('Scrivi una nota: resta nel registro (perché si aggiungono i caratteri).');
+            $nuovo = Traduttore::tettoAccount($accId) + Traduttore::AGGIUNTA;
+            Traduttore::alzaTetto($accId, $nuovo);
+            Auth::audit('translate.cap_added', (int) $acc['user_id'], ['account' => $accId, 'aggiunti' => Traduttore::AGGIUNTA, 'tetto' => $nuovo, 'nota' => mb_substr($nota, 0, 255), 'admin' => (int) $admin['id']]);
+            Support::flash('Aggiunti ' . number_format(Traduttore::AGGIUNTA, 0, ',', '.') . ' caratteri: il tetto di quest\'anno è ' . number_format($nuovo, 0, ',', '.') . '.');
+        } else {
+            $tetto = (int) preg_replace('/\D/', '', (string) ($_POST['tetto'] ?? ''));
+            if ($nota === '') throw new RuntimeException('Scrivi una nota: resta nel registro.');
+            Traduttore::alzaTetto($accId, $tetto);
+            Auth::audit('translate.cap_override', (int) $acc['user_id'], ['account' => $accId, 'tetto' => $tetto ?: null, 'nota' => mb_substr($nota, 0, 255), 'admin' => (int) $admin['id']]);
+            Support::flash($tetto > 0 ? 'Tetto personale: ' . number_format($tetto, 0, ',', '.') . ' caratteri all\'anno.' : 'Tetto personale tolto: vale quello di serie.');
+        }
+    } catch (\Throwable $e) { Support::flash($e instanceof RuntimeException ? $e->getMessage() : 'Non è stato possibile (codice ' . Log::exception($e, 'admin tetto traduzioni') . ').', 'err'); }
+    Support::redirect('/admin/cliente/' . $accId . '#traduzioni');
 });
 
 /* Cambia il pacchetto: «anteprima» rimanda alla scheda con il conto; «conferma» fa il cambio (subito con conguaglio, o dal rinnovo). */
@@ -541,9 +576,9 @@ $r->post('/admin/pacchetti/{pid}/testo', function (array $a) use ($testiEn) {
 
 // ---------------------------------------------------------------- traduzioni
 /**
- * Le traduzioni suggerite (Traduttore): consumi e costi stimati del mese, gli
- * ultimi 12 mesi, chi traduce di più, quanto costerebbe tradurre tutto quello che
- * manca, e gli anni in omaggio (con la possibilità di allungarli). I costi sono stime.
+ * Le traduzioni suggerite (Traduttore): consumi e costi stimati del mese, gli ultimi 12 mesi con gli esiti
+ * (ok / cache / limite / errore), chi traduce di più nel mese e nell'anno (con il tetto annuale, 9G), quanto
+ * costerebbe tradurre tutto quello che manca. I costi sono stime.
  */
 $r->get('/admin/traduzioni', function () {
     Auth::requireAdmin();
@@ -551,11 +586,20 @@ $r->get('/admin/traduzioni', function () {
     $usati = Traduttore::usati();
     $gratis = Traduttore::gratuitoAttivo();
     $mesi = Db::all("SELECT month, SUM(CASE WHEN outcome = 'ok' THEN chars ELSE 0 END) AS chars, SUM(CASE WHEN outcome = 'ok' THEN 1 ELSE 0 END) AS chiamate,
+                            SUM(CASE WHEN outcome = 'cache' THEN 1 ELSE 0 END) AS cache, SUM(CASE WHEN outcome = 'cache' THEN chars ELSE 0 END) AS chars_cache,
                             SUM(CASE WHEN outcome = 'errore' THEN 1 ELSE 0 END) AS errori, SUM(CASE WHEN outcome = 'limite' THEN 1 ELSE 0 END) AS limiti
                      FROM translation_usage GROUP BY month ORDER BY month DESC LIMIT 12");
     $primi = Db::all("SELECT t.account_id, SUM(t.chars) AS chars, u.email, u.name FROM translation_usage t
                       LEFT JOIN accounts a ON a.id = t.account_id LEFT JOIN users u ON u.id = a.user_id
                       WHERE t.month = ? AND t.outcome = 'ok' GROUP BY t.account_id, u.email, u.name ORDER BY chars DESC LIMIT 10", [$mese]);
+    // 9G · chi consuma di più negli ultimi 12 mesi, con il tetto annuale di ognuno.
+    $daAnno = gmdate('Y-m-d\TH:i:s\Z', strtotime('-12 months'));
+    $anno = [];
+    foreach (Db::all("SELECT t.account_id, SUM(t.chars) AS chars, u.email, u.name FROM translation_usage t
+                      JOIN accounts a ON a.id = t.account_id JOIN users u ON u.id = a.user_id
+                      WHERE t.outcome = 'ok' AND t.created_at >= ? GROUP BY t.account_id, u.email, u.name ORDER BY chars DESC LIMIT 10", [$daAnno]) as $x) {
+        $anno[] = $x + ['contatore' => Traduttore::contatore((int) $x['account_id'])];
+    }
     // Previsione: i clienti con le traduzioni suggerite nel piano, e i caratteri ancora da tradurre nelle lingue accese.
     $clienti = 0; $daTradurre = 0;
     foreach (Db::all('SELECT DISTINCT account_id FROM properties WHERE is_demo = 0 AND archived_at IS NULL') as $x) {
@@ -567,28 +611,12 @@ $r->get('/admin/traduzioni', function () {
             }
         }
     }
-    $omaggi = Db::all("SELECT a.id, a.translation_trial_until AS fino, a.translation_trial_by_admin AS admin, u.email, u.name FROM accounts a JOIN users u ON u.id = a.user_id
-                       WHERE a.translation_trial_until IS NOT NULL ORDER BY a.translation_trial_until");
     $errori = Db::all("SELECT t.*, u.email FROM translation_usage t LEFT JOIN accounts a ON a.id = t.account_id LEFT JOIN users u ON u.id = a.user_id
-                       WHERE t.outcome <> 'ok' ORDER BY t.id DESC LIMIT 8");
-    View::out('admin/traduzioni', ['mese' => $mese, 'usati' => $usati, 'tetti' => Traduttore::tetti(), 'gratis' => $gratis, 'mesi' => $mesi, 'primi' => $primi,
-        'clienti' => $clienti, 'daTradurre' => $daTradurre, 'omaggi' => $omaggi, 'errori' => $errori, 'configurato' => Traduttore::configurato(),
+                       WHERE t.outcome IN ('errore', 'limite') ORDER BY t.id DESC LIMIT 8");
+    $cache = \MHW\Migrator::tableExists('translation_cache') ? ['righe' => (int) Db::val('SELECT COUNT(*) FROM translation_cache', [], 0), 'riusi' => (int) Db::val('SELECT COALESCE(SUM(hits), 0) FROM translation_cache', [], 0)] : null;
+    View::out('admin/traduzioni', ['mese' => $mese, 'usati' => $usati, 'tetti' => Traduttore::tetti(), 'gratis' => $gratis, 'mesi' => $mesi, 'primi' => $primi, 'anno' => $anno,
+        'clienti' => $clienti, 'daTradurre' => $daTradurre, 'errori' => $errori, 'configurato' => Traduttore::configurato(), 'cache' => $cache,
         'config' => Traduttore::config(), 'nav' => 'traduzioni'], 'layout/cms');
-});
-
-/** Allungare (o accorciare) l'anno in omaggio di un account: si sceglie la data di fine. */
-$r->post('/admin/traduzioni/omaggio', function () {
-    $admin = Auth::requireAdmin();
-    $acc = (int) ($_POST['account'] ?? 0);
-    $fino = (string) ($_POST['fino'] ?? '');
-    if (!Db::val('SELECT id FROM accounts WHERE id = ?', [$acc]) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fino) || !checkdate((int) substr($fino, 5, 2), (int) substr($fino, 8, 2), (int) substr($fino, 0, 4))) {
-        Support::flash('Scegli un cliente e una data valida.', 'err');
-        Support::redirect('/admin/traduzioni#omaggi');
-    }
-    Db::update('accounts', ['translation_trial_until' => $fino . 'T23:59:59Z', 'translation_trial_by_admin' => 1], 'id = :aid', ['aid' => $acc]);
-    Auth::audit('translation.trial', (int) $admin['id'], ['account' => $acc, 'fino' => $fino]);
-    Support::flash('Omaggio delle traduzioni suggerite fino al ' . Support::date($fino . 'T12:00:00Z') . '.');
-    Support::redirect('/admin/traduzioni#omaggi');
 });
 
 // ---------------------------------------------------------------- scadenze

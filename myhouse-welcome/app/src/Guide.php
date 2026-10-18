@@ -97,6 +97,7 @@ final class Guide
             'format' => self::FORMAT,
             'property' => [
                 'id' => (int) $p['id'], 'name' => $p['name'], 'slug' => $p['slug'], 'city' => $p['city'], 'region' => $p['region'],
+                'province' => (string) ($p['province'] ?? ''),   // 9F · la sigla (o il testo libero): nella guida «Provincia · Regione», tradotta
                 'checkin_from' => $p['checkin_from'], 'checkout_by' => $p['checkout_by'],
                 'host_name' => $p['host_name'], 'host_phone' => $p['host_phone'], 'host_whatsapp' => $p['host_whatsapp'],
                 'property_type' => (string) ($p['property_type'] ?? ''), 'property_type_other' => (string) ($p['property_type_other'] ?? ''),

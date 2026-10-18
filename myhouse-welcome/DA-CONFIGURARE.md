@@ -264,6 +264,26 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 - Niente da configurare. Ogni azione chiede il motivo (resta nel registro) e manda un'email al cliente. Per i **rimborsi** serve Stripe configurato: il rimborso parte da Stripe (`refunds`), il cliente lo vede sulla carta in 5–10 giorni; la **nota di credito la fai tu in Adamo** (il sito te lo ricorda nel messaggio di esito). Il rimborso non ferma l'abbonamento: se serve, «Ferma il rinnovo».
 - **Password provvisoria**: la vedi una sola volta nella scheda del cliente (12 caratteri, due parole e quattro cifre), vale 48 ore; comunicala al telefono, mai per email. Al primo accesso il cliente deve sceglierne una nuova. Scaduta, usa «Manda il link per reimpostarla».
 
+## 4j. Fase 9 ter (9F, 9G, 9H)
+
+**9H · Posta: tutto da assistenza@welcomemyhouse.it**
+- Su Hostinger crea la casella **assistenza@welcomemyhouse.it** e inseriscila in Amministrazione → Impostazioni → **Posta** (server SMTP, porta, utente, password, mittente = la casella stessa), poi premi **«Prova»**. Il mittente di serie (`MAIL_FROM`) è già `assistenza@welcomemyhouse.it`; se in Impostazioni c'è ancora un mittente diverso dal dominio del sito, Gestione mostra l'avviso «Il mittente delle email non è sul dominio del sito».
+- Nel DNS di welcomemyhouse.it attiva **SPF**, **DKIM** e **DMARC** per la casella (Hostinger li propone nel pannello della posta): senza, le email finiscono nello spam.
+- Ogni email automatica ha `Reply-To: assistenza@welcomemyhouse.it` (l'indirizzo di Impostazioni → Sito): le risposte dei clienti arrivano lì. Lì arrivano anche i giudizi bassi, i preventivi oltre 10 strutture, le risposte di «Anche il tuo sito», gli avvisi dei tetti delle traduzioni e i rimborsi. Indirizzi separati verranno dopo.
+
+**9F · Rifiniture**
+- **Vetrina**: la migrazione 046 aggiunge i portali e «PG · Umbria» alla vetrina pubblicata e la ripubblica. Controlla il saluto finale di Casa Checco (le tre stelle con Google, Booking e Airbnb) e, se hai cambiato la vetrina a mano, dal pannello di quell'account **Lingue → Regione/Provincia** e **Pubblica** di nuovo. In alto nella vetrina c'è «Questa è una guida di esempio · Torna al sito · Crea la tua guida».
+- **Testi e foto → «Pannello: una lingua in più»** (`lingue.extra.*`) e **«Inviti» → Messaggio di partenza** (`inviti.messaggio_partenza`, `{amico}` = la percentuale): rileggili; le versioni in inglese stanno nelle chiavi `en:` (di serie da `lang/sito-en.php`).
+- **Provincia e Regione**: le strutture esistenti hanno la regione di prima in «Regione» e la provincia vuota: i clienti la mettono dal modulo della struttura (sigla con i suggerimenti; all'estero testo libero). Per la vetrina lo fa la migrazione. Nella guida si vede «Città · Provincia · Regione», tradotti dove esiste una forma (Florence, Tuscany…).
+- **Sezione libera**: una per guida per tutti i piani (la migrazione mette «Sezione libera (una per guida)» nel confronto dei piani). Chi ne ha già due o tre le tiene.
+- **Pannello in inglese**: parte da solo quando la lingua principale non è l'italiano; il cliente lo cambia in Account & Fatturazione. Restano in italiano il passo Pubblica, Impostazioni, Aspetto, QR & Link, Statistiche e i messaggi di esito: se serve, è la fase dopo. Le richieste «La tua lingua non c'è?» arrivano all'assistenza con oggetto «Lingua mancante: …».
+
+**9G · Traduzioni suggerite**
+- **Impostazioni → Traduzioni**: il tetto per account è ora **all'anno** (`translate.cap_account`, di serie 500.000 caratteri; il vecchio 150.000 al mese viene letto come 500.000). L'anno parte dall'attivazione dell'abbonamento e si azzera al rinnovo. Il tetto mensile del sito resta com'era.
+- **Chi finisce i caratteri** vede «Hai usato le traduzioni suggerite di quest'anno… scrivici» e tu ricevi un'email all'80% e al 100%: in **Amministrazione → Clienti → scheda** premi **«Aggiungi 250.000»** con una nota (resta nel registro), oppure scrivi un tetto personale. Nessuna configurazione su AWS o Stripe: il tetto è solo nostro.
+- **Vendite → Traduzioni**: la pagina nuova con gli esiti per mese e la memoria delle frasi. La memoria si pulisce da sola con il cron (righe mai riusate da 12 mesi).
+- Niente da fare per il «primo anno in omaggio»: non esiste più, le traduzioni sono comprese in Plus e Portfolio entro il tetto.
+
 ## 4b. La guida vetrina (la demo della landing)
 
 La demo della landing si sposta su un account vero, quello dell'agenzia.
@@ -301,14 +321,14 @@ Dalla migrazione `022` Plus e Portfolio hanno le traduzioni suggerite, anche chi
 1. Regione `eu-west-1` (Irlanda), oppure un'altra regione europea con Amazon Translate.
 2. Access key ID e secret access key dell'utente del punto 1. Se le lasci vuote si usano quelle dell'archivio S3, ma allora quell'utente deve avere anche `translate:TranslateText`: meglio un utente a parte.
 3. Prezzo (15 dollari per milione di caratteri), cambio dollaro-euro e fine del piano gratuito: servono solo alle stime.
-4. Tetti: 150.000 caratteri al mese per account e 1.900.000 per tutto il sito (sotto i 2 milioni del piano gratuito). Cambiali se vuoi.
+4. Tetti: 500.000 caratteri **all'anno** per account (9G: dall'attivazione dell'abbonamento, si azzera al rinnovo) e 1.900.000 al mese per tutto il sito (sotto i 2 milioni del piano gratuito). Cambiali se vuoi; dalla scheda del cliente si aggiungono 250.000 caratteri a chi li finisce.
 5. La tua password, **«Prova con questi dati»**, poi **Salva**: deve rispondere «Benvenuti» → «Welcome» (9 caratteri, nel registro).
 
 **La prova vera, da cliente:**
-1. Con un account Plus (o la vetrina): **Lingue → Accendi le traduzioni suggerite**. Compaiono la spiegazione e «In omaggio fino al…».
+1. Con un account Plus (o la vetrina): **Lingue → Accendi le traduzioni suggerite**. Compaiono la spiegazione e il contatore dell'anno («0% dell'anno usato · si azzera il …»).
 2. Apri una lingua, per esempio English: **«Suggerisci le traduzioni mancanti (N)»**. Sotto ogni campo vuoto compare «Suggerita: da controllare».
 3. Apri la guida in inglese: le suggerite **non** ci sono. Approvane una e ricarica la guida: ora c'è.
-4. In **Amministrazione → Traduzioni** controlla caratteri, costo stimato e omaggio. Sul conto AWS i caratteri compaiono il giorno dopo.
+4. In **Amministrazione → Vendite → Traduzioni** controlla caratteri, esiti (ok, dalla memoria, fermate, errori) e costo stimato. Sul conto AWS i caratteri compaiono il giorno dopo.
 
 Dal tuo computer, senza toccare il sito: `php prove/firma-translate-botocore.php` (dalla cartella `app/`, con `pip install botocore`) confronta la firma con quella della libreria ufficiale di AWS.
 

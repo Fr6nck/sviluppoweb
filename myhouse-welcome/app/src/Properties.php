@@ -180,7 +180,8 @@ final class Properties
         // e poche sezioni libere. Più camere con reti diverse: una riga per zona nella sezione Wi-Fi.
         $gia = (int) Db::val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = ?', [$propertyId, $kind], 0);
         if (SectionCatalog::multipla($kind) && $gia >= SectionCatalog::LIBERE_MAX) {
-            throw new LimitReached('Puoi avere al massimo ' . SectionCatalog::LIBERE_MAX . ' sezioni libere in una guida.');
+            throw new LimitReached(SectionCatalog::LIBERE_MAX === 1 ? 'In una guida c\'è una sola sezione libera: cambia il titolo di quella che hai, oppure scrivi lì anche il resto.'
+                                   : 'Puoi avere al massimo ' . SectionCatalog::LIBERE_MAX . ' sezioni libere in una guida.');
         }
         if (!SectionCatalog::multipla($kind) && $gia > 0) {
             throw new \RuntimeException('«' . SectionCatalog::nome($kind) . '» c\'è già in questa guida: ogni sezione si aggiunge una volta sola. Se le camere hanno reti Wi-Fi diverse, nella sezione Wi-Fi aggiungi una riga per ogni zona.');

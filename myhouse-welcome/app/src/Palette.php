@@ -131,6 +131,9 @@ final class Palette
                . "--inverse-bg:{$v['ink']};--inverse-fg:{$v['bg']};--inverse-muted:{$v['line']};";
             foreach (['terracotta', 'sea', 'pine', 'ochre'] as $i => $n) $r .= "--tile-$n:{$p['tiles'][$i]};";
             $r .= "--tile-ink:{$p['tile_ink'][0]};--tile-ink-scuro:{$p['tile_ink'][3]};";
+            // 9F · «Scegli la lingua»: bottoni bianchi con il testo scuro della palette e la lingua del telefono sull'accento pieno
+            // della variante chiara, in TUTTI E DUE i temi: mai testo chiaro su chiaro.
+            $r .= "--scelta-fondo:#ffffff;--scelta-ink:{$p['scuro']['ink']};--scelta-accento:{$p['scuro']['accent']};--scelta-su-accento:{$p['scuro']['on_accent']};";
             return $r;
         };
         $css = ':root[data-theme="chiaro"]{' . $blocco($p['scuro']) . 'color-scheme:light}';

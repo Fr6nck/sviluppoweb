@@ -2,7 +2,7 @@
 /* La procedura guidata: cinque passi, ognuno salva da sé. Avanti, indietro,
    "continua dopo": quello che è scritto resta. A destra l'anteprima vera.
    Le lingue in più sono in fondo all'ultimo passo, facoltative. */
-use function MHW\b;
+use function MHW\b; use function MHW\t;
 use MHW\{Support, Csrf, Icon, Plans};
 $pid = (int) $prop['id'];
 $chiavi = array_keys($passi);
@@ -10,7 +10,7 @@ $i = array_search($passo, $chiavi, true);
 $fatto = $prop['wizard_step'] === 'fatto' ? count($chiavi) : (int) array_search($prop['wizard_step'] ?: 'struttura', $chiavi, true);
 $prec = $i > 0 ? $chiavi[$i - 1] : null;
 $succ = $chiavi[$i + 1] ?? null;
-$title = $passi[$passo] . ' — ' . $prop['name'];
+$title = t($passi[$passo]) . ' — ' . $prop['name'];
 $vai = fn(string $p) => b() . '/pannello/' . $pid . '/procedura/' . $p;
 $barraIndietro = $prec ? $vai($prec) : '';
 $avanti = fn(string $testo, string $verso = '') => $verso !== ''
@@ -19,38 +19,38 @@ $avanti = fn(string $testo, string $verso = '') => $verso !== ''
 
 <?php if ($prop['status'] !== 'published' && !MHW\Auth::isVerified($user)): /* la verifica email, in una riga */ ?>
   <form method="post" action="<?= b() ?>/verifica/invia" class="verifica-riga"><?= Csrf::field() ?>
-    <span><?= Icon::svg('info', 16) ?><span>Conferma la tua email<span class="verifica-riga__email"> (<?= Support::e($user['email']) ?>)</span> per poter pubblicare.</span></span>
-    <button class="linkbtn">Mandami di nuovo l'email</button>
+    <span><?= Icon::svg('info', 16) ?><span><?= t('Conferma la tua email') ?><span class="verifica-riga__email"> (<?= Support::e($user['email']) ?>)</span> <?= t('per poter pubblicare.') ?></span></span>
+    <button class="linkbtn"><?= t('Mandami di nuovo l\'email') ?></button>
   </form>
 <?php endif; ?>
 
-<nav class="steps-nav" aria-label="Passi della configurazione" style="margin-bottom:28px">
+<nav class="steps-nav" aria-label="<?= t('Passi della configurazione') ?>" style="margin-bottom:28px">
   <?php foreach ($passi as $k => $nome): $j = array_search($k, $chiavi, true); ?>
     <a href="<?= $vai($k) ?>" class="<?= $k === $passo ? 'on' : ($j < $fatto || $j < $i ? 'done' : '') ?>"<?= $k === $passo ? ' aria-current="step"' : '' ?>>
-      <span class="n"><?= $j < $fatto && $k !== $passo ? Icon::svg('check', 12, 2.4) : $j + 1 ?></span><span class="steps-nav__nome"><?= Support::e($nome) ?></span></a>
+      <span class="n"><?= $j < $fatto && $k !== $passo ? Icon::svg('check', 12, 2.4) : $j + 1 ?></span><span class="steps-nav__nome"><?= Support::e(t($nome)) ?></span></a>
   <?php endforeach; ?>
 </nav>
 
 <div class="editor">
   <div class="stack stack--lg">
     <div class="stack stack--sm">
-      <span class="kicker">Passo <?= $i + 1 ?> di <?= count($passi) ?></span>
+      <span class="kicker"><?= t('Passo') ?> <?= $i + 1 ?> <?= t('di') ?> <?= count($passi) ?></span>
 
 <?php switch ($passo):
 case 'struttura': ?>
-      <h1>Struttura e contatti.</h1>
-      <p class="lead">Nome, orari, contatti e la lingua in cui scrivi: le informazioni che l'ospite cerca per prime.</p>
+      <h1><?= t('Struttura e contatti.') ?></h1>
+      <p class="lead"><?= t('Nome, orari, contatti e la lingua in cui scrivi: le informazioni che l\'ospite cerca per prime.') ?></p>
     </div>
     <?php if (empty($avvisoLetto)): /* 6M · una volta sola per account: «Ho capito» lo chiude per sempre */ ?>
       <section class="privacy-nota privacy-nota--prima" aria-labelledby="chi-vede">
         <?= Icon::svg('lock', 18) ?>
         <div class="stack" style="gap:8px">
-          <h2 id="chi-vede" style="font-size:18px;line-height:24px;margin:0">Chi vede la tua guida</h2>
-          <p style="margin:0">Solo chi ha il link o inquadra il QR: la guida non compare su Google né negli assistenti AI. Scrivi tutto quello che serve all'ospite.
-            I codici di porte, cassette delle chiavi, casseforti e allarmi ti sconsigliamo di scriverli: comunicali tu, di persona o in privato.</p>
+          <h2 id="chi-vede" style="font-size:18px;line-height:24px;margin:0"><?= t('Chi vede la tua guida') ?></h2>
+          <p style="margin:0"><?= t('Solo chi ha il link o inquadra il QR: la guida non compare su Google né negli assistenti AI. Scrivi tutto quello che serve all\'ospite.') ?>
+            <?= t('I codici di porte, cassette delle chiavi, casseforti e allarmi ti sconsigliamo di scriverli: comunicali tu, di persona o in privato.') ?></p>
           <form method="post" action="<?= b() ?>/pannello/avviso-guida" style="margin:0"><?= Csrf::field() ?>
             <input type="hidden" name="torna" value="<?= Support::e('/pannello/' . $pid . '/procedura/struttura') ?>">
-            <button class="btn btn--sm">Ho capito</button></form>
+            <button class="btn btn--sm"><?= t('Ho capito') ?></button></form>
         </div>
       </section>
     <?php endif; ?>
@@ -58,42 +58,40 @@ case 'struttura': ?>
 <?php break;
 
 case 'arrivo': $dati = json_decode((string) $core['data'], true) ?: []; ?>
-      <h1>Check-in &amp; Check-out.</h1>
-      <p class="lead">Come si entra, cosa serve all'arrivo e cosa fare prima di partire. Spiega dove sono le chiavi e come si apre: i codici di porte
-        e cassette è meglio non scriverli qui: comunicali all'ospite in privato.</p>
+      <h1><?= t('Check-in &amp; Check-out.') ?></h1>
+      <p class="lead"><?= t('Come si entra, cosa serve all\'arrivo e cosa fare prima di partire. Spiega dove sono le chiavi e come si apre: i codici di porte e cassette è meglio non scriverli qui: comunicali all\'ospite in privato.') ?></p>
       <?php include __DIR__ . '/_privacy_nota.php'; ?>
     </div>
     <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/sezioni/<?= (int) $core['id'] ?>" class="stack" data-autosave><?= Csrf::field() ?>
       <?php $kind = 'checkin'; $uid = 'core'; include __DIR__ . '/_campi.php'; ?>
-      <?php $barraAvanti = '<button class="btn btn--go" name="dopo" value="sezioni">Salva e continua <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
+      <?php $barraAvanti = '<button class="btn btn--go" name="dopo" value="sezioni">' . t('Salva e continua') . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
             include __DIR__ . '/_barra_passo.php'; ?>
     </form>
 <?php break;
 
 case 'sezioni': ?>
-      <h1>Sezioni.</h1>
-      <p class="lead">Aggiungi quello che serve davvero ai tuoi ospiti: la sezione si apre subito qui sotto, da compilare.
-        Si salva mentre scrivi, e una sezione disattivata tiene i suoi contenuti.</p>
+      <h1><?= t('Sezioni.') ?></h1>
+      <p class="lead"><?= t('Aggiungi quello che serve davvero ai tuoi ospiti: la sezione si apre subito qui sotto, da compilare. Si salva mentre scrivi, e una sezione disattivata tiene i suoi contenuti.') ?></p>
     </div>
     <?php $torna = 'procedura'; include __DIR__ . '/_sezioni.php'; ?>
-    <?php $barraAvanti = $avanti('Salva e continua', $vai('aspetto')); include __DIR__ . '/_barra_passo.php'; ?>
+    <?php $barraAvanti = $avanti(t('Salva e continua'), $vai('aspetto')); include __DIR__ . '/_barra_passo.php'; ?>
 <?php break;
 
 case 'aspetto': ?>
-      <h1>Aspetto.</h1>
-      <p class="lead">Colori, logo e foto di copertina. L'anteprima accanto cambia mentre scegli.</p>
+      <h1><?= t('Aspetto.') ?></h1>
+      <p class="lead"><?= t('Colori, logo e foto di copertina. L\'anteprima accanto cambia mentre scegli.') ?></p>
     </div>
     <?php $dopoPasso = 'pubblica'; include __DIR__ . '/_aspetto_form.php'; ?>
 <?php break;
 
 case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
-      <h1><?= $prop['status'] === 'published' && $online ? 'Pubblica le modifiche.' : 'Pubblica la guida.' ?></h1>
-      <p class="lead">Guarda la guida come la vedranno gli ospiti. Quando ti convince, pubblicala.</p>
+      <h1><?= t($prop['status'] === 'published' && $online ? 'Pubblica le modifiche.' : 'Pubblica la guida.') ?></h1>
+      <p class="lead"><?= t('Guarda la guida come la vedranno gli ospiti. Quando ti convince, pubblicala.') ?></p>
     </div>
-    <a class="btn btn--ghost phonebtn" href="<?= Support::e(Support::url('/pannello/' . $pid . '/anteprima')) ?>" target="_blank" rel="noopener"><?= Icon::svg('eye', 16) ?>Apri l'anteprima</a>
+    <a class="btn btn--ghost phonebtn" href="<?= Support::e(Support::url('/pannello/' . $pid . '/anteprima')) ?>" target="_blank" rel="noopener"><?= Icon::svg('eye', 16) ?><?= t('Apri l\'anteprima') ?></a>
 
     <?php if ($problemi): ?>
-      <div class="note note--err" role="alert"><div class="stack" style="gap:6px"><b>Prima di pubblicare</b>
+      <div class="note note--err" role="alert"><div class="stack" style="gap:6px"><b><?= t('Prima di pubblicare') ?></b>
         <?php foreach ($problemi as $pr): ?><span><?= Support::e($pr) ?></span><?php endforeach; ?></div></div>
     <?php endif; ?>
 
@@ -173,20 +171,29 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
     <?php /* 7C: le lingue con campi da tradurre (non ferma la pubblicazione) */
           $incomplete = array_filter(array_map(fn($per) => array_sum($per), MHW\Traduttore::mancanti($prop)));
           if ($incomplete): $nomiLI = MHW\Config::get('locales'); ?>
-      <div class="note" role="status"><div class="stack" style="gap:4px"><b>Lingue da completare</b>
+      <div class="note" role="status"><div class="stack" style="gap:4px"><b><?= t('Lingue da completare') ?></b>
         <?php foreach ($incomplete as $lm => $quanti): ?>
           <span><a href="<?= b() ?>/pannello/<?= $pid ?>/lingue/<?= Support::e($lm) ?>"><?= Support::e($nomiLI[$lm] ?? $lm) ?></a>: <?= (int) $quanti ?> camp<?= $quanti === 1 ? 'o' : 'i' ?> da tradurre. Dove manca, l'ospite legge la lingua principale.</span>
         <?php endforeach; ?></div></div>
-    <?php endif; ?>
+            <?php /* 9F · «Traduci tutta la guida»: una lingua per volta, con la barra (solo con JavaScript e con le suggerite nel piano) */
+              if (MHW\Traduttore::perche((int) $prop['account_id'], $prop) === ''): $lingueW = array_map(fn($lm) => ['loc' => $lm, 'nome' => ucfirst(MHW\I18n::nomeIt($lm)),
+                  'url' => b() . '/pannello/' . $pid . '/lingue/' . $lm . '/suggerite.json', 'pagina' => b() . '/pannello/' . $pid . '/lingue/' . $lm], array_keys($incomplete)); ?>
+          <div class="traduci-sezione" data-traduci-sezione="0" data-lingue="<?= Support::e(json_encode($lingueW, JSON_UNESCAPED_UNICODE)) ?>" data-csrf="<?= Support::e(Csrf::token()) ?>" hidden>
+            <button type="button" class="btn btn--sm" data-traduci-avvia><?= Icon::svg('globe', 15) ?> <span data-traduci-etichetta>Traduci tutta la guida in <?= count($incomplete) ?> lingu<?= count($incomplete) === 1 ? 'a' : 'e' ?></span></button>
+            <div class="traduci-stato" data-traduci-stato hidden role="status" aria-live="polite"><span class="traduci-stato__barra"><i></i></span><p class="small" data-traduci-testo style="margin:0"></p></div>
+            <div class="traduci-esito" data-traduci-esito></div>
+          </div>
+        <?php endif; ?>
+        <?php endif; ?>
     <?php /* Facoltativo: le lingue in più. Le traduzioni non fermano la pubblicazione:
              dove mancano, l'ospite legge la lingua principale. */
           $altreLingue = array_diff_key($tutte, [$prop['default_locale'] => 1]); if ($altreLingue): ?>
       <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/lingue" class="fieldset stack" style="gap:12px"><?= Csrf::field() ?>
-        <span class="legend">Vuoi la guida anche in altre lingue? <span class="small muted" style="font-weight:400">Facoltativo</span></span>
-        <p class="help">Puoi pubblicare anche solo in <?= Support::e($tutte[$prop['default_locale']] ?? $prop['default_locale']) ?>. Le traduzioni le scrivi
-          da <a href="<?= b() ?>/pannello/<?= $pid ?>/lingue">Lingue</a>, quando vuoi: dove mancano, l'ospite legge la lingua principale.</p>
+        <span class="legend"><?= t('Vuoi la guida anche in altre lingue?') ?> <span class="small muted" style="font-weight:400"><?= t('Facoltativo') ?></span></span>
+        <p class="help"><?= t('Puoi pubblicare anche solo in') ?> <?= Support::e($tutte[$prop['default_locale']] ?? $prop['default_locale']) ?>. <?= t('Le traduzioni le scrivi') ?>
+          <?= t('da') ?> <a href="<?= b() ?>/pannello/<?= $pid ?>/lingue"><?= t('Lingue') ?></a>, <?= t('quando vuoi: dove mancano, l\'ospite legge la lingua principale.') ?></p>
         <?php include __DIR__ . '/_lingue_scelta.php'; ?>
-        <div><button class="btn btn--sm" name="dopo" value="pubblica">Salva le lingue</button></div>
+        <div><button class="btn btn--sm" name="dopo" value="pubblica"><?= t('Salva le lingue') ?></button></div>
       </form>
     <?php endif; ?>
 
@@ -222,7 +229,7 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
       </section>
     <?php endif; ?>
 
-    <p class="small muted pubblica-riservata"><?= Icon::svg('lock', 14) ?><span>Dopo la pubblicazione la guida è online per chi ha il link o il QR. Non compare nei motori di ricerca.</span></p>
+    <p class="small muted pubblica-riservata"><?= Icon::svg('lock', 14) ?><span><?= t('Dopo la pubblicazione la guida è online per chi ha il link o il QR. Non compare nei motori di ricerca.') ?></span></p>
     <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/pubblica" style="margin:0" data-base="<?= b() ?>"><?= Csrf::field() ?>
       <?php if (!$sub && $piano): /* 8J · chi acquista, prima del primo pagamento: impresa o privato (con la richiesta di iniziare subito) */
             $acqS = (array) ($_SESSION['acquisto'] ?? []); ?>
@@ -279,7 +286,7 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
       <?php endif; ?>
       <?php /* 9D · con l'omaggio l'obbligo di pagare sta sul bottone (art. 65 Codice del Consumo): «0 € oggi, X € + IVA il …» */
             $omB = !$sub && $piano && !empty($riep['omaggio']) ? $riep : null;
-            $etichettaB = $sub ? 'Pubblica ora' : ($omB ? 'Inserisci la carta e pubblica <small class="btn__sotto">0 € oggi · ' . Support::e(Support::money($omB['totale'], $piano['currency'])) . ' + IVA il ' . Support::e(Support::date(gmdate('Y-m-d\TH:i:s\Z', $omB['omaggio']['fine']))) . '</small>' : 'Conferma e paga');
+            $etichettaB = $sub ? t('Pubblica ora') : ($omB ? 'Inserisci la carta e pubblica <small class="btn__sotto">0 € oggi · ' . Support::e(Support::money($omB['totale'], $piano['currency'])) . ' + IVA il ' . Support::e(Support::date(gmdate('Y-m-d\TH:i:s\Z', $omB['omaggio']['fine']))) . '</small>' : 'Conferma e paga');
             $barraAvanti = '<button class="btn btn--go' . ($omB ? ' btn--due-righe' : '') . '" ' . ($problemi || (!$sub && (!$verificato || !$piano || !MHW\Fatturazione::completa($acc))) ? 'disabled' : '') . '>'
                          . $etichettaB . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
             include __DIR__ . '/_barra_passo.php'; ?>

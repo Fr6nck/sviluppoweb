@@ -107,7 +107,8 @@ $config = [
         'pass'      => $env('MAIL_PASS'),
         // tls = STARTTLS sulla 587; ssl = connessione cifrata sulla 465; none = in chiaro (solo prove)
         'encryption'=> $env('MAIL_ENCRYPTION', 'tls'),
-        'from'      => $env('MAIL_FROM', 'noreply@myhouse.it'),
+        // 9H · Per ora un solo indirizzo per tutto (decisione del titolare): assistenza@welcomemyhouse.it, sul dominio del sito.
+        'from'      => $env('MAIL_FROM', 'assistenza@welcomemyhouse.it'),
         'from_name' => $env('MAIL_FROM_NAME', 'MyHouse Welcome'),
     ],
 

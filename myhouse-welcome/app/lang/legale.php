@@ -34,7 +34,7 @@ T,
 'termini.2.testo' => <<<'T'
 MyHouse Welcome permette a chi gestisce una struttura ricettiva di creare una guida digitale per i propri ospiti, raggiungibile da un link e da un codice QR. Gli ospiti non si registrano e non installano applicazioni.
 
-**Una guida, un'unità ricettiva.** Ogni guida corrisponde a una sola unità ricettiva: un indirizzo e un CIN (Codice Identificativo Nazionale), che è obbligatorio per pubblicare e non può essere usato da un'altra guida. Una guida non può raccogliere più case, appartamenti o strutture con indirizzi o CIN diversi: per ciascuna serve una guida, per esempio con il piano Portfolio. Fanno eccezione B&B, affittacamere e agriturismi con più camere allo stesso indirizzo e con lo stesso CIN: sono una struttura sola; se le camere hanno reti Wi-Fi diverse, si scrivono nella sezione Wi-Fi, una riga per zona. In ogni guida ogni sezione compare una volta sola, e le sezioni libere sono al massimo tre. Se una guida è usata per più unità ricettive possiamo chiederti di separarla e, se non lo fai, sospenderne la pubblicazione dopo un avviso.
+**Una guida, un'unità ricettiva.** Ogni guida corrisponde a una sola unità ricettiva: un indirizzo e un CIN (Codice Identificativo Nazionale), che è obbligatorio per pubblicare e non può essere usato da un'altra guida. Una guida non può raccogliere più case, appartamenti o strutture con indirizzi o CIN diversi: per ciascuna serve una guida, per esempio con il piano Portfolio. Fanno eccezione B&B, affittacamere e agriturismi con più camere allo stesso indirizzo e con lo stesso CIN: sono una struttura sola; se le camere hanno reti Wi-Fi diverse, si scrivono nella sezione Wi-Fi, una riga per zona. In ogni guida ogni sezione compare una volta sola, e la sezione libera è una sola per guida. Se una guida è usata per più unità ricettive possiamo chiederti di separarla e, se non lo fai, sospenderne la pubblicazione dopo un avviso.
 T,
 'termini.3.titolo' => 'Account',
 'termini.3.testo' => <<<'T'
@@ -112,7 +112,7 @@ T,
 'termini.13.testo' => <<<'T'
 Con i piani che le comprendono puoi chiedere traduzioni suggerite da un traduttore automatico (Amazon Translate). Sono proposte da controllare: entrano nella guida solo quando le approvi, e da quel momento sono contenuti tuoi come gli altri. Non garantiamo che siano corrette o adatte al tuo testo: per i testi importanti, falle rileggere a un madrelingua.
 
-Le traduzioni suggerite sono in omaggio per dodici mesi dalla prima attivazione nel tuo account e possono avere un limite mensile di caratteri. Finito l'omaggio non se ne possono chiedere di nuove; quelle che hai approvato restano nella guida.
+Le traduzioni suggerite sono comprese nei piani Plus e Portfolio entro un limite annuale di caratteri indicato nel pannello; oltre, su richiesta. Quelle che hai approvato restano nella guida anche dopo il limite.
 T,
 'termini.14.titolo' => 'Modifiche ai Termini',
 'termini.14.testo' => <<<'T'
@@ -407,7 +407,7 @@ T,
 'termini.2.testo' => <<<'T'
 MyHouse Welcome lets whoever runs an accommodation business create a digital guide for their guests, reachable from a link and a QR code. Guests do not sign up and do not install apps.
 
-**One guide, one accommodation unit.** Each guide corresponds to a single accommodation unit: one address and one CIN (the Italian National Identification Code), which is required to publish and cannot be used by another guide. A guide cannot cover several houses, flats or properties with different addresses or CINs: each one needs its own guide, for example with the Portfolio plan. B&Bs, guesthouses and farm stays with several rooms at the same address and with the same CIN are the exception: they are a single property; if rooms have different Wi-Fi networks, list them in the Wi-Fi section, one line per area. In each guide every section appears only once, and there are at most three free sections. If a guide is used for several accommodation units we may ask you to split it and, if you don't, suspend its publication after a notice.
+**One guide, one accommodation unit.** Each guide corresponds to a single accommodation unit: one address and one CIN (the Italian National Identification Code), which is required to publish and cannot be used by another guide. A guide cannot cover several houses, flats or properties with different addresses or CINs: each one needs its own guide, for example with the Portfolio plan. B&Bs, guesthouses and farm stays with several rooms at the same address and with the same CIN are the exception: they are a single property; if rooms have different Wi-Fi networks, list them in the Wi-Fi section, one line per area. In each guide every section appears only once, and there is one free section per guide. If a guide is used for several accommodation units we may ask you to split it and, if you don't, suspend its publication after a notice.
 T,
 'termini.3.titolo' => 'Account',
 'termini.3.testo' => <<<'T'
@@ -485,7 +485,7 @@ T,
 'termini.13.testo' => <<<'T'
 With the plans that include them you can ask for translations suggested by a machine translator (Amazon Translate). They are proposals to be checked: they enter the guide only when you approve them, and from then on they are your content like the rest. We do not guarantee they are correct or suitable for your text: for important texts, have them reviewed by a native speaker.
 
-Suggested translations are free for twelve months from their first activation in your account and may have a monthly character limit. After the free period no new ones can be requested; those you approved stay in the guide.
+Suggested translations are included in the Plus and Portfolio plans within a yearly character limit shown in the dashboard; beyond it, on request. Those you approved stay in the guide even after the limit.
 T,
 'termini.14.titolo' => 'Changes to these Terms',
 'termini.14.testo' => <<<'T'

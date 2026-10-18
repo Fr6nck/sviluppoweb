@@ -1,0 +1,57 @@
+<?php
+namespace MHW;
+
+/**
+ * 9F·11 · La lingua del pannello: italiano, oppure inglese quando l'host scrive la guida in una lingua diversa
+ * dall'italiano (lingua principale di una sua struttura), salvo l'interruttore «Pannello in: Italiano / English»
+ * in Account (users.panel_lang). L'amministrazione resta in italiano.
+ *
+ * Le viste scrivono t('Testo italiano') (MHW\t): il dizionario lang/pannello-en.php dà l'inglese; una frase che
+ * manca resta in italiano. Il catalogo delle sezioni (etichette, aiuti, opzioni) ha il suo file, lang/catalogo-en.php,
+ * applicato da SectionCatalog::fields() e simili.
+ */
+final class Pannello
+{
+    private static ?string $lingua = null;
+    private static ?array $dizionario = null;
+
+    /** 'it' oppure 'en'. */
+    public static function lingua(): string
+    {
+        if (self::$lingua !== null) return self::$lingua;
+        $u = Auth::user();
+        if (!$u || ($u['role'] ?? '') === 'admin') return self::$lingua = 'it';
+        $scelta = (string) ($u['panel_lang'] ?? '');
+        if (in_array($scelta, ['it', 'en'], true)) return self::$lingua = $scelta;
+        // Di serie dalla lingua principale: una guida non in italiano → pannello in inglese.
+        $acc = Auth::account();
+        if ($acc && Db::val("SELECT 1 FROM properties WHERE account_id = ? AND archived_at IS NULL AND is_demo < 2 AND default_locale <> 'it' LIMIT 1", [(int) $acc['id']])) return self::$lingua = 'en';
+        return self::$lingua = 'it';
+    }
+
+    public static function en(): bool { return self::lingua() === 'en'; }
+
+    /** Per le prove e dopo un cambio: si ricalcola alla prossima chiamata. */
+    public static function reset(): void { self::$lingua = null; }
+
+    /** Imposta la scelta dell'host ('' = di serie dalla lingua principale). */
+    public static function scegli(int $userId, string $lingua): void
+    {
+        if (!Migrator::columnExists('users', 'panel_lang')) return;
+        Db::update('users', ['panel_lang' => in_array($lingua, ['it', 'en'], true) ? $lingua : ''], 'id = :id', ['id' => $userId]);
+        self::reset();
+    }
+
+    public static function dizionario(): array
+    {
+        if (self::$dizionario === null) { $f = MHW_APP . '/lang/pannello-en.php'; self::$dizionario = is_file($f) ? (array) require $f : []; }
+        return self::$dizionario;
+    }
+
+    /** Il testo nella lingua del pannello: l'inglese dal dizionario (o quello passato), altrimenti l'italiano. */
+    public static function t(string $it, ?string $en = null): string
+    {
+        if (!self::en()) return $it;
+        return $en ?? (self::dizionario()[$it] ?? $it);
+    }
+}

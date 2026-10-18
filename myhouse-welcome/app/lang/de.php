@@ -57,6 +57,10 @@ return [
     'updated_on'       => 'Aktualisiert am %s',
     'demo_badge'       => 'Demo',
     'demo_note'        => 'Demo-Führer: Unterkunft und Orte sind Beispiele.',
+    'demo_example'        => 'Dies ist ein Beispiel-Guide',
+    'demo_back_site'        => 'Zurück zur Website',
+    'demo_create'        => 'Erstelle deinen Guide',
+    'demo_back_title'        => 'Zurück zu %s',
     'unavailable'      => 'Dieser Gästeführer ist nicht verfügbar.',
     'unavailable_body' => 'Der Link ist richtig, aber der Gästeführer ist gerade nicht online. Wenn Sie in der Unterkunft wohnen, wenden Sie sich an Ihren Gastgeber.',
     'not_found'        => 'Hier ist nichts.',
@@ -81,7 +85,7 @@ return [
     'og_guide_title'   => '%s · Der Hausführer',
     'og_guide_desc'    => 'Check-in, WLAN und Tipps für Ihren Aufenthalt.',
     'og_review_title'  => '%s · Wie war Ihr Aufenthalt?',
-    'kind.custom'      => 'Weitere Informationen',
+    'kind.custom'      => 'Nützliche Informationen',
     'kind.info'        => 'Gut zu wissen',
 
     // Fase 3: struttura, contatti, arrivo e partenza, Wi-Fi

@@ -1,51 +1,37 @@
 <?php
-/* «Come funziona se non scrivi in italiano»: cosa vuol dire la lingua principale, con le regole del piano
-   (Entitlements::regolaLingue), le traduzioni suggerite e i bottoni della guida.
-   Riceve $prop (account_id, default_locale) e, facoltativo, $comeGenerico (true = la versione per «la tua lingua»,
-   quando la lingua principale è ancora l'italiano). */
-use MHW\{Support, I18n, Entitlements, Traduttore};
+/* 9F · «Una lingua in più, oltre alle cinque di base» (mockup lingua-traduzione, riquadro 1): a cosa serve la lingua in più,
+   con due esempi e la riga sui bottoni della guida. I testi stanno in Testi e foto (TestiSito, sezione «Pannello»).
+   Con Essential il riquadro dice «2 lingue: la tua e una a scelta», coerente con Entitlements::regolaLingue (8C).
+   Riceve $prop (account_id, default_locale) e, facoltativo, $comeGenerico (dal primo passo della procedura: versione breve). */
+use MHW\{Support, I18n, Entitlements, TestiSito};
 $aidC = (int) $prop['account_id'];
 $locC = (string) ($prop['default_locale'] ?: 'it');
-$genC = !empty($comeGenerico) || $locC === 'it';
-$nomeC = I18n::nomeIt($locC);
-$vocale = fn(string $n) => (bool) preg_match('/^[aeiouh]/i', $n);
-$ilC = $genC ? 'la tua lingua' : ($vocale($nomeC) ? "l'" : 'il ') . $nomeC;          // «il tedesco», «l'olandese»
-$dalC = $genC ? 'dalla tua lingua' : ($vocale($nomeC) ? "dall'" : 'dal ') . $nomeC;   // «dal tedesco», «dall'inglese»
-$inC = $genC ? 'nella tua lingua' : 'in ' . $nomeC;
-$nC = Entitlements::limit($aidC, 'locales', 1); $xC = Entitlements::limit($aidC, 'lingua_extra', 0);
-$tradC = Traduttore::nelPiano($aidC);
-$nExtra = count(I18n::EXTRA);
+$xC = Entitlements::limit($aidC, 'lingua_extra', 0);
+$nC = Entitlements::limit($aidC, 'locales', 1);
 $conBottoni = array_values(array_filter(I18n::EXTRA, [I18n::class, 'interfaccia']));
+$nomiBott = array_map(fn($l) => mb_strtolower((string) (MHW\Config::get('locales')[$l] ?? $l)), $conBottoni);
 $elenco = fn(array $l) => count($l) > 1 ? implode(', ', array_slice($l, 0, -1)) . ' e ' . end($l) : (string) ($l[0] ?? '');
-$titoloC = $genC ? 'Scrivi in un\'altra lingua? Ecco come funziona' : 'Scrivi la guida ' . $inC . ': ecco come funziona'; ?>
-<?php if ($genC): ?><details class="lingua-come"><summary><?= Support::e($titoloC) ?></summary><?php else: ?>
-<section class="lingua-come lingua-come--aperta" aria-labelledby="lingua-come-titolo"><h2 id="lingua-come-titolo" class="lingua-come__titolo"><?= Support::e($titoloC) ?></h2><?php endif; ?>
-  <ul class="lingua-come__voci">
-    <li><b>I tuoi testi</b> restano <?= Support::e($inC) ?>, così come li scrivi: è la lingua che legge chi la sceglie, ed è quella da cui partono le traduzioni.</li>
-    <li><b>Le altre lingue.</b>
-      <?php if ($xC <= 0): ?>
-        Il tuo piano comprende <?= Support::e($ilC) ?> e una seconda lingua, quella che vuoi<?= $genC || $locC !== 'it' ? ', anche l\'italiano' : '' ?>. Con Plus le lingue diventano sei.
-      <?php elseif ($genC): ?>
-        Se è una delle lingue di base (inglese, francese, tedesco, spagnolo) hai anche le altre e una lingua in più a scelta tra <?= $nExtra ?>; se è un'altra lingua, per esempio il russo o il portoghese del Brasile, occupa il posto della lingua in più e hai tutte e cinque le lingue di base.
-      <?php elseif (I18n::base($locC)): ?>
-        <?= Support::e(ucfirst($ilC)) ?> è una delle cinque lingue di base: hai anche le altre quattro e una lingua in più a scelta tra <?= $nExtra ?>.
-      <?php else: ?>
-        <?= Support::e(ucfirst($ilC)) ?> occupa il posto della lingua in più: in più hai le cinque lingue di base, cioè italiano, inglese, francese, tedesco e spagnolo.
-      <?php endif; ?></li>
-    <li><b>Le traduzioni.</b>
-      <?php if ($tradC): ?>
-        Te le suggerisce il traduttore automatico partendo <?= Support::e($dalC) ?>: nella pagina di ogni lingua tocchi «Traduci» e approvi le proposte una per una. Gli ospiti vedono solo quelle che approvi.
-      <?php else: ?>
-        Le scrivi tu, nella pagina di ogni lingua, accanto al testo <?= Support::e($inC) ?>. Con Plus te le suggerisce il traduttore automatico, partendo <?= Support::e($dalC) ?>.
-      <?php endif; ?></li>
-    <li><b>I bottoni e i titoli della guida</b>
-      <?php if ($genC): ?>
-        sono tradotti nelle cinque lingue di base e in <?= Support::e($elenco(array_map([I18n::class, 'nomeIt'], $conBottoni))) ?>; per le altre lingue l'ospite li legge in inglese.
-      <?php elseif (I18n::interfaccia($locC)): ?>
-        sono già <?= Support::e($inC) ?>: l'ospite non trova parole in italiano.
-      <?php else: ?>
-        <?= Support::e($inC) ?> non sono tradotti: l'ospite li legge in inglese, mentre i tuoi testi restano <?= Support::e($inC) ?>.
-      <?php endif; ?></li>
-    <li><b>Il pannello</b> resta in italiano. Se cambi la lingua principale, i testi già scritti restano nella lingua in cui li hai scritti e diventano una traduzione.</li>
-  </ul>
-<?php if ($genC): ?></details><?php else: ?></section><?php endif; ?>
+$locT = MHW\Pannello::en() ? 'en' : null;   // 9F·11: in inglese quando il pannello è in inglese (chiavi «en:» di Testi e foto, o lang/sito-en.php)
+$grezzo = fn(string $k) => TestiSito::disponibili() ? TestiSito::get($k, $locT) : TestiSito::serie($k, $locT);
+$sostT = fn(array $sost) => array_combine(array_map(fn($x) => '{' . $x . '}', array_keys($sost)), array_map('strval', array_values($sost)));
+$t = fn(string $k, array $sost = []) => strtr((string) preg_replace(['/\*\*(.+?)\*\*/s', '/\[([^\]]+)\]\(([^)\s]+)\)/'], ['$1', '$1'], $grezzo($k)), $sostT($sost));
+$h = fn(string $k, array $sost = []) => TestiSito::formatta($grezzo($k), $sost);
+$esempio = function (string $k) use ($t): array { $r = preg_split('/\R/', trim($t($k)), 2); return [(string) ($r[0] ?? ''), (string) ($r[1] ?? '')]; };
+[$e1t, $e1] = $esempio('lingue.extra.esempio1'); [$e2t, $e2] = $esempio('lingue.extra.esempio2');
+$breve = !empty($comeGenerico); ?>
+<section class="lingua-come lingua-come--aperta" aria-labelledby="lingua-come-titolo">
+  <h2 id="lingua-come-titolo" class="lingua-come__titolo"><?= Support::e($t('lingue.extra.titolo')) ?></h2>
+  <?php if ($xC <= 0): /* Essential: due lingue in tutto */ ?>
+    <p><?= Support::e($t('lingue.extra.essential')) ?></p>
+  <?php else: ?>
+    <p><?= $h('lingue.extra.testo') ?></p>
+  <?php endif; ?>
+  <?php if (!$breve): ?>
+    <div class="lingua-come__esempi">
+      <div><b><?= Support::e($e1t) ?></b><?= Support::e($e1) ?></div>
+      <div><b><?= Support::e($e2t) ?></b><?= Support::e($e2) ?></div>
+    </div>
+  <?php endif; ?>
+  <p class="small muted" style="margin:0"><?= Support::e($t('lingue.extra.nota', ['bottoni' => $elenco($nomiBott)])) ?>
+    <?php if ($locC !== 'it' && !I18n::interfaccia($locC)): $nomeL = MHW\Pannello::en() ? (string) (MHW\Config::get('locales')[$locC] ?? $locC) : I18n::nomeIt($locC); ?> <?= Support::e(ucfirst($nomeL)) ?>: <?= MHW\Pannello::t('i bottoni in inglese, i tuoi testi in', 'buttons in English, your texts in') ?> <?= Support::e($nomeL) ?>.<?php endif; ?></p>
+</section>

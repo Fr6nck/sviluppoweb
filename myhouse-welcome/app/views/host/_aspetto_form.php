@@ -81,7 +81,7 @@ $media = [
   <?php endforeach; ?>
 
   <?php if ($dopoPasso !== ''):
-        $barraAvanti = '<button class="btn btn--go" name="dopo" value="' . Support::e($dopoPasso) . '">Salva e continua <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
+        $barraAvanti = '<button class="btn btn--go" name="dopo" value="' . Support::e($dopoPasso) . '">' . MHW\Pannello::t('Salva e continua') . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
         include __DIR__ . '/_barra_passo.php';
       else: ?>
   <div class="actions">

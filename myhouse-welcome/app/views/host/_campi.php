@@ -5,6 +5,7 @@
    Le righe con sottocampi (repeater) le disegna _ripetitore.php.
    Riceve: $kind, $dati (campi uguali in ogni lingua), $tdati (campi tradotti),
            e se c'è $prop (per i suggerimenti nella lingua della guida). */
+use function MHW\t;
 use MHW\{Support, SectionCatalog, I18n, Icon, Tassonomie};
 $uid = $uid ?? 'c';
 $linguaGuida = $prop['default_locale'] ?? 'it';
@@ -24,7 +25,7 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
     if (isset($defCampo['solo_con'])) echo '<div class="campo-solo" data-campo-solo-con="' . Support::e($defCampo['solo_con'][0]) . '" data-solo-valori="' . Support::e(implode(',', $defCampo['solo_con'][1])) . '">';
     // 7C · Novità: un campo nuovo ancora vuoto ha il bordo ocra e «Nuovo», finché non si compila o si preme «Ho visto».
     $nuovoQui = in_array($nome, $campiNuovi ?? [], true);
-    if ($nuovoQui) echo '<div class="campo-nuovo"><span class="badge badge--ochre campo-nuovo__et">Nuovo</span>';
+    if ($nuovoQui) echo '<div class="campo-nuovo"><span class="badge badge--ochre campo-nuovo__et">' . t('Nuovo') . '</span>';
     if ($tipo === 'check'): /* un interruttore; spento, i campi legati spariscono e al salvataggio si svuotano */
         $acceso = SectionCatalog::acceso($kind, $nome, $dati); ?>
   <div class="field interruttore-campo" style="margin:0">
@@ -50,7 +51,7 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
         (function (array $rip) { include __DIR__ . '/_ripetitore.php'; })([
             'name' => $nome, 'legend' => $etichetta, 'help' => $aiuto, 'sub' => $defCampo['sub'],
             'rows' => SectionCatalog::rows($defCampo, $dati[$nome] ?? [], $tdati[$nome] ?? []),
-            'add' => $defCampo['add'] ?? 'Aggiungi', 'item' => $defCampo['item'] ?? 'Voce', 'max' => $defCampo['max'] ?? 30,
+            'add' => $defCampo['add'] ?? t('Aggiungi'), 'item' => $defCampo['item'] ?? t('Voce'), 'max' => $defCampo['max'] ?? 30,
             'foto' => $foto ?? true, 'pdf' => $pdf ?? true, 'eventi' => !empty($defCampo['eventi']),
             // «Già in <struttura>»: le righe scritte nelle altre strutture, con il modulo che le copia qui.
             'altre' => $suggRighe[$nome] ?? [], 'modulo_altre' => isset($sid) ? 'da-altra-' . $sid : '',
@@ -84,7 +85,7 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
         <fieldset class="interruttore">
           <legend class="interruttore__nome"><?= Support::e($ol) ?></legend>
           <div class="scelte scelte--riga">
-            <?php foreach (['si' => I18n::t('it', 'rule_' . $ok . '_si'), 'no' => I18n::t('it', 'rule_' . $ok . '_no'), '' => 'Non indicato'] as $tv => $tl): ?>
+            <?php foreach (['si' => I18n::t('it', 'rule_' . $ok . '_si'), 'no' => I18n::t('it', 'rule_' . $ok . '_no'), '' => t('Non indicato')] as $tv => $tl): ?>
               <label class="scelta scelta--mini"><input type="radio" name="<?= Support::e($nome) ?>[<?= Support::e($ok) ?>]" value="<?= $tv ?>" <?= $ora === $tv ? 'checked' : '' ?>><span><?= Support::e($tl) ?></span></label>
             <?php endforeach; ?>
           </div>
@@ -115,7 +116,7 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
     <legend><?= Support::e($etichetta) ?><?= $facHtml ?></legend>
     <?php if ($aiuto !== ''): ?><p class="help"><?= Support::e($aiuto) ?></p><?php endif; ?>
     <div class="scelte scelte--riga">
-      <?php foreach (['' => 'Non indicato'] + $defCampo['options'] as $ok => $ol): ?>
+      <?php foreach (['' => t('Non indicato')] + $defCampo['options'] as $ok => $ol): ?>
         <label class="scelta"><input type="radio" name="<?= Support::e($nome) ?>" value="<?= Support::e((string) $ok) ?>" <?= (string) $valore === (string) $ok ? 'checked' : '' ?>>
           <span class="scelta__testo"><?= Support::e($ol) ?></span></label>
       <?php endforeach; ?>
@@ -131,12 +132,12 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
       <?php foreach ($righe as $i => $riga): ?>
         <div class="r pillola-r">
           <input type="text" name="<?= Support::e($nome) ?>[]" value="<?= Support::e((string) $riga) ?>" maxlength="80" size="<?= max(8, min(28, mb_strlen((string) $riga) + 2)) ?>"
-                 aria-label="<?= Support::e($etichetta) ?>, voce <?= $i + 1 ?>" placeholder="<?= $riga === '' ? 'Per esempio: giochi da tavolo' : '' ?>">
+                 aria-label="<?= Support::e($etichetta) ?>, voce <?= $i + 1 ?>" placeholder="<?= $riga === '' ? t('Per esempio: giochi da tavolo') : '' ?>">
           <button type="button" class="pillola-r__togli" data-togli-riga aria-label="Togli questa dotazione" hidden>&times;</button>
         </div>
       <?php endforeach; ?>
     </div>
-    <button type="button" class="linkbtn" data-aggiungi-riga="<?= Support::e($id) ?>" hidden>+ <?= Support::e($defCampo['add'] ?? 'Aggiungi') ?></button>
+    <button type="button" class="linkbtn" data-aggiungi-riga="<?= Support::e($id) ?>" hidden>+ <?= Support::e($defCampo['add'] ?? t('Aggiungi')) ?></button>
   </fieldset>
 <?php elseif (in_array($tipo, ['steps', 'list'], true)):
         $righe = array_values(array_filter((array) $valore, fn($x) => trim((string) $x) !== ''));
@@ -156,10 +157,10 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
       <?php endforeach; ?>
     </div>
     <button type="button" class="linkbtn" data-aggiungi-riga="<?= Support::e($id) ?>" hidden>
-      + <?= $tipo === 'steps' ? 'Aggiungi un passaggio' : 'Aggiungi una voce' ?></button>
+      + <?= $tipo === 'steps' ? t('Aggiungi un passaggio') : t('Aggiungi una voce') ?></button>
     <?php if (!empty($defCampo['suggest'])): /* suggerimenti a un tocco, nella lingua della guida */ ?>
       <div class="suggerimenti" data-solo-js hidden>
-        <span class="small muted">Suggerimenti:</span>
+        <span class="small muted"><?= t('Suggerimenti:') ?></span>
         <?php foreach ($defCampo['suggest'] as $sg): ?>
           <button type="button" class="chip-sugg" data-suggerisci="<?= Support::e($id) ?>"
                   data-testo="<?= Support::e(I18n::t($linguaGuida, 'sugg_' . $sg)) ?>">+ <?= Support::e(I18n::t('it', 'checkout_' . $sg)) ?></button>

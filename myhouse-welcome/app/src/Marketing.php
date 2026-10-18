@@ -59,11 +59,12 @@ final class Marketing
         return $periodo === 'tutto' ? '' : gmdate('Y-m-d\TH:i:s\Z', time() - (int) $periodo * 86400);
     }
 
-    /** La regione di una struttura: quella scritta, altrimenti dal CAP. */
+    /** La regione di una struttura: quella scritta, altrimenti dalla provincia (9F), altrimenti dal CAP. */
     public static function regione(array $p): string
     {
         $r = trim((string) ($p['region'] ?? ''));
         if ($r !== '') return $r;
+        if (($rp = Territorio::regioneDi((string) ($p['province'] ?? ''))) !== '') return $rp;
         $cap = preg_replace('/\D/', '', (string) ($p['postal_code'] ?? ''));
         return strlen($cap) === 5 ? (self::CAP_REGIONE[substr($cap, 0, 2)] ?? 'Non indicata') : 'Non indicata';
     }
@@ -98,7 +99,7 @@ final class Marketing
         $t = [];
 
         // ---------------------------------------------------------------- le guide create nel periodo
-        $guide = Db::all('SELECT p.id, p.account_id, p.property_type, p.property_type_other, p.city, p.region, p.postal_code, p.status
+        $guide = Db::all('SELECT p.id, p.account_id, p.property_type, p.property_type_other, p.city, p.region, ' . (Migrator::columnExists('properties', 'province') ? 'p.province, ' : '') . 'p.postal_code, p.status
                           FROM properties p JOIN accounts a ON a.id = p.account_id JOIN users u ON u.id = a.user_id
                           WHERE ' . self::vere() . $dal('p.created_at'));
         $n = count($guide);

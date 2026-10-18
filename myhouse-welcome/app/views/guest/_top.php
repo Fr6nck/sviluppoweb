@@ -16,7 +16,9 @@ $etScuro = I18n::t($loc, 'theme_dark'); $etChiaro = I18n::t($loc, 'theme_light')
       <?= MHW\Icon::brand(28, 'simbolo--ospite') ?>
     <?php endif; ?>
     <?php if (empty($indietro) && !$logo): ?><span class="guest-name"><?= Support::e($pr['name']) ?></span><?php endif; ?>
-    <?php if (!empty($pr['is_demo'])): ?><span class="demo-tag"><?= Support::e(I18n::t($loc, 'demo_badge')) ?></span><?php endif; ?>
+    <?php if (!empty($pr['is_demo'])): /* 9F · nella vetrina il marchio DEMO porta alla home del sito; nelle guide vere non c'è alcun link */ ?>
+      <a class="demo-tag demo-tag--link" href="<?= Support::e(Support::baseUrl()) ?>/" title="<?= Support::e(I18n::t($loc, 'demo_back_title', $hostSito = (string) parse_url(Support::baseUrl(), PHP_URL_HOST) ?: 'welcomemyhouse.it')) ?>"><?= Support::e(I18n::t($loc, 'demo_badge')) ?></a>
+    <?php endif; ?>
   </div>
   <div class="row" style="gap:8px">
     <?php if (empty($nascondiTema)) include __DIR__ . '/../layout/_tema-bottone.php'; ?>

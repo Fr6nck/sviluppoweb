@@ -130,6 +130,19 @@ final class Mailer
      * @param array{0:string,1:string}|null $bottone
      * @param array{0:string,1:string}|null $piede [html, testo]
      */
+    /**
+     * 9H · Il mittente sta sul dominio del sito? (SPF e DKIM valgono per quel dominio.) Vuoto, un IP o localhost: non si giudica.
+     * Senza argomenti usa mail.from e base_url della configurazione.
+     */
+    public static function mittenteFuoriDominio(?string $mittente = null, ?string $base = null): bool
+    {
+        $mittente = strtolower(trim($mittente ?? (string) (Config::get('mail')['from'] ?? '')));
+        $host = strtolower((string) parse_url($base ?? (string) Config::get('base_url'), PHP_URL_HOST));
+        $host = (string) preg_replace('/^www\./', '', $host);
+        if ($mittente === '' || $host === '' || $host === 'localhost' || filter_var($host, FILTER_VALIDATE_IP)) return false;
+        return !str_ends_with($mittente, '@' . $host);
+    }
+
     public static function manda(string $to, string $oggetto, string $titolo, array $paragrafi, ?array $bottone = null, ?string $nota = null, ?array $piede = null): bool
     {
         return self::send($to, $oggetto . ' — MyHouse Welcome', self::testo($titolo, $paragrafi, $bottone, $nota, $piede[1] ?? null),
@@ -178,6 +191,9 @@ final class Mailer
             'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $dominio . '>',
             'MIME-Version: 1.0',
         ];
+        // 9H · Chi risponde a un'email automatica scrive all'assistenza (Impostazioni → Sito), qualunque sia il mittente.
+        $risposte = filter_var(Support::contatto(), FILTER_VALIDATE_EMAIL) ? self::oneLine(Support::contatto()) : '';
+        if ($risposte !== '') $headers[] = 'Reply-To: <' . $risposte . '>';
         if ($html === null) {
             $headers[] = 'Content-Type: text/plain; charset=UTF-8';
             $headers[] = 'Content-Transfer-Encoding: base64';

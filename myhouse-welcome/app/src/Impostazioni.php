@@ -41,7 +41,7 @@ final class Impostazioni
             'mail.encryption' => ['MAIL_ENCRYPTION', 'Cifratura', 'choice', '', ['tls' => 'STARTTLS (porta 587)', 'ssl' => 'SSL (porta 465)', 'none' => 'Nessuna (sconsigliato)']],
             'mail.user'       => ['MAIL_USER', 'Utente', 'text', 'Di solito l\'indirizzo email completo.'],
             'mail.pass'       => ['MAIL_PASS', 'Password della casella', 'secret', ''],
-            'mail.from'       => ['MAIL_FROM', 'Mittente', 'email', 'L\'indirizzo che vedono i clienti. Meglio se è la stessa casella dell\'utente.'],
+            'mail.from'       => ['MAIL_FROM', 'Mittente', 'email', 'L\'indirizzo che vedono i clienti: per ora assistenza@welcomemyhouse.it per tutto (9H), sul dominio del sito, con SPF, DKIM e DMARC attivi. Meglio se è la stessa casella dell\'utente. Le risposte arrivano sempre all\'indirizzo di assistenza (Sito).'],
             'mail.from_name'  => ['MAIL_FROM_NAME', 'Nome del mittente', 'text', ''],
         ],
         'archivio' => [
@@ -60,7 +60,7 @@ final class Impostazioni
             'translate.price_usd_per_million' => ['MHW_TRANSLATE_PRICE', 'Prezzo, in dollari per milione di caratteri', 'decimale', 'Il listino di Amazon Translate: 15.'],
             'translate.usd_eur'               => ['MHW_TRANSLATE_USD_EUR', 'Cambio: quanti euro vale un dollaro', 'decimale', 'Per le stime in euro, per esempio 0,86.'],
             'translate.free_tier_until'       => ['MHW_TRANSLATE_FREE_UNTIL', 'Fine del piano gratuito di AWS', 'data', '2 milioni di caratteri al mese per 12 mesi dalla prima traduzione. Vuoto = nessun piano gratuito.'],
-            'translate.cap_account'           => ['MHW_TRANSLATE_CAP_ACCOUNT', 'Tetto per account, caratteri al mese', 'cifra', 'Oltre, quel cliente non riceve altre suggerite fino al mese dopo. Predefinito 150.000.'],
+            'translate.cap_account'           => ['MHW_TRANSLATE_CAP_ACCOUNT', 'Tetto per account, caratteri all\'anno', 'cifra', '9G: l\'anno parte dall\'attivazione dell\'abbonamento e si azzera al rinnovo. Oltre, quel cliente scrive le traduzioni a mano o ci scrive; dalla sua scheda si aggiungono 250.000 caratteri. Predefinito 500.000 (≈ 3–4 guide intere nelle 5 lingue).'],
             'translate.extra'                 => ['MHW_TRANSLATE_EXTRA', 'Traduci anche la lingua aggiuntiva', 'check', 'Le traduzioni suggerite anche verso la lingua in più di Plus e Portfolio (olandese, portoghese, giapponese…). Spento, quella lingua si scrive a mano.'],
             'translate.cap_global'            => ['MHW_TRANSLATE_CAP_GLOBAL', 'Tetto per tutto il sito, caratteri al mese', 'cifra', 'Predefinito 1.900.000, sotto i 2 milioni del piano gratuito.'],
         ],

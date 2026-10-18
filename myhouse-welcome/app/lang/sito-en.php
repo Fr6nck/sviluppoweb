@@ -6,6 +6,13 @@
  * (**grassetto**, [testo](link)).
  */
 return [
+    // ---- 9F·11 · il riquadro «Una lingua in più» del pannello, quando il pannello è in inglese
+    'lingue.extra.titolo'    => 'One more language, besides the five base ones',
+    'lingue.extra.testo'     => 'The five base languages are Italian, English, French, German and Spanish. The extra language serves two cases: **if your guests speak another language** (for example Dutch or Polish), you add it here and the guide shows it; **if you write the guide in a language other than Italian**, yours is the main language and the five base ones all stay.',
+    'lingue.extra.esempio1'  => "You write in Italian, guests from the Netherlands\nMain language: Italian · Extra language: Nederlands. The guide comes out in 6 languages.",
+    'lingue.extra.esempio2'  => "You write in Polish\nMain language: Polski · Extra language: none. The five base ones are already there, translated from Polish.",
+    'lingue.extra.nota'      => 'The guide\'s interface (buttons and titles) is translated for {bottoni}; for the other extra languages the buttons are in English and the texts in the chosen language.',
+    'lingue.extra.essential' => 'With Essential you have 2 languages: yours and one of your choice. With Plus and Portfolio the five base ones and one more.',
     // ---- in cima
     'hero.kicker'   => 'The digital front desk for your holiday rental',
     'hero.titolo'   => "Your home answers\nbefore they ask.",

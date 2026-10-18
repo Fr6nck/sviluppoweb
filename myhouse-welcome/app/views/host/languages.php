@@ -10,18 +10,18 @@ $def = $prop['default_locale']; ?>
     <p class="lead">Scegli in quali lingue pubblicare la guida e scrivi le traduzioni, sezione per sezione, accanto al testo originale.</p>
   </div>
   <?php if ($err): ?><p class="note note--err" role="alert"><?= Support::e($err) ?></p><?php endif; ?>
-  <?php /* Chi non scrive in italiano: come funzionano lingue, traduzioni e bottoni della guida. */
-        if ($def !== 'it') include __DIR__ . '/_lingua_come.php'; ?>
+  <?php /* 9F · «Una lingua in più, oltre alle cinque di base»: sopra la scelta, per tutti. */
+        include __DIR__ . '/_lingua_come.php'; ?>
 
   <?php $dopoPasso = ''; include __DIR__ . '/_lingue_form.php'; ?>
 
-  <?php /* Traduzioni suggerite: l'interruttore della struttura, l'anno in omaggio. Niente prezzi. */ ?>
+  <?php /* Traduzioni suggerite (9G): comprese in Plus e Portfolio entro un limite annuale di caratteri; il contatore dell'anno. Niente prezzi. */ ?>
   <section class="panel stack" id="suggerite" aria-labelledby="suggerite-titolo">
     <div class="row" style="gap:10px;align-items:center;flex-wrap:wrap">
       <h2 id="suggerite-titolo" style="font-size:22px;margin:0">Traduzioni suggerite</h2>
       <?php if (!$trad['piano']): ?><span class="badge badge--paper">con il piano Plus</span>
-      <?php elseif ($trad['acceso'] && !$trad['finito']): ?><span class="badge badge--pine">Accese</span>
-      <?php elseif ($trad['acceso']): ?><span class="badge badge--ochre">Omaggio finito</span><?php endif; ?>
+      <?php elseif ($trad['anno'] && $trad['anno']['finito']): ?><span class="badge badge--ochre">Limite dell'anno raggiunto</span>
+      <?php elseif ($trad['acceso']): ?><span class="badge badge--pine">Accese</span><?php endif; ?>
     </div>
     <p class="help" style="margin:0">Un traduttore automatico propone le traduzioni dei testi che mancano. Tu le controlli e le approvi: finché non le approvi, gli ospiti non le vedono.</p>
     <?php if ($trad['spiegazione']): ?>
@@ -32,15 +32,9 @@ $def = $prop['default_locale']; ?>
     <?php endif; ?>
     <?php if (!$trad['piano']): ?>
       <label class="scelta scelta--fissa"><input type="checkbox" disabled><span class="scelta__testo">Accendi le traduzioni suggerite <span class="small muted">con il piano Plus</span></span></label>
-      <p class="small" style="margin:0"><a href="<?= b() ?>/piano?passa=plus">Scopri Plus: traduzioni suggerite in omaggio per un anno</a></p>
+      <p class="small" style="margin:0"><a href="<?= b() ?>/piano?passa=plus">Scopri Plus: traduzioni suggerite comprese nel piano</a></p>
     <?php else: ?>
-      <?php if ($trad['finito']): ?>
-        <p class="small" style="margin:0">L'anno in omaggio è finito il <?= Support::e(Support::date((string) $trad['fino'])) ?>: le traduzioni che hai approvato restano, ma non se ne possono chiedere di nuove.</p>
-      <?php elseif ($trad['fino']): ?>
-        <p class="small" style="margin:0">In omaggio fino al <?= Support::e(Support::date((string) $trad['fino'])) ?>, per tutte le strutture del tuo account.</p>
-      <?php else: ?>
-        <p class="small" style="margin:0">In omaggio per un anno dalla prima accensione.</p>
-      <?php endif; ?>
+      <?php $annoT = $trad['anno']; include __DIR__ . '/_traduzioni_contatore.php'; ?>
       <form method="post" action="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/lingue/suggerite" class="actions" style="margin:0"><?= Csrf::field() ?>
         <?php if ($trad['acceso']): ?>
           <input type="hidden" name="acceso" value="0"><button class="btn btn--ghost btn--sm">Spegni per questa struttura</button>

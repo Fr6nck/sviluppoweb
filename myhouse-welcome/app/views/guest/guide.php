@@ -63,7 +63,7 @@ foreach ($eventiDi as $sidEv => $righeEv):
 
 <?php if ($pr['city']): ?>
   <p class="small muted" style="margin-top:20px;text-align:center">
-    <?= Support::e(trim($pr['city'] . ($pr['region'] ? ', ' . $pr['region'] : ''))) ?> ·
+    <?= Support::e(MHW\Territorio::dove($pr, $loc)) /* 9F · «Assisi · Perugia · Umbria», tradotto dove esiste una forma */ ?> ·
     <?= Support::e(I18n::t($loc, 'checkout_by', $pr['checkout_by'])) ?></p>
 <?php endif; ?>
 
@@ -81,6 +81,11 @@ foreach ($eventiDi as $sidEv => $righeEv):
   <p class="tiny muted" style="margin:18px 0 28px;text-align:center">
     <?php if (!empty($snap['published_at'])): ?><?= Support::e(I18n::t($loc, 'updated_on', gmdate('d/m/Y', strtotime($snap['published_at']) ?: time()))) ?><?php endif; ?>
     <?php if ($cin !== ''): ?><?= !empty($snap['published_at']) ? '<br>' : '' ?>CIN <?= Support::e($cin) ?><?php endif; ?></p>
+<?php endif; ?>
+<?php if (!empty($pr['is_demo'])): /* 9F · la vetrina lo dice in fondo: è un esempio, si torna al sito o si crea la propria */ ?>
+  <p class="demo-riga" style="margin:0 0 12px"><b><?= Support::e(I18n::t($loc, 'demo_example')) ?></b> ·
+    <a href="<?= Support::e(Support::baseUrl()) ?>/"><?= Support::e(I18n::t($loc, 'demo_back_site')) ?></a> ·
+    <a href="<?= Support::e(Support::baseUrl()) ?>/registrati"><?= Support::e(I18n::t($loc, 'demo_create')) ?></a></p>
 <?php endif; ?>
 <?php if ($pr['branding'] ?? true): /* la firma: un link alla landing, senza cookie; nascondibile con Plus e Portfolio */ ?>
   <p class="tiny firma"><?= Support::e(I18n::t($loc, 'made_with')) ?> ·

@@ -8,7 +8,7 @@
    JavaScript) e le voci della guida una fila di schede che scorre.
    Senza utente, o durante la procedura di una guida mai pubblicata, niente
    barra: solo il marchio, per non distrarre. */
-use function MHW\a; use function MHW\b;
+use function MHW\a; use function MHW\b; use function MHW\t;
 use MHW\{Auth, Support, Csrf, Entitlements, Icon};
 $u = Auth::user(); $f = Support::flash();
 $admin = ($u['role'] ?? '') === 'admin' && !Auth::isImpersonating();
@@ -25,16 +25,16 @@ $conLato = $u && !$soloPassi;
 $gruppiAdmin = $admin ? [
     'Vendite' => array_merge([['admin', '/admin', 'Quadro', 'grid'], ['prospetti', '/admin/prospetti', 'Prospetti', 'chart'], ['vendite', '/admin/vendite', 'Vendite per piano', 'layers'], ['marketing', '/admin/marketing', 'Marketing', 'chart'],
                   ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'], ['scadenze', '/admin/scadenze', 'Scadenze', 'calendar'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'],
-                  ['sconti', '/admin/sconti', 'Codici sconto', 'euro']], MHW\Omaggi::disponibili() ? [['omaggi', '/admin/omaggi', 'Codici omaggio', 'card']] : [],
+                  ['sconti', '/admin/sconti', 'Codici sconto', 'euro'], ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe']], MHW\Omaggi::disponibili() ? [['omaggi', '/admin/omaggi', 'Codici omaggio', 'card']] : [],
                   MHW\Inviti::disponibili() ? [['inviti', '/admin/inviti', 'Inviti', 'message']] : [],
                   MHW\Preventivi::disponibili() ? [['preventivi', '/admin/preventivi', 'Preventivi', 'message']] : []),
     'Clienti' => [['clienti', '/admin/clienti', 'Clienti', 'people'], ['guide', '/admin/guide', 'Guide', 'book'], ['anomalie', '/admin/anomalie', 'Anomalie', 'warning'],
-                  ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe'], ['giudizi', '/admin/giudizi', 'Giudizi', 'star'], ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star']],
+                  ['giudizi', '/admin/giudizi', 'Giudizi', 'star'], ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star']],
     'Sistema' => [['impostazioni', '/admin/impostazioni', 'Impostazioni', 'key'], ['testi', '/admin/testi', 'Testi e foto', 'doc'], ['seo', '/admin/seo', 'SEO e GEO', 'search'],
                   ['registro', '/admin/registro', 'Registro', 'list'], ['diagnostica', '/admin/diagnostica', 'Diagnostica', 'pulse']],
 ] : [];
 $generale = $admin ? array_merge(...array_values($gruppiAdmin))
-  : [['guide', '/pannello', 'Le mie guide', 'grid'], ['account', '/account', 'Account & Fatturazione', 'card']];
+  : [['guide', '/pannello', 'Le mie guide', 'grid'], ['account', '/account', 'Account & Fatturazione', 'card'], ['novita', '/pannello/novita', 'Novità', 'star']];
 // Per i clienti la voce c'è sempre, con gli inviti accesi: chi non può ancora invitare vede il motivo.
 // 7D: con l'etichetta colorata degli sconti (all'amico / a te).
 if (!$admin && $u && Auth::account() && MHW\Inviti::disponibili()) $generale[] = ['inviti', '/inviti', 'Invita un amico', 'people', "\u{2212}" . MHW\Inviti::AMICO . "% / \u{2212}" . MHW\Inviti::PASSO . '%'];
@@ -48,7 +48,7 @@ if ($prop) {
     $guida[] = ['impostazioni', "/pannello/$pid/impostazioni", 'Impostazioni', 'sliders'];
 }
 $quiGuida = $qui === 'procedura' ? 'contenuti' : $qui;
-$statoGuida = !$prop ? null : ($prop['status'] !== 'published' ? ['ochre', 'Bozza'] : ['pine', 'Pubblicata']);
+$statoGuida = !$prop ? null : ($prop['status'] !== 'published' ? ['ochre', t('Bozza')] : ['pine', t('Pubblicata')]);
 
 // Dove sei: le briciole in alto nella tela.
 $briciole = [];
@@ -56,11 +56,11 @@ if ($admin) {
     $briciole[] = ['Amministrazione', $nav === 'admin' ? null : '/admin'];
     foreach ($generale as [$k, , $l]) if ($k === $nav && $k !== 'admin') $briciole[] = [$l, null];
 } elseif ($u) {
-    $briciole[] = [['account' => 'Account & Fatturazione', 'inviti' => 'Invita un amico'][$nav] ?? 'Le mie guide', $prop ? '/pannello' : null];
+    $briciole[] = [t(['account' => 'Account & Fatturazione', 'inviti' => 'Invita un amico', 'novita' => 'Novità'][$nav] ?? 'Le mie guide'), $prop ? '/pannello' : null];
     if ($prop) {
         $briciole[] = [$prop['name'], null];
-        foreach ($guida as [$k, , $l]) if ($k === $quiGuida) $briciole[] = [$l, null];
-        if ($qui === 'procedura') $briciole[] = ['Configurazione', null];
+        foreach ($guida as [$k, , $l]) if ($k === $quiGuida) $briciole[] = [t($l), null];
+        if ($qui === 'procedura') $briciole[] = [t('Configurazione'), null];
     }
 }
 
@@ -69,7 +69,7 @@ $voci = function (array $elenco, string $on, string $classe) {
         [$k, $href, $l, $ico] = $voce; $etichetta = (string) ($voce[4] ?? '');
         $si = $k === $on;
         echo '<a class="' . $classe . ($si ? ' on' : '') . '" href="' . b() . Support::e($href) . '"' . ($si ? ' aria-current="page"' : '') . '>'
-           . Icon::svg($ico, 19, 1.8) . '<span>' . Support::e($l) . '</span>'
+           . Icon::svg($ico, 19, 1.8) . '<span>' . Support::e(t($l)) . '</span>'
            . ($etichetta !== '' ? '<em class="lato__etichetta" title="Sconto per il tuo amico / per te">' . Support::e($etichetta) . '</em>' : '') . '</a>';
     }
 };
@@ -93,33 +93,33 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
           <i class="lato__stato lato__stato--<?= $statoGuida[0] ?>" title="<?= $statoGuida[1] ?>"></i></span>
         <?php $voci($guida, $quiGuida, 'lato__voce'); ?>
         <a class="lato__voce" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/anteprima" target="_blank" rel="noopener">
-          <?= Icon::svg('eye', 19, 1.8) ?><span>Anteprima</span><?= Icon::svg('external', 14, 1.8, 'lato__fuori') ?></a>
+          <?= Icon::svg('eye', 19, 1.8) ?><span><?= t('Anteprima') ?></span><?= Icon::svg('external', 14, 1.8, 'lato__fuori') ?></a>
         <?php if (($esempio = MHW\Demo::esempio(null, (int) ($prop['id'] ?? 0)))): /* 7C: la vetrina, per vedere una guida finita */ ?>
           <a class="lato__voce" href="<?= Support::e(Support::url($esempio)) ?>" target="_blank" rel="noopener">
-            <?= Icon::svg('book', 19, 1.8) ?><span>Guida di esempio</span><?= Icon::svg('external', 14, 1.8, 'lato__fuori') ?></a>
+            <?= Icon::svg('book', 19, 1.8) ?><span><?= t('Guida di esempio') ?></span><?= Icon::svg('external', 14, 1.8, 'lato__fuori') ?></a>
         <?php endif; ?>
       </nav>
     <?php endif; ?>
     <div class="lato__piede">
       <div class="lato__utente">
         <span class="avatar" aria-hidden="true"><?= Support::e($iniziale) ?></span>
-        <span class="lato__chi"><b><?= Support::e($u['name'] ?: 'Il tuo account') ?></b><span><?= Support::e($u['email']) ?></span></span>
+        <span class="lato__chi"><b><?= Support::e($u['name'] ?: t('Il tuo account')) ?></b><span><?= Support::e($u['email']) ?></span></span>
       </div>
       <?php if (!$admin && Support::contatto() !== ''): /* 7A: l'assistenza, con pagina, struttura e account già scritti */
             $paginaAiuto = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH); ?>
         <a class="lato__aiuto" href="<?= Support::e(Support::mailto('Assistenza — ' . ($prop['name'] ?? 'MyHouse Welcome'),
             "Ciao, mi serve aiuto con MyHouse Welcome.\n\nPagina: " . $paginaAiuto . "\nStruttura: " . ($prop['name'] ?? '—') . "\nAccount: " . $u['email'] . "\n\nCosa succede:\n")) ?>">
-          <?= Icon::svg('message', 18, 1.8) ?>Aiuto</a>
+          <?= Icon::svg('message', 18, 1.8) ?><?= t('Aiuto') ?></a>
       <?php endif; ?>
       <div class="lato__comandi">
         <?php $etScuro = 'Passa al tema scuro'; $etChiaro = 'Passa al tema chiaro'; include __DIR__ . '/_tema-bottone.php'; ?>
         <form method="post" action="<?= b() ?>/esci" style="margin:0"><?= Csrf::field() ?>
-          <button class="lato__esci"><?= Icon::svg('logout', 18, 1.8) ?>Esci</button></form>
+          <button class="lato__esci"><?= Icon::svg('logout', 18, 1.8) ?><?= t('Esci') ?></button></form>
       </div>
     </div>
 <?php }; ?>
 <!doctype html>
-<html lang="it">
+<html lang="<?= MHW\Pannello::en() ? 'en' : 'it' ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -132,7 +132,7 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
 <link rel="stylesheet" href="<?= MHW\av('/assets/app.css') ?>">
 </head>
 <body class="cms<?= $conLato ? ' cms--lato' : '' ?>">
-<a class="salta" href="#contenuto">Vai al contenuto</a>
+<a class="salta" href="#contenuto"><?= t('Vai al contenuto') ?></a>
 <?php if (Auth::isImpersonating()): ?>
 <div class="impersonating"><div class="wrap">
   <span>Stai guardando l'applicazione con l'account di un cliente. La sessione finisce da sola entro un'ora.</span>
@@ -172,10 +172,10 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
       <?php if ($prop): ?>
         <div class="tela__azioni">
           <?php if ($qui === 'procedura'): ?>
-            <a class="btn btn--quiet btn--sm propbar__dopo" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>">Continua dopo</a>
+            <a class="btn btn--quiet btn--sm propbar__dopo" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>"><?= t('Continua dopo') ?></a>
           <?php endif; ?>
-          <a class="btn btn--ghost btn--sm" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/anteprima" target="_blank" rel="noopener"><?= Icon::svg('eye', 15) ?><span>Anteprima</span></a>
-          <a class="btn btn--sm" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/procedura/pubblica">Pubblica</a>
+          <a class="btn btn--ghost btn--sm" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/anteprima" target="_blank" rel="noopener"><?= Icon::svg('eye', 15) ?><span><?= t('Anteprima') ?></span></a>
+          <a class="btn btn--sm" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/procedura/pubblica"><?= t('Pubblica') ?></a>
         </div>
       <?php endif; ?>
     </header>
@@ -219,7 +219,7 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
   <a class="brand" href="<?= b() ?>/<?= $u ? ($admin ? 'admin' : 'pannello') : '' ?>"><?= Icon::brand(26) ?><span>myhouse welcome</span></a>
   <div class="row" style="gap:10px">
     <?php if ($soloPassi): ?>
-      <a class="btn btn--quiet btn--sm propbar__dopo" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>">Continua dopo</a>
+      <a class="btn btn--quiet btn--sm propbar__dopo" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>"><?= t('Continua dopo') ?></a>
     <?php endif; ?>
     <?php include __DIR__ . '/_tema-bottone.php'; ?>
   </div>
@@ -248,10 +248,13 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
           $notaN = !empty($novita['nota_aria']) && MHW\Db::val("SELECT 1 FROM sections s JOIN properties p ON p.id = s.property_id WHERE p.account_id = ? AND s.kind = 'aria' AND s.is_active = 0", [$accN['id']]) ? (string) $novita['nota_aria'] : ''; ?>
     <div class="novita__testo"><b id="novita-titolo"><?= Support::e($novita['titolo']) ?></b> <span><?= Support::e($novita['testo']) ?></span><?php if ($notaN !== ''): ?> <span class="novita__nota"><?= Support::e($notaN) ?></span><?php endif; ?></div>
     <div class="novita__azioni">
-      <?php if ($doveN !== ''): ?><a class="btn btn--sm" href="<?= b() . Support::e($doveN) ?>"<?= str_ends_with($doveN, '/anteprima') ? ' target="_blank" rel="noopener"' : '' ?>>Mostrami dove</a><?php endif; ?>
-      <form method="post" action="<?= b() ?>/pannello/novita/chiudi" style="margin:0"><?= Csrf::field() ?>
-        <input type="hidden" name="novita" value="<?= Support::e($novita['id']) ?>">
-        <button class="icon-btn" aria-label="Chiudi questa novità"><?= Icon::svg('close', 16, 2) ?></button></form>
+      <?php /* 9F · niente ✕: «Mostrami dove» segna la novità come vista (POST) e porta lì; la fascia resta finché non ne esce un'altra. */ ?>
+      <?php if ($doveN !== ''): ?>
+        <form method="post" action="<?= b() ?>/pannello/novita/vai" style="margin:0"<?= str_ends_with($doveN, '/anteprima') ? ' target="_blank"' : '' ?>><?= Csrf::field() ?>
+          <input type="hidden" name="novita" value="<?= Support::e($novita['id']) ?>"><input type="hidden" name="dove" value="<?= Support::e($doveN) ?>">
+          <button class="btn btn--sm">Mostrami dove</button></form>
+      <?php endif; ?>
+      <a class="novita__tutte" href="<?= b() ?>/pannello/novita">Tutte le novità</a>
     </div>
   </aside>
 <?php endif; ?>

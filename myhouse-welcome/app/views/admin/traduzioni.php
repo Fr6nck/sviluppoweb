@@ -1,7 +1,7 @@
 <?php
-/* Amministrazione → Traduzioni: consumi e costi stimati delle traduzioni suggerite
-   (Amazon Translate), gli ultimi 12 mesi, chi traduce di più, la previsione e gli
-   anni in omaggio. I costi sono stime: fa fede la fattura di AWS. */
+/* Amministrazione → Vendite → Traduzioni: consumi e costi stimati delle traduzioni suggerite
+   (Amazon Translate), gli ultimi 12 mesi con gli esiti (ok / cache / limite / errore), chi traduce
+   di più nel mese e nell'anno con il tetto annuale (9G), la previsione. I costi sono stime: fa fede la fattura di AWS. */
 use function MHW\b;
 use MHW\{Support, Csrf, Icon, Traduttore};
 $title = 'Traduzioni';
@@ -25,7 +25,7 @@ $oggi = Support::now(); $tra30 = gmdate('Y-m-d\TH:i:s\Z', strtotime('+30 days'))
   <div class="cifre">
     <?php foreach ([['cifra--mare', 'globe', 'Caratteri di ' . $nomeMese($mese), $n($usati), $perc . '% del tetto del sito (' . $n($tetti['sito']) . ')'],
                     ['cifra--ocra', 'euro', 'Costo stimato del mese', $eur($costo), $usd($costo) . ($gratis ? ' · con il piano gratuito AWS' : ' · senza piano gratuito')],
-                    ['cifra--pino', 'people', 'Tetto per account', $n($tetti['account']), 'caratteri al mese']] as [$tono, $ico, $et, $val, $nota]): ?>
+                    ['cifra--pino', 'people', 'Tetto per account', $n($tetti['account']), 'caratteri all\'anno' . ($cache ? ' · memoria: ' . $n($cache['righe']) . ' frasi, ' . $n($cache['riusi']) . ' riusi' : '')]] as [$tono, $ico, $et, $val, $nota]): ?>
       <div class="cifra <?= $tono ?>"><span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg($ico, 17) ?></span><?= Support::e($et) ?></span>
         <b class="cifra__valore"><?= Support::e($val) ?></b><span class="cifra__nota"><?= Support::e($nota) ?></span></div>
     <?php endforeach; ?>
@@ -46,11 +46,12 @@ $oggi = Support::now(); $tra30 = gmdate('Y-m-d\TH:i:s\Z', strtotime('+30 days'))
     <h2 id="mesi-titolo" style="font-size:20px">Ultimi 12 mesi</h2>
     <?php if (!$mesi): ?><p class="note note--quiet">Ancora nessuna traduzione.</p><?php else: ?>
     <div class="tablewrap"><table class="data">
-      <thead><tr><th>Mese</th><th>Caratteri</th><th>Chiamate</th><th>Errori</th><th>Fermate dal tetto</th><th>Costo stimato</th></tr></thead>
+      <thead><tr><th>Mese</th><th>Caratteri (ok)</th><th>Chiamate ok</th><th>Dalla memoria</th><th>Fermate dal tetto</th><th>Errori</th><th>Costo stimato</th></tr></thead>
       <tbody>
       <?php foreach ($mesi as $m): $c = Traduttore::costoUsd((int) $m['chars'], Traduttore::gratuitoAttivo($m['month'] . '-01')); ?>
         <tr><td><?= Support::e($nomeMese($m['month'])) ?></td><td><?= $n((int) $m['chars']) ?></td><td><?= $n((int) $m['chiamate']) ?></td>
-          <td><?= $n((int) $m['errori']) ?></td><td><?= $n((int) $m['limiti']) ?></td><td><?= $eur($c) ?> <span class="muted small"><?= $usd($c) ?></span></td></tr>
+          <td><?= $n((int) ($m['cache'] ?? 0)) ?> <span class="muted small">(<?= $n((int) ($m['chars_cache'] ?? 0)) ?> car. risparmiati)</span></td>
+          <td><?= $n((int) $m['limiti']) ?></td><td><?= $n((int) $m['errori']) ?></td><td><?= $eur($c) ?> <span class="muted small"><?= $usd($c) ?></span></td></tr>
       <?php endforeach; ?>
       </tbody>
     </table></div>
@@ -73,22 +74,18 @@ $oggi = Support::now(); $tra30 = gmdate('Y-m-d\TH:i:s\Z', strtotime('+30 days'))
     <?php endif; ?>
   </section>
 
-  <section class="stack" id="omaggi" aria-labelledby="omaggi-titolo">
-    <h2 id="omaggi-titolo" style="font-size:20px">Anni in omaggio</h2>
-    <p class="small muted" style="margin:0">L'omaggio parte alla prima accensione in un account e dura 12 mesi. Finito, le traduzioni approvate restano e non se ne chiedono di nuove.</p>
-    <?php if (!$omaggi): ?><p class="note note--quiet">Nessun cliente le ha ancora accese.</p><?php else: ?>
+  <section class="stack" id="anno" aria-labelledby="anno-titolo">
+    <h2 id="anno-titolo" style="font-size:20px">Chi ha usato di più negli ultimi 12 mesi</h2>
+    <p class="small muted" style="margin:0">9G · Le traduzioni suggerite sono comprese in Plus e Portfolio entro un tetto annuale di caratteri per account (di serie <?= $n($tetti['account']) ?>), che parte dall'attivazione dell'abbonamento e si azzera al rinnovo. Il tetto personale e «Aggiungi 250.000» stanno nella scheda del cliente.</p>
+    <?php if (!$anno): ?><p class="note note--quiet">Nessuno, per ora.</p><?php else: ?>
     <div class="tablewrap"><table class="data">
-      <thead><tr><th>Cliente</th><th>Fino al</th><th>Stato</th><th>Cambia la fine</th></tr></thead>
+      <thead><tr><th>Cliente</th><th>Caratteri (12 mesi)</th><th>Anno in corso</th><th>Si azzera il</th></tr></thead>
       <tbody>
-      <?php foreach ($omaggi as $o): $finito = $o['fino'] < $oggi; $presto = !$finito && $o['fino'] <= $tra30; ?>
-        <tr><td><a href="<?= b() ?>/admin/cliente/<?= (int) $o['id'] ?>"><?= Support::e($o['name'] ?: $o['email']) ?></a></td>
-          <td><?= Support::e(Support::date($o['fino'])) ?><?= (int) $o['admin'] ? ' <span class="small muted">(cambiata a mano)</span>' : '' ?></td>
-          <td><span class="badge badge--<?= $finito ? 'paper' : ($presto ? 'ochre' : 'pine') ?>"><?= $finito ? 'Finito' : ($presto ? 'Finisce entro 30 giorni' : 'In corso') ?></span></td>
-          <td><form method="post" action="<?= b() ?>/admin/traduzioni/omaggio" class="row" style="gap:6px;flex-wrap:wrap;align-items:center"><?= Csrf::field() ?>
-            <input type="hidden" name="account" value="<?= (int) $o['id'] ?>">
-            <label class="sr-only" for="fino-<?= (int) $o['id'] ?>">Nuova fine per <?= Support::e($o['email']) ?></label>
-            <input type="date" id="fino-<?= (int) $o['id'] ?>" name="fino" value="<?= Support::e(substr(gmdate('Y-m-d', strtotime($o['fino'] . ' +12 months')), 0, 10)) ?>" style="max-width:11rem">
-            <button class="btn btn--ghost btn--sm">Salva</button></form></td></tr>
+      <?php foreach ($anno as $x): $ct = $x['contatore']; ?>
+        <tr><td><a href="<?= b() ?>/admin/cliente/<?= (int) $x['account_id'] ?>"><?= Support::e($x['name'] ?: $x['email']) ?></a> <span class="small muted"><?= Support::e((string) $x['email']) ?></span></td>
+          <td><?= $n((int) $x['chars']) ?></td>
+          <td><?= $n((int) $ct['usati']) ?> su <?= $n((int) $ct['tetto']) ?> <span class="badge badge--<?= $ct['finito'] ? 'paper' : ($ct['basso'] ? 'ochre' : 'pine') ?>"><?= (int) $ct['percento'] ?>%</span></td>
+          <td><?= Support::e(Support::date($ct['azzera'])) ?></td></tr>
       <?php endforeach; ?>
       </tbody>
     </table></div>

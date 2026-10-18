@@ -219,7 +219,7 @@
       method: 'POST', body: dati, credentials: 'same-origin', headers: { 'Accept': 'application/json' }
     }).then(function (r) { return r.json().then(function (j) { return [r.ok, j]; }); })
       .then(function (x) {
-        if (x[0] && x[1].ok) { form._sporco = false; mostraQui('Salvato', true); aggiornaAnteprima(); }
+        if (x[0] && x[1].ok) { form._sporco = false; mostraQui(((form.querySelector('[data-stato-salvataggio]') || stato || {}).getAttribute ? (form.querySelector('[data-stato-salvataggio]') || stato).getAttribute('data-salvato') : null) || 'Salvato', true); aggiornaAnteprima(); }
         else mostraQui(x[1].errore || 'Non salvato: controlla i campi.');
       })
       .catch(function () { mostraQui('Non salvato: controlla la connessione, poi premi Salva.'); });
@@ -229,7 +229,8 @@
     var timer = null;
     form.addEventListener('input', function (e) {
       if (e.target && (e.target.type === 'file' || e.target.closest('[data-no-autosave]'))) return;
-      mostra('Modifiche non salvate', false, form.querySelector('[data-stato-salvataggio]'));
+      var statoEl = form.querySelector('[data-stato-salvataggio]') || stato;
+      mostra((statoEl && statoEl.getAttribute('data-non-salvato')) || 'Modifiche non salvate', false, form.querySelector('[data-stato-salvataggio]'));
       form._sporco = true;
       clearTimeout(timer);
       timer = setTimeout(function () { salva(form); }, 1200);
@@ -300,13 +301,27 @@
     conta();
   })(gruppi[gc]);
 
-  // «Anche il tuo sito»: «Non ora» lo nasconde per 30 giorni, solo in questo browser.
+  // 9F · Provincia → Regione: scritta la sigla, la regione si completa da sola (se è vuota o era quella di prima).
+  var provInput = document.querySelector('[data-provincia-regione]');
+  if (provInput) (function (prov) {
+    var reg = document.getElementById(prov.getAttribute('data-provincia-regione'));
+    var lista = document.getElementById('province-elenco');
+    var regioneDi = {};
+    if (lista) for (var oi = 0; oi < lista.options.length; oi++) regioneDi[lista.options[oi].value] = lista.options[oi].getAttribute('data-regione') || '';
+    var messa = '';
+    prov.addEventListener('change', function () {
+      var sg = prov.value.trim().toUpperCase();
+      if (sg.length === 2) prov.value = sg;
+      if (!reg || !regioneDi[sg]) return;
+      if (reg.value.trim() === '' || reg.value === messa) { reg.value = regioneDi[sg]; messa = regioneDi[sg]; reg.dispatchEvent(new Event('input', { bubbles: true })); }
+    });
+  })(provInput);
+  // «Anche il tuo sito»: dalla 9F il riquadro resta sempre (niente ✕, niente valore salvato nel browser).
   var invito = document.querySelectorAll('[data-sito-invito]');
-  var nascostoFino = 0;
-  try { nascostoFino = parseInt(localStorage.getItem('mhw-sito-invito') || '0', 10); } catch (e) {}
+  try { localStorage.removeItem('mhw-sito-invito'); } catch (e) {}
   for (var si = 0; si < invito.length; si++) (function (box) {
-    if (nascostoFino > Date.now()) { box.hidden = true; return; }
     var x = box.querySelector('[data-sito-chiudi]');
+    if (!x) return;   // 9F: il riquadro non si chiude più
     x.hidden = false;
     x.addEventListener('click', function () {
       try { localStorage.setItem('mhw-sito-invito', String(Date.now() + 30 * 86400000)); } catch (e) {}
@@ -820,4 +835,155 @@
     }
     [url, cod, sc].forEach(function (x) { x.addEventListener('input', aggiorna); });
   })();
+
+})();
+
+/* ---- 9F · Traduzione in corso: un blocco a sé, su ogni pagina del pannello (non dentro quello della prenotazione diretta). */
+(function () {
+  'use strict';
+  /* ---- 9F · Traduzione in corso ------------------------------------------------
+     Con JavaScript le suggerite si chiedono a gruppi (una lingua, pochi campi per volta) all'endpoint
+     …/suggerite.json: il bottone si disabilita con il cerchio che gira, la barra avanza, ogni campo
+     tradotto compare con una sfumatura; alla fine «Fatto» (verde, 3 secondi) oppure l'errore (giallo)
+     con «Riprova». Senza JavaScript restano i moduli di prima. */
+  function chiediSuggerite(url, csrf, dati) {
+    var corpo = new URLSearchParams(); corpo.set('_csrf', csrf);
+    Object.keys(dati).forEach(function (k) { corpo.set(k, dati[k]); });
+    return fetch(url, { method: 'POST', body: corpo, credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'fetch' } })
+      .then(function (r) { return r.json(); });
+  }
+  function boxSuggerita(f, loc) {
+    var box = document.createElement('div'); box.className = 'suggerita suggerita--nuova';
+    var badge = document.createElement('span'); badge.className = 'badge badge--ochre'; badge.textContent = f.aggiornata ? 'Aggiornata: da ricontrollare' : 'Suggerita: da controllare';
+    var testo = document.createElement('p'); testo.className = 'suggerita__testo'; testo.setAttribute('lang', loc); testo.textContent = f.testo;
+    var az = document.createElement('div'); az.className = 'suggerita__azioni';
+    [['approva', 'Approva', 'btn btn--sm'], ['modifica', 'Modifica', 'btn btn--ghost btn--sm'], ['scarta', 'Scarta', 'linkbtn']].forEach(function (b) {
+      var btn = document.createElement('button'); btn.type = 'submit'; btn.setAttribute('form', 'sugg-f'); btn.className = b[2]; btn.name = b[0]; btn.value = String(f.id); btn.textContent = b[1];
+      if (b[0] === 'modifica') { btn.setAttribute('data-modifica', f.dom); btn.setAttribute('data-testo', f.testo); }
+      az.appendChild(btn);
+    });
+    box.appendChild(badge); box.appendChild(testo); box.appendChild(az);
+    return box;
+  }
+  function mettiNellaPagina(f, loc) {
+    var el = document.getElementById(f.dom);
+    if (!el) return;
+    var cont = el.closest('.field, .stack') || el.parentNode;
+    cont.querySelectorAll(':scope > .suggerita, :scope > .traduci-campo').forEach(function (x) { x.remove(); });
+    var badge = cont.querySelector('label .badge');
+    if (badge) badge.remove();
+    cont.appendChild(boxSuggerita(f, loc));
+  }
+  function statoBarra(stato, perc, testo, classe) {
+    stato.hidden = false; stato.className = 'traduci-stato' + (classe ? ' traduci-stato--' + classe : '');
+    stato.querySelector('.traduci-stato__barra i').style.width = Math.max(0, Math.min(100, perc)) + '%';
+    var p = stato.querySelector('[data-traduci-testo]'); p.textContent = '';
+    if (typeof testo === 'string') p.textContent = testo; else p.appendChild(testo);
+  }
+  function occupato(btn, si, etichetta) {
+    btn.setAttribute('aria-busy', si ? 'true' : 'false'); btn.disabled = si;
+    var sp = btn.querySelector('[data-traduci-etichetta]');
+    if (si) { if (!btn.querySelector('.spin')) { var g = document.createElement('span'); g.className = 'spin'; g.setAttribute('aria-hidden', 'true'); btn.insertBefore(g, btn.firstChild); } if (sp) sp.textContent = 'Traduzione in corso…'; }
+    else { var g2 = btn.querySelector('.spin'); if (g2) g2.remove(); if (sp && etichetta) sp.textContent = etichetta; }
+  }
+
+  // La pagina di una lingua: «Traduci tutti i campi mancanti (N)» a gruppi, con «12 di 30 testi».
+  var tradu = document.querySelector('[data-traduci]');
+  if (tradu && window.fetch) (function (box) {
+    var btn = box.querySelector('[data-traduci-tutti]'), stato = box.parentNode.querySelector('[data-traduci-stato]');
+    var url = box.getAttribute('data-url'), csrf = box.getAttribute('data-csrf'), lingua = box.getAttribute('data-lingua');
+    var loc = (url.match(/\/lingue\/([a-zA-Z-]+)\//) || [])[1] || '';
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      var fatte = 0, totale = 0;
+      occupato(btn, true);
+      statoBarra(stato, 2, lingua + ' · avvio…');
+      (function giro() {
+        chiediSuggerite(url, csrf, { tutti: 1, limite: 4 }).then(function (r) {
+          if (!totale) totale = r.totale || (r.fatte.length + r.restanti);
+          r.fatte.forEach(function (f) { fatte++; mettiNellaPagina(f, loc); });
+          var perc = totale ? Math.round(fatte * 100 / totale) : 100;
+          statoBarra(stato, perc, lingua + ' · ' + fatte + ' di ' + totale + ' test' + (totale === 1 ? 'o' : 'i'));
+          if (r.stop) {
+            var msg = document.createDocumentFragment(); msg.appendChild(document.createTextNode(r.stop + ' '));
+            var ri = document.createElement('button'); ri.type = 'button'; ri.className = 'linkbtn'; ri.textContent = 'Riprova'; ri.addEventListener('click', function () { statoBarra(stato, perc, lingua + ' · riprovo…'); giro(); });
+            msg.appendChild(ri);
+            statoBarra(stato, perc, msg, 'err'); occupato(btn, false, 'Traduci di nuovo'); return;
+          }
+          if (r.restanti > 0 && r.fatte.length) return giro();
+          statoBarra(stato, 100, 'Fatto: ' + fatte + ' test' + (fatte === 1 ? 'o' : 'i') + '. Controllal' + (fatte === 1 ? 'o' : 'i') + ' e approva.', 'ok');
+          occupato(btn, false, 'Traduci di nuovo');
+          if (fatte) {
+            var tutte = document.createElement('button'); tutte.type = 'submit'; tutte.setAttribute('form', 'sugg-f'); tutte.className = 'btn btn--ghost btn--sm'; tutte.name = 'tutte'; tutte.value = '1'; tutte.textContent = 'Approva tutte (' + fatte + ')';
+            box.appendChild(tutte);
+          }
+          setTimeout(function () { stato.hidden = true; }, 3000);
+        }).catch(function () {
+          var msg = document.createDocumentFragment(); msg.appendChild(document.createTextNode('La traduzione non ha risposto: riprova. '));
+          var ri = document.createElement('button'); ri.type = 'button'; ri.className = 'linkbtn'; ri.textContent = 'Riprova'; ri.addEventListener('click', giro); msg.appendChild(ri);
+          statoBarra(stato, 0, msg, 'err'); occupato(btn, false, 'Traduci di nuovo');
+        });
+      })();
+    });
+  })(tradu);
+
+  // L'editor di una sezione e il passo Pubblica: una lingua per volta, «Francese · 2 di 5 lingue», i campi che compaiono.
+  var traduSez = document.querySelectorAll('[data-traduci-sezione]');
+  for (var ts = 0; ts < traduSez.length; ts++) (function (box) {
+    if (!window.fetch) return;
+    box.hidden = false;
+    var btn = box.querySelector('[data-traduci-avvia]'), stato = box.querySelector('[data-traduci-stato]'), esito = box.querySelector('[data-traduci-esito]');
+    var lingue = JSON.parse(box.getAttribute('data-lingue') || '[]'), csrf = box.getAttribute('data-csrf'), sezione = box.getAttribute('data-traduci-sezione') || '0';
+    var etichettaIniziale = (btn.querySelector('[data-traduci-etichetta]') || {}).textContent;
+    function unaLingua(l, suCampo) {
+      return new Promise(function (ok) {
+        var fatte = 0;
+        (function giro() {
+          chiediSuggerite(l.url, csrf, { tutti: 1, limite: 6, sezione: sezione }).then(function (r) {
+            r.fatte.forEach(function (f) { fatte++; suCampo(l, f); });
+            if (r.stop) return ok({ lingua: l, fatte: fatte, errore: r.stop });
+            if (r.restanti > 0 && r.fatte.length) return giro();
+            ok({ lingua: l, fatte: fatte, errore: '' });
+          }).catch(function () { ok({ lingua: l, fatte: fatte, errore: 'La traduzione non ha risposto.' }); });
+        })();
+      });
+    }
+    function avvia(soloLingue) {
+      var daFare = soloLingue || lingue, esiti = [], i = 0;
+      occupato(btn, true);
+      esito.textContent = '';
+      function mostraCampo(l, f) {
+        var c = document.createElement('div'); c.className = 'campo campo--nuovo';
+        var sm = document.createElement('small'); sm.textContent = f.etichetta + ' · ' + l.nome; c.appendChild(sm); c.appendChild(document.createTextNode(f.testo));
+        esito.appendChild(c);
+      }
+      (function prossima() {
+        if (i >= daFare.length) {
+          var errori = esiti.filter(function (x) { return x.errore; }), testi = esiti.reduce(function (n, x) { return n + x.fatte; }, 0);
+          if (errori.length) {
+            var msg = document.createDocumentFragment();
+            msg.appendChild(document.createTextNode(errori.map(function (x) { return x.lingua.nome; }).join(', ') + (errori.length === 1 ? ' non tradotto' : ' non tradotte') + ': ' + errori[0].errore + ' ' + (esiti.length - errori.length > 0 ? 'Le altre ' + (esiti.length - errori.length) + ' lingue sono pronte. ' : '')));
+            errori.forEach(function (x) {
+              var ri = document.createElement('button'); ri.type = 'button'; ri.className = 'btn btn--ghost btn--sm'; ri.textContent = 'Riprova ' + x.lingua.nome.toLowerCase();
+              ri.addEventListener('click', function () { avvia([x.lingua]); }); msg.appendChild(ri);
+            });
+            statoBarra(stato, Math.round((esiti.length - errori.length) * 100 / esiti.length), msg, 'err');
+          } else {
+            var ok = document.createDocumentFragment();
+            ok.appendChild(document.createTextNode('Fatto: ' + esiti.length + ' lingu' + (esiti.length === 1 ? 'a' : 'e') + ', ' + testi + ' test' + (testi === 1 ? 'o' : 'i') + '. Controllali e approva: '));
+            esiti.forEach(function (x, k) { var a = document.createElement('a'); a.href = x.lingua.pagina; a.textContent = x.lingua.nome; ok.appendChild(a); if (k < esiti.length - 1) ok.appendChild(document.createTextNode(', ')); });
+            statoBarra(stato, 100, ok, 'ok');
+            var dove = document.createElement('p'); dove.className = 'traduci-esito__lingua'; dove.appendChild(ok.cloneNode(true)); esito.appendChild(dove);
+            setTimeout(function () { stato.hidden = true; }, 3000);
+          }
+          occupato(btn, false, 'Traduci di nuovo');
+          return;
+        }
+        var l = daFare[i];
+        statoBarra(stato, Math.round(i * 100 / daFare.length) + 2, l.nome + ' · ' + (i + 1) + ' di ' + daFare.length + ' lingu' + (daFare.length === 1 ? 'a' : 'e'));
+        unaLingua(l, mostraCampo).then(function (r) { esiti.push(r); i++; prossima(); });
+      })();
+    }
+    btn.addEventListener('click', function () { avvia(null); });
+  })(traduSez[ts]);
 })();

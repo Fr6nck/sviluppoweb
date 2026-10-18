@@ -25,17 +25,27 @@ final class Novita
         return array_fill_keys(array_column(Db::all('SELECT novita_id FROM novita_viste WHERE account_id = ?', [$accountId]), 'novita_id'), true);
     }
 
-    /** La novità da mostrare nella fascia, o null. Gli account creati dopo la data non la vedono: per loro non è una novità. */
+    /**
+     * La novità da mostrare nella fascia, o null. 9F: si vede sempre e solo l'ULTIMA (la prima del file); non si chiude
+     * con una ✕, ma «Mostrami dove» la segna come vista e la fascia sparisce finché non ne esce un'altra. Gli account
+     * creati dopo la data non la vedono: per loro non è una novità. Le novità passate restano nella pagina «Novità».
+     */
     public static function daMostrare(int $accountId, string $creato = ''): ?array
     {
         if (!self::disponibili()) return null;
         $viste = self::viste($accountId);
         foreach (self::tutte() as $n) {
-            if (isset($viste[$n['id']])) continue;
             if ($creato !== '' && substr($creato, 0, 10) > (string) $n['data']) continue;
-            return $n;
+            return isset($viste[$n['id']]) ? null : $n;
         }
         return null;
+    }
+
+    /** 9F · Le novità per la pagina «Novità», dalla più recente, con «vista» per quelle già aperte con «Mostrami dove». */
+    public static function elenco(int $accountId): array
+    {
+        $viste = self::viste($accountId);
+        return array_map(fn($n) => $n + ['vista' => isset($viste[$n['id']])], self::tutte());
     }
 
     /** Chiude una novità (o segna «Ho visto» con un id «novità:tipo»). */

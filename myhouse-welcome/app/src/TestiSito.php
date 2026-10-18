@@ -46,6 +46,8 @@ final class TestiSito
         'dpa'      => ['Accordo sul trattamento dei dati (DPA)', 'La pagina /dpa (e /en/dpa): l\'Allegato A dei Termini, che l\'host accetta alla registrazione.'],
         'legale'   => ['Aggiornamenti dei documenti', 'Le novità in tre righe: nella finestra «Abbiamo aggiornato i Termini e l\'Informativa» del pannello e nell\'email di avviso. Solo in italiano (il pannello è in italiano).'],
         'sito'     => ['Anche il tuo sito', 'Il blocco del colore di MyHouse in fondo: un percorso a due domande, poi il contatto (8A). Gli stessi testi nel pannello.'],
+        // 9F · i testi del pannello che il titolare vuole poter cambiare: il riquadro «Una lingua in più» (Lingue)
+        'pannello' => ['Pannello: una lingua in più', 'Il riquadro sopra la scelta delle lingue (Lingue, e il primo passo della procedura). Le cinque lingue di base e la lingua in più: a cosa serve, con due esempi.'],
         // 9D · il messaggio pronto dei codici omaggio (Vendite → Codici omaggio: WhatsApp, email, copia)
         'omaggio'  => ['Codici omaggio', 'Il messaggio pronto da mandare con un codice omaggio (Vendite → Codici omaggio). Segnaposto: {mesi}, {link}, {codice}, {scadenza}.'],
     ];
@@ -190,6 +192,15 @@ final class TestiSito
             'amico.kicker'   => ['amico', 'Riga sopra il titolo', 'riga', 'Porta un amico', ''],
             'amico.titolo'   => ['amico', 'Titolo', 'area', "Più amici porti, meno paghi.\nIl prossimo anno fino al {max} in meno.", '{max} è lo sconto massimo, in evidenza.'],
             'amico.lead'     => ['amico', 'Testo sotto il titolo', 'area', 'Conosci altri host, B&B o case vacanza? Mandagli il tuo link: loro hanno il {amico} di sconto sul primo anno, tu il {passo} in meno sul rinnovo per ogni amico che si abbona.', ''],
+            // 9F · «Una lingua in più, oltre alle cinque di base» (Lingue): {bottoni} = le lingue con i bottoni tradotti (nederlands, português e polski)
+            'lingue.extra.titolo'   => ['pannello', 'Titolo', 'riga', 'Una lingua in più, oltre alle cinque di base', ''],
+            'lingue.extra.testo'    => ['pannello', 'Testo', 'area', 'Le cinque lingue di base sono italiano, inglese, francese, tedesco e spagnolo. La lingua in più serve in due casi: **se i tuoi ospiti parlano un\'altra lingua** (per esempio olandese o polacco), la aggiungi qui e la guida la mostra; **se tu scrivi la guida in una lingua diversa dall\'italiano**, la tua è la lingua principale e le cinque di base restano tutte.', ''],
+            'lingue.extra.esempio1' => ['pannello', 'Esempio 1', 'area', "Scrivi in italiano, ospiti dall'Olanda\nLingua principale: Italiano · Lingua in più: Nederlands. La guida esce in 6 lingue.", 'La prima riga è il titolo dell\'esempio.'],
+            'lingue.extra.esempio2' => ['pannello', 'Esempio 2', 'area', "Scrivi in polacco\nLingua principale: Polski · Lingua in più: nessuna. Le cinque di base ci sono già, tradotte dal polacco.", 'La prima riga è il titolo dell\'esempio.'],
+            'lingue.extra.nota'     => ['pannello', 'Riga finale', 'riga', 'L\'interfaccia della guida (bottoni e titoli) è tradotta per {bottoni}; per le altre lingue in più i bottoni sono in inglese e i testi nella lingua scelta.', '{bottoni} = le lingue con i bottoni tradotti.'],
+            'lingue.extra.essential' => ['pannello', 'Con Essential', 'riga', 'Con Essential hai 2 lingue: la tua e una a scelta. Con Plus e Portfolio le cinque di base e una lingua in più.', ''],
+            // 9F · il testo di partenza del messaggio degli inviti nel pannello (WhatsApp, email, «Invita per email»): {amico} = la percentuale
+            'inviti.messaggio_partenza' => ['amico', 'Messaggio di partenza degli inviti (pannello)', 'area', 'Ciao! Uso MyHouse Welcome per la guida digitale della mia struttura e mi trovo bene. Con questo invito hai il {amico} di sconto sul primo anno: crei la guida gratis e paghi solo quando la pubblichi.', 'Lo vede l\'host in «Invita un amico», modificabile prima di mandarlo. {amico} diventa la percentuale dell\'amico (per esempio 5%).'],
             'amico.1.titolo' => ['amico', 'Passo 1 · in grassetto', 'riga', 'Pubblichi la tua guida.', ''],
             'amico.1.testo'  => ['amico', 'Passo 1 · testo', 'riga', 'In «Invita un amico» trovi il tuo link personale.', ''],
             'amico.2.titolo' => ['amico', 'Passo 2 · in grassetto', 'riga', 'L\'amico si registra dal link.', ''],

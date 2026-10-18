@@ -94,7 +94,8 @@ $traguardo = Inviti::MASSIMO === 50 ? 'metà prezzo' : 'il ' . Inviti::MASSIMO .
       </div>
       <div class="field" style="margin:0">
         <label for="inv-msg">Un messaggio <span class="muted">(facoltativo)</span></label>
-        <textarea id="inv-msg" name="messaggio" rows="3" maxlength="400" placeholder="Ciao, io la uso per la mia casa vacanze: prova anche tu."><?= Support::e((string) ($bozza['messaggio'] ?? '')) ?></textarea>
+        <?php /* 9F · non parte vuoto: il testo di partenza (Testi e foto), modificabile */ ?>
+        <textarea id="inv-msg" name="messaggio" rows="4" maxlength="400"><?= Support::e((string) ($bozza['messaggio'] ?? Inviti::testoPartenza())) ?></textarea>
       </div>
       <div class="actions"><button class="btn"><?= Icon::svg('message', 16) ?>Manda l'invito</button></div>
     </form>

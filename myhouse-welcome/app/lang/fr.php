@@ -57,6 +57,10 @@ return [
     'updated_on'       => 'Guide mis à jour le %s',
     'demo_badge'       => 'Démo',
     'demo_note'        => 'Guide de démonstration : le logement et les adresses sont des exemples.',
+    'demo_example'        => 'Ceci est un guide d\'exemple',
+    'demo_back_site'        => 'Retour au site',
+    'demo_create'        => 'Créez votre guide',
+    'demo_back_title'        => 'Retour sur %s',
     'unavailable'      => 'Ce guide n\'est pas disponible.',
     'unavailable_body' => 'Le lien est correct, mais le guide n\'est pas en ligne pour le moment. Si vous séjournez dans ce logement, contactez votre hôte.',
     'not_found'        => 'Il n\'y a rien ici.',
@@ -81,7 +85,7 @@ return [
     'og_guide_title'   => '%s · Le guide de la maison',
     'og_guide_desc'    => 'Arrivée, Wi-Fi et conseils pour votre séjour.',
     'og_review_title'  => '%s · Comment s\'est passé votre séjour ?',
-    'kind.custom'      => 'Autres informations',
+    'kind.custom'      => 'Informations utiles',
     'kind.info'        => 'Bon à savoir',
 
     // Fase 3: struttura, contatti, arrivo e partenza, Wi-Fi

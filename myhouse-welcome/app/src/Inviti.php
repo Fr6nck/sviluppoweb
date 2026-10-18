@@ -85,10 +85,18 @@ final class Inviti
     /** Il messaggio pronto da mandare (7D), con struttura, link e codice già scritti. */
     public static function messaggio(array $acc): string
     {
-        $p = self::strutturaDi((int) $acc['id']);
-        return 'Ciao! Per ' . ($p ? $p['name'] : 'la mia struttura') . ' uso MyHouse Welcome: gli ospiti hanno check-in, Wi-Fi e consigli in un link e un QR, '
-             . 'e mi fanno molte meno domande. Guarda com\'è la mia: ' . self::link($acc) . '. Con questo link hai il ' . self::AMICO
-             . '% di sconto sul primo anno, il codice è ' . self::codice($acc) . '.';
+        // 9F · lo stesso testo di partenza di «Invita per email» (Testi e foto → inviti.messaggio_partenza), poi il link e il codice.
+        return self::testoPartenza() . ' Guarda com\'è la mia guida: ' . self::link($acc) . '. Il codice è ' . self::codice($acc) . '.';
+    }
+
+    /** 9F · Il testo di partenza degli inviti, con la percentuale dell'amico già scritta (modificabile in Testi e foto). */
+    public static function testoPartenza(): string
+    {
+        $serie = 'Ciao! Uso MyHouse Welcome per la guida digitale della mia struttura e mi trovo bene. Con questo invito hai il ' . self::AMICO
+               . '% di sconto sul primo anno: crei la guida gratis e paghi solo quando la pubblichi.';
+        if (!TestiSito::disponibili()) return $serie;
+        $t = trim(TestiSito::testo('inviti.messaggio_partenza', ['amico' => self::AMICO . '%']));
+        return $t !== '' ? $t : $serie;
     }
 
     // ------------------------------------------------------------ codice e link

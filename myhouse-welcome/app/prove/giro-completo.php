@@ -359,6 +359,11 @@ prova('Fase 2 · la lingua principale si salva (anche col salvataggio automatico
       && (bool) val("SELECT 1 FROM property_locales WHERE property_id = ? AND locale = 'en'", [$epid]) && (bool) val("SELECT 1 FROM property_locales WHERE property_id = ? AND locale = 'it'", [$epid]));
 $r = $elena->post("/pannello/$epid/impostazioni", ['name' => 'Casa Elena', 'default_locale' => 'xx'], ['Accept: application/json']);
 prova('…una lingua fuori piano no', $r['code'] === 422 && val('SELECT default_locale FROM properties WHERE id = ?', [$epid]) === 'en');
+// 9F·11 · con la lingua principale inglese il pannello passa in inglese da solo; per le prove che seguono Elena lo rimette in italiano da Account.
+$r = $elena->get("/pannello/$epid/procedura/struttura");
+prova('9F·11 · lingua principale inglese: il pannello è in inglese da solo (procedura e <html lang="en">), finché non si sceglie altro in Account', str_contains($r['body'], '<h1>Property and contacts.</h1>') && str_contains($r['body'], '<html lang="en">'));
+$elena->post('/account/pannello-lingua', ['pannello_lingua' => 'it']);
+prova('9F·11 · …e da Account si riporta in italiano', str_contains($elena->get("/pannello/$epid/procedura/struttura")['body'], '<h1>Struttura e contatti.</h1>'));
 $r = $anna->post('/registrati', ['piano' => pv('essential'), 'name' => 'Anna Prova', 'email' => 'anna@prova.test', 'password' => 'AnnaProva123']);
 prova('Senza Termini non si entra', $r['code'] === 200 && str_contains($r['body'], 'accettare i Termini'));
 prova('Senza Termini nessun utente creato', !val("SELECT id FROM users WHERE email = 'anna@prova.test'"));
@@ -1649,7 +1654,7 @@ $lucia->post("/pannello/$casa/dopo-il-soggiorno", ['portali' => ['google', 'book
     'direct_url' => '', 'direct_code' => 'BENTORNATI', 'direct_discount' => '10%', 'hide_branding' => '1']);
 $r = $lucia->get("/pannello/$casa/impostazioni");
 prova('8B · i portali spuntati restano spuntati, nell\'ordine scelto', preg_match('#value="google" checked.*?value="booking" checked.*?value="airbnb" >#s', $r['body']) === 1);
-prova('7C · Sconto per chi torna: aiuto, campo «Sconto», avviso senza link, anteprima della scheda', str_contains($r['body'], 'Il codice lo crei tu sul tuo sito o sul tuo motore di prenotazione')
+prova('7C · Sconto per chi torna: aiuto, campo «Sconto», avviso senza link, anteprima della scheda', str_contains($r['body'], 'lo crei tu sul tuo sito o sul tuo motore di prenotazione')
       && str_contains($r['body'], 'name="direct_discount"') && preg_match('#data-diretta-avviso>Senza il link al tuo sito#', $r['body']) === 1
       && str_contains($r['body'], "\u{2212}10% con il codice <b data-diretta-codice>BENTORNATI</b>"));
 $lucia->post("/pannello/$casa/dopo-il-soggiorno", ['portali' => ['google', 'booking'],
@@ -2130,23 +2135,24 @@ capitolo('Fase 6D · sezione libera, righe compresse, messaggio di benvenuto');
 $luc->get("/pannello/$lpid");
 $luc->post("/pannello/$lpid/sezioni", ['kind' => 'custom']);
 $r = $luc->get("/pannello/$lpid");
-prova('S1 · aggiunta una sezione libera, e il catalogo la propone ancora', (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'custom'", [$lpid]) === 1
-      && str_contains($r['body'], '<b>Sezione libera</b>') && str_contains($r['body'], 'Aggiungi<span class="sr-only"> Sezione libera</span>'));
+prova('S1 · aggiunta una sezione libera; dalla 9F·12 il catalogo non la propone più (una per guida)', (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'custom'", [$lpid]) === 1
+      && !str_contains($r['body'], 'name="kind" value="custom"') && str_contains($r['body'], 'Hai già la sezione libera'));
 $luc->post("/pannello/$lpid/sezioni", ['kind' => 'custom']);
 $liberi = array_column(righe("SELECT id FROM sections WHERE property_id = ? AND kind = 'custom' ORDER BY id", [$lpid]), 'id');
-prova('S1 · …si aggiunge più volte', count($liberi) === 2);
+prova('S1 · …una seconda non si aggiunge (9F·12)', count($liberi) === 1);
 $r = $luc->get("/pannello/$lpid/sezioni/{$liberi[0]}");
 prova('S1 · editor: riquadro, 12 icone (radio con il disegno), testo ed elenco', $r['code'] === 200 && str_contains($r['body'], 'Per quello che non sta nelle altre sezioni')
       && substr_count($r['body'], 'type="radio" name="icona"') === 12 && str_contains($r['body'], 'name="icona" value="star" checked') && str_contains($r['body'], '>Testo</label>'));
 $luc->post("/pannello/$lpid/sezioni/{$liberi[0]}", ['title' => 'La piscina', 'icona' => 'sun', 'text' => 'Aperta da giugno a settembre.', 'items' => ['Doccia prima di entrare', 'Niente vetro a bordo vasca']]);
-$luc->post("/pannello/$lpid/sezioni/{$liberi[1]}", ['title' => '', 'icona' => 'razzo', 'text' => 'Una seconda sezione.']);
 $dl = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$liberi[0]]), true);
-$dl2 = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$liberi[1]]), true);
-prova('S1 · icona salvata; una fuori elenco non passa', ($dl['icona'] ?? '') === 'sun' && ($dl2['icona'] ?? 'x') === '');
 $r = $luc->get("/pannello/$lpid/anteprima/{$liberi[0]}");
-$r2 = $luc->get("/pannello/$lpid/anteprima/{$liberi[1]}?l=de");
-prova('S1 · guida: titolo dell\'host, testo ed elenco; senza titolo «Weitere Informationen» in tedesco', $r['code'] === 200 && str_contains($r['body'], 'La piscina')
-      && str_contains($r['body'], 'Aperta da giugno a settembre.') && str_contains($r['body'], '<li>Niente vetro a bordo vasca</li>') && str_contains($r2['body'], 'Weitere Informationen'));
+// La stessa sezione, salvata di nuovo senza titolo e con un'icona fuori elenco (prima erano due sezioni: ora ce n'è una sola per guida).
+$luc->post("/pannello/$lpid/sezioni/{$liberi[0]}", ['title' => '', 'icona' => 'razzo', 'text' => 'Una seconda sezione.']);
+$dl2 = json_decode((string) val('SELECT data FROM sections WHERE id = ?', [$liberi[0]]), true);
+prova('S1 · icona salvata; una fuori elenco non passa', ($dl['icona'] ?? '') === 'sun' && ($dl2['icona'] ?? 'x') === '');
+$r2 = $luc->get("/pannello/$lpid/anteprima/{$liberi[0]}?l=de");
+prova('S1 · guida: titolo dell\'host, testo ed elenco; senza titolo «Nützliche Informationen» in tedesco (9F·12)', $r['code'] === 200 && str_contains($r['body'], 'La piscina')
+      && str_contains($r['body'], 'Aperta da giugno a settembre.') && str_contains($r['body'], '<li>Niente vetro a bordo vasca</li>') && str_contains($r2['body'], 'Nützliche Informationen'));
 $r = $luc->get("/pannello/$lpid");
 $sole = '<svg' ; $iconaSole = (string) shell_exec('php -r ' . escapeshellarg('define("MHW_APP", "' . $DOVE . '/app"); spl_autoload_register(fn($c) => require "' . $DOVE . '/app/src/" . substr($c, 4) . ".php"); echo MHW\SectionCatalog::iconaDi("custom", ["icona" => "sun"]), "|", MHW\SectionCatalog::iconaDi("custom", "{}"), "|", MHW\SectionCatalog::iconaDi("wifi", ["icona" => "sun"]);'));
 prova('S1 · l\'icona scelta vale solo per la sezione libera', trim($iconaSole) === 'sun|star|wifi', $iconaSole);
@@ -2600,9 +2606,10 @@ $valoreAuto = fn(string $code) => array_unique(array_column(righe('SELECT pf.val
     JOIN packages p ON p.id = v.package_id WHERE p.code = ? AND pf.feature_id = ?', [$code, $auto]), 'value'));
 prova('Migrazione 022: traduzioni suggerite accese in tutte le versioni di Plus e Portfolio, spente in Essential', $valoreAuto('plus') === ['1'] && $valoreAuto('portfolio') === ['1']
       && !in_array('1', $valoreAuto('essential'), true) && val("SELECT label FROM features WHERE id = ?", [$auto]) === 'Traduzioni suggerite');
-prova('…il testo di Plus dice l\'omaggio', str_contains((string) val("SELECT bullets FROM packages WHERE code = 'plus'"), 'Il primo anno è in omaggio.'));
+prova('…il testo di Plus (9G): «Comprese nel piano, entro un limite annuale di caratteri», niente più omaggio', str_contains((string) val("SELECT bullets FROM packages WHERE code = 'plus'"), 'Comprese nel piano, entro un limite annuale di caratteri.')
+      && !str_contains((string) val("SELECT bullets FROM packages WHERE code = 'plus'"), 'omaggio'));
 $r = $ospite->get('/');
-prova('Landing: confronto dei piani con «Traduzioni suggerite · in omaggio per un anno», e le FAQ', str_contains($r['body'], 'Traduzioni suggerite <span class="small muted">in omaggio per un anno</span>')
+prova('Landing: confronto dei piani con «Traduzioni suggerite · entro un limite annuale di caratteri» (9G), e le FAQ', str_contains($r['body'], 'Traduzioni suggerite <span class="small muted">entro un limite annuale di caratteri</span>')
       && str_contains($r['body'], 'Le traduzioni me le fate voi?') && str_contains($r['body'], 'falli rileggere a un madrelingua') && !str_contains($r['body'], 'nessuna traduzione automatica'));
 prova('Termini e privacy parlano delle traduzioni suggerite e di Amazon Translate', str_contains($ospite->get('/termini')['body'], 'Traduzioni suggerite')
       && str_contains($ospite->get('/privacy')['body'], 'Amazon Translate'));
@@ -2640,17 +2647,16 @@ $trData = function (int $sid, string $loc, string $campo, string $v) {
 $trData($emCasa, 'it', 'note', 'Il pronto soccorso più vicino è a Nottola.'); $trData($emCasa, 'en', 'note', '');
 
 $r = $lucia->get("/pannello/$casa/lingue");
-prova('Plus/Portfolio: in Lingue «In omaggio per un anno dalla prima accensione» e il bottone per accenderle', $r['code'] === 200 && pulita($r)
-      && str_contains($r['body'], 'In omaggio per un anno dalla prima accensione') && str_contains($r['body'], 'Accendi le traduzioni suggerite'));
+prova('Plus/Portfolio: in Lingue il contatore dell\'anno (9G) e il bottone per accenderle', $r['code'] === 200 && pulita($r)
+      && preg_match('#Traduzioni suggerite: \d+% dell\'anno usato</b> · si azzera il #', $r['body']) === 1 && str_contains($r['body'], 'Accendi le traduzioni suggerite'));
 $primaSp = count($richiesteTr());
 $r = $lucia->get("/pannello/$casa/lingue/en");
 prova('7C · …spente: nella pagina della lingua «Traduci» campo per campo lo stesso, ma nessuna chiamata finché non si clicca', str_contains($r['body'], 'name="campo" value="')
       && str_contains($r['body'], 'Traduci tutti i campi mancanti') && count($richiesteTr()) === $primaSp);
 $r = $lucia->segui($lucia->post("/pannello/$casa/lingue/suggerite", ['acceso' => '1']));
-$fino = (string) val('SELECT translation_trial_until FROM accounts WHERE id = ?', [$lacc]);
-prova('Accese: parte l\'anno in omaggio (12 mesi) e compare la spiegazione in due righe, con il madrelingua', (int) val('SELECT translation_suggest FROM properties WHERE id = ?', [$casa]) === 1
-      && substr($fino, 0, 10) === gmdate('Y-m-d', strtotime('+12 months')) && str_contains($r['body'], 'Le trovi nella pagina di ogni lingua')
-      && str_contains($r['body'], 'Per i testi importanti, falli rileggere a un madrelingua.') && str_contains($r['body'], 'In omaggio fino al'), $fino);
+prova('Accese: niente più anno in omaggio (9G); compare la spiegazione in due righe, con il madrelingua', (int) val('SELECT translation_suggest FROM properties WHERE id = ?', [$casa]) === 1
+      && !val('SELECT translation_trial_until FROM accounts WHERE id = ?', [$lacc]) && str_contains($r['body'], 'Le trovi nella pagina di ogni lingua')
+      && str_contains($r['body'], 'Per i testi importanti, falli rileggere a un madrelingua.') && !str_contains($r['body'], 'In omaggio fino al'));
 $r = $lucia->get("/pannello/$casa/lingue");
 prova('…la spiegazione solo la prima volta', !str_contains($r['body'], 'Le trovi nella pagina di ogni lingua'));
 
@@ -2711,8 +2717,8 @@ $fileLocale = "$DOVE/app/config.local.php";
 $ptIt((int) $lo[2]['id'], 'note', 'Il martedì è chiuso, ma il mercoledì apre alle sette di sera.');
 file_put_contents($fileLocale, '<?php return ' . var_export(['translate' => ['cap_account' => 20]], true) . ';');
 $r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['suggerisci' => '1']));
-prova('Tetto per account: si ferma, lo dice, e registra la richiesta fermata', str_contains($r['body'], 'hai usato tutte le traduzioni suggerite')
-      && (bool) val("SELECT id FROM translation_usage WHERE account_id = ? AND outcome = 'limite'", [$lacc]) && !$idDi('place', (int) $lo[2]['id'], 'note'));
+prova('Tetto per account (dal 9G è annuale, già raggiunto): si ferma prima di chiamare, lo dice, niente suggerita', str_contains($r['body'], 'Hai usato le traduzioni suggerite di quest')
+      && !$idDi('place', (int) $lo[2]['id'], 'note'));
 file_put_contents($fileLocale, '<?php return ' . var_export(['translate' => ['cap_global' => 30]], true) . ';');
 $r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['suggerisci' => '1']));
 prova('Tetto del sito: si ferma per tutti', str_contains($r['body'], 'Per questo mese le traduzioni suggerite sono finite'));
@@ -2724,26 +2730,28 @@ prova('Firma con il segreto sbagliato: Amazon (finto) risponde 403, il cliente l
       && str_contains($r['body'], 'Il traduttore automatico non ha risposto') && (bool) val("SELECT id FROM translation_usage WHERE outcome = 'errore' AND error LIKE '%403%'"));
 @unlink($fileLocale);
 
-// Fine dell'omaggio: niente suggerite nuove, quelle approvate restano.
-db()->prepare('UPDATE accounts SET translation_trial_until = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', strtotime('-1 day')), $lacc]);
+// 9G · Il tetto annuale raggiunto (config.local con un tetto minuscolo): la pagina lo dice, niente «Traduci», le approvate restano.
+file_put_contents($fileLocale, '<?php return ' . var_export(['translate' => ['cap_account' => 20]], true) . ';');
 $r = $lucia->get("/pannello/$casa/lingue/en");
-prova('Omaggio finito: la pagina lo dice e non offre più «Suggerisci»', str_contains($r['body'], 'anno in omaggio delle traduzioni suggerite è finito il ') && !str_contains($r['body'], 'name="suggerisci"'));
+prova('Tetto annuale raggiunto (9G): la pagina lo dice, con «scrivici», e non offre più «Traduci tutti»', str_contains($r['body'], 'tradu-contatore--finito')
+      && str_contains($r['body'], 'Hai usato le traduzioni suggerite di quest\'anno') && !str_contains($r['body'], 'name="suggerisci"'));
 $prima = count($richiesteTr());
 $lucia->post("/pannello/$casa/lingue/en/suggerite", ['suggerisci' => '1']);
 prova('…anche mandando il modulo a mano: nessuna chiamata', count($richiesteTr()) === $prima);
 prova('…e le approvate restano nella guida', str_contains($guidaEn($eatCasa), '[en] Chiedi il tavolo sotto il pergolato.')
-      && str_contains($lucia->get("/pannello/$casa/lingue")['body'], 'L\'anno in omaggio è finito'));
+      && str_contains($lucia->get("/pannello/$casa/lingue")['body'], 'Limite dell\'anno raggiunto'));
 
 // Amministrazione → Traduzioni.
 $r = $admin->get('/admin/traduzioni');
-prova('Amministrazione → Traduzioni: mese, 12 mesi, chi traduce di più, previsione, omaggi, la nota sulle stime', $r['code'] === 200 && pulita($r)
+prova('Amministrazione → Traduzioni: mese, 12 mesi, chi traduce di più, previsione, la nota sulle stime (9G: niente più omaggi)', $r['code'] === 200 && pulita($r)
       && str_contains($r['body'], 'Costo stimato del mese') && str_contains($r['body'], 'Ultimi 12 mesi') && str_contains($r['body'], 'Chi traduce di più')
-      && str_contains($r['body'], 'Previsione') && str_contains($r['body'], 'Anni in omaggio') && str_contains($r['body'], 'fa fede la fattura di AWS')
-      && str_contains($r['body'], 'Lucia') && str_contains($r['body'], 'Finito'));
-$dopo = gmdate('Y-m-d', strtotime('+6 months'));
-$r = $admin->post('/admin/traduzioni/omaggio', ['account' => (string) $lacc, 'fino' => $dopo]);
-prova('…l\'amministratore allunga l\'omaggio: si torna a suggerire', $r['code'] === 302 && (string) val('SELECT translation_trial_until FROM accounts WHERE id = ?', [$lacc]) === $dopo . 'T23:59:59Z'
-      && (int) val('SELECT translation_trial_by_admin FROM accounts WHERE id = ?', [$lacc]) === 1 && str_contains($lucia->get("/pannello/$casa/lingue/en")['body'], 'name="suggerisci"'));
+      && str_contains($r['body'], 'Previsione') && !str_contains($r['body'], 'Anni in omaggio') && str_contains($r['body'], 'fa fede la fattura di AWS')
+      && str_contains($r['body'], 'Lucia'));
+$r = $admin->segui($admin->post("/admin/cliente/$lacc/traduzioni/tetto", ['aggiungi' => '1', 'nota' => 'prova del tetto']));
+prova('…l\'amministratore aggiunge 250.000 caratteri (9G): si torna a suggerire', str_contains($r['body'], 'Aggiunti 250.000 caratteri')
+      && (int) val('SELECT translate_cap_override FROM accounts WHERE id = ?', [$lacc]) === 250020 && str_contains($lucia->get("/pannello/$casa/lingue/en")['body'], 'name="suggerisci"'));
+@unlink($fileLocale);
+db()->prepare('UPDATE accounts SET translate_cap_override = NULL WHERE id = ?')->execute([$lacc]);
 db()->prepare("INSERT INTO translation_usage (account_id, month, chars, outcome, created_at) VALUES (0, ?, 1600000, 'ok', ?)")->execute([gmdate('Y-m'), gmdate('Y-m-d\TH:i:s\Z')]);
 prova('Quadro: avviso oltre l\'80% del tetto del sito', str_contains($admin->get('/admin')['body'], 'Traduzioni suggerite oltre l&#039;80% del tetto del mese'));
 db()->exec('DELETE FROM translation_usage WHERE chars = 1600000');
@@ -2765,12 +2773,12 @@ prova('Landing: sezione «Anche il tuo sito» in fondo, dopo la chiusura, con il
       && strpos($r['body'], 'id="sito"') > strpos($r['body'], 'id="chiusura-titolo"') && !str_contains($r['body'], 'sito2__foto') && !str_contains($r['body'], '/assets/foto/sito-')
       && str_contains($r['body'], '/#sito">Il sito per la tua struttura</a>'));
 $r = $lucia->get('/pannello');
-prova('Pannello (8B): la domanda «Hai già un sito?», con il percorso verso blackout.in e «Non ora»', pulita($r) && str_contains($r['body'], 'data-sito-invito')
+prova('Pannello (8B): la domanda «Hai già un sito?», con il percorso verso blackout.in; senza ✕ (9F)', pulita($r) && str_contains($r['body'], 'data-sito-invito')
       && str_contains($r['body'], 'Con un sito tuo gli ospiti prenotano senza commissioni') && str_contains($r['body'], 'https://blackout.in/myhouse/?da=welcome')
-      && str_contains($r['body'], 'data-sito-chiudi'));
+      && !str_contains($r['body'], 'data-sito-chiudi'));
 prova('6J · …solo in «Le mie guide»: non nella pagina della guida', !str_contains($lucia->get("/pannello/$casa")['body'], 'data-sito-invito'));
 $r = $lucia->modulo('/pannello', '/pannello/sito/nascondi', []);
-prova('6J · «Non mostrare più»: cookie mhw_no_sito per 180 giorni e l\'invito non compare più', !str_contains($lucia->get('/pannello')['body'], 'data-sito-invito')
+prova('6J → 9F · «Non mostrare più» non c\'è più: /pannello/sito/nascondi non nasconde niente, il riquadro resta', str_contains($lucia->get('/pannello')['body'], 'data-sito-invito')
       && str_contains($lucia->get('/pannello')['body'], 'class="guide-griglia"'));
 
 // ================================================================= 6H
@@ -3031,7 +3039,7 @@ prova('…al massimo 10 indirizzi per volta, e il modulo resta compilato', str_c
 $r = $dario->get('/inviti');
 $codDario = (string) val('SELECT referral_code FROM accounts WHERE id = ?', [$accDi('dario@prova.test')]);
 prova('7D · abbonamento attivato dallo staff: può invitare, con il messaggio pronto, il link e il codice', $r['code'] === 200 && str_contains($r['body'], 'Il messaggio pronto')
-      && $codDario !== '' && str_contains($r['body'], '/i/' . $codDario) && str_contains($r['body'], 'il codice è ' . $codDario) && str_contains($r['body'], 'Manda l\'invito'));
+      && $codDario !== '' && str_contains($r['body'], '/i/' . $codDario) && str_contains($r['body'], 'Il codice è ' . $codDario) && str_contains($r['body'], 'Manda l\'invito'));
 prova('Amministrazione → Inviti: il conto degli inviti per email', preg_match('#Inviti per email</span><b class="cifra__valore">1<#', $admin->get('/admin/inviti')['body']) === 1);
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
 
@@ -3133,8 +3141,8 @@ $vera->modulo("/pannello/$vp", "/pannello/$vp/sezioni", ['kind' => 'wifi']);
 prova('Ogni sezione una volta sola: il secondo Wi-Fi non si aggiunge', (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'wifi'", [$vp]) === 1);
 for ($i = 0; $i < 4; $i++) $vera->modulo("/pannello/$vp", "/pannello/$vp/sezioni", ['kind' => 'custom']);
 $r = $vera->get("/pannello/$vp/procedura/sezioni");
-prova('Sezioni libere al massimo 3: la quarta non si aggiunge e il catalogo non la propone più', (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'custom'", [$vp]) === 3
-      && !str_contains($r['body'], 'name="kind" value="custom"') && str_contains($r['body'], 'il massimo per una guida'));
+prova('Sezione libera una per guida (9F·12): la seconda non si aggiunge e il catalogo non la propone più', (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'custom'", [$vp]) === 1
+      && !str_contains($r['body'], 'name="kind" value="custom"') && str_contains($r['body'], 'Hai già la sezione libera'));
 $vw = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'wifi'", [$vp]);
 $vcore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$vp]);
 $vera->post("/pannello/$vp/sezioni/$vw", ['networks' => [['id' => '', 'ssid' => 'Vera_Casa', 'password' => 'casa-vera-1', 'zone' => '']]]);
@@ -3229,7 +3237,7 @@ prova('7B · schede: «6 sezioni aggiuntive a scelta» e «Foto profilo dell\'ho
       && !str_contains($schede, 'Sezioni illimitate') && !preg_match('#[Vv]arianti#', $schede));
 prova('…foto e PDF (8A), traduzioni e «Ideale per» di Plus con i testi nuovi', str_contains($schede, 'Possibilità di inserire foto e PDF accanto ai testi, per far vedere meglio quello che spieghi')
       && !str_contains($schede, 'la foto del cancello')
-      && str_contains($schede, 'Scrivi nella tua lingua, traduciamo noi nelle altre: tu controlli e confermi. Il primo anno è in omaggio.') && !str_contains($schede, 'Scrivi in italiano')
+      && str_contains($schede, 'Scrivi nella tua lingua, traduciamo noi nelle altre: tu controlli e confermi. Comprese nel piano, entro un limite annuale di caratteri.') && !str_contains($schede, 'Scrivi in italiano')
       && str_contains($schede, 'B&amp;B, case vacanza e agriturismi con ospiti da tutto il mondo: sei lingue, foto e consigli sul territorio.')
       && !str_contains($schede, 'Scrivici per un preventivo'));
 prova('7B · 9A · Portfolio oltre 10: «Ti facciamo una proposta su misura» che porta al riquadro del preventivo, niente mailto', str_contains($schede, 'data-oltre hidden')
@@ -3293,11 +3301,11 @@ prova('…con un abbonamento dello staff: «Chiedi il cambio di piano» per emai
 $r = $vera->get('/pannello');
 prova('7B · pannello: «Scopri Portfolio» pieno e «Chiedi informazioni» per email', str_contains($r['body'], '<a class="btn btn--sm" href="' . preg_replace('#^https?://[^/]+#', '', $BASE) . '/piano?passa=portfolio">Scopri Portfolio</a>')
       && str_contains($r['body'], 'subject=Informazioni%20su%20Portfolio') && str_contains($r['body'], rawurlencode('Quante strutture vorrei gestire:')) && str_contains($r['body'], '>Chiedi informazioni</a>'));
-prova('8B · «Hai già un sito per la tua struttura?»: logo MyHouse bianco, Sì / No che aprono il percorso compatto in un <dialog>, ✕ e «Non mostrare più»',
+prova('8B · «Hai già un sito per la tua struttura?»: logo MyHouse bianco, Sì / No che aprono il percorso compatto in un <dialog>; senza ✕ né «Non mostrare più» (9F)',
       str_contains($r['body'], 'Hai già un sito per la tua struttura?') && str_contains($r['body'], 'myhouse-logo-bianco-breve.png?v=')
       && str_contains($r['body'], 'data-funnel-apri="si" data-funnel-dialogo="dlg-sito-guide"') && str_contains($r['body'], 'data-funnel-apri="no"')
       && preg_match('#<dialog class="funnel-dialogo" id="dlg-sito-guide".*?funnel funnel--nojs funnel--compatta.*?data-da="pannello"#s', $r['body']) === 1
-      && str_contains($r['body'], 'data-sito-chiudi') && str_contains($r['body'], 'Non mostrare più'));
+      && !str_contains($r['body'], 'data-sito-chiudi') && !str_contains($r['body'], 'Non mostrare più'));
 
 // ================================================================= 6J · rifiniture
 capitolo('6J · rifiniture: registrazione, amministrazione, testi legali');
@@ -3724,16 +3732,13 @@ prova('7C · Diagnostica: la riga delle traduzioni con l\'esito esatto dell\'ult
 db()->prepare('UPDATE users SET created_at = ? WHERE email = ?')->execute(['2026-01-01T00:00:00Z', 'lucia@esempio.it']);
 $r = $lucia->get('/pannello');
 prova('8C · Novità: la prima è «Riscaldamento e aria condizionata ora sono due sezioni»', str_contains($r['body'], 'Riscaldamento e aria condizionata ora sono due sezioni'));
-foreach (['2026-10-clima', '2026-10-lingue', '2026-10-portali'] as $nid) $lucia->post('/pannello/novita/chiudi', ['novita' => $nid]);
+prova('7C → 9F · Novità: la fascia con «Mostrami dove» (un modulo POST) e «Tutte le novità», senza ✕', str_contains($r['body'], 'class="novita"') && str_contains($r['body'], '>Mostrami dove</button>')
+      && str_contains($r['body'], '/pannello/novita/vai"') && str_contains($r['body'], '>Tutte le novità</a>') && !str_contains($r['body'], 'novita/chiudi'));
+$lucia->post('/pannello/novita/vai', ['novita' => '2026-10-clima']);
 $r = $lucia->get('/pannello');
-prova('7C · Novità: la fascia con «Mostrami dove»', str_contains($r['body'], 'class="novita"') && str_contains($r['body'], 'La tua foto nella guida, anche con Essential')
-      && str_contains($r['body'], '>Mostrami dove</a>'));
-$lucia->post('/pannello/novita/chiudi', ['novita' => '2026-10-host']);
-$r = $lucia->get('/pannello');
-prova('…chiusa, al suo posto la successiva; e la chiusura è per account', !str_contains($r['body'], 'La tua foto nella guida, anche con Essential') && str_contains($r['body'], 'Le stelle nel saluto')
-      && (bool) val("SELECT id FROM novita_viste WHERE novita_id = '2026-10-host' AND account_id = ?", [$accDi('lucia@esempio.it')]));
-foreach (['2026-10-stelle', '2026-10-sconto', '2026-10-foto', '2026-10-traduzioni'] as $nid) $lucia->post('/pannello/novita/chiudi', ['novita' => $nid]);
-prova('…chiuse tutte, niente più fascia', !str_contains($lucia->get('/pannello')['body'], 'class="novita"'));
+prova('…«Mostrami dove» la segna come vista (per account) e la fascia sparisce: si vede solo l\'ultima, le passate stanno in «Novità»', !str_contains($r['body'], 'class="novita"')
+      && (bool) val("SELECT id FROM novita_viste WHERE novita_id = '2026-10-clima' AND account_id = ?", [$accDi('lucia@esempio.it')])
+      && str_contains($lucia->get('/pannello/novita')['body'], 'La tua foto nella guida, anche con Essential'));
 // Un campo nuovo (una novità di prova con un campo della sezione Emergenze): «Nuovo» in Contenuti e nell'editor, «Ho visto».
 file_put_contents("$DOVE/app/lang/novita.php", str_replace("return [\n", "return [\n    ['id' => 'prova-campo', 'data' => '2026-10-11', 'titolo' => 'Prova', 'testo' => 'Prova', 'dove' => '/pannello', 'campi' => ['emergency' => ['note_prova']], 'sezioni' => []],\n", (string) file_get_contents("$DOVE/app/lang/novita.php")));
 sleep(3);   // opcache del server di prova rilegge i file ogni 2 secondi
@@ -3753,8 +3758,8 @@ db()->prepare("UPDATE properties SET address = 'Via Segretissima 7', status = 'p
 $r = $paola->get('/inviti');
 prova('7D · barra laterale: «Invita un amico» con l\'etichetta −5% / −5%', str_contains($r['body'], '<span>Invita un amico</span><em class="lato__etichetta"') && str_contains($r['body'], "\u{2212}5% / \u{2212}5%"));
 prova('…in alto «Come funziona» in tre passi, poi il messaggio pronto con struttura, link e codice, e la casella dell\'anteprima',
-      strpos($r['body'], 'Come funziona') < strpos($r['body'], 'Il messaggio pronto') && str_contains($r['body'], 'Ciao! Per Casa Paola uso MyHouse Welcome')
-      && str_contains($r['body'], 'Con questo link hai il 5% di sconto sul primo anno, il codice è ' . $codP . '.') && str_contains($r['body'], 'data-wa-da="inv-messaggio"')
+      strpos($r['body'], 'Come funziona') < strpos($r['body'], 'Il messaggio pronto') && str_contains($r['body'], 'Ciao! Uso MyHouse Welcome per la guida digitale della mia struttura')
+      && str_contains($r['body'], 'Con questo invito hai il 5% di sconto sul primo anno') && str_contains($r['body'], 'Il codice è ' . $codP . '.') && str_contains($r['body'], 'data-wa-da="inv-messaggio"')
       && str_contains($r['body'], 'name="mostra" value="1" checked') && str_contains($r['body'], 'Mostra la copertina e il nome della mia struttura'));
 $paola->post("/pannello/$pp6/aspetto", ['palette' => 'terracotta', 'text_tone' => 'scuro', 'cover' => file_(png(1600, 900), 'image/png')]);
 $visit = new Browser('visitatore7d');
@@ -4108,7 +4113,7 @@ prova('8C · una lingua sola: la guida in tedesco, senza la finestra della lingu
       && !str_contains($r['body'], 'id="scegli-lingua"'), (string) $r['code']);
 $r = $greta->get("/pannello/$gp/lingue");
 prova('8C · Plus: le lingue di base come caselle e «Una lingua in più» come scelta sola', preg_match('#type="checkbox" name="locali\[\]" value="it"#', $r['body']) === 1
-      && preg_match('#type="radio" name="locali\[\]" value="nl"#', $r['body']) === 1 && str_contains($r['body'], 'Una lingua in più') && !str_contains($r['body'], 'value="de" checked disabled'));
+      && preg_match('#type="radio" name="locali\[\]" value="nl"#', $r['body']) === 1 && str_contains($r['body'], 'One more language') && !str_contains($r['body'], 'value="de" checked disabled'));
 $r = $greta->post("/pannello/$gp/lingue", ['locali' => ['de', 'it', 'nl', 'ja']]);
 prova('…due lingue in più: rifiutato, niente salvato', !val("SELECT 1 FROM property_locales WHERE property_id = ? AND locale = 'nl'", [$gp])
       && str_contains($greta->segui($r)['body'] . $r['body'], 'una lingua aggiuntiva'));
@@ -4201,8 +4206,9 @@ prova('…senza aria condizionata nasce solo «riscaldamento»', val('SELECT kin
       && !val("SELECT 1 FROM sections WHERE property_id = ? AND kind = 'aria' AND id > ?", [$casa8, $cl]) && val("SELECT title FROM section_translations WHERE section_id = ? AND locale = 'it'", [$cl]) === 'Riscaldamento');
 $ariaA = riga("SELECT * FROM sections WHERE property_id = ? AND kind = 'aria' AND id > ?", [$esp, $ca]);
 db()->prepare("UPDATE users SET created_at = '2026-01-01T00:00:00Z' WHERE email = 'ester@prova.test'")->execute();
-// La novità di prova aggiunta più su (prova-campo) verrebbe prima: Ester l'ha già vista.
-db()->prepare("INSERT INTO novita_viste (account_id, novita_id, created_at) VALUES (?, 'prova-campo', ?)")->execute([$esacc, gmdate('Y-m-d\TH:i:s\Z')]);
+// 9F · La fascia mostra solo l'ultima novità: via la novità di prova aggiunta più su (prova-campo), così l'ultima torna «clima».
+file_put_contents("$DOVE/app/lang/novita.php", str_replace("    ['id' => 'prova-campo', 'data' => '2026-10-11', 'titolo' => 'Prova', 'testo' => 'Prova', 'dove' => '/pannello', 'campi' => ['emergency' => ['note_prova']], 'sezioni' => []],\n", '', (string) file_get_contents("$DOVE/app/lang/novita.php")));
+sleep(3);   // opcache del server di prova
 prova('…Essential al limite: «aria» nasce disattivata, con i suoi testi, e la novità lo dice', $ariaA && (int) $ariaA['is_active'] === 0
       && ($trG((int) $ariaA['id'], 'de')['ac_how'] ?? []) === ['Taste ON drücken.'] && str_contains(($rNov = $ester->segui($ester->get("/pannello/$esp/impostazioni")))['body'], 'è nata disattivata'),
       json_encode($ariaA ? ['attiva' => $ariaA['is_active'], 'tr' => $trG((int) $ariaA['id'], 'de'), 'pagina' => preg_match('#<title>([^<]*)#', $rNov['body'] ?? '', $mN) ? $mN[1] : '', 'novita' => preg_match('#novita__testo">(.{0,160})#s', $rNov['body'] ?? '', $mN) ? strip_tags($mN[1]) : ''] : null, JSON_UNESCAPED_UNICODE));
@@ -4541,19 +4547,20 @@ prova('Domande: «Posso scrivere la guida in un\'altra lingua?» spiega piani, l
 prova('Piani: nessuna scheda dice più «Scrivi in italiano»', !str_contains($rH['body'], 'Scrivi in italiano') && str_contains($rH['body'], 'Scrivi nella tua lingua, traduciamo noi nelle altre'));
 [$bJa, , $pJa] = $pxHost('plus', 'ja', '-come');
 $rJ = $bJa->get("/pannello/$pJa/lingue");
-prova('Pannello · Plus in giapponese: «Scrivi la guida in giapponese: ecco come funziona», lingua in più, traduzioni dal giapponese, bottoni in inglese',
-      str_contains($rJ['body'], 'Scrivi la guida in giapponese: ecco come funziona') && str_contains($rJ['body'], 'Il giapponese occupa il posto della lingua in più')
-      && str_contains($rJ['body'], 'partendo dal giapponese') && str_contains($rJ['body'], 'in giapponese non sono tradotti: l\'ospite li legge in inglese'));
+prova('Pannello · Plus in giapponese (9F): pannello in inglese, «One more language» con i due esempi e la riga «日本語: buttons in English, your texts in 日本語»',
+      str_contains($rJ['body'], '<html lang="en">') && str_contains($rJ['body'], 'One more language, besides the five base ones') && str_contains($rJ['body'], 'You write in Polish')
+      && str_contains($rJ['body'], '日本語: buttons in English, your texts in 日本語.'));
 [$bDe, , $pDe] = $pxHost('essential', 'de', '-come');
 $rE = $bDe->get("/pannello/$pDe/lingue");
-prova('Pannello · Essential in tedesco: il tedesco e una seconda lingua, traduzioni a mano, bottoni già in tedesco', str_contains($rE['body'], 'Scrivi la guida in tedesco')
-      && str_contains($rE['body'], 'Il tuo piano comprende il tedesco e una seconda lingua') && str_contains($rE['body'], 'Le scrivi tu') && str_contains($rE['body'], 'sono già in tedesco'));
+prova('Pannello · Essential in tedesco (9F): pannello in inglese, «With Essential you have 2 languages: yours and one of your choice»', str_contains($rE['body'], '<html lang="en">')
+      && str_contains($rE['body'], 'With Essential you have 2 languages: yours and one of your choice'));
 [$bEn, , $pEn] = $pxHost('plus', 'en', '-come');
-prova('Pannello · Plus in inglese: l\'inglese è una delle lingue di base, con le altre quattro e una in più', str_contains($bEn->get("/pannello/$pEn/lingue")['body'], 'L&#039;inglese è una delle cinque lingue di base'));
+prova('Pannello · Plus in inglese (9F): pannello in inglese con il riquadro della lingua in più', str_contains($bEn->get("/pannello/$pEn/lingue")['body'], 'One more language, besides the five base ones'));
 [$bIt, , $pIt] = $pxHost('plus', 'it', '-come');
 $rI = $bIt->get("/pannello/$pIt/impostazioni");
-prova('Pannello · chi scrive in italiano: in Impostazioni «Scrivi in un\'altra lingua? Ecco come funziona», chiuso; in Lingue niente riquadro',
-      str_contains($rI['body'], '<details class="lingua-come"><summary>Scrivi in un&#039;altra lingua? Ecco come funziona</summary>') && !str_contains($bIt->get("/pannello/$pIt/lingue")['body'], 'class="lingua-come'));
+prova('Pannello · chi scrive in italiano (9F): in Impostazioni il riquadro breve «Una lingua in più» senza esempi; in Lingue con i due esempi',
+      str_contains($rI['body'], '<html lang="it">') && str_contains($rI['body'], 'Una lingua in più, oltre alle cinque di base') && !str_contains($rI['body'], 'Scrivi in italiano, ospiti dall&#039;Olanda')
+      && str_contains($bIt->get("/pannello/$pIt/lingue")['body'], 'Scrivi in italiano, ospiti dall&#039;Olanda'));
 
 capitolo('8I · registri conformi al GDPR: file del giorno, dati ridotti, pulizia, copia su S3');
 $j8i = json_decode((string) shell_exec('php ' . escapeshellarg(__DIR__ . '/registri-8i.php') . ' ' . escapeshellarg($DOVE) . ' ' . escapeshellarg((string) getenv('AWS_S3_ENDPOINT')) . ' 2>&1'), true) ?: [];
@@ -5396,6 +5403,245 @@ $ida3 = new Browser('ida9d-3'); $ida3->get('/accedi');
 $r = $ida3->post('/accedi', ['email' => 'ida9d@prova.test', 'password' => 'IdaNuova123456']);
 prova('9E · una provvisoria scaduta (48 ore) è rifiutata all\'accesso: vale solo il link', $r['code'] === 200 && str_contains($r['body'], 'La password provvisoria è scaduta'));
 db()->prepare("UPDATE users SET must_change_password = 0, password_temp_until = NULL WHERE id = ?")->execute([$uI['id']]);
+
+// ================================================================= 9H
+$lacc9 = $accDi('lucia@esempio.it');   // più su $lacc è stato riassegnato (Lea): qui serve l'account di Lucia
+capitolo('9H · posta: mittente assistenza@welcomemyhouse.it, Reply-To all\'assistenza, avviso in Gestione, niente indirizzi scritti a mano');
+@unlink($fileLocale);
+$ospite->get('/password/dimenticata'); $ospite->post('/password/dimenticata', ['email' => 'lucia@esempio.it']);
+$emlTutti = glob("$DOVE/app/storage/logs/email/*.eml") ?: []; sort($emlTutti);
+$eml = $emlTutti ? (string) file_get_contents(end($emlTutti)) : '';
+prova('9H · un\'email automatica parte da assistenza@welcomemyhouse.it (MAIL_FROM di serie) con Reply-To all\'assistenza', str_contains($eml, 'From: MyHouse Welcome <assistenza@welcomemyhouse.it>')
+      && str_contains($eml, 'Reply-To: <assistenza@welcomemyhouse.it>'), substr($eml, 0, 200));
+// Cambiare base_url sposta il percorso del cookie di sessione (si esce): il controllo si prova direttamente, la pagina con il mittente di serie.
+$fuoriD = $php9('echo json_encode([MHW\Mailer::mittenteFuoriDominio("noreply@altrodominio.test", "https://www.welcomemyhouse.it"), MHW\Mailer::mittenteFuoriDominio("assistenza@welcomemyhouse.it", "https://www.welcomemyhouse.it"), MHW\Mailer::mittenteFuoriDominio("Assistenza@WelcomeMyHouse.it", "https://welcomemyhouse.it/sito"), MHW\Mailer::mittenteFuoriDominio("assistenza@welcomemyhouse.it", "http://127.0.0.1:8300"), MHW\Mailer::mittenteFuoriDominio("", "https://www.welcomemyhouse.it")]);');
+prova('9H · Gestione: «Il mittente delle email non è sul dominio del sito» con un mittente su un altro dominio (non con un IP o un mittente vuoto)', $fuoriD === '[true,false,false,false,false]', $fuoriD);
+prova('9H · …e non c\'è con il mittente di serie', !str_contains($admin->get('/admin')['body'], 'Il mittente delle email non è sul dominio del sito'));
+$aMano = trim((string) shell_exec('grep -rln "assistenza@welcomemyhouse.it\|noreply@myhouse.it" ' . escapeshellarg("$DOVE/app/src") . ' ' . escapeshellarg("$DOVE/app/views") . ' 2>/dev/null | grep -v "src/Impostazioni.php"'));
+prova('9H · nessun indirizzo email scritto a mano in src/ e views/ (solo i valori di serie in config.php e gli aiuti di Impostazioni)', $aMano === '', $aMano);
+
+// ================================================================= 9F
+capitolo('9F · guida: dialogo della lingua leggibile, vetrina con il link al sito e i portali a 5 stelle, regione e provincia');
+$m46 = $php9('$f = require "' . $DOVE . '/app/migrations/046_fase9ter.php"; $f(MHW\Db::conn()); echo "fatto";');
+prova('9F · migrazione 046 una seconda volta: niente cambia', $m46 === 'fatto' && (bool) val("SELECT 1 FROM schema_migrations WHERE name LIKE '046%'") && val("PRAGMA table_info(properties)") !== null
+      && (bool) riga("SELECT 1 FROM pragma_table_info('properties') WHERE name = 'province'") && (bool) riga("SELECT 1 FROM pragma_table_info('translation_cache') WHERE name = 'hash'"), $m46);
+$css9f = (string) file_get_contents("$DOVE/assets/app.css");
+$contrasti = json_decode($php9('$o = []; foreach (array_keys(MHW\Palette::all()) as $c) { $p = MHW\Palette::get($c); $o[$c] = [round(MHW\Palette::contrast($p["scuro"]["ink"], "#ffffff"), 1), round(MHW\Palette::contrast($p["scuro"]["on_accent"], $p["scuro"]["accent"]), 1)]; } echo json_encode($o);'), true) ?: [];
+prova('9F·1 · «Scegli la lingua»: bottoni bianchi con il testo scuro della palette (≥ 7:1) e la lingua del telefono sull\'accento pieno (≥ 4,5:1), uguali nei due temi, per tutte e 6 le palette',
+      count($contrasti) === 6 && min(array_column($contrasti, 0)) >= 7 && min(array_column($contrasti, 1)) >= 4.5
+      && str_contains($css9f, '.scegli-lingua__lingua{') && str_contains($css9f, 'background:var(--scelta-fondo,#fff);color:var(--scelta-ink,#231b12)')
+      && str_contains($php9('echo MHW\Palette::css("mare");'), '--scelta-fondo:#ffffff;--scelta-ink:#14232b;--scelta-accento:#1c5a78'), json_encode($contrasti));
+$vet9f = riga("SELECT id, slug FROM properties WHERE is_demo = 2 AND status = 'published' AND archived_at IS NULL ORDER BY id");   // la stessa scelta di Demo::esempio
+$r = $ospite->get('/g/' . $vet9f['slug'] . '?l=it');
+prova('9F·2 · nella vetrina il marchio DEMO è un link alla home del sito con «Torna a …», e in fondo «Questa è una guida di esempio · Torna al sito · Crea la tua guida»', (bool) $vet9f && $r['code'] === 200
+      && preg_match('#<a class="demo-tag demo-tag--link" href="[^"]+/" title="Torna a [^"]+">Demo</a>#', $r['body']) === 1 && str_contains($r['body'], '<b>Questa è una guida di esempio</b>')
+      && str_contains($r['body'], '>Torna al sito</a>') && str_contains($r['body'], '/registrati">Crea la tua guida</a>'));
+$r = $ospite->get('/g/' . $vet9f['slug'] . '/benvenuto?l=de');
+prova('9F·2 · nella copertina il marchio «myhouse welcome · DEMO» è un link, e sotto «Entra» la riga in tedesco', preg_match('#<a href="[^"]+/" title="Zurück zu [^"]+"[^>]*class="rise row"#', $r['body']) === 1
+      && str_contains($r['body'], 'Dies ist ein Beispiel-Guide') && str_contains($r['body'], 'Zurück zur Website') && str_contains($r['body'], 'Erstelle deinen Guide'));
+$veraSlug = (string) val("SELECT slug FROM properties WHERE is_demo = 0 AND status = 'published' AND archived_at IS NULL ORDER BY id LIMIT 1");
+$r = $ospite->get('/g/' . $veraSlug . '?l=it');
+prova('9F·2 · in una guida vera niente link al sito e niente riga «guida di esempio»', $r['code'] === 200 && !str_contains($r['body'], 'demo-tag--link') && !str_contains($r['body'], 'Questa è una guida di esempio'), $veraSlug);
+$r = $ospite->get('/g/' . $vet9f['slug'] . '/commiato?l=it&voto=5');
+$snapV = json_decode((string) val('SELECT snapshot FROM guide_versions WHERE property_id = ? ORDER BY version DESC LIMIT 1', [$vet9f['id']]), true);
+prova('9F·3 · vetrina con 5 stelle: i tre bottoni dei portali (Google, Booking.com, Airbnb) dall\'istantanea ripubblicata dalla 046 con i canali', $r['code'] === 200
+      && str_contains($r['body'], 'data-portale="google"') && str_contains($r['body'], 'data-portale="booking"') && str_contains($r['body'], 'data-portale="airbnb"')
+      && count(array_filter((array) ($snapV['property']['channels'] ?? []), fn($c) => empty($c['social']))) === 3 && ($snapV['property']['province'] ?? '') === 'PG');
+$rP9 = $lucia->get("/pannello/$casa");
+prova('9F·9 · «Guida di esempio» nel pannello è la vetrina (Casa Checco), e Gestione non dà l\'avviso', str_contains($rP9['body'], '/g/' . $vet9f['slug'] . '"')
+      && !str_contains($admin->get('/admin')['body'], 'rifai la vetrina'), preg_match('#href="([^"]*)"[^>]*>(?:<svg.*?</svg>)?<span>Guida di esempio#s', $rP9['body'], $mE) ? $mE[1] : 'link assente');
+$vetrine9f = array_column(righe("SELECT id FROM properties WHERE is_demo = 2 AND status = 'published'"), 'id');
+foreach ($vetrine9f as $vId) db()->prepare("UPDATE properties SET status = 'draft' WHERE id = ?")->execute([$vId]);
+$rA9 = $admin->get('/admin');
+prova('9F·9 · …senza una vetrina pubblicata l\'esempio è un cliente di esempio e Gestione avvisa «rifai la vetrina»', str_contains($rA9['body'], 'La guida di esempio è quella dei clienti di esempio: rifai la vetrina'),
+      (string) $php9('echo json_encode(MHW\Demo::esempio());'));
+foreach ($vetrine9f as $vId) db()->prepare("UPDATE properties SET status = 'published' WHERE id = ?")->execute([$vId]);
+// Regione e provincia
+$r = $lucia->get("/pannello/$casa/impostazioni");
+prova('9F·10 · Impostazioni: «Provincia (sigla)» con i suggerimenti delle 107 sigle e «Regione» con le 20 regioni; niente più «Zona o regione»', substr_count($r['body'], '<option value="') >= 127
+      && str_contains($r['body'], 'id="province-elenco"') && str_contains($r['body'], '<option value="PG" data-regione="Umbria">Perugia</option>') && str_contains($r['body'], 'id="regioni-elenco"')
+      && str_contains($r['body'], '<option value="Toscana">') && !str_contains($r['body'], 'Zona o regione'));
+$lucia->modulo("/pannello/$casa/impostazioni", "/pannello/$casa/impostazioni", ['name' => 'Casa Lucia', 'city' => 'Spello', 'region' => '', 'province' => ' fi ', 'postal_code' => '06038', 'cin' => 'IT054050C2PROVA001']);
+prova('9F·10 · si salva la sigla maiuscola e la regione si completa da sola (FI → Toscana)', val('SELECT province FROM properties WHERE id = ?', [$casa]) === 'FI' && val('SELECT region FROM properties WHERE id = ?', [$casa]) === 'Toscana');
+$lucia->modulo("/pannello/$casa/impostazioni", "/pannello/$casa/impostazioni", ['name' => 'Casa Lucia', 'city' => 'Spello', 'region' => 'Umbria', 'province' => 'PG', 'postal_code' => '06038', 'cin' => 'IT054050C2PROVA001']);
+$lucia->post("/pannello/$casa/pubblica", []);
+$snapL = json_decode((string) val('SELECT snapshot FROM guide_versions WHERE property_id = ? ORDER BY version DESC LIMIT 1', [$casa]), true);
+$slugL = (string) val('SELECT slug FROM properties WHERE id = ?', [$casa]);
+// L'anteprima dell'host (la guida pubblica può essere offline a questo punto delle prove, secondo lo stato dell'abbonamento).
+$rDe = $lucia->get("/pannello/$casa/anteprima?l=de"); $rEn = $lucia->get("/pannello/$casa/anteprima?l=en"); $rIt = $lucia->get("/pannello/$casa/anteprima?l=it");
+$haDe = (bool) val("SELECT 1 FROM property_locales WHERE property_id = ? AND locale = 'de'", [$casa]);
+prova('9F·10 · nella guida e nell\'istantanea «Città · Provincia · Regione», tradotte dove esiste una forma: «Spello · Perugia · Umbria», in tedesco «Umbrien»', ($snapL['property']['province'] ?? '') === 'PG'
+      && str_contains($rIt['body'], 'Spello · Perugia · Umbria') && (!$haDe || str_contains($rDe['body'], 'Spello · Perugia · Umbrien')) && str_contains($rEn['body'], 'Spello · Perugia · Umbria'),
+      json_encode(['prov' => $snapL['property']['province'] ?? null, 'de' => $haDe, 'it' => preg_match('#Spello · [^<]{0,40}#', $rIt['body'], $mD) ? $mD[0] : '', 'en' => preg_match('#Spello · [^<]{0,40}#', $rEn['body'], $mD) ? $mD[0] : '']));
+prova('9F·10 · Territorio: Firenze → Florence/Florenz, Toscana → Tuscany; il capoluogo non si ripete; all\'estero il testo libero resta', $php9('echo MHW\Territorio::dove(["city" => "Firenze", "province" => "fi", "region" => "toscana"], "en"), "|", MHW\Territorio::dove(["city" => "Greve in Chianti", "province" => "FI", "region" => "Toscana"], "de"), "|", MHW\Territorio::dove(["city" => "Lisbona", "province" => "Lisboa", "region" => ""], "it"), "|", MHW\Territorio::regioneDi("sr");') === 'Firenze · Tuscany|Greve in Chianti · Florenz · Toskana|Lisbona · Lisboa|Sicilia');
+prova('9F·10 · Marketing: la regione dalla provincia salvata vale più del CAP', $php9('echo MHW\Marketing::regione(["region" => "", "province" => "LE", "postal_code" => "06038"]), "|", MHW\Marketing::regione(["region" => "", "province" => "", "postal_code" => "06038"]);') === 'Puglia|Umbria');
+
+capitolo('9F · pannello: prenotazione diretta, messaggio degli inviti, riquadro MyHouse e Novità senza X, lingua in più, traduzione a gruppi, sezione libera, pannello in inglese');
+$r = $lucia->get("/pannello/$casa/impostazioni");
+prova('9F·4 · Prenotazione diretta: due colonne con «Codice sconto» e «Sconto» sulla stessa riga (3/2) e l\'aiuto del codice sotto tutti e due', str_contains($r['body'], '<div class="diretta__codice">')
+      && strpos($r['body'], 'id="direct_discount"') < strpos($r['body'], 'id="direct-code-aiuto"') && str_contains($css9f, '.diretta__codice{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr)')
+      && str_contains($css9f, '@media(min-width:900px){ .diretta{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} }'));
+$admin->segui($admin->post('/admin/impostazioni/inviti', ['inviti__attivi' => '1', 'password' => 'AdminProva123']));   // le prove di prima possono averli spenti
+$r = $paola->get('/inviti');
+prova('9F·5 · Invita per email: il messaggio parte già scritto con lo sconto (Testi e foto → inviti.messaggio_partenza), lo stesso testo del messaggio pronto di WhatsApp',
+      str_contains($r['body'], 'Ciao! Uso MyHouse Welcome per la guida digitale della mia struttura e mi trovo bene. Con questo invito hai il 5% di sconto sul primo anno: crei la guida gratis e paghi solo quando la pubblichi.</textarea>')
+      && preg_match('~<textarea id="inv-messaggio"[^>]*>Ciao! Uso MyHouse Welcome per la guida digitale della mia struttura e mi trovo bene\. Con questo invito hai il 5% di sconto sul primo anno: crei la guida gratis e paghi solo quando la pubblichi\. Guarda com&#039;è la mia guida: [^<]+ Il codice è [A-Z0-9]+\.</textarea>~', $r['body']) === 1);
+$r = $lucia->get('/pannello');
+prova('9F·6 · il riquadro MyHouse c\'è sempre, senza X né «Non mostrare più»', str_contains($r['body'], 'data-sito-invito') && !str_contains($r['body'], 'data-sito-chiudi') && !str_contains($r['body'], 'Non mostrare più'));
+db()->prepare('UPDATE properties SET has_site = 0 WHERE id = ?')->execute([$casa]);
+$r = $lucia->get('/pannello');
+prova('9F·6 · dopo la risposta diventa compatto: «Hai già risposto: «No, non ancora»», vuoi cambiare?', str_contains($r['body'], 'sito-invito--compatto') && str_contains($r['body'], 'Hai già risposto: «No, non ancora»')
+      && str_contains($r['body'], 'vuoi cambiare la risposta?'));
+db()->prepare('UPDATE properties SET has_site = NULL WHERE id = ?')->execute([$casa]);
+$luId = (int) val('SELECT id FROM users WHERE email = ?', ['lucia@esempio.it']);
+$creatoLucia = (string) val('SELECT created_at FROM users WHERE id = ?', [$luId]);
+db()->prepare('UPDATE users SET created_at = ? WHERE id = ?')->execute(['2026-10-01T00:00:00Z', $luId]);
+db()->prepare('DELETE FROM novita_viste WHERE account_id = ?')->execute([$lacc9]);
+$novitaTutte = require "$DOVE/app/lang/novita.php"; $ultimaN = $novitaTutte[0];
+$r = $lucia->get('/pannello');
+prova('9F·6 · Novità: si vede solo l\'ultima, senza X, con «Mostrami dove» (POST) e «Tutte le novità»', str_contains($r['body'], '<b id="novita-titolo">' . htmlspecialchars($ultimaN['titolo'], ENT_QUOTES) . '</b>')
+      && !str_contains($r['body'], 'Chiudi questa novità') && str_contains($r['body'], 'action="/welcomebook/index.php/pannello/novita/vai"') && str_contains($r['body'], '>Tutte le novità</a>'));
+$r = $lucia->post('/pannello/novita/vai', ['novita' => $ultimaN['id'], 'dove' => "/pannello/$casa/lingue"]);
+prova('9F·6 · «Mostrami dove»: porta lì e segna la novità come vista; la fascia sparisce finché non ne esce un\'altra', $r['code'] === 302 && str_ends_with($r['loc'], "/pannello/$casa/lingue")
+      && (bool) val('SELECT id FROM novita_viste WHERE account_id = ? AND novita_id = ?', [$lacc9, $ultimaN['id']]) && !str_contains($lucia->get('/pannello')['body'], 'class="novita"'), $r['code'] . ' ' . $r['loc']);
+$r = $lucia->get('/pannello/novita');
+prova('9F·6 · la pagina «Novità» tiene tutte quelle passate, dalla più recente, con «vista»', $r['code'] === 200 && pulita($r) && substr_count($r['body'], '<li>') >= count($novitaTutte)
+      && str_contains($r['body'], htmlspecialchars($ultimaN['titolo'], ENT_QUOTES)) && str_contains($r['body'], '· vista</time>') && str_contains($r['body'], '>Novità</span>'));
+db()->prepare('UPDATE users SET created_at = ? WHERE id = ?')->execute([$creatoLucia, $luId]);
+$r = $lucia->get("/pannello/$casa/lingue");
+prova('9F·7 · Lingue: «Una lingua in più, oltre alle cinque di base» con i due esempi e la riga sui bottoni, sopra la scelta', str_contains($r['body'], 'Una lingua in più, oltre alle cinque di base')
+      && str_contains($r['body'], '<b>se i tuoi ospiti parlano un&#039;altra lingua</b>') && str_contains($r['body'], 'Scrivi in italiano, ospiti dall&#039;Olanda') && str_contains($r['body'], 'Scrivi in polacco')
+      && str_contains($r['body'], 'è tradotta per nederlands, português (portugal), português (brasil) e polski') && strpos($r['body'], 'lingua-come__titolo') < strpos($r['body'], 'name="locali[]"'));
+prova('9F·7 · con Essential il riquadro dice «2 lingue: la tua e una a scelta»', str_contains($elsa->get("/pannello/$ep/lingue")['body'], 'Con Essential hai 2 lingue: la tua e una a scelta'));
+$r = $admin->get('/admin/testi');
+prova('9F·7 · i testi stanno in Testi e foto, sezione «Pannello: una lingua in più»', str_contains($r['body'], 'Pannello: una lingua in più') && str_contains($r['body'], 'lingue.extra.titolo'));
+// 9F·8 · traduzione in corso: l'endpoint a gruppi (il JavaScript lo chiama una lingua per volta)
+db()->prepare("DELETE FROM translation_suggestions WHERE property_id = ?")->execute([$casa]);
+db()->prepare('UPDATE accounts SET translate_cap_override = NULL WHERE id = ?')->execute([$lacc9]);
+$ptIt((int) $lo[2]['id'], 'note', 'Chiude il martedì, apre il mercoledì alle 19.'); $ptEn((int) $lo[2]['id'], 'note', '');
+$trData($emCasa, 'it', 'note', 'Il pronto soccorso è a Nottola, 20 minuti in auto.'); $trData($emCasa, 'en', 'note', '');
+$ptIt((int) $lo[0]['id'], 'description', 'Pasta fatta a mano, anche senza glutine.'); $ptEn((int) $lo[0]['id'], 'description', '');
+$lucia->get("/pannello/$casa/lingue/en");
+$primaJ = count($richiesteTr());
+$j2 = json_decode($lucia->post("/pannello/$casa/lingue/en/suggerite.json", ['tutti' => '1', 'limite' => '10', 'sezione' => (string) $emCasa], ['Accept: application/json'])['body'] ?? '', true);
+prova('9F·8 · POST …/suggerite.json con «sezione»: traduce solo i campi di quella sezione (dom, testo, etichetta)', is_array($j2) && ($j2['ok'] ?? false) && count($j2['fatte'] ?? []) >= 1
+      && array_unique(array_map(fn($f) => explode(':', $f['k'])[0] . ':' . explode(':', $f['k'])[1], $j2['fatte'])) === ['section:' . $emCasa]
+      && str_starts_with((string) ($j2['fatte'][0]['dom'] ?? ''), 'c-') && str_starts_with((string) ($j2['fatte'][0]['testo'] ?? ''), '[en] ') && ($j2['fatte'][0]['etichetta'] ?? '') !== '', json_encode($j2));
+$primaJ = count($richiesteTr());
+$j = json_decode($lucia->post("/pannello/$casa/lingue/en/suggerite.json", ['tutti' => '1', 'limite' => '1'], ['Accept: application/json'])['body'] ?? '', true);
+prova('9F·8 · …con «limite» un gruppo di campi per volta (qui uno), con «restanti» per la barra', is_array($j) && ($j['ok'] ?? false) && count($j['fatte'] ?? []) === 1 && ($j['restanti'] ?? -1) >= 1
+      && count($richiesteTr()) === $primaJ + 1, json_encode($j));
+$trData($emCasa, 'it', 'intro_errore', ''); $ptIt((int) $lo[1]['id'], 'description', 'ERRORE-FINTO testo che non si traduce'); $ptEn((int) $lo[1]['id'], 'description', '');
+$j3 = json_decode($lucia->post("/pannello/$casa/lingue/en/suggerite.json", ['campo' => 'place:' . $lo[1]['id'] . ':description'], ['Accept: application/json'])['body'] ?? '', true);
+prova('9F·8 · un errore del traduttore torna come «stop» (la barra diventa gialla con «Riprova»), gli altri campi restano', is_array($j3) && empty($j3['ok']) && str_contains((string) ($j3['stop'] ?? ''), 'non ha risposto') && ($j3['fatte'] ?? null) === [], json_encode($j3));
+$ptIt((int) $lo[1]['id'], 'description', 'Trattoria di famiglia dal 1962.');
+$r = $lucia->get("/pannello/$casa/lingue/en");
+prova('9F·8 · nella pagina della lingua il bottone ha i dati per il JavaScript (data-traduci, data-url, data-csrf) e la barra di stato; senza JavaScript resta il modulo', str_contains($r['body'], 'data-traduci data-url="/welcomebook/index.php/pannello/' . $casa . '/lingue/en/suggerite.json"')
+      && str_contains($r['body'], 'data-traduci-stato') && str_contains($r['body'], 'name="suggerisci" value="1" data-traduci-tutti') && str_contains($css9f, '@media (prefers-reduced-motion:reduce){ .spin{animation:none}'));
+$r = $lucia->get("/pannello/$casa/sezioni/$emCasa");
+prova('9F·8 · nell\'editor della sezione «Traduci questa sezione in N lingue», una lingua per volta (data-lingue con nome, url e pagina)', str_contains($r['body'], 'data-traduci-sezione="' . $emCasa . '"')
+      && str_contains($r['body'], '&quot;nome&quot;:&quot;Inglese&quot;') && str_contains($r['body'], 'Traduci questa sezione in '));
+// 9F·12 · la sezione libera: una per guida, anche con Essential
+$r = $elsa->segui($elsa->post("/pannello/$ep/sezioni", ['kind' => 'custom']));
+$liberaE = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'custom'", [$ep]);
+prova('9F·12 · Essential aggiunge la sezione libera (conta come una delle 6), con il titolo di serie «Informazioni utili»', $liberaE > 0 && val('SELECT title FROM section_translations WHERE section_id = ? AND locale = ?', [$liberaE, 'it']) === 'Informazioni utili');
+$r = $elsa->segui($elsa->post("/pannello/$ep/sezioni", ['kind' => 'custom']));
+prova('9F·12 · una seconda sezione libera è rifiutata, in tutti i piani', (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'custom'", [$ep]) === 1 && str_contains($r['body'], 'una sola sezione libera')
+      && str_contains($lucia->segui($lucia->post("/pannello/$casa/sezioni", ['kind' => 'custom']))['body'], 'una sola sezione libera') || (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'custom'", [$casa]) === 1);
+prova('9F·12 · FAQ, Termini e «Confronta i piani» lo dicono', str_contains($ospite->get('/domande')['body'], 'Posso aggiungere una sezione tutta mia?') && str_contains($ospite->get('/termini')['body'], 'la sezione libera è una sola per guida')
+      && str_contains($ospite->get('/')['body'], 'Sezione libera (una per guida)') && val("SELECT COUNT(*) FROM package_features pf JOIN features f ON f.id = pf.feature_id JOIN package_versions v ON v.id = pf.package_version_id WHERE f.code = 'custom_sections' AND v.is_current = 1 AND pf.value = '1'") >= 3);
+// 9F·11 · il pannello in inglese quando la lingua principale non è l'italiano
+$php9('MHW\Properties::setDefaultLocale(' . $lacc9 . ', ' . $casa . ', "pl");');
+$r = $lucia->get("/pannello/$casa/procedura/struttura");
+prova('9F·11 · lingua principale polacca: la procedura è in inglese (passi, titoli, etichette), la lingua è la prima cosa del primo passo, con Essential/Plus spiegati e «Your language isn\'t listed? Write to us»',
+      str_contains($r['body'], '<h1>Property and contacts.</h1>') && str_contains($r['body'], '>Check-in &amp; Check-out</span>') && str_contains($r['body'], 'Which language do you write the guide in?')
+      && strpos($r['body'], 'Which language do you write the guide in?') < strpos($r['body'], '<legend>The property</legend>') && str_contains($r['body'], 'With Essential') && str_contains($r['body'], 'Your language isn\'t listed?')
+      && str_contains($r['body'], 'mailto:assistenza@welcomemyhouse.it?subject=Lingua%20mancante') && str_contains($r['body'], 'Dashboard language: <b>English</b>') && str_contains($r['body'], '>My guides</span>'));
+$r = $lucia->get("/pannello/$casa/sezioni/$emCasa");
+prova('9F·11 · l\'editor delle sezioni in inglese: etichette e aiuti dal catalogo tradotto, «Optional» spezzato come «Facoltativo»', str_contains($r['body'], 'Single emergency number') && str_contains($r['body'], 'Useful contacts')
+      && str_contains($r['body'], '>Save</button>') && str_contains($r['body'], '(optional)') && !str_contains($r['body'], 'Numero unico di emergenza'));
+$r = $lucia->get('/account');
+prova('9F·11 · Account & Billing in inglese, con «Dashboard language: Italian / English / Default»', str_contains($r['body'], '<h1>Account &amp; Billing.</h1>') && str_contains($r['body'], 'name="pannello_lingua" value="it"')
+      && str_contains($r['body'], 'Dashboard language'));
+$r = $lucia->segui($lucia->post('/account/pannello-lingua', ['pannello_lingua' => 'it']));
+prova('9F·11 · l\'interruttore: «Italiano» riporta il pannello in italiano anche con la guida in polacco, e resta nel registro', str_contains($r['body'], 'Account &amp; Fatturazione.') && val('SELECT panel_lang FROM users WHERE id = ?', [$luId]) === 'it'
+      && str_contains($lucia->get("/pannello/$casa/procedura/struttura")['body'], '<h1>Struttura e contatti.</h1>') && (bool) val("SELECT id FROM audit_log WHERE action = 'panel.language'"));
+$lucia->post('/account/pannello-lingua', ['pannello_lingua' => '']);
+$php9('MHW\Properties::setDefaultLocale(' . $lacc9 . ', ' . $casa . ', "it");');
+prova('9F·11 · «di serie» segue la lingua principale: tornata all\'italiano, il pannello è italiano; l\'amministrazione resta sempre in italiano', val('SELECT panel_lang FROM users WHERE id = ?', [$luId]) === ''
+      && str_contains($lucia->get("/pannello/$casa/procedura/struttura")['body'], '<h1>Struttura e contatti.</h1>') && str_contains($admin->get('/admin/clienti')['body'], 'Clienti'));
+
+// ================================================================= 9G
+capitolo('9G · traduzioni suggerite: sempre per Plus e Portfolio, tetto annuale, memoria delle frasi, segnaposto protetti, contatori');
+prova('9G · i testi: Termini «entro un limite annuale di caratteri», FAQ, Confronta i piani, le schede dei piani (via l\'omaggio di un anno)', str_contains($ospite->get('/termini')['body'], 'comprese nei piani Plus e Portfolio entro un limite annuale di caratteri')
+      && str_contains($ospite->get('/domande')['body'], 'entro un limite annuale di caratteri che vedi nel pannello') && str_contains($ospite->get('/')['body'], 'Traduzioni suggerite <span class="small muted">entro un limite annuale di caratteri</span>')
+      && str_contains((string) val("SELECT bullets FROM packages WHERE code = 'plus'"), 'Comprese nel piano, entro un limite annuale di caratteri.') && !str_contains($ospite->get('/en/terms')['body'], 'free for twelve months'));
+db()->prepare('UPDATE accounts SET translation_trial_until = ? WHERE id = ?')->execute(['2020-01-01T00:00:00Z', $lacc9]);
+$r = $lucia->get("/pannello/$casa/lingue/en");
+prova('9G · un «anno in omaggio» finito da tempo non blocca più niente: Plus traduce lo stesso, con il contatore dell\'anno', str_contains($r['body'], 'name="suggerisci"') && !str_contains($r['body'], 'anno in omaggio')
+      && preg_match('#Traduzioni suggerite: \d+% dell\'anno usato</b> · si azzera il #', $r['body']) === 1 && str_contains($lucia->get('/account')['body'], 'id="traduzioni"'));
+prova('9G · Essential no', !str_contains($elsa->get("/pannello/$ep/lingue/en")['body'] ?? '', 'name="suggerisci"') && $php9('echo json_encode(MHW\Traduttore::nelPiano(' . $eacc . '));') === 'false');
+$prot = json_decode($php9('[$t, $m] = MHW\Traduttore::proteggi("Ciao  {host}!\n\n\n\nChiama il +39 075 123 4567 o scrivi a info@casa.it. Check-in dalle 15:00, 22 °C, 15 € a notte, https://casa.it/x?a=1 e il 10% di sconto."); echo json_encode([$t, $m, MHW\Traduttore::ripristina("[en] " . $t, $m)]);'), true) ?: [];
+prova('9G·4 · prima di inviare: spazi doppi e righe vuote via; {host}, telefono, email, orario, temperatura, prezzo, link e percentuale protetti (⟦n⟧) e rimessi al loro posto', count($prot) === 3
+      && $prot[0] === "Ciao \u{27E6}1\u{27E7}!\n\nChiama il \u{27E6}2\u{27E7} o scrivi a \u{27E6}3\u{27E7}. Check-in dalle \u{27E6}4\u{27E7}, \u{27E6}5\u{27E7}, \u{27E6}6\u{27E7} a notte, \u{27E6}7\u{27E7} e il \u{27E6}8\u{27E7} di sconto."
+      && count($prot[1]) === 8 && $prot[2] === "[en] Ciao {host}!\n\nChiama il +39 075 123 4567 o scrivi a info@casa.it. Check-in dalle 15:00, 22 °C, 15 € a notte, https://casa.it/x?a=1 e il 10% di sconto.", json_encode($prot));
+prova('9G·4 · i campi che non si traducono mai (nomi, codici, indirizzi, link) per nome del campo', $php9('echo json_encode([MHW\Traduttore::nonTradurre("contacts.ab12.phone"), MHW\Traduttore::nonTradurre("networks.x.ssid"), MHW\Traduttore::nonTradurre("checkin_steps.0")]);') === '[true,true,false]');
+db()->prepare("DELETE FROM translation_suggestions WHERE property_id = ?")->execute([$casa]);
+$ptIt((int) $lo[0]['id'], 'description', 'Pasta fresca ogni mattina, chiama il +39 075 123 4567.'); $ptEn((int) $lo[0]['id'], 'description', '');
+$primaC = count($richiesteTr());
+$lucia->post("/pannello/$casa/lingue/en/suggerite", ['campo' => 'place:' . $lo[0]['id'] . ':description']);
+$sugC = riga("SELECT * FROM translation_suggestions WHERE target_type = 'place' AND target_id = ? AND locale = 'en'", [$lo[0]['id']]);
+$richC = array_slice($richiesteTr(), $primaC);
+prova('9G·3/4 · la chiamata ad Amazon porta il testo protetto (il telefono è ⟦1⟧) e la suggerita ha il numero vero; la frase entra nella memoria', count($richC) === 1 && str_contains((string) ($richC[0]['testo'] ?? ''), "\u{27E6}1\u{27E7}")
+      && ($sugC['text'] ?? '') === '[en] Pasta fresca ogni mattina, chiama il +39 075 123 4567.' && (int) val("SELECT COUNT(*) FROM translation_cache WHERE testo_tradotto LIKE '[en] Pasta fresca%'") === 1, json_encode([$richC, $sugC['text'] ?? null]));
+// Lo stesso testo in un'altra guida: dalla memoria, senza chiamare Amazon.
+$casa2 = (int) val("SELECT id FROM properties WHERE account_id = ? AND id <> ? AND archived_at IS NULL ORDER BY id", [$lacc9, $casa]);
+$primaM = count($richiesteTr());
+$usoM = $php9('echo MHW\Traduttore::traduci(' . $lacc9 . ', ' . ($casa2 ?: $casa) . ', "Pasta fresca ogni mattina, chiama il +39 075 999 0000.", "it", "en"), "|", MHW\Db::val("SELECT outcome FROM translation_usage WHERE account_id = ' . $lacc9 . ' ORDER BY id DESC LIMIT 1"), "|", MHW\Db::val("SELECT hits FROM translation_cache WHERE testo_tradotto LIKE \'[en] Pasta fresca%\'");');
+prova('9G·3 · la stessa frase (anche con un altro telefono: il segnaposto è uguale) si riusa dalla memoria con esito «cache», senza chiamare Amazon', $usoM === '[en] Pasta fresca ogni mattina, chiama il +39 075 999 0000.|cache|1' && count($richiesteTr()) === $primaM, $usoM);
+prova('9G·2 · salvare una sezione senza cambiare niente non chiama Amazon', ($lucia->post("/pannello/$casa/sezioni/$emCasa", ['note' => 'Il pronto soccorso è a Nottola, 20 minuti in auto.'])['code'] ?? 0) === 302 && count($richiesteTr()) === $primaM);
+// Una traduzione approvata e poi l'originale cambia: la suggerita nuova la sostituisce, «Aggiornata: da ricontrollare».
+$lucia->post("/pannello/$casa/lingue/en/suggerite", ['approva' => (string) ($sugC['id'] ?? 0)]);
+$ptIt((int) $lo[0]['id'], 'description', 'Pasta fresca ogni mattina e pane del forno a legna.');
+$primaA = count($richiesteTr());
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['campo' => 'place:' . $lo[0]['id'] . ':description']));
+prova('9G·2 · cambia un campo: una chiamata per quella lingua, solo quel campo, e la suggerita è «Aggiornata: da ricontrollare» (sostituisce la traduzione vecchia quando la approvi)', count($richiesteTr()) === $primaA + 1
+      && str_contains($r['body'], 'Aggiornata: da ricontrollare') && str_contains($r['body'], '[en] Pasta fresca ogni mattina e pane del forno a legna.'));
+// Il tetto annuale: il contatore, l'email a noi all'80% e al 100%, «Aggiungi 250.000» dalla scheda del cliente.
+$usatiL = (int) $php9('echo MHW\Traduttore::usatiAnno(' . $lacc9 . ');');
+db()->prepare('UPDATE accounts SET translate_cap_override = ? WHERE id = ?')->execute([$usatiL + 30, $lacc9]);
+$ptIt((int) $lo[2]['id'], 'note', 'Chiude il martedì; il mercoledì apre alle 19, il giovedì alle 20 e il venerdì a mezzogiorno.'); $ptEn((int) $lo[2]['id'], 'note', '');
+db()->prepare("DELETE FROM translation_suggestions WHERE target_type = 'place' AND target_id = ?")->execute([$lo[2]['id']]);
+$primaPostaT = count(righePosta() ?: []);
+$r = $lucia->segui($lucia->post("/pannello/$casa/lingue/en/suggerite", ['campo' => 'place:' . $lo[2]['id'] . ':note']));
+$postaT = array_values(array_filter(array_map(fn($l) => json_decode($l, true), array_slice(righePosta() ?: [], $primaPostaT)), fn($m) => ($m['to'] ?? '') === 'assistenza@welcomemyhouse.it'));
+prova('9G·1 · tetto annuale raggiunto: «Hai usato le traduzioni suggerite di quest\'anno (N caratteri)… scrivici», registrata come «limite», e l\'email a noi (una volta)', str_contains($r['body'], 'Hai usato le traduzioni suggerite di quest&#039;anno')
+      && str_contains($r['body'], 'le riattiviamo noi') && (bool) val("SELECT id FROM translation_usage WHERE account_id = ? AND outcome = 'limite' AND error LIKE 'tetto annuale%'", [$lacc9])
+      && count($postaT) === 1 && str_contains((string) $postaT[0]['subject'], 'Traduzioni suggerite: Lucia') && str_contains((string) $postaT[0]['subject'], 'del tetto annuale')
+      && (bool) val("SELECT id FROM translation_usage WHERE account_id = ? AND outcome IN ('avviso80', 'avviso100')", [$lacc9]), json_encode([array_column($postaT, 'subject'), $usatiL, $php9('echo json_encode(MHW\Traduttore::contatore(' . $lacc9 . '));'), $php9('$s = MHW\Subscriptions::active(' . $lacc9 . '); echo json_encode($s ? [$s["status"], $s["current_period_start"], $s["current_period_end"]] : null);')]));
+db()->prepare('UPDATE accounts SET translate_cap_override = ? WHERE id = ?')->execute([$usatiL, $lacc9]);   // il tetto proprio ai caratteri usati: 100%
+$r = $lucia->get("/pannello/$casa/lingue/en");
+prova('9G·5 · nella pagina della lingua il contatore è al 100% con il link all\'assistenza, e Lingue dice «Limite dell\'anno raggiunto»; niente «Traduci»', str_contains($r['body'], 'tradu-contatore--finito') && str_contains($r['body'], 'mailto:assistenza@welcomemyhouse.it?subject=Traduzioni%20suggerite')
+      && !str_contains($r['body'], 'name="suggerisci"') && str_contains($lucia->get("/pannello/$casa/lingue")['body'], 'Limite dell\'anno raggiunto'));
+$r = $admin->get("/admin/cliente/$lacc9");
+prova('9G·1 · scheda del cliente: «Traduzioni: N / M caratteri quest\'anno», «Aggiungi 250.000» e il tetto personale', preg_match('#Traduzioni: <b>[\d.]+ / [\d.]+</b> caratteri quest\'anno#', $r['body']) === 1 && str_contains($r['body'], 'Aggiungi 250.000')
+      && str_contains($r['body'], 'id="tr-tetto"'));
+$r = $admin->segui($admin->post("/admin/cliente/$lacc9/traduzioni/tetto", ['aggiungi' => '1', 'nota' => '']));
+prova('9G·1 · senza la nota non si aggiunge niente', str_contains($r['body'], 'Scrivi una nota') && (int) val('SELECT translate_cap_override FROM accounts WHERE id = ?', [$lacc9]) === $usatiL);
+$r = $admin->segui($admin->post("/admin/cliente/$lacc9/traduzioni/tetto", ['aggiungi' => '1', 'nota' => 'Guida grande, ha chiesto di riattivarle']));
+prova('9G·1 · «Aggiungi 250.000»: il tetto sale, nel registro con la nota, e le suggerite ripartono', (int) val('SELECT translate_cap_override FROM accounts WHERE id = ?', [$lacc9]) === $usatiL + 250000
+      && str_contains($r['body'], 'Aggiunti 250.000 caratteri') && (bool) val("SELECT id FROM audit_log WHERE action = 'translate.cap_added' AND meta LIKE '%Guida grande%'")
+      && str_contains($lucia->get("/pannello/$casa/lingue/en")['body'], 'name="suggerisci"'));
+$r = $admin->segui($admin->post("/admin/cliente/$lacc9/traduzioni/tetto", ['salva' => '1', 'tetto' => '', 'nota' => 'torna di serie']));
+prova('9G·1 · il tetto personale si toglie (vale quello di serie, 500.000 all\'anno, che si azzera al rinnovo)', val('SELECT translate_cap_override FROM accounts WHERE id = ?', [$lacc9]) === null
+      && $php9('echo MHW\Traduttore::tettoAccount(' . $lacc9 . ');') === '500000' && preg_match('#"azzera":"\d{4}-\d{2}-\d{2}T#', $php9('echo json_encode(MHW\Traduttore::contatore(' . $lacc9 . '));')) === 1);
+$r = $admin->get('/admin/traduzioni');
+prova('9G·5 · Vendite → Traduzioni: per mese con gli esiti (ok, dalla memoria, fermate, errori), chi ha usato di più negli ultimi 12 mesi con il tetto annuale, la memoria', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], 'Dalla memoria') && str_contains($r['body'], 'Chi ha usato di più negli ultimi 12 mesi') && str_contains($r['body'], 'caratteri all&#039;anno · memoria:') && !str_contains($r['body'], 'Anni in omaggio')
+      && str_contains($admin->get('/admin')['body'], 'href="/welcomebook/index.php/admin/traduzioni"'));
+db()->prepare("INSERT INTO translation_cache (hash, da, a, chars, testo_tradotto, hits, created_at) VALUES ('vecchia-mai-usata', 'it', 'en', 5, 'x', 0, ?)")->execute(['2025-01-01T00:00:00Z']);
+$cron();
+prova('9G·3 · pulizia: le righe della memoria mai riusate da 12 mesi spariscono con il cron', !val("SELECT id FROM translation_cache WHERE hash = 'vecchia-mai-usata'"));
 
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
 

@@ -5,10 +5,17 @@ namespace MHW;
  * Le traduzioni suggerite: Amazon Translate (TranslateText) propone, il cliente
  * approva. Punto 5 del controllo di ottobre 2026.
  *
- * Regole:
- *  - solo con la funzione auto_translation del piano (Plus e Portfolio), con
- *    l'interruttore della struttura acceso (Lingue) e dentro l'anno in omaggio,
- *    che parte alla prima accensione nell'account; l'amministratore lo può allungare;
+ * Regole (9G, decisione del titolare):
+ *  - solo con la funzione auto_translation del piano (Plus e Portfolio, anche concesso a mano), finché
+ *    l'abbonamento è attivo: l'«anno in omaggio» della 7C non esiste più (la data resta solo come storico);
+ *  - un tetto ANNUALE di caratteri per account (translate.cap_account, di serie 500.000; personale con
+ *    accounts.translate_cap_override), che riparte al rinnovo; il tetto mensile per tutto il sito resta
+ *    come freno di emergenza. All'80% e al 100% una email a noi;
+ *  - prima di chiamare Amazon si guarda la memoria delle frasi già tradotte (translation_cache): una
+ *    frase uguale (stesso testo, stesse lingue) si riusa senza spesa (esito «cache»);
+ *  - prima di inviare si tolgono gli spazi doppi e le righe vuote ripetute, e si proteggono i segnaposto
+ *    ({link}), gli indirizzi web ed email, i numeri di telefono, gli orari, le temperature e i prezzi:
+ *    tornano al loro posto nella traduzione, non tradotti;
  *  - una suggerita sta in translation_suggestions, MAI nelle traduzioni: la guida
  *    non la vede finché il cliente non la approva. Approvata, diventa una
  *    traduzione come le altre («reviewed») e resta anche dopo l'omaggio;
@@ -27,6 +34,12 @@ final class Traduttore
     public const MAX_BYTE = 10000;
     /** Il piano gratuito di AWS: caratteri al mese, per 12 mesi dalla prima chiamata. */
     public const GRATIS_AL_MESE = 2000000;
+    /** 9G · Il tetto annuale di serie per account (≈ 3–4 guide intere nelle 5 lingue). */
+    public const TETTO_ANNUO = 500000;
+    /** 9G · Quanto si aggiunge con «Aggiungi 250.000» nella scheda del cliente. */
+    public const AGGIUNTA = 250000;
+    /** 9G · Campi che non passano MAI dal traduttore (nomi propri, codici, indirizzi, link): per nome del campo (ultimo pezzo del percorso). */
+    public const NON_TRADURRE = ['name', 'nome', 'network', 'ssid', 'password', 'code', 'codice', 'cin', 'url', 'link', 'email', 'phone', 'telefono', 'address', 'indirizzo'];
     private const BERSAGLIO = 'AWSShineFrontendService_20170701.TranslateText';
     /** I campi dei luoghi da tradurre, con la lunghezza delle colonne. */
     private const LUOGO = ['category' => 80, 'description' => 600, 'note' => 400, 'badge' => 80];
@@ -63,11 +76,8 @@ final class Traduttore
         return $v ? (string) $v : null;
     }
 
-    public static function omaggioFinito(int $accountId): bool
-    {
-        $fino = self::omaggioFino($accountId);
-        return $fino !== null && $fino < Support::now();
-    }
+    /** 9G · L'anno in omaggio non esiste più: non blocca mai (resta per chi la chiamava). */
+    public static function omaggioFinito(int $accountId): bool { return false; }
 
     /**
      * Perché qui non si può chiedere una traduzione: '' = si può.
@@ -79,30 +89,159 @@ final class Traduttore
         // 8C: la lingua aggiuntiva (nl, ja…) si suggerisce solo se l'amministrazione lo lascia (Impostazioni → Traduzioni).
         if ($loc !== null && !I18n::base($loc) && !self::linguaExtra()) return 'Per questa lingua le traduzioni suggerite non ci sono: scrivila a mano, accanto al testo originale.';
         // 7C: la traduzione si chiede campo per campo, con un clic: l'interruttore della struttura non serve più per chiederla.
-        if (self::omaggioFinito($accountId)) {
-            return 'L\'anno in omaggio delle traduzioni suggerite è finito il ' . Support::date((string) self::omaggioFino($accountId)) . ': le traduzioni che hai approvato restano.';
-        }
+        // 9G: niente più anno in omaggio; conta il tetto annuale di caratteri.
+        if (self::tettoRaggiunto($accountId)) return self::messaggioTetto($accountId);
         if (!self::configurato()) return 'Le traduzioni non sono disponibili in questo momento.';
         return '';
     }
 
     /**
-     * Accende o spegne l'interruttore di una struttura. La prima accensione
-     * nell'account fa partire l'anno in omaggio.
-     * @return bool true se è la prima volta (la pagina mostra la spiegazione)
+     * Accende o spegne l'interruttore di una struttura. 9G: la prima accensione nell'account non fa più partire
+     * un anno in omaggio (la data di prima, se c'è, resta come storico).
+     * @return bool true se è la prima volta nell'account (la pagina mostra la spiegazione)
      */
     public static function interruttore(int $accountId, int $propertyId, bool $acceso): bool
     {
         if ($acceso && !self::nelPiano($accountId)) throw new \RuntimeException('Le traduzioni suggerite sono disponibili con il piano Plus.');
-        $prima = false;
-        Db::tx(function () use ($accountId, $propertyId, $acceso, &$prima) {
-            Db::update('properties', ['translation_suggest' => $acceso ? 1 : 0], 'id = :pid AND account_id = :aid', ['pid' => $propertyId, 'aid' => $accountId]);
-            if ($acceso && self::omaggioFino($accountId) === null) {
-                Db::update('accounts', ['translation_trial_until' => gmdate('Y-m-d\TH:i:s\Z', strtotime('+12 months'))], 'id = :aid', ['aid' => $accountId]);
-                $prima = true;
-            }
-        });
+        $prima = $acceso && !(int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND translation_suggest = 1', [$accountId], 0);
+        Db::update('properties', ['translation_suggest' => $acceso ? 1 : 0], 'id = :pid AND account_id = :aid', ['pid' => $propertyId, 'aid' => $accountId]);
         return $prima;
+    }
+
+    // ------------------------------------------------------- il tetto annuale (9G)
+
+    /** L'anno delle traduzioni di un account: parte dall'attivazione dell'abbonamento e si azzera al rinnovo. [inizio ISO, fine ISO] */
+    public static function anno(int $accountId): array
+    {
+        $s = Subscriptions::active($accountId);
+        $fine = (string) ($s['current_period_end'] ?? '');
+        $inizio = (string) ($s['current_period_start'] ?? '');
+        if ($fine !== '' && ($t = strtotime($fine))) {
+            // Un abbonamento annuale: l'anno è quello del periodo in corso (da «fine − 1 anno», o dall'attivazione se più recente).
+            // Se la scadenza è oltre un anno (periodi lunghi, omaggi), si torna indietro di un anno alla volta fino all'anno in corso.
+            while (strtotime('-1 year', $t) > time()) { $t = strtotime('-1 year', $t); $fine = gmdate('Y-m-d\TH:i:s\Z', $t); }
+            $da = gmdate('Y-m-d\TH:i:s\Z', strtotime('-1 year', $t));
+            $creato = (string) ($s['created_at'] ?? '');
+            if ($inizio !== '' && $inizio > $da) $da = $inizio;
+            if ($creato !== '' && $creato > $da) $da = $creato;
+            return [$da, $fine];
+        }
+        // Senza abbonamento (o senza data): l'anno solare in corso.
+        return [gmdate('Y') . '-01-01T00:00:00Z', gmdate('Y') . '-12-31T23:59:59Z'];
+    }
+
+    /** Caratteri tradotti (esito «ok») nell'anno dell'abbonamento. */
+    public static function usatiAnno(int $accountId): int
+    {
+        [$da] = self::anno($accountId);
+        return (int) Db::val("SELECT COALESCE(SUM(chars), 0) FROM translation_usage WHERE account_id = ? AND outcome = 'ok' AND created_at >= ?", [$accountId, $da], 0);
+    }
+
+    /** Il tetto annuale dell'account: quello personale (scheda del cliente), altrimenti quello di serie (Impostazioni). */
+    public static function tettoAccount(int $accountId): int
+    {
+        if (Migrator::columnExists('accounts', 'translate_cap_override')) {
+            $v = Db::val('SELECT translate_cap_override FROM accounts WHERE id = ?', [$accountId]);
+            if ($v !== null && (int) $v > 0) return (int) $v;
+        }
+        return self::tetti()['account'];
+    }
+
+    public static function tettoRaggiunto(int $accountId): bool
+    {
+        $t = self::tettoAccount($accountId);
+        return $t > 0 && self::usatiAnno($accountId) >= $t;
+    }
+
+    /** Il messaggio quando l'anno è finito: si scrive a mano, oppure all'assistenza (il link mailto lo mette la pagina). */
+    public static function messaggioTetto(int $accountId): string
+    {
+        return 'Hai usato le traduzioni suggerite di quest\'anno (' . number_format(self::usatiAnno($accountId), 0, ',', '.') . ' caratteri). '
+             . 'Puoi scrivere le traduzioni a mano, oppure scrivici' . (Support::contatto() !== '' ? ' a ' . Support::contatto() : '') . ': le riattiviamo noi.';
+    }
+
+    /**
+     * Il contatore per Account & Fatturazione e Lingue: usati, tetto, percentuale, quanto resta, quando si azzera.
+     * @return array{usati:int,tetto:int,percento:int,restante:int,azzera:string,basso:bool,finito:bool}
+     */
+    public static function contatore(int $accountId): array
+    {
+        $usati = self::usatiAnno($accountId); $tetto = self::tettoAccount($accountId);
+        [, $fine] = self::anno($accountId);
+        $perc = $tetto > 0 ? (int) min(100, floor($usati * 100 / $tetto)) : 0;
+        $rest = max(0, $tetto - $usati);
+        return ['usati' => $usati, 'tetto' => $tetto, 'percento' => $perc, 'restante' => $rest, 'azzera' => $fine,
+                'basso' => $tetto > 0 && $rest < $tetto * 0.10, 'finito' => $tetto > 0 && $usati >= $tetto];
+    }
+
+    /** «Aggiungi 250.000» (o un tetto personale): nella scheda del cliente, con la nota nel registro. */
+    public static function alzaTetto(int $accountId, int $nuovo): void
+    {
+        if (!Migrator::columnExists('accounts', 'translate_cap_override')) throw new \RuntimeException('Il database non ha ancora la colonna del tetto personale: apri il sito una volta per fare le migrazioni.');
+        Db::update('accounts', ['translate_cap_override' => $nuovo > 0 ? $nuovo : null], 'id = :aid', ['aid' => $accountId]);
+    }
+
+    /** L'email a noi la prima volta che un account tocca l'80% e il 100% dell'anno (un segno in translation_usage per non ripetersi). */
+    private static function avvisaNoi(int $accountId): void
+    {
+        $tetto = self::tettoAccount($accountId);
+        if ($tetto <= 0 || Support::contatto() === '') return;
+        $usati = self::usatiAnno($accountId);
+        [$da, $fine] = self::anno($accountId);
+        foreach ([100 => 'avviso100', 80 => 'avviso80'] as $soglia => $segno) {
+            if ($usati < $tetto * $soglia / 100) continue;
+            if (Db::val('SELECT id FROM translation_usage WHERE account_id = ? AND outcome = ? AND created_at >= ?', [$accountId, $segno, $da])) return;
+            self::registra($accountId, null, '', 0, $segno, 'tetto annuale al ' . $soglia . '%');
+            $u = Db::one('SELECT u.name, u.email FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [$accountId]) ?: ['name' => '', 'email' => ''];
+            $chi = trim((string) $u['name']) . ' · ' . (string) $u['email'];
+            try {
+                Mailer::manda(Support::contatto(), 'Traduzioni suggerite: ' . ($u['name'] ?: $u['email']) . ' al ' . $soglia . '% del tetto annuale',
+                    'Un cliente ' . ($soglia === 100 ? 'ha finito' : 'è all\'80% del') . 'le traduzioni dell\'anno',
+                    ['Cliente: ' . $chi . ' (account ' . $accountId . ').',
+                     'Usati ' . number_format($usati, 0, ',', '.') . ' caratteri su ' . number_format($tetto, 0, ',', '.') . ' nell\'anno che si azzera il ' . Support::date($fine) . '.',
+                     $soglia === 100 ? 'Da ora il cliente vede «Hai usato le traduzioni suggerite di quest\'anno» e può scriverci: nella sua scheda c\'è «Aggiungi 250.000».'
+                                     : 'Al 100% le suggerite si fermano: se serve, dalla sua scheda si aggiungono 250.000 caratteri.'],
+                    ['Apri la scheda del cliente', Support::baseUrl() . '/admin/cliente/' . $accountId]);
+            } catch (\Throwable $e) { Log::exception($e, 'avviso tetto traduzioni'); }
+            return;
+        }
+    }
+
+    // -------------------------------------------------- pulizia e protezione (9G)
+
+    /**
+     * Prima di inviare: via gli spazi doppi e le righe vuote ripetute; i segnaposto ({link}), gli indirizzi web ed email,
+     * i numeri di telefono, gli orari (10:30), le temperature (22 °C), i prezzi (15 €) e le percentuali diventano ⟦n⟧ e
+     * tornano al loro posto dopo. @return array{0:string,1:array<string,string>} [testo protetto, mappa ⟦n⟧ => originale]
+     */
+    public static function proteggi(string $t): array
+    {
+        $t = (string) preg_replace('/[ \t]{2,}/u', ' ', $t);
+        $t = (string) preg_replace('/\n[ \t]*\n(?:[ \t]*\n)+/u', "\n\n", $t);
+        $mappa = []; $n = 0;
+        $pattern = '~\{[a-z_]+\}|https?://[^\s<>"]+|www\.[^\s<>"]+|[\w.+-]+@[\w-]+(?:\.[\w-]+)+|\+?\d[\d .\-/]{5,}\d|\b\d{1,2}[:.]\d{2}\b|\b\d+(?:[.,]\d+)?\s?(?:°C|°F|€|%)~u';
+        $out = (string) preg_replace_callback($pattern, function (array $m) use (&$mappa, &$n): string {
+            $n++; $k = "\u{27E6}$n\u{27E7}"; $mappa[$k] = $m[0]; return $k;
+        }, $t);
+        return [$out, $mappa];
+    }
+
+    /** I segnaposto tornano al loro posto (anche se il traduttore ci ha messo uno spazio intorno). */
+    public static function ripristina(string $t, array $mappa): string
+    {
+        foreach ($mappa as $k => $v) $t = (string) preg_replace('/\s*' . preg_quote($k, '/') . '\s*/u', ' ' . $v . ' ', $t);
+        return trim((string) preg_replace('/ {2,}/u', ' ', (string) preg_replace('/ ([,.;:!?])/u', '$1', $t)));
+    }
+
+    /** La chiave della memoria: testo protetto + lingue. */
+    private static function chiaveCache(string $testo, string $da, string $a): string { return hash('sha256', $testo . '|' . $da . '|' . $a); }
+
+    /** 9G · La pulizia della memoria (dal cron, una volta al giorno): le righe mai riusate più vecchie di 12 mesi. */
+    public static function pulisciCache(): int
+    {
+        if (!Migrator::tableExists('translation_cache')) return 0;
+        $prima = gmdate('Y-m-d\TH:i:s\Z', strtotime('-12 months'));
+        return Db::run('DELETE FROM translation_cache WHERE hits = 0 AND created_at < ?', [$prima]);
     }
 
     // ------------------------------------------------------------ consumi e costi
@@ -118,10 +257,14 @@ final class Traduttore
         return (int) Db::val($sql, $a, 0);
     }
 
+    /** I tetti: «account» è ANNUALE (9G, di serie 500.000), «sito» resta mensile (freno di emergenza). */
     public static function tetti(): array
     {
         $c = self::config();
-        return ['account' => max(0, (int) ($c['cap_account'] ?? 150000)), 'sito' => max(0, (int) ($c['cap_global'] ?? 1900000))];
+        $acc = (int) ($c['cap_account'] ?? self::TETTO_ANNUO);
+        // Il valore di serie di prima (150.000 al mese) non ha senso come annuale: vale quello nuovo. Un altro valore è una scelta: resta.
+        if ($acc === 150000) $acc = self::TETTO_ANNUO;
+        return ['account' => max(0, $acc), 'sito' => max(0, (int) ($c['cap_global'] ?? 1900000))];
     }
 
     /** Il piano gratuito di AWS vale ancora (data impostata e non passata)? */
@@ -158,22 +301,38 @@ final class Traduttore
      */
     public static function traduci(int $accountId, ?int $propertyId, string $testo, string $da, string $a): string
     {
-        $n = mb_strlen($testo);
-        $tetti = self::tetti();
-        if (self::usati($accountId) + $n > $tetti['account']) {
-            self::registra($accountId, $propertyId, $a, 0, 'limite', 'tetto account');
-            throw new LimitReached('Per questo mese hai usato tutte le traduzioni suggerite: si ricomincia il primo del mese.');
+        // 9G · prima la pulizia e la protezione (meno caratteri, niente segnaposto tradotti), poi la memoria.
+        [$protetto, $mappa] = self::proteggi($testo);
+        $n = mb_strlen($protetto);
+        $hash = self::chiaveCache($protetto, $da, $a);
+        if (Migrator::tableExists('translation_cache') && ($c = Db::one('SELECT id, testo_tradotto FROM translation_cache WHERE hash = ?', [$hash]))) {
+            Db::run('UPDATE translation_cache SET hits = hits + 1, used_at = ? WHERE id = ?', [Support::now(), $c['id']]);
+            self::registra($accountId, $propertyId, $a, $n, 'cache');
+            return self::ripristina((string) $c['testo_tradotto'], $mappa);
         }
-        if (self::usati() + $n > $tetti['sito']) {
+        $tetti = self::tetti();
+        $tettoAnno = self::tettoAccount($accountId);
+        if ($tettoAnno > 0 && self::usatiAnno($accountId) + $n > $tettoAnno) {
+            self::registra($accountId, $propertyId, $a, 0, 'limite', 'tetto annuale account');
+            self::avvisaNoi($accountId);
+            throw new LimitReached(self::messaggioTetto($accountId));
+        }
+        if ($tetti['sito'] > 0 && self::usati() + $n > $tetti['sito']) {
             self::registra($accountId, $propertyId, $a, 0, 'limite', 'tetto sito');
             throw new LimitReached('Per questo mese le traduzioni suggerite sono finite: si ricomincia il primo del mese.');
         }
         try {
             $fuori = [];
             // I codici di Amazon: il portoghese del Portogallo è pt-PT, quello del Brasile pt (I18n::aws).
-            foreach (self::pezzi($testo) as $pezzo) $fuori[] = trim($pezzo) === '' ? $pezzo : self::chiama($pezzo, I18n::aws($da), I18n::aws($a));
+            foreach (self::pezzi($protetto) as $pezzo) $fuori[] = trim($pezzo) === '' ? $pezzo : self::chiama($pezzo, I18n::aws($da), I18n::aws($a));
+            $tradotto = implode('', $fuori);
             self::registra($accountId, $propertyId, $a, $n, 'ok');
-            return implode('', $fuori);
+            if (Migrator::tableExists('translation_cache')) {
+                try { Db::insert('translation_cache', ['hash' => $hash, 'da' => $da, 'a' => $a, 'chars' => $n, 'testo_tradotto' => $tradotto, 'hits' => 0, 'created_at' => Support::now()]); }
+                catch (\Throwable) { }   // la stessa frase arrivata nello stesso momento da due richieste
+            }
+            self::avvisaNoi($accountId);
+            return self::ripristina($tradotto, $mappa);
         } catch (\Throwable $e) {
             self::registra($accountId, $propertyId, $a, 0, 'errore', $e->getMessage());
             Log::exception($e, 'traduzione suggerita');
@@ -394,9 +553,18 @@ final class Traduttore
             $c = $campi[$k] ?? null;
             if (!$c || ($c['tradotto'] !== '' && !$c['cambiato'])) { Db::run('DELETE FROM translation_suggestions WHERE id = ?', [$s['id']]); continue; }
             $s['da_rifare'] = $s['source_text'] !== $c['origine'];
+            // 9G: il campo aveva già una traduzione (approvata o scritta a mano) e l'originale è cambiato: la suggerita la sostituisce, «da ricontrollare».
+            $s['aggiornata'] = $c['tradotto'] !== '';
             $out[$k] = $s;
         }
         return $out;
+    }
+
+    /** 9G · Un percorso di campo che non si manda mai al traduttore (per nome dell'ultimo pezzo). */
+    public static function nonTradurre(string $path): bool
+    {
+        $parti = explode('.', $path);
+        return in_array(strtolower((string) end($parti)), self::NON_TRADURRE, true);
     }
 
     /** I campi ancora da tradurre senza una suggerita valida (le «da rifare» si rifanno). */
@@ -404,7 +572,7 @@ final class Traduttore
     {
         $campi = self::campi($prop, $loc);
         $sugg = self::suggerite($prop, $loc, $campi);
-        return array_filter($campi, fn($c, $k) => $c['tradotto'] === '' && (!isset($sugg[$k]) || $sugg[$k]['da_rifare']), ARRAY_FILTER_USE_BOTH);
+        return array_filter($campi, fn($c, $k) => $c['tradotto'] === '' && !self::nonTradurre($c['path']) && (!isset($sugg[$k]) || $sugg[$k]['da_rifare']), ARRAY_FILTER_USE_BOTH);
     }
 
     /**
@@ -423,6 +591,7 @@ final class Traduttore
         if ($lista && empty($prop['translation_suggest'])) self::interruttore($accountId, (int) $prop['id'], true);   // il clic è il consenso
         foreach ($lista as $k => $c) {
             if ($solo && !in_array($k, $solo, true)) continue;
+            if (self::nonTradurre($c['path'])) continue;   // 9G: nomi, codici, indirizzi e link non passano dal traduttore
             try {
                 $testo = self::traduci($accountId, (int) $prop['id'], $c['origine'], $prop['default_locale'], $loc);
             } catch (LimitReached | \RuntimeException $e) {

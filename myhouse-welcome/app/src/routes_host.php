@@ -130,10 +130,8 @@ $r->get('/pannello', function () use ($host) {
  */
 /* «Non mostrare più» l'invito al sito della struttura: un cookie tecnico del pannello, 180 giorni. */
 $r->post('/pannello/sito/nascondi', function () use ($host) {
+    // 9F · Il riquadro MyHouse non si nasconde più (niente cookie): i vecchi moduli tornano al pannello e basta.
     $host();
-    setcookie('mhw_no_sito', '1', ['expires' => time() + 180 * 86400, 'path' => (MHW\b() ?: '') . '/', 'httponly' => true, 'samesite' => 'Lax',
-                                   'secure' => str_starts_with(Support::baseUrl(), 'https://')]);
-    Support::flash('Fatto: l\'invito al sito non compare più.');
     Support::redirect('/pannello');
 });
 
@@ -286,6 +284,13 @@ $r->post('/pannello/{id}/elimina', function (array $a) use ($mia) {
 });
 
 // ---------------------------------------------------------------- contenuti
+/* 9F · La pagina «Novità» (prima di /pannello/{id}, altrimenti «novita» sembrerebbe un id). */
+$r->get('/pannello/novita', function () use ($host) {
+    [$u, $acc] = $host();
+    View::out('host/novita', ['user' => $u, 'acc' => $acc, 'nav' => 'novita', 'novita' => MHW\Novita::elenco((int) $acc['id']),
+                              'pidN' => (int) Db::val('SELECT id FROM properties WHERE account_id = ? AND archived_at IS NULL ORDER BY id', [$acc['id']], 0)], 'layout/cms');
+});
+
 $r->get('/pannello/{id}', function (array $a) use ($mia, $contesto) {
     [$u, $acc, $p] = $mia((int) $a['id']);
     $sections = Db::all('SELECT * FROM sections WHERE property_id = ? ORDER BY is_core DESC, position, id', [$p['id']]);
@@ -552,8 +557,8 @@ $r->any('/pannello/{id}/lingue', function (array $a) use ($mia, $contesto, $mess
     View::out('host/languages', $contesto($acc, $p) + [
         'err' => $err, 'lingueAttive' => $attive, 'consentite' => Entitlements::allowedLocales((int) $acc['id'], $p), 'sblocca' => $sbloccaL ?? null,
         'tutte' => Config::get('locales'), 'copertura' => $copertura, 'qui' => 'lingue',
-        'trad' => ['piano' => Traduttore::nelPiano((int) $acc['id']), 'acceso' => !empty($p['translation_suggest']), 'fino' => Traduttore::omaggioFino((int) $acc['id']),
-                   'finito' => Traduttore::omaggioFinito((int) $acc['id']), 'spiegazione' => $spiegazione, 'daControllare' => $daControllare],
+        'trad' => ['piano' => Traduttore::nelPiano((int) $acc['id']), 'acceso' => !empty($p['translation_suggest']), 'spiegazione' => $spiegazione, 'daControllare' => $daControllare,
+                   'anno' => Traduttore::nelPiano((int) $acc['id']) ? Traduttore::contatore((int) $acc['id']) : null],   // 9G: il contatore dell'anno
     ], 'layout/cms');
 });
 
@@ -567,6 +572,48 @@ $r->post('/pannello/{id}/lingue/suggerite', function (array $a) use ($mia, $mess
         Support::flash($acceso ? 'Traduzioni suggerite accese per questa struttura.' : 'Traduzioni suggerite spente. Quelle che hai approvato restano.');
     } catch (\Throwable $e) { Support::flash($messaggio($e, 'traduzioni suggerite'), 'err'); }
     Support::redirect('/pannello/' . $p['id'] . '/lingue#suggerite');
+});
+
+/* 9F · Traduzione in corso: con JavaScript la pagina chiede le suggerite un gruppo di campi per volta (e, dall'editor
+   di una sezione o dal passo Pubblica, una lingua per volta) e mostra la barra che avanza; ogni risposta porta i campi
+   appena tradotti. Senza JavaScript vale il modulo qui sotto, come prima. */
+$r->post('/pannello/{id}/lingue/{loc}/suggerite.json', function (array $a) use ($mia) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    $loc = (string) $a['loc'];
+    $attive = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale');
+    if ($loc === $p['default_locale'] || !in_array($loc, $attive, true) || !in_array($loc, Entitlements::allowedLocales((int) $acc['id'], $p), true)) {
+        Support::json(['ok' => false, 'errore' => 'Questa lingua non è tra quelle della guida.'], 422);
+    }
+    $no = Traduttore::perche((int) $acc['id'], $p, $loc);
+    if ($no !== '') Support::json(['ok' => false, 'stop' => $no, 'fatte' => [], 'restanti' => 0, 'totale' => 0]);
+    $sezione = (int) ($_POST['sezione'] ?? 0);
+    $limite = max(1, min(10, (int) ($_POST['limite'] ?? 4)));
+    $campi = Traduttore::campi($p, $loc);
+    $lista = Traduttore::daSuggerire($p, $loc);
+    if (!empty($_POST['campo']) && isset($campi[(string) $_POST['campo']])) $lista = [(string) $_POST['campo'] => $campi[(string) $_POST['campo']]];
+    if ($sezione > 0) {
+        $luoghiDi = array_map('intval', array_column(Db::all('SELECT id FROM places WHERE section_id = ?', [$sezione]), 'id'));
+        $lista = array_filter($lista, fn($c) => $c['tipo'] === 'section' ? (int) $c['id'] === $sezione : in_array((int) $c['id'], $luoghiDi, true));
+    }
+    $chiavi = array_slice(array_keys($lista), 0, $limite);
+    [$n, $stop] = $chiavi ? Traduttore::suggerisci((int) $acc['id'], $p, $loc, $chiavi) : [0, ''];
+    // L'etichetta del campo, per la lista «Titolo · Deutsch: Heizung».
+    $etichetta = function (array $c): string {
+        if ($c['tipo'] === 'place') return ['category' => 'Categoria', 'description' => 'Descrizione', 'note' => 'Perché lo consigli', 'badge' => 'Etichetta'][$c['path']] ?? $c['path'];
+        if ($c['path'] === 'title') return 'Titolo';
+        $kind = (string) Db::val('SELECT kind FROM sections WHERE id = ?', [$c['id']], '');
+        $parti = explode('.', $c['path']);
+        $def = SectionCatalog::fields($kind)[$parti[0]] ?? null;
+        if (!$def) return $c['path'];
+        if (count($parti) === 3) return (string) ($def['sub'][$parti[2]][1] ?? $parti[2]) . ' · ' . $def[1];
+        return (string) $def[1] . (count($parti) === 2 ? ' · voce ' . ((int) $parti[1] + 1) : '');
+    };
+    $fatte = [];
+    foreach (Traduttore::suggerite($p, $loc) as $k => $sg) {
+        if (!in_array($k, $chiavi, true) || $sg['da_rifare']) continue;
+        $fatte[] = ['k' => $k, 'dom' => 'c-' . md5($k), 'id' => (int) $sg['id'], 'testo' => (string) $sg['text'], 'aggiornata' => !empty($sg['aggiornata']), 'etichetta' => $etichetta($campi[$k])];
+    }
+    Support::json(['ok' => $stop === '', 'fatte' => $fatte, 'stop' => $stop, 'restanti' => max(0, count($lista) - count($fatte)), 'totale' => count($lista)]);
 });
 
 /* Le suggerite di una lingua: chiederle, approvarle (anche tutte), aprirle per
@@ -665,12 +712,13 @@ $r->any('/pannello/{id}/lingue/{loc}', function (array $a) use ($mia, $contesto,
     $campiT = Traduttore::campi($p, $loc);
     Traduttore::fissaImpronte($p, $loc, $campiT);   // i campi tradotti prima della 7C: il controllo «cambiato» parte da qui
     $sugg = Traduttore::suggerite($p, $loc, $campiT);
-    $daSuggerire = count(array_filter($campiT, fn($c, $k) => $c['tradotto'] === '' && (!isset($sugg[$k]) || $sugg[$k]['da_rifare']), ARRAY_FILTER_USE_BOTH));
+    $daSuggerire = count(array_filter($campiT, fn($c, $k) => $c['tradotto'] === '' && !Traduttore::nonTradurre($c['path']) && (!isset($sugg[$k]) || $sugg[$k]['da_rifare']), ARRAY_FILTER_USE_BOTH));
     View::out('host/translate', $contesto($acc, $p) + [
         'loc' => $loc, 'nome' => Config::get('locales')[$loc] ?? $loc, 'sections' => $sections, 'err' => $err, 'qui' => 'lingue',
         'sugg' => $sugg, 'daSuggerire' => $daSuggerire, 'perche' => Traduttore::perche((int) $acc['id'], $p, $loc),
         'cambiati' => array_keys(array_filter($campiT, fn($c) => $c['cambiato'])),
         'nelPiano' => Traduttore::nelPiano((int) $acc['id']),
+        'anno' => Traduttore::nelPiano((int) $acc['id']) ? Traduttore::contatore((int) $acc['id']) : null,   // 9G
     ], 'layout/cms');
 });
 
@@ -754,6 +802,11 @@ $r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto,
                 if (array_key_exists($campo, $_POST)) $dati[$campo] = mb_substr(trim((string) $_POST[$campo]), 0, $max);
             }
             if (array_key_exists('beds', $_POST)) $dati['beds'] = max(0, min(999, (int) $_POST['beds']));
+            // 9F · Provincia: la sigla (maiuscola) o un testo libero all'estero; la regione, se manca, dalla sigla.
+            if (array_key_exists('province', $_POST) && Migrator::columnExists('properties', 'province')) {
+                $dati['province'] = MHW\Territorio::normalizza((string) $_POST['province']);
+                if ($dati['region'] === '' && ($regDa = MHW\Territorio::regioneDi($dati['province'])) !== '') $dati['region'] = $regDa;
+            }
             // 8C: l'email per gli ospiti (facoltativa): il bottone «Mandaci un'email» della pagina delle recensioni.
             if (array_key_exists('guest_email', $_POST) && Migrator::columnExists('properties', 'guest_email')) {
                 $em = mb_substr(trim((string) $_POST['guest_email']), 0, 190);
@@ -1072,6 +1125,24 @@ $r->post('/pannello/avviso-rinnovo/chiudi', function () use ($host) {
     Support::redirect(preg_match('#^/(pannello|account)$#', (string) ($_POST['torna'] ?? '')) ? (string) $_POST['torna'] : '/pannello');
 });
 
+/* 9F·11 · «Pannello in: Italiano / English / di serie» (Account): users.panel_lang. */
+$r->post('/account/pannello-lingua', function () use ($host) {
+    [$u] = $host();
+    $l = (string) ($_POST['pannello_lingua'] ?? '');
+    MHW\Pannello::scegli((int) $u['id'], $l);
+    Auth::audit('panel.language', (int) $u['id'], ['lingua' => $l !== '' ? $l : 'di serie']);
+    Support::flash($l === 'en' ? 'Dashboard language: English.' : ($l === 'it' ? 'Lingua del pannello: italiano.' : MHW\Pannello::t('Lingua del pannello: di serie, dalla lingua principale della guida.', 'Dashboard language: default, from the guide\'s main language.')));
+    Support::redirect('/account#pannello-lingua');
+});
+
+/* 9F · «Mostrami dove»: segna la novità come vista e porta dove dice; la pagina «Novità» con tutte quelle passate. */
+$r->post('/pannello/novita/vai', function () use ($host) {
+    [, $acc] = $host();
+    $id = (string) ($_POST['novita'] ?? '');
+    if (MHW\Novita::esiste($id)) MHW\Novita::segna((int) $acc['id'], $id);
+    $dove = (string) ($_POST['dove'] ?? '');
+    Support::redirect(preg_match('~^/(pannello|account)(/[A-Za-z0-9/_?=&#.-]*)?$~', $dove) ? $dove : '/pannello');   // «~»: il «#» del percorso non chiude il motivo
+});
 $r->post('/pannello/novita/visto', function () use ($host) {
     [, $acc] = $host();
     $id = (string) ($_POST['novita'] ?? '');

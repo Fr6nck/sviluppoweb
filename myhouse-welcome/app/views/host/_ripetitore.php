@@ -17,9 +17,9 @@
    ]
    Foto e PDF di una riga: l'id del file salvato viaggia nel campo nascosto, il
    file nuovo in rip_file[campo][riga][sottocampo], «Togli» in rip_togli[…]. */
-use function MHW\b;
+use function MHW\b; use function MHW\t;
 use MHW\{Support, Icon, Media, Eventi};
-$r = $rip + ['help' => '', 'rows' => [], 'add' => 'Aggiungi', 'item' => 'Voce', 'max' => 30, 'presets' => [], 'foto' => true, 'pdf' => true, 'eventi' => false, 'altre' => [], 'modulo_altre' => ''];
+$r = $rip + ['help' => '', 'rows' => [], 'add' => t('Aggiungi'), 'item' => t('Voce'), 'max' => 30, 'presets' => [], 'foto' => true, 'pdf' => true, 'eventi' => false, 'altre' => [], 'modulo_altre' => ''];
 $nome = $r['name'];
 $domId = 'rip-' . preg_replace('/[^a-z0-9]+/i', '-', $nome);
 $giorni = [1 => 'Lun', 2 => 'Mar', 3 => 'Mer', 4 => 'Gio', 5 => 'Ven', 6 => 'Sab', 7 => 'Dom'];
@@ -120,8 +120,8 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
                     . ($tipo === 'image' ? 'image/jpeg,image/png,image/webp' : 'application/pdf') . '" aria-describedby="' . $id . '-aiuto ' . $id . '-nome">'
                     . '<label class="btn btn--ghost btn--sm" for="' . $id . '">' . ($mid ? 'Sostituisci' : 'Scegli ' . ($tipo === 'image' ? 'una foto' : 'un PDF')) . '</label></span>';
             }
-            if ($mid) $h .= '<label class="check rip__togli"><input type="checkbox" name="rip_togli' . $sub . '" value="1"> <span>Togli</span></label>';
-            if ($puoi) $h .= '<span class="small muted" id="' . $id . '-nome" data-rip-file-nome aria-live="polite">' . ($mid ? '' : 'Nessun file scelto') . '</span>';
+            if ($mid) $h .= '<label class="check rip__togli"><input type="checkbox" name="rip_togli' . $sub . '" value="1"> <span>' . t('Togli') . '</span></label>';
+            if ($puoi) $h .= '<span class="small muted" id="' . $id . '-nome" data-rip-file-nome aria-live="polite">' . ($mid ? '' : t('Nessun file scelto')) . '</span>';
             $h .= '</div>';
             if (!$puoi) $h .= '<p class="help">Il tuo piano non comprende ' . ($tipo === 'image' ? 'le foto nelle sezioni: toglila' : 'i PDF nelle sezioni: toglilo') . ' prima di pubblicare.</p>';
             else $h .= '<p class="help rip__aiuto" id="' . $id . '-aiuto">' . Support::e(trim($aiuto . ' ' . ($tipo === 'image' ? 'JPG, PNG o WebP.' : 'Solo PDF.') . ' Si carica quando salvi.')) . '</p>';
@@ -177,7 +177,7 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
         $senzaMedia = $conMedia && !$r['foto'] && !$r['pdf'];
         $aiutoRip = $senzaMedia ? str_replace('Titolo, passaggi, una foto, un PDF.', 'Titolo e passaggi.', $r['help']) : $r['help']; ?>
   <?php if ($aiutoRip !== ''): ?><p class="help"><?= Support::e($aiutoRip) ?></p><?php endif; ?>
-  <?php if ($senzaMedia): ?><p class="help rip__plus">Vuoi aggiungere foto o PDF? <a href="<?= b() ?>/piano?passa=plus">Scopri il piano Plus</a></p><?php endif; ?>
+  <?php if ($senzaMedia): ?><p class="help rip__plus"><?= t('Vuoi aggiungere foto o PDF?') ?> <a href="<?= b() ?>/piano?passa=plus"><?= t('Scopri il piano Plus') ?></a></p><?php endif; ?>
   <div class="rip__righe" data-rip-righe>
     <?php foreach (array_values($r['rows']) as $i => $v) echo $riga((string) $i, $v, $i + 1, true); ?>
     <?php /* Senza JavaScript serve una riga vuota già pronta; con JavaScript si toglie se ce n'è già un'altra. */

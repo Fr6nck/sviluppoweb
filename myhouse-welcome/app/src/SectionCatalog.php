@@ -387,7 +387,7 @@ final class SectionCatalog
         'custom' => [
             'icon' => 'star', 'group' => 'casa', 'multipla' => true, 'nome' => 'Sezione libera',
             'breve' => 'Titolo, icona e testo li scegli tu.',
-            'intro' => 'Per quello che non sta nelle altre sezioni: la piscina, il giardino, la storia del posto. Scegli il titolo e l\'icona; puoi aggiungerne quante ne vuoi.',
+            'intro' => 'Per quello che non sta nelle altre sezioni: la piscina, il giardino, la storia del posto. Scegli il titolo e l\'icona: una per guida, in tutti i piani (con Essential conta come una delle 6 sezioni).',
             'fields' => [
                 'icona' => ['choice', 'Icona', 'Compare nella guida, sulla casella della sezione.', 'icone' => true, 'options' => [
                     'star' => 'Stella', 'info' => 'Informazione', 'book' => 'Libro', 'key' => 'Chiave', 'sun' => 'Sole', 'moon' => 'Luna',
@@ -424,8 +424,20 @@ final class SectionCatalog
     /** Quante sezioni ci sono nel catalogo (la sezione libera no): il «{sezioni}» delle schede dei piani (7B). */
     public static function quante(): int { return count(array_merge(...array_values(self::gruppi()))); }
 
+    /** 9F·11 · Il catalogo in inglese (lang/catalogo-en.php), quando il pannello è in inglese; [] altrimenti. */
+    private static function inglese(string $kind): array
+    {
+        static $en = null;
+        if (!Pannello::en()) return [];
+        if ($en === null) { $f = MHW_APP . '/lang/catalogo-en.php'; $en = is_file($f) ? (array) require $f : []; }
+        return (array) ($en[$kind] ?? []);
+    }
+
     /** La riga di presentazione nel catalogo «Aggiungi una sezione». */
-    public static function breve(string $kind): string { return (string) (self::get($kind)['breve'] ?? ''); }
+    public static function breve(string $kind): string { return (string) (self::inglese($kind)['breve'] ?? self::get($kind)['breve'] ?? ''); }
+
+    /** Il testo di presentazione in cima all'editor della sezione. */
+    public static function intro(string $kind): string { return (string) (self::inglese($kind)['intro'] ?? self::get($kind)['intro'] ?? ''); }
 
     /**
      * Un aiuto che comincia con «Facoltativo.» (o «Facoltativa.», «Facoltative.»…) si divide in due:
@@ -434,18 +446,23 @@ final class SectionCatalog
      */
     public static function facoltativo(string $aiuto): array
     {
-        if (preg_match('/^(Facoltativ[oaie])\.\s*(.*)$/su', $aiuto, $m)) return [mb_strtolower($m[1]), $m[2]];
+        if (preg_match('/^(Facoltativ[oaie]|Optional)\.\s*(.*)$/su', $aiuto, $m)) return [mb_strtolower($m[1]), $m[2]];
         return ['', $aiuto];
     }
 
-    /** Sezioni libere al massimo in una guida: una guida è un'unità ricettiva, non un contenitore di case. */
-    public const LIBERE_MAX = 3;
+    /** 9F · Sezioni libere al massimo in una guida: UNA (chi ne ha già 2 o 3 dalle fasi precedenti le tiene: il limite vale per aggiungerne). */
+    public const LIBERE_MAX = 1;
 
     /** Si può aggiungere più volte alla stessa struttura? (la sezione libera) */
     public static function multipla(string $kind): bool { return !empty(self::get($kind)['multipla']); }
 
     /** Il nome nel pannello («Sezione libera»); per gli altri è il titolo italiano. */
-    public static function nome(string $kind): string { return self::get($kind)['nome'] ?? self::title($kind, 'it'); }
+    public static function nome(string $kind): string
+    {
+        $en = self::inglese($kind);
+        if ($en) return (string) ($en['nome'] ?? self::title($kind, 'en'));
+        return self::get($kind)['nome'] ?? self::title($kind, 'it');
+    }
 
     /** L'icona di una sezione: quella scelta dall'host nella sezione libera, altrimenti quella del tipo. */
     public static function iconaDi(string $kind, mixed $data = []): string
@@ -494,18 +511,26 @@ final class SectionCatalog
     public static function fields(string $kind): array
     {
         $f = self::get($kind)['fields'];
-        // Le opzioni che vengono dalle tassonomie (fase 6), con le etichette italiane del pannello.
-        $opzioni = function (array $d): array {
+        $loc = Pannello::en() ? 'en' : 'it';
+        // Le opzioni che vengono dalle tassonomie (fase 6), con le etichette del pannello (italiane, o inglesi dalla 9F).
+        $opzioni = function (array $d) use ($loc): array {
             return match ($d['tassonomia'] ?? '') {
-                'dotazioni' => array_combine(Tassonomie::dotazioni(), array_map(fn($x) => I18n::t('it', 'amen_' . $x), Tassonomie::dotazioni())),
-                'eventi' => array_combine(Eventi::CATEGORIE, array_map(fn($x) => I18n::t('it', 'evcat.' . $x), Eventi::CATEGORIE)),
-                'muoversi' => array_combine(Tassonomie::MUOVERSI, array_map(fn($x) => I18n::t('it', 'move.' . $x), Tassonomie::MUOVERSI)),
+                'dotazioni' => array_combine(Tassonomie::dotazioni(), array_map(fn($x) => I18n::t($loc, 'amen_' . $x), Tassonomie::dotazioni())),
+                'eventi' => array_combine(Eventi::CATEGORIE, array_map(fn($x) => I18n::t($loc, 'evcat.' . $x), Eventi::CATEGORIE)),
+                'muoversi' => array_combine(Tassonomie::MUOVERSI, array_map(fn($x) => I18n::t($loc, 'move.' . $x), Tassonomie::MUOVERSI)),
                 // Senza unità il prezzo resta «25 €».
-                'unita' => ['' => 'Nessuna'] + array_combine(Tassonomie::UNITA, array_map(fn($x) => I18n::t('it', 'unit.' . $x), Tassonomie::UNITA)),
+                'unita' => ['' => ($loc === 'en' ? 'None' : 'Nessuna')] + array_combine(Tassonomie::UNITA, array_map(fn($x) => I18n::t($loc, 'unit.' . $x), Tassonomie::UNITA)),
                 default => $d['options'] ?? [],
             };
         };
+        // 9F·11 · le etichette, gli aiuti e le opzioni in inglese quando il pannello è in inglese (le tassonomie già in I18n).
+        $en = self::inglese($kind)['fields'] ?? [];
         foreach ($f as $n => $d) {
+            if (isset($en[$n])) {
+                $f[$n][1] = (string) ($en[$n][0] ?? $d[1]); $f[$n][2] = (string) ($en[$n][1] ?? ($d[2] ?? ''));
+                if (isset($d['options']) && isset($en[$n]['options'])) $f[$n]['options'] = $en[$n]['options'] + $d['options'];
+                foreach ($d['sub'] ?? [] as $sn => $sd) if (isset($en[$n]['sub'][$sn])) { $f[$n]['sub'][$sn][1] = (string) $en[$n]['sub'][$sn][0]; $f[$n]['sub'][$sn][2] = (string) ($en[$n]['sub'][$sn][1] ?? ''); }
+            }
             if (isset($d['tassonomia'])) $f[$n]['options'] = $opzioni($d);
             foreach ($d['sub'] ?? [] as $sn => $sd) if (isset($sd['tassonomia'])) $f[$n]['sub'][$sn]['options'] = $opzioni($sd);
         }
