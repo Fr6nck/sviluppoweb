@@ -6090,7 +6090,7 @@ $pr = (int) val('SELECT id FROM properties WHERE account_id = ? ORDER BY id', [$
 db()->prepare("UPDATE properties SET cin = 'IT054050C2RITA0001' WHERE id = ?")->execute([$pr]);
 $rcore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$pr]);
 $rita->post("/pannello/$pr/sezioni/$rcore", ['checkin_steps' => ['Suona al citofono.']]);
-$rita->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Rita Recupero', 'cf' => 'RCPRTI85A41I921X', 'billing_address' => 'Via Rita 1', 'billing_postal' => '06038', 'billing_city' => 'Spello', 'billing_province' => 'PG']);
+$rita->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Rita Recupero', 'cf' => 'RCPRTI85A41I921I', 'billing_address' => 'Via Rita 1', 'billing_postal' => '06038', 'billing_city' => 'Spello', 'billing_province' => 'PG']);
 $rita->segui($rita->modulo("/pannello/$pr/procedura/pubblica", "/pannello/$pr/pubblica", ['acquirente' => 'impresa']));
 $ordR = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$racc]);
 $slugR = (string) val('SELECT slug FROM properties WHERE id = ?', [$pr]);
@@ -6155,7 +6155,7 @@ $remo->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Remo', 'cit
 $prm = (int) val('SELECT id FROM properties WHERE account_id = ? ORDER BY id', [$remacc]);
 db()->prepare("UPDATE properties SET cin = 'IT054004C2REMO0001' WHERE id = ?")->execute([$prm]);
 $remo->post("/pannello/$prm/sezioni/" . (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$prm]), ['checkin_steps' => ['Suona al citofono.']]);
-$remo->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Remo Recupero', 'cf' => 'RCPRME85A01A710X', 'billing_address' => 'Via Remo 1', 'billing_postal' => '06031', 'billing_city' => 'Bevagna', 'billing_province' => 'PG']);
+$remo->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Remo Recupero', 'cf' => 'RCPRME85A01A710S', 'billing_address' => 'Via Remo 1', 'billing_postal' => '06031', 'billing_city' => 'Bevagna', 'billing_province' => 'PG']);
 $remo->segui($remo->modulo("/pannello/$prm/procedura/pubblica", "/pannello/$prm/pubblica", ['acquirente' => 'impresa']));
 $ordRm = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$remacc]);
 // Remo ha chiuso la pagina subito dopo aver pagato: l'ordine è fermo da 10 minuti.
