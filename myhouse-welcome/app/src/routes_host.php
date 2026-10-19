@@ -1027,7 +1027,8 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
         }
     }
     // 9B · La casella del giudizio con lo sconto, nella stessa pagina: spuntata aderisce (al pagamento), tolta rinuncia (finché è solo promesso).
-    if (MHW\Giudizi::attivo()) {
+    // 9L · Con un codice omaggio la casella non c'è: l'adesione al pagamento non vale (si aderisce dopo, dal pannello).
+    if (MHW\Giudizi::attivo() && !(MHW\Omaggi::disponibili() && MHW\Omaggi::daUsare($acc))) {
         if (!empty($_POST['giudizio_adesione'])) MHW\Giudizi::aderisci($acc, 'pagamento');
         elseif (array_key_exists('giudizio_casella', $_POST)) MHW\Giudizi::rinuncia($acc);
         $acc = Auth::account();
@@ -1299,9 +1300,9 @@ $r->post('/inviti/anteprima', function () use ($host) {
     Support::redirect('/inviti');
 });
 
-// ------------------------------------------------------- giudizi sulla piattaforma (7D)
-/* «Ti sta piacendo MyHouse Welcome?»: voto, due righe per un altro host, foto e consenso.
-   Senza consenso il giudizio resta a noi; da 1 a 3 stelle ci scriviamo. */
+// ------------------------------------------------------- giudizi sulla piattaforma (7D, 9B, 9L)
+/* 9L · «Giudizio con sconto»: la pagina del programma (adesione, scheda in home, immagini, giudizio, ritiro) e il modulo
+   del giudizio (?scrivi=1). Da 1 a 3 stelle ci scriviamo. Mai la foto dell'host. */
 $r->any('/giudizio', function () use ($host) {
     [$u, $acc] = $host();
     if (!MHW\Testimonianze::giudizi()) { http_response_code(404); View::out('pub/404', []); }
@@ -1312,14 +1313,14 @@ $r->any('/giudizio', function () use ($host) {
             $fatto = MHW\Testimonianze::salvaGiudizio($acc, $u, $_POST);
         } catch (\RuntimeException $e) { $err = $e->getMessage(); }
     }
-    // 9B: dopo l'invio l'account può essere cambiato (adesione dal modulo); il giudizio già dato precompila il modulo, finché non è in home.
+    // Dopo l'invio l'account può essere cambiato; il giudizio già dato precompila il modulo (9L: si modifica quando si vuole).
     $acc = Auth::account();
     $gia = MHW\Testimonianze::diAccount((int) $acc['id']);
-    if (!$fatto && $_SERVER['REQUEST_METHOD'] !== 'POST' && $gia && MHW\Giudizi::disponibili() && empty($gia['home_visible']) && $gia['withdrawn_at'] === null) {
-        $vecchi = ['rating' => $gia['rating'], 'body' => $gia['body'], 'show_cover' => $gia['show_cover'], 'show_photo' => $gia['show_photo'], 'show_logo' => $gia['show_logo'], 'modifica' => 1];
-    }
+    if (!$fatto && $_SERVER['REQUEST_METHOD'] !== 'POST' && $gia && $gia['withdrawn_at'] === null) $vecchi = ['rating' => $gia['rating'], 'body' => $gia['body']];
+    $scheda = MHW\Vetrina::assicura((int) $acc['id']) ?? MHW\Vetrina::scheda((int) $acc['id']);
     View::out('host/giudizio', ['user' => $u, 'acc' => $acc, 'err' => $err, 'fatto' => $fatto, 'vecchi' => $fatto ? [] : $vecchi,
-        'p' => MHW\Testimonianze::struttura((int) $acc['id']), 'gia' => $gia, 'riquadro' => MHW\Giudizi::disponibili() ? MHW\Giudizi::riquadro($acc) : null, 'nav' => 'guide'], 'layout/cms');
+        'p' => MHW\Vetrina::disponibili() ? MHW\Vetrina::struttura($scheda ?? ['account_id' => (int) $acc['id'], 'property_id' => null]) : MHW\Testimonianze::struttura((int) $acc['id']),
+        'gia' => $gia, 'scheda' => $scheda, 'scrivi' => !empty($_GET['scrivi']) && !$fatto, 'nav' => 'giudizio'], 'layout/cms');
 });
 
 $r->post('/giudizio/chiudi', function () use ($host) {
@@ -1335,15 +1336,30 @@ $r->post('/giudizio/partecipo', function () use ($host) {
     if (!MHW\Giudizi::puoAderire($acc)) { Support::flash('Il programma non è disponibile per questo account.', 'err'); Support::redirect('/pannello'); }
     MHW\Giudizi::aderisci($acc, 'pannello');
     $pubblicata = MHW\Testimonianze::primaPubblicazione((int) $acc['id']) !== null;
-    Support::flash('Grazie! ' . ($pubblicata ? 'Ora lascia il tuo giudizio: lo sconto si applica al prossimo rinnovo.' : 'Quando avrai pubblicato la guida potrai lasciare il giudizio: lo sconto si applica al rinnovo successivo.'));
-    Support::redirect($pubblicata ? '/giudizio' : '/pannello');
+    Support::flash('Hai aderito al programma «Giudizio con sconto». ' . ($pubblicata ? 'La tua scheda è in elenco: la mettiamo in home dopo un controllo.' : 'La tua scheda va in elenco quando pubblichi la guida.'));
+    Support::redirect('/giudizio');
+});
+
+/* 9L · Le immagini della scheda (Copertina, Logo) e il ritiro dal programma. */
+$r->post('/giudizio/immagini', function () use ($host) {
+    [, $acc] = $host();
+    MHW\Vetrina::scegliImmagini((int) $acc['id'], !empty($_POST['copertina']), !empty($_POST['logo']));
+    Support::flash(empty($_POST['copertina']) ? 'Salvato. Senza la copertina la scheda non compare in home.' : 'Immagini della scheda salvate.');
+    Support::redirect('/giudizio');
+});
+$r->post('/giudizio/ritira', function () use ($host) {
+    [, $acc] = $host();
+    if (empty($_POST['conferma'])) { Support::flash('Per ritirarti spunta la conferma.', 'err'); Support::redirect('/giudizio'); }
+    $ok = MHW\Vetrina::ritira((int) $acc['id']);
+    Support::flash($ok ? 'Ti sei ritirato dal programma: la scheda e il giudizio non si vedono più sul sito.' : 'Non c\'era niente da ritirare.', $ok ? 'ok' : 'err');
+    Support::redirect('/giudizio');
 });
 
 /* 9B · La casella al pagamento, salvata subito (dallo script del passo «Pubblica», o dal modulo senza JavaScript). */
 $r->post('/giudizio/adesione', function () use ($host) {
     [, $acc] = $host();
     $torna = preg_match('#^/pannello/\d+/procedura/pubblica$#', (string) ($_POST['torna'] ?? '')) ? (string) $_POST['torna'] : '/pannello';
-    if (MHW\Giudizi::attivo()) {
+    if (MHW\Giudizi::attivo() && !(MHW\Omaggi::disponibili() && MHW\Omaggi::daUsare($acc))) {
         if (!empty($_POST['giudizio_adesione'])) MHW\Giudizi::aderisci($acc, 'pagamento'); else MHW\Giudizi::rinuncia($acc);
     }
     if (str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json')) Support::json(['ok' => true, 'aderito' => !empty(Auth::account()['giudizio_adesione'])]);
@@ -1353,6 +1369,11 @@ $r->post('/giudizio/adesione', function () use ($host) {
 /* «Ritira il giudizio» da Account & Fatturazione: sparisce subito dalla home; lo sconto già avuto resta, quello promesso sul rinnovo decade (9B). */
 $r->post('/account/giudizio/ritira', function () use ($host) {
     [, $acc] = $host();
+    if (MHW\Vetrina::disponibili() && !empty($acc['giudizio_adesione'])) {   // 9L: è il ritiro dal programma
+        $ok = MHW\Vetrina::ritira((int) $acc['id']);
+        Support::flash($ok ? 'Ti sei ritirato dal programma: la scheda e il giudizio non si vedono più sul sito.' : 'Non c\'era niente da ritirare.');
+        Support::redirect('/giudizio');
+    }
     $ok = MHW\Testimonianze::ritira((int) $acc['id']);
     if ($ok) MHW\Auth::audit('testimonial.withdrawn', null, ['account_id' => (int) $acc['id']]);
     if ($ok) MHW\Giudizi::ritirato($acc);

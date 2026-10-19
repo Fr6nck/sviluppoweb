@@ -27,7 +27,7 @@ final class TestiSito
         'scene'    => ['Le tre scene', 'Le tre foto sotto il titolo: il QR, l\'ospite, l\'host. Le foto si cambiano in fondo a questa pagina.'],
         'soddisfatti' => ['Più sanno, meglio stanno', 'Informazioni → recensioni → prenotazioni (8G): tre punti e la scheda con i quattro passi, tra le scene e «Cosa trova l\'ospite».'],
         'prodotto' => ['Cosa trova l\'ospite', ''],
-        'dicono'   => ['Cosa dicono di noi', 'I giudizi dei clienti che abbiamo messo in home (Clienti → Giudizi): la sezione compare solo se ce n\'è almeno uno. La nota in fondo è obbligatoria: si può cambiare, non togliere (vuota, torna quella di serie).'],
+        'dicono'   => ['Le guide dei nostri host e «Giudizio con sconto»', '9L: le schede di chi ha aderito al programma, accese in Vendite → Giudizi e vetrina; la sezione compare solo se ce n\'è almeno una. La nota in fondo è obbligatoria: si può cambiare, non togliere (vuota, torna quella di serie). Qui anche il testo dell\'unica casella del programma, uguale al pagamento e nel pannello.'],
         'perchi'   => ['Per chi è', 'Le sei schede (9K): casa vacanza, B&B, affittacamere, agriturismo, più strutture, property manager. Ognuna porta alla sua pagina; le foto si cambiano in fondo a questa pagina («Per chi è · …»).'],
         'tempo'    => ['Il tempo delle risposte', 'I numeri (16, 19 minuti…) restano quelli: qui si cambiano i testi intorno.'],
         'guadagno' => ['La guida che lavora per te', ''],
@@ -185,11 +185,13 @@ final class TestiSito
             'voci.kicker' => ['voci', 'Riga sopra il titolo', 'riga', 'Chi la usa', ''],
             'voci.titolo' => ['voci', 'Titolo', 'riga', 'Le parole di chi ospita.', ''],
             // ---- cosa dicono di noi (9B)
-            'dicono.kicker' => ['dicono', 'Riga sopra il titolo', 'riga', 'Cosa dicono di noi', ''],
+            'dicono.kicker' => ['dicono', 'Riga sopra il titolo', 'riga', 'Le guide dei nostri host', ''],
             'dicono.titolo' => ['dicono', 'Titolo', 'riga', 'Host veri, ospiti più sereni.', ''],
-            'dicono.sotto'  => ['dicono', 'Testo sotto il titolo', 'riga', 'Le parole di chi usa MyHouse Welcome ogni giorno.', ''],
+            'dicono.sotto'  => ['dicono', 'Testo sotto il titolo', 'riga', 'Le strutture che usano MyHouse Welcome ogni giorno, e le parole di chi ha già lasciato il suo giudizio.', ''],
             // ---- 9K · il questionario delle pagine per tipologia
             'questionario.kicker'  => ['questionario', 'Riga sopra il titolo', 'riga', 'Qual è il piano giusto per te?', ''],
+            'questionario.apri.domanda' => ['questionario', 'Home · accanto a «Confronta tutti i piani»', 'riga', 'Non sai quale scegliere?', '9L: apre la finestra con il questionario.'],
+            'questionario.apri.bottone' => ['questionario', 'Home · il bottone', 'riga', 'Rispondi a 3 domande', 'La freccia la aggiunge il sito.'],
             'questionario.titolo'  => ['questionario', 'Titolo', 'riga', 'Tre domande, una risposta.', ''],
             'questionario.sub'     => ['questionario', 'Sotto il titolo', 'riga', 'Rispondi in 20 secondi: ti diciamo quale piano ti basta, senza pagare per quello che non usi.', ''],
             'questionario.d1'      => ['questionario', 'Domanda 1', 'riga', 'Ti bastano due lingue, scritte da te?', ''],
@@ -224,12 +226,10 @@ final class TestiSito
             'questionario.portfolio.perche' => ['questionario', 'Portfolio · perché', 'area', 'Hai più strutture: ognuna ha la sua guida con i suoi dati, ma il lavoro lo fai una volta sola. Più strutture aggiungi, meno costa ognuna.', ''],
             'questionario.crea'    => ['questionario', 'Bottone principale', 'riga', 'Crea gratis con {piano}', 'La freccia la aggiunge il sito.'],
             'questionario.rifai'   => ['questionario', 'Bottone «rifai»', 'riga', 'Rifai il test', ''],
-            'questionario.sconto.entrambi' => ['questionario', 'Riga dello sconto (inviti e giudizio)', 'area', '**Fino al {totale}% di sconto sul rinnovo.** Invita {amici} amici ({passo}% a testa, fino al {max}%) e lasciaci il tuo giudizio ({giudizio}%).', 'Con gli inviti e il giudizio con sconto accesi. Il link «Come funziona» lo aggiunge il sito.'],
-            'questionario.sconto.inviti' => ['questionario', 'Riga dello sconto (solo inviti)', 'area', '**Fino al {max}% di sconto sul rinnovo.** Invita {amici} amici: {passo}% a testa, fino al {max}%.', 'Con gli inviti accesi e il giudizio con sconto spento.'],
-            'questionario.sconto.giudizio' => ['questionario', 'Riga dello sconto (solo giudizio)', 'area', '**Il {giudizio}% di sconto** se ci lasci il tuo giudizio.', 'Con il giudizio con sconto acceso e gli inviti spenti.'],
             'questionario.rinnovo.nota' => ['questionario', 'Sotto la tabella del rinnovo', 'riga', 'Prezzi + IVA, all\'anno. Lo sconto vale sul rinnovo successivo agli inviti andati a buon fine.', ''],
             'omaggio.messaggio' => ['omaggio', 'Messaggio con il codice omaggio', 'area', 'Ciao! Ti abbiamo riservato {mesi} mesi gratis di MyHouse Welcome, la guida digitale per i tuoi ospiti. Vai su {link}, crea la guida e inserisci la carta: oggi non paghi nulla, il primo addebito è tra {mesi} mesi, e prima ti avvisiamo. Il codice {codice} vale fino al {scadenza}.', 'Lo manda l\'amministrazione su WhatsApp o per email: {mesi}, {link}, {codice}, {scadenza} ed {email} (l\'email commerciale) si compilano da soli. Se il testo non contiene l\'email commerciale, in fondo si aggiunge la firma «MyHouse Welcome · commerciale@…».'],
-            'dicono.nota'   => ['dicono', 'Nota in fondo (obbligatoria)', 'area', 'Giudizi di clienti che hanno aderito al programma: chi lascia un giudizio riceve uno sconto del {giudizio}%, qualunque voto dia. Pubblicati con il loro accordo, senza link alle loro guide.', '{giudizio} è la percentuale dello sconto (Impostazioni). Non si può togliere.'],
+            'giudizio.casella' => ['dicono', 'La casella del programma (pagamento e pannello)', 'area', '**Aderisco al programma «Giudizio con sconto» e ho il {giudizio} di sconto.** La mia guida compare tra «Le guide dei nostri host» su welcomemyhouse.it **da quando la pubblico**, con il nome della struttura, la copertina, il logo, il mio nome (senza cognome) e la città. Nessun link alla guida, nessuna mia foto. Dopo 30 giorni lascio un voto da 1 a 5 con un commento, che può comparire sulla stessa scheda. Lo sconto non dipende dal voto. Posso ritirarmi quando voglio da Impostazioni → Giudizio con sconto.', 'Una chiave sola: è il testo della casella al pagamento e nel pannello, e la prova dell\'adesione. {giudizio} è la percentuale. Se cambi le regole, cambia anche i Termini.'],
+            'dicono.nota'   => ['dicono', 'Nota in fondo (obbligatoria)', 'area', 'Guide di host che hanno aderito al programma “Giudizio con sconto”: ricevono il {giudizio}% sul rinnovo, qualunque voto diano. Pubblicate con il loro accordo, senza link alle guide.', '{giudizio} è la percentuale dello sconto (Impostazioni). Non si può togliere.'],
             // ---- piani
             'piani.kicker' => ['piani', 'Riga sopra il titolo', 'riga', 'Piani e prezzi', ''],
             'piani.titolo' => ['piani', 'Titolo', 'riga', 'Scegli il piano.', ''],
@@ -237,7 +237,7 @@ final class TestiSito
             'piani.nota'   => ['piani', 'Nota sotto le schede', 'area', 'Abbonamento annuale con rinnovo automatico. Puoi disattivare il rinnovo dal tuo account quando vuoi: la guida resta online fino alla fine del periodo già pagato.', ''],
             // ---- porta un amico
             'amico.kicker'   => ['amico', 'Riga sopra il titolo', 'riga', 'Porta un amico', ''],
-            'amico.titolo'   => ['amico', 'Titolo', 'area', "Più amici porti, meno paghi.\nIl prossimo anno fino al {max} in meno.", '{max} è lo sconto massimo, in evidenza.'],
+            'amico.titolo'   => ['amico', 'Titolo', 'area', "Più amici porti, meno paghi.\nIl prossimo anno fino al {totale} in meno.", '{totale} è lo sconto massimo sul rinnovo (inviti più «Giudizio con sconto», 9L: 55%), in evidenza; {max} quello dei soli inviti.'],
             'amico.lead'     => ['amico', 'Testo sotto il titolo', 'area', 'Conosci altri host, B&B o case vacanza? Mandagli il tuo link: loro hanno il {amico} di sconto sul primo anno, tu il {passo} in meno sul rinnovo per ogni amico che si abbona.', ''],
             // 9F · «Una lingua in più, oltre alle cinque di base» (Lingue): {bottoni} = le lingue con i bottoni tradotti (nederlands, português e polski)
             'lingue.extra.titolo'   => ['pannello', 'Titolo', 'riga', 'Una lingua in più, oltre alle cinque di base', ''],
@@ -255,6 +255,10 @@ final class TestiSito
             'amico.3.titolo' => ['amico', 'Passo 3 · in grassetto', 'riga', 'Quando paga, tu risparmi.', ''],
             'amico.3.testo'  => ['amico', 'Passo 3 · testo', 'riga', 'Il tuo rinnovo costa il {passo} in meno per ogni amico, fino al {max}.', ''],
             'amico.bottone'  => ['amico', 'Bottone «Come funziona»', 'riga', 'Come funziona', 'Apre la domanda «Come funziona «Porta un amico»?».'],
+            // 9L · Lo sconto massimo sul rinnovo, con il numero grande: home (Porta un amico, Le guide dei nostri host), inviti, questionario.
+            'risparmio.testo'    => ['amico', 'Sconto massimo · inviti e giudizio', 'area', '**Fino al {totale} di sconto a partire dal prossimo anno.** Porta un amico: {passo} a testa sul rinnovo, fino al {max} con {amici} amici. Aderisci al programma “Giudizio con sconto”, con la tua guida in questa pagina: un altro {giudizio}.', 'Con gli inviti e il programma accesi. {totale} = {max} + {giudizio} (di serie 55%).'],
+            'risparmio.inviti'   => ['amico', 'Sconto massimo · solo inviti', 'area', '**Fino al {max} di sconto a partire dal prossimo anno.** Porta un amico: {passo} a testa sul rinnovo, fino al {max} con {amici} amici.', 'Con il programma «Giudizio con sconto» spento.'],
+            'risparmio.giudizio' => ['amico', 'Sconto massimo · solo giudizio', 'area', '**Il {giudizio} di sconto.** Aderisci al programma “Giudizio con sconto”, con la tua guida in questa pagina.', 'Con gli inviti spenti.'],
             // ---- domande
             'faq.kicker'    => ['faq', 'Riga sopra il titolo (home)', 'riga', 'Domande', ''],
             'faq.titolo'    => ['faq', 'Titolo (home)', 'riga', 'Prima di cominciare.', ''],
@@ -361,7 +365,7 @@ final class TestiSito
 
     /** Le foto della home: nome => [etichetta, file di serie in assets/foto, consiglio]. */
     public const IMMAGINI = [
-        'telefono'     => ['La schermata nel telefono, in cima', 'borgo-telefono.jpg', 'Orizzontale, 600 × 422 px: è la foto che l\'ospite vede sotto «Benvenuti». Con la vetrina Casa Checco, di serie c\'è la sua.'],
+        'telefono'     => ['La schermata nel telefono, in cima', 'checco-telefono.jpg', 'Orizzontale, 600 × 422 px: è la foto che l\'ospite vede sotto «Benvenuti». Di serie il portone di Casa Checco.'],
         'scena-qr'     => ['Prima scena: il QR all\'ingresso', 'scena-qr.jpg', '1200 × 750 px. Se manca, la scena mostra un disegno.'],
         'scena-ospite' => ['Seconda scena: l\'ospite', 'scena-ospite.jpg', '1200 × 750 px.'],
         'scena-host'   => ['Terza scena: l\'host', 'scena-host.jpg', '1200 × 750 px.'],

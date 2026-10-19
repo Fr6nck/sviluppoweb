@@ -232,6 +232,21 @@ final class Sconti
         Db::update('accounts', ['intended_discount_code_id' => null], 'id = :aid', ['aid' => $order['account_id']]);
     }
 
+    // ------------------------------------------------------------ 9L · lo sconto massimo sul rinnovo
+
+    /**
+     * 9L · Quanto si può risparmiare dal secondo anno: inviti (fino a Inviti::MASSIMO) più il programma «Giudizio con
+     * sconto», solo quelli accesi. Per il riquadro con il numero grande (home, inviti, questionario).
+     * @return array{chiave:?string,totale:int,max:int,passo:int,amici:int,giudizio:int}  chiave: la chiave di «Testi e foto», null se niente
+     */
+    public static function massimoRinnovo(): array
+    {
+        $inviti = Inviti::disponibili(); $giudizio = Giudizi::attivo();
+        $max = $inviti ? Inviti::MASSIMO : 0; $g = $giudizio ? Giudizi::percentuale() : 0;
+        return ['chiave' => $inviti && $giudizio ? 'risparmio.testo' : ($inviti ? 'risparmio.inviti' : ($giudizio ? 'risparmio.giudizio' : null)),
+                'totale' => $max + $g, 'max' => $max, 'passo' => Inviti::PASSO, 'amici' => Inviti::amiciMassimi(), 'giudizio' => $g];
+    }
+
     // ------------------------------------------------------------ 9A · gli sconti del primo anno, sommati
 
     /**

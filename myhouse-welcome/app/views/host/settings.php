@@ -147,6 +147,18 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
   <script src="<?= MHW\av('/assets/funnel-sito.js') ?>" defer></script>
   <?php endif; ?>
 
+  <?php /* 9L · «Giudizio con sconto»: la voce del programma (una per account), con lo stato in una riga. */
+        $accG = MHW\Auth::account();
+        if ($accG && MHW\Vetrina::disponibili() && !MHW\Giudizi::escluso($accG) && (!empty($accG['giudizio_adesione']) || MHW\Giudizi::attivo())):
+          $schG = MHW\Vetrina::scheda((int) $accG['id']); ?>
+  <section class="fieldset row" style="margin-top:24px;justify-content:space-between;align-items:center;gap:12px" id="giudizio-con-sconto">
+    <div class="stack" style="gap:2px"><b>Giudizio con sconto</b>
+      <span class="small muted"><?= empty($accG['giudizio_adesione']) ? 'Il ' . MHW\Giudizi::percentuale() . '% di sconto e la tua guida tra «Le guide dei nostri host».'
+          : ($schG && !empty($schG['ritirato_at']) ? 'Ti sei ritirato dal programma.' : 'Hai aderito il ' . Support::e(Support::date((string) $accG['giudizio_adesione_at'])) . '.') ?></span></div>
+    <a class="btn btn--ghost btn--sm" href="<?= b() ?>/giudizio">Apri</a>
+  </section>
+  <?php endif; ?>
+
   <details class="fieldset" style="margin-top:24px" id="link-guida">
     <summary class="legend" style="cursor:pointer;min-height:32px">Cambia il link della guida</summary>
     <form method="post" action="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/link" class="stack" style="margin-top:12px"><?= Csrf::field() ?>

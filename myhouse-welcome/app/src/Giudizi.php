@@ -64,24 +64,27 @@ final class Giudizi
         return max(1, min(20, $v ?: 5));
     }
 
-    /** La casella al pagamento (una sola: giudizio + possibile pubblicazione, senza link). */
+    /**
+     * 9L · La casella, una sola e con lo stesso testo al pagamento e nel pannello: «Testi e foto» → giudizio.casella.
+     * In testo semplice (è anche la prova dell'adesione, salvata con il giudizio); casellaHtml() per mostrarla.
+     */
     public static function casella(): string
     {
-        return 'Sì, voglio il ' . self::percentuale() . '% in più: lascerò un giudizio. Dopo aver pubblicato la guida darò un voto da 1 a 5 con due righe, '
-            . 'e accetto che MyHouse Welcome possa mostrarlo nella sua home con il mio nome, la copertina, la mia foto e il logo della struttura, senza link alla mia guida.';
+        return html_entity_decode(strip_tags(self::casellaHtml()), ENT_QUOTES);
     }
 
-    /** La stessa casella, in versione breve (pannello). */
-    public static function casellaBreve(): string
+    public static function casellaHtml(): string
     {
-        return 'Partecipo: lascerò un giudizio e accetto che possa essere mostrato in home con nome, copertina, foto e logo, senza link alla mia guida.';
+        return TestiSito::html('giudizio.casella', ['giudizio' => self::percentuale() . '%']);
     }
 
-    /** Lo «spiegone» sotto la casella, sempre visibile. */
+    /** 9L · Lo stesso testo anche dal pannello (una chiave sola). */
+    public static function casellaBreve(): string { return self::casella(); }
+
+    /** La riga sotto la casella al pagamento (dove vale lo sconto). */
     public static function spiegone(): string
     {
-        return 'Lo sconto non dipende dal voto. Il giudizio lo lasci dal tuo pannello quando vuoi, anche tra mesi. Decidiamo noi quali giudizi mostrare in home '
-            . 'e non c\'è nessun link alla tua guida. Puoi ritirare il giudizio quando vuoi; lo sconto già avuto resta.';
+        return 'Sconto giudizio ' . self::percentuale() . '% applicato al primo anno. Se aderisci dopo, dal pannello, vale sul rinnovo.';
     }
 
     /** Fuori dal programma: i clienti di prova (7F), gli account di esempio e chi ha la vetrina. */
@@ -99,12 +102,21 @@ final class Giudizi
         return self::attivo() && empty($acc['giudizio_adesione']) && !self::escluso($acc);
     }
 
-    /** L'adesione, al pagamento o dal pannello: lo sconto è «promesso». La prova resta nell'account (data) e nel giudizio (consent_text). */
+    /**
+     * L'adesione, al pagamento o dal pannello: lo sconto è «promesso». La prova resta nell'account (data) e nel giudizio (consent_text).
+     * 9L · Dal pannello, con lo sconto «all'adesione», vale subito sul prossimo rinnovo (coupon sull'abbonamento attivo; senza
+     * abbonamento, al primo pagamento). La scheda in «Le guide dei nostri host» nasce subito (Vetrina::assicura).
+     */
     public static function aderisci(array $acc, string $modo): void
     {
         if (!self::disponibili() || !isset(self::ADESIONI[$modo]) || !empty($acc['giudizio_adesione'])) return;
-        Db::update('accounts', ['giudizio_adesione' => $modo, 'giudizio_adesione_at' => Support::now(), 'giudizio_sconto_stato' => 'promesso'], 'id = :aid', ['aid' => (int) $acc['id']]);
-        Auth::audit('giudizio.adesione', null, ['account_id' => (int) $acc['id'], 'modo' => $modo]);
+        $subito = $modo === 'pannello' && self::quando() === 'adesione';
+        Db::update('accounts', ['giudizio_adesione' => $modo, 'giudizio_adesione_at' => Support::now(), 'giudizio_sconto_stato' => $subito ? 'da_applicare_rinnovo' : 'promesso'], 'id = :aid', ['aid' => (int) $acc['id']]);
+        $codice = '';
+        try { $codice = Codici::cliente((int) $acc['id']); } catch (\Throwable) {}
+        Auth::audit('giudizio.adesione', null, ['account_id' => (int) $acc['id'], 'modo' => $modo, 'codice' => $codice]);
+        if ($subito) { try { self::aggiungiCoupon((int) $acc['id']); } catch (\Throwable $e) { Log::exception($e, 'giudizi: coupon sul rinnovo'); } }
+        Vetrina::assicura((int) $acc['id']);
     }
 
     /** La casella tolta prima di pagare: l'adesione al pagamento si annulla (solo finché lo sconto è promesso e nessun giudizio è stato lasciato). */
@@ -229,11 +241,11 @@ final class Giudizi
         Db::update('accounts', ['giudizio_sconto_stato' => $primoAddebito ? 'applicato_primo_anno' : 'applicato_rinnovo', 'giudizio_sconto_at' => Support::now()], 'id = :aid', ['aid' => $aid]);
     }
 
-    /** Il cliente ritira il giudizio: lo sconto già avuto resta, quello promesso sul rinnovo decade. */
+    /** Il cliente si ritira dal programma: lo sconto già avuto resta, quello promesso (sul rinnovo o sul primo pagamento) decade. */
     public static function ritirato(array $acc): void
     {
         if (!self::disponibili()) return;
-        if (($acc['giudizio_sconto_stato'] ?? '') === 'da_applicare_rinnovo') {
+        if (in_array($acc['giudizio_sconto_stato'] ?? '', ['da_applicare_rinnovo', 'promesso'], true)) {
             Db::update('accounts', ['giudizio_sconto_stato' => 'nessuno'], 'id = :aid', ['aid' => (int) $acc['id']]);
             try { self::togliCoupon((int) $acc['id']); } catch (\Throwable $e) { Log::exception($e, 'giudizi: coupon tolto'); }
         }
@@ -280,30 +292,6 @@ final class Giudizi
 
     // ------------------------------------------------------------ la home
 
-    /** Le immagini di un giudizio, solo quelle scelte dal cliente e che esistono ancora nella guida. */
-    public static function immagini(array $t): array
-    {
-        $out = ['copertina' => null, 'foto' => null, 'logo' => null];
-        if (empty($t['account_id']) || empty($t['property_id'])) return $out;
-        $p = Db::one('SELECT profile_media_id, cover_media_id, logo_media_id FROM properties WHERE id = ? AND account_id = ? AND archived_at IS NULL', [(int) $t['property_id'], (int) $t['account_id']]);
-        if (!$p) return $out;
-        if (!empty($t['show_cover']) && $p['cover_media_id']) $out['copertina'] = Media::ridotta((int) $p['cover_media_id'], 800);
-        if (!empty($t['show_photo']) && $p['profile_media_id']) $out['foto'] = Media::ridotta((int) $p['profile_media_id'], 240);
-        if (!empty($t['show_logo']) && !empty($p['logo_media_id'])) $out['logo'] = Media::ridotta((int) $p['logo_media_id'], 240);
-        return $out;
-    }
-
-    /** Le schede per «Cosa dicono di noi»: in home, non ritirate, con la guida ancora attiva; le più recenti prima, al massimo 6. */
-    public static function perHome(int $max = 6): array
-    {
-        if (!self::disponibili() || !self::homeAccesa()) return [];
-        $out = [];
-        foreach (Db::all("SELECT t.* FROM testimonials t JOIN properties p ON p.id = t.property_id AND p.archived_at IS NULL
-                          WHERE t.account_id IS NOT NULL AND t.home_visible = 1 AND t.withdrawn_at IS NULL AND t.consent_at IS NOT NULL
-                          ORDER BY COALESCE(t.published_at, t.created_at) DESC, t.id DESC LIMIT " . (int) $max) as $t) {
-            $t['immagini'] = self::immagini($t);
-            $out[] = $t;
-        }
-        return $out;
-    }
+    /** 9L · Le schede di «Le guide dei nostri host» (Vetrina): copertina e logo, mai la foto dell'host. */
+    public static function perHome(int $max = 6): array { return Vetrina::perHome($max); }
 }

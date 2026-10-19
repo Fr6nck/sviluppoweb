@@ -195,7 +195,7 @@ function pv(string $codice): int
 
 // ================================================================= INSTALLAZIONE
 capitolo('Installazione');
-const MHW_VERSIONE_LEGALE = '2026-10-16';   // 8J/9B: le versioni di serie di Termini e Privacy (9A/9B: preventivi, giudizio con sconto)
+const MHW_VERSIONE_LEGALE = '2026-10-19';   // 8J/9B/9L: le versioni di serie di Termini e Privacy (9L: «Giudizio con sconto» e vetrina)
 const MHW_VERSIONE_DPA = '2026-10-15';      // il DPA non è cambiato
 $admin = new Browser('admin');
 $r = $admin->get('/');
@@ -282,8 +282,8 @@ prova('Nota sul rinnovo automatico sotto i piani', str_contains($r['body'], 'Puo
 prova('Il prodotto si vede subito: telefono nella hero, prima della foto', strpos($r['body'], 'class="device"') !== false && strpos($r['body'], 'class="device"') < strpos($r['body'], 'class="scene"'));
 prova('Il telefono è un link alla demo, con invito', preg_match('#<a class="device-link" href="([^"]+)"#', $r['body'], $mm) === 1 && str_ends_with($mm[1], '/benvenuto') && str_contains($r['body'], 'Scopri come la vedranno i tuoi ospiti'));
 prova('Demo, telefono e QR portano alla stessa demo', isset($mm[1]) && substr_count($r['body'], 'href="' . $mm[1] . '"') >= 2 && str_contains($r['body'], 'Inquadra e prova la demo.'));
-prova('Foto del borgo nel telefono, anche in WebP', str_contains($r['body'], '/assets/foto/borgo-telefono.jpg') && str_contains($r['body'], 'borgo-telefono-600.webp'));
-foreach (['borgo.jpg', 'borgo-1200.webp', 'borgo-2000.webp', 'borgo-telefono.jpg', 'borgo-telefono-600.webp'] as $f) {
+prova('9L · Casa Checco nel telefono, anche in WebP (il borgo non c\'è più)', str_contains($r['body'], '/assets/foto/checco-telefono.jpg') && str_contains($r['body'], 'checco-telefono-600.webp') && !str_contains($r['body'], 'borgo-telefono'));
+foreach (['checco-telefono.jpg', 'checco-telefono-600.webp', 'checco-orizzontale.jpg', 'checco-copertina.jpg'] as $f) {
     $x = $ospite->get(preg_replace('#/index\.php$#', '', $BASE) . '/assets/foto/' . $f);
     prova("Immagine $f raggiungibile", $x['code'] === 200 && strlen($x['body']) > 10000);
 }
@@ -2892,11 +2892,11 @@ $fileLocale = "$DOVE/app/config.local.php";
 file_put_contents($fileLocale, '<?php return ' . var_export(['inviti' => ['attivi' => true]], true) . ';');
 $r = $ospite->get('/');
 @unlink($fileLocale);
-prova('Inviti accesi: blocco «Porta un amico» dopo i piani, fino al 50%, dieci tacche e due FAQ', preg_match('#id="piani".*id="amico".*class="chiusura"#s', $r['body']) === 1
-      && str_contains($r['body'], 'fino al <span class="amico__cifra">50%</span>') && substr_count($r['body'], 'class="amico__tacca"') === 10
+prova('Inviti accesi: blocco «Porta un amico» dopo i piani, fino al 55% (9L: inviti + giudizio), dieci tacche e due FAQ', preg_match('#id="piani".*id="amico".*class="chiusura"#s', $r['body']) === 1
+      && str_contains($r['body'], 'fino al <span class="amico__cifra">55%</span>') && substr_count($r['body'], 'class="amico__tacca"') === 10
       && str_contains($r['body'], 'Come funziona «Porta un amico»?') && str_contains($r['body'], 'Quando conta un amico, e cosa succede dopo il rinnovo?'));
-prova('Testi e foto · le percentuali di «Porta un amico» restano giuste (5%, 50% in evidenza, senza doppio %)', str_contains($r['body'], 'loro hanno il 5% di sconto sul primo anno, tu il 5% in meno')
-      && str_contains($r['body'], 'fino al <span class="amico__cifra">50%</span> in meno.') && !str_contains($r['body'], '%%') && str_contains($r['body'], 'fino al 50%.</li>'));
+prova('Testi e foto · le percentuali di «Porta un amico» restano giuste (5%, 55% in evidenza, senza doppio %)', str_contains($r['body'], 'loro hanno il 5% di sconto sul primo anno, tu il 5% in meno')
+      && str_contains($r['body'], 'fino al <span class="amico__cifra">55%</span> in meno.') && !str_contains($r['body'], '%%') && str_contains($r['body'], 'fino al 50%.</li>'));
 prova('Revisione · «Come funziona» di Porta un amico apre quella domanda (sotto «Altre domande»), non le FAQ in generale', str_contains($r['body'], 'href="#faq-porta-amico">Come funziona</a>')
       && preg_match('#<details class="faq__voce faq__altre">.*?id="faq-porta-amico"#s', $r['body']) === 1 && str_contains((string) file_get_contents("$DOVE/assets/landing.js"), 'function apriDomanda'));
 
@@ -3434,7 +3434,7 @@ prova('robots.txt: per * niente guide in Disallow, /pannello escluso per tutti; 
       && str_contains((string) $blocco($r['body'], 'meta-externalagent'), "Disallow: /qr/\n") && $blocco($r['body'], 'CCBot') === "Disallow: /\n"
       && preg_match('#\nSitemap: \S+/sitemap\.xml\n$#', $r['body']) === 1, json_encode($blocco($r['body'], 'CCBot')));
 $r = $ospite->get('/sitemap.xml');
-prova('sitemap.xml: le pagine accese (con le due inglesi della 8E, le quattro per tipologia della 7F, le quattro legali della 8J e le due della 9K), con lastmod', $r['code'] === 200 && substr_count($r['body'], '<url>') === 16 && substr_count($r['body'], '<lastmod>') === 16
+prova('sitemap.xml: le pagine accese (con le due inglesi della 8E, le quattro per tipologia della 7F, le quattro legali della 8J, le due della 9K e /piano della 9L), con lastmod', $r['code'] === 200 && substr_count($r['body'], '<url>') === 17 && substr_count($r['body'], '<lastmod>') === 17
       && str_contains($r['body'], '/domande</loc>') && str_contains($r['body'], '/piu-strutture</loc>') && str_contains($r['body'], '/property-manager</loc>') && @simplexml_load_string($r['body']) !== false);
 foreach (['/accedi', '/registrati', '/password'] as $u) {
     $r = $ospite->get($u);
@@ -3907,7 +3907,8 @@ db()->prepare('UPDATE properties SET published_at = ? WHERE id = ?')->execute([g
 // 9B: il riquadro «Ti piace MyHouse Welcome?» c'è dal primo accesso (spiega il programma); l'email di richiamo resta a 30 giorni.
 $r = $paola->get('/pannello');
 prova('7D · 9B · giudizio: il riquadro del programma c\'è subito, con la casella «Partecipo» (non ha ancora aderito)', str_contains($r['body'], 'id="giudizio-invito"')
-      && str_contains($r['body'], 'sul prossimo rinnovo, con un giudizio') && str_contains($r['body'], 'name="partecipo"') && str_contains($r['body'], '/giudizio/partecipo'));
+      && str_contains($r['body'], 'Giudizio con sconto: il 5% sul prossimo rinnovo') && str_contains($r['body'], 'name="partecipo"') && str_contains($r['body'], '/giudizio/partecipo')
+      && str_contains($r['body'], 'nessuna mia foto'));
 db()->prepare('UPDATE properties SET published_at = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() - 32 * 86400), $pp6]);
 $paola->post('/giudizio/chiudi', []);
 prova('…chiuso non c\'è', !str_contains($paola->get('/pannello')['body'], 'id="giudizio-invito"'));
@@ -3922,60 +3923,64 @@ prova('7D · email «Ti sta piacendo MyHouse Welcome?» a 30 giorni, una volta s
       && str_contains((string) $ult['text'], '/giudizio'), json_encode($ult['subject'] ?? null));
 $cron();
 prova('…non si ripete', count($posta('paola@prova.test')) === $prima + 1);
-$r = $paola->get('/giudizio');
-prova('7D · 9B · modulo: 5 stelle obbligatorie, testo 20–400, i chip delle immagini (copertina), nessuna casella di consenso, la casella «Partecipo» per chi non ha aderito', $r['code'] === 200
-      && substr_count($r['body'], 'name="rating"') === 5 && str_contains($r['body'], 'minlength="20" maxlength="400"') && str_contains($r['body'], 'name="show_cover" value="1" checked')
-      && !str_contains($r['body'], 'name="show_logo"') && !str_contains($r['body'], 'name="consenso"') && !str_contains($r['body'], 'Acconsento') && substr_count($r['body'], 'name="partecipo"') === 1
-      && str_contains($r['body'], 'Nome senza cognome, struttura e città compaiono sempre.'));
-$r = $paola->post('/giudizio', ['rating' => '5', 'body' => 'Corto', 'photo_source' => 'copertina']);
+$r = $paola->get('/giudizio?scrivi=1');
+prova('7D · 9L · il modulo del giudizio: 5 stelle obbligatorie, testo 20–400, nessun chip né consenso; sopra la casella unica e «Aderisco» per chi non ha aderito', $r['code'] === 200
+      && substr_count($r['body'], 'name="rating"') === 5 && str_contains($r['body'], 'minlength="20" maxlength="400"') && !str_contains($r['body'], 'name="show_cover"') && !str_contains($r['body'], 'name="show_photo"')
+      && !str_contains($r['body'], 'name="consenso"') && !str_contains($r['body'], 'Acconsento') && substr_count($r['body'], 'name="partecipo"') === 1 && str_contains($r['body'], '>Aderisco</button>'));
+$r = $paola->post('/giudizio', ['rating' => '5', 'body' => 'Corto']);
 prova('…testo troppo corto: errore, niente salvato', str_contains($r['body'], 'almeno 20 caratteri') && !val('SELECT id FROM testimonials WHERE account_id = ?', [$pacc]));
-$r = $paola->post('/giudizio', ['rating' => '5', 'body' => 'Gli ospiti non mi chiedono più il Wi-Fi alle undici di sera.', 'photo_source' => 'copertina']);
+$r = $paola->post('/giudizio', ['rating' => '5', 'body' => 'Gli ospiti non mi chiedono più il Wi-Fi alle undici di sera.', 'photo_source' => 'profilo']);
 $gid = (int) val('SELECT id FROM testimonials WHERE account_id = ?', [$pacc]);
-prova('…senza l\'adesione: arriva solo a noi, «in_attesa», e non si può pubblicare', $gid > 0 && str_contains($r['body'], 'Resta tra noi')
-      && (string) val('SELECT status FROM testimonials WHERE id = ?', [$gid]) === 'in_attesa' && val('SELECT consent_at FROM testimonials WHERE id = ?', [$gid]) === null);
-$admin->post("/admin/testimonianze/$gid/pubblica", []);
-prova('…«In home» senza l\'adesione: rifiutato', (string) val('SELECT status FROM testimonials WHERE id = ?', [$gid]) === 'in_attesa' && !str_contains($ospite->get('/')['body'], 'alle undici di sera')
-      && $admin->post("/admin/giudizi/$gid/home", ['si' => '1'])['code'] === 302 && (int) val('SELECT home_visible FROM testimonials WHERE id = ?', [$gid]) === 0);
+prova('…senza l\'adesione: arriva solo a noi, «in_attesa», niente scheda, e la vecchia «foto profilo» non vale', $gid > 0 && str_contains($r['body'], 'Resta tra noi')
+      && (string) val('SELECT status FROM testimonials WHERE id = ?', [$gid]) === 'in_attesa' && val('SELECT consent_at FROM testimonials WHERE id = ?', [$gid]) === null
+      && (string) val('SELECT photo_source FROM testimonials WHERE id = ?', [$gid]) === 'nessuna' && !val('SELECT id FROM vetrina_schede WHERE account_id = ?', [$pacc]));
 $r = $admin->get('/admin/giudizi');
-prova('7D · 9B · Amministrazione → Clienti → Giudizi: la voce nel menu, il giudizio «Senza adesione», i filtri; Testimonianze rimanda lì', $r['code'] === 200 && pulita($r)
-      && preg_match('#/admin/giudizi"[^>]*>(?:<svg.*?</svg>)?\s*(?:<span>)?Giudizi<#s', $r['body']) === 1 && str_contains($r['body'], 'Senza adesione') && str_contains($r['body'], 'alle undici di sera') && str_contains($r['body'], '?filtro=da_valutare')
-      && str_contains($admin->get('/admin/testimonianze')['body'], 'Clienti → Giudizi'));
-$paola->post('/giudizio', ['rating' => '5', 'body' => 'Gli ospiti non mi chiedono più il Wi-Fi alle undici di sera.', 'show_cover' => '1', 'partecipo' => '1']);
+prova('7D · 9L · Amministrazione → Vendite → «Giudizi e vetrina»: la voce nel menu, i filtri; senza adesione Paola non c\'è; Testimonianze rimanda lì', $r['code'] === 200 && pulita($r)
+      && preg_match('#/admin/giudizi"[^>]*>(?:<svg.*?</svg>)?\s*(?:<span>)?Giudizi e vetrina<#s', $r['body']) === 1 && !str_contains($r['body'], 'Casa Paola') && str_contains($r['body'], '?filtro=da_approvare')
+      && str_contains($admin->get('/admin/testimonianze')['body'], 'Giudizi'));
+$paola->post('/giudizio/partecipo', ['partecipo' => '1']);
 $pa9 = riga('SELECT * FROM accounts WHERE id = ?', [$pacc]);
-prova('…con «Partecipo»: adesione dal pannello, lo sconto «sul prossimo rinnovo», la prova dell\'accordo nel giudizio (data e testo della casella), copertina scelta',
-      ($pa9['giudizio_adesione'] ?? '') === 'pannello' && ($pa9['giudizio_sconto_stato'] ?? '') === 'da_applicare_rinnovo'
-      && str_contains((string) val('SELECT consent_text FROM testimonials WHERE id = ?', [$gid]), 'Partecipo: lascerò un giudizio') && val('SELECT consent_at FROM testimonials WHERE id = ?', [$gid]) === $pa9['giudizio_adesione_at']
-      && (int) val('SELECT show_cover FROM testimonials WHERE id = ?', [$gid]) === 1 && (int) val('SELECT show_logo FROM testimonials WHERE id = ?', [$gid]) === 0, json_encode($pa9));
+$paS = riga('SELECT * FROM vetrina_schede WHERE account_id = ?', [$pacc]);
+prova('…«Aderisco» dal pannello: adesione «pannello», lo sconto subito sul prossimo rinnovo, la scheda in elenco (da approvare)',
+      ($pa9['giudizio_adesione'] ?? '') === 'pannello' && ($pa9['giudizio_sconto_stato'] ?? '') === 'da_applicare_rinnovo' && $paS && (int) $paS['scheda_home'] === 0 && $paS['decisa_at'] === null, json_encode($pa9));
 $cpP = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_paola' && isset($x['corpo']['discounts'])));
 prova('…e il coupon «mhw-giudizio-5» (una volta) aggiunto al suo abbonamento Stripe', count($cpP) >= 1 && in_array('mhw-giudizio-5', array_map(fn($d) => (string) ($d['coupon'] ?? ''), end($cpP)['corpo']['discounts']), true)
       && (bool) array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/coupons' && ($x['corpo']['id'] ?? '') === 'mhw-giudizio-5' && ($x['corpo']['duration'] ?? '') === 'once'), json_encode(end($cpP)['corpo'] ?? null));
-$admin->post("/admin/giudizi/$gid/home", ['si' => '1']);
+$paola->post('/giudizio', ['rating' => '5', 'body' => 'Gli ospiti non mi chiedono più il Wi-Fi alle undici di sera.']);
+prova('…il giudizio dopo l\'adesione: la prova dell\'accordo (data e testo della casella unica), di nuovo da approvare', str_contains((string) val('SELECT consent_text FROM testimonials WHERE id = ?', [$gid]), 'Aderisco al programma «Giudizio con sconto»')
+      && val('SELECT consent_at FROM testimonials WHERE id = ?', [$gid]) === $pa9['giudizio_adesione_at'] && (string) val('SELECT status FROM testimonials WHERE id = ?', [$gid]) === 'in_attesa');
+$admin->post('/admin/giudizi/' . (int) $paS['id'] . '/home', ['si' => '1']);
+$admin->post('/admin/giudizi/' . (int) $paS['id'] . '/giudizio', ['approva' => '1']);
 $r = $ospite->get('/');
-prova('7D · 9B · in home («Cosa dicono di noi»): stelle, nome senza cognome, struttura e città, la copertina, nessun link, la nota del programma', str_contains($r['body'], 'id="cosa-dicono"')
-      && str_contains($r['body'], 'alle undici di sera') && str_contains($r['body'], 'aria-label="5 su 5"') && preg_match('#<b>Paola</b><span class="small muted">Casa Paola · Todi</span>#', $r['body']) === 1
+prova('7D · 9L · in home («Le guide dei nostri host»): stelle, nome senza cognome, struttura e città, la copertina, nessun link, la nota del programma', str_contains($r['body'], 'id="cosa-dicono"')
+      && str_contains($r['body'], 'alle undici di sera') && str_contains($r['body'], 'aria-label="5 su 5"') && preg_match('#<b>Paola</b><span class="small muted">Casa Paola · Todi( \(PG\))?</span>#', $r['body']) === 1
       && !str_contains($r['body'], 'Paola Cambio') && preg_match('#<section id="cosa-dicono".*?</section>#s', $r['body'], $sd9) === 1 && !str_contains($sd9[0], '<a ') && !str_contains($sd9[0], 'onclick')
-      && str_contains($sd9[0], 'qualunque voto dia') && str_contains($sd9[0], '/img/') && (int) val('SELECT home_visible FROM testimonials WHERE id = ?', [$gid]) === 1);
+      && str_contains($sd9[0], 'qualunque voto diano') && str_contains($sd9[0], '/img/'));
 prova('…con meno di 5 giudizi niente media, e mai aggregateRating', !str_contains($r['body'], 'voci__media') && !str_contains($r['body'], 'aggregateRating'));
 $ins = db()->prepare("INSERT INTO testimonials (name, property_name, body, photo_storage, photo_key, visible, position, created_at, account_id, rating, photo_source, status, consent_at, consent_text, home_visible)
                       VALUES (?, 'Casa', 'Testo di prova per la media dei giudizi.', '', '', 1, 0, ?, ?, ?, 'nessuna', 'pubblicata', ?, 'x', 1)");
 foreach ([4, 5, 4, 5] as $i => $v) $ins->execute(['Host' . $i, gmdate('Y-m-d\TH:i:s\Z'), 900000 + $i, $v, gmdate('Y-m-d\TH:i:s\Z')]);
 $r = $ospite->get('/');
-prova('7D · da 5 giudizi pubblicati: «4,6 su 5 da 5 host»', str_contains($r['body'], '4,6 su 5</b> da 5 host') && !str_contains($r['body'], 'aggregateRating'));
+prova('7D · da 5 giudizi approvati: «4,6 su 5 da 5 host»', str_contains($r['body'], '4,6 su 5</b> da 5 host') && !str_contains($r['body'], 'aggregateRating'));
 db()->exec('DELETE FROM testimonials WHERE account_id >= 900000');
 $r = $paola->get('/account');
-prova('7D · 9B · Account: «Il tuo giudizio» in home, con «Ritira il giudizio»', str_contains($r['body'], 'Il tuo giudizio su MyHouse Welcome') && str_contains($r['body'], 'nella nostra home') && str_contains($r['body'], 'Ritira il giudizio'));
-$paola->post('/account/giudizio/ritira', []);
+prova('7D · 9L · Account: «Giudizio con sconto» in breve, con il link alla pagina del programma', str_contains($r['body'], 'Giudizio con sconto') && str_contains($r['body'], 'Apri Giudizio con sconto'));
+$paola->post('/giudizio/ritira', ['conferma' => '1']);
 $cpP2 = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_paola' && array_key_exists('discounts', $x['corpo'])));
-prova('…ritirato: sparisce subito dalla home; lo sconto promesso sul rinnovo decade e il coupon si toglie dall\'abbonamento', !str_contains($ospite->get('/')['body'], 'alle undici di sera')
+prova('…ritirata: sparisce subito dalla home; lo sconto promesso sul rinnovo decade e il coupon si toglie dall\'abbonamento', !str_contains($ospite->get('/')['body'], 'alle undici di sera')
       && val('SELECT withdrawn_at FROM testimonials WHERE id = ?', [$gid]) !== null && (string) val('SELECT giudizio_sconto_stato FROM accounts WHERE id = ?', [$pacc]) === 'nessuno'
       && !in_array('mhw-giudizio-5', array_map(fn($d) => (string) ($d['coupon'] ?? ''), (array) (end($cpP2)['corpo']['discounts'] ?? [])), true), json_encode(end($cpP2)['corpo'] ?? null));
-$admin->post("/admin/testimonianze/$gid/pubblica", []);
-prova('…e l\'amministrazione non lo può ripubblicare', !str_contains($ospite->get('/')['body'], 'alle undici di sera'));
+$admin->post('/admin/giudizi/' . (int) $paS['id'] . '/home', ['si' => '1']);
+prova('…e l\'amministrazione non la può riaccendere', !str_contains($ospite->get('/')['body'], 'alle undici di sera') && (int) val('SELECT scheda_home FROM vetrina_schede WHERE id = ?', [(int) $paS['id']]) === 0);
+// Da 1 a 3 stelle ci scriviamo: lo prova un altro host (Paola si è ritirata e non lascia più giudizi).
 $prima = count($posta('assistenza@welcomemyhouse.it'));
-$paola->post('/giudizio', ['rating' => '2', 'body' => 'Mi manca la possibilità di stampare tutta la guida.', 'photo_source' => 'nessuna']);
+db()->prepare('UPDATE vetrina_schede SET ritirato_at = NULL WHERE account_id = ?')->execute([$pacc]);
+db()->prepare('DELETE FROM testimonials WHERE account_id = ?')->execute([$pacc]);
+$paola->post('/giudizio', ['rating' => '2', 'body' => 'Mi manca la possibilità di stampare tutta la guida.']);
 $m = $posta('assistenza@welcomemyhouse.it'); $ult = end($m) ?: [];
 prova('7D · da 1 a 3 stelle: «Ti scriviamo» e un\'email a noi con il giudizio', count($m) === $prima + 1 && str_contains((string) ($ult['subject'] ?? ''), 'Giudizio da 2/5')
       && str_contains((string) $ult['text'], 'stampare tutta la guida'), json_encode($ult['subject'] ?? null));
+db()->prepare('UPDATE vetrina_schede SET ritirato_at = ? WHERE account_id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z'), $pacc]);
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
 
 
@@ -4459,7 +4464,8 @@ prova('7F · CSV: text/csv, BOM, punto e virgola, intestazioni', str_contains($p
 $tipi7f = array_filter(require "$DOVE/app/lang/tipologie.php", fn($tp) => !empty($tp['questionario']));   // 9K: le quattro tipologie (le pagine nuove hanno le loro prove)
 foreach (['robots.txt', 'sitemap.xml', 'llms.txt'] as $f) @unlink("$DOVE/$f");
 $campi7f = $campi6k;
-foreach (['home', 'domande', 'en', 'en-domande', 'termini', 'privacy', 'dpa', 'en-termini', 'en-privacy', 'en-dpa'] as $k) $campi7f["p_{$k}_indicizza"] = '1';
+foreach (['home', 'domande', 'en', 'en-domande', 'termini', 'privacy', 'dpa', 'en-termini', 'en-privacy', 'en-dpa', 'piano'] as $k) $campi7f["p_{$k}_indicizza"] = '1';
+$campi7f += ['p_piano_titolo' => 'Quale piano scegliere | MyHouse Welcome', 'p_piano_descrizione' => 'Tre domande, una risposta: lingue, sezioni e strutture. Ti diciamo quale piano di MyHouse Welcome ti basta, senza pagare per quello che non usi.'];
 foreach (['en' => 'Digital guest guide for holiday rentals | MyHouse Welcome', 'en-domande' => 'Frequently asked questions | MyHouse Welcome'] as $k => $t)
     $campi7f += ["p_{$k}_titolo" => $t, "p_{$k}_descrizione" => str_repeat('An English description for the test page. ', 2)];
 foreach (require "$DOVE/app/lang/tipologie.php" as $k => $tp) $campi7f += ["p_{$k}_indicizza" => '1', "p_{$k}_titolo" => $tp['titolo'], "p_{$k}_descrizione" => $tp['descrizione']];
@@ -4469,7 +4475,7 @@ foreach (['robots.txt', 'sitemap.xml', 'llms.txt'] as $f) if (!is_file("$DOVE/$f
 prova('7F · salvando «SEO e GEO»: robots.txt, sitemap.xml e llms.txt scritti accanto a index.php, uguali a quelli del sito', $fileOk
       && str_contains($adm6->segui($r)['body'], 'anche come file nella cartella principale del sito'));
 $sm7 = (string) @file_get_contents("$DOVE/sitemap.xml"); $ll7 = (string) @file_get_contents("$DOVE/llms.txt");
-prova('7F · le quattro pagine in sitemap (16 pagine in tutto con le legali della 8J e le due della 9K) e in llms.txt («Per chi è»)', substr_count($sm7, '<url>') === 16 && @simplexml_load_string($sm7) !== false
+prova('7F · le quattro pagine in sitemap (17 pagine in tutto con le legali della 8J, le due della 9K e /piano della 9L) e in llms.txt («Per chi è»)', substr_count($sm7, '<url>') === 17 && @simplexml_load_string($sm7) !== false
       && count(array_filter($tipi7f, fn($tp) => str_contains($sm7, '<loc>https://myhousewelcome.it' . $tp['percorso'] . '</loc>') && str_contains($ll7, '(https://myhousewelcome.it' . $tp['percorso'] . ')'))) === 4
       && str_contains($ll7, "## Per chi è"));
 $giudiziPubblicati = (int) val("SELECT COUNT(*) FROM testimonials WHERE visible = 1 AND (account_id IS NULL OR (status = 'pubblicata' AND consent_at IS NOT NULL AND withdrawn_at IS NULL))");
@@ -5099,12 +5105,13 @@ prova('9B · migrazione 044 una seconda volta: niente cambia', $m9b === 'fatto' 
 $r = $admin->get('/admin/impostazioni');
 prova('9B · Impostazioni → «Giudizi con sconto»: interruttore, percentuale, sezione in home', str_contains($r['body'], 'Giudizi con sconto') && str_contains($r['body'], 'name="giudizi__sconto_attivo"')
       && str_contains($r['body'], 'name="giudizi__percentuale"') && str_contains($r['body'], 'name="giudizi__home"'));
-prova('9B · Termini: punto 17 «Giudizio con sconto» dopo «Invita un amico», con le regole; in inglese «Review with discount»; Privacy t6 su base contratto (art. 6.1.b)',
+prova('9B/9L · Termini: punto 17 «Giudizio con sconto» dopo «Invita un amico», riscritto (9L); in inglese «Review with a discount»; Privacy t6 su base contratto (art. 6.1.b)',
       preg_match('#id="inviti".*id="giudizio-sconto".*13\. Traduzioni suggerite#s', $t9b = $ospite->get('/termini')['body']) === 1 && str_contains($t9b, '17. Giudizio con sconto')
-      && str_contains($t9b, 'Lo sconto non dipende dal voto') && str_contains($t9b, 'una sola casella') && str_contains($t9b, 'a nostra discrezione') && str_contains($t9b, 'decade se ritiri il giudizio prima del rinnovo')
-      && str_contains($ospite->get('/en/terms')['body'], '17. Review with discount') && str_contains($pv9b = $ospite->get('/privacy')['body'], 'art. 6.1.b): l&#039;adesione al programma')
+      && str_contains($t9b, 'Lo sconto non dipende dal voto') && str_contains($t9b, 'unica casella') && str_contains($t9b, 'a nostra discrezione') && str_contains($t9b, 'decade se ti ritiri prima del rinnovo')
+      && str_contains($t9b, 'da quando la pubblichi, anche prima del giudizio') && str_contains($ospite->get('/en/terms')['body'], '17. Review with a discount') && str_contains($pv9b = $ospite->get('/privacy')['body'], 'art. 6.1.b): l&#039;adesione al programma')
       && str_contains($pv9b, 'fino al ritiro o alla chiusura'));
-prova('9B · Testi e foto: la sezione «Cosa dicono di noi» con la nota obbligatoria', str_contains($r9b = $admin->get('/admin/testi')['body'], 'name="t_dicono_nota"') && str_contains($r9b, 'Cosa dicono di noi'));
+prova('9B/9L · Testi e foto: la sezione «Le guide dei nostri host» con la nota obbligatoria e la casella unica del programma', str_contains($r9b = $admin->get('/admin/testi')['body'], 'name="t_dicono_nota"')
+      && str_contains($r9b, 'Le guide dei nostri host') && str_contains($r9b, 'name="t_giudizio_casella"'));
 
 // Ugo: un cliente nuovo, Plus, che aderisce al pagamento. Prima: la casella, lo spiegone, il riepilogo che si aggiorna; poi il Checkout con il coupon del giudizio.
 $ugo = new Browser('ugo9b');
@@ -5122,9 +5129,9 @@ $ugo->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 
 $r = $ugo->get("/pannello/$pu/procedura/pubblica");
 prova('9B · passo Pubblica: la casella del giudizio (una sola, non spuntata) con lo spiegone e il link ai Termini; prezzo pieno 127 €', str_contains($r['body'], 'id="giudizio-sconto"')
       && substr_count($r['body'], 'name="giudizio_adesione"') === 1 && !str_contains($r['body'], 'name="giudizio_adesione" value="1" data-giudizio-casella style="margin-top:1px" checked')
-      && str_contains($r['body'], 'Sì, voglio il 5% in più: lascerò un giudizio.') && str_contains($r['body'], 'Lo sconto non dipende dal voto.') && str_contains($r['body'], '/termini#giudizio-sconto')
+      && str_contains($r['body'], 'Aderisco al programma «Giudizio con sconto» e ho il 5% di sconto.') && str_contains($r['body'], 'Lo sconto non dipende dal voto.') && str_contains($r['body'], '/termini#giudizio-sconto')
       && !str_contains($r['body'], 'Giudizio · ') && str_contains($r['body'], "Totale primo anno</span><b>127\u{00A0}€"));
-prova('9B · pannello prima di aderire: il riquadro «invito» (5% sul prossimo rinnovo) con «Partecipo»', str_contains($p9b = $ugo->get('/pannello')['body'], 'sul prossimo rinnovo, con un giudizio') && str_contains($p9b, 'name="partecipo"'));
+prova('9B · pannello prima di aderire: il riquadro «invito» (5% sul prossimo rinnovo) con «Aderisco»', str_contains($p9b = $ugo->get('/pannello')['body'], 'Giudizio con sconto: il 5% sul prossimo rinnovo') && str_contains($p9b, 'name="partecipo"'));
 $r = $ugo->post('/giudizio/adesione', ['giudizio_adesione' => '1', 'torna' => "/pannello/$pu/procedura/pubblica"]);
 $ua = riga('SELECT * FROM accounts WHERE id = ?', [$uacc]);
 prova('9B · spuntata (POST /giudizio/adesione): adesione «pagamento», sconto promesso, nel registro', $r['code'] === 302 && ($ua['giudizio_adesione'] ?? '') === 'pagamento' && ($ua['giudizio_sconto_stato'] ?? '') === 'promesso'
@@ -5153,33 +5160,37 @@ $r = inviaWebhook(['id' => 'evt_ugo_9b', 'type' => 'checkout.session.completed',
 $ua = riga('SELECT * FROM accounts WHERE id = ?', [$uacc]);
 prova('9B · webhook: abbonamento attivo, lo sconto del giudizio «applicato al primo anno»', $r['body'] === 'abbonamento-attivato' && ($ua['giudizio_sconto_stato'] ?? '') === 'applicato_primo_anno' && $ua['giudizio_sconto_at'] !== null, $r['body']);
 $r = $ugo->get('/pannello');
-prova('9B · pannello dopo il pagamento: riquadro «aderito» con «5% già applicato al primo anno» e «Dai il tuo giudizio»', str_contains($r['body'], '5% già applicato al primo anno') && str_contains($r['body'], '/giudizio">Dai il tuo giudizio') && !str_contains($r['body'], 'name="partecipo"'));
-$r = $ugo->get('/giudizio');
-prova('9B · modulo per chi ha aderito: nessuna casella del programma (già aderito), nessun chip (la guida non ha immagini), nessun consenso', $r['code'] === 200 && !str_contains($r['body'], 'name="partecipo"')
-      && !str_contains($r['body'], 'class="chip"') && !str_contains($r['body'], 'name="consenso"') && str_contains($r['body'], 'copertina, foto o logo'));
+prova('9B · pannello dopo il pagamento: riquadro «aderito» con «5% già applicato al primo anno» e il link al programma', str_contains($r['body'], '5% già applicato al primo anno') && str_contains($r['body'], '/giudizio">Giudizio con sconto') && !str_contains($r['body'], 'name="partecipo"'));
+$r = $ugo->get('/giudizio?scrivi=1');
+prova('9B/9L · la pagina del programma per chi ha aderito: nessuna casella, nessun chip (la guida non ha copertina né logo), nessun consenso; il modulo del giudizio', $r['code'] === 200 && !str_contains($r['body'], 'name="partecipo"')
+      && !str_contains($r['body'], 'class="chip"') && !str_contains($r['body'], 'name="consenso"') && str_contains($r['body'], 'Nella guida non ci sono ancora copertina e logo') && str_contains($r['body'], 'name="rating"'));
 $r = $ugo->post('/giudizio', ['rating' => '5', 'body' => 'La guida ha tolto di mezzo le domande sul parcheggio e sul Wi-Fi.', 'show_cover' => '1']);
 $gu = riga('SELECT * FROM testimonials WHERE account_id = ?', [$uacc]);
-prova('9B · giudizio salvato: «Grazie! Giudizio ricevuto», in attesa, non in home, con la data dell\'adesione e il testo della casella come prova; immagini non esistenti ignorate',
-      str_contains($r['body'], 'Grazie! Giudizio ricevuto') && str_contains($r['body'], 'non è ancora sulla nostra home') && $gu && $gu['status'] === 'in_attesa' && (int) $gu['home_visible'] === 0
-      && $gu['consent_at'] === $ua['giudizio_adesione_at'] && str_contains((string) $gu['consent_text'], 'Sì, voglio il 5% in più') && (int) $gu['show_cover'] === 0);
+prova('9B/9L · giudizio salvato: «Grazie! Giudizio ricevuto», da approvare, con la data dell\'adesione e il testo della casella unica come prova; immagini non esistenti ignorate',
+      str_contains($r['body'], 'Grazie! Giudizio ricevuto') && str_contains($r['body'], 'dopo la nostra approvazione') && $gu && $gu['status'] === 'in_attesa' && (int) $gu['home_visible'] === 0
+      && $gu['consent_at'] === $ua['giudizio_adesione_at'] && str_contains((string) $gu['consent_text'], 'Aderisco al programma «Giudizio con sconto»') && (int) $gu['show_cover'] === 0 && (int) $gu['show_photo'] === 0);
 $r = $ugo->get('/account');
-prova('9B · Account → Il tuo giudizio: «5% già applicato al primo anno», «non è ancora sulla nostra home», Modifica e Ritira', str_contains($r['body'], 'Il tuo giudizio su MyHouse Welcome')
-      && str_contains($r['body'], '5% già applicato al primo anno') && str_contains($r['body'], 'non è ancora sulla nostra home') && str_contains($r['body'], '/giudizio">Modifica</a>') && str_contains($r['body'], 'Ritira il giudizio'));
-$r = $ugo->get('/giudizio');
+prova('9B/9L · Account → Giudizio con sconto: «5% già applicato al primo anno» e il link alla pagina del programma', str_contains($r['body'], 'Giudizio con sconto')
+      && str_contains($r['body'], '5% già applicato al primo anno') && str_contains($r['body'], 'Apri Giudizio con sconto'));
+$r = $ugo->get('/giudizio?scrivi=1');
 $ugo->post('/giudizio', ['rating' => '4', 'body' => 'La guida ha tolto di mezzo le domande sul parcheggio e sul Wi-Fi. Consigliata.']);
-prova('9B · modifica finché non è in home: il modulo precompilato, la stessa riga aggiornata', str_contains($r['body'], 'Modifica il tuo giudizio.') && str_contains($r['body'], 'id="voto-5" value="5" checked')
+prova('9B · modifica: il modulo precompilato, la stessa riga aggiornata', str_contains($r['body'], 'Modifica il tuo giudizio') && str_contains($r['body'], 'id="voto-5" value="5" checked')
       && (int) val('SELECT COUNT(*) FROM testimonials WHERE account_id = ?', [$uacc]) === 1 && (int) val('SELECT rating FROM testimonials WHERE id = ?', [$gu['id']]) === 4);
-$r = $admin->get('/admin/giudizi?filtro=da_valutare');
-prova('9B · Amministrazione → Giudizi «Da valutare»: Ugo con adesione «Al pagamento», copertina no, sconto «Applicato al primo anno», interruttore spento', str_contains($r['body'], 'Ugo')
-      && str_contains($r['body'], 'Al pagamento') && str_contains($r['body'], 'Applicato al primo anno') && str_contains($r['body'], 'aria-checked="false" aria-label="In home: Ugo"'));
-$admin->post("/admin/giudizi/{$gu['id']}/home", ['si' => '1']);
+$r = $admin->get('/admin/giudizi?filtro=da_approvare');
+$uS = riga('SELECT * FROM vetrina_schede WHERE account_id = ?', [$uacc]);
+prova('9B/9L · Giudizi e vetrina «Da approvare»: Casa Ugo con adesione «al pagamento», sconto «Applicato al primo anno», interruttore spento', $uS && str_contains($r['body'], 'Casa Ugo')
+      && str_contains($r['body'], 'al pagamento') && str_contains($r['body'], 'Applicato al primo anno') && str_contains($r['body'], 'aria-checked="false" aria-label="In home: Casa Ugo"'));
+$r = $admin->segui($admin->post('/admin/giudizi/' . (int) $uS['id'] . '/home', ['si' => '1']));
+prova('9L · senza copertina la scheda non va in home', str_contains($r['body'], 'Non può andare in home: manca la copertina') && (int) val('SELECT scheda_home FROM vetrina_schede WHERE id = ?', [(int) $uS['id']]) === 0);
+$ugo->post("/pannello/$pu/aspetto", ['palette' => 'terracotta', 'text_tone' => 'scuro', 'cover' => file_(png(1600, 900), 'image/png')]);
+$admin->post('/admin/giudizi/' . (int) $uS['id'] . '/home', ['si' => '1']);
+$admin->post('/admin/giudizi/' . (int) $uS['id'] . '/giudizio', ['approva' => '1']);
 $h9b = $ospite->get('/')['body'];
-prova('9B · «In home»: la sezione mostra la scheda di Ugo (senza immagini: l\'iniziale), nessun link; il giudizio non si modifica più', str_contains($h9b, 'id="cosa-dicono"') && str_contains($h9b, 'domande sul parcheggio')
-      && preg_match('#<section id="cosa-dicono".*?</section>#s', $h9b, $sd9b) === 1 && !str_contains($sd9b[0], '<a ') && str_contains($sd9b[0], 'dicono-scheda__iniziale')
-      && str_contains($ugo->get('/giudizio')['body'], 'puoi solo ritirarlo') === false && str_contains($ugo->get('/giudizio')['body'], 'Il tuo giudizio è nella nostra home'));
-$admin->post("/admin/giudizi/{$gu['id']}/home", ['si' => '0']);
-prova('9B · tolto dalla home: sparisce; con nessun giudizio in home la sezione non c\'è nell\'HTML', (int) val('SELECT home_visible FROM testimonials WHERE id = ?', [$gu['id']]) === 0
-      && (int) val('SELECT COUNT(*) FROM testimonials WHERE home_visible = 1 AND withdrawn_at IS NULL') === 0 && !str_contains($ospite->get('/')['body'], 'id="cosa-dicono"'));
+prova('9B/9L · «In home»: la scheda di Ugo con la copertina e il giudizio approvato, nessun link, nessuna iniziale tonda', str_contains($h9b, 'id="cosa-dicono"') && str_contains($h9b, 'domande sul parcheggio')
+      && preg_match('#<section id="cosa-dicono".*?</section>#s', $h9b, $sd9b) === 1 && !str_contains($sd9b[0], '<a ') && !str_contains($sd9b[0], 'dicono-scheda__iniziale') && str_contains($sd9b[0], 'alt="Casa Ugo"'));
+$admin->post('/admin/giudizi/' . (int) $uS['id'] . '/home', ['si' => '0']);
+prova('9B · tolta dalla home: sparisce; con nessuna scheda accesa la sezione non c\'è nell\'HTML', (int) val('SELECT scheda_home FROM vetrina_schede WHERE id = ?', [(int) $uS['id']]) === 0
+      && !str_contains($ospite->get('/')['body'], 'id="cosa-dicono"'));
 
 // Nina (già pagata, abbonamento Stripe attivo): aderisce dal pannello; il coupon si aggiunge a quello degli inviti e resta quando gli inviti cambiano.
 db()->prepare("INSERT INTO referrals (referrer_account_id, friend_account_id, status, created_at, qualified_at) VALUES (?, ?, 'valido', ?, ?)")->execute([$nacc, $uacc, gmdate('Y-m-d\TH:i:s\Z'), gmdate('Y-m-d\TH:i:s\Z')]);
@@ -5188,7 +5199,7 @@ $subN = fn() => (array) (json_decode((string) file_get_contents("$STRIPE_DIR/sta
 prova('9B · prima: l\'abbonamento di Nina ha il coupon degli inviti (mhw-invito-5)', $subN() === ['mhw-invito-5'], json_encode($subN()));
 $r = $nina->post('/giudizio/partecipo', ['partecipo' => '1']);
 $na = riga('SELECT * FROM accounts WHERE id = ?', [$nacc]);
-prova('9B · «Partecipo» dal pannello: adesione «pannello», sconto promesso, si va al modulo', $r['code'] === 302 && str_contains($r['loc'], '/giudizio') && ($na['giudizio_adesione'] ?? '') === 'pannello' && ($na['giudizio_sconto_stato'] ?? '') === 'promesso');
+prova('9B/9L · «Aderisco» dal pannello: adesione «pannello», lo sconto subito sul prossimo rinnovo, si va alla pagina del programma', $r['code'] === 302 && str_contains($r['loc'], '/giudizio') && ($na['giudizio_adesione'] ?? '') === 'pannello' && ($na['giudizio_sconto_stato'] ?? '') === 'da_applicare_rinnovo');
 $nina->post('/giudizio', ['rating' => '5', 'body' => 'Con due strutture la guida mi fa risparmiare ore ogni settimana.', 'show_cover' => '1']);
 $na = riga('SELECT * FROM accounts WHERE id = ?', [$nacc]);
 prova('9B · giudizio di Nina: sconto «sul prossimo rinnovo» e il coupon del giudizio aggiunto INSIEME a quello degli inviti', ($na['giudizio_sconto_stato'] ?? '') === 'da_applicare_rinnovo'
@@ -5327,7 +5338,7 @@ $admin->get('/admin/omaggi'); $admin->post('/admin/omaggi', ['mesi' => '3', 'sca
 $codV9d = riga('SELECT * FROM codici_omaggio ORDER BY id DESC');
 prova('9D · POST /invito/verifica con un codice omaggio: mesi e primo addebito (per la registrazione senza ricaricare)', ($vis9d = new Browser('vis9d')) && $vis9d->get('/registrati') && ($j = json_decode($vis9d->post('/invito/verifica', ['codice' => $codV9d['codice']], ['Accept: application/json'])['body'] ?? '', true))
       && ($j['ok'] ?? false) && ($j['tipo'] ?? '') === 'omaggio' && ($j['mesi'] ?? 0) === 3, json_encode($j ?? null));
-// Il Checkout di Ida: 0 € oggi, trial_end, carta obbligatoria, solo il coupon del giudizio.
+// Il Checkout di Ida: 0 € oggi, trial_end, carta obbligatoria; 9L: con il codice omaggio niente giudizio con sconto al pagamento.
 $ida->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Ida', 'city' => 'Orvieto']);
 $pi = (int) val('SELECT id FROM properties WHERE account_id = ? ORDER BY id', [$iacc]);
 db()->prepare("UPDATE properties SET cin = 'IT054039C2IDA9D001' WHERE id = ?")->execute([$pi]);
@@ -5346,27 +5357,28 @@ $r = $ida->modulo("/pannello/$pi/procedura/pubblica", "/pannello/$pi/pubblica", 
 $ordI = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$iacc]);
 $sesI = array_values(array_filter(array_slice(richiesteStripe(), $prima9d), fn($x) => $x['percorso'] === '/v1/checkout/sessions' && $x['metodo'] === 'POST'))[0]['corpo'] ?? [];
 $statoI = json_decode((string) file_get_contents("$STRIPE_DIR/stato.json"), true);
-prova('9D · Checkout: trial_end = mezzanotte UTC di oggi + 3 mesi, carta obbligatoria (payment_method_collection=always, missing_payment_method=cancel), solo il coupon del giudizio, metadati omaggio, sessione a 0 €, ordine con il codice',
+prova('9D · Checkout: trial_end = mezzanotte UTC di oggi + 3 mesi, carta obbligatoria (payment_method_collection=always, missing_payment_method=cancel), nessun coupon (9L: niente giudizio con l\'omaggio), metadati omaggio, sessione a 0 €, ordine con il codice',
       $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/') && (string) ($sesI['subscription_data']['trial_end'] ?? '') === (string) $fine9d
       && ($sesI['payment_method_collection'] ?? '') === 'always' && ($sesI['subscription_data']['trial_settings']['end_behavior']['missing_payment_method'] ?? '') === 'cancel'
-      && count($sesI['discounts'] ?? []) === 1 && ($sesI['discounts'][0]['coupon'] ?? '') === 'mhw-giudizio-5' && ($sesI['metadata']['omaggio_codice'] ?? '') === $cod9d['codice'] && ($sesI['metadata']['omaggio_mesi'] ?? '') === '3'
-      && ($sesI['metadata']['sconti'] ?? '') === 'giudizio:5' && (int) ($statoI['sessioni'][$ordI['provider_session_id']]['amount_total'] ?? -1) === 0
+      && count($sesI['discounts'] ?? []) === 0 && ($sesI['metadata']['omaggio_codice'] ?? '') === $cod9d['codice'] && ($sesI['metadata']['omaggio_mesi'] ?? '') === '3'
+      && !str_contains((string) ($sesI['metadata']['sconti'] ?? ''), 'giudizio') && (int) ($statoI['sessioni'][$ordI['provider_session_id']]['amount_total'] ?? -1) === 0
+      && val('SELECT giudizio_adesione FROM accounts WHERE id = ?', [$iacc]) === null
       && (int) $ordI['codice_omaggio_id'] === (int) $cod9d['id'] && (int) $ordI['amount_cents'] === 12700 && $ordI['status'] === 'pending', json_encode([$sesI['subscription_data'] ?? null, $sesI['discounts'] ?? null]));
 // Il webhook: l'abbonamento nasce «trialing», la guida va online, il codice si brucia, la carta si ricorda.
-$statoI['subs']['sub_ida9d'] = ['cancel_at_period_end' => false, 'status' => 'trialing', 'start' => time(), 'end' => $fine9d, 'trial_end' => $fine9d, 'extra' => null, 'discounts' => ['mhw-giudizio-5'], 'last4' => '4242'];
+$statoI['subs']['sub_ida9d'] = ['cancel_at_period_end' => false, 'status' => 'trialing', 'start' => time(), 'end' => $fine9d, 'trial_end' => $fine9d, 'extra' => null, 'discounts' => [], 'last4' => '4242'];
 file_put_contents("$STRIPE_DIR/stato.json", json_encode($statoI));
 $r = inviaWebhook(['id' => 'evt_ida9d_ok', 'type' => 'checkout.session.completed', 'data' => ['object' => ['id' => $ordI['provider_session_id'], 'mode' => 'subscription', 'payment_status' => 'paid',
     'subscription' => 'sub_ida9d', 'customer' => 'cus_ida9d', 'metadata' => ['order_id' => (string) $ordI['id'], 'account_id' => (string) $iacc], 'total_details' => ['amount_discount' => 0]]]]);
 $subI = riga('SELECT * FROM subscriptions WHERE account_id = ? ORDER BY id DESC', [$iacc]);
 $cod9d = riga('SELECT * FROM codici_omaggio WHERE id = ?', [$cod9d['id']]);
 $ia = riga('SELECT * FROM accounts WHERE id = ?', [$iacc]);
-prova('9D · webhook: abbonamento «trialing» fino a fine omaggio, guida online, codice bruciato (usato da Ida), carta 4242, sconto del giudizio ancora «promesso» (si applica alla prima fattura)',
+prova('9D · webhook: abbonamento «trialing» fino a fine omaggio, guida online, codice bruciato (usato da Ida), carta 4242, nessuno sconto del giudizio (9L)',
       str_starts_with($r['body'], 'abbonamento-attivato') && $subI['status'] === 'trialing' && substr((string) $subI['current_period_end'], 0, 10) === gmdate('Y-m-d', $fine9d)
       && substr((string) $subI['omaggio_fino'], 0, 10) === gmdate('Y-m-d', $fine9d) && $subI['card_last4'] === '4242' && $cod9d['usato_at'] !== null && (int) $cod9d['usato_da_account_id'] === $iacc
-      && (string) val('SELECT status FROM properties WHERE id = ?', [$pi]) === 'published' && ($ia['giudizio_sconto_stato'] ?? '') === 'promesso', $r['body']);
+      && (string) val('SELECT status FROM properties WHERE id = ?', [$pi]) === 'published' && ($ia['giudizio_sconto_stato'] ?? '') === 'nessuno', $r['body']);
 $r = $ida->get('/account');
-prova('9D · Account: «In omaggio · Omaggio fino al … · poi 120,65 € + IVA l\'anno», carta •••• 4242, «Disattiva il rinnovo» con «fino al … la guida resta online e non paghi nulla»',
-      str_contains($r['body'], 'In omaggio') && str_contains($r['body'], "Omaggio fino al <b>$dataFine9d</b>") && str_contains($r['body'], "poi 120,65\u{00A0}€ + IVA l'anno")
+prova('9D · Account: «In omaggio · Omaggio fino al … · poi 127 € + IVA l\'anno», carta •••• 4242, «Disattiva il rinnovo» con «fino al … la guida resta online e non paghi nulla»',
+      str_contains($r['body'], 'In omaggio') && str_contains($r['body'], "Omaggio fino al <b>$dataFine9d</b>") && str_contains($r['body'], "poi 127\u{00A0}€ + IVA l'anno")
       && str_contains($r['body'], 'carta •••• 4242') && str_contains($r['body'], 'name="rinnovo" value="no">Disattiva il rinnovo</button>') && str_contains($r['body'], "Fino al $dataFine9d la guida resta online e non paghi nulla"));
 prova('9D · lo stesso codice da chi ha già pagato: «solo per i nuovi clienti»; da un altro: «già stato usato»; il link /omaggio da loggato rimanda ad Account',
       str_contains($ida->segui($ida->get('/omaggio/' . substr($cod9d['codice'], 8)))['body'], 'vale solo per i nuovi clienti')
@@ -5379,20 +5391,20 @@ db()->prepare("INSERT INTO email_optout (account_id, kind, created_at) VALUES (?
 $fra7 = gmdate('Y-m-d\TH:i:s\Z', time() + 7 * 86400 + 1800);
 db()->prepare('UPDATE subscriptions SET current_period_end = ?, omaggio_fino = ? WHERE id = ?')->execute([$fra7, $fra7, $subI['id']]);
 $statoI = json_decode((string) file_get_contents("$STRIPE_DIR/stato.json"), true);
-$statoI['upcoming']['sub_ida9d'] = ['subtotal' => 12700, 'total_excluding_tax' => 12065, 'total' => 14719, 'total_discount_amounts' => [['amount' => 635]]];
+$statoI['upcoming']['sub_ida9d'] = ['subtotal' => 12700, 'total_excluding_tax' => 12700, 'total' => 15494, 'total_discount_amounts' => []];
 file_put_contents("$STRIPE_DIR/stato.json", json_encode($statoI));
 $primaPosta = count(righePosta() ?: []);
 $cron9d = $cron();
 $posta9d = array_values(array_filter(array_map(fn($l) => json_decode($l, true), array_slice(righePosta() ?: [], $primaPosta)), fn($m) => ($m['to'] ?? '') === 'ida9d@prova.test'));
 $m7 = $posta9d[0] ?? [];
-prova('9D · a 7 giorni dalla fine dell\'omaggio: l\'email «Tra 7 giorni finisce la tua prova gratuita» con piano, 120,65 € + IVA da Stripe, carta 4242, parte anche con gli avvisi disattivati e lo dice nel piè',
+prova('9D · a 7 giorni dalla fine dell\'omaggio: l\'email «Tra 7 giorni finisce la tua prova gratuita» con piano, 127 € + IVA da Stripe, carta 4242, parte anche con gli avvisi disattivati e lo dice nel piè',
       ($cron9d['email']['rinnovo'] ?? 0) >= 1 && count($posta9d) === 1 && str_contains((string) ($m7['subject'] ?? ''), 'Tra 7 giorni finisce la tua prova gratuita')
-      && str_contains((string) ($m7['text'] ?? ''), "la tua prova gratuita finisce il " . dataIt($fra7) . ": da quel giorno parte l'abbonamento Plus a 120,65\u{00A0}€ + IVA l'anno, sulla carta che termina con 4242")
-      && str_contains((string) ($m7['text'] ?? ''), 'Hai uno sconto del 5%') && str_contains((string) ($m7['text'] ?? ''), 'non si può disattivare')
+      && str_contains((string) ($m7['text'] ?? ''), "la tua prova gratuita finisce il " . dataIt($fra7) . ": da quel giorno parte l'abbonamento Plus a 127\u{00A0}€ + IVA l'anno, sulla carta che termina con 4242")
+      && str_contains((string) ($m7['text'] ?? ''), 'non si può disattivare')
       && (string) val("SELECT ref FROM email_log WHERE account_id = ? AND kind = 'rinnovo' ORDER BY id DESC", [$iacc]) === $subI['id'] . '-' . substr($fra7, 0, 10) . '-7', json_encode($m7));
 $r = $ida->get('/pannello');
-prova('9D · nel pannello la fascia in evidenza: «La tua prova gratuita finisce il …», 120,65 € + IVA, carta •••• 4242, «Disattiva il rinnovo»; «Chiudi» la nasconde per 24 ore (cookie)',
-      preg_match('/class="fascia fascia--omaggio fascia--evidenza"/', $r['body']) === 1 && str_contains($r['body'], 'La tua prova gratuita finisce il ' . dataIt($fra7)) && str_contains($r['body'], "120,65\u{00A0}€ + IVA")
+prova('9D · nel pannello la fascia in evidenza: «La tua prova gratuita finisce il …», 127 € + IVA, carta •••• 4242, «Disattiva il rinnovo»; «Chiudi» la nasconde per 24 ore (cookie)',
+      preg_match('/class="fascia fascia--omaggio fascia--evidenza"/', $r['body']) === 1 && str_contains($r['body'], 'La tua prova gratuita finisce il ' . dataIt($fra7)) && str_contains($r['body'], "127\u{00A0}€ + IVA")
       && str_contains($r['body'], 'carta •••• 4242') && str_contains($r['body'], '>Disattiva il rinnovo</button>') && str_contains($ida->get('/account')['body'], 'fascia--evidenza')
       && $ida->post('/pannello/avviso-rinnovo/chiudi', ['torna' => '/pannello'])['code'] === 302 && !str_contains($ida->get('/pannello')['body'], 'class="fascia'));
 $fra30 = gmdate('Y-m-d\TH:i:s\Z', time() + 30 * 86400 + 1800);
@@ -5411,13 +5423,13 @@ $primaPosta = count(righePosta() ?: []); $cron();
 $mU = array_values(array_filter(array_map(fn($l) => json_decode($l, true), array_slice(righePosta() ?: [], $primaPosta)), fn($m) => ($m['to'] ?? '') === 'ugo9b@prova.test'))[0] ?? [];
 prova('9D · per tutti: Ugo a 7 giorni dal rinnovo riceve «Tra 7 giorni rinnoviamo il tuo abbonamento» con l\'importo e «disattiva il rinnovo entro il …»', str_contains((string) ($mU['subject'] ?? ''), 'Tra 7 giorni rinnoviamo il tuo abbonamento')
       && str_contains((string) ($mU['text'] ?? ''), 'il tuo abbonamento Plus si rinnova il ' . dataIt($fra7) . ': addebiteremo') && str_contains((string) ($mU['text'] ?? ''), 'disattiva il rinnovo da Account & Fatturazione entro il'), json_encode($mU));
-// La fine dell'omaggio: la prima fattura con lo sconto del giudizio.
+// La fine dell'omaggio: la prima fattura, a prezzo pieno (9L: con l'omaggio niente giudizio con sconto al pagamento).
 db()->prepare('UPDATE subscriptions SET current_period_end = ?, omaggio_fino = ? WHERE id = ?')->execute([$fine9d ? gmdate('Y-m-d\TH:i:s\Z', $fine9d) : $fra30, gmdate('Y-m-d\TH:i:s\Z', $fine9d), $subI['id']]);
 $r = inviaWebhook(['id' => 'evt_ida9d_fattura', 'type' => 'invoice.paid', 'data' => ['object' => ['id' => 'in_ida9d_1', 'customer' => 'cus_ida9d', 'subscription' => 'sub_ida9d', 'billing_reason' => 'subscription_cycle',
-    'subtotal' => 12700, 'total_excluding_tax' => 12065, 'total_discount_amounts' => [['amount' => 635]], 'lines' => ['data' => [['period' => ['start' => $fine9d, 'end' => $fine9d + 365 * 86400], 'price' => ['id' => 'price_finto_annuale']]]]]]]);
+    'subtotal' => 12700, 'total_excluding_tax' => 12700, 'total_discount_amounts' => [], 'lines' => ['data' => [['period' => ['start' => $fine9d, 'end' => $fine9d + 365 * 86400], 'price' => ['id' => 'price_finto_annuale']]]]]]]);
 $ia = riga('SELECT * FROM accounts WHERE id = ?', [$iacc]);
-prova('9D · la prima fattura a fine omaggio: abbonamento attivo per un anno, lo sconto del giudizio «applicato al primo anno»', str_starts_with($r['body'], 'rinnovo-pagato')
-      && (string) val('SELECT status FROM subscriptions WHERE id = ?', [$subI['id']]) === 'active' && ($ia['giudizio_sconto_stato'] ?? '') === 'applicato_primo_anno', $r['body']);
+prova('9D · la prima fattura a fine omaggio: abbonamento attivo per un anno, nessuno sconto del giudizio', str_starts_with($r['body'], 'rinnovo-pagato')
+      && (string) val('SELECT status FROM subscriptions WHERE id = ?', [$subI['id']]) === 'active' && ($ia['giudizio_sconto_stato'] ?? '') === 'nessuno', $r['body']);
 prova('9D · trial_will_end: solo nel registro', str_starts_with(inviaWebhook(['id' => 'evt_ida9d_twe', 'type' => 'customer.subscription.trial_will_end', 'data' => ['object' => ['id' => 'sub_ida9d', 'trial_end' => $fine9d]]])['body'], 'fine-omaggio-in-arrivo')
       && (bool) val("SELECT id FROM audit_log WHERE action = 'subscription.trial_will_end'"));
 // Annulla un codice prenotato: non vale più nemmeno per Leo.
@@ -6180,6 +6192,196 @@ file_put_contents("$STRIPE_DIR/endpoints.json", json_encode([['id' => 'we_1', 'u
 $r = $admin->segui($admin->post('/admin/impostazioni/stripe/prova', []));
 prova('Recupero · …con l\'endpoint giusto: «c\'è, è attivo e ha gli eventi principali»', str_contains($r['body'], 'è attivo e ha gli eventi principali'));
 @unlink("$STRIPE_DIR/endpoints.json"); @unlink("$STRIPE_DIR/eventi.json");
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'impostazioni%'");
+
+// ======================================================================= 9L
+capitolo('9L · finestra «Qual è il piano giusto per te?», foto nuove, Casa Checco, 55%, «Giudizio con sconto» unico con «Le guide dei nostri host»');
+// 1 · La home: le tre schede dei piani come prima, la riga «Non sai quale scegliere?» con il <dialog> e lo stesso questionario.
+$rH9l = $ospite->get('/');
+prova('9L · home: «Non sai quale scegliere?» nella riga di «Confronta tutti i piani», link a /piano con data-q-apri, <dialog> con il questionario (stesso partial, data-origine="home")',
+      str_contains($rH9l['body'], 'class="piani__riga"') && str_contains($rH9l['body'], 'Non sai quale scegliere?') && preg_match('#href="[^"]*/piano" data-q-apri aria-haspopup="dialog">Rispondi a 3 domande#', $rH9l['body']) === 1
+      && str_contains($rH9l['body'], '<dialog class="finestra-piano" aria-labelledby="piano-giusto-titolo">') && str_contains($rH9l['body'], 'class="questionario questionario--finestra" data-questionario data-origine="home"')
+      && substr_count($rH9l['body'], 'questionario.js') === 1 && substr_count($rH9l['body'], 'class="plan ') + substr_count($rH9l['body'], 'class="plan"') >= 3);
+prova('9L · /en senza la finestra (il questionario è in italiano)', !str_contains($ospite->get('/en')['body'], 'finestra-piano'));
+$rP9l = $ospite->get('/piano');
+prova('9L · /piano senza accesso: «Quale piano scegliere | MyHouse Welcome», il questionario come modulo GET su /piano, h1, indicizzabile', $rP9l['code'] === 200 && pulita($rP9l)
+      && str_contains($rP9l['body'], '<title>Quale piano scegliere | MyHouse Welcome</title>') && preg_match('#<form method="get" action="[^"]*/piano\#piano-giusto"#', $rP9l['body']) === 1
+      && str_contains($rP9l['body'], '<h1 id="piano-giusto-titolo"') && str_contains($rP9l['body'], 'data-origine="piano"') && !str_contains($rP9l['body'], 'noindex'));
+$rP9l = $ospite->get('/piano?d1=no&d2=si&d3=si');
+prova('9L · /piano senza JavaScript: con le tre risposte l\'esito Plus e «Crea gratis con Plus» con il piano preselezionato', preg_match('#data-q-esito="plus"(?![^>]*hidden)#', $rP9l['body']) === 1
+      && str_contains($rP9l['body'], 'registrati?piano=' . pv('plus')) && str_contains($rP9l['body'], 'Crea gratis con Plus'));
+prova('9L · /piano in sitemap; con ?piano=… resta la scelta del piano (accesso)', str_contains($ospite->get('/sitemap.xml')['body'], '/piano</loc>') && $ospite->get('/piano?piano=' . pv('plus'))['code'] === 302);
+$js9l = (string) file_get_contents("$DOVE/assets/questionario.js");
+prova('9L · questionario.js: showModal, chiusura con il clic sullo sfondo, pagina ferma (position: fixed), evento «piano_test» con piano e origine',
+      str_contains($js9l, 'finestra.showModal()') && str_contains($js9l, 'e.target === finestra') && str_contains($js9l, "corpo.style.position = 'fixed'")
+      && str_contains($js9l, "mhwStatistiche.evento('piano_test'"));
+// 2/3 · Le foto.
+$css9l = (string) file_get_contents("$DOVE/assets/app.css");
+prova('9L · foto: le tre tipologie nuove (JPEG e WebP sotto 300 KB, 1600 px) nell\'hero e nelle schede «Per chi è»; Casa Checco verticale e orizzontale; il borgo non c\'è più',
+      is_file("$DOVE/assets/foto/tipo-bed-and-breakfast.jpg") && is_file("$DOVE/assets/foto/tipo-agriturismi.webp") && is_file("$DOVE/assets/foto/tipo-property-manager.jpg")
+      && filesize("$DOVE/assets/foto/tipo-agriturismi.jpg") < 300000 && filesize("$DOVE/assets/foto/tipo-bed-and-breakfast.jpg") < 300000
+      && str_contains($ospite->get('/agriturismi')['body'], 'tipo-agriturismi.webp') && str_contains($ospite->get('/property-manager')['body'], 'tipo-property-manager.jpg')
+      && is_file("$DOVE/assets/foto/checco-orizzontale.jpg") && getimagesize("$DOVE/assets/foto/checco-copertina.jpg")[1] > getimagesize("$DOVE/assets/foto/checco-copertina.jpg")[0]
+      && str_contains($rH9l['body'], 'checco-telefono.jpg') && !is_file("$DOVE/assets/foto/borgo.jpg") && !str_contains($rH9l['body'], 'borgo') && !str_contains($css9l, 'borgo-telefono'));
+// 4 · Il 55%.
+prova('9L · il 55% grande in serif con «Fino al 55% di sconto a partire dal prossimo anno» in home (Porta un amico) e nel questionario; «Come funziona» alla FAQ degli inviti',
+      str_contains($rH9l['body'], '<span class="risparmio__cifra" aria-hidden="true">55%</span>') && str_contains($rH9l['body'], 'Fino al 55% di sconto a partire dal prossimo anno.')
+      && str_contains($rH9l['body'], 'fino al 50% con 10 amici') && str_contains($rH9l['body'], '#faq-porta-amico">Come funziona') && str_contains($rH9l['body'], 'Il prossimo anno fino al <span class="amico__cifra">55%</span> in meno.'));
+prova('9L · FAQ: il 55% in «Porta un amico» e le tre domande del programma', str_contains($rD9l = $ospite->get('/domande')['body'], 'fino al 55% di sconto a partire dal prossimo anno')
+      && str_contains($rD9l, 'Cos&#039;è il programma «Giudizio con sconto»?') && str_contains($rD9l, 'La mia guida compare sul sito di MyHouse Welcome?') && str_contains($rD9l, 'Posso ritirarmi dal programma?'));
+prova('9L · /en allineato: «Up to 55% off from next year»', str_contains($ospite->get('/en')['body'], 'Up to 55% off from next year.'));
+
+// 5 · Il programma. Tre host con la copertina: Lia aderisce al pagamento, Teo dal pannello, Sara al pagamento.
+$host9l = function (string $nome, string $email, string $cf, string $citta) use ($accDi) {
+    $b = new Browser('h9l-' . strtolower($nome));
+    db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+    $b->get('/registrati?piano=' . pv('plus'));
+    $b->post('/registrati', ['piano' => pv('plus'), 'name' => $nome . ' Vetrina', 'email' => $email, 'email2' => $email, 'password' => 'Vetrina9L-2026', 'termini' => '1']);
+    $acc = $accDi($email);
+    $l = linkPosta($email, 'verifica'); $b->get(substr($l, strpos($l, '/verifica/')));
+    $b->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa ' . $nome, 'city' => $citta]);
+    $pid = (int) val('SELECT id FROM properties WHERE account_id = ? ORDER BY id', [$acc]);
+    db()->prepare("UPDATE properties SET cin = ?, province = 'PG' WHERE id = ?")->execute(['IT054050C2' . strtoupper(substr($nome, 0, 3)) . '9L001', $pid]);
+    $b->post("/pannello/$pid/sezioni/" . (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$pid]), ['checkin_steps' => ['Suona al citofono.']]);
+    $b->post("/pannello/$pid/aspetto", ['palette' => 'terracotta', 'text_tone' => 'scuro', 'cover' => file_(png(1600, 900), 'image/png')]);
+    $b->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => $nome . ' Vetrina', 'cf' => $cf, 'billing_address' => 'Via ' . $nome . ' 1', 'billing_postal' => '06049', 'billing_city' => $citta, 'billing_province' => 'PG']);
+    return [$b, $acc, $pid];
+};
+$paga9l = function (Browser $b, int $acc, int $pid, bool $casella, string $sub) {
+    $b->segui($b->modulo("/pannello/$pid/procedura/pubblica", "/pannello/$pid/pubblica", ['acquirente' => 'impresa'] + ($casella ? ['giudizio_casella' => '1', 'giudizio_adesione' => '1'] : [])));
+    $o = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$acc]);
+    $r = inviaWebhook(['id' => 'evt_' . $sub, 'type' => 'checkout.session.completed', 'data' => ['object' => [
+        'id' => $o['provider_session_id'], 'mode' => 'subscription', 'payment_status' => 'paid', 'customer' => 'cus_' . $sub, 'subscription' => $sub,
+        'client_reference_id' => (string) $o['id'], 'total_details' => ['amount_discount' => $casella ? 635 : 0], 'metadata' => ['order_id' => (string) $o['id'], 'account_id' => (string) $acc, 'sconti' => (string) $o['sconti']]]]]);
+    return [$o, $r];
+};
+[$lia, $liaAcc, $liaPid] = $host9l('Lia', 'lia9l@prova.test', 'VTRLIA85A41G478H', 'Spello');
+$r = $lia->get("/pannello/$liaPid/procedura/pubblica");
+prova('9L · 1 · al pagamento la casella unica di «Testi e foto» (giudizio.casella): «Aderisco al programma… ho il 5% di sconto», «nessuna mia foto», «Impostazioni → Giudizio con sconto»',
+      str_contains($r['body'], '<b>Aderisco al programma «Giudizio con sconto» e ho il 5% di sconto.</b>') && str_contains($r['body'], 'Nessun link alla guida, nessuna mia foto.')
+      && str_contains($r['body'], 'Posso ritirarmi quando voglio da Impostazioni → Giudizio con sconto.') && !str_contains($r['body'], 'la mia foto e il logo'));
+$prima9l = count(richiesteStripe());
+[$liaOrd, $r] = $paga9l($lia, $liaAcc, $liaPid, true, 'sub_prova_lia9l');
+$ses9l = array_values(array_filter(array_slice(richiesteStripe(), $prima9l), fn($x) => $x['percorso'] === '/v1/checkout/sessions' && $x['metodo'] === 'POST'))[0]['corpo'] ?? [];
+$la = riga('SELECT * FROM accounts WHERE id = ?', [$liaAcc]);
+prova('9L · 1 · pagamento con la casella: ordine con «giudizio:5», coupon mhw-giudizio-5 su Stripe, 5% applicato al primo anno, guida pubblicata', $r['body'] === 'abbonamento-attivato'
+      && $liaOrd['sconti'] === 'giudizio:5' && ($ses9l['discounts'][0]['coupon'] ?? '') === 'mhw-giudizio-5' && $la['giudizio_adesione'] === 'pagamento'
+      && $la['giudizio_sconto_stato'] === 'applicato_primo_anno' && val('SELECT status FROM properties WHERE id = ?', [$liaPid]) === 'published', $r['body']);
+$rA = $admin->get('/admin/giudizi?filtro=da_approvare');
+$liaS = riga('SELECT * FROM vetrina_schede WHERE account_id = ?', [$liaAcc]);
+prova('9L · 1 · la scheda c\'è, «da approvare», spenta; non è in home', $liaS && (int) $liaS['scheda_home'] === 0 && $liaS['property_id'] == $liaPid && str_contains($rA['body'], 'Casa Lia')
+      && str_contains($rA['body'], 'Scheda da approvare') && !str_contains($ospite->get('/')['body'], 'Casa Lia'));
+$r = $admin->post('/admin/giudizi/' . (int) $liaS['id'] . '/home', ['si' => '1']);
+$rH = $ospite->get('/');
+$sez9l = preg_match('#<section id="cosa-dicono".*?</section>#s', $rH['body'], $m9l) ? $m9l[0] : '';
+prova('9L · 1 · accesa: in home «Le guide dei nostri host» con «Guida online da …», la copertina, il nome e «Casa Lia · Spello (PG)»; nessun link, nessuna foto dell\'host',
+      $sez9l !== '' && str_contains($sez9l, 'Le guide dei nostri host') && str_contains($sez9l, 'Host veri, ospiti più sereni.') && str_contains($sez9l, 'Guida online da ')
+      && str_contains($sez9l, 'alt="Casa Lia"') && str_contains($sez9l, '<b>Lia</b>') && str_contains($sez9l, 'Casa Lia · Spello (PG)') && !str_contains($sez9l, '<a ')
+      && !str_contains($sez9l, 'Foto di') && !str_contains($sez9l, 'dicono-scheda__iniziale') && str_contains($sez9l, 'qualunque voto diano. Pubblicate con il loro accordo, senza link alle guide.'));
+prova('9L · 1 · il registro dice tutto con il codice cliente', (bool) val("SELECT id FROM audit_log WHERE action = 'vetrina.home' AND meta LIKE ?", ['%"account_id":' . $liaAcc . ',"codice":"MW-%']));
+
+// 2 · Teo paga senza la casella e aderisce dopo, dal pannello: sconto sul rinnovo, coupon sull'abbonamento, scheda subito in elenco.
+[$teo, $teoAcc, $teoPid] = $host9l('Teo', 'teo9l@prova.test', 'VTRTEO85A01G478P', 'Bevagna');
+$paga9l($teo, $teoAcc, $teoPid, false, 'sub_prova_teo9l');
+$r = $teo->get('/giudizio');
+prova('9L · 2 · pannello «Giudizio con sconto» per chi non ha aderito: la stessa casella e «Aderisco»; la voce nella barra laterale', str_contains($r['body'], 'Aderisco al programma «Giudizio con sconto» e ho il 5% di sconto.')
+      && str_contains($r['body'], '>Aderisco</button>') && str_contains($r['body'], '<span>Giudizio con sconto</span>'));
+$prima9l = count(richiesteStripe());
+$teo->post('/giudizio/partecipo', ['partecipo' => '1']);
+$ta = riga('SELECT * FROM accounts WHERE id = ?', [$teoAcc]);
+$sub9l = array_values(array_filter(array_slice(richiesteStripe(), $prima9l), fn($x) => $x['percorso'] === '/v1/subscriptions/sub_prova_teo9l' && $x['metodo'] === 'POST'));
+prova('9L · 2 · adesione dal pannello: «pannello», sconto sul rinnovo (da_applicare_rinnovo), coupon mhw-giudizio-5 sull\'abbonamento Stripe, scheda subito in elenco',
+      $ta['giudizio_adesione'] === 'pannello' && $ta['giudizio_sconto_stato'] === 'da_applicare_rinnovo' && $sub9l && in_array('mhw-giudizio-5', array_values(array_filter((array) ($sub9l[0]['corpo']['discounts'] ?? []), 'is_array')) ? array_column($sub9l[0]['corpo']['discounts'], 'coupon') : [], true)
+      && (bool) val('SELECT id FROM vetrina_schede WHERE account_id = ?', [$teoAcc]) && str_contains($admin->get('/admin/giudizi')['body'], 'Casa Teo'), json_encode($sub9l[0]['corpo'] ?? null));
+$r = $teo->get('/giudizio');
+prova('9L · 2 · la pagina del programma: data di adesione, «La tua scheda su welcomemyhouse.it» con l\'Anteprima, «Immagini mostrate», «Il tuo giudizio» con la data, «Ritirarsi dal programma»',
+      str_contains($r['body'], 'Hai aderito il ') && str_contains($r['body'], 'La tua scheda su welcomemyhouse.it') && str_contains($r['body'], 'Senza link, senza la tua foto.')
+      && str_contains($r['body'], '>Anteprima</summary>') && str_contains($r['body'], 'Immagini mostrate') && str_contains($r['body'], 'name="copertina" value="1" checked')
+      && str_contains($r['body'], 'Te lo chiediamo 30 giorni dopo la pubblicazione (il ') && str_contains($r['body'], 'Ritirarsi dal programma') && !str_contains($r['body'], 'La mia foto'));
+
+// 3 · Il giudizio di Lia, anche con una stella: da approvare, lo sconto non cambia; approvato va sulla scheda, con la risposta pubblica.
+$lia->post('/giudizio', ['rating' => '1', 'body' => 'Le traduzioni andavano riviste, ma gli ospiti la usano tutti.']);
+$lg = riga('SELECT * FROM testimonials WHERE account_id = ? ORDER BY id DESC', [$liaAcc]);
+$rA = $admin->get('/admin/giudizi?filtro=segnalati');
+prova('9L · 3 · giudizio da 1 stella: «da approvare», segnalato, lo sconto resta «applicato al primo anno», non ancora sulla scheda', $lg && $lg['status'] === 'in_attesa' && (int) $lg['show_photo'] === 0
+      && str_contains($rA['body'], 'Casa Lia') && str_contains($rA['body'], 'Segnalato') && val('SELECT giudizio_sconto_stato FROM accounts WHERE id = ?', [$liaAcc]) === 'applicato_primo_anno'
+      && !str_contains($ospite->get('/')['body'], 'Le traduzioni andavano riviste'));
+$admin->post('/admin/giudizi/' . (int) $liaS['id'] . '/giudizio', ['approva' => '1']);
+$admin->post('/admin/giudizi/' . (int) $liaS['id'] . '/risposta', ['testo' => 'Grazie Lia: le traduzioni ora si rivedono campo per campo.']);
+$admin->post('/admin/giudizi/' . (int) $liaS['id'] . '/nota', ['testo' => 'Richiamata il 20/10.']);
+$rH = $ospite->get('/');
+prova('9L · 3 · approvato: sulla scheda le stelle ocra e il commento, sotto la risposta pubblica; la nota interna no', str_contains($rH['body'], '★☆☆☆☆') && str_contains($rH['body'], '«Le traduzioni andavano riviste, ma gli ospiti la usano tutti.»')
+      && str_contains($rH['body'], 'Grazie Lia: le traduzioni ora si rivedono campo per campo.') && !str_contains($rH['body'], 'Richiamata il 20/10.')
+      && str_contains($admin->get('/admin/giudizi/' . (int) $liaS['id'])['body'], 'Richiamata il 20/10.'));
+prova('9L · 3 · Amministrazione: filtri con i conteggi, i quattro numeri, «Esporta CSV» (BOM e punto e virgola)', str_contains($rA['body'], 'In home · ') && str_contains($rA['body'], 'Da approvare · ')
+      && str_contains($rA['body'], 'Aderenti') && str_contains($rA['body'], 'Giudizi arrivati') && str_starts_with($csv9l = $admin->get('/admin/giudizi?formato=csv')['body'], "\xEF\xBB\xBFCodice cliente;Host;") && str_contains($csv9l, 'Casa Lia'));
+
+// 5 · Spegnimento da solo: Sara (copertina, poi guida archiviata, poi abbonamento scaduto).
+[$sara, $saraAcc, $saraPid] = $host9l('Sara', 'sara9l@prova.test', 'VTRSAR85A41G478N', 'Assisi');
+$paga9l($sara, $saraAcc, $saraPid, true, 'sub_prova_sara9l');
+$admin->get('/admin/giudizi');
+$saraS = riga('SELECT * FROM vetrina_schede WHERE account_id = ?', [$saraAcc]);
+$admin->post('/admin/giudizi/' . (int) $saraS['id'] . '/home', ['si' => '1']);
+$prima = str_contains($ospite->get('/')['body'], 'Casa Sara');
+$sara->post('/giudizio/immagini', ['invia' => '1', 'logo' => '1']);   // tolta la copertina
+$admin->get('/admin/giudizi');
+$dopoCop = riga('SELECT * FROM vetrina_schede WHERE account_id = ?', [$saraAcc]);
+prova('9L · 5 · copertina tolta dall\'host: la scheda si spegne da sola («manca la copertina») e sparisce dalla home', $prima && (int) $dopoCop['scheda_home'] === 0 && $dopoCop['sospesa'] === 'copertina'
+      && !str_contains($ospite->get('/')['body'], 'Casa Sara'));
+$sara->post('/giudizio/immagini', ['invia' => '1', 'copertina' => '1', 'logo' => '1']);
+$admin->post('/admin/giudizi/' . (int) $saraS['id'] . '/home', ['si' => '1']);
+db()->prepare("UPDATE properties SET archived_at = ? WHERE id = ?")->execute([gmdate('Y-m-d\TH:i:s\Z'), $saraPid]);
+$admin->get('/admin/giudizi');
+prova('9L · 5 · guida archiviata: spenta («archiviata»), non riaccendibile finché è archiviata', val('SELECT sospesa FROM vetrina_schede WHERE account_id = ?', [$saraAcc]) === 'archiviata'
+      && (int) val('SELECT scheda_home FROM vetrina_schede WHERE account_id = ?', [$saraAcc]) === 0
+      && str_contains($admin->segui($admin->post('/admin/giudizi/' . (int) $saraS['id'] . '/home', ['si' => '1']))['body'], 'Non può andare in home: guida archiviata'));
+db()->prepare("UPDATE properties SET archived_at = NULL WHERE id = ?")->execute([$saraPid]);
+$admin->post('/admin/giudizi/' . (int) $saraS['id'] . '/home', ['si' => '1']);
+db()->prepare("UPDATE subscriptions SET status = 'canceled', current_period_end = ? WHERE account_id = ?")->execute([gmdate('Y-m-d\TH:i:s\Z', time() - 40 * 86400), $saraAcc]);
+$cron();
+prova('9L · 5 · abbonamento scaduto: i richiami spengono la scheda («scaduto») e lo scrivono nel registro', val('SELECT sospesa FROM vetrina_schede WHERE account_id = ?', [$saraAcc]) === 'scaduto'
+      && (bool) val("SELECT id FROM audit_log WHERE action = 'vetrina.spenta' AND meta LIKE ?", ['%"account_id":' . $saraAcc . ',%']));
+
+// 4 · Il ritiro: Lia (sconto già avuto, resta) e Teo (sconto promesso sul rinnovo, decade e il coupon esce dall'abbonamento).
+$admin->post('/admin/giudizi/' . (int) riga('SELECT id FROM vetrina_schede WHERE account_id = ?', [$teoAcc])['id'] . '/home', ['si' => '1']);
+$lia->post('/giudizio/ritira', ['conferma' => '1']);
+$rH = $ospite->get('/');
+prova('9L · 4 · Lia si ritira: scheda e giudizio spariscono subito dalla home; lo sconto già avuto resta', !str_contains($rH['body'], 'Casa Lia') && !str_contains($rH['body'], 'Le traduzioni andavano riviste')
+      && val('SELECT ritirato_at FROM vetrina_schede WHERE account_id = ?', [$liaAcc]) !== null && val('SELECT withdrawn_at FROM testimonials WHERE account_id = ? ORDER BY id DESC', [$liaAcc]) !== null
+      && val('SELECT giudizio_sconto_stato FROM accounts WHERE id = ?', [$liaAcc]) === 'applicato_primo_anno' && str_contains($rH['body'], 'Casa Teo'));
+$prima9l = count(richiesteStripe());
+$teo->post('/giudizio/ritira', ['conferma' => '1']);
+$tolto = array_values(array_filter(array_slice(richiesteStripe(), $prima9l), fn($x) => $x['percorso'] === '/v1/subscriptions/sub_prova_teo9l' && $x['metodo'] === 'POST'));
+prova('9L · 4 · Teo si ritira prima del rinnovo: lo sconto promesso decade («nessuno») e il coupon esce dall\'abbonamento; la sezione in home sparisce (nessuna scheda accesa)',
+      val('SELECT giudizio_sconto_stato FROM accounts WHERE id = ?', [$teoAcc]) === 'nessuno' && $tolto && !str_contains(json_encode($tolto[0]['corpo'] ?? []), 'mhw-giudizio')
+      && !str_contains($ospite->get('/')['body'], 'id="cosa-dicono"'));
+prova('9L · 4 · dopo il ritiro la casella non torna e il giudizio non si lascia più', !str_contains($r = $lia->get('/giudizio')['body'], '>Aderisco</button>') && str_contains($r, 'Ti sei ritirato dal programma'));
+
+// 6 · Con il codice omaggio la casella non compare, e l'adesione al pagamento non vale.
+$admin->get('/admin/omaggi'); $admin->post('/admin/omaggi', ['mesi' => '2', 'scade_il' => '', 'nota' => '9L']);
+$cod9l = riga('SELECT * FROM codici_omaggio ORDER BY id DESC');
+[$dem, $demAcc, $demPid] = $host9l('Demetra', 'demetra9l@prova.test', 'VTRDEM85A01G478X', 'Foligno');
+$dem->modulo('/account', '/sconto/applica', ['codice' => (string) $cod9l['codice'], 'torna' => '/account']);
+$r = $dem->get("/pannello/$demPid/procedura/pubblica");
+$dem->modulo("/pannello/$demPid/procedura/pubblica", "/pannello/$demPid/pubblica", ['acquirente' => 'impresa', 'giudizio_casella' => '1', 'giudizio_adesione' => '1']);
+prova('9L · 6 · con il codice omaggio: niente casella al pagamento, e spuntarla a mano non fa aderire', !str_contains($r['body'], 'name="giudizio_adesione"')
+      && val('SELECT giudizio_adesione FROM accounts WHERE id = ?', [$demAcc]) === null, (string) val('SELECT giudizio_adesione FROM accounts WHERE id = ?', [$demAcc]));
+
+// 7 · Clienti di prova, di esempio e la vetrina mai in elenco.
+$prova9l = (int) val('SELECT id FROM accounts WHERE is_test = 1 ORDER BY id LIMIT 1');
+$vetr9l = (int) val('SELECT account_id FROM properties WHERE is_demo = 2 ORDER BY id LIMIT 1');
+foreach (array_filter([$prova9l, $vetr9l]) as $x) db()->prepare("UPDATE accounts SET giudizio_adesione = 'pannello', giudizio_adesione_at = ? WHERE id = ?")->execute([gmdate('Y-m-d\TH:i:s\Z'), $x]);
+$admin->get('/admin/giudizi');
+prova('9L · 7 · un cliente di prova e l\'account della vetrina, anche con l\'adesione, non hanno la scheda', ($prova9l || $vetr9l)
+      && !val('SELECT id FROM vetrina_schede WHERE account_id IN (?, ?)', [$prova9l ?: -1, $vetr9l ?: -1]));
+foreach (array_filter([$prova9l, $vetr9l]) as $x) db()->prepare("UPDATE accounts SET giudizio_adesione = NULL, giudizio_adesione_at = NULL WHERE id = ?")->execute([$x]);
+
+// 8 · Mai la foto dell'host: né nei testi del programma né nel codice della scheda e del modulo.
+$src9l = '';
+foreach (['views/host/giudizio.php', 'views/pub/_dicono_scheda.php', 'views/admin/giudizi.php', 'views/admin/giudizio_scheda.php', 'src/Vetrina.php'] as $f) $src9l .= (string) @file_get_contents("$DOVE/app/$f");
+prova('9L · 8 · nessuna foto dell\'host nel programma: niente profile_media_id, «La mia foto», show_photo nei file della scheda e del modulo; Termini e Privacy lo dicono',
+      !str_contains($src9l, 'profile_media_id') && !str_contains($src9l, 'La mia foto') && !str_contains($src9l, "'show_photo'")
+      && str_contains($ospite->get('/termini')['body'], 'Non mostriamo link alla guida, la tua foto, né dati dei tuoi ospiti.') && str_contains($ospite->get('/privacy')['body'], 'Nessuna foto della persona.'));
 db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'impostazioni%'");
 
 // ================================================================= RIEPILOGO

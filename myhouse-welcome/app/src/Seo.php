@@ -34,6 +34,8 @@ final class Seo
         // 9K: chi gestisce più strutture e il programma Partner.
         'piu-strutture' => ['/piu-strutture', 'Per più strutture'],
         'property-manager' => ['/property-manager', 'Per property manager'],
+        // 9L: il questionario «Qual è il piano giusto per te?» come pagina (per chi non ha JavaScript, e da condividere).
+        'piano' => ['/piano', 'Quale piano scegliere'],
     ];
 
     /** 7F: Blackout Agency, che realizza i siti MyHouse (8J: non più nei dati strutturati: lì c'è il titolare, City Up S.r.l.). */
@@ -93,6 +95,8 @@ final class Seo
             'p.home.titolo' => 'Guida digitale per case vacanza e B&B | MyHouse Welcome',
             'p.home.descrizione' => 'La guida digitale per case vacanza, B&B, affittacamere e agriturismi: check-in, Wi-Fi e consigli in un link e un QR Code. La crei gratis, paghi solo quando la pubblichi.',
             'p.domande.titolo' => 'Domande frequenti | MyHouse Welcome',
+            'p.piano.titolo' => 'Quale piano scegliere | MyHouse Welcome',
+            'p.piano.descrizione' => 'Tre domande, una risposta: lingue, sezioni e strutture. Ti diciamo quale piano di MyHouse Welcome ti basta, senza pagare per quello che non usi.',
             'p.domande.descrizione' => 'Le risposte su MyHouse Welcome: prova gratuita, lingue e traduzioni, più strutture, B&B con più camere, fattura, cambio di piano e disdetta.',
             'p.en.titolo' => 'Digital guest guide for holiday rentals | MyHouse Welcome',
             'p.en.descrizione' => 'The digital guide for holiday homes, B&Bs, guesthouses and farm stays: check-in, Wi-Fi and local tips in one link and QR code. Build it free, pay when you publish.',
@@ -420,6 +424,10 @@ final class Seo
             $media = Testimonianze::media();
             $t .= "\n## Giudizi\n\n- Sul sito ci sono " . (count($giudizi) === 1 ? '1 testimonianza' : count($giudizi) . ' testimonianze') . ' di host che usano MyHouse Welcome'
                 . ($media ? ', con una media di ' . number_format($media['media'], 1, ',', '') . ' su 5 da ' . $media['n'] . ' giudizi' : '') . ': ' . self::assoluto('/') . "\n";
+        }
+        // 9L: «Le guide dei nostri host», solo se ce ne sono di accese.
+        if (($schede = Vetrina::perHome())) {
+            $t .= ($giudizi ? '' : "\n## Giudizi\n\n") . '- In home ci ' . (count($schede) === 1 ? 'è 1 guida' : 'sono ' . count($schede) . ' guide') . ' di host che usano MyHouse Welcome («Le guide dei nostri host»), senza link alle guide: ' . self::assoluto('/') . "\n";
         }
         // 8E: la home e le domande in inglese.
         if (self::indicizza('en') || self::indicizza('en-domande')) {

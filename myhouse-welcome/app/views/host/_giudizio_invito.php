@@ -14,11 +14,11 @@ $pct = Giudizi::disponibili() ? Giudizi::percentuale() : 5; ?>
   <div class="giudizio-invito__testo">
     <?php if ($rq['stato'] === 'aderito'): ?>
       <span class="giudizio-invito__stato"><?= Support::e($rq['sconto'] ?: $pct . '% con il tuo giudizio') ?></span>
-      <h2 id="giudizio-invito-titolo">Ti piace MyHouse Welcome?</h2>
-      <p class="small"><?= $rq['pubblicata'] ? 'Hai pubblicato la guida: ora puoi lasciarci il tuo giudizio. Ci vuole un minuto.' : 'Hai aderito: quando avrai pubblicato la guida potrai lasciare il tuo giudizio, un voto e due righe. Lo sconto non dipende dal voto.' ?></p>
+      <h2 id="giudizio-invito-titolo">Giudizio con sconto</h2>
+      <p class="small"><?= $rq['pubblicata'] ? 'Hai pubblicato la guida: puoi lasciarci il tuo giudizio quando vuoi (te lo chiediamo dopo 30 giorni). Ci vuole un minuto.' : 'Hai aderito: quando pubblichi la guida la tua scheda va in elenco; il giudizio te lo chiediamo 30 giorni dopo. Lo sconto non dipende dal voto.' ?></p>
     <?php elseif ($rq['stato'] === 'invito'): ?>
-      <h2 id="giudizio-invito-titolo"><?= $pct ?>% sul prossimo rinnovo, con un giudizio</h2>
-      <p class="small">Lasciaci un voto da 1 a 5 e due righe quando hai pubblicato la guida: il <?= $pct ?>% si applica al rinnovo annuale successivo. Lo sconto non dipende dal voto.</p>
+      <h2 id="giudizio-invito-titolo">Giudizio con sconto: il <?= $pct ?>% sul prossimo rinnovo</h2>
+      <p class="small">La tua guida tra «Le guide dei nostri host» su welcomemyhouse.it e, dopo 30 giorni, il tuo giudizio. Lo sconto non dipende dal voto.</p>
     <?php else: ?>
       <h2 id="giudizio-invito-titolo">Ti piace MyHouse Welcome? Raccontacelo</h2>
       <p class="small">Un voto e due righe per un altro host che sta decidendo. Ci vuole un minuto.</p>
@@ -27,12 +27,12 @@ $pct = Giudizi::disponibili() ? Giudizi::percentuale() : 5; ?>
   <?php if ($rq['stato'] === 'invito'): ?>
     <form method="post" action="<?= b() ?>/giudizio/partecipo" class="giudizio-invito__partecipo"><?= Csrf::field() ?>
       <label class="check" style="align-items:flex-start"><input type="checkbox" name="partecipo" value="1" required style="margin-top:1px">
-        <span><b>Partecipo: lascerò un giudizio</b> e accetto che possa essere mostrato in home con nome, copertina, foto e logo, senza link alla mia guida.</span></label>
-      <div class="row" style="gap:10px;align-items:center"><button class="btn btn--ghost btn--sm">Conferma</button>
+        <span><?= Giudizi::casellaHtml() /* 9L · lo stesso testo del pagamento */ ?></span></label>
+      <div class="row" style="gap:10px;align-items:center"><button class="btn btn--ghost btn--sm">Aderisco</button>
         <a class="small" href="<?= b() ?>/termini#giudizio-sconto" target="_blank" rel="noopener">Le regole</a></div>
     </form>
   <?php elseif ($rq['pubblicata']): ?>
-    <a class="btn btn--sm" href="<?= b() ?>/giudizio">Dai il tuo giudizio</a>
+    <a class="btn btn--sm" href="<?= b() ?>/giudizio">Giudizio con sconto</a>
   <?php endif; ?>
   <form method="post" action="<?= b() ?>/giudizio/chiudi" class="giudizio-invito__chiudi"><?= Csrf::field() ?>
     <button class="giudizio-invito__x" aria-label="Non ora"><?= Icon::svg('close', 16, 2) ?></button></form>

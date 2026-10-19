@@ -245,15 +245,16 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
             <p class="help" style="margin:0">Solo per i privati, ed è obbligatoria per pubblicare subito. Come privato hai 14 giorni per recedere: <a href="<?= b() ?>/termini#recesso" target="_blank" rel="noopener">come funziona</a>.</p>
           </div>
         </fieldset>
-        <?php /* 9B · «Ti piace MyHouse Welcome?»: una sola casella, mai pre-spuntata, solo con l'interruttore acceso e se non ha mai aderito
+        <?php /* 9B/9L · «Giudizio con sconto»: una sola casella, mai pre-spuntata, solo con l'interruttore acceso e se non ha mai aderito
                  (o ha aderito al pagamento e non ha ancora pagato: la si può togliere). Lo spiegone sotto, sempre visibile. */
-              $giudizioPuo = MHW\Giudizi::attivo() && (MHW\Giudizi::puoAderire($acc) || (($acc['giudizio_adesione'] ?? '') === 'pagamento' && ($acc['giudizio_sconto_stato'] ?? '') === 'promesso'));
+              // 9L · Con un codice omaggio (9D) la casella non compare.
+              $giudizioPuo = MHW\Giudizi::attivo() && !(MHW\Omaggi::disponibili() && MHW\Omaggi::daUsare($acc)) && (MHW\Giudizi::puoAderire($acc) || (($acc['giudizio_adesione'] ?? '') === 'pagamento' && ($acc['giudizio_sconto_stato'] ?? '') === 'promesso'));
               if ($giudizioPuo): $giudizioSi = ($acc['giudizio_adesione'] ?? '') === 'pagamento'; ?>
           <fieldset class="fieldset stack giudizio-sconto" id="giudizio-sconto" style="gap:8px;margin:0 0 16px" data-giudizio-sconto data-torna="/pannello/<?= $pid ?>/procedura/pubblica">
-            <legend class="legend">Ti piace MyHouse Welcome? <span class="badge badge--pine">−<?= MHW\Giudizi::percentuale() ?>%</span></legend>
+            <legend class="legend">Giudizio con sconto <span class="badge badge--pine">−<?= MHW\Giudizi::percentuale() ?>%</span></legend>
             <input type="hidden" name="giudizio_casella" value="1">
             <label class="check" style="align-items:flex-start"><input type="checkbox" name="giudizio_adesione" value="1" data-giudizio-casella style="margin-top:1px"<?= $giudizioSi ? ' checked' : '' ?>>
-              <span><b>Sì, voglio il <?= MHW\Giudizi::percentuale() ?>% in più: lascerò un giudizio.</b> <?= Support::e(preg_replace('/^Sì, voglio il \d+% in più: lascerò un giudizio\. /', '', MHW\Giudizi::casella())) ?></span></label>
+              <span><?= MHW\Giudizi::casellaHtml() /* 9L · il testo unico di «Testi e foto» (giudizio.casella) */ ?></span></label>
             <p class="help giudizio-sconto__spiega" style="margin:0"><?= Support::e(trim(MHW\Giudizi::spiegaQuando() . ' ' . MHW\Giudizi::spiegone())) ?> Regole complete nei <a href="<?= b() ?>/termini#giudizio-sconto" target="_blank" rel="noopener">Termini</a>, punto «Giudizio con sconto».</p>
             <noscript><button class="btn btn--ghost btn--sm" formaction="<?= b() ?>/giudizio/adesione" formmethod="post" name="torna" value="/pannello/<?= $pid ?>/procedura/pubblica">Aggiorna il riepilogo</button></noscript>
           </fieldset>

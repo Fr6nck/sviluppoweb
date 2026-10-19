@@ -45,7 +45,7 @@ return [
     ],
     'bed-and-breakfast' => [
         'percorso' => '/bed-and-breakfast', 'nome' => 'Bed & breakfast', 'tipologia' => 'bnb',
-        'foto' => ['caffe.jpg', 800, 800, 'Una tazza di caffè su un tavolo di legno, in una sala colazioni luminosa'],
+        'foto' => ['tipo-bed-and-breakfast.jpg', 1600, 900, 'L\'ingresso di un B&B in pietra al tramonto, con l\'insegna, le lanterne accese e i vasi fioriti'],
         'titolo' => 'Guida digitale per B&B | MyHouse Welcome',
         'descrizione' => 'La guida digitale per il tuo B&B: orari della colazione, Wi-Fi di ogni camera, regole e consigli della zona in un link e un QR Code per ogni ospite.',
         'kicker' => 'Per chi gestisce un B&B',
@@ -111,7 +111,7 @@ return [
     ],
     'agriturismi' => [
         'percorso' => '/agriturismi', 'nome' => 'Agriturismi', 'tipologia' => 'agriturismo',
-        'foto' => ['borgo.jpg', 2000, 924, 'Una scala in pietra fiorita tra le case di un borgo'],
+        'foto' => ['tipo-agriturismi.jpg', 1600, 900, 'Un agriturismo in pietra con il cortile fiorito, gli ombrelloni e le colline sullo sfondo'],
         'titolo' => 'Guida digitale per agriturismi | MyHouse Welcome',
         'descrizione' => 'La guida digitale per il tuo agriturismo: come arrivare, servizi, ristorante, attività in azienda e sul territorio in un link e un QR Code.',
         'kicker' => 'Per chi gestisce un agriturismo',
@@ -171,7 +171,7 @@ return [
     // 9K · Property manager: il programma Partner (per ora raccoglie i contatti), solo Portfolio, il modulo «Diventa partner».
     'property-manager' => [
         'percorso' => '/property-manager', 'nome' => 'Property manager', 'tipologia' => null,
-        'foto' => ['pannello-1.webp', 1200, 750, 'Il pannello di MyHouse Welcome con l\'elenco delle guide di più strutture'],
+        'foto' => ['tipo-property-manager.jpg', 1600, 900, 'Un property manager alla scrivania con le prenotazioni e le foto di più strutture sugli schermi'],
         'titolo' => 'Programma Partner per property manager | MyHouse Welcome',
         'descrizione' => 'Gestisci case per conto dei proprietari? Ogni immobile ha la sua guida digitale MyHouse Welcome e tu diventi partner, con una commissione per attivazione.',
         'kicker' => 'Per property manager e agenzie',

@@ -72,6 +72,31 @@ $chiInvita = function (): ?array {
 };
 
 /*
+ * 9K/9L · I dati del questionario «Qual è il piano giusto per te?» (pub/_questionario.php), gli stessi per le pagine per
+ * tipologia, la finestra della home e /piano: i piani, le risposte (senza JavaScript arrivano nell'indirizzo), le strutture
+ * del Portfolio e gli sconti di chi guarda (l'account se è dentro, l'invito di un amico se è arrivato da un link).
+ */
+$datiQuestionario = function () use ($chiInvita): array {
+    $piani = [];
+    foreach (Plans::public() as $p) $piani[$p['code']] = $p;
+    $risposte = [];
+    foreach (['d1', 'd2', 'd3'] as $k) $risposte[$k] = in_array($_GET[$k] ?? '', ['si', 'no'], true) ? $_GET[$k] : '';
+    $pf = $piani['portfolio'] ?? null;
+    $strutture = $pf ? max(2, (int) $pf['min_quantity'], min((int) $pf['max_quantity'] ?: 10, (int) ($_GET['strutture'] ?? 2))) : 2;
+    $u = Auth::user(); $acc = $u && ($u['role'] ?? '') !== 'admin' ? Auth::account() : null;
+    $chi = $acc ? null : $chiInvita();
+    $extra = $chi ? [['tipo' => 'invito', 'nome' => 'Invito di ' . explode(' ', trim((string) $chi['user_name']))[0], 'percento' => MHW\Inviti::AMICO]] : [];
+    $riep = [];
+    if (MHW\Sconti::disponibili()) foreach ($piani as $c => $p) $riep[$c] = MHW\Sconti::riepilogo($p, $c === 'portfolio' ? $strutture : 1, $acc, $extra);
+    // 8H · L'esito senza JavaScript (le tre risposte nell'indirizzo) conta come quello con JavaScript.
+    if (count(array_filter($risposte)) === 3) {
+        $esito = $risposte['d3'] === 'no' ? 'portfolio' : ($risposte['d1'] === 'no' || $risposte['d2'] === 'no' ? 'plus' : 'essential');
+        MHW\Statistiche::evento('piano_test', $esito);
+    }
+    return ['qPiani' => $piani, 'qRiep' => $riep, 'qRisposte' => $risposte, 'qStrutture' => $strutture];
+};
+
+/*
  * 9D · Il link di un codice omaggio (/omaggio/XXXXX, o con il prefisso): il codice resta in sessione, toglie un eventuale
  * invito in sessione e porta alla registrazione con il banner «Hai N mesi gratis». Chi è già dentro e non ha pagato
  * lo prende subito (Account & Fatturazione).
@@ -138,7 +163,7 @@ $r->get('/i/{codice}/anteprima.jpg', function (array $a) use ($guard) {
 });
 
 /* La home, in italiano su «/» e in inglese su «/en» (8E): stesse sezioni, testi da TestiSito nella lingua giusta. */
-$home = function (string $loc) use ($guard, $codiceDalLink, $chiInvita) {
+$home = function (string $loc) use ($guard, $codiceDalLink, $chiInvita, $datiQuestionario) {
     $guard();
     MHW\LinguaSito::imposta($loc);
     $codiceSconto = $codiceDalLink();
@@ -165,7 +190,7 @@ $home = function (string $loc) use ($guard, $codiceDalLink, $chiInvita) {
         'user' => $u, 'mie' => $mie, 'codiceSconto' => $codiceSconto,
         'invitoDi' => $invito && !$u ? explode(' ', trim((string) $invito['user_name']))[0] : '',
         'testimonianze' => MHW\Testimonianze::visibili(), 'seoPagina' => $loc === 'en' ? 'en' : 'home', 'anteprimaTesti' => $anteprimaTesti,
-    ]);
+    ] + ($loc === 'en' ? [] : $datiQuestionario()));   // 9L · la finestra «Qual è il piano giusto per te?» (solo in italiano)
 };
 $r->get('/', fn() => $home('it'));
 $r->get('/en', fn() => $home('en'));
@@ -220,25 +245,13 @@ $r->get('/en/questions', function () use ($guard) {
 
 /* 7F: le pagine per tipologia (solo italiano): problemi tipici, sezioni utili, piano consigliato, 4 domande. */
 foreach (MHW\Seo::tipologie() as $chiave => $tipoP) {
-    $r->get($tipoP['percorso'], function () use ($guard, $chiave, $tipoP, $chiInvita) {
+    $r->get($tipoP['percorso'], function () use ($guard, $chiave, $tipoP, $datiQuestionario) {
         $guard();
         MHW\Stats::funnelEvent('landing_view');
-        $piano = null; $piani = [];
-        foreach (Plans::public() as $p) { $piani[$p['code']] = $p; if ($p['code'] === ($tipoP['piano'] ?? '')) $piano = $p; }
+        $q = $datiQuestionario();   // 9K · il questionario, con i prezzi barrati per chi guarda
+        $piano = $q['qPiani'][$tipoP['piano'] ?? ''] ?? null;
         $demo = Db::one("SELECT id, slug, name FROM properties WHERE is_demo >= 1 AND status = 'published' AND archived_at IS NULL ORDER BY is_demo DESC, id");
-        // 9K · Il questionario: le risposte (senza JavaScript arrivano qui), le strutture del Portfolio e gli sconti di chi guarda
-        // (l'account se è dentro, l'invito di un amico se è arrivato da un link), per i prezzi barrati.
-        $risposte = [];
-        foreach (['d1', 'd2', 'd3'] as $k) $risposte[$k] = in_array($_GET[$k] ?? '', ['si', 'no'], true) ? $_GET[$k] : '';
-        $pf = $piani['portfolio'] ?? null;
-        $strutture = $pf ? max(2, (int) $pf['min_quantity'], min((int) $pf['max_quantity'] ?: 10, (int) ($_GET['strutture'] ?? 2))) : 2;
-        $u = Auth::user(); $acc = $u && ($u['role'] ?? '') !== 'admin' ? Auth::account() : null;
-        $chi = $acc ? null : $chiInvita();
-        $extra = $chi ? [['tipo' => 'invito', 'nome' => 'Invito di ' . explode(' ', trim((string) $chi['user_name']))[0], 'percento' => MHW\Inviti::AMICO]] : [];
-        $riep = [];
-        if (MHW\Sconti::disponibili()) foreach ($piani as $c => $p) $riep[$c] = MHW\Sconti::riepilogo($p, $c === 'portfolio' ? $strutture : 1, $acc, $extra);
-        View::out('pub/tipologia', ['tp' => $tipoP, 'chiave' => $chiave, 'piano' => $piano, 'demo' => $demo, 'user' => $u, 'seoPagina' => $chiave,
-                                    'qPiani' => $piani, 'qRiep' => $riep, 'qRisposte' => $risposte, 'qStrutture' => $strutture]);
+        View::out('pub/tipologia', ['tp' => $tipoP, 'chiave' => $chiave, 'piano' => $piano, 'demo' => $demo, 'user' => Auth::user(), 'seoPagina' => $chiave] + $q);
     });
 }
 
@@ -581,7 +594,14 @@ $r->post('/invito/verifica', function () {
 });
 
 // ------------------------------------------------------------- scelta del piano
-$r->any('/piano', function () use ($salvaPiano) {
+$r->any('/piano', function () use ($salvaPiano, $guard, $datiQuestionario) {
+    // 9L · Per chi non è dentro, /piano è «Quale piano scegliere»: il questionario come pagina (il link «Rispondi a 3 domande»
+    // della home senza JavaScript). Con ?piano=… (un piano già scelto) resta la strada di sempre: accesso, poi la scelta.
+    if (!Auth::user() && $_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['piano'])) {
+        $guard();
+        View::out('pub/piano_test', ['seoPagina' => 'piano', 'user' => null] + $datiQuestionario());
+        return;
+    }
     $u = Auth::requireUser();
     if ($u['role'] === 'admin') Support::redirect('/admin');
     if (!Auth::isVerified($u) && !Auth::isImpersonating()) Support::redirect('/conferma-email');

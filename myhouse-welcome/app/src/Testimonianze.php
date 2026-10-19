@@ -18,9 +18,10 @@ final class Testimonianze
     public const CONSENSO = 'Acconsento che MyHouse Welcome pubblichi sul proprio sito il mio voto, il mio giudizio, il mio nome (senza cognome), '
         . 'il nome e la città della struttura e la foto scelta. Il link della mia guida non viene pubblicato. '
         . 'Posso ritirare il consenso quando voglio da Account & Fatturazione.';
-    public const FOTO = ['profilo' => 'La tua foto profilo', 'copertina' => 'La copertina della guida', 'nessuna' => 'Nessuna foto'];
-    /** 9B · Le immagini che il cliente sceglie di mostrare in home (chip del modulo). */
-    public const IMMAGINI = ['show_cover' => 'Copertina', 'show_photo' => 'La mia foto', 'show_logo' => 'Logo della struttura'];
+    /** 9L · Mai la foto dell'host: restano la copertina della guida o nessuna foto. */
+    public const FOTO = ['copertina' => 'La copertina della guida', 'nessuna' => 'Nessuna foto'];
+    /** 9B/9L · Le immagini che il cliente sceglie di mostrare in home (oggi nella scheda, Vetrina::scelte). */
+    public const IMMAGINI = ['show_cover' => 'Copertina', 'show_logo' => 'Logo della struttura'];
     /** Giorni dopo la prima pubblicazione per chiedere il giudizio (9B: il riquadro c'è dal primo accesso, il modulo dopo la
         pubblicazione; l'email di richiamo resta a 30 giorni), e dopo quanti torna il riquadro chiuso. */
     public const DOPO_GIORNI = 0;
@@ -67,7 +68,8 @@ final class Testimonianze
     public static function media(): ?array
     {
         if (!self::giudizi()) return null;
-        $inHome = Migrator::columnExists('testimonials', 'home_visible') ? 'home_visible = 1' : "visible = 1 AND status = 'pubblicata'";
+        // 9L: i giudizi approvati (la scheda in home è un'altra cosa, Vetrina).
+        $inHome = Migrator::tableExists('vetrina_schede') ? "status = 'pubblicata'" : (Migrator::columnExists('testimonials', 'home_visible') ? 'home_visible = 1' : "visible = 1 AND status = 'pubblicata'");
         $r = Db::one("SELECT COUNT(*) AS n, AVG(rating) AS m FROM testimonials WHERE $inHome AND account_id IS NOT NULL
                       AND consent_at IS NOT NULL AND withdrawn_at IS NULL AND rating BETWEEN 1 AND 5");
         $n = (int) ($r['n'] ?? 0);
@@ -78,13 +80,10 @@ final class Testimonianze
     {
         // Un giudizio di un cliente: la foto scelta, presa dalla sua struttura quando si mostra.
         if (!empty($t['account_id'])) {
-            $p = !empty($t['property_id']) ? Db::one('SELECT profile_media_id, cover_media_id FROM properties WHERE id = ? AND account_id = ?', [(int) $t['property_id'], (int) $t['account_id']]) : null;
+            $p = !empty($t['property_id']) ? Db::one('SELECT cover_media_id FROM properties WHERE id = ? AND account_id = ?', [(int) $t['property_id'], (int) $t['account_id']]) : null;
             if (!$p) return null;
-            return match ((string) ($t['photo_source'] ?? '')) {
-                'profilo' => $p['profile_media_id'] ? Media::url((int) $p['profile_media_id']) : null,
-                'copertina' => $p['cover_media_id'] ? Media::url((int) $p['cover_media_id']) : null,
-                default => null,
-            };
+            // 9L: mai la foto dell'host (la vecchia scelta «profilo» non mostra niente).
+            return ($t['photo_source'] ?? '') === 'copertina' && $p['cover_media_id'] ? Media::url((int) $p['cover_media_id']) : null;
         }
         if ($t['photo_key'] === '') return null;
         try { return Storages::for($t['photo_storage'])->url($t['photo_key']); }
@@ -201,8 +200,8 @@ final class Testimonianze
         $gia = self::diAccount($aid);
         $programma = Giudizi::disponibili();
         if ($programma) {
-            // 9B: si modifica finché non è in home; dopo, solo ritirare. Il giudizio va mandato dopo la prima pubblicazione.
-            if ($gia && !empty($gia['home_visible']) && $gia['withdrawn_at'] === null) throw new \RuntimeException('Il tuo giudizio è già nella nostra home: puoi solo ritirarlo, da Account & Fatturazione.');
+            // 9L: si modifica quando si vuole (torna «da approvare»); dopo il ritiro dal programma no. Va mandato dopo la prima pubblicazione.
+            if (($sch = Vetrina::scheda($aid)) && !empty($sch['ritirato_at'])) throw new \RuntimeException('Ti sei ritirato dal programma «Giudizio con sconto»: il giudizio non si può più lasciare.');
             if (self::primaPubblicazione($aid) === null) throw new \RuntimeException('Il giudizio si lascia dopo aver pubblicato la guida.');
             // «Partecipo» spuntato nel modulo: l'adesione dal pannello (una sola casella, la stessa del pagamento).
             if (!empty($in['partecipo']) && Giudizi::puoAderire($acc)) { Giudizi::aderisci($acc, 'pannello'); $acc = Db::one('SELECT * FROM accounts WHERE id = ?', [$aid]) ?: $acc; }
@@ -212,7 +211,7 @@ final class Testimonianze
         $p = self::struttura($aid);
         // 9B: la pubblicazione è parte dell'adesione al programma (base: contratto), non un consenso a parte.
         $consenso = $programma ? !empty($acc['giudizio_adesione']) : !empty($in['consenso']);
-        $testoConsenso = $programma ? (($acc['giudizio_adesione'] ?? '') === 'pannello' ? Giudizi::casellaBreve() : Giudizi::casella()) : self::CONSENSO;
+        $testoConsenso = $programma ? Giudizi::casella() : self::CONSENSO;   // 9L: un testo solo, al pagamento e nel pannello
         $nome = trim((string) ($u['name'] ?? ''));
         $dati = [
             'account_id' => $aid, 'property_id' => $p ? (int) $p['id'] : null,
@@ -224,19 +223,19 @@ final class Testimonianze
             'photo_storage' => '', 'photo_key' => '', 'position' => 0,
         ];
         if ($programma) {
-            // Le immagini scelte (chip): solo quelle che esistono nella guida. Senza il modulo nuovo (vecchi invii) resta photo_source.
-            $ha = $p ? Db::one('SELECT profile_media_id, cover_media_id, logo_media_id FROM properties WHERE id = ?', [(int) $p['id']]) : null;
-            $dati['show_cover'] = !empty($in['show_cover']) && !empty($ha['cover_media_id']) ? 1 : 0;
-            $dati['show_photo'] = !empty($in['show_photo']) && !empty($ha['profile_media_id']) ? 1 : 0;
-            $dati['show_logo'] = !empty($in['show_logo']) && !empty($ha['logo_media_id']) ? 1 : 0;
+            // 9L: le immagini le sceglie l'host nella scheda (Vetrina::scelte), mai la sua foto; qui solo per lo storico.
+            $sc = ($sch = Vetrina::scheda($aid)) ? Vetrina::scelte($sch) : ['copertina' => true, 'logo' => true];
+            $ha = $p ? Db::one('SELECT cover_media_id, logo_media_id FROM properties WHERE id = ?', [(int) $p['id']]) : null;
+            $dati['show_cover'] = $sc['copertina'] && !empty($ha['cover_media_id']) ? 1 : 0; $dati['show_logo'] = $sc['logo'] && !empty($ha['logo_media_id']) ? 1 : 0; $dati['show_photo'] = 0;
             $dati['home_visible'] = 0;
+            if ($programma && $dati['photo_source'] === 'profilo') $dati['photo_source'] = 'nessuna';
         }
-        if ($gia && ($programma ? empty($gia['home_visible']) : $gia['status'] === 'in_attesa')) {
+        if ($gia && ($programma ? $gia['withdrawn_at'] === null : $gia['status'] === 'in_attesa')) {   // 9L: lo stesso giudizio, di nuovo da approvare
             Db::update('testimonials', $dati, 'id = :tid', ['tid' => (int) $gia['id']]); $id = (int) $gia['id'];
         } else $id = Db::insert('testimonials', $dati + ['created_at' => Support::now()]);
         Auth::audit('testimonial.submitted', null, ['account_id' => $aid, 'rating' => $voto, 'consent' => $consenso]);
         if ($voto <= 3) self::avvisaNoi($u, $dati);
-        if ($programma) Giudizi::dopoGiudizio($acc);   // chi ha aderito dal pannello: lo sconto sul prossimo rinnovo (coupon)
+        if ($programma) { Giudizi::dopoGiudizio($acc); Vetrina::assicura($aid); }   // lo sconto «dopo il giudizio» (se scelto) e la scheda
         return ['id' => $id, 'rating' => $voto, 'consenso' => $consenso, 'aderito' => !empty($acc['giudizio_adesione'])];
     }
 

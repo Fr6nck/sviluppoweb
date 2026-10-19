@@ -27,10 +27,11 @@ $gruppiAdmin = $admin ? [
                   ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'], ['scadenze', '/admin/scadenze', 'Scadenze', 'calendar'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'],
                   ['sconti', '/admin/sconti', 'Codici sconto', 'euro'], ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe']], MHW\Omaggi::disponibili() ? [['omaggi', '/admin/omaggi', 'Codici omaggio', 'card']] : [],
                   MHW\Inviti::disponibili() ? [['inviti', '/admin/inviti', 'Inviti', 'message']] : [],
+                  MHW\Giudizi::disponibili() ? [['giudizi', '/admin/giudizi', 'Giudizi e vetrina', 'star']] : [],
                   MHW\Preventivi::disponibili() ? [['preventivi', '/admin/preventivi', 'Preventivi', 'message']] : [],
                   MHW\Partner::disponibili() ? [['partner', '/admin/partner', 'Partner', 'suitcase']] : []),
     'Clienti' => [['clienti', '/admin/clienti', 'Clienti', 'people'], ['guide', '/admin/guide', 'Guide', 'book'], ['anomalie', '/admin/anomalie', 'Anomalie', 'warning'],
-                  ['giudizi', '/admin/giudizi', 'Giudizi', 'star'], ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star']],
+                  ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star']],
     'Sistema' => [['impostazioni', '/admin/impostazioni', 'Impostazioni', 'key'], ['testi', '/admin/testi', 'Testi e foto', 'doc'], ['seo', '/admin/seo', 'SEO e GEO', 'search'],
                   ['registro', '/admin/registro', 'Registro', 'list'], ['diagnostica', '/admin/diagnostica', 'Diagnostica', 'pulse']],
 ] : [];
@@ -39,6 +40,9 @@ $generale = $admin ? array_merge(...array_values($gruppiAdmin))
 // Per i clienti la voce c'è sempre, con gli inviti accesi: chi non può ancora invitare vede il motivo.
 // 7D: con l'etichetta colorata degli sconti (all'amico / a te).
 if (!$admin && $u && Auth::account() && MHW\Inviti::disponibili()) $generale[] = ['inviti', '/inviti', 'Invita un amico', 'people', "\u{2212}" . MHW\Inviti::AMICO . "% / \u{2212}" . MHW\Inviti::PASSO . '%'];
+// 9L · «Giudizio con sconto»: una voce sola per il programma (adesione, scheda in home, giudizio, ritiro).
+if (!$admin && $u && ($accNav = Auth::account()) && MHW\Vetrina::disponibili() && !MHW\Giudizi::escluso($accNav)
+    && (!empty($accNav['giudizio_adesione']) || MHW\Giudizi::attivo())) $generale[] = ['giudizio', '/giudizio', 'Giudizio con sconto', 'star', "\u{2212}" . MHW\Giudizi::percentuale() . '%'];
 $attiva = $admin ? $nav : ($prop ? '' : ($nav ?: 'guide'));
 $guida = [];
 if ($prop) {

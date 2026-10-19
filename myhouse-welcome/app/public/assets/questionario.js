@@ -1,7 +1,10 @@
 /* 9K · «Qual è il piano giusto per te?» (pagine per tipologia). Senza JavaScript le tre domande sono un modulo che
    ricarica la pagina con l'esito; qui le domande vanno una alla volta (si risponde, si passa alla successiva, si torna
    indietro), l'esito compare subito (i tre esiti sono già nella pagina, nascosti) e il Portfolio si ricalcola con
-   − e + : prezzo progressivo, sconto di chi guarda, tabella del rinnovo, link «Crea gratis» con il numero di strutture. */
+   − e + : prezzo progressivo, sconto di chi guarda, tabella del rinnovo, link «Crea gratis» con il numero di strutture.
+   9L · Lo stesso script per la finestra della home (<dialog>): «Rispondi a 3 domande» la apre (senza JavaScript è un link a
+   /piano), × / Esc / clic fuori la chiudono, la pagina sotto resta ferma (anche Safari su iPhone). L'esito va nelle
+   statistiche come «piano_test» (piano · origine). */
 (function () {
   'use strict';
   var box = document.querySelector('[data-questionario]');
@@ -9,7 +12,7 @@
   var modulo = box.querySelector('[data-q-modulo]'), passi = box.querySelectorAll('[data-q-passo]');
   var barre = box.querySelectorAll('.questionario__avanzamento i'), esiti = box.querySelectorAll('[data-q-esito]');
   var invia = box.querySelector('[data-q-invia]'), ricalcola = box.querySelector('[data-q-ricalcola]');
-  var ora = 1;
+  var ora = 1, finestra = box.closest('dialog');
 
   function soldi(c) {
     var e = Math.floor(c / 100), cent = c % 100, s = String(e).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -34,7 +37,9 @@
       for (var n = 1; n <= 3; n++) { var s = e.querySelector('[data-q-r="' + n + '"]'); if (s) s.textContent = r[n - 1] === 'si' ? 'sì' : 'no'; }
       var h = e.querySelector('h3'); h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true });
     }
-    box.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    if (finestra) finestra.scrollTop = 0;
+    else box.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    if (window.mhwStatistiche) window.mhwStatistiche.evento('piano_test', piano + ' · ' + (box.getAttribute('data-origine') || ''));
   }
 
   // Con JavaScript: niente bottone «Vedi il piano giusto», il «← Indietro» visibile, una domanda alla volta.
@@ -54,9 +59,35 @@
       for (var i = 0; i < esiti.length; i++) esiti[i].hidden = true;
       box.removeAttribute('data-esito-iniziale');
       modulo.hidden = false; vai(1, true);
-      if (history.replaceState) history.replaceState(null, '', location.pathname + '#piano-giusto');
+      if (finestra) finestra.scrollTop = 0;
+      else if (history.replaceState) history.replaceState(null, '', location.pathname + '#piano-giusto');
     });
   });
+
+  /* ---- 9L · La finestra della home ------------------------------------------- */
+  if (finestra && typeof finestra.showModal === 'function') {
+    var chi = null, y = 0, corpo = document.body;
+    function blocca() {   // la pagina sotto non scorre: overflow per tutti, position: fixed per Safari su iPhone
+      y = window.scrollY || 0;
+      document.documentElement.classList.add('finestra-aperta');
+      corpo.style.position = 'fixed'; corpo.style.top = -y + 'px'; corpo.style.left = '0'; corpo.style.right = '0';
+    }
+    function sblocca() {
+      document.documentElement.classList.remove('finestra-aperta');
+      corpo.style.position = ''; corpo.style.top = ''; corpo.style.left = ''; corpo.style.right = '';
+      window.scrollTo(0, y);
+    }
+    document.querySelectorAll('[data-q-apri]').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault(); chi = a;
+        blocca(); finestra.showModal(); finestra.scrollTop = 0;
+        var t = finestra.querySelector('#piano-giusto-titolo'); if (t) { t.setAttribute('tabindex', '-1'); t.focus(); }
+      });
+    });
+    finestra.querySelectorAll('[data-q-chiudi]').forEach(function (b) { b.addEventListener('click', function () { finestra.close(); }); });
+    finestra.addEventListener('click', function (e) { if (e.target === finestra) finestra.close(); });   // il clic sullo sfondo
+    finestra.addEventListener('close', function () { sblocca(); if (chi) chi.focus(); });
+  }
 
   /* ---- Portfolio: − / + e i prezzi ------------------------------------------ */
   var porto = box.querySelector('[data-q-esito="portfolio"]');

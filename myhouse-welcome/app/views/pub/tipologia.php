@@ -32,7 +32,9 @@ $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' : null
     <p class="small muted"><?= $partner ? 'Una guida per ogni immobile, pronta in un pomeriggio. Ci conosciamo prima, senza impegno.' : 'La crei gratis, senza carta di credito: paghi solo quando la pubblichi.' ?></p>
   </div>
   <figure class="tipo-hero__foto">
-    <img src="<?= Support::e(a('/assets/foto/' . $fotoFile)) ?>" alt="<?= Support::e($fotoAlt) ?>" width="<?= (int) $fotoL ?>" height="<?= (int) $fotoA ?>" loading="eager" decoding="async">
+    <?php $fotoWebp = preg_replace('/\.jpe?g$/', '.webp', $fotoFile);   // 9L: la WebP accanto al .jpg, se c'è, e il .jpg di riserva ?>
+    <picture><?php if ($fotoWebp !== $fotoFile && is_file(MHW_PUBLIC . '/assets/foto/' . $fotoWebp)): ?><source srcset="<?= Support::e(a('/assets/foto/' . $fotoWebp)) ?>" type="image/webp"><?php endif; ?>
+    <img src="<?= Support::e(a('/assets/foto/' . $fotoFile)) ?>" alt="<?= Support::e($fotoAlt) ?>" width="<?= (int) $fotoL ?>" height="<?= (int) $fotoA ?>" loading="eager" decoding="async"></picture>
   </figure>
 </section>
 

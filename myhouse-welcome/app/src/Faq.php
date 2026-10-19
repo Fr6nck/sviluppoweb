@@ -30,6 +30,7 @@ final class Faq
                 'prima' => $pfE ? $m((int) $pfE['price_cents']) : '', 'tiers' => $tiers,
                 'unica' => $pfE ? $m(Plans::unitPrice($pfE, 2)) : '', 'max_q' => $pfE ? (int) $pfE['max_quantity'] : 0,
                 'amico' => Inviti::AMICO, 'passo' => Inviti::PASSO, 'massimo' => Inviti::MASSIMO, 'amici' => Inviti::amiciMassimi(),
+                'giudizio' => Giudizi::attivo() ? Giudizi::percentuale() : 0, 'totale' => Sconti::massimoRinnovo()['totale'],
             ]);
             return array_map(fn($x) => isset($en[$x['id']]) ? ['id' => $x['id'], 'd' => $en[$x['id']][0], 'r' => $en[$x['id']][1]] : $x, $it);
         }
@@ -66,9 +67,16 @@ final class Faq
             ['scendere-piano', 'Se scendo di piano perdo qualcosa?', 'Niente si cancella. Prima di confermare scegli quali sezioni tenere e, con Portfolio, quali strutture archiviare, e vedi l\'elenco di cosa la guida non mostrerà più (per esempio le lingue oltre la tua e una seconda). Quello che il piano nuovo non comprende resta salvato e torna appena risali. Puoi annullare il cambio fino al giorno prima del rinnovo.'],
         );
         if (Inviti::disponibili()) array_push($f,
-            ['porta-amico', 'Come funziona «Porta un amico»?', 'Quando la tua guida è pubblicata, in «Invita un amico» trovi il tuo link personale. Chi si registra da quel link ha il ' . Inviti::AMICO . '% di sconto sul suo primo anno. Per ogni amico che paga il suo abbonamento, il tuo prossimo rinnovo costa il ' . Inviti::PASSO . '% in meno: con ' . Inviti::amiciMassimi() . ' amici arrivi al ' . Inviti::MASSIMO . '%. Lo sconto si applica da solo alla fattura del rinnovo, senza codici da inserire.'],
+            ['porta-amico', 'Come funziona «Porta un amico»?', 'Quando la tua guida è pubblicata, in «Invita un amico» trovi il tuo link personale. Chi si registra da quel link ha il ' . Inviti::AMICO . '% di sconto sul suo primo anno. Per ogni amico che paga il suo abbonamento, il tuo prossimo rinnovo costa il ' . Inviti::PASSO . '% in meno: con ' . Inviti::amiciMassimi() . ' amici arrivi al ' . Inviti::MASSIMO . '%. Lo sconto si applica da solo alla fattura del rinnovo, senza codici da inserire.'
+                . (Giudizi::attivo() ? ' Con il programma «Giudizio con sconto» si aggiunge un altro ' . Giudizi::percentuale() . '%: fino al ' . Sconti::massimoRinnovo()['totale'] . '% di sconto a partire dal prossimo anno.' : '')],
             ['amico-quando', 'Quando conta un amico, e cosa succede dopo il rinnovo?', 'Un amico conta quando paga il suo primo abbonamento, con dati di fatturazione diversi dai tuoi (un\'altra partita IVA o un altro codice fiscale). Finché si è solo registrato, resta «in attesa». Lo sconto vale sul rinnovo successivo: dopo, il conteggio riparte da zero e gli amici nuovi valgono per l\'anno dopo. Oltre i ' . Inviti::amiciMassimi() . ' amici lo sconto non cresce. Se disattivi il rinnovo automatico, lo sconto non si usa: non diventa un rimborso.'],
         );
+        // 9L · Il programma «Giudizio con sconto»: tre domande, con le stesse regole dei Termini.
+        if (Giudizi::attivo()) { $gp = Giudizi::percentuale() . '%'; array_push($f,
+            ['giudizio-sconto', 'Cos\'è il programma «Giudizio con sconto»?', 'Con un\'unica casella, al pagamento o dal pannello (Impostazioni → Giudizio con sconto), aderisci e hai il ' . $gp . ' di sconto: sul primo anno se aderisci al pagamento, sul rinnovo successivo se aderisci dopo. Si somma allo sconto degli inviti; non si somma ai codici sconto (vale il più alto) e non c\'è con i codici omaggio. In cambio, 30 giorni dopo la pubblicazione lasci un voto da 1 a 5 con un commento. Lo sconto non dipende dal voto: vale anche con una stella.'],
+            ['giudizio-vetrina', 'La mia guida compare sul sito di MyHouse Welcome?', 'Solo se aderisci al programma «Giudizio con sconto»: da quando la pubblichi, tra «Le guide dei nostri host» nella nostra home, con il nome della struttura, la copertina, il logo, il tuo nome senza cognome e la città; dopo il giudizio anche le stelle e il commento. Non mostriamo link alla guida, la tua foto né dati dei tuoi ospiti. Quali schede mostrare lo decidiamo noi.'],
+            ['giudizio-ritiro', 'Posso ritirarmi dal programma?', 'Sì, quando vuoi, da Impostazioni → Giudizio con sconto: la scheda e il giudizio spariscono subito dalla home. Lo sconto già avuto resta; quello promesso sul rinnovo decade.'],
+        ); }
         array_push($f,
             ['disdire', 'Posso disdire?', 'Sì. Disattivi il rinnovo automatico da Account & Fatturazione quando vuoi: la guida resta online fino alla fine del periodo già pagato, poi va offline. Nessun vincolo.'],
             ['non-rinnovo', 'Cosa succede se non rinnovo?', 'Alla fine del periodo pagato la guida va offline da sola. Niente si cancella: testi, foto e QR restano salvati, e il QR stampato torna a funzionare appena rinnovi.'],

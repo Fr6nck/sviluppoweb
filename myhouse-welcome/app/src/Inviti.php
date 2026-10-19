@@ -362,7 +362,9 @@ final class Inviti
                        . ' + IVA invece di ' . Support::money($st['prezzo'], $st['valuta']) : '') . '. ';
         }
         $corpo .= $mancano > 0 ? ($mancano === 1 ? 'Ti manca 1 amico' : 'Ti mancano ' . $mancano . ' amici') . ' per arrivare a metà prezzo.'
-                               : 'Hai raggiunto il massimo. I tuoi amici continuano ad avere il loro sconto.';
+                               : 'Hai raggiunto il massimo degli inviti. I tuoi amici continuano ad avere il loro sconto.';
+        // 9L · Il tetto vero è inviti + programma: «fino al 55%», non il 50%.
+        if (Giudizi::attivo()) $corpo .= ' Con il programma «Giudizio con sconto» arrivi fino al ' . Sconti::massimoRinnovo()['totale'] . '% di sconto a partire dal prossimo anno.';
         $oggetto = $amico . ' ha pubblicato la sua guida' . ($st['percento'] > 0 ? ': sei al −' . $st['percento'] . '%' : '');
         Richiami::manda($rid, (string) $u['email'], (string) $u['name'], 'inviti', 'amico-' . $amicoId,
                         [$oggetto, $corpo, 'Invita un altro amico', Support::baseUrl() . '/inviti']);

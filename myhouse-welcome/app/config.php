@@ -84,6 +84,8 @@ $config = [
         // Quando si applica: «adesione» (al primo addebito se ha spuntato la casella, anche se il giudizio arriva
         // dopo) oppure «giudizio» (solo dopo il giudizio inviato: al primo addebito se arriva prima, altrimenti al rinnovo).
         'sconto_quando' => $env('MHW_GIUDIZI_QUANDO', 'adesione') === 'giudizio' ? 'giudizio' : 'adesione',
+        // 9L · Le parole che fanno finire un giudizio tra i «Segnalati» (con le 1–2 stelle), separate da virgole.
+        'parole'        => $env('MHW_GIUDIZI_PAROLE', 'truffa, truffatori, vergogna, schifo, pessimo, denuncia, avvocato, rimborso'),
     ],
 
     // 8I: i registri (log). Quanti giorni restano sul server i registri tecnici (30–180, di serie 90; la posta
@@ -159,8 +161,8 @@ $config = [
     // ricevono l'avviso (email una volta sola e riga nel pannello) e la finestra «Accetto» arriva a quella data.
     // Si cambiano da Amministrazione → Impostazioni → Titolare e documenti legali.
     'legal' => [
-        'terms_version'   => $env('MHW_TERMS_VERSION', '2026-10-16'),   // 9B: punto «Giudizio con sconto»
-        'privacy_version' => $env('MHW_PRIVACY_VERSION', '2026-10-16'),   // 9A/9B: preventivi, giudizi
+        'terms_version'   => $env('MHW_TERMS_VERSION', '2026-10-19'),   // 9L: punto «Giudizio con sconto» riscritto (la vetrina)
+        'privacy_version' => $env('MHW_PRIVACY_VERSION', '2026-10-19'),   // 9L: «Giudizio con sconto e vetrina»; 9K: partner
         'dpa_version'     => $env('MHW_DPA_VERSION', '2026-10-15'),
         // 8J: il titolare del trattamento e fornitore del servizio.
         'company'         => $env('MHW_COMPANY', 'City Up S.r.l.'),

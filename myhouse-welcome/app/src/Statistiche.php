@@ -19,7 +19,8 @@ final class Statistiche
     /** I nomi degli obiettivi (evento: categoria «obiettivo», azione = nome). */
     public const OBIETTIVI = ['registrazione' => 'account creato', 'prova' => 'guida di prova creata', 'pagamento' => 'pagamento completato (nome = piano)',
                               'contatto' => 'clic su WhatsApp, email o telefono (nome = canale)', 'sito-myhouse' => '«Sì» nel percorso «Anche il tuo sito»',
-                              'vedi-esempio' => 'apertura della guida di esempio'];
+                              'vedi-esempio' => 'apertura della guida di esempio',
+                              'piano_test' => 'esito del questionario «Qual è il piano giusto per te?» (nome = piano · origine: home, tipologia, piano)'];
 
     /** Il nome del cookie tecnico con la scelta del visitatore (6 mesi): «s1a0.20261015», s = statistiche (GA4), a = analisi (Clarity). */
     public const COOKIE = 'mhw_consenso';

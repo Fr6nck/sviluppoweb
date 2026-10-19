@@ -1,22 +1,29 @@
 <?php
-/* 9B · Una scheda di «Cosa dicono di noi»: copertina in alto (se scelta), logo nel quadrato bianco (se scelto), stelle,
-   testo tra «», foto tonda + nome + «Struttura · Città». Nessun link, nessuna area toccabile. Riceve $g (con 'immagini'). */
+/* 9L · Una scheda di «Le guide dei nostri host»: copertina in alto (max 800 px, alt = nome della struttura), logo nel
+   quadrato bianco sul bordo (se c'è), poi le stelle ocra e il commento se il giudizio è approvato, altrimenti
+   «Guida online da {mese anno}»; sotto il nome dell'host (senza cognome) e «Struttura · Città (PR)». Nessuna foto
+   dell'host, nessun link, nessuna area toccabile. Riceve $g (Vetrina::perScheda). Serve anche alle anteprime. */
 use MHW\{Support, LinguaSito};
-$imS = $g['immagini'] ?? ['copertina' => null, 'foto' => null, 'logo' => null];
-$enS = LinguaSito::en(); ?>
-<figure class="dicono-scheda<?= $imS['copertina'] ? '' : ' dicono-scheda--senza-copertina' ?>">
-  <?php if ($imS['copertina'] || $imS['logo']): ?>
-    <div class="dicono-scheda__cop">
-      <?php if ($imS['copertina']): ?><img src="<?= Support::e($imS['copertina']) ?>" alt="<?= Support::e(($enS ? 'Cover of ' : 'Copertina di ') . $g['property_name']) ?>" loading="lazy" width="800" height="450"><?php endif; ?>
-      <?php if ($imS['logo']): ?><span class="dicono-scheda__logo"><img src="<?= Support::e($imS['logo']) ?>" alt="<?= Support::e(($enS ? 'Logo of ' : 'Logo di ') . $g['property_name']) ?>" loading="lazy" width="56" height="56"></span><?php endif; ?>
-    </div>
-  <?php endif; ?>
+$enS = LinguaSito::en();
+$meseS = (string) ($g['online_da'] ?? '') !== '' ? (int) gmdate('n', (int) strtotime((string) $g['online_da'])) : 0;
+$annoS = $meseS ? gmdate('Y', (int) strtotime((string) $g['online_da'])) : '';
+$nomiMese = $enS ? ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+                 : ['', 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre']; ?>
+<figure class="dicono-scheda<?= $g['copertina'] ? '' : ' dicono-scheda--senza-copertina' ?>">
+  <div class="dicono-scheda__cop">
+    <?php if ($g['copertina']): ?><img src="<?= Support::e($g['copertina']) ?>" alt="<?= Support::e($g['property_name']) ?>" loading="lazy" width="800" height="450"><?php endif; ?>
+    <?php if ($g['logo']): ?><span class="dicono-scheda__logo"><img src="<?= Support::e($g['logo']) ?>" alt="<?= Support::e(($enS ? 'Logo of ' : 'Logo di ') . $g['property_name']) ?>" loading="lazy" width="56" height="56"></span><?php endif; ?>
+  </div>
   <div class="dicono-scheda__corpo">
-    <span class="stelline dicono-scheda__voto" role="img" aria-label="<?= (int) $g['rating'] ?> <?= $enS ? 'out of 5' : 'su 5' ?>"><?= str_repeat('★', (int) $g['rating']) . str_repeat('☆', 5 - (int) $g['rating']) ?></span>
-    <blockquote><p>«<?= Support::e($g['body']) ?>»</p></blockquote>
+    <?php if ($g['rating'] > 0): ?>
+      <span class="stelline dicono-scheda__voto" role="img" aria-label="<?= (int) $g['rating'] ?> <?= $enS ? 'out of 5' : 'su 5' ?>"><?= str_repeat('★', (int) $g['rating']) . str_repeat('☆', 5 - (int) $g['rating']) ?></span>
+      <blockquote><p>«<?= Support::e($g['body']) ?>»</p></blockquote>
+      <?php if ($g['risposta'] !== ''): ?><p class="dicono-scheda__risposta"><b>MyHouse Welcome:</b> <?= Support::e($g['risposta']) ?></p><?php endif; ?>
+    <?php elseif ($meseS): ?>
+      <span class="dicono-scheda__online"><?= $enS ? 'Guide online since ' : 'Guida online da ' ?><?= Support::e($nomiMese[$meseS] . ' ' . $annoS) ?></span>
+    <?php endif; ?>
     <figcaption class="dicono-scheda__chi">
-      <?php if ($imS['foto']): ?><img src="<?= Support::e($imS['foto']) ?>" alt="<?= Support::e(($enS ? 'Photo of ' : 'Foto di ') . $g['name']) ?>" width="44" height="44" loading="lazy"><?php else: ?><span class="dicono-scheda__iniziale" aria-hidden="true"><?= Support::e(mb_strtoupper(mb_substr((string) $g['name'], 0, 1))) ?></span><?php endif; ?>
-      <span><b><?= Support::e($g['name']) ?></b><span class="small muted"><?= Support::e(trim($g['property_name'] . ($g['city'] !== '' ? ' · ' . $g['city'] : ''), ' ·')) ?></span></span>
+      <b><?= Support::e($g['name']) ?></b><span class="small muted"><?= Support::e(trim($g['property_name'] . ($g['luogo'] !== '' ? ' · ' . $g['luogo'] : ''), ' ·')) ?></span>
     </figcaption>
   </div>
 </figure>

@@ -328,6 +328,15 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 **9J · Palette «Bianco e nero»**
 - Niente da configurare: in **Aspetto** c'è la settima palette, chiara e scura, con la casella «Foto in bianco e nero». La migrazione **047** aggiunge la colonna della casella. Le altre sei palette restano identiche.
 
+## 4l. 9L (19 ottobre): finestra del questionario, foto, 55%, «Giudizio con sconto»
+
+1. **Termini e Informativa nuovi (2026-10-19).** Al primo accesso ogni cliente vede «Abbiamo aggiornato i Termini e l'Informativa» e li riaccetta (8J). Se in «Testi e foto» avevi riscritto a mano il punto «Giudizio con sconto» o il trattamento 6, rileggili: il testo nuovo vale solo dove non c'è il tuo.
+2. **Le schede in home.** In Amministrazione → Vendite → **Giudizi e vetrina** accendi le schede «da approvare» (al massimo 6) e approva i giudizi arrivati. Una scheda senza copertina non va in home: chiedi all'host di caricarla.
+3. **Parole da controllare.** In Impostazioni → Giudizi con sconto c'è l'elenco di serie (truffa, vergogna, schifo, …): cambialo come preferisci. I «Segnalati» servono solo ad attirare l'attenzione: lo sconto resta.
+4. **Il testo della casella** è uno solo, in «Testi e foto» → «Le guide dei nostri host e Giudizio con sconto» → «La casella del programma». Se cambi le regole, cambia anche i Termini.
+5. **Email di benvenuto dopo la pubblicazione:** oggi il sito non ne manda una (il cliente vede la conferma nella pagina); la riga sul programma è nel pannello e nell'email del 30° giorno. Se vuoi un'email di benvenuto, va decisa a parte.
+6. **Safari.** Prova la finestra «Rispondi a 3 domande» su un iPhone: si apre dal basso, la pagina sotto non scorre, si chiude con la ×.
+
 ## 4k. 9K (19 ottobre): foto, pagine nuove, partner, PEC
 
 1. **Limiti di PHP per le foto.** Se nel Quadro compare «Il server limita il caricamento delle foto», chiedi all'hosting (o in cPanel: «Seleziona versione PHP» → Opzioni, oppure «MultiPHP INI Editor») `upload_max_filesize = 20M`, `post_max_size = 20M` (meglio 25M) e `memory_limit = 256M`. Controlla poi in Diagnostica la riga «Limiti per il caricamento delle foto». Le foto prese dal browser arrivano già ridotte; i limiti servono a chi carica senza JavaScript.

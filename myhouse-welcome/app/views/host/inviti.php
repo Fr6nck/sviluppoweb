@@ -23,6 +23,7 @@ $traguardo = Inviti::MASSIMO === 50 ? 'metà prezzo' : 'il ' . Inviti::MASSIMO .
       <li class="invito__passo"><i aria-hidden="true">2</i><span>Il tuo amico apre il link: vede la tua guida in anteprima e lo sconto del <?= Inviti::AMICO ?>% è già inserito.</span></li>
       <li class="invito__passo"><i aria-hidden="true">3</i><span>Quando pubblica la sua guida, il tuo prossimo rinnovo scende del <?= Inviti::PASSO ?>%, fino al <?= Inviti::MASSIMO ?>%.</span></li>
     </ol>
+    <?php $rCome = b() . '/domande#porta-amico'; include __DIR__ . '/../pub/_risparmio.php'; /* 9L · fino al 55% con il programma «Giudizio con sconto» */ ?>
   </section>
 
   <?php if (!$puo): ?>

@@ -232,41 +232,16 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
     </details>
   </section>
 
-  <?php $rq = $giudizioRiquadro ?? null; /* 9B: «Il tuo giudizio» resta sempre qui: stato del programma, giudizio, Modifica · Ritira */
-        if ($rq && $rq['stato'] !== 'nascosto'): $pctG = MHW\Giudizi::percentuale(); ?>
+  <?php $rq = $giudizioRiquadro ?? null; /* 9L: il programma ha la sua pagina (Giudizio con sconto); qui lo stato in breve e il link */
+        if ($rq && $rq['stato'] !== 'nascosto'): $pctG = MHW\Giudizi::percentuale(); $schA = MHW\Vetrina::scheda((int) $acc['id']); ?>
   <section class="panel stack" id="giudizio" aria-labelledby="giudizio-titolo" style="gap:10px">
-    <h2 id="giudizio-titolo" style="font-size:22px;margin:0">Il tuo giudizio su MyHouse Welcome</h2>
+    <h2 id="giudizio-titolo" style="font-size:22px;margin:0">Giudizio con sconto</h2>
     <?php if ($rq['sconto'] !== ''): ?><span class="giudizio-invito__stato"><?= Support::e($rq['sconto']) ?></span><?php endif; ?>
-    <?php if ($giudizio): $ritirato = !empty($giudizio['withdrawn_at']); $inHome = !empty($giudizio['home_visible']) && !$ritirato; ?>
-      <p style="margin:0"><span class="stelline" aria-label="<?= (int) $giudizio['rating'] ?> su 5"><?= str_repeat('★', (int) $giudizio['rating']) . str_repeat('☆', 5 - (int) $giudizio['rating']) ?></span>
-        «<?= Support::e($giudizio['body']) ?>»</p>
-      <?php if ($ritirato): ?>
-        <p class="small muted" style="margin:0">Hai ritirato il giudizio il <?= Support::e(Support::date($giudizio['withdrawn_at'])) ?>: non si vede sul sito.<?= $rq['aderito'] ? ' Lo sconto già avuto resta.' : '' ?></p>
-      <?php elseif ($inHome): ?>
-        <p class="small muted" style="margin:0">È nella nostra home<?= !empty($giudizio['published_at']) ? ' dal ' . Support::e(Support::date($giudizio['published_at'])) : '' ?>. Puoi ritirarlo quando vuoi: sparisce subito.</p>
-        <form method="post" action="<?= b() ?>/account/giudizio/ritira" style="margin:0"><?= MHW\Csrf::field() ?><button class="btn btn--ghost btn--sm">Ritira il giudizio</button></form>
-      <?php elseif (!empty($giudizio['consent_at'])): ?>
-        <p class="small muted" style="margin:0">Il tuo giudizio <b>non è ancora sulla nostra home</b>: decidiamo noi quali mostrare. Adesione del <?= Support::e(Support::date($giudizio['consent_at'])) ?>.</p>
-        <div class="row" style="gap:10px"><a class="btn btn--ghost btn--sm" href="<?= b() ?>/giudizio">Modifica</a>
-          <form method="post" action="<?= b() ?>/account/giudizio/ritira" style="margin:0"><?= MHW\Csrf::field() ?><button class="linkbtn">Ritira il giudizio</button></form></div>
-      <?php else: ?>
-        <p class="small muted" style="margin:0">Resta tra noi: senza l'adesione al programma non lo pubblichiamo.</p>
-        <a class="btn btn--ghost btn--sm" href="<?= b() ?>/giudizio">Modifica</a>
-      <?php endif; ?>
-    <?php elseif ($rq['stato'] === 'aderito'): ?>
-      <p class="small" style="margin:0"><?= $rq['pubblicata'] ? 'Hai aderito: lascia il tuo giudizio quando vuoi, un voto e due righe. Lo sconto non dipende dal voto.' : 'Hai aderito: il giudizio si lascia dopo la prima pubblicazione della guida.' ?></p>
-      <?php if ($rq['pubblicata']): ?><a class="btn btn--sm" href="<?= b() ?>/giudizio">Dai il tuo giudizio</a><?php endif; ?>
-    <?php elseif ($rq['stato'] === 'invito'): ?>
-      <p class="small" style="margin:0"><?= $pctG ?>% sul prossimo rinnovo con un giudizio: un voto da 1 a 5 e due righe dopo la pubblicazione. Lo sconto non dipende dal voto.</p>
-      <form method="post" action="<?= b() ?>/giudizio/partecipo" class="stack" style="gap:8px"><?= MHW\Csrf::field() ?>
-        <label class="check" style="align-items:flex-start"><input type="checkbox" name="partecipo" value="1" required style="margin-top:1px">
-          <span><b>Partecipo: lascerò un giudizio</b> e accetto che possa essere mostrato in home con nome, copertina, foto e logo, senza link alla mia guida.</span></label>
-        <div class="row" style="gap:10px;align-items:center"><button class="btn btn--ghost btn--sm">Conferma</button><a class="small" href="<?= b() ?>/termini#giudizio-sconto" target="_blank" rel="noopener">Le regole</a></div>
-      </form>
-    <?php else: ?>
-      <p class="small" style="margin:0">Ti piace MyHouse Welcome? Raccontacelo: un voto e due righe per un altro host.</p>
-      <?php if ($rq['pubblicata']): ?><a class="btn btn--ghost btn--sm" href="<?= b() ?>/giudizio">Dai il tuo giudizio</a><?php endif; ?>
-    <?php endif; ?>
+    <p class="small" style="margin:0"><?php if ($schA && !empty($schA['ritirato_at'])): ?>Ti sei ritirato dal programma il <?= Support::e(Support::date((string) $schA['ritirato_at'])) ?>: la scheda e il giudizio non si vedono sul sito.
+      <?php elseif ($rq['aderito']): ?>Hai aderito: la tua scheda tra «Le guide dei nostri host», le immagini mostrate, il giudizio e il ritiro sono nella pagina del programma.
+      <?php elseif ($rq['stato'] === 'invito'): ?>Il <?= $pctG ?>% sul prossimo rinnovo e la tua guida tra «Le guide dei nostri host». Lo sconto non dipende dal voto.
+      <?php else: ?>Ti piace MyHouse Welcome? Raccontacelo: un voto e due righe.<?php endif; ?></p>
+    <a class="btn btn--ghost btn--sm" style="align-self:flex-start" href="<?= b() ?>/giudizio">Apri Giudizio con sconto</a>
   </section>
   <?php elseif (!empty($giudizio)): /* 7D: il giudizio sulla piattaforma e il consenso, ritirabile */ ?>
   <section class="panel stack" id="giudizio" aria-labelledby="giudizio-titolo" style="gap:10px">

@@ -188,9 +188,16 @@ final class Richiami
                 $quando = (int) strtotime((string) $g['prima']);
                 if ($t - $quando < Testimonianze::RICHIAMO_GIORNI * $giorno || $t - $quando > (Testimonianze::RICHIAMO_GIORNI + 10) * $giorno) continue;
                 if (Testimonianze::diAccount((int) $g['acc_id'])) continue;
-                $m = ['Ti sta piacendo MyHouse Welcome?',
-                      'la tua guida è online da un mese. Ci dici com\'è andata? Bastano un voto e due righe per un altro host che sta decidendo se provarla. Se vuoi, con il tuo consenso, le pubblichiamo sul sito.',
-                      'Dai il tuo giudizio', Support::baseUrl() . '/giudizio'];
+                // 9L · Chi ha aderito a «Giudizio con sconto»: il giudizio promesso, che si aggiunge alla sua scheda (mai una sua foto).
+                $sch = Vetrina::scheda((int) $g['acc_id']);
+                if ($sch && !empty($sch['ritirato_at'])) continue;
+                $m = $sch ? ['È il momento del tuo giudizio',
+                             'la tua guida è online da 30 giorni. Come previsto dal programma «Giudizio con sconto», lasciaci un voto da 1 a 5 con un commento: '
+                             . 'può comparire sulla tua scheda tra «Le guide dei nostri host», accanto al nome della struttura, alla copertina e al logo. Mai una tua foto, mai un link alla guida. Lo sconto non dipende dal voto.',
+                             'Lascia il giudizio', Support::baseUrl() . '/giudizio?scrivi=1']
+                          : ['Ti sta piacendo MyHouse Welcome?',
+                             'la tua guida è online da un mese. Ci dici com\'è andata? Bastano un voto e due righe: ci aiutano a migliorare.',
+                             'Dai il tuo giudizio', Support::baseUrl() . '/giudizio?scrivi=1'];
                 if (self::manda((int) $g['acc_id'], $g['email'], (string) $g['user_name'], 'giudizio', 'primo', $m)) $fatte['giudizio']++;
             }
         }
@@ -202,6 +209,7 @@ final class Richiami
         Inviti::inSospeso();   // gli sconti inviti che Stripe non ha ancora preso
         try { CambioAbbonamento::applyPendingChanges(); } catch (\Throwable $e) { Log::exception($e, 'cambi di piano in sospeso'); }
         RecuperoPagamenti::inSospeso();   // i pagamenti di cui il webhook di Stripe non ha dato notizia
+        try { Vetrina::sincronizza(); } catch (\Throwable $e) { Log::exception($e, 'vetrina: sincronizzazione'); }   // 9L: schede da spegnere
         return $fatte;
     }
 

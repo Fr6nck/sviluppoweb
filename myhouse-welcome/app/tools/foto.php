@@ -1,9 +1,9 @@
 <?php
 /**
- * Rigenera le versioni WebP della foto del borgo dai .jpg, con GD:
+ * Rigenera le versioni WebP delle foto della landing dai .jpg, con GD:
  *
- *   borgo.jpg            → borgo-1200.webp (1200 px di larghezza), borgo-2000.webp (2000 px)
- *   borgo-telefono.jpg   → borgo-telefono-600.webp (600 px)
+ *   checco-telefono.jpg  → checco-telefono-600.webp (600 px: Casa Checco nel telefono in cima, 9L)
+ *   checco-orizzontale.jpg → checco-orizzontale.webp (1200 px)
  *   scena-qr.jpg, scena-ospite.jpg, scena-host.jpg (le tre scene sotto l'hero,
  *                        facoltative) → scena-…-1200.webp e scena-…-600.webp
  *
@@ -18,7 +18,7 @@ if (!function_exists('mhw_rigenera_foto')) {
     /** @return array<int,array{0:string,1:bool,2:string}> [file, riuscito, dettaglio] */
     function mhw_rigenera_foto(string $cartella): array
     {
-        $lavori = [['borgo.jpg', 'borgo-1200.webp', 1200], ['borgo.jpg', 'borgo-2000.webp', 2000], ['borgo-telefono.jpg', 'borgo-telefono-600.webp', 600]];
+        $lavori = [['checco-telefono.jpg', 'checco-telefono-600.webp', 600], ['checco-orizzontale.jpg', 'checco-orizzontale.webp', 1200]];
         // Le scene sono facoltative: se il .jpg non c'è, non è un errore (la landing mostra il disegno).
         $facoltative = [];
         foreach (['scena-qr', 'scena-ospite', 'scena-host'] as $sc) {

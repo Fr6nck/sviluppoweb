@@ -118,7 +118,9 @@ final class Impostazioni
             'giudizi.percentuale'   => ['MHW_GIUDIZI_PERCENTO', 'Percentuale dello sconto', 'text', 'Da 1 a 20. Di serie 5. Vale per chi aderisce da adesso in poi.'],
             'giudizi.sconto_quando' => ['MHW_GIUDIZI_QUANDO', 'Quando si applica lo sconto', 'choice', 'All\'adesione: chi spunta la casella al pagamento ha lo sconto sul primo addebito, anche se il giudizio arriva dopo (si fida). Solo dopo il giudizio: lo sconto parte quando il giudizio è stato inviato, sul primo addebito se arriva prima (per esempio durante i mesi di un codice omaggio), altrimenti sul rinnovo.',
                                         ['adesione' => 'All\'adesione (anche se il giudizio arriva dopo)', 'giudizio' => 'Solo dopo il giudizio inviato']],
-            'giudizi.home'          => ['MHW_GIUDIZI_HOME', 'Sezione «Cosa dicono di noi» in home', 'check', 'La sezione compare solo se c\'è almeno un giudizio messo in home (Clienti → Giudizi).'],
+            'giudizi.home'          => ['MHW_GIUDIZI_HOME', 'Sezione «Le guide dei nostri host» in home', 'check', 'La sezione compare solo se c\'è almeno una scheda accesa (Vendite → Giudizi e vetrina).'],
+            // 9L · «Segnalati» in Giudizi e vetrina: i giudizi con queste parole (o con 1–2 stelle). Solo per attirare l'attenzione.
+            'giudizi.parole'        => ['MHW_GIUDIZI_PAROLE', 'Parole da controllare nei giudizi', 'text', 'Separate da virgole. Un giudizio che ne contiene una (o con 1–2 stelle) compare tra i «Segnalati». Lo sconto resta comunque.'],
         ],
     ];
 
@@ -477,10 +479,10 @@ final class Impostazioni
                     return [true, 'Assistenza: ' . Support::contatto() . ' · Commerciale: ' . Support::commerciale() . ' · Newsletter: ' . Support::newsletter()
                                 . ' · Amministrazione: ' . Support::amministrazione() . '. Mittente delle email: ' . (string) (Config::get('mail')['from'] ?? '') . '.'];
                 case 'giudizi':
-                    $inHome = Giudizi::disponibili() ? (int) Db::val('SELECT COUNT(*) FROM testimonials WHERE account_id IS NOT NULL AND home_visible = 1 AND withdrawn_at IS NULL', [], 0) : 0;
+                    $inHome = Vetrina::accese();   // 9L: le schede accese in «Le guide dei nostri host»
                     $aderiti = Giudizi::disponibili() ? (int) Db::val('SELECT COUNT(*) FROM accounts WHERE giudizio_adesione IS NOT NULL', [], 0) : 0;
                     return [true, (Giudizi::attivo() ? 'Sconto acceso: ' . Giudizi::percentuale() . '%, applicato ' . (Giudizi::quando() === 'giudizio' ? 'solo dopo il giudizio' : 'all\'adesione') . '.' : 'Sconto spento per i nuovi clienti.') . ' ' . $aderiti . ' clienti hanno aderito; '
-                                  . $inHome . ' giudizi in home' . (Giudizi::homeAccesa() ? '.' : ' (sezione spenta).')];
+                                  . $inHome . ' schede in home' . (Giudizi::homeAccesa() ? '.' : ' (sezione spenta).')];
                 case 'stripe':
                     if (!Stripe::enabled()) return [false, 'Stripe non è ancora configurato: servono la chiave segreta e il segreto del webhook.'];
                     Stripe::call('GET', 'balance');

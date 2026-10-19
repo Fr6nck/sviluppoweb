@@ -144,10 +144,10 @@ return [
     'voci.kicker' => 'Who uses it',
     'voci.titolo' => 'In our hosts\' words.',
     // ---- what our customers say (9B)
-    'dicono.kicker' => 'What our customers say',
+    'dicono.kicker' => 'Our hosts\' guides',
     'dicono.titolo' => 'Real hosts, calmer guests.',
-    'dicono.sotto'  => 'The words of people who use MyHouse Welcome every day.',
-    'dicono.nota'   => 'Reviews by customers who joined the programme: whoever leaves a review gets a {giudizio}% discount, whatever the rating. Published with their agreement, with no link to their guides.',
+    'dicono.sotto'  => 'The properties that use MyHouse Welcome every day, and the words of the hosts who have already left their review.',
+    'dicono.nota'   => 'Guides of hosts who joined the “Review with a discount” programme: they get {giudizio}% off their renewal, whatever rating they give. Published with their agreement, with no links to the guides.',
     // ---- piani
     'piani.kicker' => 'Plans and pricing',
     'piani.titolo' => 'Choose your plan.',
@@ -155,7 +155,7 @@ return [
     'piani.nota'   => 'Annual subscription with automatic renewal. You can turn off renewal from your account at any time: the guide stays online until the end of the period you have paid for.',
     // ---- porta un amico
     'amico.kicker'   => 'Bring a friend',
-    'amico.titolo'   => "The more friends you bring, the less you pay.\nUp to {max} off next year.",
+    'amico.titolo'   => "The more friends you bring, the less you pay.\nUp to {totale} off next year.",
     'amico.lead'     => 'Know other hosts, B&Bs or holiday homes? Send them your link: they get {amico} off their first year, and you get {passo} off your renewal for every friend who subscribes.',
     'amico.1.titolo' => 'Publish your guide.',
     'amico.1.testo'  => 'You will find your personal link under "Invite a friend".',
@@ -164,6 +164,9 @@ return [
     'amico.3.titolo' => 'When they pay, you save.',
     'amico.3.testo'  => 'Your renewal costs {passo} less for every friend, up to {max}.',
     'amico.bottone'  => 'How it works',
+    'risparmio.testo'    => '**Up to {totale} off from next year.** Bring a friend: {passo} each off your renewal, up to {max} with {amici} friends. Join the “Review with a discount” programme, with your guide on this page: another {giudizio}.',
+    'risparmio.inviti'   => '**Up to {max} off from next year.** Bring a friend: {passo} each off your renewal, up to {max} with {amici} friends.',
+    'risparmio.giudizio' => '**{giudizio} off.** Join the “Review with a discount” programme, with your guide on this page.',
     // ---- domande
     'faq.kicker'     => 'Questions',
     'faq.titolo'     => 'Before you start.',

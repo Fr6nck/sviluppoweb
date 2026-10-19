@@ -130,12 +130,13 @@ In tutti gli altri casi è competente in via esclusiva il **foro di Perugia**.
 T,
 'termini.17.titolo' => 'Giudizio con sconto',
 'termini.17.testo' => <<<'T'
-«Ti piace MyHouse Welcome?» è il programma con cui chi ha un account può avere uno sconto del {giudizio}% lasciando un giudizio sul Servizio. Si aderisce con **una sola casella**, prima del pagamento oppure dal pannello. Con quella casella ti impegni a lasciare, dopo aver pubblicato la guida, un voto da 1 a 5 con un breve commento, e accetti che il giudizio possa essere mostrato nella home del sito con il tuo nome (senza cognome), il nome e la città della struttura e le immagini che scegli tu tra copertina, foto e logo, senza alcun link alla tua guida.
+Con un'unica casella, al pagamento o dal pannello (Impostazioni → Giudizio con sconto), aderisci al programma «Giudizio con sconto» e hai il {giudizio}% di sconto: sul primo anno se aderisci al pagamento, sul rinnovo successivo se aderisci dopo. Si somma allo sconto degli inviti (punto 12); non si somma ai codici sconto (vale il più alto); non è disponibile con i codici omaggio.
 
-- **Lo sconto non dipende dal voto**: vale anche con una stella. Chi aderisce prima del primo pagamento ha lo sconto sul primo addebito; chi aderisce dopo ha lo sconto sul rinnovo annuale successivo, una volta lasciato il giudizio. Lo sconto del giudizio si ha **una sola volta** per account. Si somma allo sconto di «Invita un amico» e vale anche con un codice omaggio (sul primo addebito, alla fine dei mesi gratis); non si somma a un codice sconto (vale il più alto).
-- **La pubblicazione è a nostra discrezione**: non abbiamo l'obbligo di mostrare il giudizio e possiamo toglierlo dalla home in qualsiasi momento. Il giudizio si può modificare finché non è in home.
-- **Puoi ritirare il giudizio quando vuoi** da Account & Fatturazione: sparisce subito dalla home. Lo sconto già avuto resta tuo; quello promesso sul rinnovo decade se ritiri il giudizio prima del rinnovo.
-- Possiamo chiudere il programma per i nuovi clienti in qualsiasi momento: gli sconti già promessi restano validi.
+- Aderendo accetti che la tua guida compaia tra «Le guide dei nostri host» su welcomemyhouse.it **da quando la pubblichi, anche prima del giudizio**, con: nome della struttura, foto di copertina, logo, tuo nome senza cognome, città. Non mostriamo link alla guida, la tua foto, né dati dei tuoi ospiti. Scegli tu se mostrare copertina e logo.
+- Ti impegni a lasciare, dopo 30 giorni dalla pubblicazione, un voto da 1 a 5 con un commento. **Lo sconto non dipende dal voto**: vale anche con una stella. La pubblicazione in home resta a nostra discrezione; possiamo rispondere pubblicamente al giudizio.
+- **Puoi ritirarti quando vuoi**: scheda e giudizio spariscono subito. Lo sconto già avuto resta; quello promesso sul rinnovo decade se ti ritiri prima del rinnovo. La scheda sparisce da sola se la guida è archiviata, l'abbonamento scade o l'account viene chiuso.
+- Lo sconto del programma si ha **una sola volta** per account; chi si ritira non può aderire di nuovo.
+- Possiamo chiudere il programma ai nuovi clienti: gli sconti promessi restano.
 - Sono esclusi gli account di prova e di dimostrazione.
 T,
 'termini.18.titolo' => 'Codice omaggio',
@@ -211,13 +212,13 @@ T,
 | Conservazione | 24 mesi.
 | Destinatari | Il fornitore della posta.
 T,
-'privacy.t6.titolo' => 'Giudizi e pareri dei clienti',
+'privacy.t6.titolo' => 'Giudizio con sconto e vetrina, pareri dei clienti',
 'privacy.t6.testo' => <<<'T'
-| Dati | Il voto, il giudizio, il nome (senza cognome), il nome e la città della struttura e le immagini che scegli (copertina, foto, logo), se aderisci al programma «Ti piace MyHouse Welcome?» e lasci un giudizio; la risposta alla domanda «Cosa ti ha fermato?», se rispondi.
-| Finalità | Mostrare nella home del sito i giudizi dei clienti che hanno aderito al programma (con lo sconto, qualunque sia il voto); capire cosa migliorare.
-| Base giuridica | Per il giudizio e la sua pubblicazione, il contratto (art. 6.1.b): l'adesione al programma, con la casella che accetti prima del pagamento o dal pannello (Termini, «Giudizio con sconto»). Puoi ritirare il giudizio quando vuoi da Account & Fatturazione: sparisce subito dal sito. Per i pareri, il nostro legittimo interesse (art. 6.1.f).
-| Conservazione | I giudizi fino al ritiro o alla chiusura dell'account; i pareri come l'account.
-| Destinatari | I visitatori del sito, solo per i giudizi mostrati in home. Nessun link alla tua guida.
+| Dati | Per il programma «Giudizio con sconto e vetrina»: nome della struttura, copertina e logo (se scegli di mostrarli), il tuo nome senza cognome, la città, il voto e il commento, la data di pubblicazione della guida. **Nessuna foto della persona.** La risposta alla domanda «Cosa ti ha fermato?», se rispondi.
+| Finalità | Mostrare la tua guida tra «Le guide dei nostri host» nella home del sito, da quando la pubblichi, e il tuo giudizio quando lo lasci (con lo sconto, qualunque sia il voto); capire cosa migliorare.
+| Base giuridica | Per la scheda e il giudizio, il contratto (art. 6.1.b): l'adesione al programma, con l'unica casella che accetti al pagamento o dal pannello (Termini, «Giudizio con sconto»). Puoi ritirarti quando vuoi da Impostazioni → Giudizio con sconto: scheda e giudizio spariscono subito dal sito. Per i pareri, il nostro legittimo interesse (art. 6.1.f).
+| Conservazione | La scheda e il giudizio fino al ritiro o alla chiusura dell'account; i pareri come l'account.
+| Destinatari | I visitatori del sito, solo per le schede mostrate in home. Nessun link alla tua guida, nessun dato dei tuoi ospiti.
 T,
 'privacy.t7.titolo' => 'Statistiche di lettura delle guide',
 'privacy.t7.testo' => <<<'T'
@@ -509,14 +510,15 @@ If you are a consumer, the court of your place of residence or domicile has juri
 
 In all other cases the **courts of Perugia** (Italy) have exclusive jurisdiction.
 T,
-'termini.17.titolo' => 'Review with discount',
+'termini.17.titolo' => 'Review with a discount',
 'termini.17.testo' => <<<'T'
-"Do you like MyHouse Welcome?" is the programme through which an account holder can get a {giudizio}% discount by leaving a review of the Service. You join with **a single checkbox**, before payment or from the dashboard. With that checkbox you undertake to leave, after publishing your guide, a rating from 1 to 5 with a short comment, and you accept that the review may be shown on the website's home page with your first name (no surname), the name and town of the property and the images you choose among cover, photo and logo, with no link to your guide.
+With a single checkbox, at checkout or from the dashboard (Settings → Review with a discount), you join the "Review with a discount" programme and get a {giudizio}% discount: on the first year if you join at checkout, on the following renewal if you join later. It adds up with the invitation discount (section 12); it does not add up with discount codes (the higher one applies); it is not available with gift codes.
 
-- **The discount does not depend on the rating**: it applies even with one star. Whoever joins before the first payment gets the discount on the first charge; whoever joins later gets it on the next yearly renewal, once the review is left. The review discount is granted **once only** per account. It adds up with the "Invite a friend" discount and also applies with a gift code (on the first charge, at the end of the free months); it cannot be combined with a discount code (the higher one applies).
-- **Publication is at our discretion**: we have no obligation to show the review and we may remove it from the home page at any time. The review can be edited until it is on the home page.
-- **You can withdraw the review at any time** from Account & Billing: it disappears from the home page immediately. A discount already received stays yours; the one promised on the renewal lapses if you withdraw the review before the renewal.
-- We may close the programme to new customers at any time: discounts already promised remain valid.
+- By joining you accept that your guide appears among "Our hosts' guides" on welcomemyhouse.it **from the moment you publish it, even before the review**, with: property name, cover photo, logo, your first name (no surname), town. We do not show links to the guide, your photo or any data about your guests. You choose whether to show the cover and the logo.
+- You undertake to leave, 30 days after publishing, a rating from 1 to 5 with a comment. **The discount does not depend on the rating**: it applies even with one star. Publication on the home page remains at our discretion; we may reply publicly to the review.
+- **You can leave whenever you like**: the card and the review disappear immediately. A discount already received stays yours; the one promised on the renewal lapses if you leave before the renewal. The card disappears by itself if the guide is archived, the subscription expires or the account is closed.
+- The programme discount is granted **once only** per account; whoever leaves cannot join again.
+- We may close the programme to new customers: promised discounts remain valid.
 - Trial and demo accounts are excluded.
 T,
 'termini.18.titolo' => 'Gift code',
@@ -592,13 +594,13 @@ T,
 | Retention | 24 months.
 | Recipients | The email provider.
 T,
-'privacy.t6.titolo' => 'Customer reviews and feedback',
+'privacy.t6.titolo' => 'Review with a discount and showcase, customer feedback',
 'privacy.t6.testo' => <<<'T'
-| Data | Rating, review, first name (no surname), name and town of the property and the images you choose (cover, photo, logo), if you join the "Do you like MyHouse Welcome?" programme and leave a review; your answer to "What stopped you?", if you reply.
-| Purpose | Showing on the website's home page the reviews of customers who joined the programme (with the discount, whatever the rating); understanding what to improve.
-| Legal basis | For the review and its publication, the contract (art. 6.1.b): joining the programme, with the checkbox you accept before payment or from the dashboard (Terms, "Review with discount"). You can withdraw the review at any time from Account & Billing: it disappears from the website immediately. For feedback, our legitimate interest (art. 6.1.f).
-| Retention | Reviews until withdrawn or until the account is closed; feedback same as the account.
-| Recipients | Website visitors, for reviews shown on the home page only. No link to your guide.
+| Data | For the "Review with a discount and showcase" programme: property name, cover and logo (if you choose to show them), your first name (no surname), the town, the rating and the comment, the date the guide was published. **No photo of the person.** The answer to "What stopped you?", if you answer.
+| Purpose | Showing your guide among "Our hosts' guides" on the website's home page, from the moment you publish it, and your review once you leave it (with the discount, whatever the rating); understanding what to improve.
+| Legal basis | For the card and the review, the contract (Art. 6.1.b): joining the programme, with the single checkbox you accept at checkout or from the dashboard (Terms, "Review with a discount"). You can leave whenever you like from Settings → Review with a discount: the card and the review disappear from the site immediately. For feedback, our legitimate interest (Art. 6.1.f).
+| Retention | The card and the review until you leave or close your account; feedback for as long as the account.
+| Recipients | Website visitors, only for the cards shown on the home page. No link to your guide, no data about your guests.
 T,
 'privacy.t7.titolo' => 'Guide reading statistics',
 'privacy.t7.testo' => <<<'T'

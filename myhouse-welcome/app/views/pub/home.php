@@ -38,12 +38,10 @@ $vai = fn(int $pv) => b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') .
 $crea = b() . ($dentro ? '/pannello' : '/registrati' . ($en ? '?lang=en' : ''));
 $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' . ($en ? '?l=en' : '') : null;
 $nomeDemo = $demo['name'] ?? 'Casa Lucia';
-$fotoJpg = a('/assets/foto/borgo.jpg');
-$fotoSet = a('/assets/foto/borgo-1200.webp') . ' 1200w, ' . a('/assets/foto/borgo-2000.webp') . ' 2000w';
-// Il telefono mostra la demo vera: con la vetrina (Casa Checco) la sua foto, altrimenti quella di Casa Lucia.
 $vetrina = $demo && (int) $demo['is_demo'] === MHW\Demo::VETRINA;
-$telefonoJpg = a($vetrina ? '/assets/foto/checco-telefono.jpg' : '/assets/foto/borgo-telefono.jpg');
-$telefonoWebp = a($vetrina ? '/assets/foto/checco-telefono-600.webp' : '/assets/foto/borgo-telefono-600.webp');
+// 9L · Nel telefono in cima il portone di Casa Checco, ritaglio orizzontale (la foto del borgo non c'è più).
+$telefonoJpg = a('/assets/foto/checco-telefono.jpg');
+$telefonoWebp = a('/assets/foto/checco-telefono-600.webp');
 $checkinDemo = preg_match('/^\d{2}:\d{2}$/', (string) ($demo['checkin_from'] ?? '')) ? $demo['checkin_from'] : '15:00';
 // Il prezzo di partenza, dal listino: se l'amministratore lo cambia, cambia anche qui.
 $partenza = null;
@@ -272,9 +270,10 @@ $disegni = [
 
 <?php /* Per chi è: quattro modi di ospitare, a ognuno il suo uso della guida. Niente numeri e
    niente promesse: solo quello che il prodotto fa davvero. */ ?>
-<?php /* 9B · «Cosa dicono di noi»: i giudizi dei clienti che hanno aderito al programma e che abbiamo messo in home (Giudizi::perHome).
-   Compare solo se ce n'è almeno uno. Nessun link e nessuna area toccabile verso le guide; la nota in fondo è obbligatoria. */
-      $dicono = MHW\Giudizi::perHome(); if ($dicono): ?>
+<?php /* 9L · «Le guide dei nostri host»: le schede di chi ha aderito al programma «Giudizio con sconto», accese in
+   Amministrazione (Vetrina::perHome, al massimo 6: prima quelle con il giudizio). Compare solo se ce n'è almeno una.
+   Nessuna foto dell'host, nessun link e nessuna area toccabile verso le guide; la nota in fondo è obbligatoria. */
+      $dicono = MHW\Vetrina::perHome(); if ($dicono): ?>
 <section id="cosa-dicono" class="blocco dicono" aria-labelledby="dicono-titolo">
   <div class="stack stack--sm" style="max-width:640px">
     <span class="kicker"><?= $T('dicono.kicker') ?></span>
@@ -288,6 +287,7 @@ $disegni = [
     <?php foreach ($dicono as $g): ?><div role="listitem" class="dicono__scheda"><?php include __DIR__ . '/_dicono_scheda.php'; ?></div><?php endforeach; ?>
   </div>
   <p class="dicono__nota"><?= $T('dicono.nota', ['giudizio' => MHW\Giudizi::percentuale()]) ?></p>
+  <?php $rT = $T; $rCome = '#faq-porta-amico'; include __DIR__ . '/_risparmio.php'; ?>
 </section>
 <?php endif; ?>
 
@@ -304,12 +304,12 @@ $disegni = [
           $img = TestiSito::immagine('perchi-' . $foto);
           // Le foto di serie hanno la loro descrizione; una foto caricata da Gestione prende il titolo della scheda.
           $alt = $img['caricata'] ? html_entity_decode(strip_tags($T('perchi.' . $k . '.titolo')), ENT_QUOTES) : ($en ? [
-              'casa' => 'A red wooden door and shutters in a stone wall with climbing roses', 'bnb' => 'A cup of coffee on a café table',
-              'affitta' => 'An arched wooden door among flowering plants and terracotta pots', 'agri' => 'A stone village with steps and geraniums',
-              'piu' => 'Hands editing a guide on a laptop, beside a QR Code', 'pm' => 'The MyHouse Welcome dashboard with a guide\'s statistics'][$k] : [
-              'casa' => 'Una porta e le persiane rosse in legno su un muro di pietra con le rose rampicanti', 'bnb' => 'Una tazza di caffè sul tavolo di un bar',
-              'affitta' => 'Un portone ad arco in legno tra piante fiorite e vasi di terracotta', 'agri' => 'Un borgo di pietra con le scale e i gerani',
-              'piu' => 'Le mani che modificano una guida sul portatile, accanto al QR Code', 'pm' => 'Il pannello di MyHouse Welcome con le statistiche di una guida'][$k]); ?>
+              'casa' => 'A red wooden door and shutters in a stone wall with climbing roses', 'bnb' => 'The entrance of a stone B&B with its sign, lit lanterns and flower pots',
+              'affitta' => 'An arched wooden door among flowering plants and terracotta pots', 'agri' => 'A stone farmhouse with a flowering courtyard, umbrellas and hills',
+              'piu' => 'Hands editing a guide on a laptop, beside a QR Code', 'pm' => 'A property manager at the desk with bookings for several properties on screen'][$k] : [
+              'casa' => 'Una porta e le persiane rosse in legno su un muro di pietra con le rose rampicanti', 'bnb' => 'L\'ingresso di un B&B in pietra con l\'insegna, le lanterne accese e i vasi fioriti',
+              'affitta' => 'Un portone ad arco in legno tra piante fiorite e vasi di terracotta', 'agri' => 'Un agriturismo in pietra con il cortile fiorito, gli ombrelloni e le colline',
+              'piu' => 'Le mani che modificano una guida sul portatile, accanto al QR Code', 'pm' => 'Un property manager alla scrivania con le prenotazioni di più strutture sugli schermi'][$k]); ?>
       <a class="perchi__scheda" href="<?= b() . $dove ?>"<?= $en ? ' hreflang="it"' : '' ?>>
         <span class="perchi__foto"><?php if ($img['url']): ?><img src="<?= Support::e($img['url']) ?>" alt="<?= Support::e($alt) ?>" width="720" height="540" loading="lazy" decoding="async"<?= $F('perchi-' . $foto) ?>><?php endif; ?></span>
         <span class="perchi__corpo">
@@ -503,7 +503,20 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
   </div>
   <?php /* 9A · Il riquadro del preventivo, sotto le schede: si apre oltre il massimo del Portfolio. */
         foreach ($offers as $of) foreach ($of['options'] as $oP) if (Plans::perProperty($oP)) { $pvP = $oP; $qP = 0; $tornaP = $en ? '/en' : '/'; include __DIR__ . '/_preventivo.php'; break 2; } ?>
-  <?php include __DIR__ . '/_confronto.php'; ?>
+  <?php if (isset($qPiani)): /* 9L · Le tre schede restano come sono: nella riga di «Confronta tutti i piani», a destra,
+         «Non sai quale scegliere?» apre la finestra con il questionario (senza JavaScript è un link a /piano). */ ?>
+    <div class="piani__riga">
+      <?php include __DIR__ . '/_confronto.php'; ?>
+      <div class="piani__aiuto"><span><?= $T('questionario.apri.domanda') ?></span>
+        <a class="btn btn--go" href="<?= b() ?>/piano" data-q-apri aria-haspopup="dialog"><?= $T('questionario.apri.bottone') ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a></div>
+    </div>
+    <dialog class="finestra-piano" aria-labelledby="piano-giusto-titolo">
+      <div class="finestra-piano__box">
+        <button type="button" class="finestra-piano__chiudi" data-q-chiudi aria-label="Chiudi"><?= Icon::svg('close', 20, 2) ?></button>
+        <?php $qModo = 'finestra'; $qOrigine = 'home'; include __DIR__ . '/_questionario.php'; ?>
+      </div>
+    </dialog>
+  <?php else: include __DIR__ . '/_confronto.php'; endif; ?>
   <p class="piani__nota"><?= $T('piani.nota') ?></p>
 </section>
 
@@ -515,8 +528,10 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <?php /* Le percentuali arrivano dal programma; nel titolo {max} è in evidenza. */
           $pct = ['amico' => MHW\Inviti::AMICO . '%', 'passo' => MHW\Inviti::PASSO . '%', 'max' => MHW\Inviti::MASSIMO . '%']; ?>
     <span class="kicker"><?= $T('amico.kicker') ?></span>
-    <h2 id="amico-titolo" class="h-sezione"><?= $T('amico.titolo', ['max' => '<span class="amico__cifra">' . MHW\Inviti::MASSIMO . '%</span>'] + $pct) ?></h2>
+    <h2 id="amico-titolo" class="h-sezione"><?= $T('amico.titolo', ['max' => '<span class="amico__cifra">' . MHW\Inviti::MASSIMO . '%</span>',
+                                                                     'totale' => '<span class="amico__cifra">' . MHW\Sconti::massimoRinnovo()['totale'] . '%</span>'] + $pct) ?></h2>
     <p class="amico__lead"><?= $T('amico.lead', $pct) ?></p>
+    <?php $rT = $T; $rCome = '#faq-porta-amico'; include __DIR__ . '/_risparmio.php'; /* 9L · il 55% (inviti + «Giudizio con sconto») */ ?>
     <div class="row">
       <a class="btn" href="<?= b() . ($dentro ? '/inviti' : '/registrati' . ($en ? '?lang=en' : '')) ?>"><?= $dentro ? $U('Invita un amico', 'Invite a friend') : $T('cta.crea') ?></a>
       <a class="btn btn--ghost" href="#faq-porta-amico"><?= $T('amico.bottone') ?></a>
