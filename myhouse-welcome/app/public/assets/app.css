@@ -754,6 +754,8 @@ button, input[type=submit], input[type=button] { background-image: none; }
 .steps-nav a.on{background:var(--inverse-bg);color:var(--inverse-fg)}
 .steps-nav a.on .n{background:var(--inverse-fg);color:var(--inverse-bg);border-color:transparent}
 .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:8px}
+/* Pagamento: «Apri la guida» e «Scarica il QR» restano nascosti finché Stripe non conferma. */
+.actions[hidden]{display:none}
 
 /* La barra della procedura: uguale in ogni passo. Sul telefono resta
    incollata in basso, così «Salva e continua» è sempre sotto il pollice. */

@@ -935,6 +935,8 @@ prova('Cliente Stripe creato una volta', count(array_filter(richiesteStripe(), f
 
 $r = $anna->get('/pagamento/ok?order=' . $ordine['id']);
 prova('Ritorno dal pagamento: pagina di attesa', $r['code'] === 200 && pulita($r));
+prova('…«Apri la guida» e «Scarica il QR» nascosti finché Stripe non conferma (lo stile di .actions non vince su hidden)',
+      str_contains($r['body'], 'id="fatto" hidden') && str_contains((string) file_get_contents("$DOVE/assets/app.css"), '.actions[hidden]{display:none}'));
 $r = $anna->get("/g/$slug");
 prova('Il ritorno dal browser NON pubblica niente', $r['code'] === 404);
 $st = json_decode($anna->get('/pagamento/stato?order=' . $ordine['id'])['body'], true);

@@ -1,10 +1,11 @@
 # Changelog — MyHouse Welcome
 
-## v2 · Cookie e webhook: elenchi completati (19 ottobre 2026)
+## v2 · Cookie, webhook e ritorno dal pagamento (19 ottobre 2026)
 
 Nessuna migrazione.
 
 - **Informativa, «Cookie tecnici»** (italiano e inglese): ora nomina anche `mhw_fascia_…`, il cookie tecnico del pannello che nasconde per 24 ore l'avviso del rinnovo quando l'host preme «Chiudi» (9D). Correzione di completezza, non un cambio sostanziale: la versione dei documenti legali resta la stessa e nessuno deve riaccettare. Se il testo «Cookie tecnici» è stato modificato a mano in Testi del sito, resta quello salvato: va aggiornato lì.
+- **Ritorno dal pagamento** (`/pagamento/ok`): nella pagina «Stiamo attivando la tua guida» i bottoni «Apri la guida» e «Scarica il QR» si vedevano già prima della conferma di Stripe, perché lo stile di `.actions` vinceva sull'attributo `hidden` (e la guida, aperta in quel momento, dava 404). Ora restano nascosti finché Stripe non conferma.
 - **Eventi del webhook di Stripe**: l'elenco in Impostazioni → Stripe, nel LEGGIMI e in DA-CONFIGURARE comprende anche `customer.subscription.trial_will_end` e `charge.refunded` (già gestiti dal 9D e dal 9E); nel LEGGIMI anche i due `checkout.session.async_payment_*`.
 
 ## v2 · 9I Codice cliente, codice struttura e codice pagamento; «Cerca» in Amministrazione (18 ottobre 2026)
