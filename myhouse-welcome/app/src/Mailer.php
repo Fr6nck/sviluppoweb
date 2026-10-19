@@ -295,7 +295,9 @@ final class Mailer
         if ($html !== null) {
             $dir = Log::dir() . '/email';
             if (is_dir($dir) || @mkdir($dir, 0775, true)) {
-                $nome = gmdate('Ymd-His') . '-' . substr(Support::slug(explode(' — ', $subject)[0]), 0, 60);
+                // Con i microsecondi: due email nello stesso secondo restano nell'ordine in cui sono partite.
+                $adesso = microtime(true);
+                $nome = gmdate('Ymd-His', (int) $adesso) . sprintf('-%06d', (int) (($adesso - floor($adesso)) * 1e6)) . '-' . substr(Support::slug(explode(' — ', $subject)[0]), 0, 60);
                 // 9C: l'HTML come parte nell'email (con «cid:marchio») e il messaggio intero (.eml), con il marchio in linea.
                 [$htmlCid] = self::incorporaMarchio($html);
                 @file_put_contents($dir . '/' . $nome . '.html', $htmlCid, LOCK_EX);
