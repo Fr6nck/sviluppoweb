@@ -3385,6 +3385,7 @@ $r = $nina->get("/pannello/$np/pagamento/" . $no4['id']);
 prova('…e la pagina del modulo, pagata, porta a /pagamento/ok', $r['code'] === 302 && str_contains($r['loc'], '/pagamento/ok?order=' . $no4['id']));
 // Il cambio di piano resta sulla pagina di Stripe; poi la chiave si toglie, per le prove che seguono.
 $admin->post('/admin/impostazioni/stripe', ['stripe__publishable_key' => '', 'password' => 'AdminProva123']);
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'impostazioni%'");   // i salvataggi qui sopra non tolgono il limite alle prove che seguono
 prova('Senza chiave pubblicabile si torna alla pagina di Stripe (come prima)', !str_contains($lea->get("/pannello/$lp/procedura/pubblica")['body'], 'Preferisci pagare sulla pagina di Stripe?'));
 
 // ============================================================ 7B · cambiare piano dall'abbonamento, pannello
