@@ -2915,6 +2915,13 @@ body.con-finestra{overflow:hidden}
 .fascia__azioni{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .omaggio-nuovo code,.spiega{overflow-wrap:anywhere}
 .omaggio-nuovo__codice{font-size:28px;letter-spacing:1px;margin:0;word-break:break-all}
+/* «Manda per email» dei codici omaggio: il bottone apre il campo dell'indirizzo, sotto la riga dei bottoni. */
+.omaggio-email{display:contents}
+.omaggio-email>summary{list-style:none;cursor:pointer}
+.omaggio-email>summary::-webkit-details-marker{display:none}
+.omaggio-email[open]>summary{background:var(--sunk)}
+.omaggio-email__modulo{flex-basis:100%;display:flex;flex-direction:column;gap:6px;margin:4px 0 0;max-width:420px}
+.omaggio-email__modulo input{min-width:0;flex:1}
 .giudizi-programma{display:flex;gap:14px 18px;align-items:flex-end;flex-wrap:wrap}
 .giudizi-programma .scelta--mini{align-self:center}
 .giudizi-programma__campo label{font-size:12.5px}

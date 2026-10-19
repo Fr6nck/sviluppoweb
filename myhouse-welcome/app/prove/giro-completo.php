@@ -5272,6 +5272,15 @@ prova('9D · Vendite → Codici omaggio: codice OMAGGIO-XXXXX creato (3 mesi, sc
       && preg_match('#/admin/omaggi"[^>]*>(?:<svg.*?</svg>)?\s*(?:<span>)?Codici omaggio<#s', $pg) === 1,
       json_encode([$r['code'], $r['loc'] ?? '', str_contains($pg, 'wa.me/?text='), str_contains($pg, 'mailto:?subject='), str_contains($pg, 'data-copia="'), str_contains($pg, 'Ti abbiamo riservato 3 mesi gratis'),
                    str_contains($pg, 'Il codice ' . ($cod9d['codice'] ?? '') . ' vale fino al ' . dataIt((string) ($cod9d['scade_il'] ?? ''))), preg_match('#/admin/omaggi"[^>]*>(?:<svg.*?</svg>)?\s*(?:<span>)?Codici omaggio<#s', $pg), $cod9d['scade_il'] ?? '', gmdate('Y-m-d', strtotime('+14 days'))]));
+prova('9D · «Manda per email» apre il campo dell\'indirizzo (l\'email la manda il sito), con il mailto: come alternativa',
+      str_contains($pg, 'action="' . preg_replace('#^https?://[^/]+#', '', $BASE) . '/admin/omaggi/' . $cod9d['id'] . '/email"') && str_contains($pg, 'oppure apri il tuo programma di posta'));
+$r = $admin->segui($admin->post('/admin/omaggi/' . $cod9d['id'] . '/email', ['email' => 'non-un-indirizzo']));
+prova('…un indirizzo sbagliato non parte', str_contains($r['body'], 'Scrivi un indirizzo email valido'));
+$r = $admin->segui($admin->post('/admin/omaggi/' . $cod9d['id'] . '/email', ['email' => 'Tester.Omaggio@Esempio.it']));
+$posta9d = implode("\n", righePosta());
+prova('…uno giusto: il sito manda «3 mesi gratis di MyHouse Welcome» con il messaggio, il codice e il bottone del link',
+      str_contains($r['body'], 'Email con il codice ' . $cod9d['codice'] . ' mandata a tester.omaggio@esempio.it') && str_contains($posta9d, '"to":"tester.omaggio@esempio.it"')
+      && str_contains($posta9d, '3 mesi gratis di MyHouse Welcome') && preg_match('#Crea la tua guida: https?://[^"\s]+/omaggio/' . substr((string) $cod9d['codice'], 8) . '#', $posta9d) === 1);
 prova('9D · i mesi fuori da 1–12 e la scadenza passata sono rifiutati', str_contains($admin->segui($admin->post('/admin/omaggi', ['mesi' => '13', 'nota' => 'x']))['body'], 'I mesi gratis vanno da 1 a 12')
       && str_contains($admin->segui($admin->post('/admin/omaggi', ['mesi' => '2', 'scade_il' => '2020-01-01']))['body'], 'La data di scadenza è già passata'));
 // Ida arriva dal link: la registrazione con il banner e il campo in sola lettura.

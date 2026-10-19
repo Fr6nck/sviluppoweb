@@ -1,5 +1,12 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Codici omaggio: «Manda per email» parte dal sito (19 ottobre 2026)
+
+Nessuna migrazione.
+
+- In Amministrazione → Codici omaggio il bottone «Manda per email» era un link `mailto:` senza destinatario: senza un programma di posta predefinito sul computer (per esempio con la posta nel browser) non faceva niente. Ora apre il campo «Email della persona» e il sito manda l'email («N mesi gratis di MyHouse Welcome»): il messaggio di Testi e foto, con il bottone «Crea la tua guida» sul link del codice. Le risposte arrivano all'email commerciale. Il `mailto:` resta come «oppure apri il tuo programma di posta».
+- Solo per i codici validi; al massimo 50 email al giorno per amministratore; nel registro l'indirizzo mascherato e l'esito.
+
 ## v2 · Pagamento con la carta nel passo «Pubblica» (19 ottobre 2026)
 
 Nessuna migrazione. Da configurare: DA-CONFIGURARE, punto 3 (Stripe), «Pagamento con la carta nel pannello».

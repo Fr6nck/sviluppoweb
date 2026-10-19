@@ -10,7 +10,13 @@ $pillola = ['valido' => ['Valido', 'pine'], 'usato' => ['Usato', 'ochre'], 'scad
 $bottoni = function (array $c) {
     $msg = Omaggi::messaggio($c); $link = Omaggi::link($c);
     return '<a class="btn btn--sm" href="https://wa.me/?text=' . rawurlencode($msg) . '" target="_blank" rel="noopener">' . Icon::svg('whatsapp', 15) . 'Manda su WhatsApp</a>'
-         . '<a class="btn btn--ghost btn--sm" href="mailto:?subject=' . rawurlencode((int) $c['mesi'] . ' mesi gratis di MyHouse Welcome') . '&amp;body=' . rawurlencode($msg) . '">' . Icon::svg('message', 15) . 'Manda per email</a>'
+         // L'email la manda il sito: un link mailto: senza programma di posta predefinito (posta nel browser) non fa niente.
+         . '<details class="omaggio-email"><summary class="btn btn--ghost btn--sm">' . Icon::svg('message', 15) . 'Manda per email</summary>'
+         . '<form method="post" action="' . b() . '/admin/omaggi/' . (int) $c['id'] . '/email" class="omaggio-email__modulo">' . Csrf::field()
+         . '<label class="small" for="om-email-' . (int) $c['id'] . '">Email della persona</label>'
+         . '<span class="row" style="gap:6px;flex-wrap:nowrap"><input id="om-email-' . (int) $c['id'] . '" name="email" type="email" required maxlength="190" autocomplete="off" placeholder="nome@esempio.it">'
+         . '<button class="btn btn--sm">Manda</button></span>'
+         . '<a class="tiny" href="mailto:?subject=' . rawurlencode((int) $c['mesi'] . ' mesi gratis di MyHouse Welcome') . '&amp;body=' . rawurlencode($msg) . '">oppure apri il tuo programma di posta</a></form></details>'
          . '<button type="button" class="btn btn--ghost btn--sm" data-copia="' . Support::e($link) . '" data-copiato="Link copiato" hidden>' . Icon::svg('copy', 15) . 'Copia il link</button>';
 }; ?>
 <div class="stack stack--lg">

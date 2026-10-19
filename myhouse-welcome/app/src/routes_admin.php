@@ -1047,6 +1047,23 @@ $r->post('/admin/omaggi', function () {
     Support::flash('Codice ' . $c['codice'] . ' creato: ' . (int) $c['mesi'] . ' mesi gratis, da usare entro il ' . Support::date($c['scade_il']) . '. Mandalo con uno dei bottoni.');
     Support::redirect('/admin/omaggi?nuovo=' . $id);
 });
+/* «Manda per email»: il messaggio del codice parte dal sito (le risposte all'email commerciale). Solo per i codici validi. */
+$r->post('/admin/omaggi/{id}/email', function (array $a) {
+    $admin = Auth::requireAdmin();
+    $c = MHW\Omaggi::riga((int) $a['id']);
+    if (!$c || MHW\Omaggi::stato($c) !== 'valido') { Support::flash('Questo codice non è più valido: non si può mandare.', 'err'); Support::redirect('/admin/omaggi'); }
+    $email = mb_strtolower(trim((string) ($_POST['email'] ?? '')));
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { Support::flash('Scrivi un indirizzo email valido, per esempio nome@esempio.it.', 'err'); Support::redirect('/admin/omaggi'); }
+    if (!RateLimit::hit('omaggi-email:' . (int) $admin['id'], 50, 86400)) { Support::flash('Hai mandato molte email oggi: riprova domani, o usa WhatsApp.', 'err'); Support::redirect('/admin/omaggi'); }
+    $mesi = (int) $c['mesi'];
+    $paragrafi = array_values(array_filter(array_map('trim', preg_split('/\R\s*\R/', MHW\Omaggi::messaggio($c)) ?: []), fn($p) => $p !== ''));
+    $ok = MHW\Mailer::conRispostaA(Support::commerciale(), fn() => MHW\Mailer::manda($email, $mesi . ' mesi gratis di MyHouse Welcome', $mesi . ($mesi === 1 ? ' mese gratis' : ' mesi gratis') . ' per te',
+        $paragrafi, ['Crea la tua guida', MHW\Omaggi::link($c)]));
+    Auth::audit('omaggio.email', null, ['id' => (int) $c['id'], 'codice' => (string) $c['codice'], 'a' => MHW\Inviti::maschera($email), 'esito' => $ok ? 'partita' : 'non partita']);
+    Support::flash($ok ? 'Email con il codice ' . $c['codice'] . ' mandata a ' . $email . '. Le risposte arrivano a ' . Support::commerciale() . '.'
+                       : 'L\'email non è partita: controlla Amministrazione → Impostazioni → Posta in uscita, o manda il codice su WhatsApp.', $ok ? 'ok' : 'err');
+    Support::redirect('/admin/omaggi');
+});
 $r->post('/admin/omaggi/{id}/annulla', function (array $a) {
     Auth::requireAdmin();
     try { MHW\Omaggi::annulla((int) $a['id']); Auth::audit('omaggio.annullato', null, ['id' => (int) $a['id']]); Support::flash('Codice annullato: non si applica più, nemmeno se era prenotato.'); }
