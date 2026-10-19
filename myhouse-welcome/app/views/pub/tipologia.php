@@ -10,7 +10,7 @@ use MHW\{Support, Icon, Plans, SectionCatalog, Partner};
 $title = $tp['h1'] . ' · MyHouse Welcome';
 $dentro = !empty($user);
 $porto = !empty($tp['portfolio']) && $piano && Plans::perProperty($piano);
-$crea = b() . ($dentro ? '/pannello' : '/registrati' . ($piano ? '?piano=' . (int) $piano['pv_id'] . ($porto ? '&strutture=' . max(2, (int) $piano['min_quantity']) : '') : ''));
+$crea = b() . ($dentro ? '/pannello' : '/registrati' . ($piano ? '?piano=' . (int) $piano['pv_id'] . ($porto ? '&amp;strutture=' . max(2, (int) $piano['min_quantity']) : '') : ''));
 $ctaCrea = $dentro ? 'Vai alle tue guide' : ($porto ? 'Crea gratis con ' . Support::e($piano['name']) : 'Crea gratis la tua guida');
 $partner = !empty($tp['partner']);
 // 9K · Le percentuali del programma Partner, se decise (Impostazioni → Sito); altrimenti le parole senza numero.

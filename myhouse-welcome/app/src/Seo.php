@@ -31,6 +31,9 @@ final class Seo
         'bed-and-breakfast' => ['/bed-and-breakfast', 'Per B&B'],
         'affittacamere' => ['/affittacamere', 'Per affittacamere'],
         'agriturismi' => ['/agriturismi', 'Per agriturismi'],
+        // 9K: chi gestisce più strutture e il programma Partner.
+        'piu-strutture' => ['/piu-strutture', 'Per più strutture'],
+        'property-manager' => ['/property-manager', 'Per property manager'],
     ];
 
     /** 7F: Blackout Agency, che realizza i siti MyHouse (8J: non più nei dati strutturati: lì c'è il titolare, City Up S.r.l.). */

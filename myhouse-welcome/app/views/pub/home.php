@@ -301,9 +301,17 @@ $disegni = [
     <?php foreach ([['casa', 'case-vacanza', '/case-vacanza', 'home'], ['bnb', 'bed-and-breakfast', '/bed-and-breakfast', 'coffee'],
                     ['affitta', 'affittacamere', '/affittacamere', 'key'], ['agri', 'agriturismi', '/agriturismi', 'sun'],
                     ['piu', 'piu-strutture', '/piu-strutture', 'layers'], ['pm', 'property-manager', '/property-manager', 'suitcase']] as [$k, $foto, $dove, $ico]):
-          $img = TestiSito::immagine('perchi-' . $foto); ?>
+          $img = TestiSito::immagine('perchi-' . $foto);
+          // Le foto di serie hanno la loro descrizione; una foto caricata da Gestione prende il titolo della scheda.
+          $alt = $img['caricata'] ? html_entity_decode(strip_tags($T('perchi.' . $k . '.titolo')), ENT_QUOTES) : ($en ? [
+              'casa' => 'A red wooden door and shutters in a stone wall with climbing roses', 'bnb' => 'A cup of coffee on a café table',
+              'affitta' => 'An arched wooden door among flowering plants and terracotta pots', 'agri' => 'A stone village with steps and geraniums',
+              'piu' => 'Hands editing a guide on a laptop, beside a QR Code', 'pm' => 'The MyHouse Welcome dashboard with a guide\'s statistics'][$k] : [
+              'casa' => 'Una porta e le persiane rosse in legno su un muro di pietra con le rose rampicanti', 'bnb' => 'Una tazza di caffè sul tavolo di un bar',
+              'affitta' => 'Un portone ad arco in legno tra piante fiorite e vasi di terracotta', 'agri' => 'Un borgo di pietra con le scale e i gerani',
+              'piu' => 'Le mani che modificano una guida sul portatile, accanto al QR Code', 'pm' => 'Il pannello di MyHouse Welcome con le statistiche di una guida'][$k]); ?>
       <a class="perchi__scheda" href="<?= b() . $dove ?>"<?= $en ? ' hreflang="it"' : '' ?>>
-        <span class="perchi__foto"><?php if ($img['url']): ?><img src="<?= Support::e($img['url']) ?>" alt="" width="720" height="540" loading="lazy" decoding="async"<?= $F('perchi-' . $foto) ?>><?php endif; ?></span>
+        <span class="perchi__foto"><?php if ($img['url']): ?><img src="<?= Support::e($img['url']) ?>" alt="<?= Support::e($alt) ?>" width="720" height="540" loading="lazy" decoding="async"<?= $F('perchi-' . $foto) ?>><?php endif; ?></span>
         <span class="perchi__corpo">
           <span class="vantaggio__ico" aria-hidden="true"><?= Icon::svg($ico, 20, 1.7) ?></span>
           <b class="perchi__titolo"><?= $T('perchi.' . $k . '.titolo') ?></b>

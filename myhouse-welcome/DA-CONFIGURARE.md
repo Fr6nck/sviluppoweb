@@ -332,6 +332,7 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 5. **Titolare.** In Impostazioni → Titolare e documenti legali compila «Capitale sociale» (per esempio «€ 10.000 i.v.») e, se vale, «Società unipersonale»: finché sono vuoti nel piè di pagina c'è solo il REA. La PEC non compare più da nessuna parte; se in `config.local.php` c'è ancora `company_pec`, puoi lasciarla (è solo un promemoria).
 6. **Testi legali.** Tolta la PEC e aggiunto il trattamento 14 (richieste di partnership): l'ho trattata come correzione, senza cambiare la versione dei documenti. Se il consulente preferisce farla riaccettare, cambia la data di versione dell'Informativa in Impostazioni → Titolare.
 7. **«Per chi è» e questionario.** Rileggi i testi in «Testi e foto» → «Per chi è» e «Pagine per tipologia: …». Se avevi cambiato la scheda «B&B e affittacamere», ora sono due schede: riscrivile. Le foto delle sei schede si cambiano in fondo alla stessa pagina.
+8. **SEO delle pagine nuove.** /piu-strutture e /property-manager sono in sitemap e in Amministrazione → SEO con titolo e descrizione già scritti: se vuoi, ritoccali lì. Poi, in Search Console, invia di nuovo la sitemap.
 
 ## 4b. La guida vetrina (la demo della landing)
 

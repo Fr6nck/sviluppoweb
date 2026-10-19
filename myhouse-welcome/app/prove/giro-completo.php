@@ -245,8 +245,8 @@ prova('Titolo richiesto', str_contains($r['body'], 'La casa risponde') && str_co
 prova('CTA principale', str_contains($r['body'], 'Crea gratis la tua guida'));
 prova('Demo dichiarata come demo', str_contains($r['body'], 'Guarda la demo') && str_contains($r['body'], 'demo-tag'));
 prova('Microcopy', str_contains($r['body'], 'Paghi solo quando pubblichi'));
-prova('Revisione · sottotitolo immediato, «sempre aggiornato» accanto al QR, «Più strutture» come domanda', str_contains($r['body'], 'tutto accessibile tramite QR Code. Senza app da scaricare.')
-      && str_contains($r['body'], 'un QR Code sempre aggiornato in ogni camera, al posto del foglio plastificato') && str_contains($r['body'], 'Gestisci più strutture? Un QR Code per ognuna'));
+prova('Revisione · sottotitolo immediato, «sempre aggiornato» accanto al QR, «Più strutture» come scheda (9K)', str_contains($r['body'], 'tutto accessibile tramite QR Code. Senza app da scaricare.')
+      && str_contains($r['body'], 'un QR Code sempre aggiornato in ogni camera, al posto del foglio plastificato') && str_contains($r['body'], 'Una guida e un QR per ogni casa, un solo account.') && preg_match('#class="perchi__scheda" href="[^"]*/piu-strutture"#', $r['body']) === 1);
 prova('Revisione · «Il tempo delle risposte»: titolo chiaro, cursore di sinistra bianco come la barra', str_contains($r['body'], 'L&#039;accoglienza resta tua. Rispondere sempre alle stesse domande, no.')
       && str_contains($r['body'], '.t2 input[data-t2="nec"]{accent-color:var(--inverse-fg'));
 prova('Revisione · «La guida che lavora per te»: i due inviti detti in una frase', str_contains($r['body'], 'manda due inviti all&#039;ospite: una recensione sulla piattaforma'));
@@ -4469,7 +4469,7 @@ foreach (['robots.txt', 'sitemap.xml', 'llms.txt'] as $f) if (!is_file("$DOVE/$f
 prova('7F · salvando «SEO e GEO»: robots.txt, sitemap.xml e llms.txt scritti accanto a index.php, uguali a quelli del sito', $fileOk
       && str_contains($adm6->segui($r)['body'], 'anche come file nella cartella principale del sito'));
 $sm7 = (string) @file_get_contents("$DOVE/sitemap.xml"); $ll7 = (string) @file_get_contents("$DOVE/llms.txt");
-prova('7F · le quattro pagine in sitemap (14 pagine in tutto con le legali della 8J) e in llms.txt («Per chi è»)', substr_count($sm7, '<url>') === 14 && @simplexml_load_string($sm7) !== false
+prova('7F · le quattro pagine in sitemap (16 pagine in tutto con le legali della 8J e le due della 9K) e in llms.txt («Per chi è»)', substr_count($sm7, '<url>') === 16 && @simplexml_load_string($sm7) !== false
       && count(array_filter($tipi7f, fn($tp) => str_contains($sm7, '<loc>https://myhousewelcome.it' . $tp['percorso'] . '</loc>') && str_contains($ll7, '(https://myhousewelcome.it' . $tp['percorso'] . ')'))) === 4
       && str_contains($ll7, "## Per chi è"));
 $giudiziPubblicati = (int) val("SELECT COUNT(*) FROM testimonials WHERE visible = 1 AND (account_id IS NULL OR (status = 'pubblicata' AND consent_at IS NOT NULL AND withdrawn_at IS NULL))");
@@ -4720,10 +4720,10 @@ foreach (['src', 'views', 'lang'] as $c8) foreach (new RecursiveIteratorIterator
 $sorgenti8j .= file_get_contents("$DOVE/app/config.php");
 prova('8J · nel codice nessuna vecchia P.IVA né «Blackout Agency» come ragione sociale di serie', !str_contains($sorgenti8j, '02945910541') && !str_contains($sorgenti8j, "'Blackout Agency')")
       && !str_contains($sorgenti8j, 'un progetto Blackout'));
-prova('8J · Termini: 18 punti con indice (9B giudizio con sconto, 9D codice omaggio), recesso impresa/consumatore, 18 anni, foro di Perugia, modulo di recesso; Privacy: 13 trattamenti in tabella (9A: preventivi), fornitori, diritti, nessun DPO',
+prova('8J · Termini: 18 punti con indice (9B giudizio con sconto, 9D codice omaggio), recesso impresa/consumatore, 18 anni, foro di Perugia, modulo di recesso; Privacy: 14 trattamenti in tabella (9A: preventivi, 9K: partner), fornitori, diritti, nessun DPO',
       substr_count($pag8j['/termini']['body'], 'class="legale__parte"') === 20 && str_contains($pag8j['/termini']['body'], 'id="recesso"') && str_contains($pag8j['/termini']['body'], 'almeno 18 anni')
       && str_contains($pag8j['/termini']['body'], 'foro di Perugia') && str_contains($pag8j['/termini']['body'], 'id="modulo-recesso"') && str_contains($pag8j['/termini']['body'], 'Compila e manda il modulo per email')
-      && substr_count($pag8j['/privacy']['body'], 'class="legale__tabella"') === 13 && str_contains($pag8j['/privacy']['body'], 'Hostinger') && str_contains($pag8j['/privacy']['body'], 'Stripe Payments Europe')
+      && substr_count($pag8j['/privacy']['body'], 'class="legale__tabella"') === 14 && str_contains($pag8j['/privacy']['body'], 'Hostinger') && str_contains($pag8j['/privacy']['body'], 'Stripe Payments Europe')
       && str_contains($pag8j['/privacy']['body'], 'Non è stato nominato un responsabile della protezione dei dati') && str_contains($pag8j['/privacy']['body'], 'entro 30 giorni')
       && str_contains($pag8j['/dpa']['body'], 'entro 48 ore') && str_contains($pag8j['/dpa']['body'], 'almeno 30 giorni'));
 prova('8J · la posta in uscita nell\'informativa viene dall\'impostazione (qui: modalità prova)', str_contains($pag8j['/privacy']['body'], 'posta in uscita</b>: '));
