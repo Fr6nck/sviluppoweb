@@ -109,7 +109,7 @@ $intro = [
                      placeholder="<?= $bloccato ? 'Impostata sul server' : ($attuale !== '' && $attuale !== null ? 'Lascia vuoto per non cambiarla' : '') ?>"<?= $bloccato ? ' disabled' : '' ?><?= $aria ?>>
             <?php else: ?>
               <input type="<?= ['email' => 'email', 'url' => 'url', 'number' => 'number', 'data' => 'date'][$tipo] ?? 'text' ?>" id="<?= $id ?>" name="<?= $n ?>" value="<?= Support::e($valore) ?>" spellcheck="false" autocomplete="off" data-lpignore="true" data-1p-ignore
-                     <?= $tipo === 'number' ? 'min="1" max="65535" inputmode="numeric"' : ($tipo === 'cifra' ? 'inputmode="numeric"' : ($tipo === 'decimale' ? 'inputmode="decimal"' : '')) ?><?= $bloccato ? ' disabled' : '' ?><?= $aria ?>>
+                     <?= $tipo === 'number' ? 'min="1" max="65535" inputmode="numeric"' : ($tipo === 'percento' ? 'inputmode="numeric" maxlength="3"' : ($tipo === 'cifra' ? 'inputmode="numeric"' : ($tipo === 'decimale' ? 'inputmode="decimal"' : ''))) ?><?= $bloccato ? ' disabled' : '' ?><?= $aria ?>>
             <?php endif; ?>
           <?php endif; ?>
           <?php if ($bloccato): ?>

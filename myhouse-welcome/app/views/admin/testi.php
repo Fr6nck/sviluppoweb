@@ -91,7 +91,7 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
     <section class="panel stack" id="testi-foto" aria-labelledby="testi-foto-titolo">
       <div class="stack stack--sm">
         <h2 id="testi-foto-titolo" style="font-size:22px">Foto</h2>
-        <p class="help" style="margin:0">JPG, PNG o WebP fino a 8 MB; il sito le ridisegna al massimo a 1800 px. L'immagine che compare quando il sito si condivide (WhatsApp, Facebook) si cambia in SEO e GEO.</p>
+        <p class="help" style="margin:0">JPG, PNG o WebP fino a 20 MB (le foto grandi si riducono da sole prima del caricamento); il sito le ridisegna al massimo a 1800 px. L'immagine che compare quando il sito si condivide (WhatsApp, Facebook) si cambia in SEO e GEO.</p>
       </div>
       <div class="grid grid-2 testi__foto">
         <?php foreach (TestiSito::IMMAGINI as $nome => [$etichetta, $file, $consiglio]):

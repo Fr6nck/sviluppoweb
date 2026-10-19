@@ -77,7 +77,7 @@ final class Mailer
     public static function layout(string $titolo, array $paragrafi, ?array $bottone, ?string $nota, ?string $piede, array $scelte = []): string
     {
         $e = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
-        $chi = Legale::rigaTitolare();   // 8J: il titolare, con la PEC
+        $chi = Legale::rigaTitolare();   // 8J: il titolare (9K: con il REA, senza la PEC)
         $aiuto = Support::contatto();
         $radice = Support::radice();
         $sito = Support::baseUrl();

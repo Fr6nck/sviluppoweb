@@ -12,7 +12,7 @@ $src = $src ?? '/pannello/' . (int) $prop['id'] . '/anteprima'; ?>
     </span>
   </div>
   <div class="phoneframe__device">
-    <iframe src="<?= Support::e(Support::url($src)) ?>" title="Anteprima della guida sul telefono dell'ospite" loading="lazy"></iframe>
+    <div class="phoneframe__schermo"><iframe src="<?= Support::e(Support::url($src)) ?>" title="Anteprima della guida sul telefono dell'ospite" loading="lazy"></iframe></div>
   </div>
   <p class="tiny muted"><?= MHW\Pannello::t('Questa è l\'anteprima: gli ospiti vedono la guida solo dopo la pubblicazione.') ?></p>
 </aside>

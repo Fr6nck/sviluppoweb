@@ -305,8 +305,8 @@ prova('…quattro cursori veri e i conti di partenza anche senza JavaScript (35 
 prova('7B · …senza il confronto con il prezzo del piano: resta il valore del tempo', !str_contains($tempo, 'data-prezzo=') && !str_contains($tempo, 'Abbonamento Essential, IVA esclusa') && str_contains($tempo, 'Valgono <span data-o="valore">228 €</span> del tuo tempo'));
 prova('…con le fonti dei numeri', str_contains($r['body'], 'Stime di aziende del settore, non statistiche ufficiali.'));
 prova('CTA della hero verso la registrazione e verso la demo', preg_match('#<section class="hero2">.*?</section>#s', $r['body'], $mh) && str_contains($mh[0], '/registrati"') && str_contains($mh[0], 'Guarda la demo'));
-prova('Fase 1 · piè di pagina con il titolare (8J: City Up S.r.l., P.IVA, sede, PEC), telefono e WhatsApp',
-      str_contains($r['body'], 'City Up S.r.l. · P.IVA 03793880547 · Via Ariodante Fabretti 15, 06123 Perugia (PG) · PEC cityup@pec.it') && str_contains($r['body'], 'href="tel:+393920061600"')
+prova('Fase 1 · piè di pagina con il titolare (8J: City Up S.r.l., sede, P.IVA; 9K: REA, niente PEC), telefono e WhatsApp',
+      str_contains($r['body'], 'City Up S.r.l. · Via Ariodante Fabretti 15, 06123 Perugia (PG) · P.IVA 03793880547 · REA PG-352001') && !str_contains($r['body'], 'cityup@pec.it') && str_contains($r['body'], 'href="tel:+393920061600"')
       && str_contains($r['body'], 'href="https://wa.me/393920061600"') && !str_contains($r['body'], 'un progetto Blackout Agency')
       && str_contains($r['body'], 'href="mailto:assistenza@welcomemyhouse.it"'));
 prova('Fase 1 · favicon, icona Home e anteprima di condivisione', str_contains($r['body'], '/assets/favicon.svg') && str_contains($r['body'], '/assets/apple-touch-icon.png')
@@ -3434,8 +3434,8 @@ prova('robots.txt: per * niente guide in Disallow, /pannello escluso per tutti; 
       && str_contains((string) $blocco($r['body'], 'meta-externalagent'), "Disallow: /qr/\n") && $blocco($r['body'], 'CCBot') === "Disallow: /\n"
       && preg_match('#\nSitemap: \S+/sitemap\.xml\n$#', $r['body']) === 1, json_encode($blocco($r['body'], 'CCBot')));
 $r = $ospite->get('/sitemap.xml');
-prova('sitemap.xml: le pagine accese (con le due inglesi della 8E, le quattro per tipologia della 7F e le quattro legali della 8J), con lastmod', $r['code'] === 200 && substr_count($r['body'], '<url>') === 14 && substr_count($r['body'], '<lastmod>') === 14
-      && str_contains($r['body'], '/domande</loc>') && @simplexml_load_string($r['body']) !== false);
+prova('sitemap.xml: le pagine accese (con le due inglesi della 8E, le quattro per tipologia della 7F, le quattro legali della 8J e le due della 9K), con lastmod', $r['code'] === 200 && substr_count($r['body'], '<url>') === 16 && substr_count($r['body'], '<lastmod>') === 16
+      && str_contains($r['body'], '/domande</loc>') && str_contains($r['body'], '/piu-strutture</loc>') && str_contains($r['body'], '/property-manager</loc>') && @simplexml_load_string($r['body']) !== false);
 foreach (['/accedi', '/registrati', '/password'] as $u) {
     $r = $ospite->get($u);
     prova("noindex su $u", str_contains($r['body'], '<meta name="robots" content="noindex">') && !str_contains($r['body'], 'application/ld+json'));
@@ -3447,7 +3447,7 @@ capitolo('Testi e foto del sito');
 $r = $admin->get('/admin/testi');
 prova('Testi e foto: la pagina, con i blocchi nell\'ordine della home e i testi di serie già nei campi', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Testi e foto del sito.')
       && preg_match('#id="testi-hero".*id="testi-perchi".*id="testi-tempo".*id="testi-faq".*id="testi-sito".*id="testi-foto"#s', $r['body']) === 1
-      && str_contains($r['body'], "La casa risponde\nprima che chiedano.</textarea>") && str_contains($r['body'], 'name="t_perchi_2_testo"') && str_contains($r['body'], 'name="img[telefono]"')
+      && str_contains($r['body'], "La casa risponde\nprima che chiedano.</textarea>") && str_contains($r['body'], 'name="t_perchi_bnb_testo"') && str_contains($r['body'], 'name="img[telefono]"')
       && str_contains($r['body'], 'Testi cambiati') && !str_contains($r['body'], 'testi__campo testi__campo--cambiato'), (string) $r['code']);
 prova('…con l\'anteprima dal vivo a destra: la home in un iframe (?anteprima=testi), i campi con la loro chiave, le foto con quella di serie', str_contains($r['body'], 'src="/welcomebook/index.php/?anteprima=testi"')
       && str_contains($r['body'], 'data-chiave="hero.titolo"') && str_contains($r['body'], 'data-fotocampo="telefono"') && str_contains($r['body'], 'data-vista="computer"'));
@@ -3457,7 +3457,7 @@ prova('…l\'anteprima: la home come la vede un visitatore, con i segnaposto per
       && str_contains($r['body'], 'data-foto="telefono"') && str_contains($r['body'], 'data-testo="prodotto.testo" data-sost="{&quot;sezioni&quot;:') && str_contains($r['body'], '/assets/anteprima-testi.js'));
 $r = $ospite->get('/?anteprima=testi');
 prova('…ma per un visitatore ?anteprima=testi non cambia niente', $r['code'] === 200 && !str_contains($r['body'], 'data-testo=') && !str_contains($r['body'], 'anteprima-testi.js'));
-$r = $admin->segui($admin->post('/admin/testi', ['t_hero_titolo' => "La casa risponde.\nSempre.", 't_perchi_2_testo' => 'Colazione **alle 8** e [regole](/domande) <script>x</script>',
+$r = $admin->segui($admin->post('/admin/testi', ['t_hero_titolo' => "La casa risponde.\nSempre.", 't_perchi_bnb_testo' => 'Colazione **alle 8** e [regole](/domande) <script>x</script>',
     't_hero_garanzie' => "Prima\nSeconda", 't_prodotto_testo' => 'Ci sono {sezioni} sezioni.', 't_cta_crea' => 'Comincia gratis', 'torna' => 'hero']));
 prova('…salvato: titolo su due righe, grassetto e link sicuri, l\'HTML neutralizzato, la lista, il segnaposto, il bottone in tre punti', str_contains($r['body'], 'Salvato: la home è già aggiornata.')
       && str_contains($r['body'], 'class="badge badge--ochre testi__badge">cambiato</span>') && str_contains($r['body'], 'Di serie: La casa risponde'));
@@ -3493,7 +3493,7 @@ prova('Testi e foto · le foto caricate: nell\'archivio come le foto delle testi
       && !str_contains($h, 'sito2__foto') && !str_contains($r['body'], 'Lo sfondo di «Anche il tuo sito»')
       && (getenv('MHW_STORAGE') !== 's3' || is_file($fileS3Tel)), $rifTel . ' · ' . (is_file($fileS3Tel) ? 'file ok' : 'file assente'));
 // Si torna di serie: campi vuoti e «Torna alla foto di serie»; la foto vecchia sparisce dall'archivio.
-$r = $admin->segui($admin->post('/admin/testi', ['t_hero_titolo' => '', 't_perchi_2_testo' => '', 't_hero_garanzie' => '', 't_prodotto_testo' => '', 't_cta_crea' => '',
+$r = $admin->segui($admin->post('/admin/testi', ['t_hero_titolo' => '', 't_perchi_bnb_testo' => '', 't_hero_garanzie' => '', 't_prodotto_testo' => '', 't_cta_crea' => '',
     'img_togli' => ['telefono' => '1']]));
 $h = $ospite->get('/')['body'];
 $cond = ['righe' => (int) val("SELECT COUNT(*) FROM site_texts") === 0, 'h1' => str_contains($h, "<h1 class=\"display\">La casa risponde<br>\nprima che chiedano.</h1>"),
@@ -4456,7 +4456,7 @@ prova('7F · CSV: text/csv, BOM, punto e virgola, intestazioni', str_contains($p
       && ($pc['righe'][0] ?? []) === ['Passo', 'Persone', '% dei registrati', '% dal passo prima'] && $admin->get('/admin/marketing?formato=csv&tabella=niente')['code'] === 404);
 
 // SEO e GEO: il salvataggio scrive i file veri accanto a index.php.
-$tipi7f = require "$DOVE/app/lang/tipologie.php";
+$tipi7f = array_filter(require "$DOVE/app/lang/tipologie.php", fn($tp) => !empty($tp['questionario']));   // 9K: le quattro tipologie (le pagine nuove hanno le loro prove)
 foreach (['robots.txt', 'sitemap.xml', 'llms.txt'] as $f) @unlink("$DOVE/$f");
 $campi7f = $campi6k;
 foreach (['home', 'domande', 'en', 'en-domande', 'termini', 'privacy', 'dpa', 'en-termini', 'en-privacy', 'en-dpa'] as $k) $campi7f["p_{$k}_indicizza"] = '1';
@@ -4709,9 +4709,9 @@ prova('8J · le pagine inglesi in inglese (lang="en"), con i link a Terms, Priva
       && str_contains($pag8j['/en/terms']['body'], 'Right of withdrawal') && str_contains($pag8j['/en/privacy']['body'], 'Your rights') && str_contains($pag8j['/en/dpa']['body'], 'Sub-processors')
       && str_contains($pag8j['/en/terms']['body'], '/en/dpa">DPA</a>') && str_contains($pag8j['/en/terms']['body'], '>Versione italiana</a>'));
 $tutte8j = implode("\n", array_map(fn($r) => $r['body'], $pag8j));
-prova('8J · nessun «[Da completare» né «[Da far rivedere», nessuna vecchia P.IVA; titolare City Up con P.IVA, REA, sede e PEC', !str_contains($tutte8j, '[Da completare')
+prova('8J · nessun «[Da completare» né «[Da far rivedere», nessuna vecchia P.IVA; titolare City Up con P.IVA, REA e sede (9K: senza PEC)', !str_contains($tutte8j, '[Da completare')
       && !str_contains($tutte8j, '[Da far rivedere') && !str_contains($tutte8j, '02945910541') && str_contains($tutte8j, 'City Up S.r.l. — P.IVA e C.F. 03793880547 — REA PG-352001')
-      && str_contains($tutte8j, 'Via Ariodante Fabretti 15, 06123 Perugia (PG)') && str_contains($tutte8j, 'cityup@pec.it'));
+      && str_contains($tutte8j, 'Via Ariodante Fabretti 15, 06123 Perugia (PG)') && str_contains($tutte8j, 'REA PG-352001') && !str_contains($tutte8j, 'cityup@pec.it') && !str_contains($tutte8j, 'PEC {pec}'));
 prova('8J · Blackout Agency non è il titolare: niente nei Termini e nel DPA; nell\'informativa solo come destinatario di «Anche il tuo sito»',
       !str_contains($pag8j['/termini']['body'], 'Blackout') && !str_contains($pag8j['/dpa']['body'], 'Blackout') && str_contains($pag8j['/privacy']['body'], 'Titolare: City Up S.r.l.')
       && preg_match('#id="trattamento-8".*?Blackout Agency.*?</section>#s', $pag8j['/privacy']['body']) === 1 && str_contains($pag8j['/privacy']['body'], 'titolare autonomo'));
@@ -5950,6 +5950,131 @@ prova('9I · il codice cliente cliccabile accanto ai nomi (Preventivi, Giudizi, 
       && $r['code'] === 200 && pulita($r));
 
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
+
+// ================================================================= 9K
+capitolo('9K · telefoni, foto leggere, «Per chi è» a sei schede, questionario, Più strutture e Property manager, via la PEC, chi c\'è dietro');
+$css9k = (string) file_get_contents("$DOVE/assets/app.css");
+prova('9K · i telefoni disegnati: lo schermo si ritaglia da sé (isolation e maschera) e riempie la cornice con flex; l\'anteprima del pannello dentro uno schermo che ritaglia',
+      preg_match('#\.device__screen\{[^}]*flex:1 1 auto[^}]*isolation:isolate;-webkit-mask-image:-webkit-radial-gradient\(white,black\)#s', $css9k) === 1
+      && str_contains($css9k, '.phoneframe__schermo{') && str_contains((string) file_get_contents("$DOVE/app/views/host/_telefono.php"), 'class="phoneframe__schermo"'));
+$h9 = $ospite->get('/')['body'];
+$base9 = preg_replace('#^https?://[^/]+#', '', $BASE);
+$link9 = ['/case-vacanza', '/bed-and-breakfast', '/affittacamere', '/agriturismi', '/piu-strutture', '/property-manager'];
+prova('9K · «Per chi è»: sei schede, ognuna un link alla sua pagina, con la foto 4:3 (lazy), l\'icona, il titolo e «Scopri»',
+      substr_count($h9, 'class="perchi__scheda"') === 6 && count(array_filter($link9, fn($u) => str_contains($h9, 'class="perchi__scheda" href="' . $base9 . $u . '"'))) === 6
+      && substr_count($h9, 'width="720" height="540" loading="lazy"') === 6 && str_contains($h9, '>Property manager<') && str_contains($h9, '>Affittacamere<'));
+$ok200 = true; foreach ($link9 as $u) if ($ospite->get($u)['code'] !== 200) $ok200 = false;
+prova('9K · …e i sei link rispondono 200', $ok200);
+prova('9K · «Chi c\'è dietro»: City Up S.r.l. e Blackout Agency, «Vuoi vedere altri lavori?» verso blackout.in in una scheda nuova (anche in inglese)',
+      str_contains($h9, '<b>City Up S.r.l.</b> e <b>Blackout Agency</b>') && preg_match('#<a class="chi__link" href="https://blackout\.in" target="_blank" rel="noopener">Vuoi vedere altri lavori\?#', $h9) === 1
+      && str_contains($ospite->get('/en')['body'], 'Want to see more of our work?'));
+$piede9 = preg_match('#<footer class="wrap piede">.*?</footer>#s', $h9, $mp9) ? $mp9[0] : '';
+prova('9K · piè di pagina: titolare con sede, P.IVA e REA; nessuna PEC', str_contains($piede9, 'City Up S.r.l. · Via Ariodante Fabretti 15, 06123 Perugia (PG) · P.IVA 03793880547 · REA PG-352001')
+      && !preg_match('/\bPEC\b|pec\.it/i', $piede9));
+$leg9 = $ospite->get('/termini')['body'] . $ospite->get('/privacy')['body'] . $ospite->get('/dpa')['body'] . $ospite->get('/en/privacy')['body'];
+prova('9K · Termini, Privacy e DPA senza la PEC del titolare (dove serviva, l\'email assistenza); la Privacy ha le richieste di partnership (12 mesi)',
+      !str_contains($leg9, 'cityup@pec.it') && !str_contains($leg9, 'alla PEC') && !str_contains($leg9, 'Certified email') && str_contains($leg9, '(«noi»). Email')
+      && str_contains($leg9, 'Richieste di partnership') && str_contains($leg9, 'Partnership requests'));
+$imp9 = $admin->get('/admin/impostazioni')['body'];
+prova('9K · Impostazioni: REA, capitale sociale, società unipersonale; la PEC solo come promemoria; commissione e sconto del partner in Sito',
+      str_contains($imp9, 'name="legal__company_rea"') && str_contains($imp9, 'name="legal__company_capitale"') && str_contains($imp9, 'name="legal__company_unipersonale"')
+      && str_contains($imp9, 'PEC (promemoria interno)') && str_contains($imp9, 'name="partner__commissione"') && str_contains($imp9, 'name="partner__sconto"'));
+
+// Il questionario delle quattro tipologie.
+$ok9q = true; $note9q = [];
+foreach (['/case-vacanza', '/bed-and-breakfast', '/affittacamere', '/agriturismi'] as $u) {
+    $r = $ospite->get($u);
+    if (!(pulita($r) && str_contains($r['body'], 'data-questionario') && substr_count($r['body'], 'class="questionario__passo"') === 3
+          && substr_count($r['body'], 'type="radio" name="d') === 6 && preg_match_all('#data-q-esito="(essential|plus|portfolio)" hidden#', $r['body']) === 3
+          && !str_contains($r['body'], 'Il piano che ti consigliamo') && str_contains($r['body'], '/assets/questionario.js'))) { $ok9q = false; $note9q[] = $u; }
+}
+prova('9K · /case-vacanza, /bed-and-breakfast, /affittacamere, /agriturismi: «Qual è il piano giusto per te?» con tre domande sì/no (radio veri), nessun esito prima di rispondere', $ok9q, implode(', ', $note9q));
+$esito9 = function (string $q) use ($ospite): array {
+    $b = $ospite->get('/case-vacanza?' . $q)['body'];
+    preg_match_all('#data-q-esito="(essential|plus|portfolio)"( hidden)?#', $b, $m9, PREG_SET_ORDER);
+    return [implode(',', array_map(fn($x) => $x[1], array_filter($m9, fn($x) => empty($x[2])))), $b];
+};
+[$e1, $b1] = $esito9('d1=si&d2=si&d3=si');
+[$e2] = $esito9('d1=no&d2=si&d3=si');
+[$e3] = $esito9('d1=si&d2=no&d3=si');
+[$e4, $b4] = $esito9('d1=si&d2=no&d3=no&strutture=4');
+prova('9K · senza JavaScript le risposte arrivano con il modulo: sì/sì/sì Essential, un no tra le prime due Plus, la terza no Portfolio',
+      $e1 === 'essential' && $e2 === 'plus' && $e3 === 'plus' && $e4 === 'portfolio' && str_contains($b1, 'data-q-modulo hidden'), "$e1 · $e2 · $e3 · $e4");
+prova('9K · …Portfolio con le strutture scelte (4), gli scaglioni e «Crea gratis con Portfolio» che porta il numero', str_contains($b4, 'per <span data-q-n>4</span> strutture')
+      && str_contains($b4, 'piano=' . pv('portfolio') . '&amp;strutture=4') && str_contains($b4, 'la prima, poi') && str_contains($b4, 'Crea gratis con Portfolio'));
+prova('9K · …Essential con i punti dal listino e «Perché questo piano» con il riepilogo delle risposte', str_contains($b1, 'Check-in &amp; Check-out + 6 sezioni a scelta')
+      && str_contains($b1, 'Perché questo piano') && str_contains($b1, 'Due lingue senza traduzione: <span data-q-r="1">sì</span>'));
+// Lo sconto sul rinnovo: solo quello che è acceso (inviti fino al 50%, giudizio), con la tabella; 55% con tutti e due di serie.
+$conInviti9 = str_contains($b1, 'Invita 10 amici') || str_contains($b1, 'Invita ');
+$conGiudizio9 = str_contains($b1, 'giudizio (');
+prova('9K · …la riga «Fino al … di sconto sul rinnovo» e la tabella dicono solo gli sconti accesi, con i numeri del programma',
+      (!str_contains($b1, 'questionario__sconto') || (str_contains($b1, 'questionario__rinnovo') && str_contains($b1, 'Nessuno sconto') && str_contains($b1, '/domande#porta-amico')))
+      && (!($conInviti9 && $conGiudizio9) || str_contains($b1, 'Fino al 55% di sconto sul rinnovo')), ($conInviti9 ? 'inviti ' : '') . ($conGiudizio9 ? 'giudizio' : ''));
+
+// Più strutture e Property manager.
+$r = $ospite->get('/piu-strutture');
+$faq9 = null;
+if (preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $r['body'], $mj9)) foreach ($mj9[1] as $j) { $d = json_decode($j, true); if (($d['@type'] ?? '') === 'FAQPage') $faq9 = $d; }
+prova('9K · /piu-strutture: «Tutte le tue case, una sola regia.», tre problemi, solo Portfolio con gli scaglioni e il preventivo, 4 FAQ con FAQPage, il titolo per Google',
+      $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Tutte le tue case, una sola regia.') && substr_count($r['body'], 'class="vantaggio"') === 3
+      && str_contains($r['body'], 'Quanto costa ogni struttura') && str_contains($r['body'], 'class="tipo-preventivo panel"') && !str_contains($r['body'], 'data-questionario')
+      && $faq9 && count($faq9['mainEntity']) === 4 && str_contains($r['body'], '<title>Guida digitale per più strutture ricettive | MyHouse Welcome</title>')
+      && str_contains($r['body'], 'piano=' . pv('portfolio') . '&amp;strutture=2'));
+$r = $ospite->get('/property-manager');
+prova('9K · /property-manager: il titolo, «Perché conviene», i quattro passi, solo Portfolio, il modulo «Diventa partner»; senza percentuali «una commissione» e «uno sconto»',
+      $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'I tuoi proprietari se ne accorgono. I loro ospiti anche.') && str_contains($r['body'], 'Perché conviene')
+      && substr_count($r['body'], 'class="tipo-passi__n"') === 4 && str_contains($r['body'], 'action="' . $base9 . '/property-manager/partner"')
+      && str_contains($r['body'], 'ricevi una commissione sul primo anno') && str_contains($r['body'], 'Con uno sconto per loro.')
+      && str_contains($r['body'], '<title>Programma Partner per property manager | MyHouse Welcome</title>') && str_contains($r['body'], 'name="consenso"'));
+$llms9 = $ospite->get('/llms.txt')['body'];
+prova('9K · le due pagine nuove in llms.txt', str_contains($llms9, '/piu-strutture)') && str_contains($llms9, '/property-manager)'));
+$pm = new Browser('pm9k');
+$pm->get('/property-manager');
+$r = $pm->segui($pm->post('/property-manager/partner', ['nome' => 'Sara Bellini', 'email' => 'sara@umbriacase.example', 'strutture' => '14']));
+prova('9K · «Diventa partner» senza il consenso: niente salvato, il motivo e i campi già scritti', str_contains($r['body'], 'ci serve il tuo consenso') && str_contains($r['body'], 'value="Sara Bellini"')
+      && (int) val('SELECT COUNT(*) FROM partner_richieste') === 0);
+$r = $pm->segui($pm->post('/property-manager/partner', ['nome' => 'Sara Bellini', 'societa' => 'Umbria Case Gestioni', 'email' => 'Sara@UmbriaCase.example', 'telefono' => '+39 075 000 0000',
+    'strutture' => '14', 'zone' => 'Perugia, Assisi', 'messaggio' => 'Gestiamo case in centro.', 'consenso' => '1']));
+$pr9 = riga('SELECT * FROM partner_richieste ORDER BY id DESC');
+$posta9 = implode("\n", righePosta());
+prova('9K · …con il consenso: salvata (nuovo), l\'email a commerciale@ con i dati e la conferma a chi ha scritto', str_contains($r['body'], 'abbiamo ricevuto la tua richiesta')
+      && $pr9 && $pr9['email'] === 'sara@umbriacase.example' && $pr9['stato'] === 'nuovo' && $pr9['strutture'] === '14'
+      && str_contains($posta9, 'Nuovo partner: Umbria Case Gestioni') && str_contains($posta9, 'Abbiamo ricevuto la tua richiesta di partnership'));
+$r = $admin->get('/admin/partner');
+prova('9K · Amministrazione → Vendite → Partner: la richiesta, i contatori e «Rispondi»; l\'avviso nel Quadro', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Sara Bellini')
+      && str_contains($r['body'], 'Umbria Case Gestioni') && str_contains($r['body'], 'mailto:sara@umbriacase.example') && str_contains($admin->get('/admin')['body'], 'Richieste di partnership da rispondere'));
+$admin->post('/admin/partner/' . (int) $pr9['id'] . '/stato', ['stato' => 'contattato', 'nota' => 'Chiamata martedì']);
+prova('9K · …lo stato e la nota si salvano', val('SELECT stato FROM partner_richieste WHERE id = ?', [$pr9['id']]) === 'contattato'
+      && val('SELECT nota FROM partner_richieste WHERE id = ?', [$pr9['id']]) === 'Chiamata martedì');
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'impostazioni%'");
+preg_match('#name="base_url" value="([^"]*)"#', $imp9, $bu9);
+$sito9 = ['base_url' => html_entity_decode($bu9[1] ?? '', ENT_QUOTES), 'password' => 'AdminProva123'] + (preg_match('#name="pretty_urls"[^>]*checked#', $imp9) ? ['pretty_urls' => '1'] : []);
+$r = $admin->post('/admin/impostazioni/sito', $sito9 + ['partner__commissione' => '20%']);
+prova('9K · Impostazioni → Sito: la commissione è un numero da 1 a 100', str_contains($r['body'], 'Scrivi un numero da 1 a 100'));
+$admin->post('/admin/impostazioni/sito', $sito9 + ['partner__commissione' => '20', 'partner__sconto' => '10']);
+$r = $ospite->get('/property-manager');
+prova('9K · …con le percentuali la pagina le dice: «una commissione del 20%», «il 10% di sconto»', str_contains($r['body'], 'una commissione del 20% sul primo anno') && str_contains($r['body'], 'Con il 10% di sconto per loro.'));
+$admin->post('/admin/impostazioni/sito', $sito9 + ['partner__commissione' => '', 'partner__sconto' => '']);
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'impostazioni%'");
+
+// Le foto: errori di PHP in chiaro, il limite del server, la risposta per la barra di caricamento, la diagnostica.
+$err9 = (string) shell_exec('php -r ' . escapeshellarg('define("MHW_APP", "' . $DOVE . '/app"); spl_autoload_register(fn($c) => require "' . $DOVE . '/app/src/" . substr($c, 4) . ".php"); echo MHW\\Media::erroreCaricamento(UPLOAD_ERR_PARTIAL), "|", MHW\\Media::byte("2M"), "|", MHW\\Media::byte("-1") === PHP_INT_MAX ? "senza" : "?";'));
+prova('9K · gli errori di caricamento di PHP in italiano chiaro, e i valori di php.ini letti bene', str_contains($err9, 'Il caricamento si è interrotto a metà') && str_contains($err9, '|2097152|senza'), $err9);
+$grande9 = tempnam(sys_get_temp_dir(), 'g9k'); file_put_contents($grande9, str_repeat("\xFF", 9 * 1024 * 1024));
+$r = $lea->post("/pannello/$lp/aspetto", ['cover' => file_(png(), 'image/png'), 'zavorra' => file_($grande9, 'image/jpeg', 'enorme.jpg')], ['Referer: ' . $BASE . "/pannello/$lp/procedura/aspetto"]);
+$r = $lea->segui($r);
+@unlink($grande9);
+prova('9K · oltre post_max_size del server (senza JavaScript): non «la sessione si è interrotta», ma «Il file è troppo pesante per il server», e si torna alla pagina',
+      str_contains($r['body'], 'Il file è troppo pesante per il server') && !str_contains($r['body'], 'La sessione si'), (string) $r['code']);
+$r = $lea->post("/pannello/$lp/aspetto", ['cover' => file_(png(), 'image/png')], ['X-MHW-Carica: 1', 'Accept: */*']);
+prova('9K · un modulo con una foto mandato dalla barra di caricamento: al posto del reindirizzamento l\'indirizzo in JSON', $r['code'] === 200
+      && str_contains(intestazione($r, 'Content-Type'), 'application/json') && preg_match('#^\{"vai":"[^"]+/pannello/' . $lp . '#', $r['body']) === 1, substr($r['body'], 0, 120));
+prova('9K · il pannello carica foto-leggere.js (le foto si riducono nel browser prima di partire)', str_contains($lea->get("/pannello/$lp/procedura/aspetto")['body'], '/assets/foto-leggere.js'));
+prova('9K · Diagnostica: la riga dei limiti di PHP per le foto', str_contains($admin->get('/admin/diagnostica')['body'], 'Limiti per il caricamento delle foto'));
+// La foto nuova di Casa Checco: la copertina della vetrina (se c'è) ha il testo alternativo nuovo; la migrazione 049 ha la tabella dei partner.
+$alt9 = val("SELECT m.alt FROM properties p JOIN media m ON m.id = p.cover_media_id WHERE p.is_demo = 2 AND p.archived_at IS NULL ORDER BY p.id DESC");
+prova('9K · Casa Checco: la copertina è la foto nuova (il portone ad arco), e la tabella partner_richieste c\'è', ($alt9 === null || str_contains((string) $alt9, 'portone ad arco'))
+      && val("SELECT COUNT(*) FROM partner_richieste") !== null && is_file("$DOVE/assets/foto/checco-copertina.jpg"), (string) $alt9);
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

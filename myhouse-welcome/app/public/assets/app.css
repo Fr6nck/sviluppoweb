@@ -732,9 +732,12 @@ button, input[type=submit], input[type=button] { background-image: none; }
 /* La colonna con il telefono. */
 .editor{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:32px;align-items:start}
 .phoneframe{position:sticky;top:96px;display:flex;flex-direction:column;gap:12px}
-.phoneframe__device{width:360px;height:720px;border-radius:44px;padding:10px;background:#231b12;
+.phoneframe__device{display:flex;width:360px;height:720px;border-radius:44px;padding:10px;background:#231b12;
   box-shadow:0 30px 60px -30px rgba(35,27,18,.45)}
-.phoneframe iframe{width:100%;height:100%;border:0;border-radius:34px;background:var(--paper)}
+/* 9K · lo schermo ritaglia l'anteprima da sé (Safari ignora il raggio su un iframe dentro una cornice con ombra). */
+.phoneframe__schermo{flex:1 1 auto;min-height:0;border-radius:34px;overflow:hidden;background:var(--paper);
+  isolation:isolate;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0)}
+.phoneframe iframe{display:block;width:100%;height:100%;border:0;background:var(--paper)}
 .phoneframe__bar{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .phonebtn{display:none}
 @media(max-width:1100px){
@@ -936,16 +939,20 @@ input[type=file]::file-selector-button{height:36px;margin-right:12px;padding:0 1
 .stage .shot-pill{left:24px;bottom:24px;height:46px;padding:0 22px;font-size:15px}
 
 /* Il telefono. Proporzioni di uno smartphone di oggi (circa 9:19,5), cornice
-   sottile, isola in alto, ombra morbida e larga: un oggetto, non un giocattolo. */
-.device{position:relative;width:292px;aspect-ratio:292/610;padding:9px;border-radius:52px;
+   sottile, isola in alto, ombra morbida e larga: un oggetto, non un giocattolo.
+   9K · Safari: la cornice è il contenitore esterno (padding + fondo scuro), lo schermo un riquadro interno
+   che riempie la cornice con flex (niente height:100% dentro aspect-ratio) e si ritaglia da sé
+   (isolation + maschera): con il telefono inclinato in 3D Safari altrimenti perdeva il bordo in basso. */
+.device{position:relative;display:flex;flex-direction:column;width:292px;aspect-ratio:292/610;padding:9px;border-radius:52px;
   background:linear-gradient(145deg,#3a3129,#15110c 55%,#2a231c);
   box-shadow:0 0 0 1px rgba(255,255,255,.06) inset,0 1px 0 rgba(255,255,255,.12) inset,
              0 50px 90px -40px rgba(35,27,18,.55),0 18px 36px -24px rgba(35,27,18,.35)}
 .device::before,.device::after{content:"";position:absolute;width:3px;border-radius:2px;background:#2a231c}
 .device::before{left:-3px;top:120px;height:52px}
 .device::after{right:-3px;top:150px;height:76px}
-.device__screen{position:relative;height:100%;border-radius:44px;overflow:hidden;background:#faf5ec;color:#231b12;
-  display:flex;flex-direction:column;background-image:none}
+.device__screen{position:relative;flex:1 1 auto;min-height:0;border-radius:44px;overflow:hidden;background:#faf5ec;color:#231b12;
+  display:flex;flex-direction:column;background-image:none;
+  isolation:isolate;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0)}
 .device__status{display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 26px 0 30px;
   font-size:13px;font-weight:600;letter-spacing:-.2px;flex:none}
 .device__island{position:absolute;left:50%;top:10px;transform:translateX(-50%);width:92px;height:26px;border-radius:999px;background:#0d0a07}
@@ -1640,7 +1647,7 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .guadagno__ico{flex:none;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;
   background:rgba(246,240,229,.1);color:#e9b55a}
 .congedo-mock{position:relative;isolation:isolate;display:flex;flex-direction:column;gap:16px;width:100%;max-width:380px;justify-self:center;
-  padding:32px 26px 28px;border-radius:var(--r-xl);overflow:hidden;color:#f6f0e5;
+  padding:32px 26px 28px;border-radius:var(--r-xl);overflow:hidden;color:#f6f0e5;-webkit-mask-image:-webkit-radial-gradient(white,black);
   background:#17130d url("foto/borgo-telefono-600.webp") center/cover;box-shadow:0 40px 80px -40px rgba(0,0,0,.6)}
 .congedo-mock::before{content:"";position:absolute;inset:0;z-index:-1;background:rgba(23,19,13,.8)}
 .congedo-mock__kicker{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#e8dcc8}
@@ -2958,3 +2965,127 @@ body.con-finestra{overflow:hidden}
 .codici-cliente__codice{font-size:18px}
 .codici-cliente__riga{padding:4px 8px;border-radius:var(--r-sm)}
 .codici-cliente__riga--evidenza{background:var(--ochre-soft);outline:2px solid var(--ochre)}
+
+/* 9K · Foto leggere: lo stato accanto al campo («Sto preparando la foto…», «Foto pronta: 0,8 MB») e la barra
+   del caricamento, in basso al centro, finché la pagina nuova non arriva. */
+.foto-stato{display:block;margin-top:6px;color:var(--muted)}
+.foto-stato[hidden]{display:none}
+.foto-stato--attesa::before{content:"";display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:-1px;border-radius:50%;
+  border:2px solid var(--line);border-top-color:var(--accent);animation:gira .8s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+.caricamento{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:90;
+  display:flex;flex-direction:column;gap:8px;width:min(360px,calc(100% - 32px));padding:14px 18px;border-radius:var(--r-lg);
+  background:var(--inverse-bg);color:var(--inverse-fg);box-shadow:0 20px 50px -20px rgba(0,0,0,.5);font-size:14px;font-weight:600}
+.caricamento__barra{display:block;height:6px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden}
+.caricamento__barra i{display:block;height:100%;width:0;border-radius:inherit;background:var(--accent);transition:width .2s linear}
+@media (prefers-reduced-motion: reduce){ .foto-stato--attesa::before{animation:none} .caricamento__barra i{transition:none} }
+
+/* 9K · «Per chi è»: sei schede-link, 3 × 2 da computer, 2 × 3 su tablet, una colonna sul telefono.
+   Al passaggio si sollevano di 4 px, l'ombra cresce, il bordo prende l'accento e la freccia scorre; al tocco si abbassano. */
+.perchi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media(max-width:1000px){ .perchi{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media(max-width:620px){ .perchi{grid-template-columns:minmax(0,1fr)} }
+.perchi__scheda{display:flex;flex-direction:column;border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line);overflow:hidden;
+  color:inherit;text-decoration:none;box-shadow:0 1px 2px rgba(35,27,18,.04);
+  transition:transform .3s var(--molla,cubic-bezier(.22,.7,.25,1)),box-shadow .3s,border-color .3s;-webkit-mask-image:-webkit-radial-gradient(white,black)}
+.perchi__scheda:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 22px 40px -22px rgba(35,27,18,.45);color:inherit}
+.perchi__scheda:active{transform:translateY(-1px) scale(.99);box-shadow:0 8px 18px -12px rgba(35,27,18,.4);border-color:var(--accent)}
+.perchi__scheda:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.perchi__foto{display:block;aspect-ratio:4/3;background:var(--sunk);overflow:hidden}
+.perchi__foto img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .5s var(--molla,ease)}
+.perchi__scheda:hover .perchi__foto img{transform:scale(1.03)}
+.perchi__corpo{display:flex;flex-direction:column;gap:8px;padding:20px 22px 22px;flex:1}
+.perchi__titolo{font-size:18px}
+.perchi__testo{color:var(--muted);font-size:15px;line-height:1.5;flex:1}
+.perchi__scopri{display:inline-flex;align-items:center;gap:6px;color:var(--accent);font-weight:600;font-size:15px;margin-top:4px}
+.perchi__scopri svg{transition:transform .3s var(--molla,ease)}
+.perchi__scheda:hover .perchi__scopri svg{transform:translateX(4px)}
+@media (prefers-reduced-motion: reduce){
+  .perchi__scheda,.perchi__foto img,.perchi__scopri svg{transition:none}
+  .perchi__scheda:hover,.perchi__scheda:active{transform:none} .perchi__scheda:hover .perchi__foto img,.perchi__scheda:hover .perchi__scopri svg{transform:none}
+}
+
+/* 9K · «Qual è il piano giusto per te?» (pagine per tipologia): tre domande sì/no come schede grandi, poi l'esito con il
+   prezzo, i punti, «Perché questo piano», i bottoni, lo sconto sul rinnovo e la sua tabella. Come il mockup di _brief. */
+.questionario{display:flex;flex-direction:column;gap:6px;padding:36px 40px;border-radius:var(--r-2xl)}
+@media(max-width:600px){ .questionario{padding:26px 20px;border-radius:var(--r-xl)} }
+.questionario__kick{color:var(--accent)}
+.questionario__sub{margin:0 0 18px}
+.questionario__modulo[hidden],.questionario__esito[hidden],.questionario__passo[hidden],.questionario__invia[hidden],
+.questionario__indietro[hidden],.questionario__selettore button[hidden]{display:none}
+.questionario__avanzamento{display:flex;gap:6px;margin:0 0 22px}
+.questionario__avanzamento i{flex:1;height:5px;border-radius:9px;background:var(--sunk)}
+.questionario__avanzamento i.on{background:var(--accent)}
+.questionario__passo{border:0;padding:0;margin:0 0 18px;min-width:0}
+.questionario__passo:focus{outline:none}
+.questionario__domanda{font-family:Gloock,Georgia,serif;font-size:28px;line-height:1.2;padding:0;margin:0 0 6px}
+.questionario__aiuto{color:var(--muted);margin:0 0 18px;font-size:15.5px;line-height:1.45}
+.questionario__scelte{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:520px){ .questionario__scelte{grid-template-columns:1fr} }
+.questionario__scelta{position:relative;display:block;cursor:pointer}
+.questionario__scelta input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.questionario__scelta>span{display:flex;flex-direction:column;gap:4px;height:100%;padding:18px 20px;border:1.5px solid var(--line);border-radius:18px;background:var(--raised);
+  transition:transform .15s,border-color .15s,box-shadow .15s}
+.questionario__scelta b{font-size:19px}
+.questionario__scelta>span>span{color:var(--muted);font-size:14px;line-height:1.4}
+.questionario__scelta:hover>span{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 12px 24px -16px rgba(180,69,31,.5)}
+.questionario__scelta input:focus-visible+span{outline:3px solid var(--accent);outline-offset:3px}
+.questionario__scelta input:checked+span{border-color:var(--accent);background:var(--terracotta-soft)}
+.questionario__indietro{background:none;border:0;color:var(--muted);font:inherit;font-size:14px;margin-top:16px;cursor:pointer;text-decoration:underline;min-height:44px;padding:0}
+.questionario__esito{display:flex;flex-direction:column;gap:6px}
+.questionario__badge{align-self:flex-start;background:var(--sunk);color:var(--accent);text-transform:uppercase;letter-spacing:.06em}
+.questionario__piano{display:grid;grid-template-columns:1.2fr 1fr;gap:26px;align-items:start;margin-top:10px}
+@media(max-width:640px){ .questionario__piano{grid-template-columns:1fr} }
+.questionario__nome{font-family:Gloock,Georgia,serif;font-weight:400;font-size:40px;line-height:1.05;margin:4px 0 0}
+.questionario__nome:focus{outline:none}
+.questionario__prezzo{margin:0;font-size:15px;color:var(--muted)}
+.questionario__prezzo b{font-size:30px;color:var(--ink)}
+.questionario__prezzo s{margin-right:6px}
+.questionario__quante{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.questionario__selettore{display:inline-flex;align-items:center;gap:8px}
+.questionario__selettore button{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--line-strong);background:var(--raised);color:var(--ink);font-size:18px;cursor:pointer}
+.questionario__selettore button:disabled{opacity:.4;cursor:default}
+.questionario__selettore input{width:64px;height:42px;text-align:center;font-weight:700;font-size:18px;border:1.5px solid var(--line);border-radius:12px;background:var(--raised);color:var(--ink)}
+.questionario__punti{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:9px}
+.questionario__punti li{display:grid;grid-template-columns:20px 1fr;gap:8px;font-size:15px;line-height:1.4}
+.questionario__punti svg{color:var(--accent);margin-top:2px}
+.questionario__perche{background:var(--sunk);border-radius:18px;padding:18px 20px;font-size:14.5px;line-height:1.45}
+.questionario__perche b{display:block;font-family:Gloock,Georgia,serif;font-weight:400;font-size:19px;margin-bottom:6px}
+.questionario__perche p{margin:0}
+.questionario__riep{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:6px;font-size:13.5px;color:var(--muted)}
+.questionario__riep span{color:var(--ink);font-weight:600}
+.questionario__azioni{gap:12px;flex-wrap:wrap;margin-top:22px}
+.questionario__sconto{margin-top:22px;border-top:1px solid var(--line);padding-top:18px;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}
+.questionario__perc{font-family:Gloock,Georgia,serif;font-size:40px;line-height:1;color:var(--accent)}
+.questionario__sconto p{margin:0;font-size:14.5px;line-height:1.45}
+.questionario__rinnovo{margin-top:14px;background:var(--sunk);border-radius:18px;padding:16px 20px;display:grid;grid-template-columns:1fr auto;gap:6px 16px;align-items:center;font-size:14.5px}
+.questionario__rinnovo-v{font-family:Gloock,Georgia,serif;font-weight:400;font-size:30px;color:var(--accent)}
+.questionario__rinnovo table{grid-column:1/-1;width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px;font-variant-numeric:tabular-nums}
+.questionario__rinnovo td{padding:5px 0;border-top:1px solid var(--line)}
+.questionario__rinnovo td:last-child{text-align:right;font-weight:600}
+.questionario__rinnovo small{grid-column:1/-1;color:var(--muted);font-size:12.5px}
+.questionario__ricalcola{margin:0}
+@media (prefers-reduced-motion: reduce){ .questionario__scelta>span{transition:none} .questionario__scelta:hover>span{transform:none} }
+
+/* 9K · Le pagine /piu-strutture e /property-manager: i passi della partnership, il preventivo, il modulo «Diventa partner». */
+.tipo-passi{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;counter-reset:passo}
+@media(max-width:1000px){ .tipo-passi{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media(max-width:560px){ .tipo-passi{grid-template-columns:minmax(0,1fr)} }
+.tipo-passi li{display:flex;flex-direction:column;gap:10px;padding:22px;border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line)}
+.tipo-passi li>span:last-child{display:flex;flex-direction:column;gap:4px}
+.tipo-passi__n{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700}
+.tipo-preventivo{margin-top:16px;padding:20px 24px}
+.tipo-preventivo>summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;min-height:44px}
+.tipo-preventivo>summary::-webkit-details-marker{display:none}
+.tipo-preventivo>summary .faq__segno{margin-left:auto}
+.tipo-preventivo[open]>summary .faq__segno{transform:rotate(45deg)}
+.tipo-preventivo .preventivo{margin-top:12px}
+.tipo-sconto{margin-top:8px}
+.tipo-partner{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:32px;padding:32px;align-items:start}
+@media(max-width:900px){ .tipo-partner{grid-template-columns:minmax(0,1fr);padding:24px} }
+
+/* 9K · «Vuoi vedere altri lavori? →» sotto «Chi c'è dietro» */
+.chi__link{display:inline-flex;align-items:center;gap:6px;font-weight:600;min-height:44px}
+.chi__link svg{transition:transform .3s var(--molla,ease)}
+.chi__link:hover svg{transform:translateX(4px)}
+@media (prefers-reduced-motion: reduce){ .chi__link svg{transition:none} .chi__link:hover svg{transform:none} }

@@ -19,11 +19,54 @@ final class Media
     private static function upload(array $file): string
     {
         $err = $file['error'] ?? UPLOAD_ERR_NO_FILE;
-        if ($err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE) throw new \RuntimeException('Il file è troppo pesante.');
-        if ($err !== UPLOAD_ERR_OK) throw new \RuntimeException('Caricamento non riuscito. Riprova.');
+        if ($err !== UPLOAD_ERR_OK) throw new \RuntimeException(self::erroreCaricamento((int) $err));
         $tmp = (string) ($file['tmp_name'] ?? '');
         if ($tmp === '' || !is_uploaded_file($tmp)) throw new \RuntimeException('Caricamento non riuscito.');
         return $tmp;
+    }
+
+    /** 9K · Gli errori di PHP sul caricamento, in italiano chiaro: cosa è successo e cosa fare. */
+    public static function erroreCaricamento(int $err): string
+    {
+        return match ($err) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'Il file è troppo pesante per il server (al massimo ' . self::mb(self::limiteCaricamento()) . '): riducilo e riprova.',
+            UPLOAD_ERR_PARTIAL => 'Il caricamento si è interrotto a metà: controlla la connessione e riprova.',
+            UPLOAD_ERR_NO_FILE => 'Nessun file scelto.',
+            UPLOAD_ERR_NO_TMP_DIR, UPLOAD_ERR_CANT_WRITE => 'Il server non riesce a salvare il file in questo momento: riprova tra poco, e se si ripete scrivi all\'assistenza.',
+            UPLOAD_ERR_EXTENSION => 'Il server ha bloccato questo file: prova a salvarlo di nuovo come JPG o PDF.',
+            default => 'Caricamento non riuscito. Riprova.',
+        };
+    }
+
+    /** I byte di un valore di php.ini (2M, 512K, 1G, -1 = senza limite → PHP_INT_MAX). */
+    public static function byte(string $v): int
+    {
+        $v = trim($v);
+        if ($v === '' || $v === '-1') return PHP_INT_MAX;
+        $n = (int) $v;
+        return match (strtolower(substr($v, -1))) { 'g' => $n * 1073741824, 'm' => $n * 1048576, 'k' => $n * 1024, default => $n };
+    }
+
+    public static function mb(int $b): string { return $b === PHP_INT_MAX ? 'senza limite' : rtrim(rtrim(number_format($b / 1048576, 1, ',', ''), '0'), ',') . ' MB'; }
+
+    /** Il file più pesante che arriva davvero: il più basso tra upload_max_filesize e post_max_size. */
+    public static function limiteCaricamento(): int
+    {
+        return min(self::byte((string) ini_get('upload_max_filesize')), self::byte((string) ini_get('post_max_size')));
+    }
+
+    /**
+     * 9K · I limiti di PHP per le foto (Quadro e Diagnostica): [nome, valore, consigliato, basso?].
+     * @return list<array{0:string,1:string,2:string,3:bool}>
+     */
+    public static function limitiServer(): array
+    {
+        $out = [];
+        foreach (['upload_max_filesize' => '20M', 'post_max_size' => '20M', 'memory_limit' => '256M'] as $k => $min) {
+            $v = (string) ini_get($k);
+            $out[] = [$k, $v, $min, self::byte($v) < self::byte($min)];
+        }
+        return $out;
     }
 
     /**
@@ -60,7 +103,15 @@ final class Media
         $info = @getimagesize($tmp);
         if (!$info || !isset(self::IMG[$info['mime']])) throw new \RuntimeException('Formati accettati: JPG, PNG, WebP.');
         [$w, $h] = $info;
-        if ($w < 1 || $h < 1 || $w * $h > self::MAX_PIXELS) throw new \RuntimeException('Immagine troppo grande in pixel.');
+        if ($w < 1 || $h < 1 || $w * $h > self::MAX_PIXELS) throw new \RuntimeException('La foto è troppo grande per essere lavorata: riducila sotto i 4000 pixel sul lato lungo.');
+        // 9K · GD tiene in memoria circa 5 byte per pixel (più la copia ridotta): prima di aprire la foto si controlla
+        // che ci stia; se no si prova ad alzare il limite a 256 MB, e se non basta lo si dice invece di fermarsi a metà.
+        $serve = $w * $h * 5 + 8 * 1048576;
+        $libera = fn() => self::byte((string) ini_get('memory_limit')) - memory_get_usage(true);
+        if ($serve > $libera()) {
+            @ini_set('memory_limit', '256M');
+            if ($serve > $libera()) throw new \RuntimeException('La foto è troppo grande per essere lavorata: riducila sotto i 4000 pixel sul lato lungo.');
+        }
 
         $img = match ($info['mime']) {
             'image/jpeg' => @imagecreatefromjpeg($tmp),

@@ -51,15 +51,21 @@ final class Legale
 
     // ------------------------------------------------------------------ il titolare
 
-    /** La riga del titolare per il piè di pagina e le email (art. 2250 c.c., D.Lgs. 70/2003). */
+    /**
+     * La riga del titolare per il piè di pagina, il blocco «Titolare» dei documenti e le email (art. 2250 c.c.,
+     * D.Lgs. 70/2003): ragione sociale, sede, P.IVA, REA, e se compilati capitale sociale e «società unipersonale».
+     * 9K: la PEC non compare mai (resta in Impostazioni come promemoria interno).
+     */
     public static function rigaTitolare(bool $en = false): string
     {
         $l = Config::get('legal') ?? [];
         return implode(' · ', array_filter([
             (string) ($l['company'] ?? ''),
-            ($l['company_vat'] ?? '') !== '' ? ($en ? 'VAT no. ' : 'P.IVA ') . $l['company_vat'] : '',
             (string) ($l['company_city'] ?? ''),
-            ($l['company_pec'] ?? '') !== '' ? 'PEC ' . $l['company_pec'] : '',
+            ($l['company_vat'] ?? '') !== '' ? ($en ? 'VAT no. ' : 'P.IVA ') . $l['company_vat'] : '',
+            trim((string) ($l['company_rea'] ?? '')) !== '' ? 'REA ' . trim((string) $l['company_rea']) : '',
+            trim((string) ($l['company_capitale'] ?? '')) !== '' ? ($en ? 'Share capital ' : 'Cap. soc. ') . trim((string) $l['company_capitale']) : '',
+            !empty($l['company_unipersonale']) ? ($en ? 'Single-member company' : 'Società unipersonale') : '',
         ]));
     }
 
@@ -73,7 +79,6 @@ final class Legale
         $e = fn($s) => Support::e((string) $s);
         $email = (string) ($l['contact_email'] ?? '');
         $sito = (string) ($l['company_site'] ?? '');
-        $pec = (string) ($l['company_pec'] ?? '');
         $b = Support::base();
         $mail = Config::get('mail') ?? [];
         // Il fornitore della posta, dall'impostazione: il dominio del server SMTP (per esempio smtp.hostinger.com → Hostinger).
@@ -84,7 +89,7 @@ final class Legale
             'titolare_completo' => $e(($l['company_legal'] ?? '') !== '' ? $l['company_legal'] : ($l['company'] ?? '')),
             'piva' => $e($l['company_vat'] ?? ''),
             'sede' => $e($l['company_city'] ?? ''),
-            'pec' => $pec !== '' ? '<a href="mailto:' . $e($pec) . '">' . $e($pec) . '</a>' : '',
+            'pec' => '',   // 9K: la PEC non si mostra più; un testo salvato a mano con {pec} resta senza
             'email' => $email !== '' ? '<a href="mailto:' . $e($email) . '">' . $e($email) . '</a>' : '',
             'email_fatture' => ($f = Support::amministrazione()) !== '' ? '<a href="mailto:' . $e($f) . '">' . $e($f) . '</a>' : '',   // 9H
             'telefono' => $e($l['contact_phone'] ?? ''),

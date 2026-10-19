@@ -6,7 +6,7 @@
  *
  * Come si scrive (Legale::blocchi): una riga vuota separa i paragrafi; le righe che cominciano con «- » fanno un
  * elenco; quelle che cominciano con «| » una tabella a due colonne («| Dati | …»). Dentro: **grassetto**, [testo](link),
- * e i segnaposto: {titolare}, {titolare_completo}, {sede}, {pec}, {email}, {email_fatture} (9H), {telefono}, {sito_titolare},
+ * e i segnaposto: {titolare}, {titolare_completo}, {sede}, {email}, {email_fatture} (9H), {telefono}, {sito_titolare},
  * {link_termini}, {link_privacy}, {link_dpa}, {link_modulo}, {amico}, {passo}, {max}, {amici}, {regione_traduzioni},
  * {giorni_registri}, {posta}.
  *
@@ -20,7 +20,7 @@ Questi Termini regolano l'uso di MyHouse Welcome. Leggili prima di creare l'acco
 T,
 'termini.1.titolo' => 'Chi siamo e definizioni',
 'termini.1.testo' => <<<'T'
-MyHouse Welcome (il «Servizio») è fornito da {titolare_completo}, con sede in {sede} («noi»). PEC {pec} · email {email}.
+MyHouse Welcome (il «Servizio») è fornito da {titolare_completo}, con sede in {sede} («noi»). Email {email}.
 
 In questi Termini:
 - **Servizio**: la piattaforma MyHouse Welcome, con il pannello, le guide e le funzioni collegate;
@@ -146,13 +146,13 @@ Il codice vale per una sola persona, solo per il primo abbonamento, entro la dat
 T,
 'termini.16.titolo' => 'Contatti e titolare',
 'termini.16.testo' => <<<'T'
-{titolare_completo}, {sede}. PEC {pec} · email {email} · telefono {telefono} · {sito_titolare}.
+{titolare_completo}, {sede}. Email {email} · telefono {telefono} · {sito_titolare}.
 T,
 'termini.b.titolo' => 'Allegato B · Modulo di recesso tipo',
 'termini.b.testo' => <<<'T'
 Allegato I, parte B, del Codice del Consumo. Compila e manda questo modulo solo se sei un consumatore e vuoi recedere dal contratto.
 
-- Destinatario: {titolare_completo}, {sede} · PEC {pec} · email {email}
+- Destinatario: {titolare_completo}, {sede} · email {email}
 - Con la presente io/noi (*) notifico/notifichiamo (*) il recesso dal mio/nostro (*) contratto per la prestazione del seguente servizio: abbonamento MyHouse Welcome, piano …………
 - Ordinato il (*) / pagato il (*): …………
 - Nome del/dei consumatore/i: …………
@@ -275,6 +275,14 @@ T,
 | Conservazione | 12 mesi dalla richiesta, poi la cancelliamo.
 | Destinatari | Il fornitore dell'hosting e quello della posta.
 T,
+'privacy.t14.titolo' => 'Richieste di partnership',
+'privacy.t14.testo' => <<<'T'
+| Dati | Nome, società, email, telefono (se lo scrivi), quante strutture gestisci, le città o le zone e quello che ci scrivi nel modulo «Diventa partner» della pagina per i property manager.
+| Finalità | Rispondere alla richiesta, conoscerci e valutare insieme il programma Partner.
+| Base giuridica | Misure precontrattuali su tua richiesta (art. 6.1.b).
+| Conservazione | 12 mesi dalla richiesta, poi la cancelliamo.
+| Destinatari | Il fornitore dell'hosting e quello della posta.
+T,
 'privacy.fornitori.titolo' => 'Destinatari e fornitori',
 'privacy.fornitori.testo' => <<<'T'
 Ci aiutano a fornire il Servizio questi fornitori, nominati responsabili del trattamento con un contratto (art. 28 GDPR):
@@ -304,7 +312,7 @@ Puoi chiederci in ogni momento (artt. 15–22 GDPR):
 - **opposizione** ai trattamenti basati sul legittimo interesse;
 - **revoca del consenso**, senza effetto su quello che è stato fatto prima.
 
-Per esercitarli scrivi a {email} (o alla PEC {pec}): ti rispondiamo entro 30 giorni. Puoi anche proporre reclamo al Garante per la protezione dei dati personali ([www.garanteprivacy.it](https://www.garanteprivacy.it)) o ricorrere al giudice. Non prendiamo decisioni basate unicamente su trattamenti automatizzati.
+Per esercitarli scrivi a {email}: ti rispondiamo entro 30 giorni. Puoi anche proporre reclamo al Garante per la protezione dei dati personali ([www.garanteprivacy.it](https://www.garanteprivacy.it)) o ricorrere al giudice. Non prendiamo decisioni basate unicamente su trattamenti automatizzati.
 T,
 'privacy.modifiche.titolo' => 'Modifiche all\'informativa',
 'privacy.modifiche.testo' => <<<'T'
@@ -312,7 +320,7 @@ In alto trovi la data e la versione di questa informativa. Se la cambiamo in mod
 T,
 'privacy.titolare.titolo' => 'Titolare del trattamento',
 'privacy.titolare.testo' => <<<'T'
-{titolare_completo}, {sede}. PEC {pec} · email {email} · telefono {telefono} · {sito_titolare}.
+{titolare_completo}, {sede}. Email {email} · telefono {telefono} · {sito_titolare}.
 
 Non è stato nominato un responsabile della protezione dei dati (non è obbligatorio, art. 37 GDPR): per ogni richiesta scrivi a {email}.
 T,
@@ -375,7 +383,7 @@ Il Responsabile mette a disposizione del Titolare, su richiesta scritta e con un
 T,
 'dpa.12.titolo' => 'Contatti',
 'dpa.12.testo' => <<<'T'
-Responsabile del trattamento: {titolare_completo}, {sede}. PEC {pec} · email {email}.
+Responsabile del trattamento: {titolare_completo}, {sede}. Email {email}.
 T,
 
 // ================================================================ AGGIORNAMENTI (la finestra nel pannello e l'email)
@@ -393,7 +401,7 @@ These Terms govern the use of MyHouse Welcome. Please read them before creating 
 T,
 'termini.1.titolo' => 'Who we are and definitions',
 'termini.1.testo' => <<<'T'
-MyHouse Welcome (the "Service") is provided by {titolare_completo}, registered office {sede} ("we"). Certified email (PEC) {pec} · email {email}.
+MyHouse Welcome (the "Service") is provided by {titolare_completo}, registered office {sede} ("we"). Email {email}.
 
 In these Terms:
 - **Service**: the MyHouse Welcome platform, with the dashboard, the guides and the related features;
@@ -519,13 +527,13 @@ The code is valid for one person only, for the first subscription only, by the d
 T,
 'termini.16.titolo' => 'Contact details and provider',
 'termini.16.testo' => <<<'T'
-{titolare_completo}, {sede}, Italy. Certified email (PEC) {pec} · email {email} · phone {telefono} · {sito_titolare}.
+{titolare_completo}, {sede}, Italy. Email {email} · phone {telefono} · {sito_titolare}.
 T,
 'termini.b.titolo' => 'Annex B · Model withdrawal form',
 'termini.b.testo' => <<<'T'
 Annex I, part B, of the Italian Consumer Code. Complete and send this form only if you are a consumer and wish to withdraw from the contract.
 
-- To: {titolare_completo}, {sede}, Italy · PEC {pec} · email {email}
+- To: {titolare_completo}, {sede}, Italy · email {email}
 - I/We (*) hereby give notice that I/We (*) withdraw from my/our (*) contract for the provision of the following service: MyHouse Welcome subscription, plan …………
 - Ordered on (*) / paid on (*): …………
 - Name of consumer(s): …………
@@ -648,6 +656,14 @@ T,
 | Retention | 12 months from the request, then we delete it.
 | Recipients | The hosting provider and the email provider.
 T,
+'privacy.t14.titolo' => 'Partnership requests',
+'privacy.t14.testo' => <<<'T'
+| Data | Name, company, email, phone (if you give it), how many properties you manage, the cities or areas and what you write in the "Become a partner" form on the page for property managers.
+| Purpose | Answering the request, getting to know each other and assessing the Partner programme together.
+| Legal basis | Pre-contractual steps at your request (art. 6.1.b).
+| Retention | 12 months from the request, then we delete it.
+| Recipients | The hosting provider and the email provider.
+T,
 'privacy.fornitori.titolo' => 'Recipients and providers',
 'privacy.fornitori.testo' => <<<'T'
 These providers help us deliver the Service and are appointed as processors by contract (art. 28 GDPR):
@@ -677,7 +693,7 @@ You can ask us at any time (arts. 15–22 GDPR) for:
 - **objection** to processing based on legitimate interest;
 - **withdrawal of consent**, without affecting what was done before.
 
-To exercise them write to {email} (or to the PEC {pec}): we reply within 30 days. You can also lodge a complaint with the Italian Data Protection Authority ([www.garanteprivacy.it](https://www.garanteprivacy.it)) or go to court. We do not take decisions based solely on automated processing.
+To exercise them write to {email}: we reply within 30 days. You can also lodge a complaint with the Italian Data Protection Authority ([www.garanteprivacy.it](https://www.garanteprivacy.it)) or go to court. We do not take decisions based solely on automated processing.
 T,
 'privacy.modifiche.titolo' => 'Changes to this policy',
 'privacy.modifiche.testo' => <<<'T'
@@ -685,7 +701,7 @@ The date and version of this policy are shown at the top. If we change it signif
 T,
 'privacy.titolare.titolo' => 'Data controller',
 'privacy.titolare.testo' => <<<'T'
-{titolare_completo}, {sede}, Italy. Certified email (PEC) {pec} · email {email} · phone {telefono} · {sito_titolare}.
+{titolare_completo}, {sede}, Italy. Email {email} · phone {telefono} · {sito_titolare}.
 
 No data protection officer has been appointed (it is not mandatory, art. 37 GDPR): for any request write to {email}.
 T,
@@ -756,7 +772,7 @@ On written request and with reasonable notice, the Processor makes available to 
 T,
 'dpa.12.titolo' => 'Contact details',
 'dpa.12.testo' => <<<'T'
-Processor: {titolare_completo}, {sede}, Italy. Certified email (PEC) {pec} · email {email}.
+Processor: {titolare_completo}, {sede}, Italy. Email {email}.
 T,
 ],
 ];

@@ -49,7 +49,7 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
           <legend><?= t('Foto della sezione') ?></legend>
           <?php if ($foto):
                 $carica = ['id' => 'carica-foto', 'name' => 'foto', 'accept' => 'image/jpeg,image/png,image/webp', 'cosa' => 'la foto',
-                           'aiuto' => 'JPG, PNG o WebP, fino a 8 MB.', 'url' => $fotoUrl, 'togli' => 'togli-foto'];
+                           'aiuto' => 'JPG, PNG o WebP, anche dal telefono: le foto grandi si riducono da sole.', 'url' => $fotoUrl, 'togli' => 'togli-foto'];
                 include __DIR__ . '/_carica.php';
               else: ?>
             <div class="mediabox">
@@ -257,7 +257,7 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
             <?php if ($foto): ?>
               <div class="field" style="margin:0"><span class="label">Foto del luogo <span class="muted">(facoltativa)</span></span>
                 <?php $carica = ['id' => 'pl-foto', 'name' => 'foto', 'accept' => 'image/jpeg,image/png,image/webp', 'cosa' => 'la foto',
-                                 'aiuto' => 'JPG, PNG o WebP, fino a 8 MB.', 'url' => $vFoto ?: null,
+                                 'aiuto' => 'JPG, PNG o WebP, anche dal telefono: le foto grandi si riducono da sole.', 'url' => $vFoto ?: null,
                                  'togli' => $vFoto ? 'togli-foto' : '', 'togliNome' => 'fai', 'togliVerso' => $qui_url . '/luogo/' . (int) $v['id'] . '/azione'];
                       include __DIR__ . '/_carica.php'; ?></div>
             <?php endif; ?>

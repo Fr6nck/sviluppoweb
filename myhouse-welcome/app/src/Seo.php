@@ -288,7 +288,7 @@ final class Seo
             if ($j !== false) $out[] = $j;
         }
         // 7F: le pagine per tipologia hanno le loro 4 domande.
-        if (isset(self::tipologie()[$pagina])) {
+        if (!empty(self::tipologie()[$pagina]['faq'])) {
             $j = json_encode(['@context' => 'https://schema.org', '@type' => 'FAQPage', 'inLanguage' => 'it-IT',
                               'mainEntity' => array_map(fn($x) => ['@type' => 'Question', 'name' => $x[0], 'acceptedAnswer' => ['@type' => 'Answer', 'text' => $x[1]]],
                                                         self::tipologie()[$pagina]['faq'])], $f);

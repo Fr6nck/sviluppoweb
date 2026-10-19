@@ -13,8 +13,9 @@ App PHP 8.1+ per guide digitali degli ospiti (case vacanza, B&B, agriturismi). S
 
 ## Dati aziendali (pubblici, da mettere come valori predefiniti in `app/config.php` → `legal`)
 - Titolare e fornitore del servizio (8J): `City Up S.r.l.` (`MHW_COMPANY`) — «City Up S.r.l. — P.IVA e C.F. 03793880547 — REA PG-352001» (`MHW_COMPANY_LEGAL`)
-- P.IVA: `03793880547` · PEC `cityup@pec.it` · sito `https://www.cityup.eu`
-- Blackout Agency (blackout.in) resta solo come chi realizza i siti MyHouse («Anche il tuo sito»), destinatario delle risposte di quel percorso.
+- P.IVA: `03793880547` · REA `PG-352001` (sempre visibile nel piè di pagina) · sito `https://www.cityup.eu`
+- PEC: dalla 9K non si mostra più sul sito né nelle email (resta solo come promemoria interno in Impostazioni); dove serve un contatto, l'email assistenza.
+- Blackout Agency (blackout.in) realizza i siti MyHouse («Anche il tuo sito»), destinatario delle risposte di quel percorso; dalla 9K compare con City Up anche in «Chi c'è dietro» della home (con il link «Vuoi vedere altri lavori?»).
 - Telefono: `+39 392 006 1600` — link `tel:+393920061600`
 - WhatsApp: stesso numero — link `https://wa.me/393920061600`
 - Email di contatto: `assistenza@welcomemyhouse.it` (`MHW_CONTACT_EMAIL`, confermata: è quella di tutti i `mailto:`)

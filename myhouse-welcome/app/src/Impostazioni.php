@@ -27,6 +27,9 @@ final class Impostazioni
         'sito' => [
             'base_url'       => ['MHW_BASE_URL', 'Indirizzo del sito', 'url', 'Per esempio https://welcomemyhouse.it, senza barra finale. È quello che finisce nei QR, nelle email e nei motori di ricerca.'],
             'pretty_urls'    => ['MHW_PRETTY_URLS', 'Indirizzi puliti, senza index.php', 'check', 'Si accende solo se la prova riesce: il sito chiede a sé stesso una pagina senza index.php. Spento, tutto resta come prima.'],
+            // 9K · Il programma Partner (pagina /property-manager)
+            'partner.commissione' => ['MHW_PARTNER_COMMISSIONE', 'Commissione partner (%)', 'percento', 'Quanto riceve il partner su ogni struttura attivata, sul primo anno e sui rinnovi. Vuota: la pagina dice «una commissione» senza numero.'],
+            'partner.sconto'      => ['MHW_PARTNER_SCONTO', 'Sconto per i clienti del partner (%)', 'percento', 'Lo sconto per i proprietari che attivano con il codice del partner. Vuoto: la pagina dice «uno sconto» senza numero. I codici partner veri arrivano in una fase successiva.'],
         ],
         // 9H · Gli indirizzi email del sito, uno per ogni cosa. Gli ultimi tre, vuoti, valgono l'email assistenza.
         'indirizzi' => [
@@ -94,7 +97,10 @@ final class Impostazioni
             'legal.company_legal'   => ['MHW_COMPANY_LEGAL', 'Riga completa per i documenti', 'text', 'Ragione sociale, P.IVA e C.F., REA: compare in Termini, Privacy e DPA.'],
             'legal.company_vat'     => ['MHW_COMPANY_VAT', 'Partita IVA', 'text', '11 cifre, senza IT.'],
             'legal.company_city'    => ['MHW_COMPANY_CITY', 'Sede legale', 'text', 'Per esempio Via Ariodante Fabretti 15, 06123 Perugia (PG).'],
-            'legal.company_pec'     => ['MHW_COMPANY_PEC', 'PEC', 'email', ''],
+            'legal.company_rea'     => ['MHW_COMPANY_REA', 'Numero REA', 'text', 'Obbligatorio per le S.r.l. (art. 2250 c.c.): compare nel piè di pagina e nel blocco del titolare. Di serie PG-352001.'],
+            'legal.company_capitale' => ['MHW_COMPANY_CAPITALE', 'Capitale sociale', 'text', 'Per esempio «€ 10.000 i.v.». Vuoto, nel piè di pagina non compare.'],
+            'legal.company_unipersonale' => ['MHW_COMPANY_UNIPERSONALE', 'Società unipersonale', 'check', 'Accesa, nel piè di pagina compare «Società unipersonale».'],
+            'legal.company_pec'     => ['MHW_COMPANY_PEC', 'PEC (promemoria interno)', 'email', 'Non compare mai sul sito né nelle email: dove serve un contatto c\'è l\'email assistenza.'],
             'legal.company_site'    => ['MHW_COMPANY_SITE', 'Sito della società', 'url', 'Di serie https://www.cityup.eu'],
             'legal.contact_phone'   => ['MHW_CONTACT_PHONE', 'Telefono', 'text', 'Come si legge, per esempio +39 392 006 1600.'],
             'legal.contact_whatsapp' => ['MHW_CONTACT_WHATSAPP', 'WhatsApp', 'text', 'Solo cifre, con il prefisso senza +, per esempio 393920061600.'],
@@ -293,6 +299,7 @@ final class Impostazioni
                 $percorso === 'legal.company_vat' && !preg_match('/^\d{11}$/', $grezzo) => 'La partita IVA italiana è fatta di 11 cifre (senza IT).',
                 $percorso === 'legal.contact_whatsapp' && !preg_match('/^\d{8,15}$/', $grezzo) => 'Scrivi solo le cifre, con il prefisso del paese e senza +, per esempio 393920061600.',
                 $tipo === 'cifra' && (!ctype_digit(str_replace('.', '', $grezzo)) || (int) str_replace('.', '', $grezzo) < 1 || (int) str_replace('.', '', $grezzo) > 100000000) => 'Scrivi un numero intero, per esempio 150000.',
+                $tipo === 'percento' && (!ctype_digit($grezzo) || (int) $grezzo < 1 || (int) $grezzo > 100) => 'Scrivi un numero da 1 a 100, senza il simbolo %.',
                 $tipo === 'decimale' && (!preg_match('/^\d{1,6}([.,]\d{1,6})?$/', $grezzo) || (float) str_replace(',', '.', $grezzo) <= 0) => 'Scrivi un numero, per esempio 0,86.',
                 $tipo === 'data' && (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $grezzo) || !checkdate((int) substr($grezzo, 5, 2), (int) substr($grezzo, 8, 2), (int) substr($grezzo, 0, 4))) => 'Scrivi la data come 2027-10-31.',
                 default => '',
@@ -300,7 +307,7 @@ final class Impostazioni
             if ($errore !== '') { $errori[$nome] = $errore; continue; }
             $v = match ($tipo) {
                 'number' => (int) $grezzo,
-                'cifra' => (int) str_replace('.', '', $grezzo),
+                'cifra', 'percento' => (int) str_replace('.', '', $grezzo),
                 'decimale' => str_replace(',', '.', $grezzo),
                 default => $percorso === 'base_url' ? rtrim($grezzo, '/') : $grezzo,
             };

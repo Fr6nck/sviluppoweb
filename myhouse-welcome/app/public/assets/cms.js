@@ -392,7 +392,8 @@
       if (!dt || !dt.files || !dt.files.length) return;
       var accetta = (input.getAttribute('accept') || '').split(',');
       var f = dt.files[0];
-      if (accetta[0] && accetta.indexOf(f.type) === -1) {
+      // 9K: una foto HEIC passa: foto-leggere.js la converte, o spiega come caricarla.
+      if (accetta[0] && accetta.indexOf(f.type) === -1 && !(/hei[cf]$/i.test(f.type) || /\.hei[cf]$/i.test(f.name))) {
         pesoEl.textContent = 'Questo tipo di file non va bene qui.';
         zona.classList.add('drop--pieno', 'drop--nuovo'); nome.textContent = f.name; input.value = '';
         return;
@@ -400,7 +401,8 @@
       try {
         var tieni = new DataTransfer(); tieni.items.add(f); input.files = tieni.files;
       } catch (err) { input.files = dt.files; }
-      mostra();
+      // Il «change» (e non solo l'anteprima): così foto-leggere.js prepara anche la foto trascinata.
+      input.dispatchEvent(new Event('change', { bubbles: true }));
     });
   })(zone[z]);
 

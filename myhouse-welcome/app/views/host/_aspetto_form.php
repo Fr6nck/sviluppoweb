@@ -61,7 +61,7 @@ $media = [
       <legend><?= Support::e($nome) ?></legend>
       <?php if ($ok):
             $carica = ['id' => 'carica-' . $input, 'name' => $input, 'accept' => 'image/jpeg,image/png,image/webp', 'cosa' => $cosa,
-                       'aiuto' => $aiuto . ' JPG, PNG o WebP, fino a 8 MB.', 'url' => $url, 'togli' => 'togli-' . $input, 'logo' => $isLogo];
+                       'aiuto' => $aiuto . ' JPG, PNG o WebP, anche dal telefono: le foto grandi si riducono da sole.', 'url' => $url, 'togli' => 'togli-' . $input, 'logo' => $isLogo];
             include __DIR__ . '/_carica.php';
           else: ?>
         <div class="mediabox">

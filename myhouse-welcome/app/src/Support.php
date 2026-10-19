@@ -185,6 +185,11 @@ final class Support
     {
         // Gli indirizzi esterni (Stripe) passano intatti.
         if ($to !== '' && $to[0] === '/') $to = self::url($to);
+        // 9K · Un modulo con una foto mandato da foto-leggere.js (con la barra di caricamento): l'indirizzo
+        // in JSON, e ci va la pagina, così il messaggio si legge una volta sola dove deve.
+        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && !empty($_SERVER['HTTP_X_MHW_CARICA'])) {
+            header('Content-Type: application/json; charset=utf-8'); echo json_encode(['vai' => $to], JSON_UNESCAPED_SLASHES); exit;
+        }
         header('Location: ' . $to); exit;
     }
 

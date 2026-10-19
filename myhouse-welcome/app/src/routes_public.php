@@ -220,13 +220,25 @@ $r->get('/en/questions', function () use ($guard) {
 
 /* 7F: le pagine per tipologia (solo italiano): problemi tipici, sezioni utili, piano consigliato, 4 domande. */
 foreach (MHW\Seo::tipologie() as $chiave => $tipoP) {
-    $r->get($tipoP['percorso'], function () use ($guard, $chiave, $tipoP) {
+    $r->get($tipoP['percorso'], function () use ($guard, $chiave, $tipoP, $chiInvita) {
         $guard();
         MHW\Stats::funnelEvent('landing_view');
-        $piano = null;
-        foreach (Plans::public() as $p) if ($p['code'] === $tipoP['piano']) $piano = $p;
+        $piano = null; $piani = [];
+        foreach (Plans::public() as $p) { $piani[$p['code']] = $p; if ($p['code'] === ($tipoP['piano'] ?? '')) $piano = $p; }
         $demo = Db::one("SELECT id, slug, name FROM properties WHERE is_demo >= 1 AND status = 'published' AND archived_at IS NULL ORDER BY is_demo DESC, id");
-        View::out('pub/tipologia', ['tp' => $tipoP, 'chiave' => $chiave, 'piano' => $piano, 'demo' => $demo, 'user' => Auth::user(), 'seoPagina' => $chiave]);
+        // 9K · Il questionario: le risposte (senza JavaScript arrivano qui), le strutture del Portfolio e gli sconti di chi guarda
+        // (l'account se è dentro, l'invito di un amico se è arrivato da un link), per i prezzi barrati.
+        $risposte = [];
+        foreach (['d1', 'd2', 'd3'] as $k) $risposte[$k] = in_array($_GET[$k] ?? '', ['si', 'no'], true) ? $_GET[$k] : '';
+        $pf = $piani['portfolio'] ?? null;
+        $strutture = $pf ? max(2, (int) $pf['min_quantity'], min((int) $pf['max_quantity'] ?: 10, (int) ($_GET['strutture'] ?? 2))) : 2;
+        $u = Auth::user(); $acc = $u && ($u['role'] ?? '') !== 'admin' ? Auth::account() : null;
+        $chi = $acc ? null : $chiInvita();
+        $extra = $chi ? [['tipo' => 'invito', 'nome' => 'Invito di ' . explode(' ', trim((string) $chi['user_name']))[0], 'percento' => MHW\Inviti::AMICO]] : [];
+        $riep = [];
+        if (MHW\Sconti::disponibili()) foreach ($piani as $c => $p) $riep[$c] = MHW\Sconti::riepilogo($p, $c === 'portfolio' ? $strutture : 1, $acc, $extra);
+        View::out('pub/tipologia', ['tp' => $tipoP, 'chiave' => $chiave, 'piano' => $piano, 'demo' => $demo, 'user' => $u, 'seoPagina' => $chiave,
+                                    'qPiani' => $piani, 'qRiep' => $riep, 'qRisposte' => $risposte, 'qStrutture' => $strutture]);
     });
 }
 
@@ -527,7 +539,7 @@ $r->any('/password/cambia', function () use ($doveComincia) {
  */
 $r->post('/preventivo', function () {
     $torna = (string) ($_POST['torna'] ?? '/');
-    if (!preg_match('#^/(en|piano|registrati)?(\?[a-z0-9=&_-]*)?$#i', $torna)) $torna = '/';
+    if (!preg_match('#^/(en|piano|registrati|piu-strutture|property-manager)?(\?[a-z0-9=&_-]*)?$#i', $torna)) $torna = '/';
     $u = Auth::user();
     $acc = $u && $u['role'] !== 'admin' ? Auth::account() : null;
     $lingua = str_starts_with($torna, '/en') ? 'en' : 'it';
@@ -540,6 +552,18 @@ $r->post('/preventivo', function () {
         $_SESSION['preventivo_errore'] = ['msg' => $e->getMessage()] + array_map(fn($v) => is_string($v) ? mb_substr($v, 0, 2000) : '', array_intersect_key($_POST, array_flip(['nome', 'email', 'telefono', 'messaggio', 'strutture'])));
     }
     Support::redirect($torna . '#preventivo');
+});
+
+/* 9K · «Diventa partner» (/property-manager): la richiesta va all'email commerciale e in Amministrazione → Partner. */
+$r->post('/property-manager/partner', function () {
+    try {
+        MHW\Partner::salva($_POST);
+        $_SESSION['partner_ok'] = true;
+    } catch (\RuntimeException $e) {
+        $_SESSION['partner_errore'] = ['msg' => $e->getMessage()] + array_map(fn($v) => is_string($v) ? mb_substr($v, 0, 2000) : '',
+            array_intersect_key($_POST, array_flip(['nome', 'societa', 'email', 'telefono', 'strutture', 'zone', 'messaggio'])));
+    }
+    Support::redirect('/property-manager#partner');
 });
 
 /* 9A · «Applica» accanto al codice di invito in registrazione: dice se il codice vale e di chi è. */

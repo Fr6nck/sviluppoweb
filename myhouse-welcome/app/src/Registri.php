@@ -116,6 +116,7 @@ final class Registri
         if (Migrator::tableExists('interessi_sito')) Db::run('DELETE FROM interessi_sito WHERE created_at < ?', [$iso(strtotime('-12 months', $t))]);
         if (Migrator::tableExists('referral_invites')) Db::run('DELETE FROM referral_invites WHERE sent_at < ?', [$iso(strtotime('-24 months', $t))]);
         if (Migrator::tableExists('preventivi')) Db::run('DELETE FROM preventivi WHERE created_at < ?', [$iso(strtotime('-12 months', $t))]);   // 9A
+        if (Migrator::tableExists('partner_richieste')) Db::run('DELETE FROM partner_richieste WHERE created_at < ?', [$iso(strtotime('-12 months', $t))]);   // 9K
     }
 
     /** Una volta: app.log e mail.log di prima della 8I divisi nei file del giorno, secondo la data di ogni riga. */

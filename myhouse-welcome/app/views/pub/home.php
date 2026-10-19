@@ -296,13 +296,21 @@ $disegni = [
     <span class="kicker"><?= $T('perchi.kicker') ?></span>
     <h2 id="perchi-titolo" class="h-sezione"><?= $T('perchi.titolo') ?></h2>
   </div>
-  <div class="vantaggi vantaggi--4">
-    <?php foreach (['home', 'coffee', 'sun', 'layers'] as $i => $ico): $tit = $T('perchi.' . ($i + 1) . '.titolo'); $txt = $T('perchi.' . ($i + 1) . '.testo'); ?>
-      <div class="vantaggio">
-        <span class="vantaggio__ico"><?= Icon::svg($ico, 20, 1.7) ?></span>
-        <b><?= $tit ?></b>
-        <p><?= $txt ?></p>
-      </div>
+  <?php /* 9K · Sei schede, ognuna un link alla sua pagina (le pagine sono in italiano): foto 4:3, icona, titolo, testo, «Scopri →». */ ?>
+  <div class="perchi">
+    <?php foreach ([['casa', 'case-vacanza', '/case-vacanza', 'home'], ['bnb', 'bed-and-breakfast', '/bed-and-breakfast', 'coffee'],
+                    ['affitta', 'affittacamere', '/affittacamere', 'key'], ['agri', 'agriturismi', '/agriturismi', 'sun'],
+                    ['piu', 'piu-strutture', '/piu-strutture', 'layers'], ['pm', 'property-manager', '/property-manager', 'suitcase']] as [$k, $foto, $dove, $ico]):
+          $img = TestiSito::immagine('perchi-' . $foto); ?>
+      <a class="perchi__scheda" href="<?= b() . $dove ?>"<?= $en ? ' hreflang="it"' : '' ?>>
+        <span class="perchi__foto"><?php if ($img['url']): ?><img src="<?= Support::e($img['url']) ?>" alt="" width="720" height="540" loading="lazy" decoding="async"<?= $F('perchi-' . $foto) ?>><?php endif; ?></span>
+        <span class="perchi__corpo">
+          <span class="vantaggio__ico" aria-hidden="true"><?= Icon::svg($ico, 20, 1.7) ?></span>
+          <b class="perchi__titolo"><?= $T('perchi.' . $k . '.titolo') ?></b>
+          <span class="perchi__testo"><?= $T('perchi.' . $k . '.testo') ?></span>
+          <span class="perchi__scopri"><?= $T('perchi.scopri') ?> <?= Icon::svg('arrow', 15, 2) ?></span>
+        </span>
+      </a>
     <?php endforeach; ?>
   </div>
 </section>
@@ -572,6 +580,11 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <span class="chi__marchio"><?= Icon::brand(28) ?></span>
     <p class="chi__titolo"><?= $T('chi.titolo') ?></p>
     <p><?= $T('chi.testo') ?></p>
+    <?php /* 9K · «Vuoi vedere altri lavori? →», verso l'indirizzo di «Testi e foto» (di serie blackout.in), in una scheda nuova */
+          $chiUrl = trim(TestiSito::get('chi.link')); $chiEt = trim(TestiSito::get('chi.link.testo'));
+          if ($chiEt !== '' && preg_match('#^https://[^\s"<>]+$#', $chiUrl)): ?>
+      <a class="chi__link" href="<?= Support::e($chiUrl) ?>" target="_blank" rel="noopener"><?= $T('chi.link.testo') ?> <?= Icon::svg('arrow', 15, 2) ?></a>
+    <?php endif; ?>
   </aside>
 </section>
 

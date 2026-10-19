@@ -5,7 +5,8 @@
  * (qui ci sono quelli di serie); il resto del testo sta qui.
  *
  * Per ogni pagina: h1, intro, 3 problemi tipici con la risposta della guida, le sezioni più utili
- * (tipo di sezione del catalogo => perché), il piano consigliato (codice del pacchetto) con il motivo,
+ * (tipo di sezione del catalogo => perché), il piano consigliato (codice del pacchetto, per il link «Crea gratis») e, con
+ * 'questionario' => true, il questionario a tre domande (9K) al posto del riquadro del piano,
  * 4 domande frequenti (anche nei dati strutturati FAQPage), la foto [file in assets/foto, larghezza, altezza, testo alternativo].
  */
 return [
@@ -33,7 +34,7 @@ return [
             'waste' => 'Giorni di raccolta e colore dei bidoni, la domanda di ogni settimana.',
             'eat' => 'I posti dove mangeresti tu, con la mappa.',
         ],
-        'piano' => 'essential',
+        'questionario' => true, 'piano' => 'essential',
         'piano_perche' => 'Per una casa sola bastano le informazioni essenziali in due lingue: la tua e quella dei tuoi ospiti più frequenti. Se ospiti da tutto il mondo o vuoi foto e consigli sul territorio, c\'è Plus.',
         'faq' => [
             ['Posso spiegare l\'arrivo autonomo senza scrivere il codice della porta?', 'Sì, ed è quello che consigliamo. Nella guida spieghi dove sono le chiavi e come si entra; il codice lo mandi in privato poco prima dell\'arrivo. Se scrivi un codice, la piattaforma ti avvisa prima di pubblicare.'],
@@ -66,7 +67,7 @@ return [
             'visit' => 'I posti da vedere vicino a te, con la mappa.',
             'eat' => 'Dove cenare la sera, la domanda più frequente dopo il Wi-Fi.',
         ],
-        'piano' => 'plus',
+        'questionario' => true, 'piano' => 'plus',
         'piano_perche' => 'Gli ospiti di un B&B arrivano da tutto il mondo: con Plus la guida è in sei lingue, con le foto accanto ai testi, tutte le sezioni e le statistiche di lettura.',
         'faq' => [
             ['Ho cinque camere: mi servono cinque guide?', 'No. Più camere allo stesso indirizzo e con lo stesso CIN sono una struttura sola: basta una guida. Per Wi-Fi diversi aggiungi una riga per ogni zona.'],
@@ -99,7 +100,7 @@ return [
             'parking' => 'Dove lasciare l\'auto, quanto costa, dove inizia la ZTL.',
             'transport' => 'Autobus, taxi e stazione per chi si muove senza auto.',
         ],
-        'piano' => 'plus',
+        'questionario' => true, 'piano' => 'plus',
         'piano_perche' => 'Con ospiti che cambiano spesso e parlano lingue diverse, Plus ti dà sei lingue, tutte le sezioni e le foto accanto alle istruzioni, per spiegare meglio gli spazi comuni.',
         'faq' => [
             ['L\'affittacamere ha un solo CIN: basta una guida?', 'Sì. Le camere allo stesso indirizzo con lo stesso CIN sono una struttura sola: una guida e un QR Code per tutta la casa.'],
@@ -132,7 +133,7 @@ return [
             'events' => 'Sagre, mercati e feste del paese, con le date.',
             'shop' => 'Alimentari, farmacia e bancomat più vicini.',
         ],
-        'piano' => 'plus',
+        'questionario' => true, 'piano' => 'plus',
         'piano_perche' => 'Un agriturismo ha molto da raccontare: con Plus usi tutte le sezioni, metti le foto accanto ai testi e scrivi in sei lingue per gli ospiti stranieri.',
         'faq' => [
             ['Ho camere e appartamenti nella stessa azienda: quante guide servono?', 'Se sono allo stesso indirizzo con lo stesso CIN, una guida. Se hai unità con CIN diversi, una guida per ognuna, gestite insieme con Portfolio.'],
@@ -140,5 +141,55 @@ return [
             ['Gli eventi passati spariscono da soli?', 'Sì. Gli eventi con la data passata non si vedono più nella guida, e ti avvisiamo per email: se tornano l\'anno dopo, li ripeti con un clic.'],
             ['La guida funziona anche dove il segnale è debole?', 'La guida è leggera e si apre nel browser senza app. Consigliamo di mandare il link prima dell\'arrivo, così gli ospiti leggono le indicazioni quando hanno ancora rete.'],
         ],
+    ],
+
+    // 9K · Più strutture: solo Portfolio (tabella progressiva, preventivo oltre il massimo), niente questionario.
+    'piu-strutture' => [
+        'percorso' => '/piu-strutture', 'nome' => 'Più strutture', 'tipologia' => null,
+        'foto' => ['scena-host.jpg', 1200, 750, 'Un host che aggiorna la guida dal portatile, seduto al tavolo di casa'],
+        'titolo' => 'Guida digitale per più strutture ricettive | MyHouse Welcome',
+        'descrizione' => 'Più case, un solo account: ogni struttura ha la sua guida digitale e il suo QR Code, le sezioni si copiano da una all\'altra e le statistiche sono distinte. Con Portfolio.',
+        'kicker' => 'Per chi gestisce più strutture',
+        'h1' => 'Tutte le tue case, una sola regia.',
+        'intro' => 'Due appartamenti in centro, una casa in campagna, qualche camera: ogni struttura ha la sua guida e il suo QR, ma il lavoro lo fai una volta sola. Copi le sezioni da una casa all\'altra, aggiorni quello che cambia e vedi le statistiche di ognuna.',
+        'problemi' => [
+            ['Le stesse risposte per cinque case diverse', 'Wi-Fi, regole della casa, raccolta differenziata, i ristoranti della zona: tante risposte si somigliano, e riscriverle per ogni struttura è tempo perso.',
+             'Copi le sezioni da una struttura all\'altra: scrivi una volta quello che vale per tutte e cambi solo quello che è diverso.'],
+            ['Ogni casa ha il suo codice e il suo Wi-Fi', 'Indirizzo, CIN, rete Wi-Fi, istruzioni per l\'arrivo: basta un dato della casa sbagliata e l\'ospite resta fuori dalla porta.',
+             'Ogni struttura ha la sua guida e il suo QR, con i dati suoi: l\'ospite vede solo la casa in cui dorme.'],
+            ['Non sai quale guida leggono di più', 'Con più case non sai quali informazioni servono davvero, né dove gli ospiti cercano e non trovano.',
+             'Le statistiche sono distinte per struttura: quante volte si apre la guida, le sezioni più lette, le lingue degli ospiti.'],
+        ],
+        'piano' => 'portfolio', 'portfolio' => true,
+        'faq' => [
+            ['Posso aggiungere una struttura a metà anno?', 'Sì, quando vuoi, da Account & Fatturazione → «Cambia piano»: paghi oggi solo la differenza per i giorni che restano fino al rinnovo, e dal rinnovo tutte le strutture si rinnovano insieme.'],
+            ['Posso spostare una guida da una struttura all\'altra?', 'Ogni guida appartiene alla sua struttura, con il suo indirizzo, il suo CIN e il suo QR. Se cambi casa, archivi la guida vecchia da «Le mie guide» e ne prepari una nuova: le sezioni che ti servono le copi in un attimo.'],
+            ['Gli ospiti di una casa vedono le altre?', 'No. Ogni guida ha il suo link e il suo QR e mostra solo la sua struttura: dalle altre non si arriva.'],
+            ['In quante lingue?', 'Come con Plus, per ogni struttura: la lingua in cui scrivi, le altre tra italiano, inglese, francese, tedesco e spagnolo, e una lingua in più a scelta, con le traduzioni suggerite comprese entro un limite annuale di caratteri.'],
+        ],
+    ],
+    // 9K · Property manager: il programma Partner (per ora raccoglie i contatti), solo Portfolio, il modulo «Diventa partner».
+    'property-manager' => [
+        'percorso' => '/property-manager', 'nome' => 'Property manager', 'tipologia' => null,
+        'foto' => ['pannello-1.webp', 1200, 750, 'Il pannello di MyHouse Welcome con l\'elenco delle guide di più strutture'],
+        'titolo' => 'Programma Partner per property manager | MyHouse Welcome',
+        'descrizione' => 'Gestisci case per conto dei proprietari? Con MyHouse Welcome ogni immobile ha la sua guida digitale e tu diventi partner: una commissione su ogni struttura attivata.',
+        'kicker' => 'Per property manager e agenzie',
+        'h1' => 'I tuoi proprietari se ne accorgono. I loro ospiti anche.',
+        'intro' => 'Gestisci case per conto di altri? Con MyHouse Welcome ogni immobile ha la sua guida digitale, pronta in un pomeriggio. I proprietari vedono un servizio in più, gli ospiti scrivono meno e recensiscono meglio, e tu diventi partner: guadagni su ogni struttura che porti.',
+        'problemi_kicker' => 'Perché conviene', 'problemi_titolo' => 'Tre motivi per diventare partner',
+        'problemi' => [
+            ['Un servizio in più da offrire', 'La guida digitale entra nel tuo pacchetto di gestione: un motivo in più per scegliere te.', ''],
+            ['Meno telefonate, più recensioni', 'Le domande ripetute le risolve la guida, le stelle salgono, e un buon punteggio vale più prenotazioni.', ''],
+            ['Guadagni anche tu', 'Per ogni struttura attivata con il tuo codice partner ricevi {commissione} sul primo anno e sui rinnovi. Più strutture porti, più cresce.', ''],
+        ],
+        'passi_titolo' => 'Come funziona la partnership',
+        'passi' => [
+            ['Ci scrivi e ci conosciamo', 'Compili il modulo qui sotto: ti richiamiamo per capire quante case gestisci e come lavori.'],
+            ['Ricevi il tuo codice partner e i materiali', 'Un codice tutto tuo e quello che serve per presentare la guida ai proprietari.'],
+            ['I tuoi proprietari attivano la guida con il tuo codice', 'Con {sconto_clienti} per loro.'],
+            ['Ogni anno ricevi la tua commissione', 'Su ogni struttura attivata, il primo anno e a ogni rinnovo.'],
+        ],
+        'piano' => 'portfolio', 'portfolio' => true, 'partner' => true,
     ],
 ];

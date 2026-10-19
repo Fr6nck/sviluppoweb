@@ -148,6 +148,19 @@ final class Demo
     }
 
     /** La vetrina attuale (pubblicata, non archiviata), o null. */
+    /** 9K · La foto di copertina di Casa Checco (assets/foto/checco-copertina.jpg) e il suo testo alternativo. */
+    public const ALT_COPERTINA = 'Il portone ad arco in legno di Casa Checco nel muro di pietra, con la scala esterna, un vaso fiorito e il rampicante';
+
+    /** 9K · Mette la copertina attuale (la foto nuova) sulla vetrina esistente, senza rifarla. Restituisce l'id della foto o null. */
+    public static function copertinaVetrina(int $pid): ?int
+    {
+        $p = Db::one('SELECT id, account_id FROM properties WHERE id = ?', [$pid]);
+        if (!$p) return null;
+        $mid = self::foto('checco-copertina.jpg', (int) $p['account_id'], $pid, self::ALT_COPERTINA);
+        if ($mid) Db::update('properties', ['cover_media_id' => $mid], 'id = :pid', ['pid' => $pid]);
+        return $mid;
+    }
+
     public static function vetrinaAttuale(): ?array
     {
         return Db::one("SELECT id, slug FROM properties WHERE is_demo = ? AND status = 'published' AND archived_at IS NULL ORDER BY id DESC", [self::VETRINA]);
@@ -210,7 +223,7 @@ final class Demo
         Properties::saveContacts($pid, [['name' => 'Francesco', 'role' => 'host', 'phone' => $tel, 'whatsapp' => 1],
                                         ['name' => 'Marta, per le pulizie', 'role' => 'altro', 'phone' => '+39 075 000 0001', 'whatsapp' => 0]]);
         $foto = fn(string $nome, string $alt) => self::foto($nome, $acc, $pid, $alt);
-        Db::update('properties', ['cover_media_id' => $foto('checco-copertina.jpg', 'La scalinata in pietra con i gerani rossi e la porta in legno in cima')], 'id = :pid', ['pid' => $pid]);
+        Db::update('properties', ['cover_media_id' => $foto('checco-copertina.jpg', self::ALT_COPERTINA)], 'id = :pid', ['pid' => $pid]);
         // La foto profilo è la porta di casa, non un volto: Francesco è di fantasia.
         if (Migrator::columnExists('properties', 'profile_media_id')) {
             Db::update('properties', ['profile_media_id' => $foto('checco-profilo.jpg', 'La porta rossa ad arco di Casa Checco')], 'id = :pid', ['pid' => $pid]);

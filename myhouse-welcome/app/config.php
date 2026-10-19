@@ -130,7 +130,7 @@ $config = [
             'url_ttl'  => (int) $env('AWS_S3_URL_TTL', '3600'),
         ],
         // Limiti di caricamento, in byte.
-        'max_image_bytes' => (int) $env('MHW_MAX_IMAGE_BYTES', (string) (8 * 1024 * 1024)),
+        'max_image_bytes' => (int) $env('MHW_MAX_IMAGE_BYTES', (string) (20 * 1024 * 1024)),   // 9K: le foto arrivano già compresse dal browser; 20 MB serve senza JavaScript
         'max_pdf_bytes'   => (int) $env('MHW_MAX_PDF_BYTES', (string) (10 * 1024 * 1024)),
         'max_image_edge'  => 1800,
     ],
@@ -174,8 +174,21 @@ $config = [
         'contact_phone'    => $env('MHW_CONTACT_PHONE', '+39 392 006 1600'),
         'contact_whatsapp' => $env('MHW_CONTACT_WHATSAPP', '393920061600'),
         'company_city'     => $env('MHW_COMPANY_CITY', 'Via Ariodante Fabretti 15, 06123 Perugia (PG)'),
-        'company_pec'      => $env('MHW_COMPANY_PEC', 'cityup@pec.it'),
+        // 9K · La PEC resta come promemoria interno: vuota di serie e mai mostrata sul sito né nelle email.
+        'company_pec'      => $env('MHW_COMPANY_PEC', ''),
+        // 9K · I dati obbligatori delle S.r.l. (art. 2250 c.c.) nel piè di pagina e nel blocco del titolare.
+        // Il REA si mostra sempre; capitale sociale e «società unipersonale» solo se compilati.
+        'company_rea'          => $env('MHW_COMPANY_REA', 'PG-352001'),
+        'company_capitale'     => $env('MHW_COMPANY_CAPITALE', ''),
+        'company_unipersonale' => $bool('MHW_COMPANY_UNIPERSONALE'),
         'company_site'     => $env('MHW_COMPANY_SITE', 'https://www.cityup.eu'),
+    ],
+
+    // 9K · Il programma Partner (/property-manager): le percentuali, se decise. Vuote, la pagina parla di
+    // «una commissione» e «uno sconto» senza numeri. Si cambiano da Amministrazione → Impostazioni → Sito.
+    'partner' => [
+        'commissione' => $env('MHW_PARTNER_COMMISSIONE', ''),
+        'sconto'      => $env('MHW_PARTNER_SCONTO', ''),
     ],
 
     // Gli indirizzi email del sito (7A, 9H). Si cambiano da Amministrazione → Impostazioni → Indirizzi email.

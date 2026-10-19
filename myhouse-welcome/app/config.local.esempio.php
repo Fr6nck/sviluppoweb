@@ -44,7 +44,8 @@ return [
     //     'company_legal'    => 'City Up S.r.l. — P.IVA e C.F. 03793880547 — REA PG-352001',
     //     'company_vat'      => '03793880547',
     //     'company_city'     => 'Via Ariodante Fabretti 15, 06123 Perugia (PG)',
-    //     'company_pec'      => 'cityup@pec.it',
+    //     'company_rea'      => 'PG-352001',
+    //     'company_capitale' => '€ 10.000 i.v.',   // esempio: vuoto non compare
     //     'company_site'     => 'https://www.cityup.eu',
     //     'contact_email'    => 'assistenza@welcomemyhouse.it',
     //     'contact_phone'    => '+39 392 006 1600',

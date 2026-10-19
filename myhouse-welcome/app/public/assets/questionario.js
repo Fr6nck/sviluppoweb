@@ -1,0 +1,94 @@
+/* 9K · «Qual è il piano giusto per te?» (pagine per tipologia). Senza JavaScript le tre domande sono un modulo che
+   ricarica la pagina con l'esito; qui le domande vanno una alla volta (si risponde, si passa alla successiva, si torna
+   indietro), l'esito compare subito (i tre esiti sono già nella pagina, nascosti) e il Portfolio si ricalcola con
+   − e + : prezzo progressivo, sconto di chi guarda, tabella del rinnovo, link «Crea gratis» con il numero di strutture. */
+(function () {
+  'use strict';
+  var box = document.querySelector('[data-questionario]');
+  if (!box) return;
+  var modulo = box.querySelector('[data-q-modulo]'), passi = box.querySelectorAll('[data-q-passo]');
+  var barre = box.querySelectorAll('.questionario__avanzamento i'), esiti = box.querySelectorAll('[data-q-esito]');
+  var invia = box.querySelector('[data-q-invia]'), ricalcola = box.querySelector('[data-q-ricalcola]');
+  var ora = 1;
+
+  function soldi(c) {
+    var e = Math.floor(c / 100), cent = c % 100, s = String(e).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return (cent ? s + ',' + (cent < 10 ? '0' : '') + cent : s) + ' €';
+  }
+  function risposta(n) { var x = modulo.querySelector('input[name=d' + n + ']:checked'); return x ? x.value : ''; }
+
+  function vai(n, fuoco) {
+    ora = n;
+    for (var i = 0; i < passi.length; i++) passi[i].hidden = +passi[i].getAttribute('data-q-passo') !== n;
+    for (var j = 0; j < barre.length; j++) barre[j].classList.toggle('on', j < n);
+    if (fuoco) { var p = box.querySelector('[data-q-passo="' + n + '"]'); p.setAttribute('tabindex', '-1'); p.focus({ preventScroll: true }); }
+  }
+  function mostraEsito() {
+    var r = [risposta(1), risposta(2), risposta(3)];
+    var piano = r[2] === 'no' ? 'portfolio' : (r[0] === 'no' || r[1] === 'no' ? 'plus' : 'essential');
+    modulo.hidden = true;
+    for (var i = 0; i < esiti.length; i++) {
+      var e = esiti[i], mio = e.getAttribute('data-q-esito') === piano;
+      e.hidden = !mio;
+      if (!mio) continue;
+      for (var n = 1; n <= 3; n++) { var s = e.querySelector('[data-q-r="' + n + '"]'); if (s) s.textContent = r[n - 1] === 'si' ? 'sì' : 'no'; }
+      var h = e.querySelector('h3'); h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true });
+    }
+    box.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
+
+  // Con JavaScript: niente bottone «Vedi il piano giusto», il «← Indietro» visibile, una domanda alla volta.
+  if (invia) invia.hidden = true;
+  box.querySelectorAll('[data-q-indietro]').forEach(function (b) { b.hidden = false; b.addEventListener('click', function () { vai(ora - 1, true); }); });
+  if (!box.hasAttribute('data-esito-iniziale')) vai(1, false);
+  modulo.addEventListener('change', function (e) {
+    if (!e.target.matches('input[type=radio]')) return;
+    var n = +e.target.name.slice(1);
+    if (n < 3) setTimeout(function () { vai(n + 1, true); }, 180); else setTimeout(mostraEsito, 180);
+  });
+  modulo.addEventListener('submit', function (e) { e.preventDefault(); mostraEsito(); });
+  box.querySelectorAll('[data-q-rifai]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      modulo.reset(); modulo.querySelectorAll('input[type=radio]').forEach(function (x) { x.checked = false; });
+      for (var i = 0; i < esiti.length; i++) esiti[i].hidden = true;
+      box.removeAttribute('data-esito-iniziale');
+      modulo.hidden = false; vai(1, true);
+      if (history.replaceState) history.replaceState(null, '', location.pathname + '#piano-giusto');
+    });
+  });
+
+  /* ---- Portfolio: − / + e i prezzi ------------------------------------------ */
+  var porto = box.querySelector('[data-q-esito="portfolio"]');
+  if (!porto) return;
+  var campo = porto.querySelector('[data-q-quante]');
+  if (!campo) return;
+  if (ricalcola) { var rb = ricalcola.querySelector('button'); if (rb) rb.hidden = true; }
+  var base = +porto.getAttribute('data-base'), scaglioni = [];
+  try { scaglioni = JSON.parse(porto.getAttribute('data-scaglioni') || '[]'); } catch (err) {}
+  var perc = +porto.getAttribute('data-sconto') || 0, fisso = +porto.getAttribute('data-sconto-fisso') || 0;
+  function prezzo(n) {   // la prima a prezzo pieno, poi ognuna al prezzo del suo scaglione
+    var tot = base;
+    for (var k = 2; k <= n; k++) { var c = 0; scaglioni.forEach(function (s) { if (k >= s[0]) c = s[1]; }); tot += c; }
+    return tot;
+  }
+  function aggiorna() {
+    var min = +campo.min || 2, max = +campo.max || 10, n = Math.max(min, Math.min(max, parseInt(campo.value, 10) || min));
+    campo.value = n;
+    var pieno = prezzo(n), totale = perc ? Math.round(pieno * (100 - perc) / 100) : (fisso ? Math.max(0, pieno - fisso) : pieno);
+    var t = porto.querySelector('[data-q-totale]'), p = porto.querySelector('[data-q-pieno]'), q = porto.querySelector('[data-q-n]');
+    if (t) t.textContent = soldi(totale); if (p) p.textContent = soldi(pieno); if (q) q.textContent = n;
+    porto.querySelectorAll('[data-q-perc]').forEach(function (td) { td.textContent = soldi(Math.round(pieno * (100 - +td.getAttribute('data-q-perc')) / 100)); });
+    var anno = porto.querySelector('[data-q-anno]'), annoS = porto.querySelector('[data-q-anno-s]'), minimo = porto.querySelector('[data-q-min]');
+    if (anno) anno.textContent = soldi(pieno); if (annoS) annoS.textContent = soldi(pieno);
+    if (minimo) { var ultima = porto.querySelectorAll('[data-q-perc]'); minimo.textContent = ultima.length ? ultima[ultima.length - 1].textContent : soldi(pieno); }
+    var crea = porto.querySelector('[data-q-crea]'); if (crea) crea.href = crea.getAttribute('data-href') + '&strutture=' + n;
+    porto.querySelector('[data-q-meno]').disabled = n <= min; porto.querySelector('[data-q-piu]').disabled = n >= max;
+  }
+  porto.querySelectorAll('[data-q-meno],[data-q-piu]').forEach(function (b) {
+    b.hidden = false;
+    b.addEventListener('click', function () { campo.value = (parseInt(campo.value, 10) || 2) + (b.hasAttribute('data-q-piu') ? 1 : -1); aggiorna(); });
+  });
+  campo.addEventListener('input', aggiorna); campo.addEventListener('change', aggiorna);
+  aggiorna();
+})();

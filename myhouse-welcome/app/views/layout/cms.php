@@ -27,7 +27,8 @@ $gruppiAdmin = $admin ? [
                   ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'], ['scadenze', '/admin/scadenze', 'Scadenze', 'calendar'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'],
                   ['sconti', '/admin/sconti', 'Codici sconto', 'euro'], ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe']], MHW\Omaggi::disponibili() ? [['omaggi', '/admin/omaggi', 'Codici omaggio', 'card']] : [],
                   MHW\Inviti::disponibili() ? [['inviti', '/admin/inviti', 'Inviti', 'message']] : [],
-                  MHW\Preventivi::disponibili() ? [['preventivi', '/admin/preventivi', 'Preventivi', 'message']] : []),
+                  MHW\Preventivi::disponibili() ? [['preventivi', '/admin/preventivi', 'Preventivi', 'message']] : [],
+                  MHW\Partner::disponibili() ? [['partner', '/admin/partner', 'Partner', 'suitcase']] : []),
     'Clienti' => [['clienti', '/admin/clienti', 'Clienti', 'people'], ['guide', '/admin/guide', 'Guide', 'book'], ['anomalie', '/admin/anomalie', 'Anomalie', 'warning'],
                   ['giudizi', '/admin/giudizi', 'Giudizi', 'star'], ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star']],
     'Sistema' => [['impostazioni', '/admin/impostazioni', 'Impostazioni', 'key'], ['testi', '/admin/testi', 'Testi e foto', 'doc'], ['seo', '/admin/seo', 'SEO e GEO', 'search'],
@@ -288,6 +289,7 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
 <?php endif; ?>
 <script src="<?= MHW\av('/assets/cms.js') ?>" defer></script>
 <script src="<?= MHW\av('/assets/posta.js') ?>" defer></script>
+<script src="<?= MHW\av('/assets/foto-leggere.js') ?>" defer></script>
 <?php if ($u && !$admin && Auth::account()) include __DIR__ . '/../host/_sblocca.php'; /* 8B: «Passa a Plus/Portfolio», una finestra al posto dell'errore */ ?>
 <script src="<?= MHW\av('/assets/codici.js') ?>" defer></script>
 </body>

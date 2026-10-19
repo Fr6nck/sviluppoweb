@@ -12,7 +12,7 @@ $prefCookie = MHW\Statistiche::qui() && MHW\Statistiche::consensoServe() ? ' · 
   <div class="piede__colonne">
     <div class="piede__chi">
       <span class="piede__marchio"><?= MHW\Icon::brand(22) ?>MyHouse Welcome</span>
-      <?php /* 8J: chi fornisce il servizio (art. 2250 c.c., D.Lgs. 70/2003): ragione sociale, P.IVA, sede, PEC. */ ?>
+      <?php /* 8J: chi fornisce il servizio (art. 2250 c.c., D.Lgs. 70/2003): ragione sociale, sede, P.IVA, REA, capitale sociale (9K: niente PEC). */ ?>
       <span class="piede__titolare"><?= Support::e(MHW\Legale::rigaTitolare($en)) ?></span>
     </div>
     <?php /* 7F: le pagine per tipologia, solo in italiano. */ if (!$en): ?>

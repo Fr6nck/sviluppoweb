@@ -53,7 +53,7 @@ Si impostano come variabili d'ambiente o in `app/config.local.php`. Il modello �
 | `MHW_CRON_TOKEN` | no | una stringa lunga a caso. Attiva `/cron/IL_TOKEN`. |
 | `MHW_GRACE_DAYS` | no | giorni online dopo un rinnovo non riuscito (predefinito 0) |
 | `MHW_TERMS_VERSION`, `MHW_PRIVACY_VERSION`, `MHW_DPA_VERSION` | quando cambi i testi | date AAAA-MM-GG (8J); meglio da Impostazioni → Titolare e documenti legali |
-| `MHW_COMPANY`, `MHW_COMPANY_LEGAL`, `MHW_COMPANY_VAT`, `MHW_COMPANY_CITY`, `MHW_COMPANY_PEC`, `MHW_COMPANY_SITE`, `MHW_CONTACT_EMAIL`, `MHW_CONTACT_PHONE`, `MHW_CONTACT_WHATSAPP` | no | 8J: di serie il titolare City Up S.r.l.; si cambiano da Impostazioni → Titolare e documenti legali |
+| `MHW_COMPANY`, `MHW_COMPANY_LEGAL`, `MHW_COMPANY_VAT`, `MHW_COMPANY_CITY`, `MHW_COMPANY_REA`, `MHW_COMPANY_CAPITALE`, `MHW_COMPANY_UNIPERSONALE`, `MHW_COMPANY_SITE`, `MHW_CONTACT_EMAIL`, `MHW_CONTACT_PHONE`, `MHW_CONTACT_WHATSAPP` | no | 8J: di serie il titolare City Up S.r.l.; si cambiano da Impostazioni → Titolare e documenti legali |
 
 **Se la posta non parte con «535 authentication failed».** Il server rifiuta utente o password. L'errore ora dice quale utente è stato usato, quanti caratteri ha la password e con quali metodi si è provato (LOGIN e PLAIN).
 - L'utente è l'indirizzo completo della casella. La password è quella della casella, la stessa della webmail, non quella del pannello.
@@ -323,6 +323,16 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 **9J · Palette «Bianco e nero»**
 - Niente da configurare: in **Aspetto** c'è la settima palette, chiara e scura, con la casella «Foto in bianco e nero». La migrazione **047** aggiunge la colonna della casella. Le altre sei palette restano identiche.
 
+## 4k. 9K (19 ottobre): foto, pagine nuove, partner, PEC
+
+1. **Limiti di PHP per le foto.** Se nel Quadro compare «Il server limita il caricamento delle foto», chiedi all'hosting (o in cPanel: «Seleziona versione PHP» → Opzioni, oppure «MultiPHP INI Editor») `upload_max_filesize = 20M`, `post_max_size = 20M` (meglio 25M) e `memory_limit = 256M`. Controlla poi in Diagnostica la riga «Limiti per il caricamento delle foto». Le foto prese dal browser arrivano già ridotte; i limiti servono a chi carica senza JavaScript.
+2. **Safari.** Apri la home su un iPhone e su Safari del Mac: il telefono a destra deve avere il contorno scuro tutto intorno, anche in basso. Qui l'ho provato solo con Chromium.
+3. **Casa Checco.** La foto nuova è 921 × 1125 px: va bene per la guida e per il telefono, ma se ne hai una più grande (almeno 2000 px) mettila in `assets/foto/checco-copertina.jpg` e dalla scheda della vetrina usa «Rifai la vetrina».
+4. **Partner.** In Amministrazione → Impostazioni → Sito, quando le decidi, «Commissione partner (%)» e «Sconto per i clienti del partner (%)»: la pagina /property-manager le scrive da sola. Le richieste arrivano a commerciale@ e in Amministrazione → Vendite → Partner. **Fase successiva** (non fatta): i codici partner, lo sconto applicato con il codice e il conteggio delle commissioni.
+5. **Titolare.** In Impostazioni → Titolare e documenti legali compila «Capitale sociale» (per esempio «€ 10.000 i.v.») e, se vale, «Società unipersonale»: finché sono vuoti nel piè di pagina c'è solo il REA. La PEC non compare più da nessuna parte; se in `config.local.php` c'è ancora `company_pec`, puoi lasciarla (è solo un promemoria).
+6. **Testi legali.** Tolta la PEC e aggiunto il trattamento 14 (richieste di partnership): l'ho trattata come correzione, senza cambiare la versione dei documenti. Se il consulente preferisce farla riaccettare, cambia la data di versione dell'Informativa in Impostazioni → Titolare.
+7. **«Per chi è» e questionario.** Rileggi i testi in «Testi e foto» → «Per chi è» e «Pagine per tipologia: …». Se avevi cambiato la scheda «B&B e affittacamere», ora sono due schede: riscrivile. Le foto delle sei schede si cambiano in fondo alla stessa pagina.
+
 ## 4b. La guida vetrina (la demo della landing)
 
 La demo della landing si sposta su un account vero, quello dell'agenzia.
@@ -430,7 +440,7 @@ Usa solo foto di cui hai i diritti, e nessun locale reale riconoscibile nella de
 
 I testi sono **di partenza, scritti sul servizio come funziona davvero**: prima di pubblicarli falli rivedere da un legale (Termini e recesso) e dal consulente privacy (informativa, DPA, registro dei trattamenti).
 
-1. **Titolare.** Amministrazione → Impostazioni → **Titolare e documenti legali**: ragione sociale, riga completa (P.IVA, C.F., REA), sede, PEC, sito. Di serie City Up S.r.l. Se `config.local.php` sul server ha ancora un blocco `'legal'` con Blackout Agency, salva una volta questo gruppo (o togli quel blocco): vale quello che c'è lì. Anche Amministrazione → SEO e GEO → «L'azienda»: la migrazione 042 aggiorna i campi solo se avevano i vecchi valori di serie.
+1. **Titolare.** Amministrazione → Impostazioni → **Titolare e documenti legali**: ragione sociale, riga completa (P.IVA, C.F., REA), sede, REA, capitale sociale, sito (9K: la PEC non compare più da nessuna parte). Di serie City Up S.r.l. Se `config.local.php` sul server ha ancora un blocco `'legal'` con Blackout Agency, salva una volta questo gruppo (o togli quel blocco): vale quello che c'è lì. Anche Amministrazione → SEO e GEO → «L'azienda»: la migrazione 042 aggiorna i campi solo se avevano i vecchi valori di serie.
 2. **Testi.** Testi e foto → linguetta **Documenti legali** (italiano e inglese): Termini (16 punti e modulo di recesso), Informativa (12 trattamenti in tabella, fornitori, trasferimenti, diritti, cookie), DPA, le tre novità della finestra. La versione inglese dice che in caso di dubbio prevale l'italiano.
 3. **Versioni.** Dopo una modifica sostanziale cambia la data in Impostazioni → Titolare e documenti legali. **Mettila almeno 30 giorni avanti**: i clienti con un abbonamento attivo ricevono subito un'email (una volta) e una riga nel pannello; a quella data compare la finestra «Accetto» e, finché non accettano, il pannello è in sola lettura. Il testo di prima resta in «Versioni precedenti». Una data già arrivata fa comparire subito la finestra (come in questo rilascio: le versioni sono al 15 ottobre 2026, quindi **tutti i clienti attuali** al prossimo accesso accettano i nuovi documenti e ricevono l'email).
 4. **Stripe**, per quello che scrivono i Termini: in Impostazioni → Fatturazione → Recupero dei ricavi, **3 tentativi in 14 giorni**, poi **annulla l'abbonamento**; accendi le email ai clienti per i pagamenti non riusciti.
@@ -441,7 +451,7 @@ I testi sono **di partenza, scritti sul servizio come funziona davvero**: prima 
 
 ## 8. Dieci prove da fare sul server
 
-1. Apri la landing a 390 px e da computer: listino col prezzo mensile, «Confronta tutti i piani», FAQ apribili da tastiera, fascia delle scene, piè di pagina con i dati di City Up S.r.l. (P.IVA, sede, PEC) e i link Termini · Privacy · DPA.
+1. Apri la landing a 390 px e da computer: listino col prezzo mensile, «Confronta tutti i piani», FAQ apribili da tastiera, fascia delle scene, piè di pagina con i dati di City Up S.r.l. (sede, P.IVA, REA) e i link Termini · Privacy · DPA.
 2. Registrati con un'email vera, conferma il link arrivato **via SMTP**, crea una struttura e completa la procedura fino all'anteprima.
 3. Prova «Pubblica» senza dati di fatturazione (deve portarti alla scheda), poi compilali e paga in **modalità test di Stripe**. La guida va online solo quando arriva il webhook.
 4. Inquadra il QR stampato (PDF) con due telefoni diversi, Android e iPhone: si apre la guida. Inquadra anche il QR del Wi-Fi.

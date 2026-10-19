@@ -18,6 +18,15 @@ final class Csrf
     public static function check(): void
     {
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') return;
+        // 9K · Oltre post_max_size PHP butta via tutto il modulo (token compreso): non è la sessione,
+        // è il file troppo pesante. Lo si dice e si torna alla pagina di prima.
+        $lungo = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        if (!$_POST && !$_FILES && $lungo > 0 && $lungo > Media::byte((string) ini_get('post_max_size'))) {
+            Support::flash('Il file è troppo pesante per il server (al massimo ' . Media::mb(Media::limiteCaricamento()) . '): riducilo e riprova.', 'err');
+            $da = (string) ($_SERVER['HTTP_REFERER'] ?? '');
+            $qui = parse_url('//' . ($_SERVER['HTTP_HOST'] ?? ''), PHP_URL_HOST);
+            Support::redirect($da !== '' && parse_url($da, PHP_URL_HOST) === $qui ? $da : '/');
+        }
         $sent = $_POST['_csrf'] ?? '';
         if (!is_string($sent) || !hash_equals(self::token(), $sent)) {
             http_response_code(419);

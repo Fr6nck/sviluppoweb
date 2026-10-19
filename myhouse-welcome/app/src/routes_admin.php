@@ -37,6 +37,10 @@ $r->get('/admin', function () {
          JOIN accounts a ON a.id = o.account_id JOIN users u ON u.id = a.user_id WHERE 1 = 1' . $np('a.id') . ' ORDER BY o.id DESC LIMIT 8');
 
     $avvisi = [];
+    // 9K · I limiti di PHP che fermano le foto prima ancora del sito.
+    $bassi = array_filter(Media::limitiServer(), fn($l) => $l[3]);
+    if ($bassi) $avvisi[] = ['Il server limita il caricamento delle foto', 'Oggi: ' . implode(', ', array_map(fn($l) => $l[0] . ' = ' . $l[1], $bassi))
+        . '. Chiedi all\'hosting (in cPanel: «Seleziona versione PHP» → Opzioni, o «MultiPHP INI Editor») upload_max_filesize = 20M, post_max_size = 20M e memory_limit = 256M. Le foto prese dal browser arrivano già compresse; questi limiti servono a chi carica senza JavaScript o foto molto grandi.', '/admin/diagnostica', 'Apri la diagnostica'];
     if (!Stripe::enabled()) $avvisi[] = ['Stripe non è configurato', 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti possono preparare la guida ma non pagarla. Inseriscili nelle Impostazioni.', '/admin/impostazioni#stripe'];
     if (Config::get('mail')['transport'] === 'log') $avvisi[] = ['La posta non parte', 'Le email di conferma e di recupero della password finiscono nei registri della posta (storage/logs/mail-AAAA-MM-GG.log). Imposta il server SMTP nelle Impostazioni.', '/admin/impostazioni#posta'];
     // 9H · Il mittente delle email deve stare sul dominio del sito (SPF/DKIM): altrimenti spam o rifiuto.
@@ -58,6 +62,9 @@ $r->get('/admin', function () {
     }
     if (MHW\Preventivi::disponibili() && ($nuovi = (int) Db::val("SELECT COUNT(*) FROM preventivi WHERE stato = 'nuovo'", [], 0)) > 0) {
         $avvisi[] = ['Richieste di preventivo da rispondere', $nuovi . ($nuovi === 1 ? ' richiesta nuova' : ' richieste nuove') . ' per più di 10 strutture: la promessa è una risposta entro un giorno lavorativo.', '/admin/preventivi', 'Apri i preventivi'];
+    }
+    if (MHW\Partner::disponibili() && ($nuoviP = (int) Db::val("SELECT COUNT(*) FROM partner_richieste WHERE stato = 'nuovo'", [], 0)) > 0) {
+        $avvisi[] = ['Richieste di partnership da rispondere', $nuoviP . ($nuoviP === 1 ? ' richiesta nuova' : ' richieste nuove') . ' dal modulo «Diventa partner» di /property-manager.', '/admin/partner', 'Apri le richieste'];
     }
     $anomalie = Gestione::contaAnomalie();
     if ($anomalie['alta'] > 0) $avvisi[] = ['Ci sono anomalie da guardare subito', $anomalie['alta'] . ($anomalie['alta'] === 1 ? ' controllo segnala' : ' controlli segnalano') . ' pagamenti o rinnovi che non tornano.', '/admin/anomalie', 'Guarda le anomalie'];
@@ -775,6 +782,12 @@ $r->get('/admin/diagnostica', function () {
         return ['code' => $code, 'bytes' => strlen($body)];
     };
 
+    // 9K · I limiti di PHP per le foto.
+    $limiti = Media::limitiServer();
+    $bassiL = array_filter($limiti, fn($l) => $l[3]);
+    $checks[] = ['Limiti per il caricamento delle foto', !$bassiL, implode(' · ', array_map(fn($l) => $l[0] . ' = ' . $l[1] . ($l[3] ? ' (sotto ' . $l[2] . ')' : ''), $limiti))
+        . ($bassiL ? '. Chiedi all\'hosting upload_max_filesize = 20M, post_max_size = 20M e memory_limit = 256M (cPanel: «Seleziona versione PHP» → Opzioni, o «MultiPHP INI Editor»).' : '.')];
+
     $inWebroot = str_starts_with(realpath(MHW_APP) ?: '', realpath($_SERVER['DOCUMENT_ROOT'] ?? '') ?: "\0");
     $checks[] = ['Applicazione fuori dalla cartella pubblica', !$inWebroot,
         $inWebroot ? "L'applicazione sta dentro la cartella pubblica: la protezione dipende da .htaccess, che non tutti i server leggono. Se le righe qui sotto sono «OK» i file sono protetti; per toglierli del tutto dal web segui DA-CONFIGURARE → «L'applicazione fuori dalla cartella pubblica»."
@@ -1126,6 +1139,22 @@ $r->post('/admin/testimonianze/{tid}/elimina', function (array $a) {
  * disattiva e se ne crea un altro. Creazioni e disattivazioni vanno nel registro.
  */
 // ------------------------------------------------------------- 9A · preventivi oltre il massimo del Portfolio
+// 9K · Le richieste del programma Partner (/property-manager).
+$r->get('/admin/partner', function () {
+    Auth::requireAdmin();
+    View::out('admin/partner', ['righe' => MHW\Partner::tutte(), 'attivi' => MHW\Partner::disponibili(), 'nav' => 'partner'], 'layout/cms');
+});
+$r->post('/admin/partner/{id}/stato', function (array $a) {
+    Auth::requireAdmin();
+    $riga = MHW\Partner::disponibili() ? Db::one('SELECT * FROM partner_richieste WHERE id = ?', [(int) $a['id']]) : null;
+    if (!$riga) { http_response_code(404); View::out('pub/404', []); }
+    try {
+        MHW\Partner::cambiaStato((int) $riga['id'], (string) ($_POST['stato'] ?? ''), isset($_POST['nota']) ? (string) $_POST['nota'] : null);
+        Auth::audit('partner.stato', null, ['id' => (int) $riga['id'], 'stato' => (string) $_POST['stato']]);
+        Support::flash('Richiesta partner #' . (int) $riga['id'] . ': ' . MHW\Partner::STATI[(string) $_POST['stato']] . '.');
+    } catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
+    Support::redirect('/admin/partner');
+});
 $r->get('/admin/preventivi', function () {
     Auth::requireAdmin();
     View::out('admin/preventivi', ['righe' => MHW\Preventivi::tutte(), 'attivi' => MHW\Preventivi::disponibili(), 'nav' => 'preventivi'], 'layout/cms');
