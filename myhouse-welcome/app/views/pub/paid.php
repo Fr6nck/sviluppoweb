@@ -1,6 +1,7 @@
 <?php
 /* Il ritorno da Stripe. Il browser non prova niente: questa pagina aspetta il
-   webhook firmato e se ne accorge da sola, senza ricaricare. */
+   webhook firmato e se ne accorge da sola, senza ricaricare. Se dopo 20 secondi
+   non è arrivato, /pagamento/stato fa chiedere a Stripe gli eventi della sessione. */
 use function MHW\b; use MHW\{Support, Icon}; $title = 'Stiamo attivando la tua guida';
 /* Il pagamento della differenza per cambiare piano (6H): stessa attesa, altre parole. */
 if (($order['kind'] ?? 'new') === 'change'):

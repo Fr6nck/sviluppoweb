@@ -592,6 +592,14 @@ final class Stripe
      */
     public static function verifySignature(string $payload, string $header, string $secret, int $tolerance = 300): bool
     {
+        return self::motivoFirma($payload, $header, $secret, $tolerance) === null;
+    }
+
+    /** Perché la firma del webhook non va (per il registro e il Quadro), o null se va bene. */
+    public static function motivoFirma(string $payload, string $header, string $secret, int $tolerance = 300): ?string
+    {
+        if ($secret === '') return 'manca il segreto del webhook nelle Impostazioni';
+        if (trim($header) === '') return 'la richiesta non ha la firma di Stripe (intestazione Stripe-Signature)';
         $parts = [];
         foreach (explode(',', $header) as $piece) {
             $kv = explode('=', trim($piece), 2);
@@ -599,10 +607,10 @@ final class Stripe
         }
         $t = $parts['t'][0] ?? null;
         $sigs = $parts['v1'] ?? [];
-        if (!$t || !ctype_digit($t) || !$sigs) return false;
-        if (abs(time() - (int) $t) > $tolerance) return false;
+        if (!$t || !ctype_digit($t) || !$sigs) return 'la firma di Stripe è incompleta';
+        if (abs(time() - (int) $t) > $tolerance) return 'orario della firma lontano più di 5 minuti da quello del server';
         $expected = hash_hmac('sha256', $t . '.' . $payload, $secret);
-        foreach ($sigs as $s) if (hash_equals($expected, $s)) return true;
-        return false;
+        foreach ($sigs as $s) if (hash_equals($expected, $s)) return null;
+        return 'la firma non corrisponde al segreto del webhook (segreto di un altro endpoint o di un\'altra modalità)';
     }
 }

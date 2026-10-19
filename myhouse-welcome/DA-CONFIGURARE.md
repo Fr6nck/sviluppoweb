@@ -79,6 +79,11 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
   - `customer.subscription.trial_will_end` (solo registro: gli avvisi della prova li mandiamo noi)
   - `charge.refunded` (conferma dei rimborsi fatti dalla scheda del cliente)
 - Il webhook non serve solo a pubblicare: sblocca anche le strutture del Portfolio, comprese quelle aggiunte dopo.
+- **Se dopo il pagamento la guida resta «Stiamo attivando la tua guida» (19 ottobre).** Vuol dire che il webhook non arriva o viene rifiutato. Da questa versione la guida si attiva lo stesso dopo circa 20 secondi (il sito chiede a Stripe gli eventi della sessione, con la chiave segreta), ma il webhook va sistemato perché serve anche per rinnovi, disdette e rimborsi. Cosa guardare:
+  1. **Amministrazione → Impostazioni → Stripe → «Prova la connessione»**: dice se su Stripe, nella modalità della chiave (prova o reale), c'è l'endpoint verso `…/webhook/stripe`, se è attivo e quali eventi mancano.
+  2. **Quadro e Diagnostica** («Webhook di Stripe»): l'ultimo webhook ricevuto, l'ultimo rifiutato con il motivo, l'ultimo pagamento confermato dal recupero.
+  3. Su **Stripe → Sviluppatori → Webhook → il tuo endpoint**, l'esito degli ultimi invii: **400** = il «Segreto del webhook» in Impostazioni non è il «Segreto di firma» (`whsec_…`) di quell'endpoint (attenzione: prova e reale hanno endpoint e segreti diversi; se l'hai ruotato, incolla quello nuovo); **404** = indirizzo sbagliato; **301/302** = l'indirizzo reindirizza (usa quello finale, con `https://` e il `www` giusto); **403** o **406** = un firewall dell'hosting (ModSecurity) blocca Stripe: chiedi all'hosting di escludere `/webhook/stripe`; **nessun invio** = endpoint creato nell'altra modalità o evento `checkout.session.completed` non selezionato.
+  4. Sistemato, dal dettaglio dell'evento in Stripe puoi premere **«Invia di nuovo»** per gli eventi rimasti in errore: arrivano come «già elaborati» se il recupero li ha già presi, senza doppioni.
 - **Pagamento con la carta nel pannello (19 ottobre).** Il primo acquisto si può pagare con la carta di credito o di debito direttamente nel passo «Pubblica», nel modulo di Stripe incorporato nella pagina; «Preferisci pagare sulla pagina di Stripe?» resta a un clic. Per accenderlo:
   1. In Stripe → Sviluppatori → Chiavi API copia la **chiave pubblicabile** (`pk_test_…` per le prove, `pk_live_…` in produzione). Non è segreta: sta nella pagina del cliente.
   2. Incollala in **Amministrazione → Impostazioni → Stripe → «Chiave pubblicabile»** (oppure `STRIPE_PUBLISHABLE_KEY`). Deve essere della stessa modalità della chiave segreta: `pk_test_` con `sk_test_`, `pk_live_` con `sk_live_`. Se non lo è, il sito la ignora e il cliente paga sulla pagina di Stripe; «Prova la connessione» te lo dice.
@@ -454,7 +459,7 @@ I testi sono **di partenza, scritti sul servizio come funziona davvero**: prima 
 
 1. Apri la landing a 390 px e da computer: listino col prezzo mensile, «Confronta tutti i piani», FAQ apribili da tastiera, fascia delle scene, piè di pagina con i dati di City Up S.r.l. (sede, P.IVA, REA) e i link Termini · Privacy · DPA.
 2. Registrati con un'email vera, conferma il link arrivato **via SMTP**, crea una struttura e completa la procedura fino all'anteprima.
-3. Prova «Pubblica» senza dati di fatturazione (deve portarti alla scheda), poi compilali e paga in **modalità test di Stripe**. La guida va online solo quando arriva il webhook.
+3. Prova «Pubblica» senza dati di fatturazione (deve portarti alla scheda), poi compilali e paga in **modalità test di Stripe**. La guida va online quando Stripe conferma (webhook, o il recupero dopo 20 secondi): in Diagnostica «Webhook di Stripe» deve dire «ultimo ricevuto», non «confermato dal recupero».
 4. Inquadra il QR stampato (PDF) con due telefoni diversi, Android e iPhone: si apre la guida. Inquadra anche il QR del Wi-Fi.
 5. Incolla in un luogo un link breve vero di Google Maps (`maps.app.goo.gl/…`): il nome si deve compilare da solo.
 6. Carica una foto e un PDF in una sezione e in una riga (Servizi → Istruzioni), poi controlla che si vedano dalla guida. Con S3: i file stanno nel bucket.

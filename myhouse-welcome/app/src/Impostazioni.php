@@ -489,7 +489,7 @@ final class Impostazioni
                     $carta = $pk === '' ? ' Senza chiave pubblicabile il cliente paga sulla pagina di Stripe.'
                         : (Stripe::incorporato() ? ' Con la chiave pubblicabile il cliente paga con la carta nel passo «Pubblica».'
                                                  : ' La chiave pubblicabile è di un\'altra modalità (pk_test_ con sk_live_ o il contrario): finché non le allinei, il cliente paga sulla pagina di Stripe.');
-                    return [true, 'Stripe risponde: la chiave è valida (' . (self::modoStripe() === 'live' ? 'modalità reale' : 'modalità di prova') . ').' . $carta . ' Il segreto del webhook si verifica al primo pagamento: controlla in Stripe che gli eventi arrivino con esito 200.'];
+                    return [true, 'Stripe risponde: la chiave è valida (' . (self::modoStripe() === 'live' ? 'modalità reale' : 'modalità di prova') . ').' . $carta . RecuperoPagamenti::controllaEndpoint() . ' Il segreto del webhook si verifica al primo pagamento: controlla in Stripe che gli eventi arrivino con esito 200.'];
                 case 'posta':
                     $t = (string) Config::get('mail')['transport'];
                     $ok = Mailer::manda($emailAdmin, 'Prova della posta', 'La posta funziona',

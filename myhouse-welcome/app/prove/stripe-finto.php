@@ -73,6 +73,17 @@ $abbonamento = function (string $id) use (&$stato, $ora, $dir, $espandi): array 
     return $out;
 };
 
+// Il recupero dei pagamenti: gli eventi che la prova scrive in eventi.json (i più recenti prima), filtrati per tipo e data.
+if ($metodo === 'GET' && $percorso === '/v1/events') {
+    $tipi = (array) ($_GET['types'] ?? []); $dal = (int) ($_GET['created']['gte'] ?? 0);
+    $ev = is_file("$dir/eventi.json") ? (array) json_decode((string) file_get_contents("$dir/eventi.json"), true) : [];
+    $ev = array_values(array_filter($ev, fn($e) => (!$tipi || in_array($e['type'] ?? '', $tipi, true)) && (int) ($e['created'] ?? 0) >= $dal));
+    $rispondi(['object' => 'list', 'data' => array_reverse($ev), 'has_more' => false]);
+}
+// «Prova la connessione»: gli endpoint del webhook scritti dalla prova in endpoints.json.
+if ($metodo === 'GET' && $percorso === '/v1/webhook_endpoints') {
+    $rispondi(['object' => 'list', 'data' => is_file("$dir/endpoints.json") ? (array) json_decode((string) file_get_contents("$dir/endpoints.json"), true) : [], 'has_more' => false]);
+}
 if ($metodo === 'GET' && $percorso === '/v1/balance') $rispondi(['object' => 'balance', 'available' => [], 'pending' => []]);
 if ($metodo === 'POST' && $percorso === '/v1/customers') $rispondi(['id' => 'cus_finto' . $n, 'object' => 'customer', 'metadata' => $corpo['metadata'] ?? []]);
 if ($metodo === 'POST' && preg_match('#^/v1/customers/(cus_[A-Za-z0-9_]+)$#', $percorso, $m)) {

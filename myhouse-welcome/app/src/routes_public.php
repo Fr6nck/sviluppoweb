@@ -627,7 +627,7 @@ $r->get('/pagamento/ok', function () {
     $acc = Auth::account();
     $o = Db::one('SELECT * FROM orders WHERE id = ? AND account_id = ?', [(int) ($_GET['order'] ?? 0), $acc['id']]);
     if (!$o) Support::redirect('/pannello');
-    // Il ritorno dal browser non prova nulla: la pagina aspetta il webhook firmato.
+    // Il ritorno dal browser non prova nulla: la pagina aspetta il webhook firmato (o il recupero da Stripe).
     // 8H: l'obiettivo «pagamento» una volta per ordine, con il nome del piano (mai importi).
     $vistiS = (array) ($_SESSION['mhw_stat_pagati'] ?? []);
     if (!in_array((int) $o['id'], $vistiS, true)) {
@@ -642,6 +642,14 @@ $r->get('/pagamento/stato', function () {
     $acc = Auth::account();
     $o = Db::one('SELECT * FROM orders WHERE id = ? AND account_id = ?', [(int) ($_GET['order'] ?? 0), $acc['id']]);
     if (!$o) Support::json(['stato' => 'sconosciuto'], 404);
+    // Se dopo 20 secondi di attesa il webhook non ha ancora confermato, il sito chiede a Stripe gli eventi della sessione.
+    if ($o['status'] === 'pending' && (string) $o['provider_session_id'] !== '') {
+        $primo = (int) ($_SESSION['mhw_attesa'][(int) $o['id']] ??= time());
+        if (time() - $primo >= MHW\RecuperoPagamenti::ATTESA) {
+            try { MHW\RecuperoPagamenti::ordine($o); } catch (\Throwable $e) { Log::exception($e, 'recupero del pagamento ' . $o['id']); }
+            $o = Db::one('SELECT * FROM orders WHERE id = ?', [$o['id']]);
+        }
+    }
     $p = $o['property_id'] ? Db::one('SELECT slug, status FROM properties WHERE id = ?', [$o['property_id']]) : null;
     Support::json(['stato' => $o['status'], 'pubblicata' => $p && $p['status'] === 'published', 'applicato' => !empty($o['applied_at']),
                    'guida' => $p ? Support::url('/g/' . $p['slug']) : null]);
@@ -660,11 +668,14 @@ $r->post('/webhook/stripe', function () {
     $payload = (string) file_get_contents('php://input');
     $secret = (string) Config::get('stripe')['webhook_secret'];
     $sig = (string) ($_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '');
-    if ($secret === '' || !Stripe::verifySignature($payload, $sig, $secret)) {
+    // Il motivo del rifiuto resta nel registro del webhook (Quadro e Diagnostica lo dicono).
+    if (($motivo = Stripe::motivoFirma($payload, $sig, $secret)) !== null) {
+        MHW\RecuperoPagamenti::rifiutato($motivo, trim($sig) !== '');
         http_response_code(400); exit('firma non valida');
     }
     $event = json_decode($payload, true);
     if (!is_array($event)) { http_response_code(400); exit('payload illeggibile'); }
+    MHW\RecuperoPagamenti::accettato((string) ($event['type'] ?? ''));
     try {
         $esito = Billing::handleEvent($event);
         header('Content-Type: text/plain'); echo $esito;

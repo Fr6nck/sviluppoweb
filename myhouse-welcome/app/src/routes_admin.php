@@ -41,6 +41,8 @@ $r->get('/admin', function () {
     $bassi = array_filter(Media::limitiServer(), fn($l) => $l[3]);
     if ($bassi) $avvisi[] = ['Il server limita il caricamento delle foto', 'Oggi: ' . implode(', ', array_map(fn($l) => $l[0] . ' = ' . $l[1], $bassi))
         . '. Chiedi all\'hosting (in cPanel: «Seleziona versione PHP» → Opzioni, o «MultiPHP INI Editor») upload_max_filesize = 20M, post_max_size = 20M e memory_limit = 256M. Le foto prese dal browser arrivano già compresse; questi limiti servono a chi carica senza JavaScript o foto molto grandi.', '/admin/diagnostica', 'Apri la diagnostica'];
+    // Il webhook di Stripe rifiutato o mai arrivato (le guide si attivano lo stesso con il recupero, ma in ritardo).
+    if (Stripe::enabled() && ($pw = MHW\RecuperoPagamenti::problema())) $avvisi[] = [$pw[0], $pw[1], '/admin/impostazioni#stripe', 'Apri Impostazioni → Stripe'];
     if (!Stripe::enabled()) $avvisi[] = ['Stripe non è configurato', 'Senza chiave segreta e segreto del webhook nessuno può pubblicare: i clienti possono preparare la guida ma non pagarla. Inseriscili nelle Impostazioni.', '/admin/impostazioni#stripe'];
     if (Config::get('mail')['transport'] === 'log') $avvisi[] = ['La posta non parte', 'Le email di conferma e di recupero della password finiscono nei registri della posta (storage/logs/mail-AAAA-MM-GG.log). Imposta il server SMTP nelle Impostazioni.', '/admin/impostazioni#posta'];
     // 9H · Il mittente delle email deve stare sul dominio del sito (SPF/DKIM): altrimenti spam o rifiuto.
@@ -822,6 +824,13 @@ $r->get('/admin/diagnostica', function () {
     $checks[] = ['Pagamenti Stripe', Stripe::enabled(),
         Stripe::enabled() ? 'chiave segreta e segreto del webhook presenti' : 'mancano STRIPE_SECRET_KEY o STRIPE_WEBHOOK_SECRET: nessuno può pubblicare'];
     $checks[] = ['Indirizzo del webhook', true, 'In Stripe punta il webhook a ' . $base . '/webhook/stripe'];
+    // Il registro del webhook: l'ultimo accettato, l'ultimo rifiutato (con il motivo), l'ultimo pagamento confermato dal recupero.
+    $rw = MHW\RecuperoPagamenti::registro(); $pw = MHW\RecuperoPagamenti::problema();
+    $checks[] = ['Webhook di Stripe', $pw === null, implode(' · ', array_filter([
+        isset($rw['accettato']) ? 'ultimo ricevuto ' . $rw['accettato']['quando'] . ' (' . $rw['accettato']['tipo'] . ')' : 'nessun webhook ricevuto finora',
+        isset($rw['rifiutato']) ? 'ultimo rifiutato ' . $rw['rifiutato']['quando'] . ': ' . $rw['rifiutato']['motivo'] : '',
+        isset($rw['recuperato']) ? 'ultimo confermato dal recupero ' . $rw['recuperato']['quando'] . ' (ordine ' . (int) $rw['recuperato']['ordine'] . ')' : '',
+    ]))];
     $mail = Config::get('mail');
     $checks[] = ['Posta in uscita', $mail['transport'] !== 'log',
         $mail['transport'] === 'log' ? 'le email finiscono nei registri della posta (storage/logs/mail-AAAA-MM-GG.log): imposta il server SMTP nelle Impostazioni' : 'trasporto ' . $mail['transport']];

@@ -201,6 +201,7 @@ final class Richiami
         try { Legale::avvisa(); } catch (\Throwable $e) { Log::exception($e, 'avviso dei documenti legali'); }   // 8J: una volta per versione
         Inviti::inSospeso();   // gli sconti inviti che Stripe non ha ancora preso
         try { CambioAbbonamento::applyPendingChanges(); } catch (\Throwable $e) { Log::exception($e, 'cambi di piano in sospeso'); }
+        RecuperoPagamenti::inSospeso();   // i pagamenti di cui il webhook di Stripe non ha dato notizia
         return $fatte;
     }
 

@@ -6076,6 +6076,112 @@ $alt9 = val("SELECT m.alt FROM properties p JOIN media m ON m.id = p.cover_media
 prova('9K · Casa Checco: la copertina è la foto nuova (il portone ad arco), e la tabella partner_richieste c\'è', ($alt9 === null || str_contains((string) $alt9, 'portone ad arco'))
       && val("SELECT COUNT(*) FROM partner_richieste") !== null && is_file("$DOVE/assets/foto/checco-copertina.jpg"), (string) $alt9);
 
+// ======================================================================= RECUPERO DEL PAGAMENTO
+capitolo('Dopo il pagamento: se il webhook di Stripe non arriva, il sito chiede a Stripe gli eventi della sessione');
+@unlink("$DOVE/app/storage/stripe-webhook.json");
+$rita = new Browser('rita-rec');
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$rita->get('/registrati?piano=' . pv('plus'));
+$rita->post('/registrati', ['piano' => pv('plus'), 'name' => 'Rita Recupero', 'email' => 'rita.rec@prova.test', 'email2' => 'rita.rec@prova.test', 'password' => 'RitaProva12345', 'termini' => '1']);
+$racc = $accDi('rita.rec@prova.test');
+$linkR = linkPosta('rita.rec@prova.test', 'verifica'); $rita->get(substr($linkR, strpos($linkR, '/verifica/')));
+$rita->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Rita', 'city' => 'Spello']);
+$pr = (int) val('SELECT id FROM properties WHERE account_id = ? ORDER BY id', [$racc]);
+db()->prepare("UPDATE properties SET cin = 'IT054050C2RITA0001' WHERE id = ?")->execute([$pr]);
+$rcore = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$pr]);
+$rita->post("/pannello/$pr/sezioni/$rcore", ['checkin_steps' => ['Suona al citofono.']]);
+$rita->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Rita Recupero', 'cf' => 'RCPRTI85A41I921X', 'billing_address' => 'Via Rita 1', 'billing_postal' => '06038', 'billing_city' => 'Spello', 'billing_province' => 'PG']);
+$rita->segui($rita->modulo("/pannello/$pr/procedura/pubblica", "/pannello/$pr/pubblica", ['acquirente' => 'impresa']));
+$ordR = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$racc]);
+$slugR = (string) val('SELECT slug FROM properties WHERE id = ?', [$pr]);
+prova('Recupero · ordine in attesa con la sua sessione di Stripe', $ordR && $ordR['status'] === 'pending' && str_starts_with((string) $ordR['provider_session_id'], 'cs_'), json_encode($ordR['provider_session_id'] ?? null));
+// Stripe ha l'evento (pagamento riuscito), ma il webhook non arriva: lo scriviamo solo tra gli eventi che Stripe dà a chi li chiede.
+$evR = ['id' => 'evt_rita_rec', 'object' => 'event', 'type' => 'checkout.session.completed', 'created' => time(), 'data' => ['object' => [
+    'id' => $ordR['provider_session_id'], 'mode' => 'subscription', 'payment_status' => 'paid', 'customer' => 'cus_rita',
+    'subscription' => 'sub_prova_rita', 'client_reference_id' => (string) $ordR['id'], 'metadata' => ['order_id' => (string) $ordR['id'], 'account_id' => (string) $racc]]]];
+$altro = ['id' => 'evt_altro_rec', 'object' => 'event', 'type' => 'checkout.session.completed', 'created' => time(), 'data' => ['object' => ['id' => 'cs_di_qualcun_altro', 'mode' => 'subscription']]];
+file_put_contents("$STRIPE_DIR/eventi.json", json_encode([$evR, $altro]));
+$rita->get('/pagamento/ok?order=' . $ordR['id']);
+$primaR = count(richiesteStripe());
+$stR = json_decode($rita->get('/pagamento/stato?order=' . $ordR['id'])['body'], true);
+prova('Recupero · nei primi 20 secondi si aspetta il webhook: niente domande a Stripe, guida ancora offline', ($stR['stato'] ?? '') === 'pending'
+      && !array_filter(array_slice(richiesteStripe(), $primaR), fn($x) => $x['percorso'] === '/v1/events') && $ospite->get("/g/$slugR")['code'] === 404);
+sleep(21);
+$stR = json_decode($rita->get('/pagamento/stato?order=' . $ordR['id'])['body'], true);
+$chiestiR = array_values(array_filter(array_slice(richiesteStripe(), $primaR), fn($x) => $x['percorso'] === '/v1/events'));
+prova('Recupero · dopo 20 secondi il sito chiede a Stripe gli eventi (solo i tipi che chiudono la sessione, dal momento dell\'ordine)', count($chiestiR) === 1
+      && ($chiestiR[0]['metodo'] ?? '') === 'GET', json_encode($chiestiR));
+$subR = riga("SELECT * FROM subscriptions WHERE provider_subscription_id = 'sub_prova_rita'");
+prova('Recupero · l\'evento della sua sessione (non quello di un altro) attiva l\'abbonamento e pubblica la guida; lo stato lo dice alla pagina', ($stR['stato'] ?? '') === 'paid' && ($stR['pubblicata'] ?? false) === true
+      && $subR && $subR['status'] === 'active' && $ospite->get("/g/$slugR")['code'] === 200 && (bool) val("SELECT id FROM webhook_events WHERE provider_event_id = 'evt_rita_rec'")
+      && !val("SELECT id FROM webhook_events WHERE provider_event_id = 'evt_altro_rec'"), json_encode($stR));
+$r = inviaWebhook($evR);
+prova('Recupero · se poi il webhook arriva, è «già elaborato»: niente doppioni', $r['code'] === 200 && $r['body'] === 'gia-elaborato'
+      && (int) val("SELECT COUNT(*) FROM subscriptions WHERE provider_subscription_id = 'sub_prova_rita'") === 1, $r['body']);
+prova('Recupero · nel registro tecnico «confermato dal recupero»', (bool) array_filter(righeLog('app'), fn($l) => str_contains($l, 'Pagamento confermato dal recupero')));
+// Il Quadro: l'ultimo pagamento confermato dal recupero e l'ultimo webhook accettato prima → «Il webhook di Stripe non arriva».
+$reg = json_decode((string) @file_get_contents("$DOVE/app/storage/stripe-webhook.json"), true) ?: [];
+$reg['accettato']['quando'] = gmdate('Y-m-d\TH:i:s\Z', time() - 3600);
+file_put_contents("$DOVE/app/storage/stripe-webhook.json", json_encode($reg));
+$q = $admin->get('/admin');
+prova('Recupero · Quadro: «Il webhook di Stripe non arriva», con l\'ordine, l\'indirizzo da usare e gli esiti da guardare in Stripe', str_contains($q['body'], 'Il webhook di Stripe non arriva')
+      && str_contains($q['body'], '(ordine ' . $ordR['id'] . ')') && str_contains($q['body'], '/webhook/stripe') && str_contains($q['body'], '301 o 302'));
+// Un webhook con la firma di un altro segreto: rifiutato (400), il motivo nel registro, nel Quadro e in Diagnostica.
+$r = inviaWebhook(['id' => 'evt_firma_altra', 'type' => 'invoice.paid', 'data' => ['object' => []]], 'whsec_' . 'di_un_altro_endpoint');
+$q = $admin->get('/admin');
+$d = $admin->get('/admin/diagnostica');
+prova('Recupero · firma di un altro segreto: 400, e il Quadro dice «il sito lo rifiuta» con il motivo e dove prendere il segreto giusto', $r['code'] === 400
+      && str_contains($q['body'], 'Stripe manda il webhook, ma il sito lo rifiuta') && str_contains($q['body'], 'la firma non corrisponde al segreto del webhook')
+      && str_contains($q['body'], 'Segreto di firma') && !val("SELECT id FROM webhook_events WHERE provider_event_id = 'evt_firma_altra'"));
+prova('Recupero · Diagnostica: «Webhook di Stripe» con l\'ultimo ricevuto, l\'ultimo rifiutato e l\'ultimo recupero', str_contains($d['body'], 'Webhook di Stripe')
+      && str_contains($d['body'], 'ultimo rifiutato') && str_contains($d['body'], 'ultimo confermato dal recupero'));
+// Una richiesta senza firma (un robot): 400, ma non è Stripe, il Quadro non cambia.
+$ch = curl_init("$BASE/webhook/stripe"); curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => '{}']); curl_exec($ch);
+$codiceSenza = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+$reg = json_decode((string) @file_get_contents("$DOVE/app/storage/stripe-webhook.json"), true) ?: [];
+prova('Recupero · senza firma: 400, solo nel registro tecnico (il motivo del Quadro resta quello di Stripe)', $codiceSenza === 400 && str_contains((string) ($reg['rifiutato']['motivo'] ?? ''), 'non corrisponde'));
+// Un webhook buono rimette a posto il Quadro.
+$r = inviaWebhook(['id' => 'evt_buono_rec', 'type' => 'customer.subscription.trial_will_end', 'data' => ['object' => ['id' => 'sub_prova_rita']]]);
+prova('Recupero · un webhook accettato dopo: niente più avviso nel Quadro', $r['code'] === 200 && !str_contains($admin->get('/admin')['body'], 'Stripe manda il webhook, ma il sito lo rifiuta')
+      && !str_contains($admin->get('/admin')['body'], 'Il webhook di Stripe non arriva'));
+// I richiami: un ordine rimasto in sospeso (la pagina chiusa subito) si chiude da solo.
+$remo = new Browser('remo-rec');
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$remo->get('/registrati?piano=' . pv('plus'));
+$remo->post('/registrati', ['piano' => pv('plus'), 'name' => 'Remo Recupero', 'email' => 'remo.rec@prova.test', 'email2' => 'remo.rec@prova.test', 'password' => 'RemoProva12345', 'termini' => '1']);
+$remacc = $accDi('remo.rec@prova.test');
+$linkRm = linkPosta('remo.rec@prova.test', 'verifica'); $remo->get(substr($linkRm, strpos($linkRm, '/verifica/')));
+$remo->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Remo', 'city' => 'Bevagna']);
+$prm = (int) val('SELECT id FROM properties WHERE account_id = ? ORDER BY id', [$remacc]);
+db()->prepare("UPDATE properties SET cin = 'IT054004C2REMO0001' WHERE id = ?")->execute([$prm]);
+$remo->post("/pannello/$prm/sezioni/" . (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$prm]), ['checkin_steps' => ['Suona al citofono.']]);
+$remo->modulo('/account', '/account/fatturazione', ['billing_type' => 'privato', 'billing_name' => 'Remo Recupero', 'cf' => 'RCPRME85A01A710X', 'billing_address' => 'Via Remo 1', 'billing_postal' => '06031', 'billing_city' => 'Bevagna', 'billing_province' => 'PG']);
+$remo->segui($remo->modulo("/pannello/$prm/procedura/pubblica", "/pannello/$prm/pubblica", ['acquirente' => 'impresa']));
+$ordRm = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$remacc]);
+// Remo ha chiuso la pagina subito dopo aver pagato: l'ordine è fermo da 10 minuti.
+db()->prepare('UPDATE orders SET created_at = ?, updated_at = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() - 600), gmdate('Y-m-d\TH:i:s\Z', time() - 600), $ordRm['id']]);
+$evR2 = ['id' => 'evt_remo_richiami', 'object' => 'event', 'type' => 'checkout.session.completed', 'created' => time() - 500, 'data' => ['object' => [
+    'id' => $ordRm['provider_session_id'], 'mode' => 'subscription', 'payment_status' => 'paid', 'customer' => 'cus_remo', 'subscription' => 'sub_prova_remo',
+    'client_reference_id' => (string) $ordRm['id'], 'metadata' => ['order_id' => (string) $ordRm['id'], 'account_id' => (string) $remacc]]]];
+file_put_contents("$STRIPE_DIR/eventi.json", json_encode([$evR, $evR2]));
+$cron();
+prova('Recupero · i richiami periodici chiudono un ordine rimasto in sospeso (pagina chiusa subito dopo il pagamento)', $ordRm && val('SELECT status FROM orders WHERE id = ?', [$ordRm['id']]) === 'paid'
+      && (bool) val("SELECT id FROM webhook_events WHERE provider_event_id = 'evt_remo_richiami'"), (string) val('SELECT status FROM orders WHERE id = ?', [$ordRm['id'] ?? 0]));
+// «Prova la connessione»: l'endpoint su Stripe c'è o no, con gli eventi giusti.
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'impostazioni%'");
+@unlink("$STRIPE_DIR/endpoints.json");
+$r = $admin->segui($admin->post('/admin/impostazioni/stripe/prova', []));
+prova('Recupero · «Prova la connessione» senza endpoint su Stripe: «non c\'è un webhook verso …/webhook/stripe»', str_contains($r['body'], 'Stripe risponde') && str_contains($r['body'], 'non c&#039;è un webhook verso'));
+$urlW = preg_replace('#/index\.php$#', '', $BASE) . '/webhook/stripe';
+file_put_contents("$STRIPE_DIR/endpoints.json", json_encode([['id' => 'we_1', 'url' => $urlW, 'status' => 'enabled', 'enabled_events' => ['checkout.session.completed', 'invoice.paid']]]));
+$r = $admin->segui($admin->post('/admin/impostazioni/stripe/prova', []));
+prova('Recupero · …con l\'endpoint ma senza tutti gli eventi: quali mancano', str_contains($r['body'], 'mancano gli eventi checkout.session.expired, customer.subscription.updated, customer.subscription.deleted'));
+file_put_contents("$STRIPE_DIR/endpoints.json", json_encode([['id' => 'we_1', 'url' => $urlW, 'status' => 'enabled', 'enabled_events' => ['*']]]));
+$r = $admin->segui($admin->post('/admin/impostazioni/stripe/prova', []));
+prova('Recupero · …con l\'endpoint giusto: «c\'è, è attivo e ha gli eventi principali»', str_contains($r['body'], 'è attivo e ha gli eventi principali'));
+@unlink("$STRIPE_DIR/endpoints.json"); @unlink("$STRIPE_DIR/eventi.json");
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'impostazioni%'");
+
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

@@ -6,7 +6,7 @@ App PHP 8.1+ per guide digitali degli ospiti (case vacanza, B&B, agriturismi). S
 1. Stessa struttura, stesso router (`app/src/Router.php`), stesse classi, stesso stile (commenti e nomi in italiano). Niente framework, Composer, Node o build.
 2. Il database cresce solo per aggiunte: nuove migrazioni in `app/migrations/` da `007_…` in poi (`.sql` per lo schema, `.php` che restituisce `function (\PDO $pdo)` per i dati, come la `006`). Devono funzionare su SQLite **e** MySQL. I dati esistenti si convertono, non si cancellano.
 3. Configurazioni nuove da variabili d'ambiente o `config.local.php`. Non inventare dati, nomi di locali reali o testimonianze.
-4. Restano vere: guida ospite senza cookie e `noindex`, niente codici di porte, pagamento solo alla pubblicazione, attivazione solo da webhook Stripe firmato, limiti del piano controllati sul server (`Entitlements`).
+4. Restano vere: guida ospite senza cookie e `noindex`, niente codici di porte, pagamento solo alla pubblicazione, attivazione solo da eventi verificati con Stripe (webhook firmato, o evento letto da Stripe con la chiave segreta quando il webhook non arriva: `RecuperoPagamenti`), mai dal ritorno del browser, limiti del piano controllati sul server (`Entitlements`).
 5. Ogni nuova etichetta della guida ospite va in tutte e 5 le lingue: `app/lang/{it,en,fr,de,es}.php`.
 6. Accessibilità: ogni campo con `label`; controlli personalizzati costruiti su input veri usabili da tastiera; focus visibile; contrasto AA.
 7. Stile visivo: usa i token e i componenti già in `assets/app.css` (carta, terracotta, pino, ocra, mare; Gloock per i titoli, Onest per il testo). I mockup in `_brief/revisione/revisione.html` sono solo riferimento visivo.

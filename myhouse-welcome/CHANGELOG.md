@@ -1,5 +1,12 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Attivazione dopo il pagamento anche se il webhook di Stripe non arriva (19 ottobre 2026)
+
+- **Recupero da Stripe.** Se dopo il pagamento il webhook non conferma entro 20 secondi, la pagina «Stiamo attivando la tua guida» fa chiedere al sito, da server a server e con la chiave segreta, gli eventi di quella sessione di pagamento (`GET /v1/events`, solo `checkout.session.completed` e `checkout.session.async_payment_succeeded`, dal momento dell'ordine). L'evento della sessione si elabora come se fosse arrivato dal webhook: stessa funzione, stessa protezione dai doppioni (se poi arriva anche il webhook è «già elaborato»). Al più una domanda ogni 15 secondi per ordine. Il browser non prova niente: dà solo il via.
+- **Anche a pagina chiusa.** I richiami periodici (ogni 15 minuti, o il cron) fanno lo stesso per gli ordini in sospeso degli ultimi 3 giorni.
+- **Perché il webhook non arriva.** Ogni webhook rifiutato lascia il motivo (firma di un altro segreto o di un'altra modalità, orario del server sbagliato, segreto mancante) nel registro tecnico e in `storage/stripe-webhook.json`. Il **Quadro** avvisa «Stripe manda il webhook, ma il sito lo rifiuta» o «Il webhook di Stripe non arriva» (con cosa controllare in Stripe: 400, 404, 301/302, 403); **Diagnostica** ha la riga «Webhook di Stripe»; **«Prova la connessione»** di Stripe controlla che su Stripe ci sia l'endpoint verso `…/webhook/stripe`, attivo e con gli eventi principali. Le richieste senza firma (robot) restano solo nel registro tecnico.
+- Regola del progetto aggiornata: l'attivazione viene solo da eventi verificati con Stripe (webhook firmato o evento letto da Stripe con la chiave segreta), mai dal ritorno del browser.
+
 ## v2 · 9K Revisione del 19 ottobre: telefoni su Safari, Casa Checco, foto leggere, «Per chi è» a sei schede, questionario, Più strutture e Property manager, via la PEC (19 ottobre 2026)
 
 Migrazione **049**: tabella `partner_richieste`; la copertina nuova sulla vetrina (ripubblicata); i testi di «Per chi è» già cambiati nelle chiavi nuove; la PEC tolta dai testi legali salvati a mano. Da configurare: DA-CONFIGURARE, «4k».
