@@ -245,8 +245,8 @@ prova('Titolo richiesto', str_contains($r['body'], 'La casa risponde') && str_co
 prova('CTA principale', str_contains($r['body'], 'Crea gratis la tua guida'));
 prova('Demo dichiarata come demo', str_contains($r['body'], 'Guarda la demo') && str_contains($r['body'], 'demo-tag'));
 prova('Microcopy', str_contains($r['body'], 'Paghi solo quando pubblichi'));
-prova('Revisione · sottotitolo immediato, «sempre aggiornato» accanto al QR, «Più strutture» come scheda (9K)', str_contains($r['body'], 'tutto accessibile tramite QR Code. Senza app da scaricare.')
-      && str_contains($r['body'], 'un QR Code sempre aggiornato in ogni camera, al posto del foglio plastificato') && str_contains($r['body'], 'Una guida e un QR per ogni casa, un solo account.') && preg_match('#class="perchi__scheda" href="[^"]*/piu-strutture"#', $r['body']) === 1);
+prova('Revisione · sottotitolo immediato, il QR al posto del foglio plastificato, «Più strutture» come scheda (9K)', str_contains($r['body'], 'tutto accessibile tramite QR Code. Senza app da scaricare.')
+      && str_contains($r['body'], 'un QR in ogni camera al posto del foglio plastificato') && str_contains($r['body'], 'Una guida e un QR per ogni casa, un solo account.') && preg_match('#class="perchi__scheda" href="[^"]*/piu-strutture"#', $r['body']) === 1);
 prova('Revisione · «Il tempo delle risposte»: titolo chiaro, cursore di sinistra bianco come la barra', str_contains($r['body'], 'L&#039;accoglienza resta tua. Rispondere sempre alle stesse domande, no.')
       && str_contains($r['body'], '.t2 input[data-t2="nec"]{accent-color:var(--inverse-fg'));
 prova('Revisione · «La guida che lavora per te»: i due inviti detti in una frase', str_contains($r['body'], 'manda due inviti all&#039;ospite: una recensione sulla piattaforma'));
@@ -4462,7 +4462,7 @@ $campi7f = $campi6k;
 foreach (['home', 'domande', 'en', 'en-domande', 'termini', 'privacy', 'dpa', 'en-termini', 'en-privacy', 'en-dpa'] as $k) $campi7f["p_{$k}_indicizza"] = '1';
 foreach (['en' => 'Digital guest guide for holiday rentals | MyHouse Welcome', 'en-domande' => 'Frequently asked questions | MyHouse Welcome'] as $k => $t)
     $campi7f += ["p_{$k}_titolo" => $t, "p_{$k}_descrizione" => str_repeat('An English description for the test page. ', 2)];
-foreach ($tipi7f as $k => $tp) $campi7f += ["p_{$k}_indicizza" => '1', "p_{$k}_titolo" => $tp['titolo'], "p_{$k}_descrizione" => $tp['descrizione']];
+foreach (require "$DOVE/app/lang/tipologie.php" as $k => $tp) $campi7f += ["p_{$k}_indicizza" => '1', "p_{$k}_titolo" => $tp['titolo'], "p_{$k}_descrizione" => $tp['descrizione']];
 $r = $adm6->modulo('/admin/seo', '/admin/seo', $campi7f);
 $fileOk = true;
 foreach (['robots.txt', 'sitemap.xml', 'llms.txt'] as $f) if (!is_file("$DOVE/$f") || (string) file_get_contents("$DOVE/$f") !== $ospite->get('/' . $f)['body']) $fileOk = false;
