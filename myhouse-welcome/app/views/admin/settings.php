@@ -58,7 +58,7 @@ $intro = [
         <p class="small"><b>Indirizzo del webhook</b> da inserire in Stripe → Sviluppatori → Webhook → «Aggiungi endpoint»:</p>
         <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><code class="impostazioni__url"><?= Support::e($webhook) ?></code>
           <button type="button" class="btn btn--ghost btn--sm" data-copia="<?= Support::e($webhook) ?>" data-copiato="Copiato" hidden><?= Icon::svg('copy', 15) ?>Copia</button></div>
-        <p class="small muted">Eventi da selezionare: checkout.session.completed, checkout.session.expired, checkout.session.async_payment_succeeded, checkout.session.async_payment_failed, invoice.paid, invoice.payment_failed, customer.subscription.updated, customer.subscription.deleted. Il segreto di firma che Stripe ti mostra dopo va qui sotto.</p>
+        <p class="small muted">Eventi da selezionare: checkout.session.completed, checkout.session.expired, checkout.session.async_payment_succeeded, checkout.session.async_payment_failed, invoice.paid, invoice.payment_failed, customer.subscription.updated, customer.subscription.deleted, customer.subscription.trial_will_end, charge.refunded. Il segreto di firma che Stripe ti mostra dopo va qui sotto.</p>
       </div>
     <?php endif; ?>
 

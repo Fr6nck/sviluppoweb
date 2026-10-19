@@ -691,7 +691,7 @@ No data protection officer has been appointed (it is not mandatory, art. 37 GDPR
 T,
 
 // ---- the «Cookies» paragraph of the privacy policy (the Italian ones are in TestiSito, section «cookie»)
-'cookie.tecnici' => 'The website only uses technical cookies, which do not require consent: the session cookie (mhw_sess), which keeps you logged in to the dashboard and protects forms, and the one that remembers your cookie choice (mhw_consenso, 6 months).',
+'cookie.tecnici' => 'The website only uses technical cookies, which do not require consent: the session cookie (mhw_sess), which keeps you logged in to the dashboard and protects forms, the one that remembers your cookie choice (mhw_consenso, 6 months) and, in the dashboard, the one that hides the renewal notice for 24 hours when you press «Close» (mhw_fascia_…).',
 'cookie.matomo' => 'To count visits we use Matomo, installed on our own server: it uses no cookies, the IP address is anonymised (last two bytes) and the data stay with us, without being passed to third parties.',
 'cookie.ga4' => '**Google Analytics 4** (Google Ireland Ltd), only with your consent to «Statistics»: it measures visits in aggregated form, without advertising signals or ad personalisation. Cookies _ga and _ga_*, lasting up to 2 years. [Google privacy policy](https://policies.google.com/privacy).',
 'cookie.clarity' => '**Microsoft Clarity** (Microsoft Ireland Operations Ltd), only with your consent to «Usage analysis»: heatmaps and session recordings to understand where the website is unclear; form fields are masked. Cookies _clck (1 year) and _clsk (1 day). [Microsoft privacy statement](https://privacy.microsoft.com/privacystatement).',

@@ -2553,6 +2553,8 @@ $fileLocale = $DOVE . '/app/config.local.php';
 $r = $admin->get('/admin/impostazioni');
 prova('La pagina si apre con i tre riquadri e l\'indirizzo del webhook da copiare', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'id="stripe"')
       && str_contains($r['body'], 'id="posta"') && str_contains($r['body'], 'id="archivio"') && str_contains($r['body'], '/webhook/stripe'));
+prova('…e l\'elenco degli eventi del webhook comprende anche trial_will_end e charge.refunded',
+      str_contains($r['body'], 'customer.subscription.deleted, customer.subscription.trial_will_end, charge.refunded.'));
 prova('…i campi impostati dal server (variabili d\'ambiente) si vedono bloccati, e nessun segreto compare nella pagina',
       str_contains($r['body'], 'variabile d\'ambiente <code>STRIPE_SECRET_KEY</code>') && !str_contains($r['body'], 'sk_test_finto_solo_per_le_prove')
       && !str_contains($r['body'], 'whsec_finto_solo_per_le_prove') && !str_contains($r['body'], 'segreto-finto-per-le-prove'));
@@ -3471,7 +3473,7 @@ prova('8H · statistiche.js: Matomo con disableCookies e senza la query; GA4 sen
       && str_contains($js8, "evento('contatto', 'whatsapp')") && str_contains($js8, "evento('sito-myhouse')") && str_contains($js8, "evento('vedi-esempio')"));
 $pr8 = $ospite->get('/privacy')['body'];
 prova('8H · privacy, «Cookie»: cookie tecnici, Matomo (configurato), le guide senza cookie; Google e Clarity no (non configurati)',
-      str_contains($pr8, 'id="cookie"') && str_contains($pr8, 'mhw_consenso') && str_contains($pr8, 'installato sul nostro server')
+      str_contains($pr8, 'id="cookie"') && str_contains($pr8, 'mhw_consenso') && str_contains($pr8, 'mhw_fascia_') && str_contains($pr8, 'installato sul nostro server')
       && str_contains($pr8, 'Le guide degli ospiti non usano cookie') && !str_contains($pr8, 'Google Analytics 4') && !str_contains($pr8, '_clck (1 anno)'));
 // Con GA4 e Clarity: il banner (nascosto finché lo script non decide), Accetta e Rifiuta con lo stesso stile, «Scegli» con due interruttori.
 $adm6->segui($adm6->modulo('/admin/seo', '/admin/seo', $campi6k + ['stat_matomo_url' => 'https://statistiche.esempio.it', 'stat_matomo_id' => '3', 'stat_ga4' => 'g-ab12cd34ef', 'stat_clarity' => 'Abc123xyz']));

@@ -1,5 +1,12 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Cookie e webhook: elenchi completati (19 ottobre 2026)
+
+Nessuna migrazione.
+
+- **Informativa, «Cookie tecnici»** (italiano e inglese): ora nomina anche `mhw_fascia_…`, il cookie tecnico del pannello che nasconde per 24 ore l'avviso del rinnovo quando l'host preme «Chiudi» (9D). Correzione di completezza, non un cambio sostanziale: la versione dei documenti legali resta la stessa e nessuno deve riaccettare. Se il testo «Cookie tecnici» è stato modificato a mano in Testi del sito, resta quello salvato: va aggiornato lì.
+- **Eventi del webhook di Stripe**: l'elenco in Impostazioni → Stripe, nel LEGGIMI e in DA-CONFIGURARE comprende anche `customer.subscription.trial_will_end` e `charge.refunded` (già gestiti dal 9D e dal 9E); nel LEGGIMI anche i due `checkout.session.async_payment_*`.
+
 ## v2 · 9I Codice cliente, codice struttura e codice pagamento; «Cerca» in Amministrazione (18 ottobre 2026)
 
 Migrazione **048**: `accounts.code`, `properties.code`, `orders.code` (uniche), `subscriptions.code`, `rimborsi.code`, registro `codici_usati`; i codici per tutti gli account, tutte le strutture (anche archiviate e la vetrina) e gli ordini pagati. Classe `Codici`. Da configurare: DA-CONFIGURARE, «4j» (comando una tantum per Stripe, Adamo).

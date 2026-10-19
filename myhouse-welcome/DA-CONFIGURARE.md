@@ -76,6 +76,8 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
   - `invoice.payment_failed`
   - `customer.subscription.updated`
   - `customer.subscription.deleted`
+  - `customer.subscription.trial_will_end` (solo registro: gli avvisi della prova li mandiamo noi)
+  - `charge.refunded` (conferma dei rimborsi fatti dalla scheda del cliente)
 - Il webhook non serve solo a pubblicare: sblocca anche le strutture del Portfolio, comprese quelle aggiunte dopo.
 - Attiva il **portale clienti** (fatture, carta, disdetta). Nel portale **spegni «Cambio di piano» e «Modifica quantità»**: il cambio si fa solo da Account → «Cambia piano», che chiede le scelte e calcola il conguaglio. Se lo lasci acceso, il cliente cambierebbe piano su Stripe senza passare da qui.
 - **Cambio di piano (fase 6H).** Prima di aprirlo ai clienti, in modalità test:
@@ -253,7 +255,8 @@ Da provare con un pagamento di prova: (1) una persona fisica con solo codice fis
 **9D · Codici omaggio e avvisi prima dell'addebito**
 - La migrazione **045** parte da sola al primo accesso (tabelle `codici_omaggio` e `rimborsi`, colonne nuove). Niente da fare a mano.
 - **In Stripe** (Dashboard → Impostazioni → Abbonamenti ed email, o Billing → Settings): **spegni** le email automatiche di Stripe «Prova in scadenza» (*trial ending*) e «Rinnovo imminente» (*upcoming renewal*): gli avvisi a 30 e 7 giorni li manda il sito, con il nostro testo e il nostro marchio. **Accendi** Smart Retries (Billing → Settings → Manage failed payments) per i rinnovi non riusciti.
-- **Webhook**: aggiungi all'endpoint di Stripe gli eventi `customer.subscription.trial_will_end` (solo registro) e `charge.refunded` (9E: conferma dei rimborsi). Gli altri sono gli stessi di prima.
+- **Webhook**: aggiungi all'endpoint di Stripe gli eventi `customer.subscription.trial_will_end` (solo registro) e `charge.refunded` (9E: conferma dei rimborsi). Gli altri sono gli stessi di prima. Controlla in Stripe → Sviluppatori → Webhook che ci siano tutti e dieci (l'elenco è anche in Impostazioni → Stripe e al punto 3).
+- **Informativa, «Cookie tecnici»** (19 ottobre): il testo di serie ora cita anche `mhw_fascia_…`. Se in Amministrazione → Testi del sito hai salvato a mano «Cookie tecnici», aggiungi tu la frase (in italiano e in inglese); altrimenti non c'è niente da fare. Non serve cambiare la versione dei documenti legali.
 - **Codici omaggio**: Amministrazione → Vendite → Codici omaggio → «Nuovo codice» (mesi 1–12, scadenza di serie 14 giorni, nota interna). Il codice appena creato ha i bottoni **WhatsApp**, **Email** e **Copia il link** (`/omaggio/XXXXX`). Il testo del messaggio si cambia in Testi e foto → «Codici omaggio». Un codice non ancora usato si annulla dalla stessa pagina.
 - Il cliente in omaggio inserisce la carta al Checkout (Stripe chiede il metodo di pagamento anche a 0 €): su Stripe l'abbonamento è «in prova» (*trialing*) fino alla data del primo addebito. Chi disattiva il rinnovo prima non paga nulla.
 - **Prova con le chiavi di test**: `php app/tools/verifica-stripe.php` ora prova anche i casi «omaggio 1, 6 e 12 mesi» con e senza lo sconto del giudizio: tutte le righe devono dire «ok» (sessione a 0 € oggi). Poi, sempre in test: un codice da 3 mesi → `/omaggio/CODICE` → registrazione → Checkout 0 € con carta `4242…` → la guida è online, in Clienti il cliente ha «Omaggio fino al …». Con un *test clock* di Stripe a fine omaggio: la fattura parte con l'eventuale sconto del giudizio e Adamo la riceve come oggi.

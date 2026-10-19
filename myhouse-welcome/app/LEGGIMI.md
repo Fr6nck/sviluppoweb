@@ -76,8 +76,9 @@ accanto a `config.php`, e riempi solo le voci che servono.
    completo, sottocartella compresa: `https://tuodominio/welcomebook/webhook/stripe`
    (se il server non riscrive gli indirizzi: `…/welcomebook/index.php/webhook/stripe`).
 2. Eventi da inviare: `checkout.session.completed`, `checkout.session.expired`,
+   `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`,
    `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`,
-   `customer.subscription.deleted`.
+   `customer.subscription.deleted`, `customer.subscription.trial_will_end`, `charge.refunded`.
 3. Copia il segreto del webhook in `STRIPE_WEBHOOK_SECRET` e la chiave segreta in
    `STRIPE_SECRET_KEY`. Senza tutte e due nessuno può pubblicare: i clienti
    preparano la guida, e il pannello dice che i pagamenti non sono ancora attivi.
