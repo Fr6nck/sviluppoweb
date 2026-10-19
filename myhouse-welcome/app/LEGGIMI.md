@@ -82,6 +82,9 @@ accanto a `config.php`, e riempi solo le voci che servono.
 3. Copia il segreto del webhook in `STRIPE_WEBHOOK_SECRET` e la chiave segreta in
    `STRIPE_SECRET_KEY`. Senza tutte e due nessuno può pubblicare: i clienti
    preparano la guida, e il pannello dice che i pagamenti non sono ancora attivi.
+   Facoltativa, la chiave pubblicabile in `STRIPE_PUBLISHABLE_KEY` (o in Impostazioni → Stripe),
+   della stessa modalità della segreta: il primo acquisto si paga con la carta nel passo
+   «Pubblica», nel modulo di Stripe incorporato. Senza, si paga sulla pagina di Stripe.
 4. Per il **portale clienti** (fatture, carta, disdetta) attivalo in
    **Impostazioni → Fatturazione → Portale clienti**.
 5. I prezzi: di base l'applicazione descrive a Stripe il prezzo della versione

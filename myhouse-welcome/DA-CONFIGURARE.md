@@ -79,6 +79,14 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
   - `customer.subscription.trial_will_end` (solo registro: gli avvisi della prova li mandiamo noi)
   - `charge.refunded` (conferma dei rimborsi fatti dalla scheda del cliente)
 - Il webhook non serve solo a pubblicare: sblocca anche le strutture del Portfolio, comprese quelle aggiunte dopo.
+- **Pagamento con la carta nel pannello (19 ottobre).** Il primo acquisto si può pagare con la carta di credito o di debito direttamente nel passo «Pubblica», nel modulo di Stripe incorporato nella pagina; «Preferisci pagare sulla pagina di Stripe?» resta a un clic. Per accenderlo:
+  1. In Stripe → Sviluppatori → Chiavi API copia la **chiave pubblicabile** (`pk_test_…` per le prove, `pk_live_…` in produzione). Non è segreta: sta nella pagina del cliente.
+  2. Incollala in **Amministrazione → Impostazioni → Stripe → «Chiave pubblicabile»** (oppure `STRIPE_PUBLISHABLE_KEY`). Deve essere della stessa modalità della chiave segreta: `pk_test_` con `sk_test_`, `pk_live_` con `sk_live_`. Se non lo è, il sito la ignora e il cliente paga sulla pagina di Stripe; «Prova la connessione» te lo dice.
+  3. Senza chiave pubblicabile non cambia niente: «Conferma e paga» porta sulla pagina di Stripe, come prima.
+  4. Apple Pay e Google Pay nel modulo incorporato compaiono solo se li accendi in Stripe → Impostazioni → Metodi di pagamento e, per Apple Pay, se **registri il dominio** del sito in Stripe → Impostazioni → Domini dei metodi di pagamento.
+  5. Prova in modalità test: «Conferma e paga» → «Paga e pubblica.» con il modulo; carta `4242 4242 4242 4242` → «Stiamo attivando la tua guida» → online. Poi rifai con «Paga sulla pagina di Stripe» e con «Annulla e torna indietro» (nessun addebito, si torna a Pubblica). Con la carta `4000 0025 0000 3155` la verifica 3D Secure si apre dentro il modulo.
+  6. Il sito in produzione deve essere in **https**: Stripe non mostra il modulo incorporato su http (in locale sì, solo in modalità test).
+  - Gli eventi del webhook restano gli stessi. Il cambio di piano da Account resta sulla pagina di Stripe.
 - Attiva il **portale clienti** (fatture, carta, disdetta). Nel portale **spegni «Cambio di piano» e «Modifica quantità»**: il cambio si fa solo da Account → «Cambia piano», che chiede le scelte e calcola il conguaglio. Se lo lasci acceso, il cliente cambierebbe piano su Stripe senza passare da qui.
 - **Cambio di piano (fase 6H).** Prima di aprirlo ai clienti, in modalità test:
   1. Un Plus passa a Portfolio con 2 strutture: la pagina di Stripe chiede solo la differenza per i giorni che restano. Dopo il pagamento, in Account il piano è Portfolio e la fattura del conguaglio è tra le fatture del cliente.

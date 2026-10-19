@@ -118,12 +118,21 @@ if ($metodo === 'POST' && $percorso === '/v1/checkout/sessions') {
     // 9D: con i mesi gratis (subscription_data[trial_end]) oggi non si paga niente: come Stripe, imponibile e totale a 0.
     $trial = (int) ($corpo['subscription_data']['trial_end'] ?? 0);
     if ($trial > 0 && !is_file($dir . '/importo-sbagliato')) { $sub = 0; $sconto = 0; }
-    $sessione = ['id' => 'cs_test_finto' . $n, 'object' => 'checkout.session', 'url' => 'https://checkout.stripe.test/c/pay/cs_test_finto' . $n,
+    // Incorporata (ui_mode=embedded): niente url, il segreto per il modulo nella pagina e l'indirizzo di ritorno.
+    $incorporata = ($corpo['ui_mode'] ?? '') === 'embedded';
+    $sessione = ['id' => 'cs_test_finto' . $n, 'object' => 'checkout.session', 'url' => $incorporata ? null : 'https://checkout.stripe.test/c/pay/cs_test_finto' . $n,
+                 'ui_mode' => $incorporata ? 'embedded' : 'hosted', 'client_secret' => $incorporata ? 'cs_test_finto' . $n . '_secret_finto' : null,
+                 'return_url' => $corpo['return_url'] ?? null, 'success_url' => $corpo['success_url'] ?? null,
                  'mode' => $corpo['mode'] ?? '', 'status' => 'open', 'amount_subtotal' => $sub, 'amount_total' => $sub - $sconto,
                  'total_details' => ['amount_discount' => $sconto, 'amount_tax' => 0], 'metadata' => $corpo['metadata'] ?? [],
                  'trial_end' => $trial ?: null, 'payment_method_collection' => $corpo['payment_method_collection'] ?? 'if_required'];
     $stato['sessioni']['cs_test_finto' . $n] = $sessione;
     $rispondi($sessione);
+}
+// Solo nel finto: il cliente ha pagato nel modulo (la sessione diventa «complete»; il webhook lo mandano le prove).
+if ($metodo === 'POST' && preg_match('#^/finto/completa/([A-Za-z0-9_]+)$#', $percorso, $m) && isset($stato['sessioni'][$m[1]])) {
+    $stato['sessioni'][$m[1]]['status'] = 'complete';
+    $rispondi($stato['sessioni'][$m[1]]);
 }
 if (preg_match('#^/v1/checkout/sessions/([A-Za-z0-9_]+)(/expire)?$#', $percorso, $m)) {
     if (!isset($stato['sessioni'][$m[1]])) $rispondi(['error' => ['message' => 'No such checkout.session: ' . $m[1]]], 404);

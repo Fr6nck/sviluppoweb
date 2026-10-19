@@ -2265,6 +2265,15 @@ fieldset{min-width:0}
 .privacy-nota--prima{padding:16px 20px;background:var(--sea-soft)}
 .registrati__riservata,.pubblica-riservata{display:flex;gap:6px;align-items:flex-start;margin:0}
 .registrati__riservata svg,.pubblica-riservata svg{flex:none;margin-top:3px}
+/* Pagamento con la carta nel pannello (Stripe incorporato): la riga sopra «Conferma e paga» e la pagina del modulo. */
+.pagamento-modi{display:flex;gap:6px;align-items:flex-start;margin:0 0 12px}
+.pagamento-modi svg{flex:none;margin-top:3px}
+.pagamento-modi .linkbtn{font-size:inherit;min-height:0}
+/* Il modulo di Stripe è chiaro anche col tema scuro: il riquadro resta bianco in tutti e due i temi. */
+.pagamento-carta{min-height:420px;border-radius:var(--r-lg);background:#fff;border:1px solid var(--line);padding:8px}
+.pagamento-carta__attesa{display:flex;align-items:center;justify-content:center;min-height:400px;color:#6a5b48;margin:0}
+.pagamento-altri{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.pagamento-carta[hidden],#pagamento-guasto[hidden]{display:none}
 .aiuto-accesso{margin:8px 0 0}
 /* 7A · assistenza nel pannello */
 .lato__aiuto{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 4px;color:var(--lato-fg);font-size:14px;text-decoration:none;border-radius:8px}

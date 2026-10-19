@@ -3295,6 +3295,98 @@ prova('7B · «Passa a Essential» prima di pagare: piano cambiato e si torna al
       && (int) val('SELECT intended_package_version_id FROM accounts WHERE id = ?', [$lacc]) === pv('essential'));
 prova('…e la pagina dice «Hai scelto Essential»', str_contains($lea->get("/pannello/$lp/procedura/pubblica")['body'], 'Hai scelto Essential'));
 
+// ============================================================ Pagamento con la carta nel pannello (Stripe incorporato)
+capitolo('Pagamento con la carta nel passo Pubblica (Checkout incorporato di Stripe)');
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'impostazioni%'");
+$r = $admin->post('/admin/impostazioni/stripe', ['stripe__publishable_key' => 'sk_' . 'test_nonunachiavepubblicabile', 'password' => 'AdminProva123']);
+prova('Impostazioni → Stripe: la chiave pubblicabile si controlla (pk_, non sk_)', $r['code'] === 422 && str_contains($r['body'], 'La chiave pubblicabile comincia con pk_live_'));
+$r = $admin->post('/admin/impostazioni/stripe', ['stripe__publishable_key' => 'pk_live_dialtramodalita123', 'password' => 'AdminProva123']);
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$nina = new Browser('nina');
+$nina->get('/registrati');
+$nina->post('/registrati', ['piano' => pv('plus'), 'name' => 'Nina Carta', 'email' => 'nina@prova.test', 'password' => 'NinaProva12345', 'termini' => '1']);
+$nacc = $accDi('nina@prova.test');
+$nina->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Nina', 'city' => 'Trevi']);
+$np = (int) val('SELECT id FROM properties WHERE account_id = ?', [$nacc]);
+db()->prepare('UPDATE properties SET cin = ? WHERE id = ?')->execute(['IT054054C2NINA0001', $np]);
+$nina->post("/pannello/$np/sezioni/" . (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$np]), ['checkin_steps' => ['Le chiavi sono nella cassetta.']]);
+$nina->post('/account/fatturazione', ['billing_type' => 'azienda', 'billing_name' => 'Nina Carta srl', 'vat' => '02945910541', 'sdi' => 'M5UXCR1',
+    'billing_address' => 'Via Roma 1', 'billing_postal' => '06039', 'billing_city' => 'Trevi', 'billing_province' => 'PG', 'torna' => "/pannello/$np/procedura/pubblica"]);
+$r = $nina->get("/pannello/$np/procedura/pubblica");
+prova('…con la chiave pubblicabile di un\'altra modalità (pk_live_ con sk_test_) non si usa: niente modulo nel pannello', $r['code'] === 200 && str_contains($r['body'], 'Conferma e paga')
+      && !str_contains($r['body'], 'Preferisci pagare sulla pagina di Stripe?'));
+$admin->post('/admin/impostazioni/stripe', ['stripe__publishable_key' => 'pk_test_finto_solo_per_le_prove', 'password' => 'AdminProva123']);
+$r = $nina->get("/pannello/$np/procedura/pubblica");
+prova('Con pk_test_: nel passo Pubblica «Paghi qui con la carta…» e «Preferisci pagare sulla pagina di Stripe?» (stesso modulo, modo=stripe)',
+      str_contains($r['body'], 'Paghi qui con la carta di credito o di debito, nel modulo sicuro di Stripe') && str_contains($r['body'], 'name="modo" value="stripe"')
+      && str_contains($r['body'], 'Preferisci pagare sulla pagina di Stripe?'));
+$prima = count(richiesteStripe());
+$r = $nina->modulo("/pannello/$np/procedura/pubblica", "/pannello/$np/pubblica", ['acquirente' => 'impresa']);
+$no1 = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$nacc]);
+prova('«Conferma e paga» → la pagina del modulo nel pannello, non la pagina di Stripe', $r['code'] === 302 && str_ends_with($r['loc'], "/pannello/$np/pagamento/" . $no1['id']), $r['loc']);
+$cs = array_values(array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['percorso'] === '/v1/checkout/sessions'));
+$c = end($cs)['corpo'] ?? [];
+prova('…la sessione è incorporata: ui_mode=embedded, return_url su /pagamento/ok, niente success_url né cancel_url, chiave di idempotenza a parte',
+      ($c['ui_mode'] ?? '') === 'embedded' && str_ends_with((string) ($c['return_url'] ?? ''), '/pagamento/ok?order=' . $no1['id']) && !isset($c['success_url']) && !isset($c['cancel_url'])
+      && (end($cs)['idem'] ?? '') === 'mhw-checkout-incorporato-order-' . $no1['id']);
+prova('…stessi dati di prima: abbonamento, fatturazione, P.IVA e metadati con ordine e codici', ($c['mode'] ?? '') === 'subscription' && ($c['billing_address_collection'] ?? '') === 'required'
+      && ($c['tax_id_collection']['enabled'] ?? '') === 'true' && ($c['metadata']['order_id'] ?? '') === (string) $no1['id'] && ($c['metadata']['codice_pagamento'] ?? '') !== '');
+$r = $nina->get("/pannello/$np/pagamento/" . $no1['id']);
+prova('La pagina «Paga e pubblica.»: Stripe.js da js.stripe.com, chiave pubblicabile e segreto della sessione, «Paga sulla pagina di Stripe» e «Annulla»',
+      $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Paga e pubblica.') && str_contains($r['body'], '<script src="https://js.stripe.com/v3/"></script>')
+      && str_contains($r['body'], 'data-chiave="pk_test_finto_solo_per_le_prove"') && str_contains($r['body'], 'data-segreto="' . $no1['provider_session_id'] . '_secret_finto"')
+      && str_contains($r['body'], "/pannello/$np/pagamento/{$no1['id']}/stripe\"") && str_contains($r['body'], "/pannello/$np/pagamento/{$no1['id']}/annulla\"")
+      && str_contains($r['body'], 'id="pagamento-guasto" role="alert" hidden') && !str_contains($r['body'], 'sk_test_'));
+prova('…un altro cliente non apre il pagamento di Nina', $lea->get("/pannello/$np/pagamento/" . $no1['id'])['code'] === 404);
+$sessIncorporata = (string) $no1['provider_session_id'];
+$prima = count(richiesteStripe());
+$r = $nina->post("/pannello/$np/pagamento/{$no1['id']}/stripe");
+$nuove = array_slice(richiesteStripe(), $prima);
+$no1b = riga('SELECT * FROM orders WHERE id = ?', [$no1['id']]);
+prova('«Paga sulla pagina di Stripe»: la sessione incorporata scade e lo stesso ordine va sulla pagina di Stripe', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/')
+      && count(array_filter($nuove, fn($x) => $x['percorso'] === "/v1/checkout/sessions/$sessIncorporata/expire")) === 1
+      && $no1b['status'] === 'pending' && $no1b['provider_session_id'] !== $sessIncorporata, $r['loc']);
+$ch = array_values(array_filter($nuove, fn($x) => $x['percorso'] === '/v1/checkout/sessions'));
+prova('…con success_url e cancel_url, senza ui_mode, e la chiave di idempotenza di sempre', isset($ch[0]['corpo']['success_url']) && isset($ch[0]['corpo']['cancel_url'])
+      && !isset($ch[0]['corpo']['ui_mode']) && ($ch[0]['idem'] ?? '') === 'mhw-checkout-order-' . $no1['id']);
+$r = $nina->get("/pannello/$np/pagamento/" . $no1['id']);
+prova('…riaprendo la pagina del modulo si torna sulla pagina di Stripe', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/'));
+$r = inviaWebhook(['id' => 'evt_nina_scaduta', 'type' => 'checkout.session.expired', 'data' => ['object' => ['id' => $sessIncorporata, 'metadata' => ['order_id' => (string) $no1['id']]]]]);
+prova('…e l\'evento «scaduta» della sessione incorporata non chiude l\'ordine, che resta aperto sulla pagina di Stripe', $r['body'] === 'sessione-sostituita'
+      && val('SELECT status FROM orders WHERE id = ?', [$no1['id']]) === 'pending', $r['body']);
+$nina->get('/pagamento/annullato?order=' . $no1['id']);
+$nina->modulo("/pannello/$np/procedura/pubblica", "/pannello/$np/pubblica", ['acquirente' => 'impresa']);
+$no2 = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$nacc]);
+$prima = count(richiesteStripe());
+$r = $nina->post("/pannello/$np/pagamento/{$no2['id']}/annulla");
+prova('«Annulla e torna indietro»: la sessione scade, l\'ordine è annullato, si torna al passo Pubblica senza addebiti', $r['code'] === 302 && str_ends_with($r['loc'], "/pannello/$np/procedura/pubblica")
+      && val('SELECT status FROM orders WHERE id = ?', [$no2['id']]) === 'canceled'
+      && count(array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['percorso'] === "/v1/checkout/sessions/{$no2['provider_session_id']}/expire")) === 1
+      && str_contains($nina->segui($r)['body'], 'Pagamento annullato: non ti è stato addebitato niente'));
+$r = $nina->get("/pannello/$np/pagamento/" . $no2['id']);
+prova('…e la sua pagina non si riapre: si torna a Pubblica', $r['code'] === 302 && str_ends_with($r['loc'], "/pannello/$np/procedura/pubblica"));
+$r = $nina->modulo("/pannello/$np/procedura/pubblica", "/pannello/$np/pubblica", ['acquirente' => 'impresa', 'modo' => 'stripe']);
+$no3 = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$nacc]);
+prova('Dal passo Pubblica «Preferisci pagare sulla pagina di Stripe?» porta direttamente là', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/'), $r['loc']);
+$nina->get('/pagamento/annullato?order=' . $no3['id']);
+$nina->modulo("/pannello/$np/procedura/pubblica", "/pannello/$np/pubblica", ['acquirente' => 'impresa']);
+$no4 = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$nacc]);
+$ch = curl_init(getenv('STRIPE_API_BASE') . '/finto/completa/' . $no4['provider_session_id']);
+curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_USERPWD => getenv('STRIPE_SECRET_KEY') . ':']); curl_exec($ch); curl_close($ch);
+$r = $nina->get("/pannello/$np/pagamento/" . $no4['id']);
+prova('Pagato nel modulo, webhook non ancora arrivato: la pagina porta all\'attesa di /pagamento/ok, la guida non è online', $r['code'] === 302
+      && str_contains($r['loc'], '/pagamento/ok?order=' . $no4['id']) && $ospite->get('/g/' . val('SELECT slug FROM properties WHERE id = ?', [$np]))['code'] === 404);
+$r = inviaWebhook(['id' => 'evt_nina_1', 'type' => 'checkout.session.completed', 'data' => ['object' => [
+    'id' => $no4['provider_session_id'], 'mode' => 'subscription', 'payment_status' => 'paid', 'customer' => (string) val('SELECT stripe_customer_id FROM accounts WHERE id = ?', [$nacc]),
+    'subscription' => 'sub_prova_nina', 'client_reference_id' => (string) $no4['id'], 'metadata' => ['order_id' => (string) $no4['id'], 'account_id' => (string) $nacc]]]]);
+prova('…con il webhook firmato l\'abbonamento si attiva e la guida va online, come dalla pagina di Stripe', $r['body'] === 'abbonamento-attivato'
+      && $ospite->get('/g/' . val('SELECT slug FROM properties WHERE id = ?', [$np]))['code'] === 200, $r['body']);
+$r = $nina->get("/pannello/$np/pagamento/" . $no4['id']);
+prova('…e la pagina del modulo, pagata, porta a /pagamento/ok', $r['code'] === 302 && str_contains($r['loc'], '/pagamento/ok?order=' . $no4['id']));
+// Il cambio di piano resta sulla pagina di Stripe; poi la chiave si toglie, per le prove che seguono.
+$admin->post('/admin/impostazioni/stripe', ['stripe__publishable_key' => '', 'password' => 'AdminProva123']);
+prova('Senza chiave pubblicabile si torna alla pagina di Stripe (come prima)', !str_contains($lea->get("/pannello/$lp/procedura/pubblica")['body'], 'Preferisci pagare sulla pagina di Stripe?'));
+
 // ============================================================ 7B · cambiare piano dall'abbonamento, pannello
 $r = $vera->get('/account');
 prova('7B · Account: «Passa a {piano}» per gli altri piani, nel flusso del cambio di piano', str_contains($r['body'], '/account/piano/conferma?piano=essential"') && str_contains($r['body'], '>Passa a Essential</a>')

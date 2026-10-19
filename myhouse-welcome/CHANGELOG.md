@@ -1,5 +1,15 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Pagamento con la carta nel passo «Pubblica» (19 ottobre 2026)
+
+Nessuna migrazione. Da configurare: DA-CONFIGURARE, punto 3 (Stripe), «Pagamento con la carta nel pannello».
+
+- **Due modi di pagare il primo acquisto.** Con la chiave pubblicabile di Stripe, «Conferma e paga» apre la pagina «Paga e pubblica.» nel pannello, con il modulo di pagamento di Stripe incorporato (Checkout incorporato, `ui_mode=embedded`): carta di credito o di debito, e gli altri metodi accesi in Stripe. Sopra il bottone, «Paghi qui con la carta…» e «Preferisci pagare sulla pagina di Stripe?», che porta alla pagina di Stripe come prima. Nella pagina del modulo: «Paga sulla pagina di Stripe» (la sessione incorporata scade, lo stesso ordine passa alla pagina di Stripe con gli stessi prezzi, sconti e codici) e «Annulla e torna indietro» (sessione scaduta, ordine annullato, nessun addebito).
+- **Cosa non cambia.** I dati della carta li scrive il cliente nell'iframe di Stripe: il sito non li vede. La sessione è la stessa di prima (abbonamento, indirizzo e P.IVA, coupon, mesi omaggio, metadati e codici per Adamo, i due controlli sui prezzi); alla fine Stripe porta su `/pagamento/ok` e la guida va online solo con il webhook firmato. Il cambio di piano resta sulla pagina di Stripe.
+- **Senza la chiave, o con una chiave di un'altra modalità** (`pk_live_` con `sk_test_` o il contrario), tutto come prima: la pagina di Stripe. Senza JavaScript, o se Stripe.js non si carica, la pagina del modulo lo dice e offre la pagina di Stripe.
+- **Webhook `checkout.session.expired`**: chiude l'ordine solo se riguarda la sua sessione in uso. Prima, la sessione incorporata fatta scadere per passare alla pagina di Stripe avrebbe segnato «scaduto» l'ordine ancora da pagare.
+- Impostazioni → Stripe: campo «Chiave pubblicabile» (controllo `pk_live_`/`pk_test_`); «Prova la connessione» dice se il modulo nel pannello è attivo. Il finto Stripe delle prove conosce le sessioni incorporate.
+
 ## v2 · Cookie, webhook e ritorno dal pagamento (19 ottobre 2026)
 
 Nessuna migrazione.

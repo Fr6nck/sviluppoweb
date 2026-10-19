@@ -37,6 +37,8 @@ final class Impostazioni
         ],
         'stripe' => [
             'stripe.secret_key'     => ['STRIPE_SECRET_KEY', 'Chiave segreta', 'secret', 'Stripe → Sviluppatori → Chiavi API. Comincia con sk_live_ (o sk_test_ per le prove).'],
+            // Il pagamento con la carta nella pagina (Stripe incorporato): senza, si paga sulla pagina di Stripe.
+            'stripe.publishable_key' => ['STRIPE_PUBLISHABLE_KEY', 'Chiave pubblicabile', 'text', 'Stripe → Sviluppatori → Chiavi API. Comincia con pk_live_ (o pk_test_), della stessa modalità della chiave segreta. Serve per pagare con la carta direttamente nel passo «Pubblica»; senza, il cliente paga sulla pagina di Stripe.'],
             'stripe.webhook_secret' => ['STRIPE_WEBHOOK_SECRET', 'Segreto del webhook', 'secret', 'Stripe → Sviluppatori → Webhook → il tuo endpoint → «Segreto di firma». Comincia con whsec_.'],
             'stripe.automatic_tax'  => ['STRIPE_AUTOMATIC_TAX', 'Usa Stripe Tax per calcolare l\'IVA', 'check', 'Solo se Stripe Tax è già attivo nel pannello di Stripe.'],
         ],
@@ -271,6 +273,7 @@ final class Impostazioni
             $errore = match (true) {
                 $grezzo === '' => '',
                 $percorso === 'stripe.secret_key' && !preg_match('/^sk_(live|test)_[A-Za-z0-9_]{10,}$/', $grezzo) => 'La chiave segreta comincia con sk_live_ (o sk_test_). Non usare la chiave pubblicabile pk_.',
+                $percorso === 'stripe.publishable_key' && !preg_match('/^pk_(live|test)_[A-Za-z0-9_]{10,}$/', $grezzo) => 'La chiave pubblicabile comincia con pk_live_ (o pk_test_). Non usare la chiave segreta sk_.',
                 $percorso === 'stripe.webhook_secret' && !preg_match('/^whsec_[A-Za-z0-9_+\/=]{10,}$/', $grezzo) => 'Il segreto del webhook comincia con whsec_.',
                 $tipo === 'choice' && !isset($c[4][$grezzo]) => 'Scegli una delle opzioni.',
                 $tipo === 'number' && (!ctype_digit($grezzo) || (int) $grezzo < 1 || (int) $grezzo > 65535) => 'Una porta è un numero tra 1 e 65535.',
@@ -474,7 +477,12 @@ final class Impostazioni
                 case 'stripe':
                     if (!Stripe::enabled()) return [false, 'Stripe non è ancora configurato: servono la chiave segreta e il segreto del webhook.'];
                     Stripe::call('GET', 'balance');
-                    return [true, 'Stripe risponde: la chiave è valida (' . (self::modoStripe() === 'live' ? 'modalità reale' : 'modalità di prova') . '). Il segreto del webhook si verifica al primo pagamento: controlla in Stripe che gli eventi arrivino con esito 200.'];
+                    // La chiave pubblicabile di un'altra modalità non si usa: il cliente pagherebbe sulla pagina di Stripe.
+                    $pk = (string) (Config::get('stripe')['publishable_key'] ?? '');
+                    $carta = $pk === '' ? ' Senza chiave pubblicabile il cliente paga sulla pagina di Stripe.'
+                        : (Stripe::incorporato() ? ' Con la chiave pubblicabile il cliente paga con la carta nel passo «Pubblica».'
+                                                 : ' La chiave pubblicabile è di un\'altra modalità (pk_test_ con sk_live_ o il contrario): finché non le allinei, il cliente paga sulla pagina di Stripe.');
+                    return [true, 'Stripe risponde: la chiave è valida (' . (self::modoStripe() === 'live' ? 'modalità reale' : 'modalità di prova') . ').' . $carta . ' Il segreto del webhook si verifica al primo pagamento: controlla in Stripe che gli eventi arrivino con esito 200.'];
                 case 'posta':
                     $t = (string) Config::get('mail')['transport'];
                     $ok = Mailer::manda($emailAdmin, 'Prova della posta', 'La posta funziona',

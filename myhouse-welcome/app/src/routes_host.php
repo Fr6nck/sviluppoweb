@@ -957,7 +957,8 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
     [$u, $acc, $p] = $mia((int) $a['id']);
     $aid = (int) $acc['id'];
     // 8J: la scelta «chi acquista» resta in sessione, per la conferma dei codici di accesso che ripassa da qui.
-    if (isset($_POST['acquirente'])) $_SESSION['acquisto'] = ['acquirente' => (string) $_POST['acquirente'], 'rinuncia' => !empty($_POST['recesso_rinuncia'])];
+    if (isset($_POST['acquirente'])) $_SESSION['acquisto'] = ['acquirente' => (string) $_POST['acquirente'], 'rinuncia' => !empty($_POST['recesso_rinuncia']),
+                                                              'modo' => ($_POST['modo'] ?? '') === 'stripe' ? 'stripe' : ''];
     $problemi = Guide::problems($aid, (int) $p['id']);
     if ($problemi) {
         Support::flash('Prima di pubblicare: ' . implode(' ', $problemi), 'err');
@@ -1047,7 +1048,13 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
           + (Migrator::columnExists('orders', 'acquirente') ? ['acquirente' => $acquirente, 'recesso_rinuncia' => $acquirente === 'consumatore' ? 1 : 0] : []));
         unset($_SESSION['acquisto']);
         MHW\Codici::pagamento($oid);   // 9I: il codice del pagamento prima di Stripe (va nei metadati)
-        $url = Stripe::checkoutSubscription(Db::one('SELECT * FROM orders WHERE id = ?', [$oid]), $pv, $pkg, $acc, $u, $riep);
+        $ordine = Db::one('SELECT * FROM orders WHERE id = ?', [$oid]);
+        // Con la chiave pubblicabile «Conferma e paga» apre il modulo della carta qui, nel pannello; «Paga sulla pagina di Stripe»
+        // (modo=stripe, anche dopo la conferma dei codici di accesso) porta sulla pagina di Stripe, come prima.
+        if (Stripe::incorporato() && ($acquisto['modo'] ?? '') !== 'stripe') {
+            Stripe::checkoutIncorporato($ordine, $pv, $pkg, $acc, $u, $riep);
+            $url = '/pannello/' . $p['id'] . '/pagamento/' . $oid;
+        } else $url = Stripe::checkoutSubscription($ordine, $pv, $pkg, $acc, $u, $riep);
     } catch (\Throwable $e) {
         if ($oid) Db::update('orders', ['status' => 'failed', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $oid]);
         $codice = Log::exception($e, 'checkout');
@@ -1057,6 +1064,72 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
         Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
     }
     Support::redirect($url);
+});
+
+/* Il pagamento con la carta nel pannello (Checkout incorporato di Stripe). L'ordine dev'essere di questa struttura, un primo
+   acquisto ancora da pagare; la sessione si rilegge da Stripe a ogni apertura (stato e segreto del modulo, che non si salva). */
+$daPagare = function (array $acc, array $p, int $oid): array {
+    $o = Db::one('SELECT * FROM orders WHERE id = ? AND account_id = ? AND property_id = ?', [$oid, $acc['id'], $p['id']]);
+    if (!$o || ($o['kind'] ?? 'new') !== 'new') { http_response_code(404); View::out('pub/404', []); }
+    if ($o['status'] === 'paid' || $o['status'] === 'awaiting') Support::redirect('/pagamento/ok?order=' . $o['id']);
+    $torna = '/pannello/' . $p['id'] . '/procedura/pubblica';
+    if ($o['status'] !== 'pending' || (string) $o['provider_session_id'] === '') {
+        Support::flash('Questo pagamento non è più aperto: conferma di nuovo dal passo Pubblica.', 'err'); Support::redirect($torna);
+    }
+    try { $s = Stripe::sessione((string) $o['provider_session_id']); }
+    catch (\Throwable $e) {
+        Support::flash('Il pagamento non è disponibile in questo momento. Riprova tra poco (codice ' . Log::exception($e, 'checkout incorporato') . ').', 'err');
+        Support::redirect($torna);
+    }
+    // Pagato nel modulo ma il webhook non è ancora arrivato: si aspetta su /pagamento/ok, come dalla pagina di Stripe.
+    if (($s['status'] ?? '') === 'complete') Support::redirect('/pagamento/ok?order=' . $o['id']);
+    if (($s['status'] ?? '') !== 'open') {
+        Db::update('orders', ['status' => 'canceled', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $o['id']]);
+        Support::flash('Il pagamento è scaduto senza addebiti: conferma di nuovo dal passo Pubblica.', 'err'); Support::redirect($torna);
+    }
+    return [$o, $s];
+};
+
+$r->get('/pannello/{id}/pagamento/{oid}', function (array $a) use ($mia, $contesto, $daPagare) {
+    [$u, $acc, $p] = $mia((int) $a['id']);
+    [$o, $s] = $daPagare($acc, $p, (int) $a['oid']);
+    // Una sessione nata per la pagina di Stripe non ha il modulo da incorporare: si va là.
+    if (($s['ui_mode'] ?? '') !== 'embedded' || (string) ($s['client_secret'] ?? '') === '' || !Stripe::incorporato()) {
+        if ((string) ($s['url'] ?? '') !== '') Support::redirect((string) $s['url']);
+        Support::flash('Il pagamento con la carta qui non è disponibile: scegli «Paga sulla pagina di Stripe».', 'err');
+        Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
+    }
+    View::out('host/pagamento', $contesto($acc, $p) + ['ordine' => $o, 'segreto' => (string) $s['client_secret'], 'chiave' => Stripe::chiavePubblicabile(),
+        'pianoOrdine' => Plans::version((int) $o['package_version_id']), 'user' => $u, 'qui' => 'procedura'], 'layout/cms');
+});
+
+/* «Preferisci la pagina di Stripe?»: la sessione incorporata scade (non si può più pagare lì) e lo stesso ordine passa a una
+   sessione sulla pagina di Stripe, con gli stessi prezzi, sconti e codici. */
+$r->post('/pannello/{id}/pagamento/{oid}/stripe', function (array $a) use ($mia, $daPagare) {
+    [$u, $acc, $p] = $mia((int) $a['id']);
+    [$o, $s] = $daPagare($acc, $p, (int) $a['oid']);
+    try {
+        if (($s['ui_mode'] ?? '') === 'embedded') Stripe::scadiSessione((string) $s['id']);
+        $pv = Plans::version((int) $o['package_version_id']);
+        $pkg = Db::one('SELECT * FROM packages WHERE id = ?', [$pv['package_id']]);
+        $url = (string) ($s['ui_mode'] ?? '') === 'embedded' ? Stripe::checkoutSubscription($o, $pv, $pkg, $acc, $u) : (string) $s['url'];
+    } catch (\Throwable $e) {
+        Db::update('orders', ['status' => 'failed', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $o['id']]);
+        Support::flash($e instanceof MHW\PrezziNonCoerenti ? 'Il pagamento non è disponibile in questo momento, ti avvisiamo noi.'
+                       : 'Il pagamento non è disponibile in questo momento. Riprova tra poco (codice ' . Log::exception($e, 'checkout') . ').', 'err');
+        Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
+    }
+    Support::redirect($url);
+});
+
+/* «Annulla»: la sessione scade, l'ordine si chiude, si torna al passo Pubblica senza addebiti. */
+$r->post('/pannello/{id}/pagamento/{oid}/annulla', function (array $a) use ($mia, $daPagare) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    [$o, $s] = $daPagare($acc, $p, (int) $a['oid']);
+    Stripe::scadiSessione((string) $s['id']);
+    Db::run("UPDATE orders SET status = 'canceled', updated_at = ? WHERE id = ? AND status = 'pending'", [Support::now(), $o['id']]);
+    Support::flash('Pagamento annullato: non ti è stato addebitato niente. Puoi cambiare quello che vuoi e confermare di nuovo.');
+    Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
 });
 
 $r->get('/pannello/{id}/pubblicata', function (array $a) use ($mia, $contesto) {

@@ -219,8 +219,11 @@ final class Billing
     private static function onCheckoutExpired(array $s): string
     {
         $orderId = (int) ($s['metadata']['order_id'] ?? $s['client_reference_id'] ?? 0);
-        Db::run("UPDATE orders SET status = 'expired', updated_at = ? WHERE id = ? AND status = 'pending'", [Support::now(), $orderId]);
-        return 'checkout-scaduto';
+        // Solo la sessione in uso chiude l'ordine: quella incorporata, fatta scadere perché il cliente ha scelto la pagina
+        // di Stripe, lascia l'ordine aperto sulla sessione nuova.
+        $n = Db::run("UPDATE orders SET status = 'expired', updated_at = ? WHERE id = ? AND status = 'pending' AND (provider_session_id = ? OR provider_session_id = '')",
+                     [Support::now(), $orderId, (string) ($s['id'] ?? '')]);
+        return $n > 0 ? 'checkout-scaduto' : 'sessione-sostituita';
     }
 
     private static function subscriptionId(array $invoice): string

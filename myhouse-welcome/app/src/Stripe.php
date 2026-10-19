@@ -19,6 +19,21 @@ final class Stripe
         return str_starts_with((string) $s['secret_key'], 'sk_') && (string) $s['webhook_secret'] !== '';
     }
 
+    /**
+     * La chiave pubblicabile, solo se è della stessa modalità della chiave segreta (pk_test_ con sk_test_,
+     * pk_live_ con sk_live_): altrimenti '' e si paga sulla pagina di Stripe.
+     */
+    public static function chiavePubblicabile(): string
+    {
+        $s = Config::get('stripe');
+        $pk = trim((string) ($s['publishable_key'] ?? ''));
+        $modo = fn(string $k, string $p) => preg_match('/^' . $p . '_(live|test)_/', $k, $m) ? $m[1] : '';
+        return $modo($pk, 'pk') !== '' && $modo($pk, 'pk') === $modo((string) $s['secret_key'], 'sk') ? $pk : '';
+    }
+
+    /** Il pagamento con la carta nel passo «Pubblica» (Checkout incorporato): serve anche la chiave pubblicabile. */
+    public static function incorporato(): bool { return self::enabled() && self::chiavePubblicabile() !== ''; }
+
     /** @throws \RuntimeException con un messaggio tecnico: va nei log, non all'utente */
     public static function call(string $method, string $path, array $params = [], string $idempotencyKey = ''): array
     {
@@ -254,6 +269,36 @@ final class Stripe
      */
     public static function checkoutSubscription(array $order, array $pv, array $pkg, array $account, array $user, ?array $riepilogo = null): string
     {
+        return (string) self::sessioneAbbonamento($order, $pv, $pkg, $account, $user, $riepilogo, false)['url'];
+    }
+
+    /**
+     * La stessa sessione, ma incorporata nel passo «Pubblica» (ui_mode=embedded): il modulo della carta di Stripe sta
+     * nella nostra pagina, dentro un iframe di Stripe, e i dati della carta non passano mai dal sito. Alla fine Stripe
+     * porta il cliente su /pagamento/ok, come la pagina di Stripe; l'abbonamento lo attiva sempre e solo il webhook.
+     * @return array{id:string,client_secret:string}
+     */
+    public static function checkoutIncorporato(array $order, array $pv, array $pkg, array $account, array $user, ?array $riepilogo = null): array
+    {
+        $res = self::sessioneAbbonamento($order, $pv, $pkg, $account, $user, $riepilogo, true);
+        return ['id' => (string) $res['id'], 'client_secret' => (string) ($res['client_secret'] ?? '')];
+    }
+
+    /** Una sessione di Checkout: la legge (per il segreto del modulo incorporato e per lo stato). */
+    public static function sessione(string $id): array
+    {
+        return self::call('GET', 'checkout/sessions/' . rawurlencode($id));
+    }
+
+    /** Fa scadere una sessione aperta (per esempio quella incorporata, quando il cliente sceglie la pagina di Stripe). */
+    public static function scadiSessione(string $id): void
+    {
+        try { self::call('POST', 'checkout/sessions/' . rawurlencode($id) . '/expire'); }
+        catch (\Throwable $e) { Log::exception($e, 'Stripe: sessione da far scadere'); }
+    }
+
+    private static function sessioneAbbonamento(array $order, array $pv, array $pkg, array $account, array $user, ?array $riepilogo, bool $incorporato): array
+    {
         $base = Support::baseUrl();
         $cfg = Config::get('stripe');
         $quantita = max(1, (int) ($order['quantity'] ?? 1));
@@ -268,8 +313,6 @@ final class Stripe
             'mode' => 'subscription',
             'customer' => self::ensureCustomer($account, $user),
             'client_reference_id' => (string) $order['id'],
-            'success_url' => $base . '/pagamento/ok?order=' . $order['id'],
-            'cancel_url' => $base . '/pagamento/annullato?order=' . $order['id'],
             'locale' => 'it',
             // I dati di fatturazione: indirizzo sempre, partita IVA se chi paga è un'azienda.
             'billing_address_collection' => 'required',
@@ -277,6 +320,10 @@ final class Stripe
             'customer_update[address]' => 'auto',
             'customer_update[name]' => 'auto',
         ] + $voci;
+        // Incorporata: un solo indirizzo di ritorno (niente «annulla»: si resta nella nostra pagina). Sulla pagina di Stripe: ok e annullato.
+        $p += $incorporato
+            ? ['ui_mode' => 'embedded', 'return_url' => $base . '/pagamento/ok?order=' . $order['id']]
+            : ['success_url' => $base . '/pagamento/ok?order=' . $order['id'], 'cancel_url' => $base . '/pagamento/annullato?order=' . $order['id']];
         if (!empty($cfg['automatic_tax'])) $p['automatic_tax[enabled]'] = 'true';
         // Gli sconti del primo anno (6E, 7D, 9A): un coupon duration=once, quindi sconta solo la prima fattura.
         // Niente allow_promotion_codes: il codice si sceglie nel sito, non nel checkout.
@@ -306,10 +353,10 @@ final class Stripe
         if (($meta['codice_pagamento'] ?? '') !== '') $p['subscription_data[description]'] = 'Codice cliente ' . $meta['codice_cliente'] . ' · Pagamento ' . $meta['codice_pagamento'];
         foreach ($meta as $k => $v) { $p["metadata[$k]"] = $v; $p["subscription_data[metadata][$k]"] = $v; }
 
-        $res = self::call('POST', 'checkout/sessions', $p, 'mhw-checkout-order-' . $order['id']);
+        $res = self::call('POST', 'checkout/sessions', $p, ($incorporato ? 'mhw-checkout-incorporato-order-' : 'mhw-checkout-order-') . $order['id']);
         Db::update('orders', ['provider_session_id' => $res['id'], 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]);
         self::controllaSessione((string) $res['id'], $riepilogo['prezzo'], isset($p['discounts[0][coupon]']) ? $riepilogo['totale'] : $riepilogo['prezzo'], $omaggio !== null);
-        return $res['url'];
+        return $res;
     }
 
     /**

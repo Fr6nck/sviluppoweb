@@ -287,8 +287,14 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
       <?php /* 9D · con l'omaggio l'obbligo di pagare sta sul bottone (art. 65 Codice del Consumo): «0 € oggi, X € + IVA il …» */
             $omB = !$sub && $piano && !empty($riep['omaggio']) ? $riep : null;
             $etichettaB = $sub ? t('Pubblica ora') : ($omB ? 'Inserisci la carta e pubblica <small class="btn__sotto">0 € oggi · ' . Support::e(Support::money($omB['totale'], $piano['currency'])) . ' + IVA il ' . Support::e(Support::date(gmdate('Y-m-d\TH:i:s\Z', $omB['omaggio']['fine']))) . '</small>' : 'Conferma e paga');
-            $barraAvanti = '<button class="btn btn--go' . ($omB ? ' btn--due-righe' : '') . '" ' . ($problemi || (!$sub && (!$verificato || !$piano || !MHW\Fatturazione::completa($acc))) ? 'disabled' : '') . '>'
+            $spentoB = $problemi || (!$sub && (!$verificato || !$piano || !MHW\Fatturazione::completa($acc)));
+            $barraAvanti = '<button class="btn btn--go' . ($omB ? ' btn--due-righe' : '') . '" ' . ($spentoB ? 'disabled' : '') . '>'
                          . $etichettaB . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
+            /* Con la chiave pubblicabile di Stripe: il bottone apre il modulo della carta nel pannello; la pagina di Stripe resta a un clic. */
+            if (!$sub && $piano && MHW\Stripe::incorporato()): ?>
+      <p class="small muted pagamento-modi"><?= Icon::svg('lock', 14) ?><span>Paghi qui con la carta di credito o di debito, nel modulo sicuro di Stripe: i dati della carta non passano dal nostro sito.
+        <button class="linkbtn" name="modo" value="stripe"<?= $spentoB ? ' disabled' : '' ?>>Preferisci pagare sulla pagina di Stripe?</button></span></p>
+<?php       endif;
             include __DIR__ . '/_barra_passo.php'; ?>
     </form>
 <?php break;
