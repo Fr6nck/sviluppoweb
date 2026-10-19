@@ -5179,7 +5179,7 @@ prova('9B · modifica: il modulo precompilato, la stessa riga aggiornata', str_c
 $r = $admin->get('/admin/giudizi');
 $uS = riga('SELECT * FROM vetrina_schede WHERE account_id = ?', [$uacc]);
 prova('9B/9L · Giudizi e vetrina: Casa Ugo (sospesa: manca la copertina) con adesione «al pagamento», sconto «Applicato al primo anno», interruttore spento', $uS && str_contains($r['body'], 'Casa Ugo')
-      && str_contains($r['body'], 'Sospesa: manca la copertina')
+      && str_contains($r['body'], 'title="manca la copertina"')
       && str_contains($r['body'], 'al pagamento') && str_contains($r['body'], 'Applicato al primo anno') && str_contains($r['body'], 'aria-checked="false" aria-label="In home: Casa Ugo"'));
 $r = $admin->segui($admin->post('/admin/giudizi/' . (int) $uS['id'] . '/home', ['si' => '1']));
 prova('9L · senza copertina la scheda non va in home', str_contains($r['body'], 'Non può andare in home: manca la copertina') && (int) val('SELECT scheda_home FROM vetrina_schede WHERE id = ?', [(int) $uS['id']]) === 0);
@@ -6199,8 +6199,12 @@ db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'impostazioni%'");
 capitolo('9L · finestra «Qual è il piano giusto per te?», foto nuove, Casa Checco, 55%, «Giudizio con sconto» unico con «Le guide dei nostri host»');
 // 1 · La home: le tre schede dei piani come prima, la riga «Non sai quale scegliere?» con il <dialog> e lo stesso questionario.
 // Gli inviti accesi (come nella prova di «Porta un amico»), per il 55%: inviti + «Giudizio con sconto».
+// La copia compilata di un config.local.php di poco prima (stesso percorso, stesso secondo) non deve restare in OPcache:
+// file con una data nuova e una pausa più lunga di opcache.revalidate_freq.
+@unlink($fileLocale);
 file_put_contents($fileLocale, '<?php return ' . var_export(['inviti' => ['attivi' => true]], true) . ';');
-$rH9l = $ospite->get('/');
+touch($fileLocale, time() - 30); clearstatcache(); sleep(3);
+$rH9l = $r = $ospite->get('/');
 prova('9L · home: «Non sai quale scegliere?» nella riga di «Confronta tutti i piani», link a /piano con data-q-apri, <dialog> con il questionario (stesso partial, data-origine="home")',
       str_contains($rH9l['body'], 'class="piani__riga"') && str_contains($rH9l['body'], 'Non sai quale scegliere?') && preg_match('#href="[^"]*/piano" data-q-apri aria-haspopup="dialog">Rispondi a 3 domande#', $rH9l['body']) === 1
       && str_contains($rH9l['body'], '<dialog class="finestra-piano" aria-labelledby="piano-giusto-titolo">') && str_contains($rH9l['body'], 'class="questionario questionario--finestra" data-questionario data-origine="home"')
