@@ -195,7 +195,7 @@ final class Demo
         $campiCasa = array_filter($campiCasa, fn($c) => Migrator::columnExists('properties', $c), ARRAY_FILTER_USE_KEY);
         if ($campiCasa) Db::update('properties', $campiCasa, 'id = :pid', ['pid' => $pid]);
         // 8B: dove si trova (i link li prepara il sistema: per Google nome e città, la casa non esiste) e un social di esempio.
-        // 8F: Google, Booking.com e Airbnb, così con 5 stelle la vetrina mostra i tre bottoni dei portali.
+        // 8F → 9N: solo Google (con 5 stelle il bottone del portale), più Instagram.
         if (Canali::disponibili()) {
             Canali::salva($pid, ['portali' => ['google'], 'social' => ['instagram' => '@casacheccoassisi']]);
         }

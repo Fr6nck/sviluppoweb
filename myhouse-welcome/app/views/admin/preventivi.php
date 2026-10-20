@@ -41,7 +41,7 @@ $conta = array_count_values(array_column($righe, 'stato')); ?>
             <summary class="small" style="cursor:pointer;min-height:32px">Proposta, nota e ricontatto<?= $r['storico'] ? ' · storico' : '' ?></summary>
             <div class="stack" style="gap:8px;margin-top:8px;min-width:260px">
               <div class="field" style="margin:0"><label class="small" for="imp-<?= $idP ?>">Importo proposto (€, IVA esclusa)</label>
-                <input id="imp-<?= $idP ?>" name="importo" inputmode="decimal" value="<?= isset($r['importo_cents']) ? Support::e(number_format((int) $r['importo_cents'] / 100, 2, ',', '.')) : '' ?>" placeholder="es. 1.250,00"></div>
+                <input id="imp-<?= $idP ?>" name="importo" type="text" inputmode="decimal" value="<?= isset($r['importo_cents']) ? Support::e(number_format((int) $r['importo_cents'] / 100, 2, ',', '.')) : '' ?>" placeholder="es. 1.250,00"></div>
               <div class="field" style="margin:0"><label class="small" for="ric-<?= $idP ?>">Ricontattare il</label>
                 <input id="ric-<?= $idP ?>" name="ricontatta_il" type="date" value="<?= Support::e((string) ($r['ricontatta_il'] ?? '')) ?>"></div>
               <div class="field" style="margin:0"><label class="small" for="nota-<?= $idP ?>">Nota interna</label>

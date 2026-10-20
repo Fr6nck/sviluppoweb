@@ -270,10 +270,10 @@ include __DIR__ . '/_stati.php'; ?>
             <label class="check"><input type="radio" name="pagamento" value="bonifico" data-bonifico="1"> <span>Bonifico ricevuto</span></label>
           </div>
           <div class="grid grid-4 bonifico-campi" style="margin-top:10px">
-            <div class="field" style="margin:0"><label for="b-imp">Importo (€, IVA esclusa)</label><input id="b-imp" name="bonifico_importo" inputmode="decimal" placeholder="127,00"></div>
-            <div class="field" style="margin:0"><label for="b-iva">IVA (€)</label><input id="b-iva" name="bonifico_iva" inputmode="decimal" placeholder="27,94"></div>
+            <div class="field" style="margin:0"><label for="b-imp">Importo (€, IVA esclusa)</label><input id="b-imp" name="bonifico_importo" type="text" inputmode="decimal" placeholder="127,00"></div>
+            <div class="field" style="margin:0"><label for="b-iva">IVA (€)</label><input id="b-iva" name="bonifico_iva" type="text" inputmode="decimal" placeholder="27,94"></div>
             <div class="field" style="margin:0"><label for="b-data">Data del bonifico</label><input id="b-data" name="bonifico_data" type="date" max="<?= gmdate('Y-m-d') ?>"></div>
-            <div class="field" style="margin:0"><label for="b-rif">Riferimento (CRO o causale)</label><input id="b-rif" name="bonifico_riferimento" maxlength="120"></div>
+            <div class="field" style="margin:0"><label for="b-rif">Riferimento (CRO o causale)</label><input id="b-rif" name="bonifico_riferimento" type="text" maxlength="120"></div>
           </div>
           <p class="tiny muted" style="margin:6px 0 0">I campi del bonifico contano solo con «Bonifico ricevuto». La fattura si fa in Adamo, come per i pagamenti Stripe.</p>
         </fieldset>

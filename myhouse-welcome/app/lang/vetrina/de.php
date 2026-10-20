@@ -96,6 +96,9 @@ return [
     'Il turno è affisso sulla porta di ogni farmacia del centro.' => 'Der Notdienst hängt an der Tür jeder Apotheke im Zentrum aus.',
     'Veterinario di turno' => 'Tierärztlicher Notdienst',
     'Chiedi a Francesco: ti dà il numero di quello aperto.' => 'Fragen Sie Francesco: Er gibt Ihnen die Nummer der geöffneten Praxis.',
+    'Pronto soccorso' => 'Notaufnahme',   // 9N
+    'All\'ospedale di Assisi, una decina di minuti in auto.' => 'Im Krankenhaus von Assisi, etwa zehn Minuten mit dem Auto.',   // 9N
+    'Per un\'emergenza chiama il 112: risponde anche in inglese.' => 'Im Notfall wählen Sie die 112: Dort spricht man auch Englisch.',   // 9N
     'Il pronto soccorso è all\'ospedale di Assisi, una decina di minuti in auto.' => 'Die Notaufnahme ist im Krankenhaus von Assisi, etwa zehn Minuten mit dem Auto.',
     'Per entrare nelle basiliche servono spalle e ginocchia coperte.' => 'In den Basiliken müssen Schultern und Knie bedeckt sein.',
     'Il centro è tutto in salita e in discesa: scarpe comode.' => 'Die Stadt geht ständig bergauf und bergab: bequeme Schuhe.',

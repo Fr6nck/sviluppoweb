@@ -96,6 +96,9 @@ return [
     'Il turno è affisso sulla porta di ogni farmacia del centro.' => 'La farmacia de guardia está anunciada en la puerta de cada farmacia del centro.',
     'Veterinario di turno' => 'Veterinario de guardia',
     'Chiedi a Francesco: ti dà il numero di quello aperto.' => 'Pregunta a Francesco: te da el número del que esté abierto.',
+    'Pronto soccorso' => 'Urgencias',   // 9N
+    'All\'ospedale di Assisi, una decina di minuti in auto.' => 'En el hospital de Asís, a unos diez minutos en coche.',   // 9N
+    'Per un\'emergenza chiama il 112: risponde anche in inglese.' => 'En caso de emergencia, llama al 112: también atienden en inglés.',   // 9N
     'Il pronto soccorso è all\'ospedale di Assisi, una decina di minuti in auto.' => 'Urgencias está en el hospital de Asís, a unos diez minutos en coche.',
     'Per entrare nelle basiliche servono spalle e ginocchia coperte.' => 'Para entrar en las basílicas hay que llevar hombros y rodillas cubiertos.',
     'Il centro è tutto in salita e in discesa: scarpe comode.' => 'La ciudad es toda cuestas, arriba y abajo: zapatos cómodos.',

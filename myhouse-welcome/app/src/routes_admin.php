@@ -178,8 +178,7 @@ $r->get('/admin/clienti', function () {
             (bool) $sub && $sub['status'] === 'past_due' => ['Pagamento non riuscito', 'alert', 'fallito'],
             (bool) $sub && $pubbl > 0 => ['Attivo', 'pine', 'attivo'],
             (bool) $sub => [$sub['provider'] === 'stripe' || $sub['provider'] === 'dimostrazione' ? 'Pagato, non pubblicato' : 'Attivato dallo staff, non pubblicato', 'ochre', 'pagato'],
-            $maiAttivato && !$props => ['Nessuna struttura', 'ochre', 'vuoto'],
-            $maiAttivato => ['Mai attivato', 'ochre', 'mai'],
+            $maiAttivato => [$props ? 'Mai attivato' : 'Mai attivato · nessuna struttura', 'ochre', 'mai'],
             $pubbl > 0 => ['Scaduto (offline)', 'alert', 'scaduto'],
             default => ['Scaduto', 'alert', 'scaduto'],
         };
