@@ -6434,15 +6434,17 @@ prova('Benvenuto · pannello in inglese: «The guide for Casa Zoe is online», �
       && str_contains($tZ, 'Hi Zoe, welcome to MyHouse Welcome.') && str_contains($tZ, 'Three things to do now:') && str_contains($tZ, 'Open QR & Link:')
       && str_contains($tZ, 'Would you like 5% off your renewal? Join “Review with a discount”') && str_contains($tZ, 'Need help? Write to us at') && !str_contains($tZ, 'Ciao'), $tZ);
 prova('Benvenuto · l\'HTML in inglese: lang="en", «If the button does not open», «Support», «Terms» con /en/terms', str_contains($hZ, '<html lang="en">')
-      && str_contains($hZ, 'If the button does not open, copy this address into your browser:') && str_contains($hZ, '>Support</a>') && str_contains($hZ, '/en/terms">Terms</a>') && !str_contains($hZ, 'Assistenza'));
+      && str_contains($hZ, 'If the button does not open, copy this address into your browser:') && str_contains($hZ, '>Support</a>') && preg_match('#/en/terms"[^>]*>Terms</a>#', $hZ) === 1 && !str_contains($hZ, 'Assistenza'), substr(strip_tags($hZ), -400));
 // Il giro dei richiami riprende un benvenuto non partito, ma solo per una prima guida recente (FINESTRA, 3 giorni).
 db()->prepare("DELETE FROM email_log WHERE account_id = ? AND kind = 'benvenuto'")->execute([$zoeAcc]);
 $c = $cron();
-prova('Benvenuto · non partito (registro vuoto): lo riprende il giro dei richiami', count($benv($zoeAcc)) === 1 && ($c['benvenuto'] ?? 0) >= 1 && count($mBenv('zoe.benvenuto@prova.test')) === 2, json_encode($c));
+$nZ = count($mBenv('zoe.benvenuto@prova.test'));
+prova('Benvenuto · non partito (registro vuoto): lo riprende il giro dei richiami', count($benv($zoeAcc)) === 1 && ($c['benvenuto'] ?? 0) >= 1 && $nZ === 2,
+      json_encode([$c['benvenuto'] ?? null, count($benv($zoeAcc)), $nZ, array_column($posta('zoe.benvenuto@prova.test'), 'subject')], JSON_UNESCAPED_UNICODE));
 db()->prepare("DELETE FROM email_log WHERE account_id = ? AND kind = 'benvenuto'")->execute([$zoeAcc]);
 db()->prepare('UPDATE guide_versions SET published_at = ? WHERE property_id = ? AND version = 1')->execute([gmdate('Y-m-d\TH:i:s\Z', time() - 4 * 86400), $zoePid]);
 $cron();
-prova('Benvenuto · prima guida online da più di 3 giorni: niente email (chi aggiorna non scrive ai clienti vecchi)', count($benv($zoeAcc)) === 0 && count($mBenv('zoe.benvenuto@prova.test')) === 2);
+prova('Benvenuto · prima guida online da più di 3 giorni: niente email (chi aggiorna non scrive ai clienti vecchi)', count($benv($zoeAcc)) === 0 && count($mBenv('zoe.benvenuto@prova.test')) === $nZ);
 // La seconda guida di un account che ne aveva già una online, la vetrina e gli account di esempio: niente benvenuto.
 prova('Benvenuto · mai agli account di esempio (lucia@esempio.it) né alla vetrina', !(int) val("SELECT COUNT(*) FROM email_log e JOIN accounts a ON a.id = e.account_id JOIN users u ON u.id = a.user_id
       WHERE e.kind = 'benvenuto' AND (u.email LIKE '%@esempio.it' OR EXISTS (SELECT 1 FROM properties p WHERE p.account_id = a.id AND p.is_demo > 0))"));
