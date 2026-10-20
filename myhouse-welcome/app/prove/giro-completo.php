@@ -1415,7 +1415,7 @@ $admin->get('/admin/cliente/' . $lacc);
 $admin->post("/admin/cliente/$lacc/abbonamento", ['pv' => (string) pv('portfolio'), 'mesi' => '12', 'nota' => 'Prova della copia', 'strutture' => '2']);
 $r = $lucia->get('/pannello/nuova');
 prova('Fase 4 · «Crea da una struttura esistente»: Casa Lucia, con le sezioni già spuntate', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Crea da una struttura esistente')
-      && preg_match('#<option value="' . $casa . '">\s*Casa Lucia#', $r['body']) === 1 && substr_count($r['body'], 'name="copia[]"') === 15
+      && preg_match('#<option value="' . $casa . '">\s*Casa Lucia#', $r['body']) === 1 && substr_count($r['body'], 'name="copia[]"') === 16
       && str_contains($r['body'], 'Non si copiano mai, perché sono solo di una struttura: indirizzo, CIN, reti Wi-Fi'));
 $mediaPrima = (int) val('SELECT COUNT(*) FROM media WHERE account_id = ?', [$lacc]);
 $r = $lucia->post('/pannello/nuova', ['name' => 'Casa Lucia Due', 'city' => 'Pienza', 'origine' => (string) $casa, 'copia' => ['waste', 'eat', 'visit', 'todo', 'transport', 'emergency', 'info', 'rules', 'services', 'extras'], 'copia_aspetto' => '1', 'copia_contatti' => '1']);
@@ -6534,7 +6534,7 @@ $js9m = (string) file_get_contents("$DOVE/assets/prezzi.js");
 prova('9M · 1 · prezzi.js aggiorna il riquadro legato al campo (data-rinnovo / data-campo) e il bottone con il numero di strutture', str_contains($js9m, "[data-rinnovo][data-campo=\"' + campo.id + '\"]") && str_contains($js9m, '[data-crea][data-href]'));
 
 // Pia: Portfolio per 3 strutture. Prima del pagamento campione e traduzione automatica ci sono, spente, con lo spiegone.
-[$pia, $piaAcc, $piaA] = $host9l('Pia', 'pia9m@prova.test', 'VTRPIA85A41G478X', 'Gubbio', 'portfolio', 3);
+[$pia, $piaAcc, $piaA] = $host9l('Pia', 'pia9m@prova.test', 'VTRPIA85A41G478L', 'Gubbio', 'portfolio', 3);
 db()->prepare("UPDATE accounts SET intended_quantity = 3 WHERE id = ?")->execute([$piaAcc]);
 $rP = $pia->get('/pannello');
 $rL = $pia->get("/pannello/$piaA/lingue");
@@ -6572,7 +6572,7 @@ foreach ([$piaB, $piaC] as $g) $pia->modulo("/pannello/$g/copia?da=$piaA", "/pan
 $pkB = riga('SELECT * FROM sections WHERE property_id = ? AND kind = ?', [$piaB, 'parking']);
 $rB = $pia->get("/pannello/$piaB");
 prova('9M · 2 · il parcheggio copiato nella gemella: collegato alla campione, «Da controllare» nel pannello', $pkB && (int) $pkB['da_controllare'] === 1 && (int) $pkB['origine_property_id'] === $piaA
-      && str_contains($rB['body'], 'Da controllare') && str_contains($rB['body'], 'Il parcheggio è stato copiato da un&#039;altra guida'));
+      && str_contains($rB['body'], 'Da controllare') && str_contains($rB['body'], 'Il parcheggio è stato copiato da un\'altra guida'));
 $pia->post("/pannello/$piaB/sezioni/" . (int) $pkB['id'], ['ztl' => 'Ztl attiva dalle 8 alle 20 in via Baldassini. Il nostro posto è il 12.']);
 prova('9M · 2 · salvata la sezione, «da controllare» sparisce', (int) val('SELECT da_controllare FROM sections WHERE id = ?', [(int) $pkB['id']]) === 0
       && !str_contains($pia->get("/pannello/$piaB")['body'], 'Il parcheggio è stato copiato'));
