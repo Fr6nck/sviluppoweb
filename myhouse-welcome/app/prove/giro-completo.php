@@ -6423,7 +6423,7 @@ $mT = $mBenv('teo9l@prova.test'); $tT = (string) (end($mT)['text'] ?? '');
 prova('Benvenuto · Teo, senza adesione al pagamento: la riga «Vuoi il 5% di sconto sul rinnovo? Aderisci…» con il link a /giudizio (giudizio.email.invito)', count($mT) === 1
       && preg_match('#Vuoi il 5% di sconto sul rinnovo\? Aderisci a «Giudizio con sconto».*Si aderisce dal pannello: \S+/giudizio\b#s', $tT) === 1 && !str_contains($tT, 'Hai aderito'), $tT);
 // Zoe ha il pannello in inglese: l'email e le parti fisse in inglese, con la riga del programma in inglese.
-[$zoe, $zoeAcc, $zoePid] = $host9l('Zoe', 'zoe.benvenuto@prova.test', 'VTRZOE85A41G478U', 'Trevi');
+[$zoe, $zoeAcc, $zoePid] = $host9l('Zoe', 'zoe.benvenuto@prova.test', 'VTRZOE85A41G478R', 'Trevi');
 db()->prepare("UPDATE users SET panel_lang = 'en' WHERE id = (SELECT user_id FROM accounts WHERE id = ?)")->execute([$zoeAcc]);
 [, $rZ] = $paga9l($zoe, $zoeAcc, $zoePid, false, 'sub_prova_zoe_benv');
 $mZ = $mBenv('zoe.benvenuto@prova.test'); $tZ = (string) (end($mZ)['text'] ?? '');
