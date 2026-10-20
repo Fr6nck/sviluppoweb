@@ -34,7 +34,7 @@
       var e = esiti[i], mio = e.getAttribute('data-q-esito') === piano;
       e.hidden = !mio;
       if (!mio) continue;
-      for (var n = 1; n <= 3; n++) { var s = e.querySelector('[data-q-r="' + n + '"]'); if (s) s.textContent = r[n - 1] === 'si' ? 'sì' : 'no'; }
+      for (var n = 1; n <= 3; n++) { var s = e.querySelector('[data-q-r="' + n + '"]'); if (s) s.textContent = r[n - 1] === 'si' ? (box.getAttribute('data-si') || 'sì') : 'no'; }
       var h = e.querySelector('h3'); h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true });
     }
     if (finestra) finestra.scrollTop = 0;

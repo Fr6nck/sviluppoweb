@@ -344,6 +344,11 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 3. **Per provarla:** con un cliente di prova non parte (come gli altri richiami). Registrati con un indirizzo tuo, pubblica una guida e guarda la posta; in Amministrazione → scheda del cliente, nelle email mandate compare «benvenuto».
 4. Chi risponde all'email scrive all'assistenza (Reply-To di serie).
 
+## 4n. Questionario in inglese (20 ottobre)
+
+1. **Testi:** Amministrazione → Testi e foto → «Pagine per tipologia: il questionario», linguetta **EN**: le domande, le risposte e i perché in inglese (di serie già scritti). La linguetta IT resta quella delle pagine italiane.
+2. **SEO e GEO:** la pagina nuova «Quale piano scegliere in inglese» (/en/plan) è accesa di serie; titolo e descrizione si cambiano lì.
+
 ## 4k. 9K (19 ottobre): foto, pagine nuove, partner, PEC
 
 1. **Limiti di PHP per le foto.** Se nel Quadro compare «Il server limita il caricamento delle foto», chiedi all'hosting (o in cPanel: «Seleziona versione PHP» → Opzioni, oppure «MultiPHP INI Editor») `upload_max_filesize = 20M`, `post_max_size = 20M` (meglio 25M) e `memory_limit = 256M`. Controlla poi in Diagnostica la riga «Limiti per il caricamento delle foto». Le foto prese dal browser arrivano già ridotte; i limiti servono a chi carica senza JavaScript.

@@ -7,9 +7,11 @@
    'si'|'no'), $qStrutture (Portfolio), $dentro. I testi: «Testi e foto» → «Pagine per tipologia: …».
    9L · Lo stesso partial (e lo stesso JS) per la finestra della home: $qModo = 'finestra' (senza la sezione e il riquadro
    intorno, tema scuro dato dalla finestra; senza JavaScript tutto porta a /piano) e $qOrigine (home | tipologia | piano)
-   per l'evento delle statistiche «piano_test». */
+   per l'evento delle statistiche «piano_test».
+   In inglese sulla home /en e su /en/plan (LinguaSito): i testi di «Testi e foto» dalla linguetta EN, quelli fissi qui con $qU. */
 use function MHW\b;
-use MHW\{Support, Icon, Plans, TestiSito, SectionCatalog, Inviti, Giudizi};
+use MHW\{Support, Icon, Plans, TestiSito, SectionCatalog, Inviti, Giudizi, LinguaSito};
+$qU = [LinguaSito::class, 't']; $qEn = LinguaSito::en();
 // I numeri dei testi, dal listino: le sezioni di Essential, tutte le sezioni, le lingue di Plus (base + lingua in più).
 $fq = fn(string $c, string $f) => (string) ($qPiani[$c]['features'][$f] ?? '');
 $qSost = ['sezioni' => SectionCatalog::quante(), 'sezioni_essential' => ctype_digit($fq('essential', 'sections')) ? $fq('essential', 'sections') : '6',
@@ -24,15 +26,15 @@ $qInviti = Inviti::disponibili(); $qGiudizio = Giudizi::attivo();
 $qTotSconto = ($qInviti ? Inviti::MASSIMO : 0) + ($qGiudizio ? Giudizi::percentuale() : 0);
 $qScontoSost = ['totale' => $qTotSconto, 'amici' => (int) (Inviti::MASSIMO / max(1, Inviti::PASSO)), 'passo' => Inviti::PASSO, 'max' => Inviti::MASSIMO, 'giudizio' => Giudizi::percentuale()];
 $qRighe = [];   // la tabella del rinnovo: [etichetta, percento]
-if ($qInviti) foreach ([2, 5, (int) (Inviti::MASSIMO / max(1, Inviti::PASSO))] as $n) $qRighe[] = [$n . ' amici · ' . min($n * Inviti::PASSO, Inviti::MASSIMO) . '%', min($n * Inviti::PASSO, Inviti::MASSIMO)];
-if ($qGiudizio) $qRighe[] = [($qInviti ? $qScontoSost['amici'] . ' amici + giudizio' : 'Giudizio') . ' · ' . $qTotSconto . '%', $qTotSconto];
+if ($qInviti) foreach ([2, 5, (int) (Inviti::MASSIMO / max(1, Inviti::PASSO))] as $n) $qRighe[] = [$n . $qU(' amici · ', ' friends · ') . min($n * Inviti::PASSO, Inviti::MASSIMO) . '%', min($n * Inviti::PASSO, Inviti::MASSIMO)];
+if ($qGiudizio) $qRighe[] = [($qInviti ? $qScontoSost['amici'] . $qU(' amici + giudizio', ' friends + review') : $qU('Giudizio', 'Review')) . ' · ' . $qTotSconto . '%', $qTotSconto];
 $qFinestra = ($qModo ?? 'pagina') === 'finestra';
 $qOrigine ??= $qFinestra ? 'home' : 'tipologia';
 // La pagina stessa, senza le risposte; nella finestra della home, /piano (senza JavaScript la finestra non si apre).
-$qBase = $qFinestra ? b() . '/piano' : strtok((string) ($_SERVER['REQUEST_URI'] ?? '/'), '?');
+$qBase = $qFinestra ? b() . LinguaSito::percorso('/piano') : strtok((string) ($_SERVER['REQUEST_URI'] ?? '/'), '?');
 ?>
 <?php if (!$qFinestra): ?><section class="blocco" aria-labelledby="piano-giusto-titolo" id="piano-giusto"><?php endif; ?>
-  <div class="questionario<?= $qFinestra ? ' questionario--finestra' : ' panel' ?>" data-questionario data-origine="<?= Support::e($qOrigine) ?>"<?= $qEsito ? ' data-esito-iniziale="' . $qEsito . '"' : '' ?>>
+  <div class="questionario<?= $qFinestra ? ' questionario--finestra' : ' panel' ?>" data-questionario data-origine="<?= Support::e($qOrigine) ?>" data-si="<?= $qU('sì', 'yes') ?>"<?= $qEsito ? ' data-esito-iniziale="' . $qEsito . '"' : '' ?>>
     <span class="kicker questionario__kick"><?= $qT('kicker') ?></span>
     <<?= $qOrigine === 'piano' ? 'h1' : 'h2' ?> id="piano-giusto-titolo" class="h-sezione"><?= $qT('titolo') ?></<?= $qOrigine === 'piano' ? 'h1' : 'h2' ?>>
     <p class="muted questionario__sub"><?= $qT('sub') ?></p>
@@ -49,7 +51,7 @@ $qBase = $qFinestra ? b() . '/piano' : strtok((string) ($_SERVER['REQUEST_URI'] 
                 <span><b><?= $qT('d' . $n . '.' . $r) ?></b><span><?= $qT('d' . $n . '.' . $r . '.aiuto') ?></span></span></label>
             <?php endforeach; ?>
           </div>
-          <?php if ($n > 1): ?><button type="button" class="questionario__indietro" data-q-indietro hidden>← Indietro</button><?php endif; ?>
+          <?php if ($n > 1): ?><button type="button" class="questionario__indietro" data-q-indietro hidden>← <?= $qU('Indietro', 'Back') ?></button><?php endif; ?>
         </fieldset>
       <?php endforeach; ?>
       <div class="questionario__invia" data-q-invia><button class="btn btn--go"><?= $qT('vedi') ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></button></div>
@@ -68,17 +70,17 @@ $qBase = $qFinestra ? b() . '/piano' : strtok((string) ($_SERVER['REQUEST_URI'] 
             <p class="questionario__prezzo">
               <?php if ($sc): ?><s class="muted" data-q-pieno><?= Support::e(Support::money($pieno)) ?></s> <?php endif; ?>
               <b data-q-totale><?= Support::e(Support::money($sc ? $sc['totale'] : $pieno)) ?></b>
-              <span class="muted"> + IVA <?= $sc ? 'il primo anno' : '/ anno' ?><?= $porto ? ' per <span data-q-n>' . $q . '</span> strutture' : '' ?></span>
+              <span class="muted"> <?= $qU('+ IVA', '+ VAT') ?> <?= $sc ? $qU('il primo anno', 'the first year') : $qU('/ anno', '/ year') ?><?= $porto ? $qU(' per ', ' for ') . '<span data-q-n>' . $q . '</span>' . $qU(' strutture', ' properties') : '' ?></span>
             </p>
             <?php if ($porto): /* il prezzo struttura per struttura, poi il selettore (2 … massimo del listino) */
                   $parti = array_map(fn($t) => Support::money($t['cents']), $tiers); ?>
-              <p class="tiny muted" style="margin:0"><?= Support::e(Support::money((int) $pv['price_cents'])) ?> la prima, poi <?= Support::e(implode(' · ', array_map(fn($x) => preg_replace('/\s*€$/u', '', $x), $parti))) ?> € l'una<?= (int) $pv['max_quantity'] > 0 ? ' · oltre ' . (int) $pv['max_quantity'] . ': preventivo' : '' ?></p>
+              <p class="tiny muted" style="margin:0"><?= Support::e(Support::money((int) $pv['price_cents'])) ?> <?= $qU('la prima, poi', 'for the first, then') ?> <?= Support::e(implode(' · ', array_map(fn($x) => preg_replace('/\s*€$/u', '', $x), $parti))) ?> € <?= $qU('l\'una', 'each') ?><?= (int) $pv['max_quantity'] > 0 ? $qU(' · oltre ', ' · over ') . (int) $pv['max_quantity'] . $qU(': preventivo', ': quote') : '' ?></p>
               <div class="questionario__quante">
-                <label for="q-strutture" class="small">Quante strutture?</label>
+                <label for="q-strutture" class="small"><?= $qU('Quante strutture?', 'How many properties?') ?></label>
                 <span class="questionario__selettore">
-                  <button type="button" data-q-meno aria-label="Una struttura in meno" hidden>−</button>
+                  <button type="button" data-q-meno aria-label="<?= $qU('Una struttura in meno', 'One property fewer') ?>" hidden>−</button>
                   <input id="q-strutture" type="number" name="strutture" form="q-quante" inputmode="numeric" min="<?= max(2, (int) $pv['min_quantity']) ?>" max="<?= max(2, (int) $pv['max_quantity']) ?>" value="<?= $q ?>" data-q-quante>
-                  <button type="button" data-q-piu aria-label="Una struttura in più" hidden>+</button>
+                  <button type="button" data-q-piu aria-label="<?= $qU('Una struttura in più', 'One property more') ?>" hidden>+</button>
                 </span>
               </div>
             <?php endif; ?>
@@ -91,25 +93,26 @@ $qBase = $qFinestra ? b() . '/piano' : strtok((string) ($_SERVER['REQUEST_URI'] 
             <p><?= $qT($cod . '.perche') ?></p>
             <ul class="questionario__riep" data-q-riep>
               <?php foreach ([1, 2, 3] as $n): $v = $qRisposte['d' . $n] ?? ''; ?>
-                <li><?= $qT('d' . $n . '.breve') ?>: <span data-q-r="<?= $n ?>"><?= $v === 'si' ? 'sì' : ($v === 'no' ? 'no' : '') ?></span></li>
+                <li><?= $qT('d' . $n . '.breve') ?>: <span data-q-r="<?= $n ?>"><?= $v === 'si' ? $qU('sì', 'yes') : ($v === 'no' ? 'no' : '') ?></span></li>
               <?php endforeach; ?>
             </ul>
           </div>
         </div>
         <div class="row questionario__azioni">
-          <a class="btn btn--go" data-q-crea data-href="<?= Support::e(b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . (int) $pv['pv_id']) ?>"
-             href="<?= Support::e(b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . (int) $pv['pv_id'] . ($porto ? '&strutture=' . $q : '')) ?>"><?= $qT('crea', ['piano' => Support::e($pv['name'])]) ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
+          <?php $qLang = $qEn && !$dentro ? '&lang=en' : ''; /* come le schede dei piani di /en */ ?>
+          <a class="btn btn--go" data-q-crea data-href="<?= Support::e(b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . (int) $pv['pv_id'] . $qLang) ?>"
+             href="<?= Support::e(b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . (int) $pv['pv_id'] . $qLang . ($porto ? '&strutture=' . $q : '')) ?>"><?= $qT('crea', ['piano' => Support::e($pv['name'])]) ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
           <a class="btn btn--ghost" href="<?= Support::e($qBase) ?>#piano-giusto" data-q-rifai><?= $qT('rifai') ?></a>
         </div>
-        <?php if ($qTotSconto > 0): $rClasse = 'questionario__sconto'; include __DIR__ . '/_risparmio.php'; /* 9L: lo stesso riquadro della home */ ?>
+        <?php if ($qTotSconto > 0): $rClasse = 'questionario__sconto'; $rCome = b() . LinguaSito::percorso('/domande') . '#porta-amico'; include __DIR__ . '/_risparmio.php'; /* 9L: lo stesso riquadro della home */ ?>
           <div class="questionario__rinnovo" data-q-rinnovo>
-            <span>Primo anno <b data-q-anno><?= Support::e(Support::money($pieno)) ?></b>, dal rinnovo con il <?= (int) $qTotSconto ?>%:<br><s class="muted" data-q-anno-s><?= Support::e(Support::money($pieno)) ?></s></span>
+            <span><?= $qU('Primo anno', 'First year') ?> <b data-q-anno><?= Support::e(Support::money($pieno)) ?></b>, <?= $qEn ? 'from the renewal with ' . (int) $qTotSconto . '% off' : 'dal rinnovo con il ' . (int) $qTotSconto . '%' ?>:<br><s class="muted" data-q-anno-s><?= Support::e(Support::money($pieno)) ?></s></span>
             <b class="questionario__rinnovo-v" data-q-min><?= Support::e(Support::money((int) round($pieno * (100 - $qTotSconto) / 100))) ?></b>
             <table><tbody>
-              <tr><td>Nessuno sconto</td><td data-q-perc="0"><?= Support::e(Support::money($pieno)) ?></td></tr>
+              <tr><td><?= $qU('Nessuno sconto', 'No discount') ?></td><td data-q-perc="0"><?= Support::e(Support::money($pieno)) ?></td></tr>
               <?php foreach ($qRighe as [$et, $perc]): ?><tr><td><?= Support::e($et) ?></td><td data-q-perc="<?= (int) $perc ?>"><?= Support::e(Support::money((int) round($pieno * (100 - $perc) / 100))) ?></td></tr><?php endforeach; ?>
             </tbody></table>
-            <small><?= $qInviti ? $qT('rinnovo.nota') : 'Prezzi + IVA, all\'anno.' ?></small>
+            <small><?= $qInviti ? $qT('rinnovo.nota') : $qU('Prezzi + IVA, all\'anno.', 'Prices + VAT, per year.') ?></small>
           </div>
         <?php endif; ?>
       </div>
@@ -117,7 +120,7 @@ $qBase = $qFinestra ? b() . '/piano' : strtok((string) ($_SERVER['REQUEST_URI'] 
     <?php if (isset($qPiani['portfolio'])): /* senza JavaScript il numero di strutture si cambia ricaricando, con le stesse risposte */ ?>
       <form id="q-quante" method="get" action="<?= Support::e($qBase) ?>#piano-giusto" class="questionario__ricalcola" data-q-ricalcola>
         <?php foreach ($qRisposte as $k => $v): ?><input type="hidden" name="<?= Support::e($k) ?>" value="<?= Support::e($v) ?>"><?php endforeach; ?>
-        <?php if ($qEsito === 'portfolio'): ?><button class="btn btn--sm btn--ghost">Ricalcola</button><?php endif; ?>
+        <?php if ($qEsito === 'portfolio'): ?><button class="btn btn--sm btn--ghost"><?= $qU('Ricalcola', 'Recalculate') ?></button><?php endif; ?>
       </form>
     <?php endif; ?>
   </div>

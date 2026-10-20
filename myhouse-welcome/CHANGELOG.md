@@ -1,5 +1,14 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Il questionario «Qual è il piano giusto per te?» anche in inglese (20 ottobre 2026)
+
+Nessuna migrazione.
+
+- **Home /en:** accanto a «Compare all plans» c'è «Not sure which one to choose? · Answer 3 questions →», che apre la stessa finestra della home italiana con il questionario in inglese (stesso partial, stesso JS; Esc, clic fuori, pagina ferma).
+- **/en/plan** («Which plan to choose | MyHouse Welcome»): il questionario come pagina, senza JavaScript e da condividere; si indicano a vicenda con /piano (hreflang, interruttore IT/EN), in sitemap e in Amministrazione → SEO e GEO.
+- **Testi:** le 38 chiavi `questionario.*` di «Testi e foto» hanno la versione inglese (linguetta EN); i testi fissi (prezzi «+ VAT / year», «How many properties?», la tabella del rinnovo, «Back», «Recalculate», «yes») sono nelle due lingue. «Start free with …» porta alla registrazione con `lang=en`, come le schede dei piani di /en; «How it works» alle domande in inglese.
+- Schermate: `prove/schermate/9l-en-*.png`.
+
 ## v2 · Email di benvenuto quando la prima guida va online (20 ottobre 2026)
 
 Nessuna migrazione (usa il registro `email_log` dei richiami, tipo «benvenuto»).

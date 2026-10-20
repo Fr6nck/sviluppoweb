@@ -508,11 +508,11 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <div class="piani__riga">
       <?php include __DIR__ . '/_confronto.php'; ?>
       <div class="piani__aiuto"><span><?= $T('questionario.apri.domanda') ?></span>
-        <a class="btn btn--go" href="<?= b() ?>/piano" data-q-apri aria-haspopup="dialog"><?= $T('questionario.apri.bottone') ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a></div>
+        <a class="btn btn--go" href="<?= b() . LinguaSito::percorso('/piano') ?>" data-q-apri aria-haspopup="dialog"><?= $T('questionario.apri.bottone') ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a></div>
     </div>
     <dialog class="finestra-piano" aria-labelledby="piano-giusto-titolo">
       <div class="finestra-piano__box">
-        <button type="button" class="finestra-piano__chiudi" data-q-chiudi aria-label="Chiudi"><?= Icon::svg('close', 20, 2) ?></button>
+        <button type="button" class="finestra-piano__chiudi" data-q-chiudi aria-label="<?= $U('Chiudi', 'Close') ?>"><?= Icon::svg('close', 20, 2) ?></button>
         <?php $qModo = 'finestra'; $qOrigine = 'home'; include __DIR__ . '/_questionario.php'; ?>
       </div>
     </dialog>

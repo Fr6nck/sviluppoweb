@@ -3434,7 +3434,7 @@ prova('robots.txt: per * niente guide in Disallow, /pannello escluso per tutti; 
       && str_contains((string) $blocco($r['body'], 'meta-externalagent'), "Disallow: /qr/\n") && $blocco($r['body'], 'CCBot') === "Disallow: /\n"
       && preg_match('#\nSitemap: \S+/sitemap\.xml\n$#', $r['body']) === 1, json_encode($blocco($r['body'], 'CCBot')));
 $r = $ospite->get('/sitemap.xml');
-prova('sitemap.xml: le pagine accese (con le due inglesi della 8E, le quattro per tipologia della 7F, le quattro legali della 8J, le due della 9K e /piano della 9L), con lastmod', $r['code'] === 200 && substr_count($r['body'], '<url>') === 17 && substr_count($r['body'], '<lastmod>') === 17
+prova('sitemap.xml: le pagine accese (con le due inglesi della 8E, le quattro per tipologia della 7F, le quattro legali della 8J, le due della 9K, /piano della 9L e /en/plan), con lastmod', $r['code'] === 200 && substr_count($r['body'], '<url>') === 18 && substr_count($r['body'], '<lastmod>') === 18
       && str_contains($r['body'], '/domande</loc>') && str_contains($r['body'], '/piu-strutture</loc>') && str_contains($r['body'], '/property-manager</loc>') && @simplexml_load_string($r['body']) !== false);
 foreach (['/accedi', '/registrati', '/password'] as $u) {
     $r = $ospite->get($u);
@@ -4464,9 +4464,9 @@ prova('7F · CSV: text/csv, BOM, punto e virgola, intestazioni', str_contains($p
 $tipi7f = array_filter(require "$DOVE/app/lang/tipologie.php", fn($tp) => !empty($tp['questionario']));   // 9K: le quattro tipologie (le pagine nuove hanno le loro prove)
 foreach (['robots.txt', 'sitemap.xml', 'llms.txt'] as $f) @unlink("$DOVE/$f");
 $campi7f = $campi6k;
-foreach (['home', 'domande', 'en', 'en-domande', 'termini', 'privacy', 'dpa', 'en-termini', 'en-privacy', 'en-dpa', 'piano'] as $k) $campi7f["p_{$k}_indicizza"] = '1';
+foreach (['home', 'domande', 'en', 'en-domande', 'termini', 'privacy', 'dpa', 'en-termini', 'en-privacy', 'en-dpa', 'piano', 'en-piano'] as $k) $campi7f["p_{$k}_indicizza"] = '1';
 $campi7f += ['p_piano_titolo' => 'Quale piano scegliere | MyHouse Welcome', 'p_piano_descrizione' => 'Tre domande, una risposta: lingue, sezioni e strutture. Ti diciamo quale piano di MyHouse Welcome ti basta, senza pagare per quello che non usi.'];
-foreach (['en' => 'Digital guest guide for holiday rentals | MyHouse Welcome', 'en-domande' => 'Frequently asked questions | MyHouse Welcome'] as $k => $t)
+foreach (['en' => 'Digital guest guide for holiday rentals | MyHouse Welcome', 'en-domande' => 'Frequently asked questions | MyHouse Welcome', 'en-piano' => 'Which plan to choose | MyHouse Welcome'] as $k => $t)
     $campi7f += ["p_{$k}_titolo" => $t, "p_{$k}_descrizione" => str_repeat('An English description for the test page. ', 2)];
 foreach (require "$DOVE/app/lang/tipologie.php" as $k => $tp) $campi7f += ["p_{$k}_indicizza" => '1', "p_{$k}_titolo" => $tp['titolo'], "p_{$k}_descrizione" => $tp['descrizione']];
 $r = $adm6->modulo('/admin/seo', '/admin/seo', $campi7f);
@@ -4475,7 +4475,7 @@ foreach (['robots.txt', 'sitemap.xml', 'llms.txt'] as $f) if (!is_file("$DOVE/$f
 prova('7F · salvando «SEO e GEO»: robots.txt, sitemap.xml e llms.txt scritti accanto a index.php, uguali a quelli del sito', $fileOk
       && str_contains($adm6->segui($r)['body'], 'anche come file nella cartella principale del sito'));
 $sm7 = (string) @file_get_contents("$DOVE/sitemap.xml"); $ll7 = (string) @file_get_contents("$DOVE/llms.txt");
-prova('7F · le quattro pagine in sitemap (17 pagine in tutto con le legali della 8J, le due della 9K e /piano della 9L) e in llms.txt («Per chi è»)', substr_count($sm7, '<url>') === 17 && @simplexml_load_string($sm7) !== false
+prova('7F · le quattro pagine in sitemap (18 pagine in tutto con le legali della 8J, le due della 9K, /piano della 9L e /en/plan) e in llms.txt («Per chi è»)', substr_count($sm7, '<url>') === 18 && @simplexml_load_string($sm7) !== false
       && count(array_filter($tipi7f, fn($tp) => str_contains($sm7, '<loc>https://myhousewelcome.it' . $tp['percorso'] . '</loc>') && str_contains($ll7, '(https://myhousewelcome.it' . $tp['percorso'] . ')'))) === 4
       && str_contains($ll7, "## Per chi è"));
 $giudiziPubblicati = (int) val("SELECT COUNT(*) FROM testimonials WHERE visible = 1 AND (account_id IS NULL OR (status = 'pubblicata' AND consent_at IS NOT NULL AND withdrawn_at IS NULL))");
@@ -6209,7 +6209,26 @@ prova('9L · home: «Non sai quale scegliere?» nella riga di «Confronta tutti 
       str_contains($rH9l['body'], 'class="piani__riga"') && str_contains($rH9l['body'], 'Non sai quale scegliere?') && preg_match('#href="[^"]*/piano" data-q-apri aria-haspopup="dialog">Rispondi a 3 domande#', $rH9l['body']) === 1
       && str_contains($rH9l['body'], '<dialog class="finestra-piano" aria-labelledby="piano-giusto-titolo">') && str_contains($rH9l['body'], 'class="questionario questionario--finestra" data-questionario data-origine="home"')
       && substr_count($rH9l['body'], 'questionario.js') === 1 && substr_count($rH9l['body'], 'class="plan ') + substr_count($rH9l['body'], 'class="plan"') >= 3);
-prova('9L · /en senza la finestra (il questionario è in italiano)', !str_contains($ospite->get('/en')['body'], 'finestra-piano'));
+$rEn9l = $ospite->get('/en');
+prova('Questionario EN · /en: «Not sure which one to choose?», «Answer 3 questions» verso /en/plan, la finestra con il questionario in inglese («Close», «Which plan is right for you?»)',
+      str_contains($rEn9l['body'], 'Not sure which one to choose?') && preg_match('#href="[^"]*/en/plan" data-q-apri aria-haspopup="dialog">Answer 3 questions#', $rEn9l['body']) === 1
+      && str_contains($rEn9l['body'], '<dialog class="finestra-piano"') && str_contains($rEn9l['body'], 'aria-label="Close"') && str_contains($rEn9l['body'], 'Which plan is right for you?')
+      && str_contains($rEn9l['body'], 'Are two languages, written by you, enough?') && str_contains($rEn9l['body'], 'data-si="yes"') && !str_contains($rEn9l['body'], 'Rispondi a 3 domande')
+      && !str_contains($rEn9l['body'], 'Ti bastano') && !str_contains($rEn9l['body'], '← Indietro') && !str_contains($rEn9l['body'], 'Quante strutture?'));
+prova('Questionario EN · /en: «Start free with …» verso la registrazione con lang=en (come le schede dei piani), «Prices + VAT»', preg_match('#registrati\?piano=' . pv('plus') . '&amp;lang=en"[^>]*>Start free with Plus#', $rEn9l['body']) === 1
+      && str_contains($rEn9l['body'], '+ VAT') && !str_contains($rEn9l['body'], 'Crea gratis con'));
+$rEp = $ospite->get('/en/plan?d1=no&d2=si&d3=si');
+prova('Questionario EN · /en/plan: «Which plan to choose | MyHouse Welcome», lang="en", h1, esito Plus senza JavaScript, «← All plans and prices» verso /en, hreflang con /piano', $rEp['code'] === 200 && pulita($rEp)
+      && str_contains($rEp['body'], '<title>Which plan to choose | MyHouse Welcome</title>') && str_contains($rEp['body'], '<html lang="en">') && str_contains($rEp['body'], '<h1 id="piano-giusto-titolo"')
+      && preg_match('#data-q-esito="plus"(?![^>]*hidden)#', $rEp['body']) === 1 && str_contains($rEp['body'], 'One property: <span data-q-r="3">yes</span>')
+      && preg_match('#href="[^"]*/en\#piani">← All plans and prices#', $rEp['body']) === 1 && preg_match('#hreflang="it" href="[^"]*/piano"#', $rEp['body']) === 1
+      && preg_match('#<form method="get" action="[^"]*/en/plan\#piano-giusto"#', $rEp['body']) === 1);
+$rEp = $ospite->get('/en/plan?d1=si&d2=si&d3=no&strutture=3');
+prova('Questionario EN · Portfolio: «for 3 properties», «How many properties?», «each · over …: quote», «Recalculate»', str_contains($rEp['body'], 'for <span data-q-n>3</span> properties')
+      && str_contains($rEp['body'], 'How many properties?') && preg_match('#for the first, then [^<]*€ each#', $rEp['body']) === 1 && str_contains($rEp['body'], 'Recalculate'));
+$rPi = $ospite->get('/piano');
+prova('Questionario EN · /piano resta in italiano, con IT/EN che porta a /en/plan; /en/plan in sitemap', str_contains($rPi['body'], 'Ti bastano due lingue, scritte da te?') && preg_match('#href="[^"]*/en/plan" hreflang="en" lang="en">EN#', $rPi['body']) === 1
+      && str_contains($ospite->get('/sitemap.xml')['body'], '/en/plan</loc>'));
 $rP9l = $ospite->get('/piano');
 prova('9L · /piano senza accesso: «Quale piano scegliere | MyHouse Welcome», il questionario come modulo GET su /piano, h1, indicizzabile', $rP9l['code'] === 200 && pulita($rP9l)
       && str_contains($rP9l['body'], '<title>Quale piano scegliere | MyHouse Welcome</title>') && preg_match('#<form method="get" action="[^"]*/piano\#piano-giusto"#', $rP9l['body']) === 1
@@ -6439,8 +6458,8 @@ prova('Benvenuto · l\'HTML in inglese: lang="en", «If the button does not open
 db()->prepare("DELETE FROM email_log WHERE account_id = ? AND kind = 'benvenuto'")->execute([$zoeAcc]);
 $c = $cron();
 $nZ = count($mBenv('zoe.benvenuto@prova.test'));
-prova('Benvenuto · non partito (registro vuoto): lo riprende il giro dei richiami', count($benv($zoeAcc)) === 1 && ($c['benvenuto'] ?? 0) >= 1 && $nZ === 2,
-      json_encode([$c['benvenuto'] ?? null, count($benv($zoeAcc)), $nZ, array_column($posta('zoe.benvenuto@prova.test'), 'subject')], JSON_UNESCAPED_UNICODE));
+prova('Benvenuto · non partito (registro vuoto): lo riprende il giro dei richiami', count($benv($zoeAcc)) === 1 && ($c['email']['benvenuto'] ?? 0) >= 1 && $nZ === 2,
+      json_encode([$c['email']['benvenuto'] ?? null, count($benv($zoeAcc)), $nZ, array_column($posta('zoe.benvenuto@prova.test'), 'subject')], JSON_UNESCAPED_UNICODE));
 db()->prepare("DELETE FROM email_log WHERE account_id = ? AND kind = 'benvenuto'")->execute([$zoeAcc]);
 db()->prepare('UPDATE guide_versions SET published_at = ? WHERE property_id = ? AND version = 1')->execute([gmdate('Y-m-d\TH:i:s\Z', time() - 4 * 86400), $zoePid]);
 $cron();

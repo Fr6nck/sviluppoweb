@@ -6,7 +6,7 @@ $u = Auth::user(); $f = Support::flash();
 $U = [LinguaSito::class, 't'];
 $en = LinguaSito::en();
 /* 8E: l'interruttore IT / EN, solo sulle pagine che esistono nelle due lingue (home e domande). */
-$itP = ['home' => '/', 'en' => '/', 'domande' => '/domande', 'en-domande' => '/domande'][$seoPagina ?? ''] ?? null;
+$itP = ['home' => '/', 'en' => '/', 'domande' => '/domande', 'en-domande' => '/domande', 'piano' => '/piano', 'en-piano' => '/piano'][$seoPagina ?? ''] ?? null;
 $coppia = $itP !== null ? ['it' => $itP, 'en' => LinguaSito::COPPIE[$itP]] : null;
 if ($en) { $etScuro = 'Switch to dark theme'; $etChiaro = 'Switch to light theme'; }
 $lingueBottoni = function () use ($coppia, $en): string {

@@ -190,7 +190,7 @@ $home = function (string $loc) use ($guard, $codiceDalLink, $chiInvita, $datiQue
         'user' => $u, 'mie' => $mie, 'codiceSconto' => $codiceSconto,
         'invitoDi' => $invito && !$u ? explode(' ', trim((string) $invito['user_name']))[0] : '',
         'testimonianze' => MHW\Testimonianze::visibili(), 'seoPagina' => $loc === 'en' ? 'en' : 'home', 'anteprimaTesti' => $anteprimaTesti,
-    ] + ($loc === 'en' ? [] : $datiQuestionario()));   // 9L · la finestra «Qual è il piano giusto per te?» (solo in italiano)
+    ] + $datiQuestionario());   // 9L · la finestra «Qual è il piano giusto per te?» (anche su /en, in inglese)
 };
 $r->get('/', fn() => $home('it'));
 $r->get('/en', fn() => $home('en'));
@@ -594,6 +594,13 @@ $r->post('/invito/verifica', function () {
 });
 
 // ------------------------------------------------------------- scelta del piano
+/* «Which plan is right for you?»: il questionario in inglese come pagina (il link della finestra di /en senza JavaScript).
+   Per tutti, anche chi è dentro: la scelta del piano vera resta su /piano?piano=… (in italiano, come la registrazione). */
+$r->get('/en/plan', function () use ($guard, $datiQuestionario) {
+    $guard();
+    MHW\LinguaSito::imposta('en');
+    View::out('pub/piano_test', ['seoPagina' => 'en-piano', 'user' => Auth::user()] + $datiQuestionario());
+});
 $r->any('/piano', function () use ($salvaPiano, $guard, $datiQuestionario) {
     // 9L · Per chi non è dentro, /piano è «Quale piano scegliere»: il questionario come pagina (il link «Rispondi a 3 domande»
     // della home senza JavaScript). Con ?piano=… (un piano già scelto) resta la strada di sempre: accesso, poi la scelta.
