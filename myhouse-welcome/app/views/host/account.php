@@ -185,7 +185,7 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
         <div class="field" style="margin:0"><label for="pw-attuale"><?= t('Password attuale') ?></label>
           <input id="pw-attuale" name="attuale" type="password" required autocomplete="current-password"<?= $inv($ePw, 'attuale', 'pw-attuale') ?>><?= $err($ePw, 'attuale', 'pw-attuale') ?></div>
         <div class="field" style="margin:0"><label for="pw-nuova"><?= t('Password nuova') ?></label>
-          <p class="help" id="pw-nuova-aiuto" style="margin:0 0 6px"><?= t('Almeno 10 caratteri.') ?></p>
+          <p class="help" id="pw-nuova-aiuto" style="margin:0 0 6px"><?= t('Almeno 8 caratteri.') ?></p>
           <input id="pw-nuova" name="nuova" type="password" required minlength="<?= MHW\Auth::PASSWORD_MIN ?>" maxlength="72" autocomplete="new-password" aria-describedby="pw-nuova-aiuto"<?= $inv($ePw, 'nuova', 'pw-nuova') ?>><?= $err($ePw, 'nuova', 'pw-nuova') ?></div>
         <div class="field" style="margin:0"><label for="pw-nuova2"><?= t('Ripeti la password nuova') ?></label>
           <input id="pw-nuova2" name="nuova2" type="password" required minlength="<?= MHW\Auth::PASSWORD_MIN ?>" maxlength="72" autocomplete="new-password"<?= $inv($ePw, 'nuova2', 'pw-nuova2') ?>><?= $err($ePw, 'nuova2', 'pw-nuova2') ?></div>

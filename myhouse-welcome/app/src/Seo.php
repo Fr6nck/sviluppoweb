@@ -39,16 +39,31 @@ final class Seo
         'en-piano' => ['/en/plan', 'Quale piano scegliere in inglese'],
         // 9L (revisione): tutte le schede approvate di «Le guide dei nostri host».
         'guide-host' => ['/guide-dei-nostri-host', 'Le guide dei nostri host (tutte)'],
+        // 9N · Le pagine per tipologia in inglese (lang/tipologie-en.php), gemelle di quelle italiane.
+        'en-case-vacanza' => ['/en/holiday-homes', 'Per case vacanza in inglese'],
+        'en-bed-and-breakfast' => ['/en/bed-and-breakfast', 'Per B&B in inglese'],
+        'en-affittacamere' => ['/en/guesthouses', 'Per affittacamere in inglese'],
+        'en-agriturismi' => ['/en/farm-stays', 'Per agriturismi in inglese'],
+        'en-piu-strutture' => ['/en/multiple-properties', 'Per più strutture in inglese'],
+        'en-property-manager' => ['/en/property-managers', 'Per property manager in inglese'],
     ];
 
     /** 7F: Blackout Agency, che realizza i siti MyHouse (8J: non più nei dati strutturati: lì c'è il titolare, City Up S.r.l.). */
     public const GRUPPO = 'https://blackout.in';
 
-    /** 7F: i testi delle pagine per tipologia, per chiave (case-vacanza, bed-and-breakfast, affittacamere, agriturismi). */
-    public static function tipologie(): array
+    /** 7F: i testi delle pagine per tipologia, per chiave (case-vacanza, bed-and-breakfast, affittacamere, agriturismi…); 9N: anche in inglese. */
+    public static function tipologie(string $loc = 'it'): array
     {
-        static $t = null;
-        return $t ??= (array) require MHW_APP . '/lang/tipologie.php';
+        static $t = [];
+        $loc = $loc === 'en' ? 'en' : 'it';
+        return $t[$loc] ??= (array) require MHW_APP . ($loc === 'en' ? '/lang/tipologie-en.php' : '/lang/tipologie.php');
+    }
+
+    /** 9N · Il testo di una pagina per tipologia da una chiave di PAGINE («case-vacanza» o «en-case-vacanza»), o null. */
+    public static function tipologiaDi(string $pagina): ?array
+    {
+        if (str_starts_with($pagina, 'en-') && isset(self::tipologie('en')[substr($pagina, 3)])) return self::tipologie('en')[substr($pagina, 3)];
+        return self::tipologie()[$pagina] ?? null;
     }
 
     /** Gli assistenti AI: user-agent => [prodotto, azienda]. */
@@ -151,6 +166,7 @@ final class Seo
             ]),
         ];
         foreach (self::tipologie() as $k => $tp) { $d["p.$k.titolo"] = $tp['titolo']; $d["p.$k.descrizione"] = $tp['descrizione']; }
+        foreach (self::tipologie('en') as $k => $tp) { $d["p.en-$k.titolo"] = $tp['titolo']; $d["p.en-$k.descrizione"] = $tp['descrizione']; }
         foreach (array_keys(self::PAGINE) as $p) $d["p.$p.indicizza"] = '1';
         foreach (array_keys(self::BOT) as $b) $d["bot.$b"] = $b === 'CCBot' ? '0' : '1';
         return $d;
@@ -326,11 +342,11 @@ final class Seo
             $j = json_encode(self::paginaWeb($pagina), $f);
             if ($j !== false) $out[] = $j;
         }
-        // 7F: le pagine per tipologia hanno le loro 4 domande.
-        if (!empty(self::tipologie()[$pagina]['faq'])) {
-            $j = json_encode(['@context' => 'https://schema.org', '@type' => 'FAQPage', 'inLanguage' => 'it-IT',
+        // 7F: le pagine per tipologia hanno le loro 4 domande (9N: anche in inglese).
+        if (!empty(($tpF = self::tipologiaDi($pagina))['faq'])) {
+            $j = json_encode(['@context' => 'https://schema.org', '@type' => 'FAQPage', 'inLanguage' => str_starts_with($pagina, 'en-') ? 'en-GB' : 'it-IT',
                               'mainEntity' => array_map(fn($x) => ['@type' => 'Question', 'name' => $x[0], 'acceptedAnswer' => ['@type' => 'Answer', 'text' => $x[1]]],
-                                                        self::tipologie()[$pagina]['faq'])], $f);
+                                                        $tpF['faq'])], $f);
             if ($j !== false) $out[] = $j;
         }
         return $out;
@@ -355,7 +371,7 @@ final class Seo
         $en = $pagina === 'en' || str_starts_with($pagina, 'en-');
         $home = self::assoluto($en ? '/en' : '/');
         $url = self::assoluto(self::PAGINE[$pagina][0]);
-        $tp = self::tipologie()[$pagina] ?? null;
+        $tp = self::tipologiaDi($pagina);
         $nome = $tp['h1'] ?? preg_replace('/\s*\|\s*' . preg_quote(self::get('az.nome'), '/') . '$/u', '', self::titolo($pagina, self::PAGINE[$pagina][1]));
         $sito = self::assoluto('/');
         $web = array_filter([

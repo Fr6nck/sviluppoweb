@@ -386,18 +386,17 @@ Browser::$confermaAutomatica = false;
 $vera = new Browser('vera');
 $PULITO = preg_replace('#/index\.php$#', '', $BASE);
 $vera->get('/registrati');
-$dati7 = ['name' => 'Vera Conferma', 'email' => 'vera@prova.test', 'email2' => 'vera@prova.tst', 'password' => 'VeraProva1234', 'termini' => '1'];
+$dati7 = ['name' => 'Vera Conferma', 'email' => 'vera@prova.test', 'password' => 'Corta12', 'termini' => '1'];
 $r = $vera->post('/registrati', $dati7);
-prova('7A · le due email diverse: rifiutata', $r['code'] === 200 && str_contains($r['body'], 'Le due email non sono uguali') && !val("SELECT id FROM users WHERE email = 'vera@prova.test'"));
-prova('7A · «Ripeti l\'email», «Mostra» la password e l\'aiuto senza la password', str_contains($r['body'], 'name="email2"') && str_contains($r['body'], 'data-mostra-pw')
-      && str_contains($r['body'], 'Aiuto%20con%20l') && str_contains($r['body'], 'vera%40prova.test') && !str_contains($r['body'], 'VeraProva1234'));
+prova('9N · password sotto gli 8 caratteri: rifiutata, con «almeno 8 caratteri»', $r['code'] === 200 && str_contains($r['body'], 'almeno 8 caratteri') && !val("SELECT id FROM users WHERE email = 'vera@prova.test'"));
+$dati7['password'] = 'VeraProva1234';
+prova('9N · niente «Ripeti l\'email» (7A tolto); «Mostra» la password e l\'aiuto senza la password', !str_contains($r['body'], 'name="email2"') && str_contains($r['body'], 'data-mostra-pw')
+      && str_contains($r['body'], 'Aiuto%20con%20l') && str_contains($r['body'], 'vera%40prova.test') && !str_contains($r['body'], 'Corta12'));
 $r = $vera->post('/registrati', ['email2' => 'vera@prova.test', 'password' => 'password123'] + $dati7);
 prova('7A · password tra le più comuni: rifiutata', str_contains($r['body'], 'tra le più usate') && !val("SELECT id FROM users WHERE email = 'vera@prova.test'"));
 $r = $vera->post('/registrati', ['email2' => 'vera@prova.test', 'password' => 'vera@prova.test'] + $dati7);
 prova('7A · password uguale all\'email: rifiutata', str_contains($r['body'], 'uguale alla tua email'));
-$r = $vera->post('/registrati', ['email2' => 'vera@prova.test', 'password' => 'Corta1234'] + $dati7);
-prova('7A · password sotto i 10 caratteri: rifiutata', str_contains($r['body'], 'almeno 10 caratteri'));
-$r = $vera->post("$PULITO/registrati", ['email2' => 'VERA@prova.test'] + $dati7);
+$r = $vera->post("$PULITO/registrati", $dati7);
 prova('7A · registrata: «Controlla la tua email»', $r['code'] === 302 && str_ends_with($r['loc'], '/conferma-email'), $r['loc']);
 $lv = linkPosta('vera@prova.test', 'verifica');
 prova('7A · indirizzi puliti: il link di conferma è senza index.php', $lv !== '' && str_starts_with($lv, "$PULITO/verifica/") && !str_contains($lv, 'index.php'), $lv);

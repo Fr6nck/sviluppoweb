@@ -296,7 +296,7 @@ $disegni = [
     <span class="kicker"><?= $T('perchi.kicker') ?></span>
     <h2 id="perchi-titolo" class="h-sezione"><?= $T('perchi.titolo') ?></h2>
   </div>
-  <?php /* 9K · Sei schede, ognuna un link alla sua pagina (le pagine sono in italiano): foto 4:3, icona, titolo, testo, «Scopri →». */ ?>
+  <?php /* 9K · Sei schede, ognuna un link alla sua pagina (9N: su /en la pagina inglese): foto 4:3, icona, titolo, testo, «Scopri →». */ ?>
   <div class="perchi">
     <?php foreach ([['casa', 'case-vacanza', '/case-vacanza', 'home'], ['bnb', 'bed-and-breakfast', '/bed-and-breakfast', 'coffee'],
                     ['affitta', 'affittacamere', '/affittacamere', 'key'], ['agri', 'agriturismi', '/agriturismi', 'sun'],
@@ -310,7 +310,7 @@ $disegni = [
               'casa' => 'Una porta e le persiane rosse in legno su un muro di pietra con le rose rampicanti', 'bnb' => 'L\'ingresso di un B&B in pietra con l\'insegna, le lanterne accese e i vasi fioriti',
               'affitta' => 'Un portone ad arco in legno tra piante fiorite e vasi di terracotta', 'agri' => 'Un agriturismo in pietra con il cortile fiorito, gli ombrelloni e le colline',
               'piu' => 'Le mani che modificano una guida sul portatile, accanto al QR Code', 'pm' => 'Un property manager alla scrivania con le prenotazioni di più strutture sugli schermi'][$k]); ?>
-      <a class="perchi__scheda" href="<?= b() . $dove ?>"<?= $en ? ' hreflang="it"' : '' ?>>
+      <a class="perchi__scheda" href="<?= b() . MHW\LinguaSito::percorso($dove) ?>">
         <span class="perchi__foto"><?php if ($img['url']): ?><img src="<?= Support::e($img['url']) ?>" alt="<?= Support::e($alt) ?>" width="720" height="540" loading="lazy" decoding="async"<?= $F('perchi-' . $foto) ?>><?php endif; ?></span>
         <span class="perchi__corpo">
           <span class="vantaggio__ico" aria-hidden="true"><?= Icon::svg($ico, 20, 1.7) ?></span>

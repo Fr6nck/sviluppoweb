@@ -1,7 +1,7 @@
 <?php
 /**
  * 7F — Le pagine per tipologia (/case-vacanza, /bed-and-breakfast, /affittacamere, /agriturismi).
- * Solo in italiano. Titolo e descrizione per Google si cambiano in Amministrazione → SEO e GEO
+ * 9N: in inglese in lang/tipologie-en.php (stesse chiavi). Titolo e descrizione per Google si cambiano in Amministrazione → SEO e GEO
  * (qui ci sono quelli di serie); il resto del testo sta qui.
  *
  * Per ogni pagina: h1, intro, 3 problemi tipici con la risposta della guida, le sezioni più utili
@@ -73,7 +73,7 @@ return [
             ['Ho cinque camere: mi servono cinque guide?', 'No. Più camere allo stesso indirizzo e con lo stesso CIN sono una struttura sola: basta una guida. Per Wi-Fi diversi aggiungi una riga per ogni zona.'],
             ['Posso mettere il QR Code in ogni camera?', 'Sì. Il QR Code è lo stesso per tutta la guida e non cambia quando la modifichi: lo stampi una volta e lo lasci in camera, in sala colazione o all\'ingresso.'],
             ['Come chiedo una recensione agli ospiti?', 'Con il messaggio di fine soggiorno in «QR & Link». Chi dà 5 stelle trova i bottoni dei portali che hai spuntato; chi dà meno può scriverti in privato cosa migliorare.'],
-            ['E se i miei ospiti parlano tedesco o olandese?', 'Con Plus la guida è in sei lingue: la tua, le altre tra italiano, inglese, francese, tedesco e spagnolo, e una a scelta tra dieci, olandese compreso. Le traduzioni suggerite sono in omaggio il primo anno.'],
+            ['E se i miei ospiti parlano tedesco o olandese?', 'Con Plus la guida è in sei lingue: la tua, le altre tra italiano, inglese, francese, tedesco e spagnolo, e una a scelta tra dieci, olandese compreso. Hai le traduzioni suggerite dal traduttore automatico, le approvi tu, comprese nel piano entro un limite annuale.'],
         ],
     ],
     'affittacamere' => [

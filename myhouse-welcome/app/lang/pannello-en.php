@@ -105,7 +105,7 @@ return [
     // ---- Account & Fatturazione
     'Account &amp; Fatturazione.' => 'Account &amp; Billing.', 'Abbonamento' => 'Subscription', 'Attivo' => 'Active', 'In omaggio' => 'Free period', 'Non attivo' => 'Not active',
     'Dati di fatturazione' => 'Billing details', 'Completi' => 'Complete', 'Servono prima del pagamento' => 'Needed before payment',
-    'Cambia la password' => 'Change password', 'Password attuale' => 'Current password', 'Password nuova' => 'New password', 'Almeno 10 caratteri.' => 'At least 10 characters.', 'Il tuo codice omaggio' => 'Your gift code',
+    'Cambia la password' => 'Change password', 'Password attuale' => 'Current password', 'Password nuova' => 'New password', 'Almeno 8 caratteri.' => 'At least 8 characters.', 'Il tuo codice omaggio' => 'Your gift code',
     'Ripeti la password nuova' => 'Repeat the new password', 'Cambia l\'email' => 'Change email', 'Email nuova' => 'New email', 'Mandami il link di conferma' => 'Send me the confirmation link',
     'Ti mandiamo un link: finché non lo apri, resta valida l\'email di adesso.' => 'We send you a link: until you open it, your current email stays valid.',
     'Salva il nome' => 'Save name', 'Email confermata' => 'Email confirmed', 'Email da confermare' => 'Email to confirm', 'Pagamenti' => 'Payments',

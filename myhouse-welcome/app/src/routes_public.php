@@ -243,15 +243,16 @@ $r->get('/en/questions', function () use ($guard) {
     View::out('pub/domande', ['faq' => MHW\Faq::tutte('en'), 'seoPagina' => 'en-domande']);
 });
 
-/* 7F: le pagine per tipologia (solo italiano): problemi tipici, sezioni utili, piano consigliato, 4 domande. */
-foreach (MHW\Seo::tipologie() as $chiave => $tipoP) {
-    $r->get($tipoP['percorso'], function () use ($guard, $chiave, $tipoP, $datiQuestionario) {
+/* 7F: le pagine per tipologia: problemi tipici, sezioni utili, piano consigliato, 4 domande. 9N: anche in inglese (/en/…). */
+foreach (['it' => MHW\Seo::tipologie(), 'en' => MHW\Seo::tipologie('en')] as $locT => $tipiT) foreach ($tipiT as $chiave => $tipoP) {
+    $r->get($tipoP['percorso'], function () use ($guard, $chiave, $tipoP, $datiQuestionario, $locT) {
         $guard();
+        MHW\LinguaSito::imposta($locT);
         MHW\Stats::funnelEvent('landing_view');
         $q = $datiQuestionario();   // 9K · il questionario, con i prezzi barrati per chi guarda
         $piano = $q['qPiani'][$tipoP['piano'] ?? ''] ?? null;
         $demo = Db::one("SELECT id, slug, name FROM properties WHERE is_demo >= 1 AND status = 'published' AND archived_at IS NULL ORDER BY is_demo DESC, id");
-        View::out('pub/tipologia', ['tp' => $tipoP, 'chiave' => $chiave, 'piano' => $piano, 'demo' => $demo, 'user' => Auth::user(), 'seoPagina' => $chiave] + $q);
+        View::out('pub/tipologia', ['tp' => $tipoP, 'chiave' => $chiave, 'piano' => $piano, 'demo' => $demo, 'user' => Auth::user(), 'seoPagina' => ($locT === 'en' ? 'en-' : '') . $chiave] + $q);
     });
 }
 
@@ -286,7 +287,8 @@ $r->get('/llms-full.txt', fn() => $fileSeo('text/plain', [MHW\Seo::class, 'llmsC
 $r->get('/indexnow.txt', fn() => $fileSeo('text/plain', [MHW\Seo::class, 'chiaveIndexNow']));
 
 // ------------------------------------------------------------------ registrazione
-$r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $codiceDalLink, $chiInvita) {
+// 9N · La registrazione, in italiano (/registrati, anche ?lang=en) e in inglese (/en/register).
+$registrati = function () use ($guard, $doveComincia, $salvaPiano, $codiceDalLink, $chiInvita) {
     $guard();
     $codiceSconto = $codiceDalLink();
     $piano = (int) ($_GET['piano'] ?? $_POST['piano'] ?? 0);
@@ -333,14 +335,12 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
             if (empty($_POST['termini'])) {
                 throw new RuntimeException('Per creare l\'account devi accettare i Termini e l\'Accordo sul trattamento dei dati, dopo aver letto l\'Informativa privacy.');
             }
-            // 7A: l'email due volte, per non sbagliarla (incollarla è permesso).
-            if (mb_strtolower(trim($vecchi['email'])) !== mb_strtolower(trim($vecchi['email2']))) {
-                throw new RuntimeException('Le due email non sono uguali: controlla di averla scritta bene.');
-            }
+            // 9N · Niente più «Ripeti l'email» (attrito): l'indirizzo si controlla nella pagina dopo («Ho sbagliato indirizzo»).
             $u = Auth::register((string) $_POST['email'], (string) $_POST['password'], (string) $_POST['name']);
             MHW\Stats::funnelEvent('signup');
             MHW\Statistiche::evento('registrazione');   // 8H: parte dalla pagina seguente («Controlla la tua email»)
             Auth::recordConsent((int) $u['user_id']);
+            if (MHW\LinguaSito::en()) MHW\Pannello::scegli((int) $u['user_id'], 'en');   // 9N: registrato in inglese → pannello ed email in inglese
             Auth::login((int) $u['user_id']);
             // Arrivato da un link con il codice sconto: dopo la registrazione è già applicato all'account.
             if (($c = (string) ($_SESSION['codice_sconto'] ?? '')) !== '') {
@@ -370,7 +370,7 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
             // 7A: la guida si comincia dopo la conferma dell'email.
             if ($scelta && !$pvScelto) $_SESSION['dopo_conferma'] = $scelta;
             Support::redirect('/conferma-email');
-        } catch (\RuntimeException $e) { $err = $e->getMessage(); }
+        } catch (\RuntimeException $e) { $err = MHW\LinguaSito::tr($e->getMessage()); }
     }
     // La stessa fascia della landing: codice sconto dal link o invito di un amico.
     $invito = $chiInvita();
@@ -383,9 +383,12 @@ $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $cod
                                 'pianoScelto' => $pvScelto, 'quantita' => $qScelta, 'codiceSconto' => $codiceSconto, 'omaggio' => $omaggioLink,
                                 'invitoDi' => $invito && !$omaggioLink ? $nomeInvito : '', 'invitoCodice' => $invitoLink, 'oltre' => $oltre, 'pianoOltre' => $pianoOltre,
                                 'scontoInvito' => $nomeInvito !== '' ? [['tipo' => 'invito', 'nome' => 'Invito di ' . $nomeInvito, 'percento' => MHW\Inviti::AMICO]] : []], 'layout/bare');
-});
+};
+$r->any('/registrati', function () use ($registrati) { if (($_GET['lang'] ?? $_POST['lang'] ?? '') === 'en') MHW\LinguaSito::imposta('en'); $registrati(); });
+$r->any('/en/register', function () use ($registrati) { MHW\LinguaSito::imposta('en'); $registrati(); });
 
-$r->any('/accedi', function () use ($guard, $doveComincia) {
+// 9N · L'accesso, in italiano (/accedi, anche ?lang=en) e in inglese (/en/login).
+$accedi = function () use ($guard, $doveComincia) {
     $guard();
     if ($u = Auth::user()) Support::redirect($doveComincia($u));
     $err = null; $email = '';
@@ -408,8 +411,10 @@ $r->any('/accedi', function () use ($guard, $doveComincia) {
             $err = 'Email o password non corrispondono.';
         }
     }
-    View::out('auth/login', ['err' => $err, 'email' => $email], 'layout/bare');
-});
+    View::out('auth/login', ['err' => $err !== null ? MHW\LinguaSito::tr($err) : null, 'email' => $email], 'layout/bare');
+};
+$r->any('/accedi', function () use ($accedi) { if (($_GET['lang'] ?? $_POST['lang'] ?? '') === 'en') MHW\LinguaSito::imposta('en'); $accedi(); });
+$r->any('/en/login', function () use ($accedi) { MHW\LinguaSito::imposta('en'); $accedi(); });
 
 $r->post('/esci', function () { Auth::logout(); Support::redirect('/'); });
 
@@ -432,9 +437,10 @@ $r->get('/verifica/{token}', function (array $a) use ($doveComincia) {
         Db::update('users', ['email_verified_at' => Support::now()], 'id = :uid AND email_verified_at IS NULL', ['uid' => $uid]);
         $chi = Auth::user();
         if (!$chi || (int) $chi['id'] !== $uid) { if (!Auth::isImpersonating()) Auth::login($uid); }
-        Support::flash('Email confermata: ora prepari la tua guida.');
-        $dopo = (string) ($_SESSION['dopo_conferma'] ?? ''); unset($_SESSION['dopo_conferma']);
         $u = Db::one('SELECT * FROM users WHERE id = ?', [$uid]);
+        MHW\LinguaSito::imposta(($u['panel_lang'] ?? '') === 'en' ? 'en' : 'it'); // 9N: nella lingua del pannello
+        Support::flash(MHW\LinguaSito::tr('Email confermata: ora prepari la tua guida.'));
+        $dopo = (string) ($_SESSION['dopo_conferma'] ?? ''); unset($_SESSION['dopo_conferma']);
         $dove = str_starts_with($dopo, '/piano') ? $dopo : $doveComincia($u);
         // Dentro la procedura: chi non ha ancora una struttura comincia dal nome.
         if ($dove === '/pannello' && !Db::val('SELECT p.id FROM properties p JOIN accounts a ON a.id = p.account_id WHERE a.user_id = ? AND p.archived_at IS NULL', [$uid])) $dove = '/pannello/nuova';
@@ -447,6 +453,7 @@ $r->get('/verifica/{token}', function (array $a) use ($doveComincia) {
 $r->get('/conferma-email', function () use ($doveComincia) {
     $u = Auth::requireUser();
     if (Auth::isVerified($u) || $u['role'] === 'admin') Support::redirect($doveComincia($u));
+    MHW\LinguaSito::imposta(($u['panel_lang'] ?? '') === 'en' ? 'en' : 'it'); // 9N
     View::out('auth/check_email', ['email' => (string) $u['email'], 'attendi' => RateLimit::attesa('verifica-attesa:' . (int) $u['id'])], 'layout/bare');
 });
 
@@ -454,18 +461,19 @@ $r->get('/conferma-email', function () use ($doveComincia) {
 $r->post('/conferma-email/cambia', function () {
     $u = Auth::requireUser();
     if (Auth::isVerified($u)) Support::redirect('/pannello');
+    MHW\LinguaSito::imposta(($u['panel_lang'] ?? '') === 'en' ? 'en' : 'it'); // 9N
     $email = mb_strtolower(trim((string) ($_POST['email'] ?? '')));
     $err = null;
     if (!RateLimit::hit('verify:' . $u['id'], 5, 3600)) $err = 'Ti abbiamo già scritto più volte in un\'ora: riprova più tardi.';
     elseif (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 190) $err = 'Questo indirizzo email non è valido.';
     elseif ($email === mb_strtolower((string) $u['email'])) $err = 'È lo stesso indirizzo di prima: controlla anche in Spam e Promozioni.';
     elseif (Db::val('SELECT id FROM users WHERE email = ? AND id <> ?', [$email, $u['id']])) $err = 'Questa email è già usata da un altro account: accedi con quella, oppure recupera la password.';
-    if ($err) View::out('auth/check_email', ['email' => (string) $u['email'], 'attendi' => RateLimit::attesa('verifica-attesa:' . (int) $u['id']), 'err' => $err], 'layout/bare');
+    if ($err) View::out('auth/check_email', ['email' => (string) $u['email'], 'attendi' => RateLimit::attesa('verifica-attesa:' . (int) $u['id']), 'err' => MHW\LinguaSito::tr($err)], 'layout/bare');
     Db::update('users', ['email' => $email], 'id = :uid', ['uid' => $u['id']]);
     Auth::audit('account.email_prima_conferma', (int) $u['id'], ['da' => $u['email']]);
     Auth::sendVerification((int) $u['id']);
     RateLimit::hit('verifica-attesa:' . (int) $u['id'], 1, 60);
-    Support::flash('Fatto: ti abbiamo scritto a ' . $email . '.');
+    Support::flash(MHW\LinguaSito::t('Fatto: ti abbiamo scritto a ', 'Done: we have written to ') . $email . '.');
     Support::redirect('/conferma-email');
 });
 
@@ -473,15 +481,17 @@ $r->post('/verifica/invia', function () {
     $u = Auth::requireUser();
     if (Auth::isVerified($u)) Support::redirect('/pannello');
     $torna = (string) ($_POST['torna'] ?? '');
+    MHW\LinguaSito::imposta(($u['panel_lang'] ?? '') === 'en' ? 'en' : 'it'); // 9N
+    $T = [MHW\LinguaSito::class, 'tr'];
     if (RateLimit::attesa('verifica-attesa:' . (int) $u['id']) > 0) {
-        Support::flash('Aspetta qualche secondo prima di rimandarla.', 'err');
+        Support::flash($T('Aspetta qualche secondo prima di rimandarla.'), 'err');
     } elseif (!RateLimit::hit('verify:' . $u['id'], 5, 3600)) {
-        Support::flash('Ti abbiamo già scritto più volte: controlla anche in Spam e Promozioni, oppure riprova tra un\'ora.', 'err');
+        Support::flash($T('Ti abbiamo già scritto più volte: controlla anche in Spam e Promozioni, oppure riprova tra un\'ora.'), 'err');
     } elseif (Auth::sendVerification((int) $u['id'])) {
         RateLimit::hit('verifica-attesa:' . (int) $u['id'], 1, 60);
-        Support::flash('Ti abbiamo mandato di nuovo l\'email di conferma, a ' . $u['email'] . '.');
+        Support::flash(MHW\LinguaSito::t('Ti abbiamo mandato di nuovo l\'email di conferma, a ', 'We have sent the confirmation email again, to ') . $u['email'] . '.');
     } else {
-        Support::flash('L\'email non è partita. Riprova tra poco.', 'err');
+        Support::flash($T('L\'email non è partita. Riprova tra poco.'), 'err');
     }
     Support::redirect($torna === 'account' ? '/account' : '/conferma-email');
 });
@@ -489,6 +499,7 @@ $r->post('/verifica/invia', function () {
 // --------------------------------------------------------- recupero password
 $r->any('/password/dimenticata', function () use ($guard) {
     $guard();
+    if (($_GET['lang'] ?? '') === 'en') MHW\LinguaSito::imposta('en');   // 9N: dalla pagina di accesso inglese
     $inviata = false; $err = null;
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = (string) ($_POST['email'] ?? '');
@@ -500,11 +511,12 @@ $r->any('/password/dimenticata', function () use ($guard) {
             $inviata = true;
         }
     }
-    View::out('auth/forgot', ['inviata' => $inviata, 'err' => $err], 'layout/bare');
+    View::out('auth/forgot', ['inviata' => $inviata, 'err' => $err !== null ? MHW\LinguaSito::tr($err) : null], 'layout/bare');
 });
 
 $r->any('/password/nuova/{token}', function (array $a) {
     $uid = Tokens::peek($a['token'], Tokens::RESET);
+    if ($uid && Db::val("SELECT panel_lang FROM users WHERE id = ?", [$uid], '') === 'en') MHW\LinguaSito::imposta('en');   // 9N
     if (!$uid) View::out('auth/reset', ['valido' => false, 'err' => null], 'layout/bare');
     $err = null;
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -520,17 +532,18 @@ $r->any('/password/nuova/{token}', function (array $a) {
             Db::update('users', ['email_verified_at' => Support::now()], 'id = :uid AND email_verified_at IS NULL', ['uid' => $uid]);
             Db::insert('audit_log', ['actor_user_id' => $uid, 'target_user_id' => $uid, 'action' => 'password.reset',
                                      'meta' => '', 'created_at' => Support::now()]);
-            Support::flash('Password cambiata. Accedi con quella nuova.');
-            Support::redirect('/accedi');
+            Support::flash(MHW\LinguaSito::tr('Password cambiata. Accedi con quella nuova.'));
+            Support::redirect(MHW\LinguaSito::percorso('/accedi'));
         }
     }
-    View::out('auth/reset', ['valido' => true, 'err' => $err, 'token' => $a['token']], 'layout/bare');
+    View::out('auth/reset', ['valido' => true, 'err' => $err !== null ? MHW\LinguaSito::tr($err) : null, 'token' => $a['token']], 'layout/bare');
 });
 
 /* 9E · Dopo una password provvisoria: si può solo scegliere la password nuova, poi si entra. */
 $r->any('/password/cambia', function () use ($doveComincia) {
     $u = Auth::requireUser();
     if (empty($u['must_change_password'])) Support::redirect($doveComincia($u));
+    MHW\LinguaSito::imposta(($u['panel_lang'] ?? '') === 'en' ? 'en' : 'it'); // 9N
     $err = null;
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pw = (string) ($_POST['password'] ?? '');
@@ -541,11 +554,11 @@ $r->any('/password/cambia', function () use ($doveComincia) {
             Db::update('users', ['password_hash' => password_hash($pw, PASSWORD_DEFAULT), 'must_change_password' => 0, 'password_temp_until' => null], 'id = :uid', ['uid' => (int) $u['id']]);
             session_regenerate_id(true);
             Auth::audit('password.changed_after_temp', (int) $u['id']);
-            Support::flash('Password cambiata: da adesso entri con quella nuova.');
+            Support::flash(MHW\LinguaSito::tr('Password cambiata: da adesso entri con quella nuova.'));
             Support::redirect($doveComincia(Db::one('SELECT * FROM users WHERE id = ?', [(int) $u['id']]) ?: $u));
         }
     }
-    View::out('auth/cambia', ['err' => $err, 'user' => $u], 'layout/bare');
+    View::out('auth/cambia', ['err' => $err !== null ? MHW\LinguaSito::tr($err) : null, 'user' => $u], 'layout/bare');
 });
 
 // ------------------------------------------------------------- 9A · preventivo oltre il massimo del Portfolio
@@ -579,7 +592,7 @@ $r->post('/property-manager/partner', function () {
         $_SESSION['partner_errore'] = ['msg' => $e->getMessage()] + array_map(fn($v) => is_string($v) ? mb_substr($v, 0, 2000) : '',
             array_intersect_key($_POST, array_flip(['nome', 'societa', 'email', 'telefono', 'strutture', 'zone', 'messaggio'])));
     }
-    Support::redirect('/property-manager#partner');
+    Support::redirect((($_POST['lingua'] ?? '') === 'en' ? '/en/property-managers' : '/property-manager') . '#partner');   // 9N: si torna nella lingua del modulo
 });
 
 /* 9A · «Applica» accanto al codice di invito in registrazione: dice se il codice vale e di chi è. */

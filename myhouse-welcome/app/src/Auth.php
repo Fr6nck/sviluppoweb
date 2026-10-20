@@ -76,6 +76,10 @@ final class Auth
         $token = Tokens::issue($userId, Tokens::VERIFY, 48 * 3600);
         $link = Support::baseUrl() . '/verifica/' . $token;
         $nome = trim(explode(' ', trim((string) $u['name']))[0] ?? '');
+        // 9N · In inglese per chi si è registrato in inglese (panel_lang): testo e cornice dell'email.
+        if (($u['panel_lang'] ?? '') === 'en') return Mailer::inLingua('en', fn() => Mailer::manda($u['email'], 'Confirm your email', 'Confirm your email',
+            ['Hello' . ($nome !== '' ? ' ' . $nome : '') . ', one step to go: confirm your address and prepare your guide.'],
+            ['Confirm my email', $link], 'The link is valid for 48 hours. If you did not create the account, ignore this message.'));
         return Mailer::manda($u['email'], 'Conferma la tua email', 'Conferma la tua email',
             ['Ciao' . ($nome !== '' ? ' ' . $nome : '') . ', manca un passo: conferma il tuo indirizzo e prepari la tua guida.'],
             ['Conferma la mia email', $link], 'Il link vale 48 ore. Se non hai creato tu l\'account, ignora questo messaggio.');
@@ -88,16 +92,23 @@ final class Auth
         if (!$u) return;
         $token = Tokens::issue((int) $u['id'], Tokens::RESET, 3600);
         $link = Support::baseUrl() . '/password/nuova/' . $token;
+        if (($u['panel_lang'] ?? '') === 'en') {   // 9N
+            Mailer::inLingua('en', fn() => Mailer::manda($u['email'], 'Choose a new password', 'Choose a new password',
+                ['Someone asked to change the password of your MyHouse Welcome account. If it was you, choose the new password with the button below.',
+                 'If it was not you, ignore this message: the password stays the same.'],
+                ['Choose the password', $link], 'The link expires in one hour.'));
+            return;
+        }
         Mailer::manda($u['email'], 'Scegli una nuova password', 'Scegli una nuova password',
             ['Qualcuno ha chiesto di cambiare la password del tuo account MyHouse Welcome. Se sei stato tu, scegli la nuova password dal bottone qui sotto.',
              'Se non sei stato tu, ignora questo messaggio: la password resta quella di prima.'],
             ['Scegli la password', $link], 'Il link scade tra un\'ora.');
     }
 
-    public const PASSWORD_MIN = 10;
+    public const PASSWORD_MIN = 8;   // 9N: deciso dal titolare (prima 10)
 
     /**
-     * La password va bene? Almeno 10 caratteri, al massimo 72 byte (oltre, bcrypt la taglierebbe senza
+     * La password va bene? Almeno PASSWORD_MIN caratteri (8), al massimo 72 byte (oltre, bcrypt la taglierebbe senza
      * dirlo), non tra le 1.000 più usate (lang/password-comuni.txt), diversa dall'email e dal nome (7A).
      * Lancia l'errore da mostrare così com'è.
      */

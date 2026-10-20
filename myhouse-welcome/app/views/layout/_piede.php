@@ -15,10 +15,10 @@ $prefCookie = MHW\Statistiche::qui() && MHW\Statistiche::consensoServe() ? ' · 
       <?php /* 8J: chi fornisce il servizio (art. 2250 c.c., D.Lgs. 70/2003): ragione sociale, sede, P.IVA, REA, capitale sociale (9K: niente PEC). */ ?>
       <span class="piede__titolare"><?= Support::e(MHW\Legale::rigaTitolare($en)) ?></span>
     </div>
-    <?php /* 7F: le pagine per tipologia, solo in italiano. */ if (!$en): ?>
+    <?php /* 7F: le pagine per tipologia; 9N: anche in inglese. */ if (true): ?>
     <nav class="piede__perchi" aria-labelledby="piede-perchi">
-      <span id="piede-perchi" class="piede__titolo">Per chi è</span>
-      <?php foreach (MHW\Seo::tipologie() as $tpP): ?><a href="<?= b() . Support::e($tpP['percorso']) ?>"><?= Support::e($tpP['nome']) ?></a><?php endforeach; ?>
+      <span id="piede-perchi" class="piede__titolo"><?= $en ? 'Who it is for' : 'Per chi è' ?></span>
+      <?php foreach (MHW\Seo::tipologie(MHW\LinguaSito::get()) as $tpP): /* 9N: su /en le pagine inglesi */ ?><a href="<?= b() . Support::e($tpP['percorso']) ?>"><?= Support::e($tpP['nome']) ?></a><?php endforeach; ?>
     </nav>
     <?php endif; ?>
     <div class="piede__contatti">
