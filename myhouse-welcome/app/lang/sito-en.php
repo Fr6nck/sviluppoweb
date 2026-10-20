@@ -210,6 +210,13 @@ return [
     'questionario.crea'         => 'Start free with {piano}',
     'questionario.rifai'        => 'Take the test again',
     'questionario.rinnovo.nota' => 'Prices + VAT, per year. The discount applies to the renewal after the successful invitations.',
+    // 9M · La scheda campione (Portfolio) e «Disponibile dopo l'attivazione».
+    'campione.titolo' => 'The template guide',
+    'campione.testo'  => 'With Portfolio you choose one guide as your **template**: it is the model the others come from. When you create a new guide, you copy the sections you want from the template; when you later change the template, we let you know and you bring the changes to the twin guides with one click. You can change the template whenever you like: the twins stay linked to the copied sections.',
+    'campione.si'     => "House rules, rubbish, getting around\nWhere to eat, what to see, shops and groceries\nServices, extra services, emergencies\n**Where to park** (marked “to check”, because the address changes)\nAppearance: palette, theme, logo · Contacts",
+    'campione.no'     => "Address and CIN\nWi-Fi networks and passwords\nSteps to get in (codes, key boxes)\nCover photo",
+    'campione.avviso' => "Every copied section remembers which version of the template it comes from.\nIf the template changes, the twin shows “to update”; if you have customised the twin, we tell you before overwriting.\nNothing is copied by itself: you confirm, section by section.",
+    'attivazione.spiegone' => '**Available after activation.** Automatic translation and the template guide switch on when you activate Plus or Portfolio. Meanwhile you can prepare everything.',
     'risparmio.testo'    => '**Up to {totale} off from next year.** Bring a friend: {passo} each off your renewal, up to {max} with {amici} friends. Join the “Review with a discount” programme, with your guide on our home page: another {giudizio}.',
     'risparmio.inviti'   => '**Up to {max} off from next year.** Bring a friend: {passo} each off your renewal, up to {max} with {amici} friends.',
     'risparmio.giudizio' => '**{giudizio} off.** Join the “Review with a discount” programme, with your guide on our home page.',

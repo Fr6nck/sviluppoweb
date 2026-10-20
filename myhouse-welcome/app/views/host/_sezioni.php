@@ -48,6 +48,7 @@ $n = count($sezioni); ?>
       <?php if (!$on): ?><span class="badge badge--paper"><?= t('Disattivata') ?></span>
       <?php elseif ($s['empty']): ?><span class="badge badge--terracotta"><?= t('Da compilare') ?></span>
       <?php else: ?><span class="badge badge--pine"><?= t('Pronta') ?></span><?php endif; ?>
+      <?php if (!empty($s['da_controllare'])): /* 9M · il parcheggio copiato da un'altra guida: l'indirizzo è diverso */ ?><span class="badge badge--terracotta"><?= t('Da controllare') ?></span><?php endif; ?>
       <?php /* 7C · Novità: un campo nuovo ancora vuoto in questa sezione */
             $tdN = json_decode((string) MHW\Db::val('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $prop['default_locale']], ''), true) ?: [];
             if ($on && MHW\Novita::campiNuovi((int) $prop['account_id'], (string) $s['kind'], (json_decode((string) ($s['data'] ?? ''), true) ?: []) + $tdN)): ?>

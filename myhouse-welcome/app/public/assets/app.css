@@ -3191,3 +3191,28 @@ html.finestra-aperta{overflow:hidden}
 .giudizi-ordine__freccia:hover,.giudizi-ordine__freccia:focus-visible{color:var(--text);background:var(--sunk)}
 tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .giudizi-azioni form{display:inline}
+
+/* 9M · La scheda campione: badge sulle schede di «Le mie guide», il banner «Aggiorna le gemelle», lo spiegone,
+   «Disponibile dopo l'attivazione», la tabella «Porta le modifiche alle gemelle» con l'anteprima delle differenze. */
+.badge-campione{display:inline-flex;align-items:center;margin-left:6px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;vertical-align:middle;background:var(--accent);color:#fff8f2;text-decoration:none}
+.badge-campione--gemella{background:var(--sunk);color:var(--muted)}
+.badge-campione--spento{background:var(--sunk);color:var(--muted)}
+.gemella-da-aggiornare{color:var(--accent)} .gemella-allineata{color:var(--pine)}
+.campione-banner{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:20px;padding:16px 18px;border:1px solid var(--ochre-soft,#f3dca8);border-radius:var(--r-lg);background:var(--ochre-soft,#fbf0d9)}
+.campione-banner>div{flex:1 1 320px}
+.campione-banner__ico{flex:0 0 32px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--ochre,#d4a12a);color:#231b12;font-weight:700}
+.campione-spiegone{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.campione-spiegone__titolo{font-size:24px;margin:0}
+.campione-spiegone__lista{margin:0;padding-left:18px;display:grid;gap:4px}
+@media (max-width:760px){.campione-spiegone{grid-template-columns:1fr}}
+.attivazione{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:var(--r-md,12px);background:var(--sunk)}
+.attivazione p{margin:0;font-size:14px;line-height:21px}
+.attivazione__ico{flex:0 0 auto;color:var(--muted)}
+.gemelle-tabella th[scope="row"]{min-width:180px}
+.gemelle-tabella__scelta{background:var(--sunk)}
+.gemelle-cella{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.gemelle-anteprima p{line-height:24px}
+.gemelle-anteprima del{color:var(--alert);text-decoration:line-through}
+.gemelle-anteprima ins{text-decoration:none;background:var(--pine-soft);color:var(--pine);border-radius:4px;padding:0 2px}
+.tipo-rinnovo{max-width:720px;margin-top:20px}
+.gemelle-tabella tbody th{text-transform:none;letter-spacing:0;font-size:15px;font-weight:600;color:var(--text);background:transparent}

@@ -22,6 +22,7 @@ $intro = SectionCatalog::intro($s['kind']); ?>
         <h1 style="font-size:clamp(28px,3.4vw,38px)"><?= $titoloSalvato ?></h1>
         <?php if ($core): ?><span class="badge badge--sea"><?= t('Sempre inclusa') ?></span><?php endif; ?>
         <?php if (!$core && (int) $s['is_active'] === 0): ?><span class="badge badge--paper"><?= t('Disattivata') ?></span><?php endif; ?>
+        <?php if (!empty($s['da_controllare'])): ?><span class="badge badge--terracotta"><?= t('Da controllare') ?></span><?php endif; ?>
         <?php if (($esempioSez = MHW\Demo::esempio((string) $s['kind'], (int) $prop['id']))): /* 7C: la stessa sezione nella guida di esempio */ ?>
           <a class="vedi-esempio" href="<?= Support::e(Support::url($esempioSez)) ?>" target="_blank" rel="noopener"><?= Icon::svg('book', 18) ?>Vedi un esempio</a>
         <?php endif; ?>

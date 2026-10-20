@@ -54,6 +54,16 @@ $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' : null
   </div>
 </section>
 
+<?php if (!empty($tp['campione'])): /* 9M · «Il lavoro lo fai una volta sola»: lo spiegone della scheda campione (le stesse chiavi del pannello e delle FAQ) */ ?>
+<section class="blocco" aria-labelledby="tipo-campione">
+  <div class="come__testa">
+    <span class="kicker">Con Portfolio</span>
+    <h2 id="tipo-campione" class="h-sezione">Il lavoro lo fai una volta sola</h2>
+  </div>
+  <?php $csTitolo = 'h3'; include __DIR__ . '/_campione_spiegone.php'; ?>
+</section>
+<?php endif; ?>
+
 <?php if (!empty($tp['passi'])): /* 9K · Come funziona la partnership: quattro passi in ordine */ ?>
 <section class="blocco" aria-labelledby="tipo-passi">
   <div class="come__testa">

@@ -161,7 +161,7 @@ return [
             ['Non sai quale guida leggono di più', 'Con più case non sai quali informazioni servono davvero, né dove gli ospiti cercano e non trovano.',
              'Le statistiche sono distinte per struttura: quante volte si apre la guida, le sezioni più lette, le lingue degli ospiti.'],
         ],
-        'piano' => 'portfolio', 'portfolio' => true,
+        'piano' => 'portfolio', 'portfolio' => true, 'campione' => true,   // 9M: lo spiegone della scheda campione
         'faq' => [
             ['Posso aggiungere una struttura a metà anno?', 'Sì, quando vuoi, da Account & Fatturazione → «Cambia piano»: paghi oggi solo la differenza per i giorni che restano fino al rinnovo, e dal rinnovo tutte le strutture si rinnovano insieme.'],
             ['Posso spostare una guida da una struttura all\'altra?', 'Ogni guida appartiene alla sua struttura, con il suo indirizzo, il suo CIN e il suo QR. Se cambi casa, archivi la guida vecchia da «Le mie guide» e ne prepari una nuova: le sezioni che ti servono le copi in un attimo.'],

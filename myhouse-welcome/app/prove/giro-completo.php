@@ -6266,11 +6266,11 @@ prova('9L · /en allineato: «Up to 55% off from next year»', str_contains($osp
 @unlink($fileLocale);
 
 // 5 · Il programma. Tre host con la copertina: Lia aderisce al pagamento, Teo dal pannello, Sara al pagamento.
-$host9l = function (string $nome, string $email, string $cf, string $citta) use ($accDi) {
+$host9l = function (string $nome, string $email, string $cf, string $citta, string $piano = 'plus', int $strutture = 1) use ($accDi) {
     $b = new Browser('h9l-' . strtolower($nome));
     db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
-    $b->get('/registrati?piano=' . pv('plus'));
-    $b->post('/registrati', ['piano' => pv('plus'), 'name' => $nome . ' Vetrina', 'email' => $email, 'email2' => $email, 'password' => 'Vetrina9L-2026', 'termini' => '1']);
+    $b->get('/registrati?piano=' . pv($piano));
+    $b->post('/registrati', ['piano' => pv($piano), 'name' => $nome . ' Vetrina', 'email' => $email, 'email2' => $email, 'password' => 'Vetrina9L-2026', 'termini' => '1'] + ($strutture > 1 ? ['strutture' => (string) $strutture] : []));
     $acc = $accDi($email);
     $l = linkPosta($email, 'verifica'); $b->get(substr($l, strpos($l, '/verifica/')));
     $b->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa ' . $nome, 'city' => $citta]);
@@ -6516,6 +6516,125 @@ prova('Benvenuto · mai agli account di esempio (lucia@esempio.it) né alla vetr
 $ts = $admin->get('/admin/testi');
 prova('Benvenuto · in «Testi e foto» (Le guide dei nostri host e «Giudizio con sconto») le due righe dell\'email', str_contains($ts['body'], 'Email di benvenuto · la riga per chi ha aderito')
       && str_contains($ts['body'], 'Email di benvenuto · la riga per chi può ancora aderire'));
+
+// ======================================================================= 9M
+capitolo('9M · /piu-strutture con il riquadro dello sconto; il parcheggio si copia «da controllare»; la scheda campione di Portfolio; traduzione e campione dopo il pagamento');
+// 1 · /piu-strutture: il riquadro dello sconto sotto i prezzi e il selettore, senza le tre domande; con inviti e giudizio accesi il 55%.
+@unlink($fileLocale);
+file_put_contents($fileLocale, '<?php return ' . var_export(['inviti' => ['attivi' => true]], true) . ';');
+touch($fileLocale, time() - 30); clearstatcache(); sleep(3);
+$r9m = $ospite->get('/piu-strutture');
+@unlink($fileLocale); clearstatcache(); sleep(3);
+prova('9M · 1 · /piu-strutture: «Quante strutture?» accanto al prezzo (177 € per 2), sotto il 55% e la scala del rinnovo legata al selettore (79,65 €), senza titolo né domande del questionario',
+      str_contains($r9m['body'], 'id="pf-strutture"') && str_contains($r9m['body'], 'data-rinnovo data-campo="pf-strutture"') && preg_match('#Primo anno <b data-q-anno>177\x{00A0}€</b>, dal rinnovo con il 55%#u', $r9m['body']) === 1
+      && str_contains($r9m['body'], "79,65\u{00A0}€") && str_contains($r9m['body'], 'Fino al 55% di sconto a partire dal prossimo anno.') && str_contains($r9m['body'], 'Nessuno sconto')
+      && str_contains($r9m['body'], '10 amici + giudizio · 55%') && !str_contains($r9m['body'], 'data-questionario') && !str_contains($r9m['body'], 'Tre domande, una risposta.')
+      && str_contains($r9m['body'], 'prezzi.js') && str_contains($r9m['body'], 'Il lavoro lo fai una volta sola') && str_contains($r9m['body'], 'La scheda campione'));
+$js9m = (string) file_get_contents("$DOVE/assets/prezzi.js");
+prova('9M · 1 · prezzi.js aggiorna il riquadro legato al campo (data-rinnovo / data-campo) e il bottone con il numero di strutture', str_contains($js9m, "[data-rinnovo][data-campo=\"' + campo.id + '\"]") && str_contains($js9m, '[data-crea][data-href]'));
+
+// Pia: Portfolio per 3 strutture. Prima del pagamento campione e traduzione automatica ci sono, spente, con lo spiegone.
+[$pia, $piaAcc, $piaA] = $host9l('Pia', 'pia9m@prova.test', 'VTRPIA85A41G478X', 'Gubbio', 'portfolio', 3);
+db()->prepare("UPDATE accounts SET intended_quantity = 3 WHERE id = ?")->execute([$piaAcc]);
+$rP = $pia->get('/pannello');
+$rL = $pia->get("/pannello/$piaA/lingue");
+$pia->post("/pannello/$piaA/lingue/suggerite", ['acceso' => '1']);
+$pia->post("/pannello/$piaA/campione", []);
+prova('9M · 7 · Portfolio non pagato: «Rendi campione» spento con «Disponibile dopo l\'attivazione»; traduzione automatica spenta con lo stesso spiegone; niente si accende',
+      str_contains($rP['body'], 'class="panel stack campione-spento"') && str_contains($rP['body'], 'Disponibile dopo l&#039;attivazione.') && !str_contains($rP['body'], 'badge-campione">Campione')
+      && str_contains($rL['body'], 'Disponibile dopo l&#039;attivazione.') && str_contains($rL['body'], '<button type="button" class="btn btn--sm" disabled>Accendi le traduzioni suggerite</button>')
+      && (int) val('SELECT translation_suggest FROM properties WHERE id = ?', [$piaA]) === 0 && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND campione = 1', [$piaAcc]) === 0);
+$paga9l($pia, $piaAcc, $piaA, false, 'sub_prova_pia9m');
+$rL = $pia->get("/pannello/$piaA/lingue");
+prova('9M · 7 · dopo il pagamento si accendono senza toccare l\'account: niente spiegone, il bottone delle traduzioni attivo', !str_contains($rL['body'], 'Disponibile dopo l&#039;attivazione.')
+      && str_contains($rL['body'], '<button class="btn btn--sm">Accendi le traduzioni suggerite</button>') && str_contains($pia->get('/pannello')['body'], 'Rendi campione</button>'));
+// Altre due guide (B e C), poi la campione: una sola per account.
+$pia->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Pia Due', 'city' => 'Gubbio']);
+$pia->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Pia Tre', 'city' => 'Gubbio']);
+[$piaB, $piaC] = array_map('intval', array_column(righe('SELECT id FROM properties WHERE account_id = ? AND id <> ? ORDER BY id', [$piaAcc, $piaA]), 'id')) + [0, 0];
+$pia->post("/pannello/$piaB/campione", []);
+$pia->post("/pannello/$piaA/campione", []);
+prova('9M · 3 · una sola campione per account: B, poi A; B perde il ruolo; nel registro', $piaB > 0 && $piaC > 0
+      && (int) val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND campione = 1', [$piaAcc]) === 1 && (int) val('SELECT campione FROM properties WHERE id = ?', [$piaA]) === 1
+      && (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'campione.scelta'") >= 2);
+// Le sezioni della campione: regole, parcheggio, negozi.
+foreach (['rules', 'parking', 'shop'] as $k) $pia->post("/pannello/$piaA/sezioni", ['kind' => $k]);
+$sezA = fn(string $k) => (int) val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$piaA, $k]);
+$pia->post("/pannello/$piaA/sezioni/" . $sezA('rules'), ['note' => 'Il check-out è entro le 10:00. Le chiavi vanno lasciate sul tavolo.']);
+$pia->post("/pannello/$piaA/sezioni/" . $sezA('parking'), ['ztl' => 'Ztl attiva dalle 8 alle 20 in via Baldassini.']);
+// 2 · La copia: il parcheggio c'è, si copia ed è «da controllare» nella gemella; la nota «Non si copiano mai» senza il parcheggio.
+$rCo = $pia->get("/pannello/$piaB/copia");
+prova('9M · 2 · «Copia sezioni da…»: di serie la campione («(campione)» e le briciole), il parcheggio tra le copiabili «copiata e segnata da controllare», la nota senza il parcheggio',
+      str_contains($rCo['body'], 'Casa Pia (campione)</option>') && str_contains($rCo['body'], 'Casa Pia (campione) › Contenuti → Casa Pia Due')
+      && str_contains($rCo['body'], 'value="parking" checked') && str_contains($rCo['body'], 'copiata e segnata «da controllare»')
+      && str_contains($rCo['body'], 'Non si copiano mai, perché sono solo di una struttura: indirizzo, CIN, reti Wi-Fi, passaggi per entrare, foto di copertina.</p>'));
+foreach ([$piaB, $piaC] as $g) $pia->modulo("/pannello/$g/copia?da=$piaA", "/pannello/$g/copia", ['da' => (string) $piaA, 'copia' => ['rules', 'parking', 'shop']]);
+$pkB = riga('SELECT * FROM sections WHERE property_id = ? AND kind = ?', [$piaB, 'parking']);
+$rB = $pia->get("/pannello/$piaB");
+prova('9M · 2 · il parcheggio copiato nella gemella: collegato alla campione, «Da controllare» nel pannello', $pkB && (int) $pkB['da_controllare'] === 1 && (int) $pkB['origine_property_id'] === $piaA
+      && str_contains($rB['body'], 'Da controllare') && str_contains($rB['body'], 'Il parcheggio è stato copiato da un&#039;altra guida'));
+$pia->post("/pannello/$piaB/sezioni/" . (int) $pkB['id'], ['ztl' => 'Ztl attiva dalle 8 alle 20 in via Baldassini. Il nostro posto è il 12.']);
+prova('9M · 2 · salvata la sezione, «da controllare» sparisce', (int) val('SELECT da_controllare FROM sections WHERE id = ?', [(int) $pkB['id']]) === 0
+      && !str_contains($pia->get("/pannello/$piaB")['body'], 'Il parcheggio è stato copiato'));
+// C personalizza le sue regole.
+$rulesC = (int) val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$piaC, 'rules']);
+$pia->post("/pannello/$piaC/sezioni/$rulesC", ['note' => 'Da noi il check-out è alle 9:30, la chiave nella cassetta.']);
+// 4/5 · La campione cambia: le gemelle «da aggiornare», contatore e banner; niente si propaga da solo.
+$verPrima = (int) val('SELECT versione FROM sections WHERE id = ?', [$sezA('rules')]);
+$pia->post("/pannello/$piaA/sezioni/" . $sezA('rules'), ['note' => 'Il check-out è entro le 11:00. Non è permesso fumare nemmeno sul balcone. Le chiavi vanno lasciate sul tavolo.']);
+$rulesB = (int) val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$piaB, 'rules']);
+$testoB = fn() => (string) val('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$rulesB, 'it']);
+$rP = $pia->get('/pannello');
+prova('9M · 4/5 · salvata la campione: versione +1; «Le mie guide» con «Campione», «Gemella», «1 sezione da aggiornare» e il banner; la gemella NON cambia da sola',
+      (int) val('SELECT versione FROM sections WHERE id = ?', [$sezA('rules')]) === $verPrima + 1 && str_contains($rP['body'], 'class="badge-campione">Campione</span>')
+      && substr_count($rP['body'], 'badge-campione--gemella">Gemella</span>') === 2 && str_contains($rP['body'], '1 sezione da aggiornare')
+      && str_contains($rP['body'], 'Hai modificato <b>«Regole della casa»</b> nella scheda campione.') && str_contains($rP['body'], 'Le modifiche non si copiano da sole: decidi tu.')
+      && str_contains($rP['body'], '/campione/gemelle">Aggiorna le gemelle →</a>') && str_contains($testoB(), '10:00') && !str_contains($testoB(), '11:00')
+      && str_contains($pia->get("/pannello/$piaA")['body'], 'Aggiorna le gemelle →'));
+// Una sezione aggiunta e una eliminata nella campione.
+sleep(1);
+$pia->post("/pannello/$piaA/sezioni", ['kind' => 'eat']);
+$pia->post("/pannello/$piaA/sezioni/" . $sezA('shop') . '/azione', ['fai' => 'elimina']);
+$rG = $pia->get('/campione/gemelle?riga=c' . $sezA('rules'));
+prova('9M · 4 · «Porta le modifiche alle gemelle»: Regole (B «uguale alla campione» spuntata, C «personalizzata» no), Dove mangiare «manca: verrà aggiunta» spuntata, Negozi «presente: verrà tolta se spunti» no; anteprima con il tolto barrato e l\'aggiunto evidenziato',
+      $rG['code'] === 200 && preg_match('#name="sel\[c' . $sezA('rules') . '\]\[' . $piaB . '\]" value="1" checked data-gemelle-casella>\s*<span class="pillola pillola--pino">uguale alla campione#', $rG['body']) === 1
+      && preg_match('#name="sel\[c' . $sezA('rules') . '\]\[' . $piaC . '\]" value="1" data-gemelle-casella>\s*<span class="pillola pillola--terracotta">personalizzata#', $rG['body']) === 1
+      && preg_match('#name="sel\[c' . $sezA('eat') . '\]\[' . $piaB . '\]" value="1" checked data-gemelle-casella>\s*<span class="pillola pillola--ocra">manca: verrà aggiunta#', $rG['body']) === 1
+      && preg_match('#name="sel\[e\d+\]\[' . $piaB . '\]" value="1" data-gemelle-casella>\s*<span class="pillola pillola--ocra">presente: verrà tolta se spunti#', $rG['body']) === 1
+      && str_contains($rG['body'], '<del>10:00.</del>') && str_contains($rG['body'], '<ins>11:00. Non è permesso fumare nemmeno sul balcone.</ins>') && str_contains($rG['body'], 'non consumano il tetto annuale'));
+$shopB = (int) val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$piaB, 'shop']);
+preg_match('#name="sel\[(e\d+)\]\[' . $piaB . '\]"#', $rG['body'], $mE);
+$sel9m = ['c' . $sezA('rules') => [$piaB => '1'], 'c' . $sezA('eat') => [$piaB => '1', $piaC => '1'], ($mE[1] ?? 'e0') => [$piaB => '1']];
+$usoPrima = (int) val('SELECT COUNT(*) FROM translation_usage WHERE account_id = ?', [$piaAcc]);
+$rCf = $pia->post('/campione/gemelle', ['sel' => $sel9m, 'applica' => '1']);
+prova('9M · 8 · la rimozione chiede conferma: «Vuoi togliere «Negozi e spesa» da 1 guida?», e finché non si conferma niente cambia', str_contains($rCf['body'], 'Vuoi togliere «Negozi e spesa» da 1 guida?')
+      && str_contains($rCf['body'], 'Il testo resta nello storico per 30 giorni') && (bool) val('SELECT id FROM sections WHERE id = ?', [$shopB]) && str_contains($testoB(), '10:00'));
+$pia->post('/campione/gemelle', ['sel' => $sel9m, 'conferma' => '1']);
+$rulesB2 = riga('SELECT * FROM sections WHERE id = ?', [$rulesB]);
+prova('9M · 4 · applicato: B ha le regole nuove (stessa sezione, versione allineata, non più personalizzata), Dove mangiare in B e C, Negozi tolto da B; C tiene il suo testo; storico 30 giorni e registro',
+      str_contains($testoB(), '11:00') && (int) $rulesB2['origine_versione'] === (int) val('SELECT versione FROM sections WHERE id = ?', [$sezA('rules')]) && $rulesB2['personalizzata_at'] === null
+      && (bool) val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$piaB, 'eat']) && (bool) val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$piaC, 'eat'])
+      && !val('SELECT id FROM sections WHERE id = ?', [$shopB]) && str_contains((string) val('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$rulesC, 'it']), '9:30')
+      && (bool) val("SELECT id FROM sezioni_versioni WHERE section_id = ? AND motivo = 'sovrascritta'", [$rulesB]) && (bool) val("SELECT id FROM sezioni_versioni WHERE section_id = ? AND motivo = 'tolta'", [$shopB])
+      && (bool) val("SELECT id FROM audit_log WHERE action = 'campione.applica' AND meta LIKE ?", ['%"account_id":' . $piaAcc . ',%']));
+prova('9M · 6 · la propagazione non chiama il traduttore: il contatore delle traduzioni (translation_usage) non sale', (int) val('SELECT COUNT(*) FROM translation_usage WHERE account_id = ?', [$piaAcc]) === $usoPrima);
+prova('9M · 4 · dopo: la gemella B è allineata per le regole; C resta da decidere (personalizzata)', !str_contains($pia->get('/campione/gemelle')['body'], 'name="sel[c' . $sezA('rules') . '][' . $piaB . ']"')
+      && str_contains($pia->get('/campione/gemelle')['body'], 'name="sel[c' . $sezA('rules') . '][' . $piaC . ']"'));
+// 3 · Cambio campione: i collegamenti restano.
+$pia->post("/pannello/$piaB/campione", []);
+prova('9M · 3 · cambio campione (B): le sezioni copiate da A restano collegate ad A', (int) val('SELECT campione FROM properties WHERE id = ?', [$piaB]) === 1
+      && (int) val('SELECT origine_property_id FROM sections WHERE id = ?', [$rulesC]) === $piaA);
+$pia->post("/pannello/$piaA/campione", []);
+// 7 · Essential e Plus: niente campione.
+$rT9 = $teo->get('/pannello');
+prova('9M · 7 · Plus (Teo): nessun badge, nessun banner, nessuna voce «Rendi campione»; /campione rimanda a Le mie guide', !str_contains($rT9['body'], 'badge-campione') && !str_contains($rT9['body'], 'Rendi campione')
+      && !str_contains($rT9['body'], 'campione-banner') && $teo->get('/campione')['code'] === 302);
+// Spiegone e FAQ: una chiave sola; il parcheggio tra le copiabili, non tra quelle che non si copiano mai.
+$rD9 = $ospite->get('/domande');
+prova('9M · spiegone e FAQ: «Cos\'è la scheda campione?», «Cosa si copia e cosa no?» (Dove parcheggiare segnato «da controllare»), «Quando si accendono…»; «La scheda campione» nel pannello',
+      str_contains($rD9['body'], 'Cos&#039;è la scheda campione?') && str_contains($rD9['body'], 'Cosa si copia e cosa no?') && str_contains($rD9['body'], 'Dove parcheggiare (segnato «da controllare»')
+      && preg_match('#Non si copiano mai: [^.]*parcheggi#', $rD9['body']) === 0 && str_contains($rD9['body'], 'Disponibile dopo l&#039;attivazione.')
+      && str_contains($pia->get('/campione')['body'], 'Si copiano (e si aggiornano)'));
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

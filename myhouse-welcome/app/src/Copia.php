@@ -11,9 +11,14 @@ namespace MHW;
  *     c'è già si sceglie se sostituirla o saltarla.
  *
  * Mai copiati: indirizzo, CIN, reti Wi-Fi, passaggi di arrivo (Check-in &
- * Check-out), «Come arrivare», foto di copertina, parcheggio. Sono dati di
- * QUELLA casa: copiarli vorrebbe dire dare agli ospiti la password o la strada
- * sbagliata.
+ * Check-out), «Come arrivare», foto di copertina. Sono dati di QUELLA casa:
+ * copiarli vorrebbe dire dare agli ospiti la password o la strada sbagliata.
+ * 9M · Il parcheggio sì, ma la copia è segnata «da controllare» (sections.da_controllare)
+ * finché non si salva la sezione: l'indirizzo è diverso.
+ *
+ * 9M · Ogni sezione copiata resta collegata alla sua origine (origine_sezione_id,
+ * origine_property_id, origine_versione): se l'origine è la «scheda campione»,
+ * Campione propone di portare nelle gemelle le modifiche (mai da solo).
  *
  * Le immagini e i PDF si DUPLICANO nello storage con nomi nuovi: le due guide
  * sono indipendenti, eliminare l'una non tocca i file dell'altra.
@@ -31,9 +36,13 @@ namespace MHW;
 final class Copia
 {
     /** Le sezioni che si possono copiare, nell'ordine in cui si propongono (tutte già spuntate). 8C: «clima» è diventata due. */
-    public const SEZIONI = ['waste', 'eat', 'visit', 'todo', 'shop', 'transport', 'emergency', 'info', 'rules', 'services', 'riscaldamento', 'aria', 'extras', 'events', 'custom'];
-    /** Mai copiate: dati della singola casa. */
-    public const MAI = ['checkin', 'wifi', 'arrival', 'parking'];
+    public const SEZIONI = ['waste', 'eat', 'visit', 'todo', 'shop', 'transport', 'parking', 'emergency', 'info', 'rules', 'services', 'riscaldamento', 'aria', 'extras', 'events', 'custom'];
+    /** Mai copiate: dati della singola casa. 9M: il parcheggio si copia, segnato «da controllare». */
+    public const MAI = ['checkin', 'wifi', 'arrival'];
+    /** I suggerimenti riga per riga da un'altra guida (Suggerimenti) restano fuori anche dal parcheggio: prezzi e indirizzi sono di quella casa. */
+    public const MAI_SUGGERIMENTI = ['checkin', 'wifi', 'arrival', 'parking'];
+    /** Copiate, ma da controllare nella guida di arrivo. */
+    public const DA_CONTROLLARE = ['parking'];
 
     /**
      * Cosa si può copiare dalla struttura di origine, per il modulo.
@@ -144,8 +153,12 @@ final class Copia
         return $esito;
     }
 
-    /** Una sezione con le sue traduzioni, i suoi file e i suoi luoghi, in un'altra struttura. */
-    private static function sezione(array $s, int $aPid, int $posizione, callable $dup): void
+    /**
+     * Una sezione con le sue traduzioni, i suoi file e i suoi luoghi, in un'altra struttura. Resta collegata all'origine (9M).
+     * Con $inPosto (una sezione della struttura di arrivo) la riscrive lì, con lo stesso id: traduzioni e luoghi di prima
+     * si tolgono (i file li libera chi chiama, a operazione riuscita). @return int l'id della sezione scritta
+     */
+    public static function sezione(array $s, int $aPid, int $posizione, callable $dup, ?array $inPosto = null): int
     {
         $dati = json_decode((string) $s['data'], true) ?: [];
         // Foto e PDF dentro le righe (istruzioni dei servizi…): duplicati anche loro.
@@ -162,7 +175,18 @@ final class Copia
         $riga = ['property_id' => $aPid, 'position' => $posizione, 'data' => json_encode($dati, JSON_UNESCAPED_UNICODE),
                  'media_id' => $dup($s['media_id'] ? (int) $s['media_id'] : null), 'pdf_media_id' => $dup($s['pdf_media_id'] ? (int) $s['pdf_media_id'] : null)] + $riga;
         if (array_key_exists('created_at', $riga)) $riga['created_at'] = Support::now();
-        $sid = Db::insert('sections', $riga);
+        if (Migrator::columnExists('sections', 'origine_sezione_id')) {
+            // 9M · il collegamento all'origine, e il parcheggio da controllare.
+            $riga = ['origine_sezione_id' => (int) $s['id'], 'origine_property_id' => (int) $s['property_id'], 'origine_versione' => (int) ($s['versione'] ?? 1),
+                     'personalizzata_at' => null, 'da_controllare' => in_array($s['kind'], self::DA_CONTROLLARE, true) ? 1 : 0, 'versione' => 1, 'versione_at' => null] + $riga;
+        }
+        if ($inPosto) {
+            $sid = (int) $inPosto['id'];
+            unset($riga['created_at'], $riga['position']);
+            Db::run('DELETE FROM places WHERE section_id = ?', [$sid]);   // le traduzioni dei luoghi vanno con loro
+            Db::run('DELETE FROM section_translations WHERE section_id = ?', [$sid]);
+            Db::update('sections', $riga, 'id = :sid', ['sid' => $sid]);
+        } else $sid = Db::insert('sections', $riga);
         foreach (Db::all('SELECT * FROM section_translations WHERE section_id = ?', [$s['id']]) as $t) {
             unset($t['id']); $t['section_id'] = $sid;
             Db::insert('section_translations', $t);
@@ -175,11 +199,25 @@ final class Copia
                 unset($pt['id']); $pt['place_id'] = $nuovo;
                 Db::insert('place_translations', $pt);
             }
+            self::impronte('place', $vecchio, $nuovo);
+        }
+        self::impronte('section', (int) $s['id'], $sid);
+        return $sid;
+    }
+
+    /** 9G/9M · Le impronte dei testi tradotti viaggiano con le traduzioni: la copia non risulta «da ricontrollare». */
+    private static function impronte(string $tipo, int $da, int $a): void
+    {
+        if (!Migrator::tableExists('translation_hashes')) return;
+        Db::run('DELETE FROM translation_hashes WHERE target_type = ? AND target_id = ?', [$tipo, $a]);
+        foreach (Db::all('SELECT locale, field_path, source_hash FROM translation_hashes WHERE target_type = ? AND target_id = ?', [$tipo, $da]) as $h) {
+            Db::insert('translation_hashes', ['target_type' => $tipo, 'target_id' => $a, 'locale' => $h['locale'], 'field_path' => $h['field_path'],
+                                              'source_hash' => $h['source_hash'], 'created_at' => Support::now()]);
         }
     }
 
     /** Tutti i file di una sezione: immagine, PDF, file delle righe, foto dei luoghi. */
-    private static function mediaDellaSezione(array $s): array
+    public static function mediaDellaSezione(array $s): array
     {
         $ids = array_filter([(int) $s['media_id'], (int) $s['pdf_media_id']]);
         $ids = array_merge($ids, SectionCatalog::mediaIds($s['kind'], json_decode((string) $s['data'], true) ?: []));

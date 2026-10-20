@@ -223,10 +223,13 @@ $r->any('/pannello/{id}/copia', function (array $a) use ($mia, $contesto, $messa
     [$u, $acc, $p] = $mia((int) $a['id']);
     $aid = (int) $acc['id'];
     $bloccate = Entitlements::lockedIds($aid);
-    $origini = array_values(array_filter(Db::all('SELECT id, name FROM properties WHERE account_id = ? AND id <> ? AND archived_at IS NULL ORDER BY id', [$aid, $p['id']]),
+    $campioneQ = MHW\Campione::tabelle() ? ', campione' : ', 0 AS campione';
+    $origini = array_values(array_filter(Db::all("SELECT id, name$campioneQ FROM properties WHERE account_id = ? AND id <> ? AND archived_at IS NULL ORDER BY id", [$aid, $p['id']]),
                                          fn($x) => !in_array((int) $x['id'], $bloccate, true)));
     if (!$origini) { Support::flash('Non c\'è un\'altra struttura da cui copiare.', 'avviso'); Support::redirect('/pannello/' . $p['id']); }
-    $daId = (int) ($_POST['da'] ?? $_GET['da'] ?? $origini[0]['id']);
+    // 9M · di serie si copia dalla scheda campione, se c'è.
+    $daSerie = (int) $origini[0]['id']; foreach ($origini as $o) if ((int) $o['campione'] === 1) $daSerie = (int) $o['id'];
+    $daId = (int) ($_POST['da'] ?? $_GET['da'] ?? $daSerie);
     $da = null; foreach ($origini as $o) if ((int) $o['id'] === $daId) $da = $o;
     $err = null;
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && $da) {
@@ -289,6 +292,60 @@ $r->get('/pannello/novita', function () use ($host) {
     [$u, $acc] = $host();
     View::out('host/novita', ['user' => $u, 'acc' => $acc, 'nav' => 'novita', 'novita' => MHW\Novita::elenco((int) $acc['id']),
                               'pidN' => (int) Db::val('SELECT id FROM properties WHERE account_id = ? AND archived_at IS NULL ORDER BY id', [$acc['id']], 0)], 'layout/cms');
+});
+
+// ------------------------------------------------------------- 9M · la scheda campione (Portfolio)
+/* «La scheda campione»: lo spiegone, la campione di adesso e le gemelle, la scelta. Solo con Portfolio pagato; con Portfolio
+   scelto e non ancora pagato la pagina c'è, con «Disponibile dopo l'attivazione». */
+$r->get('/campione', function () use ($host) {
+    [, $acc] = $host();
+    $aid = (int) $acc['id'];
+    if (!MHW\Campione::disponibile($aid) && !MHW\Campione::inArrivo($aid)) Support::redirect('/pannello');
+    $guide = Db::all('SELECT id, name, status, campione FROM properties WHERE account_id = ? AND archived_at IS NULL AND is_demo = 0 ORDER BY id', [$aid]);
+    View::out('host/campione', ['acc' => $acc, 'guide' => $guide, 'disponibile' => MHW\Campione::disponibile($aid),
+                                'd' => MHW\Campione::disponibile($aid) ? MHW\Campione::differenze($aid) : null, 'nav' => 'guide'], 'layout/cms');
+});
+$r->post('/campione/scegli', function () use ($host) {
+    [, $acc] = $host();
+    try {
+        $pid = (int) ($_POST['guida'] ?? 0);
+        if ($pid > 0) { MHW\Campione::rendi((int) $acc['id'], $pid); Support::flash((string) Db::val('SELECT name FROM properties WHERE id = ?', [$pid], '') . ' è la tua scheda campione.'); }
+        else { MHW\Campione::togli((int) $acc['id']); Support::flash('Nessuna scheda campione: le guide restano come sono.'); }
+    } catch (\Throwable $e) { Support::flash($e->getMessage(), 'err'); }
+    Support::redirect((string) ($_POST['torna'] ?? '') === 'pannello' ? '/pannello' : '/campione');
+});
+/* «Porta le modifiche alle gemelle»: una riga per sezione cambiata, una colonna per gemella; ?riga= per l'anteprima delle differenze. */
+$r->any('/campione/gemelle', function () use ($host) {
+    [, $acc] = $host();
+    $aid = (int) $acc['id'];
+    if (!MHW\Campione::disponibile($aid)) Support::redirect('/campione');
+    $conferma = null;
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $scelte = (array) ($_POST['sel'] ?? []);
+        if (!empty($_POST['non_ora'])) Support::redirect('/pannello');
+        // Le rimozioni chiedono conferma: prima la domanda, poi (con conferma=1) si applica tutto insieme.
+        $togliere = [];
+        foreach (MHW\Campione::differenze($aid)['righe'] as $r) {
+            if ($r['tipo'] !== 'eliminata') continue;
+            $n = count(array_filter(array_keys($r['celle']), fn($gid) => !empty($scelte[$r['chiave']][$gid]) && $r['celle'][$gid]['stato'] === 'presente'));
+            if ($n) $togliere[] = [$r['titolo'], $n];
+        }
+        if ($togliere && empty($_POST['conferma'])) $conferma = ['scelte' => $scelte, 'togliere' => $togliere];
+        else {
+            try {
+                $e = MHW\Campione::applica($aid, $scelte, !empty($_POST['conferma']));
+                Support::flash('Fatto: ' . $e['aggiornate'] . ' sezioni aggiornate, ' . $e['aggiunte'] . ' aggiunte, ' . $e['tolte'] . ' tolte in ' . $e['guide'] . ($e['guide'] === 1 ? ' guida' : ' guide') . '. Le guide online sono già aggiornate.');
+                Support::redirect('/pannello');
+            } catch (\Throwable $e) { Support::flash($e->getMessage(), 'err'); Support::redirect('/campione/gemelle'); }
+        }
+    }
+    View::out('host/gemelle', ['acc' => $acc, 'd' => MHW\Campione::differenze($aid), 'riga' => (string) ($_GET['riga'] ?? ''), 'conferma' => $conferma, 'nav' => 'guide'], 'layout/cms');
+});
+$r->post('/pannello/{id}/campione', function (array $a) use ($mia) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    try { MHW\Campione::rendi((int) $acc['id'], (int) $p['id']); Support::flash($p['name'] . ' è la tua scheda campione: quando la cambi, ti proponiamo di portare le modifiche anche nelle gemelle.'); }
+    catch (\Throwable $e) { Support::flash($e->getMessage(), 'err'); }
+    Support::redirect('/pannello');
 });
 
 $r->get('/pannello/{id}', function (array $a) use ($mia, $contesto) {
@@ -409,6 +466,7 @@ $r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($mia, $contesto
                     Db::update('sections', ['pdf_media_id' => $mid], 'id = :sid', ['sid' => $s['id']]);
                 }
             }
+            MHW\Campione::toccata((int) $s['id']);   // 9M: versione della campione, o copia personalizzata (e parcheggio controllato)
             if ($vuoleJson()) Support::json(['ok' => true, 'salvato' => Support::now()]);
             if (isset($ripetuto)) { Support::flash($ripetuto); Support::redirect('/pannello/' . $p['id'] . '/sezioni/' . $s['id']); }
             Support::flash('Salvato. Ricordati di pubblicare quando hai finito.');
@@ -452,6 +510,7 @@ $r->post('/pannello/{id}/sezioni/{sid}/luogo', function (array $a) use ($mia, $m
             if ($prima) Media::rilascia((int) $prima, $aid);
             Db::update('places', ['media_id' => $mid], 'id = :pid', ['pid' => $plid]);
         }
+        MHW\Campione::toccata((int) $a['sid']);   // 9M: un luogo è parte della sezione
         if ($vuoleJson()) Support::json(['ok' => true, 'salvato' => Support::now()]);
         Support::flash('Luogo salvato.');
     } catch (NotFound) { http_response_code(404); View::out('pub/404', []); }
@@ -526,6 +585,7 @@ $r->post('/pannello/{id}/sezioni/{sid}/luogo/{plid}/azione', function (array $a)
             })(),
             default => throw new RuntimeException('Azione sconosciuta.'),
         };
+        MHW\Campione::toccata($sid);   // 9M
     } catch (NotFound) { http_response_code(404); View::out('pub/404', []); }
     catch (\Throwable $e) { Support::flash($messaggio($e, 'azione luogo'), 'err'); }
     Support::redirect($tornaSezione($p, $sid, '/pannello/' . $p['id'] . '/sezioni/' . $sid));

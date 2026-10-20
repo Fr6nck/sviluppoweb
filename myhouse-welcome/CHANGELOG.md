@@ -1,5 +1,16 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 9M Più strutture: riquadro dello sconto, parcheggio copiabile, «scheda campione» (20 ottobre 2026)
+
+Migrazione **052**: `properties.campione`; in `sections` versione, origine (sezione, guida, versione), `personalizzata_at`, `da_controllare`; tabella `sezioni_versioni` (storico 30 giorni). Da configurare: DA-CONFIGURARE, «4o».
+
+- **/piu-strutture**: accanto al prezzo di Portfolio il selettore «Quante strutture?» (prezzo, media e bottone seguono il numero); sotto, solo la parte finale del questionario: il 55% con «Come funziona» e la scala del rinnovo (Nessuno sconto · 2, 5, 10 amici · 10 amici + giudizio), legata al selettore (2 → 177 € / 79,65 €; 5 → 327 € / 147,15 €). Il riquadro è un componente a sé (`_rinnovo.php`), lo stesso del questionario. Sotto i tre problemi, «Il lavoro lo fai una volta sola» con lo spiegone della scheda campione.
+- **Il parcheggio si copia** tra le guide (prima mai): la copia è segnata «Da controllare» nel pannello finché non salvi la sezione, perché l'indirizzo è diverso. La nota «Non si copiano mai» non cita più il parcheggio.
+- **Scheda campione (solo Portfolio pagato)**: in «Le mie guide» → «Rendi campione» (una sola per account; si cambia quando vuoi, i collegamenti restano). Le sezioni copiate restano collegate alla loro origine e alla sua versione. Quando la campione cambia (sezione modificata, aggiunta o eliminata) le gemelle risultano «da aggiornare»: badge Campione/Gemella, «N sezioni da aggiornare» o «Allineata», banner «Hai modificato … Le modifiche non si copiano da sole: decidi tu» (anche in cima alla campione). **Niente si propaga da solo e nessuna email.**
+- **«Porta le modifiche alle gemelle»**: una riga per sezione cambiata e una colonna per gemella; stati uguale alla campione / manca (spuntate), personalizzata / indirizzo diverso / presente da togliere (no); anteprima delle differenze parola per parola; la rimozione chiede conferma («Vuoi togliere … da N guide?»). Applicando: copia sovrascritta nello storico per 30 giorni, versione allineata, registro, ripubblicazione delle guide online. Le traduzioni arrivano dalla campione: non consumano il tetto annuale.
+- **Prima del pagamento** la traduzione automatica e la scheda campione ci sono ma spente, con «Disponibile dopo l'attivazione…» (una chiave in «Testi e foto»: pannello, FAQ, scelta del piano). Prima la traduzione si poteva chiedere anche senza aver pagato: ora no. Un codice omaggio o un piano dato a mano valgono come pagamento.
+- **Testi** (`campione.*`, `attivazione.spiegone`, anche in inglese): pagina «La scheda campione» nel pannello, tre FAQ nuove, la pagina /piu-strutture.
+
 ## v2 · 9L rivista: la scheda in vetrina e il giudizio sono due pubblicazioni separate (20 ottobre 2026)
 
 Migrazione **051**: in `vetrina_schede` due gruppi di colonne (scheda: ordine, approvazione, ritiro con motivo; giudizio: acceso, ordine, approvazione, ritiro con motivo); le schede accese e i giudizi già approvati restano accesi, nello stesso ordine. Termini e Informativa: versione **2026-10-20** (i clienti li riaccettano). Da configurare: DA-CONFIGURARE, «4l bis».

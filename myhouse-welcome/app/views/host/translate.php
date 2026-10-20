@@ -79,6 +79,9 @@ $campo = function (string $name, string $tipo, $orig, $trad, string $etichetta, 
       <p class="small" style="margin:0">Un traduttore automatico propone le traduzioni che mancano, e tu le approvi: comprese in Plus e Portfolio, entro un limite annuale di caratteri. <a href="<?= b() ?>/piano?passa=plus">Scopri Plus</a></p>
     <?php elseif (!empty($anno) && $anno['finito']): /* 9G · il tetto annuale: a mano, oppure all'assistenza */ ?>
       <?php $annoT = $anno; include __DIR__ . '/_traduzioni_contatore.php'; ?>
+    <?php elseif ($perche !== '' && !MHW\Traduttore::attiva((int) $prop['account_id'])): /* 9M · prima del pagamento: il bottone c'è, spento */ ?>
+      <?php include __DIR__ . '/_attivazione.php'; ?>
+      <div class="actions" style="margin:0"><button type="button" class="btn btn--sm" disabled><?= Icon::svg('globe', 15) ?> Traduci tutti i campi mancanti</button></div>
     <?php elseif ($perche !== ''): ?>
       <p class="small" style="margin:0"><?= Support::e($perche) ?><?php if (empty($prop['translation_suggest'])): ?> <a href="<?= b() ?>/pannello/<?= $pid ?>/lingue#suggerite">Vai a Lingue</a><?php endif; ?></p>
     <?php elseif ($daSuggerire): /* 9F · con JavaScript: un gruppo di campi per volta, la barra «12 di 30 testi», i campi che compaiono (cms.js) */ ?>

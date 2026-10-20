@@ -11,7 +11,13 @@ $puoiAggiungere = $n < $maxProp || !empty($aggiungiPagando);
 $online = count(array_filter($attive, fn($x) => $x['status'] === 'published' && $x['online'] && !in_array((int) $x['id'], $bloccate, true)));
 $bozze = count(array_filter($attive, fn($x) => $x['status'] !== 'published' && !in_array((int) $x['id'], $bloccate, true)));
 $nome = trim((string) (Auth::user()['name'] ?? ''));
-$nome = $nome !== '' ? explode(' ', $nome)[0] : ''; ?>
+$nome = $nome !== '' ? explode(' ', $nome)[0] : '';
+// 9M · La scheda campione (solo Portfolio pagato): badge, contatori delle gemelle e il banner «Aggiorna le gemelle».
+$accC = Auth::account(); $aidC = $accC ? (int) $accC['id'] : 0;
+$campDisp = $aidC && MHW\Campione::disponibile($aidC); $campArrivo = !$campDisp && $aidC && MHW\Campione::inArrivo($aidC);
+$campD = $campDisp ? MHW\Campione::differenze($aidC) : null;
+$campId = (int) ($campD['campione']['id'] ?? 0);
+$gemIds = $campD ? array_map(fn($g) => (int) $g['id'], $campD['gemelle']) : []; ?>
 <div class="saluto">
   <div>
     <h1><?= $nome !== '' ? 'Ciao, ' . Support::e($nome) . '.' : 'Le mie guide.' ?></h1>
@@ -25,6 +31,7 @@ $nome = $nome !== '' ? explode(' ', $nome)[0] : ''; ?>
       <?php endif; ?>
       <?= $maxProp > 1 && $maxProp < PHP_INT_MAX ? ' Strutture: ' . $n . ' su ' . $maxProp . '.' : '' ?>
     </p>
+    <?php if ($campId): ?><p class="small muted" style="margin:4px 0 0"><?= Support::e($campD['campione']['name']) ?> è la tua <a href="<?= b() ?>/campione">scheda campione</a>: quando la cambi, ti proponiamo di portare le modifiche anche nelle gemelle.</p><?php endif; ?>
   </div>
   <?php if ($puoiAggiungere): ?>
     <a class="btn btn--go" href="<?= b() ?>/pannello/nuova">Aggiungi una struttura <span class="go"><?= Icon::svg('plus', 18, 2) ?></span></a>
@@ -82,8 +89,10 @@ $nome = $nome !== '' ? explode(' ', $nome)[0] : ''; ?>
         <span class="badge badge--<?= $stato[0] ?>"><span class="dot"></span><?= $stato[1] ?></span>
       </a>
       <a class="scheda-guida__corpo" href="<?= b() ?>/pannello/<?= $pid ?>">
-        <b class="scheda-guida__nome"><?= Support::e($pr['name']) ?></b>
+        <b class="scheda-guida__nome"><?= Support::e($pr['name']) ?><?php if ($pid === $campId): ?> <span class="badge-campione">Campione</span><?php elseif (in_array($pid, $gemIds, true)): ?> <span class="badge-campione badge-campione--gemella">Gemella</span><?php endif; ?></b>
         <span class="small muted"><?= Support::e($pr['city'] ?: 'Città da indicare') ?></span>
+        <?php if ($pid === $campId): ?><span class="small"><?= count($gemIds) ?> <?= count($gemIds) === 1 ? 'guida gemella' : 'guide gemelle' ?></span>
+        <?php elseif (in_array($pid, $gemIds, true)): $nG = (int) ($campD['contatori'][$pid] ?? 0); ?><span class="small <?= $nG ? 'gemella-da-aggiornare' : 'gemella-allineata' ?>"><?= $nG ? $nG . ($nG === 1 ? ' sezione da aggiornare' : ' sezioni da aggiornare') : 'Allineata' ?></span><?php endif; ?>
       </a>
       <?php if (!empty($pr['archived_at'])): ?>
         <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/riattiva" class="scheda-guida__azioni"><?= MHW\Csrf::field() ?>
@@ -93,6 +102,9 @@ $nome = $nome !== '' ? explode(' ', $nome)[0] : ''; ?>
           <a href="<?= b() ?>/pannello/<?= $pid ?>"><?= Icon::svg('doc', 15) ?>Contenuti</a>
           <a href="<?= b() ?>/pannello/<?= $pid ?>/qr"><?= Icon::svg('qr', 15) ?>QR</a>
           <a href="<?= b() ?>/pannello/<?= $pid ?>/anteprima" target="_blank" rel="noopener"><?= Icon::svg('eye', 15) ?>Anteprima</a>
+          <?php if ($campDisp && $pid !== $campId && (int) $pr['is_demo'] === 0): ?>
+            <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/campione" style="display:inline;margin:0"><?= MHW\Csrf::field() ?><button class="linkbtn"><?= Icon::svg('star', 15) ?>Rendi campione</button></form>
+          <?php endif; ?>
         </div>
       <?php endif; ?>
     </article>
@@ -102,6 +114,22 @@ $nome = $nome !== '' ? explode(' ', $nome)[0] : ''; ?>
       <span class="small">Una guida e un QR in più, con i suoi contenuti.</span></a>
   <?php endif; ?>
 </div>
+
+<?php if ($campD && $campD['righe']): /* 9M · il banner: niente si propaga da solo */
+      $nomiC = array_slice($campD['cambiate'], 0, 3); $nGem = count(array_filter($campD['contatori'])); ?>
+  <div class="campione-banner" role="status">
+    <span class="campione-banner__ico" aria-hidden="true">!</span>
+    <div><p style="margin:0">Hai modificato <?= implode(' e ', array_map(fn($x) => '<b>«' . Support::e($x) . '»</b>', $nomiC)) ?><?= count($campD['cambiate']) > 3 ? ' e altre' : '' ?> nella scheda campione.</p>
+      <p class="small muted" style="margin:2px 0 0"><?= $nGem ?> <?= $nGem === 1 ? 'guida gemella ha' : 'guide gemelle hanno' ?> ancora la versione precedente. Le modifiche non si copiano da sole: decidi tu.</p></div>
+    <a class="btn btn--go btn--sm" href="<?= b() ?>/campione/gemelle">Aggiorna le gemelle →</a>
+  </div>
+<?php elseif ($campArrivo): /* 9M · Portfolio scelto e non ancora pagato: la voce spenta, con lo spiegone */ ?>
+  <div class="panel stack campione-spento" style="gap:10px;margin-top:20px">
+    <div class="row" style="justify-content:space-between;gap:10px"><span><b>Rendi campione</b><br><span class="small muted">Scheda campione e traduzione automatica</span></span>
+      <a class="badge-campione badge-campione--spento" href="<?= b() ?>/campione">Campione</a></div>
+    <?php include __DIR__ . '/_attivazione.php'; ?>
+  </div>
+<?php endif; ?>
 
 <?php include __DIR__ . '/_invita.php'; /* Invita un amico: la barra e il link, per chi ha un abbonamento attivo */ ?>
 

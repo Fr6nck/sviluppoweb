@@ -72,6 +72,15 @@ foreach ($sections as $s) { if ((int) $s['is_core'] === 1) $core = $s; else $alt
     </div>
     <?php endif; ?>
 
+    <?php if (!empty($s0 = array_filter($altre, fn($x) => !empty($x['da_controllare'])))): /* 9M */ ?>
+      <p class="note" role="status"><span>Il parcheggio è stato copiato da un'altra guida: controlla l'indirizzo e i prezzi, poi salva la sezione.</span></p>
+    <?php endif; ?>
+    <?php if (!empty($prop['campione']) && MHW\Campione::disponibile((int) $prop['account_id']) && ($dC = MHW\Campione::differenze((int) $prop['account_id'])) && $dC['righe']): /* 9M · lo stesso banner, in cima alla campione */ ?>
+      <div class="campione-banner" role="status"><span class="campione-banner__ico" aria-hidden="true">!</span>
+        <div><p style="margin:0">Hai modificato <?= implode(' e ', array_map(fn($x) => '<b>«' . Support::e($x) . '»</b>', array_slice($dC['cambiate'], 0, 3))) ?> nella scheda campione.</p>
+          <p class="small muted" style="margin:2px 0 0"><?= count(array_filter($dC['contatori'])) ?> guide gemelle hanno ancora la versione precedente. Le modifiche non si copiano da sole: decidi tu.</p></div>
+        <a class="btn btn--go btn--sm" href="<?= b() ?>/campione/gemelle">Aggiorna le gemelle →</a></div>
+    <?php endif; ?>
     <?php $sezioni = $altre; $torna = ''; include __DIR__ . '/_sezioni.php'; ?>
 
     <a class="btn btn--ghost phonebtn" href="<?= b() ?>/pannello/<?= $pid ?>/anteprima" target="_blank" rel="noopener"><?= Icon::svg('eye', 16) ?>Apri l'anteprima</a>

@@ -12,6 +12,13 @@ final class Faq
     public const IN_VISTA = ['prova', 'app', 'tempo', 'lingue', 'traduzioni', 'piu-strutture', 'fattura', 'disdire'];
 
     /** @return array<int,array{id:string,d:string,r:string}> nell'ordine di sempre */
+    /** 9M · Una lista di «Testi e foto» in una riga («a; b; c»), senza la sintassi. */
+    private static function elenco(string $k): string
+    {
+        $righe = array_filter(array_map(fn($r) => trim((string) preg_replace('/\*\*(.+?)\*\*/s', '$1', $r)), explode("\n", TestiSito::get($k))));
+        return implode('; ', $righe);
+    }
+
     public static function tutte(?string $loc = null): array
     {
         // 8E: in inglese le stesse domande, con gli stessi id (lang/faq-en.php); le parti calcolate arrivano da qui.
@@ -48,6 +55,10 @@ final class Faq
             ['recensioni', 'Come chiedo una recensione agli ospiti?', 'In QR & Link trovi il messaggio di fine soggiorno, pronto da copiare nella lingua dell\'ospite: lo mandi su WhatsApp o nella chat di Booking e Airbnb. Il link apre una pagina in cui l\'ospite dà un voto da 1 a 5. A chi dà 5 stelle mostriamo i bottoni dei portali che hai spuntato in Impostazioni («Su quali piattaforme si trova la tua struttura?»): i link li prepariamo noi. Da 1 a 4 stelle l\'ospite può scriverti su WhatsApp, per dirti cosa migliorare.'],
             ['qr', 'Posso cambiare i testi dopo aver stampato il QR?', 'Sì, quando vuoi. Il QR Code non cambia mai, anche se modifichi la guida: pubblichi la nuova versione e chi inquadra il QR stampato vede già quella. Resta valido finché l\'abbonamento è attivo.'],
             ['piu-strutture', 'Ho più di una struttura: come funziona?', 'Con Portfolio le gestisci tutte dallo stesso account: ognuna ha la sua guida, il suo QR Code e le sue statistiche. Le sezioni che valgono per tutte, come i ristoranti o le regole, le scrivi una volta e le copi nelle altre.'],
+            // 9M · la scheda campione e «Disponibile dopo l'attivazione»: gli stessi testi di «Testi e foto», in chiaro.
+            ['campione', 'Cos\'è la scheda campione?', TestiSito::testoSemplice('campione.testo')],
+            ['campione-copia', 'Cosa si copia e cosa no?', 'Si copiano (e si aggiornano): ' . self::elenco('campione.si') . '. Non si copiano mai: ' . self::elenco('campione.no') . '. Niente si copia da solo: confermi tu, sezione per sezione.'],
+            ['attivazione', 'Quando si accendono la traduzione automatica e la scheda campione?', TestiSito::testoSemplice('attivazione.spiegone')],
         ];
         if ($pf) {
             $tiers = Plans::tiers($pf);

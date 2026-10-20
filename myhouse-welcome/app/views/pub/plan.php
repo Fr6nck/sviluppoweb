@@ -76,6 +76,8 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
     <span class="small muted">Rinnovo annuale automatico, disattivabile quando vuoi. Prezzi IVA esclusa.</span>
   </div>
 </form>
+<?php /* 9M · «Disponibile dopo l'attivazione»: la traduzione automatica e la scheda campione si accendono dopo il pagamento. */ ?>
+<div style="max-width:720px;margin-top:16px"><?php include dirname(__DIR__) . '/host/_attivazione.php'; ?></div>
 <?php /* 9A · Il riquadro del preventivo, oltre il massimo del Portfolio: fuori dal modulo del piano. */
       foreach ($offers as $of) foreach ($of['options'] as $oP) if (Plans::perProperty($oP)) { $pvP = $oP; $qP = $strutture; $tornaP = '/piano' . ($strutture ? '?piano=' . (int) $oP['pv_id'] . '&strutture=' . (int) $strutture : ''); include __DIR__ . '/_preventivo.php'; break 2; } ?>
 <?php /* Il codice sconto del primo anno (6E): fuori dal modulo del piano. */

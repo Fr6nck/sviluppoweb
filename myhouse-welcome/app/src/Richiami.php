@@ -211,6 +211,7 @@ final class Richiami
         try { CambioAbbonamento::applyPendingChanges(); } catch (\Throwable $e) { Log::exception($e, 'cambi di piano in sospeso'); }
         RecuperoPagamenti::inSospeso();   // i pagamenti di cui il webhook di Stripe non ha dato notizia
         try { Vetrina::sincronizza(); } catch (\Throwable $e) { Log::exception($e, 'vetrina: sincronizzazione'); }   // 9L: schede da spegnere
+        try { Campione::pulisci(); } catch (\Throwable $e) { Log::exception($e, 'campione: storico'); }   // 9M: le copie sovrascritte oltre i 30 giorni
         // Benvenuto: le prime guide degli ultimi giorni rimaste senza email (il primo tentativo non è partito).
         try { $fatte['benvenuto'] = Benvenuto::recenti($t); } catch (\Throwable $e) { Log::exception($e, 'email di benvenuto'); }
         return $fatte;

@@ -8,7 +8,7 @@ namespace MHW;
  *
  * Regole:
  *  - solo se l'account ha almeno 2 strutture non archiviate;
- *  - mai per le sezioni di Copia::MAI (Check-in & Check-out, Wi-Fi, Come
+ *  - mai per le sezioni di Copia::MAI_SUGGERIMENTI (Check-in & Check-out, Wi-Fi, Come
  *    arrivare, Parcheggio): sono dati di quella struttura;
  *  - non si propone quello che c'è già con lo stesso nome;
  *  - si portano testi, traduzioni, categoria, etichetta, colore; la foto (e il
@@ -27,7 +27,7 @@ final class Suggerimenti
 
     public static function attivi(int $accountId, string $kind): bool
     {
-        if (in_array($kind, Copia::MAI, true)) return false;
+        if (in_array($kind, Copia::MAI_SUGGERIMENTI, true)) return false;
         return (int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL', [$accountId], 0) >= 2;
     }
 

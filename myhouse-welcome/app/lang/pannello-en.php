@@ -73,7 +73,7 @@ return [
     'Togli la foto' => 'Remove the photo', 'Togli il PDF' => 'Remove the PDF', 'Aggiungi una foto' => 'Add a photo', 'Aggiungi un PDF' => 'Add a PDF',
     'Foto e PDF nelle sezioni sono compresi nel piano Plus.' => 'Photos and PDFs in sections are included in the Plus plan.',
     'Per esempio: il manuale della caldaia o la mappa del paese. Solo PDF, fino a 10 MB.' => 'For example: the boiler manual or the map of the village. PDF only, up to 10 MB.',
-    'Sempre inclusa' => 'Always included', 'Disattivata' => 'Disabled', 'Da compilare' => 'To fill in', 'Pronta' => 'Ready', 'Nuovo' => 'New',
+    'Sempre inclusa' => 'Always included', 'Disattivata' => 'Disabled', 'Da compilare' => 'To fill in', 'Da controllare' => 'To check', 'Pronta' => 'Ready', 'Nuovo' => 'New',
     'I luoghi che consigli' => 'The places you recommend', 'Ancora nessun luogo. Aggiungi il primo qui sotto: nome, indirizzo e due righe su perché ti piace.' => 'No places yet. Add the first one below: name, address and two lines on why you like it.',
     'Modifica' => 'Edit', 'Sposta su' => 'Move up', 'Sposta giù' => 'Move down', 'Elimina' => 'Delete', 'Attiva' => 'Enable', 'Disattiva' => 'Disable',
     'Eliminare cancella anche contenuti e traduzioni. Per toglierla solo dalla guida, disattivala.' => 'Deleting also removes content and translations. To take it out of the guide only, disable it.',

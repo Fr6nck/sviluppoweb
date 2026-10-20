@@ -66,6 +66,9 @@ final class Traduttore
 
     public static function nelPiano(int $accountId): bool { return Entitlements::can($accountId, 'auto_translation'); }
 
+    /** 9M · La traduzione automatica parte solo dopo il pagamento di Plus o Portfolio (o con un omaggio, o un piano dato a mano). */
+    public static function attiva(int $accountId): bool { return Subscriptions::active($accountId) !== null; }
+
     /** 8C: «Traduci anche la lingua aggiuntiva» (Amministrazione → Impostazioni → Traduzioni), di serie acceso. */
     public static function linguaExtra(): bool { return (bool) (Config::get('translate', [])['extra'] ?? true); }
 
@@ -86,6 +89,8 @@ final class Traduttore
     public static function perche(int $accountId, ?array $prop = null, ?string $loc = null): string
     {
         if (!self::nelPiano($accountId)) return 'Le traduzioni suggerite sono disponibili con il piano Plus.';
+        // 9M · durante la creazione gratuita i bottoni ci sono, spenti, con «Disponibile dopo l'attivazione».
+        if (!self::attiva($accountId)) return TestiSito::testoSemplice('attivazione.spiegone');
         // 8C: la lingua aggiuntiva (nl, ja…) si suggerisce solo se l'amministrazione lo lascia (Impostazioni → Traduzioni).
         if ($loc !== null && !I18n::base($loc) && !self::linguaExtra()) return 'Per questa lingua le traduzioni suggerite non ci sono: scrivila a mano, accanto al testo originale.';
         // 7C: la traduzione si chiede campo per campo, con un clic: l'interruttore della struttura non serve più per chiederla.
@@ -103,6 +108,7 @@ final class Traduttore
     public static function interruttore(int $accountId, int $propertyId, bool $acceso): bool
     {
         if ($acceso && !self::nelPiano($accountId)) throw new \RuntimeException('Le traduzioni suggerite sono disponibili con il piano Plus.');
+        if ($acceso && !self::attiva($accountId)) throw new \RuntimeException(TestiSito::testoSemplice('attivazione.spiegone'));
         $prima = $acceso && !(int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND translation_suggest = 1', [$accountId], 0);
         Db::update('properties', ['translation_suggest' => $acceso ? 1 : 0], 'id = :pid AND account_id = :aid', ['pid' => $propertyId, 'aid' => $accountId]);
         return $prima;

@@ -50,6 +50,7 @@ final class TestiSito
         // 9F · i testi del pannello che il titolare vuole poter cambiare: il riquadro «Una lingua in più» (Lingue)
         'pannello' => ['Pannello: una lingua in più', 'Il riquadro sopra la scelta delle lingue (Lingue, e il primo passo della procedura). Le cinque lingue di base e la lingua in più: a cosa serve, con due esempi.'],
         // 9D · il messaggio pronto dei codici omaggio (Vendite → Codici omaggio: WhatsApp, email, copia)
+        'campione' => ['Scheda campione e attivazione (Portfolio)', '9M: lo spiegone della scheda campione (pannello «La scheda campione», FAQ, pagina /piu-strutture) e il riquadro «Disponibile dopo l\'attivazione» (traduzione automatica e scheda campione prima del pagamento: pannello, FAQ, piani). Una chiave per testo, la stessa ovunque.'],
         'omaggio'  => ['Codici omaggio', 'Il messaggio pronto da mandare con un codice omaggio (Vendite → Codici omaggio). Segnaposto: {mesi}, {link}, {codice}, {scadenza}.'],
     ];
 
@@ -232,6 +233,12 @@ final class TestiSito
             'questionario.crea'    => ['questionario', 'Bottone principale', 'riga', 'Crea gratis con {piano}', 'La freccia la aggiunge il sito.'],
             'questionario.rifai'   => ['questionario', 'Bottone «rifai»', 'riga', 'Rifai il test', ''],
             'questionario.rinnovo.nota' => ['questionario', 'Sotto la tabella del rinnovo', 'riga', 'Prezzi + IVA, all\'anno. Lo sconto vale sul rinnovo successivo agli inviti andati a buon fine.', ''],
+            'campione.titolo' => ['campione', 'Titolo dello spiegone', 'riga', 'La scheda campione', ''],
+            'campione.testo'  => ['campione', 'Cos\'è', 'area', 'Con Portfolio scegli una guida come **campione**: è il modello da cui nascono le altre. Quando crei una guida nuova, copi dalla campione le sezioni che vuoi; quando poi cambi la campione, ti avvisiamo e porti le modifiche alle gemelle con un clic. Puoi cambiare campione quando vuoi: le gemelle restano collegate alle sezioni copiate.', ''],
+            'campione.si'     => ['campione', 'Si copiano (e si aggiornano)', 'lista', "Regole della casa, rifiuti, muoversi in zona\nDove mangiare, cosa visitare, negozi e spesa\nServizi, servizi extra, emergenze\n**Dove parcheggiare** (segnato «da controllare», perché l'indirizzo cambia)\nAspetto: palette, tema, logo · Contatti", 'Una voce per riga.'],
+            'campione.no'     => ['campione', 'Non si copiano mai', 'lista', "Indirizzo e CIN\nReti Wi-Fi e password\nPassaggi per entrare (codici, cassette)\nFoto di copertina", 'Una voce per riga.'],
+            'campione.avviso' => ['campione', 'Come funziona l\'avviso', 'lista', "Ogni sezione copiata ricorda da quale versione della campione viene.\nSe la campione cambia, la gemella mostra «da aggiornare»; se hai personalizzato la gemella, te lo diciamo prima di sovrascrivere.\nNiente si copia da solo: confermi tu, sezione per sezione.", 'Una voce per riga.'],
+            'attivazione.spiegone' => ['campione', 'Disponibile dopo l\'attivazione', 'area', '**Disponibile dopo l\'attivazione.** La traduzione automatica e la scheda campione si accendono quando attivi Plus o Portfolio. Intanto puoi preparare tutto.', 'Compare accanto ai bottoni spenti prima del pagamento (traduzione automatica, «Rendi campione»), nelle FAQ e nella pagina dei piani.'],
             'omaggio.messaggio' => ['omaggio', 'Messaggio con il codice omaggio', 'area', 'Ciao! Ti abbiamo riservato {mesi} mesi gratis di MyHouse Welcome, la guida digitale per i tuoi ospiti. Vai su {link}, crea la guida e inserisci la carta: oggi non paghi nulla, il primo addebito è tra {mesi} mesi, e prima ti avvisiamo. Il codice {codice} vale fino al {scadenza}.', 'Lo manda l\'amministrazione su WhatsApp o per email: {mesi}, {link}, {codice}, {scadenza} ed {email} (l\'email commerciale) si compilano da soli. Se il testo non contiene l\'email commerciale, in fondo si aggiunge la firma «MyHouse Welcome · commerciale@…».'],
             'giudizio.casella' => ['dicono', 'La casella del programma (pagamento e pannello)', 'area', '**Aderisco al programma «Giudizio con sconto» e ho il {giudizio} di sconto.** Il programma comprende due cose: (1) la mia scheda tra «Le guide dei nostri host» su welcomemyhouse.it **da quando pubblico la guida**, con nome della struttura, copertina, logo, il mio nome (senza cognome) e la città, anche senza foto; (2) dopo 30 giorni, un voto da 1 a 5 con un commento, che può comparire in «Cosa dicono di noi». MyHouse decide se e quando pubblicare scheda e giudizio. Nessun link alla guida, nessuna mia foto. Lo sconto non dipende dal voto né dalla pubblicazione. Posso ritirarmi quando voglio da Impostazioni → Giudizio con sconto.', 'Una chiave sola: è il testo della casella al pagamento e nel pannello, e la prova dell\'adesione. {giudizio} è la percentuale. Se cambi le regole, cambia anche i Termini.'],
             'giudizio.email.aderito' => ['dicono', 'Email di benvenuto · la riga per chi ha aderito', 'area', 'Hai aderito a «Giudizio con sconto»: dopo un nostro controllo la tua guida compare tra «Le guide dei nostri host» su welcomemyhouse.it, con il nome, la copertina e il logo (mai una tua foto, mai un link alla guida). Tra 30 giorni ti chiediamo un voto da 1 a 5, che può comparire in «Cosa dicono di noi»: lo sconto non dipende dal voto.', 'Nell\'email che parte quando la prima guida va online. Testo semplice: il grassetto non si vede.'],
@@ -474,6 +481,13 @@ final class TestiSito
     }
 
     /** Un testo «lista»: una voce per riga, ognuna già formattata. @return string[] */
+    /** 9M · In testo semplice (messaggi d'errore, FAQ): senza la sintassi, non escapato. */
+    public static function testoSemplice(string $k, array $sost = []): string
+    {
+        $t = preg_replace(['/\*\*(.+?)\*\*/s', '/\[([^\]]+)\]\(([^)\s]+)\)/'], ['$1', '$1'], self::get($k));
+        return strtr(trim((string) $t), self::sostituzioni($sost));
+    }
+
     public static function lista(string $k, array $sost = []): array
     {
         $out = [];

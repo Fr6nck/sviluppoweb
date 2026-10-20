@@ -220,6 +220,7 @@ final class Properties
     {
         $s = self::section($propertyId, $sectionId);
         if ((int) $s['is_core'] === 1) throw new \RuntimeException('Check-in & Check-out non si elimina.');
+        Campione::primaDiEliminare($sectionId);   // 9M: nella campione resta il titolo, per proporre la rimozione alle gemelle
         Db::run('DELETE FROM sections WHERE id = ?', [$sectionId]);
         // Con la sezione se ne vanno i suoi file: immagine, PDF, foto e PDF delle righe.
         $aid = (int) Db::val('SELECT account_id FROM properties WHERE id = ?', [$propertyId], 0);

@@ -33,6 +33,9 @@ $def = $prop['default_locale']; ?>
     <?php if (!$trad['piano']): ?>
       <label class="scelta scelta--fissa"><input type="checkbox" disabled><span class="scelta__testo">Accendi le traduzioni suggerite <span class="small muted">con il piano Plus</span></span></label>
       <p class="small" style="margin:0"><a href="<?= b() ?>/piano?passa=plus">Scopri Plus: traduzioni suggerite comprese nel piano</a></p>
+    <?php elseif (!MHW\Traduttore::attiva((int) $prop['account_id'])): /* 9M · prima del pagamento: il bottone c'è, spento, con lo spiegone */ ?>
+      <?php include __DIR__ . '/_attivazione.php'; ?>
+      <div class="actions" style="margin:0"><button type="button" class="btn btn--sm" disabled>Accendi le traduzioni suggerite</button></div>
     <?php else: ?>
       <?php $annoT = $trad['anno']; include __DIR__ . '/_traduzioni_contatore.php'; ?>
       <form method="post" action="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/lingue/suggerite" class="actions" style="margin:0"><?= Csrf::field() ?>

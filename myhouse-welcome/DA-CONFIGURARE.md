@@ -357,6 +357,13 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 1. **Testi:** Amministrazione → Testi e foto → «Pagine per tipologia: il questionario», linguetta **EN**: le domande, le risposte e i perché in inglese (di serie già scritti). La linguetta IT resta quella delle pagine italiane.
 2. **SEO e GEO:** la pagina nuova «Quale piano scegliere in inglese» (/en/plan) è accesa di serie; titolo e descrizione si cambiano lì.
 
+## 4o. 9M (20 ottobre): scheda campione e parcheggio copiabile
+
+1. **Niente da attivare**: la scheda campione compare da sola ai clienti Portfolio dopo il pagamento («Le mie guide» → «Rendi campione»). Prima del pagamento vedono la voce spenta con «Disponibile dopo l'attivazione».
+2. **Testi e foto** → «Scheda campione e attivazione (Portfolio)»: lo spiegone (titolo, testo, «Si copiano», «Non si copiano mai», «Come funziona l'avviso») e il riquadro «Disponibile dopo l'attivazione», anche in inglese. Sono le stesse chiavi del pannello, delle FAQ e di /piu-strutture.
+3. **Attenzione, cambio di comportamento**: la traduzione automatica ora parte solo dopo il pagamento (o con un codice omaggio, o un piano dato a mano). Chi sta preparando la guida senza aver pagato vede il bottone spento.
+4. Lo storico delle sezioni sovrascritte o tolte nelle gemelle si cancella da solo dopo 30 giorni.
+
 ## 4k. 9K (19 ottobre): foto, pagine nuove, partner, PEC
 
 1. **Limiti di PHP per le foto.** Se nel Quadro compare «Il server limita il caricamento delle foto», chiedi all'hosting (o in cPanel: «Seleziona versione PHP» → Opzioni, oppure «MultiPHP INI Editor») `upload_max_filesize = 20M`, `post_max_size = 20M` (meglio 25M) e `memory_limit = 256M`. Controlla poi in Diagnostica la riga «Limiti per il caricamento delle foto». Le foto prese dal browser arrivano già ridotte; i limiti servono a chi carica senza JavaScript.
