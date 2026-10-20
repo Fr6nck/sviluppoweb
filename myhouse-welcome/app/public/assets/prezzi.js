@@ -51,9 +51,17 @@
         var mese = b.querySelector('[data-mensile]');
         if (mese) mese.textContent = soldi(Math.round(tot / 12), valuta);
         // In media a struttura, e quante.
-        var media = b.querySelector('[data-media]'), quante = b.querySelector('[data-quante]');
+        var media = b.querySelector('[data-media]');
         if (media) media.textContent = soldi(Math.round(tot / q), valuta);
-        if (quante) quante.textContent = q;
+        b.querySelectorAll('[data-quante]').forEach(function (x) { x.textContent = q; });   // 9M: anche «per N strutture» accanto al prezzo
+        // 9M: il riquadro dello sconto sul rinnovo legato a questo campo (/piu-strutture) e il bottone che porta il numero.
+        if (campo.id) document.querySelectorAll('[data-rinnovo][data-campo="' + campo.id + '"]').forEach(function (r) {
+          ['[data-q-anno]', '[data-q-anno-s]'].forEach(function (s) { var x = r.querySelector(s); if (x) x.textContent = soldi(tot, valuta); });
+          var celle = r.querySelectorAll('[data-q-perc]');
+          celle.forEach(function (td) { td.textContent = soldi(Math.round(tot * (100 - parseInt(td.getAttribute('data-q-perc'), 10)) / 100), valuta); });
+          var m = r.querySelector('[data-q-min]'); if (m && celle.length) m.textContent = celle[celle.length - 1].textContent;
+        });
+        b.querySelectorAll('[data-crea][data-href]').forEach(function (a) { a.href = a.getAttribute('data-href') + (a.getAttribute('data-href').indexOf('?') > -1 ? '&strutture=' + q : ''); });
         oltre(q > maxPrezzo, q);
       }
     }

@@ -21,13 +21,6 @@ $qEsito = null;
 if (count(array_filter($qRisposte, fn($v) => in_array($v, ['si', 'no'], true))) === 3) {
     $qEsito = $qRisposte['d3'] === 'no' ? 'portfolio' : ($qRisposte['d1'] === 'no' || $qRisposte['d2'] === 'no' ? 'plus' : 'essential');
 }
-// Lo sconto sul rinnovo: inviti (fino a MASSIMO) e giudizio, solo quelli accesi.
-$qInviti = Inviti::disponibili(); $qGiudizio = Giudizi::attivo();
-$qTotSconto = ($qInviti ? Inviti::MASSIMO : 0) + ($qGiudizio ? Giudizi::percentuale() : 0);
-$qScontoSost = ['totale' => $qTotSconto, 'amici' => (int) (Inviti::MASSIMO / max(1, Inviti::PASSO)), 'passo' => Inviti::PASSO, 'max' => Inviti::MASSIMO, 'giudizio' => Giudizi::percentuale()];
-$qRighe = [];   // la tabella del rinnovo: [etichetta, percento]
-if ($qInviti) foreach ([2, 5, (int) (Inviti::MASSIMO / max(1, Inviti::PASSO))] as $n) $qRighe[] = [$n . $qU(' amici · ', ' friends · ') . min($n * Inviti::PASSO, Inviti::MASSIMO) . '%', min($n * Inviti::PASSO, Inviti::MASSIMO)];
-if ($qGiudizio) $qRighe[] = [($qInviti ? $qScontoSost['amici'] . $qU(' amici + giudizio', ' friends + review') : $qU('Giudizio', 'Review')) . ' · ' . $qTotSconto . '%', $qTotSconto];
 $qFinestra = ($qModo ?? 'pagina') === 'finestra';
 $qOrigine ??= $qFinestra ? 'home' : 'tipologia';
 // La pagina stessa, senza le risposte; nella finestra della home, /piano (senza JavaScript la finestra non si apre).
@@ -104,17 +97,7 @@ $qBase = $qFinestra ? b() . LinguaSito::percorso('/piano') : strtok((string) ($_
              href="<?= Support::e(b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . (int) $pv['pv_id'] . $qLang . ($porto ? '&strutture=' . $q : '')) ?>"><?= $qT('crea', ['piano' => Support::e($pv['name'])]) ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
           <a class="btn btn--ghost" href="<?= Support::e($qBase) ?>#piano-giusto" data-q-rifai><?= $qT('rifai') ?></a>
         </div>
-        <?php if ($qTotSconto > 0): $rClasse = 'questionario__sconto'; $rCome = b() . LinguaSito::percorso('/domande') . '#porta-amico'; include __DIR__ . '/_risparmio.php'; /* 9L: lo stesso riquadro della home */ ?>
-          <div class="questionario__rinnovo" data-q-rinnovo>
-            <span><?= $qU('Primo anno', 'First year') ?> <b data-q-anno><?= Support::e(Support::money($pieno)) ?></b>, <?= $qEn ? 'from the renewal with ' . (int) $qTotSconto . '% off' : 'dal rinnovo con il ' . (int) $qTotSconto . '%' ?>:<br><s class="muted" data-q-anno-s><?= Support::e(Support::money($pieno)) ?></s></span>
-            <b class="questionario__rinnovo-v" data-q-min><?= Support::e(Support::money((int) round($pieno * (100 - $qTotSconto) / 100))) ?></b>
-            <table><tbody>
-              <tr><td><?= $qU('Nessuno sconto', 'No discount') ?></td><td data-q-perc="0"><?= Support::e(Support::money($pieno)) ?></td></tr>
-              <?php foreach ($qRighe as [$et, $perc]): ?><tr><td><?= Support::e($et) ?></td><td data-q-perc="<?= (int) $perc ?>"><?= Support::e(Support::money((int) round($pieno * (100 - $perc) / 100))) ?></td></tr><?php endforeach; ?>
-            </tbody></table>
-            <small><?= $qInviti ? $qT('rinnovo.nota') : $qU('Prezzi + IVA, all\'anno.', 'Prices + VAT, per year.') ?></small>
-          </div>
-        <?php endif; ?>
+        <?php $rnPieno = $pieno; include __DIR__ . '/_rinnovo.php'; /* 9M: il riquadro dello sconto, componente a sé */ ?>
       </div>
     <?php endforeach; ?>
     <?php if (isset($qPiani['portfolio'])): /* senza JavaScript il numero di strutture si cambia ricaricando, con le stesse risposte */ ?>

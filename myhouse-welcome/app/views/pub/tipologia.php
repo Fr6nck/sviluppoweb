@@ -90,20 +90,26 @@ $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' : null
 <?php if ($porto): /* 9K · Solo Portfolio: quanto costa ogni struttura, il preventivo oltre il massimo, lo sconto sul rinnovo */
       $maxP = (int) $piano['max_quantity']; $minP = max(2, (int) $piano['min_quantity']); ?>
 <section class="blocco" aria-labelledby="tipo-portfolio">
-  <div class="tipo-piano panel">
+  <?php $prezzoP = Plans::price($piano, $minP); ?>
+  <div class="tipo-piano panel" data-quantita data-base="<?= (int) $piano['price_cents'] ?>" data-extra="<?= (int) $piano['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($piano)) ?>" data-valuta="<?= Support::e($piano['currency']) ?>">
     <div class="stack" style="gap:10px">
       <span class="kicker">Il piano per più strutture</span>
       <h2 id="tipo-portfolio" class="h-sezione"><?= Support::e($piano['name']) ?>: più strutture aggiungi, meno costa ognuna</h2>
       <p>Tutto quello che c'è in Plus, per ogni struttura: tutte le sezioni, foto e PDF, la traduzione automatica, le statistiche di ognuna. Un solo account e un solo abbonamento.</p>
       <?php $pvS = $piano; $qS = $minP; include __DIR__ . '/_scaglioni.php'; ?>
-      <?php include __DIR__ . '/_sconto_rinnovo.php'; ?>
     </div>
     <div class="tipo-piano__prezzo">
-      <span class="tipo-piano__cifra"><?= Support::e(Support::money(Plans::price($piano, $minP), $piano['currency'])) ?></span>
-      <span class="small muted">+ IVA all'anno per <?= $minP ?> strutture<?= $maxP > 0 ? ', fino a ' . $maxP : '' ?></span>
-      <a class="btn btn--go" href="<?= $crea ?>"><?= $ctaCrea ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
+      <span class="tipo-piano__cifra price" data-totale><?= Support::e(Support::money($prezzoP, $piano['currency'])) ?></span>
+      <span class="small muted">+ IVA all'anno per <span data-quante><?= $minP ?></span> strutture<?= $maxP > 0 ? ', fino a ' . $maxP : '' ?></span>
+      <div class="field" style="margin:0"><label for="pf-strutture">Quante strutture?</label>
+        <input id="pf-strutture" type="number" inputmode="numeric" min="<?= $minP ?>" max="<?= $maxP > 0 ? $maxP + 1 : 999 ?>" data-max-prezzo="<?= $maxP > 0 ? $maxP : 999 ?>" value="<?= $minP ?>"></div>
+      <a class="btn btn--go" href="<?= $crea ?>" data-crea data-href="<?= Support::e(b() . ($dentro ? '/pannello' : '/registrati?piano=' . (int) $piano['pv_id'])) ?>"><?= $ctaCrea ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
     </div>
   </div>
+  <?php /* 9M · Sotto i prezzi e il selettore, solo la parte finale del questionario: il 55% e la scala del rinnovo, legati al selettore. */
+        $rnPieno = $prezzoP; $rnCampo = 'pf-strutture'; ?>
+  <div class="tipo-rinnovo"><?php include __DIR__ . '/_rinnovo.php'; ?></div>
+  <script src="<?= MHW\av('/assets/prezzi.js') ?>" defer></script>
   <?php if ($maxP > 0 && MHW\Preventivi::disponibili()): /* oltre il massimo: il modulo del preventivo (9A), aperto da qui */ ?>
     <details class="tipo-preventivo panel"<?= isset($_SESSION['preventivo_ok']) || isset($_SESSION['preventivo_errore']) ? ' open' : '' ?>>
       <summary><b>Più di <?= $maxP ?> strutture?</b> Ti facciamo una proposta su misura <?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
