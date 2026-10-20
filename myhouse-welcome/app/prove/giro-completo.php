@@ -6675,7 +6675,7 @@ prova('Cache · solo per l\'amministrazione', $ospite->get('/admin/cache')['code
 capitolo('SEO e GEO: meta robots per anteprime grandi, indirizzo e contatti nei dati strutturati, briciole, sitemap con le lingue, llms-full.txt, IndexNow');
 $domSeo = (string) val("SELECT valore FROM seo_settings WHERE chiave = 'dominio'");
 $salvaSeo = function (string $k, string $v) { db()->prepare('DELETE FROM seo_settings WHERE chiave = ?')->execute([$k]); db()->prepare('INSERT INTO seo_settings (chiave, valore, updated_at) VALUES (?, ?, ?)')->execute([$k, $v, gmdate('Y-m-d\TH:i:s\Z')]); };
-foreach (['p.home.descrizione', 'p.en.descrizione', 'az.indirizzo', 'llms.intro', 'p.domande.indicizza', 'p.en-domande.indicizza', 'p.case-vacanza.indicizza', 'p.en.indicizza'] as $k) db()->prepare('DELETE FROM seo_settings WHERE chiave = ?')->execute([$k]);
+foreach (['p.home.descrizione', 'p.en.descrizione', 'az.indirizzo', 'az.email', 'az.telefono', 'az.venditore', 'llms.intro', 'p.domande.indicizza', 'p.en-domande.indicizza', 'p.case-vacanza.indicizza', 'p.en.indicizza'] as $k) db()->prepare('DELETE FROM seo_settings WHERE chiave = ?')->execute([$k]);
 $salvaSeo('dominio', 'https://myhousewelcome.it');
 $rS = $ospite->get('/');
 $ldS = preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $rS['body'], $mm) ? array_map(fn($j) => json_decode($j, true), $mm[1]) : [];
