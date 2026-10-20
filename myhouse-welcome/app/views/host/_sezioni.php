@@ -60,10 +60,10 @@ $n = count($sezioni); ?>
             $lingueSez = $on ? array_keys(array_filter($mancantiL, fn($per) => !empty($per[(int) $s['id']]))) : [];
             if ($lingueSez): ?>
         <a class="badge badge--ochre etichetta-tradurre" href="<?= b() ?>/pannello/<?= $pid ?>/lingue/<?= Support::e($lingueSez[0]) ?>"
-           title="Da tradurre in: <?= Support::e(implode(', ', array_map('strtoupper', $lingueSez))) ?>"><?= Support::e(implode(', ', array_map('strtoupper', $lingueSez))) ?> da tradurre</a>
+           title="<?= Support::e(tf('Da tradurre in: {lingue}', ['{lingue}' => implode(', ', array_map('strtoupper', $lingueSez))])) ?>"><?= Support::e(tf('{lingue} da tradurre', ['{lingue}' => implode(', ', array_map('strtoupper', $lingueSez))])) ?></a>
       <?php endif; ?>
       <details class="menu-riga">
-        <summary class="icon-btn" aria-label="Azioni per <?= Support::e($s['title']) ?>"><span aria-hidden="true">⋯</span></summary>
+        <summary class="icon-btn" aria-label="<?= Support::e(tf('Azioni per {sezione}', ['{sezione}' => $s['title']])) ?>"><span aria-hidden="true">⋯</span></summary>
         <div class="menu-riga__lista">
           <a class="menu-riga__voce" href="<?= $modificaUrl ?>"><?= t('Modifica') ?></a>
           <?= $i > 0 ? $azione($s, 'su', t('Sposta su')) : '' ?>

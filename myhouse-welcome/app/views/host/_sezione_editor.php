@@ -32,8 +32,13 @@ $suggLuoghi = $suggLuoghi ?? []; $suggRighe = $suggRighe ?? []; ?>
       <?php if ($inProcedura): ?><input type="hidden" name="da" value="procedura"><?php endif; ?>
       <div class="field" style="margin:0">
         <label for="title"><?= t('Titolo nella guida') ?></label>
+        <?php if ($s['kind'] === 'custom'): /* 9N · la sezione libera: titolo vuoto e obbligatorio */ ?>
+          <input id="title" name="title" type="text" maxlength="120" required value="<?= $titoloSalvato ?>" placeholder="<?= Support::e(t('Per esempio: La piscina')) ?>" aria-describedby="title-aiuto">
+          <p class="help" id="title-aiuto" style="margin-top:6px"><?= t('Obbligatorio: è quello che l\'ospite legge sulla casella della sezione.') ?></p>
+        <?php else: ?>
         <input id="title" name="title" type="text" maxlength="120" value="<?= $titoloSalvato ?>" placeholder="<?= Support::e($nome) ?>">
         <p class="help" style="margin-top:6px"><?= t('Se lo lasci com\'è, nelle altre lingue compare il titolo già tradotto.') ?></p>
+        <?php endif; ?>
       </div>
 
       <?php $kind = $s['kind']; $uid = 's' . $sid;

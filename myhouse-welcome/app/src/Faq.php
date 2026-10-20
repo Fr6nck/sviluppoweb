@@ -108,6 +108,29 @@ final class Faq
         } catch (\Throwable) { return 6; }
     }
 
+    /** 9N · I temi della pagina /domande: [id, italiano, inglese, domande]. Una domanda nuova senza tema va in «Altro». */
+    private const TEMI = [
+        ['cominciare', 'Cominciare', 'Getting started', ['prova', 'app', 'tempo', 'qr', 'sezione-libera', 'recensioni', 'codice-porta', 'google', 'tracciamento']],
+        ['lingue', 'Lingue e traduzioni', 'Languages and translations', ['lingue', 'lingua-principale', 'traduzioni', 'traduzioni-suggerite', 'attivazione']],
+        ['strutture', 'Più strutture', 'More properties', ['piu-strutture', 'campione', 'campione-copia', 'bnb-camere', 'piu-case']],
+        ['sconti', 'Sconti, inviti e giudizio', 'Discounts, invites and reviews', ['porta-amico', 'amico-quando', 'giudizio-sconto', 'giudizio-vetrina', 'giudizio-ritiro', 'omaggio']],
+        ['pagamento', 'Pagamento, piani e disdetta', 'Payment, plans and cancelling', ['fattura', 'cambio-piano', 'scendere-piano', 'disdire', 'non-rinnovo']],
+    ];
+
+    /** 9N · Le domande divise per tema, nell'ordine dei temi: [[id, titolo, domande]]. */
+    public static function perTema(array $faq, bool $en = false): array
+    {
+        $perId = array_column($faq, null, 'id'); $usate = []; $out = [];
+        foreach (self::TEMI as [$id, $it, $enT, $ids]) {
+            $q = array_values(array_filter(array_map(fn($x) => $perId[$x] ?? null, $ids)));
+            foreach ($q as $x) $usate[$x['id']] = true;
+            if ($q) $out[] = [$id, $en ? $enT : $it, $q];
+        }
+        $resto = array_values(array_filter($faq, fn($x) => !isset($usate[$x['id']])));
+        if ($resto) $out[] = ['altro', $en ? 'Other questions' : 'Altre domande', $resto];
+        return $out;
+    }
+
     /** [in vista, altre]: le otto della landing nel loro ordine, poi tutte le altre nell'ordine di sempre. */
     public static function perLanding(): array
     {

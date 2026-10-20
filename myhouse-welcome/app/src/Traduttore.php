@@ -269,8 +269,6 @@ final class Traduttore
     {
         $c = self::config();
         $acc = (int) ($c['cap_account'] ?? self::TETTO_ANNUO);
-        // Il valore di serie di prima (150.000 al mese) non ha senso come annuale: vale quello nuovo. Un altro valore è una scelta: resta.
-        if ($acc === 150000) $acc = self::TETTO_ANNUO;
         return ['account' => max(0, $acc), 'sito' => max(0, (int) ($c['cap_global'] ?? 1900000))];
     }
 

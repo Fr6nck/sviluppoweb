@@ -11,7 +11,8 @@ $etS = function (array $t) use ($enS, $ordS, $maxS): string {
     return $t['a'] === null ? ($t['da'] === 2 ? 'From the 2nd on' : 'Beyond the ' . $ordS($t['da'] - 1)) : ($t['a'] === $t['da'] ? ucfirst($ordS($t['da'])) : 'From the ' . $ordS($t['da']) . ' to the ' . $ordS($t['a']));
 }; ?>
 <div class="scaglioni">
-  <p class="scaglioni__titolo"><?= $enS ? 'What each property costs, per year' : 'Quanto costa ogni struttura, all\'anno' ?></p>
+  <?php $minS = max(2, (int) ($pvS['min_quantity'] ?? 2)); /* 9N · accanto a Plus: si vede subito che Portfolio parte da 2 strutture */ ?>
+  <p class="scaglioni__titolo"><?= $enS ? 'What each property costs, per year · from ' . $minS . ' properties' : 'Quanto costa ogni struttura, all\'anno · da ' . $minS . ' strutture' ?></p>
   <ul class="scaglioni__elenco">
     <li><span><?= $enS ? '1st' : '1ª' ?></span><b><?= Support::e(Support::money((int) $pvS['price_cents'], $pvS['currency'])) ?></b></li>
     <?php foreach (Plans::tiers($pvS) as $t): ?>

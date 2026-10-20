@@ -103,17 +103,9 @@ if ($dentro):
     <div class="hero2__azioni">
       <a class="btn btn--lg btn--go" href="<?= $crea ?>"><?= $ctaCrea() ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
       <?php if ($demoUrl): ?>
-        <?php /* La demo, e accanto le lingue in cui aprirla: un solo gruppo, non tre bottoni in fila.
-                 Le lingue che la demo ha davvero, al massimo tre. */
-              $lingueDemo = array_values(array_intersect(['it', 'en', 'fr'], array_column(MHW\Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$demo['id']]), 'locale')));
-              $nomiLingue = $en ? ['it' => 'Italian', 'en' => 'English', 'fr' => 'French'] : ['it' => 'italiano', 'en' => 'inglese', 'fr' => 'francese']; ?>
+        <?php /* 9N · La demo senza le sigle delle lingue: ne ha cinque, e alla prima apertura c'è già il dialogo della lingua. */ ?>
         <span class="demo-gruppo">
           <a class="demo-gruppo__vai" href="<?= $demoUrl ?>"><?= Icon::svg('eye', 18, 1.8) ?><?= $T('cta.demo') ?></a>
-          <?php if (count($lingueDemo) > 1): ?>
-            <span class="demo-lingue" role="group" aria-label="<?= $U('Lingua della demo', 'Demo language') ?>">
-              <?php foreach ($lingueDemo as $l): ?><a href="<?= preg_replace('/\?l=\w+$/', '', $demoUrl) ?>?l=<?= $l ?>" hreflang="<?= $l ?>" aria-label="Demo in <?= $nomiLingue[$l] ?>"><?= strtoupper($l) ?></a><?php endforeach; ?>
-            </span>
-          <?php endif; ?>
         </span>
       <?php endif; ?>
     </div>
@@ -263,7 +255,7 @@ $disegni = [
     <?php foreach ($giudiziH as $g): ?><div role="listitem" class="dicono__scheda"><?php include __DIR__ . '/_dicono_scheda.php'; ?></div><?php endforeach; ?>
   </div>
   <p class="dicono__nota"><?= $T('dicono.nota', ['giudizio' => MHW\Giudizi::percentuale()]) ?></p>
-  <?php $rT = $T; $rCome = '#faq-porta-amico'; include __DIR__ . '/_risparmio.php'; ?>
+  <?php $rT = $T; $rCome = '#faq-{id}'; include __DIR__ . '/_risparmio.php'; ?>
 </section>
 <?php endif; ?>
 <section class="prodotto" aria-labelledby="prodotto-titolo">
@@ -447,7 +439,7 @@ $disegni = [
     <?php foreach ($vetrinaH as $v): ?><div role="listitem" class="dicono__scheda"><?php include __DIR__ . '/_vetrina_scheda.php'; ?></div><?php endforeach; ?>
   </div>
   <p class="dicono__nota"><?= $T('vetrina.nota') ?> <a href="<?= b() ?>/guide-dei-nostri-host"><?= $T('vetrina.tutte') ?> →</a></p>
-  <?php if (!$giudiziH): $rT = $T; $rCome = '#faq-porta-amico'; include __DIR__ . '/_risparmio.php'; endif; /* il 55%, se «Cosa dicono di noi» non c'è */ ?>
+  <?php if (!$giudiziH): $rT = $T; $rCome = '#faq-{id}'; include __DIR__ . '/_risparmio.php'; endif; /* il 55%, se «Cosa dicono di noi» non c'è */ ?>
 </section>
 <?php endif; ?>
 <?php $legale = MHW\Config::get('legal');
@@ -548,7 +540,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <h2 id="amico-titolo" class="h-sezione"><?= $T('amico.titolo', ['max' => '<span class="amico__cifra">' . MHW\Inviti::MASSIMO . '%</span>',
                                                                      'totale' => '<span class="amico__cifra">' . MHW\Sconti::massimoRinnovo()['totale'] . '%</span>'] + $pct) ?></h2>
     <p class="amico__lead"><?= $T('amico.lead', $pct) ?></p>
-    <?php $rT = $T; $rCome = '#faq-porta-amico'; include __DIR__ . '/_risparmio.php'; /* 9L · il 55% (inviti + «Giudizio con sconto») */ ?>
+    <?php $rT = $T; $rCome = '#faq-{id}'; include __DIR__ . '/_risparmio.php'; /* 9L · il 55% (inviti + «Giudizio con sconto») */ ?>
     <div class="row">
       <a class="btn" href="<?= b() . ($dentro ? '/inviti' : '/registrati' . ($en ? '?lang=en' : '')) ?>"><?= $dentro ? $U('Invita un amico', 'Invite a friend') : $T('cta.crea') ?></a>
       <a class="btn btn--ghost" href="#faq-porta-amico"><?= $T('amico.bottone') ?></a>

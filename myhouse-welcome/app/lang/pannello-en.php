@@ -1353,4 +1353,55 @@ How many properties I\'d like to manage:',
     'Abbiamo aggiornato i documenti legali' => 'We have updated our legal documents',
     'Leggi i Termini' => 'Read the Terms',
     'Informativa: {privacy} · Accordo sul trattamento dei dati: {dpa}' => 'Privacy policy: {privacy} · Data processing agreement: {dpa}',
+    // ---- 9N · voci del rapporto (pannello)
+    'Come si entra, cosa serve all\'arrivo e cosa fare prima di partire. Spiega dove sono le chiavi e come si apre.' => 'How to get in, what guests need on arrival and what to do before leaving. Explain where the keys are and how to open the door.',
+    // ---- 9N · voci del rapporto (pannello)
+    '«{nome}» diventa il modello delle altre guide: da qui copi le sezioni, e quando la cambi ti proponiamo di aggiornare le gemelle.' => '"{nome}" becomes the template for your other guides: you copy sections from it, and when you change it we offer to update the twins.',
+    'È ancora una bozza: conviene sceglierne una già completa.' => 'It\'s still a draft: better to choose one that\'s already complete.',
+    'Sì, rendila campione' => 'Yes, make it the template',
+    // ---- 9N · voci del rapporto (pannello)
+    'Ogni sezione si copia con le sue traduzioni, i luoghi, le foto e i PDF. Dalla scheda campione le sezioni copiate restano collegate: quando cambi la campione ti proponiamo di aggiornarle, e niente cambia da solo.' => 'Each section is copied with its translations, places, photos and PDFs. Sections copied from the template stay linked: when you change the template we offer to update them, and nothing changes by itself.',
+    'non personalizzata · da aggiornare' => 'not customised · to update',
+    // ---- 9N · voci del rapporto (pannello)
+    'Scrivi il titolo della sezione libera: è quello che l\'ospite legge nella guida.' => 'Write the title of the free section: it\'s what guests read in the guide.',
+    'Sezione libera · senza titolo' => 'Free section · no title',
+    'Per esempio: La piscina' => 'For example: The pool',
+    'Obbligatorio: è quello che l\'ospite legge sulla casella della sezione.' => 'Required: it\'s what guests read on the section\'s tile.',
+    // ---- 9N · voci del rapporto (pannello)
+    'Sconto per il tuo amico / per te' => 'Discount for your friend / for you',
+    'Assistenza — ' => 'Support — ',
+    'Ciao, mi serve aiuto con MyHouse Welcome.
+
+Pagina: {pagina}
+Struttura: {struttura}
+Account: {email}
+
+Cosa succede:
+' => 'Hi, I need help with MyHouse Welcome.
+
+Page: {pagina}
+Property: {struttura}
+Account: {email}
+
+What\'s happening:
+',
+    'Conferma la tua email ({email}): puoi preparare la guida, ma per pubblicarla serve la conferma.' => 'Confirm your email ({email}): you can prepare the guide, but to publish it we need the confirmation.',
+    ' sulla {carta}' => ' on {carta}',
+    'carta •••• {n}' => 'card •••• {n}',
+    '<b>La tua prova gratuita finisce il {data}.</b> Da quel giorno parte {piano} a {importo} l\'anno{carta}. Fino ad allora non paghi nulla.' => '<b>Your free trial ends on {data}.</b> From that day {piano} starts at {importo} a year{carta}. Until then you pay nothing.',
+    '<b>Tra {n} giorni, il {data},</b> addebitiamo {importo} per il rinnovo di {piano}{carta}. Se non vuoi rinnovare, disattivalo entro quella data: la guida resta online fino al {data}.' => '<b>In {n} days, on {data},</b> we\'ll charge {importo} for the renewal of {piano}{carta}. If you don\'t want to renew, turn it off by that date: the guide stays online until {data}.',
+    '<b>Rinnovo il {data}</b> · {piano} · {importo}{carta}. Non devi fare nulla.' => '<b>Renewal on {data}</b> · {piano} · {importo}{carta}. You don\'t need to do anything.',
+    '<b>L\'abbonamento scade il {data} e non si rinnova.</b> Nessun addebito. Dopo quella data la guida non sarà più visibile.' => '<b>The subscription expires on {data} and doesn\'t renew.</b> No charge. After that date the guide will no longer be visible.',
+    'Chiudi l\'avviso per 24 ore' => 'Close the notice for 24 hours',
+    'Tutte le novità' => 'All the news',
+    'Chiudi questa novità' => 'Close this news item',
+    // ---- 9N · voci del rapporto (pannello)
+    'Da tradurre in: {lingue}' => 'To translate into: {lingue}',
+    '{lingue} da tradurre' => '{lingue} to translate',
+    'Azioni per {sezione}' => 'Actions for {sezione}',
+    // ---- 9N · voci del rapporto (pannello)
+    'Conferma la tua email: il link è nella posta che ti abbiamo mandato.' => 'Confirm your email: the link is in the email we sent you.',
+    'Compila i dati per la fattura, qui sopra.' => 'Fill in your invoice details, above.',
+    'Il bottone si attiva quando:' => 'The button turns on when:',
+    'Sistema' => 'Fix it',
 ];

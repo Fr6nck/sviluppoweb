@@ -1,6 +1,6 @@
 <?php use function MHW\t, MHW\tf;
 /* 9M · «Porta le modifiche alle gemelle» (blocco 2 del mockup): una riga per sezione cambiata nella campione (modificata,
-   aggiunta, eliminata), una colonna per gemella; in ogni cella la casella e lo stato (uguale alla campione e manca:
+   aggiunta, eliminata), una colonna per gemella; in ogni cella la casella e lo stato (non personalizzata · da aggiornare e manca:
    spuntate; personalizzata, indirizzo diverso, presente da togliere: no). Sotto, l'anteprima delle differenze della riga
    scelta (?riga=…): il testo tolto barrato, quello aggiunto evidenziato. Le rimozioni chiedono conferma.
    Riceve $d (Campione::differenze), $riga, $conferma (null, o le scelte e le rimozioni da confermare). */

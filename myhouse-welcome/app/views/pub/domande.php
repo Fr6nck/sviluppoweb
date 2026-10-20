@@ -1,5 +1,6 @@
 <?php
-/* Tutte le domande frequenti (Faq::tutte), aperte, con il link diretto a ognuna: /domande#id.
+/* Tutte le domande frequenti (Faq::tutte), divise per tema con l'indice in cima (9N), chiuse: si apre quella del link
+   (/domande#id, guida.js/landing.js) o quella toccata.
    Le stesse della landing e dei dati strutturati (FAQPage) e di llms.txt. */
 use function MHW\b;
 use MHW\{Support, Icon, Config, LinguaSito};
@@ -23,13 +24,25 @@ $crea = b() . (!empty(MHW\Auth::user()) ? '/pannello' : '/registrati' . ($enD ? 
       <?php endif; ?>
     <?php endif; ?>
   </div>
+  <?php $temi = MHW\Faq::perTema($faq, $enD); ?>
+  <nav class="faq__indice" aria-label="<?= $enD ? 'Topics' : 'Temi' ?>">
+    <?php foreach ($temi as [$idT, $nomeT, $qT]): ?><a href="#tema-<?= Support::e($idT) ?>"><?= Support::e($nomeT) ?> <span class="muted">(<?= count($qT) ?>)</span></a><?php endforeach; ?>
+  </nav>
   <div class="faq__lista">
-    <?php foreach ($faq as $q): ?>
-      <details class="faq__voce" id="<?= Support::e($q['id']) ?>" open>
-        <summary><?= Support::e($q['d']) ?><?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
-        <p><?= Support::e($q['r']) ?></p>
-      </details>
+    <?php foreach ($temi as [$idT, $nomeT, $qT]): ?>
+      <h2 class="faq__tema" id="tema-<?= Support::e($idT) ?>"><?= Support::e($nomeT) ?></h2>
+      <?php foreach ($qT as $q): ?>
+        <details class="faq__voce" id="<?= Support::e($q['id']) ?>">
+          <summary><?= Support::e($q['d']) ?><?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
+          <p><?= Support::e($q['r']) ?></p>
+        </details>
+      <?php endforeach; ?>
     <?php endforeach; ?>
+    <script>
+    /* 9N · La domanda del link (#id) si apre da sola, anche cambiando ancora nella stessa pagina. */
+    (function () { var apri = function () { var d = location.hash && document.getElementById(location.hash.slice(1)); if (d && d.tagName === 'DETAILS') d.open = true; };
+      apri(); window.addEventListener('hashchange', apri); })();
+    </script>
     <div class="row domande__azioni">
       <a class="btn" href="<?= $crea ?>"><?= MHW\TestiSito::html('cta.crea') ?></a>
       <a class="btn btn--ghost" href="<?= b() . ($enD ? '/en' : '/') ?>#piani"><?= $enD ? 'See pricing' : 'Vedi i prezzi' ?></a>

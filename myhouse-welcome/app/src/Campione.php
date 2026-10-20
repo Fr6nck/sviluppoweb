@@ -24,7 +24,7 @@ final class Campione
     public const GIORNI_STORICO = 30;
     /** Gli stati di una cella (sezione × gemella) e se la casella parte spuntata. */
     public const STATI = [
-        'uguale' => ['uguale alla campione', true], 'personalizzata' => ['personalizzata', false], 'manca' => ['manca: verrà aggiunta', true],
+        'uguale' => ['non personalizzata · da aggiornare', true], 'personalizzata' => ['personalizzata', false], 'manca' => ['manca: verrà aggiunta', true],
         'indirizzo' => ['indirizzo diverso: controlla', false], 'presente' => ['presente: verrà tolta se spunti', false], 'assente' => ['già assente', false],
         'allineata' => ['allineata', false],
     ];

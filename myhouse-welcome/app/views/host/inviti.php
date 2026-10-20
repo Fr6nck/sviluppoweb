@@ -23,7 +23,7 @@ $nI = ['{amico}' => Inviti::AMICO, '{passo}' => Inviti::PASSO, '{max}' => Inviti
       <li class="invito__passo"><i aria-hidden="true">2</i><span><?= Support::e(tf('Il tuo amico apre il link: vede la tua guida in anteprima e lo sconto del {amico}% è già inserito.', $nI)) ?></span></li>
       <li class="invito__passo"><i aria-hidden="true">3</i><span><?= Support::e(tf('Quando pubblica la sua guida, il tuo prossimo rinnovo scende del {passo}%, fino al {max}%.', $nI)) ?></span></li>
     </ol>
-    <?php $rCome = b() . '/domande#porta-amico'; $rEtichetta = t('Come funziona'); $rT = fn($k, $s) => MHW\TestiSito::formatta(MHW\TestiSito::get($k, MHW\Pannello::en() ? 'en' : null), $s); include __DIR__ . '/../pub/_risparmio.php'; /* 9L · fino al 55% con il programma «Giudizio con sconto» */ ?>
+    <?php $rCome = b() . '/domande#{id}'; $rEtichetta = t('Come funziona'); $rT = fn($k, $s) => MHW\TestiSito::formatta(MHW\TestiSito::get($k, MHW\Pannello::en() ? 'en' : null), $s); include __DIR__ . '/../pub/_risparmio.php'; /* 9L · fino al 55% con il programma «Giudizio con sconto» */ ?>
   </section>
 
   <?php if (!$puo): ?>

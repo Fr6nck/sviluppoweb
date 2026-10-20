@@ -11,6 +11,8 @@ if ($rM['chiave'] !== null):
     $rTesto = isset($rT) ? $rT($rM['chiave'], $rSost) : TestiSito::html($rM['chiave'], $rSost); ?>
   <div class="risparmio<?= isset($rClasse) ? ' ' . $rClasse : '' ?>">
     <span class="risparmio__cifra" aria-hidden="true"><?= (int) $rM['totale'] ?>%</span>
-    <p class="risparmio__testo"><?= $rTesto ?> <a href="<?= $rCome ?? b() . '/domande#porta-amico' ?>"><?= $rEtichetta ?? (MHW\LinguaSito::en() ? 'How it works' : 'Come funziona') ?></a></p>
+    <?php /* 9N · la domanda giusta: solo inviti → «Porta un amico», altrimenti il programma «Giudizio con sconto» */
+          $rCome = str_replace('{id}', $rM['chiave'] === 'risparmio.inviti' ? 'porta-amico' : 'giudizio-sconto', $rCome ?? b() . '/domande#{id}'); ?>
+    <p class="risparmio__testo"><?= $rTesto ?> <a href="<?= $rCome ?>"><?= $rEtichetta ?? (MHW\LinguaSito::en() ? 'How it works' : 'Come funziona') ?></a></p>
   </div>
 <?php endif; unset($rT, $rCome, $rClasse, $rEtichetta); ?>

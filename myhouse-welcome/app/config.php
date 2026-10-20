@@ -160,7 +160,7 @@ $config = [
         'usd_eur'        => $env('MHW_TRANSLATE_USD_EUR', '0.86'),
         // Fine del piano gratuito AWS (2 milioni di caratteri al mese per 12 mesi dalla prima chiamata).
         'free_tier_until' => $env('MHW_TRANSLATE_FREE_UNTIL'),
-        'cap_account'    => (int) $env('MHW_TRANSLATE_CAP_ACCOUNT', '150000'),
+        'cap_account'    => (int) $env('MHW_TRANSLATE_CAP_ACCOUNT', '500000'),   // 9N · il tetto annuale per account (prima 150.000, corretto a mano)
         'cap_global'     => (int) $env('MHW_TRANSLATE_CAP_GLOBAL', '1900000'),
         // 8C: suggerire anche la lingua aggiuntiva (nl, pt, ja…). Spento, quella lingua si scrive a mano.
         'extra'          => $bool('MHW_TRANSLATE_EXTRA', true),

@@ -435,6 +435,11 @@ final class Guide
         if (empty($d['checkin_steps']) && trim((string) ($d['checkin_note'] ?? '')) === '') {
             $out[] = 'Scrivi almeno un passaggio in Check-in & Check-out: è la prima cosa che l\'ospite cerca.';
         }
+        // 9N · La sezione libera ha bisogno del suo titolo: è quello che l'ospite legge sulla casella.
+        if (Db::val("SELECT s.id FROM sections s JOIN section_translations st ON st.section_id = s.id AND st.locale = ?
+                     WHERE s.property_id = ? AND s.kind = 'custom' AND s.is_active = 1 AND TRIM(COALESCE(st.title, '')) = ''", [$p['default_locale'], $propertyId])) {
+            $out[] = 'Scrivi il titolo della sezione libera: è quello che l\'ospite legge nella guida.';
+        }
         return $out;
     }
 

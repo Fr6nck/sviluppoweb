@@ -196,7 +196,8 @@ final class Properties
             ]);
             $loc = (string) Db::val('SELECT default_locale FROM properties WHERE id = ?', [$propertyId], 'it');
             Db::insert('section_translations', [
-                'section_id' => $sid, 'locale' => $loc, 'title' => SectionCatalog::title($kind, $loc),
+                // 9N · la sezione libera nasce senza titolo: lo sceglie l'host (obbligatorio per pubblicare)
+                'section_id' => $sid, 'locale' => $loc, 'title' => $kind === 'custom' ? '' : SectionCatalog::title($kind, $loc),
                 'body' => '', 'data' => '{}', 'state' => 'reviewed', 'updated_at' => Support::now(),
             ]);
             // «Come arrivare» parte dall'indirizzo della struttura: si scrive una volta sola.
@@ -344,7 +345,7 @@ final class Properties
         $titolo = null;
         if (array_key_exists('title', $in)) {
             $titolo = mb_substr(trim((string) $in['title']), 0, 120);
-            if ($titolo === '') $titolo = SectionCatalog::title($s['kind'], $locale);
+            if ($titolo === '' && $s['kind'] !== 'custom') $titolo = SectionCatalog::title($s['kind'], $locale);   // 9N · la libera resta senza, finché non lo scrivi
         }
         Db::tx(function () use ($s, $locale, $comuni, $tradotti, $titolo, $isDefault) {
             if ($isDefault) {

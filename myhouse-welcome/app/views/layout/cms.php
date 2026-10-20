@@ -8,7 +8,7 @@
    JavaScript) e le voci della guida una fila di schede che scorre.
    Senza utente, o durante la procedura di una guida mai pubblicata, niente
    barra: solo il marchio, per non distrarre. */
-use function MHW\a; use function MHW\b; use function MHW\t;
+use function MHW\a; use function MHW\b; use function MHW\t, MHW\tf;
 use MHW\{Auth, Support, Csrf, Entitlements, Icon};
 $u = Auth::user(); $f = Support::flash();
 $admin = ($u['role'] ?? '') === 'admin' && !Auth::isImpersonating();
@@ -75,7 +75,7 @@ $voci = function (array $elenco, string $on, string $classe) {
         $si = $k === $on;
         echo '<a class="' . $classe . ($si ? ' on' : '') . '" href="' . b() . Support::e($href) . '"' . ($si ? ' aria-current="page"' : '') . '>'
            . Icon::svg($ico, 19, 1.8) . '<span>' . Support::e(t($l)) . '</span>'
-           . ($etichetta !== '' ? '<em class="lato__etichetta" title="Sconto per il tuo amico / per te">' . Support::e($etichetta) . '</em>' : '') . '</a>';
+           . ($etichetta !== '' ? '<em class="lato__etichetta" title="' . Support::e(t('Sconto per il tuo amico / per te')) . '">' . Support::e($etichetta) . '</em>' : '') . '</a>';
     }
 };
 $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida, $quiGuida, $prop, $statoGuida, $voci, $u, $iniziale) { ?>
@@ -112,12 +112,12 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
       </div>
       <?php if (!$admin && Support::contatto() !== ''): /* 7A: l'assistenza, con pagina, struttura e account già scritti */
             $paginaAiuto = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH); ?>
-        <a class="lato__aiuto" href="<?= Support::e(Support::mailto('Assistenza — ' . ($prop['name'] ?? 'MyHouse Welcome'),
-            "Ciao, mi serve aiuto con MyHouse Welcome.\n\nPagina: " . $paginaAiuto . "\nStruttura: " . ($prop['name'] ?? '—') . "\nAccount: " . $u['email'] . "\n\nCosa succede:\n")) ?>">
+        <a class="lato__aiuto" href="<?= Support::e(Support::mailto(t('Assistenza — ') . ($prop['name'] ?? 'MyHouse Welcome'),
+            tf("Ciao, mi serve aiuto con MyHouse Welcome.\n\nPagina: {pagina}\nStruttura: {struttura}\nAccount: {email}\n\nCosa succede:\n", ['{pagina}' => $paginaAiuto, '{struttura}' => $prop['name'] ?? '—', '{email}' => $u['email']]))) ?>">
           <?= Icon::svg('message', 18, 1.8) ?><?= t('Aiuto') ?></a>
       <?php endif; ?>
       <div class="lato__comandi">
-        <?php $etScuro = 'Passa al tema scuro'; $etChiaro = 'Passa al tema chiaro'; include __DIR__ . '/_tema-bottone.php'; ?>
+        <?php $etScuro = t('Passa al tema scuro'); $etChiaro = t('Passa al tema chiaro'); include __DIR__ . '/_tema-bottone.php'; ?>
         <form method="post" action="<?= b() ?>/esci" style="margin:0"><?= Csrf::field() ?>
           <button class="lato__esci"><?= Icon::svg('logout', 18, 1.8) ?><?= t('Esci') ?></button></form>
       </div>
@@ -200,29 +200,32 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
 
     <?php if (!$admin && !Auth::isVerified($u)): ?>
       <div class="banner banner--info">
-        <span><?= Icon::svg('info', 18) ?>Conferma la tua email (<?= Support::e($u['email']) ?>): puoi preparare la guida, ma per pubblicarla serve la conferma.</span>
-        <form method="post" action="<?= b() ?>/verifica/invia"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm">Mandami di nuovo l'email</button></form>
+        <span><?= Icon::svg('info', 18) ?><?= Support::e(tf('Conferma la tua email ({email}): puoi preparare la guida, ma per pubblicarla serve la conferma.', ['{email}' => $u['email']])) ?></span>
+        <form method="post" action="<?= b() ?>/verifica/invia"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm"><?= t('Mandami di nuovo l\'email') ?></button></form>
       </div>
     <?php endif; ?>
     <?php /* 9D · La fascia dei 30 giorni prima dell'addebito (o della scadenza), nel Quadro e in Account: a 7 giorni in evidenza; «Chiudi» per 24 ore. */
           if (!$admin && in_array($nav, ['guide', 'account'], true) && !$prop && ($accF = Auth::account()) && ($fascia = MHW\Richiami::fascia($accF)) && empty($_COOKIE[$fascia['chiave']])): ?>
+      <?php /* 9N · nella lingua del pannello: frasi intere con i dati dentro */
+            $xF = ['{data}' => Support::e(MHW\Pannello::data((string) $fascia['sub']['current_period_end'])), '{piano}' => Support::e($fascia['piano']), '{importo}' => Support::e($fascia['importo']),
+                   '{n}' => (int) $fascia['giorni'], '{carta}' => $fascia['carta'] !== '' ? Support::e(tf(' sulla {carta}', ['{carta}' => $fascia['carta']])) : '']; ?>
       <div class="fascia fascia--<?= $fascia['tipo'] ?><?= $fascia['evidenza'] ? ' fascia--evidenza' : '' ?>" role="status">
         <span class="fascia__testo">
           <?php if ($fascia['tipo'] === 'omaggio'): ?>
-            <b>La tua prova gratuita finisce il <?= Support::e($fascia['data']) ?>.</b> Da quel giorno parte <?= Support::e($fascia['piano']) ?> a <?= Support::e($fascia['importo']) ?> l'anno<?= $fascia['carta'] !== '' ? ', sulla ' . Support::e($fascia['carta']) : '' ?>. Fino ad allora non paghi nulla.
+            <?= tf('<b>La tua prova gratuita finisce il {data}.</b> Da quel giorno parte {piano} a {importo} l\'anno{carta}. Fino ad allora non paghi nulla.', $xF) ?>
           <?php elseif ($fascia['tipo'] === 'rinnovo' && $fascia['evidenza']): ?>
-            <b>Tra <?= (int) $fascia['giorni'] ?> giorni, il <?= Support::e($fascia['data']) ?>,</b> addebitiamo <?= Support::e($fascia['importo']) ?> per il rinnovo di <?= Support::e($fascia['piano']) ?><?= $fascia['carta'] !== '' ? ' sulla ' . Support::e($fascia['carta']) : '' ?>. Se non vuoi rinnovare, disattivalo entro quella data: la guida resta online fino al <?= Support::e($fascia['data']) ?>.
+            <?= tf('<b>Tra {n} giorni, il {data},</b> addebitiamo {importo} per il rinnovo di {piano}{carta}. Se non vuoi rinnovare, disattivalo entro quella data: la guida resta online fino al {data}.', $xF) ?>
           <?php elseif ($fascia['tipo'] === 'rinnovo'): ?>
-            <b>Rinnovo il <?= Support::e($fascia['data']) ?></b> · <?= Support::e($fascia['piano']) ?> · <?= Support::e($fascia['importo']) ?><?= $fascia['carta'] !== '' ? ' sulla ' . Support::e($fascia['carta']) : '' ?>. Non devi fare nulla.
+            <?= tf('<b>Rinnovo il {data}</b> · {piano} · {importo}{carta}. Non devi fare nulla.', $xF) ?>
           <?php else: ?>
-            <b>L'abbonamento scade il <?= Support::e($fascia['data']) ?> e non si rinnova.</b> Nessun addebito. Dopo quella data la guida non sarà più visibile.
+            <?= tf('<b>L\'abbonamento scade il {data} e non si rinnova.</b> Nessun addebito. Dopo quella data la guida non sarà più visibile.', $xF) ?>
           <?php endif; ?>
         </span>
         <span class="fascia__azioni">
           <?php if ($fascia['sub']['provider'] === 'stripe' && $fascia['sub']['provider_subscription_id'] !== ''): ?>
-            <form method="post" action="<?= b() ?>/account/rinnovo" style="margin:0"><?= Csrf::field() ?><button class="btn btn--sm<?= $fascia['evidenza'] && $fascia['automatico'] ? '' : ' btn--ghost' ?>" name="rinnovo" value="<?= $fascia['automatico'] ? 'no' : 'si' ?>"><?= $fascia['automatico'] ? 'Disattiva il rinnovo' : 'Riattiva il rinnovo' ?></button></form>
+            <form method="post" action="<?= b() ?>/account/rinnovo" style="margin:0"><?= Csrf::field() ?><button class="btn btn--sm<?= $fascia['evidenza'] && $fascia['automatico'] ? '' : ' btn--ghost' ?>" name="rinnovo" value="<?= $fascia['automatico'] ? 'no' : 'si' ?>"><?= $fascia['automatico'] ? t('Disattiva il rinnovo') : t('Riattiva il rinnovo') ?></button></form>
           <?php endif; ?>
-          <form method="post" action="<?= b() ?>/pannello/avviso-rinnovo/chiudi" style="margin:0"><?= Csrf::field() ?><input type="hidden" name="torna" value="/<?= $nav === 'account' ? 'account' : 'pannello' ?>"><button class="btn btn--quiet btn--sm" aria-label="Chiudi l'avviso per 24 ore">Chiudi</button></form>
+          <form method="post" action="<?= b() ?>/pannello/avviso-rinnovo/chiudi" style="margin:0"><?= Csrf::field() ?><input type="hidden" name="torna" value="/<?= $nav === 'account' ? 'account' : 'pannello' ?>"><button class="btn btn--quiet btn--sm" aria-label="<?= Support::e(t('Chiudi l\'avviso per 24 ore')) ?>"><?= t('Chiudi') ?></button></form>
         </span>
       </div>
     <?php endif; ?>
@@ -250,12 +253,14 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
     <p class="note <?= ['err' => 'note--err', 'avviso' => ''][$f['kind']] ?? 'note--ok' ?>" style="margin-bottom:24px" role="status"><?= Support::e(MHW\Pannello::t($f['msg'])) ?></p>
   <?php endif; ?>
 <?php endif; ?>
-<?php /* 7C · Novità: la prima non ancora chiusa da questo account (non per l'amministrazione). */
-      if ($u && ($u['role'] ?? '') !== 'admin' && ($accN = Auth::account()) && ($novita = MHW\Novita::daMostrare((int) $accN['id'], (string) ($u['created_at'] ?? '')))):
+<?php /* 7C · Novità: la prima non ancora chiusa da questo account (non per l'amministrazione).
+         9N · Non nella procedura e negli editor (sezioni, lingue): lì si lavora; con la ✕ si chiude (resta nella pagina «Novità»). */
+      $inLavoro = (bool) preg_match('~/pannello/\d+/(procedura|sezioni|lingue)(/|$|\?)~', (string) ($_SERVER['REQUEST_URI'] ?? ''));
+      if (!$inLavoro && $u && ($u['role'] ?? '') !== 'admin' && ($accN = Auth::account()) && ($novita = MHW\Novita::daMostrare((int) $accN['id'], (string) ($u['created_at'] ?? '')))):
         $pidN = !empty($prop['id']) ? (int) $prop['id'] : (int) MHW\Db::val('SELECT id FROM properties WHERE account_id = ? AND archived_at IS NULL ORDER BY id', [$accN['id']], 0);
         $doveN = str_contains((string) $novita['dove'], '{pid}') ? ($pidN ? str_replace('{pid}', (string) $pidN, (string) $novita['dove']) : '') : (string) $novita['dove']; ?>
   <aside class="novita" aria-labelledby="novita-titolo">
-    <span class="novita__kicker"><span class="dot" aria-hidden="true"></span>Novità</span>
+    <span class="novita__kicker"><span class="dot" aria-hidden="true"></span><?= MHW\Pannello::t('Novità') ?></span>
     <?php /* 8C: la riga in più se la sezione «Aria condizionata» è nata spenta (migrazione 037, account al limite) */
           $notaN = !empty($novita['nota_aria']) && MHW\Db::val("SELECT 1 FROM sections s JOIN properties p ON p.id = s.property_id WHERE p.account_id = ? AND s.kind = 'aria' AND s.is_active = 0", [$accN['id']]) ? (string) $novita['nota_aria'] : ''; ?>
     <div class="novita__testo"><b id="novita-titolo"><?= Support::e($novita['titolo']) ?></b> <span><?= Support::e($novita['testo']) ?></span><?php if ($notaN !== ''): ?> <span class="novita__nota"><?= Support::e($notaN) ?></span><?php endif; ?></div>
@@ -264,9 +269,12 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
       <?php if ($doveN !== ''): ?>
         <form method="post" action="<?= b() ?>/pannello/novita/vai" style="margin:0"<?= str_ends_with($doveN, '/anteprima') ? ' target="_blank"' : '' ?>><?= Csrf::field() ?>
           <input type="hidden" name="novita" value="<?= Support::e($novita['id']) ?>"><input type="hidden" name="dove" value="<?= Support::e($doveN) ?>">
-          <button class="btn btn--sm">Mostrami dove</button></form>
+          <button class="btn btn--sm"><?= MHW\Pannello::t('Mostrami dove') ?></button></form>
       <?php endif; ?>
-      <a class="novita__tutte" href="<?= b() ?>/pannello/novita">Tutte le novità</a>
+      <a class="novita__tutte" href="<?= b() ?>/pannello/novita"><?= MHW\Pannello::t('Tutte le novità') ?></a>
+      <form method="post" action="<?= b() ?>/pannello/novita/chiudi" style="margin:0"><?= Csrf::field() ?>
+        <input type="hidden" name="novita" value="<?= Support::e($novita['id']) ?>">
+        <button class="icon-btn novita__chiudi" aria-label="<?= Support::e(MHW\Pannello::t('Chiudi questa novità')) ?>"><?= MHW\Icon::svg('close', 16, 2) ?></button></form>
     </div>
   </aside>
 <?php endif; ?>

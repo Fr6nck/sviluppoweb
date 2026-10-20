@@ -2135,6 +2135,8 @@ prova('6C · home: tutte le sezioni del catalogo nei tre gruppi, contate', $r['c
 capitolo('Fase 6D · sezione libera, righe compresse, messaggio di benvenuto');
 $luc->get("/pannello/$lpid");
 $luc->post("/pannello/$lpid/sezioni", ['kind' => 'custom']);
+// 9N · la sezione libera nasce senza titolo (obbligatorio per pubblicare): qui gliene diamo uno
+db()->prepare("UPDATE section_translations SET title = 'La piscina' WHERE section_id IN (SELECT id FROM sections WHERE property_id = ? AND kind = 'custom')")->execute([$lpid]);
 $r = $luc->get("/pannello/$lpid");
 prova('S1 · aggiunta una sezione libera; dalla 9F·12 il catalogo non la propone più (una per guida)', (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'custom'", [$lpid]) === 1
       && !str_contains($r['body'], 'name="kind" value="custom"') && str_contains($r['body'], 'Hai già la sezione libera'));
@@ -3143,6 +3145,7 @@ $vera->modulo("/pannello/$vp", "/pannello/$vp/sezioni", ['kind' => 'wifi']);
 $vera->modulo("/pannello/$vp", "/pannello/$vp/sezioni", ['kind' => 'wifi']);
 prova('Ogni sezione una volta sola: il secondo Wi-Fi non si aggiunge', (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'wifi'", [$vp]) === 1);
 for ($i = 0; $i < 4; $i++) $vera->modulo("/pannello/$vp", "/pannello/$vp/sezioni", ['kind' => 'custom']);
+db()->prepare("UPDATE section_translations SET title = 'Il giardino' WHERE section_id IN (SELECT id FROM sections WHERE property_id = ? AND kind = 'custom')")->execute([$vp]);   // 9N
 $r = $vera->get("/pannello/$vp/procedura/sezioni");
 prova('Sezione libera una per guida (9F·12): la seconda non si aggiunge e il catalogo non la propone più', (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'custom'", [$vp]) === 1
       && !str_contains($r['body'], 'name="kind" value="custom"') && str_contains($r['body'], 'Hai già la sezione libera'));
@@ -5764,7 +5767,10 @@ prova('9F·8 · nell\'editor della sezione «Traduci questa sezione in N lingue�
 // 9F·12 · la sezione libera: una per guida, anche con Essential
 $r = $elsa->segui($elsa->post("/pannello/$ep/sezioni", ['kind' => 'custom']));
 $liberaE = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'custom'", [$ep]);
-prova('9F·12 · Essential aggiunge la sezione libera (conta come una delle 6), con il titolo di serie «Informazioni utili»', $liberaE > 0 && val('SELECT title FROM section_translations WHERE section_id = ? AND locale = ?', [$liberaE, 'it']) === 'Informazioni utili');
+prova('9F·12 / 9N · Essential aggiunge la sezione libera (conta come una delle 6), senza titolo: lo sceglie l\'host', $liberaE > 0 && val('SELECT title FROM section_translations WHERE section_id = ? AND locale = ?', [$liberaE, 'it']) === '');
+$rPub = $elsa->get("/pannello/$ep/procedura/pubblica");
+prova('9N · la sezione libera senza titolo ferma la pubblicazione, con il motivo sotto il bottone', str_contains($rPub['body'], 'Scrivi il titolo della sezione libera') && str_contains($rPub['body'], 'Il bottone si attiva quando'));
+db()->prepare("UPDATE section_translations SET title = 'La storia della casa' WHERE section_id = ?")->execute([$liberaE]);
 $r = $elsa->segui($elsa->post("/pannello/$ep/sezioni", ['kind' => 'custom']));
 prova('9F·12 · una seconda sezione libera è rifiutata, in tutti i piani', (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'custom'", [$ep]) === 1 && str_contains($r['body'], 'una sola sezione libera')
       && str_contains($lucia->segui($lucia->post("/pannello/$casa/sezioni", ['kind' => 'custom']))['body'], 'una sola sezione libera') || (int) val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'custom'", [$casa]) === 1);
@@ -6595,8 +6601,8 @@ sleep(1);
 $pia->post("/pannello/$piaA/sezioni", ['kind' => 'eat']);
 $pia->post("/pannello/$piaA/sezioni/" . $sezA('shop') . '/azione', ['fai' => 'elimina']);
 $rG = $pia->get('/campione/gemelle?riga=c' . $sezA('rules'));
-prova('9M · 4 · «Porta le modifiche alle gemelle»: Regole (B «uguale alla campione» spuntata, C «personalizzata» no), Dove mangiare «manca: verrà aggiunta» spuntata, Negozi «presente: verrà tolta se spunti» no; anteprima con il tolto barrato e l\'aggiunto evidenziato',
-      $rG['code'] === 200 && preg_match('#name="sel\[c' . $sezA('rules') . '\]\[' . $piaB . '\]" value="1" checked data-gemelle-casella>\s*<span class="pillola pillola--pino">uguale alla campione#', $rG['body']) === 1
+prova('9M · 4 · «Porta le modifiche alle gemelle»: Regole (B «non personalizzata · da aggiornare» spuntata, C «personalizzata» no), Dove mangiare «manca: verrà aggiunta» spuntata, Negozi «presente: verrà tolta se spunti» no; anteprima con il tolto barrato e l\'aggiunto evidenziato',
+      $rG['code'] === 200 && preg_match('#name="sel\[c' . $sezA('rules') . '\]\[' . $piaB . '\]" value="1" checked data-gemelle-casella>\s*<span class="pillola pillola--pino">non personalizzata · da aggiornare#', $rG['body']) === 1
       && preg_match('#name="sel\[c' . $sezA('rules') . '\]\[' . $piaC . '\]" value="1" data-gemelle-casella>\s*<span class="pillola pillola--terracotta">personalizzata#', $rG['body']) === 1
       && preg_match('#name="sel\[c' . $sezA('eat') . '\]\[' . $piaB . '\]" value="1" checked data-gemelle-casella>\s*<span class="pillola pillola--ocra">manca: verrà aggiunta#', $rG['body']) === 1
       && preg_match('#name="sel\[e\d+\]\[' . $piaB . '\]" value="1" data-gemelle-casella>\s*<span class="pillola pillola--ocra">presente: verrà tolta se spunti#', $rG['body']) === 1

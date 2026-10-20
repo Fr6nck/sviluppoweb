@@ -8,43 +8,6 @@ $tipi = MHW\Properties::TIPOLOGIE;
 $contatti = Db::all('SELECT * FROM property_contacts WHERE property_id = ? ORDER BY position, id', [$prop['id']]);
 $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
 <form method="post" action="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/impostazioni" class="stack"<?= $dopoPasso !== '' ? ' data-autosave' : '' ?>><?= Csrf::field() ?>
-  <?php /* 9F·11 · La lingua in cui scrivi è la PRIMA cosa del primo passo: da lì dipende la lingua del pannello. */ ?>
-  <?php if (isset($tutte)): $principale = $prop['default_locale'] ?: 'it'; ?>
-    <fieldset class="fieldset" id="lingua-principale">
-      <legend><?= t('In che lingua scrivi la guida?') ?></legend>
-      <p class="help"><?= t('È la lingua principale: quella in cui scrivi tutti i testi. Di serie è l\'italiano; puoi scegliere quella che vuoi.') ?>
-        <?= t('Le altre lingue sono facoltative e le aggiungi alla fine. Sceglila prima di scrivere: se la cambi dopo, i testi già scritti restano nella lingua in cui li hai scritti.') ?></p>
-      <div class="scelte scelte--riga">
-        <?php foreach ($tutte as $code => $nomeL): if (!MHW\I18n::base($code)) continue; ?>
-          <label class="scelta"><input type="radio" name="default_locale" value="<?= Support::e($code) ?>" <?= $code === $principale ? 'checked' : '' ?>>
-            <span class="scelta__testo" lang="<?= Support::e($code) ?>"><?= Support::e($nomeL) ?></span></label>
-        <?php endforeach; ?>
-      </div>
-      <?php /* 8C: le lingue aggiuntive come principale (Nederlands, 日本語…): con Plus occupa il posto della lingua in più. */
-            $aggiuntive = array_filter($tutte, fn($c) => !MHW\I18n::base($c), ARRAY_FILTER_USE_KEY); ?>
-      <details class="lingue-altre"<?= isset($aggiuntive[$principale]) ? ' open' : '' ?>>
-        <summary><?= t('Un\'altra lingua') ?></summary>
-        <div class="scelte scelte--riga" style="margin-top:8px">
-          <?php foreach ($aggiuntive as $code => $nomeL): ?>
-            <label class="scelta"><input type="radio" name="default_locale" value="<?= Support::e($code) ?>" <?= $code === $principale ? 'checked' : '' ?>>
-              <span class="scelta__testo" lang="<?= Support::e($code) ?>"><?= Support::e($nomeL) ?></span></label>
-          <?php endforeach; ?>
-        </div>
-        <p class="small muted" style="margin:8px 0 0"><?= t('I bottoni e i titoli della guida sono tradotti in olandese, portoghese (del Portogallo e del Brasile) e polacco; per le altre lingue l\'ospite li legge in inglese, i tuoi testi restano nella lingua che scegli.') ?></p>
-      </details>
-      <?php /* 9F·11 · Essential: tutte le lingue, senza traduzioni suggerite; Plus e Portfolio: con le suggerite. Poi «La tua lingua non c'è?» e la lingua del pannello. */
-            $aidL = (int) ($prop['account_id'] ?? 0); $suggL = $aidL && MHW\Traduttore::nelPiano($aidL); ?>
-      <div class="lingua-come__esempi" style="margin:12px 0 0">
-        <div><b><?= t('Con Essential') ?></b><?= t('Scrivi nella tua lingua; gli ospiti la leggono nella tua e in una a scelta. Le traduzioni le scrivi tu.') ?></div>
-        <div><b><?= t('Con Plus e Portfolio') ?></b><?= t('Scrivi nella tua lingua; ti suggeriamo le traduzioni in italiano, inglese, francese, tedesco e spagnolo, che approvi tu.') ?></div>
-      </div>
-      <p class="small muted" style="margin:10px 0 0"><?= t('La tua lingua non c\'è?') ?>
-        <?php if (Support::contatto() !== ''): ?><a href="<?= Support::e(Support::mailto(t('Lingua mancante: ') . ($prop['name'] ?? ''), (MHW\Pannello::en() ? "Hi, I would like to write my guide in: " : "Ciao, vorrei scrivere la mia guida in: ") . "\n\n")) ?>"><?= t('Scrivici') ?></a><?php else: ?><?= t('Scrivici') ?><?php endif; ?> <?= t('e la aggiungiamo.') ?>
-        · <?= t('Pannello in:') ?> <b><?= MHW\Pannello::en() ? 'English' : 'Italiano' ?></b> <?= t('(lo cambi in Account)') ?></p>
-      <?php /* Come funziona se la guida non è in italiano: per la lingua scelta, o la versione per «la tua lingua». */
-            if (!empty($prop['account_id'])) { $comeGenerico = $principale === 'it'; include __DIR__ . '/_lingua_come.php'; } ?>
-    </fieldset>
-  <?php endif; ?>
   <fieldset class="fieldset">
     <legend><?= t('La struttura') ?><?php if (!empty($prop['id']) && ($codS = MHW\Codici::struttura((int) $prop['id'])) !== ''): ?> <span class="small muted codice-struttura"><?= Support::e($codS) ?></span><?php endif; ?></legend>
     <div class="field" style="margin:0"><label for="name"><?= t('Nome') ?></label><input type="text" id="name" name="name" required maxlength="120" autocomplete="off" value="<?= $c('name') ?>"></div>
@@ -92,6 +55,44 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
         <input type="number" id="beds" name="beds" min="0" max="999" step="1" inputmode="numeric" value="<?= (int) ($prop['beds'] ?? 0) ?: '' ?>"></div>
     </div>
   </fieldset>
+  <?php /* 9F·11 · La lingua in cui scrivi (da lì dipende la lingua del pannello). 9N · Dopo la scheda della struttura, in un riquadro
+           che si apre: l'intro promette «bastano nome e città», e la lingua di serie va bene quasi sempre. */ ?>
+  <?php if (isset($tutte)): $principale = $prop['default_locale'] ?: 'it'; ?>
+    <details class="fieldset lingua-principale" id="lingua-principale"<?= $principale !== 'it' ? ' open' : '' ?>>
+      <summary class="legend"><?= t('In che lingua scrivi la guida?') ?> <span class="small muted" style="font-weight:400">· <?= Support::e(MHW\Config::get('locales')[$principale] ?? strtoupper($principale)) ?></span></summary>
+      <p class="help"><?= t('È la lingua principale: quella in cui scrivi tutti i testi. Di serie è l\'italiano; puoi scegliere quella che vuoi.') ?>
+        <?= t('Le altre lingue sono facoltative e le aggiungi alla fine. Sceglila prima di scrivere: se la cambi dopo, i testi già scritti restano nella lingua in cui li hai scritti.') ?></p>
+      <div class="scelte scelte--riga">
+        <?php foreach ($tutte as $code => $nomeL): if (!MHW\I18n::base($code)) continue; ?>
+          <label class="scelta"><input type="radio" name="default_locale" value="<?= Support::e($code) ?>" <?= $code === $principale ? 'checked' : '' ?>>
+            <span class="scelta__testo" lang="<?= Support::e($code) ?>"><?= Support::e($nomeL) ?></span></label>
+        <?php endforeach; ?>
+      </div>
+      <?php /* 8C: le lingue aggiuntive come principale (Nederlands, 日本語…): con Plus occupa il posto della lingua in più. */
+            $aggiuntive = array_filter($tutte, fn($c) => !MHW\I18n::base($c), ARRAY_FILTER_USE_KEY); ?>
+      <details class="lingue-altre"<?= isset($aggiuntive[$principale]) ? ' open' : '' ?>>
+        <summary><?= t('Un\'altra lingua') ?></summary>
+        <div class="scelte scelte--riga" style="margin-top:8px">
+          <?php foreach ($aggiuntive as $code => $nomeL): ?>
+            <label class="scelta"><input type="radio" name="default_locale" value="<?= Support::e($code) ?>" <?= $code === $principale ? 'checked' : '' ?>>
+              <span class="scelta__testo" lang="<?= Support::e($code) ?>"><?= Support::e($nomeL) ?></span></label>
+          <?php endforeach; ?>
+        </div>
+        <p class="small muted" style="margin:8px 0 0"><?= t('I bottoni e i titoli della guida sono tradotti in olandese, portoghese (del Portogallo e del Brasile) e polacco; per le altre lingue l\'ospite li legge in inglese, i tuoi testi restano nella lingua che scegli.') ?></p>
+      </details>
+      <?php /* 9F·11 · Essential: tutte le lingue, senza traduzioni suggerite; Plus e Portfolio: con le suggerite. Poi «La tua lingua non c'è?» e la lingua del pannello. */
+            $aidL = (int) ($prop['account_id'] ?? 0); $suggL = $aidL && MHW\Traduttore::nelPiano($aidL); ?>
+      <div class="lingua-come__esempi" style="margin:12px 0 0">
+        <div><b><?= t('Con Essential') ?></b><?= t('Scrivi nella tua lingua; gli ospiti la leggono nella tua e in una a scelta. Le traduzioni le scrivi tu.') ?></div>
+        <div><b><?= t('Con Plus e Portfolio') ?></b><?= t('Scrivi nella tua lingua; ti suggeriamo le traduzioni in italiano, inglese, francese, tedesco e spagnolo, che approvi tu.') ?></div>
+      </div>
+      <p class="small muted" style="margin:10px 0 0"><?= t('La tua lingua non c\'è?') ?>
+        <?php if (Support::contatto() !== ''): ?><a href="<?= Support::e(Support::mailto(t('Lingua mancante: ') . ($prop['name'] ?? ''), (MHW\Pannello::en() ? "Hi, I would like to write my guide in: " : "Ciao, vorrei scrivere la mia guida in: ") . "\n\n")) ?>"><?= t('Scrivici') ?></a><?php else: ?><?= t('Scrivici') ?><?php endif; ?> <?= t('e la aggiungiamo.') ?>
+        · <?= t('Pannello in:') ?> <b><?= MHW\Pannello::en() ? 'English' : 'Italiano' ?></b> <?= t('(lo cambi in Account)') ?></p>
+      <?php /* Come funziona se la guida non è in italiano: per la lingua scelta, o la versione per «la tua lingua». */
+            if (!empty($prop['account_id'])) { $comeGenerico = $principale === 'it'; include __DIR__ . '/_lingua_come.php'; } ?>
+    </details>
+  <?php endif; ?>
   <fieldset class="fieldset">
     <legend><?= t('Orari') ?></legend>
     <div class="grid grid-2">

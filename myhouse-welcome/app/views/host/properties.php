@@ -62,8 +62,6 @@ $gemIds = $campD ? array_map(fn($g) => (int) $g['id'], $campD['gemelle']) : []; 
 
 <?php include __DIR__ . '/_giudizio_invito.php'; /* 7D: «Ti sta piacendo MyHouse Welcome?» */ ?>
 
-<?php include __DIR__ . '/_sito_invito.php'; ?>
-
 <div class="guide-griglia">
   <?php foreach ($props as $pr): $cop = Media::url($pr['cover_media_id'] ? (int) $pr['cover_media_id'] : null);
         if (in_array((int) $pr['id'], $bloccate, true)): /* bloccata: si vede, non si apre */ ?>
@@ -104,7 +102,12 @@ $gemIds = $campD ? array_map(fn($g) => (int) $g['id'], $campD['gemelle']) : []; 
           <a href="<?= b() ?>/pannello/<?= $pid ?>/qr"><?= Icon::svg('qr', 15) ?>QR</a>
           <a href="<?= b() ?>/pannello/<?= $pid ?>/anteprima" target="_blank" rel="noopener"><?= Icon::svg('eye', 15) ?><?= t('Anteprima') ?></a>
           <?php if ($campDisp && $pid !== $campId && (int) $pr['is_demo'] === 0): ?>
-            <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/campione" style="display:inline;margin:0"><?= MHW\Csrf::field() ?><button class="linkbtn"><?= Icon::svg('star', 15) ?><?= t('Rendi campione') ?></button></form>
+            <?php /* 9N · con la conferma: la campione è il modello delle altre guide (una bozza vuota non serve a niente) */ ?>
+            <details class="rendi-campione"><summary class="linkbtn"><?= Icon::svg('star', 15) ?><?= t('Rendi campione') ?></summary>
+              <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/campione" class="rendi-campione__conferma"><?= MHW\Csrf::field() ?>
+                <p class="small" style="margin:0"><?= Support::e(tf('«{nome}» diventa il modello delle altre guide: da qui copi le sezioni, e quando la cambi ti proponiamo di aggiornare le gemelle.', ['{nome}' => $pr['name']])) ?>
+                  <?php if ($pr['status'] !== 'published'): ?><?= t('È ancora una bozza: conviene sceglierne una già completa.') ?><?php endif; ?></p>
+                <button class="btn btn--sm"><?= t('Sì, rendila campione') ?></button></form></details>
           <?php endif; ?>
         </div>
       <?php endif; ?>
@@ -133,6 +136,8 @@ $gemIds = $campD ? array_map(fn($g) => (int) $g['id'], $campD['gemelle']) : []; 
 <?php endif; ?>
 
 <?php include __DIR__ . '/_invita.php'; /* Invita un amico: la barra e il link, per chi ha un abbonamento attivo */ ?>
+
+<?php include __DIR__ . '/_sito_invito.php'; /* 9N · «Hai già un sito?» sotto le guide, non sopra */ ?>
 
 <?php if (!$puoiAggiungere && $maxProp < PHP_INT_MAX): ?>
   <div class="limit" style="margin-top:28px">

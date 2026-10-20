@@ -238,7 +238,11 @@ $r->any('/pannello/{id}/copia', function (array $a) use ($mia, $contesto, $messa
             $esito = MHW\Copia::esegui($aid, (int) $da['id'], (int) $p['id'], (array) ($_POST['copia'] ?? []), (array) ($_POST['esistenti'] ?? []),
                                        !empty($_POST['copia_aspetto']), !empty($_POST['copia_contatti']));
             Auth::audit('property.copy', (int) $u['id'], ['da' => (int) $da['id'], 'a' => (int) $p['id']] + $esito);
-            $nomi = fn(array $k) => implode(', ', array_map(fn($x) => SectionCatalog::title($x, 'it'), $k));
+            // 9N · il titolo vero della sezione nella guida (la sezione libera «La piscina», non «Informazioni utili»)
+            $titoloSez = fn(string $kind) => (string) (Db::val('SELECT st.title FROM section_translations st JOIN sections s ON s.id = st.section_id
+                                                                 WHERE s.property_id = ? AND s.kind = ? AND st.locale = ? ORDER BY s.id DESC LIMIT 1', [$p['id'], $kind, $p['default_locale'] ?: 'it'], '')
+                                                    ?: SectionCatalog::nome($kind));
+            $nomi = fn(array $k) => implode(', ', array_map(fn($x) => '«' . $titoloSez((string) $x) . '»', $k));
             Support::flash(MHW\tf('Copia da {nome} fatta.', ['{nome}' => $da['name']])
                 . ($esito['copiate'] ? ' ' . MHW\tf('Copiate: {elenco}.', ['{elenco}' => $nomi($esito['copiate'])]) : '')
                 . ($esito['sostituite'] ? ' ' . MHW\tf('Sostituite: {elenco}.', ['{elenco}' => $nomi($esito['sostituite'])]) : '')
@@ -345,7 +349,7 @@ $r->any('/campione/gemelle', function () use ($host) {
 });
 $r->post('/pannello/{id}/campione', function (array $a) use ($mia) {
     [, $acc, $p] = $mia((int) $a['id']);
-    try { MHW\Campione::rendi((int) $acc['id'], (int) $p['id']); Support::flash(MHW\tf('{nome} è la tua scheda campione: quando la cambi, ti proponiamo di portare le modifiche anche nelle gemelle.', ['{nome}' => $p['name']])); }
+    try { MHW\Campione::rendi((int) $acc['id'], (int) $p['id']); Support::flash(MHW\tf('{nome} è la tua scheda campione.', ['{nome}' => $p['name']])); }   // 9N · un messaggio solo: la spiegazione è già nella pagina
     catch (\Throwable $e) { Support::flash($e->getMessage(), 'err'); }
     Support::redirect('/pannello');
 });
@@ -355,7 +359,7 @@ $r->get('/pannello/{id}', function (array $a) use ($mia, $contesto) {
     $sections = Db::all('SELECT * FROM sections WHERE property_id = ? ORDER BY is_core DESC, position, id', [$p['id']]);
     foreach ($sections as &$s) {
         $t = Db::one('SELECT * FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $p['default_locale']]);
-        $s['title'] = $t['title'] ?? SectionCatalog::title($s['kind'], $p['default_locale']);
+        $s['title'] = ($t['title'] ?? '') !== '' ? $t['title'] : ($s['kind'] === 'custom' ? MHW\t('Sezione libera · senza titolo') : SectionCatalog::title($s['kind'], $p['default_locale']));
         $s['empty'] = SectionCatalog::isEmpty($s['kind'], json_decode((string) $s['data'], true) ?: [],
             json_decode((string) ($t['data'] ?? ''), true) ?: [],
             (int) Db::val('SELECT COUNT(*) FROM places WHERE section_id = ?', [$s['id']], 0));
@@ -964,7 +968,7 @@ $r->get('/pannello/{id}/procedura/{passo}', function (array $a) use ($mia, $cont
         $aperta = null;
         foreach ($sez as &$s) {
             $t = Db::one('SELECT title, data FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $p['default_locale']]);
-            $s['title'] = $t['title'] ?? SectionCatalog::title($s['kind'], $p['default_locale']);
+            $s['title'] = ($t['title'] ?? '') !== '' ? $t['title'] : ($s['kind'] === 'custom' ? MHW\t('Sezione libera · senza titolo') : SectionCatalog::title($s['kind'], $p['default_locale']));
             $s['empty'] = SectionCatalog::isEmpty($s['kind'], json_decode((string) $s['data'], true) ?: [], json_decode((string) ($t['data'] ?? ''), true) ?: [],
                 (int) Db::val('SELECT COUNT(*) FROM places WHERE section_id = ?', [$s['id']], 0));
             if ((int) $s['id'] === (int) ($_GET['apri'] ?? 0)) $aperta = $s;
@@ -1284,6 +1288,16 @@ $r->post('/pannello/novita/vai', function () use ($host) {
     if (MHW\Novita::esiste($id)) MHW\Novita::segna((int) $acc['id'], $id);
     $dove = (string) ($_POST['dove'] ?? '');
     Support::redirect(preg_match('~^/(pannello|account)(/[A-Za-z0-9/_?=&#.-]*)?$~', $dove) ? $dove : '/pannello');   // «~»: il «#» del percorso non chiude il motivo
+});
+/* 9N · La ✕ della fascia: la novità si segna come vista e si torna dove si era. */
+$r->post('/pannello/novita/chiudi', function () use ($host) {
+    [, $acc] = $host();
+    $id = (string) ($_POST['novita'] ?? '');
+    if (MHW\Novita::esiste($id)) MHW\Novita::segna((int) $acc['id'], $id);
+    $da = (string) parse_url((string) ($_SERVER['HTTP_REFERER'] ?? ''), PHP_URL_PATH);
+    $base = (string) parse_url(Support::baseUrl(), PHP_URL_PATH);
+    $da = $base !== '' && str_starts_with($da, $base) ? substr($da, strlen($base)) : $da;
+    Support::redirect(preg_match('~^/(pannello|account|giudizio|inviti|campione)(/[A-Za-z0-9/_-]*)?$~', $da) ? $da : '/pannello');
 });
 $r->post('/pannello/novita/visto', function () use ($host) {
     [, $acc] = $host();

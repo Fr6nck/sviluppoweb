@@ -673,6 +673,14 @@ button, input[type=submit], input[type=button] { background-image: none; }
 .riga__nome b,.riga__nome .small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .riga__nome b{font-size:16px;font-weight:500;letter-spacing:-.3px}
 .riga .badge{flex:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;line-height:26px}
+/* 9N · Su telefono le etichette («Pronta», «EN da tradurre») vanno sotto il nome: il titolo della sezione non si tronca più. */
+@media(max-width:600px){
+  .riga{height:auto;min-height:68px;flex-wrap:wrap;row-gap:4px;padding:8px 10px 8px 6px}
+  .riga__nome{flex:1 1 calc(100% - 120px)}
+  .riga .menu-riga{order:1}
+  .riga .badge{order:2;max-width:none}
+  .riga .riga__nome~.badge:first-of-type{margin-left:62px}
+}
 .menu-riga{position:relative;flex:none}
 .menu-riga>summary{list-style:none;font-size:20px;line-height:1;border-color:transparent;background:none}
 .menu-riga>summary::-webkit-details-marker{display:none}
@@ -1733,6 +1741,11 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .faq__indirizzo b{font-weight:600;color:var(--ink);user-select:all}
 .faq__voce{scroll-margin-top:96px}   /* aperta da un link (#faq-…), non finisce sotto la testata */
 .faq__lista{border-top:1px solid var(--line)}
+/* 9N · /domande: l'indice dei temi e i titoli dei gruppi */
+.faq__indice{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 24px}
+.faq__indice a{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:8px 14px;border:1px solid var(--line);border-radius:999px;font-size:15px;color:var(--ink);text-decoration:none}
+.faq__indice a:hover{border-color:var(--accent);color:var(--accent)}
+.faq__tema{font-size:22px;line-height:28px;margin:28px 0 4px;scroll-margin-top:96px}
 @media(max-width:900px){ .faq{grid-template-columns:minmax(0,1fr);gap:24px} .faq__testa{position:static} }
 .faq__voce{border-bottom:1px solid var(--line)}
 .faq__voce>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px;padding:14px 0;cursor:pointer;font-size:18px;font-weight:500;line-height:24px}
@@ -1754,6 +1767,11 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .confronto{max-width:100%;min-width:0}
 .confronto__tabella{position:relative;width:100%;max-width:calc(100vw - 32px)}
 .confronto__tabella th[scope=row]{white-space:normal;min-width:9rem}
+/* 9N · Su telefono la prima colonna resta ferma e un'ombra dice che la tabella scorre (Plus e Portfolio a destra). */
+@media(max-width:760px){
+  .confronto__tabella th:first-child,.confronto__tabella td:first-child{position:sticky;left:0;z-index:1;background:var(--raised);box-shadow:6px 0 8px -6px rgba(35,27,18,.28)}
+  .confronto__tabella th[scope=row]{min-width:8rem;max-width:10rem}
+}
 
 /* ======================================= movimento: comparse e interazioni
    Le comparse valgono solo con html.anima (la mette lo script in testa alla
@@ -2386,6 +2404,9 @@ fieldset{min-width:0}
 .novita__kicker .dot{width:8px;height:8px;border-radius:50%;background:var(--ochre,#b07d0c)}
 .novita__testo{font-size:15px;line-height:22px}
 .novita__tutte{font-size:13px;color:var(--muted);white-space:nowrap}
+.novita__chiudi{width:36px;height:36px}
+.rendi-campione{display:inline-block}.rendi-campione>summary{list-style:none;cursor:pointer}.rendi-campione>summary::-webkit-details-marker{display:none}
+.rendi-campione__conferma{display:grid;gap:8px;margin-top:8px;padding:12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--raised);max-width:340px}   /* 9N · la fascia si chiude */
 /* 9G · il contatore delle traduzioni suggerite dell'anno */
 /* 9F · Traduzione in corso: bottone con il cerchio che gira, barra che avanza per lingua o per testo, Fatto (verde) ed errore (giallo);
    i campi tradotti compaiono con una sfumatura di 400 ms dal fondo chiaro al normale. Con prefers-reduced-motion niente animazioni. */
@@ -2993,6 +3014,15 @@ body.con-finestra{overflow:hidden}
 .perchi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 @media(max-width:1000px){ .perchi{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media(max-width:620px){ .perchi{grid-template-columns:minmax(0,1fr)} }
+/* 9N · Su telefono le sei schede in riga compatta (miniatura + titolo), come le tre «scene»: la home non è più lunga cinque schermi. */
+@media(max-width:620px){
+  .perchi{gap:10px}
+  .perchi__scheda{flex-direction:row;align-items:center;border-radius:var(--r-lg)}
+  .perchi__foto{flex:none;width:96px;aspect-ratio:1/1}
+  .perchi__corpo{padding:12px 14px;gap:4px}
+  .perchi__testo{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14px}
+  .perchi__scopri{display:none}
+}
 .perchi__scheda{display:flex;flex-direction:column;border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line);overflow:hidden;
   color:inherit;text-decoration:none;box-shadow:0 1px 2px rgba(35,27,18,.04);
   transition:transform .3s var(--molla,cubic-bezier(.22,.7,.25,1)),box-shadow .3s,border-color .3s;-webkit-mask-image:-webkit-radial-gradient(white,black)}

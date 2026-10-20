@@ -41,7 +41,8 @@ case 'struttura': ?>
       <h1><?= t('Struttura e contatti.') ?></h1>
       <p class="lead"><?= t('Nome, orari, contatti e la lingua in cui scrivi: le informazioni che l\'ospite cerca per prime.') ?></p>
     </div>
-    <?php if (empty($avvisoLetto)): /* 6M · una volta sola per account: «Ho capito» lo chiude per sempre */ ?>
+    <?php $dopoPasso = 'arrivo'; include __DIR__ . '/_struttura_form.php'; ?>
+    <?php if (empty($avvisoLetto)): /* 6M · una volta sola per account (9N: sotto il modulo, non prima dei campi): «Ho capito» lo chiude per sempre */ ?>
       <section class="privacy-nota privacy-nota--prima" aria-labelledby="chi-vede">
         <?= Icon::svg('lock', 18) ?>
         <div class="stack" style="gap:8px">
@@ -54,12 +55,11 @@ case 'struttura': ?>
         </div>
       </section>
     <?php endif; ?>
-    <?php $dopoPasso = 'arrivo'; include __DIR__ . '/_struttura_form.php'; ?>
 <?php break;
 
 case 'arrivo': $dati = json_decode((string) $core['data'], true) ?: []; ?>
       <h1><?= t('Check-in &amp; Check-out.') ?></h1>
-      <p class="lead"><?= t('Come si entra, cosa serve all\'arrivo e cosa fare prima di partire. Spiega dove sono le chiavi e come si apre: i codici di porte e cassette è meglio non scriverli qui: comunicali all\'ospite in privato.') ?></p>
+      <p class="lead"><?= t('Come si entra, cosa serve all\'arrivo e cosa fare prima di partire. Spiega dove sono le chiavi e come si apre.') ?></p><?php /* 9N · l'avviso sui codici una volta sola: è nel riquadro qui sotto */ ?>
       <?php include __DIR__ . '/_privacy_nota.php'; ?>
     </div>
     <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/sezioni/<?= (int) $core['id'] ?>" class="stack" data-autosave><?= Csrf::field() ?>
@@ -294,7 +294,19 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
       <p class="small muted pagamento-modi"><?= Icon::svg('lock', 14) ?><span><?= t('Paghi qui con la carta di credito o di debito, nel modulo sicuro di Stripe: i dati della carta non passano dal nostro sito.') ?>
         <button class="linkbtn" name="modo" value="stripe"<?= $spentoB ? ' disabled' : '' ?>><?= t('Preferisci pagare sulla pagina di Stripe?') ?></button></span></p>
 <?php       endif;
-            include __DIR__ . '/_barra_passo.php'; ?>
+            include __DIR__ . '/_barra_passo.php';
+            /* 9N · Il bottone spento dice perché, proprio sotto: con il link a dove si sistema (il CIN e il nome stanno al passo 1). */
+            if ($spentoB):
+              $cause = [];
+              foreach ($problemi as $pr) $cause[] = [t($pr), preg_match('/\bCIN\b|nome della struttura/u', $pr) ? '/pannello/' . $pid . '/procedura/struttura#cin' : (str_contains($pr, 'Check-in') ? '/pannello/' . $pid . '/procedura/arrivo' : '')];
+              if (!$sub && !$verificato) $cause[] = [t('Conferma la tua email: il link è nella posta che ti abbiamo mandato.'), ''];
+              if (!$sub && !$piano) $cause[] = [t('Scegli il piano con cui pubblicare.'), '/piano'];
+              if (!$sub && $piano && !MHW\Fatturazione::completa($acc)) $cause[] = [t('Compila i dati per la fattura, qui sopra.'), '#fatturazione']; ?>
+      <div class="note note--err barra-passo__perche" role="status"><div class="stack" style="gap:4px">
+        <b><?= t('Il bottone si attiva quando:') ?></b>
+        <?php foreach ($cause as [$testoC, $doveC]): ?><span><?= Support::e($testoC) ?><?php if ($doveC !== ''): ?> <a href="<?= Support::e(str_starts_with($doveC, '#') ? $doveC : b() . $doveC) ?>"><?= t('Sistema') ?></a><?php endif; ?></span><?php endforeach; ?>
+      </div></div>
+<?php       endif; ?>
     </form>
 <?php break;
 endswitch; ?>

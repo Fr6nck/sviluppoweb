@@ -8,7 +8,9 @@ $sezioniOrigine = $sezioniOrigine ?? null;
 $elenco = $sezioniOrigine ?? array_map(fn($k) => ['kind' => $k, 'titolo' => SectionCatalog::title($k, 'it'), 'esiste' => false], Copia::SEZIONI); ?>
 <fieldset class="fieldset" style="margin:0">
   <legend><?= t('Cosa copiare') ?></legend>
-  <p class="help"><?= t('Ogni sezione si copia con le sue traduzioni, i luoghi, le foto e i PDF. Le due guide restano indipendenti: quello che cambi in una non cambia nell\'altra.') ?>
+  <p class="help"><?= !empty($da['campione'])
+      ? t('Ogni sezione si copia con le sue traduzioni, i luoghi, le foto e i PDF. Dalla scheda campione le sezioni copiate restano collegate: quando cambi la campione ti proponiamo di aggiornarle, e niente cambia da solo.')
+      : t('Ogni sezione si copia con le sue traduzioni, i luoghi, le foto e i PDF. Le due guide restano indipendenti: quello che cambi in una non cambia nell\'altra.') ?>
     <?= $sezioniOrigine === null ? t('Le sezioni che la struttura di origine non ha vengono saltate.') : '' ?></p>
   <div class="stack" style="gap:8px">
     <?php foreach ($elenco as $x): $id = 'copia-' . $x['kind']; ?>

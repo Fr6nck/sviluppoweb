@@ -382,9 +382,9 @@ final class Richiami
         $a = $automatico ? self::prossimoAddebito($s) : ['netto' => 0, 'valuta' => 'EUR', 'piano' => (string) ((Plans::version((int) $s['package_version_id']) ?? [])['name'] ?? ''), 'quantita' => max(1, (int) $s['quantity'])];
         $l4 = (string) ($s['card_last4'] ?? '');
         return ['tipo' => $tipo, 'giorni' => $giorni, 'data' => Support::date((string) $s['current_period_end']),
-                'importo' => $automatico ? Support::money($a['netto'], $a['valuta']) . ' + IVA' : '',
-                'piano' => $a['piano'] . ($a['quantita'] > 1 ? ' · ' . $a['quantita'] . ' strutture' : ''),
-                'carta' => $l4 !== '' ? 'carta •••• ' . $l4 : '', 'evidenza' => $giorni <= 7, 'sub' => $s, 'automatico' => $automatico,
+                'importo' => $automatico ? strtr(Pannello::t('{prezzo} + IVA'), ['{prezzo}' => Support::money($a['netto'], $a['valuta'])]) : '',
+                'piano' => $a['piano'] . ($a['quantita'] > 1 ? ' · ' . strtr(Pannello::t('{n} strutture'), ['{n}' => $a['quantita']]) : ''),
+                'carta' => $l4 !== '' ? strtr(Pannello::t('carta •••• {n}'), ['{n}' => $l4]) : '', 'evidenza' => $giorni <= 7, 'sub' => $s, 'automatico' => $automatico,
                 'chiave' => 'mhw_fascia_' . (int) $s['id'] . '_' . substr((string) $s['current_period_end'], 0, 10)];
     }
 
