@@ -4479,7 +4479,7 @@ foreach (['robots.txt', 'sitemap.xml', 'llms.txt'] as $f) if (!is_file("$DOVE/$f
 prova('7F · salvando «SEO e GEO»: robots.txt, sitemap.xml e llms.txt scritti accanto a index.php, uguali a quelli del sito', $fileOk
       && str_contains($adm6->segui($r)['body'], 'anche come file nella cartella principale del sito'));
 $sm7 = (string) @file_get_contents("$DOVE/sitemap.xml"); $ll7 = (string) @file_get_contents("$DOVE/llms.txt");
-prova('7F · le quattro pagine in sitemap (24 pagine in tutto con le legali della 8J, le due della 9K, /piano della 9L, /en/plan e le sei in inglese della 9N) e in llms.txt («Per chi è»)', substr_count($sm7, '<url>') === 24 && @simplexml_load_string($sm7) !== false
+prova('7F · le quattro pagine in sitemap (18 pagine in tutto con le legali della 8J, le due della 9K, /piano della 9L, /en/plan; le sei inglesi della 9N non sono spuntate in questo modulo, quindi fuori) e in llms.txt («Per chi è»)', substr_count($sm7, '<url>') === 18 && !str_contains($sm7, '/en/holiday-homes</loc>') && @simplexml_load_string($sm7) !== false
       && count(array_filter($tipi7f, fn($tp) => str_contains($sm7, '<loc>https://myhousewelcome.it' . $tp['percorso'] . '</loc>') && str_contains($ll7, '(https://myhousewelcome.it' . $tp['percorso'] . ')'))) === 4
       && str_contains($ll7, "## Per chi è"), substr_count($sm7, '<url>') . ' pagine · ' . count(array_filter($tipi7f, fn($tp) => str_contains($ll7, '(https://myhousewelcome.it' . $tp['percorso'] . ')'))) . ' in llms');
 $giudiziPubblicati = (int) val("SELECT COUNT(*) FROM testimonials WHERE visible = 1 AND (account_id IS NULL OR (status = 'pubblicata' AND consent_at IS NOT NULL AND withdrawn_at IS NULL))");
