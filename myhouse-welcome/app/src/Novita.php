@@ -13,7 +13,9 @@ final class Novita
     {
         static $n = null;
         if ($n === null) { $f = MHW_APP . '/lang/novita.php'; $n = is_file($f) ? (array) require $f : []; }
-        return $n;
+        // 9N · Nel pannello in inglese titolo, testo e nota dal dizionario del pannello (lang/pannello-en.php).
+        if (!Pannello::en()) return $n;
+        return array_map(fn($x) => array_map(fn($v) => is_string($v) ? Pannello::t($v) : $v, $x), $n);
     }
 
     public static function disponibili(): bool { return Migrator::tableExists('novita_viste'); }

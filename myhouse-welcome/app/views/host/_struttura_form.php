@@ -1,4 +1,4 @@
-<?php
+<?php use function MHW\tf;
 /* Nome, luogo, orari, contatti dell'host e, nella procedura, la lingua in cui
    si scrive la guida. Riceve: $prop, $dopoPasso, e se c'è la lingua $tutte e $consentite. */
 use function MHW\b; use function MHW\t;
@@ -39,7 +39,7 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
         <div><b><?= t('Con Plus e Portfolio') ?></b><?= t('Scrivi nella tua lingua; ti suggeriamo le traduzioni in italiano, inglese, francese, tedesco e spagnolo, che approvi tu.') ?></div>
       </div>
       <p class="small muted" style="margin:10px 0 0"><?= t('La tua lingua non c\'è?') ?>
-        <?php if (Support::contatto() !== ''): ?><a href="<?= Support::e(Support::mailto('Lingua mancante: ' . ($prop['name'] ?? ''), (MHW\Pannello::en() ? "Hi, I would like to write my guide in: " : "Ciao, vorrei scrivere la mia guida in: ") . "\n\n")) ?>"><?= t('Scrivici') ?></a><?php else: ?><?= t('Scrivici') ?><?php endif; ?> <?= t('e la aggiungiamo.') ?>
+        <?php if (Support::contatto() !== ''): ?><a href="<?= Support::e(Support::mailto(t('Lingua mancante: ') . ($prop['name'] ?? ''), (MHW\Pannello::en() ? "Hi, I would like to write my guide in: " : "Ciao, vorrei scrivere la mia guida in: ") . "\n\n")) ?>"><?= t('Scrivici') ?></a><?php else: ?><?= t('Scrivici') ?><?php endif; ?> <?= t('e la aggiungiamo.') ?>
         · <?= t('Pannello in:') ?> <b><?= MHW\Pannello::en() ? 'English' : 'Italiano' ?></b> <?= t('(lo cambi in Account)') ?></p>
       <?php /* Come funziona se la guida non è in italiano: per la lingua scelta, o la versione per «la tua lingua». */
             if (!empty($prop['account_id'])) { $comeGenerico = $principale === 'it'; include __DIR__ . '/_lingua_come.php'; } ?>
@@ -59,7 +59,7 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
     <?php /* Con «Altro» si scrive che tipo di struttura è. Senza JavaScript il campo si vede sempre. */ ?>
     <div class="field" style="margin:0" id="tipo-altro" data-se-altro>
       <label for="property_type_other"><?= t('Che tipo di struttura è?') ?></label>
-      <input type="text" id="property_type_other" name="property_type_other" maxlength="60" placeholder="Area camper, glamping, ostello…"
+      <input type="text" id="property_type_other" name="property_type_other" maxlength="60" placeholder="<?= MHW\Support::e(t('Area camper, glamping, ostello…')) ?>"
              value="<?= Support::e((string) ($prop['property_type_other'] ?? '')) ?>">
     </div>
     <div class="field" style="margin:0"><label for="address"><?= t('Indirizzo') ?></label>
@@ -75,7 +75,7 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
                la regione si completa da sola dalla sigla (cms.js, data-provincia-regione). */ ?>
       <div class="field" style="margin:0"><label for="province"><?= t('Provincia') ?> <span class="muted"><?= t('(sigla)') ?></span></label>
         <p class="help" id="province-aiuto" style="margin:0 0 6px"><?= t('Sigla: PG, FI, RM… All\'estero: provincia o contea, facoltativa.') ?></p>
-        <input type="text" id="province" name="province" maxlength="60" autocomplete="off" list="province-elenco" placeholder="PG, FI, RM…" style="text-transform:uppercase"
+        <input type="text" id="province" name="province" maxlength="60" autocomplete="off" list="province-elenco" placeholder="<?= MHW\Support::e(t('PG, FI, RM…')) ?>" style="text-transform:uppercase"
                value="<?= Support::e((string) ($prop['province'] ?? '')) ?>" aria-describedby="province-aiuto" data-provincia-regione="region">
         <datalist id="province-elenco"><?php foreach (MHW\Territorio::province() as $sg => $nomeP): ?><option value="<?= $sg ?>" data-regione="<?= Support::e(MHW\Territorio::regioneDi($sg)) ?>"><?= Support::e($nomeP) ?></option><?php endforeach; ?></datalist>
 </div>
@@ -86,7 +86,7 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
 </div>
       <div class="field campo-largo" style="margin:0"><label for="cin">CIN <span class="muted"><?= t('(serve per pubblicare)') ?></span></label>
         <p class="help" id="cin-aiuto" style="margin:0 0 6px"><?= t('Il Codice Identificativo Nazionale della struttura: obbligatorio per legge, compare in piccolo in fondo alla guida. Ogni guida ha il suo CIN.') ?></p>
-        <input type="text" id="cin" name="cin" maxlength="40" spellcheck="false" autocapitalize="characters" autocomplete="off" placeholder="IT…" aria-describedby="cin-aiuto" value="<?= $c('cin') ?>"></div>
+        <input type="text" id="cin" name="cin" maxlength="40" spellcheck="false" autocapitalize="characters" autocomplete="off" placeholder="<?= MHW\Support::e(t('IT…')) ?>" aria-describedby="cin-aiuto" value="<?= $c('cin') ?>"></div>
       <div class="field" style="margin:0"><label for="beds"><?= t('Posti letto') ?> <span class="muted"><?= t('(facoltativo)') ?></span></label>
         <p class="help" style="margin:0 0 6px"><?= t('Quante persone può ospitare la struttura.') ?></p>
         <input type="number" id="beds" name="beds" min="0" max="999" step="1" inputmode="numeric" value="<?= (int) ($prop['beds'] ?? 0) ?: '' ?>"></div>
@@ -123,7 +123,7 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
         include __DIR__ . '/_barra_passo.php';
       else: ?>
   <div class="actions">
-      <button class="btn">Salva</button>
+      <button class="btn"><?= t('Salva') ?></button>
   </div>
   <?php endif; ?>
 </form>

@@ -162,8 +162,9 @@ final class Traduttore
     /** Il messaggio quando l'anno è finito: si scrive a mano, oppure all'assistenza (il link mailto lo mette la pagina). */
     public static function messaggioTetto(int $accountId): string
     {
-        return 'Hai usato le traduzioni suggerite di quest\'anno (' . number_format(self::usatiAnno($accountId), 0, ',', '.') . ' caratteri). '
-             . 'Puoi scrivere le traduzioni a mano, oppure scrivici' . (Support::contatto() !== '' ? ' a ' . Support::contatto() : '') . ': le riattiviamo noi.';
+        return strtr(Pannello::t(Support::contatto() !== '' ? 'Hai usato le traduzioni suggerite di quest\'anno ({n} caratteri). Puoi scrivere le traduzioni a mano, oppure scrivici a {email}: le riattiviamo noi.'
+                                                         : 'Hai usato le traduzioni suggerite di quest\'anno ({n} caratteri). Puoi scrivere le traduzioni a mano, oppure scrivici: le riattiviamo noi.'),
+                     ['{n}' => number_format(self::usatiAnno($accountId), 0, ',', '.'), '{email}' => Support::contatto()]);
     }
 
     /**

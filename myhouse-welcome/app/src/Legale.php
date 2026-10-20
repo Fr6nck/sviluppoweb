@@ -239,16 +239,20 @@ final class Legale
         $quando = max($v);
         $nome = trim(explode(' ', trim((string) $u['name']))[0] ?? '');
         $futura = self::futura($quando);
-        $paragrafi = ['Ciao' . ($nome !== '' ? ' ' . $nome : '') . ', ' . ($futura
-            ? 'dal ' . Support::date($quando) . ' cambiano i Termini e condizioni, l\'Informativa sulla privacy e l\'Accordo sul trattamento dei dati di MyHouse Welcome. Ecco le novità principali:'
-            : 'abbiamo aggiornato i Termini e condizioni, l\'Informativa sulla privacy e l\'Accordo sul trattamento dei dati di MyHouse Welcome. Ecco le novità principali:')];
-        foreach (TestiSito::lista('legale.novita') as $riga) $paragrafi[] = '• ' . html_entity_decode(strip_tags($riga), ENT_QUOTES, 'UTF-8');
+        // 9N · Nella lingua del pannello dell'host, con i link alle versioni inglesi.
+        $lin = Pannello::linguaDi($u, (int) ($u['acc_id'] ?? 0));
+        $tl = fn(string $it, array $s = []) => Pannello::tIn($lin, $it, $s);
+        $x = ['{nome}' => $nome, '{data}' => $lin === 'en' ? gmdate('j F Y', (int) strtotime($quando)) : Support::date($quando)];
+        $paragrafi = [$futura
+            ? $tl($nome !== '' ? 'Ciao {nome}, dal {data} cambiano i Termini e condizioni, l\'Informativa sulla privacy e l\'Accordo sul trattamento dei dati di MyHouse Welcome. Ecco le novità principali:' : 'Ciao, dal {data} cambiano i Termini e condizioni, l\'Informativa sulla privacy e l\'Accordo sul trattamento dei dati di MyHouse Welcome. Ecco le novità principali:', $x)
+            : $tl($nome !== '' ? 'Ciao {nome}, abbiamo aggiornato i Termini e condizioni, l\'Informativa sulla privacy e l\'Accordo sul trattamento dei dati di MyHouse Welcome. Ecco le novità principali:' : 'Ciao, abbiamo aggiornato i Termini e condizioni, l\'Informativa sulla privacy e l\'Accordo sul trattamento dei dati di MyHouse Welcome. Ecco le novità principali:', $x)];
+        foreach (TestiSito::lista('legale.novita', [], $lin === 'en' ? 'en' : 'it') as $riga) $paragrafi[] = '• ' . html_entity_decode(strip_tags($riga), ENT_QUOTES, 'UTF-8');
         $paragrafi[] = $futura
-            ? 'Puoi leggerli già adesso. Se non li accetti puoi disdire l\'abbonamento senza penali fino a quella data; dopo, continuando a usare il servizio, li accetti. Le condizioni economiche del periodo che hai già pagato non cambiano.'
-            : 'Al prossimo accesso al pannello ti chiederemo di accettarli. Le condizioni economiche del periodo che hai già pagato non cambiano.';
-        $b = Support::baseUrl();
-        return Mailer::manda((string) $u['email'], 'Aggiornamento dei Termini e dell\'Informativa', 'Abbiamo aggiornato i documenti legali', $paragrafi,
-            ['Leggi i Termini', $b . '/termini'], 'Informativa: ' . $b . '/privacy · Accordo sul trattamento dei dati: ' . $b . '/dpa');
+            ? $tl('Puoi leggerli già adesso. Se non li accetti puoi disdire l\'abbonamento senza penali fino a quella data; dopo, continuando a usare il servizio, li accetti. Le condizioni economiche del periodo che hai già pagato non cambiano.')
+            : $tl('Al prossimo accesso al pannello ti chiederemo di accettarli. Le condizioni economiche del periodo che hai già pagato non cambiano.');
+        $b = Support::baseUrl(); $en = $lin === 'en' ? '/en' : '';
+        return Mailer::inLingua($lin, fn() => Mailer::manda((string) $u['email'], $tl('Aggiornamento dei Termini e dell\'Informativa'), $tl('Abbiamo aggiornato i documenti legali'), $paragrafi,
+            [$tl('Leggi i Termini'), $b . ($en ? '/en/terms' : '/termini')], $tl('Informativa: {privacy} · Accordo sul trattamento dei dati: {dpa}', ['{privacy}' => $b . ($en ? '/en/privacy' : '/privacy'), '{dpa}' => $b . ($en ? '/en/dpa' : '/dpa')])));
     }
 
     // ------------------------------------------------------------------ archivio delle versioni

@@ -14,6 +14,13 @@ final class Pannello
 {
     private static ?string $lingua = null;
     private static ?array $dizionario = null;
+    private static bool $area = false;
+
+    /** 9N · Siamo in una pagina del pannello dell'host: i «Testi e foto» (TestiSito) seguono la lingua del pannello. */
+    public static function entra(): void { self::$area = true; }
+
+    /** 'en' nel pannello in inglese, altrimenti null (decide la pagina: LinguaSito). */
+    public static function linguaTesti(): ?string { return self::$area && self::en() ? 'en' : null; }
 
     /** 'it' oppure 'en'. */
     public static function lingua(): string
@@ -59,5 +66,18 @@ final class Pannello
     {
         if (!self::en()) return $it;
         return $en ?? (self::dizionario()[$it] ?? $it);
+    }
+
+    /** 9N · Una frase nella lingua data ('it' o 'en'), per le email agli host fuori dalla loro sessione. */
+    public static function tIn(string $lingua, string $it, array $sost = []): string
+    {
+        return strtr($lingua === 'en' ? (self::dizionario()[$it] ?? $it) : $it, $sost);
+    }
+
+    /** 9N · Una data nella lingua del pannello: 26 settembre 2026 / 26 September 2026. */
+    public static function data(?string $iso): string
+    {
+        if (!self::en() || !$iso || !($t = strtotime($iso))) return Support::date($iso);
+        return gmdate('j F Y', $t);
     }
 }

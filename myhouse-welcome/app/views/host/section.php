@@ -1,4 +1,4 @@
-<?php
+<?php use function MHW\tf;
 /* L'editor di una sezione: campi veri, uno per informazione. Il testo si
    salva mentre scrivi (se il browser lo permette) e comunque col bottone.
    Le immagini e i PDF compaiono solo se il piano li comprende. */

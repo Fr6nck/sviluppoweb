@@ -1,9 +1,9 @@
-<?php
+<?php use function MHW\t, MHW\tf;
 /* Le mie guide: il saluto, tre numeri veri (online, da finire, il piano), poi
    una scheda per struttura con lo stato vero — bozza, online, offline perché
    l'abbonamento è scaduto — e le scorciatoie per le cose che si fanno spesso. */
 use function MHW\b; use MHW\{Support, Media, Icon, Auth};
-$title = 'Le mie guide';
+$title = t('Le mie guide');
 $attive = array_values(array_filter($props, fn($x) => empty($x['archived_at'])));
 $n = count(array_filter($attive, fn($x) => (int) $x['is_demo'] < 2));   // la vetrina non conta nel limite
 $bloccate = $bloccate ?? [];
@@ -20,42 +20,43 @@ $campId = (int) ($campD['campione']['id'] ?? 0);
 $gemIds = $campD ? array_map(fn($g) => (int) $g['id'], $campD['gemelle']) : []; ?>
 <div class="saluto">
   <div>
-    <h1><?= $nome !== '' ? 'Ciao, ' . Support::e($nome) . '.' : 'Le mie guide.' ?></h1>
+    <h1><?= $nome !== '' ? Support::e(tf('Ciao, {nome}.', ['{nome}' => $nome])) : t('Le mie guide.') ?></h1>
     <p>
       <?php if ($sub && $piano): ?>
-        Piano <strong><?= Support::e($piano['name']) ?></strong> attivo<?= $sub['current_period_end'] ? ' fino al ' . Support::e(Support::date($sub['current_period_end'])) : '' ?>.
+        <?= $sub['current_period_end'] ? tf('Piano {piano} attivo fino al {data}.', ['{piano}' => '<strong>' . Support::e($piano['name']) . '</strong>', '{data}' => Support::e(MHW\Pannello::data($sub['current_period_end']))])
+                                       : tf('Piano {piano} attivo.', ['{piano}' => '<strong>' . Support::e($piano['name']) . '</strong>']) ?>
       <?php elseif ($piano): ?>
-        Stai configurando con il piano <strong><?= Support::e($piano['name']) ?></strong>. Paghi solo quando pubblichi.
+        <?= tf('Stai configurando con il piano {piano}. Paghi solo quando pubblichi.', ['{piano}' => '<strong>' . Support::e($piano['name']) . '</strong>']) ?>
       <?php else: ?>
-        Le tue guide, in un posto solo.
+        <?= t('Le tue guide, in un posto solo.') ?>
       <?php endif; ?>
-      <?= $maxProp > 1 && $maxProp < PHP_INT_MAX ? ' Strutture: ' . $n . ' su ' . $maxProp . '.' : '' ?>
+      <?= $maxProp > 1 && $maxProp < PHP_INT_MAX ? ' ' . tf('Strutture: {n} su {max}.', ['{n}' => $n, '{max}' => $maxProp]) : '' ?>
     </p>
-    <?php if ($campId): ?><p class="small muted" style="margin:4px 0 0"><?= Support::e($campD['campione']['name']) ?> è la tua <a href="<?= b() ?>/campione">scheda campione</a>: quando la cambi, ti proponiamo di portare le modifiche anche nelle gemelle.</p><?php endif; ?>
+    <?php if ($campId): ?><p class="small muted" style="margin:4px 0 0"><?= Support::e(tf('{nome} è la tua', ['{nome}' => $campD['campione']['name']])) ?> <a href="<?= b() ?>/campione"><?= t('scheda campione') ?></a><?= t(': quando la cambi, ti proponiamo di portare le modifiche anche nelle gemelle.') ?></p><?php endif; ?>
   </div>
   <?php if ($puoiAggiungere): ?>
-    <a class="btn btn--go" href="<?= b() ?>/pannello/nuova">Aggiungi una struttura <span class="go"><?= Icon::svg('plus', 18, 2) ?></span></a>
+    <a class="btn btn--go" href="<?= b() ?>/pannello/nuova"><?= t('Aggiungi una struttura') ?> <span class="go"><?= Icon::svg('plus', 18, 2) ?></span></a>
   <?php elseif ($maxProp === 1): /* 8B: senza più strutture nel piano il bottone resta e apre «Più strutture con Portfolio» */ ?>
-    <a class="btn btn--go btn--lucchetto" href="<?= b() ?>/piano?passa=portfolio" data-sblocca="strutture">Aggiungi una struttura <span class="go"><?= Icon::svg('lock', 18, 2) ?></span></a>
+    <a class="btn btn--go btn--lucchetto" href="<?= b() ?>/piano?passa=portfolio" data-sblocca="strutture"><?= t('Aggiungi una struttura') ?> <span class="go"><?= Icon::svg('lock', 18, 2) ?></span></a>
   <?php endif; ?>
 </div>
 
-<div class="cifre" aria-label="In breve">
+<div class="cifre" aria-label="<?= MHW\Support::e(t('In breve')) ?>">
   <div class="cifra cifra--pino">
-    <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('globe', 17) ?></span>Guide online</span>
+    <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('globe', 17) ?></span><?= t('Guide online') ?></span>
     <b class="cifra__valore"><?= $online ?></b>
-    <span class="cifra__nota"><?= $online ? 'Gli ospiti le aprono dal link o dal QR.' : 'Ancora nessuna: pubblica la prima.' ?></span>
+    <span class="cifra__nota"><?= $online ? t('Gli ospiti le aprono dal link o dal QR.') : t('Ancora nessuna: pubblica la prima.') ?></span>
   </div>
   <div class="cifra cifra--ocra">
-    <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('doc', 17) ?></span>Da finire</span>
+    <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('doc', 17) ?></span><?= t('Da finire') ?></span>
     <b class="cifra__valore"><?= $bozze ?></b>
-    <span class="cifra__nota"><?= $bozze ? 'Bozze che gli ospiti non vedono ancora.' : 'Nessuna bozza in sospeso.' ?></span>
+    <span class="cifra__nota"><?= $bozze ? t('Bozze che gli ospiti non vedono ancora.') : t('Nessuna bozza in sospeso.') ?></span>
   </div>
   <a class="cifra cifra--mare" href="<?= b() ?>/account">
-    <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('card', 17) ?></span>Il tuo piano</span>
+    <span class="cifra__testa"><span class="cifra__ico"><?= Icon::svg('card', 17) ?></span><?= t('Il tuo piano') ?></span>
     <?= Icon::svg('arrow', 18, 2, 'cifra__freccia') ?>
-    <b class="cifra__valore cifra__valore--testo"><?= Support::e($piano['name'] ?? 'Da scegliere') ?></b>
-    <span class="cifra__nota"><?= $sub ? ($sub['current_period_end'] ? 'Si rinnova il ' . Support::e(Support::date($sub['current_period_end'])) . '.' : 'Attivo.') : 'Paghi solo quando pubblichi.' ?></span>
+    <b class="cifra__valore cifra__valore--testo"><?= Support::e($piano['name'] ?? t('Da scegliere')) ?></b>
+    <span class="cifra__nota"><?= $sub ? ($sub['current_period_end'] ? Support::e(tf('Si rinnova il {data}.', ['{data}' => MHW\Pannello::data($sub['current_period_end'])])) : t('Attivo.')) : t('Paghi solo quando pubblichi.') ?></span>
   </a>
 </div>
 
@@ -69,49 +70,49 @@ $gemIds = $campD ? array_map(fn($g) => (int) $g['id'], $campD['gemelle']) : []; 
     <div class="panel stack bloccata" style="padding:20px;gap:8px">
       <span class="bloccata__ico" aria-hidden="true"><?= Icon::svg('lock', 22) ?></span>
       <b class="scheda-guida__nome"><?= Support::e($pr['name']) ?></b>
-      <span class="badge badge--ochre" style="align-self:flex-start"><span class="dot"></span>Si attiva dopo il pagamento</span>
-      <span class="small muted"><?= $sub ? 'Aspetta la conferma di Stripe per la struttura in più.' : 'Prima del pagamento si configura una struttura alla volta: completa e pubblica la prima.' ?></span>
+      <span class="badge badge--ochre" style="align-self:flex-start"><span class="dot"></span><?= t('Si attiva dopo il pagamento') ?></span>
+      <span class="small muted"><?= $sub ? t('Aspetta la conferma di Stripe per la struttura in più.') : t('Prima del pagamento si configura una struttura alla volta: completa e pubblica la prima.') ?></span>
       <details class="small">
-        <summary style="cursor:pointer;min-height:32px">Elimina</summary>
+        <summary style="cursor:pointer;min-height:32px"><?= t('Elimina') ?></summary>
         <form method="post" action="<?= b() ?>/pannello/<?= (int) $pr['id'] ?>/elimina" class="stack" style="gap:8px;margin-top:6px"><?= MHW\Csrf::field() ?>
-          <div class="field" style="margin:0"><label for="conferma-<?= (int) $pr['id'] ?>">Per confermare scrivi <b><?= Support::e($pr['name']) ?></b></label>
+          <div class="field" style="margin:0"><label for="conferma-<?= (int) $pr['id'] ?>"><?= t('Per confermare scrivi') ?> <b><?= Support::e($pr['name']) ?></b></label>
             <input type="text" id="conferma-<?= (int) $pr['id'] ?>" name="conferma" required autocomplete="off"></div>
-          <button class="btn btn--danger btn--sm" style="align-self:flex-start">Elimina</button>
+          <button class="btn btn--danger btn--sm" style="align-self:flex-start"><?= t('Elimina') ?></button>
         </form>
       </details>
     </div>
   <?php continue; endif;
         $pid = (int) $pr['id'];
-        $stato = !empty($pr['archived_at']) ? ['paper', 'Archiviata'] : ($pr['status'] !== 'published' ? ['ochre', 'Bozza'] : ($pr['online'] ? ['pine', 'Online'] : ['alert', 'Offline'])); ?>
+        $stato = !empty($pr['archived_at']) ? ['paper', t('Archiviata')] : ($pr['status'] !== 'published' ? ['ochre', t('Bozza')] : ($pr['online'] ? ['pine', t('Online')] : ['alert', t('Offline')])); ?>
     <article class="scheda-guida">
       <a class="scheda-guida__foto" href="<?= b() ?>/pannello/<?= $pid ?>" tabindex="-1" aria-hidden="true">
         <?php if ($cop): ?><img src="<?= Support::e($cop) ?>" alt="" loading="lazy"><?php else: ?><span class="scheda-guida__vuota"><?= Icon::brand(40) ?></span><?php endif; ?>
         <span class="badge badge--<?= $stato[0] ?>"><span class="dot"></span><?= $stato[1] ?></span>
       </a>
       <a class="scheda-guida__corpo" href="<?= b() ?>/pannello/<?= $pid ?>">
-        <b class="scheda-guida__nome"><?= Support::e($pr['name']) ?><?php if ($pid === $campId): ?> <span class="badge-campione">Campione</span><?php elseif (in_array($pid, $gemIds, true)): ?> <span class="badge-campione badge-campione--gemella">Gemella</span><?php endif; ?></b>
-        <span class="small muted"><?= Support::e($pr['city'] ?: 'Città da indicare') ?></span>
-        <?php if ($pid === $campId): ?><span class="small"><?= count($gemIds) ?> <?= count($gemIds) === 1 ? 'guida gemella' : 'guide gemelle' ?></span>
-        <?php elseif (in_array($pid, $gemIds, true)): $nG = (int) ($campD['contatori'][$pid] ?? 0); ?><span class="small <?= $nG ? 'gemella-da-aggiornare' : 'gemella-allineata' ?>"><?= $nG ? $nG . ($nG === 1 ? ' sezione da aggiornare' : ' sezioni da aggiornare') : 'Allineata' ?></span><?php endif; ?>
+        <b class="scheda-guida__nome"><?= Support::e($pr['name']) ?><?php if ($pid === $campId): ?> <span class="badge-campione"><?= t('Campione') ?></span><?php elseif (in_array($pid, $gemIds, true)): ?> <span class="badge-campione badge-campione--gemella"><?= t('Gemella') ?></span><?php endif; ?></b>
+        <span class="small muted"><?= Support::e($pr['city'] ?: t('Città da indicare')) ?></span>
+        <?php if ($pid === $campId): ?><span class="small"><?= count($gemIds) === 1 ? t('1 guida gemella') : Support::e(tf('{n} guide gemelle', ['{n}' => count($gemIds)])) ?></span>
+        <?php elseif (in_array($pid, $gemIds, true)): $nG = (int) ($campD['contatori'][$pid] ?? 0); ?><span class="small <?= $nG ? 'gemella-da-aggiornare' : 'gemella-allineata' ?>"><?= $nG ? ($nG === 1 ? t('1 sezione da aggiornare') : Support::e(tf('{n} sezioni da aggiornare', ['{n}' => $nG]))) : t('Allineata') ?></span><?php endif; ?>
       </a>
       <?php if (!empty($pr['archived_at'])): ?>
         <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/riattiva" class="scheda-guida__azioni"><?= MHW\Csrf::field() ?>
-          <button class="btn btn--ghost btn--sm">Riattiva <?= Support::e($pr['name']) ?></button></form>
+          <button class="btn btn--ghost btn--sm"><?= Support::e(tf('Riattiva {nome}', ['{nome}' => $pr['name']])) ?></button></form>
       <?php else: ?>
         <div class="scheda-guida__azioni">
-          <a href="<?= b() ?>/pannello/<?= $pid ?>"><?= Icon::svg('doc', 15) ?>Contenuti</a>
+          <a href="<?= b() ?>/pannello/<?= $pid ?>"><?= Icon::svg('doc', 15) ?><?= t('Contenuti') ?></a>
           <a href="<?= b() ?>/pannello/<?= $pid ?>/qr"><?= Icon::svg('qr', 15) ?>QR</a>
-          <a href="<?= b() ?>/pannello/<?= $pid ?>/anteprima" target="_blank" rel="noopener"><?= Icon::svg('eye', 15) ?>Anteprima</a>
+          <a href="<?= b() ?>/pannello/<?= $pid ?>/anteprima" target="_blank" rel="noopener"><?= Icon::svg('eye', 15) ?><?= t('Anteprima') ?></a>
           <?php if ($campDisp && $pid !== $campId && (int) $pr['is_demo'] === 0): ?>
-            <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/campione" style="display:inline;margin:0"><?= MHW\Csrf::field() ?><button class="linkbtn"><?= Icon::svg('star', 15) ?>Rendi campione</button></form>
+            <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/campione" style="display:inline;margin:0"><?= MHW\Csrf::field() ?><button class="linkbtn"><?= Icon::svg('star', 15) ?><?= t('Rendi campione') ?></button></form>
           <?php endif; ?>
         </div>
       <?php endif; ?>
     </article>
   <?php endforeach; ?>
   <?php if ($puoiAggiungere): ?>
-    <a class="scheda-nuova" href="<?= b() ?>/pannello/nuova"><span class="scheda-nuova__piu"><?= Icon::svg('plus', 24, 2) ?></span>Aggiungi una struttura
-      <span class="small">Una guida e un QR in più, con i suoi contenuti.</span></a>
+    <a class="scheda-nuova" href="<?= b() ?>/pannello/nuova"><span class="scheda-nuova__piu"><?= Icon::svg('plus', 24, 2) ?></span><?= t('Aggiungi una struttura') ?>
+      <span class="small"><?= t('Una guida e un QR in più, con i suoi contenuti.') ?></span></a>
   <?php endif; ?>
 </div>
 
@@ -119,14 +120,14 @@ $gemIds = $campD ? array_map(fn($g) => (int) $g['id'], $campD['gemelle']) : []; 
       $nomiC = array_slice($campD['cambiate'], 0, 3); $nGem = count(array_filter($campD['contatori'])); ?>
   <div class="campione-banner" role="status">
     <span class="campione-banner__ico" aria-hidden="true">!</span>
-    <div><p style="margin:0">Hai modificato <?= implode(' e ', array_map(fn($x) => '<b>«' . Support::e($x) . '»</b>', $nomiC)) ?><?= count($campD['cambiate']) > 3 ? ' e altre' : '' ?> nella scheda campione.</p>
-      <p class="small muted" style="margin:2px 0 0"><?= $nGem ?> <?= $nGem === 1 ? 'guida gemella ha' : 'guide gemelle hanno' ?> ancora la versione precedente. Le modifiche non si copiano da sole: decidi tu.</p></div>
-    <a class="btn btn--go btn--sm" href="<?= b() ?>/campione/gemelle">Aggiorna le gemelle →</a>
+    <div><p style="margin:0"><?= tf(count($campD['cambiate']) > 3 ? 'Hai modificato {sezioni} e altre nella scheda campione.' : 'Hai modificato {sezioni} nella scheda campione.', ['{sezioni}' => implode(t(' e '), array_map(fn($x) => '<b>«' . Support::e($x) . '»</b>', $nomiC))]) ?></p>
+      <p class="small muted" style="margin:2px 0 0"><?= Support::e($nGem === 1 ? t('1 guida gemella ha ancora la versione precedente. Le modifiche non si copiano da sole: decidi tu.') : tf('{n} guide gemelle hanno ancora la versione precedente. Le modifiche non si copiano da sole: decidi tu.', ['{n}' => $nGem])) ?></p></div>
+    <a class="btn btn--go btn--sm" href="<?= b() ?>/campione/gemelle"><?= t('Aggiorna le gemelle →') ?></a>
   </div>
 <?php elseif ($campArrivo): /* 9M · Portfolio scelto e non ancora pagato: la voce spenta, con lo spiegone */ ?>
   <div class="panel stack campione-spento" style="gap:10px;margin-top:20px">
-    <div class="row" style="justify-content:space-between;gap:10px"><span><b>Rendi campione</b><br><span class="small muted">Scheda campione e traduzione automatica</span></span>
-      <a class="badge-campione badge-campione--spento" href="<?= b() ?>/campione">Campione</a></div>
+    <div class="row" style="justify-content:space-between;gap:10px"><span><b><?= t('Rendi campione') ?></b><br><span class="small muted"><?= t('Scheda campione e traduzione automatica') ?></span></span>
+      <a class="badge-campione badge-campione--spento" href="<?= b() ?>/campione"><?= t('Campione') ?></a></div>
     <?php include __DIR__ . '/_attivazione.php'; ?>
   </div>
 <?php endif; ?>
@@ -136,20 +137,19 @@ $gemIds = $campD ? array_map(fn($g) => (int) $g['id'], $campD['gemelle']) : []; 
 <?php if (!$puoiAggiungere && $maxProp < PHP_INT_MAX): ?>
   <div class="limit" style="margin-top:28px">
     <?php if ($maxProp === 1): ?>
-      <p style="max-width:620px">Il tuo piano comprende una struttura. Con Portfolio gestisci più strutture dallo stesso account,
-        ognuna con la sua guida e il suo QR.</p>
+      <p style="max-width:620px"><?= t('Il tuo piano comprende una struttura. Con Portfolio gestisci più strutture dallo stesso account, ognuna con la sua guida e il suo QR.') ?></p>
       <div class="row">
-        <a class="btn btn--sm" href="<?= b() ?>/piano?passa=portfolio">Scopri Portfolio</a>
+        <a class="btn btn--sm" href="<?= b() ?>/piano?passa=portfolio"><?= t('Scopri Portfolio') ?></a>
         <?php $pianoAdesso = (string) ($piano['name'] ?? ''); $chiInfo = (string) ($user['email'] ?? ''); ?>
-        <a class="btn btn--ghost btn--sm" href="<?= Support::e(Support::mailto('Informazioni su Portfolio', "Ciao, vorrei sapere di più su Portfolio.\n\nEmail dell'account: $chiInfo\nPiano attuale: " . ($pianoAdesso ?: 'nessuno') . "\nQuante strutture vorrei gestire:")) ?>">Chiedi informazioni</a>
+        <a class="btn btn--ghost btn--sm" href="<?= Support::e(Support::mailto(t('Informazioni su Portfolio'), tf("Ciao, vorrei sapere di più su Portfolio.\n\nEmail dell'account: {email}\nPiano attuale: {piano}\nQuante strutture vorrei gestire:", ['{email}' => $chiInfo, '{piano}' => $pianoAdesso ?: t('nessuno')]))) ?>"><?= t('Chiedi informazioni') ?></a>
       </div>
     <?php else: ?>
       <?php if ($sub): ?>
-        <p style="max-width:620px">Il tuo piano comprende <?= (int) $maxProp ?> strutture. Puoi aggiungerne altre da Account &amp; Fatturazione.</p>
-        <a class="btn btn--ghost btn--sm" href="<?= b() ?>/account">Account &amp; Fatturazione</a>
+        <p style="max-width:620px"><?= Support::e(tf('Il tuo piano comprende {n} strutture. Puoi aggiungerne altre da Account & Fatturazione.', ['{n}' => (int) $maxProp])) ?></p>
+        <a class="btn btn--ghost btn--sm" href="<?= b() ?>/account"><?= t('Account &amp; Fatturazione') ?></a>
       <?php else: ?>
-        <p style="max-width:620px">Hai scelto Portfolio per <?= (int) $maxProp ?> strutture. Il numero lo cambi prima di pagare, dalla scelta del piano.</p>
-        <a class="btn btn--ghost btn--sm" href="<?= b() ?>/piano">Cambia il numero di strutture</a>
+        <p style="max-width:620px"><?= Support::e(tf('Hai scelto Portfolio per {n} strutture. Il numero lo cambi prima di pagare, dalla scelta del piano.', ['{n}' => (int) $maxProp])) ?></p>
+        <a class="btn btn--ghost btn--sm" href="<?= b() ?>/piano"><?= t('Cambia il numero di strutture') ?></a>
       <?php endif; ?>
     <?php endif; ?>
   </div>

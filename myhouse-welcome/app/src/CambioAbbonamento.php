@@ -247,8 +247,10 @@ final class CambioAbbonamento
         if ($lingueDopo < $lingueOra || $extraDopo < $extraOra) {
             // 8C: con Essential restano la lingua principale e una seconda (la prima nell'ordine del listino).
             $perde[] = $extraDopo <= 0 && $lingueDopo <= 2
-                ? 'Lingue: restano la lingua principale e una seconda. Le traduzioni nelle altre restano salvate, ma la guida non le mostra.'
-                : 'Lingue: restano ' . $lingueDopo . ' lingue di base' . ($extraDopo > 0 ? ' e ' . ($extraDopo === 1 ? 'una lingua in più' : $extraDopo . ' lingue in più') : '') . '. Le traduzioni nelle altre restano salvate, ma la guida non le mostra.';
+                ? Pannello::t('Lingue: restano la lingua principale e una seconda. Le traduzioni nelle altre restano salvate, ma la guida non le mostra.')
+                : strtr(Pannello::t($extraDopo <= 0 ? 'Lingue: restano {n} lingue di base. Le traduzioni nelle altre restano salvate, ma la guida non le mostra.'
+                    : ($extraDopo === 1 ? 'Lingue: restano {n} lingue di base e una lingua in più. Le traduzioni nelle altre restano salvate, ma la guida non le mostra.'
+                                        : 'Lingue: restano {n} lingue di base e {extra} lingue in più. Le traduzioni nelle altre restano salvate, ma la guida non le mostra.')), ['{n}' => $lingueDopo, '{extra}' => $extraDopo]);
         }
         $funzioni = ['photos' => 'Foto e PDF nelle sezioni: restano salvati, la guida non li mostra.', 'profile_image' => 'Foto profilo: resta salvata, la guida non la mostra.',
                      'analytics' => 'Statistiche di lettura.', 'hide_branding' => 'La firma «Guida creata con MyHouse Welcome» torna visibile.',
@@ -327,15 +329,18 @@ final class CambioAbbonamento
         if ($u) {
             try {
                 $nome = trim(explode(' ', trim((string) $u['name']))[0] ?? '');
-                Mailer::diPagamento(fn() => Mailer::manda((string) $u['email'], 'Da oggi sei su ' . $pv['name'], 'Da oggi sei su ' . $pv['name'],
+                // 9N · Nella lingua del pannello dell'host.
+                $lin = Richiami::lingua($aid);
+                $tl = fn(string $it, array $s = []) => Pannello::tIn($lin, $it, $s);
+                $x = ['{nome}' => $nome, '{piano}' => $pv['name'] . (Plans::perProperty($pv) ? ' ' . $tl('({n} strutture)', ['{n}' => $q]) : ''), '{prezzo}' => Support::money(Plans::price($pv, $q), (string) $pv['currency'])];
+                Mailer::diPagamento(fn() => Mailer::inLingua($lin, fn() => Mailer::manda((string) $u['email'], $tl('Da oggi sei su {piano}', ['{piano}' => $pv['name']]), $tl('Da oggi sei su {piano}', ['{piano}' => $pv['name']]),
                     array_values(array_filter([
-                        'Ciao' . ($nome !== '' ? ' ' . $nome : '') . ', come avevi chiesto, con il rinnovo il tuo abbonamento è passato a ' . $pv['name']
-                        . (Plans::perProperty($pv) ? " ($q strutture)" : '') . ': ' . Support::money(Plans::price($pv, $q), (string) $pv['currency']) . ' + IVA all\'anno.',
-                        $cambiato ? "Cosa è cambiato:\n• " . implode("\n• ", $cambiato) : '',
-                        'Niente è stato cancellato: se torni a un piano più ricco, ritrovi tutto.',
-                        Support::fraseFatture(),   // 9H
+                        $tl($nome !== '' ? 'Ciao {nome}, come avevi chiesto, con il rinnovo il tuo abbonamento è passato a {piano}: {prezzo} + IVA all\'anno.' : 'Ciao, come avevi chiesto, con il rinnovo il tuo abbonamento è passato a {piano}: {prezzo} + IVA all\'anno.', $x),
+                        $cambiato ? $tl('Cosa è cambiato:') . "\n• " . implode("\n• ", array_map($tl, $cambiato)) : '',
+                        $tl('Niente è stato cancellato: se torni a un piano più ricco, ritrovi tutto.'),
+                        Support::fraseFatture($lin === 'en'),   // 9H
                     ])),
-                    ['Vai al tuo account', Support::baseUrl() . '/account']));   // 9H: Reply-To amministrazione
+                    [$tl('Vai al tuo account'), Support::baseUrl() . '/account'])));   // 9H: Reply-To amministrazione
             } catch (\Throwable $e) { Log::exception($e, 'email cambio piano'); }
         }
         return $cambiato;

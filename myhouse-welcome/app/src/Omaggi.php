@@ -90,7 +90,7 @@ final class Omaggi
         }
         if (!empty($c['usato_at']) && (int) $c['usato_da_account_id'] !== $aid) throw new \RuntimeException('Questo codice omaggio è già stato usato.');
         if (!empty($c['usato_at'])) throw new \RuntimeException('Hai già usato questo codice omaggio.');
-        if ((string) $c['scade_il'] < self::oggi()) throw new \RuntimeException('Questo codice omaggio è scaduto il ' . Support::date($c['scade_il']) . '.');
+        if ((string) $c['scade_il'] < self::oggi()) throw new \RuntimeException(strtr(Pannello::t('Questo codice omaggio è scaduto il {data}.'), ['{data}' => Pannello::data($c['scade_il'])]));
         // Prenotato a un altro account: resta suo fino alla scadenza.
         $altro = Db::val('SELECT id FROM accounts WHERE codice_omaggio_id = ? AND id <> ?', [(int) $c['id'], $aid]);
         if ($altro) throw new \RuntimeException('Questo codice omaggio è già stato usato.');

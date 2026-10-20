@@ -1,4 +1,4 @@
-<?php
+<?php use function MHW\t, MHW\tf;
 /* Il codice sconto del primo anno (6E) e, dalla 9A, tutti gli sconti che valgono per l'account: nel riquadro
    del piano (/piano e passo «Pubblica»). Riceve $acc, $pv (il piano, può mancare), $quantita, $torna e,
    se la pagina l'ha già calcolato, $riep (Sconti::riepilogo). Con $soloCampo il conto lo mostra la pagina
@@ -18,47 +18,47 @@ $conInviti = MHW\Inviti::disponibili();
 $manuale = $riep['manuale'] ?? (!$pv && !empty($acc['intended_discount_code_id']) ? Sconti::riga((int) $acc['intended_discount_code_id']) : null);
 if ($manuale && !empty($manuale['sistema'])) $manuale = null;
 $sistema = $riep['sistema'] ?? Sconti::sistema($acc);
-$togli = fn() => '<form method="post" action="' . b() . '/sconto/togli" style="margin:0">' . Csrf::field() . '<input type="hidden" name="torna" value="' . Support::e($torna) . '"><button class="linkbtn">Togli</button></form>';
+$togli = fn() => '<form method="post" action="' . b() . '/sconto/togli" style="margin:0">' . Csrf::field() . '<input type="hidden" name="torna" value="' . Support::e($torna) . '"><button class="linkbtn">' . t('Togli') . '</button></form>';
 $omaggioS = MHW\Omaggi::daUsare($acc);   // 9D · il codice omaggio prenotato: mesi gratis e primo addebito ?>
 <?php if ($omaggioS && !$soloCampo): ?>
   <div class="sconto-ok" role="status">
-    <p style="margin:0"><b>Codice omaggio <?= Support::e($omaggioS['codice']) ?></b>: <?= (int) $omaggioS['mesi'] ?> mesi gratis, primo addebito il <?= Support::e(Support::date(MHW\Omaggi::fineIso((int) $omaggioS['mesi']))) ?> a prezzo pieno. Un codice omaggio e un invito non si sommano: vale l'omaggio.
-      <?= (MHW\Inviti::disponibili() || MHW\Giudizi::attivo()) ? Support::e("Dal primo rinnovo dopo l'attivazione hai tutti gli sconti, fino al " . MHW\Sconti::massimoRinnovo()['totale'] . '%.') : '' ?></p>
+    <p style="margin:0"><b><?= Support::e(tf('Codice omaggio {codice}', ['{codice}' => $omaggioS['codice']])) ?></b>: <?= Support::e(tf('{n} mesi gratis, primo addebito il {data} a prezzo pieno. Un codice omaggio e un invito non si sommano: vale l\'omaggio.', ['{n}' => (int) $omaggioS['mesi'], '{data}' => MHW\Pannello::data(MHW\Omaggi::fineIso((int) $omaggioS['mesi']))])) ?>
+      <?= (MHW\Inviti::disponibili() || MHW\Giudizi::attivo()) ? Support::e(tf('Dal primo rinnovo dopo l\'attivazione hai tutti gli sconti, fino al {n}%.', ['{n}' => MHW\Sconti::massimoRinnovo()['totale']])) : '' ?></p>
   </div>
 <?php elseif ($omaggioS): ?>
-  <p class="small" style="margin:0">Codice omaggio <b><?= Support::e($omaggioS['codice']) ?></b> applicato: <?= (int) $omaggioS['mesi'] ?> mesi gratis.</p>
+  <p class="small" style="margin:0"><?= tf('Codice omaggio {codice} applicato: {n} mesi gratis.', ['{codice}' => '<b>' . Support::e($omaggioS['codice']) . '</b>', '{n}' => (int) $omaggioS['mesi']]) ?></p>
 <?php endif; ?>
 <?php if (!$soloCampo && $riep && $riep['sconto'] > 0): ?>
   <div class="sconto-ok" role="status">
     <p class="sconto-ok__prezzo" style="margin:0"><s><?= Support::e(Support::money($riep['prezzo'], $val)) ?></s>
-      <b><?= Support::e(Support::money($riep['totale'], $val)) ?></b> + IVA il primo anno</p>
+      <b><?= Support::e(Support::money($riep['totale'], $val)) ?></b> <?= t('+ IVA il primo anno') ?></p>
     <?php foreach ($riep['righe'] as $rr): ?>
-      <p style="margin:0"><b><?= Support::e($rr['nome']) ?></b>: <?= $rr['percento'] > 0 ? '−' . (int) $rr['percento'] . '%' : '−' . Support::e(Support::money((int) $rr['cents'], $val)) ?> sul primo anno.</p>
+      <p style="margin:0"><b><?= Support::e($rr['nome']) ?></b>: <?= Support::e(tf('{sconto} sul primo anno.', ['{sconto}' => $rr['percento'] > 0 ? '−' . (int) $rr['percento'] . '%' : '−' . Support::money((int) $rr['cents'], $val)])) ?></p>
     <?php endforeach; ?>
-    <p style="margin:0">Dal secondo anno <?= Support::e(Support::money($riep['prezzo'], $val)) ?> + IVA.</p>
+    <p style="margin:0"><?= Support::e(tf('Dal secondo anno {prezzo} + IVA.', ['{prezzo}' => Support::money($riep['prezzo'], $val)])) ?></p>
     <?php if ($riep['nota'] !== ''): ?><p class="small" style="margin:0"><?= Support::e($riep['nota']) ?></p><?php endif; ?>
     <?php if ($manuale): echo $togli(); endif; ?>
   </div>
 <?php elseif (!$soloCampo && !$pv && ($manuale || $sistema)): /* piano non ancora scelto */ ?>
   <div class="sconto-ok" role="status">
-    <?php foreach ($sistema as $s): ?><p style="margin:0"><b><?= Support::e($s['nome']) ?></b>: −<?= (int) $s['percento'] ?>% sul primo anno, sul piano che scegli.</p><?php endforeach; ?>
-    <?php if ($manuale): ?><p style="margin:0">Codice <b><?= Support::e($manuale['code']) ?></b> applicato: <?= Support::e(Sconti::etichetta($manuale)) ?> sul primo anno, sul piano che scegli.<?= $sistema ? ' Non si somma agli altri sconti: vale il più alto.' : '' ?></p><?= $togli() ?><?php endif; ?>
+    <?php foreach ($sistema as $s): ?><p style="margin:0"><b><?= Support::e($s['nome']) ?></b>: <?= Support::e(tf('−{n}% sul primo anno, sul piano che scegli.', ['{n}' => (int) $s['percento']])) ?></p><?php endforeach; ?>
+    <?php if ($manuale): ?><p style="margin:0"><?= tf('Codice {codice} applicato: {sconto} sul primo anno, sul piano che scegli.', ['{codice}' => '<b>' . Support::e($manuale['code']) . '</b>', '{sconto}' => Support::e(Sconti::etichetta($manuale))]) ?><?= $sistema ? ' ' . t('Non si somma agli altri sconti: vale il più alto.') : '' ?></p><?= $togli() ?><?php endif; ?>
   </div>
 <?php elseif ($soloCampo && $manuale): ?>
-  <div class="row" style="gap:10px;align-items:center"><span class="small">Codice <b><?= Support::e($manuale['code']) ?></b> applicato.</span><?= $togli() ?></div>
+  <div class="row" style="gap:10px;align-items:center"><span class="small"><?= t('Codice') ?> <b><?= Support::e($manuale['code']) ?></b> <?= t('applicato.') ?></span><?= $togli() ?></div>
 <?php endif; ?>
 <?php if (!$manuale || $errSconto): /* il campo: senza codice scritto a mano, o per mostrare l'errore di un altro codice */ ?>
   <details class="sconto"<?= $errSconto ? ' open' : '' ?>>
-    <summary class="linkbtn"><?= $conInviti ? 'Hai un codice sconto, un invito o un codice omaggio?' : 'Hai un codice sconto o un codice omaggio?' ?></summary>
+    <summary class="linkbtn"><?= $conInviti ? t('Hai un codice sconto, un invito o un codice omaggio?') : t('Hai un codice sconto o un codice omaggio?') ?></summary>
     <form method="post" action="<?= b() ?>/sconto/applica" class="sconto__form"><?= Csrf::field() ?>
       <input type="hidden" name="torna" value="<?= Support::e($torna) ?>">
       <div class="field" style="margin:0">
-        <label for="<?= $idS ?>"><?= $conInviti ? 'Codice sconto, di invito o omaggio' : 'Codice sconto o omaggio' ?></label>
+        <label for="<?= $idS ?>"><?= $conInviti ? t('Codice sconto, di invito o omaggio') : t('Codice sconto o omaggio') ?></label>
         <input id="<?= $idS ?>" name="codice" type="text" maxlength="24" autocomplete="off" spellcheck="false" style="text-transform:uppercase"
                value="<?= Support::e($errSconto['codice'] ?? '') ?>"<?= $errSconto ? ' aria-invalid="true" aria-describedby="' . $idS . '-err"' : '' ?>>
       </div>
-      <button class="btn btn--ghost btn--sm">Applica</button>
-      <?php if ($errSconto): ?><p class="field-error" id="<?= $idS ?>-err" role="alert" style="flex-basis:100%;margin:0"><?= Support::e($errSconto['msg']) ?></p><?php endif; ?>
+      <button class="btn btn--ghost btn--sm"><?= t('Applica') ?></button>
+      <?php if ($errSconto): ?><p class="field-error" id="<?= $idS ?>-err" role="alert" style="flex-basis:100%;margin:0"><?= Support::e(t($errSconto['msg'])) ?></p><?php endif; ?>
     </form>
   </details>
 <?php endif; ?>

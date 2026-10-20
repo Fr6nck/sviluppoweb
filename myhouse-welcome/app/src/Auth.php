@@ -114,7 +114,7 @@ final class Auth
      */
     public static function controllaPassword(string $pw, string $email = '', string $nome = ''): void
     {
-        if (mb_strlen($pw) < self::PASSWORD_MIN) throw new \RuntimeException('La password deve avere almeno ' . self::PASSWORD_MIN . ' caratteri.');
+        if (mb_strlen($pw) < self::PASSWORD_MIN) throw new \RuntimeException(strtr(Pannello::t('La password deve avere almeno {n} caratteri.'), ['{n}' => self::PASSWORD_MIN]));
         if (strlen($pw) > 72) throw new \RuntimeException('La password può avere al massimo 72 caratteri.');
         $bassa = mb_strtolower($pw);
         foreach ([$email, $nome] as $x) {

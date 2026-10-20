@@ -41,6 +41,22 @@ final class Richiami
 
     public static function disponibili(): bool { return Migrator::tableExists('email_log'); }
 
+    /** 9N · La lingua delle email dell'account che si sta scrivendo: quella del suo pannello (Pannello::linguaDi). */
+    private static string $lin = 'it';
+
+    /** 9N · Fissa (e restituisce) la lingua delle email per un account: da chiamare prima di comporre il testo. */
+    public static function lingua(int $accountId): string
+    {
+        $u = Db::one('SELECT u.* FROM users u JOIN accounts a ON a.user_id = u.id WHERE a.id = ?', [$accountId]);
+        return self::$lin = $u ? Pannello::linguaDi($u, $accountId) : 'it';
+    }
+
+    /** 9N · Una frase nella lingua fissata da lingua(), con i segnaposto. */
+    private static function tt(string $it, array $sost = []): string { return Pannello::tIn(self::$lin, $it, $sost); }
+
+    /** 9N · Una data nella lingua fissata: 26 settembre 2026 / 26 September 2026. */
+    private static function giorno(string $iso): string { return self::$lin === 'en' && ($t = strtotime($iso)) ? gmdate('j F Y', $t) : Support::date($iso); }
+
     private static function blocco(): string { return MHW_APP . '/storage/richiami.lock'; }
 
     /** Il controllo leggero: al massimo ogni 15 minuti, e mai due insieme. */
@@ -76,9 +92,10 @@ final class Richiami
             $ref = ($t - (int) strtotime((string) $u['created_at'])) >= 3 * $giorno ? '72' : '24';
             if (!self::puo((int) $u['acc_id'], 'conferma', $ref, $t)) continue;
             $link = Support::baseUrl() . '/verifica/' . Tokens::issue((int) $u['uid'], Tokens::VERIFY, 48 * 3600);
-            $m = ['Confermi la tua email?',
-                  ($ref === '72' ? 'è l\'ultima volta che te lo chiediamo: ' : '') . 'il tuo account MyHouse Welcome aspetta solo la conferma dell\'indirizzo. Un clic sul bottone e prepari la tua guida, come la vedranno i tuoi ospiti.',
-                  'Conferma la mia email', $link, 'Il link vale 48 ore. Se non hai creato tu l\'account, ignora questo messaggio.'];
+            self::lingua((int) $u['acc_id']);
+            $m = [self::tt('Confermi la tua email?'),
+                  ($ref === '72' ? self::tt('è l\'ultima volta che te lo chiediamo:') . ' ' : '') . self::tt('il tuo account MyHouse Welcome aspetta solo la conferma dell\'indirizzo. Un clic sul bottone e prepari la tua guida, come la vedranno i tuoi ospiti.'),
+                  self::tt('Conferma la mia email'), $link, self::tt('Il link vale 48 ore. Se non hai creato tu l\'account, ignora questo messaggio.')];
             if (self::manda((int) $u['acc_id'], $u['email'], (string) $u['user_name'], 'conferma', $ref, $m)) $fatte['conferma']++;
         }
 
@@ -91,6 +108,7 @@ final class Richiami
             $acc = (int) $o['account_id'];
             if (!self::puo($acc, 'pagamento', 'primo', $t) || Subscriptions::active($acc)
                 || Db::val("SELECT id FROM orders WHERE account_id = ? AND status = 'paid' AND id > ?", [$acc, $o['id']])) continue;
+            self::lingua($acc);
             if (self::manda($acc, $o['email'], (string) $o['user_name'], 'pagamento', 'primo', self::testoPagamento($o))) $fatte['pagamento']++;
         }
 
@@ -107,6 +125,7 @@ final class Richiami
             if ($eta < 3) { if (self::arrivoVuoto($p)) $tipo = 'arrivo'; }
             elseif ($eta < 7) { if (!(int) Db::val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_core = 0', [$p['id']], 0)) $tipo = 'sezioni'; }
             else $tipo = 'pubblica';
+            if ($tipo) self::lingua((int) $p['acc_id']);
             if ($tipo && self::manda((int) $p['acc_id'], $p['email'], (string) $p['user_name'], $tipo, (string) $p['id'], self::testo($tipo, $p))) $fatte[$tipo]++;
         }
 
@@ -119,6 +138,7 @@ final class Richiami
                                 AND s.current_period_end > ? AND s.current_period_end <= ? AND u.email NOT LIKE ?",
                              [$iso($t + ($prima - 1) * $giorno), $iso($t + ($prima + 1) * $giorno), '%@' . Demo::DOMINIO]) as $s) {
                 $ref = $s['id'] . '-' . substr((string) $s['current_period_end'], 0, 10) . ($prima === 7 ? '-7' : '');
+                self::lingua((int) $s['account_id']);
                 if (self::manda((int) $s['account_id'], $s['email'], (string) $s['user_name'], 'rinnovo', $ref, self::testoRinnovo($s, $prima))) $fatte['rinnovo']++;
             }
         }
@@ -133,6 +153,7 @@ final class Richiami
                              [$iso($t + ($prima - 1) * $giorno), $iso($t + ($prima + 1) * $giorno), '%@' . Demo::DOMINIO]) as $s) {
                 if (self::continua($s)) continue;
                 $ref = $s['id'] . '-' . substr((string) $s['current_period_end'], 0, 10) . '-' . $prima;
+                self::lingua((int) $s['account_id']);
                 if (self::manda((int) $s['account_id'], $s['email'], (string) $s['user_name'], 'scadenza', $ref, self::testoScadenza($s, false))) $fatte['scadenza']++;
             }
         }
@@ -141,6 +162,7 @@ final class Richiami
                          [$iso($t - $giorno), $iso($t - 4 * $giorno), '%@' . Demo::DOMINIO]) as $s) {
             if (self::continua($s) || Subscriptions::active((int) $s['account_id'])) continue;
             $ref = $s['id'] . '-' . substr((string) $s['current_period_end'], 0, 10) . '-offline';
+            self::lingua((int) $s['account_id']);
             if (self::manda((int) $s['account_id'], $s['email'], (string) $s['user_name'], 'scadenza', $ref, self::testoScadenza($s, true))) $fatte['scadenza']++;
         }
 
@@ -157,9 +179,10 @@ final class Richiami
             if (!$passati) continue;
             $nomi = array_values(array_filter(array_map(fn($r) => trim((string) ($r['name'] ?? '')), $passati)));
             $n = count($passati);
-            $m = [$n === 1 ? 'Un evento è passato' : "$n eventi sono passati",
-                  ($nomi ? implode(', ', $nomi) . '. ' : '') . 'Non si vedono più nella guida di ' . $e['name'] . ". Se tornano l'anno prossimo, basta un clic.",
-                  'Apri gli eventi', Support::baseUrl() . '/pannello/' . (int) $e['id'] . '/sezioni/' . (int) $e['sid']];
+            self::lingua((int) $e['acc_id']);
+            $m = [$n === 1 ? self::tt('Un evento è passato') : self::tt('{n} eventi sono passati', ['{n}' => $n]),
+                  ($nomi ? implode(', ', $nomi) . '. ' : '') . self::tt('Non si vedono più nella guida di {nome}. Se tornano l\'anno prossimo, basta un clic.', ['{nome}' => $e['name']]),
+                  self::tt('Apri gli eventi'), Support::baseUrl() . '/pannello/' . (int) $e['id'] . '/sezioni/' . (int) $e['sid']];
             if (self::manda((int) $e['acc_id'], $e['email'], (string) $e['user_name'], 'eventi', $e['id'] . '-' . substr($oggi, 0, 7), $m)) $fatte['eventi']++;
         }
         // Parere (7A): dal 14° al 30° giorno dopo la registrazione, mai pubblicato né abbonato, nessuna bozza
@@ -173,9 +196,10 @@ final class Richiami
                 || Db::val('SELECT id FROM subscriptions WHERE account_id = ?', [$acc])
                 || Db::val("SELECT id FROM properties WHERE account_id = ? AND archived_at IS NULL AND created_at > ?", [$acc, $iso($t - 7 * $giorno)])) continue;
             $base = Support::baseUrl() . '/parere/{token}/';
-            $m = ['Cosa ti ha fermato?',
-                  'ti sei iscritto a MyHouse Welcome due settimane fa, ma la guida non è ancora online. Ci aiuti a capire perché? Basta un clic, non serve accedere.',
-                  null, null, null, array_map(fn($k, $v) => [$v, $base . $k], array_keys(self::MOTIVI), self::MOTIVI)];
+            self::lingua($acc);
+            $m = [self::tt('Cosa ti ha fermato?'),
+                  self::tt('ti sei iscritto a MyHouse Welcome due settimane fa, ma la guida non è ancora online. Ci aiuti a capire perché? Basta un clic, non serve accedere.'),
+                  null, null, null, array_map(fn($k, $v) => [self::tt($v), $base . $k], array_keys(self::MOTIVI), self::MOTIVI)];
             if (self::manda($acc, $u['email'], (string) $u['user_name'], 'parere', 'primo', $m)) $fatte['parere']++;
         }
 
@@ -192,13 +216,13 @@ final class Richiami
                 // 9L · Chi ha aderito a «Giudizio con sconto»: il giudizio promesso, che si aggiunge alla sua scheda (mai una sua foto).
                 $sch = Vetrina::scheda((int) $g['acc_id']);
                 if ($sch && !empty($sch['ritirato_at'])) continue;
-                $m = $sch ? ['È il momento del tuo giudizio',
-                             'la tua guida è online da 30 giorni. Come previsto dal programma «Giudizio con sconto», lasciaci un voto da 1 a 5 con un commento: '
-                             . 'se decidiamo di pubblicarlo, compare in «Cosa dicono di noi» nella nostra home, con il nome della struttura, la copertina e il logo. Mai una tua foto, mai un link alla guida. Lo sconto non dipende dal voto né dalla pubblicazione.',
-                             'Lascia il giudizio', Support::baseUrl() . '/giudizio?scrivi=1']
-                          : ['Ti sta piacendo MyHouse Welcome?',
-                             'la tua guida è online da un mese. Ci dici com\'è andata? Bastano un voto e due righe: ci aiutano a migliorare.',
-                             'Dai il tuo giudizio', Support::baseUrl() . '/giudizio?scrivi=1'];
+                self::lingua((int) $g['acc_id']);
+                $m = $sch ? [self::tt('È il momento del tuo giudizio'),
+                             self::tt('la tua guida è online da 30 giorni. Come previsto dal programma «Giudizio con sconto», lasciaci un voto da 1 a 5 con un commento: se decidiamo di pubblicarlo, compare in «Cosa dicono di noi» nella nostra home, con il nome della struttura, la copertina e il logo. Mai una tua foto, mai un link alla guida. Lo sconto non dipende dal voto né dalla pubblicazione.'),
+                             self::tt('Lascia il giudizio'), Support::baseUrl() . '/giudizio?scrivi=1']
+                          : [self::tt('Ti sta piacendo MyHouse Welcome?'),
+                             self::tt('la tua guida è online da un mese. Ci dici com\'è andata? Bastano un voto e due righe: ci aiutano a migliorare.'),
+                             self::tt('Dai il tuo giudizio'), Support::baseUrl() . '/giudizio?scrivi=1'];
                 if (self::manda((int) $g['acc_id'], $g['email'], (string) $g['user_name'], 'giudizio', 'primo', $m)) $fatte['giudizio']++;
             }
         }
@@ -237,11 +261,11 @@ final class Richiami
     {
         $pv = Plans::version((int) $o['package_version_id']) ?? [];
         $p = !empty($o['property_id']) ? Db::one('SELECT id, name FROM properties WHERE id = ?', [$o['property_id']]) : null;
-        $prezzo = Support::money((int) $o['amount_cents'], (string) ($o['currency'] ?: 'EUR')) . ' + IVA / anno';
-        return ['La tua guida è pronta per andare online',
-                ($p ? 'la guida di ' . $p['name'] : 'la tua guida') . ' è pronta: manca solo il pagamento, e non ti è stato addebitato niente. '
-                . 'Hai scelto ' . ($pv['name'] ?? 'il tuo piano') . ": $prezzo. Riprendi da dove eri rimasto: un minuto e gli ospiti la aprono dal QR.",
-                'Riprendi e pubblica', Support::baseUrl() . ($p ? '/pannello/' . (int) $p['id'] . '/procedura/pubblica' : '/piano')];
+        $prezzo = self::tt('{prezzo} + IVA / anno', ['{prezzo}' => Support::money((int) $o['amount_cents'], (string) ($o['currency'] ?: 'EUR'))]);
+        return [self::tt('La tua guida è pronta per andare online'),
+                ($p ? self::tt('la guida di {nome} è pronta: manca solo il pagamento, e non ti è stato addebitato niente.', ['{nome}' => $p['name']]) : self::tt('la tua guida è pronta: manca solo il pagamento, e non ti è stato addebitato niente.'))
+                . ' ' . self::tt('Hai scelto {piano}: {prezzo}. Riprendi da dove eri rimasto: un minuto e gli ospiti la aprono dal QR.', ['{piano}' => $pv['name'] ?? self::tt('il tuo piano'), '{prezzo}' => $prezzo]),
+                self::tt('Riprendi e pubblica'), Support::baseUrl() . ($p ? '/pannello/' . (int) $p['id'] . '/procedura/pubblica' : '/piano')];
     }
 
     private static function arrivoVuoto(array $p): bool
@@ -257,16 +281,16 @@ final class Richiami
     {
         $nome = $p['name']; $base = Support::baseUrl() . '/pannello/' . (int) $p['id'] . '/procedura/';
         return match ($tipo) {
-            'arrivo' => ["Come si entra a $nome?",
-                         "hai cominciato la guida di $nome. Manca la parte che gli ospiti cercano per prima: come si entra, a che ora, dove sono le chiavi. Bastano pochi minuti.",
-                         'Compila Check-in & Check-out', $base . 'arrivo'],
-            'sezioni' => ["Wi-Fi, regole, consigli: aggiungili a $nome",
-                          "la guida di $nome ha già Check-in & Check-out, ma ancora nessun'altra sezione. Wi-Fi, regole della casa, dove mangiare: scegli quelle che servono, si compilano in pochi minuti.",
-                          'Scegli le sezioni', $base . 'sezioni'],
-            default => ["$nome è quasi pronta",
-                        "la guida di $nome non è ancora online. Guarda l'anteprima come la vedranno gli ospiti e, quando ti convince, pubblicala"
-                        . (Subscriptions::active((int) $p['account_id']) ? ': è già compresa nel tuo abbonamento.' : ': paghi solo quando pubblichi.'),
-                        "Apri l'anteprima e pubblica", $base . 'pubblica'],
+            'arrivo' => [self::tt('Come si entra a {nome}?', ['{nome}' => $nome]),
+                         self::tt('hai cominciato la guida di {nome}. Manca la parte che gli ospiti cercano per prima: come si entra, a che ora, dove sono le chiavi. Bastano pochi minuti.', ['{nome}' => $nome]),
+                         self::tt('Compila Check-in & Check-out'), $base . 'arrivo'],
+            'sezioni' => [self::tt('Wi-Fi, regole, consigli: aggiungili a {nome}', ['{nome}' => $nome]),
+                          self::tt('la guida di {nome} ha già Check-in & Check-out, ma ancora nessun\'altra sezione. Wi-Fi, regole della casa, dove mangiare: scegli quelle che servono, si compilano in pochi minuti.', ['{nome}' => $nome]),
+                          self::tt('Scegli le sezioni'), $base . 'sezioni'],
+            default => [self::tt('{nome} è quasi pronta', ['{nome}' => $nome]),
+                        self::tt(Subscriptions::active((int) $p['account_id']) ? 'la guida di {nome} non è ancora online. Guarda l\'anteprima come la vedranno gli ospiti e, quando ti convince, pubblicala: è già compresa nel tuo abbonamento.'
+                                                                              : 'la guida di {nome} non è ancora online. Guarda l\'anteprima come la vedranno gli ospiti e, quando ti convince, pubblicala: paghi solo quando pubblichi.', ['{nome}' => $nome]),
+                        self::tt('Apri l\'anteprima e pubblica'), $base . 'pubblica'],
         };
     }
 
@@ -295,32 +319,33 @@ final class Richiami
     private static function carta(array $s): string
     {
         $l4 = (string) ($s['card_last4'] ?? '');
-        return $l4 !== '' ? "sulla carta che termina con $l4" : 'sul tuo metodo di pagamento';
+        return $l4 !== '' ? self::tt('sulla carta che termina con {n}', ['{n}' => $l4]) : self::tt('sul tuo metodo di pagamento');
     }
 
     /** 9D · L'avviso prima dell'addebito, a 30 o a 7 giorni: rinnovo automatico, oppure fine dei mesi gratis di un omaggio. */
     private static function testoRinnovo(array $s, int $prima = 30): array
     {
-        $quando = Support::date((string) $s['current_period_end']);
+        $quando = self::giorno((string) $s['current_period_end']);
         $a = self::prossimoAddebito($s);
-        $importo = Support::money($a['netto'], $a['valuta']) . ' + IVA';
-        $piano = $a['piano'] . ($a['quantita'] > 1 ? ' (' . $a['quantita'] . ' strutture)' : '');
+        $importo = self::tt('{prezzo} + IVA', ['{prezzo}' => Support::money($a['netto'], $a['valuta'])]);
+        $piano = $a['piano'] . ($a['quantita'] > 1 ? ' ' . self::tt('({n} strutture)', ['{n}' => $a['quantita']]) : '');
         $omaggio = !empty($s['omaggio_fino']) && $s['status'] === 'trialing';
-        $sconti = $a['sconto'] > 0 ? ' Hai uno sconto del ' . $a['percento'] . '%: pagherai ' . $importo . ' invece di ' . Support::money($a['listino'], $a['valuta']) . ' + IVA.' : '';
+        $x = ['{data}' => $quando, '{piano}' => $piano, '{importo}' => $importo, '{carta}' => self::carta($s)];
+        $sconti = $a['sconto'] > 0 ? ' ' . self::tt('Hai uno sconto del {n}%: pagherai {importo} invece di {pieno} + IVA.', ['{n}' => $a['percento'], '{importo}' => $importo, '{pieno}' => Support::money($a['listino'], $a['valuta'])]) : '';
         if ($omaggio) {
-            $corpo = "la tua prova gratuita finisce il $quando: da quel giorno parte l'abbonamento $piano a $importo l'anno, " . self::carta($s) . ". Non devi fare nulla.$sconti "
-                   . "Se non vuoi continuare, disattiva il rinnovo da Account & Fatturazione entro il $quando: fino a quel giorno la guida resta online e non ti addebitiamo nulla.";
-            $oggetto = $prima === 7 ? "Tra 7 giorni finisce la tua prova gratuita" : "La tua prova gratuita finisce il $quando";
+            $corpo = self::tt('la tua prova gratuita finisce il {data}: da quel giorno parte l\'abbonamento {piano} a {importo} l\'anno, {carta}. Non devi fare nulla.', $x) . $sconti . ' '
+                   . self::tt('Se non vuoi continuare, disattiva il rinnovo da Account & Fatturazione entro il {data}: fino a quel giorno la guida resta online e non ti addebitiamo nulla.', $x);
+            $oggetto = $prima === 7 ? self::tt('Tra 7 giorni finisce la tua prova gratuita') : self::tt('La tua prova gratuita finisce il {data}', $x);
         } else {
-            $corpo = "il tuo abbonamento $piano si rinnova il $quando: addebiteremo $importo " . self::carta($s) . ". Non devi fare nulla.$sconti "
-                   . "Se non vuoi rinnovare, disattiva il rinnovo da Account & Fatturazione entro il $quando: la guida resta online fino a quel giorno e non ti addebitiamo nulla.";
-            $oggetto = $prima === 7 ? 'Tra 7 giorni rinnoviamo il tuo abbonamento' : "Il tuo abbonamento si rinnova il $quando";
+            $corpo = self::tt('il tuo abbonamento {piano} si rinnova il {data}: addebiteremo {importo} {carta}. Non devi fare nulla.', $x) . $sconti . ' '
+                   . self::tt('Se non vuoi rinnovare, disattiva il rinnovo da Account & Fatturazione entro il {data}: la guida resta online fino a quel giorno e non ti addebitiamo nulla.', $x);
+            $oggetto = $prima === 7 ? self::tt('Tra 7 giorni rinnoviamo il tuo abbonamento') : self::tt('Il tuo abbonamento si rinnova il {data}', $x);
         }
         // Una discesa programmata (6H): l'avviso dice già il piano e l'importo nuovi (prossimoAddebito li usa); qui solo la frase.
-        if (!empty($s['next_package_version_id'])) $corpo .= ' Come avevi chiesto, dal rinnovo passi a ' . $piano . '.';
+        if (!empty($s['next_package_version_id'])) $corpo .= ' ' . self::tt('Come avevi chiesto, dal rinnovo passi a {piano}.', $x);
         // A 30 giorni, per chi rinnova, restano le statistiche dell'anno (K5) e la spinta a invitare un amico.
         if ($prima === 30 && !$omaggio) $corpo .= ' ' . self::numeriDellAnno($s, $a);
-        return [$oggetto, $corpo, 'Vai ad Account & Fatturazione', Support::baseUrl() . '/account'];
+        return [$oggetto, $corpo, self::tt('Vai ad Account & Fatturazione'), Support::baseUrl() . '/account'];
     }
 
     /** K5 · Le aperture dell'anno (e dal QR) con, se ci sono gli inviti, lo sconto già guadagnato o come abbassare il rinnovo. */
@@ -331,10 +356,12 @@ final class Richiami
                                                  WHERE p.account_id = ? AND e.day >= ? AND e.kind IN ($k)", [$s['account_id'], $da], 0);
         $aperture = $conta("'guide_view','open'"); $qr = $conta("'qr_open','qr'");
         $guide = (int) Db::val("SELECT COUNT(*) FROM properties WHERE account_id = ? AND status = 'published' AND archived_at IS NULL", [$s['account_id']], 0);
+        $x = ['{g}' => $guide, '{n}' => $aperture, '{qr}' => $qr];
         $numeri = $aperture > 0
-            ? "In quest'anno " . ($guide === 1 ? 'la tua guida è stata aperta' : "le tue $guide guide sono state aperte") . " $aperture volte" . ($qr > 0 ? ", $qr delle quali dal QR" : '') . '.'
-            : "Quest'anno non abbiamo ancora registrato aperture: controlla che il QR sia in vista e che il link arrivi agli ospiti prima dell'arrivo.";
-        if (Inviti::disponibili() && $a['sconto'] <= 0) $numeri .= ' Puoi ancora abbassare il rinnovo: ogni amico che pubblica con il tuo invito vale il ' . Inviti::PASSO . '% in meno.';
+            ? ($guide === 1 ? ($qr > 0 ? self::tt('In quest\'anno la tua guida è stata aperta {n} volte, {qr} delle quali dal QR.', $x) : self::tt('In quest\'anno la tua guida è stata aperta {n} volte.', $x))
+                            : ($qr > 0 ? self::tt('In quest\'anno le tue {g} guide sono state aperte {n} volte, {qr} delle quali dal QR.', $x) : self::tt('In quest\'anno le tue {g} guide sono state aperte {n} volte.', $x)))
+            : self::tt('Quest\'anno non abbiamo ancora registrato aperture: controlla che il QR sia in vista e che il link arrivi agli ospiti prima dell\'arrivo.');
+        if (Inviti::disponibili() && $a['sconto'] <= 0) $numeri .= ' ' . self::tt('Puoi ancora abbassare il rinnovo: ogni amico che pubblica con il tuo invito vale il {n}% in meno.', ['{n}' => Inviti::PASSO]);
         return $numeri;
     }
 
@@ -371,21 +398,22 @@ final class Richiami
     /** L'avviso prima della scadenza (o, a scadenza passata, che la guida è offline). */
     private static function testoScadenza(array $s, bool $finito): array
     {
-        $quando = Support::date((string) $s['current_period_end']);
+        $quando = self::giorno((string) $s['current_period_end']);
         $piano = (Plans::version((int) $s['package_version_id']) ?? [])['name'] ?? '';
-        $abb = 'il tuo abbonamento MyHouse Welcome' . ($piano !== '' ? ' ' . $piano : '');
+        $abb = $piano !== '' ? self::tt('il tuo abbonamento MyHouse Welcome {piano}', ['{piano}' => $piano]) : self::tt('il tuo abbonamento MyHouse Welcome');
+        $x = ['{abb}' => $abb, '{data}' => $quando];
         if ($finito) {
-            return ['La tua guida è offline',
-                    "$abb è finito il $quando: la guida non si apre più, nemmeno dal QR. Testi, foto e QR sono salvati: appena rinnovi, la guida torna online con lo stesso QR, senza ristampare niente.",
-                    'Rinnova e torna online', Support::baseUrl() . '/piano'];
+            return [self::tt('La tua guida è offline'),
+                    self::tt('{abb} è finito il {data}: la guida non si apre più, nemmeno dal QR. Testi, foto e QR sono salvati: appena rinnovi, la guida torna online con lo stesso QR, senza ristampare niente.', $x),
+                    self::tt('Rinnova e torna online'), Support::baseUrl() . '/piano'];
         }
         $stripe = $s['provider'] === 'stripe';
         $contatto = (string) ((Config::get('legal') ?? [])['contact_email'] ?? '');
-        return ["La tua guida va offline il $quando",
-                "$abb finisce il $quando e non si rinnova da solo. Da quel giorno la guida non si apre più, nemmeno dal QR stampato. Niente si cancella. "
-                . ($stripe ? 'Per restare online riattiva il rinnovo automatico dal tuo account: bastano due clic.'
-                           : 'Per restare online scrivici' . ($contatto !== '' ? " a $contatto" : '') . ': ti diciamo come rinnovare.'),
-                $stripe ? 'Riattiva il rinnovo' : 'Vai al tuo account', Support::baseUrl() . '/account'];
+        return [self::tt('La tua guida va offline il {data}', $x),
+                self::tt('{abb} finisce il {data} e non si rinnova da solo. Da quel giorno la guida non si apre più, nemmeno dal QR stampato. Niente si cancella.', $x) . ' '
+                . ($stripe ? self::tt('Per restare online riattiva il rinnovo automatico dal tuo account: bastano due clic.')
+                           : ($contatto !== '' ? self::tt('Per restare online scrivici a {email}: ti diciamo come rinnovare.', ['{email}' => $contatto]) : self::tt('Per restare online scrivici: ti diciamo come rinnovare.'))),
+                $stripe ? self::tt('Riattiva il rinnovo') : self::tt('Vai al tuo account'), Support::baseUrl() . '/account'];
     }
 
     /**
@@ -406,6 +434,7 @@ final class Richiami
         if (Db::one('SELECT id FROM email_optout WHERE account_id = ? AND kind = ?', [$s['account_id'], $tipo])) {
             return [false, $s['email'] . ' ha chiesto di non ricevere ' . self::TIPI[$tipo] . ': se serve, scrivigli tu.'];
         }
+        self::lingua((int) $s['account_id']);
         $ok = self::manda((int) $s['account_id'], (string) $s['email'], (string) $s['user_name'], $tipo,
                           'manuale-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(3)), $automatico ? self::testoRinnovo($s, $giorniR <= 7 ? 7 : 30) : self::testoScadenza($s, $finito));
         return [$ok, $ok ? 'Promemoria mandato a ' . $s['email'] . '.' : 'L\'email a ' . $s['email'] . ' non è partita: controlla la posta in Impostazioni.'];
@@ -418,8 +447,9 @@ final class Richiami
      * Manda una volta sola: prima si scrive il registro (indice unico), poi l'email.
      * $lingua 'en': il saluto e le parti fisse in inglese (host con il pannello in inglese); il testo $m lo dà chi chiama.
      */
-    public static function manda(int $accountId, string $email, string $nome, string $tipo, string $ref, array $m, string $lingua = 'it'): bool
+    public static function manda(int $accountId, string $email, string $nome, string $tipo, string $ref, array $m, ?string $lingua = null): bool
     {
+        $lingua ??= self::$lin;   // 9N · quella fissata da lingua() prima di comporre il testo
         // 7F: i clienti di prova non ricevono richiami automatici; il promemoria mandato a mano dall'amministrazione sì.
         if (!str_starts_with($ref, 'manuale-') && self::diProva($accountId)) return false;
         // 9H · L'account della vetrina (vetrina_email in config.php) non riceve email.
@@ -444,10 +474,12 @@ final class Richiami
         $paragrafi = explode("\n\n", $saluto . ' ' . $corpo);   // una riga vuota nel testo = un paragrafo nuovo
         // 9H · Le email di pagamento: la frase sulle fatture e il Reply-To all'email amministrazione.
         $pagamento = in_array($tipo, ['rinnovo', 'scadenza', 'pagamento'], true);
-        if ($pagamento) $paragrafi[] = Support::fraseFatture();
-        $piedeHtml = $servizio ? '' : ($dovuta ? 'Questo avviso è dovuto prima di un addebito e non si può disattivare.'
-                   : 'Non vuoi più ricevere ' . $e(self::TIPI[$tipo]) . '? <a href="' . $e($stop) . '" style="color:#6a5b48">Non mandarmene più</a>');
-        $piedeTesto = $servizio ? '' : ($dovuta ? 'Questo avviso è dovuto prima di un addebito e non si può disattivare.' : 'Non vuoi più ricevere ' . self::TIPI[$tipo] . "? $stop");
+        if ($pagamento) $paragrafi[] = Support::fraseFatture($lingua === 'en');
+        $tl = fn(string $it, array $s = []) => Pannello::tIn($lingua, $it, $s);
+        $dovutaT = $tl('Questo avviso è dovuto prima di un addebito e non si può disattivare.');
+        $piedeHtml = $servizio ? '' : ($dovuta ? $dovutaT
+                   : $e($tl('Non vuoi più ricevere {cosa}?', ['{cosa}' => $tl(self::TIPI[$tipo])])) . ' <a href="' . $e($stop) . '" style="color:#6a5b48">' . $e($tl('Non mandarmene più')) . '</a>');
+        $piedeTesto = $servizio ? '' : ($dovuta ? $dovutaT : $tl('Non vuoi più ricevere {cosa}?', ['{cosa}' => $tl(self::TIPI[$tipo])]) . " $stop");
         $invio = fn() => Mailer::inLingua($lingua, fn() => Mailer::send($email, $oggetto . ' — MyHouse Welcome',
             Mailer::testo($oggetto, $paragrafi, $tasto, $nota, $piedeTesto, $scelte), Mailer::layout($oggetto, $paragrafi, $tasto, $nota, $piedeHtml, $scelte)));
         $ok = $pagamento ? Mailer::diPagamento($invio) : $invio();

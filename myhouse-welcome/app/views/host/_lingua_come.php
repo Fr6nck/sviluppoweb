@@ -1,4 +1,4 @@
-<?php
+<?php use function MHW\t, MHW\tf;
 /* 9F · «Una lingua in più, oltre alle cinque di base» (mockup lingua-traduzione, riquadro 1): a cosa serve la lingua in più,
    con due esempi e la riga sui bottoni della guida. I testi stanno in Testi e foto (TestiSito, sezione «Pannello»).
    Con Essential il riquadro dice «2 lingue: la tua e una a scelta», coerente con Entitlements::regolaLingue (8C).

@@ -1,4 +1,4 @@
-<?php
+<?php use function MHW\tf;
 /* Le caselle delle lingue della guida (8C), con le regole del piano (Entitlements::regolaLingue):
      Essential — la principale e UNA seconda a scelta tra tutte: una scelta sola (radio);
      Plus e Portfolio — la principale, le altre lingue di base (caselle) e UNA lingua aggiuntiva (radio).
@@ -33,7 +33,7 @@ $nessuna = fn(array $gruppo) => !array_filter(array_keys($gruppo), $attivaS); ?>
 
 <?php if ($xS <= 0): /* Essential: in tutto $nS lingue, la seconda (e le altre) a scelta tra tutte */ ?>
   <?php if ($nS >= 3): ?>
-    <p class="help" style="margin:0">Fino a <?= $nS ?> lingue in tutto, compresa la principale.</p>
+    <p class="help" style="margin:0"><?= Support::e(tf('Fino a {n} lingue in tutto, compresa la principale.', ['{n}' => $nS])) ?></p>
     <div class="scelte"><?php foreach ($baseS + $aggS as $code => $nome) $casella($code, $nome, 'checkbox'); ?></div>
   <?php elseif ($nS === 2): ?>
     <p class="help" style="margin:0"><?= t('Il tuo piano comprende due lingue: la principale e una seconda, quella che vuoi.') ?></p>
@@ -61,7 +61,7 @@ $nessuna = fn(array $gruppo) => !array_filter(array_keys($gruppo), $attivaS); ?>
       <?php foreach ($aggS as $code => $nome) $casella($code, $nome, 'radio'); ?>
     </div>
   <?php else: ?>
-    <p class="help" style="margin:0">Fino a <?= $xS ?> lingue in più.</p>
+    <p class="help" style="margin:0"><?= Support::e(tf('Fino a {n} lingue in più.', ['{n}' => $xS])) ?></p>
     <div class="scelte"><?php foreach ($aggS as $code => $nome) $casella($code, $nome, 'checkbox'); ?></div>
   <?php endif; ?>
   <p class="small muted" style="margin:0"><?= t('I bottoni e i titoli della guida sono tradotti in olandese, portoghese (del Portogallo e del Brasile) e polacco; per le altre lingue in più l\'ospite li legge in inglese.') ?></p>

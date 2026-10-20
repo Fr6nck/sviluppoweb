@@ -82,8 +82,8 @@ final class Sconti
         }
         $oggi = self::oggi();
         if (!(int) $r['active']) throw new \RuntimeException('Questo codice non è più attivo.');
-        if ($oggi > $r['valid_until']) throw new \RuntimeException('Questo codice è scaduto il ' . self::giorno($r['valid_until']) . '.');
-        if ($oggi < $r['valid_from']) throw new \RuntimeException('Questo codice sarà valido dal ' . self::giorno($r['valid_from']) . '.');
+        if ($oggi > $r['valid_until']) throw new \RuntimeException(strtr(Pannello::t('Questo codice è scaduto il {data}.'), ['{data}' => self::giorno($r['valid_until'])]));
+        if ($oggi < $r['valid_from']) throw new \RuntimeException(strtr(Pannello::t('Questo codice sarà valido dal {data}.'), ['{data}' => self::giorno($r['valid_from'])]));
         if ((int) $r['max_uses'] > 0 && self::utilizzi((int) $r['id']) >= (int) $r['max_uses']) {
             throw new \RuntimeException('Questo codice ha raggiunto il numero massimo di utilizzi.');
         }
@@ -91,7 +91,7 @@ final class Sconti
         if ($pv) {
             $pkg = Db::one('SELECT p.code, p.name FROM packages p JOIN package_versions pv ON pv.package_id = p.id WHERE pv.id = ?', [(int) $pv['id']]);
             $ammessi = self::pacchetti($r);
-            if ($ammessi && $pkg && !in_array($pkg['code'], $ammessi, true)) throw new \RuntimeException('Questo codice non vale per il piano ' . $pkg['name'] . '.');
+            if ($ammessi && $pkg && !in_array($pkg['code'], $ammessi, true)) throw new \RuntimeException(strtr(Pannello::t('Questo codice non vale per il piano {piano}.'), ['{piano}' => $pkg['name']]));
             // Un importo fisso non può portare il prezzo sotto 1 €: lo dice calcola(), qui basta il piano.
         }
         if ($account && Db::one("SELECT id FROM orders WHERE account_id = ? AND status = 'paid'", [(int) $account['id']])) {
@@ -418,7 +418,7 @@ final class Sconti
         $omaggio = $acc ? Omaggi::daUsare($acc) : null;
         if ($acc && !$omaggio && Inviti::disponibili() && ($i = Inviti::invitato((int) $acc['id'])) && $i['status'] === 'registrato'
             && !Db::one("SELECT id FROM orders WHERE account_id = ? AND status = 'paid'", [(int) $acc['id']])) {
-            $out[] = ['tipo' => 'invito', 'nome' => 'Invito di ' . (explode(' ', trim((string) $i['referrer_name']))[0] ?: 'un amico'), 'percento' => Inviti::AMICO];
+            $out[] = ['tipo' => 'invito', 'nome' => strtr(Pannello::t('Invito di {nome}'), ['{nome}' => explode(' ', trim((string) $i['referrer_name']))[0] ?: Pannello::t('un amico')]), 'percento' => Inviti::AMICO];
         }
         if ($acc && !$omaggio && ($g = Giudizi::scontoDiSistema($acc))) $out[] = $g;   // 9N: con l'omaggio, dal primo rinnovo
         return $out;
@@ -452,8 +452,8 @@ final class Sconti
         $righe = []; $nota = ''; $scelta = 'nessuna';
         if ($manuale && $scontoManuale > $scontoSistema) {
             $scelta = 'manuale';
-            $righe[] = ['tipo' => 'codice', 'nome' => 'Codice ' . $manuale['code'], 'percento' => $manuale['kind'] === 'percent' ? (int) $manuale['value'] : 0, 'cents' => $scontoManuale];
-            if ($sistema) $nota = 'Il codice ' . $manuale['code'] . ' non si somma agli altri sconti: vale il più alto.';
+            $righe[] = ['tipo' => 'codice', 'nome' => strtr(Pannello::t('Codice {codice}'), ['{codice}' => $manuale['code']]), 'percento' => $manuale['kind'] === 'percent' ? (int) $manuale['value'] : 0, 'cents' => $scontoManuale];
+            if ($sistema) $nota = strtr(Pannello::t('Il codice {codice} non si somma agli altri sconti: vale il più alto.'), ['{codice}' => $manuale['code']]);
             $sconto = $scontoManuale;
         } elseif ($sistema) {
             $scelta = 'sistema';
@@ -463,13 +463,13 @@ final class Sconti
                 $resto -= $c;
                 $righe[] = $s + ['cents' => $c];
             }
-            if ($manuale) $nota = 'Il codice ' . $manuale['code'] . ' non si somma agli altri sconti e vale meno: non si applica.';
+            if ($manuale) $nota = strtr(Pannello::t('Il codice {codice} non si somma agli altri sconti e vale meno: non si applica.'), ['{codice}' => $manuale['code']]);
             $sconto = $scontoSistema;
         } else {
             $sconto = 0;
         }
-        if ($omaggio && $acc && !empty($acc['intended_discount_code_id'])) $nota = 'Con il codice omaggio non si applicano altri codici sconto né l\'invito di un amico.';
-        if ($omaggio && $acc && !empty($acc['giudizio_adesione'])) $nota = trim($nota . ' Lo sconto del giudizio vale dal primo rinnovo dopo il primo pagamento.');
+        if ($omaggio && $acc && !empty($acc['intended_discount_code_id'])) $nota = Pannello::t('Con il codice omaggio non si applicano altri codici sconto né l\'invito di un amico.');
+        if ($omaggio && $acc && !empty($acc['giudizio_adesione'])) $nota = trim($nota . ' ' . Pannello::t('Lo sconto del giudizio vale dal primo rinnovo dopo il primo pagamento.'));
         return ['prezzo' => $prezzo, 'righe' => $righe, 'sconto' => $sconto, 'totale' => $prezzo - $sconto,
                 'percento' => $scelta === 'sistema' ? $percento : ($scelta === 'manuale' && $manuale['kind'] === 'percent' ? (int) $manuale['value'] : 0),
                 'manuale' => $manuale, 'scelta' => $scelta, 'nota' => $nota, 'sistema' => $sistema,

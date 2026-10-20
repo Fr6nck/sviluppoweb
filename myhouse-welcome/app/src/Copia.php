@@ -114,7 +114,7 @@ final class Copia
 
                 // Le sezioni libere restano al massimo SectionCatalog::LIBERE_MAX anche copiandole.
                 $libere = (int) Db::val("SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = 'custom'", [$a['id']], 0);
-                if ($libere > SectionCatalog::LIBERE_MAX) throw new LimitReached('Una guida ha ' . (SectionCatalog::LIBERE_MAX === 1 ? 'una sola sezione libera' : 'al massimo ' . SectionCatalog::LIBERE_MAX . ' sezioni libere') . ": con questa copia diventerebbero $libere. Togli le sezioni libere dalla scelta.");
+                if ($libere > SectionCatalog::LIBERE_MAX) throw new LimitReached(strtr(Pannello::t(SectionCatalog::LIBERE_MAX === 1 ? 'Una guida ha una sola sezione libera: con questa copia diventerebbero {n}. Togli le sezioni libere dalla scelta.' : 'Una guida ha al massimo {max} sezioni libere: con questa copia diventerebbero {n}. Togli le sezioni libere dalla scelta.'), ['{max}' => SectionCatalog::LIBERE_MAX, '{n}' => $libere]));
 
                 // Il limite delle sezioni del piano vale anche per le copie.
                 $max = Entitlements::limit($accountId, 'sections', 4);

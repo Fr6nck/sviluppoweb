@@ -1,4 +1,4 @@
-<?php
+<?php use function MHW\tf;
 /* La scelta delle lingue (8C: la principale, poi le altre con le regole del piano in _lingue_scelta.php).
    Quelle fuori dal piano si vedono col lucchetto: niente sorprese dopo.
    Riceve: $prop, $lingueAttive, $tutte, $dopoPasso ('' fuori dalla procedura). */

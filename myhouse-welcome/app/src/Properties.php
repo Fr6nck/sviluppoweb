@@ -47,9 +47,10 @@ final class Properties
     public static function cinGiaUsato(array $altra, int $accountId): string
     {
         $mia = (int) $altra['account_id'] === $accountId;
-        return 'Questo CIN è già usato ' . ($mia ? 'dalla tua guida «' . $altra['name'] . '»' : 'da un\'altra guida su MyHouse Welcome') . '. '
-             . 'Una guida corrisponde a un\'unità ricettiva, con il suo indirizzo e il suo CIN: più camere allo stesso indirizzo e con lo stesso CIN sono una guida sola.'
-             . ($mia ? '' : ' Se la struttura è tua, scrivici a ' . (string) ((Config::get('legal') ?? [])['contact_email'] ?? '') . ' e lo sistemiamo.');
+        // 9N · Nella lingua del pannello (frasi intere).
+        return ($mia ? strtr(Pannello::t('Questo CIN è già usato dalla tua guida «{nome}».'), ['{nome}' => $altra['name']]) : Pannello::t('Questo CIN è già usato da un\'altra guida su MyHouse Welcome.')) . ' '
+             . Pannello::t('Una guida corrisponde a un\'unità ricettiva, con il suo indirizzo e il suo CIN: più camere allo stesso indirizzo e con lo stesso CIN sono una guida sola.')
+             . ($mia ? '' : ' ' . strtr(Pannello::t('Se la struttura è tua, scrivici a {email} e lo sistemiamo.'), ['{email}' => (string) ((Config::get('legal') ?? [])['contact_email'] ?? '')]));
     }
 
     /** La tipologia da mostrare: con «Altro» il testo scritto dall'host, se c'è. */
@@ -182,10 +183,10 @@ final class Properties
         $gia = (int) Db::val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND kind = ?', [$propertyId, $kind], 0);
         if (SectionCatalog::multipla($kind) && $gia >= SectionCatalog::LIBERE_MAX) {
             throw new LimitReached(SectionCatalog::LIBERE_MAX === 1 ? 'In una guida c\'è una sola sezione libera: cambia il titolo di quella che hai, oppure scrivi lì anche il resto.'
-                                   : 'Puoi avere al massimo ' . SectionCatalog::LIBERE_MAX . ' sezioni libere in una guida.');
+                                   : strtr(Pannello::t('Puoi avere al massimo {n} sezioni libere in una guida.'), ['{n}' => SectionCatalog::LIBERE_MAX]));
         }
         if (!SectionCatalog::multipla($kind) && $gia > 0) {
-            throw new \RuntimeException('«' . SectionCatalog::nome($kind) . '» c\'è già in questa guida: ogni sezione si aggiunge una volta sola. Se le camere hanno reti Wi-Fi diverse, nella sezione Wi-Fi aggiungi una riga per ogni zona.');
+            throw new \RuntimeException(strtr(Pannello::t('«{sezione}» c\'è già in questa guida: ogni sezione si aggiunge una volta sola. Se le camere hanno reti Wi-Fi diverse, nella sezione Wi-Fi aggiungi una riga per ogni zona.'), ['{sezione}' => SectionCatalog::nome($kind)]));
         }
         return Db::tx(function () use ($accountId, $propertyId, $kind) {
             $pos = (int) Db::val('SELECT COALESCE(MAX(position),0)+1 FROM sections WHERE property_id = ?', [$propertyId], 1);
@@ -534,7 +535,7 @@ final class Properties
             if (Entitlements::limit($accountId, 'lingua_extra', 0) > 0) {
                 throw new \RuntimeException('Il tuo piano comprende la lingua principale, le altre lingue di base e una lingua aggiuntiva: togline una.');
             }
-            throw new PianoLimite('Il tuo piano comprende ' . Entitlements::limit($accountId, 'locales', 1) . ' lingue in tutto: la principale e una a scelta.', 'lingue', 'plus');
+            throw new PianoLimite(strtr(Pannello::t('Il tuo piano comprende {n} lingue in tutto: la principale e una a scelta.'), ['{n}' => Entitlements::limit($accountId, 'locales', 1)]), 'lingue', 'plus');
         }
         Db::tx(function () use ($propertyId, $chieste) {
             Db::run('DELETE FROM property_locales WHERE property_id = ?', [$propertyId]);

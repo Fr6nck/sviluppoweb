@@ -5,6 +5,10 @@
 (function () {
   'use strict';
 
+  // 9N · I testi scritti da qui seguono la lingua del pannello (<html lang>): T('italiano', 'english').
+  var EN = document.documentElement.lang === 'en';
+  var T = function (it, en) { return EN ? en : it; };
+
   // I bottoni che servono solo con JavaScript compaiono solo con JavaScript.
   var nascosti = document.querySelectorAll('[data-togli-riga][hidden],[data-aggiungi-riga][hidden],[data-copia][hidden],[data-copia-da][hidden],[data-ricarica-anteprima][hidden],[data-solo-js][hidden]');
   for (var h = 0; h < nascosti.length; h++) nascosti[h].hidden = false;
@@ -51,7 +55,7 @@
       var testo = da ? da.value : copia.getAttribute('data-copia');
       var fatto = function () {
         var prima = copia.textContent;
-        copia.textContent = copia.getAttribute('data-copiato') || 'Copiato';
+        copia.textContent = copia.getAttribute('data-copiato') || T('Copiato', 'Copied');
         setTimeout(function () { copia.textContent = prima; }, 1600);
       };
       if (navigator.clipboard) navigator.clipboard.writeText(testo).then(fatto, function () {});
@@ -214,15 +218,15 @@
     dati.forEach(function (v, k) { if (v instanceof File) chiavi.push(k); });
     chiavi.forEach(function (k) { dati.delete(k); });
     dati.delete('dopo');
-    mostraQui('Salvataggio…');
+    mostraQui(T('Salvataggio…', 'Saving…'));
     return fetch(form.getAttribute('action') || location.href, {
       method: 'POST', body: dati, credentials: 'same-origin', headers: { 'Accept': 'application/json' }
     }).then(function (r) { return r.json().then(function (j) { return [r.ok, j]; }); })
       .then(function (x) {
-        if (x[0] && x[1].ok) { form._sporco = false; mostraQui(((form.querySelector('[data-stato-salvataggio]') || stato || {}).getAttribute ? (form.querySelector('[data-stato-salvataggio]') || stato).getAttribute('data-salvato') : null) || 'Salvato', true); aggiornaAnteprima(); }
+        if (x[0] && x[1].ok) { form._sporco = false; mostraQui(((form.querySelector('[data-stato-salvataggio]') || stato || {}).getAttribute ? (form.querySelector('[data-stato-salvataggio]') || stato).getAttribute('data-salvato') : null) || T('Salvato', 'Saved'), true); aggiornaAnteprima(); }
         else mostraQui(x[1].errore || 'Non salvato: controlla i campi.');
       })
-      .catch(function () { mostraQui('Non salvato: controlla la connessione, poi premi Salva.'); });
+      .catch(function () { mostraQui(T('Non salvato: controlla la connessione, poi premi Salva.', 'Not saved: check your connection, then press Save.')); });
   }
   var forms = document.querySelectorAll('form[data-autosave]');
   for (var i = 0; i < forms.length; i++) (function (form) {
@@ -230,7 +234,7 @@
     form.addEventListener('input', function (e) {
       if (e.target && (e.target.type === 'file' || e.target.closest('[data-no-autosave]'))) return;
       var statoEl = form.querySelector('[data-stato-salvataggio]') || stato;
-      mostra((statoEl && statoEl.getAttribute('data-non-salvato')) || 'Modifiche non salvate', false, form.querySelector('[data-stato-salvataggio]'));
+      mostra((statoEl && statoEl.getAttribute('data-non-salvato')) || T('Modifiche non salvate', 'Unsaved changes'), false, form.querySelector('[data-stato-salvataggio]'));
       form._sporco = true;
       clearTimeout(timer);
       timer = setTimeout(function () { salva(form); }, 1200);
@@ -295,7 +299,7 @@
       var n = 0;
       for (var i = 0; i < box.length; i++) if (box[i].checked) n++;
       for (var j = 0; j < box.length; j++) box[j].disabled = !box[j].checked && n >= max;
-      if (out) out.textContent = n + ' di ' + max + ' scelte.';
+      if (out) out.textContent = n + T(' di ', ' of ') + max + T(' scelte.', ' chosen.');
     }
     g.addEventListener('change', conta);
     conta();
@@ -394,7 +398,7 @@
       var f = dt.files[0];
       // 9K: una foto HEIC passa: foto-leggere.js la converte, o spiega come caricarla.
       if (accetta[0] && accetta.indexOf(f.type) === -1 && !(/hei[cf]$/i.test(f.type) || /\.hei[cf]$/i.test(f.name))) {
-        pesoEl.textContent = 'Questo tipo di file non va bene qui.';
+        pesoEl.textContent = T('Questo tipo di file non va bene qui.', "This type of file isn't allowed here.");
         zona.classList.add('drop--pieno', 'drop--nuovo'); nome.textContent = f.name; input.value = '';
         return;
       }
@@ -537,7 +541,7 @@
       campi.hidden = si; r.classList.toggle('rip__riga--chiusa', si);
       b.setAttribute('aria-expanded', si ? 'false' : 'true');
       b.querySelector('[data-rip-riassunto]').textContent = si ? (riassunto(r) || 'Riga vuota') : '';
-      b.querySelector('[data-rip-azione]').textContent = si ? 'Apri' : 'Comprimi';
+      b.querySelector('[data-rip-azione]').textContent = si ? T('Apri', 'Open') : T('Comprimi', 'Collapse');
     };
     Array.prototype.forEach.call(tutte(), function (r) {
       var b = r.querySelector('[data-rip-apri]'); if (b) b.hidden = false;
@@ -727,16 +731,16 @@
       ultimo = url;
       var dati = new FormData(); dati.append('url', url);
       var t = form.querySelector('input[name=_csrf]'); if (t) dati.append('_csrf', t.value);
-      if (stato) stato.textContent = 'Leggo il link…';
+      if (stato) stato.textContent = T('Leggo il link…', 'Reading the link…');
       fetch(inp.getAttribute('data-mappe'), { method: 'POST', body: dati, credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
         .then(function (r) { return r.json(); })
         .then(function (j) {
           var fatto = [];
           var nome = form.querySelector('[name=name]'), piedi = form.querySelector('[name=walk_minutes]');
-          if (j.name && nome && nome.value.trim() === '') { nome.value = j.name; fatto.push('il nome'); }
+          if (j.name && nome && nome.value.trim() === '') { nome.value = j.name; fatto.push(T('il nome', 'the name')); }
           if (j.walk_minutes && piedi && !piedi.value) { piedi.value = j.walk_minutes; fatto.push(j.walk_minutes + ' min a piedi (stima, modificabile, in «Altri dettagli»)'); }
           if (stato) stato.textContent = fatto.length ? 'Dal link: ' + fatto.join(', ') + '.'
-            : (j.ok ? 'Link letto. Il resto scrivilo tu.' : 'Dal link non si ricava niente: scrivi tu nome e dettagli.');
+            : (j.ok ? T('Link letto. Il resto scrivilo tu.', 'Link read. Write the rest yourself.') : T('Dal link non si ricava niente: scrivi tu nome e dettagli.', 'Nothing could be read from the link: write the name and details yourself.'));
         })
         .catch(function () { if (stato) stato.textContent = ''; });
     };
@@ -840,7 +844,7 @@
     function aggiorna() {
       var c = cod.value.replace(/\s+/g, ''), s = sc.value.trim().replace(/^[-\u2212]+/, '');
       off.hidden = copia.hidden = c === '';
-      off.textContent = s !== '' ? '\u2212' + s + ' con il codice ' : 'Con il codice ';
+      off.textContent = s !== '' ? '\u2212' + s + T(' con il codice ', ' with the code ') : T('Con il codice ', 'With the code ');
       var b = document.createElement('b'); b.textContent = c; off.appendChild(b);
       avviso.hidden = !(c !== '' && url.value.trim() === '');
     }
@@ -914,25 +918,25 @@
           if (!totale) totale = r.totale || (r.fatte.length + r.restanti);
           r.fatte.forEach(function (f) { fatte++; mettiNellaPagina(f, loc); });
           var perc = totale ? Math.round(fatte * 100 / totale) : 100;
-          statoBarra(stato, perc, lingua + ' · ' + fatte + ' di ' + totale + ' test' + (totale === 1 ? 'o' : 'i'));
+          statoBarra(stato, perc, lingua + ' · ' + fatte + T(' di ', ' of ') + totale + (totale === 1 ? T(' testo', ' text') : T(' testi', ' texts')));
           if (r.stop) {
             var msg = document.createDocumentFragment(); msg.appendChild(document.createTextNode(r.stop + ' '));
-            var ri = document.createElement('button'); ri.type = 'button'; ri.className = 'linkbtn'; ri.textContent = 'Riprova'; ri.addEventListener('click', function () { statoBarra(stato, perc, lingua + ' · riprovo…'); giro(); });
+            var ri = document.createElement('button'); ri.type = 'button'; ri.className = 'linkbtn'; ri.textContent = T('Riprova', 'Try again'); ri.addEventListener('click', function () { statoBarra(stato, perc, lingua + T(' · riprovo…', ' · retrying…')); giro(); });
             msg.appendChild(ri);
-            statoBarra(stato, perc, msg, 'err'); occupato(btn, false, 'Traduci di nuovo'); return;
+            statoBarra(stato, perc, msg, 'err'); occupato(btn, false, T('Traduci di nuovo', 'Translate again')); return;
           }
           if (r.restanti > 0 && r.fatte.length) return giro();
-          statoBarra(stato, 100, 'Fatto: ' + fatte + ' test' + (fatte === 1 ? 'o' : 'i') + '. Controllal' + (fatte === 1 ? 'o' : 'i') + ' e approva.', 'ok');
-          occupato(btn, false, 'Traduci di nuovo');
+          statoBarra(stato, 100, fatte === 1 ? T('Fatto: 1 testo. Controllalo e approva.', 'Done: 1 text. Check it and approve.') : T('Fatto: ' + fatte + ' testi. Controllali e approva.', 'Done: ' + fatte + ' texts. Check them and approve.'), 'ok');
+          occupato(btn, false, T('Traduci di nuovo', 'Translate again'));
           if (fatte) {
             var tutte = document.createElement('button'); tutte.type = 'submit'; tutte.setAttribute('form', 'sugg-f'); tutte.className = 'btn btn--ghost btn--sm'; tutte.name = 'tutte'; tutte.value = '1'; tutte.textContent = 'Approva tutte (' + fatte + ')';
             box.appendChild(tutte);
           }
           setTimeout(function () { stato.hidden = true; }, 3000);
         }).catch(function () {
-          var msg = document.createDocumentFragment(); msg.appendChild(document.createTextNode('La traduzione non ha risposto: riprova. '));
-          var ri = document.createElement('button'); ri.type = 'button'; ri.className = 'linkbtn'; ri.textContent = 'Riprova'; ri.addEventListener('click', giro); msg.appendChild(ri);
-          statoBarra(stato, 0, msg, 'err'); occupato(btn, false, 'Traduci di nuovo');
+          var msg = document.createDocumentFragment(); msg.appendChild(document.createTextNode(T('La traduzione non ha risposto: riprova. ', "The translation didn't respond: try again. ")));
+          var ri = document.createElement('button'); ri.type = 'button'; ri.className = 'linkbtn'; ri.textContent = T('Riprova', 'Try again'); ri.addEventListener('click', giro); msg.appendChild(ri);
+          statoBarra(stato, 0, msg, 'err'); occupato(btn, false, T('Traduci di nuovo', 'Translate again'));
         });
       })();
     });
@@ -955,7 +959,7 @@
             if (r.stop) return ok({ lingua: l, fatte: fatte, errore: r.stop });
             if (r.restanti > 0 && r.fatte.length) return giro();
             ok({ lingua: l, fatte: fatte, errore: '' });
-          }).catch(function () { ok({ lingua: l, fatte: fatte, errore: 'La traduzione non ha risposto.' }); });
+          }).catch(function () { ok({ lingua: l, fatte: fatte, errore: T('La traduzione non ha risposto.', "The translation didn't respond.") }); });
         })();
       });
     }
@@ -973,25 +977,26 @@
           var errori = esiti.filter(function (x) { return x.errore; }), testi = esiti.reduce(function (n, x) { return n + x.fatte; }, 0);
           if (errori.length) {
             var msg = document.createDocumentFragment();
-            msg.appendChild(document.createTextNode(errori.map(function (x) { return x.lingua.nome; }).join(', ') + (errori.length === 1 ? ' non tradotto' : ' non tradotte') + ': ' + errori[0].errore + ' ' + (esiti.length - errori.length > 0 ? 'Le altre ' + (esiti.length - errori.length) + ' lingue sono pronte. ' : '')));
+            msg.appendChild(document.createTextNode(errori.map(function (x) { return x.lingua.nome; }).join(', ') + (errori.length === 1 ? T(' non tradotto', ' not translated') : T(' non tradotte', ' not translated')) + ': ' + errori[0].errore + ' ' + (esiti.length - errori.length > 0 ? T('Le altre ' + (esiti.length - errori.length) + ' lingue sono pronte. ', 'The other ' + (esiti.length - errori.length) + ' languages are ready. ') : '')));
             errori.forEach(function (x) {
-              var ri = document.createElement('button'); ri.type = 'button'; ri.className = 'btn btn--ghost btn--sm'; ri.textContent = 'Riprova ' + x.lingua.nome.toLowerCase();
+              var ri = document.createElement('button'); ri.type = 'button'; ri.className = 'btn btn--ghost btn--sm'; ri.textContent = T('Riprova ', 'Retry ') + (EN ? x.lingua.nome : x.lingua.nome.toLowerCase());
               ri.addEventListener('click', function () { avvia([x.lingua]); }); msg.appendChild(ri);
             });
             statoBarra(stato, Math.round((esiti.length - errori.length) * 100 / esiti.length), msg, 'err');
           } else {
             var ok = document.createDocumentFragment();
-            ok.appendChild(document.createTextNode('Fatto: ' + esiti.length + ' lingu' + (esiti.length === 1 ? 'a' : 'e') + ', ' + testi + ' test' + (testi === 1 ? 'o' : 'i') + '. Controllali e approva: '));
+            ok.appendChild(document.createTextNode(T('Fatto: ' + esiti.length + ' lingu' + (esiti.length === 1 ? 'a' : 'e') + ', ' + testi + ' test' + (testi === 1 ? 'o' : 'i') + '. Controllali e approva: ',
+              'Done: ' + esiti.length + ' language' + (esiti.length === 1 ? '' : 's') + ', ' + testi + ' text' + (testi === 1 ? '' : 's') + '. Check and approve them: ')));
             esiti.forEach(function (x, k) { var a = document.createElement('a'); a.href = x.lingua.pagina; a.textContent = x.lingua.nome; ok.appendChild(a); if (k < esiti.length - 1) ok.appendChild(document.createTextNode(', ')); });
             statoBarra(stato, 100, ok, 'ok');
             var dove = document.createElement('p'); dove.className = 'traduci-esito__lingua'; dove.appendChild(ok.cloneNode(true)); esito.appendChild(dove);
             setTimeout(function () { stato.hidden = true; }, 3000);
           }
-          occupato(btn, false, 'Traduci di nuovo');
+          occupato(btn, false, T('Traduci di nuovo', 'Translate again'));
           return;
         }
         var l = daFare[i];
-        statoBarra(stato, Math.round(i * 100 / daFare.length) + 2, l.nome + ' · ' + (i + 1) + ' di ' + daFare.length + ' lingu' + (daFare.length === 1 ? 'a' : 'e'));
+        statoBarra(stato, Math.round(i * 100 / daFare.length) + 2, l.nome + ' · ' + (i + 1) + T(' di ', ' of ') + daFare.length + (daFare.length === 1 ? T(' lingua', ' language') : T(' lingue', ' languages')));
         unaLingua(l, mostraCampo).then(function (r) { esiti.push(r); i++; prossima(); });
       })();
     }

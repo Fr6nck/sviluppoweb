@@ -1,4 +1,4 @@
-<?php
+<?php use function MHW\tf;
 /* La barra delle azioni della procedura: la stessa in ogni passo, fissa in
    basso sul telefono. Indietro a sinistra, a destra lo stato del salvataggio
    automatico e il passo successivo.

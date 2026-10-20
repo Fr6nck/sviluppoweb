@@ -426,7 +426,7 @@ final class Guide
         if ((int) $p['is_demo'] === 0 && array_key_exists('cin', $p)) {
             $cin = trim((string) $p['cin']);
             if ($cin === '') $out[] = 'Manca il CIN (Codice Identificativo Nazionale) della struttura: è obbligatorio per legge e identifica la guida. Scrivilo nei dati della struttura.';
-            elseif (!Properties::cinValido($cin)) $out[] = 'Il CIN «' . $cin . '» non sembra completo: comincia con IT seguito dal codice del comune, come IT054001C2XXXXXXXX.';
+            elseif (!Properties::cinValido($cin)) $out[] = strtr(Pannello::t('Il CIN «{cin}» non sembra completo: comincia con IT seguito dal codice del comune, come IT054001C2XXXXXXXX.'), ['{cin}' => $cin]);
             elseif (($altra = Properties::cinInUso($cin, $propertyId))) $out[] = Properties::cinGiaUsato($altra, $accountId);
         }
         $core = Db::one('SELECT * FROM sections WHERE property_id = ? AND is_core = 1', [$propertyId]);

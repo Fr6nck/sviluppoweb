@@ -1,4 +1,4 @@
-<?php
+<?php use function MHW\tf;
 /* La procedura guidata: cinque passi, ognuno salva da sé. Avanti, indietro,
    "continua dopo": quello che è scritto resta. A destra l'anteprima vera.
    Le lingue in più sono in fondo all'ultimo passo, facoltative. */
@@ -92,35 +92,34 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
 
     <?php if ($problemi): ?>
       <div class="note note--err" role="alert"><div class="stack" style="gap:6px"><b><?= t('Prima di pubblicare') ?></b>
-        <?php foreach ($problemi as $pr): ?><span><?= Support::e($pr) ?></span><?php endforeach; ?></div></div>
+        <?php foreach ($problemi as $pr): ?><span><?= Support::e(t($pr)) ?></span><?php endforeach; ?></div></div>
     <?php endif; ?>
 
     <div class="panel stack">
       <?php if ($sub): ?>
-        <p>Il tuo abbonamento <b><?= Support::e($piano['name'] ?? '') ?></b> è attivo<?= $sub['current_period_end'] ? ' fino al ' . Support::e(Support::date($sub['current_period_end'])) : '' ?>:
-          la guida si pubblica subito, senza nuovi pagamenti.</p>
+        <p><?= $sub['current_period_end'] ? tf('Il tuo abbonamento {piano} è attivo fino al {data}: la guida si pubblica subito, senza nuovi pagamenti.', ['{piano}' => '<b>' . Support::e($piano['name'] ?? '') . '</b>', '{data}' => Support::e(MHW\Pannello::data($sub['current_period_end']))])
+                                         : tf('Il tuo abbonamento {piano} è attivo: la guida si pubblica subito, senza nuovi pagamenti.', ['{piano}' => '<b>' . Support::e($piano['name'] ?? '') . '</b>']) ?></p>
       <?php elseif ($piano): $qSc = Plans::perProperty($piano) ? $quantita : 1;
             /* 9A · Il conto del primo anno: sconti di sistema sommati (invito, giudizio) o il codice scritto a mano. */
             $riep = MHW\Sconti::disponibili() ? MHW\Sconti::riepilogo($piano, $qSc, $acc) : null; $sc = $riep && $riep['sconto'] > 0 ? $riep : null;
-            $om = $riep['omaggio'] ?? null; $dataOm = $om ? Support::date(gmdate('Y-m-d\TH:i:s\Z', $om['fine'])) : ''; ?>
+            $om = $riep['omaggio'] ?? null; $dataOm = $om ? MHW\Pannello::data(gmdate('Y-m-d\TH:i:s\Z', $om['fine'])) : ''; ?>
         <div class="spread spread--mid">
-          <div class="stack" style="gap:4px"><span class="kicker">Il tuo piano</span>
-            <b style="font-size:22px;font-weight:500">Hai scelto <?= Support::e($piano['name']) ?><?= Plans::perProperty($piano) ? ' · ' . $quantita . ' strutture' : '' ?></b></div>
-          <span style="font-size:26px;font-weight:500"><?php if ($om): /* 9D · con il codice omaggio oggi si paga 0 € */ ?>0&nbsp;€<span class="small muted"> oggi</span>
+          <div class="stack" style="gap:4px"><span class="kicker"><?= t('Il tuo piano') ?></span>
+            <b style="font-size:22px;font-weight:500"><?= Support::e(tf('Hai scelto {piano}', ['{piano}' => $piano['name']])) ?><?= Plans::perProperty($piano) ? ' · ' . Support::e(tf('{n} strutture', ['{n}' => $quantita])) : '' ?></b></div>
+          <span style="font-size:26px;font-weight:500"><?php if ($om): /* 9D · con il codice omaggio oggi si paga 0 € */ ?>0&nbsp;€<span class="small muted"> <?= t('oggi') ?></span>
             <?php elseif ($sc): ?><s class="muted" style="font-size:18px"><?= Support::e(Support::money($sc['prezzo'], $piano['currency'])) ?></s>
-            <?= Support::e(Support::money($sc['totale'], $piano['currency'])) ?><span class="small muted"> + IVA il primo anno</span>
+            <?= Support::e(Support::money($sc['totale'], $piano['currency'])) ?><span class="small muted"> <?= t('+ IVA il primo anno') ?></span>
             <?php else: ?><?= Support::e(Support::money(Plans::price($piano, $qSc), $piano['currency'])) ?>
-            <span class="small muted">+ IVA / anno</span><?php endif; ?></span>
+            <span class="small muted"><?= t('+ IVA / anno') ?></span><?php endif; ?></span>
         </div>
-        <?php if ($sc && !$om): ?><p class="plan__sconto-riga" style="margin:0">−<?= $sc['percento'] > 0 ? (int) $sc['percento'] . '%' : Support::e(Support::money($sc['sconto'], $piano['currency'])) ?> primo anno</p><?php endif; ?>
+        <?php if ($sc && !$om): ?><p class="plan__sconto-riga" style="margin:0">−<?= $sc['percento'] > 0 ? (int) $sc['percento'] . '%' : Support::e(Support::money($sc['sconto'], $piano['currency'])) ?> <?= t('primo anno') ?></p><?php endif; ?>
         <?php if ($om): ?>
-          <div class="spiega omaggio-spiega" role="status"><b>Oggi paghi 0 €.</b> I tuoi primi <b><?= (int) $om['mesi'] ?> mesi sono gratis</b>: il primo addebito di <b><?= Support::e(Support::money($riep['totale'], $piano['currency'])) ?> + IVA</b> sarà il <b><?= Support::e($dataOm) ?></b>.
-            Prima ti avvisiamo due volte, per email e nel pannello, 30 e 7 giorni prima. Puoi disattivare il rinnovo quando vuoi da Account &amp; Fatturazione: fino al <?= Support::e($dataOm) ?> la guida resta online e non paghi nulla; senza disattivazione l'abbonamento parte da solo.</div>
+          <div class="spiega omaggio-spiega" role="status"><b><?= t('Oggi paghi 0 €.') ?></b> <?= tf('I tuoi primi {n} mesi sono gratis: il primo addebito di {prezzo} sarà il {data}.', ['{n}' => '<b>' . (int) $om['mesi'] . '</b>', '{prezzo}' => '<b>' . Support::e(Support::money($riep['totale'], $piano['currency'])) . ' ' . t('+ IVA') . '</b>', '{data}' => '<b>' . Support::e($dataOm) . '</b>']) ?>
+            <?= Support::e(tf('Prima ti avvisiamo due volte, per email e nel pannello, 30 e 7 giorni prima. Puoi disattivare il rinnovo quando vuoi da Account & Fatturazione: fino al {data} la guida resta online e non paghi nulla; senza disattivazione l\'abbonamento parte da solo.', ['{data}' => $dataOm])) ?></div>
         <?php endif; ?>
         <?php if ($riep): $pv = $piano; $quantita = $qSc; include __DIR__ . '/_riepilogo.php'; endif; ?>
         <?php $pv = $piano; $quantita = $qSc; $torna = '/pannello/' . $pid . '/procedura/pubblica'; $soloCampo = true; include __DIR__ . '/_sconto.php'; ?>
-        <p class="small muted">Abbonamento annuale con rinnovo automatico, che puoi disattivare quando vuoi. Il pagamento avviene su Stripe;
-          la guida va online appena Stripe conferma.</p>
+        <p class="small muted"><?= t('Abbonamento annuale con rinnovo automatico, che puoi disattivare quando vuoi. Il pagamento avviene su Stripe; la guida va online appena Stripe conferma.') ?></p>
         <?php /* 7B: prima di pagare si può passare a un altro piano, anche più economico; se perde qualcosa che la guida usa, lo si dice prima. */
               $altriPiani = array_values(array_filter(Plans::public(), fn($o) => (int) $o['id'] !== (int) $piano['package_id']));
               $nStrutture = (int) MHW\Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL AND is_demo < 2', [$acc['id']], 1);
@@ -131,18 +130,18 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
                   $prezzoO = Plans::price($o, $qO); $menoCaro = $prezzoO < Plans::price($piano, $qSc);
                   $cambia = $menoCaro ? MHW\CambioAbbonamento::cosaCambia((int) $acc['id'], ['id' => (int) $o['pv_id']] + $o, $qO) : null;
                   $perdite = $cambia ? array_merge($cambia['perde'],
-                      array_map(fn($x) => '«' . $x['struttura']['name'] . '» ha ' . count($x['sezioni']) . ' sezioni attive: con ' . $o['name'] . ' ne restano ' . $cambia['maxSezioni'] . ', e prima di pubblicare scegli quali.', $cambia['sezioni']),
-                      $cambia['daArchiviare'] ? [$o['name'] . ' comprende ' . $cambia['maxStrutture'] . ' struttur' . ($cambia['maxStrutture'] === 1 ? 'a' : 'e') . ': le altre restano in bozza.'] : []) : [];
-                  $etichettaO = 'Passa a ' . $o['name'] . ' · ' . Support::money($prezzoO, $o['currency']) . ' + IVA / anno';
+                      array_map(fn($x) => tf('«{nome}» ha {n} sezioni attive: con {piano} ne restano {max}, e prima di pubblicare scegli quali.', ['{nome}' => $x['struttura']['name'], '{n}' => count($x['sezioni']), '{piano}' => $o['name'], '{max}' => $cambia['maxSezioni']]), $cambia['sezioni']),
+                      $cambia['daArchiviare'] ? [$cambia['maxStrutture'] === 1 ? tf('{piano} comprende 1 struttura: le altre restano in bozza.', ['{piano}' => $o['name']]) : tf('{piano} comprende {n} strutture: le altre restano in bozza.', ['{piano}' => $o['name'], '{n}' => $cambia['maxStrutture']])] : []) : [];
+                  $etichettaO = tf('Passa a {piano} · {prezzo} + IVA / anno', ['{piano}' => $o['name'], '{prezzo}' => Support::money($prezzoO, $o['currency'])]);
                   $modulo = '<form method="post" action="' . b() . '/piano" style="margin:0">' . Csrf::field() . '<input type="hidden" name="pv" value="' . (int) $o['pv_id'] . '">'
                           . (Plans::perProperty($o) ? '<input type="hidden" name="strutture" value="' . $qO . '">' : '') . '<input type="hidden" name="torna" value="' . Support::e($torna) . '">'; ?>
               <?php if ($perdite): ?>
                 <details class="passa-piano__conferma">
                   <summary class="btn btn--ghost btn--sm"><?= Support::e($etichettaO) ?></summary>
                   <div class="stack" style="gap:8px;margin-top:10px">
-                    <p class="small" style="margin:0"><b>Con <?= Support::e($o['name']) ?> la guida non mostrerà:</b></p>
-                    <ul class="small" style="margin:0;padding-left:18px"><?php foreach ($perdite as $x): ?><li><?= Support::e($x) ?></li><?php endforeach; ?></ul>
-                    <?= $modulo ?><button class="btn btn--sm">Conferma: passa a <?= Support::e($o['name']) ?></button></form>
+                    <p class="small" style="margin:0"><b><?= Support::e(tf('Con {piano} la guida non mostrerà:', ['{piano}' => $o['name']])) ?></b></p>
+                    <ul class="small" style="margin:0;padding-left:18px"><?php foreach ($perdite as $x): ?><li><?= Support::e(t($x)) ?></li><?php endforeach; ?></ul>
+                    <?= $modulo ?><button class="btn btn--sm"><?= Support::e(tf('Conferma: passa a {piano}', ['{piano}' => $o['name']])) ?></button></form>
                   </div>
                 </details>
               <?php else: ?>
@@ -152,18 +151,18 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
           </div>
         <?php endif; ?>
         <?php if (!$verificato): ?>
-          <div class="note" role="status"><span>Per attivare l'abbonamento conferma prima la tua email (<?= Support::e($user['email']) ?>).</span></div>
-          <form method="post" action="<?= b() ?>/verifica/invia" style="margin:0"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm">Mandami di nuovo l'email</button></form>
+          <div class="note" role="status"><span><?= Support::e(tf('Per attivare l\'abbonamento conferma prima la tua email ({email}).', ['{email}' => $user['email']])) ?></span></div>
+          <form method="post" action="<?= b() ?>/verifica/invia" style="margin:0"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm"><?= t('Mandami di nuovo l\'email') ?></button></form>
         <?php endif; ?>
         <?php if (!MHW\Fatturazione::completa($acc)): /* 7B: lo stesso modulo di Account & Fatturazione, qui, sopra «Conferma e paga». */ ?>
           <section class="stack fatt-pubblica" id="fatturazione" style="gap:12px" aria-labelledby="fatt-pubblica-titolo">
-            <h2 id="fatt-pubblica-titolo" style="font-size:20px;margin:0">I dati per la fattura</h2>
-            <p class="small muted" style="margin:0">Servono per la fattura o la ricevuta. Potrai cambiarli quando vuoi in Account &amp; Fatturazione.</p>
+            <h2 id="fatt-pubblica-titolo" style="font-size:20px;margin:0"><?= t('I dati per la fattura') ?></h2>
+            <p class="small muted" style="margin:0"><?= t('Servono per la fattura o la ricevuta. Potrai cambiarli quando vuoi in Account &amp; Fatturazione.') ?></p>
             <?php $torna = '/pannello/' . $pid . '/procedura/pubblica'; include __DIR__ . '/_fatturazione_form.php'; ?>
           </section>
         <?php endif; ?>
       <?php else: ?>
-        <p>Scegli il piano con cui pubblicare. <a href="<?= b() ?>/piano">Vedi i piani</a></p>
+        <p><?= t('Scegli il piano con cui pubblicare.') ?> <a href="<?= b() ?>/piano"><?= t('Vedi i piani') ?></a></p>
       <?php endif; ?>
 
     </div>
@@ -173,13 +172,13 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
           if ($incomplete): $nomiLI = MHW\Config::get('locales'); ?>
       <div class="note" role="status"><div class="stack" style="gap:4px"><b><?= t('Lingue da completare') ?></b>
         <?php foreach ($incomplete as $lm => $quanti): ?>
-          <span><a href="<?= b() ?>/pannello/<?= $pid ?>/lingue/<?= Support::e($lm) ?>"><?= Support::e($nomiLI[$lm] ?? $lm) ?></a>: <?= (int) $quanti ?> camp<?= $quanti === 1 ? 'o' : 'i' ?> da tradurre. Dove manca, l'ospite legge la lingua principale.</span>
+          <span><a href="<?= b() ?>/pannello/<?= $pid ?>/lingue/<?= Support::e($lm) ?>"><?= Support::e($nomiLI[$lm] ?? $lm) ?></a>: <?= Support::e($quanti === 1 ? t('1 campo da tradurre. Dove manca, l\'ospite legge la lingua principale.') : tf('{n} campi da tradurre. Dove manca, l\'ospite legge la lingua principale.', ['{n}' => (int) $quanti])) ?></span>
         <?php endforeach; ?></div></div>
             <?php /* 9F · «Traduci tutta la guida»: una lingua per volta, con la barra (solo con JavaScript e con le suggerite nel piano) */
               if (MHW\Traduttore::perche((int) $prop['account_id'], $prop) === ''): $lingueW = array_map(fn($lm) => ['loc' => $lm, 'nome' => ucfirst(MHW\I18n::nomeIt($lm)),
                   'url' => b() . '/pannello/' . $pid . '/lingue/' . $lm . '/suggerite.json', 'pagina' => b() . '/pannello/' . $pid . '/lingue/' . $lm], array_keys($incomplete)); ?>
           <div class="traduci-sezione" data-traduci-sezione="0" data-lingue="<?= Support::e(json_encode($lingueW, JSON_UNESCAPED_UNICODE)) ?>" data-csrf="<?= Support::e(Csrf::token()) ?>" hidden>
-            <button type="button" class="btn btn--sm" data-traduci-avvia><?= Icon::svg('globe', 15) ?> <span data-traduci-etichetta>Traduci tutta la guida in <?= count($incomplete) ?> lingu<?= count($incomplete) === 1 ? 'a' : 'e' ?></span></button>
+            <button type="button" class="btn btn--sm" data-traduci-avvia><?= Icon::svg('globe', 15) ?> <span data-traduci-etichetta><?= Support::e(count($incomplete) === 1 ? t('Traduci tutta la guida in 1 lingua') : tf('Traduci tutta la guida in {n} lingue', ['{n}' => count($incomplete)])) ?></span></button>
             <div class="traduci-stato" data-traduci-stato hidden role="status" aria-live="polite"><span class="traduci-stato__barra"><i></i></span><p class="small" data-traduci-testo style="margin:0"></p></div>
             <div class="traduci-esito" data-traduci-esito></div>
           </div>
@@ -199,22 +198,21 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
 
     <?php if (!empty($codici)): /* 6M: codici di accesso, conferma a proprio rischio (vale solo per questa pubblicazione) */ ?>
       <section class="codici-conferma" id="codici" role="alertdialog" aria-labelledby="codici-titolo" aria-describedby="codici-testo" tabindex="-1">
-        <h2 id="codici-titolo"><?= Icon::svg('lock', 20) ?>Nella guida ci sono codici di accesso</h2>
+        <h2 id="codici-titolo"><?= Icon::svg('lock', 20) ?><?= t('Nella guida ci sono codici di accesso') ?></h2>
         <ul class="codici-conferma__campi">
           <?php foreach ($codici as $c): $dove = $c['lingua'] === $prop['default_locale'] ? '/pannello/' . $pid . '/sezioni/' . $c['sid'] : '/pannello/' . $pid . '/lingue/' . $c['lingua']; ?>
             <li><span><b><?= Support::e($c['sezione']) ?></b> · <?= Support::e($c['campo']) ?><?= $c['lingua'] !== $prop['default_locale'] ? ' <span class="small muted">(' . Support::e(strtoupper($c['lingua'])) . ')</span>' : '' ?></span>
-              <a href="<?= b() . $dove ?>">Correggi</a></li>
+              <a href="<?= b() . $dove ?>"><?= t('Correggi') ?></a></li>
           <?php endforeach; ?>
         </ul>
-        <p id="codici-testo">Chi ha il link o il QR della guida può leggerli, anche dopo la partenza, e il link si può inoltrare. Ti consigliamo di toglierli e comunicarli
-          all'ospite in privato. Se pubblichi lo stesso, lo fai a tuo rischio: MyHouse Welcome non risponde dell'uso di questi codici.</p>
+        <p id="codici-testo"><?= t('Chi ha il link o il QR della guida può leggerli, anche dopo la partenza, e il link si può inoltrare. Ti consigliamo di toglierli e comunicarli all\'ospite in privato. Se pubblichi lo stesso, lo fai a tuo rischio: MyHouse Welcome non risponde dell\'uso di questi codici.') ?></p>
         <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/pubblica" class="stack" style="gap:16px;margin:0" data-codici-conferma><?= Csrf::field() ?>
-          <label class="check"><input type="checkbox" name="codici_ok" value="1" required data-codici-ok> <span>Ho capito, pubblico a mio rischio</span></label>
+          <label class="check"><input type="checkbox" name="codici_ok" value="1" required data-codici-ok> <span><?= t('Ho capito, pubblico a mio rischio') ?></span></label>
           <div class="row" style="gap:12px">
-            <a class="btn" href="<?= b() ?>/pannello/<?= $pid ?>/<?= $codici[0]['lingua'] === $prop['default_locale'] ? 'sezioni/' . $codici[0]['sid'] : 'lingue/' . $codici[0]['lingua'] ?>">Torna a correggere</a>
-            <button class="btn btn--ghost" data-codici-vai disabled>Pubblica lo stesso</button>
+            <a class="btn" href="<?= b() ?>/pannello/<?= $pid ?>/<?= $codici[0]['lingua'] === $prop['default_locale'] ? 'sezioni/' . $codici[0]['sid'] : 'lingue/' . $codici[0]['lingua'] ?>"><?= t('Torna a correggere') ?></a>
+            <button class="btn btn--ghost" data-codici-vai disabled><?= t('Pubblica lo stesso') ?></button>
             <?php /* senza JavaScript il bottone resta attivo: la casella è obbligatoria e il server la controlla */ ?>
-            <noscript><style>[data-codici-vai]{display:none}</style><button class="btn btn--ghost">Pubblica lo stesso</button></noscript>
+            <noscript><style>[data-codici-vai]{display:none}</style><button class="btn btn--ghost"><?= t('Pubblica lo stesso') ?></button></noscript>
           </div>
         </form>
         <script>
@@ -234,15 +232,15 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
       <?php if (!$sub && $piano): /* 8J · chi acquista, prima del primo pagamento: impresa o privato (con la richiesta di iniziare subito) */
             $acqS = (array) ($_SESSION['acquisto'] ?? []); ?>
         <fieldset class="fieldset stack acquisto" id="acquisto" style="gap:10px;margin:0 0 16px">
-          <legend class="legend">Chi acquista?</legend>
+          <legend class="legend"><?= t('Chi acquista?') ?></legend>
           <label class="check"><input type="radio" name="acquirente" value="impresa" required data-acquirente<?= ($acqS['acquirente'] ?? '') === 'impresa' ? ' checked' : '' ?>>
-            <span>Acquisto per la mia attività ricettiva (impresa o professionista)</span></label>
+            <span><?= t('Acquisto per la mia attività ricettiva (impresa o professionista)') ?></span></label>
           <label class="check"><input type="radio" name="acquirente" value="consumatore" required data-acquirente<?= ($acqS['acquirente'] ?? '') === 'consumatore' ? ' checked' : '' ?>>
-            <span>Acquisto come privato</span></label>
+            <span><?= t('Acquisto come privato') ?></span></label>
           <div class="acquisto__privato stack" style="gap:6px" data-acquisto-privato>
             <label class="check" style="align-items:flex-start"><input type="checkbox" name="recesso_rinuncia" value="1" data-recesso style="margin-top:1px"<?= !empty($acqS['rinuncia']) ? ' checked' : '' ?>>
-              <span>Chiedo che il servizio inizi subito e so che, pubblicata la guida, perdo il diritto di recesso per il periodo già goduto</span></label>
-            <p class="help" style="margin:0">Solo per i privati, ed è obbligatoria per pubblicare subito. Come privato hai 14 giorni per recedere: <a href="<?= b() ?>/termini#recesso" target="_blank" rel="noopener">come funziona</a>.</p>
+              <span><?= t('Chiedo che il servizio inizi subito e so che, pubblicata la guida, perdo il diritto di recesso per il periodo già goduto') ?></span></label>
+            <p class="help" style="margin:0"><?= t('Solo per i privati, ed è obbligatoria per pubblicare subito. Come privato hai 14 giorni per recedere:') ?> <a href="<?= b() ?>/termini#recesso" target="_blank" rel="noopener"><?= t('come funziona') ?></a>.</p>
           </div>
         </fieldset>
         <?php /* 9B/9L · «Giudizio con sconto»: una sola casella, mai pre-spuntata, solo con l'interruttore acceso e se non ha mai aderito
@@ -251,12 +249,12 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
               $giudizioPuo = MHW\Giudizi::attivo() && !(MHW\Omaggi::disponibili() && MHW\Omaggi::daUsare($acc)) && (MHW\Giudizi::puoAderire($acc) || (($acc['giudizio_adesione'] ?? '') === 'pagamento' && ($acc['giudizio_sconto_stato'] ?? '') === 'promesso'));
               if ($giudizioPuo): $giudizioSi = ($acc['giudizio_adesione'] ?? '') === 'pagamento'; ?>
           <fieldset class="fieldset stack giudizio-sconto" id="giudizio-sconto" style="gap:8px;margin:0 0 16px" data-giudizio-sconto data-torna="/pannello/<?= $pid ?>/procedura/pubblica">
-            <legend class="legend">Giudizio con sconto <span class="badge badge--pine">−<?= MHW\Giudizi::percentuale() ?>%</span></legend>
+            <legend class="legend"><?= t('Giudizio con sconto') ?> <span class="badge badge--pine">−<?= MHW\Giudizi::percentuale() ?>%</span></legend>
             <input type="hidden" name="giudizio_casella" value="1">
             <label class="check" style="align-items:flex-start"><input type="checkbox" name="giudizio_adesione" value="1" data-giudizio-casella style="margin-top:1px"<?= $giudizioSi ? ' checked' : '' ?>>
               <span><?= MHW\Giudizi::casellaHtml() /* 9L · il testo unico di «Testi e foto» (giudizio.casella) */ ?></span></label>
-            <p class="help giudizio-sconto__spiega" style="margin:0"><?= Support::e(trim(MHW\Giudizi::spiegaQuando() . ' ' . MHW\Giudizi::spiegone())) ?> Regole complete nei <a href="<?= b() ?>/termini#giudizio-sconto" target="_blank" rel="noopener">Termini</a>, punto «Giudizio con sconto».</p>
-            <noscript><button class="btn btn--ghost btn--sm" formaction="<?= b() ?>/giudizio/adesione" formmethod="post" name="torna" value="/pannello/<?= $pid ?>/procedura/pubblica">Aggiorna il riepilogo</button></noscript>
+            <p class="help giudizio-sconto__spiega" style="margin:0"><?= Support::e(trim(MHW\Giudizi::spiegaQuando() . ' ' . MHW\Giudizi::spiegone())) ?> Regole complete nei <a href="<?= b() ?>/termini#giudizio-sconto" target="_blank" rel="noopener"><?= t('Termini') ?></a><?= t(', punto «Giudizio con sconto».') ?></p>
+            <noscript><button class="btn btn--ghost btn--sm" formaction="<?= b() ?>/giudizio/adesione" formmethod="post" name="torna" value="/pannello/<?= $pid ?>/procedura/pubblica"><?= t('Aggiorna il riepilogo') ?></button></noscript>
           </fieldset>
           <script>
           /* Spuntata o tolta: si salva subito e la pagina si ricarica con il riepilogo aggiornato (senza JavaScript: «Aggiorna il riepilogo», o all'invio). */
@@ -287,14 +285,14 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
       <?php endif; ?>
       <?php /* 9D · con l'omaggio l'obbligo di pagare sta sul bottone (art. 65 Codice del Consumo): «0 € oggi, X € + IVA il …» */
             $omB = !$sub && $piano && !empty($riep['omaggio']) ? $riep : null;
-            $etichettaB = $sub ? t('Pubblica ora') : ($omB ? 'Inserisci la carta e pubblica <small class="btn__sotto">0 € oggi · ' . Support::e(Support::money($omB['totale'], $piano['currency'])) . ' + IVA il ' . Support::e(Support::date(gmdate('Y-m-d\TH:i:s\Z', $omB['omaggio']['fine']))) . '</small>' : 'Conferma e paga');
+            $etichettaB = $sub ? t('Pubblica ora') : ($omB ? t('Inserisci la carta e pubblica') . ' <small class="btn__sotto">' . Support::e(tf('0 € oggi · {prezzo} + IVA il {data}', ['{prezzo}' => Support::money($omB['totale'], $piano['currency']), '{data}' => MHW\Pannello::data(gmdate('Y-m-d\TH:i:s\Z', $omB['omaggio']['fine']))])) . '</small>' : t('Conferma e paga'));
             $spentoB = $problemi || (!$sub && (!$verificato || !$piano || !MHW\Fatturazione::completa($acc)));
             $barraAvanti = '<button class="btn btn--go' . ($omB ? ' btn--due-righe' : '') . '" ' . ($spentoB ? 'disabled' : '') . '>'
                          . $etichettaB . ' <span class="go">' . Icon::svg('arrow', 18, 2) . '</span></button>';
             /* Con la chiave pubblicabile di Stripe: il bottone apre il modulo della carta nel pannello; la pagina di Stripe resta a un clic. */
             if (!$sub && $piano && MHW\Stripe::incorporato()): ?>
-      <p class="small muted pagamento-modi"><?= Icon::svg('lock', 14) ?><span>Paghi qui con la carta di credito o di debito, nel modulo sicuro di Stripe: i dati della carta non passano dal nostro sito.
-        <button class="linkbtn" name="modo" value="stripe"<?= $spentoB ? ' disabled' : '' ?>>Preferisci pagare sulla pagina di Stripe?</button></span></p>
+      <p class="small muted pagamento-modi"><?= Icon::svg('lock', 14) ?><span><?= t('Paghi qui con la carta di credito o di debito, nel modulo sicuro di Stripe: i dati della carta non passano dal nostro sito.') ?>
+        <button class="linkbtn" name="modo" value="stripe"<?= $spentoB ? ' disabled' : '' ?>><?= t('Preferisci pagare sulla pagina di Stripe?') ?></button></span></p>
 <?php       endif;
             include __DIR__ . '/_barra_passo.php'; ?>
     </form>

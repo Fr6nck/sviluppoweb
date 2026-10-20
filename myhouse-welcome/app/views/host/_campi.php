@@ -1,4 +1,4 @@
-<?php
+<?php use function MHW\tf;
 /* I campi di una sezione, disegnati dal catalogo. Passaggi ed elenchi sono
    righe vere: una casella per voce, "+ Aggiungi" per la prossima. Niente
    sintassi da imparare.
@@ -133,7 +133,7 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
         <div class="r pillola-r">
           <input type="text" name="<?= Support::e($nome) ?>[]" value="<?= Support::e((string) $riga) ?>" maxlength="80" size="<?= max(8, min(28, mb_strlen((string) $riga) + 2)) ?>"
                  aria-label="<?= Support::e($etichetta) ?>, voce <?= $i + 1 ?>" placeholder="<?= $riga === '' ? t('Per esempio: giochi da tavolo') : '' ?>">
-          <button type="button" class="pillola-r__togli" data-togli-riga aria-label="Togli questa dotazione" hidden>&times;</button>
+          <button type="button" class="pillola-r__togli" data-togli-riga aria-label="<?= MHW\Support::e(t('Togli questa dotazione')) ?>" hidden><?= t('&times;') ?></button>
         </div>
       <?php endforeach; ?>
     </div>
@@ -152,7 +152,7 @@ foreach (SectionCatalog::fields($kind) as $nome => $defCampo):
           <?php if ($tipo === 'steps'): ?><span class="num" aria-hidden="true"><?= $i + 1 ?></span><?php endif; ?>
           <input type="text" name="<?= Support::e($nome) ?>[]" value="<?= Support::e((string) $riga) ?>" maxlength="600"
                  aria-label="<?= Support::e($etichetta) ?>, voce <?= $i + 1 ?>">
-          <button type="button" class="icon-btn" data-togli-riga aria-label="Togli questa voce" hidden>&times;</button>
+          <button type="button" class="icon-btn" data-togli-riga aria-label="<?= MHW\Support::e(t('Togli questa voce')) ?>" hidden><?= t('&times;') ?></button>
         </div>
       <?php endforeach; ?>
     </div>

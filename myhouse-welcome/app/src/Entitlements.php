@@ -201,7 +201,7 @@ final class Entitlements
         $troppe = array_diff($lingue, self::lingueGuida($accountId, $principaleP, $lingue));
         if ($troppe) {
             $nomi = array_map(fn($l) => Config::get('locales')[$l] ?? $l, $troppe);
-            $fuori[] = 'Il piano non comprende: ' . implode(', ', $nomi) . '. Togli queste lingue da quelle della guida.';
+            $fuori[] = strtr(Pannello::t('Il piano non comprende: {lingue}. Togli queste lingue da quelle della guida.'), ['{lingue}' => implode(', ', $nomi)]);
         }
 
         if (!self::can($accountId, 'photos')) {

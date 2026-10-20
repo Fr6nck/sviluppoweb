@@ -75,7 +75,8 @@ final class Giudizi
 
     public static function casellaHtml(): string
     {
-        return TestiSito::html('giudizio.casella', ['giudizio' => self::percentuale() . '%']);
+        // 9N · Nel pannello in inglese la casella è in inglese (ed è quella la prova salvata dell'adesione).
+        return TestiSito::formatta(TestiSito::get('giudizio.casella', Pannello::en() ? 'en' : null), ['giudizio' => self::percentuale() . '%']);
     }
 
     /** 9L · Lo stesso testo anche dal pannello (una chiave sola). */
@@ -99,10 +100,10 @@ final class Giudizi
     /** 9N · Perché un account è fuori dal programma, in parole semplici (pagina /giudizio). '' se non è escluso. */
     public static function motivoEscluso(array $acc): string
     {
-        if (!empty($acc['is_test'])) return 'è un account di prova del nostro staff';
+        if (!empty($acc['is_test'])) return Pannello::t('è un account di prova del nostro staff');
         $email = (string) Db::val('SELECT email FROM users WHERE id = ?', [(int) $acc['user_id']], '');
-        if (str_ends_with($email, '@' . Demo::DOMINIO)) return 'è un account di esempio';
-        if (Db::val('SELECT id FROM properties WHERE account_id = ? AND is_demo > 0', [(int) $acc['id']])) return 'gestisce la guida di esempio del sito (la vetrina)';
+        if (str_ends_with($email, '@' . Demo::DOMINIO)) return Pannello::t('è un account di esempio');
+        if (Db::val('SELECT id FROM properties WHERE account_id = ? AND is_demo > 0', [(int) $acc['id']])) return Pannello::t('gestisce la guida di esempio del sito (la vetrina)');
         return '';
     }
 
@@ -148,7 +149,7 @@ final class Giudizi
         // «Solo dopo il giudizio»: la casella al pagamento promette lo sconto, ma sul primo addebito lo si ha solo con il giudizio già inviato.
         $conGiudizio = self::quando() === 'adesione' || (($g = Testimonianze::diAccount((int) $acc['id'])) && $g['withdrawn_at'] === null);
         $vale = ($acc['giudizio_adesione'] === 'pagamento' && $stato === 'promesso' && $conGiudizio) || $stato === 'da_applicare_rinnovo';
-        return $vale ? ['tipo' => 'giudizio', 'nome' => 'Giudizio', 'percento' => self::percentuale()] : null;
+        return $vale ? ['tipo' => 'giudizio', 'nome' => Pannello::t('Giudizio'), 'percento' => self::percentuale()] : null;
     }
 
     /** Da Billing::activate: il primo pagamento con lo sconto del giudizio dentro (orders.sconti). Solo database. */
@@ -245,18 +246,19 @@ final class Giudizi
     /** Una riga sullo stato dello sconto, per il pannello e l'amministrazione. */
     public static function scontoTesto(array $acc): string
     {
-        $p = self::percentuale() . '%';
+        // 9N · Nella lingua del pannello dell'host (l'amministrazione resta in italiano): frasi intere con {n} e {data}.
+        $f = fn(string $it, string $data = '') => strtr(Pannello::t($it), ['{n}' => self::percentuale(), '{data}' => Pannello::data($data)]);
         // 9N · Nei mesi di un codice omaggio il primo addebito è pieno: lo sconto vale dal primo rinnovo dopo quel pagamento.
         $s = Subscriptions::active((int) $acc['id']);
         $omaggio = $s && ($s['status'] ?? '') === 'trialing' && !empty($s['omaggio_fino']);
-        $dopoOmaggio = $p . ' dal primo rinnovo dopo il primo pagamento' . ($omaggio ? ' (il primo addebito è il ' . Support::date((string) $s['omaggio_fino']) . ')' : '');
+        $dopoOmaggio = $omaggio ? $f('{n}% dal primo rinnovo dopo il primo pagamento (il primo addebito è il {data})', (string) $s['omaggio_fino']) : $f('{n}% dal primo rinnovo dopo il primo pagamento');
         return match ((string) ($acc['giudizio_sconto_stato'] ?? 'nessuno')) {
             'promesso' => $omaggio ? $dopoOmaggio : (($acc['giudizio_adesione'] ?? '') === 'pagamento'
-                ? (self::quando() === 'giudizio' ? $p . ' dopo il giudizio: sul primo addebito o sul rinnovo' : $p . ' sul primo anno, al pagamento')
-                : $p . ' sul prossimo rinnovo, dopo il giudizio'),
-            'applicato_primo_anno' => $p . ' già applicato al primo anno',
-            'da_applicare_rinnovo' => $omaggio ? $dopoOmaggio : (($r = self::prossimoRinnovo((int) $acc['id'])) ? $p . ' sul rinnovo del ' . Support::date($r) : $p . ' sul prossimo pagamento'),
-            'applicato_rinnovo' => $p . ' applicato al rinnovo' . (!empty($acc['giudizio_sconto_at']) ? ' del ' . Support::date($acc['giudizio_sconto_at']) : ''),
+                ? (self::quando() === 'giudizio' ? $f('{n}% dopo il giudizio: sul primo addebito o sul rinnovo') : $f('{n}% sul primo anno, al pagamento'))
+                : $f('{n}% sul prossimo rinnovo, dopo il giudizio')),
+            'applicato_primo_anno' => $f('{n}% già applicato al primo anno'),
+            'da_applicare_rinnovo' => $omaggio ? $dopoOmaggio : (($r = self::prossimoRinnovo((int) $acc['id'])) ? $f('{n}% sul rinnovo del {data}', $r) : $f('{n}% sul prossimo pagamento')),
+            'applicato_rinnovo' => !empty($acc['giudizio_sconto_at']) ? $f('{n}% applicato al rinnovo del {data}', (string) $acc['giudizio_sconto_at']) : $f('{n}% applicato al rinnovo'),
             default => '',
         };
     }

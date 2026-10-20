@@ -416,7 +416,7 @@ final class TestiSito
      * «en:» + chiave (site_texts ha la chiave primaria su «chiave»: niente colonne nuove); quelli di serie
      * stanno in lang/sito-en.php. Una chiave che lì manca resta in italiano.
      */
-    private static function lingua(?string $loc): string { return ($loc ?? LinguaSito::get()) === 'en' ? 'en' : 'it'; }
+    private static function lingua(?string $loc): string { return ($loc ?? Pannello::linguaTesti() ?? LinguaSito::get()) === 'en' ? 'en' : 'it'; }
 
     private static function chiave(string $k, string $loc): string { return $loc === 'en' ? 'en:' . $k : $k; }
 
@@ -488,10 +488,10 @@ final class TestiSito
         return strtr(trim((string) $t), self::sostituzioni($sost));
     }
 
-    public static function lista(string $k, array $sost = []): array
+    public static function lista(string $k, array $sost = [], ?string $loc = null): array
     {
         $out = [];
-        foreach (explode("\n", self::get($k)) as $riga) if (trim($riga) !== '') $out[] = self::formatta(trim($riga), $sost);
+        foreach (explode("\n", self::get($k, $loc)) as $riga) if (trim($riga) !== '') $out[] = self::formatta(trim($riga), $sost);
         return $out;
     }
 

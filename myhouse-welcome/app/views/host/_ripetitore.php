@@ -1,4 +1,4 @@
-<?php
+<?php use function MHW\tf;
 /* Un elenco di righe con sottocampi: più reti Wi-Fi, più contatti, più
    parcheggi… Ogni riga si sposta (maniglia o «su/giù» da tastiera), si toglie,
    se ne aggiunge un'altra. L'id nascosto tiene la riga legata alle sue
@@ -35,24 +35,24 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
     $campiId = $domId . '-' . $k . '-campi';
     $h = '<div class="rip__riga" data-rip-riga' . ($chiusa ? ' data-rip-chiusa' : '') . '>'
        . '<div class="rip__testa">'
-       . '<span class="riga__maniglia rip__maniglia" aria-hidden="true" title="Trascina per cambiare l\'ordine">' . Icon::svg('grip', 18, 2.6) . '</span>'
+       . '<span class="riga__maniglia rip__maniglia" aria-hidden="true" title="' . Support::e(t('Trascina per cambiare l\'ordine')) . '">' . Icon::svg('grip', 18, 2.6) . '</span>'
        . '<span class="rip__nome">' . Support::e($r['item']) . ' <span data-rip-num>' . ($num ?: '') . '</span></span>';
     // Gli eventi (6G): lo stato di ogni evento salvato, e «Ripeti nel 2027» per quelli passati che tornano ogni anno.
     if ($r['eventi'] && $v && trim((string) ($v['name'] ?? '')) !== '') {
         [$st, $gg] = Eventi::stato($v, Eventi::oggi());
-        [$testo, $tono] = ['in_corso' => ['In corso', 'pine'], 'tra' => [$gg === 1 ? 'Domani' : 'Tra ' . $gg . ' giorni', 'sea'], 'ricorrente' => ['Ricorrente', 'paper'],
-                           'passato' => ['Passato: nascosto', 'ochre'], 'senza_data' => ['Manca la data', 'alert']][$st] ?? ['', 'paper'];
+        [$testo, $tono] = ['in_corso' => [t('In corso'), 'pine'], 'tra' => [$gg === 1 ? t('Domani') : tf('Tra {n} giorni', ['{n}' => $gg]), 'sea'], 'ricorrente' => [t('Ricorrente'), 'paper'],
+                           'passato' => [t('Passato: nascosto'), 'ochre'], 'senza_data' => [t('Manca la data'), 'alert']][$st] ?? ['', 'paper'];
         $h .= '<span class="badge badge--' . $tono . ' rip__stato">' . $testo . '</span>';
         if ($st === 'passato' && !empty($v['yearly'])) {
-            $h .= '<button type="submit" class="btn btn--ghost btn--sm rip__ripeti" name="ripeti" value="' . Support::e((string) ($v['id'] ?? '')) . '">Ripeti nel ' . Eventi::annoDopo($v) . '</button>';
+            $h .= '<button type="submit" class="btn btn--ghost btn--sm rip__ripeti" name="ripeti" value="' . Support::e((string) ($v['id'] ?? '')) . '">' . tf('Ripeti nel {anno}', ['{anno}' => Eventi::annoDopo($v)]) . '</button>';
         }
     }
     $h .= '<button type="button" class="rip__apri" data-rip-apri aria-expanded="true" aria-controls="' . $campiId . '" hidden>'
-       . '<span class="rip__riassunto" data-rip-riassunto></span><span class="sr-only" data-rip-azione>Comprimi</span>' . Icon::svg('chevron', 16, 2, 'rip__freccia') . '</button>'
+       . '<span class="rip__riassunto" data-rip-riassunto></span><span class="sr-only" data-rip-azione>' . t('Comprimi') . '</span>' . Icon::svg('chevron', 16, 2, 'rip__freccia') . '</button>'
        . '<div class="rip__azioni">'
-       . '<button type="button" class="icon-btn" data-rip-su aria-label="Sposta su">' . Icon::svg('chevron', 16, 2, 'rip__su') . '</button>'
-       . '<button type="button" class="icon-btn" data-rip-giu aria-label="Sposta giù">' . Icon::svg('chevron', 16, 2, 'rip__giu') . '</button>'
-       . '<button type="button" class="icon-btn" data-rip-togli aria-label="Togli questa riga">&times;</button>'
+       . '<button type="button" class="icon-btn" data-rip-su aria-label="' . t('Sposta su') . '">' . Icon::svg('chevron', 16, 2, 'rip__su') . '</button>'
+       . '<button type="button" class="icon-btn" data-rip-giu aria-label="' . t('Sposta giù') . '">' . Icon::svg('chevron', 16, 2, 'rip__giu') . '</button>'
+       . '<button type="button" class="icon-btn" data-rip-togli aria-label="' . t('Togli questa riga') . '">&times;</button>'
        . '</div></div>'
        . '<input type="hidden" name="' . Support::e($nome) . '[' . $k . '][id]" value="' . Support::e((string) ($v['id'] ?? '')) . '">'
        . '<div class="rip__campi" id="' . $campiId . '">';
@@ -85,23 +85,23 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
                 . '<input type="hidden" name="' . Support::e($nome) . '[' . $k . '][' . Support::e($pn) . ']" value="' . ($pdfId ?: '') . '">'
                 . '<div class="rip__file">';
             if ($mid && ($url = Media::url($mid))) $h .= '<img src="' . Support::e($url) . '" alt="">';
-            elseif ($pdfId) $h .= '<span class="rip__pdf">' . Icon::svg('doc', 22) . '<span class="small">' . Support::e((Media::row($pdfId)['original_name'] ?? '') ?: 'Locandina') . '</span></span>';
+            elseif ($pdfId) $h .= '<span class="rip__pdf">' . Icon::svg('doc', 22) . '<span class="small">' . Support::e((Media::row($pdfId)['original_name'] ?? '') ?: t('Locandina')) . '</span></span>';
             if ($puoi) {
                 $h .= '<span class="rip__carica"><input class="drop__input" id="' . $id . '" type="file" name="rip_file' . $sub . '" accept="image/jpeg,image/png,image/webp,application/pdf" aria-describedby="' . $id . '-aiuto ' . $id . '-nome">'
-                    . '<label class="btn btn--ghost btn--sm" for="' . $id . '">' . ($mid || $pdfId ? 'Sostituisci' : 'Scegli la locandina') . '</label></span>';
+                    . '<label class="btn btn--ghost btn--sm" for="' . $id . '">' . ($mid || $pdfId ? t('Sostituisci') : t('Scegli la locandina')) . '</label></span>';
             }
-            if ($mid || $pdfId) $h .= '<label class="check rip__togli"><input type="checkbox" name="rip_togli' . $sub . '" value="1"> <span>Togli</span></label>';
-            if ($puoi) $h .= '<span class="small muted" id="' . $id . '-nome" data-rip-file-nome aria-live="polite">' . ($mid || $pdfId ? '' : 'Nessun file scelto') . '</span>';
+            if ($mid || $pdfId) $h .= '<label class="check rip__togli"><input type="checkbox" name="rip_togli' . $sub . '" value="1"> <span>' . t('Togli') . '</span></label>';
+            if ($puoi) $h .= '<span class="small muted" id="' . $id . '-nome" data-rip-file-nome aria-live="polite">' . ($mid || $pdfId ? '' : t('Nessun file scelto')) . '</span>';
             $h .= '</div>';
-            $h .= $puoi ? '<p class="help rip__aiuto" id="' . $id . '-aiuto">' . Support::e(trim($aiuto . ' Si carica quando salvi.')) . '</p>'
-                        : '<p class="help">Il tuo piano non comprende foto e PDF nelle sezioni.</p>';
+            $h .= $puoi ? '<p class="help rip__aiuto" id="' . $id . '-aiuto">' . Support::e(trim($aiuto . ' ' . t('Si carica quando salvi.'))) . '</p>'
+                        : '<p class="help">' . t('Il tuo piano non comprende foto e PDF nelle sezioni.') . '</p>';
             $h .= '</div></div>';
         } elseif ($tipo === 'image' || $tipo === 'pdf') {
             $mid = (int) $val; $puoi = $tipo === 'image' ? $r['foto'] : $r['pdf'];
             if (!$mid && !$puoi) {   // 8B: il bottone c'è, con il lucchetto: apre «Foto e PDF sono compresi in Plus»
                 $h .= $c . '<div class="field rip__media" style="margin:0"><span class="label">' . $etH . '</span><div class="rip__file">'
                     . '<a class="btn btn--ghost btn--sm btn--lucchetto" href="' . b() . '/piano?passa=plus" data-sblocca="foto">' . Icon::svg('lock', 15, 2)
-                    . ($tipo === 'image' ? 'Aggiungi una foto' : 'Aggiungi un PDF') . '</a></div></div></div>';
+                    . ($tipo === 'image' ? t('Aggiungi una foto') : t('Aggiungi un PDF')) . '</a></div></div></div>';
                 continue;
             }
             $sub = '[' . Support::e($nome) . '][' . $k . '][' . $sn . ']';
@@ -110,7 +110,7 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
                 . '<div class="rip__file">';
             if ($mid) {
                 $url = $tipo === 'image' ? Media::url($mid) : null;
-                $file = $tipo === 'pdf' ? ((Media::row($mid)['original_name'] ?? '') ?: 'Documento') : '';
+                $file = $tipo === 'pdf' ? ((Media::row($mid)['original_name'] ?? '') ?: t('Documento')) : '';
                 $h .= ($url ? '<img src="' . Support::e($url) . '" alt="">' : '<span class="rip__pdf">' . Icon::svg('doc', 22) . '<span class="small">' . Support::e($file) . '</span></span>');
             }
             // Il selettore del browser parla la lingua del sistema: l'input vero resta (nascosto
@@ -118,13 +118,13 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
             if ($puoi) {
                 $h .= '<span class="rip__carica"><input class="drop__input" id="' . $id . '" type="file" name="rip_file' . $sub . '" accept="'
                     . ($tipo === 'image' ? 'image/jpeg,image/png,image/webp' : 'application/pdf') . '" aria-describedby="' . $id . '-aiuto ' . $id . '-nome">'
-                    . '<label class="btn btn--ghost btn--sm" for="' . $id . '">' . ($mid ? 'Sostituisci' : 'Scegli ' . ($tipo === 'image' ? 'una foto' : 'un PDF')) . '</label></span>';
+                    . '<label class="btn btn--ghost btn--sm" for="' . $id . '">' . ($mid ? t('Sostituisci') : ($tipo === 'image' ? t('Scegli una foto') : t('Scegli un PDF'))) . '</label></span>';
             }
             if ($mid) $h .= '<label class="check rip__togli"><input type="checkbox" name="rip_togli' . $sub . '" value="1"> <span>' . t('Togli') . '</span></label>';
             if ($puoi) $h .= '<span class="small muted" id="' . $id . '-nome" data-rip-file-nome aria-live="polite">' . ($mid ? '' : t('Nessun file scelto')) . '</span>';
             $h .= '</div>';
-            if (!$puoi) $h .= '<p class="help">Il tuo piano non comprende ' . ($tipo === 'image' ? 'le foto nelle sezioni: toglila' : 'i PDF nelle sezioni: toglilo') . ' prima di pubblicare.</p>';
-            else $h .= '<p class="help rip__aiuto" id="' . $id . '-aiuto">' . Support::e(trim($aiuto . ' ' . ($tipo === 'image' ? 'JPG, PNG o WebP.' : 'Solo PDF.') . ' Si carica quando salvi.')) . '</p>';
+            if (!$puoi) $h .= '<p class="help">' . ($tipo === 'image' ? t('Il tuo piano non comprende le foto nelle sezioni: toglila prima di pubblicare.') : t('Il tuo piano non comprende i PDF nelle sezioni: toglilo prima di pubblicare.')) . '</p>';
+            else $h .= '<p class="help rip__aiuto" id="' . $id . '-aiuto">' . Support::e(trim($aiuto . ' ' . ($tipo === 'image' ? 'JPG, PNG o WebP.' : t('Solo PDF.')) . ' ' . t('Si carica quando salvi.'))) . '</p>';
             $h .= '</div></div>';
         } elseif ($tipo === 'check') {
             $h .= $c . '<label class="check rip__check"><input type="checkbox" name="' . $n . '" value="1"' . ($val ? ' checked' : '') . '> <span>' . Support::e($et) . '</span></label></div>';
@@ -175,7 +175,7 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
   <?php /* Se le righe prevedono foto o PDF ma il piano non li comprende, l'aiuto non li promette e si rimanda a Plus. */
         $conMedia = (bool) array_filter($r['sub'], fn($sd) => in_array($sd[0], ['image', 'pdf'], true));
         $senzaMedia = $conMedia && !$r['foto'] && !$r['pdf'];
-        $aiutoRip = $senzaMedia ? str_replace('Titolo, passaggi, una foto, un PDF.', 'Titolo e passaggi.', $r['help']) : $r['help']; ?>
+        $aiutoRip = $senzaMedia ? str_replace(['Titolo, passaggi, una foto, un PDF.', 'Title, steps, a photo, a PDF.'], ['Titolo e passaggi.', 'Title and steps.'], $r['help']) : $r['help']; ?>
   <?php if ($aiutoRip !== ''): ?><p class="help"><?= Support::e($aiutoRip) ?></p><?php endif; ?>
   <?php if ($senzaMedia): ?><p class="help rip__plus"><?= t('Vuoi aggiungere foto o PDF?') ?> <a href="<?= b() ?>/piano?passa=plus"><?= t('Scopri il piano Plus') ?></a></p><?php endif; ?>
   <div class="rip__righe" data-rip-righe>
@@ -187,7 +187,7 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
   <button type="button" class="linkbtn" data-rip-aggiungi hidden><?= Icon::svg('plus', 15, 2) ?> <?= Support::e($r['add']) ?></button>
   <?php if ($r['presets']): /* righe pronte: si aggiungono già compilate, poi si correggono */ ?>
     <div class="suggerimenti" data-solo-js hidden>
-      <span class="small muted">Suggerimenti:</span>
+      <span class="small muted"><?= t('Suggerimenti:') ?></span>
       <?php foreach ($r['presets'] as $et => $valori): ?>
         <button type="button" class="chip-sugg" data-rip-preset="<?= Support::e(json_encode($valori, JSON_UNESCAPED_UNICODE)) ?>">+ <?= Support::e($et) ?></button>
       <?php endforeach; ?>
@@ -198,10 +198,10 @@ $riga = function (string $k, array $v, int $num = 0, bool $chiusa = false) use (
     <div class="gia-altrove" data-gia-altrove>
       <?php foreach ($gruppi as $struttura => $voci): ?>
         <div class="suggerimenti">
-          <span class="small muted">Già in <?= Support::e($struttura) ?>:</span>
+          <span class="small muted"><?= Support::e(tf('Già in {nome}:', ['{nome}' => $struttura])) ?></span>
           <?php foreach ($voci as $x): ?>
             <button type="submit" class="chip-sugg" form="<?= Support::e($r['modulo_altre']) ?>" name="riga" data-nome="<?= Support::e(mb_strtolower($x['etichetta'])) ?>"
-                    value="<?= Support::e($nome . '|' . $x['sid'] . '|' . $x['riga']) ?>" aria-label="Aggiungi <?= Support::e($x['etichetta']) ?>, già in <?= Support::e($struttura) ?>">+ <?= Support::e($x['etichetta']) ?></button>
+                    value="<?= Support::e($nome . '|' . $x['sid'] . '|' . $x['riga']) ?>" aria-label="<?= Support::e(tf('Aggiungi {voce}, già in {nome}', ['{voce}' => $x['etichetta'], '{nome}' => $struttura])) ?>">+ <?= Support::e($x['etichetta']) ?></button>
           <?php endforeach; ?>
         </div>
       <?php endforeach; ?>

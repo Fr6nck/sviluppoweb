@@ -81,7 +81,7 @@ final class Palette
     public static function exists(string $code): bool { return isset(self::P[$code]); }
 
     /** 9J · La riga sotto la scheda della palette in Aspetto ('' se non c'è). */
-    public static function descrizione(string $code): string { return (string) (self::P[$code]['descrizione'] ?? ''); }
+    public static function descrizione(string $code): string { return Pannello::t((string) (self::P[$code]['descrizione'] ?? '')); }
 
     /** 9J · Le classi dell'<html> della guida: palette-{codice} e, con «Bianco e nero» e la casella accesa, foto-bn. */
     public static function classi(array $property): string

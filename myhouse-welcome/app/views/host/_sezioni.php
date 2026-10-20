@@ -1,4 +1,4 @@
-<?php
+<?php use function MHW\tf;
 /* L'elenco delle sezioni aggiuntive e il catalogo da cui aggiungerne.
    Si ordinano trascinando la maniglia, oppure dal menu ⋯ con «Sposta su /
    giù» (tastiera e telefono): tutte e due usano le stesse rotte.
@@ -42,7 +42,7 @@ $n = count($sezioni); ?>
             : b() . '/pannello/' . $pid . '/sezioni/' . (int) $s['id']; ?>
     <div class="riga <?= $on ? ($s['empty'] ? 'riga--flag' : '') : 'riga--spenta' ?><?= $apertaQui ? ' riga--aperta' : '' ?>" data-riga id="sez-<?= (int) $s['id'] ?>"
          data-azione="<?= b() ?>/pannello/<?= $pid ?>/sezioni/<?= (int) $s['id'] ?>/azione" data-torna="<?= Support::e($torna) ?>">
-      <span class="riga__maniglia" aria-hidden="true" title="Trascina per cambiare l'ordine"><?= Icon::svg('grip', 18, 2.6) ?></span>
+      <span class="riga__maniglia" aria-hidden="true" title="<?= MHW\Support::e(t('Trascina per cambiare l\'ordine')) ?>"><?= Icon::svg('grip', 18, 2.6) ?></span>
       <span class="riga__ico"><?= Icon::svg(SectionCatalog::iconaDi($s['kind'], $s['data'] ?? []), 20) ?></span>
       <a class="riga__nome" href="<?= $modificaUrl ?>"<?= $apertaQui ? ' aria-current="true"' : '' ?>><b><?= Support::e($s['title']) ?></b></a>
       <?php if (!$on): ?><span class="badge badge--paper"><?= t('Disattivata') ?></span>
@@ -52,7 +52,7 @@ $n = count($sezioni); ?>
       <?php /* 7C · Novità: un campo nuovo ancora vuoto in questa sezione */
             $tdN = json_decode((string) MHW\Db::val('SELECT data FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $prop['default_locale']], ''), true) ?: [];
             if ($on && MHW\Novita::campiNuovi((int) $prop['account_id'], (string) $s['kind'], (json_decode((string) ($s['data'] ?? ''), true) ?: []) + $tdN)): ?>
-        <span class="badge badge--ochre novita-pallino"><span class="dot" aria-hidden="true"></span>Nuovo</span>
+        <span class="badge badge--ochre novita-pallino"><span class="dot" aria-hidden="true"></span><?= t('Nuovo') ?></span>
       <?php endif; ?>
       <?php /* 7C: le lingue in cui la sezione non è ancora tradotta, in una sola etichetta ocra («EN da tradurre», «DE, FR da tradurre»):
                una per lingua, sul telefono, spingerebbe fuori il nome della sezione. Porta alla prima lingua da fare. */
@@ -94,9 +94,8 @@ $n = count($sezioni); ?>
   <h3 style="font-size:18px"><?= t('Aggiungi una sezione') ?></h3>
   <?php if ($pieno): ?>
     <div class="limit" role="status">
-      <p style="max-width:620px">Hai già <?= (int) $limite ?> sezioni attive, il massimo del tuo piano. Passa a Plus per averne quante vuoi,
-        oppure disattivane una per liberare un posto.</p>
-      <a class="btn btn--sm" href="<?= b() ?>/piano?passa=plus" data-sblocca="sezioni">Scopri Plus</a>
+      <p style="max-width:620px"><?= Support::e(tf('Hai già {n} sezioni attive, il massimo del tuo piano. Passa a Plus per averne quante vuoi, oppure disattivane una per liberare un posto.', ['{n}' => (int) $limite])) ?></p>
+      <a class="btn btn--sm" href="<?= b() ?>/piano?passa=plus" data-sblocca="sezioni"><?= t('Scopri Plus') ?></a>
     </div>
   <?php endif; ?>
   <?php if ($libere >= SectionCatalog::LIBERE_MAX): ?>
@@ -121,5 +120,5 @@ $n = count($sezioni); ?>
 
 <?php /* «Copia sezioni da…»: solo se c'è un'altra struttura da cui partire. */
 if ((int) MHW\Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND id <> ? AND archived_at IS NULL', [$prop['account_id'], $pid], 0) > 0): ?>
-  <p style="margin-top:16px"><a class="linkbtn" href="<?= b() ?>/pannello/<?= $pid ?>/copia"><?= Icon::svg('copy', 15) ?> Copia sezioni da un'altra struttura</a></p>
+  <p style="margin-top:16px"><a class="linkbtn" href="<?= b() ?>/pannello/<?= $pid ?>/copia"><?= Icon::svg('copy', 15) ?> <?= t('Copia sezioni da un\'altra struttura') ?></a></p>
 <?php endif; ?>

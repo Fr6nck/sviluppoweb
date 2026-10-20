@@ -26,8 +26,8 @@ final class LinguaSito
 
     public static function en(): bool { return self::$loc === 'en'; }
 
-    /** Un testo fisso della pagina nelle due lingue. */
-    public static function t(string $it, string $en): string { return self::$loc === 'en' ? $en : $it; }
+    /** Un testo fisso della pagina nelle due lingue (9N: nel pannello in inglese, l'inglese anche nei pezzi condivisi con il sito). */
+    public static function t(string $it, string $en): string { return self::$loc === 'en' || Pannello::linguaTesti() === 'en' ? $en : $it; }
 
     /** 9N · Un messaggio di registrazione, accesso o password nella lingua di adesso (lang/accesso-en.php); se manca, com'è. */
     public static function tr(string $it): string

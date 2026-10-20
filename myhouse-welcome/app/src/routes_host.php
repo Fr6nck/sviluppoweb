@@ -20,6 +20,7 @@ $host = function (): array {
     if (!Auth::isVerified($u) && !Auth::isImpersonating()) Support::redirect('/conferma-email');
     // 9E: con una password provvisoria si può solo sceglierne una nuova.
     if (!empty($u['must_change_password']) && !Auth::isImpersonating()) Support::redirect('/password/cambia');
+    MHW\Pannello::entra();   // 9N · da qui i «Testi e foto» seguono la lingua del pannello
     return [$u, $acc];
 };
 
@@ -34,7 +35,7 @@ $mia = function (int $id, bool $ancheBloccata = false) use ($host): array {
     $p = Db::one('SELECT * FROM properties WHERE id = ? AND account_id = ?', [$id, $acc['id']]);
     if (!$p) { http_response_code(404); View::out('pub/404', []); }
     if (!$ancheBloccata && !Entitlements::editable((int) $acc['id'], (int) $p['id'])) {
-        $avviso = $p['name'] . ' si attiva dopo il pagamento: per ora si configura una struttura alla volta.';
+        $avviso = MHW\tf('{nome} si attiva dopo il pagamento: per ora si configura una struttura alla volta.', ['{nome}' => $p['name']]);
         if (str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json')) Support::json(['ok' => false, 'errore' => $avviso], 423);
         Support::flash($avviso, 'avviso');
         Support::redirect('/pannello');
@@ -82,7 +83,7 @@ $vuoleJson = fn(): bool => str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? '')
 /** Messaggio d'errore per l'utente: i RuntimeException sono già scritti per lui, il resto no. */
 $messaggio = function (\Throwable $e, string $dove): string {
     if ($e instanceof \RuntimeException && !($e instanceof \PDOException)) return $e->getMessage();
-    return 'Non è stato possibile salvare. Riprova tra poco (codice ' . Log::exception($e, $dove) . ').';
+    return MHW\tf('Non è stato possibile salvare. Riprova tra poco (codice {codice}).', ['{codice}' => Log::exception($e, $dove)]);
 };
 
 /** Le informazioni che ogni pagina di una struttura mostra in alto e nella colonna. */
@@ -167,7 +168,7 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
             if ($modo === 'bloccata') {
                 $pid = Properties::create($aid, $nome, (string) ($_POST['city'] ?? ''), (string) $u['name']);
                 Stats::funnelEvent('property_created'); MHW\Statistiche::matomoDalServer('prova');
-                Support::flash(trim($nome) . ' creata. Si attiva dopo il pagamento: intanto completa e pubblica la prima.', 'avviso');
+                Support::flash(MHW\tf('{nome} creata. Si attiva dopo il pagamento: intanto completa e pubblica la prima.', ['{nome}' => trim($nome)]), 'avviso');
                 Support::redirect('/pannello');
             }
             if ($modo === 'a-pagamento') {
@@ -187,7 +188,7 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
                 Auth::audit('subscription.add_property', (int) $u['id'], ['property_id' => $pid, 'quantita' => $costo['quantita']]);
                 if ($prev['conguaglio'] === 0) {
                     CambioAbbonamento::subito($sub, $pv, $costo['quantita']);
-                    Support::flash(trim($nome) . ' aggiunta.');
+                    Support::flash(MHW\tf('{nome} aggiunta.', ['{nome}' => trim($nome)]));
                     Support::redirect('/pannello');
                 }
                 $o = CambioAbbonamento::ordine($acc, $sub, $pv, $costo['quantita'], $prev['conguaglio']);
@@ -207,7 +208,7 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
             });
             Db::update('properties', ['wizard_step' => 'arrivo'], 'id = :pid', ['pid' => $pid]);
             Stats::funnelEvent('property_created'); MHW\Statistiche::matomoDalServer('prova');
-            if ($origine) Support::flash('Struttura creata partendo da ' . Db::val('SELECT name FROM properties WHERE id = ?', [$origine]) . '. Ora completa quello che è solo di questa struttura: indirizzo, check-in, Wi-Fi.');
+            if ($origine) Support::flash(MHW\tf('Struttura creata partendo da {nome}. Ora completa quello che è solo di questa struttura: indirizzo, check-in, Wi-Fi.', ['{nome}' => Db::val('SELECT name FROM properties WHERE id = ?', [$origine])]));
             Support::redirect('/pannello/' . $pid . '/procedura/struttura');
         } catch (NotFound) { $err = 'Struttura di origine non trovata.'; }
         catch (\Throwable $e) { $err = $messaggio($e, 'nuova struttura'); }
@@ -238,10 +239,10 @@ $r->any('/pannello/{id}/copia', function (array $a) use ($mia, $contesto, $messa
                                        !empty($_POST['copia_aspetto']), !empty($_POST['copia_contatti']));
             Auth::audit('property.copy', (int) $u['id'], ['da' => (int) $da['id'], 'a' => (int) $p['id']] + $esito);
             $nomi = fn(array $k) => implode(', ', array_map(fn($x) => SectionCatalog::title($x, 'it'), $k));
-            Support::flash('Copia da ' . $da['name'] . ' fatta.'
-                . ($esito['copiate'] ? ' Copiate: ' . $nomi($esito['copiate']) . '.' : '')
-                . ($esito['sostituite'] ? ' Sostituite: ' . $nomi($esito['sostituite']) . '.' : '')
-                . ($esito['saltate'] ? ' Saltate, perché c\'erano già: ' . $nomi($esito['saltate']) . '.' : ''));
+            Support::flash(MHW\tf('Copia da {nome} fatta.', ['{nome}' => $da['name']])
+                . ($esito['copiate'] ? ' ' . MHW\tf('Copiate: {elenco}.', ['{elenco}' => $nomi($esito['copiate'])]) : '')
+                . ($esito['sostituite'] ? ' ' . MHW\tf('Sostituite: {elenco}.', ['{elenco}' => $nomi($esito['sostituite'])]) : '')
+                . ($esito['saltate'] ? ' ' . MHW\tf('Saltate, perché c\'erano già: {elenco}.', ['{elenco}' => $nomi($esito['saltate'])]) : ''));
             Support::redirect('/pannello/' . $p['id']);
         } catch (\Throwable $e) { $err = $messaggio($e, 'copia'); if ($e instanceof MHW\PianoLimite) $sbloccaCopia = $e->funzione; }
     }
@@ -267,7 +268,7 @@ $r->post('/pannello/{id}/link', function (array $a) use ($mia) {
     $nuovo = Support::slugGuida((string) $p['name'], (int) $p['id']);
     Db::update('properties', ['slug' => $nuovo], 'id = :pid', ['pid' => (int) $p['id']]);
     Auth::audit('property.link', (int) $u['id'], ['property' => (int) $p['id'], 'prima' => $p['slug'], 'dopo' => $nuovo]);
-    Support::flash('Link nuovo: ' . Support::baseUrl() . '/g/' . $nuovo . '. Il QR stampato continua ad aprire la guida.');
+    Support::flash(MHW\tf('Link nuovo: {link}. Il QR stampato continua ad aprire la guida.', ['{link}' => Support::baseUrl() . '/g/' . $nuovo]));
     Support::redirect('/pannello/' . $p['id'] . '/impostazioni#link-guida');
 });
 
@@ -309,7 +310,7 @@ $r->post('/campione/scegli', function () use ($host) {
     [, $acc] = $host();
     try {
         $pid = (int) ($_POST['guida'] ?? 0);
-        if ($pid > 0) { MHW\Campione::rendi((int) $acc['id'], $pid); Support::flash((string) Db::val('SELECT name FROM properties WHERE id = ?', [$pid], '') . ' è la tua scheda campione.'); }
+        if ($pid > 0) { MHW\Campione::rendi((int) $acc['id'], $pid); Support::flash(MHW\tf('{nome} è la tua scheda campione.', ['{nome}' => (string) Db::val('SELECT name FROM properties WHERE id = ?', [$pid], '')])); }
         else { MHW\Campione::togli((int) $acc['id']); Support::flash('Nessuna scheda campione: le guide restano come sono.'); }
     } catch (\Throwable $e) { Support::flash($e->getMessage(), 'err'); }
     Support::redirect((string) ($_POST['torna'] ?? '') === 'pannello' ? '/pannello' : '/campione');
@@ -334,7 +335,8 @@ $r->any('/campione/gemelle', function () use ($host) {
         else {
             try {
                 $e = MHW\Campione::applica($aid, $scelte, !empty($_POST['conferma']));
-                Support::flash('Fatto: ' . $e['aggiornate'] . ' sezioni aggiornate, ' . $e['aggiunte'] . ' aggiunte, ' . $e['tolte'] . ' tolte in ' . $e['guide'] . ($e['guide'] === 1 ? ' guida' : ' guide') . '. Le guide online sono già aggiornate.');
+                Support::flash(MHW\tf($e['guide'] === 1 ? 'Fatto: {agg} sezioni aggiornate, {nuove} aggiunte, {tolte} tolte in 1 guida. Le guide online sono già aggiornate.' : 'Fatto: {agg} sezioni aggiornate, {nuove} aggiunte, {tolte} tolte in {guide} guide. Le guide online sono già aggiornate.',
+                    ['{agg}' => $e['aggiornate'], '{nuove}' => $e['aggiunte'], '{tolte}' => $e['tolte'], '{guide}' => $e['guide']]));
                 Support::redirect('/pannello');
             } catch (\Throwable $e) { Support::flash($e->getMessage(), 'err'); Support::redirect('/campione/gemelle'); }
         }
@@ -343,7 +345,7 @@ $r->any('/campione/gemelle', function () use ($host) {
 });
 $r->post('/pannello/{id}/campione', function (array $a) use ($mia) {
     [, $acc, $p] = $mia((int) $a['id']);
-    try { MHW\Campione::rendi((int) $acc['id'], (int) $p['id']); Support::flash($p['name'] . ' è la tua scheda campione: quando la cambi, ti proponiamo di portare le modifiche anche nelle gemelle.'); }
+    try { MHW\Campione::rendi((int) $acc['id'], (int) $p['id']); Support::flash(MHW\tf('{nome} è la tua scheda campione: quando la cambi, ti proponiamo di portare le modifiche anche nelle gemelle.', ['{nome}' => $p['name']])); }
     catch (\Throwable $e) { Support::flash($e->getMessage(), 'err'); }
     Support::redirect('/pannello');
 });
@@ -375,7 +377,7 @@ $r->post('/pannello/{id}/sezioni', function (array $a) use ($mia, $messaggio) {
     $torna = (string) ($_POST['torna'] ?? '') === 'procedura' ? '/pannello/' . $p['id'] . '/procedura/sezioni' : '/pannello/' . $p['id'];
     try {
         $sid = Properties::addSection((int) $acc['id'], (int) $p['id'], (string) ($_POST['kind'] ?? ''));
-        Support::flash(SectionCatalog::nome((string) $_POST['kind']) . ' aggiunta: compilala qui sotto.');
+        Support::flash(MHW\tf('{sezione} aggiunta: compilala qui sotto.', ['{sezione}' => SectionCatalog::nome((string) $_POST['kind'])]));
         // Nella procedura «Aggiungi» apre subito l'editor sotto la card della sezione.
         Support::redirect($torna === '/pannello/' . $p['id'] ? '/pannello/' . $p['id'] . '/sezioni/' . $sid
                           : $torna . '?apri=' . $sid . '#sez-' . $sid);
@@ -443,7 +445,7 @@ $r->any('/pannello/{id}/sezioni/{sid}', function (array $a) use ($mia, $contesto
                         if (!is_array($ev) || (string) ($ev['id'] ?? '') !== $ripeti) continue;
                         $ora['events'][$i] = MHW\Eventi::ripeti($ev, MHW\Eventi::oggi());
                         Db::update('sections', ['data' => json_encode($ora, JSON_UNESCAPED_UNICODE)], 'id = :sid', ['sid' => $s['id']]);   // la locandina tolta la libera cleanRowMedia, qui sotto
-                        $ripetuto = 'Date spostate al ' . substr((string) ($ora['events'][$i]['date_from'] ?? ''), 0, 4) . ': controllale, carica la nuova locandina e pubblica.';
+                        $ripetuto = MHW\tf('Date spostate al {anno}: controllale, carica la nuova locandina e pubblica.', ['{anno}' => substr((string) ($ora['events'][$i]['date_from'] ?? ''), 0, 4)]);
                         break;
                     }
                 }
@@ -690,7 +692,7 @@ $r->post('/pannello/{id}/lingue/{loc}/suggerite', function (array $a) use ($mia,
     try {
         if (!empty($_POST['suggerisci'])) {
             [$n, $stop] = Traduttore::suggerisci((int) $acc['id'], $p, $loc);
-            if ($n) Support::flash(($n === 1 ? '1 traduzione suggerita' : "$n traduzioni suggerite") . ': controllale una per una e approvale.' . ($stop !== '' ? ' ' . $stop : ''), $stop !== '' ? 'avviso' : 'ok');
+            if ($n) Support::flash(($n === 1 ? MHW\t('1 traduzione suggerita: controllala e approvala.') : MHW\tf('{n} traduzioni suggerite: controllale una per una e approvale.', ['{n}' => $n])) . ($stop !== '' ? ' ' . MHW\t($stop) : ''), $stop !== '' ? 'avviso' : 'ok');
             else Support::flash($stop !== '' ? $stop : 'Non manca niente da suggerire.', $stop !== '' ? 'err' : 'ok');
         } elseif (($campo = (string) ($_POST['campo'] ?? '')) !== '') {
             // 7C: «Traduci» un campo solo (o «Traduci di nuovo» se il testo italiano è cambiato): una proposta da confermare.
@@ -706,7 +708,7 @@ $r->post('/pannello/{id}/lingue/{loc}/suggerite', function (array $a) use ($mia,
         } elseif (!empty($_POST['tutte'])) {
             $fatte = 0;
             foreach (Traduttore::suggerite($p, $loc) as $s) if (!$s['da_rifare'] && Traduttore::approva($p, $loc, (int) $s['id']) === '') $fatte++;
-            Support::flash($fatte ? ($fatte === 1 ? '1 traduzione approvata' : "$fatte traduzioni approvate") . ': ora gli ospiti le vedono.' : 'Niente da approvare.');
+            Support::flash($fatte ? ($fatte === 1 ? MHW\t('1 traduzione approvata: ora gli ospiti la vedono.') : MHW\tf('{n} traduzioni approvate: ora gli ospiti le vedono.', ['{n}' => $fatte])) : 'Niente da approvare.');
             $ancora = '';
         } elseif (($id = (int) ($_POST['approva'] ?? $_POST['modifica'] ?? 0)) > 0) {
             $s = Db::one('SELECT * FROM translation_suggestions WHERE id = ? AND property_id = ?', [$id, $p['id']]);
@@ -928,7 +930,7 @@ $r->post('/pannello/{id}/dopo-il-soggiorno', function (array $a) use ($mia) {
     Db::update('properties', $dati, 'id = :pid', ['pid' => $p['id']]);
     $errori = MHW\Canali::salva((int) $p['id'], $_POST);
     if ($scartati) array_unshift($errori, 'Il link al sito per prenotare non era un indirizzo web valido (comincia con https://) ed è rimasto vuoto.');
-    Support::flash($errori ? 'Salvato, ma: ' . implode(' ', $errori) : 'Salvato. Lo vedranno gli ospiti quando pubblichi.', $errori ? 'avviso' : 'ok');
+    Support::flash($errori ? MHW\t('Salvato, ma:') . ' ' . implode(' ', array_map('MHW\\t', $errori)) : 'Salvato. Lo vedranno gli ospiti quando pubblichi.', $errori ? 'avviso' : 'ok');
     Support::redirect('/pannello/' . $p['id'] . '/impostazioni#' . ($errori ? 'piattaforme' : 'dopo-il-soggiorno'));
 });
 
@@ -1021,7 +1023,7 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
                                                               'modo' => ($_POST['modo'] ?? '') === 'stripe' ? 'stripe' : ''];
     $problemi = Guide::problems($aid, (int) $p['id']);
     if ($problemi) {
-        Support::flash('Prima di pubblicare: ' . implode(' ', $problemi), 'err');
+        Support::flash(MHW\t('Prima di pubblicare:') . ' ' . implode(' ', array_map('MHW\\t', $problemi)), 'err');
         Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
     }
     // Codici di accesso (6M): sconsigliati, non vietati. Se ci sono, si pubblica solo con la conferma
@@ -1041,7 +1043,7 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
     }
 
     if (!Auth::isVerified($u)) {
-        Support::flash('Conferma prima la tua email: ti abbiamo scritto a ' . $u['email'] . '. Serve per attivare l\'abbonamento.', 'err');
+        Support::flash(MHW\tf('Conferma prima la tua email: ti abbiamo scritto a {email}. Serve per attivare l\'abbonamento.', ['{email}' => $u['email']]), 'err');
         Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
     }
     $pv = $acc['intended_package_version_id'] ? Plans::currentVersion((int) $acc['intended_package_version_id']) : null;
@@ -1051,7 +1053,7 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
         Db::update('accounts', ['intended_package_version_id' => $pv['id']], 'id = :aid', ['aid' => $aid]);
         Entitlements::forget($aid);
         $problemi = Guide::problems($aid, (int) $p['id']);
-        if ($problemi) { Support::flash('Il piano è stato aggiornato: ' . implode(' ', $problemi), 'err'); Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica'); }
+        if ($problemi) { Support::flash(MHW\t('Il piano è stato aggiornato:') . ' ' . implode(' ', array_map('MHW\\t', $problemi)), 'err'); Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica'); }
     }
     if (!Stripe::enabled()) {
         Log::error('Pubblicazione richiesta ma Stripe non è configurato', ['account' => $aid]);
@@ -1083,7 +1085,7 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
         try { $codiceSconto = MHW\Sconti::valida($riga['code'], $acc, $pv, $quantita); }
         catch (\RuntimeException $e) {
             Db::update('accounts', ['intended_discount_code_id' => null], 'id = :aid', ['aid' => $aid]);
-            Support::flash('Il codice ' . $riga['code'] . ' è stato tolto: ' . $e->getMessage() . ' Controlla il prezzo e pubblica di nuovo.', 'err');
+            Support::flash(MHW\tf('Il codice {codice} è stato tolto: {motivo} Controlla il prezzo e pubblica di nuovo.', ['{codice}' => $riga['code'], '{motivo}' => MHW\t($e->getMessage())]), 'err');
             Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
         }
     }
@@ -1122,7 +1124,7 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
         $codice = Log::exception($e, 'checkout');
         // 9A · I due controlli sui prezzi di Stripe (verificaPrezzi, controllaSessione) fermano il pagamento: lo si dice senza codice.
         Support::flash($e instanceof MHW\PrezziNonCoerenti ? 'Il pagamento non è disponibile in questo momento, ti avvisiamo noi.'
-                       : 'Il pagamento non è disponibile in questo momento. Riprova tra poco (codice ' . $codice . ').', 'err');
+                       : MHW\tf('Il pagamento non è disponibile in questo momento. Riprova tra poco (codice {codice}).', ['{codice}' => $codice]), 'err');
         Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
     }
     Support::redirect($url);
@@ -1140,7 +1142,7 @@ $daPagare = function (array $acc, array $p, int $oid): array {
     }
     try { $s = Stripe::sessione((string) $o['provider_session_id']); }
     catch (\Throwable $e) {
-        Support::flash('Il pagamento non è disponibile in questo momento. Riprova tra poco (codice ' . Log::exception($e, 'checkout incorporato') . ').', 'err');
+        Support::flash(MHW\tf('Il pagamento non è disponibile in questo momento. Riprova tra poco (codice {codice}).', ['{codice}' => Log::exception($e, 'checkout incorporato')]), 'err');
         Support::redirect($torna);
     }
     // Pagato nel modulo ma il webhook non è ancora arrivato: si aspetta su /pagamento/ok, come dalla pagina di Stripe.
@@ -1178,7 +1180,7 @@ $r->post('/pannello/{id}/pagamento/{oid}/stripe', function (array $a) use ($mia,
     } catch (\Throwable $e) {
         Db::update('orders', ['status' => 'failed', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $o['id']]);
         Support::flash($e instanceof MHW\PrezziNonCoerenti ? 'Il pagamento non è disponibile in questo momento, ti avvisiamo noi.'
-                       : 'Il pagamento non è disponibile in questo momento. Riprova tra poco (codice ' . Log::exception($e, 'checkout') . ').', 'err');
+                       : MHW\tf('Il pagamento non è disponibile in questo momento. Riprova tra poco (codice {codice}).', ['{codice}' => Log::exception($e, 'checkout')]), 'err');
         Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
     }
     Support::redirect($url);
@@ -1399,7 +1401,7 @@ $r->post('/giudizio/partecipo', function () use ($host) {
     if (!MHW\Giudizi::puoAderire($acc)) { Support::flash('Il programma non è disponibile per questo account.', 'err'); Support::redirect('/pannello'); }
     MHW\Giudizi::aderisci($acc, 'pannello');
     $pubblicata = MHW\Testimonianze::primaPubblicazione((int) $acc['id']) !== null;
-    Support::flash('Hai aderito al programma «Giudizio con sconto». ' . ($pubblicata ? 'La tua scheda è in elenco: la mettiamo in home dopo un controllo.' : 'La tua scheda va in elenco quando pubblichi la guida.'));
+    Support::flash(MHW\t('Hai aderito al programma «Giudizio con sconto».') . ' ' . ($pubblicata ? MHW\t('La tua scheda è in elenco: la mettiamo in home dopo un controllo.') : MHW\t('La tua scheda va in elenco quando pubblichi la guida.')));
     Support::redirect('/giudizio');
 });
 
@@ -1450,10 +1452,10 @@ $r->post('/inviti/email', function () use ($host) {
     [, $acc] = $host();
     $e = MHW\Inviti::perEmail($acc, (string) ($_POST['email'] ?? ''), (string) ($_POST['messaggio'] ?? ''));
     $testo = $e['mandati'] === 1 ? 'Invito mandato.' : ($e['mandati'] > 1 ? 'Inviti mandati: ' . $e['mandati'] . '.' : '');
-    if ($e['saltati'] > 0) $testo .= ' ' . ($e['saltati'] === 1 ? 'Un indirizzo non è stato invitato' : $e['saltati'] . ' indirizzi non sono stati invitati')
-        . ': non valido, già invitato negli ultimi 30 giorni o già cliente.';
-    if ($e['limite']) $testo .= ' Hai raggiunto ' . MHW\Inviti::EMAIL_AL_GIORNO . ' inviti per email oggi: gli altri domani.';
-    if ($e['errore'] !== '') $testo .= ' ' . $e['errore'];
+    if ($e['saltati'] > 0) $testo .= ' ' . ($e['saltati'] === 1 ? MHW\t('Un indirizzo non è stato invitato: non valido, già invitato negli ultimi 30 giorni o già cliente.')
+        : MHW\tf('{n} indirizzi non sono stati invitati: non validi, già invitati negli ultimi 30 giorni o già clienti.', ['{n}' => $e['saltati']]));
+    if ($e['limite']) $testo .= ' ' . MHW\tf('Hai raggiunto {n} inviti per email oggi: gli altri domani.', ['{n}' => MHW\Inviti::EMAIL_AL_GIORNO]);
+    if ($e['errore'] !== '') $testo .= ' ' . MHW\t($e['errore']);
     if ($e['mandati'] === 0 && $e['errore'] === '' && !$e['limite'] && $e['saltati'] > 0) $testo = 'Nessun invito mandato.' . $testo;
     $_SESSION['invito_email'] = $e['errore'] !== '' && $e['mandati'] === 0 ? ['email' => mb_substr((string) ($_POST['email'] ?? ''), 0, 1000), 'messaggio' => mb_substr((string) ($_POST['messaggio'] ?? ''), 0, 400)] : null;
     Support::flash(trim($testo), $e['mandati'] > 0 ? 'ok' : 'err');
@@ -1504,16 +1506,18 @@ $r->post('/account/email', function () use ($host, $paginaAccount) {
     if ($errori) $paginaAccount($u, $acc, ['erroriEmail' => $errori, 'apri' => 'email', 'emailNuova' => $email]);
     Db::update('users', ['pending_email' => $email], 'id = :uid', ['uid' => $u['id']]);
     $link = Support::baseUrl() . '/account/email/' . MHW\Tokens::issue((int) $u['id'], MHW\Tokens::EMAIL, 48 * 3600);
-    $partita = MHW\Mailer::manda($email, 'Conferma la tua nuova email', 'Conferma la tua nuova email',
-        ['Ciao' . (($n = trim(explode(' ', trim((string) $u['name']))[0] ?? '')) !== '' ? ' ' . $n : '') . ', per usare questo indirizzo nel tuo account MyHouse Welcome confermalo dal bottone qui sotto.',
-         'Finché non lo confermi resta valida l\'email di prima.'],
-        ['Conferma la nuova email', $link], 'Il link vale 48 ore. Se non l\'hai chiesto tu, ignora questo messaggio.');
+    // 9N · L'email nella lingua del pannello dell'host.
+    $n = trim(explode(' ', trim((string) $u['name']))[0] ?? '');
+    $partita = MHW\Mailer::manda($email, MHW\t('Conferma la tua nuova email'), MHW\t('Conferma la tua nuova email'),
+        [$n !== '' ? MHW\tf('Ciao {nome}, per usare questo indirizzo nel tuo account MyHouse Welcome confermalo dal bottone qui sotto.', ['{nome}' => $n]) : MHW\t('Ciao, per usare questo indirizzo nel tuo account MyHouse Welcome confermalo dal bottone qui sotto.'),
+         MHW\t('Finché non lo confermi resta valida l\'email di prima.')],
+        [MHW\t('Conferma la nuova email'), $link], MHW\t('Il link vale 48 ore. Se non l\'hai chiesto tu, ignora questo messaggio.'));
     if (!$partita) {
         Db::update('users', ['pending_email' => null], 'id = :uid', ['uid' => $u['id']]);
         $paginaAccount($u, $acc, ['erroriEmail' => ['email' => 'Non siamo riusciti a mandare l\'email di conferma: riprova tra poco.'], 'apri' => 'email', 'emailNuova' => $email]);
     }
     Auth::audit('account.email_request', (int) $u['id']);
-    Support::flash('Ti abbiamo mandato un link a ' . $email . ': aprilo per confermare la nuova email.');
+    Support::flash(MHW\tf('Ti abbiamo mandato un link a {email}: aprilo per confermare la nuova email.', ['{email}' => $email]));
     Support::redirect('/account#profilo');
 });
 
@@ -1526,11 +1530,14 @@ $r->get('/account/email/{token}', function (array $a) {
         Support::redirect(Auth::user() ? '/account' : '/accedi');
     }
     Db::update('users', ['email' => $nuova, 'pending_email' => null, 'email_verified_at' => Support::now()], 'id = :uid', ['uid' => $uid]);
-    MHW\Mailer::manda((string) $u['email'], 'La tua email è cambiata', 'La tua email è cambiata',
-        ['Ciao' . (($n = trim(explode(' ', trim((string) $u['name']))[0] ?? '')) !== '' ? ' ' . $n : '') . ', l\'email del tuo account MyHouse Welcome ora è ' . $nuova . '.',
-         'Se non l\'hai chiesto tu, scrivici subito: ' . Support::contatto() . '.']);
+    // 9N · Nella lingua del pannello dell'host (anche senza sessione: dal suo account).
+    $lin = MHW\Pannello::linguaDi($u, (int) Db::val('SELECT id FROM accounts WHERE user_id = ?', [$uid], 0));
+    $n = trim(explode(' ', trim((string) $u['name']))[0] ?? '');
+    MHW\Mailer::manda((string) $u['email'], MHW\Pannello::tIn($lin, 'La tua email è cambiata'), MHW\Pannello::tIn($lin, 'La tua email è cambiata'),
+        [MHW\Pannello::tIn($lin, $n !== '' ? 'Ciao {nome}, l\'email del tuo account MyHouse Welcome ora è {email}.' : 'Ciao, l\'email del tuo account MyHouse Welcome ora è {email}.', ['{nome}' => $n, '{email}' => $nuova]),
+         MHW\Pannello::tIn($lin, 'Se non l\'hai chiesto tu, scrivici subito: {contatto}.', ['{contatto}' => Support::contatto()])]);
     Auth::audit('account.email', (int) $uid, ['da' => $u['email']]);
-    Support::flash('Email cambiata: ora accedi con ' . $nuova . '.');
+    Support::flash(MHW\Pannello::tIn($lin, 'Email cambiata: ora accedi con {email}.', ['{email}' => $nuova]));
     Support::redirect(Auth::user() ? '/account' : '/accedi');
 });
 
@@ -1567,10 +1574,10 @@ $r->post('/account/rinnovo', function () use ($host) {
         // Il webhook confermerà; intanto lo si scrive, perché la pagina lo mostri subito.
         Db::update('subscriptions', ['cancel_at_period_end' => $spegni ? 1 : 0, 'updated_at' => Support::now()], 'id = :sid', ['sid' => $s['id']]);
         Auth::audit($spegni ? 'subscription.renewal_off' : 'subscription.renewal_on', (int) $u['id']);
-        Support::flash($spegni ? 'Rinnovo automatico disattivato. La guida resta online fino al ' . Support::date($s['current_period_end']) . '.'
+        Support::flash($spegni ? MHW\tf('Rinnovo automatico disattivato. La guida resta online fino al {data}.', ['{data}' => MHW\Pannello::data($s['current_period_end'])])
                                : 'Rinnovo automatico riattivato.');
     } catch (\Throwable $e) {
-        Support::flash('Non è stato possibile cambiare il rinnovo adesso (codice ' . Log::exception($e, 'rinnovo') . ').', 'err');
+        Support::flash(MHW\tf('Non è stato possibile cambiare il rinnovo adesso (codice {codice}).', ['{codice}' => Log::exception($e, 'rinnovo')]), 'err');
     }
     Support::redirect('/account');
 });
@@ -1580,7 +1587,7 @@ $r->post('/account/portale', function () use ($host) {
     if (!Stripe::enabled() || $acc['stripe_customer_id'] === '') Support::redirect('/account');
     try { Support::redirect(Stripe::portalUrl($acc['stripe_customer_id'])); }
     catch (\Throwable $e) {
-        Support::flash('Il portale di fatturazione non è disponibile adesso (codice ' . Log::exception($e, 'portale') . ').', 'err');
+        Support::flash(MHW\tf('Il portale di fatturazione non è disponibile adesso (codice {codice}).', ['{codice}' => Log::exception($e, 'portale')]), 'err');
         Support::redirect('/account');
     }
 });
@@ -1646,7 +1653,7 @@ $r->any('/account/piano/conferma', function () use ($host, $cambioPossibile, $sc
                 foreach ($cambia['sezioni'] as $blocco) {
                     $pid = (int) $blocco['struttura']['id'];
                     $tenute = array_values(array_intersect(array_map('intval', (array) ($_POST['tieni'][$pid] ?? [])), array_map('intval', array_column($blocco['sezioni'], 'id'))));
-                    if (count($tenute) > $cambia['maxSezioni']) throw new RuntimeException('In ' . $blocco['struttura']['name'] . ' scegli al massimo ' . $cambia['maxSezioni'] . ' sezioni da tenere.');
+                    if (count($tenute) > $cambia['maxSezioni']) throw new RuntimeException(MHW\tf('In {nome} scegli al massimo {n} sezioni da tenere.', ['{nome}' => $blocco['struttura']['name'], '{n}' => $cambia['maxSezioni']]));
                     $scelte['sezioni'][$pid] = $tenute;
                 }
                 $ids = array_map('intval', array_column($cambia['strutture'], 'id'));
@@ -1654,12 +1661,12 @@ $r->any('/account/piano/conferma', function () use ($host, $cambioPossibile, $sc
                     throw new RuntimeException('Scegli esattamente ' . $cambia['daArchiviare'] . ' struttur' . ($cambia['daArchiviare'] === 1 ? 'a' : 'e') . ' da archiviare.');
                 }
                 CambioAbbonamento::programma($sub, $pv, $q, $scelte);
-                Support::flash('Fatto: dal ' . Support::date($prev['fine']) . ' passi a ' . $pv['name'] . '. Fino ad allora resti su ' . $st['pv']['name'] . '.');
+                Support::flash(MHW\tf('Fatto: dal {data} passi a {piano}. Fino ad allora resti su {attuale}.', ['{data}' => MHW\Pannello::data($prev['fine']), '{piano}' => $pv['name'], '{attuale}' => $st['pv']['name']]));
                 Support::redirect('/account');
             }
             if ($prev['conguaglio'] === 0) {
                 CambioAbbonamento::subito($sub, $pv, $q);
-                Support::flash('Fatto: ora sei su ' . $pv['name'] . (Plans::perProperty($pv) ? " ($q strutture)" : '') . '.');
+                Support::flash(Plans::perProperty($pv) ? MHW\tf('Fatto: ora sei su {piano} ({n} strutture).', ['{piano}' => $pv['name'], '{n}' => $q]) : MHW\tf('Fatto: ora sei su {piano}.', ['{piano}' => $pv['name']]));
                 Support::redirect('/account');
             }
             if (!MHW\Fatturazione::completa($acc)) {
@@ -1670,7 +1677,7 @@ $r->any('/account/piano/conferma', function () use ($host, $cambioPossibile, $sc
             Support::redirect(Stripe::checkoutChange($o, CambioAbbonamento::descrizione($st['pv'], $st['quantita'], $pv, $q), $acc, $u));
         } catch (\Throwable $e) {
             $err = $e instanceof RuntimeException && !($e instanceof \PDOException) ? $e->getMessage()
-                 : 'Non è stato possibile cambiare piano adesso (codice ' . Log::exception($e, 'cambio piano') . '). Riprova tra poco.';
+                 : MHW\tf('Non è stato possibile cambiare piano adesso (codice {codice}). Riprova tra poco.', ['{codice}' => Log::exception($e, 'cambio piano')]);
         }
     }
     View::out('host/piano_conferma', ['user' => $u, 'acc' => $acc, 'st' => $st, 'pv' => $pv, 'q' => $q, 'prev' => $prev, 'cambia' => $cambia,
@@ -1683,9 +1690,9 @@ $r->post('/account/piano/annulla', function () use ($host) {
     if (!$st['sub'] || empty($st['sub']['next_package_version_id'])) Support::redirect('/account');
     try {
         CambioAbbonamento::annulla($st['sub']);
-        Support::flash('Cambio annullato: resti su ' . $st['pv']['name'] . ' anche dopo il rinnovo.');
+        Support::flash(MHW\tf('Cambio annullato: resti su {piano} anche dopo il rinnovo.', ['{piano}' => $st['pv']['name']]));
     } catch (\Throwable $e) {
-        Support::flash('Non è stato possibile annullare il cambio adesso (codice ' . Log::exception($e, 'annulla cambio piano') . '). Riprova tra poco.', 'err');
+        Support::flash(MHW\tf('Non è stato possibile annullare il cambio adesso (codice {codice}). Riprova tra poco.', ['{codice}' => Log::exception($e, 'annulla cambio piano')]), 'err');
     }
     Support::redirect('/account');
 });
@@ -1716,7 +1723,7 @@ $r->post('/pannello/{id}/riattiva', function (array $a) use ($mia) {
     $max = Entitlements::limit((int) $acc['id'], 'properties', 1);
     $attive = (int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL AND is_demo < 2', [$acc['id']], 0);
     if ($attive >= $max) {
-        Support::flash("Il tuo piano comprende $max struttur" . ($max === 1 ? 'a' : 'e') . ': per riattivarla aumenta il numero di strutture da Account & Fatturazione.', 'err');
+        Support::flash($max === 1 ? MHW\t('Il tuo piano comprende 1 struttura: per riattivarla aumenta il numero di strutture da Account & Fatturazione.') : MHW\tf('Il tuo piano comprende {n} strutture: per riattivarla aumenta il numero di strutture da Account & Fatturazione.', ['{n}' => $max]), 'err');
     } else {
         Db::update('properties', ['archived_at' => null], 'id = :pid', ['pid' => $p['id']]);
         Auth::audit('property.unarchive', (int) $u['id'], ['property_id' => (int) $p['id']]);
@@ -1745,12 +1752,12 @@ $r->post('/sconto/applica', function () use ($host, $tornaSconto) {
         if (MHW\Omaggi::sembra($codice)) {
             $c = MHW\Omaggi::valida($codice, $acc);
             MHW\Omaggi::applica($acc, $c);
-            Support::flash('Codice omaggio applicato: ' . (int) $c['mesi'] . ' mesi gratis, primo addebito il ' . Support::date(MHW\Omaggi::fineIso((int) $c['mesi'])) . '.');
+            Support::flash(MHW\tf('Codice omaggio applicato: {n} mesi gratis, primo addebito il {data}.', ['{n}' => (int) $c['mesi'], '{data}' => MHW\Pannello::data(MHW\Omaggi::fineIso((int) $c['mesi']))]));
             Support::redirect($tornaSconto());
         }
         // Qui si può scrivere anche il codice di invito di un amico (Invita un amico).
         if (!MHW\Sconti::trova($codice) && ($chi = MHW\Inviti::applicaCodice($acc, $codice)) !== null) {
-            Support::flash('Invito di ' . $chi . ' applicato: −' . MHW\Inviti::AMICO . '% sul primo anno.');
+            Support::flash(MHW\tf('Invito di {nome} applicato: −{n}% sul primo anno.', ['{nome}' => $chi, '{n}' => MHW\Inviti::AMICO]));
             Support::redirect($tornaSconto());
         }
         $riga = MHW\Sconti::valida($codice, $acc, $pv, $q);

@@ -29,7 +29,7 @@ final class Media
     public static function erroreCaricamento(int $err): string
     {
         return match ($err) {
-            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'Il file è troppo pesante per il server (al massimo ' . self::mb(self::limiteCaricamento()) . '): riducilo e riprova.',
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => strtr(Pannello::t('Il file è troppo pesante per il server (al massimo {mb}): riducilo e riprova.'), ['{mb}' => self::mb(self::limiteCaricamento())]),
             UPLOAD_ERR_PARTIAL => 'Il caricamento si è interrotto a metà: controlla la connessione e riprova.',
             UPLOAD_ERR_NO_FILE => 'Nessun file scelto.',
             UPLOAD_ERR_NO_TMP_DIR, UPLOAD_ERR_CANT_WRITE => 'Il server non riesce a salvare il file in questo momento: riprova tra poco, e se si ripete scrivi all\'assistenza.',
@@ -98,7 +98,7 @@ final class Media
         $tmp = self::upload($file);
         $cfg = Config::get('storage');
         if (filesize($tmp) > $cfg['max_image_bytes']) {
-            throw new \RuntimeException('Immagine troppo pesante: il limite è ' . round($cfg['max_image_bytes'] / 1048576) . ' MB.');
+            throw new \RuntimeException(strtr(Pannello::t('Immagine troppo pesante: il limite è {n} MB.'), ['{n}' => round($cfg['max_image_bytes'] / 1048576)]));
         }
         $info = @getimagesize($tmp);
         if (!$info || !isset(self::IMG[$info['mime']])) throw new \RuntimeException('Formati accettati: JPG, PNG, WebP.');
@@ -155,7 +155,7 @@ final class Media
         $tmp = self::upload($file);
         $cfg = Config::get('storage');
         $size = (int) filesize($tmp);
-        if ($size > $cfg['max_pdf_bytes']) throw new \RuntimeException('PDF troppo pesante: il limite è ' . round($cfg['max_pdf_bytes'] / 1048576) . ' MB.');
+        if ($size > $cfg['max_pdf_bytes']) throw new \RuntimeException(strtr(Pannello::t('PDF troppo pesante: il limite è {n} MB.'), ['{n}' => round($cfg['max_pdf_bytes'] / 1048576)]));
         if ($size < 100) throw new \RuntimeException('Questo file non è un PDF valido.');
         $bytes = (string) file_get_contents($tmp);
         $finfo = function_exists('finfo_open') ? finfo_file(finfo_open(FILEINFO_MIME_TYPE), $tmp) : 'application/pdf';

@@ -243,11 +243,11 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
 <?php if ($f): ?>
   <?php if ($f['kind'] === 'limite'): ?>
     <div class="limit" style="margin-bottom:24px" role="status">
-      <p style="max-width:620px"><?= Support::e($f['msg']) ?></p>
-      <a class="btn btn--sm" href="<?= b() ?>/piano?passa=plus">Scopri Plus</a>
+      <p style="max-width:620px"><?= Support::e(MHW\Pannello::t($f['msg'])) ?></p>
+      <a class="btn btn--sm" href="<?= b() ?>/piano?passa=plus"><?= MHW\Pannello::t('Scopri Plus') ?></a>
     </div>
   <?php else: ?>
-    <p class="note <?= ['err' => 'note--err', 'avviso' => ''][$f['kind']] ?? 'note--ok' ?>" style="margin-bottom:24px" role="status"><?= Support::e($f['msg']) ?></p>
+    <p class="note <?= ['err' => 'note--err', 'avviso' => ''][$f['kind']] ?? 'note--ok' ?>" style="margin-bottom:24px" role="status"><?= Support::e(MHW\Pannello::t($f['msg'])) ?></p>
   <?php endif; ?>
 <?php endif; ?>
 <?php /* 7C · Novità: la prima non ancora chiusa da questo account (non per l'amministrazione). */

@@ -86,16 +86,17 @@ final class Inviti
     public static function messaggio(array $acc): string
     {
         // 9F · lo stesso testo di partenza di «Invita per email» (Testi e foto → inviti.messaggio_partenza), poi il link e il codice.
-        return self::testoPartenza() . ' Guarda com\'è la mia guida: ' . self::link($acc) . '. Il codice è ' . self::codice($acc) . '.';
+        // 9N · Nel pannello in inglese il messaggio parte in inglese.
+        return self::testoPartenza() . ' ' . strtr(Pannello::t('Guarda com\'è la mia guida: {link}. Il codice è {codice}.'), ['{link}' => self::link($acc), '{codice}' => self::codice($acc)]);
     }
 
     /** 9F · Il testo di partenza degli inviti, con la percentuale dell'amico già scritta (modificabile in Testi e foto). */
     public static function testoPartenza(): string
     {
-        $serie = 'Ciao! Uso MyHouse Welcome per la guida digitale della mia struttura e mi trovo bene. Con questo invito hai il ' . self::AMICO
-               . '% di sconto sul primo anno: crei la guida gratis e paghi solo quando la pubblichi.';
+        $loc = Pannello::en() ? 'en' : null;
+        $serie = strtr(Pannello::t('Ciao! Uso MyHouse Welcome per la guida digitale della mia struttura e mi trovo bene. Con questo invito hai il {amico}% di sconto sul primo anno: crei la guida gratis e paghi solo quando la pubblichi.'), ['{amico}' => self::AMICO]);
         if (!TestiSito::disponibili()) return $serie;
-        $t = trim(TestiSito::testo('inviti.messaggio_partenza', ['amico' => self::AMICO . '%']));
+        $t = trim(html_entity_decode(strip_tags(TestiSito::formatta(TestiSito::get('inviti.messaggio_partenza', $loc), ['amico' => self::AMICO . '%'])), ENT_QUOTES, 'UTF-8'));
         return $t !== '' ? $t : $serie;
     }
 
@@ -314,19 +315,23 @@ final class Inviti
         $amico = self::nomeBreve((string) Db::val('SELECT u.name FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [$amicoId], ''));
         $st = self::stato(['id' => $rid]);
         $mancano = $st['massimo'] - $st['validi'];
-        $corpo = $amico . ' ha pubblicato la sua guida con il tuo invito. ';
+        // 9N · Nella lingua del pannello di chi ha invitato.
+        $lin = Richiami::lingua($rid);
+        $tl = fn(string $it, array $s = []) => Pannello::tIn($lin, $it, $s);
+        $data = fn(string $iso) => $lin === 'en' && ($t = strtotime($iso)) ? gmdate('j F Y', $t) : Support::date($iso);
+        $x = ['{amico}' => $amico, '{n}' => $st['totale'], '{max}' => self::MASSIMO, '{mancano}' => $mancano];
+        $corpo = $tl('{amico} ha pubblicato la sua guida con il tuo invito.', $x) . ' ';
         if ($st['percento'] > 0) {
-            $corpo .= 'Il tuo sconto sul prossimo rinnovo ' . ($mancano > 0 ? 'sale al ' : 'è al ') . $st['totale'] . '%'
-                    . ($st['rinnovo'] !== '' && $st['prezzo'] > 0 ? ': il ' . Support::date($st['rinnovo']) . ' paghi ' . Support::money($st['scontato'], $st['valuta'])
-                       . ' + IVA invece di ' . Support::money($st['prezzo'], $st['valuta']) : '') . '. ';
+            $corpo .= $tl($mancano > 0 ? 'Il tuo sconto sul prossimo rinnovo sale al {n}%' : 'Il tuo sconto sul prossimo rinnovo è al {n}%', $x)
+                    . ($st['rinnovo'] !== '' && $st['prezzo'] > 0 ? $tl(': il {data} paghi {prezzo} + IVA invece di {pieno}', ['{data}' => $data($st['rinnovo']), '{prezzo}' => Support::money($st['scontato'], $st['valuta']), '{pieno}' => Support::money($st['prezzo'], $st['valuta'])]) : '') . '. ';
         }
-        $corpo .= $mancano > 0 ? ($mancano === 1 ? 'Ti manca 1 amico' : 'Ti mancano ' . $mancano . ' amici') . ' per arrivare al ' . self::MASSIMO . '% degli inviti.'
-                               : 'Hai raggiunto il massimo degli inviti. I tuoi amici continuano ad avere il loro sconto.';
+        $corpo .= $mancano > 0 ? ($mancano === 1 ? $tl('Ti manca 1 amico per arrivare al {max}% degli inviti.', $x) : $tl('Ti mancano {mancano} amici per arrivare al {max}% degli inviti.', $x))
+                               : $tl('Hai raggiunto il massimo degli inviti. I tuoi amici continuano ad avere il loro sconto.');
         // 9L · Il tetto vero è inviti + programma: «fino al 55%», non il 50%.
-        if (Giudizi::attivo()) $corpo .= ' Con il programma «Giudizio con sconto» arrivi fino al ' . Sconti::massimoRinnovo()['totale'] . '% di sconto a partire dal prossimo anno.';
-        $oggetto = $amico . ' ha pubblicato la sua guida' . ($st['percento'] > 0 ? ': sei al −' . $st['totale'] . '%' : '');
+        if (Giudizi::attivo()) $corpo .= ' ' . $tl('Con il programma «Giudizio con sconto» arrivi fino al {n}% di sconto a partire dal prossimo anno.', ['{n}' => Sconti::massimoRinnovo()['totale']]);
+        $oggetto = $st['percento'] > 0 ? $tl('{amico} ha pubblicato la sua guida: sei al −{n}%', $x) : $tl('{amico} ha pubblicato la sua guida', $x);
         Richiami::manda($rid, (string) $u['email'], (string) $u['name'], 'inviti', 'amico-' . $amicoId,
-                        [$oggetto, $corpo, 'Invita un altro amico', Support::baseUrl() . '/inviti']);
+                        [$oggetto, $corpo, $tl('Invita un altro amico'), Support::baseUrl() . '/inviti'], $lin);
     }
 
     // ------------------------------------------------------------------ per le pagine
@@ -375,7 +380,7 @@ final class Inviti
             $out[] = [
                 'nome' => $nome !== '' ? (preg_split('/\s+/', $nome)[0] ?? $nome) : self::maschera((string) $r['email']),
                 'struttura' => (string) ($r['struttura'] ?? ''),
-                'stato' => $pubblicato ? 'Ha pubblicato la guida' : 'Si è registrato',
+                'stato' => $pubblicato ? Pannello::t('Ha pubblicato la guida') : Pannello::t('Si è registrato'),
                 'pubblicato' => $pubblicato, 'status' => (string) $r['status'],
                 'data' => (string) ($pubblicato ? ($r['qualified_at'] ?: $r['created_at']) : $r['created_at']),
                 'risparmio' => $r['status'] === 'valido' ? $passo : 0,
