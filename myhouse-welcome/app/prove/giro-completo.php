@@ -6392,6 +6392,64 @@ prova('9L · 8 · nessuna foto dell\'host nel programma: niente profile_media_id
       && str_contains($ospite->get('/termini')['body'], 'Non mostriamo link alla guida, la tua foto, né dati dei tuoi ospiti.') && str_contains($ospite->get('/privacy')['body'], 'Nessuna foto della persona.'));
 db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'impostazioni%'");
 
+// ======================================================================= Benvenuto
+capitolo('Email di benvenuto: la prima guida online, una volta sola, in italiano o in inglese, con la riga sul programma');
+$benv = fn(int $acc) => righe("SELECT * FROM email_log WHERE account_id = ? AND kind = 'benvenuto'", [$acc]);
+$mBenv = fn(string $a) => array_values(array_filter($posta($a), fn($m) => str_contains((string) ($m['subject'] ?? ''), 'è online') || str_contains((string) ($m['subject'] ?? ''), 'is online')));
+// Lia (9L · 1) ha pagato con la casella: il webhook ha messo online la guida e mandato il benvenuto.
+$mL = $mBenv('lia9l@prova.test'); $tL = (string) (end($mL)['text'] ?? '');
+$slugL = (string) val('SELECT slug FROM properties WHERE id = ?', [$liaPid]);
+prova('Benvenuto · dopo il pagamento (webhook): una email «La guida di Casa Lia è online — MyHouse Welcome», «Ciao Lia,», il link della guida, le tre cose da fare, «Apri QR & Link»',
+      count($benv($liaAcc)) === 1 && count($mL) === 1 && ($mL[0]['subject'] ?? '') === 'La guida di Casa Lia è online — MyHouse Welcome'
+      && str_contains($tL, 'Ciao Lia, ti diamo il benvenuto in MyHouse Welcome.') && str_contains($tL, "/g/$slugL") && str_contains($tL, 'Tre cose da fare adesso:')
+      && str_contains($tL, '1. Stampa il QR') && str_contains($tL, "3. Quando cambi qualcosa, pubblica le modifiche") && preg_match('#Apri QR & Link: \S+/pannello/' . $liaPid . '/qr#', $tL) === 1, $tL);
+prova('Benvenuto · Lia ha aderito: la riga «Hai aderito a «Giudizio con sconto»» (giudizio.email.aderito), niente invito; email di servizio senza «Non mandarmene più»',
+      str_contains($tL, 'Hai aderito a «Giudizio con sconto»: dopo un nostro controllo la tua guida compare tra «Le guide dei nostri host»') && str_contains($tL, 'mai una tua foto')
+      && !str_contains($tL, 'Vuoi il 5% di sconto') && !str_contains($tL, 'Non vuoi più ricevere') && !str_contains($tL, '/email/stop/') && str_contains($tL, 'Una domanda? Rispondi a questa email'));
+$emlL = $emlPer('lia9l@prova.test');
+prova('Benvenuto · l\'HTML con il marchio, in italiano (lang="it", «Assistenza», «Termini»), Reply-To all\'assistenza', str_contains($emlL, 'Reply-To: <assistenza@welcomemyhouse.it>')
+      && str_contains(base64_decode(preg_match('#Content-Type: text/html; charset=UTF-8\r?\nContent-Transfer-Encoding: base64\r?\n\r?\n([A-Za-z0-9+/=\r\n]+)#', $emlL, $hL) ? $hL[1] : ''), '<html lang="it">'));
+// Di nuovo il webhook, la pagina che aspetta il pagamento, il giro dei richiami e una ripubblicazione: niente seconda email.
+$liaO = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$liaAcc]);
+inviaWebhook(['id' => 'evt_sub_prova_lia9l', 'type' => 'checkout.session.completed', 'data' => ['object' => ['id' => $liaO['provider_session_id'], 'mode' => 'subscription', 'payment_status' => 'paid',
+    'customer' => 'cus_sub_prova_lia9l', 'subscription' => 'sub_prova_lia9l', 'client_reference_id' => (string) $liaO['id'], 'metadata' => ['order_id' => (string) $liaO['id'], 'account_id' => (string) $liaAcc]]]]);
+$lia->get('/pagamento/stato?order=' . (int) $liaO['id']);
+$cron();
+$lia->segui($lia->modulo("/pannello/$liaPid/procedura/pubblica", "/pannello/$liaPid/pubblica", []));
+prova('Benvenuto · una volta sola: webhook ripetuto, /pagamento/stato, giro dei richiami e «Pubblica le modifiche» non la rimandano', count($benv($liaAcc)) === 1 && count($mBenv('lia9l@prova.test')) === 1
+      && (int) val('SELECT MAX(version) FROM guide_versions WHERE property_id = ?', [$liaPid]) >= 2);
+// Teo (9L · 2) ha pagato senza la casella: nel benvenuto l'invito al programma con la percentuale e il link.
+$mT = $mBenv('teo9l@prova.test'); $tT = (string) (end($mT)['text'] ?? '');
+prova('Benvenuto · Teo, senza adesione al pagamento: la riga «Vuoi il 5% di sconto sul rinnovo? Aderisci…» con il link a /giudizio (giudizio.email.invito)', count($mT) === 1
+      && preg_match('#Vuoi il 5% di sconto sul rinnovo\? Aderisci a «Giudizio con sconto».*Si aderisce dal pannello: \S+/giudizio\b#s', $tT) === 1 && !str_contains($tT, 'Hai aderito'), $tT);
+// Zoe ha il pannello in inglese: l'email e le parti fisse in inglese, con la riga del programma in inglese.
+[$zoe, $zoeAcc, $zoePid] = $host9l('Zoe', 'zoe.benvenuto@prova.test', 'VTRZOE85A41G478U', 'Trevi');
+db()->prepare("UPDATE users SET panel_lang = 'en' WHERE id = (SELECT user_id FROM accounts WHERE id = ?)")->execute([$zoeAcc]);
+[, $rZ] = $paga9l($zoe, $zoeAcc, $zoePid, false, 'sub_prova_zoe_benv');
+$mZ = $mBenv('zoe.benvenuto@prova.test'); $tZ = (string) (end($mZ)['text'] ?? '');
+$emlZ = $emlPer('zoe.benvenuto@prova.test');
+$hZ = base64_decode(preg_match('#Content-Type: text/html; charset=UTF-8\r?\nContent-Transfer-Encoding: base64\r?\n\r?\n([A-Za-z0-9+/=\r\n]+)#', $emlZ, $mm) ? $mm[1] : '');
+prova('Benvenuto · pannello in inglese: «The guide for Casa Zoe is online», «Hi Zoe,», «Open QR & Link», invito «Would you like 5% off your renewal?», piede «Need help?»',
+      $rZ['body'] === 'abbonamento-attivato' && count($mZ) === 1 && ($mZ[0]['subject'] ?? '') === 'The guide for Casa Zoe is online — MyHouse Welcome'
+      && str_contains($tZ, 'Hi Zoe, welcome to MyHouse Welcome.') && str_contains($tZ, 'Three things to do now:') && str_contains($tZ, 'Open QR & Link:')
+      && str_contains($tZ, 'Would you like 5% off your renewal? Join “Review with a discount”') && str_contains($tZ, 'Need help? Write to us at') && !str_contains($tZ, 'Ciao'), $tZ);
+prova('Benvenuto · l\'HTML in inglese: lang="en", «If the button does not open», «Support», «Terms» con /en/terms', str_contains($hZ, '<html lang="en">')
+      && str_contains($hZ, 'If the button does not open, copy this address into your browser:') && str_contains($hZ, '>Support</a>') && str_contains($hZ, '/en/terms">Terms</a>') && !str_contains($hZ, 'Assistenza'));
+// Il giro dei richiami riprende un benvenuto non partito, ma solo per una prima guida recente (FINESTRA, 3 giorni).
+db()->prepare("DELETE FROM email_log WHERE account_id = ? AND kind = 'benvenuto'")->execute([$zoeAcc]);
+$c = $cron();
+prova('Benvenuto · non partito (registro vuoto): lo riprende il giro dei richiami', count($benv($zoeAcc)) === 1 && ($c['benvenuto'] ?? 0) >= 1 && count($mBenv('zoe.benvenuto@prova.test')) === 2, json_encode($c));
+db()->prepare("DELETE FROM email_log WHERE account_id = ? AND kind = 'benvenuto'")->execute([$zoeAcc]);
+db()->prepare('UPDATE guide_versions SET published_at = ? WHERE property_id = ? AND version = 1')->execute([gmdate('Y-m-d\TH:i:s\Z', time() - 4 * 86400), $zoePid]);
+$cron();
+prova('Benvenuto · prima guida online da più di 3 giorni: niente email (chi aggiorna non scrive ai clienti vecchi)', count($benv($zoeAcc)) === 0 && count($mBenv('zoe.benvenuto@prova.test')) === 2);
+// La seconda guida di un account che ne aveva già una online, la vetrina e gli account di esempio: niente benvenuto.
+prova('Benvenuto · mai agli account di esempio (lucia@esempio.it) né alla vetrina', !(int) val("SELECT COUNT(*) FROM email_log e JOIN accounts a ON a.id = e.account_id JOIN users u ON u.id = a.user_id
+      WHERE e.kind = 'benvenuto' AND (u.email LIKE '%@esempio.it' OR EXISTS (SELECT 1 FROM properties p WHERE p.account_id = a.id AND p.is_demo > 0))"));
+$ts = $admin->get('/admin/testi');
+prova('Benvenuto · in «Testi e foto» (Le guide dei nostri host e «Giudizio con sconto») le due righe dell\'email', str_contains($ts['body'], 'Email di benvenuto · la riga per chi ha aderito')
+      && str_contains($ts['body'], 'Email di benvenuto · la riga per chi può ancora aderire'));
+
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

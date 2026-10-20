@@ -13,6 +13,7 @@ namespace MHW;
  *   pagamento — (7A) pagamento iniziato e annullato, e dopo 2 ore ancora nessun abbonamento
  *   parere   — (7A) 14 giorni dopo la registrazione, mai pubblicato: «Cosa ti ha fermato?»
  *   giudizio — (7D) dal 30° al 40° giorno dopo la prima pubblicazione, una volta sola: «Ti sta piacendo?»
+ *   benvenuto — la prima guida dell'account è online (Benvenuto): una volta sola, di servizio, senza «non mandarmene più»
  *
  * Le finestre non si sovrappongono: una struttura riceve al massimo un richiamo
  * per volta, e chi aggiorna l'applicazione con bozze vecchie non riceve una
@@ -31,7 +32,7 @@ final class Richiami
                          'scadenza' => 'l\'avviso prima della scadenza',
                          'conferma' => 'il promemoria sulla conferma dell\'email', 'pagamento' => 'il promemoria sul pagamento',
                          'parere' => 'la domanda su cosa ti ha fermato',
-                         'giudizio' => 'la richiesta di un giudizio su MyHouse Welcome'];   // con l'articolo: «Non vuoi più ricevere …?»
+                         'giudizio' => 'la richiesta di un giudizio su MyHouse Welcome', 'benvenuto' => 'l\'email di benvenuto'];   // con l'articolo: «Non vuoi più ricevere …?»
     /** Le risposte a un clic di «Cosa ti ha fermato?» (7A). */
     public const MOTIVI = ['prezzo' => 'Il prezzo', 'tempo' => 'Non ho avuto tempo', 'funzione' => 'Mi mancava una funzione', 'altro' => 'Altro'];
     /** I richiami del percorso: uno per volta, mai due a meno di due giorni l'uno dall'altro (7A). */
@@ -210,6 +211,8 @@ final class Richiami
         try { CambioAbbonamento::applyPendingChanges(); } catch (\Throwable $e) { Log::exception($e, 'cambi di piano in sospeso'); }
         RecuperoPagamenti::inSospeso();   // i pagamenti di cui il webhook di Stripe non ha dato notizia
         try { Vetrina::sincronizza(); } catch (\Throwable $e) { Log::exception($e, 'vetrina: sincronizzazione'); }   // 9L: schede da spegnere
+        // Benvenuto: le prime guide degli ultimi giorni rimaste senza email (il primo tentativo non è partito).
+        try { $fatte['benvenuto'] = Benvenuto::recenti($t); } catch (\Throwable $e) { Log::exception($e, 'email di benvenuto'); }
         return $fatte;
     }
 
@@ -407,8 +410,14 @@ final class Richiami
         return [$ok, $ok ? 'Promemoria mandato a ' . $s['email'] . '.' : 'L\'email a ' . $s['email'] . ' non è partita: controlla la posta in Impostazioni.'];
     }
 
-    /** Manda una volta sola: prima si scrive il registro (indice unico), poi l'email. */
-    public static function manda(int $accountId, string $email, string $nome, string $tipo, string $ref, array $m): bool
+    /** Le email di servizio: partono una volta sola e non si disattivano (niente «non mandarmene più»). */
+    private const SERVIZIO = ['benvenuto'];
+
+    /**
+     * Manda una volta sola: prima si scrive il registro (indice unico), poi l'email.
+     * $lingua 'en': il saluto e le parti fisse in inglese (host con il pannello in inglese); il testo $m lo dà chi chiama.
+     */
+    public static function manda(int $accountId, string $email, string $nome, string $tipo, string $ref, array $m, string $lingua = 'it'): bool
     {
         // 7F: i clienti di prova non ricevono richiami automatici; il promemoria mandato a mano dall'amministrazione sì.
         if (!str_starts_with($ref, 'manuale-') && self::diProva($accountId)) return false;
@@ -417,7 +426,8 @@ final class Richiami
         if ($vetrinaE !== '' && mb_strtolower(trim($email)) === $vetrinaE) return false;
         // 9D · L'avviso a 7 giorni dall'addebito (rinnovo, ref «-7») è dovuto: parte anche a chi ha disattivato gli avvisi.
         $dovuta = $tipo === 'rinnovo' && str_ends_with($ref, '-7');
-        if (!$dovuta && Db::one('SELECT id FROM email_optout WHERE account_id = ? AND kind = ?', [$accountId, $tipo])) return false;
+        $servizio = in_array($tipo, self::SERVIZIO, true);
+        if (!$dovuta && !$servizio && Db::one('SELECT id FROM email_optout WHERE account_id = ? AND kind = ?', [$accountId, $tipo])) return false;
         if (Db::one('SELECT id FROM email_log WHERE account_id = ? AND kind = ? AND ref = ?', [$accountId, $tipo, $ref])) return false;
         $token = bin2hex(random_bytes(24));
         try { Db::insert('email_log', ['account_id' => $accountId, 'kind' => $tipo, 'ref' => $ref, 'token' => $token, 'sent_at' => Support::now()]); }
@@ -428,18 +438,17 @@ final class Richiami
         $scelte = array_map(fn($x) => [$x[0], str_replace('{token}', $token, $x[1])], $m[5] ?? []);
         $tasto = $bottone !== null && $url !== null ? [$bottone, str_replace('{token}', $token, $url)] : null;
         $stop = Support::baseUrl() . '/email/stop/' . $token;
-        $saluto = 'Ciao' . (trim($nome) !== '' ? ' ' . trim(explode(' ', trim($nome))[0]) : '') . ',';
+        $saluto = ($lingua === 'en' ? 'Hi' : 'Ciao') . (trim($nome) !== '' ? ' ' . trim(explode(' ', trim($nome))[0]) : '') . ',';
         $e = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
-        $paragrafi = [$saluto . ' ' . $corpo];
+        $paragrafi = explode("\n\n", $saluto . ' ' . $corpo);   // una riga vuota nel testo = un paragrafo nuovo
         // 9H · Le email di pagamento: la frase sulle fatture e il Reply-To all'email amministrazione.
         $pagamento = in_array($tipo, ['rinnovo', 'scadenza', 'pagamento'], true);
         if ($pagamento) $paragrafi[] = Support::fraseFatture();
-        $piedeHtml = $dovuta ? 'Questo avviso è dovuto prima di un addebito e non si può disattivare.'
-                   : 'Non vuoi più ricevere ' . $e(self::TIPI[$tipo]) . '? <a href="' . $e($stop) . '" style="color:#6a5b48">Non mandarmene più</a>';
-        $piedeTesto = $dovuta ? 'Questo avviso è dovuto prima di un addebito e non si può disattivare.' : 'Non vuoi più ricevere ' . self::TIPI[$tipo] . "? $stop";
-        $testo = Mailer::testo($oggetto, $paragrafi, $tasto, $nota, $piedeTesto, $scelte);
-        $html = Mailer::layout($oggetto, $paragrafi, $tasto, $nota, $piedeHtml, $scelte);
-        $invio = fn() => Mailer::send($email, $oggetto . ' — MyHouse Welcome', $testo, $html);
+        $piedeHtml = $servizio ? '' : ($dovuta ? 'Questo avviso è dovuto prima di un addebito e non si può disattivare.'
+                   : 'Non vuoi più ricevere ' . $e(self::TIPI[$tipo]) . '? <a href="' . $e($stop) . '" style="color:#6a5b48">Non mandarmene più</a>');
+        $piedeTesto = $servizio ? '' : ($dovuta ? 'Questo avviso è dovuto prima di un addebito e non si può disattivare.' : 'Non vuoi più ricevere ' . self::TIPI[$tipo] . "? $stop");
+        $invio = fn() => Mailer::inLingua($lingua, fn() => Mailer::send($email, $oggetto . ' — MyHouse Welcome',
+            Mailer::testo($oggetto, $paragrafi, $tasto, $nota, $piedeTesto, $scelte), Mailer::layout($oggetto, $paragrafi, $tasto, $nota, $piedeHtml, $scelte)));
         $ok = $pagamento ? Mailer::diPagamento($invio) : $invio();
         if (!$ok) Db::run('DELETE FROM email_log WHERE token = ?', [$token]);   // si riproverà al prossimo giro
         return $ok;

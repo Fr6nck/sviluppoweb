@@ -1,5 +1,15 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Email di benvenuto quando la prima guida va online (20 ottobre 2026)
+
+Nessuna migrazione (usa il registro `email_log` dei richiami, tipo «benvenuto»).
+
+- **Quando parte.** Appena la **prima** guida dell'account va online: dalla pubblicazione nel pannello (abbonamento già attivo), dal webhook di Stripe dopo il pagamento, dalla pagina che aspetta la conferma. Se lì non parte (posta giù), la riprende il giro dei richiami entro 3 giorni dalla prima pubblicazione. **Una volta sola** per account: non riparte con «Pubblica le modifiche», con la seconda guida o con un webhook ripetuto. Mai agli account di esempio, alla vetrina, ai clienti di prova; chi aggiorna l'applicazione non scrive ai clienti di prima.
+- **Cosa dice.** «La guida di {struttura} è online»: il benvenuto, tre cose da fare subito (stampare il QR, mandare il link prima dell'arrivo con il messaggio già scritto, pubblicare le modifiche: link e QR restano), una riga sul programma «Giudizio con sconto» e «Una domanda? Rispondi a questa email». Bottone «Apri QR & Link», sotto «Apri la guida».
+- **La riga sul programma** viene da «Testi e foto» → Le guide dei nostri host e «Giudizio con sconto», in italiano e in inglese: `giudizio.email.aderito` (per chi ha aderito: la scheda tra «Le guide dei nostri host» dopo il controllo, il voto tra 30 giorni) oppure `giudizio.email.invito` (per chi può ancora aderire: la percentuale e il link al programma). Niente riga con il programma spento, con un codice omaggio da usare o dopo il ritiro.
+- **In inglese** per chi ha il pannello in inglese (la scelta in Account, o di serie con una guida non in italiano): testo, saluto e parti fisse dell'email («If the button does not open…», «Support», «Terms» → `/en/terms`, «Customer code»).
+- Email di servizio: senza «Non mandarmene più». Nelle email dei richiami una riga vuota nel testo diventa un paragrafo a sé.
+
 ## v2 · 9L Finestra «Qual è il piano giusto per te?», foto nuove, Casa Checco, 55%, «Giudizio con sconto» unico con «Le guide dei nostri host» (19 ottobre 2026)
 
 Migrazione **050**: tabella `vetrina_schede` (una scheda per ogni aderente al programma); la foto dell'host azzerata nei giudizi; le schede di chi aveva già aderito (9B); la copertina nuova sulla vetrina (ripubblicata). Termini e Informativa: versione **2026-10-19**, da riaccettare (8J). Da configurare: DA-CONFIGURARE, «4l».

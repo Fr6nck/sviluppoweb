@@ -671,6 +671,8 @@ $r->get('/pagamento/stato', function () {
         }
     }
     $p = $o['property_id'] ? Db::one('SELECT slug, status FROM properties WHERE id = ?', [$o['property_id']]) : null;
+    // La guida è online (confermato da Stripe): se è la prima dell'account, l'email di benvenuto, se non è già partita.
+    if ($o['status'] === 'paid' && $p && $p['status'] === 'published') MHW\Benvenuto::forse((int) $acc['id']);
     Support::json(['stato' => $o['status'], 'pubblicata' => $p && $p['status'] === 'published', 'applicato' => !empty($o['applied_at']),
                    'guida' => $p ? Support::url('/g/' . $p['slug']) : null]);
 });
@@ -699,6 +701,12 @@ $r->post('/webhook/stripe', function () {
     try {
         $esito = Billing::handleEvent($event);
         header('Content-Type: text/plain'); echo $esito;
+        // Il pagamento ha messo online una prima guida: l'email di benvenuto, dopo aver risposto a Stripe.
+        if (in_array($event['type'] ?? '', ['checkout.session.completed', 'checkout.session.async_payment_succeeded'], true)
+            && ($accB = (int) ($event['data']['object']['metadata']['account_id'] ?? 0)) > 0) {
+            if (function_exists('fastcgi_finish_request')) @fastcgi_finish_request();
+            MHW\Benvenuto::forse($accB);
+        }
     } catch (\Throwable $e) {
         // Un 500 fa ritentare Stripe: l'evento non è stato segnato come elaborato.
         Log::exception($e, 'webhook ' . ($event['type'] ?? '?'));

@@ -334,8 +334,15 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 2. **Le schede in home.** In Amministrazione → Vendite → **Giudizi e vetrina** accendi le schede «da approvare» (al massimo 6) e approva i giudizi arrivati. Una scheda senza copertina non va in home: chiedi all'host di caricarla.
 3. **Parole da controllare.** In Impostazioni → Giudizi con sconto c'è l'elenco di serie (truffa, vergogna, schifo, …): cambialo come preferisci. I «Segnalati» servono solo ad attirare l'attenzione: lo sconto resta.
 4. **Il testo della casella** è uno solo, in «Testi e foto» → «Le guide dei nostri host e Giudizio con sconto» → «La casella del programma». Se cambi le regole, cambia anche i Termini.
-5. **Email di benvenuto dopo la pubblicazione:** oggi il sito non ne manda una (il cliente vede la conferma nella pagina); la riga sul programma è nel pannello e nell'email del 30° giorno. Se vuoi un'email di benvenuto, va decisa a parte.
+5. **Email di benvenuto dopo la pubblicazione:** fatta il 20 ottobre (vedi «4m»).
 6. **Safari.** Prova la finestra «Rispondi a 3 domande» su un iPhone: si apre dal basso, la pagina sotto non scorre, si chiude con la ×.
+
+## 4m. Email di benvenuto (20 ottobre)
+
+1. **Niente da attivare:** parte da sola quando la prima guida di un account va online, una volta sola, in italiano o in inglese (lingua del pannello).
+2. **La riga sul programma** si cambia in Amministrazione → Testi e foto → «Le guide dei nostri host e “Giudizio con sconto”»: «Email di benvenuto · la riga per chi ha aderito» e «… per chi può ancora aderire» (linguette IT ed EN). `{giudizio}` è la percentuale, `{link}` la pagina del programma nel pannello.
+3. **Per provarla:** con un cliente di prova non parte (come gli altri richiami). Registrati con un indirizzo tuo, pubblica una guida e guarda la posta; in Amministrazione → scheda del cliente, nelle email mandate compare «benvenuto».
+4. Chi risponde all'email scrive all'assistenza (Reply-To di serie).
 
 ## 4k. 9K (19 ottobre): foto, pagine nuove, partner, PEC
 

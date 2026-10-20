@@ -147,6 +147,8 @@ return [
     'dicono.kicker' => 'Our hosts\' guides',
     'dicono.titolo' => 'Real hosts, calmer guests.',
     'dicono.sotto'  => 'The properties that use MyHouse Welcome every day, and the words of the hosts who have already left their review.',
+    'giudizio.email.aderito' => 'You joined “Review with a discount”: once we have checked it, your guide appears among “Our hosts\' guides” on welcomemyhouse.it, with its name, cover and logo (never a photo of you, never a link to the guide). In 30 days we will ask you for a rating from 1 to 5: the discount does not depend on the rating.',
+    'giudizio.email.invito' => 'Would you like {giudizio} off your renewal? Join “Review with a discount”: your guide appears among “Our hosts\' guides” on welcomemyhouse.it and after 30 days you leave us a rating from 1 to 5. The discount does not depend on the rating. You can join from your dashboard: {link}',
     'dicono.nota'   => 'Guides of hosts who joined the “Review with a discount” programme: they get {giudizio}% off their renewal, whatever rating they give. Published with their agreement, with no links to the guides.',
     // ---- piani
     'piani.kicker' => 'Plans and pricing',

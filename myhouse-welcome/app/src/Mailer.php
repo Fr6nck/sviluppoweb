@@ -49,6 +49,19 @@ final class Mailer
         try { return $invio(); } finally { self::$rispondiA = $prima; }
     }
 
+    /** Benvenuto · La lingua delle parti fisse (piede, «Se il bottone non si apre», codice cliente): 'it' o 'en'. */
+    private static string $lingua = 'it';
+
+    /** Benvenuto · Esegue $invio con le parti fisse dell'email in inglese (host con il pannello in inglese), poi torna all'italiano. */
+    public static function inLingua(string $lingua, callable $invio): mixed
+    {
+        $prima = self::$lingua;
+        self::$lingua = $lingua === 'en' ? 'en' : 'it';
+        try { return $invio(); } finally { self::$lingua = $prima; }
+    }
+
+    private static function en(): bool { return self::$lingua === 'en'; }
+
     /** 9H · Un'email di pagamento (rinnovo, scadenza, cambio piano, rimborso): Reply-To all'email amministrazione. */
     public static function diPagamento(callable $invio): mixed { return self::conRispostaA(Support::amministrazione(), $invio); }
 
@@ -85,7 +98,7 @@ final class Mailer
         $font = "font-family:'Helvetica Neue',Helvetica,Arial,sans-serif";
         $serif = "font-family:Gloock,Georgia,'Times New Roman',serif";
         $grigio = '#6a5b48';
-        $h = '<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+        $h = '<!doctype html><html lang="' . self::$lingua . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
            . '<meta name="color-scheme" content="light"><title>' . $e($titolo) . '</title></head>'
            . '<body style="margin:0;padding:0;background:#faf5ec;' . $font . ';color:#231b12">'
            . '<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#faf5ec">' . $e($anteprima) . '</div>'
@@ -105,7 +118,7 @@ final class Mailer
             $h .= '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:12px auto 12px"><tr>'
                 . '<td align="center" style="border-radius:999px;background:#b4451f"><a href="' . $e($url) . '" style="display:inline-block;padding:15px 30px;' . $font
                 . ';font-size:16px;font-weight:600;color:#fff8f2;text-decoration:none;border-radius:999px">' . $e($testoB) . '</a></td></tr></table>'
-                . '<p style="margin:0 auto 8px;max-width:440px;' . $font . ';font-size:12px;line-height:18px;color:' . $grigio . ';text-align:center">Se il bottone non si apre, copia questo indirizzo nel browser:<br>'
+                . '<p style="margin:0 auto 8px;max-width:440px;' . $font . ';font-size:12px;line-height:18px;color:' . $grigio . ';text-align:center">' . (self::en() ? 'If the button does not open, copy this address into your browser:' : 'Se il bottone non si apre, copia questo indirizzo nel browser:') . '<br>'
                 . '<a href="' . $e($url) . '" style="color:' . $grigio . ';word-break:break-all">' . $e($url) . '</a></p>';
         }
         foreach ($scelte as [$testoS, $urlS]) {
@@ -118,7 +131,8 @@ final class Mailer
 
         // Il piede: a sinistra chi siamo e i link, a destra le icone social (solo quelle che ci sono).
         $link = fn(string $t, string $u) => '<a href="' . $e($u) . '" style="color:' . $grigio . ';text-decoration:underline">' . $e($t) . '</a>';
-        $voci = array_filter([$aiuto !== '' ? $link('Assistenza', 'mailto:' . $aiuto) : '', $link('Privacy', $sito . '/privacy'), $link('Termini', $sito . '/termini')]);
+        $voci = array_filter([$aiuto !== '' ? $link(self::en() ? 'Support' : 'Assistenza', 'mailto:' . $aiuto) : '',
+                              $link('Privacy', $sito . (self::en() ? '/en/privacy' : '/privacy')), $link(self::en() ? 'Terms' : 'Termini', $sito . (self::en() ? '/en/terms' : '/termini'))]);
         $icone = '';
         foreach (self::social() as [$nome, $u]) {
             $icone .= '<a href="' . $e($u) . '" style="display:inline-block;margin-left:8px;text-decoration:none"><img src="' . $e($radice . '/assets/email/social-' . $nome . '.png')
@@ -160,7 +174,7 @@ final class Mailer
         if ($scelte) $t .= "\n";
         if ($bottone) $t .= $bottone[0] . ': ' . $bottone[1] . "\n\n";
         if ($nota !== null && $nota !== '') $t .= $nota . "\n\n";
-        $t .= "MyHouse Welcome" . ($aiuto !== '' ? "\nHai bisogno di aiuto? Scrivici a $aiuto" : '') . self::SEGNO_CODICE;
+        $t .= "MyHouse Welcome" . ($aiuto !== '' ? (self::en() ? "\nNeed help? Write to us at $aiuto" : "\nHai bisogno di aiuto? Scrivici a $aiuto") : '') . self::SEGNO_CODICE;
         if ($piede !== null && $piede !== '') $t .= "\n\n—\n" . $piede;
         return $t;
     }
@@ -198,8 +212,9 @@ final class Mailer
         self::$ultimoErrore = '';
         // 9I · «Codice cliente MW-…» nel piede delle email a un cliente.
         $cod = self::codiceDi($to);
-        $text = str_replace(self::SEGNO_CODICE, $cod !== '' ? "\nCodice cliente $cod" : '', $text);
-        if ($html !== null) $html = str_replace(self::SEGNO_CODICE, $cod !== '' ? '<br>Codice cliente ' . htmlspecialchars($cod, ENT_QUOTES, 'UTF-8') : '', $html);
+        $etCod = self::en() ? 'Customer code' : 'Codice cliente';
+        $text = str_replace(self::SEGNO_CODICE, $cod !== '' ? "\n$etCod $cod" : '', $text);
+        if ($html !== null) $html = str_replace(self::SEGNO_CODICE, $cod !== '' ? "<br>$etCod " . htmlspecialchars($cod, ENT_QUOTES, 'UTF-8') : '', $html);
 
         try {
             return match ($cfg['transport']) {

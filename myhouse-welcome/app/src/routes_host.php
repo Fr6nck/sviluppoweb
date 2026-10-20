@@ -976,6 +976,7 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
     if (Subscriptions::active($aid)) {
         $v = Guide::publish((int) $p['id']);
         Auth::audit('guide.publish', (int) $u['id'], ['property_id' => (int) $p['id'], 'version' => $v]);
+        if ($v === 1) MHW\Benvenuto::forse($aid);   // la prima guida dell'account: l'email di benvenuto (una volta sola)
         Support::redirect('/pannello/' . $p['id'] . '/pubblicata');
     }
 

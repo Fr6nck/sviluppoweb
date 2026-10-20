@@ -21,12 +21,18 @@ final class Pannello
         if (self::$lingua !== null) return self::$lingua;
         $u = Auth::user();
         if (!$u || ($u['role'] ?? '') === 'admin') return self::$lingua = 'it';
-        $scelta = (string) ($u['panel_lang'] ?? '');
-        if (in_array($scelta, ['it', 'en'], true)) return self::$lingua = $scelta;
-        // Di serie dalla lingua principale: una guida non in italiano → pannello in inglese.
         $acc = Auth::account();
-        if ($acc && Db::val("SELECT 1 FROM properties WHERE account_id = ? AND archived_at IS NULL AND is_demo < 2 AND default_locale <> 'it' LIMIT 1", [(int) $acc['id']])) return self::$lingua = 'en';
-        return self::$lingua = 'it';
+        return self::$lingua = self::linguaDi($u, $acc ? (int) $acc['id'] : 0);
+    }
+
+    /** La lingua del pannello di un host qualunque (anche fuori dalla sua sessione: le email). */
+    public static function linguaDi(array $u, int $accountId): string
+    {
+        $scelta = (string) ($u['panel_lang'] ?? '');
+        if (in_array($scelta, ['it', 'en'], true)) return $scelta;
+        // Di serie dalla lingua principale: una guida non in italiano → pannello in inglese.
+        if ($accountId && Db::val("SELECT 1 FROM properties WHERE account_id = ? AND archived_at IS NULL AND is_demo < 2 AND default_locale <> 'it' LIMIT 1", [$accountId])) return 'en';
+        return 'it';
     }
 
     public static function en(): bool { return self::lingua() === 'en'; }
