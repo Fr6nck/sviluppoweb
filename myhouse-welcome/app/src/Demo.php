@@ -116,7 +116,8 @@ final class Demo
     public const CHECCO_LNG = 12.61966;
     public const CHECCO_MAPS = 'https://www.google.com/maps/search/?api=1&query=43.07025,12.61966';
     /** 8F · «Prenota sul nostro sito» nella vetrina: la pagina di MyHouse, il servizio dei siti con la prenotazione diretta. */
-    public const VETRINA_SITO = 'https://blackout.in/myhouse/?da=vetrina';
+    /** 9N · Il sito della casa (di fantasia, in rel=nofollow): una guida per ospiti non porta a una pagina per host. */
+    public const VETRINA_SITO = 'https://www.casachecco.it';
 
     /**
      * La guida di esempio pubblicata (7C): la vetrina se c'è, altrimenti la demo. È la stessa della landing.
@@ -189,15 +190,14 @@ final class Demo
         // i link per le recensioni (le pagine di Assisi delle piattaforme, la casa non esiste) e il codice
         // sconto per la prossima volta (8F: il link per prenotare è sotto, con lo sconto).
         $campiCasa = ['cin' => 'IT054001C2DEMO0001', 'beds' => 4, 'province' => 'PG',   // 9F · Assisi · Perugia · Umbria
-                      'review_google' => 'https://www.google.com/maps/search/?api=1&query=Piazza+Matteotti+Assisi',
-                      'review_booking' => 'https://www.booking.com/city/it/assisi.it.html',
-                      'review_airbnb' => 'https://www.airbnb.it/assisi-italia/stays', 'direct_code' => 'CHECCO10'];
+                      // 9N · solo Google, con un link vero (le pagine generiche di Booking e Airbnb confondevano)
+                      'review_google' => 'https://www.google.com/maps/search/?api=1&query=Piazza+Matteotti+Assisi', 'direct_code' => 'CHECCO10'];
         $campiCasa = array_filter($campiCasa, fn($c) => Migrator::columnExists('properties', $c), ARRAY_FILTER_USE_KEY);
         if ($campiCasa) Db::update('properties', $campiCasa, 'id = :pid', ['pid' => $pid]);
         // 8B: dove si trova (i link li prepara il sistema: per Google nome e città, la casa non esiste) e un social di esempio.
         // 8F: Google, Booking.com e Airbnb, così con 5 stelle la vetrina mostra i tre bottoni dei portali.
         if (Canali::disponibili()) {
-            Canali::salva($pid, ['portali' => ['google', 'booking', 'airbnb'], 'social' => ['instagram' => '@casacheccoassisi']]);
+            Canali::salva($pid, ['portali' => ['google'], 'social' => ['instagram' => '@casacheccoassisi']]);
         }
         // 8D: le due parole di benvenuto nel foglio della foto, lo sconto per chi torna, il sito, l'email per gli ospiti
         // (di fantasia, come gli indirizzi), i messaggi da mandare su WhatsApp. 8F: «Prenota sul nostro sito» porta alla
@@ -221,7 +221,7 @@ final class Demo
         if (Migrator::columnExists('properties', 'lat')) Db::update('properties', ['lat' => self::CHECCO_LAT, 'lng' => self::CHECCO_LNG], 'id = :pid', ['pid' => $pid]);
         Properties::setLocales($acc, $pid, Entitlements::regolaLingue(Entitlements::limit($acc, 'locales', 1), Entitlements::limit($acc, 'lingua_extra', 0), 'it', ['it', 'en', 'de', 'fr', 'es']));
         Properties::saveContacts($pid, [['name' => 'Francesco', 'role' => 'host', 'phone' => $tel, 'whatsapp' => 1],
-                                        ['name' => 'Marta, per le pulizie', 'role' => 'altro', 'phone' => '+39 075 000 0001', 'whatsapp' => 0]]);
+                                        ['name' => 'Marta', 'role' => 'pulizie', 'phone' => '+39 075 000 0001', 'whatsapp' => 0]]);   // 9N · il ruolo si traduce da solo
         $foto = fn(string $nome, string $alt) => self::foto($nome, $acc, $pid, $alt);
         Db::update('properties', ['cover_media_id' => $foto('checco-copertina.jpg', self::ALT_COPERTINA)], 'id = :pid', ['pid' => $pid]);
         // La foto profilo è la porta di casa, non un volto: Francesco è di fantasia.
@@ -241,7 +241,7 @@ final class Demo
                                          'In casa trovi il quaderno con le istruzioni e la mappa della città.'],
                      'late_arrival' => 'Dopo le 21 lasciamo le chiavi in una cassetta con il codice: te lo mandiamo su WhatsApp il giorno stesso, non lo scriviamo qui.',
                      'documents' => 'Un documento d\'identità per ogni ospite, anche per i bambini: serve per la registrazione obbligatoria. Puoi mandarne una foto su WhatsApp prima dell\'arrivo.',
-                     'tax_amount' => '4 € a persona per notte', 'tax_max_nights' => '3',
+                     'tax_amount' => '4 €', 'tax_max_nights' => '3',   // 9N · «a persona a notte» lo aggiunge la guida, in ogni lingua
                      'tax_notes' => 'È l\'imposta di soggiorno del Comune di Assisi per le locazioni turistiche (tariffe 2026): 3 € a notte se il soggiorno costa fino a 60,99 € a notte, 4 € fino a 100,99 €, 6 € oltre. Si paga solo per le prime 3 notti di fila; esenti i bambini sotto i 12 anni. Si paga in contanti all\'arrivo: ti lasciamo la ricevuta.',
                      'checkin_note' => 'Il vicolo è pedonale: con l\'auto non si arriva alla porta. Il parcheggio di Piazza Matteotti è a due minuti: guarda la sezione Parcheggio.',
                      'checkout_steps' => ['Chiavi: lasciale nella ciotola di ceramica sul mobile dell\'ingresso.',
@@ -272,7 +272,7 @@ final class Demo
         $wifi = Properties::addSection($acc, $pid, 'wifi');
         self::scrivi($pid, $wifi, [
             'it' => ['networks' => [['ssid' => 'CasaChecco', 'password' => 'vicolo-dei-gerani', 'zone' => 'Soggiorno e cucina'],
-                                    ['ssid' => 'CasaChecco_Camera', 'password' => 'vicolo-dei-gerani', 'zone' => 'Camera da letto e terrazzino']],
+                                    ['ssid' => 'CasaChecco_Camera', 'password' => 'terrazzino-sul-subasio', 'zone' => 'Camera da letto e terrazzino']],   // 9N · due reti, due password
                      'instructions' => 'Se la rete non si vede, spegni il router per trenta secondi e riaccendilo. La fibra regge anche le videochiamate di lavoro.',
                      'router_location' => 'Nel mobile basso del soggiorno, accanto alla TV.'],
             'en' => ['networks' => [['zone' => 'Living room and kitchen'], ['zone' => 'Bedroom and small terrace']],
@@ -429,13 +429,15 @@ final class Demo
             'it' => ['emergency_number' => '112', 'contacts' => [
                         ['name' => 'Francesco, per la casa', 'phone' => $tel, 'note' => 'Dalle 8 alle 23'],
                         ['name' => 'Guardia medica turistica', 'phone' => '', 'note' => 'Il numero aggiornato è sul foglio appeso in cucina.'],
-                        ['name' => 'Farmacia di turno', 'phone' => '', 'note' => 'Il turno è affisso sulla porta di ogni farmacia del centro.'],
+                        ['name' => 'Farmacia di turno', 'phone' => '', 'note' => 'Il turno è affisso sulla porta di ogni farmacia del centro.', 'address' => 'Farmacia, Piazza del Comune, Assisi'],
+                        ['name' => 'Pronto soccorso', 'phone' => '', 'note' => 'All\'ospedale di Assisi, una decina di minuti in auto.', 'address' => 'Ospedale di Assisi, Assisi'],   // 9N · con «Apri Maps»
                         ['name' => 'Veterinario di turno', 'phone' => '', 'note' => 'Chiedi a Francesco: ti dà il numero di quello aperto.']],
-                     'note' => 'Il pronto soccorso è all\'ospedale di Assisi, una decina di minuti in auto.'],
+                     'note' => 'Per un\'emergenza chiama il 112: risponde anche in inglese.'],
             'en' => ['contacts' => [['name' => 'Francesco, for the house', 'note' => '8am to 11pm'], ['name' => 'Tourist medical service', 'note' => 'The current number is on the sheet in the kitchen.'],
                                     ['name' => 'Duty pharmacy', 'note' => 'The rota is posted on the door of every pharmacy in the centre.'],
+                                    ['name' => 'Emergency department', 'note' => 'At Assisi hospital, about ten minutes by car.'],
                                     ['name' => 'Duty vet', 'note' => 'Ask Francesco for the one that is open.']],
-                     'note' => 'The emergency department is at Assisi hospital, about ten minutes by car.'],
+                     'note' => 'In an emergency call 112: they also answer in English.'],
         ], 'Emergenze e contatti');
 
         // -------- Informazioni utili

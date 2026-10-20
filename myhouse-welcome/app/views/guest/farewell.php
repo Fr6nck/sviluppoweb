@@ -16,7 +16,7 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
 
 <div class="full" id="congedo">
   <?php if ($copertina): ?><img class="full__photo" src="<?= Support::e($copertina) ?>" alt="" style="transform-origin:50% 40%"><?php endif; ?>
-  <div class="full__scrim" style="background:linear-gradient(180deg,rgba(23,19,13,.70) 0%,rgba(23,19,13,.42) 24%,rgba(23,19,13,.82) 58%,rgba(23,19,13,.97) 100%)"></div>
+  <div class="full__scrim" style="background:linear-gradient(180deg,rgba(23,19,13,.78) 0%,rgba(23,19,13,.58) 24%,rgba(23,19,13,.88) 52%,rgba(23,19,13,.98) 100%)"></div>
   <div class="full__stage">
     <div class="rise" style="display:flex;align-items:center;justify-content:space-between;gap:12px;animation-delay:.1s">
       <span style="font-size:14px;font-weight:500;letter-spacing:-.2px;color:var(--full-ink,#f6f0e5)"><?= Support::e($pr['name']) ?></span>
@@ -54,10 +54,10 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
             <p class="codice-offerta"><?= $scontoF !== '' ? Support::e(I18n::t($loc, 'direct_offer', "\u{2212}" . ltrim($scontoF, "-\u{2212} "), '')) : Support::e(I18n::t($loc, 'direct_code', '')) ?><b><?= Support::e($codiceF) ?></b></p>
             <div class="ctas">
               <button type="button" data-copia-di="<?= Support::e($codiceF) ?>" data-copiato="<?= Support::e(I18n::t($loc, 'copied')) ?>" hidden><?= Icon::svg('copy', 15) ?><?= Support::e(I18n::t($loc, 'copy_code')) ?></button>
-              <?php if (trim((string) $diretta['url']) !== ''): ?><a href="<?= Support::e($diretta['url']) ?>" target="_blank" rel="noopener"><?= Icon::svg('globe', 15) ?><?= Support::e(I18n::t($loc, 'direct_book')) ?></a><?php endif; ?>
+              <?php if (trim((string) $diretta['url']) !== ''): ?><a href="<?= Support::e($diretta['url']) ?>" target="_blank" rel="noopener nofollow"><?= Icon::svg('globe', 15) ?><?= Support::e(I18n::t($loc, 'direct_book')) ?></a><?php endif; ?>
             </div>
           <?php elseif (trim((string) $diretta['url']) !== ''): ?>
-            <div class="ctas"><a href="<?= Support::e($diretta['url']) ?>" target="_blank" rel="noopener"><?= Icon::svg('globe', 15) ?><?= Support::e(I18n::t($loc, 'direct_book')) ?></a></div>
+            <div class="ctas"><a href="<?= Support::e($diretta['url']) ?>" target="_blank" rel="noopener nofollow"><?= Icon::svg('globe', 15) ?><?= Support::e(I18n::t($loc, 'direct_book')) ?></a></div>
           <?php endif; ?>
         </div>
       <?php endif; ?>

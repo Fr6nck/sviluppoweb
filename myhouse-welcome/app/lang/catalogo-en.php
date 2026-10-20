@@ -13,7 +13,7 @@ return [
             'checkin_steps'  => ['Steps to get in', 'One step per line: where the keys are, how the front door opens, which floor.'],
             'late_arrival'   => ['Late arrival', 'Optional. What to do when arriving late, for example after 9 pm.'],
             'documents'      => ['Documents to show', 'Optional. For example: an ID document for every guest, for the mandatory registration.'],
-            'tax_amount'     => ['Tourist tax — amount per night', 'Optional. For example: €2.00 per person.'],
+            'tax_amount'     => ['Tourist tax — amount per night', 'Optional. Just the amount, for example €2.00: the guide adds "per person per night" in the guest\'s language.'],
             'tax_max_nights' => ['Tourist tax — for how many nights at most', 'Optional. For example: 5.'],
             'tax_notes'      => ['Tourist tax — exemptions and payment', 'Optional. For example: under 14 exempt; in cash on arrival.'],
             'checkin_note'   => ['Important note', 'Optional. It stands out in the guide, in a box.'],
@@ -161,7 +161,7 @@ return [
         'intro' => 'The numbers to have at hand if something goes wrong: guests call them with one tap. Start from 112 and add the out-of-hours doctor, the pharmacy and your number for emergencies.',
         'fields' => [
             'emergency_number' => ['Single emergency number', 'In Italy it is 112.'],
-            'contacts'         => ['Useful contacts', 'One row per contact: out-of-hours doctor, on-duty pharmacy, your number for emergencies.', 'sub' => ['name' => ['Name', ''], 'phone' => ['Phone', ''], 'note' => ['Note', 'Optional. Hours, address…']]],
+            'contacts'         => ['Useful contacts', 'One row per contact: out-of-hours doctor, on-duty pharmacy, your number for emergencies.', 'sub' => ['name' => ['Name', ''], 'phone' => ['Phone', ''], 'note' => ['Note', 'Optional. Hours, address…'], 'address' => ['Address', 'Optional: with the address, the guide shows "Open in Maps".']]],
             'note'             => ['Note', 'Optional.'],
         ],
     ],

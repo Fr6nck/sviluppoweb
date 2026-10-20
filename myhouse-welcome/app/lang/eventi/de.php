@@ -33,6 +33,7 @@ return [
     'ev.until'                 => 'bis %s',
     'ev.walk'                  => '%d Min. zu Fuß',
     'ev.car'                   => '%d Min. mit dem Auto',
+    'ev.yearly'                => 'Jedes Jahr, %s',   // 9N
     'ev.every'                 => 'jeden %s',
     'ev.date_dm'               => '%1$s. %2$s',
     'ev.date_wdm'              => '%1$s, %2$s. %3$s',

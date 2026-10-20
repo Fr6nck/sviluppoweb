@@ -73,12 +73,14 @@ if ($campo === 'events'):
 elseif ($campo === 'contacts'):
     $righe = array_filter($righe, fn($r) => $pieno($r, ['name', 'phone'])); if ($righe): ?>
   <div class="stack" style="margin-top:16px;gap:10px">
-    <?php foreach ($righe as $r): $nome = trim((string) $r['name']); $tel = trim((string) $r['phone']); ?>
+    <?php foreach ($righe as $r): $nome = trim((string) $r['name']); $tel = trim((string) $r['phone']);
+          $indE = trim((string) ($r['address'] ?? '')); $uE = $indE !== '' ? $maps($indE, '') : null;   // 9N · «Apri Maps» per farmacia e ospedale ?>
       <div class="panel numero">
         <span class="grow stack" style="gap:3px">
           <b><?= Support::e($nome !== '' ? $nome : $tel) ?></b>
           <?php if ($tel !== '' && $nome !== ''): ?><span class="numero__tel"><?= Support::e($tel) ?></span><?php endif; ?>
           <?php if (trim((string) $r['note']) !== ''): ?><span class="small muted"><?= Support::e($r['note']) ?></span><?php endif; ?>
+          <?php if ($uE): ?><span class="ctas" style="margin-top:4px"><a href="<?= Support::e($uE) ?>" target="_blank" rel="noopener"><?= Icon::svg('pin', 15) ?><?= Support::e(I18n::t($loc, 'open_maps')) ?></a></span><?php endif; ?>
         </span>
         <?php if ($tel !== ''): ?>
           <a class="btn btn--sm numero__chiama" href="tel:<?= Support::e(Support::telHref($tel)) ?>"

@@ -46,6 +46,7 @@ return [
     'host_signature'   => '%s, o seu anfitrião',
     'leaving'          => 'Estamos de partida',
     'leaving_sub'      => 'O que fazer antes de sair, e uma despedida',
+    'see_before_leaving' => 'Ver «Antes de sair»',   // 9N
     'before_leaving'   => 'Antes de partir',
     'farewell_title'   => 'Boa viagem.',
     'farewell_lead'    => 'Só mais umas coisas, e depois a porta fecha-se atrás de si.',
@@ -101,6 +102,7 @@ return [
     'late_arrival'         => 'Chegada tardia',
     'documents'            => 'Documentos a apresentar',
     'tourist_tax'          => 'Taxa turística',
+    'tax_per_person_night' => '%s por pessoa por noite',   // 9N
     'tax_per_night'        => '%s por noite',
     'tax_max'              => 'No máximo %s noites.',
     'contact'              => 'Contactar %s',

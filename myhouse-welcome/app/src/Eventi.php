@@ -188,6 +188,12 @@ final class Eventi
         [$y2, $m2, $d2] = array_map('intval', explode('-', $a));
         $anno = $y2 !== (int) substr($oggi ?? self::oggi(), 0, 4) ? ' ' . $y2 : '';
         $mese = fn(int $m) => I18n::t($loc, 'ev.month_' . $m);
+        // 9N · Gli eventi che tornano ogni anno: «Ogni anno, 11–12 agosto», senza anno né giorno della settimana.
+        if (!empty($r['yearly'])) {
+            $date = $a === $da ? I18n::t($loc, 'ev.date_dm', $d1, $mese($m1))
+                  : ($m1 === $m2 ? I18n::t($loc, 'ev.date_range', $d1, $d2, $mese($m1)) : I18n::t($loc, 'ev.date_dm', $d1, $mese($m1)) . ' – ' . I18n::t($loc, 'ev.date_dm', $d2, $mese($m2)));
+            return I18n::t($loc, 'ev.yearly', $date);
+        }
         if ($a === $da) {
             return I18n::t($loc, 'ev.date_wdm', I18n::t($loc, 'day_' . (new \DateTimeImmutable($da))->format('N')), $d1, $mese($m1)) . $anno;
         }
@@ -224,7 +230,7 @@ final class Eventi
         $a = self::fine($r);
         [, $m1, $d1] = array_map('intval', explode('-', $da));
         [, $m2, $d2] = array_map('intval', explode('-', $a));
-        if ($a === $da) return [(string) $d1, I18n::t($loc, 'ev.dow_' . (new \DateTimeImmutable($da))->format('N'))];
+        if ($a === $da) return [(string) $d1, !empty($r['yearly']) ? I18n::t($loc, 'ev.mon_' . $m1) : I18n::t($loc, 'ev.dow_' . (new \DateTimeImmutable($da))->format('N'))];
         return [$m1 === $m2 ? $d1 . '–' . $d2 : (string) $d1, I18n::t($loc, 'ev.mon_' . $m1)];
     }
 

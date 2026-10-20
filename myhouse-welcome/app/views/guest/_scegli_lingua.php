@@ -23,6 +23,7 @@ if ($telefono !== '') $lingueSL = array_values(array_unique(array_merge([$telefo
   <div class="scegli-lingua__dentro">
     <p class="scegli-lingua__casa"><?= Support::e((string) $snap['property']['name']) ?></p>
     <h2 class="scegli-lingua__titolo" id="scegli-lingua-titolo"><?= Support::e(I18n::t($titoloSL, 'choose_language')) ?></h2>
+    <?php if ($titoloSL !== 'en'): /* 9N · anche in inglese, per chi non legge la prima */ ?><p class="scegli-lingua__sotto" lang="en">Choose your language</p><?php endif; ?>
     <div class="scegli-lingua__elenco">
       <?php foreach ($lingueSL as $l): ?>
         <a class="scegli-lingua__lingua<?= $l === $telefono ? ' scegli-lingua__lingua--telefono' : '' ?>" href="<?= Support::e($base . ($coda ?? '')) ?>?l=<?= Support::e($l) ?>"

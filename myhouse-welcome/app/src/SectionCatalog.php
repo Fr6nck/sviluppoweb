@@ -98,7 +98,7 @@ final class SectionCatalog
                 'checkin_steps'   => ['steps', 'Passaggi per entrare', 'Un passaggio per riga: dove sono le chiavi, come si apre il portone, a che piano si sale.'],
                 'late_arrival'    => ['textarea', 'Arrivo tardivo', 'Facoltativo. Cosa fare se si arriva tardi, per esempio dopo le 21.'],
                 'documents'       => ['textarea', 'Documenti da mostrare', 'Facoltativo. Per esempio: un documento d\'identità per ogni ospite, per la registrazione obbligatoria.'],
-                'tax_amount'      => ['plain', 'Imposta di soggiorno — importo per notte', 'Facoltativo. Per esempio: 2,00 € a persona.'],
+                'tax_amount'      => ['plain', 'Imposta di soggiorno — importo per notte', 'Facoltativo. Solo l\'importo, per esempio 2,00 €: la guida aggiunge «a persona a notte» nella lingua dell\'ospite.'],
                 'tax_max_nights'  => ['plain', 'Imposta di soggiorno — per quante notti al massimo', 'Facoltativo. Per esempio: 5.', 'cifre' => true],
                 'tax_notes'       => ['textarea', 'Imposta di soggiorno — esenzioni e pagamento', 'Facoltativo. Per esempio: sotto i 14 anni esenti; in contanti all\'arrivo.'],
                 'checkin_note'    => ['textarea', 'Nota importante', 'Facoltativa. Nella guida compare in evidenza, in un riquadro.'],
@@ -343,6 +343,8 @@ final class SectionCatalog
                                            'name'  => ['text', 'Nome', '', 'w' => 5],
                                            'phone' => ['tel', 'Telefono', '', 'w' => 3],
                                            'note'  => ['text', 'Nota', 'Facoltativa. Orari, indirizzo…', 'w' => 4],
+                                           // 9N · con l'indirizzo la guida mostra «Apri Maps» (farmacia, ospedale)
+                                           'address' => ['plain', 'Indirizzo', 'Facoltativo: con l\'indirizzo, nella guida c\'è «Apri Maps».', 'w' => 6],
                                        ]],
                 'note'             => ['textarea', 'Nota', 'Facoltativa.'],
             ],

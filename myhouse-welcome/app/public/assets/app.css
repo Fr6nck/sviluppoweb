@@ -2723,6 +2723,7 @@ ol.invito__passi{list-style:none;margin:0;padding:0}
 .scegli-lingua__dentro{display:flex;flex-direction:column;gap:12px;padding:28px 24px}
 .scegli-lingua__casa{margin:0;font-size:14px;line-height:20px;color:var(--muted,#6b6157)}
 .scegli-lingua__titolo{margin:0 0 8px;font-size:30px;line-height:36px}
+.scegli-lingua__sotto{margin:-4px 0 12px;font-size:16px;line-height:24px;opacity:.75}   /* 9N · «Choose your language» */
 .scegli-lingua__elenco{display:flex;flex-direction:column;gap:8px}
 /* 9F · ogni lingua su un bottone bianco con testo scuro (≥ 7:1), bordo sottile; quella del telefono sull'accento pieno con testo
    chiaro. I colori arrivano dalla palette (--scelta-*) e sono gli stessi nei due temi: mai testo chiaro su fondo chiaro. */

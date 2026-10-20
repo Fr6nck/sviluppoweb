@@ -115,19 +115,22 @@ foreach ($snap['sections'] as $s) {
   <?php if ($imposta !== '' || $val('tax_notes') !== ''): ?>
     <div class="panel stack" style="margin-top:20px;gap:6px">
       <span class="kicker"><?= Icon::svg('euro', 13) ?> <?= Support::e(I18n::t($loc, 'tourist_tax')) ?></span>
-      <?php if ($imposta !== ''): ?><b style="font-size:20px;font-weight:500"><?= Support::e(I18n::t($loc, 'tax_per_night', $imposta)) ?></b><?php endif; ?>
+      <?php if ($imposta !== ''):
+            /* 9N · Un importo da solo («4 €», «2,50»): la guida aggiunge «a persona a notte» nella lingua dell'ospite (in inglese «€4»). */
+            $soloImporto = preg_match('/^(?:€\s*)?(\d+(?:[.,]\d{1,2})?)\s*(?:€|euro)?$/iu', $imposta, $mImp);
+            $impostaT = $soloImporto ? I18n::t($loc, 'tax_per_person_night', $loc === 'en' ? '€' . $mImp[1] : $mImp[1] . ' €') : I18n::t($loc, 'tax_per_night', $imposta); ?>
+        <b style="font-size:20px;font-weight:500"><?= Support::e($impostaT) ?></b><?php endif; ?>
       <?php if ($notti !== ''): ?><p class="small"><?= Support::e(I18n::t($loc, 'tax_max', $notti)) ?></p><?php endif; ?>
       <?php if ($val('tax_notes') !== ''): ?><p class="small muted" style="white-space:pre-line"><?= Support::e($val('tax_notes')) ?></p><?php endif; ?>
     </div>
   <?php endif; ?>
+  <?php /* 9N · La partenza non si ripete: qui l'orario e il rimando a «Prima di andare» (il commiato ha l'elenco e il saluto). */ ?>
   <div class="stack" style="margin-top:28px;gap:10px">
     <span class="kicker"><?= Support::e(I18n::t($loc, 'departure')) ?> · <?= Support::e(I18n::t($loc, 'checkout_by', $pr['checkout_by'])) ?></span>
-    <?php if ($lista('checkout_steps')): ?>
-      <ul class="lined">
-        <?php foreach ($lista('checkout_steps') as $voce): ?><li><?= Support::e($voce) ?></li><?php endforeach; ?>
-      </ul>
+    <?php if ($lista('checkout_steps') || $val('checkout_notes') !== ''): ?>
+      <?php if (isset($base)): ?><p class="ctas"><a href="<?= Support::e($base) ?>/commiato?l=<?= Support::e($loc) ?>"><?= Icon::svg('arrow', 15) ?><?= Support::e(I18n::t($loc, 'see_before_leaving')) ?></a></p>
+      <?php else: ?><p class="small muted"><?= Support::e(I18n::t($loc, 'see_before_leaving')) ?></p><?php endif; ?>
     <?php endif; ?>
-    <?php if ($val('checkout_notes') !== ''): ?><p style="white-space:pre-line;line-height:24px"><?= Support::e($val('checkout_notes')) ?></p><?php endif; ?>
   </div>
 
 <?php /* --------------------------------------------------- luoghi consigliati */ ?>

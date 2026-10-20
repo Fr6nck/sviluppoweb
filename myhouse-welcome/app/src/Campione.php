@@ -315,6 +315,6 @@ final class Campione
     public static function pulisci(): int
     {
         if (!Migrator::tableExists('sezioni_versioni')) return 0;
-        return Db::run('DELETE FROM sezioni_versioni WHERE created_at < ?', [gmdate('Y-m-d\TH:i:s\Z', time() - self::GIORNI_STORICO * 86400)])->rowCount();
+        return Db::run('DELETE FROM sezioni_versioni WHERE created_at < ?', [gmdate('Y-m-d\TH:i:s\Z', time() - self::GIORNI_STORICO * 86400)]);
     }
 }

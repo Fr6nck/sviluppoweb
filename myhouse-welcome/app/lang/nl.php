@@ -46,6 +46,7 @@ return [
     'host_signature'   => '%s, je gastheer',
     'leaving'          => 'We gaan bijna vertrekken',
     'leaving_sub'      => 'Wat je moet doen voor je vertrekt, en een groet',
+    'see_before_leaving' => 'Zie „Voor vertrek”',   // 9N
     'before_leaving'   => 'Voor je vertrekt',
     'farewell_title'   => 'Goede reis.',
     'farewell_lead'    => 'Nog een paar dingen, dan valt de deur achter je dicht.',
@@ -101,6 +102,7 @@ return [
     'late_arrival'         => 'Late aankomst',
     'documents'            => 'Te tonen documenten',
     'tourist_tax'          => 'Toeristenbelasting',
+    'tax_per_person_night' => '%s per persoon per nacht',   // 9N
     'tax_per_night'        => '%s per nacht',
     'tax_max'              => 'Voor maximaal %s nachten.',
     'contact'              => 'Contact opnemen met %s',
