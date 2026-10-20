@@ -1,5 +1,19 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 9L rivista: la scheda in vetrina e il giudizio sono due pubblicazioni separate (20 ottobre 2026)
+
+Migrazione **051**: in `vetrina_schede` due gruppi di colonne (scheda: ordine, approvazione, ritiro con motivo; giudizio: acceso, ordine, approvazione, ritiro con motivo); le schede accese e i giudizi già approvati restano accesi, nello stesso ordine. Termini e Informativa: versione **2026-10-20** (i clienti li riaccettano). Da configurare: DA-CONFIGURARE, «4l bis».
+
+- **Home, due sezioni.** «Le guide dei nostri host» (*Case vere, già online.*), prima dei piani: le schede approvate, le prime 4 nell'ordine deciso in admin, con «Vedi tutte →». «Cosa dicono di noi» (*Host veri, ospiti più sereni.*), dopo «Più sanno, meglio stanno»: i giudizi accesi a mano (di norma i 5 stelle, al massimo 6), con stelle, commento e risposta pubblica, e il 55% sotto. Ognuna compare solo con almeno una voce; la stessa struttura può stare in tutte e due. Chiavi `vetrina.*` e `dicono.*` in «Testi e foto», anche in inglese.
+- **Segnaposto «Welcome My House»** (`assets/vetrina-segnaposto.jpg`, `vetrina-logo-segnaposto.png`) al posto di copertina o logo mancanti: la scheda si può approvare lo stesso («incompleta», con il consiglio di aspettare).
+- **«Tutte le guide»** (`/guide-dei-nostri-host`): tutte le schede approvate, 24 per pagina, indicizzabile, in sitemap e in SEO e GEO.
+- **Amministrazione → «Giudizi e vetrina»**: tre schede (Vetrina · Giudizi · Ritirati) con i conteggi; quattro numeri (in vetrina e in home, da approvare, giudizi pubblicati su arrivati, doppioni); tabella con l'ordine (numero, frecce ▲▼ e trascinamento, separato per vetrina e giudizi), la scheda e il giudizio ognuno con il suo interruttore e la sua data, «anche in vetrina» per i doppioni, Approva, Ritira con motivo interno, Rimetti; filtro «5 stelle» di serie sui giudizi. Il Quadro dice «N schede da approvare · M giudizi da approvare».
+- **Impostazioni → Sito**: posti in home per le schede (4) e per i giudizi (6).
+- **Pannello → Giudizio con sconto**: lo stato della scheda e, a parte, quello del giudizio (in attesa di approvazione / in home / non in home al momento); due anteprime.
+- **Regole**: un giudizio nuovo o modificato è «da approvare» e non va mai in home da solo; copertina o logo tolti dopo l'approvazione → la scheda torna da approvare; guida archiviata, abbonamento scaduto, account chiuso → si spengono tutte e due.
+- **Testi**: casella del programma, Termini (punto 17: «due pubblicazioni, decise da MyHouse Welcome caso per caso»), Informativa, registro dei trattamenti, FAQ, email del 30° giorno e di benvenuto allineati.
+- **/affittacamere**: l'hero usa la stessa foto della scheda «Per chi è» (il portone di legno con i fiori).
+
 ## v2 · Il questionario «Qual è il piano giusto per te?» anche in inglese (20 ottobre 2026)
 
 Nessuna migrazione.

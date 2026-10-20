@@ -71,9 +71,10 @@ $r->get('/admin', function () {
     // 9L · «Giudizi e vetrina»: gli aderenti e le schede o i giudizi da approvare.
     if (MHW\Vetrina::disponibili()) {
         MHW\Vetrina::sincronizza();
-        $nv = MHW\Vetrina::elenco()['numeri'];
-        if ((int) ($nv['da_approvare'] ?? 0) > 0) $avvisi[] = ['Giudizi e vetrina: ' . (int) $nv['aderenti'] . ' aderenti · ' . (int) $nv['da_approvare'] . ' da approvare',
-            'Schede nuove da accendere in home o giudizi arrivati da leggere (programma «Giudizio con sconto»).', '/admin/giudizi?filtro=da_approvare', 'Apri Giudizi e vetrina'];
+        $nv = MHW\Vetrina::elenco('vetrina')['numeri'];
+        if ((int) ($nv['da_approvare'] ?? 0) > 0) $avvisi[] = ['Giudizi e vetrina: ' . (int) $nv['schede_da_approvare'] . ' schede da approvare · ' . (int) $nv['giudizi_da_approvare'] . ' giudizi da approvare',
+            'Le schede nuove di «Le guide dei nostri host» e i giudizi arrivati per «Cosa dicono di noi» (programma «Giudizio con sconto»): si approvano separatamente.',
+            '/admin/giudizi' . ((int) $nv['schede_da_approvare'] === 0 ? '?scheda=giudizi&stelle=tutti' : ''), 'Apri Giudizi e vetrina'];
     }
     $anomalie = Gestione::contaAnomalie();
     if ($anomalie['alta'] > 0) $avvisi[] = ['Ci sono anomalie da guardare subito', $anomalie['alta'] . ($anomalie['alta'] === 1 ? ' controllo segnala' : ' controlli segnalano') . ' pagamenti o rinnovi che non tornano.', '/admin/anomalie', 'Guarda le anomalie'];
@@ -1026,30 +1027,49 @@ $r->get('/admin/giudizi', function () {
         header('Content-Disposition: attachment; filename="giudizi-e-vetrina-' . gmdate('Y-m-d') . '.csv"');
         echo MHW\Vetrina::csv(); exit;
     }
-    $filtro = isset(MHW\Vetrina::FILTRI[$_GET['filtro'] ?? '']) ? (string) $_GET['filtro'] : 'tutti';
-    View::out('admin/giudizi', MHW\Vetrina::elenco($filtro) + ['filtro' => $filtro, 'nav' => 'giudizi'], 'layout/cms');
+    $scheda = isset(MHW\Vetrina::SCHEDE[$_GET['scheda'] ?? '']) ? (string) $_GET['scheda'] : 'vetrina';
+    $stelle = ($_GET['stelle'] ?? '5') === 'tutti' ? 'tutti' : '5';   // i giudizi: «5 stelle» di serie
+    View::out('admin/giudizi', MHW\Vetrina::elenco($scheda, $stelle) + ['scheda' => $scheda, 'stelle' => $stelle, 'nav' => 'giudizi'], 'layout/cms');
+});
+/** Dopo un'azione della tabella si torna dov'eri (la scheda e il filtro), solo dentro /admin/giudizi. */
+$tornaGiudizi = function (string $di = ''): never {
+    $t = (string) ($_POST['torna'] ?? '');
+    Support::redirect(preg_match('#^/admin/giudizi(\?[a-z=&]*)?$#', $t) ? $t : ($di !== '' ? $di : '/admin/giudizi'));
+};
+$r->post('/admin/giudizi/ordine', function () use ($tornaGiudizi) {
+    Auth::requireAdmin();
+    MHW\Vetrina::ordina(($_POST['tipo'] ?? '') === 'giudizio' ? 'giudizio' : 'scheda', (array) ($_POST['ids'] ?? []));
+    Support::flash('Ordine salvato: la home lo segue.');
+    $tornaGiudizi();
 });
 $r->get('/admin/giudizi/{sid}', function (array $a) {
     Auth::requireAdmin();
-    $riga = null;
-    foreach (MHW\Vetrina::elenco()['righe'] as $x) if ((int) $x['id'] === (int) $a['sid']) $riga = $x;
+    $riga = MHW\Vetrina::rigaElenco((int) $a['sid']);
     if (!$riga) { http_response_code(404); View::out('pub/404', []); }
     $s = Db::one('SELECT * FROM vetrina_schede WHERE id = ?', [(int) $riga['id']]);
-    View::out('admin/giudizio_scheda', ['r' => $riga, 'card' => MHW\Vetrina::perScheda($s, $riga['p'], $riga['g']), 'storico' => MHW\Vetrina::storico((int) $riga['account_id']),
-                                        'nav' => 'giudizi'], 'layout/cms');
+    View::out('admin/giudizio_scheda', ['r' => $riga, 'card' => MHW\Vetrina::perScheda($s, $riga['p']), 'cardG' => $riga['g'] ? MHW\Vetrina::perScheda($s, $riga['p'], $riga['g'], true) : null,
+                                        'storico' => MHW\Vetrina::storico((int) $riga['account_id']), 'nav' => 'giudizi'], 'layout/cms');
 });
-$r->post('/admin/giudizi/{sid}/home', function (array $a) {
+/* La scheda: acceso = approvata (anche «Rimetti»), spento = ritirata dall'admin (con il motivo, se scritto). */
+$r->post('/admin/giudizi/{sid}/home', function (array $a) use ($tornaGiudizi) {
     Auth::requireAdmin();
     $si = !empty($_POST['si']);
-    $err = MHW\Vetrina::accendi((int) $a['sid'], $si);
-    Support::flash($err === '' ? ($si ? 'Scheda in home.' : 'Scheda tolta dalla home.') : $err, $err === '' ? 'ok' : 'err');
-    Support::redirect('/admin/giudizi' . (($_POST['filtro'] ?? '') !== '' && ($_POST['filtro'] ?? '') !== 'tutti' ? '?filtro=' . rawurlencode((string) $_POST['filtro']) : ''));
+    $err = MHW\Vetrina::accendi((int) $a['sid'], $si, (string) ($_POST['motivo'] ?? ''));
+    Support::flash($err === '' ? ($si ? 'Scheda approvata: è in vetrina.' : 'Scheda ritirata: il cliente vede «non in home al momento».') : $err, $err === '' ? 'ok' : 'err');
+    $tornaGiudizi('/admin/giudizi/' . (int) $a['sid']);
 });
-$r->post('/admin/giudizi/{sid}/giudizio', function (array $a) {
+/* Il giudizio: acceso = in «Cosa dicono di noi», spento = non pubblicato (lo sconto resta). */
+$r->post('/admin/giudizi/{sid}/giudizio', function (array $a) use ($tornaGiudizi) {
     Auth::requireAdmin();
-    $err = MHW\Vetrina::approvaGiudizio((int) $a['sid'], !empty($_POST['approva']));
-    Support::flash($err === '' ? (!empty($_POST['approva']) ? 'Giudizio approvato: è sulla scheda.' : 'Giudizio tolto dalla scheda.') : $err, $err === '' ? 'ok' : 'err');
-    Support::redirect('/admin/giudizi/' . (int) $a['sid'] . '#giudizio');
+    $si = !empty($_POST['si']) || !empty($_POST['approva']);
+    $err = MHW\Vetrina::accendiGiudizio((int) $a['sid'], $si, (string) ($_POST['motivo'] ?? ''));
+    Support::flash($err === '' ? ($si ? 'Giudizio pubblicato in «Cosa dicono di noi».' : 'Giudizio non pubblicato: lo sconto resta.') : $err, $err === '' ? 'ok' : 'err');
+    $tornaGiudizi('/admin/giudizi/' . (int) $a['sid'] . '#giudizio');
+});
+$r->post('/admin/giudizi/{sid}/sposta', function (array $a) use ($tornaGiudizi) {
+    Auth::requireAdmin();
+    MHW\Vetrina::sposta(($_POST['tipo'] ?? '') === 'giudizio' ? 'giudizio' : 'scheda', (int) $a['sid'], (int) ($_POST['verso'] ?? 0) < 0 ? -1 : 1);
+    $tornaGiudizi();
 });
 $r->post('/admin/giudizi/{sid}/risposta', function (array $a) {
     Auth::requireAdmin();

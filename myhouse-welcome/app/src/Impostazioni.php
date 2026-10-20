@@ -29,6 +29,9 @@ final class Impostazioni
             'pretty_urls'    => ['MHW_PRETTY_URLS', 'Indirizzi puliti, senza index.php', 'check', 'Si accende solo se la prova riesce: il sito chiede a sé stesso una pagina senza index.php. Spento, tutto resta come prima.'],
             // 9K · Il programma Partner (pagina /property-manager)
             'partner.commissione' => ['MHW_PARTNER_COMMISSIONE', 'Commissione partner (%)', 'percento', 'Quanto riceve il partner su ogni struttura attivata, sul primo anno e sui rinnovi. Vuota: la pagina dice «una commissione» senza numero.'],
+            // 9L · I posti in home del programma «Giudizio con sconto».
+            'giudizi.posti_schede'  => ['MHW_VETRINA_POSTI', 'Schede in home («Le guide dei nostri host»)', 'cifra', 'Di serie 4, da 1 a 24. Le altre schede approvate sono nella pagina «Tutte le guide» (/guide-dei-nostri-host).'],
+            'giudizi.posti_giudizi' => ['MHW_GIUDIZI_POSTI', 'Giudizi in home («Cosa dicono di noi»)', 'cifra', 'Di serie 6, da 1 a 12.'],
             'partner.sconto'      => ['MHW_PARTNER_SCONTO', 'Sconto per i clienti del partner (%)', 'percento', 'Lo sconto per i proprietari che attivano con il codice del partner. Vuoto: la pagina dice «uno sconto» senza numero. I codici partner veri arrivano in una fase successiva.'],
         ],
         // 9H · Gli indirizzi email del sito, uno per ogni cosa. Gli ultimi tre, vuoti, valgono l'email assistenza.
@@ -118,7 +121,7 @@ final class Impostazioni
             'giudizi.percentuale'   => ['MHW_GIUDIZI_PERCENTO', 'Percentuale dello sconto', 'text', 'Da 1 a 20. Di serie 5. Vale per chi aderisce da adesso in poi.'],
             'giudizi.sconto_quando' => ['MHW_GIUDIZI_QUANDO', 'Quando si applica lo sconto', 'choice', 'All\'adesione: chi spunta la casella al pagamento ha lo sconto sul primo addebito, anche se il giudizio arriva dopo (si fida). Solo dopo il giudizio: lo sconto parte quando il giudizio è stato inviato, sul primo addebito se arriva prima (per esempio durante i mesi di un codice omaggio), altrimenti sul rinnovo.',
                                         ['adesione' => 'All\'adesione (anche se il giudizio arriva dopo)', 'giudizio' => 'Solo dopo il giudizio inviato']],
-            'giudizi.home'          => ['MHW_GIUDIZI_HOME', 'Sezione «Le guide dei nostri host» in home', 'check', 'La sezione compare solo se c\'è almeno una scheda accesa (Vendite → Giudizi e vetrina).'],
+            'giudizi.home'          => ['MHW_GIUDIZI_HOME', 'Sezioni «Le guide dei nostri host» e «Cosa dicono di noi» in home', 'check', 'Ognuna compare solo se c\'è almeno una scheda o un giudizio approvato (Vendite → Giudizi e vetrina). Spento: spariscono tutte e due, anche la pagina «Tutte le guide».'],
             // 9L · «Segnalati» in Giudizi e vetrina: i giudizi con queste parole (o con 1–2 stelle). Solo per attirare l'attenzione.
             'giudizi.parole'        => ['MHW_GIUDIZI_PAROLE', 'Parole da controllare nei giudizi', 'text', 'Separate da virgole. Un giudizio che ne contiene una (o con 1–2 stelle) compare tra i «Segnalati». Lo sconto resta comunque.'],
         ],

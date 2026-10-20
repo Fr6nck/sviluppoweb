@@ -194,7 +194,7 @@ final class Richiami
                 if ($sch && !empty($sch['ritirato_at'])) continue;
                 $m = $sch ? ['È il momento del tuo giudizio',
                              'la tua guida è online da 30 giorni. Come previsto dal programma «Giudizio con sconto», lasciaci un voto da 1 a 5 con un commento: '
-                             . 'può comparire sulla tua scheda tra «Le guide dei nostri host», accanto al nome della struttura, alla copertina e al logo. Mai una tua foto, mai un link alla guida. Lo sconto non dipende dal voto.',
+                             . 'se decidiamo di pubblicarlo, compare in «Cosa dicono di noi» nella nostra home, con il nome della struttura, la copertina e il logo. Mai una tua foto, mai un link alla guida. Lo sconto non dipende dal voto né dalla pubblicazione.',
                              'Lascia il giudizio', Support::baseUrl() . '/giudizio?scrivi=1']
                           : ['Ti sta piacendo MyHouse Welcome?',
                              'la tua guida è online da un mese. Ci dici com\'è andata? Bastano un voto e due righe: ci aiutano a migliorare.',

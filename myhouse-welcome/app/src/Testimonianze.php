@@ -235,7 +235,12 @@ final class Testimonianze
         } else $id = Db::insert('testimonials', $dati + ['created_at' => Support::now()]);
         Auth::audit('testimonial.submitted', null, ['account_id' => $aid, 'rating' => $voto, 'consent' => $consenso]);
         if ($voto <= 3) self::avvisaNoi($u, $dati);
-        if ($programma) { Giudizi::dopoGiudizio($acc); Vetrina::assicura($aid); }   // lo sconto «dopo il giudizio» (se scelto) e la scheda
+        if ($programma) {
+            Giudizi::dopoGiudizio($acc);   // lo sconto «dopo il giudizio» (se scelto)
+            // 9L: il giudizio nuovo (o modificato) è «da approvare»: esce da «Cosa dicono di noi» finché non lo riaccendiamo.
+            if (($sch = Vetrina::assicura($aid)) && Migrator::columnExists('vetrina_schede', 'giudizio_home'))
+                Db::update('vetrina_schede', ['giudizio_home' => 0, 'giudizio_approvato_at' => null, 'giudizio_ritirato_at' => null, 'giudizio_motivo' => null, 'updated_at' => Support::now()], 'id = :id', ['id' => (int) $sch['id']]);
+        }
         return ['id' => $id, 'rating' => $voto, 'consenso' => $consenso, 'aderito' => !empty($acc['giudizio_adesione'])];
     }
 

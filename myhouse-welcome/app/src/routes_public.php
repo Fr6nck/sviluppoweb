@@ -593,6 +593,13 @@ $r->post('/invito/verifica', function () {
     Support::json(['ok' => true, 'nome' => explode(' ', trim((string) $chi['user_name']))[0] ?: 'un amico', 'percento' => MHW\Inviti::AMICO]);
 });
 
+/* 9L · «Tutte le guide»: le schede approvate di «Le guide dei nostri host», nell'ordine deciso in admin, 24 per pagina
+   (le prime sono anche in home). Indicizzabile; con il programma spento (o nessuna scheda) dice che non ce ne sono. */
+$r->get('/guide-dei-nostri-host', function () use ($guard) {
+    $guard();
+    View::out('pub/guide_host', MHW\Vetrina::tutte(max(1, (int) ($_GET['pagina'] ?? 1))) + ['seoPagina' => 'guide-host']);
+});
+
 // ------------------------------------------------------------- scelta del piano
 /* «Which plan is right for you?»: il questionario in inglese come pagina (il link della finestra di /en senza JavaScript).
    Per tutti, anche chi è dentro: la scelta del piano vera resta su /piano?piano=… (in italiano, come la registrazione). */

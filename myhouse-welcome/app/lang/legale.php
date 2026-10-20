@@ -132,7 +132,7 @@ T,
 'termini.17.testo' => <<<'T'
 Con un'unica casella, al pagamento o dal pannello (Impostazioni → Giudizio con sconto), aderisci al programma «Giudizio con sconto» e hai il {giudizio}% di sconto: sul primo anno se aderisci al pagamento, sul rinnovo successivo se aderisci dopo. Si somma allo sconto degli inviti (punto 12); non si somma ai codici sconto (vale il più alto); non è disponibile con i codici omaggio.
 
-- Aderendo accetti che la tua guida compaia tra «Le guide dei nostri host» su welcomemyhouse.it **da quando la pubblichi, anche prima del giudizio**, con: nome della struttura, foto di copertina, logo, tuo nome senza cognome, città. Non mostriamo link alla guida, la tua foto, né dati dei tuoi ospiti. Scegli tu se mostrare copertina e logo.
+- Il programma comprende **due pubblicazioni, decise da MyHouse Welcome caso per caso**: la tua scheda tra «Le guide dei nostri host» (da quando pubblichi la guida, anche senza foto, con nome della struttura, copertina se c'è, logo, tuo nome senza cognome, città) e il tuo giudizio in «Cosa dicono di noi» (voto e commento). Possiamo pubblicarne una sola, tutte e due o nessuna, e toglierle quando vogliamo: lo sconto resta comunque. Non mostriamo link alla guida, la tua foto, né dati dei tuoi ospiti. Scegli tu se mostrare copertina e logo.
 - Ti impegni a lasciare, dopo 30 giorni dalla pubblicazione, un voto da 1 a 5 con un commento. **Lo sconto non dipende dal voto**: vale anche con una stella. La pubblicazione in home resta a nostra discrezione; possiamo rispondere pubblicamente al giudizio.
 - **Puoi ritirarti quando vuoi**: scheda e giudizio spariscono subito. Lo sconto già avuto resta; quello promesso sul rinnovo decade se ti ritiri prima del rinnovo. La scheda sparisce da sola se la guida è archiviata, l'abbonamento scade o l'account viene chiuso.
 - Lo sconto del programma si ha **una sola volta** per account; chi si ritira non può aderire di nuovo.
@@ -214,11 +214,11 @@ T,
 T,
 'privacy.t6.titolo' => 'Giudizio con sconto e vetrina, pareri dei clienti',
 'privacy.t6.testo' => <<<'T'
-| Dati | Per il programma «Giudizio con sconto e vetrina»: nome della struttura, copertina e logo (se scegli di mostrarli), il tuo nome senza cognome, la città, il voto e il commento, la data di pubblicazione della guida. **Nessuna foto della persona.** La risposta alla domanda «Cosa ti ha fermato?», se rispondi.
-| Finalità | Mostrare la tua guida tra «Le guide dei nostri host» nella home del sito, da quando la pubblichi, e il tuo giudizio quando lo lasci (con lo sconto, qualunque sia il voto); capire cosa migliorare.
+| Dati | Per il programma «Giudizio con sconto e vetrina»: nome della struttura, copertina e logo (se ci sono e scegli di mostrarli), il tuo nome senza cognome, la città, il voto e il commento, la data di pubblicazione della guida. **Nessuna foto della persona.** La risposta alla domanda «Cosa ti ha fermato?», se rispondi.
+| Finalità | Mostrare, se decidiamo di pubblicarle, la tua scheda tra «Le guide dei nostri host» (da quando pubblichi la guida) e il tuo giudizio in «Cosa dicono di noi» (con lo sconto, qualunque sia il voto e anche se non li pubblichiamo); capire cosa migliorare.
 | Base giuridica | Per la scheda e il giudizio, il contratto (art. 6.1.b): l'adesione al programma, con l'unica casella che accetti al pagamento o dal pannello (Termini, «Giudizio con sconto»). Puoi ritirarti quando vuoi da Impostazioni → Giudizio con sconto: scheda e giudizio spariscono subito dal sito. Per i pareri, il nostro legittimo interesse (art. 6.1.f).
 | Conservazione | La scheda e il giudizio fino al ritiro o alla chiusura dell'account; i pareri come l'account.
-| Destinatari | I visitatori del sito, solo per le schede mostrate in home. Nessun link alla tua guida, nessun dato dei tuoi ospiti.
+| Destinatari | I visitatori del sito, solo per le schede e i giudizi pubblicati (home e pagina «Tutte le guide»). Nessun link alla tua guida, nessun dato dei tuoi ospiti.
 T,
 'privacy.t7.titolo' => 'Statistiche di lettura delle guide',
 'privacy.t7.testo' => <<<'T'
@@ -514,7 +514,7 @@ T,
 'termini.17.testo' => <<<'T'
 With a single checkbox, at checkout or from the dashboard (Settings → Review with a discount), you join the "Review with a discount" programme and get a {giudizio}% discount: on the first year if you join at checkout, on the following renewal if you join later. It adds up with the invitation discount (section 12); it does not add up with discount codes (the higher one applies); it is not available with gift codes.
 
-- By joining you accept that your guide appears among "Our hosts' guides" on welcomemyhouse.it **from the moment you publish it, even before the review**, with: property name, cover photo, logo, your first name (no surname), town. We do not show links to the guide, your photo or any data about your guests. You choose whether to show the cover and the logo.
+- The programme includes **two publications, decided by MyHouse Welcome case by case**: your card among "Our hosts' guides" (from the moment you publish the guide, even without photos, with property name, cover if there is one, logo, your first name without surname, town) and your review in "What they say about us" (rating and comment). We may publish just one, both or neither, and remove them whenever we like: the discount stays anyway. We do not show links to the guide, your photo or any data about your guests. You choose whether to show the cover and the logo.
 - You undertake to leave, 30 days after publishing, a rating from 1 to 5 with a comment. **The discount does not depend on the rating**: it applies even with one star. Publication on the home page remains at our discretion; we may reply publicly to the review.
 - **You can leave whenever you like**: the card and the review disappear immediately. A discount already received stays yours; the one promised on the renewal lapses if you leave before the renewal. The card disappears by itself if the guide is archived, the subscription expires or the account is closed.
 - The programme discount is granted **once only** per account; whoever leaves cannot join again.
@@ -596,11 +596,11 @@ T,
 T,
 'privacy.t6.titolo' => 'Review with a discount and showcase, customer feedback',
 'privacy.t6.testo' => <<<'T'
-| Data | For the "Review with a discount and showcase" programme: property name, cover and logo (if you choose to show them), your first name (no surname), the town, the rating and the comment, the date the guide was published. **No photo of the person.** The answer to "What stopped you?", if you answer.
-| Purpose | Showing your guide among "Our hosts' guides" on the website's home page, from the moment you publish it, and your review once you leave it (with the discount, whatever the rating); understanding what to improve.
+| Data | For the "Review with a discount and showcase" programme: property name, cover and logo (if there are any and you choose to show them), your first name (no surname), the town, the rating and the comment, the date the guide was published. **No photo of the person.** The answer to "What stopped you?", if you answer.
+| Purpose | Showing, if we decide to publish them, your card among "Our hosts' guides" (from the moment you publish the guide) and your review in "What they say about us" (with the discount, whatever the rating and even if we do not publish them); understanding what to improve.
 | Legal basis | For the card and the review, the contract (Art. 6.1.b): joining the programme, with the single checkbox you accept at checkout or from the dashboard (Terms, "Review with a discount"). You can leave whenever you like from Settings → Review with a discount: the card and the review disappear from the site immediately. For feedback, our legitimate interest (Art. 6.1.f).
 | Retention | The card and the review until you leave or close your account; feedback for as long as the account.
-| Recipients | Website visitors, only for the cards shown on the home page. No link to your guide, no data about your guests.
+| Recipients | Website visitors, only for the cards and reviews we publish (home page and "All guides" page). No link to your guide, no data about your guests.
 T,
 'privacy.t7.titolo' => 'Guide reading statistics',
 'privacy.t7.testo' => <<<'T'

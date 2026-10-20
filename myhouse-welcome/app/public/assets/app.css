@@ -3171,3 +3171,23 @@ html.finestra-aperta{overflow:hidden}
 @media(max-width:720px){.giudizi-tabella__img{display:none}}
 .giudizio-dettaglio{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:28px;align-items:start}
 @media(max-width:820px){.giudizio-dettaglio{grid-template-columns:1fr}}
+
+/* 9L (revisione) · «Le guide dei nostri host» a quattro colonne, la scheda senza giudizio (nome e «Host · Città») e il segnaposto. */
+.dicono__schede--quattro{grid-template-columns:repeat(4,minmax(0,1fr))}
+.dicono-scheda--vetrina .dicono-scheda__corpo{gap:2px;padding:30px 18px 18px}
+.dicono-scheda--vetrina .dicono-scheda__corpo b{font-size:17px;line-height:24px}
+.dicono-scheda--segnaposto .dicono-scheda__cop{background:#f3ece0}
+.dicono-scheda__logo--segnaposto{padding:4px}
+.dicono__nota a{white-space:nowrap}
+@media (max-width:1100px) and (min-width:901px){.dicono__schede--quattro{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* «Tutte le guide» (/guide-dei-nostri-host): la griglia, poi le pagine. */
+.tutte-guide .dicono__schede{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+@media (max-width:900px){.tutte-guide .dicono__schede{display:grid;overflow:visible;margin:24px 0 0;padding:0;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}}
+.tutte-guide__pagine{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px}
+/* «Giudizi e vetrina»: in vetrina (oltre i posti in home), l'ordine con le frecce e la riga trascinata. */
+.pillola--mare{background:var(--sea-soft);color:var(--sea)}
+.giudizi-ordine{white-space:nowrap}
+.giudizi-ordine__freccia{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:2px 4px;font-size:12px;border-radius:6px}
+.giudizi-ordine__freccia:hover,.giudizi-ordine__freccia:focus-visible{color:var(--text);background:var(--sunk)}
+tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
+.giudizi-azioni form{display:inline}

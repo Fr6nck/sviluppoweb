@@ -246,6 +246,26 @@ $disegni = [
   </figure>
 </section>
 
+<?php /* 9L · «Cosa dicono di noi»: i giudizi accesi a mano in Vendite → Giudizi e vetrina (mai in automatico, di norma i 5 stelle),
+   al massimo Vetrina::postiGiudizi(), nell'ordine deciso lì. Compare solo se ce n'è almeno uno. La stessa struttura può
+   stare anche in «Le guide dei nostri host». Nessuna foto dell'host, nessun link; nota obbligatoria; sotto, il 55%. */
+      $giudiziH = MHW\Vetrina::giudiziHome(); if ($giudiziH): ?>
+<section id="cosa-dicono" class="blocco dicono" aria-labelledby="dicono-titolo">
+  <div class="stack stack--sm" style="max-width:640px">
+    <span class="kicker"><?= $T('dicono.kicker') ?></span>
+    <h2 id="dicono-titolo" class="h-sezione"><?= $T('dicono.titolo') ?></h2>
+    <p class="muted" style="line-height:24px"><?= $T('dicono.sotto') ?></p>
+    <?php if (($mediaDicono = MHW\Testimonianze::media())): ?>
+      <p class="voci__media"><span class="stelline" aria-hidden="true">★</span><b><?= Support::e($en ? (string) $mediaDicono['media'] : str_replace('.', ',', (string) $mediaDicono['media'])) ?> <?= $U('su 5', 'out of 5') ?></b> <?= $U('da', 'from') ?> <?= (int) $mediaDicono['n'] ?> host<?= $en ? 's' : '' ?></p>
+    <?php endif; ?>
+  </div>
+  <div class="dicono__schede" role="list">
+    <?php foreach ($giudiziH as $g): ?><div role="listitem" class="dicono__scheda"><?php include __DIR__ . '/_dicono_scheda.php'; ?></div><?php endforeach; ?>
+  </div>
+  <p class="dicono__nota"><?= $T('dicono.nota', ['giudizio' => MHW\Giudizi::percentuale()]) ?></p>
+  <?php $rT = $T; $rCome = '#faq-porta-amico'; include __DIR__ . '/_risparmio.php'; ?>
+</section>
+<?php endif; ?>
 <section class="prodotto" aria-labelledby="prodotto-titolo">
   <div class="prodotto__testa">
     <span class="kicker"><?= $T('prodotto.kicker') ?></span>
@@ -270,26 +290,6 @@ $disegni = [
 
 <?php /* Per chi è: quattro modi di ospitare, a ognuno il suo uso della guida. Niente numeri e
    niente promesse: solo quello che il prodotto fa davvero. */ ?>
-<?php /* 9L · «Le guide dei nostri host»: le schede di chi ha aderito al programma «Giudizio con sconto», accese in
-   Amministrazione (Vetrina::perHome, al massimo 6: prima quelle con il giudizio). Compare solo se ce n'è almeno una.
-   Nessuna foto dell'host, nessun link e nessuna area toccabile verso le guide; la nota in fondo è obbligatoria. */
-      $dicono = MHW\Vetrina::perHome(); if ($dicono): ?>
-<section id="cosa-dicono" class="blocco dicono" aria-labelledby="dicono-titolo">
-  <div class="stack stack--sm" style="max-width:640px">
-    <span class="kicker"><?= $T('dicono.kicker') ?></span>
-    <h2 id="dicono-titolo" class="h-sezione"><?= $T('dicono.titolo') ?></h2>
-    <p class="muted" style="line-height:24px"><?= $T('dicono.sotto') ?></p>
-    <?php if (($mediaDicono = MHW\Testimonianze::media())): ?>
-      <p class="voci__media"><span class="stelline" aria-hidden="true">★</span><b><?= Support::e($en ? (string) $mediaDicono['media'] : str_replace('.', ',', (string) $mediaDicono['media'])) ?> <?= $U('su 5', 'out of 5') ?></b> <?= $U('da', 'from') ?> <?= (int) $mediaDicono['n'] ?> host<?= $en ? 's' : '' ?></p>
-    <?php endif; ?>
-  </div>
-  <div class="dicono__schede" role="list">
-    <?php foreach ($dicono as $g): ?><div role="listitem" class="dicono__scheda"><?php include __DIR__ . '/_dicono_scheda.php'; ?></div><?php endforeach; ?>
-  </div>
-  <p class="dicono__nota"><?= $T('dicono.nota', ['giudizio' => MHW\Giudizi::percentuale()]) ?></p>
-  <?php $rT = $T; $rCome = '#faq-porta-amico'; include __DIR__ . '/_risparmio.php'; ?>
-</section>
-<?php endif; ?>
 
 <section id="per-chi" class="blocco" aria-labelledby="perchi-titolo">
   <div class="come__testa">
@@ -433,6 +433,23 @@ $disegni = [
 </section>
 <?php endif; ?>
 
+<?php /* 9L · «Le guide dei nostri host»: le schede approvate in Vendite → Giudizi e vetrina (programma «Giudizio con sconto»),
+   le prime Vetrina::postiSchede() nell'ordine deciso lì; le altre in «Tutte le guide» (/guide-dei-nostri-host). Compare solo
+   se ce n'è almeno una. Senza copertina o logo, il segnaposto. Nessuna foto dell'host, nessun link alle guide; nota obbligatoria. */
+      $vetrinaH = MHW\Vetrina::perHome(); if ($vetrinaH): $giudiziH ??= MHW\Vetrina::giudiziHome(); ?>
+<section id="guide-host" class="blocco dicono dicono--vetrina" aria-labelledby="vetrina-titolo">
+  <div class="stack stack--sm" style="max-width:640px">
+    <span class="kicker"><?= $T('vetrina.kicker') ?></span>
+    <h2 id="vetrina-titolo" class="h-sezione"><?= $T('vetrina.titolo') ?></h2>
+    <p class="muted" style="line-height:24px"><?= $T('vetrina.sotto') ?></p>
+  </div>
+  <div class="dicono__schede dicono__schede--quattro" role="list">
+    <?php foreach ($vetrinaH as $v): ?><div role="listitem" class="dicono__scheda"><?php include __DIR__ . '/_vetrina_scheda.php'; ?></div><?php endforeach; ?>
+  </div>
+  <p class="dicono__nota"><?= $T('vetrina.nota') ?> <a href="<?= b() ?>/guide-dei-nostri-host"><?= $T('vetrina.tutte') ?> →</a></p>
+  <?php if (!$giudiziH): $rT = $T; $rCome = '#faq-porta-amico'; include __DIR__ . '/_risparmio.php'; endif; /* il 55%, se «Cosa dicono di noi» non c'è */ ?>
+</section>
+<?php endif; ?>
 <?php $legale = MHW\Config::get('legal');
 $inviti = MHW\Inviti::disponibili(); /* «Porta un amico» compare (qui e nelle FAQ) solo se è acceso */
 $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? '')); ?>

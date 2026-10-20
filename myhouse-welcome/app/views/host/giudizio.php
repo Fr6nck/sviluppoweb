@@ -1,7 +1,7 @@
 <?php
 /* 9L · Impostazioni → «Giudizio con sconto»: una pagina sola per il programma (fonde la pagina «Giudizio» della 9B).
-   Chi ha aderito vede: la data e dove vale lo sconto; «La tua scheda su welcomemyhouse.it» con lo stato e l'Anteprima (la
-   scheda vera, com'è in home); «Immagini mostrate» (Copertina / Logo, solo quelli che esistono nella guida); «Il tuo
+   Chi ha aderito vede: la data e dove vale lo sconto; «La tua scheda su welcomemyhouse.it» con lo stato della scheda e,
+   separato, quello del giudizio (in attesa di approvazione / in home / non in home al momento) e l'Anteprima; «Immagini mostrate» (Copertina / Logo, solo quelli che esistono nella guida); «Il tuo
    giudizio» con la data in cui lo chiediamo e «Lascia il giudizio» (anche prima dei 30 giorni); «Ritirarsi dal programma»
    con la conferma. Chi non ha aderito: la stessa unica casella del pagamento e «Aderisco». Mai la foto dell'host.
    Il modulo del giudizio (5 stelle, «Cosa diresti a un altro host?» 20–400 caratteri) si apre con ?scrivi=1.
@@ -15,7 +15,7 @@ $aderito = !empty($acc['giudizio_adesione']);
 $ritirato = $scheda && !empty($scheda['ritirato_at']);
 $pubblicata = Testimonianze::primaPubblicazione((int) $acc['id']) !== null;
 $voto = (int) ($vecchi['rating'] ?? 0);
-$statoG = $programma ? Vetrina::statoGiudizio($gia) : ($gia ? 'da_approvare' : 'nessuno');
+$statoG = $programma && $scheda ? Vetrina::statoGiudizio($scheda, $gia, Vetrina::motivoSospesa($scheda, $p)) : ($gia ? (!empty($gia['withdrawn_at']) ? 'ritirato' : 'da_approvare') : 'in_attesa');
 $data = fn(?string $d) => $d ? Support::date($d) : ''; ?>
 <div class="stack stack--lg giudizio-pagina" style="max-width:820px">
   <div class="stack stack--sm">
@@ -33,32 +33,40 @@ $data = fn(?string $d) => $d ? Support::date($d) : ''; ?>
     <section class="panel stack giudizio-grazie" role="status">
       <span class="giudizio-grazie__ico" aria-hidden="true"><?= Icon::svg('star', 26, 1.8) ?></span>
       <h2 style="font-size:26px;margin:0"><?= $fatto['rating'] <= 3 ? 'Grazie.' : 'Grazie! Giudizio ricevuto.' ?></h2>
-      <p class="lead" style="margin:0"><?= $fatto['rating'] <= 3 ? 'Ti scriviamo per capire cosa migliorare. ' : '' ?><?php if ($programma && !empty($fatto['aderito'])): ?>Lo sconto non dipende dal voto: resta tuo. Il giudizio compare sulla tua scheda dopo la nostra approvazione.<?php else: ?>Resta tra noi: lo leggiamo per migliorare.<?php endif; ?></p>
+      <p class="lead" style="margin:0"><?= $fatto['rating'] <= 3 ? 'Ti scriviamo per capire cosa migliorare. ' : '' ?><?php if ($programma && !empty($fatto['aderito'])): ?>Lo sconto non dipende dal voto: resta tuo. Se lo pubblichiamo, compare in «Cosa dicono di noi».<?php else: ?>Resta tra noi: lo leggiamo per migliorare.<?php endif; ?></p>
       <div class="row"><a class="btn" href="<?= b() ?>/giudizio">Torna a Giudizio con sconto</a><a class="btn btn--ghost" href="<?= b() ?>/pannello">Le tue guide</a></div>
     </section>
   <?php endif; ?>
 
   <?php if ($programma && $aderito && $scheda && !$ritirato):
-        $card = Vetrina::perScheda($scheda, $p, $gia); $motivo = Vetrina::motivoSospesa($scheda, $p); $sc = Vetrina::scelte($scheda);
-        $inHome = (int) $scheda['scheda_home'] === 1 && $motivo === '';
+        $card = Vetrina::perScheda($scheda, $p); $cardG = $gia && $statoG !== 'ritirato' ? Vetrina::perScheda($scheda, $p, $gia, true) : null;
+        $motivo = Vetrina::motivoSospesa($scheda, $p); $sc = Vetrina::scelte($scheda);
+        $statoS = Vetrina::statoScheda($scheda, $motivo, Vetrina::posizione((int) $scheda['id']));
+        $etS = match ($statoS) {
+            'in_home' => 'Scheda approvata il ' . $data((string) $scheda['scheda_approvata_at']) . ' · in home',
+            'in_vetrina' => 'Scheda approvata il ' . $data((string) $scheda['scheda_approvata_at']) . ' · in «Tutte le guide»',
+            'da_approvare' => 'Scheda in attesa di approvazione', default => 'Scheda: non in home al momento' };
+        $etG = match ($statoG) { 'pubblicato' => 'Giudizio: in home', 'da_approvare' => 'Giudizio: in attesa di approvazione', 'in_attesa' => 'Giudizio: in attesa', default => 'Giudizio: non in home al momento' };
         $richiesta = Vetrina::dataRichiesta($scheda); ?>
     <section class="panel giudizio-blocchi" aria-label="Il programma">
       <div class="giudizio-blocco">
         <div class="stack" style="gap:4px">
           <h2 class="giudizio-blocco__titolo">La tua scheda su welcomemyhouse.it</h2>
           <p class="small muted" style="margin:0"><?= Support::e($p ? trim($p['name'] . ' · ' . Vetrina::nomeHost((int) $acc['id']) . ($p['city'] !== '' ? ' · ' . Vetrina::dove($p) : '')) : 'La guida non è ancora pubblicata') ?>. Senza link, senza la tua foto.</p>
-          <span class="pillola <?= $inHome ? 'pillola--pino' : 'pillola--ocra' ?>"><?= $motivo !== '' ? 'Non in home: ' . Support::e(Vetrina::SOSPESA[$motivo]) : (!empty($scheda['scheda_da']) ? 'In elenco dal ' . Support::e($data((string) $scheda['scheda_da'])) . ' · ' . ($inHome ? 'visibile in home' : 'in attesa della nostra approvazione') : 'In elenco') ?></span>
+          <span class="row" style="gap:6px;flex-wrap:wrap"><span class="pillola <?= in_array($statoS, ['in_home', 'in_vetrina'], true) ? 'pillola--pino' : 'pillola--ocra' ?>"><?= Support::e($etS) ?></span>
+            <span class="pillola <?= $statoG === 'pubblicato' ? 'pillola--pino' : 'pillola--ocra' ?>"><?= Support::e($etG) ?></span></span>
         </div>
         <?php if ($card): ?>
           <details class="giudizio-anteprima"><summary class="btn btn--ghost btn--sm">Anteprima</summary>
-            <div class="giudizio-anteprima__scheda dicono"><?php $g = $card; include MHW_APP . '/views/pub/_dicono_scheda.php'; ?></div></details>
+            <div class="giudizio-anteprima__scheda dicono"><?php $v = $card; include MHW_APP . '/views/pub/_vetrina_scheda.php'; ?></div>
+            <?php if ($cardG): ?><div class="giudizio-anteprima__scheda dicono" style="margin-top:12px"><?php $g = $cardG; include MHW_APP . '/views/pub/_dicono_scheda.php'; ?></div><?php endif; ?></details>
         <?php endif; ?>
       </div>
 
       <div class="giudizio-blocco">
         <div class="stack" style="gap:6px">
           <h2 class="giudizio-blocco__titolo">Immagini mostrate</h2>
-          <p class="small muted" style="margin:0">Solo queste due. Se le cambi nella guida, cambiano anche lì. Senza copertina la scheda non va in home.</p>
+          <p class="small muted" style="margin:0">Solo queste due. Se le cambi nella guida, cambiano anche lì. Se mancano, al loro posto c'è il segnaposto «Welcome My House».</p>
           <?php $haCop = $p && !empty($p['cover_media_id']); $haLogo = $p && !empty($p['logo_media_id']); ?>
           <?php if ($haCop || $haLogo): ?>
             <form method="post" action="<?= b() ?>/giudizio/immagini" class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><?= Csrf::field() ?>
@@ -76,7 +84,7 @@ $data = fn(?string $d) => $d ? Support::date($d) : ''; ?>
           <h2 class="giudizio-blocco__titolo">Il tuo giudizio</h2>
           <?php if ($gia && $statoG !== 'ritirato'): ?>
             <p style="margin:0"><span class="stelline" aria-label="<?= (int) $gia['rating'] ?> su 5"><?= str_repeat('★', (int) $gia['rating']) . str_repeat('☆', 5 - (int) $gia['rating']) ?></span> «<?= Support::e($gia['body']) ?>»</p>
-            <span class="pillola <?= $statoG === 'pubblicato' ? 'pillola--pino' : 'pillola--ocra' ?>"><?= $statoG === 'pubblicato' ? 'Pubblicato sulla tua scheda' : 'Da approvare: lo leggiamo e lo aggiungiamo alla scheda' ?></span>
+            <span class="pillola <?= $statoG === 'pubblicato' ? 'pillola--pino' : 'pillola--ocra' ?>"><?= $statoG === 'pubblicato' ? 'In home, in «Cosa dicono di noi»' : ($statoG === 'da_approvare' ? 'In attesa di approvazione' : 'Non in home al momento') ?></span>
           <?php else: ?>
             <p class="small muted" style="margin:0"><?= $richiesta ? 'Te lo chiediamo 30 giorni dopo la pubblicazione (il ' . Support::e($data($richiesta)) . '). Puoi lasciarlo anche prima.' : 'Lo lasci dopo aver pubblicato la guida: te lo chiediamo 30 giorni dopo.' ?></p>
             <span class="pillola pillola--ocra">In attesa</span>
@@ -131,7 +139,7 @@ $data = fn(?string $d) => $d ? Support::date($d) : ''; ?>
             <textarea id="g-testo" name="body" rows="4" minlength="20" maxlength="400" required aria-describedby="g-testo-aiuto" data-conta><?= Support::e((string) ($vecchi['body'] ?? '')) ?></textarea>
             <p class="help" id="g-testo-aiuto">Da 20 a 400 caratteri. Per esempio: cosa ti fa risparmiare, cosa dicono gli ospiti. <span class="muted" data-conta-per="g-testo"></span></p>
           </div>
-          <p class="help" style="margin:0"><?= $programma && $aderito ? 'Compare sulla tua scheda, con il nome della struttura, la città e il tuo nome senza cognome, dopo la nostra approvazione. Nessun link alla tua guida, nessuna tua foto. Lo sconto non dipende dal voto.' : 'Resta tra noi: lo leggiamo per migliorare.' ?></p>
+          <p class="help" style="margin:0"><?= $programma && $aderito ? 'Può comparire in «Cosa dicono di noi» su welcomemyhouse.it, con il nome della struttura, la città e il tuo nome senza cognome, se decidiamo di pubblicarlo. Nessun link alla tua guida, nessuna tua foto. Lo sconto non dipende dal voto né dalla pubblicazione.' : 'Resta tra noi: lo leggiamo per migliorare.' ?></p>
           <div class="actions"><button class="btn"><?= Icon::svg('message', 16) ?><?= $gia && $statoG !== 'ritirato' ? 'Salva il giudizio' : 'Invia il giudizio' ?></button>
             <a class="btn btn--ghost" href="<?= b() ?>/giudizio">Annulla</a></div>
         </form>

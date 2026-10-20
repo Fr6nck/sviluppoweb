@@ -78,7 +78,8 @@ return [
     ],
     'affittacamere' => [
         'percorso' => '/affittacamere', 'nome' => 'Affittacamere', 'tipologia' => 'affittacamere',
-        'foto' => ['soggiorno.jpg', 1400, 875, 'Un soggiorno luminoso con il divano bianco, il tavolino e la cucina a vista'],
+        // 9L (revisione): la stessa foto della scheda «Per chi è» (il portone di legno con i fiori), così scheda e pagina coincidono.
+        'foto' => ['tipo-affittacamere.jpg', 1200, 900, 'Il portone di legno ad arco di una casa in pietra, tra vasi di fiori, rampicanti e piante aromatiche'],
         'titolo' => 'Guida digitale per affittacamere | MyHouse Welcome',
         'descrizione' => 'La guida digitale per il tuo affittacamere: ingresso, spazi comuni, Wi-Fi, regole e consigli in un link e un QR Code, nelle lingue dei tuoi ospiti.',
         'kicker' => 'Per chi gestisce un affittacamere',

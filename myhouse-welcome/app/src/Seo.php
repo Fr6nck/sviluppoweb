@@ -37,6 +37,8 @@ final class Seo
         // 9L: il questionario «Qual è il piano giusto per te?» come pagina (per chi non ha JavaScript, e da condividere).
         'piano' => ['/piano', 'Quale piano scegliere'],
         'en-piano' => ['/en/plan', 'Quale piano scegliere in inglese'],
+        // 9L (revisione): tutte le schede approvate di «Le guide dei nostri host».
+        'guide-host' => ['/guide-dei-nostri-host', 'Le guide dei nostri host (tutte)'],
     ];
 
     /** 7F: Blackout Agency, che realizza i siti MyHouse (8J: non più nei dati strutturati: lì c'è il titolare, City Up S.r.l.). */
@@ -102,6 +104,8 @@ final class Seo
             'p.en.titolo' => 'Digital guest guide for holiday rentals | MyHouse Welcome',
             'p.en.descrizione' => 'The digital guide for holiday homes, B&Bs, guesthouses and farm stays: check-in, Wi-Fi and local tips in one link and QR code. Build it free, pay when you publish.',
             'p.en-domande.titolo' => 'Frequently asked questions | MyHouse Welcome',
+            'p.guide-host.titolo' => 'Le guide dei nostri host | MyHouse Welcome',
+            'p.guide-host.descrizione' => 'Case vacanza, B&B e agriturismi che usano MyHouse Welcome ogni giorno: le strutture degli host che hanno aderito al programma «Giudizio con sconto».',
             'p.en-piano.titolo' => 'Which plan to choose | MyHouse Welcome',
             'p.en-piano.descrizione' => 'Three questions, one answer: languages, sections and properties. We tell you which MyHouse Welcome plan is enough, without paying for what you don\'t use.',
             'p.en-domande.descrizione' => 'Answers about MyHouse Welcome: free trial, languages and translations, several properties, B&Bs with several rooms, invoices, plan changes and cancelling.',

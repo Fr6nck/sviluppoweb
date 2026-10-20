@@ -337,6 +337,14 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 5. **Email di benvenuto dopo la pubblicazione:** fatta il 20 ottobre (vedi «4m»).
 6. **Safari.** Prova la finestra «Rispondi a 3 domande» su un iPhone: si apre dal basso, la pagina sotto non scorre, si chiude con la ×.
 
+## 4l bis. 9L rivista (20 ottobre): scheda e giudizio separati
+
+1. **Vendite → Giudizi e vetrina**: le schede si approvano dalla scheda «Vetrina», i giudizi dalla scheda «Giudizi» (filtro «5 stelle» di serie). Di norma si approvano tutte le schede; i giudizi solo quelli che vuoi in home. L'ordine si cambia con ▲▼ o trascinando le righe.
+2. **Impostazioni → Sito**: «Schede in home» (di serie 4) e «Giudizi in home» (di serie 6).
+3. **Testi e foto** → «Le guide dei nostri host, Cosa dicono di noi…»: le chiavi `vetrina.*` (titolo «Case vere, già online.») e `dicono.*`, anche nella linguetta EN.
+4. **Termini e Informativa** sono alla versione 2026-10-20: al primo accesso i clienti li riaccettano.
+5. Il segnaposto «Welcome My House» è generato dal marchio; se preferisci un'altra immagine, sostituisci `assets/vetrina-segnaposto.jpg` (1200 × 675) e `assets/vetrina-logo-segnaposto.png` (240 × 240) con lo stesso nome.
+
 ## 4m. Email di benvenuto (20 ottobre)
 
 1. **Niente da attivare:** parte da sola quando la prima guida di un account va online, una volta sola, in italiano o in inglese (lingua del pannello).
