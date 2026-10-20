@@ -69,11 +69,14 @@ final class Gestione
             $r['giorni'] = (int) floor(($fine - $ora) / self::GIORNO);
             $r['finito'] = $fine <= $ora;
             $r['automatico'] = !$r['finito'] && $r['provider'] === 'stripe' && (int) $r['cancel_at_period_end'] === 0 && in_array($r['status'], ['active', 'trialing'], true);
+            // 9N · anche l'omaggio (primo addebito) e il bonifico (si rinnova a mano)
             $r['stato'] = match (true) {
                 $r['finito'] => ['Scaduto', 'alert'],
                 $r['status'] === 'past_due' => ['Rinnovo non riuscito', 'alert'],
+                $r['automatico'] && $r['status'] === 'trialing' && !empty($r['omaggio_fino']) => ['In omaggio: primo addebito', 'sea'],
                 $r['automatico'] => ['Si rinnova da solo', 'pine'],
-                $r['provider'] === 'stripe' => ['Rinnovo disattivato', 'ochre'],
+                $r['provider'] === 'stripe' => ['Rinnovo fermo (disattivato)', 'ochre'],
+                ($r['payment_status'] ?? '') === 'bonifico' => ['Pagato con bonifico: rinnovo a mano', 'ochre'],
                 default => ['Attivato dallo staff', 'sea'],
             };
             [$r['importo'], $r['sconto']] = self::importoRinnovo($r);
@@ -416,6 +419,108 @@ final class Gestione
         return ['mesi' => array_values($perMese), 'totali' => $totali, 'attivi' => $attivi, 'ultimi' => $ultimi];
     }
 
+    // -------------------------------------------------------------------- cassa
+
+    /** Le vie di pagamento che entrano nell'incasso: Stripe e i bonifici segnati dall'amministrazione (9N). */
+    public const VIE_INCASSO = ['stripe' => 'Stripe', 'bonifico' => 'Bonifico'];
+
+    /**
+     * 9N · I pagamenti incassati tra $da (compreso) e $a (escluso), date ISO: la fonte unica di Cassa, Prospetti e Quadro.
+     * Ordini pagati (Stripe e bonifici: nuovi abbonamenti e cambi di piano), rinnovi (fatture «subscription_cycle» arrivate
+     * col webhook, che non passano dagli ordini) e rimborsi (tabella rimborsi, con il segno meno). Clienti di esempio e di
+     * prova esclusi. Importi in centesimi: imponibile, IVA (da Stripe o scritta per il bonifico; null se Stripe non l'ha
+     * detta), totale. @return list<array> dal più vecchio
+     */
+    public static function pagamenti(string $da, string $a): array
+    {
+        $out = [];
+        $conIva = Migrator::columnExists('orders', 'iva_cents');
+        $conCodice = Migrator::columnExists('orders', 'code');
+        // L'IVA dei pagamenti Stripe: dalla sessione di Checkout completata (total_details.amount_tax).
+        $ivaSessione = [];
+        foreach (Db::all("SELECT payload FROM webhook_events WHERE provider = 'stripe' AND kind = 'checkout.session.completed' AND processed_at >= ?",
+                         [self::iso((int) strtotime($da) - 2 * self::GIORNO)]) as $r) {
+            $s = (json_decode((string) $r['payload'], true) ?: [])['data']['object'] ?? [];
+            if (isset($s['id'], $s['total_details']['amount_tax'])) $ivaSessione[(string) $s['id']] = (int) $s['total_details']['amount_tax'];
+        }
+        foreach (Db::all("SELECT o.id, o.kind, o.provider, o.amount_cents, o.discount_cents, o.sconti, o.quantity, o.created_at, o.account_id, o.provider_session_id,
+                                 " . ($conIva ? 'o.iva_cents, o.riferimento' : "NULL AS iva_cents, '' AS riferimento") . ", " . ($conCodice ? 'o.code' : "'' AS code") . ",
+                                 pk.name AS piano, u.email, u.name AS cliente
+                          FROM orders o JOIN package_versions pv ON pv.id = o.package_version_id JOIN packages pk ON pk.id = pv.package_id
+                          JOIN accounts a ON a.id = o.account_id JOIN users u ON u.id = a.user_id
+                          WHERE o.status = 'paid' AND o.provider IN ('stripe','bonifico') AND o.created_at >= ? AND o.created_at < ? AND u.email NOT LIKE ?" . self::senzaProva('a.id') . "
+                          ORDER BY o.created_at, o.id", [$da, $a, self::demo()]) as $o) {
+            $iva = $o['iva_cents'] !== null ? (int) $o['iva_cents'] : ($ivaSessione[(string) $o['provider_session_id']] ?? null);
+            $out[] = ['data' => (string) $o['created_at'], 'tipo' => $o['kind'] === 'change' ? 'cambio' : 'nuovo', 'via' => (string) $o['provider'],
+                      'imponibile' => (int) $o['amount_cents'], 'iva' => $iva, 'totale' => (int) $o['amount_cents'] + (int) $iva,
+                      'codice' => (string) $o['code'] !== '' ? (string) $o['code'] : Codici::pagamento((int) $o['id']),
+                      'account_id' => (int) $o['account_id'], 'cliente' => (string) $o['cliente'], 'email' => (string) $o['email'],
+                      'piano' => (string) $o['piano'] . ((int) $o['quantity'] > 1 ? ' · ' . (int) $o['quantity'] . ' strutture' : ''),
+                      'sconti' => (int) $o['discount_cents'] > 0 ? trim(Support::money((int) $o['discount_cents']) . ' ' . (string) $o['sconti']) : '',
+                      'riferimento' => (string) $o['riferimento'], 'fattura' => ''];
+        }
+        // I rinnovi: dalle fatture arrivate col webhook (IVA esclusa nell'imponibile).
+        foreach (Db::all("SELECT processed_at, payload FROM webhook_events WHERE provider = 'stripe' AND kind = 'invoice.paid' AND processed_at >= ? AND processed_at < ?", [$da, $a]) as $r) {
+            $inv = (json_decode((string) $r['payload'], true) ?: [])['data']['object'] ?? [];
+            if (($inv['billing_reason'] ?? '') !== 'subscription_cycle') continue;
+            $sub = Db::one("SELECT s.account_id, s.quantity, pk.name AS piano, u.email, u.name AS cliente FROM subscriptions s JOIN accounts a ON a.id = s.account_id
+                            JOIN users u ON u.id = a.user_id JOIN package_versions pv ON pv.id = s.package_version_id JOIN packages pk ON pk.id = pv.package_id
+                            WHERE s.provider_subscription_id = ? ORDER BY s.id DESC", [(string) ($inv['subscription'] ?? '')])
+                ?: Db::one('SELECT a.id AS account_id, 1 AS quantity, \'\' AS piano, u.email, u.name AS cliente FROM accounts a JOIN users u ON u.id = a.user_id
+                            WHERE a.stripe_customer_id = ? AND a.stripe_customer_id <> \'\'', [(string) ($inv['customer'] ?? '')]);
+            if ($sub && (str_ends_with((string) $sub['email'], substr(self::demo(), 1)) || (self::conProva() && (int) Db::val('SELECT is_test FROM accounts WHERE id = ?', [(int) $sub['account_id']], 0)))) continue;
+            $netto = (int) ($inv['total_excluding_tax'] ?? $inv['subtotal'] ?? $inv['amount_paid'] ?? 0);
+            $totale = (int) ($inv['total'] ?? $inv['amount_paid'] ?? $netto);
+            $iva = isset($inv['tax']) ? (int) $inv['tax'] : (isset($inv['total_excluding_tax'], $inv['total']) ? $totale - $netto : null);
+            $sconto = array_sum(array_map(fn($d) => (int) ($d['amount'] ?? 0), (array) ($inv['total_discount_amounts'] ?? [])));
+            $out[] = ['data' => (string) $r['processed_at'], 'tipo' => 'rinnovo', 'via' => 'stripe', 'imponibile' => $netto, 'iva' => $iva, 'totale' => $netto + (int) $iva,
+                      'codice' => Codici::perFattura((string) ($inv['id'] ?? '')), 'account_id' => (int) ($sub['account_id'] ?? 0),
+                      'cliente' => (string) ($sub['cliente'] ?? ''), 'email' => (string) ($sub['email'] ?? ''),
+                      'piano' => (string) ($sub['piano'] ?? '') . ((int) ($sub['quantity'] ?? 1) > 1 ? ' · ' . (int) $sub['quantity'] . ' strutture' : ''),
+                      'sconti' => $sconto > 0 ? Support::money($sconto) : '', 'riferimento' => '', 'fattura' => (string) ($inv['number'] ?? $inv['id'] ?? '')];
+        }
+        // I rimborsi fatti dall'amministrazione (importo IVA compresa, come su Stripe).
+        if (Migrator::tableExists('rimborsi')) {
+            foreach (Db::all("SELECT r.*, u.email, u.name AS cliente FROM rimborsi r JOIN accounts a ON a.id = r.account_id JOIN users u ON u.id = a.user_id
+                              WHERE r.stato <> 'fallito' AND r.created_at >= ? AND r.created_at < ? AND u.email NOT LIKE ?" . self::senzaProva('a.id') . ' ORDER BY r.created_at',
+                             [$da, $a, self::demo()]) as $r) {
+                $out[] = ['data' => (string) $r['created_at'], 'tipo' => 'rimborso', 'via' => 'stripe', 'imponibile' => 0, 'iva' => 0, 'totale' => -(int) $r['amount_cents'],
+                          'codice' => (string) ($r['code'] ?? ''), 'account_id' => (int) $r['account_id'], 'cliente' => (string) $r['cliente'], 'email' => (string) $r['email'],
+                          'piano' => '', 'sconti' => '', 'riferimento' => (string) $r['motivo'], 'fattura' => (string) $r['invoice_id']];
+            }
+        }
+        usort($out, fn($x, $y) => strcmp($x['data'], $y['data']));
+        return $out;
+    }
+
+    /**
+     * 9N · La cassa di un anno, mese per mese: nuovi, cambi, rinnovi, imponibile Stripe e bonifici, IVA, totale, rimborsi.
+     * Somma di Gestione::pagamenti (la stessa fonte di Prospetti). @return array{mesi:list<array>,totale:array,senza_iva:int}
+     */
+    public static function cassa(int $anno): array
+    {
+        $vuoto = ['nuovi' => 0, 'cambi' => 0, 'rinnovi' => 0, 'stripe' => 0, 'bonifico' => 0, 'imponibile' => 0, 'iva' => 0, 'totale' => 0, 'rimborsi' => 0, 'netto' => 0, 'senza_iva' => 0];
+        $mesi = [];
+        for ($m = 1; $m <= 12; $m++) $mesi[sprintf('%04d-%02d', $anno, $m)] = ['mese' => sprintf('%04d-%02d', $anno, $m)] + $vuoto;
+        $totale = $vuoto;
+        foreach (self::pagamenti(sprintf('%04d-01-01', $anno), sprintf('%04d-01-01', $anno + 1)) as $p) {
+            $k = substr($p['data'], 0, 7);
+            if (!isset($mesi[$k])) continue;
+            foreach ([&$mesi[$k], &$totale] as &$riga) {
+                if ($p['tipo'] === 'rimborso') { $riga['rimborsi'] += -$p['totale']; $riga['netto'] += $p['totale']; continue; }
+                $riga[['nuovo' => 'nuovi', 'cambio' => 'cambi', 'rinnovo' => 'rinnovi'][$p['tipo']]]++;
+                $riga[$p['via'] === 'bonifico' ? 'bonifico' : 'stripe'] += $p['imponibile'];
+                $riga['imponibile'] += $p['imponibile'];
+                $riga['iva'] += (int) $p['iva'];
+                $riga['totale'] += $p['totale'];
+                $riga['netto'] += $p['totale'];
+                if ($p['iva'] === null) $riga['senza_iva']++;
+            }
+            unset($riga);
+        }
+        return ['mesi' => array_values($mesi), 'totale' => $totale];
+    }
+
     /** Gli ultimi 12 mesi (dal più vecchio), con i conti di ogni mese. */
     public static function mesi(): array
     {
@@ -430,21 +535,15 @@ final class Gestione
 
         foreach (Db::all("SELECT substr(created_at, 1, 7) AS m, COUNT(*) AS n FROM users WHERE role = 'host' AND email NOT LIKE ? AND created_at >= ?" . self::utentiVeri('id') . " GROUP BY substr(created_at, 1, 7)",
                          [self::demo(), $da]) as $r) $metti($r['m'], 'registrati', (int) $r['n']);
-        foreach (Db::all("SELECT MIN(created_at) AS primo FROM orders WHERE status = 'paid' AND provider = 'stripe' AND kind = 'new'" . self::senzaProva('account_id') . " GROUP BY account_id") as $r) {
+        foreach (Db::all("SELECT MIN(created_at) AS primo FROM orders WHERE status = 'paid' AND provider IN ('stripe','bonifico') AND kind = 'new'" . self::senzaProva('account_id') . " GROUP BY account_id") as $r) {
             $metti(substr((string) $r['primo'], 0, 7), 'nuovi', 1);
         }
-        foreach (Db::all("SELECT substr(created_at, 1, 7) AS m, kind, SUM(amount_cents) AS c FROM orders WHERE status = 'paid' AND provider = 'stripe' AND created_at >= ?" . self::senzaProva('account_id') . "
-                          GROUP BY substr(created_at, 1, 7), kind", [$da]) as $r) {
-            $metti($r['m'], $r['kind'] === 'change' ? 'incasso_cambi' : 'incasso_nuovi', (int) $r['c']);
-        }
-        // I rinnovi non passano dagli ordini: si leggono dalle fatture arrivate col webhook (IVA esclusa).
-        foreach (Db::all("SELECT processed_at, payload FROM webhook_events WHERE provider = 'stripe' AND kind = 'invoice.paid' AND processed_at >= ?", [$da]) as $r) {
-            $inv = (json_decode((string) $r['payload'], true) ?: [])['data']['object'] ?? [];
-            if (($inv['billing_reason'] ?? '') !== 'subscription_cycle') continue;
-            $c = (int) ($inv['total_excluding_tax'] ?? $inv['subtotal'] ?? $inv['amount_paid'] ?? 0);
-            $m = substr((string) $r['processed_at'], 0, 7);
-            $metti($m, 'incasso_rinnovi', $c);
-            $metti($m, 'rinnovi', 1);
+        // 9N · Gli incassi dalla stessa fonte della Cassa (Gestione::pagamenti): ordini Stripe e bonifici, rinnovi dalle fatture, IVA esclusa.
+        foreach (self::pagamenti($da, self::iso(time() + self::GIORNO)) as $p) {
+            if ($p['tipo'] === 'rimborso') continue;
+            $m = substr($p['data'], 0, 7);
+            $metti($m, ['nuovo' => 'incasso_nuovi', 'cambio' => 'incasso_cambi', 'rinnovo' => 'incasso_rinnovi'][$p['tipo']], $p['imponibile']);
+            if ($p['tipo'] === 'rinnovo') $metti($m, 'rinnovi', 1);
         }
         // Persi: abbonamenti finiti nel mese senza che ne sia arrivato un altro dopo.
         foreach (Db::all("SELECT s.id, s.account_id, s.current_period_end FROM subscriptions s JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id

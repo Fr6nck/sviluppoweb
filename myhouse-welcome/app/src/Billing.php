@@ -377,6 +377,51 @@ final class Billing
         return 'abbonamento-chiuso';
     }
 
+    /**
+     * 9N · I dati di un bonifico scritti nell'attivazione manuale: imponibile e IVA in euro («127,00»), data (AAAA-MM-GG,
+     * non nel futuro), riferimento (CRO o causale). @return array{imponibile:int,iva:int,data:string,riferimento:string}
+     */
+    public static function datiBonifico(array $in): array
+    {
+        $euro = function (string $campo, string $nome, bool $zero) use ($in): int {
+            $g = str_replace([' ', '€'], '', trim((string) ($in[$campo] ?? '')));
+            if (preg_match('/^\d{1,3}(\.\d{3})+(,\d{1,2})?$/', $g)) $g = str_replace('.', '', $g);
+            $g = str_replace(',', '.', $g);
+            if ($g === '' || !is_numeric($g) || (float) $g < 0 || (!$zero && (float) $g <= 0)) throw new \RuntimeException("Scrivi $nome in euro, per esempio 127,00.");
+            return (int) round((float) $g * 100);
+        };
+        $imponibile = $euro('bonifico_importo', "l'importo del bonifico (IVA esclusa)", false);
+        $iva = $euro('bonifico_iva', "l'IVA del bonifico (0 se non c'è)", true);
+        $data = trim((string) ($in['bonifico_data'] ?? ''));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $data) || !checkdate((int) substr($data, 5, 2), (int) substr($data, 8, 2), (int) substr($data, 0, 4)) || $data > gmdate('Y-m-d')) {
+            throw new \RuntimeException('Scrivi la data in cui è arrivato il bonifico (non nel futuro).');
+        }
+        $rif = mb_substr(trim((string) ($in['bonifico_riferimento'] ?? '')), 0, 120);
+        if ($rif === '') throw new \RuntimeException('Scrivi il riferimento del bonifico (CRO o causale): serve per ritrovarlo in banca.');
+        return ['imponibile' => $imponibile, 'iva' => $iva, 'data' => $data, 'riferimento' => $rif];
+    }
+
+    /**
+     * 9N · Il bonifico diventa un pagamento: una riga in orders (provider «bonifico», pagata, alla data del bonifico) con il
+     * suo codice MW-XXXXX-AAAA-N; l'abbonamento manuale appena creato lo segna come pagato con bonifico. @return string il codice
+     */
+    public static function segnaBonifico(int $accountId, int $subscriptionId, array $b, string $nota): string
+    {
+        $sub = Db::one('SELECT * FROM subscriptions WHERE id = ?', [$subscriptionId]) ?: [];
+        $quando = $b['data'] . 'T12:00:00Z';
+        $riga = ['account_id' => $accountId, 'package_version_id' => (int) ($sub['package_version_id'] ?? 0), 'amount_cents' => $b['imponibile'], 'currency' => 'EUR',
+                 'status' => 'paid', 'provider' => 'bonifico', 'provider_session_id' => '', 'created_at' => $quando, 'updated_at' => Support::now(),
+                 'quantity' => max(1, (int) ($sub['quantity'] ?? 1)), 'kind' => 'new'];
+        if (Migrator::columnExists('orders', 'iva_cents')) $riga += ['iva_cents' => $b['iva'], 'riferimento' => $b['riferimento']];
+        $orderId = Db::insert('orders', $riga);
+        Db::update('subscriptions', ['payment_status' => 'bonifico'], 'id = :id', ['id' => $subscriptionId]);
+        $codice = Codici::pagamento($orderId);
+        $uid = (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$accountId]);
+        Auth::audit('payment.bank_transfer', $uid ?: null, ['order' => $orderId, 'codice' => $codice, 'imponibile' => $b['imponibile'], 'iva' => $b['iva'],
+                                                            'data' => $b['data'], 'riferimento' => $b['riferimento'], 'subscription' => $subscriptionId, 'nota' => $nota]);
+        return $codice;
+    }
+
     /** 7F: «Gratis per sempre» = un abbonamento manuale di 100 anni. */
     public const PER_SEMPRE = 1200;
 

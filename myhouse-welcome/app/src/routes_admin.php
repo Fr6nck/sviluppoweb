@@ -31,12 +31,17 @@ $r->get('/admin', function () {
                 (SELECT COUNT(*) FROM subscriptions s WHERE s.package_version_id = pv.id AND s.status IN ('active','trialing')" . $np('s.account_id') . ") AS clienti
          FROM package_versions pv JOIN packages pk ON pk.id = pv.package_id
          WHERE pv.is_current = 1 AND pk.public = 1 AND pk.active = 1 ORDER BY pk.sort, pk.id");
+    // 9N · «Clienti attivi» del listino come i numeri sopra: senza clienti di esempio né abbonamenti dimostrativi.
+    foreach ($piani as &$pL) $pL['clienti'] = (int) Db::val("SELECT COUNT(*) FROM subscriptions s JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id
+        WHERE s.package_version_id = ? AND s.status IN ('active','trialing') AND s.provider <> 'dimostrazione' AND u.email NOT LIKE ?" . $np('a.id'), [$pL['id'], '%@' . Demo::DOMINIO], 0);
+    unset($pL);
     $ordini = Db::all(
         'SELECT o.*, pk.name AS package, u.email, u.name AS cliente, a.id AS account_id FROM orders o
          JOIN package_versions pv ON pv.id = o.package_version_id JOIN packages pk ON pk.id = pv.package_id
          JOIN accounts a ON a.id = o.account_id JOIN users u ON u.id = a.user_id WHERE 1 = 1' . $np('a.id') . ' ORDER BY o.id DESC LIMIT 8');
 
-    $avvisi = [];
+    $avvisi = [];   // 9N · da configurare (un solo riquadro chiuso); le cose da fare oggi stanno in $daFare
+    $daFare = [];
     // 9K · I limiti di PHP che fermano le foto prima ancora del sito.
     $bassi = array_filter(Media::limitiServer(), fn($l) => $l[3]);
     if ($bassi) $avvisi[] = ['Il server limita il caricamento delle foto', 'Oggi: ' . implode(', ', array_map(fn($l) => $l[0] . ' = ' . $l[1], $bassi))
@@ -63,21 +68,27 @@ $r->get('/admin', function () {
         if (empty($esito['ok'])) $avvisi[] = ['Prezzi su Stripe diversi dal listino', 'Il pagamento della versione ' . (int) $pvId . ' è fermo: ' . (string) ($esito['errore'] ?? '') . ' Correggi i Price su Stripe o svuota i Price ID nella versione (Piani): il sito li ricrea alla prossima vendita.', '/admin/pacchetti', 'Apri i piani'];
     }
     if (MHW\Preventivi::disponibili() && ($nuovi = (int) Db::val("SELECT COUNT(*) FROM preventivi WHERE stato = 'nuovo'", [], 0)) > 0) {
-        $avvisi[] = ['Richieste di preventivo da rispondere', $nuovi . ($nuovi === 1 ? ' richiesta nuova' : ' richieste nuove') . ' per più di 10 strutture: la promessa è una risposta entro un giorno lavorativo.', '/admin/preventivi', 'Apri i preventivi'];
+        $daFare[] = ['Preventivi nuovi', $nuovi, 'risposta promessa entro un giorno lavorativo', '/admin/preventivi'];
+    }
+    if (MHW\Preventivi::conProposta() && ($richiama = (int) Db::val("SELECT COUNT(*) FROM preventivi WHERE stato <> 'chiuso' AND ricontatta_il IS NOT NULL AND ricontatta_il <= ?", [gmdate('Y-m-d')], 0)) > 0) {
+        $daFare[] = ['Preventivi da ricontattare', $richiama, 'la data scelta è oggi o è passata', '/admin/preventivi'];
     }
     if (MHW\Partner::disponibili() && ($nuoviP = (int) Db::val("SELECT COUNT(*) FROM partner_richieste WHERE stato = 'nuovo'", [], 0)) > 0) {
-        $avvisi[] = ['Richieste di partnership da rispondere', $nuoviP . ($nuoviP === 1 ? ' richiesta nuova' : ' richieste nuove') . ' dal modulo «Diventa partner» di /property-manager.', '/admin/partner', 'Apri le richieste'];
+        $daFare[] = ['Richieste di partnership', $nuoviP, 'dal modulo «Diventa partner»', '/admin/partner'];
     }
     // 9L · «Giudizi e vetrina»: gli aderenti e le schede o i giudizi da approvare.
     if (MHW\Vetrina::disponibili()) {
         MHW\Vetrina::sincronizza();
         $nv = MHW\Vetrina::elenco('vetrina')['numeri'];
-        if ((int) ($nv['da_approvare'] ?? 0) > 0) $avvisi[] = ['Giudizi e vetrina: ' . (int) $nv['schede_da_approvare'] . ' schede da approvare · ' . (int) $nv['giudizi_da_approvare'] . ' giudizi da approvare',
-            'Le schede nuove di «Le guide dei nostri host» e i giudizi arrivati per «Cosa dicono di noi» (programma «Giudizio con sconto»): si approvano separatamente.',
-            '/admin/giudizi' . ((int) $nv['schede_da_approvare'] === 0 ? '?scheda=giudizi&stelle=tutti' : ''), 'Apri Giudizi e vetrina'];
+        if ((int) ($nv['schede_da_approvare'] ?? 0) > 0) $daFare[] = ['Schede da approvare', (int) $nv['schede_da_approvare'], '«Le guide dei nostri host»', '/admin/giudizi'];
+        if ((int) ($nv['giudizi_da_approvare'] ?? 0) > 0) $daFare[] = ['Giudizi da approvare', (int) $nv['giudizi_da_approvare'], '«Cosa dicono di noi»', '/admin/giudizi?scheda=giudizi&stelle=tutti'];
     }
     $anomalie = Gestione::contaAnomalie();
-    if ($anomalie['alta'] > 0) $avvisi[] = ['Ci sono anomalie da guardare subito', $anomalie['alta'] . ($anomalie['alta'] === 1 ? ' controllo segnala' : ' controlli segnalano') . ' pagamenti o rinnovi che non tornano.', '/admin/anomalie', 'Guarda le anomalie'];
+    if ($numeri['falliti'] > 0) $daFare[] = ['Rinnovi falliti', $numeri['falliti'], 'carte da aggiornare: la guida è offline', '/admin/anomalie'];
+    $nonConfermate = (int) Db::val("SELECT COUNT(*) FROM users WHERE role = 'host' AND email_verified_at IS NULL AND created_at <= ? AND email NOT LIKE ?" . Gestione::utentiVeri('id'),
+                                   [gmdate('Y-m-d\TH:i:s\Z', time() - 7 * 86400), '%@' . Demo::DOMINIO], 0);
+    if ($nonConfermate > 0) $daFare[] = ['Email non confermate da più di 7 giorni', $nonConfermate, 'forse nello spam o scritte male', '/admin/anomalie'];
+    if ($anomalie['alta'] > 0) $daFare[] = ['Anomalie da guardare subito', $anomalie['alta'], 'pagamenti o rinnovi che non tornano', '/admin/anomalie'];
     // 9D · I clienti in omaggio e quelli il cui primo addebito è vicino.
     $numeri['omaggio'] = MHW\Omaggi::numeri(30);
     $adesso = Gestione::adesso();
@@ -85,8 +96,20 @@ $r->get('/admin', function () {
     $numeri['rinnovi30'] = $adesso['rinnovi']['30'];
     $numeri['scadono30'] = count(array_filter(Gestione::scadenze(30), fn($x) => !$x['automatico'] && !$x['finito']));
     $numeri['anomalie'] = $anomalie;
+    // 9N · I quattro numeri in cima, contati tutti allo stesso modo: senza clienti di esempio, di prova e abbonamenti dimostrativi.
+    $attivi = Db::all("SELECT DISTINCT s.account_id FROM subscriptions s JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id
+                       WHERE s.status IN ('active','trialing') AND s.provider <> 'dimostrazione' AND s.current_period_end > ? AND u.email NOT LIKE ?" . $np('a.id'),
+                      [Support::now(), '%@' . Demo::DOMINIO]);
+    $numeri['attivi'] = count($attivi);
+    $numeri['online'] = 0;
+    foreach (Db::all("SELECT p.* FROM properties p JOIN accounts a ON a.id = p.account_id JOIN users u ON u.id = a.user_id
+                      WHERE p.status = 'published' AND p.is_demo = 0 AND p.archived_at IS NULL AND u.email NOT LIKE ?" . $np('a.id'), ['%@' . Demo::DOMINIO]) as $pO) {
+        if (Subscriptions::propertyOnline($pO)) $numeri['online']++;
+    }
+    $mese = gmdate('Y-m');
+    $numeri['mese'] = array_sum(array_map(fn($p) => $p['tipo'] === 'rimborso' ? 0 : $p['imponibile'], Gestione::pagamenti($mese . '-01', gmdate('Y-m-01', strtotime($mese . '-01 +1 month')))));
 
-    View::out('admin/dashboard', ['numeri' => $numeri, 'piani' => $piani, 'ordini' => $ordini, 'avvisi' => $avvisi, 'funnel' => Stats::funnel(30),
+    View::out('admin/dashboard', ['numeri' => $numeri, 'piani' => $piani, 'ordini' => $ordini, 'avvisi' => $avvisi, 'daFare' => $daFare, 'funnel' => Stats::funnel(30),
                                   'esempi' => Demo::presente(), 'nav' => 'admin'], 'layout/cms');
 });
 
@@ -128,6 +151,15 @@ $r->get('/admin/clienti', function () {
         array_push($args, ...$idsC);
     }
     $rows = Db::all($sql . ' ORDER BY u.id DESC LIMIT 300', $args);
+    // 9N · L'ultimo pagamento e l'incassato di ognuno, dalla stessa fonte della Cassa (clienti di esempio e di prova esclusi).
+    $incassi = [];
+    foreach (Gestione::pagamenti('2000-01-01', gmdate('Y-m-d\TH:i:s\Z', time() + 86400)) as $pg) {
+        $x = &$incassi[$pg['account_id']];
+        $x ??= ['ultimo' => '', 'netto' => 0];
+        $x['netto'] += $pg['tipo'] === 'rimborso' ? $pg['totale'] : $pg['imponibile'];
+        if ($pg['tipo'] !== 'rimborso') $x['ultimo'] = max($x['ultimo'], $pg['data']);
+        unset($x);
+    }
     foreach ($rows as &$row) {
         $aid = (int) $row['account_id'];
         $sub = Subscriptions::active($aid);
@@ -140,14 +172,20 @@ $r->get('/admin/clienti', function () {
         $row['citta'] = $props[0]['city'] ?? '';
         $row['strutture'] = count($props);
         $pubbl = count(array_filter($props, fn($p) => $p['status'] === 'published'));
+        // 9N · «Mai attivato»: nessun abbonamento, mai (né pagato né concesso). Gli altri senza abbonamento sono scaduti.
+        $maiAttivato = !$sub && !Db::val("SELECT id FROM subscriptions WHERE account_id = ? AND provider <> 'dimostrazione'", [$aid]);
         $row['stato'] = match (true) {
             (bool) $sub && $sub['status'] === 'past_due' => ['Pagamento non riuscito', 'alert', 'fallito'],
             (bool) $sub && $pubbl > 0 => ['Attivo', 'pine', 'attivo'],
-            (bool) $sub => ['Pagato, non pubblicato', 'ochre', 'pagato'],
-            !$props => ['Nessuna struttura', 'ochre', 'vuoto'],
+            (bool) $sub => [$sub['provider'] === 'stripe' || $sub['provider'] === 'dimostrazione' ? 'Pagato, non pubblicato' : 'Attivato dallo staff, non pubblicato', 'ochre', 'pagato'],
+            $maiAttivato && !$props => ['Nessuna struttura', 'ochre', 'vuoto'],
+            $maiAttivato => ['Mai attivato', 'ochre', 'mai'],
             $pubbl > 0 => ['Scaduto (offline)', 'alert', 'scaduto'],
-            default => ['In bozza, senza piano pagato', 'ochre', 'bozza'],
+            default => ['Scaduto', 'alert', 'scaduto'],
         };
+        $row['manuale'] = $sub && $sub['provider'] === 'manuale';
+        $row['ultimo_pagamento'] = $incassi[$aid]['ultimo'] ?? '';
+        $row['incassato'] = $incassi[$aid]['netto'] ?? 0;
         $row['scadenza'] = $sub['current_period_end'] ?? '';
         $row['rinnovo'] = $sub ? ($sub['provider'] !== 'stripe' ? 'staff' : ((int) $sub['cancel_at_period_end'] ? 'disattivato' : 'automatico')) : '';
         // 9D · in omaggio: fino a quando (poi parte l'addebito)
@@ -157,11 +195,17 @@ $r->get('/admin/clienti', function () {
     // Filtri: stato e piano. Si applicano dopo il calcolo, perché lo stato non è una colonna.
     $filtroStato = (string) ($_GET['stato'] ?? ''); $filtroPiano = (string) ($_GET['piano'] ?? '');
     $piani = array_values(array_unique(array_filter(array_column($rows, 'plan'), fn($p) => $p !== '—')));
-    $rows = array_values(array_filter($rows, fn($x) => ($filtroStato === '' || ($filtroStato === 'omaggio' ? $x['omaggio'] !== '' : $x['stato'][2] === $filtroStato)) && ($filtroPiano === '' || $x['plan'] === $filtroPiano)));
+    // 9N · in più: clienti di prova, attivati dallo staff, mai pagato (nessun incasso, anche se attivati a mano).
+    $passa = fn(array $x) => match ($filtroStato) {
+        '' => true, 'omaggio' => $x['omaggio'] !== '', 'prova' => !empty($x['is_test']), 'manuale' => $x['manuale'],
+        'maipagato' => $x['ultimo_pagamento'] === '' && empty($x['is_test']), default => $x['stato'][2] === $filtroStato };
+    $rows = array_values(array_filter($rows, fn($x) => $passa($x) && ($filtroPiano === '' || $x['plan'] === $filtroPiano)));
     if (($_GET['formato'] ?? '') === 'csv') {
-        Gestione::csv('clienti', ['Nome', 'Email', 'Email confermata', 'Struttura', 'Città', 'Strutture', 'Piano', 'Stato', 'Scadenza', 'Rinnovo', 'Omaggio fino al', 'Registrato'],
-            array_map(fn($x) => [$x['name'], $x['email'], $x['email_verified_at'] ? 'sì' : 'no', $x['struttura'], $x['citta'], $x['strutture'], $x['plan'],
-                                 $x['stato'][0], $x['scadenza'] ? substr($x['scadenza'], 0, 10) : '', $x['rinnovo'], $x['omaggio'] ? substr($x['omaggio'], 0, 10) : '', substr((string) $x['created_at'], 0, 10)], $rows));
+        Gestione::csv('clienti', ['Codice', 'Nome', 'Email', 'Email confermata', 'Struttura', 'Città', 'Strutture', 'Piano', 'Stato', 'Scadenza', 'Rinnovo', 'Omaggio fino al',
+                                  'Ultimo pagamento', 'Incassato (IVA esclusa, meno i rimborsi)', 'Registrato'],
+            array_map(fn($x) => [(string) ($x['code'] ?? ''), $x['name'], $x['email'], $x['email_verified_at'] ? 'sì' : 'no', $x['struttura'], $x['citta'], $x['strutture'], $x['plan'],
+                                 $x['stato'][0], $x['scadenza'] ? substr($x['scadenza'], 0, 10) : '', $x['rinnovo'], $x['omaggio'] ? substr($x['omaggio'], 0, 10) : '',
+                                 substr($x['ultimo_pagamento'], 0, 10), number_format($x['incassato'] / 100, 2, ',', ''), substr((string) $x['created_at'], 0, 10)], $rows));
     }
     View::out('admin/customers', ['rows' => $rows, 'cerca' => $cerca, 'filtroStato' => $filtroStato, 'filtroPiano' => $filtroPiano, 'piani' => $piani,
                                   'esempi' => Demo::presente(), 'nav' => 'clienti'], 'layout/cms');
@@ -175,8 +219,10 @@ $r->post('/admin/entra/{uid}', function (array $a) {
 });
 
 $r->post('/admin/esci-da-cliente', function () {
+    // 9N · si torna alla scheda del cliente da cui si era entrati, non all'elenco
+    $aid = Auth::isImpersonating() ? (int) Db::val('SELECT id FROM accounts WHERE user_id = ?', [(int) ($_SESSION['uid'] ?? 0)], 0) : 0;
     Auth::stopImpersonating();
-    Support::redirect('/admin/clienti');
+    Support::redirect($aid ? '/admin/cliente/' . $aid : '/admin/clienti');
 });
 
 $r->get('/admin/cliente/{aid}', function (array $a) {
@@ -209,8 +255,10 @@ $r->get('/admin/cliente/{aid}', function (array $a) {
         'orders' => Db::all('SELECT o.*, pk.name AS package FROM orders o JOIN package_versions pv ON pv.id = o.package_version_id
                              JOIN packages pk ON pk.id = pv.package_id WHERE o.account_id = ? ORDER BY o.id DESC', [$acc['id']]),
         'ent' => Entitlements::forAccount((int) $acc['id']),
-        'versioni' => Db::all('SELECT pv.id, pv.version, pk.name FROM package_versions pv JOIN packages pk ON pk.id = pv.package_id
-                               WHERE pv.is_current = 1 ORDER BY pk.sort'),
+        // 9N · in vendita (pubblici, attivi, versione corrente) prima; le altre in «Precedenti»
+        'versioni' => Db::all('SELECT pv.id, pv.version, pk.name, CASE WHEN pk.public = 1 AND pk.active = 1 THEN 1 ELSE 0 END AS in_vendita
+                               FROM package_versions pv JOIN packages pk ON pk.id = pv.package_id
+                               WHERE pv.is_current = 1 ORDER BY pk.sort, pk.id'),
         'audit' => Db::all('SELECT * FROM audit_log WHERE target_user_id = ? ORDER BY id DESC LIMIT 50', [$acc['user_id']]),
         'email' => Richiami::disponibili() ? Db::all('SELECT kind, ref, sent_at FROM email_log WHERE account_id = ? ORDER BY sent_at DESC, id DESC LIMIT 20', [$acc['id']]) : [],
         'optout' => Richiami::disponibili() ? array_column(Db::all('SELECT kind FROM email_optout WHERE account_id = ?', [$acc['id']]), 'kind') : [],
@@ -357,11 +405,23 @@ $r->post('/admin/cliente/{aid}/abbonamento', function (array $a) {
     $nota = trim((string) ($_POST['nota'] ?? ''));
     if (!$pv || $nota === '') {
         Support::flash('Scegli un piano e scrivi il motivo: resta nel registro.', 'err');
-        Support::redirect('/admin/cliente/' . $accId);
+        Support::redirect('/admin/cliente/' . $accId . '#abbonamento');
     }
-    Billing::grantManual($accId, (int) $pv['id'], $mesi, $nota, max(1, (int) ($_POST['strutture'] ?? 1)));
-    Support::flash($mesi === Billing::PER_SEMPRE ? $pv['name'] . " gratis per sempre. Non compare nell'incasso."
-                                                 : $pv['name'] . " attivo per $mesi mesi. Non compare nell'incasso.");
+    // 9N · «Pagato fuori Stripe: bonifico»: importo e IVA, data e riferimento → un pagamento con codice MW che entra in Cassa e Prospetti.
+    $bonifico = null;
+    if (($_POST['pagamento'] ?? '') === 'bonifico') {
+        try { $bonifico = Billing::datiBonifico($_POST); }
+        catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); Support::redirect('/admin/cliente/' . $accId . '#abbonamento'); }
+    }
+    $subId = Billing::grantManual($accId, (int) $pv['id'], $mesi, $nota, max(1, (int) ($_POST['strutture'] ?? 1)));
+    if ($bonifico) {
+        $codice = Billing::segnaBonifico($accId, $subId, $bonifico, $nota);
+        Support::flash($pv['name'] . ($mesi === Billing::PER_SEMPRE ? ' attivo per sempre' : " attivo per $mesi mesi") . '. Bonifico di ' . Support::money($bonifico['imponibile'] + $bonifico['iva'])
+                       . ' segnato' . ($codice !== '' ? ' con il codice ' . $codice : '') . ': entra in Cassa e Prospetti.');
+    } else {
+        Support::flash($mesi === Billing::PER_SEMPRE ? $pv['name'] . " gratis per sempre. Non compare nell'incasso."
+                                                     : $pv['name'] . " attivo per $mesi mesi. Non compare nell'incasso.");
+    }
     Support::redirect('/admin/cliente/' . $accId);
 });
 
@@ -472,6 +532,13 @@ $r->get('/admin/abbonamenti', function () {
         . ($gratuiti ? " WHERE s.provider IN ('manuale', 'dimostrazione')" : '') . ' ORDER BY s.id DESC LIMIT 300');
     foreach ($subs as &$s) $s['valido'] = Subscriptions::valid($s, (int) (Config::get('billing')['grace_days'] ?? 0));
     unset($s);
+    if (($_GET['formato'] ?? '') === 'csv') {   // 9N
+        Gestione::csv($gratuiti ? 'abbonamenti-gratuiti' : 'abbonamenti', ['Cliente', 'Email', 'Piano', 'Versione', 'Strutture', 'Via', 'Stato', 'Valido', 'Inizio', 'Fine', 'Rinnovo', 'Cliente di prova', 'ID Stripe abbonamento'],
+            array_map(fn($s) => [$s['cliente'], $s['email'], $s['package'], (int) $s['version'], (int) ($s['quantity'] ?? 1), $s['provider'], $s['status'], $s['valido'] ? 'sì' : 'no',
+                                 substr((string) $s['current_period_start'], 0, 10), substr((string) $s['current_period_end'], 0, 10),
+                                 $s['provider'] !== 'stripe' ? 'staff' : ((int) $s['cancel_at_period_end'] ? 'disattivato' : 'automatico'), !empty($s['is_test']) ? 'sì' : '',
+                                 (string) $s['provider_subscription_id']], $subs));
+    }
     View::out('admin/subscriptions', ['subs' => $subs, 'gratuiti' => $gratuiti, 'nav' => 'abbonamenti'], 'layout/cms');
 });
 
@@ -498,6 +565,12 @@ $r->get('/admin/registro', function () {
         'SELECT l.*, ua.email AS attore, ut.email AS bersaglio FROM audit_log l
          LEFT JOIN users ua ON ua.id = l.actor_user_id LEFT JOIN users ut ON ut.id = l.target_user_id
          ORDER BY l.id DESC LIMIT 300');
+    if (($_GET['formato'] ?? '') === 'csv') {   // 9N · le ultime 5000 azioni
+        Gestione::csv('registro-azioni', ['Quando (UTC)', 'Chi', 'Azione', 'Su', 'Dettagli'],
+            array_map(fn($l) => [str_replace(['T', 'Z'], [' ', ''], (string) $l['created_at']), $l['attore'] ?: 'sistema', $l['action'], $l['bersaglio'] ?: '', $l['meta']],
+                      Db::all('SELECT l.*, ua.email AS attore, ut.email AS bersaglio FROM audit_log l LEFT JOIN users ua ON ua.id = l.actor_user_id
+                               LEFT JOIN users ut ON ut.id = l.target_user_id ORDER BY l.id DESC LIMIT 5000')));
+    }
     View::out('admin/audit', ['righe' => $righe, 'nav' => 'registro'], 'layout/cms');
 });
 
@@ -677,10 +750,10 @@ $r->get('/admin/traduzioni', function () {
    «Manda il promemoria» parte subito, anche per più clienti insieme. */
 $r->get('/admin/scadenze', function () {
     Auth::requireAdmin();
-    $giorni = in_array((int) ($_GET['giorni'] ?? 60), [30, 60, 90, 180], true) ? (int) ($_GET['giorni'] ?? 60) : 60;
+    $giorni = in_array((int) ($_GET['giorni'] ?? 30), [30, 60, 90, 180], true) ? (int) ($_GET['giorni'] ?? 30) : 30;
     $righe = Gestione::scadenze($giorni);
     if (($_GET['formato'] ?? '') === 'csv') {
-        Gestione::csv('scadenze', ['Cliente', 'Email', 'Piano', 'Strutture', 'Scadenza', 'Giorni', 'Stato', 'Rinnovo (IVA esclusa)', 'Sconto inviti %', 'Ultimo avviso', 'Avviso a mano'],
+        Gestione::csv('scadenze', ['Cliente', 'Email', 'Piano', 'Strutture', 'Scadenza', 'Giorni', 'Stato', 'Importo atteso (IVA esclusa)', 'Sconto rinnovo %', 'Ultimo avviso', 'Avviso a mano'],
             array_map(fn($x) => [$x['cliente'], $x['email'], $x['piano'], (int) ($x['quantity'] ?? 1), substr((string) $x['current_period_end'], 0, 10), $x['giorni'], $x['stato'][0],
                                  number_format($x['importo'] / 100, 2, ',', ''), $x['sconto'], $x['avviso'] ? substr((string) $x['avviso']['sent_at'], 0, 10) : '',
                                  $x['avviso'] && $x['avviso']['manuale'] ? 'sì' : ''], $righe));
@@ -708,6 +781,26 @@ $r->post('/admin/scadenze/promemoria', function () {
     Support::redirect($torna);
 });
 
+/* 9N · Richiami: le email automatiche ai clienti (percorso, rinnovi, scadenze, eventi, inviti, giudizio) degli ultimi 30 giorni,
+   per tipo, con chi ha detto «non mandarmene più». Per mandarne uno a mano: Scadenze o la scheda del cliente. */
+$r->get('/admin/richiami', function () {
+    Auth::requireAdmin();
+    $attivi = Richiami::disponibili();
+    $da = gmdate('Y-m-d\TH:i:s\Z', time() - 30 * 86400);
+    $righe = $attivi ? Db::all('SELECT e.kind, e.ref, e.sent_at, e.account_id, u.email, u.name AS cliente FROM email_log e JOIN accounts a ON a.id = e.account_id
+                                JOIN users u ON u.id = a.user_id WHERE e.sent_at >= ? ORDER BY e.sent_at DESC, e.id DESC LIMIT 300', [$da]) : [];
+    $perTipo = $attivi ? array_column(Db::all('SELECT kind, COUNT(*) AS n FROM email_log WHERE sent_at >= ? GROUP BY kind', [$da]), 'n', 'kind') : [];
+    $noGrazie = $attivi ? array_column(Db::all('SELECT kind, COUNT(*) AS n FROM email_optout GROUP BY kind'), 'n', 'kind') : [];
+    if (($_GET['formato'] ?? '') === 'csv') {
+        Gestione::csv('richiami', ['Quando (UTC)', 'Tipo', 'Cliente', 'Email', 'Riferimento', 'A mano'],
+            array_map(fn($x) => [str_replace(['T', 'Z'], [' ', ''], (string) $x['sent_at']), $x['kind'], $x['cliente'], $x['email'], $x['ref'], str_starts_with((string) $x['ref'], 'manuale-') ? 'sì' : ''], $righe));
+    }
+    $lock = MHW_APP . '/storage/richiami.lock';
+    View::out('admin/richiami', ['righe' => $righe, 'perTipo' => $perTipo, 'noGrazie' => $noGrazie, 'attivi' => $attivi,
+                                 'giro' => is_file($lock) ? gmdate('Y-m-d\TH:i:s\Z', (int) filemtime($lock)) : '', 'cron' => (string) (Config::get('cron_token') ?? '') !== '',
+                                 'nav' => 'richiami'], 'layout/cms');
+});
+
 // ---------------------------------------------------------------- anomalie
 $r->get('/admin/anomalie', function () {
     Auth::requireAdmin();
@@ -732,6 +825,37 @@ $r->get('/admin/prospetti', function () {
         ? Db::all('SELECT i.*, u.name AS cliente, u.email FROM interessi_sito i LEFT JOIN accounts a ON a.id = i.account_id LEFT JOIN users u ON u.id = a.user_id
                    WHERE (i.account_id IS NULL OR 1 = 1' . Gestione::senzaProva('i.account_id') . ') ORDER BY i.id DESC LIMIT 100') : null;
     View::out('admin/prospetti', ['mesi' => $mesi, 'adesso' => Gestione::adesso(), 'pareri' => $pareri, 'interessati' => $interessati, 'nav' => 'prospetti'], 'layout/cms');
+});
+
+/*
+ * 9N · Cassa: gli incassi di un anno mese per mese (nuovi, cambi, rinnovi; Stripe e bonifici; imponibile, IVA, totale,
+ * rimborsi), il totale e l'anno precedente; un mese aperto mostra i pagamenti. Stessa fonte di Prospetti (Gestione::pagamenti).
+ * CSV: i mesi (?formato=csv) o i pagamenti (?formato=csv&pagamenti=1, dell'anno o del mese scelto).
+ */
+$r->get('/admin/cassa', function () {
+    Auth::requireAdmin();
+    $anno = (int) ($_GET['anno'] ?? gmdate('Y'));
+    if ($anno < 2020 || $anno > (int) gmdate('Y') + 1) $anno = (int) gmdate('Y');
+    $mese = preg_match('/^' . $anno . '-(0[1-9]|1[0-2])$/', (string) ($_GET['mese'] ?? '')) ? (string) $_GET['mese'] : '';
+    $eur = fn(?int $c) => $c === null ? '' : number_format($c / 100, 2, ',', '');
+    $nomi = ['nuovo' => 'Nuovo abbonamento', 'cambio' => 'Cambio di piano', 'rinnovo' => 'Rinnovo', 'rimborso' => 'Rimborso'];
+    if (($_GET['formato'] ?? '') === 'csv') {
+        if (!empty($_GET['pagamenti'])) {
+            [$da, $a] = $mese !== '' ? [$mese . '-01', gmdate('Y-m-01', strtotime($mese . '-01 +1 month'))] : [$anno . '-01-01', ($anno + 1) . '-01-01'];
+            Gestione::csv('cassa-pagamenti-' . ($mese ?: $anno), ['Data', 'Codice', 'Cliente', 'Email', 'Tipo', 'Via', 'Piano', 'Sconti', 'Imponibile', 'IVA', 'Totale', 'Riferimento', 'Fattura'],
+                array_map(fn($p) => [substr($p['data'], 0, 10), $p['codice'], $p['cliente'], $p['email'], $nomi[$p['tipo']], Gestione::VIE_INCASSO[$p['via']] ?? $p['via'], $p['piano'],
+                                     $p['sconti'], $eur($p['imponibile']), $eur($p['iva']), $eur($p['totale']), $p['riferimento'], $p['fattura']], Gestione::pagamenti($da, $a)));
+        }
+        $c = Gestione::cassa($anno);
+        $riga = fn(string $et, array $m) => [$et, $m['nuovi'], $m['cambi'], $m['rinnovi'], $eur($m['stripe']), $eur($m['bonifico']), $eur($m['imponibile']), $eur($m['iva']),
+                                             $eur($m['totale']), $eur($m['rimborsi']), $eur($m['netto'])];
+        Gestione::csv('cassa-' . $anno, ['Mese', 'Nuovi', 'Cambi di piano', 'Rinnovi', 'Stripe (imponibile)', 'Bonifici (imponibile)', 'Imponibile', 'IVA', 'Totale', 'Rimborsi', 'Netto incassato'],
+            [...array_map(fn($m) => $riga($m['mese'], $m), $c['mesi']), $riga('Totale ' . $anno, $c['totale'])]);
+    }
+    $pagamenti = [];
+    if ($mese !== '') $pagamenti = Gestione::pagamenti($mese . '-01', gmdate('Y-m-01', strtotime($mese . '-01 +1 month')));
+    View::out('admin/cassa', ['anno' => $anno, 'mese' => $mese, 'cassa' => Gestione::cassa($anno), 'prima' => Gestione::cassa($anno - 1)['totale'],
+                              'pagamenti' => $pagamenti, 'nomi' => $nomi, 'nav' => 'cassa'], 'layout/cms');
 });
 
 /* Vendite per piano: che piani si comprano, mese per mese, con grafici e tabella. */
@@ -1254,6 +1378,11 @@ $r->post('/admin/testimonianze/{tid}/elimina', function (array $a) {
 // 9K · Le richieste del programma Partner (/property-manager).
 $r->get('/admin/partner', function () {
     Auth::requireAdmin();
+    if (($_GET['formato'] ?? '') === 'csv') {   // 9N
+        Gestione::csv('partner', ['Data', 'Nome', 'Società', 'Email', 'Telefono', 'Strutture', 'Zone', 'Messaggio', 'Stato', 'Nota'],
+            array_map(fn($x) => [substr((string) $x['created_at'], 0, 10), $x['nome'], $x['societa'], $x['email'], $x['telefono'], $x['strutture'], $x['zone'],
+                                 (string) $x['messaggio'], MHW\Partner::STATI[$x['stato']] ?? $x['stato'], $x['nota']], MHW\Partner::tutte()));
+    }
     View::out('admin/partner', ['righe' => MHW\Partner::tutte(), 'attivi' => MHW\Partner::disponibili(), 'nav' => 'partner'], 'layout/cms');
 });
 $r->post('/admin/partner/{id}/stato', function (array $a) {
@@ -1269,18 +1398,28 @@ $r->post('/admin/partner/{id}/stato', function (array $a) {
 });
 $r->get('/admin/preventivi', function () {
     Auth::requireAdmin();
-    View::out('admin/preventivi', ['righe' => MHW\Preventivi::tutte(), 'attivi' => MHW\Preventivi::disponibili(), 'nav' => 'preventivi'], 'layout/cms');
+    $righe = MHW\Preventivi::tutte();
+    if (($_GET['formato'] ?? '') === 'csv') {   // 9N
+        Gestione::csv('preventivi', ['Data', 'Nome', 'Email', 'Telefono', 'Strutture', 'Lingua', 'Messaggio', 'Stato', 'Importo proposto (IVA esclusa)', 'Nota', 'Ricontattare il'],
+            array_map(fn($x) => [substr((string) $x['created_at'], 0, 10), $x['nome'], $x['email'], $x['telefono'], (int) $x['strutture'], $x['lingua'], (string) $x['messaggio'],
+                                 MHW\Preventivi::STATI[$x['stato']] ?? $x['stato'], isset($x['importo_cents']) ? number_format((int) $x['importo_cents'] / 100, 2, ',', '') : '',
+                                 (string) ($x['nota'] ?? ''), (string) ($x['ricontatta_il'] ?? '')], $righe));
+    }
+    foreach ($righe as &$x) $x['storico'] = MHW\Preventivi::storico((int) $x['id']);
+    unset($x);
+    View::out('admin/preventivi', ['righe' => $righe, 'attivi' => MHW\Preventivi::disponibili(), 'proposta' => MHW\Preventivi::conProposta(), 'nav' => 'preventivi'], 'layout/cms');
 });
 $r->post('/admin/preventivi/{id}/stato', function (array $a) {
     Auth::requireAdmin();
     $riga = MHW\Preventivi::disponibili() ? Db::one('SELECT * FROM preventivi WHERE id = ?', [(int) $a['id']]) : null;
     if (!$riga) { http_response_code(404); View::out('pub/404', []); }
     try {
-        MHW\Preventivi::cambiaStato((int) $riga['id'], (string) ($_POST['stato'] ?? ''));
-        Auth::audit('preventivo.stato', null, ['id' => (int) $riga['id'], 'stato' => (string) $_POST['stato']]);
-        Support::flash('Richiesta #' . (int) $riga['id'] . ': ' . MHW\Preventivi::STATI[(string) $_POST['stato']] . '.');
+        // 9N · stato, importo proposto, nota e data per ricontattare; nel registro solo quello che cambia (è lo storico).
+        $cambiati = MHW\Preventivi::aggiorna((int) $riga['id'], $_POST);
+        if ($cambiati) Auth::audit('preventivo.stato', null, ['id' => (int) $riga['id']] + $cambiati);
+        Support::flash($cambiati ? 'Richiesta #' . (int) $riga['id'] . ' salvata: ' . MHW\Preventivi::STATI[(string) ($_POST['stato'] ?? $riga['stato'])] . '.' : 'Richiesta #' . (int) $riga['id'] . ': niente da cambiare.');
     } catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
-    Support::redirect('/admin/preventivi');
+    Support::redirect('/admin/preventivi#preventivo-' . (int) $riga['id']);
 });
 
 $r->get('/admin/sconti', function () {

@@ -398,7 +398,7 @@ final class Stripe
         $cliente = '';
         try {
             [$base, $extra] = self::ensurePrices($pv, $pkg);
-            $cliente = (string) self::call('POST', 'customers', ['email' => 'verifica-rinnovo@example.com', 'name' => 'Verifica rinnovo (prova)'])['id'];
+            $cliente = (string) self::call('POST', 'customers', ['email' => 'verifica-rinnovo@welcomemyhouse.example', 'name' => 'Verifica rinnovo (prova)'])['id'];
             $p = ['customer' => $cliente, 'subscription_details[items][0][price]' => $base, 'subscription_details[items][0][quantity]' => '1'];
             if ($extra !== '' && $quantita > 1) { $p['subscription_details[items][1][price]'] = $extra; $p['subscription_details[items][1][quantity]'] = (string) ($quantita - 1); }
             if ($percento > 0) $p['discounts[0][coupon]'] = Sconti::couponRinnovo($percento);

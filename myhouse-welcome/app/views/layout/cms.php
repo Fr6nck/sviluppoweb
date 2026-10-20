@@ -23,8 +23,8 @@ $conLato = $u && !$soloPassi;
 // Le voci, una volta sola: servono alla barra e al cassetto del telefono.
 // L'amministrazione in tre gruppi: vendite, clienti, sistema (Inviti solo se sono accesi).
 $gruppiAdmin = $admin ? [
-    'Vendite' => array_merge([['admin', '/admin', 'Quadro', 'grid'], ['prospetti', '/admin/prospetti', 'Prospetti', 'chart'], ['vendite', '/admin/vendite', 'Vendite per piano', 'layers'], ['marketing', '/admin/marketing', 'Marketing', 'chart'],
-                  ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'], ['scadenze', '/admin/scadenze', 'Scadenze', 'calendar'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'],
+    'Vendite' => array_merge([['admin', '/admin', 'Quadro', 'grid'], ['cassa', '/admin/cassa', 'Cassa', 'euro'], ['prospetti', '/admin/prospetti', 'Prospetti', 'chart'], ['vendite', '/admin/vendite', 'Vendite per piano', 'layers'], ['marketing', '/admin/marketing', 'Marketing', 'chart'],
+                  ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'], ['scadenze', '/admin/scadenze', 'Scadenze', 'calendar'], ['richiami', '/admin/richiami', 'Richiami', 'message'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'],
                   ['sconti', '/admin/sconti', 'Codici sconto', 'euro'], ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe']], MHW\Omaggi::disponibili() ? [['omaggi', '/admin/omaggi', 'Codici omaggio', 'card']] : [],
                   MHW\Inviti::disponibili() ? [['inviti', '/admin/inviti', 'Inviti', 'message']] : [],
                   MHW\Giudizi::disponibili() ? [['giudizi', '/admin/giudizi', 'Giudizi e vetrina', 'star']] : [],
@@ -33,7 +33,7 @@ $gruppiAdmin = $admin ? [
     'Clienti' => [['clienti', '/admin/clienti', 'Clienti', 'people'], ['guide', '/admin/guide', 'Guide', 'book'], ['anomalie', '/admin/anomalie', 'Anomalie', 'warning'],
                   ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star']],
     'Sistema' => [['impostazioni', '/admin/impostazioni', 'Impostazioni', 'key'], ['testi', '/admin/testi', 'Testi e foto', 'doc'], ['seo', '/admin/seo', 'SEO e GEO', 'search'],
-                  ['registro', '/admin/registro', 'Registro', 'list'], ['diagnostica', '/admin/diagnostica', 'Diagnostica', 'pulse'], ['cache', '/admin/cache', 'Cache', 'bin']],
+                  ['registro', '/admin/registro', 'Registro azioni', 'list'], ['diagnostica', '/admin/diagnostica', 'Diagnostica', 'pulse'], ['cache', '/admin/cache', 'Cache', 'bin']],
 ] : [];
 $generale = $admin ? array_merge(...array_values($gruppiAdmin))
   : [['guide', '/pannello', 'Le mie guide', 'grid'], ['account', '/account', 'Account & Fatturazione', 'card'], ['novita', '/pannello/novita', 'Novità', 'star']];

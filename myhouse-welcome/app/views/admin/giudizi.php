@@ -28,6 +28,16 @@ $int = function (string $azione, int $id, bool $on, string $etichetta, bool $spe
     <a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/giudizi?formato=csv">Esporta CSV</a>
   </div>
 
+  <details class="panel">
+    <summary style="cursor:pointer;font-weight:600;min-height:32px">Regole del programma</summary>
+  <p class="small muted" style="max-width:860px;margin:8px 0 0">Scheda e giudizio si approvano separatamente, ognuno con il suo interruttore e la sua data.
+    Vetrina: di norma si approvano tutte; in home ne stanno <?= Vetrina::postiSchede() ?> (Impostazioni → Sito) nell'ordine scelto qui, le altre nella pagina «Tutte le guide»;
+    ritirarne una chiede un motivo interno (il cliente vede solo «non in home al momento»). Giudizi: mai in automatico, di norma solo 5 stelle, al massimo <?= Vetrina::postiGiudizi() ?> in home.
+    Una struttura può stare in tutte e due le sezioni («Doppioni»). L'ordine si cambia con le frecce o trascinando, per ognuna delle due sezioni.
+    Si spengono da soli: guida archiviata, abbonamento scaduto, account chiuso, ritiro dell'host; copertina o logo tolti dopo l'approvazione: la scheda torna da approvare.
+    «Segnalato»: 1–2 stelle o parole da controllare, solo per attirare l'attenzione: lo sconto resta. Ogni azione finisce nel registro con il codice cliente.</p>
+  </details>
+
   <?php if (!Vetrina::disponibili()): ?><p class="note note--err" role="status">Il programma non è ancora attivo: mancano le migrazioni 050 e 051.</p><?php endif; ?>
 
   <?php /* 9N · Le due sezioni pubbliche, accese solo da qui (spente di serie). Spenta: niente in home, /guide-dei-nostri-host in 404,
@@ -140,12 +150,6 @@ $int = function (string $azione, int $id, bool $on, string $etichetta, bool $spe
     </script>
   <?php endif; ?>
   <?php endif; ?>
-  <p class="small muted" style="max-width:860px;margin:0"><b>Regole.</b> Scheda e giudizio si approvano separatamente, ognuno con il suo interruttore e la sua data.
-    Vetrina: di norma si approvano tutte; in home ne stanno <?= Vetrina::postiSchede() ?> (Impostazioni → Sito) nell'ordine scelto qui, le altre nella pagina «Tutte le guide»;
-    ritirarne una chiede un motivo interno (il cliente vede solo «non in home al momento»). Giudizi: mai in automatico, di norma solo 5 stelle, al massimo <?= Vetrina::postiGiudizi() ?> in home.
-    Una struttura può stare in tutte e due le sezioni («Doppioni»). L'ordine si cambia con le frecce o trascinando, per ognuna delle due sezioni.
-    Si spengono da soli: guida archiviata, abbonamento scaduto, account chiuso, ritiro dell'host; copertina o logo tolti dopo l'approvazione: la scheda torna da approvare.
-    «Segnalato»: 1–2 stelle o parole da controllare, solo per attirare l'attenzione: lo sconto resta. Ogni azione finisce nel registro con il codice cliente.</p>
 
   <?php /* Gli interruttori del programma (le stesse voci di Impostazioni → Giudizi con sconto). */ $qG = Giudizi::quando(); ?>
   <details class="panel" id="programma"><summary class="legend" style="cursor:pointer">Il programma: sconto, percentuale, parole da controllare</summary>

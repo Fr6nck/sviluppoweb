@@ -84,4 +84,40 @@ final class Preventivi
         if (!isset(self::STATI[$stato])) throw new \RuntimeException('Stato non valido.');
         Db::update('preventivi', ['stato' => $stato], 'id = :id', ['id' => $id]);
     }
+
+    /** 9N · La proposta: importo (IVA esclusa, anche vuoto), nota interna e data per ricontattare (migrazione 057). */
+    public static function conProposta(): bool { return self::disponibili() && Migrator::columnExists('preventivi', 'importo_cents'); }
+
+    /**
+     * 9N · Salva stato, importo proposto, nota e «ricontattare il». @return array<string,mixed> solo i campi cambiati (per il registro)
+     */
+    public static function aggiorna(int $id, array $in): array
+    {
+        $riga = Db::one('SELECT * FROM preventivi WHERE id = ?', [$id]);
+        if (!$riga) throw new \RuntimeException('Richiesta non trovata.');
+        $stato = (string) ($in['stato'] ?? $riga['stato']);
+        if (!isset(self::STATI[$stato])) throw new \RuntimeException('Stato non valido.');
+        $nuovi = ['stato' => $stato];
+        if (self::conProposta()) {
+            $grezzo = str_replace(['€', ' ', '.'], '', trim((string) ($in['importo'] ?? '')));
+            $grezzo = str_replace(',', '.', $grezzo);
+            if ($grezzo !== '' && (!is_numeric($grezzo) || (float) $grezzo < 0)) throw new \RuntimeException('Scrivi l\'importo proposto in euro, per esempio 1.250,00.');
+            $data = trim((string) ($in['ricontatta_il'] ?? ''));
+            if ($data !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $data)) throw new \RuntimeException('La data per ricontattare va scritta come AAAA-MM-GG.');
+            $nuovi += ['importo_cents' => $grezzo === '' ? null : (int) round((float) $grezzo * 100), 'nota' => mb_substr(trim((string) ($in['nota'] ?? '')), 0, 2000),
+                       'ricontatta_il' => $data === '' ? null : $data];
+        }
+        $cambiati = [];
+        foreach ($nuovi as $k => $v) if ((string) ($riga[$k] ?? '') !== (string) $v) $cambiati[$k] = $v;
+        if ($cambiati) Db::update('preventivi', $cambiati + (self::conProposta() ? ['aggiornato_at' => Support::now()] : []), 'id = :id', ['id' => $id]);
+        return $cambiati;
+    }
+
+    /** 9N · Lo storico di una richiesta: le modifiche salvate nel registro azioni, dalla più recente. */
+    public static function storico(int $id): array
+    {
+        return Db::all("SELECT l.created_at, l.meta, u.email AS chi FROM audit_log l LEFT JOIN users u ON u.id = l.actor_user_id
+                        WHERE l.action LIKE 'preventivo.%' AND (l.meta LIKE ? OR l.meta LIKE ?) ORDER BY l.id DESC LIMIT 20",
+                       ['{"id":' . $id . ',%', '{"id":' . $id . '}']);
+    }
 }

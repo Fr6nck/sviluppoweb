@@ -1016,3 +1016,20 @@
     e.preventDefault(); campo.focus(); campo.select();
   });
 })();
+
+/* 9N · Attivazione manuale: i campi del bonifico compaiono solo con «Bonifico ricevuto» (senza JS restano visibili). */
+(function () {
+  'use strict';
+  var scelte = document.querySelectorAll('input[name="pagamento"][data-bonifico]');
+  if (!scelte.length) return;
+  var campi = scelte[0].closest('fieldset').querySelector('.bonifico-campi');
+  if (!campi) return;
+  function aggiorna() {
+    var si = false;
+    scelte.forEach(function (s) { if (s.checked && s.getAttribute('data-bonifico') === '1') si = true; });
+    campi.hidden = !si;
+    campi.querySelectorAll('input').forEach(function (i) { i.required = si; });
+  }
+  scelte.forEach(function (s) { s.addEventListener('change', aggiorna); });
+  aggiorna();
+})();

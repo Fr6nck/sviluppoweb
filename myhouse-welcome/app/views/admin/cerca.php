@@ -17,7 +17,7 @@ $title = 'Cerca'; ?>
   <?php if ($q === ''): ?>
     <p class="note note--quiet">Scrivi qualcosa da cercare.</p>
   <?php elseif (!$righe): ?>
-    <p class="note" role="status">Nessun cliente con «<?= Support::e($q) ?>».</p>
+    <p class="note" role="status">Nessun cliente con «<?= Support::e($q) ?>».<?= preg_match('/^\s*mw[\s-]*$/i', $q) ? ' Scrivi anche il codice dopo MW, per esempio MW-7K4P2 o solo 7K4P2 (bastano le prime lettere).' : '' ?></p>
   <?php else: ?>
     <p class="small muted" role="status"><?= count($righe) ?> clienti con «<?= Support::e($q) ?>»<?= count($righe) >= 50 ? ' (i primi 50)' : '' ?>.</p>
     <div class="tablewrap"><table class="data resp">

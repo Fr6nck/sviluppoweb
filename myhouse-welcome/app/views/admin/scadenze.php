@@ -15,13 +15,9 @@ $incasso = array_sum(array_map(fn($x) => $x['automatico'] ? $x['importo'] : 0, $
       <p class="muted">Gli abbonamenti che finiscono nei prossimi <?= (int) $giorni ?> giorni e quelli scaduti da meno di 30. Importi IVA esclusa.</p>
     </div>
     <div class="row" style="gap:8px">
-      <form method="get" class="row" style="gap:8px;align-items:center">
-        <label for="giorni" class="small">Prossimi</label>
-        <select id="giorni" name="giorni" onchange="this.form.submit()">
-          <?php foreach ([30, 60, 90, 180] as $g): ?><option value="<?= $g ?>"<?= $g === $giorni ? ' selected' : '' ?>><?= $g ?> giorni</option><?php endforeach; ?>
-        </select>
-        <noscript><button class="btn btn--ghost btn--sm">Mostra</button></noscript>
-      </form>
+      <nav class="row" style="gap:6px" aria-label="Quanti giorni">
+        <?php foreach ([30, 60, 90] as $g): ?><a class="btn btn--sm<?= $g === $giorni ? '' : ' btn--ghost' ?>" href="<?= b() ?>/admin/scadenze?giorni=<?= $g ?>"<?= $g === $giorni ? ' aria-current="page"' : '' ?>><?= $g ?> giorni</a><?php endforeach; ?>
+      </nav>
       <a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/scadenze?giorni=<?= (int) $giorni ?>&amp;formato=csv">Esporta CSV</a>
     </div>
   </div>
@@ -54,7 +50,7 @@ $incasso = array_sum(array_map(fn($x) => $x['automatico'] ? $x['importo'] : 0, $
     <input type="hidden" name="torna" value="/admin/scadenze?giorni=<?= (int) $giorni ?>">
     <div class="tablewrap"><table class="data scadenze">
       <thead><tr><th scope="col"><span class="sr-only">Scegli</span></th><th scope="col">Cliente</th><th scope="col">Piano</th><th scope="col">Scadenza</th>
-        <th scope="col">Rinnovo</th><th scope="col">Avvisi</th><th scope="col"></th></tr></thead>
+        <th scope="col">Stato e importo atteso</th><th scope="col">Avvisi</th><th scope="col"></th></tr></thead>
       <tbody>
       <?php foreach ($righe as $x): $sid = (int) $x['id']; $bloccato = in_array($x['automatico'] ? 'rinnovo' : 'scadenza', $x['optout'], true); ?>
         <tr<?= $x['finito'] ? ' class="scadenze__finita"' : '' ?>>
@@ -65,7 +61,7 @@ $incasso = array_sum(array_map(fn($x) => $x['automatico'] ? $x['importo'] : 0, $
           <td style="white-space:nowrap"><?= Support::e(Support::date($x['current_period_end'])) ?><br>
             <span class="tiny <?= $x['giorni'] <= 7 ? '' : 'muted' ?>"><?= $x['finito'] ? 'scaduto da ' . abs($x['giorni']) . ' g' : ($x['giorni'] === 0 ? 'oggi' : 'tra ' . $x['giorni'] . ' g') ?></span></td>
           <td><span class="badge badge--<?= $x['stato'][1] ?>"><?= Support::e($x['stato'][0]) ?></span>
-            <?php if ($x['automatico']): ?><br><span class="small"><?= Support::e(Support::money($x['importo'])) ?></span><?= $x['sconto'] ? ' <span class="tiny muted">−' . (int) $x['sconto'] . '% inviti</span>' : '' ?><?php endif; ?></td>
+            <?php if (!$x['finito'] && $x['importo'] > 0): /* 9N · l'importo atteso con lo sconto del rinnovo (inviti + giudizio), IVA esclusa */ ?><br><span class="small"><?= Support::e(Support::money($x['importo'])) ?><?= $x['automatico'] ? '' : ' <span class="tiny muted">se rinnova</span>' ?></span><?= $x['sconto'] ? ' <span class="tiny muted">−' . (int) $x['sconto'] . '% sconto rinnovo</span>' : '' ?><?php endif; ?></td>
           <td class="small">
             <?php if ($x['avviso']): ?>Ultimo: <?= Support::e(Support::date($x['avviso']['sent_at'])) ?><?= $x['avviso']['manuale'] ? ' <span class="tiny muted">a mano</span>' : '' ?><?php else: ?><span class="muted">Nessuno finora</span><?php endif; ?>
             <?php if ($bloccato): ?><br><span class="tiny">Non vuole avvisi</span><?php elseif ($x['prossimo']): ?><br><span class="tiny muted">Prossimo da solo: <?= Support::e(Support::date($x['prossimo'])) ?></span><?php endif; ?></td>

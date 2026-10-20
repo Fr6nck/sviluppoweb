@@ -1,7 +1,9 @@
-<?php use MHW\Support; $title = 'Registro'; ?>
+<?php use function MHW\b; use MHW\Support; $title = 'Registro azioni'; ?>
 <div class="stack stack--lg">
-  <div class="stack stack--sm"><h1>Registro.</h1>
-    <p class="muted small">Le azioni che contano: accessi come cliente, eccezioni, abbonamenti manuali, pubblicazioni, cambi di listino. Ultime 300.</p></div>
+  <div class="spread spread--mid"><div class="stack stack--sm"><h1>Registro azioni.</h1>
+    <p class="muted small">Le azioni che contano: accessi come cliente, eccezioni, abbonamenti manuali, pubblicazioni, cambi di listino. Ultime 300.
+      Gli errori e i messaggi tecnici del sito sono un'altra cosa: <a href="<?= b() ?>/admin/impostazioni#registri">Impostazioni → Log tecnici</a>.</p></div>
+    <a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/registro?formato=csv">Esporta CSV</a></div>
   <?php if (!$righe): ?><p class="muted">Ancora nessuna azione registrata.</p><?php else: ?>
   <div class="tablewrap"><table class="data">
     <thead><tr><th>Quando (UTC)</th><th>Chi</th><th>Azione</th><th>Su</th><th>Dettagli</th></tr></thead>

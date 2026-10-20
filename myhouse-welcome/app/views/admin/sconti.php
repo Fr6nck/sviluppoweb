@@ -4,7 +4,7 @@
 use function MHW\b;
 use MHW\{Support, Csrf, Icon, Sconti, Plans};
 $title = 'Codici sconto';
-$v = $vecchi + ['code' => $proposto, 'kind' => 'percent', 'value' => '', 'valid_from' => Sconti::oggi(), 'valid_until' => '', 'max_uses' => '', 'piani' => 'tutti', 'packages' => [], 'note' => ''];
+$v = $vecchi + ['code' => $proposto, 'kind' => 'percent', 'value' => '', 'valid_from' => Sconti::oggi(), 'valid_until' => (function () { $f = gmdate('Y') . '-12-31'; return strtotime($f) - time() < 30 * 86400 ? (gmdate('Y') + 1) . '-12-31' : $f; })(), 'max_uses' => '', 'piani' => 'tutti', 'packages' => [], 'note' => ''];
 $pillola = ['attivo' => ['Attivo', 'pine'], 'programmato' => ['Programmato', 'sea'], 'scaduto' => ['Scaduto', 'paper'], 'esaurito' => ['Esaurito', 'ochre'],
             'disattivato' => ['Disattivato', 'paper'], 'da_sincronizzare' => ['Da sincronizzare', 'alert']];
 $giorno = fn(string $d) => Support::e(Support::date($d));
@@ -54,7 +54,7 @@ $nomiPiani = array_column($piani, 'name', 'code'); ?>
     <h2 style="font-size:22px">Nuovo codice</h2>
     <div class="grid grid-2">
       <div class="field" style="margin:0"><label for="sc-code">Codice</label>
-        <div class="row" style="gap:8px;flex-wrap:nowrap"><input id="sc-code" name="code" type="text" required maxlength="24" pattern="[A-Za-z0-9-]{4,24}" style="text-transform:uppercase"
+        <div class="row" style="gap:8px;flex-wrap:nowrap"><input id="sc-code" name="code" type="text" required maxlength="24" pattern="[A-Za-z0-9\-]{4,24}" title="Da 4 a 24 caratteri: lettere, cifre e trattino" style="text-transform:uppercase"
                value="<?= Support::e($v['code']) ?>" aria-describedby="sc-code-aiuto">
           <button type="button" class="btn btn--ghost btn--sm" data-genera hidden>Genera</button></div>
         <p class="help" id="sc-code-aiuto">Da 4 a 24 caratteri: lettere, cifre e trattino.</p></div>
@@ -70,7 +70,8 @@ $nomiPiani = array_column($piani, 'name', 'code'); ?>
         <input id="sc-max" name="max_uses" type="number" min="1" step="1" value="<?= Support::e((string) $v['max_uses']) ?>" aria-describedby="sc-max-aiuto">
         <p class="help" id="sc-max-aiuto">Vuoto: senza limite.</p></div>
       <div class="field" style="margin:0"><label for="sc-da">Valido dal</label><input id="sc-da" name="valid_from" type="date" required value="<?= Support::e($v['valid_from']) ?>"></div>
-      <div class="field" style="margin:0"><label for="sc-a">Valido fino al</label><input id="sc-a" name="valid_until" type="date" required value="<?= Support::e($v['valid_until']) ?>"></div>
+      <div class="field" style="margin:0"><label for="sc-a">Valido fino al <span class="muted">(obbligatorio)</span></label><input id="sc-a" name="valid_until" type="date" required value="<?= Support::e($v['valid_until']) ?>" aria-describedby="sc-a-aiuto">
+        <p class="help" id="sc-a-aiuto">L'ultimo giorno in cui il codice vale. Di serie il 31 dicembre: cambialo se serve.</p></div>
     </div>
     <fieldset class="fieldset" style="margin:0"><legend>Piani</legend>
       <div class="scelte scelte--riga">

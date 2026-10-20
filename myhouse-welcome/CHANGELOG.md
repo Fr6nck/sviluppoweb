@@ -1,5 +1,31 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 9N Correzioni dopo il controllo del 20 ottobre: sconto unico sul rinnovo, solo chi aderisce, inglese completo, omaggio, legale, demo, pannelli, Cassa e «Da fare oggi» (20 ottobre 2026)
+
+Migrazioni **054** (indice unico sul codice omaggio prenotato), **055** (rigenera la vetrina Casa Checco), **056** (una sola formula delle traduzioni nei testi salvati identici), **057** (`orders.iva_cents`, `orders.riferimento`; `preventivi.importo_cents`, `nota`, `ricontatta_il`, `aggiornato_at`). Solo aggiunte, SQLite e MySQL. Da configurare: DA-CONFIGURARE, «4q».
+
+- **1 · Sconto sul rinnovo, una sola percentuale sul prezzo pieno.** Inviti (5% a testa, fino al 50%) e giudizio (5%) si sommano e vanno su Stripe come **un solo coupon** `mhw-rinnovo-N` (una volta), con la composizione nei metadati dell'abbonamento («inviti:50,giudizio:5»). Plus con 10 inviti e giudizio: 127 € → 57,15 € + IVA, la stessa cifra nell'avviso a 30 giorni, in Scadenze e nel pannello. Ritiro dal programma o inviti cambiati → il coupon si ricalcola. Le fatture si leggono dal coupon e dai metadati.
+- **2 · Senza adesione niente pubblicazione.** Vetrina, giudizi e «Tutte le guide» prendono solo chi ha aderito e non si è ritirato; l'amministrazione non ha un bottone per pubblicare gli altri. `/giudizio` per gli esclusi (prova, esempio, vetrina) mostra il motivo. Termini e privacy lo dicono.
+- **3 · Password** di almeno 8 caratteri (decisione del titolare), errore accanto al modulo.
+- **4 · Inglese completo.** Le sei pagine per tipologia in inglese, `/en/register` e `/en/login`, email di conferma e di recupero in inglese; il **pannello tutto in inglese** con `panel_lang=en` (frasi con i dati, date, stati, messaggi, email automatiche agli host), circa 1.200 voci in `lang/pannello-en.php`.
+- **5 · Codice omaggio.** Nei mesi gratis il primo addebito è pieno e non vale lo sconto di un invito ricevuto; si può già aderire al programma. **Dal primo rinnovo dopo il primo pagamento** inviti e giudizio, fino al 55%. Termini (un solo punto «Giudizio con sconto, sconto sul rinnovo e codice omaggio», IT ed EN), FAQ, Amministrazione → Codici omaggio e pannello allineati.
+- **6 · Legale e cookie.** Capitale sociale nel piè e nei documenti; Termini numerati in fila; novità legali nuove; banner dei cookie con GA4 e Clarity quando sono configurati, Diagnostica che avvisa se mancano.
+- **7 · Le due sezioni pubbliche si accendono dall'amministrazione.** In cima a «Giudizi e vetrina» gli interruttori «Mostra la sezione “Le guide dei nostri host” sul sito» e «… “Cosa dicono di noi” …», **spenti di serie**, con il conteggio e l'anteprima. Spenta (o accesa ma senza schede approvate): niente in home, `/guide-dei-nostri-host` in 404 e fuori dalla sitemap. Cambio nel registro (`vetrina.sezione`).
+- **8 · Demo Casa Checco rigenerata** (migrazione 055): imposta di soggiorno solo come importo («a persona a notte» in ogni lingua), partenza in una riga, eventi annuali, emergenze con l'indirizzo e «Apri Maps», due reti Wi-Fi, commiato con Google e casachecco.it.
+- **9 · Sito e pannello**: tutte le voci del rapporto (FAQ chiuse con l'indice per tema, confronto dei piani con la prima colonna ferma su telefono, «Per chi è» compatto, una formula sola delle traduzioni, «da 2 strutture», fascia Novità chiudibile, procedura, scheda campione, sezione libera con titolo obbligatorio, checklist delle bozze, «?» verso gli spiegoni, /piano oltre il massimo con il preventivo precompilato, `cap_account` 500.000).
+- **10 · Amministrazione.**
+  - **Quadro**: in cima **«Da fare oggi»** (preventivi nuovi o da ricontattare, partner, schede e giudizi da approvare, rinnovi falliti, email non confermate da più di 7 giorni, anomalie urgenti), ognuno con «Apri»; **quattro numeri** contati allo stesso modo (clienti attivi senza esempi, guide online, incassato del mese, rinnovi a 30 giorni con l'importo); gli altri in «Altri numeri»; gli avvisi di configurazione in un solo riquadro chiuso «Da configurare: N voci». Il listino conta i clienti senza gli esempi.
+  - **Cassa** (voce nuova): per mese nuovi, cambi, rinnovi, Stripe, bonifici, imponibile, IVA, totale, rimborsi, netto; totale dell'anno e anno precedente; un mese si apre con i pagamenti (codice MW, cliente, piano, sconti, riferimento; la fattura quando ci sarà Adamo); CSV dei mesi e dei pagamenti. **Stessa fonte di Prospetti** (`Gestione::pagamenti`), che ora conta anche i bonifici.
+  - **Attivazione manuale**: solo i piani in vendita, le versioni vecchie nel gruppo «Precedenti»; «Pagato fuori Stripe: nessun incasso / bonifico ricevuto»; con il bonifico importo, IVA, data e riferimento → un pagamento con il codice `MW-XXXXX-AAAA-N` che entra in Cassa, Prospetti e Scadenze.
+  - **Scadenze** a 30 / 60 / 90 giorni, importo atteso con lo sconto del rinnovo, stati nuovi (in omaggio, rinnovo fermo, pagato con bonifico), «Manda il promemoria» per riga.
+  - **Clienti**: stato «Mai attivato» al posto di «Scaduto» per chi non ha mai avuto un abbonamento; colonna «Ultimo pagamento» con l'incassato; filtri «Attivati dallo staff», «Mai pagato», «Clienti di prova».
+  - **Preventivi**: importo proposto, nota interna, «Ricontattare il» e lo storico (dal registro).
+  - **CSV** anche su Abbonamenti, Preventivi, Partner, Registro azioni e Richiami.
+  - **Richiami** (voce nuova): le email automatiche degli ultimi 30 giorni, per tipo, con chi non le vuole più e l'ultimo giro.
+  - Nomi: **«Registro azioni»** (menu) e **«Log tecnici»** (Impostazioni). «Torna al mio account» riporta alla scheda del cliente. «Regole» di Giudizi e vetrina in un riquadro apribile in cima. Codici MW su una riga. Cerca trova anche il codice senza «MW» (e l'inizio di un codice cliente).
+  - **Codici sconto**: il modulo si salva anche in Chrome (pattern valido) e «Valido fino al» è già scritto (31 dicembre) con l'aiuto.
+- **Prove**: capitolo 9N (verifiche 1, 2, 5, 7, 10); le prove accendono le due sezioni con `MHW_VETRINA_SEZIONE` e `MHW_DICONO_SEZIONE`.
+
 ## v2 · Cache dall'amministrazione; SEO e GEO rinforzati (20 ottobre 2026)
 
 Migrazione **053** (solo dati): le descrizioni di serie della home (IT/EN) e l'introduzione di llms.txt salvate com'erano di serie si tolgono, così valgono le nuove; un testo cambiato a mano resta.

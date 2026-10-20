@@ -1,7 +1,8 @@
 <?php use function MHW\b; use MHW\Support; $title = 'Abbonamenti'; include __DIR__ . '/_stati.php'; ?>
 <div class="stack stack--lg">
-  <div class="stack stack--sm"><h1>Abbonamenti.</h1>
+  <div class="spread spread--mid"><div class="stack stack--sm"><h1>Abbonamenti.</h1>
     <p class="muted small">Un abbonamento vale se Stripe lo dà per attivo e il periodo pagato non è finito. Quelli manuali e di esempio sono indicati come tali.</p></div>
+    <a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/abbonamenti?<?= !empty($gratuiti) ? 'filtro=gratuiti&amp;' : '' ?>formato=csv">Esporta CSV</a></div>
   <nav class="row filtri-abbonamenti" style="gap:8px" aria-label="Filtro degli abbonamenti">
     <a class="btn btn--sm<?= empty($gratuiti) ? '' : ' btn--ghost' ?>" href="<?= b() ?>/admin/abbonamenti"<?= empty($gratuiti) ? ' aria-current="page"' : '' ?>>Tutti</a>
     <a class="btn btn--sm<?= !empty($gratuiti) ? '' : ' btn--ghost' ?>" href="<?= b() ?>/admin/abbonamenti?filtro=gratuiti"<?= !empty($gratuiti) ? ' aria-current="page"' : '' ?>>Gratuiti</a>

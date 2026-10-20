@@ -374,6 +374,19 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 6. **Profili social**: in SEO e GEO → Dati dell'azienda → «Profili social» metti gli indirizzi veri (Instagram, Facebook, LinkedIn…). Sono il segnale più forte, per Google e per gli assistenti AI, che il marchio è un'azienda vera.
 7. **Google Business Profile** (fuori dal sito): crea la scheda di City Up / MyHouse Welcome con lo stesso indirizzo, telefono ed email del sito, scritti uguali. Aiuta le ricerche locali e il pannello del marchio.
 
+## 4q. 9N (20 ottobre): sconto unico, solo aderenti, inglese, omaggio, legale, demo, Cassa
+
+1. **Carica e apri una pagina qualsiasi**: le migrazioni 054–057 girano da sole. La **055 rigenera la vetrina Casa Checco** (stesso indirizzo /g/casa-checco): se in Quadro → «Da configurare» compare «rifai la vetrina», usa **«Rifai la vetrina»** dalla scheda del cliente della vetrina. La **056** cambia la formula delle traduzioni solo nei testi rimasti uguali a quelli di serie; un testo scritto da te resta: rileggilo in Testi e foto (questionario, piani, attivazione).
+2. **Le due sezioni pubbliche sono spente di serie.** Amministrazione → Giudizi e vetrina, in cima: accendi «Mostra la sezione “Le guide dei nostri host” sul sito» e/o «… “Cosa dicono di noi” …» quando hai almeno una scheda (o un giudizio) approvata. Finché sono spente, o accese senza contenuti, non si vede niente e /guide-dei-nostri-host risponde 404. Dopo il primo caricamento erano accese (9L): **ora sono spente finché non le riaccendi**.
+3. **Versione dei Termini.** Il punto 17 (giudizio, rinnovo, omaggio) e la privacy sono cambiati ma la versione di serie resta **2026-10-20**. Se sul server c'era già la 9L con la stessa data, i clienti non vedranno la finestra di riaccettazione: se vuoi che riaccettino, imposta `MHW_TERMS_VERSION=2026-10-21` e `MHW_PRIVACY_VERSION=2026-10-21` (o da Impostazioni → Titolare e documenti legali). Fai rileggere i testi al legale.
+4. **Password**: minimo 8 caratteri per i nuovi account e i cambi di password (scelta tua; il brief diceva 10). Chi ha già una password più corta entra lo stesso.
+5. **Capitale sociale**: di serie «10.000,00 € i.v.» (`MHW_COMPANY_CAPITALE`), nel piè di pagina e nei documenti. Controlla il numero.
+6. **GA4 e Clarity**: se li usi, inserisci gli ID (SEO e GEO → «Statistiche delle visite»); la Diagnostica avvisa se mancano. Il banner dei cookie compare solo con almeno un ID.
+7. **Bonifici**: dalla scheda del cliente → «Attiva un abbonamento manuale» → «Bonifico ricevuto», con importo **IVA esclusa**, IVA, data e riferimento (CRO o causale). Nasce un pagamento con codice MW che entra in **Cassa**, Prospetti e Scadenze. Il rinnovo di un cliente a bonifico è a mano (Scadenze lo segna «Pagato con bonifico: rinnovo a mano»). La fattura la fai in Adamo come sempre.
+8. **Cassa**: l'IVA dei pagamenti Stripe è quella calcolata da Stripe (IVA automatica accesa); se un mese ha l'asterisco, Stripe non l'ha detta per quei pagamenti: controllali nella dashboard di Stripe. Il CSV («pagamenti dell'anno») è quello da mandare al commercialista.
+9. **Codici sconto**: «Valido fino al» è ora già compilato con il 31 dicembre; cambialo se serve.
+10. Restano in italiano (per ora): l'email d'invito all'amico e le email scritte dall'amministrazione al cliente (rinnovo fermato, cambio piano, rimborso, password provvisoria).
+
 ## 4k. 9K (19 ottobre): foto, pagine nuove, partner, PEC
 
 1. **Limiti di PHP per le foto.** Se nel Quadro compare «Il server limita il caricamento delle foto», chiedi all'hosting (o in cPanel: «Seleziona versione PHP» → Opzioni, oppure «MultiPHP INI Editor») `upload_max_filesize = 20M`, `post_max_size = 20M` (meglio 25M) e `memory_limit = 256M`. Controlla poi in Diagnostica la riga «Limiti per il caricamento delle foto». Le foto prese dal browser arrivano già ridotte; i limiti servono a chi carica senza JavaScript.

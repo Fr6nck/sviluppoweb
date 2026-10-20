@@ -130,7 +130,7 @@ final class Impostazioni
     /** 9H · Il vecchio mittente di serie (dominio sbagliato): se è ancora salvato, correggiMittente lo sostituisce. */
     public const MITTENTE_VECCHIO = 'noreply@myhouse.it';
 
-    public const TITOLI = ['sito' => 'Sito', 'indirizzi' => 'Indirizzi email', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'portali' => 'Portali', 'registri' => 'Registri', 'legale' => 'Titolare e documenti legali', 'inviti' => 'Invita un amico', 'giudizi' => 'Giudizi con sconto'];
+    public const TITOLI = ['sito' => 'Sito', 'indirizzi' => 'Indirizzi email', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'portali' => 'Portali', 'registri' => 'Log tecnici', 'legale' => 'Titolare e documenti legali', 'inviti' => 'Invita un amico', 'giudizi' => 'Giudizi con sconto'];
 
     public static function file(): string { return MHW_APP . '/config.local.php'; }
 

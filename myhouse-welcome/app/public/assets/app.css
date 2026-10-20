@@ -3265,3 +3265,15 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .sezioni-vetrina__riga .int-home{flex:none}
 .sezioni-vetrina__anteprima{margin-top:10px}
 .sezioni-vetrina__anteprima summary{cursor:pointer}
+
+/* 9N · Amministrazione: i codici MW su una riga sola; «Da fare oggi» nel Quadro; la Cassa. */
+.codice-mw, .codice-link code, table.data code{white-space:nowrap}
+.dafare__elenco{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.dafare__elenco li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.dafare__elenco li:first-child{border-top:0;padding-top:0}
+.dafare__elenco b{font-size:20px;margin-right:4px}
+.cassa td, .cassa th{text-align:right;white-space:nowrap}
+.cassa td:first-child, .cassa th:first-child{text-align:left}
+.cassa tfoot td{font-weight:700;border-top:2px solid var(--line)}
+.cassa tr.cassa__aperto td{background:var(--sunk)}
+.bonifico-campi[hidden]{display:none}

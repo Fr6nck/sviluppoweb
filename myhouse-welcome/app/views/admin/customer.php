@@ -262,17 +262,37 @@ include __DIR__ . '/_stati.php'; ?>
     <details class="fieldset">
       <summary class="legend" style="cursor:pointer;min-height:32px">Attiva un abbonamento manuale</summary>
       <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/abbonamento" class="stack" style="margin-top:12px"><?= Csrf::field() ?>
-        <p class="small muted">Per omaggi, clienti gratuiti o pagamenti arrivati per altre vie. Non passa da Stripe, non conta nell'incasso e resta nel registro.</p>
+        <p class="small muted">Per omaggi, clienti gratuiti o pagamenti arrivati per altre vie. Non passa da Stripe e resta nel registro azioni.
+          Senza incasso non entra nei conti; con un bonifico diventa un pagamento con il suo codice, in Cassa, Prospetti e Scadenze.</p>
+        <fieldset class="fieldset" style="margin:0"><legend class="legend">Pagato fuori Stripe</legend>
+          <div class="row" style="gap:16px;flex-wrap:wrap">
+            <label class="check"><input type="radio" name="pagamento" value="nessuno" checked data-bonifico="0"> <span>Nessun incasso (omaggio, gratuito)</span></label>
+            <label class="check"><input type="radio" name="pagamento" value="bonifico" data-bonifico="1"> <span>Bonifico ricevuto</span></label>
+          </div>
+          <div class="grid grid-4 bonifico-campi" style="margin-top:10px">
+            <div class="field" style="margin:0"><label for="b-imp">Importo (€, IVA esclusa)</label><input id="b-imp" name="bonifico_importo" inputmode="decimal" placeholder="127,00"></div>
+            <div class="field" style="margin:0"><label for="b-iva">IVA (€)</label><input id="b-iva" name="bonifico_iva" inputmode="decimal" placeholder="27,94"></div>
+            <div class="field" style="margin:0"><label for="b-data">Data del bonifico</label><input id="b-data" name="bonifico_data" type="date" max="<?= gmdate('Y-m-d') ?>"></div>
+            <div class="field" style="margin:0"><label for="b-rif">Riferimento (CRO o causale)</label><input id="b-rif" name="bonifico_riferimento" maxlength="120"></div>
+          </div>
+          <p class="tiny muted" style="margin:6px 0 0">I campi del bonifico contano solo con «Bonifico ricevuto». La fattura si fa in Adamo, come per i pagamenti Stripe.</p>
+        </fieldset>
         <?php /* 7F: le scelte rapide. «Per sempre» è una scadenza lontana (100 anni): niente avvisi di scadenza. */ ?>
         <fieldset class="fieldset" style="margin:0"><legend class="legend">Durata</legend>
           <div class="row" style="gap:16px;flex-wrap:wrap">
-            <label class="check"><input type="radio" name="durata" value="12"> <span>Gratis 12 mesi</span></label>
-            <label class="check"><input type="radio" name="durata" value="sempre"> <span>Gratis per sempre</span></label>
+            <label class="check"><input type="radio" name="durata" value="12"> <span>12 mesi</span></label>
+            <label class="check"><input type="radio" name="durata" value="sempre"> <span>Per sempre</span></label>
             <label class="check"><input type="radio" name="durata" value="mesi" checked> <span>I mesi scritti qui sotto</span></label>
           </div></fieldset>
         <div class="grid grid-4">
           <div class="field" style="margin:0"><label for="pv">Piano</label><select id="pv" name="pv">
-            <?php foreach ($versioni as $v): ?><option value="<?= (int) $v['id'] ?>"><?= Support::e($v['name']) ?> v<?= (int) $v['version'] ?></option><?php endforeach; ?></select></div>
+            <?php /* 9N · solo i piani in vendita; le versioni non più in vendita in un gruppo a parte */
+                  foreach ([1 => null, 0 => 'Precedenti (non più in vendita)'] as $inV => $gruppo):
+                    $elenco = array_filter($versioni, fn($v) => (int) ($v['in_vendita'] ?? 1) === $inV); if (!$elenco) continue; ?>
+              <?php if ($gruppo): ?><optgroup label="<?= Support::e($gruppo) ?>"><?php endif; ?>
+              <?php foreach ($elenco as $v): ?><option value="<?= (int) $v['id'] ?>"><?= Support::e($v['name']) ?><?= $gruppo ? ' v' . (int) $v['version'] : '' ?></option><?php endforeach; ?>
+              <?php if ($gruppo): ?></optgroup><?php endif; ?>
+            <?php endforeach; ?></select></div>
           <div class="field" style="margin:0"><label for="mesi">Mesi</label><input id="mesi" name="mesi" type="number" min="1" max="36" value="12"></div>
           <div class="field" style="margin:0"><label for="strutture">Strutture <span class="muted">(Portfolio)</span></label><input id="strutture" name="strutture" type="number" min="1" max="500" value="2"></div>
           <div class="field" style="margin:0"><label for="nota">Motivo</label><input type="text" id="nota" name="nota" required maxlength="200"></div>
@@ -384,7 +404,7 @@ include __DIR__ . '/_stati.php'; ?>
   </section>
 
   <section class="stack" style="gap:10px">
-    <h2 style="font-size:22px">Registro</h2>
+    <h2 style="font-size:22px">Registro azioni</h2>
     <?php if (!$audit): ?><p class="small muted">Niente da segnalare.</p><?php else: ?>
     <div class="tablewrap"><table class="data"><tbody><?php foreach ($audit as $l): ?>
       <tr><td class="small" style="white-space:nowrap"><?= Support::e(str_replace(['T', 'Z'], [' ', ''], $l['created_at'])) ?></td><td><code><?= Support::e($l['action']) ?></code></td>

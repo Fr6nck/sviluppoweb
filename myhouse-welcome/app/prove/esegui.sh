@@ -70,6 +70,8 @@ export MHW_INDEXNOW_ENDPOINT="http://127.0.0.1:$PORTA_STRIPE/indexnow"
 export PROVE_DUMP=${PROVE_DUMP:-}
 # La vetrina automatica nelle prove: un account suo, non quello dell'agenzia (che le prove usano per il pulsante).
 export MHW_VETRINA_EMAIL=vetrina-auto@prova.test
+# 9N · Le due sezioni pubbliche sono spente di serie: nelle prove si accendono qui (il capitolo 9N le spegne e riaccende da Amministrazione).
+export MHW_VETRINA_SEZIONE=1 MHW_DICONO_SEZIONE=1
 
 php -S "127.0.0.1:$PORTA" -t "$TMP/docroot" "$TMP/docroot/router.php" > "$TMP/server.log" 2>&1 &
 PID=$!

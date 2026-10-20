@@ -8,7 +8,8 @@ $pillola = ['nuovo' => 'ochre', 'contattato' => 'sea', 'attivo' => 'pine', 'chiu
 $conta = array_count_values(array_column($righe, 'stato'));
 $comm = Partner::commissione(); $sc = Partner::sconto(); ?>
 <div class="stack stack--lg">
-  <div class="stack stack--sm"><h1>Partner.</h1>
+  <div class="spread spread--mid"><h1>Partner.</h1><a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/partner?formato=csv">Esporta CSV</a></div>
+  <div class="stack stack--sm">
     <p class="muted small" style="max-width:760px">Le richieste del modulo «Diventa partner» della pagina <a href="<?= b() ?>/property-manager" target="_blank" rel="noopener">/property-manager</a>
       (property manager e agenzie). Arrivano anche all'email commerciale. Si conservano 12 mesi. Commissione <?= $comm ? $comm . '%' : 'non decisa' ?>,
       sconto per i clienti del partner <?= $sc ? $sc . '%' : 'non deciso' ?> (<a href="<?= b() ?>/admin/impostazioni#sito">Impostazioni → Sito</a>). I codici partner e il conteggio delle commissioni arrivano in una fase successiva.</p></div>

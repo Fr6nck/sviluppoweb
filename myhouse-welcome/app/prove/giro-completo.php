@@ -6740,6 +6740,200 @@ prova('GEO · senza dominio in https IndexNow non parte (gli indirizzi devono es
 prova('GEO · il controllo di SEO e GEO: indirizzo leggibile dalle mappe', str_contains($admin->get('/admin/seo')['body'], 'Indirizzo dell&#039;azienda leggibile dalle mappe (Perugia, 06123)'));
 $salvaSeo('dominio', $domSeo);
 
+// ======================================================================= 9N
+capitolo('9N · verifiche 1, 2, 5, 7, 10: sconto unico sul rinnovo, solo chi aderisce, codice omaggio, interruttori delle sezioni, Cassa e Amministrazione');
+// Gli strumenti: un cliente scritto nel database, e il codice dell'app da riga di comando con gli inviti accesi.
+$c9n = fn(string $codice) => trim((string) shell_exec('php -r ' . escapeshellarg($php . 'MHW\Config::sovrascrivi("inviti", ["attivi" => true] + (array) (MHW\Config::get("inviti") ?? [])); ' . $codice) . ' 2>&1'));
+$cliente9n = function (string $nome, string $email): int {
+    $ora = gmdate('Y-m-d\TH:i:s\Z');
+    db()->prepare("INSERT INTO users (email, password_hash, name, role, created_at, email_verified_at) VALUES (?, ?, ?, 'host', ?, ?)")->execute([$email, password_hash('Prova9N-2026', PASSWORD_DEFAULT), $nome, $ora, $ora]);
+    db()->prepare('INSERT INTO accounts (user_id, name, created_at) VALUES (?, ?, ?)')->execute([(int) db()->lastInsertId(), $nome, $ora]);
+    return (int) db()->lastInsertId();
+};
+$abbonamento9n = function (int $acc, string $piano, string $stato, string $sub, int $giorni, ?string $omaggioFino = null): void {
+    $ora = gmdate('Y-m-d\TH:i:s\Z');
+    db()->prepare("INSERT INTO subscriptions (account_id, package_version_id, status, provider, provider_customer_id, provider_subscription_id, current_period_start, current_period_end,
+                   payment_status, created_at, updated_at, quantity, omaggio_fino) VALUES (?, ?, ?, 'stripe', ?, ?, ?, ?, 'paid', ?, ?, 1, ?)")
+        ->execute([$acc, pv($piano), $stato, 'cus_' . $sub, $sub, $ora, gmdate('Y-m-d\TH:i:s\Z', time() + $giorni * 86400), $ora, $ora, $omaggioFino]);
+};
+$inviti9n = function (int $acc, int $n): void {
+    db()->prepare('DELETE FROM referrals WHERE referrer_account_id = ?')->execute([$acc]);
+    for ($i = 1; $i <= $n; $i++) db()->prepare("INSERT INTO referrals (referrer_account_id, friend_account_id, status, created_at) VALUES (?, ?, 'valido', ?)")->execute([$acc, 9000000 + $acc * 100 + $i, gmdate('Y-m-d\TH:i:s\Z')]);
+};
+$giudizio9n = fn(int $acc, ?string $adesione, string $stato) => db()->prepare('UPDATE accounts SET giudizio_adesione = ?, giudizio_adesione_at = ?, giudizio_sconto_stato = ? WHERE id = ?')
+    ->execute([$adesione, $adesione ? gmdate('Y-m-d\TH:i:s\Z') : null, $stato, $acc]);
+$rinnovo9n = fn(int $acc) => json_decode($c9n('$s = MHW\Subscriptions::active(' . $acc . '); $r = MHW\Sconti::rinnovo(' . $acc . ', $s); [$imp] = MHW\Gestione::importoRinnovo($s);
+    $pv = MHW\Plans::version((int) $s["package_version_id"]); echo json_encode(["r" => $r, "importo" => $imp, "avviso" => MHW\Richiami::prossimoAddebito($s)["netto"], "listino" => MHW\Plans::price($pv, 1)]);'), true) ?: [];
+$postSub = fn(string $sub, int $da) => array_values(array_filter(array_slice(richiesteStripe(), $da), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/' . $sub));
+
+// 1 · Rinnovo con 10 inviti + giudizio su Plus: un solo coupon del 55%, 57,15 € + IVA, lo stesso importo nell'avviso a 30 giorni.
+$ugo9n = $cliente9n('Ugo Rinnovo', 'ugo9n@prova.test');
+$abbonamento9n($ugo9n, 'plus', 'active', 'sub_9n_ugo', 20);
+$inviti9n($ugo9n, 10); $giudizio9n($ugo9n, 'pannello', 'da_applicare_rinnovo');
+$x = $rinnovo9n($ugo9n);
+prova('9N · 1 · 10 inviti + giudizio su Plus: 50% + 5% = 55% sul prezzo pieno; 127 € → 57,15 € + IVA; l\'avviso a 30 giorni dice la stessa cifra',
+      ($x['r']['percento'] ?? 0) === 55 && ($x['r']['stripe'] ?? 0) === 55 && ($x['listino'] ?? 0) === 12700 && ($x['importo'] ?? 0) === 5715 && ($x['avviso'] ?? 0) === 5715, json_encode($x));
+$da9n = count(richiesteStripe());
+$c9n('echo json_encode(MHW\Sconti::sincronizzaRinnovo(' . $ugo9n . '));');
+$p9n = $postSub('sub_9n_ugo', $da9n);
+$corpo9n = json_encode(end($p9n)['corpo'] ?? []);
+$coupon9n = array_values(array_filter(array_slice(richiesteStripe(), $da9n), fn($x) => $x['percorso'] === '/v1/coupons' && $x['metodo'] === 'POST'))[0]['corpo'] ?? [];
+prova('9N · 1 · su Stripe un solo coupon «mhw-rinnovo-55» (55%, una volta) e la composizione «inviti:50,giudizio:5» nei metadati', $p9n && substr_count($corpo9n, 'coupon') === 1
+      && str_contains($corpo9n, 'mhw-rinnovo-55') && str_contains($corpo9n, 'inviti:50,giudizio:5') && !str_contains($corpo9n, 'mhw-invito-') && !str_contains($corpo9n, 'mhw-giudizio-')
+      && ($coupon9n['id'] ?? '') === 'mhw-rinnovo-55' && ($coupon9n['percent_off'] ?? '') === '55' && ($coupon9n['duration'] ?? '') === 'once', $corpo9n);
+$r = $admin->get('/admin/scadenze?giorni=30');
+prova('9N · 10 · Scadenze a 30 giorni: Ugo con l\'importo scontato (57,15 €) e «−55% sconto rinnovo»', preg_match('#ugo9n@prova\.test.*?57,15.*?−55% sconto rinnovo#su', $r['body']) === 1);
+$inviti9n($ugo9n, 3); $giudizio9n($ugo9n, null, 'nessuno');
+$tre = $rinnovo9n($ugo9n);
+$inviti9n($ugo9n, 0); $giudizio9n($ugo9n, 'pannello', 'da_applicare_rinnovo');
+$solo = $rinnovo9n($ugo9n);
+prova('9N · 1 · 3 inviti senza giudizio = 15%; giudizio da solo = 5%', ($tre['r']['percento'] ?? 0) === 15 && ($tre['importo'] ?? 0) === 10795 && ($solo['r']['percento'] ?? 0) === 5 && ($solo['importo'] ?? 0) === 12065,
+      json_encode([$tre['r'] ?? null, $solo['r'] ?? null]));
+$inviti9n($ugo9n, 10);
+$c9n('MHW\Sconti::sincronizzaRinnovo(' . $ugo9n . ');');
+$da9n = count(richiesteStripe());
+$c9n('MHW\Giudizi::ritirato(MHW\Db::one("SELECT * FROM accounts WHERE id = ?", [' . $ugo9n . ']));');
+$p9n = $postSub('sub_9n_ugo', $da9n); $corpo9n = json_encode(end($p9n)['corpo'] ?? []);
+prova('9N · 1 · ritiro dal programma: lo sconto si ricalcola (solo inviti, «mhw-rinnovo-50», «inviti:50») e lo stato del giudizio decade', str_contains($corpo9n, 'mhw-rinnovo-50') && substr_count($corpo9n, 'coupon') === 1
+      && str_contains($corpo9n, 'inviti:50') && !str_contains($corpo9n, 'giudizio:') && (string) val('SELECT giudizio_sconto_stato FROM accounts WHERE id = ?', [$ugo9n]) === 'nessuno'
+      && ($rinnovo9n($ugo9n)['r']['percento'] ?? 0) === 50, $corpo9n);
+
+// 5 · Codice omaggio: nei mesi gratis niente sconto sul primo addebito; dal primo rinnovo dopo il primo pagamento inviti + giudizio fino al 55%.
+$ole9n = $cliente9n('Ole Omaggio', 'ole9n@prova.test');
+$fine9n = gmdate('Y-m-d\TH:i:s\Z', time() + 40 * 86400);
+$abbonamento9n($ole9n, 'plus', 'trialing', 'sub_9n_ole', 40, $fine9n);
+$inviti9n($ole9n, 10); $giudizio9n($ole9n, 'pannello', 'promesso');
+$x = $rinnovo9n($ole9n);
+$da9n = count(richiesteStripe());
+$c9n('MHW\Sconti::sincronizzaRinnovo(' . $ole9n . ');');
+prova('9N · 5 · durante l\'omaggio: il primo addebito è pieno (127 €, nessun coupon su Stripe), ma la promessa è già del 55% (inviti 50 + giudizio 5)',
+      ($x['r']['omaggio'] ?? false) === true && ($x['r']['stripe'] ?? -1) === 0 && ($x['r']['percento'] ?? 0) === 55 && ($x['importo'] ?? 0) === 12700 && !$postSub('sub_9n_ole', $da9n), json_encode($x));
+// Il primo pagamento: la fattura di fine omaggio (subscription_cycle, abbonamento ancora «trialing») sposta il giudizio sul primo rinnovo.
+$c9n('MHW\Giudizi::fattura(MHW\Db::one("SELECT * FROM subscriptions WHERE provider_subscription_id = ?", ["sub_9n_ole"]), ["billing_reason" => "subscription_cycle", "id" => "in_9n_ole"]);');
+db()->prepare("UPDATE subscriptions SET status = 'active', current_period_end = ? WHERE provider_subscription_id = 'sub_9n_ole'")->execute([gmdate('Y-m-d\TH:i:s\Z', time() + 365 * 86400)]);
+$x = $rinnovo9n($ole9n);
+prova('9N · 5 · dopo il primo pagamento: dal primo rinnovo inviti + giudizio, 55% (57,15 €), e il giudizio è «da applicare al rinnovo»',
+      ($x['r']['omaggio'] ?? true) === false && ($x['r']['stripe'] ?? 0) === 55 && ($x['importo'] ?? 0) === 5715
+      && (string) val('SELECT giudizio_sconto_stato FROM accounts WHERE id = ?', [$ole9n]) === 'da_applicare_rinnovo', json_encode($x));
+$rT = $ospite->get('/termini'); $rF = $ospite->get('/domande');
+prova('9N · 5 · Termini: un solo punto «Giudizio con sconto, sconto sul rinnovo e codice omaggio» coerente; FAQ «omaggio» e «giudizio-sconto» allineate',
+      str_contains($rT['body'], 'Giudizio con sconto, sconto sul rinnovo e codice omaggio') && str_contains($rT['body'], 'Dopo il primo pagamento hai tutte le agevolazioni')
+      && str_contains($rT['body'], 'Se non aderisci, non pubblichiamo nulla di te') && !str_contains($rT['body'], 'non disponibile con i codici omaggio')
+      && str_contains($rF['body'], 'Dal primo rinnovo dopo il primo pagamento hai tutti gli sconti') && str_contains($rF['body'], 'lo sconto vale dal primo rinnovo dopo il primo pagamento'));
+
+// 7 · Gli interruttori delle due sezioni pubbliche (spenti di serie).
+$sezione9n = fn(string $quale, string $si) => $admin->segui($admin->modulo('/admin/giudizi', '/admin/giudizi/sezione', ['quale' => $quale, 'si' => $si]));
+$sezione9n('guide', '0'); $sezione9n('dicono', '0');
+$rH = $ospite->get('/');
+prova('9N · 7 · spente: in home né «Le guide dei nostri host» né «Cosa dicono di noi», /guide-dei-nostri-host in 404 e fuori dalla sitemap; nel registro',
+      !str_contains($rH['body'], 'id="guide-host"') && !str_contains($rH['body'], 'id="cosa-dicono"') && $ospite->get('/guide-dei-nostri-host')['code'] === 404
+      && !str_contains($ospite->get('/sitemap.xml')['body'], '/guide-dei-nostri-host') && (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'vetrina.sezione'") >= 2);
+$schede9n = righe('SELECT id, scheda_home, giudizio_home FROM vetrina_schede');
+db()->exec('UPDATE vetrina_schede SET scheda_home = 0, giudizio_home = 0');
+$rS = $sezione9n('guide', '1'); $rD = $sezione9n('dicono', '1');
+$rH = $ospite->get('/');
+prova('9N · 7 · accese senza schede né giudizi approvati: ancora nascoste (404 compreso), con l\'avviso in Amministrazione',
+      !str_contains($rH['body'], 'id="guide-host"') && !str_contains($rH['body'], 'id="cosa-dicono"') && $ospite->get('/guide-dei-nostri-host')['code'] === 404
+      && str_contains($rS['body'], 'resta nascosta') && str_contains($rD['body'], 'Acceso ma nessuna scheda approvata') && str_contains($rD['body'], 'Acceso ma nessun giudizio approvato'));
+foreach ($schede9n as $s) db()->prepare('UPDATE vetrina_schede SET scheda_home = ?, giudizio_home = ? WHERE id = ?')->execute([$s['scheda_home'], $s['giudizio_home'], $s['id']]);
+$rH = $ospite->get('/'); $giudiziVeri = (bool) array_filter($schede9n, fn($s) => (int) $s['giudizio_home'] === 1);
+prova('9N · 7 · accese con una scheda approvata: la sezione in home con il titolo e «Vedi tutte», la pagina in sitemap; «Cosa dicono di noi» con i suoi giudizi',
+      str_contains($rH['body'], 'id="guide-host"') && str_contains($rH['body'], 'Case vere, già online.') && preg_match('#href="[^"]*/guide-dei-nostri-host">Vedi tutte →</a>#', $rH['body']) === 1
+      && $ospite->get('/guide-dei-nostri-host')['code'] === 200 && str_contains($ospite->get('/sitemap.xml')['body'], '/guide-dei-nostri-host</loc>')
+      && (!$giudiziVeri || str_contains($rH['body'], 'id="cosa-dicono"')), $giudiziVeri ? 'con giudizi' : 'nessun giudizio approvato nella prova');
+
+// 2 · Senza adesione niente pubblicazione: né scheda, né giudizio, né «Tutte le guide»; /giudizio per gli esclusi con il motivo.
+[$nino, $ninoAcc, $ninoPid] = $host9l('Nino', 'nino9n@prova.test', 'VTRNIN85A01G478S', 'Trevi');
+$paga9l($nino, $ninoAcc, $ninoPid, false, 'sub_prova_nino9n');
+$rA = $admin->get('/admin/giudizi');
+prova('9N · 2 · pagato senza aderire: online, ma nessuna scheda in Amministrazione → Giudizi (niente da accendere), niente in home né in «Tutte le guide»',
+      val('SELECT status FROM properties WHERE id = ?', [$ninoPid]) === 'published' && !val('SELECT id FROM vetrina_schede WHERE account_id = ?', [$ninoAcc])
+      && !str_contains($rA['body'], 'Casa Nino') && !str_contains($ospite->get('/')['body'], 'Casa Nino') && !str_contains($ospite->get('/guide-dei-nostri-host')['body'], 'Casa Nino'));
+db()->prepare('UPDATE accounts SET is_test = 1 WHERE id = ?')->execute([$ninoAcc]);
+$rG = $nino->get('/giudizio');
+db()->prepare('UPDATE accounts SET is_test = 0 WHERE id = ?')->execute([$ninoAcc]);
+prova('9N · 2 · /giudizio per un account escluso: il riquadro con il motivo, mai una pagina vuota, e niente «Aderisco»', $rG['code'] === 200 && pulita($rG)
+      && str_contains($rG['body'], 'è un account di prova del nostro staff') && !str_contains($rG['body'], '>Aderisco</button>'));
+
+// 10 · Amministrazione.
+$r = $admin->get('/admin/sconti');
+prova('9N · 10 · Codici sconto: il pattern valido anche per Chrome (trattino protetto) e «Valido fino al» obbligatorio con la data già scritta e l\'aiuto', $r['code'] === 200
+      && str_contains($r['body'], 'pattern="[A-Za-z0-9\-]{4,24}"') && preg_match('#name="valid_until" type="date" required value="\d{4}-12-31"#', $r['body']) === 1
+      && str_contains($r['body'], 'Valido fino al <span class="muted">(obbligatorio)</span>'));
+$bru = $cliente9n('Bruno Bonifico', 'bruno9n@prova.test');
+$r = $admin->get('/admin/clienti?stato=mai');
+prova('9N · 10 · Clienti: chi non ha mai avuto un abbonamento è «Mai attivato» (non «Scaduto»), con il filtro; colonna «Ultimo pagamento»',
+      str_contains($r['body'], 'bruno9n@prova.test') && str_contains($r['body'], 'Mai attivato') && str_contains($r['body'], '<th>Ultimo pagamento</th>') && str_contains($r['body'], 'value="maipagato"'));
+$rC = $admin->get("/admin/cliente/$bru");
+prova('9N · 10 · attivazione manuale: i piani in vendita, le versioni vecchie nel gruppo «Precedenti»; «Pagato fuori Stripe: bonifico / nessun incasso»',
+      str_contains($rC['body'], '<optgroup label="Precedenti (non più in vendita)">') && str_contains($rC['body'], 'name="pagamento" value="bonifico"')
+      && str_contains($rC['body'], 'name="bonifico_riferimento"') && preg_match('#<select id="pv" name="pv">\s*<option value="\d+">Essential</option>#', $rC['body']) === 1);
+$cassaMese = function () use ($admin): array {
+    foreach (explode("\n", $admin->get('/admin/cassa?formato=csv')['body']) as $l) { $c = str_getcsv(ltrim($l, "\xEF\xBB\xBF"), ';', '"', ''); if (($c[0] ?? '') === gmdate('Y-m')) return $c; }
+    return [];
+};
+$cent = fn(?string $s) => (int) round((float) str_replace(',', '.', (string) $s) * 100);
+$prima = $cassaMese();
+$bonifico9n = ['pv' => (string) pv('plus'), 'durata' => 'mesi', 'mesi' => '2', 'strutture' => '1', 'nota' => 'Bonifico di prova 9N', 'pagamento' => 'bonifico',
+               'bonifico_importo' => '127,00', 'bonifico_iva' => '27,94', 'bonifico_data' => gmdate('Y-m-d'), 'bonifico_riferimento' => ''];
+$r = $admin->segui($admin->modulo("/admin/cliente/$bru", "/admin/cliente/$bru/abbonamento", $bonifico9n));
+prova('9N · 10 · bonifico senza riferimento: errore che dice cosa manca, niente abbonamento né pagamento', str_contains($r['body'], 'Scrivi il riferimento del bonifico')
+      && !val('SELECT id FROM subscriptions WHERE account_id = ?', [$bru]) && !val('SELECT id FROM orders WHERE account_id = ?', [$bru]));
+$r = $admin->segui($admin->modulo("/admin/cliente/$bru", "/admin/cliente/$bru/abbonamento", ['bonifico_riferimento' => 'CRO 0001 prova'] + $bonifico9n));
+$ob = riga("SELECT * FROM orders WHERE account_id = ? AND provider = 'bonifico'", [$bru]);
+$sb = riga('SELECT * FROM subscriptions WHERE account_id = ? ORDER BY id DESC', [$bru]);
+prova('9N · 10 · bonifico: Plus attivo, una riga nei pagamenti (127,00 + IVA 27,94, data, riferimento) con il codice MW-XXXXX-AAAA-N, nel messaggio e nel registro',
+      $ob && $ob['status'] === 'paid' && (int) $ob['amount_cents'] === 12700 && (int) $ob['iva_cents'] === 2794 && $ob['riferimento'] === 'CRO 0001 prova'
+      && substr((string) $ob['created_at'], 0, 10) === gmdate('Y-m-d') && preg_match('/^MW-[A-Z0-9]{5}-\d{4}-\d+$/', (string) $ob['code']) === 1
+      && str_contains($r['body'], (string) $ob['code']) && $sb && $sb['provider'] === 'manuale' && $sb['payment_status'] === 'bonifico'
+      && (bool) val("SELECT id FROM audit_log WHERE action = 'payment.bank_transfer'"), json_encode($ob));
+$dopo = $cassaMese();
+prova('9N · 10 · Cassa: il bonifico entra nel mese (Bonifici +127,00, IVA +27,94, totale +154,94, un nuovo in più)', $prima && $dopo
+      && $cent($dopo[5]) - $cent($prima[5]) === 12700 && $cent($dopo[7]) - $cent($prima[7]) === 2794 && $cent($dopo[8]) - $cent($prima[8]) === 15494 && (int) $dopo[1] - (int) $prima[1] === 1,
+      json_encode([$prima, $dopo]));
+$prosp = []; foreach (explode("\n", $admin->get('/admin/prospetti?formato=csv')['body']) as $l) { $c = str_getcsv(ltrim($l, "\xEF\xBB\xBF"), ';', '"', ''); if (($c[0] ?? '') === gmdate('Y-m')) $prosp = $c; }
+prova('9N · 10 · Cassa e Prospetti tornano: l\'imponibile del mese è lo stesso incasso di Prospetti (stessa fonte)', $prosp && $cent($prosp[7]) === $cent($dopo[6]), json_encode([$prosp[7] ?? null, $dopo[6] ?? null]));
+$r = $admin->get('/admin/cassa?mese=' . gmdate('Y-m'));
+prova('9N · 10 · Cassa: la voce nel menu, totale dell\'anno e anno precedente, un mese aperto con i pagamenti (codice, cliente, piano)', $r['code'] === 200 && pulita($r)
+      && preg_match('#href="[^"]*/admin/cassa"[^>]*>(?:<svg.*?</svg>)?\s*<span>Cassa</span>#s', $r['body']) === 1 && str_contains($r['body'], 'Totale ' . gmdate('Y'))
+      && str_contains($r['body'], 'Anno ' . (gmdate('Y') - 1)) && str_contains($r['body'], (string) $ob['code']) && str_contains($r['body'], 'Bruno Bonifico') && str_contains($r['body'], 'CRO 0001 prova'));
+$r = $admin->get('/admin/scadenze?giorni=90');
+prova('9N · 10 · Scadenze a 30/60/90 giorni: il bonifico con «Pagato con bonifico: rinnovo a mano» e il bottone «Manda il promemoria»', str_contains($r['body'], '/admin/scadenze?giorni=60"')
+      && preg_match('#bruno9n@prova\.test.*?Pagato con bonifico: rinnovo a mano.*?name="solo" value="' . (int) $sb['id'] . '"#s', $r['body']) === 1);
+$r = $admin->get('/admin');
+$attiviVeri = (int) val("SELECT COUNT(DISTINCT s.account_id) FROM subscriptions s JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id
+                         WHERE s.status IN ('active','trialing') AND s.provider <> 'dimostrazione' AND s.current_period_end > ? AND u.email NOT LIKE '%@esempio.it' AND a.is_test = 0", [gmdate('Y-m-d\TH:i:s\Z')]);
+$attiviQ = preg_match('#Clienti attivi</span>.*?<b class="cifra__valore">(\d+)</b>#s', $r['body'], $mm) ? (int) $mm[1] : -1;
+prova('9N · 10 · Quadro: «Da fare oggi» con «Apri», i quattro numeri (clienti attivi senza esempi, guide online, incassato del mese, rinnovi a 30 giorni), «Altri numeri» e «Da configurare: N voci» chiusi',
+      $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Da fare oggi') && $attiviQ === $attiviVeri && str_contains($r['body'], 'Guide online') && str_contains($r['body'], 'Incassato a ')
+      && str_contains($r['body'], 'Rinnovi entro 30 giorni') && str_contains($r['body'], '>Altri numeri</summary>') && preg_match('#Da configurare: \d+ vo(?:ce|ci)</summary>#', $r['body']) === 1
+      && strpos($r['body'], 'Da fare oggi') < strpos($r['body'], 'Clienti attivi'), "$attiviQ / $attiviVeri");
+$idPrev = (int) val('SELECT id FROM preventivi ORDER BY id LIMIT 1');
+$admin->modulo('/admin/preventivi', "/admin/preventivi/$idPrev/stato", ['stato' => 'contattato', 'importo' => '1.250,00', 'nota' => 'Proposta 9N', 'ricontatta_il' => gmdate('Y-m-d')]);
+$pr = riga('SELECT * FROM preventivi WHERE id = ?', [$idPrev]); $r = $admin->get('/admin/preventivi');
+prova('9N · 10 · Preventivi: importo proposto, nota, «ricontattare il» e lo storico; nel Quadro «Preventivi da ricontattare»', (int) $pr['importo_cents'] === 125000 && $pr['nota'] === 'Proposta 9N'
+      && $pr['ricontatta_il'] === gmdate('Y-m-d') && str_contains($r['body'], 'Proposta 1.250,00') && str_contains($r['body'], 'importo 1.250,00') && str_contains($admin->get('/admin')['body'], 'Preventivi da ricontattare'));
+$csvOk = [];
+foreach (['/admin/abbonamenti', '/admin/preventivi', '/admin/partner', '/admin/registro', '/admin/cassa', '/admin/richiami', '/admin/clienti'] as $pag) {
+    $rc = $admin->get($pag . '?formato=csv');
+    $csvOk[$pag] = $rc['code'] === 200 && str_starts_with(intestazione($rc, 'Content-Type'), 'text/csv') && str_starts_with($rc['body'], "\xEF\xBB\xBF");
+}
+prova('9N · 10 · CSV scaricabili: Abbonamenti, Preventivi, Partner, Registro azioni, Cassa, Richiami, Clienti', !in_array(false, $csvOk, true), json_encode($csvOk));
+$r = $admin->get('/admin/impostazioni');
+prova('9N · 10 · nomi: «Registro azioni» nel menu e «Log tecnici» nelle Impostazioni; la voce «Richiami» con la sua pagina; «Regole» di Giudizi in un riquadro apribile',
+      str_contains($r['body'], '<span>Registro azioni</span>') && str_contains($r['body'], 'Log tecnici') && str_contains($r['body'], '<span>Richiami</span>')
+      && $admin->get('/admin/richiami')['code'] === 200 && str_contains($admin->get('/admin/giudizi')['body'], '>Regole del programma</summary>'));
+$codBru = (string) val('SELECT code FROM accounts WHERE id = ?', [$bru]);
+$rQ = $admin->get('/admin/cerca?q=' . rawurlencode(substr($codBru, 3)));
+$rP = $admin->get('/admin/cerca?q=' . rawurlencode(substr((string) $ob['code'], 3)));
+prova('9N · 10 · Cerca: il codice senza «MW» trova il cliente (e il codice del pagamento apre la scheda sul pagamento)', $codBru !== '' && $rQ['code'] === 302 && str_ends_with($rQ['loc'], "/admin/cliente/$bru")
+      && $rP['code'] === 302 && str_contains($rP['loc'], "/admin/cliente/$bru") && str_contains($rP['loc'], 'pagamento-'), $rQ['loc'] . ' · ' . $rP['loc']);
+$admin->modulo('/admin/clienti', '/admin/entra/' . (int) val('SELECT user_id FROM accounts WHERE id = ?', [$bru]), []);
+$rE = $admin->post('/admin/esci-da-cliente', []);
+prova('9N · 10 · «Torna al mio account» dall\'impersonazione riporta alla scheda del cliente, non all\'elenco', $rE['code'] === 302 && str_ends_with($rE['loc'], "/admin/cliente/$bru"), $rE['loc']);
+$r = $admin->get('/admin/clienti');
+prova('9N · 10 · i codici MW non vanno a capo (classe sulla cella, regola nel CSS)', str_contains($r['body'], '<code class="codice-mw">') && str_contains((string) file_get_contents("$DOVE/assets/app.css"), '.codice-mw, .codice-link code, table.data code{white-space:nowrap}'));
+
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

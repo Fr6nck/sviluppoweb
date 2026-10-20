@@ -178,8 +178,13 @@ final class Codici
         $colonna = fn(string $t, string $c) => Migrator::tableExists($t) && Migrator::columnExists($t, $c);
         $su = strtoupper($q);
 
-        // 1. I codici MW-…
-        if (($cod = self::normalizza($q)) !== '' && self::disponibili()) {
+        // 1. I codici MW-… (9N: anche senza «MW», per esempio «7K4P2» o «7k4p2-2026-1»; e l'inizio di un codice cliente, «MW-7K4»)
+        $cod = self::normalizza($q);
+        if ($cod === '' && preg_match('/^\s*[' . self::ALFABETO . ']{5}\b/i', $q)) $cod = self::normalizza('MW ' . $q);
+        if (self::disponibili() && preg_match('/^(?:MW[\s-]?)?([' . self::ALFABETO . ']{2,4})$/', strtoupper(trim($q)), $mP) && Migrator::columnExists('accounts', 'code')) {
+            foreach (Db::all('SELECT id FROM accounts WHERE code LIKE ? ORDER BY id DESC LIMIT 50', ['MW-' . $mP[1] . '%']) as $r) $metti((int) $r['id'], 'il codice cliente inizia così', '', 7);
+        }
+        if ($cod !== '' && self::disponibili()) {
             $trattini = substr_count($cod, '-');
             if ($trattini === 1) foreach (Db::all('SELECT id FROM accounts WHERE code = ?', [$cod]) as $r) $metti((int) $r['id'], 'trovato per codice cliente', '', 9);
             if ($trattini === 2) foreach (Db::all('SELECT id, account_id FROM properties WHERE code = ?', [$cod]) as $r) $metti((int) $r['account_id'], 'trovato per codice struttura', 'struttura-' . $r['id'], 9);

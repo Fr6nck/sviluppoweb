@@ -15,7 +15,7 @@ $tot = fn(string $k) => array_sum(array_column($mesi, $k)); ?>
   <div class="spread spread--mid">
     <div class="stack stack--sm">
       <h1>Prospetti.</h1>
-      <p class="muted">Importi IVA esclusa. Gli abbonamenti attivati dallo staff e quelli di esempio non sono incassi.</p>
+      <p class="muted">Importi IVA esclusa. Gli incassi sono quelli della <a href="<?= b() ?>/admin/cassa">Cassa</a>: Stripe e bonifici segnati. Gli abbonamenti concessi dallo staff senza incasso e quelli di esempio non contano.</p>
     </div>
     <a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/prospetti?formato=csv">Esporta i 12 mesi in CSV</a>
   </div>
