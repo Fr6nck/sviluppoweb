@@ -1,5 +1,17 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Cache dall'amministrazione; SEO e GEO rinforzati (20 ottobre 2026)
+
+Migrazione **053** (solo dati): le descrizioni di serie della home (IT/EN) e l'introduzione di llms.txt salvate com'erano di serie si tolgono, così valgono le nuove; un testo cambiato a mano resta.
+
+- **Amministrazione → Sistema → Cache** (nuova): per ogni cache la misura, l'ultima pulizia e un bottone. *Codice PHP (OPcache)* dopo un caricamento via FTP; *Foto ridotte* (si rifanno alla prima visita); *Foglio di stile e script nei browser* (un numero dopo `?v=` obbliga tutti i browser, e una CDN, a riscaricarli); *File per motori e assistenti* (riscritti). «Svuota tutto» fa queste quattro. La *memoria delle traduzioni* sta a parte: di serie si tolgono solo le frasi mai riusate; svuotarla tutta chiede la conferma, perché poi si paga di nuovo. Tutto nel registro (`cache.svuota`).
+- **Cache del browser e compressione** in `.htaccess` (foglio di stile e script un anno, foto un mese, caratteri un anno; testi compressi) e in `web.config`.
+- **SEO**: meta robots con anteprime grandi e snippet interi (`max-image-preview:large, max-snippet:-1`); `og:image:alt`, `twitter:title`, `twitter:description`; descrizioni di serie della home entro i 155 caratteri dello snippet, con «welcome book digitale»; sitemap con la pagina gemella nell'altra lingua (hreflang it, en, x-default).
+- **GEO, dati strutturati**: l'indirizzo dell'azienda a pezzi (via, CAP, città, provincia) per Google e le mappe; il contatto dell'assistenza (email, telefono, italiano e inglese); Italia come area servita; gli argomenti di cui il sito è fonte; per l'app funzioni e pubblico. Ogni pagina che non è una home ha WebPage (di chi è, per chi è) e le briciole Home › pagina.
+- **GEO, assistenti AI**: `llms.txt` dice «welcome book digitale», rimanda a `llms-full.txt` ed elenca le altre pagine (quale piano, le guide dei nostri host); **`llms-full.txt`** (nuovo) ha tutte le risposte per intero, in italiano e in inglese, e le pagine per tipologia con le loro domande, in testo semplice. Anche come file accanto a index.php.
+- **IndexNow** (nuovo): in SEO e GEO «Avvisa i motori (IndexNow)» manda a Bing (che alimenta anche la ricerca di ChatGPT e Copilot), Yandex, Seznam e Naver le pagine pubbliche da rileggere. La chiave si crea da sola (`/indexnow.txt`, anche come file). Parte solo con il dominio in https. Esito nel controllo di SEO e GEO e nel registro (`seo.indexnow`).
+- **Controllo di SEO e GEO**: due righe nuove (IndexNow, indirizzo leggibile dalle mappe).
+
 ## v2 · 9M Più strutture: riquadro dello sconto, parcheggio copiabile, «scheda campione» (20 ottobre 2026)
 
 Migrazione **052**: `properties.campione`; in `sections` versione, origine (sezione, guida, versione), `personalizzata_at`, `da_controllare`; tabella `sezioni_versioni` (storico 30 giorni). Da configurare: DA-CONFIGURARE, «4o».

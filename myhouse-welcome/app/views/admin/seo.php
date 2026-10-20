@@ -180,5 +180,15 @@ $v = fn(string $k) => Support::e(Seo::get($k)); ?>
         <a href="<?= b() ?>/sitemap.xml" target="_blank" rel="noopener">sitemap.xml</a> ·
         <a href="<?= b() ?>/llms.txt" target="_blank" rel="noopener">llms.txt</a></span></div>
   </form>
+  <?php /* GEO · IndexNow: Bing (che alimenta anche la ricerca di ChatGPT e Copilot), Yandex, Seznam e Naver sanno subito che le pagine
+           sono cambiate. Un modulo a sé, dopo quello di SEO e GEO, perché Invio in un campo deve sempre salvare. */
+        $ix = Seo::esitoIndexNow(); ?>
+  <form method="post" action="<?= b() ?>/admin/seo/indexnow" class="panel stack" id="seo-indexnow" style="gap:8px"><?= Csrf::field() ?>
+    <h2 style="font-size:22px;margin:0">Avvisa i motori che il sito è cambiato</h2>
+    <p class="help" style="margin:0">Con IndexNow Bing (e con lui la ricerca di ChatGPT e Copilot), Yandex, Seznam e Naver rileggono subito le pagine pubbliche, invece di aspettare il loro giro.
+      Fallo dopo aver cambiato prezzi, testi o titoli. Google non usa IndexNow: per Google c'è la sitemap in Search Console.
+      <?= $ix ? 'Ultimo avviso: ' . Support::e(Support::date($ix['quando'])) . ' — ' . Support::e($ix['msg']) : 'Mai avvisati.' ?></p>
+    <div class="actions"><button class="btn btn--ghost btn--sm">Avvisa i motori (IndexNow)</button></div>
+  </form>
 </div>
 <script src="<?= MHW\av('/assets/seo.js') ?>" defer></script>

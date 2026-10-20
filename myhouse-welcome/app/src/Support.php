@@ -299,5 +299,7 @@ function av(string $path): string
     if ($path[0] !== '/') $path = '/' . $path;
     $file = (defined('MHW_PUBLIC') ? MHW_PUBLIC : dirname(__DIR__) . '/public') . $path;
     $data = is_file($file) ? @filemtime($file) : false;
-    return a($path) . ($data ? '?v=' . $data : '');
+    // Amministrazione → Cache → «Foglio di stile e script nei browser»: un numero in più obbliga tutti a riscaricarli.
+    $forza = Cache::versioneRisorse();
+    return a($path) . ($data ? '?v=' . $data . ($forza > 0 ? '-' . $forza : '') : '');
 }

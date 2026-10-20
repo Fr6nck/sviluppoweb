@@ -364,6 +364,16 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 3. **Attenzione, cambio di comportamento**: la traduzione automatica ora parte solo dopo il pagamento (o con un codice omaggio, o un piano dato a mano). Chi sta preparando la guida senza aver pagato vede il bottone spento.
 4. Lo storico delle sezioni sovrascritte o tolte nelle gemelle si cancella da solo dopo 30 giorni.
 
+## 4p. Cache e SEO/GEO (20 ottobre)
+
+1. **Dopo ogni caricamento via FTP**: Amministrazione → Sistema → **Cache** → «Svuota tutto». Se una modifica non si vede ancora, è quasi sempre OPcache o il browser: questo li sistema tutti e due.
+2. Se la riga «Codice PHP (OPcache)» dice che l'hosting non permette di svuotarla (`opcache.restrict_api`), chiedi all'hosting di riavviare PHP, o aspetta qualche minuto.
+3. **Memoria delle traduzioni**: non svuotarla tutta senza motivo, ogni frase tolta si paga di nuovo ad Amazon. «Togli le frasi mai riusate» invece è innocuo.
+4. **SEO e GEO, da fare una volta sul dominio vero**: imposta il **dominio** con https (senza, canonical, sitemap e IndexNow non usano gli indirizzi giusti); in **Bing Webmaster Tools** verifica il sito e invia la sitemap (Bing alimenta anche ChatGPT e Copilot); in **Google Search Console** invia la sitemap. Poi premi **«Avvisa i motori (IndexNow)»**, e di nuovo ogni volta che cambi prezzi, testi o titoli.
+5. Se avevi già cambiato a mano la descrizione della home o l'introduzione di llms.txt, restano le tue: rileggile in SEO e GEO (la home deve stare tra 70 e 155 caratteri; il controllo lo dice).
+6. **Profili social**: in SEO e GEO → Dati dell'azienda → «Profili social» metti gli indirizzi veri (Instagram, Facebook, LinkedIn…). Sono il segnale più forte, per Google e per gli assistenti AI, che il marchio è un'azienda vera.
+7. **Google Business Profile** (fuori dal sito): crea la scheda di City Up / MyHouse Welcome con lo stesso indirizzo, telefono ed email del sito, scritti uguali. Aiuta le ricerche locali e il pannello del marchio.
+
 ## 4k. 9K (19 ottobre): foto, pagine nuove, partner, PEC
 
 1. **Limiti di PHP per le foto.** Se nel Quadro compare «Il server limita il caricamento delle foto», chiedi all'hosting (o in cPanel: «Seleziona versione PHP» → Opzioni, oppure «MultiPHP INI Editor») `upload_max_filesize = 20M`, `post_max_size = 20M` (meglio 25M) e `memory_limit = 256M`. Controlla poi in Diagnostica la riga «Limiti per il caricamento delle foto». Le foto prese dal browser arrivano già ridotte; i limiti servono a chi carica senza JavaScript.

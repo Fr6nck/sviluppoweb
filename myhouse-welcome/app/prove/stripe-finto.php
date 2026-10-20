@@ -28,6 +28,11 @@ file_put_contents($dir . '/richieste.jsonl', json_encode([
 ]) . "\n", FILE_APPEND);
 
 header('Content-Type: application/json');
+// GEO · IndexNow finto (MHW_INDEXNOW_ENDPOINT): niente chiave Stripe, il corpo JSON intero nel registro, risposta 202.
+if ($percorso === '/indexnow') {
+    file_put_contents($dir . '/indexnow.jsonl', file_get_contents('php://input') . "\n", FILE_APPEND);
+    http_response_code(is_file($dir . '/indexnow-rifiuta') ? 403 : 202); exit;
+}
 $rispondi = function (array $r, int $code = 200) use (&$stato, $statoFile, $chiave) {
     if ($chiave !== '') $stato['idem'][$chiave] = $r;
     file_put_contents($statoFile, json_encode($stato));

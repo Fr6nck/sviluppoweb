@@ -25,6 +25,8 @@ $config = [
     'base_path' => $env('MHW_BASE_PATH'),
     // Indirizzi puliti: null = si decide da solo; true = sempre; false = mai.
     'pretty_urls' => null,
+    // GEO · dove si mandano gli avvisi IndexNow (vuoto = api.indexnow.org; le prove lo puntano a un servizio finto).
+    'indexnow_endpoint' => $env('MHW_INDEXNOW_ENDPOINT'),
     // I dettagli degli errori si vedono solo con debug acceso. Sempre nei log.
     'debug' => $bool('MHW_DEBUG'),
     // Il token dell'indirizzo /cron/{token}, da collegare a un cron di cPanel

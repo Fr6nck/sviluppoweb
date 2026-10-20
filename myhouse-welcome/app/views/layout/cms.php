@@ -33,7 +33,7 @@ $gruppiAdmin = $admin ? [
     'Clienti' => [['clienti', '/admin/clienti', 'Clienti', 'people'], ['guide', '/admin/guide', 'Guide', 'book'], ['anomalie', '/admin/anomalie', 'Anomalie', 'warning'],
                   ['testimonianze', '/admin/testimonianze', 'Testimonianze', 'star']],
     'Sistema' => [['impostazioni', '/admin/impostazioni', 'Impostazioni', 'key'], ['testi', '/admin/testi', 'Testi e foto', 'doc'], ['seo', '/admin/seo', 'SEO e GEO', 'search'],
-                  ['registro', '/admin/registro', 'Registro', 'list'], ['diagnostica', '/admin/diagnostica', 'Diagnostica', 'pulse']],
+                  ['registro', '/admin/registro', 'Registro', 'list'], ['diagnostica', '/admin/diagnostica', 'Diagnostica', 'pulse'], ['cache', '/admin/cache', 'Cache', 'bin']],
 ] : [];
 $generale = $admin ? array_merge(...array_values($gruppiAdmin))
   : [['guide', '/pannello', 'Le mie guide', 'grid'], ['account', '/account', 'Account & Fatturazione', 'card'], ['novita', '/pannello/novita', 'Novità', 'star']];

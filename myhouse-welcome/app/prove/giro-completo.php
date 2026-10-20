@@ -229,7 +229,7 @@ $ld = preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $r
 $grafo = $ld[0]['@graph'] ?? [];
 $app6k = array_values(array_filter($grafo, fn($x) => ($x['@type'] ?? '') === 'SoftwareApplication'))[0] ?? [];
 prova('Home: title e description di serie, index, niente canonical senza dominio, Open Graph', str_contains($r['body'], '<title>Guida digitale per case vacanza e B&amp;B | MyHouse Welcome</title>')
-      && substr_count($r['body'], '<meta name="description"') === 1 && str_contains($r['body'], '<meta name="robots" content="index, follow">')
+      && substr_count($r['body'], '<meta name="description"') === 1 && str_contains($r['body'], '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">')
       && !str_contains($r['body'], 'rel="canonical"') && substr_count($r['body'], 'property="og:title"') === 1 && str_contains($r['body'], 'name="twitter:card" content="summary_large_image"'));
 prova('Home: JSON-LD valido, Organization con vatID, tre offerte (97, 127, Portfolio 177) IVA esclusa, FAQPage', count($ld) === 2 && !in_array(null, $ld, true)
       && in_array('IT03793880547', array_column($grafo, 'vatID'), true) && count($app6k['offers'] ?? []) === 3
@@ -4344,7 +4344,7 @@ $ospiteEn = new Browser('ospite-en');
 $r = $ospiteEn->get('/en'); $rq = $ospiteEn->get('/en/questions');
 prova('8E · /en e /en/questions: 200, <html lang="en">, og:locale en_GB, indicizzabili', $r['code'] === 200 && $rq['code'] === 200 && pulita($r) && pulita($rq)
       && str_contains($r['body'], '<html lang="en">') && str_contains($rq['body'], '<html lang="en">') && str_contains($r['body'], 'og:locale" content="en_GB"')
-      && str_contains($r['body'], '<meta name="robots" content="index, follow">'));
+      && str_contains($r['body'], '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">'));
 $visibile = function (string $h): string {
     $h = preg_replace(['#<script.*?</script>#s', '#<style.*?</style>#s', '#<svg.*?</svg>#s', '#<head>.*?</head>#s', '#<figure class="schermata".*?</figure>#s'], '', $h);
     return html_entity_decode(strip_tags((string) $h), ENT_QUOTES, 'UTF-8');
@@ -4501,7 +4501,7 @@ foreach ($tipi7f as $k => $tp) {
     $faqJ = null;
     if (preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $r['body'], $mj)) foreach ($mj[1] as $j) { $d = json_decode($j, true); if (($d['@type'] ?? '') === 'FAQPage') $faqJ = $d; }
     $buono = $r['code'] === 200 && pulita($r) && str_contains($r['body'], '<link rel="canonical" href="https://myhousewelcome.it' . $tp['percorso'] . '">')
-        && str_contains($r['body'], '<meta name="robots" content="index, follow">') && str_contains($r['body'], '>' . htmlspecialchars($tp['h1']) . '</h1>')
+        && str_contains($r['body'], '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">') && str_contains($r['body'], '>' . htmlspecialchars($tp['h1']) . '</h1>')
         && $faqJ && count($faqJ['mainEntity']) === 4 && ($faqJ['mainEntity'][0]['acceptedAnswer']['text'] ?? '') === $tp['faq'][0][1]
         && substr_count($r['body'], 'class="faq__voce"') === 4 && substr_count($r['body'], 'class="vantaggio"') === 3
         && str_contains($r['body'], 'Crea gratis la tua guida') && !str_contains($r['body'], 'class="lingua-sito"') && !str_contains($r['body'], 'hreflang=')
@@ -6635,6 +6635,105 @@ prova('9M · spiegone e FAQ: «Cos\'è la scheda campione?», «Cosa si copia e 
       str_contains($rD9['body'], 'Cos&#039;è la scheda campione?') && str_contains($rD9['body'], 'Cosa si copia e cosa no?') && str_contains($rD9['body'], 'Dove parcheggiare (segnato «da controllare»')
       && preg_match('#Non si copiano mai: [^.]*parcheggi#', $rD9['body']) === 0 && str_contains($rD9['body'], 'Disponibile dopo l&#039;attivazione.')
       && str_contains($pia->get('/campione')['body'], 'Si copiano (e si aggiornano)'));
+
+// ======================================================================= CACHE
+capitolo('Cache: Amministrazione → Sistema → Cache (OPcache, foto ridotte, foglio di stile e script, file SEO, memoria delle traduzioni)');
+$rC = $admin->get('/admin/cache');
+prova('Cache · la pagina, nel menu Sistema, con «Svuota tutto» e le cinque voci', $rC['code'] === 200 && pulita($rC) && preg_match('#href="[^"]*/admin/cache"#', $rC['body']) === 1
+      && str_contains($rC['body'], '/admin/cache/tutto"') && str_contains($rC['body'], 'Codice PHP (OPcache)') && str_contains($rC['body'], 'Foto ridotte')
+      && str_contains($rC['body'], 'Foglio di stile e script nei browser') && str_contains($rC['body'], 'File per motori e assistenti') && str_contains($rC['body'], 'Memoria delle traduzioni'));
+// Le foto ridotte: si toglie solo quello che scrive Media::ridottaBytes.
+@mkdir("$DOVE/app/storage/cache/ridotte", 0777, true);
+file_put_contents("$DOVE/app/storage/cache/ridotte/999999-800.jpg", 'x'); file_put_contents("$DOVE/app/storage/cache/ridotte/leggimi.txt", 'resta');
+$rC = $admin->segui($admin->post('/admin/cache/immagini', []));
+prova('Cache · foto ridotte: tolte (si rifanno alla prima visita); un file che non è una foto ridotta resta', !is_file("$DOVE/app/storage/cache/ridotte/999999-800.jpg")
+      && is_file("$DOVE/app/storage/cache/ridotte/leggimi.txt") && preg_match('#Tolt[ae] \d+ foto ridott[ae]#', $rC['body']) === 1);
+@unlink("$DOVE/app/storage/cache/ridotte/leggimi.txt");
+// Foglio di stile e script: il numero dopo la data del file cambia, e i browser li riscaricano.
+$cssDi = fn(string $h) => preg_match('#/assets/app\.css\?v=([0-9-]+)"#', $h, $m) ? $m[1] : '';
+$cssPrima = $cssDi($ospite->get('/')['body']);
+$admin->post('/admin/cache/risorse', []);
+$cssDopo = $cssDi($ospite->get('/')['body']);
+prova('Cache · «Forza il ricaricamento»: app.css?v=data-1, anche per i visitatori', $cssPrima !== '' && !str_contains($cssPrima, '-') && $cssDopo === $cssPrima . '-1', "$cssPrima → $cssDopo");
+$rC = $admin->segui($admin->post('/admin/cache/tutto', []));
+prova('Cache · «Svuota tutto»: codice, foto, foglio di stile e file SEO (la memoria delle traduzioni no), nel registro', str_contains($rC['body'], 'Svuotato: Codice PHP (OPcache) · Foto ridotte')
+      && $cssDi($ospite->get('/')['body']) === $cssPrima . '-2' && (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'cache.svuota'") >= 6
+      && !str_contains((string) val("SELECT meta FROM audit_log WHERE action = 'cache.svuota' ORDER BY id DESC LIMIT 1"), 'traduzioni'));
+// La memoria delle traduzioni: di serie solo le frasi mai riusate; tutta solo con la conferma.
+$oraC = gmdate('Y-m-d\TH:i:s\Z');
+foreach ([['c1', 0], ['c2', 3]] as [$h, $hits]) db()->prepare('INSERT INTO translation_cache (hash, da, a, chars, testo_tradotto, hits, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')->execute([hash('sha256', "prova-cache-$h"), 'it', 'en', 5, 'Hello', $hits, $oraC]);
+$memoria = fn() => (int) val("SELECT COUNT(*) FROM translation_cache WHERE hash IN (?, ?)", [hash('sha256', 'prova-cache-c1'), hash('sha256', 'prova-cache-c2')]);
+$rC = $admin->segui($admin->post('/admin/cache/traduzioni', []));
+prova('Cache · memoria delle traduzioni: tolte solo le frasi mai riusate', $memoria() === 1 && (int) val('SELECT COUNT(*) FROM translation_cache WHERE hits = 0') === 0 && str_contains($rC['body'], 'mai riusate dalla memoria'));
+$rC = $admin->segui($admin->post('/admin/cache/traduzioni', ['tutte' => '1']));
+prova('Cache · tutta la memoria senza la conferma: niente, e si dice perché', $memoria() === 1 && str_contains($rC['body'], 'spunta la conferma'));
+$rC = $admin->segui($admin->post('/admin/cache/traduzioni', ['tutte' => '1', 'conferma' => '1']));
+prova('Cache · con la conferma la memoria si svuota (e si avvisa che poi si paga di nuovo)', (int) val('SELECT COUNT(*) FROM translation_cache') === 0 && str_contains($rC['body'], 'si pagano di nuovo'));
+prova('Cache · solo per l\'amministrazione', $ospite->get('/admin/cache')['code'] === 302 && (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'cache.svuota'") >= 8);
+
+// ======================================================================= SEO E GEO (rinforzo)
+capitolo('SEO e GEO: meta robots per anteprime grandi, indirizzo e contatti nei dati strutturati, briciole, sitemap con le lingue, llms-full.txt, IndexNow');
+$domSeo = (string) val("SELECT valore FROM seo_settings WHERE chiave = 'dominio'");
+$salvaSeo = function (string $k, string $v) { db()->prepare('DELETE FROM seo_settings WHERE chiave = ?')->execute([$k]); db()->prepare('INSERT INTO seo_settings (chiave, valore, updated_at) VALUES (?, ?, ?)')->execute([$k, $v, gmdate('Y-m-d\TH:i:s\Z')]); };
+foreach (['p.home.descrizione', 'p.en.descrizione', 'az.indirizzo', 'llms.intro', 'p.domande.indicizza', 'p.en-domande.indicizza', 'p.case-vacanza.indicizza', 'p.en.indicizza'] as $k) db()->prepare('DELETE FROM seo_settings WHERE chiave = ?')->execute([$k]);
+$salvaSeo('dominio', 'https://myhousewelcome.it');
+$rS = $ospite->get('/');
+$ldS = preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $rS['body'], $mm) ? array_map(fn($j) => json_decode($j, true), $mm[1]) : [];
+$orgS = array_values(array_filter($ldS[0]['@graph'] ?? [], fn($x) => ($x['@type'] ?? '') === 'Organization'))[0] ?? [];
+$appS = array_values(array_filter($ldS[0]['@graph'] ?? [], fn($x) => ($x['@type'] ?? '') === 'SoftwareApplication'))[0] ?? [];
+prova('SEO · home: robots con anteprime grandi e snippet interi, og:image:alt, twitter:title e twitter:description', str_contains($rS['body'], '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">')
+      && str_contains($rS['body'], '<meta property="og:image:alt" content="MyHouse Welcome: il welcome book digitale">') && str_contains($rS['body'], '<meta name="twitter:title" content="')
+      && str_contains($rS['body'], '<meta name="twitter:description" content="Il welcome book digitale per case vacanza'));
+$descrS = preg_match('#<meta name="description" content="([^"]*)"#', $rS['body'], $mm) ? html_entity_decode($mm[1]) : '';
+prova('SEO · la descrizione di serie della home sta nei 155 caratteri dello snippet di Google (prima 169), con «welcome book digitale»', mb_strlen($descrS) <= 155 && mb_strlen($descrS) >= 70 && str_contains($descrS, 'welcome book digitale'), (string) mb_strlen($descrS));
+prova('GEO · Organization: indirizzo a pezzi (via, CAP, città, provincia), contatto assistenza in italiano e inglese, Italia, argomenti', ($orgS['address']['streetAddress'] ?? '') === 'Via Ariodante Fabretti 15'
+      && ($orgS['address']['postalCode'] ?? '') === '06123' && ($orgS['address']['addressLocality'] ?? '') === 'Perugia' && ($orgS['address']['addressRegion'] ?? '') === 'PG'
+      && ($orgS['contactPoint'][0]['email'] ?? '') === 'assistenza@welcomemyhouse.it' && ($orgS['contactPoint'][0]['availableLanguage'] ?? []) === ['Italian', 'English']
+      && ($orgS['areaServed']['name'] ?? '') === 'Italia' && in_array('welcome book digitale', $orgS['knowsAbout'] ?? [], true), json_encode($orgS['address'] ?? null));
+prova('GEO · SoftwareApplication con funzioni e pubblico (host di case vacanza, B&B…)', count($appS['featureList'] ?? []) === 5 && str_contains((string) ($appS['audience']['audienceType'] ?? ''), 'B&B'));
+$rS = $ospite->get('/case-vacanza');
+$ldS = preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $rS['body'], $mm) ? array_map(fn($j) => json_decode($j, true), $mm[1]) : [];
+$grS = array_merge(...array_map(fn($j) => $j['@graph'] ?? [$j], $ldS));
+$webS = array_values(array_filter($grS, fn($x) => ($x['@type'] ?? '') === 'WebPage'))[0] ?? [];
+$briS = array_values(array_filter($grS, fn($x) => ($x['@type'] ?? '') === 'BreadcrumbList'))[0] ?? [];
+prova('GEO · pagina per tipologia: WebPage (di chi è, per chi è) + briciole Home › pagina + le sue domande', ($webS['url'] ?? '') === 'https://myhousewelcome.it/case-vacanza'
+      && ($webS['isPartOf']['@id'] ?? '') === 'https://myhousewelcome.it/#sito' && ($webS['audience']['audienceType'] ?? '') === 'Case vacanza'
+      && count($briS['itemListElement'] ?? []) === 2 && ($briS['itemListElement'][0]['item'] ?? '') === 'https://myhousewelcome.it/'
+      && (bool) array_filter($grS, fn($x) => ($x['@type'] ?? '') === 'FAQPage'), json_encode($webS));
+$ldEn = preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $ospite->get('/en/questions')['body'], $mm) ? array_map(fn($j) => json_decode($j, true), $mm[1]) : [];
+$briEn = array_values(array_filter(array_merge(...array_map(fn($j) => $j['@graph'] ?? [$j], $ldEn)), fn($x) => ($x['@type'] ?? '') === 'BreadcrumbList'))[0] ?? [];
+prova('GEO · le pagine inglesi hanno le briciole verso /en', ($briEn['itemListElement'][0]['item'] ?? '') === 'https://myhousewelcome.it/en' && ($briEn['itemListElement'][1]['item'] ?? '') === 'https://myhousewelcome.it/en/questions');
+$smS = $ospite->get('/sitemap.xml')['body'];
+prova('SEO · sitemap: le pagine con la gemella nell\'altra lingua (hreflang it, en, x-default), XML valido', @simplexml_load_string($smS) !== false
+      && str_contains($smS, '<loc>https://myhousewelcome.it/domande</loc>') && preg_match('#<loc>https://myhousewelcome\.it/domande</loc>(?:<lastmod>[^<]*</lastmod>)?<xhtml:link rel="alternate" hreflang="it" href="https://myhousewelcome\.it/domande"/><xhtml:link rel="alternate" hreflang="en" href="https://myhousewelcome\.it/en/questions"/><xhtml:link rel="alternate" hreflang="x-default" href="https://myhousewelcome\.it/domande"/></url>#', $smS) === 1
+      && preg_match('#<loc>https://myhousewelcome\.it/case-vacanza</loc>(?:<lastmod>[^<]*</lastmod>)?</url>#', $smS) === 1);
+$llS = $ospite->get('/llms.txt')['body']; $llF = $ospite->get('/llms-full.txt');
+prova('GEO · llms.txt: «welcome book digitale» nell\'introduzione, il rimando a llms-full.txt e «Altre pagine» (/piano, guide dei nostri host)', str_contains($llS, '> MyHouse Welcome è il welcome book digitale')
+      && str_contains($llS, "Tutte le risposte per intero: https://myhousewelcome.it/llms-full.txt\n") && str_contains($llS, "## Altre pagine\n") && str_contains($llS, '(https://myhousewelcome.it/piano)'));
+prova('GEO · llms-full.txt: llms.txt + le risposte intere (italiano e inglese) + le pagine per tipologia con le loro domande, testo semplice', $llF['code'] === 200
+      && str_starts_with($llF['body'], "# MyHouse Welcome\n") && str_contains($llF['body'], "## Domande frequenti, con le risposte\n\n### ") && str_contains($llF['body'], "## Per chi è, nel dettaglio\n")
+      && str_contains($llF['body'], "### La guida digitale per la tua casa vacanza\n\nhttps://myhousewelcome.it/case-vacanza\n") && str_contains($llF['body'], "## Frequently asked questions (English)\n")
+      && !preg_match('#<[a-z][^>]*>#i', $llF['body']) && !str_contains($llF['body'], '/g/'), (string) strlen($llF['body']));
+$k1 = trim($ospite->get('/indexnow.txt')['body']); $k2 = trim($ospite->get('/indexnow.txt')['body']);
+prova('GEO · /indexnow.txt: una chiave di 32 caratteri, sempre la stessa, salvata', preg_match('/^[a-f0-9]{32}$/', $k1) === 1 && $k1 === $k2 && (string) val("SELECT valore FROM seo_settings WHERE chiave = 'indexnow.chiave'") === $k1);
+// IndexNow: al servizio finto (MHW_INDEXNOW_ENDPOINT → prove/stripe-finto.php /indexnow), con gli indirizzi della sitemap.
+@unlink("$STRIPE_DIR/indexnow.jsonl"); @unlink("$STRIPE_DIR/indexnow-rifiuta");
+$rS = $admin->segui($admin->post('/admin/seo/indexnow', []));
+$ixS = json_decode((string) (file("$STRIPE_DIR/indexnow.jsonl", FILE_IGNORE_NEW_LINES) ?: [''])[0], true) ?: [];
+prova('GEO · «Avvisa i motori (IndexNow)»: host, chiave, keyLocation e le pagine indicizzate sul dominio; «segnalate»; nel registro', ($ixS['host'] ?? '') === 'myhousewelcome.it' && ($ixS['key'] ?? '') === $k1
+      && ($ixS['keyLocation'] ?? '') === 'https://myhousewelcome.it/indexnow.txt' && in_array('https://myhousewelcome.it/case-vacanza', $ixS['urlList'] ?? [], true)
+      && !preg_grep('#/g/|/pannello|/admin#', $ixS['urlList'] ?? []) && str_contains($rS['body'], 'pagine segnalate a Bing') && (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'seo.indexnow'") === 1, json_encode($ixS));
+prova('GEO · llms-full.txt e indexnow.txt anche come file veri accanto a index.php, uguali alle pagine', is_file("$DOVE/llms-full.txt") && (string) file_get_contents("$DOVE/llms-full.txt") === $ospite->get('/llms-full.txt')['body']
+      && trim((string) @file_get_contents("$DOVE/indexnow.txt")) === $k1);
+touch("$STRIPE_DIR/indexnow-rifiuta");
+$rS = $admin->segui($admin->post('/admin/seo/indexnow', []));
+@unlink("$STRIPE_DIR/indexnow-rifiuta");
+prova('GEO · IndexNow rifiuta (403): si dice cosa controllare, e il controllo di SEO e GEO lo segnala', str_contains($rS['body'], 'IndexNow non trova la chiave') && str_contains($admin->get('/admin/seo')['body'], 'IndexNow: IndexNow non trova la chiave'));
+$salvaSeo('dominio', 'http://myhousewelcome.it');
+$rS = $admin->segui($admin->post('/admin/seo/indexnow', []));
+prova('GEO · senza dominio in https IndexNow non parte (gli indirizzi devono essere quelli veri)', str_contains($rS['body'], 'Prima imposta il dominio con https://') && count(file("$STRIPE_DIR/indexnow.jsonl") ?: []) === 2);
+prova('GEO · il controllo di SEO e GEO: indirizzo leggibile dalle mappe', str_contains($admin->get('/admin/seo')['body'], 'Indirizzo dell&#039;azienda leggibile dalle mappe (Perugia, 06123)'));
+$salvaSeo('dominio', $domSeo);
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

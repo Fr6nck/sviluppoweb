@@ -907,6 +907,34 @@ $r->post('/admin/diagnostica/foto', function () {
     Support::redirect('/admin/diagnostica');
 });
 
+// -------------------------------------------------------------------- cache
+/* Sistema → Cache: le cache del sito con la loro misura e un bottone per svuotarle (MHW\Cache). La memoria delle
+   traduzioni ha due bottoni: le frasi mai riusate, oppure tutta (con la conferma, perché poi si paga di nuovo). */
+$r->get('/admin/cache', function () {
+    Auth::requireAdmin();
+    View::out('admin/cache', ['voci' => MHW\Cache::stato(), 'nav' => 'cache'], 'layout/cms');
+});
+$r->post('/admin/cache/{voce}', function (array $a) {
+    Auth::requireAdmin();
+    $voce = (string) $a['voce'];
+    if ($voce === 'tutto') {
+        $esiti = MHW\Cache::svuotaTutto();
+        $falliti = array_filter($esiti, fn($e) => !$e[0]);
+        Support::flash($falliti ? 'Non tutto: ' . implode(' ', array_map(fn($e) => $e[1], $falliti))
+                                : 'Svuotato: ' . implode(' · ', array_map(fn($v) => MHW\Cache::NOMI[$v], array_keys($esiti))) . '.', $falliti ? 'err' : 'ok');
+        Support::redirect('/admin/cache');
+    }
+    if (!isset(MHW\Cache::NOMI[$voce])) Support::redirect('/admin/cache');
+    $tutte = $voce === 'traduzioni' && ($_POST['tutte'] ?? '') === '1';
+    if ($tutte && ($_POST['conferma'] ?? '') !== '1') {
+        Support::flash('Per svuotare tutta la memoria delle traduzioni spunta la conferma: le frasi tolte, se tornano, si pagano di nuovo.', 'err');
+        Support::redirect('/admin/cache#traduzioni');
+    }
+    [$ok, $msg] = MHW\Cache::svuota($voce, $tutte);
+    Support::flash($msg, $ok ? 'ok' : 'err');
+    Support::redirect('/admin/cache#' . $voce);
+});
+
 // -------------------------------------------------------------- impostazioni
 /*
  * Stripe, posta e archivio delle foto dal pannello (Impostazioni scrive in
@@ -1463,4 +1491,14 @@ $r->post('/admin/seo', function () {
     Support::flash($okFile ? 'Salvato. Sitemap, robots.txt e llms.txt sono già aggiornati, anche come file nella cartella principale del sito.'
                            : 'Salvato. Sitemap, robots.txt e llms.txt sono aggiornati, ma: ' . $msgFile, $okFile ? 'ok' : 'err');
     Support::redirect('/admin/seo');
+});
+/* GEO · «Avvisa i motori (IndexNow)»: un modulo a sé sotto SEO e GEO. */
+$r->post('/admin/seo/indexnow', function () {
+    Auth::requireAdmin();
+    if (!MHW\Seo::disponibili()) Support::redirect('/admin/seo');
+    MHW\Seo::scriviFile();   // prima la chiave, anche come file: IndexNow la va a leggere
+    [$ok, $msg] = MHW\Seo::avvisaIndexNow();
+    Auth::audit('seo.indexnow', null, ['ok' => $ok, 'esito' => $msg]);
+    Support::flash($msg, $ok ? 'ok' : 'err');
+    Support::redirect('/admin/seo#seo-indexnow');
 });

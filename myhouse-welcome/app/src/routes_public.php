@@ -281,6 +281,9 @@ $r->get('/robots.txt', fn() => $fileSeo('text/plain', [MHW\Seo::class, 'robots']
 $r->get('/indirizzi-puliti', fn() => $fileSeo('text/plain', fn() => MHW\Seo::SONDA . "\n"));
 $r->get('/sitemap.xml', fn() => $fileSeo('application/xml', [MHW\Seo::class, 'sitemap']));
 $r->get('/llms.txt', fn() => $fileSeo('text/plain', [MHW\Seo::class, 'llms']));
+// GEO · la versione completa per gli assistenti AI, e la chiave IndexNow (Bing la legge per credere agli avvisi).
+$r->get('/llms-full.txt', fn() => $fileSeo('text/plain', [MHW\Seo::class, 'llmsCompleto']));
+$r->get('/indexnow.txt', fn() => $fileSeo('text/plain', [MHW\Seo::class, 'chiaveIndexNow']));
 
 // ------------------------------------------------------------------ registrazione
 $r->any('/registrati', function () use ($guard, $doveComincia, $salvaPiano, $codiceDalLink, $chiInvita) {

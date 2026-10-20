@@ -65,6 +65,8 @@ export MHW_TRANSLATE_SECRET=segreto-traduzioni-finto
 export MHW_TRANSLATE_ENDPOINT="http://127.0.0.1:$PORTA_TRADUZIONI"
 export MAIL_TRANSPORT=log
 export MHW_CRON_TOKEN=token-finto-per-le-prove
+# GEO · gli avvisi IndexNow vanno allo Stripe finto (prove/stripe-finto.php, /indexnow), mai ad api.indexnow.org.
+export MHW_INDEXNOW_ENDPOINT="http://127.0.0.1:$PORTA_STRIPE/indexnow"
 export PROVE_DUMP=${PROVE_DUMP:-}
 # La vetrina automatica nelle prove: un account suo, non quello dell'agenzia (che le prove usano per il pulsante).
 export MHW_VETRINA_EMAIL=vetrina-auto@prova.test
