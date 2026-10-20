@@ -6,6 +6,8 @@
   'use strict';
   // 8E: sulla home inglese (/en) i messaggi dello script sono in inglese.
   var en = document.documentElement.lang === 'en';
+  // 9N · La stessa formula del server (Sconti::netto): lo sconto arrotondato una volta, il netto mai sotto 1 €.
+  function netto(p, perc) { return perc > 0 ? p - Math.max(0, Math.min(Math.round(p * Math.min(100, perc) / 100), p - 100)) : p; }
   function soldi(cents, valuta) {
     var intero = cents % 100 === 0, n = (cents / 100).toFixed(intero ? 0 : 2).split('.');
     n[0] = n[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -58,7 +60,7 @@
         if (campo.id) document.querySelectorAll('[data-rinnovo][data-campo="' + campo.id + '"]').forEach(function (r) {
           ['[data-q-anno]', '[data-q-anno-s]'].forEach(function (s) { var x = r.querySelector(s); if (x) x.textContent = soldi(tot, valuta); });
           var celle = r.querySelectorAll('[data-q-perc]');
-          celle.forEach(function (td) { td.textContent = soldi(Math.round(tot * (100 - parseInt(td.getAttribute('data-q-perc'), 10)) / 100), valuta); });
+          celle.forEach(function (td) { td.textContent = soldi(netto(tot, parseInt(td.getAttribute('data-q-perc'), 10)), valuta); });
           var m = r.querySelector('[data-q-min]'); if (m && celle.length) m.textContent = celle[celle.length - 1].textContent;
         });
         b.querySelectorAll('[data-crea][data-href]').forEach(function (a) { a.href = a.getAttribute('data-href') + (a.getAttribute('data-href').indexOf('?') > -1 ? '&strutture=' + q : ''); });

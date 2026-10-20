@@ -14,6 +14,8 @@
   var invia = box.querySelector('[data-q-invia]'), ricalcola = box.querySelector('[data-q-ricalcola]');
   var ora = 1, finestra = box.closest('dialog');
 
+  // 9N · La stessa formula del server (Sconti::netto): lo sconto arrotondato una volta, il netto mai sotto 1 €.
+  function netto(p, perc) { return perc > 0 ? p - Math.max(0, Math.min(Math.round(p * Math.min(100, perc) / 100), p - 100)) : p; }
   function soldi(c) {
     var e = Math.floor(c / 100), cent = c % 100, s = String(e).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     return (cent ? s + ',' + (cent < 10 ? '0' : '') + cent : s) + ' €';
@@ -106,10 +108,10 @@
   function aggiorna() {
     var min = +campo.min || 2, max = +campo.max || 10, n = Math.max(min, Math.min(max, parseInt(campo.value, 10) || min));
     campo.value = n;
-    var pieno = prezzo(n), totale = perc ? Math.round(pieno * (100 - perc) / 100) : (fisso ? Math.max(0, pieno - fisso) : pieno);
+    var pieno = prezzo(n), totale = perc ? netto(pieno, perc) : (fisso ? Math.max(0, pieno - fisso) : pieno);
     var t = porto.querySelector('[data-q-totale]'), p = porto.querySelector('[data-q-pieno]'), q = porto.querySelector('[data-q-n]');
     if (t) t.textContent = soldi(totale); if (p) p.textContent = soldi(pieno); if (q) q.textContent = n;
-    porto.querySelectorAll('[data-q-perc]').forEach(function (td) { td.textContent = soldi(Math.round(pieno * (100 - +td.getAttribute('data-q-perc')) / 100)); });
+    porto.querySelectorAll('[data-q-perc]').forEach(function (td) { td.textContent = soldi(netto(pieno, +td.getAttribute('data-q-perc'))); });
     var anno = porto.querySelector('[data-q-anno]'), annoS = porto.querySelector('[data-q-anno-s]'), minimo = porto.querySelector('[data-q-min]');
     if (anno) anno.textContent = soldi(pieno); if (annoS) annoS.textContent = soldi(pieno);
     if (minimo) { var ultima = porto.querySelectorAll('[data-q-perc]'); minimo.textContent = ultima.length ? ultima[ultima.length - 1].textContent : soldi(pieno); }

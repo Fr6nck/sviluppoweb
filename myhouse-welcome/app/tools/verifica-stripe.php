@@ -5,7 +5,8 @@
  *   php app/tools/verifica-stripe.php
  *
  * Per Essential, Plus e Portfolio da 2 a 10 strutture, senza sconto e con lo sconto dell'invito; 9D: con un codice omaggio
- * da 1, 6 e 12 mesi, con e senza lo sconto del giudizio (sessione a 0 € oggi, trial_end)
+ * da 1, 6 e 12 mesi (sessione a 0 € oggi, trial_end; 9N: primo addebito pieno); 9N: il rinnovo con il coupon unico
+ * mhw-rinnovo-N (10 amici + giudizio = 55%, 3 amici = 15%, solo giudizio = 5%), con l'anteprima della fattura
  * (Inviti::AMICO %): crea una sessione di Checkout senza cliente, fa i due controlli del sito
  * (Stripe::verificaPrezzi prima, Stripe::controllaSessione dopo), la fa scadere e stampa una tabella
  * atteso/Stripe. Da lanciare prima di andare online e dopo ogni cambio di listino. Con la chiave
@@ -36,20 +37,29 @@ foreach (Plans::public() as $o) {
     $quantita = Plans::perProperty($pv) ? range((int) $pv['min_quantity'], (int) $pv['max_quantity']) : [1];
     foreach ($quantita as $q) foreach ($sconti as $pct) {
         $atteso = Plans::price($pv, $q);
-        $attesoNetto = $atteso - ($pct > 0 ? (int) round($atteso * $pct / 100) : 0);
+        $attesoNetto = Sconti::netto($atteso, $pct);
         $esito = Stripe::sessioneDiProva($pv, $pkg, $q, $pct);
         $righe[] = [$o['name'] . (Plans::perProperty($pv) ? " · $q strutture" : ''), $pct > 0 ? "−$pct%" : '—',
                     Support::money($atteso), Support::money($attesoNetto), $esito['ok'] ? 'ok' : 'NO', $esito['errore'], $esito['sessione']];
     }
-    // 9D · Codice omaggio: 1, 6 e 12 mesi, senza sconto e con quello del giudizio (l'unico ammesso); oggi la sessione deve dire 0 €.
-    // «Invito + omaggio»: su Stripe va solo l'omaggio (il sito non manda il coupon dell'invito): qui la riga «solo omaggio» lo rappresenta.
+    // 9D · Codice omaggio: 1, 6 e 12 mesi; oggi la sessione deve dire 0 €. 9N: il primo addebito è pieno (niente invito né
+    // giudizio: valgono dal primo rinnovo), quindi una riga sola per durata.
     $qMin = Plans::perProperty($pv) ? (int) $pv['min_quantity'] : 1;
-    foreach ([1, 6, 12] as $mesi) foreach ([0, $giudizio] as $pct) {
+    foreach ([1, 6, 12] as $mesi) {
         $atteso = Plans::price($pv, $qMin);
-        $attesoNetto = $atteso - ($pct > 0 ? (int) round($atteso * $pct / 100) : 0);
-        $esito = Stripe::sessioneDiProva($pv, $pkg, $qMin, $pct, $mesi);
-        $righe[] = [$o['name'] . (Plans::perProperty($pv) ? " · $qMin strutture" : '') . " · omaggio $mesi m.", $pct > 0 ? "−$pct% giudizio" : 'solo omaggio',
-                    '0 € oggi', Support::money($attesoNetto), $esito['ok'] ? 'ok' : 'NO', $esito['errore'], $esito['sessione']];
+        $esito = Stripe::sessioneDiProva($pv, $pkg, $qMin, 0, $mesi);
+        $righe[] = [$o['name'] . (Plans::perProperty($pv) ? " · $qMin strutture" : '') . " · omaggio $mesi m.", 'solo omaggio',
+                    '0 € oggi', Support::money($atteso), $esito['ok'] ? 'ok' : 'NO', $esito['errore'], $esito['sessione']];
+    }
+    // 9N · Il rinnovo: un solo coupon mhw-rinnovo-N (inviti + giudizio sommati sul prezzo pieno). Plus con 10 inviti e il
+    // giudizio deve fare 57,15 € (127 × 45%), mai 60,33 € (due coupon in cascata).
+    $maxInviti = Inviti::MASSIMO;
+    foreach ([[$maxInviti, $giudizio, '10 amici + giudizio'], [3 * Inviti::PASSO, 0, '3 amici'], [0, $giudizio, 'solo giudizio']] as [$i, $g, $et]) {
+        $pct = $i + $g;
+        $atteso = Plans::price($pv, $qMin);
+        $esito = Stripe::rinnovoDiProva($pv, $pkg, $qMin, $pct);
+        $righe[] = [$o['name'] . (Plans::perProperty($pv) ? " · $qMin strutture" : '') . ' · rinnovo', "−$pct% $et",
+                    Support::money($atteso), Support::money(Sconti::netto($atteso, $pct)), $esito['ok'] ? 'ok' : 'NO', $esito['errore'], 'anteprima della fattura'];
     }
 }
 
@@ -59,7 +69,7 @@ echo str_repeat('-', 100) . "\n";
 $ko = 0;
 foreach ($righe as $r) {
     if ($r[4] !== 'ok') $ko++;
-    echo $col($r[0], 34) . $col($r[1], 14) . $col($r[2], 12) . $col($r[3], 15) . $col($r[4], 7) . ($r[4] === 'ok' ? $r[6] . ' (scaduta)' : $r[5]) . "\n";
+    echo $col($r[0], 34) . $col($r[1], 14) . $col($r[2], 12) . $col($r[3], 15) . $col($r[4], 7) . ($r[4] === 'ok' ? $r[6] . (str_starts_with($r[6], 'cs_') ? ' (scaduta)' : '') : $r[5]) . "\n";
 }
 echo str_repeat('-', 100) . "\n";
 echo $ko === 0 ? "Tutte le " . count($righe) . " righe tornano: i Price su Stripe e gli importi del Checkout corrispondono al listino.\n"

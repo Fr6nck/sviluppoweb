@@ -98,6 +98,7 @@ final class Billing
         }
         // Invita un amico: lo sconto su Stripe e l'email partono a transazione chiusa.
         Inviti::dopoEvento();
+        Sconti::dopoEvento();   // 9N: lo sconto del rinnovo (uno solo: inviti + giudizio) dopo una fattura pagata
         return $esito;
     }
 
@@ -273,6 +274,7 @@ final class Billing
             }
         }
         Inviti::fattura($row, $inv);         // un rinnovo scontato chiude gli inviti che lo hanno pagato
+        if (in_array($inv['billing_reason'] ?? '', ['subscription_cycle', 'subscription_update'], true)) Sconti::accoda((int) $row['account_id']);   // 9N
         Giudizi::fattura($row, $inv);        // 9B: un rinnovo scontato chiude lo sconto del giudizio promesso sul rinnovo
         // Discesa programmata (6H): al rinnovo il sito passa al piano nuovo.
         if (!empty($row['next_package_version_id']) && ($inv['billing_reason'] ?? '') === 'subscription_cycle') {

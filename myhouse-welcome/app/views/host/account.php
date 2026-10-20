@@ -51,6 +51,10 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
       <?php elseif ($inOmaggio): $addOm = MHW\Richiami::prossimoAddebito($sub); ?>
         <p><span class="badge badge--pine"><span class="dot"></span>In omaggio</span>
           <span class="small"> · Omaggio fino al <b><?= Support::e(Support::date($fine)) ?></b> · poi <?= Support::e(Support::money($addOm['netto'], $addOm['valuta'])) ?> + IVA l'anno<?= $addOm['sconto'] > 0 ? ' (il primo addebito con il ' . (int) $addOm['percento'] . '% di sconto)' : '' ?><?= ($sub['card_last4'] ?? '') !== '' ? ', sulla carta •••• ' . Support::e($sub['card_last4']) : '' ?>.</span></p>
+        <?php /* 9N · «Il tuo codice omaggio»: le agevolazioni dal primo rinnovo dopo il primo pagamento. */ if (MHW\Inviti::disponibili() || MHW\Giudizi::attivo()): $rOm = MHW\Sconti::rinnovo((int) $acc['id'], $sub); ?>
+        <div class="sconto-ok" role="note"><p style="margin:0"><b><?= t('Il tuo codice omaggio') ?></b>: <?= Support::e("Dal primo rinnovo dopo l'attivazione hai tutti gli sconti, fino al " . MHW\Sconti::massimoRinnovo()['totale'] . '%.') ?>
+          <?= $rOm['percento'] > 0 ? Support::e('Oggi ne hai già il ' . $rOm['percento'] . '% (inviti ' . $rOm['inviti'] . '%' . ($rOm['giudizio'] ? ', giudizio ' . $rOm['giudizio'] . '%' : '') . ').') : '' ?></p></div>
+        <?php endif; ?>
       <?php else: ?>
         <p><span class="badge badge--pine"><span class="dot"></span>Attivo</span>
           <?php if ($fine): ?><span class="small muted"> · si rinnova il <?= Support::e(Support::date($fine)) ?></span><?php endif; ?></p>
@@ -174,17 +178,17 @@ $statoOrdine = ['pending' => 'In attesa', 'awaiting' => 'In verifica', 'paid' =>
         <?= $err($eP, 'name', 'pr-nome') ?></div>
       <button class="btn"><?= t('Salva il nome') ?></button>
     </form>
-    <details class="fieldset"<?= $apri === 'password' ? ' open' : '' ?>>
+    <details class="fieldset" id="password"<?= $apri === 'password' ? ' open' : '' ?>>
       <summary class="legend"><?= t('Cambia la password') ?></summary>
       <form method="post" action="<?= b() ?>/account/password" class="stack" style="gap:12px;margin-top:12px"><?= Csrf::field() ?>
         <input type="text" name="username" value="<?= Support::e($user['email']) ?>" autocomplete="username" hidden>
         <div class="field" style="margin:0"><label for="pw-attuale"><?= t('Password attuale') ?></label>
           <input id="pw-attuale" name="attuale" type="password" required autocomplete="current-password"<?= $inv($ePw, 'attuale', 'pw-attuale') ?>><?= $err($ePw, 'attuale', 'pw-attuale') ?></div>
         <div class="field" style="margin:0"><label for="pw-nuova"><?= t('Password nuova') ?></label>
-          <p class="help" id="pw-nuova-aiuto" style="margin:0 0 6px"><?= t('Almeno 8 caratteri.') ?></p>
-          <input id="pw-nuova" name="nuova" type="password" required minlength="8" maxlength="72" autocomplete="new-password" aria-describedby="pw-nuova-aiuto"<?= $inv($ePw, 'nuova', 'pw-nuova') ?>><?= $err($ePw, 'nuova', 'pw-nuova') ?></div>
+          <p class="help" id="pw-nuova-aiuto" style="margin:0 0 6px"><?= t('Almeno 10 caratteri.') ?></p>
+          <input id="pw-nuova" name="nuova" type="password" required minlength="<?= MHW\Auth::PASSWORD_MIN ?>" maxlength="72" autocomplete="new-password" aria-describedby="pw-nuova-aiuto"<?= $inv($ePw, 'nuova', 'pw-nuova') ?>><?= $err($ePw, 'nuova', 'pw-nuova') ?></div>
         <div class="field" style="margin:0"><label for="pw-nuova2"><?= t('Ripeti la password nuova') ?></label>
-          <input id="pw-nuova2" name="nuova2" type="password" required minlength="8" maxlength="72" autocomplete="new-password"<?= $inv($ePw, 'nuova2', 'pw-nuova2') ?>><?= $err($ePw, 'nuova2', 'pw-nuova2') ?></div>
+          <input id="pw-nuova2" name="nuova2" type="password" required minlength="<?= MHW\Auth::PASSWORD_MIN ?>" maxlength="72" autocomplete="new-password"<?= $inv($ePw, 'nuova2', 'pw-nuova2') ?>><?= $err($ePw, 'nuova2', 'pw-nuova2') ?></div>
         <div class="actions"><button class="btn"><?= t('Cambia la password') ?></button></div>
         <p class="small muted"><?= t('Non ricordi quella attuale?') ?> <a href="<?= b() ?>/password/dimenticata"><?= t('Chiedi un link di recupero') ?></a>.</p>
       </form>

@@ -101,7 +101,7 @@ final class Impostazioni
             'legal.company_vat'     => ['MHW_COMPANY_VAT', 'Partita IVA', 'text', '11 cifre, senza IT.'],
             'legal.company_city'    => ['MHW_COMPANY_CITY', 'Sede legale', 'text', 'Per esempio Via Ariodante Fabretti 15, 06123 Perugia (PG).'],
             'legal.company_rea'     => ['MHW_COMPANY_REA', 'Numero REA', 'text', 'Obbligatorio per le S.r.l. (art. 2250 c.c.): compare nel piè di pagina e nel blocco del titolare. Di serie PG-352001.'],
-            'legal.company_capitale' => ['MHW_COMPANY_CAPITALE', 'Capitale sociale', 'text', 'Per esempio «€ 10.000 i.v.». Vuoto, nel piè di pagina non compare.'],
+            'legal.company_capitale' => ['MHW_COMPANY_CAPITALE', 'Capitale sociale', 'text', 'Di serie «10.000,00 € i.v.» (art. 2250 c.c.): compare nel piè di pagina e nel blocco del titolare dei documenti.'],
             'legal.company_unipersonale' => ['MHW_COMPANY_UNIPERSONALE', 'Società unipersonale', 'check', 'Accesa, nel piè di pagina compare «Società unipersonale».'],
             'legal.company_pec'     => ['MHW_COMPANY_PEC', 'PEC (promemoria interno)', 'email', 'Non compare mai sul sito né nelle email: dove serve un contatto c\'è l\'email assistenza.'],
             'legal.company_site'    => ['MHW_COMPANY_SITE', 'Sito della società', 'url', 'Di serie https://www.cityup.eu'],
@@ -117,11 +117,11 @@ final class Impostazioni
         ],
         // 9B · Giudizi con sconto: l'interruttore per i nuovi clienti, la percentuale e la sezione in home.
         'giudizi' => [
-            'giudizi.sconto_attivo' => ['MHW_GIUDIZI_SCONTO', 'Sconto per i nuovi clienti che lasciano un giudizio', 'check', 'Acceso: la casella «Sì, voglio il 5% in più» prima del pagamento e «Partecipo» nel pannello. Spento: spariscono per chi non ha ancora aderito; chi ha già aderito conserva lo sconto promesso.'],
+            'giudizi.sconto_attivo' => ['MHW_GIUDIZI_SCONTO', 'Sconto per i nuovi clienti che lasciano un giudizio', 'check', 'Acceso: la casella del programma (Testi e foto → giudizio.casella) prima del pagamento e nel pannello. Spento: spariscono per chi non ha ancora aderito; chi ha già aderito conserva lo sconto promesso.'],
             'giudizi.percentuale'   => ['MHW_GIUDIZI_PERCENTO', 'Percentuale dello sconto', 'text', 'Da 1 a 20. Di serie 5. Vale per chi aderisce da adesso in poi.'],
             'giudizi.sconto_quando' => ['MHW_GIUDIZI_QUANDO', 'Quando si applica lo sconto', 'choice', 'All\'adesione: chi spunta la casella al pagamento ha lo sconto sul primo addebito, anche se il giudizio arriva dopo (si fida). Solo dopo il giudizio: lo sconto parte quando il giudizio è stato inviato, sul primo addebito se arriva prima (per esempio durante i mesi di un codice omaggio), altrimenti sul rinnovo.',
                                         ['adesione' => 'All\'adesione (anche se il giudizio arriva dopo)', 'giudizio' => 'Solo dopo il giudizio inviato']],
-            'giudizi.home'          => ['MHW_GIUDIZI_HOME', 'Sezioni «Le guide dei nostri host» e «Cosa dicono di noi» in home', 'check', 'Ognuna compare solo se c\'è almeno una scheda o un giudizio approvato (Vendite → Giudizi e vetrina). Spento: spariscono tutte e due, anche la pagina «Tutte le guide».'],
+            // 9N · Le sezioni pubbliche (guide e giudizi) non stanno più qui: due interruttori in cima a Giudizi e vetrina.
             // 9L · «Segnalati» in Giudizi e vetrina: i giudizi con queste parole (o con 1–2 stelle). Solo per attirare l'attenzione.
             'giudizi.parole'        => ['MHW_GIUDIZI_PAROLE', 'Parole da controllare nei giudizi', 'text', 'Separate da virgole. Un giudizio che ne contiene una (o con 1–2 stelle) compare tra i «Segnalati». Lo sconto resta comunque.'],
         ],
@@ -400,6 +400,20 @@ final class Impostazioni
         return trim((string) preg_replace('/^\S+ /', '', trim(strtok($t, "\n") ?: '')));
     }
 
+    /**
+     * 9N · Un interruttore scritto da una pagina dell'amministrazione (Giudizi e vetrina → «Mostra la sezione…»): un solo
+     * valore vero/falso in config.local.php, il resto com'è. Con la variabile d'ambiente impostata vince lei: si dice.
+     */
+    public static function interruttore(string $percorso, bool $v): void
+    {
+        $locale = self::locale();
+        self::metti($locale, $percorso, $v);
+        self::scrivi($locale);
+        $parti = explode('.', $percorso);
+        $cfg = Config::get($parti[0]) ?? [];
+        if (is_array($cfg) && isset($parti[1])) { $cfg[$parti[1]] = $v; Config::sovrascrivi($parti[0], $cfg); }
+    }
+
     private static function scrivi(array $dati): void
     {
         $f = self::file();
@@ -485,7 +499,7 @@ final class Impostazioni
                     $inHome = Vetrina::accese();   // 9L: le schede accese in «Le guide dei nostri host»
                     $aderiti = Giudizi::disponibili() ? (int) Db::val('SELECT COUNT(*) FROM accounts WHERE giudizio_adesione IS NOT NULL', [], 0) : 0;
                     return [true, (Giudizi::attivo() ? 'Sconto acceso: ' . Giudizi::percentuale() . '%, applicato ' . (Giudizi::quando() === 'giudizio' ? 'solo dopo il giudizio' : 'all\'adesione') . '.' : 'Sconto spento per i nuovi clienti.') . ' ' . $aderiti . ' clienti hanno aderito; '
-                                  . $inHome . ' schede in home' . (Giudizi::homeAccesa() ? '.' : ' (sezione spenta).')];
+                                  . $inHome . ' schede in home' . (Vetrina::sezioneGuide() ? '.' : ' (sezione spenta).')];
                 case 'stripe':
                     if (!Stripe::enabled()) return [false, 'Stripe non è ancora configurato: servono la chiave segreta e il segreto del webhook.'];
                     Stripe::call('GET', 'balance');

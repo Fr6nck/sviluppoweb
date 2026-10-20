@@ -242,19 +242,19 @@ final class Inviti
         $aid = (int) $sub['account_id'];
         $applicato = (int) Db::val('SELECT referral_applied_percent FROM accounts WHERE id = ?', [$aid], 0);
         if ($applicato <= 0) return;
-        $sconto = 0;
-        foreach ((array) ($inv['total_discount_amounts'] ?? []) as $d) $sconto += (int) ($d['amount'] ?? 0);
-        if ($sconto === 0 && isset($inv['subtotal'], $inv['total_excluding_tax'])) $sconto = max(0, (int) $inv['subtotal'] - (int) $inv['total_excluding_tax']);
+        // 9N · Quanti inviti c'erano davvero nello sconto della fattura: dal coupon del rinnovo e dai metadati, non dal prefisso.
+        $comp = Sconti::rinnovoInFattura($inv, $applicato);
+        $sconto = $comp['sconto'];
         $rif = (string) ($inv['id'] ?? '');
         if (($inv['billing_reason'] ?? '') === 'subscription_cycle') {
-            if ($sconto > 0) {
-                $n = max(1, intdiv($applicato, self::PASSO));
+            if ($sconto > 0 && $comp['inviti'] > 0) {
+                $n = max(1, intdiv($comp['inviti'], self::PASSO));
                 foreach (Db::all("SELECT id FROM referrals WHERE referrer_account_id = ? AND status = 'valido' ORDER BY qualified_at, id LIMIT " . $n, [$aid]) as $r) {
                     Db::update('referrals', ['status' => 'usato', 'used_at' => Support::now(), 'used_ref' => $rif], 'id = :id', ['id' => $r['id']]);
                 }
                 // Gli inviti oltre il tetto non passano all'anno dopo: si chiudono con questo rinnovo.
                 Db::run("UPDATE referrals SET status = 'usato', used_at = ?, used_ref = ? WHERE referrer_account_id = ? AND status = 'oltre'", [Support::now(), $rif, $aid]);
-                Auth::audit('referral.redeemed', null, ['account_id' => $aid, 'percent' => $applicato, 'discount_cents' => $sconto, 'invoice' => $rif]);
+                Auth::audit('referral.redeemed', null, ['account_id' => $aid, 'percent' => $comp['inviti'], 'discount_cents' => $sconto, 'invoice' => $rif]);
             } else {
                 Log::error('Inviti: rinnovo senza lo sconto atteso', ['account' => $aid, 'percent' => $applicato, 'invoice' => $rif]);
             }
@@ -283,54 +283,13 @@ final class Inviti
     public static function percento(int $accountId): int { return min(self::MASSIMO, self::PASSO * self::validi($accountId)); }
 
     /**
-     * Porta sull'abbonamento Stripe lo sconto guadagnato: toglie il coupon inviti che
-     * c'è, mette quello giusto, lascia stare gli altri sconti. Chiamate di rete:
-     * mai dentro una transazione. Si può ripetere: se è già a posto non scrive niente.
+     * Porta sull'abbonamento Stripe lo sconto guadagnato. 9N: un solo coupon per il rinnovo (inviti + giudizio, sul prezzo
+     * pieno), da Sconti::sincronizzaRinnovo; qui resta il nome per chi la chiamava.
      */
     public static function sincronizza(int $accountId): bool
     {
-        if (!self::disponibili() || !Stripe::enabled()) return false;
-        $s = Subscriptions::active($accountId);
-        if (!$s || $s['provider'] !== 'stripe' || (string) $s['provider_subscription_id'] === '') return false;
-        $voluto = self::percento($accountId);
-        $sid = (string) $s['provider_subscription_id'];
-        $sub = Stripe::call('GET', 'subscriptions/' . rawurlencode($sid), ['expand' => ['discounts']]);
-        $tieni = []; $presente = '';
-        foreach ((array) ($sub['discounts'] ?? []) as $d) {
-            if (!is_array($d)) { $tieni[] = (string) $d; continue; }
-            // Nelle API recenti il coupon sta in source.coupon, in quelle vecchie in coupon.
-            $c = $d['coupon'] ?? ($d['source']['coupon'] ?? '');
-            $cid = is_array($c) ? (string) ($c['id'] ?? '') : (string) $c;
-            // 9B: il coupon del giudizio (mhw-giudizio-N) e ogni altro sconto restano com'erano: si tocca solo quello degli inviti.
-            if (str_starts_with($cid, self::COUPON)) $presente = $cid; else $tieni[] = (string) ($d['id'] ?? '');
-        }
-        $coupon = $voluto > 0 ? self::coupon($voluto, $s) : '';
-        if ($presente !== $coupon) {
-            $p = []; $i = 0;
-            foreach (array_filter($tieni) as $did) $p['discounts[' . $i++ . '][discount]'] = $did;
-            if ($coupon !== '') $p['discounts[' . $i . '][coupon]'] = $coupon;
-            Stripe::call('POST', 'subscriptions/' . rawurlencode($sid), $p ?: ['discounts' => '']);
-        }
-        Db::update('accounts', ['referral_applied_percent' => $voluto], 'id = :aid', ['aid' => $accountId]);
-        return true;
-    }
-
-    /** Il coupon Stripe di una percentuale: id fisso, creato la prima volta. Con il tetto in euro, un importo fisso. */
-    private static function coupon(int $percento, array $sub): string
-    {
-        $id = self::COUPON . $percento; $p = ['percent_off' => (string) $percento];
-        if (self::TETTO_CENTS > 0) {
-            $pv = Db::one('SELECT * FROM package_versions WHERE id = ?', [(int) $sub['package_version_id']]) ?: [];
-            $prezzo = $pv ? Plans::price($pv, max(1, (int) ($sub['quantity'] ?? 1))) : 0;
-            if ((int) round($prezzo * $percento / 100) > self::TETTO_CENTS) {
-                $id = self::COUPON . 'tetto-' . self::TETTO_CENTS; $p = ['amount_off' => (string) self::TETTO_CENTS, 'currency' => 'eur'];
-            }
-        }
-        try { Stripe::call('GET', 'coupons/' . rawurlencode($id)); }
-        catch (\RuntimeException) {
-            Stripe::call('POST', 'coupons', $p + ['id' => $id, 'duration' => 'once', 'name' => 'Invita un amico'], 'mhw-coupon-' . $id);
-        }
-        return $id;
+        if (!self::disponibili()) return false;
+        return Sconti::sincronizzaRinnovo($accountId);
     }
 
     /** Dal giro dei Richiami: gli account il cui sconto su Stripe non è quello guadagnato. */
@@ -357,15 +316,15 @@ final class Inviti
         $mancano = $st['massimo'] - $st['validi'];
         $corpo = $amico . ' ha pubblicato la sua guida con il tuo invito. ';
         if ($st['percento'] > 0) {
-            $corpo .= 'Il tuo sconto sul prossimo rinnovo ' . ($mancano > 0 ? 'sale al ' : 'è al ') . $st['percento'] . '%'
+            $corpo .= 'Il tuo sconto sul prossimo rinnovo ' . ($mancano > 0 ? 'sale al ' : 'è al ') . $st['totale'] . '%'
                     . ($st['rinnovo'] !== '' && $st['prezzo'] > 0 ? ': il ' . Support::date($st['rinnovo']) . ' paghi ' . Support::money($st['scontato'], $st['valuta'])
                        . ' + IVA invece di ' . Support::money($st['prezzo'], $st['valuta']) : '') . '. ';
         }
-        $corpo .= $mancano > 0 ? ($mancano === 1 ? 'Ti manca 1 amico' : 'Ti mancano ' . $mancano . ' amici') . ' per arrivare a metà prezzo.'
+        $corpo .= $mancano > 0 ? ($mancano === 1 ? 'Ti manca 1 amico' : 'Ti mancano ' . $mancano . ' amici') . ' per arrivare al ' . self::MASSIMO . '% degli inviti.'
                                : 'Hai raggiunto il massimo degli inviti. I tuoi amici continuano ad avere il loro sconto.';
         // 9L · Il tetto vero è inviti + programma: «fino al 55%», non il 50%.
         if (Giudizi::attivo()) $corpo .= ' Con il programma «Giudizio con sconto» arrivi fino al ' . Sconti::massimoRinnovo()['totale'] . '% di sconto a partire dal prossimo anno.';
-        $oggetto = $amico . ' ha pubblicato la sua guida' . ($st['percento'] > 0 ? ': sei al −' . $st['percento'] . '%' : '');
+        $oggetto = $amico . ' ha pubblicato la sua guida' . ($st['percento'] > 0 ? ': sei al −' . $st['totale'] . '%' : '');
         Richiami::manda($rid, (string) $u['email'], (string) $u['name'], 'inviti', 'amico-' . $amicoId,
                         [$oggetto, $corpo, 'Invita un altro amico', Support::baseUrl() . '/inviti']);
     }
@@ -381,13 +340,14 @@ final class Inviti
         $s = Subscriptions::active($aid);
         $pv = $s ? (Db::one('SELECT * FROM package_versions WHERE id = ?', [(int) $s['package_version_id']]) ?: null) : null;
         $prezzo = $pv ? Plans::price($pv, max(1, (int) ($s['quantity'] ?? 1))) : 0;
-        $sconto = (int) round($prezzo * $percento / 100);
-        if (self::TETTO_CENTS > 0) $sconto = min($sconto, self::TETTO_CENTS);
+        // 9N · Quanto si paga al rinnovo: inviti + giudizio sommati, una volta sul prezzo pieno (la cifra degli avvisi a 30/7 giorni).
+        $totale = $s ? Sconti::rinnovo($aid, $s)['percento'] : $percento;
+        $sconto = $prezzo - Sconti::netto($prezzo, $totale);
         return [
             'validi' => $validi, 'massimo' => self::amiciMassimi(), 'percento' => $percento,
             'oltre' => (int) Db::val("SELECT COUNT(*) FROM referrals WHERE referrer_account_id = ? AND status = 'oltre'", [$aid], 0),
             'in_attesa' => (int) Db::val("SELECT COUNT(*) FROM referrals WHERE referrer_account_id = ? AND status = 'registrato'", [$aid], 0),
-            'prezzo' => $prezzo, 'sconto' => $sconto, 'scontato' => $prezzo - $sconto, 'valuta' => (string) ($pv['currency'] ?? 'EUR'),
+            'prezzo' => $prezzo, 'sconto' => $sconto, 'scontato' => $prezzo - $sconto, 'valuta' => (string) ($pv['currency'] ?? 'EUR'), 'totale' => $totale,
             'rinnovo' => (string) ($s['current_period_end'] ?? ''),
             'automatico' => $s !== null && (int) $s['cancel_at_period_end'] === 0,
             'a_mano' => $s !== null && ($s['provider'] !== 'stripe' || (string) $s['provider_subscription_id'] === ''),

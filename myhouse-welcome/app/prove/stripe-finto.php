@@ -71,7 +71,7 @@ $abbonamento = function (string $id) use (&$stato, $ora, $dir, $espandi): array 
     // 9D: la carta (ultime 4 cifre) e la fine dei mesi gratis, se la prova li ha scritti nello stato.
     $out = [
         'id' => $id, 'object' => 'subscription', 'status' => $s['status'], 'cancel_at_period_end' => $s['cancel_at_period_end'],
-        'items' => ['data' => $voci], 'discounts' => $sconti,
+        'items' => ['data' => $voci], 'discounts' => $sconti, 'metadata' => (array) ($s['metadata'] ?? []),   // 9N: sconti del rinnovo
         'default_payment_method' => ['id' => 'pm_finto_' . $id, 'object' => 'payment_method', 'card' => ['last4' => $s['last4'] ?? '4242']],
     ];
     if (!empty($s['trial_end'])) $out['trial_end'] = (int) $s['trial_end'];
@@ -171,6 +171,11 @@ if (preg_match('#^/v1/subscriptions/([A-Za-z0-9_]+)$#', $percorso, $m)) {
         }
         $stato['subs'][$m[1]]['discounts'] = array_values(array_unique($nuovi));
     }
+    // 9N: i metadati dell'abbonamento (la composizione dello sconto del rinnovo, «inviti:10,giudizio:5»).
+    if ($metodo === 'POST' && isset($corpo['metadata']) && is_array($corpo['metadata'])) {
+        $abbonamento($m[1]);
+        $stato['subs'][$m[1]]['metadata'] = array_filter(array_merge((array) ($stato['subs'][$m[1]]['metadata'] ?? []), $corpo['metadata']), fn($v) => $v !== '');
+    }
     if ($metodo === 'POST' && isset($corpo['items'])) {
         // Le voci: la principale (prezzo nuovo) e quella delle strutture aggiuntive (quantità, prezzo, o tolta).
         $abbonamento($m[1]);
@@ -207,6 +212,25 @@ if ($metodo === 'GET' && $percorso === '/v1/invoices/upcoming') {
     if (!isset($stato['upcoming'][$sid])) $rispondi(['error' => ['message' => 'No upcoming invoices for subscription: ' . $sid]], 404);
     $rispondi(['object' => 'invoice', 'subscription' => $sid] + $stato['upcoming'][$sid]);
 }
+// 9N: l'anteprima di una fattura (tools/verifica-stripe.php, rinnovo): prezzi del listino finto, coupon in cascata come Stripe.
+if ($metodo === 'POST' && $percorso === '/v1/invoices/create_preview') {
+    $sub = 0;
+    foreach ((array) ($corpo['subscription_details']['items'] ?? []) as $voce) {
+        $pr = $stato['listino'][(string) ($voce['price'] ?? '')] ?? null; $q = (int) ($voce['quantity'] ?? 1);
+        if (!$pr) $rispondi(['error' => ['message' => 'No such price: ' . ($voce['price'] ?? '')]], 400);
+        if (!empty($pr['tiers'])) { $da = 0; foreach ($pr['tiers'] as $t) { $fino = $t['up_to'] ?? PHP_INT_MAX; $k = max(0, min($q, $fino) - $da); $sub += $k * $t['unit_amount']; $da = min($q, $fino); if ($da >= $q) break; } }
+        else $sub += $q * (int) $pr['unit_amount'];
+    }
+    $resto = $sub; $sconti = [];
+    foreach ((array) ($corpo['discounts'] ?? []) as $d) {
+        $c = $stato['coupons'][(string) ($d['coupon'] ?? '')] ?? null;
+        if (!$c) $rispondi(['error' => ['message' => 'No such coupon: ' . ($d['coupon'] ?? '')]], 400);
+        $x = (int) round($resto * (float) $c['percent_off'] / 100); $resto -= $x;
+        $sconti[] = ['amount' => $x, 'discount' => ['id' => 'di_anteprima_' . $n, 'coupon' => ['id' => $c['id']]]];
+    }
+    $rispondi(['object' => 'invoice', 'subtotal' => $sub, 'total_discount_amounts' => $sconti, 'total_excluding_tax' => $resto, 'total' => $resto]);
+}
+if ($metodo === 'DELETE' && preg_match('#^/v1/customers/(cus_[A-Za-z0-9_]+)$#', $percorso, $m)) $rispondi(['id' => $m[1], 'object' => 'customer', 'deleted' => true]);
 // 9E: le fatture pagate di un cliente (stato['invoices'][cus]) e i rimborsi.
 if ($metodo === 'GET' && $percorso === '/v1/invoices') {
     $cus = (string) ($_GET['customer'] ?? '');

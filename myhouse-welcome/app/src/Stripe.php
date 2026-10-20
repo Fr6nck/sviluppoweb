@@ -338,8 +338,8 @@ final class Stripe
             $meta['discount_code'] = $c['code'];
         }
         // 9D · Codice omaggio: i primi mesi gratis (trial_end a mezzanotte UTC di oggi + N mesi), carta obbligatoria,
-        // abbonamento cancellato se alla fine manca il metodo di pagamento. Il coupon (solo quello del giudizio, una
-        // volta) Stripe lo applica alla prima fattura, cioè quella di fine omaggio.
+        // abbonamento cancellato se alla fine manca il metodo di pagamento. 9N: nessun coupon, il primo addebito è pieno;
+        // inviti e giudizio vanno sul primo rinnovo (Sconti::sincronizzaRinnovo dopo quella fattura).
         $omaggio = $riepilogo['omaggio'] ?? null;
         if ($omaggio) {
             $p['subscription_data[trial_end]'] = (string) $omaggio['fine'];
@@ -369,7 +369,7 @@ final class Stripe
             [$voci, $pv] = self::vociCheckout($pv, $pkg, $quantita);
             self::verificaPrezzi($pv);
             $prezzo = Plans::price($pv, $quantita);
-            $sconto = $percento > 0 ? (int) round($prezzo * $percento / 100) : 0;
+            $sconto = $prezzo - Sconti::netto($prezzo, $percento);
             $p = ['mode' => 'subscription', 'success_url' => 'https://example.com/ok', 'cancel_url' => 'https://example.com/no',
                   'billing_address_collection' => 'required', 'tax_id_collection[enabled]' => 'true'] + $voci;
             if ($percento > 0) $p['discounts[0][coupon]'] = Sconti::couponCombinato($percento);
@@ -385,6 +385,34 @@ final class Stripe
             return ['ok' => true, 'errore' => '', 'sessione' => (string) $res['id']];
         } catch (\Throwable $e) {
             return ['ok' => false, 'errore' => $e->getMessage(), 'sessione' => ''];
+        }
+    }
+
+    /**
+     * 9N · Per tools/verifica-stripe.php (solo chiavi di prova): quanto farebbe Stripe al rinnovo con lo sconto unico
+     * mhw-rinnovo-N. Un cliente di prova, l'anteprima della fattura di un abbonamento con quel coupon, il cliente tolto.
+     * @return array{ok:bool,errore:string,netto:int}
+     */
+    public static function rinnovoDiProva(array $pv, array $pkg, int $quantita, int $percento): array
+    {
+        $cliente = '';
+        try {
+            [$base, $extra] = self::ensurePrices($pv, $pkg);
+            $cliente = (string) self::call('POST', 'customers', ['email' => 'verifica-rinnovo@example.com', 'name' => 'Verifica rinnovo (prova)'])['id'];
+            $p = ['customer' => $cliente, 'subscription_details[items][0][price]' => $base, 'subscription_details[items][0][quantity]' => '1'];
+            if ($extra !== '' && $quantita > 1) { $p['subscription_details[items][1][price]'] = $extra; $p['subscription_details[items][1][quantity]'] = (string) ($quantita - 1); }
+            if ($percento > 0) $p['discounts[0][coupon]'] = Sconti::couponRinnovo($percento);
+            $inv = self::call('POST', 'invoices/create_preview', $p);
+            $sconto = 0;
+            foreach ((array) ($inv['total_discount_amounts'] ?? []) as $d) $sconto += (int) ($d['amount'] ?? 0);
+            $netto = isset($inv['total_excluding_tax']) ? (int) $inv['total_excluding_tax'] : (int) ($inv['subtotal'] ?? 0) - $sconto;
+            $atteso = Sconti::netto(Plans::price($pv, $quantita), $percento);
+            $ok = $netto === $atteso;
+            return ['ok' => $ok, 'errore' => $ok ? '' : 'Stripe fa ' . Support::money($netto) . ', il sito dice ' . Support::money($atteso), 'netto' => $netto];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'errore' => $e->getMessage(), 'netto' => 0];
+        } finally {
+            if ($cliente !== '') { try { self::call('DELETE', 'customers/' . rawurlencode($cliente)); } catch (\Throwable) {} }
         }
     }
 

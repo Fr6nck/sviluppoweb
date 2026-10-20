@@ -14,9 +14,12 @@ namespace MHW;
  */
 final class Testimonianze
 {
-    /** Il testo del consenso, salvato con ogni giudizio così com'era quando è stato dato. */
+    /**
+     * @deprecated 9N · Dalla 9L il testo dell'adesione è la casella del programma (Giudizi::casella()), salvata con il giudizio.
+     * Resta solo per i giudizi lasciati senza programma (sito senza le migrazioni 044/050); mai una foto della persona.
+     */
     public const CONSENSO = 'Acconsento che MyHouse Welcome pubblichi sul proprio sito il mio voto, il mio giudizio, il mio nome (senza cognome), '
-        . 'il nome e la città della struttura e la foto scelta. Il link della mia guida non viene pubblicato. '
+        . 'il nome e la città della struttura. Il link della mia guida non viene pubblicato. '
         . 'Posso ritirare il consenso quando voglio da Account & Fatturazione.';
     /** 9L · Mai la foto dell'host: restano la copertina della guida o nessuna foto. */
     public const FOTO = ['copertina' => 'La copertina della guida', 'nessuna' => 'Nessuna foto'];

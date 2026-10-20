@@ -18,10 +18,10 @@ if ($rnTot > 0):
     $rClasse = 'questionario__sconto'; $rCome = b() . LinguaSito::percorso('/domande') . '#porta-amico'; include __DIR__ . '/_risparmio.php'; /* 9L: lo stesso riquadro della home */ ?>
   <div class="questionario__rinnovo" data-q-rinnovo<?= !empty($rnCampo) ? ' data-rinnovo data-campo="' . Support::e($rnCampo) . '"' : '' ?>>
     <span><?= $rnU('Primo anno', 'First year') ?> <b data-q-anno><?= Support::e(Support::money($rnPieno)) ?></b>, <?= $rnEn ? 'from the renewal with ' . (int) $rnTot . '% off' : 'dal rinnovo con il ' . (int) $rnTot . '%' ?>:<br><s class="muted" data-q-anno-s><?= Support::e(Support::money($rnPieno)) ?></s></span>
-    <b class="questionario__rinnovo-v" data-q-min><?= Support::e(Support::money((int) round($rnPieno * (100 - $rnTot) / 100))) ?></b>
+    <b class="questionario__rinnovo-v" data-q-min><?= Support::e(Support::money(MHW\Sconti::netto($rnPieno, $rnTot))) ?></b>
     <table><tbody>
       <tr><td><?= $rnU('Nessuno sconto', 'No discount') ?></td><td data-q-perc="0"><?= Support::e(Support::money($rnPieno)) ?></td></tr>
-      <?php foreach ($rnRighe as [$et, $perc]): ?><tr><td><?= Support::e($et) ?></td><td data-q-perc="<?= (int) $perc ?>"><?= Support::e(Support::money((int) round($rnPieno * (100 - $perc) / 100))) ?></td></tr><?php endforeach; ?>
+      <?php foreach ($rnRighe as [$et, $perc]): ?><tr><td><?= Support::e($et) ?></td><td data-q-perc="<?= (int) $perc ?>"><?= Support::e(Support::money(MHW\Sconti::netto($rnPieno, (int) $perc))) ?></td></tr><?php endforeach; ?>
     </tbody></table>
     <small><?= $rnInviti ? TestiSito::html('questionario.rinnovo.nota') : $rnU('Prezzi + IVA, all\'anno.', 'Prices + VAT, per year.') ?></small>
   </div>

@@ -1104,7 +1104,7 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
             'account_id' => $aid, 'package_version_id' => $pv['id'], 'property_id' => $p['id'], 'quantity' => $quantita,
             'amount_cents' => $riep['prezzo'], 'currency' => $pv['currency'], 'status' => 'pending',
             'provider' => 'stripe', 'provider_session_id' => '', 'created_at' => Support::now(), 'updated_at' => Support::now(),
-        ] + ($sc['discount_code_id'] ? ['discount_code_id' => $sc['discount_code_id']] : ($codiceSconto ? ['discount_code_id' => (int) $codiceSconto['id']] : []))
+        ] + ($sc['discount_code_id'] ? ['discount_code_id' => $sc['discount_code_id']] : [])   // 9N: solo il codice che vale davvero (mai quello che ha perso)
           + (Migrator::columnExists('orders', 'sconti') ? ['sconti' => $sc['sconti']] : [])
           + (!empty($riep['omaggio']) && Migrator::columnExists('orders', 'codice_omaggio_id') ? ['codice_omaggio_id' => (int) $riep['omaggio']['id']] : [])   // 9D
           + (Migrator::columnExists('orders', 'acquirente') ? ['acquirente' => $acquirente, 'recesso_rinuncia' => $acquirente === 'consumatore' ? 1 : 0] : []));
@@ -1330,7 +1330,9 @@ $paginaAccount = function (array $u, array $acc, array $extra = []) use ($tornaV
 
 $r->get('/account', function () use ($host, $paginaAccount) {
     [$u, $acc] = $host();
-    $paginaAccount($u, $acc);
+    // 9N · Dopo un errore nel cambio della password si torna qui (mai il POST rimandato ricaricando), con il modulo aperto.
+    $ePw = (array) ($_SESSION['errori_password'] ?? []); unset($_SESSION['errori_password']);
+    $paginaAccount($u, $acc, $ePw ? ['erroriPassword' => $ePw, 'apri' => 'password'] : []);
 });
 
 // ------------------------------------------------------------ Invita un amico
@@ -1481,7 +1483,8 @@ $r->post('/account/password', function () use ($host, $paginaAccount) {
     $nuova = (string) ($_POST['nuova'] ?? '');
     try { Auth::controllaPassword($nuova, (string) $u['email'], (string) $u['name']); } catch (\RuntimeException $e) { $errori['nuova'] = $e->getMessage(); }
     if (!isset($errori['nuova']) && $nuova !== (string) ($_POST['nuova2'] ?? '')) $errori['nuova2'] = 'Le due password non sono uguali: riscrivile.';
-    if ($errori) $paginaAccount($u, $acc, ['erroriPassword' => $errori, 'apri' => 'password']);
+    // 9N · L'errore accanto al modulo: redirect con l'ancora #password (un solo messaggio, quello del campo; niente flash in più).
+    if ($errori) { $_SESSION['errori_password'] = $errori; Support::redirect('/account#password'); }
     Db::update('users', ['password_hash' => password_hash($nuova, PASSWORD_DEFAULT)], 'id = :uid', ['uid' => $u['id']]);
     session_regenerate_id(true);
     Auth::audit('account.password', (int) $u['id']);

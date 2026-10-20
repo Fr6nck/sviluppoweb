@@ -22,7 +22,7 @@ $bottoni = function (array $c) {
 <div class="stack stack--lg">
   <div class="stack stack--sm">
     <h1>Codici omaggio.</h1>
-    <p class="muted" style="max-width:760px">Da 1 a 12 mesi gratis per una persona sola, solo nuovi clienti. Il cliente inserisce la carta prima di pubblicare: oggi paga 0 €, il primo addebito parte da solo alla fine dei mesi gratis, con gli avvisi a 30 e 7 giorni. Il codice si brucia al pagamento e scade dopo <?= Omaggi::GIORNI ?> giorni (modificabile). Non si somma allo sconto «Invita un amico»; lo sconto del giudizio resta.</p>
+    <p class="muted" style="max-width:760px">Da 1 a 12 mesi gratis per una persona sola, solo nuovi clienti. Il cliente inserisce la carta prima di pubblicare: oggi paga 0 €, il primo addebito parte da solo alla fine dei mesi gratis, con gli avvisi a 30 e 7 giorni. Il codice si brucia al pagamento e scade dopo <?= Omaggi::GIORNI ?> giorni (modificabile). Il primo addebito è a prezzo pieno: niente sconto dell'invito ricevuto né del giudizio. Dal primo rinnovo dopo quel pagamento il cliente ha tutte le agevolazioni (inviti fino al <?= MHW\Inviti::MASSIMO ?>% e giudizio), fino al <?= MHW\Sconti::massimoRinnovo()['totale'] ?>%; durante i mesi gratis può già aderire al programma e la sua scheda può andare in vetrina.</p>
   </div>
 
   <div class="cifre">

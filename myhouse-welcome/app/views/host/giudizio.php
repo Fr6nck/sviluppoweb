@@ -20,7 +20,14 @@ $data = fn(?string $d) => $d ? Support::date($d) : ''; ?>
 <div class="stack stack--lg giudizio-pagina" style="max-width:820px">
   <div class="stack stack--sm">
     <h1>Giudizio con sconto.</h1>
-    <?php if ($programma && $aderito): ?>
+    <?php if ($escluso = Giudizi::motivoEscluso($acc)): /* 9N · mai una pagina vuota: il motivo, e cosa si può fare */ ?>
+      <section class="panel stack" role="status" style="gap:8px">
+        <p class="lead" style="margin:0">Il programma «Giudizio con sconto» non è disponibile per questo account perché <?= Support::e($escluso) ?>.</p>
+        <p class="small muted" style="margin:0">Senza adesione non pubblichiamo nulla: né la scheda della tua guida né un giudizio. Se pensi che sia un errore, scrivici a
+          <a href="mailto:<?= Support::e(Support::contatto()) ?>"><?= Support::e(Support::contatto()) ?></a>.</p>
+        <div class="row"><a class="btn btn--ghost btn--sm" href="<?= b() ?>/pannello">Torna alle tue guide</a></div>
+      </section>
+    <?php elseif ($programma && $aderito): ?>
       <p class="lead">Hai aderito il <?= Support::e($data((string) $acc['giudizio_adesione_at'])) ?><?= ($s = Giudizi::scontoTesto($acc)) !== '' ? ' · ' . Support::e($s) : '' ?>.</p>
     <?php elseif ($programma && Giudizi::attivo()): ?>
       <p class="lead">Il <?= $pct ?>% di sconto, e la tua guida tra «Le guide dei nostri host» su welcomemyhouse.it.</p>

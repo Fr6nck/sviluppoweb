@@ -5,8 +5,8 @@
 <form method="post" class="panel stack" style="margin-top:24px"><?= Csrf::field() ?>
   <div class="field" style="margin:0"><label for="email">La tua email</label>
     <input id="email" name="email" type="email" required autocomplete="email"></div>
-  <div class="field" style="margin:0"><label for="password">Una password <span class="muted">— almeno 8 caratteri</span></label>
-    <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password"></div>
+  <div class="field" style="margin:0"><label for="password">Una password <span class="muted">— almeno <?= MHW\Auth::PASSWORD_MIN ?> caratteri</span></label>
+    <input id="password" name="password" type="password" required minlength="<?= MHW\Auth::PASSWORD_MIN ?>" autocomplete="new-password"></div>
   <div class="note note--quiet">
     <label class="check" style="margin:0"><input type="checkbox" name="esempi" value="1" checked> <span>Crea anche la demo e tre clienti di esempio</span></label>
     <p class="tiny muted" style="margin-top:8px">Casa Lucia diventa la demo della landing. I clienti di esempio entrano con la password

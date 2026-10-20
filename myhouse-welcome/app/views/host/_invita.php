@@ -9,7 +9,7 @@ if (!Inviti::puoInvitare($acc)) return;
 $inv = $inv ?? Inviti::stato($acc);
 $linkInvito = Inviti::link($acc);
 $invN = (int) $inv['validi']; $invMax = (int) $inv['massimo'];
-$invTraguardo = Inviti::MASSIMO === 50 ? 'metà prezzo' : 'il ' . Inviti::MASSIMO . '% di sconto';
+$invTraguardo = 'al ' . Inviti::MASSIMO . '% degli inviti';   // 9N: non «metà prezzo»
 if ($invN === 0) {
     $titoloInv = 'Invita un amico: uno sconto per te, uno per lui.';
     $sottoInv = 'Per ogni amico che pubblica la sua guida, il tuo prossimo rinnovo scende del ' . Inviti::PASSO . '%, fino al '
@@ -17,7 +17,7 @@ if ($invN === 0) {
 } elseif ($invN < $invMax) {
     $titoloInv = "Sei al \u{2212}" . (int) $inv['percento'] . '% sul prossimo rinnovo.';
     $sottoInv = ($invN === 1 ? '1 amico ha pubblicato la sua guida.' : $invN . ' amici hanno pubblicato la loro guida.')
-              . ' Ancora ' . ($invMax - $invN) . ' e arrivi a ' . $invTraguardo . '.';
+              . ' Ancora ' . ($invMax - $invN) . ' e arrivi ' . $invTraguardo . '.';
 } else {
     $titoloInv = (Inviti::MASSIMO === 50 ? 'Metà prezzo' : "\u{2212}" . Inviti::MASSIMO . '%') . ': hai raggiunto il massimo.';
     $sottoInv = (int) $inv['oltre'] > 0

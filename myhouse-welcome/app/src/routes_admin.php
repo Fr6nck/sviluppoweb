@@ -877,6 +877,11 @@ $r->get('/admin/diagnostica', function () {
     $checks[] = ['File per motori e assistenti (robots.txt, sitemap.xml, llms.txt)', MHW\Seo::scrivibili() && (!$esitoSeo || $esitoSeo['ok']),
         !MHW\Seo::scrivibili() ? 'La cartella principale del sito non è scrivibile: i tre file restano solo come pagine, e senza riscrittura degli indirizzi i motori non li trovano.'
         : ($esitoSeo ? $esitoSeo['msg'] . ' Ultima volta: ' . Support::date($esitoSeo['quando']) . '.' : 'Cartella scrivibile: i file si scrivono al prossimo salvataggio di SEO e GEO.')];
+    // 9N · GA4 e Clarity sono nell'informativa (con il consenso): se mancano gli ID il banner non compare e l'informativa promette cose che non ci sono.
+    $ga4 = trim(MHW\Seo::get('stat.ga4')); $clarity = trim(MHW\Seo::get('stat.clarity'));
+    $checks[] = ['Statistiche con consenso (GA4 e Clarity)', $ga4 !== '' && $clarity !== '', $ga4 !== '' && $clarity !== ''
+        ? 'GA4 ' . $ga4 . ' e Clarity ' . $clarity . ' configurati: il banner dei cookie compare ai visitatori e parte solo dopo il consenso.'
+        : 'GA4/Clarity dichiarati in privacy ma non configurati' . ($ga4 === '' && $clarity === '' ? '' : ' (manca ' . ($ga4 === '' ? 'GA4' : 'Clarity') . ')') . ': inserisci gli ID in SEO e GEO → Statistiche delle visite, oppure togli i riferimenti dall\'informativa (Testi e foto → Documenti legali).'];
     $checks[] = ['Indirizzo pubblico impostato', Config::get('base_url') !== '',
         Config::get('base_url') !== '' ? Config::get('base_url') : 'MHW_BASE_URL vuoto: QR ed email usano l\'indirizzo della richiesta'];
     $daCompletare = MHW\CambioAbbonamento::inSospeso();
@@ -1120,6 +1125,22 @@ $r->post('/admin/giudizi/{tid}/elimina', function (array $a) {
 });
 
 /* 9B · Gli interruttori del programma dalla pagina Giudizi (le stesse impostazioni di Impostazioni → Giudizi con sconto). */
+/* 9N · Gli interruttori delle due sezioni pubbliche (in cima a Giudizi e vetrina), scritti in config.local.php e nel registro. */
+$r->post('/admin/giudizi/sezione', function () {
+    Auth::requireAdmin();
+    $quale = (string) ($_POST['quale'] ?? '');
+    $percorso = ['guide' => 'vetrina.sezione_attiva', 'dicono' => 'vetrina.dicono_attiva'][$quale] ?? '';
+    if ($percorso === '') Support::redirect('/admin/giudizi');
+    $si = ($_POST['si'] ?? '') === '1';
+    try { Impostazioni::interruttore($percorso, $si); }
+    catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); Support::redirect('/admin/giudizi#sezioni'); }
+    Auth::audit('vetrina.sezione', null, ['sezione' => $quale, 'accesa' => $si]);
+    try { MHW\Seo::scriviFile(); } catch (\Throwable $e) { MHW\Log::exception($e, 'vetrina: file SEO'); }
+    $nome = $quale === 'guide' ? '«Le guide dei nostri host»' : '«Cosa dicono di noi»';
+    $vuota = $quale === 'guide' ? !MHW\Vetrina::visibili() : !MHW\Vetrina::giudiziHome();
+    Support::flash($si ? 'Sezione ' . $nome . ' accesa' . ($vuota ? ', ma senza ' . ($quale === 'guide' ? 'schede' : 'giudizi') . ' approvati resta nascosta.' : ': è sul sito.') : 'Sezione ' . $nome . ' spenta: non si vede più.', $si && $vuota ? 'avviso' : 'ok');
+    Support::redirect('/admin/giudizi#sezioni');
+});
 $r->post('/admin/giudizi/impostazioni', function () {
     $admin = Auth::requireAdmin();
     $hash = (string) Db::val('SELECT password_hash FROM users WHERE id = ?', [(int) $admin['id']], '');

@@ -34,6 +34,19 @@ final class Legale
 
     public static function disponibili(): bool { return Migrator::tableExists('legal_acceptances'); }
 
+    /**
+     * 9N · L'ordine dei punti dei Termini (le chiavi di lang/legale.php) e il numero che si vede: 1…17 in fila. Il punto
+     * «Giudizio con sconto, sconto sul rinnovo e codice omaggio» (chiave 17, con dentro il vecchio 18) è il 13; contatti è il 17.
+     */
+    public const ORDINE_TERMINI = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 17, 13, 14, 15, 16];
+
+    /** Il numero che si vede di un punto dei Termini, dalla sua chiave (0 se la chiave non è nei Termini). */
+    public static function numeroTermini(int $chiave): int
+    {
+        $i = array_search($chiave, self::ORDINE_TERMINI, true);
+        return $i === false ? 0 : $i + 1;
+    }
+
     /** @return array{termini:string,privacy:string,dpa:string} le versioni in uso */
     public static function versioni(): array
     {
@@ -100,6 +113,7 @@ final class Legale
             'link_modulo' => '<a href="' . $b . ($en ? '/en/terms' : '/termini') . '#modulo-recesso">' . ($en ? 'model withdrawal form' : 'modulo tipo di recesso') . '</a>',
             'amico' => (string) Inviti::AMICO, 'passo' => (string) Inviti::PASSO, 'max' => (string) Inviti::MASSIMO, 'amici' => (string) Inviti::amiciMassimi(),
             'giudizio' => (string) Giudizi::percentuale(),   // 9B
+            'totale' => (string) (Inviti::MASSIMO + Giudizi::percentuale()),   // 9N: inviti + giudizio, lo sconto massimo sul rinnovo
             'regione_traduzioni' => $e((string) (Traduttore::config()['region'] ?? 'eu-west-1')),
             'giorni_registri' => (string) Registri::config()['giorni'],
             'posta' => $e($posta),

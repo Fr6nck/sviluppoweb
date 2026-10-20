@@ -30,6 +30,30 @@ $int = function (string $azione, int $id, bool $on, string $etichetta, bool $spe
 
   <?php if (!Vetrina::disponibili()): ?><p class="note note--err" role="status">Il programma non è ancora attivo: mancano le migrazioni 050 e 051.</p><?php endif; ?>
 
+  <?php /* 9N · Le due sezioni pubbliche, accese solo da qui (spente di serie). Spenta: niente in home, /guide-dei-nostri-host in 404,
+           fuori dalla sitemap. Accesa senza schede (o giudizi) approvati: resta nascosta lo stesso, con l'avviso. */
+        $nSchede = count(Vetrina::visibili()); $nGiudizi = (int) ($numeri['giudizi_pubblicati'] ?? 0);
+        $sezioni = [['guide', 'Mostra la sezione «Le guide dei nostri host» sul sito', 'Home e pagina «Tutte le guide»', Vetrina::sezioneGuide(), $nSchede, $nSchede === 1 ? '1 scheda approvata' : $nSchede . ' schede approvate'],
+                    ['dicono', 'Mostra la sezione «Cosa dicono di noi» sul sito', 'Home', Vetrina::sezioneDicono(), $nGiudizi, $nGiudizi === 1 ? '1 giudizio approvato' : $nGiudizi . ' giudizi approvati']]; ?>
+  <section class="panel stack sezioni-vetrina" id="sezioni" aria-label="Le sezioni sul sito" style="gap:0">
+    <?php foreach ($sezioni as [$chiave, $titolo, $dove, $acceso, $quanti, $conta]): ?>
+      <form method="post" action="<?= b() ?>/admin/giudizi/sezione" class="sezioni-vetrina__riga"><?= Csrf::field() ?>
+        <input type="hidden" name="quale" value="<?= $chiave ?>"><input type="hidden" name="si" value="<?= $acceso ? '0' : '1' ?>">
+        <div class="stack" style="gap:2px">
+          <b><?= Support::e($titolo) ?></b>
+          <span class="small muted"><?= Support::e($dove) ?>. Oggi: <?= Support::e($conta) ?>. <?= $acceso ? 'Accesa.' : 'Spento di serie: finché è spento non si vede niente, nemmeno il titolo.' ?></span>
+          <?php if ($acceso && $quanti === 0): ?><span class="small"><span class="pillola pillola--ocra">Acceso ma <?= $chiave === 'guide' ? 'nessuna scheda approvata' : 'nessun giudizio approvato' ?>: la sezione resta nascosta</span></span><?php endif; ?>
+        </div>
+        <button class="int-home<?= $acceso ? ' int-home--on' : '' ?>" role="switch" aria-checked="<?= $acceso ? 'true' : 'false' ?>" aria-label="<?= Support::e($titolo) ?>"><span class="int-home__pallina"></span><span class="int-home__testo"><?= $acceso ? 'Acceso' : 'Spento' ?></span></button>
+      </form>
+    <?php endforeach; ?>
+    <?php $anteprima = array_values(array_filter(array_map(fn($x) => Vetrina::perScheda($x['s'], $x['p']), array_slice(Vetrina::visibili(), 0, Vetrina::postiSchede())))); if ($anteprima): ?>
+      <details class="sezioni-vetrina__anteprima"><summary class="small">Anteprima di «Le guide dei nostri host» com'è adesso (<?= count($anteprima) ?> in home)</summary>
+        <div class="dicono__schede dicono__schede--quattro" style="margin-top:10px"><?php foreach ($anteprima as $v): ?><div class="dicono__scheda"><?php include dirname(__DIR__) . '/pub/_vetrina_scheda.php'; ?></div><?php endforeach; ?></div></details>
+    <?php endif; ?>
+    <p class="small muted" style="margin:10px 0 0">Sotto, le due tabelle di approvazione: si può approvare e ordinare anche a interruttore spento, così all'accensione è già tutto pronto. Senza adesione al programma non si pubblica nulla.</p>
+  </section>
+
   <nav class="row" style="gap:6px;flex-wrap:wrap" aria-label="Schede">
     <?php foreach (Vetrina::SCHEDE as $k => $et): ?><a class="btn btn--sm <?= $scheda === $k ? '' : 'btn--ghost' ?>" href="<?= b() ?>/admin/giudizi<?= $k === 'vetrina' ? '' : '?scheda=' . $k ?>" <?= $scheda === $k ? 'aria-current="page"' : '' ?>><?= $et ?> · <?= (int) ($conta[$k] ?? 0) ?></a><?php endforeach; ?>
   </nav>
@@ -124,7 +148,7 @@ $int = function (string $azione, int $id, bool $on, string $etichetta, bool $spe
     «Segnalato»: 1–2 stelle o parole da controllare, solo per attirare l'attenzione: lo sconto resta. Ogni azione finisce nel registro con il codice cliente.</p>
 
   <?php /* Gli interruttori del programma (le stesse voci di Impostazioni → Giudizi con sconto). */ $qG = Giudizi::quando(); ?>
-  <details class="panel" id="programma"><summary class="legend" style="cursor:pointer">Il programma: sconto, percentuale, sezioni in home</summary>
+  <details class="panel" id="programma"><summary class="legend" style="cursor:pointer">Il programma: sconto, percentuale, parole da controllare</summary>
   <form method="post" action="<?= b() ?>/admin/giudizi/impostazioni" class="giudizi-programma" style="margin-top:12px"><?= Csrf::field() ?>
     <label class="scelta scelta--mini"><input type="checkbox" name="giudizi__sconto_attivo" value="1"<?= Giudizi::attivo() ? ' checked' : '' ?>><span>Programma aperto ai nuovi clienti (<?= $pct ?>%) <b><?= Giudizi::attivo() ? 'attivo' : 'spento' ?></b></span></label>
     <div class="field giudizi-programma__campo" style="margin:0"><label for="gp-percentuale">Percentuale</label><input id="gp-percentuale" name="giudizi__percentuale" type="text" inputmode="numeric" value="<?= $pct ?>" style="width:5em"></div>
@@ -133,7 +157,6 @@ $int = function (string $azione, int $id, bool $on, string $etichetta, bool $spe
         <option value="adesione"<?= $qG === 'adesione' ? ' selected' : '' ?>>all'adesione (anche se il giudizio arriva dopo)</option>
         <option value="giudizio"<?= $qG === 'giudizio' ? ' selected' : '' ?>>solo dopo il giudizio</option>
       </select></div>
-    <label class="scelta scelta--mini"><input type="checkbox" name="giudizi__home" value="1"<?= Giudizi::homeAccesa() ? ' checked' : '' ?>><span>Sezioni «Le guide dei nostri host» e «Cosa dicono di noi» <b><?= Giudizi::homeAccesa() ? 'visibili' : 'spente' ?></b></span></label>
     <div class="field giudizi-programma__campo" style="margin:0;flex-basis:100%"><label for="gp-parole">Parole da controllare (separate da virgole)</label><input id="gp-parole" name="giudizi__parole" type="text" value="<?= Support::e((string) ((MHW\Config::get('giudizi') ?? [])['parole'] ?? '')) ?>"></div>
     <div class="field giudizi-programma__campo" style="margin:0"><label for="gp-password">La tua password, per confermare</label><input id="gp-password" name="password" type="password" autocomplete="current-password" required style="width:12em"></div>
     <button class="btn btn--sm">Salva</button>

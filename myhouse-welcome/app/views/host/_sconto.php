@@ -22,7 +22,8 @@ $togli = fn() => '<form method="post" action="' . b() . '/sconto/togli" style="m
 $omaggioS = MHW\Omaggi::daUsare($acc);   // 9D · il codice omaggio prenotato: mesi gratis e primo addebito ?>
 <?php if ($omaggioS && !$soloCampo): ?>
   <div class="sconto-ok" role="status">
-    <p style="margin:0"><b>Codice omaggio <?= Support::e($omaggioS['codice']) ?></b>: <?= (int) $omaggioS['mesi'] ?> mesi gratis, primo addebito il <?= Support::e(Support::date(MHW\Omaggi::fineIso((int) $omaggioS['mesi']))) ?>. Un codice omaggio e un invito non si sommano: vale l'omaggio.</p>
+    <p style="margin:0"><b>Codice omaggio <?= Support::e($omaggioS['codice']) ?></b>: <?= (int) $omaggioS['mesi'] ?> mesi gratis, primo addebito il <?= Support::e(Support::date(MHW\Omaggi::fineIso((int) $omaggioS['mesi']))) ?> a prezzo pieno. Un codice omaggio e un invito non si sommano: vale l'omaggio.
+      <?= (MHW\Inviti::disponibili() || MHW\Giudizi::attivo()) ? Support::e("Dal primo rinnovo dopo l'attivazione hai tutti gli sconti, fino al " . MHW\Sconti::massimoRinnovo()['totale'] . '%.') : '' ?></p>
   </div>
 <?php elseif ($omaggioS): ?>
   <p class="small" style="margin:0">Codice omaggio <b><?= Support::e($omaggioS['codice']) ?></b> applicato: <?= (int) $omaggioS['mesi'] ?> mesi gratis.</p>

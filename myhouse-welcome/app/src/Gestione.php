@@ -86,21 +86,19 @@ final class Gestione
         return $righe;
     }
 
-    /** [quanto si incassa al rinnovo, percentuale di sconto inviti]: il piano programmato (6H) e lo sconto inviti contano. */
+    /**
+     * [quanto si incassa al prossimo addebito, percentuale di sconto]: il piano programmato (6H) e lo sconto del rinnovo
+     * (9N: inviti + giudizio sommati, una volta sul prezzo pieno, Sconti::rinnovo e Sconti::netto). Nei mesi di un omaggio
+     * il prossimo addebito è il primo, pieno.
+     */
     public static function importoRinnovo(array $s): array
     {
         $pv = Plans::version((int) (!empty($s['next_package_version_id']) ? $s['next_package_version_id'] : $s['package_version_id']));
         if (!$pv) return [0, 0];
         $q = max(1, (int) (!empty($s['next_package_version_id']) ? ($s['next_quantity'] ?? 1) : ($s['quantity'] ?? 1)));
         $prezzo = Plans::price($pv, $q);
-        $sconto = Inviti::disponibili() ? Inviti::percento((int) $s['account_id']) : 0;
-        // 9B · Lo sconto del giudizio promesso sul prossimo addebito (coupon «una volta» sull'abbonamento) si somma a quello degli inviti.
-        if (Giudizi::disponibili()) {
-            $g = Db::one('SELECT giudizio_adesione, giudizio_sconto_stato FROM accounts WHERE id = ?', [(int) $s['account_id']]) ?: [];
-            $promessoOmaggio = ($g['giudizio_sconto_stato'] ?? '') === 'promesso' && ($g['giudizio_adesione'] ?? '') === 'pagamento' && !empty($s['omaggio_fino']) && Giudizi::quando() === 'adesione';
-            if (($g['giudizio_sconto_stato'] ?? '') === 'da_applicare_rinnovo' || $promessoOmaggio) $sconto = min(100, $sconto + Giudizi::percentuale());
-        }
-        return [(int) round($prezzo * (100 - $sconto) / 100), $sconto];
+        $sconto = Sconti::rinnovo((int) $s['account_id'], $s)['stripe'];
+        return [Sconti::netto($prezzo, $sconto), $sconto];
     }
 
     /** L'ultimo avviso di rinnovo o di scadenza mandato a un cliente: quando, di che tipo, se a mano. */

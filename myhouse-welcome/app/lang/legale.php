@@ -128,22 +128,20 @@ Se sei un consumatore, per ogni controversia è competente il giudice del luogo 
 
 In tutti gli altri casi è competente in via esclusiva il **foro di Perugia**.
 T,
-'termini.17.titolo' => 'Giudizio con sconto',
+'termini.17.titolo' => 'Giudizio con sconto, sconto sul rinnovo e codice omaggio',
 'termini.17.testo' => <<<'T'
-Con un'unica casella, al pagamento o dal pannello (Impostazioni → Giudizio con sconto), aderisci al programma «Giudizio con sconto» e hai il {giudizio}% di sconto: sul primo anno se aderisci al pagamento, sul rinnovo successivo se aderisci dopo. Si somma allo sconto degli inviti (punto 12); non si somma ai codici sconto (vale il più alto); non è disponibile con i codici omaggio.
+Con un'unica casella, al pagamento o dal pannello (Impostazioni → Giudizio con sconto), aderisci al programma «Giudizio con sconto» e hai il {giudizio}% di sconto: sul primo anno se aderisci al pagamento, sul rinnovo successivo se aderisci dopo. **Se non aderisci, non pubblichiamo nulla di te: né la scheda né un giudizio.**
 
-- Il programma comprende **due pubblicazioni, decise da MyHouse Welcome caso per caso**: la tua scheda tra «Le guide dei nostri host» (da quando pubblichi la guida, anche senza foto, con nome della struttura, copertina se c'è, logo, tuo nome senza cognome, città) e il tuo giudizio in «Cosa dicono di noi» (voto e commento). Possiamo pubblicarne una sola, tutte e due o nessuna, e toglierle quando vogliamo: lo sconto resta comunque. Non mostriamo link alla guida, la tua foto, né dati dei tuoi ospiti. Scegli tu se mostrare copertina e logo.
-- Ti impegni a lasciare, dopo 30 giorni dalla pubblicazione, un voto da 1 a 5 con un commento. **Lo sconto non dipende dal voto**: vale anche con una stella. La pubblicazione in home resta a nostra discrezione; possiamo rispondere pubblicamente al giudizio.
+- Il programma comprende **due pubblicazioni, decise da MyHouse Welcome caso per caso**, solo per chi ha aderito: la tua scheda tra «Le guide dei nostri host» (da quando pubblichi la guida, anche senza foto, con nome della struttura, copertina se c'è, logo, tuo nome senza cognome, città) e il tuo giudizio in «Cosa dicono di noi» (voto e commento). Possiamo pubblicarne una sola, tutte e due o nessuna, e toglierle quando vogliamo: lo sconto resta comunque. Non mostriamo link alla guida, la tua foto, né dati dei tuoi ospiti. Scegli tu se mostrare copertina e logo.
+- Ti impegni a lasciare, dopo 30 giorni dalla pubblicazione, un voto da 1 a 5 con un commento. **Lo sconto non dipende dal voto**: vale anche con una stella. Possiamo rispondere pubblicamente al giudizio.
 - **Puoi ritirarti quando vuoi**: scheda e giudizio spariscono subito. Lo sconto già avuto resta; quello promesso sul rinnovo decade se ti ritiri prima del rinnovo. La scheda sparisce da sola se la guida è archiviata, l'abbonamento scade o l'account viene chiuso.
 - Lo sconto del programma si ha **una sola volta** per account; chi si ritira non può aderire di nuovo.
 - Possiamo chiudere il programma ai nuovi clienti: gli sconti promessi restano.
 - Sono esclusi gli account di prova e di dimostrazione.
-T,
-'termini.18.titolo' => 'Codice omaggio',
-'termini.18.testo' => <<<'T'
-Con un codice omaggio i primi mesi indicati sono gratuiti. Registri comunque un metodo di pagamento e, al termine dei mesi gratuiti, l'abbonamento parte automaticamente al prezzo del piano scelto, con gli stessi avvisi per email e nel pannello 30 e 7 giorni prima dell'addebito. Disattivando il rinnovo prima della fine del periodo gratuito non ti viene addebitato nulla: la guida resta online fino a quella data, poi non è più visibile agli ospiti.
 
-Il codice vale per una sola persona, solo per il primo abbonamento, entro la data indicata, e non si somma allo sconto «Invita un amico» (punto 12): se l'account è arrivato da un invito e usa un codice omaggio, vale l'omaggio e l'invito non viene conteggiato. Lo sconto del giudizio (punto 17) resta valido e si applica al primo addebito. Possiamo annullare un codice non ancora usato in qualsiasi momento.
+**Sconto sul rinnovo, una sola percentuale.** Lo sconto del giudizio e quelli degli inviti (punto 12) si sommano e si applicano **una sola volta sul prezzo di listino** del rinnovo: per esempio 10 inviti (50%) e il giudizio (5%) fanno il 55%. Non si sommano ai codici sconto, che valgono solo sul primo anno: tra codice e sconti di sistema vale il più alto.
+
+**Codice omaggio.** Con un codice omaggio i primi mesi indicati sono gratuiti. Registri comunque un metodo di pagamento e, al termine dei mesi gratuiti, l'abbonamento parte automaticamente al prezzo pieno del piano scelto, con gli stessi avvisi per email e nel pannello 30 e 7 giorni prima dell'addebito. Disattivando il rinnovo prima della fine del periodo gratuito non ti viene addebitato nulla: la guida resta online fino a quella data, poi non è più visibile agli ospiti. Il codice vale per una sola persona, solo per il primo abbonamento, entro la data indicata. Durante i mesi gratuiti non vale lo sconto di un invito ricevuto: se l'account è arrivato da un invito e usa un codice omaggio, vale l'omaggio e l'invito non viene conteggiato. Anche nei mesi gratuiti puoi aderire al programma e la tua scheda può essere pubblicata. **Dopo il primo pagamento hai tutte le agevolazioni**: inviti ({passo}% per ogni amico, fino al {max}%) e giudizio ({giudizio}%), fino al {totale}%, a partire dal primo rinnovo. Possiamo annullare un codice non ancora usato in qualsiasi momento.
 T,
 'termini.16.titolo' => 'Contatti e titolare',
 'termini.16.testo' => <<<'T'
@@ -215,10 +213,10 @@ T,
 'privacy.t6.titolo' => 'Giudizio con sconto e vetrina, pareri dei clienti',
 'privacy.t6.testo' => <<<'T'
 | Dati | Per il programma «Giudizio con sconto e vetrina»: nome della struttura, copertina e logo (se ci sono e scegli di mostrarli), il tuo nome senza cognome, la città, il voto e il commento, la data di pubblicazione della guida. **Nessuna foto della persona.** La risposta alla domanda «Cosa ti ha fermato?», se rispondi.
-| Finalità | Mostrare, se decidiamo di pubblicarle, la tua scheda tra «Le guide dei nostri host» (da quando pubblichi la guida) e il tuo giudizio in «Cosa dicono di noi» (con lo sconto, qualunque sia il voto e anche se non li pubblichiamo); capire cosa migliorare.
+| Finalità | Solo se aderisci al programma (senza adesione non pubblichiamo nulla di te): mostrare, se decidiamo di pubblicarle, la tua scheda tra «Le guide dei nostri host» (da quando pubblichi la guida) e il tuo giudizio in «Cosa dicono di noi» (con lo sconto, qualunque sia il voto e anche se non li pubblichiamo); capire cosa migliorare.
 | Base giuridica | Per la scheda e il giudizio, il contratto (art. 6.1.b): l'adesione al programma, con l'unica casella che accetti al pagamento o dal pannello (Termini, «Giudizio con sconto»). Puoi ritirarti quando vuoi da Impostazioni → Giudizio con sconto: scheda e giudizio spariscono subito dal sito. Per i pareri, il nostro legittimo interesse (art. 6.1.f).
 | Conservazione | La scheda e il giudizio fino al ritiro o alla chiusura dell'account; i pareri come l'account.
-| Destinatari | I visitatori del sito, solo per le schede e i giudizi pubblicati (home e pagina «Tutte le guide»). Nessun link alla tua guida, nessun dato dei tuoi ospiti.
+| Destinatari | I visitatori del sito, solo per le schede e i giudizi pubblicati di chi ha aderito (home e pagina «Tutte le guide»). Nessun link alla tua guida, nessun dato dei tuoi ospiti.
 T,
 'privacy.t7.titolo' => 'Statistiche di lettura delle guide',
 'privacy.t7.testo' => <<<'T'
@@ -389,9 +387,10 @@ T,
 
 // ================================================================ AGGIORNAMENTI (la finestra nel pannello e l'email)
 'legale.novita' => <<<'T'
-Il titolare e fornitore del servizio è City Up S.r.l. (Perugia).
-Nuove regole su pagamento, recesso (con il modulo per i consumatori), responsabilità e foro, e l'Accordo sul trattamento dei dati per i dati che metti nella guida.
-L'informativa privacy indica per ogni dato perché lo trattiamo, per quanto tempo e con quali fornitori.
+«Giudizio con sconto»: la scheda in «Le guide dei nostri host» e il giudizio in «Cosa dicono di noi» sono due pubblicazioni decise da noi, solo per chi aderisce; se non aderisci non pubblichiamo nulla di te, e puoi ritirarti quando vuoi.
+Sconto sul rinnovo, una sola percentuale: inviti e giudizio si sommano e si applicano una volta sul prezzo di listino (fino al 55%).
+Codice omaggio: i mesi gratuiti, poi il primo pagamento a prezzo pieno; da lì inviti e giudizio valgono dal primo rinnovo, con gli avvisi 30 e 7 giorni prima.
+Traduzioni suggerite comprese in Plus e Portfolio entro un limite annuale di caratteri.
 T,
 ],
 
@@ -510,22 +509,20 @@ If you are a consumer, the court of your place of residence or domicile has juri
 
 In all other cases the **courts of Perugia** (Italy) have exclusive jurisdiction.
 T,
-'termini.17.titolo' => 'Review with a discount',
+'termini.17.titolo' => 'Review with a discount, renewal discount and gift code',
 'termini.17.testo' => <<<'T'
-With a single checkbox, at checkout or from the dashboard (Settings → Review with a discount), you join the "Review with a discount" programme and get a {giudizio}% discount: on the first year if you join at checkout, on the following renewal if you join later. It adds up with the invitation discount (section 12); it does not add up with discount codes (the higher one applies); it is not available with gift codes.
+With a single checkbox, at checkout or from the dashboard (Settings → Review with a discount), you join the "Review with a discount" programme and get a {giudizio}% discount: on the first year if you join at checkout, on the following renewal if you join later. **If you do not join, we publish nothing about you: neither the card nor a review.**
 
-- The programme includes **two publications, decided by MyHouse Welcome case by case**: your card among "Our hosts' guides" (from the moment you publish the guide, even without photos, with property name, cover if there is one, logo, your first name without surname, town) and your review in "What they say about us" (rating and comment). We may publish just one, both or neither, and remove them whenever we like: the discount stays anyway. We do not show links to the guide, your photo or any data about your guests. You choose whether to show the cover and the logo.
-- You undertake to leave, 30 days after publishing, a rating from 1 to 5 with a comment. **The discount does not depend on the rating**: it applies even with one star. Publication on the home page remains at our discretion; we may reply publicly to the review.
+- The programme includes **two publications, decided by MyHouse Welcome case by case**, only for those who joined: your card among "Our hosts' guides" (from the moment you publish the guide, even without photos, with property name, cover if there is one, logo, your first name without surname, town) and your review in "What they say about us" (rating and comment). We may publish just one, both or neither, and remove them whenever we like: the discount stays anyway. We do not show links to the guide, your photo or any data about your guests. You choose whether to show the cover and the logo.
+- You undertake to leave, 30 days after publishing, a rating from 1 to 5 with a comment. **The discount does not depend on the rating**: it applies even with one star. We may reply publicly to the review.
 - **You can leave whenever you like**: the card and the review disappear immediately. A discount already received stays yours; the one promised on the renewal lapses if you leave before the renewal. The card disappears by itself if the guide is archived, the subscription expires or the account is closed.
 - The programme discount is granted **once only** per account; whoever leaves cannot join again.
 - We may close the programme to new customers: promised discounts remain valid.
 - Trial and demo accounts are excluded.
-T,
-'termini.18.titolo' => 'Gift code',
-'termini.18.testo' => <<<'T'
-With a gift code the first months indicated are free. You still register a payment method and, at the end of the free months, the subscription starts automatically at the price of the chosen plan, with the same notices by email and in the dashboard 30 and 7 days before the charge. If you turn off renewal before the end of the free period nothing is charged: the guide stays online until that date, then it is no longer visible to guests.
 
-The code is valid for one person only, for the first subscription only, by the date indicated, and cannot be combined with the "Invite a friend" discount (section 12): if the account came from an invitation and uses a gift code, the gift code applies and the invitation is not counted. The review discount (section 17) remains valid and applies to the first charge. We may cancel an unused code at any time.
+**Renewal discount, a single percentage.** The review discount and the invitation discounts (section 12) add up and are applied **once on the list price** of the renewal: for example 10 invitations (50%) and the review (5%) make 55%. They do not add up with discount codes, which apply to the first year only: between a code and the system discounts, the higher one applies.
+
+**Gift code.** With a gift code the first months indicated are free. You still register a payment method and, at the end of the free months, the subscription starts automatically at the full price of the chosen plan, with the same notices by email and in the dashboard 30 and 7 days before the charge. If you turn off renewal before the end of the free period nothing is charged: the guide stays online until that date, then it is no longer visible to guests. The code is valid for one person only, for the first subscription only, by the date indicated. During the free months the discount of an invitation you received does not apply: if the account came from an invitation and uses a gift code, the gift code applies and the invitation is not counted. During the free months you can also join the programme and your card may be published. **After the first payment you get all the benefits**: invitations ({passo}% per friend, up to {max}%) and review ({giudizio}%), up to {totale}%, starting from the first renewal. We may cancel an unused code at any time.
 T,
 'termini.16.titolo' => 'Contact details and provider',
 'termini.16.testo' => <<<'T'
@@ -597,10 +594,10 @@ T,
 'privacy.t6.titolo' => 'Review with a discount and showcase, customer feedback',
 'privacy.t6.testo' => <<<'T'
 | Data | For the "Review with a discount and showcase" programme: property name, cover and logo (if there are any and you choose to show them), your first name (no surname), the town, the rating and the comment, the date the guide was published. **No photo of the person.** The answer to "What stopped you?", if you answer.
-| Purpose | Showing, if we decide to publish them, your card among "Our hosts' guides" (from the moment you publish the guide) and your review in "What they say about us" (with the discount, whatever the rating and even if we do not publish them); understanding what to improve.
+| Purpose | Only if you join the programme (without joining we publish nothing about you): showing, if we decide to publish them, your card among "Our hosts' guides" (from the moment you publish the guide) and your review in "What they say about us" (with the discount, whatever the rating and even if we do not publish them); understanding what to improve.
 | Legal basis | For the card and the review, the contract (Art. 6.1.b): joining the programme, with the single checkbox you accept at checkout or from the dashboard (Terms, "Review with a discount"). You can leave whenever you like from Settings → Review with a discount: the card and the review disappear from the site immediately. For feedback, our legitimate interest (Art. 6.1.f).
 | Retention | The card and the review until you leave or close your account; feedback for as long as the account.
-| Recipients | Website visitors, only for the cards and reviews we publish (home page and "All guides" page). No link to your guide, no data about your guests.
+| Recipients | Website visitors, only for the published cards and reviews of those who joined (home page and "All guides" page). No link to your guide, no data about your guests.
 T,
 'privacy.t7.titolo' => 'Guide reading statistics',
 'privacy.t7.testo' => <<<'T'
@@ -775,6 +772,14 @@ T,
 'dpa.12.titolo' => 'Contact details',
 'dpa.12.testo' => <<<'T'
 Processor: {titolare_completo}, {sede}, Italy. Email {email}.
+T,
+
+// ================================================================ UPDATES (the dashboard window and the email)
+'legale.novita' => <<<'T'
+"Review with a discount": the card in "Our hosts' guides" and the review in "What they say about us" are two publications we decide on, only for those who join; if you do not join we publish nothing about you, and you can leave whenever you like.
+Renewal discount, a single percentage: invitations and the review add up and are applied once on the list price (up to 55%).
+Gift code: the free months, then the first payment at full price; from then on invitations and the review apply from the first renewal, with notices 30 and 7 days before.
+Suggested translations included in Plus and Portfolio within a yearly character limit.
 T,
 ],
 ];

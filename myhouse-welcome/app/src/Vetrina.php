@@ -36,6 +36,26 @@ final class Vetrina
     }
 
     /** I posti in home: schede (di serie 4) e giudizi (di serie 6), da Impostazioni → Sito. */
+    /** 9N · La sezione «Le guide dei nostri host» (home e /guide-dei-nostri-host) è accesa dall'admin? Spenta di serie. */
+    public static function sezioneGuide(): bool { return self::disponibili() && !empty((Config::get('vetrina') ?? [])['sezione_attiva']); }
+
+    /** 9N · La sezione «Cosa dicono di noi» è accesa dall'admin? Spenta di serie. */
+    public static function sezioneDicono(): bool { return self::disponibili() && !empty((Config::get('vetrina') ?? [])['dicono_attiva']); }
+
+    /** 9N · La sezione delle guide si vede davvero: accesa e con almeno una scheda approvata (mai un titolo senza contenuto). */
+    public static function guideVisibili(): bool { return self::sezioneGuide() && (bool) self::visibili(); }
+
+    /**
+     * 9N · Chi ha aderito al programma e non si è ritirato: l'unico che può comparire (scheda o giudizio). Chi non aderisce
+     * non viene pubblicato in nessun modo, nemmeno a nostra discrezione.
+     */
+    public static function aderente(array $s): bool
+    {
+        if (!empty($s['ritirato_at'])) return false;
+        $acc = Db::one('SELECT * FROM accounts WHERE id = ?', [(int) $s['account_id']]);
+        return $acc && !empty($acc['giudizio_adesione']) && !Giudizi::escluso($acc);
+    }
+
     public static function postiSchede(): int { return max(1, min(24, (int) ((Config::get('giudizi') ?? [])['posti_schede'] ?? 4) ?: 4)); }
 
     public static function postiGiudizi(): int { return max(1, min(12, (int) ((Config::get('giudizi') ?? [])['posti_giudizi'] ?? 6) ?: 6)); }
@@ -218,10 +238,11 @@ final class Vetrina
     {
         if (!self::disponibili()) return [];
         $out = [];
-        foreach (Db::all('SELECT * FROM vetrina_schede WHERE scheda_home = 1 AND ritirato_at IS NULL AND scheda_ritirata_at IS NULL
-                          ORDER BY CASE WHEN scheda_ordine > 0 THEN 0 ELSE 1 END, scheda_ordine, scheda_approvata_at, id') as $s) {
+        foreach (Db::all('SELECT v.* FROM vetrina_schede v JOIN accounts a ON a.id = v.account_id
+                          WHERE v.scheda_home = 1 AND v.ritirato_at IS NULL AND v.scheda_ritirata_at IS NULL AND a.giudizio_adesione IS NOT NULL
+                          ORDER BY CASE WHEN v.scheda_ordine > 0 THEN 0 ELSE 1 END, v.scheda_ordine, v.scheda_approvata_at, v.id') as $s) {
             $p = self::struttura($s);
-            if (!$p || self::motivoSospesa($s, $p) !== '' || self::daRiapprovare($s, $p)) continue;
+            if (!$p || self::motivoSospesa($s, $p) !== '' || self::daRiapprovare($s, $p) || !self::aderente($s)) continue;
             $out[] = ['s' => $s, 'p' => $p];
         }
         return $out;
@@ -237,17 +258,17 @@ final class Vetrina
     /** «Le guide dei nostri host» in home: le prime postiSchede() approvate. */
     public static function perHome(?int $max = null): array
     {
-        if (!Giudizi::homeAccesa()) return [];
+        if (!self::sezioneGuide()) return [];
         return array_values(array_filter(array_map(fn($x) => self::perScheda($x['s'], $x['p']), array_slice(self::visibili(), 0, $max ?? self::postiSchede()))));
     }
 
     /** Quante schede approvate e visibili (in home e in «Tutte le guide»). */
-    public static function quanteApprovate(): int { return Giudizi::homeAccesa() ? count(self::visibili()) : 0; }
+    public static function quanteApprovate(): int { return self::sezioneGuide() ? count(self::visibili()) : 0; }
 
     /** La pagina «Tutte le guide» (/guide-dei-nostri-host): PER_PAGINA schede per pagina. @return array{schede:list<array>,pagina:int,pagine:int,totale:int} */
     public static function tutte(int $pagina = 1): array
     {
-        $tutte = Giudizi::homeAccesa() ? self::visibili() : [];
+        $tutte = self::sezioneGuide() ? self::visibili() : [];
         $pagine = max(1, (int) ceil(count($tutte) / self::PER_PAGINA));
         $pagina = max(1, min($pagine, $pagina));
         $parte = array_slice($tutte, ($pagina - 1) * self::PER_PAGINA, self::PER_PAGINA);
@@ -259,11 +280,12 @@ final class Vetrina
     {
         if (!self::disponibili()) return [];
         $out = [];
-        foreach (Db::all('SELECT * FROM vetrina_schede WHERE giudizio_home = 1 AND ritirato_at IS NULL
-                          ORDER BY CASE WHEN giudizio_ordine > 0 THEN 0 ELSE 1 END, giudizio_ordine, giudizio_approvato_at, id') as $s) {
+        foreach (Db::all('SELECT v.* FROM vetrina_schede v JOIN accounts a ON a.id = v.account_id
+                          WHERE v.giudizio_home = 1 AND v.ritirato_at IS NULL AND a.giudizio_adesione IS NOT NULL
+                          ORDER BY CASE WHEN v.giudizio_ordine > 0 THEN 0 ELSE 1 END, v.giudizio_ordine, v.giudizio_approvato_at, v.id') as $s) {
             $p = self::struttura($s);
             $g = self::giudizio((int) $s['account_id']);
-            if (!$p || !$g || !empty($g['withdrawn_at']) || self::motivoSospesa($s, $p) !== '') continue;
+            if (!$p || !$g || !empty($g['withdrawn_at']) || self::motivoSospesa($s, $p) !== '' || !self::aderente($s)) continue;
             $out[] = ['s' => $s, 'p' => $p, 'g' => $g];
         }
         return $out;
@@ -272,7 +294,7 @@ final class Vetrina
     /** «Cosa dicono di noi» in home: i giudizi accesi, al massimo postiGiudizi(). */
     public static function giudiziHome(): array
     {
-        if (!Giudizi::homeAccesa()) return [];
+        if (!self::sezioneDicono()) return [];
         return array_values(array_filter(array_map(fn($x) => self::perScheda($x['s'], $x['p'], $x['g'], true), array_slice(self::giudiziAccesi(), 0, self::postiGiudizi()))));
     }
 
@@ -301,6 +323,7 @@ final class Vetrina
         $s = self::riga($id);
         if (!$s) return 'Scheda non trovata.';
         if (!empty($s['ritirato_at'])) return 'L\'host si è ritirato dal programma: la scheda non può tornare.';
+        if (!self::aderente($s)) return 'L\'host non ha aderito al programma: senza adesione non pubblichiamo nulla.';
         $p = self::struttura($s);
         if (($m = self::motivoSospesa($s, $p)) !== '') return 'Non si può approvare: ' . self::SOSPESA[$m] . '.';
         $imm = json_decode((string) ($s['immagini'] ?? ''), true) ?: ['copertina' => 1, 'logo' => 1];
@@ -339,6 +362,7 @@ final class Vetrina
         if (!$s || !$g || !empty($g['withdrawn_at'])) return 'Non c\'è un giudizio da pubblicare.';
         if ($si) {
             if (!empty($s['ritirato_at'])) return 'L\'host si è ritirato dal programma.';
+            if (!self::aderente($s)) return 'L\'host non ha aderito al programma: senza adesione non pubblichiamo nulla.';
             if (($m = self::motivoSospesa($s)) !== '') return 'Non si può pubblicare: ' . self::SOSPESA[$m] . '.';
             if (!(int) $s['giudizio_home'] && count(self::giudiziAccesi()) >= self::postiGiudizi()) return 'In home ci sono già ' . self::postiGiudizi() . ' giudizi: spegnine uno prima.';
             Db::update('vetrina_schede', ['giudizio_home' => 1, 'giudizio_approvato_at' => Support::now(), 'giudizio_ritirato_at' => null, 'giudizio_motivo' => null,

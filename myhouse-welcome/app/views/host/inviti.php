@@ -8,12 +8,12 @@
 use function MHW\b;
 use MHW\{Support, Inviti, Icon};
 $title = 'Invita un amico';
-$traguardo = Inviti::MASSIMO === 50 ? 'metà prezzo' : 'il ' . Inviti::MASSIMO . '%'; ?>
+$traguardo = 'al ' . Inviti::MASSIMO . '% degli inviti'; /* 9N: non «metà prezzo», accanto al 55% confondeva */ ?>
 <div class="stack stack--lg" style="max-width:980px">
   <div class="stack stack--sm">
     <h1>Invita un amico.</h1>
     <p class="lead" style="max-width:680px">Conosci un altro host? Mandagli il tuo link. Lui ha il <?= Inviti::AMICO ?>% di sconto sul primo anno,
-      tu il <?= Inviti::PASSO ?>% in meno sul prossimo rinnovo per ogni amico che pubblica, fino a <?= $traguardo ?>.</p>
+      tu il <?= Inviti::PASSO ?>% in meno sul prossimo rinnovo per ogni amico che pubblica, fino <?= $traguardo ?>.</p>
   </div>
 
   <section class="stack" style="gap:12px" aria-labelledby="inviti-come">

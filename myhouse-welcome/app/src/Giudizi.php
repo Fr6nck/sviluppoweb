@@ -33,10 +33,10 @@ final class Giudizi
         return self::disponibili() && !empty((Config::get('giudizi') ?? [])['sconto_attivo']);
     }
 
-    /** La sezione «Cosa dicono di noi» in home è accesa? */
+    /** 9N · Almeno una delle due sezioni pubbliche è accesa dall'admin (Vetrina::sezioneGuide, Vetrina::sezioneDicono). */
     public static function homeAccesa(): bool
     {
-        return self::disponibili() && !empty((Config::get('giudizi') ?? [])['home']);
+        return Vetrina::sezioneGuide() || Vetrina::sezioneDicono();
     }
 
     /**
@@ -94,6 +94,16 @@ final class Giudizi
         $email = (string) Db::val('SELECT email FROM users WHERE id = ?', [(int) $acc['user_id']], '');
         if (str_ends_with($email, '@' . Demo::DOMINIO)) return true;
         return (bool) Db::val('SELECT id FROM properties WHERE account_id = ? AND is_demo > 0', [(int) $acc['id']]);
+    }
+
+    /** 9N · Perché un account è fuori dal programma, in parole semplici (pagina /giudizio). '' se non è escluso. */
+    public static function motivoEscluso(array $acc): string
+    {
+        if (!empty($acc['is_test'])) return 'è un account di prova del nostro staff';
+        $email = (string) Db::val('SELECT email FROM users WHERE id = ?', [(int) $acc['user_id']], '');
+        if (str_ends_with($email, '@' . Demo::DOMINIO)) return 'è un account di esempio';
+        if (Db::val('SELECT id FROM properties WHERE account_id = ? AND is_demo > 0', [(int) $acc['id']])) return 'gestisce la guida di esempio del sito (la vetrina)';
+        return '';
     }
 
     /** Può ancora aderire: interruttore acceso, mai aderito, non escluso. */
@@ -166,7 +176,7 @@ final class Giudizi
         try { self::aggiungiCoupon((int) $acc['id']); } catch (\Throwable $e) { Log::exception($e, 'giudizi: coupon sul rinnovo'); }
     }
 
-    /** Il coupon Stripe «una volta» del giudizio, creato la prima volta. */
+    /** Il coupon Stripe «una volta» del giudizio da solo: 9N, solo per il primo anno (Sconti::perStripe); il rinnovo usa mhw-rinnovo-N. */
     public static function coupon(int $percento): string
     {
         if (!Stripe::enabled()) return '';
@@ -178,67 +188,41 @@ final class Giudizi
         return $id;
     }
 
-    /** Gli sconti di un abbonamento Stripe: [id dello sconto, id del coupon] per ognuno. */
-    private static function scontiDi(array $sub): array
-    {
-        $out = [];
-        foreach ((array) ($sub['discounts'] ?? []) as $d) {
-            if (!is_array($d)) { $out[] = [(string) $d, '']; continue; }
-            $c = $d['coupon'] ?? ($d['source']['coupon'] ?? '');
-            $out[] = [(string) ($d['id'] ?? ''), is_array($c) ? (string) ($c['id'] ?? '') : (string) $c];
-        }
-        return $out;
-    }
+    /** 9N · Lo sconto del giudizio sul rinnovo: un solo coupon con gli inviti, sommati sul prezzo pieno (Sconti::sincronizzaRinnovo). */
+    public static function aggiungiCoupon(int $accountId): bool { return Sconti::sincronizzaRinnovo($accountId); }
 
-    /** Aggiunge il coupon del giudizio all'abbonamento attivo, conservando gli altri sconti (per esempio quello degli inviti). */
-    public static function aggiungiCoupon(int $accountId): bool
-    {
-        if (!Stripe::enabled()) return false;
-        $s = Subscriptions::active($accountId);
-        if (!$s || $s['provider'] !== 'stripe' || (string) $s['provider_subscription_id'] === '') return false;
-        $sid = (string) $s['provider_subscription_id'];
-        $sub = Stripe::call('GET', 'subscriptions/' . rawurlencode($sid), ['expand' => ['discounts']]);
-        $p = []; $i = 0;
-        foreach (self::scontiDi($sub) as [$did, $cid]) {
-            if (str_starts_with($cid, self::COUPON)) return true;   // c'è già
-            if ($did !== '') $p['discounts[' . $i++ . '][discount]'] = $did;
-        }
-        $p['discounts[' . $i . '][coupon]'] = self::coupon(self::percentuale());
-        Stripe::call('POST', 'subscriptions/' . rawurlencode($sid), $p);
-        return true;
-    }
+    /** 9N · Ritiro o adesione decaduta: il coupon del rinnovo si ricalcola senza il giudizio. */
+    public static function togliCoupon(int $accountId): void { Sconti::sincronizzaRinnovo($accountId); }
 
-    /** Toglie il coupon del giudizio dall'abbonamento (ritiro prima del rinnovo), lasciando gli altri. */
-    public static function togliCoupon(int $accountId): void
-    {
-        if (!Stripe::enabled()) return;
-        $s = Subscriptions::active($accountId);
-        if (!$s || $s['provider'] !== 'stripe' || (string) $s['provider_subscription_id'] === '') return;
-        $sid = (string) $s['provider_subscription_id'];
-        $sub = Stripe::call('GET', 'subscriptions/' . rawurlencode($sid), ['expand' => ['discounts']]);
-        $p = []; $i = 0; $trovato = false;
-        foreach (self::scontiDi($sub) as [$did, $cid]) {
-            if (str_starts_with($cid, self::COUPON)) { $trovato = true; continue; }
-            if ($did !== '') $p['discounts[' . $i++ . '][discount]'] = $did;
-        }
-        if ($trovato) Stripe::call('POST', 'subscriptions/' . rawurlencode($sid), $p ?: ['discounts' => '']);
-    }
-
-    /** Da Billing::onInvoicePaid: un rinnovo scontato chiude lo sconto promesso sul rinnovo. Solo database. */
+    /**
+     * Da Billing::onInvoicePaid: un rinnovo con lo sconto del giudizio dentro (coupon e metadati, non il prefisso) chiude lo
+     * sconto promesso sul rinnovo. 9N · Il primo addebito dopo i mesi di un omaggio è pieno: l'adesione (al pagamento o dal
+     * pannello) passa sul primo rinnovo. Solo database; lo sconto su Stripe si riallinea dopo (Sconti::accoda).
+     */
     public static function fattura(array $sub, array $inv): void
     {
         if (!self::disponibili() || ($inv['billing_reason'] ?? '') !== 'subscription_cycle') return;
         $aid = (int) $sub['account_id'];
         $a = Db::one('SELECT giudizio_adesione, giudizio_sconto_stato FROM accounts WHERE id = ?', [$aid]) ?: [];
         $stato = (string) ($a['giudizio_sconto_stato'] ?? '');
-        // 9D · Il primo addebito dopo i mesi gratis: lo sconto promesso al pagamento (coupon sulla prima fattura) è applicato al primo anno.
-        $primoAddebito = $stato === 'promesso' && ($a['giudizio_adesione'] ?? '') === 'pagamento' && !empty($sub['omaggio_fino']);
-        if ($stato !== 'da_applicare_rinnovo' && !$primoAddebito) return;
-        $sconto = 0;
-        foreach ((array) ($inv['total_discount_amounts'] ?? []) as $d) $sconto += (int) ($d['amount'] ?? 0);
-        if ($sconto === 0 && isset($inv['subtotal'], $inv['total_excluding_tax'])) $sconto = max(0, (int) $inv['subtotal'] - (int) $inv['total_excluding_tax']);
-        if ($sconto <= 0) { if (!$primoAddebito) Log::error('Giudizi: rinnovo senza lo sconto atteso', ['account' => $aid, 'invoice' => (string) ($inv['id'] ?? '')]); return; }
-        Db::update('accounts', ['giudizio_sconto_stato' => $primoAddebito ? 'applicato_primo_anno' : 'applicato_rinnovo', 'giudizio_sconto_at' => Support::now()], 'id = :aid', ['aid' => $aid]);
+        if (empty($a['giudizio_adesione'])) return;
+        $comp = Sconti::rinnovoInFattura($inv, 0, $stato === 'da_applicare_rinnovo' ? self::percentuale() : 0);
+        $primoDopoOmaggio = ($sub['status'] ?? '') === 'trialing' && !empty($sub['omaggio_fino']);
+        if ($primoDopoOmaggio) {
+            // Un abbonamento di prima della 9N con il coupon del giudizio sulla prima fattura: applicato al primo anno.
+            if ($stato === 'promesso' && $comp['giudizio'] > 0) {
+                Db::update('accounts', ['giudizio_sconto_stato' => 'applicato_primo_anno', 'giudizio_sconto_at' => Support::now()], 'id = :aid', ['aid' => $aid]);
+                return;
+            }
+            $conGiudizio = self::quando() === 'adesione' || (($g = Testimonianze::diAccount($aid)) && $g['withdrawn_at'] === null);
+            if ($stato === 'promesso' && $conGiudizio) Db::update('accounts', ['giudizio_sconto_stato' => 'da_applicare_rinnovo'], 'id = :aid', ['aid' => $aid]);
+            Sconti::accoda($aid);
+            return;
+        }
+        if ($stato !== 'da_applicare_rinnovo') return;
+        if ($comp['giudizio'] <= 0) { Log::error('Giudizi: rinnovo senza lo sconto atteso', ['account' => $aid, 'invoice' => (string) ($inv['id'] ?? '')]); return; }
+        Db::update('accounts', ['giudizio_sconto_stato' => 'applicato_rinnovo', 'giudizio_sconto_at' => Support::now()], 'id = :aid', ['aid' => $aid]);
+        Sconti::accoda($aid);
     }
 
     /** Il cliente si ritira dal programma: lo sconto già avuto resta, quello promesso (sul rinnovo o sul primo pagamento) decade. */
@@ -262,13 +246,16 @@ final class Giudizi
     public static function scontoTesto(array $acc): string
     {
         $p = self::percentuale() . '%';
+        // 9N · Nei mesi di un codice omaggio il primo addebito è pieno: lo sconto vale dal primo rinnovo dopo quel pagamento.
+        $s = Subscriptions::active((int) $acc['id']);
+        $omaggio = $s && ($s['status'] ?? '') === 'trialing' && !empty($s['omaggio_fino']);
+        $dopoOmaggio = $p . ' dal primo rinnovo dopo il primo pagamento' . ($omaggio ? ' (il primo addebito è il ' . Support::date((string) $s['omaggio_fino']) . ')' : '');
         return match ((string) ($acc['giudizio_sconto_stato'] ?? 'nessuno')) {
-            'promesso' => ($acc['giudizio_adesione'] ?? '') === 'pagamento'
-                ? (self::quando() === 'giudizio' ? $p . ' dopo il giudizio: sul primo addebito o sul rinnovo'
-                   : ((($s = Subscriptions::active((int) $acc['id'])) && !empty($s['omaggio_fino'])) ? $p . ' sul primo addebito del ' . Support::date((string) $s['omaggio_fino']) : $p . ' sul primo anno, al pagamento'))
-                : $p . ' sul prossimo rinnovo, dopo il giudizio',
+            'promesso' => $omaggio ? $dopoOmaggio : (($acc['giudizio_adesione'] ?? '') === 'pagamento'
+                ? (self::quando() === 'giudizio' ? $p . ' dopo il giudizio: sul primo addebito o sul rinnovo' : $p . ' sul primo anno, al pagamento')
+                : $p . ' sul prossimo rinnovo, dopo il giudizio'),
             'applicato_primo_anno' => $p . ' già applicato al primo anno',
-            'da_applicare_rinnovo' => ($r = self::prossimoRinnovo((int) $acc['id'])) ? $p . ' sul rinnovo del ' . Support::date($r) : $p . ' sul prossimo pagamento',
+            'da_applicare_rinnovo' => $omaggio ? $dopoOmaggio : (($r = self::prossimoRinnovo((int) $acc['id'])) ? $p . ' sul rinnovo del ' . Support::date($r) : $p . ' sul prossimo pagamento'),
             'applicato_rinnovo' => $p . ' applicato al rinnovo' . (!empty($acc['giudizio_sconto_at']) ? ' del ' . Support::date($acc['giudizio_sconto_at']) : ''),
             default => '',
         };

@@ -217,7 +217,12 @@ final class Seo
         return $base . $percorso;
     }
 
-    public static function indicizza(string $pagina): bool { return self::get("p.$pagina.indicizza", '1') === '1'; }
+    public static function indicizza(string $pagina): bool
+    {
+        // 9N · «Tutte le guide» esiste solo con la sezione accesa e almeno una scheda: altrimenti fuori da sitemap, llms.txt e IndexNow.
+        if ($pagina === 'guide-host' && !Vetrina::guideVisibili()) return false;
+        return self::get("p.$pagina.indicizza", '1') === '1';
+    }
 
     public static function botAmmesso(string $bot): bool { return self::get("bot.$bot", '1') === '1'; }
 

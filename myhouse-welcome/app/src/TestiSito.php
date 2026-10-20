@@ -356,10 +356,10 @@ final class TestiSito
             [$sez, $parte] = array_pad(explode('.', $k, 3), 2, '');
             $ultima = substr($k, strrpos($k, '.') + 1);
             $tipo = $k === 'legale.novita' ? 'lista' : ($ultima === 'titolo' ? 'riga' : 'lungo');
-            $nome = ctype_digit($parte) ? 'Punto ' . $parte : (preg_match('/^t(\d+)$/', $parte, $m) ? 'Trattamento ' . $m[1] : ($parte === 'b' ? 'Allegato B' : ucfirst($parte)));
+            $nome = ctype_digit($parte) ? 'Punto ' . ($sez === 'termini' ? (Legale::numeroTermini((int) $parte) ?: $parte) : $parte) : (preg_match('/^t(\d+)$/', $parte, $m) ? 'Trattamento ' . $m[1] : ($parte === 'b' ? 'Allegato B' : ucfirst($parte)));
             $titolo = $leg['it'][$sez . '.' . $parte . '.titolo'] ?? '';
             $etichetta = match (true) {
-                $k === 'legale.novita' => 'Le novità, una per riga (tre)',
+                $k === 'legale.novita' => 'Le novità, una per riga',
                 $ultima === 'intro' => 'Introduzione, in cima',
                 $ultima === 'titolo' => $nome . ' · titolo',
                 default => $nome . ' · testo' . ($titolo !== '' ? ' («' . $titolo . '»)' : ''),

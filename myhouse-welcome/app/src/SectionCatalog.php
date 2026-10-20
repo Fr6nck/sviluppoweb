@@ -387,7 +387,7 @@ final class SectionCatalog
         'custom' => [
             'icon' => 'star', 'group' => 'casa', 'multipla' => true, 'nome' => 'Sezione libera',
             'breve' => 'Titolo, icona e testo li scegli tu.',
-            'intro' => 'Per quello che non sta nelle altre sezioni: la piscina, il giardino, la storia del posto. Scegli il titolo e l\'icona: una per guida, in tutti i piani (con Essential conta come una delle 6 sezioni).',
+            'intro' => 'Per quello che non sta nelle altre sezioni: la piscina, il giardino, la storia del posto. Scegli il titolo e l\'icona: una per guida, in tutti i piani (con Essential conta tra le sezioni aggiuntive del piano).',
             'fields' => [
                 'icona' => ['choice', 'Icona', 'Compare nella guida, sulla casella della sezione.', 'icone' => true, 'options' => [
                     'star' => 'Stella', 'info' => 'Informazione', 'book' => 'Libro', 'key' => 'Chiave', 'sun' => 'Sole', 'moon' => 'Luna',

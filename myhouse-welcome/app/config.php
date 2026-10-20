@@ -78,6 +78,12 @@ $config = [
     'inviti' => [
         'attivi' => $bool('MHW_INVITI'),
     ],
+    // 9N · Le due sezioni pubbliche del programma «Giudizio con sconto»: spente di serie, si accendono da Amministrazione →
+    // Giudizi e vetrina. Accese ma senza schede (o giudizi) approvati restano nascoste lo stesso.
+    'vetrina' => [
+        'sezione_attiva' => $bool('MHW_VETRINA_SEZIONE', false),   // «Le guide dei nostri host» in home e /guide-dei-nostri-host
+        'dicono_attiva'  => $bool('MHW_DICONO_SEZIONE', false),    // «Cosa dicono di noi» in home
+    ],
     // 9B · «Ti piace MyHouse Welcome?»: lo sconto per chi lascia un giudizio (di serie acceso, 5%) e la sezione in home.
     'giudizi' => [
         'sconto_attivo' => $bool('MHW_GIUDIZI_SCONTO', true),
@@ -186,7 +192,7 @@ $config = [
         // 9K · I dati obbligatori delle S.r.l. (art. 2250 c.c.) nel piè di pagina e nel blocco del titolare.
         // Il REA si mostra sempre; capitale sociale e «società unipersonale» solo se compilati.
         'company_rea'          => $env('MHW_COMPANY_REA', 'PG-352001'),
-        'company_capitale'     => $env('MHW_COMPANY_CAPITALE', ''),
+        'company_capitale'     => $env('MHW_COMPANY_CAPITALE', '10.000,00 € i.v.'),   // 9N: art. 2250 c.c., piè di pagina e Titolare
         'company_unipersonale' => $bool('MHW_COMPANY_UNIPERSONALE'),
         'company_site'     => $env('MHW_COMPANY_SITE', 'https://www.cityup.eu'),
     ],

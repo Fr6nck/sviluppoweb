@@ -104,7 +104,16 @@ final class Omaggi
     public static function applica(array $acc, array $c): void
     {
         $aid = (int) $acc['id'];
-        Db::update('accounts', ['codice_omaggio_id' => (int) $c['id']], 'id = :aid', ['aid' => $aid]);
+        // 9N · La prenotazione in una transazione, con il controllo rifatto dentro e l'indice unico (migrazione 054):
+        // due registrazioni nello stesso momento non possono prendere lo stesso codice.
+        try {
+            Db::tx(function () use ($aid, $c) {
+                if (Db::val('SELECT id FROM accounts WHERE codice_omaggio_id = ? AND id <> ?', [(int) $c['id'], $aid])) throw new \RuntimeException('Questo codice omaggio è già stato usato.');
+                Db::update('accounts', ['codice_omaggio_id' => (int) $c['id']], 'id = :aid', ['aid' => $aid]);
+            });
+        } catch (\PDOException) {
+            throw new \RuntimeException('Questo codice omaggio è già stato usato.');
+        }
         if (Inviti::disponibili()) {
             $r = Db::one("SELECT * FROM referrals WHERE friend_account_id = ? AND status = 'registrato'", [$aid]);
             if ($r) Db::update('referrals', ['status' => 'omaggio'], 'id = :id', ['id' => (int) $r['id']]);

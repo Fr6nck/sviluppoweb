@@ -597,9 +597,10 @@ $r->post('/invito/verifica', function () {
 });
 
 /* 9L · «Tutte le guide»: le schede approvate di «Le guide dei nostri host», nell'ordine deciso in admin, 24 per pagina
-   (le prime sono anche in home). Indicizzabile; con il programma spento (o nessuna scheda) dice che non ce ne sono. */
+   (le prime sono anche in home). 9N: esiste solo con la sezione accesa dall'admin e almeno una scheda approvata, altrimenti 404. */
 $r->get('/guide-dei-nostri-host', function () use ($guard) {
     $guard();
+    if (!MHW\Vetrina::guideVisibili()) { http_response_code(404); View::out('pub/404', []); return; }
     View::out('pub/guide_host', MHW\Vetrina::tutte(max(1, (int) ($_GET['pagina'] ?? 1))) + ['seoPagina' => 'guide-host']);
 });
 

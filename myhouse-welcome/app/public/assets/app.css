@@ -3216,3 +3216,10 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .gemelle-anteprima ins{text-decoration:none;background:var(--pine-soft);color:var(--pine);border-radius:4px;padding:0 2px}
 .tipo-rinnovo{max-width:720px;margin-top:20px}
 .gemelle-tabella tbody th{text-transform:none;letter-spacing:0;font-size:15px;font-weight:600;color:var(--text);background:transparent}
+
+/* 9N · Giudizi e vetrina: i due interruttori delle sezioni pubbliche, in cima. */
+.sezioni-vetrina__riga{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--line);margin:0}
+.sezioni-vetrina__riga:first-child{padding-top:0}
+.sezioni-vetrina__riga .int-home{flex:none}
+.sezioni-vetrina__anteprima{margin-top:10px}
+.sezioni-vetrina__anteprima summary{cursor:pointer}
