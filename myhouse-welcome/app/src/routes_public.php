@@ -658,7 +658,8 @@ $r->any('/piano', function () use ($salvaPiano, $guard, $datiQuestionario) {
             Support::redirect('/piano?piano=' . (int) $pv['id']);
         }
         $salvaPiano($acc, (int) $u['id'], $pv, $q);
-        Support::flash('Piano ' . $pv['name'] . (Plans::perProperty($pv) ? ' per ' . $q . ' strutture' : '') . ' scelto. Non paghi niente adesso: solo quando pubblichi.');
+        Support::flash(Plans::perProperty($pv) ? MHW\tf('Piano {piano} per {n} strutture scelto. Non paghi niente adesso: solo quando pubblichi.', ['{piano}' => $pv['name'], '{n}' => $q])
+                                          : MHW\tf('Piano {piano} scelto. Non paghi niente adesso: solo quando pubblichi.', ['{piano}' => $pv['name']]));
         // 7B: «Passa a …» dal passo Pubblica torna lì.
         if (preg_match('#^/pannello/\d+/procedura/pubblica$#', (string) ($_POST['torna'] ?? ''))) Support::redirect((string) $_POST['torna']);
         $ha = Db::val('SELECT id FROM properties WHERE account_id = ?', [$acc['id']]);

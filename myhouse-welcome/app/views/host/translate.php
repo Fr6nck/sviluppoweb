@@ -73,27 +73,33 @@ $campo = function (string $name, string $tipo, $orig, $trad, string $etichetta, 
 
   <?php $pronte = count(array_filter($sugg, fn($x) => !$x['da_rifare'])); ?>
   <section class="panel stack suggerite" id="suggerite" aria-labelledby="suggerite-titolo">
-    <h2 id="suggerite-titolo" style="font-size:20px;margin:0"><?= t('Traduzioni suggerite') ?></h2>
+    <h2 id="suggerite-titolo" style="font-size:20px;margin:0"><?= t('Traduzioni suggerite') ?> <a class="aiuto-q" href="<?= b() ?>/domande#traduzioni" target="_blank" rel="noopener" aria-label="<?= MHW\Support::e(MHW\t('Come funzionano le traduzioni suggerite')) ?>" title="<?= MHW\Support::e(MHW\t('Come funzionano le traduzioni suggerite')) ?>">?</a></h2>
     <?php if (!($nelPiano ?? false)): ?>
       <p class="small" style="margin:0"><?= t('Un traduttore automatico propone le traduzioni che mancano, e tu le approvi: comprese in Plus e Portfolio, entro un limite annuale di caratteri.') ?> <a href="<?= b() ?>/piano?passa=plus"><?= t('Scopri Plus') ?></a></p>
     <?php elseif (!empty($anno) && $anno['finito']): /* 9G · il tetto annuale: a mano, oppure all'assistenza */ ?>
       <?php $annoT = $anno; include __DIR__ . '/_traduzioni_contatore.php'; ?>
     <?php elseif ($perche !== '' && !MHW\Traduttore::attiva((int) $prop['account_id'])): /* 9M · prima del pagamento: il bottone c'è, spento */ ?>
       <?php include __DIR__ . '/_attivazione.php'; ?>
-      <div class="actions" style="margin:0"><button type="button" class="btn btn--sm" disabled><?= Icon::svg('globe', 15) ?> Traduci tutti i campi mancanti</button></div>
+      <div class="actions" style="margin:0"><button type="button" class="btn btn--sm" disabled><?= Icon::svg('globe', 15) ?> <?= t('Traduci tutti i campi mancanti') ?></button></div>
     <?php elseif ($perche !== ''): ?>
       <p class="small" style="margin:0"><?= Support::e($perche) ?><?php if (empty($prop['translation_suggest'])): ?> <a href="<?= b() ?>/pannello/<?= $pid ?>/lingue#suggerite"><?= t('Vai a Lingue') ?></a><?php endif; ?></p>
     <?php elseif ($daSuggerire): /* 9F · con JavaScript: un gruppo di campi per volta, la barra «12 di 30 testi», i campi che compaiono (cms.js) */ ?>
       <div class="actions" style="margin:0" data-traduci data-url="<?= b() ?>/pannello/<?= $pid ?>/lingue/<?= Support::e($loc) ?>/suggerite.json" data-lingua="<?= Support::e(ucfirst(MHW\I18n::nomeIt($loc))) ?>" data-csrf="<?= Support::e(Csrf::token()) ?>">
-        <button type="submit" form="sugg-f" class="btn btn--sm" name="suggerisci" value="1" data-traduci-tutti><?= Icon::svg('globe', 15) ?> <span data-traduci-etichetta>Traduci tutti i campi mancanti (<?= (int) $daSuggerire ?>)</span></button>
+        <button type="submit" form="sugg-f" class="btn btn--sm" name="suggerisci" value="1" data-traduci-tutti><?= Icon::svg('globe', 15) ?> <span data-traduci-etichetta><?= Support::e(tf('Traduci tutti i campi mancanti ({n})', ['{n}' => (int) $daSuggerire])) ?></span></button>
       </div>
+      <?php /* 9N · la stima prima di toccare il bottone: quanti caratteri e che parte del tetto dell'anno */
+            if (!empty($anno) && $anno['tetto'] > 0 && ($stimaT ?? 0) > 0): $nT = fn(int $x) => number_format($x, 0, ',', '.'); ?>
+        <p class="small muted" style="margin:0"><?= Support::e(tf($daSuggerire === 1 ? 'Per il campo mancante servono circa {c} caratteri ({p}% del limite dell\'anno).' : 'Per i {n} campi mancanti servono circa {c} caratteri ({p}% del limite dell\'anno).',
+              ['{n}' => (int) $daSuggerire, '{c}' => $nT((int) $stimaT), '{p}' => max(1, (int) round($stimaT * 100 / $anno['tetto']))])) ?>
+          <?= $stimaT > $anno['restante'] ? Support::e(t('Sono più di quelli che ti restano: si traduce finché non finiscono.')) : '' ?></p>
+      <?php endif; ?>
       <div class="traduci-stato" data-traduci-stato hidden role="status" aria-live="polite"><span class="traduci-stato__barra"><i></i></span><p class="small" data-traduci-testo style="margin:0"></p></div>
     <?php else: ?>
       <p class="small" style="margin:0"><?= t('Non manca niente da suggerire.') ?></p>
     <?php endif; ?>
     <?php if ($pronte): ?>
-      <div class="actions" style="margin:0"><span class="small"><b><?= $pronte ?></b> suggerit<?= $pronte === 1 ? 'a' : 'e' ?> da controllare, qui sotto.</span>
-        <button type="submit" form="sugg-f" class="btn btn--ghost btn--sm" name="tutte" value="1">Approva tutte (<?= $pronte ?>)</button></div>
+      <div class="actions" style="margin:0"><span class="small"><?= Support::e($pronte === 1 ? t('1 suggerita da controllare, qui sotto.') : tf('{n} suggerite da controllare, qui sotto.', ['{n}' => $pronte])) ?></span>
+        <button type="submit" form="sugg-f" class="btn btn--ghost btn--sm" name="tutte" value="1"><?= Support::e(tf('Approva tutte ({n})', ['{n}' => $pronte])) ?></button></div>
     <?php endif; ?>
     <?php if (!empty($anno) && !$anno['finito']): ?><?php $annoT = $anno; include __DIR__ . '/_traduzioni_contatore.php'; ?><?php endif; ?>
     <p class="tiny muted" style="margin:0"><?= t('Suggerite da un traduttore automatico, da approvare: finché non le approvi, gli ospiti non le vedono. Per i testi importanti, falli rileggere a un madrelingua.') ?></p>

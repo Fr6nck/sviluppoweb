@@ -47,7 +47,7 @@ $c = fn(string $k) => Support::e((string) $prop[$k]); ?>
         <input type="text" id="region" name="region" maxlength="120" autocomplete="off" list="regioni-elenco" value="<?= $c('region') ?>" aria-describedby="region-aiuto">
         <datalist id="regioni-elenco"><?php foreach (MHW\Territorio::regioni() as $nomeR): ?><option value="<?= Support::e($nomeR) ?>"></option><?php endforeach; ?></datalist>
 </div>
-      <div class="field campo-largo" style="margin:0"><label for="cin">CIN <span class="muted"><?= t('(serve per pubblicare)') ?></span></label>
+      <div class="field campo-largo" style="margin:0"><label for="cin">CIN <span class="muted"><?= t('(serve per pubblicare)') ?></span> <a class="aiuto-q" href="<?= MHW\b() ?>/domande#bnb-camere" target="_blank" rel="noopener" aria-label="<?= MHW\Support::e(MHW\t('Cos\'è il CIN e quante guide servono')) ?>" title="<?= MHW\Support::e(MHW\t('Cos\'è il CIN e quante guide servono')) ?>">?</a></label>
         <p class="help" id="cin-aiuto" style="margin:0 0 6px"><?= t('Il Codice Identificativo Nazionale della struttura: obbligatorio per legge, compare in piccolo in fondo alla guida. Ogni guida ha il suo CIN.') ?></p>
         <input type="text" id="cin" name="cin" maxlength="40" spellcheck="false" autocapitalize="characters" autocomplete="off" placeholder="<?= MHW\Support::e(t('IT…')) ?>" aria-describedby="cin-aiuto" value="<?= $c('cin') ?>"></div>
       <div class="field" style="margin:0"><label for="beds"><?= t('Posti letto') ?> <span class="muted"><?= t('(facoltativo)') ?></span></label>

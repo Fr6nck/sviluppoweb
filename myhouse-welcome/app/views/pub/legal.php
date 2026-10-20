@@ -49,7 +49,8 @@ $precedenti = Legale::precedenti($doc);
 $altra = $en ? $percorsoIt : $percorsoEn;
 
 ob_start(); ?>
-<h1 style="margin-top:24px"><?= Support::e($nome) ?></h1>
+<p class="small" style="margin:16px 0 0"><a href="<?= MHW\b() . ($en ? '/en' : '/') ?>">← <?= $U('Torna alla home', 'Back to the home page') ?></a></p><?php /* 9N */ ?>
+<h1 style="margin-top:12px"><?= Support::e($nome) ?></h1>
 <p class="small muted legale__meta">
   <?= $U('Versione del', 'Version of') ?> <?= Support::e($data($versione)) ?><?php if (Legale::futura($versione)): ?> · <b><?= $U('in vigore dal', 'in force from') ?> <?= Support::e($data($versione)) ?></b><?php endif; ?>
   · <?= $doc === 'dpa' ? $U('Responsabile del trattamento', 'Processor') : ($doc === 'privacy' ? $U('Titolare', 'Controller') : $U('Fornitore', 'Provider')) ?>: <?= Support::e(Legale::rigaTitolare($en)) ?>

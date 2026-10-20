@@ -24,9 +24,15 @@ $intro = SectionCatalog::intro($s['kind']); ?>
         <?php if (!$core && (int) $s['is_active'] === 0): ?><span class="badge badge--paper"><?= t('Disattivata') ?></span><?php endif; ?>
         <?php if (!empty($s['da_controllare'])): ?><span class="badge badge--terracotta"><?= t('Da controllare') ?></span><?php endif; ?>
         <?php if (($esempioSez = MHW\Demo::esempio((string) $s['kind'], (int) $prop['id']))): /* 7C: la stessa sezione nella guida di esempio */ ?>
-          <a class="vedi-esempio" href="<?= Support::e(Support::url($esempioSez)) ?>" target="_blank" rel="noopener"><?= Icon::svg('book', 18) ?>Vedi un esempio</a>
+          <a class="vedi-esempio" href="<?= Support::e(Support::url($esempioSez)) ?>" target="_blank" rel="noopener"><?= Icon::svg('book', 18) ?><?= t('Vedi un esempio') ?></a>
         <?php endif; ?>
       </div>
+      <?php /* 9N · Nella campione, dopo il salvataggio: l'avviso in pagina (il banner sta solo in «Le mie guide»). */
+            if (!empty($prop['campione']) && MHW\Campione::disponibile((int) $prop['account_id']) && ($dS = MHW\Campione::differenze((int) $prop['account_id'])) && $dS['righe']):
+              $nGemS = count(array_filter($dS['contatori'])); ?>
+        <p class="note campione-avviso" role="status"><span><?= Support::e($nGemS === 1 ? t('1 gemella da aggiornare.') : tf('{n} gemelle da aggiornare.', ['{n}' => $nGemS])) ?></span>
+          <a class="btn btn--sm" href="<?= b() ?>/campione/gemelle"><?= t('Porta le modifiche →') ?></a></p>
+      <?php endif; ?>
       <?php if ($intro !== ''): ?><p class="note note--quiet"><?= Support::e($intro) ?></p><?php endif; ?>
       <?php include __DIR__ . '/_privacy_nota.php'; ?>
     </div>

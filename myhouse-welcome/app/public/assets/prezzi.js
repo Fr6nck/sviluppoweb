@@ -96,6 +96,7 @@
       for (var j = 0; j < invio.length; j++) { if (blocca) invio[j].setAttribute('disabled', ''); else invio[j].removeAttribute('disabled'); }
       if (preventivo && si) {
         preventivo.hidden = false;
+        var dettagli = preventivo.closest('details'); if (dettagli) dettagli.open = true;   // 9N · pagine per tipologia: il modulo non resta chiuso
         var n = preventivo.querySelector('[data-preventivo-n]'), campoN = preventivo.querySelector('[data-preventivo-strutture]');
         if (n) n.textContent = q;
         if (campoN) campoN.value = q;

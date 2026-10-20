@@ -93,6 +93,30 @@ $gemIds = $campD ? array_map(fn($g) => (int) $g['id'], $campD['gemelle']) : []; 
         <?php if ($pid === $campId): ?><span class="small"><?= count($gemIds) === 1 ? t('1 guida gemella') : Support::e(tf('{n} guide gemelle', ['{n}' => count($gemIds)])) ?></span>
         <?php elseif (in_array($pid, $gemIds, true)): $nG = (int) ($campD['contatori'][$pid] ?? 0); ?><span class="small <?= $nG ? 'gemella-da-aggiornare' : 'gemella-allineata' ?>"><?= $nG ? ($nG === 1 ? t('1 sezione da aggiornare') : Support::e(tf('{n} sezioni da aggiornare', ['{n}' => $nG]))) : t('Allineata') ?></span><?php endif; ?>
       </a>
+      <?php /* 9N · La checklist delle bozze: cosa manca per pubblicare (e cosa conviene), con il link a dove si completa. */
+            if (empty($pr['archived_at']) && $pr['status'] !== 'published' && (int) $pr['is_demo'] === 0):
+              $locP = (string) ($pr['default_locale'] ?: 'it');
+              $dCore = json_decode((string) MHW\Db::val('SELECT st.data FROM section_translations st JOIN sections s ON s.id = st.section_id WHERE s.property_id = ? AND s.is_core = 1 AND st.locale = ?', [$pid, $locP], ''), true) ?: [];
+              $wifiP = (string) MHW\Db::val("SELECT data FROM sections WHERE property_id = ? AND kind = 'wifi' AND is_active = 1", [$pid], '');
+              $passi = [
+                  [t('Nome e città'), trim((string) $pr['name']) !== '' && trim((string) $pr['city']) !== '', '/procedura/struttura'],
+                  [t('Check-in: come si entra'), !empty(array_filter((array) ($dCore['checkin_steps'] ?? []), fn($x) => trim((string) $x) !== '')), '/procedura/arrivo'],
+                  [t('Wi-Fi'), $wifiP !== '' && str_contains($wifiP, '"ssid":"') && !str_contains($wifiP, '"ssid":""'), '/procedura/sezioni'],
+                  [t('CIN'), trim((string) ($pr['cin'] ?? '')) !== '', '/procedura/struttura#cin'],
+                  [t('Foto di copertina'), !empty($pr['cover_media_id']), '/procedura/aspetto'],
+                  [t('Lingue'), (int) MHW\Db::val('SELECT COUNT(*) FROM property_locales WHERE property_id = ?', [$pid], 0) > 1, '/lingue'],
+              ];
+              $fatti = count(array_filter($passi, fn($x) => $x[1])); ?>
+        <details class="checklist-bozza"<?= $fatti < count($passi) ? ' open' : '' ?>>
+          <summary class="small"><?= Support::e(tf('Per pubblicare: {fatti} su {tot}', ['{fatti}' => $fatti, '{tot}' => count($passi)])) ?></summary>
+          <ul class="checklist-bozza__elenco">
+            <?php foreach ($passi as [$etP, $okP, $doveP]): ?>
+              <li class="<?= $okP ? 'fatto' : '' ?>"><?= Icon::svg($okP ? 'check' : 'plus', 14, 2.2) ?>
+                <?php if ($okP): ?><span><?= Support::e($etP) ?></span><?php else: ?><a href="<?= b() ?>/pannello/<?= $pid ?><?= Support::e($doveP) ?>"><?= Support::e($etP) ?></a><?php endif; ?></li>
+            <?php endforeach; ?>
+          </ul>
+        </details>
+      <?php endif; ?>
       <?php if (!empty($pr['archived_at'])): ?>
         <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/riattiva" class="scheda-guida__azioni"><?= MHW\Csrf::field() ?>
           <button class="btn btn--ghost btn--sm"><?= Support::e(tf('Riattiva {nome}', ['{nome}' => $pr['name']])) ?></button></form>
@@ -107,7 +131,7 @@ $gemIds = $campD ? array_map(fn($g) => (int) $g['id'], $campD['gemelle']) : []; 
               <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/campione" class="rendi-campione__conferma"><?= MHW\Csrf::field() ?>
                 <p class="small" style="margin:0"><?= Support::e(tf('«{nome}» diventa il modello delle altre guide: da qui copi le sezioni, e quando la cambi ti proponiamo di aggiornare le gemelle.', ['{nome}' => $pr['name']])) ?>
                   <?php if ($pr['status'] !== 'published'): ?><?= t('È ancora una bozza: conviene sceglierne una già completa.') ?><?php endif; ?></p>
-                <button class="btn btn--sm"><?= t('Sì, rendila campione') ?></button></form></details>
+                <span class="row" style="gap:8px;align-items:center"><button class="btn btn--sm"><?= t('Sì, rendila campione') ?></button> <a class="aiuto-q" href="<?= b() ?>/campione" target="_blank" rel="noopener" aria-label="<?= MHW\Support::e(MHW\t('Cos\'è la scheda campione')) ?>" title="<?= MHW\Support::e(MHW\t('Cos\'è la scheda campione')) ?>">?</a></span></form></details>
           <?php endif; ?>
         </div>
       <?php endif; ?>

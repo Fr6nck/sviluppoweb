@@ -3,7 +3,7 @@
    cosa si legge, in che lingua. Eventi anonimi, niente cookie, niente profili. */
 use function MHW\b;
 use MHW\{Support, Icon};
-$title = 'Statistiche — ' . $prop['name']; ?>
+$title = t('Statistiche — ') . $prop['name']; ?>
 <div class="stack stack--lg" style="max-width:1040px">
   <div class="stack stack--sm">
     <h1><?= t('Statistiche.') ?></h1>
@@ -12,6 +12,13 @@ $title = 'Statistiche — ' . $prop['name']; ?>
 <?php if (!$stats): ?>
   <div class="limit"><p style="max-width:560px"><?= t('Le statistiche di lettura sono disponibili con il piano Plus: quante volte si apre la guida, quante dal QR, quali sezioni si leggono di più e in quali lingue.') ?></p><a class="btn btn--sm" href="<?= b() ?>/piano?passa=plus"><?= t('Scopri Plus') ?></a></div>
 <?php else: $max = max(1, ...array_values($stats['series'])); ?>
+  <?php if ((int) $stats['views'] === 0): /* 9N · lo stato vuoto: cosa fare perché i numeri arrivino */ ?>
+    <div class="panel stack" style="gap:10px">
+      <b><?= t('Ancora nessuna apertura in questi 30 giorni.') ?></b>
+      <p class="small" style="margin:0"><?= t('I numeri arrivano quando gli ospiti aprono la guida: manda il link prima dell\'arrivo e metti il QR in vista, all\'ingresso o sul tavolo.') ?></p>
+      <div class="row" style="gap:8px"><a class="btn btn--sm" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>/qr"><?= Icon::svg('qr', 15) ?><?= t('Condividi il QR e il link') ?></a></div>
+    </div>
+  <?php endif; ?>
   <?php $v = (int) $stats['views']; $q = min($v, (int) $stats['qr']); $perc = $v ? (int) round($q / $v * 100) : 0; ?>
   <div class="statistiche-testa">
     <div class="panel anello">

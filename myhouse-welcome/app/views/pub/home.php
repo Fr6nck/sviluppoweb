@@ -254,7 +254,7 @@ $disegni = [
   <div class="dicono__schede" role="list">
     <?php foreach ($giudiziH as $g): ?><div role="listitem" class="dicono__scheda"><?php include __DIR__ . '/_dicono_scheda.php'; ?></div><?php endforeach; ?>
   </div>
-  <p class="dicono__nota"><?= $T('dicono.nota', ['giudizio' => MHW\Giudizi::percentuale()]) ?></p>
+  <p class="dicono__nota"><?= str_replace('%%', '%', $T('dicono.nota', ['giudizio' => MHW\Giudizi::percentuale() . '%'])) /* 9N · {giudizio} ha già il %, come altrove (un testo salvato con «{giudizio}%» non diventa «5%%») */ ?></p>
   <?php $rT = $T; $rCome = '#faq-{id}'; include __DIR__ . '/_risparmio.php'; ?>
 </section>
 <?php endif; ?>
@@ -627,7 +627,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
 <section id="sito" class="sito2" aria-labelledby="sito-titolo">
   <div class="sito2__dentro">
     <div class="sito2__testo">
-      <img class="sito2__logo" src="<?= Support::e(MHW\av('/assets/myhouse/myhouse-logo-bianco-su-rosso.png')) ?>" alt="<?= TestiSito::testo('sito2.logo') ?>" width="168" height="52" loading="lazy">
+      <img class="sito2__logo" src="<?= Support::e(MHW\av('/assets/myhouse/myhouse-logo-bianco.png')) ?>" alt="<?= TestiSito::testo('sito2.logo') ?>" width="168" height="52" loading="lazy">
       <span class="sito2__kicker"><?= $T('sito2.kicker') ?></span>
       <h2 id="sito-titolo" class="sito2__titolo"><?= $T('sito2.titolo') ?><br><span class="sito2__accento"><?= $T('sito2.accento') ?></span></h2>
       <p class="sito2__lead"><?= $T('sito2.lead') ?></p>

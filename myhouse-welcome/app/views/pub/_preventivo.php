@@ -13,7 +13,9 @@ $okP = $_SESSION['preventivo_ok'] ?? null; unset($_SESSION['preventivo_ok']);
 $errP = $_SESSION['preventivo_errore'] ?? null; unset($_SESSION['preventivo_errore']);
 $apertoP = $qP > $maxP || $okP || $errP;
 $nP = (int) ($errP['strutture'] ?? ($okP ?: max((int) $qP, $maxP + 1)));
-$vP = fn(string $k) => Support::e((string) ($errP[$k] ?? ''));
+// 9N · chi ha già l'account trova nome ed email già scritti
+$utP = MHW\Auth::user();
+$vP = fn(string $k) => Support::e((string) ($errP[$k] ?? ($errP ? '' : ($utP ? ['nome' => $utP['name'] ?? '', 'email' => $utP['email'] ?? ''][$k] ?? '' : ''))));
 $uP = fn(string $it, string $en) => $enP ? $en : $it; ?>
 <div class="preventivo" id="preventivo" data-preventivo data-min="<?= $maxP + 1 ?>"<?= $apertoP ? '' : ' hidden' ?>>
   <?php if ($okP): ?>

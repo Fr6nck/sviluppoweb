@@ -778,8 +778,11 @@ $r->any('/pannello/{id}/lingue/{loc}', function (array $a) use ($mia, $contesto,
     $campiT = Traduttore::campi($p, $loc);
     Traduttore::fissaImpronte($p, $loc, $campiT);   // i campi tradotti prima della 7C: il controllo «cambiato» parte da qui
     $sugg = Traduttore::suggerite($p, $loc, $campiT);
-    $daSuggerire = count(array_filter($campiT, fn($c, $k) => $c['tradotto'] === '' && !Traduttore::nonTradurre($c['path']) && (!isset($sugg[$k]) || $sugg[$k]['da_rifare']), ARRAY_FILTER_USE_BOTH));
-    View::out('host/translate', $contesto($acc, $p) + [
+    $mancantiT = array_filter($campiT, fn($c, $k) => $c['tradotto'] === '' && !Traduttore::nonTradurre($c['path']) && (!isset($sugg[$k]) || $sugg[$k]['da_rifare']), ARRAY_FILTER_USE_BOTH);
+    $daSuggerire = count($mancantiT);
+    // 9N · Quanto costa tradurre quello che manca, prima di «Traduci»: i caratteri dei testi originali.
+    $stimaT = array_sum(array_map(fn($c) => mb_strlen((string) $c['origine']), $mancantiT));
+    View::out('host/translate', $contesto($acc, $p) + ['stimaT' => $stimaT] + [
         'loc' => $loc, 'nome' => Config::get('locales')[$loc] ?? $loc, 'sections' => $sections, 'err' => $err, 'qui' => 'lingue',
         'sugg' => $sugg, 'daSuggerire' => $daSuggerire, 'perche' => Traduttore::perche((int) $acc['id'], $p, $loc),
         'cambiati' => array_keys(array_filter($campiT, fn($c) => $c['cambiato'])),

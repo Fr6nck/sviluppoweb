@@ -18,7 +18,7 @@ $def = $prop['default_locale']; ?>
   <?php /* Traduzioni suggerite (9G): comprese in Plus e Portfolio entro un limite annuale di caratteri; il contatore dell'anno. Niente prezzi. */ ?>
   <section class="panel stack" id="suggerite" aria-labelledby="suggerite-titolo">
     <div class="row" style="gap:10px;align-items:center;flex-wrap:wrap">
-      <h2 id="suggerite-titolo" style="font-size:22px;margin:0"><?= t('Traduzioni suggerite') ?></h2>
+      <h2 id="suggerite-titolo" style="font-size:22px;margin:0"><?= t('Traduzioni suggerite') ?> <a class="aiuto-q" href="<?= MHW\b() ?>/domande#traduzioni" target="_blank" rel="noopener" aria-label="<?= MHW\Support::e(MHW\t('Come funzionano le traduzioni suggerite')) ?>" title="<?= MHW\Support::e(MHW\t('Come funzionano le traduzioni suggerite')) ?>">?</a></h2>
       <?php if (!$trad['piano']): ?><span class="badge badge--paper"><?= t('con il piano Plus') ?></span>
       <?php elseif ($trad['anno'] && $trad['anno']['finito']): ?><span class="badge badge--ochre"><?= t('Limite dell\'anno raggiunto') ?></span>
       <?php elseif ($trad['acceso']): ?><span class="badge badge--pine"><?= t('Accese') ?></span><?php endif; ?>
@@ -26,7 +26,7 @@ $def = $prop['default_locale']; ?>
     <p class="help" style="margin:0"><?= t('Un traduttore automatico propone le traduzioni dei testi che mancano. Tu le controlli e le approvi: finché non le approvi, gli ospiti non le vedono.') ?></p>
     <?php if ($trad['spiegazione']): ?>
       <div class="note note--ok" role="status" style="display:block">
-        <p style="margin:0"><?= t('Le trovi nella pagina di ogni lingua, qui sotto: tocca «Suggerisci le traduzioni mancanti», poi approvale una per una.') ?></p>
+        <p style="margin:0"><?= t('Le trovi nella pagina di ogni lingua, qui sotto: tocca «Traduci tutti i campi mancanti», poi approvale una per una.') ?></p>
         <p style="margin:6px 0 0"><?= t('Per i testi importanti, falli rileggere a un madrelingua.') ?></p>
       </div>
     <?php endif; ?>

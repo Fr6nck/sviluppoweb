@@ -1404,4 +1404,37 @@ What\'s happening:
     'Compila i dati per la fattura, qui sopra.' => 'Fill in your invoice details, above.',
     'Il bottone si attiva quando:' => 'The button turns on when:',
     'Sistema' => 'Fix it',
+    // ---- 9N · voci del rapporto (pannello, 2)
+    'Traduci tutti i campi mancanti' => 'Translate all missing fields',
+    'Traduci tutti i campi mancanti ({n})' => 'Translate all missing fields ({n})',
+    'Per il campo mancante servono circa {c} caratteri ({p}% del limite dell\'anno).' => 'The missing field needs about {c} characters ({p}% of the yearly limit).',
+    'Per i {n} campi mancanti servono circa {c} caratteri ({p}% del limite dell\'anno).' => 'The {n} missing fields need about {c} characters ({p}% of the yearly limit).',
+    'Sono più di quelli che ti restano: si traduce finché non finiscono.' => 'That\'s more than you have left: translation goes on until they run out.',
+    '1 suggerita da controllare, qui sotto.' => '1 suggestion to check, below.',
+    '{n} suggerite da controllare, qui sotto.' => '{n} suggestions to check, below.',
+    'Approva tutte ({n})' => 'Approve all ({n})',
+    'Le trovi nella pagina di ogni lingua, qui sotto: tocca «Traduci tutti i campi mancanti», poi approvale una per una.' => 'You find them on each language page, below: tap "Translate all missing fields", then approve them one by one.',
+    // ---- 9N · voci del rapporto (pannello, 2)
+    'Nome e città' => 'Name and town',
+    'Check-in: come si entra' => 'Check-in: how to get in',
+    'Wi-Fi' => 'Wi-Fi',
+    'Per pubblicare: {fatti} su {tot}' => 'To publish: {fatti} of {tot}',
+    // ---- 9N · voci del rapporto (pannello, 2)
+    '1 gemella da aggiornare.' => '1 twin to update.',
+    '{n} gemelle da aggiornare.' => '{n} twins to update.',
+    'Porta le modifiche →' => 'Carry the changes over →',
+    // ---- 9N · voci del rapporto (pannello, 2)
+    'Cos\'è il CIN e quante guide servono' => 'What the CIN is and how many guides you need',
+    'Come funzionano le traduzioni suggerite' => 'How suggested translations work',
+    'Cos\'è la scheda campione' => 'What the template guide is',
+    'Vedi un esempio' => 'See an example',
+    // ---- 9N · voci del rapporto (pannello, 2)
+    'Statistiche — ' => 'Statistics — ',
+    'Ancora nessuna apertura in questi 30 giorni.' => 'No opens yet in these 30 days.',
+    'I numeri arrivano quando gli ospiti aprono la guida: manda il link prima dell\'arrivo e metti il QR in vista, all\'ingresso o sul tavolo.' => 'The numbers come when guests open the guide: send the link before arrival and put the QR code where it can be seen, at the entrance or on the table.',
+    'Condividi il QR e il link' => 'Share the QR code and the link',
+    // ---- 9N · scelta del piano
+    'Piano {piano} per {n} strutture scelto. Non paghi niente adesso: solo quando pubblichi.' => '{piano} plan for {n} properties chosen. You pay nothing now: only when you publish.',
+    'Piano {piano} scelto. Non paghi niente adesso: solo quando pubblichi.' => '{piano} plan chosen. You pay nothing now: only when you publish.',
+    'Scegli uno dei piani in elenco.' => 'Choose one of the plans listed.',
 ];

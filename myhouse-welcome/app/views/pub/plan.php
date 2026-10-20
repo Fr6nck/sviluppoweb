@@ -21,7 +21,9 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
     <?php foreach ($offers as $of): foreach ($of['options'] as $o): $id = (int) $o['pv_id'];
           $sel = $preselezione ? $preselezione === $id : $scelto === $id;
           $perStruttura = Plans::perProperty($o);
-          $q = $perStruttura ? (Plans::quantity($o, $strutture ?: null) ?? (int) $o['min_quantity']) : 1; ?>
+          $q = $perStruttura ? (Plans::quantity($o, $strutture ?: null) ?? (int) $o['min_quantity']) : 1;
+          // 9N · oltre il massimo la scheda non torna a 2 strutture: resta il numero scelto, con il preventivo al posto del prezzo
+          $oltreQ = $perStruttura && $strutture > (int) $o['max_quantity']; ?>
       <div class="plan pianocard<?= $o['badge'] !== '' ? ' pianocard--evidenza' : '' ?>">
         <input class="pianocard__radio" type="radio" name="pv" value="<?= $id ?>" id="pv-<?= $id ?>" <?= $sel ? 'checked' : '' ?> required>
         <label class="pianocard__velo" for="pv-<?= $id ?>"><span class="sr-only"><?= Support::e($o['name']) ?></span></label>
@@ -46,8 +48,8 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
               <?php $pvS = $o; $qS = $q; include __DIR__ . '/_scaglioni.php'; ?>
               <label for="strutture-<?= $id ?>" class="plan__label">Quante strutture vuoi gestire?</label>
               <input id="strutture-<?= $id ?>" name="strutture" type="number" inputmode="numeric" step="1" data-sceglie="pv-<?= $id ?>"
-                     min="<?= (int) $o['min_quantity'] ?>" max="999" data-max-prezzo="<?= (int) $o['max_quantity'] ?>" value="<?= $q ?>">
-              <div class="plan__oltre" data-oltre hidden><p>Più di <?= (int) $o['max_quantity'] ?> strutture? Ti facciamo una proposta su misura.</p>
+                     min="<?= (int) $o['min_quantity'] ?>" max="999" data-max-prezzo="<?= (int) $o['max_quantity'] ?>" value="<?= $oltreQ ? (int) $strutture : $q ?>">
+              <div class="plan__oltre" data-oltre<?= $oltreQ ? '' : ' hidden' ?>><p>Da <?= (int) $o['max_quantity'] + 1 ?> strutture in su: preventivo. Ti facciamo una proposta su misura.</p>
                 <a class="btn btn--sm" href="#preventivo">Chiedi il preventivo</a></div>
             </div>
             <div class="plan__prezzo">
