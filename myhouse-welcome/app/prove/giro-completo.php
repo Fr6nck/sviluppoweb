@@ -631,7 +631,7 @@ prova('R3 · guida: modalità, arrivo tardivo, documenti', str_contains($r['body
 prova('R3 · imposta di soggiorno: importo (9N: la guida aggiunge «a persona a notte»), notti, esenzioni', str_contains($r['body'], "2,00 € a persona a notte") && str_contains($r['body'], 'Per un massimo di 5 notti.')
       && str_contains($r['body'], 'Sotto i 14 anni esenti'));
 prova('R3 · partenza (9N): una riga con il rimando a «Prima di andare», dove c\'è la lista', str_contains($r['body'], 'Vedi «Prima di andare»</a>')
-      && str_contains($anna->get("/pannello/$pid/anteprima/commiato?l=it")['body'], '<li>Lascia le chiavi sul tavolo.</li>'));
+      && preg_match('#<ul class="checklist">.*?Lascia le chiavi sul tavolo\.#s', $anna->get("/pannello/$pid/anteprima/commiato?l=it")['body']) === 1);
 $r = $anna->get("/pannello/$pid/anteprima/$core?l=en");
 prova('R3 · in inglese le etichette sono tradotte', str_contains($r['body'], 'Tourist tax') && str_contains($r['body'], '€2.00 per person per night') && str_contains($r['body'], 'Late arrival'));
 $r = $anna->get("/pannello/$pid/procedura/arrivo");
@@ -3947,8 +3947,8 @@ $paS = riga('SELECT * FROM vetrina_schede WHERE account_id = ?', [$pacc]);
 prova('…«Aderisco» dal pannello: adesione «pannello», lo sconto subito sul prossimo rinnovo, la scheda in elenco (da approvare)',
       ($pa9['giudizio_adesione'] ?? '') === 'pannello' && ($pa9['giudizio_sconto_stato'] ?? '') === 'da_applicare_rinnovo' && $paS && (int) $paS['scheda_home'] === 0 && $paS['decisa_at'] === null, json_encode($pa9));
 $cpP = array_values(array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/sub_prova_paola' && isset($x['corpo']['discounts'])));
-prova('…e lo sconto sul rinnovo (9N: un solo coupon «mhw-rinnovo-5», una volta) sul suo abbonamento Stripe', count($cpP) >= 1 && array_map(fn($d) => (string) ($d['coupon'] ?? ''), end($cpP)['corpo']['discounts']) === ['mhw-rinnovo-5']
-      && (bool) array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/coupons' && ($x['corpo']['id'] ?? '') === 'mhw-rinnovo-5' && ($x['corpo']['duration'] ?? '') === 'once'), json_encode(end($cpP)['corpo'] ?? null));
+prova('…e lo sconto sul rinnovo (9N: un solo coupon, qui «mhw-rinnovo-10» con l\'invito che aveva già, una volta) sul suo abbonamento Stripe', count($cpP) >= 1 && array_map(fn($d) => (string) ($d['coupon'] ?? ''), end($cpP)['corpo']['discounts']) === ['mhw-rinnovo-10'] && (end($cpP)['corpo']['metadata']['sconti'] ?? '') === 'inviti:5,giudizio:5'
+      && (bool) array_filter(richiesteStripe(), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/coupons' && ($x['corpo']['id'] ?? '') === 'mhw-rinnovo-10' && ($x['corpo']['duration'] ?? '') === 'once'), json_encode(end($cpP)['corpo'] ?? null));
 $paola->post('/giudizio', ['rating' => '5', 'body' => 'Gli ospiti non mi chiedono più il Wi-Fi alle undici di sera.']);
 prova('…il giudizio dopo l\'adesione: la prova dell\'accordo (data e testo della casella unica), di nuovo da approvare', str_contains((string) val('SELECT consent_text FROM testimonials WHERE id = ?', [$gid]), 'Aderisco al programma «Giudizio con sconto»')
       && val('SELECT consent_at FROM testimonials WHERE id = ?', [$gid]) === $pa9['giudizio_adesione_at'] && (string) val('SELECT status FROM testimonials WHERE id = ?', [$gid]) === 'in_attesa');
@@ -4481,7 +4481,7 @@ prova('7F · salvando «SEO e GEO»: robots.txt, sitemap.xml e llms.txt scritti 
 $sm7 = (string) @file_get_contents("$DOVE/sitemap.xml"); $ll7 = (string) @file_get_contents("$DOVE/llms.txt");
 prova('7F · le quattro pagine in sitemap (24 pagine in tutto con le legali della 8J, le due della 9K, /piano della 9L, /en/plan e le sei in inglese della 9N) e in llms.txt («Per chi è»)', substr_count($sm7, '<url>') === 24 && @simplexml_load_string($sm7) !== false
       && count(array_filter($tipi7f, fn($tp) => str_contains($sm7, '<loc>https://myhousewelcome.it' . $tp['percorso'] . '</loc>') && str_contains($ll7, '(https://myhousewelcome.it' . $tp['percorso'] . ')'))) === 4
-      && str_contains($ll7, "## Per chi è"));
+      && str_contains($ll7, "## Per chi è"), substr_count($sm7, '<url>') . ' pagine · ' . count(array_filter($tipi7f, fn($tp) => str_contains($ll7, '(https://myhousewelcome.it' . $tp['percorso'] . ')'))) . ' in llms');
 $giudiziPubblicati = (int) val("SELECT COUNT(*) FROM testimonials WHERE visible = 1 AND (account_id IS NULL OR (status = 'pubblicata' AND consent_at IS NOT NULL AND withdrawn_at IS NULL))");
 prova('7F · llms.txt: la riga sui giudizi solo se ce ne sono di pubblicati', ($giudiziPubblicati > 0) === str_contains($ll7, '## Giudizi'), (string) $giudiziPubblicati);
 prova('7F · Diagnostica e SEO e GEO: la riga sui file veri', str_contains($admin->get('/admin/diagnostica')['body'], 'File per motori e assistenti')
@@ -5783,7 +5783,7 @@ $php9('MHW\Properties::setDefaultLocale(' . $lacc9 . ', ' . $casa . ', "pl");');
 $r = $lucia->get("/pannello/$casa/procedura/struttura");
 prova('9F·11 · lingua principale polacca: la procedura è in inglese (passi, titoli, etichette), la lingua è la prima cosa del primo passo, con Essential/Plus spiegati e «Your language isn\'t listed? Write to us»',
       str_contains($r['body'], '<h1>Property and contacts.</h1>') && str_contains($r['body'], '>Check-in &amp; Check-out</span>') && str_contains($r['body'], 'Which language do you write the guide in?')
-      && strpos($r['body'], 'Which language do you write the guide in?') < strpos($r['body'], '<legend>The property') && str_contains($r['body'], 'With Essential') && str_contains($r['body'], 'Your language isn\'t listed?')
+      && strpos($r['body'], 'Which language do you write the guide in?') > strpos($r['body'], '<legend>The property')   /* 9N: prima la struttura, la lingua in un riquadro dopo */ && str_contains($r['body'], 'With Essential') && str_contains($r['body'], 'Your language isn\'t listed?')
       && str_contains($r['body'], 'mailto:assistenza@welcomemyhouse.it?subject=') && str_contains($r['body'], '%20Missing%20language') && str_contains($r['body'], 'Dashboard language: <b>English</b>') && str_contains($r['body'], '>My guides</span>'));
 $r = $lucia->get("/pannello/$casa/sezioni/$emCasa");
 prova('9F·11 · l\'editor delle sezioni in inglese: etichette e aiuti dal catalogo tradotto, «Optional» spezzato come «Facoltativo»', str_contains($r['body'], 'Single emergency number') && str_contains($r['body'], 'Useful contacts')
@@ -6349,10 +6349,10 @@ $lg = riga('SELECT * FROM testimonials WHERE account_id = ? ORDER BY id DESC', [
 $rA = $admin->get('/admin/giudizi?scheda=giudizi&stelle=tutti');
 prova('9L · 3 · giudizio da 1 stella: «Da approvare», segnalato, lo sconto resta «applicato al primo anno», non in home; con il filtro «5 stelle» (di serie) non si vede', $lg && $lg['status'] === 'in_attesa' && (int) $lg['show_photo'] === 0
       && str_contains($rA['body'], 'Casa Lia') && str_contains($rA['body'], 'Segnalato') && val('SELECT giudizio_sconto_stato FROM accounts WHERE id = ?', [$liaAcc]) === 'applicato_primo_anno'
-      && !str_contains($ospite->get('/')['body'], 'Le traduzioni andavano riviste') && !str_contains($admin->get('/admin/giudizi?scheda=giudizi')['body'], 'Casa Lia')
+      && !str_contains($ospite->get('/')['body'], 'Le traduzioni andavano riviste') && !str_contains($admin->get('/admin/giudizi?scheda=giudizi')['body'], 'Le traduzioni andavano riviste')
       && (int) val('SELECT giudizio_home FROM vetrina_schede WHERE account_id = ?', [$liaAcc]) === 0,
       json_encode(['stato' => $lg['status'] ?? null, 'foto' => $lg['show_photo'] ?? null, 'lia' => str_contains($rA['body'], 'Casa Lia'), 'segnalato' => str_contains($rA['body'], 'Segnalato'),
-                   'sconto' => val('SELECT giudizio_sconto_stato FROM accounts WHERE id = ?', [$liaAcc]), 'filtro5' => str_contains($admin->get('/admin/giudizi?scheda=giudizi')['body'], 'Casa Lia')]));
+                   'sconto' => val('SELECT giudizio_sconto_stato FROM accounts WHERE id = ?', [$liaAcc]), 'filtro5' => str_contains($admin->get('/admin/giudizi?scheda=giudizi')['body'], 'Le traduzioni andavano riviste')]));
 $admin->post('/admin/giudizi/' . (int) $liaS['id'] . '/giudizio', ['si' => '1']);
 $admin->post('/admin/giudizi/' . (int) $liaS['id'] . '/risposta', ['testo' => 'Grazie Lia: le traduzioni ora si rivedono campo per campo.']);
 $admin->post('/admin/giudizi/' . (int) $liaS['id'] . '/nota', ['testo' => 'Richiamata il 20/10.']);
