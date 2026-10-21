@@ -22,6 +22,8 @@ final class CambioAbbonamento
 {
     public const STAFF = 'Questo abbonamento è stato attivato dal nostro staff: per cambiarlo scrivici.';
     public const ARRETRATO = 'Prima sistema il pagamento dell\'ultimo rinnovo, poi puoi cambiare piano.';
+    /** 9N · 10 bis: un'offerta su misura non si cambia dal pannello: per più strutture si prepara un'offerta nuova. */
+    public const OFFERTA = 'Il tuo abbonamento è un\'offerta su misura: per cambiare il numero di strutture scrivici e ti mandiamo una nuova offerta.';
 
     /**
      * L'abbonamento che si può cambiare, o il perché no.
@@ -42,6 +44,7 @@ final class CambioAbbonamento
         $motivo = '';
         if ($s['provider'] !== 'stripe' || (string) $s['provider_subscription_id'] === '') $motivo = self::STAFF;
         elseif ($s['status'] === 'past_due') $motivo = self::ARRETRATO;
+        elseif (!empty($s['offerta_id'])) $motivo = self::OFFERTA;
         return ['sub' => $s, 'pv' => $pv, 'quantita' => max(1, (int) $s['quantity']), 'motivo' => $motivo];
     }
 
@@ -154,6 +157,7 @@ final class CambioAbbonamento
     {
         $o = Db::one("SELECT * FROM orders WHERE id = ? AND kind = 'change'", [$orderId]);
         if (!$o || !empty($o['applied_at'])) return ['ok' => false, 'sub' => null];
+        if (!empty($o['offerta_id'])) return Offerte::preparaCambio($o);   // 9N · 10 bis: più strutture su un'offerta su misura
         $sub = Subscriptions::active((int) $o['account_id']);
         $pv = Plans::version((int) $o['package_version_id']);
         if (!$sub || !$pv || $sub['provider'] !== 'stripe') return ['ok' => false, 'sub' => null];
@@ -169,6 +173,7 @@ final class CambioAbbonamento
     public static function pagato(array $order, array $prep): string
     {
         if ($order['status'] !== 'paid') Db::update('orders', ['status' => 'paid', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]);
+        if (!empty($order['offerta_id'])) return Offerte::cambioPagato($order, $prep);
         if (!empty($order['applied_at'])) return 'cambio-gia-applicato';
         if (!$prep['ok']) return 'cambio-pagato-da-completare';
         $sub = Subscriptions::active((int) $order['account_id']);

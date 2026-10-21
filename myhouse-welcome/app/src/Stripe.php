@@ -360,6 +360,44 @@ final class Stripe
     }
 
     /**
+     * 9N · 10 bis · Il Checkout di un'offerta su misura: abbonamento annuale con UN prezzo creato solo per questo cliente
+     * (price_data, IVA esclusa, Stripe Tax), nessuno sconto automatico, i metadati dell'ordine e dell'offerta. Pagina di Stripe.
+     */
+    public static function checkoutOfferta(array $order, array $offerta, array $pv, array $pkg, array $account, array $user): string
+    {
+        $base = Support::baseUrl();
+        $meta = ['order_id' => (string) $order['id'], 'account_id' => (string) $account['id'], 'package_version_id' => (string) $pv['id'],
+                 'property_id' => '', 'quantity' => (string) (int) $offerta['strutture'], 'offerta' => (string) $offerta['id']];
+        $p = [
+            'mode' => 'subscription',
+            'customer' => self::ensureCustomer($account, $user),
+            'client_reference_id' => (string) $order['id'],
+            'locale' => $offerta['lingua'] === 'en' ? 'en' : 'it',
+            'billing_address_collection' => 'required',
+            'customer_update[address]' => 'auto',
+            'customer_update[name]' => 'auto',
+            'line_items[0][quantity]' => 1,
+            'line_items[0][price_data][currency]' => strtolower((string) $pv['currency']),
+            'line_items[0][price_data][unit_amount]' => (string) (int) $offerta['prezzo_cents'],
+            'line_items[0][price_data][tax_behavior]' => 'exclusive',
+            'line_items[0][price_data][recurring][interval]' => 'year',
+            'line_items[0][price_data][product_data][name]' => 'MyHouse Welcome Portfolio su misura · ' . (int) $offerta['strutture'] . ' strutture',
+            'line_items[0][price_data][product_data][metadata][ruolo]' => 'offerta',
+            'line_items[0][price_data][product_data][metadata][offerta]' => (string) $offerta['id'],
+            'success_url' => $base . '/pagamento/ok?order=' . $order['id'],
+            'cancel_url' => $base . '/offerta/' . $offerta['token'],
+        ];
+        if (!empty(Config::get('stripe')['automatic_tax'])) $p['automatic_tax[enabled]'] = 'true';
+        $meta += self::codici($order);
+        if (($meta['codice_pagamento'] ?? '') !== '') $p['subscription_data[description]'] = 'Codice cliente ' . $meta['codice_cliente'] . ' · Pagamento ' . $meta['codice_pagamento'];
+        foreach ($meta as $k => $v) { $p["metadata[$k]"] = $v; $p["subscription_data[metadata][$k]"] = $v; }
+        $res = self::call('POST', 'checkout/sessions', $p, 'mhw-checkout-offerta-order-' . $order['id']);
+        Db::update('orders', ['provider_session_id' => $res['id'], 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]);
+        self::controllaSessione((string) $res['id'], (int) $offerta['prezzo_cents'], (int) $offerta['prezzo_cents']);
+        return (string) $res['url'];
+    }
+
+    /**
      * 9A · Per tools/verifica-stripe.php (solo chiavi di prova): una sessione di Checkout senza cliente né ordine, con
      * lo sconto in percento voluto, controllata nei due modi e fatta scadere. @return array{ok:bool,errore:string,sessione:string}
      */

@@ -259,6 +259,11 @@ final class Sconti
     public static function rinnovo(int $accountId, ?array $sub = null): array
     {
         $sub ??= Subscriptions::active($accountId);
+        // 9N · 10 bis: con un'offerta su misura inviti e giudizio non valgono da soli: vale lo sconto deciso dall'amministrazione.
+        if ($sub && !empty($sub['offerta_id'])) {
+            $m = Offerte::scontoRinnovo($sub);
+            return ['inviti' => 0, 'giudizio' => 0, 'percento' => $m, 'omaggio' => false, 'stripe' => $m, 'manuale' => $m];
+        }
         $omaggio = $sub && ($sub['status'] ?? '') === 'trialing' && !empty($sub['omaggio_fino']);
         $inviti = Inviti::disponibili() ? Inviti::percento($accountId) : 0;
         $giudizio = 0;
@@ -275,7 +280,7 @@ final class Sconti
     /** I metadati della composizione, sull'abbonamento Stripe: «inviti:10,giudizio:5». */
     public static function composizione(array $r): string
     {
-        return implode(',', array_map(fn($k) => "$k:" . (int) $r[$k], array_values(array_filter(['inviti', 'giudizio'], fn($k) => (int) ($r[$k] ?? 0) > 0))));
+        return implode(',', array_map(fn($k) => "$k:" . (int) $r[$k], array_values(array_filter(['inviti', 'giudizio', 'manuale'], fn($k) => (int) ($r[$k] ?? 0) > 0))));
     }
 
     /** Il coupon del rinnovo di una percentuale somma: id fisso «mhw-rinnovo-N», una volta sola, creato se manca (come mhw-primo-anno-N). */

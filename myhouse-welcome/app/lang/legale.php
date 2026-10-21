@@ -53,6 +53,8 @@ T,
 Puoi cambiare piano da Account & Fatturazione. Se passi a un piano superiore o aggiungi strutture paghi subito solo la differenza per i giorni che restano fino al rinnovo, e la data di rinnovo non cambia. Se passi a un piano inferiore il cambio vale dal rinnovo successivo: fino ad allora resti sul piano già pagato, senza rimborsi.
 
 I codici sconto valgono solo sul primo anno del primo abbonamento: dal rinnovo si paga il prezzo pieno del piano. Non si sommano tra loro né con lo sconto di un invito: a ogni abbonamento si applica un solo codice. Per «Invita un amico» valgono le condizioni del punto 12.
+
+**Offerte su misura.** Oltre il numero massimo di strutture del Portfolio ti facciamo un'offerta su misura: un prezzo annuo concordato per tutte le strutture, valido fino alla data indicata nell'offerta, che vale **anche ai rinnovi**. Gli sconti del programma «Invita un amico» e «Giudizio con sconto» non si applicano in automatico alle offerte su misura: un eventuale sconto sul rinnovo lo decidiamo con te e te lo comunichiamo con l'avviso che precede il rinnovo. Per cambiare il numero di strutture ti mandiamo una nuova offerta, che vale subito (pagando la differenza per i giorni che restano) oppure dal rinnovo.
 T,
 'termini.6.titolo' => 'Pagamento e mancato pagamento',
 'termini.6.testo' => <<<'T'
@@ -434,6 +436,8 @@ T,
 You can change plan from Account & Billing. If you move to a higher plan or add properties you pay straight away only the difference for the days left until renewal, and the renewal date does not change. If you move to a lower plan the change applies from the next renewal: until then you keep the plan already paid, without refunds.
 
 Discount codes apply only to the first year of the first subscription: from renewal the full price of the plan applies. They cannot be combined with each other or with an invitation discount: only one code applies to each subscription. "Invite a friend" follows the conditions in section 12.
+
+**Tailored offers.** Beyond the maximum number of properties of Portfolio we make you a tailored offer: an agreed annual price for all your properties, valid until the date stated in the offer, which also applies **at renewal**. The discounts of the «Invite a friend» and «Review with a discount» programmes do not apply automatically to tailored offers: any renewal discount is agreed with you and shown in the notice before the renewal. To change the number of properties we send you a new offer, which applies straight away (paying the difference for the days left) or from the renewal.
 T,
 'termini.6.titolo' => 'Payment and failed payment',
 'termini.6.testo' => <<<'T'

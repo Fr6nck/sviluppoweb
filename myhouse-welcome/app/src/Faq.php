@@ -67,6 +67,10 @@ final class Faq
                     ? 'poi ogni struttura in più costa meno, a scaglioni: ' . implode(', ', array_map(fn($t) => Plans::tierLabel($t, (int) $pf['max_quantity']) . ' ' . Support::money($t['cents'], $pf['currency']) . ($t['a'] === $t['da'] ? '' : " l'una"), $tiers))
                     : 'ogni struttura in più costa ' . Support::money(Plans::unitPrice($pf, 2), $pf['currency']) . ', fino a ' . (int) $pf['max_quantity'] . ' strutture (per di più, scrivici)')
                 . '. Prezzi annuali, IVA esclusa. Nel listino scegli quante strutture ti servono e vedi il totale e quanto costa in media ognuna; dentro il pannello trovi il conto struttura per struttura.'];
+            // 9N · 10 bis · oltre il massimo del Portfolio: l'offerta su misura
+            $f[] = ['oltre-portfolio', 'Ho più di ' . (int) $pf['max_quantity'] . ' strutture?', 'Oltre ' . (int) $pf['max_quantity'] . ' strutture ti facciamo un\'offerta su misura: chiedi il preventivo dal listino. '
+                . 'Ti mandiamo per email un link con il prezzo annuo concordato per tutte le strutture; lo accetti e paghi su Stripe, come gli altri piani. Al rinnovo vale lo stesso prezzo. '
+                . 'Gli sconti del programma inviti e «Giudizio con sconto» non si applicano da soli alle offerte su misura: li valutiamo con te prima di ogni rinnovo.'];
         }
         array_push($f,
             ['bnb-camere', 'Ho un B&B, un affittacamere o un agriturismo con più camere: mi servono più guide?', 'No. Più camere allo stesso indirizzo e con lo stesso CIN sono una struttura sola: basta una guida. Se le camere hanno reti Wi-Fi diverse, nella sezione Wi-Fi aggiungi una riga per ogni zona.'],
@@ -112,7 +116,7 @@ final class Faq
     private const TEMI = [
         ['cominciare', 'Cominciare', 'Getting started', ['prova', 'app', 'tempo', 'qr', 'sezione-libera', 'recensioni', 'codice-porta', 'google', 'tracciamento']],
         ['lingue', 'Lingue e traduzioni', 'Languages and translations', ['lingue', 'lingua-principale', 'traduzioni', 'traduzioni-suggerite', 'attivazione']],
-        ['strutture', 'Più strutture', 'More properties', ['piu-strutture', 'campione', 'campione-copia', 'bnb-camere', 'piu-case']],
+        ['strutture', 'Più strutture', 'More properties', ['piu-strutture', 'oltre-portfolio', 'campione', 'campione-copia', 'bnb-camere', 'piu-case']],
         ['sconti', 'Sconti, inviti e giudizio', 'Discounts, invites and reviews', ['porta-amico', 'amico-quando', 'giudizio-sconto', 'giudizio-vetrina', 'giudizio-ritiro', 'omaggio']],
         ['pagamento', 'Pagamento, piani e disdetta', 'Payment, plans and cancelling', ['fattura', 'cambio-piano', 'scendere-piano', 'disdire', 'non-rinnovo']],
     ];

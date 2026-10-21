@@ -5,7 +5,7 @@
 use function MHW\b;
 use MHW\{Support, Csrf, Icon, Preventivi};
 $title = 'Preventivi';
-$pillola = ['nuovo' => 'ochre', 'contattato' => 'sea', 'chiuso' => 'paper'];
+$pillola = ['nuovo' => 'ochre', 'contattato' => 'sea', 'offerta' => 'sea', 'accettato' => 'pine', 'ricontattare' => 'alert', 'chiuso' => 'paper'];
 $conta = array_count_values(array_column($righe, 'stato')); ?>
 <div class="stack stack--lg">
   <div class="spread spread--mid"><h1>Preventivi.</h1><a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/preventivi?formato=csv">Esporta CSV</a></div>
@@ -36,6 +36,7 @@ $conta = array_count_values(array_column($righe, 'stato')); ?>
           <select id="stato-<?= (int) $r['id'] ?>" name="stato" style="min-height:36px;min-width:132px"><?php foreach (Preventivi::STATI as $k => $et): ?><option value="<?= $k ?>"<?= $k === $r['stato'] ? ' selected' : '' ?>><?= $et ?></option><?php endforeach; ?></select>
           <button class="btn btn--ghost btn--sm">Salva</button>
           <a class="btn btn--sm" href="mailto:<?= Support::e($r['email']) ?>?subject=<?= $oggetto ?>" aria-label="Rispondi a <?= Support::e($r['nome']) ?>">Rispondi</a>
+          <?php if (MHW\Offerte::disponibili()): /* 9N · 10 bis */ ?><a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/preventivi/<?= (int) $r['id'] ?>/offerta">Prepara l'offerta</a><?php endif; ?>
           <?php if ($proposta): $idP = (int) $r['id']; ?>
           <details class="preventivo__proposta" style="flex-basis:100%;margin-top:6px">
             <summary class="small" style="cursor:pointer;min-height:32px">Proposta, nota e ricontatto<?= $r['storico'] ? ' · storico' : '' ?></summary>

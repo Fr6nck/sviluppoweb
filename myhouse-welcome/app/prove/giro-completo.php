@@ -6951,6 +6951,124 @@ prova('9N · 10 · «Torna al mio account» dall\'impersonazione riporta alla sc
 $r = $admin->get('/admin/clienti');
 prova('9N · 10 · i codici MW non vanno a capo (classe sulla cella, regola nel CSS)', str_contains($r['body'], '<code class="codice-mw">') && str_contains((string) file_get_contents("$DOVE/assets/app.css"), '.codice-mw, .codice-link code, table.data code{white-space:nowrap}'));
 
+// 11 · Offerta su misura (10 bis): preventivo → offerta 15 strutture a 640 € → email → pagamento → Portfolio 15, Cassa, Scadenze;
+// rinnovo allo stesso prezzo; sconto a mano del 10% → 576 € + IVA; inviti e giudizio solo promemoria; offerta scaduta → «da ricontattare».
+db()->prepare("INSERT INTO preventivi (account_id, nome, email, telefono, strutture, messaggio, lingua, stato, created_at) VALUES (NULL, 'Marta Misura', 'marta9n@prova.test', '', 15, 'Quindici case', 'it', 'nuovo', ?)")
+    ->execute([gmdate('Y-m-d\TH:i:s\Z')]);
+$prevM = (int) db()->lastInsertId();
+$pagOff = "/admin/preventivi/$prevM/offerta";
+$r = $admin->get('/admin/preventivi');
+prova('9N · 11 · Preventivi: «Prepara l\'offerta» sulla richiesta; la pagina con strutture, prezzo, scadenza a 14 giorni, sconto facoltativo e il confronto «15 strutture a scaglioni = 727 €»',
+      str_contains($r['body'], $pagOff . '"') && ($r = $admin->get($pagOff))['code'] === 200 && pulita($r) && str_contains($r['body'], 'value="15"') && str_contains($r['body'], 'value="727,00"')
+      && str_contains($r['body'], 'value="' . gmdate('Y-m-d', strtotime('+14 days')) . '"') && str_contains($r['body'], 'name="sconto_rinnovo"')
+      && str_contains($r['body'], '15 strutture a scaglioni = <b>727 €</b>') && str_contains($r['body'], 'non si applicano da soli'));
+$campiOff = ['strutture' => '15', 'prezzo' => '640,00', 'valida_fino' => gmdate('Y-m-d', strtotime('+14 days')), 'sconto_rinnovo' => '0', 'note' => 'Prezzo bloccato anche al rinnovo.'];
+$r = $admin->modulo($pagOff, $pagOff, $campiOff + ['azione' => 'anteprima']);
+prova('9N · 11 · «Anteprima email»: l\'email com\'è (640 € + IVA, 15 strutture), senza salvare né mandare', str_contains($r['body'], '640 € + IVA') && str_contains($r['body'], 'anteprima, non mandata')
+      && !val('SELECT id FROM offerte WHERE preventivo_id = ?', [$prevM]));
+$r = $admin->modulo($pagOff, $pagOff, $campiOff + ['strutture' => '9', 'azione' => 'manda']);
+prova('9N · 11 · meno di 11 strutture: errore, niente offerta', !val('SELECT id FROM offerte WHERE preventivo_id = ?', [$prevM]) && str_contains($admin->segui($r)['body'], 'strutture'));
+$primaPosta = count(righePosta() ?: []);
+$r = $admin->segui($admin->modulo($pagOff, $pagOff, $campiOff + ['azione' => 'manda']));
+$off = riga('SELECT * FROM offerte WHERE preventivo_id = ?', [$prevM]) ?? [];
+$mOff = array_values(array_filter(array_map(fn($l) => json_decode($l, true), array_slice(righePosta() ?: [], $primaPosta)), fn($m) => ($m['to'] ?? '') === 'marta9n@prova.test'))[0] ?? [];
+prova('9N · 11 · «Manda l\'offerta»: salvata (15 strutture, 64000, «inviata»), preventivo «Offerta inviata», email con il prezzo e il link, Reply-To commerciale, nel registro',
+      $off && (int) $off['strutture'] === 15 && (int) $off['prezzo_cents'] === 64000 && $off['stato'] === 'inviata' && str_contains($r['body'], 'Offerta mandata a marta9n@prova.test')
+      && val('SELECT stato FROM preventivi WHERE id = ?', [$prevM]) === 'offerta' && str_contains((string) ($mOff['subject'] ?? ''), 'La tua offerta Portfolio su misura: 15 strutture')
+      && str_contains((string) ($mOff['text'] ?? ''), '640 € + IVA') && str_contains((string) ($mOff['text'] ?? ''), '/offerta/' . $off['token'])
+      && str_contains(json_encode($mOff), 'commerciale') && (bool) val("SELECT id FROM audit_log WHERE action = 'offerta.creata'"), json_encode($mOff));
+$r = $ospite->get('/offerta/' . $off['token']);
+prova('9N · 11 · /offerta/{token}: 640 € + IVA per 15 strutture, «stesso prezzo anche al rinnovo», la scadenza, «Crea l\'account e accetta», noindex; un token sconosciuto è 404',
+      $r['code'] === 200 && pulita($r) && str_contains($r['body'], '640 €') && str_contains($r['body'], 'Stesso prezzo anche al rinnovo') && str_contains($r['body'], 'Offerta valida fino al')
+      && str_contains($r['body'], '/registrati?offerta=' . $off['token']) && str_contains($r['body'], 'noindex') && $ospite->get('/offerta/' . str_repeat('x', 32))['code'] === 404);
+// Marta si registra dal link dell'offerta: dopo la conferma dell'email torna all'offerta.
+$marta = new Browser('marta9n');
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$marta->get('/registrati?offerta=' . $off['token']);
+$marta->post('/registrati', ['piano' => pv('plus'), 'name' => 'Marta Misura', 'email' => 'marta9n@prova.test', 'email2' => 'marta9n@prova.test', 'password' => 'Misura9N-2026', 'termini' => '1']);
+$martaAcc = $accDi('marta9n@prova.test');
+$l = linkPosta('marta9n@prova.test', 'verifica'); $rV = $marta->segui($marta->get(substr($l, strpos($l, '/verifica/'))));
+$r = $marta->get('/offerta/' . $off['token']);
+prova('9N · 11 · registrata dal link: torna all\'offerta; senza dati di fatturazione niente «Accetta e paga», c\'è «Compila i dati di fatturazione»', $martaAcc > 0
+      && str_contains($rV['body'] . $r['body'], 'La tua offerta Portfolio su misura') && str_contains($r['body'], 'Compila i dati di fatturazione') && !str_contains($r['body'], 'Accetta e paga'));
+$marta->modulo('/account', '/account/fatturazione', ['billing_type' => 'azienda', 'billing_name' => 'Misura Case srl', 'vat' => '02945910541', 'cf' => '', 'sdi' => 'M5UXCR1',
+               'pec' => '', 'billing_address' => 'Via Misura 1', 'billing_postal' => '06081', 'billing_city' => 'Assisi', 'billing_province' => 'PG']);
+$daOff = count(richiesteStripe());
+$r = $marta->modulo('/offerta/' . $off['token'], '/offerta/' . $off['token'] . '/accetta', []);
+$oOff = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$martaAcc]) ?? [];
+$sesOff = array_values(array_filter(array_slice(richiesteStripe(), $daOff), fn($x) => $x['percorso'] === '/v1/checkout/sessions' && $x['metodo'] === 'POST'))[0]['corpo'] ?? [];
+$voceOff = $sesOff['line_items'][0] ?? [];
+prova('9N · 11 · «Accetta e paga»: ordine Portfolio da 15 strutture a 640 € con l\'offerta; Checkout in abbonamento con una sola voce (640 € l\'anno, IVA esclusa, prezzo creato solo per l\'offerta)',
+      $r['code'] === 302 && $oOff && (int) $oOff['amount_cents'] === 64000 && (int) $oOff['quantity'] === 15 && (int) $oOff['offerta_id'] === (int) $off['id'] && $oOff['status'] === 'pending'
+      && ($sesOff['mode'] ?? '') === 'subscription' && count($sesOff['line_items'] ?? []) === 1 && (string) ($voceOff['price_data']['unit_amount'] ?? '') === '64000'
+      && ($voceOff['price_data']['recurring']['interval'] ?? '') === 'year' && ($voceOff['price_data']['tax_behavior'] ?? '') === 'exclusive'
+      && ($sesOff['metadata']['offerta'] ?? '') === (string) $off['id'] && !isset($sesOff['discounts']), json_encode($sesOff));
+$r = inviaWebhook(['id' => 'evt_9n_marta', 'type' => 'checkout.session.completed', 'data' => ['object' => [
+    'id' => $oOff['provider_session_id'], 'mode' => 'subscription', 'payment_status' => 'paid', 'customer' => 'cus_9n_marta', 'subscription' => 'sub_9n_marta',
+    'client_reference_id' => (string) $oOff['id'], 'total_details' => ['amount_discount' => 0, 'amount_tax' => 14080],
+    'metadata' => ['order_id' => (string) $oOff['id'], 'account_id' => (string) $martaAcc, 'offerta' => (string) $off['id']]]]]);
+$sM = riga('SELECT * FROM subscriptions WHERE account_id = ? ORDER BY id DESC', [$martaAcc]) ?? [];
+$dirM = $c9n('echo json_encode(MHW\Entitlements::forAccount(' . $martaAcc . ')["properties"] ?? null);');
+prova('9N · 11 · pagato (webhook verificato): Portfolio con 15 strutture e l\'offerta sull\'abbonamento; offerta «accettata», preventivo «accettato»', $r['body'] === 'abbonamento-attivato'
+      && (int) ($sM['quantity'] ?? 0) === 15 && (int) ($sM['offerta_id'] ?? 0) === (int) $off['id'] && str_contains($dirM, '"15"')
+      && val('SELECT stato FROM offerte WHERE id = ?', [$off['id']]) === 'accettata' && val('SELECT stato FROM preventivi WHERE id = ?', [$prevM]) === 'accettato', $r['body'] . ' ' . $dirM);
+$r = inviaWebhook(['id' => 'evt_9n_marta_upd', 'type' => 'customer.subscription.updated', 'data' => ['object' => ['id' => 'sub_9n_marta', 'status' => 'active',
+    'items' => ['data' => [['id' => 'si_9n_marta', 'quantity' => 1, 'price' => ['id' => 'price_9n_marta', 'product' => ['metadata' => ['ruolo' => 'offerta']]]]]]]]]);
+prova('9N · 11 · un aggiornamento da Stripe (una voce, quantità 1) non toglie strutture all\'offerta', (int) val('SELECT quantity FROM subscriptions WHERE id = ?', [$sM['id']]) === 15, $r['body']);
+$r = $admin->get('/admin/cassa?mese=' . gmdate('Y-m'));
+prova('9N · 11 · Cassa: il pagamento dell\'offerta (640,00 + IVA 140,80) come «Portfolio su misura · 15 strutture»', str_contains($r['body'], (string) $oOff['code'])
+      && preg_match('#Marta Misura.*?Portfolio su misura · 15 strutture#su', $r['body']) === 1 && str_contains($r['body'], '640,00'));
+db()->prepare('UPDATE subscriptions SET current_period_end = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() + 20 * 86400), $sM['id']]);
+prova('9N · 11 · Scadenze a 30 giorni: Marta con 640,00 € (stesso prezzo)', preg_match('#marta9n@prova\.test.*?640,00#su', $admin->get('/admin/scadenze?giorni=30')['body']) === 1);
+// Inviti e giudizio: solo promemoria.
+$inviti9n($martaAcc, 4); $giudizio9n($martaAcc, 'pannello', 'da_applicare_rinnovo');
+$xM = $rinnovo9n($martaAcc);
+$rC = $admin->get("/admin/cliente/$martaAcc");
+prova('9N · 11 · inviti (4 amici) e giudizio non si applicano da soli: rinnovo a 640 €; nella scheda il promemoria «4 amici · varrebbero 20%» e il giudizio',
+      ($xM['importo'] ?? 0) === 64000 && ($xM['r']['percento'] ?? -1) === 0 && ($xM['avviso'] ?? 0) === 64000 && str_contains($rC['body'], 'id="offerta"')
+      && str_contains($rC['body'], '4 amici · varrebbero 20%') && str_contains($rC['body'], 'Portfolio su misura · 15 strutture · 640 € + IVA'), json_encode($xM));
+$daOff = count(richiesteStripe());
+$r = $admin->segui($admin->modulo("/admin/cliente/$martaAcc", "/admin/cliente/$martaAcc/offerta/sconto", ['sconto' => '10']));
+$xM = $rinnovo9n($martaAcc);
+$pS = $postSub('sub_9n_marta', $daOff); $corpoS = json_encode(end($pS)['corpo'] ?? []);
+prova('9N · 11 · sconto a mano del 10%: 576 € + IVA nella scheda, nell\'avviso a 30 giorni e su Stripe (coupon «mhw-rinnovo-10», «manuale:10»), nel registro',
+      ($xM['importo'] ?? 0) === 57600 && ($xM['avviso'] ?? 0) === 57600 && str_contains($r['body'], '576 € + IVA') && str_contains($corpoS, 'mhw-rinnovo-10') && str_contains($corpoS, 'manuale:10')
+      && (bool) val("SELECT id FROM audit_log WHERE action = 'offerta.sconto_rinnovo'") && preg_match('#marta9n@prova\.test.*?576,00.*?−10% sconto rinnovo#su', $admin->get('/admin/scadenze?giorni=30')['body']) === 1,
+      json_encode($xM) . $corpoS);
+// Il rinnovo: stesso prezzo concordato (scontato del 10%), sempre 15 strutture.
+$fineM = time() + 365 * 86400;
+$r = inviaWebhook(['id' => 'evt_9n_marta_rin', 'type' => 'invoice.paid', 'data' => ['object' => ['id' => 'in_9n_marta_rin', 'customer' => 'cus_9n_marta', 'subscription' => 'sub_9n_marta',
+    'billing_reason' => 'subscription_cycle', 'subtotal' => 64000, 'total_excluding_tax' => 57600, 'tax' => 12672, 'total' => 70272, 'total_discount_amounts' => [['amount' => 6400]],
+    'discounts' => [['coupon' => 'mhw-rinnovo-10']], 'lines' => ['data' => [['period' => ['start' => time(), 'end' => $fineM]]]]]]]);
+$sM2 = riga('SELECT * FROM subscriptions WHERE id = ?', [$sM['id']]);
+$xM = $rinnovo9n($martaAcc);
+$rCa = $admin->get('/admin/cassa?mese=' . gmdate('Y-m'));
+prova('9N · 11 · rinnovo pagato: un anno in più, ancora 15 strutture e la stessa offerta; in Cassa il rinnovo a 576,00 + IVA; il prezzo concordato resta 640 € (sconto ancora 10%)',
+      $r['body'] === 'rinnovo-pagato' && (int) $sM2['quantity'] === 15 && (int) $sM2['offerta_id'] === (int) $off['id'] && substr((string) $sM2['current_period_end'], 0, 10) === gmdate('Y-m-d', $fineM)
+      && preg_match('#Marta Misura.*?Portfolio su misura · 15 strutture.*?576,00#su', $rCa['body']) === 1 && ($xM['importo'] ?? 0) === 57600, $r['body'] . json_encode($xM));
+// A meno di 7 giorni dal rinnovo lo sconto non si cambia più.
+db()->prepare('UPDATE subscriptions SET current_period_end = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() + 5 * 86400), $sM['id']]);
+$r = $admin->segui($admin->modulo("/admin/cliente/$martaAcc", "/admin/cliente/$martaAcc/offerta/sconto", ['sconto' => '20']));
+prova('9N · 11 · a 5 giorni dal rinnovo lo sconto resta fermo (10%) e il messaggio lo dice', str_contains($r['body'], 'non si cambia più') && (int) val('SELECT sconto_rinnovo_pct FROM offerte WHERE id = ?', [$off['id']]) === 10);
+db()->prepare('UPDATE subscriptions SET current_period_end = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', $fineM), $sM['id']]);
+prova('9N · 11 · l\'offerta accettata non si riusa: «Hai già accettato questa offerta»', str_contains($marta->get('/offerta/' . $off['token'])['body'], 'Hai già accettato questa offerta'));
+// Offerta scaduta senza pagamento: «scaduta» e il preventivo torna «da ricontattare».
+db()->prepare("INSERT INTO preventivi (account_id, nome, email, telefono, strutture, messaggio, lingua, stato, created_at) VALUES (NULL, 'Sergio Scaduto', 'sergio9n@prova.test', '', 12, '', 'en', 'nuovo', ?)")
+    ->execute([gmdate('Y-m-d\TH:i:s\Z')]);
+$prevS = (int) db()->lastInsertId();
+$admin->modulo("/admin/preventivi/$prevS/offerta", "/admin/preventivi/$prevS/offerta", ['strutture' => '12', 'prezzo' => '560', 'valida_fino' => gmdate('Y-m-d', strtotime('+1 day')), 'sconto_rinnovo' => '0', 'note' => '', 'azione' => 'manda']);
+$offS = riga('SELECT * FROM offerte WHERE preventivo_id = ?', [$prevS]) ?? [];
+$mS = array_values(array_filter(array_map(fn($l) => json_decode($l, true), righePosta() ?: []), fn($m) => ($m['to'] ?? '') === 'sergio9n@prova.test'))[0] ?? [];
+db()->prepare('UPDATE offerte SET valida_fino = ? WHERE id = ?')->execute([gmdate('Y-m-d', strtotime('-1 day')), $offS['id'] ?? 0]);
+$cron();
+$rS = $ospite->get('/offerta/' . ($offS['token'] ?? ''));
+prova('9N · 11 · in inglese l\'email «Your tailored Portfolio offer»; scaduta: offerta «scaduta», preventivo «da ricontattare», la pagina dice che è scaduta e niente bottoni',
+      str_contains((string) ($mS['subject'] ?? ''), 'Your tailored Portfolio offer: 12 properties') && val('SELECT stato FROM offerte WHERE id = ?', [$offS['id'] ?? 0]) === 'scaduta'
+      && val('SELECT stato FROM preventivi WHERE id = ?', [$prevS]) === 'ricontattare' && str_contains($rS['body'], 'This offer expired on') && !str_contains($rS['body'], '/registrati?offerta='));
+$rT = $ospite->get('/termini'); $rF = $ospite->get('/domande');
+prova('9N · 11 · Termini e FAQ: «Offerte su misura» (prezzo concordato, stesso prezzo al rinnovo, inviti e giudizio non automatici), IT ed EN',
+      str_contains($rT['body'], 'Offerte su misura') && str_contains($ospite->get('/en/terms')['body'], 'Tailored offers') && str_contains($rF['body'], 'Ho più di 10 strutture?'));
+
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

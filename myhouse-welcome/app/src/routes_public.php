@@ -22,6 +22,8 @@ $salvaPiano = function (array $acc, int $userId, array $pv, int $q): void {
 $doveComincia = function (array $u): string {
     if ($u['role'] === 'admin') return '/admin';
     if (!Auth::isVerified($u)) return '/conferma-email';
+    // 9N · 10 bis: arrivato da un'offerta su misura (/offerta/{token}): dopo l'accesso o la registrazione si torna lì.
+    if (!empty($_SESSION['offerta_dopo']) && $u['role'] === 'host') return '/offerta/' . $_SESSION['offerta_dopo'];
     $acc = Db::one('SELECT * FROM accounts WHERE user_id = ?', [$u['id']]);
     if (!$acc['intended_package_version_id'] && !Subscriptions::active((int) $acc['id'])) return '/piano';
     return '/pannello';
@@ -384,7 +386,12 @@ $registrati = function () use ($guard, $doveComincia, $salvaPiano, $codiceDalLin
                                 'invitoDi' => $invito && !$omaggioLink ? $nomeInvito : '', 'invitoCodice' => $invitoLink, 'oltre' => $oltre, 'pianoOltre' => $pianoOltre,
                                 'scontoInvito' => $nomeInvito !== '' ? [['tipo' => 'invito', 'nome' => 'Invito di ' . $nomeInvito, 'percento' => MHW\Inviti::AMICO]] : []], 'layout/bare');
 };
-$r->any('/registrati', function () use ($registrati) { if (($_GET['lang'] ?? $_POST['lang'] ?? '') === 'en') MHW\LinguaSito::imposta('en'); $registrati(); });
+/* 9N · 10 bis: ?offerta={token} su registrazione e accesso ricorda l'offerta, per tornarci dopo. */
+$ricordaOfferta = function (): void {
+    $t = (string) ($_GET['offerta'] ?? '');
+    if ($t !== '' && MHW\Offerte::perToken($t)) $_SESSION['offerta_dopo'] = $t;
+};
+$r->any('/registrati', function () use ($registrati, $ricordaOfferta) { $ricordaOfferta(); if (($_GET['lang'] ?? $_POST['lang'] ?? '') === 'en') MHW\LinguaSito::imposta('en'); $registrati(); });
 $r->any('/en/register', function () use ($registrati) { MHW\LinguaSito::imposta('en'); $registrati(); });
 
 // 9N · L'accesso, in italiano (/accedi, anche ?lang=en) e in inglese (/en/login).
@@ -413,7 +420,35 @@ $accedi = function () use ($guard, $doveComincia) {
     }
     View::out('auth/login', ['err' => $err !== null ? MHW\LinguaSito::tr($err) : null, 'email' => $email], 'layout/bare');
 };
-$r->any('/accedi', function () use ($accedi) { if (($_GET['lang'] ?? $_POST['lang'] ?? '') === 'en') MHW\LinguaSito::imposta('en'); $accedi(); });
+$r->any('/accedi', function () use ($accedi, $ricordaOfferta) { $ricordaOfferta(); if (($_GET['lang'] ?? $_POST['lang'] ?? '') === 'en') MHW\LinguaSito::imposta('en'); $accedi(); });
+
+// 9N · 10 bis · L'offerta su misura: la pagina (senza account si vede lo stesso) e «Accetta e paga».
+$r->get('/offerta/{token}', function (array $a) {
+    $o = MHW\Offerte::perToken((string) $a['token']);
+    if (!$o) { http_response_code(404); View::out('pub/404', []); }
+    if ($o['lingua'] === 'en') MHW\LinguaSito::imposta('en');
+    $u = Auth::user();
+    $utente = $u && $u['role'] === 'host' ? $u : null;
+    $acc = $utente ? Auth::account() : null;
+    if ($utente && $o['stato'] !== 'inviata') unset($_SESSION['offerta_dopo']);
+    View::out('pub/offerta', ['o' => $o, 'utente' => $utente, 'acc' => $acc, 'fatturazioneOk' => $acc ? MHW\Fatturazione::completa($acc) : false]);
+});
+$r->post('/offerta/{token}/accetta', function (array $a) {
+    $u = Auth::requireUser();
+    $o = MHW\Offerte::perToken((string) $a['token']);
+    if (!$o || $u['role'] !== 'host') { http_response_code(404); View::out('pub/404', []); }
+    if (!Auth::isVerified($u)) { Support::flash('Conferma prima la tua email: ti abbiamo scritto.', 'err'); Support::redirect('/offerta/' . $o['token']); }
+    try {
+        $url = MHW\Offerte::accetta($o, Auth::account(), $u);
+        unset($_SESSION['offerta_dopo']);
+    } catch (\RuntimeException $e) {
+        Support::flash($e->getMessage(), 'err'); Support::redirect('/offerta/' . $o['token']);
+    } catch (\Throwable $e) {
+        Support::flash('Il pagamento non è disponibile in questo momento. Riprova tra poco (codice ' . Log::exception($e, 'offerta su misura') . ').', 'err');
+        Support::redirect('/offerta/' . $o['token']);
+    }
+    Support::redirect($url);
+});
 $r->any('/en/login', function () use ($accedi) { MHW\LinguaSito::imposta('en'); $accedi(); });
 
 $r->post('/esci', function () { Auth::logout(); Support::redirect('/'); });

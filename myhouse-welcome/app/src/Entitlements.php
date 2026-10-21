@@ -23,7 +23,10 @@ final class Entitlements
         $pv = Subscriptions::governingVersionId($accountId);
         $attivo = Subscriptions::active($accountId);
         $q = $attivo ? (int) $attivo['quantity'] : (int) Db::val('SELECT intended_quantity FROM accounts WHERE id = ?', [$accountId], 1);
-        return self::$cache[$accountId] = self::calcola($accountId, $pv, $q, $attivo ? 'package' : 'intended');
+        $out = self::calcola($accountId, $pv, $q, $attivo ? 'package' : 'intended');
+        // 9N · 10 bis: un'offerta su misura paga N strutture oltre il massimo del listino: valgono tutte (salvo un'eccezione a mano).
+        if ($attivo && !empty($attivo['offerta_id']) && isset($out['properties']) && $out['properties']['source'] !== 'override') $out['properties']['value'] = (string) max(1, $q);
+        return self::$cache[$accountId] = $out;
     }
 
     /**

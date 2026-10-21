@@ -83,6 +83,7 @@ final class Richiami
         $giorno = 86400;
         $fatte = array_fill_keys(array_keys(self::TIPI), 0);
         $fuori = '%@' . Demo::DOMINIO;
+        try { Offerte::aggiornaScadute(); } catch (\Throwable $e) { Log::exception($e, 'offerte scadute'); }   // 9N · 10 bis
 
         // Conferma (7A): chi non ha confermato l'email dopo 24 ore, e l'ultima volta dopo 72. Fino a 7 giorni:
         // chi aggiorna l'applicazione non scrive agli iscritti di mesi fa. Il link è nuovo (annulla il vecchio).
@@ -102,6 +103,7 @@ final class Richiami
         // Pagamento (7A): un checkout aperto e annullato (o lasciato a metà) da almeno 2 ore, entro 3 giorni,
         // e ancora nessun abbonamento. Una volta sola per account.
         $nuovo = Migrator::columnExists('orders', 'kind') ? " AND o.kind = 'new'" : '';
+        if (Migrator::columnExists('orders', 'offerta_id')) $nuovo .= ' AND o.offerta_id IS NULL';   // 9N · 10 bis: l'offerta ha il suo link
         foreach (Db::all("SELECT o.*, u.email, u.name AS user_name FROM orders o JOIN accounts a ON a.id = o.account_id JOIN users u ON u.id = a.user_id
                           WHERE o.status IN ('pending', 'canceled')$nuovo AND o.created_at <= ? AND o.created_at > ? AND u.email NOT LIKE ?
                           ORDER BY o.id DESC", [$iso($t - 7200), $iso($t - 3 * $giorno), $fuori]) as $o) {
@@ -303,7 +305,7 @@ final class Richiami
         $pvId = (int) (!empty($s['next_package_version_id']) ? $s['next_package_version_id'] : $s['package_version_id']);
         $pv = Plans::version($pvId) ?? [];
         $q = max(1, (int) (!empty($s['next_package_version_id']) ? ($s['next_quantity'] ?? 1) : ($s['quantity'] ?? 1)));
-        $listino = $pv ? Plans::price($pv, $q) : 0;
+        $listino = Offerte::prezzo($s) ?? ($pv ? Plans::price($pv, $q) : 0);   // 9N · 10 bis: il prezzo concordato
         [$netto, $percento] = Gestione::importoRinnovo($s);
         $sconto = max(0, $listino - $netto);
         $daStripe = false;

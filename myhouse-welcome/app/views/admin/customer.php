@@ -130,6 +130,28 @@ include __DIR__ . '/_stati.php'; ?>
         $subAtt = MHW\Subscriptions::active((int) $acc['id']); $stripeAtt = $subAtt && $subAtt['provider'] === 'stripe' && $subAtt['provider_subscription_id'] !== '';
         $pianoAtt = $subAtt ? MHW\Plans::version((int) $subAtt['package_version_id']) : null; $qAtt = max(1, (int) ($subAtt['quantity'] ?? 1));
         $inOmaggioA = $subAtt && $subAtt['status'] === 'trialing' && !empty($subAtt['omaggio_fino']); ?>
+  <?php /* 9N · 10 bis · L'offerta su misura: prezzo concordato, rinnovo, promemoria degli sconti del programma, sconto deciso a mano. */
+        $offAtt = MHW\Offerte::disponibili() ? MHW\Offerte::attiva((int) $acc['id']) : null;
+        if ($offAtt): $subO = MHW\Subscriptions::active((int) $acc['id']); $memo = MHW\Offerte::promemoria((int) $acc['id']);
+              $giorniO = (int) floor((strtotime((string) $subO['current_period_end']) - time()) / 86400); $prossimaO = !empty($subO['next_offerta_id']) ? MHW\Offerte::riga((int) $subO['next_offerta_id']) : null; ?>
+  <section class="panel stack" id="offerta" style="gap:10px" aria-labelledby="offerta-titolo">
+    <h2 id="offerta-titolo" style="font-size:22px;margin:0">Portfolio su misura · <?= (int) $offAtt['strutture'] ?> strutture · <?= Support::e(Support::money((int) $offAtt['prezzo_cents'])) ?> + IVA <span class="badge badge--pine">attivo</span></h2>
+    <p class="muted small" style="margin:0">Rinnovo il <?= Support::e(Support::date((string) $subO['current_period_end'])) ?> · prezzo concordato bloccato<?= $prossimaO ? ' · dal rinnovo: ' . (int) $prossimaO['strutture'] . ' strutture a ' . Support::e(Support::money((int) $prossimaO['prezzo_cents'])) . ' + IVA' : '' ?></p>
+    <div class="tablewrap"><table class="data"><tbody>
+      <tr><td>Inviti andati a buon fine (promemoria)</td><td style="text-align:right"><?= (int) $memo['amici'] ?> amici · varrebbero <?= (int) $memo['inviti_pct'] ?>%</td></tr>
+      <tr><td>Giudizio con sconto (promemoria)</td><td style="text-align:right"><?= $memo['giudizio'] ? 'aderito · varrebbe ' . (int) $memo['giudizio_pct'] . '%' : 'non aderito' ?></td></tr>
+      <tr><td><b>Sconto sul prossimo rinnovo (deciso da te)</b></td><td style="text-align:right">
+        <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/offerta/sconto" class="row" style="gap:6px;justify-content:flex-end;align-items:center"><?= Csrf::field() ?>
+          <label class="sr-only" for="of-sc">Sconto sul prossimo rinnovo (%)</label>
+          <input id="of-sc" name="sconto" type="number" min="0" max="90" value="<?= (int) $offAtt['sconto_rinnovo_pct'] ?>" style="width:80px"<?= $giorniO < MHW\Offerte::GIORNI_SCONTO ? ' disabled' : '' ?>> %
+          → <b><?= Support::e(Support::money(MHW\Sconti::netto((int) ($prossimaO['prezzo_cents'] ?? $offAtt['prezzo_cents']), (int) $offAtt['sconto_rinnovo_pct']))) ?></b> + IVA
+          <button class="btn btn--ghost btn--sm"<?= $giorniO < MHW\Offerte::GIORNI_SCONTO ? ' disabled' : '' ?>>Salva</button></form></td></tr>
+    </tbody></table></div>
+    <p class="small muted" style="margin:0">Lo sconto vale per ogni rinnovo finché non lo cambi (0 lo toglie) e si può cambiare fino a <?= MHW\Offerte::GIORNI_SCONTO ?> giorni prima del rinnovo; l'avviso dei 30 giorni al cliente mostra l'importo già scontato. Ogni modifica va nel Registro azioni.
+      <a href="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/offerta">Nuova offerta (più strutture)</a></p>
+  </section>
+  <?php endif; ?>
+
   <div class="grid grid-2" style="align-items:start" id="abbonamento">
     <section class="panel stack" style="gap:8px" aria-labelledby="abb-titolo">
       <h2 id="abb-titolo" style="font-size:19px;margin:0">Abbonamento</h2>

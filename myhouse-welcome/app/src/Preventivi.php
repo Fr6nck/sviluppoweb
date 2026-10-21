@@ -9,7 +9,8 @@ namespace MHW;
  */
 final class Preventivi
 {
-    public const STATI = ['nuovo' => 'Nuovo', 'contattato' => 'Contattato', 'chiuso' => 'Chiuso'];
+    /** 9N · 10 bis: «Offerta inviata», «Accettato» (pagata) e «Da ricontattare» (offerta scaduta) li mette anche il sito. */
+    public const STATI = ['nuovo' => 'Nuovo', 'contattato' => 'Contattato', 'offerta' => 'Offerta inviata', 'accettato' => 'Accettato', 'ricontattare' => 'Da ricontattare', 'chiuso' => 'Chiuso'];
 
     public static function disponibili(): bool { return Migrator::tableExists('preventivi'); }
 

@@ -99,7 +99,7 @@ final class Gestione
         $pv = Plans::version((int) (!empty($s['next_package_version_id']) ? $s['next_package_version_id'] : $s['package_version_id']));
         if (!$pv) return [0, 0];
         $q = max(1, (int) (!empty($s['next_package_version_id']) ? ($s['next_quantity'] ?? 1) : ($s['quantity'] ?? 1)));
-        $prezzo = Plans::price($pv, $q);
+        $prezzo = Offerte::prezzo($s) ?? Plans::price($pv, $q);   // 9N · 10 bis: un'offerta su misura si rinnova al prezzo concordato
         $sconto = Sconti::rinnovo((int) $s['account_id'], $s)['stripe'];
         return [Sconti::netto($prezzo, $sconto), $sconto];
     }
@@ -444,6 +444,7 @@ final class Gestione
             if (isset($s['id'], $s['total_details']['amount_tax'])) $ivaSessione[(string) $s['id']] = (int) $s['total_details']['amount_tax'];
         }
         foreach (Db::all("SELECT o.id, o.kind, o.provider, o.amount_cents, o.discount_cents, o.sconti, o.quantity, o.created_at, o.account_id, o.provider_session_id,
+                                 " . (Migrator::columnExists('orders', 'offerta_id') ? 'o.offerta_id' : 'NULL AS offerta_id') . ",
                                  " . ($conIva ? 'o.iva_cents, o.riferimento' : "NULL AS iva_cents, '' AS riferimento") . ", " . ($conCodice ? 'o.code' : "'' AS code") . ",
                                  pk.name AS piano, u.email, u.name AS cliente
                           FROM orders o JOIN package_versions pv ON pv.id = o.package_version_id JOIN packages pk ON pk.id = pv.package_id
@@ -455,7 +456,7 @@ final class Gestione
                       'imponibile' => (int) $o['amount_cents'], 'iva' => $iva, 'totale' => (int) $o['amount_cents'] + (int) $iva,
                       'codice' => (string) $o['code'] !== '' ? (string) $o['code'] : Codici::pagamento((int) $o['id']),
                       'account_id' => (int) $o['account_id'], 'cliente' => (string) $o['cliente'], 'email' => (string) $o['email'],
-                      'piano' => (string) $o['piano'] . ((int) $o['quantity'] > 1 ? ' · ' . (int) $o['quantity'] . ' strutture' : ''),
+                      'piano' => (string) $o['piano'] . (!empty($o['offerta_id']) ? ' su misura' : '') . ((int) $o['quantity'] > 1 ? ' · ' . (int) $o['quantity'] . ' strutture' : ''),
                       'sconti' => (int) $o['discount_cents'] > 0 ? trim(Support::money((int) $o['discount_cents']) . ' ' . (string) $o['sconti']) : '',
                       'riferimento' => (string) $o['riferimento'], 'fattura' => ''];
         }
@@ -463,7 +464,7 @@ final class Gestione
         foreach (Db::all("SELECT processed_at, payload FROM webhook_events WHERE provider = 'stripe' AND kind = 'invoice.paid' AND processed_at >= ? AND processed_at < ?", [$da, $a]) as $r) {
             $inv = (json_decode((string) $r['payload'], true) ?: [])['data']['object'] ?? [];
             if (($inv['billing_reason'] ?? '') !== 'subscription_cycle') continue;
-            $sub = Db::one("SELECT s.account_id, s.quantity, pk.name AS piano, u.email, u.name AS cliente FROM subscriptions s JOIN accounts a ON a.id = s.account_id
+            $sub = Db::one("SELECT s.account_id, s.quantity, " . (Migrator::columnExists('subscriptions', 'offerta_id') ? 's.offerta_id' : 'NULL AS offerta_id') . ", pk.name AS piano, u.email, u.name AS cliente FROM subscriptions s JOIN accounts a ON a.id = s.account_id
                             JOIN users u ON u.id = a.user_id JOIN package_versions pv ON pv.id = s.package_version_id JOIN packages pk ON pk.id = pv.package_id
                             WHERE s.provider_subscription_id = ? ORDER BY s.id DESC", [(string) ($inv['subscription'] ?? '')])
                 ?: Db::one('SELECT a.id AS account_id, 1 AS quantity, \'\' AS piano, u.email, u.name AS cliente FROM accounts a JOIN users u ON u.id = a.user_id
@@ -476,7 +477,7 @@ final class Gestione
             $out[] = ['data' => (string) $r['processed_at'], 'tipo' => 'rinnovo', 'via' => 'stripe', 'imponibile' => $netto, 'iva' => $iva, 'totale' => $netto + (int) $iva,
                       'codice' => Codici::perFattura((string) ($inv['id'] ?? '')), 'account_id' => (int) ($sub['account_id'] ?? 0),
                       'cliente' => (string) ($sub['cliente'] ?? ''), 'email' => (string) ($sub['email'] ?? ''),
-                      'piano' => (string) ($sub['piano'] ?? '') . ((int) ($sub['quantity'] ?? 1) > 1 ? ' · ' . (int) $sub['quantity'] . ' strutture' : ''),
+                      'piano' => (string) ($sub['piano'] ?? '') . (!empty($sub['offerta_id']) ? ' su misura' : '') . ((int) ($sub['quantity'] ?? 1) > 1 ? ' · ' . (int) $sub['quantity'] . ' strutture' : ''),
                       'sconti' => $sconto > 0 ? Support::money($sconto) : '', 'riferimento' => '', 'fattura' => (string) ($inv['number'] ?? $inv['id'] ?? '')];
         }
         // I rimborsi fatti dall'amministrazione (importo IVA compresa, come su Stripe).
@@ -569,7 +570,7 @@ final class Gestione
         $arr = 0; $aRischio = 0; $piani = []; $rinnovi = ['30' => [0, 0], '90' => [0, 0]];
         foreach ($attivi as $s) {
             $pv = Plans::version((int) $s['package_version_id']);
-            $annuo = $pv ? Plans::price($pv, max(1, (int) ($s['quantity'] ?? 1))) : 0;
+            $annuo = Offerte::prezzo($s) ?? ($pv ? Plans::price($pv, max(1, (int) ($s['quantity'] ?? 1))) : 0);   // 9N · 10 bis
             $p = &$piani[$s['piano']];
             $p ??= ['piano' => $s['piano'], 'clienti' => 0, 'strutture' => 0, 'arr' => 0, 'disdetti' => 0];
             $p['clienti']++; $p['strutture'] += max(1, (int) ($s['quantity'] ?? 1));

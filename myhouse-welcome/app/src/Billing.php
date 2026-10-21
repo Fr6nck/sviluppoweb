@@ -175,8 +175,9 @@ final class Billing
         ] + $acquirente + $omaggio;
         // 9I · L'abbonamento porta il codice dell'ordine che l'ha creato.
         if (Migrator::columnExists('subscriptions', 'code') && ($codP = Codici::pagamento((int) $order['id'])) !== '') $riga['code'] = $codP;
-        if ($esistente) Db::update('subscriptions', $riga, 'id = :sid', ['sid' => $esistente['id']]);
-        else Db::insert('subscriptions', $riga + ['created_at' => Support::now()]);
+        if ($esistente) { Db::update('subscriptions', $riga, 'id = :sid', ['sid' => $esistente['id']]); $subId = (int) $esistente['id']; }
+        else $subId = Db::insert('subscriptions', $riga + ['created_at' => Support::now()]);
+        Offerte::attivata($order, $subId);   // 9N · 10 bis: l'abbonamento nato da un'offerta su misura
 
         Db::update('accounts', ['intended_package_version_id' => $order['package_version_id'], 'intended_quantity' => $quantita]
                    + ($customerId !== '' ? ['stripe_customer_id' => $customerId] : []), 'id = :aid', ['aid' => $acc]);
@@ -276,6 +277,8 @@ final class Billing
         Inviti::fattura($row, $inv);         // un rinnovo scontato chiude gli inviti che lo hanno pagato
         if (in_array($inv['billing_reason'] ?? '', ['subscription_cycle', 'subscription_update'], true)) Sconti::accoda((int) $row['account_id']);   // 9N
         Giudizi::fattura($row, $inv);        // 9B: un rinnovo scontato chiude lo sconto del giudizio promesso sul rinnovo
+        // 9N · 10 bis: un'offerta su misura nuova che vale dal rinnovo (Stripe ha già il prezzo nuovo).
+        if (!empty($row['next_offerta_id']) && ($inv['billing_reason'] ?? '') === 'subscription_cycle') Offerte::alRinnovo(Db::one('SELECT * FROM subscriptions WHERE id = ?', [$row['id']]));
         // Discesa programmata (6H): al rinnovo il sito passa al piano nuovo.
         if (!empty($row['next_package_version_id']) && ($inv['billing_reason'] ?? '') === 'subscription_cycle') {
             CambioAbbonamento::alRinnovo(Db::one('SELECT * FROM subscriptions WHERE id = ?', [$row['id']]));
@@ -311,7 +314,8 @@ final class Billing
         $quantita = (int) $row['quantity']; $voce = (string) $row['provider_extra_item_id'];
         // Con una discesa programmata Stripe ha già le voci nuove: nel sito valgono quelle pagate fino al rinnovo.
         $programmato = !empty($row['next_package_version_id']);
-        if (Plans::perProperty($pv) && !$programmato) {
+        // 9N · 10 bis: con un'offerta su misura Stripe ha una sola voce (il prezzo concordato): le strutture sono quelle dell'offerta.
+        if (Plans::perProperty($pv) && !$programmato && empty($row['offerta_id'])) {
             [$daStripe, $voce] = self::quantityFrom($sub, $pv, $voce);
             if ($daStripe !== null) $quantita = $daStripe;
         }

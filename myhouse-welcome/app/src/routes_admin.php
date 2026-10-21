@@ -1421,6 +1421,93 @@ $r->post('/admin/preventivi/{id}/stato', function (array $a) {
     Support::redirect('/admin/preventivi#preventivo-' . (int) $riga['id']);
 });
 
+// ------------------------------------------------------- 9N · 10 bis · offerte su misura
+/* Il modulo dell'offerta e il suo invio, dal preventivo o dalla scheda del cliente (più strutture). */
+$offertaPagina = function (array $dest, string $azione, ?array $attiva) {
+    $vecchi = (array) ($_SESSION['offerta_valori'] ?? []); unset($_SESSION['offerta_valori']);
+    $n = max(MHW\Offerte::minimo(), (int) ($vecchi['strutture'] ?? $dest['strutture'] ?? 0));
+    $v = $vecchi + ['strutture' => $n, 'prezzo' => number_format(MHW\Offerte::listino($n) / 100, 2, ',', '.'), 'valida_fino' => gmdate('Y-m-d', strtotime('+14 days')),
+                    'sconto_rinnovo' => 0, 'note' => '', 'modo' => 'rinnovo'];
+    $offerte = $dest['preventivo_id'] ? MHW\Offerte::di((int) $dest['preventivo_id']) : MHW\Offerte::di(null, (int) $dest['account_id']);
+    View::out('admin/offerta', ['dest' => $dest, 'v' => $v, 'offerte' => $offerte, 'attiva' => $attiva, 'azione' => $azione, 'minimo' => MHW\Offerte::minimo(),
+                                'nav' => $dest['preventivo_id'] ? 'preventivi' : 'clienti'], 'layout/cms');
+};
+$offertaInvia = function (array $dest, string $torna) {
+    Auth::requireAdmin();
+    $in = ['strutture' => (int) ($_POST['strutture'] ?? 0), 'prezzo' => (string) ($_POST['prezzo'] ?? ''), 'valida_fino' => (string) ($_POST['valida_fino'] ?? ''),
+           'sconto_rinnovo' => (int) ($_POST['sconto_rinnovo'] ?? 0), 'note' => (string) ($_POST['note'] ?? ''), 'modo' => (string) ($_POST['modo'] ?? 'nuovo')];
+    if (($_POST['azione'] ?? '') === 'anteprima') {
+        // L'email com'è, senza salvare né mandare (con un link di prova).
+        $finta = ['id' => 0, 'token' => 'anteprima', 'lingua' => $dest['lingua'], 'nome' => $dest['nome'], 'strutture' => max(1, $in['strutture']),
+                  'prezzo_cents' => (int) (MHW\Offerte::euro($in['prezzo']) ?? 0), 'valida_fino' => preg_match('/^\d{4}-\d{2}-\d{2}$/', $in['valida_fino']) ? $in['valida_fino'] : gmdate('Y-m-d'),
+                  'note' => $in['note'], 'modo' => $dest['account_id'] && MHW\Offerte::attiva((int) $dest['account_id']) && in_array($in['modo'], ['subito', 'rinnovo'], true) ? $in['modo'] : 'nuovo'];
+        [$oggetto, $titolo, $par, $bottone, $nota] = MHW\Offerte::email($finta);
+        header('Content-Type: text/html; charset=utf-8');
+        echo MHW\Mailer::inLingua($dest['lingua'], fn() => MHW\Mailer::layout($titolo, $par, $bottone, $nota, 'Oggetto: ' . htmlspecialchars($oggetto) . ' · anteprima, non mandata'));
+        exit;
+    }
+    try {
+        $o = MHW\Offerte::crea($in, $dest, (int) Auth::user()['id']);
+        $ok = MHW\Offerte::manda($o);
+        Support::flash($ok ? 'Offerta mandata a ' . $dest['email'] . ': ' . (int) $o['strutture'] . ' strutture, ' . Support::money((int) $o['prezzo_cents']) . ' + IVA, valida fino al ' . Support::date($o['valida_fino']) . '.'
+                           : 'Offerta salvata, ma l\'email non è partita: controlla la posta in Impostazioni e copia il link dall\'elenco.', $ok ? 'ok' : 'err');
+    } catch (\RuntimeException $e) {
+        $_SESSION['offerta_valori'] = $in;
+        Support::flash($e->getMessage(), 'err');
+    }
+    Support::redirect($torna);
+};
+$destPreventivo = function (int $id): array {
+    $p = MHW\Preventivi::disponibili() ? Db::one('SELECT * FROM preventivi WHERE id = ?', [$id]) : null;
+    if (!$p || !MHW\Offerte::disponibili()) { http_response_code(404); View::out('pub/404', []); }
+    $aid = (int) ($p['account_id'] ?? 0);
+    if (!$aid && ($trovato = Db::val("SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = ?", [mb_strtolower((string) $p['email'])]))) $aid = (int) $trovato;
+    return ['preventivo_id' => (int) $p['id'], 'account_id' => $aid ?: null, 'email' => (string) $p['email'], 'nome' => (string) $p['nome'], 'lingua' => (string) $p['lingua'],
+            'strutture' => (int) $p['strutture'], 'titolo' => (string) $p['nome'],
+            'sotto' => 'Richiesta del ' . Support::date($p['created_at']) . ': ' . (int) $p['strutture'] . ' strutture · ' . $p['email'] . ($aid ? ' · ' . MHW\Codici::cliente($aid) : ' · non ancora registrato')];
+};
+$destCliente = function (int $aid): array {
+    $c = Db::one('SELECT a.id, u.email, u.name FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [$aid]);
+    if (!$c || !MHW\Offerte::disponibili()) { http_response_code(404); View::out('pub/404', []); }
+    $att = MHW\Offerte::attiva($aid);
+    return ['preventivo_id' => null, 'account_id' => $aid, 'email' => (string) $c['email'], 'nome' => (string) $c['name'],
+            'lingua' => MHW\Richiami::lingua($aid) === 'en' ? 'en' : 'it', 'strutture' => $att ? (int) $att['strutture'] + 1 : 0,
+            'titolo' => (string) $c['name'], 'sotto' => MHW\Codici::cliente($aid) . ' · ' . $c['email'] . ($att ? ' · offerta attiva: ' . (int) $att['strutture'] . ' strutture' : '')];
+};
+$r->get('/admin/preventivi/{id}/offerta', function (array $a) use ($offertaPagina, $destPreventivo) {
+    Auth::requireAdmin();
+    $d = $destPreventivo((int) $a['id']);
+    $offertaPagina($d, '/admin/preventivi/' . (int) $a['id'] . '/offerta', $d['account_id'] ? MHW\Offerte::attiva((int) $d['account_id']) : null);
+});
+$r->post('/admin/preventivi/{id}/offerta', function (array $a) use ($offertaInvia, $destPreventivo) {
+    Auth::requireAdmin();
+    $offertaInvia($destPreventivo((int) $a['id']), '/admin/preventivi/' . (int) $a['id'] . '/offerta');
+});
+$r->get('/admin/cliente/{aid}/offerta', function (array $a) use ($offertaPagina, $destCliente) {
+    Auth::requireAdmin();
+    $offertaPagina($destCliente((int) $a['aid']), '/admin/cliente/' . (int) $a['aid'] . '/offerta', MHW\Offerte::attiva((int) $a['aid']));
+});
+$r->post('/admin/cliente/{aid}/offerta', function (array $a) use ($offertaInvia, $destCliente) {
+    Auth::requireAdmin();
+    $offertaInvia($destCliente((int) $a['aid']), '/admin/cliente/' . (int) $a['aid'] . '/offerta');
+});
+$r->post('/admin/offerte/{id}/annulla', function (array $a) {
+    Auth::requireAdmin();
+    $o = MHW\Offerte::riga((int) $a['id']);
+    if (!$o) { http_response_code(404); View::out('pub/404', []); }
+    if ($o['stato'] === 'inviata') { Db::update('offerte', ['stato' => 'annullata'], 'id = :id', ['id' => $o['id']]); Auth::audit('offerta.annullata', null, ['id' => (int) $o['id']]); Support::flash('Offerta annullata: il link non vale più.'); }
+    Support::redirect($o['preventivo_id'] ? '/admin/preventivi/' . (int) $o['preventivo_id'] . '/offerta' : '/admin/cliente/' . (int) $o['account_id'] . '/offerta');
+});
+/* Lo sconto sul prossimo rinnovo di un'offerta su misura, deciso a mano (fino a 7 giorni prima). */
+$r->post('/admin/cliente/{aid}/offerta/sconto', function (array $a) {
+    $admin = Auth::requireAdmin();
+    try {
+        $x = MHW\Offerte::impostaSconto((int) $a['aid'], (int) ($_POST['sconto'] ?? 0), (int) $admin['id']);
+        Support::flash('Sconto sul prossimo rinnovo: ' . $x['dopo'] . '% → ' . Support::money($x['importo']) . ' + IVA.');
+    } catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
+    Support::redirect('/admin/cliente/' . (int) $a['aid'] . '#offerta');
+});
+
 $r->get('/admin/sconti', function () {
     Auth::requireAdmin();
     $righe = MHW\Sconti::disponibili() ? Db::all('SELECT * FROM discount_codes ORDER BY id DESC') : [];
