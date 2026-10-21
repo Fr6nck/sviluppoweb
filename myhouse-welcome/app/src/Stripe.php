@@ -14,11 +14,12 @@ final class Stripe
 {
     /**
      * La modalità di una chiave segreta: «live» o «test», '' se non è una chiave segreta. Vale la chiave segreta standard
-     * (sk_live_ / sk_test_) e la chiave con restrizioni (rk_live_ / rk_test_), che Stripe propone per le integrazioni.
+     * (sk_live_ / sk_test_), la chiave con restrizioni (rk_live_ / rk_test_), che Stripe propone per le integrazioni, e
+     * (scelta del titolare) le chiavi mk_live_ / mk_test_: se Stripe non le riconosce lo dice «Prova la connessione».
      */
     public static function modoChiave(string $k): string
     {
-        return preg_match('/^(?:sk|rk)_(live|test)_/', trim($k), $m) ? $m[1] : '';
+        return preg_match('/^(?:sk|rk|mk)_(live|test)_/', trim($k), $m) ? $m[1] : '';
     }
 
     /** Senza chiave segreta E segreto del webhook non si vende: un pagamento non arriverebbe mai. */

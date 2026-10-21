@@ -71,6 +71,7 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
 - **Chiave segreta**: vanno bene la chiave segreta standard (`sk_live_…`, in Stripe → Sviluppatori → Chiavi API → «Chiavi standard») **o una chiave con restrizioni** (`rk_live_…`). Con la chiave con restrizioni dai questi permessi, altrimenti Stripe rifiuta alcune operazioni:
   - **Scrittura**: Customers (con i tax ID), Checkout Sessions, Subscriptions, Products, Prices, Coupons, Invoices, Refunds, Customer portal.
   - **Lettura**: Events, Webhook Endpoints, Charges, PaymentIntents, PaymentMethods, Payment method configurations, Tax settings e Tax registrations.
+  - Il sito accetta anche le chiavi `mk_live_…` (`mk_test_…` per le prove). Stripe non le documenta: dopo averla salvata premi «Prova la connessione»; se risponde «Invalid API Key», usa una `sk_live_` o una `rk_live_`.
   - «Prova la connessione» e Diagnostica → Stripe dicono se qualcosa manca (un errore «does not have the required permissions» indica il permesso da aggiungere).
 
 - **Webhook** su `https://TUODOMINIO/webhook/stripe` (oppure `…/index.php/webhook/stripe`). Eventi da inviare:
