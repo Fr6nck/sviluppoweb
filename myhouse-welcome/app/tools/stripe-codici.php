@@ -24,7 +24,7 @@ Config::load(MHW_APP . '/config.php');
 $scrivi = in_array('--scrivi', $argv, true);
 $chiave = (string) ((Config::get('stripe') ?? [])['secret_key'] ?? '');
 if ($scrivi && $chiave === '') { fwrite(STDERR, "Stripe non è configurato (chiave segreta).\n"); exit(1); }
-if ($scrivi && str_starts_with($chiave, 'sk_live_') && !in_array('--live', $argv, true)) {
+if ($scrivi && \MHW\Stripe::modoChiave($chiave) === 'live' && !in_array('--live', $argv, true)) {
     fwrite(STDERR, "Chiave viva (sk_live_): prima prova con quella di test, poi rilancia con --scrivi --live.\n"); exit(1);
 }
 if (!Codici::disponibili()) { fwrite(STDERR, "Manca la migrazione 048: apri il sito una volta per aggiornare il database.\n"); exit(1); }

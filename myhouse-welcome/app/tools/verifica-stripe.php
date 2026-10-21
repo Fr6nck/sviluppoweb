@@ -26,7 +26,7 @@ Config::load(MHW_APP . '/config.php');
 
 $chiave = (string) ((Config::get('stripe') ?? [])['secret_key'] ?? '');
 if ($chiave === '') { fwrite(STDERR, "Stripe non è configurato (chiave segreta): niente da verificare.\n"); exit(1); }
-if (!str_starts_with($chiave, 'sk_test_')) { fwrite(STDERR, "Questo strumento lavora solo con la chiave di prova (sk_test_): con quella viva si fermerebbe qui.\n"); exit(1); }
+if (\MHW\Stripe::modoChiave($chiave) !== 'test') { fwrite(STDERR, "Questo strumento lavora solo con la chiave di prova (sk_test_): con quella viva si fermerebbe qui.\n"); exit(1); }
 
 $righe = [];
 $sconti = [0, Inviti::AMICO];

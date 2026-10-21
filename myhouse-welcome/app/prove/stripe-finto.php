@@ -90,6 +90,8 @@ if ($metodo === 'GET' && $percorso === '/v1/webhook_endpoints') {
     $rispondi(['object' => 'list', 'data' => is_file("$dir/endpoints.json") ? (array) json_decode((string) file_get_contents("$dir/endpoints.json"), true) : [], 'has_more' => false]);
 }
 if ($metodo === 'GET' && $percorso === '/v1/balance') $rispondi(['object' => 'balance', 'available' => [], 'pending' => []]);
+// «Prova la connessione» in Impostazioni legge un cliente (va bene anche con una chiave con restrizioni rk_).
+if ($metodo === 'GET' && $percorso === '/v1/customers') $rispondi(['object' => 'list', 'data' => [], 'has_more' => false]);
 if ($metodo === 'POST' && $percorso === '/v1/customers') $rispondi(['id' => 'cus_finto' . $n, 'object' => 'customer', 'metadata' => $corpo['metadata'] ?? []]);
 if ($metodo === 'POST' && preg_match('#^/v1/customers/(cus_[A-Za-z0-9_]+)$#', $percorso, $m)) {
     $rispondi(['id' => $m[1], 'object' => 'customer', 'metadata' => $corpo['metadata'] ?? []]);

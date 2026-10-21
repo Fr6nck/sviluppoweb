@@ -7652,6 +7652,12 @@ prova('Pagamenti · SEPA in verifica, la conferma della banca è su Stripe ma il
       (string) val('SELECT status FROM orders WHERE id = ?', [$ovs]));
 @unlink("$STRIPE_DIR/eventi.json");
 
+// Le chiavi con restrizioni di Stripe (rk_live_ / rk_test_) valgono come la chiave segreta (sk_), con la loro modalità.
+$rk = json_decode($c9n('echo json_encode([array_map(fn($k) => MHW\Stripe::modoChiave($k), ["rk_live_abc", "rk_test_abc", "sk_live_abc", "sk_test_abc", "pk_live_abc", "whsec_abc", ""]),
+    (function () { MHW\Config::sovrascrivi("stripe", ["secret_key" => "rk_live_' . 'prova", "publishable_key" => "pk_live_prova", "webhook_secret" => "whsec_prova"] + (array) MHW\Config::get("stripe")); return [MHW\Stripe::enabled(), MHW\Stripe::chiavePubblicabile(), MHW\Config::stripeReady()]; })()]);'), true) ?: [];
+prova('Stripe · la chiave con restrizioni rk_live_ / rk_test_ vale come sk_: modalità giusta, Stripe attivo, chiave pubblicabile pk_live_ abbinata', ($rk[0] ?? []) === ['live', 'test', 'live', 'test', '', '', '']
+      && ($rk[1] ?? []) === [true, 'pk_live_prova', true], json_encode($rk));
+
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

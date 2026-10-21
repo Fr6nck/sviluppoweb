@@ -12,23 +12,32 @@ namespace MHW;
  */
 final class Stripe
 {
+    /**
+     * La modalità di una chiave segreta: «live» o «test», '' se non è una chiave segreta. Vale la chiave segreta standard
+     * (sk_live_ / sk_test_) e la chiave con restrizioni (rk_live_ / rk_test_), che Stripe propone per le integrazioni.
+     */
+    public static function modoChiave(string $k): string
+    {
+        return preg_match('/^(?:sk|rk)_(live|test)_/', trim($k), $m) ? $m[1] : '';
+    }
+
     /** Senza chiave segreta E segreto del webhook non si vende: un pagamento non arriverebbe mai. */
     public static function enabled(): bool
     {
         $s = Config::get('stripe');
-        return str_starts_with((string) $s['secret_key'], 'sk_') && (string) $s['webhook_secret'] !== '';
+        return self::modoChiave((string) $s['secret_key']) !== '' && (string) $s['webhook_secret'] !== '';
     }
 
     /**
-     * La chiave pubblicabile, solo se è della stessa modalità della chiave segreta (pk_test_ con sk_test_,
-     * pk_live_ con sk_live_): altrimenti '' e si paga sulla pagina di Stripe.
+     * La chiave pubblicabile, solo se è della stessa modalità della chiave segreta (pk_test_ con sk_test_ o rk_test_,
+     * pk_live_ con sk_live_ o rk_live_): altrimenti '' e si paga sulla pagina di Stripe.
      */
     public static function chiavePubblicabile(): string
     {
         $s = Config::get('stripe');
         $pk = trim((string) ($s['publishable_key'] ?? ''));
-        $modo = fn(string $k, string $p) => preg_match('/^' . $p . '_(live|test)_/', $k, $m) ? $m[1] : '';
-        return $modo($pk, 'pk') !== '' && $modo($pk, 'pk') === $modo((string) $s['secret_key'], 'sk') ? $pk : '';
+        $modoPk = preg_match('/^pk_(live|test)_/', $pk, $m) ? $m[1] : '';
+        return $modoPk !== '' && $modoPk === self::modoChiave((string) $s['secret_key']) ? $pk : '';
     }
 
     /** Il pagamento con la carta nel passo «Pubblica» (Checkout incorporato): serve anche la chiave pubblicabile. */

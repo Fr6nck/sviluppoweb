@@ -18,6 +18,6 @@ final class Config
     public static function stripeReady(): bool
     {
         $s = self::get('stripe');
-        return $s['secret_key'] !== '' && str_starts_with($s['secret_key'], 'sk_');
+        return Stripe::modoChiave((string) $s['secret_key']) !== '';   // sk_ o rk_ (chiave con restrizioni)
     }
 }

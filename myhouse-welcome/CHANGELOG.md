@@ -4,6 +4,7 @@
 
 - **«Il pagamento non è disponibile in questo momento»** al passo Pubblica: con la versione «Dahlia» delle API (2026-03-25), quella degli account Stripe recenti, il Checkout incorporato si chiama `ui_mode=embedded_page` e il vecchio `embedded` viene rifiutato. Ora il sito manda `embedded_page` e, se l'account è su una versione precedente, riprova da solo con `embedded` e se lo ricorda (`storage/.stripe-ui-mode`). Le pagine riconoscono tutti e due i nomi; il modulo usa `createEmbeddedCheckoutPage` (o `initEmbeddedCheckout` dove c'è ancora).
 - Chi guarda come cliente («Entra come cliente») vede nel messaggio anche il motivo tecnico dell'errore, senza cercarlo nei log.
+- **Chiavi con restrizioni di Stripe** (`rk_live_` / `rk_test_`): accettate in Impostazioni → Stripe come la chiave segreta (`sk_`), con la loro modalità (abbinamento con la chiave pubblicabile, strumenti da riga di comando). «Prova la connessione» legge un cliente invece del saldo, così basta il permesso sui clienti. I permessi da dare sono in DA-CONFIGURARE, punto 3.
 
 ## v2 · 9N 10 bis, 9O, 9P, 9Q: offerta su misura, rimborsi da ogni parte, SEPA, IVA per i privati, partner con commissioni, email «Fino al 55%» e guide in bozza (21 ottobre 2026)
 

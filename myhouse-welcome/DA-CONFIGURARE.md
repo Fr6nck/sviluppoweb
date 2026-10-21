@@ -68,6 +68,11 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
 
 ## 3. Stripe
 
+- **Chiave segreta**: vanno bene la chiave segreta standard (`sk_live_…`, in Stripe → Sviluppatori → Chiavi API → «Chiavi standard») **o una chiave con restrizioni** (`rk_live_…`). Con la chiave con restrizioni dai questi permessi, altrimenti Stripe rifiuta alcune operazioni:
+  - **Scrittura**: Customers (con i tax ID), Checkout Sessions, Subscriptions, Products, Prices, Coupons, Invoices, Refunds, Customer portal.
+  - **Lettura**: Events, Webhook Endpoints, Charges, PaymentIntents, PaymentMethods, Payment method configurations, Tax settings e Tax registrations.
+  - «Prova la connessione» e Diagnostica → Stripe dicono se qualcosa manca (un errore «does not have the required permissions» indica il permesso da aggiungere).
+
 - **Webhook** su `https://TUODOMINIO/webhook/stripe` (oppure `…/index.php/webhook/stripe`). Eventi da inviare:
   - `checkout.session.completed`
   - `checkout.session.expired`
@@ -87,7 +92,7 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
   4. Sistemato, dal dettaglio dell'evento in Stripe puoi premere **«Invia di nuovo»** per gli eventi rimasti in errore: arrivano come «già elaborati» se il recupero li ha già presi, senza doppioni.
 - **Pagamento con la carta nel pannello (19 ottobre).** Il primo acquisto si può pagare con la carta di credito o di debito direttamente nel passo «Pubblica», nel modulo di Stripe incorporato nella pagina; «Preferisci pagare sulla pagina di Stripe?» resta a un clic. Per accenderlo:
   1. In Stripe → Sviluppatori → Chiavi API copia la **chiave pubblicabile** (`pk_test_…` per le prove, `pk_live_…` in produzione). Non è segreta: sta nella pagina del cliente.
-  2. Incollala in **Amministrazione → Impostazioni → Stripe → «Chiave pubblicabile»** (oppure `STRIPE_PUBLISHABLE_KEY`). Deve essere della stessa modalità della chiave segreta: `pk_test_` con `sk_test_`, `pk_live_` con `sk_live_`. Se non lo è, il sito la ignora e il cliente paga sulla pagina di Stripe; «Prova la connessione» te lo dice.
+  2. Incollala in **Amministrazione → Impostazioni → Stripe → «Chiave pubblicabile»** (oppure `STRIPE_PUBLISHABLE_KEY`). Deve essere della stessa modalità della chiave segreta: `pk_test_` con `sk_test_`/`rk_test_`, `pk_live_` con `sk_live_`/`rk_live_`. Se non lo è, il sito la ignora e il cliente paga sulla pagina di Stripe; «Prova la connessione» te lo dice.
   3. Senza chiave pubblicabile non cambia niente: «Conferma e paga» porta sulla pagina di Stripe, come prima.
   4. Apple Pay e Google Pay nel modulo incorporato compaiono solo se li accendi in Stripe → Impostazioni → Metodi di pagamento e, per Apple Pay, se **registri il dominio** del sito in Stripe → Impostazioni → Domini dei metodi di pagamento.
   5. Prova in modalità test: «Conferma e paga» → «Paga e pubblica.» con il modulo; carta `4242 4242 4242 4242` → «Stiamo attivando la tua guida» → online. Poi rifai con «Paga sulla pagina di Stripe» e con «Annulla e torna indietro» (nessun addebito, si torna a Pubblica). Con la carta `4000 0025 0000 3155` la verifica 3D Secure si apre dentro il modulo.
