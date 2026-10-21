@@ -14,6 +14,7 @@ namespace MHW;
  *   parere   — (7A) 14 giorni dopo la registrazione, mai pubblicato: «Cosa ti ha fermato?»
  *   giudizio — (7D) dal 30° al 40° giorno dopo la prima pubblicazione, una volta sola: «Ti sta piacendo?»
  *   benvenuto — la prima guida dell'account è online (Benvenuto): una volta sola, di servizio, senza «non mandarmene più»
+ *   sconti   — (9P) 7 giorni dopo l'attivazione, una volta per account: «Fino al 55%», inviti e giudizio con i conti (EmailSconti)
  *
  * Le finestre non si sovrappongono: una struttura riceve al massimo un richiamo
  * per volta, e chi aggiorna l'applicazione con bozze vecchie non riceve una
@@ -229,6 +230,9 @@ final class Richiami
                 if (self::manda((int) $g['acc_id'], $g['email'], (string) $g['user_name'], 'giudizio', 'primo', $m)) $fatte['giudizio']++;
             }
         }
+
+        // 9P · «Fino al 55%», 7 giorni dopo l'attivazione: prima dei lavori di manutenzione qui sotto (che chiamano Stripe e possono durare).
+        try { $fatte['sconti'] = EmailSconti::giro($t); } catch (\Throwable $e) { Log::exception($e, 'email «Fino al 55%»'); }
 
         Seo::forseFile();      // 7F: una volta al giorno robots.txt, sitemap.xml e llms.txt come file veri
         Registri::giornaliero();   // 8I: una volta al giorno pulizia dei registri e copia di quelli di ieri su S3

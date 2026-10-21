@@ -3277,3 +3277,15 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .cassa tfoot td{font-weight:700;border-top:2px solid var(--line)}
 .cassa tr.cassa__aperto td{background:var(--sunk)}
 .bonifico-campi[hidden]{display:none}
+
+/* 9O · «Sono un privato: mostra i prezzi IVA inclusa»: l'interruttore e «di cui IVA 22%» sotto i prezzi. */
+.iva-interruttore{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0 0;font-size:14px}
+.iva-interruttore .check{margin:0}
+.iva-dettaglio{display:block;font-size:12.5px;line-height:1.4;color:var(--muted)}
+.plan--dark .iva-dettaglio{color:var(--inverse-muted)}
+.iva-dettaglio[hidden]{display:none}
+.questionario__iva{margin-top:6px}
+/* 9O · Riepilogo: per una persona fisica il totale con l'IVA in grande. */
+.riepilogo__riga--grande{font-size:24px} .riepilogo__riga--grande b{font-weight:700}
+/* 9P · «Fino al 55%» nella home del pannello: il numero grande senza la riga sopra */
+.risparmio--pannello{margin-top:0;padding-top:0;border-top:0}

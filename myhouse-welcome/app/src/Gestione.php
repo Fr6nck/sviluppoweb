@@ -510,7 +510,7 @@ final class Gestione
                       'codice' => (string) $o['code'] !== '' ? (string) $o['code'] : Codici::pagamento((int) $o['id']),
                       'account_id' => (int) $o['account_id'], 'cliente' => (string) $o['cliente'], 'email' => (string) $o['email'],
                       'piano' => (string) $o['piano'] . (!empty($o['offerta_id']) ? ' su misura' : '') . ((int) $o['quantity'] > 1 ? ' · ' . (int) $o['quantity'] . ' strutture' : ''),
-                      'sconti' => (int) $o['discount_cents'] > 0 ? trim(Support::money((int) $o['discount_cents']) . ' ' . (string) $o['sconti']) : '',
+                      'sconti' => $sconto > 0 ? trim(Support::money($sconto) . ' ' . (string) $o['sconti']) : '',
                       'riferimento' => (string) $o['riferimento'], 'fattura' => ''];
         }
         // I rinnovi: dalle fatture arrivate col webhook (IVA esclusa nell'imponibile).

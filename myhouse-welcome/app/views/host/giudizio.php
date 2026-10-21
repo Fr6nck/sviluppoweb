@@ -114,7 +114,7 @@ $data = fn(?string $d) => $d ? MHW\Pannello::data($d) : ''; ?>
   <?php elseif ($programma && $aderito && $ritirato): ?>
     <p class="note" role="status"><span><?= Support::e(tf('Ti sei ritirato dal programma il {data}: la scheda e il giudizio non si vedono sul sito. Lo sconto già avuto resta.', ['{data}' => $data((string) $scheda['ritirato_at'])])) ?></span></p>
   <?php elseif ($programma && Giudizi::puoAderire($acc)): ?>
-    <form method="post" action="<?= b() ?>/giudizio/partecipo" class="panel stack" style="gap:12px"><?= Csrf::field() ?>
+    <form method="post" action="<?= b() ?>/giudizio/partecipo" class="panel stack" id="adesione" style="gap:12px"><?= Csrf::field() ?>
       <label class="check giudizio-casella" style="align-items:flex-start"><input type="checkbox" name="partecipo" value="1" required style="margin-top:2px">
         <span><?= Giudizi::casellaHtml() ?></span></label>
       <p class="small muted" style="margin:0"><?= Support::e(tf('Aderendo adesso, il {n}% vale sul prossimo rinnovo.', ['{n}' => $pct])) ?> <?= t('Regole complete nei') ?> <a href="<?= b() ?>/termini#giudizio-sconto" target="_blank" rel="noopener"><?= t('Termini') ?></a><?= t(', punto «Giudizio con sconto».') ?></p>

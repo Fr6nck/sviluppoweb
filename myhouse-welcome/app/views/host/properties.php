@@ -159,6 +159,8 @@ $gemIds = $campD ? array_map(fn($g) => (int) $g['id'], $campD['gemelle']) : []; 
   </div>
 <?php endif; ?>
 
+<?php include __DIR__ . '/_fino55.php'; /* 9P · «Fino al 55%»: i due bottoni dell'email, finché non ha 10 inviti e il giudizio */ ?>
+
 <?php include __DIR__ . '/_invita.php'; /* Invita un amico: la barra e il link, per chi ha un abbonamento attivo */ ?>
 
 <?php include __DIR__ . '/_sito_invito.php'; /* 9N · «Hai già un sito?» sotto le guide, non sopra */ ?>

@@ -354,6 +354,9 @@ include __DIR__ . '/_stati.php'; ?>
         <button class="btn btn--ghost btn--sm" name="solo" value="<?= (int) $ultimo['id'] ?>">Manda il promemoria adesso</button>
       </form>
     <?php endif; ?>
+    <?php if (MHW\EmailSconti::disponibili()): $stSc = MHW\EmailSconti::stato($acc); /* 9P · l'email «Fino al 55%»: quando è partita, o perché no */ ?>
+      <p class="small" style="margin:0">Email «Fino al <?= (int) MHW\Sconti::massimoRinnovo()['totale'] ?>%»: <b><?= Support::e(['inviata' => 'inviata', 'programmata' => 'programmata', 'da_mandare' => 'da mandare', 'attesa' => 'in attesa', 'saltata' => 'non parte'][$stSc['stato']] ?? $stSc['stato']) ?></b> <?= Support::e($stSc['motivo']) ?>.</p>
+    <?php endif; ?>
     <?php if ($optout): ?><p class="small">Non vuole ricevere: <?= Support::e(implode(', ', array_map(fn($k) => mb_strtolower($nomiEmail[$k] ?? $k), $optout))) ?>.</p><?php endif; ?>
     <?php if (!empty($parere)): ?>
       <div class="panel stack" style="gap:6px" id="parere">
