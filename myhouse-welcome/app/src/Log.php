@@ -76,7 +76,7 @@ final class Log
         $t = preg_replace('/\bwhsec_[A-Za-z0-9+\/=]{6,}/', '[nascosto]', $t);
         $t = preg_replace('/\b(AKIA|ASIA)[A-Z0-9]{12,}\b/', '[nascosto]', $t);
         $t = preg_replace('/((?:password|passwd|pass|pwd|token|secret|segreto|api_key|apikey)["\']?\s*[:=]\s*["\']?)[^\s"\',&}]+/i', '$1[nascosto]', $t);
-        $t = preg_replace('#(/(?:verifica|password/nuova|email/stop|parere|g)/)[A-Za-z0-9_-]{24,}#', '$1[nascosto]', $t);
+        $t = preg_replace('#(/(?:verifica|password/nuova|email/stop|parere|g|bozza/non-ora|bozza/chiamata)/)[A-Za-z0-9_-]{24,}#', '$1[nascosto]', $t);
         $t = preg_replace('/\b[a-f0-9]{40,}\b/i', '[nascosto]', $t);
         // Email: la prima lettera e il dominio.
         $t = preg_replace_callback('/\b([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/', fn($m) => $m[1] . '***@' . $m[2], $t);

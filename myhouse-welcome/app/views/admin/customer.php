@@ -266,7 +266,15 @@ include __DIR__ . '/_stati.php'; ?>
       <tbody><?php foreach ($props as $p): ?>
         <tr><td><b><?= Support::e($p['name']) ?></b><br><span class="small muted"><?= Support::e($p['city']) ?></span></td>
           <td><?= $p['status'] === 'published' ? ($p['online'] ? '<span class="badge badge--pine">Online</span>' : '<span class="badge badge--alert">Offline</span>') : '<span class="badge badge--ochre">Bozza</span>' ?>
-            <br><a class="small" href="<?= b() ?>/g/<?= Support::e($p['slug']) ?>" target="_blank" rel="noopener">/g/<?= Support::e($p['slug']) ?></a></td>
+            <br><a class="small" href="<?= b() ?>/g/<?= Support::e($p['slug']) ?>" target="_blank" rel="noopener">/g/<?= Support::e($p['slug']) ?></a>
+            <?php /* 9Q · Le email sulla bozza e «la finiamo noi»: si compila da «Entra come cliente», poi si segna qui (Registro azioni). */
+                  $compilata = MHW\Db::val("SELECT created_at FROM audit_log WHERE action = 'guida.compilata_da_noi' AND meta LIKE ?", ['%"property_id":' . (int) $p['id'] . '}%']);
+                  foreach (MHW\Bozze::GIORNI as $tb => $gg): if (($inv = MHW\Db::val('SELECT sent_at FROM email_log WHERE account_id = ? AND kind = ? AND ref = ?', [$acc['id'], $tb, (string) $p['id']]))): ?>
+              <br><span class="tiny muted">Email sulla bozza del giorno <?= $gg ?>: <?= Support::e(Support::date((string) $inv)) ?></span><?php endif; endforeach; ?>
+            <?php if ($compilata): ?><br><span class="tiny">Guida compilata da noi il <?= Support::e(Support::date((string) $compilata)) ?></span>
+            <?php elseif ($p['status'] !== 'published'): ?>
+              <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/compilata/<?= (int) $p['id'] ?>" style="margin-top:4px"><?= Csrf::field() ?><button class="linkbtn small">Segna «compilata da noi»</button></form>
+            <?php endif; ?></td>
           <td><?= Support::e($p['lingue']) ?></td>
           <td><code><?= Support::e($p['qr']['token'] ?? '—') ?></code></td>
           <td class="small"><?= Support::e(Support::date($p['published_at'] ?? '')) ?: '—' ?></td></tr>
@@ -343,7 +351,9 @@ include __DIR__ . '/_stati.php'; ?>
         $ultimo = $subs[0] ?? null;
         $nomiEmail = ['arrivo' => 'Check-in da compilare', 'sezioni' => 'Sezioni da aggiungere', 'pubblica' => 'Guida da pubblicare', 'rinnovo' => 'Rinnovo in arrivo',
                       'scadenza' => 'Scadenza', 'eventi' => 'Eventi passati', 'inviti' => 'Inviti',
-                      'conferma' => 'Email da confermare', 'pagamento' => 'Pagamento da riprendere', 'parere' => 'Cosa ti ha fermato?']; ?>
+                      'conferma' => 'Email da confermare', 'pagamento' => 'Pagamento da riprendere', 'parere' => 'Cosa ti ha fermato?',
+                      'giudizio' => 'Richiesta di giudizio', 'benvenuto' => 'Benvenuto', 'bozza7' => 'Bozza · giorno 7', 'bozza21' => 'Bozza · giorno 21', 'bozza' => 'Email sulla bozza',
+                      'sconti' => 'Fino al ' . MHW\Sconti::massimoRinnovo()['totale'] . '%']; ?>
   <section class="stack" style="gap:10px" id="promemoria" aria-labelledby="prom-titolo">
     <h2 id="prom-titolo" style="font-size:22px">Avvisi e promemoria</h2>
     <?php if ($ultimo && $ultimo['provider'] !== 'dimostrazione' && $ultimo['current_period_end'] !== ''): ?>

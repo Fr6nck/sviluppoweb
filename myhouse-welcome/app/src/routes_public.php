@@ -1035,6 +1035,25 @@ $r->any('/email/stop/{token}', function (array $a) {
     View::out('pub/email_stop', ['tipo' => MHW\Richiami::TIPI[$riga['kind']] ?? 'questa email', 'fatto' => $fatto], 'layout/bare');
 });
 
+/* 9Q · Le strade dell'email del giorno 21 sulle bozze: il token dell'email fa da firma, non serve accedere.
+   «Non ora» ferma le email sulla bozza (è l'ultima: un clic di un antivirus non toglie niente di più) e lo dice;
+   «Scegli un orario» porta al link di Impostazioni → Sito. Tutte e due contano il clic in Matomo (bozza21_click). */
+$r->get('/bozza/non-ora/{token}', function (array $a) {
+    $riga = MHW\Richiami::daToken((string) $a['token']);
+    if (!$riga || !in_array($riga['kind'], MHW\Bozze::TIPI, true)) { http_response_code(404); View::out('pub/404', []); }
+    MHW\Richiami::smetti((int) $riga['account_id'], 'bozza');
+    MHW\Statistiche::matomoDalServer($riga['kind'] . '_click', 'non-ora');
+    View::out('pub/bozza_non_ora', ['en' => MHW\Richiami::lingua((int) $riga['account_id']) === 'en'], 'layout/bare');
+});
+$r->get('/bozza/chiamata/{token}', function (array $a) {
+    $riga = MHW\Richiami::daToken((string) $a['token']);
+    $link = trim((string) (Config::get('chiamata_url') ?? ''));
+    if (!$riga || !in_array($riga['kind'], MHW\Bozze::TIPI, true) || !preg_match('#^https?://#', $link)) { http_response_code(404); View::out('pub/404', []); }
+    MHW\Statistiche::matomoDalServer($riga['kind'] . '_click', 'chiamata');
+    header('Location: ' . $link, true, 302);
+    exit;
+});
+
 /* «Cosa ti ha fermato?» (7A): il token dell'email fa da firma, non serve accedere. Il clic salva il motivo. */
 $r->get('/parere/{token}/{motivo}', function (array $a) {
     $riga = MHW\Richiami::daToken((string) $a['token']);

@@ -320,5 +320,19 @@ if ($metodo === 'DELETE' && preg_match('#^/v1/subscription_items/si_var_([A-Za-z
     $rispondi(['id' => 'si_var_' . $m[1], 'object' => 'subscription_item', 'deleted' => true]);
 }
 if ($metodo === 'DELETE' && preg_match('#^/v1/coupons/([A-Za-z0-9_-]+)$#', $percorso, $m)) { unset($stato['coupons'][$m[1]]); $rispondi(['id' => $m[1], 'object' => 'coupon', 'deleted' => true]); }
+// 9O · La diagnostica di Stripe: Tax, registrazioni, webhook, portale, metodi. I file nella cartella cambiano le risposte:
+// «tax-spento», «portale-aperto», «metodi-strani». Gli endpoint del webhook li legge da endpoints.json (più su).
+if ($metodo === 'GET' && $percorso === '/v1/tax/settings') $rispondi(['object' => 'tax.settings', 'status' => is_file($dir . '/tax-spento') ? 'pending' : 'active']);
+if ($metodo === 'GET' && $percorso === '/v1/tax/registrations') $rispondi(['object' => 'list', 'data' => is_file($dir . '/tax-spento') ? [] : [['id' => 'taxreg_finto', 'country' => 'IT', 'status' => 'active']]]);
+if ($metodo === 'GET' && $percorso === '/v1/billing_portal/configurations') {
+    $aperto = is_file($dir . '/portale-aperto');
+    $rispondi(['object' => 'list', 'data' => [['id' => 'bpc_finto', 'is_default' => true, 'features' => ['subscription_update' => ['enabled' => $aperto],
+        'subscription_cancel' => ['enabled' => true, 'mode' => $aperto ? 'immediately' : 'at_period_end'], 'customer_update' => ['enabled' => false]]]]]);
+}
+if ($metodo === 'GET' && $percorso === '/v1/payment_method_configurations') {
+    $on = fn(bool $si) => ['available' => $si, 'display_preference' => ['preference' => $si ? 'on' : 'off', 'value' => $si ? 'on' : 'off']];
+    $rispondi(['object' => 'list', 'data' => [['id' => 'pmc_finto', 'is_default' => true, 'card' => $on(true), 'link' => $on(true), 'sepa_debit' => $on(true),
+        'apple_pay' => $on(true), 'google_pay' => $on(true), 'klarna' => $on(is_file($dir . '/metodi-strani')), 'bancontact' => $on(false)]]]);
+}
 if ($metodo === 'POST' && $percorso === '/v1/billing_portal/sessions') $rispondi(['url' => 'https://billing.stripe.test/p/session_' . $n]);
 $rispondi(['error' => ['message' => 'Unrecognized request URL']], 404);

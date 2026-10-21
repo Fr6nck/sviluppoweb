@@ -32,6 +32,10 @@ final class Impostazioni
             // 9L · I posti in home del programma «Giudizio con sconto».
             'giudizi.posti_schede'  => ['MHW_VETRINA_POSTI', 'Schede in home («Le guide dei nostri host»)', 'cifra', 'Di serie 4, da 1 a 24. Le altre schede approvate sono nella pagina «Tutte le guide» (/guide-dei-nostri-host).'],
             'giudizi.posti_giudizi' => ['MHW_GIUDIZI_POSTI', 'Giudizi in home («Cosa dicono di noi»)', 'cifra', 'Di serie 6, da 1 a 12.'],
+            // 9O · L'aliquota dell'interruttore «Sono un privato: mostra i prezzi IVA inclusa» (riepilogo prima del pagamento compreso).
+            'iva_percentuale'     => ['MHW_IVA_PERCENTUALE', 'Aliquota IVA per i prezzi IVA inclusa (%)', 'percento', 'Di serie 22. Serve solo a mostrare i prezzi con l\'IVA ai privati: l\'IVA vera la calcola Stripe Tax al pagamento.'],
+            // 9Q · La strada «Quindici minuti insieme» dell'email del giorno 21 sulle bozze.
+            'chiamata_url'        => ['MHW_CHIAMATA_URL', 'Link per fissare una chiamata', 'url', 'Per esempio la pagina di Calendly o di Google Calendar. Nell\'email del giorno 21 sulle bozze diventa il bottone «Scegli un orario»; vuoto, il bottone è «Chiamaci» con il telefono dell\'assistenza (e senza telefono la strada non compare).'],
             'partner.sconto'      => ['MHW_PARTNER_SCONTO', 'Sconto per i clienti del partner (%)', 'percento', 'Lo sconto per i proprietari che attivano con il codice del partner. Vuoto: la pagina dice «uno sconto» senza numero. I codici partner veri arrivano in una fase successiva.'],
         ],
         // 9H · Gli indirizzi email del sito, uno per ogni cosa. Gli ultimi tre, vuoti, valgono l'email assistenza.

@@ -258,7 +258,10 @@ final class Billing
             Db::update('orders', ['status' => 'awaiting', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $o['id']]);
             return 'cambio-in-attesa-del-pagamento';
         }
-        return CambioAbbonamento::pagato($o, $cambio);
+        $esito = CambioAbbonamento::pagato($o, $cambio);
+        // 9O · Il conguaglio di un cliente con partner: anche lui porta la commissione (sull'imponibile pagato).
+        ProgrammaPartner::matura((int) $o['account_id'], 'ordine:' . (int) $o['id'], (int) $o['amount_cents'], Codici::pagamento((int) $o['id']), false);
+        return $esito;
     }
 
     private static function onChangeFailed(array $s): string
@@ -327,6 +330,12 @@ final class Billing
         Inviti::fattura($row, $inv);         // un rinnovo scontato chiude gli inviti che lo hanno pagato
         if (in_array($inv['billing_reason'] ?? '', ['subscription_cycle', 'subscription_update'], true)) Sconti::accoda((int) $row['account_id']);   // 9N
         Giudizi::fattura($row, $inv);        // 9B: un rinnovo scontato chiude lo sconto del giudizio promesso sul rinnovo
+        // 9O · Il rinnovo (o il primo addebito dopo i mesi gratis) di un cliente con partner, o un conguaglio pagato (strutture
+        // Portfolio in più durante l'anno): la commissione sull'imponibile.
+        $conguaglio = ($inv['billing_reason'] ?? '') === 'subscription_update' && (int) ($inv['amount_paid'] ?? 0) > 0;
+        if ((($inv['billing_reason'] ?? '') === 'subscription_cycle' || $conguaglio) && ($inv['id'] ?? '') !== '') {
+            ProgrammaPartner::matura((int) $row['account_id'], 'fattura:' . $inv['id'], (int) ($inv['total_excluding_tax'] ?? $inv['subtotal'] ?? 0), Codici::perFattura((string) $inv['id']), !$conguaglio);
+        }
         // 9N · 10 bis: un'offerta su misura nuova che vale dal rinnovo (Stripe ha già il prezzo nuovo).
         if (!empty($row['next_offerta_id']) && ($inv['billing_reason'] ?? '') === 'subscription_cycle') Offerte::alRinnovo(Db::one('SELECT * FROM subscriptions WHERE id = ?', [$row['id']]));
         // Discesa programmata (6H): al rinnovo il sito passa al piano nuovo.

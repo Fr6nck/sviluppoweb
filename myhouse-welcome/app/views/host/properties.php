@@ -95,17 +95,7 @@ $gemIds = $campD ? array_map(fn($g) => (int) $g['id'], $campD['gemelle']) : []; 
       </a>
       <?php /* 9N · La checklist delle bozze: cosa manca per pubblicare (e cosa conviene), con il link a dove si completa. */
             if (empty($pr['archived_at']) && $pr['status'] !== 'published' && (int) $pr['is_demo'] === 0):
-              $locP = (string) ($pr['default_locale'] ?: 'it');
-              $dCore = json_decode((string) MHW\Db::val('SELECT st.data FROM section_translations st JOIN sections s ON s.id = st.section_id WHERE s.property_id = ? AND s.is_core = 1 AND st.locale = ?', [$pid, $locP], ''), true) ?: [];
-              $wifiP = (string) MHW\Db::val("SELECT data FROM sections WHERE property_id = ? AND kind = 'wifi' AND is_active = 1", [$pid], '');
-              $passi = [
-                  [t('Nome e città'), trim((string) $pr['name']) !== '' && trim((string) $pr['city']) !== '', '/procedura/struttura'],
-                  [t('Check-in: come si entra'), !empty(array_filter((array) ($dCore['checkin_steps'] ?? []), fn($x) => trim((string) $x) !== '')), '/procedura/arrivo'],
-                  [t('Wi-Fi'), $wifiP !== '' && str_contains($wifiP, '"ssid":"') && !str_contains($wifiP, '"ssid":""'), '/procedura/sezioni'],
-                  [t('CIN'), trim((string) ($pr['cin'] ?? '')) !== '', '/procedura/struttura#cin'],
-                  [t('Foto di copertina'), !empty($pr['cover_media_id']), '/procedura/aspetto'],
-                  [t('Lingue'), (int) MHW\Db::val('SELECT COUNT(*) FROM property_locales WHERE property_id = ?', [$pid], 0) > 1, '/lingue'],
-              ];
+              $passi = array_map(fn($v) => [$v['etichetta'], $v['fatto'], MHW\Bozze::dove($pr, $v)], MHW\Bozze::checklist($pr, null, true));   // 9Q · lo stesso calcolo dell'email del giorno 7
               $fatti = count(array_filter($passi, fn($x) => $x[1])); ?>
         <details class="checklist-bozza"<?= $fatti < count($passi) ? ' open' : '' ?>>
           <summary class="small"><?= Support::e(tf('Per pubblicare: {fatti} su {tot}', ['{fatti}' => $fatti, '{tot}' => count($passi)])) ?></summary>

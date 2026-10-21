@@ -15,7 +15,7 @@ $title = 'Clienti'; ?>
       <select id="c-stato" name="stato"><option value="">Tutti</option>
         <?php foreach (['attivo' => 'Attivo', 'pagato' => 'Pagato, non pubblicato', 'fallito' => 'Pagamento non riuscito', 'scaduto' => 'Scaduto',
                         'mai' => 'Mai attivato', 'omaggio' => 'In omaggio (mesi gratis)', 'manuale' => 'Attivati dallo staff',
-                        'maipagato' => 'Mai pagato', 'prova' => 'Clienti di prova'] as $k => $et): ?>
+                        'maipagato' => 'Mai pagato', 'prova' => 'Clienti di prova', 'bozze21' => 'Bozze da più di 21 giorni'] as $k => $et): ?>
           <option value="<?= $k ?>"<?= $filtroStato === $k ? ' selected' : '' ?>><?= Support::e($et) ?></option><?php endforeach; ?></select></div>
     <div class="field" style="margin:0"><label for="c-piano">Piano</label>
       <select id="c-piano" name="piano"><option value="">Tutti</option>

@@ -26,20 +26,48 @@ final class Benvenuto
                         WHERE v.version = 1 AND p.account_id = ? AND p.is_demo = 0 ORDER BY v.published_at, v.id', [$accountId]);
     }
 
+    /** 9O · Il benvenuto è dovuto adesso? La prima guida (online da meno di FINESTRA giorni) e l'utente, o null. */
+    public static function dovuto(int $accountId, ?int $t = null): ?array
+    {
+        if (!Richiami::disponibili() || $accountId <= 0) return null;
+        if (Db::one("SELECT id FROM email_log WHERE account_id = ? AND kind = 'benvenuto'", [$accountId])) return null;
+        $p = self::primaGuida($accountId);
+        if (!$p || $p['status'] !== 'published' || !empty($p['archived_at'])) return null;
+        $quando = (int) strtotime((string) $p['prima_pubblicazione']);
+        if (($t ?? time()) - $quando > self::FINESTRA * 86400) return null;
+        $u = Db::one("SELECT u.*, a.id AS acc_id FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ? AND u.role = 'host'", [$accountId]);
+        if (!$u || str_ends_with(mb_strtolower((string) $u['email']), '@' . Demo::DOMINIO)) return null;
+        // La vetrina (e chi ha guide di esempio) non riceve il benvenuto.
+        if (Db::val('SELECT id FROM properties WHERE account_id = ? AND is_demo > 0', [$accountId])) return null;
+        return ['guida' => $p, 'utente' => $u];
+    }
+
+    /** Il benvenuto è partito dentro l'email «La tua guida è online» (9O): si segna, così non riparte da solo. */
+    public static function segna(int $accountId): void
+    {
+        try { Db::insert('email_log', ['account_id' => $accountId, 'kind' => 'benvenuto', 'ref' => 'primo', 'token' => bin2hex(random_bytes(24)), 'sent_at' => Support::now()]); }
+        catch (\Throwable) { }   // già segnato
+    }
+
+    /** Le tre cose da fare adesso (un paragrafo, a capo tra le voci). */
+    public static function coseDaFare(string $lingua): string
+    {
+        return $lingua === 'en'
+            ? "Three things to do now:\n1. Print the QR code: in “QR & Link” there is a ready-made PDF sheet for the entrance or the table.\n"
+              . "2. Send the link before arrival: in “QR & Link” the message is already written, in every language of the guide, to paste into WhatsApp or the booking platform chat.\n"
+              . "3. When you change something, publish the changes: the link and the QR code stay the same."
+            : "Tre cose da fare adesso:\n1. Stampa il QR: in «QR & Link» c'è il foglio pronto in PDF, da mettere all'ingresso o sul tavolo.\n"
+              . "2. Manda il link prima dell'arrivo: in «QR & Link» il messaggio è già scritto, in ogni lingua della guida, da incollare su WhatsApp o nella chat del portale.\n"
+              . "3. Quando cambi qualcosa, pubblica le modifiche: il link e il QR restano gli stessi.";
+    }
+
     /** Manda l'email se è il momento (prima guida online da meno di FINESTRA giorni) e non è già partita. Non solleva mai. */
     public static function forse(int $accountId, ?int $t = null): bool
     {
         try {
-            if (!Richiami::disponibili() || $accountId <= 0) return false;
-            if (Db::one("SELECT id FROM email_log WHERE account_id = ? AND kind = 'benvenuto'", [$accountId])) return false;
-            $p = self::primaGuida($accountId);
-            if (!$p || $p['status'] !== 'published' || !empty($p['archived_at'])) return false;
-            $quando = (int) strtotime((string) $p['prima_pubblicazione']);
-            if (($t ?? time()) - $quando > self::FINESTRA * 86400) return false;
-            $u = Db::one("SELECT u.*, a.id AS acc_id FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ? AND u.role = 'host'", [$accountId]);
-            if (!$u || str_ends_with(mb_strtolower((string) $u['email']), '@' . Demo::DOMINIO)) return false;
-            // La vetrina (e chi ha guide di esempio) non riceve il benvenuto.
-            if (Db::val('SELECT id FROM properties WHERE account_id = ? AND is_demo > 0', [$accountId])) return false;
+            $d = self::dovuto($accountId, $t);
+            if (!$d) return false;
+            ['guida' => $p, 'utente' => $u] = $d;
             $lingua = Pannello::linguaDi($u, $accountId);
             return Richiami::manda($accountId, (string) $u['email'], (string) $u['name'], 'benvenuto', 'primo', self::testo($accountId, $p, $lingua), $lingua);
         } catch (\Throwable $e) {

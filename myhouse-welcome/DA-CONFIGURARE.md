@@ -71,13 +71,14 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
 - **Webhook** su `https://TUODOMINIO/webhook/stripe` (oppure `…/index.php/webhook/stripe`). Eventi da inviare:
   - `checkout.session.completed`
   - `checkout.session.expired`
-  - `checkout.session.async_payment_succeeded` e `checkout.session.async_payment_failed` (nuovi: servono ai cambi di piano pagati con bonifico SEPA o altri metodi non immediati)
+  - `checkout.session.async_payment_succeeded` e `checkout.session.async_payment_failed` (l'addebito SEPA confermato o rifiutato dalla banca: abbonamenti nuovi e cambi di piano)
   - `invoice.paid`
   - `invoice.payment_failed`
   - `customer.subscription.updated`
   - `customer.subscription.deleted`
   - `customer.subscription.trial_will_end` (solo registro: gli avvisi della prova li mandiamo noi)
-  - `charge.refunded` (conferma dei rimborsi fatti dalla scheda del cliente)
+  - `charge.refunded` (9O: ogni rimborso, fatto dal sito, da Stripe o da Adamo)
+  - `charge.refund.updated` (consigliato: un rimborso confermato o fallito dopo)
 - Il webhook non serve solo a pubblicare: sblocca anche le strutture del Portfolio, comprese quelle aggiunte dopo.
 - **Se dopo il pagamento la guida resta «Stiamo attivando la tua guida» (19 ottobre).** Vuol dire che il webhook non arriva o viene rifiutato. Da questa versione la guida si attiva lo stesso dopo circa 20 secondi (il sito chiede a Stripe gli eventi della sessione, con la chiave segreta), ma il webhook va sistemato perché serve anche per rinnovi, disdette e rimborsi. Cosa guardare:
   1. **Amministrazione → Impostazioni → Stripe → «Prova la connessione»**: dice se su Stripe, nella modalità della chiave (prova o reale), c'è l'endpoint verso `…/webhook/stripe`, se è attivo e quali eventi mancano.
@@ -386,6 +387,20 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 8. **Cassa**: l'IVA dei pagamenti Stripe è quella calcolata da Stripe (IVA automatica accesa); se un mese ha l'asterisco, Stripe non l'ha detta per quei pagamenti: controllali nella dashboard di Stripe. Il CSV («pagamenti dell'anno») è quello da mandare al commercialista.
 9. **Codici sconto**: «Valido fino al» è ora già compilato con il 31 dicembre; cambialo se serve.
 10. Restano in italiano (per ora): l'email d'invito all'amico e le email scritte dall'amministrazione al cliente (rinnovo fermato, cambio piano, rimborso, password provvisoria).
+
+## 4r. 9N 10 bis, 9O, 9P, 9Q (21 ottobre): offerta su misura, rimborsi, SEPA, IVA per i privati, partner, email «Fino al 55%» e bozze
+
+1. **Carica e apri una pagina qualsiasi**: le migrazioni 058–061 girano da sole. Poi **Amministrazione → Diagnostica → Stripe → «Ricontrolla»**: ogni voce deve essere «OK». Le due voci «Da controllare a mano» (Adaptive Pricing spento, email di Stripe ai clienti spente): controllale su Stripe e premi **«Confermo»**.
+2. **Webhook**: aggiungi all'endpoint `charge.refunded` e (consigliato) `charge.refund.updated`; controlla che ci siano anche `checkout.session.async_payment_succeeded` e `checkout.session.async_payment_failed` (SEPA). L'elenco completo è al punto 3 qui sopra e nella Diagnostica.
+3. **Rimborsi e Adamo**: fai un rimborso di prova da Stripe e uno dal sito; controlla che Adamo emetta da solo la nota di credito. Se non lo fa, fai la nota in Adamo e spunta **«Segna come fatta»** nella scheda del cliente (finché non la spunti resta in «Da fare oggi»).
+4. **SEPA**: prova con l'IBAN di test `DE89370400440532013000` (riesce) e `DE62370400440532013001` (fallisce). Il periodo dell'abbonamento è quello di Stripe: decorre dal pagamento, non dalla conferma della banca (3–7 giorni).
+5. **IVA per i privati**: Impostazioni → Sito → «Aliquota IVA per i prezzi IVA inclusa» (vuota = 22). Serve solo a mostrare i prezzi: l'IVA vera la calcola Stripe Tax.
+6. **Partner**: Amministrazione → Vendite → Partner → «Approva e crea il partner» (codice, commissione, sconto, rinnovi sì/no, IBAN, P.IVA, periodicità). Il partner entra da `/partner` con un link via email (48 ore). Le commissioni si pagano con un bonifico su fattura del partner: Cassa → **Commissioni partner** → «Segna come pagata». Le email ai partner partono da commerciale@.
+7. **Termini e privacy**: il punto 12 (Programma partner) e il trattamento 15 sono nuovi; la versione di serie resta 2026-10-20. Per far riaccettare i clienti imposta in Impostazioni → Titolare e documenti legali una versione nuova (per esempio a 30 giorni da oggi, come chiede l'aiuto del campo) e fai rileggere i testi al legale.
+8. **Email «Fino al 55%» (9P)**: parte da sola 7 giorni dopo l'attivazione, solo con gli inviti accesi (`MHW_INVITI=1`): spenti, in Amministrazione → Richiami vedi «Email sconti in attesa: N» e partono quando li accendi. Rileggi i testi in Testi e foto → «Email ai clienti: Fino al 55%».
+9. **Email sulle bozze (9Q)**: al giorno 7 e al giorno 21 da sole. Per la strada «Quindici minuti insieme» metti in Impostazioni → Sito il **«Link per fissare una chiamata»** (Calendly, Google Calendar…): vuoto, il bottone è «Chiamaci» con il telefono dell'assistenza. Le risposte «la finiamo noi» arrivano all'assistenza: compila la guida da «Entra come cliente» e segna «compilata da noi» nella scheda. Il vecchio richiamo «pubblica» non parte più.
+10. **Matomo** (se lo usi): crea gli obiettivi `bozza7_click`, `bozza21_click`, `email_sconti_click` (eventi, categoria «obiettivo»).
+11. **Offerte su misura (10 bis)**: da Vendite → Preventivi → «Prepara l'offerta»; il cliente riceve il link `/offerta/…`. Lo sconto sui rinnovi è quello che scrivi nell'offerta e vale a ogni rinnovo finché non lo cambi.
 
 ## 4k. 9K (19 ottobre): foto, pagine nuove, partner, PEC
 

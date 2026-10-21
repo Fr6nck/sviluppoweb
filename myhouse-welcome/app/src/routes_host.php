@@ -21,6 +21,12 @@ $host = function (): array {
     // 9E: con una password provvisoria si può solo sceglierne una nuova.
     if (!empty($u['must_change_password']) && !Auth::isImpersonating()) Support::redirect('/password/cambia');
     MHW\Pannello::entra();   // 9N · da qui i «Testi e foto» seguono la lingua del pannello
+    // 9P/9Q · Il clic da un'email ai clienti (?da=bozza7, ?da=email_sconti): un evento a Matomo dal server, senza identificativi;
+    // il nome è l'ultima parte dell'indirizzo (il passo della procedura, «inviti», «giudizio»).
+    $da = (string) ($_GET['da'] ?? '');
+    if ($_SERVER['REQUEST_METHOD'] === 'GET' && in_array($da, ['bozza7', 'email_sconti'], true) && !Auth::isImpersonating()) {
+        MHW\Statistiche::matomoDalServer($da . '_click', basename((string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH)));
+    }
     return [$u, $acc];
 };
 

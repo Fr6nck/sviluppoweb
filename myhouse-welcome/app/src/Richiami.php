@@ -6,7 +6,8 @@ namespace MHW;
  *
  *   arrivo   — dal 1° al 3° giorno dopo la creazione, se «Arrivo» è ancora vuoto
  *   sezioni  — dal 3° al 7° giorno, se non c'è nessuna sezione aggiuntiva
- *   pubblica — dal 7° al 21° giorno, se la guida non è pubblicata
+ *   bozza7   — (9Q, era «pubblica») dal 7° al 21° giorno, se la guida non è pubblicata: la checklist e il consiglio (Bozze)
+ *   bozza21  — (9Q) dal 21° al 35° giorno, ancora in bozza: «la finiamo noi», quindici minuti insieme, «Non ora»
  *   rinnovo  — 30 giorni prima del rinnovo automatico (Stripe), con le statistiche dell'anno
  *   eventi   — (6G) ci sono eventi passati nella guida pubblicata: al massimo una al mese per struttura
  *   conferma — (7A) email non confermata: dopo 24 ore e, l'ultima volta, dopo 72, con un link nuovo
@@ -33,11 +34,15 @@ final class Richiami
                          'scadenza' => 'l\'avviso prima della scadenza',
                          'conferma' => 'il promemoria sulla conferma dell\'email', 'pagamento' => 'il promemoria sul pagamento',
                          'parere' => 'la domanda su cosa ti ha fermato',
-                         'giudizio' => 'la richiesta di un giudizio su MyHouse Welcome', 'benvenuto' => 'l\'email di benvenuto'];   // con l'articolo: «Non vuoi più ricevere …?»
+                         'giudizio' => 'la richiesta di un giudizio su MyHouse Welcome', 'benvenuto' => 'l\'email di benvenuto',
+                         'sconti' => 'l\'email sugli sconti del rinnovo',
+                         'bozza7' => 'le email sulla guida in bozza', 'bozza21' => 'le email sulla guida in bozza', 'bozza' => 'le email sulla guida in bozza'];   // con l'articolo: «Non vuoi più ricevere …?»
     /** Le risposte a un clic di «Cosa ti ha fermato?» (7A). */
     public const MOTIVI = ['prezzo' => 'Il prezzo', 'tempo' => 'Non ho avuto tempo', 'funzione' => 'Mi mancava una funzione', 'altro' => 'Altro'];
     /** I richiami del percorso: uno per volta, mai due a meno di due giorni l'uno dall'altro (7A). */
-    private const PERCORSO = ['arrivo', 'sezioni', 'pubblica', 'conferma', 'pagamento', 'parere'];
+    private const PERCORSO = ['arrivo', 'sezioni', 'pubblica', 'bozza7', 'bozza21', 'conferma', 'pagamento', 'parere'];
+    /** 9Q · I rifiuti che fermano un tipo: le due email sulla bozza si fermano insieme («bozza»), anche con il vecchio «pubblica». */
+    private const RIFIUTI = ['bozza7' => ['bozza', 'bozza7', 'bozza21', 'pubblica'], 'bozza21' => ['bozza', 'bozza7', 'bozza21', 'pubblica']];
     private const OGNI = 900;   // secondi tra un controllo e l'altro
 
     public static function disponibili(): bool { return Migrator::tableExists('email_log'); }
@@ -119,8 +124,8 @@ final class Richiami
         $bozze = Db::all("SELECT p.*, a.id AS acc_id, u.email, u.name AS user_name, u.email_verified_at FROM properties p
                           JOIN accounts a ON a.id = p.account_id JOIN users u ON u.id = a.user_id
                           WHERE p.is_demo = 0 AND p.archived_at IS NULL AND p.status <> 'published'
-                            AND p.created_at <= ? AND p.created_at > ? AND u.email NOT LIKE ?",
-                         [$iso($t - $giorno), $iso($t - 21 * $giorno), '%@' . Demo::DOMINIO]);
+                            AND (p.published_at IS NULL OR p.published_at = '') AND p.created_at <= ? AND p.created_at > ? AND u.email NOT LIKE ?",
+                         [$iso($t - $giorno), $iso($t - (Bozze::GIORNI['bozza21'] + Bozze::FINESTRA) * $giorno), '%@' . Demo::DOMINIO]);
         foreach ($bozze as $p) {
             if (in_array((int) $p['id'], Entitlements::lockedIds((int) $p['acc_id']), true)) continue;
             if (empty($p['email_verified_at']) || self::recente((int) $p['acc_id'], $t, ['conferma', 'pagamento', 'parere'])) continue;   // c'è già il richiamo giusto
@@ -128,9 +133,17 @@ final class Richiami
             $tipo = null;
             if ($eta < 3) { if (self::arrivoVuoto($p)) $tipo = 'arrivo'; }
             elseif ($eta < 7) { if (!(int) Db::val('SELECT COUNT(*) FROM sections WHERE property_id = ? AND is_core = 0', [$p['id']], 0)) $tipo = 'sezioni'; }
-            else $tipo = 'pubblica';
-            if ($tipo) self::lingua((int) $p['acc_id']);
-            if ($tipo && self::manda((int) $p['acc_id'], $p['email'], (string) $p['user_name'], $tipo, (string) $p['id'], self::testo($tipo, $p))) $fatte[$tipo]++;
+            else {
+                // 9Q · Giorno 7 e giorno 21: mai se l'account ha già una guida online (Portfolio), mai nei 3 giorni dopo
+                // un'altra email del sito; chi aveva già avuto il vecchio «pubblica» non riceve anche «bozza7».
+                $tipo = $eta < Bozze::GIORNI['bozza21'] ? 'bozza7' : 'bozza21';
+                if (Bozze::haGuidaOnline((int) $p['acc_id']) || self::recente((int) $p['acc_id'], $t, [], 3)
+                    || ($tipo === 'bozza7' && Db::one("SELECT id FROM email_log WHERE account_id = ? AND kind = 'pubblica' AND ref = ?", [$p['acc_id'], (string) $p['id']]))) $tipo = null;
+            }
+            if (!$tipo) continue;
+            self::lingua((int) $p['acc_id']);
+            $m = str_starts_with($tipo, 'bozza') ? Bozze::testo($tipo, $p, self::$lin) : self::testo($tipo, $p);
+            if (self::manda((int) $p['acc_id'], $p['email'], (string) $p['user_name'], $tipo, (string) $p['id'], $m)) $fatte[$tipo]++;
         }
 
         // Rinnovo (9D): abbonamenti Stripe col rinnovo automatico (anche in omaggio), a 30 e a 7 giorni dall'addebito.
@@ -448,6 +461,74 @@ final class Richiami
         return [$ok, $ok ? 'Promemoria mandato a ' . $s['email'] . '.' : 'L\'email a ' . $s['email'] . ' non è partita: controlla la posta in Impostazioni.'];
     }
 
+    /**
+     * 9Q · Le email sulla bozza per Amministrazione → Richiami: le strutture mai pubblicate create da 1 a 35 giorni, con lo
+     * stato di «bozza7» e «bozza21» (inviata il …, programmata per il …, fermata e perché).
+     * @return list<array{id:int,name:string,account_id:int,cliente:string,email:string,created_at:string,giorni:int,stati:array<string,array{0:string,1:string}>}>
+     */
+    public static function statoBozze(?int $adesso = null): array
+    {
+        if (!self::disponibili()) return [];
+        $t = $adesso ?? time();
+        $out = [];
+        foreach (Db::all("SELECT p.id, p.name, p.account_id, p.created_at, u.email, u.name AS cliente, u.email_verified_at FROM properties p
+                          JOIN accounts a ON a.id = p.account_id JOIN users u ON u.id = a.user_id
+                          WHERE p.is_demo = 0 AND p.archived_at IS NULL AND p.status <> 'published' AND (p.published_at IS NULL OR p.published_at = '')
+                            AND p.created_at <= ? AND p.created_at > ? AND u.email NOT LIKE ? ORDER BY p.created_at",
+                         [gmdate('Y-m-d\TH:i:s\Z', $t - 86400), gmdate('Y-m-d\TH:i:s\Z', $t - (Bozze::GIORNI['bozza21'] + Bozze::FINESTRA) * 86400), '%@' . Demo::DOMINIO]) as $p) {
+            $acc = (int) $p['account_id'];
+            $nato = (int) strtotime((string) $p['created_at']);
+            $perche = self::fermaBozza($acc, (string) $p['email'], !empty($p['email_verified_at']));
+            $stati = [];
+            foreach (Bozze::GIORNI as $tipo => $giorni) {
+                $inviata = Db::val('SELECT sent_at FROM email_log WHERE account_id = ? AND kind = ? AND ref = ?', [$acc, $tipo, (string) $p['id']]);
+                $quando = $nato + $giorni * 86400;
+                $stati[$tipo] = match (true) {
+                    (bool) $inviata => ['inviata', 'il ' . Support::date((string) $inviata)],
+                    $perche !== null => ['fermata', $perche],
+                    $t > $quando + ($tipo === 'bozza7' ? Bozze::GIORNI['bozza21'] - Bozze::GIORNI['bozza7'] : Bozze::FINESTRA) * 86400 => ['fermata', 'finestra passata'],
+                    default => ['programmata', $t >= $quando ? 'al prossimo giro' : 'il ' . Support::date(gmdate('Y-m-d\TH:i:s\Z', $quando))],
+                };
+            }
+            $out[] = ['id' => (int) $p['id'], 'name' => (string) $p['name'], 'account_id' => $acc, 'cliente' => (string) $p['cliente'], 'email' => (string) $p['email'],
+                      'created_at' => (string) $p['created_at'], 'giorni' => (int) floor(($t - $nato) / 86400), 'stati' => $stati];
+        }
+        return $out;
+    }
+
+    /** 9Q · Perché le email sulla bozza di questo account non partono (null: partono). */
+    private static function fermaBozza(int $acc, string $email, bool $confermata): ?string
+    {
+        $vetrinaE = mb_strtolower(trim((string) Config::get('vetrina_email', '')));
+        return match (true) {
+            self::diProva($acc) => 'cliente di prova',
+            $vetrinaE !== '' && mb_strtolower(trim($email)) === $vetrinaE => 'account della vetrina',
+            !$confermata => 'email non confermata',
+            Bozze::haGuidaOnline($acc) => 'ha già una guida online',
+            (bool) Db::val("SELECT id FROM email_optout WHERE account_id = ? AND kind IN ('bozza', 'bozza7', 'bozza21', 'pubblica')", [$acc]) => '«Non ora» o «non mandarmene più»',
+            default => null,
+        };
+    }
+
+    /**
+     * 9Q · «Manda adesso» da Amministrazione → Richiami: l'email del giorno 7 o 21 per una struttura, senza aspettare il giorno.
+     * Valgono le stesse regole (una volta sola per struttura, mai se ferma). @return array{0:bool,1:string}
+     */
+    public static function mandaBozza(int $propertyId, string $tipo): array
+    {
+        if (!in_array($tipo, Bozze::TIPI, true) || !self::disponibili()) return [false, 'Email sconosciuta.'];
+        $p = Db::one("SELECT p.*, u.email, u.name AS user_name, u.email_verified_at FROM properties p JOIN accounts a ON a.id = p.account_id
+                      JOIN users u ON u.id = a.user_id WHERE p.id = ? AND p.is_demo = 0", [$propertyId]);
+        if (!$p) return [false, 'Struttura non trovata.'];
+        if ($p['status'] === 'published' || !empty($p['published_at'])) return [false, $p['name'] . ' è già stata pubblicata.'];
+        $acc = (int) $p['account_id'];
+        if (($perche = self::fermaBozza($acc, (string) $p['email'], !empty($p['email_verified_at']))) !== null) return [false, 'Non parte: ' . $perche . '.'];
+        if (Db::val('SELECT id FROM email_log WHERE account_id = ? AND kind = ? AND ref = ?', [$acc, $tipo, (string) $p['id']])) return [false, 'Già mandata per ' . $p['name'] . '.'];
+        self::lingua($acc);
+        $ok = self::manda($acc, (string) $p['email'], (string) $p['user_name'], $tipo, (string) $p['id'], Bozze::testo($tipo, $p, self::$lin));
+        return [$ok, $ok ? 'Email mandata a ' . $p['email'] . '.' : 'L\'email a ' . $p['email'] . ' non è partita: controlla la posta in Impostazioni.'];
+    }
+
     /** Le email di servizio: partono una volta sola e non si disattivano (niente «non mandarmene più»). */
     private const SERVIZIO = ['benvenuto'];
 
@@ -466,7 +547,8 @@ final class Richiami
         // 9D · L'avviso a 7 giorni dall'addebito (rinnovo, ref «-7») è dovuto: parte anche a chi ha disattivato gli avvisi.
         $dovuta = $tipo === 'rinnovo' && str_ends_with($ref, '-7');
         $servizio = in_array($tipo, self::SERVIZIO, true);
-        if (!$dovuta && !$servizio && Db::one('SELECT id FROM email_optout WHERE account_id = ? AND kind = ?', [$accountId, $tipo])) return false;
+        $rifiuti = self::RIFIUTI[$tipo] ?? [$tipo];
+        if (!$dovuta && !$servizio && Db::val('SELECT id FROM email_optout WHERE account_id = ? AND kind IN (' . implode(',', array_fill(0, count($rifiuti), '?')) . ')', array_merge([$accountId], $rifiuti))) return false;
         if (Db::one('SELECT id FROM email_log WHERE account_id = ? AND kind = ? AND ref = ?', [$accountId, $tipo, $ref])) return false;
         $token = bin2hex(random_bytes(24));
         try { Db::insert('email_log', ['account_id' => $accountId, 'kind' => $tipo, 'ref' => $ref, 'token' => $token, 'sent_at' => Support::now()]); }
@@ -529,6 +611,7 @@ final class Richiami
 
     public static function smetti(int $accountId, string $tipo): void
     {
+        if (isset(self::RIFIUTI[$tipo])) $tipo = 'bozza';   // 9Q · «Non scrivermi più su questo» ferma tutte e due
         if (!isset(self::TIPI[$tipo]) || Db::one('SELECT id FROM email_optout WHERE account_id = ? AND kind = ?', [$accountId, $tipo])) return;
         Db::insert('email_optout', ['account_id' => $accountId, 'kind' => $tipo, 'created_at' => Support::now()]);
     }

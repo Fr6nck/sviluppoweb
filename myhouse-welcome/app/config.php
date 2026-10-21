@@ -36,6 +36,10 @@ $config = [
     // L'account in cui la guida vetrina «Casa Checco» si crea da sola, una volta, al primo
     // aggiornamento (Demo::vetrinaAutomatica). Vuoto = mai: la si crea dall'amministrazione.
     'vetrina_email' => $env('MHW_VETRINA_EMAIL', 'vetrina@welcomemyhouse.it'),   // 9H: non riceve email (esclusa dai Richiami)
+    // 9O · L'aliquota dei prezzi «IVA inclusa» per i privati (solo da mostrare: l'IVA vera la calcola Stripe Tax). Vuota = 22.
+    'iva_percentuale' => $env('MHW_IVA_PERCENTUALE'),
+    // 9Q · Il link «Scegli un orario» (Calendly, Google Calendar…) dell'email del giorno 21 sulle bozze. Vuoto = «Chiamaci».
+    'chiamata_url' => $env('MHW_CHIAMATA_URL'),
 
     'db' => [
         'driver' => $env('MHW_DB_DRIVER', 'sqlite'),

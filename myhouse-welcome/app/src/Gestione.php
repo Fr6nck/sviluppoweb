@@ -450,7 +450,8 @@ final class Gestione
     /**
      * 9N · I pagamenti incassati tra $da (compreso) e $a (escluso), date ISO: la fonte unica di Cassa, Prospetti e Quadro.
      * Ordini pagati (Stripe e bonifici: nuovi abbonamenti e cambi di piano), rinnovi (fatture «subscription_cycle» arrivate
-     * col webhook, che non passano dagli ordini) e rimborsi (tabella rimborsi, con il segno meno). Clienti di esempio e di
+     * col webhook, che non passano dagli ordini), conguagli (fatture «subscription_update» pagate subito: strutture Portfolio
+     * aggiunte durante l'anno) e rimborsi (tabella rimborsi, con il segno meno). Clienti di esempio e di
      * prova esclusi. Importi in centesimi: imponibile, IVA (da Stripe o scritta per il bonifico; null se Stripe non l'ha
      * detta), totale. @return list<array> dal più vecchio
      */
@@ -516,8 +517,11 @@ final class Gestione
         // I rinnovi: dalle fatture arrivate col webhook (IVA esclusa nell'imponibile).
         foreach (Db::all("SELECT processed_at, payload FROM webhook_events WHERE provider = 'stripe' AND kind = 'invoice.paid' AND processed_at >= ? AND processed_at < ?", [$da, $a]) as $r) {
             $inv = (json_decode((string) $r['payload'], true) ?: [])['data']['object'] ?? [];
-            if (($inv['billing_reason'] ?? '') !== 'subscription_cycle') continue;
-            $sub = Db::one("SELECT s.account_id, s.quantity, " . (Migrator::columnExists('subscriptions', 'offerta_id') ? 's.offerta_id' : 'NULL AS offerta_id') . ", pk.name AS piano, u.email, u.name AS cliente FROM subscriptions s JOIN accounts a ON a.id = s.account_id
+            // 9O · Anche i conguagli pagati (subscription_update con un importo: strutture Portfolio in più a metà anno); i crediti no.
+            $motivo = (string) ($inv['billing_reason'] ?? '');
+            if ($motivo !== 'subscription_cycle' && !($motivo === 'subscription_update' && (int) ($inv['amount_paid'] ?? 0) > 0)) continue;
+            $sub = Db::one("SELECT s.account_id, s.quantity, " . (Migrator::columnExists('subscriptions', 'offerta_id') ? 's.offerta_id' : 'NULL AS offerta_id') . ", "
+                            . (Migrator::columnExists('subscriptions', 'omaggio_fino') ? 's.omaggio_fino' : 'NULL AS omaggio_fino') . ", pk.name AS piano, u.email, u.name AS cliente FROM subscriptions s JOIN accounts a ON a.id = s.account_id
                             JOIN users u ON u.id = a.user_id JOIN package_versions pv ON pv.id = s.package_version_id JOIN packages pk ON pk.id = pv.package_id
                             WHERE s.provider_subscription_id = ? ORDER BY s.id DESC", [(string) ($inv['subscription'] ?? '')])
                 ?: Db::one('SELECT a.id AS account_id, 1 AS quantity, \'\' AS piano, u.email, u.name AS cliente FROM accounts a JOIN users u ON u.id = a.user_id
@@ -527,7 +531,10 @@ final class Gestione
             $totale = (int) ($inv['total'] ?? $inv['amount_paid'] ?? $netto);
             $iva = isset($inv['tax']) ? (int) $inv['tax'] : (isset($inv['total_excluding_tax'], $inv['total']) ? $totale - $netto : null);
             $sconto = array_sum(array_map(fn($d) => (int) ($d['amount'] ?? 0), (array) ($inv['total_discount_amounts'] ?? [])));
-            $out[] = ['data' => (string) $r['processed_at'], 'tipo' => 'rinnovo', 'via' => 'stripe', 'imponibile' => $netto, 'iva' => $iva, 'totale' => $netto + (int) $iva,
+            // 9O · Il primo addebito alla fine dei mesi gratis di un codice omaggio è una fattura «di ciclo», ma è un cliente nuovo.
+            $inizioF = (int) ($inv['lines']['data'][0]['period']['start'] ?? 0);
+            $dopoOmaggio = $motivo === 'subscription_cycle' && !empty($sub['omaggio_fino']) && $inizioF > 0 && abs($inizioF - (int) strtotime((string) $sub['omaggio_fino'])) < 2 * self::GIORNO;
+            $out[] = ['data' => (string) $r['processed_at'], 'tipo' => $motivo === 'subscription_update' ? 'cambio' : ($dopoOmaggio ? 'nuovo' : 'rinnovo'), 'via' => 'stripe', 'imponibile' => $netto, 'iva' => $iva, 'totale' => $netto + (int) $iva,
                       'codice' => Codici::perFattura((string) ($inv['id'] ?? '')), 'account_id' => (int) ($sub['account_id'] ?? 0),
                       'cliente' => (string) ($sub['cliente'] ?? ''), 'email' => (string) ($sub['email'] ?? ''),
                       'piano' => (string) ($sub['piano'] ?? '') . (!empty($sub['offerta_id']) ? ' su misura' : '') . ((int) ($sub['quantity'] ?? 1) > 1 ? ' · ' . (int) $sub['quantity'] . ' strutture' : ''),

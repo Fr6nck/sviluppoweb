@@ -83,6 +83,16 @@ $r->get('/admin', function () {
         if ((int) ($nv['schede_da_approvare'] ?? 0) > 0) $daFare[] = ['Schede da approvare', (int) $nv['schede_da_approvare'], '«Le guide dei nostri host»', '/admin/giudizi'];
         if ((int) ($nv['giudizi_da_approvare'] ?? 0) > 0) $daFare[] = ['Giudizi da approvare', (int) $nv['giudizi_da_approvare'], '«Cosa dicono di noi»', '/admin/giudizi?scheda=giudizi&stelle=tutti'];
     }
+    // 9O · Le commissioni dei partner da liquidare: il periodo (trimestre o mese) è finito.
+    if (MHW\ProgrammaPartner::disponibili() && ($scadP = MHW\ProgrammaPartner::scaduti()) > 0) {
+        $daFare[] = ['Commissioni partner da liquidare', $scadP, 'periodo finito: bonifico su fattura del partner', '/admin/cassa/partner'];
+    }
+    // 9O · I rimborsi senza la nota di credito fatta in Adamo.
+    if (Migrator::columnExists('rimborsi', 'nota_credito_at') && ($note = Db::all("SELECT account_id FROM rimborsi WHERE stato <> 'fallito' AND nota_credito_at IS NULL ORDER BY id"))) {
+        $daFare[] = ['Note di credito da fare in Adamo', count($note), 'rimborsi senza la spunta «fatta»', count($note) === 1 ? '/admin/cliente/' . (int) $note[0]['account_id'] . '#rimborsi' : '/admin/cassa?mese=' . gmdate('Y-m')];
+    }
+    // 9Q · Le bozze ferme da 21 giorni o più (account senza guide online): l'email del giorno 21 propone di finirle noi.
+    if (($ferme = count(MHW\Bozze::ferme())) > 0) $daFare[] = [$ferme === 1 ? '1 bozza ferma da 21+ giorni' : "$ferme bozze ferme da 21+ giorni", $ferme, 'da «Entra come cliente» la finiamo noi', '/admin/clienti?stato=bozze21'];
     $anomalie = Gestione::contaAnomalie();
     if ($numeri['falliti'] > 0) $daFare[] = ['Rinnovi falliti', $numeri['falliti'], 'carte da aggiornare: la guida è offline', '/admin/anomalie'];
     $nonConfermate = (int) Db::val("SELECT COUNT(*) FROM users WHERE role = 'host' AND email_verified_at IS NULL AND created_at <= ? AND email NOT LIKE ?" . Gestione::utentiVeri('id'),
@@ -195,8 +205,10 @@ $r->get('/admin/clienti', function () {
     $filtroStato = (string) ($_GET['stato'] ?? ''); $filtroPiano = (string) ($_GET['piano'] ?? '');
     $piani = array_values(array_unique(array_filter(array_column($rows, 'plan'), fn($p) => $p !== '—')));
     // 9N · in più: clienti di prova, attivati dallo staff, mai pagato (nessun incasso, anche se attivati a mano).
+    // 9Q · «Bozze da più di 21 giorni»: le stesse dell'email del giorno 21 e del contatore nel Quadro (Bozze::ferme).
+    $ferme = $filtroStato === 'bozze21' ? array_flip(array_map(fn($b) => (int) $b['account_id'], MHW\Bozze::ferme())) : [];
     $passa = fn(array $x) => match ($filtroStato) {
-        '' => true, 'omaggio' => $x['omaggio'] !== '', 'prova' => !empty($x['is_test']), 'manuale' => $x['manuale'],
+        '' => true, 'bozze21' => isset($ferme[(int) $x['account_id']]), 'omaggio' => $x['omaggio'] !== '', 'prova' => !empty($x['is_test']), 'manuale' => $x['manuale'],
         'maipagato' => $x['ultimo_pagamento'] === '' && empty($x['is_test']), default => $x['stato'][2] === $filtroStato };
     $rows = array_values(array_filter($rows, fn($x) => $passa($x) && ($filtroPiano === '' || $x['plan'] === $filtroPiano)));
     if (($_GET['formato'] ?? '') === 'csv') {
@@ -809,9 +821,39 @@ $r->get('/admin/richiami', function () {
             array_map(fn($x) => [str_replace(['T', 'Z'], [' ', ''], (string) $x['sent_at']), $x['kind'], $x['cliente'], $x['email'], $x['ref'], str_starts_with((string) $x['ref'], 'manuale-') ? 'sì' : ''], $righe));
     }
     $lock = MHW_APP . '/storage/richiami.lock';
-    View::out('admin/richiami', ['righe' => $righe, 'perTipo' => $perTipo, 'noGrazie' => $noGrazie, 'attivi' => $attivi,
+    View::out('admin/richiami', ['righe' => $righe, 'perTipo' => $perTipo, 'noGrazie' => $noGrazie, 'attivi' => $attivi, 'bozze' => Richiami::statoBozze(), 'sconti' => MHW\EmailSconti::elenco(),
                                  'giro' => is_file($lock) ? gmdate('Y-m-d\TH:i:s\Z', (int) filemtime($lock)) : '', 'cron' => (string) (Config::get('cron_token') ?? '') !== '',
                                  'nav' => 'richiami'], 'layout/cms');
+});
+
+/* 9P · «Manda adesso» l'email «Fino al 55%» a un cliente: anche prima dei 7 giorni, mai se saltata o con gli inviti spenti. */
+$r->post('/admin/richiami/sconti/{id}', function (array $a) {
+    Auth::requireAdmin();
+    [$ok, $msg] = MHW\EmailSconti::mandaAdesso((int) $a['id']);
+    if ($ok) Auth::audit('richiamo.sconti', (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [(int) $a['id']], 0) ?: null, ['account_id' => (int) $a['id']]);
+    Support::flash($msg, $ok ? 'ok' : 'err');
+    Support::redirect('/admin/richiami#sconti');
+});
+
+/* 9Q · «La finiamo noi»: dopo aver compilato la guida da «Entra come cliente», si segna nel Registro azioni. */
+$r->post('/admin/cliente/{id}/compilata/{pid}', function (array $a) {
+    Auth::requireAdmin();
+    $acc = Db::one('SELECT * FROM accounts WHERE id = ?', [(int) $a['id']]);
+    $p = $acc ? Db::one('SELECT id, name FROM properties WHERE id = ? AND account_id = ?', [(int) $a['pid'], (int) $acc['id']]) : null;
+    if (!$p) { http_response_code(404); View::out('pub/404', []); }
+    Auth::audit('guida.compilata_da_noi', (int) $acc['user_id'], ['property_id' => (int) $p['id']]);
+    Support::flash('Segnato: la guida di ' . $p['name'] . ' è stata compilata da noi.');
+    Support::redirect('/admin/cliente/' . (int) $acc['id']);
+});
+
+/* 9Q · «Manda adesso» l'email del giorno 7 o 21 per una bozza: le stesse regole del giro automatico, senza aspettare il giorno. */
+$r->post('/admin/richiami/bozza/{id}/{tipo}', function (array $a) {
+    Auth::requireAdmin();
+    [$ok, $msg] = Richiami::mandaBozza((int) $a['id'], (string) $a['tipo']);
+    if ($ok) Auth::audit('richiamo.bozza', (int) Db::val('SELECT a.user_id FROM properties p JOIN accounts a ON a.id = p.account_id WHERE p.id = ?', [(int) $a['id']], 0) ?: null,
+                         ['property_id' => (int) $a['id'], 'tipo' => (string) $a['tipo']]);
+    Support::flash($msg, $ok ? 'ok' : 'err');
+    Support::redirect('/admin/richiami#bozze');
 });
 
 // ---------------------------------------------------------------- anomalie
