@@ -6,7 +6,7 @@
    Riceve: $tp (i testi), $chiave, $piano (il piano consigliato da Plans::public, o null), $demo, $user, e per il questionario
    $qPiani, $qRiep, $qRisposte, $qStrutture. */
 use function MHW\b; use function MHW\a;
-use MHW\{Support, Icon, Plans, SectionCatalog, Partner, LinguaSito};
+use MHW\{Support, Icon, Plans, SectionCatalog, Partner, LinguaSito, Iva};
 $U = [LinguaSito::class, 't']; $EN = LinguaSito::en();
 $title = $tp['h1'] . ' · MyHouse Welcome';
 $dentro = !empty($user);
@@ -110,8 +110,10 @@ $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' : null
       <?php $pvS = $piano; $qS = $minP; include __DIR__ . '/_scaglioni.php'; ?>
     </div>
     <div class="tipo-piano__prezzo">
-      <span class="tipo-piano__cifra price" data-totale><?= Support::e(Support::money($prezzoP, $piano['currency'])) ?></span>
-      <span class="small muted"><?= $U('+ IVA all\'anno per ', '+ VAT per year for ') ?><span data-quante><?= $minP ?></span><?= $U(' strutture', ' properties') ?><?= $maxP > 0 ? $U(', fino a ', ', up to ') . $maxP : '' ?></span>
+      <?= Iva::cifra($prezzoP, $piano['currency'], 'class="tipo-piano__cifra price" data-totale') ?>
+      <span class="small muted"><?= Iva::nota($U('+ IVA all\'anno per', '+ VAT per year for'), $U('IVA inclusa all\'anno per', 'incl. VAT per year for')) ?> <span data-quante><?= $minP ?></span><?= $U(' strutture', ' properties') ?><?= $maxP > 0 ? $U(', fino a ', ', up to ') . $maxP : '' ?></span>
+      <?= Iva::dettaglio($prezzoP, LinguaSito::en(), $piano['currency']) ?>
+      <?= Iva::interruttore(LinguaSito::en(), $tp['percorso']) /* 9O · i prezzi IVA inclusa per i privati */ ?>
       <div class="field" style="margin:0"><label for="pf-strutture"><?= $U('Quante strutture?', 'How many properties?') ?></label>
         <input id="pf-strutture" type="number" inputmode="numeric" min="<?= $minP ?>" max="<?= $maxP > 0 ? $maxP + 1 : 999 ?>" data-max-prezzo="<?= $maxP > 0 ? $maxP : 999 ?>" value="<?= $minP ?>"></div>
       <a class="btn btn--go" href="<?= $crea ?>" data-crea data-href="<?= Support::e(b() . ($dentro ? '/pannello' : LinguaSito::percorso('/registrati') . '?piano=' . (int) $piano['pv_id'])) ?>"><?= $ctaCrea ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
@@ -121,6 +123,7 @@ $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' : null
         $rnPieno = $prezzoP; $rnCampo = 'pf-strutture'; ?>
   <div class="tipo-rinnovo"><?php include __DIR__ . '/_rinnovo.php'; ?></div>
   <script src="<?= MHW\av('/assets/prezzi.js') ?>" defer></script>
+  <script src="<?= MHW\av('/assets/iva.js') ?>" defer></script>
   <?php if ($maxP > 0 && MHW\Preventivi::disponibili()): /* oltre il massimo: il modulo del preventivo (9A), aperto da qui */ ?>
     <details class="tipo-preventivo panel"<?= isset($_SESSION['preventivo_ok']) || isset($_SESSION['preventivo_errore']) ? ' open' : '' ?>>
       <summary><b><?= $U('Più di ', 'More than ') . $maxP . $U(' strutture?', ' properties?') ?></b> <?= $U('Ti facciamo una proposta su misura', 'We will make you a tailored offer') ?> <?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>

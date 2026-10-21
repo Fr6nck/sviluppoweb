@@ -257,15 +257,15 @@ $portfolio = preg_match('#<form class="plan__scelta".*?</form>#s', $r['body'], $
 prova('Portfolio: campo numerico (min 2, solo interi) al posto del menu', str_contains($portfolio, 'Quante strutture vuoi gestire?') && preg_match('#<input[^>]*name="strutture"[^>]*type="number"[^>]*step="1"[^>]*min="2"[^>]*value="2"#', $portfolio) === 1
       && !str_contains($portfolio, '<select'));
 prova('…costo per struttura dal listino 9A: 1ª 117 €, 2ª +60 €, dalla 3ª alla 5ª +50 €, dalla 6ª alla 10ª +40 €, la media e «più di 10? preventivo»', str_contains($portfolio, 'Quanto costa ogni struttura')
-      && str_contains($portfolio, "<span>1ª</span><b>117\u{00A0}€</b>") && str_contains($portfolio, "<span>2ª</span><b>+60\u{00A0}€</b>")
-      && str_contains($portfolio, "<span>Dalla 3ª alla 5ª</span><b>+50\u{00A0}€ <small>l'una</small>") && str_contains($portfolio, "<span>Dalla 6ª alla 10ª</span><b>+40\u{00A0}€ <small>l'una</small>")
-      && str_contains($portfolio, 'data-scaglioni="[[2,6000],[3,5000],[6,4000]]"') && str_contains($portfolio, "in media\n    <b data-media>88,50\u{00A0}€</b>")
+      && str_contains($portfolio, "<span>1ª</span><b data-iva-netto=\"11700\">117\u{00A0}€</b>") && str_contains($portfolio, "<span>2ª</span><b>+<span data-iva-netto=\"6000\">60\u{00A0}€</span>")
+      && str_contains($portfolio, "<span>Dalla 3ª alla 5ª</span><b>+<span data-iva-netto=\"5000\">50\u{00A0}€</span> <small>l'una</small>") && str_contains($portfolio, "<span>Dalla 6ª alla 10ª</span><b>+<span data-iva-netto=\"4000\">40\u{00A0}€</span> <small>l'una</small>")
+      && str_contains($portfolio, 'data-scaglioni="[[2,6000],[3,5000],[6,4000]]"') && str_contains($portfolio, "in media\n    <b data-media data-iva-netto=\"8850\">88,50\u{00A0}€</b>")
       && str_contains($portfolio, 'Più di 10 strutture? Ti facciamo una proposta su misura.') && str_contains($portfolio, 'max="999" data-max-prezzo="10"'));   // 9A: fino a 999, oltre 10 il preventivo
 prova('Listino: per ogni piano «Ideale per», dal pacchetto (Essential casa o appartamento, Plus B&B e agriturismi, Portfolio da 2 a 10 strutture)',
       substr_count($r['body'], '<p class="plan__per"><b>Ideale per</b>') === 3 && str_contains($r['body'], 'chi affitta una casa o un appartamento')
       && str_contains($r['body'], 'B&amp;B, case vacanza e agriturismi con ospiti da tutto il mondo') && str_contains($r['body'], 'chi gestisce da 2 a 10 strutture'));
 prova('…base e costo aggiuntivo dal listino, totale iniziale 177 €', str_contains($portfolio, 'data-base="11700"') && str_contains($portfolio, 'data-extra="6000"')
-      && preg_match("#<span data-totale>177\u{00A0}€</span><small> \+ IVA / anno</small>#u", $portfolio) === 1 && substr_count($portfolio, '+ IVA / anno') === 1);
+      && preg_match("#<span data-totale data-iva-netto=\"17700\">177\u{00A0}€</span><small> <span data-iva-nota data-lordo=\"IVA inclusa / anno\">\+ IVA / anno</span></small>#u", $portfolio) === 1 && substr_count($portfolio, '+ IVA / anno') === 1);
 prova('…la quantità va alla registrazione col piano', str_contains($portfolio, '/registrati"') && str_contains($portfolio, 'name="piano" value="' . pv('portfolio') . '"') && str_contains($portfolio, 'Crea gratis con Portfolio'));
 prova('…label esplicita del campo', preg_match('#<label for="([a-z0-9-]+)"[^>]*>Quante strutture#', $portfolio, $mm) === 1 && str_contains($portfolio, 'id="' . $mm[1] . '"'));
 prova('…il totale lo calcola uno script senza prezzi scritti dentro', str_contains($r['body'], '/assets/prezzi.js') && is_file("$DOVE/assets/prezzi.js") && !preg_match('/11700|6000|117|177/', (string) @file_get_contents("$DOVE/assets/prezzi.js")));
@@ -928,7 +928,10 @@ $c = end($cs)['corpo'] ?? [];
 prova('Checkout in modalità abbonamento', ($c['mode'] ?? '') === 'subscription');
 prova('Rinnovo annuale', ($c['line_items'][0]['price_data']['recurring']['interval'] ?? '') === 'year');
 prova('Prezzo IVA esclusa', ($c['line_items'][0]['price_data']['tax_behavior'] ?? '') === 'exclusive' && ($c['line_items'][0]['price_data']['unit_amount'] ?? '') === '9700');
-prova('Dati di fatturazione e partita IVA raccolti', ($c['billing_address_collection'] ?? '') === 'required' && ($c['tax_id_collection']['enabled'] ?? '') === 'true');
+$cliS = array_values(array_filter(richiesteStripe(), fn($x) => $x['percorso'] === '/v1/customers' && $x['metodo'] === 'POST'))[0]['corpo'] ?? [];
+prova('9O · 2 · nel Checkout l\'indirizzo sì, la partita IVA no (niente tax_id_collection): è già sul cliente Stripe come tax id eu_vat, scritta prima della sessione',
+      ($c['billing_address_collection'] ?? '') === 'required' && !isset($c['tax_id_collection']) && ($cliS['tax_id_data'][0]['type'] ?? '') === 'eu_vat'
+      && ($cliS['tax_id_data'][0]['value'] ?? '') === 'IT02945910541', json_encode($cliS['tax_id_data'] ?? null));
 prova('Metadati sull\'abbonamento', ($c['subscription_data']['metadata']['order_id'] ?? '') === (string) $ordine['id']);
 prova('Chiave di idempotenza sul checkout', (end($cs)['idem'] ?? '') === 'mhw-checkout-order-' . $ordine['id']);
 prova('Cliente Stripe creato una volta', count(array_filter(richiesteStripe(), fn($x) => $x['percorso'] === '/v1/customers')) === 1);
@@ -1549,8 +1552,8 @@ prova('Fase 4 · eliminata la copia, l\'originale ha ancora tutte le sue foto e 
 capitolo('Fase 5 · listino, guida che fa guadagnare, FAQ, firma, email, funnel');
 $posta = fn(string $a) => array_values(array_filter(array_map(fn($l) => json_decode($l, true), righePosta() ?: []), fn($m) => ($m['to'] ?? '') === $a));
 $r = $ospite->get('/');
-prova('K1 · sotto ogni prezzo l\'equivalente mensile (97/12, 127/12, Portfolio per 2: 177/12)', str_contains($r['body'], "circa 8,08\u{00A0}€ al mese")
-      && str_contains($r['body'], "circa 10,58\u{00A0}€ al mese") && str_contains($r['body'], "<span data-mensile>14,75\u{00A0}€</span> al mese"));
+prova('K1 · sotto ogni prezzo l\'equivalente mensile (97/12, 127/12, Portfolio per 2: 177/12)', str_contains($r['body'], "circa <span data-iva-netto=\"808\">8,08\u{00A0}€</span> al mese")
+      && str_contains($r['body'], "circa <span data-iva-netto=\"1058\">10,58\u{00A0}€</span> al mese") && str_contains($r['body'], "<span data-mensile data-iva-netto=\"1475\">14,75\u{00A0}€</span> al mese"));
 preg_match_all('#<div class="plan[^"]*">(.*?)(?=<div class="plan[ "]|</div>\s*<details class="confronto")#s', $r['body'], $carte);
 $ess = $carte[1][0] ?? ''; $plus = $carte[1][1] ?? '';
 prova('K1 · Essential senza le voci comuni; Plus da «Tutto di Essential, e in più:» senza ripetere', !str_contains($ess, 'Pannello di controllo') && !str_contains($ess, 'Personalizzazione colori')
@@ -1898,7 +1901,7 @@ prova('Nuovi prezzi Portfolio = nuova versione per struttura', pv('portfolio') !
 prova('…la versione venduta a Carla resta com\'era', (int) val('SELECT extra_price_cents FROM package_versions WHERE id = ?', [$vecchiaP]) === 6000
       && (int) val("SELECT package_version_id FROM subscriptions WHERE provider_subscription_id = 'sub_prova_carla'") === $vecchiaP);
 $home = $ospite->get('/')['body'];
-prova('La landing segue i prezzi dell\'amministrazione (119 + 65 = 184 €)', str_contains($home, 'data-base="11900"') && str_contains($home, 'data-extra="6500"') && str_contains($home, "<span data-totale>184\u{00A0}€</span>"));
+prova('La landing segue i prezzi dell\'amministrazione (119 + 65 = 184 €)', str_contains($home, 'data-base="11900"') && str_contains($home, 'data-extra="6500"') && str_contains($home, "<span data-totale data-iva-netto=\"18400\">184\u{00A0}€</span>"));
 $admin->post("/admin/pacchetti/$pf/nuova-versione", ['nome' => $pkP['name'], 'prezzo' => '119', 'prezzo_extra' => '65', 'min_quantita' => '2', 'max_quantita' => '40', 'stripe_price_id' => '', 'stripe_extra_price_id' => 'sbagliato', 'f' => $featP]);
 prova('Price ID delle aggiuntive malformato rifiutato', !val("SELECT id FROM package_versions WHERE stripe_extra_price_id = 'sbagliato'"));
 $r = $admin->post("/admin/pacchetti/$essential/nuova-versione", ['prezzo' => '97', 'stripe_price_id' => 'prezzo-sbagliato', 'f' => $feat]);
@@ -2556,8 +2559,8 @@ $fileLocale = $DOVE . '/app/config.local.php';
 $r = $admin->get('/admin/impostazioni');
 prova('La pagina si apre con i tre riquadri e l\'indirizzo del webhook da copiare', $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'id="stripe"')
       && str_contains($r['body'], 'id="posta"') && str_contains($r['body'], 'id="archivio"') && str_contains($r['body'], '/webhook/stripe'));
-prova('…e l\'elenco degli eventi del webhook comprende anche trial_will_end e charge.refunded',
-      str_contains($r['body'], 'customer.subscription.deleted, customer.subscription.trial_will_end, charge.refunded.'));
+prova('…e l\'elenco degli eventi del webhook comprende anche trial_will_end, charge.refunded e (9O) charge.refund.updated',
+      str_contains($r['body'], 'customer.subscription.deleted, customer.subscription.trial_will_end, charge.refunded, charge.refund.updated'));
 prova('…i campi impostati dal server (variabili d\'ambiente) si vedono bloccati, e nessun segreto compare nella pagina',
       str_contains($r['body'], 'variabile d\'ambiente <code>STRIPE_SECRET_KEY</code>') && !str_contains($r['body'], 'sk_test_finto_solo_per_le_prove')
       && !str_contains($r['body'], 'whsec_finto_solo_per_le_prove') && !str_contains($r['body'], 'segreto-finto-per-le-prove'));
@@ -3331,8 +3334,8 @@ $c = end($cs)['corpo'] ?? [];
 prova('…la sessione è incorporata: ui_mode=embedded, return_url su /pagamento/ok, niente success_url né cancel_url, chiave di idempotenza a parte',
       ($c['ui_mode'] ?? '') === 'embedded' && str_ends_with((string) ($c['return_url'] ?? ''), '/pagamento/ok?order=' . $no1['id']) && !isset($c['success_url']) && !isset($c['cancel_url'])
       && (end($cs)['idem'] ?? '') === 'mhw-checkout-incorporato-order-' . $no1['id']);
-prova('…stessi dati di prima: abbonamento, fatturazione, P.IVA e metadati con ordine e codici', ($c['mode'] ?? '') === 'subscription' && ($c['billing_address_collection'] ?? '') === 'required'
-      && ($c['tax_id_collection']['enabled'] ?? '') === 'true' && ($c['metadata']['order_id'] ?? '') === (string) $no1['id'] && ($c['metadata']['codice_pagamento'] ?? '') !== '');
+prova('…stessi dati di prima: abbonamento, fatturazione (9O: senza chiedere la P.IVA) e metadati con ordine e codici', ($c['mode'] ?? '') === 'subscription' && ($c['billing_address_collection'] ?? '') === 'required'
+      && !isset($c['tax_id_collection']) && ($c['metadata']['order_id'] ?? '') === (string) $no1['id'] && ($c['metadata']['codice_pagamento'] ?? '') !== '');
 $r = $nina->get("/pannello/$np/pagamento/" . $no1['id']);
 prova('La pagina «Paga e pubblica.»: Stripe.js da js.stripe.com, chiave pubblicabile e segreto della sessione, «Paga sulla pagina di Stripe» e «Annulla»',
       $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Paga e pubblica.') && str_contains($r['body'], '<script src="https://js.stripe.com/v3/"></script>')
@@ -4731,10 +4734,10 @@ foreach (['src', 'views', 'lang'] as $c8) foreach (new RecursiveIteratorIterator
 $sorgenti8j .= file_get_contents("$DOVE/app/config.php");
 prova('8J · nel codice nessuna vecchia P.IVA né «Blackout Agency» come ragione sociale di serie', !str_contains($sorgenti8j, '02945910541') && !str_contains($sorgenti8j, "'Blackout Agency')")
       && !str_contains($sorgenti8j, 'un progetto Blackout'));
-prova('8J · Termini: 17 punti con indice (9N: giudizio, rinnovo e omaggio in un punto solo), recesso impresa/consumatore, 18 anni, foro di Perugia, modulo di recesso; Privacy: 14 trattamenti in tabella (9A: preventivi, 9K: partner), fornitori, diritti, nessun DPO',
+prova('8J · Termini: 17 punti con indice (9N: giudizio, rinnovo e omaggio in un punto solo), recesso impresa/consumatore, 18 anni, foro di Perugia, modulo di recesso; Privacy: 15 trattamenti in tabella (9A: preventivi, 9K: partner, 9O: programma partner), fornitori, diritti, nessun DPO',
       substr_count($pag8j['/termini']['body'], 'class="legale__parte"') === 19 && str_contains($pag8j['/termini']['body'], 'id="recesso"') && str_contains($pag8j['/termini']['body'], 'almeno 18 anni')
       && str_contains($pag8j['/termini']['body'], 'foro di Perugia') && str_contains($pag8j['/termini']['body'], 'id="modulo-recesso"') && str_contains($pag8j['/termini']['body'], 'Compila e manda il modulo per email')
-      && substr_count($pag8j['/privacy']['body'], 'class="legale__tabella"') === 14 && str_contains($pag8j['/privacy']['body'], 'Hostinger') && str_contains($pag8j['/privacy']['body'], 'Stripe Payments Europe')
+      && substr_count($pag8j['/privacy']['body'], 'class="legale__tabella"') === 15 && str_contains($pag8j['/privacy']['body'], 'Hostinger') && str_contains($pag8j['/privacy']['body'], 'Stripe Payments Europe')
       && str_contains($pag8j['/privacy']['body'], 'Non è stato nominato un responsabile della protezione dei dati') && str_contains($pag8j['/privacy']['body'], 'entro 30 giorni')
       && str_contains($pag8j['/dpa']['body'], 'entro 48 ore') && str_contains($pag8j['/dpa']['body'], 'almeno 30 giorni'));
 prova('8J · la posta in uscita nell\'informativa viene dall\'impostazione (qui: modalità prova)', str_contains($pag8j['/privacy']['body'], 'posta in uscita</b>: '));
@@ -4879,8 +4882,8 @@ db()->prepare("UPDATE package_versions SET stripe_price_id = '', stripe_extra_pr
 $r = $ospite->get('/');
 $pf9 = preg_match('#<form class="plan__scelta".*?</form>#s', $r['body'], $mm9) ? $mm9[0] : '';
 prova('9A · home: 177 € per 2 strutture, la tabella con le 4 righe, campo fino a 999 con il massimo del listino a parte, riquadro del preventivo chiuso',
-      str_contains($pf9, "<span data-totale>177\u{00A0}€</span>") && str_contains($pf9, "<span>1ª</span><b>117\u{00A0}€</b>") && str_contains($pf9, "<span>2ª</span><b>+60\u{00A0}€</b>")
-      && str_contains($pf9, "<span>Dalla 3ª alla 5ª</span><b>+50\u{00A0}€ <small>l'una</small>") && str_contains($pf9, "<span>Dalla 6ª alla 10ª</span><b>+40\u{00A0}€ <small>l'una</small>")
+      str_contains($pf9, "<span data-totale data-iva-netto=\"17700\">177\u{00A0}€</span>") && str_contains($pf9, "<span>1ª</span><b data-iva-netto=\"11700\">117\u{00A0}€</b>") && str_contains($pf9, "<span>2ª</span><b>+<span data-iva-netto=\"6000\">60\u{00A0}€</span>")
+      && str_contains($pf9, "<span>Dalla 3ª alla 5ª</span><b>+<span data-iva-netto=\"5000\">50\u{00A0}€</span> <small>l'una</small>") && str_contains($pf9, "<span>Dalla 6ª alla 10ª</span><b>+<span data-iva-netto=\"4000\">40\u{00A0}€</span> <small>l'una</small>")
       && str_contains($pf9, 'max="999" data-max-prezzo="10"') && str_contains($pf9, 'data-scaglioni="[[2,6000],[3,5000],[6,4000]]"') && str_contains($pf9, 'href="#preventivo"')
       && str_contains($r['body'], 'id="preventivo" data-preventivo data-min="11" hidden') && str_contains($r['body'], 'action="' . $base9 . '/preventivo"')
       && str_contains($r['body'], 'id="prev-strutture" name="strutture" type="number" inputmode="numeric" required min="11" max="999"'), substr($pf9, 0, 300) . ' … ' . (preg_match('#<div class="preventivo"[^>]*>#', $r['body'], $mp9) ? $mp9[0] : 'niente riquadro'));
@@ -4890,7 +4893,7 @@ prova('9A · FAQ (IT/EN) senza «come Plus»; llms.txt con 177 € e gli scaglio
       && str_contains($l9 = $ospite->get('/llms.txt')['body'], '- Portfolio: 117 € la prima struttura, poi 60 € 2ª; 50 € dalla 3ª alla 5ª; 40 € dalla 6ª alla 10ª') && str_contains($l9, '(con 2: 177 €)')
       && str_contains($r['body'], '"price":"177.00"'));
 $r = $ospite->get('/en');
-prova('9A · /en: tabella in inglese (From the 6th to the 10th) e riquadro del preventivo in inglese', str_contains($r['body'], "<span>From the 6th to the 10th</span><b>+40\u{00A0}€ <small>each</small>")
+prova('9A · /en: tabella in inglese (From the 6th to the 10th) e riquadro del preventivo in inglese', str_contains($r['body'], "<span>From the 6th to the 10th</span><b>+<span data-iva-netto=\"4000\">40\u{00A0}€</span> <small>each</small>")
       && str_contains($r['body'], 'properties? We will make you a tailored offer.') && str_contains($r['body'], 'name="torna" value="/en"'));
 
 // Il preventivo: senza JavaScript, salvato con le due email; errori sotto il modulo; 5 l'ora per IP; in inglese; Amministrazione → Preventivi.
@@ -4984,8 +4987,8 @@ $link9 = linkPosta('nina9a@prova.test', 'verifica');
 $nina->get(substr($link9, strpos($link9, '/verifica/')));
 $r = $nina->get('/piano');
 prova('9A · /piano con l\'invito: prezzo pieno barrato e scontato nelle tre schede, lo sconto nei dati dello script, l\'invito nel riquadro dei codici', $r['code'] === 200 && pulita($r)
-      && substr_count($r['body'], 'class="price price--barrato"') === 3 && str_contains($r['body'], "<s data-pieno>177\u{00A0}€</s>") && str_contains($r['body'], "<span data-totale>168,15\u{00A0}€</span><small> + IVA il primo anno</small>")
-      && str_contains($r['body'], 'data-sconto="5"') && str_contains($r['body'], '−5% primo anno · poi <span data-pieno-poi>177') && str_contains($r['body'], '<b>Invito di Paola</b>: −5% sul primo anno, sul piano che scegli.')
+      && substr_count($r['body'], 'class="price price--barrato"') === 3 && str_contains($r['body'], "<s data-pieno data-iva-netto=\"17700\">177\u{00A0}€</s>") && str_contains($r['body'], "<span data-totale data-iva-netto=\"16815\">168,15\u{00A0}€</span><small> <span data-iva-nota data-lordo=\"IVA inclusa il primo anno\">+ IVA il primo anno</span></small>")
+      && str_contains($r['body'], 'data-sconto="5"') && str_contains($r['body'], '−5% primo anno · poi <span data-pieno-poi data-iva-netto="17700">177') && str_contains($r['body'], '<b>Invito di Paola</b>: −5% sul primo anno, sul piano che scegli.')
       && !str_contains($r['body'], '/sconto/togli'));
 $r = $nina->post('/piano', ['pv' => $pp9, 'strutture' => '11']);
 prova('9A · 11 strutture in /piano: nessun ordine e nessun errore, si torna al riquadro del preventivo già compilato', $r['code'] === 302 && str_contains($r['loc'], "/piano?piano=$pp9&strutture=11#preventivo")
@@ -5136,7 +5139,7 @@ prova('9B · passo Pubblica: la casella del giudizio (una sola, non spuntata) co
       && substr_count($r['body'], 'name="giudizio_adesione"') === 1 && !str_contains($r['body'], 'name="giudizio_adesione" value="1" data-giudizio-casella style="margin-top:1px" checked')
       && str_contains($r['body'], 'Aderisco al programma «Giudizio con sconto» e ho il 5% di sconto.') && str_contains($r['body'], 'Lo sconto non dipende dal voto né dalla pubblicazione.') && str_contains($r['body'], '/termini#giudizio-sconto')
       && str_contains($r['body'], 'che può comparire in «Cosa dicono di noi»')
-      && !str_contains($r['body'], 'Giudizio · ') && str_contains($r['body'], "Totale primo anno</span><b>127\u{00A0}€"));
+      && !str_contains($r['body'], 'Giudizio · ') && preg_match("#(Totale|Imponibile) primo anno</span><b>127\u{00A0}€#u", $r['body']) === 1);
 prova('9B · pannello prima di aderire: il riquadro «invito» (5% sul prossimo rinnovo) con «Aderisco»', str_contains($p9b = $ugo->get('/pannello')['body'], 'Giudizio con sconto: il 5% sul prossimo rinnovo') && str_contains($p9b, 'name="partecipo"'));
 $r = $ugo->post('/giudizio/adesione', ['giudizio_adesione' => '1', 'torna' => "/pannello/$pu/procedura/pubblica"]);
 $ua = riga('SELECT * FROM accounts WHERE id = ?', [$uacc]);
@@ -5144,7 +5147,7 @@ prova('9B · spuntata (POST /giudizio/adesione): adesione «pagamento», sconto 
       && $ua['giudizio_adesione_at'] !== null && (bool) val("SELECT id FROM audit_log WHERE action = 'giudizio.adesione'"));
 $r = $ugo->get("/pannello/$pu/procedura/pubblica");
 prova('9B · il riepilogo ha la riga «Giudizio · −5%» (−6,35 €), totale 120,65 €, la casella spuntata, il prezzo barrato', str_contains($r['body'], "Giudizio · −5% primo anno</span><b>−6,35\u{00A0}€</b>")
-      && str_contains($r['body'], "Totale primo anno</span><b>120,65\u{00A0}€") && str_contains($r['body'], 'data-giudizio-casella style="margin-top:1px" checked') && str_contains($r['body'], "style=\"font-size:18px\">127\u{00A0}€</s>"));
+      && preg_match("#(Totale|Imponibile) primo anno</span><b>120,65\u{00A0}€#u", $r['body']) === 1 && str_contains($r['body'], 'data-giudizio-casella style="margin-top:1px" checked') && str_contains($r['body'], "style=\"font-size:18px\">127\u{00A0}€</s>"));
 $ugo->post('/giudizio/adesione', ['torna' => "/pannello/$pu/procedura/pubblica"]);
 prova('9B · tolta prima di pagare: l\'adesione si annulla, prezzo pieno', (string) val('SELECT giudizio_sconto_stato FROM accounts WHERE id = ?', [$uacc]) === 'nessuno' && val('SELECT giudizio_adesione FROM accounts WHERE id = ?', [$uacc]) === null
       && !str_contains($ugo->get("/pannello/$pu/procedura/pubblica")['body'], 'Giudizio · '));
@@ -6474,13 +6477,13 @@ $mBenv = fn(string $a) => array_values(array_filter($posta($a), fn($m) => str_co
 // Lia (9L · 1) ha pagato con la casella: il webhook ha messo online la guida e mandato il benvenuto.
 $mL = $mBenv('lia9l@prova.test'); $tL = (string) (end($mL)['text'] ?? '');
 $slugL = (string) val('SELECT slug FROM properties WHERE id = ?', [$liaPid]);
-prova('Benvenuto · dopo il pagamento (webhook): una email «La guida di Casa Lia è online — MyHouse Welcome», «Ciao Lia,», il link della guida, le tre cose da fare, «Apri QR & Link»',
-      count($benv($liaAcc)) === 1 && count($mL) === 1 && ($mL[0]['subject'] ?? '') === 'La guida di Casa Lia è online — MyHouse Welcome'
-      && str_contains($tL, 'Ciao Lia, ti diamo il benvenuto in MyHouse Welcome.') && str_contains($tL, "/g/$slugL") && str_contains($tL, 'Tre cose da fare adesso:')
+prova('Benvenuto → 9O · dopo il pagamento (webhook): una sola email «La tua guida Casa Lia è online — MyHouse Welcome» («È online.», pagamento, piano) con dentro il benvenuto: il link della guida, le tre cose da fare, «Apri QR & Link»',
+      count($benv($liaAcc)) === 1 && count($mL) === 1 && ($mL[0]['subject'] ?? '') === 'La tua guida Casa Lia è online — MyHouse Welcome'
+      && str_contains($tL, 'Il pagamento è andato a buon fine e la guida di Casa Lia è pubblicata') && str_contains($tL, "/g/$slugL") && str_contains($tL, 'Tre cose da fare adesso:')
       && str_contains($tL, '1. Stampa il QR') && str_contains($tL, "3. Quando cambi qualcosa, pubblica le modifiche") && preg_match('#Apri QR & Link: \S+/pannello/' . $liaPid . '/qr#', $tL) === 1, $tL);
 prova('Benvenuto · Lia ha aderito: la riga «Hai aderito a «Giudizio con sconto»» (giudizio.email.aderito), niente invito; email di servizio senza «Non mandarmene più»',
       str_contains($tL, 'Hai aderito a «Giudizio con sconto»: dopo un nostro controllo la tua guida compare tra «Le guide dei nostri host»') && str_contains($tL, 'mai una tua foto')
-      && !str_contains($tL, 'Vuoi il 5% di sconto') && !str_contains($tL, 'Non vuoi più ricevere') && !str_contains($tL, '/email/stop/') && str_contains($tL, 'Una domanda? Rispondi a questa email'));
+      && !str_contains($tL, 'Vuoi il 5% di sconto') && !str_contains($tL, 'Non vuoi più ricevere') && !str_contains($tL, '/email/stop/') && str_contains($tL, 'per qualsiasi domanda: assistenza@'));
 $emlL = $emlPer('lia9l@prova.test');
 prova('Benvenuto · l\'HTML con il marchio, in italiano (lang="it", «Assistenza», «Termini»), Reply-To all\'assistenza', str_contains($emlL, 'Reply-To: <assistenza@welcomemyhouse.it>')
       && str_contains(base64_decode(preg_match('#Content-Type: text/html; charset=UTF-8\r?\nContent-Transfer-Encoding: base64\r?\n\r?\n([A-Za-z0-9+/=\r\n]+)#', $emlL, $hL) ? $hL[1] : ''), '<html lang="it">'));
@@ -6504,9 +6507,9 @@ db()->prepare("UPDATE users SET panel_lang = 'en' WHERE id = (SELECT user_id FRO
 $mZ = $mBenv('zoe.benvenuto@prova.test'); $tZ = (string) (end($mZ)['text'] ?? '');
 $emlZ = $emlPer('zoe.benvenuto@prova.test');
 $hZ = base64_decode(preg_match('#Content-Type: text/html; charset=UTF-8\r?\nContent-Transfer-Encoding: base64\r?\n\r?\n([A-Za-z0-9+/=\r\n]+)#', $emlZ, $mm) ? $mm[1] : '');
-prova('Benvenuto · pannello in inglese: «The guide for Casa Zoe is online», «Hi Zoe,», «Open QR & Link», invito «Would you like 5% off your renewal?», piede «Need help?»',
-      $rZ['body'] === 'abbonamento-attivato' && count($mZ) === 1 && ($mZ[0]['subject'] ?? '') === 'The guide for Casa Zoe is online — MyHouse Welcome'
-      && str_contains($tZ, 'Hi Zoe, welcome to MyHouse Welcome.') && str_contains($tZ, 'Three things to do now:') && str_contains($tZ, 'Open QR & Link:')
+prova('Benvenuto → 9O · pannello in inglese: «Your guide Casa Zoe is online», «It is online.», «Open QR & Link», invito «Would you like 5% off your renewal?», piede «Need help?»',
+      $rZ['body'] === 'abbonamento-attivato' && count($mZ) === 1 && ($mZ[0]['subject'] ?? '') === 'Your guide Casa Zoe is online — MyHouse Welcome'
+      && str_contains($tZ, 'It is online.') && str_contains($tZ, 'The payment went through') && str_contains($tZ, 'Three things to do now:') && str_contains($tZ, 'Open QR & Link:')
       && str_contains($tZ, 'Would you like 5% off your renewal? Join “Review with a discount”') && str_contains($tZ, 'Need help? Write to us at') && !str_contains($tZ, 'Ciao'), $tZ);
 prova('Benvenuto · l\'HTML in inglese: lang="en", «If the button does not open», «Support», «Terms» con /en/terms', str_contains($hZ, '<html lang="en">')
       && str_contains($hZ, 'If the button does not open, copy this address into your browser:') && str_contains($hZ, '>Support</a>') && preg_match('#/en/terms"[^>]*>Terms</a>#', $hZ) === 1 && !str_contains($hZ, 'Assistenza'), substr(strip_tags($hZ), -400));
@@ -6536,7 +6539,7 @@ touch($fileLocale, time() - 30); clearstatcache(); sleep(3);
 $r9m = $ospite->get('/piu-strutture');
 @unlink($fileLocale); clearstatcache(); sleep(3);
 prova('9M · 1 · /piu-strutture: «Quante strutture?» accanto al prezzo (177 € per 2), sotto il 55% e la scala del rinnovo legata al selettore (79,65 €), senza titolo né domande del questionario',
-      str_contains($r9m['body'], 'id="pf-strutture"') && str_contains($r9m['body'], 'data-rinnovo data-campo="pf-strutture"') && preg_match('#Primo anno <b data-q-anno>177\x{00A0}€</b>, dal rinnovo con il 55%#u', $r9m['body']) === 1
+      str_contains($r9m['body'], 'id="pf-strutture"') && str_contains($r9m['body'], 'data-rinnovo data-campo="pf-strutture"') && preg_match('#Primo anno <b data-q-anno data-iva-netto="17700">177\x{00A0}€</b>, dal rinnovo con il 55%#u', $r9m['body']) === 1
       && str_contains($r9m['body'], "79,65\u{00A0}€") && str_contains($r9m['body'], 'Fino al 55% di sconto a partire dal prossimo anno.') && str_contains($r9m['body'], 'Nessuno sconto')
       && str_contains($r9m['body'], '10 amici + giudizio · 55%') && !str_contains($r9m['body'], 'data-questionario') && !str_contains($r9m['body'], 'Tre domande, una risposta.')
       && str_contains($r9m['body'], 'prezzi.js') && str_contains($r9m['body'], 'Il lavoro lo fai una volta sola') && str_contains($r9m['body'], 'La scheda campione'));
@@ -6961,25 +6964,27 @@ $r = $admin->get('/admin/preventivi');
 prova('9N · 11 · Preventivi: «Prepara l\'offerta» sulla richiesta; la pagina con strutture, prezzo, scadenza a 14 giorni, sconto facoltativo e il confronto «15 strutture a scaglioni = 727 €»',
       str_contains($r['body'], $pagOff . '"') && ($r = $admin->get($pagOff))['code'] === 200 && pulita($r) && str_contains($r['body'], 'value="15"') && str_contains($r['body'], 'value="727,00"')
       && str_contains($r['body'], 'value="' . gmdate('Y-m-d', strtotime('+14 days')) . '"') && str_contains($r['body'], 'name="sconto_rinnovo"')
-      && str_contains($r['body'], '15 strutture a scaglioni = <b>727 €</b>') && str_contains($r['body'], 'non si applicano da soli'));
+      && str_contains($r['body'], "15 strutture a scaglioni = <b>727\u{00A0}€</b>") && str_contains($r['body'], 'non si applicano da soli'));
 $campiOff = ['strutture' => '15', 'prezzo' => '640,00', 'valida_fino' => gmdate('Y-m-d', strtotime('+14 days')), 'sconto_rinnovo' => '0', 'note' => 'Prezzo bloccato anche al rinnovo.'];
 $r = $admin->modulo($pagOff, $pagOff, $campiOff + ['azione' => 'anteprima']);
-prova('9N · 11 · «Anteprima email»: l\'email com\'è (640 € + IVA, 15 strutture), senza salvare né mandare', str_contains($r['body'], '640 € + IVA') && str_contains($r['body'], 'anteprima, non mandata')
+prova('9N · 11 · «Anteprima email»: l\'email com\'è (640 € + IVA, 15 strutture), senza salvare né mandare', str_contains($r['body'], "640\u{00A0}€ + IVA") && str_contains($r['body'], 'anteprima, non mandata')
       && !val('SELECT id FROM offerte WHERE preventivo_id = ?', [$prevM]));
-$r = $admin->modulo($pagOff, $pagOff, $campiOff + ['strutture' => '9', 'azione' => 'manda']);
-prova('9N · 11 · meno di 11 strutture: errore, niente offerta', !val('SELECT id FROM offerte WHERE preventivo_id = ?', [$prevM]) && str_contains($admin->segui($r)['body'], 'strutture'));
+$minOff = (int) $c9n('echo MHW\Offerte::minimo();');
+$r = $admin->modulo($pagOff, $pagOff, ['strutture' => (string) ($minOff - 1), 'azione' => 'manda'] + $campiOff);
+prova('9N · 11 · meno strutture del minimo (oltre il massimo del Portfolio): errore che lo dice, niente offerta', $minOff > 1 && !val('SELECT id FROM offerte WHERE preventivo_id = ?', [$prevM])
+      && str_contains(($rMin = $admin->segui($r))['body'], 'Un&#039;offerta su misura parte da ' . $minOff . ' strutture'), $minOff . ' ' . json_encode(val('SELECT COUNT(*) FROM offerte WHERE preventivo_id = ?', [$prevM])) . ' ' . substr(strip_tags($rMin['body'] ?? ''), 0, 0) . ($rMin['code'] ?? '') . ' ' . (preg_match('#class="flash[^>]*>(.*?)</#s', $rMin['body'] ?? '', $mf) ? $mf[1] : 'nessun flash'));
 $primaPosta = count(righePosta() ?: []);
 $r = $admin->segui($admin->modulo($pagOff, $pagOff, $campiOff + ['azione' => 'manda']));
-$off = riga('SELECT * FROM offerte WHERE preventivo_id = ?', [$prevM]) ?? [];
+$off = riga("SELECT * FROM offerte WHERE preventivo_id = ? AND stato <> 'annullata' ORDER BY id DESC", [$prevM]) ?? [];
 $mOff = array_values(array_filter(array_map(fn($l) => json_decode($l, true), array_slice(righePosta() ?: [], $primaPosta)), fn($m) => ($m['to'] ?? '') === 'marta9n@prova.test'))[0] ?? [];
 prova('9N · 11 · «Manda l\'offerta»: salvata (15 strutture, 64000, «inviata»), preventivo «Offerta inviata», email con il prezzo e il link, Reply-To commerciale, nel registro',
       $off && (int) $off['strutture'] === 15 && (int) $off['prezzo_cents'] === 64000 && $off['stato'] === 'inviata' && str_contains($r['body'], 'Offerta mandata a marta9n@prova.test')
       && val('SELECT stato FROM preventivi WHERE id = ?', [$prevM]) === 'offerta' && str_contains((string) ($mOff['subject'] ?? ''), 'La tua offerta Portfolio su misura: 15 strutture')
-      && str_contains((string) ($mOff['text'] ?? ''), '640 € + IVA') && str_contains((string) ($mOff['text'] ?? ''), '/offerta/' . $off['token'])
-      && str_contains(json_encode($mOff), 'commerciale') && (bool) val("SELECT id FROM audit_log WHERE action = 'offerta.creata'"), json_encode($mOff));
+      && str_contains((string) ($mOff['text'] ?? ''), "640\u{00A0}€ + IVA") && str_contains((string) ($mOff['text'] ?? ''), '/offerta/' . $off['token'])
+      && str_contains($emlPer('marta9n@prova.test'), 'Reply-To: <commerciale@') && (bool) val("SELECT id FROM audit_log WHERE action = 'offerta.creata'"), json_encode($mOff));
 $r = $ospite->get('/offerta/' . $off['token']);
 prova('9N · 11 · /offerta/{token}: 640 € + IVA per 15 strutture, «stesso prezzo anche al rinnovo», la scadenza, «Crea l\'account e accetta», noindex; un token sconosciuto è 404',
-      $r['code'] === 200 && pulita($r) && str_contains($r['body'], '640 €') && str_contains($r['body'], 'Stesso prezzo anche al rinnovo') && str_contains($r['body'], 'Offerta valida fino al')
+      $r['code'] === 200 && pulita($r) && str_contains($r['body'], "640\u{00A0}€") && str_contains($r['body'], 'Stesso prezzo anche al rinnovo') && str_contains($r['body'], 'Offerta valida fino al')
       && str_contains($r['body'], '/registrati?offerta=' . $off['token']) && str_contains($r['body'], 'noindex') && $ospite->get('/offerta/' . str_repeat('x', 32))['code'] === 404);
 // Marta si registra dal link dell'offerta: dopo la conferma dell'email torna all'offerta.
 $marta = new Browser('marta9n');
@@ -7017,23 +7022,23 @@ $r = inviaWebhook(['id' => 'evt_9n_marta_upd', 'type' => 'customer.subscription.
 prova('9N · 11 · un aggiornamento da Stripe (una voce, quantità 1) non toglie strutture all\'offerta', (int) val('SELECT quantity FROM subscriptions WHERE id = ?', [$sM['id']]) === 15, $r['body']);
 $r = $admin->get('/admin/cassa?mese=' . gmdate('Y-m'));
 prova('9N · 11 · Cassa: il pagamento dell\'offerta (640,00 + IVA 140,80) come «Portfolio su misura · 15 strutture»', str_contains($r['body'], (string) $oOff['code'])
-      && preg_match('#Marta Misura.*?Portfolio su misura · 15 strutture#su', $r['body']) === 1 && str_contains($r['body'], '640,00'));
+      && preg_match("#Marta Misura.*?Portfolio su misura · 15 strutture.*?640\u{00A0}€.*?140,80\u{00A0}€#su", $r['body']) === 1);
 db()->prepare('UPDATE subscriptions SET current_period_end = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() + 20 * 86400), $sM['id']]);
-prova('9N · 11 · Scadenze a 30 giorni: Marta con 640,00 € (stesso prezzo)', preg_match('#marta9n@prova\.test.*?640,00#su', $admin->get('/admin/scadenze?giorni=30')['body']) === 1);
+prova('9N · 11 · Scadenze a 30 giorni: Marta con 640 € (stesso prezzo)', preg_match("#marta9n@prova\.test.*?640\u{00A0}€#su", $admin->get('/admin/scadenze?giorni=30')['body']) === 1);
 // Inviti e giudizio: solo promemoria.
 $inviti9n($martaAcc, 4); $giudizio9n($martaAcc, 'pannello', 'da_applicare_rinnovo');
 $xM = $rinnovo9n($martaAcc);
 $rC = $admin->get("/admin/cliente/$martaAcc");
 prova('9N · 11 · inviti (4 amici) e giudizio non si applicano da soli: rinnovo a 640 €; nella scheda il promemoria «4 amici · varrebbero 20%» e il giudizio',
       ($xM['importo'] ?? 0) === 64000 && ($xM['r']['percento'] ?? -1) === 0 && ($xM['avviso'] ?? 0) === 64000 && str_contains($rC['body'], 'id="offerta"')
-      && str_contains($rC['body'], '4 amici · varrebbero 20%') && str_contains($rC['body'], 'Portfolio su misura · 15 strutture · 640 € + IVA'), json_encode($xM));
+      && str_contains($rC['body'], '4 amici · varrebbero 20%') && str_contains($rC['body'], "Portfolio su misura · 15 strutture · 640\u{00A0}€ + IVA"), json_encode($xM));
 $daOff = count(richiesteStripe());
 $r = $admin->segui($admin->modulo("/admin/cliente/$martaAcc", "/admin/cliente/$martaAcc/offerta/sconto", ['sconto' => '10']));
 $xM = $rinnovo9n($martaAcc);
 $pS = $postSub('sub_9n_marta', $daOff); $corpoS = json_encode(end($pS)['corpo'] ?? []);
 prova('9N · 11 · sconto a mano del 10%: 576 € + IVA nella scheda, nell\'avviso a 30 giorni e su Stripe (coupon «mhw-rinnovo-10», «manuale:10»), nel registro',
-      ($xM['importo'] ?? 0) === 57600 && ($xM['avviso'] ?? 0) === 57600 && str_contains($r['body'], '576 € + IVA') && str_contains($corpoS, 'mhw-rinnovo-10') && str_contains($corpoS, 'manuale:10')
-      && (bool) val("SELECT id FROM audit_log WHERE action = 'offerta.sconto_rinnovo'") && preg_match('#marta9n@prova\.test.*?576,00.*?−10% sconto rinnovo#su', $admin->get('/admin/scadenze?giorni=30')['body']) === 1,
+      ($xM['importo'] ?? 0) === 57600 && ($xM['avviso'] ?? 0) === 57600 && str_contains($r['body'], "576\u{00A0}€ + IVA") && str_contains($corpoS, 'mhw-rinnovo-10') && str_contains($corpoS, 'manuale:10')
+      && (bool) val("SELECT id FROM audit_log WHERE action = 'offerta.sconto_rinnovo'") && preg_match("#marta9n@prova\.test.*?576\u{00A0}€.*?−10% sconto rinnovo#su", $admin->get('/admin/scadenze?giorni=30')['body']) === 1,
       json_encode($xM) . $corpoS);
 // Il rinnovo: stesso prezzo concordato (scontato del 10%), sempre 15 strutture.
 $fineM = time() + 365 * 86400;
@@ -7045,7 +7050,7 @@ $xM = $rinnovo9n($martaAcc);
 $rCa = $admin->get('/admin/cassa?mese=' . gmdate('Y-m'));
 prova('9N · 11 · rinnovo pagato: un anno in più, ancora 15 strutture e la stessa offerta; in Cassa il rinnovo a 576,00 + IVA; il prezzo concordato resta 640 € (sconto ancora 10%)',
       $r['body'] === 'rinnovo-pagato' && (int) $sM2['quantity'] === 15 && (int) $sM2['offerta_id'] === (int) $off['id'] && substr((string) $sM2['current_period_end'], 0, 10) === gmdate('Y-m-d', $fineM)
-      && preg_match('#Marta Misura.*?Portfolio su misura · 15 strutture.*?576,00#su', $rCa['body']) === 1 && ($xM['importo'] ?? 0) === 57600, $r['body'] . json_encode($xM));
+      && preg_match("#Marta Misura.*?Portfolio su misura · 15 strutture.*?576\u{00A0}€#su", $rCa['body']) === 1 && ($xM['importo'] ?? 0) === 57600, $r['body'] . json_encode($xM));
 // A meno di 7 giorni dal rinnovo lo sconto non si cambia più.
 db()->prepare('UPDATE subscriptions SET current_period_end = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() + 5 * 86400), $sM['id']]);
 $r = $admin->segui($admin->modulo("/admin/cliente/$martaAcc", "/admin/cliente/$martaAcc/offerta/sconto", ['sconto' => '20']));

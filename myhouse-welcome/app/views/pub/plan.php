@@ -1,7 +1,7 @@
 <?php
 /* La scelta del piano, dopo la registrazione. Non si paga niente qui: il piano
    scelto decide cosa si può configurare, e si paga solo alla pubblicazione. */
-use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli il piano'; ?>
+use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans, Iva}; $title = 'Scegli il piano'; ?>
 <div class="stack stack--sm" style="max-width:720px">
   <h1>Scegli il piano.</h1>
   <p class="lead">Adesso non paghi niente: configuri la guida con le funzioni del piano scelto, e paghi solo quando
@@ -12,7 +12,8 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
   <p class="note" style="margin-top:24px"><?= Icon::svg('info', 19) ?><span>Hai già un abbonamento attivo.
     Per cambiarlo vai in <a href="<?= b() ?>/account/piano">Cambia piano</a>.</span></p>
 <?php else: ?>
-<form method="post" style="margin-top:28px"><?= Csrf::field() ?>
+<div style="margin-top:20px"><?= Iva::interruttore(false, '/piano') /* 9O · i prezzi IVA inclusa per i privati (fuori dal modulo del piano) */ ?></div>
+<form method="post" style="margin-top:16px"><?= Csrf::field() ?>
   <?php /* Ogni opzione è una card intera che si preme: il pallino in alto a destra è
            il radio vero (tastiera e lettori di schermo), il velo trasparente sopra la
            card è la sua etichetta. Il numero di strutture del Portfolio sta dentro la
@@ -53,20 +54,22 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
                 <a class="btn btn--sm" href="#preventivo">Chiedi il preventivo</a></div>
             </div>
             <div class="plan__prezzo">
-              <?php if ($scO): ?><span class="price price--barrato"><s data-pieno><?= Support::e(Support::money($scO['prezzo'], $o['currency'])) ?></s></span><?php endif; ?>
-              <span class="price"><span data-totale><?= Support::e(Support::money($scO ? $scO['totale'] : Plans::price($o, $q), $o['currency'])) ?></span><small> + IVA<?= $scO ? ' il primo anno' : ' / anno' ?></small></span>
-              <?php if ($scO): ?><span class="plan__sconto-riga">−<?= $scO['percento'] > 0 ? (int) $scO['percento'] . '%' : Support::e(Support::money($scO['sconto'], $o['currency'])) ?> primo anno · poi <span data-pieno-poi><?= Support::e(Support::money($scO['prezzo'], $o['currency'])) ?></span></span><?php endif; ?>
-              <span class="plan__mese">circa <span data-mensile><?= Support::e(Support::money(Plans::monthly(Plans::price($o, $q)), $o['currency'])) ?></span> al mese</span>
+              <?php if ($scO): ?><span class="price price--barrato"><?= Iva::cifra($scO['prezzo'], $o['currency'], 'data-pieno', 's') ?></span><?php endif; ?>
+              <span class="price"><?= Iva::cifra($scO ? $scO['totale'] : Plans::price($o, $q), $o['currency'], 'data-totale') ?><small> <?= Iva::nota('+ IVA' . ($scO ? ' il primo anno' : ' / anno'), 'IVA inclusa' . ($scO ? ' il primo anno' : ' / anno')) ?></small></span>
+              <?= Iva::dettaglio($scO ? $scO['totale'] : Plans::price($o, $q), false, $o['currency']) ?>
+              <?php if ($scO): ?><span class="plan__sconto-riga">−<?= $scO['percento'] > 0 ? (int) $scO['percento'] . '%' : Support::e(Support::money($scO['sconto'], $o['currency'])) ?> primo anno · poi <?= Iva::cifra($scO['prezzo'], $o['currency'], 'data-pieno-poi') ?></span><?php endif; ?>
+              <span class="plan__mese">circa <?= Iva::cifra(Plans::monthly(Plans::price($o, $q)), $o['currency'], 'data-mensile') ?> al mese</span>
             </div>
           </div>
         <?php else: ?>
           <div class="plan__piede">
             <div class="plan__quante"></div>
             <div class="plan__prezzo">
-              <?php if ($scO): ?><span class="price price--barrato"><s><?= Support::e(Support::money($scO['prezzo'], $o['currency'])) ?></s></span><?php endif; ?>
-              <span class="price"><?= Support::e(Support::money($scO ? $scO['totale'] : (int) $o['price_cents'], $o['currency'])) ?><small> + IVA<?= $scO ? ' il primo anno' : ' / anno' ?></small></span>
-              <?php if ($scO): ?><span class="plan__sconto-riga">−<?= $scO['percento'] > 0 ? (int) $scO['percento'] . '%' : Support::e(Support::money($scO['sconto'], $o['currency'])) ?> primo anno · poi <?= Support::e(Support::money($scO['prezzo'], $o['currency'])) ?></span><?php endif; ?>
-              <span class="plan__mese">circa <?= Support::e(Support::money(Plans::monthly((int) $o['price_cents']), $o['currency'])) ?> al mese</span>
+              <?php if ($scO): ?><span class="price price--barrato"><?= Iva::cifra($scO['prezzo'], $o['currency'], '', 's') ?></span><?php endif; ?>
+              <span class="price"><?= Iva::cifra($scO ? $scO['totale'] : (int) $o['price_cents'], $o['currency']) ?><small> <?= Iva::nota('+ IVA' . ($scO ? ' il primo anno' : ' / anno'), 'IVA inclusa' . ($scO ? ' il primo anno' : ' / anno')) ?></small></span>
+              <?= Iva::dettaglio($scO ? $scO['totale'] : (int) $o['price_cents'], false, $o['currency']) ?>
+              <?php if ($scO): ?><span class="plan__sconto-riga">−<?= $scO['percento'] > 0 ? (int) $scO['percento'] . '%' : Support::e(Support::money($scO['sconto'], $o['currency'])) ?> primo anno · poi <?= Iva::cifra($scO['prezzo'], $o['currency']) ?></span><?php endif; ?>
+              <span class="plan__mese">circa <?= Iva::cifra(Plans::monthly((int) $o['price_cents']), $o['currency']) ?> al mese</span>
             </div>
           </div>
         <?php endif; ?>
@@ -75,7 +78,7 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
   </div>
   <div class="actions" style="margin-top:24px">
     <button class="btn btn--go">Continua <span class="go"><?= Icon::svg('arrow', 18, 2) ?></span></button>
-    <span class="small muted">Rinnovo annuale automatico, disattivabile quando vuoi. Prezzi IVA esclusa.</span>
+    <span class="small muted">Rinnovo annuale automatico, disattivabile quando vuoi. <span data-iva-nota data-lordo="Prezzi IVA inclusa.">Prezzi IVA esclusa.</span></span>
   </div>
 </form>
 <?php /* 9M · «Disponibile dopo l'attivazione»: la traduzione automatica e la scheda campione si accendono dopo il pagamento. */ ?>
@@ -88,6 +91,7 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans}; $title = 'Scegli 
 <?php } ?>
 <?php endif; ?>
 <script src="<?= MHW\av('/assets/prezzi.js') ?>" defer></script>
+<script src="<?= MHW\av('/assets/iva.js') ?>" defer></script>
 <script>
 /* Scrivere il numero di strutture sceglie anche il Portfolio. */
 document.addEventListener('focusin', function (e) {

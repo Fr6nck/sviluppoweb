@@ -110,17 +110,16 @@ $statoOrdine = array_map('MHW\\t', ['pending' => 'In attesa', 'awaiting' => 'In 
             <?php endif; ?>
           </form>
         <?php endif; ?>
-        <?php if ($portale): ?>
+        <?php if ($portale): /* 9O · il portale di Stripe solo per la carta: le fatture le manda Adamo (sotto, «Pagamenti e fatture») */ ?>
           <form method="post" action="<?= b() ?>/account/portale" style="margin:0"><?= Csrf::field() ?>
-            <button class="btn btn--ghost"><?= t('Fatture e metodo di pagamento') ?></button></form>
+            <button class="btn btn--ghost"><?= t('Cambia il metodo di pagamento') ?></button></form>
         <?php endif; ?>
       </div>
     <?php elseif ($ultimo): ?>
       <p><span class="badge badge--alert"><span class="dot"></span><?= t('Non attivo') ?></span>
         <?php if ($ultimo['current_period_end']): ?><span class="small muted"> · <?= Support::e(tf('scaduto il {data}', ['{data}' => MHW\Pannello::data($ultimo['current_period_end'])])) ?></span><?php endif; ?></p>
       <p><?= t('Le tue guide sono offline, ma niente è stato cancellato. Per rimetterle online ripubblicale: ti chiederemo di riattivare l\'abbonamento.') ?></p>
-      <div class="actions"><a class="btn" href="<?= b() ?>/pannello"><?= t('Vai alle mie guide') ?></a>
-        <?php if ($portale): ?><form method="post" action="<?= b() ?>/account/portale" style="margin:0"><?= Csrf::field() ?><button class="btn btn--ghost"><?= t('Fatture precedenti') ?></button></form><?php endif; ?></div>
+      <div class="actions"><a class="btn" href="<?= b() ?>/pannello"><?= t('Vai alle mie guide') ?></a></div>
     <?php else: ?>
       <p><?= t('Nessun abbonamento attivo.') ?> <?= $piano ? tf('Stai configurando con il piano {piano}: paghi solo quando pubblichi.', ['{piano}' => '<b>' . Support::e($piano['name']) . '</b>']) : '' ?></p>
       <?php /* 9A · finché non si è pagato il primo abbonamento: gli sconti che valgono e il campo per un codice sconto o di invito. */
@@ -265,17 +264,26 @@ $statoOrdine = array_map('MHW\\t', ['pending' => 'In attesa', 'awaiting' => 'In 
   </section>
   <?php endif; ?>
 
-  <?php if ($ordini): ?>
-  <section class="stack" style="gap:10px">
-    <h2 style="font-size:22px"><?= t('Pagamenti') ?></h2>
-    <?php foreach ($ordini as $o): ?>
-      <div class="rowcard"><b class="grow"><?= Support::e($o['package']) ?><?php if (($o['code'] ?? '') !== ''): ?> <span class="small muted codice-pagamento"><?= Support::e($o['code']) ?></span><?php endif; ?></b>
-        <span class="small muted"><?= Support::e(MHW\Pannello::data($o['created_at'])) ?></span>
-        <span><?= Support::e(Support::money((int) $o['amount_cents'], $o['currency'])) ?> <span class="small muted"><?= t('+ IVA') ?></span></span>
-        <span class="badge badge--<?= $o['status'] === 'paid' ? 'pine' : ($o['status'] === 'failed' ? 'alert' : 'paper') ?>"><?= Support::e($statoOrdine[$o['status']] ?? $o['status']) ?></span>
-      </div>
-    <?php endforeach; ?>
-    <p class="tiny muted"><?= t('Le ricevute dei pagamenti le trovi in «Fatture e metodo di pagamento»; la fattura elettronica arriva nel tuo cassetto fiscale, o alla PEC o al codice destinatario che hai indicato.') ?></p>
+  <?php /* 9O · «Pagamenti e fatture»: i pagamenti con codice, piano, imponibile, IVA, totale, stato e metodo. Le fatture le manda Adamo. */
+        $pagamenti = MHW\Pagamenti::elenco((int) $acc['id']);
+        if ($pagamenti): $statiP = ['pagato' => ['Pagato', 'pine'], 'in verifica' => ['In verifica', 'sea'], 'non riuscito' => ['Non riuscito', 'alert'], 'rimborsato' => ['Rimborsato', 'ochre'], 'rimborso in corso' => ['Rimborso in corso', 'ochre']];
+              $tipiP = ['nuovo' => 'Attivazione', 'cambio' => 'Cambio di piano', 'rinnovo' => 'Rinnovo', 'rimborso' => 'Rimborso'];
+              $metodiP = ['carta' => 'Carta', 'sepa' => 'Addebito SEPA', 'bonifico' => 'Bonifico', '' => '—']; ?>
+  <section class="panel stack" id="pagamenti" aria-labelledby="pagamenti-titolo" style="gap:10px">
+    <h2 id="pagamenti-titolo" style="font-size:22px;margin:0"><?= t('Pagamenti e fatture') ?></h2>
+    <p class="small muted" style="margin:0"><?= tf('La fattura elettronica ti arriva per email da Adamo con la copia di cortesia in PDF; l\'originale è nel tuo cassetto fiscale o al tuo codice destinatario/PEC. Per richieste sulle fatture: {email}.', ['{email}' => '<a href="mailto:' . Support::e(Support::amministrazione()) . '">' . Support::e(Support::amministrazione()) . '</a>']) ?></p>
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th><?= t('Data') ?></th><th><?= t('Codice') ?></th><th><?= t('Cosa') ?></th><th><?= t('Imponibile') ?></th><th><?= t('IVA') ?></th><th><?= t('Totale') ?></th><th><?= t('Stato') ?></th><th><?= t('Metodo') ?></th></tr></thead>
+      <tbody><?php foreach ($pagamenti as $pg): [$stEt, $stCol] = $statiP[$pg['stato']] ?? [$pg['stato'], 'paper']; ?>
+        <tr><td class="small"><?= Support::e(MHW\Pannello::data($pg['data'])) ?></td>
+          <td><?php if ($pg['codice'] !== ''): ?><code class="codice-mw"><?= Support::e($pg['codice']) ?></code><?php endif; ?></td>
+          <td class="small"><?= Support::e(t($tipiP[$pg['tipo']] ?? $pg['tipo'])) ?><?= $pg['piano'] !== '' ? ' · ' . Support::e($pg['piano']) : '' ?></td>
+          <td class="small"><?= $pg['imponibile'] !== null ? Support::e(Support::money((int) $pg['imponibile'])) : '—' ?></td>
+          <td class="small"><?= $pg['iva'] !== null ? Support::e(Support::money((int) $pg['iva'])) : '—' ?></td>
+          <td><?= $pg['totale'] !== null ? '<b>' . Support::e(Support::money((int) $pg['totale'])) . '</b>' : '—' ?></td>
+          <td><span class="badge badge--<?= $stCol ?>"><?= Support::e(t($stEt)) ?></span></td>
+          <td class="small"><?= Support::e(t($metodiP[$pg['metodo']] ?? $pg['metodo'])) ?></td></tr>
+      <?php endforeach; ?></tbody></table></div>
   </section>
   <?php endif; ?>
 </div>

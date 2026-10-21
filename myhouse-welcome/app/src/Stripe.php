@@ -134,6 +134,11 @@ final class Stripe
      */
     public static function vociCheckout(array $pv, array $pkg, int $quantita): array
     {
+        // 9O · Essential e Plus valgono per una struttura: una quantità diversa non apre nessuna sessione (e finisce in Anomalie).
+        if (!Plans::perProperty($pv) && $quantita !== 1) {
+            Log::error('Quantità non valida per un piano a struttura singola', ['piano' => (string) ($pkg['code'] ?? ''), 'versione' => (int) ($pv['id'] ?? 0), 'quantita' => $quantita]);
+            throw new \RuntimeException('Quantità non valida: il piano ' . (string) ($pkg['name'] ?? '') . ' vale per una struttura.');
+        }
         $p = ['line_items[0][quantity]' => 1];
         if ((string) ($pv['stripe_price_id'] ?? '') !== '') {
             $p['line_items[0][price]'] = $pv['stripe_price_id'];
@@ -255,6 +260,9 @@ final class Stripe
         $tot = (int) ($s['amount_total'] ?? -1) - (int) ($s['total_details']['amount_tax'] ?? 0);
         // 9D · Con i mesi gratis oggi non si paga niente: la sessione deve dire 0 (l'imponibile Stripe lo dà a 0 o al listino).
         if ($omaggio) { $totale = 0; if ($sub === 0) $prezzo = 0; }
+        // 9O · L'IVA di Stripe Tax dev'essere quella mostrata nel riepilogo (Iva::di): se no, resta nei log (il pagamento va avanti).
+        $ivaS = (int) ($s['total_details']['amount_tax'] ?? 0);
+        if ($ivaS > 0 && $tot === $totale && $ivaS !== Iva::di($totale)) Log::error('IVA di Stripe diversa da quella mostrata', ['sessione' => $id, 'stripe' => $ivaS, 'sito' => Iva::di($totale)]);
         if ($sub !== $prezzo || $tot !== $totale) {
             try { self::call('POST', 'checkout/sessions/' . rawurlencode($id) . '/expire'); } catch (\Throwable $e) { Log::exception($e, 'Stripe: sessione da far scadere'); }
             throw new PrezziNonCoerenti("Checkout con importi diversi dal listino: imponibile $sub (atteso $prezzo), totale senza IVA $tot (atteso $totale). Sessione $id fatta scadere.");
@@ -307,16 +315,16 @@ final class Stripe
             'package_version_id' => (string) $pv['id'], 'property_id' => (string) ($order['property_id'] ?? ''),
             'quantity' => (string) $quantita,
         ];
-        [$voci, $pv] = self::vociCheckout($pv, $pkg, $quantita);
+        try { [$voci, $pv] = self::vociCheckout($pv, $pkg, $quantita); }
+        catch (\RuntimeException $e) { Db::update('orders', ['status' => 'failed', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]); throw $e; }   // 9O
         self::verificaPrezzi($pv);
         $p = [
             'mode' => 'subscription',
             'customer' => self::ensureCustomer($account, $user),
             'client_reference_id' => (string) $order['id'],
             'locale' => 'it',
-            // I dati di fatturazione: indirizzo sempre, partita IVA se chi paga è un'azienda.
+            // I dati di fatturazione: l'indirizzo sempre. 9O: la partita IVA no, la chiede il sito una volta sola e sta già sul cliente (tax id eu_vat).
             'billing_address_collection' => 'required',
-            'tax_id_collection[enabled]' => 'true',
             'customer_update[address]' => 'auto',
             'customer_update[name]' => 'auto',
         ] + $voci;
@@ -325,6 +333,8 @@ final class Stripe
             ? ['ui_mode' => 'embedded', 'return_url' => $base . '/pagamento/ok?order=' . $order['id']]
             : ['success_url' => $base . '/pagamento/ok?order=' . $order['id'], 'cancel_url' => $base . '/pagamento/annullato?order=' . $order['id']];
         if (!empty($cfg['automatic_tax'])) $p['automatic_tax[enabled]'] = 'true';
+        // 9O · Dopo un addebito SEPA rifiutato («Paga con carta» nell'email): solo la carta.
+        if (Pagamenti::soloCarta((int) $account['id'])) $p['payment_method_types[0]'] = 'card';
         // Gli sconti del primo anno (6E, 7D, 9A): un coupon duration=once, quindi sconta solo la prima fattura.
         // Niente allow_promotion_codes: il codice si sceglie nel sito, non nel checkout.
         $riepilogo ??= Sconti::riepilogo($pv, $quantita, $account);
@@ -409,8 +419,9 @@ final class Stripe
             $prezzo = Plans::price($pv, $quantita);
             $sconto = $prezzo - Sconti::netto($prezzo, $percento);
             $p = ['mode' => 'subscription', 'success_url' => 'https://example.com/ok', 'cancel_url' => 'https://example.com/no',
-                  'billing_address_collection' => 'required', 'tax_id_collection[enabled]' => 'true'] + $voci;
+                  'billing_address_collection' => 'required'] + $voci;
             if ($percento > 0) $p['discounts[0][coupon]'] = Sconti::couponCombinato($percento);
+            if (!empty(Config::get('stripe')['automatic_tax'])) $p['automatic_tax[enabled]'] = 'true';   // 9O: l'IVA come al pagamento vero
             // 9D · Con l'omaggio: trial_end, carta obbligatoria, e la sessione deve uscire a 0 €.
             if ($mesiOmaggio > 0) {
                 $p['subscription_data[trial_end]'] = (string) Omaggi::fine($mesiOmaggio);
@@ -420,7 +431,7 @@ final class Stripe
             $res = self::call('POST', 'checkout/sessions', $p);
             self::controllaSessione((string) $res['id'], $prezzo, $prezzo - $sconto, $mesiOmaggio > 0);
             self::call('POST', 'checkout/sessions/' . rawurlencode((string) $res['id']) . '/expire');
-            return ['ok' => true, 'errore' => '', 'sessione' => (string) $res['id']];
+            return ['ok' => true, 'errore' => '', 'sessione' => (string) $res['id'], 'totale' => (int) ($res['amount_total'] ?? 0), 'iva' => (int) ($res['total_details']['amount_tax'] ?? 0)];
         } catch (\Throwable $e) {
             return ['ok' => false, 'errore' => $e->getMessage(), 'sessione' => ''];
         }
@@ -612,8 +623,7 @@ final class Stripe
             'invoice_creation[enabled]' => 'true',
             'invoice_creation[invoice_data][description]' => $descrizione,
             'invoice_creation[invoice_data][metadata][order_id]' => (string) $order['id'],
-            'billing_address_collection' => 'required',
-            'tax_id_collection[enabled]' => 'true',
+            'billing_address_collection' => 'required',   // 9O: niente tax_id_collection, la partita IVA è già sul cliente
             'customer_update[address]' => 'auto',
             'customer_update[name]' => 'auto',
         ];
@@ -648,7 +658,8 @@ final class Stripe
 
     public static function portalUrl(string $customerId): string
     {
-        $r = self::call('POST', 'billing_portal/sessions', ['customer' => $customerId, 'return_url' => Support::baseUrl() . '/account']);
+        // 9O · Solo per cambiare la carta: il portale si apre direttamente sull'aggiornamento del metodo di pagamento.
+        $r = self::call('POST', 'billing_portal/sessions', ['customer' => $customerId, 'return_url' => Support::baseUrl() . '/account', 'flow_data[type]' => 'payment_method_update']);
         return $r['url'];
     }
 

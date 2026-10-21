@@ -38,7 +38,7 @@ if ($doc === 'termini') {
     $parti[] = ['allegato-a', $U('Allegato A · Accordo sul trattamento dei dati', 'Annex A · Data processing agreement'), null];
     $parti[] = ['modulo-recesso', TestiSito::html('termini.b.titolo'), 'termini.b.testo'];
 } elseif ($doc === 'privacy') {
-    for ($i = 1; $i <= 14; $i++) $parti[] = ['trattamento-' . $i, $i . '. ' . TestiSito::html("privacy.t$i.titolo"), "privacy.t$i.testo"];
+    for ($i = 1; $i <= 15; $i++) $parti[] = ['trattamento-' . $i, $i . '. ' . TestiSito::html("privacy.t$i.titolo"), "privacy.t$i.testo"];
     foreach (['fornitori', 'trasferimenti', 'minori', 'diritti'] as $p) $parti[] = [$p, TestiSito::html("privacy.$p.titolo"), "privacy.$p.testo"];
     $parti[] = ['cookie', $U('Cookie', 'Cookies'), null];
     foreach (['modifiche', 'titolare'] as $p) $parti[] = [$p, TestiSito::html("privacy.$p.titolo"), "privacy.$p.testo"];

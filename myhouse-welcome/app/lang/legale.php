@@ -109,6 +109,8 @@ T,
 Chi ha un abbonamento attivo può invitare altre persone con il proprio link personale. Chi si registra da quel link e attiva il suo primo abbonamento ha uno sconto del {amico}% sul primo anno. Per ogni persona invitata che paga il primo abbonamento, chi ha invitato ha uno sconto del {passo}% sul prezzo del suo prossimo rinnovo annuale, fino a un massimo del {max}% ({amici} inviti). Gli inviti oltre il massimo non danno altro sconto a chi invita; la persona invitata ha comunque il suo.
 
 Lo sconto di chi invita si applica una sola volta, al primo rinnovo automatico successivo; dopo quel rinnovo il conto degli inviti riparte da zero. Non è convertibile in denaro e non si applica senza un rinnovo. Lo sconto della persona invitata non si somma ad altri codici sconto. Non valgono gli inviti a se stessi, ad account con gli stessi dati di fatturazione o a chi ha già avuto un abbonamento. Un invito non conta più se il primo pagamento della persona invitata viene rimborsato. Se mandi l'invito per email dal pannello, dichiari di avere il consenso della persona invitata a riceverlo. Possiamo modificare o chiudere il programma: gli sconti già maturati restano validi per il rinnovo successivo.
+
+**Programma partner.** Property manager e agenzie approvati da noi hanno un codice partner (per esempio PM-ROSSI). Se lo usi al pagamento o arrivi dal suo link, hai lo sconto del partner sul primo anno (si somma all'invito di un amico; con un codice sconto vale il più alto; con un codice omaggio non si applica) e il tuo account resta legato a quel partner, una volta sola. Al partner paghiamo una commissione sui tuoi pagamenti, anche sui rinnovi salvo diversa comunicazione, che liquidiamo su sua fattura; non cambia nulla di quello che paghi tu. Al partner non comunichiamo i tuoi dati personali oltre a nome e città della struttura, piano e date: mai email, importi pagati o dati di pagamento. Possiamo chiudere il programma con un preavviso.
 T,
 'termini.13.titolo' => 'Traduzioni suggerite',
 'termini.13.testo' => <<<'T'
@@ -283,6 +285,14 @@ T,
 | Base giuridica | Misure precontrattuali su tua richiesta (art. 6.1.b).
 | Conservazione | 12 mesi dalla richiesta, poi la cancelliamo.
 | Destinatari | Il fornitore dell'hosting e quello della posta.
+T,
+'privacy.t15.titolo' => 'Programma partner',
+'privacy.t15.testo' => <<<'T'
+| Dati | Per il partner: ragione sociale, referente, email, telefono, zona, P.IVA, IBAN, le commissioni e le liquidazioni. Per il cliente arrivato da un partner: il collegamento al partner (quale codice e quando), i suoi pagamenti per calcolare la commissione.
+| Finalità | Gestire il programma: lo sconto del cliente, le commissioni e i bonifici al partner, la pagina del partner.
+| Base giuridica | Esecuzione del contratto con il partner e con il cliente (art. 6.1.b); obblighi fiscali per le liquidazioni (art. 6.1.c).
+| Conservazione | 10 anni per le liquidazioni e le commissioni (obblighi fiscali); il collegamento cliente–partner finché dura l'account.
+| Destinatari | Il partner vede solo nome e città della struttura, piano, date e la sua commissione: mai email, importi pagati o dati di pagamento del cliente. Il fornitore dell'hosting e quello della posta.
 T,
 'privacy.fornitori.titolo' => 'Destinatari e fornitori',
 'privacy.fornitori.testo' => <<<'T'
@@ -492,6 +502,8 @@ T,
 Anyone with an active subscription can invite other people with their personal link. Whoever signs up from that link and activates their first subscription gets {amico}% off the first year. For each invited person who pays their first subscription, the inviter gets {passo}% off the price of their next yearly renewal, up to a maximum of {max}% ({amici} invitations). Invitations beyond the maximum give no further discount to the inviter; the invited person still gets theirs.
 
 The inviter's discount applies only once, to the next automatic renewal; after that renewal the count starts again from zero. It cannot be converted into cash and does not apply without a renewal. The invited person's discount cannot be combined with other discount codes. Invitations to yourself, to accounts with the same billing details or to people who already had a subscription do not count. An invitation no longer counts if the invited person's first payment is refunded. If you send the invitation by email from the dashboard, you declare that the invited person agreed to receive it. We may change or end the programme: discounts already earned remain valid for the next renewal.
+
+**Partner programme.** Property managers and agencies approved by us have a partner code (for example PM-ROSSI). If you use it at checkout or arrive from their link, you get the partner's discount on the first year (it adds up with a friend's invitation; with a discount code the higher one applies; it does not apply with a gift code) and your account stays linked to that partner, once only. We pay the partner a commission on your payments, renewals included unless otherwise stated, settled against their invoice; nothing changes in what you pay. We do not share your personal data with the partner beyond the property name and town, plan and dates: never email, amounts paid or payment details. We may close the programme with notice.
 T,
 'termini.13.titolo' => 'Suggested translations',
 'termini.13.testo' => <<<'T'
@@ -666,6 +678,14 @@ T,
 | Legal basis | Pre-contractual steps at your request (art. 6.1.b).
 | Retention | 12 months from the request, then we delete it.
 | Recipients | The hosting provider and the email provider.
+T,
+'privacy.t15.titolo' => 'Partner programme',
+'privacy.t15.testo' => <<<'T'
+| Data | For the partner: company name, contact person, email, phone, area, VAT number, IBAN, commissions and settlements. For a client who came from a partner: the link to the partner (which code and when), their payments to calculate the commission.
+| Purpose | Running the programme: the client's discount, the commissions and the bank transfers to the partner, the partner page.
+| Legal basis | Performance of the contract with the partner and with the client (art. 6.1.b); tax obligations for the settlements (art. 6.1.c).
+| Retention | 10 years for settlements and commissions (tax obligations); the client–partner link as long as the account exists.
+| Recipients | The partner only sees the property name and town, plan, dates and their commission: never the client's email, amounts paid or payment details. The hosting provider and the email provider.
 T,
 'privacy.fornitori.titolo' => 'Recipients and providers',
 'privacy.fornitori.testo' => <<<'T'

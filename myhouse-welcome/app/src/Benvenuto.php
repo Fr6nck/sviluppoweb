@@ -71,14 +71,7 @@ final class Benvenuto
         $corpo = $en
             ? "welcome to MyHouse Welcome. The guide for $nome is online now: guests open it on their phone, with no app and no sign-up."
             : "ti diamo il benvenuto in MyHouse Welcome. La guida di $nome è online da adesso: gli ospiti la aprono dal telefono, senza app e senza registrarsi.";
-        $cose = $en
-            ? "Three things to do now:\n1. Print the QR code: in “QR & Link” there is a ready-made PDF sheet for the entrance or the table.\n"
-              . "2. Send the link before arrival: in “QR & Link” the message is already written, in every language of the guide, to paste into WhatsApp or the booking platform chat.\n"
-              . "3. When you change something, publish the changes: the link and the QR code stay the same."
-            : "Tre cose da fare adesso:\n1. Stampa il QR: in «QR & Link» c'è il foglio pronto in PDF, da mettere all'ingresso o sul tavolo.\n"
-              . "2. Manda il link prima dell'arrivo: in «QR & Link» il messaggio è già scritto, in ogni lingua della guida, da incollare su WhatsApp o nella chat del portale.\n"
-              . "3. Quando cambi qualcosa, pubblica le modifiche: il link e il QR restano gli stessi.";
-        $corpo .= "\n\n" . $cose;
+        $corpo .= "\n\n" . self::coseDaFare($lingua);
         $riga = self::rigaGiudizio($accountId, $lingua);
         if ($riga !== '') $corpo .= "\n\n" . $riga;
         return [$en ? "The guide for $nome is online" : "La guida di $nome è online", $corpo,

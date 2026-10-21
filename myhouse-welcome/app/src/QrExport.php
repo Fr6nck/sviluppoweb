@@ -105,8 +105,11 @@ final class QrExport
      * sotto, in italiano e in inglese con la stessa grandezza, «Inquadra il QR Code» e «La guida della casa…»;
      * l'indirizzo per chi il QR non lo sa usare; in basso, piccolo, il marchio.
      */
-    public static function pdf(string $text, string $name, ?string $logo = null): string
+    public static function pdf(string $text, string $name, ?string $logo = null, ?array $righe = null, ?string $sottotitolo = null): string
     {
+        // 9O · Lo stesso foglio per il partner: quattro righe e il sottotitolo diversi (righe e sottotitolo facoltativi).
+        $righe = array_values(array_pad(array_slice($righe ?? self::INVITI, 0, 4), 4, ''));
+        $sottotitolo ??= self::SOTTOTITOLO;
         $m = Qr::matrix($text);
         $n = count($m);
         $W = 595.28; $H = 841.89;                     // A4 in punti
@@ -140,11 +143,11 @@ final class QrExport
         } else $yNome = 720;
         $c .= $scrivi($name, 28, $yNome, true);
         $grigio = '0.416 0.357 0.282';
-        $c .= $scrivi(self::SOTTOTITOLO, 11, $yNome - 24, false, $grigio);
-        $c .= $scrivi(self::INVITI[0], 16, 262, true);
-        $c .= $scrivi(self::INVITI[1], 16, 240, true);
-        $c .= $scrivi(self::INVITI[2], 16, 206, false, $grigio);
-        $c .= $scrivi(self::INVITI[3], 16, 184, false, $grigio);
+        $c .= $scrivi($sottotitolo, 11, $yNome - 24, false, $grigio);
+        $c .= $scrivi($righe[0], 16, 262, true);
+        $c .= $scrivi($righe[1], 16, 240, true);
+        $c .= $scrivi($righe[2], 16, 206, false, $grigio);
+        $c .= $scrivi($righe[3], 16, 184, false, $grigio);
         // In fondo, piccoli: il marchio e l'indirizzo breve della guida, così come lo genera il sito.
         $c .= $scrivi('MyHouse Welcome', 10, 62, true, '0.580 0.510 0.373');
         $c .= $scrivi(preg_replace('#^https?://#', '', $text), 9, 46, false, $grigio);

@@ -1,7 +1,7 @@
 <?php
 /* «Confronta tutti i piani»: la tabella completa, generata dalle funzioni dei
    pacchetti in vendita (cambia da sola quando l'amministratore crea una versione). */
-use MHW\{Support, Icon, Plans, LinguaSito};
+use MHW\{Support, Icon, Plans, LinguaSito, Iva};
 $enC = LinguaSito::en();
 $cf = Plans::comparison($enC ? 'en' : 'it'); if (!$cf['righe']) return; ?>
 <details class="confronto">
@@ -13,7 +13,7 @@ $cf = Plans::comparison($enC ? 'en' : 'it'); if (!$cf['righe']) return; ?>
         <?php foreach ($cf['piani'] as $p): ?><th scope="col"><?= Support::e($p['nome']) ?></th><?php endforeach; ?></tr></thead>
       <tbody>
         <tr><th scope="row"><?= $enC ? 'Price' : 'Prezzo' ?></th>
-          <?php foreach ($cf['piani'] as $p): ?><td><?= Plans::perProperty($p) ? ($enC ? 'from ' : 'da ') : '' ?><?= Support::e(Support::money((int) $p['price_cents'], $p['currency'])) ?><?= $enC ? ' + VAT / year' : ' + IVA / anno' ?></td><?php endforeach; ?></tr>
+          <?php foreach ($cf['piani'] as $p): ?><td><?= Plans::perProperty($p) ? ($enC ? 'from ' : 'da ') : '' ?><?= Iva::cifra((int) $p['price_cents'], $p['currency']) ?> <?= $enC ? Iva::nota('+ VAT / year', 'incl. VAT / year') : Iva::nota('+ IVA / anno', 'IVA inclusa / anno') ?></td><?php endforeach; ?></tr>
         <?php foreach ($cf['righe'] as $r): ?>
           <tr><th scope="row"><?= Support::e($r['label']) ?><?php if (($r['code'] ?? '') === 'auto_translation'): ?> <span class="small muted"><?= $enC ? 'within a yearly character limit' : 'entro un limite annuale di caratteri' ?></span><?php endif; ?></th>
             <?php foreach ($r['valori'] as $v): ?>

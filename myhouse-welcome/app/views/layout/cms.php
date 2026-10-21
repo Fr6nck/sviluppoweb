@@ -204,6 +204,10 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
         <form method="post" action="<?= b() ?>/verifica/invia"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm"><?= t('Mandami di nuovo l\'email') ?></button></form>
       </div>
     <?php endif; ?>
+    <?php /* 9O · Addebito SEPA in attesa della banca: in ogni pagina del pannello (Quadro, guida, Account) finché non arriva la conferma. */
+          if (!$admin && ($accV = Auth::account()) && MHW\Pagamenti::inVerifica((int) $accV['id'])): ?>
+      <div class="banner banner--info" role="status" id="pagamento-in-verifica"><span><?= Icon::svg('info', 18) ?><?= MHW\Pagamenti::riquadroVerifica(MHW\Pannello::en()) ?></span></div>
+    <?php endif; ?>
     <?php /* 9D · La fascia dei 30 giorni prima dell'addebito (o della scadenza), nel Quadro e in Account: a 7 giorni in evidenza; «Chiudi» per 24 ore. */
           if (!$admin && in_array($nav, ['guide', 'account'], true) && !$prop && ($accF = Auth::account()) && ($fascia = MHW\Richiami::fascia($accF)) && empty($_COOKIE[$fascia['chiave']])): ?>
       <?php /* 9N · nella lingua del pannello: frasi intere con i dati dentro */

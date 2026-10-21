@@ -21,7 +21,7 @@ $r->get('/admin', function () {
         'guide'      => (int) Db::val('SELECT COUNT(*) FROM properties WHERE is_demo = 0' . $np('account_id'), [], 0),
         'pubblicate' => (int) Db::val("SELECT COUNT(*) FROM properties WHERE status = 'published' AND is_demo = 0" . $np('account_id'), [], 0),
         'aperture'   => Stats::totalViews(30),
-        'incassato'  => (int) Db::val("SELECT COALESCE(SUM(amount_cents),0) FROM orders WHERE status = 'paid' AND provider = 'stripe'" . $np('account_id'), [], 0),
+        'incassato'  => Gestione::incassatoStripe($np('account_id')),   // 9O: dopo gli sconti
         'in_attesa'  => (int) Db::val("SELECT COUNT(*) FROM orders WHERE status IN ('pending','awaiting')" . $np('account_id'), [], 0),
         'rinnovo_off'=> (int) Db::val("SELECT COUNT(*) FROM subscriptions WHERE status = 'active' AND cancel_at_period_end = 1" . $np('account_id'), [], 0),
         'falliti'    => (int) Db::val("SELECT COUNT(*) FROM subscriptions WHERE status = 'past_due'" . $np('account_id'), [], 0),
@@ -274,6 +274,7 @@ $r->get('/admin/cliente/{aid}', function (array $a) {
             catch (\RuntimeException $e) { return ['ok' => false, 'errore' => $e->getMessage()]; }
         })(),
         'fatture' => MHW\AzioniCliente::fatture($acc),
+        'rimborsiFatti' => Migrator::tableExists('rimborsi') ? Db::all('SELECT * FROM rimborsi WHERE account_id = ? ORDER BY created_at DESC, id DESC', [(int) $acc['id']]) : [],   // 9O
         'pianiVendita' => Plans::public(),
         'omaggio' => MHW\Omaggi::prenotato($acc),
         'nav' => 'clienti',
@@ -333,7 +334,20 @@ $r->post('/admin/cliente/{aid}/cambio', function (array $a) {
     Support::redirect('/admin/cliente/' . $accId . '#abbonamento');
 });
 
-/* Rimborso da Stripe, totale o parziale, con il motivo. Non tocca l'abbonamento. */
+/* 9O · «Nota di credito fatta in Adamo» (o tolta la spunta): il promemoria sparisce dalla scheda. */
+$r->post('/admin/rimborsi/{id}/nota', function (array $a) {
+    Auth::requireAdmin();
+    $rb = Migrator::columnExists('rimborsi', 'nota_credito_at') ? Db::one('SELECT * FROM rimborsi WHERE id = ?', [(int) $a['id']]) : null;
+    if (!$rb) { http_response_code(404); View::out('pub/404', []); }
+    $fatta = ($_POST['fatta'] ?? '1') === '1';
+    Db::update('rimborsi', ['nota_credito_at' => $fatta ? Support::now() : null], 'id = :id', ['id' => (int) $rb['id']]);
+    Auth::audit('refund.credit_note', (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [(int) $rb['account_id']], 0) ?: null,
+                ['rimborso' => (int) $rb['id'], 'fatta' => $fatta, 'cliente' => MHW\Codici::cliente((int) $rb['account_id'])]);
+    Support::flash($fatta ? 'Nota di credito segnata come fatta in Adamo.' : 'Promemoria della nota di credito riaperto.');
+    Support::redirect('/admin/cliente/' . (int) $rb['account_id'] . '#rimborsi');
+});
+
+/* Rimborso da Stripe, totale o parziale, con il motivo. 9O: totale sull'ultimo pagamento → abbonamento chiuso (dal webhook). */
 $r->post('/admin/cliente/{aid}/rimborso', function (array $a) {
     $admin = Auth::requireAdmin();
     $accId = (int) $a['aid'];
@@ -857,6 +871,86 @@ $r->get('/admin/cassa', function () {
                               'pagamenti' => $pagamenti, 'nomi' => $nomi, 'nav' => 'cassa'], 'layout/cms');
 });
 
+/* 9O · Cassa → «Commissioni partner»: un costo, a parte dagli incassi. Per partner le commissioni da liquidare, «Segna come pagata», CSV. */
+$r->get('/admin/cassa/partner', function () {
+    Auth::requireAdmin();
+    $anno = (int) gmdate('Y');
+    $dl = MHW\ProgrammaPartner::daLiquidare();
+    if (($_GET['formato'] ?? '') === 'csv') {
+        $eur = fn(int $c) => number_format($c / 100, 2, ',', '');
+        $righe = [];
+        foreach (Db::all('SELECT c.*, p.codice, p.ragione_sociale FROM partner_commissioni c JOIN partner p ON p.id = c.partner_id ORDER BY c.created_at, c.id') as $c) {
+            $righe[] = [substr((string) $c['created_at'], 0, 10), $c['codice'], $c['ragione_sociale'], MHW\Codici::cliente((int) $c['account_id']), $c['codice_pagamento'],
+                        $c['tipo'] === 'rinnovo' ? 'Rinnovo' : 'Primo anno', $eur((int) $c['imponibile_cents']), (int) $c['pct'] . '%', $eur((int) $c['importo_cents']), $c['stato'], (string) ($c['liquidazione_id'] ?? '')];
+        }
+        Gestione::csv('commissioni-partner', ['Data', 'Codice partner', 'Partner', 'Cliente', 'Pagamento', 'Tipo', 'Imponibile', 'Percentuale', 'Commissione', 'Stato', 'Liquidazione'], $righe);
+    }
+    View::out('admin/cassa_partner', ['dl' => $dl, 'numeri' => MHW\ProgrammaPartner::numeri($anno), 'anno' => $anno,
+        'liquidazioni' => MHW\ProgrammaPartner::disponibili() ? Db::all('SELECT l.*, p.codice, p.ragione_sociale FROM partner_liquidazioni l JOIN partner p ON p.id = l.partner_id ORDER BY l.data_bonifico DESC, l.id DESC LIMIT 50') : [],
+        'nav' => 'cassa'], 'layout/cms');
+});
+$r->post('/admin/cassa/partner/{id}/pagata', function (array $a) {
+    $admin = Auth::requireAdmin();
+    try { MHW\ProgrammaPartner::liquida((int) $a['id'], $_POST, (int) $admin['id']); Support::flash('Liquidazione registrata: le commissioni sono «liquidate» e il partner ha ricevuto l\'email.'); }
+    catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
+    Support::redirect('/admin/cassa/partner');
+});
+
+/* 9O · Il programma partner: «Approva e crea il partner» (anche da zero), la scheda con i clienti, le modifiche, lo stato. */
+$r->get('/admin/partner/nuovo', function () {
+    Auth::requireAdmin();
+    $rq = MHW\Partner::disponibili() && !empty($_GET['richiesta']) ? Db::one('SELECT * FROM partner_richieste WHERE id = ?', [(int) $_GET['richiesta']]) : null;
+    $v = (array) ($_SESSION['partner_valori'] ?? []); unset($_SESSION['partner_valori']);
+    $v += ['ragione_sociale' => (string) ($rq['societa'] ?? ''), 'referente' => (string) ($rq['nome'] ?? ''), 'email' => (string) ($rq['email'] ?? ''), 'telefono' => (string) ($rq['telefono'] ?? ''),
+           'zona' => (string) ($rq['zone'] ?? ''), 'commissione_pct' => MHW\Partner::commissione() ?? 15, 'sconto_clienti_pct' => MHW\Partner::sconto() ?? 10, 'rinnovi' => 1,
+           'iban' => '', 'piva' => '', 'periodicita' => 'trimestrale', 'lingua' => 'it', 'note' => '', 'codice' => ''];
+    if ($v['codice'] === '' && MHW\ProgrammaPartner::disponibili()) $v['codice'] = MHW\ProgrammaPartner::genera((string) ($v['ragione_sociale'] ?: $v['referente']) ?: 'partner');
+    View::out('admin/partner_scheda', ['p' => null, 'v' => $v, 'richiesta' => $rq, 'nav' => 'partner'], 'layout/cms');
+});
+$r->post('/admin/partner/crea', function () {
+    $admin = Auth::requireAdmin();
+    $rid = (int) ($_POST['richiesta'] ?? 0) ?: null;
+    try {
+        $p = MHW\ProgrammaPartner::crea($_POST, $rid, (int) $admin['id']);
+        Support::flash('Partner creato: codice ' . $p['codice'] . '. Gli abbiamo mandato l\'email di benvenuto con il codice, il link e i materiali.');
+        Support::redirect('/admin/partner/p/' . (int) $p['id']);
+    } catch (\RuntimeException $e) {
+        $_SESSION['partner_valori'] = $_POST;
+        Support::flash($e->getMessage(), 'err');
+        Support::redirect('/admin/partner/nuovo' . ($rid ? '?richiesta=' . $rid : ''));
+    }
+});
+$r->get('/admin/partner/p/{id}', function (array $a) {
+    Auth::requireAdmin();
+    $p = MHW\ProgrammaPartner::riga((int) $a['id']);
+    if (!$p) { http_response_code(404); View::out('pub/404', []); }
+    $storico = array_values(array_filter(Db::all("SELECT * FROM audit_log WHERE action LIKE 'partner.%' ORDER BY id DESC LIMIT 400"),
+        fn($x) => (int) ((json_decode((string) $x['meta'], true) ?: [])['partner'] ?? 0) === (int) $p['id']));
+    View::out('admin/partner_scheda', ['p' => $p, 'v' => $p, 'richiesta' => null, 'clienti' => MHW\ProgrammaPartner::clienti((int) $p['id']),
+        'liquidazioni' => Db::all('SELECT * FROM partner_liquidazioni WHERE partner_id = ? ORDER BY data_bonifico DESC, id DESC', [(int) $p['id']]),
+        'storico' => array_slice($storico, 0, 60), 'riep' => MHW\ProgrammaPartner::riepilogo((int) $p['id']), 'nav' => 'partner'], 'layout/cms');
+});
+$r->post('/admin/partner/p/{id}', function (array $a) {
+    $admin = Auth::requireAdmin();
+    $id = (int) $a['id'];
+    try {
+        if (($_POST['azione'] ?? '') === 'materiali') {
+            $p = MHW\ProgrammaPartner::riga($id);
+            if (!$p) throw new \RuntimeException('Partner non trovato.');
+            MHW\ProgrammaPartner::emailBenvenuto($p);
+            Auth::audit('partner.materiali', null, ['partner' => $id, 'codice' => $p['codice']]);
+            Support::flash('Codice, link e materiali rimandati a ' . $p['email'] . '.');
+        } elseif (in_array($_POST['azione'] ?? '', ['attivo', 'sospeso', 'chiuso'], true)) {
+            MHW\ProgrammaPartner::stato($id, (string) $_POST['azione'], (int) $admin['id']);
+            Support::flash('Partner ' . MHW\ProgrammaPartner::STATI[(string) $_POST['azione']] . '.');
+        } else {
+            MHW\ProgrammaPartner::aggiorna($id, $_POST, (int) $admin['id']);
+            Support::flash('Partner salvato.');
+        }
+    } catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
+    Support::redirect('/admin/partner/p/' . $id);
+});
+
 /* Vendite per piano: che piani si comprano, mese per mese, con grafici e tabella. */
 $r->get('/admin/vendite', function () {
     Auth::requireAdmin();
@@ -1020,7 +1114,20 @@ $r->get('/admin/diagnostica', function () {
             ? 'L\'ultima chiamata (' . Support::date((string) $ultimaT['created_at']) . ') non è riuscita: «' . $ultimaT['error'] . '». ' . MHW\Traduttore::consiglio((string) $ultimaT['error']) . ' Prova di nuovo da Impostazioni → Traduzioni → «Prova».'
             : 'Collegate: un traduttore automatico propone, il cliente approva. Consumi in Amministrazione → Traduzioni.' . ($ultimaT ? ' Ultima chiamata riuscita: ' . Support::date((string) $ultimaT['created_at']) . '.' : ''))];
 
-    View::out('admin/diagnostics', ['checks' => $checks, 'base' => $base, 'nav' => 'diagnostica'], 'layout/cms');
+    // 9O · La sezione «Stripe»: la configurazione letta con la chiave del sito (cache di un'ora, «Ricontrolla»).
+    View::out('admin/diagnostics', ['checks' => $checks, 'base' => $base, 'stripe' => MHW\DiagnosticaStripe::voci(), 'nav' => 'diagnostica'], 'layout/cms');
+});
+$r->post('/admin/diagnostica/stripe', function () {
+    Auth::requireAdmin();
+    if (($voce = (string) ($_POST['conferma'] ?? '')) !== '') {
+        MHW\DiagnosticaStripe::conferma($voce);
+        Auth::audit('stripe.controllo_manuale', null, ['voce' => $voce]);
+        Support::flash('Segnato come controllato a mano oggi.');
+    } else {
+        MHW\DiagnosticaStripe::voci(true);
+        Support::flash('Configurazione di Stripe ricontrollata adesso.');
+    }
+    Support::redirect('/admin/diagnostica#stripe');
 });
 
 /* Rigenera le foto WebP della landing dai .jpg (app/tools/foto.php). */
@@ -1382,7 +1489,8 @@ $r->get('/admin/partner', function () {
             array_map(fn($x) => [substr((string) $x['created_at'], 0, 10), $x['nome'], $x['societa'], $x['email'], $x['telefono'], $x['strutture'], $x['zone'],
                                  (string) $x['messaggio'], MHW\Partner::STATI[$x['stato']] ?? $x['stato'], $x['nota']], MHW\Partner::tutte()));
     }
-    View::out('admin/partner', ['righe' => MHW\Partner::tutte(), 'attivi' => MHW\Partner::disponibili(), 'nav' => 'partner'], 'layout/cms');
+    View::out('admin/partner', ['righe' => MHW\Partner::tutte(), 'attivi' => MHW\Partner::disponibili(), 'partner' => MHW\ProgrammaPartner::tutti(),   // 9O
+                                'daLiquidare' => array_column(array_map(fn($x) => [(int) $x['partner']['id'], $x['totale']], MHW\ProgrammaPartner::daLiquidare()), 1, 0), 'nav' => 'partner'], 'layout/cms');
 });
 $r->post('/admin/partner/{id}/stato', function (array $a) {
     Auth::requireAdmin();

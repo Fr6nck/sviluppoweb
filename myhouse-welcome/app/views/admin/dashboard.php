@@ -108,7 +108,7 @@ include __DIR__ . '/_stati.php'; ?>
         <tr><td><?= Support::e(Support::date($o['created_at'])) ?></td>
           <td><a href="<?= b() ?>/admin/cliente/<?= (int) $o['account_id'] ?>"><?= Support::e($o['cliente'] ?: $o['email']) ?></a></td>
           <td><?= Support::e($o['package']) ?></td><td><?= Support::e(Support::money((int) $o['amount_cents'], $o['currency'])) ?></td>
-          <td><span class="pill pill--<?= ['paid' => 'pine', 'pending' => 'ochre', 'awaiting' => 'sea', 'failed' => 'alert'][$o['status']] ?? '' ?>"><?= Support::e($statoOrdine[$o['status']] ?? $o['status']) ?></span> <span class="tiny muted"><?= Support::e($viaPagamento[$o['provider']] ?? $o['provider']) ?></span></td></tr>
+          <td><span class="pill pill--<?= ['paid' => 'pine', 'pending' => 'ochre', 'awaiting' => 'sea', 'failed' => 'alert'][$o['status']] ?? '' ?>"><?= Support::e($statoOrdine[$o['status']] ?? $o['status']) ?></span><?= $o['status'] === 'awaiting' && !empty($o['in_verifica_at']) ? ' <span class="tiny muted">dal ' . Support::e(Support::date((string) $o['in_verifica_at'])) . '</span>' : '' ?> <span class="tiny muted"><?= Support::e($viaPagamento[$o['provider']] ?? $o['provider']) ?></span></td></tr>
       <?php endforeach; ?>
       </tbody></table></div>
     <?php endif; ?>

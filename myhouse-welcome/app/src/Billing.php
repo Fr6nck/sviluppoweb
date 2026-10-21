@@ -61,7 +61,7 @@ final class Billing
         // Le chiamate di rete si fanno PRIMA della transazione: non si tiene
         // bloccato il database mentre si aspetta Stripe.
         $sub = null;
-        if ($type === 'checkout.session.completed' && !empty($obj['subscription']) && is_string($obj['subscription'])) {
+        if (in_array($type, ['checkout.session.completed', 'checkout.session.async_payment_succeeded'], true) && !empty($obj['subscription']) && is_string($obj['subscription'])) {
             $sub = Stripe::retrieveSubscription($obj['subscription']);
         }
         // Cambio di piano pagato (6H): Stripe passa alle voci nuove prima della transazione.
@@ -71,23 +71,35 @@ final class Billing
             $cambio = CambioAbbonamento::preparaStripe((int) ($obj['metadata']['order_id'] ?? 0));
         }
 
+        // 9O · Un rimborso: le righe dei rimborsi della charge (nelle API recenti non arrivano dentro l'evento).
+        $rimborsi = [];
+        if ($type === 'charge.refunded') {
+            $rimborsi = (array) ($obj['refunds']['data'] ?? []);
+            if (!$rimborsi && !empty($obj['id']) && Stripe::enabled()) {
+                try { $rimborsi = (array) (Stripe::call('GET', 'refunds', ['charge' => (string) $obj['id'], 'limit' => '100'])['data'] ?? []); }
+                catch (\Throwable $e) { Log::exception($e, 'rimborsi della charge ' . $obj['id']); throw $e; }   // Stripe rimanda l'evento
+            }
+        }
+
         try {
-            $esito = Db::tx(function () use ($id, $type, $obj, $event, $sub, $cambio) {
+            $esito = Db::tx(function () use ($id, $type, $obj, $event, $sub, $cambio, $rimborsi) {
                 Db::insert('webhook_events', [
                     'provider' => 'stripe', 'provider_event_id' => $id, 'kind' => $type,
                     'payload' => json_encode($event, JSON_UNESCAPED_UNICODE), 'processed_at' => Support::now(),
                 ]);
                 return match ($type) {
                     'checkout.session.completed' => ($obj['mode'] ?? '') === 'payment' ? self::onChangePaid($obj, $cambio) : self::onCheckoutCompleted($obj, $sub),
-                    'checkout.session.async_payment_succeeded' => self::onChangePaid($obj, $cambio),
-                    'checkout.session.async_payment_failed' => self::onChangeFailed($obj),
+                    // 9O · L'addebito SEPA confermato (o rifiutato) dalla banca: un abbonamento nuovo o un cambio di piano.
+                    'checkout.session.async_payment_succeeded' => ($obj['mode'] ?? '') === 'subscription' ? self::onCheckoutCompleted(['payment_status' => 'paid'] + $obj, $sub) : self::onChangePaid($obj, $cambio),
+                    'checkout.session.async_payment_failed' => ($obj['mode'] ?? '') === 'subscription' ? self::onSepaFallito($obj) : self::onChangeFailed($obj),
                     'checkout.session.expired' => self::onCheckoutExpired($obj),
                     'invoice.paid', 'invoice.payment_succeeded' => self::onInvoicePaid($obj),
                     'invoice.payment_failed' => self::onInvoiceFailed($obj),
                     'customer.subscription.created', 'customer.subscription.updated' => self::onSubscriptionChanged($obj),
                     'customer.subscription.deleted' => self::onSubscriptionDeleted($obj),
                     'customer.subscription.trial_will_end' => self::onTrialWillEnd($obj),   // 9D: solo nel registro (gli avvisi li mandiamo noi)
-                    'charge.refunded' => self::onChargeRefunded($obj),                        // 9E: il rimborso fatto dall'amministrazione
+                    'charge.refunded' => self::onChargeRefunded($obj, $rimborsi),             // 9E/9O: i rimborsi, da qualunque parte (sito, Stripe, Adamo)
+                    'charge.refund.updated', 'refund.updated' => self::onRefundUpdated($obj),  // 9O: un rimborso confermato o fallito
                     default => 'ignorato',
                 };
             });
@@ -99,6 +111,7 @@ final class Billing
         // Invita un amico: lo sconto su Stripe e l'email partono a transazione chiusa.
         Inviti::dopoEvento();
         Sconti::dopoEvento();   // 9N: lo sconto del rinnovo (uno solo: inviti + giudizio) dopo una fattura pagata
+        self::dopoRimborso();   // 9O: un abbonamento rimborsato per intero si chiude anche su Stripe
         return $esito;
     }
 
@@ -112,9 +125,14 @@ final class Billing
             Log::error('Webhook: account non coerente con l\'ordine', ['order' => $orderId]);
             return 'incoerente';
         }
-        // Pagamenti differiti (bonifico): si aspetta invoice.paid.
+        // Pagamenti differiti (9O: addebito SEPA): l'ordine è «in verifica», la guida resta offline; si aspetta
+        // checkout.session.async_payment_succeeded o invoice.paid, e il periodo decorre dalla conferma.
         if (!in_array($s['payment_status'] ?? '', ['paid', 'no_payment_required'], true)) {
-            Db::update('orders', ['status' => 'awaiting', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $orderId]);
+            if ($o['status'] === 'paid') return 'gia-pagato';
+            Db::update('orders', ['status' => 'awaiting', 'updated_at' => Support::now()]
+                       + (Migrator::columnExists('orders', 'in_verifica_at') && empty($o['in_verifica_at']) ? ['in_verifica_at' => Support::now()] : []), 'id = :oid', ['oid' => $orderId]);
+            Auth::audit('payment.processing', (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [(int) $o['account_id']], 0) ?: null,
+                        ['order' => $orderId, 'cliente' => Codici::cliente((int) $o['account_id']), 'pagamento' => (string) ($o['code'] ?? '')]);
             return 'in-attesa-del-pagamento';
         }
         // Lo sconto davvero concesso lo dice la sessione (total_details.amount_discount).
@@ -123,10 +141,38 @@ final class Billing
         return 'abbonamento-attivato';
     }
 
+    /** 9O · Gli ordini attivati (email «La tua guida è online») e gli addebiti rifiutati, da scrivere a transazione chiusa. */
+    private static array $attivati = [];
+    private static array $sepaFalliti = [];
+
+    /** Dopo la risposta a Stripe (webhook) o dopo il recupero: «La tua guida è online» o «Pagamento non riuscito». Il giro dei richiami riprende quelle perse. */
+    public static function dopoRisposta(): void
+    {
+        $a = self::$attivati; $f = self::$sepaFalliti; self::$attivati = []; self::$sepaFalliti = [];
+        ProgrammaPartner::dopoEvento();   // le email al partner (commissione nuova o stornata)
+        foreach (array_unique($a) as $oid) Pagamenti::emailOnline((int) $oid);
+        foreach (array_unique($f) as $oid) Pagamenti::emailSepaFallito((int) $oid);
+    }
+
+    /** 9O · L'addebito SEPA rifiutato: ordine «non riuscito» (in Anomalie), guida offline, email con «Paga con carta». */
+    private static function onSepaFallito(array $s): string
+    {
+        $orderId = (int) ($s['metadata']['order_id'] ?? $s['client_reference_id'] ?? 0);
+        $o = Db::one('SELECT * FROM orders WHERE id = ?', [$orderId]);
+        if (!$o || $o['status'] === 'paid') return $o ? 'gia-pagato' : 'ordine-sconosciuto';
+        Db::update('orders', ['status' => 'failed', 'updated_at' => Support::now()]
+                   + (Migrator::columnExists('orders', 'in_verifica_at') && empty($o['in_verifica_at']) ? ['in_verifica_at' => Support::now()] : []), 'id = :oid', ['oid' => $orderId]);
+        Auth::audit('payment.sepa_failed', (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [(int) $o['account_id']], 0) ?: null,
+                    ['order' => $orderId, 'cliente' => Codici::cliente((int) $o['account_id']), 'pagamento' => (string) ($o['code'] ?? '')]);
+        self::$sepaFalliti[] = $orderId;
+        return 'addebito-non-riuscito';
+    }
+
     /** Ordine pagato → abbonamento attivo → guida pubblicata. Tutto o niente. $sconto: lo sconto del primo anno secondo Stripe. */
     public static function activate(array $order, array $sub, string $customerId, ?int $sconto = null): void
     {
         if ($order['status'] === 'paid') return;
+        if (($order['kind'] ?? 'new') === 'new') self::$attivati[] = (int) $order['id'];   // 9O: l'email parte a transazione chiusa
         $acc = (int) $order['account_id'];
         [$inizio, $fine] = self::period($sub);
         $price = (string) ($sub['items']['data'][0]['price']['id'] ?? '');
@@ -145,6 +191,8 @@ final class Billing
 
         $pv = Db::one('SELECT * FROM package_versions WHERE id = ?', [$order['package_version_id']]) ?: [];
         $quantita = 1; $voceExtra = '';
+        // 9O · Un piano a struttura singola vale sempre 1: un ordine con un'altra quantità si attiva con 1 e resta in Anomalie.
+        if (!Plans::perProperty($pv) && (int) ($order['quantity'] ?? 1) !== 1) Log::error('Quantità non valida nell\'ordine pagato', ['order' => (int) $order['id'], 'quantita' => (int) $order['quantity']]);
         if (Plans::perProperty($pv)) {
             [$daStripe, $voceExtra] = self::quantityFrom($sub, $pv);
             // Vale quello che Stripe dice di aver fatto pagare; l'ordine è la riserva.
@@ -185,6 +233,8 @@ final class Billing
         Sconti::registra($order, $sconto);   // un utilizzo per ordine, nella stessa transazione
         Inviti::pagato($order);              // se è un amico invitato, l'invito diventa valido
         Giudizi::pagato($order);             // 9B: lo sconto del giudizio sul primo anno è stato applicato
+        // 9O · Il cliente di un partner: la commissione sull'imponibile incassato (il prezzo meno lo sconto di Stripe).
+        ProgrammaPartner::matura($acc, 'ordine:' . (int) $order['id'], max(0, (int) $order['amount_cents'] - (int) ($sconto ?? $order['discount_cents'] ?? 0)), Codici::pagamento((int) $order['id']));
         Entitlements::forget($acc);
 
         // La guida che aspettava il pagamento va online adesso.
@@ -255,7 +305,7 @@ final class Billing
         }
         $linea = $inv['lines']['data'][0] ?? [];
         Db::update('subscriptions', [
-            'status' => 'active', 'payment_status' => 'paid',
+            'status' => $row['status'] === 'refunded' ? 'refunded' : 'active', 'payment_status' => $row['status'] === 'refunded' ? 'refunded' : 'paid',   // 9O
             'current_period_start' => self::iso($linea['period']['start'] ?? null) ?: $row['current_period_start'],
             'current_period_end' => self::iso($linea['period']['end'] ?? null) ?: $row['current_period_end'],
             'updated_at' => Support::now(),
@@ -328,7 +378,7 @@ final class Billing
         }
         Db::update('subscriptions', [
             'quantity' => $quantita, 'provider_extra_item_id' => $voce,
-            'status' => (string) ($sub['status'] ?? $row['status']),
+            'status' => $row['status'] === 'refunded' ? 'refunded' : (string) ($sub['status'] ?? $row['status']),   // 9O: il rimborso totale non si annulla
             'cancel_at_period_end' => !empty($sub['cancel_at_period_end']) ? 1 : 0,
             'current_period_start' => $inizio ?: $row['current_period_start'],
             'current_period_end' => $fine ?: $row['current_period_end'],
@@ -350,24 +400,117 @@ final class Billing
     }
 
     /** 9E · Il rimborso è arrivato: la riga in rimborsi (se c'è) si conferma, e resta nel registro. */
-    private static function onChargeRefunded(array $charge): string
+    /** 9O · Gli abbonamenti rimborsati per intero, da chiudere su Stripe a transazione chiusa. */
+    private static array $daChiudere = [];
+
+    /**
+     * 9E/9O · charge.refunded: i rimborsi di un pagamento, partiti da qualunque parte. Una riga in `rimborsi` per ogni rimborso
+     * (idempotente sull'id del rimborso: quello fatto dalla scheda del cliente c'è già e si conferma), storno in Cassa, scheda
+     * cliente e Registro azioni. Rimborso totale del pagamento del periodo in corso: abbonamento «rimborsato», guida offline e
+     * abbonamento chiuso su Stripe; parziale: solo la registrazione.
+     */
+    private static function onChargeRefunded(array $charge, array $rimborsi = []): string
     {
         if (!Migrator::tableExists('rimborsi')) return 'ignorato';
+        $chargeId = (string) ($charge['id'] ?? '');
         $cents = (int) ($charge['amount_refunded'] ?? 0);
         $invoice = (string) ($charge['invoice'] ?? '');
-        $riga = Db::one("SELECT * FROM rimborsi WHERE (charge_id = ? OR (invoice_id = ? AND invoice_id <> '')) AND stato <> 'confermato' ORDER BY id DESC", [(string) ($charge['id'] ?? ''), $invoice]);
-        $aid = $riga ? (int) $riga['account_id'] : (int) Db::val('SELECT id FROM accounts WHERE stripe_customer_id = ?', [(string) ($charge['customer'] ?? '')], 0);
-        if ($riga) Db::update('rimborsi', ['stato' => 'confermato', 'confermato_at' => Support::now(), 'charge_id' => (string) ($charge['id'] ?? $riga['charge_id'])], 'id = :id', ['id' => (int) $riga['id']]);
+        $nota = Migrator::columnExists('rimborsi', 'origine');
+        $aid = (int) Db::val("SELECT account_id FROM rimborsi WHERE charge_id = ? AND charge_id <> '' ORDER BY id DESC", [$chargeId], 0)
+            ?: (int) Db::val("SELECT id FROM accounts WHERE stripe_customer_id = ? AND stripe_customer_id <> ''", [(string) ($charge['customer'] ?? '')], 0);
+        if (!$rimborsi && $cents > 0) $rimborsi = [['id' => '', 'amount' => $cents, 'status' => 'succeeded', 'created' => time(), 'metadata' => []]];
+        $nuovi = 0; $confermati = 0; $perPartner = [];
+        foreach ($rimborsi as $rf) {
+            $rid = (string) ($rf['id'] ?? '');
+            $stato = (string) ($rf['status'] ?? 'succeeded');
+            if (in_array($stato, ['failed', 'canceled'], true)) continue;
+            $perPartner[] = [$rid !== '' ? $rid : 'ch:' . $chargeId . ':' . (int) ($rf['amount'] ?? 0), (int) ($rf['amount'] ?? 0)];   // 9O: lo storno della commissione
+            if ($invoice === '') $invoice = (string) ($rf['metadata']['invoice'] ?? '');
+            // Il rimborso fatto dalla scheda del cliente (9E): c'è già, con l'id del rimborso; senza id (vecchie righe) per fattura e importo.
+            $riga = $rid !== '' ? Db::one('SELECT * FROM rimborsi WHERE refund_id = ?', [$rid]) : null;
+            $riga ??= Db::one("SELECT * FROM rimborsi WHERE refund_id = '' AND stato <> 'confermato' AND amount_cents = ? AND ((charge_id = ? AND charge_id <> '') OR (invoice_id = ? AND invoice_id <> '')) ORDER BY id",
+                              [(int) ($rf['amount'] ?? 0), $chargeId, $invoice]);
+            if ($riga) {
+                $aid = $aid ?: (int) $riga['account_id'];
+                if ($riga['stato'] !== 'confermato') {   // charge.refunded: Stripe l'ha fatto (anche se il rimborso è ancora «pending» verso la banca)
+                    Db::update('rimborsi', ['stato' => 'confermato', 'confermato_at' => Support::now(), 'charge_id' => $chargeId ?: $riga['charge_id'], 'refund_id' => $rid ?: $riga['refund_id']], 'id = :id', ['id' => (int) $riga['id']]);
+                    $confermati++;
+                }
+                continue;
+            }
+            if (!$aid) { Log::error('Rimborso da Stripe per un cliente sconosciuto', ['charge' => $chargeId, 'refund' => $rid]); continue; }
+            // Partito da Stripe (dashboard) o da Adamo: lo dicono i metadati, se Adamo li scrive.
+            $meta = mb_strtolower(json_encode($rf['metadata'] ?? [], JSON_UNESCAPED_UNICODE) . ' ' . (string) ($rf['description'] ?? ''));
+            $origine = str_contains($meta, 'adamo') ? 'adamo' : 'stripe';
+            $quando = !empty($rf['created']) ? gmdate('Y-m-d\TH:i:s\Z', (int) $rf['created']) : Support::now();
+            $codice = $invoice !== '' ? Codici::pagamentoFattura($aid, $invoice) : '';
+            $id = Db::insert('rimborsi', ['account_id' => $aid, 'invoice_id' => $invoice, 'charge_id' => $chargeId, 'refund_id' => $rid, 'amount_cents' => (int) ($rf['amount'] ?? 0),
+                                          'motivo' => mb_substr((string) ($rf['reason'] ?? '') ?: $origine, 0, 40), 'testo' => '', 'stato' => 'confermato',
+                                          'creato_da' => null, 'created_at' => $quando, 'confermato_at' => Support::now()]
+                                         + (Migrator::columnExists('rimborsi', 'code') ? ['code' => $codice] : [])
+                                         + ($nota ? ['origine' => $origine, 'nota_credito_at' => $origine === 'adamo' ? Support::now() : null] : []));
+            $uid = (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$aid], 0);
+            Auth::audit('refund.received', $uid ?: null, ['rimborso' => $id, 'origine' => $origine, 'refund' => $rid, 'charge' => $chargeId, 'invoice' => $invoice,
+                                                         'amount' => (int) ($rf['amount'] ?? 0), 'cliente' => Codici::cliente($aid), 'pagamento' => $codice]);
+            $nuovi++;
+        }
         $uid = $aid ? (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$aid], 0) : 0;
-        Auth::audit('refund.confirmed', $uid ?: null, ['charge' => (string) ($charge['id'] ?? ''), 'invoice' => $invoice, 'amount_refunded' => $cents]);
-        // 9H · A noi, all'email amministrazione: la nota di credito si fa in Adamo.
+        Auth::audit('refund.confirmed', $uid ?: null, ['charge' => $chargeId, 'invoice' => $invoice, 'amount_refunded' => $cents, 'nuovi' => $nuovi, 'confermati' => $confermati]);
+        // Totale: l'abbonamento pagato da questo addebito (il periodo in corso) è rimborsato, la guida va offline.
+        $totale = !empty($charge['refunded']) || ($cents > 0 && $cents >= (int) ($charge['amount'] ?? PHP_INT_MAX));
+        // 9O · Il cliente di un partner: la commissione si storna (idempotente sull'id del rimborso).
+        if ($aid) foreach ($perPartner as [$ridP, $centsP]) ProgrammaPartner::storna($aid, $ridP, $centsP, $totale);
+        $chiuso = false;
+        if ($totale && $aid) {
+            $quando = (int) ($charge['created'] ?? time());
+            foreach (Db::all("SELECT * FROM subscriptions WHERE account_id = ? AND provider = 'stripe' AND status <> 'refunded' ORDER BY id DESC", [$aid]) as $s) {
+                $inizio = (int) strtotime((string) ($s['current_period_start'] ?: $s['created_at']));
+                if (!Subscriptions::valid($s) || $quando < $inizio - 2 * 86400) continue;
+                Db::update('subscriptions', ['status' => 'refunded', 'payment_status' => 'refunded', 'cancel_at_period_end' => 0, 'updated_at' => Support::now()], 'id = :sid', ['sid' => $s['id']]);
+                Entitlements::forget($aid);
+                Auth::audit('subscription.refunded', $uid ?: null, ['subscription' => (int) $s['id'], 'charge' => $chargeId, 'cliente' => Codici::cliente($aid)]);
+                if ((string) $s['provider_subscription_id'] !== '') self::$daChiudere[] = (string) $s['provider_subscription_id'];
+                $chiuso = true;
+                break;
+            }
+        }
+        // 9H · A noi, all'email amministrazione: la nota di credito si fa in Adamo (se non è partito da Adamo).
         $u = $uid ? (Db::one('SELECT name, email FROM users WHERE id = ?', [$uid]) ?: ['name' => '', 'email' => '']) : ['name' => '', 'email' => ''];
         Mailer::avvisaAmministrazione('Rimborso confermato da Stripe: ' . Support::money($cents, strtoupper((string) ($charge['currency'] ?? 'eur'))), [
-            'Stripe ha confermato un rimborso. Ricordati la nota di credito in Adamo.',
-            'Cliente: ' . (trim((string) $u['name']) . ' · ' . (string) $u['email']) . ($aid ? ' (account ' . $aid . ')' : '') . '.',
-            'Addebito: ' . (string) ($charge['id'] ?? '—') . ($invoice !== '' ? ' · fattura ' . $invoice : '') . '.'],
+            'Stripe ha confermato un rimborso' . ($totale ? ' totale' : ' parziale') . '. Ricordati la nota di credito in Adamo, se non l\'ha già fatta Adamo: nella scheda del cliente c\'è il promemoria finché non la segni come fatta.',
+            'Cliente: ' . (trim((string) $u['name']) . ' · ' . (string) $u['email']) . ($aid ? ' (' . Codici::cliente($aid) . ')' : '') . '.',
+            'Addebito: ' . ($chargeId ?: '—') . ($invoice !== '' ? ' · fattura ' . $invoice : '') . '.' . ($chiuso ? ' L\'abbonamento è chiuso e la guida è offline.' : '')],
             $aid ? ['Apri la scheda del cliente', Support::baseUrl() . '/admin/cliente/' . $aid] : null);
-        return 'rimborso-confermato';
+        return $chiuso ? 'rimborso-totale-abbonamento-chiuso' : ($nuovi ? 'rimborso-registrato' : 'rimborso-confermato');
+    }
+
+    /** 9O · charge.refund.updated: un rimborso fallito o annullato non vale più (in Cassa non compare); uno riuscito si conferma. */
+    private static function onRefundUpdated(array $rf): string
+    {
+        if (!Migrator::tableExists('rimborsi') || empty($rf['id'])) return 'ignorato';
+        $riga = Db::one('SELECT * FROM rimborsi WHERE refund_id = ?', [(string) $rf['id']]);
+        if (!$riga) return 'rimborso-non-ancora-noto';
+        $stato = (string) ($rf['status'] ?? '');
+        if (in_array($stato, ['failed', 'canceled'], true) && $riga['stato'] !== 'fallito') {
+            Db::update('rimborsi', ['stato' => 'fallito'], 'id = :id', ['id' => (int) $riga['id']]);
+            Auth::audit('refund.failed', null, ['rimborso' => (int) $riga['id'], 'refund' => (string) $rf['id'], 'cliente' => Codici::cliente((int) $riga['account_id'])]);
+            return 'rimborso-fallito';
+        }
+        if ($stato === 'succeeded' && $riga['stato'] !== 'confermato') {
+            Db::update('rimborsi', ['stato' => 'confermato', 'confermato_at' => Support::now()], 'id = :id', ['id' => (int) $riga['id']]);
+            return 'rimborso-confermato';
+        }
+        return 'rimborso-invariato';
+    }
+
+    /** A transazione chiusa: l'abbonamento rimborsato per intero si chiude subito su Stripe (niente rinnovo). Un errore resta nei log. */
+    private static function dopoRimborso(): void
+    {
+        $lista = self::$daChiudere; self::$daChiudere = [];
+        foreach (array_unique($lista) as $sid) {
+            try { Stripe::call('DELETE', 'subscriptions/' . rawurlencode($sid), ['prorate' => 'false', 'invoice_now' => 'false']); }
+            catch (\Throwable $e) { Log::exception($e, 'chiusura su Stripe dell\'abbonamento rimborsato ' . $sid); }
+        }
     }
 
     private static function onSubscriptionDeleted(array $sub): string
@@ -375,8 +518,8 @@ final class Billing
         $row = Db::one('SELECT * FROM subscriptions WHERE provider_subscription_id = ?', [(string) ($sub['id'] ?? '')]);
         if (!$row) return 'abbonamento-non-ancora-noto';
         // La guida non si cancella e i dati restano: va solo offline, perché
-        // Subscriptions::valid non la considera più pagata.
-        Db::update('subscriptions', ['status' => 'canceled', 'updated_at' => Support::now()], 'id = :sid', ['sid' => $row['id']]);
+        // Subscriptions::valid non la considera più pagata. 9O: un abbonamento rimborsato resta «rimborsato».
+        if ($row['status'] !== 'refunded') Db::update('subscriptions', ['status' => 'canceled', 'updated_at' => Support::now()], 'id = :sid', ['sid' => $row['id']]);
         Entitlements::forget((int) $row['account_id']);
         return 'abbonamento-chiuso';
     }
@@ -423,6 +566,8 @@ final class Billing
         $uid = (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$accountId]);
         Auth::audit('payment.bank_transfer', $uid ?: null, ['order' => $orderId, 'codice' => $codice, 'imponibile' => $b['imponibile'], 'iva' => $b['iva'],
                                                             'data' => $b['data'], 'riferimento' => $b['riferimento'], 'subscription' => $subscriptionId, 'nota' => $nota]);
+        ProgrammaPartner::matura($accountId, 'ordine:' . $orderId, (int) $b['imponibile'], $codice);   // 9O: anche il bonifico porta la commissione
+        try { ProgrammaPartner::dopoEvento(); } catch (\Throwable) { }
         return $codice;
     }
 

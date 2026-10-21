@@ -170,6 +170,11 @@ $home = function (string $loc) use ($guard, $codiceDalLink, $chiInvita, $datiQue
     MHW\LinguaSito::imposta($loc);
     $codiceSconto = $codiceDalLink();
     $invito = $chiInvita();
+    // 9O · Il link di un partner (/?partner=PM-…): il codice resta 30 giorni; chi è già dentro e non ha pagato lo prende subito.
+    if (($codP = (string) ($_GET['partner'] ?? '')) !== '' && ($pp = MHW\ProgrammaPartner::daLink($codP)) && ($uP = Auth::user()) && $uP['role'] !== 'admin' && ($accP = Auth::account())) {
+        try { MHW\ProgrammaPartner::applica($accP, (string) $pp['codice']); Support::flash('Codice partner ' . $pp['codice'] . ' applicato.'); unset($_SESSION['partner']); }
+        catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'avviso'); }
+    }
     MHW\Stats::funnelEvent('landing_view');
     MHW\Demo::vetrinaAutomatica();   // una volta sola: poi costa un controllo su un file
     // La demo della landing: la vetrina creata dall'amministrazione, se c'è; altrimenti quella dei clienti di esempio.
@@ -326,6 +331,9 @@ $registrati = function () use ($guard, $doveComincia, $salvaPiano, $codiceDalLin
             $codiceAMano = $invitoLink === '' && !$omaggioLink ? $vecchi['codice_invito'] : '';
             $omaggioAMano = null;
             if ($codiceAMano !== '' && MHW\Omaggi::sembra($codiceAMano)) { $omaggioAMano = MHW\Omaggi::valida($codiceAMano, null); $codiceAMano = ''; }
+            // 9O · Nello stesso campo il codice di un partner (prefisso PM-).
+            $partnerAMano = null;
+            if ($codiceAMano !== '' && MHW\ProgrammaPartner::sembra($codiceAMano) && MHW\ProgrammaPartner::disponibili()) { $partnerAMano = MHW\ProgrammaPartner::valida($codiceAMano, null); $codiceAMano = ''; }
             if ($codiceAMano !== '' && !(($chiM = MHW\Inviti::daCodice($codiceAMano)) && MHW\Inviti::puoInvitare($chiM))) {
                 throw new RuntimeException('Questo codice non esiste o non è più attivo. Controlla con chi te l\'ha dato.');
             }
@@ -356,6 +364,13 @@ $registrati = function () use ($guard, $doveComincia, $salvaPiano, $codiceDalLin
                 try { MHW\Omaggi::applica(Auth::account(), MHW\Omaggi::valida((string) ($omaggioLink ?? $omaggioAMano)['codice'], Auth::account())); }
                 catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'avviso'); }
                 unset($_SESSION['omaggio'], $_SESSION['invito']);
+            }
+            // 9O · Il codice di un partner: scritto nel modulo o arrivato dal link /?partner=PM-… (cookie di 30 giorni). Con l'omaggio no.
+            $codP = $partnerAMano ? (string) $partnerAMano['codice'] : (string) ($_SESSION['partner'] ?? $_COOKIE[MHW\ProgrammaPartner::COOKIE] ?? '');
+            if ($codP !== '' && MHW\ProgrammaPartner::disponibili()) {
+                try { MHW\ProgrammaPartner::applica(Auth::account(), $codP); }
+                catch (\RuntimeException $e) { if ($partnerAMano || !($omaggioLink || $omaggioAMano)) Support::flash($e->getMessage(), 'avviso'); }
+                unset($_SESSION['partner']);
             }
             // Arrivato dal link di un amico (/i/CODICE): resta legato a chi l'ha invitato, con il suo sconto.
             if (($inv = (string) ($_SESSION['invito'] ?? '')) !== '') {
@@ -601,6 +616,59 @@ $r->any('/password/cambia', function () use ($doveComincia) {
  * «N strutture? Ti facciamo una proposta su misura»: il modulo nella home, in /piano e in registrazione.
  * Funziona anche senza JavaScript. Si torna alla pagina di partenza con l'esito nel riquadro.
  */
+/* 9O · La pagina del partner (/partner): si entra con un link senza password (48 ore) mandato alla sua email; la sessione è
+   a parte da quella degli host. Vede codice, percentuali, i quattro numeri, i clienti (struttura, città, piano, date, la sua
+   commissione), i materiali e il foglio da stampare. Mai email, importi pagati dai clienti o dati di pagamento. Noindex. */
+$partnerDentro = function (): ?array {
+    $id = (int) ($_SESSION['partner_area'] ?? 0);
+    $p = $id ? MHW\ProgrammaPartner::riga($id) : null;
+    if ($p && $p['stato'] === 'chiuso') { unset($_SESSION['partner_area']); return null; }
+    return $p;
+};
+$r->get('/partner', function () use ($partnerDentro) {
+    $p = $partnerDentro();
+    if (!$p) View::out('pub/partner', ['p' => null]);
+    View::out('pub/partner', ['p' => $p, 'clienti' => MHW\ProgrammaPartner::clienti((int) $p['id']), 'riep' => MHW\ProgrammaPartner::riepilogo((int) $p['id'])]);
+});
+$r->post('/partner/accedi', function () {
+    $email = (string) ($_POST['email'] ?? '');
+    if (MHW\RateLimit::hit('partner-link:' . MHW\RateLimit::ipKey(), 5, 3600) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        try { MHW\ProgrammaPartner::mandaLink($email); } catch (\Throwable $e) { Log::exception($e, 'link del partner'); }
+    }
+    Support::flash('Se l\'email è quella di un partner, ti abbiamo scritto: apri il link (vale ' . MHW\ProgrammaPartner::ORE_LINK . ' ore, una volta sola).');
+    Support::redirect('/partner');
+});
+$r->get('/partner/entra/{token}', function (array $a) {
+    $p = MHW\ProgrammaPartner::entra((string) $a['token']);
+    if (!$p) { Support::flash('Il link non vale più (dura ' . MHW\ProgrammaPartner::ORE_LINK . ' ore e si usa una volta): chiedine un altro.', 'err'); Support::redirect('/partner'); }
+    session_regenerate_id(true);
+    $_SESSION['partner_area'] = (int) $p['id'];
+    Auth::audit('partner.accesso', null, ['partner' => (int) $p['id']]);
+    Support::redirect('/partner');
+});
+$r->post('/partner/esci', function () { unset($_SESSION['partner_area']); Support::redirect('/partner'); });
+$r->get('/partner/foglio.pdf', function () use ($partnerDentro) {
+    $p = $partnerDentro();
+    if (!$p) Support::redirect('/partner');
+    $en = $p['lingua'] === 'en'; $sc = (int) $p['sconto_clienti_pct'];
+    $pdf = MHW\QrExport::pdf(MHW\ProgrammaPartner::link($p), 'MyHouse Welcome', null,
+        [$en ? 'Your guests\' guide, on their phone' : 'La guida per i tuoi ospiti, sul telefono', ($en ? 'Code ' : 'Codice ') . $p['codice'] . ($sc > 0 ? ($en ? ": $sc% off the first year" : ": $sc% sul primo anno") : ''),
+         $en ? 'Scan the QR code to start' : 'Inquadra il QR per cominciare', (string) ($p['ragione_sociale'] ?: $p['referente'])],
+        $en ? 'The digital guide for holiday homes, B&Bs and farm stays' : 'La guida digitale per case vacanza, B&B e agriturismi');
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="myhouse-welcome-' . strtolower((string) $p['codice']) . '.pdf"');
+    header('X-Robots-Tag: noindex');
+    echo $pdf; exit;
+});
+
+/* 9O · «Sono un privato: mostra i prezzi IVA inclusa»: la scelta in sessione (lo script la tiene anche nel browser). */
+$r->post('/prezzi/iva', function () {
+    MHW\Iva::imposta(($_POST['si'] ?? '') === '1');
+    if (($_POST['js'] ?? '') === '1') { http_response_code(204); exit; }
+    $torna = (string) ($_POST['torna'] ?? '/');
+    Support::redirect(preg_match('~^/[A-Za-z0-9/_?=&.%#-]*$~', $torna) && !str_starts_with($torna, '//') ? $torna : '/');
+});
+
 $r->post('/preventivo', function () {
     $torna = (string) ($_POST['torna'] ?? '/');
     if (!preg_match('#^/(en|piano|registrati|piu-strutture|property-manager)?(\?[a-z0-9=&_-]*)?$#i', $torna)) $torna = '/';
@@ -768,10 +836,12 @@ $r->post('/webhook/stripe', function () {
     try {
         $esito = Billing::handleEvent($event);
         header('Content-Type: text/plain'); echo $esito;
-        // Il pagamento ha messo online una prima guida: l'email di benvenuto, dopo aver risposto a Stripe.
+        // 9O · Le email del pagamento (la guida è online, l'addebito rifiutato), dopo aver risposto a Stripe.
+        if (function_exists('fastcgi_finish_request')) @fastcgi_finish_request();
+        Billing::dopoRisposta();
+        // Il pagamento ha messo online una prima guida: l'email di benvenuto.
         if (in_array($event['type'] ?? '', ['checkout.session.completed', 'checkout.session.async_payment_succeeded'], true)
             && ($accB = (int) ($event['data']['object']['metadata']['account_id'] ?? 0)) > 0) {
-            if (function_exists('fastcgi_finish_request')) @fastcgi_finish_request();
             MHW\Benvenuto::forse($accB);
         }
     } catch (\Throwable $e) {

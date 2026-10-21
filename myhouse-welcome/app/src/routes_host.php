@@ -1772,6 +1772,13 @@ $r->post('/sconto/applica', function () use ($host, $tornaSconto) {
             Support::flash(MHW\tf('Codice omaggio applicato: {n} mesi gratis, primo addebito il {data}.', ['{n}' => (int) $c['mesi'], '{data}' => MHW\Pannello::data(MHW\Omaggi::fineIso((int) $c['mesi']))]));
             Support::redirect($tornaSconto());
         }
+        // 9O · Il codice di un partner (prefisso PM-): lega l'account al partner, con il suo sconto sul primo anno.
+        if (MHW\ProgrammaPartner::sembra($codice) && MHW\ProgrammaPartner::disponibili()) {
+            $pp = MHW\ProgrammaPartner::applica($acc, $codice);
+            Support::flash((int) $pp['sconto_clienti_pct'] > 0 ? MHW\tf('Codice partner {codice} applicato: −{n}% sul primo anno.', ['{codice}' => $pp['codice'], '{n}' => (int) $pp['sconto_clienti_pct']])
+                                                             : MHW\tf('Codice partner {codice} applicato.', ['{codice}' => $pp['codice']]));
+            Support::redirect($tornaSconto());
+        }
         // Qui si può scrivere anche il codice di invito di un amico (Invita un amico).
         if (!MHW\Sconti::trova($codice) && ($chi = MHW\Inviti::applicaCodice($acc, $codice)) !== null) {
             Support::flash(MHW\tf('Invito di {nome} applicato: −{n}% sul primo anno.', ['{nome}' => $chi, '{n}' => MHW\Inviti::AMICO]));

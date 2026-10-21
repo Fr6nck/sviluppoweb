@@ -239,6 +239,19 @@ return [
     'Facoltativo, al massimo 160 caratteri: le leggono gli ospiti quando toccano la tua foto. Se lo lasci vuoto: «Casa mia è casa vostra: per qualsiasi cosa, scrivimi.»' => 'Optional, at most 160 characters: guests read it when they tap your photo. If you leave it empty: "My home is your home: for anything at all, write to me."',
     'Facoltativo. Nella pagina di saluto, che l\'ospite apre da «Stiamo per partire», e in quella del voto compare solo quello che compili.' => 'Optional. On the goodbye page, which guests open from "We are about to leave", and on the rating page only what you fill in appears.',
     'Fatture precedenti' => 'Previous invoices',
+    // 9O · Il codice di un partner
+    'Codice partner {codice}' => 'Partner code {codice}', 'Codice partner {codice} applicato: −{n}% sul primo anno.' => 'Partner code {codice} applied: −{n}% on the first year.',
+    'Codice partner {codice} applicato.' => 'Partner code {codice} applied.',
+    // 9O · Il riepilogo prima del pagamento: imponibile, IVA e totale
+    'IVA {n}%' => 'VAT {n}%', 'Totale con IVA' => 'Total incl. VAT', 'Imponibile primo anno' => 'First year, net',
+    // 9O · Pagamenti e fatture
+    'Cambia il metodo di pagamento' => 'Change payment method', 'Pagamenti e fatture' => 'Payments and invoices',
+    'La fattura elettronica ti arriva per email da Adamo con la copia di cortesia in PDF; l\'originale è nel tuo cassetto fiscale o al tuo codice destinatario/PEC. Per richieste sulle fatture: {email}.'
+        => 'The electronic invoice reaches you by email from Adamo with a courtesy PDF copy; the original is in your tax drawer (cassetto fiscale) or at your recipient code / PEC. For questions about invoices: {email}.',
+    'Codice' => 'Code', 'Cosa' => 'What', 'Imponibile' => 'Net', 'IVA' => 'VAT', 'Totale' => 'Total', 'Metodo' => 'Method',
+    'Attivazione' => 'Activation', 'Cambio di piano' => 'Plan change', 'Rinnovo' => 'Renewal', 'Rimborso' => 'Refund',
+    'Pagato' => 'Paid', 'In verifica' => 'Being verified', 'Non riuscito' => 'Not completed', 'Rimborsato' => 'Refunded', 'Rimborso in corso' => 'Refund in progress',
+    'Carta' => 'Card', 'Addebito SEPA' => 'SEPA debit', 'Bonifico' => 'Bank transfer',
     'Firma nella guida' => 'Signature in the guide',
     'Foto del luogo' => 'Photo of the place',
     'Foto in bianco e nero' => 'Black and white photos',

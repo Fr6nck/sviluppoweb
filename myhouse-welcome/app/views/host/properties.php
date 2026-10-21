@@ -112,7 +112,7 @@ $gemIds = $campD ? array_map(fn($g) => (int) $g['id'], $campD['gemelle']) : []; 
           <ul class="checklist-bozza__elenco">
             <?php foreach ($passi as [$etP, $okP, $doveP]): ?>
               <li class="<?= $okP ? 'fatto' : '' ?>"><?= Icon::svg($okP ? 'check' : 'plus', 14, 2.2) ?>
-                <?php if ($okP): ?><span><?= Support::e($etP) ?></span><?php else: ?><a href="<?= b() ?>/pannello/<?= $pid ?><?= Support::e($doveP) ?>"><?= Support::e($etP) ?></a><?php endif; ?></li>
+                <?php if ($okP): ?><span><?= Support::e($etP) ?></span><?php else: ?><a href="<?= b() ?><?= Support::e($doveP) ?>"><?= Support::e($etP) ?></a><?php endif; ?></li>
             <?php endforeach; ?>
           </ul>
         </details>

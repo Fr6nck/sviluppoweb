@@ -222,9 +222,24 @@ include __DIR__ . '/_stati.php'; ?>
               <select id="rb-motivo" name="motivo"><?php foreach (MHW\AzioniCliente::MOTIVI_RIMBORSO as $k => $et): ?><option value="<?= $k ?>"><?= Support::e($et) ?></option><?php endforeach; ?></select></div>
           </div>
           <div class="field" style="margin:0"><label for="rb-testo" class="small">Dettaglio (obbligatorio con «altro»)</label><input id="rb-testo" name="testo" type="text" maxlength="255"></div>
-          <p class="tiny muted" style="margin:0">Il rimborso non ferma l'abbonamento. Nota di credito da fare in Adamo. Il cliente riceve un'email con importo e tempi (5–10 giorni).</p>
+          <p class="tiny muted" style="margin:0">Parziale: l'abbonamento non cambia. Totale sul pagamento del periodo in corso: quando Stripe lo conferma l'abbonamento si chiude («Rimborsato») e la guida va offline. Nota di credito da fare in Adamo. Il cliente riceve un'email con importo e tempi (5–10 giorni).</p>
           <div class="actions"><button class="btn btn--sm btn--danger">Conferma il rimborso</button></div>
         </form>
+      <?php endif; ?>
+      <?php if (!empty($rimborsiFatti)): /* 9O · i rimborsi da qualunque parte (sito, Stripe, Adamo), con il promemoria della nota di credito */
+        $origini = ['admin' => 'dal sito', 'stripe' => 'da Stripe', 'adamo' => 'da Adamo']; ?>
+        <h3 id="rimborsi" style="font-size:16px;margin:6px 0 0">Rimborsi</h3>
+        <div class="tablewrap"><table class="data"><thead><tr><th>Data</th><th>Importo</th><th>Da dove</th><th>Stato</th><th>Nota di credito</th></tr></thead><tbody>
+          <?php foreach ($rimborsiFatti as $rb): $daAdamo = ($rb['origine'] ?? 'admin') === 'adamo'; ?>
+            <tr><td class="small"><?= Support::e(Support::date($rb['created_at'])) ?><?= (string) ($rb['code'] ?? '') !== '' ? '<br><span class="tiny muted">' . Support::e($rb['code']) . '</span>' : '' ?></td>
+              <td><?= Support::e(Support::money((int) $rb['amount_cents'])) ?> <span class="tiny muted">con IVA</span></td>
+              <td class="small"><?= Support::e($origini[$rb['origine'] ?? 'admin'] ?? (string) $rb['origine']) ?></td>
+              <td class="small"><?= Support::e(['confermato' => 'Confermato', 'richiesto' => 'In corso', 'fallito' => 'Fallito'][$rb['stato']] ?? $rb['stato']) ?></td>
+              <td class="small"><?php if ($rb['stato'] === 'fallito'): ?>—<?php elseif (!empty($rb['nota_credito_at'])): ?><?= $daAdamo ? 'La fa Adamo' : 'Fatta il ' . Support::e(Support::date($rb['nota_credito_at'])) ?>
+                <?php else: ?><span class="badge badge--alert">Da fare in Adamo</span>
+                  <form method="post" action="<?= b() ?>/admin/rimborsi/<?= (int) $rb['id'] ?>/nota" style="display:inline"><?= Csrf::field() ?><input type="hidden" name="fatta" value="1"><button class="linkbtn">Segna come fatta</button></form>
+                <?php endif; ?></td></tr>
+          <?php endforeach; ?></tbody></table></div>
       <?php endif; ?>
     </section>
     <section class="panel stack" style="gap:8px" id="accesso" aria-labelledby="acc-titolo">
@@ -419,7 +434,7 @@ include __DIR__ . '/_stati.php'; ?>
       <thead><tr><th>Data</th><th>Piano</th><th>Importo</th><th>Stato</th><th>Sessione Stripe</th></tr></thead>
       <tbody><?php foreach ($orders as $o): ?>
         <tr><td class="small"><?= Support::e(Support::date($o['created_at'])) ?></td><td><?= Support::e($o['package']) ?></td>
-          <td><?= Support::e(Support::money((int) $o['amount_cents'], $o['currency'])) ?></td><td><?= Support::e($statoOrdine[$o['status']] ?? $o['status']) ?></td>
+          <td><?= Support::e(Support::money((int) $o['amount_cents'], $o['currency'])) ?></td><td><?= Support::e($statoOrdine[$o['status']] ?? $o['status']) ?><?= !empty($o['in_verifica_at']) ? '<br><span class="tiny muted">addebito SEPA dal ' . Support::e(Support::date((string) $o['in_verifica_at'])) . '</span>' : '' ?></td>
           <td><code><?= Support::e($o['provider_session_id'] ?: '—') ?></code></td></tr>
       <?php endforeach; ?></tbody></table></div>
     <?php endif; ?>

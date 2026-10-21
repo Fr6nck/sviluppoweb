@@ -73,6 +73,7 @@ final class Gestione
             $r['stato'] = match (true) {
                 $r['finito'] => ['Scaduto', 'alert'],
                 $r['status'] === 'past_due' => ['Rinnovo non riuscito', 'alert'],
+                $r['status'] === 'refunded' => ['Rimborsato: chiuso', 'alert'],   // 9O
                 $r['automatico'] && $r['status'] === 'trialing' && !empty($r['omaggio_fino']) => ['In omaggio: primo addebito', 'sea'],
                 $r['automatico'] => ['Si rinnova da solo', 'pine'],
                 $r['provider'] === 'stripe' => ['Rinnovo fermo (disattivato)', 'ochre'],
@@ -160,6 +161,26 @@ final class Gestione
             $righe[] = [$chi($r), 'cambio di piano pagato il ' . Support::date($r['created_at']), $cliente($r)];
         }
         $aggiungi('Cambi di piano pagati da completare', 'alta', 'Il sito riprova da solo a ogni giro dei promemoria. Se restano, controlla le chiavi di Stripe in Impostazioni.', $righe);
+
+        // 2 bis · 9O · Quantità non valida: Essential e Plus valgono per una struttura (il server rifiuta il Checkout, ma lo si vede qui).
+        $righe = [];
+        foreach (Db::all("SELECT o.*, u.email, u.name AS cliente FROM orders o " . sprintf($utenti, 'o') . " JOIN package_versions pv ON pv.id = o.package_version_id
+                          WHERE pv.per_property = 0 AND o.quantity <> 1 AND o.created_at >= ? ORDER BY o.id DESC LIMIT 50", [self::iso($ora - 90 * self::GIORNO)]) as $r) {
+            $righe[] = [$chi($r), 'ordine #' . (int) $r['id'] . ' del ' . Support::date($r['created_at']) . ' con ' . (int) $r['quantity'] . ' strutture su un piano da una (' . (string) $r['status'] . ')', $cliente($r)];
+        }
+        $aggiungi('Quantità non valida', 'alta', 'Un ordine di Essential o Plus con più di una struttura: il sito non apre il pagamento (o attiva una struttura sola). Controlla da dove arriva la richiesta.', $righe);
+
+        // 2 ter · 9O · Addebiti SEPA rifiutati dalla banca (ultimi 30 giorni): il cliente ha l'email con «Paga con carta».
+        if (Migrator::columnExists('orders', 'in_verifica_at')) {
+            $righe = [];
+            foreach (Db::all("SELECT o.*, u.email, u.name AS cliente FROM orders o " . sprintf($utenti, 'o') . "
+                              WHERE o.status = 'failed' AND o.in_verifica_at IS NOT NULL AND o.updated_at >= ?
+                                AND NOT EXISTS (SELECT 1 FROM orders o2 WHERE o2.account_id = o.account_id AND o2.status = 'paid' AND o2.id > o.id)
+                              ORDER BY o.id DESC LIMIT 50", [self::iso($ora - 30 * self::GIORNO)]) as $r) {
+                $righe[] = [$chi($r), 'addebito sul conto rifiutato il ' . Support::date($r['updated_at']) . ' · ' . Support::money((int) $r['amount_cents'], (string) $r['currency']) . ' + IVA', $cliente($r)];
+            }
+            $aggiungi('Addebiti SEPA non riusciti', 'media', 'La banca non ha confermato l\'addebito: il cliente ha ricevuto l\'email con «Paga con carta» e la guida è offline. Sparisce quando paga.', $righe);
+        }
 
         // 3. Rinnovi non riusciti.
         $righe = [];
@@ -389,7 +410,8 @@ final class Gestione
         }
         $da = array_key_first($perMese) . '-01';
         $totali = ['nuovi' => $vuoto(), 'incasso' => $vuoto(), 'cambi' => $vuoto(), 'strutture' => $vuoto()];
-        foreach (Db::all("SELECT o.kind, o.amount_cents, o.quantity, o.created_at, p.code FROM orders o
+        $scontiS = self::scontiSessioni();
+        foreach (Db::all("SELECT o.kind, o.amount_cents, o.discount_cents, o.provider_session_id, o.quantity, o.created_at, p.code FROM orders o
                           JOIN package_versions pv ON pv.id = o.package_version_id JOIN packages p ON p.id = pv.package_id
                           JOIN accounts a ON a.id = o.account_id JOIN users u ON u.id = a.user_id
                           WHERE o.status = 'paid' AND o.provider = 'stripe' AND o.created_at >= ? AND u.email NOT LIKE ?" . self::senzaProva('a.id'), [$da, self::demo()]) as $o) {
@@ -398,7 +420,8 @@ final class Gestione
             $f = self::famigliaPiano((string) $o['code']);
             if ($o['kind'] === 'change') { $perMese[$m]['cambi'][$f]++; $totali['cambi'][$f]++; }
             else { $perMese[$m]['nuovi'][$f]++; $totali['nuovi'][$f]++; $totali['strutture'][$f] += max(1, (int) $o['quantity']); }
-            $perMese[$m]['incasso'][$f] += (int) $o['amount_cents']; $totali['incasso'][$f] += (int) $o['amount_cents'];
+            $netto = max(0, (int) $o['amount_cents'] - ($scontiS[(string) $o['provider_session_id']] ?? (int) $o['discount_cents']));   // 9O: dopo lo sconto
+            $perMese[$m]['incasso'][$f] += $netto; $totali['incasso'][$f] += $netto;
         }
         // Adesso: abbonamenti attivi per piano (Stripe e staff a parte) e strutture.
         $attivi = [];
@@ -431,17 +454,45 @@ final class Gestione
      * prova esclusi. Importi in centesimi: imponibile, IVA (da Stripe o scritta per il bonifico; null se Stripe non l'ha
      * detta), totale. @return list<array> dal più vecchio
      */
+    /**
+     * 9O · Lo sconto davvero concesso da Stripe in ogni sessione di Checkout (total_details.amount_discount), per sessione:
+     * l'imponibile incassato di un ordine è il prezzo (orders.amount_cents) meno questo sconto.
+     */
+    public static function scontiSessioni(): array
+    {
+        static $s = null;
+        if ($s !== null) return $s;
+        $s = [];
+        foreach (Db::all("SELECT payload FROM webhook_events WHERE provider = 'stripe' AND kind IN ('checkout.session.completed','checkout.session.async_payment_succeeded')") as $r) {
+            $x = (json_decode((string) $r['payload'], true) ?: [])['data']['object'] ?? [];
+            if (isset($x['id'], $x['total_details']['amount_discount'])) $s[(string) $x['id']] = (int) $x['total_details']['amount_discount'];
+        }
+        return $s;
+    }
+
+    /** 9O · L'imponibile incassato dai pagamenti Stripe (nuovi e cambi), dopo gli sconti. */
+    public static function incassatoStripe(string $filtro = ''): int
+    {
+        $s = self::scontiSessioni(); $tot = 0;
+        foreach (Db::all("SELECT amount_cents, discount_cents, provider_session_id FROM orders WHERE status = 'paid' AND provider = 'stripe'" . $filtro) as $o) {
+            $tot += max(0, (int) $o['amount_cents'] - ($s[(string) $o['provider_session_id']] ?? (int) $o['discount_cents']));
+        }
+        return $tot;
+    }
+
     public static function pagamenti(string $da, string $a): array
     {
         $out = [];
         $conIva = Migrator::columnExists('orders', 'iva_cents');
         $conCodice = Migrator::columnExists('orders', 'code');
-        // L'IVA dei pagamenti Stripe: dalla sessione di Checkout completata (total_details.amount_tax).
-        $ivaSessione = [];
-        foreach (Db::all("SELECT payload FROM webhook_events WHERE provider = 'stripe' AND kind = 'checkout.session.completed' AND processed_at >= ?",
-                         [self::iso((int) strtotime($da) - 2 * self::GIORNO)]) as $r) {
+        // L'IVA e lo sconto dei pagamenti Stripe: dalla sessione di Checkout (total_details.amount_tax e amount_discount).
+        // 9O · L'imponibile incassato è il prezzo meno lo sconto davvero concesso da Stripe (invito, giudizio, partner, codice).
+        $ivaSessione = []; $scontoSessione = [];
+        foreach (Db::all("SELECT payload FROM webhook_events WHERE provider = 'stripe' AND kind IN ('checkout.session.completed','checkout.session.async_payment_succeeded') AND processed_at >= ?",
+                         [self::iso((int) strtotime($da) - 40 * self::GIORNO)]) as $r) {
             $s = (json_decode((string) $r['payload'], true) ?: [])['data']['object'] ?? [];
             if (isset($s['id'], $s['total_details']['amount_tax'])) $ivaSessione[(string) $s['id']] = (int) $s['total_details']['amount_tax'];
+            if (isset($s['id'], $s['total_details']['amount_discount'])) $scontoSessione[(string) $s['id']] = (int) $s['total_details']['amount_discount'];
         }
         foreach (Db::all("SELECT o.id, o.kind, o.provider, o.amount_cents, o.discount_cents, o.sconti, o.quantity, o.created_at, o.account_id, o.provider_session_id,
                                  " . (Migrator::columnExists('orders', 'offerta_id') ? 'o.offerta_id' : 'NULL AS offerta_id') . ",
@@ -452,8 +503,10 @@ final class Gestione
                           WHERE o.status = 'paid' AND o.provider IN ('stripe','bonifico') AND o.created_at >= ? AND o.created_at < ? AND u.email NOT LIKE ?" . self::senzaProva('a.id') . "
                           ORDER BY o.created_at, o.id", [$da, $a, self::demo()]) as $o) {
             $iva = $o['iva_cents'] !== null ? (int) $o['iva_cents'] : ($ivaSessione[(string) $o['provider_session_id']] ?? null);
+            $sconto = $scontoSessione[(string) $o['provider_session_id']] ?? (int) $o['discount_cents'];
+            $netto = max(0, (int) $o['amount_cents'] - $sconto);
             $out[] = ['data' => (string) $o['created_at'], 'tipo' => $o['kind'] === 'change' ? 'cambio' : 'nuovo', 'via' => (string) $o['provider'],
-                      'imponibile' => (int) $o['amount_cents'], 'iva' => $iva, 'totale' => (int) $o['amount_cents'] + (int) $iva,
+                      'imponibile' => $netto, 'iva' => $iva, 'totale' => $netto + (int) $iva,
                       'codice' => (string) $o['code'] !== '' ? (string) $o['code'] : Codici::pagamento((int) $o['id']),
                       'account_id' => (int) $o['account_id'], 'cliente' => (string) $o['cliente'], 'email' => (string) $o['email'],
                       'piano' => (string) $o['piano'] . (!empty($o['offerta_id']) ? ' su misura' : '') . ((int) $o['quantity'] > 1 ? ' · ' . (int) $o['quantity'] . ' strutture' : ''),

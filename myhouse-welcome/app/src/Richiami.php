@@ -78,6 +78,7 @@ final class Richiami
     public static function esegui(?int $adesso = null): array
     {
         if (!self::disponibili()) return [];
+        if (function_exists('set_time_limit')) @set_time_limit(300);   // il giro chiama Stripe per più clienti: non si ferma a metà (30 secondi di serie)
         $t = $adesso ?? time();
         $iso = fn(int $s) => gmdate('Y-m-d\TH:i:s\Z', $s);
         $giorno = 86400;
@@ -239,6 +240,7 @@ final class Richiami
         try { Vetrina::sincronizza(); } catch (\Throwable $e) { Log::exception($e, 'vetrina: sincronizzazione'); }   // 9L: schede da spegnere
         try { Campione::pulisci(); } catch (\Throwable $e) { Log::exception($e, 'campione: storico'); }   // 9M: le copie sovrascritte oltre i 30 giorni
         // Benvenuto: le prime guide degli ultimi giorni rimaste senza email (il primo tentativo non è partito).
+        try { $fatte['online'] = Pagamenti::recenti($t); } catch (\Throwable $e) { Log::exception($e, 'email «La tua guida è online»'); }   // 9O: quelle non partite
         try { $fatte['benvenuto'] = Benvenuto::recenti($t); } catch (\Throwable $e) { Log::exception($e, 'email di benvenuto'); }
         return $fatte;
     }
@@ -251,12 +253,12 @@ final class Richiami
         return !self::recente($accountId, $t, self::PERCORSO);
     }
 
-    /** Uno di questi richiami è partito negli ultimi 2 giorni? */
-    private static function recente(int $accountId, int $t, array $tipi): bool
+    /** Uno di questi richiami è partito negli ultimi $giorni giorni (2 di serie)? Nessun tipo: una qualunque email del registro. */
+    private static function recente(int $accountId, int $t, array $tipi, int $giorni = 2): bool
     {
         $segni = implode(',', array_fill(0, count($tipi), '?'));
-        return (bool) Db::val("SELECT id FROM email_log WHERE account_id = ? AND kind IN ($segni) AND sent_at > ?",
-                              array_merge([$accountId], $tipi, [gmdate('Y-m-d\TH:i:s\Z', $t - 2 * 86400)]));
+        return (bool) Db::val('SELECT id FROM email_log WHERE account_id = ?' . ($tipi ? " AND kind IN ($segni)" : '') . ' AND sent_at > ?',
+                              array_merge([$accountId], $tipi, [gmdate('Y-m-d\TH:i:s\Z', $t - $giorni * 86400)]));
     }
 
     private static function testoPagamento(array $o): array

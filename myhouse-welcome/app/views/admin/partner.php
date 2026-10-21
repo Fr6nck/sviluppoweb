@@ -12,7 +12,20 @@ $comm = Partner::commissione(); $sc = Partner::sconto(); ?>
   <div class="stack stack--sm">
     <p class="muted small" style="max-width:760px">Le richieste del modulo «Diventa partner» della pagina <a href="<?= b() ?>/property-manager" target="_blank" rel="noopener">/property-manager</a>
       (property manager e agenzie). Arrivano anche all'email commerciale. Si conservano 12 mesi. Commissione <?= $comm ? $comm . '%' : 'non decisa' ?>,
-      sconto per i clienti del partner <?= $sc ? $sc . '%' : 'non deciso' ?> (<a href="<?= b() ?>/admin/impostazioni#sito">Impostazioni → Sito</a>). I codici partner e il conteggio delle commissioni arrivano in una fase successiva.</p></div>
+      sconto per i clienti del partner <?= $sc ? $sc . '%' : 'non deciso' ?> di serie (<a href="<?= b() ?>/admin/impostazioni#sito">Impostazioni → Sito</a>); ogni partner poi ha le sue percentuali.
+      «Approva e crea il partner» gli dà il codice (PM-…) e gli manda l'email di benvenuto; le commissioni si liquidano da <a href="<?= b() ?>/admin/cassa/partner">Cassa → Commissioni partner</a>.</p></div>
+  <?php if (MHW\ProgrammaPartner::disponibili()): /* 9O · i partner approvati */ ?>
+  <section class="stack" style="gap:10px" aria-labelledby="pp-attivi">
+    <div class="spread spread--mid"><h2 id="pp-attivi" style="font-size:22px;margin:0">Partner · <?= count($partner) ?></h2><a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/partner/nuovo">Nuovo partner</a></div>
+    <?php if (!$partner): ?><p class="note note--quiet">Ancora nessun partner approvato: «Approva e crea il partner» su una richiesta qui sotto.</p><?php else: ?>
+    <div class="tablewrap"><table class="data"><thead><tr><th>Partner</th><th>Codice</th><th>Commissione</th><th>Sconto clienti</th><th>Rinnovi</th><th>Da liquidare</th><th>Stato</th></tr></thead><tbody>
+      <?php foreach ($partner as $pp): ?><tr><td><a href="<?= b() ?>/admin/partner/p/<?= (int) $pp['id'] ?>"><?= Support::e($pp['ragione_sociale'] ?: $pp['referente']) ?></a><br><span class="tiny muted"><?= Support::e($pp['email']) ?></span></td>
+        <td><code><?= Support::e($pp['codice']) ?></code></td><td><?= (int) $pp['commissione_pct'] ?>%</td><td><?= (int) $pp['sconto_clienti_pct'] ?>%</td><td><?= (int) $pp['rinnovi'] ? 'sì' : 'no' ?></td>
+        <td><?= Support::e(Support::money((int) ($daLiquidare[(int) $pp['id']] ?? 0))) ?></td><td><?= Support::e(MHW\ProgrammaPartner::STATI[$pp['stato']] ?? $pp['stato']) ?></td></tr><?php endforeach; ?>
+    </tbody></table></div>
+    <?php endif; ?>
+  </section>
+  <?php endif; ?>
   <?php if (!$attivi): ?><p class="note" role="status"><span>La tabella delle richieste non c'è ancora: manca la migrazione 049.</span></p><?php endif; ?>
   <div class="cifre cifre--4" aria-label="In breve">
     <div class="cifra cifra--ocra"><span class="cifra__testa">Da rispondere</span><b class="cifra__valore"><?= (int) ($conta['nuovo'] ?? 0) ?></b><span class="cifra__nota">richieste nuove</span></div>
@@ -36,7 +49,8 @@ $comm = Partner::commissione(); $sc = Partner::sconto(); ?>
           <select id="pstato-<?= (int) $r['id'] ?>" name="stato" style="min-height:36px"><?php foreach (Partner::STATI as $k => $et): ?><option value="<?= $k ?>"<?= $k === $r['stato'] ? ' selected' : '' ?>><?= $et ?></option><?php endforeach; ?></select>
           <label class="sr-only" for="pnota-<?= (int) $r['id'] ?>">Nota interna</label>
           <input id="pnota-<?= (int) $r['id'] ?>" name="nota" type="text" maxlength="255" value="<?= Support::e((string) $r['nota']) ?>" placeholder="Nota interna">
-          <span class="row" style="gap:6px"><button class="btn btn--ghost btn--sm">Salva</button>
+          <span class="row" style="gap:6px;flex-wrap:wrap"><button class="btn btn--ghost btn--sm">Salva</button>
+            <?php if (MHW\ProgrammaPartner::disponibili() && !in_array((int) $r['id'], array_map(fn($x) => (int) $x['richiesta_id'], $partner), true)): ?><a class="btn btn--sm" href="<?= b() ?>/admin/partner/nuovo?richiesta=<?= (int) $r['id'] ?>">Approva e crea il partner</a><?php endif; ?>
             <a class="btn btn--sm" href="mailto:<?= Support::e($r['email']) ?>?subject=<?= $oggetto ?>" aria-label="Rispondi a <?= Support::e($r['nome']) ?>">Rispondi</a></span></form></td></tr>
     <?php endforeach; ?></tbody>
   </table></div>

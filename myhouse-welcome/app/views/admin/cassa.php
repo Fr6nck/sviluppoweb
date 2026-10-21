@@ -24,6 +24,7 @@ $celle = function (array $m) use ($soldi) { ?>
     <div class="row" style="gap:8px;flex-wrap:wrap">
       <a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/cassa?anno=<?= (int) $anno - 1 ?>">← <?= (int) $anno - 1 ?></a>
       <?php if ($anno < (int) gmdate('Y')): ?><a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/cassa?anno=<?= (int) $anno + 1 ?>"><?= (int) $anno + 1 ?> →</a><?php endif; ?>
+      <?php if (MHW\ProgrammaPartner::disponibili()): ?><a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/cassa/partner">Commissioni partner →</a><?php endif; ?>
       <a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/cassa?anno=<?= (int) $anno ?>&amp;formato=csv">Esporta CSV (mesi)</a>
       <a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/cassa?anno=<?= (int) $anno ?>&amp;formato=csv&amp;pagamenti=1">Esporta CSV (pagamenti dell'anno)</a>
     </div>

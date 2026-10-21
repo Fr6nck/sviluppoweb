@@ -426,6 +426,7 @@ final class Sconti
             $out[] = ['tipo' => 'invito', 'nome' => strtr(Pannello::t('Invito di {nome}'), ['{nome}' => explode(' ', trim((string) $i['referrer_name']))[0] ?: Pannello::t('un amico')]), 'percento' => Inviti::AMICO];
         }
         if ($acc && !$omaggio && ($g = Giudizi::scontoDiSistema($acc))) $out[] = $g;   // 9N: con l'omaggio, dal primo rinnovo
+        if ($acc && !$omaggio && ($pp = ProgrammaPartner::scontoDiSistema($acc))) $out[] = $pp;   // 9O: il codice del partner, primo anno
         return $out;
     }
 
@@ -499,7 +500,7 @@ final class Sconti
         $invito = null;
         foreach ($riep['sistema'] as $s) if ($s['tipo'] === 'invito') $invito = Inviti::codiceAmico();
         $coupon = '';
-        if (count($riep['sistema']) === 1) {
+        if (count($riep['sistema']) === 1 && in_array($riep['sistema'][0]['tipo'], ['invito', 'giudizio'], true)) {
             $coupon = $riep['sistema'][0]['tipo'] === 'invito' ? (string) ($invito['stripe_coupon_id'] ?? '') : Giudizi::coupon($riep['percento']);
         } else {
             $coupon = self::couponCombinato($riep['percento']);

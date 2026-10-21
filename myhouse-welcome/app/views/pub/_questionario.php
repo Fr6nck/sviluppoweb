@@ -10,7 +10,7 @@
    per l'evento delle statistiche «piano_test».
    In inglese sulla home /en e su /en/plan (LinguaSito): i testi di «Testi e foto» dalla linguetta EN, quelli fissi qui con $qU. */
 use function MHW\b;
-use MHW\{Support, Icon, Plans, TestiSito, SectionCatalog, Inviti, Giudizi, LinguaSito};
+use MHW\{Support, Icon, Plans, TestiSito, SectionCatalog, Inviti, Giudizi, LinguaSito, Iva};
 $qU = [LinguaSito::class, 't']; $qEn = LinguaSito::en();
 // I numeri dei testi, dal listino: le sezioni di Essential, tutte le sezioni, le lingue di Plus (base + lingua in più).
 $fq = fn(string $c, string $f) => (string) ($qPiani[$c]['features'][$f] ?? '');
@@ -61,10 +61,11 @@ $qBase = $qFinestra ? b() . LinguaSito::percorso('/piano') : strtok((string) ($_
           <div class="stack" style="gap:8px">
             <h3 class="questionario__nome"><?= Support::e($pv['name']) ?></h3>
             <p class="questionario__prezzo">
-              <?php if ($sc): ?><s class="muted" data-q-pieno><?= Support::e(Support::money($pieno)) ?></s> <?php endif; ?>
-              <b data-q-totale><?= Support::e(Support::money($sc ? $sc['totale'] : $pieno)) ?></b>
-              <span class="muted"> <?= $qU('+ IVA', '+ VAT') ?> <?= $sc ? $qU('il primo anno', 'the first year') : $qU('/ anno', '/ year') ?><?= $porto ? $qU(' per ', ' for ') . '<span data-q-n>' . $q . '</span>' . $qU(' strutture', ' properties') : '' ?></span>
+              <?php if ($sc): ?><?= Iva::cifra($pieno, 'EUR', 'class="muted" data-q-pieno', 's') ?> <?php endif; ?>
+              <?= Iva::cifra($sc ? $sc['totale'] : $pieno, 'EUR', 'data-q-totale', 'b') ?>
+              <span class="muted"> <?= $qEn ? Iva::nota('+ VAT', 'incl. VAT') : Iva::nota('+ IVA', 'IVA inclusa') ?> <?= $sc ? $qU('il primo anno', 'the first year') : $qU('/ anno', '/ year') ?><?= $porto ? $qU(' per ', ' for ') . '<span data-q-n>' . $q . '</span>' . $qU(' strutture', ' properties') : '' ?></span>
             </p>
+            <?= Iva::dettaglio($sc ? $sc['totale'] : $pieno, $qEn) ?>
             <?php if ($porto): /* il prezzo struttura per struttura, poi il selettore (2 … massimo del listino) */
                   $parti = array_map(fn($t) => Support::money($t['cents']), $tiers); ?>
               <p class="tiny muted" style="margin:0"><?= Support::e(Support::money((int) $pv['price_cents'])) ?> <?= $qU('la prima, poi', 'for the first, then') ?> <?= Support::e(implode(' · ', array_map(fn($x) => preg_replace('/\s*€$/u', '', $x), $parti))) ?> € <?= $qU('l\'una', 'each') ?><?= (int) $pv['max_quantity'] > 0 ? $qU(' · oltre ', ' · over ') . (int) $pv['max_quantity'] . $qU(': preventivo', ': quote') : '' ?></p>
@@ -100,6 +101,7 @@ $qBase = $qFinestra ? b() . LinguaSito::percorso('/piano') : strtok((string) ($_
         <?php $rnPieno = $pieno; include __DIR__ . '/_rinnovo.php'; /* 9M: il riquadro dello sconto, componente a sé */ ?>
       </div>
     <?php endforeach; ?>
+    <div class="questionario__iva" data-q-iva<?= $qEsito ? '' : ' hidden' ?>><?= Iva::interruttore($qEn, $qFinestra ? LinguaSito::percorso('/piano') : $qBase) /* 9O · i prezzi IVA inclusa per i privati */ ?></div>
     <?php if (isset($qPiani['portfolio'])): /* senza JavaScript il numero di strutture si cambia ricaricando, con le stesse risposte */ ?>
       <form id="q-quante" method="get" action="<?= Support::e($qBase) ?>#piano-giusto" class="questionario__ricalcola" data-q-ricalcola>
         <?php foreach ($qRisposte as $k => $v): ?><input type="hidden" name="<?= Support::e($k) ?>" value="<?= Support::e($v) ?>"><?php endforeach; ?>
@@ -109,3 +111,4 @@ $qBase = $qFinestra ? b() . LinguaSito::percorso('/piano') : strtok((string) ($_
   </div>
 <?php if (!$qFinestra): ?></section><?php endif; ?>
 <script src="<?= MHW\av('/assets/questionario.js') ?>" defer></script>
+<script src="<?= MHW\av('/assets/iva.js') ?>" defer></script>

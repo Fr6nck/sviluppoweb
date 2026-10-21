@@ -17,7 +17,7 @@
    testimonianza e nessun numero inventato: la demo è dichiarata come demo, le
    domande sono esempi. */
 use function MHW\{a, b};
-use MHW\{Support, Icon, Plans, TestiSito, LinguaSito};
+use MHW\{Support, Icon, Plans, TestiSito, LinguaSito, Iva};
 /* 8E: la stessa pagina in inglese su /en. I testi modificabili arrivano da TestiSito nella lingua giusta,
    quelli fissi da $U(italiano, inglese); i piani da Plans::inLingua. */
 $U = [LinguaSito::class, 't'];
@@ -453,6 +453,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     </div>
     <p class="muted" style="max-width:400px;line-height:24px"><?= $T('piani.lead') ?></p>
   </div>
+  <?= Iva::interruttore($en, $en ? '/en#piani' : '/#piani') /* 9O · i prezzi IVA inclusa per i privati */ ?>
 
   <?php $vociPiano = fn(array $p) => $p['bullet_list']; ?>
   <div class="grid grid-3 piani" style="margin-top:28px">
@@ -493,8 +494,9 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
                 <a class="btn btn--sm" href="#preventivo"><?= $U('Chiedi il preventivo', 'Ask for a quote') ?></a></div>
             </div>
             <div class="plan__prezzo">
-              <span class="price" aria-live="polite"><span data-totale><?= Support::e(Support::money(Plans::price($primo, $minimo), $primo['currency'])) ?></span><small><?= $U(' + IVA / anno', ' + VAT / year') ?></small></span>
-              <span class="plan__mese"><?= $U('circa', 'about') ?> <span data-mensile><?= Support::e(Support::money(Plans::monthly(Plans::price($primo, $minimo)), $primo['currency'])) ?></span> <?= $U('al mese', 'a month') ?></span>
+              <span class="price" aria-live="polite"><?= Iva::cifra(Plans::price($primo, $minimo), $primo['currency'], 'data-totale') ?><small> <?= Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?></small></span>
+              <?= Iva::dettaglio(Plans::price($primo, $minimo), $en, $primo['currency']) ?>
+              <span class="plan__mese"><?= $U('circa', 'about') ?> <?= Iva::cifra(Plans::monthly(Plans::price($primo, $minimo)), $primo['currency'], 'data-mensile') ?> <?= $U('al mese', 'a month') ?></span>
             </div>
             <button class="btn"><?= Support::e($p['cta_label'] ?: $U('Scegli ', 'Choose ') . $nome) ?></button>
           </form>
@@ -502,8 +504,9 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
           <?php $voci = $vociPiano($p); include __DIR__ . '/_voci_piano.php'; ?>
           <div class="plan__quante"></div>
           <div class="plan__prezzo">
-            <span class="price"><?= Support::e(Support::money((int) $primo['price_cents'], $primo['currency'])) ?><small><?= $U(' + IVA / anno', ' + VAT / year') ?></small></span>
-            <span class="plan__mese"><?= $U('circa', 'about') ?> <?= Support::e(Support::money(Plans::monthly((int) $primo['price_cents']), $primo['currency'])) ?> <?= $U('al mese', 'a month') ?></span>
+            <span class="price"><?= Iva::cifra((int) $primo['price_cents'], $primo['currency']) ?><small> <?= Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?></small></span>
+            <?= Iva::dettaglio((int) $primo['price_cents'], $en, $primo['currency']) ?>
+            <span class="plan__mese"><?= $U('circa', 'about') ?> <?= Iva::cifra(Plans::monthly((int) $primo['price_cents']), $primo['currency']) ?> <?= $U('al mese', 'a month') ?></span>
           </div>
           <a class="btn" href="<?= $vai((int) $p['pv_id']) ?>"><?= Support::e($p['cta_label'] ?: $U('Scegli ', 'Choose ') . $nome) ?></a>
         <?php endif; ?>
@@ -641,6 +644,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
 <script src="<?= MHW\av('/assets/funnel-sito.js') ?>" defer></script>
 
 <script src="<?= MHW\av('/assets/prezzi.js') ?>" defer></script>
+<script src="<?= MHW\av('/assets/iva.js') ?>" defer></script>
 <script src="<?= MHW\av('/assets/landing.js') ?>" defer></script>
 <?php if ($anteprimaTesti): /* dentro l'iframe di Amministrazione → Testi e foto: riceve i testi mentre si scrivono */ ?>
 <script src="<?= MHW\av('/assets/anteprima-testi.js') ?>" defer></script>

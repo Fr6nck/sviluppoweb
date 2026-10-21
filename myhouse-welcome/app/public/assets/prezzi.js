@@ -13,6 +13,8 @@
     n[0] = n[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     return n.join(',') + ' ' + (valuta === 'EUR' ? '€' : valuta);
   }
+  // 9O · Una cifra: l'imponibile in data-iva-netto (per l'interruttore «IVA inclusa», assets/iva.js) e il testo giusto.
+  function scrivi(el, cents, valuta) { if (!el) return; el.setAttribute('data-iva-netto', cents); el.textContent = window.mhwIva ? window.mhwIva.testo(cents) : soldi(cents, valuta); }
   var blocchi = document.querySelectorAll('[data-quantita]');
   for (var i = 0; i < blocchi.length; i++) (function (b) {
     var campo = b.querySelector('input[type=number]'), totale = b.querySelector('[data-totale]');
@@ -45,24 +47,25 @@
       campo.setCustomValidity(ok ? '' : (en ? 'Enter a whole number of properties between ' + min + ' and ' + max + '.' : 'Indica un numero intero di strutture tra ' + min + ' e ' + max + '.'));
       if (ok) {
         var tot = prezzo(q);
-        totale.textContent = soldi(scontoPct > 0 || scontoFisso > 0 ? scontato(tot) : tot, valuta);
-        var pieno = b.querySelector('[data-pieno]'), pienoPoi = b.querySelector('[data-pieno-poi]');
-        if (pieno) pieno.textContent = soldi(tot, valuta);
-        if (pienoPoi) pienoPoi.textContent = soldi(tot, valuta);
+        var principale = scontoPct > 0 || scontoFisso > 0 ? scontato(tot) : tot;
+        scrivi(totale, principale, valuta);
+        b.querySelectorAll('[data-iva-dettaglio]').forEach(function (d) { d.setAttribute('data-iva-dettaglio', principale); });
+        scrivi(b.querySelector('[data-pieno]'), tot, valuta);
+        scrivi(b.querySelector('[data-pieno-poi]'), tot, valuta);
         // L'equivalente mensile: prezzo annuale / 12, arrotondato al centesimo.
-        var mese = b.querySelector('[data-mensile]');
-        if (mese) mese.textContent = soldi(Math.round(tot / 12), valuta);
+        scrivi(b.querySelector('[data-mensile]'), Math.round(tot / 12), valuta);
         // In media a struttura, e quante.
-        var media = b.querySelector('[data-media]');
-        if (media) media.textContent = soldi(Math.round(tot / q), valuta);
+        scrivi(b.querySelector('[data-media]'), Math.round(tot / q), valuta);
         b.querySelectorAll('[data-quante]').forEach(function (x) { x.textContent = q; });   // 9M: anche «per N strutture» accanto al prezzo
         // 9M: il riquadro dello sconto sul rinnovo legato a questo campo (/piu-strutture) e il bottone che porta il numero.
         if (campo.id) document.querySelectorAll('[data-rinnovo][data-campo="' + campo.id + '"]').forEach(function (r) {
-          ['[data-q-anno]', '[data-q-anno-s]'].forEach(function (s) { var x = r.querySelector(s); if (x) x.textContent = soldi(tot, valuta); });
-          var celle = r.querySelectorAll('[data-q-perc]');
-          celle.forEach(function (td) { td.textContent = soldi(netto(tot, parseInt(td.getAttribute('data-q-perc'), 10)), valuta); });
-          var m = r.querySelector('[data-q-min]'); if (m && celle.length) m.textContent = celle[celle.length - 1].textContent;
+          ['[data-q-anno]', '[data-q-anno-s]'].forEach(function (s) { scrivi(r.querySelector(s), tot, valuta); });
+          var ultimo = tot;
+          r.querySelectorAll('[data-q-perc]').forEach(function (td) { ultimo = netto(tot, parseInt(td.getAttribute('data-q-perc'), 10)); scrivi(td, ultimo, valuta); });
+          scrivi(r.querySelector('[data-q-min]'), ultimo, valuta);
+          if (window.mhwIva) window.mhwIva.aggiorna(r);
         });
+        if (window.mhwIva) window.mhwIva.aggiorna(b);
         b.querySelectorAll('[data-crea][data-href]').forEach(function (a) { a.href = a.getAttribute('data-href') + (a.getAttribute('data-href').indexOf('?') > -1 ? '&strutture=' + q : ''); });
         oltre(q > maxPrezzo, q);
       }

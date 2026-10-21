@@ -20,6 +20,8 @@
     var e = Math.floor(c / 100), cent = c % 100, s = String(e).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     return (cent ? s + ',' + (cent < 10 ? '0' : '') + cent : s) + ' €';
   }
+  // 9O · Una cifra: l'imponibile in data-iva-netto (per l'interruttore «IVA inclusa», assets/iva.js) e il testo giusto.
+  function scrivi(el, c) { if (!el) return; el.setAttribute('data-iva-netto', c); el.textContent = window.mhwIva ? window.mhwIva.testo(c) : soldi(c); }
   function risposta(n) { var x = modulo.querySelector('input[name=d' + n + ']:checked'); return x ? x.value : ''; }
 
   function vai(n, fuoco) {
@@ -39,6 +41,7 @@
       for (var n = 1; n <= 3; n++) { var s = e.querySelector('[data-q-r="' + n + '"]'); if (s) s.textContent = r[n - 1] === 'si' ? (box.getAttribute('data-si') || 'sì') : 'no'; }
       var h = e.querySelector('h3'); h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true });
     }
+    var ivaQ = box.querySelector('[data-q-iva]'); if (ivaQ) ivaQ.hidden = false;   // 9O · l'interruttore IVA inclusa con l'esito
     if (finestra) finestra.scrollTop = 0;
     else box.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     if (window.mhwStatistiche) window.mhwStatistiche.evento('piano_test', piano + ' · ' + (box.getAttribute('data-origine') || ''));
@@ -59,6 +62,7 @@
       e.preventDefault();
       modulo.reset(); modulo.querySelectorAll('input[type=radio]').forEach(function (x) { x.checked = false; });
       for (var i = 0; i < esiti.length; i++) esiti[i].hidden = true;
+      var ivaR = box.querySelector('[data-q-iva]'); if (ivaR) ivaR.hidden = true;
       box.removeAttribute('data-esito-iniziale');
       modulo.hidden = false; vai(1, true);
       if (finestra) finestra.scrollTop = 0;
@@ -110,11 +114,13 @@
     campo.value = n;
     var pieno = prezzo(n), totale = perc ? netto(pieno, perc) : (fisso ? Math.max(0, pieno - fisso) : pieno);
     var t = porto.querySelector('[data-q-totale]'), p = porto.querySelector('[data-q-pieno]'), q = porto.querySelector('[data-q-n]');
-    if (t) t.textContent = soldi(totale); if (p) p.textContent = soldi(pieno); if (q) q.textContent = n;
-    porto.querySelectorAll('[data-q-perc]').forEach(function (td) { td.textContent = soldi(netto(pieno, +td.getAttribute('data-q-perc'))); });
-    var anno = porto.querySelector('[data-q-anno]'), annoS = porto.querySelector('[data-q-anno-s]'), minimo = porto.querySelector('[data-q-min]');
-    if (anno) anno.textContent = soldi(pieno); if (annoS) annoS.textContent = soldi(pieno);
-    if (minimo) { var ultima = porto.querySelectorAll('[data-q-perc]'); minimo.textContent = ultima.length ? ultima[ultima.length - 1].textContent : soldi(pieno); }
+    scrivi(t, totale); scrivi(p, pieno); if (q) q.textContent = n;
+    porto.querySelectorAll('[data-iva-dettaglio]').forEach(function (d) { d.setAttribute('data-iva-dettaglio', totale); });
+    var ultimo = pieno;
+    porto.querySelectorAll('[data-q-perc]').forEach(function (td) { ultimo = netto(pieno, +td.getAttribute('data-q-perc')); scrivi(td, ultimo); });
+    scrivi(porto.querySelector('[data-q-anno]'), pieno); scrivi(porto.querySelector('[data-q-anno-s]'), pieno);
+    scrivi(porto.querySelector('[data-q-min]'), ultimo);
+    if (window.mhwIva) window.mhwIva.aggiorna(porto);
     var crea = porto.querySelector('[data-q-crea]'); if (crea) crea.href = crea.getAttribute('data-href') + '&strutture=' + n;
     porto.querySelector('[data-q-meno]').disabled = n <= min; porto.querySelector('[data-q-piu]').disabled = n >= max;
   }

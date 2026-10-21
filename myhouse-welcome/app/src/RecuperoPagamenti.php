@@ -17,7 +17,9 @@ namespace MHW;
 final class RecuperoPagamenti
 {
     /** Gli eventi che chiudono una sessione di pagamento. */
-    public const EVENTI = ['checkout.session.completed', 'checkout.session.async_payment_succeeded'];
+    public const EVENTI = ['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'checkout.session.async_payment_failed'];
+    /** 9O · Per quanti giorni si cerca la conferma della banca di un addebito SEPA «in verifica» (3–7 giorni lavorativi, con margine). */
+    public const GIORNI_SEPA = 14;
 
     /** Secondi di attesa del webhook, nella pagina dopo il pagamento, prima di chiedere a Stripe. */
     public const ATTESA = 20;
@@ -51,35 +53,42 @@ final class RecuperoPagamenti
     }
 
     /**
-     * Chiede a Stripe gli eventi della sessione dell'ordine e li elabora.
+     * Chiede a Stripe gli eventi della sessione dell'ordine e li elabora, dal più vecchio (Billing::handleEvent salta quelli già
+     * elaborati). 9O: anche un ordine «in verifica» (addebito SEPA), per la conferma o il rifiuto della banca.
      * @return string l'esito: «niente», «attendi», «non-trovato», o quello di Billing::handleEvent
      */
     public static function ordine(array $o): string
     {
         $sessione = (string) ($o['provider_session_id'] ?? '');
-        if (($o['status'] ?? '') !== 'pending' || $sessione === '' || !Stripe::enabled()) return 'niente';
+        if (!in_array($o['status'] ?? '', ['pending', 'awaiting'], true) || $sessione === '' || !Stripe::enabled()) return 'niente';
         if (!RateLimit::hit('recupero:' . (int) $o['id'], 1, 15)) return 'attendi';
         // Gli eventi dal momento in cui è nato l'ordine (con 10 minuti di margine sugli orologi), al più 300.
         $dal = max(0, (int) strtotime((string) $o['created_at']) - 600);
         $dopo = '';
+        $trovati = [];
         for ($pagina = 0; $pagina < 3; $pagina++) {
             $p = ['types' => self::EVENTI, 'created' => ['gte' => $dal], 'limit' => 100] + ($dopo !== '' ? ['starting_after' => $dopo] : []);
             $res = Stripe::call('GET', 'events', $p);
             foreach ((array) ($res['data'] ?? []) as $ev) {
-                if (!is_array($ev) || ($ev['data']['object']['id'] ?? '') !== $sessione) continue;
-                $esito = Billing::handleEvent($ev);
-                if ($esito !== 'gia-elaborato') {
-                    Log::error('Pagamento confermato dal recupero: il webhook di Stripe non è arrivato', ['order' => (int) $o['id'], 'evento' => $ev['type'] ?? '', 'esito' => $esito]);
-                    self::annota('recuperato', ['ordine' => (int) $o['id'], 'esito' => $esito]);
-                }
-                return $esito;
+                if (is_array($ev) && ($ev['data']['object']['id'] ?? '') === $sessione) $trovati[] = $ev;
             }
-            if (empty($res['has_more']) || empty($res['data'])) break;
+            if ($trovati || empty($res['has_more']) || empty($res['data'])) break;
             $ultimo = end($res['data']);
             $dopo = (string) ($ultimo['id'] ?? '');
             if ($dopo === '') break;
         }
-        return 'non-trovato';
+        if (!$trovati) return 'non-trovato';
+        // Stripe li dà dal più recente: si elaborano in ordine (sessione completata, poi conferma o rifiuto della banca).
+        $esito = 'gia-elaborato';
+        foreach (array_reverse($trovati) as $ev) {
+            $e = Billing::handleEvent($ev);
+            Billing::dopoRisposta();   // 9O: l'email «La tua guida è online» (o «Pagamento non riuscito»)
+            if ($e === 'gia-elaborato') continue;
+            $esito = $e;
+            Log::error('Pagamento confermato dal recupero: il webhook di Stripe non è arrivato', ['order' => (int) $o['id'], 'evento' => $ev['type'] ?? '', 'esito' => $e]);
+            self::annota('recuperato', ['ordine' => (int) $o['id'], 'esito' => $e]);
+        }
+        return $esito;
     }
 
     /** Dai richiami: gli ordini ancora in sospeso degli ultimi 3 giorni, fermi da almeno 2 minuti. */
@@ -89,8 +98,10 @@ final class RecuperoPagamenti
         $t = $adesso ?? time();
         $iso = fn(int $s) => gmdate('Y-m-d\TH:i:s\Z', $s);
         $n = 0;
-        foreach (Db::all("SELECT * FROM orders WHERE status = 'pending' AND provider = 'stripe' AND provider_session_id <> ''
-                          AND created_at > ? AND updated_at < ? ORDER BY id DESC LIMIT 20", [$iso($t - 3 * 86400), $iso($t - 120)]) as $o) {
+        // In sospeso da 3 giorni al più; «in verifica» (SEPA) fino a GIORNI_SEPA, finché la banca non risponde.
+        foreach (Db::all("SELECT * FROM orders WHERE provider = 'stripe' AND provider_session_id <> '' AND updated_at < ?
+                            AND ((status = 'pending' AND created_at > ?) OR (status = 'awaiting' AND created_at > ?)) ORDER BY id DESC LIMIT 20",
+                         [$iso($t - 120), $iso($t - 3 * 86400), $iso($t - self::GIORNI_SEPA * 86400)]) as $o) {
             try {
                 if (!in_array(self::ordine($o), ['niente', 'attendi', 'non-trovato'], true)) $n++;
             } catch (\Throwable $e) { Log::exception($e, 'recupero del pagamento ' . $o['id']); }

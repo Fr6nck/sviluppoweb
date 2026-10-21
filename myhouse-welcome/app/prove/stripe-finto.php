@@ -121,8 +121,8 @@ $importoVoce = function (array $voce) use (&$stato): int {
     return $q * (int) ($pr['unit_amount'] ?? 0);
 };
 if ($metodo === 'POST' && $percorso === '/v1/checkout/sessions') {
-    $sub = 0;
-    foreach ((array) ($corpo['line_items'] ?? []) as $voce) $sub += $importoVoce((array) $voce);
+    $sub = 0; $righe = [];
+    foreach ((array) ($corpo['line_items'] ?? []) as $voce) { $righe[] = $importoVoce((array) $voce); $sub += end($righe); }
     $sconto = 0;
     $cid = (string) ($corpo['discounts'][0]['coupon'] ?? '');
     if ($cid !== '' && isset($stato['coupons'][$cid])) {
@@ -134,13 +134,18 @@ if ($metodo === 'POST' && $percorso === '/v1/checkout/sessions') {
     // 9D: con i mesi gratis (subscription_data[trial_end]) oggi non si paga niente: come Stripe, imponibile e totale a 0.
     $trial = (int) ($corpo['subscription_data']['trial_end'] ?? 0);
     if ($trial > 0 && !is_file($dir . '/importo-sbagliato')) { $sub = 0; $sconto = 0; }
+    // 9O · Con Stripe Tax (automatic_tax[enabled]): l'IVA al 22% voce per voce, sullo scontato di ogni voce, come Stripe.
+    $tassa = 0;
+    if (($corpo['automatic_tax']['enabled'] ?? '') === 'true' && $sub > 0) {
+        foreach ($righe as $imp) { $scVoce = (int) round($imp * $sconto / $sub); $tassa += (int) round(($imp - $scVoce) * 22 / 100); }
+    }
     // Incorporata (ui_mode=embedded): niente url, il segreto per il modulo nella pagina e l'indirizzo di ritorno.
     $incorporata = ($corpo['ui_mode'] ?? '') === 'embedded';
     $sessione = ['id' => 'cs_test_finto' . $n, 'object' => 'checkout.session', 'url' => $incorporata ? null : 'https://checkout.stripe.test/c/pay/cs_test_finto' . $n,
                  'ui_mode' => $incorporata ? 'embedded' : 'hosted', 'client_secret' => $incorporata ? 'cs_test_finto' . $n . '_secret_finto' : null,
                  'return_url' => $corpo['return_url'] ?? null, 'success_url' => $corpo['success_url'] ?? null,
-                 'mode' => $corpo['mode'] ?? '', 'status' => 'open', 'amount_subtotal' => $sub, 'amount_total' => $sub - $sconto,
-                 'total_details' => ['amount_discount' => $sconto, 'amount_tax' => 0], 'metadata' => $corpo['metadata'] ?? [],
+                 'mode' => $corpo['mode'] ?? '', 'status' => 'open', 'amount_subtotal' => $sub, 'amount_total' => $sub - $sconto + $tassa,
+                 'total_details' => ['amount_discount' => $sconto, 'amount_tax' => $tassa], 'metadata' => $corpo['metadata'] ?? [],
                  'trial_end' => $trial ?: null, 'payment_method_collection' => $corpo['payment_method_collection'] ?? 'if_required'];
     $stato['sessioni']['cs_test_finto' . $n] = $sessione;
     $rispondi($sessione);
@@ -154,6 +159,12 @@ if (preg_match('#^/v1/checkout/sessions/([A-Za-z0-9_]+)(/expire)?$#', $percorso,
     if (!isset($stato['sessioni'][$m[1]])) $rispondi(['error' => ['message' => 'No such checkout.session: ' . $m[1]]], 404);
     if ($metodo === 'POST' && ($m[2] ?? '') === '/expire') $stato['sessioni'][$m[1]]['status'] = 'expired';
     $rispondi($stato['sessioni'][$m[1]]);
+}
+// 9O: la chiusura subito di un abbonamento (dopo un rimborso totale).
+if ($metodo === 'DELETE' && preg_match('#^/v1/subscriptions/([A-Za-z0-9_]+)$#', $percorso, $m)) {
+    $abbonamento($m[1]);
+    $stato['subs'][$m[1]]['status'] = 'canceled';
+    $rispondi(['id' => $m[1], 'object' => 'subscription', 'status' => 'canceled']);
 }
 if (preg_match('#^/v1/subscriptions/([A-Za-z0-9_]+)$#', $percorso, $m)) {
     if ($metodo === 'POST' && isset($corpo['cancel_at_period_end'])) {
@@ -240,6 +251,11 @@ if ($metodo === 'GET' && $percorso === '/v1/invoices') {
 if ($metodo === 'POST' && preg_match('#^/v1/invoices/(in_[A-Za-z0-9_]+)$#', $percorso, $mI)) {
     $stato['fatture_meta'][$mI[1]] = array_merge((array) ($stato['fatture_meta'][$mI[1]] ?? []), (array) ($corpo['metadata'] ?? []));
     $rispondi(['id' => $mI[1], 'object' => 'invoice', 'metadata' => $stato['fatture_meta'][$mI[1]]]);
+}
+// 9O: i rimborsi di una charge (charge.refunded nelle API recenti non li porta dentro).
+if ($metodo === 'GET' && $percorso === '/v1/refunds') {
+    $ch = (string) ($_GET['charge'] ?? '');
+    $rispondi(['object' => 'list', 'data' => array_values(array_filter((array) ($stato['refunds'] ?? []), fn($r) => $ch === '' || ($r['charge'] ?? '') === $ch))]);
 }
 if ($metodo === 'POST' && $percorso === '/v1/refunds') {
     if (is_file($dir . '/rifiuta-rimborso')) $rispondi(['error' => ['message' => 'Charge has already been refunded.']], 400);
