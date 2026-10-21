@@ -1,5 +1,10 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Correzione: pagamento con la carta nella pagina e API «Dahlia» di Stripe (21 ottobre 2026)
+
+- **«Il pagamento non è disponibile in questo momento»** al passo Pubblica: con la versione «Dahlia» delle API (2026-03-25), quella degli account Stripe recenti, il Checkout incorporato si chiama `ui_mode=embedded_page` e il vecchio `embedded` viene rifiutato. Ora il sito manda `embedded_page` e, se l'account è su una versione precedente, riprova da solo con `embedded` e se lo ricorda (`storage/.stripe-ui-mode`). Le pagine riconoscono tutti e due i nomi; il modulo usa `createEmbeddedCheckoutPage` (o `initEmbeddedCheckout` dove c'è ancora).
+- Chi guarda come cliente («Entra come cliente») vede nel messaggio anche il motivo tecnico dell'errore, senza cercarlo nei log.
+
 ## v2 · 9N 10 bis, 9O, 9P, 9Q: offerta su misura, rimborsi da ogni parte, SEPA, IVA per i privati, partner con commissioni, email «Fino al 55%» e guide in bozza (21 ottobre 2026)
 
 Migrazioni **058** (offerte su misura), **059** (`rimborsi.origine`, `rimborsi.nota_credito_at`, `orders.in_verifica_at`, `orders.online_email_at`), **060** (tabelle `partner`, `partner_commissioni`, `partner_liquidazioni`, `partner_accessi`; `accounts.partner_id`, `accounts.partner_codice_usato_at`), **061** (`accounts.email_sconti_at`). Solo aggiunte, SQLite e MySQL. Da configurare: DA-CONFIGURARE, «4r».

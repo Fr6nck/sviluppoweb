@@ -34,6 +34,25 @@ final class Stripe
     /** Il pagamento con la carta nel passo «Pubblica» (Checkout incorporato): serve anche la chiave pubblicabile. */
     public static function incorporato(): bool { return self::enabled() && self::chiavePubblicabile() !== ''; }
 
+    /**
+     * Il valore di ui_mode per il Checkout incorporato. Con la versione «Dahlia» delle API (2026-03-25) Stripe ha cambiato
+     * i nomi: «embedded» → «embedded_page» (e «hosted» → «hosted_page»); quello vecchio è rifiutato. Il sito non fissa la
+     * versione (vale quella dell'account): si prova il nome nuovo e, se l'account è su una versione precedente, il vecchio.
+     * Quello che funziona si ricorda in storage/.stripe-ui-mode.
+     */
+    public const UI_INCORPORATA = ['embedded_page', 'embedded'];
+
+    private static function fileUi(): string { return MHW_APP . '/storage/.stripe-ui-mode'; }
+
+    private static function uiIncorporata(): string
+    {
+        $v = is_file(self::fileUi()) ? trim((string) @file_get_contents(self::fileUi())) : '';
+        return in_array($v, self::UI_INCORPORATA, true) ? $v : self::UI_INCORPORATA[0];
+    }
+
+    /** Una sessione di Checkout è incorporata (con tutti e due i nomi)? */
+    public static function sessioneIncorporata(array $s): bool { return in_array((string) ($s['ui_mode'] ?? ''), self::UI_INCORPORATA, true); }
+
     /** @throws \RuntimeException con un messaggio tecnico: va nei log, non all'utente */
     public static function call(string $method, string $path, array $params = [], string $idempotencyKey = ''): array
     {
@@ -281,7 +300,7 @@ final class Stripe
     }
 
     /**
-     * La stessa sessione, ma incorporata nel passo «Pubblica» (ui_mode=embedded): il modulo della carta di Stripe sta
+     * La stessa sessione, ma incorporata nel passo «Pubblica» (ui_mode=embedded_page, o embedded prima di Dahlia): il modulo della carta di Stripe sta
      * nella nostra pagina, dentro un iframe di Stripe, e i dati della carta non passano mai dal sito. Alla fine Stripe
      * porta il cliente su /pagamento/ok, come la pagina di Stripe; l'abbonamento lo attiva sempre e solo il webhook.
      * @return array{id:string,client_secret:string}
@@ -330,7 +349,7 @@ final class Stripe
         ] + $voci;
         // Incorporata: un solo indirizzo di ritorno (niente «annulla»: si resta nella nostra pagina). Sulla pagina di Stripe: ok e annullato.
         $p += $incorporato
-            ? ['ui_mode' => 'embedded', 'return_url' => $base . '/pagamento/ok?order=' . $order['id']]
+            ? ['ui_mode' => self::uiIncorporata(), 'return_url' => $base . '/pagamento/ok?order=' . $order['id']]
             : ['success_url' => $base . '/pagamento/ok?order=' . $order['id'], 'cancel_url' => $base . '/pagamento/annullato?order=' . $order['id']];
         if (!empty($cfg['automatic_tax'])) $p['automatic_tax[enabled]'] = 'true';
         // 9O · Dopo un addebito SEPA rifiutato («Paga con carta» nell'email): solo la carta.
@@ -363,7 +382,16 @@ final class Stripe
         if (($meta['codice_pagamento'] ?? '') !== '') $p['subscription_data[description]'] = 'Codice cliente ' . $meta['codice_cliente'] . ' · Pagamento ' . $meta['codice_pagamento'];
         foreach ($meta as $k => $v) { $p["metadata[$k]"] = $v; $p["subscription_data[metadata][$k]"] = $v; }
 
-        $res = self::call('POST', 'checkout/sessions', $p, ($incorporato ? 'mhw-checkout-incorporato-order-' : 'mhw-checkout-order-') . $order['id']);
+        $chiave = ($incorporato ? 'mhw-checkout-incorporato-order-' . $order['id'] . '-' . $p['ui_mode'] : 'mhw-checkout-order-' . $order['id']);
+        try { $res = self::call('POST', 'checkout/sessions', $p, $chiave); }
+        catch (\RuntimeException $e) {
+            // L'account Stripe è su un'altra versione delle API: l'altro nome di ui_mode, e si ricorda (vedi uiIncorporata).
+            if (!$incorporato || !str_contains($e->getMessage(), 'ui_mode')) throw $e;
+            $p['ui_mode'] = $p['ui_mode'] === self::UI_INCORPORATA[0] ? self::UI_INCORPORATA[1] : self::UI_INCORPORATA[0];
+            $res = self::call('POST', 'checkout/sessions', $p, 'mhw-checkout-incorporato-order-' . $order['id'] . '-' . $p['ui_mode']);
+            @file_put_contents(self::fileUi(), $p['ui_mode'], LOCK_EX);
+            Log::error('Stripe: ui_mode del Checkout incorporato cambiato', ['ui_mode' => $p['ui_mode'], 'prima' => $e->getMessage()]);
+        }
         Db::update('orders', ['provider_session_id' => $res['id'], 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]);
         self::controllaSessione((string) $res['id'], $riepilogo['prezzo'], isset($p['discounts[0][coupon]']) ? $riepilogo['totale'] : $riepilogo['prezzo'], $omaggio !== null);
         return $res;

@@ -1136,8 +1136,10 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
         if ($oid) Db::update('orders', ['status' => 'failed', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $oid]);
         $codice = Log::exception($e, 'checkout');
         // 9A · I due controlli sui prezzi di Stripe (verificaPrezzi, controllaSessione) fermano il pagamento: lo si dice senza codice.
-        Support::flash($e instanceof MHW\PrezziNonCoerenti ? 'Il pagamento non è disponibile in questo momento, ti avvisiamo noi.'
-                       : MHW\tf('Il pagamento non è disponibile in questo momento. Riprova tra poco (codice {codice}).', ['{codice}' => $codice]), 'err');
+        // Chi guarda come cliente («Entra come cliente») vede anche il motivo tecnico, senza cercarlo nei log.
+        Support::flash(($e instanceof MHW\PrezziNonCoerenti ? 'Il pagamento non è disponibile in questo momento, ti avvisiamo noi.'
+                       : MHW\tf('Il pagamento non è disponibile in questo momento. Riprova tra poco (codice {codice}).', ['{codice}' => $codice]))
+                       . (Auth::isImpersonating() ? ' Per l\'amministrazione: ' . mb_substr($e->getMessage(), 0, 300) : ''), 'err');
         Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
     }
     Support::redirect($url);
@@ -1171,7 +1173,7 @@ $r->get('/pannello/{id}/pagamento/{oid}', function (array $a) use ($mia, $contes
     [$u, $acc, $p] = $mia((int) $a['id']);
     [$o, $s] = $daPagare($acc, $p, (int) $a['oid']);
     // Una sessione nata per la pagina di Stripe non ha il modulo da incorporare: si va là.
-    if (($s['ui_mode'] ?? '') !== 'embedded' || (string) ($s['client_secret'] ?? '') === '' || !Stripe::incorporato()) {
+    if (!Stripe::sessioneIncorporata($s) || (string) ($s['client_secret'] ?? '') === '' || !Stripe::incorporato()) {
         if ((string) ($s['url'] ?? '') !== '') Support::redirect((string) $s['url']);
         Support::flash('Il pagamento con la carta qui non è disponibile: scegli «Paga sulla pagina di Stripe».', 'err');
         Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
@@ -1186,10 +1188,10 @@ $r->post('/pannello/{id}/pagamento/{oid}/stripe', function (array $a) use ($mia,
     [$u, $acc, $p] = $mia((int) $a['id']);
     [$o, $s] = $daPagare($acc, $p, (int) $a['oid']);
     try {
-        if (($s['ui_mode'] ?? '') === 'embedded') Stripe::scadiSessione((string) $s['id']);
+        if (Stripe::sessioneIncorporata($s)) Stripe::scadiSessione((string) $s['id']);
         $pv = Plans::version((int) $o['package_version_id']);
         $pkg = Db::one('SELECT * FROM packages WHERE id = ?', [$pv['package_id']]);
-        $url = (string) ($s['ui_mode'] ?? '') === 'embedded' ? Stripe::checkoutSubscription($o, $pv, $pkg, $acc, $u) : (string) $s['url'];
+        $url = Stripe::sessioneIncorporata($s) ? Stripe::checkoutSubscription($o, $pv, $pkg, $acc, $u) : (string) $s['url'];
     } catch (\Throwable $e) {
         Db::update('orders', ['status' => 'failed', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $o['id']]);
         Support::flash($e instanceof MHW\PrezziNonCoerenti ? 'Il pagamento non è disponibile in questo momento, ti avvisiamo noi.'

@@ -3335,9 +3335,9 @@ $no1 = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$nacc
 prova('«Conferma e paga» → la pagina del modulo nel pannello, non la pagina di Stripe', $r['code'] === 302 && str_ends_with($r['loc'], "/pannello/$np/pagamento/" . $no1['id']), $r['loc']);
 $cs = array_values(array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['percorso'] === '/v1/checkout/sessions'));
 $c = end($cs)['corpo'] ?? [];
-prova('…la sessione è incorporata: ui_mode=embedded, return_url su /pagamento/ok, niente success_url né cancel_url, chiave di idempotenza a parte',
-      ($c['ui_mode'] ?? '') === 'embedded' && str_ends_with((string) ($c['return_url'] ?? ''), '/pagamento/ok?order=' . $no1['id']) && !isset($c['success_url']) && !isset($c['cancel_url'])
-      && (end($cs)['idem'] ?? '') === 'mhw-checkout-incorporato-order-' . $no1['id']);
+prova('…la sessione è incorporata: ui_mode=embedded_page (API «Dahlia»), return_url su /pagamento/ok, niente success_url né cancel_url, chiave di idempotenza a parte',
+      ($c['ui_mode'] ?? '') === 'embedded_page' && str_ends_with((string) ($c['return_url'] ?? ''), '/pagamento/ok?order=' . $no1['id']) && !isset($c['success_url']) && !isset($c['cancel_url'])
+      && (end($cs)['idem'] ?? '') === 'mhw-checkout-incorporato-order-' . $no1['id'] . '-embedded_page' && count($cs) === 1);
 prova('…stessi dati di prima: abbonamento, fatturazione (9O: senza chiedere la P.IVA) e metadati con ordine e codici', ($c['mode'] ?? '') === 'subscription' && ($c['billing_address_collection'] ?? '') === 'required'
       && !isset($c['tax_id_collection']) && ($c['metadata']['order_id'] ?? '') === (string) $no1['id'] && ($c['metadata']['codice_pagamento'] ?? '') !== '');
 $r = $nina->get("/pannello/$np/pagamento/" . $no1['id']);
@@ -3378,8 +3378,17 @@ $r = $nina->modulo("/pannello/$np/procedura/pubblica", "/pannello/$np/pubblica",
 $no3 = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$nacc]);
 prova('Dal passo Pubblica «Preferisci pagare sulla pagina di Stripe?» porta direttamente là', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/'), $r['loc']);
 $nina->get('/pagamento/annullato?order=' . $no3['id']);
-$nina->modulo("/pannello/$np/procedura/pubblica", "/pannello/$np/pubblica", ['acquirente' => 'impresa']);
+// Un account Stripe su una versione delle API precedente a «Dahlia»: «embedded_page» rifiutato, il sito riprova con «embedded» e se lo ricorda.
+file_put_contents("$STRIPE_DIR/api-vecchie", '1');
+$prima = count(richiesteStripe());
+$r = $nina->modulo("/pannello/$np/procedura/pubblica", "/pannello/$np/pubblica", ['acquirente' => 'impresa']);
 $no4 = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$nacc]);
+$cs = array_values(array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['percorso'] === '/v1/checkout/sessions' && $x['metodo'] === 'POST'));
+prova('Stripe con le API di prima di «Dahlia»: rifiuta embedded_page, il sito riprova con embedded (chiave di idempotenza diversa), il pagamento si apre e il nome si ricorda',
+      count($cs) === 2 && ($cs[0]['corpo']['ui_mode'] ?? '') === 'embedded_page' && ($cs[1]['corpo']['ui_mode'] ?? '') === 'embedded'
+      && ($cs[1]['idem'] ?? '') === 'mhw-checkout-incorporato-order-' . $no4['id'] . '-embedded' && $r['code'] === 302 && str_ends_with($r['loc'], "/pannello/$np/pagamento/" . $no4['id'])
+      && trim((string) @file_get_contents("$DOVE/app/storage/.stripe-ui-mode")) === 'embedded' && $nina->get("/pannello/$np/pagamento/" . $no4['id'])['code'] === 200, json_encode([array_column(array_column($cs, 'corpo'), 'ui_mode'), $r['loc']]));
+@unlink("$STRIPE_DIR/api-vecchie");
 $ch = curl_init(getenv('STRIPE_API_BASE') . '/finto/completa/' . $no4['provider_session_id']);
 curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_USERPWD => getenv('STRIPE_SECRET_KEY') . ':']); curl_exec($ch); curl_close($ch);
 $r = $nina->get("/pannello/$np/pagamento/" . $no4['id']);
@@ -3393,6 +3402,7 @@ prova('…con il webhook firmato l\'abbonamento si attiva e la guida va online, 
 $r = $nina->get("/pannello/$np/pagamento/" . $no4['id']);
 prova('…e la pagina del modulo, pagata, porta a /pagamento/ok', $r['code'] === 302 && str_contains($r['loc'], '/pagamento/ok?order=' . $no4['id']));
 // Il cambio di piano resta sulla pagina di Stripe; poi la chiave si toglie, per le prove che seguono.
+@unlink("$DOVE/app/storage/.stripe-ui-mode");
 $admin->post('/admin/impostazioni/stripe', ['stripe__publishable_key' => '', 'password' => 'AdminProva123']);
 db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'impostazioni%'");   // i salvataggi qui sopra non tolgono il limite alle prove che seguono
 prova('Senza chiave pubblicabile si torna alla pagina di Stripe (come prima)', !str_contains($lea->get("/pannello/$lp/procedura/pubblica")['body'], 'Preferisci pagare sulla pagina di Stripe?'));

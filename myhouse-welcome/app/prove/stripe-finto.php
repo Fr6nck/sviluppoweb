@@ -139,10 +139,16 @@ if ($metodo === 'POST' && $percorso === '/v1/checkout/sessions') {
     if (($corpo['automatic_tax']['enabled'] ?? '') === 'true' && $sub > 0) {
         foreach ($righe as $imp) { $scVoce = (int) round($imp * $sconto / $sub); $tassa += (int) round(($imp - $scVoce) * 22 / 100); }
     }
-    // Incorporata (ui_mode=embedded): niente url, il segreto per il modulo nella pagina e l'indirizzo di ritorno.
-    $incorporata = ($corpo['ui_mode'] ?? '') === 'embedded';
+    // Incorporata: niente url, il segreto per il modulo nella pagina e l'indirizzo di ritorno. Come un account sulle API «Dahlia»
+    // (2026-03-25) accetta solo «embedded_page»; con il file «api-vecchie» solo «embedded», come prima.
+    $uiChiesto = (string) ($corpo['ui_mode'] ?? '');
+    $vecchie = is_file($dir . '/api-vecchie');
+    if ($uiChiesto !== '' && $uiChiesto !== ($vecchie ? 'embedded' : 'embedded_page')) {
+        http_response_code(400); echo json_encode(['error' => ['type' => 'invalid_request_error', 'param' => 'ui_mode', 'message' => "Invalid ui_mode: must be one of " . ($vecchie ? 'hosted, embedded, custom' : 'hosted_page, embedded_page, elements, form')]]); exit;
+    }
+    $incorporata = $uiChiesto !== '';
     $sessione = ['id' => 'cs_test_finto' . $n, 'object' => 'checkout.session', 'url' => $incorporata ? null : 'https://checkout.stripe.test/c/pay/cs_test_finto' . $n,
-                 'ui_mode' => $incorporata ? 'embedded' : 'hosted', 'client_secret' => $incorporata ? 'cs_test_finto' . $n . '_secret_finto' : null,
+                 'ui_mode' => $incorporata ? $uiChiesto : ($vecchie ? 'hosted' : 'hosted_page'), 'client_secret' => $incorporata ? 'cs_test_finto' . $n . '_secret_finto' : null,
                  'return_url' => $corpo['return_url'] ?? null, 'success_url' => $corpo['success_url'] ?? null,
                  'mode' => $corpo['mode'] ?? '', 'status' => 'open', 'amount_subtotal' => $sub, 'amount_total' => $sub - $sconto + $tassa,
                  'total_details' => ['amount_discount' => $sconto, 'amount_tax' => $tassa], 'metadata' => $corpo['metadata'] ?? [],

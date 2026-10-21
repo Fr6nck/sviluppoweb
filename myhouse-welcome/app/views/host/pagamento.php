@@ -47,8 +47,9 @@ $codiceP = Codici::pagamento($oid); ?>
   if (typeof window.Stripe !== 'function') { nonVa(); return; }
   var segreto = box.getAttribute('data-segreto');
   try {
-    window.Stripe(box.getAttribute('data-chiave'), { locale: 'it' })
-      .initEmbeddedCheckout({ fetchClientSecret: function () { return Promise.resolve(segreto); } })
+    var stripe = window.Stripe(box.getAttribute('data-chiave'), { locale: 'it' });
+    // Stripe.js «Dahlia» ha rinominato initEmbeddedCheckout in createEmbeddedCheckoutPage: si usa quello che c'è.
+    (stripe.createEmbeddedCheckoutPage || stripe.initEmbeddedCheckout).call(stripe, { fetchClientSecret: function () { return Promise.resolve(segreto); } })
       .then(function (modulo) {
         var attesa = box.querySelector('[data-attesa]'); if (attesa) attesa.remove();
         modulo.mount(box);
