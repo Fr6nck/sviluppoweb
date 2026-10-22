@@ -42,7 +42,7 @@ $conta = array_count_values(array_column($righe, 'status')); ?>
     <tbody><?php foreach ($righe as $r): [$et, $tono] = $stati[$r['status']] ?? [$r['status'], 'paper']; ?>
       <tr><td><a href="<?= b() ?>/admin/cliente/<?= (int) $r['chi_account'] ?>"><?= Support::e($r['chi'] ?: $r['chi_email']) ?></a><br><span class="tiny muted"><?= Support::e($r['chi_email']) ?></span></td>
         <td><a href="<?= b() ?>/admin/cliente/<?= (int) $r['amico_account'] ?>"><?= Support::e($r['amico'] ?: $r['amico_email']) ?></a><br><span class="tiny muted"><?= Support::e($r['amico_email']) ?></span></td>
-        <td><span class="badge badge--<?= $tono ?>"><?= Support::e($et) ?></span></td>
+        <td><span class="badge badge--<?= $tono ?>"><?= Support::e($et) ?></span><?= ($r['motivo'] ?? '') !== '' ? '<br><span class="tiny muted">' . Support::e($r['motivo']) . '</span>' : '' ?></td>
         <td class="small"><?= Support::e(Support::date($r['created_at'])) ?></td>
         <td class="small"><?= Support::e(Support::date($r['qualified_at'])) ?></td>
         <td><?php if (in_array($r['status'], ['registrato', 'valido', 'oltre'], true)): ?>

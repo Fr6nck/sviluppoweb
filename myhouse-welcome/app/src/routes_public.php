@@ -128,6 +128,12 @@ $r->get('/i/{codice}', function (array $a) use ($guard) {
     $codice = mb_substr(strtoupper((string) $a['codice']), 0, 12);
     $_SESSION['invito'] = $codice;
     if (($u = Auth::user()) && $u['role'] !== 'admin' && ($acc = Auth::account())) {
+        // Il proprio link: il codice resta in sessione (e sopravvive all'uscita), così un amico che si registra dopo da
+        // questo stesso browser è legato a chi invita. Prima si consumava e l'invito si perdeva.
+        if (($mio = MHW\Inviti::daCodice($codice)) && (int) $mio['id'] === (int) $acc['id']) {
+            Support::flash('Questo è il tuo link di invito: è per i tuoi amici. Se un amico si registra da questo browser dopo che sei uscito, resta legato a te.', 'avviso');
+            Support::redirect('/inviti');
+        }
         try {
             $nome = MHW\Inviti::applicaCodice($acc, $codice);
             if ($nome !== null) Support::flash('Invito di ' . $nome . ' applicato: −' . MHW\Inviti::AMICO . '% sul primo anno.');

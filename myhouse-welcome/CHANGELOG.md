@@ -2,7 +2,12 @@
 
 ## v2 · Correzione: pagamento fermo con «Il pagamento non è disponibile in questo momento» (22 ottobre 2026)
 
-Nessuna migrazione.
+Migrazione **064** (`referrals.motivo`).
+
+- **Invita un amico: l'invito che si perdeva per strada.** Segnalazione: dopo un invito andato a buon fine la barra restava vuota (0 su 10, sconto maturato 0%) e «Chi è entrato» diceva «Ancora nessuno». Tre cause, tutte silenziose, ora sistemate:
+  1. Chi apriva **il proprio link** mentre era dentro consumava il codice: se poi usciva e un amico si registrava dallo stesso browser, l'invito era perso. Ora il proprio link porta a «Invita un amico» con un avviso, il codice resta e sopravvive all'uscita: l'amico che si registra dopo è legato a chi invita.
+  2. L'amico che paga con **gli stessi dati di fatturazione** di chi invita (stessa partita IVA o codice fiscale, regola anti-abuso dei Termini) ha l'invito annullato, ma non lo si vedeva da nessuna parte. Ora il motivo è scritto sull'invito (`referrals.motivo`), nel Registro azioni dell'amico (`invito.annullato`) e nelle schede dei due clienti e in Amministrazione → Inviti. Anche un invito scartato alla registrazione (`invito.scartato`) o un pagamento che non conta (`invito.non_contato`) finiscono nel Registro azioni con il motivo.
+  3. **«Collega a un invito»** nella scheda del cliente (Amministrazione → Clienti): si scrive il codice di chi lo ha invitato e l'amico si lega; se ha già pagato l'invito conta subito, il rettangolo si accende e lo sconto di chi invita va su Stripe (`referral.manual_link`). Serve per gli inviti persi prima di questa versione.
 
 - **Price ID e cliente Stripe dell'altra modalità.** Il sito crea da sé su Stripe il Price della «struttura aggiuntiva» del Portfolio e lo salva nella versione del piano; se era nato con le chiavi di test, con le chiavi live Stripe rispondeva «No such price» e il controllo dei prezzi fermava il pagamento («ti avvisiamo noi»). Ora, prima di aprire il Checkout, ogni Price ID salvato si rilegge: se Stripe non lo trova si toglie dalla versione (Registro azioni «stripe.price_tolto» e log) e il sito lo ricrea nella modalità giusta. Lo stesso per il cliente Stripe dell'account: se non esiste con le chiavi di adesso se ne crea uno nuovo. `Stripe::prezziDiQuestaModalita`, `Stripe::ensureCustomer`.
 - **Quadro**: se l'ultimo Checkout è stato fermato perché Stripe chiedeva importi diversi dal riepilogo (Adaptive Pricing acceso, prezzi IVA inclusa…), l'avviso «Il Checkout di Stripe chiede importi diversi dal riepilogo» con gli importi e la valuta; prima era solo nel log.

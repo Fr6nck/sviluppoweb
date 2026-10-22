@@ -458,15 +458,23 @@ include __DIR__ . '/_stati.php'; ?>
   <?php if ($inviti || $traduzioni): ?>
   <div class="grid grid-2" style="align-items:start">
     <?php if ($inviti): $iv = $inviti['stato']; ?>
-      <section class="panel stack" style="gap:8px" aria-labelledby="inv-titolo">
+      <section class="panel stack" style="gap:8px" aria-labelledby="inv-titolo" id="inviti">
         <span class="kicker" id="inv-titolo">Porta un amico</span>
         <p class="small" style="margin:0">Amici che hanno pagato: <b><?= (int) $iv['validi'] ?></b> su <?= (int) $iv['massimo'] ?> · in attesa <?= (int) $iv['in_attesa'] ?>
           · sconto sul prossimo rinnovo <b><?= (int) $iv['percento'] ?>%</b><?= $iv['sconto'] > 0 ? ' (−' . Support::e(Support::money($iv['sconto'], $iv['valuta'])) . ')' : '' ?></p>
-        <?php if ($inviti['invitato']): ?><p class="small" style="margin:0">Invitato da <b><?= Support::e($inviti['invitato']['referrer_name']) ?></b>.</p><?php endif; ?>
+        <?php if ($inviti['invitato']): ?><p class="small" style="margin:0">Invitato da <b><?= Support::e($inviti['invitato']['referrer_name']) ?></b> · <?= Support::e(['registrato' => 'in attesa che paghi', 'valido' => 'ha pagato: conta', 'usato' => 'sconto già usato', 'oltre' => 'oltre il tetto'][$inviti['invitato']['status']] ?? $inviti['invitato']['status']) ?>.</p>
+        <?php elseif (!empty($inviti['invito_annullato'])): ?><p class="small" style="margin:0">Invitato da <b><?= Support::e($inviti['invito_annullato']['referrer_name']) ?></b> · <b>invito annullato</b><?= $inviti['invito_annullato']['motivo'] !== '' ? ': ' . Support::e($inviti['invito_annullato']['motivo']) : '' ?>.</p>
+        <?php endif; ?>
         <?php if ($inviti['amici']): ?>
           <ul class="stack small" style="gap:4px;margin:0;padding-left:18px">
-            <?php foreach (array_slice($inviti['amici'], 0, 10) as $f): ?><li><?= Support::e($f['name']) ?> · <?= Support::e(['registrato' => 'in attesa', 'valido' => 'ha pagato', 'usato' => 'sconto già usato', 'oltre' => 'oltre il tetto'][$f['status']] ?? $f['status']) ?></li><?php endforeach; ?>
+            <?php foreach (array_slice($inviti['amici'], 0, 10) as $f): ?><li><a href="<?= b() ?>/admin/cliente/<?= (int) $f['friend_account_id'] ?>"><?= Support::e($f['name'] ?: $f['email']) ?></a> · <?= Support::e(['registrato' => 'in attesa', 'valido' => 'ha pagato', 'usato' => 'sconto già usato', 'oltre' => 'oltre il tetto', 'annullato' => 'annullato'][$f['status']] ?? $f['status']) ?><?= $f['status'] === 'annullato' && $f['motivo'] !== '' ? ': ' . Support::e($f['motivo']) : '' ?></li><?php endforeach; ?>
           </ul>
+        <?php endif; ?>
+        <?php if (!$inviti['invitato']): /* L'invito perso per strada (registrato senza il link, sessione scaduta, annullato per sbaglio): si lega a mano al codice di chi invita. */ ?>
+          <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/invito" class="actions" style="margin:0;gap:8px;align-items:end"><?= Csrf::field() ?>
+            <div class="field" style="margin:0"><label for="inv-codice" class="small">Collega a un invito · codice di chi lo ha invitato</label><input id="inv-codice" name="codice" type="text" maxlength="6" pattern="[A-Za-z0-9]{6}" style="width:9em;text-transform:uppercase" required></div>
+            <button class="btn btn--sm btn--ghost" type="submit">Collega</button></form>
+          <p class="tiny muted" style="margin:0">Se ha già pagato, l'invito conta subito per chi lo ha invitato; il suo 5% invece no (vale solo prima del primo pagamento). Niente controllo sui dati di fatturazione uguali: decidi tu.</p>
         <?php endif; ?>
         <a class="small" href="<?= b() ?>/admin/inviti">Tutti gli inviti</a>
       </section>

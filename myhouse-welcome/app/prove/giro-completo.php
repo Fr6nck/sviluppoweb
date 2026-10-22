@@ -7850,6 +7850,53 @@ curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CU
 $u4 = $paga9r('Da Plus a Portfolio · 2 strutture (ancora)');
 prova('…e se quella sessione è già pagata, nessun secondo pagamento: «Questo pagamento risulta già fatto»', str_contains($u4, 'risulta già fatto') && (string) val('SELECT provider_session_id FROM orders WHERE id = ?', [$oc9r]) === $s3, $u4);
 
+// Inviti persi per strada (segnalazione: la barra resta vuota e «Chi è entrato» dice «Ancora nessuno» dopo un invito andato a buon fine).
+$inviti9p(true);
+$gaia9r = $cliente9n('Gaia Inviti', 'gaia9r@prova.test'); $abbonamento9n($gaia9r, 'plus', 'active', 'sub_gaia9r', 300);
+$gaiaB = new Browser('gaia9r'); $gaiaB->get('/accedi'); $gaiaB->post('/accedi', ['email' => 'gaia9r@prova.test', 'password' => 'Prova9N-2026']);
+$codGaia = (string) $c9n('echo MHW\Inviti::codice(["id" => ' . $gaia9r . ']);');
+// 1. Chi invita apre il proprio link, esce, e l'amico si registra dallo stesso browser: prima l'invito si perdeva (consumato dal proprio account).
+$r = $gaiaB->get('/i/' . $codGaia);
+prova('Inviti · il proprio link da dentro: avviso «è per i tuoi amici», si va a Invita un amico, il codice resta in sessione', $r['code'] === 302 && str_ends_with($r['loc'], '/inviti')
+      && str_contains($gaiaB->segui($r)['body'], 'Questo è il tuo link di invito'));
+$gaiaB->post('/esci', []);
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$r = $gaiaB->get('/registrati');
+prova('…dopo l\'uscita il modulo di registrazione ha ancora il codice dell\'invito', str_contains($r['body'], 'value="' . $codGaia . '" readonly'));
+$gaiaB->post('/registrati', ['name' => 'Amico Di Gaia', 'email' => 'amico-gaia9r@prova.test', 'email2' => 'amico-gaia9r@prova.test', 'password' => 'AmicoGaia1234', 'termini' => '1']);
+$amicoG = $accDi('amico-gaia9r@prova.test');
+prova('…e l\'amico registrato è legato a chi invita', $amicoG > 0 && (string) val('SELECT status FROM referrals WHERE friend_account_id = ? AND referrer_account_id = ?', [$amicoG, $gaia9r]) === 'registrato');
+// 2. L'amico paga con gli stessi dati di fatturazione di chi invita: l'invito si annulla, ma ora con il motivo scritto e nel registro.
+db()->prepare("UPDATE accounts SET billing_type = 'azienda', vat = '01234567890' WHERE id IN (?, ?)")->execute([$gaia9r, $amicoG]);
+db()->prepare("INSERT INTO orders (account_id, package_version_id, amount_cents, currency, status, provider, provider_session_id, quantity, kind, created_at, updated_at)
+               VALUES (?, ?, 12700, 'EUR', 'paid', 'stripe', 'cs_amico_gaia', 1, 'new', ?, ?)")->execute([$amicoG, pv('plus'), gmdate('Y-m-d\TH:i:s\Z'), gmdate('Y-m-d\TH:i:s\Z')]);
+$ordAmico = (int) val("SELECT id FROM orders WHERE provider_session_id = 'cs_amico_gaia'");
+$c9n('MHW\Inviti::pagato(MHW\Db::one("SELECT * FROM orders WHERE id = ' . $ordAmico . '"));');
+$refG = riga('SELECT * FROM referrals WHERE friend_account_id = ?', [$amicoG]);
+prova('Inviti · stessi dati di fatturazione: invito «annullato» con il motivo (partita IVA) e nel Registro azioni dell\'amico', ($refG['status'] ?? '') === 'annullato' && str_contains((string) ($refG['motivo'] ?? ''), 'partita IVA')
+      && (bool) val("SELECT id FROM audit_log WHERE action = 'invito.annullato' AND meta LIKE ?", ['%"amico":' . $amicoG . '%']), json_encode($refG));
+$r = $admin->get('/admin/cliente/' . $amicoG);
+prova('…nella scheda dell\'amico: «Invitato da Gaia · invito annullato: stessi dati di fatturazione…» e il modulo «Collega a un invito»', str_contains($r['body'], 'invito annullato</b>: stessi dati di fatturazione')
+      && str_contains($r['body'], 'Collega a un invito') && str_contains($r['body'], '/admin/cliente/' . $amicoG . '/invito'));
+$r = $admin->get('/admin/cliente/' . $gaia9r);
+prova('…nella scheda di chi invita l\'amico compare come «annullato: …» (prima sparivano)', preg_match('#Amico.*?annullato: stessi dati di fatturazione#s', $r['body']) === 1);
+$gaiaB->post('/esci', []); $gaiaB->get('/accedi'); $gaiaB->post('/accedi', ['email' => 'gaia9r@prova.test', 'password' => 'Prova9N-2026']);   // la registrazione aveva lasciato dentro l'amico
+prova('…per chi invita la barra resta vuota e «Chi è entrato» non lo elenca', !str_contains($gaiaB->get('/inviti')['body'], 'barra-inviti__casella--pieno'));
+// 3. «Collega a un invito» dall'amministrazione: l'amico ha già pagato, l'invito conta subito e il primo rettangolo si accende.
+$r = $admin->segui($admin->post('/admin/cliente/' . $amicoG . '/invito', ['codice' => 'ZZZZZZ']));
+prova('Inviti · «Collega a un invito» con un codice sconosciuto: errore chiaro', str_contains($r['body'], 'Codice di invito sconosciuto'));
+$r = $admin->segui($admin->post('/admin/cliente/' . $amicoG . '/invito', ['codice' => strtolower($codGaia)]));
+$refG = riga('SELECT * FROM referrals WHERE friend_account_id = ?', [$amicoG]);
+prova('…con il codice di chi invita: invito «valido» (ha già pagato), motivo «collegato dall\'amministrazione», nel registro, conferma in pagina',
+      ($refG['status'] ?? '') === 'valido' && (int) $refG['order_id'] === $ordAmico && ($refG['motivo'] ?? '') === 'collegato dall\'amministrazione' && str_contains($r['body'], 'Collegato: l&#039;invito conta')
+      && (bool) val("SELECT id FROM audit_log WHERE action = 'referral.manual_link' AND meta LIKE ?", ['%"amico":' . $amicoG . '%']), json_encode($refG));
+$r = $gaiaB->get('/inviti');
+prova('…per chi invita: il primo rettangolo acceso con l\'alone, «1 su 10», sconto maturato 5%, e in «Chi è entrato» «Ha attivato · −5% per te»',
+      str_contains($r['body'], 'barra-inviti__casella--pieno barra-inviti__casella--alone') && str_contains($r['body'], '<b>1 su 10</b>') && str_contains($r['body'], 'Ha attivato · −5% per te')
+      && (int) val("SELECT referral_applied_percent FROM accounts WHERE id = ?", [$gaia9r]) === 5);
+$r = $admin->segui($admin->post('/admin/cliente/' . $amicoG . '/invito', ['codice' => $codGaia]));
+prova('…una seconda volta: «già legato a un invito»', str_contains($r['body'], 'già legato a un invito'));
+
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

@@ -280,7 +280,9 @@ $r->get('/admin/cliente/{aid}', function (array $a) {
         'email' => Richiami::disponibili() ? Db::all('SELECT kind, ref, sent_at FROM email_log WHERE account_id = ? ORDER BY sent_at DESC, id DESC LIMIT 20', [$acc['id']]) : [],
         'optout' => Richiami::disponibili() ? array_column(Db::all('SELECT kind FROM email_optout WHERE account_id = ?', [$acc['id']]), 'kind') : [],
         'parere' => \MHW\Migrator::tableExists('feedback') ? Db::one('SELECT * FROM feedback WHERE account_id = ?', [$acc['id']]) : null,
-        'inviti' => Inviti::disponibili() ? ['stato' => Inviti::stato($acc), 'amici' => Inviti::amici((int) $acc['id']), 'invitato' => Inviti::invitato((int) $acc['id'])] : null,
+        'inviti' => Inviti::disponibili() ? ['stato' => Inviti::stato($acc), 'amici' => Inviti::amici((int) $acc['id']), 'invitato' => Inviti::invitato((int) $acc['id']),
+                                              // L'invito ricevuto e annullato (stessi dati di fatturazione…), con il motivo: si vede perché non conta.
+                                              'invito_annullato' => Db::one('SELECT r.*, u.name AS referrer_name' . (Migrator::columnExists('referrals', 'motivo') ? '' : ", '' AS motivo") . ' FROM referrals r JOIN accounts a ON a.id = r.referrer_account_id JOIN users u ON u.id = a.user_id WHERE r.friend_account_id = ? AND r.status = ?', [(int) $acc['id'], 'annullato'])] : null,
         // 9G · il contatore dell'anno, il tetto personale e «Aggiungi 250.000»
         'traduzioni' => \MHW\Migrator::tableExists('translation_usage') ? ['mese' => Traduttore::usati((int) $acc['id']), 'anno' => Traduttore::contatore((int) $acc['id']),
                                                                              'override' => \MHW\Migrator::columnExists('accounts', 'translate_cap_override') ? $acc['translate_cap_override'] : null,
@@ -957,6 +959,17 @@ $r->post('/admin/cliente/{id}/staff', function (array $a) {
         }
     } catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
     Support::redirect('/admin/cliente/' . $aid . '#staff');
+});
+
+/* «Collega a un invito»: l'amico che non è rimasto legato al link di chi l'ha invitato (o il cui invito è stato annullato) si lega al codice. */
+$r->post('/admin/cliente/{id}/invito', function (array $a) {
+    Auth::requireAdmin();
+    $aid = (int) $a['id'];
+    try {
+        $stato = MHW\Inviti::collegaAMano($aid, (string) ($_POST['codice'] ?? ''), (int) Auth::user()['id']);
+        Support::flash($stato === 'registrato' ? 'Collegato: l\'invito si accende quando questo cliente paga.' : ($stato === 'oltre' ? 'Collegato, ma chi invita ha già i suoi ' . MHW\Inviti::amiciMassimi() . ' amici: conta oltre il massimo.' : 'Collegato: l\'invito conta e lo sconto di chi invita è aggiornato.'));
+    } catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
+    Support::redirect('/admin/cliente/' . $aid . '#inviti');
 });
 
 /* 9R · «Proponi un cambio di piano»: la proposta con lo sconto, per email (bottone «Accetta il cambio») o per WhatsApp. */

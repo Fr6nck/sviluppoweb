@@ -171,10 +171,11 @@ final class Inviti
     public static function collega(array $amico, array $chiInvita): bool
     {
         $aid = (int) $amico['id']; $rid = (int) $chiInvita['id'];
-        if ($aid === $rid || !self::puoInvitare($chiInvita)) return false;
-        if (Omaggi::daUsare($amico)) return false;   // 9D: omaggio e invito si escludono, vale l'omaggio
-        if (Db::one('SELECT id FROM referrals WHERE friend_account_id = ?', [$aid])) return false;
-        if (Db::one("SELECT id FROM orders WHERE account_id = ? AND status = 'paid'", [$aid])) return false;
+        if (($motivo = self::motivoNonCollegabile($amico, $chiInvita)) !== null) {
+            // Prima si perdeva in silenzio: ora resta nel Registro azioni del cliente (scheda in Amministrazione).
+            Auth::audit('invito.scartato', (int) ($amico['user_id'] ?? 0) ?: null, ['amico' => $aid, 'chi' => $rid, 'codice' => (string) ($chiInvita['referral_code'] ?? ''), 'motivo' => $motivo]);
+            return false;
+        }
         Db::insert('referrals', ['referrer_account_id' => $rid, 'friend_account_id' => $aid, 'status' => 'registrato', 'created_at' => Support::now()]);
         $gia = !empty($amico['intended_discount_code_id']) ? Sconti::riga((int) $amico['intended_discount_code_id']) : null;
         $piuAlto = $gia && !($gia['kind'] === 'percent' && (int) $gia['value'] < self::AMICO);
@@ -182,6 +183,18 @@ final class Inviti
             Db::update('accounts', ['intended_discount_code_id' => (int) $c['id']], 'id = :aid', ['aid' => $aid]);
         }
         return true;
+    }
+
+    /** Perché l'amico non si può legare a questo invito (null = si può). */
+    public static function motivoNonCollegabile(array $amico, array $chiInvita): ?string
+    {
+        $aid = (int) $amico['id']; $rid = (int) $chiInvita['id'];
+        if ($aid === $rid) return 'è il suo stesso codice';
+        if (!self::puoInvitare($chiInvita)) return 'chi invita non ha un abbonamento attivo';
+        if (Omaggi::daUsare($amico)) return 'ha un codice omaggio: non si somma a un invito';   // 9D: omaggio e invito si escludono, vale l'omaggio
+        if (Db::one('SELECT id FROM referrals WHERE friend_account_id = ?', [$aid])) return 'ha già un invito';
+        if (Db::one("SELECT id FROM orders WHERE account_id = ? AND status = 'paid'", [$aid])) return 'ha già pagato un abbonamento: l\'invito vale solo per il primo';
+        return null;
     }
 
     /**
@@ -219,15 +232,23 @@ final class Inviti
         $r = Db::one("SELECT * FROM referrals WHERE friend_account_id = ? AND status = 'registrato'", [$aid]);
         if (!$r) return;
         // Conta solo il primo ordine pagato (quello che activate ha appena segnato).
-        if ((int) Db::val("SELECT COUNT(*) FROM orders WHERE account_id = ? AND status = 'paid'", [$aid], 0) !== 1) return;
         $rid = (int) $r['referrer_account_id'];
+        if ((int) Db::val("SELECT COUNT(*) FROM orders WHERE account_id = ? AND status = 'paid'", [$aid], 0) !== 1) {
+            Auth::audit('invito.non_contato', (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$aid], 0) ?: null, ['amico' => $aid, 'chi' => $rid, 'ordine' => (int) $order['id'], 'motivo' => 'non è il primo ordine pagato']);
+            return;
+        }
         $a = Db::one('SELECT vat, cf FROM accounts WHERE id = ?', [$aid]) ?: [];
         $b = Db::one('SELECT vat, cf FROM accounts WHERE id = ?', [$rid]) ?: [];
         $uguale = fn(string $k) => trim((string) ($a[$k] ?? '')) !== '' && strtoupper(trim((string) $a[$k])) === strtoupper(trim((string) ($b[$k] ?? '')));
         $stessi = $uguale('vat') || $uguale('cf');
         $stato = $stessi ? 'annullato' : (self::validi($rid) >= self::amiciMassimi() ? 'oltre' : 'valido');
-        Db::update('referrals', ['status' => $stato, 'order_id' => (int) $order['id'], 'qualified_at' => Support::now()], 'id = :id', ['id' => $r['id']]);
-        if ($stessi) { Log::error('Inviti: stessi dati di fatturazione di chi invita, invito annullato', ['referral' => (int) $r['id']]); return; }
+        $motivo = $stessi ? 'stessi dati di fatturazione di chi invita (' . ($uguale('vat') ? 'partita IVA' : 'codice fiscale') . ')' : '';
+        Db::update('referrals', ['status' => $stato, 'order_id' => (int) $order['id'], 'qualified_at' => Support::now()] + (Migrator::columnExists('referrals', 'motivo') ? ['motivo' => $motivo] : []), 'id = :id', ['id' => $r['id']]);
+        if ($stessi) {
+            Log::error('Inviti: stessi dati di fatturazione di chi invita, invito annullato', ['referral' => (int) $r['id']]);
+            Auth::audit('invito.annullato', (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$aid], 0) ?: null, ['amico' => $aid, 'chi' => $rid, 'motivo' => $motivo]);
+            return;
+        }
         self::$coda[$rid] = $aid;
     }
 
@@ -536,14 +557,46 @@ final class Inviti
             Db::all('SELECT email_hash, email_mask, sent_at FROM referral_invites WHERE account_id = ? ORDER BY sent_at DESC, id DESC LIMIT 50', [$accountId]));
     }
 
-    /** Gli amici invitati, dal più recente: nome breve, stato, date. */
+    /** Gli amici invitati, dal più recente: nome breve, stato, date. Per l'amministrazione anche gli annullati, con il motivo. */
     public static function amici(int $accountId): array
     {
-        $righe = Db::all("SELECT r.id, r.status, r.created_at, r.qualified_at, u.name FROM referrals r JOIN accounts a ON a.id = r.friend_account_id
-                          JOIN users u ON u.id = a.user_id WHERE r.referrer_account_id = ? AND r.status <> 'annullato' ORDER BY r.id DESC LIMIT 50", [$accountId]);
+        $motivo = Migrator::columnExists('referrals', 'motivo') ? 'r.motivo' : "'' AS motivo";
+        $righe = Db::all("SELECT r.id, r.status, r.created_at, r.qualified_at, r.friend_account_id, $motivo, u.name, u.email FROM referrals r JOIN accounts a ON a.id = r.friend_account_id
+                          JOIN users u ON u.id = a.user_id WHERE r.referrer_account_id = ? ORDER BY r.id DESC LIMIT 50", [$accountId]);
         foreach ($righe as &$r) $r['nome'] = self::nomeBreve((string) $r['name']);
         unset($r);
         return $righe;
+    }
+
+    /**
+     * Dall'amministrazione, scheda del cliente: «Collega a un invito». Per quando il link si è perso per strada (amico
+     * registrato senza passare dal link, sessione scaduta, invito annullato per sbaglio): l'amico si lega al codice di chi
+     * lo ha invitato. Se ha già pagato, l'invito è subito «valido» (o «oltre» se chi invita ha già i suoi 10) e lo sconto di
+     * chi invita va su Stripe; se no resta «registrato» e si accende quando paga. L'amico non riceve il suo 5%: quello
+     * si applica solo prima del primo pagamento. Il controllo dei dati di fatturazione uguali qui non c'è: decide chi
+     * amministra. @return string lo stato dell'invito
+     */
+    public static function collegaAMano(int $amicoId, string $codice, int $adminId): string
+    {
+        $chi = self::daCodice($codice);
+        if (!$chi) throw new \RuntimeException('Codice di invito sconosciuto: sono 6 lettere o cifre, lo trovi in «Invita un amico» del cliente che invita.');
+        $rid = (int) $chi['id'];
+        $amico = Db::one('SELECT * FROM accounts WHERE id = ?', [$amicoId]);
+        if (!$amico) throw new \RuntimeException('Cliente inesistente.');
+        if ($rid === $amicoId) throw new \RuntimeException('È il codice di questo stesso cliente.');
+        if (!self::puoInvitare($chi)) throw new \RuntimeException('Chi invita non ha un abbonamento attivo: l\'invito non può contare.');
+        $gia = Db::one('SELECT * FROM referrals WHERE friend_account_id = ?', [$amicoId]);
+        if ($gia && $gia['status'] !== 'annullato') throw new \RuntimeException('Questo cliente è già legato a un invito (stato: ' . $gia['status'] . ').');
+        $ordine = Db::one("SELECT id FROM orders WHERE account_id = ? AND status = 'paid' AND kind = 'new' ORDER BY id", [$amicoId])
+               ?: Db::one("SELECT id FROM orders WHERE account_id = ? AND status = 'paid' ORDER BY id", [$amicoId]);
+        $stato = $ordine ? (self::validi($rid) >= self::amiciMassimi() ? 'oltre' : 'valido') : 'registrato';
+        $riga = ['referrer_account_id' => $rid, 'status' => $stato, 'order_id' => $ordine ? (int) $ordine['id'] : null,
+                 'qualified_at' => $ordine ? Support::now() : null] + (Migrator::columnExists('referrals', 'motivo') ? ['motivo' => 'collegato dall\'amministrazione'] : []);
+        if ($gia) Db::update('referrals', $riga, 'id = :id', ['id' => (int) $gia['id']]);
+        else Db::insert('referrals', $riga + ['friend_account_id' => $amicoId, 'created_at' => Support::now()]);
+        Auth::audit('referral.manual_link', (int) $amico['user_id'] ?: null, ['amico' => $amicoId, 'chi' => $rid, 'codice' => strtoupper(trim($codice)), 'stato' => $stato, 'admin' => $adminId]);
+        if ($stato === 'valido') { try { self::sincronizza($rid); } catch (\Throwable $e) { Log::exception($e, 'inviti: collega a mano'); } }
+        return $stato;
     }
 
     /** Dall'amministrazione: un invito non conta più (rimborso, abuso). Uno «oltre» prende il suo posto. */
@@ -551,7 +604,7 @@ final class Inviti
     {
         $r = Db::one('SELECT * FROM referrals WHERE id = ?', [$id]);
         if (!$r || in_array($r['status'], ['usato', 'annullato'], true)) return;
-        Db::update('referrals', ['status' => 'annullato'], 'id = :id', ['id' => $id]);
+        Db::update('referrals', ['status' => 'annullato'] + (Migrator::columnExists('referrals', 'motivo') ? ['motivo' => 'annullato dall\'amministrazione'] : []), 'id = :id', ['id' => $id]);
         if ($r['status'] === 'valido') {
             $o = Db::one("SELECT id FROM referrals WHERE referrer_account_id = ? AND status = 'oltre' ORDER BY qualified_at, id", [(int) $r['referrer_account_id']]);
             if ($o) Db::update('referrals', ['status' => 'valido'], 'id = :id', ['id' => $o['id']]);

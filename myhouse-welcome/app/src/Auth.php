@@ -160,7 +160,11 @@ final class Auth
     public static function logout(): void
     {
         if (($u = self::user()) && $u['role'] === 'admin' && !self::isImpersonating()) Log::accesso('logout', (int) $u['id'], (string) $u['email']);   // 8I
+        // L'invito di un amico (/i/CODICE) sopravvive all'uscita: chi apre il proprio link, esce e fa registrare un amico
+        // dallo stesso browser lo trova ancora legato a sé (prima si perdeva in silenzio).
+        $invito = (string) ($_SESSION['invito'] ?? '');
         $_SESSION = []; session_destroy(); session_start(); session_regenerate_id(true);
+        if ($invito !== '') $_SESSION['invito'] = $invito;
     }
 
     /** Per l'anteprima di Amministrazione → Testi e foto: per il resto della richiesta nessuno è dentro (solo lettura). */

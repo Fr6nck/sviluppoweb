@@ -394,6 +394,15 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 9. **Codici sconto**: «Valido fino al» è ora già compilato con il 31 dicembre; cambialo se serve.
 10. Restano in italiano (per ora): l'email d'invito all'amico e le email scritte dall'amministrazione al cliente (rinnovo fermato, cambio piano, rimborso, password provvisoria).
 
+## 4v. Invita un amico: la barra resta vuota dopo un invito (22 ottobre)
+
+Se un amico si è registrato e ha pagato ma la barra di chi invita resta a «0 su 10» e «Chi è entrato» dice «Ancora nessuno», l'invito non si è legato o è stato annullato. Con questa versione:
+
+1. Apri **Amministrazione → Clienti → la scheda dell'amico** (chi si è registrato). In «Porta un amico» leggi se è «Invitato da …» e con che stato, oppure «invito annullato: motivo». Nel **Registro azioni** della stessa scheda trovi le righe `invito.scartato`, `invito.annullato` o `invito.non_contato` con il motivo. Se non c'è niente, l'amico si è registrato senza passare dal link né scrivere il codice (per esempio da un altro browser, o dopo che chi invita aveva aperto il proprio link).
+2. Per sistemare: nella stessa scheda, **«Collega a un invito»** → scrivi il codice di chi lo ha invitato (6 caratteri, in «Invita un amico» del cliente che invita) → **Collega**. Se l'amico ha già pagato, il rettangolo di chi invita si accende subito e lo sconto del rinnovo va su Stripe. Il 5% dell'amico non si applica dopo il pagamento.
+3. Attenzione al caso «stessi dati di fatturazione»: se i due account hanno la stessa partita IVA o lo stesso codice fiscale (prove fatte con i propri dati), l'invito è annullato dalla regola anti-abuso. «Collega a un invito» non fa questo controllo: per una prova va bene, per un cliente vero decidi tu.
+4. Da questa versione chi apre il proprio link da dentro non perde più il codice: un amico che si registra dopo dallo stesso browser resta legato.
+
 ## 4u. Pagamento fermo «Il pagamento non è disponibile in questo momento» (22 ottobre)
 
 Il messaggio compare quando il controllo dei prezzi prima del Checkout non va a buon fine. La causa più comune: un Price ID salvato nel piano (di solito la «struttura aggiuntiva» del Portfolio, che il sito crea da solo) era nato con le chiavi di **test** e con le chiavi **live** Stripe non lo trova.
