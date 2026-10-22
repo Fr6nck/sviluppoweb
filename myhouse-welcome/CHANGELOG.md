@@ -7,6 +7,7 @@ Nessuna migrazione.
 - **Price ID e cliente Stripe dell'altra modalità.** Il sito crea da sé su Stripe il Price della «struttura aggiuntiva» del Portfolio e lo salva nella versione del piano; se era nato con le chiavi di test, con le chiavi live Stripe rispondeva «No such price» e il controllo dei prezzi fermava il pagamento («ti avvisiamo noi»). Ora, prima di aprire il Checkout, ogni Price ID salvato si rilegge: se Stripe non lo trova si toglie dalla versione (Registro azioni «stripe.price_tolto» e log) e il sito lo ricrea nella modalità giusta. Lo stesso per il cliente Stripe dell'account: se non esiste con le chiavi di adesso se ne crea uno nuovo. `Stripe::prezziDiQuestaModalita`, `Stripe::ensureCustomer`.
 - **Quadro**: se l'ultimo Checkout è stato fermato perché Stripe chiedeva importi diversi dal riepilogo (Adaptive Pricing acceso, prezzi IVA inclusa…), l'avviso «Il Checkout di Stripe chiede importi diversi dal riepilogo» con gli importi e la valuta; prima era solo nel log.
 - **Prove**: Price creato in test tolto dalla versione Portfolio e pagamento che parte; cliente creato in test sostituito da uno nuovo.
+- **Registrazione, scelta del piano**: nella scheda Portfolio il riquadro «Quante strutture?» finiva nella colonna del pallino e schiacciava nome, prezzo e voci in una striscia a destra; ora sta nella colonna del testo (verificato a 1366 e 390 px).
 
 ## v2 · 9R (pacchetto 16): il 5% del giudizio una volta sola (22 ottobre 2026)
 

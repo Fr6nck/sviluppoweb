@@ -2330,6 +2330,9 @@ fieldset{min-width:0}
 .scegli-piano__testa{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 12px}
 .scegli-piano__testa span{font-size:14px;color:var(--muted)}
 .scegli-piano__scheda ul{grid-column:2;margin:0;padding:0 0 0 16px;font-size:14px;line-height:20px;color:var(--muted)}
+/* 9R · Portfolio: il numero di strutture e la scomposizione stanno nella colonna del testo, non sotto il pallino (lo allargavano). */
+.scegli-piano__scheda .reg-strutture,.scegli-piano__scheda .reg-scaglioni{grid-column:2;min-width:0}
+.scegli-piano__scheda .reg-strutture input{margin-top:0}
 /* 7B: «Passa a …» prima del pagamento, e il modulo di fatturazione nel passo Pubblica. */
 .passa-piano{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
 .passa-piano__conferma{flex:1 1 100%}
