@@ -128,12 +128,14 @@ final class Stripe
         // La partita IVA come «tax id» del cliente: Stripe la stampa in fattura e Adamo la legge da lì.
         $piva = ($account['billing_type'] ?? '') === 'azienda' ? preg_replace('/\D/', '', (string) ($account['vat'] ?? '')) : '';
         if ($piva !== '') $dati += ['tax_id_data[0][type]' => 'eu_vat', 'tax_id_data[0][value]' => 'IT' . $piva];
-        $c = self::call('POST', 'customers', $dati + [
+        $nuovo = $dati + [
             'email' => $user['email'], 'name' => $user['name'],
             'metadata[account_id]' => (string) $account['id'],
             'metadata[codice_cliente]' => Codici::cliente((int) $account['id']),   // 9I
             'preferred_locales[0]' => 'it',
-        ], 'mhw-customer-account-' . $account['id'] . ($dati ? '-' . substr(md5(serialize($dati)), 0, 10) : ''));
+        ];
+        // 9R · La chiave con tutti i parametri (email e nome compresi) e dieci minuti: un cliente da ricreare non riceve quello di prima.
+        $c = self::call('POST', 'customers', $nuovo, 'mhw-customer-account-' . $account['id'] . '-' . substr(md5(serialize($nuovo)), 0, 10) . '-' . intdiv(time(), 600));
         Db::update('accounts', ['stripe_customer_id' => $c['id']], 'id = :aid', ['aid' => $account['id']]);
         return $c['id'];
     }
@@ -148,7 +150,9 @@ final class Stripe
         foreach (['vat', 'cf', 'sdi', 'pec', 'billing_type', 'Fiscal_code', 'Pec', 'Fe_code'] as $k) $dati += ['metadata[' . $k . ']' => ''];
         if (($codC = Codici::cliente((int) $account['id'])) !== '') $dati['metadata[codice_cliente]'] = $codC;   // 9I
         $cid = rawurlencode($account['stripe_customer_id']);
-        self::call('POST', 'customers/' . $cid, $dati, 'mhw-customer-dati-' . $account['id'] . '-' . substr(md5(serialize($dati)), 0, 10));
+        // 9R · Nella chiave anche il cliente Stripe e dieci minuti: un cliente ricreato non riusa la chiave del vecchio (Stripe la
+        // rifiuterebbe), e tornare ai dati di prima entro 24 ore non riceve la risposta salvata (che lascerebbe su Stripe i dati intermedi).
+        self::call('POST', 'customers/' . $cid, $dati, 'mhw-customer-dati-' . $account['id'] . '-' . $account['stripe_customer_id'] . '-' . substr(md5(serialize($dati)), 0, 10) . '-' . intdiv(time(), 600));
         // La partita IVA come «tax id»: si aggiunge se un'azienda la inserisce dopo il primo pagamento,
         // e quella vecchia si toglie se cambia o se il cliente diventa persona fisica.
         $piva = ($account['billing_type'] ?? '') === 'azienda' ? preg_replace('/\D/', '', (string) ($account['vat'] ?? '')) : '';
@@ -160,7 +164,7 @@ final class Stripe
                 if (($t['value'] ?? '') === $giusta) { $presente = true; continue; }
                 self::call('DELETE', 'customers/' . $cid . '/tax_ids/' . rawurlencode((string) $t['id']));
             }
-            if ($giusta !== '' && !$presente) self::call('POST', 'customers/' . $cid . '/tax_ids', ['type' => 'eu_vat', 'value' => $giusta], 'mhw-taxid-' . $account['id'] . '-' . $piva);
+            if ($giusta !== '' && !$presente) self::call('POST', 'customers/' . $cid . '/tax_ids', ['type' => 'eu_vat', 'value' => $giusta], 'mhw-taxid-' . $account['id'] . '-' . $account['stripe_customer_id'] . '-' . $piva . '-' . intdiv(time(), 600));
         } catch (\Throwable $e) { Log::exception($e, 'Stripe: partita IVA del cliente'); }
     }
 
@@ -386,6 +390,32 @@ final class Stripe
         catch (\Throwable $e) { Log::exception($e, 'Stripe: sessione da far scadere'); }
     }
 
+    /**
+     * 9R · Prima di creare la sessione di Checkout di un ordine, quella già creata per lo stesso ordine (si riprova a pagare,
+     * o l'ordine del cambio di piano si riusa per 30 minuti). Pagata → ci si ferma, niente secondo addebito; aperta e con gli
+     * stessi parametri (la firma nei metadati) → si riusa; aperta ma diversa → si fa scadere dopo aver creato la nuova.
+     * La chiave di idempotenza porta la firma dei parametri: con la sola «mhw-checkout-order-N», riprovando dopo un cambio
+     * (cliente Stripe ricreato, Price ricreato, IVA automatica accesa, indirizzo del sito) Stripe rispondeva «Keys for
+     * idempotent requests can only be used with the same parameters they were first used with» e il pagamento si fermava.
+     * Aggiunge a $p il metadato mhw_firma. @return array{0:?array,1:string,2:string} [sessione da riusare, chiave, sessione da far scadere]
+     */
+    private static function primaDellaSessione(array $order, array &$p, string $prefisso): array
+    {
+        $firma = substr(hash('sha256', serialize($p)), 0, 16);
+        $p['metadata[mhw_firma]'] = $firma;
+        $vecchia = (string) Db::val('SELECT provider_session_id FROM orders WHERE id = ?', [$order['id']], '');
+        $daScadere = '';
+        if ($vecchia !== '') {
+            try { $s = self::sessione($vecchia); } catch (\Throwable $e) { $s = []; }   // creata con le altre chiavi (test/live): come se non ci fosse
+            $stato = (string) ($s['status'] ?? '');
+            if ($stato === 'complete') throw new \RuntimeException('Questo pagamento risulta già fatto: tra pochi secondi lo vedi attivo. Se non succede, scrivici.');
+            if ($stato === 'open' && (string) ($s['metadata']['mhw_firma'] ?? '') === $firma) return [$s, '', ''];
+            if ($stato === 'open') $daScadere = $vecchia;
+        }
+        // Dieci minuti nella chiave: un errore che Stripe ricorda per la chiave non si ripete per 24 ore.
+        return [null, $prefisso . $order['id'] . '-' . $firma . '-' . intdiv(time(), 600), $daScadere];
+    }
+
     private static function sessioneAbbonamento(array $order, array $pv, array $pkg, array $account, array $user, ?array $riepilogo, bool $incorporato): array
     {
         $base = Support::baseUrl();
@@ -445,16 +475,19 @@ final class Stripe
         if (($meta['codice_pagamento'] ?? '') !== '') $p['subscription_data[description]'] = 'Codice cliente ' . $meta['codice_cliente'] . ' · Pagamento ' . $meta['codice_pagamento'];
         foreach ($meta as $k => $v) { $p["metadata[$k]"] = $v; $p["subscription_data[metadata][$k]"] = $v; }
 
-        $chiave = ($incorporato ? 'mhw-checkout-incorporato-order-' . $order['id'] . '-' . $p['ui_mode'] : 'mhw-checkout-order-' . $order['id']);
-        try { $res = self::call('POST', 'checkout/sessions', $p, $chiave); }
-        catch (\RuntimeException $e) {
-            // L'account Stripe è su un'altra versione delle API: l'altro nome di ui_mode, e si ricorda (vedi uiIncorporata).
-            if (!$incorporato || !str_contains($e->getMessage(), 'ui_mode')) throw $e;
-            $p['ui_mode'] = $p['ui_mode'] === self::UI_INCORPORATA[0] ? self::UI_INCORPORATA[1] : self::UI_INCORPORATA[0];
-            $res = self::call('POST', 'checkout/sessions', $p, 'mhw-checkout-incorporato-order-' . $order['id'] . '-' . $p['ui_mode']);
-            @file_put_contents(self::fileUi(), $p['ui_mode'], LOCK_EX);
-            Log::error('Stripe: ui_mode del Checkout incorporato cambiato', ['ui_mode' => $p['ui_mode'], 'prima' => $e->getMessage()]);
+        [$res, $chiave, $daScadere] = self::primaDellaSessione($order, $p, $incorporato ? 'mhw-checkout-incorporato-' . $p['ui_mode'] . '-order-' : 'mhw-checkout-order-');
+        if ($res === null) {
+            try { $res = self::call('POST', 'checkout/sessions', $p, $chiave); }
+            catch (\RuntimeException $e) {
+                // L'account Stripe è su un'altra versione delle API: l'altro nome di ui_mode, e si ricorda (vedi uiIncorporata).
+                if (!$incorporato || !str_contains($e->getMessage(), 'ui_mode')) throw $e;
+                $p['ui_mode'] = $p['ui_mode'] === self::UI_INCORPORATA[0] ? self::UI_INCORPORATA[1] : self::UI_INCORPORATA[0];
+                $res = self::call('POST', 'checkout/sessions', $p, $chiave . '-' . $p['ui_mode']);
+                @file_put_contents(self::fileUi(), $p['ui_mode'], LOCK_EX);
+                Log::error('Stripe: ui_mode del Checkout incorporato cambiato', ['ui_mode' => $p['ui_mode'], 'prima' => $e->getMessage()]);
+            }
         }
+        if ($daScadere !== '' && $daScadere !== (string) $res['id']) self::scadiSessione($daScadere);
         Db::update('orders', ['provider_session_id' => $res['id'], 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]);
         self::controllaSessione((string) $res['id'], $riepilogo['prezzo'], isset($p['discounts[0][coupon]']) ? $riepilogo['totale'] : $riepilogo['prezzo'], $omaggio !== null);
         return $res;
@@ -492,7 +525,9 @@ final class Stripe
         $meta += self::codici($order);
         if (($meta['codice_pagamento'] ?? '') !== '') $p['subscription_data[description]'] = 'Codice cliente ' . $meta['codice_cliente'] . ' · Pagamento ' . $meta['codice_pagamento'];
         foreach ($meta as $k => $v) { $p["metadata[$k]"] = $v; $p["subscription_data[metadata][$k]"] = $v; }
-        $res = self::call('POST', 'checkout/sessions', $p, 'mhw-checkout-offerta-order-' . $order['id']);
+        [$res, $chiave, $daScadere] = self::primaDellaSessione($order, $p, 'mhw-checkout-offerta-order-');
+        $res ??= self::call('POST', 'checkout/sessions', $p, $chiave);
+        if ($daScadere !== '' && $daScadere !== (string) $res['id']) self::scadiSessione($daScadere);
         Db::update('orders', ['provider_session_id' => $res['id'], 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]);
         self::controllaSessione((string) $res['id'], (int) $offerta['prezzo_cents'], (int) $offerta['prezzo_cents']);
         return (string) $res['url'];
@@ -728,7 +763,9 @@ final class Stripe
             foreach (['codice_cliente', 'codice_pagamento', 'codice_struttura'] as $k) if (($meta[$k] ?? '') !== '') $p["invoice_creation[invoice_data][metadata][$k]"] = $meta[$k];
         }
         foreach ($meta as $k => $v) { $p["metadata[$k]"] = $v; $p["payment_intent_data[metadata][$k]"] = $v; }
-        $res = self::call('POST', 'checkout/sessions', $p, 'mhw-checkout-order-' . $order['id']);
+        [$res, $chiave, $daScadere] = self::primaDellaSessione($order, $p, 'mhw-checkout-order-');
+        $res ??= self::call('POST', 'checkout/sessions', $p, $chiave);
+        if ($daScadere !== '' && $daScadere !== (string) $res['id']) self::scadiSessione($daScadere);
         Db::update('orders', ['provider_session_id' => $res['id'], 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]);
         return $res['url'];
     }

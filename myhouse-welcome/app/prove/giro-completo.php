@@ -933,7 +933,7 @@ prova('9O · 2 · nel Checkout l\'indirizzo sì, la partita IVA no (niente tax_i
       ($c['billing_address_collection'] ?? '') === 'required' && !isset($c['tax_id_collection']) && ($cliS['tax_id_data'][0]['type'] ?? '') === 'eu_vat'
       && ($cliS['tax_id_data'][0]['value'] ?? '') === 'IT02945910541', json_encode($cliS['tax_id_data'] ?? null));
 prova('Metadati sull\'abbonamento', ($c['subscription_data']['metadata']['order_id'] ?? '') === (string) $ordine['id']);
-prova('Chiave di idempotenza sul checkout', (end($cs)['idem'] ?? '') === 'mhw-checkout-order-' . $ordine['id']);
+prova('Chiave di idempotenza sul checkout (ordine, firma dei parametri, dieci minuti)', (bool) preg_match('/^mhw-checkout-order-' . $ordine['id'] . '-[0-9a-f]{16}-\d+$/', (string) (end($cs)['idem'] ?? '')));
 prova('Cliente Stripe creato una volta', count(array_filter(richiesteStripe(), fn($x) => $x['percorso'] === '/v1/customers')) === 1);
 
 $r = $anna->get('/pagamento/ok?order=' . $ordine['id']);
@@ -3337,7 +3337,7 @@ $cs = array_values(array_filter(array_slice(richiesteStripe(), $prima), fn($x) =
 $c = end($cs)['corpo'] ?? [];
 prova('…la sessione è incorporata: ui_mode=embedded_page (API «Dahlia»), return_url su /pagamento/ok, niente success_url né cancel_url, chiave di idempotenza a parte',
       ($c['ui_mode'] ?? '') === 'embedded_page' && str_ends_with((string) ($c['return_url'] ?? ''), '/pagamento/ok?order=' . $no1['id']) && !isset($c['success_url']) && !isset($c['cancel_url'])
-      && (end($cs)['idem'] ?? '') === 'mhw-checkout-incorporato-order-' . $no1['id'] . '-embedded_page' && count($cs) === 1);
+      && str_starts_with((string) (end($cs)['idem'] ?? ''), 'mhw-checkout-incorporato-embedded_page-order-' . $no1['id'] . '-') && count($cs) === 1);
 prova('…stessi dati di prima: abbonamento, fatturazione (9O: senza chiedere la P.IVA) e metadati con ordine e codici', ($c['mode'] ?? '') === 'subscription' && ($c['billing_address_collection'] ?? '') === 'required'
       && !isset($c['tax_id_collection']) && ($c['metadata']['order_id'] ?? '') === (string) $no1['id'] && ($c['metadata']['codice_pagamento'] ?? '') !== '');
 $r = $nina->get("/pannello/$np/pagamento/" . $no1['id']);
@@ -3357,7 +3357,7 @@ prova('«Paga sulla pagina di Stripe»: la sessione incorporata scade e lo stess
       && $no1b['status'] === 'pending' && $no1b['provider_session_id'] !== $sessIncorporata, $r['loc']);
 $ch = array_values(array_filter($nuove, fn($x) => $x['percorso'] === '/v1/checkout/sessions'));
 prova('…con success_url e cancel_url, senza ui_mode, e la chiave di idempotenza di sempre', isset($ch[0]['corpo']['success_url']) && isset($ch[0]['corpo']['cancel_url'])
-      && !isset($ch[0]['corpo']['ui_mode']) && ($ch[0]['idem'] ?? '') === 'mhw-checkout-order-' . $no1['id']);
+      && !isset($ch[0]['corpo']['ui_mode']) && str_starts_with((string) ($ch[0]['idem'] ?? ''), 'mhw-checkout-order-' . $no1['id'] . '-'));
 $r = $nina->get("/pannello/$np/pagamento/" . $no1['id']);
 prova('…riaprendo la pagina del modulo si torna sulla pagina di Stripe', $r['code'] === 302 && str_starts_with($r['loc'], 'https://checkout.stripe.test/'));
 $r = inviaWebhook(['id' => 'evt_nina_scaduta', 'type' => 'checkout.session.expired', 'data' => ['object' => ['id' => $sessIncorporata, 'metadata' => ['order_id' => (string) $no1['id']]]]]);
@@ -3386,7 +3386,7 @@ $no4 = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$nacc
 $cs = array_values(array_filter(array_slice(richiesteStripe(), $prima), fn($x) => $x['percorso'] === '/v1/checkout/sessions' && $x['metodo'] === 'POST'));
 prova('Stripe con le API di prima di «Dahlia»: rifiuta embedded_page, il sito riprova con embedded (chiave di idempotenza diversa), il pagamento si apre e il nome si ricorda',
       count($cs) === 2 && ($cs[0]['corpo']['ui_mode'] ?? '') === 'embedded_page' && ($cs[1]['corpo']['ui_mode'] ?? '') === 'embedded'
-      && ($cs[1]['idem'] ?? '') === 'mhw-checkout-incorporato-order-' . $no4['id'] . '-embedded' && $r['code'] === 302 && str_ends_with($r['loc'], "/pannello/$np/pagamento/" . $no4['id'])
+      && str_starts_with((string) ($cs[1]['idem'] ?? ''), 'mhw-checkout-incorporato-embedded_page-order-' . $no4['id'] . '-') && str_ends_with((string) ($cs[1]['idem'] ?? ''), '-embedded') && $r['code'] === 302 && str_ends_with($r['loc'], "/pannello/$np/pagamento/" . $no4['id'])
       && trim((string) @file_get_contents("$DOVE/app/storage/.stripe-ui-mode")) === 'embedded' && $nina->get("/pannello/$np/pagamento/" . $no4['id'])['code'] === 200, json_encode([array_column(array_column($cs, 'corpo'), 'ui_mode'), $r['loc']]));
 @unlink("$STRIPE_DIR/api-vecchie");
 $ch = curl_init(getenv('STRIPE_API_BASE') . '/finto/completa/' . $no4['provider_session_id']);
@@ -7826,6 +7826,29 @@ $nuovoCus = $c9n('$a = MHW\\Db::one("SELECT * FROM accounts WHERE id = ' . $cus9
 @unlink("$STRIPE_DIR/no-cus_creato_in_test");
 prova('Stripe · cliente creato in test e non trovato con le chiavi live: se ne crea uno nuovo e si salva', str_starts_with($nuovoCus, 'cus_') && $nuovoCus !== 'cus_creato_in_test'
       && (string) val('SELECT stripe_customer_id FROM accounts WHERE id = ?', [$cus9r]) === $nuovoCus, $nuovoCus);
+
+// Lo stesso ordine pagato di nuovo dopo un cambio (cliente Stripe ricreato, IVA accesa…): con la sola «mhw-checkout-order-N» Stripe rispondeva
+// «Keys for idempotent requests can only be used with the same parameters…». Ora: stessa sessione se uguale, nuova (e la vecchia scade) se diversa, stop se pagata.
+$idem9r = $c9n('try { MHW\Stripe::call("POST", "checkout/sessions", ["mode" => "payment", "client_reference_id" => "1"], "prova-idem-9r");
+    MHW\Stripe::call("POST", "checkout/sessions", ["mode" => "payment", "client_reference_id" => "2"], "prova-idem-9r"); echo "passata"; } catch (Throwable $e) { echo $e->getMessage(); }');
+prova('Stripe finto come Stripe: la stessa chiave di idempotenza con parametri diversi è rifiutata (400)', str_contains($idem9r, 'Keys for idempotent requests'), $idem9r);
+db()->prepare("INSERT INTO orders (account_id, package_version_id, amount_cents, currency, status, provider, provider_session_id, quantity, kind, from_package_version_id, from_quantity, created_at, updated_at)
+               VALUES (?, ?, 5000, 'EUR', 'pending', 'stripe', '', 2, 'change', ?, 1, ?, ?)")->execute([$cus9r, pv('portfolio'), pv('plus'), gmdate('Y-m-d\TH:i:s\Z'), gmdate('Y-m-d\TH:i:s\Z')]);
+$oc9r = (int) val("SELECT id FROM orders WHERE account_id = ? AND kind = 'change' ORDER BY id DESC", [$cus9r]);
+$paga9r = fn(string $descr) => $c9n('$a = MHW\Db::one("SELECT * FROM accounts WHERE id = ' . $cus9r . '"); $u = MHW\Db::one("SELECT * FROM users WHERE id = ?", [$a["user_id"]]);
+    try { echo MHW\Stripe::checkoutChange(MHW\Db::one("SELECT * FROM orders WHERE id = ' . $oc9r . '"), ' . var_export($descr, true) . ', $a, $u); } catch (Throwable $e) { echo "ERRORE " . $e->getMessage(); }');
+$sesPost = fn() => count(array_filter(richiesteStripe(), fn($x) => $x['percorso'] === '/v1/checkout/sessions' && $x['metodo'] === 'POST'));
+$u1 = $paga9r('Da Plus a Portfolio · 2 strutture'); $s1 = (string) val('SELECT provider_session_id FROM orders WHERE id = ?', [$oc9r]); $n1 = $sesPost();
+$u2 = $paga9r('Da Plus a Portfolio · 2 strutture'); $n2 = $sesPost();
+prova('Cambio di piano pagato due volte con gli stessi dati: la stessa pagina di Stripe, nessuna sessione nuova', str_starts_with($u1, 'https://checkout.stripe.test/') && $u2 === $u1 && $n2 === $n1, $u1 . ' | ' . $u2);
+$u3 = $paga9r('Da Plus a Portfolio · 2 strutture (dati cambiati)'); $s3 = (string) val('SELECT provider_session_id FROM orders WHERE id = ?', [$oc9r]);
+$stato9r = json_decode((string) @file_get_contents("$STRIPE_DIR/stato.json"), true) ?: [];
+prova('…con i dati cambiati: niente «Keys for idempotent requests», una sessione nuova e quella di prima fatta scadere', str_starts_with($u3, 'https://checkout.stripe.test/') && $s3 !== $s1
+      && ($stato9r['sessioni'][$s1]['status'] ?? '') === 'expired' && ($stato9r['sessioni'][$s3]['status'] ?? '') === 'open', $u3);
+$ch = curl_init(getenv('STRIPE_API_BASE') . '/finto/completa/' . $s3);
+curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_USERPWD => getenv('STRIPE_SECRET_KEY') . ':']); curl_exec($ch); curl_close($ch);
+$u4 = $paga9r('Da Plus a Portfolio · 2 strutture (ancora)');
+prova('…e se quella sessione è già pagata, nessun secondo pagamento: «Questo pagamento risulta già fatto»', str_contains($u4, 'risulta già fatto') && (string) val('SELECT provider_session_id FROM orders WHERE id = ?', [$oc9r]) === $s3, $u4);
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

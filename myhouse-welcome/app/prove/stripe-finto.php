@@ -33,14 +33,20 @@ if ($percorso === '/indexnow') {
     file_put_contents($dir . '/indexnow.jsonl', file_get_contents('php://input') . "\n", FILE_APPEND);
     http_response_code(is_file($dir . '/indexnow-rifiuta') ? 403 : 202); exit;
 }
-$rispondi = function (array $r, int $code = 200) use (&$stato, $statoFile, $chiave) {
-    if ($chiave !== '') $stato['idem'][$chiave] = $r;
+// Come Stripe: la chiave di idempotenza vale con gli stessi parametri; con parametri diversi è un errore 400.
+$impronta = md5($metodo . $percorso . serialize($corpo));
+$rispondi = function (array $r, int $code = 200) use (&$stato, $statoFile, $chiave, $impronta) {
+    if ($chiave !== '') { $stato['idem'][$chiave] = $r; $stato['idem_h'][$chiave] = $impronta; }
     file_put_contents($statoFile, json_encode($stato));
     http_response_code($code);
     echo json_encode($r);
     exit;
 };
 if (!str_starts_with($auth, 'sk_test_')) $rispondi(['error' => ['message' => 'Invalid API Key provided']], 401);
+if ($chiave !== '' && isset($stato['idem'][$chiave]) && ($stato['idem_h'][$chiave] ?? $impronta) !== $impronta) {
+    http_response_code(400);
+    echo json_encode(['error' => ['type' => 'idempotency_error', 'message' => "Keys for idempotent requests can only be used with the same parameters they were first used with. Try using a key other than '$chiave' if you meant to execute a different request."]]); exit;
+}
 if ($chiave !== '' && isset($stato['idem'][$chiave])) { echo json_encode($stato['idem'][$chiave]); exit; }
 if (getenv('STRIPE_FINTO_GUASTO') === '1' || is_file($dir . '/guasto')) $rispondi(['error' => ['message' => 'Simulated outage']], 500);
 
