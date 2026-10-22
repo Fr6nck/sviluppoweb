@@ -346,6 +346,24 @@ final class Sconti
         return true;
     }
 
+    /**
+     * 9R · Gli account che una migrazione ha segnato da riallineare (storage/.sconti-da-riallineare.json, 063): lo sconto del
+     * rinnovo su Stripe si ricalcola; chi non riesce resta nel file per il giro dopo. @return int quanti riallineati
+     */
+    public static function riallineaInSospeso(): int
+    {
+        $file = MHW_APP . '/storage/.sconti-da-riallineare.json';
+        if (!is_file($file)) return 0;
+        $ids = json_decode((string) @file_get_contents($file), true) ?: [];
+        $restano = []; $n = 0;
+        foreach ($ids as $id) {
+            try { self::sincronizzaRinnovo((int) $id); $n++; }
+            catch (\Throwable $e) { Log::exception($e, 'riallineamento sconto rinnovo, account ' . (int) $id); $restano[] = (int) $id; }
+        }
+        if ($restano) @file_put_contents($file, json_encode($restano), LOCK_EX); else @unlink($file);
+        return $n;
+    }
+
     /** Dopo una fattura pagata (Billing::onInvoicePaid): lo sconto del rinnovo si riallinea a transazione chiusa. */
     public static function accoda(int $accountId): void { self::$coda[$accountId] = true; }
 

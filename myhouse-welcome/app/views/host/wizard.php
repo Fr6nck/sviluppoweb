@@ -263,7 +263,7 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
               $giudizioPuo = MHW\Giudizi::attivo() && !(MHW\Omaggi::disponibili() && MHW\Omaggi::daUsare($acc)) && (MHW\Giudizi::puoAderire($acc) || (($acc['giudizio_adesione'] ?? '') === 'pagamento' && ($acc['giudizio_sconto_stato'] ?? '') === 'promesso'));
               if ($giudizioPuo): $giudizioSi = ($acc['giudizio_adesione'] ?? '') === 'pagamento'; ?>
           <fieldset class="fieldset stack giudizio-sconto" id="giudizio-sconto" style="gap:8px;margin:0 0 16px" data-giudizio-sconto data-torna="/pannello/<?= $pid ?>/procedura/pubblica">
-            <legend class="legend"><?= t('Giudizio con sconto') ?> <span class="badge badge--pine">−<?= MHW\Giudizi::percentuale() ?>%</span></legend>
+            <legend class="legend"><?= t('Giudizio con sconto') ?> <span class="badge badge--pine">−<?= MHW\Giudizi::percentuale() ?>%</span><?= $giudizioSi ? ' <span class="small muted">' . t('Hai già aderito') . '</span>' : '' /* 9R · anche dal pannello prima del pagamento */ ?></legend>
             <input type="hidden" name="giudizio_casella" value="1">
             <label class="check" style="align-items:flex-start"><input type="checkbox" name="giudizio_adesione" value="1" data-giudizio-casella style="margin-top:1px"<?= $giudizioSi ? ' checked' : '' ?>>
               <span><?= MHW\Giudizi::casellaHtml() /* 9L · il testo unico di «Testi e foto» (giudizio.casella) */ ?></span></label>

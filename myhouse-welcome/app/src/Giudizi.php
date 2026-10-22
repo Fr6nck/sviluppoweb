@@ -31,17 +31,31 @@ final class Giudizi
     }
 
     /**
-     * 9R · Lo sconto del programma vale adesso? Adesione non ritirata E giudizio lasciato; oppure, per il solo primo anno,
-     * l'adesione al pagamento (è l'incentivo: il 5% sul primo pagamento anche prima del giudizio). Senza giudizio al rinnovo
-     * il 5% non si applica e va sul rinnovo successivo al giudizio.
+     * 9R (pacchetto 16) · Il 5% del giudizio si usa UNA SOLA VOLTA per account, mai ogni anno:
+     * - adesione al pagamento (o dal pannello prima del primo pagamento, che conta come «al pagamento»): solo sul primo anno,
+     *   subito; al rinnovo non si applica, con o senza giudizio;
+     * - adesione dopo il pagamento: solo sul rinnovo successivo, se a quel rinnovo il giudizio c'è (altrimenti sul primo
+     *   rinnovo dopo il giudizio). Applicato una volta («applicato_primo_anno» / «applicato_rinnovo»), non si ripete più.
+     * scontoDisponibile: adesione non ritirata E sconto non ancora applicato E (al pagamento → solo nel primo pagamento,
+     * $primoPagamento; dopo → giudizio lasciato).
      */
-    public static function scontoAttivo(array $acc, bool $primoAnno = false): bool
+    public static function scontoDisponibile(array $acc, bool $primoPagamento = false): bool
     {
         if (!self::disponibili() || empty($acc['giudizio_adesione'])) return false;
+        if (in_array((string) ($acc['giudizio_sconto_stato'] ?? ''), ['applicato_primo_anno', 'applicato_rinnovo', 'nessuno'], true)) return false;
         $sch = Vetrina::disponibili() ? Vetrina::scheda((int) $acc['id']) : null;
         if ($sch && !empty($sch['ritirato_at'])) return false;
-        if ($primoAnno && $acc['giudizio_adesione'] === 'pagamento') return true;
+        if ($acc['giudizio_adesione'] === 'pagamento') return $primoPagamento;
         return self::conGiudizio((int) $acc['id']);
+    }
+
+    /** @deprecated 9R · il nome di prima: vedi scontoDisponibile. */
+    public static function scontoAttivo(array $acc, bool $primoAnno = false): bool { return self::scontoDisponibile($acc, $primoAnno); }
+
+    /** 9R · Il 5% è già stato usato (sul primo anno o su un rinnovo): non torna più. */
+    public static function scontoUsato(array $acc): bool
+    {
+        return in_array((string) ($acc['giudizio_sconto_stato'] ?? ''), ['applicato_primo_anno', 'applicato_rinnovo'], true);
     }
 
     /** Il programma è disponibile (migrazione 044 applicata)? */
@@ -106,10 +120,13 @@ final class Giudizi
      * 9R · La riga in piccolo sotto la casella (privacy, si somma agli amici, quando vale, ritiro): «Testi e foto» →
      * giudizio.casella_nota. $alPagamento: «sul primo anno»; dal pannello «sul prossimo rinnovo». Il link ai Termini lo mette la vista.
      */
-    public static function casellaNota(bool $alPagamento): string
+    public static function casellaNota(bool $alPagamento, ?array $acc = null): string
     {
         $en = Pannello::en();
-        $quando = $alPagamento ? ($en ? 'on the first year' : 'sul primo anno') : ($en ? 'on your next renewal' : 'sul prossimo rinnovo');
+        // 9R · Dal pannello, chi non ha ancora pagato aderisce «al pagamento»: il 5% va sul primo anno.
+        $acc ??= Auth::account();
+        if (!$alPagamento && $acc && !Subscriptions::active((int) $acc['id'])) $alPagamento = true;
+        $quando = $alPagamento ? ($en ? 'on the first year' : 'sul primo anno') : ($en ? 'on the first renewal after your review' : 'sul primo rinnovo dopo il tuo giudizio');
         return TestiSito::formatta(TestiSito::get('giudizio.casella_nota', $en ? 'en' : null), ['quando' => $quando, 'giudizio' => self::percentuale() . '%']);
     }
 
@@ -155,6 +172,9 @@ final class Giudizi
     public static function aderisci(array $acc, string $modo): void
     {
         if (!self::disponibili() || !isset(self::ADESIONI[$modo]) || !empty($acc['giudizio_adesione'])) return;
+        // 9R · Dal pannello prima del primo pagamento conta come «al pagamento»: il 5% sul primo anno (e la casella al
+        // pagamento compare già spuntata, «Hai già aderito»).
+        if ($modo === 'pannello' && !Subscriptions::active((int) $acc['id']) && !Db::val("SELECT id FROM orders WHERE account_id = ? AND status = 'paid'", [(int) $acc['id']])) $modo = 'pagamento';
         $subito = $modo === 'pannello' && self::quando() === 'adesione';
         Db::update('accounts', ['giudizio_adesione' => $modo, 'giudizio_adesione_at' => Support::now(), 'giudizio_sconto_stato' => $subito ? 'da_applicare_rinnovo' : 'promesso'], 'id = :aid', ['aid' => (int) $acc['id']]);
         $codice = '';
@@ -203,10 +223,10 @@ final class Giudizi
     public static function dopoGiudizio(array $acc): void
     {
         if (!self::disponibili()) return;
-        // 9R · Chi ha avuto il 5% sul primo anno (aderito al pagamento) e lascia il giudizio: il 5% torna sul rinnovo successivo.
-        // Chi ha aderito dal pannello è già «sul prossimo rinnovo»: con il giudizio il coupon del rinnovo lo comprende.
-        if (in_array($acc['giudizio_sconto_stato'] ?? '', ['applicato_primo_anno', 'da_applicare_rinnovo'], true) && !empty($acc['giudizio_adesione'])) {
-            if (($acc['giudizio_sconto_stato'] ?? '') === 'applicato_primo_anno') Db::update('accounts', ['giudizio_sconto_stato' => 'da_applicare_rinnovo'], 'id = :aid', ['aid' => (int) $acc['id']]);
+        // 9R · Il 5% si usa una volta: chi l'ha avuto sul primo anno (aderito al pagamento) lascia il giudizio e basta, il
+        // rinnovo resta senza. Chi ha aderito dopo il pagamento è «sul prossimo rinnovo»: con il giudizio il coupon lo comprende.
+        if (self::scontoUsato($acc)) return;
+        if (($acc['giudizio_sconto_stato'] ?? '') === 'da_applicare_rinnovo' && !empty($acc['giudizio_adesione'])) {
             try { self::aggiungiCoupon((int) $acc['id']); } catch (\Throwable $e) { Log::exception($e, 'giudizi: coupon sul rinnovo'); }
             return;
         }

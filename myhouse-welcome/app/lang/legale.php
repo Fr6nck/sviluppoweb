@@ -138,7 +138,7 @@ T,
 'termini.17.testo' => <<<'T'
 **Cos'è.** Un programma facoltativo: chi aderisce si impegna a lasciare, dopo la pubblicazione della guida, un voto da 1 a 5 e un commento sul servizio; in cambio riceve uno sconto del {giudizio}% sul prezzo di listino dell'abbonamento. L'adesione si fa con un'unica casella, al pagamento o dal pannello (Impostazioni → Giudizio con sconto).
 
-**Lo sconto.** Vale sul rinnovo successivo all'adesione (sul primo anno se si aderisce al pagamento) e si somma allo sconto del programma «Porta un amico», fino a un massimo complessivo del {totale}% sul prezzo di listino. Non si somma ai codici sconto (vale il più alto) e non è disponibile con un codice omaggio finché l'abbonamento non è a pagamento. **Lo sconto matura solo quando il giudizio (voto e commento) è stato effettivamente lasciato**: senza giudizio al momento del rinnovo, il {giudizio}% non si applica e sarà applicato al rinnovo successivo al giudizio. Lo sconto non dipende dal voto: vale anche con una stella.
+**Lo sconto.** Il {giudizio}% sul prezzo di listino **si applica una sola volta**: se aderisci al pagamento (o prima del primo pagamento), sul primo anno; se aderisci dopo il pagamento, sul rinnovo successivo, a condizione che a quel rinnovo tu abbia già lasciato voto e commento (altrimenti sul primo rinnovo dopo il giudizio). Nei rinnovi seguenti non si ripete. Si somma allo sconto del programma «Porta un amico», fino a un massimo complessivo del {totale}% su quel rinnovo; non si somma ai codici sconto (vale il più alto) e non è disponibile durante un periodo omaggio. Lo sconto non dipende dal voto: vale anche con una stella.
 
 **Cosa possiamo pubblicare.** Aderendo, l'host autorizza MyHouse Welcome a mostrare nella home di welcomemyhouse.it, a propria discrezione e senza obbligo:
 
@@ -151,7 +151,7 @@ Per la riservatezza dell'host e dei suoi ospiti, le schede e i giudizi non conte
 
 **Ritiro.** L'host può ritirarsi in ogni momento dal pannello: scheda e giudizio spariscono dalla home entro 24 ore. Lo sconto già applicato resta; quello promesso sul rinnovo decade se il ritiro avviene prima del rinnovo. Scheda e giudizio spariscono anche se la guida viene archiviata, l'abbonamento scade o l'account viene chiuso. MyHouse Welcome può togliere o non pubblicare una scheda o un giudizio senza che ciò tocchi lo sconto, e può chiudere il programma ai nuovi aderenti con un preavviso di 30 giorni, mantenendo gli sconti già promessi.
 
-**Promemoria.** Chi ha aderito e non ha ancora lasciato il giudizio riceve un promemoria dopo 30 giorni dalla pubblicazione e un secondo 30 giorni prima del rinnovo.
+**Promemoria.** Chi ha aderito e non ha ancora lasciato il giudizio riceve un promemoria dopo 30 giorni dalla pubblicazione e, se ha aderito dopo il pagamento, un secondo 30 giorni prima del rinnovo.
 
 **Sconto sul rinnovo, una sola percentuale.** Lo sconto del giudizio e quelli degli inviti (punto 12) si sommano e si applicano **una sola volta sul prezzo di listino** del rinnovo: per esempio 10 inviti (50%) e il giudizio (5%) fanno il 55%. Non si sommano ai codici sconto, che valgono solo sul primo anno: tra codice e sconti di sistema vale il più alto.
 
@@ -409,7 +409,7 @@ T,
 
 // ================================================================ AGGIORNAMENTI (la finestra nel pannello e l'email)
 'legale.novita' => <<<'T'
-«Giudizio con sconto»: il 5% matura solo quando hai lasciato il giudizio (voto e commento); senza giudizio al rinnovo non si applica e passa al rinnovo successivo. Il logo che carichi compare così com'è nella scheda in home.
+«Giudizio con sconto»: il 5% si applica una sola volta. Se aderisci al pagamento (o prima del primo pagamento), sul primo anno; se aderisci dopo, sul rinnovo successivo al tuo giudizio (voto e commento). Il logo che carichi compare così com'è nella scheda in home.
 Programma partner: con il codice di un partner hai uno sconto sul primo anno; al partner va una commissione sui tuoi pagamenti, senza i tuoi dati personali.
 Cambio di piano proposto da noi con uno sconto: vale solo con la tua conferma, dal link che ti mandiamo.
 Sconto sul rinnovo, una sola percentuale: inviti e giudizio si sommano e si applicano una volta sul prezzo di listino (fino al 55%).
@@ -541,7 +541,7 @@ T,
 'termini.17.testo' => <<<'T'
 **What it is.** An optional programme: whoever joins undertakes to leave, after publishing the guide, a rating from 1 to 5 and a comment on the service; in return they get a {giudizio}% discount on the list price of the subscription. You join with a single checkbox, at checkout or from the dashboard (Settings → Review with a discount).
 
-**The discount.** It applies to the renewal following the date you join (to the first year if you join at checkout) and adds up with the discount of the "Bring a friend" programme, up to a combined maximum of {totale}% of the list price. It does not add up with discount codes (the higher one applies) and is not available with a gift code until the subscription is paid. **The discount is earned only once the review (rating and comment) has actually been left**: without a review at the time of renewal, the {giudizio}% does not apply and will be applied to the renewal following the review. The discount does not depend on the rating: it applies even with one star.
+**The discount.** The {giudizio}% off the list price **applies only once**: if you join at checkout (or before your first payment), on the first year; if you join after paying, on the following renewal, provided that by then you have left your rating and comment (otherwise on the first renewal after the review). It is not repeated on later renewals. It adds up with the discount of the "Bring a friend" programme, up to a combined maximum of {totale}% on that renewal; it does not add up with discount codes (the higher one applies) and is not available during a gift period. The discount does not depend on the rating: it applies even with one star.
 
 **What we may publish.** By joining, the host authorises MyHouse Welcome to show on the welcomemyhouse.it home page, at its own discretion and with no obligation:
 
@@ -554,7 +554,7 @@ To protect the privacy of the host and their guests, cards and reviews contain n
 
 **Leaving.** The host can leave at any time from the dashboard: the card and the review disappear from the home page within 24 hours. A discount already applied stays; the one promised on the renewal lapses if the host leaves before the renewal. The card and the review also disappear if the guide is archived, the subscription expires or the account is closed. MyHouse Welcome may remove or not publish a card or a review without affecting the discount, and may close the programme to new members with 30 days' notice, keeping the discounts already promised.
 
-**Reminders.** Whoever has joined and has not yet left the review receives a reminder 30 days after publishing and a second one 30 days before the renewal.
+**Reminders.** Whoever has joined and has not yet left the review receives a reminder 30 days after publishing and, if they joined after paying, a second one 30 days before the renewal.
 
 **Renewal discount, a single percentage.** The review discount and the invitation discounts (section 12) add up and are applied **once on the list price** of the renewal: for example 10 invitations (50%) and the review (5%) make 55%. They do not add up with discount codes, which apply to the first year only: between a code and the system discounts, the higher one applies.
 
@@ -820,7 +820,7 @@ T,
 
 // ================================================================ UPDATES (the dashboard window and the email)
 'legale.novita' => <<<'T'
-“Review with a discount”: the 5% is earned only once you have left the review (rating and comment); without a review at renewal it does not apply and moves to the following renewal. The logo you upload appears as it is on the home-page card.
+“Review with a discount”: the 5% applies only once. If you join at checkout (or before your first payment), on the first year; if you join later, on the renewal following your review (rating and comment). The logo you upload appears as it is on the home-page card.
 Partner programme: with a partner's code you get a discount on the first year; the partner receives a commission on your payments, without your personal data.
 A change of plan proposed by us with a discount: it applies only with your confirmation, from the link we send you.
 Renewal discount, a single percentage: invitations and review add up and are applied once on the list price (up to 55%).

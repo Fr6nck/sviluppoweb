@@ -394,6 +394,13 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 9. **Codici sconto**: «Valido fino al» è ora già compilato con il 31 dicembre; cambialo se serve.
 10. Restano in italiano (per ora): l'email d'invito all'amico e le email scritte dall'amministrazione al cliente (rinnovo fermato, cambio piano, rimborso, password provvisoria).
 
+## 4t. 9R pacchetto 16 (22 ottobre): il 5% del giudizio una volta sola
+
+1. Carica e apri una pagina qualsiasi: parte la migrazione **063**. Poi Amministrazione → Sistema → Cache → «Svuota tutto».
+2. Termini e privacy passano alla **2026-10-22**: i clienti li riaccettano al primo accesso. Se hai scritto una versione a mano in Impostazioni → Titolare e documenti legali, aggiornala.
+3. In Testi e foto rileggi «Giudizio con sconto · riga sotto la casella» e le email «Fino al 55%» (oggetto, prima riga e conti per chi ha aderito al pagamento; riquadro del giudizio; le due chiavi nuove «Riquadro del giudizio per chi ha aderito dopo il pagamento» e «I conti per chi ha aderito dopo il pagamento»). Se le avevi cambiate a mano, riscrivile con la regola «una volta».
+4. Chi con il pacchetto di ieri aveva avuto il 5% sul primo anno e, lasciato il giudizio, era tornato «Sul prossimo rinnovo»: la migrazione **063** lo riporta da sola ad «Applicato al primo anno» e al primo giro dei richiami lo sconto del rinnovo su Stripe si ricalcola. Non devi fare niente.
+
 ## 4s. 9R (22 ottobre): giudizio, pagamenti di prova, staff, cambio proposto, Portfolio
 
 1. **Carica e apri una pagina qualsiasi**: la migrazione 062 gira da sola. Poi Amministrazione → Sistema → Cache → «Svuota tutto».

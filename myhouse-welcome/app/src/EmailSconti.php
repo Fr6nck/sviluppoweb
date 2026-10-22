@@ -110,7 +110,8 @@ final class EmailSconti
 
     /**
      * Il testo per Richiami::manda: [oggetto, corpo, bottone, indirizzo, nota, scelte]. I conti sul piano e sulle strutture
-     * del cliente: oggi, con il massimo (10 amici e il giudizio), con 2 e con 5 amici (con il giudizio, se ha già aderito).
+     * del cliente: oggi, con il massimo (10 amici e il giudizio), con 2 e con 5 amici; 9R: chi ha aderito al pagamento solo
+     * con gli amici (il 5% l'ha già avuto sul primo anno), chi ha aderito dopo con il giudizio compreso.
      */
     public static function testo(array $acc, string $lingua): array
     {
@@ -123,20 +124,23 @@ final class EmailSconti
         $valuta = (string) ($pv['currency'] ?? 'EUR');
         $m = Sconti::massimoRinnovo();
         $giudizioOn = $m['giudizio'] > 0;
+        // 9R · Il 5% del giudizio si usa una volta: chi ha aderito al pagamento l'ha già avuto sul primo anno (i conti del
+        // rinnovo sono solo con gli amici); chi ha aderito dopo lo ha sul rinnovo, con il giudizio lasciato prima.
         $aderito = !empty($acc['giudizio_adesione']);
+        $alPagamento = $aderito && ($acc['giudizio_adesione'] === 'pagamento' || Giudizi::scontoUsato($acc));
         $amici = Inviti::validi($aid);
-        $base = $aderito && $giudizioOn ? $m['giudizio'] : 0;
+        $base = $aderito && !$alPagamento && $giudizioOn ? $m['giudizio'] : 0;
         $soldi = fn(int $pct) => Support::money(Sconti::netto($prezzo, $pct), $valuta);
         $p = fn(int $n) => $n . '%';
         $s = ['struttura' => (string) (Db::val("SELECT name FROM properties WHERE account_id = ? AND is_demo = 0 AND archived_at IS NULL ORDER BY (status = 'published') DESC, id", [$aid], '') ?: ''),
               'totale' => $p($m['totale']), 'max' => $p($m['max']), 'passo' => $p(Inviti::PASSO), 'amico' => $p(Inviti::AMICO), 'giudizio' => $p($m['giudizio']),
               'amici' => $m['amici'], 'codice' => Inviti::codice($acc), 'n' => $amici, 'percento' => $p(Inviti::percento($aid)),
               'piano' => (string) ($pv['name'] ?? '') . ($q > 1 ? ($en ? " ($q properties)" : " ($q strutture)") : ''), 'prezzo' => Support::money($prezzo, $valuta),
-              'minimo' => $soldi($m['totale']), 'due' => $soldi($base + 2 * Inviti::PASSO), 'cinque' => $soldi($base + 5 * Inviti::PASSO)];
+              'minimo' => $soldi($alPagamento ? $m['max'] : $m['totale']), 'due' => $soldi($base + 2 * Inviti::PASSO), 'cinque' => $soldi($base + 5 * Inviti::PASSO)];
         $tx = fn(string $k) => TestiSito::testoSemplice('email.sconti.' . $k, $s, $en ? 'en' : 'it');
         $online = (bool) Db::val("SELECT id FROM properties WHERE account_id = ? AND is_demo = 0 AND status = 'published'", [$aid]);
         $par = [];
-        if ($aderito && $giudizioOn) {
+        if ($alPagamento && $giudizioOn) {
             $oggetto = $tx('oggetto_aderito');
             $par[] = $tx('intro_aderito');
             $par[] = $tx('inviti');
@@ -145,12 +149,12 @@ final class EmailSconti
             $par[] = $tx($online && $s['struttura'] !== '' ? 'intro' : 'intro_attivo');
             $par[] = $tx('massimo');
             $par[] = '1 · ' . $tx('inviti');
-            if ($giudizioOn) $par[] = '2 · ' . $tx('giudizio');
+            if ($giudizioOn) $par[] = '2 · ' . $tx($aderito ? 'giudizio_aderito' : 'giudizio');
         }
         if ($amici > 0) $par[] = $tx($amici === 1 ? 'gia_amico' : 'gia_amici');
-        $par[] = $tx($aderito && $giudizioOn ? 'conti_aderito' : ($giudizioOn ? 'conti' : 'conti_senza_giudizio'));
+        $par[] = $tx(!$giudizioOn ? 'conti_senza_giudizio' : ($alPagamento ? 'conti_aderito' : ($aderito ? 'conti_dopo' : 'conti')));
         // Il voto si chiede 30 giorni dopo la prima pubblicazione (7D): tra quanti giorni, se è ancora da venire.
-        if ($aderito && $giudizioOn && ($prima = Testimonianze::primaPubblicazione($aid)) !== null
+        if ($alPagamento && $giudizioOn && ($prima = Testimonianze::primaPubblicazione($aid)) !== null
             && ($giorni = (int) ceil(($prima + Testimonianze::RICHIAMO_GIORNI * 86400 - time()) / 86400)) > 0) {
             $par[] = strtr($tx('quando_giudizio'), ['{giorni}' => $giorni]);
         }

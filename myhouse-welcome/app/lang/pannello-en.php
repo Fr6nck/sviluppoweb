@@ -1498,4 +1498,16 @@ What\'s happening:
     'Lasciaci un giudizio: un altro {n}% sul prossimo rinnovo' => 'Leave us a review: another {n}% off your next renewal',
     'Aderisci al programma «Giudizio con sconto», poi lasciaci un voto da 1 a 5 e un commento. Si somma allo sconto degli amici: insieme fino al {totale}%.' => 'Join the “Review with a discount” programme, then leave us a rating from 1 to 5 and a comment. It adds up with the friends discount: together up to {totale}%.',
     'Aderisci' => 'Join',
+    // ---- 9R (pacchetto 16) · il 5% del giudizio una volta sola
+    'Ci lasci il tuo giudizio?' => 'Will you leave us your review?',
+    'hai aderito a «Giudizio con sconto» al pagamento e il {n}% l\'hai già avuto sul primo anno: grazie! Come previsto dal programma, ci lasci un voto da 1 a 5 e un commento? Bastano due minuti.' => 'you joined “Review with a discount” at checkout and already had the {n}% on your first year: thank you! As the programme provides, will you leave us a rating from 1 to 5 and a comment? It takes two minutes.',
+    'Il voto non cambia lo sconto che hai avuto. Se non vuoi più partecipare puoi ritirarti da Impostazioni → Giudizio con sconto.' => 'The rating does not change the discount you had. If you no longer want to take part you can leave from Settings → Review with a discount.',
+    'Hai aderito: il {n}% sul primo anno' => 'You have joined: {n}% off your first year',
+    'Il {n}% l\'hai già avuto sul primo anno: grazie! Come previsto dal programma, lasciaci un voto da 1 a 5 e un commento.' => 'You already had the {n}% on your first year: thank you! As the programme provides, leave us a rating from 1 to 5 and a comment.',
+    'Lo trovi nel riepilogo quando pubblichi. Dopo, lasciaci un voto da 1 a 5 e un commento.' => 'You will find it in the summary when you publish. Afterwards, leave us a rating from 1 to 5 and a comment.',
+    'Hai aderito il {data}, dopo il pagamento.' => 'You joined on {data}, after paying.',
+    'Lascia un voto da 1 a 5 e un commento prima del rinnovo: vale {euro} in meno su {piano}, una volta, in più allo sconto degli amici.' => 'Leave a rating from 1 to 5 and a comment before the renewal: it is worth {euro} less on {piano}, once, on top of the friends discount.',
+    'Lascia un voto da 1 a 5 e un commento prima del rinnovo: il 5% vale una volta e si somma allo sconto degli amici.' => 'Leave a rating from 1 to 5 and a comment before the renewal: the 5% applies once and adds up with the friends discount.',
+    'Aderisci al programma «Giudizio con sconto», poi lasciaci un voto da 1 a 5 e un commento: il {n}% vale una volta. Si somma allo sconto degli amici: insieme fino al {totale}%.' => 'Join the “Review with a discount” programme, then leave us a rating from 1 to 5 and a comment: the {n}% applies once. It adds up with the friends discount: together up to {totale}%.',
+    'Hai già aderito' => 'You have already joined',
 ];

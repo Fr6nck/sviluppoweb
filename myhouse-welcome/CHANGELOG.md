@@ -1,5 +1,15 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 9R (pacchetto 16): il 5% del giudizio una volta sola (22 ottobre 2026)
+
+Regola definitiva del titolare. Migrazione **063** (chi con il pacchetto di ieri era tornato «sul prossimo rinnovo» dopo il 5% del primo anno torna «applicato al primo anno»; lo sconto su Stripe si riallinea al giro dei richiami). Termini e privacy alla versione **2026-10-22** (ri-accettazione).
+
+- **Il 5% di «Giudizio con sconto» si applica una sola volta per account.** Chi aderisce al pagamento (o dal pannello prima del primo pagamento, che ora conta come «al pagamento»: al passo Pubblica la casella è già spuntata con «Hai già aderito») ha il 5% sul primo anno e mai più sul rinnovo, anche dopo il giudizio. Chi aderisce dopo il pagamento ha il 5% sul rinnovo successivo, se a quel rinnovo ha già lasciato voto e commento (altrimenti sul primo rinnovo dopo il giudizio); poi non si ripete. `Giudizi::scontoDisponibile`.
+- **Promemoria e avvisi**: il secondo promemoria (30 giorni prima del rinnovo) e la riga «senza giudizio il 5% non si applica» nell'avviso di rinnovo solo per chi ha aderito dopo il pagamento; a chi ha già avuto il 5% sul primo anno il promemoria chiede solo il voto («Ci lasci il tuo giudizio?»). In Richiami lo stato lo dice.
+- **Testi**: Termini «Lo sconto» e «Promemoria» (IT/EN), riga sotto la casella («Il 5% si applica una volta, sul primo anno» / «sul primo rinnovo dopo il tuo giudizio»), FAQ, riquadri in «Le mie guide» (al pagamento: «Ci lasci il tuo giudizio?»; dopo: «… prima del rinnovo: vale X € in meno, una volta»).
+- **Email «Fino al 55%» (9P)**: chi ha aderito al pagamento riceve «Il prossimo anno puoi pagare la metà.», solo «Porta un amico» e i conti senza il giudizio (Plus con 10 amici: 63,50 €); chi ha aderito dopo ha il riquadro «Hai aderito: lascia voto e commento prima del rinnovo e hai il 5% in più, una volta»; il riquadro del giudizio dice «un altro 5%, una volta».
+- **Prove**: capitolo 9R con la regola «una volta sola»; prove 9B, 9L e 9P riportate alla regola.
+
 ## v2 · 9R Correzioni del 22 ottobre: barra degli inviti, giudizio solo con il giudizio lasciato, pagamenti di prova, account staff, cambio proposto, Portfolio con N strutture (22 ottobre 2026)
 
 Migrazione **062** (`accounts.is_staff`, `staff_fino`, `staff_no_vetrina`; `orders.livemode`; `vetrina_schede.logo_nascosto`; tabelle `pagamenti_esclusi` e `proposte_cambio`; via i testi di serie vecchi salvati uguali in «Testi e foto»). Termini e privacy alla versione **2026-10-21** (ri-accettazione).
