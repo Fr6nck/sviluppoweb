@@ -84,8 +84,24 @@
         campo.value = q;
         campo.dispatchEvent(new Event('input', { bubbles: true }));
         totale.classList.remove('prezzo--cambia'); void totale.offsetWidth; totale.classList.add('prezzo--cambia');
+        inviaDaSolo();
       });
       return x;
+    }
+    // Passo «Pubblica» (data-aggiorna sul modulo): dopo l'ultimo clic su − o + il modulo parte da solo e il riepilogo (sconti,
+    // IVA, totale) si ricalcola sul server, come quando si spunta la casella del giudizio. Il bottone «Aggiorna» resta solo senza JavaScript.
+    var daSolo = campo.form && campo.form.hasAttribute('data-aggiorna'), attesa = null;
+    if (daSolo) {
+      var btnAgg = campo.form.querySelector('[data-aggiorna-btn]'); if (btnAgg) btnAgg.style.display = 'none';   // (hidden perderebbe contro il display del bottone)
+      campo.form.addEventListener('submit', function () { var st = campo.form.querySelector('[data-aggiorna-stato]'); if (st) st.hidden = false; campo.readOnly = true; });
+    }
+    function inviaDaSolo() {
+      if (!daSolo) return;
+      clearTimeout(attesa);
+      attesa = setTimeout(function () {
+        if (!campo.checkValidity()) return;
+        if (campo.form.requestSubmit) campo.form.requestSubmit(); else campo.form.submit();
+      }, 700);
     }
     // 9A: oltre il massimo del listino sparisce il prezzo, resta «Ti facciamo una proposta su misura», il bottone
     // del piano si spegne e il riquadro del preventivo (fuori dalle schede) si apre con il numero già scritto.

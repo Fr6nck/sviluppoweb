@@ -107,13 +107,14 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
           <div class="stack" style="gap:4px"><span class="kicker"><?= t('Il tuo piano') ?></span>
             <b style="font-size:22px;font-weight:500"><?= Support::e(tf('Hai scelto {piano}', ['{piano}' => $piano['name']])) ?><?= Plans::perProperty($piano) ? ' · ' . Support::e(tf('{n} strutture', ['{n}' => $quantita])) : '' ?></b>
             <?php if (Plans::perProperty($piano)): $minQ = Plans::minimoPer($piano, (int) $acc['id']); $maxQ = (int) $piano['max_quantity'];
-                  /* 9R · Il numero di strutture si cambia qui: −/+ (prezzi.js) e «Aggiorna» ricalcola il riepilogo; mai sotto le strutture create. */ ?>
-              <form method="post" action="<?= b() ?>/piano" class="quante-pubblica" data-quantita data-base="<?= (int) $piano['price_cents'] ?>" data-extra="<?= (int) $piano['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($piano)) ?>" data-valuta="<?= Support::e($piano['currency']) ?>"><?= Csrf::field() ?>
+                  /* 9R · Il numero di strutture si cambia qui: −/+ (prezzi.js) e il riepilogo si ricalcola da solo (data-aggiorna: un attimo dopo
+                     l'ultimo clic la pagina si ricarica; senza JavaScript resta «Aggiorna»); mai sotto le strutture create. */ ?>
+              <form method="post" action="<?= b() ?>/piano" class="quante-pubblica" data-quantita data-aggiorna data-base="<?= (int) $piano['price_cents'] ?>" data-extra="<?= (int) $piano['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($piano)) ?>" data-valuta="<?= Support::e($piano['currency']) ?>"><?= Csrf::field() ?>
                 <input type="hidden" name="pv" value="<?= (int) $piano['id'] ?>"><input type="hidden" name="torna" value="/pannello/<?= (int) $pid ?>/procedura/pubblica">
                 <label for="pub-strutture" class="small"><?= t('Strutture') ?></label>
                 <input id="pub-strutture" name="strutture" type="number" inputmode="numeric" step="1" min="<?= $minQ ?>" max="<?= $maxQ ?>" value="<?= max($minQ, (int) $qSc) ?>" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
                 <span class="small muted"><span data-totale><?= Support::e(Support::money(Plans::price($piano, max($minQ, (int) $qSc)), $piano['currency'])) ?></span> <?= t('+ IVA / anno') ?></span>
-                <button class="btn btn--ghost btn--sm"><?= t('Aggiorna') ?></button>
+                <button class="btn btn--ghost btn--sm" data-aggiorna-btn><?= t('Aggiorna') ?></button><span class="small muted" data-aggiorna-stato hidden aria-live="polite"><?= t('Aggiorno il riepilogo…') ?></span>
               </form>
               <p class="small muted" style="margin:0"><?= Support::e(Plans::scomposizione($piano, (int) $qSc, MHW\Pannello::en())) ?></p>
               <?php if ($minQ > (int) $piano['min_quantity']): ?><p class="small muted" style="margin:0"><?= Support::e(tf('Hai già {n} strutture: il minimo è {n}; per ridurre, archivia una struttura.', ['{n}' => $minQ])) ?></p><?php endif; ?>
