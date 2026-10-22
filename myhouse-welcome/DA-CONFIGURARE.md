@@ -394,6 +394,15 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 9. **Codici sconto**: «Valido fino al» è ora già compilato con il 31 dicembre; cambialo se serve.
 10. Restano in italiano (per ora): l'email d'invito all'amico e le email scritte dall'amministrazione al cliente (rinnovo fermato, cambio piano, rimborso, password provvisoria).
 
+## 4u. Pagamento fermo «Il pagamento non è disponibile in questo momento» (22 ottobre)
+
+Il messaggio compare quando il controllo dei prezzi prima del Checkout non va a buon fine. La causa più comune: un Price ID salvato nel piano (di solito la «struttura aggiuntiva» del Portfolio, che il sito crea da solo) era nato con le chiavi di **test** e con le chiavi **live** Stripe non lo trova.
+
+1. Carica questa versione: il Price ID dell'altra modalità si toglie da solo al primo pagamento e il sito lo ricrea con le chiavi live (nel Registro azioni: «stripe.price_tolto»). Non devi fare niente.
+2. Se non puoi aggiornare subito: **Amministrazione → Piani → Portfolio** (versione in vendita) → svuota «Price ID» e «Price ID della struttura aggiuntiva» → salva. Fai lo stesso per gli altri piani se avevano Price ID creati in test.
+3. Se il pagamento resta fermo, il motivo esatto è nel **Quadro** («Prezzi su Stripe diversi dal listino» o «Il Checkout di Stripe chiede importi diversi dal riepilogo») e in **Diagnostica → Stripe**. Casi tipici: un Price ID messo a mano con «IVA inclusa» (va «IVA esclusa») o importo diverso; la chiave con restrizioni senza il permesso di scrittura su **Prices**; **Adaptive Pricing** acceso in Stripe → Impostazioni → Pagamenti (va spento: il cliente pagherebbe in un'altra valuta).
+4. Prova: con un cliente di prova (o «Entra come cliente», dove l'errore mostra anche il motivo tecnico) arriva al passo Pubblica con Portfolio · 2 strutture e premi «Conferma e paga»: deve aprirsi il pagamento a 177 € + IVA.
+
 ## 4t. 9R pacchetto 16 (22 ottobre): il 5% del giudizio una volta sola
 
 1. Carica e apri una pagina qualsiasi: parte la migrazione **063**. Poi Amministrazione → Sistema → Cache → «Svuota tutto».

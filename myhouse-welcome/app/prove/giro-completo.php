@@ -7811,6 +7811,22 @@ $sc9r = json_decode($c9n('$v = MHW\Vetrina::perScheda(["id" => 1, "account_id" =
 prova('9R · 8 bis · la scheda: «Casa vacanza», «Assisi (PG)» · «Umbria», 5 stelle e commento (giudizio acceso), logo spento dall\'admin → segnaposto',
       ($sc9r[0] ?? '') === 'Casa vacanza' && ($sc9r[1] ?? '') === 'Assisi (PG)' && ($sc9r[2] ?? '') === 'Umbria' && ($sc9r[3] ?? 0) === 5 && str_contains((string) ($sc9r[4] ?? ''), 'Gli ospiti arrivano') && array_key_exists(5, $sc9r) && $sc9r[5] === null, json_encode($sc9r, JSON_UNESCAPED_UNICODE));
 
+// Chiavi live dopo le prove in test: il Price graduato e il cliente Stripe salvati in test non esistono più. Il sito li toglie e va avanti.
+$ppM = pv('portfolio');
+$extraPrima = (string) val('SELECT stripe_extra_price_id FROM package_versions WHERE id = ?', [$ppM]);
+db()->prepare("UPDATE package_versions SET stripe_extra_price_id = 'price_creato_in_test' WHERE id = ?")->execute([$ppM]);
+$modo9r = json_decode($c9n('$pv = MHW\\Plans::version(' . $ppM . '); MHW\\Stripe::prezziDiQuestaModalita($pv); echo json_encode([$pv["stripe_extra_price_id"], MHW\\Db::val("SELECT stripe_extra_price_id FROM package_versions WHERE id = ' . $ppM . '")]);'), true) ?: [];
+prova('Stripe · Price ID creato con le chiavi di test e letto con quelle live («No such price»): tolto dalla versione, nel registro; il sito lo ricrea alla vendita',
+      ($modo9r[0] ?? 'x') === '' && ($modo9r[1] ?? 'x') === '' && (bool) val("SELECT id FROM audit_log WHERE action = 'stripe.price_tolto' AND meta LIKE '%price_creato_in_test%'"), json_encode($modo9r));
+db()->prepare('UPDATE package_versions SET stripe_extra_price_id = ? WHERE id = ?')->execute([$extraPrima, $ppM]);
+$cus9r = $cliente9n('Tina Test', 'tina9r@prova.test');
+db()->prepare("UPDATE accounts SET stripe_customer_id = 'cus_creato_in_test' WHERE id = ?")->execute([$cus9r]);
+touch("$STRIPE_DIR/no-cus_creato_in_test");
+$nuovoCus = $c9n('$a = MHW\\Db::one("SELECT * FROM accounts WHERE id = ' . $cus9r . '"); $u = MHW\\Db::one("SELECT * FROM users WHERE id = ?", [$a["user_id"]]); echo MHW\\Stripe::ensureCustomer($a, $u);');
+@unlink("$STRIPE_DIR/no-cus_creato_in_test");
+prova('Stripe · cliente creato in test e non trovato con le chiavi live: se ne crea uno nuovo e si salva', str_starts_with($nuovoCus, 'cus_') && $nuovoCus !== 'cus_creato_in_test'
+      && (string) val('SELECT stripe_customer_id FROM accounts WHERE id = ?', [$cus9r]) === $nuovoCus, $nuovoCus);
+
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

@@ -274,6 +274,8 @@ if ($metodo === 'POST' && $percorso === '/v1/refunds') {
 }
 if ($metodo === 'GET' && preg_match('#^/v1/payment_methods/([A-Za-z0-9_]+)$#', $percorso, $m)) $rispondi(['id' => $m[1], 'object' => 'payment_method', 'card' => ['last4' => '4242']]);
 if ($metodo === 'GET' && preg_match('#^/v1/customers/(cus_[A-Za-z0-9_]+)$#', $percorso, $m)) {
+    // Un cliente creato con le chiavi dell'altra modalità: la prova scrive il file «no-<id>», Stripe risponde 404.
+    if (is_file("$dir/no-{$m[1]}")) $rispondi(['error' => ['message' => 'No such customer: \'' . $m[1] . '\'; a similar object exists in test mode, but a live mode key was used to make this request.']], 404);
     $rispondi(['id' => $m[1], 'object' => 'customer', 'invoice_settings' => ['default_payment_method' => ['id' => 'pm_cus_' . $m[1], 'object' => 'payment_method', 'card' => ['last4' => '4242']]]]);
 }
 // Price (cambio di piano, 6H): si creano con il prodotto e il suo ruolo. Quelli delle varianti

@@ -113,8 +113,17 @@ final class Stripe
     {
         $dati = Fatturazione::anagrafica($account) + Fatturazione::metadati($account);
         if (($account['stripe_customer_id'] ?? '') !== '') {
-            self::syncCustomer($account);
-            return $account['stripe_customer_id'];
+            try {
+                self::call('GET', 'customers/' . rawurlencode((string) $account['stripe_customer_id']));   // esiste con queste chiavi?
+                self::syncCustomer($account);
+                return $account['stripe_customer_id'];
+            } catch (\RuntimeException $e) {
+                // Il cliente era stato creato con le chiavi di test (o cancellato su Stripe): se ne crea uno nuovo, qui sotto.
+                if (!self::nonInQuestaModalita($e, 'customer')) throw $e;
+                Log::error('Stripe: cliente non trovato con le chiavi di adesso (creato in test?), se ne crea uno nuovo', ['account' => (int) $account['id'], 'cliente' => (string) $account['stripe_customer_id']]);
+                Db::update('accounts', ['stripe_customer_id' => ''], 'id = :aid', ['aid' => (int) $account['id']]);
+                $account['stripe_customer_id'] = '';
+            }
         }
         // La partita IVA come «tax id» del cliente: Stripe la stampa in fattura e Adamo la legge da lì.
         $piva = ($account['billing_type'] ?? '') === 'azienda' ? preg_replace('/\D/', '', (string) ($account['vat'] ?? '')) : '';
@@ -217,6 +226,42 @@ final class Stripe
         @file_put_contents(self::fileVerifica(), json_encode($tutti), LOCK_EX);
     }
 
+    /** Stripe dice che l'oggetto non c'è in questa modalità (creato con le chiavi di test e letto con quelle live, o il contrario). */
+    public static function nonInQuestaModalita(\Throwable $e, string $oggetto): bool
+    {
+        return str_contains($e->getMessage(), 'Stripe 404') && str_contains($e->getMessage(), 'No such ' . $oggetto);
+    }
+
+    /**
+     * Prima del Checkout: i Price ID salvati nella versione del listino esistono con le chiavi di adesso? Il sito crea da sé
+     * il Price della «struttura aggiuntiva» del Portfolio (ensureExtraPrice) e lo salva: se è nato con le chiavi di test,
+     * con quelle live Stripe risponde «No such price» e il pagamento si fermava. Un Price ID che Stripe non trova si toglie
+     * (registro e log): il sito descrive il prezzo dal listino o ricrea quello graduato nella modalità giusta.
+     * Una lettura che fallisce per altri motivi non tocca niente (ci pensa verificaPrezzi). Il Price ID buono vale un'ora.
+     */
+    public static function prezziDiQuestaModalita(array &$pv): void
+    {
+        foreach (['stripe_price_id', 'stripe_extra_price_id'] as $col) {
+            $id = (string) ($pv[$col] ?? '');
+            if ($id === '') continue;
+            $visto = self::esitiVerifica()['modo:' . $id] ?? null;
+            if ($visto && time() - (int) ($visto['t'] ?? 0) < 3600) continue;
+            try {
+                self::call('GET', 'prices/' . rawurlencode($id));
+                $tutti = self::esitiVerifica(); $tutti['modo:' . $id] = ['ok' => true, 't' => time()];
+                @file_put_contents(self::fileVerifica(), json_encode($tutti), LOCK_EX);
+            } catch (\RuntimeException $e) {
+                if (!self::nonInQuestaModalita($e, 'price')) continue;
+                Db::update('package_versions', [$col => ''], 'id = :id', ['id' => (int) $pv['id']]);
+                $pv[$col] = '';
+                Log::error('Stripe: Price ID non trovato con le chiavi di adesso (creato in test?), tolto dalla versione: il sito lo ricrea', ['versione' => (int) $pv['id'], 'campo' => $col, 'price' => $id, 'stripe' => mb_substr($e->getMessage(), 0, 200)]);
+                Auth::audit('stripe.price_tolto', null, ['versione' => (int) $pv['id'], 'campo' => $col, 'price' => $id]);
+                $tutti = self::esitiVerifica(); unset($tutti[(string) $pv['id']]);
+                @file_put_contents(self::fileVerifica(), json_encode($tutti), LOCK_EX);
+            }
+        }
+    }
+
     /**
      * 9A · Controllo 1, prima di aprire il Checkout: i Price su Stripe dicono gli stessi importi del listino.
      * Si rilegge ogni Price ID della versione (base e, per il Portfolio, struttura aggiuntiva con gli scaglioni)
@@ -293,10 +338,16 @@ final class Stripe
         // 9O · L'IVA di Stripe Tax dev'essere quella mostrata nel riepilogo (Iva::di): se no, resta nei log (il pagamento va avanti).
         $ivaS = (int) ($s['total_details']['amount_tax'] ?? 0);
         if ($ivaS > 0 && $tot === $totale && $ivaS !== Iva::di($totale)) Log::error('IVA di Stripe diversa da quella mostrata', ['sessione' => $id, 'stripe' => $ivaS, 'sito' => Iva::di($totale)]);
+        $tutti = self::esitiVerifica();
         if ($sub !== $prezzo || $tot !== $totale) {
             try { self::call('POST', 'checkout/sessions/' . rawurlencode($id) . '/expire'); } catch (\Throwable $e) { Log::exception($e, 'Stripe: sessione da far scadere'); }
-            throw new PrezziNonCoerenti("Checkout con importi diversi dal listino: imponibile $sub (atteso $prezzo), totale senza IVA $tot (atteso $totale). Sessione $id fatta scadere.");
+            $msg = "Checkout con importi diversi dal listino: imponibile $sub (atteso $prezzo), totale senza IVA $tot (atteso $totale), valuta " . (string) ($s['currency'] ?? '?') . ". Sessione $id fatta scadere.";
+            // 9R · L'ultimo controllo della sessione fallito resta visibile nel Quadro (prima solo nel log), finché uno va bene.
+            $tutti['sessione'] = ['ok' => false, 'errore' => $msg, 't' => time()];
+            @file_put_contents(self::fileVerifica(), json_encode($tutti), LOCK_EX);
+            throw new PrezziNonCoerenti($msg);
         }
+        if (isset($tutti['sessione'])) { unset($tutti['sessione']); @file_put_contents(self::fileVerifica(), json_encode($tutti), LOCK_EX); }
         return $s;
     }
 
@@ -345,6 +396,7 @@ final class Stripe
             'package_version_id' => (string) $pv['id'], 'property_id' => (string) ($order['property_id'] ?? ''),
             'quantity' => (string) $quantita,
         ];
+        self::prezziDiQuestaModalita($pv);   // un Price ID dell'altra modalità (test/live) si toglie: il sito lo ricrea
         try { [$voci, $pv] = self::vociCheckout($pv, $pkg, $quantita); }
         catch (\RuntimeException $e) { Db::update('orders', ['status' => 'failed', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]); throw $e; }   // 9O
         self::verificaPrezzi($pv);
@@ -453,6 +505,7 @@ final class Stripe
     public static function sessioneDiProva(array $pv, array $pkg, int $quantita, int $percento, int $mesiOmaggio = 0): array
     {
         try {
+            self::prezziDiQuestaModalita($pv);
             [$voci, $pv] = self::vociCheckout($pv, $pkg, $quantita);
             self::verificaPrezzi($pv);
             $prezzo = Plans::price($pv, $quantita);

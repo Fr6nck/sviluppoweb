@@ -65,6 +65,9 @@ $r->get('/admin', function () {
     if ((string) Config::get('base_url') === '') $avvisi[] = ['Indirizzo del sito non impostato', 'Senza «Indirizzo pubblico del sito» i link e le icone nelle email mandate dal cron puntano a localhost (il marchio è incorporato e si vede comunque). Impostalo in Sito.', '/admin/impostazioni#sito'];
     // 9A · I controlli sui prezzi di Stripe prima del Checkout: un errore ferma i pagamenti di quella versione.
     foreach (Stripe::esitiVerifica() as $pvId => $esito) {
+        // 9R · Il controllo della sessione (importi del Checkout diversi dal riepilogo): Adaptive Pricing, IVA inclusa sul Price…
+        if ($pvId === 'sessione' && empty($esito['ok'])) { $avvisi[] = ['Il Checkout di Stripe chiede importi diversi dal riepilogo', 'L\'ultimo pagamento è stato fermato: ' . (string) ($esito['errore'] ?? '') . ' Controlla in Stripe che Adaptive Pricing sia spento e che i prezzi siano «IVA esclusa»; poi Amministrazione → Diagnostica → Stripe.', '/admin/diagnostica', 'Apri la Diagnostica']; continue; }
+        if (str_starts_with((string) $pvId, 'modo:')) continue;
         if (empty($esito['ok'])) $avvisi[] = ['Prezzi su Stripe diversi dal listino', 'Il pagamento della versione ' . (int) $pvId . ' è fermo: ' . (string) ($esito['errore'] ?? '') . ' Correggi i Price su Stripe o svuota i Price ID nella versione (Piani): il sito li ricrea alla prossima vendita.', '/admin/pacchetti', 'Apri i piani'];
     }
     if (MHW\Preventivi::disponibili() && ($nuovi = (int) Db::val("SELECT COUNT(*) FROM preventivi WHERE stato = 'nuovo'", [], 0)) > 0) {

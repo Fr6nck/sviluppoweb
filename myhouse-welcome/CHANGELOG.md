@@ -1,5 +1,13 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Correzione: pagamento fermo con «Il pagamento non è disponibile in questo momento» (22 ottobre 2026)
+
+Nessuna migrazione.
+
+- **Price ID e cliente Stripe dell'altra modalità.** Il sito crea da sé su Stripe il Price della «struttura aggiuntiva» del Portfolio e lo salva nella versione del piano; se era nato con le chiavi di test, con le chiavi live Stripe rispondeva «No such price» e il controllo dei prezzi fermava il pagamento («ti avvisiamo noi»). Ora, prima di aprire il Checkout, ogni Price ID salvato si rilegge: se Stripe non lo trova si toglie dalla versione (Registro azioni «stripe.price_tolto» e log) e il sito lo ricrea nella modalità giusta. Lo stesso per il cliente Stripe dell'account: se non esiste con le chiavi di adesso se ne crea uno nuovo. `Stripe::prezziDiQuestaModalita`, `Stripe::ensureCustomer`.
+- **Quadro**: se l'ultimo Checkout è stato fermato perché Stripe chiedeva importi diversi dal riepilogo (Adaptive Pricing acceso, prezzi IVA inclusa…), l'avviso «Il Checkout di Stripe chiede importi diversi dal riepilogo» con gli importi e la valuta; prima era solo nel log.
+- **Prove**: Price creato in test tolto dalla versione Portfolio e pagamento che parte; cliente creato in test sostituito da uno nuovo.
+
 ## v2 · 9R (pacchetto 16): il 5% del giudizio una volta sola (22 ottobre 2026)
 
 Regola definitiva del titolare. Migrazione **063** (chi con il pacchetto di ieri era tornato «sul prossimo rinnovo» dopo il 5% del primo anno torna «applicato al primo anno»; lo sconto su Stripe si riallinea al giro dei richiami). Termini e privacy alla versione **2026-10-22** (ri-accettazione).
