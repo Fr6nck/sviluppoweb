@@ -394,6 +394,17 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 9. **Codici sconto**: «Valido fino al» è ora già compilato con il 31 dicembre; cambialo se serve.
 10. Restano in italiano (per ora): l'email d'invito all'amico e le email scritte dall'amministrazione al cliente (rinnovo fermato, cambio piano, rimborso, password provvisoria).
 
+## 4w. Piano di prova «Prova»: 1 € a settimana (22 ottobre)
+
+Per provare con soldi veri (chiavi live) pagamento, rinnovi e sconti a costo quasi zero.
+
+1. Carica e apri una pagina: parte la migrazione **065**, che crea il piano «Prova» (nascosto: non compare nel sito).
+2. Registra un cliente di prova (o usa uno che non ha ancora pagato). In **Amministrazione → Clienti → la sua scheda → riquadro Stripe** premi **«Assegna il piano di prova · 1 € + IVA a settimana»**.
+3. Da quel cliente vai al passo **Pubblica**: il riepilogo dice «Prova · 1 € + IVA / settimana», totale con IVA 1,22 €. Paga con la carta vera. Da lì in poi la guida va online con il webhook, come per tutti.
+4. Ogni settimana Stripe rinnova a 1 € + IVA: puoi vedere `invoice.paid`, lo sconto del rinnovo (inviti, giudizio) sulla fattura successiva, la Cassa e i Prospetti. Per non aspettare, su Stripe usa un **test clock** (solo in modalità test) oppure, in live, aspetta il rinnovo della settimana dopo.
+5. Finito: dal cliente, Account → «Disattiva il rinnovo» (o da Stripe, annulla l'abbonamento). I pagamenti live fatti restano in Cassa: se non li vuoi nei conti, in Cassa → «Escludi dai conti».
+6. Limiti: il cambio di piano dal piano di prova è bloccato; gli avvisi di rinnovo a 30/7 giorni non partono; nelle email e in qualche pagina può restare la parola «anno» (il piano è per te, non per i clienti).
+
 ## 4v. Invita un amico: la barra resta vuota dopo un invito (22 ottobre)
 
 Se un amico si è registrato e ha pagato ma la barra di chi invita resta a «0 su 10» e «Chi è entrato» dice «Ancora nessuno», l'invito non si è legato o è stato annullato. Con questa versione:

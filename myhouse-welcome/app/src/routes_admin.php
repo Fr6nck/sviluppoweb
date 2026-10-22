@@ -961,6 +961,19 @@ $r->post('/admin/cliente/{id}/staff', function (array $a) {
     Support::redirect('/admin/cliente/' . $aid . '#staff');
 });
 
+/* «Assegna il piano di prova» (065): il cliente, senza abbonamento attivo, al passo Pubblica paga 1 € a settimana con le funzioni di Plus. */
+$r->post('/admin/cliente/{id}/piano-prova', function (array $a) {
+    Auth::requireAdmin();
+    $aid = (int) $a['id'];
+    $pv = Plans::prova();
+    if (!$pv) { Support::flash('Il piano di prova non c\'è: ricarica la pagina per applicare la migrazione 065.', 'err'); Support::redirect('/admin/cliente/' . $aid); }
+    if (Subscriptions::active($aid)) { Support::flash('Ha già un abbonamento attivo: il piano di prova si assegna solo prima del primo pagamento.', 'err'); Support::redirect('/admin/cliente/' . $aid); }
+    Db::update('accounts', ['intended_package_version_id' => (int) $pv['id'], 'intended_quantity' => 1], 'id = :aid', ['aid' => $aid]);
+    Auth::audit('account.piano_prova', (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$aid], 0) ?: null, ['package_version_id' => (int) $pv['id']]);
+    Support::flash('Piano di prova assegnato: al passo Pubblica paga ' . Support::money((int) $pv['price_cents'], (string) $pv['currency']) . ' + IVA a settimana.');
+    Support::redirect('/admin/cliente/' . $aid);
+});
+
 /* «Collega a un invito»: l'amico che non è rimasto legato al link di chi l'ha invitato (o il cui invito è stato annullato) si lega al codice. */
 $r->post('/admin/cliente/{id}/invito', function (array $a) {
     Auth::requireAdmin();

@@ -7897,6 +7897,33 @@ prova('…per chi invita: il primo rettangolo acceso con l\'alone, «1 su 10», 
 $r = $admin->segui($admin->post('/admin/cliente/' . $amicoG . '/invito', ['codice' => $codGaia]));
 prova('…una seconda volta: «già legato a un invito»', str_contains($r['body'], 'già legato a un invito'));
 
+// 065 · Il piano di prova «Prova»: 1 € a settimana, le funzioni di Plus, nascosto; lo assegna l'amministrazione prima del primo pagamento.
+$pvProva = pv('prova'); $pkProva = riga("SELECT * FROM packages WHERE code = 'prova'");
+prova('065 · il piano «Prova» c\'è: 1 € a settimana, nascosto (public = 0), le funzioni di Plus', $pvProva > 0 && (int) $pkProva['public'] === 0
+      && (int) val('SELECT price_cents FROM package_versions WHERE id = ?', [$pvProva]) === 100 && val('SELECT interval_unit FROM package_versions WHERE id = ?', [$pvProva]) === 'week'
+      && (int) val('SELECT COUNT(*) FROM package_features WHERE package_version_id = ?', [$pvProva]) === (int) val('SELECT COUNT(*) FROM package_features WHERE package_version_id = ?', [pv('plus')]));
+$r = $ospite->get('/registrati');
+prova('…non compare nella registrazione né tra i piani pubblici', !str_contains($r['body'], 'value="' . $pvProva . '"') && !in_array('prova', array_column(json_decode($c9n('echo json_encode(MHW\Plans::public());'), true) ?: [], 'code'), true));
+$cl065 = $cliente9n('Prova Settimana', 'prova065@prova.test');
+$r = $admin->get('/admin/cliente/' . $cl065);
+prova('065 · nella scheda di un cliente senza abbonamento c\'è «Assegna il piano di prova · 1 € + IVA a settimana»', str_contains($r['body'], '/admin/cliente/' . $cl065 . '/piano-prova') && str_contains($r['body'], 'Assegna il piano di prova'));
+$r = $admin->segui($admin->post('/admin/cliente/' . $cl065 . '/piano-prova', []));
+prova('…assegnato: piano scelto «Prova · 1 € + IVA / settimana», registro, bottone spento', (int) val('SELECT intended_package_version_id FROM accounts WHERE id = ?', [$cl065]) === $pvProva
+      && str_contains($r['body'], "Piano scelto: Prova · 1\u{00A0}€ + IVA / settimana") && (bool) val("SELECT id FROM audit_log WHERE action = 'account.piano_prova' AND meta LIKE ?", ['%' . $pvProva . '%']), $r['code'] . '');
+$voci065 = json_decode($c9n('$pv = MHW\Plans::version(' . $pvProva . '); $pk = MHW\Db::one("SELECT * FROM packages WHERE id = ?", [$pv["package_id"]]); echo json_encode(MHW\Stripe::vociCheckout($pv, $pk, 1)[0]);'), true) ?: [];
+prova('065 · il Checkout descrive il prezzo a Stripe con 1 € e rinnovo ogni settimana (recurring.interval = week)', ($voci065['line_items[0][price_data][unit_amount]'] ?? '') === '100'
+      && ($voci065['line_items[0][price_data][recurring][interval]'] ?? '') === 'week' && ($voci065['line_items[0][price_data][tax_behavior]'] ?? '') === 'exclusive', json_encode($voci065));
+$abbonamento9n($cl065, 'prova', 'active', 'sub_prova065', 6);
+$st065 = json_decode($c9n('echo json_encode(MHW\CambioAbbonamento::stato(' . $cl065 . ')["motivo"]);'), true);
+prova('065 · con l\'abbonamento di prova attivo il cambio di piano è bloccato («Sei sul piano di prova…») e l\'amministrazione non lo riassegna', str_starts_with((string) $st065, 'Sei sul piano di prova')
+      && str_contains($admin->segui($admin->post('/admin/cliente/' . $cl065 . '/piano-prova', []))['body'], 'Ha già un abbonamento attivo'));
+$pB065 = new Browser('prova065'); $pB065->get('/accedi'); $pB065->post('/accedi', ['email' => 'prova065@prova.test', 'password' => 'Prova9N-2026']);
+$r = $pB065->get('/account');
+prova('…in Account: «Prova» con «1 € + IVA / settimana»', str_contains($r['body'], "1\u{00A0}€") && str_contains($r['body'], '+ IVA / settimana'), (string) $r['code']);
+$prima = count(glob("$DOVE/app/storage/logs/email/*.eml") ?: []);
+$cron();
+prova('065 · il rinnovo settimanale non riceve l\'avviso «tra 7 giorni» (solo i piani annuali)', !val("SELECT id FROM email_log WHERE account_id = ? AND kind = 'rinnovo'", [$cl065]));
+
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

@@ -22,7 +22,8 @@ $righeIva = function (int $netto) use ($privatoR, $valR): string {
     <div class="riepilogo__riga riepilogo__riga--totale"><span><?= t('Oggi') ?></span><b><?= t('0&nbsp;€') ?></b></div>
     <div class="riepilogo__riga" style="font-weight:600"><span><?= Support::e(tf('Il {data}', ['{data}' => MHW\Pannello::data(gmdate('Y-m-d\TH:i:s\Z', (int) $omR['fine']))])) ?></span><b><?= Support::e(Support::money($riep['totale'], $valR)) ?> <small><?= t('+ IVA') ?></small></b></div>
     <?= $righeIva((int) $riep['totale']) ?>
-    <p class="small muted" style="margin:0"><?= Support::e(tf($riep['sconto'] > 0 ? 'Poi {prezzo} + IVA l\'anno: lo sconto vale solo sul primo addebito.' : 'Poi {prezzo} + IVA l\'anno.', ['{prezzo}' => Support::money($riep['prezzo'], $valR)])) ?></p>
+    <p class="small muted" style="margin:0"><?= Support::e(Plans::settimanale($pv) ? tf('Poi {prezzo} + IVA a settimana (piano di prova).', ['{prezzo}' => Support::money($riep['prezzo'], $valR)])
+                                                 : tf($riep['sconto'] > 0 ? 'Poi {prezzo} + IVA l\'anno: lo sconto vale solo sul primo addebito.' : 'Poi {prezzo} + IVA l\'anno.', ['{prezzo}' => Support::money($riep['prezzo'], $valR)])) ?></p>
   <?php else: ?>
   <?php if ($privatoR): ?>
     <div class="riepilogo__riga"><span><?= t('Imponibile primo anno') ?></span><b><?= Support::e(Support::money($riep['totale'], $valR)) ?></b></div>
@@ -30,7 +31,8 @@ $righeIva = function (int $netto) use ($privatoR, $valR): string {
     <div class="riepilogo__riga riepilogo__riga--totale"><span><?= t('Totale primo anno') ?></span><b><?= Support::e(Support::money($riep['totale'], $valR)) ?> <small><?= t('+ IVA') ?></small></b></div>
   <?php endif; ?>
   <?= $righeIva((int) $riep['totale']) ?>
-  <p class="small muted" style="margin:0"><?= Support::e(tf($riep['sconto'] > 0 ? 'Dal secondo anno {prezzo} + IVA: gli sconti valgono solo sul primo anno.' : 'Dal secondo anno {prezzo} + IVA.', ['{prezzo}' => Support::money($riep['prezzo'], $valR)])) ?></p>
+  <p class="small muted" style="margin:0"><?= Support::e(Plans::settimanale($pv) ? tf('Dalla seconda settimana {prezzo} + IVA (piano di prova).', ['{prezzo}' => Support::money($riep['prezzo'], $valR)])
+                                                 : tf($riep['sconto'] > 0 ? 'Dal secondo anno {prezzo} + IVA: gli sconti valgono solo sul primo anno.' : 'Dal secondo anno {prezzo} + IVA.', ['{prezzo}' => Support::money($riep['prezzo'], $valR)])) ?></p>
   <?php endif; ?>
   <?php if ($riep['nota'] !== ''): ?><p class="small" style="margin:0"><?= Support::e($riep['nota']) ?></p><?php endif; ?>
 </div>

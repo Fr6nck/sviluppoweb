@@ -226,7 +226,7 @@ final class Billing
             'provider' => 'stripe', 'provider_customer_id' => $customerId,
             'provider_subscription_id' => (string) ($sub['id'] ?? ''), 'provider_price_id' => $price,
             'current_period_start' => $inizio ?: Support::now(),
-            'current_period_end' => $fine ?: gmdate('Y-m-d\TH:i:s\Z', strtotime('+1 year')),
+            'current_period_end' => $fine ?: gmdate('Y-m-d\TH:i:s\Z', strtotime(Plans::settimanale(Plans::version((int) $order['package_version_id']) ?? []) ? '+1 week' : '+1 year')),
             'cancel_at_period_end' => !empty($sub['cancel_at_period_end']) ? 1 : 0,
             'payment_status' => 'paid', 'updated_at' => Support::now(),
             'quantity' => $quantita, 'provider_extra_item_id' => $voceExtra,

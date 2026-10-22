@@ -1,5 +1,13 @@
 # Changelog — MyHouse Welcome
 
+## v2 · Piano di prova «Prova»: 1 € a settimana (22 ottobre 2026)
+
+Migrazione **065** (pacchetto `prova`, nascosto, con le funzioni di Plus; `package_versions.interval_unit = 'week'`).
+
+- **Il piano di prova**: 1 € + IVA a settimana, rinnovo automatico ogni settimana, 1 struttura, tutto quello che dà Plus. Non compare nel sito né nella scelta del piano. Lo assegna chi amministra dalla scheda del cliente («Assegna il piano di prova», solo prima del primo pagamento): al passo Pubblica il cliente paga 1 € come con qualsiasi altro piano, e da lì tutto il resto (webhook, attivazione, rinnovi, sconti, Cassa) funziona come con i piani veri.
+- Stripe riceve il prezzo con `recurring.interval = week` (`Plans::intervallo`); il controllo dei Price e il fallback del periodo seguono l'intervallo. Nel pannello i prezzi dicono «/ settimana» e il riepilogo «Dalla seconda settimana». Il cambio di piano dal piano di prova è bloccato (lo fa l'amministrazione); gli avvisi di rinnovo a 30 e 7 giorni non partono per i piani settimanali.
+- **Prove**: capitolo 065.
+
 ## v2 · Correzione: pagamento fermo con «Il pagamento non è disponibile in questo momento» (22 ottobre 2026)
 
 Migrazione **064** (`referrals.motivo`).

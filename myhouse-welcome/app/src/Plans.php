@@ -77,6 +77,25 @@ final class Plans
     /** Il piano si paga a struttura (Portfolio)? */
     public static function perProperty(array $pv): bool { return (int) ($pv['per_property'] ?? 0) === 1; }
 
+    /** Ogni quanto si paga: 'year' (tutti i piani in vendita) o 'week' (il piano di prova «Prova», migrazione 065). */
+    public static function intervallo(array $pv): string { return ($pv['interval_unit'] ?? 'year') === 'week' ? 'week' : 'year'; }
+
+    /** Il piano si paga a settimana (il piano di prova)? */
+    public static function settimanale(array $pv): bool { return self::intervallo($pv) === 'week'; }
+
+    /** «/ anno» o «/ settimana» (in inglese «/ year», «/ week»), per i prezzi. */
+    public static function perPeriodo(array $pv, bool $en = false): string
+    {
+        return self::settimanale($pv) ? ($en ? '/ week' : '/ settimana') : ($en ? '/ year' : '/ anno');
+    }
+
+    /** La versione in vendita del piano di prova (codice «prova», nascosto), o null se la migrazione 065 non c'è. */
+    public static function prova(): ?array
+    {
+        $id = (int) Db::val("SELECT pv.id FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = 'prova' AND p.active = 1 AND pv.is_current = 1", [], 0);
+        return $id ? self::version($id) : null;
+    }
+
     /** 9R · Le strutture che l'account ha già (non archiviate, vetrina esclusa): il Portfolio non si compra per meno. */
     public static function struttureEsistenti(int $accountId): int
     {
