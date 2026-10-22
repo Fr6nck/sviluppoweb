@@ -30,11 +30,7 @@ $testoInvito = Inviti::messaggio($acc);   /* 7D: lo stesso messaggio pronto dell
     <span class="kicker"><?= t('Invita un amico') ?></span>
     <h2 id="invito-titolo" class="invito__titolo"><?= Support::e($titoloInv) ?></h2>
     <p class="invito__sotto"><?= Support::e($sottoInv) ?></p>
-    <div>
-      <div class="invito__conto"><span><?= t('Amici che hanno pubblicato') ?></span><b><?= Support::e(tf('{n} su {tetto}', $numInv)) ?></b></div>
-      <div class="invito__barra" aria-hidden="true"><?php for ($invI = 1; $invI <= $invMax; $invI++): ?><i<?= $invI <= $invN ? ' class="si"' : '' ?>></i><?php endfor; ?></div>
-      <div class="invito__scala" aria-hidden="true"><span>0</span><span><?= "\u{2212}" . intdiv(Inviti::MASSIMO, 2) ?>%</span><span><?= "\u{2212}" . Inviti::MASSIMO ?>%</span></div>
-    </div>
+    <?php $barra = Inviti::barra($acc); $piccola = false; include __DIR__ . '/_barra_inviti.php'; /* 9R · la barra che si accende */ ?>
     <?php if ((int) $inv['percento'] > 0 && (int) $inv['prezzo'] > 0): ?>
       <p><?= tf($inv['rinnovo'] !== '' ? 'Il {data} paghi {prezzo} invece di {pieno}.' : 'Al rinnovo paghi {prezzo} invece di {pieno}.', ['{data}' => Support::e(MHW\Pannello::data($inv['rinnovo'])),
           '{prezzo}' => '<b>' . Support::e(Support::money((int) $inv['scontato'], $inv['valuta'])) . ' ' . t('+ IVA') . '</b>', '{pieno}' => Support::e(Support::money((int) $inv['prezzo'], $inv['valuta']))]) ?></p>

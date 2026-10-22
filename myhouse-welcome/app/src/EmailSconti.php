@@ -46,6 +46,7 @@ final class EmailSconti
         if (!$sub) return $salta('nessun abbonamento attivo');
         if ($sub['provider'] === 'dimostrazione') return $salta('abbonamento di esempio');
         if (Richiami::diProva($aid)) return $salta('cliente di prova');
+        if (Staff::e($acc) || $sub['provider'] === 'staff') return $salta('account staff');   // 9R
         $email = mb_strtolower(trim((string) Db::val('SELECT email FROM users WHERE id = ?', [(int) $acc['user_id']], '')));
         $vetrinaE = mb_strtolower(trim((string) Config::get('vetrina_email', '')));
         if (($vetrinaE !== '' && $email === $vetrinaE) || str_ends_with($email, '@' . Demo::DOMINIO)) return $salta('account della vetrina o di esempio');

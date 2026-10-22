@@ -59,7 +59,7 @@ $data = fn(?string $d) => $d ? MHW\Pannello::data($d) : ''; ?>
       <div class="giudizio-blocco">
         <div class="stack" style="gap:4px">
           <h2 class="giudizio-blocco__titolo"><?= t('La tua scheda su welcomemyhouse.it') ?></h2>
-          <p class="small muted" style="margin:0"><?= Support::e($p ? trim($p['name'] . ' · ' . Vetrina::nomeHost((int) $acc['id']) . ($p['city'] !== '' ? ' · ' . Vetrina::dove($p) : '')) : t('La guida non è ancora pubblicata')) ?>. <?= t('Senza link, senza la tua foto.') ?></p>
+          <p class="small muted" style="margin:0"><?= Support::e($p ? trim($p['name'] . ' · ' . Vetrina::nomeHost((int) $acc['id']) . ($p['city'] !== '' ? ' · ' . Vetrina::dove($p) : '')) : t('La guida non è ancora pubblicata')) ?>. <?= t('Senza link, non cliccabile né cercabile.') ?></p>
           <span class="row" style="gap:6px;flex-wrap:wrap"><span class="pillola <?= in_array($statoS, ['in_home', 'in_vetrina'], true) ? 'pillola--pino' : 'pillola--ocra' ?>"><?= Support::e($etS) ?></span>
             <span class="pillola <?= $statoG === 'pubblicato' ? 'pillola--pino' : 'pillola--ocra' ?>"><?= Support::e($etG) ?></span></span>
         </div>
@@ -117,7 +117,7 @@ $data = fn(?string $d) => $d ? MHW\Pannello::data($d) : ''; ?>
     <form method="post" action="<?= b() ?>/giudizio/partecipo" class="panel stack" id="adesione" style="gap:12px"><?= Csrf::field() ?>
       <label class="check giudizio-casella" style="align-items:flex-start"><input type="checkbox" name="partecipo" value="1" required style="margin-top:2px">
         <span><?= Giudizi::casellaHtml() ?></span></label>
-      <p class="small muted" style="margin:0"><?= Support::e(tf('Aderendo adesso, il {n}% vale sul prossimo rinnovo.', ['{n}' => $pct])) ?> <?= t('Regole complete nei') ?> <a href="<?= b() ?>/termini#giudizio-sconto" target="_blank" rel="noopener"><?= t('Termini') ?></a><?= t(', punto «Giudizio con sconto».') ?></p>
+      <p class="small muted" style="margin:0"><?= Giudizi::casellaNota(false) /* 9R */ ?> <?= t('Regole complete nei') ?> <a href="<?= b() ?>/termini#giudizio-sconto" target="_blank" rel="noopener"><?= t('Termini') ?></a><?= t(', punto «Giudizio con sconto».') ?></p>
       <div class="actions"><button class="btn"><?= t('Aderisco') ?></button></div>
     </form>
   <?php endif; ?>
@@ -146,7 +146,7 @@ $data = fn(?string $d) => $d ? MHW\Pannello::data($d) : ''; ?>
             <textarea id="g-testo" name="body" rows="4" minlength="20" maxlength="400" required aria-describedby="g-testo-aiuto" data-conta><?= Support::e((string) ($vecchi['body'] ?? '')) ?></textarea>
             <p class="help" id="g-testo-aiuto"><?= t('Da 20 a 400 caratteri. Per esempio: cosa ti fa risparmiare, cosa dicono gli ospiti.') ?> <span class="muted" data-conta-per="g-testo"></span></p>
           </div>
-          <p class="help" style="margin:0"><?= $programma && $aderito ? t('Può comparire in «Cosa dicono di noi» su welcomemyhouse.it, con il nome della struttura, la città e il tuo nome senza cognome, se decidiamo di pubblicarlo. Nessun link alla tua guida, nessuna tua foto. Lo sconto non dipende dal voto né dalla pubblicazione.') : t('Resta tra noi: lo leggiamo per migliorare.') ?></p>
+          <p class="help" style="margin:0"><?= $programma && $aderito ? t('Può comparire in «Cosa dicono di noi» su welcomemyhouse.it, con il nome della struttura, la città e il tuo nome senza cognome, se decidiamo di pubblicarlo. Nessun link alla tua guida, nessun dato dei tuoi ospiti. Lo sconto non dipende dal voto né dalla pubblicazione.') : t('Resta tra noi: lo leggiamo per migliorare.') ?></p>
           <div class="actions"><button class="btn"><?= Icon::svg('message', 16) ?><?= $gia && $statoG !== 'ritirato' ? t('Salva il giudizio') : t('Invia il giudizio') ?></button>
             <a class="btn btn--ghost" href="<?= b() ?>/giudizio"><?= t('Annulla') ?></a></div>
         </form>

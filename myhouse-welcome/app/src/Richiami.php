@@ -163,7 +163,7 @@ final class Richiami
         // Scadenza: gli abbonamenti che non si rinnovano da soli (rinnovo disattivato, o attivati dallo
         // staff) avvisano 30 e 7 giorni prima; il giorno dopo la fine, se non è arrivato un abbonamento
         // nuovo, un'ultima email dice che la guida è offline. Gli abbonamenti di esempio non scrivono.
-        $nonRinnova = "(s.provider <> 'stripe' OR s.cancel_at_period_end = 1 OR s.status = 'canceled') AND s.provider <> 'dimostrazione'";
+        $nonRinnova = "(s.provider <> 'stripe' OR s.cancel_at_period_end = 1 OR s.status = 'canceled') AND s.provider NOT IN ('dimostrazione', 'staff')";   // 9R: lo staff non paga
         foreach ([30, 7] as $prima) {
             foreach (Db::all("SELECT s.*, u.email, u.name AS user_name FROM subscriptions s JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id
                               WHERE s.status IN ('active', 'trialing') AND $nonRinnova AND s.current_period_end > ? AND s.current_period_end <= ? AND u.email NOT LIKE ?",
@@ -230,17 +230,32 @@ final class Richiami
                 $quando = (int) strtotime((string) $g['prima']);
                 if ($t - $quando < Testimonianze::RICHIAMO_GIORNI * $giorno || $t - $quando > (Testimonianze::RICHIAMO_GIORNI + 10) * $giorno) continue;
                 if (Testimonianze::diAccount((int) $g['acc_id'])) continue;
-                // 9L · Chi ha aderito a «Giudizio con sconto»: il giudizio promesso, che si aggiunge alla sua scheda (mai una sua foto).
+                // 9L · Chi ha aderito a «Giudizio con sconto»: il giudizio promesso, che si aggiunge alla sua scheda.
                 $sch = Vetrina::scheda((int) $g['acc_id']);
                 if ($sch && !empty($sch['ritirato_at'])) continue;
+                // 9R · Chi ha aderito: «Il tuo 5% aspetta solo il tuo giudizio» (mai allo staff, che non paga).
+                $aderito = (bool) Db::val("SELECT giudizio_adesione FROM accounts WHERE id = ?", [(int) $g['acc_id']]);
+                if ($aderito && Staff::e((int) $g['acc_id'])) continue;
                 self::lingua((int) $g['acc_id']);
-                $m = $sch ? [self::tt('È il momento del tuo giudizio'),
-                             self::tt('la tua guida è online da 30 giorni. Come previsto dal programma «Giudizio con sconto», lasciaci un voto da 1 a 5 con un commento: se decidiamo di pubblicarlo, compare in «Cosa dicono di noi» nella nostra home, con il nome della struttura, la copertina e il logo. Mai una tua foto, mai un link alla guida. Lo sconto non dipende dal voto né dalla pubblicazione.'),
-                             self::tt('Lascia il giudizio'), Support::baseUrl() . '/giudizio?scrivi=1']
+                $m = $aderito ? self::testoPromemoriaGiudizio((int) $g['acc_id'], 'pubblicazione')
                           : [self::tt('Ti sta piacendo MyHouse Welcome?'),
                              self::tt('la tua guida è online da un mese. Ci dici com\'è andata? Bastano un voto e due righe: ci aiutano a migliorare.'),
                              self::tt('Dai il tuo giudizio'), Support::baseUrl() . '/giudizio?scrivi=1'];
                 if (self::manda((int) $g['acc_id'], $g['email'], (string) $g['user_name'], 'giudizio', 'primo', $m)) $fatte['giudizio']++;
+            }
+        }
+
+        // 9R · Il secondo promemoria del giudizio: 30 giorni prima del rinnovo, a chi ha aderito e non l'ha ancora lasciato.
+        if (Testimonianze::giudizi() && Giudizi::disponibili()) {
+            foreach (Db::all("SELECT s.*, u.email, u.name AS user_name FROM subscriptions s JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id
+                              WHERE s.status IN ('active', 'trialing') AND s.provider IN ('stripe', 'manuale') AND a.giudizio_adesione IS NOT NULL AND a.giudizio_adesione <> ''
+                                AND s.current_period_end > ? AND s.current_period_end <= ? AND u.email NOT LIKE ?" . Staff::senza('a'),
+                             [$iso($t + 29 * $giorno), $iso($t + 31 * $giorno), $fuori]) as $s) {
+                $acc = (int) $s['account_id'];
+                if (Giudizi::conGiudizio($acc) || (($sch = Vetrina::scheda($acc)) && !empty($sch['ritirato_at']))) continue;
+                self::lingua($acc);
+                $ref = 'rinnovo-' . $s['id'] . '-' . substr((string) $s['current_period_end'], 0, 10);
+                if (self::manda($acc, $s['email'], (string) $s['user_name'], 'giudizio', $ref, self::testoPromemoriaGiudizio($acc, 'rinnovo', $s))) $fatte['giudizio']++;
             }
         }
 
@@ -256,6 +271,7 @@ final class Richiami
         RecuperoPagamenti::inSospeso();   // i pagamenti di cui il webhook di Stripe non ha dato notizia
         try { Vetrina::sincronizza(); } catch (\Throwable $e) { Log::exception($e, 'vetrina: sincronizzazione'); }   // 9L: schede da spegnere
         try { Campione::pulisci(); } catch (\Throwable $e) { Log::exception($e, 'campione: storico'); }   // 9M: le copie sovrascritte oltre i 30 giorni
+        try { AccountProva::pulisci(); } catch (\Throwable $e) { Log::exception($e, 'account di prova: registro'); }   // 9R: l'email tolta dopo 90 giorni
         // Benvenuto: le prime guide degli ultimi giorni rimaste senza email (il primo tentativo non è partito).
         try { $fatte['online'] = Pagamenti::recenti($t); } catch (\Throwable $e) { Log::exception($e, 'email «La tua guida è online»'); }   // 9O: quelle non partite
         try { $fatte['benvenuto'] = Benvenuto::recenti($t); } catch (\Throwable $e) { Log::exception($e, 'email di benvenuto'); }
@@ -364,9 +380,83 @@ final class Richiami
         }
         // Una discesa programmata (6H): l'avviso dice già il piano e l'importo nuovi (prossimoAddebito li usa); qui solo la frase.
         if (!empty($s['next_package_version_id'])) $corpo .= ' ' . self::tt('Come avevi chiesto, dal rinnovo passi a {piano}.', $x);
+        // 9R · Ha aderito al giudizio ma non l'ha lasciato: senza, il 5% non si applica a questo rinnovo.
+        if (!$omaggio && Giudizi::disponibili() && !empty(Db::val('SELECT giudizio_adesione FROM accounts WHERE id = ?', [(int) $s['account_id']]))
+            && !Giudizi::conGiudizio((int) $s['account_id']) && !(($sch = Vetrina::scheda((int) $s['account_id'])) && !empty($sch['ritirato_at']))) {
+            $corpo .= ' ' . self::tt('Hai aderito a «Giudizio con sconto»: senza giudizio il {n}% non si applica, lascialo ora da {link}', ['{n}' => Giudizi::percentuale(), '{link}' => Support::baseUrl() . '/giudizio?scrivi=1']);
+        }
         // A 30 giorni, per chi rinnova, restano le statistiche dell'anno (K5) e la spinta a invitare un amico.
         if ($prima === 30 && !$omaggio) $corpo .= ' ' . self::numeriDellAnno($s, $a);
         return [$oggetto, $corpo, self::tt('Vai ad Account & Fatturazione'), Support::baseUrl() . '/account'];
+    }
+
+    /**
+     * 9R · Il promemoria del giudizio a chi ha aderito e non l'ha lasciato: dopo 30 giorni dalla pubblicazione ($quando =
+     * «pubblicazione») o 30 giorni prima del rinnovo («rinnovo»). Con l'importo del 5% sul suo piano e la somma con gli amici.
+     * @return array [oggetto, corpo, bottone, indirizzo, nota]
+     */
+    public static function testoPromemoriaGiudizio(int $accountId, string $quando, ?array $sub = null): array
+    {
+        $sub ??= Subscriptions::active($accountId);
+        $gp = Giudizi::percentuale();
+        $struttura = (string) Db::val("SELECT name FROM properties WHERE account_id = ? AND is_demo = 0 AND archived_at IS NULL ORDER BY (status = 'published') DESC, id", [$accountId], '');
+        $pv = $sub ? Plans::version((int) $sub['package_version_id']) : null;
+        $prezzo = $pv ? (Offerte::prezzo($sub) ?? Plans::price($pv, max(1, (int) ($sub['quantity'] ?? 1)))) : 0;
+        $valuta = (string) ($pv['currency'] ?? 'EUR');
+        $amici = Inviti::disponibili() ? Inviti::percento($accountId) : 0;
+        $x = ['{n}' => $gp, '{struttura}' => $struttura, '{piano}' => (string) ($pv['name'] ?? ''), '{data}' => $sub ? self::giorno((string) $sub['current_period_end']) : ''];
+        $corpo = $quando === 'rinnovo'
+            ? self::tt('il tuo abbonamento si rinnova il {data} e hai aderito al programma «Giudizio con sconto». Per avere il {n}% su questo rinnovo manca solo il tuo voto da 1 a 5 e un commento: due minuti.', $x)
+            : self::tt('un mese fa hai aderito al programma «Giudizio con sconto» per {struttura}. Per avere il {n}% sul prossimo rinnovo manca solo il tuo voto da 1 a 5 e un commento: due minuti.', $x);
+        if ($prezzo > 0 && !Staff::e($accountId)) {
+            $euro = Support::money($prezzo - Sconti::netto($prezzo, $gp), $valuta);
+            $corpo .= "\n\n" . ($amici > 0
+                ? self::tt('Sul rinnovo di {piano} vale {euro} in meno, che si sommano allo sconto degli amici (oggi sei al {amici}%: in tutto {tot}%, cioè {paga} invece di {prezzo}).', $x + ['{euro}' => $euro, '{amici}' => $amici, '{tot}' => min(100, $amici + $gp),
+                          '{paga}' => Support::money(Sconti::netto($prezzo, min(100, $amici + $gp)), $valuta), '{prezzo}' => Support::money($prezzo, $valuta)])
+                : self::tt('Sul rinnovo di {piano} vale {euro} in meno: paghi {paga} invece di {prezzo}.', $x + ['{euro}' => $euro, '{paga}' => Support::money(Sconti::netto($prezzo, $gp), $valuta), '{prezzo}' => Support::money($prezzo, $valuta)]));
+        }
+        return [$quando === 'rinnovo' ? self::tt('Al rinnovo manca il tuo giudizio: senza, il {n}% non si applica', $x) : self::tt('Il tuo {n}% aspetta solo il tuo giudizio.', $x),
+                $corpo, self::tt('Lascia il giudizio →'), Support::baseUrl() . '/giudizio?scrivi=1#scrivi',
+                self::tt('Senza giudizio al momento del rinnovo lo sconto non si applica. Se non vuoi più partecipare puoi ritirarti da Impostazioni → Giudizio con sconto.')];
+    }
+
+    /**
+     * 9R · Per Amministrazione → Richiami: chi ha aderito al giudizio e non l'ha lasciato, con lo stato dei due promemoria.
+     * @return list<array{account_id:int,cliente:string,email:string,adesione:string,stati:array<string,array{0:string,1:string}>}>
+     */
+    public static function statoPromemoriaGiudizio(): array
+    {
+        if (!self::disponibili() || !Giudizi::disponibili()) return [];
+        $out = [];
+        foreach (Db::all("SELECT a.id, a.giudizio_adesione_at, u.email, u.name FROM accounts a JOIN users u ON u.id = a.user_id
+                          WHERE a.giudizio_adesione IS NOT NULL AND a.giudizio_adesione <> '' AND u.email NOT LIKE ?" . Staff::senza('a') . ' ORDER BY a.id DESC LIMIT 200', ['%@' . Demo::DOMINIO]) as $a) {
+            $acc = (int) $a['id'];
+            if (Giudizi::conGiudizio($acc) || (($sch = Vetrina::scheda($acc)) && !empty($sch['ritirato_at']))) continue;
+            $prima = Testimonianze::primaPubblicazione($acc);
+            $sub = Subscriptions::active($acc);
+            $inviata = fn(string $like) => (string) Db::val("SELECT sent_at FROM email_log WHERE account_id = ? AND kind = 'giudizio' AND ref LIKE ? ORDER BY id DESC", [$acc, $like], '');
+            $p1 = $inviata('primo'); $p2 = $sub ? $inviata('rinnovo-' . $sub['id'] . '-%') : '';
+            $out[] = ['account_id' => $acc, 'cliente' => (string) $a['name'], 'email' => (string) $a['email'], 'adesione' => (string) $a['giudizio_adesione_at'], 'stati' => [
+                'pubblicazione' => $p1 !== '' ? ['inviata', 'il ' . Support::date($p1)] : ($prima === null ? ['programmata', 'dopo la pubblicazione'] : ['programmata', 'dal ' . Support::date(gmdate('Y-m-d\TH:i:s\Z', $prima + Testimonianze::RICHIAMO_GIORNI * 86400))]),
+                'rinnovo' => $p2 !== '' ? ['inviata', 'il ' . Support::date($p2)] : ($sub && (string) $sub['current_period_end'] !== '' ? ['programmata', 'dal ' . Support::date(gmdate('Y-m-d\TH:i:s\Z', (int) strtotime((string) $sub['current_period_end']) - 30 * 86400))] : ['fermata', 'nessun rinnovo']),
+            ]];
+        }
+        return $out;
+    }
+
+    /** 9R · «Manda adesso» il promemoria del giudizio (quello della pubblicazione o del rinnovo). @return array{0:bool,1:string} */
+    public static function mandaPromemoriaGiudizio(int $accountId, string $quale): array
+    {
+        $a = Db::one('SELECT a.*, u.email, u.name AS user_name FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [$accountId]);
+        if (!$a || empty($a['giudizio_adesione'])) return [false, 'Il cliente non ha aderito al programma.'];
+        if (Giudizi::conGiudizio($accountId)) return [false, 'Il giudizio c\'è già: il promemoria non serve.'];
+        if (Staff::e($a)) return [false, 'Non parte: account staff.'];
+        self::lingua($accountId);
+        $sub = Subscriptions::active($accountId);
+        $ref = $quale === 'rinnovo' && $sub ? 'rinnovo-' . $sub['id'] . '-' . substr((string) $sub['current_period_end'], 0, 10) : 'primo';
+        if (Db::val("SELECT id FROM email_log WHERE account_id = ? AND kind = 'giudizio' AND ref = ?", [$accountId, $ref])) return [false, 'Già mandato.'];
+        $ok = self::manda($accountId, (string) $a['email'], (string) $a['user_name'], 'giudizio', $ref, self::testoPromemoriaGiudizio($accountId, $quale === 'rinnovo' ? 'rinnovo' : 'pubblicazione', $sub));
+        return [$ok, $ok ? 'Promemoria del giudizio mandato a ' . $a['email'] . '.' : 'L\'email a ' . $a['email'] . ' non è partita: controlla la posta in Impostazioni.'];
     }
 
     /** K5 · Le aperture dell'anno (e dal QR) con, se ci sono gli inviti, lo sconto già guadagnato o come abbassare il rinnovo. */

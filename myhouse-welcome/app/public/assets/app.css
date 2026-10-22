@@ -3289,3 +3289,56 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .riepilogo__riga--grande{font-size:24px} .riepilogo__riga--grande b{font-weight:700}
 /* 9P · «Fino al 55%» nella home del pannello: il numero grande senza la riga sopra */
 .risparmio--pannello{margin-top:0;padding-top:0;border-top:0}
+/* 9R · La barra degli inviti: pieni (accento, con «−5%»), in attesa (tratteggiati), vuoti; l'alone per l'ultimo arrivato */
+.barra-inviti{display:grid;gap:8px}
+.barra-inviti__caselle{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;margin:0;padding:0;list-style:none}
+.barra-inviti__casella{min-height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;text-align:center;line-height:1.1;padding:2px}
+.barra-inviti__casella--vuoto{background:color-mix(in srgb,var(--terracotta) 14%,var(--terracotta-soft));color:color-mix(in srgb,var(--ink) 55%,transparent)}
+.barra-inviti__casella--pieno{background:var(--terracotta);color:#fff}
+.barra-inviti__casella--attesa{background:transparent;border:2px dashed var(--ochre);color:var(--ink)}
+.barra-inviti__casella--alone{box-shadow:0 0 0 3px color-mix(in srgb,var(--terracotta) 35%,transparent),0 0 18px color-mix(in srgb,var(--terracotta) 55%,transparent);animation:barra-alone 2.4s ease-in-out infinite}
+@keyframes barra-alone{50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--terracotta) 20%,transparent),0 0 26px color-mix(in srgb,var(--terracotta) 40%,transparent)}}
+@media (prefers-reduced-motion:reduce){.barra-inviti__casella--alone{animation:none}}
+.barra-inviti--piccola .barra-inviti__casella{min-height:10px;border-radius:999px;padding:0}
+.barra-inviti__numeri{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:6px}
+.barra-inviti__numero{display:grid;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--raised)}
+.barra-inviti__numero b{font-size:22px;font-variant-numeric:tabular-nums}
+.barra-inviti__accento{color:var(--terracotta)}
+@media (max-width:640px){.barra-inviti__numeri{grid-template-columns:1fr}.barra-inviti__casella{font-size:10px;min-height:28px}}
+/* 9R · «Le mie guide»: i due riquadri degli sconti (inviti, giudizio) */
+.riquadro-sconto{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center}
+.riquadro-sconto__cifra{font-family:Gloock,Georgia,serif;font-size:44px;line-height:1;color:var(--terracotta)}
+.riquadro-sconto__titolo{font-size:18px;margin:0}
+.riquadro-sconto--manca{border:2px solid var(--ochre)}
+@media (max-width:640px){.riquadro-sconto{grid-template-columns:1fr}.riquadro-sconto__cifra{font-size:34px}}
+
+/* 9R · La scheda di «Le guide dei nostri host» definitiva (mockup scheda-home): copertina 16:10, tipologia in pillola,
+   logo 46×46 su bianco con object-fit contain, nome in serif, «Città (PR) · Regione», «Host: Nome», stelle e commento. */
+.dicono-scheda--vetrina .dicono-scheda__cop{aspect-ratio:16/10}
+.dicono-scheda--vetrina .dicono-scheda__logo{width:46px;height:46px;bottom:-20px;left:18px;border-radius:12px;padding:5px;overflow:hidden}
+.dicono-scheda--vetrina .dicono-scheda__logo img{width:100%;height:100%;object-fit:contain}
+.dicono-scheda__logo--segnaposto{background:#f3ece0}
+.dicono-scheda__tipo{position:absolute;top:12px;left:12px;background:rgba(22,20,16,.75);color:#f4eee2;font-size:11px;line-height:16px;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:4px 9px}
+.dicono-scheda--vetrina .dicono-scheda__corpo b.dicono-scheda__nome{font-family:var(--serif, Gloock, Georgia, serif);font-weight:400;font-size:19px;line-height:24px}
+.dicono-scheda__dove{color:var(--muted);font-size:14px;line-height:20px;margin-top:2px}
+.dicono-scheda__host{color:var(--muted);font-size:14px;line-height:20px;margin-top:8px}
+.dicono-scheda__host b{color:var(--ink);font-weight:600;font-size:inherit!important;line-height:inherit!important;font-family:inherit!important}
+.dicono-scheda--vetrina .dicono-scheda__voto{font-size:15px;margin-top:8px}
+.dicono-scheda__commento{display:block;font-size:14px;line-height:21px;margin-top:4px;quotes:"« " " »"}
+
+/* 9R · Cassa: un pagamento escluso dai conti resta nell'elenco, barrato, con la pillola e il motivo. */
+.cassa__escluso td:not(.cassa__esclusione){text-decoration:line-through;color:var(--muted)}
+.cassa__esclusione{white-space:nowrap}
+.cassa__escludi{display:flex;gap:6px;align-items:center;margin:4px 0 0}
+
+/* 9R · Portfolio: il numero di strutture nel passo «Pubblica», in registrazione e nel riquadro del piano scelto. */
+.quante-pubblica{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 4px}
+.quante-pubblica input[type=number],.reg-strutture input[type=number],.chip-piano__quante{width:4.5em}
+.reg-strutture{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:14px}
+.reg-scaglioni{display:block;margin-top:4px}
+
+/* 9R · «Dati di fatturazione»: etichetta in alto, campo subito sotto, aiuto sotto il campo; colonne allineate in alto. */
+.fatt-modulo .campi-allineati{align-items:start}
+.fatt-modulo .campi-allineati>.field>:is(input,select,textarea){margin-top:0}
+.fatt-modulo .campi-allineati>.field>label{min-height:24px}
+.fatt-aiuto{margin:6px 0 0}

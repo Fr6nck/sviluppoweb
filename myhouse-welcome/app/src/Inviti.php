@@ -328,7 +328,7 @@ final class Inviti
         $corpo .= $mancano > 0 ? ($mancano === 1 ? $tl('Ti manca 1 amico per arrivare al {max}% degli inviti.', $x) : $tl('Ti mancano {mancano} amici per arrivare al {max}% degli inviti.', $x))
                                : $tl('Hai raggiunto il massimo degli inviti. I tuoi amici continuano ad avere il loro sconto.');
         // 9L · Il tetto vero è inviti + programma: «fino al 55%», non il 50%.
-        if (Giudizi::attivo()) $corpo .= ' ' . $tl('Con il programma «Giudizio con sconto» arrivi fino al {n}% di sconto a partire dal prossimo anno.', ['{n}' => Sconti::massimoRinnovo()['totale']]);
+        if (Giudizi::attivo()) $corpo .= ' ' . $tl('Con il programma «Giudizio con sconto», diverso e cumulabile, un altro {g}%: insieme, fino al {n}% sul prossimo rinnovo.', ['{n}' => Sconti::massimoRinnovo()['totale'], '{g}' => Giudizi::percentuale()]);
         $oggetto = $st['percento'] > 0 ? $tl('{amico} ha pubblicato la sua guida: sei al −{n}%', $x) : $tl('{amico} ha pubblicato la sua guida', $x);
         Richiami::manda($rid, (string) $u['email'], (string) $u['name'], 'inviti', 'amico-' . $amicoId,
                         [$oggetto, $corpo, $tl('Invita un altro amico'), Support::baseUrl() . '/inviti'], $lin);
@@ -359,6 +359,47 @@ final class Inviti
         ];
     }
 
+    /** 9R · Quanti giorni resta «tratteggiato» un amico che si è solo registrato, e quanti dura l'alone del rettangolo appena acceso. */
+    public const GIORNI_ATTESA = 90;
+    public const GIORNI_ALONE = 3;
+
+    /**
+     * 9R · La barra dei 10 rettangoli: ogni amico che ha attivato (invito «valido») ne accende uno, in ordine, con «−5%»,
+     * «−10%»…; il più recente, per GIORNI_ALONE giorni, ha l'alone. Chi si è solo registrato (da meno di GIORNI_ATTESA giorni)
+     * occupa i rettangoli seguenti, tratteggiati, «in attesa». Sotto, i numeri sul piano del cliente (Sconti, la formula del
+     * server): sconto maturato, quanto risparmia al prossimo rinnovo e quanto paga, e se arrivano tutti e 10. Per lo staff
+     * (non paga) gli euro sono null.
+     * @return array{caselle:list<array{stato:string,etichetta:string,alone:bool}>,pieni:int,attesa:int,maturato:int,prezzo:int,risparmio:?int,paga:?int,tutti:?int,paga_tutti:?int,valuta:string,staff:bool,ordine:array<int,int>}
+     */
+    public static function barra(array $acc): array
+    {
+        $aid = (int) $acc['id'];
+        $max = self::amiciMassimi();
+        $pieni = Db::all("SELECT id, qualified_at, created_at FROM referrals WHERE referrer_account_id = ? AND status = 'valido' ORDER BY COALESCE(qualified_at, created_at), id", [$aid]);
+        $pieni = array_slice($pieni, 0, $max);
+        $attesa = Db::all("SELECT id FROM referrals WHERE referrer_account_id = ? AND status = 'registrato' AND created_at > ? ORDER BY created_at, id",
+                          [$aid, gmdate('Y-m-d\TH:i:s\Z', time() - self::GIORNI_ATTESA * 86400)]);
+        $attesa = array_slice($attesa, 0, max(0, $max - count($pieni)));
+        $ultimo = $pieni ? end($pieni) : null;
+        $alone = $ultimo && (int) strtotime((string) ($ultimo['qualified_at'] ?: $ultimo['created_at'])) > time() - self::GIORNI_ALONE * 86400;
+        $caselle = []; $ordine = [];
+        for ($i = 0; $i < $max; $i++) {
+            $pct = '−' . (($i + 1) * self::PASSO) . '%';
+            if ($i < count($pieni)) { $caselle[] = ['stato' => 'pieno', 'etichetta' => $pct, 'alone' => $alone && $i === count($pieni) - 1]; $ordine[(int) $pieni[$i]['id']] = $i + 1; }
+            elseif ($i < count($pieni) + count($attesa)) { $caselle[] = ['stato' => 'attesa', 'etichetta' => Pannello::t('in attesa'), 'alone' => false]; $ordine[(int) $attesa[$i - count($pieni)]['id']] = $i + 1; }
+            else $caselle[] = ['stato' => 'vuoto', 'etichetta' => $pct, 'alone' => false];
+        }
+        $st = self::stato($acc);
+        $staff = Staff::e($acc);
+        $prezzo = (int) $st['prezzo'];
+        $netto = Sconti::netto($prezzo, (int) $st['totale']);
+        $nettoTutti = Sconti::netto($prezzo, self::MASSIMO);
+        return ['caselle' => $caselle, 'pieni' => count($pieni), 'attesa' => count($attesa), 'maturato' => min(self::MASSIMO, count($pieni) * self::PASSO),
+                'prezzo' => $prezzo, 'risparmio' => $staff || !$prezzo ? null : $prezzo - $netto, 'paga' => $staff || !$prezzo ? null : $netto,
+                'tutti' => $staff || !$prezzo ? null : $prezzo - $nettoTutti, 'paga_tutti' => $staff || !$prezzo ? null : $nettoTutti,
+                'valuta' => (string) $st['valuta'], 'staff' => $staff, 'ordine' => $ordine];
+    }
+
     /**
      * «Chi è entrato» (7D): per ogni amico il nome (solo il nome; senza, l'email mascherata), la sua
      * struttura, lo stato e quanto ha fatto risparmiare sul prossimo rinnovo (il PASSO% del prezzo
@@ -369,6 +410,7 @@ final class Inviti
         $aid = (int) $acc['id'];
         $st = self::stato($acc);
         $passo = (int) round($st['prezzo'] * self::PASSO / 100);
+        $ordine = self::barra($acc)['ordine'];   // 9R · il numero del rettangolo di ognuno
         $righe = Db::all("SELECT r.id, r.status, r.created_at, r.qualified_at, r.friend_account_id, u.name, u.email,
                                  (SELECT p.name FROM properties p WHERE p.account_id = r.friend_account_id AND p.archived_at IS NULL ORDER BY p.id LIMIT 1) AS struttura
                           FROM referrals r JOIN accounts a ON a.id = r.friend_account_id JOIN users u ON u.id = a.user_id
@@ -380,7 +422,9 @@ final class Inviti
             $out[] = [
                 'nome' => $nome !== '' ? (preg_split('/\s+/', $nome)[0] ?? $nome) : self::maschera((string) $r['email']),
                 'struttura' => (string) ($r['struttura'] ?? ''),
-                'stato' => $pubblicato ? Pannello::t('Ha pubblicato la guida') : Pannello::t('Si è registrato'),
+                // 9R · «Ha attivato · −5% per te» (verde) o «Si è registrato · in attesa che attivi» (ocra), con il suo rettangolo.
+                'stato' => $pubblicato ? strtr(Pannello::t('Ha attivato · −{n}% per te'), ['{n}' => self::PASSO]) : Pannello::t('Si è registrato · in attesa che attivi'),
+                'casella' => $ordine[(int) $r['id']] ?? null,
                 'pubblicato' => $pubblicato, 'status' => (string) $r['status'],
                 'data' => (string) ($pubblicato ? ($r['qualified_at'] ?: $r['created_at']) : $r['created_at']),
                 'risparmio' => $r['status'] === 'valido' ? $passo : 0,

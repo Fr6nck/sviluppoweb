@@ -72,8 +72,11 @@ final class Pagamenti
             $lingua = Pannello::linguaDi($u, $aid); $en = $lingua === 'en';
             $struttura = $p ? (string) $p['name'] : ($en ? 'your property' : 'la tua struttura');
             $fine = $s ? self::giorno((string) $s['current_period_end'], $en) : '';
-            $pianoRiga = $en ? 'Plan ' . $piano . ($n > 1 ? ", $n properties" : '') . ($fine !== '' ? " · valid until $fine" : '') . ' · it renews automatically, and we remind you 30 and 7 days before.'
-                             : 'Piano ' . $piano . ($n > 1 ? ", $n strutture" : '') . ($fine !== '' ? " · valido fino al $fine" : '') . ' · si rinnova da solo, ti avvisiamo 30 e 7 giorni prima.';
+            // 9R · «Portfolio · 3 strutture · 227 € + IVA» (il prezzo annuale del piano per il numero pagato) e la scomposizione.
+            $prezzoP = $pv ? ' · ' . Support::money(Plans::price($pv, max(1, $n)), (string) $pv['currency']) . ($en ? ' + VAT' : ' + IVA') : '';
+            $scompP = $pv && $n > 1 ? ' (' . Plans::scomposizione($pv, $n, $en) . ')' : '';
+            $pianoRiga = $en ? 'Plan ' . $piano . ($n > 1 ? " · $n properties" : '') . $prezzoP . $scompP . ($fine !== '' ? " · valid until $fine" : '') . ' · it renews automatically, and we remind you 30 and 7 days before.'
+                             : 'Piano ' . $piano . ($n > 1 ? " · $n strutture" : '') . $prezzoP . $scompP . ($fine !== '' ? " · valido fino al $fine" : '') . ' · si rinnova da solo, ti avvisiamo 30 e 7 giorni prima.';
             // Con un codice omaggio (9D) oggi non si paga: il primo addebito è alla fine dei mesi gratis.
             $omaggio = $s && $s['status'] === 'trialing' && !empty($s['omaggio_fino']);
             if ($omaggio) $pianoRiga = $en ? 'Plan ' . $piano . ($n > 1 ? ", $n properties" : '') . " · free until $fine, then it renews automatically: we remind you 30 and 7 days before the first charge."

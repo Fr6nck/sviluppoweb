@@ -17,10 +17,14 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
 <?php if ($oltre && $pianoOltre): /* 9A · più strutture del massimo: il preventivo, non un piano */ ?>
   <?php $pvP = $pianoOltre; $qP = $oltre; $tornaP = LinguaSito::percorso('/registrati') . '?piano=' . (int) $piano . '&strutture=' . (int) $oltre; include __DIR__ . '/../pub/_preventivo.php'; ?>
 <?php endif; ?>
-<?php if ($pianoScelto): /* Il piano scelto sulla landing resta in vista: si sa cosa si sta attivando. */ ?>
-  <p class="chip-piano">
-    <span class="chip-piano__testo"><?= Icon::svg('check', 15, 2.2) ?><span><?= $U('Piano', 'Plan') ?> <b><?= Support::e($pianoScelto['name']) ?></b><?= Plans::perProperty($pianoScelto) ? ' · ' . (int) $quantita . $U(' strutture', ' properties') : '' ?>
-      · <?= $prezzoReg($pianoScelto, (int) $quantita) ?></span></span>
+<?php if ($pianoScelto): /* Il piano scelto sulla landing resta in vista: si sa cosa si sta attivando. */
+      $perC = Plans::perProperty($pianoScelto); /* 9R · Portfolio: il numero resta modificabile (campo del modulo, attributo form) */
+      $rC = $perC ? $contoReg($pianoScelto, (int) $quantita) : null; $scC = $rC && $rC['sconto'] > 0 && $rC['percento'] > 0 ? (int) $rC['percento'] : 0; ?>
+  <p class="chip-piano"<?= $perC ? ' data-quantita data-base="' . (int) $pianoScelto['price_cents'] . '" data-extra="' . (int) $pianoScelto['extra_price_cents'] . '" data-scaglioni="' . Support::e(Plans::tiersJson($pianoScelto)) . '" data-valuta="' . Support::e($pianoScelto['currency']) . '"' . ($scC ? ' data-sconto="' . $scC . '"' : '') : '' ?>>
+    <span class="chip-piano__testo"><?= Icon::svg('check', 15, 2.2) ?><span><?= $U('Piano', 'Plan') ?> <b><?= Support::e($pianoScelto['name']) ?></b>
+      <?php if ($perC): ?> · <label for="chip-strutture" class="sr-only"><?= $U('Quante strutture?', 'How many properties?') ?></label><input id="chip-strutture" form="form-registrati" name="strutture" type="number" inputmode="numeric" step="1" min="<?= (int) $pianoScelto['min_quantity'] ?>" max="<?= (int) $pianoScelto['max_quantity'] ?>" value="<?= (int) $quantita ?>" class="chip-piano__quante"><?= $U(' strutture', ' properties') ?>
+        · <span class="reg-prezzo" data-totale><?= Support::e(Support::money($scC ? $rC['totale'] : Plans::price($pianoScelto, (int) $quantita), $pianoScelto['currency'])) ?></span><?= $scC ? $U(' + IVA il primo anno', ' + VAT the first year') . ' <span class="reg-prezzo__sconto">−' . $scC . $U('% primo anno', '% first year') . '</span>' : $U(' + IVA / anno', ' + VAT / year') ?>
+      <?php else: ?> · <?= $prezzoReg($pianoScelto, (int) $quantita) ?><?php endif; ?></span></span>
     <a href="<?= b() . ($EN ? '/en' : '/') ?>#piani"><?= $U('Cambia', 'Change') ?></a>
   </p>
 <?php endif; ?>
@@ -33,7 +37,7 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
 <p class="muted" style="margin-top:14px;line-height:24px"><?= $U('Configuri la guida gratis. Paghi solo quando la pubblichi.', 'Set up your guide for free. You only pay when you publish it.') ?></p>
 <?php if ($err): ?><p class="note note--err" style="margin-top:20px" role="alert"><?= Support::e($err) ?></p>
   <?php $aiutoEmail = $vecchi['email']; $aiutoPagina = $U('Registrazione', 'Sign-up'); include __DIR__ . '/_aiuto.php'; ?><?php endif; ?>
-<form method="post" class="panel stack" style="margin-top:24px" novalidate data-base="<?= b() ?>"><?= Csrf::field() ?>
+<form method="post" class="panel stack" id="form-registrati" style="margin-top:24px" novalidate data-base="<?= b() ?>"><?= Csrf::field() ?>
   <?php if ($daInglese): ?><input type="hidden" name="lang" value="en"><?php endif; ?>
   <?php if ($pianoScelto): ?>
   <input type="hidden" name="piano" value="<?= (int) $piano ?>">
@@ -45,18 +49,25 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
     <p class="small muted" style="margin:0 0 12px"><?= $U('Non paghi niente finché non decidi di pubblicare. Intanto prepari la guida e la vedi in anteprima, come la vedranno i tuoi ospiti.', 'You pay nothing until you decide to publish. Meanwhile you prepare the guide and preview it as your guests will see it.') ?></p>
     <div class="scegli-piano__schede">
       <?php foreach ($sceglibili as $o): $qMin = Plans::quantity($o, null) ?? 1; if ($EN) $o = Plans::inLingua($o, 'en');
-            $voci = array_slice(array_values(array_filter($o['bullet_list'], fn($v) => !str_ends_with($v, ':'))), 0, 3); ?>
+            $voci = array_slice(array_values(array_filter($o['bullet_list'], fn($v) => !str_ends_with($v, ':'))), 0, 3);
+            /* 9R · Portfolio: il numero di strutture si sceglie qui (2–10, da ?strutture= se arriva da home o questionario). */
+            $perS = Plans::perProperty($o); $qReg = $perS ? (Plans::quantity($o, (string) ($strutture ?: '')) ?? $qMin) : 1; ?>
         <label class="scegli-piano__scheda">
           <input type="radio" name="piano" value="<?= (int) $o['pv_id'] ?>"<?= (int) $o['pv_id'] === $giaScelto ? ' checked' : '' ?> required>
           <span class="scegli-piano__testa"><b><?= Support::e($o['name']) ?></b>
-            <span><?= $prezzoReg($o, $qMin) ?><?= Plans::perProperty($o) ? ' · ' . $qMin . $U(' strutture', ' properties') : '' ?></span></span>
+            <span><?= $prezzoReg($o, $qReg) ?><?= $perS ? ' · ' . $qReg . $U(' strutture', ' properties') : '' ?></span></span>
+          <?php if ($perS): $rS = $contoReg($o, $qReg); ?><span class="reg-strutture" data-quantita data-base="<?= (int) $o['price_cents'] ?>" data-extra="<?= (int) $o['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($o)) ?>" data-valuta="<?= Support::e($o['currency']) ?>"<?= $rS && $rS['sconto'] > 0 && $rS['percento'] > 0 ? ' data-sconto="' . (int) $rS['percento'] . '"' : '' ?>>
+            <span id="reg-strutture-et"><?= $U('Quante strutture?', 'How many properties?') ?></span>
+            <input id="reg-strutture" name="strutture" aria-labelledby="reg-strutture-et" type="number" inputmode="numeric" step="1" min="<?= (int) $o['min_quantity'] ?>" max="<?= (int) $o['max_quantity'] ?>" value="<?= $qReg ?>">
+            <span class="small"><span data-totale><?= Support::e(Support::money($rS && $rS['sconto'] > 0 ? $rS['totale'] : Plans::price($o, $qReg), $o['currency'])) ?></span><?= $U(' + IVA', ' + VAT') ?> · <span data-quante><?= $qReg ?></span><?= $U(' strutture', ' properties') ?></span></span>
+            <span class="small muted reg-scaglioni"><?= Support::e(Plans::scomposizione($o, (int) $o['max_quantity'], $EN)) ?></span><?php endif; ?>
           <ul><?php foreach ($voci as $v): ?><li><?= Support::e(str_replace('{sezioni}', (string) MHW\SectionCatalog::quante(), $v)) ?></li><?php endforeach; ?></ul>
         </label>
       <?php endforeach; ?>
     </div>
   </fieldset>
   <?php endif; ?>
-  <?php if (!empty($strutture) && !$oltre): ?><input type="hidden" name="strutture" value="<?= (int) $strutture ?>"><?php endif; ?>
+  <?php if ($pianoScelto && !Plans::perProperty($pianoScelto) && !empty($strutture) && !$oltre): ?><input type="hidden" name="strutture" value="<?= (int) $strutture ?>"><?php endif; ?>
   <?php $omaggiOk = MHW\Omaggi::disponibili(); if ($omaggio): /* 9D · il codice omaggio dal link: già scritto, in sola lettura */ ?>
     <div class="field invito-campo" style="margin:0"><label for="codice_invito"><?= $U('Codice di invito o omaggio', 'Invitation or gift code') ?></label>
       <input id="codice_invito" name="codice_invito" type="text" value="<?= Support::e($omaggio['codice']) ?>" readonly aria-describedby="invito-ok">
@@ -142,3 +153,4 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
 })();
 </script>
 <?php endif; ?>
+<script src="<?= MHW\av('/assets/prezzi.js') ?>" defer></script>

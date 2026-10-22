@@ -271,16 +271,21 @@ final class Sconti
             $a = Db::one('SELECT giudizio_adesione, giudizio_sconto_stato FROM accounts WHERE id = ?', [$accountId]) ?: [];
             $stato = (string) ($a['giudizio_sconto_stato'] ?? '');
             // Nei mesi dell'omaggio l'adesione (al pagamento o dal pannello) vale sul primo rinnovo dopo il primo pagamento.
-            if (!empty($a['giudizio_adesione']) && ($stato === 'da_applicare_rinnovo' || ($omaggio && $stato === 'promesso'))) $giudizio = Giudizi::percentuale();
+            // 9R · Il 5% sul rinnovo matura solo con il giudizio lasciato (voto e commento): senza, il coupon comprende solo gli inviti.
+            if (!empty($a['giudizio_adesione']) && ($stato === 'da_applicare_rinnovo' || ($omaggio && $stato === 'promesso')) && Giudizi::conGiudizio($accountId)) $giudizio = Giudizi::percentuale();
         }
         $percento = min(100, $inviti + $giudizio);
+        // 9R · Un cambio di piano proposto e accettato «dal rinnovo»: il suo sconto vale su questo rinnovo al posto di inviti e
+        // giudizio, se è più alto (non si sommano); dopo, si torna alle regole solite.
+        $cambio = ProposteCambio::scontoRinnovo($accountId, $sub);
+        if ($cambio > $percento) return ['inviti' => 0, 'giudizio' => 0, 'cambio' => $cambio, 'percento' => $cambio, 'omaggio' => $omaggio, 'stripe' => $omaggio ? 0 : $cambio];
         return ['inviti' => $inviti, 'giudizio' => $giudizio, 'percento' => $percento, 'omaggio' => $omaggio, 'stripe' => $omaggio ? 0 : $percento];
     }
 
     /** I metadati della composizione, sull'abbonamento Stripe: «inviti:10,giudizio:5». */
     public static function composizione(array $r): string
     {
-        return implode(',', array_map(fn($k) => "$k:" . (int) $r[$k], array_values(array_filter(['inviti', 'giudizio', 'manuale'], fn($k) => (int) ($r[$k] ?? 0) > 0))));
+        return implode(',', array_map(fn($k) => "$k:" . (int) $r[$k], array_values(array_filter(['inviti', 'giudizio', 'manuale', 'cambio'], fn($k) => (int) ($r[$k] ?? 0) > 0))));
     }
 
     /** Il coupon del rinnovo di una percentuale somma: id fisso «mhw-rinnovo-N», una volta sola, creato se manca (come mhw-primo-anno-N). */
@@ -297,7 +302,7 @@ final class Sconti
     /** I coupon del rinnovo che questo punto gestisce: il suo e quelli di prima (uno per gli inviti, uno per il giudizio). */
     private static function nostroRinnovo(string $cid): bool
     {
-        return str_starts_with($cid, self::COUPON_RINNOVO) || str_starts_with($cid, 'mhw-invito-') || str_starts_with($cid, 'mhw-giudizio-');
+        return str_starts_with($cid, self::COUPON_RINNOVO) || str_starts_with($cid, 'mhw-invito-') || str_starts_with($cid, 'mhw-giudizio-') || str_starts_with($cid, ProposteCambio::COUPON);
     }
 
     /**
@@ -326,7 +331,7 @@ final class Sconti
             $cid = is_array($c) ? (string) ($c['id'] ?? '') : (string) $c;
             if (self::nostroRinnovo($cid)) $presenti[] = $cid; else $tieni[] = (string) ($d['id'] ?? '');
         }
-        $coupon = $r['stripe'] > 0 ? self::couponRinnovo($r['stripe']) : '';
+        $coupon = $r['stripe'] > 0 ? (!empty($r['cambio']) ? ProposteCambio::coupon($r['stripe']) : self::couponRinnovo($r['stripe'])) : '';
         $comp = $r['stripe'] > 0 ? self::composizione($r) : '';
         $p = [];
         if ($presenti !== ($coupon !== '' ? [$coupon] : [])) {

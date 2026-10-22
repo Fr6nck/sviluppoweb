@@ -105,7 +105,21 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
             $om = $riep['omaggio'] ?? null; $dataOm = $om ? MHW\Pannello::data(gmdate('Y-m-d\TH:i:s\Z', $om['fine'])) : ''; ?>
         <div class="spread spread--mid">
           <div class="stack" style="gap:4px"><span class="kicker"><?= t('Il tuo piano') ?></span>
-            <b style="font-size:22px;font-weight:500"><?= Support::e(tf('Hai scelto {piano}', ['{piano}' => $piano['name']])) ?><?= Plans::perProperty($piano) ? ' · ' . Support::e(tf('{n} strutture', ['{n}' => $quantita])) : '' ?></b></div>
+            <b style="font-size:22px;font-weight:500"><?= Support::e(tf('Hai scelto {piano}', ['{piano}' => $piano['name']])) ?><?= Plans::perProperty($piano) ? ' · ' . Support::e(tf('{n} strutture', ['{n}' => $quantita])) : '' ?></b>
+            <?php if (Plans::perProperty($piano)): $minQ = Plans::minimoPer($piano, (int) $acc['id']); $maxQ = (int) $piano['max_quantity'];
+                  /* 9R · Il numero di strutture si cambia qui: −/+ (prezzi.js) e «Aggiorna» ricalcola il riepilogo; mai sotto le strutture create. */ ?>
+              <form method="post" action="<?= b() ?>/piano" class="quante-pubblica" data-quantita data-base="<?= (int) $piano['price_cents'] ?>" data-extra="<?= (int) $piano['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($piano)) ?>" data-valuta="<?= Support::e($piano['currency']) ?>"><?= Csrf::field() ?>
+                <input type="hidden" name="pv" value="<?= (int) $piano['id'] ?>"><input type="hidden" name="torna" value="/pannello/<?= (int) $pid ?>/procedura/pubblica">
+                <label for="pub-strutture" class="small"><?= t('Strutture') ?></label>
+                <input id="pub-strutture" name="strutture" type="number" inputmode="numeric" step="1" min="<?= $minQ ?>" max="<?= $maxQ ?>" value="<?= max($minQ, (int) $qSc) ?>" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+                <span class="small muted"><span data-totale><?= Support::e(Support::money(Plans::price($piano, max($minQ, (int) $qSc)), $piano['currency'])) ?></span> <?= t('+ IVA / anno') ?></span>
+                <button class="btn btn--ghost btn--sm"><?= t('Aggiorna') ?></button>
+              </form>
+              <p class="small muted" style="margin:0"><?= Support::e(Plans::scomposizione($piano, (int) $qSc, MHW\Pannello::en())) ?></p>
+              <?php if ($minQ > (int) $piano['min_quantity']): ?><p class="small muted" style="margin:0"><?= Support::e(tf('Hai già {n} strutture: il minimo è {n}; per ridurre, archivia una struttura.', ['{n}' => $minQ])) ?></p><?php endif; ?>
+              <p class="small" style="margin:0"><a href="<?= b() ?>/piano?piano=<?= (int) $piano['id'] ?>&amp;strutture=<?= $maxQ + 1 ?>#preventivo"><?= Support::e(tf('Più di {n} strutture? Chiedi il preventivo', ['{n}' => $maxQ])) ?></a></p>
+              <script src="<?= MHW\av('/assets/prezzi.js') ?>" defer></script>
+            <?php endif; ?></div>
           <span style="font-size:26px;font-weight:500"><?php if ($om): /* 9D · con il codice omaggio oggi si paga 0 € */ ?>0&nbsp;€<span class="small muted"> <?= t('oggi') ?></span>
             <?php elseif ($sc): ?><s class="muted" style="font-size:18px"><?= Support::e(Support::money($sc['prezzo'], $piano['currency'])) ?></s>
             <?= Support::e(Support::money($sc['totale'], $piano['currency'])) ?><span class="small muted"> <?= t('+ IVA il primo anno') ?></span>
@@ -253,7 +267,8 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
             <input type="hidden" name="giudizio_casella" value="1">
             <label class="check" style="align-items:flex-start"><input type="checkbox" name="giudizio_adesione" value="1" data-giudizio-casella style="margin-top:1px"<?= $giudizioSi ? ' checked' : '' ?>>
               <span><?= MHW\Giudizi::casellaHtml() /* 9L · il testo unico di «Testi e foto» (giudizio.casella) */ ?></span></label>
-            <p class="help giudizio-sconto__spiega" style="margin:0"><?= Support::e(trim(MHW\Giudizi::spiegaQuando() . ' ' . MHW\Giudizi::spiegone())) ?> Regole complete nei <a href="<?= b() ?>/termini#giudizio-sconto" target="_blank" rel="noopener"><?= t('Termini') ?></a><?= t(', punto «Giudizio con sconto».') ?></p>
+            <p class="help giudizio-sconto__spiega" style="margin:0"><?= MHW\Giudizi::casellaNota(true) /* 9R · la riga corta, «sul primo anno» */ ?> <?= t('Regole complete nei') ?> <a href="<?= b() ?>/termini#giudizio-sconto" target="_blank" rel="noopener"><?= t('Termini') ?></a><?= t(', punto «Giudizio con sconto».') ?></p>
+            <?php if (($spQ = MHW\Giudizi::spiegaQuando()) !== ''): /* 9B-bis · lo sconto solo dopo il giudizio */ ?><p class="help" style="margin:0"><?= Support::e(t($spQ)) ?></p><?php endif; ?>
             <noscript><button class="btn btn--ghost btn--sm" formaction="<?= b() ?>/giudizio/adesione" formmethod="post" name="torna" value="/pannello/<?= $pid ?>/procedura/pubblica"><?= t('Aggiorna il riepilogo') ?></button></noscript>
           </fieldset>
           <script>

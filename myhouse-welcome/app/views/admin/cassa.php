@@ -60,9 +60,9 @@ $celle = function (array $m) use ($soldi) { ?>
       <a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/cassa?anno=<?= (int) $anno ?>&amp;mese=<?= Support::e($mese) ?>&amp;formato=csv&amp;pagamenti=1">Esporta CSV</a></div>
     <?php if (!$pagamenti): ?><p class="muted small">Nessun pagamento in questo mese.</p><?php else: ?>
     <div class="tablewrap"><table class="data">
-      <thead><tr><th>Data</th><th>Codice</th><th>Cliente</th><th>Tipo</th><th>Piano</th><th>Sconti</th><th>Imponibile</th><th>IVA</th><th>Totale</th><th>Fattura</th></tr></thead>
-      <tbody><?php foreach ($pagamenti as $p): ?>
-        <tr><td class="small" style="white-space:nowrap"><?= Support::e(Support::date($p['data'])) ?></td>
+      <thead><tr><th>Data</th><th>Codice</th><th>Cliente</th><th>Tipo</th><th>Piano</th><th>Sconti</th><th>Imponibile</th><th>IVA</th><th>Totale</th><th>Fattura</th><th><span class="sr-only">Nei conti</span></th></tr></thead>
+      <tbody><?php foreach ($pagamenti as $p): $esc = (string) ($p['escluso'] ?? ''); /* 9R · escluso: riga barrata con la pillola, fuori dai totali */ ?>
+        <tr<?= $esc !== '' ? ' class="cassa__escluso"' : '' ?>><td class="small" style="white-space:nowrap"><?= Support::e(Support::date($p['data'])) ?></td>
           <td><code class="codice-mw"><?= Support::e($p['codice'] ?: '—') ?></code></td>
           <td><?php if ($p['account_id']): ?><a href="<?= b() ?>/admin/cliente/<?= (int) $p['account_id'] ?>"><?= Support::e($p['cliente'] ?: $p['email']) ?></a><?php else: ?>—<?php endif; ?></td>
           <td class="small"><?= Support::e($nomi[$p['tipo']]) ?><br><span class="tiny muted"><?= Support::e(Gestione::VIE_INCASSO[$p['via']] ?? $p['via']) ?><?= $p['riferimento'] !== '' ? ' · ' . Support::e($p['riferimento']) : '' ?></span></td>
@@ -71,8 +71,19 @@ $celle = function (array $m) use ($soldi) { ?>
           <td style="white-space:nowrap"><?= $p['tipo'] === 'rimborso' ? '—' : $soldi($p['imponibile']) ?></td>
           <td style="white-space:nowrap"><?= $p['tipo'] === 'rimborso' ? '—' : $soldi($p['iva']) ?></td>
           <td style="white-space:nowrap"><b><?= $soldi($p['totale']) ?></b></td>
-          <td class="small"><?= Support::e($p['fattura'] ?: '—') ?></td></tr>
+          <td class="small"><?= Support::e($p['fattura'] ?: '—') ?></td>
+          <td class="small cassa__esclusione"><?php if ($esc !== ''): ?><span class="pillola pillola--ocra">Escluso · <?= Support::e($esc) ?></span><?php endif; ?>
+            <?php if (!empty($p['rif']) && $esc !== 'Stripe test'): ?>
+            <form method="post" action="<?= b() ?>/admin/cassa/esclusione" class="cassa__escludi"><?= MHW\Csrf::field() ?>
+              <input type="hidden" name="rif" value="<?= Support::e($p['rif']) ?>"><input type="hidden" name="torna" value="<?= Support::e($anno . '|' . $mese) ?>">
+              <?php if ($esc === ''): ?><label class="sr-only" for="mot-<?= Support::e($p['rif']) ?>">Motivo dell'esclusione</label>
+                <input id="mot-<?= Support::e($p['rif']) ?>" name="motivo" type="text" required maxlength="200" placeholder="Motivo" style="max-width:140px">
+                <button class="linkbtn">Escludi dai conti</button>
+              <?php else: ?><input type="hidden" name="rimetti" value="1"><button class="linkbtn">Rimetti</button><?php endif; ?>
+            </form><?php endif; ?></td></tr>
       <?php endforeach; ?></tbody></table></div>
+    <p class="tiny muted" style="margin:0">Un pagamento escluso dai conti resta qui, barrato, ma non entra in imponibile, netto, Prospetti, Quadro e commissioni partner.
+      I pagamenti fatti con le chiavi di test di Stripe sono esclusi da soli («Stripe test»). L'abbonamento del cliente non cambia.</p>
     <?php endif; ?>
   </section>
   <?php endif; ?>

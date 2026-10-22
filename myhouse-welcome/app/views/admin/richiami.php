@@ -47,6 +47,24 @@ $attesa = count(array_filter($sconti, fn($x) => $x['sconti']['stato'] === 'attes
     <?php endif; ?>
   </section>
 
+  <section class="stack" style="gap:10px" id="giudizio" aria-labelledby="ric-giudizio">
+    <h2 id="ric-giudizio" style="font-size:22px">Il promemoria di «Giudizio con sconto»</h2>
+    <p class="muted small" style="margin:0;max-width:760px">A chi ha aderito e non ha ancora lasciato il giudizio: 30 giorni dopo la pubblicazione e 30 giorni prima del rinnovo,
+      con l'importo dello sconto sul suo piano. Si ferma al giudizio o al ritiro; mai agli account staff, ai clienti di prova e alla vetrina.</p>
+    <?php $promemoriaGiudizio ??= []; if (!$promemoriaGiudizio): ?><p class="muted small">Nessun cliente aderito senza giudizio.</p><?php else: ?>
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th>Cliente</th><th>Dopo la pubblicazione</th><th>Prima del rinnovo</th></tr></thead>
+      <tbody><?php foreach ($promemoriaGiudizio as $pg): ?>
+        <tr><td><a href="<?= b() ?>/admin/cliente/<?= (int) $pg['account_id'] ?>"><?= Support::e($pg['cliente'] ?: $pg['email']) ?></a>
+            <span class="small muted">· aderito <?= $pg['adesione'] !== '' ? Support::e(Support::date($pg['adesione'])) : '' ?></span></td>
+          <?php foreach (['pubblicazione', 'rinnovo'] as $quale): [$stG, $dettG] = $pg['stati'][$quale]; ?>
+          <td class="small"><span class="badge badge--<?= $badge[$stG] ?? 'paper' ?>"><?= Support::e($stG) ?></span> <?= Support::e($dettG) ?>
+            <?php if ($stG === 'programmata'): ?><form method="post" action="<?= b() ?>/admin/richiami/giudizio/<?= (int) $pg['account_id'] ?>/<?= $quale ?>" style="margin:4px 0 0"><?= Csrf::field() ?><button class="btn btn--ghost btn--sm">Manda adesso</button></form><?php endif; ?></td>
+          <?php endforeach; ?></tr>
+      <?php endforeach; ?></tbody></table></div>
+    <?php endif; ?>
+  </section>
+
   <section class="stack" style="gap:10px" id="bozze" aria-labelledby="ric-bozze">
     <h2 id="ric-bozze" style="font-size:22px">Le email sulla bozza</h2>
     <p class="muted small" style="margin:0;max-width:760px">Le strutture mai pubblicate create da 1 a 35 giorni: al giorno 7 la checklist con il consiglio, al giorno 21 le tre strade

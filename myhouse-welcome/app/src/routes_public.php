@@ -464,6 +464,31 @@ $r->post('/offerta/{token}/accetta', function (array $a) {
     }
     Support::redirect($url);
 });
+/* 9R · Il cambio di piano proposto dall'amministrazione: si vede dal link, si conferma da cliente (mai da «Entra come cliente»). */
+$r->get('/proposta/{token}', function (array $a) {
+    $p = MHW\ProposteCambio::perToken((string) $a['token']);
+    if (!$p) { http_response_code(404); View::out('pub/404', []); }
+    $u = Auth::user();
+    $acc = $u && $u['role'] === 'host' ? Auth::account() : null;
+    View::out('pub/proposta', ['p' => $p, 'c' => MHW\ProposteCambio::conti($p), 'acc' => $acc, 'suo' => $acc && (int) $acc['id'] === (int) $p['account_id'],
+                               'impersona' => Auth::isImpersonating()]);
+});
+$r->post('/proposta/{token}/accetta', function (array $a) {
+    $u = Auth::requireUser();
+    $p = MHW\ProposteCambio::perToken((string) $a['token']);
+    if (!$p || $u['role'] !== 'host') { http_response_code(404); View::out('pub/404', []); }
+    try {
+        $url = MHW\ProposteCambio::accetta($p, Auth::account(), $u);
+    } catch (\RuntimeException $e) {
+        Support::flash($e->getMessage(), 'err'); Support::redirect('/proposta/' . $a['token']);
+    } catch (\Throwable $e) {
+        Support::flash('Il pagamento non è disponibile in questo momento. Riprova tra poco (codice ' . Log::exception($e, 'proposta di cambio') . ').', 'err');
+        Support::redirect('/proposta/' . $a['token']);
+    }
+    if ($url !== null) Support::redirect($url);
+    Support::flash('Fatto: il cambio parte dal rinnovo, con lo sconto proposto. Lo trovi in Account & Fatturazione.');
+    Support::redirect('/account');
+});
 $r->any('/en/login', function () use ($accedi) { MHW\LinguaSito::imposta('en'); $accedi(); });
 
 $r->post('/esci', function () { Auth::logout(); Support::redirect('/'); });
@@ -759,6 +784,12 @@ $r->any('/piano', function () use ($salvaPiano, $guard, $datiQuestionario) {
             if (Plans::perProperty($pv) && (int) ($_POST['strutture'] ?? 0) > (int) $pv['max_quantity']) Support::redirect('/piano?piano=' . (int) $pv['id'] . '&strutture=' . (int) $_POST['strutture'] . '#preventivo');
             Support::flash('Indica un numero intero di strutture tra ' . (int) $pv['min_quantity'] . ' e ' . (int) $pv['max_quantity'] . '.', 'err');
             Support::redirect('/piano?piano=' . (int) $pv['id']);
+        }
+        // 9R · Il Portfolio non si compra per meno strutture di quelle che l'account ha già: per ridurre se ne archivia una.
+        $tornaP = preg_match('#^/pannello/\d+/procedura/pubblica$#', (string) ($_POST['torna'] ?? '')) ? (string) $_POST['torna'] : '/piano?piano=' . (int) $pv['id'];
+        if (Plans::perProperty($pv) && $q < ($minP = Plans::minimoPer($pv, (int) $acc['id']))) {
+            Support::flash(MHW\tf('Hai già {n} strutture: il minimo è {n}; per ridurre, archivia una struttura.', ['{n}' => $minP]), 'err');
+            Support::redirect($tornaP);
         }
         $salvaPiano($acc, (int) $u['id'], $pv, $q);
         Support::flash(Plans::perProperty($pv) ? MHW\tf('Piano {piano} per {n} strutture scelto. Non paghi niente adesso: solo quando pubblichi.', ['{piano}' => $pv['name'], '{n}' => $q])

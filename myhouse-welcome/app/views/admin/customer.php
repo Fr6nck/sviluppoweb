@@ -200,6 +200,41 @@ include __DIR__ . '/_stati.php'; ?>
           <?php endif; ?>
         </form>
       <?php endif; ?>
+      <?php if ($stripeAtt && MHW\ProposteCambio::disponibili()): $propC = MHW\ProposteCambio::diAccount((int) $acc['id']); /* 9R · proposto da noi, vale solo con la conferma del cliente */ ?>
+        <details class="proposta-cambio" id="proposta"<?= !empty($_SESSION['proposta_wa']) ? ' open' : '' ?>>
+          <summary><b>Proponi un cambio di piano</b> <span class="small muted">· con uno sconto, vale solo se il cliente conferma dal suo link</span></summary>
+          <?php if (!empty($_SESSION['proposta_wa'])): $waP = (string) $_SESSION['proposta_wa']; unset($_SESSION['proposta_wa']); ?>
+            <div class="spiega" role="status"><span class="small">Il messaggio per WhatsApp (stesso link dell'email). Mostrato solo adesso: il link non si può ricostruire.</span>
+              <label for="prop-wa" class="sr-only">Messaggio per WhatsApp</label><textarea id="prop-wa" rows="7" readonly style="width:100%"><?= Support::e($waP) ?></textarea>
+              <button type="button" class="btn btn--ghost btn--sm" data-copia-da="prop-wa">Copia il messaggio per WhatsApp</button></div>
+          <?php endif; ?>
+          <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/proposta" class="stack" style="gap:8px;margin-top:8px"><?= Csrf::field() ?>
+            <div class="row" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
+              <div class="field" style="margin:0;flex:1 1 160px"><label for="pr-piano" class="small">Nuovo piano</label>
+                <select id="pr-piano" name="piano"><?php foreach ($pianiVendita as $o): ?><option value="<?= Support::e($o['code']) ?>"><?= Support::e($o['name']) ?></option><?php endforeach; ?></select></div>
+              <div class="field" style="margin:0;width:7em"><label for="pr-strutture" class="small">Strutture</label><input id="pr-strutture" name="strutture" type="number" min="1" max="10" value="<?= (int) $qAtt ?>"></div>
+              <div class="field" style="margin:0;width:8em"><label for="pr-sconto" class="small">Sconto %</label><input id="pr-sconto" name="sconto" type="number" min="0" max="<?= MHW\ProposteCambio::SCONTO_MAX ?>" value="10"></div>
+              <div class="field" style="margin:0;width:8em"><label for="pr-giorni" class="small">Valida (giorni)</label><input id="pr-giorni" name="giorni" type="number" min="1" max="60" value="<?= MHW\ProposteCambio::GIORNI ?>"></div>
+            </div>
+            <fieldset class="row" style="gap:12px;border:0;padding:0;margin:0"><legend class="small">Quando</legend>
+              <label class="check"><input type="radio" name="quando" value="subito" checked> <span>Subito, con il conguaglio scontato</span></label>
+              <label class="check"><input type="radio" name="quando" value="rinnovo"> <span>Dal rinnovo, sconto sul primo anno del piano nuovo</span></label></fieldset>
+            <div class="field" style="margin:0"><label for="pr-msg" class="small">Messaggio (facoltativo, compare nell'email)</label><textarea id="pr-msg" name="messaggio" rows="2" maxlength="1000"></textarea></div>
+            <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn btn--sm" name="invio" value="email">Manda per email</button>
+              <button class="btn btn--ghost btn--sm" name="invio" value="whatsapp">Prepara il messaggio per WhatsApp</button></div>
+          </form>
+          <?php if ($propC): ?>
+          <div class="tablewrap" style="margin-top:8px"><table class="data">
+            <thead><tr><th>Proposta</th><th>Stato</th><th>Valida fino al</th><th><span class="sr-only">Azioni</span></th></tr></thead>
+            <tbody><?php foreach ($propC as $pc): $pvP = MHW\Plans::version((int) $pc['package_version_id']); ?>
+              <tr><td class="small"><?= Support::e(($pvP['name'] ?? '?') . ((int) $pc['quantita'] > 1 ? ' · ' . (int) $pc['quantita'] . ' strutture' : '') . ' · ' . ($pc['quando'] === 'subito' ? 'subito' : 'dal rinnovo') . ' · −' . (int) $pc['sconto_pct'] . '%') ?><br><span class="tiny muted">del <?= Support::e(Support::date((string) $pc['created_at'])) ?></span></td>
+                <td class="small"><?= Support::e(MHW\ProposteCambio::STATI[$pc['stato']] ?? $pc['stato']) ?><?= $pc['accettata_at'] ? ' il ' . Support::e(Support::date((string) $pc['accettata_at'])) : '' ?></td>
+                <td class="small"><?= Support::e(Support::date((string) $pc['valida_fino'])) ?></td>
+                <td><?php if ($pc['stato'] === 'inviata'): ?><form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/proposta/<?= (int) $pc['id'] ?>/annulla" style="margin:0"><?= Csrf::field() ?><button class="linkbtn">Annulla</button></form><?php endif; ?></td></tr>
+            <?php endforeach; ?></tbody></table></div>
+          <?php endif; ?>
+        </details>
+      <?php endif; ?>
     </section>
   </div>
   <div class="grid grid-2" style="align-items:start">
@@ -254,6 +289,40 @@ include __DIR__ . '/_stati.php'; ?>
       <?php endif; ?>
       <?php if (!empty($acc['must_change_password']) || !empty($acc['password_temp_until'])): ?>
         <p class="small muted" style="margin:0"><?= !empty($acc['must_change_password']) ? 'Password provvisoria in corso' : '' ?><?= !empty($acc['password_temp_until']) ? ' (valida fino al ' . Support::e(Support::date($acc['password_temp_until'])) . ')' : '' ?>.</p>
+      <?php endif; ?>
+    </section>
+    <?php $elP = MHW\AccountProva::riepilogo((int) $acc['id']); $codP = MHW\Codici::cliente((int) $acc['id']); /* 9R · solo senza pagamenti live */ ?>
+    <?php if (MHW\Staff::disponibili()): $staffOn = MHW\Staff::e($acc); /* 9R · tester interni: niente pagamenti, niente Stripe */ ?>
+    <section class="panel stack" style="gap:8px" id="staff" aria-labelledby="staff-titolo">
+      <h2 id="staff-titolo" style="font-size:19px;margin:0">Account staff <?= $staffOn ? '<span class="badge badge--pine">Staff</span>' : '' ?></h2>
+      <?php if ($staffOn): ?>
+        <p class="small" style="margin:0">Fino al <b><?= Support::e(Support::date((string) $acc['staff_fino'])) ?></b><?= (int) $acc['staff_no_vetrina'] === 1 ? ' · non in vetrina' : '' ?>. Niente pagamenti, fatture né Stripe; fuori da Cassa, Scadenze, richiami di pagamento, commissioni e statistiche.</p>
+        <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/staff" style="margin:0"><?= Csrf::field() ?><input type="hidden" name="togli" value="1"><button class="btn btn--ghost btn--sm">Togli lo staff</button></form>
+      <?php else: ?>
+        <p class="small muted" style="margin:0">Per chi prova il sistema dall'interno: può fare tutto come un cliente, senza pagare. Diverso dal cliente di prova.</p>
+        <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/staff" class="row" style="gap:8px;align-items:flex-end;flex-wrap:wrap;margin:0"><?= Csrf::field() ?>
+          <div class="field" style="margin:0;flex:1 1 140px"><label for="st-piano" class="small">Piano</label>
+            <select id="st-piano" name="pv"><?php foreach ($pianiVendita as $o): ?><option value="<?= (int) $o['pv_id'] ?>"<?= $o['code'] === 'plus' ? ' selected' : '' ?>><?= Support::e($o['name']) ?></option><?php endforeach; ?></select></div>
+          <div class="field" style="margin:0;width:7em"><label for="st-q" class="small">Strutture</label><input id="st-q" name="strutture" type="number" min="1" max="50" value="<?= max(1, (int) $qAtt) ?>"></div>
+          <div class="field" style="margin:0"><label for="st-fino" class="small">Valido fino al</label><input id="st-fino" name="fino" type="date" required min="<?= gmdate('Y-m-d', time() + 86400) ?>" value="<?= gmdate('Y-m-d', strtotime('+1 year')) ?>"></div>
+          <label class="check small"><input type="checkbox" name="no_vetrina" value="1"> <span>Non in vetrina</span></label>
+          <button class="btn btn--sm">Attiva come staff</button>
+        </form>
+      <?php endif; ?>
+    </section>
+    <?php endif; ?>
+    <section class="panel stack elimina-prova" style="gap:8px" id="elimina-prova" aria-labelledby="elp-titolo">
+      <h2 id="elp-titolo" style="font-size:19px;margin:0">Elimina account di prova</h2>
+      <?php if (!$elP['puo']): ?>
+        <p class="small muted" style="margin:0"><?= Support::e($elP['perche']) ?></p>
+      <?php else: ?>
+        <p class="small" style="margin:0">Nessun pagamento live: si può cancellare tutto. L'email <b><?= Support::e($elP['email']) ?></b> torna libera per una nuova registrazione<?= $elP['stripe'] !== '' ? ' e il cliente Stripe si cancella' : '' ?>. Non si torna indietro.</p>
+        <ul class="small" style="margin:0;padding-left:18px"><?php foreach ($elP['righe'] as [$etP, $nP]): ?><li><?= Support::e($etP) ?>: <b><?= (int) $nP ?></b></li><?php endforeach; ?></ul>
+        <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/elimina-prova" class="row" style="gap:8px;align-items:flex-end;flex-wrap:wrap;margin:0"><?= Csrf::field() ?>
+          <div class="field" style="margin:0;flex:1 1 220px"><label for="elp-conferma" class="small">Scrivi «ELIMINA <?= Support::e($codP) ?>»</label>
+            <input id="elp-conferma" name="conferma" type="text" required autocomplete="off"></div>
+          <button class="btn btn--sm btn--danger">Elimina account di prova</button>
+        </form>
       <?php endif; ?>
     </section>
   </div>

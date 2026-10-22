@@ -15,7 +15,7 @@ $title = 'Clienti'; ?>
       <select id="c-stato" name="stato"><option value="">Tutti</option>
         <?php foreach (['attivo' => 'Attivo', 'pagato' => 'Pagato, non pubblicato', 'fallito' => 'Pagamento non riuscito', 'scaduto' => 'Scaduto',
                         'mai' => 'Mai attivato', 'omaggio' => 'In omaggio (mesi gratis)', 'manuale' => 'Attivati dallo staff',
-                        'maipagato' => 'Mai pagato', 'prova' => 'Clienti di prova', 'bozze21' => 'Bozze da più di 21 giorni'] as $k => $et): ?>
+                        'maipagato' => 'Mai pagato', 'prova' => 'Clienti di prova', 'staff' => 'Account staff', 'bozze21' => 'Bozze da più di 21 giorni'] as $k => $et): ?>
           <option value="<?= $k ?>"<?= $filtroStato === $k ? ' selected' : '' ?>><?= Support::e($et) ?></option><?php endforeach; ?></select></div>
     <div class="field" style="margin:0"><label for="c-piano">Piano</label>
       <select id="c-piano" name="piano"><option value="">Tutti</option>
@@ -30,12 +30,12 @@ $title = 'Clienti'; ?>
     <tbody>
     <?php foreach ($rows as $r): ?>
       <tr>
-        <td><a href="<?= b() ?>/admin/cliente/<?= (int) $r['account_id'] ?>"><b><?= Support::e($r['name'] ?: '—') ?></b></a><?= !empty($r['is_test']) ? ' <span class="badge badge--sea">Prova</span>' : '' ?><br>
+        <td><a href="<?= b() ?>/admin/cliente/<?= (int) $r['account_id'] ?>"><b><?= Support::e($r['name'] ?: '—') ?></b></a><?= !empty($r['is_test']) ? ' <span class="badge badge--sea">Prova</span>' : '' ?><?= !empty($r['is_staff']) ? ' <span class="badge badge--pine">Staff</span>' : '' ?><br>
           <span class="small muted"><?= Support::e($r['email']) ?></span><?= $r['email_verified_at'] ? '' : ' <span class="badge badge--ochre">non confermata</span>' ?></td>
         <td class="small"><code class="codice-mw"><?= Support::e((string) ($r['code'] ?? '')) ?></code></td>
         <td><?= Support::e($r['struttura'] ?: '—') ?><?= $r['citta'] ? '<br><span class="small muted">' . Support::e($r['citta']) . '</span>' : '' ?>
           <?= $r['strutture'] > 1 ? '<br><span class="small muted">+' . ($r['strutture'] - 1) . ((int) $r['strutture'] === 2 ? ' altra' : ' altre') . '</span>' : '' ?></td>
-        <td><?= Support::e($r['plan']) ?><?= $r['plan_version'] ? ' <span class="tiny muted">v' . (int) $r['plan_version'] . '</span>' : '' ?></td>
+        <td><?= Support::e($r['plan']) ?><?= !empty($r['plan_q']) ? ' · ' . (int) $r['plan_q'] . ' strutture' : '' ?><?= $r['plan_version'] ? ' <span class="tiny muted">v' . (int) $r['plan_version'] . '</span>' : '' ?></td>
         <td><span class="badge badge--<?= $r['stato'][1] ?>"><?= Support::e($r['stato'][0]) ?></span></td>
         <td class="small"><?= $r['scadenza'] !== '' ? Support::e(Support::date($r['scadenza'])) . '<br><span class="tiny muted">' . Support::e(['automatico' => 'si rinnova', 'disattivato' => 'non si rinnova', 'staff' => 'dallo staff'][$r['rinnovo']] ?? '') . '</span>' : '—' ?></td>
         <td class="small"><?= $r['omaggio'] !== '' ? Support::e(Support::date($r['omaggio'])) : '<span class="muted">—</span>' ?></td>

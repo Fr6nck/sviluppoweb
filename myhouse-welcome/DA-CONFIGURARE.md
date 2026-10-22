@@ -394,6 +394,17 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 9. **Codici sconto**: «Valido fino al» è ora già compilato con il 31 dicembre; cambialo se serve.
 10. Restano in italiano (per ora): l'email d'invito all'amico e le email scritte dall'amministrazione al cliente (rinnovo fermato, cambio piano, rimborso, password provvisoria).
 
+## 4s. 9R (22 ottobre): giudizio, pagamenti di prova, staff, cambio proposto, Portfolio
+
+1. **Carica e apri una pagina qualsiasi**: la migrazione 062 gira da sola. Poi Amministrazione → Sistema → Cache → «Svuota tutto».
+2. **Termini e privacy** passano alla versione 2026-10-21: al primo accesso i clienti vedono la finestra per riaccettarli (8J). Se in Impostazioni → Titolare e documenti legali hai scritto a mano una versione, aggiornala tu.
+3. **Testi rivisti**: in Testi e foto controlla «Giudizio con sconto · casella», «Sconto massimo · inviti e giudizio», il titolo di «Porta un amico» e le email «Fino al 55%». I testi salvati identici a quelli di serie vecchi si sono aggiornati da soli; quelli cambiati a mano restano: riscrivili con la formula dei due programmi.
+4. **Pagamenti di prova**: da ora i pagamenti fatti con le chiavi di test di Stripe non entrano nei conti (lo dice il webhook). Quelli di prima, se ci sono, escludili a mano da Cassa → mese → «Escludi dai conti» con il motivo.
+5. **Account di prova da togliere**: scheda cliente → «Elimina account di prova» (solo senza pagamenti live), scrivendo «ELIMINA» e il codice cliente.
+6. **Staff**: per chi prova il sistema da dentro, scheda cliente → «Attiva come staff» (piano, strutture, fino al). Non usare più i piani dati a mano per i tester.
+7. **Portfolio**: se hai creato a mano su Stripe il Price della prima struttura (`stripe_price_id`), il nome della voce in fattura è quello del prodotto su Stripe: chiamalo «MyHouse Welcome Portfolio — prima struttura». Poi, una volta, `php app/tools/verifica-stripe.php --portfolio` (va bene anche con la chiave live: solo letture) o Anomalie → «Ricontrolla con Stripe le quantità dei Portfolio».
+8. **Foto di Francesco (demo)**: manca. Metti un ritratto generato con l'IA (nessuna persona reale), quadrato, almeno 800×800, in `_brief/claude-code/pronti/checco/francesco.jpg` e chiedi di collegarlo alla demo; fino ad allora resta la porta rossa.
+
 ## 4r. 9N 10 bis, 9O, 9P, 9Q (21 ottobre): offerta su misura, rimborsi, SEPA, IVA per i privati, partner, email «Fino al 55%» e bozze
 
 1. **Carica e apri una pagina qualsiasi**: le migrazioni 058–061 girano da sole. Poi **Amministrazione → Diagnostica → Stripe → «Ricontrolla»**: ogni voce deve essere «OK». Le due voci «Da controllare a mano» (Adaptive Pricing spento, email di Stripe ai clienti spente): controllale su Stripe e premi **«Confermo»**.

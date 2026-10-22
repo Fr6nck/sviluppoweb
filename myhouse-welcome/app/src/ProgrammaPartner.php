@@ -195,6 +195,8 @@ final class ProgrammaPartner
     {
         $p = self::diAccount($accountId);
         if (!$p || $p['stato'] !== 'attivo' || $imponibile <= 0 || (int) $p['commissione_pct'] <= 0) return null;
+        // 9R · Niente commissione su un pagamento di test di Stripe, di un account staff o escluso dai conti.
+        if (Billing::$liveEvento === false || Staff::e($accountId) || isset(Gestione::esclusi()[$paymentId])) return null;
         if (Db::one('SELECT id FROM partner_commissioni WHERE payment_id = ?', [$paymentId])) return null;
         $ultimo = Db::val("SELECT tipo FROM partner_commissioni WHERE account_id = ? AND importo_cents > 0 ORDER BY id DESC", [$accountId]);
         $tipo = $ultimo === null || $ultimo === false ? 'primo_anno' : ($ciclo ? 'rinnovo' : (string) $ultimo);

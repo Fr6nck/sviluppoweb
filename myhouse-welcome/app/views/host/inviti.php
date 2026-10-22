@@ -72,6 +72,7 @@ $nI = ['{amico}' => Inviti::AMICO, '{passo}' => Inviti::PASSO, '{max}' => Inviti
             <?php if ($am['struttura'] !== ''): ?><span class="small muted"><?= Support::e($am['struttura']) ?></span><?php endif; ?></span>
           <span class="small muted"><?= Support::e(MHW\Pannello::data($am['data'])) ?></span>
           <span class="badge badge--<?= $am['pubblicato'] ? 'pine' : 'ochre' ?>"><?= Support::e($am['stato']) ?></span>
+          <?php if (!empty($am['casella'])): /* 9R · il suo rettangolo nella barra */ ?><span class="tiny muted"><?= Support::e($am['pubblicato'] ? tf('rettangolo {n}', ['{n}' => $am['casella']]) : tf('rettangolo {n}, tratteggiato', ['{n}' => $am['casella']])) ?></span><?php endif; ?>
           <?php if ($am['risparmio'] > 0): ?>
             <span class="small invito-entrati__euro"><?= t('Ti ha fatto risparmiare') ?> <b><?= Support::e(Support::money((int) $am['risparmio'], $inv['valuta'])) ?></b></span>
           <?php elseif ($am['status'] === 'oltre'): ?><span class="small muted"><?= t('Oltre il massimo') ?></span>

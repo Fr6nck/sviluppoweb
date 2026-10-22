@@ -52,6 +52,8 @@ T,
 
 Puoi cambiare piano da Account & Fatturazione. Se passi a un piano superiore o aggiungi strutture paghi subito solo la differenza per i giorni che restano fino al rinnovo, e la data di rinnovo non cambia. Se passi a un piano inferiore il cambio vale dal rinnovo successivo: fino ad allora resti sul piano già pagato, senza rimborsi.
 
+**Cambio proposto da noi.** Possiamo proporti un cambio di piano con uno sconto, per email o messaggio, con un link: vale solo con la tua conferma da quel link, entro la data indicata. Senza la tua conferma non cambia niente.
+
 I codici sconto valgono solo sul primo anno del primo abbonamento: dal rinnovo si paga il prezzo pieno del piano. Non si sommano tra loro né con lo sconto di un invito: a ogni abbonamento si applica un solo codice. Per «Invita un amico» valgono le condizioni del punto 12.
 
 **Offerte su misura.** Oltre il numero massimo di strutture del Portfolio ti facciamo un'offerta su misura: un prezzo annuo concordato per tutte le strutture, valido fino alla data indicata nell'offerta, che vale **anche ai rinnovi**. Gli sconti del programma «Invita un amico» e «Giudizio con sconto» non si applicano in automatico alle offerte su misura: un eventuale sconto sul rinnovo lo decidiamo con te e te lo comunichiamo con l'avviso che precede il rinnovo. Per cambiare il numero di strutture ti mandiamo una nuova offerta, che vale subito (pagando la differenza per i giorni che restano) oppure dal rinnovo.
@@ -134,14 +136,22 @@ In tutti gli altri casi è competente in via esclusiva il **foro di Perugia**.
 T,
 'termini.17.titolo' => 'Giudizio con sconto, sconto sul rinnovo e codice omaggio',
 'termini.17.testo' => <<<'T'
-Con un'unica casella, al pagamento o dal pannello (Impostazioni → Giudizio con sconto), aderisci al programma «Giudizio con sconto» e hai il {giudizio}% di sconto: sul primo anno se aderisci al pagamento, sul rinnovo successivo se aderisci dopo. **Se non aderisci, non pubblichiamo nulla di te: né la scheda né un giudizio.**
+**Cos'è.** Un programma facoltativo: chi aderisce si impegna a lasciare, dopo la pubblicazione della guida, un voto da 1 a 5 e un commento sul servizio; in cambio riceve uno sconto del {giudizio}% sul prezzo di listino dell'abbonamento. L'adesione si fa con un'unica casella, al pagamento o dal pannello (Impostazioni → Giudizio con sconto).
 
-- Il programma comprende **due pubblicazioni, decise da MyHouse Welcome caso per caso**, solo per chi ha aderito: la tua scheda tra «Le guide dei nostri host» (da quando pubblichi la guida, anche senza foto, con nome della struttura, copertina se c'è, logo, tuo nome senza cognome, città) e il tuo giudizio in «Cosa dicono di noi» (voto e commento). Possiamo pubblicarne una sola, tutte e due o nessuna, e toglierle quando vogliamo: lo sconto resta comunque. Non mostriamo link alla guida, la tua foto, né dati dei tuoi ospiti. Scegli tu se mostrare copertina e logo.
-- Ti impegni a lasciare, dopo 30 giorni dalla pubblicazione, un voto da 1 a 5 con un commento. **Lo sconto non dipende dal voto**: vale anche con una stella. Possiamo rispondere pubblicamente al giudizio.
-- **Puoi ritirarti quando vuoi**: scheda e giudizio spariscono subito. Lo sconto già avuto resta; quello promesso sul rinnovo decade se ti ritiri prima del rinnovo. La scheda sparisce da sola se la guida è archiviata, l'abbonamento scade o l'account viene chiuso.
-- Lo sconto del programma si ha **una sola volta** per account; chi si ritira non può aderire di nuovo.
-- Possiamo chiudere il programma ai nuovi clienti: gli sconti promessi restano.
-- Sono esclusi gli account di prova e di dimostrazione.
+**Lo sconto.** Vale sul rinnovo successivo all'adesione (sul primo anno se si aderisce al pagamento) e si somma allo sconto del programma «Porta un amico», fino a un massimo complessivo del {totale}% sul prezzo di listino. Non si somma ai codici sconto (vale il più alto) e non è disponibile con un codice omaggio finché l'abbonamento non è a pagamento. **Lo sconto matura solo quando il giudizio (voto e commento) è stato effettivamente lasciato**: senza giudizio al momento del rinnovo, il {giudizio}% non si applica e sarà applicato al rinnovo successivo al giudizio. Lo sconto non dipende dal voto: vale anche con una stella.
+
+**Cosa possiamo pubblicare.** Aderendo, l'host autorizza MyHouse Welcome a mostrare nella home di welcomemyhouse.it, a propria discrezione e senza obbligo:
+
+- la **scheda** della struttura (nome della struttura, foto di copertina, logo, nome dell'host senza cognome, città), anche prima del giudizio e anche in assenza di giudizio; con il piano Portfolio possono comparire tutte le strutture dell'account;
+- il **giudizio** (voto, commento, nome e struttura).
+
+**Il logo della struttura, se caricato, compare nella scheda così com'è: se scegli di usare come logo una tua fotografia, acconsenti a che venga mostrata nella home del sito. Puoi cambiarlo o toglierlo in ogni momento dal pannello.**
+
+Per la riservatezza dell'host e dei suoi ospiti, le schede e i giudizi non contengono link alla guida, non sono cercabili dai motori di ricerca, non mostrano la foto dell'host né alcun dato degli ospiti. Non pubblichiamo nulla di chi non aderisce.
+
+**Ritiro.** L'host può ritirarsi in ogni momento dal pannello: scheda e giudizio spariscono dalla home entro 24 ore. Lo sconto già applicato resta; quello promesso sul rinnovo decade se il ritiro avviene prima del rinnovo. Scheda e giudizio spariscono anche se la guida viene archiviata, l'abbonamento scade o l'account viene chiuso. MyHouse Welcome può togliere o non pubblicare una scheda o un giudizio senza che ciò tocchi lo sconto, e può chiudere il programma ai nuovi aderenti con un preavviso di 30 giorni, mantenendo gli sconti già promessi.
+
+**Promemoria.** Chi ha aderito e non ha ancora lasciato il giudizio riceve un promemoria dopo 30 giorni dalla pubblicazione e un secondo 30 giorni prima del rinnovo.
 
 **Sconto sul rinnovo, una sola percentuale.** Lo sconto del giudizio e quelli degli inviti (punto 12) si sommano e si applicano **una sola volta sul prezzo di listino** del rinnovo: per esempio 10 inviti (50%) e il giudizio (5%) fanno il 55%. Non si sommano ai codici sconto, che valgono solo sul primo anno: tra codice e sconti di sistema vale il più alto.
 
@@ -399,10 +409,10 @@ T,
 
 // ================================================================ AGGIORNAMENTI (la finestra nel pannello e l'email)
 'legale.novita' => <<<'T'
-«Giudizio con sconto»: la scheda in «Le guide dei nostri host» e il giudizio in «Cosa dicono di noi» sono due pubblicazioni decise da noi, solo per chi aderisce; se non aderisci non pubblichiamo nulla di te, e puoi ritirarti quando vuoi.
+«Giudizio con sconto»: il 5% matura solo quando hai lasciato il giudizio (voto e commento); senza giudizio al rinnovo non si applica e passa al rinnovo successivo. Il logo che carichi compare così com'è nella scheda in home.
+Programma partner: con il codice di un partner hai uno sconto sul primo anno; al partner va una commissione sui tuoi pagamenti, senza i tuoi dati personali.
+Cambio di piano proposto da noi con uno sconto: vale solo con la tua conferma, dal link che ti mandiamo.
 Sconto sul rinnovo, una sola percentuale: inviti e giudizio si sommano e si applicano una volta sul prezzo di listino (fino al 55%).
-Codice omaggio: i mesi gratuiti, poi il primo pagamento a prezzo pieno; da lì inviti e giudizio valgono dal primo rinnovo, con gli avvisi 30 e 7 giorni prima.
-Traduzioni suggerite comprese in Plus e Portfolio entro un limite annuale di caratteri.
 T,
 ],
 
@@ -444,6 +454,8 @@ T,
 **Automatic renewal.** The subscription is yearly and, unless you turn renewal off, it renews automatically at the end of the period for another year, charged to the payment method on file. We notify you by email and in the dashboard 30 and 7 days before. You can turn off renewal at any time from Account & Billing: the service stays active until the end of the period paid and nothing else is charged. Prices are shown excluding VAT; tax is calculated at checkout.
 
 You can change plan from Account & Billing. If you move to a higher plan or add properties you pay straight away only the difference for the days left until renewal, and the renewal date does not change. If you move to a lower plan the change applies from the next renewal: until then you keep the plan already paid, without refunds.
+
+**A change proposed by us.** We may propose a change of plan with a discount, by email or message, with a link: it applies only with your confirmation from that link, by the date indicated. Without your confirmation nothing changes.
 
 Discount codes apply only to the first year of the first subscription: from renewal the full price of the plan applies. They cannot be combined with each other or with an invitation discount: only one code applies to each subscription. "Invite a friend" follows the conditions in section 12.
 
@@ -527,14 +539,22 @@ In all other cases the **courts of Perugia** (Italy) have exclusive jurisdiction
 T,
 'termini.17.titolo' => 'Review with a discount, renewal discount and gift code',
 'termini.17.testo' => <<<'T'
-With a single checkbox, at checkout or from the dashboard (Settings → Review with a discount), you join the "Review with a discount" programme and get a {giudizio}% discount: on the first year if you join at checkout, on the following renewal if you join later. **If you do not join, we publish nothing about you: neither the card nor a review.**
+**What it is.** An optional programme: whoever joins undertakes to leave, after publishing the guide, a rating from 1 to 5 and a comment on the service; in return they get a {giudizio}% discount on the list price of the subscription. You join with a single checkbox, at checkout or from the dashboard (Settings → Review with a discount).
 
-- The programme includes **two publications, decided by MyHouse Welcome case by case**, only for those who joined: your card among "Our hosts' guides" (from the moment you publish the guide, even without photos, with property name, cover if there is one, logo, your first name without surname, town) and your review in "What they say about us" (rating and comment). We may publish just one, both or neither, and remove them whenever we like: the discount stays anyway. We do not show links to the guide, your photo or any data about your guests. You choose whether to show the cover and the logo.
-- You undertake to leave, 30 days after publishing, a rating from 1 to 5 with a comment. **The discount does not depend on the rating**: it applies even with one star. We may reply publicly to the review.
-- **You can leave whenever you like**: the card and the review disappear immediately. A discount already received stays yours; the one promised on the renewal lapses if you leave before the renewal. The card disappears by itself if the guide is archived, the subscription expires or the account is closed.
-- The programme discount is granted **once only** per account; whoever leaves cannot join again.
-- We may close the programme to new customers: promised discounts remain valid.
-- Trial and demo accounts are excluded.
+**The discount.** It applies to the renewal following the date you join (to the first year if you join at checkout) and adds up with the discount of the "Bring a friend" programme, up to a combined maximum of {totale}% of the list price. It does not add up with discount codes (the higher one applies) and is not available with a gift code until the subscription is paid. **The discount is earned only once the review (rating and comment) has actually been left**: without a review at the time of renewal, the {giudizio}% does not apply and will be applied to the renewal following the review. The discount does not depend on the rating: it applies even with one star.
+
+**What we may publish.** By joining, the host authorises MyHouse Welcome to show on the welcomemyhouse.it home page, at its own discretion and with no obligation:
+
+- the property **card** (property name, cover photo, logo, the host's first name without surname, town), even before the review and even without a review; with the Portfolio plan all the account's properties may appear;
+- the **review** (rating, comment, name and property).
+
+**The property logo, if uploaded, appears on the card as it is: if you choose to use a photograph of yourself as the logo, you agree to it being shown on the site's home page. You can change or remove it at any time from the dashboard.**
+
+To protect the privacy of the host and their guests, cards and reviews contain no link to the guide, cannot be found by search engines, and show neither the host's photo nor any guest data. We publish nothing about those who do not join.
+
+**Leaving.** The host can leave at any time from the dashboard: the card and the review disappear from the home page within 24 hours. A discount already applied stays; the one promised on the renewal lapses if the host leaves before the renewal. The card and the review also disappear if the guide is archived, the subscription expires or the account is closed. MyHouse Welcome may remove or not publish a card or a review without affecting the discount, and may close the programme to new members with 30 days' notice, keeping the discounts already promised.
+
+**Reminders.** Whoever has joined and has not yet left the review receives a reminder 30 days after publishing and a second one 30 days before the renewal.
 
 **Renewal discount, a single percentage.** The review discount and the invitation discounts (section 12) add up and are applied **once on the list price** of the renewal: for example 10 invitations (50%) and the review (5%) make 55%. They do not add up with discount codes, which apply to the first year only: between a code and the system discounts, the higher one applies.
 
@@ -800,10 +820,10 @@ T,
 
 // ================================================================ UPDATES (the dashboard window and the email)
 'legale.novita' => <<<'T'
-"Review with a discount": the card in "Our hosts' guides" and the review in "What they say about us" are two publications we decide on, only for those who join; if you do not join we publish nothing about you, and you can leave whenever you like.
-Renewal discount, a single percentage: invitations and the review add up and are applied once on the list price (up to 55%).
-Gift code: the free months, then the first payment at full price; from then on invitations and the review apply from the first renewal, with notices 30 and 7 days before.
-Suggested translations included in Plus and Portfolio within a yearly character limit.
+“Review with a discount”: the 5% is earned only once you have left the review (rating and comment); without a review at renewal it does not apply and moves to the following renewal. The logo you upload appears as it is on the home-page card.
+Partner programme: with a partner's code you get a discount on the first year; the partner receives a commission on your payments, without your personal data.
+A change of plan proposed by us with a discount: it applies only with your confirmation, from the link we send you.
+Renewal discount, a single percentage: invitations and review add up and are applied once on the list price (up to 55%).
 T,
 ],
 ];

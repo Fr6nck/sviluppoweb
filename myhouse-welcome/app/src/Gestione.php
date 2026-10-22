@@ -34,6 +34,63 @@ final class Gestione
         return self::conProva() ? " AND $col NOT IN (SELECT id FROM accounts WHERE is_test = 1)" : '';
     }
 
+    /** 9R: come senzaProva, e fuori anche gli account staff (Cassa, Prospetti, Scadenze, Quadro: non pagano). */
+    public static function senzaProvaNeStaff(string $col): string
+    {
+        return self::senzaProva($col) . (Staff::disponibili() ? " AND $col NOT IN (SELECT id FROM accounts WHERE is_staff = 1)" : '');
+    }
+
+    // ------------------------------------------------------------------ 9R · pagamenti esclusi dai conti
+
+    /** @return array<string,string> rif («ordine:N», «fattura:in_…», «rimborso:N») => motivo, per i pagamenti esclusi a mano. */
+    public static function esclusi(): array
+    {
+        return Migrator::tableExists('pagamenti_esclusi') ? array_column(Db::all('SELECT rif, motivo FROM pagamenti_esclusi'), 'motivo', 'rif') : [];
+    }
+
+    /**
+     * «Escludi dai conti»: il pagamento resta nell'elenco della Cassa, barrato, ma non entra in imponibile, netto, Prospetti,
+     * Quadro e commissioni partner (quelle ancora da liquidare diventano «esclusa»). L'abbonamento del cliente non cambia.
+     */
+    public static function escludi(string $rif, string $motivo, int $adminId): void
+    {
+        if (!Migrator::tableExists('pagamenti_esclusi') || !preg_match('/^(ordine|fattura|rimborso):[A-Za-z0-9_]+$/', $rif)) throw new \RuntimeException('Pagamento sconosciuto.');
+        $motivo = trim(mb_substr($motivo, 0, 200));
+        if ($motivo === '') throw new \RuntimeException('Scrivi il motivo: resta nel Registro azioni.');
+        $acc = self::accountDi($rif);
+        Db::tx(function () use ($rif, $motivo, $adminId, $acc) {
+            Db::run('DELETE FROM pagamenti_esclusi WHERE rif = ?', [$rif]);
+            Db::insert('pagamenti_esclusi', ['rif' => $rif, 'account_id' => $acc, 'motivo' => $motivo, 'escluso_da' => $adminId, 'created_at' => Support::now()]);
+            if (Migrator::tableExists('partner_commissioni')) Db::run("UPDATE partner_commissioni SET stato = 'esclusa' WHERE payment_id = ? AND stato = 'maturata'", [$rif]);
+        });
+        Auth::audit('pagamento.escluso', null, ['rif' => $rif, 'cliente' => $acc ? Codici::cliente($acc) : '', 'motivo' => $motivo, 'admin' => $adminId]);
+    }
+
+    /** «Rimetti»: il pagamento torna nei conti (e la sua commissione partner, se era stata esclusa). */
+    public static function rimetti(string $rif, int $adminId): void
+    {
+        if (!Migrator::tableExists('pagamenti_esclusi')) return;
+        $acc = self::accountDi($rif);
+        Db::run('DELETE FROM pagamenti_esclusi WHERE rif = ?', [$rif]);
+        if (Migrator::tableExists('partner_commissioni')) Db::run("UPDATE partner_commissioni SET stato = 'maturata' WHERE payment_id = ? AND stato = 'esclusa'", [$rif]);
+        Auth::audit('pagamento.rimesso', null, ['rif' => $rif, 'cliente' => $acc ? Codici::cliente($acc) : '', 'admin' => $adminId]);
+    }
+
+    /** Il cliente di un pagamento dal suo riferimento (0 se non si trova). */
+    private static function accountDi(string $rif): int
+    {
+        [$tipo, $id] = explode(':', $rif, 2) + ['', ''];
+        if ($tipo === 'ordine') return (int) Db::val('SELECT account_id FROM orders WHERE id = ?', [(int) $id], 0);
+        if ($tipo === 'rimborso') return Migrator::tableExists('rimborsi') ? (int) Db::val('SELECT account_id FROM rimborsi WHERE id = ?', [(int) $id], 0) : 0;
+        foreach (Db::all("SELECT payload FROM webhook_events WHERE provider = 'stripe' AND kind = 'invoice.paid' AND payload LIKE ?", ['%' . $id . '%']) as $r) {
+            $inv = (json_decode((string) $r['payload'], true) ?: [])['data']['object'] ?? [];
+            if ((string) ($inv['id'] ?? '') !== $id) continue;
+            return (int) (Db::val('SELECT account_id FROM subscriptions WHERE provider_subscription_id = ? ORDER BY id DESC', [(string) ($inv['subscription'] ?? '')], 0)
+                ?: Db::val("SELECT id FROM accounts WHERE stripe_customer_id = ? AND stripe_customer_id <> ''", [(string) ($inv['customer'] ?? '')], 0));
+        }
+        return 0;
+    }
+
     /** 7F: la colonna «is_test» per gli elenchi (0 prima della migrazione 039). */
     public static function colonnaProva(string $alias = 'a'): string
     {
@@ -60,7 +117,7 @@ final class Gestione
              FROM subscriptions s JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id
              JOIN package_versions pv ON pv.id = s.package_version_id JOIN packages pk ON pk.id = pv.package_id
              WHERE s.id = (SELECT MAX(s2.id) FROM subscriptions s2 WHERE s2.account_id = s.account_id)
-               AND s.provider <> 'dimostrazione' AND u.email NOT LIKE ?" . self::senzaProva('a.id') . " AND s.current_period_end <> ''
+               AND s.provider NOT IN ('dimostrazione', 'staff') AND u.email NOT LIKE ?" . self::senzaProvaNeStaff('a.id') . " AND s.current_period_end <> ''
                AND s.current_period_end > ? AND s.current_period_end <= ?
              ORDER BY s.current_period_end, s.id",
             [self::demo(), self::iso($ora - 30 * self::GIORNO), self::iso($ora + $giorni * self::GIORNO)]);
@@ -330,9 +387,87 @@ final class Gestione
         }
         $aggiungi('Guide pubblicate con un codice di accesso', 'bassa', 'Solo per sapere: l\'host ha scelto di pubblicarle. Non vanno tolte né bloccate; se vuoi, suggerisci di comunicare i codici in privato.', $righe);
 
+        // 20. 9R · Portfolio: la quantità pagata su Stripe (dall'ultimo controllo), quella nel sito e le guide pubblicate.
+        $righe = [];
+        $letti = self::portfolioLetti();
+        foreach (self::portfolioAttivi() as $s) {
+            $q = (int) $s['quantity']; $pub = (int) $s['pubblicate']; $st = $letti[(int) $s['id']]['stripe'] ?? null;
+            if ($st !== null && $st !== $q) {
+                $righe[] = [$chi($s), 'Stripe ' . $st . ' strutture · sito ' . $q . ' · pubblicate ' . $pub . ' (controllo del ' . Support::date((string) $letti[(int) $s['id']]['quando']) . ')', $cliente($s),
+                            ['/admin/anomalie/portfolio/' . (int) $s['id'] . '/allinea', 'Allinea al valore di Stripe (' . $st . ')']];
+            } elseif ($pub > $q) {
+                $righe[] = [$chi($s), 'pubblicate ' . $pub . ' guide su ' . $q . ' strutture pagate' . ($st !== null ? ' (Stripe: ' . $st . ')' : ''), $cliente($s)];
+            }
+        }
+        $aggiungi('Portfolio: quantità non allineata', 'alta', 'Il numero di strutture pagato su Stripe, quello del sito e le guide pubblicate devono coincidere. «Ricontrolla con Stripe» legge le quantità; «Allinea al valore di Stripe» corregge il sito (Stripe è quello che il cliente paga).', $righe);
+
         $ordine = ['alta' => 0, 'media' => 1, 'bassa' => 2];
         usort($voci, fn($a, $b) => $ordine[$a['gravita']] <=> $ordine[$b['gravita']]);
         return ['voci' => $voci, 'superati' => $superati];
+    }
+
+    // ------------------------------------------------------------------ 9R · Portfolio: Stripe, sito e guide pubblicate
+
+    private static function filePortfolio(): string { return MHW_APP . '/storage/.portfolio-stripe.json'; }
+
+    /** Gli abbonamenti Stripe attivi di un piano a strutture, con le guide pubblicate dell'account. */
+    public static function portfolioAttivi(): array
+    {
+        $out = [];
+        foreach (Db::all("SELECT s.*, u.email, u.name AS cliente FROM subscriptions s JOIN accounts a ON a.id = s.account_id JOIN users u ON u.id = a.user_id
+                          JOIN package_versions pv ON pv.id = s.package_version_id
+                          WHERE s.status IN ('active', 'trialing', 'past_due') AND s.provider = 'stripe' AND pv.per_property = 1 AND u.email NOT LIKE ?" . self::senzaProvaNeStaff('a.id') . '
+                          ORDER BY s.id', [self::demo()]) as $s) {
+            if (!Subscriptions::valid($s, 30)) continue;
+            $s['pubblicate'] = (int) Db::val("SELECT COUNT(*) FROM properties WHERE account_id = ? AND status = 'published' AND archived_at IS NULL AND is_demo < 2", [(int) $s['account_id']], 0);
+            $out[] = $s;
+        }
+        return $out;
+    }
+
+    /** L'ultimo controllo con Stripe: [subscription id del sito => [stripe => quantità, quando]]. */
+    public static function portfolioLetti(): array
+    {
+        $j = is_file(self::filePortfolio()) ? json_decode((string) @file_get_contents(self::filePortfolio()), true) : null;
+        return is_array($j) ? array_map(fn($x) => ['stripe' => isset($x['stripe']) ? (int) $x['stripe'] : null, 'quando' => (string) ($x['quando'] ?? '')], $j) : [];
+    }
+
+    /**
+     * «Ricontrolla con Stripe» (e tools/verifica-stripe.php): per ogni Portfolio attivo legge la subscription su Stripe e
+     * ricorda la quantità pagata. Solo letture. @return list<array{sub:int,cliente:string,stripe:?int,sito:int,pubblicate:int}>
+     */
+    public static function verificaPortfolio(): array
+    {
+        $letti = []; $out = [];
+        foreach (self::portfolioAttivi() as $s) {
+            $q = null;
+            if (Stripe::enabled() && (string) $s['provider_subscription_id'] !== '') {
+                try {
+                    $ss = Stripe::call('GET', 'subscriptions/' . rawurlencode((string) $s['provider_subscription_id']), ['expand' => ['items.data.price']]);
+                    [$q] = Billing::quantityFrom($ss, Plans::version((int) $s['package_version_id']) ?? [], (string) ($s['provider_extra_item_id'] ?? ''));
+                } catch (\Throwable $e) { Log::exception($e, 'verifica Portfolio su Stripe, abbonamento ' . $s['id']); }
+            }
+            $letti[(int) $s['id']] = ['stripe' => $q, 'quando' => Support::now()];
+            $out[] = ['sub' => (int) $s['id'], 'cliente' => (string) ($s['cliente'] ?: $s['email']), 'stripe' => $q, 'sito' => (int) $s['quantity'], 'pubblicate' => (int) $s['pubblicate']];
+        }
+        @file_put_contents(self::filePortfolio(), json_encode($letti), LOCK_EX);
+        return $out;
+    }
+
+    /** «Allinea al valore di Stripe»: la quantità del sito (abbonamento e intended_quantity) diventa quella pagata su Stripe. */
+    public static function allineaPortfolio(int $subId, int $adminId): string
+    {
+        $s = Db::one('SELECT * FROM subscriptions WHERE id = ?', [$subId]);
+        $st = self::portfolioLetti()[$subId]['stripe'] ?? null;
+        if (!$s || $st === null || $st < 1) throw new \RuntimeException('Prima «Ricontrolla con Stripe»: non so ancora quante strutture paga.');
+        Db::tx(function () use ($s, $st) {
+            Db::update('subscriptions', ['quantity' => $st, 'updated_at' => Support::now()], 'id = :id', ['id' => (int) $s['id']]);
+            Db::update('accounts', ['intended_quantity' => $st], 'id = :aid', ['aid' => (int) $s['account_id']]);
+        });
+        Entitlements::forget((int) $s['account_id']);
+        Auth::audit('portfolio.allineato', (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [(int) $s['account_id']], 0) ?: null,
+                    ['subscription' => (int) $s['id'], 'prima' => (int) $s['quantity'], 'dopo' => $st, 'admin' => $adminId]);
+        return 'Allineato: ' . $st . ' strutture, come su Stripe (prima ' . (int) $s['quantity'] . ').';
     }
 
     /** Il testo dell'avviso sull'indirizzo pubblico del bucket (Impostazioni e Anomalie). */
@@ -475,15 +610,22 @@ final class Gestione
     public static function incassatoStripe(string $filtro = ''): int
     {
         $s = self::scontiSessioni(); $tot = 0;
-        foreach (Db::all("SELECT amount_cents, discount_cents, provider_session_id FROM orders WHERE status = 'paid' AND provider = 'stripe'" . $filtro) as $o) {
+        $esclusi = self::esclusi();
+        foreach (Db::all("SELECT id, amount_cents, discount_cents, provider_session_id FROM orders WHERE status = 'paid' AND provider = 'stripe'" . $filtro
+                         . (Migrator::columnExists('orders', 'livemode') ? ' AND (livemode IS NULL OR livemode <> 0)' : '') . self::senzaProvaNeStaff('account_id')) as $o) {
+            if (isset($esclusi['ordine:' . (int) $o['id']])) continue;   // 9R
             $tot += max(0, (int) $o['amount_cents'] - ($s[(string) $o['provider_session_id']] ?? (int) $o['discount_cents']));
         }
         return $tot;
     }
 
-    public static function pagamenti(string $da, string $a): array
+    public static function pagamenti(string $da, string $a, bool $conEsclusi = false): array
     {
         $out = [];
+        // 9R · I pagamenti di prova di Stripe (livemode = 0) e quelli esclusi a mano: con $conEsclusi restano nell'elenco
+        // con il motivo («escluso»), altrimenti non ci sono (Cassa, Prospetti, Quadro, Clienti).
+        $esclusi = self::esclusi();
+        $conLive = Migrator::columnExists('orders', 'livemode');
         $conIva = Migrator::columnExists('orders', 'iva_cents');
         $conCodice = Migrator::columnExists('orders', 'code');
         // L'IVA e lo sconto dei pagamenti Stripe: dalla sessione di Checkout (total_details.amount_tax e amount_discount).
@@ -498,11 +640,15 @@ final class Gestione
         foreach (Db::all("SELECT o.id, o.kind, o.provider, o.amount_cents, o.discount_cents, o.sconti, o.quantity, o.created_at, o.account_id, o.provider_session_id,
                                  " . (Migrator::columnExists('orders', 'offerta_id') ? 'o.offerta_id' : 'NULL AS offerta_id') . ",
                                  " . ($conIva ? 'o.iva_cents, o.riferimento' : "NULL AS iva_cents, '' AS riferimento") . ", " . ($conCodice ? 'o.code' : "'' AS code") . ",
+                                 " . ($conLive ? 'o.livemode' : 'NULL AS livemode') . ",
                                  pk.name AS piano, u.email, u.name AS cliente
                           FROM orders o JOIN package_versions pv ON pv.id = o.package_version_id JOIN packages pk ON pk.id = pv.package_id
                           JOIN accounts a ON a.id = o.account_id JOIN users u ON u.id = a.user_id
-                          WHERE o.status = 'paid' AND o.provider IN ('stripe','bonifico') AND o.created_at >= ? AND o.created_at < ? AND u.email NOT LIKE ?" . self::senzaProva('a.id') . "
+                          WHERE o.status = 'paid' AND o.provider IN ('stripe','bonifico') AND o.created_at >= ? AND o.created_at < ? AND u.email NOT LIKE ?" . self::senzaProvaNeStaff('a.id') . "
                           ORDER BY o.created_at, o.id", [$da, $a, self::demo()]) as $o) {
+            $rif = 'ordine:' . (int) $o['id'];
+            $escluso = $o['livemode'] !== null && (int) $o['livemode'] === 0 ? 'Stripe test' : ($esclusi[$rif] ?? '');
+            if ($escluso !== '' && !$conEsclusi) continue;
             $iva = $o['iva_cents'] !== null ? (int) $o['iva_cents'] : ($ivaSessione[(string) $o['provider_session_id']] ?? null);
             $sconto = $scontoSessione[(string) $o['provider_session_id']] ?? (int) $o['discount_cents'];
             $netto = max(0, (int) $o['amount_cents'] - $sconto);
@@ -512,11 +658,15 @@ final class Gestione
                       'account_id' => (int) $o['account_id'], 'cliente' => (string) $o['cliente'], 'email' => (string) $o['email'],
                       'piano' => (string) $o['piano'] . (!empty($o['offerta_id']) ? ' su misura' : '') . ((int) $o['quantity'] > 1 ? ' · ' . (int) $o['quantity'] . ' strutture' : ''),
                       'sconti' => $sconto > 0 ? trim(Support::money($sconto) . ' ' . (string) $o['sconti']) : '',
-                      'riferimento' => (string) $o['riferimento'], 'fattura' => ''];
+                      'riferimento' => (string) $o['riferimento'], 'fattura' => '', 'rif' => $rif, 'escluso' => $escluso];
         }
         // I rinnovi: dalle fatture arrivate col webhook (IVA esclusa nell'imponibile).
         foreach (Db::all("SELECT processed_at, payload FROM webhook_events WHERE provider = 'stripe' AND kind = 'invoice.paid' AND processed_at >= ? AND processed_at < ?", [$da, $a]) as $r) {
-            $inv = (json_decode((string) $r['payload'], true) ?: [])['data']['object'] ?? [];
+            $ev = json_decode((string) $r['payload'], true) ?: [];
+            $inv = $ev['data']['object'] ?? [];
+            $rif = 'fattura:' . (string) ($inv['id'] ?? '');
+            $escluso = array_key_exists('livemode', $ev) && $ev['livemode'] === false ? 'Stripe test' : ($esclusi[$rif] ?? '');
+            if ($escluso !== '' && !$conEsclusi) continue;
             // 9O · Anche i conguagli pagati (subscription_update con un importo: strutture Portfolio in più a metà anno); i crediti no.
             $motivo = (string) ($inv['billing_reason'] ?? '');
             if ($motivo !== 'subscription_cycle' && !($motivo === 'subscription_update' && (int) ($inv['amount_paid'] ?? 0) > 0)) continue;
@@ -527,6 +677,7 @@ final class Gestione
                 ?: Db::one('SELECT a.id AS account_id, 1 AS quantity, \'\' AS piano, u.email, u.name AS cliente FROM accounts a JOIN users u ON u.id = a.user_id
                             WHERE a.stripe_customer_id = ? AND a.stripe_customer_id <> \'\'', [(string) ($inv['customer'] ?? '')]);
             if ($sub && (str_ends_with((string) $sub['email'], substr(self::demo(), 1)) || (self::conProva() && (int) Db::val('SELECT is_test FROM accounts WHERE id = ?', [(int) $sub['account_id']], 0)))) continue;
+            if ($sub && Staff::e((int) $sub['account_id'])) continue;   // 9R · lo staff non paga: fuori dai conti
             $netto = (int) ($inv['total_excluding_tax'] ?? $inv['subtotal'] ?? $inv['amount_paid'] ?? 0);
             $totale = (int) ($inv['total'] ?? $inv['amount_paid'] ?? $netto);
             $iva = isset($inv['tax']) ? (int) $inv['tax'] : (isset($inv['total_excluding_tax'], $inv['total']) ? $totale - $netto : null);
@@ -538,16 +689,19 @@ final class Gestione
                       'codice' => Codici::perFattura((string) ($inv['id'] ?? '')), 'account_id' => (int) ($sub['account_id'] ?? 0),
                       'cliente' => (string) ($sub['cliente'] ?? ''), 'email' => (string) ($sub['email'] ?? ''),
                       'piano' => (string) ($sub['piano'] ?? '') . (!empty($sub['offerta_id']) ? ' su misura' : '') . ((int) ($sub['quantity'] ?? 1) > 1 ? ' · ' . (int) $sub['quantity'] . ' strutture' : ''),
-                      'sconti' => $sconto > 0 ? Support::money($sconto) : '', 'riferimento' => '', 'fattura' => (string) ($inv['number'] ?? $inv['id'] ?? '')];
+                      'sconti' => $sconto > 0 ? Support::money($sconto) : '', 'riferimento' => '', 'fattura' => (string) ($inv['number'] ?? $inv['id'] ?? ''), 'rif' => $rif, 'escluso' => $escluso];
         }
         // I rimborsi fatti dall'amministrazione (importo IVA compresa, come su Stripe).
         if (Migrator::tableExists('rimborsi')) {
             foreach (Db::all("SELECT r.*, u.email, u.name AS cliente FROM rimborsi r JOIN accounts a ON a.id = r.account_id JOIN users u ON u.id = a.user_id
-                              WHERE r.stato <> 'fallito' AND r.created_at >= ? AND r.created_at < ? AND u.email NOT LIKE ?" . self::senzaProva('a.id') . ' ORDER BY r.created_at',
+                              WHERE r.stato <> 'fallito' AND r.created_at >= ? AND r.created_at < ? AND u.email NOT LIKE ?" . self::senzaProvaNeStaff('a.id') . ' ORDER BY r.created_at',
                              [$da, $a, self::demo()]) as $r) {
+                $rif = 'rimborso:' . (int) $r['id'];
+                $escluso = $esclusi[$rif] ?? '';
+                if ($escluso !== '' && !$conEsclusi) continue;
                 $out[] = ['data' => (string) $r['created_at'], 'tipo' => 'rimborso', 'via' => 'stripe', 'imponibile' => 0, 'iva' => 0, 'totale' => -(int) $r['amount_cents'],
                           'codice' => (string) ($r['code'] ?? ''), 'account_id' => (int) $r['account_id'], 'cliente' => (string) $r['cliente'], 'email' => (string) $r['email'],
-                          'piano' => '', 'sconti' => '', 'riferimento' => (string) $r['motivo'], 'fattura' => (string) $r['invoice_id']];
+                          'piano' => '', 'sconti' => '', 'riferimento' => (string) $r['motivo'], 'fattura' => (string) $r['invoice_id'], 'rif' => $rif, 'escluso' => $escluso];
             }
         }
         usort($out, fn($x, $y) => strcmp($x['data'], $y['data']));
@@ -596,7 +750,8 @@ final class Gestione
 
         foreach (Db::all("SELECT substr(created_at, 1, 7) AS m, COUNT(*) AS n FROM users WHERE role = 'host' AND email NOT LIKE ? AND created_at >= ?" . self::utentiVeri('id') . " GROUP BY substr(created_at, 1, 7)",
                          [self::demo(), $da]) as $r) $metti($r['m'], 'registrati', (int) $r['n']);
-        foreach (Db::all("SELECT MIN(created_at) AS primo FROM orders WHERE status = 'paid' AND provider IN ('stripe','bonifico') AND kind = 'new'" . self::senzaProva('account_id') . " GROUP BY account_id") as $r) {
+        foreach (Db::all("SELECT MIN(created_at) AS primo FROM orders WHERE status = 'paid' AND provider IN ('stripe','bonifico') AND kind = 'new'" . self::senzaProvaNeStaff('account_id')
+                         . (Migrator::columnExists('orders', 'livemode') ? ' AND (livemode IS NULL OR livemode <> 0)' : '') . " GROUP BY account_id") as $r) {
             $metti(substr((string) $r['primo'], 0, 7), 'nuovi', 1);
         }
         // 9N · Gli incassi dalla stessa fonte della Cassa (Gestione::pagamenti): ordini Stripe e bonifici, rinnovi dalle fatture, IVA esclusa.

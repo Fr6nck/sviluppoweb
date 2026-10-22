@@ -9,6 +9,8 @@ $tono = ['alta' => ['Subito', 'alert'], 'media' => ['Da guardare', 'ochre'], 'ba
   <div class="stack stack--sm">
     <h1>Anomalie.</h1>
     <p class="muted">Controlli fatti adesso sul database, sul registro tecnico e sui promemoria. I clienti di esempio non contano.</p>
+    <form method="post" action="<?= b() ?>/admin/anomalie/portfolio/ricontrolla" style="margin:0"><?= MHW\Csrf::field() ?>
+      <button class="btn btn--ghost btn--sm">Ricontrolla con Stripe le quantità dei Portfolio</button></form>
   </div>
 
   <?php if (!$voci): ?>
@@ -23,9 +25,10 @@ $tono = ['alta' => ['Subito', 'alert'], 'media' => ['Da guardare', 'ochre'], 'ba
       </div>
       <p class="small" style="margin:0"><?= Support::e($v['cosa']) ?></p>
       <ul class="anomalia__righe">
-        <?php foreach ($v['righe'] as [$testo, $dettaglio, $link]): ?>
+        <?php foreach ($v['righe'] as $rigaA): [$testo, $dettaglio, $link] = $rigaA; $azioneA = $rigaA[3] ?? null; ?>
           <li><span><?= $link !== '' ? '<a href="' . b() . Support::e($link) . '"><b>' . Support::e($testo) . '</b></a>' : '<b>' . Support::e($testo) . '</b>' ?></span>
-            <span class="small muted"><?= Support::e($dettaglio) ?></span></li>
+            <span class="small muted"><?= Support::e($dettaglio) ?></span>
+            <?php if ($azioneA): /* 9R · un'azione sulla riga (per esempio «Allinea al valore di Stripe») */ ?><form method="post" action="<?= b() . Support::e($azioneA[0]) ?>" style="margin:0"><?= MHW\Csrf::field() ?><button class="linkbtn"><?= Support::e($azioneA[1]) ?></button></form><?php endif; ?></li>
         <?php endforeach; ?>
       </ul>
     </section>

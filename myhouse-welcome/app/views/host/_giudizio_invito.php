@@ -28,8 +28,8 @@ $pct = Giudizi::disponibili() ? Giudizi::percentuale() : 5; ?>
     <form method="post" action="<?= b() ?>/giudizio/partecipo" class="giudizio-invito__partecipo"><?= Csrf::field() ?>
       <label class="check" style="align-items:flex-start"><input type="checkbox" name="partecipo" value="1" required style="margin-top:1px">
         <span><?= Giudizi::casellaHtml() /* 9L · lo stesso testo del pagamento */ ?></span></label>
-      <div class="row" style="gap:10px;align-items:center"><button class="btn btn--ghost btn--sm"><?= t('Aderisco') ?></button>
-        <a class="small" href="<?= b() ?>/termini#giudizio-sconto" target="_blank" rel="noopener"><?= t('Le regole') ?></a></div>
+      <p class="small muted" style="margin:0"><?= Giudizi::casellaNota(false) /* 9R */ ?> <?= t('Regole complete nei') ?> <a href="<?= b() ?>/termini#giudizio-sconto" target="_blank" rel="noopener"><?= t('Termini') ?></a><?= t(', punto «Giudizio con sconto».') ?></p>
+      <div class="row" style="gap:10px;align-items:center"><button class="btn btn--ghost btn--sm"><?= t('Aderisco') ?></button></div>
     </form>
   <?php elseif ($rq['pubblicata']): ?>
     <a class="btn btn--sm" href="<?= b() ?>/giudizio"><?= t('Giudizio con sconto') ?></a>

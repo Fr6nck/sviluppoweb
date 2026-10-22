@@ -12,8 +12,8 @@ $r->get('/admin', function () {
     Auth::requireAdmin();
     Demo::vetrinaAutomatica();
     if (($esitoM = MHW\Impostazioni::esitoMittente()) !== '') Support::flash($esitoM);   // 9H, una volta sola
-    // 7F: i clienti di prova non entrano nel quadro.
-    $np = fn(string $col) => Gestione::senzaProva($col);
+    // 7F: i clienti di prova non entrano nel quadro (9R: e nemmeno gli account staff).
+    $np = fn(string $col) => Gestione::senzaProvaNeStaff($col);
     $numeri = [
         'clienti'    => (int) Db::val("SELECT COUNT(*) FROM users WHERE role = 'host' AND email NOT LIKE ?" . Gestione::utentiVeri('id'), ['%@' . Demo::DOMINIO], 0),
         'abbonati'   => (int) Db::val("SELECT COUNT(DISTINCT account_id) FROM subscriptions WHERE status IN ('active','trialing')
@@ -151,6 +151,7 @@ $r->get('/admin/clienti', function () {
     Auth::requireAdmin();
     $cerca = trim((string) ($_GET['q'] ?? ''));
     $sql = 'SELECT u.id AS user_id, u.email, u.name, u.created_at, u.email_verified_at, a.id AS account_id, ' . Gestione::colonnaProva() . ' AS is_test'
+         . (MHW\Staff::disponibili() ? ', a.is_staff' : ', 0 AS is_staff')
          . (MHW\Codici::disponibili() ? ', a.code' : ", '' AS code") . '
             FROM users u JOIN accounts a ON a.user_id = u.id WHERE u.role = ?';
     $args = ['host'];
@@ -177,6 +178,8 @@ $r->get('/admin/clienti', function () {
         $v = $gov ? Plans::version($gov) : null;
         $row['plan'] = $v['name'] ?? '—';
         $row['plan_version'] = $v['version'] ?? null;
+        // 9R · «Portfolio · 3 strutture»: quelle pagate (abbonamento) o, prima del pagamento, quelle scelte.
+        $row['plan_q'] = $v && Plans::perProperty($v) ? (int) ($sub['quantity'] ?? Db::val('SELECT intended_quantity FROM accounts WHERE id = ?', [$aid], 1)) : 0;
         $props = Db::all('SELECT name, city, status FROM properties WHERE account_id = ? ORDER BY id', [$aid]);
         $row['struttura'] = $props[0]['name'] ?? '';
         $row['citta'] = $props[0]['city'] ?? '';
@@ -208,7 +211,7 @@ $r->get('/admin/clienti', function () {
     // 9Q · «Bozze da più di 21 giorni»: le stesse dell'email del giorno 21 e del contatore nel Quadro (Bozze::ferme).
     $ferme = $filtroStato === 'bozze21' ? array_flip(array_map(fn($b) => (int) $b['account_id'], MHW\Bozze::ferme())) : [];
     $passa = fn(array $x) => match ($filtroStato) {
-        '' => true, 'bozze21' => isset($ferme[(int) $x['account_id']]), 'omaggio' => $x['omaggio'] !== '', 'prova' => !empty($x['is_test']), 'manuale' => $x['manuale'],
+        '' => true, 'bozze21' => isset($ferme[(int) $x['account_id']]), 'omaggio' => $x['omaggio'] !== '', 'prova' => !empty($x['is_test']), 'manuale' => $x['manuale'], 'staff' => !empty($x['is_staff']),
         'maipagato' => $x['ultimo_pagamento'] === '' && empty($x['is_test']), default => $x['stato'][2] === $filtroStato };
     $rows = array_values(array_filter($rows, fn($x) => $passa($x) && ($filtroPiano === '' || $x['plan'] === $filtroPiano)));
     if (($_GET['formato'] ?? '') === 'csv') {
@@ -821,7 +824,7 @@ $r->get('/admin/richiami', function () {
             array_map(fn($x) => [str_replace(['T', 'Z'], [' ', ''], (string) $x['sent_at']), $x['kind'], $x['cliente'], $x['email'], $x['ref'], str_starts_with((string) $x['ref'], 'manuale-') ? 'sì' : ''], $righe));
     }
     $lock = MHW_APP . '/storage/richiami.lock';
-    View::out('admin/richiami', ['righe' => $righe, 'perTipo' => $perTipo, 'noGrazie' => $noGrazie, 'attivi' => $attivi, 'bozze' => Richiami::statoBozze(), 'sconti' => MHW\EmailSconti::elenco(),
+    View::out('admin/richiami', ['righe' => $righe, 'perTipo' => $perTipo, 'noGrazie' => $noGrazie, 'attivi' => $attivi, 'bozze' => Richiami::statoBozze(), 'sconti' => MHW\EmailSconti::elenco(), 'promemoriaGiudizio' => Richiami::statoPromemoriaGiudizio(),
                                  'giro' => is_file($lock) ? gmdate('Y-m-d\TH:i:s\Z', (int) filemtime($lock)) : '', 'cron' => (string) (Config::get('cron_token') ?? '') !== '',
                                  'nav' => 'richiami'], 'layout/cms');
 });
@@ -833,6 +836,15 @@ $r->post('/admin/richiami/sconti/{id}', function (array $a) {
     if ($ok) Auth::audit('richiamo.sconti', (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [(int) $a['id']], 0) ?: null, ['account_id' => (int) $a['id']]);
     Support::flash($msg, $ok ? 'ok' : 'err');
     Support::redirect('/admin/richiami#sconti');
+});
+
+/* 9R · «Manda adesso» il promemoria del giudizio (dopo la pubblicazione o prima del rinnovo) a chi ha aderito senza lasciarlo. */
+$r->post('/admin/richiami/giudizio/{id}/{quale}', function (array $a) {
+    Auth::requireAdmin();
+    [$ok, $msg] = Richiami::mandaPromemoriaGiudizio((int) $a['id'], (string) $a['quale']);
+    if ($ok) Auth::audit('richiamo.giudizio', (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [(int) $a['id']], 0) ?: null, ['account_id' => (int) $a['id'], 'quale' => (string) $a['quale']]);
+    Support::flash($msg, $ok ? 'ok' : 'err');
+    Support::redirect('/admin/richiami#giudizio');
 });
 
 /* 9Q · «La finiamo noi»: dopo aver compilato la guida da «Entra come cliente», si segna nel Registro azioni. */
@@ -860,6 +872,21 @@ $r->post('/admin/richiami/bozza/{id}/{tipo}', function (array $a) {
 $r->get('/admin/anomalie', function () {
     Auth::requireAdmin();
     View::out('admin/anomalie', Gestione::anomalie() + ['nav' => 'anomalie'], 'layout/cms');
+});
+
+/* 9R · Portfolio: la quantità pagata su Stripe confrontata con il sito; «Allinea al valore di Stripe». */
+$r->post('/admin/anomalie/portfolio/ricontrolla', function () {
+    Auth::requireAdmin();
+    $esito = Gestione::verificaPortfolio();
+    $diversi = count(array_filter($esito, fn($x) => $x['stripe'] !== null && $x['stripe'] !== $x['sito']));
+    Support::flash(count($esito) . ' Portfolio controllati su Stripe' . ($diversi ? ': ' . $diversi . ' con la quantità diversa.' : ': tutti allineati.'), $diversi ? 'err' : 'ok');
+    Support::redirect('/admin/anomalie');
+});
+$r->post('/admin/anomalie/portfolio/{sid}/allinea', function (array $a) {
+    $admin = Auth::requireAdmin();
+    try { Support::flash(Gestione::allineaPortfolio((int) $a['sid'], (int) $admin['id'])); }
+    catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
+    Support::redirect('/admin/anomalie');
 });
 
 // --------------------------------------------------------------- prospetti
@@ -897,9 +924,11 @@ $r->get('/admin/cassa', function () {
     if (($_GET['formato'] ?? '') === 'csv') {
         if (!empty($_GET['pagamenti'])) {
             [$da, $a] = $mese !== '' ? [$mese . '-01', gmdate('Y-m-01', strtotime($mese . '-01 +1 month'))] : [$anno . '-01-01', ($anno + 1) . '-01-01'];
-            Gestione::csv('cassa-pagamenti-' . ($mese ?: $anno), ['Data', 'Codice', 'Cliente', 'Email', 'Tipo', 'Via', 'Piano', 'Sconti', 'Imponibile', 'IVA', 'Totale', 'Riferimento', 'Fattura'],
+            // 9R · Anche i pagamenti esclusi dai conti, con la colonna «Escluso» (sì e il motivo).
+            Gestione::csv('cassa-pagamenti-' . ($mese ?: $anno), ['Data', 'Codice', 'Cliente', 'Email', 'Tipo', 'Via', 'Piano', 'Sconti', 'Imponibile', 'IVA', 'Totale', 'Riferimento', 'Fattura', 'Escluso'],
                 array_map(fn($p) => [substr($p['data'], 0, 10), $p['codice'], $p['cliente'], $p['email'], $nomi[$p['tipo']], Gestione::VIE_INCASSO[$p['via']] ?? $p['via'], $p['piano'],
-                                     $p['sconti'], $eur($p['imponibile']), $eur($p['iva']), $eur($p['totale']), $p['riferimento'], $p['fattura']], Gestione::pagamenti($da, $a)));
+                                     $p['sconti'], $eur($p['imponibile']), $eur($p['iva']), $eur($p['totale']), $p['riferimento'], $p['fattura'],
+                                     ($p['escluso'] ?? '') !== '' ? 'sì · ' . $p['escluso'] : ''], Gestione::pagamenti($da, $a, true)));
         }
         $c = Gestione::cassa($anno);
         $riga = fn(string $et, array $m) => [$et, $m['nuovi'], $m['cambi'], $m['rinnovi'], $eur($m['stripe']), $eur($m['bonifico']), $eur($m['imponibile']), $eur($m['iva']),
@@ -908,9 +937,71 @@ $r->get('/admin/cassa', function () {
             [...array_map(fn($m) => $riga($m['mese'], $m), $c['mesi']), $riga('Totale ' . $anno, $c['totale'])]);
     }
     $pagamenti = [];
-    if ($mese !== '') $pagamenti = Gestione::pagamenti($mese . '-01', gmdate('Y-m-01', strtotime($mese . '-01 +1 month')));
+    if ($mese !== '') $pagamenti = Gestione::pagamenti($mese . '-01', gmdate('Y-m-01', strtotime($mese . '-01 +1 month')), true);
     View::out('admin/cassa', ['anno' => $anno, 'mese' => $mese, 'cassa' => Gestione::cassa($anno), 'prima' => Gestione::cassa($anno - 1)['totale'],
                               'pagamenti' => $pagamenti, 'nomi' => $nomi, 'nav' => 'cassa'], 'layout/cms');
+});
+
+/* 9R · «Attiva come staff» (piano, strutture, fino al, «non in vetrina») e «Togli lo staff». */
+$r->post('/admin/cliente/{id}/staff', function (array $a) {
+    Auth::requireAdmin();
+    $aid = (int) $a['id'];
+    try {
+        if (!empty($_POST['togli'])) { MHW\Staff::togli($aid); Support::flash('Non è più un account staff: torna un cliente normale, senza abbonamento attivo.'); }
+        else {
+            MHW\Staff::attiva($aid, (int) ($_POST['pv'] ?? 0), (int) ($_POST['strutture'] ?? 1), (string) ($_POST['fino'] ?? ''), empty($_POST['no_vetrina']));
+            Support::flash('Account staff attivo: niente pagamenti, fuori dai conti.');
+        }
+    } catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
+    Support::redirect('/admin/cliente/' . $aid . '#staff');
+});
+
+/* 9R · «Proponi un cambio di piano»: la proposta con lo sconto, per email (bottone «Accetta il cambio») o per WhatsApp. */
+$r->post('/admin/cliente/{id}/proposta', function (array $a) {
+    $admin = Auth::requireAdmin();
+    $aid = (int) $a['id'];
+    try {
+        $pr = MHW\ProposteCambio::crea($aid, (string) ($_POST['piano'] ?? ''), $_POST['strutture'] ?? null, (string) ($_POST['quando'] ?? 'subito'),
+                                       (int) ($_POST['sconto'] ?? 0), (int) ($_POST['giorni'] ?? MHW\ProposteCambio::GIORNI), (string) ($_POST['messaggio'] ?? ''), (int) $admin['id']);
+        $riga = Db::one('SELECT * FROM proposte_cambio WHERE id = ?', [$pr['id']]);
+        $_SESSION['proposta_wa'] = MHW\ProposteCambio::whatsapp($riga, $pr['token']);
+        if (($_POST['invio'] ?? '') === 'email') {
+            $ok = MHW\ProposteCambio::manda($riga, $pr['token']);
+            Support::flash($ok ? 'Proposta mandata per email. Qui sotto anche il messaggio per WhatsApp.' : 'Proposta creata, ma l\'email non è partita: usa il messaggio per WhatsApp qui sotto.', $ok ? 'ok' : 'err');
+        } else Support::flash('Proposta creata: copia il messaggio per WhatsApp qui sotto.');
+    } catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
+    Support::redirect('/admin/cliente/' . $aid . '#proposta');
+});
+$r->post('/admin/cliente/{id}/proposta/{pid}/annulla', function (array $a) {
+    Auth::requireAdmin();
+    MHW\ProposteCambio::annulla((int) $a['pid'], (int) $a['id']);
+    Support::flash('Proposta annullata: il link non vale più.');
+    Support::redirect('/admin/cliente/' . (int) $a['id'] . '#proposta');
+});
+
+/* 9R · «Elimina account di prova»: solo senza pagamenti live, con «ELIMINA {codice cliente}». */
+$r->post('/admin/cliente/{id}/elimina-prova', function (array $a) {
+    $admin = Auth::requireAdmin();
+    try {
+        $email = MHW\AccountProva::elimina((int) $a['id'], (string) ($_POST['conferma'] ?? ''), (int) $admin['id']);
+        Support::flash('Account di prova eliminato: ' . $email . ' è di nuovo libera per registrarsi.');
+        Support::redirect('/admin/clienti');
+    } catch (\RuntimeException $e) {
+        Support::flash($e->getMessage(), 'err');
+        Support::redirect('/admin/cliente/' . (int) $a['id'] . '#elimina-prova');
+    }
+});
+
+/* 9R · «Escludi dai conti» (con il motivo) / «Rimetti» un pagamento della Cassa. */
+$r->post('/admin/cassa/esclusione', function () {
+    $admin = Auth::requireAdmin();
+    $rif = (string) ($_POST['rif'] ?? '');
+    try {
+        if (!empty($_POST['rimetti'])) { Gestione::rimetti($rif, (int) $admin['id']); Support::flash('Pagamento rimesso nei conti.'); }
+        else { Gestione::escludi($rif, (string) ($_POST['motivo'] ?? ''), (int) $admin['id']); Support::flash('Pagamento escluso dai conti: resta nell\'elenco, barrato.'); }
+    } catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
+    [$an, $me] = explode('|', (string) ($_POST['torna'] ?? ''), 2) + ['', ''];
+    Support::redirect('/admin/cassa' . (preg_match('/^\d{4}$/', $an) ? '?anno=' . $an . (preg_match('/^\d{4}-\d{2}$/', $me) ? '&mese=' . $me . '#pagamenti' : '') : ''));
 });
 
 /* 9O · Cassa → «Commissioni partner»: un costo, a parte dagli incassi. Per partner le commissioni da liquidare, «Segna come pagata», CSV. */
@@ -1361,6 +1452,14 @@ $r->post('/admin/giudizi/{sid}/home', function (array $a) use ($tornaGiudizi) {
     $si = !empty($_POST['si']);
     $err = MHW\Vetrina::accendi((int) $a['sid'], $si, (string) ($_POST['motivo'] ?? ''));
     Support::flash($err === '' ? ($si ? 'Scheda approvata: è in vetrina.' : 'Scheda ritirata: il cliente vede «non in home al momento».') : $err, $err === '' ? 'ok' : 'err');
+    $tornaGiudizi('/admin/giudizi/' . (int) $a['sid']);
+});
+/* 9R · «Logo: non mostrare»: il logo caricato dal cliente resta nella guida, nella scheda compare il quadratino con l'arco. */
+$r->post('/admin/giudizi/{sid}/logo', function (array $a) use ($tornaGiudizi) {
+    Auth::requireAdmin();
+    $no = empty($_POST['si']);
+    MHW\Vetrina::nascondiLogo((int) $a['sid'], $no);
+    Support::flash($no ? 'Logo nascosto: nella scheda c\'è il quadratino con l\'arco.' : 'Logo di nuovo visibile nella scheda.');
     $tornaGiudizi('/admin/giudizi/' . (int) $a['sid']);
 });
 /* Il giudizio: acceso = in «Cosa dicono di noi», spento = non pubblicato (lo sconto resta). */

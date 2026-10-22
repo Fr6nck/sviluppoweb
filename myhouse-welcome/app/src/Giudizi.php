@@ -21,6 +21,29 @@ final class Giudizi
     public const STATI = ['promesso' => 'Promesso', 'applicato_primo_anno' => 'Applicato al primo anno', 'da_applicare_rinnovo' => 'Sul prossimo rinnovo',
                           'applicato_rinnovo' => 'Applicato al rinnovo', 'nessuno' => 'Nessuno'];
 
+    /**
+     * 9R · Il giudizio c'è (voto e commento lasciati, non ritirati)? Senza, lo sconto del 5% sul rinnovo non matura.
+     */
+    public static function conGiudizio(int $accountId): bool
+    {
+        $g = Testimonianze::diAccount($accountId);
+        return $g !== null && empty($g['withdrawn_at']);
+    }
+
+    /**
+     * 9R · Lo sconto del programma vale adesso? Adesione non ritirata E giudizio lasciato; oppure, per il solo primo anno,
+     * l'adesione al pagamento (è l'incentivo: il 5% sul primo pagamento anche prima del giudizio). Senza giudizio al rinnovo
+     * il 5% non si applica e va sul rinnovo successivo al giudizio.
+     */
+    public static function scontoAttivo(array $acc, bool $primoAnno = false): bool
+    {
+        if (!self::disponibili() || empty($acc['giudizio_adesione'])) return false;
+        $sch = Vetrina::disponibili() ? Vetrina::scheda((int) $acc['id']) : null;
+        if ($sch && !empty($sch['ritirato_at'])) return false;
+        if ($primoAnno && $acc['giudizio_adesione'] === 'pagamento') return true;
+        return self::conGiudizio((int) $acc['id']);
+    }
+
     /** Il programma è disponibile (migrazione 044 applicata)? */
     public static function disponibili(): bool
     {
@@ -77,6 +100,17 @@ final class Giudizi
     {
         // 9N · Nel pannello in inglese la casella è in inglese (ed è quella la prova salvata dell'adesione).
         return TestiSito::formatta(TestiSito::get('giudizio.casella', Pannello::en() ? 'en' : null), ['giudizio' => self::percentuale() . '%']);
+    }
+
+    /**
+     * 9R · La riga in piccolo sotto la casella (privacy, si somma agli amici, quando vale, ritiro): «Testi e foto» →
+     * giudizio.casella_nota. $alPagamento: «sul primo anno»; dal pannello «sul prossimo rinnovo». Il link ai Termini lo mette la vista.
+     */
+    public static function casellaNota(bool $alPagamento): string
+    {
+        $en = Pannello::en();
+        $quando = $alPagamento ? ($en ? 'on the first year' : 'sul primo anno') : ($en ? 'on your next renewal' : 'sul prossimo rinnovo');
+        return TestiSito::formatta(TestiSito::get('giudizio.casella_nota', $en ? 'en' : null), ['quando' => $quando, 'giudizio' => self::percentuale() . '%']);
     }
 
     /** 9L · Lo stesso testo anche dal pannello (una chiave sola). */
@@ -148,7 +182,8 @@ final class Giudizi
         $stato = (string) ($acc['giudizio_sconto_stato'] ?? '');
         // «Solo dopo il giudizio»: la casella al pagamento promette lo sconto, ma sul primo addebito lo si ha solo con il giudizio già inviato.
         $conGiudizio = self::quando() === 'adesione' || (($g = Testimonianze::diAccount((int) $acc['id'])) && $g['withdrawn_at'] === null);
-        $vale = ($acc['giudizio_adesione'] === 'pagamento' && $stato === 'promesso' && $conGiudizio) || $stato === 'da_applicare_rinnovo';
+        // 9R · Il 5% «sul rinnovo» (aderito dal pannello) vale come sconto del primo pagamento solo con il giudizio lasciato.
+        $vale = ($acc['giudizio_adesione'] === 'pagamento' && $stato === 'promesso' && $conGiudizio) || ($stato === 'da_applicare_rinnovo' && self::conGiudizio((int) $acc['id']));
         return $vale ? ['tipo' => 'giudizio', 'nome' => Pannello::t('Giudizio'), 'percento' => self::percentuale()] : null;
     }
 
@@ -167,7 +202,15 @@ final class Giudizi
      */
     public static function dopoGiudizio(array $acc): void
     {
-        if (!self::disponibili() || ($acc['giudizio_sconto_stato'] ?? '') !== 'promesso') return;
+        if (!self::disponibili()) return;
+        // 9R · Chi ha avuto il 5% sul primo anno (aderito al pagamento) e lascia il giudizio: il 5% torna sul rinnovo successivo.
+        // Chi ha aderito dal pannello è già «sul prossimo rinnovo»: con il giudizio il coupon del rinnovo lo comprende.
+        if (in_array($acc['giudizio_sconto_stato'] ?? '', ['applicato_primo_anno', 'da_applicare_rinnovo'], true) && !empty($acc['giudizio_adesione'])) {
+            if (($acc['giudizio_sconto_stato'] ?? '') === 'applicato_primo_anno') Db::update('accounts', ['giudizio_sconto_stato' => 'da_applicare_rinnovo'], 'id = :aid', ['aid' => (int) $acc['id']]);
+            try { self::aggiungiCoupon((int) $acc['id']); } catch (\Throwable $e) { Log::exception($e, 'giudizi: coupon sul rinnovo'); }
+            return;
+        }
+        if (($acc['giudizio_sconto_stato'] ?? '') !== 'promesso') return;
         $adesione = (string) ($acc['giudizio_adesione'] ?? '');
         // Adesione al pagamento con «solo dopo il giudizio»: finché non ha pagato lo sconto resta promesso (andrà sul primo
         // addebito come sconto di sistema); con un abbonamento già attivo (o in omaggio) va sul prossimo addebito, col coupon.
@@ -221,7 +264,8 @@ final class Giudizi
             return;
         }
         if ($stato !== 'da_applicare_rinnovo') return;
-        if ($comp['giudizio'] <= 0) { Log::error('Giudizi: rinnovo senza lo sconto atteso', ['account' => $aid, 'invoice' => (string) ($inv['id'] ?? '')]); return; }
+        // 9R · Senza giudizio il 5% non si applica a questo rinnovo: resta «sul prossimo rinnovo», dopo il giudizio.
+        if ($comp['giudizio'] <= 0) { if (self::conGiudizio($aid)) Log::error('Giudizi: rinnovo senza lo sconto atteso', ['account' => $aid, 'invoice' => (string) ($inv['id'] ?? '')]); return; }
         Db::update('accounts', ['giudizio_sconto_stato' => 'applicato_rinnovo', 'giudizio_sconto_at' => Support::now()], 'id = :aid', ['aid' => $aid]);
         Sconti::accoda($aid);
     }

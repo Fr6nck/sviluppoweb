@@ -119,7 +119,8 @@ $int = function (string $azione, int $id, bool $on, string $etichetta, bool $spe
             <span class="pillola <?= $pillola[$sg] ?? 'pillola--ocra' ?>"><?= Support::e(Vetrina::STATI_GIUDIZIO[$sg] ?? $sg) ?></span>
             <br><span class="tiny muted"><?= $r['richiesta'] ? 'richiesta il ' . Support::e(Support::date($r['richiesta'])) : 'guida non ancora pubblicata' ?></span>
           <?php endif; ?></td>
-        <td class="small giudizi-tabella__img"><?= $haCop ? 'Copertina ' . ($sc['copertina'] ? '✓' : '—') : 'Copertina —' ?><br><?= $haLogo ? 'Logo ' . ($sc['logo'] ? '✓' : '—') : 'Logo —' ?></td>
+        <td class="small giudizi-tabella__img"><?= $haCop ? 'Copertina ' . ($sc['copertina'] ? '✓' : '—') : 'Copertina —' ?><br><?= $haLogo ? 'Logo ' . ($sc['logo'] ? '✓' : '—') : 'Logo —' ?>
+          <?php if ($haLogo && $sc['logo'] && array_key_exists('logo_nascosto', $r)): /* 9R · acceso = il logo si vede; spento = «Logo: non mostrare» */ ?><br><span class="tiny">Logo in vetrina</span> <?= $int('logo', $id, (int) $r['logo_nascosto'] !== 1, 'Logo: non mostrare? ' . $nome) ?><?php endif; ?></td>
         <td class="small giudizi-azioni"><a href="<?= b() ?>/admin/giudizi/<?= $id ?>">Anteprima</a>
           <?php if ($ss === 'da_approvare'): ?> · <form method="post" action="<?= b() ?>/admin/giudizi/<?= $id ?>/home" style="display:inline;margin:0"><?= Csrf::field() ?><input type="hidden" name="si" value="1"><input type="hidden" name="torna" value="<?= Support::e($qui) ?>"><button class="linkbtn">Approva</button></form><?php endif; ?>
           <?php if ($ss === 'ritirata_admin'): ?> · <form method="post" action="<?= b() ?>/admin/giudizi/<?= $id ?>/home" style="display:inline;margin:0"><?= Csrf::field() ?><input type="hidden" name="si" value="1"><input type="hidden" name="torna" value="<?= Support::e($qui) ?>"><button class="linkbtn">Rimetti</button></form><?php endif; ?>

@@ -1092,6 +1092,13 @@ $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
     }
     $pkg = Db::one('SELECT * FROM packages WHERE id = ?', [$pv['package_id']]);
     $quantita = Plans::quantity($pv, (int) ($acc['intended_quantity'] ?? 1)) ?? (int) $pv['min_quantity'];
+    // 9R · Mai meno strutture di quelle create: il numero scelto (intended_quantity) sale al minimo e si dice.
+    if (Plans::perProperty($pv) && $quantita < ($minP = Plans::minimoPer($pv, $aid))) {
+        if ($minP > (int) $pv['max_quantity']) { Support::flash(MHW\tf('Hai {n} strutture: oltre {max} si chiede il preventivo.', ['{n}' => $minP, '{max}' => (int) $pv['max_quantity']]), 'err'); Support::redirect('/piano?piano=' . (int) $pv['id'] . '&strutture=' . $minP . '#preventivo'); }
+        Db::update('accounts', ['intended_quantity' => $minP], 'id = :aid', ['aid' => $aid]);
+        Support::flash(MHW\tf('Hai già {n} strutture: il minimo è {n}; per ridurre, archivia una struttura.', ['{n}' => $minP]), 'err');
+        Support::redirect('/pannello/' . $p['id'] . '/procedura/pubblica');
+    }
     // Il codice sconto (6E) si rivalida adesso: se non vale più si toglie, si dice perché e non si crea l'ordine.
     $codiceSconto = null;
     if (!empty($acc['intended_discount_code_id']) && ($riga = MHW\Sconti::riga((int) $acc['intended_discount_code_id']))) {

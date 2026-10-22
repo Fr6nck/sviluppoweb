@@ -149,9 +149,13 @@ $gemIds = $campD ? array_map(fn($g) => (int) $g['id'], $campD['gemelle']) : []; 
   </div>
 <?php endif; ?>
 
-<?php include __DIR__ . '/_fino55.php'; /* 9P · «Fino al 55%»: i due bottoni dell'email, finché non ha 10 inviti e il giudizio */ ?>
-
-<?php include __DIR__ . '/_invita.php'; /* Invita un amico: la barra e il link, per chi ha un abbonamento attivo */ ?>
+<?php if ($aidC && MHW\Staff::e($aidC) && ($subSt = MHW\Subscriptions::active($aidC))): $pvSt = MHW\Plans::version((int) $subSt['package_version_id']); /* 9R · l'account staff */ ?>
+  <div class="panel riquadro-staff" role="note" style="margin-top:20px">
+    <p style="margin:0"><b><?= t('Account staff') ?></b> · <?= Support::e((string) ($pvSt['name'] ?? '')) ?> · <?= Support::e(tf('fino al {data}', ['{data}' => Support::date((string) $subSt['current_period_end'])])) ?></p>
+    <p class="small muted" style="margin:4px 0 0"><?= t('Niente da pagare. Inviti e giudizio funzionano come per un cliente; lo sconto maturato non si applica perché non paghi.') ?></p>
+  </div>
+<?php endif; ?>
+<?php include __DIR__ . '/_riquadri_sconto.php'; /* 9R · i due programmi, separati: «Invita un amico» (fino al 50%) e il giudizio (un altro 5%) */ ?>
 
 <?php include __DIR__ . '/_sito_invito.php'; /* 9N · «Hai già un sito?» sotto le guide, non sopra */ ?>
 

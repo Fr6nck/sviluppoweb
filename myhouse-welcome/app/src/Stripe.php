@@ -178,7 +178,8 @@ final class Stripe
             $p['line_items[0][price_data][unit_amount]'] = (string) $pv['price_cents'];
             $p['line_items[0][price_data][tax_behavior]'] = 'exclusive';
             $p['line_items[0][price_data][recurring][interval]'] = 'year';
-            $p['line_items[0][price_data][product_data][name]'] = 'MyHouse Welcome ' . $pkg['name'];
+            // 9R · Con il Portfolio la fattura (e Adamo) dice «prima struttura» e «struttura aggiuntiva × N».
+            $p['line_items[0][price_data][product_data][name]'] = 'MyHouse Welcome ' . $pkg['name'] . (Plans::perProperty($pv) ? ' — prima struttura' : '');
             $p['line_items[0][price_data][product_data][metadata][package]'] = $pkg['code'];
             $p['line_items[0][price_data][product_data][metadata][ruolo]'] = 'base';
         }
@@ -642,7 +643,7 @@ final class Stripe
      * La pagina di pagamento della differenza per salire di piano: un pagamento singolo
      * (mode=payment) con la sua fattura. IVA, indirizzo e partita IVA come per l'abbonamento.
      */
-    public static function checkoutChange(array $order, string $descrizione, array $account, array $user): string
+    public static function checkoutChange(array $order, string $descrizione, array $account, array $user, ?string $coupon = null): string
     {
         $base = Support::baseUrl();
         $meta = ['order_id' => (string) $order['id'], 'account_id' => (string) $account['id'], 'kind' => 'change'];
@@ -666,6 +667,7 @@ final class Stripe
             'customer_update[name]' => 'auto',
         ];
         if (!empty(Config::get('stripe')['automatic_tax'])) $p['automatic_tax[enabled]'] = 'true';
+        if ($coupon !== null && $coupon !== '') $p['discounts[0][coupon]'] = $coupon;   // 9R · lo sconto di un cambio proposto (mhw-cambio-N)
         // 9I · I codici nei metadati di Checkout, del pagamento e della fattura, e nella causale (descrizione della fattura).
         $meta += self::codici($order);
         if (($meta['codice_pagamento'] ?? '') !== '') {

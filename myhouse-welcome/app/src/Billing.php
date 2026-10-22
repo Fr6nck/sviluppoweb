@@ -31,7 +31,7 @@ final class Billing
      *
      * @return array{0:?int,1:string} [quantità o null se non ricavabile, id della voce]
      */
-    private static function quantityFrom(array $sub, array $pv, string $itemNoto = ''): array
+    public static function quantityFrom(array $sub, array $pv, string $itemNoto = ''): array
     {
         $voci = $sub['items']['data'] ?? null;
         if (!is_array($voci) || !$voci) return [null, $itemNoto];
@@ -49,8 +49,12 @@ final class Billing
     }
 
     /** @return string un esito leggibile, per il registro */
+    /** 9R · L'evento che si sta elaborando è live (true), di test (false) o non si sa (null): le commissioni partner solo se live. */
+    public static ?bool $liveEvento = null;
+
     public static function handleEvent(array $event): string
     {
+        self::$liveEvento = null;
         $id = (string) ($event['id'] ?? '');
         $type = (string) ($event['type'] ?? '');
         if ($id === '' || $type === '') return 'evento-incompleto';
@@ -87,6 +91,12 @@ final class Billing
                     'provider' => 'stripe', 'provider_event_id' => $id, 'kind' => $type,
                     'payload' => json_encode($event, JSON_UNESCAPED_UNICODE), 'processed_at' => Support::now(),
                 ]);
+                // 9R · Chiavi live o di test: l'ordine se lo ricorda (event.livemode). I pagamenti di test non entrano nei conti.
+                self::$liveEvento = array_key_exists('livemode', $event) ? (bool) $event['livemode'] : null;
+                if (self::$liveEvento !== null && str_starts_with($type, 'checkout.session.') && ($oidL = (int) ($obj['metadata']['order_id'] ?? $obj['client_reference_id'] ?? 0)) > 0
+                    && Migrator::columnExists('orders', 'livemode')) {
+                    Db::run('UPDATE orders SET livemode = ? WHERE id = ?', [self::$liveEvento ? 1 : 0, $oidL]);
+                }
                 return match ($type) {
                     'checkout.session.completed' => ($obj['mode'] ?? '') === 'payment' ? self::onChangePaid($obj, $cambio) : self::onCheckoutCompleted($obj, $sub),
                     // 9O · L'addebito SEPA confermato (o rifiutato) dalla banca: un abbonamento nuovo o un cambio di piano.

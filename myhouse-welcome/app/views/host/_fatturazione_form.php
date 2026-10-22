@@ -16,13 +16,14 @@ $etichetta = fn(array $per) => implode('', array_map(fn($t, $et) => '<span data-
 $campoF = function (string $k, string $et, string $tipo = 'text', string $extra = '', string $aiuto = '', string $solo = '') use ($fv, $erroriFatt, $per): string {
     $err = $erroriFatt[$k] ?? '';
     $desc = trim(($aiuto !== '' ? 'f-' . $k . '-aiuto ' : '') . ($err !== '' ? 'f-' . $k . '-err' : ''));
+    // 9R · L'aiuto sotto il campo (non più tra etichetta e campo): nelle colonne i campi restano allineati in alto.
     return '<div class="field" style="margin:0"' . ($solo !== '' ? $per($solo) : '') . '><label for="f-' . $k . '">' . t($et) . '</label>'
-        . ($aiuto !== '' ? '<p class="help" id="f-' . $k . '-aiuto" style="margin:0 0 6px">' . t($aiuto) . '</p>' : '')
         . '<input id="f-' . $k . '" name="' . $k . '" type="' . $tipo . '" value="' . $fv($k) . '" ' . $extra
         . ($desc !== '' ? ' aria-describedby="' . $desc . '"' : '') . ($err !== '' ? ' aria-invalid="true"' : '') . '>'
+        . ($aiuto !== '' ? '<p class="help fatt-aiuto" id="f-' . $k . '-aiuto">' . t($aiuto) . '</p>' : '')
         . ($err !== '' ? '<p class="campo-errore" id="f-' . $k . '-err">' . Support::e(t($err)) . '</p>' : '') . '</div>';
 }; ?>
-<form method="post" action="<?= b() ?>/account/fatturazione" class="stack" style="margin-top:14px" novalidate data-tipo-fatt><?= Csrf::field() ?>
+<form method="post" action="<?= b() ?>/account/fatturazione" class="stack fatt-modulo" style="margin-top:14px" novalidate data-tipo-fatt><?= Csrf::field() ?>
   <?php if ($torna !== ''): ?><input type="hidden" name="torna" value="<?= Support::e($torna) ?>"><?php endif; ?>
   <fieldset class="fieldset" style="margin:0">
     <legend><?= t('A chi intestiamo la fattura') ?></legend>
@@ -43,7 +44,7 @@ $campoF = function (string $k, string $et, string $tipo = 'text', string $extra 
   </div>
   <p class="small muted"<?= $per('privato') ?>><?= t('Per una persona fisica bastano nome, codice fiscale e indirizzo: la fattura elettronica arriva anche nel tuo cassetto fiscale dell\'Agenzia delle Entrate. Hai la partita IVA? Scegli «Azienda o professionista».') ?></p>
   <?= $campoF('billing_address', 'Indirizzo', 'text', 'maxlength="255" autocomplete="street-address"', 'Via e numero civico.') ?>
-  <div class="grid grid-3">
+  <div class="grid grid-3 campi-allineati">
     <?= $campoF('billing_postal', 'CAP', 'text', 'maxlength="5" inputmode="numeric" autocomplete="postal-code"') ?>
     <?= $campoF('billing_city', 'Città', 'text', 'maxlength="120" autocomplete="address-level2"') ?>
     <?= $campoF('billing_province', 'Provincia', 'text', 'maxlength="2" autocomplete="address-level1" style="text-transform:uppercase" autocapitalize="characters"', 'Sigla, per esempio PG.') ?>

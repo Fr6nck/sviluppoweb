@@ -85,11 +85,48 @@ final class Vetrina
         return array_keys(array_filter(self::mostrate($s, $p), fn($x) => !$x));
     }
 
+    /** Le colonne della struttura che servono alla scheda (9R: anche regione e tipologia). */
+    private static function colonne(): string
+    {
+        $c = 'id, account_id, name, city, cover_media_id, logo_media_id, status, archived_at, published_at, is_demo, property_type, property_type_other';
+        foreach (['province', 'region'] as $x) if (Migrator::columnExists('properties', $x)) $c .= ', ' . $x;
+        return $c;
+    }
+
+    /**
+     * 9R · Le strutture della scheda: con Portfolio tutte quelle pubblicate e online dell'account (la principale per prima),
+     * con gli altri piani solo la principale. Una scheda approvata vale per tutte (lo dicono i Termini).
+     * @return list<array>
+     */
+    public static function strutture(array $s, array $p): array
+    {
+        $sub = Subscriptions::active((int) $s['account_id']);
+        $pv = $sub ? Plans::version((int) $sub['package_version_id']) : null;
+        if (!$pv || !Plans::perProperty($pv)) return [$p];
+        $altre = Db::all('SELECT ' . self::colonne() . " FROM properties WHERE account_id = ? AND id <> ? AND is_demo = 0 AND archived_at IS NULL AND status = 'published'
+                          AND published_at IS NOT NULL AND published_at <> '' ORDER BY published_at, id", [(int) $s['account_id'], (int) $p['id']]);
+        return array_merge([$p], $altre);
+    }
+
+    /**
+     * 9R · Le schede da mostrare: una per struttura (Portfolio), al massimo $perAccount dello stesso account (in home 2).
+     * @return list<array{s:array,p:array}>
+     */
+    private static function espandi(array $vis, int $perAccount = 0): array
+    {
+        $out = [];
+        foreach ($vis as $x) {
+            $tutte = self::strutture($x['s'], $x['p']);
+            if ($perAccount > 0) $tutte = array_slice($tutte, 0, $perAccount);
+            foreach ($tutte as $p) $out[] = ['s' => $x['s'], 'p' => $p];
+        }
+        return $out;
+    }
+
     /** La struttura della scheda: la prima pubblicata dell'account (anche se poi archiviata, per dirlo in admin). */
     public static function struttura(array $s): ?array
     {
-        $cols = 'id, account_id, name, city, cover_media_id, logo_media_id, status, archived_at, published_at, is_demo'
-              . (Migrator::columnExists('properties', 'province') ? ', province' : '');
+        $cols = self::colonne();
         if (!empty($s['property_id']) && ($p = Db::one("SELECT $cols FROM properties WHERE id = ? AND account_id = ?", [(int) $s['property_id'], (int) $s['account_id']]))) return $p;
         return Db::one("SELECT $cols FROM properties WHERE account_id = ? AND is_demo = 0 AND published_at IS NOT NULL AND published_at <> ''
                         ORDER BY CASE WHEN archived_at IS NULL THEN 0 ELSE 1 END, published_at, id LIMIT 1", [(int) $s['account_id']]);
@@ -218,11 +255,21 @@ final class Vetrina
         $m = self::mostrate($s, $p);
         if ($conGiudizio) $g ??= self::giudizio((int) $s['account_id']);
         $ok = $conGiudizio && $g && empty($g['withdrawn_at']);
+        // 9R · Nella scheda di «Le guide dei nostri host»: stelle e commento (al massimo 160 caratteri) solo se il giudizio è
+        // approvato e acceso in admin; il logo, se l'admin ha scelto «Logo: non mostrare», diventa il quadratino con l'arco.
+        $gS = !$conGiudizio && (int) ($s['giudizio_home'] ?? 0) === 1 ? self::giudizio((int) $s['account_id']) : null;
+        if ($gS && !empty($gS['withdrawn_at'])) $gS = null;
+        $logoNo = (int) ($s['logo_nascosto'] ?? 0) === 1;
+        $tipo = (string) ($p['property_type'] ?? '') !== 'altro' ? Properties::tipologia($p) : '';
         return [
             'id' => (int) $s['id'], 'account_id' => (int) $s['account_id'], 'property_name' => (string) $p['name'], 'luogo' => self::dove($p),
             'name' => self::nomeHost((int) $s['account_id']),
             'copertina' => $m['copertina'] ? Media::ridotta((int) $p['cover_media_id'], 800) : null,
-            'logo' => $m['logo'] ? Media::ridotta((int) $p['logo_media_id'], 240) : null,
+            'logo' => $m['logo'] && !$logoNo ? Media::ridotta((int) $p['logo_media_id'], 240) : null,
+            'tipologia' => $tipo !== '' && LinguaSito::en() ? Pannello::tIn('en', $tipo) : $tipo,
+            'regione' => trim((string) ($p['region'] ?? '')),
+            'stelle' => $gS ? max(1, min(5, (int) $gS['rating'])) : 0,
+            'commento' => $gS ? mb_strimwidth(trim((string) $gS['body']), 0, 160, '…') : '',
             'rating' => $ok ? (int) $g['rating'] : 0, 'body' => $ok ? (string) $g['body'] : '',
             'risposta' => $ok ? trim((string) ($s['risposta_pubblica'] ?? '')) : '',
             'online_da' => (string) ($s['scheda_da'] ?: $p['published_at']),
@@ -239,7 +286,8 @@ final class Vetrina
         if (!self::disponibili()) return [];
         $out = [];
         foreach (Db::all('SELECT v.* FROM vetrina_schede v JOIN accounts a ON a.id = v.account_id
-                          WHERE v.scheda_home = 1 AND v.ritirato_at IS NULL AND v.scheda_ritirata_at IS NULL AND a.giudizio_adesione IS NOT NULL
+                          WHERE v.scheda_home = 1 AND v.ritirato_at IS NULL AND v.scheda_ritirata_at IS NULL AND a.giudizio_adesione IS NOT NULL'
+                          . (Migrator::columnExists('accounts', 'staff_no_vetrina') ? ' AND a.staff_no_vetrina = 0' : '') . '
                           ORDER BY CASE WHEN v.scheda_ordine > 0 THEN 0 ELSE 1 END, v.scheda_ordine, v.scheda_approvata_at, v.id') as $s) {
             $p = self::struttura($s);
             if (!$p || self::motivoSospesa($s, $p) !== '' || self::daRiapprovare($s, $p) || !self::aderente($s)) continue;
@@ -259,7 +307,7 @@ final class Vetrina
     public static function perHome(?int $max = null): array
     {
         if (!self::sezioneGuide()) return [];
-        return array_values(array_filter(array_map(fn($x) => self::perScheda($x['s'], $x['p']), array_slice(self::visibili(), 0, $max ?? self::postiSchede()))));
+        return array_values(array_filter(array_map(fn($x) => self::perScheda($x['s'], $x['p']), array_slice(self::espandi(self::visibili(), 2), 0, $max ?? self::postiSchede()))));
     }
 
     /** Quante schede approvate e visibili (in home e in «Tutte le guide»). */
@@ -268,7 +316,7 @@ final class Vetrina
     /** La pagina «Tutte le guide» (/guide-dei-nostri-host): PER_PAGINA schede per pagina. @return array{schede:list<array>,pagina:int,pagine:int,totale:int} */
     public static function tutte(int $pagina = 1): array
     {
-        $tutte = self::sezioneGuide() ? self::visibili() : [];
+        $tutte = self::sezioneGuide() ? self::espandi(self::visibili()) : [];
         $pagine = max(1, (int) ceil(count($tutte) / self::PER_PAGINA));
         $pagina = max(1, min($pagine, $pagina));
         $parte = array_slice($tutte, ($pagina - 1) * self::PER_PAGINA, self::PER_PAGINA);
@@ -417,6 +465,14 @@ final class Vetrina
     }
 
     /** L'host sceglie copertina e logo (chip). Togliere un'immagine approvata rimette la scheda «da approvare». */
+    /** 9R · «Logo: non mostrare» (admin): al posto del logo il quadratino con l'arco; la scheda resta approvata. */
+    public static function nascondiLogo(int $id, bool $si): void
+    {
+        if (!Migrator::columnExists('vetrina_schede', 'logo_nascosto') || !($s = self::riga($id))) return;
+        Db::update('vetrina_schede', ['logo_nascosto' => $si ? 1 : 0, 'updated_at' => Support::now()], 'id = :id', ['id' => $id]);
+        self::registra('vetrina.logo', (int) $s['account_id'], ['nascosto' => $si]);
+    }
+
     public static function scegliImmagini(int $accountId, bool $copertina, bool $logo): void
     {
         $s = self::assicura($accountId);

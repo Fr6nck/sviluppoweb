@@ -77,6 +77,35 @@ final class Plans
     /** Il piano si paga a struttura (Portfolio)? */
     public static function perProperty(array $pv): bool { return (int) ($pv['per_property'] ?? 0) === 1; }
 
+    /** 9R · Le strutture che l'account ha già (non archiviate, vetrina esclusa): il Portfolio non si compra per meno. */
+    public static function struttureEsistenti(int $accountId): int
+    {
+        return (int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL AND is_demo < 2', [$accountId], 0);
+    }
+
+    /** 9R · Il minimo di strutture di un Portfolio per questo account: quello del listino o quelle che ha già. */
+    public static function minimoPer(array $pv, int $accountId): int
+    {
+        return self::perProperty($pv) ? max(1, (int) $pv['min_quantity'], self::struttureEsistenti($accountId)) : 1;
+    }
+
+    /** 9R · «1ª struttura 117 € · 2ª +60 € · 3ª +50 €»: la scomposizione del prezzo per il numero scelto (riepiloghi, email). */
+    public static function scomposizione(array $pv, int $q, bool $en = false): string
+    {
+        if (!self::perProperty($pv) || $q < 1) return '';
+        $parti = [($en ? '1st property ' : '1ª struttura ') . Support::money((int) $pv['price_cents'], (string) $pv['currency'])];
+        $ord = fn(int $n) => $en ? $n . (in_array($n % 100, [11, 12, 13], true) ? 'th' : ([1 => 'st', 2 => 'nd', 3 => 'rd'][$n % 10] ?? 'th')) : $n . 'ª';
+        // Strutture consecutive allo stesso prezzo in un gruppo solo: «4ª–10ª +50 € l'una».
+        $n = 2;
+        while ($n <= $q) {
+            $c = self::unitPrice($pv, $n); $fino = $n;
+            while ($fino + 1 <= $q && self::unitPrice($pv, $fino + 1) === $c) $fino++;
+            $parti[] = ($fino === $n ? $ord($n) : $ord($n) . '–' . $ord($fino)) . ' +' . Support::money($c, (string) $pv['currency']) . ($fino === $n ? '' : ($en ? ' each' : ' l\'una'));
+            $n = $fino + 1;
+        }
+        return implode(' · ', $parti);
+    }
+
     /**
      * La quantità valida per una versione, o null se quella chiesta non va bene.
      * I piani a struttura singola valgono sempre 1.

@@ -11,6 +11,10 @@
  * (Stripe::verificaPrezzi prima, Stripe::controllaSessione dopo), la fa scadere e stampa una tabella
  * atteso/Stripe. Da lanciare prima di andare online e dopo ogni cambio di listino. Con la chiave
  * viva (sk_live_) si rifiuta: non si creano sessioni vere per una prova.
+ *
+ * 9R · php app/tools/verifica-stripe.php --portfolio   (anche con la chiave viva: solo letture)
+ * Per ogni abbonamento Portfolio attivo confronta la quantità pagata su Stripe, quella del sito e le guide pubblicate; le
+ * differenze compaiono in Amministrazione → Anomalie («Portfolio: quantità non allineata», con «Allinea al valore di Stripe»).
  */
 
 declare(strict_types=1);
@@ -26,6 +30,18 @@ Config::load(MHW_APP . '/config.php');
 
 $chiave = (string) ((Config::get('stripe') ?? [])['secret_key'] ?? '');
 if ($chiave === '') { fwrite(STDERR, "Stripe non è configurato (chiave segreta): niente da verificare.\n"); exit(1); }
+if (in_array('--portfolio', $argv ?? [], true)) {
+    $ko = 0;
+    echo str_pad('Abbonamento', 14) . str_pad('Cliente', 40) . str_pad('Stripe', 8) . str_pad('Sito', 6) . "Pubblicate\n" . str_repeat('-', 80) . "\n";
+    foreach (\MHW\Gestione::verificaPortfolio() as $x) {
+        $male = ($x['stripe'] !== null && $x['stripe'] !== $x['sito']) || $x['pubblicate'] > $x['sito'];
+        if ($male) $ko++;
+        echo str_pad('#' . $x['sub'], 14) . str_pad(mb_substr($x['cliente'], 0, 38), 40 + strlen($x['cliente']) - mb_strlen($x['cliente'])) . str_pad($x['stripe'] === null ? '?' : (string) $x['stripe'], 8)
+           . str_pad((string) $x['sito'], 6) . $x['pubblicate'] . ($male ? '   ← non allineato' : '') . "\n";
+    }
+    echo $ko ? "$ko Portfolio non allineati: vedi Amministrazione → Anomalie.\n" : "Tutti i Portfolio sono allineati.\n";
+    exit($ko ? 2 : 0);
+}
 if (\MHW\Stripe::modoChiave($chiave) !== 'test') { fwrite(STDERR, "Questo strumento lavora solo con la chiave di prova (sk_test_): con quella viva si fermerebbe qui.\n"); exit(1); }
 
 $righe = [];
