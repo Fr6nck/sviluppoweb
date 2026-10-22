@@ -398,8 +398,8 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 
 Per provare con soldi veri (chiavi live) pagamento, rinnovi e sconti a costo quasi zero.
 
-1. Carica e apri una pagina: parte la migrazione **065**, che crea il piano «Prova» (nascosto: non compare nel sito).
-2. Registra un cliente di prova (o usa uno che non ha ancora pagato). In **Amministrazione → Clienti → la sua scheda → riquadro Stripe** premi **«Assegna il piano di prova · 1 € + IVA a settimana»**.
+1. Carica e apri una pagina: parte la migrazione **065**, che crea il piano «Prova». Compare nella **registrazione** accanto a Essential, Plus e Portfolio, e al passo Pubblica tra i «Passa a…»; non in home né nelle FAQ. Attenzione: chi si registra può sceglierlo. Se non vuoi che un cliente vero lo prenda, spegnilo in **Amministrazione → Piani → Prova** (disattiva) quando hai finito le prove.
+2. Registra un cliente di prova e scegli «Prova» nel modulo, oppure, per uno già registrato che non ha ancora pagato, in **Amministrazione → Clienti → la sua scheda → riquadro Stripe** premi **«Assegna il piano di prova · 1 € + IVA a settimana»**.
 3. Da quel cliente vai al passo **Pubblica**: il riepilogo dice «Prova · 1 € + IVA / settimana», totale con IVA 1,22 €. Paga con la carta vera. Da lì in poi la guida va online con il webhook, come per tutti.
 4. Ogni settimana Stripe rinnova a 1 € + IVA: puoi vedere `invoice.paid`, lo sconto del rinnovo (inviti, giudizio) sulla fattura successiva, la Cassa e i Prospetti. Per non aspettare, su Stripe usa un **test clock** (solo in modalità test) oppure, in live, aspetta il rinnovo della settimana dopo.
 5. Finito: dal cliente, Account → «Disattiva il rinnovo» (o da Stripe, annulla l'abbonamento). I pagamenti live fatti restano in Cassa: se non li vuoi nei conti, in Cassa → «Escludi dai conti».

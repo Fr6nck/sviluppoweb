@@ -3268,7 +3268,7 @@ prova('7B · Amministrazione → Piani: l\'aiuto sotto il Price ID e il segnapos
 
 // ============================================================ 7B · scegliere e confermare il piano
 $r = (new Browser('scelta7b'))->get('/registrati');
-prova('7B · /registrati senza piano: «Scegli il tuo piano», tre schede, Plus già scelto, la frase', str_contains($r['body'], 'Scegli il tuo piano') && substr_count($r['body'], 'name="piano" value="') === 3
+prova('7B · /registrati senza piano: «Scegli il tuo piano», quattro schede (065: anche «Prova»), Plus già scelto, la frase', str_contains($r['body'], 'Scegli il tuo piano') && substr_count($r['body'], 'name="piano" value="') === 4
       && preg_match('#name="piano" value="' . pv('plus') . '" checked#', $r['body']) === 1
       && str_contains($r['body'], 'Non paghi niente finché non decidi di pubblicare. Intanto prepari la guida e la vedi in anteprima, come la vedranno i tuoi ospiti.'));
 db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
@@ -4990,9 +4990,9 @@ prova('9A · con il codice scritto a mano: account creato e legato all\'invito d
 $olga = new Browser('olga9a');
 $olga->get('/i/' . $codP9);
 $r = $olga->get('/registrati');
-prova('9A · dal link /i/CODICE: il codice già scritto e in sola lettura, «Codice di Paola: 5% sul primo anno», i tre prezzi barrati con −5%',
+prova('9A · dal link /i/CODICE: il codice già scritto e in sola lettura, «Codice di Paola: 5% sul primo anno», i tre prezzi barrati con −5% (la quarta scheda, «Prova» da 1 €, resta a prezzo pieno: lo sconto non scende sotto 1 €)',
       preg_match('#<input id="codice_invito" name="codice_invito" type="text" value="' . $codP9 . '" readonly#', $r['body']) === 1 && str_contains($r['body'], 'Codice di Paola: 5% sul primo anno')
-      && substr_count($r['body'], '<span class="reg-prezzo"') === 3 && str_contains($r['body'], "<s>127\u{00A0}€</s> <b>120,65\u{00A0}€</b></span> + IVA il primo anno")
+      && substr_count($r['body'], '<span class="reg-prezzo"') === 4 && str_contains($r['body'], "<s>127\u{00A0}€</s> <b>120,65\u{00A0}€</b></span> + IVA il primo anno")
       && str_contains($r['body'], "<s>177\u{00A0}€</s> <b>168,15\u{00A0}€</b>") && str_contains($r['body'], "<s>107\u{00A0}€</s> <b>101,65\u{00A0}€</b>")
       && substr_count($r['body'], '<span class="reg-prezzo__sconto">−5% primo anno</span>') === 3 && !str_contains($r['body'], 'data-invito-applica'));
 
@@ -7903,7 +7903,8 @@ prova('065 · il piano «Prova» c\'è: 1 € a settimana, nascosto (public = 0)
       && (int) val('SELECT price_cents FROM package_versions WHERE id = ?', [$pvProva]) === 100 && val('SELECT interval_unit FROM package_versions WHERE id = ?', [$pvProva]) === 'week'
       && (int) val('SELECT COUNT(*) FROM package_features WHERE package_version_id = ?', [$pvProva]) === (int) val('SELECT COUNT(*) FROM package_features WHERE package_version_id = ?', [pv('plus')]));
 $r = $ospite->get('/registrati');
-prova('…non compare nella registrazione né tra i piani pubblici', !str_contains($r['body'], 'value="' . $pvProva . '"') && !in_array('prova', array_column(json_decode($c9n('echo json_encode(MHW\Plans::public());'), true) ?: [], 'code'), true));
+prova('…compare nella registrazione accanto agli altri («Prova», 1 € + IVA / settimana), ma non tra i piani pubblici (home, FAQ, Google)', str_contains($r['body'], 'value="' . $pvProva . '"')
+      && preg_match('#<b>Prova</b>.{0,200}1\x{00A0}€</span> \+ IVA / settimana#su', $r['body']) === 1 && !in_array('prova', array_column(json_decode($c9n('echo json_encode(MHW\Plans::public());'), true) ?: [], 'code'), true));
 $cl065 = $cliente9n('Prova Settimana', 'prova065@prova.test');
 $r = $admin->get('/admin/cliente/' . $cl065);
 prova('065 · nella scheda di un cliente senza abbonamento c\'è «Assegna il piano di prova · 1 € + IVA a settimana»', str_contains($r['body'], '/admin/cliente/' . $cl065 . '/piano-prova') && str_contains($r['body'], 'Assegna il piano di prova'));

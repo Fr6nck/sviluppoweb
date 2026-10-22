@@ -4,7 +4,7 @@
 
 Migrazione **065** (pacchetto `prova`, nascosto, con le funzioni di Plus; `package_versions.interval_unit = 'week'`).
 
-- **Il piano di prova**: 1 € + IVA a settimana, rinnovo automatico ogni settimana, 1 struttura, tutto quello che dà Plus. Non compare nel sito né nella scelta del piano. Lo assegna chi amministra dalla scheda del cliente («Assegna il piano di prova», solo prima del primo pagamento): al passo Pubblica il cliente paga 1 € come con qualsiasi altro piano, e da lì tutto il resto (webhook, attivazione, rinnovi, sconti, Cassa) funziona come con i piani veri.
+- **Il piano di prova**: 1 € + IVA a settimana, rinnovo automatico ogni settimana, 1 struttura, tutto quello che dà Plus. Compare **accanto agli altri piani nella registrazione** («Scegli il tuo piano») e nel passo Pubblica («Passa a Prova · 1 € + IVA / settimana»); non in home, nelle FAQ, nei dati per Google né in «Cambia piano». In più, chi amministra può assegnarlo dalla scheda del cliente («Assegna il piano di prova», solo prima del primo pagamento). Al passo Pubblica il cliente paga 1 € come con qualsiasi altro piano, e da lì tutto il resto (webhook, attivazione, rinnovi, sconti, Cassa) funziona come con i piani veri.
 - Stripe riceve il prezzo con `recurring.interval = week` (`Plans::intervallo`); il controllo dei Price e il fallback del periodo seguono l'intervallo. Nel pannello i prezzi dicono «/ settimana» e il riepilogo «Dalla seconda settimana». Il cambio di piano dal piano di prova è bloccato (lo fa l'amministrazione); gli avvisi di rinnovo a 30 e 7 giorni non partono per i piani settimanali.
 - **Prove**: capitolo 065.
 

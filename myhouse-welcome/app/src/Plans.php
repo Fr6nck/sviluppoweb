@@ -27,14 +27,25 @@ final class Plans
     }
 
     /** @return array<int,array> pacchetti pubblici, ciascuno con la versione corrente */
-    public static function public(): array
+    public static function public(): array { return self::elenco('p.public = 1'); }
+
+    /**
+     * 065 · I piani tra cui si può scegliere in registrazione e al passo Pubblica («Passa a…»): quelli pubblici più il piano
+     * di prova «Prova» (1 € a settimana), che non va in home, nelle FAQ, nei dati per Google né in «Cambia piano».
+     */
+    public static function sceglibili(): array { return self::elenco("(p.public = 1 OR p.code = 'prova')"); }
+
+    /** La condizione SQL dei piani che si possono comprare (pubblici e il piano di prova). */
+    public const COMPRABILE = "(p.public = 1 OR p.code = 'prova')";
+
+    private static function elenco(string $dove): array
     {
         $rows = Db::all(
-            'SELECT p.*, pv.id AS pv_id, pv.version, pv.price_cents, pv.currency, pv.stripe_price_id,
+            'SELECT p.*, pv.id AS pv_id, pv.version, pv.price_cents, pv.currency, pv.stripe_price_id, pv.interval_unit,
                     pv.per_property, pv.extra_price_cents, pv.min_quantity, pv.max_quantity'
             . (Migrator::columnExists('package_versions', 'extra_tiers') ? ', pv.extra_tiers' : '') . '
              FROM packages p JOIN package_versions pv ON pv.package_id = p.id AND pv.is_current = 1
-             WHERE p.active = 1 AND p.public = 1 ORDER BY p.sort, p.id');
+             WHERE p.active = 1 AND ' . $dove . ' ORDER BY p.sort, p.id');
         foreach ($rows as &$r) {
             $r['bullet_list'] = array_values(array_filter(array_map('trim', preg_split('/\R/', (string) $r['bullets']) ?: [])));
             $r['features'] = array_column(Db::all(
@@ -65,7 +76,7 @@ final class Plans
         return Db::one(
             'SELECT pv.*, p.name, p.code, p.family FROM package_versions pv JOIN packages p ON p.id = pv.package_id
              WHERE pv.package_id = (SELECT package_id FROM package_versions WHERE id = ?)
-               AND pv.is_current = 1 AND p.active = 1 AND p.public = 1', [$pvId]);
+               AND pv.is_current = 1 AND p.active = 1 AND ' . self::COMPRABILE, [$pvId]);   // 065: anche il piano di prova
     }
 
     public static function version(int $pvId): ?array
