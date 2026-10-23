@@ -10,7 +10,7 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
       $contoReg = fn(array $o, int $q) => MHW\Sconti::disponibili() && $scontoInvito ? MHW\Sconti::riepilogo($o, $q, null, $scontoInvito) : null;
       $prezzoReg = function (array $o, int $q) use ($contoReg): string {
           $r = $contoReg($o, $q);
-          if (!$r || $r['sconto'] <= 0) return '<span class="reg-prezzo" data-pieno="' . Plans::price($o, $q) . '" data-valuta="' . Support::e($o['currency']) . '">' . Support::e(Support::money(Plans::price($o, $q), $o['currency'])) . '</span>' . (Plans::settimanale($o) ? ' + IVA ' . Plans::perPeriodo($o, LinguaSito::en()) : LinguaSito::t(' + IVA / anno', ' + VAT / year'));
+          if (!$r || $r['sconto'] <= 0) return '<span class="reg-prezzo" data-pieno="' . Plans::price($o, $q) . '" data-valuta="' . Support::e($o['currency']) . '">' . Support::e(Support::money(Plans::price($o, $q), $o['currency'])) . '</span>' . LinguaSito::t(' + IVA / anno', ' + VAT / year');
           return '<span class="reg-prezzo" data-pieno="' . $r['prezzo'] . '" data-valuta="' . Support::e($o['currency']) . '"><s>' . Support::e(Support::money($r['prezzo'], $o['currency'])) . '</s> <b>' . Support::e(Support::money($r['totale'], $o['currency'])) . '</b></span>' . LinguaSito::t(' + IVA il primo anno', ' + VAT the first year')
                . ' <span class="reg-prezzo__sconto">−' . (int) $r['percento'] . LinguaSito::t('% primo anno', '% first year') . '</span>';
       }; ?>
@@ -42,7 +42,7 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
   <?php if ($pianoScelto): ?>
   <input type="hidden" name="piano" value="<?= (int) $piano ?>">
   <?php else: /* 7B: senza un piano dalla landing, si sceglie qui (Plus già scelto); si salva come intended_package_version_id. */
-        $sceglibili = Plans::sceglibili(); $giaScelto = (int) $piano;   // 065: anche il piano di prova
+        $sceglibili = Plans::public(); $giaScelto = (int) $piano;
         if (!$giaScelto) foreach ($sceglibili as $o) if ($o['code'] === 'plus') $giaScelto = (int) $o['pv_id']; ?>
   <fieldset class="scegli-piano">
     <legend class="scegli-piano__titolo"><?= $U('Scegli il tuo piano', 'Choose your plan') ?></legend>

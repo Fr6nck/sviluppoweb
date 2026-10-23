@@ -24,7 +24,6 @@ final class CambioAbbonamento
     public const ARRETRATO = 'Prima sistema il pagamento dell\'ultimo rinnovo, poi puoi cambiare piano.';
     /** 9N · 10 bis: un'offerta su misura non si cambia dal pannello: per più strutture si prepara un'offerta nuova. */
     public const OFFERTA = 'Il tuo abbonamento è un\'offerta su misura: per cambiare il numero di strutture scrivici e ti mandiamo una nuova offerta.';
-    public const PROVA = 'Sei sul piano di prova (1 € a settimana): il cambio di piano lo fa l\'amministrazione.';
 
     /**
      * L'abbonamento che si può cambiare, o il perché no.
@@ -46,7 +45,6 @@ final class CambioAbbonamento
         if ($s['provider'] !== 'stripe' || (string) $s['provider_subscription_id'] === '') $motivo = self::STAFF;
         elseif ($s['status'] === 'past_due') $motivo = self::ARRETRATO;
         elseif (!empty($s['offerta_id'])) $motivo = self::OFFERTA;
-        elseif ($pv && Plans::settimanale($pv)) $motivo = self::PROVA;   // il piano di prova (1 € a settimana): si cambia solo dall'amministrazione
         return ['sub' => $s, 'pv' => $pv, 'quantita' => max(1, (int) $s['quantity']), 'motivo' => $motivo];
     }
 

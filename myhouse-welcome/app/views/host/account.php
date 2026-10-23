@@ -25,7 +25,7 @@ $statoOrdine = array_map('MHW\\t', ['pending' => 'In attesa', 'awaiting' => 'In 
       <div class="spread spread--mid">
         <b style="font-size:24px;font-weight:500"><?= Support::e($piano['name'] ?? '') ?><?= $q > 1 ? ' · ' . tf('{n} strutture', ['{n}' => $q]) : '' ?></b>
         <span style="font-size:20px;font-weight:500"><?= Support::e(Support::money($piano ? Plans::price($piano, $q) : 0, $piano['currency'] ?? 'EUR')) ?>
-          <span class="small muted"><?= $piano && Plans::settimanale($piano) ? '+ IVA ' . Support::e(Plans::perPeriodo($piano, MHW\Pannello::en())) : t('+ IVA / anno') ?></span></span>
+          <span class="small muted"><?= t('+ IVA / anno') ?></span></span>
       </div>
       <?php if ($perStruttura && $q > 1): /* Portfolio: quanto costa ognuna delle strutture, nell'ordine in cui sono state create */
             $bloccateA = MHW\Entitlements::lockedIds((int) $acc['id']);

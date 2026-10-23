@@ -190,7 +190,7 @@ final class Stripe
             $p['line_items[0][price_data][currency]'] = strtolower($pv['currency']);
             $p['line_items[0][price_data][unit_amount]'] = (string) $pv['price_cents'];
             $p['line_items[0][price_data][tax_behavior]'] = 'exclusive';
-            $p['line_items[0][price_data][recurring][interval]'] = Plans::intervallo($pv);   // 'week' solo per il piano di prova
+            $p['line_items[0][price_data][recurring][interval]'] = 'year';
             // 9R · Con il Portfolio la fattura (e Adamo) dice «prima struttura» e «struttura aggiuntiva × N».
             $p['line_items[0][price_data][product_data][name]'] = 'MyHouse Welcome ' . $pkg['name'] . (Plans::perProperty($pv) ? ' — prima struttura' : '');
             $p['line_items[0][price_data][product_data][metadata][package]'] = $pkg['code'];
@@ -205,7 +205,7 @@ final class Stripe
                 $p['line_items[1][price_data][currency]'] = strtolower($pv['currency']);
                 $p['line_items[1][price_data][unit_amount]'] = (string) (int) $pv['extra_price_cents'];
                 $p['line_items[1][price_data][tax_behavior]'] = 'exclusive';
-                $p['line_items[1][price_data][recurring][interval]'] = Plans::intervallo($pv);
+                $p['line_items[1][price_data][recurring][interval]'] = 'year';
                 $p['line_items[1][price_data][product_data][name]'] = 'MyHouse Welcome ' . $pkg['name'] . ' — struttura aggiuntiva';
                 $p['line_items[1][price_data][product_data][metadata][package]'] = $pkg['code'];
                 $p['line_items[1][price_data][product_data][metadata][ruolo]'] = 'aggiuntiva';
@@ -290,7 +290,7 @@ final class Stripe
                 $pr = $leggi($base);
                 $campo($pr, 'base unit_amount', (int) $pv['price_cents'], (int) ($pr['unit_amount'] ?? -1));
                 $campo($pr, 'base currency', strtolower((string) $pv['currency']), strtolower((string) ($pr['currency'] ?? '')));
-                $campo($pr, 'base recurring.interval', Plans::intervallo($pv), (string) ($pr['recurring']['interval'] ?? ''));
+                $campo($pr, 'base recurring.interval', 'year', (string) ($pr['recurring']['interval'] ?? ''));
                 $campo($pr, 'base recurring.interval_count', 1, (int) ($pr['recurring']['interval_count'] ?? 1));
                 $campo($pr, 'base tax_behavior', 'exclusive', (string) ($pr['tax_behavior'] ?? ''));
                 $campo($pr, 'base active', true, (bool) ($pr['active'] ?? true));
@@ -298,7 +298,7 @@ final class Stripe
             if ($extra !== '' && Plans::perProperty($pv)) {
                 $pr = $leggi($extra);
                 $campo($pr, 'aggiuntiva currency', strtolower((string) $pv['currency']), strtolower((string) ($pr['currency'] ?? '')));
-                $campo($pr, 'aggiuntiva recurring.interval', Plans::intervallo($pv), (string) ($pr['recurring']['interval'] ?? ''));
+                $campo($pr, 'aggiuntiva recurring.interval', 'year', (string) ($pr['recurring']['interval'] ?? ''));
                 $campo($pr, 'aggiuntiva tax_behavior', 'exclusive', (string) ($pr['tax_behavior'] ?? ''));
                 $campo($pr, 'aggiuntiva active', true, (bool) ($pr['active'] ?? true));
                 $scaglioni = Plans::tiers($pv);
@@ -686,7 +686,7 @@ final class Stripe
         $crea = function (int $cents, string $ruolo, string $nome) use ($pv, $pkg): string {
             $r = self::call('POST', 'prices', [
                 'currency' => strtolower((string) $pv['currency']), 'unit_amount' => (string) $cents, 'tax_behavior' => 'exclusive',
-                'recurring[interval]' => Plans::intervallo($pv), 'product_data[name]' => $nome,
+                'recurring[interval]' => 'year', 'product_data[name]' => $nome,
                 'product_data[metadata][package]' => (string) $pkg['code'], 'product_data[metadata][ruolo]' => $ruolo,
             ], 'mhw-price-' . $pv['id'] . '-' . ($ruolo === 'base' ? 'base' : 'extra'));
             return (string) $r['id'];
@@ -709,7 +709,7 @@ final class Stripe
         $extra = (string) ($pv['stripe_extra_price_id'] ?? '');
         if ($extra !== '') return $extra;
         $nome = 'MyHouse Welcome ' . $pkg['name'] . ' — struttura aggiuntiva';
-        $p = ['currency' => strtolower((string) $pv['currency']), 'tax_behavior' => 'exclusive', 'recurring[interval]' => Plans::intervallo($pv),
+        $p = ['currency' => strtolower((string) $pv['currency']), 'tax_behavior' => 'exclusive', 'recurring[interval]' => 'year',
               'product_data[name]' => $nome, 'product_data[metadata][package]' => (string) $pkg['code'], 'product_data[metadata][ruolo]' => 'aggiuntiva'];
         $scaglioni = Plans::tiers($pv);
         if (count($scaglioni) > 1) {

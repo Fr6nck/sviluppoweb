@@ -87,13 +87,7 @@ include __DIR__ . '/_stati.php'; ?>
     <section class="panel stack" style="gap:8px">
       <span class="kicker">Stripe</span>
       <p class="small">Cliente su Stripe: <code><?= Support::e($acc['stripe_customer_id'] ?: '—') ?></code></p>
-      <?php $pvScelto = $acc['intended_package_version_id'] ? MHW\Plans::version((int) $acc['intended_package_version_id']) : null; ?>
-      <p class="small">Piano scelto: <?= $pvScelto ? Support::e($pvScelto['name']) . ' · ' . Support::e(Support::money((int) $pvScelto['price_cents'], (string) $pvScelto['currency'])) . ' + IVA ' . Support::e(MHW\Plans::perPeriodo($pvScelto)) . ' (versione #' . (int) $pvScelto['id'] . ')' : '—' ?></p>
-      <?php if (($pvProva = MHW\Plans::prova()) && !MHW\Subscriptions::active((int) $acc['id'])): /* 065 · il piano di prova, solo prima del primo pagamento */ ?>
-        <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/piano-prova" style="margin:0"><?= Csrf::field() ?>
-          <button class="btn btn--sm btn--ghost" type="submit"<?= (int) ($acc['intended_package_version_id'] ?? 0) === (int) $pvProva['id'] ? ' disabled' : '' ?>>Assegna il piano di prova · 1 € + IVA a settimana</button></form>
-        <p class="tiny muted" style="margin:0">Nascosto ai clienti: le funzioni di Plus, 1 struttura, rinnovo ogni settimana. Serve a provare con soldi veri pagamento, rinnovi e sconti. Il cambio di piano da qui non è possibile: si sistema a mano.</p>
-      <?php endif; ?>
+      <p class="small">Piano scelto: <?= $acc['intended_package_version_id'] ? 'versione #' . (int) $acc['intended_package_version_id'] : '—' ?></p>
       <?php if (!empty($omaggio)): /* 9D · il codice omaggio prenotato o usato */ ?>
         <p class="small">Codice omaggio: <code><?= Support::e($omaggio['codice']) ?></code> · <?= (int) $omaggio['mesi'] ?> mesi<?= !empty($omaggio['usato_at']) ? ', usato il ' . Support::e(Support::date($omaggio['usato_at'])) : ', prenotato (vale fino al ' . Support::e(Support::date($omaggio['scade_il'])) . ')' ?></p>
       <?php endif; ?>

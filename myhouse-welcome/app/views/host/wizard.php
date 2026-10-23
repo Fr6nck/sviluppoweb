@@ -125,7 +125,7 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
             <?php elseif ($sc): ?><s class="muted" style="font-size:18px"><?= Support::e(Support::money($sc['prezzo'], $piano['currency'])) ?></s>
             <?= Support::e(Support::money($sc['totale'], $piano['currency'])) ?><span class="small muted"> <?= t('+ IVA il primo anno') ?></span>
             <?php else: ?><?= Support::e(Support::money(Plans::price($piano, $qSc), $piano['currency'])) ?>
-            <span class="small muted"><?= Plans::settimanale($piano) ? '+ IVA ' . Support::e(Plans::perPeriodo($piano, MHW\Pannello::en())) : t('+ IVA / anno') ?></span><?php endif; ?></span>
+            <span class="small muted"><?= t('+ IVA / anno') ?></span><?php endif; ?></span>
         </div>
         <?php if ($sc && !$om): ?><p class="plan__sconto-riga" style="margin:0">−<?= $sc['percento'] > 0 ? (int) $sc['percento'] . '%' : Support::e(Support::money($sc['sconto'], $piano['currency'])) ?> <?= t('primo anno') ?></p><?php endif; ?>
         <?php if ($om): ?>
@@ -134,10 +134,9 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
         <?php endif; ?>
         <?php if ($riep): $pv = $piano; $quantita = $qSc; include __DIR__ . '/_riepilogo.php'; endif; ?>
         <?php $pv = $piano; $quantita = $qSc; $torna = '/pannello/' . $pid . '/procedura/pubblica'; $soloCampo = true; include __DIR__ . '/_sconto.php'; ?>
-        <p class="small muted"><?= Plans::settimanale($piano) ? t('Piano di prova: abbonamento settimanale con rinnovo automatico, che puoi disattivare quando vuoi. Il pagamento avviene su Stripe; la guida va online appena Stripe conferma.')
-                                   : t('Abbonamento annuale con rinnovo automatico, che puoi disattivare quando vuoi. Il pagamento avviene su Stripe; la guida va online appena Stripe conferma.') ?></p>
+        <p class="small muted"><?= t('Abbonamento annuale con rinnovo automatico, che puoi disattivare quando vuoi. Il pagamento avviene su Stripe; la guida va online appena Stripe conferma.') ?></p>
         <?php /* 7B: prima di pagare si può passare a un altro piano, anche più economico; se perde qualcosa che la guida usa, lo si dice prima. */
-              $altriPiani = array_values(array_filter(Plans::sceglibili(), fn($o) => (int) $o['id'] !== (int) $piano['package_id']));   // 065: anche il piano di prova
+              $altriPiani = array_values(array_filter(Plans::public(), fn($o) => (int) $o['id'] !== (int) $piano['package_id']));
               $nStrutture = (int) MHW\Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND archived_at IS NULL AND is_demo < 2', [$acc['id']], 1);
               $torna = '/pannello/' . $pid . '/procedura/pubblica'; ?>
         <?php if ($altriPiani): ?>
@@ -148,8 +147,7 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
                   $perdite = $cambia ? array_merge($cambia['perde'],
                       array_map(fn($x) => tf('«{nome}» ha {n} sezioni attive: con {piano} ne restano {max}, e prima di pubblicare scegli quali.', ['{nome}' => $x['struttura']['name'], '{n}' => count($x['sezioni']), '{piano}' => $o['name'], '{max}' => $cambia['maxSezioni']]), $cambia['sezioni']),
                       $cambia['daArchiviare'] ? [$cambia['maxStrutture'] === 1 ? tf('{piano} comprende 1 struttura: le altre restano in bozza.', ['{piano}' => $o['name']]) : tf('{piano} comprende {n} strutture: le altre restano in bozza.', ['{piano}' => $o['name'], '{n}' => $cambia['maxStrutture']])] : []) : [];
-                  $etichettaO = Plans::settimanale($o) ? tf('Passa a {piano} · {prezzo} + IVA / settimana', ['{piano}' => $o['name'], '{prezzo}' => Support::money($prezzoO, $o['currency'])])
-                                                       : tf('Passa a {piano} · {prezzo} + IVA / anno', ['{piano}' => $o['name'], '{prezzo}' => Support::money($prezzoO, $o['currency'])]);
+                  $etichettaO = tf('Passa a {piano} · {prezzo} + IVA / anno', ['{piano}' => $o['name'], '{prezzo}' => Support::money($prezzoO, $o['currency'])]);
                   $modulo = '<form method="post" action="' . b() . '/piano" style="margin:0">' . Csrf::field() . '<input type="hidden" name="pv" value="' . (int) $o['pv_id'] . '">'
                           . (Plans::perProperty($o) ? '<input type="hidden" name="strutture" value="' . $qO . '">' : '') . '<input type="hidden" name="torna" value="' . Support::e($torna) . '">'; ?>
               <?php if ($perdite): ?>

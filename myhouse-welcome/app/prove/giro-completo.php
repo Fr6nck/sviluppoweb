@@ -3268,7 +3268,7 @@ prova('7B · Amministrazione → Piani: l\'aiuto sotto il Price ID e il segnapos
 
 // ============================================================ 7B · scegliere e confermare il piano
 $r = (new Browser('scelta7b'))->get('/registrati');
-prova('7B · /registrati senza piano: «Scegli il tuo piano», quattro schede (065: anche «Prova»), Plus già scelto, la frase', str_contains($r['body'], 'Scegli il tuo piano') && substr_count($r['body'], 'name="piano" value="') === 4
+prova('7B · /registrati senza piano: «Scegli il tuo piano», tre schede, Plus già scelto, la frase', str_contains($r['body'], 'Scegli il tuo piano') && substr_count($r['body'], 'name="piano" value="') === 3
       && preg_match('#name="piano" value="' . pv('plus') . '" checked#', $r['body']) === 1
       && str_contains($r['body'], 'Non paghi niente finché non decidi di pubblicare. Intanto prepari la guida e la vedi in anteprima, come la vedranno i tuoi ospiti.'));
 db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
@@ -4990,9 +4990,9 @@ prova('9A · con il codice scritto a mano: account creato e legato all\'invito d
 $olga = new Browser('olga9a');
 $olga->get('/i/' . $codP9);
 $r = $olga->get('/registrati');
-prova('9A · dal link /i/CODICE: il codice già scritto e in sola lettura, «Codice di Paola: 5% sul primo anno», i tre prezzi barrati con −5% (la quarta scheda, «Prova» da 1 €, resta a prezzo pieno: lo sconto non scende sotto 1 €)',
+prova('9A · dal link /i/CODICE: il codice già scritto e in sola lettura, «Codice di Paola: 5% sul primo anno», i tre prezzi barrati con −5%',
       preg_match('#<input id="codice_invito" name="codice_invito" type="text" value="' . $codP9 . '" readonly#', $r['body']) === 1 && str_contains($r['body'], 'Codice di Paola: 5% sul primo anno')
-      && substr_count($r['body'], '<span class="reg-prezzo"') === 4 && str_contains($r['body'], "<s>127\u{00A0}€</s> <b>120,65\u{00A0}€</b></span> + IVA il primo anno")
+      && substr_count($r['body'], '<span class="reg-prezzo"') === 3 && str_contains($r['body'], "<s>127\u{00A0}€</s> <b>120,65\u{00A0}€</b></span> + IVA il primo anno")
       && str_contains($r['body'], "<s>177\u{00A0}€</s> <b>168,15\u{00A0}€</b>") && str_contains($r['body'], "<s>107\u{00A0}€</s> <b>101,65\u{00A0}€</b>")
       && substr_count($r['body'], '<span class="reg-prezzo__sconto">−5% primo anno</span>') === 3 && !str_contains($r['body'], 'data-invito-applica'));
 
@@ -7897,33 +7897,25 @@ prova('…per chi invita: il primo rettangolo acceso con l\'alone, «1 su 10», 
 $r = $admin->segui($admin->post('/admin/cliente/' . $amicoG . '/invito', ['codice' => $codGaia]));
 prova('…una seconda volta: «già legato a un invito»', str_contains($r['body'], 'già legato a un invito'));
 
-// 065 · Il piano di prova «Prova»: 1 € a settimana, le funzioni di Plus, nascosto; lo assegna l'amministrazione prima del primo pagamento.
-$pvProva = pv('prova'); $pkProva = riga("SELECT * FROM packages WHERE code = 'prova'");
-prova('065 · il piano «Prova» c\'è: 1 € a settimana, nascosto (public = 0), le funzioni di Plus', $pvProva > 0 && (int) $pkProva['public'] === 0
-      && (int) val('SELECT price_cents FROM package_versions WHERE id = ?', [$pvProva]) === 100 && val('SELECT interval_unit FROM package_versions WHERE id = ?', [$pvProva]) === 'week'
-      && (int) val('SELECT COUNT(*) FROM package_features WHERE package_version_id = ?', [$pvProva]) === (int) val('SELECT COUNT(*) FROM package_features WHERE package_version_id = ?', [pv('plus')]));
-$r = $ospite->get('/registrati');
-prova('…compare nella registrazione accanto agli altri («Prova», 1 € + IVA / settimana), ma non tra i piani pubblici (home, FAQ, Google)', str_contains($r['body'], 'value="' . $pvProva . '"')
-      && preg_match('#<b>Prova</b>.{0,200}1\x{00A0}€</span> \+ IVA / settimana#su', $r['body']) === 1 && !in_array('prova', array_column(json_decode($c9n('echo json_encode(MHW\Plans::public());'), true) ?: [], 'code'), true));
-$cl065 = $cliente9n('Prova Settimana', 'prova065@prova.test');
-$r = $admin->get('/admin/cliente/' . $cl065);
-prova('065 · nella scheda di un cliente senza abbonamento c\'è «Assegna il piano di prova · 1 € + IVA a settimana»', str_contains($r['body'], '/admin/cliente/' . $cl065 . '/piano-prova') && str_contains($r['body'], 'Assegna il piano di prova'));
-$r = $admin->segui($admin->post('/admin/cliente/' . $cl065 . '/piano-prova', []));
-prova('…assegnato: piano scelto «Prova · 1 € + IVA / settimana», registro, bottone spento', (int) val('SELECT intended_package_version_id FROM accounts WHERE id = ?', [$cl065]) === $pvProva
-      && str_contains($r['body'], "Piano scelto: Prova · 1\u{00A0}€ + IVA / settimana") && (bool) val("SELECT id FROM audit_log WHERE action = 'account.piano_prova' AND meta LIKE ?", ['%' . $pvProva . '%']), $r['code'] . '');
-$voci065 = json_decode($c9n('$pv = MHW\Plans::version(' . $pvProva . '); $pk = MHW\Db::one("SELECT * FROM packages WHERE id = ?", [$pv["package_id"]]); echo json_encode(MHW\Stripe::vociCheckout($pv, $pk, 1)[0]);'), true) ?: [];
-prova('065 · il Checkout descrive il prezzo a Stripe con 1 € e rinnovo ogni settimana (recurring.interval = week)', ($voci065['line_items[0][price_data][unit_amount]'] ?? '') === '100'
-      && ($voci065['line_items[0][price_data][recurring][interval]'] ?? '') === 'week' && ($voci065['line_items[0][price_data][tax_behavior]'] ?? '') === 'exclusive', json_encode($voci065));
-$abbonamento9n($cl065, 'prova', 'active', 'sub_prova065', 6);
-$st065 = json_decode($c9n('echo json_encode(MHW\CambioAbbonamento::stato(' . $cl065 . ')["motivo"]);'), true);
-prova('065 · con l\'abbonamento di prova attivo il cambio di piano è bloccato («Sei sul piano di prova…») e l\'amministrazione non lo riassegna', str_starts_with((string) $st065, 'Sei sul piano di prova')
-      && str_contains($admin->segui($admin->post('/admin/cliente/' . $cl065 . '/piano-prova', []))['body'], 'Ha già un abbonamento attivo'));
-$pB065 = new Browser('prova065'); $pB065->get('/accedi'); $pB065->post('/accedi', ['email' => 'prova065@prova.test', 'password' => 'Prova9N-2026']);
-$r = $pB065->get('/account');
-prova('…in Account: «Prova» con «1 € + IVA / settimana»', str_contains($r['body'], "1\u{00A0}€") && str_contains($r['body'], '+ IVA / settimana'), (string) $r['code']);
-$prima = count(glob("$DOVE/app/storage/logs/email/*.eml") ?: []);
-$cron();
-prova('065 · il rinnovo settimanale non riceve l\'avviso «tra 7 giorni» (solo i piani annuali)', !val("SELECT id FROM email_log WHERE account_id = ? AND kind = 'rinnovo'", [$cl065]));
+// 066 · Il piano di prova «Prova» del pacchetto 22h/22i, se c'era, si toglie: senza acquisti si cancella, con un acquisto si spegne.
+$ora066 = gmdate('Y-m-d\TH:i:s\Z');
+db()->prepare("INSERT INTO packages (code, name, tagline, sort, active, public) VALUES ('prova', 'Prova', 'prova', 99, 1, 0)")->execute();
+$pk066 = (int) db()->lastInsertId();
+db()->prepare("INSERT INTO package_versions (package_id, version, price_cents, currency, interval_unit, is_current, sold_count, created_at) VALUES (?, 1, 100, 'EUR', 'week', 1, 0, ?)")->execute([$pk066, $ora066]);
+$pv066 = (int) db()->lastInsertId();
+$cl066 = $cliente9n('Resto Prova', 'resto066@prova.test');
+db()->prepare('UPDATE accounts SET intended_package_version_id = ? WHERE id = ?')->execute([$pv066, $cl066]);
+$c9n('$m = require MHW_APP . "/migrations/066_via_piano_prova.php"; $m(MHW\Db::conn());');
+prova('066 · il piano «Prova» senza acquisti sparisce con la versione, e chi lo aveva scelto torna senza piano', !val("SELECT id FROM packages WHERE code = 'prova'") && !val('SELECT id FROM package_versions WHERE id = ?', [$pv066])
+      && val('SELECT intended_package_version_id FROM accounts WHERE id = ?', [$cl066]) === null);
+db()->prepare("INSERT INTO packages (code, name, tagline, sort, active, public) VALUES ('prova', 'Prova', 'prova', 99, 1, 0)")->execute();
+$pk066 = (int) db()->lastInsertId();
+db()->prepare("INSERT INTO package_versions (package_id, version, price_cents, currency, interval_unit, is_current, sold_count, created_at) VALUES (?, 1, 100, 'EUR', 'week', 1, 0, ?)")->execute([$pk066, $ora066]);
+$pv066 = (int) db()->lastInsertId();
+db()->prepare("INSERT INTO orders (account_id, package_version_id, amount_cents, currency, status, provider, provider_session_id, quantity, kind, created_at, updated_at) VALUES (?, ?, 100, 'EUR', 'paid', 'stripe', 'cs_066', 1, 'new', ?, ?)")->execute([$cl066, $pv066, $ora066, $ora066]);
+$c9n('$m = require MHW_APP . "/migrations/066_via_piano_prova.php"; $m(MHW\Db::conn());');
+prova('066 · …con un acquisto resta, ma spento e non pubblico', (int) val("SELECT active FROM packages WHERE code = 'prova'") === 0 && (int) val("SELECT public FROM packages WHERE code = 'prova'") === 0
+      && (bool) val('SELECT id FROM package_versions WHERE id = ?', [$pv066]));
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

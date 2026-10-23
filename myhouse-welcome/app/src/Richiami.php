@@ -152,7 +152,6 @@ final class Richiami
             foreach (Db::all("SELECT s.*, u.email, u.name AS user_name FROM subscriptions s JOIN accounts a ON a.id = s.account_id
                               JOIN users u ON u.id = a.user_id
                               WHERE s.status IN ('active', 'trialing') AND s.provider = 'stripe' AND s.cancel_at_period_end = 0
-                                AND s.package_version_id NOT IN (SELECT id FROM package_versions WHERE interval_unit = 'week')
                                 AND s.current_period_end > ? AND s.current_period_end <= ? AND u.email NOT LIKE ?",
                              [$iso($t + ($prima - 1) * $giorno), $iso($t + ($prima + 1) * $giorno), '%@' . Demo::DOMINIO]) as $s) {
                 $ref = $s['id'] . '-' . substr((string) $s['current_period_end'], 0, 10) . ($prima === 7 ? '-7' : '');

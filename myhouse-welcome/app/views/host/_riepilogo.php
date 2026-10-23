@@ -12,7 +12,7 @@ $righeIva = function (int $netto) use ($privatoR, $valR): string {
          . '<div class="riepilogo__riga riepilogo__riga--lordo' . ($privatoR ? ' riepilogo__riga--totale riepilogo__riga--grande' : '') . '"><span>' . Support::e(t('Totale con IVA')) . '</span><b>'
          . Support::e(Support::money($netto + $iva, $valR)) . '</b></div>';
 }; ?>
-<div class="riepilogo" role="region" aria-label="<?= MHW\Support::e((Plans::settimanale($pv) ? t('Riepilogo della prima settimana') : t('Riepilogo del primo anno'))) ?>">
+<div class="riepilogo" role="region" aria-label="<?= MHW\Support::e(t('Riepilogo del primo anno')) ?>">
   <div class="riepilogo__riga"><span><?= Support::e($pv['name']) ?><?= $perStrutturaR ? ' · ' . Support::e(tf('{n} strutture', ['{n}' => (int) $quantita])) : '' ?></span><b><?= Support::e(Support::money($riep['prezzo'], $valR)) ?></b></div>
   <?php foreach ($riep['righe'] as $rr): ?>
     <div class="riepilogo__riga riepilogo__riga--sconto"><span><?= Support::e($rr['nome']) ?><?= $rr['percento'] > 0 ? ' · −' . Support::e(tf('{n}% primo anno', ['{n}' => (int) $rr['percento']])) : ' · ' . t('primo anno') ?></span><b>−<?= Support::e(Support::money((int) $rr['cents'], $valR)) ?></b></div>
@@ -22,17 +22,15 @@ $righeIva = function (int $netto) use ($privatoR, $valR): string {
     <div class="riepilogo__riga riepilogo__riga--totale"><span><?= t('Oggi') ?></span><b><?= t('0&nbsp;€') ?></b></div>
     <div class="riepilogo__riga" style="font-weight:600"><span><?= Support::e(tf('Il {data}', ['{data}' => MHW\Pannello::data(gmdate('Y-m-d\TH:i:s\Z', (int) $omR['fine']))])) ?></span><b><?= Support::e(Support::money($riep['totale'], $valR)) ?> <small><?= t('+ IVA') ?></small></b></div>
     <?= $righeIva((int) $riep['totale']) ?>
-    <p class="small muted" style="margin:0"><?= Support::e(Plans::settimanale($pv) ? tf('Poi {prezzo} + IVA a settimana (piano di prova).', ['{prezzo}' => Support::money($riep['prezzo'], $valR)])
-                                                 : tf($riep['sconto'] > 0 ? 'Poi {prezzo} + IVA l\'anno: lo sconto vale solo sul primo addebito.' : 'Poi {prezzo} + IVA l\'anno.', ['{prezzo}' => Support::money($riep['prezzo'], $valR)])) ?></p>
+    <p class="small muted" style="margin:0"><?= Support::e(tf($riep['sconto'] > 0 ? 'Poi {prezzo} + IVA l\'anno: lo sconto vale solo sul primo addebito.' : 'Poi {prezzo} + IVA l\'anno.', ['{prezzo}' => Support::money($riep['prezzo'], $valR)])) ?></p>
   <?php else: ?>
   <?php if ($privatoR): ?>
-    <div class="riepilogo__riga"><span><?= (Plans::settimanale($pv) ? t('Imponibile prima settimana') : t('Imponibile primo anno')) ?></span><b><?= Support::e(Support::money($riep['totale'], $valR)) ?></b></div>
+    <div class="riepilogo__riga"><span><?= t('Imponibile primo anno') ?></span><b><?= Support::e(Support::money($riep['totale'], $valR)) ?></b></div>
   <?php else: ?>
-    <div class="riepilogo__riga riepilogo__riga--totale"><span><?= (Plans::settimanale($pv) ? t('Totale prima settimana') : t('Totale primo anno')) ?></span><b><?= Support::e(Support::money($riep['totale'], $valR)) ?> <small><?= t('+ IVA') ?></small></b></div>
+    <div class="riepilogo__riga riepilogo__riga--totale"><span><?= t('Totale primo anno') ?></span><b><?= Support::e(Support::money($riep['totale'], $valR)) ?> <small><?= t('+ IVA') ?></small></b></div>
   <?php endif; ?>
   <?= $righeIva((int) $riep['totale']) ?>
-  <p class="small muted" style="margin:0"><?= Support::e(Plans::settimanale($pv) ? tf('Dalla seconda settimana {prezzo} + IVA (piano di prova).', ['{prezzo}' => Support::money($riep['prezzo'], $valR)])
-                                                 : tf($riep['sconto'] > 0 ? 'Dal secondo anno {prezzo} + IVA: gli sconti valgono solo sul primo anno.' : 'Dal secondo anno {prezzo} + IVA.', ['{prezzo}' => Support::money($riep['prezzo'], $valR)])) ?></p>
+  <p class="small muted" style="margin:0"><?= Support::e(tf($riep['sconto'] > 0 ? 'Dal secondo anno {prezzo} + IVA: gli sconti valgono solo sul primo anno.' : 'Dal secondo anno {prezzo} + IVA.', ['{prezzo}' => Support::money($riep['prezzo'], $valR)])) ?></p>
   <?php endif; ?>
   <?php if ($riep['nota'] !== ''): ?><p class="small" style="margin:0"><?= Support::e($riep['nota']) ?></p><?php endif; ?>
 </div>
