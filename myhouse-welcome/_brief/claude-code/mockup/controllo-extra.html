@@ -1,0 +1,69 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Proposte del controllo · mockup</title>
+<style>
+:root{--paper:#faf5ec;--sabbia:#f3ece0;--ink:#231b12;--muted:#6a5b48;--line:#e7dccb;--acc:#b4451f;--ok:#2f6b3f;--ocra:#8a5a12;--bg:#161410;--card:#28221b;--dline:#3b332a;--dink:#f4eee2;--dmuted:#b7ab98;--dacc:#e86f48}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Onest,"Helvetica Neue",Arial,sans-serif;padding:40px 20px 60px}
+.serif{font-family:Gloock,Georgia,"Times New Roman",serif;font-weight:400}
+.wrap{max-width:1040px;margin:0 auto;display:grid;gap:40px}
+.lbl{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;font-weight:600}
+.box{background:#fff;border:1px solid var(--line);border-radius:24px;padding:24px 28px}
+h2{font-size:26px;margin:0 0 6px}h3{font-size:19px;margin:0 0 4px}.sub{color:var(--muted);margin:0 0 16px;font-size:14.5px;line-height:21px}
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 18px;border-radius:999px;background:var(--acc);color:#fff;border:0;font:inherit;font-weight:700;font-size:14px;text-decoration:none}.btn.g{background:#fff;color:var(--ink);border:1.5px solid #8a7b65}.btn.s{height:32px;font-size:12.5px;padding:0 12px}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.kpi div{background:var(--sabbia);border-radius:16px;padding:14px 16px;font-size:13px;color:var(--muted)}.kpi b{display:block;font-size:26px;color:var(--ink);font-family:Gloock,Georgia,serif;font-weight:400}
+.todo{display:grid;gap:8px;margin-top:14px}.todo div{display:grid;grid-template-columns:1fr auto;justify-items:start;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px}.todo span{color:var(--muted);font-size:12.5px;display:block}.todo .btn{justify-self:end}
+.pill{font-size:12px;border-radius:999px;padding:3px 9px;display:inline-block}.pill.g{background:#e8f1e6;color:var(--ok)}.pill.a{background:#fbefd9;color:var(--ocra)}.pill.r{background:#f6e2dc;color:var(--acc)}.pill.n{background:var(--sabbia);color:var(--muted)}
+details{border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px;margin-top:14px}summary{cursor:pointer;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13.5px}th{text-align:left;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line);font-weight:600}td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}td.n{text-align:right;font-variant-numeric:tabular-nums}
+.bar{height:10px;border-radius:9px;background:var(--sabbia);overflow:hidden;margin:6px 0}.bar i{display:block;height:100%;background:var(--acc)}
+.chk{display:grid;gap:6px;font-size:14px}.chk div:before{content:"○ ";color:var(--muted)}.chk div.ok:before{content:"✓ ";color:var(--ok)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}@media(max-width:700px){.two{grid-template-columns:1fr}.kpi{grid-template-columns:1fr 1fr}}
+.ban{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;background:#fbefd9;border:1px solid #ecd7a6;border-radius:14px;padding:12px 16px;font-size:14px}.ban .i{width:32px;height:32px;border-radius:50%;background:#e9c46a;display:grid;place-items:center;font-weight:800;color:#5a3a00}
+.phone{width:300px;background:#fff;border:8px solid #2b241d;border-radius:30px;padding:14px;font-size:13px;line-height:19px}.phone h4{margin:0 0 6px;font-family:Gloock,Georgia,serif;font-weight:400;font-size:18px}.phone .s{background:var(--sabbia);border-radius:10px;padding:8px 10px;margin-top:8px}.phone del{color:var(--acc)}.phone ins{text-decoration:none;color:var(--ok)}
+.demo{display:flex;gap:16px;flex-wrap:wrap}
+.dark{background:var(--bg);color:var(--dink);border-radius:24px;padding:30px 32px}.dark .sub{color:var(--dmuted)}.kick{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dacc);font-weight:700;margin:0 0 8px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.c{background:var(--card);border:1px solid var(--dline);border-radius:18px;overflow:hidden}.c img{width:100%;height:100px;object-fit:cover;display:block}.c div{padding:12px 14px;font-size:13.5px}.c span{color:var(--dmuted);display:block;font-size:12.5px}
+@media(max-width:700px){.cards{grid-template-columns:1fr 1fr}}
+</style></head><body><div class="wrap">
+
+<section><p class="lbl">A · Decisione 5 — la sezione «Le guide dei nostri host» esce solo quando l'admin la accende. Admin → Giudizi e vetrina, in cima:</p>
+<div class="box"><div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)"><div><b>Mostra la sezione «Le guide dei nostri host» sul sito</b><br><span style="color:var(--muted);font-size:13px">Home e pagina «Tutte le guide». Oggi: 3 schede approvate. Spento di serie: finché è spento non si vede niente, nemmeno il titolo.</span></div><span class="pill r">Spento</span></div>
+<div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;padding:12px 0"><div><b>Mostra la sezione «Cosa dicono di noi» sul sito</b><br><span style="color:var(--muted);font-size:13px">Giudizi approvati: 0. <span class="pill a">Acceso ma senza giudizi approvati: la sezione resta nascosta</span></span></div><span class="pill g">Acceso</span></div>
+<p class="sub" style="margin:10px 0 0;font-size:13px">Sotto, le due tabelle di approvazione come già previsto (9L). Si può approvare e ordinare anche a interruttore spento, così all'accensione è tutto pronto.</p></div>
+<p class="lbl" style="margin-top:18px">Con l'interruttore acceso e almeno una scheda approvata, in home compare la sezione completa:</p>
+<div class="dark"><p class="kick">Le guide dei nostri host</p><h2 class="serif" style="color:var(--dink)">Case vere, già online.</h2><p class="sub">Le strutture che usano MyHouse Welcome ogni giorno.</p>
+<div class="cards"><div class="c"><img src="../pronti/checco/checco-copertina-orizzontale.jpg" alt=""><div>Casa Checco<span>Francesco · Assisi (PG)</span></div></div><div class="c"><img src="../pronti/tipologie/bed-and-breakfast.jpg" alt=""><div>B&amp;B La Corte<span>Giulia · Spello (PG)</span></div></div><div class="c"><img src="../pronti/tipologie/agriturismi.jpg" alt=""><div>Agriturismo Le Vigne<span>Marco · Montefalco (PG)</span></div></div></div>
+<p class="sub" style="margin:16px 0 0;font-size:13px">Host che hanno aderito al programma «Giudizio con sconto». Mostrate con il loro accordo, senza link. <span style="color:var(--dacc)">Vedi tutte →</span></p></div></section>
+
+<section><p class="lbl">B · Decisione 6 — Demo Casa Checco: le 5 migliorie di contenuto (prima → dopo)</p>
+<div class="demo">
+<div class="phone"><h4>Check-in &amp; Check-out</h4><div class="s">Check-in dalle 15:00 · Imposta di soggiorno <del>4 € a persona per notte a notte</del> <ins>4 € a persona a notte</ins></div><div class="s"><del>Partenza: lasciate le chiavi sul tavolo, chiudete le finestre… (tutto il blocco)</del><br><ins>Check-out entro le 10:30 → vedi «Prima di andare»</ins></div></div>
+<div class="phone"><h4>Wi-Fi</h4><div class="s">Casa · rete <b>CasaChecco</b> · <del>vicolo-dei-gerani</del> <ins>gerani-2026</ins></div><div class="s">Terrazza · rete <b>CasaChecco-Terrazza</b> · <del>vicolo-dei-gerani</del> <ins>terrazza-2026</ins></div><small style="color:var(--muted)">Due reti con due password: si vede a cosa serve «una riga per zona».</small></div>
+<div class="phone"><h4>Prima di andare</h4><div class="s">★★★★★ Lascia una recensione: <b>Google</b> <del>· Booking.com · Airbnb</del></div><div class="s"><del>Prenota sul nostro sito → blackout.in/myhouse</del><br><ins>Torna a trovarci: casachecco.it (sito fittizio)</ins></div></div>
+<div class="phone"><h4>Eventi</h4><div class="s"><del>Calendimaggio · mercoledì 11 agosto 2027</del><br><ins>Palio di San Rufino · ogni anno, fine agosto</ins></div><div class="s"><ins>Calendimaggio · ogni anno, primi di maggio</ins></div><small style="color:var(--muted)">Niente date fisse che invecchiano.</small></div>
+<div class="phone"><h4>Emergenze</h4><div class="s">112 · Numero unico</div><div class="s"><ins>Farmacia Comunale · Via San Francesco 4 · 075 812… · Apri Maps</ins></div><div class="s"><ins>Ospedale di Assisi · Via V. Muller · 075 81391 · Apri Maps</ins></div></div>
+</div></section>
+
+<section><p class="lbl">C · Admin → Quadro: avvisi compressi in una riga, «Da fare oggi» sopra i numeri</p>
+<div class="box"><details><summary>Da configurare: 6 voci (posta, S3, dominio, Stripe, upload, clienti di esempio)</summary>Elenco con link alle Impostazioni.</details>
+<h3 class="serif" style="margin-top:18px">Da fare oggi</h3>
+<div class="todo"><div><b>2 preventivi nuovi</b><span>Agriturismo Le Vigne (12 strutture), ieri</span><a class="btn s">Apri</a></div><div><b>4 schede da approvare · 1 giudizio da approvare</b><span>Giudizi e vetrina</span><a class="btn s">Apri</a></div><div><b>1 rinnovo fallito</b><span>MW-00019 · carta rifiutata il 19 ott</span><a class="btn s">Apri</a></div><div><b>3 email non confermate da più di 7 giorni</b><a class="btn s">Apri</a></div></div>
+<div class="kpi" style="margin-top:18px"><div>Clienti attivi<b>41</b>senza esempio</div><div>Guide online<b>38</b></div><div>Incassato ottobre<b>1.247 €</b>+ IVA</div><div>Rinnovi 30 giorni<b>6 · 702 €</b>attesi</div></div></div></section>
+
+<section><p class="lbl">D · Admin → voce nuova «Cassa»: incassi per mese, Stripe + bonifici, CSV per il commercialista</p>
+<div class="box"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><h3 class="serif">Cassa · 2026</h3><div><a class="btn g s">Esporta CSV</a> <a class="btn g s">Anno precedente</a></div></div>
+<table><tr><th>Mese</th><th>Nuovi</th><th>Rinnovi</th><th>Stripe</th><th>Bonifici</th><th class="n">Imponibile</th><th class="n">IVA 22%</th><th class="n">Totale</th><th>Rimborsi</th></tr>
+<tr><td>Ottobre</td><td>7</td><td>2</td><td>1.137 €</td><td>110 €</td><td class="n">1.247,00 €</td><td class="n">274,34 €</td><td class="n">1.521,34 €</td><td>—</td></tr>
+<tr><td>Settembre</td><td>5</td><td>0</td><td>615 €</td><td>—</td><td class="n">615,00 €</td><td class="n">135,30 €</td><td class="n">750,30 €</td><td>97 €</td></tr>
+<tr><td><b>Anno</b></td><td>12</td><td>2</td><td>1.752 €</td><td>110 €</td><td class="n"><b>1.862,00 €</b></td><td class="n">409,64 €</td><td class="n"><b>2.271,64 €</b></td><td>97 €</td></tr></table>
+<p class="sub" style="margin:12px 0 0;font-size:13px">Ogni riga si apre sull'elenco dei pagamenti (codice MW-AAAA-N, cliente, piano, sconti applicati, fattura Adamo quando ci sarà).</p></div></section>
+
+<section><p class="lbl">E · Admin → Scadenze a 30 / 60 / 90 giorni + attivazione manuale con incasso</p>
+<div class="two"><div class="box"><h3 class="serif">Scadenze</h3><div class="kpi" style="grid-template-columns:repeat(3,1fr)"><div>Entro 30 gg<b>6</b>702 € attesi</div><div>31–60 gg<b>9</b>1.058 €</div><div>61–90 gg<b>4</b>468 €</div></div>
+<table style="margin-top:12px"><tr><th>Cliente</th><th>Scade</th><th class="n">Atteso</th><th></th></tr><tr><td>Casa Checco · MW-00012</td><td>3 nov <span class="pill a">rinnovo fermo</span></td><td class="n">120,65 €</td><td><a class="btn g s">Promemoria</a></td></tr><tr><td>B&amp;B La Corte · MW-00007</td><td>12 nov</td><td class="n">60,33 €</td><td><a class="btn g s">Promemoria</a></td></tr><tr><td>Appartamento Sole · MW-00021</td><td>15 nov <span class="pill n">omaggio</span></td><td class="n">97,00 €</td><td><a class="btn g s">Promemoria</a></td></tr></table></div>
+<div class="box"><h3 class="serif">Attiva un abbonamento manuale</h3><p class="sub">Piano: <b>Portfolio (in vendita)</b> ▾ · 3 strutture <span class="pill n">versioni precedenti nascoste</span></p>
+<div style="display:grid;gap:8px;font-size:14px"><div>Pagato fuori Stripe? <span class="pill g">Bonifico</span> <span class="pill n">Nessun incasso (omaggio/prova)</span></div><div>Importo incassato <b>227,00 €</b> + IVA · data <b>18 ott 2026</b> · riferimento <b>CRO 1234…</b></div><div style="color:var(--muted);font-size:13px">Finisce in Cassa e in Scadenze come gli altri pagamenti; codice MW-00019-2026-1.</div></div><p style="margin:14px 0 0"><a class="btn">Attiva</a></p></div></div></section>
+
+<section><p class="lbl">F · Pannello cliente: checklist per le bozze, barra del tetto traduzioni, avviso inline dopo il salvataggio della campione</p>
+<div class="two"><div class="box"><h3 class="serif">Casa sul Mare <span class="pill a" style="vertical-align:middle">bozza</span></h3><p class="sub">Per pubblicare mancano 2 cose.</p><div class="chk"><div class="ok">Nome e città</div><div class="ok">Check-in &amp; Check-out</div><div class="ok">Wi-Fi</div><div>CIN · <a href="#" style="color:var(--acc)">scrivilo</a></div><div>Foto di copertina · <a href="#" style="color:var(--acc)">caricala</a></div><div class="ok">Lingue: IT, EN</div></div></div>
+<div class="box"><h3 class="serif">Lingue</h3><p class="sub">Traduzioni suggerite comprese nel piano: <b>38.400</b> su 500.000 caratteri usati quest'anno.</p><div class="bar"><i style="width:8%"></i></div><p class="sub" style="margin:8px 0 12px">Per tradurre i 4 campi mancanti in EN e NL servono ≈ 6.200 caratteri (1% del tetto).</p><a class="btn">Traduci i 4 campi mancanti</a>
+<div class="ban" style="margin-top:18px"><div class="i">!</div><div>Hai salvato «Regole della casa» nella campione: <b>1 gemella da aggiornare</b>.</div><a class="btn s">Porta le modifiche →</a></div></div></div></section>
+</div></body></html>

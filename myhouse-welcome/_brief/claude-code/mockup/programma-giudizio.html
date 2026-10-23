@@ -1,0 +1,105 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Programma «Giudizio con sconto» · un solo programma</title>
+<style>
+:root{--paper:#faf5ec;--sabbia:#f3ece0;--ink:#231b12;--muted:#6a5b48;--line:#e7dccb;--acc:#b4451f;--bg:#161410;--card:#28221b;--dline:#3b332a;--dink:#f4eee2;--dmuted:#b7ab98;--dacc:#e86f48;--ocra:#d7a73a;--ok:#2f6b3f}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Onest,"Helvetica Neue",Arial,sans-serif;padding:40px 20px 60px}
+.serif{font-family:Gloock,Georgia,"Times New Roman",serif;font-weight:400}
+.wrap{max-width:1040px;margin:0 auto;display:grid;gap:40px}
+.lbl{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;font-weight:600}
+.box{background:#fff;border:1px solid var(--line);border-radius:24px;padding:28px 32px}
+h2{font-size:28px;margin:0 0 6px}h3{font-size:22px;margin:0 0 4px}.sub{color:var(--muted);margin:0 0 18px;font-size:15px;line-height:22px}
+.chk{display:grid;grid-template-columns:26px 1fr;gap:12px;align-items:start;background:var(--sabbia);border-radius:16px;padding:16px 18px;margin:10px 0}
+.chk i{width:24px;height:24px;border:2px solid var(--acc);border-radius:7px;display:block;margin-top:2px}.chk i.on{background:var(--acc)}.chk i.on:after{content:"✓";color:#fff;display:block;text-align:center;line-height:20px;font-weight:700}
+.chk p{margin:0;font-size:15px;line-height:22px}.chk small{display:block;color:var(--muted);font-size:13px;line-height:19px;margin-top:4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0 20px;border-radius:999px;background:var(--acc);color:#fff;border:0;font:inherit;font-weight:700;font-size:15px;text-decoration:none}
+.btn.g{background:#fff;color:var(--ink);border:1.5px solid #8a7b65}.btn.s{height:36px;font-size:13px;padding:0 14px}
+.tog{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 0;border-top:1px solid var(--line)}.tog:first-of-type{border-top:0}.tog b{display:block;font-size:15px}.tog span{color:var(--muted);font-size:13.5px;line-height:19px}
+.stato{font-size:13px;color:var(--muted);background:var(--sabbia);border-radius:999px;padding:4px 10px;display:inline-block;margin-top:8px}.stato.ok{color:var(--ok);background:#e8f1e6}
+.chip{display:inline-block;border:1.5px solid var(--acc);color:var(--acc);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600;margin-right:6px}.chip.off{border-color:var(--line);color:var(--muted);text-decoration:line-through}
+.riep{display:grid;grid-template-columns:1fr 1fr;gap:18px}@media(max-width:640px){.riep{grid-template-columns:1fr}}
+.tot{font-size:14px;color:var(--muted);line-height:24px}.tot b{color:var(--ink)}.tot s{color:var(--muted)}
+/* home scura */
+.dark{background:var(--bg);color:var(--dink);border-radius:28px;padding:40px 36px}
+.kick{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dacc);font-weight:700;margin:0 0 10px}
+.dark h2{font-size:40px;line-height:44px;margin:0 0 6px}.dark .sub{color:var(--dmuted);font-size:17px;margin-bottom:26px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}@media(max-width:720px){.cards{grid-template-columns:1fr}}
+.c{background:var(--card);border:1px solid var(--dline);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.c img{width:100%;height:150px;object-fit:cover;display:block}.c .b{padding:22px 18px 18px;display:grid;gap:10px}
+.logo{position:absolute;top:128px;left:18px;width:44px;height:44px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:11px;font-weight:800;color:#5a4636;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.stelle{color:var(--ocra);letter-spacing:2px;font-size:16px}.quote{font-size:15px;line-height:22px;margin:0}.quote:before{content:"« "}.quote:after{content:" »"}
+.da{font-size:13px;color:var(--dmuted);background:#1e1a15;border:1px solid var(--dline);border-radius:999px;padding:5px 10px;display:inline-block;width:max-content}
+.host{font-size:14px}.host span{color:var(--dmuted);display:block;font-size:13px}
+.notad{color:var(--dmuted);font-size:13.5px;line-height:20px;margin:22px 0 0}
+.sconto{margin-top:34px;border-top:1px solid var(--dline);padding-top:24px;display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
+.sconto .n{font-family:Gloock,Georgia,serif;font-size:56px;color:var(--dacc);line-height:1}.sconto p{margin:0;font-size:16px;line-height:24px;color:var(--dmuted)}.sconto b{color:var(--dink)}
+.termini p{font-size:14.5px;line-height:22px;margin:0 0 10px}.termini b{display:block;margin-bottom:4px}
+/* admin */
+.adm{background:#fff;border:1px solid var(--line);border-radius:24px;overflow:hidden}
+.adm .top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 24px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.filtri{display:flex;gap:8px;flex-wrap:wrap}.filtri span{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}.filtri span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}.kpi div{padding:14px 24px;border-right:1px solid var(--line);font-size:13px;color:var(--muted)}.kpi div:last-child{border:0}.kpi b{display:block;font-size:24px;color:var(--ink);font-family:Gloock,Georgia,serif;font-weight:400}
+table{width:100%;border-collapse:collapse;font-size:13.5px}th{text-align:left;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:12px 14px;border-bottom:1px solid var(--line);font-weight:600}td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+td .st{display:block;font-weight:600}td .mu{color:var(--muted);font-size:12.5px}
+.sw{width:40px;height:22px;border-radius:999px;background:#cfc4b2;position:relative;display:inline-block;vertical-align:middle}.sw.on{background:var(--acc)}.sw:after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff}.sw.on:after{left:21px}
+.pill{font-size:12px;border-radius:999px;padding:3px 9px;display:inline-block}.pill.g{background:#e8f1e6;color:var(--ok)}.pill.a{background:#fbefd9;color:#8a5a12}.pill.r{background:#f6e2dc;color:var(--acc)}
+.mini{width:54px;height:36px;object-fit:cover;border-radius:6px;display:inline-block;vertical-align:middle;margin-right:8px}
+.az a{color:var(--acc);font-size:13px;margin-right:10px;text-decoration:none}
+@media(max-width:760px){.kpi{grid-template-columns:1fr 1fr}table{font-size:12.5px}th:nth-child(4),td:nth-child(4){display:none}}
+</style></head><body><div class="wrap">
+
+<section><p class="lbl">1 · Pagamento → una sola casella, sotto quella dei Termini (vale anche dal pannello, stesso testo)</p>
+<div class="box">
+<div class="chk"><i class="on"></i><p>Ho letto e accetto i <u>Termini e condizioni</u> e l'<u>informativa privacy</u>.</p></div>
+<div class="chk"><i class="on"></i><p><b>Aderisco al programma «Giudizio con sconto» e ho il 5% di sconto.</b><small>Il programma comprende due cose: (1) la mia scheda tra «Le guide dei nostri host» su welcomemyhouse.it <b>da quando pubblico la guida</b>, con nome della struttura, copertina, logo, il mio nome (senza cognome) e la città, anche senza foto; (2) dopo 30 giorni, un voto da 1 a 5 con un commento, che può comparire in «Cosa dicono di noi». MyHouse decide se e quando pubblicare scheda e giudizio. Nessun link alla guida, nessuna mia foto. Lo sconto non dipende dal voto né dalla pubblicazione. Posso ritirarmi quando voglio da Impostazioni → Giudizio con sconto.</small></p></div>
+<div class="riep" style="margin-top:14px"><div class="tot">Plus · primo anno<br><s>127,00 €</s> <b style="font-size:22px">120,65 €</b> + IVA<br><span style="font-size:12.5px">Sconto giudizio 5% applicato al primo anno. Se aderisci dopo, dal pannello, vale sul rinnovo.</span></div>
+<div class="tot" style="font-size:13px">Con il codice omaggio (9D) la casella non compare. Con un codice sconto normale vale lo sconto più alto, non la somma. Con l'invito di un amico si somma.</div></div>
+</div></section>
+
+<section><p class="lbl">2 · Pannello → Impostazioni → «Giudizio con sconto» (una voce sola; sparisce la pagina «Giudizio» di oggi)</p>
+<div class="box"><h3 class="serif">Giudizio con sconto</h3><p class="sub">Hai aderito il 3 ottobre 2026 · 5% già applicato al primo anno.</p>
+<div class="tog"><div><b>La tua scheda su welcomemyhouse.it</b><span>Casa Checco · Francesco · Assisi (PG). Senza link, senza la tua foto.</span><br><span class="stato ok">Scheda approvata il 19 ottobre · in home</span> <span class="stato">Giudizio: in attesa</span></div><a class="btn g s">Anteprima</a></div>
+<div class="tog"><div><b>Immagini mostrate</b><span>Solo queste due. Se le cambi nella guida, cambiano anche lì.</span><br><div style="margin-top:8px"><span class="chip">Copertina ✓</span><span class="chip">Logo ✓</span></div></div></div>
+<div class="tog"><div><b>Il tuo giudizio</b><span>Te lo chiediamo 30 giorni dopo la pubblicazione (il 18 novembre 2026). Puoi lasciarlo anche prima.</span><br><span class="stato">In attesa</span></div><a class="btn s">Lascia il giudizio</a></div>
+<div class="tog"><div><b>Ritirarsi dal programma</b><span>La scheda e il giudizio spariscono subito. Lo sconto già avuto resta; quello promesso sul rinnovo decade.</span></div><a class="btn g s">Ritirati</a></div>
+</div></section>
+
+<section><p class="lbl">3 · Home → DUE sezioni separate: «Le guide dei nostri host» (schede, tutte quelle approvate) e «Cosa dicono di noi» (giudizi, solo quelli scelti, di norma 5 stelle)</p>
+<div class="dark"><p class="kick">Le guide dei nostri host</p><h2 class="serif">Case vere, già online.</h2><p class="sub">Le strutture che usano MyHouse Welcome ogni giorno.</p>
+<div class="cards" style="grid-template-columns:repeat(4,1fr)">
+ <div class="c"><img src="../pronti/checco/checco-copertina-orizzontale.jpg" alt="" style="height:110px"><div class="logo" style="top:90px;width:36px;height:36px;font-size:10px">CC</div><div class="b" style="padding-top:18px"><div class="host">Casa Checco<span>Francesco · Assisi (PG)</span></div></div></div>
+ <div class="c"><img src="../pronti/tipologie/bed-and-breakfast.jpg" alt="" style="height:110px"><div class="logo" style="top:90px;width:36px;height:36px;font-size:10px">LC</div><div class="b" style="padding-top:18px"><div class="host">B&amp;B La Corte<span>Giulia · Spello (PG)</span></div></div></div>
+ <div class="c"><img src="../pronti/tipologie/agriturismi.jpg" alt="" style="height:110px"><div class="b" style="padding-top:14px"><div class="host">Agriturismo Le Vigne<span>Marco · Montefalco (PG)</span></div></div></div>
+ <div class="c"><div style="height:110px;background:#f3ece0;display:grid;place-items:center;color:#8a5a12;font-family:Gloock,Georgia,serif;font-size:15px;letter-spacing:.02em">⌂ Welcome My House</div><div class="logo" style="top:90px;width:36px;height:36px;font-size:14px;color:#b4451f">⌂</div><div class="b" style="padding-top:18px"><div class="host">Appartamento Sole<span>Anna · Perugia</span></div></div></div>
+</div>
+<p class="notad">Host che hanno aderito al programma «Giudizio con sconto». Mostrate con il loro accordo, senza link alle guide. <span style="color:var(--dacc)">Vedi tutte →</span></p>
+</div>
+<div class="dark" style="margin-top:18px"><p class="kick">Cosa dicono di noi</p><h2 class="serif">Host veri, ospiti più sereni.</h2><p class="sub">Le parole di chi ha già lasciato il suo giudizio.</p>
+<div class="cards">
+ <div class="c"><img src="../pronti/tipologie/bed-and-breakfast.jpg" alt=""><div class="logo">LC</div><div class="b"><div class="stelle">★★★★★</div><p class="quote">Le domande a colazione sono finite. Gli ospiti arrivano già sapendo tutto.</p><div class="host">Giulia<span>B&amp;B La Corte · Spello (PG)</span></div></div></div>
+ <div class="c"><img src="../pronti/tipologie/agriturismi.jpg" alt=""><div class="b"><div class="stelle">★★★★★</div><p class="quote">Finalmente nessuno si perde sulle strade bianche.</p><div class="host">Marco<span>Agriturismo Le Vigne · Montefalco (PG)</span></div></div></div>
+ <div class="c"><img src="../pronti/checco/checco-copertina-orizzontale.jpg" alt=""><div class="logo">CC</div><div class="b"><div class="stelle">★★★★★</div><p class="quote">L'ho fatta in un pomeriggio, da solo.</p><div class="host">Francesco<span>Casa Checco · Assisi (PG)</span></div></div></div>
+</div>
+<p class="notad">Giudizi di host che hanno aderito al programma: ricevono il 5% sul rinnovo, qualunque voto diano. Pubblicati con il loro accordo, a nostra scelta, senza link.</p>
+<div class="sconto"><span class="n">55%</span><p><b>Fino al 55% di sconto a partire dal prossimo anno.</b> Porta un amico: 5% a testa sul rinnovo, fino al 50% con 10 amici. Aderisci al programma «Giudizio con sconto», con la tua guida in questa pagina: un altro 5%.</p></div>
+</div></section>
+
+<section><p class="lbl">4 · Amministrazione → Vendite → «Giudizi e vetrina»: due schede, approvazione separata, ordine a mano</p>
+<div class="adm"><div class="top"><div><h3 class="serif" style="margin:0">Giudizi e vetrina</h3><span style="font-size:13px;color:var(--muted)">23 aderenti al programma · 41 clienti attivi</span></div>
+<div class="filtri"><span class="on">Vetrina (schede) · 23</span><span>Giudizi · 12</span><span>Ritirati · 2</span></div></div>
+<div class="kpi"><div>In vetrina<b>8</b>in home: 4 + «Vedi tutte»</div><div>Da approvare<b>4</b>2 nuovi oggi</div><div>Giudizi pubblicati<b>3 / 12</b>mostriamo i 5 stelle</div><div>Doppioni<b>2</b>in vetrina e nei giudizi</div></div>
+<table><tr><th>Ordine</th><th>Struttura</th><th>Scheda (vetrina)</th><th>Giudizio</th><th>Immagini</th><th></th></tr>
+<tr><td><b>1</b> <span class="mu">▲▼</span></td><td><img class="mini" src="../pronti/checco/checco-copertina-orizzontale.jpg" alt=""><span class="st" style="display:inline">Casa Checco</span><br><span class="mu">Francesco · Assisi (PG) · MW-00012-01 · Plus · aderito 3 ott</span></td><td><i class="sw on"></i> <span class="pill g">In home</span><br><span class="mu">approvata il 19 ott</span></td><td>★★★★★ <i class="sw on"></i> <span class="pill g">In home</span><br><span class="mu">«L'ho fatta in un pomeriggio…» · <b>anche in vetrina</b></span></td><td>Copertina ✓ Logo ✓</td><td class="az"><a>Anteprima</a><a>Rispondi</a><a>Nota</a></td></tr>
+<tr><td><b>2</b> <span class="mu">▲▼</span></td><td><img class="mini" src="../pronti/tipologie/bed-and-breakfast.jpg" alt=""><span class="st" style="display:inline">B&amp;B La Corte</span><br><span class="mu">Giulia · Spello (PG) · MW-00007-01 · Plus · aderita 12 set</span></td><td><i class="sw on"></i> <span class="pill g">In home</span></td><td>★★★★★ <i class="sw on"></i> <span class="pill g">In home</span></td><td>Copertina ✓ Logo ✓</td><td class="az"><a>Anteprima</a><a>Modifica</a></td></tr>
+<tr><td><b>3</b> <span class="mu">▲▼</span></td><td><img class="mini" src="../pronti/tipologie/agriturismi.jpg" alt=""><span class="st" style="display:inline">Agriturismo Le Vigne</span><br><span class="mu">Marco · Montefalco (PG) · MW-00019-01 · Portfolio · aderito 1 ott</span></td><td><i class="sw on"></i> <span class="pill g">In vetrina</span><br><span class="mu">non in home: oltre i 4 posti</span></td><td>★★☆☆☆ <i class="sw"></i> <span class="pill a">Non pubblicato</span><br><span class="mu">«Buono ma le traduzioni…» · sconto confermato</span></td><td>Copertina ✓ Logo —</td><td class="az"><a>Leggi</a><a>Rispondi</a></td></tr>
+<tr><td><span class="mu">—</span></td><td><span class="st" style="display:inline">Appartamento Sole</span><br><span class="mu">Anna · Perugia · MW-00021-01 · Essential · aderita 15 ott</span></td><td><i class="sw"></i> <span class="pill a">Da approvare</span><br><span class="mu">incompleta: manca copertina/logo · consiglio: aspetta che completi</span></td><td><span class="pill a">In attesa</span><br><span class="mu">richiesta il 14 nov</span></td><td>—</td><td class="az"><a>Anteprima</a><a>Approva</a></td></tr>
+<tr><td><span class="mu">—</span></td><td><span class="st" style="display:inline">Casa Beppe</span><br><span class="mu">Luca · Gubbio (PG) · MW-00025-01 · Portfolio · aderito 18 ott</span></td><td><span class="pill r">Ritirata dall'admin</span><br><span class="mu">«troppe schede della stessa zona» · nota del 19 ott</span></td><td><span class="pill a">In attesa</span></td><td>Copertina ✓</td><td class="az"><a>Rimetti</a><a>Storico</a></td></tr>
+</table>
+<div style="padding:16px 24px;font-size:13px;color:var(--muted);line-height:20px"><b>Regole.</b> Scheda e giudizio si approvano <b>separatamente</b>, ognuno con il suo interruttore e la sua data. <b>Vetrina</b>: di norma si approvano tutte; in home ne stanno 4 (configurabile) nell'ordine scelto qui, le altre nella pagina «Tutte le guide» raggiunta da «Vedi tutte»; l'admin può ritirare una scheda con un motivo (appunto interno, il cliente vede solo «non in home al momento»). <b>Giudizi</b>: mai in automatico, di norma solo 5 stelle, al massimo 6 in home; una struttura può stare in tutte e due le sezioni (la colonna «Doppioni» lo segnala). L'ordine si cambia con le frecce o trascinando, per ognuna delle due sezioni. Si spengono da soli: guida archiviata, abbonamento scaduto, ritiro dell'host, copertina tolta (la scheda resta ma «solo testo», da riapprovare). Tutto in <code>audit_log</code>.</div>
+</div></section>
+
+<section><p class="lbl">5 · Termini e condizioni → punto «Giudizio con sconto» (riscritto)</p>
+<div class="box termini"><p><b>Giudizio con sconto</b>Con un'unica casella, al pagamento o dal pannello, aderisci al programma e hai il 5% di sconto: sul primo anno se aderisci al pagamento, sul rinnovo successivo se aderisci dopo. Si somma allo sconto degli inviti; non si somma ai codici sconto (vale il più alto); non è disponibile con i codici omaggio.</p>
+<p>Il programma comprende due pubblicazioni, decise da MyHouse Welcome caso per caso: la tua <b style="display:inline">scheda</b> tra «Le guide dei nostri host» (da quando pubblichi la guida, anche senza foto, con nome della struttura, copertina se c'è, logo, tuo nome senza cognome, città) e il tuo <b style="display:inline">giudizio</b> in «Cosa dicono di noi» (voto e commento). Possiamo pubblicarne una sola, tutte e due o nessuna, e toglierle quando vogliamo: lo sconto resta comunque. Non mostriamo link alla guida, la tua foto, né dati dei tuoi ospiti. Scegli tu se mostrare copertina e logo.</p>
+<p>Ti impegni a lasciare, dopo 30 giorni dalla pubblicazione, un voto da 1 a 5 con un commento. Lo sconto non dipende dal voto: vale anche con una stella. La pubblicazione in home resta a nostra discrezione; possiamo rispondere pubblicamente al giudizio.</p>
+<p>Puoi ritirarti quando vuoi: scheda e giudizio spariscono subito. Lo sconto già avuto resta; quello promesso sul rinnovo decade se ti ritiri prima del rinnovo. La scheda sparisce da sola se la guida è archiviata, l'abbonamento scade o l'account viene chiuso. Possiamo chiudere il programma ai nuovi clienti: gli sconti promessi restano.</p>
+<p style="margin:0;color:var(--muted);font-size:13px">Privacy: trattamento «Giudizio con sconto e vetrina» — base giuridica contratto (art. 6.1.b): l'adesione al programma; dati pubblicati: nome struttura, copertina, logo, nome dell'host, città, voto e commento; conservazione fino al ritiro o alla chiusura dell'account; nessuna foto della persona.</p></div></section>
+</div></body></html>

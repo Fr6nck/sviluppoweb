@@ -1,0 +1,823 @@
+<?php
+namespace MHW;
+
+/**
+ * Stripe, scritto con curl: nessuna libreria da installare.
+ *
+ * Abbonamenti annuali con rinnovo automatico (Checkout in modalità
+ * subscription). I prezzi sono IVA esclusa: il prezzo Stripe ha
+ * tax_behavior=exclusive e l'imposta si aggiunge al checkout.
+ * Il ritorno dal browser non attiva niente: l'unica fonte di verità è il
+ * webhook firmato.
+ */
+final class Stripe
+{
+    /**
+     * La modalità di una chiave segreta: «live» o «test», '' se non è una chiave segreta. Vale la chiave segreta standard
+     * (sk_live_ / sk_test_), la chiave con restrizioni (rk_live_ / rk_test_), che Stripe propone per le integrazioni, e
+     * (scelta del titolare) le chiavi mk_live_ / mk_test_: se Stripe non le riconosce lo dice «Prova la connessione».
+     */
+    public static function modoChiave(string $k): string
+    {
+        return preg_match('/^(?:sk|rk|mk)_(live|test)_/', trim($k), $m) ? $m[1] : '';
+    }
+
+    /** Senza chiave segreta E segreto del webhook non si vende: un pagamento non arriverebbe mai. */
+    public static function enabled(): bool
+    {
+        $s = Config::get('stripe');
+        return self::modoChiave((string) $s['secret_key']) !== '' && (string) $s['webhook_secret'] !== '';
+    }
+
+    /**
+     * La chiave pubblicabile, solo se è della stessa modalità della chiave segreta (pk_test_ con sk_test_ o rk_test_,
+     * pk_live_ con sk_live_ o rk_live_): altrimenti '' e si paga sulla pagina di Stripe.
+     */
+    public static function chiavePubblicabile(): string
+    {
+        $s = Config::get('stripe');
+        $pk = trim((string) ($s['publishable_key'] ?? ''));
+        $modoPk = preg_match('/^pk_(live|test)_/', $pk, $m) ? $m[1] : '';
+        return $modoPk !== '' && $modoPk === self::modoChiave((string) $s['secret_key']) ? $pk : '';
+    }
+
+    /** Il pagamento con la carta nel passo «Pubblica» (Checkout incorporato): serve anche la chiave pubblicabile. */
+    public static function incorporato(): bool { return self::enabled() && self::chiavePubblicabile() !== ''; }
+
+    /**
+     * Il valore di ui_mode per il Checkout incorporato. Con la versione «Dahlia» delle API (2026-03-25) Stripe ha cambiato
+     * i nomi: «embedded» → «embedded_page» (e «hosted» → «hosted_page»); quello vecchio è rifiutato. Il sito non fissa la
+     * versione (vale quella dell'account): si prova il nome nuovo e, se l'account è su una versione precedente, il vecchio.
+     * Quello che funziona si ricorda in storage/.stripe-ui-mode.
+     */
+    public const UI_INCORPORATA = ['embedded_page', 'embedded'];
+
+    private static function fileUi(): string { return MHW_APP . '/storage/.stripe-ui-mode'; }
+
+    private static function uiIncorporata(): string
+    {
+        $v = is_file(self::fileUi()) ? trim((string) @file_get_contents(self::fileUi())) : '';
+        return in_array($v, self::UI_INCORPORATA, true) ? $v : self::UI_INCORPORATA[0];
+    }
+
+    /** Una sessione di Checkout è incorporata (con tutti e due i nomi)? */
+    public static function sessioneIncorporata(array $s): bool { return in_array((string) ($s['ui_mode'] ?? ''), self::UI_INCORPORATA, true); }
+
+    /** @throws \RuntimeException con un messaggio tecnico: va nei log, non all'utente */
+    public static function call(string $method, string $path, array $params = [], string $idempotencyKey = ''): array
+    {
+        $s = Config::get('stripe');
+        $url = rtrim((string) $s['api_base'], '/') . '/v1/' . ltrim($path, '/');
+        if (($method === 'GET' || $method === 'DELETE') && $params) { $url .= '?' . http_build_query($params); $params = []; }   // come le librerie di Stripe
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true, CURLOPT_USERPWD => $s['secret_key'] . ':', CURLOPT_TIMEOUT => 25,
+            CURLOPT_CUSTOMREQUEST => $method,
+            // Con una chiave stabile, la stessa richiesta ripetuta (doppio clic, due
+            // schede aperte) non crea due volte lo stesso cliente o lo stesso checkout.
+            CURLOPT_HTTPHEADER => $idempotencyKey !== '' ? ['Idempotency-Key: ' . $idempotencyKey] : [],
+        ]);
+        if ($params) curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+        $body = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+        if ($body === false) throw new \RuntimeException('Stripe non raggiungibile: ' . $err);
+        $json = json_decode((string) $body, true) ?: [];
+        if ($code >= 400) throw new \RuntimeException('Stripe ' . $code . ': ' . ($json['error']['message'] ?? 'errore sconosciuto'));
+        return $json;
+    }
+
+    /**
+     * Il cliente Stripe dell'account, creato la prima volta e poi riusato.
+     * Porta con sé i dati di fatturazione: intestatario e indirizzo, e come
+     * metadati partita IVA, codice fiscale, SDI e PEC (vat, cf, sdi, pec).
+     */
+    /** 9I · I codici di un ordine per i metadati di Stripe (vuoti spariscono). */
+    private static function codici(array $order): array
+    {
+        $aid = (int) ($order['account_id'] ?? 0);
+        return array_filter(['codice_cliente' => Codici::cliente($aid), 'codice_pagamento' => Codici::pagamento((int) ($order['id'] ?? 0)),
+                             'codice_struttura' => Codici::strutture($aid)], fn($v) => $v !== '');
+    }
+
+    /** 9I · Metadati su una fattura (anche pagata: Stripe lascia cambiare i metadati). */
+    public static function metadatiFattura(string $invoiceId, array $meta): array
+    {
+        $p = [];
+        foreach ($meta as $k => $v) if ((string) $v !== '') $p["metadata[$k]"] = (string) $v;
+        return $p ? self::call('POST', 'invoices/' . rawurlencode($invoiceId), $p, 'mhw-fattura-codici-' . $invoiceId . '-' . substr(md5(serialize($p)), 0, 8)) : [];
+    }
+
+    public static function ensureCustomer(array $account, array $user): string
+    {
+        $dati = Fatturazione::anagrafica($account) + Fatturazione::metadati($account);
+        if (($account['stripe_customer_id'] ?? '') !== '') {
+            try {
+                self::call('GET', 'customers/' . rawurlencode((string) $account['stripe_customer_id']));   // esiste con queste chiavi?
+                self::syncCustomer($account);
+                return $account['stripe_customer_id'];
+            } catch (\RuntimeException $e) {
+                // Il cliente era stato creato con le chiavi di test (o cancellato su Stripe): se ne crea uno nuovo, qui sotto.
+                if (!self::nonInQuestaModalita($e, 'customer')) throw $e;
+                Log::error('Stripe: cliente non trovato con le chiavi di adesso (creato in test?), se ne crea uno nuovo', ['account' => (int) $account['id'], 'cliente' => (string) $account['stripe_customer_id']]);
+                Db::update('accounts', ['stripe_customer_id' => ''], 'id = :aid', ['aid' => (int) $account['id']]);
+                $account['stripe_customer_id'] = '';
+            }
+        }
+        // La partita IVA come «tax id» del cliente: Stripe la stampa in fattura e Adamo la legge da lì.
+        $piva = ($account['billing_type'] ?? '') === 'azienda' ? preg_replace('/\D/', '', (string) ($account['vat'] ?? '')) : '';
+        if ($piva !== '') $dati += ['tax_id_data[0][type]' => 'eu_vat', 'tax_id_data[0][value]' => 'IT' . $piva];
+        $nuovo = $dati + [
+            'email' => $user['email'], 'name' => $user['name'],
+            'metadata[account_id]' => (string) $account['id'],
+            'metadata[codice_cliente]' => Codici::cliente((int) $account['id']),   // 9I
+            'preferred_locales[0]' => 'it',
+        ];
+        // 9R · La chiave con tutti i parametri (email e nome compresi) e dieci minuti: un cliente da ricreare non riceve quello di prima.
+        $c = self::call('POST', 'customers', $nuovo, 'mhw-customer-account-' . $account['id'] . '-' . substr(md5(serialize($nuovo)), 0, 10) . '-' . intdiv(time(), 600));
+        Db::update('accounts', ['stripe_customer_id' => $c['id']], 'id = :aid', ['aid' => $account['id']]);
+        return $c['id'];
+    }
+
+    /** Aggiorna i dati di fatturazione sul cliente Stripe che esiste già. */
+    public static function syncCustomer(array $account): void
+    {
+        $dati = Fatturazione::anagrafica($account) + Fatturazione::metadati($account);
+        if (!$dati || ($account['stripe_customer_id'] ?? '') === '') return;
+        // Un dato tolto (la PEC, o la partita IVA passando a persona fisica) va tolto anche su Stripe,
+        // altrimenti Adamo legge quello vecchio: un metadato vuoto lo cancella.
+        foreach (['vat', 'cf', 'sdi', 'pec', 'billing_type', 'Fiscal_code', 'Pec', 'Fe_code'] as $k) $dati += ['metadata[' . $k . ']' => ''];
+        if (($codC = Codici::cliente((int) $account['id'])) !== '') $dati['metadata[codice_cliente]'] = $codC;   // 9I
+        $cid = rawurlencode($account['stripe_customer_id']);
+        // 9R · Nella chiave anche il cliente Stripe e dieci minuti: un cliente ricreato non riusa la chiave del vecchio (Stripe la
+        // rifiuterebbe), e tornare ai dati di prima entro 24 ore non riceve la risposta salvata (che lascerebbe su Stripe i dati intermedi).
+        self::call('POST', 'customers/' . $cid, $dati, 'mhw-customer-dati-' . $account['id'] . '-' . $account['stripe_customer_id'] . '-' . substr(md5(serialize($dati)), 0, 10) . '-' . intdiv(time(), 600));
+        // La partita IVA come «tax id»: si aggiunge se un'azienda la inserisce dopo il primo pagamento,
+        // e quella vecchia si toglie se cambia o se il cliente diventa persona fisica.
+        $piva = ($account['billing_type'] ?? '') === 'azienda' ? preg_replace('/\D/', '', (string) ($account['vat'] ?? '')) : '';
+        try {
+            $giusta = $piva !== '' ? 'IT' . $piva : '';
+            $presente = false;
+            foreach ((array) (self::call('GET', 'customers/' . $cid . '/tax_ids', ['limit' => '20'])['data'] ?? []) as $t) {
+                if (($t['type'] ?? '') !== 'eu_vat') continue;
+                if (($t['value'] ?? '') === $giusta) { $presente = true; continue; }
+                self::call('DELETE', 'customers/' . $cid . '/tax_ids/' . rawurlencode((string) $t['id']));
+            }
+            if ($giusta !== '' && !$presente) self::call('POST', 'customers/' . $cid . '/tax_ids', ['type' => 'eu_vat', 'value' => $giusta], 'mhw-taxid-' . $account['id'] . '-' . $account['stripe_customer_id'] . '-' . $piva . '-' . intdiv(time(), 600));
+        } catch (\Throwable $e) { Log::exception($e, 'Stripe: partita IVA del cliente'); }
+    }
+
+    /**
+     * 9A · Le voci del Checkout di un abbonamento, dalla versione del listino: la prima struttura (Price ID se c'è,
+     * altrimenti descritta qui) e, per il Portfolio, le strutture aggiuntive × quantità. Con gli scaglioni la seconda
+     * voce è un Price graduato, che Checkout non sa descrivere al volo: si crea su Stripe la prima volta e si riusa.
+     * @return array{0:array,1:array} [i parametri line_items, la versione con i Price ID eventualmente creati]
+     */
+    public static function vociCheckout(array $pv, array $pkg, int $quantita): array
+    {
+        // 9O · Essential e Plus valgono per una struttura: una quantità diversa non apre nessuna sessione (e finisce in Anomalie).
+        if (!Plans::perProperty($pv) && $quantita !== 1) {
+            Log::error('Quantità non valida per un piano a struttura singola', ['piano' => (string) ($pkg['code'] ?? ''), 'versione' => (int) ($pv['id'] ?? 0), 'quantita' => $quantita]);
+            throw new \RuntimeException('Quantità non valida: il piano ' . (string) ($pkg['name'] ?? '') . ' vale per una struttura.');
+        }
+        $p = ['line_items[0][quantity]' => 1];
+        if ((string) ($pv['stripe_price_id'] ?? '') !== '') {
+            $p['line_items[0][price]'] = $pv['stripe_price_id'];
+        } else {
+            // Nessun prezzo creato a mano su Stripe: lo si descrive qui, dalla
+            // versione del listino. Il prezzo resta quello del database.
+            $p['line_items[0][price_data][currency]'] = strtolower($pv['currency']);
+            $p['line_items[0][price_data][unit_amount]'] = (string) $pv['price_cents'];
+            $p['line_items[0][price_data][tax_behavior]'] = 'exclusive';
+            $p['line_items[0][price_data][recurring][interval]'] = 'year';
+            // 9R · Con il Portfolio la fattura (e Adamo) dice «prima struttura» e «struttura aggiuntiva × N».
+            $p['line_items[0][price_data][product_data][name]'] = 'MyHouse Welcome ' . $pkg['name'] . (Plans::perProperty($pv) ? ' — prima struttura' : '');
+            $p['line_items[0][price_data][product_data][metadata][package]'] = $pkg['code'];
+            $p['line_items[0][price_data][product_data][metadata][ruolo]'] = 'base';
+        }
+        if (Plans::perProperty($pv) && $quantita > 1) {
+            if (($pv['stripe_extra_price_id'] ?? '') === '' && count(Plans::tiers($pv)) > 1) $pv['stripe_extra_price_id'] = self::ensureExtraPrice($pv, $pkg);
+            $p['line_items[1][quantity]'] = $quantita - 1;
+            if (($pv['stripe_extra_price_id'] ?? '') !== '') {
+                $p['line_items[1][price]'] = $pv['stripe_extra_price_id'];
+            } else {
+                $p['line_items[1][price_data][currency]'] = strtolower($pv['currency']);
+                $p['line_items[1][price_data][unit_amount]'] = (string) (int) $pv['extra_price_cents'];
+                $p['line_items[1][price_data][tax_behavior]'] = 'exclusive';
+                $p['line_items[1][price_data][recurring][interval]'] = 'year';
+                $p['line_items[1][price_data][product_data][name]'] = 'MyHouse Welcome ' . $pkg['name'] . ' — struttura aggiuntiva';
+                $p['line_items[1][price_data][product_data][metadata][package]'] = $pkg['code'];
+                $p['line_items[1][price_data][product_data][metadata][ruolo]'] = 'aggiuntiva';
+            }
+        }
+        return [$p, $pv];
+    }
+
+    /** 9A · Il file con l'esito dei controlli sui Price (per versione: ok a che ora, o l'ultimo errore). */
+    private static function fileVerifica(): string { return MHW_APP . '/storage/.prezzi-stripe.json'; }
+
+    public static function esitiVerifica(): array
+    {
+        $f = self::fileVerifica();
+        return is_file($f) ? (json_decode((string) @file_get_contents($f), true) ?: []) : [];
+    }
+
+    private static function segnaVerifica(int $pvId, array $esito): void
+    {
+        $tutti = self::esitiVerifica();
+        $tutti[(string) $pvId] = $esito + ['t' => time()];
+        @file_put_contents(self::fileVerifica(), json_encode($tutti), LOCK_EX);
+    }
+
+    /** Stripe dice che l'oggetto non c'è in questa modalità (creato con le chiavi di test e letto con quelle live, o il contrario). */
+    public static function nonInQuestaModalita(\Throwable $e, string $oggetto): bool
+    {
+        return str_contains($e->getMessage(), 'Stripe 404') && str_contains($e->getMessage(), 'No such ' . $oggetto);
+    }
+
+    /**
+     * Prima del Checkout: i Price ID salvati nella versione del listino esistono con le chiavi di adesso? Il sito crea da sé
+     * il Price della «struttura aggiuntiva» del Portfolio (ensureExtraPrice) e lo salva: se è nato con le chiavi di test,
+     * con quelle live Stripe risponde «No such price» e il pagamento si fermava. Un Price ID che Stripe non trova si toglie
+     * (registro e log): il sito descrive il prezzo dal listino o ricrea quello graduato nella modalità giusta.
+     * Una lettura che fallisce per altri motivi non tocca niente (ci pensa verificaPrezzi). Il Price ID buono vale un'ora.
+     */
+    public static function prezziDiQuestaModalita(array &$pv): void
+    {
+        foreach (['stripe_price_id', 'stripe_extra_price_id'] as $col) {
+            $id = (string) ($pv[$col] ?? '');
+            if ($id === '') continue;
+            $visto = self::esitiVerifica()['modo:' . $id] ?? null;
+            if ($visto && time() - (int) ($visto['t'] ?? 0) < 3600) continue;
+            try {
+                self::call('GET', 'prices/' . rawurlencode($id));
+                $tutti = self::esitiVerifica(); $tutti['modo:' . $id] = ['ok' => true, 't' => time()];
+                @file_put_contents(self::fileVerifica(), json_encode($tutti), LOCK_EX);
+            } catch (\RuntimeException $e) {
+                if (!self::nonInQuestaModalita($e, 'price')) continue;
+                Db::update('package_versions', [$col => ''], 'id = :id', ['id' => (int) $pv['id']]);
+                $pv[$col] = '';
+                Log::error('Stripe: Price ID non trovato con le chiavi di adesso (creato in test?), tolto dalla versione: il sito lo ricrea', ['versione' => (int) $pv['id'], 'campo' => $col, 'price' => $id, 'stripe' => mb_substr($e->getMessage(), 0, 200)]);
+                Auth::audit('stripe.price_tolto', null, ['versione' => (int) $pv['id'], 'campo' => $col, 'price' => $id]);
+                $tutti = self::esitiVerifica(); unset($tutti[(string) $pv['id']]);
+                @file_put_contents(self::fileVerifica(), json_encode($tutti), LOCK_EX);
+            }
+        }
+    }
+
+    /**
+     * 9A · Controllo 1, prima di aprire il Checkout: i Price su Stripe dicono gli stessi importi del listino.
+     * Si rilegge ogni Price ID della versione (base e, per il Portfolio, struttura aggiuntiva con gli scaglioni)
+     * e si confronta importo, valuta, periodo annuale, IVA esclusa e, per quello graduato, ogni scaglione.
+     * L'esito buono vale un'ora per versione. Un Price descritto al volo (ID vuoto) non ha niente da controllare.
+     * @throws \RuntimeException con cosa non torna (va nei registri, non all'utente)
+     */
+    public static function verificaPrezzi(array $pv): void
+    {
+        $base = (string) ($pv['stripe_price_id'] ?? ''); $extra = (string) ($pv['stripe_extra_price_id'] ?? '');
+        if ($base === '' && $extra === '') return;
+        $pvId = (int) $pv['id'];
+        $esito = self::esitiVerifica()[(string) $pvId] ?? null;
+        if ($esito && !empty($esito['ok']) && time() - (int) $esito['t'] < 3600 && ($esito['ids'] ?? '') === $base . '|' . $extra) return;
+        $problemi = [];
+        $leggi = fn(string $id) => self::call('GET', 'prices/' . rawurlencode($id), ['expand' => ['tiers']]);
+        $campo = function (array $pr, string $nome, mixed $atteso, mixed $suStripe) use (&$problemi): void {
+            if ((string) $atteso !== (string) $suStripe) $problemi[] = $nome . ': atteso ' . json_encode($atteso) . ', su Stripe ' . json_encode($suStripe);
+        };
+        try {
+            if ($base !== '') {
+                $pr = $leggi($base);
+                $campo($pr, 'base unit_amount', (int) $pv['price_cents'], (int) ($pr['unit_amount'] ?? -1));
+                $campo($pr, 'base currency', strtolower((string) $pv['currency']), strtolower((string) ($pr['currency'] ?? '')));
+                $campo($pr, 'base recurring.interval', 'year', (string) ($pr['recurring']['interval'] ?? ''));
+                $campo($pr, 'base recurring.interval_count', 1, (int) ($pr['recurring']['interval_count'] ?? 1));
+                $campo($pr, 'base tax_behavior', 'exclusive', (string) ($pr['tax_behavior'] ?? ''));
+                $campo($pr, 'base active', true, (bool) ($pr['active'] ?? true));
+            }
+            if ($extra !== '' && Plans::perProperty($pv)) {
+                $pr = $leggi($extra);
+                $campo($pr, 'aggiuntiva currency', strtolower((string) $pv['currency']), strtolower((string) ($pr['currency'] ?? '')));
+                $campo($pr, 'aggiuntiva recurring.interval', 'year', (string) ($pr['recurring']['interval'] ?? ''));
+                $campo($pr, 'aggiuntiva tax_behavior', 'exclusive', (string) ($pr['tax_behavior'] ?? ''));
+                $campo($pr, 'aggiuntiva active', true, (bool) ($pr['active'] ?? true));
+                $scaglioni = Plans::tiers($pv);
+                if (count($scaglioni) > 1) {
+                    $campo($pr, 'aggiuntiva billing_scheme', 'tiered', (string) ($pr['billing_scheme'] ?? ''));
+                    $campo($pr, 'aggiuntiva tiers_mode', 'graduated', (string) ($pr['tiers_mode'] ?? ''));
+                    $tiers = (array) ($pr['tiers'] ?? []);
+                    $campo($pr, 'aggiuntiva tiers (quanti)', count($scaglioni), count($tiers));
+                    foreach ($scaglioni as $i => $t) {
+                        $campo($pr, "aggiuntiva tiers[$i].up_to", $t['a'] === null ? 'inf' : $t['a'] - 1, ($tiers[$i]['up_to'] ?? null) === null ? 'inf' : (int) $tiers[$i]['up_to']);
+                        $campo($pr, "aggiuntiva tiers[$i].unit_amount", $t['cents'], (int) ($tiers[$i]['unit_amount'] ?? -1));
+                    }
+                } else {
+                    $campo($pr, 'aggiuntiva unit_amount', (int) $pv['extra_price_cents'], (int) ($pr['unit_amount'] ?? -1));
+                }
+            }
+        } catch (\RuntimeException $e) {
+            $problemi[] = 'lettura dei Price: ' . $e->getMessage();
+        }
+        if ($problemi) {
+            $msg = 'Prezzi su Stripe diversi dal listino (versione ' . $pvId . '): ' . implode('; ', $problemi);
+            self::segnaVerifica($pvId, ['ok' => false, 'errore' => $msg, 'ids' => $base . '|' . $extra]);
+            throw new PrezziNonCoerenti($msg);
+        }
+        self::segnaVerifica($pvId, ['ok' => true, 'ids' => $base . '|' . $extra]);
+    }
+
+    /**
+     * 9A · Controllo 2, a sessione creata: si rilegge e si confrontano l'imponibile (amount_subtotal) con il prezzo
+     * del listino e il totale IVA esclusa (amount_total meno le tasse) con il prezzo scontato atteso. Se non tornano,
+     * la sessione si fa scadere e si lancia l'errore: nessuno paga una cifra diversa da quella mostrata.
+     * @throws \RuntimeException
+     */
+    public static function controllaSessione(string $id, int $prezzo, int $totale, bool $omaggio = false): array
+    {
+        $s = self::call('GET', 'checkout/sessions/' . rawurlencode($id));
+        $sub = (int) ($s['amount_subtotal'] ?? -1);
+        $tot = (int) ($s['amount_total'] ?? -1) - (int) ($s['total_details']['amount_tax'] ?? 0);
+        // 9D · Con i mesi gratis oggi non si paga niente: la sessione deve dire 0 (l'imponibile Stripe lo dà a 0 o al listino).
+        if ($omaggio) { $totale = 0; if ($sub === 0) $prezzo = 0; }
+        // 9O · L'IVA di Stripe Tax dev'essere quella mostrata nel riepilogo (Iva::di): se no, resta nei log (il pagamento va avanti).
+        $ivaS = (int) ($s['total_details']['amount_tax'] ?? 0);
+        if ($ivaS > 0 && $tot === $totale && $ivaS !== Iva::di($totale)) Log::error('IVA di Stripe diversa da quella mostrata', ['sessione' => $id, 'stripe' => $ivaS, 'sito' => Iva::di($totale)]);
+        $tutti = self::esitiVerifica();
+        if ($sub !== $prezzo || $tot !== $totale) {
+            try { self::call('POST', 'checkout/sessions/' . rawurlencode($id) . '/expire'); } catch (\Throwable $e) { Log::exception($e, 'Stripe: sessione da far scadere'); }
+            $msg = "Checkout con importi diversi dal listino: imponibile $sub (atteso $prezzo), totale senza IVA $tot (atteso $totale), valuta " . (string) ($s['currency'] ?? '?') . ". Sessione $id fatta scadere.";
+            // 9R · L'ultimo controllo della sessione fallito resta visibile nel Quadro (prima solo nel log), finché uno va bene.
+            $tutti['sessione'] = ['ok' => false, 'errore' => $msg, 't' => time()];
+            @file_put_contents(self::fileVerifica(), json_encode($tutti), LOCK_EX);
+            throw new PrezziNonCoerenti($msg);
+        }
+        if (isset($tutti['sessione'])) { unset($tutti['sessione']); @file_put_contents(self::fileVerifica(), json_encode($tutti), LOCK_EX); }
+        return $s;
+    }
+
+    /**
+     * La sessione di Checkout per un abbonamento annuale. Restituisce l'URL di Stripe.
+     * 9A: prima si controllano i Price (verificaPrezzi), poi la sessione creata (controllaSessione); gli sconti del
+     * primo anno arrivano dal conto di Sconti::riepilogo (un solo coupon, con la composizione nei metadati).
+     */
+    public static function checkoutSubscription(array $order, array $pv, array $pkg, array $account, array $user, ?array $riepilogo = null): string
+    {
+        return (string) self::sessioneAbbonamento($order, $pv, $pkg, $account, $user, $riepilogo, false)['url'];
+    }
+
+    /**
+     * La stessa sessione, ma incorporata nel passo «Pubblica» (ui_mode=embedded_page, o embedded prima di Dahlia): il modulo della carta di Stripe sta
+     * nella nostra pagina, dentro un iframe di Stripe, e i dati della carta non passano mai dal sito. Alla fine Stripe
+     * porta il cliente su /pagamento/ok, come la pagina di Stripe; l'abbonamento lo attiva sempre e solo il webhook.
+     * @return array{id:string,client_secret:string}
+     */
+    public static function checkoutIncorporato(array $order, array $pv, array $pkg, array $account, array $user, ?array $riepilogo = null): array
+    {
+        $res = self::sessioneAbbonamento($order, $pv, $pkg, $account, $user, $riepilogo, true);
+        return ['id' => (string) $res['id'], 'client_secret' => (string) ($res['client_secret'] ?? '')];
+    }
+
+    /** Una sessione di Checkout: la legge (per il segreto del modulo incorporato e per lo stato). */
+    public static function sessione(string $id): array
+    {
+        return self::call('GET', 'checkout/sessions/' . rawurlencode($id));
+    }
+
+    /** Fa scadere una sessione aperta (per esempio quella incorporata, quando il cliente sceglie la pagina di Stripe). */
+    public static function scadiSessione(string $id): void
+    {
+        try { self::call('POST', 'checkout/sessions/' . rawurlencode($id) . '/expire'); }
+        catch (\Throwable $e) { Log::exception($e, 'Stripe: sessione da far scadere'); }
+    }
+
+    /**
+     * 9R · Prima di creare la sessione di Checkout di un ordine, quella già creata per lo stesso ordine (si riprova a pagare,
+     * o l'ordine del cambio di piano si riusa per 30 minuti). Pagata → ci si ferma, niente secondo addebito; aperta e con gli
+     * stessi parametri (la firma nei metadati) → si riusa; aperta ma diversa → si fa scadere dopo aver creato la nuova.
+     * La chiave di idempotenza porta la firma dei parametri: con la sola «mhw-checkout-order-N», riprovando dopo un cambio
+     * (cliente Stripe ricreato, Price ricreato, IVA automatica accesa, indirizzo del sito) Stripe rispondeva «Keys for
+     * idempotent requests can only be used with the same parameters they were first used with» e il pagamento si fermava.
+     * Aggiunge a $p il metadato mhw_firma. @return array{0:?array,1:string,2:string} [sessione da riusare, chiave, sessione da far scadere]
+     */
+    private static function primaDellaSessione(array $order, array &$p, string $prefisso): array
+    {
+        $firma = substr(hash('sha256', serialize($p)), 0, 16);
+        $p['metadata[mhw_firma]'] = $firma;
+        $vecchia = (string) Db::val('SELECT provider_session_id FROM orders WHERE id = ?', [$order['id']], '');
+        $daScadere = '';
+        if ($vecchia !== '') {
+            try { $s = self::sessione($vecchia); } catch (\Throwable $e) { $s = []; }   // creata con le altre chiavi (test/live): come se non ci fosse
+            $stato = (string) ($s['status'] ?? '');
+            if ($stato === 'complete') throw new \RuntimeException('Questo pagamento risulta già fatto: tra pochi secondi lo vedi attivo. Se non succede, scrivici.');
+            if ($stato === 'open' && (string) ($s['metadata']['mhw_firma'] ?? '') === $firma) return [$s, '', ''];
+            if ($stato === 'open') $daScadere = $vecchia;
+        }
+        // Dieci minuti nella chiave: un errore che Stripe ricorda per la chiave non si ripete per 24 ore.
+        return [null, $prefisso . $order['id'] . '-' . $firma . '-' . intdiv(time(), 600), $daScadere];
+    }
+
+    private static function sessioneAbbonamento(array $order, array $pv, array $pkg, array $account, array $user, ?array $riepilogo, bool $incorporato): array
+    {
+        $base = Support::baseUrl();
+        $cfg = Config::get('stripe');
+        $quantita = max(1, (int) ($order['quantity'] ?? 1));
+        $meta = [
+            'order_id' => (string) $order['id'], 'account_id' => (string) $account['id'],
+            'package_version_id' => (string) $pv['id'], 'property_id' => (string) ($order['property_id'] ?? ''),
+            'quantity' => (string) $quantita,
+        ];
+        self::prezziDiQuestaModalita($pv);   // un Price ID dell'altra modalità (test/live) si toglie: il sito lo ricrea
+        try { [$voci, $pv] = self::vociCheckout($pv, $pkg, $quantita); }
+        catch (\RuntimeException $e) { Db::update('orders', ['status' => 'failed', 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]); throw $e; }   // 9O
+        self::verificaPrezzi($pv);
+        $p = [
+            'mode' => 'subscription',
+            'customer' => self::ensureCustomer($account, $user),
+            'client_reference_id' => (string) $order['id'],
+            'locale' => 'it',
+            // I dati di fatturazione: l'indirizzo sempre. 9O: la partita IVA no, la chiede il sito una volta sola e sta già sul cliente (tax id eu_vat).
+            'billing_address_collection' => 'required',
+            'customer_update[address]' => 'auto',
+            'customer_update[name]' => 'auto',
+        ] + $voci;
+        // Incorporata: un solo indirizzo di ritorno (niente «annulla»: si resta nella nostra pagina). Sulla pagina di Stripe: ok e annullato.
+        $p += $incorporato
+            ? ['ui_mode' => self::uiIncorporata(), 'return_url' => $base . '/pagamento/ok?order=' . $order['id']]
+            : ['success_url' => $base . '/pagamento/ok?order=' . $order['id'], 'cancel_url' => $base . '/pagamento/annullato?order=' . $order['id']];
+        if (!empty($cfg['automatic_tax'])) $p['automatic_tax[enabled]'] = 'true';
+        // 9O · Dopo un addebito SEPA rifiutato («Paga con carta» nell'email): solo la carta.
+        if (Pagamenti::soloCarta((int) $account['id'])) $p['payment_method_types[0]'] = 'card';
+        // Gli sconti del primo anno (6E, 7D, 9A): un coupon duration=once, quindi sconta solo la prima fattura.
+        // Niente allow_promotion_codes: il codice si sceglie nel sito, non nel checkout.
+        $riepilogo ??= Sconti::riepilogo($pv, $quantita, $account);
+        $sc = Sconti::perStripe($riepilogo);
+        if ($sc['coupon'] !== '') {
+            $p['discounts[0][coupon]'] = $sc['coupon'];
+            if ($riepilogo['scelta'] === 'manuale') $meta['discount_code'] = (string) $riepilogo['manuale']['code'];
+            $meta['sconti'] = $sc['sconti'];
+        } elseif (!empty($order['discount_code_id']) && ($c = Sconti::riga((int) $order['discount_code_id'])) && (string) $c['stripe_coupon_id'] !== '') {
+            $p['discounts[0][coupon]'] = $c['stripe_coupon_id'];
+            $meta['discount_code'] = $c['code'];
+        }
+        // 9D · Codice omaggio: i primi mesi gratis (trial_end a mezzanotte UTC di oggi + N mesi), carta obbligatoria,
+        // abbonamento cancellato se alla fine manca il metodo di pagamento. 9N: nessun coupon, il primo addebito è pieno;
+        // inviti e giudizio vanno sul primo rinnovo (Sconti::sincronizzaRinnovo dopo quella fattura).
+        $omaggio = $riepilogo['omaggio'] ?? null;
+        if ($omaggio) {
+            $p['subscription_data[trial_end]'] = (string) $omaggio['fine'];
+            $p['payment_method_collection'] = 'always';
+            $p['subscription_data[trial_settings][end_behavior][missing_payment_method]'] = 'cancel';
+            $meta['omaggio_codice'] = (string) $omaggio['codice'];
+            $meta['omaggio_mesi'] = (string) $omaggio['mesi'];
+        }
+        // 9I · I codici: cliente, pagamento (questo ordine), strutture; la descrizione dell'abbonamento è la causale che legge Adamo.
+        $meta += self::codici($order);
+        if (($meta['codice_pagamento'] ?? '') !== '') $p['subscription_data[description]'] = 'Codice cliente ' . $meta['codice_cliente'] . ' · Pagamento ' . $meta['codice_pagamento'];
+        foreach ($meta as $k => $v) { $p["metadata[$k]"] = $v; $p["subscription_data[metadata][$k]"] = $v; }
+
+        [$res, $chiave, $daScadere] = self::primaDellaSessione($order, $p, $incorporato ? 'mhw-checkout-incorporato-' . $p['ui_mode'] . '-order-' : 'mhw-checkout-order-');
+        if ($res === null) {
+            try { $res = self::call('POST', 'checkout/sessions', $p, $chiave); }
+            catch (\RuntimeException $e) {
+                // L'account Stripe è su un'altra versione delle API: l'altro nome di ui_mode, e si ricorda (vedi uiIncorporata).
+                if (!$incorporato || !str_contains($e->getMessage(), 'ui_mode')) throw $e;
+                $p['ui_mode'] = $p['ui_mode'] === self::UI_INCORPORATA[0] ? self::UI_INCORPORATA[1] : self::UI_INCORPORATA[0];
+                $res = self::call('POST', 'checkout/sessions', $p, $chiave . '-' . $p['ui_mode']);
+                @file_put_contents(self::fileUi(), $p['ui_mode'], LOCK_EX);
+                Log::error('Stripe: ui_mode del Checkout incorporato cambiato', ['ui_mode' => $p['ui_mode'], 'prima' => $e->getMessage()]);
+            }
+        }
+        if ($daScadere !== '' && $daScadere !== (string) $res['id']) self::scadiSessione($daScadere);
+        Db::update('orders', ['provider_session_id' => $res['id'], 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]);
+        self::controllaSessione((string) $res['id'], $riepilogo['prezzo'], isset($p['discounts[0][coupon]']) ? $riepilogo['totale'] : $riepilogo['prezzo'], $omaggio !== null);
+        return $res;
+    }
+
+    /**
+     * 9N · 10 bis · Il Checkout di un'offerta su misura: abbonamento annuale con UN prezzo creato solo per questo cliente
+     * (price_data, IVA esclusa, Stripe Tax), nessuno sconto automatico, i metadati dell'ordine e dell'offerta. Pagina di Stripe.
+     */
+    public static function checkoutOfferta(array $order, array $offerta, array $pv, array $pkg, array $account, array $user): string
+    {
+        $base = Support::baseUrl();
+        $meta = ['order_id' => (string) $order['id'], 'account_id' => (string) $account['id'], 'package_version_id' => (string) $pv['id'],
+                 'property_id' => '', 'quantity' => (string) (int) $offerta['strutture'], 'offerta' => (string) $offerta['id']];
+        $p = [
+            'mode' => 'subscription',
+            'customer' => self::ensureCustomer($account, $user),
+            'client_reference_id' => (string) $order['id'],
+            'locale' => $offerta['lingua'] === 'en' ? 'en' : 'it',
+            'billing_address_collection' => 'required',
+            'customer_update[address]' => 'auto',
+            'customer_update[name]' => 'auto',
+            'line_items[0][quantity]' => 1,
+            'line_items[0][price_data][currency]' => strtolower((string) $pv['currency']),
+            'line_items[0][price_data][unit_amount]' => (string) (int) $offerta['prezzo_cents'],
+            'line_items[0][price_data][tax_behavior]' => 'exclusive',
+            'line_items[0][price_data][recurring][interval]' => 'year',
+            'line_items[0][price_data][product_data][name]' => 'MyHouse Welcome Portfolio su misura · ' . (int) $offerta['strutture'] . ' strutture',
+            'line_items[0][price_data][product_data][metadata][ruolo]' => 'offerta',
+            'line_items[0][price_data][product_data][metadata][offerta]' => (string) $offerta['id'],
+            'success_url' => $base . '/pagamento/ok?order=' . $order['id'],
+            'cancel_url' => $base . '/offerta/' . $offerta['token'],
+        ];
+        if (!empty(Config::get('stripe')['automatic_tax'])) $p['automatic_tax[enabled]'] = 'true';
+        $meta += self::codici($order);
+        if (($meta['codice_pagamento'] ?? '') !== '') $p['subscription_data[description]'] = 'Codice cliente ' . $meta['codice_cliente'] . ' · Pagamento ' . $meta['codice_pagamento'];
+        foreach ($meta as $k => $v) { $p["metadata[$k]"] = $v; $p["subscription_data[metadata][$k]"] = $v; }
+        [$res, $chiave, $daScadere] = self::primaDellaSessione($order, $p, 'mhw-checkout-offerta-order-');
+        $res ??= self::call('POST', 'checkout/sessions', $p, $chiave);
+        if ($daScadere !== '' && $daScadere !== (string) $res['id']) self::scadiSessione($daScadere);
+        Db::update('orders', ['provider_session_id' => $res['id'], 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]);
+        self::controllaSessione((string) $res['id'], (int) $offerta['prezzo_cents'], (int) $offerta['prezzo_cents']);
+        return (string) $res['url'];
+    }
+
+    /**
+     * 9A · Per tools/verifica-stripe.php (solo chiavi di prova): una sessione di Checkout senza cliente né ordine, con
+     * lo sconto in percento voluto, controllata nei due modi e fatta scadere. @return array{ok:bool,errore:string,sessione:string}
+     */
+    public static function sessioneDiProva(array $pv, array $pkg, int $quantita, int $percento, int $mesiOmaggio = 0): array
+    {
+        try {
+            self::prezziDiQuestaModalita($pv);
+            [$voci, $pv] = self::vociCheckout($pv, $pkg, $quantita);
+            self::verificaPrezzi($pv);
+            $prezzo = Plans::price($pv, $quantita);
+            $sconto = $prezzo - Sconti::netto($prezzo, $percento);
+            $p = ['mode' => 'subscription', 'success_url' => 'https://example.com/ok', 'cancel_url' => 'https://example.com/no',
+                  'billing_address_collection' => 'required'] + $voci;
+            if ($percento > 0) $p['discounts[0][coupon]'] = Sconti::couponCombinato($percento);
+            if (!empty(Config::get('stripe')['automatic_tax'])) $p['automatic_tax[enabled]'] = 'true';   // 9O: l'IVA come al pagamento vero
+            // 9D · Con l'omaggio: trial_end, carta obbligatoria, e la sessione deve uscire a 0 €.
+            if ($mesiOmaggio > 0) {
+                $p['subscription_data[trial_end]'] = (string) Omaggi::fine($mesiOmaggio);
+                $p['payment_method_collection'] = 'always';
+                $p['subscription_data[trial_settings][end_behavior][missing_payment_method]'] = 'cancel';
+            }
+            $res = self::call('POST', 'checkout/sessions', $p);
+            self::controllaSessione((string) $res['id'], $prezzo, $prezzo - $sconto, $mesiOmaggio > 0);
+            self::call('POST', 'checkout/sessions/' . rawurlencode((string) $res['id']) . '/expire');
+            return ['ok' => true, 'errore' => '', 'sessione' => (string) $res['id'], 'totale' => (int) ($res['amount_total'] ?? 0), 'iva' => (int) ($res['total_details']['amount_tax'] ?? 0)];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'errore' => $e->getMessage(), 'sessione' => ''];
+        }
+    }
+
+    /**
+     * 9N · Per tools/verifica-stripe.php (solo chiavi di prova): quanto farebbe Stripe al rinnovo con lo sconto unico
+     * mhw-rinnovo-N. Un cliente di prova, l'anteprima della fattura di un abbonamento con quel coupon, il cliente tolto.
+     * @return array{ok:bool,errore:string,netto:int}
+     */
+    public static function rinnovoDiProva(array $pv, array $pkg, int $quantita, int $percento): array
+    {
+        $cliente = '';
+        try {
+            [$base, $extra] = self::ensurePrices($pv, $pkg);
+            $cliente = (string) self::call('POST', 'customers', ['email' => 'verifica-rinnovo@welcomemyhouse.example', 'name' => 'Verifica rinnovo (prova)'])['id'];
+            $p = ['customer' => $cliente, 'subscription_details[items][0][price]' => $base, 'subscription_details[items][0][quantity]' => '1'];
+            if ($extra !== '' && $quantita > 1) { $p['subscription_details[items][1][price]'] = $extra; $p['subscription_details[items][1][quantity]'] = (string) ($quantita - 1); }
+            if ($percento > 0) $p['discounts[0][coupon]'] = Sconti::couponRinnovo($percento);
+            $inv = self::call('POST', 'invoices/create_preview', $p);
+            $sconto = 0;
+            foreach ((array) ($inv['total_discount_amounts'] ?? []) as $d) $sconto += (int) ($d['amount'] ?? 0);
+            $netto = isset($inv['total_excluding_tax']) ? (int) $inv['total_excluding_tax'] : (int) ($inv['subtotal'] ?? 0) - $sconto;
+            $atteso = Sconti::netto(Plans::price($pv, $quantita), $percento);
+            $ok = $netto === $atteso;
+            return ['ok' => $ok, 'errore' => $ok ? '' : 'Stripe fa ' . Support::money($netto) . ', il sito dice ' . Support::money($atteso), 'netto' => $netto];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'errore' => $e->getMessage(), 'netto' => 0];
+        } finally {
+            if ($cliente !== '') { try { self::call('DELETE', 'customers/' . rawurlencode($cliente)); } catch (\Throwable) {} }
+        }
+    }
+
+    public static function retrieveSubscription(string $id): array
+    {
+        // Con il prodotto espanso si riconosce la voce "struttura aggiuntiva"; 9D: la carta, per le ultime 4 cifre negli avvisi.
+        return self::call('GET', 'subscriptions/' . rawurlencode($id), ['expand' => ['items.data.price.product', 'default_payment_method']]);
+    }
+
+    /**
+     * 9D · Le ultime 4 cifre della carta dell'abbonamento: dal metodo di pagamento dell'abbonamento, altrimenti da quello
+     * predefinito del cliente. Vuoto se non si sa (si scriverà «sul tuo metodo di pagamento»). Rete: solo se serve.
+     */
+    public static function ultime4(array $sub, string $customerId = ''): string
+    {
+        $pm = $sub['default_payment_method'] ?? null;
+        if (is_array($pm) && ($pm['card']['last4'] ?? '') !== '') return (string) $pm['card']['last4'];
+        try {
+            if (is_string($pm) && $pm !== '') { $o = self::call('GET', 'payment_methods/' . rawurlencode($pm)); return (string) ($o['card']['last4'] ?? ''); }
+            if ($customerId !== '') {
+                $c = self::call('GET', 'customers/' . rawurlencode($customerId), ['expand' => ['invoice_settings.default_payment_method']]);
+                $cpm = $c['invoice_settings']['default_payment_method'] ?? null;
+                if (is_array($cpm)) return (string) ($cpm['card']['last4'] ?? '');
+            }
+        } catch (\Throwable $e) { Log::exception($e, 'Stripe: ultime 4 cifre della carta'); }
+        return '';
+    }
+
+    /**
+     * 9D · Quanto Stripe addebiterà al prossimo rinnovo (fattura imminente): [imponibile IVA esclusa, sconti, totale con IVA],
+     * oppure null se Stripe non risponde (si usa il listino con gli sconti noti).
+     */
+    public static function prossimaFattura(string $subscriptionId): ?array
+    {
+        try {
+            $inv = self::call('GET', 'invoices/upcoming', ['subscription' => $subscriptionId]);
+        } catch (\Throwable $e) { Log::exception($e, 'Stripe: fattura imminente'); return null; }
+        $sconto = 0;
+        foreach ((array) ($inv['total_discount_amounts'] ?? []) as $d) $sconto += (int) ($d['amount'] ?? 0);
+        $netto = isset($inv['total_excluding_tax']) ? (int) $inv['total_excluding_tax'] : (int) ($inv['subtotal'] ?? 0) - $sconto;
+        return ['netto' => $netto, 'sconto' => $sconto, 'totale' => (int) ($inv['total'] ?? $netto), 'subtotal' => (int) ($inv['subtotal'] ?? 0)];
+    }
+
+    /** 9E · Un rimborso, totale o parziale, dal payment intent di una fattura pagata (idempotente per fattura e importo). */
+    public static function rimborsa(string $paymentIntent, int $cents, string $motivo, string $invoiceId): array
+    {
+        $p = ['payment_intent' => $paymentIntent, 'metadata[invoice]' => $invoiceId];
+        if ($cents > 0) $p['amount'] = (string) $cents;
+        if (in_array($motivo, ['duplicate', 'requested_by_customer', 'fraudulent'], true)) $p['reason'] = $motivo;
+        return self::call('POST', 'refunds', $p, 'mhw-refund-' . $invoiceId . '-' . $cents);
+    }
+
+    /** 9E · Le ultime fatture pagate di un cliente, dalla più recente. */
+    public static function fatturePagate(string $customerId, int $max = 12): array
+    {
+        $r = self::call('GET', 'invoices', ['customer' => $customerId, 'status' => 'paid', 'limit' => (string) $max]);
+        return (array) ($r['data'] ?? []);
+    }
+
+    /**
+     * Cambia il numero di strutture aggiuntive di un abbonamento Portfolio.
+     * Aumento: conguaglio fatturato subito e cambio applicato SOLO se il
+     * pagamento riesce (pending_if_incomplete); il webhook porta la quantità.
+     * Riduzione: credito proporzionale sulla prossima fattura.
+     */
+    public static function updateExtraQuantity(string $subscriptionId, string $itemId, int $extra, bool $aumento): array
+    {
+        $p = ['items[0][id]' => $itemId, 'items[0][quantity]' => max(0, $extra),
+              'proration_behavior' => $aumento ? 'always_invoice' : 'create_prorations'];
+        if ($aumento) $p['payment_behavior'] = 'pending_if_incomplete';
+        return self::call('POST', 'subscriptions/' . rawurlencode($subscriptionId), $p,
+                          'mhw-qty-' . $subscriptionId . '-' . $extra . '-' . gmdate('YmdHi'));
+    }
+
+    /**
+     * Una struttura in più, aggiunta dal pannello: la voce delle strutture aggiuntive
+     * sale di uno, e la parte dell'anno che resta va sulla prossima fattura
+     * (proration_behavior=create_prorations). Il numero nuovo lo conferma il webhook.
+     */
+    public static function addExtraProrated(string $subscriptionId, string $itemId, int $extra): array
+    {
+        return self::call('POST', 'subscriptions/' . rawurlencode($subscriptionId),
+                          ['items[0][id]' => $itemId, 'items[0][quantity]' => max(0, $extra), 'proration_behavior' => 'create_prorations'],
+                          'mhw-qty-add-' . $subscriptionId . '-' . $extra);
+    }
+
+    /**
+     * I Price di Stripe di una versione del listino (cambio di piano, 6H): se mancano si
+     * creano dalla versione e si salvano, così l'abbonamento può puntarci. Il prodotto
+     * porta il metadato ruolo (base / aggiuntiva) che quantityFrom usa per riconoscere le voci.
+     * @return array{0:string,1:string} [Price base, Price della struttura aggiuntiva ('' se il piano non è a strutture)]
+     */
+    public static function ensurePrices(array $pv, array $pkg): array
+    {
+        $crea = function (int $cents, string $ruolo, string $nome) use ($pv, $pkg): string {
+            $r = self::call('POST', 'prices', [
+                'currency' => strtolower((string) $pv['currency']), 'unit_amount' => (string) $cents, 'tax_behavior' => 'exclusive',
+                'recurring[interval]' => 'year', 'product_data[name]' => $nome,
+                'product_data[metadata][package]' => (string) $pkg['code'], 'product_data[metadata][ruolo]' => $ruolo,
+            ], 'mhw-price-' . $pv['id'] . '-' . ($ruolo === 'base' ? 'base' : 'extra'));
+            return (string) $r['id'];
+        };
+        $base = (string) ($pv['stripe_price_id'] ?? '');
+        if ($base === '') {
+            $base = $crea((int) $pv['price_cents'], 'base', 'MyHouse Welcome ' . $pkg['name']);
+            Db::update('package_versions', ['stripe_price_id' => $base], 'id = :id', ['id' => $pv['id']]);
+        }
+        return [$base, Plans::perProperty($pv) ? self::ensureExtraPrice($pv, $pkg) : ''];
+    }
+
+    /**
+     * Il Price delle strutture aggiuntive di una versione Portfolio, creato se manca. Con gli
+     * scaglioni è un Price graduato: la quantità della voce è il numero di strutture oltre la
+     * prima, quindi lo scaglione «dalla 3ª alla 5ª» copre le unità dalla 2 alla 4.
+     */
+    public static function ensureExtraPrice(array $pv, array $pkg): string
+    {
+        $extra = (string) ($pv['stripe_extra_price_id'] ?? '');
+        if ($extra !== '') return $extra;
+        $nome = 'MyHouse Welcome ' . $pkg['name'] . ' — struttura aggiuntiva';
+        $p = ['currency' => strtolower((string) $pv['currency']), 'tax_behavior' => 'exclusive', 'recurring[interval]' => 'year',
+              'product_data[name]' => $nome, 'product_data[metadata][package]' => (string) $pkg['code'], 'product_data[metadata][ruolo]' => 'aggiuntiva'];
+        $scaglioni = Plans::tiers($pv);
+        if (count($scaglioni) > 1) {
+            $p['billing_scheme'] = 'tiered'; $p['tiers_mode'] = 'graduated';
+            foreach ($scaglioni as $i => $t) {
+                $p["tiers[$i][up_to]"] = $t['a'] === null ? 'inf' : (string) ($t['a'] - 1);
+                $p["tiers[$i][unit_amount]"] = (string) $t['cents'];
+            }
+        } else {
+            $p['unit_amount'] = (string) (int) $pv['extra_price_cents'];
+        }
+        $r = self::call('POST', 'prices', $p, 'mhw-price-' . $pv['id'] . '-extra' . (count($scaglioni) > 1 ? '-scaglioni' : ''));
+        $extra = (string) $r['id'];
+        Db::update('package_versions', ['stripe_extra_price_id' => $extra], 'id = :id', ['id' => $pv['id']]);
+        return $extra;
+    }
+
+    /**
+     * La pagina di pagamento della differenza per salire di piano: un pagamento singolo
+     * (mode=payment) con la sua fattura. IVA, indirizzo e partita IVA come per l'abbonamento.
+     */
+    public static function checkoutChange(array $order, string $descrizione, array $account, array $user, ?string $coupon = null): string
+    {
+        $base = Support::baseUrl();
+        $meta = ['order_id' => (string) $order['id'], 'account_id' => (string) $account['id'], 'kind' => 'change'];
+        $p = [
+            'mode' => 'payment',
+            'customer' => self::ensureCustomer($account, $user),
+            'client_reference_id' => (string) $order['id'],
+            'success_url' => $base . '/pagamento/ok?order=' . $order['id'],
+            'cancel_url' => $base . '/account/piano',
+            'locale' => 'it',
+            'line_items[0][quantity]' => 1,
+            'line_items[0][price_data][currency]' => strtolower((string) $order['currency']),
+            'line_items[0][price_data][unit_amount]' => (string) (int) $order['amount_cents'],
+            'line_items[0][price_data][tax_behavior]' => 'exclusive',
+            'line_items[0][price_data][product_data][name]' => $descrizione,
+            'invoice_creation[enabled]' => 'true',
+            'invoice_creation[invoice_data][description]' => $descrizione,
+            'invoice_creation[invoice_data][metadata][order_id]' => (string) $order['id'],
+            'billing_address_collection' => 'required',   // 9O: niente tax_id_collection, la partita IVA è già sul cliente
+            'customer_update[address]' => 'auto',
+            'customer_update[name]' => 'auto',
+        ];
+        if (!empty(Config::get('stripe')['automatic_tax'])) $p['automatic_tax[enabled]'] = 'true';
+        if ($coupon !== null && $coupon !== '') $p['discounts[0][coupon]'] = $coupon;   // 9R · lo sconto di un cambio proposto (mhw-cambio-N)
+        // 9I · I codici nei metadati di Checkout, del pagamento e della fattura, e nella causale (descrizione della fattura).
+        $meta += self::codici($order);
+        if (($meta['codice_pagamento'] ?? '') !== '') {
+            $p['invoice_creation[invoice_data][description]'] .= ' · Codice cliente ' . $meta['codice_cliente'] . ' · Pagamento ' . $meta['codice_pagamento'];
+            foreach (['codice_cliente', 'codice_pagamento', 'codice_struttura'] as $k) if (($meta[$k] ?? '') !== '') $p["invoice_creation[invoice_data][metadata][$k]"] = $meta[$k];
+        }
+        foreach ($meta as $k => $v) { $p["metadata[$k]"] = $v; $p["payment_intent_data[metadata][$k]"] = $v; }
+        [$res, $chiave, $daScadere] = self::primaDellaSessione($order, $p, 'mhw-checkout-order-');
+        $res ??= self::call('POST', 'checkout/sessions', $p, $chiave);
+        if ($daScadere !== '' && $daScadere !== (string) $res['id']) self::scadiSessione($daScadere);
+        Db::update('orders', ['provider_session_id' => $res['id'], 'updated_at' => Support::now()], 'id = :oid', ['oid' => $order['id']]);
+        return $res['url'];
+    }
+
+    /**
+     * Porta l'abbonamento alle voci nuove (CambioPiano::voci), SEMPRE senza proporzioni:
+     * la differenza è già stata pagata a parte (salita) o non è dovuta (discesa).
+     */
+    public static function applyChange(string $subscriptionId, array $voci, string $chiave): array
+    {
+        return self::call('POST', 'subscriptions/' . rawurlencode($subscriptionId),
+                          $voci + ['proration_behavior' => 'none', 'expand[0]' => 'items.data.price.product'], $chiave);
+    }
+
+    /** Rinnovo automatico acceso o spento. Il servizio pagato resta fino alla fine del periodo. */
+    public static function setCancelAtPeriodEnd(string $subscriptionId, bool $cancel): array
+    {
+        return self::call('POST', 'subscriptions/' . rawurlencode($subscriptionId), ['cancel_at_period_end' => $cancel ? 'true' : 'false']);
+    }
+
+    public static function portalUrl(string $customerId): string
+    {
+        // 9O · Solo per cambiare la carta: il portale si apre direttamente sull'aggiornamento del metodo di pagamento.
+        $r = self::call('POST', 'billing_portal/sessions', ['customer' => $customerId, 'return_url' => Support::baseUrl() . '/account', 'flow_data[type]' => 'payment_method_update']);
+        return $r['url'];
+    }
+
+    /**
+     * Verifica la firma del webhook. Senza questo controllo chiunque potrebbe
+     * spedirci un "pagamento riuscito" e regalarsi un abbonamento.
+     */
+    public static function verifySignature(string $payload, string $header, string $secret, int $tolerance = 300): bool
+    {
+        return self::motivoFirma($payload, $header, $secret, $tolerance) === null;
+    }
+
+    /** Perché la firma del webhook non va (per il registro e il Quadro), o null se va bene. */
+    public static function motivoFirma(string $payload, string $header, string $secret, int $tolerance = 300): ?string
+    {
+        if ($secret === '') return 'manca il segreto del webhook nelle Impostazioni';
+        if (trim($header) === '') return 'la richiesta non ha la firma di Stripe (intestazione Stripe-Signature)';
+        $parts = [];
+        foreach (explode(',', $header) as $piece) {
+            $kv = explode('=', trim($piece), 2);
+            if (count($kv) === 2) $parts[$kv[0]][] = $kv[1];
+        }
+        $t = $parts['t'][0] ?? null;
+        $sigs = $parts['v1'] ?? [];
+        if (!$t || !ctype_digit($t) || !$sigs) return 'la firma di Stripe è incompleta';
+        if (abs(time() - (int) $t) > $tolerance) return 'orario della firma lontano più di 5 minuti da quello del server';
+        $expected = hash_hmac('sha256', $t . '.' . $payload, $secret);
+        foreach ($sigs as $s) if (hash_equals($expected, $s)) return null;
+        return 'la firma non corrisponde al segreto del webhook (segreto di un altro endpoint o di un\'altra modalità)';
+    }
+}

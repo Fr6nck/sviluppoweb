@@ -1,0 +1,62 @@
+<?php use MHW\{Support, Icon, Config, I18n, Media};
+$pr = $snap['property']; $title = $pr['name'];
+$nomi = Config::get('locales');
+$dentro = $base . '?l=' . $loc;
+$luogo = MHW\Territorio::dove($pr, $loc);   // 9F · «Assisi · Perugia · Umbria», tradotto dove esiste una forma
+$copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr['cover_url'] ?? null); ?>
+
+<?php $coda = '/benvenuto'; include __DIR__ . '/_scegli_lingua.php'; /* 8C: «Scegli la lingua» alla prima apertura */ ?>
+<div class="full" id="soglia">
+  <?php if ($copertina): ?><img class="full__photo" src="<?= Support::e($copertina) ?>" alt="" fetchpriority="high"><?php endif; ?>
+  <div class="full__scrim"></div>
+  <div class="full__stage">
+    <?php /* 9F · nella vetrina il marchio è un link alla home del sito (title «Torna a welcomemyhouse.it»); nelle guide vere non lo è. */
+          $demoS = !empty($pr['is_demo']); $hostSito = (string) parse_url(Support::baseUrl(), PHP_URL_HOST) ?: 'welcomemyhouse.it'; ?>
+    <<?= $demoS ? 'a href="' . Support::e(Support::baseUrl()) . '/" title="' . Support::e(I18n::t($loc, 'demo_back_title', $hostSito)) . '" style="color:inherit;text-decoration:none"' : 'div' ?> class="rise row" style="gap:10px;animation-delay:.1s">
+      <svg class="mh-arch arch" width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <path d="M6 28V14a10 10 0 0 1 20 0v14" stroke="currentColor" style="color:var(--full-ink,#f6f0e5)" stroke-width="2.2" stroke-linecap="round"></path>
+        <circle cx="20.5" cy="19" r="1.9" fill="#ee7a4a"></circle>
+      </svg>
+      <span style="font-size:14px;font-weight:500;letter-spacing:-.2px;color:var(--full-ink,#f6f0e5)">myhouse welcome</span>
+      <?php if ($demoS): ?><span class="demo-tag"><?= Support::e(I18n::t($loc, 'demo_badge')) ?></span><?php endif; ?>
+    </<?= $demoS ? 'a' : 'div' ?>>
+    <div class="stack" style="gap:24px">
+      <div class="stack" style="gap:12px">
+        <span class="kicker rise" style="animation-delay:.34s"><?= Support::e(I18n::t($loc, 'splash_kicker')) ?></span>
+        <h1 class="rise" style="animation-delay:.46s"><?= Support::e($pr['name']) ?></h1>
+        <p class="rise" style="animation-delay:.62s"><?= $luogo ? Support::e($luogo) . ' — ' : '' ?><?= Support::e(I18n::t($loc, 'splash_lead')) ?></p>
+      </div>
+      <div class="stack" style="gap:12px">
+        <a class="btn btn--lg btn--go rise" id="entra" href="<?= Support::e($dentro) ?>" style="animation-delay:.8s">
+          <?= Support::e(I18n::t($loc, 'enter')) ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
+        <?php if ($demoS): /* 9F · sotto «Entra», solo nella vetrina */ ?>
+          <p class="demo-riga demo-riga--chiara rise" style="animation-delay:.9s"><b><?= Support::e(I18n::t($loc, 'demo_example')) ?></b> ·
+            <a href="<?= Support::e(Support::baseUrl()) ?>/"><?= Support::e(I18n::t($loc, 'demo_back_site')) ?></a> ·
+            <a href="<?= Support::e(Support::baseUrl()) ?>/registrati"><?= Support::e(I18n::t($loc, 'demo_create')) ?></a></p>
+        <?php endif; ?>
+        <?php if (count($snap['locales']) > 1): ?>
+          <nav class="langbar rise" style="animation-delay:.96s" aria-label="<?= Support::e(I18n::t($loc, 'change_language')) ?>">
+            <?php foreach ($snap['locales'] as $l): ?>
+              <a href="<?= Support::e($base) ?>/benvenuto?l=<?= Support::e($l) ?>" hreflang="<?= Support::e($l) ?>" lang="<?= Support::e($l) ?>"
+                 class="<?= $l === $loc ? 'on' : '' ?>"><?= Support::e($nomi[$l] ?? strtoupper($l)) ?></a>
+            <?php endforeach; ?>
+          </nav>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+  <div id="velo" style="position:absolute;inset:0;background:var(--tile-terracotta);pointer-events:none;transform:translateY(101%);z-index:5"></div>
+</div>
+<script>
+(function () {
+  var a = document.getElementById('entra'), velo = document.getElementById('velo'), stage = document.querySelector('.full__stage');
+  if (!a || !velo || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  a.addEventListener('click', function (e) {
+    e.preventDefault();
+    stage.style.transition = 'opacity .5s cubic-bezier(.5,0,.75,0), transform .5s cubic-bezier(.5,0,.75,0)';
+    stage.style.opacity = '0'; stage.style.transform = 'translateY(-26px)';
+    velo.style.transition = 'transform .62s cubic-bezier(.5,0,.2,1) .18s'; velo.style.transform = 'translateY(0)';
+    setTimeout(function () { window.location.href = a.href; }, 800);
+  });
+})();
+</script>

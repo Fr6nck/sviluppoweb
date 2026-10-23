@@ -1,0 +1,196 @@
+<?php
+/**
+ * 7F — Le pagine per tipologia (/case-vacanza, /bed-and-breakfast, /affittacamere, /agriturismi).
+ * 9N: in inglese in lang/tipologie-en.php (stesse chiavi). Titolo e descrizione per Google si cambiano in Amministrazione → SEO e GEO
+ * (qui ci sono quelli di serie); il resto del testo sta qui.
+ *
+ * Per ogni pagina: h1, intro, 3 problemi tipici con la risposta della guida, le sezioni più utili
+ * (tipo di sezione del catalogo => perché), il piano consigliato (codice del pacchetto, per il link «Crea gratis») e, con
+ * 'questionario' => true, il questionario a tre domande (9K) al posto del riquadro del piano,
+ * 4 domande frequenti (anche nei dati strutturati FAQPage), la foto [file in assets/foto, larghezza, altezza, testo alternativo].
+ */
+return [
+    'case-vacanza' => [
+        'percorso' => '/case-vacanza', 'nome' => 'Case vacanza', 'tipologia' => 'casa_vacanza',
+        'foto' => ['portone.jpg', 1200, 900, 'La facciata di una casa con le persiane rosse, una rosa rampicante e il portone ad arco'],
+        'titolo' => 'Guida digitale per case vacanza | MyHouse Welcome',
+        'descrizione' => 'La guida digitale per la tua casa vacanza: arrivo autonomo, Wi-Fi, regole e consigli della zona in un link e un QR Code. La crei gratis.',
+        'kicker' => 'Per chi affitta una casa vacanza',
+        'h1' => 'La guida digitale per la tua casa vacanza',
+        'intro' => 'Quando non ci sei, la casa deve spiegarsi da sola. Con MyHouse Welcome gli ospiti trovano sul telefono come entrare, la password del Wi-Fi, come funzionano gli elettrodomestici e cosa fare in zona, nella loro lingua.',
+        'problemi' => [
+            ['Gli ospiti arrivano quando tu non ci sei', 'Volo in ritardo, chiavi in una cassetta, un portone che non si trova: le domande arrivano tutte la sera dell\'arrivo.',
+             'In «Check-in & Check-out» scrivi i passi uno per uno, con l\'orario e la foto del portone. L\'ospite li apre dal link che gli mandi prima di partire.'],
+            ['La casa ha le sue abitudini', 'La caldaia, la lavatrice, il cancello automatico, la raccolta differenziata: cose ovvie per te, misteriose per chi arriva.',
+             'Servizi, Riscaldamento e Rifiuti hanno campi pronti: scrivi una volta come si fa, aggiungi una foto, e non lo ripeti più a ogni soggiorno.'],
+            ['Il foglio plastificato invecchia', 'Il numero del taxi cambia, il ristorante chiude, la password del Wi-Fi è un\'altra: e il raccoglitore in salotto resta com\'era.',
+             'Modifichi la guida dal telefono quando vuoi: il link e il QR Code restano gli stessi e gli ospiti vedono subito la versione nuova.'],
+        ],
+        'sezioni' => [
+            'checkin' => 'Arrivo autonomo spiegato passo per passo, con orari e foto.',
+            'wifi' => 'Rete e password da copiare con un tocco, e il QR per collegarsi.',
+            'services' => 'Lavatrice, forno, caldaia: le istruzioni che altrimenti chiedono.',
+            'rules' => 'Fumo, animali, silenzio: le regole dette una volta, con garbo.',
+            'waste' => 'Giorni di raccolta e colore dei bidoni, la domanda di ogni settimana.',
+            'eat' => 'I posti dove mangeresti tu, con la mappa.',
+        ],
+        'questionario' => true, 'piano' => 'essential',
+        'piano_perche' => 'Per una casa sola bastano le informazioni essenziali in due lingue: la tua e quella dei tuoi ospiti più frequenti. Se ospiti da tutto il mondo o vuoi foto e consigli sul territorio, c\'è Plus.',
+        'faq' => [
+            ['Posso spiegare l\'arrivo autonomo senza scrivere il codice della porta?', 'Sì, ed è quello che consigliamo. Nella guida spieghi dove sono le chiavi e come si entra; il codice lo mandi in privato poco prima dell\'arrivo. Se scrivi un codice, la piattaforma ti avvisa prima di pubblicare.'],
+            ['Ho due case vacanza: mi serve un\'altra guida?', 'Sì, una guida per ogni casa, perché ognuna ha il suo indirizzo e il suo CIN. Con Portfolio le gestisci dallo stesso account e dalla seconda in poi costano meno.'],
+            ['Come la mando agli ospiti?', 'Con il link, nel messaggio di benvenuto su WhatsApp o nella chat di Booking.com e Airbnb, e con il QR Code stampato in casa. In «QR & Link» trovi il messaggio pronto da copiare.'],
+            ['Gli ospiti devono scaricare un\'app?', 'No. La guida si apre nel browser del telefono, senza registrazione e senza cookie.'],
+        ],
+    ],
+    'bed-and-breakfast' => [
+        'percorso' => '/bed-and-breakfast', 'nome' => 'Bed & breakfast', 'tipologia' => 'bnb',
+        'foto' => ['tipo-bed-and-breakfast.jpg', 1600, 900, 'L\'ingresso di un B&B in pietra al tramonto, con l\'insegna, le lanterne accese e i vasi fioriti'],
+        'titolo' => 'Guida digitale per B&B | MyHouse Welcome',
+        'descrizione' => 'La guida digitale per il tuo B&B: orari della colazione, Wi-Fi di ogni camera, regole e consigli della zona in un link e un QR Code per ogni ospite.',
+        'kicker' => 'Per chi gestisce un B&B',
+        'h1' => 'La guida digitale per il tuo B&B',
+        'intro' => 'In un B&B le domande si ripetono ogni mattina: a che ora è la colazione, qual è il Wi-Fi della camera, dove si parcheggia. Mettile in una guida che l\'ospite apre dal telefono, e a colazione parlate d\'altro.',
+        'problemi' => [
+            ['Le stesse domande, a ogni check-in', 'Orari della colazione, del rientro serale e della partenza: li ripeti a voce a ogni ospite, spesso in tre lingue.',
+             'Li scrivi una volta in «Check-in & Check-out» e in «Regole della casa»; gli ospiti li ritrovano quando vogliono, nella loro lingua.'],
+            ['Camere diverse, Wi-Fi diversi', 'Un ripetitore per piano, una rete per la dépendance: il biglietto con la password si perde.',
+             'Nella sezione Wi-Fi aggiungi una riga per ogni zona, con il nome della rete e la password da copiare, e il QR per collegarsi senza scrivere.'],
+            ['La colazione e i servizi extra non si vedono', 'Late check-out, transfer, degustazioni: li offri, ma gli ospiti lo scoprono quando è tardi.',
+             'In «Servizi extra» li presenti con prezzo e modo di prenotare; il messaggio di fine soggiorno chiede la recensione a chi è rimasto contento.'],
+        ],
+        'sezioni' => [
+            'checkin' => 'Orari di arrivo, rientro serale e partenza, chiari per tutti.',
+            'wifi' => 'Una rete per ogni zona della casa, con la password da copiare.',
+            'extras' => 'Colazione, transfer e late check-out, con il prezzo.',
+            'rules' => 'Silenzio, spazi comuni, chiavi: le regole della convivenza.',
+            'visit' => 'I posti da vedere vicino a te, con la mappa.',
+            'eat' => 'Dove cenare la sera, la domanda più frequente dopo il Wi-Fi.',
+        ],
+        'questionario' => true, 'piano' => 'plus',
+        'piano_perche' => 'Gli ospiti di un B&B arrivano da tutto il mondo: con Plus la guida è in sei lingue, con le foto accanto ai testi, tutte le sezioni e le statistiche di lettura.',
+        'faq' => [
+            ['Ho cinque camere: mi servono cinque guide?', 'No. Più camere allo stesso indirizzo e con lo stesso CIN sono una struttura sola: basta una guida. Per Wi-Fi diversi aggiungi una riga per ogni zona.'],
+            ['Posso mettere il QR Code in ogni camera?', 'Sì. Il QR Code è lo stesso per tutta la guida e non cambia quando la modifichi: lo stampi una volta e lo lasci in camera, in sala colazione o all\'ingresso.'],
+            ['Come chiedo una recensione agli ospiti?', 'Con il messaggio di fine soggiorno in «QR & Link». Chi dà 5 stelle trova i bottoni dei portali che hai spuntato; chi dà meno può scriverti in privato cosa migliorare.'],
+            ['E se i miei ospiti parlano tedesco o olandese?', 'Con Plus la guida è in sei lingue: la tua, le altre tra italiano, inglese, francese, tedesco e spagnolo, e una a scelta tra dieci, olandese compreso. Hai le traduzioni suggerite dal traduttore automatico, le approvi tu, comprese nel piano entro un limite annuale.'],
+        ],
+    ],
+    'affittacamere' => [
+        'percorso' => '/affittacamere', 'nome' => 'Affittacamere', 'tipologia' => 'affittacamere',
+        // 9L (revisione): la stessa foto della scheda «Per chi è» (il portone di legno con i fiori), così scheda e pagina coincidono.
+        'foto' => ['tipo-affittacamere.jpg', 1200, 900, 'Il portone di legno ad arco di una casa in pietra, tra vasi di fiori, rampicanti e piante aromatiche'],
+        'titolo' => 'Guida digitale per affittacamere | MyHouse Welcome',
+        'descrizione' => 'La guida digitale per il tuo affittacamere: ingresso, spazi comuni, Wi-Fi, regole e consigli in un link e un QR Code, nelle lingue dei tuoi ospiti.',
+        'kicker' => 'Per chi gestisce un affittacamere',
+        'h1' => 'La guida digitale per il tuo affittacamere',
+        'intro' => 'Ingressi separati, cucina in comune, ospiti che arrivano a orari diversi: in un affittacamere le regole della convivenza contano quanto la camera. Scrivile una volta, in una guida che ognuno apre dal suo telefono.',
+        'problemi' => [
+            ['Ospiti che arrivano a orari diversi', 'Chi atterra la sera, chi arriva in treno a mezzogiorno: non puoi essere alla porta per tutti.',
+             'In «Check-in & Check-out» spieghi l\'ingresso e dove trovare la chiave della camera; mandi il link prima dell\'arrivo e l\'ospite entra da solo.'],
+            ['Gli spazi comuni sono di tutti', 'La cucina, il bagno sul corridoio, la lavatrice: senza regole chiare, nascono le incomprensioni.',
+             'In «Regole della casa» e «Servizi» scrivi orari, turni e istruzioni; restano lì, sempre uguali, per ogni ospite.'],
+            ['Chi soggiorna per lavoro ha bisogno di risposte veloci', 'Wi-Fi, parcheggio, come muoversi: domande da risolvere in un minuto, magari alle sette del mattino.',
+             'Wi-Fi da copiare con un tocco, Parcheggio con prezzi e ZTL, «Muoversi in zona» con autobus e taxi: tutto a portata di pollice.'],
+        ],
+        'sezioni' => [
+            'checkin' => 'L\'ingresso spiegato per chi arriva quando non ci sei.',
+            'rules' => 'Cucina, bagni e silenzio: le regole degli spazi comuni.',
+            'services' => 'Lavatrice, cucina, ferro da stiro: come si usano.',
+            'wifi' => 'La rete di casa, da copiare senza errori.',
+            'parking' => 'Dove lasciare l\'auto, quanto costa, dove inizia la ZTL.',
+            'transport' => 'Autobus, taxi e stazione per chi si muove senza auto.',
+        ],
+        'questionario' => true, 'piano' => 'plus',
+        'piano_perche' => 'Con ospiti che cambiano spesso e parlano lingue diverse, Plus ti dà sei lingue, tutte le sezioni e le foto accanto alle istruzioni, per spiegare meglio gli spazi comuni.',
+        'faq' => [
+            ['L\'affittacamere ha un solo CIN: basta una guida?', 'Sì. Le camere allo stesso indirizzo con lo stesso CIN sono una struttura sola: una guida e un QR Code per tutta la casa.'],
+            ['Posso dare informazioni diverse per ogni camera?', 'Nella stessa guida sì: nel Wi-Fi aggiungi una riga per ogni zona e nei testi indichi la camera. Se le camere hanno indirizzi e CIN diversi, servono guide separate con Portfolio.'],
+            ['Gli ospiti vedono i miei dati personali?', 'Vedono solo quello che scrivi tu: il nome con cui ti presenti e i contatti che decidi di mostrare. La guida non compare su Google e si apre solo da chi ha il link o il QR.'],
+            ['Posso aggiornare le regole durante la stagione?', 'Sì, quando vuoi, anche dal telefono. Pubblichi la versione nuova e chi apre il link o inquadra il QR la vede subito.'],
+        ],
+    ],
+    'agriturismi' => [
+        'percorso' => '/agriturismi', 'nome' => 'Agriturismi', 'tipologia' => 'agriturismo',
+        'foto' => ['tipo-agriturismi.jpg', 1600, 900, 'Un agriturismo in pietra con il cortile fiorito, gli ombrelloni e le colline sullo sfondo'],
+        'titolo' => 'Guida digitale per agriturismi | MyHouse Welcome',
+        'descrizione' => 'La guida digitale per il tuo agriturismo: come arrivare, servizi, ristorante, attività in azienda e sul territorio in un link e un QR Code.',
+        'kicker' => 'Per chi gestisce un agriturismo',
+        'h1' => 'La guida digitale per il tuo agriturismo',
+        'intro' => 'Strade bianche, navigatori che sbagliano, una piscina con i suoi orari e un territorio da raccontare: la guida dell\'agriturismo accompagna gli ospiti dal cancello alle cantine dei dintorni.',
+        'problemi' => [
+            ['Il navigatore porta nel posto sbagliato', 'In campagna l\'indirizzo non basta: l\'ultimo bivio, la strada bianca, il cancello giusto.',
+             '«Come arrivare» ha la mappa, le indicazioni per ogni mezzo e le foto dei punti di riferimento: gli ospiti la aprono prima di partire.'],
+            ['Tanti servizi, tanti orari', 'Piscina, ristorante, colazione, fattoria didattica: ognuno ha i suoi orari e le sue regole.',
+             'In «Servizi» e «Servizi extra» li presenti uno per uno, con orari e prezzi; in «Cosa fare» le attività in azienda e nei dintorni.'],
+            ['Il territorio è il motivo per cui vengono', 'Borghi, sentieri, sagre e cantine: i consigli che dai a voce si dimenticano al primo bivio.',
+             '«Cosa consigliamo di visitare», «Cosa fare» ed «Eventi e sagre» raccolgono i tuoi consigli con la mappa e le date, nelle lingue degli ospiti.'],
+        ],
+        'sezioni' => [
+            'arrival' => 'Le indicazioni dall\'ultimo bivio al cancello, con la mappa.',
+            'services' => 'Piscina, ristorante, colazione: orari e regole.',
+            'todo' => 'Escursioni, degustazioni e attività in azienda.',
+            'visit' => 'I borghi e i panorami che consigli tu.',
+            'events' => 'Sagre, mercati e feste del paese, con le date.',
+            'shop' => 'Alimentari, farmacia e bancomat più vicini.',
+        ],
+        'questionario' => true, 'piano' => 'plus',
+        'piano_perche' => 'Un agriturismo ha molto da raccontare: con Plus usi tutte le sezioni, metti le foto accanto ai testi e scrivi in sei lingue per gli ospiti stranieri.',
+        'faq' => [
+            ['Ho camere e appartamenti nella stessa azienda: quante guide servono?', 'Se sono allo stesso indirizzo con lo stesso CIN, una guida. Se hai unità con CIN diversi, una guida per ognuna, gestite insieme con Portfolio.'],
+            ['Posso inserire il ristorante e le attività a pagamento?', 'Sì. In «Servizi extra» presenti colazione, cene, degustazioni e attività con il prezzo e il modo di prenotare.'],
+            ['Gli eventi passati spariscono da soli?', 'Sì. Gli eventi con la data passata non si vedono più nella guida, e ti avvisiamo per email: se tornano l\'anno dopo, li ripeti con un clic.'],
+            ['La guida funziona anche dove il segnale è debole?', 'La guida è leggera e si apre nel browser senza app. Consigliamo di mandare il link prima dell\'arrivo, così gli ospiti leggono le indicazioni quando hanno ancora rete.'],
+        ],
+    ],
+
+    // 9K · Più strutture: solo Portfolio (tabella progressiva, preventivo oltre il massimo), niente questionario.
+    'piu-strutture' => [
+        'percorso' => '/piu-strutture', 'nome' => 'Più strutture', 'tipologia' => null,
+        'foto' => ['scena-host.jpg', 1200, 750, 'Un host che aggiorna la guida dal portatile, seduto al tavolo di casa'],
+        'titolo' => 'Guida digitale per più strutture ricettive | MyHouse Welcome',
+        'descrizione' => 'Più case, un solo account: ogni struttura ha la sua guida digitale e il suo QR Code, le sezioni si copiano, le statistiche restano distinte. Con Portfolio.',
+        'kicker' => 'Per chi gestisce più strutture',
+        'h1' => 'Tutte le tue case, una sola regia.',
+        'intro' => 'Due appartamenti in centro, una casa in campagna, qualche camera: ogni struttura ha la sua guida e il suo QR, ma il lavoro lo fai una volta sola. Copi le sezioni da una casa all\'altra, aggiorni quello che cambia e vedi le statistiche di ognuna.',
+        'problemi' => [
+            ['Le stesse risposte per cinque case diverse', 'Wi-Fi, regole della casa, raccolta differenziata, i ristoranti della zona: tante risposte si somigliano, e riscriverle per ogni struttura è tempo perso.',
+             'Copi le sezioni da una struttura all\'altra: scrivi una volta quello che vale per tutte e cambi solo quello che è diverso.'],
+            ['Ogni casa ha il suo codice e il suo Wi-Fi', 'Indirizzo, CIN, rete Wi-Fi, istruzioni per l\'arrivo: basta un dato della casa sbagliata e l\'ospite resta fuori dalla porta.',
+             'Ogni struttura ha la sua guida e il suo QR, con i dati suoi: l\'ospite vede solo la casa in cui dorme.'],
+            ['Non sai quale guida leggono di più', 'Con più case non sai quali informazioni servono davvero, né dove gli ospiti cercano e non trovano.',
+             'Le statistiche sono distinte per struttura: quante volte si apre la guida, le sezioni più lette, le lingue degli ospiti.'],
+        ],
+        'piano' => 'portfolio', 'portfolio' => true, 'campione' => true,   // 9M: lo spiegone della scheda campione
+        'faq' => [
+            ['Posso aggiungere una struttura a metà anno?', 'Sì, quando vuoi, da Account & Fatturazione → «Cambia piano»: paghi oggi solo la differenza per i giorni che restano fino al rinnovo, e dal rinnovo tutte le strutture si rinnovano insieme.'],
+            ['Posso spostare una guida da una struttura all\'altra?', 'Ogni guida appartiene alla sua struttura, con il suo indirizzo, il suo CIN e il suo QR. Se cambi casa, archivi la guida vecchia da «Le mie guide» e ne prepari una nuova: le sezioni che ti servono le copi in un attimo.'],
+            ['Gli ospiti di una casa vedono le altre?', 'No. Ogni guida ha il suo link e il suo QR e mostra solo la sua struttura: dalle altre non si arriva.'],
+            ['In quante lingue?', 'Come con Plus, per ogni struttura: la lingua in cui scrivi, le altre tra italiano, inglese, francese, tedesco e spagnolo, e una lingua in più a scelta, con le traduzioni suggerite comprese entro un limite annuale di caratteri.'],
+        ],
+    ],
+    // 9K · Property manager: il programma Partner (per ora raccoglie i contatti), solo Portfolio, il modulo «Diventa partner».
+    'property-manager' => [
+        'percorso' => '/property-manager', 'nome' => 'Property manager', 'tipologia' => null,
+        'foto' => ['tipo-property-manager.jpg', 1600, 900, 'Un property manager alla scrivania con le prenotazioni e le foto di più strutture sugli schermi'],
+        'titolo' => 'Programma Partner per property manager | MyHouse Welcome',
+        'descrizione' => 'Gestisci case per conto dei proprietari? Ogni immobile ha la sua guida digitale MyHouse Welcome e tu diventi partner, con una commissione per attivazione.',
+        'kicker' => 'Per property manager e agenzie',
+        'h1' => 'I tuoi proprietari se ne accorgono. I loro ospiti anche.',
+        'intro' => 'Gestisci case per conto di altri? Con MyHouse Welcome ogni immobile ha la sua guida digitale, pronta in un pomeriggio. I proprietari vedono un servizio in più, gli ospiti scrivono meno e recensiscono meglio, e tu diventi partner: guadagni su ogni struttura che porti.',
+        'problemi_kicker' => 'Perché conviene', 'problemi_titolo' => 'Tre motivi per diventare partner',
+        'problemi' => [
+            ['Un servizio in più da offrire', 'La guida digitale entra nel tuo pacchetto di gestione: un motivo in più per scegliere te.', ''],
+            ['Meno telefonate, più recensioni', 'Le domande ripetute le risolve la guida, le stelle salgono, e un buon punteggio vale più prenotazioni.', ''],
+            ['Guadagni anche tu', 'Per ogni struttura attivata con il tuo codice partner ricevi {commissione} sul primo anno e sui rinnovi. Più strutture porti, più cresce.', ''],
+        ],
+        'passi_titolo' => 'Come funziona la partnership',
+        'passi' => [
+            ['Ci scrivi e ci conosciamo', 'Compili il modulo qui sotto: ti richiamiamo per capire quante case gestisci e come lavori.'],
+            ['Ricevi il tuo codice partner e i materiali', 'Un codice tutto tuo e quello che serve per presentare la guida ai proprietari.'],
+            ['I tuoi proprietari attivano la guida con il tuo codice', 'Con {sconto_clienti} per loro.'],
+            ['Ogni anno ricevi la tua commissione', 'Su ogni struttura attivata, il primo anno e a ogni rinnovo.'],
+        ],
+        'piano' => 'portfolio', 'portfolio' => true, 'partner' => true,
+    ],
+];
