@@ -25,8 +25,14 @@ use ArcoDelVento\Storage\JsonStore;
  * Senza gettone la creazione è chiusa, così nessuno può arrivare per primo e
  * prendersi il pannello di un sito appena caricato.
  *
- * PASSWORD DIMENTICATA. Si cancella storage/data/admin.json via FTP e si
- * rifà la prima volta, con il gettone.
+ * PASSWORD DIMENTICATA. Quella del gestore la reimposta il super admin,
+ * dalla sua pagina Account. Quella del super admin no: si cancella
+ * storage/data/superadmin.json via FTP e si rifà la prima volta, con il
+ * gettone (lo stesso vale per il gestore, se il super admin non c'è).
+ *
+ * SESSIONI. Ogni password nuova chiude le sessioni aperte con la vecchia:
+ * l'account ha un numero di versione, che sale a ogni cambio, e la sessione
+ * vale solo con il numero che aveva all'ingresso.
  *
  * TENTATIVI. Cinque password sbagliate dallo stesso indirizzo in un quarto
  * d'ora chiudono l'accesso a quell'indirizzo per un quarto d'ora. Gli
@@ -146,14 +152,63 @@ final class Auth
         ], false);
     }
 
-    /** Cambia la password di chi è dentro. */
+    /**
+     * Cambia la password di chi è dentro. Le sue altre sessioni si chiudono;
+     * questa resta aperta con un nuovo login() subito dopo.
+     */
     public function changePassword(string $nuova): void
     {
-        $ruolo = $this->role() ?? self::ADMIN;
+        $this->impostaPassword($this->role() ?? self::ADMIN, $nuova, false);
+    }
+
+    /**
+     * Il super admin dà una password nuova al gestore, che l'ha dimenticata.
+     * Le sessioni aperte del gestore si chiudono; con $daCambiare, al primo
+     * accesso deve sceglierne una sua prima di fare altro.
+     */
+    public function resetPassword(string $nuova, bool $daCambiare): void
+    {
+        $this->impostaPassword(self::ADMIN, $nuova, true, $daCambiare);
+    }
+
+    /** Chi è dentro deve scegliere una password sua prima di fare altro? */
+    public function mustChangePassword(): bool
+    {
+        $ruolo = $this->role();
+
+        return $ruolo !== null && !empty($this->store->read(self::ARCHIVI[$ruolo])['da_cambiare']);
+    }
+
+    /**
+     * Nome, creazione, ultimo cambio e ultimo accesso di un account, senza
+     * l'hash. Vuoto se l'account non c'è.
+     *
+     * @return array{utente?: string, creato?: string, modificato?: string, ultimo_accesso?: string, reimpostata?: string, da_cambiare?: bool}
+     */
+    public function details(string $ruolo): array
+    {
         $a = $this->store->read(self::ARCHIVI[$ruolo]);
-        $a['hash']       = password_hash($nuova, PASSWORD_DEFAULT);
-        $a['modificato'] = date('c');
-        $this->store->write(self::ARCHIVI[$ruolo], $a, false);
+
+        return empty($a['utente']) ? [] : array_intersect_key($a, array_flip(['utente', 'creato', 'modificato', 'ultimo_accesso', 'reimpostata', 'da_cambiare']));
+    }
+
+    private function impostaPassword(string $ruolo, string $nuova, bool $reimpostata, bool $daCambiare = false): void
+    {
+        $this->store->update(self::ARCHIVI[$ruolo], static function (array $a) use ($nuova, $reimpostata, $daCambiare): array {
+            $a['hash']       = password_hash($nuova, PASSWORD_DEFAULT);
+            $a['modificato'] = date('c');
+            $a['versione']   = (int) ($a['versione'] ?? 0) + 1;
+            // Il segno del reset resta finché il gestore non la cambia lui.
+            unset($a['reimpostata'], $a['da_cambiare']);
+            if ($reimpostata) {
+                $a['reimpostata'] = date('c');
+                if ($daCambiare) {
+                    $a['da_cambiare'] = true;
+                }
+            }
+
+            return $a;
+        }, false);
     }
 
     /** Il nome dell'account di chi gestisce la casa. */
@@ -200,7 +255,10 @@ final class Auth
         // Un identificativo nuovo a ogni ingresso: quello di prima, se qualcuno
         // l'avesse visto, non vale più.
         session_regenerate_id(true);
-        $_SESSION[self::SESSIONE] = ['utente' => $utente, 'ruolo' => $ruolo, 'dal' => time(), 'ultimo' => time()];
+        $_SESSION[self::SESSIONE] = [
+            'utente' => $utente, 'ruolo' => $ruolo, 'dal' => time(), 'ultimo' => time(),
+            'versione' => (int) ($this->store->read(self::ARCHIVI[$ruolo])['versione'] ?? 0),
+        ];
         $this->salvaAccesso($ruolo);
     }
 
@@ -221,9 +279,12 @@ final class Auth
         $ruolo  = (string) ($s['ruolo'] ?? self::ADMIN);
         // L'account deve esserci ancora, con lo stesso nome: se è stato
         // cancellato via FTP (password dimenticata), la sessione non vale più.
-        $nome = isset(self::ARCHIVI[$ruolo]) ? $this->nome($ruolo) : '';
+        // E con la stessa password: dopo un cambio vale solo la versione nuova.
+        $a    = isset(self::ARCHIVI[$ruolo]) ? $this->store->read(self::ARCHIVI[$ruolo]) : [];
+        $nome = (string) ($a['utente'] ?? '');
         if ($adesso - (int) $s['ultimo'] > self::INATTIVITA || $adesso - (int) $s['dal'] > self::DURATA_MASSIMA
-            || $nome === '' || mb_strtolower($nome) !== mb_strtolower((string) $s['utente'])) {
+            || $nome === '' || mb_strtolower($nome) !== mb_strtolower((string) $s['utente'])
+            || (int) ($s['versione'] ?? -1) !== (int) ($a['versione'] ?? 0)) {
             unset($_SESSION[self::SESSIONE]);
 
             return null;

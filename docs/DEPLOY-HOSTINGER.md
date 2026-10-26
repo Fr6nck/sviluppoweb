@@ -372,9 +372,19 @@ Si apre all'indirizzo del sito seguito da **`/admin`** — in prova
 `env-produzione.txt`, prima di rinominarlo). Creato l'account, quella riga si
 può svuotare: il controllo finale lo ricorda.
 
-**Password dimenticata**: via FTP cancella `storage/data/admin.json` e rifai la
-prima volta con il codice. Se il codice l'hai già tolto dal `.env`, rimettine
-uno nuovo (almeno 16 caratteri a caso).
+**Password dimenticata**: se c'è il super admin (punto 15), gliela reimposta lui:
+area riservata → **Account** → «La password del gestore». Scrive la password
+nuova due volte e la sua per conferma; le sessioni aperte del gestore si
+chiudono, e con la spunta (attiva in partenza) al primo accesso il gestore deve
+sceglierne una sua. La password nuova si comunica a voce o al telefono: il sito
+non la manda a nessuno.
+
+Senza super admin: via FTP cancella `storage/data/admin.json` e rifai la prima
+volta con il codice. Se il codice l'hai già tolto dal `.env`, rimettine uno
+nuovo (almeno 16 caratteri a caso).
+
+Ogni cambio di password, anche dalla pagina Account, chiude le altre sessioni
+aperte con la vecchia password.
 
 **Le modifiche fatte dal pannello stanno in `storage/data/`** sul server, non nei
 file del pacchetto. Quindi:
@@ -655,7 +665,11 @@ normale di `/admin`: il nome utente dice chi entra.
 - Se il sito non può scrivere il `.env`, la pagina si legge soltanto: dai al file
   i permessi 644 via FTP.
 
-**Password del super admin dimenticata.** Via FTP cancella
+**Password del gestore dimenticata.** Da **Account** → «La password del
+gestore»: vedi il punto 10.
+
+**Password del super admin dimenticata.** Nessuno la può reimpostare dal sito.
+Via FTP cancella
 `storage/data/superadmin.json`, rimetti nel `.env` una riga
 `SUPERADMIN_SETUP_TOKEN=` con un codice nuovo (almeno 16 caratteri a caso) e
 rifai la creazione da `/admin/super`. Il `.env` e le sue copie non si toccano.

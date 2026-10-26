@@ -112,6 +112,12 @@ final class AdminController
         }
 
         // ------------------------------------------------ dentro
+        // Dopo un reset, chi è dentro con la password data da un altro deve
+        // sceglierne una sua prima di fare qualunque altra cosa.
+        if ($auth->mustChangePassword() && $pezzi !== ['account'] && $pezzi !== ['esci']) {
+            return $this->headers(Response::redirect($this->url('account'), 303));
+        }
+
         $risposta = match (true) {
             $pezzi === []                                   => $this->dashboard($request),
             $pezzi === ['esci'] && $metodo === 'POST'        => $this->logout(),
@@ -227,7 +233,10 @@ final class AdminController
         $nome  = (string) $auth->current();
         $ruolo = (string) $auth->role();
         if (!$request->isPost()) {
-            return Response::html($this->page('account', ['titolo' => 'Account', 'utente' => $nome]));
+            return Response::html($this->page('account', $this->datiAccount($nome)));
+        }
+        if ($this->in($request, 'azione') === 'reimposta' && $auth->isSuper()) {
+            return $this->resetAdminPassword($request);
         }
 
         $errori = [];
@@ -241,16 +250,67 @@ final class AdminController
             (string) $this->in($request, 'ripeti', '')
         ));
         if ($errori !== []) {
-            return Response::html($this->page('account', [
-                'titolo' => 'Account', 'utente' => $nome, 'errori' => $errori,
-            ]), 422);
+            return Response::html($this->page('account', ['errori' => $errori] + $this->datiAccount($nome)), 422);
         }
 
+        $dovuta = $auth->mustChangePassword();
         $auth->changePassword((string) $this->in($request, 'nuova', ''));
         $auth->login($nome, $ruolo);
-        $this->flash('ok', 'Password cambiata.');
+        $this->flash('ok', $dovuta ? 'Password cambiata: adesso puoi usare il pannello.' : 'Password cambiata. Le altre sessioni aperte con la vecchia password sono chiuse.');
+
+        return Response::redirect($this->url($dovuta ? '' : 'account'), 303);
+    }
+
+    /**
+     * Il super admin dà una password nuova al gestore. Chiede la password del
+     * super admin, come ogni salvataggio di Configurazione: una sessione
+     * lasciata aperta non basta per prendersi l'account del gestore.
+     */
+    private function resetAdminPassword(Request $request): Response
+    {
+        $auth = $this->app->auth();
+        $ip   = $this->ip($request);
+        $nome = (string) $auth->current();
+        $gestore = $auth->nome(Auth::ADMIN);
+
+        $errori = [];
+        if ($gestore === '') {
+            $errori[] = 'Il gestore non ha ancora un account: non c\'è una password da reimpostare.';
+        } elseif ($auth->isLockedOut($ip)) {
+            $errori[] = 'Troppi tentativi sbagliati. Riprova fra ' . $auth->minutesLocked($ip) . ' minuti.';
+        } else {
+            if (!$auth->verifyCurrent($this->in($request, 'conferma'))) {
+                $auth->recordFailure($ip);
+                $errori[] = 'La tua password di conferma non è giusta: la password del gestore non è cambiata.';
+            }
+            $errori = array_merge($errori, $auth->passwordProblems($gestore, $this->in($request, 'nuova_gestore'), $this->in($request, 'ripeti_gestore')));
+        }
+        if ($errori !== []) {
+            return Response::html($this->page('account', ['errori' => $errori] + $this->datiAccount($nome)), 422);
+        }
+
+        $daCambiare = $this->in($request, 'da_cambiare') === '1';
+        $auth->resetPassword($this->in($request, 'nuova_gestore'), $daCambiare);
+        $this->flash('ok', 'Password di ' . $gestore . ' reimpostata. Le sue sessioni aperte sono chiuse'
+            . ($daCambiare ? ', e al prossimo accesso dovrà sceglierne una sua.' : '.')
+            . ' Diglielo tu, a voce o al telefono: il sito non la manda a nessuno.');
 
         return Response::redirect($this->url('account'), 303);
+    }
+
+    /** @return array<string,mixed> */
+    private function datiAccount(string $nome): array
+    {
+        $auth = $this->app->auth();
+
+        return [
+            'titolo'     => 'Account',
+            'utente'     => $nome,
+            'mio'        => $auth->details((string) $auth->role()),
+            'daCambiare' => $auth->mustChangePassword(),
+            // Solo il super admin vede l'account del gestore.
+            'gestore'    => $auth->isSuper() ? $auth->details(Auth::ADMIN) : null,
+        ];
     }
 
     // =========================================================== super admin

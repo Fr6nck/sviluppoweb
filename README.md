@@ -515,8 +515,16 @@ pagina lo dice.
   blackout.in quella non conservava i dati tra una pagina e l'altra, e ogni
   modulo del sito — area riservata, prenotazione, contatti — rispondeva
   «sessione scaduta».
-- *Password dimenticata*: via FTP si cancella `storage/data/admin.json` e si
-  rifà la prima volta con il codice. Modifiche e richieste restano.
+- *Password dimenticata*: quella del gestore la reimposta il super admin da
+  **Account** (con la sua password per conferma; in partenza il gestore deve
+  sceglierne una sua al primo accesso, e del super admin non vede traccia).
+  Senza super admin, o per la sua password, via FTP si cancella
+  `storage/data/admin.json` (o `superadmin.json`) e si rifà la prima volta con
+  il codice. Modifiche e richieste restano.
+- Ogni password nuova chiude le sessioni aperte con la vecchia: l'account ha un
+  numero di `versione` che sale a ogni cambio, e `Auth::current()` accetta solo
+  la sessione con lo stesso numero. Chi cambia la propria password resta dentro;
+  le sue altre sessioni no.
 
 **Le richieste** arrivano sempre anche per e-mail. Nel pannello si cancellano da
 sole dopo 24 mesi: sono dati personali, e lo stesso periodo va scritto
