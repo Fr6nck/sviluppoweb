@@ -91,8 +91,14 @@ $invito   = ($paginaCorrente ?? '') !== 'book';
         &middot; P. IVA <?= $legal['vat'] ? e($legal['vat']) : daConfermare() ?>
       </p>
       <p class="adv-piede__crediti"><?= te('footer.photo_credits') ?></p>
-      <a href="<?= e(url('privacy')) ?>"><?= te('nav.privacy') ?></a>
-      <a class="adv-piede__su" href="#inizio"><?= te('footer.back_top') ?><?= icona('freccia-su', 12) ?></a>
+      <div class="adv-piede__link">
+        <a href="<?= e(url('privacy')) ?>"><?= te('nav.privacy') ?></a>
+        <?php /* L'accesso all'area riservata, per chi gestisce la casa. nofollow:
+                 la pagina d'accesso non è una pagina da motore di ricerca (e
+                 risponde comunque noindex). */ ?>
+        <a href="<?= e(adminUrl()) ?>" rel="nofollow"><?= te('footer.login') ?></a>
+        <a class="adv-piede__su" href="#inizio"><?= te('footer.back_top') ?><?= icona('freccia-su', 12) ?></a>
+      </div>
     </div>
 
   </div>

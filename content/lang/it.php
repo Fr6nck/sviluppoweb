@@ -887,6 +887,7 @@ return [
         'rights'     => '© :year Arco del Vento di Pecetta Daniele',
         'tagline'    => 'Cinque camere nel centro storico.|Una persona a tenerle aperte.',
         'back_top'   => 'Torna su',
+        'login'      => 'Area riservata',
     ],
 
 ];

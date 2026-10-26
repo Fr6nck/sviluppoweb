@@ -1195,6 +1195,9 @@ a.adv-tappe__voce:hover .adv-tappe__freccia { transform: translate(3px, -3px); }
 }
 .adv-piede__crediti { flex: 1 1 320px; }
 .adv-piede__su { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; white-space: nowrap; }
+/* Privacy, area riservata, torna su: sempre insieme, a destra; se la riga non
+   basta vanno a capo tutti e tre, non uno solo. */
+.adv-piede__link { display: flex; flex-wrap: wrap; align-items: center; gap: 0 20px; margin-left: auto; white-space: nowrap; }
 
 .adv-sticky { display: none; }
 
@@ -1614,6 +1617,7 @@ a.adv-tappe__voce:hover .adv-tappe__freccia { transform: translate(3px, -3px); }
   .adv-camera__piede { grid-template-columns: 1fr; }
   .adv-camera__cella + .adv-camera__cella { padding-left: 0; padding-top: 12px; border-left: 0; border-top: 1px solid var(--filo); }
   .adv-piede__riga { flex-direction: column; align-items: flex-start; }
+  .adv-piede__link { margin-left: 0; }
   .adv-piede__crediti { flex: none; }
   .adv-testa__meta, .adv-apertura__luoghi { gap: 8px 16px; }
   .adv-testa__meta li + li::before, .adv-apertura__luoghi li + li::before { display: none; }

@@ -857,6 +857,7 @@ return [
         'rights'     => '© :year Arco del Vento di Pecetta Daniele',
         'tagline'    => 'Five rooms in the old town.|One person keeping them open.',
         'back_top'   => 'Back to top',
+        'login'      => 'Staff login',
     ],
 
 ];
