@@ -3345,3 +3345,49 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .fatt-modulo .campi-allineati>.field>:is(input,select,textarea){margin-top:0}
 .fatt-modulo .campi-allineati>.field>label{min-height:24px}
 .fatt-aiuto{margin:6px 0 0}
+
+/* 10 · «Chiedi alla guida»: il bottone nella barra in fondo, la finestra della chat (un foglio dal basso, come
+   «Chi ti accoglie») e i fumetti. Anche nella pagina senza JavaScript (chiedi__form--pagina). */
+.guest-bottom .chiedi-apri{flex:1 1 0;min-width:0}
+.guest-bottom:has(.chiedi-apri):has(.contatti-foglio) .chiedi-apri{flex:0 0 auto;padding:0 14px}
+.chiedi{width:min(560px,100%);max-width:100%;max-height:min(92dvh,760px);margin:auto auto 0;padding:0;border:0;border-radius:26px 26px 0 0;background:var(--paper);color:var(--ink);overflow:hidden}
+.chiedi::backdrop{background:rgba(23,19,13,.5)}
+.chiedi__dentro{display:flex;flex-direction:column;gap:12px;height:min(92dvh,760px);padding:16px 16px calc(14px + env(safe-area-inset-bottom))}
+.chiedi__testa{display:flex;align-items:flex-start;gap:12px;padding-right:48px;position:relative}
+.chiedi__ico{flex:none;width:40px;height:40px;border-radius:12px;background:var(--accent);color:var(--on-dark);display:grid;place-items:center}
+.chiedi__ico svg{stroke:currentColor}
+.chiedi__titoli{display:flex;flex-direction:column;gap:2px;min-width:0}
+.chiedi__titolo{margin:0;font-family:Gloock,Georgia,serif;font-weight:400;font-size:24px;line-height:28px}
+.chiedi__intro{margin:0;font-size:14px;line-height:20px;color:var(--muted)}
+.chiedi__chiudi{position:absolute;right:0;top:0;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--raised);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.chiedi__msgs{flex:1 1 auto;min-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 2px;overscroll-behavior:contain}
+.chiedi__msgs--pagina{flex:none;min-height:0;overflow:visible}
+.chiedi__msg{max-width:88%;padding:10px 14px;border-radius:16px;font-size:16px;line-height:23px;white-space:pre-line;overflow-wrap:anywhere}
+.chiedi__msg--tu{align-self:flex-end;background:var(--inverse-bg);color:var(--inverse-fg);border-bottom-right-radius:4px}
+.chiedi__msg--guida{align-self:flex-start;background:var(--raised);border:1px solid var(--line);border-bottom-left-radius:4px}
+.chiedi__msg--attesa{color:var(--muted);font-style:normal}
+.chiedi__msg--errore{background:var(--alert-soft);color:var(--alert);border-color:transparent}
+.chiedi__fonte{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin-top:-2px;padding:6px 10px;border-radius:999px;background:var(--pine-soft);color:var(--pine);font-size:13px;line-height:18px;text-decoration:none}
+.chiedi__fonte b{font-weight:600}
+.chiedi__fonte svg{stroke:currentColor;flex:none}
+.chiedi__contatto{align-self:flex-start}
+.chiedi__esempi{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chiedi__esempi>.small{flex:0 0 100%}
+.chiedi__chip{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line-strong);background:var(--raised);color:var(--ink);font:inherit;font-size:14px;cursor:pointer;text-decoration:none;text-align:left}
+.chiedi__chip:hover{background:var(--sunk)}
+.chiedi__form{display:flex;gap:8px;align-items:center}
+.chiedi__form input{flex:1 1 auto;min-width:0;height:52px;padding:0 16px;border-radius:999px;border:1px solid var(--line-strong);background:var(--raised);color:var(--ink);font:inherit;font-size:16px}
+.chiedi__form input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.chiedi__invia{flex:none;width:52px;height:52px;padding:0;border-radius:50%}
+.chiedi__invia svg{stroke:currentColor;flex:none;width:20px;height:20px}
+.chiedi__nota{margin:0;font-size:12px;line-height:17px;color:var(--muted)}
+.chiedi__form--pagina{margin-top:20px}
+/* 10 · La sezione «Chiedi alla guida» in home: il testo a sinistra, la finta chat a destra (come .prodotto). */
+.assistente{margin-top:96px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:48px;align-items:center}
+.assistente__testa{display:flex;flex-direction:column;gap:16px;max-width:520px}
+.assistente__testa>p.muted{font-size:17px;line-height:26px;margin:0}
+.assistente__nota{margin:0}
+.assistente__chat{margin:0;padding:22px;border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.assistente__fumetti{display:flex;flex-direction:column;gap:8px}
+.assistente__chat figcaption{margin:0}
+@media (max-width:860px){.assistente{grid-template-columns:1fr;gap:28px;margin-top:72px}}

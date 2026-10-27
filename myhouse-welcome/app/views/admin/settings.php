@@ -16,8 +16,9 @@ $pronti = [
     'portali' => true,   // hanno sempre gli indirizzi di serie
     'registri' => MHW\Registri::s3Configurato(),
     'legale' => (string) (Config::get('legal')['company'] ?? '') !== '' && (string) (Config::get('legal')['company_vat'] ?? '') !== '',
+    'assistente' => MHW\Assistente::configurato(),
 ];
-$icone = ['sito' => 'globe', 'indirizzi' => 'message', 'stripe' => 'card', 'posta' => 'message', 'archivio' => 'layers', 'traduzioni' => 'globe', 'portali' => 'star', 'registri' => 'doc', 'legale' => 'doc', 'inviti' => 'people', 'giudizi' => 'star'];
+$icone = ['sito' => 'globe', 'indirizzi' => 'message', 'stripe' => 'card', 'posta' => 'message', 'archivio' => 'layers', 'traduzioni' => 'globe', 'portali' => 'star', 'registri' => 'doc', 'legale' => 'doc', 'inviti' => 'people', 'giudizi' => 'star', 'assistente' => 'message'];
 $intro = [
     'sito'     => 'L\'indirizzo pubblico del sito e gli indirizzi senza index.php: valgono per link, email, QR, canonical e sitemap. «Prova» chiede al sito una sua pagina senza index.php: se risponde, il server legge .htaccess e gli indirizzi puliti si possono accendere.',
     'indirizzi' => 'Quattro indirizzi, ognuno al suo posto (9H). Tutte le email del sito partono dal mittente di Posta; qui decidi a chi arrivano le risposte e chi riceve gli avvisi. Commerciale, newsletter e amministrazione possono essere alias che inoltrano all\'assistenza.',
@@ -29,6 +30,7 @@ $intro = [
     'portali' => 'I link che la guida mostra a chi dà 5 stelle, per i portali che l\'host ha spuntato (8B). Google cerca su Maps il nome e la città della struttura; gli altri aprono il sito del portale, dove la recensione si lascia dall\'app o dall\'email che mandano dopo il soggiorno.',
     'registri' => 'I registri tecnici, della posta di prova e degli accessi degli amministratori, in app/storage/logs (fuori dal web), con email, IP e telefoni abbreviati. Ogni giorno si tolgono quelli più vecchi e, se c\'è il bucket, la copia di quelli di ieri va su S3 (Milano), dove gli accessi degli amministratori non si possono cancellare per 6 mesi.',
     'legale' => 'Chi fornisce il servizio ed è titolare del trattamento: compare nel piè di pagina del sito e delle email, nei dati strutturati, nei Termini, nell\'Informativa e nel DPA. Le versioni sono la data da cui un testo vale: cambiale quando cambi i testi in Testi e foto → Documenti legali. Una data futura (almeno 30 giorni) manda subito l\'avviso ai clienti; a quella data, nel pannello, la finestra «Accetto».',
+    'assistente' => '«Chiedi alla guida» (10): l\'assistente che risponde agli ospiti con il testo della guida, compreso in Plus e Portfolio. Le domande vanno all\'API di Anthropic (Claude) con la chiave scritta qui; il limite per struttura e il tetto di spesa fermano le richieste; prezzi e cambio servono solo per le stime di Amministrazione → Assistente AI.',
     'traduzioni' => 'Le traduzioni suggerite di Plus e Portfolio, con Amazon Translate. Prezzo, cambio e piano gratuito servono solo per le stime di Amministrazione → Traduzioni; i tetti fermano le richieste.',
 ]; ?>
 <div class="stack stack--lg" style="max-width:860px">
@@ -94,7 +96,7 @@ $intro = [
             $e = $err[$n] ?? '';
             $descr = trim(($aiuto !== '' ? $id . '-aiuto ' : '') . ($e !== '' ? $idErr($n) : ''));
             $aria = ($descr !== '' ? ' aria-describedby="' . $descr . '"' : '') . ($e !== '' ? ' aria-invalid="true"' : '');
-            $largo = in_array($tipo, ['check'], true) || in_array($percorso, ['mail.transport', 'storage.driver', 'stripe.secret_key', 'stripe.webhook_secret', 'storage.s3.public_base_url', 'storage.s3.secret', 'translate.secret'], true); ?>
+            $largo = in_array($tipo, ['check'], true) || in_array($percorso, ['mail.transport', 'storage.driver', 'stripe.secret_key', 'stripe.webhook_secret', 'storage.s3.public_base_url', 'storage.s3.secret', 'translate.secret', 'assistente.api_key'], true); ?>
         <div class="field<?= $largo ? ' impostazioni__largo' : '' ?>" style="margin:0">
           <?php if ($tipo === 'check'): ?>
             <label class="scelta scelta--mini"><input type="checkbox" id="<?= $id ?>" name="<?= $n ?>" value="1" <?= $valore !== '' ? 'checked' : '' ?><?= $bloccato ? ' disabled' : '' ?><?= $aria ?>><span><?= Support::e($etichetta) ?></span></label>
@@ -142,7 +144,7 @@ $intro = [
     </form>
     <form method="post" action="<?= b() ?>/admin/impostazioni/<?= $g ?>/prova" class="impostazioni__prova"><?= Csrf::field() ?>
       <button class="btn btn--ghost btn--sm"><?= Icon::svg('pulse', 15) ?>Prova i dati salvati</button>
-      <span class="small muted"><?= $g === 'posta' ? 'Manda un\'email di prova a ' . Support::e($emailAdmin) . '.' : ($g === 'stripe' ? 'Chiede a Stripe se la chiave è valida.' : ($g === 'traduzioni' ? 'Fa tradurre una parola: 9 caratteri.' : ($g === 'inviti' ? 'Dice se è acceso e quanti clienti possono invitare.' : ($g === 'portali' ? 'Mostra i link per una struttura d\'esempio.' : ($g === 'registri' ? 'Carica un file di prova nel bucket e controlla che la cancellazione sia rifiutata.' : ($g === 'legale' ? 'Mostra la riga del titolare, le versioni in vigore e quanti clienti devono ancora accettarle.' : ($g === 'giudizi' ? 'Dice se lo sconto è acceso, quanti hanno aderito e quanti giudizi sono in home.' : ($g === 'indirizzi' ? 'Mostra dove va ciascun indirizzo adesso.' : 'Scrive, legge e cancella un piccolo file nel bucket.')))))))) ?></span>
+      <span class="small muted"><?= $g === 'posta' ? 'Manda un\'email di prova a ' . Support::e($emailAdmin) . '.' : ($g === 'stripe' ? 'Chiede a Stripe se la chiave è valida.' : ($g === 'assistente' ? 'Manda una domanda minima ad Anthropic con il modello scelto.' : ($g === 'traduzioni' ? 'Fa tradurre una parola: 9 caratteri.' : ($g === 'inviti' ? 'Dice se è acceso e quanti clienti possono invitare.' : ($g === 'portali' ? 'Mostra i link per una struttura d\'esempio.' : ($g === 'registri' ? 'Carica un file di prova nel bucket e controlla che la cancellazione sia rifiutata.' : ($g === 'legale' ? 'Mostra la riga del titolare, le versioni in vigore e quanti clienti devono ancora accettarle.' : ($g === 'giudizi' ? 'Dice se lo sconto è acceso, quanti hanno aderito e quanti giudizi sono in home.' : ($g === 'indirizzi' ? 'Mostra dove va ciascun indirizzo adesso.' : 'Scrive, legge e cancella un piccolo file nel bucket.'))))))))) ?></span>
     </form>
   </section>
   <?php endforeach; ?>

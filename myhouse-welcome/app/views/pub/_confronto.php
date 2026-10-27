@@ -15,7 +15,7 @@ $cf = Plans::comparison($enC ? 'en' : 'it'); if (!$cf['righe']) return; ?>
         <tr><th scope="row"><?= $enC ? 'Price' : 'Prezzo' ?></th>
           <?php foreach ($cf['piani'] as $p): ?><td><?= Plans::perProperty($p) ? ($enC ? 'from ' : 'da ') : '' ?><?= Iva::cifra((int) $p['price_cents'], $p['currency']) ?> <?= $enC ? Iva::nota('+ VAT / year', 'incl. VAT / year') : Iva::nota('+ IVA / anno', 'IVA inclusa / anno') ?></td><?php endforeach; ?></tr>
         <?php foreach ($cf['righe'] as $r): ?>
-          <tr><th scope="row"><?= Support::e($r['label']) ?><?php if (($r['code'] ?? '') === 'auto_translation'): ?> <span class="small muted"><?= $enC ? 'within a yearly character limit' : 'entro un limite annuale di caratteri' ?></span><?php endif; ?></th>
+          <tr><th scope="row"><?= Support::e($r['label']) ?><?php if (($r['code'] ?? '') === 'auto_translation'): ?> <span class="small muted"><?= $enC ? 'within a yearly character limit' : 'entro un limite annuale di caratteri' ?></span><?php elseif (($r['code'] ?? '') === 'ai_concierge'): ?> <span class="small muted"><?= $enC ? 'up to ' . number_format(MHW\Assistente::limite(0)) . ' questions a month per property' : 'fino a ' . number_format(MHW\Assistente::limite(0), 0, ',', '.') . ' domande al mese per struttura' ?></span><?php endif; ?></th>
             <?php foreach ($r['valori'] as $v): ?>
               <td><?php if ($v === 'si'): ?><span class="confronto__si"><?= Icon::svg('check', 16, 2.2) ?><span class="sr-only"><?= $enC ? 'Included' : 'Compreso' ?></span></span>
                   <?php elseif ($v === 'no'): ?><span class="confronto__no" aria-hidden="true">—</span><span class="sr-only"><?= $enC ? 'Not included' : 'Non compreso' ?></span>

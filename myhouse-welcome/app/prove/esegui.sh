@@ -12,13 +12,14 @@ PORTA_STRIPE=$((PORTA + 1))
 PORTA_S3=$((PORTA + 2))
 PORTA_TRADUZIONI=$((PORTA + 3))
 PORTA_SMTP=$((PORTA + 4))
+PORTA_ASSISTENTE=$((PORTA + 5))
 TMP=$(mktemp -d)
 W="$TMP/docroot/welcomebook"
 
-pulisci() { for p in $PID $PID_STRIPE $PID_S3 $PID_TRADUZIONI $PID_SMTP; do kill "$p" 2>/dev/null || true; done; rm -rf "$TMP"; }
+pulisci() { for p in $PID $PID_STRIPE $PID_S3 $PID_TRADUZIONI $PID_SMTP $PID_ASSISTENTE; do kill "$p" 2>/dev/null || true; done; rm -rf "$TMP"; }
 trap pulisci EXIT
 
-mkdir -p "$W/app/storage/uploads" "$TMP/stripe" "$TMP/s3" "$TMP/translate" "$TMP/smtp"
+mkdir -p "$W/app/storage/uploads" "$TMP/stripe" "$TMP/s3" "$TMP/translate" "$TMP/smtp" "$TMP/assistente"
 cp "$RADICE/app/public/index.php" "$W/"
 for f in .htaccess web.config controllo.php; do
   [ -f "$RADICE/app/public/$f" ] && cp "$RADICE/app/public/$f" "$W/"
@@ -47,6 +48,10 @@ PID_S3=$!
 TRANSLATE_FINTO_DIR="$TMP/translate" TRANSLATE_FINTO_KEY=AKIATRADUZIONIFINTE TRANSLATE_FINTO_SECRET=segreto-traduzioni-finto \
   php -S "127.0.0.1:$PORTA_TRADUZIONI" "$QUI/translate-finto.php" > "$TMP/translate.log" 2>&1 &
 PID_TRADUZIONI=$!
+# 10 · Un'API di Anthropic finta per «Chiedi alla guida» (prove/assistente-finto.php): verifica la chiave e risponde con le regole del prompt.
+ASSISTENTE_FINTO_DIR="$TMP/assistente" ASSISTENTE_FINTO_KEY=chiave-finta-assistente-solo-prove \
+  php -S "127.0.0.1:$PORTA_ASSISTENTE" "$QUI/assistente-finto.php" > "$TMP/assistente.log" 2>&1 &
+PID_ASSISTENTE=$!
 # Un server di posta finto, per l'accesso SMTP (LOGIN e PLAIN) e «Prova con questi dati».
 php "$QUI/smtp-finto.php" "$PORTA_SMTP" "$TMP/smtp" > "$TMP/smtp.log" 2>&1 &
 PID_SMTP=$!
@@ -63,6 +68,8 @@ export AWS_S3_ENDPOINT="http://127.0.0.1:$PORTA_S3"
 export MHW_TRANSLATE_KEY=AKIATRADUZIONIFINTE
 export MHW_TRANSLATE_SECRET=segreto-traduzioni-finto
 export MHW_TRANSLATE_ENDPOINT="http://127.0.0.1:$PORTA_TRADUZIONI"
+export MHW_ASSISTENTE_KEY=chiave-finta-assistente-solo-prove
+export MHW_ASSISTENTE_ENDPOINT="http://127.0.0.1:$PORTA_ASSISTENTE"
 export MAIL_TRANSPORT=log
 export MHW_CRON_TOKEN=token-finto-per-le-prove
 # GEO · gli avvisi IndexNow vanno allo Stripe finto (prove/stripe-finto.php, /indexnow), mai ad api.indexnow.org.
@@ -78,7 +85,7 @@ PID=$!
 sleep 2
 
 set +e
-php "$QUI/giro-completo.php" "http://127.0.0.1:$PORTA/welcomebook/index.php" "$W" "$TMP/stripe" "$TMP/s3" "$TMP/translate" "$TMP/smtp" "$PORTA_SMTP"
+php "$QUI/giro-completo.php" "http://127.0.0.1:$PORTA/welcomebook/index.php" "$W" "$TMP/stripe" "$TMP/s3" "$TMP/translate" "$TMP/smtp" "$PORTA_SMTP" "$TMP/assistente"
 ESITO=$?
 # PROVE_EMAIL=1: un file HTML per ogni email (l'ultima di ogni oggetto) in prove/email/, da aprire nel browser.
 if [ -n "${PROVE_EMAIL:-}" ] && [ -d "$W/app/storage/logs/email" ]; then

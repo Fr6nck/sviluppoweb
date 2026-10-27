@@ -27,6 +27,7 @@ final class TestiSito
         'scene'    => ['Le tre scene', 'Le tre foto sotto il titolo: il QR, l\'ospite, l\'host. Le foto si cambiano in fondo a questa pagina.'],
         'soddisfatti' => ['Più sanno, meglio stanno', 'Informazioni → recensioni → prenotazioni (8G): tre punti e la scheda con i quattro passi, tra le scene e «Cosa trova l\'ospite».'],
         'prodotto' => ['Cosa trova l\'ospite', ''],
+        'assistente' => ['Chiedi alla guida', '10: la sezione sull\'assistente che risponde agli ospiti, dopo «Cosa trova l\'ospite». Compare solo se la funzione è in vendita in un piano. {domande} diventa il limite mensile per struttura (Impostazioni), {ora} l\'orario di check-out della guida vetrina.'],
         'dicono'   => ['Le guide dei nostri host, Cosa dicono di noi e «Giudizio con sconto»', '9L: due sezioni della home, approvate separatamente in Vendite → Giudizi e vetrina. «Le guide dei nostri host» (vetrina.*): le schede di chi ha aderito al programma, prima dei piani; «Cosa dicono di noi» (dicono.*): i giudizi accesi a mano, dopo «Più sanno, meglio stanno». Ognuna compare solo se ha almeno una voce. Le note in fondo sono obbligatorie: si possono cambiare, non togliere (vuote, tornano quelle di serie). Qui anche il testo dell\'unica casella del programma, uguale al pagamento e nel pannello.'],
         'perchi'   => ['Per chi è', 'Le sei schede (9K): casa vacanza, B&B, affittacamere, agriturismo, più strutture, property manager. Ognuna porta alla sua pagina; le foto si cambiano in fondo a questa pagina («Per chi è · …»).'],
         'tempo'    => ['Il tempo delle risposte', 'I numeri (16, 19 minuti…) restano quelli: qui si cambiano i testi intorno.'],
@@ -103,6 +104,15 @@ final class TestiSito
             'prodotto.titolo' => ['prodotto', 'Titolo', 'riga', 'Cosa trova l\'ospite.', ''],
             'prodotto.testo'  => ['prodotto', 'Testo', 'area', 'Le informazioni del soggiorno, in ordine e sempre sul telefono, nella lingua dell\'ospite. {sezioni} sezioni pronte da compilare, più le sezioni libere per tutto il resto: scegli quelle che servono ai tuoi ospiti.', '{sezioni} diventa il numero di sezioni del catalogo.'],
             'prodotto.link'   => ['prodotto', 'Link alla demo', 'riga', 'Sfoglia la guida di {demo}', '{demo} è il nome della guida dimostrativa.'],
+            // ---- 10 · Chiedi alla guida
+            'assistente.kicker' => ['assistente', 'Riga sopra il titolo', 'riga', 'Chiedi alla guida', ''],
+            'assistente.titolo' => ['assistente', 'Titolo', 'riga', 'La guida risponde. Tu dormi.', ''],
+            'assistente.testo'  => ['assistente', 'Testo', 'area', 'L\'ospite scrive una domanda, nella sua lingua, e l\'assistente risponde con quello che hai scritto nella guida: Wi-Fi, check-out, parcheggio, i tuoi consigli. Sotto ogni risposta c\'è la sezione da cui viene. Se la guida non lo dice, lo ammette e rimanda ai tuoi contatti.', ''],
+            'assistente.punti'  => ['assistente', 'I tre punti', 'lista', "**Solo le tue informazioni.** Niente inventato: legge la guida e basta.\n**In ogni lingua.** Domanda in tedesco, risposta in tedesco, anche se la guida è in italiano.\n**Ti dice cosa manca.** Le domande senza risposta le trovi nel pannello: due righe e la prossima volta risponde da sola.", 'Una per riga; la parte in grassetto è il titolo del punto.'],
+            'assistente.nota'   => ['assistente', 'Nota sotto i punti', 'riga', 'Compreso in Plus e Portfolio, fino a {domande} domande al mese per struttura. Nessun cookie, nessun dato dell\'ospite.', '{domande}: il limite mensile dalle Impostazioni.'],
+            'assistente.esempio.d' => ['assistente', 'Esempio · la domanda', 'riga', 'A che ora è il check-out?', 'Nella finta chat accanto al testo.'],
+            'assistente.esempio.r' => ['assistente', 'Esempio · la risposta', 'riga', 'Entro le {ora}. Lo trovi nella sezione «Check-in & Check-out».', '{ora}: il check-out della guida vetrina.'],
+            'assistente.esempio.fonte' => ['assistente', 'Esempio · la riga sotto la risposta', 'riga', 'Dalla sezione «Check-in & Check-out»', ''],
             // ---- per chi è
             'perchi.kicker'   => ['perchi', 'Riga sopra il titolo', 'riga', 'Per chi è', ''],
             'perchi.titolo'   => ['perchi', 'Titolo', 'riga', 'Ogni struttura ha le sue domande.', ''],

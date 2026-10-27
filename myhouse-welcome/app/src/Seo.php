@@ -163,6 +163,7 @@ final class Seo
                 'Lingue per gli ospiti: con Essential la lingua dell\'host e una a scelta; con Plus e Portfolio sei (italiano, inglese, francese, tedesco, spagnolo e una a scelta tra dieci, tra cui il portoghese del Portogallo e quello del Brasile).',
                 'Il QR Code stampato non cambia quando si modifica la guida.',
                 'Le guide degli ospiti non usano cookie e non compaiono nei motori di ricerca.',
+                'Con Plus e Portfolio la guida ha «Chiedi alla guida»: un assistente che risponde alle domande degli ospiti usando solo il testo della guida, nella loro lingua, e rimanda ai contatti dell\'host quando la guida non lo dice.',
             ]),
         ];
         foreach (self::tipologie() as $k => $tp) { $d["p.$k.titolo"] = $tp['titolo']; $d["p.$k.descrizione"] = $tp['descrizione']; }

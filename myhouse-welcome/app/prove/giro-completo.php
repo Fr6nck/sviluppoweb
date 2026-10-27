@@ -195,7 +195,7 @@ function pv(string $codice): int
 
 // ================================================================= INSTALLAZIONE
 capitolo('Installazione');
-const MHW_VERSIONE_LEGALE = '2026-10-22';   // 8J/9B/9L: le versioni di serie di Termini e Privacy (9L rivista: scheda e giudizio pubblicati separatamente)
+const MHW_VERSIONE_LEGALE = '2026-10-27';   // 10: «Chiedi alla guida»; 8J/9B/9L: le versioni di serie di Termini e Privacy (9L rivista: scheda e giudizio pubblicati separatamente)
 const MHW_VERSIONE_DPA = '2026-10-15';      // il DPA non è cambiato
 $admin = new Browser('admin');
 $r = $admin->get('/');
@@ -3848,13 +3848,13 @@ prova('7C · Diagnostica: la riga delle traduzioni con l\'esito esatto dell\'ult
 // 8 · Novità: la fascia, una volta per account, e chiusa resta chiusa.
 db()->prepare('UPDATE users SET created_at = ? WHERE email = ?')->execute(['2026-01-01T00:00:00Z', 'lucia@esempio.it']);
 $r = $lucia->get('/pannello');
-prova('8C · Novità: la prima è «Riscaldamento e aria condizionata ora sono due sezioni»', str_contains($r['body'], 'Riscaldamento e aria condizionata ora sono due sezioni'));
+prova('8C → 10 · Novità: la prima (l\'ultima uscita) è «La tua guida risponde agli ospiti: Chiedi alla guida»', str_contains($r['body'], 'La tua guida risponde agli ospiti'));
 prova('7C → 9F → 9N · Novità: la fascia con «Mostrami dove» (un modulo POST), «Tutte le novità» e la ✕ per chiuderla (9N)', str_contains($r['body'], 'class="novita"') && str_contains($r['body'], '>Mostrami dove</button>')
       && str_contains($r['body'], '/pannello/novita/vai"') && str_contains($r['body'], '>Tutte le novità</a>') && str_contains($r['body'], 'novita/chiudi"'));
-$lucia->post('/pannello/novita/vai', ['novita' => '2026-10-clima']);
+$lucia->post('/pannello/novita/vai', ['novita' => '2026-10-assistente']);
 $r = $lucia->get('/pannello');
 prova('…«Mostrami dove» la segna come vista (per account) e la fascia sparisce: si vede solo l\'ultima, le passate stanno in «Novità»', !str_contains($r['body'], 'class="novita"')
-      && (bool) val("SELECT id FROM novita_viste WHERE novita_id = '2026-10-clima' AND account_id = ?", [$accDi('lucia@esempio.it')])
+      && (bool) val("SELECT id FROM novita_viste WHERE novita_id = '2026-10-assistente' AND account_id = ?", [$accDi('lucia@esempio.it')])
       && str_contains($lucia->get('/pannello/novita')['body'], 'La tua foto nella guida, anche con Essential'));
 // Un campo nuovo (una novità di prova con un campo della sezione Emergenze): «Nuovo» in Contenuti e nell'editor, «Ho visto».
 file_put_contents("$DOVE/app/lang/novita.php", str_replace("return [\n", "return [\n    ['id' => 'prova-campo', 'data' => '2026-10-11', 'titolo' => 'Prova', 'testo' => 'Prova', 'dove' => '/pannello', 'campi' => ['emergency' => ['note_prova']], 'sezioni' => []],\n", (string) file_get_contents("$DOVE/app/lang/novita.php")));
@@ -4330,10 +4330,15 @@ $ariaA = riga("SELECT * FROM sections WHERE property_id = ? AND kind = 'aria' AN
 db()->prepare("UPDATE users SET created_at = '2026-01-01T00:00:00Z' WHERE email = 'ester@prova.test'")->execute();
 // 9F · La fascia mostra solo l'ultima novità: via la novità di prova aggiunta più su (prova-campo), così l'ultima torna «clima».
 file_put_contents("$DOVE/app/lang/novita.php", str_replace("    ['id' => 'prova-campo', 'data' => '2026-10-11', 'titolo' => 'Prova', 'testo' => 'Prova', 'dove' => '/pannello', 'campi' => ['emergency' => ['note_prova']], 'sezioni' => []],\n", '', (string) file_get_contents("$DOVE/app/lang/novita.php")));
+// 10 · La fascia mostra solo l'ultima novità, che ora è «Chiedi alla guida»: per questa prova si toglie dal file e si rimette dopo.
+$novitaFile = "$DOVE/app/lang/novita.php"; $novitaTutto = (string) file_get_contents($novitaFile);
+$novita10 = preg_match("#    // 10 · «Chiedi alla guida».*?\n(?:    .*?\n)*?     'dove' => '/pannello/\{pid\}/impostazioni\#chiedi-alla-guida', 'campi' => \[\], 'sezioni' => \[\]\],\n#s", $novitaTutto, $mN10) ? $mN10[0] : '';
+file_put_contents($novitaFile, str_replace($novita10, '', $novitaTutto));
 sleep(3);   // opcache del server di prova
 prova('…Essential al limite: «aria» nasce disattivata, con i suoi testi, e la novità lo dice', $ariaA && (int) $ariaA['is_active'] === 0
       && ($trG((int) $ariaA['id'], 'de')['ac_how'] ?? []) === ['Taste ON drücken.'] && preg_match('#è nata disattivata|was created switched off#', ($rNov = $ester->segui($ester->get("/pannello/$esp/impostazioni")))['body']) === 1,   // 9N: nella lingua del pannello
       json_encode($ariaA ? ['attiva' => $ariaA['is_active'], 'tr' => $trG((int) $ariaA['id'], 'de'), 'pagina' => preg_match('#<title>([^<]*)#', $rNov['body'] ?? '', $mN) ? $mN[1] : '', 'novita' => preg_match('#novita__testo">(.{0,160})#s', $rNov['body'] ?? '', $mN) ? strip_tags($mN[1]) : ''] : null, JSON_UNESCAPED_UNICODE));
+file_put_contents($novitaFile, $novitaTutto); sleep(3);   // 10 · la novità di «Chiedi alla guida» torna al suo posto
 $conta = fn() => (int) val("SELECT COUNT(*) FROM sections WHERE kind IN ('clima', 'riscaldamento', 'aria')");
 $n1 = $conta();
 $esito2 = trim((string) shell_exec('cd ' . escapeshellarg("$DOVE/app") . ' && php -r ' . escapeshellarg($migra) . ' 2>&1'));
@@ -4748,10 +4753,10 @@ foreach (['src', 'views', 'lang'] as $c8) foreach (new RecursiveIteratorIterator
 $sorgenti8j .= file_get_contents("$DOVE/app/config.php");
 prova('8J · nel codice nessuna vecchia P.IVA né «Blackout Agency» come ragione sociale di serie', !str_contains($sorgenti8j, '02945910541') && !str_contains($sorgenti8j, "'Blackout Agency')")
       && !str_contains($sorgenti8j, 'un progetto Blackout'));
-prova('8J · Termini: 17 punti con indice (9N: giudizio, rinnovo e omaggio in un punto solo), recesso impresa/consumatore, 18 anni, foro di Perugia, modulo di recesso; Privacy: 15 trattamenti in tabella (9A: preventivi, 9K: partner, 9O: programma partner), fornitori, diritti, nessun DPO',
-      substr_count($pag8j['/termini']['body'], 'class="legale__parte"') === 19 && str_contains($pag8j['/termini']['body'], 'id="recesso"') && str_contains($pag8j['/termini']['body'], 'almeno 18 anni')
+prova('8J · Termini: 18 punti con indice (9N: giudizio, rinnovo e omaggio in un punto solo; 10: «Chiedi alla guida»), recesso impresa/consumatore, 18 anni, foro di Perugia, modulo di recesso; Privacy: 16 trattamenti in tabella (9A: preventivi, 9K: partner, 9O: programma partner, 10: domande degli ospiti), fornitori, diritti, nessun DPO',
+      substr_count($pag8j['/termini']['body'], 'class="legale__parte"') === 20 && str_contains($pag8j['/termini']['body'], 'id="recesso"') && str_contains($pag8j['/termini']['body'], 'almeno 18 anni')
       && str_contains($pag8j['/termini']['body'], 'foro di Perugia') && str_contains($pag8j['/termini']['body'], 'id="modulo-recesso"') && str_contains($pag8j['/termini']['body'], 'Compila e manda il modulo per email')
-      && substr_count($pag8j['/privacy']['body'], 'class="legale__tabella"') === 15 && str_contains($pag8j['/privacy']['body'], 'Hostinger') && str_contains($pag8j['/privacy']['body'], 'Stripe Payments Europe')
+      && substr_count($pag8j['/privacy']['body'], 'class="legale__tabella"') === 16 && str_contains($pag8j['/privacy']['body'], 'Hostinger') && str_contains($pag8j['/privacy']['body'], 'Stripe Payments Europe')
       && str_contains($pag8j['/privacy']['body'], 'Non è stato nominato un responsabile della protezione dei dati') && str_contains($pag8j['/privacy']['body'], 'entro 30 giorni')
       && str_contains($pag8j['/dpa']['body'], 'entro 48 ore') && str_contains($pag8j['/dpa']['body'], 'almeno 30 giorni'));
 prova('8J · la posta in uscita nell\'informativa viene dall\'impostazione (qui: modalità prova)', str_contains($pag8j['/privacy']['body'], 'posta in uscita</b>: '));
@@ -7916,6 +7921,200 @@ db()->prepare("INSERT INTO orders (account_id, package_version_id, amount_cents,
 $c9n('$m = require MHW_APP . "/migrations/066_via_piano_prova.php"; $m(MHW\Db::conn());');
 prova('066 · …con un acquisto resta, ma spento e non pubblico', (int) val("SELECT active FROM packages WHERE code = 'prova'") === 0 && (int) val("SELECT public FROM packages WHERE code = 'prova'") === 0
       && (bool) val('SELECT id FROM package_versions WHERE id = ?', [$pv066]));
+
+// ================================================================= 10 · «Chiedi alla guida»
+capitolo('10 · «Chiedi alla guida»: l\'assistente che risponde agli ospiti con il testo della guida (Anthropic finto): guida, pannello, limiti, Amministrazione, sito, email, locandina');
+$AS_DIR = rtrim($argv[8] ?? '', '/');
+$richiesteAs = fn() => array_values(array_filter(array_map(fn($l) => json_decode($l, true), $AS_DIR !== '' && is_file("$AS_DIR/richieste.jsonl") ? (file("$AS_DIR/richieste.jsonl") ?: []) : [])));
+/** La domanda in JSON dalla finestra della guida (stessa origine, come fa guida.js). */
+$chiedi10 = function (string $slug, string $q, string $l = 'it', array $storia = [], array $intestazioni = ['Sec-Fetch-Site: same-origin']) use ($BASE): array {
+    $ch = curl_init("$BASE/g/$slug/chiedi");
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode(['q' => $q, 'l' => $l, 'storia' => $storia], JSON_UNESCAPED_UNICODE), CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 30,
+                            CURLOPT_HTTPHEADER => array_merge(['Content-Type: application/json', 'Accept: application/json'], $intestazioni)]);
+    $body = (string) curl_exec($ch); $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+    return ['code' => $code, 'body' => $body, 'j' => json_decode($body, true) ?: []];
+};
+$valoreAi = fn(string $code) => array_unique(array_column(righe('SELECT pf.value FROM package_features pf JOIN package_versions v ON v.id = pf.package_version_id JOIN packages p ON p.id = v.package_id
+                                                                 JOIN features f ON f.id = pf.feature_id WHERE p.code = ? AND f.code = ?', [$code, 'ai_concierge']), 'value'));
+prova('067 · la funzione ai_concierge si chiama «Chiedi alla guida (assistente AI)», accesa in tutte le versioni di Plus e Portfolio, spenta in Essential; le voci dei piani la citano',
+      $valoreAi('plus') === ['1'] && $valoreAi('portfolio') === ['1'] && !in_array('1', $valoreAi('essential'), true)
+      && val("SELECT label FROM features WHERE code = 'ai_concierge'") === 'Chiedi alla guida (assistente AI)'
+      && str_contains((string) val("SELECT bullets FROM packages WHERE code = 'plus'"), 'Chiedi alla guida') && str_contains((string) val("SELECT bullets FROM packages WHERE code = 'portfolio'"), 'Chiedi alla guida'),
+      json_encode([$valoreAi('plus'), $valoreAi('essential')]));
+
+// Un host Plus con la guida pubblicata (Wi-Fi e un contatto WhatsApp), e uno Essential.
+[$nora, $noraAcc, $noraPid] = $host9l('Nora', 'nora10@prova.test', 'ASSNRA80A41G478N', 'Spello');
+db()->prepare("INSERT INTO property_contacts (property_id, name, role, phone, whatsapp, position) VALUES (?, 'Nora Rossi', 'host', '+39 333 1234567', 1, 0)")->execute([$noraPid]);
+$nora->post("/pannello/$noraPid/sezioni", ['kind' => 'wifi']);
+$wifiN = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'wifi'", [$noraPid]);
+if ($wifiN) $nora->post("/pannello/$noraPid/sezioni/$wifiN", ['networks' => [['id' => 'r10wifi', 'ssid' => 'CasaNora', 'password' => 'segreto-finto-10', 'zone' => '']]]);
+[$ordN, $rWebN] = $paga9l($nora, $noraAcc, $noraPid, false, 'sub_10_nora');
+$slugN = (string) val('SELECT slug FROM properties WHERE id = ?', [$noraPid]);
+$coreN = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 1', [$noraPid]);
+prova('10 · l\'host Plus ha pagato e la guida è pubblicata (con il Wi-Fi e il contatto WhatsApp)', val('SELECT status FROM orders WHERE id = ?', [(int) ($ordN['id'] ?? 0)]) === 'paid' && val('SELECT status FROM properties WHERE id = ?', [$noraPid]) === 'published' && $wifiN > 0,
+      json_encode(['ordine' => $ordN['status'] ?? null, 'webhook' => $rWebN, 'stato' => val('SELECT status FROM properties WHERE id = ?', [$noraPid]), 'wifi' => $wifiN, 'pubblica' => $nora->get("/pannello/$noraPid/procedura/pubblica")['code']]));
+$r = $ospite->get("/g/$slugN?l=it");
+prova('10 · la guida Plus pubblicata ha «Chiedi alla guida» nella barra in fondo (link alla pagina senza JavaScript) e la finestra con intro, esempi, modulo e nota',
+      $r['code'] === 200 && pulita($r) && preg_match('#<a class="btn btn--ghost chiedi-apri" href="[^"]*/g/' . preg_quote($slugN, '#') . '/chiedi\?l=it" data-chiedi-apri="chiedi-alla-guida"#', $r['body']) === 1
+      && str_contains($r['body'], '<dialog class="chiedi" id="chiedi-alla-guida"') && str_contains($r['body'], 'Qual è la password del Wi-Fi?') && str_contains($r['body'], 'A che ora è il check-out?')
+      && str_contains($r['body'], 'name="q"') && str_contains($r['body'], 'Nessun dato tuo viene salvato') && !str_contains($r['body'], 'Set-Cookie'),
+      (string) $r['code']);
+prova('…anche dentro una sezione, e senza cookie', ($rs = $ospite->get("/g/$slugN/$coreN?l=it"))['code'] === 200 && pulita($rs) && str_contains($rs['body'], 'data-chiedi-apri') && str_contains($rs['body'], 'Chiedi alla guida') && !str_contains($rs['head'], 'Set-Cookie'));
+
+$primaAs = count($richiesteAs());
+$x = $chiedi10($slugN, 'A che ora è il check-out?');
+$ultimaAs = $richiesteAs()[count($richiesteAs()) - 1] ?? [];
+$rigaAs = riga('SELECT * FROM assistant_questions WHERE property_id = ? ORDER BY id DESC', [$noraPid]) ?? [];
+prova('10 · POST …/chiedi in JSON: risposta trovata, con la sezione (titolo e link nella lingua), niente contatti',
+      $x['code'] === 200 && ($x['j']['ok'] ?? false) === true && ($x['j']['trovata'] ?? false) === true && (int) ($x['j']['sezione']['id'] ?? 0) === $coreN
+      && str_ends_with((string) ($x['j']['sezione']['url'] ?? ''), "/g/$slugN/$coreN?l=it") && ($x['j']['contatti'] ?? true) === false && str_contains((string) ($x['j']['testo'] ?? ''), 'Risposta finta'), $x['body']);
+prova('…la richiesta ad Anthropic: versione 2026-10-21, modello claude-haiku-5-5, effort low, la guida nel prompt di sistema con la cache, la domanda con la data e la lingua',
+      ($ultimaAs['versione'] ?? '') === '2026-10-21' && ($ultimaAs['model'] ?? '') === 'claude-haiku-5-5' && ($ultimaAs['effort'] ?? '') === 'low' && !empty($ultimaAs['cache'])
+      && (int) ($ultimaAs['byte_sistema'] ?? 0) > 800 && str_contains((string) ($ultimaAs['domanda'] ?? ''), "(lingua dell'ospite: it).\nDomanda: A che ora") && count($richiesteAs()) === $primaAs + 1, json_encode($ultimaAs));
+prova('…nel registro: anonima, esito ok, sezione, token (cache scritta la prima volta), costo stimato > 0, modello',
+      ($rigaAs['outcome'] ?? '') === 'ok' && (int) ($rigaAs['section_id'] ?? 0) === $coreN && (int) ($rigaAs['tokens_cache_write'] ?? 0) > 0 && (int) ($rigaAs['cost_microusd'] ?? 0) > 0
+      && ($rigaAs['model'] ?? '') === 'claude-haiku-5-5' && ($rigaAs['locale'] ?? '') === 'it' && !isset($rigaAs['ip']), json_encode($rigaAs));
+// La guida è in italiano soltanto: la finestra chiede «en», la guida risponde dalla principale (il modello risponde comunque nella lingua della domanda).
+$x = $chiedi10($slugN, 'NIENTE-FINTO is there a laundry nearby?', 'en', [['r' => 'u', 't' => 'A che ora è il check-out?'], ['r' => 'a', 't' => 'Risposta finta.']]);
+$ultimaAs = $richiesteAs()[count($richiesteAs()) - 1] ?? [];
+prova('10 · «la guida non lo dice»: trovata false, niente sezione, contatti true (WhatsApp dell\'host); la storia precedente va nei messaggi (3); la cache si riusa',
+      $x['code'] === 200 && ($x['j']['trovata'] ?? true) === false && array_key_exists('sezione', $x['j']) && $x['j']['sezione'] === null && ($x['j']['contatti'] ?? false) === true && (int) ($ultimaAs['messaggi'] ?? 0) === 3
+      && (int) val("SELECT tokens_cache_read FROM assistant_questions WHERE property_id = ? AND outcome = 'no' ORDER BY id DESC", [$noraPid]) > 0, $x['body'] . json_encode($ultimaAs));
+$r = $nora->get("/pannello/$noraPid/impostazioni");
+prova('10 · Impostazioni → Chiedi alla guida (Plus): «Accesa», interruttore acceso, contatti spuntati, «2 domande su 300», la domanda senza risposta elencata, «Provala sulla tua guida»',
+      str_contains($r['body'], 'id="chiedi-alla-guida"') && str_contains($r['body'], '<span class="badge badge--pine">Accesa</span>') && str_contains($r['body'], 'name="acceso" value="1" checked')
+      && str_contains($r['body'], '<b>Questo mese: 2 domande su 300</b>') && str_contains($r['body'], 'NIENTE-FINTO is there a laundry nearby?') && str_contains($r['body'], 'Provala sulla tua guida'), (string) $r['code']);
+$x = $chiedi10($slugN, 'x', 'it', [], ['Sec-Fetch-Site: cross-site']);
+$x2 = $chiedi10($slugN, 'x', 'it', [], ['Origin: https://altro.example']);
+prova('10 · una richiesta da un altro sito (Sec-Fetch-Site o Origin diversi) è rifiutata con 400, senza chiamare Anthropic',
+      $x['code'] === 400 && $x2['code'] === 400 && count($richiesteAs()) === $primaAs + 2, $x['body']);
+$r = $ospite->get("/g/$slugN/chiedi?l=it&q=" . rawurlencode('Dove posso parcheggiare?'));
+prova('10 · senza JavaScript: la pagina …/chiedi?q= mostra domanda e risposta con la sezione, noindex, niente cookie',
+      $r['code'] === 200 && str_contains($r['body'], 'chiedi__msg--tu') && str_contains($r['body'], 'chiedi__msg--guida') && str_contains($r['body'], 'class="chiedi__fonte"')
+      && str_contains($r['body'], 'noindex') && !str_contains($r['head'], 'Set-Cookie'), (string) $r['code']);
+$x = $chiedi10($slugN, 'ERRORE-FINTO che succede?');
+prova('10 · Anthropic non risponde (529): 503 con «Non sono riuscito a rispondere», esito «errore» nel registro con il motivo',
+      $x['code'] === 503 && str_contains((string) ($x['j']['errore'] ?? ''), 'Non sono riuscito a rispondere')
+      && str_contains((string) val("SELECT error FROM assistant_questions WHERE property_id = ? AND outcome = 'errore'", [$noraPid]), '529'), $x['body']);
+
+// Il limite del mese: 5 domande (contano solo ok e «non lo dice»: finora 3, l'errore no); all'80% l'email all'host, poi «finite».
+$fileLocale = "$DOVE/app/config.local.php";
+file_put_contents($fileLocale, '<?php return ' . var_export(['assistente' => ['limite_struttura' => 5]], true) . ';'); clearstatcache(); sleep(3);   // opcache del server di prova
+$avviso80 = riga("SELECT * FROM email_log WHERE account_id = ? AND kind = 'assistente' AND ref LIKE '80-%'", [$noraAcc]);
+prova('10 · limite a 5 con 3 domande già fatte: nessun avviso prima; alla quarta (80%) l\'email «è all\'80% delle domande del mese», una volta sola; la quinta passa ancora',
+      $avviso80 === null && (int) val("SELECT COUNT(*) FROM assistant_questions WHERE property_id = ? AND outcome IN ('ok', 'no')", [$noraPid]) === 3
+      && $chiedi10($slugN, 'Quarta domanda, parcheggio?')['code'] === 200
+      && ($avviso80 = riga("SELECT * FROM email_log WHERE account_id = ? AND kind = 'assistente' AND ref LIKE '80-%'", [$noraAcc])) !== null
+      && (bool) array_filter(righePosta(), fn($l) => str_contains($l, 'nora10@prova.test') && str_contains($l, 'al 80% delle domande del mese'))
+      && $chiedi10($slugN, 'Quinta domanda, il wifi?')['code'] === 200
+      && (int) val("SELECT COUNT(*) FROM email_log WHERE account_id = ? AND kind = 'assistente' AND ref LIKE '80-%'", [$noraAcc]) === 1, json_encode($avviso80));
+$x = $chiedi10($slugN, 'Sesta domanda?');
+prova('10 · oltre il limite: 429 con «ha finito le domande», esito «limite», Anthropic non è chiamato; nel pannello «Domande del mese finite»',
+      $x['code'] === 429 && str_contains((string) ($x['j']['errore'] ?? ''), 'ha finito le domande') && (bool) val("SELECT id FROM assistant_questions WHERE property_id = ? AND outcome = 'limite'", [$noraPid])
+      && str_contains($nora->get("/pannello/$noraPid/impostazioni")['body'], 'Domande del mese finite'), $x['body']);
+$r = $ospite->get("/g/$slugN?l=it");
+prova('…e nella guida il bottone non compare più (fino al mese dopo)', $r['code'] === 200 && !str_contains($r['body'], 'data-chiedi-apri'));
+// Il limite personale dalla scheda del cliente.
+$r = $admin->segui($admin->post("/admin/cliente/$noraAcc/assistente/limite", ['limite' => '50', 'nota' => 'prova del limite']));
+prova('10 · Amministrazione → scheda cliente: limite personale 50 (nel registro), la guida riprende, nel pannello «su 50»',
+      (int) val('SELECT assistant_cap_override FROM accounts WHERE id = ?', [$noraAcc]) === 50 && str_contains($r['body'], 'Limite personale salvato: 50')
+      && (bool) val("SELECT id FROM audit_log WHERE action = 'assistente.limite' AND meta LIKE ?", ['%"limite":50%'])
+      && str_contains($ospite->get("/g/$slugN?l=it")['body'], 'data-chiedi-apri') && str_contains($nora->get("/pannello/$noraPid/impostazioni")['body'], 'domande su 50</b>'));
+db()->prepare('UPDATE accounts SET assistant_cap_override = NULL WHERE id = ?')->execute([$noraAcc]);
+// Il tetto di spesa di tutto il sito.
+file_put_contents($fileLocale, '<?php return ' . var_export(['assistente' => ['tetto_euro' => '0.00001']], true) . ';'); clearstatcache(); sleep(3);
+$x = $chiedi10($slugN, 'Con il tetto raggiunto?');
+prova('10 · tetto di spesa del sito raggiunto: si ferma per tutti (429), email a noi «tetto di spesa raggiunto», segno «avviso100» una volta sola',
+      $x['code'] === 429 && (bool) array_filter(righePosta(), fn($l) => str_contains($l, 'tetto di spesa raggiunto'))
+      && (int) val("SELECT COUNT(*) FROM assistant_questions WHERE outcome = 'avviso100'") === 1 && $chiedi10($slugN, 'Ancora?')['code'] === 429
+      && (int) val("SELECT COUNT(*) FROM assistant_questions WHERE outcome = 'avviso100'") === 1, $x['body']);
+@unlink($fileLocale); clearstatcache(); sleep(3);
+// L'host spegne l'assistente.
+$r = $nora->segui($nora->modulo("/pannello/$noraPid/impostazioni", "/pannello/$noraPid/assistente", ['contatti' => '1']));
+prova('10 · l\'host spegne «Chiedi alla guida»: conferma, «Spenta», niente bottone nella guida, POST …/chiedi 404, nel registro azioni',
+      str_contains($r['body'], 'è spenta su questa guida') && str_contains($r['body'], '<span class="badge badge--paper">Spenta</span>') && (int) val('SELECT assistant_enabled FROM properties WHERE id = ?', [$noraPid]) === 0
+      && !str_contains($ospite->get("/g/$slugN")['body'], 'data-chiedi-apri') && $chiedi10($slugN, 'x')['code'] === 404 && (bool) val("SELECT id FROM audit_log WHERE action = 'assistente.spento'"));
+$nora->modulo("/pannello/$noraPid/impostazioni", "/pannello/$noraPid/assistente", ['acceso' => '1']);
+prova('…e la riaccende senza i contatti: nella risposta «non lo dice» contatti false',
+      (int) val('SELECT assistant_enabled FROM properties WHERE id = ?', [$noraPid]) === 1 && (int) val('SELECT assistant_contacts FROM properties WHERE id = ?', [$noraPid]) === 0
+      && ($xx = $chiedi10($slugN, 'NIENTE-FINTO ancora?'))['code'] === 200 && ($xx['j']['contatti'] ?? true) === false, json_encode($xx['j'] ?? []));
+
+// Essential: niente bottone, «Disponibile con Plus».
+[$ugo, $ugoAcc, $ugoPid] = $host9l('Ugo', 'ugo10@prova.test', 'ASSUGO80A01G478L', 'Assisi', 'essential');
+[$ordU, $r] = $paga9l($ugo, $ugoAcc, $ugoPid, false, 'sub_10_ugo');
+$slugU = (string) val('SELECT slug FROM properties WHERE id = ?', [$ugoPid]);
+$r = $ugo->get("/pannello/$ugoPid/impostazioni");
+prova('10 · Essential: la guida non ha il bottone, POST …/chiedi 404; in Impostazioni «con il piano Plus» e «Passa a Plus», l\'interruttore non si accende',
+      !str_contains($ospite->get("/g/$slugU")['body'], 'data-chiedi-apri') && $chiedi10($slugU, 'x')['code'] === 404
+      && str_contains($r['body'], 'con il piano Plus') && str_contains($r['body'], 'I tuoi ospiti ti scrivono alle 23') && str_contains($r['body'], '/piano?passa=plus')
+      && str_contains($ugo->segui($ugo->modulo("/pannello/$ugoPid/impostazioni", "/pannello/$ugoPid/assistente", ['acceso' => '1']))['body'], 'compreso in Plus e Portfolio'));
+
+// Amministrazione → Assistente AI, Impostazioni, Diagnostica.
+$r = $admin->get('/admin/assistente');
+prova('10 · Amministrazione → Assistente AI: il mese, Nora con le domande e il costo stimato, i totali, gli errori recenti, il menu',
+      $r['code'] === 200 && str_contains($r['body'], 'Costo stimato · ') && str_contains($r['body'], 'nora10@prova.test') && str_contains($r['body'], '<td>Totale</td>')
+      && str_contains($r['body'], 'Fermata dal limite') && str_contains($r['body'], 'Overloaded') && str_contains($r['body'], '/admin/assistente"') && str_contains($r['body'], 'Assistente AI</span>'), (string) $r['code']);
+$r = $admin->get('/admin/assistente/csv?mese=' . gmdate('Y-m'));
+prova('…il CSV: intestazioni, la riga di Nora con le domande', $r['code'] === 200 && str_contains($r['body'], 'Codice;Cliente;Email;Piano;Guide;Domande;') && str_contains($r['body'], 'nora10@prova.test'));
+$r = $admin->post('/admin/impostazioni/assistente', ['assistente__modello' => 'gpt-4o', 'assistente__limite_struttura' => '300', 'assistente__tetto_euro' => '50', 'assistente__prezzo_in' => '0.10', 'assistente__prezzo_out' => '0.50', 'assistente__usd_eur' => '0.86', 'password' => 'AdminProva123']);
+prova('10 · Impostazioni → Chiedi alla guida: il modello si controlla (claude-…)', $r['code'] === 422 && str_contains($r['body'], 'si scrive come claude-haiku-5-5'));
+$r = $admin->segui($admin->post('/admin/impostazioni/assistente/prova', []));
+prova('…«Prova la connessione»: Anthropic risponde con il modello, i token, il limite e il tetto', str_contains($r['body'], 'Anthropic risponde con il modello claude-haiku-5-5') && str_contains($r['body'], '300 domande al mese per struttura'));
+prova('…Diagnostica: «Chiedi alla guida» risulta configurata', str_contains($admin->get('/admin/diagnostica')['body'], 'chiave impostata, modello claude-haiku-5-5'));
+$r = $admin->get("/admin/cliente/$noraAcc");
+prova('…scheda del cliente: il riquadro con le domande del mese e il limite personale', str_contains($r['body'], 'id="assistente"') && preg_match('#Questo mese <b>\d+</b> domande#', $r['body']) === 1);
+
+// Il sito: home (IT/EN), listino, FAQ, Termini, Privacy, llms.
+$r = $ospite->get('/');
+prova('10 · home: la sezione «Chiedi alla guida» con la finta chat (il check-out della vetrina), «fino a 300 domande», la voce nei piani e nel confronto',
+      str_contains($r['body'], 'id="chiedi-alla-guida" class="assistente"') && str_contains($r['body'], 'La guida risponde. Tu dormi.') && str_contains($r['body'], 'fino a 300 domande al mese per struttura')
+      && str_contains($r['body'], 'Chiedi alla guida (assistente AI)') && str_contains($r['body'], 'chiedi__msg--guida'), (string) $r['code']);
+$r = $ospite->get('/en');
+prova('…in inglese', str_contains($r['body'], 'The guide answers. You sleep.') && str_contains($r['body'], 'up to 300 questions a month per property') && str_contains($r['body'], 'Ask the guide (AI assistant)'));
+prova('…FAQ IT ed EN con il tema «Chiedi alla guida»', str_contains($ospite->get('/domande')['body'], 'Cos&#039;è «Chiedi alla guida»?') && str_contains($ospite->get('/en/questions')['body'], 'What is &quot;Ask the guide&quot;?'));
+prova('…Termini (punto 15) e Privacy (trattamento 16, Anthropic tra i fornitori e nei trasferimenti), IT ed EN',
+      str_contains($ospite->get('/termini')['body'], '15. Chiedi alla guida (assistente automatico)') && str_contains($ospite->get('/privacy')['body'], '16. Chiedi alla guida (le domande degli ospiti)')
+      && substr_count($ospite->get('/privacy')['body'], 'Anthropic') >= 3 && str_contains($ospite->get('/en/terms')['body'], '15. Ask the guide (automatic assistant)') && str_contains($ospite->get('/en/privacy')['body'], 'Anthropic, PBC'));
+prova('…llms.txt cita l\'assistente', str_contains($ospite->get('/llms.txt')['body'], 'Chiedi alla guida'));
+$r = $nora->get('/pannello/novita');
+prova('10 · la pagina Novità ha «La tua guida risponde agli ospiti»', str_contains($r['body'], 'La tua guida risponde agli ospiti'));
+
+// La locandina A6 e il link in QR & Link.
+$r = $nora->get("/pannello/$noraPid/locandina");
+prova('10 · la locandina A6: il QR, i tre passi in italiano e inglese, gli esempi, il contatto per le urgenze, noindex',
+      $r['code'] === 200 && str_contains($r['body'], 'foglio__qr') && str_contains($r['body'], 'data:image/png;base64,') && str_contains($r['body'], 'Inquadra il codice') && str_contains($r['body'], 'Point your camera')
+      && str_contains($r['body'], '+39 333 1234567') && str_contains($r['body'], 'noindex') && str_contains($nora->get("/pannello/$noraPid/qr")['body'], "/pannello/$noraPid/locandina"), (string) $r['code']);
+prova('…per Essential il link alla locandina non c\'è', !str_contains($ugo->get("/pannello/$ugoPid/qr")['body'], 'locandina'));
+
+// L'email mensile: domande del mese scorso, il giro nei primi 7 giorni del mese, «non mandarmene più».
+$meseScorso = gmdate('Y-m', strtotime('first day of last month'));
+$quando10 = gmdate('Y-m-d\TH:i:s\Z', strtotime('-25 days'));
+foreach ([['Dove lascio le valigie?', 'no', null], ['Password wifi?', 'ok', $coreN], ['Check-out?', 'ok', $coreN]] as [$q, $o, $sid]) {
+    db()->prepare("INSERT INTO assistant_questions (property_id, account_id, month, locale, question, answer, section_id, outcome, tokens_in, tokens_out, cost_microusd, model, created_at) VALUES (?, ?, ?, 'it', ?, 'x', ?, ?, 30, 20, 20, 'finto', ?)")
+        ->execute([$noraPid, $noraAcc, $meseScorso, $q, $sid, $o, $quando10]);
+}
+$fatte10 = (int) $c9n('echo MHW\Richiami::giroAssistente(strtotime("first day of this month") + 2 * 86400);');   // «primi 7 giorni del mese»: il riepilogo è del mese scorso
+$logMese = riga("SELECT * FROM email_log WHERE account_id = ? AND kind = 'assistente' AND ref = ?", [$noraAcc, "mese-$meseScorso-$noraPid"]);
+$postaMese = array_values(array_filter(righePosta(), fn($l) => str_contains($l, 'nora10@prova.test') && str_contains($l, 'la tua guida ha risposto 2 volte')));
+prova('10 · l\'email mensile all\'host: una per guida e mese, con le domande (3), con risposta (2), la sezione più chiesta e la domanda senza risposta; non si ripete',
+      $fatte10 === 1 && $logMese !== null && count($postaMese) === 1 && str_contains($postaMese[0], 'Dove lascio le valigie?') && str_contains($postaMese[0], 'Check-in')
+      && (int) $c9n('echo MHW\Richiami::giroAssistente(strtotime("first day of this month") + 2 * 86400);') === 0, json_encode([$fatte10, $logMese]));
+prova('…mai fuori dai primi 7 giorni del mese', (int) $c9n('echo MHW\Richiami::giroAssistente(strtotime("first day of this month") + 9 * 86400);') === 0);
+$r = $ospite->get('/email/stop/' . $logMese['token']);
+prova('…«Non mandarmene più» ferma le email su «Chiedi alla guida»', str_contains($r['body'], 'le email su «Chiedi alla guida»')
+      && str_contains($ospite->post('/email/stop/' . $logMese['token'], ['_csrf' => csrf($r['body'])])['body'], 'Fatto.') && (bool) val("SELECT id FROM email_optout WHERE account_id = ? AND kind = 'assistente'", [$noraAcc]));
+// La pulizia: le domande oltre i 12 mesi spariscono.
+db()->prepare("INSERT INTO assistant_questions (property_id, account_id, month, locale, question, outcome, created_at) VALUES (?, ?, '2025-01', 'it', 'vecchia', 'ok', '2025-01-10T10:00:00Z')")->execute([$noraPid, $noraAcc]);
+$c9n('MHW\Assistente::pulisci();');
+prova('10 · le domande più vecchie di 12 mesi si cancellano dal giro quotidiano; le recenti restano', !val("SELECT id FROM assistant_questions WHERE question = 'vecchia'") && (bool) val("SELECT id FROM assistant_questions WHERE question = 'Check-out?'"));
+// La vetrina: solo con l'interruttore dell'amministrazione.
+$slugV = (string) $c9n('echo (string) ((MHW\Demo::vetrinaAttuale() ?? [])["slug"] ?? "");');
+if ($slugV !== '') {
+    prova('10 · la guida vetrina non ha il bottone finché l\'amministrazione non lo accende per la demo', !str_contains($ospite->get("/g/$slugV")['body'], 'data-chiedi-apri'));
+    file_put_contents($fileLocale, '<?php return ' . var_export(['assistente' => ['demo' => true]], true) . ';'); clearstatcache(); sleep(3);
+    prova('…acceso «Anche sulla guida vetrina»: il bottone c\'è', str_contains($ospite->get("/g/$slugV")['body'], 'data-chiedi-apri'));
+    @unlink($fileLocale); clearstatcache(); sleep(3);
+}
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

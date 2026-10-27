@@ -280,6 +280,9 @@ $disegni = [
   </div>
 </section>
 
+<?php /* 10 · «Chiedi alla guida»: l'assistente che risponde agli ospiti, solo se la funzione è in vendita in un piano. */
+      if (MHW\Assistente::inVendita()) include __DIR__ . '/_assistente.php'; ?>
+
 <?php /* Per chi è: quattro modi di ospitare, a ognuno il suo uso della guida. Niente numeri e
    niente promesse: solo quello che il prodotto fa davvero. */ ?>
 

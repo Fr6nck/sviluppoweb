@@ -76,3 +76,60 @@
     });
   });
 })();
+
+/* 10 · «Chiedi alla guida»: il bottone apre la finestra; le domande vanno in JSON a …/chiedi e le risposte compaiono
+   come fumetti, con il link alla sezione o il contatto di chi ospita. Gli scambi restano nella pagina (al massimo gli
+   ultimi sei si rimandano come contesto): niente cookie, niente memoria nel telefono. Senza JavaScript il bottone è
+   un link alla stessa pagina con il modulo. */
+(function () {
+  'use strict';
+  var d = document.querySelector('[data-chiedi]');
+  if (!d || !window.fetch) return;
+  var T = {}; try { T = JSON.parse(d.getAttribute('data-testi') || '{}'); } catch (e) {}
+  var url = d.getAttribute('data-url'), contatto = d.getAttribute('data-contatti-href') || '';
+  var msgs = d.querySelector('[data-chiedi-msgs]'), form = d.querySelector('[data-chiedi-form]'), campo = form.querySelector('input[name=q]');
+  var invia = form.querySelector('button'), esempi = d.querySelector('[data-chiedi-esempi]');
+  var storia = [], occupato = false;
+  function apri() { if (typeof d.showModal === 'function') d.showModal(); else d.setAttribute('open', ''); setTimeout(function () { campo.focus(); }, 50); }
+  document.querySelectorAll('[data-chiedi-apri]').forEach(function (b) { b.addEventListener('click', function (e) { e.preventDefault(); apri(); }); });
+  d.querySelectorAll('[data-chiedi-chiudi]').forEach(function (b) { b.addEventListener('click', function () { d.close(); }); });
+  d.addEventListener('click', function (e) { if (e.target === d) d.close(); });
+  function fumetto(classe, testo, etichetta) {
+    var m = document.createElement('div'); m.className = 'chiedi__msg ' + classe;
+    var sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = etichetta + ': ';
+    m.appendChild(sr); m.appendChild(document.createTextNode(testo));
+    msgs.appendChild(m); msgs.scrollTop = msgs.scrollHeight; return m;
+  }
+  function chiedi(q) {
+    q = (q || '').trim(); if (!q || occupato) return;
+    occupato = true; invia.disabled = true; campo.value = '';
+    if (esempi) esempi.style.display = 'none';
+    fumetto('chiedi__msg--tu', q, T.you || '');
+    var attesa = fumetto('chiedi__msg--guida chiedi__msg--attesa', T.thinking || '…', T.answer || '');
+    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, credentials: 'omit',
+                 body: JSON.stringify({ q: q, l: T.lingua || '', storia: storia.slice(-6) }) })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) {
+        var j = x.j || {};
+        attesa.remove();
+        if (!x.ok || !j.ok) { fumetto('chiedi__msg--guida chiedi__msg--errore', j.errore || T.error || '', T.answer || ''); return; }
+        fumetto('chiedi__msg--guida', j.testo, T.answer || '');
+        storia.push({ r: 'u', t: q }); storia.push({ r: 'a', t: j.testo });
+        if (j.sezione && j.sezione.url) {
+          var a = document.createElement('a'); a.className = 'chiedi__fonte'; a.href = j.sezione.url;
+          a.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5h6a3 3 0 0 1 3 3V20a2 2 0 0 0-2-2H4z"/><path d="M20 4.5h-6a3 3 0 0 0-3 3V20a2 2 0 0 1 2-2h7z"/></svg>';
+          a.appendChild(document.createTextNode((T.source || '%s').replace('%s', j.sezione.titolo) + ' · '));
+          var b = document.createElement('b'); b.textContent = T.open || ''; a.appendChild(b);
+          msgs.appendChild(a);
+        } else if (j.contatti && contatto) {
+          var c = document.createElement('a'); c.className = 'btn btn--sm chiedi__contatto'; c.href = contatto; c.rel = 'noopener'; c.textContent = T.contact || '';
+          msgs.appendChild(c);
+        }
+        msgs.scrollTop = msgs.scrollHeight;
+      })
+      .catch(function () { attesa.remove(); fumetto('chiedi__msg--guida chiedi__msg--errore', T.error || '', T.answer || ''); })
+      .then(function () { occupato = false; invia.disabled = false; campo.focus(); });
+  }
+  form.addEventListener('submit', function (e) { e.preventDefault(); chiedi(campo.value); });
+  d.querySelectorAll('[data-esempio]').forEach(function (b) { b.addEventListener('click', function () { chiedi(b.textContent); }); });
+})();

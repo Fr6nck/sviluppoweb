@@ -25,7 +25,7 @@ $conLato = $u && !$soloPassi;
 $gruppiAdmin = $admin ? [
     'Vendite' => array_merge([['admin', '/admin', 'Quadro', 'grid'], ['cassa', '/admin/cassa', 'Cassa', 'euro'], ['prospetti', '/admin/prospetti', 'Prospetti', 'chart'], ['vendite', '/admin/vendite', 'Vendite per piano', 'layers'], ['marketing', '/admin/marketing', 'Marketing', 'chart'],
                   ['abbonamenti', '/admin/abbonamenti', 'Abbonamenti', 'card'], ['scadenze', '/admin/scadenze', 'Scadenze', 'calendar'], ['richiami', '/admin/richiami', 'Richiami', 'message'], ['pacchetti', '/admin/pacchetti', 'Piani', 'layers'],
-                  ['sconti', '/admin/sconti', 'Codici sconto', 'euro'], ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe']], MHW\Omaggi::disponibili() ? [['omaggi', '/admin/omaggi', 'Codici omaggio', 'card']] : [],
+                  ['sconti', '/admin/sconti', 'Codici sconto', 'euro'], ['traduzioni', '/admin/traduzioni', 'Traduzioni', 'globe'], ['assistente', '/admin/assistente', 'Assistente AI', 'message']], MHW\Omaggi::disponibili() ? [['omaggi', '/admin/omaggi', 'Codici omaggio', 'card']] : [],
                   MHW\Inviti::disponibili() ? [['inviti', '/admin/inviti', 'Inviti', 'message']] : [],
                   MHW\Giudizi::disponibili() ? [['giudizi', '/admin/giudizi', 'Giudizi e vetrina', 'star']] : [],
                   MHW\Preventivi::disponibili() ? [['preventivi', '/admin/preventivi', 'Preventivi', 'message']] : [],

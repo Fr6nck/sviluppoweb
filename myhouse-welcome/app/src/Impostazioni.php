@@ -119,6 +119,17 @@ final class Impostazioni
         'inviti' => [
             'inviti.attivi' => ['MHW_INVITI', 'Accendi «Invita un amico»', 'check', 'I clienti con un abbonamento attivo vedono il loro link e il codice, e possono mandare l\'invito per email. Prima di accenderlo con le chiavi live, fai una prova in modalità test di Stripe.'],
         ],
+        // 10 · «Chiedi alla guida» (Assistente): la chiave di Anthropic, il modello, i limiti e il listino per le stime.
+        'assistente' => [
+            'assistente.api_key'  => ['MHW_ASSISTENTE_KEY', 'Chiave API di Anthropic', 'secret', 'Console di Anthropic → Settings → API keys. Comincia con sk-ant-. Senza chiave la guida non mostra «Chiedi alla guida». Dopo il salvataggio premi «Prova la connessione».'],
+            'assistente.modello'  => ['MHW_ASSISTENTE_MODELLO', 'Modello', 'text', 'Di serie claude-haiku-5-5: economico e veloce, basta per rispondere con il testo della guida. claude-sonnet-5-5 risponde meglio ma costa venti volte di più: cambia anche i prezzi qui sotto.'],
+            'assistente.limite_struttura' => ['MHW_ASSISTENTE_LIMITE', 'Domande al mese per struttura', 'cifra', 'Di serie 300. Oltre, in quella guida l\'assistente si ferma fino al primo del mese; l\'host riceve un avviso all\'80%. Un limite personale si mette nella scheda del cliente.'],
+            'assistente.tetto_euro' => ['MHW_ASSISTENTE_TETTO', 'Tetto di spesa stimata al mese per tutto il sito (€)', 'decimale', 'Di serie 50. Raggiunto, l\'assistente si ferma per tutti fino al mese dopo e arriva un\'email a noi (anche all\'80%). Imposta lo stesso limite nella console di Anthropic (Plans & billing → spend limit). 0 = nessun tetto.'],
+            'assistente.prezzo_in'  => ['MHW_ASSISTENTE_PREZZO_IN', 'Prezzo in ingresso, dollari per milione di token', 'decimale', 'Il listino del modello scelto: Haiku 0,10 · Sonnet 2,00. Serve solo per le stime.'],
+            'assistente.prezzo_out' => ['MHW_ASSISTENTE_PREZZO_OUT', 'Prezzo in uscita, dollari per milione di token', 'decimale', 'Haiku 0,50 · Sonnet 10,00.'],
+            'assistente.usd_eur'    => ['MHW_ASSISTENTE_USD_EUR', 'Cambio: quanti euro vale un dollaro', 'decimale', 'Per le stime in euro, per esempio 0,86.'],
+            'assistente.demo'       => ['MHW_ASSISTENTE_DEMO', 'Anche sulla guida vetrina della home (Casa Checco)', 'check', 'Chiunque apra la demo può fare domande: costa per ogni visitatore. Spento di serie; vale comunque il limite mensile.'],
+        ],
         // 9B · Giudizi con sconto: l'interruttore per i nuovi clienti, la percentuale e la sezione in home.
         'giudizi' => [
             'giudizi.sconto_attivo' => ['MHW_GIUDIZI_SCONTO', 'Sconto per i nuovi clienti che lasciano un giudizio', 'check', 'Acceso: la casella del programma (Testi e foto → giudizio.casella) prima del pagamento e nel pannello. Spento: spariscono per chi non ha ancora aderito; chi ha già aderito conserva lo sconto promesso.'],
@@ -134,7 +145,7 @@ final class Impostazioni
     /** 9H · Il vecchio mittente di serie (dominio sbagliato): se è ancora salvato, correggiMittente lo sostituisce. */
     public const MITTENTE_VECCHIO = 'noreply@myhouse.it';
 
-    public const TITOLI = ['sito' => 'Sito', 'indirizzi' => 'Indirizzi email', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'portali' => 'Portali', 'registri' => 'Log tecnici', 'legale' => 'Titolare e documenti legali', 'inviti' => 'Invita un amico', 'giudizi' => 'Giudizi con sconto'];
+    public const TITOLI = ['sito' => 'Sito', 'indirizzi' => 'Indirizzi email', 'stripe' => 'Stripe', 'posta' => 'Posta in uscita', 'archivio' => 'Archivio di foto e PDF', 'traduzioni' => 'Traduzioni', 'portali' => 'Portali', 'registri' => 'Log tecnici', 'legale' => 'Titolare e documenti legali', 'inviti' => 'Invita un amico', 'giudizi' => 'Giudizi con sconto', 'assistente' => 'Chiedi alla guida (assistente AI)'];
 
     public static function file(): string { return MHW_APP . '/config.local.php'; }
 
@@ -307,9 +318,12 @@ final class Impostazioni
                 $percorso === 'registri.key' && !preg_match('/^[A-Z0-9]{16,128}$/', $grezzo) => 'L\'access key ID è fatto di lettere maiuscole e numeri, per esempio AKIA….',
                 $percorso === 'legal.company_vat' && !preg_match('/^\d{11}$/', $grezzo) => 'La partita IVA italiana è fatta di 11 cifre (senza IT).',
                 $percorso === 'legal.contact_whatsapp' && !preg_match('/^\d{8,15}$/', $grezzo) => 'Scrivi solo le cifre, con il prefisso del paese e senza +, per esempio 393920061600.',
+                $percorso === 'assistente.api_key' && !preg_match('/^[A-Za-z0-9_\-]{20,200}$/', $grezzo) => 'La chiave API di Anthropic è una sola riga di lettere, numeri e trattini (comincia con sk-ant-). Niente spazi.',
+                $percorso === 'assistente.modello' && !preg_match('/^claude-[a-z0-9.-]{3,60}$/', $grezzo) => 'Il nome del modello si scrive come claude-haiku-5-5.',
+                $percorso === 'assistente.tetto_euro' && !preg_match('/^\d{1,6}([.,]\d{1,2})?$/', $grezzo) => 'Scrivi un importo, per esempio 50 (0 = nessun tetto).',
                 $tipo === 'cifra' && (!ctype_digit(str_replace('.', '', $grezzo)) || (int) str_replace('.', '', $grezzo) < 1 || (int) str_replace('.', '', $grezzo) > 100000000) => 'Scrivi un numero intero, per esempio 150000.',
                 $tipo === 'percento' && (!ctype_digit($grezzo) || (int) $grezzo < 1 || (int) $grezzo > 100) => 'Scrivi un numero da 1 a 100, senza il simbolo %.',
-                $tipo === 'decimale' && (!preg_match('/^\d{1,6}([.,]\d{1,6})?$/', $grezzo) || (float) str_replace(',', '.', $grezzo) <= 0) => 'Scrivi un numero, per esempio 0,86.',
+                $tipo === 'decimale' && $percorso !== 'assistente.tetto_euro' && (!preg_match('/^\d{1,6}([.,]\d{1,6})?$/', $grezzo) || (float) str_replace(',', '.', $grezzo) <= 0) => 'Scrivi un numero, per esempio 0,86.',
                 $tipo === 'data' && (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $grezzo) || !checkdate((int) substr($grezzo, 5, 2), (int) substr($grezzo, 8, 2), (int) substr($grezzo, 0, 4))) => 'Scrivi la data come 2027-10-31.',
                 default => '',
             };
@@ -574,6 +588,16 @@ final class Impostazioni
                         $righe[] = $nome . ' → ' . $u;
                     }
                     return [true, 'I link dei portali, per una struttura «Casa Esempio» ad Assisi: ' . implode(' · ', $righe)];
+                case 'assistente':   // 10 · una domanda minima all'API di Anthropic, con il modello scelto
+                    if (!Assistente::configurato()) return [false, 'Manca la chiave API: finché manca, nelle guide non compare «Chiedi alla guida».'];
+                    try { [$t, $uso] = Assistente::prova(); }
+                    catch (\Throwable $e) {
+                        Log::exception($e, 'impostazioni: prova assistente');
+                        $cosa = Assistente::consiglio($e->getMessage());
+                        return [false, 'La prova non è riuscita. Anthropic risponde: «' . $e->getMessage() . '».' . ($cosa !== '' ? ' ' . $cosa : '')];
+                    }
+                    return [true, 'Anthropic risponde con il modello ' . (string) ($uso['model'] ?? Assistente::modello()) . ': «' . mb_substr(trim($t), 0, 60) . '» (' . (int) ($uso['input_tokens'] ?? 0) . ' token in ingresso, ' . (int) ($uso['output_tokens'] ?? 0) . ' in uscita, nel registro). '
+                                  . 'Limite: ' . Assistente::limite(0) . ' domande al mese per struttura; tetto: ' . number_format(Assistente::tetto(), 2, ',', '.') . ' € al mese.'];
                 case 'traduzioni':
                     if (!Traduttore::configurato()) return [false, 'Mancano le chiavi: scrivile qui, oppure configura l\'archivio S3 (si usano le sue). Finché mancano, nel pannello i clienti leggono «Le traduzioni non sono disponibili in questo momento».'];
                     try { $t = Traduttore::prova(); }

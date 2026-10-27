@@ -243,6 +243,7 @@ foreach ($snap['sections'] as $s) {
 <?php endif; ?>
 
 <div class="guest-bottom">
+  <?php if (!empty($chiedi)) include __DIR__ . '/_chiedi.php'; /* 10 · «Chiedi alla guida» anche dentro le sezioni */ ?>
   <?php if ($dopo): ?>
     <a class="btn btn--go grow" href="<?= Support::e($base) ?>/<?= (int) $dopo['id'] ?>?l=<?= Support::e($loc) ?>"
        aria-label="<?= Support::e(I18n::t($loc, 'next')) ?>: <?= Support::e(Guide::title($dopo, $loc, $def)) ?>">

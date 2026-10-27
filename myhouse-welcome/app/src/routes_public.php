@@ -929,8 +929,57 @@ $telaio = function (array $snap, string $loc, string $base, bool $anteprima = fa
     $og = ['titolo' => I18n::t($principale, $ogTitolo, (string) $pr['name']), 'testo' => I18n::t($principale, 'og_guide_desc'),
            'immagine' => Support::baseUrl() . '/g/' . rawurlencode((string) $pr['slug']) . '/anteprima.jpg'];
     return ['snap' => $snap, 'loc' => $loc, 'base' => $base, 'anteprima' => $anteprima, 'og' => $og,
-            'paletteCss' => Palette::css($pr['palette']), 'tema' => Palette::themeFor($pr['text_tone'])];
+            'paletteCss' => Palette::css($pr['palette']), 'tema' => Palette::themeFor($pr['text_tone']),
+            // 10 · «Chiedi alla guida», se il piano, l'abbonamento, l'interruttore dell'host e la chiave lo permettono.
+            'chiedi' => MHW\Assistente::datiGuida($snap, $loc)];
 };
+
+// 10 · «Chiedi alla guida»: la pagina (senza JavaScript, o dal link) e la risposta in JSON per la finestra nella guida.
+$chiedi = function (array $a, string $domanda, array $storia, bool $json) use ($guida, $telaio): void {
+    [$g, $snap, $loc] = $guida($a['slug']);
+    if (!MHW\Assistente::perGuida($g['property'])) {
+        if ($json) Support::json(['ok' => false, 'errore' => I18n::t($loc, 'not_found')], 404);
+        http_response_code(404); View::out('guest/unavailable', ['loc' => $loc, 'esiste' => true, 'title' => I18n::t($loc, 'unavailable')], 'layout/guest');
+    }
+    $dati = MHW\Assistente::datiGuida($snap, $loc) ?? [];
+    $base = Support::url('/g/' . $a['slug']);
+    $esito = null; $errore = ''; $code = 200;
+    if ($domanda !== '') {
+        // Il limite anti-abuso per chi chiede (l'IP solo in forma abbreviata, mai scritto) e per la guida.
+        if (!MHW\RateLimit::hit('chiedi:' . MHW\RateLimit::ipKey(), 20, 600) || !MHW\RateLimit::hit('chiedi-g:' . (int) $g['property']['id'], 120, 600)) {
+            $errore = I18n::t($loc, 'ask_too_many'); $code = 429;
+        } else {
+            try {
+                $r = MHW\Assistente::rispondi($g, $loc, $domanda, $storia);
+                $sez = null;
+                if ($r['sezione'] !== null) foreach ($snap['sections'] as $s) if ((int) $s['id'] === $r['sezione']) { $sez = ['id' => $r['sezione'], 'titolo' => Guide::title($s, $loc, (string) $snap['property']['default_locale']), 'url' => $base . '/' . $r['sezione'] . '?l=' . $loc]; break; }
+                $esito = ['testo' => $r['testo'], 'trovata' => $r['trovata'], 'sezione' => $sez, 'contatti' => $r['contatti']];
+            } catch (\InvalidArgumentException) { $errore = I18n::t($loc, 'ask_error'); $code = 422; }
+            catch (MHW\LimitReached $e) { $errore = $e->getMessage(); $code = 429; }
+            catch (\RuntimeException $e) { $errore = $e->getMessage(); $code = 503; }
+        }
+    }
+    if ($json) {
+        if ($errore !== '') Support::json(['ok' => false, 'errore' => $errore], $code);
+        Support::json(['ok' => true] + ($esito ?? ['testo' => '', 'trovata' => false, 'sezione' => null, 'contatti' => false]));
+    }
+    if ($code !== 200) http_response_code($code);
+    View::out('guest/ask', ['domanda' => $domanda, 'esito' => $esito, 'errore' => $errore, 'chiedi' => $dati] + $telaio($snap, $loc, $base), 'layout/guest');
+};
+$r->get('/g/{slug}/chiedi', function (array $a) use ($chiedi) {
+    $chiedi($a, trim((string) ($_GET['q'] ?? '')), [], false);
+});
+$r->post('/g/{slug}/chiedi', function (array $a) use ($chiedi) {
+    // Solo dalla guida stessa (stessa origine), in JSON: niente moduli da altri siti.
+    $sfs = (string) ($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '');
+    $origine = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
+    $stessa = $sfs !== '' ? $sfs === 'same-origin' : ($origine === '' || strcasecmp((string) parse_url($origine, PHP_URL_HOST), (string) ($_SERVER['HTTP_HOST'] ?? '')) === 0);
+    if (!$stessa || !str_contains((string) ($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json')) Support::json(['ok' => false, 'errore' => 'richiesta non valida'], 400);
+    $in = json_decode((string) file_get_contents('php://input'), true);
+    if (!is_array($in)) Support::json(['ok' => false, 'errore' => 'richiesta non valida'], 400);
+    if (($l = (string) ($in['l'] ?? '')) !== '' && preg_match('/^[a-z]{2}(-[A-Z]{2})?$/', $l)) $_GET['l'] = $l;
+    $chiedi($a, trim((string) ($in['q'] ?? '')), is_array($in['storia'] ?? null) ? $in['storia'] : [], true);
+});
 
 $r->get('/q/{token}', function (array $a) use ($nonDisponibile) {
     $t = Db::one('SELECT * FROM qr_tokens WHERE token = ?', [$a['token']]);

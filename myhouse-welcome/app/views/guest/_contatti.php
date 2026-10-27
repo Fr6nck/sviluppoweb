@@ -6,12 +6,18 @@
    Riceve: $pr (proprietà dell'istantanea), $loc. */
 use MHW\{Support, Icon, I18n, Media};
 $contatti = array_values(array_filter($pr['contacts'] ?? [], fn($c) => trim((string) ($c['phone'] ?? '')) !== ''));
+// 10 · «Chiedi alla guida» sta nella stessa barra, prima dei contatti (anche senza contatti, se è acceso).
+$chiedi = $chiedi ?? null;
+if (!$contatti && !empty($chiedi)): ?>
+  <div class="guest-bottom"><?php include __DIR__ . '/_chiedi.php'; ?></div>
+<?php endif;
 if ($contatti):
     $primo = trim((string) $contatti[0]['name']);
     $nomeBreve = $primo !== '' ? explode(' ', $primo)[0] : '';
     $etichetta = $nomeBreve !== '' ? I18n::t($loc, 'contact', $nomeBreve) : I18n::t($loc, 'contacts');
     $fotoHost = !empty($pr['profile_id']) ? Media::url((int) $pr['profile_id']) : null; ?>
   <div class="guest-bottom">
+    <?php if (!empty($chiedi)) include __DIR__ . '/_chiedi.php'; ?>
     <details class="contatti-foglio">
       <summary class="btn btn--block"><?php if ($fotoHost): ?><img class="contatto__foto contatto__foto--bottone" src="<?= Support::e($fotoHost) ?>" alt="" width="26" height="26"><?php else: ?><?= Icon::svg('phone', 17) ?><?php endif; ?><?= Support::e($etichetta) ?></summary>
       <div class="contatti-foglio__pannello">

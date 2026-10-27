@@ -479,6 +479,21 @@ include __DIR__ . '/_stati.php'; ?>
         <a class="small" href="<?= b() ?>/admin/inviti">Tutti gli inviti</a>
       </section>
     <?php endif; ?>
+    <?php if (!empty($assistente)): /* 10 · «Chiedi alla guida»: le domande del mese, il costo stimato, il limite personale */ ?>
+      <section class="panel stack" id="assistente" style="gap:8px" aria-labelledby="as-titolo">
+        <span class="kicker" id="as-titolo">Chiedi alla guida</span>
+        <p class="small" style="margin:0">Questo mese <b><?= (int) $assistente['domande'] ?></b> domande (<?= (int) $assistente['senza'] ?> senza risposta), circa <b><?= number_format((float) $assistente['euro'], 2, ',', '.') ?> €</b> stimati.
+          Limite: <b><?= number_format((int) $assistente['limite'], 0, ',', '.') ?></b> domande al mese per struttura<?= $assistente['override'] !== null && (int) $assistente['override'] > 0 ? ' (personale)' : '' ?><?= $assistente['nelPiano'] ? '' : ' · <span class="muted">il piano non la comprende</span>' ?>.</p>
+        <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/assistente/limite" class="row" style="gap:8px;flex-wrap:wrap;align-items:flex-end"><?= Csrf::field() ?>
+          <div class="field" style="margin:0;max-width:11rem"><label for="as-limite" class="small">Limite personale <span class="muted">(vuoto = di serie)</span></label>
+            <input id="as-limite" name="limite" type="text" inputmode="numeric" value="<?= $assistente['override'] !== null && (int) $assistente['override'] > 0 ? (int) $assistente['override'] : '' ?>"></div>
+          <div class="field" style="margin:0;flex:1 1 12rem"><label for="as-nota" class="small">Nota <span class="muted">(resta nel registro)</span></label>
+            <input id="as-nota" name="nota" type="text" maxlength="255" placeholder="Per esempio: struttura grande, ha chiesto più domande"></div>
+          <button class="btn btn--ghost btn--sm">Salva il limite</button>
+        </form>
+        <a class="small" href="<?= b() ?>/admin/assistente">Assistente AI, tutti i clienti</a>
+      </section>
+    <?php endif; ?>
     <?php if ($traduzioni): $annoC = $traduzioni['anno']; $nC = fn(int $x) => number_format($x, 0, ',', '.'); ?>
       <section class="panel stack" id="traduzioni" style="gap:8px" aria-labelledby="tr-titolo">
         <span class="kicker" id="tr-titolo">Traduzioni suggerite</span>

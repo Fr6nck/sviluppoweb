@@ -38,7 +38,7 @@ final class Legale
      * 9N · L'ordine dei punti dei Termini (le chiavi di lang/legale.php) e il numero che si vede: 1…17 in fila. Il punto
      * «Giudizio con sconto, sconto sul rinnovo e codice omaggio» (chiave 17, con dentro il vecchio 18) è il 13; contatti è il 17.
      */
-    public const ORDINE_TERMINI = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 17, 13, 14, 15, 16];
+    public const ORDINE_TERMINI = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 17, 13, 18, 14, 15, 16];   // 10: «Chiedi alla guida» (chiave 18) è il 15, dopo le traduzioni
 
     /** Il numero che si vede di un punto dei Termini, dalla sua chiave (0 se la chiave non è nei Termini). */
     public static function numeroTermini(int $chiave): int

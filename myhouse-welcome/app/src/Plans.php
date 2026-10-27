@@ -194,7 +194,7 @@ final class Plans
                    'places' => 'Recommended places', 'properties' => 'Properties on the same account', 'analytics' => 'Reading statistics',
                    'branding' => 'Custom branding (no longer sold)', 'custom_sections' => 'Custom sections', 'auto_translation' => 'Suggested translations',
                    'protected_content' => 'Protected content', 'advanced_analytics' => 'Advanced statistics', 'video' => 'Video',
-                   'upselling' => 'Selling extra services', 'custom_domain' => 'Custom domain', 'ai_concierge' => 'AI concierge',
+                   'upselling' => 'Selling extra services', 'custom_domain' => 'Custom domain', 'ai_concierge' => 'Ask the guide (AI assistant)',
                    'hide_branding' => 'Hideable "Guide created with MyHouse Welcome" signature'];
         $piani = [];
         foreach (self::offers() as $of) {

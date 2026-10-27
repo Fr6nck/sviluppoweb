@@ -923,6 +923,17 @@ $r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto,
     View::out('host/settings', $contesto($acc, $p) + ['err' => $err, 'qui' => 'impostazioni', 'tutte' => Config::get('locales')], 'layout/cms');
 });
 
+/* 10 · «Chiedi alla guida»: l'interruttore della guida e i contatti quando la guida non sa rispondere. */
+$r->post('/pannello/{id}/assistente', function (array $a) use ($mia) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    try {
+        MHW\Assistente::imposta((int) $acc['id'], (int) $p['id'], !empty($_POST['acceso']), !empty($_POST['contatti']));
+        Auth::audit('assistente.' . (!empty($_POST['acceso']) ? 'acceso' : 'spento'), null, ['property' => (int) $p['id']]);
+        Support::flash(!empty($_POST['acceso']) ? MHW\t('«Chiedi alla guida» è accesa su questa guida.') : MHW\t('«Chiedi alla guida» è spenta su questa guida: il bottone non compare più.'));
+    } catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
+    Support::redirect('/pannello/' . $p['id'] . '/impostazioni#chiedi-alla-guida');
+});
+
 /* Dopo il soggiorno: dove si trova la struttura (8B, portali e social), prenotazione diretta con la
    domanda sul sito, firma della guida. Tutto facoltativo. I link di recensione non si scrivono più:
    i portali sono caselle e i link li prepara Canali. */
@@ -1246,6 +1257,21 @@ $r->post('/pannello/{id}/messaggi', function (array $a) use ($mia) {
     $manca = !$serie && trim($testo) !== '' && !str_contains($testo, '{link}');
     Support::flash($serie ? 'Fatto: torna il testo di serie.' : ($manca ? 'Salvato, ma nel messaggio manca il link: scrivi {link} dove deve comparire.' : 'Messaggio salvato.'), $manca ? 'avviso' : 'ok');
     Support::redirect('/pannello/' . $p['id'] . '/qr#msg-' . $tipo);
+});
+
+/* 10 · La locandina A6 «Chiedi alla guida» da stampare e lasciare in casa: il QR, i tre passi, le domande d'esempio e il
+   contatto per le urgenze, nella lingua principale della guida e in inglese. Una pagina a sé con lo stile di stampa
+   (Stampa → Salva come PDF): niente da scaricare. */
+$r->get('/pannello/{id}/locandina', function (array $a) use ($mia) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    $qr = Db::one('SELECT * FROM qr_tokens WHERE property_id = ?', [$p['id']]);
+    if (!$qr) Support::redirect('/pannello/' . $p['id'] . '/qr');
+    $contatti = Migrator::tableExists('property_contacts') ? Db::all('SELECT * FROM property_contacts WHERE property_id = ? ORDER BY position, id', [$p['id']]) : [];
+    $primo = null;
+    foreach ($contatti as $c) if (trim((string) $c['phone']) !== '') { $primo = $c; break; }
+    $kinds = array_column(Db::all('SELECT kind FROM sections WHERE property_id = ? AND is_active = 1', [$p['id']]), 'kind');
+    View::out('host/locandina', ['prop' => $p, 'acc' => $acc, 'qrPng' => Qr::png(Support::baseUrl() . '/q/' . $qr['token'], 6, 2), 'primo' => $primo, 'kinds' => $kinds,
+                                 'attiva' => MHW\Assistente::perGuida($p)], null);
 });
 
 $r->get('/pannello/{id}/qr.{formato}', function (array $a) use ($mia) {

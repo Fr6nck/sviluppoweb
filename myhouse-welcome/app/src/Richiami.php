@@ -16,6 +16,8 @@ namespace MHW;
  *   giudizio — (7D) dal 30° al 40° giorno dopo la prima pubblicazione, una volta sola: «Ti sta piacendo?»
  *   benvenuto — la prima guida dell'account è online (Benvenuto): una volta sola, di servizio, senza «non mandarmene più»
  *   sconti   — (9P) 7 giorni dopo l'attivazione, una volta per account: «Fino al 55%», inviti e giudizio con i conti (EmailSconti)
+ *   assistente — (10) «Chiedi alla guida»: nei primi 7 giorni del mese il riepilogo del mese prima per ogni guida con domande
+ *                (quante, le sezioni più chieste, quelle senza risposta); e l'avviso all'80% delle domande del mese
  *
  * Le finestre non si sovrappongono: una struttura riceve al massimo un richiamo
  * per volta, e chi aggiorna l'applicazione con bozze vecchie non riceve una
@@ -36,7 +38,8 @@ final class Richiami
                          'parere' => 'la domanda su cosa ti ha fermato',
                          'giudizio' => 'la richiesta di un giudizio su MyHouse Welcome', 'benvenuto' => 'l\'email di benvenuto',
                          'sconti' => 'l\'email sugli sconti del rinnovo',
-                         'bozza7' => 'le email sulla guida in bozza', 'bozza21' => 'le email sulla guida in bozza', 'bozza' => 'le email sulla guida in bozza'];   // con l'articolo: «Non vuoi più ricevere …?»
+                         'bozza7' => 'le email sulla guida in bozza', 'bozza21' => 'le email sulla guida in bozza', 'bozza' => 'le email sulla guida in bozza',
+                         'assistente' => 'le email su «Chiedi alla guida»'];   // con l'articolo: «Non vuoi più ricevere …?»
     /** Le risposte a un clic di «Cosa ti ha fermato?» (7A). */
     public const MOTIVI = ['prezzo' => 'Il prezzo', 'tempo' => 'Non ho avuto tempo', 'funzione' => 'Mi mancava una funzione', 'altro' => 'Altro'];
     /** I richiami del percorso: uno per volta, mai due a meno di due giorni l'uno dall'altro (7A). */
@@ -262,6 +265,9 @@ final class Richiami
 
         // 9P · «Fino al 55%», 7 giorni dopo l'attivazione: prima dei lavori di manutenzione qui sotto (che chiamano Stripe e possono durare).
         try { $fatte['sconti'] = EmailSconti::giro($t); } catch (\Throwable $e) { Log::exception($e, 'email «Fino al 55%»'); }
+        // 10 · «Chiedi alla guida»: il riepilogo del mese prima, nei primi 7 giorni del mese, e la pulizia delle domande oltre i 12 mesi.
+        try { $fatte['assistente'] = self::giroAssistente($t); } catch (\Throwable $e) { Log::exception($e, 'email mensile «Chiedi alla guida»'); }
+        try { Assistente::pulisci(); } catch (\Throwable $e) { Log::exception($e, 'pulizia domande assistente'); }
 
         Seo::forseFile();      // 7F: una volta al giorno robots.txt, sitemap.xml e llms.txt come file veri
         Registri::giornaliero();   // 8I: una volta al giorno pulizia dei registri e copia di quelli di ieri su S3
@@ -679,6 +685,61 @@ final class Richiami
         $ok = $pagamento ? Mailer::diPagamento($invio) : $invio();
         if (!$ok) Db::run('DELETE FROM email_log WHERE token = ?', [$token]);   // si riproverà al prossimo giro
         return $ok;
+    }
+
+    // ------------------------------------------------------- 10 · «Chiedi alla guida»
+
+    /** Il nome del mese nella lingua fissata: «ottobre 2026» / «October 2026». */
+    private static function meseNome(string $ym): string
+    {
+        $m = (int) substr($ym, 5, 2); $a = substr($ym, 0, 4);
+        $it = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+        return (self::$lin === 'en' ? gmdate('F', mktime(0, 0, 0, $m, 1, 2000)) : ($it[$m - 1] ?? $ym)) . ' ' . $a;
+    }
+
+    /**
+     * Il riepilogo mensile all'host: dal 1° al 7° giorno del mese, per ogni guida pubblicata con l'assistente acceso e
+     * almeno una domanda nel mese prima. Una volta per guida e mese (ref «mese-AAAA-MM-pid»), mai ai clienti di prova,
+     * mai a chi ha chiesto di non riceverne («Non mandarmene più»). @return int quante email
+     */
+    public static function giroAssistente(int $t): int
+    {
+        if (!Assistente::disponibile() || (int) gmdate('j', $t) > 7) return 0;
+        $mese = gmdate('Y-m', strtotime('first day of last month', $t));
+        $n = 0;
+        foreach (Db::all("SELECT DISTINCT p.id, p.name, p.account_id AS acc_id, u.email, u.name AS user_name FROM assistant_questions q
+                          JOIN properties p ON p.id = q.property_id JOIN accounts a ON a.id = p.account_id JOIN users u ON u.id = a.user_id
+                          WHERE q.month = ? AND q.outcome IN ('ok', 'no') AND p.is_demo = 0 AND p.archived_at IS NULL AND p.status = 'published' AND u.email NOT LIKE ?",
+                         [$mese, '%@' . Demo::DOMINIO]) as $p) {
+            $r = Assistente::riepilogo((int) $p['id'], $mese);
+            if ($r['domande'] === 0) continue;
+            self::lingua((int) $p['acc_id']);
+            $x = ['{nome}' => (string) $p['name'], '{mese}' => self::meseNome($mese), '{n}' => $r['domande'], '{ok}' => $r['ok'], '{no}' => $r['no'], '{lingue}' => $r['lingue']];
+            $corpo = self::tt('a {mese} la guida di {nome} ha ricevuto {n} domande dagli ospiti: {ok} hanno avuto risposta dalla guida, {no} no (e gli ospiti hanno visto i tuoi contatti).', $x);
+            if ($r['sezioni']) $corpo .= "\n\n" . self::tt('Le sezioni più chieste: ') . implode(', ', array_map(fn($s) => $s['titolo'] . ' (' . $s['n'] . ')', $r['sezioni'])) . '.';
+            if ($r['senza']) {
+                $corpo .= "\n\n" . self::tt('Senza risposta, da aggiungere alla guida: ') . implode(' · ', array_map(fn($q) => '«' . mb_substr(trim((string) $q['question']), 0, 120) . '»', $r['senza'])) . '. '
+                        . self::tt('Due righe nella sezione giusta e la prossima volta la guida risponde da sola.');
+            }
+            $m = [self::tt('A {mese} la tua guida ha risposto {ok} volte', $x), $corpo, self::tt('Completa la guida'), Support::baseUrl() . '/pannello/' . (int) $p['id'] . '/impostazioni#chiedi-alla-guida',
+                  self::tt('Le domande degli ospiti sono anonime: qui vedi solo i numeri e le domande rimaste senza risposta.')];
+            if (self::manda((int) $p['acc_id'], (string) $p['email'], (string) $p['user_name'], 'assistente', 'mese-' . $mese . '-' . (int) $p['id'], $m)) $n++;
+        }
+        return $n;
+    }
+
+    /** L'avviso all'80% delle domande del mese (da Assistente::rispondi), una volta per guida e mese. */
+    public static function avvisoAssistente(int $propertyId, int $accountId, array $contatore): void
+    {
+        $p = Db::one('SELECT p.id, p.name, u.email, u.name AS user_name FROM properties p JOIN accounts a ON a.id = p.account_id JOIN users u ON u.id = a.user_id WHERE p.id = ? AND p.is_demo = 0', [$propertyId]);
+        if (!$p) return;
+        self::lingua($accountId);
+        $x = ['{nome}' => (string) $p['name'], '{usate}' => $contatore['usate'], '{limite}' => $contatore['limite'], '{percento}' => $contatore['percento']];
+        $m = [self::tt('«Chiedi alla guida»: {nome} è al {percento}% delle domande del mese', $x),
+              self::tt('la guida di {nome} ha già risposto a {usate} domande su {limite} comprese questo mese. Quando le finisce, l\'assistente si ferma fino al primo del mese prossimo e la guida resta come sempre: gli ospiti trovano tutto nelle sezioni.', $x)
+              . "\n\n" . self::tt('Se ti serve un limite più alto, scrivici: lo alziamo noi.'),
+              self::tt('Apri le impostazioni'), Support::baseUrl() . '/pannello/' . (int) $p['id'] . '/impostazioni#chiedi-alla-guida'];
+        self::manda($accountId, (string) $p['email'], (string) $p['user_name'], 'assistente', '80-' . Assistente::mese() . '-' . (int) $p['id'], $m);
     }
 
     /** È un «Cliente di prova» (7F)? */

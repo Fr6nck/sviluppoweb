@@ -394,6 +394,32 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 9. **Codici sconto**: «Valido fino al» è ora già compilato con il 31 dicembre; cambialo se serve.
 10. Restano in italiano (per ora): l'email d'invito all'amico e le email scritte dall'amministrazione al cliente (rinnovo fermato, cambio piano, rimborso, password provvisoria).
 
+## 4w. «Chiedi alla guida», l'assistente AI (27 ottobre)
+
+Dalla migrazione **067** Plus e Portfolio hanno «Chiedi alla guida», anche chi è già abbonato (acceso di serie: l'host lo spegne dalle Impostazioni della guida). **Finché non inserisci la chiave di Anthropic, nelle guide il bottone non compare** e nel pannello i clienti leggono «non disponibile al momento».
+
+**Una volta, su Anthropic (console.anthropic.com):**
+1. Crea l'account (o usa quello che hai) e, in **Plans & billing**, carica un credito prepagato: si paga a consumo, niente abbonamento. Con Haiku 5.5, 5.000 domande al mese costano pochi euro (le stime le vedi in Amministrazione → Assistente AI).
+2. **Settings → Limits → Spend limit**: metti lo stesso tetto mensile che scriverai nel sito (di serie 50 €). È il freno vero: quello del sito è una stima.
+3. **Settings → API keys → Create key**: un nome (per esempio `welcomemyhouse`), copiala subito (non si rimostra) e **incollala solo nel pannello del sito**, mai in chat, mai in un file del repository.
+4. Le condizioni commerciali di Anthropic per le API prevedono che i dati non si usino per addestrare i modelli; il DPA di Anthropic si accetta dalla console (Settings → Privacy / Legal). Fallo leggere al consulente privacy (punto 7).
+
+**Sul sito, in Amministrazione → Impostazioni → Chiedi alla guida (assistente AI):**
+1. La chiave API; modello `claude-haiku-5-5` (quello di serie: basta, perché risponde solo con il testo della guida; Sonnet costa venti volte di più).
+2. Limite: 300 domande al mese per struttura; tetto di spesa 50 € al mese per tutto il sito (0 = nessuno); prezzi 0,10 / 0,50 dollari per milione di token e cambio 0,86 (solo per le stime).
+3. «Anche sulla guida vetrina»: spento di serie. Acceso, chiunque apra Casa Checco dalla home può fare domande: serve per mostrarla, ma costa per ogni visitatore.
+4. La tua password, **«Prova con questi dati»**, poi **Salva**: deve rispondere «Anthropic risponde con il modello claude-haiku-5-5: «OK» (… token …)».
+
+**La prova vera, da cliente:**
+1. Con un account Plus pubblicato: apri la guida dal telefono, in basso «Chiedi alla guida», tocca un esempio («A che ora è il check-out?»): la risposta arriva con «Dalla sezione … · Apri la sezione».
+2. Chiedi una cosa che la guida non dice («C'è una lavanderia?»): «La guida non lo dice» e il bottone con il tuo WhatsApp. Nel pannello, Impostazioni → Chiedi alla guida, la domanda compare in «Senza risposta».
+3. Prova in un'altra lingua (scrivi in inglese o tedesco): risponde nella lingua della domanda anche se la guida è solo in italiano.
+4. In **Amministrazione → Vendite → Assistente AI** controlla domande, token e costo stimato; nella console di Anthropic (Usage) i token veri compaiono quasi subito.
+5. **Termini e privacy** passano alla versione 2026-10-27: al primo accesso i clienti riaccettano (la finestra elenca la novità). Se in Impostazioni → Titolare e documenti legali hai scritto a mano una versione, aggiornala tu.
+6. **Testi**: in Testi e foto → «Chiedi alla guida» i testi della sezione in home (IT ed EN); in Vendite → Piani la riga nuova in fondo alle voci di Plus e Portfolio (aggiunta dalla migrazione solo se mancava: controlla che ti piaccia).
+7. La **locandina A6** per ogni guida è in QR & Link → «Apri la locandina A6»: si stampa dal browser (Stampa → Salva come PDF).
+8. Poi Amministrazione → Sistema → **Cache** → «Svuota tutto» (anche per il llms.txt nuovo).
+
 ## 4v. Invita un amico: la barra resta vuota dopo un invito (22 ottobre)
 
 Se un amico si è registrato e ha pagato ma la barra di chi invita resta a «0 su 10» e «Chi è entrato» dice «Ancora nessuno», l'invito non si è legato o è stato annullato. Con questa versione:
@@ -558,6 +584,7 @@ Usa solo foto di cui hai i diritti, e nessun locale reale riconoscibile nella de
 6. **Registro email** (`email_log`): conserva tipo e data di ogni richiamo. Va deciso il tempo di conservazione.
 7. **Traduzioni suggerite**: i testi della guida di cui il cliente chiede la traduzione vanno ad Amazon Web Services (Amazon Translate, regione impostata in Amministrazione). Nell'informativa c'è una riga tra i fornitori; vanno confermati la nomina di AWS come responsabile e la policy di rinuncia ai servizi di IA (punto 4c). I testi non contengono dati degli ospiti, ma possono contenere nomi e telefoni dell'host. Termini e informativa sono passati alla versione 2026-10.
 8. **Adamo** è ora tra i fornitori dell'informativa (riceve da Stripe i dati di fatturazione): va confermata la nomina a responsabile.
+9. **«Chiedi alla guida» (10)**: la domanda scritta dall'ospite e il testo della guida pubblicata vanno ad **Anthropic, PBC** (Stati Uniti) per generare la risposta; nell'informativa ci sono il trattamento 16 (base giuridica proposta: legittimo interesse, art. 6.1.f; conservazione 12 mesi, anonima), la riga tra i fornitori e la frase nei trasferimenti; nei Termini il punto 15. Vanno confermati: il DPA di Anthropic (si accetta dalla console) con le clausole contrattuali standard per il trasferimento negli Stati Uniti; la base giuridica e il tempo di conservazione; il testo della nota sotto la chat («Risposte automatiche… Nessun dato tuo viene salvato»). Nessun cookie, nessun dato identificativo dell'ospite: l'IP serve solo al limite anti-abuso, in forma abbreviata, e non si conserva. Per gli ospiti che scrivono dati personali nella domanda, la domanda resta nel registro per 12 mesi.
 
 ## 7b. Termini, Privacy, DPA e titolare (8J)
 
