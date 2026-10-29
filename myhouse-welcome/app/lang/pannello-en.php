@@ -1537,4 +1537,15 @@ What\'s happening:
     'Lascia un voto da 1 a 5 e un commento prima del rinnovo: il 5% vale una volta e si somma allo sconto degli amici.' => 'Leave a rating from 1 to 5 and a comment before the renewal: the 5% applies once and adds up with the friends discount.',
     'Aderisci al programma «Giudizio con sconto», poi lasciaci un voto da 1 a 5 e un commento: il {n}% vale una volta. Si somma allo sconto degli amici: insieme fino al {totale}%.' => 'Join the “Review with a discount” programme, then leave us a rating from 1 to 5 and a comment: the {n}% applies once. It adds up with the friends discount: together up to {totale}%.',
     'Hai già aderito' => 'You have already joined',
+    // 10H · Chiudere l'account (Account) e l'email di conferma dopo «Elimina account» in Amministrazione
+    'Chiudere l\'account' => 'Closing your account',
+    'Chiusura dell\'account {codice}' => 'Account closure {codice}',
+    'Vuoi chiudere l\'account? {link}: lo chiudiamo noi, ti confermiamo per email e l\'abbonamento non si rinnova più. Le guide vanno offline e i dati si cancellano; per legge restano solo quelli delle fatture (10 anni).' => 'Want to close your account? {link}: we close it for you, confirm it by email and your subscription will not renew. Your guides go offline and your data is deleted; by law we keep only your invoice data (10 years).',
+    'Il tuo account è chiuso' => 'Your account is closed',
+    'Ciao {nome}, abbiamo chiuso il tuo account MyHouse Welcome, come ci hai chiesto.' => 'Hi {nome}, we have closed your MyHouse Welcome account, as you asked.',
+    'Ciao, abbiamo chiuso il tuo account MyHouse Welcome, come ci hai chiesto.' => 'Hi, we have closed your MyHouse Welcome account, as you asked.',
+    'Le guide sono offline e il QR non apre più niente; testi, foto e PDF sono cancellati. L\'abbonamento è chiuso: non ci saranno altri addebiti.' => 'Your guides are offline and the QR code no longer opens anything; texts, photos and PDFs are deleted. Your subscription is closed: there will be no further charges.',
+    'Per legge conserviamo per 10 anni solo i dati di fatturazione e dei pagamenti (codice cliente {codice}); le fatture restano nel tuo cassetto fiscale. Con questa email puoi registrarti di nuovo quando vuoi.' => 'By law we keep only your billing and payment data for 10 years (customer code {codice}); your invoices stay in your tax records. You can sign up again with this email whenever you like.',
+    'Non abbiamo conservato altro. Con questa email puoi registrarti di nuovo quando vuoi.' => 'We have kept nothing else. You can sign up again with this email whenever you like.',
+    'Se non hai chiesto tu la chiusura, scrivici subito a {email}.' => 'If you did not ask for this, write to us right away at {email}.',
 ];

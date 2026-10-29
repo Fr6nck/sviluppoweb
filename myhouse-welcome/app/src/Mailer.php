@@ -208,6 +208,7 @@ final class Mailer
         $cfg = Config::get('mail');
         $to = trim($to);
         if (!filter_var($to, FILTER_VALIDATE_EMAIL)) { Log::error('Mailer: destinatario non valido', ['to' => $to]); return false; }
+        if (str_ends_with(mb_strtolower($to), '@' . EliminaAccount::DOMINIO)) return false;   // 10H · l'indirizzo segnaposto di un account eliminato
         $subject = self::oneLine($subject);
         self::$ultimoErrore = '';
         // 9I · «Codice cliente MW-…» nel piede delle email a un cliente.

@@ -181,7 +181,14 @@ final class Auth
         }
         $id = $_SESSION['uid'] ?? null;
         if (!$id) return null;
-        return Db::one('SELECT * FROM users WHERE id = ?', [$id]);
+        $u = Db::one('SELECT * FROM users WHERE id = ?', [$id]);
+        // 10H · Account eliminato da Amministrazione (EliminaAccount): chi era dentro esce.
+        if ($u && ($u['role'] ?? '') === EliminaAccount::RUOLO) {
+            if (self::isImpersonating()) { self::stopImpersonating('impersonate.eliminato'); return self::user(); }
+            unset($_SESSION['uid']);
+            return null;
+        }
+        return $u;
     }
 
     public static function account(): ?array
@@ -211,6 +218,7 @@ final class Auth
         $target = Db::one('SELECT * FROM users WHERE id = ?', [$targetUserId]);
         if (!$target) { http_response_code(404); exit('Utente inesistente.'); }
         if ($target['role'] === 'admin') { http_response_code(403); exit('Non si entra nell\'account di un altro amministratore.'); }
+        if ($target['role'] === EliminaAccount::RUOLO) { http_response_code(403); exit('Questo account è stato eliminato: non ci si entra più.'); }
         Db::insert('audit_log', [
             'actor_user_id' => $admin['id'], 'target_user_id' => $targetUserId,
             'action' => 'impersonate.start', 'meta' => json_encode(['ip' => Log::mascheraIp(RateLimit::ip())]), 'created_at' => Support::now(),

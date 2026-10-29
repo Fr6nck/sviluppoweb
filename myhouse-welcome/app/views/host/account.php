@@ -286,4 +286,13 @@ $statoOrdine = array_map('MHW\\t', ['pending' => 'In attesa', 'awaiting' => 'In 
       <?php endforeach; ?></tbody></table></div>
   </section>
   <?php endif; ?>
+
+  <?php /* 10H · Chiudere l'account: lo fa l'amministrazione su richiesta (Termini, «Recesso e chiusura»), non un bottone qui. */
+        $codChiudi = MHW\Codici::disponibili() ? MHW\Codici::cliente((int) $acc['id']) : '';
+        $mailChiudi = 'mailto:' . Support::contatto() . '?subject=' . rawurlencode(tf('Chiusura dell\'account {codice}', ['{codice}' => $codChiudi])); ?>
+  <section class="stack" id="chiudi-account" aria-labelledby="chiudi-titolo" style="gap:4px">
+    <h2 id="chiudi-titolo" style="font-size:17px;margin:0"><?= t('Chiudere l\'account') ?></h2>
+    <p class="small muted" style="margin:0"><?= tf('Vuoi chiudere l\'account? {link}: lo chiudiamo noi, ti confermiamo per email e l\'abbonamento non si rinnova più. Le guide vanno offline e i dati si cancellano; per legge restano solo quelli delle fatture (10 anni).',
+      ['{link}' => '<a href="' . Support::e($mailChiudi) . '">' . Support::e(t('Scrivici')) . '</a>']) ?></p>
+  </section>
 </div>

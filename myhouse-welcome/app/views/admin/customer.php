@@ -311,20 +311,38 @@ include __DIR__ . '/_stati.php'; ?>
       <?php endif; ?>
     </section>
     <?php endif; ?>
-    <section class="panel stack elimina-prova" style="gap:8px" id="elimina-prova" aria-labelledby="elp-titolo">
-      <h2 id="elp-titolo" style="font-size:19px;margin:0">Elimina account di prova</h2>
-      <?php if (!$elP['puo']): ?>
-        <p class="small muted" style="margin:0"><?= Support::e($elP['perche']) ?></p>
+    <?php /* 10H · «Elimina account», solo da qui: senza pagamenti live si cancella tutto; con pagamenti veri restano 10 anni i dati
+             di fatturazione e i pagamenti, il resto si cancella (EliminaAccount). Conferma, motivo, password dell'amministratore. */
+          if (MHW\EliminaAccount::disponibile()): $el = MHW\EliminaAccount::riepilogo((int) $acc['id']); ?>
+    <section class="panel stack elimina-account" style="gap:8px" id="elimina" aria-labelledby="el-titolo">
+      <h2 id="el-titolo" style="font-size:19px;margin:0">Elimina account</h2>
+      <?php if ($el['modo'] === 'completa'): ?>
+        <p class="small" style="margin:0">Nessun pagamento live: si cancella tutto. L'email <b><?= Support::e($el['email']) ?></b> torna libera per una nuova registrazione<?= $elP['stripe'] !== '' ? ' e il cliente Stripe si cancella' : '' ?>. Non si torna indietro.</p>
       <?php else: ?>
-        <p class="small" style="margin:0">Nessun pagamento live: si può cancellare tutto. L'email <b><?= Support::e($elP['email']) ?></b> torna libera per una nuova registrazione<?= $elP['stripe'] !== '' ? ' e il cliente Stripe si cancella' : '' ?>. Non si torna indietro.</p>
-        <ul class="small" style="margin:0;padding-left:18px"><?php foreach ($elP['righe'] as [$etP, $nP]): ?><li><?= Support::e($etP) ?>: <b><?= (int) $nP ?></b></li><?php endforeach; ?></ul>
-        <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/elimina-prova" class="row" style="gap:8px;align-items:flex-end;flex-wrap:wrap;margin:0"><?= Csrf::field() ?>
-          <div class="field" style="margin:0;flex:1 1 220px"><label for="elp-conferma" class="small">Scrivi «ELIMINA <?= Support::e($codP) ?>»</label>
-            <input id="elp-conferma" name="conferma" type="text" required autocomplete="off"></div>
-          <button class="btn btn--sm btn--danger">Elimina account di prova</button>
-        </form>
+        <p class="small" style="margin:0">Ha <?= (int) $el['live'] ?> <?= $el['live'] === 1 ? 'pagamento live' : 'pagamenti live' ?>: per legge si conservano 10 anni i dati di fatturazione e i pagamenti, quindi l'account resta, anonimo, solo per quelli. Tutto il resto si cancella e l'email <b><?= Support::e($el['email']) ?></b> torna libera. Non si torna indietro.</p>
       <?php endif; ?>
+      <p class="small" style="margin:0"><b>Si cancella:</b></p>
+      <ul class="small" style="margin:0;padding-left:18px"><?php foreach ($el['righe'] as [$etP, $nP]): ?><li><?= Support::e($etP) ?><?= str_starts_with($etP, 'Accesso') ? '' : ': <b>' . (int) $nP . '</b>' ?></li><?php endforeach; ?></ul>
+      <?php if ($el['restano']): ?>
+        <p class="small" style="margin:0"><b>Restano:</b></p>
+        <ul class="small" style="margin:0;padding-left:18px"><?php foreach ($el['restano'] as $rest): ?><li><?= Support::e($rest) ?></li><?php endforeach; ?></ul>
+      <?php endif; ?>
+      <?php foreach ($el['aperti'] as $sA): ?>
+        <p class="spiega small" style="margin:0">Abbonamento <?= Support::e($sA['provider'] === 'stripe' ? 'Stripe' : (string) $sA['provider']) ?> <?= Support::e($sA['status'] === 'trialing' ? 'in omaggio' : ($sA['status'] === 'past_due' ? 'con un pagamento non riuscito' : 'attivo')) ?><?= (string) $sA['current_period_end'] !== '' ? ' fino al ' . Support::e(Support::date((string) $sA['current_period_end'])) : '' ?>: si chiude subito<?= $sA['provider'] === 'stripe' ? ' su Stripe' : '' ?>, senza conguaglio né rimborso. Se va rimborsato qualcosa, fallo prima da <a href="#fatture">«Fatture e rimborsi»</a>.</p>
+      <?php endforeach; ?>
+      <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/elimina" class="stack" style="gap:8px;margin:0"
+            onsubmit="return confirm('Eliminare l\'account <?= Support::e($el['codice']) ?>? Non si torna indietro.')"><?= Csrf::field() ?>
+        <div class="field" style="margin:0"><label for="el-conferma" class="small">Scrivi «ELIMINA <?= Support::e($el['codice']) ?>»</label>
+          <input id="el-conferma" name="conferma" type="text" required autocomplete="off" spellcheck="false"></div>
+        <div class="field" style="margin:0"><label for="el-motivo" class="small">Motivo (resta nel Registro azioni)</label>
+          <input id="el-motivo" name="motivo" type="text" required minlength="5" maxlength="255" placeholder="Per esempio: richiesta del cliente per email del 28 ottobre"></div>
+        <div class="field" style="margin:0"><label for="el-password" class="small">La tua password</label>
+          <input id="el-password" name="password" type="password" required autocomplete="current-password"></div>
+        <label class="check small"><input type="checkbox" name="avvisa" value="1"<?= $el['prova'] ? '' : ' checked' ?>> <span>Manda al cliente l'email di conferma (a <?= Support::e($el['email']) ?>)</span></label>
+        <div class="actions"><button class="btn btn--sm btn--danger">Elimina account</button></div>
+      </form>
     </section>
+    <?php endif; ?>
   </div>
 
   <section class="stack" style="gap:10px">

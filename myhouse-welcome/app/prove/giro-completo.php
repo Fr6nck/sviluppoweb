@@ -8116,6 +8116,103 @@ if ($slugV !== '') {
     @unlink($fileLocale); clearstatcache(); sleep(3);
 }
 
+capitolo('10H · «Elimina account» solo da Amministrazione: con pagamenti veri restano solo i dati fiscali (10 anni), senza si cancella tutto');
+// Un host Plus pagato con Stripe: guida pubblicata con la copertina, una domanda all'assistente, un'adesione al giudizio.
+[$elio, $elioAcc, $elioPid] = $host9l('Elio', 'elio10h@prova.test', 'LELELI80A01D653A', 'Foligno');
+[$ordE] = $paga9l($elio, $elioAcc, $elioPid, false, 'sub_10h_elio');
+$slugE = (string) val('SELECT slug FROM properties WHERE id = ?', [$elioPid]);
+$qrE = (string) val('SELECT token FROM qr_tokens WHERE property_id = ?', [$elioPid]);
+$mediaE = righe('SELECT storage, object_key, filename FROM media WHERE account_id = ?', [$elioAcc]);
+// La foto è sparita dal disco o da S3 (nelle prove S3 finto: la richiesta DELETE con la sua chiave).
+$s3Del = fn() => array_values(array_filter(array_map(fn($l) => json_decode($l, true), $S3_DIR !== '' && is_file("$S3_DIR/richieste.jsonl") ? (file("$S3_DIR/richieste.jsonl", FILE_IGNORE_NEW_LINES) ?: []) : []), fn($x) => ($x['metodo'] ?? '') === 'DELETE'));
+$fotoVia = fn(array $m) => $m['storage'] === 'local' ? !is_file("$DOVE/app/storage/uploads/" . $m['filename']) : (bool) array_filter($s3Del(), fn($x) => str_contains((string) $x['percorso'], (string) $m['object_key']));
+db()->prepare("INSERT INTO assistant_questions (property_id, account_id, month, locale, question, outcome, created_at) VALUES (?, ?, ?, 'it', 'Dove si parcheggia?', 'ok', ?)")->execute([$elioPid, $elioAcc, gmdate('Y-m'), gmdate('Y-m-d\TH:i:s\Z')]);
+$codE = $c9n('echo MHW\Codici::cliente(' . $elioAcc . ');');
+$uidE = (int) val('SELECT user_id FROM accounts WHERE id = ?', [$elioAcc]);
+prova('10H · prima: l\'host ha pagato (ordine pagato, abbonamento attivo), la guida è online, il QR apre la guida, c\'è la foto della copertina',
+      val('SELECT status FROM orders WHERE id = ?', [(int) $ordE['id']]) === 'paid' && val("SELECT status FROM subscriptions WHERE provider_subscription_id = 'sub_10h_elio'") === 'active'
+      && $ospite->get("/g/$slugE")['code'] === 200 && $qrE !== '' && $ospite->get("/q/$qrE")['code'] === 302 && $mediaE && !$fotoVia($mediaE[0]), json_encode([val('SELECT status FROM orders WHERE id = ?', [(int) $ordE['id']]), $mediaE]));
+
+// Il cliente non ha un bottone per eliminarsi: in Account la riga «Vuoi chiudere l'account? Scrivici» (mailto con il codice), e la domanda frequente.
+$r = $elio->get('/account');
+prova('10H · Account del cliente: «Chiudere l\'account» con «Scrivici» (mailto con l\'oggetto «Chiusura dell\'account {codice}»), nessun modulo per eliminarsi',
+      str_contains($r['body'], 'id="chiudi-account"') && str_contains($r['body'], 'subject=' . rawurlencode('Chiusura dell\'account ' . $codE)) && !str_contains($r['body'], '/elimina"'), (string) $r['code']);
+$rIt = $ospite->get('/domande'); $rEn = $ospite->get('/en/questions');
+prova('10H · la domanda frequente «Posso chiudere l\'account e cancellare i miei dati?» in /domande (tema Pagamento) e in inglese', str_contains($rIt['body'], 'id="chiudere-account"') && str_contains($rIt['body'], 'Posso chiudere l&#039;account e cancellare i miei dati?')
+      && str_contains($rEn['body'], 'Can I close my account and delete my data?'));
+
+// Il riquadro nella scheda cliente: con pagamenti live «restano» i dati fiscali; l'abbonamento attivo si chiude subito.
+$r = $admin->get("/admin/cliente/$elioAcc");
+prova('10H · scheda cliente → «Elimina account»: 1 pagamento live, «Si cancella» e «Restano» (fatturazione con il CF, pagamenti, codice), l\'abbonamento che si chiude su Stripe senza rimborso, conferma, motivo, password, email spuntata',
+      str_contains($r['body'], 'id="elimina"') && str_contains($r['body'], 'Ha 1 pagamento live') && str_contains($r['body'], '<b>Restano:</b>') && str_contains($r['body'], 'LELELI80A01D653A')
+      && str_contains($r['body'], 'si chiude subito su Stripe, senza conguaglio né rimborso') && str_contains($r['body'], 'Scrivi «ELIMINA ' . $codE . '»') && str_contains($r['body'], 'name="motivo"')
+      && str_contains($r['body'], 'id="el-password" name="password" type="password"') && str_contains($r['body'], 'name="avvisa" value="1" checked'), (string) $r['code']);
+$prova10h = fn(array $d) => $admin->segui($admin->modulo("/admin/cliente/$elioAcc", "/admin/cliente/$elioAcc/elimina", $d + ['conferma' => 'ELIMINA ' . $codE, 'motivo' => 'Richiesta del cliente per email (prova)', 'password' => 'AdminProva123', 'avvisa' => '1']));
+$primaS = count(richiesteStripe());
+$delStripe = fn() => array_values(array_filter(array_slice(richiesteStripe(), $primaS), fn($x) => $x['metodo'] === 'DELETE'));   // la scheda legge anche le fatture (GET)
+$r1 = $prova10h(['password' => 'sbagliata']); $r2 = $prova10h(['conferma' => 'ELIMINA']); $r3 = $prova10h(['motivo' => 'x']);
+prova('10H · password sbagliata, conferma sbagliata o motivo mancante: non si cancella niente (né su Stripe)', str_contains($r1['body'], 'La password non è giusta: non è stato cancellato niente.')
+      && str_contains($r2['body'], 'Per eliminare scrivi esattamente «ELIMINA ' . $codE . '»') && str_contains($r3['body'], 'Scrivi il motivo')
+      && val('SELECT email FROM users WHERE id = ?', [$uidE]) === 'elio10h@prova.test' && $delStripe() === [] && val("SELECT status FROM subscriptions WHERE provider_subscription_id = 'sub_10h_elio'") === 'active',
+      json_encode($delStripe()));
+$r = $prova10h([]);
+$delS = $delStripe();
+prova('10H · «Elimina account»: l\'abbonamento si chiude su Stripe (DELETE senza conguaglio né fattura) e qui «Chiuso»; il cliente Stripe resta (le fatture)',
+      count($delS) === 1 && $delS[0]['percorso'] === '/v1/subscriptions/sub_10h_elio' && ($delS[0]['corpo']['prorate'] ?? '') === 'false' && ($delS[0]['corpo']['invoice_now'] ?? '') === 'false'
+      && val("SELECT status FROM subscriptions WHERE provider_subscription_id = 'sub_10h_elio'") === 'canceled' && (string) val('SELECT stripe_customer_id FROM accounts WHERE id = ?', [$elioAcc]) !== '', json_encode($delS));
+prova('…si apre la scheda dell\'account eliminato: codice, data, motivo, «da conservare almeno fino al» +10 anni, il CF, l\'ordine pagato con il suo codice',
+      $r['code'] === 200 && str_contains($r['body'], 'Account eliminato.') && str_contains($r['body'], $codE) && str_contains($r['body'], 'Richiesta del cliente per email (prova)')
+      && str_contains($r['body'], 'da conservare almeno fino al <b>' . $c9n('echo MHW\Support::date(gmdate("Y-m-d", strtotime("+10 years")));') . '</b>') && str_contains($r['body'], 'C.F. LELELI80A01D653A')
+      && str_contains($r['body'], (string) $ordE['code']) && str_contains($r['body'], 'Restano solo i dati di fatturazione e i pagamenti, per legge.'), substr(strip_tags($r['body']), 0, 0));
+$accE = riga('SELECT * FROM accounts WHERE id = ?', [$elioAcc]); $uE = riga('SELECT * FROM users WHERE id = ?', [$uidE]);
+prova('10H · il pagamento resta in Cassa (Gestione::pagamenti)', $c9n('echo json_encode(array_values(array_map(fn($p) => $p["account_id"], array_filter(MHW\Gestione::pagamenti("2000-01-01", "2100-01-01"), fn($p) => $p["account_id"] === ' . $elioAcc . '))));') === '[' . $elioAcc . ']');
+prova('10H · restano l\'account anonimo («Account eliminato», eliminato_at) con i dati di fatturazione, l\'ordine pagato, l\'abbonamento e il codice; l\'accesso no (email segnaposto, ruolo «eliminato»)',
+      $accE['name'] === 'Account eliminato' && $accE['eliminato_at'] && $accE['cf'] === 'LELELI80A01D653A' && $accE['code'] === $codE && $uE['email'] === "eliminato-$uidE@eliminato.invalid"
+      && $uE['role'] === 'eliminato' && $uE['name'] === 'Account eliminato' && !password_verify('Vetrina9L-2026', (string) $uE['password_hash'])
+      && val('SELECT status FROM orders WHERE id = ?', [(int) $ordE['id']]) === 'paid' && (int) val('SELECT COUNT(*) FROM subscriptions WHERE account_id = ?', [$elioAcc]) === 1, json_encode([$accE['name'], $uE['email'], $uE['role']]));
+prova('10H · si cancellano guida (con sezioni e QR), foto sul disco, domande degli ospiti, email programmate: /g e il QR non aprono più niente',
+      !val('SELECT id FROM properties WHERE account_id = ?', [$elioAcc]) && !val('SELECT id FROM sections WHERE property_id = ?', [$elioPid]) && !val('SELECT id FROM qr_tokens WHERE property_id = ?', [$elioPid])
+      && !val('SELECT id FROM media WHERE account_id = ?', [$elioAcc]) && $fotoVia($mediaE[0]) && !val('SELECT id FROM assistant_questions WHERE account_id = ?', [$elioAcc])
+      && !val('SELECT id FROM email_log WHERE account_id = ?', [$elioAcc]) && $ospite->get("/g/$slugE")['code'] === 404 && $ospite->get("/q/$qrE")['code'] === 404);
+$postaE = array_values(array_filter(righePosta(), fn($l) => str_contains($l, 'elio10h@prova.test') && str_contains($l, 'Il tuo account è chiuso')));
+$audE = riga("SELECT * FROM audit_log WHERE action = 'account.eliminato' AND target_user_id = ?", [$uidE]);
+$metaE = json_decode((string) ($audE['meta'] ?? ''), true) ?: [];
+prova('10H · l\'email di conferma all\'indirizzo vero (10 anni, codice cliente, «se non hai chiesto tu»); nel Registro azioni codice, email, motivo, abbonamento chiuso, cosa si è cancellato e cosa resta',
+      count($postaE) === 1 && str_contains($postaE[0], 'conserviamo per 10 anni solo i dati di fatturazione') && str_contains($postaE[0], $codE) && str_contains($postaE[0], 'Se non hai chiesto tu la chiusura')
+      && ($metaE['email'] ?? '') === 'elio10h@prova.test' && ($metaE['motivo'] ?? '') === 'Richiesta del cliente per email (prova)' && ($metaE['stripe_abbonamenti'] ?? []) === ['sub_10h_elio']
+      && ($metaE['modo'] ?? '') === 'conserva' && count($metaE['conservati'] ?? []) === 4, json_encode($metaE));
+$r = $elio->get('/pannello');
+prova('10H · chi era dentro esce: il pannello del cliente porta ad Accedi; con la vecchia password non si entra più', $r['code'] === 302 && str_contains($r['head'], '/accedi')
+      && !str_contains(($l = (new Browser('h10-elio-ri'))->modulo('/accedi', '/accedi', ['email' => 'elio10h@prova.test', 'password' => 'Vetrina9L-2026']))['head'], '/pannello'), $r['head']);
+prova('10H · non è più in Clienti; «Cerca» col codice apre la sua scheda; «Entra come cliente» è bloccato', !str_contains($admin->get('/admin/clienti')['body'], $codE)
+      && str_contains($admin->get('/admin/cerca?q=' . rawurlencode($codE))['head'], "/admin/cliente/$elioAcc") && $admin->modulo("/admin/cliente/$elioAcc", "/admin/entra/$uidE", [])['code'] === 403);
+prova('10H · nessuna email parte più verso l\'indirizzo segnaposto né dai richiami (account eliminato)', $c9n('echo json_encode(MHW\Mailer::send("eliminato-' . $uidE . '@eliminato.invalid", "x", "y"));') === 'false'
+      && $c9n('echo json_encode(MHW\Richiami::manda(' . $elioAcc . ', "eliminato-' . $uidE . '@eliminato.invalid", "x", "assistente", "prova-10h", []));') === 'false');
+// L'email è di nuovo libera: ci si registra da capo.
+$elio2 = new Browser('h10-elio2');
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+$elio2->get('/registrati?piano=' . pv('plus'));
+$elio2->post('/registrati', ['piano' => pv('plus'), 'name' => 'Elio Nuovo', 'email' => 'elio10h@prova.test', 'email2' => 'elio10h@prova.test', 'password' => 'Nuovo10H-2026', 'termini' => '1']);
+$nuovoE = (int) val('SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.email = ?', ['elio10h@prova.test']);
+prova('10H · con la stessa email ci si registra di nuovo: un account nuovo, con un codice diverso', $nuovoE > 0 && $nuovoE !== $elioAcc && $c9n('echo MHW\Codici::cliente(' . $nuovoE . ');') !== $codE);
+$r = $admin->modulo("/admin/cliente/$elioAcc", "/admin/cliente/$elioAcc/elimina", ['conferma' => 'ELIMINA ' . $codE, 'motivo' => 'Di nuovo', 'password' => 'AdminProva123']);
+prova('10H · un account già eliminato non si elimina due volte', str_contains($admin->segui($r)['body'], 'Account eliminato.') && (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'account.eliminato' AND target_user_id = ?", [$uidE]) === 1);
+
+// Senza pagamenti live: si cancella tutto, come un account di prova, con l'azione «account.eliminato» e il motivo.
+$rita = $cliente9n('Rita Bozza', 'rita10h@prova.test'); $c9n('echo MHW\Properties::create(' . $rita . ', "Casa Rita", "Trevi", "Rita");');
+$codR = $c9n('echo MHW\Codici::cliente(' . $rita . ');');
+$r = $admin->get("/admin/cliente/$rita");
+prova('10H · senza pagamenti il riquadro dice «si cancella tutto» e niente «Restano»', str_contains($r['body'], 'Nessun pagamento live: si cancella tutto.') && !str_contains($r['body'], '<b>Restano:</b>'));
+$r = $admin->segui($admin->modulo("/admin/cliente/$rita", "/admin/cliente/$rita/elimina", ['conferma' => 'ELIMINA ' . $codR, 'motivo' => 'Account doppio', 'password' => 'AdminProva123', 'avvisa' => '1']));
+prova('10H · …eliminato del tutto: utente, account e struttura non ci sono più, l\'email è libera, nel Registro «account.eliminato» con il motivo; email di conferma «Non abbiamo conservato altro»',
+      str_contains($r['body'], 'rita10h@prova.test è di nuovo libera per registrarsi') && !val('SELECT id FROM users WHERE email = ?', ['rita10h@prova.test']) && !val('SELECT id FROM accounts WHERE id = ?', [$rita])
+      && !val('SELECT id FROM properties WHERE account_id = ?', [$rita]) && (bool) val("SELECT id FROM audit_log WHERE action = 'account.eliminato' AND meta LIKE '%rita10h@prova.test%' AND meta LIKE '%Account doppio%'")
+      && (bool) array_filter(righePosta(), fn($l) => str_contains($l, 'rita10h@prova.test') && str_contains($l, 'Non abbiamo conservato altro')));
+// Dopo 90 giorni l'email si toglie anche dal Registro azioni.
+db()->prepare("UPDATE audit_log SET created_at = '2025-01-01T00:00:00Z' WHERE action = 'account.eliminato' AND target_user_id = ?")->execute([$uidE]);
+$c9n('MHW\AccountProva::pulisci();');
+prova('10H · dopo 90 giorni l\'email dell\'account eliminato sparisce anche dal Registro azioni', (json_decode((string) val("SELECT meta FROM audit_log WHERE action = 'account.eliminato' AND target_user_id = ?", [$uidE]), true)['email'] ?? '') === '—');
+
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

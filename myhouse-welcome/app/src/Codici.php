@@ -260,7 +260,8 @@ final class Codici
         // Solo i clienti (non gli amministratori), i più sicuri prima.
         $ids = array_keys($trovati);
         if ($ids) {
-            $host = array_column(Db::all('SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.role = ? AND a.id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')', array_merge(['host'], $ids)), 'id');
+            // 10H · anche gli account eliminati (restano per i pagamenti): la scheda dice cosa è rimasto
+            $host = array_column(Db::all('SELECT a.id FROM accounts a JOIN users u ON u.id = a.user_id WHERE u.role IN (?, ?) AND a.id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')', array_merge(['host', EliminaAccount::RUOLO], $ids)), 'id');
             $trovati = array_intersect_key($trovati, array_flip(array_map('intval', $host)));
         }
         uasort($trovati, fn($a, $b) => $b['peso'] <=> $a['peso'] ?: $b['account_id'] <=> $a['account_id']);

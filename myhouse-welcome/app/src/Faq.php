@@ -38,6 +38,7 @@ final class Faq
                 'unica' => $pfE ? $m(Plans::unitPrice($pfE, 2)) : '', 'max_q' => $pfE ? (int) $pfE['max_quantity'] : 0,
                 'amico' => Inviti::AMICO, 'passo' => Inviti::PASSO, 'massimo' => Inviti::MASSIMO, 'amici' => Inviti::amiciMassimi(),
                 'giudizio' => Giudizi::attivo() ? Giudizi::percentuale() : 0, 'totale' => Sconti::massimoRinnovo()['totale'], 'sez_ess' => self::sezioniEssential(), 'domande' => Assistente::limite(0),
+                'email' => Support::contatto(),
             ]);
             return array_map(fn($x) => isset($en[$x['id']]) ? ['id' => $x['id'], 'd' => $en[$x['id']][0], 'r' => $en[$x['id']][1]] : $x, $it);
         }
@@ -106,6 +107,8 @@ final class Faq
         array_push($f,
             ['disdire', 'Posso disdire?', 'Sì. Disattivi il rinnovo automatico da Account & Fatturazione quando vuoi: la guida resta online fino alla fine del periodo già pagato, poi va offline. Nessun vincolo.'],
             ['non-rinnovo', 'Cosa succede se non rinnovo?', 'Alla fine del periodo pagato la guida va offline da sola. Niente si cancella: testi, foto e QR restano salvati, e il QR stampato torna a funzionare appena rinnovi.'],
+            // 10H · La chiusura la fa l'amministrazione (EliminaAccount), su richiesta.
+            ['chiudere-account', 'Posso chiudere l\'account e cancellare i miei dati?', 'Sì. Scrivi a ' . Support::contatto() . ' dall\'indirizzo del tuo account (o con il codice cliente): chiudiamo noi l\'account e ti confermiamo per email. Le guide vanno offline subito, il QR non apre più niente e testi, foto e PDF si cancellano; l\'abbonamento si chiude senza altri addebiti. Per legge conserviamo solo i dati di fatturazione e dei pagamenti, per 10 anni. Se vuoi solo fermarti, basta disattivare il rinnovo: niente si cancella.'],
             ['tracciamento', 'Gli ospiti vengono tracciati?', 'No. La guida non usa cookie e non compare nei motori di ricerca. Le statistiche di lettura contano solo aperture anonime: nessun indirizzo IP, nessun profilo.'],
         );
         return array_map(fn($x) => ['id' => $x[0], 'd' => $x[1], 'r' => $x[2]], $f);
@@ -128,7 +131,7 @@ final class Faq
         ['assistente', 'Chiedi alla guida', 'Ask the guide', ['assistente', 'assistente-inventa', 'assistente-quante', 'assistente-privacy', 'assistente-spegnere', 'assistente-lingue']],
         ['strutture', 'Più strutture', 'More properties', ['piu-strutture', 'oltre-portfolio', 'campione', 'campione-copia', 'bnb-camere', 'piu-case']],
         ['sconti', 'Sconti, inviti e giudizio', 'Discounts, invites and reviews', ['porta-amico', 'amico-quando', 'giudizio-sconto', 'giudizio-vetrina', 'giudizio-ritiro', 'omaggio', 'codice-partner']],
-        ['pagamento', 'Pagamento, piani e disdetta', 'Payment, plans and cancelling', ['fattura', 'cambio-piano', 'scendere-piano', 'disdire', 'non-rinnovo']],
+        ['pagamento', 'Pagamento, piani e disdetta', 'Payment, plans and cancelling', ['fattura', 'cambio-piano', 'scendere-piano', 'disdire', 'non-rinnovo', 'chiudere-account']],
     ];
 
     /** 9N · Le domande divise per tema, nell'ordine dei temi: [[id, titolo, domande]]. */

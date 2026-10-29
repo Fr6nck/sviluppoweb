@@ -651,6 +651,8 @@ final class Richiami
         $lingua ??= self::$lin;   // 9N · quella fissata da lingua() prima di comporre il testo
         // 7F: i clienti di prova non ricevono richiami automatici; il promemoria mandato a mano dall'amministrazione sì.
         if (!str_starts_with($ref, 'manuale-') && self::diProva($accountId)) return false;
+        // 10H · Un account eliminato da Amministrazione non riceve più niente.
+        if (Migrator::columnExists('accounts', 'eliminato_at') && Db::val('SELECT eliminato_at FROM accounts WHERE id = ?', [$accountId])) return false;
         // 9H · L'account della vetrina (vetrina_email in config.php) non riceve email.
         $vetrinaE = mb_strtolower(trim((string) Config::get('vetrina_email', '')));
         if ($vetrinaE !== '' && mb_strtolower(trim($email)) === $vetrinaE) return false;

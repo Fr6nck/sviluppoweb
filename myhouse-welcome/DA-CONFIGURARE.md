@@ -394,11 +394,22 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 9. **Codici sconto**: «Valido fino al» è ora già compilato con il 31 dicembre; cambialo se serve.
 10. Restano in italiano (per ora): l'email d'invito all'amico e le email scritte dall'amministrazione al cliente (rinnovo fermato, cambio piano, rimborso, password provvisoria).
 
+## 4x. «Elimina account» da Amministrazione (29 ottobre)
+
+Niente da configurare: la migrazione **068** parte da sola al primo accesso. Da sapere:
+
+1. Il cliente non ha un bottone per eliminarsi: in Account legge «Vuoi chiudere l'account? Scrivici» e ti scrive (oggetto «Chiusura dell'account MW-…»). **Prima di eliminare controlla che la richiesta arrivi dall'email dell'account** (o con il codice cliente).
+2. Amministrazione → Clienti → la scheda → in fondo **«Elimina account»**: scrivi «ELIMINA MW-…», il motivo (per esempio «richiesta del cliente per email del 28 ottobre») e la tua password. Non si torna indietro.
+3. **Abbonamento attivo**: si chiude subito su Stripe, **senza rimborso automatico**. Se al cliente spetta un rimborso, fallo prima da «Fatture e rimborsi» (e la nota di credito in Adamo), poi elimina.
+4. Con pagamenti veri l'account resta, anonimo, solo con i dati di fatturazione e i pagamenti, da conservare 10 anni (art. 2220 c.c.): lo ritrovi con «Cerca» (codice cliente, P.IVA, CF, ID Stripe). Il cliente su Stripe non si cancella (ci sono le fatture). Senza pagamenti veri si cancella tutto.
+5. Il cliente riceve l'email di conferma (togli la spunta se non vuoi mandarla). Con la stessa email può registrarsi di nuovo.
+6. Da far guardare al consulente privacy: punto 7.10.
+
 ## 4w. «Chiedi alla guida», l'assistente AI (27 ottobre)
 
 Dalla migrazione **067** Plus e Portfolio hanno «Chiedi alla guida», anche chi è già abbonato (acceso di serie: l'host lo spegne dalle Impostazioni della guida). **Finché non inserisci la chiave di Anthropic, nelle guide il bottone non compare** e nel pannello i clienti leggono «non disponibile al momento».
 
-**Una volta, su Anthropic (console.anthropic.com):**
+**Una volta, su Anthropic (la console è su platform.claude.com):**
 1. Crea l'account (o usa quello che hai) e, in **Plans & billing**, carica un credito prepagato: si paga a consumo, niente abbonamento. Con Haiku 5.5, 5.000 domande al mese costano pochi euro (le stime le vedi in Amministrazione → Assistente AI).
 2. **Settings → Limits → Spend limit**: metti lo stesso tetto mensile che scriverai nel sito (di serie 50 €). È il freno vero: quello del sito è una stima.
 3. **Settings → API keys → Create key**: un nome (per esempio `welcomemyhouse`), copiala subito (non si rimostra) e **incollala solo nel pannello del sito**, mai in chat, mai in un file del repository.
@@ -585,6 +596,7 @@ Usa solo foto di cui hai i diritti, e nessun locale reale riconoscibile nella de
 7. **Traduzioni suggerite**: i testi della guida di cui il cliente chiede la traduzione vanno ad Amazon Web Services (Amazon Translate, regione impostata in Amministrazione). Nell'informativa c'è una riga tra i fornitori; vanno confermati la nomina di AWS come responsabile e la policy di rinuncia ai servizi di IA (punto 4c). I testi non contengono dati degli ospiti, ma possono contenere nomi e telefoni dell'host. Termini e informativa sono passati alla versione 2026-10.
 8. **Adamo** è ora tra i fornitori dell'informativa (riceve da Stripe i dati di fatturazione): va confermata la nomina a responsabile.
 9. **«Chiedi alla guida» (10)**: la domanda scritta dall'ospite e il testo della guida pubblicata vanno ad **Anthropic, PBC** (Stati Uniti) per generare la risposta; nell'informativa ci sono il trattamento 16 (base giuridica proposta: legittimo interesse, art. 6.1.f; conservazione 12 mesi, anonima), la riga tra i fornitori e la frase nei trasferimenti; nei Termini il punto 15. Vanno confermati: il DPA di Anthropic (si accetta dalla console) con le clausole contrattuali standard per il trasferimento negli Stati Uniti; la base giuridica e il tempo di conservazione; il testo della nota sotto la chat («Risposte automatiche… Nessun dato tuo viene salvato»). Nessun cookie, nessun dato identificativo dell'ospite: l'IP serve solo al limite anti-abuso, in forma abbreviata, e non si conserva. Per gli ospiti che scrivono dati personali nella domanda, la domanda resta nel registro per 12 mesi.
+10. **Chiusura dell'account (10H)**: su richiesta del cliente (per email) l'amministrazione elimina l'account. Senza pagamenti si cancella tutto; con pagamenti restano 10 anni solo i dati di fatturazione e dei pagamenti (art. 2220 c.c.), tutto il resto si cancella subito (guide, foto, domande degli ospiti, email, preferenze, accesso). Nel Registro azioni l'email del cliente resta 90 giorni, poi si toglie. Vanno confermati i tempi e la frase nei Termini («Recesso e chiusura») e nell'informativa (conservazione dei dati fiscali).
 
 ## 7b. Termini, Privacy, DPA e titolare (8J)
 

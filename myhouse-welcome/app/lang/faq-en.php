@@ -51,6 +51,7 @@ return function (array $v): array {
         'giudizio-ritiro' => ['Can I leave the programme?', 'Yes, whenever you like, from Settings → Review with a discount: the card and the review disappear from the home page at once. The discount you already had stays; the one promised on the renewal lapses.'],
         'disdire' => ['Can I cancel?', 'Yes. Turn off automatic renewal from Account & Billing whenever you like: the guide stays online until the end of the period you have already paid for, then goes offline. No lock-in.'],
         'non-rinnovo' => ['What happens if I don\'t renew?', 'At the end of the paid period the guide goes offline by itself. Nothing is deleted: texts, photos and QR code stay saved, and the printed QR code works again as soon as you renew.'],
+        'chiudere-account' => ['Can I close my account and delete my data?', 'Yes. Write to ' . $v['email'] . ' from your account address (or with your customer code): we close the account for you and confirm it by email. Your guides go offline straight away, the QR code no longer opens anything and texts, photos and PDFs are deleted; the subscription closes with no further charges. By law we keep only billing and payment data, for 10 years. If you just want to stop, turn off renewal: nothing is deleted.'],
         'tracciamento' => ['Are guests tracked?', 'No. The guide uses no cookies and doesn\'t appear in search engines. Reading statistics only count anonymous visits: no IP addresses, no profiles.'],
     ];
 };

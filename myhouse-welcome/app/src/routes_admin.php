@@ -140,8 +140,10 @@ $r->get('/admin/cerca', function () {
     }
     $righe = [];
     foreach ($ris as $x) {
-        $c = Db::one('SELECT a.id, a.' . (MHW\Codici::disponibili() ? 'code' : 'id AS code') . ', u.name, u.email FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [$x['account_id']]);
+        $c = Db::one('SELECT a.id, a.' . (MHW\Codici::disponibili() ? 'code' : 'id AS code') . ', u.name, u.email, u.role FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [$x['account_id']]);
         if (!$c) continue;
+        // 10H · un account eliminato si trova ancora (per i pagamenti), senza email
+        if ($c['role'] === MHW\EliminaAccount::RUOLO) { $righe[] = ['email' => '', 'perche' => $x['perche'], 'evidenzia' => '', 'piano' => '—', 'stato' => 'Eliminato'] + $c; continue; }
         $sub = Subscriptions::active((int) $c['id']);
         $gov = Subscriptions::governingVersionId((int) $c['id']);
         $righe[] = $c + ['perche' => $x['perche'], 'evidenzia' => $x['evidenzia'], 'piano' => $gov ? (Plans::version($gov)['name'] ?? '—') : '—',
@@ -249,6 +251,8 @@ $r->get('/admin/cliente/{aid}', function (array $a) {
                            u.terms_accepted_at, u.privacy_version, u.privacy_accepted_at, u.dpa_version, u.dpa_accepted_at, u.created_at AS registrato' . $pwTemp . '
                     FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [(int) $a['aid']]);
     if (!$acc) { http_response_code(404); View::out('pub/404', []); }
+    // 10H · Un account eliminato: resta solo la scheda dei dati che la legge chiede di conservare.
+    if (MHW\EliminaAccount::disponibile() && MHW\EliminaAccount::eliminato($acc)) View::out('admin/customer_eliminato', MHW\EliminaAccount::scheda($acc) + ['nav' => 'clienti'], 'layout/cms');
     $props = Db::all('SELECT * FROM properties WHERE account_id = ? ORDER BY id', [$acc['id']]);
     foreach ($props as &$p) {
         $p['lingue'] = implode(', ', array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$p['id']]), 'locale'));
@@ -1047,6 +1051,25 @@ $r->post('/admin/cliente/{id}/elimina-prova', function (array $a) {
     } catch (\RuntimeException $e) {
         Support::flash($e->getMessage(), 'err');
         Support::redirect('/admin/cliente/' . (int) $a['id'] . '#elimina-prova');
+    }
+});
+
+/* 10H · «Elimina account»: solo da qui, con «ELIMINA {codice}», il motivo e la password dell'amministratore (EliminaAccount). */
+$r->post('/admin/cliente/{id}/elimina', function (array $a) {
+    $admin = Auth::requireAdmin();
+    $aid = (int) $a['id'];
+    if (!RateLimit::hit('elimina-account:' . (int) $admin['id'], 10, 900)) { Support::flash('Troppi tentativi: riprova tra un quarto d\'ora.', 'err'); Support::redirect('/admin/cliente/' . $aid . '#elimina'); }
+    $hash = (string) Db::val('SELECT password_hash FROM users WHERE id = ?', [(int) $admin['id']], '');
+    if (!password_verify((string) ($_POST['password'] ?? ''), $hash)) { Support::flash('La password non è giusta: non è stato cancellato niente.', 'err'); Support::redirect('/admin/cliente/' . $aid . '#elimina'); }
+    try {
+        $esito = MHW\EliminaAccount::elimina($aid, (string) ($_POST['conferma'] ?? ''), (string) ($_POST['motivo'] ?? ''), !empty($_POST['avvisa']), (int) $admin['id']);
+        $abb = $esito['stripe'] ? ' Abbonamento chiuso su Stripe (' . implode(', ', $esito['stripe']) . ').' : '';
+        if ($esito['modo'] === 'completa') { Support::flash('Account eliminato: ' . $esito['email'] . ' è di nuovo libera per registrarsi.' . $abb); Support::redirect('/admin/clienti'); }
+        Support::flash('Account eliminato: guide, foto e dati personali cancellati, ' . $esito['email'] . ' di nuovo libera. Restano solo i dati di fatturazione e i pagamenti, per legge.' . $abb);
+        Support::redirect('/admin/cliente/' . $aid);
+    } catch (\RuntimeException $e) {
+        Support::flash($e->getMessage(), 'err');
+        Support::redirect('/admin/cliente/' . $aid . '#elimina');
     }
 });
 

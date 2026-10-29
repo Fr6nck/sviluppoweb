@@ -14,7 +14,7 @@ final class AccountProva
     public const GIORNI_REGISTRO = 90;
 
     /** Le tabelle con account_id che si svuotano (quelle con la chiave esterna si cancellano da sole con l'account). */
-    private const TABELLE = ['codici_usati', 'discount_redemptions', 'email_log', 'email_optout', 'feedback', 'interessi_sito', 'novita_viste', 'offerte',
+    private const TABELLE = ['assistant_questions', 'codici_usati', 'discount_redemptions', 'email_log', 'email_optout', 'feedback', 'interessi_sito', 'novita_viste', 'offerte',
                              'pagamenti_esclusi', 'partner_commissioni', 'preventivi', 'proposte_cambio', 'referral_invites', 'rimborsi', 'testimonials',
                              'translation_usage', 'vetrina_schede'];
 
@@ -53,8 +53,12 @@ final class AccountProva
         return ['puo' => $live === 0, 'perche' => $perche, 'righe' => $righe, 'email' => (string) $acc['email'], 'stripe' => (string) ($acc['stripe_customer_id'] ?? '')];
     }
 
-    /** Elimina l'account di prova. $conferma deve essere «ELIMINA {codice cliente}». @return string l'email liberata */
-    public static function elimina(int $accountId, string $conferma, int $adminId): string
+    /**
+     * Elimina l'account di prova. $conferma deve essere «ELIMINA {codice cliente}». Lo usa anche «Elimina account»
+     * (EliminaAccount) per un account senza pagamenti live, con la sua azione nel Registro e il motivo.
+     * @return string l'email liberata
+     */
+    public static function elimina(int $accountId, string $conferma, int $adminId, string $azione = 'account.eliminato_prova', array $extra = []): string
     {
         $r = self::riepilogo($accountId);
         if (!$r['puo']) throw new \RuntimeException($r['perche'] ?: 'Non si può eliminare.');
@@ -72,7 +76,7 @@ final class AccountProva
             }
             if (Migrator::tableExists('referrals')) Db::run('DELETE FROM referrals WHERE referrer_account_id = ? OR friend_account_id = ?', [$accountId, $accountId]);
             foreach (['legal_acceptances'] as $tab) if (Migrator::tableExists($tab)) Db::run("DELETE FROM $tab WHERE user_id = ?", [$userId]);
-            Db::run('DELETE FROM properties WHERE account_id = ?', [$accountId]);
+            EliminaAccount::cancellaStrutture($accountId);   // con le tabelle delle strutture senza chiave esterna
             Db::run('DELETE FROM users WHERE id = ?', [$userId]);   // account, abbonamenti, ordini, foto e permessi vanno con l'utente (chiavi esterne)
         });
         // Il cliente Stripe, se c'è: senza pagamenti live non serve più (un errore non ferma l'eliminazione, si scrive nel log).
@@ -81,17 +85,17 @@ final class AccountProva
             try { Stripe::call('DELETE', 'customers/' . rawurlencode($r['stripe'])); $stripeEsito = 'cancellato'; }
             catch (\Throwable $e) { Log::exception($e, 'elimina account di prova: cliente Stripe'); $stripeEsito = 'non cancellato: ' . $e->getMessage(); }
         }
-        Auth::audit('account.eliminato_prova', null, ['cliente' => $codice, 'email' => $r['email'], 'admin' => $adminId, 'stripe' => $stripeEsito,
-                                                     'cancellati' => array_map(fn($x) => $x[0] . ': ' . $x[1], $r['righe'])]);
+        Auth::audit($azione, null, ['cliente' => $codice, 'email' => $r['email'], 'admin' => $adminId] + $extra + ['stripe' => $stripeEsito,
+                                    'cancellati' => array_map(fn($x) => $x[0] . ': ' . $x[1], $r['righe'])]);
         return $r['email'];
     }
 
-    /** Dopo 90 giorni l'email dell'account eliminato si toglie anche dal Registro azioni. Dal giro dei richiami. */
+    /** Dopo 90 giorni l'email dell'account eliminato (di prova o no) si toglie anche dal Registro azioni. Dal giro dei richiami. */
     public static function pulisci(): int
     {
         $n = 0;
         $prima = gmdate('Y-m-d\TH:i:s\Z', time() - self::GIORNI_REGISTRO * 86400);
-        foreach (Db::all("SELECT id, meta FROM audit_log WHERE action = 'account.eliminato_prova' AND created_at < ? AND meta LIKE ?", [$prima, '%"email"%']) as $r) {
+        foreach (Db::all("SELECT id, meta FROM audit_log WHERE action IN ('account.eliminato_prova', 'account.eliminato') AND created_at < ? AND meta LIKE ?", [$prima, '%"email"%']) as $r) {
             $m = json_decode((string) $r['meta'], true) ?: [];
             if (($m['email'] ?? '') === '—') continue;
             $m['email'] = '—';
