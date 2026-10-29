@@ -24,7 +24,10 @@ if ($contattiH) {
     <img class="host-foglio__foto" src="<?= Support::e($fotoHost) ?>" alt="">
     <h2 class="host-foglio__titolo" id="host-foglio-titolo"><?= Support::e(I18n::t($loc, 'host_ciao', $nomeH)) ?></h2>
     <p class="host-foglio__testo"><?= Support::e($benvenutoH) ?></p>
-    <?php if ($scriviH !== ''): ?>
+    <?php if ($scriviH !== '' && (int) ($pr['is_demo'] ?? 0) === MHW\Demo::VETRINA): /* 9T · 5.4: nella vetrina niente numeri di fantasia */
+            $dcClasse = 'btn btn--block'; $dcEtichetta = Icon::svg(str_starts_with($scriviH, 'tel:') ? 'phone' : 'whatsapp', 17) . Support::e(I18n::t($loc, 'host_scrivi', $nomeH));
+            include __DIR__ . '/_demo_contatto.php'; ?>
+    <?php elseif ($scriviH !== ''): ?>
       <a class="btn btn--block" href="<?= Support::e($scriviH) ?>" rel="noopener"><?= Icon::svg(str_starts_with($scriviH, 'tel:') ? 'phone' : 'whatsapp', 17) ?><?= Support::e(I18n::t($loc, 'host_scrivi', $nomeH)) ?></a>
     <?php endif; ?>
   </div>

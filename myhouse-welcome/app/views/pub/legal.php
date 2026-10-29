@@ -31,7 +31,7 @@ if (!empty($archiviata)): /* una versione vecchia, così com'era */ ?>
 // Le parti del documento: [id, titolo, chiave del testo]
 $parti = [];
 if ($doc === 'termini') {
-    $ancore = [2 => 'unita', 5 => 'rinnovo', 7 => 'recesso', 9 => 'ruoli', 12 => 'inviti', 13 => 'traduzioni', 17 => 'giudizio-sconto', 18 => 'chiedi-alla-guida'];
+    $ancore = [2 => 'unita', 5 => 'rinnovo', 7 => 'recesso', 9 => 'ruoli', 12 => 'inviti', 13 => 'traduzioni', 17 => 'giudizio-sconto', 18 => 'concierge-ai'];
     // 9B/9D: «Giudizio con sconto» (chiave 17, con dentro il codice omaggio dalla 9N) sta dopo «Invita un amico» (12).
     // 9N · I punti in fila (1…17): la chiave resta quella di sempre, il numero è la posizione (Legale::ORDINE_TERMINI).
     foreach (MHW\Legale::ORDINE_TERMINI as $pos => $i) $parti[] = [$ancore[$i] ?? 'termini-' . $i, ($pos + 1) . '. ' . TestiSito::html("termini.$i.titolo"), "termini.$i.testo"];

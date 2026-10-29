@@ -2,7 +2,7 @@
 namespace MHW;
 
 /**
- * «Chiedi alla guida» (10): l'assistente che risponde agli ospiti con il testo della guida, nella loro lingua.
+ * Concierge AI (10): l'assistente che risponde agli ospiti con il testo della guida, nella loro lingua.
  *
  * Regole (decisione del titolare, ottobre 2026):
  *  - compreso in Plus e Portfolio (funzione ai_concierge, migrazione 067), finché l'abbonamento è attivo; l'host lo
@@ -11,7 +11,7 @@ namespace MHW;
  *  - risponde SOLO con quello che c'è nella guida pubblicata (l'istantanea), mai con altro: se l'informazione manca
  *    lo dice e rimanda ai contatti. Sotto ogni risposta c'è la sezione da cui viene;
  *  - niente cookie, niente dati dell'ospite: la domanda si salva anonima (assistant_questions) con l'esito e i token,
- *    per i contatori dell'host («domande senza risposta») e per Amministrazione → Assistente AI. L'IP serve solo al
+ *    per i contatori dell'host («domande senza risposta») e per Amministrazione → Concierge AI. L'IP serve solo al
  *    limite anti-abuso (RateLimit, in forma abbreviata) e non si scrive;
  *  - un limite di domande al mese per struttura (assistente.limite_struttura, personale con
  *    accounts.assistant_cap_override) e un tetto di spesa stimata al mese per tutto il sito (assistente.tetto_euro):
@@ -39,7 +39,8 @@ final class Assistente
     public static function config(): array
     {
         return (array) Config::get('assistente', []) + ['api_key' => '', 'modello' => 'claude-haiku-5-5', 'endpoint' => '', 'limite_struttura' => self::LIMITE,
-                                                        'tetto_euro' => '50', 'prezzo_in' => '0.10', 'prezzo_out' => '0.50', 'usd_eur' => '0.86', 'demo' => false];
+                                                        'tetto_euro' => '50', 'prezzo_in' => '0.10', 'prezzo_out' => '0.50', 'usd_eur' => '0.86', 'demo' => true,
+                                                        'demo_limite' => self::LIMITE, 'admin_key' => '', 'workspace' => ''];
     }
 
     public static function disponibile(): bool { return Migrator::tableExists('assistant_questions') && Migrator::columnExists('properties', 'assistant_enabled'); }
@@ -81,7 +82,7 @@ final class Assistente
         return '';
     }
 
-    /** La guida ospite mostra «Chiedi alla guida»? (il piano, l'abbonamento, l'interruttore, la chiave; la vetrina solo se lo decide l'amministrazione) */
+    /** La guida ospite mostra Concierge AI? (il piano, l'abbonamento, l'interruttore, la chiave; la vetrina solo se lo decide l'amministrazione) */
     public static function perGuida(array $prop): bool
     {
         if (!self::disponibile() || !self::configurato()) return false;
@@ -93,7 +94,7 @@ final class Assistente
     }
 
     /**
-     * Per il telaio della guida ospite: null se «Chiedi alla guida» non c'è, altrimenti l'indirizzo della chat, il nome
+     * Per il telaio della guida ospite: null se Concierge AI non c'è, altrimenti l'indirizzo della chat, il nome
      * di chi risponde e il suo contatto (WhatsApp o telefono) per «la guida non lo dice», e tre domande d'esempio
      * scelte dalle sezioni che la guida ha davvero.
      */
@@ -104,13 +105,16 @@ final class Assistente
         $riga = Db::one('SELECT id, account_id, is_demo, assistant_enabled, assistant_contacts, slug, status FROM properties WHERE id = ?', [(int) $pr['id']]);
         if (!$riga || $riga['status'] !== 'published' || !self::perGuida($riga)) return null;
         // Domande del mese finite (o tetto del sito raggiunto): il bottone sparisce fino al mese dopo, la guida resta come sempre.
-        if (self::limiteRaggiunto((int) $riga['id'], (int) $riga['account_id']) || self::tettoRaggiunto()) return null;
+        // 9T · Nella demo invece resta (ci porta «Provalo sulla demo» dalla home): la risposta dice che la demo ha finito le domande.
+        $demo = (int) $riga['is_demo'] > 0;
+        if (!$demo && (self::limiteRaggiunto((int) $riga['id'], (int) $riga['account_id']) || self::tettoRaggiunto())) return null;
         $kinds = array_map(fn($s) => (string) $s['kind'], (array) ($snap['sections'] ?? []));
         $esempi = [];
         foreach (['wifi' => 'ask_eg_wifi', 'checkin' => 'ask_eg_checkout', 'parking' => 'ask_eg_parking', 'eat' => 'ask_eg_eat'] as $k => $chiave) if (in_array($k, $kinds, true)) $esempi[] = $chiave;
         $contatti = array_values(array_filter((array) ($pr['contacts'] ?? []), fn($c) => trim((string) ($c['phone'] ?? '')) !== ''));
         $host = ''; $href = '';
-        if ($contatti && (int) $riga['assistant_contacts'] === 1) {
+        // 9T · Nella demo nessun contatto: i numeri di Casa Checco sono di fantasia (5.4).
+        if ($contatti && (int) $riga['assistant_contacts'] === 1 && !$demo) {
             $host = trim((string) ($contatti[0]['name'] ?? '')) !== '' ? explode(' ', trim((string) $contatti[0]['name']))[0] : '';
             $num = Support::telHref((string) $contatti[0]['phone']);
             $href = !empty($contatti[0]['whatsapp']) ? 'https://wa.me/' . ltrim($num, '+') : 'tel:' . $num;
@@ -122,7 +126,7 @@ final class Assistente
     public static function imposta(int $accountId, int $propertyId, bool $acceso, bool $contatti): void
     {
         if (!self::disponibile()) throw new \RuntimeException('Il database non è ancora aggiornato: apri il sito una volta per fare le migrazioni.');
-        if ($acceso && !self::nelPiano($accountId)) throw new \RuntimeException(t('«Chiedi alla guida» è compreso in Plus e Portfolio.'));
+        if ($acceso && !self::nelPiano($accountId)) throw new \RuntimeException(t('Il Concierge AI è compreso in Plus e Portfolio.'));
         Db::update('properties', ['assistant_enabled' => $acceso ? 1 : 0, 'assistant_contacts' => $contatti ? 1 : 0], 'id = :pid AND account_id = :aid', ['pid' => $propertyId, 'aid' => $accountId]);
     }
 
@@ -147,16 +151,29 @@ final class Assistente
         return (int) Db::val("SELECT COUNT(*) FROM assistant_questions WHERE property_id = ? AND month = ? AND outcome IN ('ok', 'no')", [$propertyId, $mese ?? self::mese()], 0);
     }
 
+    /** 9T · La guida è dimostrativa (la vetrina Casa Checco o un esempio)? */
+    public static function eDemo(int $propertyId): bool
+    {
+        static $c = [];
+        return $c[$propertyId] ??= (int) Db::val('SELECT is_demo FROM properties WHERE id = ?', [$propertyId], 0) > 0;
+    }
+
+    /** 9T · Il limite di una struttura: per la demo il suo (assistente.demo_limite, di serie 300), per le altre quello dell'account. */
+    public static function limiteStruttura(int $propertyId, int $accountId): int
+    {
+        return self::eDemo($propertyId) ? max(0, (int) (self::config()['demo_limite'] ?? self::LIMITE)) : self::limite($accountId);
+    }
+
     public static function limiteRaggiunto(int $propertyId, int $accountId): bool
     {
-        $l = self::limite($accountId);
+        $l = self::limiteStruttura($propertyId, $accountId);
         return $l > 0 && self::usate($propertyId) >= $l;
     }
 
     /** Il contatore per il pannello dell'host: usate, limite, percentuale, quanto resta. */
     public static function contatore(int $propertyId, int $accountId): array
     {
-        $usate = self::usate($propertyId); $limite = self::limite($accountId);
+        $usate = self::usate($propertyId); $limite = self::limiteStruttura($propertyId, $accountId);
         return ['usate' => $usate, 'limite' => $limite, 'percento' => $limite > 0 ? (int) min(100, floor($usate * 100 / $limite)) : 0,
                 'restanti' => max(0, $limite - $usate), 'finito' => $limite > 0 && $usate >= $limite];
     }
@@ -221,13 +238,13 @@ final class Assistente
             if (Db::val('SELECT id FROM assistant_questions WHERE outcome = ? AND month = ?', [$segno, self::mese()])) return;
             self::registra(0, 0, '', '', null, null, $segno, [], 'tetto di spesa al ' . $soglia . '%');
             try {
-                Mailer::manda(Support::contatto(), 'Chiedi alla guida: ' . ($soglia === 100 ? 'tetto di spesa raggiunto' : 'all\'80% del tetto di spesa'),
-                    $soglia === 100 ? 'L\'assistente si è fermato per questo mese' : 'L\'assistente è all\'80% del tetto di spesa',
+                Mailer::manda(Support::contatto(), 'Concierge AI: ' . ($soglia === 100 ? 'tetto di spesa raggiunto' : 'all\'80% del tetto di spesa'),
+                    $soglia === 100 ? 'Il Concierge AI si è fermato per questo mese' : 'Il Concierge AI è all\'80% del tetto di spesa',
                     ['Costo stimato di ' . self::mese() . ': ' . number_format($costo, 2, ',', '.') . ' € su un tetto di ' . number_format($tetto, 2, ',', '.') . ' €.',
-                     $soglia === 100 ? 'Da ora gli ospiti non vedono più «Chiedi alla guida» fino al primo del mese prossimo. Per riaprirlo alza il tetto in Impostazioni → Chiedi alla guida.'
-                                     : 'Al 100% l\'assistente si ferma per tutti fino al mese dopo. Il tetto si cambia in Impostazioni → Chiedi alla guida.',
+                     $soglia === 100 ? 'Da ora gli ospiti non vedono più il Concierge AI fino al primo del mese prossimo. Per riaprirlo alza il tetto in Impostazioni → Concierge AI.'
+                                     : 'Al 100% il Concierge AI si ferma per tutti fino al mese dopo. Il tetto si cambia in Impostazioni → Concierge AI.',
                      'La stima è fatta con i prezzi salvati nelle Impostazioni: fa fede la console di Anthropic.'],
-                    ['Apri Assistente AI', Support::baseUrl() . '/admin/assistente']);
+                    ['Apri Concierge AI', Support::baseUrl() . '/admin/assistente']);
             } catch (\Throwable $e) { Log::exception($e, 'avviso tetto assistente'); }
             return;
         }
@@ -343,7 +360,7 @@ final class Assistente
     /** Le istruzioni fisse (stesso testo per ogni guida: resta in cache con la guida). */
     private static function istruzioni(array $pr, bool $contatti): string
     {
-        return "Sei «Chiedi alla guida», l'assistente della guida digitale di «" . trim((string) $pr['name']) . "», scritta da chi ospita. "
+        return "Sei Concierge AI, l'assistente della guida digitale di «" . trim((string) $pr['name']) . "», scritta da chi ospita. "
             . "Rispondi SOLO con le informazioni della guida che segue; la guida è l'unica fonte.\n"
             . "Regole:\n"
             . "1. Rispondi nella lingua in cui l'ospite scrive la domanda, anche se la guida è in un'altra lingua.\n"
@@ -373,15 +390,17 @@ final class Assistente
         $domanda = trim(preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $domanda) ?? '');
         if ($domanda === '') throw new \InvalidArgumentException('vuota');
         $domanda = mb_substr($domanda, 0, self::DOMANDA_MAX);
-        $contatti = (int) ($prop['assistant_contacts'] ?? 1) === 1 && (bool) array_filter((array) ($snap['property']['contacts'] ?? []), fn($c) => trim((string) ($c['phone'] ?? '')) !== '');
+        $demo = (int) ($prop['is_demo'] ?? 0) > 0;
+        $contatti = !$demo && (int) ($prop['assistant_contacts'] ?? 1) === 1 && (bool) array_filter((array) ($snap['property']['contacts'] ?? []), fn($c) => trim((string) ($c['phone'] ?? '')) !== '');
+        $msgLimite = I18n::t($loc, $demo ? 'ask_limit_demo' : 'ask_limit');   // 9T · la demo invita a creare la propria guida
         if (self::limiteRaggiunto($pid, $acc)) {
-            self::registra($pid, $acc, $loc, $domanda, null, null, 'limite', [], 'limite del mese');
-            throw new LimitReached(I18n::t($loc, 'ask_limit'));
+            self::registra($pid, $acc, $loc, $domanda, null, null, 'limite', [], $demo ? 'limite della demo' : 'limite del mese');
+            throw new LimitReached($msgLimite);
         }
         if (self::tettoRaggiunto()) {
             self::registra($pid, $acc, $loc, $domanda, null, null, 'limite', [], 'tetto sito');
             self::avvisaNoi();
-            throw new LimitReached(I18n::t($loc, 'ask_limit'));
+            throw new LimitReached($msgLimite);
         }
         // Gli scambi precedenti, puliti: al massimo STORIA_MAX, alternati, testi corti. Niente «prefill»: l'ultimo è la domanda.
         $messaggi = [];
@@ -399,7 +418,7 @@ final class Assistente
             [$testo, $uso] = self::chiama(self::istruzioni($snap['property'], $contatti), self::testoGuida($snap, $loc), $messaggi);
         } catch (\Throwable $e) {
             self::registra($pid, $acc, $loc, $domanda, null, null, 'errore', [], $e->getMessage());
-            Log::exception($e, 'Chiedi alla guida');
+            Log::exception($e, 'Concierge AI');
             throw new \RuntimeException(I18n::t($loc, 'ask_error'));
         }
         [$pulito, $trovata, $sezione] = self::interpreta($testo, $snap);
@@ -514,8 +533,9 @@ final class Assistente
     }
 
     /**
-     * Amministrazione → Assistente AI: una riga per cliente nel mese (domande, senza risposta, token, costo stimato,
-     * stato del limite), con il totale. Solo i clienti con almeno una domanda, più quelli con l'assistente acceso.
+     * Amministrazione → Concierge AI: una riga per cliente nel mese (domande, senza risposta, token, costo stimato,
+     * stato del limite e, 9T, le sue strutture con la percentuale usata), con il totale. Solo i clienti con almeno una
+     * domanda; le guide dimostrative stanno nella riga a sé (demo()).
      */
     public static function perCliente(string $mese): array
     {
@@ -525,18 +545,27 @@ final class Assistente
                                  COUNT(CASE WHEN q.outcome = 'errore' THEN 1 END) AS errori, COUNT(CASE WHEN q.outcome = 'limite' THEN 1 END) AS fermate,
                                  SUM(q.tokens_in + q.tokens_cache_write + q.tokens_cache_read) AS tin, SUM(q.tokens_out) AS tout, SUM(q.cost_microusd) AS micro,
                                  COUNT(DISTINCT q.property_id) AS guide
-                          FROM assistant_questions q WHERE q.month = ? AND q.account_id > 0 GROUP BY q.account_id ORDER BY micro DESC", [$mese]) as $x) {
+                          FROM assistant_questions q WHERE q.month = ? AND q.account_id > 0 AND q.property_id NOT IN (SELECT id FROM properties WHERE is_demo > 0)
+                          GROUP BY q.account_id ORDER BY micro DESC", [$mese]) as $x) {
             $aid = (int) $x['account_id'];
             $u = Db::one('SELECT u.name, u.email FROM accounts a JOIN users u ON u.id = a.user_id WHERE a.id = ?', [$aid]) ?: ['name' => '', 'email' => ''];
             $gov = Subscriptions::governingVersionId($aid);
             $piano = $gov ? Plans::version($gov) : null;
             $limite = self::limite($aid);
-            $maxProp = (int) Db::val("SELECT MAX(n) FROM (SELECT COUNT(*) AS n FROM assistant_questions WHERE account_id = ? AND month = ? AND outcome IN ('ok', 'no') GROUP BY property_id) x", [$aid, $mese], 0);
+            // 9T · il limite è per struttura: ogni guida con le sue domande e la percentuale usata (la più alta fa lo stato del cliente)
+            $strutture = [];
+            foreach (Db::all("SELECT q.property_id, p.name, COUNT(*) AS n FROM assistant_questions q LEFT JOIN properties p ON p.id = q.property_id
+                              WHERE q.account_id = ? AND q.month = ? AND q.outcome IN ('ok', 'no') AND q.property_id > 0 AND COALESCE(p.is_demo, 0) = 0
+                              GROUP BY q.property_id, p.name ORDER BY n DESC", [$aid, $mese]) as $s) {
+                $strutture[] = ['id' => (int) $s['property_id'], 'nome' => (string) ($s['name'] ?? ''), 'domande' => (int) $s['n'],
+                                'percento' => $limite > 0 ? (int) min(100, floor((int) $s['n'] * 100 / $limite)) : 0];
+            }
+            $maxProp = $strutture ? max(array_column($strutture, 'domande')) : 0;
             $spente = (int) Db::val('SELECT COUNT(*) FROM properties WHERE account_id = ? AND is_demo = 0 AND archived_at IS NULL AND assistant_enabled = 0', [$aid], 0);
             $righe[] = ['account_id' => $aid, 'nome' => (string) $u['name'], 'email' => (string) $u['email'], 'piano' => $piano ? (string) $piano['name'] : '',
                         'guide' => (int) $x['guide'], 'domande' => (int) $x['domande'], 'senza' => (int) $x['senza'], 'errori' => (int) $x['errori'], 'fermate' => (int) $x['fermate'],
                         'token_in' => (int) $x['tin'], 'token_out' => (int) $x['tout'], 'euro' => self::inEuro((int) $x['micro'] / 1000000),
-                        'limite' => $limite, 'percento' => $limite > 0 ? (int) min(100, floor($maxProp * 100 / $limite)) : 0, 'spente' => $spente];
+                        'limite' => $limite, 'percento' => $limite > 0 ? (int) min(100, floor($maxProp * 100 / $limite)) : 0, 'spente' => $spente, 'strutture' => $strutture];
         }
         return $righe;
     }
@@ -557,6 +586,131 @@ final class Assistente
                 'token_in' => (int) ($x['tin'] ?? 0), 'token_out' => (int) ($x['tout'] ?? 0), 'euro' => self::inEuro((int) ($x['micro'] ?? 0) / 1000000), 'guide' => (int) ($x['guide'] ?? 0), 'accese' => $accese];
     }
 
+    // ------------------------------------------- 9T · consumo e spesa (Amministrazione → Concierge AI)
+
+    /** La riga a sé della demo (la vetrina Casa Checco e le altre guide dimostrative): domande, costo, limite suo. */
+    public static function demo(string $mese): array
+    {
+        $limite = max(0, (int) (self::config()['demo_limite'] ?? self::LIMITE));
+        $x = self::disponibile() ? (Db::one("SELECT COUNT(CASE WHEN q.outcome IN ('ok', 'no') THEN 1 END) AS domande, COUNT(CASE WHEN q.outcome = 'no' THEN 1 END) AS senza,
+                                                    COUNT(CASE WHEN q.outcome = 'errore' THEN 1 END) AS errori, COUNT(CASE WHEN q.outcome = 'limite' THEN 1 END) AS fermate,
+                                                    SUM(q.tokens_in + q.tokens_cache_write + q.tokens_cache_read) AS tin, SUM(q.tokens_out) AS tout, SUM(q.cost_microusd) AS micro,
+                                                    COUNT(DISTINCT q.property_id) AS guide
+                                             FROM assistant_questions q JOIN properties p ON p.id = q.property_id WHERE q.month = ? AND p.is_demo > 0", [$mese]) ?: []) : [];
+        $max = self::disponibile() ? (int) Db::val("SELECT MAX(n) FROM (SELECT COUNT(*) AS n FROM assistant_questions q JOIN properties p ON p.id = q.property_id
+                                                    WHERE q.month = ? AND p.is_demo > 0 AND q.outcome IN ('ok', 'no') GROUP BY q.property_id) x", [$mese], 0) : 0;
+        return ['acceso' => !empty(self::config()['demo']), 'guide' => (int) ($x['guide'] ?? 0), 'domande' => (int) ($x['domande'] ?? 0), 'senza' => (int) ($x['senza'] ?? 0),
+                'errori' => (int) ($x['errori'] ?? 0), 'fermate' => (int) ($x['fermate'] ?? 0), 'token_in' => (int) ($x['tin'] ?? 0), 'token_out' => (int) ($x['tout'] ?? 0),
+                'euro' => self::inEuro((int) ($x['micro'] ?? 0) / 1000000), 'limite' => $limite, 'percento' => $limite > 0 ? (int) min(100, floor($max * 100 / $limite)) : 0];
+    }
+
+    /** La quota di cache del costo stimato del mese, in euro (scritture ×1,25 e letture ×0,1 del prezzo in ingresso). */
+    public static function quotaCache(string $mese): float
+    {
+        if (!self::disponibile()) return 0.0;
+        $x = Db::one('SELECT SUM(tokens_cache_write) AS cw, SUM(tokens_cache_read) AS cr FROM assistant_questions WHERE month = ?', [$mese]) ?: [];
+        return self::inEuro(self::costoUsd(0, 0, (int) ($x['cw'] ?? 0), (int) ($x['cr'] ?? 0)));
+    }
+
+    /** I giorni del mese che contano per le medie: per il mese in corso quelli fino a oggi compreso, per gli altri tutti. */
+    public static function giorniTrascorsi(string $mese): int
+    {
+        $tutti = (int) gmdate('t', (int) strtotime($mese . '-01 00:00:00 UTC'));
+        return $mese === self::mese() ? (int) gmdate('j') : $tutti;
+    }
+
+    /** Le domande che contano per giorno negli ultimi $giorni giorni (oggi compreso, UTC), anche i giorni a zero: ['2026-10-29' => 12, …]. */
+    public static function perGiorno(int $giorni = 30): array
+    {
+        $serie = [];
+        for ($i = $giorni - 1; $i >= 0; $i--) $serie[gmdate('Y-m-d', time() - $i * 86400)] = 0;
+        if (!self::disponibile()) return $serie;
+        foreach (Db::all("SELECT SUBSTR(created_at, 1, 10) AS g, COUNT(*) AS n FROM assistant_questions WHERE created_at >= ? AND outcome IN ('ok', 'no') AND property_id > 0
+                          GROUP BY SUBSTR(created_at, 1, 10)", [array_key_first($serie) . 'T00:00:00Z']) as $x) {
+            if (isset($serie[(string) $x['g']])) $serie[(string) $x['g']] = (int) $x['n'];
+        }
+        return $serie;
+    }
+
+    /**
+     * Le domande senza risposta più frequenti del mese, anonime (solo il testo, le lingue e in quante guide): per capire
+     * cosa manca nelle guide. Raggruppate in PHP per testo normalizzato (minuscole, spazi, senza la punteggiatura finale),
+     * uguale su SQLite e MySQL.
+     */
+    public static function senzaRispostaFrequenti(string $mese, int $quante = 20): array
+    {
+        if (!self::disponibile()) return [];
+        $gruppi = [];
+        foreach (Db::all("SELECT question, locale, property_id FROM assistant_questions WHERE month = ? AND outcome = 'no' AND property_id > 0", [$mese]) as $x) {
+            $testo = trim((string) preg_replace('/\s+/u', ' ', (string) $x['question']));
+            $k = mb_strtolower(rtrim($testo, " ?!.¿¡…"));
+            if ($k === '') continue;
+            $gruppi[$k] ??= ['domanda' => $testo, 'n' => 0, 'lingue' => [], 'guide' => []];
+            $gruppi[$k]['n']++;
+            $gruppi[$k]['lingue'][(string) $x['locale']] = true;
+            $gruppi[$k]['guide'][(int) $x['property_id']] = true;
+        }
+        uasort($gruppi, fn($a, $b) => [$b['n'], count($b['guide'])] <=> [$a['n'], count($a['guide'])]);
+        return array_map(fn($g) => ['domanda' => $g['domanda'], 'n' => $g['n'], 'lingue' => array_keys($g['lingue']), 'guide' => count($g['guide'])], array_slice(array_values($gruppi), 0, $quante));
+    }
+
+    /**
+     * Il costo vero del mese secondo Anthropic (Usage & Cost API, GET /v1/organizations/cost_report), con la Admin key
+     * facoltativa delle Impostazioni: del workspace scelto, o di tutta l'organizzazione. null senza Admin key.
+     * Anthropic dà importi in centesimi di dollaro (stringhe decimali) a giorni UTC; si sommano tutte le pagine.
+     * Il risultato resta 30 minuti in storage/cache (un giorno per i mesi chiusi): la pagina non aspetta a ogni apertura.
+     * Restituisce ['usd' => ?float, 'euro' => ?float, 'errore' => string].
+     */
+    public static function costoReale(string $mese): ?array
+    {
+        $c = self::config();
+        $chiave = trim((string) ($c['admin_key'] ?? '')); $ws = trim((string) ($c['workspace'] ?? ''));
+        if ($chiave === '' || !preg_match('/^\d{4}-\d{2}$/', $mese)) return null;
+        $file = MHW_APP . '/storage/cache/costo-anthropic-' . $mese . '.json';
+        $impronta = substr(hash('sha256', $chiave . '|' . $ws), 0, 16);
+        $salvato = is_file($file) ? json_decode((string) @file_get_contents($file), true) : null;
+        $durata = $mese === self::mese() ? 1800 : 86400;
+        if (is_array($salvato) && ($salvato['impronta'] ?? '') === $impronta && (int) ($salvato['quando'] ?? 0) > time() - $durata && is_array($salvato['dati'] ?? null)) return $salvato['dati'];
+        $da = $mese . '-01T00:00:00Z';
+        $fineMese = gmdate('Y-m-d', (int) strtotime($mese . '-01 00:00:00 UTC +1 month')) . 'T00:00:00Z';
+        $domani = gmdate('Y-m-d', time() + 86400) . 'T00:00:00Z';
+        $a = strcmp($fineMese, $domani) < 0 ? $fineMese : $domani;
+        $base = rtrim((string) (($c['endpoint'] ?? '') ?: 'https://api.anthropic.com'), '/') . '/v1/organizations/cost_report';
+        $centesimi = 0.0; $pagina = ''; $giri = 0;
+        try {
+            do {
+                $url = $base . '?starting_at=' . rawurlencode($da) . '&ending_at=' . rawurlencode($a) . '&limit=31'
+                     . ($ws !== '' ? '&group_by%5B%5D=workspace_id' : '') . ($pagina !== '' ? '&page=' . rawurlencode($pagina) : '');
+                $ch = curl_init($url);
+                curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 10,
+                    CURLOPT_HTTPHEADER => ['x-api-key: ' . $chiave, 'anthropic-version: ' . self::VERSIONE_API]]);
+                $risposta = (string) curl_exec($ch);
+                $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); $err = curl_error($ch);
+                curl_close($ch);
+                $j = json_decode($risposta, true);
+                if ($code !== 200 || !is_array($j) || !is_array($j['data'] ?? null)) {
+                    $tipo = is_array($j) ? (string) ($j['error']['type'] ?? '') : '';
+                    throw new \RuntimeException('Anthropic ' . ($code ?: 'nessuna risposta') . ($tipo !== '' ? ' ' . $tipo : '') . ($err !== '' ? ': ' . mb_substr($err, 0, 120) : ''));
+                }
+                foreach ($j['data'] as $giorno) {
+                    foreach ((array) ($giorno['results'] ?? []) as $r) {
+                        if (!is_array($r) || strtoupper((string) ($r['currency'] ?? 'USD')) !== 'USD') continue;
+                        if ($ws !== '' && (string) ($r['workspace_id'] ?? '') !== $ws) continue;
+                        $centesimi += (float) ($r['amount'] ?? 0);
+                    }
+                }
+                $pagina = !empty($j['has_more']) ? (string) ($j['next_page'] ?? '') : '';
+            } while ($pagina !== '' && ++$giri < 6);
+        } catch (\Throwable $e) {
+            Log::exception($e, 'Assistente::costoReale');
+            return ['usd' => null, 'euro' => null, 'errore' => $e->getMessage()];
+        }
+        $dati = ['usd' => $centesimi / 100, 'euro' => self::inEuro($centesimi / 100), 'errore' => ''];
+        @mkdir(dirname($file), 0775, true);
+        @file_put_contents($file, json_encode(['impronta' => $impronta, 'quando' => time(), 'dati' => $dati]));
+        return $dati;
+    }
+
     /** I mesi con almeno una riga, dal più recente. */
     public static function mesi(): array
     {
@@ -569,6 +723,7 @@ final class Assistente
     /** L'email all'host la prima volta che una struttura tocca l'80% del limite del mese (Richiami, tipo «assistente»). */
     private static function avvisaHost(int $propertyId, int $accountId): void
     {
+        if (self::eDemo($propertyId)) return;   // 9T · la demo ha il suo limite e nessun host a cui scrivere
         $c = self::contatore($propertyId, $accountId);
         if ($c['limite'] <= 0 || $c['percento'] < 80 || !Richiami::disponibili()) return;
         try { Richiami::avvisoAssistente($propertyId, $accountId, $c); } catch (\Throwable $e) { Log::exception($e, 'avviso 80% assistente'); }

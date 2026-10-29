@@ -38,7 +38,7 @@ final class Legale
      * 9N · L'ordine dei punti dei Termini (le chiavi di lang/legale.php) e il numero che si vede: 1…17 in fila. Il punto
      * «Giudizio con sconto, sconto sul rinnovo e codice omaggio» (chiave 17, con dentro il vecchio 18) è il 13; contatti è il 17.
      */
-    public const ORDINE_TERMINI = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 17, 13, 18, 14, 15, 16];   // 10: «Chiedi alla guida» (chiave 18) è il 15, dopo le traduzioni
+    public const ORDINE_TERMINI = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 17, 13, 18, 14, 15, 16];   // 10: Concierge AI (chiave 18) è il 15, dopo le traduzioni
 
     /** Il numero che si vede di un punto dei Termini, dalla sua chiave (0 se la chiave non è nei Termini). */
     public static function numeroTermini(int $chiave): int
@@ -77,9 +77,17 @@ final class Legale
             (string) ($l['company_city'] ?? ''),
             ($l['company_vat'] ?? '') !== '' ? ($en ? 'VAT no. ' : 'P.IVA ') . $l['company_vat'] : '',
             trim((string) ($l['company_rea'] ?? '')) !== '' ? 'REA ' . trim((string) $l['company_rea']) : '',
-            trim((string) ($l['company_capitale'] ?? '')) !== '' ? ($en ? 'Share capital ' : 'Cap. soc. ') . trim((string) $l['company_capitale']) : '',
+            trim((string) ($l['company_capitale'] ?? '')) !== '' ? ($en ? 'Share capital ' . self::capitaleEn(trim((string) $l['company_capitale'])) : 'Cap. soc. ' . trim((string) $l['company_capitale'])) : '',
             !empty($l['company_unipersonale']) ? ($en ? 'Single-member company' : 'Società unipersonale') : '',
         ]));
+    }
+
+    /** 9T · 5.7: il capitale sociale all'inglese: «10.000,00 € i.v.» → «€10,000.00, fully paid-up» (un testo diverso resta com'è). */
+    public static function capitaleEn(string $c): string
+    {
+        if (!preg_match('/^€?\s*(\d{1,3}(?:\.\d{3})*|\d+)(?:,(\d{1,2}))?\s*(?:€|euro)?\s*(i\.\s?v\.?|interamente versato)?$/iu', trim($c), $m)) return $c;
+        $n = (float) (str_replace('.', '', $m[1]) . '.' . ($m[2] ?? '0'));
+        return '€' . number_format($n, 2, '.', ',') . (!empty($m[3]) ? ', fully paid-up' : '');
     }
 
     /**

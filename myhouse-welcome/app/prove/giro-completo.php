@@ -1956,7 +1956,7 @@ prova('Scene: le foto hanno un testo alternativo e la versione piccola per il te
       && str_contains($r['body'], 'alt="Un ospite inquadra con il telefono il QR'));
 prova('Come funziona: tre passi che sono link alle tre schermate vere', substr_count($r['body'], 'class="passo"') === 3
       && str_contains($r['body'], 'href="#schermata-1"') && str_contains($r['body'], 'id="schermata-3"') && str_contains($r['body'], 'data-passi')
-      && is_file("$DOVE/assets/landing.js") && substr_count($r['body'], '/assets/foto/pannello-') === 3);
+      && is_file("$DOVE/assets/landing.js") && substr_count($r['body'], '/assets/foto/pannello-') === 6);   // 9T · ogni schermata anche sotto il suo passo (telefono)
 prova('Tempo: le domande evitabili con una guida, accanto alle comunicazioni che restano dell\'host', str_contains($tempo = (preg_match('#<section id="il-tempo".*?</section>#s', $r['body'], $m) ? $m[0] : ''), 'Domande evitabili con una guida')
       && str_contains($tempo, 'Comunicazioni importanti e necessarie'));
 prova('6J · niente blocco doppione «Il valore non è soltanto nella guida»', !str_contains($r['body'], 'class="frase"') && !str_contains($r['body'], 'Il valore non è soltanto nella guida'));
@@ -2321,11 +2321,11 @@ prova('…il congedo in tedesco mostra recensioni (con 5 stelle, 8C) e codice sc
 foreach (['it' => ['Tornerai da queste parti?', 'Seguici', 'Torna alla guida'], 'en' => ['Coming back this way?', 'Follow us', 'Back to the guide']] as $l8 => [$torn8, $seg8, $back8]) {
     $b8 = $ospite->get("/g/$vslug/commiato?l=$l8&voto=5")['body'];
     $pos8 = ['voto' => strpos($b8, 'data-voto="5"'), 'google' => strpos($b8, 'data-portale="google"'), 'torna' => strpos($b8, $torn8), 'codice' => strpos($b8, '<b>CHECCO10</b>'),
-             'seguici' => strpos($b8, $seg8), 'whatsapp' => strpos($b8, 'href="https://wa.me/'), 'guida' => strpos($b8, '>' . $back8 . '</a>')];
+             'seguici' => strpos($b8, $seg8), 'whatsapp' => strpos($b8, 'class="demo-contatto"'), 'guida' => strpos($b8, '>' . $back8 . '</a>')];   // 9T · 5.4: nella vetrina WhatsApp apre «È una demo…»
     $crescente8 = !in_array(false, $pos8, true); $prima8 = -1;
     foreach ($pos8 as $v8) { if ($v8 === false || $v8 <= $prima8) { $crescente8 = false; break; } $prima8 = $v8; }
-    prova("8F · vetrina, saluto ($l8) con 5 stelle: Google (9N: il solo portale), poi «{$torn8}» con CHECCO10, «Seguici», WhatsApp e il ritorno alla guida",
-          $crescente8 && preg_match('#href="https://www\.casachecco\.it/?"[^>]*rel="noopener nofollow"#', $b8) === 1 && !str_contains($b8, 'data-portale="booking"') && str_contains($b8, 'instagram.com/casacheccoassisi'),
+    prova("8F · vetrina, saluto ($l8) con 5 stelle: Google (9N: il solo portale), poi «{$torn8}» con CHECCO10, «Seguici», WhatsApp (9T: «È una demo…», nessun numero finto) e il ritorno alla guida",
+          $crescente8 && !str_contains($b8, 'wa.me/') && preg_match('#href="https://www\.casachecco\.it/?"[^>]*rel="noopener nofollow"#', $b8) === 1 && !str_contains($b8, 'data-portale="booking"') && str_contains($b8, 'instagram.com/casacheccoassisi'),
           json_encode($pos8));
 }
 $b8 = $ospite->get("/g/$vslug/commiato?l=it&voto=3")['body'];
@@ -3848,7 +3848,7 @@ prova('7C · Diagnostica: la riga delle traduzioni con l\'esito esatto dell\'ult
 // 8 · Novità: la fascia, una volta per account, e chiusa resta chiusa.
 db()->prepare('UPDATE users SET created_at = ? WHERE email = ?')->execute(['2026-01-01T00:00:00Z', 'lucia@esempio.it']);
 $r = $lucia->get('/pannello');
-prova('8C → 10 · Novità: la prima (l\'ultima uscita) è «La tua guida risponde agli ospiti: Chiedi alla guida»', str_contains($r['body'], 'La tua guida risponde agli ospiti'));
+prova('8C → 10 → 9T · Novità: la prima (l\'ultima uscita) è «Concierge AI: risponde ai tuoi ospiti, a qualsiasi ora»', str_contains($r['body'], 'Concierge AI: risponde ai tuoi ospiti, a qualsiasi ora'));
 prova('7C → 9F → 9N · Novità: la fascia con «Mostrami dove» (un modulo POST), «Tutte le novità» e la ✕ per chiuderla (9N)', str_contains($r['body'], 'class="novita"') && str_contains($r['body'], '>Mostrami dove</button>')
       && str_contains($r['body'], '/pannello/novita/vai"') && str_contains($r['body'], '>Tutte le novità</a>') && str_contains($r['body'], 'novita/chiudi"'));
 $lucia->post('/pannello/novita/vai', ['novita' => '2026-10-assistente']);
@@ -4038,7 +4038,7 @@ prova('8A · Prospetti: «Interessati a MyHouse» con data, risposte e canale', 
 $guad = preg_match('#<section id="guadagno".*?</section>#s', $ospite->get('/')['body'], $mm) ? $mm[0] : '';
 prova('8A · la scheda a destra: «Com\'è andato il soggiorno?», 5 stelle piene, il grazie, la richiesta e i tre portali, poi BENTORNATI',
       str_contains($guad, 'Com&#039;è andato il soggiorno?') && substr_count(preg_match('#congedo-mock__stelle">(.*?)</span>#s', $guad, $st) ? $st[1] : '', '<svg') === 5
-      && str_contains($guad, 'Siamo felici che ti sia trovato bene! 😊') && str_contains($guad, 'Ti chiediamo un piccolo favore') && str_contains($guad, 'Booking.com') && str_contains($guad, 'BENTORNATI'));
+      && str_contains($guad, "Siamo felici che ti sia trovato bene!\u{00A0}😊") && str_contains($guad, 'Ti chiediamo un piccolo favore') && str_contains($guad, 'Booking.com') && str_contains($guad, 'BENTORNATI'));
 prova('8A · Termini e Privacy senza «Testo di partenza»', !str_contains($ospite->get('/termini')['body'], 'Testo di partenza') && !str_contains($ospite->get('/privacy')['body'], 'Testo di partenza'));
 $admin->get('/admin/testi');
 $admin->post('/admin/testi', ['t_tempo2_valgono' => 'Fanno {euro} in un anno.', 't_sito2_titolo' => 'Prima la guida.', 'torna' => 'tempo']);
@@ -4330,15 +4330,15 @@ $ariaA = riga("SELECT * FROM sections WHERE property_id = ? AND kind = 'aria' AN
 db()->prepare("UPDATE users SET created_at = '2026-01-01T00:00:00Z' WHERE email = 'ester@prova.test'")->execute();
 // 9F · La fascia mostra solo l'ultima novità: via la novità di prova aggiunta più su (prova-campo), così l'ultima torna «clima».
 file_put_contents("$DOVE/app/lang/novita.php", str_replace("    ['id' => 'prova-campo', 'data' => '2026-10-11', 'titolo' => 'Prova', 'testo' => 'Prova', 'dove' => '/pannello', 'campi' => ['emergency' => ['note_prova']], 'sezioni' => []],\n", '', (string) file_get_contents("$DOVE/app/lang/novita.php")));
-// 10 · La fascia mostra solo l'ultima novità, che ora è «Chiedi alla guida»: per questa prova si toglie dal file e si rimette dopo.
+// 10 · La fascia mostra solo l'ultima novità, che ora è il Concierge AI: per questa prova si toglie dal file e si rimette dopo.
 $novitaFile = "$DOVE/app/lang/novita.php"; $novitaTutto = (string) file_get_contents($novitaFile);
-$novita10 = preg_match("#    // 10 · «Chiedi alla guida».*?\n(?:    .*?\n)*?     'dove' => '/pannello/\{pid\}/impostazioni\#chiedi-alla-guida', 'campi' => \[\], 'sezioni' => \[\]\],\n#s", $novitaTutto, $mN10) ? $mN10[0] : '';
+$novita10 = preg_match("#    // 10 · Concierge AI.*?\n(?:    .*?\n)*?     'dove' => '/pannello/\{pid\}/impostazioni\#concierge-ai', 'campi' => \[\], 'sezioni' => \[\]\],\n#s", $novitaTutto, $mN10) ? $mN10[0] : '';
 file_put_contents($novitaFile, str_replace($novita10, '', $novitaTutto));
 sleep(3);   // opcache del server di prova
 prova('…Essential al limite: «aria» nasce disattivata, con i suoi testi, e la novità lo dice', $ariaA && (int) $ariaA['is_active'] === 0
       && ($trG((int) $ariaA['id'], 'de')['ac_how'] ?? []) === ['Taste ON drücken.'] && preg_match('#è nata disattivata|was created switched off#', ($rNov = $ester->segui($ester->get("/pannello/$esp/impostazioni")))['body']) === 1,   // 9N: nella lingua del pannello
       json_encode($ariaA ? ['attiva' => $ariaA['is_active'], 'tr' => $trG((int) $ariaA['id'], 'de'), 'pagina' => preg_match('#<title>([^<]*)#', $rNov['body'] ?? '', $mN) ? $mN[1] : '', 'novita' => preg_match('#novita__testo">(.{0,160})#s', $rNov['body'] ?? '', $mN) ? strip_tags($mN[1]) : ''] : null, JSON_UNESCAPED_UNICODE));
-file_put_contents($novitaFile, $novitaTutto); sleep(3);   // 10 · la novità di «Chiedi alla guida» torna al suo posto
+file_put_contents($novitaFile, $novitaTutto); sleep(3);   // 10 · la novità del Concierge AI torna al suo posto
 $conta = fn() => (int) val("SELECT COUNT(*) FROM sections WHERE kind IN ('clima', 'riscaldamento', 'aria')");
 $n1 = $conta();
 $esito2 = trim((string) shell_exec('cd ' . escapeshellarg("$DOVE/app") . ' && php -r ' . escapeshellarg($migra) . ' 2>&1'));
@@ -6715,7 +6715,7 @@ $orgS = array_values(array_filter($ldS[0]['@graph'] ?? [], fn($x) => ($x['@type'
 $appS = array_values(array_filter($ldS[0]['@graph'] ?? [], fn($x) => ($x['@type'] ?? '') === 'SoftwareApplication'))[0] ?? [];
 prova('SEO · home: robots con anteprime grandi e snippet interi, og:image:alt, twitter:title e twitter:description', str_contains($rS['body'], '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">')
       && str_contains($rS['body'], '<meta property="og:image:alt" content="MyHouse Welcome: il welcome book digitale">') && str_contains($rS['body'], '<meta name="twitter:title" content="')
-      && str_contains($rS['body'], '<meta name="twitter:description" content="Il welcome book digitale per case vacanza'));
+      && str_contains($rS['body'], '<meta name="twitter:description" content="Il welcome book digitale con Concierge AI per case vacanza'));   // 9T
 $descrS = preg_match('#<meta name="description" content="([^"]*)"#', $rS['body'], $mm) ? html_entity_decode($mm[1]) : '';
 prova('SEO · la descrizione di serie della home sta nei 155 caratteri dello snippet di Google (prima 169), con «welcome book digitale»', mb_strlen($descrS) <= 155 && mb_strlen($descrS) >= 70 && str_contains($descrS, 'welcome book digitale'), (string) mb_strlen($descrS));
 prova('GEO · Organization: indirizzo a pezzi (via, CAP, città, provincia), contatto assistenza in italiano e inglese, Italia, argomenti', ($orgS['address']['streetAddress'] ?? '') === 'Via Ariodante Fabretti 15'
@@ -7922,8 +7922,8 @@ $c9n('$m = require MHW_APP . "/migrations/066_via_piano_prova.php"; $m(MHW\Db::c
 prova('066 · …con un acquisto resta, ma spento e non pubblico', (int) val("SELECT active FROM packages WHERE code = 'prova'") === 0 && (int) val("SELECT public FROM packages WHERE code = 'prova'") === 0
       && (bool) val('SELECT id FROM package_versions WHERE id = ?', [$pv066]));
 
-// ================================================================= 10 · «Chiedi alla guida»
-capitolo('10 · «Chiedi alla guida»: l\'assistente che risponde agli ospiti con il testo della guida (Anthropic finto): guida, pannello, limiti, Amministrazione, sito, email, locandina');
+// ================================================================= 10 · Concierge AI (9T; prima «Chiedi alla guida»)
+capitolo('10 · Concierge AI: l\'assistente che risponde agli ospiti con il testo della guida (Anthropic finto): guida, pannello, limiti, Amministrazione, sito, email, locandina');
 $AS_DIR = rtrim($argv[8] ?? '', '/');
 $richiesteAs = fn() => array_values(array_filter(array_map(fn($l) => json_decode($l, true), $AS_DIR !== '' && is_file("$AS_DIR/richieste.jsonl") ? (file("$AS_DIR/richieste.jsonl") ?: []) : [])));
 /** La domanda in JSON dalla finestra della guida (stessa origine, come fa guida.js). */
@@ -7936,10 +7936,11 @@ $chiedi10 = function (string $slug, string $q, string $l = 'it', array $storia =
 };
 $valoreAi = fn(string $code) => array_unique(array_column(righe('SELECT pf.value FROM package_features pf JOIN package_versions v ON v.id = pf.package_version_id JOIN packages p ON p.id = v.package_id
                                                                  JOIN features f ON f.id = pf.feature_id WHERE p.code = ? AND f.code = ?', [$code, 'ai_concierge']), 'value'));
-prova('067 · la funzione ai_concierge si chiama «Chiedi alla guida (assistente AI)», accesa in tutte le versioni di Plus e Portfolio, spenta in Essential; le voci dei piani la citano',
+prova('067/069 · la funzione ai_concierge si chiama «Concierge AI» (9T), accesa in tutte le versioni di Plus e Portfolio, spenta in Essential; le voci dei piani la citano',
       $valoreAi('plus') === ['1'] && $valoreAi('portfolio') === ['1'] && !in_array('1', $valoreAi('essential'), true)
-      && val("SELECT label FROM features WHERE code = 'ai_concierge'") === 'Chiedi alla guida (assistente AI)'
-      && str_contains((string) val("SELECT bullets FROM packages WHERE code = 'plus'"), 'Chiedi alla guida') && str_contains((string) val("SELECT bullets FROM packages WHERE code = 'portfolio'"), 'Chiedi alla guida'),
+      && val("SELECT label FROM features WHERE code = 'ai_concierge'") === 'Concierge AI'
+      && str_contains((string) val("SELECT bullets FROM packages WHERE code = 'plus'"), 'Concierge AI') && str_contains((string) val("SELECT bullets FROM packages WHERE code = 'portfolio'"), 'Concierge AI')
+      && !str_contains((string) val("SELECT bullets FROM packages WHERE code = 'plus'"), 'Chiedi alla guida'),
       json_encode([$valoreAi('plus'), $valoreAi('essential')]));
 
 // Un host Plus con la guida pubblicata (Wi-Fi e un contatto WhatsApp), e uno Essential.
@@ -7954,12 +7955,14 @@ $coreN = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 
 prova('10 · l\'host Plus ha pagato e la guida è pubblicata (con il Wi-Fi e il contatto WhatsApp)', val('SELECT status FROM orders WHERE id = ?', [(int) ($ordN['id'] ?? 0)]) === 'paid' && val('SELECT status FROM properties WHERE id = ?', [$noraPid]) === 'published' && $wifiN > 0,
       json_encode(['ordine' => $ordN['status'] ?? null, 'webhook' => $rWebN, 'stato' => val('SELECT status FROM properties WHERE id = ?', [$noraPid]), 'wifi' => $wifiN, 'pubblica' => $nora->get("/pannello/$noraPid/procedura/pubblica")['code']]));
 $r = $ospite->get("/g/$slugN?l=it");
-prova('10 · la guida Plus pubblicata ha «Chiedi alla guida» nella barra in fondo (link alla pagina senza JavaScript) e la finestra con intro, esempi, modulo e nota',
-      $r['code'] === 200 && pulita($r) && preg_match('#<a class="btn btn--ghost chiedi-apri" href="[^"]*/g/' . preg_quote($slugN, '#') . '/chiedi\?l=it" data-chiedi-apri="chiedi-alla-guida"#', $r['body']) === 1
-      && str_contains($r['body'], '<dialog class="chiedi" id="chiedi-alla-guida"') && str_contains($r['body'], 'Qual è la password del Wi-Fi?') && str_contains($r['body'], 'A che ora è il check-out?')
-      && str_contains($r['body'], 'name="q"') && str_contains($r['body'], 'Nessun dato tuo viene salvato') && !str_contains($r['body'], 'Set-Cookie'),
+prova('10 · 9T · la guida Plus pubblicata ha «Chiedi al Concierge» col badge AI nella barra in fondo (link alla pagina senza JavaScript) e la finestra #concierge con intro, suggerimento, esempi, modulo e nota (IA, Anthropic, 12 mesi)',
+      $r['code'] === 200 && pulita($r) && preg_match('#<a class="btn btn--ghost chiedi-apri" href="[^"]*/g/' . preg_quote($slugN, '#') . '/chiedi\?l=it" data-chiedi-apri="concierge"#', $r['body']) === 1
+      && str_contains($r['body'], 'Chiedi al Concierge</span><span class="badge-ai">AI</span>')
+      && str_contains($r['body'], '<dialog class="chiedi" id="concierge"') && str_contains($r['body'], 'Qual è la password del Wi-Fi?') && str_contains($r['body'], 'A che ora è il check-out?')
+      && str_contains($r['body'], 'id="chiedi-hint"') && str_contains($r['body'], 'aria-describedby="chiedi-hint"')
+      && str_contains($r['body'], 'name="q"') && str_contains($r['body'], 'Concierge AI, con Anthropic') && str_contains($r['body'], 'anonima per 12 mesi') && !str_contains($r['body'], 'Set-Cookie'),
       (string) $r['code']);
-prova('…anche dentro una sezione, e senza cookie', ($rs = $ospite->get("/g/$slugN/$coreN?l=it"))['code'] === 200 && pulita($rs) && str_contains($rs['body'], 'data-chiedi-apri') && str_contains($rs['body'], 'Chiedi alla guida') && !str_contains($rs['head'], 'Set-Cookie'));
+prova('…anche dentro una sezione, e senza cookie', ($rs = $ospite->get("/g/$slugN/$coreN?l=it"))['code'] === 200 && pulita($rs) && str_contains($rs['body'], 'data-chiedi-apri') && str_contains($rs['body'], 'Chiedi al Concierge') && !str_contains($rs['head'], 'Set-Cookie'));
 
 $primaAs = count($richiesteAs());
 $x = $chiedi10($slugN, 'A che ora è il check-out?');
@@ -7981,9 +7984,9 @@ prova('10 · «la guida non lo dice»: trovata false, niente sezione, contatti t
       $x['code'] === 200 && ($x['j']['trovata'] ?? true) === false && array_key_exists('sezione', $x['j']) && $x['j']['sezione'] === null && ($x['j']['contatti'] ?? false) === true && (int) ($ultimaAs['messaggi'] ?? 0) === 3
       && (int) val("SELECT tokens_cache_read FROM assistant_questions WHERE property_id = ? AND outcome = 'no' ORDER BY id DESC", [$noraPid]) > 0, $x['body'] . json_encode($ultimaAs));
 $r = $nora->get("/pannello/$noraPid/impostazioni");
-prova('10 · Impostazioni → Chiedi alla guida (Plus): «Accesa», interruttore acceso, contatti spuntati, «2 domande su 300», la domanda senza risposta elencata, «Provala sulla tua guida»',
-      str_contains($r['body'], 'id="chiedi-alla-guida"') && str_contains($r['body'], '<span class="badge badge--pine">Accesa</span>') && str_contains($r['body'], 'name="acceso" value="1" checked')
-      && str_contains($r['body'], '<b>Questo mese: 2 domande su 300</b>') && str_contains($r['body'], 'NIENTE-FINTO is there a laundry nearby?') && str_contains($r['body'], 'Provala sulla tua guida'), (string) $r['code']);
+prova('10 · Impostazioni → Concierge AI (Plus): «Acceso», interruttore acceso, contatti spuntati, «2 domande su 300», la domanda senza risposta elencata, «Provalo sulla tua guida»',
+      str_contains($r['body'], 'id="concierge-ai"') && str_contains($r['body'], '<span class="badge badge--pine">Acceso</span>') && str_contains($r['body'], 'name="acceso" value="1" checked')
+      && str_contains($r['body'], '<b>Questo mese: 2 domande su 300</b>') && str_contains($r['body'], 'NIENTE-FINTO is there a laundry nearby?') && str_contains($r['body'], 'Provalo sulla tua guida'), (string) $r['code']);
 $x = $chiedi10($slugN, 'x', 'it', [], ['Sec-Fetch-Site: cross-site']);
 $x2 = $chiedi10($slugN, 'x', 'it', [], ['Origin: https://altro.example']);
 prova('10 · una richiesta da un altro sito (Sec-Fetch-Site o Origin diversi) è rifiutata con 400, senza chiamare Anthropic',
@@ -8031,8 +8034,8 @@ prova('10 · tetto di spesa del sito raggiunto: si ferma per tutti (429), email 
 @unlink($fileLocale); clearstatcache(); sleep(3);
 // L'host spegne l'assistente.
 $r = $nora->segui($nora->modulo("/pannello/$noraPid/impostazioni", "/pannello/$noraPid/assistente", ['contatti' => '1']));
-prova('10 · l\'host spegne «Chiedi alla guida»: conferma, «Spenta», niente bottone nella guida, POST …/chiedi 404, nel registro azioni',
-      str_contains($r['body'], 'è spenta su questa guida') && str_contains($r['body'], '<span class="badge badge--paper">Spenta</span>') && (int) val('SELECT assistant_enabled FROM properties WHERE id = ?', [$noraPid]) === 0
+prova('10 · l\'host spegne il Concierge AI: conferma, «Spento», niente bottone nella guida, POST …/chiedi 404, nel registro azioni',
+      str_contains($r['body'], 'Il Concierge AI è spento su questa guida') && str_contains($r['body'], '<span class="badge badge--paper">Spento</span>') && (int) val('SELECT assistant_enabled FROM properties WHERE id = ?', [$noraPid]) === 0
       && !str_contains($ospite->get("/g/$slugN")['body'], 'data-chiedi-apri') && $chiedi10($slugN, 'x')['code'] === 404 && (bool) val("SELECT id FROM audit_log WHERE action = 'assistente.spento'"));
 $nora->modulo("/pannello/$noraPid/impostazioni", "/pannello/$noraPid/assistente", ['acceso' => '1']);
 prova('…e la riaccende senza i contatti: nella risposta «non lo dice» contatti false',
@@ -8049,35 +8052,37 @@ prova('10 · Essential: la guida non ha il bottone, POST …/chiedi 404; in Impo
       && str_contains($r['body'], 'con il piano Plus') && str_contains($r['body'], 'I tuoi ospiti ti scrivono alle 23') && str_contains($r['body'], '/piano?passa=plus')
       && str_contains($ugo->segui($ugo->modulo("/pannello/$ugoPid/impostazioni", "/pannello/$ugoPid/assistente", ['acceso' => '1']))['body'], 'compreso in Plus e Portfolio'));
 
-// Amministrazione → Assistente AI, Impostazioni, Diagnostica.
+// Amministrazione → Concierge AI, Impostazioni, Diagnostica.
 $r = $admin->get('/admin/assistente');
-prova('10 · Amministrazione → Assistente AI: il mese, Nora con le domande e il costo stimato, i totali, gli errori recenti, il menu',
-      $r['code'] === 200 && str_contains($r['body'], 'Costo stimato · ') && str_contains($r['body'], 'nora10@prova.test') && str_contains($r['body'], '<td>Totale</td>')
-      && str_contains($r['body'], 'Fermata dal limite') && str_contains($r['body'], 'Overloaded') && str_contains($r['body'], '/admin/assistente"') && str_contains($r['body'], 'Assistente AI</span>'), (string) $r['code']);
+prova('10 · Amministrazione → Concierge AI: il mese, Nora con le domande e il costo stimato, i totali, gli errori recenti, il menu',
+      $r['code'] === 200 && str_contains($r['body'], 'Costo stimato del mese') && str_contains($r['body'], 'nora10@prova.test') && str_contains($r['body'], '<td>Totale')
+      && str_contains($r['body'], 'Fermata dal limite') && str_contains($r['body'], 'Overloaded') && str_contains($r['body'], '/admin/assistente"') && str_contains($r['body'], 'Concierge AI</span>'), (string) $r['code']);
 $r = $admin->get('/admin/assistente/csv?mese=' . gmdate('Y-m'));
 prova('…il CSV: intestazioni, la riga di Nora con le domande', $r['code'] === 200 && str_contains($r['body'], 'Codice;Cliente;Email;Piano;Guide;Domande;') && str_contains($r['body'], 'nora10@prova.test'));
 $r = $admin->post('/admin/impostazioni/assistente', ['assistente__modello' => 'gpt-4o', 'assistente__limite_struttura' => '300', 'assistente__tetto_euro' => '50', 'assistente__prezzo_in' => '0.10', 'assistente__prezzo_out' => '0.50', 'assistente__usd_eur' => '0.86', 'password' => 'AdminProva123']);
-prova('10 · Impostazioni → Chiedi alla guida: il modello si controlla (claude-…)', $r['code'] === 422 && str_contains($r['body'], 'si scrive come claude-haiku-5-5'));
+prova('10 · Impostazioni → Concierge AI: il modello si controlla (claude-…)', $r['code'] === 422 && str_contains($r['body'], 'si scrive come claude-haiku-5-5'));
 $r = $admin->segui($admin->post('/admin/impostazioni/assistente/prova', []));
 prova('…«Prova la connessione»: Anthropic risponde con il modello, i token, il limite e il tetto', str_contains($r['body'], 'Anthropic risponde con il modello claude-haiku-5-5') && str_contains($r['body'], '300 domande al mese per struttura'));
-prova('…Diagnostica: «Chiedi alla guida» risulta configurata', str_contains($admin->get('/admin/diagnostica')['body'], 'chiave impostata, modello claude-haiku-5-5'));
+prova('…Diagnostica: il Concierge AI risulta configurato', str_contains($admin->get('/admin/diagnostica')['body'], 'chiave impostata, modello claude-haiku-5-5'));
 $r = $admin->get("/admin/cliente/$noraAcc");
 prova('…scheda del cliente: il riquadro con le domande del mese e il limite personale', str_contains($r['body'], 'id="assistente"') && preg_match('#Questo mese <b>\d+</b> domande#', $r['body']) === 1);
 
 // Il sito: home (IT/EN), listino, FAQ, Termini, Privacy, llms.
 $r = $ospite->get('/');
-prova('10 · home: la sezione «Chiedi alla guida» con la finta chat (il check-out della vetrina), «fino a 300 domande», la voce nei piani e nel confronto',
-      str_contains($r['body'], 'id="chiedi-alla-guida" class="assistente"') && str_contains($r['body'], 'La guida risponde. Tu dormi.') && str_contains($r['body'], 'fino a 300 domande al mese per struttura')
-      && str_contains($r['body'], 'Chiedi alla guida (assistente AI)') && str_contains($r['body'], 'chiedi__msg--guida'), (string) $r['code']);
+prova('10 · 9T · home: la sezione #concierge-ai col badge AI, «Risponde ai tuoi ospiti, a qualsiasi ora.», la finta chat in tedesco (il check-out della vetrina), «fino a 300 domande», la voce nei piani e nel confronto',
+      str_contains($r['body'], 'id="concierge-ai" class="assistente"') && str_contains($r['body'], 'Risponde ai tuoi ospiti, a qualsiasi ora.') && str_contains($r['body'], 'fino a 300 domande al mese per struttura')
+      && str_contains($r['body'], 'kicker kicker--ai') && str_contains($r['body'], 'Wann ist der Check-out?') && str_contains($r['body'], 'Concierge AI') && str_contains($r['body'], 'chiedi__msg--guida')
+      && !str_contains($r['body'], 'Chiedi alla guida'), (string) $r['code']);
 $r = $ospite->get('/en');
-prova('…in inglese', str_contains($r['body'], 'The guide answers. You sleep.') && str_contains($r['body'], 'up to 300 questions a month per property') && str_contains($r['body'], 'Ask the guide (AI assistant)'));
-prova('…FAQ IT ed EN con il tema «Chiedi alla guida»', str_contains($ospite->get('/domande')['body'], 'Cos&#039;è «Chiedi alla guida»?') && str_contains($ospite->get('/en/questions')['body'], 'What is &quot;Ask the guide&quot;?'));
-prova('…Termini (punto 15) e Privacy (trattamento 16, Anthropic tra i fornitori e nei trasferimenti), IT ed EN',
-      str_contains($ospite->get('/termini')['body'], '15. Chiedi alla guida (assistente automatico)') && str_contains($ospite->get('/privacy')['body'], '16. Chiedi alla guida (le domande degli ospiti)')
-      && substr_count($ospite->get('/privacy')['body'], 'Anthropic') >= 3 && str_contains($ospite->get('/en/terms')['body'], '15. Ask the guide (automatic assistant)') && str_contains($ospite->get('/en/privacy')['body'], 'Anthropic, PBC'));
-prova('…llms.txt cita l\'assistente', str_contains($ospite->get('/llms.txt')['body'], 'Chiedi alla guida'));
+prova('…in inglese', str_contains($r['body'], 'Answers your guests, at any hour.') && str_contains($r['body'], 'up to 300 questions a month per property') && str_contains($r['body'], 'Concierge AI') && !str_contains($r['body'], 'Ask the guide'));
+prova('…FAQ IT ed EN con il tema «Concierge AI»', str_contains($ospite->get('/domande')['body'], 'Cos&#039;è il Concierge AI?') && str_contains($ospite->get('/en/questions')['body'], 'What is Concierge AI?'));
+prova('…Termini (punto 15) e Privacy (trattamento 16, Anthropic tra i fornitori e nei trasferimenti; 9T: noi vediamo le domande senza risposta raggruppate), IT ed EN',
+      str_contains($ospite->get('/termini')['body'], '15. Concierge AI (assistente automatico)') && str_contains($pv16 = $ospite->get('/privacy')['body'], '16. Concierge AI (le domande degli ospiti)')
+      && str_contains($pv16, 'raggruppate e senza sapere chi le ha scritte')
+      && substr_count($pv16, 'Anthropic') >= 3 && str_contains($ospite->get('/en/terms')['body'], '15. Concierge AI (automatic assistant)') && str_contains($ospite->get('/en/privacy')['body'], 'Anthropic, PBC'));
+prova('…llms.txt cita il Concierge AI', str_contains($ospite->get('/llms.txt')['body'], 'Concierge AI'));
 $r = $nora->get('/pannello/novita');
-prova('10 · la pagina Novità ha «La tua guida risponde agli ospiti»', str_contains($r['body'], 'La tua guida risponde agli ospiti'));
+prova('10 · la pagina Novità ha «Concierge AI: risponde ai tuoi ospiti, a qualsiasi ora»', str_contains($r['body'], 'Concierge AI: risponde ai tuoi ospiti, a qualsiasi ora'));
 
 // La locandina A6 e il link in QR & Link.
 $r = $nora->get("/pannello/$noraPid/locandina");
@@ -8095,24 +8100,25 @@ foreach ([['Dove lascio le valigie?', 'no', null], ['Password wifi?', 'ok', $cor
 }
 $fatte10 = (int) $c9n('echo MHW\Richiami::giroAssistente(strtotime("first day of this month") + 2 * 86400);');   // «primi 7 giorni del mese»: il riepilogo è del mese scorso
 $logMese = riga("SELECT * FROM email_log WHERE account_id = ? AND kind = 'assistente' AND ref = ?", [$noraAcc, "mese-$meseScorso-$noraPid"]);
-$postaMese = array_values(array_filter(righePosta(), fn($l) => str_contains($l, 'nora10@prova.test') && str_contains($l, 'la tua guida ha risposto 2 volte')));
+$postaMese = array_values(array_filter(righePosta(), fn($l) => str_contains($l, 'nora10@prova.test') && str_contains($l, 'il Concierge AI ha risposto 2 volte')));
 prova('10 · l\'email mensile all\'host: una per guida e mese, con le domande (3), con risposta (2), la sezione più chiesta e la domanda senza risposta; non si ripete',
       $fatte10 === 1 && $logMese !== null && count($postaMese) === 1 && str_contains($postaMese[0], 'Dove lascio le valigie?') && str_contains($postaMese[0], 'Check-in')
       && (int) $c9n('echo MHW\Richiami::giroAssistente(strtotime("first day of this month") + 2 * 86400);') === 0, json_encode([$fatte10, $logMese]));
 prova('…mai fuori dai primi 7 giorni del mese', (int) $c9n('echo MHW\Richiami::giroAssistente(strtotime("first day of this month") + 9 * 86400);') === 0);
 $r = $ospite->get('/email/stop/' . $logMese['token']);
-prova('…«Non mandarmene più» ferma le email su «Chiedi alla guida»', str_contains($r['body'], 'le email su «Chiedi alla guida»')
+prova('…«Non mandarmene più» ferma le email sul Concierge AI', str_contains($r['body'], 'le email sul Concierge AI')
       && str_contains($ospite->post('/email/stop/' . $logMese['token'], ['_csrf' => csrf($r['body'])])['body'], 'Fatto.') && (bool) val("SELECT id FROM email_optout WHERE account_id = ? AND kind = 'assistente'", [$noraAcc]));
 // La pulizia: le domande oltre i 12 mesi spariscono.
 db()->prepare("INSERT INTO assistant_questions (property_id, account_id, month, locale, question, outcome, created_at) VALUES (?, ?, '2025-01', 'it', 'vecchia', 'ok', '2025-01-10T10:00:00Z')")->execute([$noraPid, $noraAcc]);
 $c9n('MHW\Assistente::pulisci();');
 prova('10 · le domande più vecchie di 12 mesi si cancellano dal giro quotidiano; le recenti restano', !val("SELECT id FROM assistant_questions WHERE question = 'vecchia'") && (bool) val("SELECT id FROM assistant_questions WHERE question = 'Check-out?'"));
-// La vetrina: solo con l'interruttore dell'amministrazione.
+// La vetrina: 9T · di serie il Concierge risponde anche sulla demo; l'amministrazione lo può spegnere.
 $slugV = (string) $c9n('echo (string) ((MHW\Demo::vetrinaAttuale() ?? [])["slug"] ?? "");');
 if ($slugV !== '') {
-    prova('10 · la guida vetrina non ha il bottone finché l\'amministrazione non lo accende per la demo', !str_contains($ospite->get("/g/$slugV")['body'], 'data-chiedi-apri'));
-    file_put_contents($fileLocale, '<?php return ' . var_export(['assistente' => ['demo' => true]], true) . ';'); clearstatcache(); sleep(3);
-    prova('…acceso «Anche sulla guida vetrina»: il bottone c\'è', str_contains($ospite->get("/g/$slugV")['body'], 'data-chiedi-apri'));
+    prova('10 · 9T · la guida vetrina ha il bottone di serie («Anche sulla guida vetrina» acceso)', str_contains($ospite->get("/g/$slugV")['body'], 'data-chiedi-apri'));
+    file_put_contents($fileLocale, '<?php return ' . var_export(['assistente' => ['demo' => false]], true) . ';'); clearstatcache(); sleep(3);
+    prova('…spento dall\'amministrazione: niente bottone, POST …/chiedi 404, e in home niente «Provalo sulla demo»', !str_contains($ospite->get("/g/$slugV")['body'], 'data-chiedi-apri')
+          && $chiedi10($slugV, 'x')['code'] === 404 && !str_contains($ospite->get('/')['body'], 'Provalo sulla demo'));
     @unlink($fileLocale); clearstatcache(); sleep(3);
 }
 
@@ -8212,6 +8218,189 @@ prova('10H · …eliminato del tutto: utente, account e struttura non ci sono pi
 db()->prepare("UPDATE audit_log SET created_at = '2025-01-01T00:00:00Z' WHERE action = 'account.eliminato' AND target_user_id = ?")->execute([$uidE]);
 $c9n('MHW\AccountProva::pulisci();');
 prova('10H · dopo 90 giorni l\'email dell\'account eliminato sparisce anche dal Registro azioni', (json_decode((string) val("SELECT meta FROM audit_log WHERE action = 'account.eliminato' AND target_user_id = ?", [$uidE]), true)['email'] ?? '') === '—');
+
+// ======================================================================= 9T
+capitolo('9T · Concierge AI (nome, demo, limite, Amministrazione con consumo e spesa), inviti che contano col bonifico e «Conta l\'invito (prova)», demo in una nuova scheda, correzioni del 28 ottobre');
+// La configurazione di prova: un solo config.local.php (gli inviti accesi e, se serve, le impostazioni del Concierge AI).
+$conf9t = function (array $c) use ($fileLocale): void {
+    @unlink($fileLocale);
+    if ($c) { file_put_contents($fileLocale, '<?php return ' . var_export($c, true) . ';'); touch($fileLocale, time() - 30); }
+    clearstatcache(); sleep(3);
+};
+$slugV = (string) $c9n('echo (string) ((MHW\Demo::vetrinaAttuale() ?? [])["slug"] ?? "");');
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'chiedi%'");
+
+// 1 · Il nome: «Chiedi al Concierge» nelle 5 lingue della guida, nessun vecchio testo nelle pagine.
+$etich9t = [];
+foreach (['it' => 'Chiedi al Concierge', 'en' => 'Ask the Concierge', 'fr' => 'Demandez au Concierge', 'de' => 'Frag den Concierge', 'es' => 'Pregunta al Concierge'] as $l => $t) {
+    $etich9t[$l] = $c9n('echo MHW\I18n::t("' . $l . '", "ask_guide");') === $t && $c9n('echo MHW\I18n::t("' . $l . '", "ask_answer");') === 'Concierge AI';
+}
+prova('9T · 1 · «Chiedi al Concierge» (bottone) e «Concierge AI» (chi risponde) nelle 5 lingue della guida; il suggerimento e la locandina «Scansiona e chiedi al Concierge AI»',
+      !in_array(false, $etich9t, true) && $c9n('echo MHW\I18n::t("it", "ask_hint");') === 'Concierge AI risponde con le informazioni di questa guida.'
+      && $c9n('echo MHW\I18n::t("it", "ask_poster");') === 'Scansiona e chiedi al Concierge AI', json_encode($etich9t));
+$vecchi9t = [];
+foreach (['/', '/en', '/domande', '/en/questions', '/termini', '/privacy', '/prezzi', '/llms.txt'] as $u) {
+    $b = $ospite->get($u)['body'];
+    if (str_contains($b, 'Chiedi alla guida') || str_contains($b, 'Ask the guide') || str_contains($b, 'Tu dormi') || str_contains($b, 'You sleep')) $vecchi9t[] = $u;
+}
+prova('9T · 1 · nessun «Chiedi alla guida», «Ask the guide» o «Tu dormi» nelle pagine del sito (home IT/EN, FAQ, Termini, Privacy, prezzi, llms.txt)', $vecchi9t === [], json_encode($vecchi9t));
+$r = $ospite->get('/');
+prova('9T · 1 · SEO: la descrizione della home cita il Concierge AI', preg_match('#<meta name="description" content="[^"]*Concierge AI#', $r['body']) === 1);
+
+// 2 bis · «Come funziona» su telefono: ogni passo ha la sua schermata intera (figure con alt), niente pillole.
+prova('9T · 2 bis · «Come funziona»: tre passi, ognuno con la sua schermata (figure .passo__schermata con l\'alt del passo); il CSS sotto 760 px le mostra intere e nasconde la colonna delle schermate',
+      substr_count($r['body'], '<figure class="schermata passo__schermata"') === 3 && str_contains((string) file_get_contents("$DOVE/assets/app.css"), '.passi[data-passi] .passi__schermate{display:none}'));
+
+// 2 ter / 5.1 · Le 8 pagine per tipologia: il blocco Portfolio vero (177 € con 2 strutture, fino a 10), niente modulo del preventivo; il link a /piu-strutture.
+$tip9t = [];
+foreach (['/case-vacanza', '/bed-and-breakfast', '/affittacamere', '/agriturismi', '/en/holiday-homes', '/en/bed-and-breakfast', '/en/guesthouses', '/en/farm-stays'] as $u) {
+    $b = $ospite->get($u)['body']; $en = str_starts_with($u, '/en');
+    $tip9t[$u] = str_contains($b, '177') && str_contains($b, $en ? 'up to 10' : 'fino a 10') && str_contains($b, $en ? 'Start free with Portfolio' : 'Crea gratis con Portfolio')
+               && !str_contains($b, 'id="preventivo"') && str_contains($b, '#preventivo');   // «Applica» resta nel modulo senza JS: lo nasconde .btn[hidden] (5.3)
+}
+prova('9T · 2 ter/5.1 · le 8 pagine per tipologia (IT ed EN): blocco Portfolio con 177 €, «fino a 10», «Crea gratis con Portfolio», nessun modulo del preventivo (solo il link a /piu-strutture#preventivo)',
+      !in_array(false, $tip9t, true), json_encode($tip9t));
+prova('…/piu-strutture tiene il suo preventivo', str_contains($ospite->get('/piu-strutture')['body'], 'id="preventivo"'));
+
+// 2 quater · Inviti: tre amici (pagato con Stripe, bonifico registrato, solo registrato) → 2 pieni e 1 tratteggiato; omaggio senza bonifico: resta in attesa.
+$conf9t(['inviti' => ['attivi' => true]]);
+$tito9t = $cliente9n('Tito Inviti', 'tito9t@prova.test'); $abbonamento9n($tito9t, 'plus', 'active', 'sub_9t_tito', 300);
+$amici9t = [];
+foreach (['Anna Carta' => 'anna9t@prova.test', 'Bruno Bonifico' => 'bruno9t@prova.test', 'Carla Attesa' => 'carla9t@prova.test', 'Dario Staff' => 'dario9t@prova.test'] as $n => $e) {
+    $amici9t[$n] = $cliente9n($n, $e);
+    db()->prepare("INSERT INTO referrals (referrer_account_id, friend_account_id, status, created_at) VALUES (?, ?, 'registrato', ?)")->execute([$tito9t, $amici9t[$n], gmdate('Y-m-d\TH:i:s\Z')]);
+}
+// Anna paga con Stripe (Billing::activate chiama Inviti::pagato).
+db()->prepare("INSERT INTO orders (account_id, package_version_id, amount_cents, currency, status, provider, provider_session_id, quantity, kind, created_at, updated_at)
+               VALUES (?, ?, 12700, 'EUR', 'paid', 'stripe', 'cs_9t_anna', 1, 'new', ?, ?)")->execute([$amici9t['Anna Carta'], pv('plus'), gmdate('Y-m-d\TH:i:s\Z'), gmdate('Y-m-d\TH:i:s\Z')]);
+$c9n('MHW\Inviti::pagato(MHW\Db::one("SELECT * FROM orders WHERE provider_session_id = \'cs_9t_anna\'"));');
+// Bruno: attivato a mano con il bonifico registrato (9N).
+$daTito = count(righePosta() ?: []);
+$admin->post('/admin/cliente/' . $amici9t['Bruno Bonifico'] . '/abbonamento', ['pv' => pv('plus'), 'durata' => '12', 'nota' => 'Bonifico 9T', 'pagamento' => 'bonifico',
+             'bonifico_importo' => '127,00', 'bonifico_iva' => '27,94', 'bonifico_data' => gmdate('Y-m-d'), 'bonifico_riferimento' => 'CRO 9T']);
+$refB = riga('SELECT * FROM referrals WHERE friend_account_id = ?', [$amici9t['Bruno Bonifico']]);
+prova('9T · 2 quater · attivazione a mano con bonifico: l\'invito diventa «valido» con l\'ordine del bonifico; a chi invita l\'email «Bruno B. ha attivato la sua guida»',
+      ($refB['status'] ?? '') === 'valido' && (int) ($refB['order_id'] ?? 0) === (int) val("SELECT id FROM orders WHERE account_id = ? AND provider = 'bonifico'", [$amici9t['Bruno Bonifico']])
+      && (bool) array_filter($mailA('tito9t@prova.test', $daTito), fn($m) => str_contains((string) $m['subject'], 'Bruno B. ha attivato la sua guida')), json_encode($refB));
+// Carla: piano dato a mano senza bonifico (omaggio) → resta in attesa.
+$admin->post('/admin/cliente/' . $amici9t['Carla Attesa'] . '/abbonamento', ['pv' => pv('plus'), 'durata' => '12', 'nota' => 'Omaggio 9T']);
+prova('…con un piano dato a mano senza pagamento (omaggio) l\'invito resta «registrato»', val('SELECT status FROM referrals WHERE friend_account_id = ?', [$amici9t['Carla Attesa']]) === 'registrato');
+$titoB = new Browser('tito9t'); $titoB->get('/accedi'); $titoB->post('/accedi', ['email' => 'tito9t@prova.test', 'password' => 'Prova9N-2026']);
+db()->prepare("UPDATE referrals SET status = 'annullato' WHERE friend_account_id = ?")->execute([$amici9t['Dario Staff']]);   // Dario entra dopo
+$r = $titoB->get('/inviti');
+prova('9T · 2 quater · la barra di chi invita: 2 rettangoli pieni, 1 tratteggiato con la sola clessidra (title e testo per lo screen reader «in attesa che attivi»), 7 vuoti; la spiegazione sotto',
+      substr_count($r['body'], 'barra-inviti__casella--pieno') === 2 && substr_count($r['body'], 'barra-inviti__casella--attesa') === 1 && substr_count($r['body'], 'barra-inviti__casella--vuoto') === 7
+      && str_contains($r['body'], 'class="barra-inviti__attesa" title="in attesa che attivi"') && str_contains($r['body'], '<span class="sr-only">in attesa che attivi</span>')
+      && str_contains($r['body'], 'Un amico si è registrato ma non ha ancora attivato la guida'), (string) $r['code']);
+prova('9T · 2 quater · i testi dicono «attiva», non «pubblica»: «per ogni amico che attiva la sua guida (con il primo pagamento)»',
+      str_contains($r['body'], 'per ogni amico che attiva la sua guida (con il primo pagamento)') && str_contains($r['body'], 'Quando attiva la sua guida (con il primo pagamento)')
+      && !str_contains($r['body'], 'amico che pubblica') && !str_contains($r['body'], 'ha pubblicato la sua guida'));
+// «Conta l'invito (prova)»: mai tra due clienti veri; con un amico staff sì, con il motivo nel Registro.
+$rC = $admin->get('/admin/cliente/' . $amici9t['Carla Attesa']);
+$rC2 = $admin->segui($admin->post('/admin/cliente/' . $amici9t['Carla Attesa'] . '/invito-prova', ['motivo' => 'prova']));
+prova('9T · 2 quater · «Conta l\'invito (prova)» non c\'è tra due clienti veri, e il POST è rifiutato', !str_contains($rC['body'], 'Conta l&#039;invito (prova)') && !str_contains($rC['body'], "Conta l'invito (prova)")
+      && str_contains($rC2['body'], 'Solo per le prove') && val('SELECT status FROM referrals WHERE friend_account_id = ?', [$amici9t['Carla Attesa']]) === 'registrato');
+db()->prepare("UPDATE referrals SET status = 'registrato' WHERE friend_account_id = ?")->execute([$amici9t['Dario Staff']]);
+db()->prepare('UPDATE accounts SET is_staff = 1 WHERE id = ?')->execute([$amici9t['Dario Staff']]);
+$rD = $admin->get('/admin/cliente/' . $amici9t['Dario Staff']);
+$rD0 = $admin->segui($admin->post('/admin/cliente/' . $amici9t['Dario Staff'] . '/invito-prova', ['motivo' => '']));
+$rD1 = $admin->segui($admin->post('/admin/cliente/' . $amici9t['Dario Staff'] . '/invito-prova', ['motivo' => 'prova della barra 9T']));
+prova('9T · 2 quater · con un amico staff: il bottone c\'è, senza motivo no, con il motivo l\'invito conta (Registro «invito.contato_prova») e la barra ha 3 pieni',
+      str_contains($rD['body'], '/invito-prova"') && str_contains($rD0['body'], 'Scrivi il motivo') && str_contains($rD1['body'], 'Invito contato per prova')
+      && val('SELECT status FROM referrals WHERE friend_account_id = ?', [$amici9t['Dario Staff']]) === 'valido'
+      && (bool) val("SELECT id FROM audit_log WHERE action = 'invito.contato_prova' AND meta LIKE ?", ['%prova della barra 9T%'])
+      && substr_count($titoB->get('/inviti')['body'], 'barra-inviti__casella--pieno') === 3, json_encode(riga('SELECT * FROM referrals WHERE friend_account_id = ?', [$amici9t['Dario Staff']])));
+$conf9t([]);
+
+// 2 quinquies · La foto di Francesco nella vetrina (non la porta rossa).
+prova('9T · 2 quinquies · la foto profilo della vetrina è il ritratto di Francesco (checco-francesco.jpg), la porta rossa resta nel Check-in',
+      $slugV !== '' && val('SELECT m.original_name FROM properties p JOIN media m ON m.id = p.profile_media_id WHERE p.slug = ?', [$slugV]) === 'checco-francesco.jpg'
+      && val('SELECT m.alt FROM properties p JOIN media m ON m.id = p.profile_media_id WHERE p.slug = ?', [$slugV]) === 'Francesco, l\'host' && !is_file("$DOVE/assets/foto/checco-profilo.jpg"));
+
+// 3 · Il Concierge AI nella demo: risponde con Casa Checco, niente contatti, limite suo e 5 domande ogni 10 minuti.
+$x = $chiedi10($slugV, 'A che ora è il check-out?');
+prova('9T · 3 · demo: il Concierge risponde a «A che ora è il check-out?» con la sezione di Casa Checco, senza contatti', $x['code'] === 200 && ($x['j']['trovata'] ?? false) === true
+      && ($x['j']['contatti'] ?? true) === false && !empty($x['j']['sezione']['id']), $x['body']);
+$x = $chiedi10($slugV, 'NIENTE-FINTO c\'è una piscina?');
+prova('…«non lo dice» nella demo: niente contatti (nessun numero finto)', $x['code'] === 200 && ($x['j']['trovata'] ?? true) === false && ($x['j']['contatti'] ?? true) === false, $x['body']);
+$conf9t(['assistente' => ['demo_limite' => 3]]);
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'chiedi%'");
+$x3 = $chiedi10($slugV, 'Dove si parcheggia?'); $x4 = $chiedi10($slugV, 'E il wifi?');
+prova('9T · 3 · limite della demo (qui 3 al mese): la quarta riceve «La demo ha finito le domande per questo mese: crea la tua guida…», Anthropic non è chiamato; il limite dei clienti non cambia',
+      $x3['code'] === 200 && $x4['code'] === 429 && str_contains((string) ($x4['j']['errore'] ?? ''), 'La demo ha finito le domande per questo mese') && str_contains((string) ($x4['j']['errore'] ?? ''), 'crea la tua guida')
+      && (int) $c9n('echo MHW\Assistente::limite(0);') === 300, $x4['body']);
+$conf9t([]);
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'chiedi%'");
+$codici9t = [];
+for ($i = 1; $i <= 6; $i++) $codici9t[] = $chiedi10($slugV, "Domanda $i sul check-in?")['code'];
+prova('9T · 3 · demo: 5 domande ogni 10 minuti per visitatore, la sesta «Troppe domande» (429)', $codici9t === [200, 200, 200, 200, 200, 429], json_encode($codici9t));
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'chiedi%'");
+$wa9t = [];
+foreach (["/g/$slugV?l=it", "/g/$slugV/commiato", "/g/$slugV/chiedi?l=it"] as $u) { $b = $ospite->get($u)['body']; if (str_contains($b, 'wa.me/') || str_contains($b, 'tel:+39075')) $wa9t[] = $u; }
+$rV = $ospite->get("/g/$slugV?l=it");
+prova('9T · 5.4 · demo: nessun link a WhatsApp o a numeri finti; al loro posto «È una demo: nella tua guida, qui gli ospiti scrivono a te su WhatsApp» con «Crea la tua guida»; il Concierge senza contatto',
+      $wa9t === [] && str_contains($rV['body'], 'demo-contatto') && str_contains($rV['body'], 'È una demo: nella tua guida, qui gli ospiti scrivono a te su WhatsApp.')
+      && str_contains($rV['body'], 'data-contatti-href=""'), json_encode($wa9t));
+$r = $ospite->get('/');
+prova('9T · 3 · home: «Provalo sulla demo» apre la demo sulla finestra del Concierge (?l=it#concierge) in una nuova scheda', preg_match('#href="[^"]*/g/[a-z0-9-]+\?l=it\#concierge" target="_blank" rel="noopener">Provalo sulla demo#', $r['body']) === 1);   // la demo della home
+prova('9T · 3 · la guida apre da sola la finestra con #concierge (guida.js)', str_contains((string) file_get_contents("$DOVE/assets/guida.js"), "location.hash === '#concierge'"));
+
+// 3 · Amministrazione → Concierge AI: quattro numeri, 30 giorni, per struttura, la demo a sé, le domande senza risposta; il costo vero solo con la Admin key.
+$r = $admin->get('/admin/assistente');
+prova('9T · 3 · Amministrazione → Concierge AI: domande del mese con la media al giorno, costo stimato con la cache, proiezione a fine mese, costo medio a domanda',
+      $r['code'] === 200 && str_contains($r['body'], 'al giorno ·') && str_contains($r['body'], 'di cui cache') && str_contains($r['body'], 'Proiezione a fine mese') && str_contains($r['body'], 'Costo medio a domanda')
+      && !str_contains($r['body'], 'data-costo-reale'), (string) $r['code']);
+prova('…le domande per giorno degli ultimi 30 giorni (30 barre, con la tabella dei numeri) e la nota sul costo vero nella Claude Console',
+      substr_count($r['body'], 'class="giorni__col"') === 30 && str_contains($r['body'], 'I numeri giorno per giorno') && str_contains($r['body'], 'Il costo vero è nella Claude Console → Usage / Cost del workspace MyHouse Welcome.'));
+prova('…la riga a sé «Demo Casa Checco» con le domande del mese (fuori dalle righe dei clienti) e la colonna «Per struttura» con la percentuale',
+      preg_match('#<b>Demo Casa Checco</b>.*?<td>—</td><td>(\d+)</td>#s', $r['body'], $mD) === 1 && (int) $mD[1] >= 8 && str_contains($r['body'], '<th scope="col">Per struttura</th>')
+      && str_contains($r['body'], 'class="uso-strutture"'), json_encode($mD ?? []));
+prova('…le domande senza risposta più frequenti, anonime (la demo e Nora)', str_contains($r['body'], 'Le domande senza risposta più frequenti') && str_contains($r['body'], 'NIENTE-FINTO c&#039;è una piscina?')
+      && str_contains($r['body'], 'NIENTE-FINTO is there a laundry nearby?'));
+prova('…il CSV ha la colonna «Per struttura» e la riga della demo', str_contains($csv9t = $admin->get('/admin/assistente/csv?mese=' . gmdate('Y-m'))['body'], 'Per struttura') && str_contains($csv9t, 'Demo Casa Checco'));
+$r = $admin->post('/admin/impostazioni/assistente', ['assistente__modello' => 'claude-haiku-5-5', 'assistente__limite_struttura' => '300', 'assistente__tetto_euro' => '50', 'assistente__prezzo_in' => '0.10', 'assistente__prezzo_out' => '0.50',
+                  'assistente__usd_eur' => '0.86', 'assistente__demo_limite' => '300', 'assistente__admin_key' => 'sk-ant-api03-nonvaquestachiave', 'password' => 'AdminProva123']);
+prova('9T · 3 · Impostazioni: la Admin key deve cominciare con sk-ant-admin (non la chiave API normale)', $r['code'] === 422 && str_contains($r['body'], 'comincia con sk-ant-admin'), (string) $r['code']);
+$euro9t = fn(float $centesimi) => number_format($centesimi / 100 * 0.86, 2, ',', '.') . ' €';
+$giorni9t = (int) gmdate('j');
+$conf9t(['assistente' => ['admin_key' => 'sk-ant-admin-finta-solo-prove']]);
+$r = $admin->get('/admin/assistente');
+$costi9t = array_values(array_filter($richiesteAs(), fn($x) => ($x['percorso'] ?? '') === 'cost_report'));
+prova('9T · 3 · con la Admin key: il costo vero del mese da Anthropic (cost_report, tutte le pagine, versione API) accanto alla stima, in euro e dollari',
+      str_contains($r['body'], 'Costo vero da Anthropic: ' . $euro9t($giorni9t * 165.5)) && str_contains($r['body'], 'tutta l\'organizzazione')
+      && count($costi9t) === (int) ceil($giorni9t / 10) && ($costi9t[0]['versione'] ?? '') === '2026-10-21', json_encode([$giorni9t, $costi9t, preg_match('#data-costo-reale>(.{0,200})#s', $r['body'], $mC) ? strip_tags($mC[1]) : '']));
+$conf9t(['assistente' => ['admin_key' => 'sk-ant-admin-finta-solo-prove', 'workspace' => 'wrkspc_finto01']]);
+prova('…con il workspace: solo i costi di quel workspace', str_contains($admin->get('/admin/assistente')['body'], 'Costo vero da Anthropic: ' . $euro9t($giorni9t * 125.5)));
+$conf9t(['assistente' => ['admin_key' => 'sk-ant-admin-sbagliata-solo-prove']]);
+prova('…con una Admin key sbagliata: «Il costo vero non si legge: Anthropic 401 …» e il link alle Impostazioni', str_contains($admin->get('/admin/assistente')['body'], 'Il costo vero non si legge: Anthropic 401 authentication_error'));
+$conf9t([]);
+
+// 4 · Tutti i link alla demo aprono una nuova scheda (IT ed EN), con l'avviso per lo screen reader.
+$nuova9t = [];
+foreach (['/' => '(si apre in una nuova scheda)', '/en' => '(opens in a new tab)', '/case-vacanza' => '(si apre in una nuova scheda)', '/en/holiday-homes' => '(opens in a new tab)'] as $u => $avviso) {
+    $b = $ospite->get($u)['body'];
+    preg_match_all('#<a\b[^>]*href="[^"]*/g/' . preg_quote($slugV, '#') . '[^"]*"[^>]*>#', $b, $mL);
+    $nuova9t[$u] = count($mL[0]) > 0 && count(array_filter($mL[0], fn($a) => !str_contains($a, 'target="_blank"') || !str_contains($a, 'rel="noopener"'))) === 0 && str_contains($b, $avviso) ? count($mL[0]) : 0;
+}
+prova('9T · 4 · ogni link alla demo (hero, telefono, scena, prodotto, Concierge, fondo pagina, tipologie) apre una nuova scheda con «si apre in una nuova scheda» per lo screen reader, IT ed EN',
+      ($nuova9t['/'] ?? 0) >= 6 && ($nuova9t['/en'] ?? 0) >= 6 && ($nuova9t['/case-vacanza'] ?? 0) >= 2 && ($nuova9t['/en/holiday-homes'] ?? 0) >= 2, json_encode($nuova9t));
+prova('…dentro la demo «Torna al sito» e «Crea la tua» restano nella stessa scheda', preg_match('#<a[^>]*class="[^"]*demo-[^"]*"[^>]*target="_blank"#', $rV['body']) === 0);
+
+// 5 · Le correzioni del 28 ottobre.
+prova('9T · 5.2 · FAQ del giudizio: amici fino al 50% + giudizio 5%, massimo 55% (IT ed EN); l\'omaggio: «e il giudizio (5%, una volta)»',
+      str_contains($fq = $ospite->get('/domande')['body'], 'massimo 55%') && str_contains($fq, 'e il giudizio (5%, una volta)') && str_contains($ospite->get('/en/questions')['body'], '55%'));
+$css9t = (string) file_get_contents("$DOVE/assets/app.css");
+prova('9T · 5.3/5.5 · CSS: .btn[hidden] nascosto (niente «Applica» sotto i prezzi IVA inclusa); le schede dei piani senza spazio vuoto forzato', str_contains($css9t, '.btn[hidden]{display:none}') && str_contains($css9t, '.piani{align-items:start}'));
+prova('9T · 5.6 · «Buon viaggio»: lo spazio prima dell\'emoji non va a capo (NBSP) in tutte le lingue', !in_array(false, array_map(fn($l) => str_contains($c9n('echo MHW\I18n::t("' . $l . '", "rating_happy");'), "\u{00A0}"), ['it', 'en', 'fr', 'de', 'es']), true));
+prova('9T · 5.7 · EN: il capitale sociale «€10,000.00, fully paid-up»', $c9n('echo MHW\Legale::capitaleEn("10.000,00 € i.v.");') === '€10,000.00, fully paid-up');
+prova('9T · 5.8 · demo: la copertina ha l\'alt con il nome della struttura', str_contains($rV['body'], 'alt="Casa Checco"'));
+$rA = $ospite->get('/accedi'); $rR = $ospite->get('/registrati');
+prova('9T · 5.9 · /accedi e /registrati: «Accedi | MyHouse Welcome», «Crea il tuo account | MyHouse Welcome» e la meta description (restano noindex)',
+      str_contains($rA['body'], '<title>Accedi | MyHouse Welcome</title>') && str_contains($rR['body'], '<title>Crea il tuo account | MyHouse Welcome</title>')
+      && str_contains($rA['body'], '<meta name="description" content="Accedi a MyHouse Welcome') && str_contains($rR['body'], '<meta name="description" content="Crea gratis la guida digitale')
+      && str_contains($rA['body'], 'noindex') && str_contains($rR['body'], 'noindex'));
+$busta9t = $c9n('echo MHW\Icon::svg("mail", 18);');
+prova('9T · 5.10 · i bottoni Email in home e in /domande hanno la busta, non il fumetto', str_contains($ospite->get('/')['body'], $busta9t) && str_contains($ospite->get('/domande')['body'], $busta9t));
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

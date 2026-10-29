@@ -13,16 +13,16 @@ $invN = (int) $inv['validi']; $invMax = (int) $inv['massimo'];
 $numInv = ['{passo}' => Inviti::PASSO, '{max}' => Inviti::MASSIMO, '{amico}' => Inviti::AMICO, '{n}' => $invN, '{tetto}' => $invMax];
 if ($invN === 0) {
     $titoloInv = t('Invita un amico: uno sconto per te, uno per lui.');
-    $sottoInv = tf('Per ogni amico che pubblica la sua guida, il tuo prossimo rinnovo scende del {passo}%, fino al {max}%. Il tuo amico ha il {amico}% di sconto sul primo anno.', $numInv);
+    $sottoInv = tf('Per ogni amico che attiva la sua guida (con il primo pagamento), il tuo prossimo rinnovo scende del {passo}%, fino al {max}%. Il tuo amico ha il {amico}% di sconto sul primo anno.', $numInv);
 } elseif ($invN < $invMax) {
     $titoloInv = tf('Sei al {p}% sul prossimo rinnovo.', ['{p}' => "\u{2212}" . (int) $inv['percento']]);
-    $sottoInv = ($invN === 1 ? t('1 amico ha pubblicato la sua guida.') : tf('{n} amici hanno pubblicato la loro guida.', $numInv))
+    $sottoInv = ($invN === 1 ? t('1 amico ha attivato la sua guida.') : tf('{n} amici hanno attivato la loro guida.', $numInv))
               . ' ' . tf('Ancora {r} e arrivi al {max}% degli inviti.', $numInv + ['{r}' => $invMax - $invN]);
 } else {
     $titoloInv = (Inviti::MASSIMO === 50 ? t('Metà prezzo') : "\u{2212}" . Inviti::MASSIMO . '%') . t(': hai raggiunto il massimo.');
     $sottoInv = (int) $inv['oltre'] > 0
-        ? tf('{tot} amici hanno pubblicato la loro guida: i primi {tetto} contano per il tuo sconto. I prossimi hanno comunque il loro {amico}%.', $numInv + ['{tot}' => $invN + (int) $inv['oltre']])
-        : tf('{tetto} amici hanno pubblicato la loro guida. Puoi continuare a invitare: i tuoi amici hanno sempre il loro {amico}%.', $numInv);
+        ? tf('{tot} amici hanno attivato la loro guida: i primi {tetto} contano per il tuo sconto. I prossimi hanno comunque il loro {amico}%.', $numInv + ['{tot}' => $invN + (int) $inv['oltre']])
+        : tf('{tetto} amici hanno attivato la loro guida. Puoi continuare a invitare: i tuoi amici hanno sempre il loro {amico}%.', $numInv);
 }
 $testoInvito = Inviti::messaggio($acc);   /* 7D: lo stesso messaggio pronto della pagina «Invita un amico» */ ?>
 <section class="invito" aria-labelledby="invito-titolo">

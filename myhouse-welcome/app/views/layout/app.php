@@ -22,7 +22,7 @@ $lingueBottoni = function () use ($coppia, $en): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <?php /* Titolo, descrizione, robots, canonical, Open Graph e dati strutturati: Amministrazione → SEO e GEO.
          Le pagine senza $seoPagina (accesso, registrazione…) hanno noindex. */ ?>
-<?= MHW\Seo::head($seoPagina ?? null, $title ?? 'MyHouse Welcome') ?>
+<?= MHW\Seo::head($seoPagina ?? null, $title ?? 'MyHouse Welcome', $descrizione ?? '') ?>
 <?php include __DIR__ . '/_tema.php'; ?>
 <?php include __DIR__ . '/_icone.php'; ?>
 <?php if (empty($seoPagina)) include __DIR__ . '/_condivisione.php'; ?>

@@ -24,8 +24,8 @@ final class View
 
         // Una vista che imposta $title o $nav lo fa nel proprio scope: senza
         // questo passaggio il layout non li vedrebbe mai e ogni pagina
-        // finirebbe con lo stesso titolo.
-        foreach (['title', 'nav', 'theme', 'topnav', 'topright', 'loc'] as $k) {
+        // finirebbe con lo stesso titolo. 9T · anche $descrizione (la meta description di accesso e registrazione).
+        foreach (['title', 'nav', 'theme', 'topnav', 'topright', 'loc', 'descrizione'] as $k) {
             if (!isset($data[$k]) && isset($definite[$k])) $data[$k] = $definite[$k];
         }
 

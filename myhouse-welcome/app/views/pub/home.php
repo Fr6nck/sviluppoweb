@@ -39,6 +39,9 @@ $crea = b() . ($dentro ? '/pannello' : '/registrati' . ($en ? '?lang=en' : ''));
 $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' . ($en ? '?l=en' : '') : null;
 $nomeDemo = $demo['name'] ?? 'Casa Lucia';
 $vetrina = $demo && (int) $demo['is_demo'] === MHW\Demo::VETRINA;
+// 9T · Ogni link alla demo apre una nuova scheda (target, rel, «si apre in una nuova scheda» per lo screen reader, icona di uscita).
+$nuovaScheda = ' target="_blank" rel="noopener"';
+$srNuova = '<span class="sr-only"> ' . $U('(si apre in una nuova scheda)', '(opens in a new tab)') . '</span>';
 // 9L · Nel telefono in cima il portone di Casa Checco, ritaglio orizzontale (la foto del borgo non c'è più).
 $telefonoJpg = a('/assets/foto/checco-telefono.jpg');
 $telefonoWebp = a('/assets/foto/checco-telefono-600.webp');
@@ -105,7 +108,7 @@ if ($dentro):
       <?php if ($demoUrl): ?>
         <?php /* 9N · La demo senza le sigle delle lingue: ne ha cinque, e alla prima apertura c'è già il dialogo della lingua. */ ?>
         <span class="demo-gruppo">
-          <a class="demo-gruppo__vai" href="<?= $demoUrl ?>"><?= Icon::svg('eye', 18, 1.8) ?><?= $T('cta.demo') ?></a>
+          <a class="demo-gruppo__vai" href="<?= $demoUrl ?>"<?= $nuovaScheda ?>><?= Icon::svg('eye', 18, 1.8) ?><?= $T('cta.demo') ?> <?= Icon::svg('external', 15, 2) ?><?= $srNuova ?></a>
         </span>
       <?php endif; ?>
     </div>
@@ -115,7 +118,7 @@ if ($dentro):
   <?php /* Il telefono: una schermata della guida disegnata in HTML, sempre nel
      tema chiaro della guida. Se c'è la demo, tutto il telefono la apre. */
   $tag = $demoUrl ? 'a' : 'div'; ?>
-  <<?= $tag ?> class="device-link"<?= $demoUrl ? ' href="' . $demoUrl . '" aria-label="' . $U('Apri la demo di ' . Support::e($nomeDemo) . ': scopri come la vedranno i tuoi ospiti', 'Open the ' . Support::e($nomeDemo) . ' demo: see it the way your guests will') . '"' : '' ?>>
+  <<?= $tag ?> class="device-link"<?= $demoUrl ? ' href="' . $demoUrl . '"' . $nuovaScheda . ' aria-label="' . $U('Apri la demo di ' . Support::e($nomeDemo) . ': scopri come la vedranno i tuoi ospiti (si apre in una nuova scheda)', 'Open the ' . Support::e($nomeDemo) . ' demo: see it the way your guests will (opens in a new tab)') . '"' : '' ?>>
     <span class="device"<?= $demoUrl ? '' : ' role="img" aria-label="' . $U('La guida di ' . Support::e($nomeDemo) . ' sullo schermo di uno smartphone', 'The ' . Support::e($nomeDemo) . ' guide on a smartphone screen') . '"' ?>>
       <span class="device__screen" aria-hidden="true">
         <span class="device__status"><span>9:41</span><span class="device__island"></span>
@@ -152,7 +155,7 @@ if ($dentro):
         <span class="device__home"></span>
       </span>
     </span>
-    <?php if ($demoUrl): ?><span class="device-link__invito"><?= $T('hero.invito') ?> <?= Icon::svg('arrow', 15, 2) ?></span><?php endif; ?>
+    <?php if ($demoUrl): ?><span class="device-link__invito"><?= $T('hero.invito') ?> <?= Icon::svg('external', 15, 2) ?></span><?php endif; ?>
   </<?= $tag ?>>
 </section>
 
@@ -209,7 +212,8 @@ $disegni = [
         <img src="<?= Support::e(a('/assets/foto/' . $file)) ?>" alt="<?= $alt ?>" loading="lazy" decoding="async" width="1200" height="750" style="object-position:<?= $centro ?>"<?= $F(substr($file, 0, -4)) ?>>
       </picture>
       <?php else: ?><span class="scena__vuota <?= $tono ?>" aria-hidden="true"><svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice"><?= $disegni[$dis] ?></svg></span><?php endif; ?>
-      <figcaption><a class="scena__link" href="<?= $dove ?>"><?= $tit ?> <?= Icon::svg('arrow', 15, 2) ?></a><span><?= $txt ?></span></figcaption>
+      <?php $fuori = $demoUrl !== null && $dove === $demoUrl; ?>
+      <figcaption><a class="scena__link" href="<?= $dove ?>"<?= $fuori ? $nuovaScheda : '' ?>><?= $tit ?> <?= Icon::svg($fuori ? 'external' : 'arrow', 15, 2) ?><?= $fuori ? $srNuova : '' ?></a><span><?= $txt ?></span></figcaption>
     </figure>
   <?php endforeach; ?>
 </section>
@@ -263,7 +267,7 @@ $disegni = [
     <span class="kicker"><?= $T('prodotto.kicker') ?></span>
     <h2 id="prodotto-titolo" class="h-sezione"><?= $T('prodotto.titolo') ?></h2>
     <p class="muted"><?= $T('prodotto.testo', ['sezioni' => $quanteSezioni]) ?></p>
-    <?php if ($demoUrl): ?><a class="link-freccia" href="<?= $demoUrl ?>"><?= $T('prodotto.link', ['demo' => Support::e($nomeDemo)]) ?> <?= Icon::svg('arrow', 16, 2) ?></a><?php endif; ?>
+    <?php if ($demoUrl): ?><a class="link-freccia" href="<?= $demoUrl ?>"<?= $nuovaScheda ?>><?= $T('prodotto.link', ['demo' => Support::e($nomeDemo)]) ?> <?= Icon::svg('external', 16, 2) ?><?= $srNuova ?></a><?php endif; ?>
   </div>
   <div class="gruppi-sez">
     <?php $toni = ['casa' => 'terracotta', 'arrivo' => 'sea', 'territorio' => 'pine'];
@@ -280,7 +284,7 @@ $disegni = [
   </div>
 </section>
 
-<?php /* 10 · «Chiedi alla guida»: l'assistente che risponde agli ospiti, solo se la funzione è in vendita in un piano. */
+<?php /* 10 · Concierge AI: l'assistente che risponde agli ospiti, solo se la funzione è in vendita in un piano. */
       if (MHW\Assistente::inVendita()) include __DIR__ . '/_assistente.php'; ?>
 
 <?php /* Per chi è: quattro modi di ospitare, a ognuno il suo uso della guida. Niente numeri e
@@ -365,13 +369,19 @@ $disegni = [
   $passi = [];
   foreach (['01', '02', '03'] as $i => $n) $passi[] = [$n, $T('come.' . ($i + 1) . '.titolo'), $T('come.' . ($i + 1) . '.testo'), TestiSito::testo('come.' . ($i + 1) . '.alt')];
   // Le schermate: quelle caricate dall'amministrazione, altrimenti pannello-N.webp se c'è.
-  $schermate = array_filter(array_map(fn($i) => TestiSito::immagine('pannello-' . ($i + 1))['url'], array_keys($passi))); ?>
+  $schermate = array_filter(array_map(fn($i) => TestiSito::immagine('pannello-' . ($i + 1))['url'], array_keys($passi)));
+  // 9T · Su telefono (sotto 760 px) ogni passo ha sotto la sua schermata, intera: la versione per telefono se caricata, altrimenti la stessa.
+  $schermateM = array_map(fn($i) => TestiSito::immagine('pannello-' . ($i + 1) . '-m')['url'] ?: ($schermate[$i] ?? null), array_keys($passi)); ?>
   <div class="passi<?= count($schermate) === 3 ? '' : ' passi--senza' ?>"<?= count($schermate) === 3 ? ' data-passi' : '' ?>>
     <ol class="passi__lista">
-      <?php foreach ($passi as $i => [$n, $tit, $txt]): ?>
+      <?php foreach ($passi as $i => [$n, $tit, $txt, $altP]): ?>
         <li><a class="passo" id="passo-<?= $i + 1 ?>" href="#schermata-<?= $i + 1 ?>"<?= count($schermate) === 3 ? '' : ' tabindex="-1"' ?>>
           <span class="passo__n"><?= $n ?></span>
-          <span class="passo__testo"><b><?= $tit ?></b><span><?= $txt ?></span></span></a></li>
+          <span class="passo__testo"><b><?= $tit ?></b><span><?= $txt ?></span></span></a>
+          <?php if (count($schermate) === 3): ?>
+          <figure class="schermata passo__schermata"><span class="schermata__barra" aria-hidden="true"><i></i><i></i><i></i></span>
+            <img src="<?= Support::e((string) $schermateM[$i]) ?>" alt="<?= $altP ?>" loading="lazy" decoding="async" width="1200" height="750"<?= $F('pannello-' . ($i + 1) . '-m') ?>></figure>
+          <?php endif; ?></li>
       <?php endforeach; ?>
     </ol>
     <?php if (count($schermate) === 3): ?>
@@ -572,7 +582,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
       <p class="muted"><?= $T('faq.aiuto') ?></p>
       <div class="faq__contatti">
         <?php if ($waFaq !== ''): ?><a class="btn btn--ghost" href="https://wa.me/<?= Support::e($waFaq) ?>" rel="noopener"><?= Icon::svg('whatsapp', 18, 1.8) ?>WhatsApp</a><?php endif; ?>
-        <?php if (($legale['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legale['contact_email']) ?>"><?= Icon::svg('message', 18, 1.8) ?>Email</a><?php endif; ?>
+        <?php if (($legale['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legale['contact_email']) ?>"><?= Icon::svg('mail', 18, 1.8) ?>Email</a><?php endif; ?>
       </div>
       <?php if (($legale['contact_email'] ?? '') !== ''): /* chi non ha un programma di posta sul computer lo copia da qui */ ?>
         <p class="small muted faq__indirizzo"><?= $T('faq.oppure') ?> <b><?= Support::e($legale['contact_email']) ?></b></p>
@@ -611,7 +621,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
     <p><?= $T('chiusura.testo') ?></p>
     <div class="row">
       <a class="btn btn--lg btn--go" href="<?= $crea ?>"><?= $ctaCrea() ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
-      <?php if ($demoUrl): ?><a class="btn btn--lg btn--ghost" href="<?= $demoUrl ?>"><?= $T('cta.demo') ?></a><?php endif; ?>
+      <?php if ($demoUrl): ?><a class="btn btn--lg btn--ghost" href="<?= $demoUrl ?>"<?= $nuovaScheda ?>><?= $T('cta.demo') ?> <?= Icon::svg('external', 16, 2) ?><?= $srNuova ?></a><?php endif; ?>
     </div>
   </div>
   <aside class="chi" aria-label="<?= $U('Chi c\'è dietro MyHouse Welcome', 'Who is behind MyHouse Welcome') ?>">

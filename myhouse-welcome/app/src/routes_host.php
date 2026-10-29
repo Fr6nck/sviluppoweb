@@ -923,15 +923,15 @@ $r->any('/pannello/{id}/impostazioni', function (array $a) use ($mia, $contesto,
     View::out('host/settings', $contesto($acc, $p) + ['err' => $err, 'qui' => 'impostazioni', 'tutte' => Config::get('locales')], 'layout/cms');
 });
 
-/* 10 · «Chiedi alla guida»: l'interruttore della guida e i contatti quando la guida non sa rispondere. */
+/* 10 · Concierge AI: l'interruttore della guida e i contatti quando la guida non sa rispondere. */
 $r->post('/pannello/{id}/assistente', function (array $a) use ($mia) {
     [, $acc, $p] = $mia((int) $a['id']);
     try {
         MHW\Assistente::imposta((int) $acc['id'], (int) $p['id'], !empty($_POST['acceso']), !empty($_POST['contatti']));
         Auth::audit('assistente.' . (!empty($_POST['acceso']) ? 'acceso' : 'spento'), null, ['property' => (int) $p['id']]);
-        Support::flash(!empty($_POST['acceso']) ? MHW\t('«Chiedi alla guida» è accesa su questa guida.') : MHW\t('«Chiedi alla guida» è spenta su questa guida: il bottone non compare più.'));
+        Support::flash(!empty($_POST['acceso']) ? MHW\t('Il Concierge AI è acceso su questa guida.') : MHW\t('Il Concierge AI è spento su questa guida: il bottone non compare più.'));
     } catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
-    Support::redirect('/pannello/' . $p['id'] . '/impostazioni#chiedi-alla-guida');
+    Support::redirect('/pannello/' . $p['id'] . '/impostazioni#concierge-ai');
 });
 
 /* Dopo il soggiorno: dove si trova la struttura (8B, portali e social), prenotazione diretta con la
@@ -1259,7 +1259,7 @@ $r->post('/pannello/{id}/messaggi', function (array $a) use ($mia) {
     Support::redirect('/pannello/' . $p['id'] . '/qr#msg-' . $tipo);
 });
 
-/* 10 · La locandina A6 «Chiedi alla guida» da stampare e lasciare in casa: il QR, i tre passi, le domande d'esempio e il
+/* 10 · La locandina A6 Concierge AI da stampare e lasciare in casa: il QR, i tre passi, le domande d'esempio e il
    contatto per le urgenze, nella lingua principale della guida e in inglese. Una pagina a sé con lo stile di stampa
    (Stampa → Salva come PDF): niente da scaricare. */
 $r->get('/pannello/{id}/locandina', function (array $a) use ($mia) {

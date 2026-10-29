@@ -43,7 +43,7 @@ $colTenue = !empty($chiaro) ? 'var(--full-tenue,#e8dcc8)' : 'var(--muted)'; ?>
       <p class="small" style="margin:0;color:<?= $colTenue ?>"><?= Support::e(I18n::t($loc, 'rating_improve')) ?></p>
       <?php if ($waV || $emailOspiti !== ''): ?>
         <div class="ctas">
-          <?php if ($waV): ?><a href="https://wa.me/<?= Support::e(ltrim(Support::telHref((string) $waV['phone']), '+')) ?>?text=<?= rawurlencode(I18n::t($loc, 'rating_wa_text', $nomeHost)) ?>" rel="noopener"><?= Icon::svg('whatsapp', 15) ?><?= Support::e(I18n::t($loc, 'rating_whatsapp')) ?></a><?php endif; ?>
+          <?php if ($waV && (int) ($pr['is_demo'] ?? 0) !== MHW\Demo::VETRINA): /* 9T · 5.4: non nella vetrina */ ?><a href="https://wa.me/<?= Support::e(ltrim(Support::telHref((string) $waV['phone']), '+')) ?>?text=<?= rawurlencode(I18n::t($loc, 'rating_wa_text', $nomeHost)) ?>" rel="noopener"><?= Icon::svg('whatsapp', 15) ?><?= Support::e(I18n::t($loc, 'rating_whatsapp')) ?></a><?php endif; ?>
           <?php if ($emailOspiti !== ''): ?><a href="mailto:<?= Support::e($emailOspiti) ?>?subject=<?= rawurlencode(I18n::t($loc, 'rating_email_subject', (string) $pr['name'])) ?>"><?= Icon::svg('message', 15) ?><?= Support::e(I18n::t($loc, 'rating_email')) ?></a><?php endif; ?>
         </div>
       <?php endif; ?>

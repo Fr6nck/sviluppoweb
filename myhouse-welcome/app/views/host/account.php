@@ -68,7 +68,7 @@ $statoOrdine = array_map('MHW\\t', ['pending' => 'In attesa', 'awaiting' => 'In 
           <p class="sconto-ok__prezzo" style="margin:0"><s><?= Support::e(Support::money((int) $invAcc['prezzo'], $invAcc['valuta'])) ?></s>
             <b><?= Support::e(Support::money((int) $invAcc['scontato'], $invAcc['valuta'])) ?></b> <?= t('+ IVA al prossimo rinnovo') ?></p>
           <p style="margin:0"><?= t('Sconto inviti') ?> <b><?= "\u{2212}" . (int) $invAcc['percento'] ?>%</b>:
-            <?= (int) $invAcc['validi'] === 1 ? t('1 amico ha pubblicato la sua guida') : tf('{n} amici hanno pubblicato la loro guida', ['{n}' => (int) $invAcc['validi']]) ?>.
+            <?= (int) $invAcc['validi'] === 1 ? t('1 amico ha attivato la sua guida') : tf('{n} amici hanno attivato la loro guida', ['{n}' => (int) $invAcc['validi']]) ?>.
             <?= Support::e(tf('Dal rinnovo successivo torni a {prezzo} + IVA.', ['{prezzo}' => Support::money((int) $invAcc['prezzo'], $invAcc['valuta'])])) ?>
             <a href="<?= b() ?>/inviti"><?= t('Invita altri amici') ?></a></p>
           <?php if (!$invAcc['automatico']): ?><p class="small" style="margin:0"><?= t('Il rinnovo automatico è disattivato: lo sconto vale solo sul rinnovo.') ?></p><?php endif; ?>

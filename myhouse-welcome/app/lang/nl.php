@@ -201,7 +201,7 @@ return [
     'host_scrivi'              => '%s een bericht sturen',
     'rating_q'                 => 'Hoe was je verblijf?',
     'rating_star'              => '%s van de 5',
-    'rating_happy'             => 'Fijn dat je het naar je zin hebt gehad! 😊',
+    'rating_happy'             => 'Fijn dat je het naar je zin hebt gehad! 😊',
     'rating_favor'             => 'Een kleine gunst: laat een review achter op de site waar je hebt geboekt. Dat betekent veel voor ons.',
     'direct_offer'             => '%s met de code %s',
     'copy_code'                => 'Code kopiëren',

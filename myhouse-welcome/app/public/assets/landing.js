@@ -133,9 +133,17 @@
     parole.forEach(function (p, i) { p.style.setProperty('--i', i % 6); ioP.observe(p); });
   }
 
-  /* -------------------------------------------- Come funziona: i passi a schede */
+  /* -------------------------------------------- Come funziona: i passi a schede
+     9T · Solo da 760 px in su: sul telefono i passi restano uno sotto l'altro, ognuno con la sua schermata (app.css), senza
+     schede né avanzamento automatico; i passi non sono link (tabindex -1). Se lo schermo si allarga, le schede partono allora. */
   var box = document.querySelector('[data-passi]');
-  if (box) (function () {
+  var largo = window.matchMedia ? window.matchMedia('(min-width: 760px)') : null;
+  if (box && largo && !largo.matches) {
+    box.querySelectorAll('.passo').forEach(function (p) { p.setAttribute('tabindex', '-1'); });
+    var allarga = function (e) { if (!e.matches) return; largo.removeEventListener('change', allarga); box.querySelectorAll('.passo').forEach(function (p) { p.removeAttribute('tabindex'); }); schedePassi(); };
+    if (largo.addEventListener) largo.addEventListener('change', allarga);
+  } else if (box) schedePassi();
+  function schedePassi() {
     var passi = Array.prototype.slice.call(box.querySelectorAll('.passo'));
     var schede = passi.map(function (p) { return document.getElementById(p.getAttribute('href').slice(1)); });
     if (schede.some(function (s) { return !s; })) return;
@@ -198,7 +206,7 @@
       });
     });
     scegli(0, false);
-  })();
+  }
 
   /* ---------------- un link a una domanda (#faq-…) la apre, anche dentro «Altre domande» */
   function apriDomanda() {

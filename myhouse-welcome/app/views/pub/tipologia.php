@@ -10,15 +10,23 @@ use MHW\{Support, Icon, Plans, SectionCatalog, Partner, LinguaSito, Iva};
 $U = [LinguaSito::class, 't']; $EN = LinguaSito::en();
 $title = $tp['h1'] . ' · MyHouse Welcome';
 $dentro = !empty($user);
-$porto = !empty($tp['portfolio']) && $piano && Plans::perProperty($piano);
-$crea = b() . ($dentro ? '/pannello' : LinguaSito::percorso('/registrati') . ($piano ? '?piano=' . (int) $piano['pv_id'] . ($porto ? '&amp;strutture=' . max(2, (int) $piano['min_quantity']) : '') : ''));
-$ctaCrea = $dentro ? $U('Vai alle tue guide', 'Go to your guides') : ($porto ? $U('Crea gratis con ', 'Create free with ') . Support::e($piano['name']) : $U('Crea gratis la tua guida', 'Create your guide for free'));
+$pianoPorto = !empty($tp['portfolio']) && $piano && Plans::perProperty($piano);   // la pagina consiglia Portfolio (/piu-strutture)
+$crea = b() . ($dentro ? '/pannello' : LinguaSito::percorso('/registrati') . ($piano ? '?piano=' . (int) $piano['pv_id'] . ($pianoPorto ? '&amp;strutture=' . max(2, (int) $piano['min_quantity']) : '') : ''));
+$ctaCrea = $dentro ? $U('Vai alle tue guide', 'Go to your guides') : ($pianoPorto ? $U('Crea gratis con ', 'Create free with ') . Support::e($piano['name']) : $U('Crea gratis la tua guida', 'Create your guide for free'));
+// 9T · Il blocco «Il piano per più strutture» (su /piu-strutture e, sotto il questionario, nelle pagine per tipologia) mostra
+// sempre Portfolio, la versione in vendita, qualunque sia il piano consigliato dalla pagina; il preventivo solo su /piu-strutture.
+$pf = null;
+foreach (Plans::public() as $ppf) if (Plans::perProperty($ppf)) $pf = $ppf;
+$porto = (!empty($tp['portfolio']) || !empty($tp['questionario'])) && $pf !== null;
 $partner = !empty($tp['partner']);
 // 9K · Le percentuali del programma Partner, se decise (Impostazioni → Sito); altrimenti le parole senza numero.
 $comm = Partner::commissione(); $scP = Partner::sconto();
 $sost = fn(string $t) => strtr($t, ['{commissione}' => $comm ? $U('una commissione del ', 'a commission of ') . $comm . '%' : $U('una commissione', 'a commission'),
                                    '{sconto_clienti}' => $scP ? ($EN ? $scP . '% off' : 'il ' . $scP . '% di sconto') : $U('uno sconto', 'a discount')]);
 $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' : null;
+// 9T · la demo apre una nuova scheda (con l'avviso per lo screen reader e l'icona di uscita)
+$linkDemo = fn() => '<a class="btn btn--lg btn--ghost" href="' . $demoUrl . '" target="_blank" rel="noopener">' . Icon::svg('eye', 18, 1.8) . $U('Guarda la demo', 'See the demo') . ' '
+    . Icon::svg('external', 15, 2) . '<span class="sr-only"> ' . $U('(si apre in una nuova scheda)', '(opens in a new tab)') . '</span></a>';
 [$fotoFile, $fotoL, $fotoA, $fotoAlt] = $tp['foto']; ?>
 <section class="tipo-hero" aria-labelledby="tipo-titolo">
   <div class="tipo-hero__testo">
@@ -28,7 +36,7 @@ $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' : null
     <div class="row tipo-hero__azioni">
       <?php if ($partner): ?><a class="btn btn--lg btn--go" href="#partner"><?= $U('Diventa partner', 'Become a partner') ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
       <?php else: ?><a class="btn btn--lg btn--go" href="<?= $crea ?>"><?= $ctaCrea ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a><?php endif; ?>
-      <?php if ($demoUrl): ?><a class="btn btn--lg btn--ghost" href="<?= $demoUrl ?>"><?= Icon::svg('eye', 18, 1.8) ?><?= $U('Guarda la demo', 'See the demo') ?></a><?php endif; ?>
+      <?php if ($demoUrl): ?><?= $linkDemo() ?><?php endif; ?>
     </div>
     <p class="small muted"><?= $partner ? $U('Una guida per ogni immobile, pronta in un pomeriggio. Ci conosciamo prima, senza impegno.', 'A guide for every property, ready in an afternoon. We get to know each other first, with no commitment.') : $U('La crei gratis, senza carta di credito: paghi solo quando la pubblichi.', 'Build it for free, no credit card: you only pay when you publish it.') ?></p>
   </div>
@@ -98,25 +106,31 @@ $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' : null
 <?php /* 9K · Al posto del piano consigliato fisso: «Qual è il piano giusto per te?», tre domande e l'esito. */
       if (!empty($tp['questionario'])) include __DIR__ . '/_questionario.php'; ?>
 
-<?php if ($porto): /* 9K · Solo Portfolio: quanto costa ogni struttura, il preventivo oltre il massimo, lo sconto sul rinnovo */
-      $maxP = (int) $piano['max_quantity']; $minP = max(2, (int) $piano['min_quantity']); ?>
+<?php if ($porto): /* 9K · Portfolio: quanto costa ogni struttura, il preventivo oltre il massimo (solo /piu-strutture), lo sconto sul rinnovo.
+         9T: con la variabile $porto non più sovrascritta da _questionario.php, sempre il piano Portfolio ($pf). */
+      $maxP = (int) $pf['max_quantity']; $minP = max(2, (int) $pf['min_quantity']);
+      $hrefPf = b() . ($dentro ? '/pannello' : LinguaSito::percorso('/registrati') . '?piano=' . (int) $pf['pv_id']);
+      $ctaPf = $dentro ? $U('Vai alle tue guide', 'Go to your guides') : $U('Crea gratis con ', 'Create free with ') . Support::e($pf['name']); ?>
 <section class="blocco" aria-labelledby="tipo-portfolio">
-  <?php $prezzoP = Plans::price($piano, $minP); ?>
-  <div class="tipo-piano panel" data-quantita data-base="<?= (int) $piano['price_cents'] ?>" data-extra="<?= (int) $piano['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($piano)) ?>" data-valuta="<?= Support::e($piano['currency']) ?>">
+  <?php $prezzoP = Plans::price($pf, $minP); ?>
+  <div class="tipo-piano panel" data-quantita data-base="<?= (int) $pf['price_cents'] ?>" data-extra="<?= (int) $pf['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($pf)) ?>" data-valuta="<?= Support::e($pf['currency']) ?>">
     <div class="stack" style="gap:10px">
       <span class="kicker"><?= $U('Il piano per più strutture', 'The plan for several properties') ?></span>
-      <h2 id="tipo-portfolio" class="h-sezione"><?= Support::e($piano['name']) ?><?= $U(': più strutture aggiungi, meno costa ognuna', ': the more properties you add, the less each one costs') ?></h2>
+      <h2 id="tipo-portfolio" class="h-sezione"><?= Support::e($pf['name']) ?><?= $U(': più strutture aggiungi, meno costa ognuna', ': the more properties you add, the less each one costs') ?></h2>
       <p><?= $U('Tutto quello che c\'è in Plus, per ogni struttura: tutte le sezioni, foto e PDF, le traduzioni suggerite dal traduttore automatico (le approvi tu, comprese entro un limite annuale), le statistiche di ognuna. Un solo account e un solo abbonamento.', 'Everything in Plus, for every property: all the sections, photos and PDFs, translations suggested by the automatic translator (you approve them, included within a yearly limit), statistics for each. One account and one subscription.') ?></p>
-      <?php $pvS = $piano; $qS = $minP; include __DIR__ . '/_scaglioni.php'; ?>
+      <?php $pvS = $pf; $qS = $minP; include __DIR__ . '/_scaglioni.php'; ?>
     </div>
     <div class="tipo-piano__prezzo">
-      <?= Iva::cifra($prezzoP, $piano['currency'], 'class="tipo-piano__cifra price" data-totale') ?>
+      <?= Iva::cifra($prezzoP, $pf['currency'], 'class="tipo-piano__cifra price" data-totale') ?>
       <span class="small muted"><?= Iva::nota($U('+ IVA all\'anno per', '+ VAT per year for'), $U('IVA inclusa all\'anno per', 'incl. VAT per year for')) ?> <span data-quante><?= $minP ?></span><?= $U(' strutture', ' properties') ?><?= $maxP > 0 ? $U(', fino a ', ', up to ') . $maxP : '' ?></span>
-      <?= Iva::dettaglio($prezzoP, LinguaSito::en(), $piano['currency']) ?>
+      <?= Iva::dettaglio($prezzoP, LinguaSito::en(), $pf['currency']) ?>
       <?= Iva::interruttore(LinguaSito::en(), $tp['percorso']) /* 9O · i prezzi IVA inclusa per i privati */ ?>
       <div class="field" style="margin:0"><label for="pf-strutture"><?= $U('Quante strutture?', 'How many properties?') ?></label>
         <input id="pf-strutture" type="number" inputmode="numeric" min="<?= $minP ?>" max="<?= $maxP > 0 ? $maxP + 1 : 999 ?>" data-max-prezzo="<?= $maxP > 0 ? $maxP : 999 ?>" value="<?= $minP ?>"></div>
-      <a class="btn btn--go" href="<?= $crea ?>" data-crea data-href="<?= Support::e(b() . ($dentro ? '/pannello' : LinguaSito::percorso('/registrati') . '?piano=' . (int) $piano['pv_id'])) ?>"><?= $ctaCrea ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
+      <a class="btn btn--go" href="<?= Support::e($hrefPf . ($dentro ? '' : '&strutture=' . $minP)) ?>" data-crea data-href="<?= Support::e($hrefPf) ?>"><?= $ctaPf ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
+      <?php if (empty($tp['portfolio']) && $maxP > 0): /* 9T · nelle pagine per tipologia niente modulo: il preventivo è su /piu-strutture */ ?>
+        <a class="small tipo-piano__oltre" href="<?= b() . LinguaSito::percorso('/piu-strutture') ?>#preventivo"><?= $U('Più di ', 'More than ') . $maxP . $U(' strutture? Chiedi un preventivo', ' properties? Ask for a quote') ?> →</a>
+      <?php endif; ?>
     </div>
   </div>
   <?php /* 9M · Sotto i prezzi e il selettore, solo la parte finale del questionario: il 55% e la scala del rinnovo, legati al selettore. */
@@ -124,10 +138,10 @@ $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' : null
   <div class="tipo-rinnovo"><?php include __DIR__ . '/_rinnovo.php'; ?></div>
   <script src="<?= MHW\av('/assets/prezzi.js') ?>" defer></script>
   <script src="<?= MHW\av('/assets/iva.js') ?>" defer></script>
-  <?php if ($maxP > 0 && MHW\Preventivi::disponibili()): /* oltre il massimo: il modulo del preventivo (9A), aperto da qui */ ?>
-    <details class="tipo-preventivo panel"<?= isset($_SESSION['preventivo_ok']) || isset($_SESSION['preventivo_errore']) ? ' open' : '' ?>>
+  <?php if (!empty($tp['portfolio']) && $maxP > 0 && MHW\Preventivi::disponibili()): /* oltre il massimo: il modulo del preventivo (9A), solo su /piu-strutture */ ?>
+    <details class="tipo-preventivo panel" id="preventivo"<?= isset($_SESSION['preventivo_ok']) || isset($_SESSION['preventivo_errore']) ? ' open' : '' ?>>
       <summary><b><?= $U('Più di ', 'More than ') . $maxP . $U(' strutture?', ' properties?') ?></b> <?= $U('Ti facciamo una proposta su misura', 'We will make you a tailored offer') ?> <?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
-      <?php $pvP = $piano; $qP = $maxP + 1; $tornaP = $tp['percorso']; include __DIR__ . '/_preventivo.php'; ?>
+      <?php $pvP = $pf; $qP = $maxP + 1; $tornaP = $tp['percorso']; include __DIR__ . '/_preventivo.php'; ?>
     </details>
   <?php endif; ?>
 </section>
@@ -191,6 +205,6 @@ $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' : null
   <div class="row tipo-hero__azioni">
     <?php if ($partner): ?><a class="btn btn--lg btn--go" href="#partner"><?= $U('Diventa partner', 'Become a partner') ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a>
     <?php else: ?><a class="btn btn--lg btn--go" href="<?= $crea ?>"><?= $ctaCrea ?> <span class="go"><?= Icon::svg('arrow', 19, 2) ?></span></a><?php endif; ?>
-    <?php if ($demoUrl): ?><a class="btn btn--lg btn--ghost" href="<?= $demoUrl ?>"><?= Icon::svg('eye', 18, 1.8) ?><?= $U('Guarda la demo', 'See the demo') ?></a><?php endif; ?>
+    <?php if ($demoUrl): ?><?= $linkDemo() ?><?php endif; ?>
   </div>
 </section>

@@ -587,6 +587,10 @@ final class Billing
                                                             'data' => $b['data'], 'riferimento' => $b['riferimento'], 'subscription' => $subscriptionId, 'nota' => $nota]);
         ProgrammaPartner::matura($accountId, 'ordine:' . $orderId, (int) $b['imponibile'], $codice);   // 9O: anche il bonifico porta la commissione
         try { ProgrammaPartner::dopoEvento(); } catch (\Throwable) { }
+        // 9T · Anche il bonifico è un pagamento vero: se è il primo pagamento di un amico invitato, l'invito diventa valido
+        // (sconto di chi invita su Stripe ed email «ha attivato la sua guida»). L'omaggio senza bonifico non passa di qui.
+        Inviti::pagato(['id' => $orderId] + $riga);
+        try { Inviti::dopoEvento(); } catch (\Throwable $e) { Log::exception($e, 'inviti dopo il bonifico'); }
         return $codice;
     }
 

@@ -120,9 +120,9 @@ Con i piani che le comprendono puoi chiedere traduzioni suggerite da un tradutto
 
 Le traduzioni suggerite sono comprese nei piani Plus e Portfolio entro un limite annuale di caratteri indicato nel pannello; oltre, su richiesta. Quelle che hai approvato restano nella guida anche dopo il limite.
 T,
-'termini.18.titolo' => 'Chiedi alla guida (assistente automatico)',
+'termini.18.titolo' => 'Concierge AI (assistente automatico)',
 'termini.18.testo' => <<<'T'
-Con i piani che lo comprendono, la guida ha il bottone «Chiedi alla guida»: un assistente automatico, basato su un modello di intelligenza artificiale di Anthropic, risponde alle domande degli ospiti usando soltanto il testo della guida pubblicata, nella lingua dell'ospite, e indica la sezione da cui viene la risposta. Le risposte sono automatiche e possono contenere errori: l'assistente è istruito a non inventare e a rimandare ai tuoi contatti quando la guida non contiene l'informazione, ma non garantiamo che ogni risposta sia corretta o completa. I contenuti della guida restano tuoi e sono l'unica fonte delle risposte; sotto la chat gli ospiti leggono che le risposte sono automatiche.
+Con i piani che lo comprendono, la guida ha il Concierge AI (il bottone «Chiedi al Concierge»): un assistente automatico, basato su un modello di intelligenza artificiale di Anthropic, risponde alle domande degli ospiti usando soltanto il testo della guida pubblicata, nella lingua dell'ospite, e indica la sezione da cui viene la risposta. Le risposte sono automatiche e possono contenere errori: l'assistente è istruito a non inventare e a rimandare ai tuoi contatti quando la guida non contiene l'informazione, ma non garantiamo che ogni risposta sia corretta o completa. I contenuti della guida restano tuoi e sono l'unica fonte delle risposte; sotto la chat gli ospiti leggono che le risposte sono automatiche.
 
 Lo accendi e lo spegni per ogni guida dal pannello. È compreso nei piani Plus e Portfolio entro un numero di domande al mese per struttura indicato nel pannello; oltre, si ferma fino al mese successivo e la guida resta consultabile come sempre. Possiamo sospenderlo o limitarlo in caso di abuso, di costi anomali o di indisponibilità del fornitore, senza rimborsi: non è una funzione essenziale della guida. Le domande degli ospiti sono anonime; nel pannello vedi solo quelle a cui la guida non ha saputo rispondere.
 T,
@@ -310,13 +310,13 @@ T,
 | Conservazione | 10 anni per le liquidazioni e le commissioni (obblighi fiscali); il collegamento cliente–partner finché dura l'account.
 | Destinatari | Il partner vede solo nome e città della struttura, piano, date e la sua commissione: mai email, importi pagati o dati di pagamento del cliente. Il fornitore dell'hosting e quello della posta.
 T,
-'privacy.t16.titolo' => 'Chiedi alla guida (le domande degli ospiti)',
+'privacy.t16.titolo' => 'Concierge AI (le domande degli ospiti)',
 'privacy.t16.testo' => <<<'T'
 | Dati | La domanda scritta dall'ospite nella guida e la risposta, senza nome, account o cookie; il testo della guida pubblicata; la lingua. L'indirizzo IP dell'ospite serve solo al limite contro gli abusi, in forma abbreviata, e non si conserva.
-| Finalità | Rispondere alla domanda dell'ospite con il testo della guida; mostrare all'host le domande rimaste senza risposta, perché completi la guida; contare le domande per i limiti del piano e i costi del servizio.
+| Finalità | Rispondere alla domanda dell'ospite con il testo della guida; mostrare all'host le domande rimaste senza risposta, perché completi la guida; vedere noi, raggruppate e senza sapere chi le ha scritte, le domande senza risposta più frequenti, per migliorare il Servizio; contare le domande per i limiti del piano e i costi del servizio.
 | Base giuridica | Legittimo interesse dell'host e nostro a offrire il servizio (art. 6.1.f): l'ospite usa la funzione solo se vuole, senza registrarsi. Per i contenuti della guida il titolare è l'host (trattamento 3).
 | Conservazione | 12 mesi, poi le domande si cancellano. Non chiediamo all'ospite dati personali: se li scrive nella domanda, restano nel registro per lo stesso periodo.
-| Destinatari | Anthropic (vedi «Destinatari e fornitori»), che riceve la domanda e il testo della guida per generare la risposta. L'host vede solo le domande senza risposta, anonime. Il fornitore dell'hosting.
+| Destinatari | Anthropic (vedi «Destinatari e fornitori»), che riceve la domanda e il testo della guida per generare la risposta. L'host vede solo le domande senza risposta della sua guida, anonime. Il fornitore dell'hosting.
 T,
 'privacy.fornitori.titolo' => 'Destinatari e fornitori',
 'privacy.fornitori.testo' => <<<'T'
@@ -325,14 +325,14 @@ Ci aiutano a fornire il Servizio questi fornitori, nominati responsabili del tra
 - **Amazon Web Services EMEA SARL** (Lussemburgo): archiviazione di foto, PDF e della copia dei registri su Amazon S3 a Milano (eu-south-1); traduzioni suggerite con Amazon Translate in Irlanda ({regione_traduzioni});
 - **Stripe Payments Europe Ltd** (Irlanda): pagamenti;
 - **Adamo** (Italia): fatturazione elettronica;
-- **Anthropic, PBC** (San Francisco, Stati Uniti): l'assistente «Chiedi alla guida», che riceve la domanda dell'ospite e il testo della guida per generare la risposta; per i suoi termini commerciali non usa questi dati per addestrare i modelli;
+- **Anthropic, PBC** (San Francisco, Stati Uniti): il Concierge AI, che riceve la domanda dell'ospite e il testo della guida per generare la risposta; per i suoi termini commerciali non usa questi dati per addestrare i modelli;
 - **posta in uscita**: {posta}.
 
 Sono invece titolari autonomi, ciascuno con la sua informativa: **Google** e **Microsoft**, solo se acconsenti ai loro cookie; **Blackout Agency** (blackout.in), solo per il percorso «Anche il tuo sito». Possono ricevere i dati anche le autorità, quando la legge lo richiede.
 T,
 'privacy.trasferimenti.titolo' => 'Trasferimenti fuori dall\'Unione europea',
 'privacy.trasferimenti.testo' => <<<'T'
-I dati restano nell'Unione europea, tranne in questi casi: Stripe può trasferirli a Stripe Inc. (Stati Uniti), Google e Microsoft (solo con il tuo consenso ai cookie) alle loro società negli Stati Uniti, Anthropic (Stati Uniti) riceve le domande degli ospiti e il testo della guida per «Chiedi alla guida». Questi trasferimenti avvengono con le Clausole Contrattuali Standard della Commissione europea e, per le società aderenti, con il Data Privacy Framework UE-USA.
+I dati restano nell'Unione europea, tranne in questi casi: Stripe può trasferirli a Stripe Inc. (Stati Uniti), Google e Microsoft (solo con il tuo consenso ai cookie) alle loro società negli Stati Uniti, Anthropic (Stati Uniti) riceve le domande degli ospiti e il testo della guida per il Concierge AI. Questi trasferimenti avvengono con le Clausole Contrattuali Standard della Commissione europea e, per le società aderenti, con il Data Privacy Framework UE-USA.
 T,
 'privacy.minori.titolo' => 'Minori',
 'privacy.minori.testo' => <<<'T'
@@ -424,7 +424,7 @@ T,
 
 // ================================================================ AGGIORNAMENTI (la finestra nel pannello e l'email)
 'legale.novita' => <<<'T'
-«Chiedi alla guida»: con Plus e Portfolio la guida risponde alle domande degli ospiti con il tuo testo, tramite un assistente automatico di Anthropic. Lo accendi e lo spegni dal pannello; le domande degli ospiti sono anonime (punto 14 dei Termini, trattamento 16 dell'Informativa).
+Concierge AI: con Plus e Portfolio risponde alle domande degli ospiti con il testo della tua guida, tramite un assistente automatico di Anthropic. Lo accendi e lo spegni dal pannello; le domande degli ospiti sono anonime (punto 14 dei Termini, trattamento 16 dell'Informativa).
 «Giudizio con sconto»: il 5% si applica una sola volta. Se aderisci al pagamento (o prima del primo pagamento), sul primo anno; se aderisci dopo, sul rinnovo successivo al tuo giudizio (voto e commento). Il logo che carichi compare così com'è nella scheda in home.
 Programma partner: con il codice di un partner hai uno sconto sul primo anno; al partner va una commissione sui tuoi pagamenti, senza i tuoi dati personali.
 Cambio di piano proposto da noi con uno sconto: vale solo con la tua conferma, dal link che ti mandiamo.
@@ -539,9 +539,9 @@ With the plans that include them you can ask for translations suggested by a mac
 
 Suggested translations are included in the Plus and Portfolio plans within a yearly character limit shown in the dashboard; beyond it, on request. Those you approved stay in the guide even after the limit.
 T,
-'termini.18.titolo' => 'Ask the guide (automatic assistant)',
+'termini.18.titolo' => 'Concierge AI (automatic assistant)',
 'termini.18.testo' => <<<'T'
-With the plans that include it, the guide has an "Ask the guide" button: an automatic assistant, based on an Anthropic artificial-intelligence model, answers guests' questions using only the text of the published guide, in the guest's language, and names the section the answer comes from. Answers are automatic and may contain errors: the assistant is instructed not to invent and to point to your contacts when the guide does not contain the information, but we do not guarantee that every answer is correct or complete. The guide's contents remain yours and are the only source of the answers; under the chat, guests read that answers are automatic.
+With the plans that include it, the guide has Concierge AI (the "Ask the Concierge" button): an automatic assistant, based on an Anthropic artificial-intelligence model, answers guests' questions using only the text of the published guide, in the guest's language, and names the section the answer comes from. Answers are automatic and may contain errors: the assistant is instructed not to invent and to point to your contacts when the guide does not contain the information, but we do not guarantee that every answer is correct or complete. The guide's contents remain yours and are the only source of the answers; under the chat, guests read that answers are automatic.
 
 You turn it on and off for each guide from the dashboard. It is included in the Plus and Portfolio plans within a number of questions per month per property shown in the dashboard; beyond it, it stops until the following month and the guide stays readable as always. We may suspend or limit it in case of abuse, abnormal costs or unavailability of the provider, without refunds: it is not an essential function of the guide. Guests' questions are anonymous; in the dashboard you only see the ones the guide could not answer.
 T,
@@ -729,13 +729,13 @@ T,
 | Retention | 10 years for settlements and commissions (tax obligations); the client–partner link as long as the account exists.
 | Recipients | The partner only sees the property name and town, plan, dates and their commission: never the client's email, amounts paid or payment details. The hosting provider and the email provider.
 T,
-'privacy.t16.titolo' => 'Ask the guide (guests\' questions)',
+'privacy.t16.titolo' => 'Concierge AI (guests\' questions)',
 'privacy.t16.testo' => <<<'T'
 | Data | The question the guest types in the guide and the answer, with no name, account or cookie; the text of the published guide; the language. The guest's IP address is used only for the anti-abuse limit, in shortened form, and is not kept.
-| Purpose | Answering the guest's question with the guide's text; showing the host the unanswered questions, so they can complete the guide; counting questions for the plan limits and the service costs.
+| Purpose | Answering the guest's question with the guide's text; showing the host the unanswered questions, so they can complete the guide; letting us see the most frequent unanswered questions, grouped and without knowing who wrote them, to improve the Service; counting questions for the plan limits and the service costs.
 | Legal basis | Legitimate interest of the host and ours in offering the service (art. 6.1.f): guests use the feature only if they want, without signing up. For the guide's contents the controller is the host (processing 3).
 | Retention | 12 months, then the questions are deleted. We do not ask guests for personal data: if they type some in the question, it stays in the log for the same period.
-| Recipients | Anthropic (see "Recipients and providers"), which receives the question and the guide's text to generate the answer. The host only sees the unanswered questions, anonymous. The hosting provider.
+| Recipients | Anthropic (see "Recipients and providers"), which receives the question and the guide's text to generate the answer. The host only sees the unanswered questions of their own guide, anonymous. The hosting provider.
 T,
 'privacy.fornitori.titolo' => 'Recipients and providers',
 'privacy.fornitori.testo' => <<<'T'
@@ -744,14 +744,14 @@ These providers help us deliver the Service and are appointed as processors by c
 - **Amazon Web Services EMEA SARL** (Luxembourg): storage of photos, PDFs and the copy of the logs on Amazon S3 in Milan (eu-south-1); suggested translations with Amazon Translate in Ireland ({regione_traduzioni});
 - **Stripe Payments Europe Ltd** (Ireland): payments;
 - **Adamo** (Italy): electronic invoicing;
-- **Anthropic, PBC** (San Francisco, United States): the "Ask the guide" assistant, which receives the guest's question and the guide's text to generate the answer; under its commercial terms it does not use this data to train its models;
+- **Anthropic, PBC** (San Francisco, United States): Concierge AI, which receives the guest's question and the guide's text to generate the answer; under its commercial terms it does not use this data to train its models;
 - **outgoing email**: {posta}.
 
 The following are instead independent controllers, each with its own policy: **Google** and **Microsoft**, only if you consent to their cookies; **Blackout Agency** (blackout.in), only for the "A website for your property too" questions. Authorities may also receive data, when required by law.
 T,
 'privacy.trasferimenti.titolo' => 'Transfers outside the European Union',
 'privacy.trasferimenti.testo' => <<<'T'
-Data stay in the European Union, except in these cases: Stripe may transfer them to Stripe Inc. (United States), Google and Microsoft (only with your consent to cookies) to their companies in the United States. These transfers rely on the European Commission's Standard Contractual Clauses and, for companies that have joined it, on the EU-US Data Privacy Framework. Anthropic (United States) receives guests' questions and the guide's text for "Ask the guide", under the Standard Contractual Clauses.
+Data stay in the European Union, except in these cases: Stripe may transfer them to Stripe Inc. (United States), Google and Microsoft (only with your consent to cookies) to their companies in the United States. These transfers rely on the European Commission's Standard Contractual Clauses and, for companies that have joined it, on the EU-US Data Privacy Framework. Anthropic (United States) receives guests' questions and the guide's text for Concierge AI, under the Standard Contractual Clauses.
 T,
 'privacy.minori.titolo' => 'Minors',
 'privacy.minori.testo' => <<<'T'
@@ -851,7 +851,7 @@ T,
 
 // ================================================================ UPDATES (the dashboard window and the email)
 'legale.novita' => <<<'T'
-“Ask the guide”: with Plus and Portfolio the guide answers guests' questions with your text, through an automatic assistant by Anthropic. You turn it on and off from the dashboard; guests' questions are anonymous (point 14 of the Terms, processing 16 of the Policy).
+Concierge AI: with Plus and Portfolio it answers guests' questions with your guide's text, through an automatic assistant by Anthropic. You turn it on and off from the dashboard; guests' questions are anonymous (point 14 of the Terms, processing 16 of the Policy).
 “Review with a discount”: the 5% applies only once. If you join at checkout (or before your first payment), on the first year; if you join later, on the renewal following your review (rating and comment). The logo you upload appears as it is on the home-page card.
 Partner programme: with a partner's code you get a discount on the first year; the partner receives a commission on your payments, without your personal data.
 A change of plan proposed by us with a discount: it applies only with your confirmation, from the link we send you.

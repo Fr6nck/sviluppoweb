@@ -201,7 +201,7 @@ return [
     'host_scrivi'              => 'Napisz do: %s',
     'rating_q'                 => 'Jak minął pobyt?',
     'rating_star'              => '%s na 5',
-    'rating_happy'             => 'Cieszymy się, że było miło! 😊',
+    'rating_happy'             => 'Cieszymy się, że było miło! 😊',
     'rating_favor'             => 'Mała prośba: wystaw opinię na stronie, na której była rezerwacja. To dla nas naprawdę ważne.',
     'direct_offer'             => '%s z kodem %s',
     'copy_code'                => 'Kopiuj kod',

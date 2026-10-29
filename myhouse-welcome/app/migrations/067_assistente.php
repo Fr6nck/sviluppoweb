@@ -61,8 +61,9 @@ return function (\PDO $pdo): void {
         $p = Db::one('SELECT * FROM packages WHERE code = ?', [$code]);
         if (!$p) continue;
         $dati = [];
-        if (!str_contains((string) $p['bullets'], 'Chiedi alla guida')) $dati['bullets'] = rtrim((string) $p['bullets']) . "\n" . $it;
-        if ($en && trim((string) ($p['bullets_en'] ?? '')) !== '' && !str_contains((string) $p['bullets_en'], 'Ask the guide')) $dati['bullets_en'] = rtrim((string) $p['bullets_en']) . "\n" . $enRiga;
+        // 9T: dalla 069 la voce si chiama «Concierge AI»: non si aggiunge di nuovo.
+        if (!str_contains((string) $p['bullets'], 'Chiedi alla guida') && !str_contains((string) $p['bullets'], 'Concierge AI')) $dati['bullets'] = rtrim((string) $p['bullets']) . "\n" . $it;
+        if ($en && trim((string) ($p['bullets_en'] ?? '')) !== '' && !str_contains((string) $p['bullets_en'], 'Ask the guide') && !str_contains((string) $p['bullets_en'], 'Concierge AI')) $dati['bullets_en'] = rtrim((string) $p['bullets_en']) . "\n" . $enRiga;
         if ($dati) Db::update('packages', $dati, 'id = :id', ['id' => (int) $p['id']]);
     }
 };

@@ -1,7 +1,8 @@
 <?php use function MHW\b; use MHW\{Support, Csrf, Plans, Icon, LinguaSito};
 /* 9N · In inglese da /en/register (o ?lang=en): LinguaSito::en() e $U per i testi fissi; il pannello nasce in inglese. */
 $U = [LinguaSito::class, 't']; $EN = LinguaSito::en();
-$title = $U('Crea il tuo account', 'Create your account');
+$title = $U('Crea il tuo account', 'Create your account') . ' | MyHouse Welcome';   // 9T · 5.9
+$descrizione = $U('Crea gratis la guida digitale della tua struttura: check-in, Wi-Fi e consigli in un link o QR Code. Paghi solo quando la pubblichi.', 'Create the digital guide for your property for free: check-in, Wi-Fi and tips in one link or QR code. You only pay when you publish it.');
 $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
 <div class="registrati__fascia"><?php include __DIR__ . '/../pub/_fascia_sconto.php'; ?></div>
 <?php $daInglese = $EN; /* 9N: il pannello di chi si registra in inglese è in inglese (panel_lang) */ ?>

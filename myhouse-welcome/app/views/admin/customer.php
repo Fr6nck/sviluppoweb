@@ -481,6 +481,12 @@ include __DIR__ . '/_stati.php'; ?>
         <p class="small" style="margin:0">Amici che hanno pagato: <b><?= (int) $iv['validi'] ?></b> su <?= (int) $iv['massimo'] ?> · in attesa <?= (int) $iv['in_attesa'] ?>
           · sconto sul prossimo rinnovo <b><?= (int) $iv['percento'] ?>%</b><?= $iv['sconto'] > 0 ? ' (−' . Support::e(Support::money($iv['sconto'], $iv['valuta'])) . ')' : '' ?></p>
         <?php if ($inviti['invitato']): ?><p class="small" style="margin:0">Invitato da <b><?= Support::e($inviti['invitato']['referrer_name']) ?></b> · <?= Support::e(['registrato' => 'in attesa che paghi', 'valido' => 'ha pagato: conta', 'usato' => 'sconto già usato', 'oltre' => 'oltre il tetto'][$inviti['invitato']['status']] ?? $inviti['invitato']['status']) ?>.</p>
+        <?php if ($inviti['invitato']['status'] === 'registrato' && MHW\Inviti::contabilePerProva((int) $acc['id'], (int) $inviti['invitato']['referrer_account_id'])): /* 9T · solo tra account staff o di prova */ ?>
+          <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/invito-prova" class="actions" style="margin:0;gap:8px;align-items:end"><?= Csrf::field() ?>
+            <div class="field" style="margin:0"><label for="inv-prova-motivo" class="small">Motivo (va nel Registro azioni)</label><input id="inv-prova-motivo" name="motivo" type="text" maxlength="200" minlength="3" required placeholder="prova della barra degli inviti"></div>
+            <button class="btn btn--sm btn--ghost" type="submit">Conta l'invito (prova)</button></form>
+          <p class="tiny muted" style="margin:0">Solo per le prove: chi invita o questo cliente è staff o di prova. L'invito conta come se avesse pagato.</p>
+        <?php endif; ?>
         <?php elseif (!empty($inviti['invito_annullato'])): ?><p class="small" style="margin:0">Invitato da <b><?= Support::e($inviti['invito_annullato']['referrer_name']) ?></b> · <b>invito annullato</b><?= $inviti['invito_annullato']['motivo'] !== '' ? ': ' . Support::e($inviti['invito_annullato']['motivo']) : '' ?>.</p>
         <?php endif; ?>
         <?php if ($inviti['amici']): ?>
@@ -497,9 +503,9 @@ include __DIR__ . '/_stati.php'; ?>
         <a class="small" href="<?= b() ?>/admin/inviti">Tutti gli inviti</a>
       </section>
     <?php endif; ?>
-    <?php if (!empty($assistente)): /* 10 · «Chiedi alla guida»: le domande del mese, il costo stimato, il limite personale */ ?>
+    <?php if (!empty($assistente)): /* 10 · Concierge AI: le domande del mese, il costo stimato, il limite personale */ ?>
       <section class="panel stack" id="assistente" style="gap:8px" aria-labelledby="as-titolo">
-        <span class="kicker" id="as-titolo">Chiedi alla guida</span>
+        <span class="kicker" id="as-titolo">Concierge AI</span>
         <p class="small" style="margin:0">Questo mese <b><?= (int) $assistente['domande'] ?></b> domande (<?= (int) $assistente['senza'] ?> senza risposta), circa <b><?= number_format((float) $assistente['euro'], 2, ',', '.') ?> €</b> stimati.
           Limite: <b><?= number_format((int) $assistente['limite'], 0, ',', '.') ?></b> domande al mese per struttura<?= $assistente['override'] !== null && (int) $assistente['override'] > 0 ? ' (personale)' : '' ?><?= $assistente['nelPiano'] ? '' : ' · <span class="muted">il piano non la comprende</span>' ?>.</p>
         <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/assistente/limite" class="row" style="gap:8px;flex-wrap:wrap;align-items:flex-end"><?= Csrf::field() ?>
@@ -509,7 +515,7 @@ include __DIR__ . '/_stati.php'; ?>
             <input id="as-nota" name="nota" type="text" maxlength="255" placeholder="Per esempio: struttura grande, ha chiesto più domande"></div>
           <button class="btn btn--ghost btn--sm">Salva il limite</button>
         </form>
-        <a class="small" href="<?= b() ?>/admin/assistente">Assistente AI, tutti i clienti</a>
+        <a class="small" href="<?= b() ?>/admin/assistente">Concierge AI, tutti i clienti</a>
       </section>
     <?php endif; ?>
     <?php if ($traduzioni): $annoC = $traduzioni['anno']; $nC = fn(int $x) => number_format($x, 0, ',', '.'); ?>

@@ -135,3 +135,9 @@
     campo.addEventListener('input', limiti); limiti();
   })(blocchi[i]);
 })();
+
+/* 9T · «Più di 10 strutture? Chiedi un preventivo →» dalle pagine per tipologia: su /piu-strutture#preventivo il modulo è già aperto. */
+(function () {
+  var d = document.getElementById('preventivo');
+  if (d && d.tagName === 'DETAILS' && location.hash === '#preventivo') d.open = true;
+})();

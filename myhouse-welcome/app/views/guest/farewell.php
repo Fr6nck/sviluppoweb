@@ -69,7 +69,10 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
         </div>
       <?php endif; ?>
       <div class="stack" style="gap:10px">
-        <?php if ($tel): ?>
+        <?php if ($tel && (int) ($pr['is_demo'] ?? 0) === MHW\Demo::VETRINA): /* 9T · 5.4: solo nella vetrina */
+                $dcClasse = 'btn btn--lg btn--go rise'; $dcEtichetta = Support::e(I18n::t($loc, 'whatsapp')) . ' <span class="go">' . Icon::svg('whatsapp', 19, 2) . '</span>';
+                include __DIR__ . '/_demo_contatto.php'; ?>
+        <?php elseif ($tel): ?>
           <a class="btn btn--lg btn--go rise" style="animation-delay:1.05s" href="https://wa.me/<?= Support::e(ltrim($tel, '+')) ?>" rel="noopener">
             <?= Support::e(I18n::t($loc, 'whatsapp')) ?> <span class="go"><?= Icon::svg('whatsapp', 19, 2) ?></span></a>
         <?php endif; ?>

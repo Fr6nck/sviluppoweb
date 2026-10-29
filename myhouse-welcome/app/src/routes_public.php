@@ -930,11 +930,11 @@ $telaio = function (array $snap, string $loc, string $base, bool $anteprima = fa
            'immagine' => Support::baseUrl() . '/g/' . rawurlencode((string) $pr['slug']) . '/anteprima.jpg'];
     return ['snap' => $snap, 'loc' => $loc, 'base' => $base, 'anteprima' => $anteprima, 'og' => $og,
             'paletteCss' => Palette::css($pr['palette']), 'tema' => Palette::themeFor($pr['text_tone']),
-            // 10 · «Chiedi alla guida», se il piano, l'abbonamento, l'interruttore dell'host e la chiave lo permettono.
+            // 10 · Concierge AI, se il piano, l'abbonamento, l'interruttore dell'host e la chiave lo permettono.
             'chiedi' => MHW\Assistente::datiGuida($snap, $loc)];
 };
 
-// 10 · «Chiedi alla guida»: la pagina (senza JavaScript, o dal link) e la risposta in JSON per la finestra nella guida.
+// 10 · Concierge AI: la pagina (senza JavaScript, o dal link) e la risposta in JSON per la finestra nella guida.
 $chiedi = function (array $a, string $domanda, array $storia, bool $json) use ($guida, $telaio): void {
     [$g, $snap, $loc] = $guida($a['slug']);
     if (!MHW\Assistente::perGuida($g['property'])) {
@@ -946,7 +946,10 @@ $chiedi = function (array $a, string $domanda, array $storia, bool $json) use ($
     $esito = null; $errore = ''; $code = 200;
     if ($domanda !== '') {
         // Il limite anti-abuso per chi chiede (l'IP solo in forma abbreviata, mai scritto) e per la guida.
-        if (!MHW\RateLimit::hit('chiedi:' . MHW\RateLimit::ipKey(), 20, 600) || !MHW\RateLimit::hit('chiedi-g:' . (int) $g['property']['id'], 120, 600)) {
+        // 9T · Sulla demo (aperta a tutti dalla home) 5 domande ogni 10 minuti per visitatore.
+        $demoQ = (int) ($g['property']['is_demo'] ?? 0) > 0;
+        if (($demoQ && !MHW\RateLimit::hit('chiedi-demo:' . MHW\RateLimit::ipKey(), 5, 600))
+            || !MHW\RateLimit::hit('chiedi:' . MHW\RateLimit::ipKey(), 20, 600) || !MHW\RateLimit::hit('chiedi-g:' . (int) $g['property']['id'], 120, 600)) {
             $errore = I18n::t($loc, 'ask_too_many'); $code = 429;
         } else {
             try {

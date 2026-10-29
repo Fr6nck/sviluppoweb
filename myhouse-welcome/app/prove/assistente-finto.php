@@ -8,6 +8,7 @@
  *
  *   ASSISTENTE_FINTO_DIR   cartella del registro
  *   ASSISTENTE_FINTO_KEY   la chiave attesa
+ *   ASSISTENTE_FINTO_ADMIN_KEY   la Admin key attesa dal rapporto dei costi (9T)
  */
 $dir = getenv('ASSISTENTE_FINTO_DIR') ?: sys_get_temp_dir() . '/assistente-finto';
 @mkdir($dir, 0777, true);
@@ -26,6 +27,27 @@ $rispondi = function (int $code, array $dati) use ($dir, $corpo, $h, $j) {
 };
 $errore = fn(int $code, string $tipo, string $msg) => $rispondi($code, ['type' => 'error', 'error' => ['type' => $tipo, 'message' => $msg]]);
 
+// 9T · Usage & Cost API (GET /v1/organizations/cost_report) con la Admin key (ASSISTENTE_FINTO_ADMIN_KEY): ogni giorno
+// 125,5 centesimi nel workspace wrkspc_finto01 e 40 nel workspace di serie (workspace_id null); pagine da 10 giorni.
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) === '/v1/organizations/cost_report') {
+    if (($h['x-api-key'] ?? '') === '' || ($h['x-api-key'] ?? '') !== (getenv('ASSISTENTE_FINTO_ADMIN_KEY') ?: '')) $errore(401, 'authentication_error', 'invalid x-api-key');
+    if (($h['anthropic-version'] ?? '') === '') $errore(400, 'invalid_request_error', 'anthropic-version header is required');
+    parse_str((string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY), $q);
+    $da = strtotime((string) ($q['starting_at'] ?? '')); $a = strtotime((string) ($q['ending_at'] ?? ''));
+    if (!$da || !$a || $a <= $da) $errore(400, 'invalid_request_error', 'starting_at and ending_at are required');
+    $perWs = in_array('workspace_id', (array) ($q['group_by'] ?? []), true);
+    $giorni = [];
+    for ($t = $da; $t < $a; $t += 86400) {
+        $giorni[] = ['starting_at' => gmdate('Y-m-d\TH:i:s\Z', $t), 'ending_at' => gmdate('Y-m-d\TH:i:s\Z', $t + 86400),
+                     'results' => $perWs ? [['amount' => '125.5', 'currency' => 'USD', 'workspace_id' => 'wrkspc_finto01', 'description' => null],
+                                            ['amount' => '40', 'currency' => 'USD', 'workspace_id' => null, 'description' => null]]
+                                         : [['amount' => '165.5', 'currency' => 'USD', 'workspace_id' => null, 'description' => null]]];
+    }
+    $da0 = (int) ($q['page'] ?? 0);
+    file_put_contents($dir . '/richieste.jsonl', json_encode(['code' => 200, 'percorso' => 'cost_report', 'pagina' => $da0, 'gruppi' => $perWs, 'versione' => $h['anthropic-version'] ?? '']) . "\n", FILE_APPEND);
+    header('Content-Type: application/json');
+    exit(json_encode(['data' => array_slice($giorni, $da0, 10), 'has_more' => $da0 + 10 < count($giorni), 'next_page' => $da0 + 10 < count($giorni) ? (string) ($da0 + 10) : null]));
+}
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) !== '/v1/messages') $errore(404, 'not_found_error', 'Not found');
 if (($h['x-api-key'] ?? '') !== (getenv('ASSISTENTE_FINTO_KEY') ?: '')) $errore(401, 'authentication_error', 'invalid x-api-key');
 if (($h['anthropic-version'] ?? '') === '') $errore(400, 'invalid_request_error', 'anthropic-version header is required');

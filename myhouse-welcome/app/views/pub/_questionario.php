@@ -51,7 +51,7 @@ $qBase = $qFinestra ? b() . LinguaSito::percorso('/piano') : strtok((string) ($_
     </form>
 
     <?php foreach (['essential', 'plus', 'portfolio'] as $cod): $pv = $qPiani[$cod] ?? null; if (!$pv) continue;
-          $porto = $cod === 'portfolio'; $q = $porto ? $qStrutture : 1; $ri = $qRiep[$cod] ?? null; $sc = $ri && $ri['sconto'] > 0 ? $ri : null;
+          $qPorto = $cod === 'portfolio'; $q = $qPorto ? $qStrutture : 1; $ri = $qRiep[$cod] ?? null; $sc = $ri && $ri['sconto'] > 0 ? $ri : null;
           $pieno = Plans::price($pv, $q); $tiers = Plans::tiers($pv); ?>
       <div class="questionario__esito" data-q-esito="<?= $cod ?>"<?= $qEsito === $cod ? '' : ' hidden' ?>
            data-base="<?= (int) $pv['price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($pv)) ?>"
@@ -63,10 +63,10 @@ $qBase = $qFinestra ? b() . LinguaSito::percorso('/piano') : strtok((string) ($_
             <p class="questionario__prezzo">
               <?php if ($sc): ?><?= Iva::cifra($pieno, 'EUR', 'class="muted" data-q-pieno', 's') ?> <?php endif; ?>
               <?= Iva::cifra($sc ? $sc['totale'] : $pieno, 'EUR', 'data-q-totale', 'b') ?>
-              <span class="muted"> <?= $qEn ? Iva::nota('+ VAT', 'incl. VAT') : Iva::nota('+ IVA', 'IVA inclusa') ?> <?= $sc ? $qU('il primo anno', 'the first year') : $qU('/ anno', '/ year') ?><?= $porto ? $qU(' per ', ' for ') . '<span data-q-n>' . $q . '</span>' . $qU(' strutture', ' properties') : '' ?></span>
+              <span class="muted"> <?= $qEn ? Iva::nota('+ VAT', 'incl. VAT') : Iva::nota('+ IVA', 'IVA inclusa') ?> <?= $sc ? $qU('il primo anno', 'the first year') : $qU('/ anno', '/ year') ?><?= $qPorto ? $qU(' per ', ' for ') . '<span data-q-n>' . $q . '</span>' . $qU(' strutture', ' properties') : '' ?></span>
             </p>
             <?= Iva::dettaglio($sc ? $sc['totale'] : $pieno, $qEn) ?>
-            <?php if ($porto): /* il prezzo struttura per struttura, poi il selettore (2 … massimo del listino) */
+            <?php if ($qPorto): /* il prezzo struttura per struttura, poi il selettore (2 … massimo del listino) */
                   $parti = array_map(fn($t) => Support::money($t['cents']), $tiers); ?>
               <p class="tiny muted" style="margin:0"><?= Support::e(Support::money((int) $pv['price_cents'])) ?> <?= $qU('la prima, poi', 'for the first, then') ?> <?= Support::e(implode(' · ', array_map(fn($x) => preg_replace('/\s*€$/u', '', $x), $parti))) ?> € <?= $qU('l\'una', 'each') ?><?= (int) $pv['max_quantity'] > 0 ? $qU(' · oltre ', ' · over ') . (int) $pv['max_quantity'] . $qU(': preventivo', ': quote') : '' ?></p>
               <div class="questionario__quante">
@@ -95,7 +95,7 @@ $qBase = $qFinestra ? b() . LinguaSito::percorso('/piano') : strtok((string) ($_
         <div class="row questionario__azioni">
           <?php $qLang = $qEn && !$dentro ? '&lang=en' : ''; /* come le schede dei piani di /en */ ?>
           <a class="btn btn--go" data-q-crea data-href="<?= Support::e(b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . (int) $pv['pv_id'] . $qLang) ?>"
-             href="<?= Support::e(b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . (int) $pv['pv_id'] . $qLang . ($porto ? '&strutture=' . $q : '')) ?>"><?= $qT('crea', ['piano' => Support::e($pv['name'])]) ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
+             href="<?= Support::e(b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . (int) $pv['pv_id'] . $qLang . ($qPorto ? '&strutture=' . $q : '')) ?>"><?= $qT('crea', ['piano' => Support::e($pv['name'])]) ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
           <a class="btn btn--ghost" href="<?= Support::e($qBase) ?>#piano-giusto" data-q-rifai><?= $qT('rifai') ?></a>
         </div>
         <?php $rnPieno = $pieno; include __DIR__ . '/_rinnovo.php'; /* 9M: il riquadro dello sconto, componente a sé */ ?>

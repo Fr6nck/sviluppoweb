@@ -341,7 +341,7 @@ final class Inviti
         $tl = fn(string $it, array $s = []) => Pannello::tIn($lin, $it, $s);
         $data = fn(string $iso) => $lin === 'en' && ($t = strtotime($iso)) ? gmdate('j F Y', $t) : Support::date($iso);
         $x = ['{amico}' => $amico, '{n}' => $st['totale'], '{max}' => self::MASSIMO, '{mancano}' => $mancano];
-        $corpo = $tl('{amico} ha pubblicato la sua guida con il tuo invito.', $x) . ' ';
+        $corpo = $tl('{amico} ha attivato la sua guida con il tuo invito.', $x) . ' ';
         if ($st['percento'] > 0) {
             $corpo .= $tl($mancano > 0 ? 'Il tuo sconto sul prossimo rinnovo sale al {n}%' : 'Il tuo sconto sul prossimo rinnovo è al {n}%', $x)
                     . ($st['rinnovo'] !== '' && $st['prezzo'] > 0 ? $tl(': il {data} paghi {prezzo} + IVA invece di {pieno}', ['{data}' => $data($st['rinnovo']), '{prezzo}' => Support::money($st['scontato'], $st['valuta']), '{pieno}' => Support::money($st['prezzo'], $st['valuta'])]) : '') . '. ';
@@ -350,7 +350,7 @@ final class Inviti
                                : $tl('Hai raggiunto il massimo degli inviti. I tuoi amici continuano ad avere il loro sconto.');
         // 9L · Il tetto vero è inviti + programma: «fino al 55%», non il 50%.
         if (Giudizi::attivo()) $corpo .= ' ' . $tl('Con il programma «Giudizio con sconto», diverso e cumulabile, un altro {g}%: insieme, fino al {n}% sul prossimo rinnovo.', ['{n}' => Sconti::massimoRinnovo()['totale'], '{g}' => Giudizi::percentuale()]);
-        $oggetto = $st['percento'] > 0 ? $tl('{amico} ha pubblicato la sua guida: sei al −{n}%', $x) : $tl('{amico} ha pubblicato la sua guida', $x);
+        $oggetto = $st['percento'] > 0 ? $tl('{amico} ha attivato la sua guida: sei al −{n}%', $x) : $tl('{amico} ha attivato la sua guida', $x);
         Richiami::manda($rid, (string) $u['email'], (string) $u['name'], 'inviti', 'amico-' . $amicoId,
                         [$oggetto, $corpo, $tl('Invita un altro amico'), Support::baseUrl() . '/inviti'], $lin);
     }
@@ -407,7 +407,7 @@ final class Inviti
         for ($i = 0; $i < $max; $i++) {
             $pct = '−' . (($i + 1) * self::PASSO) . '%';
             if ($i < count($pieni)) { $caselle[] = ['stato' => 'pieno', 'etichetta' => $pct, 'alone' => $alone && $i === count($pieni) - 1]; $ordine[(int) $pieni[$i]['id']] = $i + 1; }
-            elseif ($i < count($pieni) + count($attesa)) { $caselle[] = ['stato' => 'attesa', 'etichetta' => Pannello::t('in attesa'), 'alone' => false]; $ordine[(int) $attesa[$i - count($pieni)]['id']] = $i + 1; }
+            elseif ($i < count($pieni) + count($attesa)) { $caselle[] = ['stato' => 'attesa', 'etichetta' => Pannello::t('in attesa che attivi'), 'alone' => false]; $ordine[(int) $attesa[$i - count($pieni)]['id']] = $i + 1; }
             else $caselle[] = ['stato' => 'vuoto', 'etichetta' => $pct, 'alone' => false];
         }
         $st = self::stato($acc);
@@ -596,6 +596,35 @@ final class Inviti
         else Db::insert('referrals', $riga + ['friend_account_id' => $amicoId, 'created_at' => Support::now()]);
         Auth::audit('referral.manual_link', (int) $amico['user_id'] ?: null, ['amico' => $amicoId, 'chi' => $rid, 'codice' => strtoupper(trim($codice)), 'stato' => $stato, 'admin' => $adminId]);
         if ($stato === 'valido') { try { self::sincronizza($rid); } catch (\Throwable $e) { Log::exception($e, 'inviti: collega a mano'); } }
+        return $stato;
+    }
+
+    /** 9T · «Conta l'invito (prova)» si può usare solo se chi invita o l'amico è staff o di prova: mai tra due clienti veri. */
+    public static function contabilePerProva(int $amicoId, int $chiInvitaId): bool
+    {
+        $prova = fn(int $id) => Staff::e($id) || (Migrator::columnExists('accounts', 'is_test') && (int) Db::val('SELECT is_test FROM accounts WHERE id = ?', [$id], 0) === 1);
+        return $prova($amicoId) || $prova($chiInvitaId);
+    }
+
+    /**
+     * 9T · Dall'amministrazione, per le prove: l'invito «registrato» di un amico diventa valido senza ordine (amici staff, con
+     * omaggio o con un piano dato a mano non pagano mai). Solo tra account staff o di prova; il motivo va nel Registro azioni.
+     * Come un pagamento: sconto di chi invita su Stripe ed email «ha attivato la sua guida». @return string lo stato nuovo
+     */
+    public static function contaPerProva(int $amicoId, string $motivo, int $adminId): string
+    {
+        if (!self::disponibili()) throw new \RuntimeException('Il programma «Invita un amico» è spento.');
+        $r = Db::one("SELECT * FROM referrals WHERE friend_account_id = ? AND status = 'registrato'", [$amicoId]);
+        if (!$r) throw new \RuntimeException('Questo cliente non ha un invito in attesa.');
+        $rid = (int) $r['referrer_account_id'];
+        if (!self::contabilePerProva($amicoId, $rid)) throw new \RuntimeException('Solo per le prove: chi invita o l\'amico deve essere un account staff o di prova. Tra due clienti veri l\'invito conta solo con un pagamento.');
+        $motivo = trim($motivo);
+        if (mb_strlen($motivo) < 3) throw new \RuntimeException('Scrivi il motivo: resta nel Registro azioni.');
+        $stato = self::validi($rid) >= self::amiciMassimi() ? 'oltre' : 'valido';
+        Db::update('referrals', ['status' => $stato, 'qualified_at' => Support::now()] + (Migrator::columnExists('referrals', 'motivo') ? ['motivo' => mb_substr('contato per prova: ' . $motivo, 0, 190)] : []), 'id = :id', ['id' => (int) $r['id']]);
+        Auth::audit('invito.contato_prova', (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$amicoId], 0) ?: null,
+                    ['amico' => $amicoId, 'chi' => $rid, 'stato' => $stato, 'motivo' => mb_substr($motivo, 0, 300), 'admin' => $adminId]);
+        if ($stato === 'valido') { self::$coda[$rid] = $amicoId; self::dopoEvento(); }
         return $stato;
     }
 

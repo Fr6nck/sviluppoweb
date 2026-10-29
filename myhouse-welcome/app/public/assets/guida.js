@@ -77,7 +77,7 @@
   });
 })();
 
-/* 10 · «Chiedi alla guida»: il bottone apre la finestra; le domande vanno in JSON a …/chiedi e le risposte compaiono
+/* 10 · Concierge AI: il bottone apre la finestra; le domande vanno in JSON a …/chiedi e le risposte compaiono
    come fumetti, con il link alla sezione o il contatto di chi ospita. Gli scambi restano nella pagina (al massimo gli
    ultimi sei si rimandano come contesto): niente cookie, niente memoria nel telefono. Senza JavaScript il bottone è
    un link alla stessa pagina con il modulo. */
@@ -132,4 +132,6 @@
   }
   form.addEventListener('submit', function (e) { e.preventDefault(); chiedi(campo.value); });
   d.querySelectorAll('[data-esempio]').forEach(function (b) { b.addEventListener('click', function () { chiedi(b.textContent); }); });
+  // 9T · «Provalo sulla demo» dalla home: con #concierge nell'indirizzo la finestra si apre da sola.
+  if (location.hash === '#concierge') apri();
 })();

@@ -16,7 +16,7 @@ $copertina = !empty($pr['cover_id']) ? MHW\Media::url((int) $pr['cover_id']) : (
 <?php if ($copertina): ?>
   <div class="guest-cover-wrap" style="margin-top:22px">
     <div class="shot shot--h262 guest-cover">
-      <img src="<?= Support::e($copertina) ?>" alt="" fetchpriority="high" decoding="async">
+      <img src="<?= Support::e($copertina) ?>" alt="<?= Support::e((string) $pr['name']) ?>" fetchpriority="high" decoding="async">
       <span class="shot-pill"><span class="dot"></span><?= Support::e(I18n::t($loc, 'checkin_from', $pr['checkin_from'])) ?></span>
     </div>
     <?php include __DIR__ . '/_host.php'; /* 7C: il tondo con la foto dell'host, a cavallo dell'angolo, anche con il logo */ ?>

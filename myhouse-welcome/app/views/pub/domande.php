@@ -17,7 +17,7 @@ $crea = b() . (!empty(MHW\Auth::user()) ? '/pannello' : '/registrati' . ($enD ? 
       <p class="muted"><?= MHW\TestiSito::html('faq.aiuto') ?></p>
       <div class="faq__contatti">
         <?php if ($waFaq !== ''): ?><a class="btn btn--ghost" href="https://wa.me/<?= Support::e($waFaq) ?>" rel="noopener"><?= Icon::svg('whatsapp', 18, 1.8) ?>WhatsApp</a><?php endif; ?>
-        <?php if (($legale['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legale['contact_email']) ?>"><?= Icon::svg('message', 18, 1.8) ?>Email</a><?php endif; ?>
+        <?php if (($legale['contact_email'] ?? '') !== ''): ?><a class="btn btn--ghost" href="mailto:<?= Support::e($legale['contact_email']) ?>"><?= Icon::svg('mail', 18, 1.8) ?>Email</a><?php endif; ?>
       </div>
       <?php if (($legale['contact_email'] ?? '') !== ''): /* chi non ha un programma di posta sul computer lo copia da qui */ ?>
         <p class="small muted faq__indirizzo"><?= MHW\TestiSito::html('faq.oppure') ?> <b><?= Support::e($legale['contact_email']) ?></b></p>

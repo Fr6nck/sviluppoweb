@@ -1,7 +1,8 @@
 <?php use function MHW\b; use MHW\{Support, Csrf, LinguaSito};
 /* L'accesso. 9N: anche in inglese (/en/login): $U per i testi fissi, i link nella stessa lingua. */
 $U = [LinguaSito::class, 't']; $q = LinguaSito::en() ? '?lang=en' : '';
-$title = $U('Accedi', 'Log in'); ?>
+$title = $U('Accedi', 'Log in') . ' | MyHouse Welcome';   // 9T · 5.9: titolo e descrizione anche qui (la pagina resta noindex)
+$descrizione = $U('Accedi a MyHouse Welcome per preparare e aggiornare la guida digitale della tua struttura.', 'Log in to MyHouse Welcome to build and update the digital guide for your property.'); ?>
 <h1><?= $U('Rieccoti.', 'Welcome back.') ?></h1>
 <?php if ($err): ?><p class="note note--err" style="margin-top:20px" role="alert"><?= Support::e($err) ?></p>
   <?php $aiutoEmail = $email; $aiutoPagina = $U('Accedi', 'Log in'); include __DIR__ . '/_aiuto.php'; ?><?php endif; ?>

@@ -27,9 +27,9 @@ $corto = Support::baseUrl() . '/q/' . $qr['token']; ?>
       <p class="help"><?= t('Il foglio da stampare ha il logo e il nome della struttura, il QR e l\'invito a inquadrarlo in italiano e in inglese. Il PNG è solo il codice, da mettere nelle tue grafiche.') ?></p>
       <p class="help" style="overflow-wrap:anywhere"><?= Support::e(tf('Il QR resta sempre lo stesso: lo stampi una volta, e ogni volta che aggiorni la guida gli ospiti vedono la versione nuova. Punta a {link}.', ['{link}' => $corto])) ?></p>
     </div>
-    <?php if (MHW\Assistente::disponibile() && MHW\Assistente::nelPiano((int) $prop['account_id'])): /* 10 · la locandina A6 di «Chiedi alla guida» */ ?>
+    <?php if (MHW\Assistente::disponibile() && MHW\Assistente::nelPiano((int) $prop['account_id'])): /* 10 · la locandina A6 del Concierge AI */ ?>
     <div class="fieldset" id="locandina">
-      <span class="legend"><?= t('Locandina «Chiedi alla guida»') ?></span>
+      <span class="legend"><?= t('Locandina del Concierge AI') ?></span>
       <div class="row" style="gap:8px"><a class="btn btn--ghost btn--sm" href="<?= b() ?>/pannello/<?= $pid ?>/locandina" target="_blank" rel="noopener"><?= Icon::svg('message', 15) ?><?= t('Apri la locandina A6') ?></a></div>
       <p class="help"><?= t('Un foglio A6 da lasciare in casa: il QR, i tre passi per fare una domanda, qualche esempio e il tuo numero per le urgenze, nella lingua della guida e in inglese. Si stampa dal browser (Stampa → Salva come PDF).') ?></p>
     </div>

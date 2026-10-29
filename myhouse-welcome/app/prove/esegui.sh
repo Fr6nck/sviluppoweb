@@ -48,8 +48,8 @@ PID_S3=$!
 TRANSLATE_FINTO_DIR="$TMP/translate" TRANSLATE_FINTO_KEY=AKIATRADUZIONIFINTE TRANSLATE_FINTO_SECRET=segreto-traduzioni-finto \
   php -S "127.0.0.1:$PORTA_TRADUZIONI" "$QUI/translate-finto.php" > "$TMP/translate.log" 2>&1 &
 PID_TRADUZIONI=$!
-# 10 · Un'API di Anthropic finta per «Chiedi alla guida» (prove/assistente-finto.php): verifica la chiave e risponde con le regole del prompt.
-ASSISTENTE_FINTO_DIR="$TMP/assistente" ASSISTENTE_FINTO_KEY=chiave-finta-assistente-solo-prove \
+# 10 · Un'API di Anthropic finta per il Concierge AI (prove/assistente-finto.php): verifica la chiave e risponde con le regole del prompt; 9T: anche il rapporto dei costi con la Admin key.
+ASSISTENTE_FINTO_DIR="$TMP/assistente" ASSISTENTE_FINTO_KEY=chiave-finta-assistente-solo-prove ASSISTENTE_FINTO_ADMIN_KEY=sk-ant-admin-finta-solo-prove \
   php -S "127.0.0.1:$PORTA_ASSISTENTE" "$QUI/assistente-finto.php" > "$TMP/assistente.log" 2>&1 &
 PID_ASSISTENTE=$!
 # Un server di posta finto, per l'accesso SMTP (LOGIN e PLAIN) e «Prova con questi dati».

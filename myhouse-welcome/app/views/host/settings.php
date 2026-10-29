@@ -148,7 +148,7 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
   <script src="<?= MHW\av('/assets/funnel-sito.js') ?>" defer></script>
   <?php endif; ?>
 
-  <?php include __DIR__ . '/_assistente.php'; /* 10 · «Chiedi alla guida»: interruttore, contatti, contatore, domande senza risposta */ ?>
+  <?php include __DIR__ . '/_assistente.php'; /* 10 · Concierge AI: interruttore, contatti, contatore, domande senza risposta */ ?>
 
   <?php /* 9L · «Giudizio con sconto»: la voce del programma (una per account), con lo stato in una riga. */
         $accG = MHW\Auth::account();

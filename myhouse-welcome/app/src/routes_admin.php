@@ -291,7 +291,7 @@ $r->get('/admin/cliente/{aid}', function (array $a) {
         'traduzioni' => \MHW\Migrator::tableExists('translation_usage') ? ['mese' => Traduttore::usati((int) $acc['id']), 'anno' => Traduttore::contatore((int) $acc['id']),
                                                                              'override' => \MHW\Migrator::columnExists('accounts', 'translate_cap_override') ? $acc['translate_cap_override'] : null,
                                                                              'nelPiano' => Traduttore::nelPiano((int) $acc['id'])] : null,
-        // 10 · «Chiedi alla guida»: le domande del mese, il costo stimato, il limite personale
+        // 10 · Concierge AI: le domande del mese, il costo stimato, il limite personale
         'assistente' => Assistente::disponibile() ? ['nelPiano' => Assistente::nelPiano((int) $acc['id']), 'euro' => Assistente::costoMeseEuro(null, (int) $acc['id']),
                                                     'domande' => (int) Db::val("SELECT COUNT(*) FROM assistant_questions WHERE account_id = ? AND month = ? AND outcome IN ('ok', 'no')", [(int) $acc['id'], Assistente::mese()], 0),
                                                     'senza' => (int) Db::val("SELECT COUNT(*) FROM assistant_questions WHERE account_id = ? AND month = ? AND outcome = 'no'", [(int) $acc['id'], Assistente::mese()], 0),
@@ -346,7 +346,7 @@ $r->post('/admin/cliente/{aid}/traduzioni/tetto', function (array $a) {
 });
 
 /* Cambia il pacchetto: «anteprima» rimanda alla scheda con il conto; «conferma» fa il cambio (subito con conguaglio, o dal rinnovo). */
-// 10 · Il limite mensile personale di «Chiedi alla guida» (vuoto = quello di serie), con la nota nel registro.
+// 10 · Il limite mensile personale del Concierge AI (vuoto = quello di serie), con la nota nel registro.
 $r->post('/admin/cliente/{aid}/assistente/limite', function (array $a) {
     $admin = Auth::requireAdmin();
     $acc = Db::one('SELECT * FROM accounts WHERE id = ?', [(int) $a['aid']]);
@@ -802,8 +802,8 @@ $r->get('/admin/traduzioni', function () {
         'config' => Traduttore::config(), 'nav' => 'traduzioni'], 'layout/cms');
 });
 
-// ---------------------------------------------------------------- 10 · Assistente AI
-/* «Chiedi alla guida»: per ogni cliente le domande del mese, quelle senza risposta, i token e il costo stimato dal
+// ---------------------------------------------------------------- 10 · Concierge AI
+/* Concierge AI: per ogni cliente le domande del mese, quelle senza risposta, i token e il costo stimato dal
    listino delle Impostazioni, lo stato del limite; i totali, gli ultimi errori, il CSV. Le stime non sono la fattura: fa fede la console di Anthropic. */
 $meseAssistente = fn(): string => preg_match('/^\d{4}-\d{2}$/', (string) ($_GET['mese'] ?? '')) ? (string) $_GET['mese'] : Assistente::mese();
 $r->get('/admin/assistente', function () use ($meseAssistente) {
@@ -812,16 +812,23 @@ $r->get('/admin/assistente', function () use ($meseAssistente) {
     $errori = Assistente::disponibile() ? Db::all("SELECT q.*, u.email FROM assistant_questions q LEFT JOIN accounts a ON a.id = q.account_id LEFT JOIN users u ON u.id = a.user_id
                                                    WHERE q.outcome IN ('errore', 'limite') ORDER BY q.id DESC LIMIT 8") : [];
     View::out('admin/assistente', ['mese' => $mese, 'mesi' => Assistente::mesi(), 'righe' => Assistente::perCliente($mese), 'totali' => Assistente::totali($mese), 'errori' => $errori,
-        'configurato' => Assistente::configurato(), 'config' => Assistente::config(), 'tetto' => Assistente::tetto(), 'limite' => Assistente::limite(0), 'nav' => 'assistente'], 'layout/cms');
+        'configurato' => Assistente::configurato(), 'config' => Assistente::config(), 'tetto' => Assistente::tetto(), 'limite' => Assistente::limite(0), 'nav' => 'assistente',
+        // 9T · consumo e spesa: la demo a sé, la cache, i giorni, le domande senza risposta più frequenti, il costo vero (Admin key facoltativa)
+        'demo' => Assistente::demo($mese), 'cache' => Assistente::quotaCache($mese), 'giorni' => Assistente::giorniTrascorsi($mese), 'serie' => Assistente::perGiorno(30),
+        'frequenti' => Assistente::senzaRispostaFrequenti($mese, 20), 'reale' => Assistente::costoReale($mese)], 'layout/cms');
 });
 $r->get('/admin/assistente/csv', function () use ($meseAssistente) {
     Auth::requireAdmin();
     $mese = $meseAssistente();
     $righe = [];
     foreach (Assistente::perCliente($mese) as $x) {
-        $righe[] = [MHW\Codici::cliente((int) $x['account_id']), $x['nome'], $x['email'], $x['piano'], $x['guide'], $x['domande'], $x['senza'], $x['errori'], $x['fermate'], $x['token_in'], $x['token_out'], number_format($x['euro'], 4, ',', ''), $x['limite'], $x['percento'] . '%'];
+        $righe[] = [MHW\Codici::cliente((int) $x['account_id']), $x['nome'], $x['email'], $x['piano'], $x['guide'], $x['domande'], $x['senza'], $x['errori'], $x['fermate'], $x['token_in'], $x['token_out'], number_format($x['euro'], 4, ',', ''), $x['limite'], $x['percento'] . '%',
+                    implode(' | ', array_map(fn($st) => $st['nome'] . ': ' . $st['domande'] . ' (' . $st['percento'] . '%)', $x['strutture']))];
     }
-    Gestione::csv('assistente-' . $mese, ['Codice', 'Cliente', 'Email', 'Piano', 'Guide', 'Domande', 'Senza risposta', 'Errori', 'Fermate dal limite', 'Token in ingresso', 'Token in uscita', 'Costo stimato (€)', 'Limite mensile', 'Del limite'], $righe);
+    // 9T · la demo, riga a sé
+    $d = Assistente::demo($mese);
+    if ($d['acceso'] || $d['domande'] > 0) $righe[] = ['', 'Demo Casa Checco', '', '', $d['guide'], $d['domande'], $d['senza'], $d['errori'], $d['fermate'], $d['token_in'], $d['token_out'], number_format($d['euro'], 4, ',', ''), $d['limite'], $d['percento'] . '%', ''];
+    Gestione::csv('assistente-' . $mese, ['Codice', 'Cliente', 'Email', 'Piano', 'Guide', 'Domande', 'Senza risposta', 'Errori', 'Fermate dal limite', 'Token in ingresso', 'Token in uscita', 'Costo stimato (€)', 'Limite mensile per struttura', 'Del limite (la struttura più usata)', 'Per struttura'], $righe);
 });
 
 // ---------------------------------------------------------------- scadenze
@@ -1014,6 +1021,17 @@ $r->post('/admin/cliente/{id}/invito', function (array $a) {
     try {
         $stato = MHW\Inviti::collegaAMano($aid, (string) ($_POST['codice'] ?? ''), (int) Auth::user()['id']);
         Support::flash($stato === 'registrato' ? 'Collegato: l\'invito si accende quando questo cliente paga.' : ($stato === 'oltre' ? 'Collegato, ma chi invita ha già i suoi ' . MHW\Inviti::amiciMassimi() . ' amici: conta oltre il massimo.' : 'Collegato: l\'invito conta e lo sconto di chi invita è aggiornato.'));
+    } catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
+    Support::redirect('/admin/cliente/' . $aid . '#inviti');
+});
+
+/* 9T · «Conta l'invito (prova)»: l'invito in attesa di un amico diventa valido senza pagamento, solo tra account staff o di prova, con il motivo. */
+$r->post('/admin/cliente/{id}/invito-prova', function (array $a) {
+    Auth::requireAdmin();
+    $aid = (int) $a['id'];
+    try {
+        $stato = MHW\Inviti::contaPerProva($aid, (string) ($_POST['motivo'] ?? ''), (int) Auth::user()['id']);
+        Support::flash($stato === 'oltre' ? 'Contato, ma chi invita ha già i suoi ' . MHW\Inviti::amiciMassimi() . ' amici: resta oltre il massimo.' : 'Invito contato per prova: il rettangolo di chi invita è pieno e il suo sconto è aggiornato.');
     } catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
     Support::redirect('/admin/cliente/' . $aid . '#inviti');
 });
@@ -1297,10 +1315,10 @@ $r->get('/admin/diagnostica', function () {
                 . ' Prova da Impostazioni → Archivio → «Prova».';
     }
     $checks[] = ['Foto e PDF su Amazon S3', $s3ok, $s3det];
-    // 10 · «Chiedi alla guida»: la chiave c'è? (la prova vera è in Impostazioni → Chiedi alla guida)
-    $checks[] = ['«Chiedi alla guida» (assistente AI)', Assistente::configurato(), Assistente::configurato()
-        ? 'chiave impostata, modello ' . Assistente::modello() . ', ' . Assistente::limite(0) . ' domande al mese per struttura, tetto ' . number_format(Assistente::tetto(), 2, ',', '.') . ' €/mese. Prova la connessione da Impostazioni → Chiedi alla guida.'
-        : 'manca la chiave API di Anthropic: i clienti Plus e Portfolio non vedono il bottone nella guida. Impostazioni → Chiedi alla guida.'];
+    // 10 · Concierge AI: la chiave c'è? (la prova vera è in Impostazioni → Concierge AI)
+    $checks[] = ['Concierge AI', Assistente::configurato(), Assistente::configurato()
+        ? 'chiave impostata, modello ' . Assistente::modello() . ', ' . Assistente::limite(0) . ' domande al mese per struttura, tetto ' . number_format(Assistente::tetto(), 2, ',', '.') . ' €/mese. Prova la connessione da Impostazioni → Concierge AI.'
+        : 'manca la chiave API di Anthropic: i clienti Plus e Portfolio non vedono il bottone nella guida. Impostazioni → Concierge AI.'];
     $checks[] = ['HTTPS', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || str_starts_with($base, 'https'),
         'i cookie di sessione diventano "secure" solo su HTTPS'];
     [$pulitiOk, $pulitiMsg] = Impostazioni::provaIndirizzi(rtrim((string) Config::get('base_url'), '/'));

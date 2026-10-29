@@ -16,7 +16,7 @@ namespace MHW;
  *   giudizio — (7D) dal 30° al 40° giorno dopo la prima pubblicazione, una volta sola: «Ti sta piacendo?»
  *   benvenuto — la prima guida dell'account è online (Benvenuto): una volta sola, di servizio, senza «non mandarmene più»
  *   sconti   — (9P) 7 giorni dopo l'attivazione, una volta per account: «Fino al 55%», inviti e giudizio con i conti (EmailSconti)
- *   assistente — (10) «Chiedi alla guida»: nei primi 7 giorni del mese il riepilogo del mese prima per ogni guida con domande
+ *   assistente — (10) Concierge AI: nei primi 7 giorni del mese il riepilogo del mese prima per ogni guida con domande
  *                (quante, le sezioni più chieste, quelle senza risposta); e l'avviso all'80% delle domande del mese
  *
  * Le finestre non si sovrappongono: una struttura riceve al massimo un richiamo
@@ -39,7 +39,7 @@ final class Richiami
                          'giudizio' => 'la richiesta di un giudizio su MyHouse Welcome', 'benvenuto' => 'l\'email di benvenuto',
                          'sconti' => 'l\'email sugli sconti del rinnovo',
                          'bozza7' => 'le email sulla guida in bozza', 'bozza21' => 'le email sulla guida in bozza', 'bozza' => 'le email sulla guida in bozza',
-                         'assistente' => 'le email su «Chiedi alla guida»'];   // con l'articolo: «Non vuoi più ricevere …?»
+                         'assistente' => 'le email sul Concierge AI'];   // con l'articolo: «Non vuoi più ricevere …?»
     /** Le risposte a un clic di «Cosa ti ha fermato?» (7A). */
     public const MOTIVI = ['prezzo' => 'Il prezzo', 'tempo' => 'Non ho avuto tempo', 'funzione' => 'Mi mancava una funzione', 'altro' => 'Altro'];
     /** I richiami del percorso: uno per volta, mai due a meno di due giorni l'uno dall'altro (7A). */
@@ -265,8 +265,8 @@ final class Richiami
 
         // 9P · «Fino al 55%», 7 giorni dopo l'attivazione: prima dei lavori di manutenzione qui sotto (che chiamano Stripe e possono durare).
         try { $fatte['sconti'] = EmailSconti::giro($t); } catch (\Throwable $e) { Log::exception($e, 'email «Fino al 55%»'); }
-        // 10 · «Chiedi alla guida»: il riepilogo del mese prima, nei primi 7 giorni del mese, e la pulizia delle domande oltre i 12 mesi.
-        try { $fatte['assistente'] = self::giroAssistente($t); } catch (\Throwable $e) { Log::exception($e, 'email mensile «Chiedi alla guida»'); }
+        // 10 · Concierge AI: il riepilogo del mese prima, nei primi 7 giorni del mese, e la pulizia delle domande oltre i 12 mesi.
+        try { $fatte['assistente'] = self::giroAssistente($t); } catch (\Throwable $e) { Log::exception($e, 'email mensile Concierge AI'); }
         try { Assistente::pulisci(); } catch (\Throwable $e) { Log::exception($e, 'pulizia domande assistente'); }
 
         Seo::forseFile();      // 7F: una volta al giorno robots.txt, sitemap.xml e llms.txt come file veri
@@ -492,7 +492,7 @@ final class Richiami
             ? ($guide === 1 ? ($qr > 0 ? self::tt('In quest\'anno la tua guida è stata aperta {n} volte, {qr} delle quali dal QR.', $x) : self::tt('In quest\'anno la tua guida è stata aperta {n} volte.', $x))
                             : ($qr > 0 ? self::tt('In quest\'anno le tue {g} guide sono state aperte {n} volte, {qr} delle quali dal QR.', $x) : self::tt('In quest\'anno le tue {g} guide sono state aperte {n} volte.', $x)))
             : self::tt('Quest\'anno non abbiamo ancora registrato aperture: controlla che il QR sia in vista e che il link arrivi agli ospiti prima dell\'arrivo.');
-        if (Inviti::disponibili() && $a['sconto'] <= 0) $numeri .= ' ' . self::tt('Puoi ancora abbassare il rinnovo: ogni amico che pubblica con il tuo invito vale il {n}% in meno.', ['{n}' => Inviti::PASSO]);
+        if (Inviti::disponibili() && $a['sconto'] <= 0) $numeri .= ' ' . self::tt('Puoi ancora abbassare il rinnovo: ogni amico che attiva la sua guida con il tuo invito vale il {n}% in meno.', ['{n}' => Inviti::PASSO]);
         return $numeri;
     }
 
@@ -689,7 +689,7 @@ final class Richiami
         return $ok;
     }
 
-    // ------------------------------------------------------- 10 · «Chiedi alla guida»
+    // ------------------------------------------------------- 10 · Concierge AI
 
     /** Il nome del mese nella lingua fissata: «ottobre 2026» / «October 2026». */
     private static function meseNome(string $ym): string
@@ -717,13 +717,13 @@ final class Richiami
             if ($r['domande'] === 0) continue;
             self::lingua((int) $p['acc_id']);
             $x = ['{nome}' => (string) $p['name'], '{mese}' => self::meseNome($mese), '{n}' => $r['domande'], '{ok}' => $r['ok'], '{no}' => $r['no'], '{lingue}' => $r['lingue']];
-            $corpo = self::tt('a {mese} la guida di {nome} ha ricevuto {n} domande dagli ospiti: {ok} hanno avuto risposta dalla guida, {no} no (e gli ospiti hanno visto i tuoi contatti).', $x);
+            $corpo = self::tt('a {mese} il Concierge AI di {nome} ha ricevuto {n} domande dagli ospiti: {ok} hanno avuto risposta dalla guida, {no} no (e gli ospiti hanno visto i tuoi contatti).', $x);
             if ($r['sezioni']) $corpo .= "\n\n" . self::tt('Le sezioni più chieste: ') . implode(', ', array_map(fn($s) => $s['titolo'] . ' (' . $s['n'] . ')', $r['sezioni'])) . '.';
             if ($r['senza']) {
                 $corpo .= "\n\n" . self::tt('Senza risposta, da aggiungere alla guida: ') . implode(' · ', array_map(fn($q) => '«' . mb_substr(trim((string) $q['question']), 0, 120) . '»', $r['senza'])) . '. '
-                        . self::tt('Due righe nella sezione giusta e la prossima volta la guida risponde da sola.');
+                        . self::tt('Due righe nella sezione giusta e la prossima volta il Concierge AI risponde da solo.');
             }
-            $m = [self::tt('A {mese} la tua guida ha risposto {ok} volte', $x), $corpo, self::tt('Completa la guida'), Support::baseUrl() . '/pannello/' . (int) $p['id'] . '/impostazioni#chiedi-alla-guida',
+            $m = [self::tt('A {mese} il Concierge AI ha risposto {ok} volte', $x), $corpo, self::tt('Completa la guida'), Support::baseUrl() . '/pannello/' . (int) $p['id'] . '/impostazioni#concierge-ai',
                   self::tt('Le domande degli ospiti sono anonime: qui vedi solo i numeri e le domande rimaste senza risposta.')];
             if (self::manda((int) $p['acc_id'], (string) $p['email'], (string) $p['user_name'], 'assistente', 'mese-' . $mese . '-' . (int) $p['id'], $m)) $n++;
         }
@@ -737,10 +737,10 @@ final class Richiami
         if (!$p) return;
         self::lingua($accountId);
         $x = ['{nome}' => (string) $p['name'], '{usate}' => $contatore['usate'], '{limite}' => $contatore['limite'], '{percento}' => $contatore['percento']];
-        $m = [self::tt('«Chiedi alla guida»: {nome} è al {percento}% delle domande del mese', $x),
-              self::tt('la guida di {nome} ha già risposto a {usate} domande su {limite} comprese questo mese. Quando le finisce, l\'assistente si ferma fino al primo del mese prossimo e la guida resta come sempre: gli ospiti trovano tutto nelle sezioni.', $x)
+        $m = [self::tt('Concierge AI: {nome} è al {percento}% delle domande del mese', $x),
+              self::tt('il Concierge AI di {nome} ha già risposto a {usate} domande su {limite} comprese questo mese. Quando le finisce, si ferma fino al primo del mese prossimo e la guida resta come sempre: gli ospiti trovano tutto nelle sezioni.', $x)
               . "\n\n" . self::tt('Se ti serve un limite più alto, scrivici: lo alziamo noi.'),
-              self::tt('Apri le impostazioni'), Support::baseUrl() . '/pannello/' . (int) $p['id'] . '/impostazioni#chiedi-alla-guida'];
+              self::tt('Apri le impostazioni'), Support::baseUrl() . '/pannello/' . (int) $p['id'] . '/impostazioni#concierge-ai'];
         self::manda($accountId, (string) $p['email'], (string) $p['user_name'], 'assistente', '80-' . Assistente::mese() . '-' . (int) $p['id'], $m);
     }
 

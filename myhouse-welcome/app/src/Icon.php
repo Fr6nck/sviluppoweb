@@ -23,6 +23,7 @@ final class Icon
         'pulse'     => '<path d="M3 12h4l2.5-6 5 12 2.5-6H21"/>',
         'external'  => '<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/>',
         'close'     => '<path d="M6 6l12 12M18 6 6 18"/>',
+        'mail'      => '<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m4 7.5 8 6 8-6"/>',   // 9T · la busta, per i bottoni «Email»
         'calendar'  => '<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
         'bag'       => '<path d="M5 8h14l-1.2 12H6.2L5 8Z"/><path d="M9 10.5V6.5a3 3 0 0 1 6 0v4"/>',
         'wifi'      => '<path d="M2.5 9a15 15 0 0 1 19 0"/><path d="M6 12.5a10 10 0 0 1 12 0"/><path d="M9.5 16a5 5 0 0 1 5 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor" stroke="none"/>',
@@ -56,6 +57,7 @@ final class Icon
         'book'      => '<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v18H5.5A1.5 1.5 0 0 1 4 19.5Z"/><path d="M4 17.5h15"/>',
         'chart'     => '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
         'bin'       => '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/><path d="M10.5 11v5.5M13.5 11v5.5"/>',
+        'clessidra' => '<path d="M7 3.5h10M7 20.5h10"/><path d="M8 3.5c0 4 4 5.2 4 8.5s-4 4.5-4 8.5M16 3.5c0 4-4 5.2-4 8.5s4 4.5 4 8.5"/>',
         'clock'     => '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
         'message'   => '<path d="M20 12a7.5 7.5 0 0 1-11 6.6L4 20l1.4-4.6A7.5 7.5 0 1 1 20 12Z"/>',
         'bus'       => '<rect x="4.5" y="3.5" width="15" height="14" rx="3"/><path d="M4.5 11h15M8 17.5v2.5M16 17.5v2.5"/><path d="M8 14.3h.01M16 14.3h.01"/><path d="M8.5 6.5h7"/>',

@@ -170,10 +170,10 @@ $config = [
         'extra'          => $bool('MHW_TRANSLATE_EXTRA', true),
     ],
 
-    // 10 · «Chiedi alla guida»: l'assistente che risponde agli ospiti con il testo della guida (Claude, API di
-    // Anthropic). Compreso in Plus e Portfolio (funzione ai_concierge, migrazione 067). La chiave si imposta da
-    // Amministrazione → Impostazioni → Chiedi alla guida (config.local.php) o con MHW_ASSISTENTE_KEY. Senza chiave
-    // la guida non mostra il bottone. I prezzi servono solo per le stime di Amministrazione → Assistente AI.
+    // 10 · Concierge AI (9T; prima «Chiedi alla guida»): l'assistente che risponde agli ospiti con il testo della guida
+    // (Claude, API di Anthropic). Compreso in Plus e Portfolio (funzione ai_concierge, migrazione 067). La chiave si
+    // imposta da Amministrazione → Impostazioni → Concierge AI (config.local.php) o con MHW_ASSISTENTE_KEY. Senza chiave
+    // la guida non mostra il bottone. I prezzi servono solo per le stime di Amministrazione → Concierge AI.
     'assistente' => [
         'api_key'  => $env('MHW_ASSISTENTE_KEY'),
         // Il modello: di serie Haiku (economico e veloce); Sonnet risponde meglio ma costa molto di più.
@@ -188,8 +188,14 @@ $config = [
         'prezzo_in'  => $env('MHW_ASSISTENTE_PREZZO_IN', '0.10'),
         'prezzo_out' => $env('MHW_ASSISTENTE_PREZZO_OUT', '0.50'),
         'usd_eur'    => $env('MHW_ASSISTENTE_USD_EUR', '0.86'),
-        // Anche sulla guida vetrina (Casa Checco) della home: costa per ogni visitatore, di serie spento.
-        'demo'       => $bool('MHW_ASSISTENTE_DEMO'),
+        // 9T · Anche sulla guida vetrina (Casa Checco) della home, di serie acceso («Provalo sulla demo»): costa per ogni
+        // visitatore, quindi ha un limite suo al mese e, per ogni visitatore, 5 domande ogni 10 minuti.
+        'demo'       => $bool('MHW_ASSISTENTE_DEMO', true),
+        'demo_limite' => (int) $env('MHW_ASSISTENTE_DEMO_LIMITE', '300'),
+        // 9T · Facoltative: la Admin API key di Anthropic e il workspace, per leggere il costo vero del mese (Usage & Cost
+        // API) in Amministrazione → Concierge AI accanto alla stima. Vuote = solo la stima.
+        'admin_key'  => $env('MHW_ASSISTENTE_ADMIN_KEY'),
+        'workspace'  => $env('MHW_ASSISTENTE_WORKSPACE'),
     ],
 
     // Le versioni dei documenti legali: cambiatele quando cambia il testo, e ogni
@@ -198,8 +204,8 @@ $config = [
     // ricevono l'avviso (email una volta sola e riga nel pannello) e la finestra «Accetto» arriva a quella data.
     // Si cambiano da Amministrazione → Impostazioni → Titolare e documenti legali.
     'legal' => [
-        'terms_version'   => $env('MHW_TERMS_VERSION', '2026-10-27'),   // 10: «Chiedi alla guida»; 9R (22 ottobre): il 5% del giudizio una volta sola; 9R: «Giudizio con sconto» riscritto (sconto solo con il giudizio, logo), cambio proposto; 9O: programma partner
-        'privacy_version' => $env('MHW_PRIVACY_VERSION', '2026-10-27'),   // 10: Anthropic per «Chiedi alla guida»; 9O: programma partner (trattamento 15);   // 9L (revisione): scheda e giudizio pubblicati a nostra scelta; 9L: «Giudizio con sconto e vetrina»; 9K: partner
+        'terms_version'   => $env('MHW_TERMS_VERSION', '2026-10-27'),   // 10: Concierge AI; 9R (22 ottobre): il 5% del giudizio una volta sola; 9R: «Giudizio con sconto» riscritto (sconto solo con il giudizio, logo), cambio proposto; 9O: programma partner
+        'privacy_version' => $env('MHW_PRIVACY_VERSION', '2026-10-27'),   // 10: Anthropic per Concierge AI; 9O: programma partner (trattamento 15);   // 9L (revisione): scheda e giudizio pubblicati a nostra scelta; 9L: «Giudizio con sconto e vetrina»; 9K: partner
         'dpa_version'     => $env('MHW_DPA_VERSION', '2026-10-15'),
         // 8J: il titolare del trattamento e fornitore del servizio.
         'company'         => $env('MHW_COMPANY', 'City Up S.r.l.'),

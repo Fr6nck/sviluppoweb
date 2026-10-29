@@ -126,6 +126,8 @@ p{margin:0}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;
   padding:0 26px;border:0;border-radius:999px;background:var(--accent);color:var(--on-dark);
   font:inherit;font-weight:500;letter-spacing:-.3px;cursor:pointer;text-align:center;white-space:nowrap}
+/* 9T · 5.3: un bottone con l'attributo hidden (per esempio «Applica» quando c'è JavaScript) resta nascosto anche con display:inline-flex */
+.btn[hidden]{display:none}
 /* 9C · nelle tabelle e nelle righe i bottoni non si restringono: se lo spazio manca scorre il contenitore (.tablewrap), mai la pagina.
    Sotto i 400 px la testata del pannello stringe i bottoni («Continua dopo», «Pubblica») per non far scorrere la pagina;
    i testi lunghi delle anomalie vanno a capo; i campi file non escono dal loro riquadro. */
@@ -1188,8 +1190,10 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .spunte li b{display:block;color:var(--ink);font-size:17px;font-weight:600;letter-spacing:-.2px}
 .spunte svg{flex:none;margin-top:3px;color:var(--pine)}
 
-/* Piani: nomi forti, elenco allineato con spunte, niente frasi finali. */
-.piani{align-items:stretch}
+/* Piani: nomi forti, elenco allineato con spunte, niente frasi finali.
+   9T · 5.5: ogni scheda alta quanto il suo contenuto: prezzo e bottone subito sotto le voci, senza il vuoto di ~250 px che
+   Essential e Plus avevano per allinearsi a Portfolio (che ha in più la scala dei prezzi e il selettore). */
+.piani{align-items:start}
 /* Schede dei piani: testa, voci, quantità, prezzo e bottone. Il prezzo sta in fondo, sopra il bottone,
    separato da una riga; con la subgrid le cinque righe sono comuni alle tre schede, così prezzi e
    bottoni sono alla stessa altezza anche se le voci sono di più in una scheda che nell'altra. */
@@ -1201,13 +1205,7 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .plan__prezzo{display:flex;flex-direction:column;gap:6px;margin-top:auto;padding-top:18px;border-top:1px solid var(--line)}
 .plan__prezzo .plan__mese{margin-top:0}
 .plan--dark .plan__prezzo{border-top-color:rgba(246,240,229,.16)}
-@supports (grid-template-rows:subgrid){ @media (min-width:561px){
-  .piani .plan{display:grid;grid-row:span 5;grid-template-rows:subgrid;row-gap:18px;align-content:start}
-  .piani .plan__scelta{display:contents}
-  .piani .plan__quante:empty{display:block}
-  .piani .plan__prezzo{margin-top:0;align-self:end}
-  .piani .plan>.btn,.piani .plan__scelta>.btn{margin-top:0;align-self:end}
-} }   /* su una colonna sola le schede sono una sotto l'altra: niente da allineare */
+
 /* /piano: le stesse righe, senza bottone (si sceglie col pallino); il piede tiene quantità e prezzo. */
 .plan__piede{display:flex;flex-direction:column;gap:18px;margin-top:auto}
 .pianocard .plan__quante,.pianocard .plan__prezzo{position:relative;z-index:2}
@@ -1715,9 +1713,21 @@ a.device-link:hover .device{transform:translateY(-4px)}
   .passo{padding:14px;gap:12px}
   .passo__testo b{font-size:16px;line-height:22px}
   .passo__testo span{font-size:14.5px;line-height:21px}
-  .schermata__barra{height:28px} .schermata__barra span{display:none}
-  /* Sul telefono la schermata intera è troppo piccola: si mostra la parte sinistra, ingrandita. */
-  .schermata img{width:150%;max-width:none}
+}
+/* 9T · «Come funziona» su telefono (sotto 760 px; mockup concierge-come, blocco 2): i tre passi tutti uguali (cerchio pieno,
+   titolo, testo), niente scheda «attiva» che cambia scorrendo (landing.js usa le schede solo da 760 px in su), e sotto ogni
+   passo la sua schermata intera, larga quanto lo schermo, nella cornice con i tre pallini; niente pillola dell'indirizzo.
+   Da 760 px in su resta tutto com'era: i passi a sinistra, la schermata a destra. */
+.passo__schermata{display:none}
+@media(max-width:759px){
+  .passi[data-passi] .passi__schermate{display:none}
+  .passi[data-passi] .passi__lista{gap:4px}
+  .passi[data-passi] .passo{padding:6px 0;background:none;border-color:transparent;box-shadow:none;pointer-events:none}
+  .passi[data-passi] .passo__n{background:var(--accent);color:var(--on-dark);border-color:transparent}
+  .passi[data-passi] .passo::after{display:none}
+  .passo__schermata{display:block;margin:10px 0 22px}
+  .passo__schermata img{display:block;width:100%;height:auto;max-width:100%;object-fit:contain}
+  .schermata__barra{height:24px} .schermata__barra span{display:none}
 }
 @media (prefers-reduced-motion:reduce){ .passo,.passo__n,.link-freccia svg,.demo-gruppo__vai,.demo-lingue a{transition:none} }
 
@@ -2052,6 +2062,27 @@ a.cifra .cifra__freccia{position:absolute;top:18px;right:18px;opacity:.55}
 @media(max-width:860px){ .cifre--3{grid-template-columns:minmax(0,1fr)} }
 @media(max-width:1100px){ .cifre--4{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media(max-width:480px){ .cifre--4{grid-template-columns:minmax(0,1fr)} }
+/* 9T · Amministrazione → Concierge AI: domande per giorno (30 barre, una serie sola: niente legenda; il numero di ogni
+   giorno al passaggio del puntatore e nella tabella sotto), le strutture di un cliente, la riga della demo. */
+.giorni{--giorni-barra:var(--pine);margin:0;display:flex;flex-direction:column;gap:6px}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="chiaro"]) .giorni{--giorni-barra:#4fa86e} }
+:root[data-theme="scuro"] .giorni{--giorni-barra:#4fa86e}
+.giorni__grafico{position:relative;display:flex;align-items:flex-end;gap:2px;height:140px;padding-top:20px;border-bottom:1px solid var(--line-strong)}
+.giorni__grafico::before{content:"";position:absolute;left:0;right:0;top:20px;border-top:1px dashed var(--line)}
+.giorni__scala{position:absolute;top:0;left:0;font-size:12px;line-height:16px;color:var(--muted)}
+.giorni__col{position:relative;flex:1 1 0;min-width:0;height:100%;display:flex;align-items:flex-end}
+.giorni__barra{display:block;width:100%;border-radius:4px 4px 0 0;background:var(--giorni-barra)}
+.giorni__col:hover .giorni__barra{filter:brightness(1.15)}
+.giorni__col:hover::after{content:attr(data-v);position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);z-index:2;white-space:nowrap;
+  padding:4px 8px;border-radius:6px;background:var(--ink);color:var(--paper);font-size:12px;line-height:16px;pointer-events:none}
+.giorni__col:nth-child(-n+6):hover::after{left:0;transform:none}
+.giorni__col:nth-last-child(-n+5):hover::after{left:auto;right:0;transform:none}
+.giorni__asse{display:flex;justify-content:space-between}
+.giorni__tabella summary{cursor:pointer;width:max-content}
+.giorni__tabella .tablewrap{max-height:320px;overflow:auto;margin-top:8px}
+.uso-strutture{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.uso-strutture li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.riga-demo td{background:var(--sunk)}
 .lato .simbolo,.cassetto__pannello .simbolo{color:var(--lato-fg)}
 .lato .simbolo__punto{fill:var(--lato-accento)}
 @media(max-width:860px){
@@ -2773,8 +2804,21 @@ ol.invito__passi{list-style:none;margin:0;padding:0}
 .demo-tag--link:hover{filter:brightness(1.08)}
 .demo-riga{margin:0;font-size:13px;line-height:20px;text-align:center;color:var(--muted)}
 .demo-riga a{color:inherit;text-decoration:underline;text-underline-offset:3px}
+/* 9T · 5.8: nella demo «Torna al sito», «Crea la tua» e il marchio DEMO hanno un'area da toccare di almeno 44 px
+   (il disegno resta piccolo: l'area in più è invisibile). */
+.demo-riga a,.demo-tag--link{position:relative}
+.demo-riga a{display:inline-block;padding:12px 2px;margin:-12px 0}
+.demo-tag--link::after{content:"";position:absolute;left:-6px;right:-6px;top:50%;height:44px;transform:translateY(-50%)}
 .demo-riga--chiara{color:var(--full-tenue,#e8dcc8)}
 .demo-riga--chiara a{color:#f6f0e5}
+/* 9T · 5.4 · Nella demo il bottone per scrivere all'host apre questo riquadro (niente numeri di fantasia). */
+.demo-contatto{display:block}
+.demo-contatto>summary{list-style:none;cursor:pointer}
+.demo-contatto>summary::-webkit-details-marker{display:none}
+.demo-contatto__pannello{margin-top:10px;padding:12px 14px;border-radius:16px;background:var(--ochre-soft);color:var(--ink);font-size:14px;line-height:20px;
+  display:flex;flex-direction:column;gap:10px;align-items:flex-start;text-align:left}
+.demo-contatto__pannello p{margin:0}
+.demo-contatto__pannello--foglio{margin-top:4px}
 @media (max-width:600px){
   .scegli-lingua{width:100%;max-width:none;height:100%;max-height:none;margin:0;border-radius:0}
   .scegli-lingua__dentro{min-height:100%;justify-content:center;padding:32px 20px}
@@ -3028,15 +3072,6 @@ body.con-finestra{overflow:hidden}
 .perchi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 @media(max-width:1000px){ .perchi{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media(max-width:620px){ .perchi{grid-template-columns:minmax(0,1fr)} }
-/* 9N · Su telefono le sei schede in riga compatta (miniatura + titolo), come le tre «scene»: la home non è più lunga cinque schermi. */
-@media(max-width:620px){
-  .perchi{gap:10px}
-  .perchi__scheda{flex-direction:row;align-items:center;border-radius:var(--r-lg)}
-  .perchi__foto{flex:none;width:96px;aspect-ratio:1/1}
-  .perchi__corpo{padding:12px 14px;gap:4px}
-  .perchi__testo{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14px}
-  .perchi__scopri{display:none}
-}
 .perchi__scheda{display:flex;flex-direction:column;border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line);overflow:hidden;
   color:inherit;text-decoration:none;box-shadow:0 1px 2px rgba(35,27,18,.04);
   transition:transform .3s var(--molla,cubic-bezier(.22,.7,.25,1)),box-shadow .3s,border-color .3s;-webkit-mask-image:-webkit-radial-gradient(white,black)}
@@ -3055,6 +3090,20 @@ body.con-finestra{overflow:hidden}
 @media (prefers-reduced-motion: reduce){
   .perchi__scheda,.perchi__foto img,.perchi__scopri svg{transition:none}
   .perchi__scheda:hover,.perchi__scheda:active{transform:none} .perchi__scheda:hover .perchi__foto img,.perchi__scheda:hover .perchi__scopri svg{transform:none}
+}
+/* 9N · Su telefono le sei schede in riga compatta, come le tre «scene»: la home non è più lunga cinque schermi.
+   9T: dopo le regole generali (prima la colonna e la foto 4:3 le sovrascrivevano: foto piccola e centrata sopra l'icona).
+   Miniatura 96 × 96 a sinistra che riempie il suo spazio, titolo e testo a destra (intero: niente righe tagliate, 5.6),
+   niente icona né «Scopri»; tutta la scheda resta il link. */
+@media(max-width:620px){
+  .perchi{gap:10px}
+  .perchi .perchi__scheda{flex-direction:row;align-items:stretch;border-radius:var(--r-lg)}
+  .perchi .perchi__foto{flex:0 0 96px;width:96px;min-height:96px;aspect-ratio:auto;align-self:stretch}
+  .perchi .perchi__foto img{width:96px;height:100%;min-height:96px;object-fit:cover}
+  .perchi .perchi__corpo{padding:12px 14px;gap:4px;justify-content:center}
+  .perchi .perchi__corpo .vantaggio__ico{display:none}
+  .perchi .perchi__testo{font-size:14px;line-height:20px;flex:none}
+  .perchi .perchi__scopri{display:none}
 }
 
 /* 9K · «Qual è il piano giusto per te?» (pagine per tipologia): tre domande sì/no come schede grandi, poi l'esito con il
@@ -3299,6 +3348,7 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .barra-inviti__casella--vuoto{background:color-mix(in srgb,var(--terracotta) 14%,var(--terracotta-soft));color:color-mix(in srgb,var(--ink) 55%,transparent)}
 .barra-inviti__casella--pieno{background:var(--terracotta);color:#fff}
 .barra-inviti__casella--attesa{background:transparent;border:2px dashed var(--ochre);color:var(--ink)}
+.barra-inviti__attesa{display:inline-flex;color:var(--ochre)}
 .barra-inviti__casella--alone{box-shadow:0 0 0 3px color-mix(in srgb,var(--terracotta) 35%,transparent),0 0 18px color-mix(in srgb,var(--terracotta) 55%,transparent);animation:barra-alone 2.4s ease-in-out infinite}
 @keyframes barra-alone{50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--terracotta) 20%,transparent),0 0 26px color-mix(in srgb,var(--terracotta) 40%,transparent)}}
 @media (prefers-reduced-motion:reduce){.barra-inviti__casella--alone{animation:none}}
@@ -3346,7 +3396,7 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .fatt-modulo .campi-allineati>.field>label{min-height:24px}
 .fatt-aiuto{margin:6px 0 0}
 
-/* 10 · «Chiedi alla guida»: il bottone nella barra in fondo, la finestra della chat (un foglio dal basso, come
+/* 10 · Concierge AI (9T; prima «Chiedi alla guida»): il bottone nella barra in fondo, la finestra della chat (un foglio dal basso, come
    «Chi ti accoglie») e i fumetti. Anche nella pagina senza JavaScript (chiedi__form--pagina). */
 .guest-bottom .chiedi-apri{flex:1 1 0;min-width:0}
 .guest-bottom:has(.chiedi-apri):has(.contatti-foglio) .chiedi-apri{flex:0 0 auto;padding:0 14px}
@@ -3382,7 +3432,29 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .chiedi__invia svg{stroke:currentColor;flex:none;width:20px;height:20px}
 .chiedi__nota{margin:0;font-size:12px;line-height:17px;color:var(--muted)}
 .chiedi__form--pagina{margin-top:20px}
-/* 10 · La sezione «Chiedi alla guida» in home: il testo a sinistra, la finta chat a destra (come .prodotto). */
+/* 9T · Concierge AI: il badge «AI» accanto al nome (bottone della guida, titolo della finestra, kicker in home), la riga
+   sotto il campo. Contrasto AA: testo chiaro su terracotta pieno. */
+.badge-ai{display:inline-flex;align-items:center;justify-content:center;flex:none;height:18px;padding:0 6px;border-radius:6px;background:var(--accent);color:var(--on-dark);
+  font-family:Onest,system-ui,sans-serif;font-size:11px;line-height:1;font-weight:700;letter-spacing:.04em;vertical-align:middle;text-transform:none}
+.chiedi__titolo .badge-ai{position:relative;top:-3px}
+.chiedi-apri{gap:6px}
+.chiedi-apri__testo{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.contatti-foglio__corto{display:none}
+/* Su telefono, con «Chiedi al Concierge» e i contatti nella stessa barra: niente icona del fumetto, e nel bottone dei
+   contatti solo il nome (con la foto o il telefono), così stanno tutti e due senza uscire dallo schermo. */
+@media (max-width:440px){
+  .guest-bottom:has(.chiedi-apri):has(.contatti-foglio) .chiedi-apri>svg{display:none}
+  .guest-bottom:has(.chiedi-apri):has(.contatti-foglio) .chiedi-apri{padding:0 12px;flex:1 1 auto}
+  .guest-bottom:has(.chiedi-apri):has(.contatti-foglio .contatti-foglio__corto) .contatti-foglio__lungo{display:none}
+  .guest-bottom:has(.chiedi-apri):has(.contatti-foglio .contatti-foglio__corto) .contatti-foglio__corto{display:inline;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .guest-bottom:has(.chiedi-apri) .contatti-foglio{flex:0 1 auto;min-width:0}
+  .guest-bottom:has(.chiedi-apri) .contatti-foglio>summary{padding:0 14px}
+}
+.chiedi__hint{margin:-4px 0 0;font-size:13px;line-height:18px;color:var(--muted)}
+.kicker--ai{display:flex;align-items:center;gap:8px}
+.assistente__azioni{margin:4px 0 0;display:flex;gap:10px;flex-wrap:wrap}
+.assistente__azioni .btn svg{stroke:currentColor}
+/* 10 · La sezione Concierge AI in home: il testo a sinistra, la finta chat a destra (come .prodotto). */
 .assistente{margin-top:96px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:48px;align-items:center}
 .assistente__testa{display:flex;flex-direction:column;gap:16px;max-width:520px}
 .assistente__testa>p.muted{font-size:17px;line-height:26px;margin:0}

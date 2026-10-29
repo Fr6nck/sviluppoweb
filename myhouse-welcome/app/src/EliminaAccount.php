@@ -67,7 +67,7 @@ final class EliminaAccount
             $t = fn(string $tab) => Migrator::tableExists($tab);
             $righe = array_values(array_filter($righe, fn($x) => !str_starts_with($x[0], 'Ordini') && !str_starts_with($x[0], 'Inviti')));
             $righe[] = ['Inviti mandati per email (gli indirizzi degli amici)', $t('referral_invites') ? $conta('SELECT COUNT(*) FROM referral_invites WHERE account_id = ?', [$accountId]) : 0];
-            $righe[] = ['Domande degli ospiti a «Chiedi alla guida»', $t('assistant_questions') ? $conta('SELECT COUNT(*) FROM assistant_questions WHERE account_id = ?', [$accountId]) : 0];
+            $righe[] = ['Domande degli ospiti al Concierge AI', $t('assistant_questions') ? $conta('SELECT COUNT(*) FROM assistant_questions WHERE account_id = ?', [$accountId]) : 0];
             $righe[] = ['Accesso (email e password), note dell\'amministrazione, preferenze', 1];
             $fatt = trim(($acc['billing_name'] ?? '') . ' · ' . (($acc['vat'] ?? '') ?: ($acc['cf'] ?? '')), ' ·');
             $restano = ['Dati di fatturazione' . ($fatt !== '' ? ' (' . $fatt . ')' : ' (nessuno inserito)'),

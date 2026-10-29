@@ -7,7 +7,7 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
 
 <?php $coda = '/benvenuto'; include __DIR__ . '/_scegli_lingua.php'; /* 8C: «Scegli la lingua» alla prima apertura */ ?>
 <div class="full" id="soglia">
-  <?php if ($copertina): ?><img class="full__photo" src="<?= Support::e($copertina) ?>" alt="" fetchpriority="high"><?php endif; ?>
+  <?php if ($copertina): ?><img class="full__photo" src="<?= Support::e($copertina) ?>" alt="<?= Support::e((string) $pr['name']) ?>" fetchpriority="high"><?php endif; ?>
   <div class="full__scrim"></div>
   <div class="full__stage">
     <?php /* 9F · nella vetrina il marchio è un link alla home del sito (title «Torna a welcomemyhouse.it»); nelle guide vere non lo è. */

@@ -1,5 +1,5 @@
 <?php
-/* 10 · La pagina «Chiedi alla guida» per chi naviga senza JavaScript (e per chi arriva dal link): la domanda nel
+/* 10 · La pagina del Concierge AI («Chiedi al Concierge», 9T) per chi naviga senza JavaScript (e per chi arriva dal link): la domanda nel
    modulo, la risposta sotto, con la sezione da cui viene o i contatti. Riceve: $snap, $loc, $base, $domanda,
    $esito (null | ['testo', 'trovata', 'sezione' => ?array, 'contatti' => bool]), $errore, $chiedi. */
 use MHW\{Support, Icon, I18n};
@@ -9,13 +9,13 @@ $indietro = true; $coda = '/chiedi';
 $nomeHost = (string) ($chiedi['host'] ?? ''); ?>
 <?php include __DIR__ . '/_top.php'; ?>
 <div class="stack stack--sm" style="margin-top:20px">
-  <h1 class="guest-title" style="font-size:38px;line-height:38px"><?= Support::e(I18n::t($loc, 'ask_guide')) ?></h1>
+  <h1 class="guest-title" style="font-size:38px;line-height:38px"><?= Support::e(I18n::t($loc, 'ask_guide')) ?> <span class="badge-ai">AI</span></h1>
   <p class="muted" style="margin-top:6px"><?= Support::e(I18n::t($loc, 'ask_intro')) ?></p>
 </div>
 <form class="chiedi__form chiedi__form--pagina" method="get" action="<?= Support::e($chiedi['url']) ?>" style="margin-top:20px">
   <input type="hidden" name="l" value="<?= Support::e($loc) ?>">
   <label class="sr-only" for="chiedi-q"><?= Support::e(I18n::t($loc, 'ask_placeholder')) ?></label>
-  <input id="chiedi-q" name="q" type="text" maxlength="<?= MHW\Assistente::DOMANDA_MAX ?>" required autocomplete="off" value="<?= Support::e($domanda) ?>" placeholder="<?= Support::e(I18n::t($loc, 'ask_placeholder')) ?>">
+  <input id="chiedi-q" name="q" type="text" maxlength="<?= MHW\Assistente::DOMANDA_MAX ?>" required autocomplete="off" aria-describedby="chiedi-hint" value="<?= Support::e($domanda) ?>" placeholder="<?= Support::e(I18n::t($loc, 'ask_placeholder')) ?>">
   <button class="btn chiedi__invia" aria-label="<?= Support::e(I18n::t($loc, 'ask_send')) ?>"><?= Icon::svg('arrow', 20, 2) ?></button>
 </form>
 <?php if ($domanda !== '' && !empty($chiedi['esempi']) && $esito === null && $errore === ''): ?><?php endif; ?>
@@ -37,6 +37,7 @@ $nomeHost = (string) ($chiedi['host'] ?? ''); ?>
     <?php foreach ($chiedi['esempi'] as $k): ?><a class="chiedi__chip" href="<?= Support::e($chiedi['url']) ?>?l=<?= Support::e($loc) ?>&amp;q=<?= rawurlencode(I18n::t($loc, $k)) ?>"><?= Support::e(I18n::t($loc, $k)) ?></a><?php endforeach; ?>
   </div>
 <?php endif; ?>
+<p class="chiedi__hint" id="chiedi-hint" style="margin-top:8px"><?= Support::e(I18n::t($loc, 'ask_hint')) ?></p>
 <p class="chiedi__nota" style="margin-top:20px"><?= Support::e(I18n::t($loc, 'ask_note')) ?></p>
 <div class="guest-bottom">
   <a class="btn btn--ghost grow" href="<?= Support::e($base) ?>?l=<?= Support::e($loc) ?>"><?= Icon::svg('back', 17) ?><?= Support::e(I18n::t($loc, 'back')) ?></a>

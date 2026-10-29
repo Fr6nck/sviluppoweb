@@ -160,7 +160,7 @@ elseif ($campo === 'items' && $tipo === 'repeater'):
         </div>
         <?php if (trim((string) ($r['price_note'] ?? '')) !== ''): ?><p class="small muted"><?= Support::e($r['price_note']) ?></p><?php endif; ?>
         <?php if (trim((string) $r['description']) !== ''): ?><p class="small" style="white-space:pre-line;line-height:21px"><?= Support::e($r['description']) ?></p><?php endif; ?>
-        <?php if ($wa !== '' && $titoloExtra !== ''): ?>
+        <?php if ($wa !== '' && $titoloExtra !== '' && (int) ($pr['is_demo'] ?? 0) !== MHW\Demo::VETRINA): /* 9T · 5.4: non nella vetrina */ ?>
           <div class="ctas"><a href="https://wa.me/<?= Support::e($wa) ?>?text=<?= rawurlencode(I18n::t($loc, 'extra_message', $titoloExtra)) ?>" rel="noopener" target="_blank"
              aria-label="<?= Support::e(I18n::t($loc, 'request_whatsapp') . ': ' . $titoloExtra) ?>"><?= Icon::svg('whatsapp', 15) ?><?= Support::e(I18n::t($loc, 'request_whatsapp')) ?></a></div>
         <?php endif; ?>

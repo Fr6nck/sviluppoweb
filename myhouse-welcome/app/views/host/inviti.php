@@ -13,7 +13,7 @@ $nI = ['{amico}' => Inviti::AMICO, '{passo}' => Inviti::PASSO, '{max}' => Inviti
 <div class="stack stack--lg" style="max-width:980px">
   <div class="stack stack--sm">
     <h1><?= t('Invita un amico.') ?></h1>
-    <p class="lead" style="max-width:680px"><?= Support::e(tf('Conosci un altro host? Mandagli il tuo link. Lui ha il {amico}% di sconto sul primo anno, tu il {passo}% in meno sul prossimo rinnovo per ogni amico che pubblica, fino al {max}% degli inviti.', $nI)) ?></p>
+    <p class="lead" style="max-width:680px"><?= Support::e(tf('Conosci un altro host? Mandagli il tuo link. Lui ha il {amico}% di sconto sul primo anno, tu il {passo}% in meno sul prossimo rinnovo per ogni amico che attiva la sua guida (con il primo pagamento), fino al {max}% degli inviti.', $nI)) ?></p>
   </div>
 
   <section class="stack" style="gap:12px" aria-labelledby="inviti-come">
@@ -21,7 +21,7 @@ $nI = ['{amico}' => Inviti::AMICO, '{passo}' => Inviti::PASSO, '{max}' => Inviti
     <ol class="invito__passi" role="list">
       <li class="invito__passo"><i aria-hidden="true">1</i><span><?= t('Mandi il messaggio su WhatsApp (o per email) con il tuo link.') ?></span></li>
       <li class="invito__passo"><i aria-hidden="true">2</i><span><?= Support::e(tf('Il tuo amico apre il link: vede la tua guida in anteprima e lo sconto del {amico}% è già inserito.', $nI)) ?></span></li>
-      <li class="invito__passo"><i aria-hidden="true">3</i><span><?= Support::e(tf('Quando pubblica la sua guida, il tuo prossimo rinnovo scende del {passo}%, fino al {max}%.', $nI)) ?></span></li>
+      <li class="invito__passo"><i aria-hidden="true">3</i><span><?= Support::e(tf('Quando attiva la sua guida (con il primo pagamento), il tuo prossimo rinnovo scende del {passo}%, fino al {max}%.', $nI)) ?></span></li>
     </ol>
     <?php $rCome = b() . '/domande#{id}'; $rEtichetta = t('Come funziona'); $rT = fn($k, $s) => MHW\TestiSito::formatta(MHW\TestiSito::get($k, MHW\Pannello::en() ? 'en' : null), $s); include __DIR__ . '/../pub/_risparmio.php'; /* 9L · fino al 55% con il programma «Giudizio con sconto» */ ?>
   </section>
@@ -63,7 +63,7 @@ $nI = ['{amico}' => Inviti::AMICO, '{passo}' => Inviti::PASSO, '{max}' => Inviti
       <p class="invito-risparmio"><?= Icon::svg('check', 17, 2.2) ?><?= t('Finora hai risparmiato') ?> <b><?= Support::e(Support::money((int) $inv['sconto'], $inv['valuta'])) ?></b> <?= t('sul prossimo rinnovo.') ?></p>
     <?php endif; ?>
     <?php if (!$entrati): ?>
-      <p class="muted"><?= Support::e(tf('Ancora nessuno. Il primo amico che pubblica vale il {passo}% in meno sul tuo rinnovo.', $nI)) ?></p>
+      <p class="muted"><?= Support::e(tf('Ancora nessuno. Il primo amico che attiva la guida vale il {passo}% in meno sul tuo rinnovo.', $nI)) ?></p>
     <?php else: ?>
       <ul class="invito-entrati" role="list">
       <?php foreach ($entrati as $am): ?>
@@ -106,7 +106,7 @@ $nI = ['{amico}' => Inviti::AMICO, '{passo}' => Inviti::PASSO, '{max}' => Inviti
         <b class="small"><?= t('Inviti mandati per email') ?></b>
         <?php foreach ($perEmail as $pe):
               [$tono, $et] = match ($pe['stato']) {
-                  'valido', 'usato', 'oltre' => ['pine', t('Ha pubblicato')],
+                  'valido', 'usato', 'oltre' => ['pine', t('Ha attivato')],
                   'registrato' => ['ochre', t('Si è registrato')],
                   'annullato' => ['paper', t('Non vale')],
                   default => ['paper', t('Invitato')],

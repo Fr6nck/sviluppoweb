@@ -123,13 +123,13 @@ final class Seo
             // 8H · statistiche delle visite (vuoti = spento): Matomo senza cookie, GA4 e Clarity solo con il consenso.
             'stat.matomo_url' => '', 'stat.matomo_id' => '', 'stat.ga4' => '', 'stat.clarity' => '',
             'p.home.titolo' => 'Guida digitale per case vacanza e B&B | MyHouse Welcome',
-            'p.home.descrizione' => 'Il welcome book digitale per case vacanza, B&B, affittacamere e agriturismi: check-in, Wi-Fi e consigli in un link o QR Code. Gratis finché non pubblichi.',
+            'p.home.descrizione' => 'Il welcome book digitale con Concierge AI per case vacanza e B&B: check-in, Wi-Fi e consigli in un link o QR Code. Gratis finché non pubblichi.',
             'p.domande.titolo' => 'Domande frequenti | MyHouse Welcome',
             'p.piano.titolo' => 'Quale piano scegliere | MyHouse Welcome',
             'p.piano.descrizione' => 'Tre domande, una risposta: lingue, sezioni e strutture. Ti diciamo quale piano di MyHouse Welcome ti basta, senza pagare per quello che non usi.',
             'p.domande.descrizione' => 'Le risposte su MyHouse Welcome: prova gratuita, lingue e traduzioni, più strutture, B&B con più camere, fattura, cambio di piano e disdetta.',
             'p.en.titolo' => 'Digital guest guide for holiday rentals | MyHouse Welcome',
-            'p.en.descrizione' => 'The digital welcome book for holiday homes, B&Bs, guesthouses and farm stays: check-in, Wi-Fi and local tips in one link or QR code. Free until you publish.',
+            'p.en.descrizione' => 'The digital welcome book with Concierge AI for holiday homes and B&Bs: check-in, Wi-Fi and local tips in one link or QR code. Free until you publish.',
             'p.en-domande.titolo' => 'Frequently asked questions | MyHouse Welcome',
             'p.guide-host.titolo' => 'Le guide dei nostri host | MyHouse Welcome',
             'p.guide-host.descrizione' => 'Case vacanza, B&B e agriturismi che usano MyHouse Welcome ogni giorno: le strutture degli host che hanno aderito al programma «Giudizio con sconto».',
@@ -163,7 +163,7 @@ final class Seo
                 'Lingue per gli ospiti: con Essential la lingua dell\'host e una a scelta; con Plus e Portfolio sei (italiano, inglese, francese, tedesco, spagnolo e una a scelta tra dieci, tra cui il portoghese del Portogallo e quello del Brasile).',
                 'Il QR Code stampato non cambia quando si modifica la guida.',
                 'Le guide degli ospiti non usano cookie e non compaiono nei motori di ricerca.',
-                'Con Plus e Portfolio la guida ha «Chiedi alla guida»: un assistente che risponde alle domande degli ospiti usando solo il testo della guida, nella loro lingua, e rimanda ai contatti dell\'host quando la guida non lo dice.',
+                'Concierge AI per case vacanza e B&B: con Plus e Portfolio risponde ai tuoi ospiti 24 ore su 24, nella loro lingua, usando solo le informazioni della guida, e rimanda ai contatti dell\'host quando la guida non lo dice.',
             ]),
         ];
         foreach (self::tipologie() as $k => $tp) { $d["p.$k.titolo"] = $tp['titolo']; $d["p.$k.descrizione"] = $tp['descrizione']; }
@@ -280,11 +280,12 @@ final class Seo
      * description, robots, canonical (solo con il dominio), Open Graph, verifiche (solo home)
      * e dati strutturati. Senza: il titolo di sempre e noindex.
      */
-    public static function head(?string $pagina, string $titoloDiSerie): string
+    public static function head(?string $pagina, string $titoloDiSerie, string $descrizione = ''): string
     {
         $e = fn(string $s) => Support::e($s);
         if ($pagina === null || !isset(self::PAGINE[$pagina])) {
-            return '<title>' . $e($titoloDiSerie) . "</title>\n<meta name=\"robots\" content=\"noindex\">\n";
+            // 9T · 5.9: una pagina noindex può avere la sua descrizione (accesso e registrazione, per i link condivisi).
+            return '<title>' . $e($titoloDiSerie) . "</title>\n" . ($descrizione !== '' ? '<meta name="description" content="' . $e($descrizione) . "\">\n" : '') . "<meta name=\"robots\" content=\"noindex\">\n";
         }
         $titolo = self::titolo($pagina, $titoloDiSerie);
         $descr = trim(self::get("p.$pagina.descrizione"));
@@ -558,7 +559,7 @@ final class Seo
     }
 
     /**
-     * GEO · llms-full.txt: tutto quello che un assistente AI deve sapere per rispondere su MyHouse Welcome senza aprire
+     * GEO · llms-full.txt: tutto quello che un modello di intelligenza artificiale deve sapere per rispondere su MyHouse Welcome senza aprire
      * altre pagine: llms.txt, poi le domande frequenti con le risposte intere (italiano e inglese) e le pagine per tipologia.
      */
     public static function llmsCompleto(): string
@@ -739,7 +740,7 @@ final class Seo
                               : ['sistema', 'I dati strutturati non si generano: ' . $errore . '.', 'seo-azienda'];
         $ammessi = count(array_filter(array_keys(self::BOT), [self::class, 'botAmmesso']));
         $c[] = $ammessi > 0 ? ['ok', "Assistenti AI ammessi: $ammessi su " . count(self::BOT) . '.', 'seo-motori']
-                            : ['sistema', 'Nessun assistente AI è ammesso: il sito non comparirà nelle loro risposte.', 'seo-motori'];
+                            : ['sistema', 'Nessun bot di intelligenza artificiale è ammesso: il sito non comparirà nelle loro risposte.', 'seo-motori'];
         $c[] = Support::baseDir() === '' ? ['ok', 'Il sito è nella radice del dominio: robots.txt e llms.txt si trovano.', 'seo-motori']
                                          : ['sistema', 'Il sito è in una sottocartella: robots.txt e llms.txt non vengono letti.', 'seo-motori'];
         // 7F: i file veri accanto a index.php.

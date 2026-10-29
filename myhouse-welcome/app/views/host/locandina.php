@@ -1,5 +1,5 @@
 <?php
-/* 10 · La locandina A6 «Chiedi alla guida» (pagina a sé, senza telaio): il QR della guida, i tre passi, le domande
+/* 10 · La locandina A6 Concierge AI (pagina a sé, senza telaio): il QR della guida, i tre passi, le domande
    d'esempio, il contatto per le urgenze. Nella lingua principale della guida e, se è un'altra, anche in inglese.
    Riceve: $prop, $qrPng, $primo (contatto), $kinds, $attiva. */
 use MHW\{Support, I18n};
@@ -44,11 +44,11 @@ $tel = $primo ? trim((string) $primo['phone']) : ''; ?>
 <body>
 <div class="stampa">
   <button type="button" class="btn btn--sm" onclick="window.print()"><?= Support::e(MHW\t('Stampa la locandina')) ?></button>
-  <?php if (!$attiva): ?><span class="note note--err" role="status" style="padding:8px 14px"><?= Support::e(MHW\t('«Chiedi alla guida» non è ancora accesa su questa guida: la locandina serve quando lo sarà.')) ?></span><?php endif; ?>
+  <?php if (!$attiva): ?><span class="note note--err" role="status" style="padding:8px 14px"><?= Support::e(MHW\t('Il Concierge AI non è ancora acceso su questa guida: la locandina serve quando lo sarà.')) ?></span><?php endif; ?>
 </div>
 <div class="foglio">
   <p class="foglio__casa"><?= Support::e($prop['name']) ?></p>
-  <h1><?= Support::e($t('ask_guide')) ?><?php if ($seconda): ?><br><span style="color:#6a5b48"><?= Support::e($t2('ask_guide')) ?></span><?php endif; ?></h1>
+  <h1><?= Support::e($t('ask_poster')) ?><?php if ($seconda): ?><br><span style="color:#6a5b48"><?= Support::e($t2('ask_poster')) ?></span><?php endif; ?></h1>
   <p class="foglio__sotto"><?= Support::e($t('ask_intro')) ?><?php if ($seconda): ?><br><?= Support::e($t2('ask_intro')) ?><?php endif; ?></p>
   <div class="foglio__qr">
     <img src="data:image/png;base64,<?= base64_encode($qrPng) ?>" alt="QR">
