@@ -116,9 +116,11 @@ final class TestiSito
             'assistente.punti'  => ['assistente', 'I tre punti', 'lista', "**Solo la tua guida.** Non inventa: se l'informazione non c'è, lo dice e indica i tuoi contatti.\n**In ogni lingua.** Domanda in tedesco, risposta in tedesco.\n**Ti dice cosa manca.** Le domande senza risposta le trovi nel pannello.", 'Una per riga; la parte in grassetto è il titolo del punto.'],
             'assistente.nota'   => ['assistente', 'Nota sotto i punti', 'riga', '**Compreso in Plus e Portfolio** · fino a {domande} domande al mese per struttura.', '{domande}: il limite mensile dalle Impostazioni.'],
             'assistente.demo'   => ['assistente', 'Bottone verso la demo', 'riga', 'Provalo sulla demo', 'Apre Casa Checco in una nuova scheda, con la finestra del Concierge già aperta. Compare solo se il Concierge AI è acceso sulla vetrina (Impostazioni).'],
-            'assistente.esempio.d' => ['assistente', 'Esempio · la domanda', 'riga', 'Wann ist der Check-out?', 'Nella finta chat accanto al testo: una domanda in tedesco, come farebbe un ospite.'],
-            'assistente.esempio.r' => ['assistente', 'Esempio · la risposta', 'riga', 'Bis {ora} Uhr.', '{ora}: il check-out della guida vetrina. Solo cose scritte nella guida vetrina.'],
-            'assistente.esempio.fonte' => ['assistente', 'Esempio · la riga sotto la risposta', 'riga', 'Aus dem Abschnitt „Check-in & Check-out“', ''],
+            // 9U · La finta chat parte nella lingua della pagina (questi testi), poi passa da sola a tedesco, francese, spagnolo e all'altra
+            // lingua del sito (le frasi della guida ospite): «In ogni lingua». Senza JavaScript o con «riduci il movimento» resta questa.
+            'assistente.esempio.d' => ['assistente', 'Esempio · la domanda', 'riga', 'A che ora è il check-out?', 'Nella finta chat accanto al testo, nella lingua della pagina; poi la chat passa da sola alle altre lingue della guida.'],
+            'assistente.esempio.r' => ['assistente', 'Esempio · la risposta', 'riga', 'Entro le {ora}.', '{ora}: il check-out della guida vetrina. Solo cose scritte nella guida vetrina.'],
+            'assistente.esempio.fonte' => ['assistente', 'Esempio · la riga sotto la risposta', 'riga', 'Dalla sezione «Check-in & Check-out»', ''],
             'assistente.esempio.nota' => ['assistente', 'Esempio · la riga in fondo alla chat', 'riga', 'Concierge AI · risposte generate dall\'intelligenza artificiale con le informazioni scritte dall\'host.', ''],
             // ---- per chi è
             'perchi.kicker'   => ['perchi', 'Riga sopra il titolo', 'riga', 'Per chi è', ''],

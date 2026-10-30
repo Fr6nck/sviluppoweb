@@ -1,5 +1,11 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 9U (correzione): la finta chat del Concierge AI nella lingua della pagina (30 ottobre 2026)
+
+- **Home, sezione Concierge AI**: la chat d'esempio a destra non resta più in tedesco. Parte nella lingua della pagina («A che ora è il check-out?» · «Entro le 10:30.» · «Dalla sezione «Check-in & Check-out»» su `/`, in inglese su `/en`), poi ogni 4 secondi passa con una dissolvenza a tedesco, francese, spagnolo e all'altra lingua del sito: è il «In ogni lingua» dei tre punti. Le frasi delle altre lingue vengono dalle etichette della guida ospite (5 lingue), l'orario e il nome della sezione dalla guida vetrina pubblicata.
+- Si ferma quando ci passi sopra il mouse o la scheda non è visibile; con «riduci il movimento» o senza JavaScript resta ferma nella lingua della pagina (nuovo `assets/chat-lingue.js`, niente cookie).
+- **Testi e foto → Concierge AI**: i tre testi «Esempio» di serie ora sono in italiano (e in inglese per `/en`). Il tedesco era voluto dal brief 9T («esempio di chat in tedesco»), ma senza le altre lingue sembrava un errore.
+
 ## v2 · 9U (correzione): la foto del profilo di Casa Checco che non arrivava in home (30 ottobre 2026)
 
 - **Perché succedeva**: la home e la demo mostrano la versione **pubblicata** di Casa Checco; la foto cambiata nel pannello resta «modifica non pubblicata» finché non si preme «Pubblica le modifiche». In più, con i Termini nuovi del 30 ottobre l'account della vetrina doveva riaccettarli: finché non lo faceva il suo pannello era in sola lettura e «Pubblica» veniva rifiutato.

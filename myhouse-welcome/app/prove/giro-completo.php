@@ -8075,12 +8075,13 @@ prova('…scheda del cliente: il riquadro con le domande del mese e il limite pe
 
 // Il sito: home (IT/EN), listino, FAQ, Termini, Privacy, llms.
 $r = $ospite->get('/');
-prova('10 · 9T · home: la sezione #concierge-ai col badge AI, «Risponde ai tuoi ospiti, a qualsiasi ora.», la finta chat in tedesco (il check-out della vetrina), «fino a 300 domande», la voce nei piani e nel confronto',
+prova('10 · 9T · 9U · home: la sezione #concierge-ai col badge AI, «Risponde ai tuoi ospiti, a qualsiasi ora.», la finta chat in italiano (il check-out della vetrina) che poi passa al tedesco e alle altre lingue, «fino a 300 domande», la voce nei piani e nel confronto',
       str_contains($r['body'], 'id="concierge-ai" class="assistente"') && str_contains($r['body'], 'Risponde ai tuoi ospiti, a qualsiasi ora.') && str_contains($r['body'], 'fino a 300 domande al mese per struttura')
-      && str_contains($r['body'], 'kicker kicker--ai') && str_contains($r['body'], 'Wann ist der Check-out?') && str_contains($r['body'], 'Concierge AI') && str_contains($r['body'], 'chiedi__msg--guida')
+      && str_contains($r['body'], 'kicker kicker--ai') && str_contains($r['body'], 'data-chat-d>A che ora è il check-out?</div>') && str_contains($r['body'], 'data-chat-lingue="')
+      && str_contains($r['body'], 'Wann ist der Check-out?') && str_contains($r['body'], 'assets/chat-lingue.js') && str_contains($r['body'], 'Concierge AI') && str_contains($r['body'], 'chiedi__msg--guida')
       && !str_contains($r['body'], 'Chiedi alla guida'), (string) $r['code']);
 $r = $ospite->get('/en');
-prova('…in inglese', str_contains($r['body'], 'Answers your guests, at any hour.') && str_contains($r['body'], 'up to 300 questions a month per property') && str_contains($r['body'], 'Concierge AI') && !str_contains($r['body'], 'Ask the guide'));
+prova('…in inglese (la chat parte in inglese)', str_contains($r['body'], 'Answers your guests, at any hour.') && str_contains($r['body'], 'data-chat-d>What time is check-out?</div>') && str_contains($r['body'], 'up to 300 questions a month per property') && str_contains($r['body'], 'Concierge AI') && !str_contains($r['body'], 'Ask the guide'));
 prova('…FAQ IT ed EN con il tema «Concierge AI»', str_contains($ospite->get('/domande')['body'], 'Cos&#039;è il Concierge AI?') && str_contains($ospite->get('/en/questions')['body'], 'What is Concierge AI?'));
 prova('…Termini (punto 15) e Privacy (trattamento 16, Anthropic tra i fornitori e nei trasferimenti; 9T: noi vediamo le domande senza risposta raggruppate), IT ed EN',
       str_contains($ospite->get('/termini')['body'], '15. Concierge AI (assistente automatico)') && str_contains($pv16 = $ospite->get('/privacy')['body'], '16. Concierge AI (le domande degli ospiti)')

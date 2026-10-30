@@ -3486,6 +3486,10 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .assistente__nota{margin:0}
 .assistente__chat{margin:0;padding:22px;border-radius:var(--r-xl);background:var(--raised);border:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
 .assistente__fumetti{display:flex;flex-direction:column;gap:8px}
+/* 9U · La chat che cambia lingua (assets/chat-lingue.js): dissolvenza breve tra una lingua e l'altra. */
+.assistente__fumetti{transition:opacity .35s ease}
+.assistente__fumetti.chat-lingue--via{opacity:0}
+@media (prefers-reduced-motion: reduce){.assistente__fumetti{transition:none}}
 .assistente__chat figcaption{margin:0}
 @media (max-width:860px){.assistente{grid-template-columns:1fr;gap:28px;margin-top:72px}}
 
