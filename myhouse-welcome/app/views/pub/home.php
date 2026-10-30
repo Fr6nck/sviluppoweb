@@ -39,7 +39,10 @@ $promoV = MHW\Sconti::promoPerChiGuarda();
 $vai = fn(int $pv) => b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . $pv . ($en && !$dentro ? '&lang=en' : '') . ($promoV ? '&codice=' . rawurlencode((string) $promoV['code']) : '');
 $crea = b() . ($dentro ? '/pannello' : '/registrati' . ($en ? '?lang=en' : ''));
 $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' . ($en ? '?l=en' : '') : null;
-$nomeDemo = $demo['name'] ?? 'Casa Lucia';
+// 9U · Il telefono legge tutto dalla guida vetrina PUBBLICATA (nome, check-in, copertina, foto del profilo, logo, palette,
+// contatti, Concierge): quando Casa Checco si pubblica con delle modifiche, la home le mostra; quelle non pubblicate no.
+$tel = MHW\Demo::telefono($demo ?: null);
+$nomeDemo = $tel['nome'];
 $vetrina = $demo && (int) $demo['is_demo'] === MHW\Demo::VETRINA;
 // 9T · Ogni link alla demo apre una nuova scheda (target, rel, «si apre in una nuova scheda» per lo screen reader, icona di uscita).
 $nuovaScheda = ' target="_blank" rel="noopener"';
@@ -47,7 +50,7 @@ $srNuova = '<span class="sr-only"> ' . $U('(si apre in una nuova scheda)', '(ope
 // 9L · Nel telefono in cima il portone di Casa Checco, ritaglio orizzontale (la foto del borgo non c'è più).
 $telefonoJpg = a('/assets/foto/checco-telefono.jpg');
 $telefonoWebp = a('/assets/foto/checco-telefono-600.webp');
-$checkinDemo = preg_match('/^\d{2}:\d{2}$/', (string) ($demo['checkin_from'] ?? '')) ? $demo['checkin_from'] : '15:00';
+$checkinDemo = $tel['checkin'];
 // Il prezzo di partenza, dal listino: se l'amministratore lo cambia, cambia anche qui.
 $partenza = null;
 foreach ($offers as $of) foreach ($of['options'] as $o) {
@@ -125,15 +128,20 @@ if ($dentro):
       <span class="device__screen" aria-hidden="true">
         <span class="device__status"><span>9:41</span><span class="device__island"></span>
           <span class="device__icons"><i class="sig"></i><i class="bat"></i></span></span>
-        <span class="device__app">
-          <span class="device__top"><?= Icon::brand(24) ?><span><?= Support::e($nomeDemo) ?></span>
+        <?php $palTel = $tel['palette'] ? MHW\Palette::get($tel['palette']) : null;   // 9U · i colori delle sezioni e dell'accento della guida demo
+              $stileTel = $palTel ? '--tel-t1:' . $palTel['tiles'][0] . ';--tel-t2:' . $palTel['tiles'][1] . ';--tel-t3:' . $palTel['tiles'][2] . ';--tel-t4:' . $palTel['tiles'][3]
+                  . ';--tel-i1:' . $palTel['tile_ink'][0] . ';--tel-i2:' . $palTel['tile_ink'][1] . ';--tel-i3:' . $palTel['tile_ink'][2] . ';--tel-i4:' . $palTel['tile_ink'][3]
+                  . ';--tel-accento:' . $palTel['scuro']['accent'] . ';--tel-su-accento:' . $palTel['scuro']['on_accent'] : ''; ?>
+        <span class="device__app"<?= $stileTel !== '' ? ' style="' . Support::e($stileTel) . '"' : '' ?>>
+          <span class="device__top"><?php if ($tel['logo']): ?><img class="device__logo" src="<?= Support::e($tel['logo']) ?>" alt="<?= $U('Il logo di ', 'The logo of ') . Support::e($nomeDemo) ?>" width="110" height="22"><?php else: ?><?= Icon::brand(24) ?><?php endif; ?><span><?= Support::e($nomeDemo) ?></span>
             <?php if ($demo): ?><span class="demo-tag">Demo</span><?php endif; ?></span>
           <span class="device__title"><?= Support::e(MHW\I18n::t($locSito, 'welcome_1')) ?><br><?= Support::e(MHW\I18n::t($locSito, 'welcome_2', $nomeDemo)) ?></span>
-          <span class="device__shot"><?php $telPers = MHW\Demo::fotoTelefono($demo ?: null); /* 9U · la copertina della guida demo, una sola fonte */ if ($telPers['caricata']): ?>
+          <span class="device__shot"><?php $telPers = $tel['copertina']; /* 9U · la copertina della guida demo pubblicata (o la foto di Testi e foto, se scelta) */ if ($telPers['caricata']): ?>
             <img src="<?= Support::e($telPers['url']) ?>" alt="<?= $U('La copertina della guida di ' . Support::e($nomeDemo) . ' sul telefono', 'The cover of the ' . Support::e($nomeDemo) . ' guide on the phone') ?>" width="600" height="422" loading="eager" decoding="async"<?= $F('telefono') ?>>
             <?php else: ?><picture><source srcset="<?= Support::e($telefonoWebp) ?>" type="image/webp">
             <img src="<?= Support::e($telefonoJpg) ?>" alt="<?= $U('La copertina della guida di ' . Support::e($nomeDemo) . ' sul telefono', 'The cover of the ' . Support::e($nomeDemo) . ' guide on the phone') ?>" width="600" height="422" loading="eager" decoding="async"<?= $F('telefono') ?>></picture><?php endif; ?>
-            <span class="device__pill"><i></i><?= Support::e(MHW\I18n::t($locSito, 'checkin_from', $checkinDemo)) ?></span></span>
+            <span class="device__pill"><i></i><?= Support::e(MHW\I18n::t($locSito, 'checkin_from', $checkinDemo)) ?></span>
+            <?php if ($tel['profilo']): /* 9U · il tondo con la foto del profilo dell'host, come nella guida */ ?><span class="device__profilo"><img src="<?= Support::e($tel['profilo']) ?>" alt="<?= $tel['host'] !== '' ? $U('La foto di ' . Support::e($tel['host']) . ', l\'host', 'Photo of ' . Support::e($tel['host']) . ', the host') : $U('La foto dell\'host', 'Photo of the host') ?>" width="46" height="46" loading="eager" decoding="async"><i></i></span><?php endif; ?></span>
           <?php /* 8D: con la vetrina pubblicata, tutte le sue sezioni (titolo italiano, icona, colore come nella guida),
                    in una griglia che scorre dentro lo schermo; senza vetrina i quattro riquadri di sempre. */
                 $sezTel = [];
@@ -152,6 +160,10 @@ if ($dentro):
             <span class="t-pine"><?= Icon::svg('fork', 16, 1.8) ?><?= $U('Dove mangiare', 'Where to eat') ?></span>
             <span class="t-ochre"><?= Icon::svg(MHW\SectionCatalog::icon('parking'), 16, 1.8) ?><?= $U('Parcheggio', 'Parking') ?></span>
           </span>
+          <?php endif; ?>
+          <?php if ($tel['snap']): /* 9U · la barra in fondo alla guida, come la vedono gli ospiti (disegnata: il telefono intero apre la demo) */
+                $pr = $tel['snap']['property']; $loc = $locSito; $barraFinta = true; $barraChiedi = $tel['concierge'];
+                include __DIR__ . '/../guest/_contatti.php'; unset($pr, $loc, $barraFinta, $barraChiedi); ?>
           <?php endif; ?>
         </span>
         <span class="device__home"></span>

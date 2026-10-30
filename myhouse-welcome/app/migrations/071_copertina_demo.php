@@ -1,8 +1,9 @@
 <?php
 /**
  * 071 — 9U · Una sola fonte per la foto della demo: se in Testi e foto c'è già «La schermata nel telefono», diventa adesso
- * anche la copertina della guida vetrina (Casa Checco), che si ripubblica (Demo::copertinaDaSito). Da qui in poi lo fa il
- * salvataggio di Testi e foto. Senza foto caricata o senza vetrina non cambia niente; una seconda esecuzione nemmeno.
+ * anche la copertina della guida vetrina (Casa Checco), che si ripubblica (Demo::copertinaDaSito): così la home, che dalla
+ * seconda parte della 9U legge la guida demo pubblicata, resta com'era. Senza foto caricata o senza vetrina non cambia
+ * niente; una seconda esecuzione nemmeno.
  */
 use MHW\{Db, Demo, Media, Migrator, TestiSito};
 

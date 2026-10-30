@@ -12,13 +12,13 @@ $nomeHost = (string) ($chiedi['host'] ?? '');
 $testi = ['thinking' => I18n::t($loc, 'ask_thinking'), 'source' => I18n::t($loc, 'ask_source', '%s'), 'open' => I18n::t($loc, 'ask_open_section'),
           'contact' => $nomeHost !== '' ? I18n::t($loc, 'ask_contact', $nomeHost) : I18n::t($loc, 'ask_contact_plain'), 'error' => I18n::t($loc, 'ask_error'),
           'you' => I18n::t($loc, 'ask_you'), 'answer' => I18n::t($loc, 'ask_answer'), 'base' => $base, 'lingua' => $loc]; ?>
-<a class="btn btn--ghost chiedi-apri" href="<?= Support::e($urlChiedi) ?>?l=<?= Support::e($loc) ?>" data-chiedi-apri="concierge" aria-haspopup="dialog"><?= Icon::svg('message', 17) ?><span class="chiedi-apri__testo"><?= Support::e(I18n::t($loc, 'ask_guide')) ?></span><span class="badge-ai">AI</span></a>
+<a class="btn btn--ghost chiedi-apri" href="<?= Support::e($urlChiedi) ?>?l=<?= Support::e($loc) ?>" data-chiedi-apri="concierge" aria-haspopup="dialog"><?= Icon::svg('message', 17) ?><span class="chiedi-apri__testo"><?= Support::e(I18n::t($loc, 'ask_short')) ?></span><span class="badge-ai">AI</span></a>
 <dialog class="chiedi" id="concierge" aria-labelledby="chiedi-titolo" data-chiedi data-url="<?= Support::e($urlChiedi) ?>"
         data-contatti-href="<?= Support::e((string) ($chiedi['contatto_href'] ?? '')) ?>" data-testi="<?= Support::e(json_encode($testi, JSON_UNESCAPED_UNICODE)) ?>">
   <div class="chiedi__dentro">
     <div class="chiedi__testa">
       <span class="chiedi__ico" aria-hidden="true"><?= Icon::svg('message', 20, 1.7) ?></span>
-      <div class="chiedi__titoli"><h2 class="chiedi__titolo" id="chiedi-titolo"><?= Support::e(I18n::t($loc, 'ask_guide')) ?> <span class="badge-ai">AI</span></h2>
+      <div class="chiedi__titoli"><h2 class="chiedi__titolo" id="chiedi-titolo">Concierge <span class="badge-ai">AI</span></h2><?php /* 9U · il titolo resta «Concierge AI» (il nome del prodotto); il bottone dice «Chiedi» */ ?>
         <p class="chiedi__intro"><?= Support::e(I18n::t($loc, 'ask_intro')) ?></p></div>
       <button type="button" class="chiedi__chiudi" data-chiedi-chiudi aria-label="<?= Support::e(I18n::t($loc, 'close')) ?>"><?= Icon::svg('close', 18, 2) ?></button>
     </div>

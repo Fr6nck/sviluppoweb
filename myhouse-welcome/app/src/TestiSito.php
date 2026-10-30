@@ -442,7 +442,7 @@ final class TestiSito
 
     /** Le foto della home: nome => [etichetta, file di serie in assets/foto, consiglio]. */
     public const IMMAGINI = [
-        'telefono'     => ['La schermata nel telefono, in cima', 'checco-telefono.jpg', 'Orizzontale, 600 × 422 px: è la foto che l\'ospite vede sotto «Benvenuti». Di serie il portone di Casa Checco. Questa foto è anche la copertina della guida di esempio (Casa Checco).'],
+        'telefono'     => ['La schermata nel telefono, in cima', 'checco-telefono.jpg', 'Orizzontale, 600 × 422 px: è la foto che l\'ospite vede sotto «Benvenuti». Il telefono della home mostra la guida demo Casa Checco pubblicata (copertina, foto del profilo, sezioni): questa foto la sostituisce solo con «Usa questa foto invece di quella della guida demo».'],
         'scena-qr'     => ['Prima scena: il QR all\'ingresso', 'scena-qr.jpg', '1200 × 750 px. Se manca, la scena mostra un disegno.'],
         'scena-ospite' => ['Seconda scena: l\'ospite', 'scena-ospite.jpg', '1200 × 750 px.'],
         'scena-host'   => ['Terza scena: l\'host', 'scena-host.jpg', '1200 × 750 px.'],
@@ -609,6 +609,9 @@ final class TestiSito
         $cartella = (defined('MHW_PUBLIC') ? MHW_PUBLIC : dirname(__DIR__) . '/public') . '/assets/foto/';
         return $file !== '' && is_file($cartella . $file) ? a('/assets/foto/' . $file) : null;
     }
+
+    /** 9U · «Usa questa foto invece di quella della guida demo» (Testi e foto, spenta di serie). */
+    public static function usaFotoTelefono(): bool { return (self::salvate()['img.telefono_usa'] ?? '') === '1'; }
 
     /** Il riferimento «driver:chiave» della foto caricata, o ''. */
     public static function riferimentoImmagine(string $nome): string { return (string) (self::salvate()['img.' . $nome] ?? ''); }

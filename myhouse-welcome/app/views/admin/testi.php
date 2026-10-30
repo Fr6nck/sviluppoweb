@@ -103,6 +103,8 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
             <input id="<?= $id ?>" name="img[<?= $nome ?>]" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="<?= $id ?>-aiuto">
             <span class="help" id="<?= $id ?>-aiuto"><?= Support::e($consiglio !== '' ? $consiglio : 'Di serie: ' . $file) ?></span>
             <?php if ($img['caricata']): ?><label class="check"><input type="checkbox" name="img_togli[<?= $nome ?>]" value="1"> <span>Torna alla foto di serie</span></label><?php endif; ?>
+            <?php if ($nome === 'telefono'): /* 9U · di serie il telefono mostra la guida demo pubblicata */ ?><input type="hidden" name="img_opzioni" value="1">
+              <label class="check"><input type="checkbox" name="img_usa[telefono]" value="1"<?= TestiSito::usaFotoTelefono() ? ' checked' : '' ?>> <span>Usa questa foto invece di quella della guida demo</span></label><?php endif; ?>
           </div>
         <?php endforeach; ?>
       </div>

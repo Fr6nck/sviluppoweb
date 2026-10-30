@@ -108,8 +108,8 @@ final class Faq
             $gF = !empty($prF['somma_giudizio']) && Giudizi::attivo() ? Giudizi::percentuale() : 0;
             array_unshift($f, ['offerta', 'C\'è un\'offerta?', 'Sì: ' . $prF['nome_promo'] . ', −' . (int) $prF['value'] . '% sul primo anno per i nuovi clienti che attivano un abbonamento entro il '
                 . Pannello::giornoMese((string) $prF['valid_until'], false) . ' ' . substr((string) $prF['valid_until'], 0, 4) . ', con il codice ' . $prF['code'] . ' (dal bottone della promo è già inserito).'
-                . ($gF ? ' Si somma allo sconto del programma «Giudizio con sconto» se aderisci al pagamento (in tutto −' . ((int) $prF['value'] + $gF) . '% sul primo anno); n' : ' N')
-                . (empty($prF['somma_invito']) ? 'on si somma allo sconto dell\'invito di un amico (vale il più alto), ad altri codici, ai codici omaggio né ai codici partner.' : 'on si somma ad altri codici, ai codici omaggio né ai codici partner.')
+                . ($gF ? ' Si somma allo sconto del programma «Giudizio con sconto» se aderisci al pagamento (in tutto −' . ((int) $prF['value'] + $gF) . '% sul primo anno) e allo sconto del codice di un partner; n' : ' Si somma allo sconto del codice di un partner; n')
+                . (empty($prF['somma_invito']) ? 'on si somma allo sconto dell\'invito di un amico (vale il più alto), ad altri codici né ai codici omaggio.' : 'on si somma ad altri codici né ai codici omaggio.')
                 . ' Dal secondo anno vale il prezzo di listino, con gli sconti dei programmi «Porta un amico» e «Giudizio con sconto» se maturati.']);
         }
         // 9N · Il codice omaggio: i mesi gratuiti, poi il primo pagamento pieno; dal primo rinnovo tutte le agevolazioni.

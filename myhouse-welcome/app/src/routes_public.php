@@ -364,7 +364,7 @@ $registrati = function () use ($guard, $doveComincia, $salvaPiano, $codiceDalLin
                       Db::update('accounts', ['intended_discount_code_id' => (int) $riga['id']], 'id = :aid', ['aid' => (int) $u['account_id']]); }
                 catch (\RuntimeException) {}
                 unset($_SESSION['codice_sconto']);
-            } elseif (($promoReg = MHW\Sconti::promoAttiva()) && !$omaggioLink && !$omaggioAMano && !MHW\ProgrammaPartner::dalLink()) {
+            } elseif (($promoReg = MHW\Sconti::promoAttiva()) && !$omaggioLink && !$omaggioAMano) {
                 // 9U · Senza un codice dal link, la promo in corso si salva nell'account (come se fosse arrivato dalla fascia).
                 Db::update('accounts', ['intended_discount_code_id' => (int) $promoReg['id']], 'id = :aid', ['aid' => (int) $u['account_id']]);
             }

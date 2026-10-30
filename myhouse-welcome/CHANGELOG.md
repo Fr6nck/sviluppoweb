@@ -1,5 +1,16 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 9U (seconda parte): la home segue Casa Checco pubblicata, barra «Chiedi» / «Contatta», promo e partner insieme (30 ottobre 2026)
+
+Nessuna migrazione nuova (070 e 071 sono nel pacchetto di prima). Vedi `DA-CONFIGURARE.md` → **4z**.
+
+- **Quando si pubblica Casa Checco, la home si aggiorna**: il telefono in cima legge tutto dalla versione pubblicata della guida demo: nome, check-in, copertina, **il tondo con la foto del profilo** dell'host (46 px, bordo bianco, pallino verde, come nella guida), il logo se c'è, i colori delle sezioni e dell'accento della palette, le sezioni. Le modifiche non pubblicate non compaiono, né in home né nella demo. Le foto nuove hanno un indirizzo nuovo: niente cache da svuotare.
+- **Testi e foto → «La schermata nel telefono»** resta solo come scelta: «Usa questa foto invece di quella della guida demo» (spenta di serie). Caricarla non cambia più la copertina della demo (la regola della prima parte della 9U è sostituita da questa).
+- **«Rifai la vetrina»** tiene copertina, foto del profilo e logo cambiati dal titolare: le foto di serie solo se mancano.
+- **Barra in fondo a tutte le guide** (clienti, demo e telefono della home; mockup barra-guida): due bottoni della stessa larghezza, «Chiedi» con il badge AI e «Contatta» pieno con il **logo ufficiale di WhatsApp** (nuovo `whatsapp-logo` in `Icon.php`; il vecchio fumetto `whatsapp` resta) o il telefono in un tondo bianco se l'host non usa WhatsApp. Il nome e la foto sono nel foglio che si apre: «Ciao, sono {nome}», poi WhatsApp (verde, testo scuro: contrasto AA), telefono ed email. Con solo WhatsApp il bottone apre subito WhatsApp. Senza Concierge «Contatta» prende tutta la riga, con il nome se è corto («Contatta Francesco»). Etichette nelle 5 lingue; la finestra del Concierge si intitola «Concierge AI».
+- **Promo novembre e codice partner si sommano** (decisione del titolare): per esempio −27% sul primo anno (−32% con il giudizio), in un solo coupon `mhw-primo-anno-N`; la commissione del partner resta calcolata sull'imponibile davvero pagato dal cliente. Termini, FAQ e Amministrazione aggiornati (IT/EN). Con il codice omaggio la promo continua a non valere.
+- **Prove**: capitolo 9U riscritto per il punto 2 (pubblica → home aggiornata, senza pubblicare niente cambia, «Rifai la vetrina») e con il punto 4 (Francesco, Massimiliano, senza Concierge, senza WhatsApp, solo WhatsApp, lingue, logo, contrasto, telefono della home) e il cliente di un partner che paga con la promo.
+
 ## v2 · 9U: selettore oltre 10 nelle tipologie, foto della demo da una sola fonte, Promo novembre (30 ottobre 2026)
 
 Migrazioni **070** (quattro campi dei codici sconto: `somma_giudizio`, `somma_invito`, `in_home`, `nome_promo`; il codice **NOVEMBRE17**, se non c'è già) e **071** (la foto di Testi e foto «La schermata nel telefono», se caricata, diventa la copertina della vetrina). Versione dei Termini: **30 ottobre 2026**. Vedi `DA-CONFIGURARE.md` → **4z**.

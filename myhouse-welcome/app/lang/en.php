@@ -247,9 +247,13 @@ return [
     'ask_answer'               => 'Concierge AI',
     'ask_new'                  => 'Another question',
     'ask_step_scan'            => 'Point your camera at the code',
-    'ask_step_tap'             => 'Tap “Ask the Concierge”, at the bottom of the guide',
+    'ask_step_tap'             => 'Tap “Ask”, at the bottom of the guide',
     'ask_step_write'           => 'Type as you speak, in your language',
     'ask_hint'                   => 'Concierge AI answers with the information in this guide.',
     'ask_poster'                 => 'Scan and ask Concierge AI',
     'ask_limit_demo'             => 'The demo has used up its questions for this month: create your guide and try Concierge AI on yours.',
+    // 9U · La barra in fondo alla guida: «Chiedi» (Concierge AI) e «Contatta» a pari larghezza; l'email nel foglio dei contatti.
+    'ask_short'                  => 'Ask',
+    'contact_short'              => 'Contact',
+    'email_host'                 => 'Email',
 ];

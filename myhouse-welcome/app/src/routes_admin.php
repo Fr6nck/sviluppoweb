@@ -512,10 +512,11 @@ $r->post('/admin/cliente/{aid}/vetrina', function (array $a) {
             Support::flash('Questo account ha già una guida vetrina: usa «Rifai la vetrina» per sostituirla.', 'err');
             Support::redirect('/admin/cliente/' . $accId);
         }
-        Demo::eliminaVetrina($accId);
     }
     try {
-        $pid = Demo::creaVetrina($accId, ($_POST['plus'] ?? '') === '1');
+        // 9U · «Rifai»: copertina, foto del profilo e logo cambiati dal titolare restano (rifaiVetrina); senza vetrina, una nuova.
+        $pid = $rifai && Db::val('SELECT id FROM properties WHERE account_id = ? AND is_demo = ?', [$accId, Demo::VETRINA])
+            ? Demo::rifaiVetrina($accId, ($_POST['plus'] ?? '') === '1') : Demo::creaVetrina($accId, ($_POST['plus'] ?? '') === '1');
     } catch (\Throwable $e) {
         Log::error('vetrina: ' . $e->getMessage(), ['account' => $accId]);
         Support::flash('La guida vetrina non è stata creata: ' . $e->getMessage(), 'err');
@@ -2018,18 +2019,14 @@ $r->post('/admin/testi', function () {
     } catch (\RuntimeException $e) {
         Support::flash($e->getMessage(), 'err'); Support::redirect('/admin/testi#testi-foto');
     }
+    // 9U · «Usa questa foto invece di quella della guida demo» (spenta di serie): il telefono della home altrimenti prende la
+    // copertina della guida demo pubblicata. Il segno img_opzioni c'è solo nel modulo delle foto.
+    if (!empty($_POST['img_opzioni'])) $c['img.telefono_usa'] = !empty($_POST['img_usa']['telefono']) ? '1' : '';
     $prima = []; foreach (array_keys($c) as $k) $prima[$k] = str_starts_with($k, 'img.') ? MHW\TestiSito::riferimentoImmagine(substr($k, 4)) : MHW\TestiSito::get($k);
     // I testi nella lingua della linguetta; le foto (img.*) valgono per tutte e due.
     MHW\TestiSito::set(array_filter($c, fn($k) => !str_starts_with($k, 'img.'), ARRAY_FILTER_USE_KEY), $lingua);
     MHW\TestiSito::set(array_filter($c, fn($k) => str_starts_with($k, 'img.'), ARRAY_FILTER_USE_KEY), 'it');
     foreach ($daCancellare as $rif) { [$d, $k] = explode(':', $rif, 2); try { Storages::for($d)->delete($k); } catch (\Throwable $e) { Log::exception($e, 'testi.foto'); } }
-    // 9U · «La schermata nel telefono» è anche la copertina della guida demo: caricata, va sulla vetrina (ripubblicata);
-    // tolta, la vetrina torna alla copertina di serie se aveva quella del sito.
-    if (array_key_exists('img.telefono', $c)) foreach (MHW\Demo::vetrineOnline() as $vt) {
-        if ($c['img.telefono'] !== '') MHW\Demo::copertinaDaSito($c['img.telefono'], (int) $vt['id']);
-        elseif (str_starts_with((string) ((MHW\Media::row((int) MHW\Db::val('SELECT cover_media_id FROM properties WHERE id = ?', [(int) $vt['id']], 0)) ?? [])['original_name'] ?? ''), MHW\Demo::FOTO_SITO)
-                && MHW\Demo::copertinaVetrina((int) $vt['id'])) MHW\Guide::publish((int) $vt['id']);
-    }
     $cambiate = array_values(array_keys(array_filter($c, fn($v, $k) => $prima[$k] !== (str_starts_with($k, 'img.') ? $v : MHW\TestiSito::get($k)), ARRAY_FILTER_USE_BOTH)));
     Auth::audit('testi.save', null, ['cambiate' => $cambiate, 'lingua' => $lingua]);
     $legali = !empty($_POST['legali']);

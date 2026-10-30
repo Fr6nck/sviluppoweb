@@ -3137,7 +3137,8 @@ $r = $admin->get('/admin/pacchetti');
 prova('Amministrazione → Piani: gli scaglioni del Portfolio si modificano (dalla struttura: prezzo)', str_contains($r['body'], 'name="scaglioni"') && str_contains($r['body'], "3: 50\n6: 40\n11: 30\n21: 25"), $r['code'] . ' ' . ($r['loc'] ?? ''));
 $vetSlug = (string) val('SELECT slug FROM properties WHERE is_demo = 2 ORDER BY id DESC LIMIT 1');
 $r = $ospite->get("/g/$vetSlug");
-prova('Vetrina: la foto profilo (la porta di Casa Checco) sul bottone dei contatti e accanto a Francesco', $vetSlug !== '' && substr_count($r['body'], 'class="contatto__foto') === 2
+prova('Vetrina: la foto profilo (Francesco) nel foglio dei contatti, accanto a «Ciao, sono Francesco» (9U: non più nel bottone)', $vetSlug !== '' && substr_count($r['body'], 'class="contatto__foto"') === 1
+      && !str_contains($r['body'], 'contatto__foto--bottone')
       && (bool) val('SELECT profile_media_id FROM properties WHERE slug = ?', [$vetSlug]));
 
 $vera = new Browser('vera');
@@ -3506,22 +3507,23 @@ $admin->segui($admin->post('/admin/testi', ['t_soddisfatti_titolo' => '']));
 prova('8G · …il titolo si cambia da Testi e foto (e si torna a quello di serie)', $cambiato8g && str_contains($ospite->get('/')['body'], 'Più sanno, meglio stanno.')
       && !val("SELECT chiave FROM site_texts WHERE chiave = 'soddisfatti.titolo'"));
 // Le foto: il telefono in cima e lo sfondo di «Anche il tuo sito»; la home le usa al posto di quelle di serie.
-$r = $admin->segui($admin->post('/admin/testi', ['img[telefono]' => file_(png(600, 422), 'image/png'), 'torna' => 'foto']));
+// 9U · Il telefono mostra di serie la guida demo pubblicata: la foto di Testi e foto vale con «Usa questa foto invece di quella della guida demo».
+$r = $admin->segui($admin->post('/admin/testi', ['img[telefono]' => file_(png(600, 422), 'image/png'), 'img_opzioni' => '1', 'img_usa[telefono]' => '1', 'torna' => 'foto']));
 $h = $ospite->get('/')['body'];
 $rifTel = (string) val("SELECT valore FROM site_texts WHERE chiave = 'img.telefono'");
 $fileS3Tel = "$S3_DIR/oggetti/mhw-prove__" . str_replace('/', '__', substr($rifTel, 3));
 prova('Testi e foto · le foto caricate: nell\'archivio come le foto delle testimonianze, e nella home al posto di quelle di serie', str_contains($r['body'], '>caricata</span>')
       && preg_match('#^(s3|local):sito/\d{4}/[0-9a-f]{32}\.(jpg|png|webp)$#', $rifTel) === 1 && str_contains($r['body'], 'Torna alla foto di serie')
-      && !str_contains($h, 'borgo-telefono') && !str_contains($h, 'checco-telefono') && preg_match('#class="device__shot">\s*<img src="[^"]+"#', $h) === 1
+      && !str_contains($h, 'borgo-telefono') && !str_contains($h, 'checco-telefono') && preg_match('#class="device__shot">\s*<img src="[^"]*' . preg_quote(basename($rifTel), '#') . '#', $h) === 1
       && !str_contains($h, 'sito2__foto') && !str_contains($r['body'], 'Lo sfondo di «Anche il tuo sito»')
       && (getenv('MHW_STORAGE') !== 's3' || is_file($fileS3Tel)), $rifTel . ' · ' . (is_file($fileS3Tel) ? 'file ok' : 'file assente'));
 // Si torna di serie: campi vuoti e «Torna alla foto di serie»; la foto vecchia sparisce dall'archivio.
 $r = $admin->segui($admin->post('/admin/testi', ['t_hero_titolo' => '', 't_perchi_bnb_testo' => '', 't_hero_garanzie' => '', 't_prodotto_testo' => '', 't_cta_crea' => '',
-    'img_togli' => ['telefono' => '1']]));
+    'img_togli' => ['telefono' => '1'], 'img_opzioni' => '1']));
 $h = $ospite->get('/')['body'];
 $cond = ['righe' => (int) val("SELECT COUNT(*) FROM site_texts") === 0, 'h1' => str_contains($h, "<h1 class=\"display\">La casa risponde<br>\nprima che chiedano.</h1>"),
          'garanzie' => str_contains($h, 'Nessuna app da scaricare</span>'), 'cta' => str_contains($h, 'Crea gratis la tua guida'),
-         'telefono' => str_contains($h, 'borgo-telefono') || str_contains($h, 'checco-telefono'), 'sito' => !str_contains($h, 'sito2__foto'),
+         'telefono' => !str_contains($h, basename($rifTel)) && preg_match('#class="device__shot">\s*<(img|picture)#', $h) === 1, 'sito' => !str_contains($h, 'sito2__foto'),
          'admin' => !str_contains($admin->get('/admin/testi')['body'], 'testi__campo testi__campo--cambiato'),
          'fileS3' => getenv('MHW_STORAGE') !== 's3' || !(clearstatcache(true, $fileS3Tel) ?? is_file($fileS3Tel))];   // is_file() tiene una cache per percorso: va svuotata
 $richS3 = array_values(array_filter(array_map('trim', (array) @file("$S3_DIR/richieste.jsonl")), fn($l) => str_contains($l, 'DELETE') && str_contains($l, 'sito')));
@@ -6288,7 +6290,8 @@ prova('9L · foto: le tre tipologie nuove (JPEG e WebP sotto 300 KB, 1600 px) ne
       && filesize("$DOVE/assets/foto/tipo-agriturismi.jpg") < 300000 && filesize("$DOVE/assets/foto/tipo-bed-and-breakfast.jpg") < 300000
       && str_contains($ospite->get('/agriturismi')['body'], 'tipo-agriturismi.webp') && str_contains($ospite->get('/property-manager')['body'], 'tipo-property-manager.jpg')
       && is_file("$DOVE/assets/foto/checco-orizzontale.jpg") && getimagesize("$DOVE/assets/foto/checco-copertina.jpg")[1] > getimagesize("$DOVE/assets/foto/checco-copertina.jpg")[0]
-      && str_contains($rH9l['body'], 'checco-telefono.jpg') && !is_file("$DOVE/assets/foto/borgo.jpg") && !str_contains($rH9l['body'], 'borgo') && !str_contains($css9l, 'borgo-telefono'));
+      && (str_contains($rH9l['body'], 'checco-telefono.jpg') || preg_match('#class="device__shot">\s*<img src="[^"]+"#', $rH9l['body']) === 1)   // 9U: o la copertina della guida demo pubblicata
+      && !is_file("$DOVE/assets/foto/borgo.jpg") && !str_contains($rH9l['body'], 'borgo') && !str_contains($css9l, 'borgo-telefono'));
 // 4 · Il 55%.
 prova('9L · il 55% grande in serif con «Fino al 55% di sconto a partire dal prossimo anno» in home (Porta un amico) e nel questionario; «Come funziona» alla FAQ degli inviti',
       str_contains($rH9l['body'], '<span class="risparmio__cifra" aria-hidden="true">55%</span>') && str_contains($rH9l['body'], 'Insieme, fino al 55% sul prossimo rinnovo.')
@@ -7958,14 +7961,14 @@ $coreN = (int) val('SELECT id FROM sections WHERE property_id = ? AND is_core = 
 prova('10 · l\'host Plus ha pagato e la guida è pubblicata (con il Wi-Fi e il contatto WhatsApp)', val('SELECT status FROM orders WHERE id = ?', [(int) ($ordN['id'] ?? 0)]) === 'paid' && val('SELECT status FROM properties WHERE id = ?', [$noraPid]) === 'published' && $wifiN > 0,
       json_encode(['ordine' => $ordN['status'] ?? null, 'webhook' => $rWebN, 'stato' => val('SELECT status FROM properties WHERE id = ?', [$noraPid]), 'wifi' => $wifiN, 'pubblica' => $nora->get("/pannello/$noraPid/procedura/pubblica")['code']]));
 $r = $ospite->get("/g/$slugN?l=it");
-prova('10 · 9T · la guida Plus pubblicata ha «Chiedi al Concierge» col badge AI nella barra in fondo (link alla pagina senza JavaScript) e la finestra #concierge con intro, suggerimento, esempi, modulo e nota (IA, Anthropic, 12 mesi)',
+prova('10 · 9T · 9U · la guida Plus pubblicata ha «Chiedi» col badge AI nella barra in fondo (link alla pagina senza JavaScript) e la finestra #concierge con intro, suggerimento, esempi, modulo e nota (IA, Anthropic, 12 mesi)',
       $r['code'] === 200 && pulita($r) && preg_match('#<a class="btn btn--ghost chiedi-apri" href="[^"]*/g/' . preg_quote($slugN, '#') . '/chiedi\?l=it" data-chiedi-apri="concierge"#', $r['body']) === 1
-      && str_contains($r['body'], 'Chiedi al Concierge</span><span class="badge-ai">AI</span>')
+      && str_contains($r['body'], '<span class="chiedi-apri__testo">Chiedi</span><span class="badge-ai">AI</span>') && str_contains($r['body'], 'id="chiedi-titolo">Concierge <span class="badge-ai">AI</span>')
       && str_contains($r['body'], '<dialog class="chiedi" id="concierge"') && str_contains($r['body'], 'Qual è la password del Wi-Fi?') && str_contains($r['body'], 'A che ora è il check-out?')
       && str_contains($r['body'], 'id="chiedi-hint"') && str_contains($r['body'], 'aria-describedby="chiedi-hint"')
       && str_contains($r['body'], 'name="q"') && str_contains($r['body'], 'Concierge AI, con Anthropic') && str_contains($r['body'], 'anonima per 12 mesi') && !str_contains($r['body'], 'Set-Cookie'),
       (string) $r['code']);
-prova('…anche dentro una sezione, e senza cookie', ($rs = $ospite->get("/g/$slugN/$coreN?l=it"))['code'] === 200 && pulita($rs) && str_contains($rs['body'], 'data-chiedi-apri') && str_contains($rs['body'], 'Chiedi al Concierge') && !str_contains($rs['head'], 'Set-Cookie'));
+prova('…anche dentro una sezione, e senza cookie', ($rs = $ospite->get("/g/$slugN/$coreN?l=it"))['code'] === 200 && pulita($rs) && str_contains($rs['body'], 'data-chiedi-apri') && str_contains($rs['body'], '<span class="chiedi-apri__testo">Chiedi</span>') && !str_contains($rs['head'], 'Set-Cookie'));
 
 $primaAs = count($richiesteAs());
 $x = $chiedi10($slugN, 'A che ora è il check-out?');
@@ -8406,7 +8409,7 @@ $busta9t = $c9n('echo MHW\Icon::svg("mail", 18);');
 prova('9T · 5.10 · i bottoni Email in home e in /domande hanno la busta, non il fumetto', str_contains($ospite->get('/')['body'], $busta9t) && str_contains($ospite->get('/domande')['body'], $busta9t));
 
 // ======================================================================= 9U
-capitolo('9U · selettore Portfolio oltre 10 nelle pagine per tipologia, foto della demo da una sola fonte (Testi e foto = copertina), Promo novembre NOVEMBRE17');
+capitolo('9U · selettore Portfolio oltre 10 nelle pagine per tipologia, la home si aggiorna quando si pubblica Casa Checco, Promo novembre NOVEMBRE17, barra «Chiedi» / «Contatta» nella guida');
 $conf9t(['inviti' => ['attivi' => true]]);
 db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
 
@@ -8437,47 +8440,70 @@ prova('9U · 1 · «Chiedi il preventivo» da una tipologia: /piu-strutture?stru
 prova('9U · 1 · CSS: il riquadro a tutta larghezza e niente prezzo oltre 10 (anche con il display dei prezzi)', str_contains($css9u = (string) file_get_contents("$DOVE/assets/app.css"), '.tipo-piano__prezzo .plan__oltre{align-self:stretch}')
       && str_contains($css9u, '.tipo-piano__prezzo .price[hidden]'));
 
-// 2 · Una sola fonte per la foto della demo: «La schermata nel telefono» di Testi e foto è anche la copertina della vetrina.
-$slugV = (string) $c9n('echo (string) ((MHW\Demo::vetrinaAttuale() ?? [])["slug"] ?? "");');
-$vid9u = (int) val('SELECT id FROM properties WHERE slug = ?', [$slugV]);
-$copDi = fn(int $pid) => riga('SELECT m.* FROM properties p JOIN media m ON m.id = p.cover_media_id WHERE p.id = ?', [$pid]) ?? [];
-$snapCop = fn(int $pid) => (int) $c9n('echo (int) ((MHW\Guide::published(' . $pid . ') ?? [])["property"]["cover_id"] ?? 0);');
-$fileDi = fn(int $mid) => basename((string) parse_url($c9n('echo (string) MHW\Media::url(' . $mid . ');'), PHP_URL_PATH));
-$r = $admin->get('/admin/testi');
-prova('9U · 2 · Testi e foto: sotto «La schermata nel telefono» l\'avviso «è anche la copertina della guida di esempio (Casa Checco)»',
-      str_contains($r['body'], 'Questa foto è anche la copertina della guida di esempio (Casa Checco).'));
-$admin->segui($admin->post('/admin/testi', ['img[telefono]' => file_(png(600, 422), 'image/png'), 'torna' => 'foto']));
-$c9u = $copDi($vid9u);
+// 2 · Quando si pubblica Casa Checco, la home si aggiorna: il telefono legge tutto dalla guida vetrina PUBBLICATA.
 $vH9u = (int) val("SELECT id FROM properties WHERE is_demo >= 1 AND status = 'published' AND archived_at IS NULL ORDER BY is_demo DESC, id");   // la demo della home
-$cH9u = $copDi($vH9u);
+$pH9u = riga('SELECT * FROM properties WHERE id = ?', [$vH9u]) ?? [];
+$slugH9u = (string) ($pH9u['slug'] ?? '');
+$uidH9u = (int) val('SELECT user_id FROM accounts WHERE id = ?', [(int) ($pH9u['account_id'] ?? 0)]);
+$snap9u = fn(int $pid) => json_decode($c9n('echo json_encode((MHW\Guide::published(' . $pid . ') ?? [])["property"] ?? []);'), true) ?: [];
+$fileDi = fn(int $mid) => $mid ? basename((string) parse_url($c9n('echo (string) MHW\Media::url(' . $mid . ');'), PHP_URL_PATH)) : '-';
+$tondo9u = fn(string $h) => preg_match('#class="device__profilo"><img src="([^"?]+)#', $h, $mm) ? basename($mm[1]) : '';
+$r = $admin->get('/admin/testi');
+prova('9U · 2 · Testi e foto: «Usa questa foto invece di quella della guida demo», spenta di serie; il consiglio dice che il telefono mostra la guida demo pubblicata',
+      str_contains($r['body'], 'name="img_usa[telefono]" value="1">') && str_contains($r['body'], 'Usa questa foto invece di quella della guida demo')
+      && str_contains($r['body'], 'Il telefono della home mostra la guida demo Casa Checco pubblicata'));
+$h9u = $ospite->get('/')['body']; $sp9u = $snap9u($vH9u);
+prova('9U · 2 · il telefono della home come la guida demo pubblicata: nome, check-in, copertina, tondo con la foto del profilo, colori della palette, barra in fondo',
+      $sp9u && str_contains($h9u, '<span>' . htmlspecialchars((string) $sp9u['name']) . '</span>') && str_contains($h9u, 'Check-in dalle ' . $sp9u['checkin_from'])
+      && preg_match('#class="device__shot">\s*<img src="[^"]*' . preg_quote($fileDi((int) ($sp9u['cover_id'] ?? 0)), '#') . '#', $h9u) === 1
+      && $tondo9u($h9u) === $fileDi((int) ($sp9u['profile_id'] ?? 0)) && str_contains($h9u, '--tel-t1:') && str_contains($h9u, 'barra-guida barra-guida--finta'),
+      json_encode([$sp9u['name'] ?? null, $tondo9u($h9u), $fileDi((int) ($sp9u['profile_id'] ?? 0))]));
+// Verifica 1 e 3: la foto del profilo cambiata nel pannello (entrando come il cliente della vetrina): senza pubblicare niente cambia.
+$prof0 = $tondo9u($h9u);
+$admin->post("/admin/entra/$uidH9u", []);
+$rA9u = $admin->post("/pannello/$vH9u/aspetto", ['palette' => (string) $pH9u['palette'], 'text_tone' => (string) $pH9u['text_tone'], 'profile' => file_(png(400, 400), 'image/png', 'francesco-nuovo.png')]);
+$admin->post('/admin/esci-da-cliente', []);
+$nuovaP9u = (int) val('SELECT profile_media_id FROM properties WHERE id = ?', [$vH9u]);
+db()->prepare('UPDATE properties SET name = ?, checkin_from = ? WHERE id = ?')->execute(['Casa Checco Nuova', '16:00', $vH9u]);
+$h9u = $ospite->get('/')['body']; $g9u = $ospite->get("/g/$slugH9u?l=it")['body'];
+prova('9U · 2 · verifica 3: foto del profilo, nome e check-in cambiati senza pubblicare: la home e la demo restano come prima',
+      $nuovaP9u > 0 && $tondo9u($h9u) === $prof0 && !str_contains($h9u, 'Casa Checco Nuova') && !str_contains($h9u, 'Check-in dalle 16:00')
+      && !str_contains($g9u, $fileDi($nuovaP9u)), json_encode([$rA9u['code'], $nuovaP9u, $tondo9u($h9u), $prof0]));
+// Verifica 2: anche la palette; poi «Pubblica le modifiche» (Guide::publish, come il bottone del pannello).
+$tono9u = $c9n('echo MHW\Palette::readable("oliva", "scuro") ? "scuro" : "chiaro";');
+db()->prepare('UPDATE properties SET palette = ?, text_tone = ? WHERE id = ?')->execute(['oliva', $tono9u, $vH9u]);
+$c9n('MHW\Guide::publish(' . $vH9u . ');');
+$h9u = $ospite->get('/')['body']; $hEn9u = $ospite->get('/en')['body'];
+$demo9u = []; foreach (['it', 'en'] as $l) { $g = $ospite->get("/g/$slugH9u?l=$l")['body']; $demo9u[$l] = str_contains($g, $fileDi($nuovaP9u)) && str_contains($g, 'Casa Checco Nuova'); }
+$olivaT1 = json_decode($c9n('echo json_encode(MHW\Palette::get("oliva")["tiles"]);'), true)[0] ?? '?';
+prova('9U · 2 · verifica 1 e 2: dopo la pubblicazione la home (IT ed EN) mostra la foto del profilo nuova nel tondo, il nome, il check-in e i colori della palette; la demo la foto nuova, IT ed EN',
+      $tondo9u($h9u) === $fileDi($nuovaP9u) && $tondo9u($hEn9u) === $fileDi($nuovaP9u) && str_contains($h9u, '<span>Casa Checco Nuova</span>') && str_contains($h9u, 'Check-in dalle 16:00')
+      && str_contains($hEn9u, 'Check-in from 16:00') && str_contains($h9u, '--tel-t1:' . $olivaT1) && !in_array(false, $demo9u, true),
+      json_encode([$tondo9u($h9u), $fileDi($nuovaP9u), $demo9u, $olivaT1]));
+prova('…l\'indirizzo della foto cambia con la foto (niente cache da svuotare)', $fileDi($nuovaP9u) !== $prof0 && $prof0 !== '');
+db()->prepare('UPDATE properties SET name = ?, checkin_from = ?, palette = ?, text_tone = ? WHERE id = ?')->execute([$pH9u['name'], $pH9u['checkin_from'], $pH9u['palette'], $pH9u['text_tone'], $vH9u]);
+$c9n('MHW\Guide::publish(' . $vH9u . ');');
+// Testi e foto con «Usa questa foto…»: il telefono mostra quella; spenta, di nuovo la copertina della guida demo.
+$admin->segui($admin->post('/admin/testi', ['img[telefono]' => file_(png(600, 422), 'image/png'), 'img_opzioni' => '1', 'img_usa[telefono]' => '1', 'torna' => 'foto']));
+$rifT9u = (string) val("SELECT valore FROM site_texts WHERE chiave = 'img.telefono'");
+$conT9u = str_contains($ospite->get('/')['body'], basename($rifT9u));
+$admin->segui($admin->post('/admin/testi', ['img_opzioni' => '1', 'torna' => 'foto']));
 $h9u = $ospite->get('/')['body'];
-$guide9u = [];
-foreach (['it', 'en', 'fr', 'de', 'es'] as $l) $guide9u[$l] = str_contains($g = $ospite->get('/g/' . $slugV . '/benvenuto?l=' . $l)['body'], $fileDi((int) ($c9u['id'] ?? 0))) && str_contains($g, 'alt="Casa Checco"');
-prova('9U · 2 · caricata in Testi e foto: è la copertina della vetrina (alt «Casa Checco»), pubblicata subito, nel telefono della home e in /g/' . $slugV . ' in tutte e 5 le lingue',
-      str_starts_with((string) ($c9u['original_name'] ?? ''), 'sito-telefono') && ($c9u['alt'] ?? '') === 'Casa Checco' && $snapCop($vid9u) === (int) ($c9u['id'] ?? -1)
-      && str_starts_with((string) ($cH9u['original_name'] ?? ''), 'sito-telefono') && preg_match('#class="device__shot">\s*<img src="[^"]*' . preg_quote($fileDi((int) ($cH9u['id'] ?? 0)), '#') . '#', $h9u) === 1 && !in_array(false, $guide9u, true),
-      json_encode([$c9u['original_name'] ?? null, $c9u['alt'] ?? null, $guide9u, $snapCop($vid9u), (int) ($c9u['id'] ?? 0), $fileDi((int) ($c9u['id'] ?? 0)),
-                   preg_match('#class="device__shot">\s*<img src="([^"?]+)#', $h9u, $mm) ? $mm[1] : '']));
-// La copertina cambiata dal pannello (una foto non di serie) la usa anche la home.
-$pan9u = $c9n('$p = MHW\Db::one("SELECT * FROM properties WHERE id = ' . $vH9u . '"); $png = (string) file_get_contents(' . var_export(png(640, 450), true) . ');
-    $id = MHW\Media::salvaImmagine($png, (int) $p["account_id"], ' . $vH9u . ', "Casa Checco", "dal-pannello"); MHW\Db::update("properties", ["cover_media_id" => $id], "id = :p", ["p" => ' . $vH9u . ']);
-    MHW\Guide::publish(' . $vH9u . '); echo "ID:", $id;');
-$pan9u = preg_match('/ID:(\d+)/', $panOut9u = $pan9u, $mm) ? (int) $mm[1] : 0;
-$telH9u = preg_match('#class="device__shot">\s*<img src="([^"?]+)#', $ospite->get('/')['body'], $mm) ? $mm[1] : '';
-prova('9U · 2 · la copertina cambiata dal pannello va anche nel telefono della home', $pan9u > 0 && str_ends_with($telH9u, $fileDi($pan9u)), mb_substr($panOut9u, 0, 200) . ' · ' . $telH9u . ' · ' . ($pan9u ? $fileDi($pan9u) : ''));
-$c9n('MHW\Demo::copertinaDaSito(MHW\TestiSito::riferimentoImmagine("telefono"), ' . $vH9u . ');');   // di nuovo la foto di Testi e foto, per le prove qui sotto
-// «Rifai la vetrina»: la copertina è quella di Testi e foto, non più quella di serie.
-$accV9u = (int) val('SELECT account_id FROM properties WHERE id = ?', [$vid9u]);
-$admin->post("/admin/cliente/$accV9u/vetrina", ['rifai' => '1']);
-$vid9u = (int) val('SELECT id FROM properties WHERE account_id = ? AND is_demo = 2', [$accV9u]);
-$slugV = (string) val('SELECT slug FROM properties WHERE id = ?', [$vid9u]);
-prova('9U · 2 · «Rifai la vetrina» prende la foto di Testi e foto (non torna quella di serie)', str_starts_with((string) ($copDi($vid9u)['original_name'] ?? ''), 'sito-telefono') && $snapCop($vid9u) === (int) ($copDi($vid9u)['id'] ?? -1));
-// Tolta da Testi e foto: la vetrina torna alla copertina di serie (Casa Checco) e la home al telefono di serie.
-$admin->segui($admin->post('/admin/testi', ['img_togli' => ['telefono' => '1'], 'torna' => 'foto']));
-$h9u = $ospite->get('/')['body'];
-prova('…tolta da Testi e foto: la vetrina torna alla copertina di serie, la home al telefono di serie', str_starts_with((string) ($copDi($vid9u)['original_name'] ?? ''), 'checco-')
-      && $snapCop($vid9u) === (int) ($copDi($vid9u)['id'] ?? -1) && str_contains($h9u, 'checco-telefono'), (string) ($copDi($vid9u)['original_name'] ?? ''));
-prova('9U · 2 · migrazione 071 applicata (la foto di Testi e foto già caricata va sulla copertina all\'aggiornamento)', (bool) val("SELECT 1 FROM schema_migrations WHERE name LIKE '071%'"));
+prova('9U · 2 · con «Usa questa foto invece di quella della guida demo» il telefono mostra la foto di Testi e foto; spenta, la copertina della guida demo (la foto resta salvata)',
+      $conT9u && !str_contains($h9u, basename($rifT9u)) && preg_match('#class="device__shot">\s*<img src="[^"]*' . preg_quote($fileDi((int) ($snap9u($vH9u)['cover_id'] ?? 0)), '#') . '#', $h9u) === 1
+      && (string) val("SELECT valore FROM site_texts WHERE chiave = 'img.telefono'") === $rifT9u);
+$admin->segui($admin->post('/admin/testi', ['img_togli' => ['telefono' => '1'], 'img_opzioni' => '1', 'torna' => 'foto']));
+// Verifica 4: «Rifai la vetrina» tiene la foto del profilo cambiata (le foto di serie solo se mancano).
+$accH9u = (int) $pH9u['account_id'];
+$admin->post("/admin/cliente/$accH9u/vetrina", ['rifai' => '1']);
+$vN9u = (int) val('SELECT id FROM properties WHERE account_id = ? AND is_demo = 2', [$accH9u]);
+$profN9u = riga('SELECT m.* FROM properties p JOIN media m ON m.id = p.profile_media_id WHERE p.id = ?', [$vN9u]) ?? [];
+$copN9u = riga('SELECT m.* FROM properties p JOIN media m ON m.id = p.cover_media_id WHERE p.id = ?', [$vN9u]) ?? [];
+prova('9U · 2 · verifica 4: «Rifai la vetrina» rimette la foto del profilo cambiata (non quella di serie), già pubblicata; la copertina di serie resta quella di serie',
+      $vN9u > 0 && $vN9u !== $vH9u && str_starts_with((string) ($profN9u['original_name'] ?? ''), 'francesco-nuovo') && (int) ($snap9u($vN9u)['profile_id'] ?? 0) === (int) ($profN9u['id'] ?? -1)
+      && str_starts_with((string) ($copN9u['original_name'] ?? ''), 'checco-'), json_encode([$profN9u['original_name'] ?? null, $copN9u['original_name'] ?? null]));
+prova('9U · 2 · migrazione 071 applicata (la foto di Testi e foto già caricata è diventata la copertina della guida demo all\'aggiornamento)', (bool) val("SELECT 1 FROM schema_migrations WHERE name LIKE '071%'"));
+$slugV = (string) $c9n('echo (string) ((MHW\Demo::vetrinaAttuale() ?? [])["slug"] ?? "");');
 
 // 3 · Promo novembre: il codice della migrazione 070 (spento all'inizio delle prove), riacceso qui.
 $pr9u = riga("SELECT * FROM discount_codes WHERE code = 'NOVEMBRE17'") ?? [];
@@ -8544,21 +8570,22 @@ $c9n('MHW\Inviti::pagato(MHW\Db::one("SELECT * FROM orders WHERE provider_sessio
 prova('…quando l\'amica paga con la promo, l\'invito diventa valido: chi ha invitato ha il suo 5% sul rinnovo', val('SELECT status FROM referrals WHERE friend_account_id = ?', [$ami9u]) === 'valido'
       && (int) $c9n('echo MHW\Inviti::validi(' . $inv9u . ');') === 1);
 
-// Codice omaggio o partner: la promo non si applica e il riepilogo lo dice.
+// Codice omaggio: la promo non si applica e il riepilogo lo dice. Codice partner: si sommano (decisione del titolare del 30 ottobre).
 $om9u = $cliente9n('Oreste Omaggio', 'oreste9u@prova.test');
 $c9n('$id = MHW\Omaggi::crea(["mesi" => 3, "nota" => "Prova 9U"], 1); MHW\Db::update("accounts", ["codice_omaggio_id" => $id], "id = :a", ["a" => ' . $om9u . ']);');
 $rO9u = $riep9u('plus', 1, 'MHW\Db::one("SELECT * FROM accounts WHERE id = ' . $om9u . '")');
 $pa9u = $cliente9n('Paola Partner', 'paola9u@prova.test');
 db()->prepare('UPDATE accounts SET partner_id = ? WHERE id = ?')->execute([(int) $pp8['id'], $pa9u]);
 $rP9u = $riep9u('plus', 1, 'MHW\Db::one("SELECT * FROM accounts WHERE id = ' . $pa9u . '")');
+$rPG9u = $riep9u('plus', 1, 'MHW\Db::one("SELECT * FROM accounts WHERE id = ' . $pa9u . '")', true);
 prova('9U · 3 · con un codice omaggio la promo non si applica: «La Promo novembre non vale con il codice omaggio.»', ($rO9u['righe'] ?? ['x']) === [] && str_contains((string) ($rO9u['nota'] ?? ''), 'La Promo novembre non vale con il codice omaggio.'), json_encode($rO9u));
 $ppPct9u = (int) val('SELECT sconto_clienti_pct FROM partner WHERE id = ?', [(int) $pp8['id']]);
-prova('9U · 3 · con un codice partner resta il suo sconto (' . $ppPct9u . '%): «La Promo novembre non vale per chi arriva da un partner…»', ($rP9u['righe'] ?? []) === ['partner:' . $ppPct9u . ':' . (int) round(12700 * $ppPct9u / 100)]
-      && str_contains((string) ($rP9u['nota'] ?? ''), 'La Promo novembre non vale per chi arriva da un partner: resta lo sconto del partner.'), json_encode($rP9u));
+$totP9u = $netto9u(12700, 17 + $ppPct9u);
+prova('9U · 3 · con un codice partner (' . $ppPct9u . '%) la promo si somma: Plus ' . $eur9u($totP9u) . ' (−' . (17 + $ppPct9u) . '%), con il giudizio −' . (22 + $ppPct9u) . '%; nessuna nota «vale il più alto»',
+      ($rP9u['tot'] ?? 0) === $totP9u && ($rP9u['righe'] ?? []) === ['promo:17:2159', 'partner:' . $ppPct9u . ':' . (12700 - $totP9u - 2159)]
+      && ($rPG9u['tot'] ?? 0) === $netto9u(12700, 22 + $ppPct9u) && count($rPG9u['righe'] ?? []) === 3 && (string) ($rP9u['nota'] ?? '') === '', json_encode([$rP9u, $rPG9u]));
 $vp9u = new Browser('visita-partner-9u'); $a9u = $vp9u->get('/?partner=PM-ROSSI')['body']; $b9u = $vp9u->get('/')['body'];
-$vpC9u = ['prima' => !str_contains($a9u, 'badge-promo') && !str_contains($a9u, 'data-promo-fine'), 'dopo' => !str_contains($b9u, 'badge-promo') && !str_contains($b9u, 'data-promo-fine'),
-          'fascia' => str_contains($a9u, 'Codice partner <b>PM-ROSSI</b>'), 'stato' => val("SELECT stato FROM partner WHERE codice = 'PM-ROSSI'")];
-prova('…e chi arriva dal link di un partner non vede la promo in home (vede la fascia del partner)', $vpC9u['prima'] && $vpC9u['dopo'] && $vpC9u['fascia'], json_encode($vpC9u));
+prova('…e chi arriva dal link di un partner vede la promo in home insieme alla fascia del partner', str_contains($a9u, 'Codice partner <b>PM-ROSSI</b>') && str_contains($b9u, 'badge-promo') && str_contains($b9u, 'data-promo-fine'));
 
 // Dal link della fascia alla registrazione e al pagamento con Stripe (finto): il codice è già inserito; con il giudizio un coupon solo del 22%.
 $re9u = new Browser('registra-9u');
@@ -8586,6 +8613,23 @@ inviaWebhook(['id' => 'evt_9u_promo', 'type' => 'checkout.session.completed', 'd
 $red9u = riga('SELECT * FROM discount_redemptions WHERE order_id = ?', [(int) $o9u['id']]) ?? [];
 prova('…pagato: l\'utilizzo della promo con la sua parte dello sconto (21,59 € su 27,94 €)', val('SELECT status FROM orders WHERE id = ?', [(int) $o9u['id']]) === 'paid'
       && (int) ($red9u['discount_code_id'] ?? 0) === (int) $pr9u['id'] && (int) ($red9u['discount_cents'] ?? 0) === 2159, json_encode($red9u));
+// Un cliente di un partner paga con la promo: le due percentuali in un solo coupon; la commissione del partner sull'imponibile pagato davvero.
+[$zen9u, $zenAcc9u, $zenPid9u] = $host9l('Zeno', 'zeno9u@prova.test', 'VTRZEN85A01G478U', 'Spello');
+db()->prepare('UPDATE accounts SET partner_id = ? WHERE id = ?')->execute([(int) $pp8['id'], $zenAcc9u]);
+$daZ9u = count(richiesteStripe());
+$zen9u->segui($zen9u->modulo("/pannello/$zenPid9u/procedura/pubblica", "/pannello/$zenPid9u/pubblica", ['acquirente' => 'impresa']));
+$oZ9u = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$zenAcc9u]) ?? [];
+$csZ9u = array_values(array_filter(array_slice(richiesteStripe(), $daZ9u), fn($x) => $x['percorso'] === '/v1/checkout/sessions' && $x['metodo'] === 'POST'))[0]['corpo'] ?? [];
+inviaWebhook(['id' => 'evt_9u_zeno', 'type' => 'checkout.session.completed', 'data' => ['object' => [
+    'id' => $oZ9u['provider_session_id'] ?? '', 'mode' => 'subscription', 'payment_status' => 'paid', 'customer' => 'cus_9u_zeno', 'subscription' => 'sub_9u_zeno',
+    'client_reference_id' => (string) ($oZ9u['id'] ?? ''), 'total_details' => ['amount_discount' => 12700 - $totP9u, 'amount_tax' => (int) round($totP9u * 0.22)],
+    'metadata' => ['order_id' => (string) ($oZ9u['id'] ?? ''), 'account_id' => (string) $zenAcc9u, 'sconti' => (string) ($oZ9u['sconti'] ?? '')]]]]);
+$cZ9u = riga("SELECT * FROM partner_commissioni WHERE account_id = ? AND tipo = 'primo_anno'", [$zenAcc9u]) ?? [];
+$pctC9u = (int) val('SELECT commissione_pct FROM partner WHERE id = ?', [(int) $pp8['id']]);
+prova('9U · 3 · cliente del partner con la promo: ordine «promo:17,partner:' . $ppPct9u . '», un solo coupon «mhw-primo-anno-' . (17 + $ppPct9u) . '»; commissione del ' . $pctC9u . '% sull\'imponibile pagato (' . $eur9u($totP9u) . ')',
+      ($oZ9u['sconti'] ?? '') === 'promo:17,partner:' . $ppPct9u && ($csZ9u['discounts'][0]['coupon'] ?? '') === 'mhw-primo-anno-' . (17 + $ppPct9u)
+      && (int) ($cZ9u['imponibile_cents'] ?? 0) === $totP9u && (int) ($cZ9u['importo_cents'] ?? 0) === (int) round($totP9u * $pctC9u / 100),
+      json_encode([$oZ9u['sconti'] ?? null, $csZ9u['discounts'] ?? null, $cZ9u['imponibile_cents'] ?? null, $cZ9u['importo_cents'] ?? null]));
 // Chi ha già pagato: niente promo in home, codice non valido.
 $h9u = $pro9u->get('/')['body'];
 $fl9u = $pro9u->segui($pro9u->get('/piano?codice=NOVEMBRE17'))['body'];
@@ -8602,8 +8646,8 @@ prova('9U · 3 · /piano?codice=NOVEMBRE17 per chi è dentro e non ha pagato: «
 // Cassa: le promo (clienti e sconto) e il filtro dei pagamenti.
 $cassa9u = $admin->get('/admin/cassa')['body'];
 $sezP9u = preg_match('#<section[^>]*aria-labelledby="promo-titolo">.*?</section>#s', $cassa9u, $mm) ? $mm[0] : '';
-prova('9U · 3 · Cassa → Promo: «Promo novembre · −17%», NOVEMBRE17, 1 cliente, 21,59 € di sconto concesso (la parte della promo), «Vedi i pagamenti»',
-      str_contains($sezP9u, 'Promo novembre · −17%') && preg_match('#<td>1</td><td>21,59(?:\x{00A0}|&nbsp;| )€</td>#u', $sezP9u) === 1 && str_contains($cassa9u, '<code>NOVEMBRE17</code>') && str_contains($cassa9u, '&amp;promo=' . (int) $pr9u['id'] . '#pagamenti') && str_contains($cassa9u, 'Vedi i pagamenti'));
+prova('9U · 3 · Cassa → Promo: «Promo novembre · −17%», NOVEMBRE17, 2 clienti, 43,18 € di sconto concesso (la parte della promo: 21,59 € ciascuno), «Vedi i pagamenti»',
+      str_contains($sezP9u, 'Promo novembre · −17%') && preg_match('#<td>2</td><td>43,18(?:\x{00A0}|&nbsp;| )€</td>#u', $sezP9u) === 1 && str_contains($cassa9u, '<code>NOVEMBRE17</code>') && str_contains($cassa9u, '&amp;promo=' . (int) $pr9u['id'] . '#pagamenti') && str_contains($cassa9u, 'Vedi i pagamenti'));
 $filtro9u = $admin->get('/admin/cassa?promo=' . (int) $pr9u['id'])['body'];
 prova('…il filtro: «Pagamenti con la Promo novembre (NOVEMBRE17)», c\'è chi ha usato la promo, non gli altri pagamenti dello stesso periodo',
       str_contains($filtro9u, 'Pagamenti con la Promo novembre (NOVEMBRE17)') && str_contains($filtro9u, 'Promo Vetrina') && !str_contains($filtro9u, 'Anna Carta'));
@@ -8622,9 +8666,9 @@ db()->prepare('DELETE FROM discount_codes WHERE id = ?')->execute([(int) ($n9u['
 
 // Termini e FAQ, IT ed EN.
 $t9u = $ospite->get('/termini')['body']; $te9u = $ospite->get('/en/terms')['body'];
-prova('9U · 3 · Termini IT/EN: il paragrafo della promo (−17%, NOVEMBRE17, −22% con il giudizio, non con invito, omaggio e partner); versione del 30 ottobre 2026',
+prova('9U · 3 · Termini IT/EN: il paragrafo della promo (−17%, NOVEMBRE17, −22% con il giudizio, si somma al codice di un partner, non con invito e omaggio); versione del 30 ottobre 2026',
       str_contains($t9u, '<b>Promo novembre.</b> −17% sul primo anno per i nuovi clienti') && str_contains($t9u, 'NOVEMBRE17') && str_contains($t9u, 'in tutto −22% sul primo anno')
-      && str_contains($t9u, 'ai codici omaggio né ai codici partner') && str_contains($te9u, '<b>November promo.</b>') && str_contains($t9u, 'Versione del 30 ottobre 2026'));
+      && str_contains($t9u, 'e allo sconto del codice di un partner') && str_contains($t9u, 'ad altri codici né ai codici omaggio') && str_contains($te9u, '<b>November promo.</b>') && str_contains($te9u, 'and with a partner') && str_contains($t9u, 'Versione del 30 ottobre 2026'));
 $f9u = $ospite->get('/domande')['body']; $fe9u = $ospite->get('/en/questions')['body'];
 prova('9U · 3 · FAQ «C\'è un\'offerta?» (IT) e «Is there an offer?» (EN) con il codice e la data', str_contains($f9u, 'C&#039;è un&#039;offerta?') && str_contains($f9u, 'con il codice NOVEMBRE17')
       && str_contains($fe9u, 'Is there an offer?') && str_contains($fe9u, 'NOVEMBRE17'));
@@ -8642,6 +8686,44 @@ foreach (['/', '/en', '/piano', '/case-vacanza', '/domande'] as $u) { $b = $ospi
 $flA9u = $ag9u->segui($ag9u->get('/piano?codice=NOVEMBRE17'))['body'];
 prova('9U · 3 · finita la promo: nessun badge, prezzo barrato, fascia né FAQ (home IT/EN, /piano, tipologie, FAQ); /piano?codice= rifiuta con «La Promo novembre è scaduta il …»',
       !in_array(false, $dopo9u, true) && str_contains($flA9u, 'La Promo novembre è scaduta il ' . $c9n('echo MHW\Pannello::giornoMese("' . $oggiR(-1) . '", false);') . '.'), json_encode($dopo9u));
+// 4 · La barra in fondo alla guida: «Chiedi» (AI) e «Contatta» a pari larghezza, con il logo di WhatsApp; il nome nel foglio.
+$slugP9u = (string) val('SELECT slug FROM properties WHERE id = ?', [$proPid9u]);
+$scen9u = fn(string $nome, int $wa, int $conc, string $email) => $c9n('MHW\Properties::saveContacts(' . $proPid9u . ', [["name" => "' . $nome . '", "role" => "host", "phone" => "+39 333 765 4321", "whatsapp" => ' . $wa . ']]);
+    MHW\Db::update("properties", ["assistant_enabled" => ' . $conc . ', "guest_email" => "' . $email . '"], "id = :p", ["p" => ' . $proPid9u . ']); MHW\Guide::publish(' . $proPid9u . '); echo "ok";');
+$barra9u = function () use ($ospite, $slugP9u): string { $b = $ospite->get("/g/$slugP9u?l=it")['body']; return preg_match('#<div class="guest-bottom barra-guida[^"]*">.*?</details>|<div class="guest-bottom barra-guida[^"]*">.*?</a>\s*</div>#s', $b, $mm) ? $mm[0] : $b; };
+$scen9u('Francesco', 1, 1, 'ospiti9u@prova.test'); $bF9u = $barra9u();
+$posWa = strpos($bF9u, 'btn--wa'); $posTel = strpos($bF9u, 'href="tel:'); $posMail = strpos($bF9u, 'href="mailto:ospiti9u@prova.test"');
+prova('9U · 4 · con il Concierge: due bottoni della stessa riga, «Chiedi» con il badge AI e «Contatta» con il logo di WhatsApp; niente nome né foto nel bottone',
+      str_contains($bF9u, '<div class="guest-bottom barra-guida">') && str_contains($bF9u, '<span class="chiedi-apri__testo">Chiedi</span><span class="badge-ai">AI</span>')
+      && preg_match('#<summary class="btn contatta" aria-label="Contatta Francesco"><svg[^>]*class="logo-wa"#', $bF9u) === 1 && str_contains($bF9u, '<span class="contatta__testo">Contatta</span>')
+      && !str_contains($bF9u, 'contatto__foto--bottone'), mb_substr(strip_tags($bF9u), 0, 200));
+prova('…il foglio: «Ciao, sono Francesco», poi nell\'ordine WhatsApp (verde, con il logo), telefono ed email', str_contains($bF9u, 'contatti-foglio__ciao">Ciao, sono Francesco<')
+      && $posWa !== false && $posTel !== false && $posMail !== false && $posWa < $posTel && $posTel < $posMail && str_contains($bF9u, 'href="https://wa.me/393337654321"'));
+$scen9u('Massimiliano', 1, 1, 'ospiti9u@prova.test'); $bM9u = $barra9u();
+prova('9U · 4 · «Massimiliano»: il bottone resta «Contatta», il foglio dice «Ciao, sono Massimiliano»', str_contains($bM9u, '<span class="contatta__testo">Contatta</span>') && str_contains($bM9u, 'Ciao, sono Massimiliano'));
+$scen9u('Francesco', 1, 0, 'ospiti9u@prova.test'); $bE9u = $barra9u();
+$scen9u('Massimiliano', 1, 0, 'ospiti9u@prova.test'); $bE29u = $barra9u();
+prova('9U · 4 · senza Concierge (spento, o Essential): «Contatta» su tutta la riga, «Contatta Francesco»; con «Massimiliano» solo «Contatta»',
+      str_contains($bE9u, 'guest-bottom barra-guida barra-guida--sola') && !str_contains($bE9u, 'chiedi-apri') && str_contains($bE9u, 'contatta__testo">Contatta Francesco<')
+      && str_contains($bE29u, 'contatta__testo">Contatta<'));
+$scen9u('Francesco', 0, 1, 'ospiti9u@prova.test'); $bT9u = $barra9u();
+$scen9u('Francesco', 1, 1, ''); $bW9u = $barra9u();
+prova('9U · 4 · host senza WhatsApp: il telefono in un tondo bianco al posto del logo; host con solo WhatsApp: il bottone apre subito wa.me',
+      str_contains($bT9u, 'class="contatta__tel"') && !preg_match('#class="btn contatta"[^>]*>\s*<svg[^>]*logo-wa#', $bT9u)
+      && preg_match('#<a class="btn contatta" href="https://wa\.me/393337654321" rel="noopener"#', $bW9u) === 1 && !str_contains($bW9u, 'contatti-foglio'));
+$lab9u = json_decode($c9n('$o = []; foreach (["it", "en", "fr", "de", "es"] as $l) $o[$l] = [MHW\I18n::t($l, "ask_short"), MHW\I18n::t($l, "contact_short")]; echo json_encode($o);'), true) ?: [];
+$gDe9u = $ospite->get("/g/$slugV?l=de")['body'];
+prova('9U · 4 · le etichette nelle 5 lingue (corte: stanno in 150 px), e la demo in tedesco: «Fragen» e «Kontakt»',
+      $lab9u === ['it' => ['Chiedi', 'Contatta'], 'en' => ['Ask', 'Contact'], 'fr' => ['Demander', 'Contacter'], 'de' => ['Fragen', 'Kontakt'], 'es' => ['Preguntar', 'Contactar']]
+      && str_contains($gDe9u, 'chiedi-apri__testo">Fragen<') && str_contains($gDe9u, 'contatta__testo">Kontakt<'), json_encode($lab9u));
+$wl9u = $c9n('echo MHW\Icon::svg("whatsapp-logo", 26);');
+prova('9U · 4 · il logo ufficiale di WhatsApp in Icon.php (whatsapp-logo: glifo del marchio, tondo #25D366); l\'icona «whatsapp» di prima resta com\'era',
+      str_contains($wl9u, 'fill="#25D366"') && str_contains($wl9u, 'M17.472 14.382') && str_contains($c9n('echo MHW\Icon::svg("whatsapp", 20);'), 'M21 11.5a8.5'));
+prova('9U · 4 · contrasto AA: testo scuro sul verde di WhatsApp ' . number_format($contr('#0f2a17', '#25D366'), 1) . ':1, «Contatta» sull\'accento ' . number_format($contr('#fff8f2', '#b4451f'), 1) . ':1; il logo ha il bordo bianco',
+      $contr('#0f2a17', '#25D366') >= 4.5 && $contr('#fff8f2', '#b4451f') >= 4.5 && str_contains((string) file_get_contents("$DOVE/assets/app.css"), '.logo-wa{flex:none;border-radius:999px;box-shadow:0 0 0 1.5px #fff}'));
+$hB9u = $ospite->get('/')['body'];
+prova('9U · 4 · nel telefono della home la stessa barra (disegnata): «Chiedi» AI e «Contatta» con il logo verde di WhatsApp; la foto dell\'host solo nel tondo',
+      preg_match('#<span class="barra-guida barra-guida--finta">.*?chiedi-apri__testo">Chiedi<.*?class="logo-wa".*?contatta__testo">Contatta<#s', $hB9u) === 1 && str_contains($hB9u, 'class="device__profilo"'));
 db()->exec("UPDATE discount_codes SET active = 0, valid_from = '2026-10-30', valid_until = '2026-11-30' WHERE code = 'NOVEMBRE17'");
 $conf9t([]);
 

@@ -13,5 +13,5 @@ if (!MHW\Migrator::columnExists('discount_codes', 'in_home')) return; ?>
   </div>
   <div class="field" style="margin:8px 0 0"><label for="sc-promo-nome">Nome della promo</label>
     <input id="sc-promo-nome" name="nome_promo" type="text" maxlength="80" value="<?= Support::e((string) ($vP['nome_promo'] ?? '')) ?>" placeholder="Promo novembre" aria-describedby="sc-promo-aiuto">
-    <p class="help" id="sc-promo-aiuto">Nella fascia e nel riepilogo («Promo novembre NOVEMBRE17 · −17%»). In home la promo compare dal primo all'ultimo giorno di validità e sparisce da sola; solo per chi non ha ancora pagato (come tutti i codici). Non si somma mai ai codici omaggio né ai codici partner: vale il più alto. I testi della fascia sono in Testi e foto → Promo.</p></div>
+    <p class="help" id="sc-promo-aiuto">Nella fascia e nel riepilogo («Promo novembre NOVEMBRE17 · −17%»). In home la promo compare dal primo all'ultimo giorno di validità e sparisce da sola; solo per chi non ha ancora pagato (come tutti i codici). Si somma sempre al codice di un partner (la commissione del partner resta sull'imponibile pagato); mai ai codici omaggio. I testi della fascia sono in Testi e foto → Promo.</p></div>
 </fieldset>

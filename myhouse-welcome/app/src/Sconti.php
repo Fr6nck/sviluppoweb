@@ -149,10 +149,10 @@ final class Sconti
         if (!$r) return null;
         $u = Auth::user();
         if ($u && ($u['role'] ?? '') === 'admin') return $r;
-        // Non con un codice partner (dal link o nell'account) né con un codice omaggio prenotato: lì vale il loro.
-        if (!$u) return ProgrammaPartner::dalLink() ? null : $r;
+        if (!$u) return $r;
+        // Non con un codice omaggio prenotato (lì vale l'omaggio). Con il codice di un partner sì: si sommano.
         $acc = Auth::account();
-        if ($acc && (ProgrammaPartner::scontoDiSistema($acc) || Omaggi::daUsare($acc))) return null;
+        if ($acc && Omaggi::daUsare($acc)) return null;
         return self::promoPer($acc) ? $r : null;
     }
 
@@ -165,11 +165,10 @@ final class Sconti
         return (new \DateTimeImmutable($r['valid_until'] . ' 23:59:59', new \DateTimeZone('Europe/Rome')))->getTimestamp();
     }
 
-    /** 9U · Per chi vale la promo «inserita da sola»: chi guarda senza account (non dal link di un partner), o un account che non ha ancora pagato. */
+    /** 9U · Per chi vale la promo «inserita da sola»: chi guarda senza account, o un account che non ha ancora pagato. */
     private static function promoPer(?array $acc): bool
     {
-        if (!$acc) return !ProgrammaPartner::dalLink();   // chi arriva dal link di un partner ha lo sconto del partner
-        return !Db::one("SELECT id FROM orders WHERE account_id = ? AND status = 'paid'", [(int) $acc['id']]);
+        return !$acc || !Db::one("SELECT id FROM orders WHERE account_id = ? AND status = 'paid'", [(int) $acc['id']]);
     }
 
     /** Lo sconto in centesimi su un prezzo: mai più del prezzo meno 1 €. */
@@ -572,7 +571,8 @@ final class Sconti
         }
         // 9U · La promo (un codice «cumulabile», come NOVEMBRE17): quella scritta o arrivata dal link, oppure, finché vale ed è
         // in home, inserita da sola per chi non ha ancora pagato e non ha un altro codice. Entra tra gli sconti di sistema:
-        // si somma al giudizio e/o all'invito se le sue caselle lo dicono; con gli altri (partner, invito se no) vale il più alto.
+        // si somma al giudizio e/o all'invito se le sue caselle lo dicono, e sempre al codice del partner (decisione del titolare
+        // del 30 ottobre: la commissione del partner resta sull'imponibile davvero pagato); con l'invito, se no, vale il più alto.
         $promo = null;
         if (self::disponibili()) {
             if ($manuale && self::cumulabile($manuale)) { $promo = $manuale; $manuale = null; $scontoManuale = 0; }
@@ -581,17 +581,14 @@ final class Sconti
                 $pkg = $ammessi ? (string) Db::val('SELECT p.code FROM packages p JOIN package_versions pv ON pv.package_id = p.id WHERE pv.id = ?', [(int) $pv['id']], '') : '';
                 if (!$ammessi || in_array($pkg, $ammessi, true)) $promo = $pa;
             }
-            // Mai con un codice omaggio né con un codice partner (il loro sconto resta): il riepilogo lo dice.
+            // Mai con un codice omaggio: il riepilogo lo dice.
             if ($promo && $omaggio) { $notaPromo = strtr(Pannello::t('La {promo} non vale con il codice omaggio.'), ['{promo}' => self::nomePromo($promo)]); $promo = null; }
-            elseif ($promo && array_filter($sistema, fn($s) => $s['tipo'] === 'partner')) {
-                $notaPromo = strtr(Pannello::t('La {promo} non vale per chi arriva da un partner: resta lo sconto del partner.'), ['{promo}' => self::nomePromo($promo)]); $promo = null;
-            }
         }
         if ($promo) {
             $rigaP = ['tipo' => 'promo', 'nome' => trim(self::nomePromo($promo) . ' ' . $promo['code']), 'percento' => (int) $promo['value'], 'codice_id' => (int) $promo['id']];
             $con = [$rigaP]; $fuori = [];
             foreach ($sistema as $s) {
-                if (($s['tipo'] === 'giudizio' && !empty($promo['somma_giudizio'])) || ($s['tipo'] === 'invito' && !empty($promo['somma_invito']))) $con[] = $s; else $fuori[] = $s;
+                if (($s['tipo'] === 'giudizio' && !empty($promo['somma_giudizio'])) || ($s['tipo'] === 'invito' && !empty($promo['somma_invito'])) || $s['tipo'] === 'partner') $con[] = $s; else $fuori[] = $s;
             }
             $pctCon = min(100, array_sum(array_column($con, 'percento')));
             $nomeP = self::nomePromo($promo);

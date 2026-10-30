@@ -3402,7 +3402,6 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 /* 10 · Concierge AI (9T; prima «Chiedi alla guida»): il bottone nella barra in fondo, la finestra della chat (un foglio dal basso, come
    «Chi ti accoglie») e i fumetti. Anche nella pagina senza JavaScript (chiedi__form--pagina). */
 .guest-bottom .chiedi-apri{flex:1 1 0;min-width:0}
-.guest-bottom:has(.chiedi-apri):has(.contatti-foglio) .chiedi-apri{flex:0 0 auto;padding:0 14px}
 .chiedi{width:min(560px,100%);max-width:100%;max-height:min(92dvh,760px);margin:auto auto 0;padding:0;border:0;border-radius:26px 26px 0 0;background:var(--paper);color:var(--ink);overflow:hidden}
 .chiedi::backdrop{background:rgba(23,19,13,.5)}
 .chiedi__dentro{display:flex;flex-direction:column;gap:12px;height:min(92dvh,760px);padding:16px 16px calc(14px + env(safe-area-inset-bottom))}
@@ -3443,16 +3442,35 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .chiedi-apri{gap:6px}
 .chiedi-apri__testo{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .contatti-foglio__corto{display:none}
-/* Su telefono, con «Chiedi al Concierge» e i contatti nella stessa barra: niente icona del fumetto, e nel bottone dei
-   contatti solo il nome (con la foto o il telefono), così stanno tutti e due senza uscire dallo schermo. */
-@media (max-width:440px){
-  .guest-bottom:has(.chiedi-apri):has(.contatti-foglio) .chiedi-apri>svg{display:none}
-  .guest-bottom:has(.chiedi-apri):has(.contatti-foglio) .chiedi-apri{padding:0 12px;flex:1 1 auto}
-  .guest-bottom:has(.chiedi-apri):has(.contatti-foglio .contatti-foglio__corto) .contatti-foglio__lungo{display:none}
-  .guest-bottom:has(.chiedi-apri):has(.contatti-foglio .contatti-foglio__corto) .contatti-foglio__corto{display:inline;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-  .guest-bottom:has(.chiedi-apri) .contatti-foglio{flex:0 1 auto;min-width:0}
-  .guest-bottom:has(.chiedi-apri) .contatti-foglio>summary{padding:0 14px}
-}
+/* 9U · La barra in fondo alla guida (mockup barra-guida): «Chiedi» con il badge AI e «Contatta» pieno, della stessa
+   larghezza, alti 46 px, mai a capo; con un solo bottone tutta la riga. Il foglio dei contatti si apre largo come la barra. */
+.guest-bottom.barra-guida{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:stretch}
+.guest-bottom.barra-guida--sola{grid-template-columns:minmax(0,1fr)}
+.barra-guida .btn{height:46px;width:100%;min-width:0;padding:0 12px;gap:8px;white-space:nowrap;font-size:15px}
+.barra-guida .chiedi-apri{background:var(--raised)}
+.barra-guida .contatti-foglio{position:static;min-width:0}
+.contatta__testo{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.logo-wa{flex:none;border-radius:999px;box-shadow:0 0 0 1.5px #fff}
+.contatta__tel{flex:none;display:inline-grid;place-items:center;width:26px;height:26px;border-radius:999px;background:#fff;color:var(--accent)}
+.contatta__tel svg{stroke:currentColor}
+.contatti-foglio__testa{display:flex;align-items:center;gap:12px;padding:2px 4px 10px}
+.contatti-foglio__ciao{font-family:Gloock,Georgia,serif;font-weight:400;font-size:22px;line-height:26px}
+.contatti-foglio__azioni{display:flex;flex-direction:column;gap:8px;padding:0 0 6px}
+.contatti-foglio__pannello .btn{flex:none;height:46px;width:100%}
+.contatti-foglio__pannello .btn--sm{height:36px;width:auto}
+/* WhatsApp: il verde del marchio con il testo scuro (contrasto 7,4:1; il bianco sul verde non arriva all'AA). */
+.btn.btn--wa{background:#25D366;border-color:#25D366;color:#0f2a17}
+.btn.btn--wa:hover{background:#1fbf5b;border-color:#1fbf5b;color:#0f2a17}
+.btn--wa svg{fill:currentColor;stroke:none}
+/* Il telefono disegnato in home: la stessa barra, piccola, sotto le sezioni (non cliccabile: il telefono intero apre la demo). */
+.barra-guida--finta{flex:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px;padding:8px 0 20px;margin-top:-8px}
+.barra-guida--finta.barra-guida--sola{grid-template-columns:minmax(0,1fr)}
+.barra-guida--finta .btn{height:36px;min-width:0;padding:0 8px;gap:5px;font-size:12.5px;white-space:nowrap;pointer-events:none;box-shadow:none}
+.barra-guida--finta .chiedi-apri{background:#fffdf8;color:#231b12;border-color:rgba(35,27,18,.25)}
+.barra-guida--finta .contatta{background:var(--tel-accento,#b4451f);color:var(--tel-su-accento,#fff8f2);border-color:transparent}
+.barra-guida--finta .badge-ai{height:15px;padding:0 4px;font-size:9.5px;background:var(--tel-accento,#b4451f);color:var(--tel-su-accento,#fff8f2)}
+.barra-guida--finta .logo-wa{width:20px;height:20px}
+.barra-guida--finta .contatta__tel{width:20px;height:20px;color:var(--tel-accento,#b4451f)}
 .chiedi__hint{margin:-4px 0 0;font-size:13px;line-height:18px;color:var(--muted)}
 .kicker--ai{display:flex;align-items:center;gap:8px}
 .assistente__azioni{margin:4px 0 0;display:flex;gap:10px;flex-wrap:wrap}
@@ -3490,3 +3508,15 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .plan--dark .price--barrato{color:var(--inverse-muted)}
 .plan__poi{display:block;font-size:14px;line-height:20px;color:var(--muted)}
 .plan--dark .plan__poi{color:var(--inverse-muted)}
+
+/* 9U · Il telefono della home come la guida demo pubblicata: il tondo con la foto del profilo sopra la copertina (bordo
+   bianco, pallino verde, come .host-tondo nella guida), il logo al posto del simbolo, i colori delle sezioni della palette. */
+.device__shot .device__profilo{position:absolute;right:9px;top:9px;width:46px;height:46px;border-radius:999px;border:2.5px solid #fff;
+  box-shadow:0 2px 8px rgba(35,27,18,.25);background:#f1e9db}
+.device__shot .device__profilo img{width:100%;height:100%;border-radius:999px;object-fit:cover}
+.device__shot .device__profilo i{position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:999px;background:#1f9d55;border:2px solid #fff}
+.device__logo{height:22px;width:auto;max-width:110px;object-fit:contain}
+.device__tiles span.t-terracotta{background:var(--tel-t1,#b4451f)} .device__tiles span.t-sea{background:var(--tel-t2,#1c5a78)}
+.device__tiles span.t-pine{background:var(--tel-t3,#1f6b3f)} .device__tiles span.t-ochre{background:var(--tel-t4,#c08a14)}
+.device__tiles span.t-terracotta{color:var(--tel-i1,#fff8f2)} .device__tiles span.t-sea{color:var(--tel-i2,#fff8f2)}
+.device__tiles span.t-pine{color:var(--tel-i3,#fff8f2)} .device__tiles span.t-ochre{color:var(--tel-i4,#231b12)}

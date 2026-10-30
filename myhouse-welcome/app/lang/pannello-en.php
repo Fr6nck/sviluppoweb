@@ -1559,6 +1559,5 @@ What\'s happening:
     'La {promo} non si somma a: {altri}. Vale il più alto.' => 'The {promo} does not add up with: {altri}. The highest applies.',
     'La {promo} vale meno degli altri sconti: non si applica.' => 'The {promo} is worth less than your other discounts: it does not apply.',
     'La {promo} non vale con il codice omaggio.' => 'The {promo} does not apply with a gift code.',
-    'La {promo} non vale per chi arriva da un partner: resta lo sconto del partner.' => 'The {promo} does not apply to customers referred by a partner: the partner discount stays.',
     'Codice {codice} applicato.' => 'Code {codice} applied.',
 ];
