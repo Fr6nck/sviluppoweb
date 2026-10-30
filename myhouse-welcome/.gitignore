@@ -1,0 +1,9 @@
+dist/
+app/config.local.php
+app/config.local.bak.php
+app/.config.local.*.php
+app/public/robots.txt
+app/public/sitemap.xml
+app/public/llms.txt
+app/public/llms-full.txt
+app/public/indexnow.txt
