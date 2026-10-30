@@ -3137,8 +3137,8 @@ $r = $admin->get('/admin/pacchetti');
 prova('Amministrazione → Piani: gli scaglioni del Portfolio si modificano (dalla struttura: prezzo)', str_contains($r['body'], 'name="scaglioni"') && str_contains($r['body'], "3: 50\n6: 40\n11: 30\n21: 25"), $r['code'] . ' ' . ($r['loc'] ?? ''));
 $vetSlug = (string) val('SELECT slug FROM properties WHERE is_demo = 2 ORDER BY id DESC LIMIT 1');
 $r = $ospite->get("/g/$vetSlug");
-prova('Vetrina: la foto profilo (Francesco) nel foglio dei contatti, accanto a «Ciao, sono Francesco» (9U: non più nel bottone)', $vetSlug !== '' && substr_count($r['body'], 'class="contatto__foto"') === 1
-      && !str_contains($r['body'], 'contatto__foto--bottone')
+prova('Vetrina: la foto profilo (Francesco) sul bottone «Contatta» e nel foglio dei contatti, accanto a «Ciao, sono Francesco»', $vetSlug !== '' && substr_count($r['body'], 'class="contatto__foto"') === 1
+      && str_contains($r['body'], '<img class="contatta__foto"')
       && (bool) val('SELECT profile_media_id FROM properties WHERE slug = ?', [$vetSlug]));
 
 $vera = new Browser('vera');
@@ -8693,12 +8693,20 @@ $scen9u = fn(string $nome, int $wa, int $conc, string $email) => $c9n('MHW\Prope
 $barra9u = function () use ($ospite, $slugP9u): string { $b = $ospite->get("/g/$slugP9u?l=it")['body']; return preg_match('#<div class="guest-bottom barra-guida[^"]*">.*?</details>|<div class="guest-bottom barra-guida[^"]*">.*?</a>\s*</div>#s', $b, $mm) ? $mm[0] : $b; };
 $scen9u('Francesco', 1, 1, 'ospiti9u@prova.test'); $bF9u = $barra9u();
 $posWa = strpos($bF9u, 'btn--wa'); $posTel = strpos($bF9u, 'href="tel:'); $posMail = strpos($bF9u, 'href="mailto:ospiti9u@prova.test"');
-prova('9U · 4 · con il Concierge: due bottoni della stessa riga, «Chiedi» con il badge AI e «Contatta» con il logo di WhatsApp; niente nome né foto nel bottone',
+prova('9U · 4 · con il Concierge: due bottoni della stessa riga, «Chiedi» con il badge AI e «Contatta» (senza foto del profilo: con il logo di WhatsApp); niente nome nel bottone',
       str_contains($bF9u, '<div class="guest-bottom barra-guida">') && str_contains($bF9u, '<span class="chiedi-apri__testo">Chiedi</span><span class="badge-ai">AI</span>')
       && preg_match('#<summary class="btn contatta" aria-label="Contatta Francesco"><svg[^>]*class="logo-wa"#', $bF9u) === 1 && str_contains($bF9u, '<span class="contatta__testo">Contatta</span>')
       && !str_contains($bF9u, 'contatto__foto--bottone'), mb_substr(strip_tags($bF9u), 0, 200));
 prova('…il foglio: «Ciao, sono Francesco», poi nell\'ordine WhatsApp (verde, con il logo), telefono ed email', str_contains($bF9u, 'contatti-foglio__ciao">Ciao, sono Francesco<')
       && $posWa !== false && $posTel !== false && $posMail !== false && $posWa < $posTel && $posTel < $posMail && str_contains($bF9u, 'href="https://wa.me/393337654321"'));
+// Con la foto del profilo il bottone mostra la foto (decisione del titolare: nel foglio ci sono tre modi di contatto, non solo WhatsApp).
+$c9n('$p = MHW\Db::one("SELECT * FROM properties WHERE id = ' . $proPid9u . '"); $id = MHW\Media::salvaImmagine((string) file_get_contents(' . var_export(png(300, 300), true) . '), (int) $p["account_id"], ' . $proPid9u . ', "Host", "host-9u");
+    MHW\Db::update("properties", ["profile_media_id" => $id], "id = :p", ["p" => ' . $proPid9u . ']); MHW\Guide::publish(' . $proPid9u . ');');
+$bFF9u = $barra9u();
+prova('9U · 4 · con la foto del profilo il bottone «Contatta» mostra la foto dell\'host al posto del logo di WhatsApp (il logo resta sul bottone verde del foglio)',
+      preg_match('#<summary class="btn contatta" aria-label="Contatta Francesco"><img class="contatta__foto" src="[^"]+" alt="Francesco" width="26" height="26">#', $bFF9u) === 1
+      && !preg_match('#class="btn contatta"[^>]*>\s*<svg[^>]*logo-wa#', $bFF9u) && str_contains($bFF9u, 'btn--wa'));
+$c9n('MHW\Db::update("properties", ["profile_media_id" => null], "id = :p", ["p" => ' . $proPid9u . ']); MHW\Guide::publish(' . $proPid9u . ');');
 $scen9u('Massimiliano', 1, 1, 'ospiti9u@prova.test'); $bM9u = $barra9u();
 prova('9U · 4 · «Massimiliano»: il bottone resta «Contatta», il foglio dice «Ciao, sono Massimiliano»', str_contains($bM9u, '<span class="contatta__testo">Contatta</span>') && str_contains($bM9u, 'Ciao, sono Massimiliano'));
 $scen9u('Francesco', 1, 0, 'ospiti9u@prova.test'); $bE9u = $barra9u();
@@ -8722,8 +8730,8 @@ prova('9U · 4 · il logo ufficiale di WhatsApp in Icon.php (whatsapp-logo: glif
 prova('9U · 4 · contrasto AA: testo scuro sul verde di WhatsApp ' . number_format($contr('#0f2a17', '#25D366'), 1) . ':1, «Contatta» sull\'accento ' . number_format($contr('#fff8f2', '#b4451f'), 1) . ':1; il logo ha il bordo bianco',
       $contr('#0f2a17', '#25D366') >= 4.5 && $contr('#fff8f2', '#b4451f') >= 4.5 && str_contains((string) file_get_contents("$DOVE/assets/app.css"), '.logo-wa{flex:none;border-radius:999px;box-shadow:0 0 0 1.5px #fff}'));
 $hB9u = $ospite->get('/')['body'];
-prova('9U · 4 · nel telefono della home la stessa barra (disegnata): «Chiedi» AI e «Contatta» con il logo verde di WhatsApp; la foto dell\'host solo nel tondo',
-      preg_match('#<span class="barra-guida barra-guida--finta">.*?chiedi-apri__testo">Chiedi<.*?class="logo-wa".*?contatta__testo">Contatta<#s', $hB9u) === 1 && str_contains($hB9u, 'class="device__profilo"'));
+prova('9U · 4 · nel telefono della home la stessa barra (disegnata): «Chiedi» AI e «Contatta» con la foto di Francesco, come nella guida demo; il tondo sulla copertina',
+      preg_match('#<span class="barra-guida barra-guida--finta">.*?chiedi-apri__testo">Chiedi<.*?class="contatta__foto".*?contatta__testo">Contatta<#s', $hB9u) === 1 && str_contains($hB9u, 'class="device__profilo"'));
 db()->exec("UPDATE discount_codes SET active = 0, valid_from = '2026-10-30', valid_until = '2026-11-30' WHERE code = 'NOVEMBRE17'");
 $conf9t([]);
 

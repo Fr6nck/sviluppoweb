@@ -3453,6 +3453,7 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .logo-wa{flex:none;border-radius:999px;box-shadow:0 0 0 1.5px #fff}
 .contatta__tel{flex:none;display:inline-grid;place-items:center;width:26px;height:26px;border-radius:999px;background:#fff;color:var(--accent)}
 .contatta__tel svg{stroke:currentColor}
+.contatta__foto{flex:none;width:26px;height:26px;border-radius:999px;object-fit:cover;box-shadow:0 0 0 1.5px #fff}
 .contatti-foglio__testa{display:flex;align-items:center;gap:12px;padding:2px 4px 10px}
 .contatti-foglio__ciao{font-family:Gloock,Georgia,serif;font-weight:400;font-size:22px;line-height:26px}
 .contatti-foglio__azioni{display:flex;flex-direction:column;gap:8px;padding:0 0 6px}
@@ -3469,7 +3470,7 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .barra-guida--finta .chiedi-apri{background:#fffdf8;color:#231b12;border-color:rgba(35,27,18,.25)}
 .barra-guida--finta .contatta{background:var(--tel-accento,#b4451f);color:var(--tel-su-accento,#fff8f2);border-color:transparent}
 .barra-guida--finta .badge-ai{height:15px;padding:0 4px;font-size:9.5px;background:var(--tel-accento,#b4451f);color:var(--tel-su-accento,#fff8f2)}
-.barra-guida--finta .logo-wa{width:20px;height:20px}
+.barra-guida--finta .logo-wa,.barra-guida--finta .contatta__foto{width:20px;height:20px}
 .barra-guida--finta .contatta__tel{width:20px;height:20px;color:var(--tel-accento,#b4451f)}
 .chiedi__hint{margin:-4px 0 0;font-size:13px;line-height:18px;color:var(--muted)}
 .kicker--ai{display:flex;align-items:center;gap:8px}

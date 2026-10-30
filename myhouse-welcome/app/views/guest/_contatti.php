@@ -1,8 +1,9 @@
 <?php
 /* La barra in fondo alla guida. 9U (mockup barra-guida): due bottoni affiancati della stessa larghezza, a sinistra
-   «Chiedi» con il badge AI (Concierge AI, _chiedi.php), a destra «Contatta» pieno, con il logo di WhatsApp se almeno un
-   contatto ce l'ha (altrimenti il telefono in un tondo bianco). Niente nome né foto nel bottone: il nome completo e la
-   foto sono nel foglio che si apre («Ciao, sono {nome}», poi WhatsApp, telefono ed email). Se WhatsApp è l'unico modo di
+   «Chiedi» con il badge AI (Concierge AI, _chiedi.php), a destra «Contatta» pieno, con la foto del profilo dell'host
+   (decisione del titolare del 30 ottobre: nel foglio ci sono tre modi di contatto, non solo WhatsApp); senza foto il
+   logo di WhatsApp se almeno un contatto ce l'ha, altrimenti il telefono in un tondo bianco. Niente nome nel bottone:
+   il nome completo è nel foglio che si apre («Ciao, sono {nome}», poi WhatsApp, telefono ed email). Se WhatsApp è l'unico modo di
    contattare l'host (un solo contatto, con WhatsApp, e nessuna email), il bottone apre subito wa.me. Senza Concierge
    «Contatta» occupa tutta la riga, con il nome se è corto («Contatta Francesco»). Il foglio è un <details>: si apre anche
    senza JavaScript, e la guida resta senza cookie.
@@ -25,8 +26,9 @@ $soloWa = !$finta && !$vetrinaC && count($contatti) === 1 && !empty($primoC['wha
 // Senza Concierge il nome entra nel bottone se è corto (fino a 11 lettere: «Francesco» sì, «Massimiliano» no).
 $etichetta = !$conChiedi && $nomeBreve !== '' && mb_strlen($nomeBreve) < 12 ? I18n::t($loc, 'contact', $nomeBreve) : I18n::t($loc, 'contact_short');
 $etichettaLunga = $nomeBreve !== '' ? I18n::t($loc, 'contact', $nomeBreve) : I18n::t($loc, 'contacts');
-$iconaC = $conWa ? Icon::svg('whatsapp-logo', 26) : '<span class="contatta__tel">' . Icon::svg('phone', 15, 2) . '</span>';
 $fotoHost = !empty($pr['profile_id']) ? Media::url((int) $pr['profile_id']) : null;
+$iconaC = $fotoHost ? '<img class="contatta__foto" src="' . Support::e($fotoHost) . '" alt="' . Support::e($nomeC) . '" width="26" height="26">'
+        : ($conWa ? Icon::svg('whatsapp-logo', 26) : '<span class="contatta__tel">' . Icon::svg('phone', 15, 2) . '</span>');
 $classeBarra = 'guest-bottom barra-guida' . ($conChiedi && $contatti ? '' : ' barra-guida--sola');
 
 if ($finta): ?>
