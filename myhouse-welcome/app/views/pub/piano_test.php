@@ -9,4 +9,5 @@ $dentro = !empty($user) && ($user['role'] ?? '') !== 'admin'; $qOrigine = 'piano
 <div class="pagina-piano">
   <p class="small"><a href="<?= b() . LinguaSito::percorso('/') ?>#piani"><?= LinguaSito::t('← Tutti i piani e i prezzi', '← All plans and prices') ?></a></p>
   <?php include __DIR__ . '/_questionario.php'; ?>
+  <?php if (($promoR = MHW\Sconti::promoPerChiGuarda())): $promoPiccola = true; include __DIR__ . '/_promo.php'; endif; /* 9U */ ?>
 </div>

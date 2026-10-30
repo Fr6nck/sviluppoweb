@@ -181,6 +181,15 @@ final class Media
                           $alt, basename($path), (int) $info[0], (int) $info[1]);
     }
 
+    /** 9U · Una foto già ridisegnata (i byte di un'immagine libera del sito) salvata come foto di una struttura. */
+    public static function salvaImmagine(string $bytes, int $accountId, int $propertyId, string $alt, string $original): ?int
+    {
+        $info = @getimagesizefromstring($bytes);
+        $ext = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'][$info['mime'] ?? ''] ?? null;
+        if (!$info || $ext === null) return null;
+        return self::save($bytes, (string) $info['mime'], $ext, 'image', $accountId, $propertyId, $alt, $original . '.' . $ext, (int) $info[0], (int) $info[1]);
+    }
+
     private static function save(string $bytes, string $mime, string $ext, string $kind, int $accountId, ?int $propertyId,
                                  string $alt, string $original, int $w, int $h): int
     {

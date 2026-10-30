@@ -619,6 +619,23 @@ final class Gestione
         return $tot;
     }
 
+    /**
+     * 9U · Le promo (Promo novembre): per ogni codice con il nome della promo, quanti clienti l'hanno usata e quanto sconto
+     * ha dato (gli utilizzi registrati al pagamento; clienti di prova e staff esclusi). Per Amministrazione → Cassa.
+     */
+    public static function promo(): array
+    {
+        if (!Sconti::disponibili() || !Migrator::columnExists('discount_codes', 'nome_promo')) return [];
+        $out = [];
+        foreach (Db::all("SELECT * FROM discount_codes WHERE nome_promo <> '' ORDER BY valid_from DESC, id DESC") as $c) {
+            $x = Db::one('SELECT COUNT(DISTINCT r.account_id) AS clienti, COUNT(*) AS usi, COALESCE(SUM(r.discount_cents), 0) AS sconto FROM discount_redemptions r
+                          JOIN accounts a ON a.id = r.account_id WHERE r.discount_code_id = ?' . self::senzaProvaNeStaff('a.id'), [(int) $c['id']]) ?: [];
+            $out[] = ['id' => (int) $c['id'], 'codice' => (string) $c['code'], 'nome' => (string) $c['nome_promo'], 'percento' => (int) $c['value'], 'da' => (string) $c['valid_from'],
+                      'a' => (string) $c['valid_until'], 'clienti' => (int) ($x['clienti'] ?? 0), 'usi' => (int) ($x['usi'] ?? 0), 'sconto' => (int) ($x['sconto'] ?? 0)];
+        }
+        return $out;
+    }
+
     public static function pagamenti(string $da, string $a, bool $conEsclusi = false): array
     {
         $out = [];
@@ -637,7 +654,7 @@ final class Gestione
             if (isset($s['id'], $s['total_details']['amount_tax'])) $ivaSessione[(string) $s['id']] = (int) $s['total_details']['amount_tax'];
             if (isset($s['id'], $s['total_details']['amount_discount'])) $scontoSessione[(string) $s['id']] = (int) $s['total_details']['amount_discount'];
         }
-        foreach (Db::all("SELECT o.id, o.kind, o.provider, o.amount_cents, o.discount_cents, o.sconti, o.quantity, o.created_at, o.account_id, o.provider_session_id,
+        foreach (Db::all("SELECT o.id, o.kind, o.provider, o.amount_cents, o.discount_cents, o.sconti, o.quantity, o.created_at, o.account_id, o.provider_session_id, o.discount_code_id,
                                  " . (Migrator::columnExists('orders', 'offerta_id') ? 'o.offerta_id' : 'NULL AS offerta_id') . ",
                                  " . ($conIva ? 'o.iva_cents, o.riferimento' : "NULL AS iva_cents, '' AS riferimento") . ", " . ($conCodice ? 'o.code' : "'' AS code") . ",
                                  " . ($conLive ? 'o.livemode' : 'NULL AS livemode') . ",
@@ -658,7 +675,7 @@ final class Gestione
                       'account_id' => (int) $o['account_id'], 'cliente' => (string) $o['cliente'], 'email' => (string) $o['email'],
                       'piano' => (string) $o['piano'] . (!empty($o['offerta_id']) ? ' su misura' : '') . ((int) $o['quantity'] > 1 ? ' · ' . (int) $o['quantity'] . ' strutture' : ''),
                       'sconti' => $sconto > 0 ? trim(Support::money($sconto) . ' ' . (string) $o['sconti']) : '',
-                      'riferimento' => (string) $o['riferimento'], 'fattura' => '', 'rif' => $rif, 'escluso' => $escluso];
+                      'riferimento' => (string) $o['riferimento'], 'fattura' => '', 'rif' => $rif, 'escluso' => $escluso, 'sconto_id' => (int) ($o['discount_code_id'] ?? 0)];
         }
         // I rinnovi: dalle fatture arrivate col webhook (IVA esclusa nell'imponibile).
         foreach (Db::all("SELECT processed_at, payload FROM webhook_events WHERE provider = 'stripe' AND kind = 'invoice.paid' AND processed_at >= ? AND processed_at < ?", [$da, $a]) as $r) {

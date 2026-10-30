@@ -8,7 +8,8 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
 <?php $daInglese = $EN; /* 9N: il pannello di chi si registra in inglese è in inglese (panel_lang) */ ?>
 <?php /* 9A · Gli sconti che valgono per chi si registra (l'invito dal link o dal codice): prezzo barrato. */
       $scontoInvito = $scontoInvito ?? []; $invitoCodice = $invitoCodice ?? ''; $oltre = $oltre ?? 0; $pianoOltre = $pianoOltre ?? null; $omaggio = $omaggio ?? null;
-      $contoReg = fn(array $o, int $q) => MHW\Sconti::disponibili() && $scontoInvito ? MHW\Sconti::riepilogo($o, $q, null, $scontoInvito) : null;
+      // 9U · anche con la promo in corso (inserita da sola per chi si registra): il prezzo del primo anno barrato
+      $contoReg = fn(array $o, int $q) => MHW\Sconti::disponibili() && ($scontoInvito || MHW\Sconti::promoAttiva()) ? MHW\Sconti::riepilogo($o, $q, null, $scontoInvito) : null;
       $prezzoReg = function (array $o, int $q) use ($contoReg): string {
           $r = $contoReg($o, $q);
           if (!$r || $r['sconto'] <= 0) return '<span class="reg-prezzo" data-pieno="' . Plans::price($o, $q) . '" data-valuta="' . Support::e($o['currency']) . '">' . Support::e(Support::money(Plans::price($o, $q), $o['currency'])) . '</span>' . LinguaSito::t(' + IVA / anno', ' + VAT / year');

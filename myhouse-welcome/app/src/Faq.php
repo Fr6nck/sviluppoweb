@@ -37,6 +37,7 @@ final class Faq
                 'prima' => $pfE ? $m((int) $pfE['price_cents']) : '', 'tiers' => $tiers,
                 'unica' => $pfE ? $m(Plans::unitPrice($pfE, 2)) : '', 'max_q' => $pfE ? (int) $pfE['max_quantity'] : 0,
                 'amico' => Inviti::AMICO, 'passo' => Inviti::PASSO, 'massimo' => Inviti::MASSIMO, 'amici' => Inviti::amiciMassimi(),
+                'promo' => Sconti::promoAttiva(), 'giornoPromo' => ($prE = Sconti::promoAttiva()) ? Pannello::giornoMese((string) $prE['valid_until'], true) . ' ' . substr((string) $prE['valid_until'], 0, 4) : '',
                 'giudizio' => Giudizi::attivo() ? Giudizi::percentuale() : 0, 'totale' => Sconti::massimoRinnovo()['totale'], 'sez_ess' => self::sezioniEssential(), 'domande' => Assistente::limite(0),
                 'email' => Support::contatto(),
             ]);
@@ -102,6 +103,15 @@ final class Faq
             ['giudizio-vetrina', 'La mia guida compare sul sito di MyHouse Welcome?', 'Solo se aderisci al programma «Giudizio con sconto», e lo decidiamo noi caso per caso: da quando la pubblichi, la tua scheda può comparire tra «Le guide dei nostri host» (nella home o nella pagina «Tutte le guide»), con il nome della struttura, la copertina, il logo, il tuo nome senza cognome e la città; il tuo giudizio, separatamente, può comparire in «Cosa dicono di noi». La scheda non è cliccabile né cercabile: nessun link alla guida, nessun dato dei tuoi ospiti. Lo sconto resta anche se non li pubblichiamo.'],
             ['giudizio-ritiro', 'Posso ritirarmi dal programma?', 'Sì, quando vuoi, da Impostazioni → Giudizio con sconto: la scheda e il giudizio spariscono subito dalla home. Lo sconto già avuto resta; quello promesso sul rinnovo decade.'],
         ); }
+        // 9U · La promo in corso (Promo novembre): la domanda c'è solo finché vale, con le regole dei Termini.
+        if (($prF = Sconti::promoAttiva())) {
+            $gF = !empty($prF['somma_giudizio']) && Giudizi::attivo() ? Giudizi::percentuale() : 0;
+            array_unshift($f, ['offerta', 'C\'è un\'offerta?', 'Sì: ' . $prF['nome_promo'] . ', −' . (int) $prF['value'] . '% sul primo anno per i nuovi clienti che attivano un abbonamento entro il '
+                . Pannello::giornoMese((string) $prF['valid_until'], false) . ' ' . substr((string) $prF['valid_until'], 0, 4) . ', con il codice ' . $prF['code'] . ' (dal bottone della promo è già inserito).'
+                . ($gF ? ' Si somma allo sconto del programma «Giudizio con sconto» se aderisci al pagamento (in tutto −' . ((int) $prF['value'] + $gF) . '% sul primo anno); n' : ' N')
+                . (empty($prF['somma_invito']) ? 'on si somma allo sconto dell\'invito di un amico (vale il più alto), ad altri codici, ai codici omaggio né ai codici partner.' : 'on si somma ad altri codici, ai codici omaggio né ai codici partner.')
+                . ' Dal secondo anno vale il prezzo di listino, con gli sconti dei programmi «Porta un amico» e «Giudizio con sconto» se maturati.']);
+        }
         // 9N · Il codice omaggio: i mesi gratuiti, poi il primo pagamento pieno; dal primo rinnovo tutte le agevolazioni.
         // 9O · Il codice di un partner.
         if (ProgrammaPartner::disponibili()) $f[] = ['codice-partner', 'Ho un codice partner, cosa mi dà?', 'Un codice partner (per esempio PM-ROSSI) te lo dà un property manager o un\'agenzia che collabora con noi. Lo scrivi nel campo «Hai un codice?» prima del pagamento, o arrivi dal suo link: hai il suo sconto sul primo anno (si somma all\'invito di un amico; con un codice sconto vale il più alto; con un codice omaggio non si applica). Al partner paghiamo noi una commissione: tu non paghi niente di più, e lui vede solo il nome e la città della struttura, il piano e le date, mai la tua email o i tuoi pagamenti.'];
@@ -132,7 +142,7 @@ final class Faq
         ['lingue', 'Lingue e traduzioni', 'Languages and translations', ['lingue', 'lingua-principale', 'traduzioni', 'traduzioni-suggerite', 'attivazione']],
         ['assistente', 'Concierge AI', 'Concierge AI', ['assistente', 'assistente-cosa', 'assistente-costo', 'assistente-inventa', 'assistente-quante', 'assistente-privacy', 'assistente-spegnere', 'assistente-lingue']],
         ['strutture', 'Più strutture', 'More properties', ['piu-strutture', 'oltre-portfolio', 'campione', 'campione-copia', 'bnb-camere', 'piu-case']],
-        ['sconti', 'Sconti, inviti e giudizio', 'Discounts, invites and reviews', ['porta-amico', 'amico-quando', 'giudizio-sconto', 'giudizio-vetrina', 'giudizio-ritiro', 'omaggio', 'codice-partner']],
+        ['sconti', 'Sconti, inviti e giudizio', 'Discounts, invites and reviews', ['offerta', 'porta-amico', 'amico-quando', 'giudizio-sconto', 'giudizio-vetrina', 'giudizio-ritiro', 'omaggio', 'codice-partner']],
         ['pagamento', 'Pagamento, piani e disdetta', 'Payment, plans and cancelling', ['fattura', 'cambio-piano', 'scendere-piano', 'disdire', 'non-rinnovo', 'chiudere-account']],
     ];
 

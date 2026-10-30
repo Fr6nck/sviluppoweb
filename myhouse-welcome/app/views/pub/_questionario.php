@@ -59,7 +59,7 @@ $qBase = $qFinestra ? b() . LinguaSito::percorso('/piano') : strtok((string) ($_
         <span class="badge questionario__badge"><?= $qT('badge') ?></span>
         <div class="questionario__piano">
           <div class="stack" style="gap:8px">
-            <h3 class="questionario__nome"><?= Support::e($pv['name']) ?></h3>
+            <h3 class="questionario__nome"><?= Support::e($pv['name']) ?><?php if ($sc && in_array('promo', array_column($sc['righe'], 'tipo'), true)): /* 9U · la promo in corso */ ?> <span class="badge-promo">−<?= (int) $sc['percento'] ?>%</span><?php endif; ?></h3>
             <p class="questionario__prezzo">
               <?php if ($sc): ?><?= Iva::cifra($pieno, 'EUR', 'class="muted" data-q-pieno', 's') ?> <?php endif; ?>
               <?= Iva::cifra($sc ? $sc['totale'] : $pieno, 'EUR', 'data-q-totale', 'b') ?>

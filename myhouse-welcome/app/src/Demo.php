@@ -162,6 +162,60 @@ final class Demo
         return $mid;
     }
 
+    /**
+     * 9U · Una sola fonte per la foto della demo: «La schermata nel telefono» di Testi e foto è anche la copertina della
+     * vetrina. Il nome del file originale delle copie fatte da qui (sito-telefono.*) le distingue dalle foto caricate dal pannello.
+     */
+    public const FOTO_SITO = 'sito-telefono';
+
+    /**
+     * 9U · La foto di Testi e foto (riferimento «driver:chiave») diventa la copertina della vetrina $pid (di serie quella
+     * attuale), alt «Casa Checco»; la vetrina pubblicata si ripubblica (la guida legge la copertina dall'istantanea; la
+     * foto vecchia la toglie Guide::publish, l'anteprima per WhatsApp si rifà da sola). Restituisce l'id della foto, o null.
+     */
+    private static function copiaDaSito(string $rif, int $accountId, int $pid): ?int
+    {
+        if (!str_contains($rif, ':')) return null;
+        [$driver, $key] = explode(':', $rif, 2);
+        try { return Media::salvaImmagine(Storages::for($driver)->get($key), $accountId, $pid, 'Casa Checco', self::FOTO_SITO); }
+        catch (\Throwable $e) { Log::exception($e, 'Demo::copiaDaSito'); return null; }
+    }
+
+    public static function copertinaDaSito(string $rif, ?int $pid = null): ?int
+    {
+        $pid ??= (int) ((self::vetrinaAttuale() ?? [])['id'] ?? 0);
+        $p = $pid ? Db::one('SELECT id, account_id, status FROM properties WHERE id = ?', [$pid]) : null;
+        if (!$p || !str_contains($rif, ':')) return null;
+        $mid = self::copiaDaSito($rif, (int) $p['account_id'], $pid);
+        if (!$mid) return null;
+        Db::update('properties', ['cover_media_id' => $mid], 'id = :pid', ['pid' => $pid]);
+        if ($p['status'] === 'published') { try { Guide::publish($pid); } catch (\Throwable $e) { Log::exception($e, 'Demo::copertinaDaSito publish'); } }
+        return $mid;
+    }
+
+    /**
+     * 9U · La foto del telefono in home: la copertina della vetrina quando non è una di serie (checco-*) (caricata da Testi e foto,
+     * che la mette anche lì, o cambiata dal pannello dopo); altrimenti quella di Testi e foto, se c'è; altrimenti quella di
+     * serie. @return array{url:?string,caricata:bool}
+     */
+    public static function fotoTelefono(?array $demo = null): array
+    {
+        $v = $demo ?? self::vetrinaAttuale();   // la demo della home, se la pagina la passa
+        // Solo la vetrina (Casa Checco): la guida di esempio dei clienti di esempio ha una copertina sua, che qui non va.
+        if ($v && (int) Db::val('SELECT is_demo FROM properties WHERE id = ?', [(int) $v['id']], 0) !== self::VETRINA) $v = null;
+        $snap = $v ? Guide::published((int) $v['id']) : null;
+        $cid = (int) ($snap['property']['cover_id'] ?? 0);
+        $m = $cid ? Media::row($cid) : null;
+        if ($m && !str_starts_with((string) ($m['original_name'] ?? ''), 'checco-') && ($url = Media::url($cid))) return ['url' => $url, 'caricata' => true];
+        return TestiSito::immagine('telefono');
+    }
+
+    /** 9U · Le vetrine online (di solito una): la foto di Testi e foto va su tutte. */
+    public static function vetrineOnline(): array
+    {
+        return Db::all("SELECT id, slug FROM properties WHERE is_demo = ? AND status = 'published' AND archived_at IS NULL ORDER BY id", [self::VETRINA]);
+    }
+
     public static function vetrinaAttuale(): ?array
     {
         return Db::one("SELECT id, slug FROM properties WHERE is_demo = ? AND status = 'published' AND archived_at IS NULL ORDER BY id DESC", [self::VETRINA]);
@@ -223,7 +277,11 @@ final class Demo
         Properties::saveContacts($pid, [['name' => 'Francesco', 'role' => 'host', 'phone' => $tel, 'whatsapp' => 1],
                                         ['name' => 'Marta', 'role' => 'pulizie', 'phone' => '+39 075 000 0001', 'whatsapp' => 0]]);   // 9N · il ruolo si traduce da solo
         $foto = fn(string $nome, string $alt) => self::foto($nome, $acc, $pid, $alt);
-        Db::update('properties', ['cover_media_id' => $foto('checco-copertina.jpg', self::ALT_COPERTINA)], 'id = :pid', ['pid' => $pid]);
+        // 9U · La copertina è la foto di Testi e foto «La schermata nel telefono», se caricata; altrimenti quella di serie
+        // (checco-copertina.jpg, la foto nuova della 9K): rifare la vetrina non riporta più la foto di serie.
+        $rifSito = TestiSito::riferimentoImmagine('telefono');
+        $copertina = $rifSito !== '' ? self::copiaDaSito($rifSito, $acc, $pid) : null;
+        Db::update('properties', ['cover_media_id' => $copertina ?? $foto('checco-copertina.jpg', self::ALT_COPERTINA)], 'id = :pid', ['pid' => $pid]);
         // 9T · La foto profilo è Francesco, l'host di fantasia: un ritratto generato con l'intelligenza artificiale (fornito dal
         // titolare, 1000 × 1000, già ritagliato sul volto; ricodificato senza metadati). La porta rossa resta nella sezione
         // Check-in & Check-out (checco-ingresso.jpg), non più al posto della persona.

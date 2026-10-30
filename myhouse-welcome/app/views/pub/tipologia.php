@@ -113,7 +113,8 @@ $linkDemo = fn() => '<a class="btn btn--lg btn--ghost" href="' . $demoUrl . '" t
       $ctaPf = $dentro ? $U('Vai alle tue guide', 'Go to your guides') : $U('Crea gratis con ', 'Create free with ') . Support::e($pf['name']); ?>
 <section class="blocco" aria-labelledby="tipo-portfolio">
   <?php $prezzoP = Plans::price($pf, $minP); ?>
-  <div class="tipo-piano panel" data-quantita data-base="<?= (int) $pf['price_cents'] ?>" data-extra="<?= (int) $pf['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($pf)) ?>" data-valuta="<?= Support::e($pf['currency']) ?>">
+  <?php $promoT = MHW\Sconti::promoPerChiGuarda(); /* 9U · la promo in corso: badge, listino barrato, primo anno */ ?>
+  <div class="tipo-piano panel" data-quantita data-base="<?= (int) $pf['price_cents'] ?>" data-extra="<?= (int) $pf['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($pf)) ?>" data-valuta="<?= Support::e($pf['currency']) ?>"<?= $promoT ? ' data-sconto="' . (int) $promoT['value'] . '"' : '' ?>>
     <div class="stack" style="gap:10px">
       <span class="kicker"><?= $U('Il piano per più strutture', 'The plan for several properties') ?></span>
       <h2 id="tipo-portfolio" class="h-sezione"><?= Support::e($pf['name']) ?><?= $U(': più strutture aggiungi, meno costa ognuna', ': the more properties you add, the less each one costs') ?></h2>
@@ -121,27 +122,33 @@ $linkDemo = fn() => '<a class="btn btn--lg btn--ghost" href="' . $demoUrl . '" t
       <?php $pvS = $pf; $qS = $minP; include __DIR__ . '/_scaglioni.php'; ?>
     </div>
     <div class="tipo-piano__prezzo">
-      <?= Iva::cifra($prezzoP, $pf['currency'], 'class="tipo-piano__cifra price" data-totale') ?>
-      <span class="small muted"><?= Iva::nota($U('+ IVA all\'anno per', '+ VAT per year for'), $U('IVA inclusa all\'anno per', 'incl. VAT per year for')) ?> <span data-quante><?= $minP ?></span><?= $U(' strutture', ' properties') ?><?= $maxP > 0 ? $U(', fino a ', ', up to ') . $maxP : '' ?></span>
-      <?= Iva::dettaglio($prezzoP, LinguaSito::en(), $pf['currency']) ?>
-      <?= Iva::interruttore(LinguaSito::en(), $tp['percorso']) /* 9O · i prezzi IVA inclusa per i privati */ ?>
+      <?php /* 9U · Il selettore va da 2 al massimo del listino (max_quantity), il «+» porta a un numero in più = «oltre»: come
+               nella home spariscono prezzo, «+ IVA all'anno», «Sono un privato» e il bottone (data-nascondi-oltre) e compare il
+               riquadro del preventivo (_oltre.php, prezzi.js). Su /piu-strutture apre il modulo; altrove porta a /piu-strutture. */ ?>
+      <?php if ($promoT): ?><span class="badge-promo" data-nascondi-oltre>−<?= (int) $promoT['value'] ?>%</span><span class="price price--barrato"><?= Iva::cifra($prezzoP, $pf['currency'], 'data-pieno', 's') ?></span><?php endif; ?>
+      <?= Iva::cifra($promoT ? MHW\Sconti::conPromo($prezzoP, $promoT) : $prezzoP, $pf['currency'], 'class="tipo-piano__cifra price" data-totale') ?>
+      <div class="tipo-piano__righe" data-nascondi-oltre>
+        <span class="small muted"><?= $promoT ? Iva::nota($U('+ IVA il 1° anno per', '+ VAT the 1st year for'), $U('IVA inclusa il 1° anno per', 'incl. VAT the 1st year for')) : Iva::nota($U('+ IVA all\'anno per', '+ VAT per year for'), $U('IVA inclusa all\'anno per', 'incl. VAT per year for')) ?> <span data-quante><?= $minP ?></span><?= $U(' strutture', ' properties') ?><?= $maxP > 0 ? $U(', fino a ', ', up to ') . $maxP : '' ?><?php if ($promoT): ?> · <?= $U('poi', 'then') ?> <?= Iva::cifra($prezzoP, $pf['currency'], 'data-pieno-poi') ?> <?= $U('/ anno', '/ year') ?><?php endif; ?></span>
+        <?= Iva::dettaglio($promoT ? MHW\Sconti::conPromo($prezzoP, $promoT) : $prezzoP, LinguaSito::en(), $pf['currency']) ?>
+        <?= Iva::interruttore(LinguaSito::en(), $tp['percorso']) /* 9O · i prezzi IVA inclusa per i privati */ ?>
+      </div>
       <div class="field" style="margin:0"><label for="pf-strutture"><?= $U('Quante strutture?', 'How many properties?') ?></label>
         <input id="pf-strutture" type="number" inputmode="numeric" min="<?= $minP ?>" max="<?= $maxP > 0 ? $maxP + 1 : 999 ?>" data-max-prezzo="<?= $maxP > 0 ? $maxP : 999 ?>" value="<?= $minP ?>"></div>
-      <a class="btn btn--go" href="<?= Support::e($hrefPf . ($dentro ? '' : '&strutture=' . $minP)) ?>" data-crea data-href="<?= Support::e($hrefPf) ?>"><?= $ctaPf ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
-      <?php if (empty($tp['portfolio']) && $maxP > 0): /* 9T · nelle pagine per tipologia niente modulo: il preventivo è su /piu-strutture */ ?>
-        <a class="small tipo-piano__oltre" href="<?= b() . LinguaSito::percorso('/piu-strutture') ?>#preventivo"><?= $U('Più di ', 'More than ') . $maxP . $U(' strutture? Chiedi un preventivo', ' properties? Ask for a quote') ?> →</a>
-      <?php endif; ?>
+      <?php if ($maxP > 0): $maxO = $maxP; $hrefO = !empty($tp['portfolio']) && MHW\Preventivi::disponibili() ? '#preventivo' : b() . LinguaSito::percorso('/piu-strutture'); include __DIR__ . '/_oltre.php'; endif; ?>
+      <?php if ($promoT && !$dentro) $hrefPf .= '&codice=' . rawurlencode((string) $promoT['code']); ?>
+      <a class="btn btn--go" href="<?= Support::e($hrefPf . ($dentro ? '' : '&strutture=' . $minP)) ?>" data-crea data-href="<?= Support::e($hrefPf) ?>" data-nascondi-oltre><?= $ctaPf ?> <span class="go"><?= Icon::svg('arrow', 17, 2) ?></span></a>
     </div>
   </div>
   <?php /* 9M · Sotto i prezzi e il selettore, solo la parte finale del questionario: il 55% e la scala del rinnovo, legati al selettore. */
         $rnPieno = $prezzoP; $rnCampo = 'pf-strutture'; ?>
   <div class="tipo-rinnovo"><?php include __DIR__ . '/_rinnovo.php'; ?></div>
+  <?php if ($promoT): $promoR = $promoT; $promoPiccola = true; include __DIR__ . '/_promo.php'; endif; /* 9U · la fascia piccola, sotto i prezzi */ ?>
   <script src="<?= MHW\av('/assets/prezzi.js') ?>" defer></script>
   <script src="<?= MHW\av('/assets/iva.js') ?>" defer></script>
   <?php if (!empty($tp['portfolio']) && $maxP > 0 && MHW\Preventivi::disponibili()): /* oltre il massimo: il modulo del preventivo (9A), solo su /piu-strutture */ ?>
-    <details class="tipo-preventivo panel" id="preventivo"<?= isset($_SESSION['preventivo_ok']) || isset($_SESSION['preventivo_errore']) ? ' open' : '' ?>>
+    <details class="tipo-preventivo panel" id="preventivo"<?= isset($_SESSION['preventivo_ok']) || isset($_SESSION['preventivo_errore']) || (int) ($_GET['strutture'] ?? 0) > $maxP ? ' open' : '' ?>>
       <summary><b><?= $U('Più di ', 'More than ') . $maxP . $U(' strutture?', ' properties?') ?></b> <?= $U('Ti facciamo una proposta su misura', 'We will make you a tailored offer') ?> <?= Icon::svg('plus', 18, 2, 'faq__segno') ?></summary>
-      <?php $pvP = $pf; $qP = $maxP + 1; $tornaP = $tp['percorso']; include __DIR__ . '/_preventivo.php'; ?>
+      <?php $pvP = $pf; $qP = max($maxP + 1, min(9999, (int) ($_GET['strutture'] ?? 0))); $tornaP = $tp['percorso']; include __DIR__ . '/_preventivo.php'; ?>
     </details>
   <?php endif; ?>
 </section>

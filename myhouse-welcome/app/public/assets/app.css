@@ -1113,6 +1113,9 @@ a.device-link:hover .device{transform:translateY(-4px)}
 .plan [hidden],.quantita [hidden]{display:none!important}
 .plan__oltre{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:16px;border-radius:16px;background:var(--terracotta-soft);color:var(--ink)}
 .plan__oltre p{margin:0;font-size:16px;line-height:24px;font-weight:600}
+.tipo-piano__righe{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.tipo-piano__righe[hidden],.tipo-piano__prezzo .btn[hidden],.tipo-piano__prezzo .price[hidden],.badge-promo[hidden]{display:none}
+.tipo-piano__prezzo .plan__oltre{align-self:stretch}   /* 9U · a tutta larghezza della colonna (e su telefono) */
 /* 9A · prezzo barrato e riga dello sconto nelle schede; il riquadro del preventivo oltre il massimo del Portfolio;
    il riepilogo del primo anno nel passo «Pubblica»; il codice di invito in registrazione. */
 .price--barrato{font-size:18px;color:var(--muted)} .price--barrato s{text-decoration:line-through}
@@ -3463,3 +3466,27 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .assistente__fumetti{display:flex;flex-direction:column;gap:8px}
 .assistente__chat figcaption{margin:0}
 @media (max-width:860px){.assistente{grid-template-columns:1fr;gap:28px;margin-top:72px}}
+
+/* 9U · Promo novembre: la fascia sotto i piani (e più piccola in /piano e nelle pagine per tipologia), il badge sulle schede. */
+.promo{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:24px 32px;align-items:center;margin-top:24px;padding:28px 32px;border-radius:24px;
+  background:color-mix(in srgb,var(--terracotta) 9%,var(--raised));border:1px solid color-mix(in srgb,var(--terracotta) 45%,transparent)}
+.promo[hidden],.promo__conto[hidden]{display:none}
+.promo__cifra{font-family:Gloock,Georgia,serif;font-size:72px;line-height:1;color:var(--terracotta);letter-spacing:-2px;white-space:nowrap}
+.promo__testo{display:flex;flex-direction:column;gap:8px}
+.promo__testo p{margin:0;color:var(--muted);line-height:24px;text-wrap:pretty}
+.promo__titolo{margin:0;font-size:20px;line-height:28px;font-weight:700;text-wrap:balance}
+.promo__codice{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;padding:2px 8px;border-radius:8px;border:1px dashed var(--terracotta);color:var(--ink);background:var(--raised);white-space:nowrap}
+.promo__conto{display:flex;gap:8px;margin-top:4px}
+.promo__conto span{display:flex;flex-direction:column;align-items:center;min-width:52px;padding:6px 8px;border-radius:12px;background:var(--ink);color:var(--paper)}
+.promo__conto b{font-size:20px;line-height:24px;font-variant-numeric:tabular-nums}
+.promo__conto small{font-size:12px;line-height:16px;opacity:.85}
+.promo__vai{white-space:nowrap}
+.promo--piccola{grid-template-columns:auto minmax(0,1fr) auto;padding:20px 24px;gap:16px 24px}
+.promo--piccola .promo__cifra{font-size:48px}
+.promo--piccola .promo__titolo{font-size:18px;line-height:28px}
+@media (max-width:860px){ .promo,.promo--piccola{grid-template-columns:minmax(0,1fr);padding:24px 20px} .promo__cifra{font-size:56px} .promo__vai{justify-self:start} }
+.badge-promo{display:inline-flex;align-items:center;padding:2px 10px;border-radius:999px;background:var(--terracotta);color:var(--on-dark);font-size:13px;line-height:20px;font-weight:700;white-space:nowrap}
+.plan .price--barrato,.tipo-piano .price--barrato{display:block;font-size:16px;line-height:20px;color:var(--muted)}
+.plan--dark .price--barrato{color:var(--inverse-muted)}
+.plan__poi{display:block;font-size:14px;line-height:20px;color:var(--muted)}
+.plan--dark .plan__poi{color:var(--inverse-muted)}

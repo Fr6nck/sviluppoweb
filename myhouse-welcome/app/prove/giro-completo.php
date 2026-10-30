@@ -195,7 +195,8 @@ function pv(string $codice): int
 
 // ================================================================= INSTALLAZIONE
 capitolo('Installazione');
-const MHW_VERSIONE_LEGALE = '2026-10-27';   // 10: «Chiedi alla guida»; 8J/9B/9L: le versioni di serie di Termini e Privacy (9L rivista: scheda e giudizio pubblicati separatamente)
+const MHW_VERSIONE_LEGALE = '2026-10-30';   // 9U: Promo novembre; 10: «Chiedi alla guida»; 8J/9B/9L: le versioni di serie di Termini e Privacy (9L rivista: scheda e giudizio pubblicati separatamente)
+const MHW_VERSIONE_PRIVACY = '2026-10-27';   // 9U: la Privacy non cambia con la promo (solo i Termini)
 const MHW_VERSIONE_DPA = '2026-10-15';      // il DPA non è cambiato
 $admin = new Browser('admin');
 $r = $admin->get('/');
@@ -205,6 +206,8 @@ prova('La pagina di installazione si apre', $r['code'] === 200 && pulita($r));
 $r = $admin->post('/installa', ['email' => 'admin@prova.test', 'password' => 'AdminProva123', 'esempi' => '1']);
 prova('Installazione con i clienti di esempio', $r['code'] === 302 && str_contains($r['loc'], '/admin'));
 prova('Migrazioni applicate tutte', (int) val("SELECT COUNT(*) FROM schema_migrations") >= 3);
+// 9U · La Promo novembre (070) vale dal 30/10 al 30/11/2026: le prove dei prezzi e degli sconti la vogliono spenta; il capitolo 9U la riaccende.
+db()->exec("UPDATE discount_codes SET active = 0 WHERE code = 'NOVEMBRE17'");
 prova('Il catalogo delle funzioni c\'è', (int) val('SELECT COUNT(*) FROM features') >= 20);
 prova('Nessun codice porta nel database', (int) val("SELECT COUNT(*) FROM sections WHERE door_code <> ''") === 0);
 prova('Nessun codice porta nelle guide pubblicate', (int) val("SELECT COUNT(*) FROM guide_versions WHERE snapshot LIKE '%door_code%'") === 0);
@@ -4777,7 +4780,7 @@ prova('8J · registrazione senza la casella: rifiutata, nessun account', str_con
 $irene->post('/registrati', ['piano' => pv('plus'), 'name' => 'Irene Legale', 'email' => 'irene@prova.test', 'password' => 'IreneProva12345', 'termini' => '1']);
 $u8 = riga("SELECT * FROM users WHERE email = 'irene@prova.test'");
 prova('8J · con la casella: Termini, Privacy e DPA accettati nella versione in vigore, una riga per documento', $u8 && $u8['terms_version'] === MHW_VERSIONE_LEGALE
-      && $u8['privacy_version'] === MHW_VERSIONE_LEGALE && $u8['dpa_version'] === MHW_VERSIONE_DPA && $u8['dpa_accepted_at'] !== null
+      && $u8['privacy_version'] === MHW_VERSIONE_PRIVACY && $u8['dpa_version'] === MHW_VERSIONE_DPA && $u8['dpa_accepted_at'] !== null
       && (int) val("SELECT COUNT(*) FROM legal_acceptances WHERE user_id = ? AND modo = 'registrazione'", [$u8['id']]) === 3);
 $acc8 = (int) val('SELECT id FROM accounts WHERE user_id = ?', [$u8['id']]);
 $irene->modulo('/pannello/nuova', '/pannello/nuova', ['name' => 'Casa Irene', 'city' => 'Spello']);
@@ -4812,7 +4815,7 @@ prova('8J · durante l\'accesso dell\'assistenza: niente finestra, e «Accetto»
       && val('SELECT terms_version FROM users WHERE id = ?', [$u8['id']]) === '2026-10-08');
 $admin->post('/admin/esci-da-cliente', []);
 prova('8J · Account: documenti accettati e accessi dell\'assistenza (data e chi)', str_contains($r8a = $irene->get('/account')['body'], "Accessi dell'assistenza al tuo account")
-      && str_contains($r8a, 'UTC ·') && str_contains($r8a, 'versione ' . MHW_VERSIONE_LEGALE));
+      && str_contains($r8a, 'UTC ·') && str_contains($r8a, 'versione ' . MHW_VERSIONE_PRIVACY));
 
 // L'email di avviso: ai clienti con un abbonamento attivo, una volta sola per combinazione di versioni.
 db()->prepare("INSERT INTO subscriptions (account_id, package_version_id, status, provider, provider_customer_id, provider_subscription_id, current_period_start,
@@ -4832,7 +4835,7 @@ $r = $admin->post('/admin/impostazioni/legale', ['legal__company_vat' => '123', 
 prova('8J · la P.IVA ha 11 cifre', str_contains($r['body'], 'La partita IVA italiana è fatta di 11 cifre'));
 $futura8 = gmdate('Y-m-d', time() + 40 * 86400);
 $admin->post('/admin/impostazioni/legale', ['legal__terms_version' => $futura8, 'password' => 'AdminProva123']);
-db()->prepare("UPDATE users SET terms_version = ?, privacy_version = ?, dpa_version = ? WHERE id = ?")->execute([MHW_VERSIONE_LEGALE, MHW_VERSIONE_LEGALE, MHW_VERSIONE_DPA, $u8['id']]);
+db()->prepare("UPDATE users SET terms_version = ?, privacy_version = ?, dpa_version = ? WHERE id = ?")->execute([MHW_VERSIONE_LEGALE, MHW_VERSIONE_PRIVACY, MHW_VERSIONE_DPA, $u8['id']]);
 $r = $irene->get('/pannello');
 prova('8J · versione annunciata (tra 40 giorni): nel pannello la riga «cambiano», niente finestra, si lavora', str_contains($r['body'], 'cambiano') && !str_contains($r['body'], 'Abbiamo aggiornato i Termini')
       && ($irene->post('/account/profilo', ['name' => 'Irene Legale'])['code'] === 302) && val('SELECT name FROM users WHERE id = ?', [$u8['id']]) === 'Irene Legale');
@@ -8401,6 +8404,246 @@ prova('9T · 5.9 · /accedi e /registrati: «Accedi | MyHouse Welcome», «Crea 
       && str_contains($rA['body'], 'noindex') && str_contains($rR['body'], 'noindex'));
 $busta9t = $c9n('echo MHW\Icon::svg("mail", 18);');
 prova('9T · 5.10 · i bottoni Email in home e in /domande hanno la busta, non il fumetto', str_contains($ospite->get('/')['body'], $busta9t) && str_contains($ospite->get('/domande')['body'], $busta9t));
+
+// ======================================================================= 9U
+capitolo('9U · selettore Portfolio oltre 10 nelle pagine per tipologia, foto della demo da una sola fonte (Testi e foto = copertina), Promo novembre NOVEMBRE17');
+$conf9t(['inviti' => ['attivi' => true]]);
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'register:%'");
+
+// 1 · Il selettore delle pagine per tipologia: da 2 a 10, il «+» porta a 11 = «oltre» (prezzo, righe e bottone spariscono, compare il riquadro).
+$sel9u = [];
+foreach (['/case-vacanza' => false, '/en/holiday-homes' => true, '/piu-strutture' => false] as $u => $en) {
+    $b = $ospite->get($u)['body'];
+    $sel9u[$u] = ['campo' => preg_match('#<input id="pf-strutture" type="number" inputmode="numeric" min="2" max="11" data-max-prezzo="10" value="2">#', $b) === 1,
+                  'righe' => str_contains($b, '<div class="tipo-piano__righe" data-nascondi-oltre>'),
+                  'cta' => preg_match('#<a class="btn btn--go"[^>]*data-crea[^>]*data-nascondi-oltre>#', $b) === 1,
+                  'riquadro' => str_contains($b, '<div class="plan__oltre" data-oltre hidden>')
+                      && str_contains($b, $en ? 'More than 10 properties? We will make you a tailored offer.' : 'Più di 10 strutture? Ti facciamo una proposta su misura.')
+                      && str_contains($b, $en ? '>Ask for a quote</a>' : '>Chiedi il preventivo</a>'),
+                  'link' => $u === '/piu-strutture' ? preg_match('#data-oltre hidden>.{0,300}href="\#preventivo">#s', $b) === 1
+                      : preg_match('#href="[^"]*' . ($en ? '/en/multiple-properties' : '/piu-strutture') . '\?strutture=11\#preventivo" data-oltre-href="[^"]*' . ($en ? '/en/multiple-properties' : '/piu-strutture') . '"#', $b) === 1,
+                  'niente riga vecchia' => !str_contains($b, 'tipo-piano__oltre') && !str_contains($b, 'strutture? Chiedi un preventivo') && !str_contains($b, 'properties? Ask for a quote →')];
+    $sel9u[$u] = array_keys(array_filter($sel9u[$u], fn($v) => !$v));
+}
+prova('9U · 1 · pagine per tipologia (IT, EN, /piu-strutture): campo da 2 a 11 (prezzo fino a 10), righe dell\'IVA e bottone che spariscono oltre 10, il riquadro della home «Più di 10 strutture? Ti facciamo una proposta su misura.» con «Chiedi il preventivo»; via la riga piccola',
+      array_filter($sel9u) === [], json_encode($sel9u));
+$js9u = (string) file_get_contents("$DOVE/assets/prezzi.js");
+prova('9U · 1 · lo stesso script della home: oltre il massimo nasconde [data-nascondi-oltre] e il link porta il numero (?strutture=N#preventivo); il conto del rinnovo resta sull\'ultimo prezzo',
+      str_contains($js9u, "querySelectorAll('[data-nascondi-oltre]')") && str_contains($js9u, "'?strutture=' + q + '#preventivo'") && str_contains($js9u, 'campo.id && q <= maxPrezzo'));
+prova('9U · 1 · a 10 strutture il listino dice 527 € (lo stesso calcolo del selettore)', (int) $c9n('echo MHW\Plans::price(MHW\Plans::version(' . pv('portfolio') . '), 10);') === 52700);
+$r = $ospite->get('/piu-strutture?strutture=12');
+prova('9U · 1 · «Chiedi il preventivo» da una tipologia: /piu-strutture?strutture=12 apre il modulo con 12 strutture già scritte',
+      str_contains($r['body'], 'id="preventivo" open>') && str_contains($r['body'], '<span data-preventivo-n>12</span>') && str_contains($r['body'], 'value="12" data-preventivo-strutture'));
+prova('9U · 1 · CSS: il riquadro a tutta larghezza e niente prezzo oltre 10 (anche con il display dei prezzi)', str_contains($css9u = (string) file_get_contents("$DOVE/assets/app.css"), '.tipo-piano__prezzo .plan__oltre{align-self:stretch}')
+      && str_contains($css9u, '.tipo-piano__prezzo .price[hidden]'));
+
+// 2 · Una sola fonte per la foto della demo: «La schermata nel telefono» di Testi e foto è anche la copertina della vetrina.
+$slugV = (string) $c9n('echo (string) ((MHW\Demo::vetrinaAttuale() ?? [])["slug"] ?? "");');
+$vid9u = (int) val('SELECT id FROM properties WHERE slug = ?', [$slugV]);
+$copDi = fn(int $pid) => riga('SELECT m.* FROM properties p JOIN media m ON m.id = p.cover_media_id WHERE p.id = ?', [$pid]) ?? [];
+$snapCop = fn(int $pid) => (int) $c9n('echo (int) ((MHW\Guide::published(' . $pid . ') ?? [])["property"]["cover_id"] ?? 0);');
+$fileDi = fn(int $mid) => basename((string) parse_url($c9n('echo (string) MHW\Media::url(' . $mid . ');'), PHP_URL_PATH));
+$r = $admin->get('/admin/testi');
+prova('9U · 2 · Testi e foto: sotto «La schermata nel telefono» l\'avviso «è anche la copertina della guida di esempio (Casa Checco)»',
+      str_contains($r['body'], 'Questa foto è anche la copertina della guida di esempio (Casa Checco).'));
+$admin->segui($admin->post('/admin/testi', ['img[telefono]' => file_(png(600, 422), 'image/png'), 'torna' => 'foto']));
+$c9u = $copDi($vid9u);
+$vH9u = (int) val("SELECT id FROM properties WHERE is_demo >= 1 AND status = 'published' AND archived_at IS NULL ORDER BY is_demo DESC, id");   // la demo della home
+$cH9u = $copDi($vH9u);
+$h9u = $ospite->get('/')['body'];
+$guide9u = [];
+foreach (['it', 'en', 'fr', 'de', 'es'] as $l) $guide9u[$l] = str_contains($g = $ospite->get('/g/' . $slugV . '/benvenuto?l=' . $l)['body'], $fileDi((int) ($c9u['id'] ?? 0))) && str_contains($g, 'alt="Casa Checco"');
+prova('9U · 2 · caricata in Testi e foto: è la copertina della vetrina (alt «Casa Checco»), pubblicata subito, nel telefono della home e in /g/' . $slugV . ' in tutte e 5 le lingue',
+      str_starts_with((string) ($c9u['original_name'] ?? ''), 'sito-telefono') && ($c9u['alt'] ?? '') === 'Casa Checco' && $snapCop($vid9u) === (int) ($c9u['id'] ?? -1)
+      && str_starts_with((string) ($cH9u['original_name'] ?? ''), 'sito-telefono') && preg_match('#class="device__shot">\s*<img src="[^"]*' . preg_quote($fileDi((int) ($cH9u['id'] ?? 0)), '#') . '#', $h9u) === 1 && !in_array(false, $guide9u, true),
+      json_encode([$c9u['original_name'] ?? null, $c9u['alt'] ?? null, $guide9u, $snapCop($vid9u), (int) ($c9u['id'] ?? 0), $fileDi((int) ($c9u['id'] ?? 0)),
+                   preg_match('#class="device__shot">\s*<img src="([^"?]+)#', $h9u, $mm) ? $mm[1] : '']));
+// La copertina cambiata dal pannello (una foto non di serie) la usa anche la home.
+$pan9u = $c9n('$p = MHW\Db::one("SELECT * FROM properties WHERE id = ' . $vH9u . '"); $png = (string) file_get_contents(' . var_export(png(640, 450), true) . ');
+    $id = MHW\Media::salvaImmagine($png, (int) $p["account_id"], ' . $vH9u . ', "Casa Checco", "dal-pannello"); MHW\Db::update("properties", ["cover_media_id" => $id], "id = :p", ["p" => ' . $vH9u . ']);
+    MHW\Guide::publish(' . $vH9u . '); echo "ID:", $id;');
+$pan9u = preg_match('/ID:(\d+)/', $panOut9u = $pan9u, $mm) ? (int) $mm[1] : 0;
+$telH9u = preg_match('#class="device__shot">\s*<img src="([^"?]+)#', $ospite->get('/')['body'], $mm) ? $mm[1] : '';
+prova('9U · 2 · la copertina cambiata dal pannello va anche nel telefono della home', $pan9u > 0 && str_ends_with($telH9u, $fileDi($pan9u)), mb_substr($panOut9u, 0, 200) . ' · ' . $telH9u . ' · ' . ($pan9u ? $fileDi($pan9u) : ''));
+$c9n('MHW\Demo::copertinaDaSito(MHW\TestiSito::riferimentoImmagine("telefono"), ' . $vH9u . ');');   // di nuovo la foto di Testi e foto, per le prove qui sotto
+// «Rifai la vetrina»: la copertina è quella di Testi e foto, non più quella di serie.
+$accV9u = (int) val('SELECT account_id FROM properties WHERE id = ?', [$vid9u]);
+$admin->post("/admin/cliente/$accV9u/vetrina", ['rifai' => '1']);
+$vid9u = (int) val('SELECT id FROM properties WHERE account_id = ? AND is_demo = 2', [$accV9u]);
+$slugV = (string) val('SELECT slug FROM properties WHERE id = ?', [$vid9u]);
+prova('9U · 2 · «Rifai la vetrina» prende la foto di Testi e foto (non torna quella di serie)', str_starts_with((string) ($copDi($vid9u)['original_name'] ?? ''), 'sito-telefono') && $snapCop($vid9u) === (int) ($copDi($vid9u)['id'] ?? -1));
+// Tolta da Testi e foto: la vetrina torna alla copertina di serie (Casa Checco) e la home al telefono di serie.
+$admin->segui($admin->post('/admin/testi', ['img_togli' => ['telefono' => '1'], 'torna' => 'foto']));
+$h9u = $ospite->get('/')['body'];
+prova('…tolta da Testi e foto: la vetrina torna alla copertina di serie, la home al telefono di serie', str_starts_with((string) ($copDi($vid9u)['original_name'] ?? ''), 'checco-')
+      && $snapCop($vid9u) === (int) ($copDi($vid9u)['id'] ?? -1) && str_contains($h9u, 'checco-telefono'), (string) ($copDi($vid9u)['original_name'] ?? ''));
+prova('9U · 2 · migrazione 071 applicata (la foto di Testi e foto già caricata va sulla copertina all\'aggiornamento)', (bool) val("SELECT 1 FROM schema_migrations WHERE name LIKE '071%'"));
+
+// 3 · Promo novembre: il codice della migrazione 070 (spento all'inizio delle prove), riacceso qui.
+$pr9u = riga("SELECT * FROM discount_codes WHERE code = 'NOVEMBRE17'") ?? [];
+prova('9U · 3 · migrazione 070: NOVEMBRE17 una volta sola, 17%, dal 30/10 al 30/11/2026, illimitato, tutti i piani, «Promo novembre», si somma al giudizio e non all\'invito, in home',
+      (int) val("SELECT COUNT(*) FROM discount_codes WHERE code = 'NOVEMBRE17'") === 1 && $pr9u['kind'] === 'percent' && (int) $pr9u['value'] === 17
+      && $pr9u['valid_from'] === '2026-10-30' && $pr9u['valid_until'] === '2026-11-30' && (int) $pr9u['max_uses'] === 0 && (string) $pr9u['packages'] === ''
+      && $pr9u['nome_promo'] === 'Promo novembre' && (int) $pr9u['somma_giudizio'] === 1 && (int) $pr9u['somma_invito'] === 0 && (int) $pr9u['in_home'] === 1, json_encode($pr9u));
+prova('9U · 3 · la fine: il 30 novembre alle 23:59:59 di Roma; dal 1° dicembre (data forzata) nessuna promo', (int) $c9n('$r = MHW\Db::one("SELECT * FROM discount_codes WHERE code = \'NOVEMBRE17\'"); echo MHW\Sconti::fine($r);') === (new DateTimeImmutable('2026-11-30 23:59:59', new DateTimeZone('Europe/Rome')))->getTimestamp()
+      && $c9n('MHW\Db::run("UPDATE discount_codes SET active = 1 WHERE code = \'NOVEMBRE17\'"); echo MHW\Sconti::promoAttiva("2026-11-30") ? "si" : "no", MHW\Sconti::promoAttiva("2026-12-01") ? "si" : "no"; MHW\Db::run("UPDATE discount_codes SET active = 0 WHERE code = \'NOVEMBRE17\'");') === 'sino');
+$attiva9u = fn(bool $si) => db()->prepare("UPDATE discount_codes SET active = ?, valid_from = ?, valid_until = ? WHERE code = 'NOVEMBRE17'")
+    ->execute([$si ? 1 : 0, min('2026-10-30', $oggiR(0)), max('2026-11-30', $oggiR(1))]);   // le prove girano anche dopo novembre: il periodo copre sempre oggi
+$attiva9u(true);
+$fine9u = (string) val("SELECT valid_until FROM discount_codes WHERE code = 'NOVEMBRE17'");
+$giorno9u = $c9n('echo MHW\Pannello::giornoMese("' . $fine9u . '", false);');
+
+// Plus e Portfolio hanno il listino di serie; Essential le prove prima l'hanno cambiato: i suoi conti sono sul prezzo di adesso (di serie 97 € → 80,51 / 75,66 €).
+$ess9u = (int) val('SELECT price_cents FROM package_versions WHERE id = ?', [pv('essential')]);
+$netto9u = fn(int $p, int $pct) => $p - max(0, min((int) round($p * $pct / 100), $p - 100));
+$eur9u = fn(int $c) => number_format($c / 100, $c % 100 ? 2 : 0, ',', '.') . "\u{00A0}€";
+// Home: badge, listino barrato, prezzo del primo anno, «poi … / anno», la fascia con il conto alla rovescia; bottoni con il codice; Offer a prezzo pieno.
+$h9u = $ospite->get('/')['body'];
+$piani9u = $h9u;   // (le schede e «Confronta tutti i piani»)
+$hC9u = ['badge' => substr_count($piani9u, '<span class="badge-promo">−17%</span>') >= 3, 'barrato' => str_contains($piani9u, '<s data-iva-netto="' . $ess9u . '">' . $eur9u($ess9u) . '</s>'),
+          'ess' => str_contains($piani9u, $eur9u($netto9u($ess9u, 17))), 'plus' => str_contains($piani9u, "105,41\u{00A0}€"), 'pf' => str_contains($piani9u, "146,91\u{00A0}€"),
+          'iva' => substr_count($piani9u, '+ IVA il 1° anno') >= 3, 'poi' => str_contains($piani9u, "class=\"plan__poi\">poi <span data-iva-netto=\"12700\">127\u{00A0}€</span>"),
+          'da2a10' => str_contains($piani9u, 'da 2 a 10 strutture'), 'link' => str_contains($piani9u, '&codice=NOVEMBRE17'), 'campo' => str_contains($piani9u, 'name="codice" value="NOVEMBRE17"'), 'sconto' => str_contains($piani9u, 'data-sconto="17"')];
+prova('9U · 3 · home: sulle tre schede «−17%», listino barrato, ' . $eur9u($netto9u($ess9u, 17)) . ' / 105,41 / 146,91 € «+ IVA il 1° anno», «poi … / 127 / 177 € + IVA / anno», i bottoni con &codice=NOVEMBRE17',
+      !in_array(false, $hC9u, true), json_encode(array_keys(array_filter($hC9u, fn($v) => !$v))));
+prova('9U · 3 · home: la fascia «Promo novembre: −17% sul primo anno, fino al ' . $giorno9u . '.» con il codice, il −22% con il giudizio, il conto alla rovescia (JS) e «Approfitta della promo →» verso /registrati?codice=NOVEMBRE17',
+      str_contains($h9u, '<span class="promo__cifra" aria-hidden="true">−17%</span>') && str_contains($h9u, 'Promo novembre: −17% sul primo anno, fino al ' . $giorno9u . '.')
+      && str_contains($h9u, '<code class="promo__codice">NOVEMBRE17</code>') && str_contains($h9u, '−22%') && str_contains($h9u, 'data-promo-fine="')
+      && preg_match('#href="[^"]*/registrati\?codice=NOVEMBRE17">Approfitta della promo <span aria-hidden="true">→</span>#', $h9u) === 1 && str_contains($h9u, 'assets/promo.js'));
+prova('9U · 3 · SEO: l\'Offer dei dati strutturati resta a prezzo pieno (127.00), senza priceValidUntil', str_contains($h9u, '"name":"Plus","price":"127.00"') && !str_contains($h9u, 'priceValidUntil'));
+$en9u = $ospite->get('/en')['body'];
+prova('9U · 3 · /en: badge, «+ VAT the 1st year», la fascia in inglese «November promo» e «Get the promo»',
+      str_contains($en9u, 'badge-promo') && str_contains($en9u, '+ VAT the 1st year') && str_contains($en9u, 'November promo') && str_contains($en9u, 'Get the promo'));
+$pag9u = [];
+foreach (['/piano', '/case-vacanza', '/piu-strutture', '/en/holiday-homes'] as $u) { $b = $ospite->get($u)['body']; $pag9u[$u] = str_contains($b, 'promo promo--piccola') && str_contains($b, 'badge-promo'); }
+$tp9u = $ospite->get('/case-vacanza')['body'];
+prova('9U · 3 · la fascia piccola in /piano e nelle pagine per tipologia; il blocco Portfolio con badge, 177 € barrato, 146,91 € «+ IVA il 1° anno per 2 strutture … poi 177 € / anno»',
+      !in_array(false, $pag9u, true) && str_contains($tp9u, "<s data-pieno data-iva-netto=\"17700\">177\u{00A0}€</s>") && str_contains($tp9u, '146,91') && str_contains($tp9u, '+ IVA il 1° anno per') && str_contains($tp9u, 'data-sconto="17"'), json_encode($pag9u));
+$q9u = $ospite->get('/piano?d1=si&d2=no&d3=si')['body'];
+prova('9U · 3 · questionario e «Confronta tutti i piani»: badge e prezzi del primo anno', str_contains($q9u, 'badge-promo') && str_contains($h9u, 'il 1° anno,'));
+
+// I conti del riepilogo (Sconti::riepilogo, quello del pagamento): con e senza il giudizio.
+$riep9u = fn(string $piano, int $q, string $acc = 'null', bool $giudizio = false) => json_decode($c9n('$r = MHW\Sconti::riepilogo(MHW\Plans::version(' . pv($piano) . '), ' . $q . ', ' . $acc . ', '
+    . ($giudizio ? '[["tipo" => "giudizio", "nome" => "Giudizio", "percento" => 5]]' : '[]') . '); echo json_encode(["tot" => $r["totale"], "righe" => array_map(fn($x) => $x["tipo"] . ":" . $x["percento"] . ":" . $x["cents"], $r["righe"]), "nota" => $r["nota"]]);'), true) ?: [];
+$conti9u = ['plus' => [$riep9u('plus', 1)['tot'] ?? 0, $riep9u('plus', 1, 'null', true)['tot'] ?? 0], 'essential' => [$riep9u('essential', 1)['tot'] ?? 0, $riep9u('essential', 1, 'null', true)['tot'] ?? 0],
+            'portfolio' => [$riep9u('portfolio', 2)['tot'] ?? 0, $riep9u('portfolio', 2, 'null', true)['tot'] ?? 0]];
+prova('9U · 3 · i conti: Plus 105,41 / 99,06 €, Essential 80,51 / 75,66 €, Portfolio 2 strutture 146,91 / 138,06 € (senza / con il giudizio), + IVA',
+      $conti9u === ['plus' => [10541, 9906], 'essential' => [$netto9u($ess9u, 17), $netto9u($ess9u, 22)], 'portfolio' => [14691, 13806]] && $netto9u(9700, 17) === 8051 && $netto9u(9700, 22) === 7566, json_encode([$conti9u, $ess9u]));
+prova('…Plus con il giudizio: due righe, «Promo novembre» −21,59 € e il giudizio −6,35 €; 120,85 € con l\'IVA', ($riep9u('plus', 1, 'null', true)['righe'] ?? []) === ['promo:17:2159', 'giudizio:5:635']
+      && (int) $c9n('echo 9906 + MHW\Iva::di(9906);') === 12085);
+
+// Invito: vale il più alto (17%); chi invita ha comunque il suo amico valido (5% sul suo rinnovo).
+$inv9u = $cliente9n('Ivo Invitante', 'ivo9u@prova.test'); $ami9u = $cliente9n('Amelia Amica', 'amelia9u@prova.test');
+db()->prepare("INSERT INTO referrals (referrer_account_id, friend_account_id, status, created_at) VALUES (?, ?, 'registrato', ?)")->execute([$inv9u, $ami9u, gmdate('Y-m-d\TH:i:s\Z')]);
+$rA9u = $riep9u('plus', 1, 'MHW\Db::one("SELECT * FROM accounts WHERE id = ' . $ami9u . '")');
+prova('9U · 3 · Plus + invito di un amico: vale il 17% (105,41 €), il riepilogo dice «La Promo novembre non si somma a: Invito di Ivo. Vale il più alto.»',
+      ($rA9u['tot'] ?? 0) === 10541 && ($rA9u['righe'] ?? []) === ['promo:17:2159'] && str_contains((string) ($rA9u['nota'] ?? ''), 'La Promo novembre non si somma a: Invito di Ivo. Vale il più alto.'), json_encode($rA9u));
+db()->prepare("INSERT INTO orders (account_id, package_version_id, amount_cents, currency, status, provider, provider_session_id, quantity, kind, created_at, updated_at, discount_code_id, sconti)
+               VALUES (?, ?, 10541, 'EUR', 'paid', 'stripe', 'cs_9u_amelia', 1, 'new', ?, ?, ?, 'promo:17')")->execute([$ami9u, pv('plus'), gmdate('Y-m-d\TH:i:s\Z'), gmdate('Y-m-d\TH:i:s\Z'), (int) $pr9u['id']]);
+$c9n('MHW\Inviti::pagato(MHW\Db::one("SELECT * FROM orders WHERE provider_session_id = \'cs_9u_amelia\'"));');
+prova('…quando l\'amica paga con la promo, l\'invito diventa valido: chi ha invitato ha il suo 5% sul rinnovo', val('SELECT status FROM referrals WHERE friend_account_id = ?', [$ami9u]) === 'valido'
+      && (int) $c9n('echo MHW\Inviti::validi(' . $inv9u . ');') === 1);
+
+// Codice omaggio o partner: la promo non si applica e il riepilogo lo dice.
+$om9u = $cliente9n('Oreste Omaggio', 'oreste9u@prova.test');
+$c9n('$id = MHW\Omaggi::crea(["mesi" => 3, "nota" => "Prova 9U"], 1); MHW\Db::update("accounts", ["codice_omaggio_id" => $id], "id = :a", ["a" => ' . $om9u . ']);');
+$rO9u = $riep9u('plus', 1, 'MHW\Db::one("SELECT * FROM accounts WHERE id = ' . $om9u . '")');
+$pa9u = $cliente9n('Paola Partner', 'paola9u@prova.test');
+db()->prepare('UPDATE accounts SET partner_id = ? WHERE id = ?')->execute([(int) $pp8['id'], $pa9u]);
+$rP9u = $riep9u('plus', 1, 'MHW\Db::one("SELECT * FROM accounts WHERE id = ' . $pa9u . '")');
+prova('9U · 3 · con un codice omaggio la promo non si applica: «La Promo novembre non vale con il codice omaggio.»', ($rO9u['righe'] ?? ['x']) === [] && str_contains((string) ($rO9u['nota'] ?? ''), 'La Promo novembre non vale con il codice omaggio.'), json_encode($rO9u));
+$ppPct9u = (int) val('SELECT sconto_clienti_pct FROM partner WHERE id = ?', [(int) $pp8['id']]);
+prova('9U · 3 · con un codice partner resta il suo sconto (' . $ppPct9u . '%): «La Promo novembre non vale per chi arriva da un partner…»', ($rP9u['righe'] ?? []) === ['partner:' . $ppPct9u . ':' . (int) round(12700 * $ppPct9u / 100)]
+      && str_contains((string) ($rP9u['nota'] ?? ''), 'La Promo novembre non vale per chi arriva da un partner: resta lo sconto del partner.'), json_encode($rP9u));
+$vp9u = new Browser('visita-partner-9u'); $a9u = $vp9u->get('/?partner=PM-ROSSI')['body']; $b9u = $vp9u->get('/')['body'];
+$vpC9u = ['prima' => !str_contains($a9u, 'badge-promo') && !str_contains($a9u, 'data-promo-fine'), 'dopo' => !str_contains($b9u, 'badge-promo') && !str_contains($b9u, 'data-promo-fine'),
+          'fascia' => str_contains($a9u, 'Codice partner <b>PM-ROSSI</b>'), 'stato' => val("SELECT stato FROM partner WHERE codice = 'PM-ROSSI'")];
+prova('…e chi arriva dal link di un partner non vede la promo in home (vede la fascia del partner)', $vpC9u['prima'] && $vpC9u['dopo'] && $vpC9u['fascia'], json_encode($vpC9u));
+
+// Dal link della fascia alla registrazione e al pagamento con Stripe (finto): il codice è già inserito; con il giudizio un coupon solo del 22%.
+$re9u = new Browser('registra-9u');
+$re9u->get('/registrati?codice=NOVEMBRE17&piano=' . pv('plus'));
+$re9u->post('/registrati', ['piano' => pv('plus'), 'name' => 'Rita Promo', 'email' => 'rita9u@prova.test', 'email2' => 'rita9u@prova.test', 'password' => 'Promo9U-2026!', 'termini' => '1']);
+$rita9u = $accDi('rita9u@prova.test');
+prova('9U · 3 · /registrati?codice=NOVEMBRE17: il codice si salva nell\'account (già inserito nel riepilogo)', $rita9u > 0 && (int) val('SELECT intended_discount_code_id FROM accounts WHERE id = ?', [$rita9u]) === (int) $pr9u['id']);
+[$pro9u, $proAcc9u, $proPid9u] = $host9l('Promo', 'promo9u@prova.test', 'VTRPRO85A01G478K', 'Foligno');
+$rR9u = $pro9u->get("/pannello/$proPid9u/procedura/pubblica");
+prova('9U · 3 · anche senza link, registrandosi durante la promo il codice è nell\'account; nel riepilogo «Promo novembre NOVEMBRE17 · −17% primo anno» e 105,41 €',
+      (int) val('SELECT intended_discount_code_id FROM accounts WHERE id = ?', [$proAcc9u]) === (int) $pr9u['id'] && str_contains($rR9u['body'], 'Promo novembre NOVEMBRE17 · −17% primo anno') && str_contains($rR9u['body'], '105,41'));
+$daS9u = count(richiesteStripe());
+$pro9u->segui($pro9u->modulo("/pannello/$proPid9u/procedura/pubblica", "/pannello/$proPid9u/pubblica", ['acquirente' => 'impresa', 'giudizio_casella' => '1', 'giudizio_adesione' => '1']));
+$o9u = riga('SELECT * FROM orders WHERE account_id = ? ORDER BY id DESC', [$proAcc9u]) ?? [];
+$cs9u = array_values(array_filter(array_slice(richiesteStripe(), $daS9u), fn($x) => $x['percorso'] === '/v1/checkout/sessions' && $x['metodo'] === 'POST'))[0]['corpo'] ?? [];
+$cp9u = array_values(array_filter(richiesteStripe(), fn($x) => $x['percorso'] === '/v1/coupons' && $x['metodo'] === 'POST' && ($x['corpo']['id'] ?? '') === 'mhw-primo-anno-22'))[0]['corpo'] ?? [];   // creato una volta sola
+prova('9U · 3 · Stripe: un solo coupon «mhw-primo-anno-22» (22%, once), metadati sconti «promo:17,giudizio:5» e discount_code NOVEMBRE17; l\'ordine lega la promo',
+      ($cs9u['discounts'][0]['coupon'] ?? '') === 'mhw-primo-anno-22' && count($cs9u['discounts'] ?? []) === 1 && ($cs9u['metadata']['sconti'] ?? '') === 'promo:17,giudizio:5'
+      && ($cs9u['metadata']['discount_code'] ?? '') === 'NOVEMBRE17' && ($cp9u['percent_off'] ?? '') === '22' && ($cp9u['duration'] ?? '') === 'once'
+      && (int) ($o9u['discount_code_id'] ?? 0) === (int) $pr9u['id'] && ($o9u['sconti'] ?? '') === 'promo:17,giudizio:5', json_encode([$cs9u['discounts'] ?? null, $cs9u['metadata'] ?? null, $cp9u, $o9u['sconti'] ?? null]));
+inviaWebhook(['id' => 'evt_9u_promo', 'type' => 'checkout.session.completed', 'data' => ['object' => [
+    'id' => $o9u['provider_session_id'], 'mode' => 'subscription', 'payment_status' => 'paid', 'customer' => 'cus_9u_promo', 'subscription' => 'sub_9u_promo',
+    'client_reference_id' => (string) $o9u['id'], 'total_details' => ['amount_discount' => 2794, 'amount_tax' => 2179],
+    'metadata' => ['order_id' => (string) $o9u['id'], 'account_id' => (string) $proAcc9u, 'sconti' => 'promo:17,giudizio:5', 'discount_code' => 'NOVEMBRE17']]]]);
+$red9u = riga('SELECT * FROM discount_redemptions WHERE order_id = ?', [(int) $o9u['id']]) ?? [];
+prova('…pagato: l\'utilizzo della promo con la sua parte dello sconto (21,59 € su 27,94 €)', val('SELECT status FROM orders WHERE id = ?', [(int) $o9u['id']]) === 'paid'
+      && (int) ($red9u['discount_code_id'] ?? 0) === (int) $pr9u['id'] && (int) ($red9u['discount_cents'] ?? 0) === 2159, json_encode($red9u));
+// Chi ha già pagato: niente promo in home, codice non valido.
+$h9u = $pro9u->get('/')['body'];
+$fl9u = $pro9u->segui($pro9u->get('/piano?codice=NOVEMBRE17'))['body'];
+$rPag9u = $riep9u('plus', 1, 'MHW\Db::one("SELECT * FROM accounts WHERE id = ' . $proAcc9u . '")');
+prova('9U · 3 · un cliente che ha già pagato: niente badge né fascia, il codice non vale («I codici sconto valgono solo per il primo abbonamento.»), nessuna riga di promo',
+      !str_contains($h9u, 'badge-promo') && !str_contains($h9u, 'data-promo-fine') && str_contains($fl9u, 'I codici sconto valgono solo per il primo abbonamento.') && ($rPag9u['righe'] ?? ['x']) === []);
+// /piano?codice= per chi è dentro e non ha pagato: «Codice NOVEMBRE17 applicato.»
+$ag9u = new Browser('agata-9u'); $agAcc9u = $cliente9n('Agata Piano', 'agata9u@prova.test');
+$ag9u->get('/accedi'); $ag9u->post('/accedi', ['email' => 'agata9u@prova.test', 'password' => 'Prova9N-2026']);
+$flA9u = $ag9u->segui($ag9u->get('/piano?codice=NOVEMBRE17'))['body'];
+prova('9U · 3 · /piano?codice=NOVEMBRE17 per chi è dentro e non ha pagato: «Codice NOVEMBRE17 applicato.», il codice va nell\'account', (int) val('SELECT intended_discount_code_id FROM accounts WHERE id = ?', [$agAcc9u]) === (int) $pr9u['id']
+      && str_contains($flA9u, 'Codice NOVEMBRE17 applicato.'));
+
+// Cassa: le promo (clienti e sconto) e il filtro dei pagamenti.
+$cassa9u = $admin->get('/admin/cassa')['body'];
+$sezP9u = preg_match('#<section[^>]*aria-labelledby="promo-titolo">.*?</section>#s', $cassa9u, $mm) ? $mm[0] : '';
+prova('9U · 3 · Cassa → Promo: «Promo novembre · −17%», NOVEMBRE17, 1 cliente, 21,59 € di sconto concesso (la parte della promo), «Vedi i pagamenti»',
+      str_contains($sezP9u, 'Promo novembre · −17%') && preg_match('#<td>1</td><td>21,59(?:\x{00A0}|&nbsp;| )€</td>#u', $sezP9u) === 1 && str_contains($cassa9u, '<code>NOVEMBRE17</code>') && str_contains($cassa9u, '&amp;promo=' . (int) $pr9u['id'] . '#pagamenti') && str_contains($cassa9u, 'Vedi i pagamenti'));
+$filtro9u = $admin->get('/admin/cassa?promo=' . (int) $pr9u['id'])['body'];
+prova('…il filtro: «Pagamenti con la Promo novembre (NOVEMBRE17)», c\'è chi ha usato la promo, non gli altri pagamenti dello stesso periodo',
+      str_contains($filtro9u, 'Pagamenti con la Promo novembre (NOVEMBRE17)') && str_contains($filtro9u, 'Promo Vetrina') && !str_contains($filtro9u, 'Anna Carta'));
+
+// Amministrazione → Codici sconto: le caselle della promo, nel codice nuovo e nella scheda.
+$r = $admin->get('/admin/sconti');
+prova('9U · 3 · Codici sconto: le caselle «Si somma al Giudizio con sconto», «Si somma all\'invito di un amico», «Mostra in home» e il nome della promo; NOVEMBRE17 con il badge della promo',
+      str_contains($r['body'], 'name="somma_giudizio"') && str_contains($r['body'], 'name="somma_invito"') && str_contains($r['body'], 'name="in_home"') && str_contains($r['body'], 'name="nome_promo"') && str_contains($r['body'], 'NOVEMBRE17'));
+$r = $admin->segui($admin->post('/admin/sconti', ['code' => 'PROVA9U', 'kind' => 'percent', 'value' => '10', 'valid_from' => $oggiR(0), 'valid_until' => $oggiR(5), 'max_uses' => '0', 'note' => 'Prova 9U',
+                                                 'somma_giudizio' => '1', 'nome_promo' => 'Promo di prova']));
+$n9u = riga("SELECT * FROM discount_codes WHERE code = 'PROVA9U'") ?? [];
+prova('…un codice nuovo con «si somma al giudizio»: salvato con i campi della promo, nessun coupon suo su Stripe (usa «Sconti primo anno»)',
+      (int) ($n9u['somma_giudizio'] ?? 0) === 1 && (int) ($n9u['in_home'] ?? 1) === 0 && ($n9u['nome_promo'] ?? '') === 'Promo di prova' && (string) ($n9u['stripe_coupon_id'] ?? 'x') === ''
+      && str_contains($r['body'], 'si somma agli altri sconti del primo anno'), json_encode($n9u));
+db()->prepare('DELETE FROM discount_codes WHERE id = ?')->execute([(int) ($n9u['id'] ?? 0)]);
+
+// Termini e FAQ, IT ed EN.
+$t9u = $ospite->get('/termini')['body']; $te9u = $ospite->get('/en/terms')['body'];
+prova('9U · 3 · Termini IT/EN: il paragrafo della promo (−17%, NOVEMBRE17, −22% con il giudizio, non con invito, omaggio e partner); versione del 30 ottobre 2026',
+      str_contains($t9u, '<b>Promo novembre.</b> −17% sul primo anno per i nuovi clienti') && str_contains($t9u, 'NOVEMBRE17') && str_contains($t9u, 'in tutto −22% sul primo anno')
+      && str_contains($t9u, 'ai codici omaggio né ai codici partner') && str_contains($te9u, '<b>November promo.</b>') && str_contains($t9u, 'Versione del 30 ottobre 2026'));
+$f9u = $ospite->get('/domande')['body']; $fe9u = $ospite->get('/en/questions')['body'];
+prova('9U · 3 · FAQ «C\'è un\'offerta?» (IT) e «Is there an offer?» (EN) con il codice e la data', str_contains($f9u, 'C&#039;è un&#039;offerta?') && str_contains($f9u, 'con il codice NOVEMBRE17')
+      && str_contains($fe9u, 'Is there an offer?') && str_contains($fe9u, 'NOVEMBRE17'));
+
+// Dopo la promo (il periodo finito ieri; e la data forzata al 1° dicembre): niente badge né fasce né FAQ, codice rifiutato con il messaggio di scadenza.
+$dic9u = $c9n('MHW\Db::run("UPDATE discount_codes SET valid_from = \'2026-10-30\', valid_until = \'2026-11-30\' WHERE code = \'NOVEMBRE17\'"); MHW\Sconti::$oggiProva = "2026-12-01";
+    try { MHW\Sconti::valida("NOVEMBRE17", null, null); echo "valido"; } catch (RuntimeException $e) { echo $e->getMessage(); }
+    $acc = MHW\Db::one("SELECT * FROM accounts WHERE id = ' . $agAcc9u . '"); $r = MHW\Sconti::riepilogo(MHW\Plans::version(' . pv('plus') . '), 1, $acc);
+    echo "|", count($r["righe"]), "|", $r["nota"], "|", MHW\Sconti::promoAttiva() ? "attiva" : "spenta";');
+prova('9U · 3 · data forzata al 1/12/2026: codice rifiutato «La Promo novembre è scaduta il 30 novembre.», il riepilogo lo dice e la promo è spenta',
+      $dic9u === 'La Promo novembre è scaduta il 30 novembre.|0|La Promo novembre è scaduta il 30 novembre.|spenta', $dic9u);
+db()->prepare("UPDATE discount_codes SET valid_from = ?, valid_until = ? WHERE code = 'NOVEMBRE17'")->execute([$oggiR(-32), $oggiR(-1)]);
+$dopo9u = [];
+foreach (['/', '/en', '/piano', '/case-vacanza', '/domande'] as $u) { $b = $ospite->get($u)['body']; $dopo9u[$u] = !str_contains($b, 'badge-promo') && !str_contains($b, 'data-promo-fine') && !str_contains($b, 'NOVEMBRE17') && !str_contains($b, 'C&#039;è un&#039;offerta?'); }
+$flA9u = $ag9u->segui($ag9u->get('/piano?codice=NOVEMBRE17'))['body'];
+prova('9U · 3 · finita la promo: nessun badge, prezzo barrato, fascia né FAQ (home IT/EN, /piano, tipologie, FAQ); /piano?codice= rifiuta con «La Promo novembre è scaduta il …»',
+      !in_array(false, $dopo9u, true) && str_contains($flA9u, 'La Promo novembre è scaduta il ' . $c9n('echo MHW\Pannello::giornoMese("' . $oggiR(-1) . '", false);') . '.'), json_encode($dopo9u));
+db()->exec("UPDATE discount_codes SET active = 0, valid_from = '2026-10-30', valid_until = '2026-11-30' WHERE code = 'NOVEMBRE17'");
+$conf9t([]);
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

@@ -1552,4 +1552,13 @@ What\'s happening:
     'Per legge conserviamo per 10 anni solo i dati di fatturazione e dei pagamenti (codice cliente {codice}); le fatture restano nel tuo cassetto fiscale. Con questa email puoi registrarti di nuovo quando vuoi.' => 'By law we keep only your billing and payment data for 10 years (customer code {codice}); your invoices stay in your tax records. You can sign up again with this email whenever you like.',
     'Non abbiamo conservato altro. Con questa email puoi registrarti di nuovo quando vuoi.' => 'We have kept nothing else. You can sign up again with this email whenever you like.',
     'Se non hai chiesto tu la chiusura, scrivici subito a {email}.' => 'If you did not ask for this, write to us right away at {email}.',
+    // 9U · Promo novembre
+    'Promo novembre' => 'November promo',
+    'Il codice {codice}' => 'The code {codice}',
+    'La {promo} è scaduta il {data}.' => 'The {promo} ended on {data}.',
+    'La {promo} non si somma a: {altri}. Vale il più alto.' => 'The {promo} does not add up with: {altri}. The highest applies.',
+    'La {promo} vale meno degli altri sconti: non si applica.' => 'The {promo} is worth less than your other discounts: it does not apply.',
+    'La {promo} non vale con il codice omaggio.' => 'The {promo} does not apply with a gift code.',
+    'La {promo} non vale per chi arriva da un partner: resta lo sconto del partner.' => 'The {promo} does not apply to customers referred by a partner: the partner discount stays.',
+    'Codice {codice} applicato.' => 'Code {codice} applied.',
 ];

@@ -996,8 +996,14 @@ $r->get('/admin/cassa', function () {
     }
     $pagamenti = [];
     if ($mese !== '') $pagamenti = Gestione::pagamenti($mese . '-01', gmdate('Y-m-01', strtotime($mese . '-01 +1 month')), true);
+    // 9U · «Promo novembre»: i pagamenti fatti con la promo (?promo=id), dal primo all'ultimo giorno della promo.
+    $promoFiltro = null;
+    if (($idP = (int) ($_GET['promo'] ?? 0)) > 0 && ($cP = MHW\Sconti::riga($idP))) {
+        $promoFiltro = $cP; $mese = '';
+        $pagamenti = array_values(array_filter(Gestione::pagamenti($cP['valid_from'], gmdate('Y-m-d', strtotime($cP['valid_until'] . ' +2 days')), true), fn($p) => ($p['sconto_id'] ?? 0) === $idP));
+    }
     View::out('admin/cassa', ['anno' => $anno, 'mese' => $mese, 'cassa' => Gestione::cassa($anno), 'prima' => Gestione::cassa($anno - 1)['totale'],
-                              'pagamenti' => $pagamenti, 'nomi' => $nomi, 'nav' => 'cassa'], 'layout/cms');
+                              'pagamenti' => $pagamenti, 'nomi' => $nomi, 'nav' => 'cassa', 'promo' => Gestione::promo(), 'promoFiltro' => $promoFiltro], 'layout/cms');
 });
 
 /* 9R · «Attiva come staff» (piano, strutture, fino al, «non in vetrina») e «Togli lo staff». */
@@ -1882,9 +1888,12 @@ $r->post('/admin/sconti', function () {
     try {
         [$id, $sync] = MHW\Sconti::crea($_POST);
         Auth::audit('discount.create', null, ['id' => $id, 'code' => MHW\Sconti::normalizza((string) $_POST['code'])]);
-        Support::flash($sync ? 'Codice creato e attivo anche su Stripe.' : 'Codice salvato, ma non ancora su Stripe: non si può usare finché non lo sincronizzi.', $sync ? 'ok' : 'err');
+        // 9U · Una promo (si somma ad altri sconti) non ha un coupon suo: al pagamento usa «Sconti primo anno» della percentuale totale.
+        $nuovo = MHW\Sconti::riga($id);
+        if ($nuovo && MHW\Sconti::cumulabile($nuovo)) Support::flash('Codice creato: si somma agli altri sconti del primo anno e al pagamento usa il coupon «Sconti primo anno» della percentuale totale (mhw-primo-anno-N).');
+        else Support::flash($sync ? 'Codice creato e attivo anche su Stripe.' : 'Codice salvato, ma non ancora su Stripe: non si può usare finché non lo sincronizzi.', $sync ? 'ok' : 'err');
     } catch (\RuntimeException $e) {
-        $_SESSION['sconto_modulo'] = array_intersect_key($_POST, array_flip(['code', 'kind', 'value', 'valid_from', 'valid_until', 'max_uses', 'piani', 'packages', 'note']));
+        $_SESSION['sconto_modulo'] = array_intersect_key($_POST, array_flip(['code', 'kind', 'value', 'valid_from', 'valid_until', 'max_uses', 'piani', 'packages', 'note', 'somma_giudizio', 'somma_invito', 'in_home', 'nome_promo']));
         Support::flash($e->getMessage(), 'err');
     }
     Support::redirect('/admin/sconti');
@@ -1921,8 +1930,8 @@ $r->post('/admin/sconti/{id}/{fai}', function (array $a) {
             Support::flash($ok ? 'Codice attivo su Stripe.' : 'Stripe non ha risposto, o non è configurato: riprova più tardi.', $ok ? 'ok' : 'err');
             break;
         case 'modifica':
-            MHW\Sconti::aggiorna((int) $c['id'], $_POST);
-            Support::flash('Nota e piani aggiornati.');
+            try { MHW\Sconti::aggiorna((int) $c['id'], $_POST); Support::flash('Nota, piani e promo aggiornati.'); }
+            catch (\RuntimeException $e) { Support::flash($e->getMessage(), 'err'); }
             break;
         default: http_response_code(404); View::out('pub/404', []);
     }
@@ -2014,6 +2023,13 @@ $r->post('/admin/testi', function () {
     MHW\TestiSito::set(array_filter($c, fn($k) => !str_starts_with($k, 'img.'), ARRAY_FILTER_USE_KEY), $lingua);
     MHW\TestiSito::set(array_filter($c, fn($k) => str_starts_with($k, 'img.'), ARRAY_FILTER_USE_KEY), 'it');
     foreach ($daCancellare as $rif) { [$d, $k] = explode(':', $rif, 2); try { Storages::for($d)->delete($k); } catch (\Throwable $e) { Log::exception($e, 'testi.foto'); } }
+    // 9U · «La schermata nel telefono» è anche la copertina della guida demo: caricata, va sulla vetrina (ripubblicata);
+    // tolta, la vetrina torna alla copertina di serie se aveva quella del sito.
+    if (array_key_exists('img.telefono', $c)) foreach (MHW\Demo::vetrineOnline() as $vt) {
+        if ($c['img.telefono'] !== '') MHW\Demo::copertinaDaSito($c['img.telefono'], (int) $vt['id']);
+        elseif (str_starts_with((string) ((MHW\Media::row((int) MHW\Db::val('SELECT cover_media_id FROM properties WHERE id = ?', [(int) $vt['id']], 0)) ?? [])['original_name'] ?? ''), MHW\Demo::FOTO_SITO)
+                && MHW\Demo::copertinaVetrina((int) $vt['id'])) MHW\Guide::publish((int) $vt['id']);
+    }
     $cambiate = array_values(array_keys(array_filter($c, fn($v, $k) => $prima[$k] !== (str_starts_with($k, 'img.') ? $v : MHW\TestiSito::get($k)), ARRAY_FILTER_USE_BOTH)));
     Auth::audit('testi.save', null, ['cambiate' => $cambiate, 'lingua' => $lingua]);
     $legali = !empty($_POST['legali']);

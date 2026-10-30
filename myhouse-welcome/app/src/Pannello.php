@@ -74,6 +74,14 @@ final class Pannello
         return strtr($lingua === 'en' ? (self::dizionario()[$it] ?? $it) : $it, $sost);
     }
 
+    /** 9U · Giorno e mese, senza l'anno: «30 novembre» / «30 November» (nella lingua data, di serie quella del pannello). */
+    public static function giornoMese(string $iso, ?bool $en = null): string
+    {
+        if (!($t = strtotime($iso . ' 12:00:00 UTC'))) return $iso;
+        if ($en ?? self::en()) return gmdate('j F', $t);
+        return (int) gmdate('j', $t) . ' ' . ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'][(int) gmdate('n', $t) - 1];
+    }
+
     /** 9N · Una data nella lingua del pannello: 26 settembre 2026 / 26 September 2026. */
     public static function data(?string $iso): string
     {

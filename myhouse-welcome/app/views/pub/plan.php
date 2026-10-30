@@ -8,6 +8,7 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans, Iva}; $title = 'Sc
     decidi di pubblicarla. Puoi cambiare idea fino a quel momento.</p>
 </div>
 
+<?php if (!$attivo && ($promoR = MHW\Sconti::promoPerChiGuarda())): $promoPiccola = true; ?><div style="max-width:960px"><?php include __DIR__ . '/_promo.php'; ?></div><?php endif; /* 9U · la promo in corso */ ?>
 <?php if ($attivo): ?>
   <p class="note" style="margin-top:24px"><?= Icon::svg('info', 19) ?><span>Hai già un abbonamento attivo.
     Per cambiarlo vai in <a href="<?= b() ?>/account/piano">Cambia piano</a>.</span></p>

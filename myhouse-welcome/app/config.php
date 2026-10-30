@@ -204,7 +204,7 @@ $config = [
     // ricevono l'avviso (email una volta sola e riga nel pannello) e la finestra «Accetto» arriva a quella data.
     // Si cambiano da Amministrazione → Impostazioni → Titolare e documenti legali.
     'legal' => [
-        'terms_version'   => $env('MHW_TERMS_VERSION', '2026-10-27'),   // 10: Concierge AI; 9R (22 ottobre): il 5% del giudizio una volta sola; 9R: «Giudizio con sconto» riscritto (sconto solo con il giudizio, logo), cambio proposto; 9O: programma partner
+        'terms_version'   => $env('MHW_TERMS_VERSION', '2026-10-30'),   // 9U: Promo novembre; 10: Concierge AI; 9R (22 ottobre): il 5% del giudizio una volta sola; 9R: «Giudizio con sconto» riscritto (sconto solo con il giudizio, logo), cambio proposto; 9O: programma partner
         'privacy_version' => $env('MHW_PRIVACY_VERSION', '2026-10-27'),   // 10: Anthropic per Concierge AI; 9O: programma partner (trattamento 15);   // 9L (revisione): scheda e giudizio pubblicati a nostra scelta; 9L: «Giudizio con sconto e vetrina»; 9K: partner
         'dpa_version'     => $env('MHW_DPA_VERSION', '2026-10-15'),
         // 8J: il titolare del trattamento e fornitore del servizio.

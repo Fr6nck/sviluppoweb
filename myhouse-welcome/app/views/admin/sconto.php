@@ -25,7 +25,7 @@ $scelti = Sconti::pacchetti($c); ?>
     <?php endif; ?>
   </section>
   <form method="post" action="<?= b() ?>/admin/sconti/<?= (int) $c['id'] ?>/modifica" class="panel stack"><?= Csrf::field() ?><input type="hidden" name="torna" value="dettaglio">
-    <h2 style="font-size:20px">Nota e piani</h2>
+    <h2 style="font-size:20px">Nota, piani e promo</h2>
     <div class="field" style="margin:0"><label for="sc-note">Nota interna</label><input id="sc-note" name="note" type="text" maxlength="255" value="<?= Support::e($c['note']) ?>"></div>
     <fieldset class="fieldset" style="margin:0"><legend>Piani</legend>
       <div class="scelte scelte--riga">
@@ -35,6 +35,7 @@ $scelti = Sconti::pacchetti($c); ?>
           <label class="scelta scelta--mini"><input type="checkbox" name="packages[]" value="<?= Support::e($p['code']) ?>" <?= in_array($p['code'], $scelti, true) ? 'checked' : '' ?>><span><?= Support::e($p['name']) ?></span></label>
         <?php endforeach; ?>
       </div></fieldset>
+    <?php $vP = $c; include __DIR__ . '/_sconto_promo.php'; /* 9U */ ?>
     <div class="row" style="gap:12px"><button class="btn btn--sm">Salva</button></div>
   </form>
   <?php if ((int) $c['active']): ?>

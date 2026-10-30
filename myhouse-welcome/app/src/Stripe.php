@@ -454,6 +454,7 @@ final class Stripe
         if ($sc['coupon'] !== '') {
             $p['discounts[0][coupon]'] = $sc['coupon'];
             if ($riepilogo['scelta'] === 'manuale') $meta['discount_code'] = (string) $riepilogo['manuale']['code'];
+            foreach ($riepilogo['sistema'] ?? [] as $sP) if (($sP['tipo'] ?? '') === 'promo' && ($cP = Sconti::riga((int) $sP['codice_id']))) $meta['discount_code'] = (string) $cP['code'];   // 9U · la promo
             $meta['sconti'] = $sc['sconti'];
         } elseif (!empty($order['discount_code_id']) && ($c = Sconti::riga((int) $order['discount_code_id'])) && (string) $c['stripe_coupon_id'] !== '') {
             $p['discounts[0][coupon]'] = $c['stripe_coupon_id'];

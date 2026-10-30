@@ -61,6 +61,11 @@ return [
     'prodotto.testo'  => 'Everything about their stay, neatly organised and always on their phone, in their own language. {sezioni} ready-made sections to fill in, plus free-form sections for everything else: pick the ones your guests need.',
     'prodotto.link'   => 'Browse the {demo} guide',
     // ---- 10 · 9T: Concierge AI
+    // 9U · Promo novembre
+    'promo.titolo'   => '{promo}: −{percento}% off the first year, until {data}.',
+    'promo.testo'    => 'Use the code {codice} when you activate your guide (the button adds it for you). If you join «Review with a discount» when you pay, you get another **{giudizio}%**: **−{totale}%** in total on the first year. From the second year full price, minus the «Bring a friend» discounts you have earned.',
+    'promo.semplice' => 'Use the code {codice} when you activate your guide (the button adds it for you). From the second year full price, minus the discounts you have earned.',
+    'promo.bottone'  => 'Get the promo',
     'assistente.kicker' => 'Concierge AI',
     'assistente.titolo' => 'Answers your guests, at any hour.',
     'assistente.testo'  => 'Guests write in their own language. Concierge AI answers with what you wrote in the guide and shows the section it comes from.',

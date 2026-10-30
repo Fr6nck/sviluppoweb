@@ -30,7 +30,7 @@ $nomiPiani = array_column($piani, 'name', 'code'); ?>
   <div class="tablewrap"><table class="data">
     <thead><tr><th>Codice</th><th>Sconto</th><th>Validità</th><th>Piani</th><th>Utilizzi</th><th>Stato</th><th><span class="sr-only">Azioni</span></th></tr></thead>
     <tbody><?php foreach ($righe as $c): [$st, $tono] = $pillola[$c['stato']]; $link = Support::baseUrl() . '/?codice=' . rawurlencode($c['code']); ?>
-      <tr><td><a href="<?= b() ?>/admin/sconti/<?= (int) $c['id'] ?>"><b><?= Support::e($c['code']) ?></b></a><?= $c['note'] !== '' ? '<br><span class="tiny muted">' . Support::e($c['note']) . '</span>' : '' ?></td>
+      <tr><td><a href="<?= b() ?>/admin/sconti/<?= (int) $c['id'] ?>"><b><?= Support::e($c['code']) ?></b></a><?= trim((string) ($c['nome_promo'] ?? '')) !== '' ? ' <span class="badge badge--ochre">' . Support::e($c['nome_promo']) . (!empty($c['in_home']) ? ' · in home' : '') . '</span>' : '' ?><?= $c['note'] !== '' ? '<br><span class="tiny muted">' . Support::e($c['note']) . '</span>' : '' ?><?= Sconti::cumulabile($c) ? '<br><span class="tiny muted">si somma ' . Support::e(implode(' e ', array_filter([!empty($c['somma_giudizio']) ? 'al giudizio' : '', !empty($c['somma_invito']) ? 'all\'invito' : '']))) . ' · coupon combinato</span>' : '' ?></td>
         <td><?= Support::e(Sconti::etichetta($c)) ?></td>
         <td class="small"><?= $giorno($c['valid_from']) ?> → <?= $giorno($c['valid_until']) ?></td>
         <td class="small"><?= Sconti::pacchetti($c) ? Support::e(implode(', ', array_map(fn($k) => $nomiPiani[$k] ?? $k, Sconti::pacchetti($c)))) : 'Tutti' ?></td>
@@ -83,6 +83,7 @@ $nomiPiani = array_column($piani, 'name', 'code'); ?>
       </div></fieldset>
     <div class="field" style="margin:0"><label for="sc-note">Nota interna</label>
       <input id="sc-note" name="note" type="text" maxlength="255" value="<?= Support::e($v['note']) ?>" placeholder="Per esempio: Fiera TTG"></div>
+    <?php $vP = $v; include __DIR__ . '/_sconto_promo.php'; /* 9U */ ?>
     <div class="note note--quiet" aria-live="polite">
       <b style="display:block;margin-bottom:4px">Anteprima</b>
       <ul class="small" style="margin:0;padding-left:18px" data-anteprima-righe>

@@ -394,6 +394,18 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 9. **Codici sconto**: «Valido fino al» è ora già compilato con il 31 dicembre; cambialo se serve.
 10. Restano in italiano (per ora): l'email d'invito all'amico e le email scritte dall'amministrazione al cliente (rinnovo fermato, cambio piano, rimborso, password provvisoria).
 
+## 4z. 9U (30 ottobre): Promo novembre, foto della demo, selettore oltre 10
+
+Le migrazioni **070** e **071** partono da sole al primo accesso. Poi:
+
+1. **Amministrazione → Codici sconto**: controlla che **NOVEMBRE17** ci sia **una volta sola** (se l'avevi già creato a mano la migrazione non lo duplica: accende solo le caselle) con 17%, dal 30/10 al 30/11/2026, illimitato, tutti i piani, e le caselle «Si somma al Giudizio con sconto» **sì**, «Si somma all'invito di un amico» **no**, «Mostra in home» **sì**, nome «Promo novembre». Non serve un coupon suo su Stripe: al primo pagamento si crea da solo `mhw-primo-anno-17` (o `-22` con il giudizio), «Sconti primo anno».
+2. **Termini**: la versione di serie è ora il **30 ottobre 2026** (paragrafo della promo). Se in Impostazioni → Titolare avevi scritto a mano una versione dei Termini, aggiornala a `2026-10-30`: i clienti la riaccettano al prossimo accesso.
+3. **Testi e foto → Promo**: titolo, testo e bottone della fascia (IT/EN). Senza modifiche valgono quelli del brief.
+4. **La foto della demo**: se in Testi e foto avevi già caricato «La schermata nel telefono», la 071 l'ha messa anche come copertina di Casa Checco. Da ora basta caricarla lì; per tornare alla foto di serie usa «Torna alla foto di serie».
+5. **Cassa → Promo**: quanti clienti hanno usato la promo e quanto sconto, con «Vedi i pagamenti».
+6. Dal **1° dicembre** badge, prezzi barrati, fasce e FAQ spariscono da soli: niente da fare. Per una promo futura basta un codice nuovo con le stesse caselle.
+7. Poi Amministrazione → Sistema → **Cache** → «Svuota tutto» (CSS e JavaScript nuovi).
+
 ## 4y. 9T (29 ottobre): Concierge AI, demo che risponde, inviti col bonifico
 
 La migrazione **069** parte da sola al primo accesso (nome «Concierge AI» nella funzione e nelle voci dei piani; i testi di serie vecchi della home e della SEO li sostituisce solo se non li avevi cambiati). Poi:

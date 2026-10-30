@@ -364,6 +364,9 @@ $registrati = function () use ($guard, $doveComincia, $salvaPiano, $codiceDalLin
                       Db::update('accounts', ['intended_discount_code_id' => (int) $riga['id']], 'id = :aid', ['aid' => (int) $u['account_id']]); }
                 catch (\RuntimeException) {}
                 unset($_SESSION['codice_sconto']);
+            } elseif (($promoReg = MHW\Sconti::promoAttiva()) && !$omaggioLink && !$omaggioAMano && !MHW\ProgrammaPartner::dalLink()) {
+                // 9U · Senza un codice dal link, la promo in corso si salva nell'account (come se fosse arrivato dalla fascia).
+                Db::update('accounts', ['intended_discount_code_id' => (int) $promoReg['id']], 'id = :aid', ['aid' => (int) $u['account_id']]);
             }
             // 9D · Il codice omaggio (dal link o scritto a mano) si prenota all'account: niente invito.
             if ($omaggioLink || $omaggioAMano) {
@@ -759,7 +762,17 @@ $r->get('/en/plan', function () use ($guard, $datiQuestionario) {
     MHW\LinguaSito::imposta('en');
     View::out('pub/piano_test', ['seoPagina' => 'en-piano', 'user' => Auth::user()] + $datiQuestionario());
 });
-$r->any('/piano', function () use ($salvaPiano, $guard, $datiQuestionario) {
+$r->any('/piano', function () use ($salvaPiano, $guard, $datiQuestionario, $codiceDalLink) {
+    // 9U · /piano?codice=NOVEMBRE17 (la fascia della promo): chi è dentro lo trova già applicato; chi guarda lo porta alla registrazione.
+    if (isset($_GET['codice']) && is_string($_GET['codice']) && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        $uC = Auth::user();
+        if ($uC && $uC['role'] !== 'admin' && ($accC = Auth::account())) {
+            try { $rigaC = MHW\Sconti::valida((string) $_GET['codice'], $accC, null);
+                  Db::update('accounts', ['intended_discount_code_id' => (int) $rigaC['id']], 'id = :aid', ['aid' => (int) $accC['id']]);
+                  Support::flash(MHW\tf('Codice {codice} applicato.', ['{codice}' => $rigaC['code']])); }
+            catch (\RuntimeException $e) { Support::flash(MHW\t($e->getMessage()), 'err'); }
+        } else $codiceDalLink();
+    }
     // 9L · Per chi non è dentro, /piano è «Quale piano scegliere»: il questionario come pagina (il link «Rispondi a 3 domande»
     // della home senza JavaScript). Con ?piano=… (un piano già scelto) resta la strada di sempre: accesso, poi la scelta.
     if (!Auth::user() && $_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['piano'])) {

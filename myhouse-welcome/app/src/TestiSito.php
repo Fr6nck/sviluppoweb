@@ -27,6 +27,7 @@ final class TestiSito
         'scene'    => ['Le tre scene', 'Le tre foto sotto il titolo: il QR, l\'ospite, l\'host. Le foto si cambiano in fondo a questa pagina.'],
         'soddisfatti' => ['Più sanno, meglio stanno', 'Informazioni → recensioni → prenotazioni (8G): tre punti e la scheda con i quattro passi, tra le scene e «Cosa trova l\'ospite».'],
         'prodotto' => ['Cosa trova l\'ospite', ''],
+        'promo'    => ['Promo (fascia sotto i piani)', '9U · La fascia della promo in corso (Amministrazione → Codici sconto, «Mostra in home»), sotto le schede dei piani, in /piano e nelle pagine per tipologia; sparisce da sola alla fine. {promo} il nome (Promo novembre), {percento} lo sconto, {codice} il codice, {data} l\'ultimo giorno, {giudizio} lo sconto del «Giudizio con sconto», {totale} la somma.'],
         'assistente' => ['Concierge AI', '10 · 9T: la sezione del Concierge AI (l\'assistente che risponde agli ospiti con il testo della guida), dopo «Cosa trova l\'ospite». Compare solo se la funzione è in vendita in un piano. Il nome «Concierge AI» non si traduce. {domande} diventa il limite mensile per struttura (Impostazioni), {ora} l\'orario di check-out della guida vetrina.'],
         'dicono'   => ['Le guide dei nostri host, Cosa dicono di noi e «Giudizio con sconto»', '9L: due sezioni della home, approvate separatamente in Vendite → Giudizi e vetrina. «Le guide dei nostri host» (vetrina.*): le schede di chi ha aderito al programma, prima dei piani; «Cosa dicono di noi» (dicono.*): i giudizi accesi a mano, dopo «Più sanno, meglio stanno». Ognuna compare solo se ha almeno una voce. Le note in fondo sono obbligatorie: si possono cambiare, non togliere (vuote, tornano quelle di serie). Qui anche il testo dell\'unica casella del programma, uguale al pagamento e nel pannello.'],
         'perchi'   => ['Per chi è', 'Le sei schede (9K): casa vacanza, B&B, affittacamere, agriturismo, più strutture, property manager. Ognuna porta alla sua pagina; le foto si cambiano in fondo a questa pagina («Per chi è · …»).'],
@@ -105,6 +106,10 @@ final class TestiSito
             'prodotto.testo'  => ['prodotto', 'Testo', 'area', 'Le informazioni del soggiorno, in ordine e sempre sul telefono, nella lingua dell\'ospite. {sezioni} sezioni pronte da compilare, più le sezioni libere per tutto il resto: scegli quelle che servono ai tuoi ospiti.', '{sezioni} diventa il numero di sezioni del catalogo.'],
             'prodotto.link'   => ['prodotto', 'Link alla demo', 'riga', 'Sfoglia la guida di {demo}', '{demo} è il nome della guida dimostrativa.'],
             // ---- 10 · 9T: Concierge AI (prima «Chiedi alla guida»; il badge «AI» accanto alla riga sopra il titolo è fisso)
+            'promo.titolo'   => ['promo', 'Titolo', 'riga', '{promo}: −{percento}% sul primo anno, fino al {data}.', ''],
+            'promo.testo'    => ['promo', 'Testo (con il «Giudizio con sconto»)', 'area', 'Usa il codice {codice} quando attivi la guida (dal bottone è già inserito). Se aderisci al «Giudizio con sconto» quando paghi hai un altro **{giudizio}%**: in tutto **−{totale}%** sul primo anno. Dal secondo anno prezzo pieno, meno gli sconti di «Porta un amico» che avrai maturato.', 'Per una promo che si somma al giudizio.'],
+            'promo.semplice' => ['promo', 'Testo (senza il giudizio)', 'area', 'Usa il codice {codice} quando attivi la guida (dal bottone è già inserito). Dal secondo anno prezzo pieno, meno gli sconti che avrai maturato.', 'Per una promo che non si somma al giudizio.'],
+            'promo.bottone'  => ['promo', 'Bottone', 'riga', 'Approfitta della promo', ''],
             'assistente.kicker' => ['assistente', 'Riga sopra il titolo', 'riga', 'Concierge AI', 'Il nome di prodotto: uguale in italiano e in inglese.'],
             'assistente.titolo' => ['assistente', 'Titolo', 'riga', 'Risponde ai tuoi ospiti, a qualsiasi ora.', ''],
             'assistente.testo'  => ['assistente', 'Testo', 'area', 'L\'ospite scrive nella sua lingua. Il Concierge AI risponde con quello che hai scritto nella guida e indica la sezione da cui viene.', ''],
@@ -437,7 +442,7 @@ final class TestiSito
 
     /** Le foto della home: nome => [etichetta, file di serie in assets/foto, consiglio]. */
     public const IMMAGINI = [
-        'telefono'     => ['La schermata nel telefono, in cima', 'checco-telefono.jpg', 'Orizzontale, 600 × 422 px: è la foto che l\'ospite vede sotto «Benvenuti». Di serie il portone di Casa Checco.'],
+        'telefono'     => ['La schermata nel telefono, in cima', 'checco-telefono.jpg', 'Orizzontale, 600 × 422 px: è la foto che l\'ospite vede sotto «Benvenuti». Di serie il portone di Casa Checco. Questa foto è anche la copertina della guida di esempio (Casa Checco).'],
         'scena-qr'     => ['Prima scena: il QR all\'ingresso', 'scena-qr.jpg', '1200 × 750 px. Se manca, la scena mostra un disegno.'],
         'scena-ospite' => ['Seconda scena: l\'ospite', 'scena-ospite.jpg', '1200 × 750 px.'],
         'scena-host'   => ['Terza scena: l\'host', 'scena-host.jpg', '1200 × 750 px.'],

@@ -54,11 +54,26 @@ $celle = function (array $m) use ($soldi) { ?>
     quella dei bonifici è scritta all'attivazione. <?= $t['senza_iva'] ? '* ' . (int) $t['senza_iva'] . ' pagamenti senza IVA letta da Stripe: controllali nella dashboard di Stripe.' : '' ?>
     Le fatture elettroniche si fanno in Adamo: il numero comparirà qui quando Adamo sarà collegato.</p>
 
-  <?php if ($mese !== ''): ?>
+  <?php if (!empty($promo)): /* 9U · le promo: quanti clienti e quanto sconto, e il filtro dei pagamenti */ ?>
+  <section class="stack" style="gap:10px" aria-labelledby="promo-titolo">
+    <h2 id="promo-titolo" style="font-size:22px">Promo</h2>
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th scope="col">Promo</th><th scope="col">Codice</th><th scope="col">Periodo</th><th scope="col">Clienti</th><th scope="col">Sconto concesso</th><th scope="col"><span class="sr-only">Pagamenti</span></th></tr></thead>
+      <tbody><?php foreach ($promo as $pr): ?>
+        <tr><td><?= Support::e($pr['nome']) ?> · −<?= (int) $pr['percento'] ?>%</td><td><code><?= Support::e($pr['codice']) ?></code></td>
+          <td class="small"><?= Support::e(Support::date($pr['da'])) ?> – <?= Support::e(Support::date($pr['a'])) ?></td>
+          <td><?= (int) $pr['clienti'] ?></td><td><?= $soldi($pr['sconto']) ?></td>
+          <td><a href="<?= b() ?>/admin/cassa?anno=<?= (int) $anno ?>&amp;promo=<?= (int) $pr['id'] ?>#pagamenti">Vedi i pagamenti</a></td></tr>
+      <?php endforeach; ?></tbody></table></div>
+    <p class="tiny muted" style="margin:0">Lo sconto concesso è la parte della promo (con il «Giudizio con sconto» il coupon è uno solo: alla promo va la sua quota). Clienti di prova e staff esclusi.</p>
+  </section>
+  <?php endif; ?>
+
+  <?php if ($mese !== '' || !empty($promoFiltro)): ?>
   <section class="stack" style="gap:10px" id="pagamenti" aria-labelledby="pag-titolo">
-    <div class="spread spread--mid"><h2 id="pag-titolo" style="font-size:22px">Pagamenti di <?= Support::e($nomeMese($mese)) ?> <?= (int) $anno ?></h2>
-      <a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/cassa?anno=<?= (int) $anno ?>&amp;mese=<?= Support::e($mese) ?>&amp;formato=csv&amp;pagamenti=1">Esporta CSV</a></div>
-    <?php if (!$pagamenti): ?><p class="muted small">Nessun pagamento in questo mese.</p><?php else: ?>
+    <div class="spread spread--mid"><h2 id="pag-titolo" style="font-size:22px"><?php if (!empty($promoFiltro)): ?>Pagamenti con la <?= Support::e($promoFiltro['nome_promo']) ?> (<?= Support::e($promoFiltro['code']) ?>)<?php else: ?>Pagamenti di <?= Support::e($nomeMese($mese)) ?> <?= (int) $anno ?><?php endif; ?></h2>
+      <?php if ($mese !== ''): ?><a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/cassa?anno=<?= (int) $anno ?>&amp;mese=<?= Support::e($mese) ?>&amp;formato=csv&amp;pagamenti=1">Esporta CSV</a><?php else: ?><a class="btn btn--ghost btn--sm" href="<?= b() ?>/admin/cassa?anno=<?= (int) $anno ?>">Togli il filtro</a><?php endif; ?></div>
+    <?php if (!$pagamenti): ?><p class="muted small"><?= !empty($promoFiltro) ? 'Nessun pagamento con questa promo.' : 'Nessun pagamento in questo mese.' ?></p><?php else: ?>
     <div class="tablewrap"><table class="data">
       <thead><tr><th>Data</th><th>Codice</th><th>Cliente</th><th>Tipo</th><th>Piano</th><th>Sconti</th><th>Imponibile</th><th>IVA</th><th>Totale</th><th>Fattura</th><th><span class="sr-only">Nei conti</span></th></tr></thead>
       <tbody><?php foreach ($pagamenti as $p): $esc = (string) ($p['escluso'] ?? ''); /* 9R · escluso: riga barrata con la pillola, fuori dai totali */ ?>

@@ -34,7 +34,9 @@ $F = fn(string $n) => $anteprimaTesti ? ' data-foto="' . $n . '"' : '';         
 $dentro = !empty($user);
 $ctaCrea = fn() => $dentro ? $U('Vai alle tue guide', 'Go to your guides') : $T('cta.crea');
 // 8E: dall'inglese la registrazione riceve ?lang=en (il pannello per ora resta in italiano).
-$vai = fn(int $pv) => b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . $pv . ($en && !$dentro ? '&lang=en' : '');
+// 9U · La promo in corso (Promo novembre): badge, prezzo barrato e scontato sulle schede, fascia sotto; i bottoni portano il codice.
+$promoV = MHW\Sconti::promoPerChiGuarda();
+$vai = fn(int $pv) => b() . ($dentro ? '/piano?piano=' : '/registrati?piano=') . $pv . ($en && !$dentro ? '&lang=en' : '') . ($promoV ? '&codice=' . rawurlencode((string) $promoV['code']) : '');
 $crea = b() . ($dentro ? '/pannello' : '/registrati' . ($en ? '?lang=en' : ''));
 $demoUrl = $demo ? b() . '/g/' . Support::e($demo['slug']) . '/benvenuto' . ($en ? '?l=en' : '') : null;
 $nomeDemo = $demo['name'] ?? 'Casa Lucia';
@@ -127,7 +129,7 @@ if ($dentro):
           <span class="device__top"><?= Icon::brand(24) ?><span><?= Support::e($nomeDemo) ?></span>
             <?php if ($demo): ?><span class="demo-tag">Demo</span><?php endif; ?></span>
           <span class="device__title"><?= Support::e(MHW\I18n::t($locSito, 'welcome_1')) ?><br><?= Support::e(MHW\I18n::t($locSito, 'welcome_2', $nomeDemo)) ?></span>
-          <span class="device__shot"><?php $telPers = TestiSito::immagine('telefono'); if ($telPers['caricata']): ?>
+          <span class="device__shot"><?php $telPers = MHW\Demo::fotoTelefono($demo ?: null); /* 9U · la copertina della guida demo, una sola fonte */ if ($telPers['caricata']): ?>
             <img src="<?= Support::e($telPers['url']) ?>" alt="<?= $U('La copertina della guida di ' . Support::e($nomeDemo) . ' sul telefono', 'The cover of the ' . Support::e($nomeDemo) . ' guide on the phone') ?>" width="600" height="422" loading="eager" decoding="async"<?= $F('telefono') ?>>
             <?php else: ?><picture><source srcset="<?= Support::e($telefonoWebp) ?>" type="image/webp">
             <img src="<?= Support::e($telefonoJpg) ?>" alt="<?= $U('La copertina della guida di ' . Support::e($nomeDemo) . ' sul telefono', 'The cover of the ' . Support::e($nomeDemo) . ' guide on the phone') ?>" width="600" height="422" loading="eager" decoding="async"<?= $F('telefono') ?>></picture><?php endif; ?>
@@ -481,7 +483,8 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
         <div class="plan__testa">
           <div class="spread spread--mid" style="gap:12px;align-items:center">
             <span class="plan__nome"><?= Support::e($nome) ?></span>
-            <?php if ($p['badge'] !== ''): ?><span class="badge badge--ochre-strong"><?= Support::e($p['badge']) ?></span><?php endif; ?>
+            <?php if ($promoV): ?><span class="badge-promo">−<?= (int) $promoV['value'] ?>%</span>
+            <?php elseif ($p['badge'] !== ''): ?><span class="badge badge--ochre-strong"><?= Support::e($p['badge']) ?></span><?php endif; ?>
           </div>
           <?php if (trim((string) $p['tagline']) !== ''): /* il posizionamento: per chi è indicato */ ?>
             <p class="plan__per"><b><?= $U('Ideale per', 'Ideal for') ?></b> <?= Support::e(preg_replace($en ? '/^For /u' : '/^Per /u', '', trim((string) $p['tagline']))) ?></p>
@@ -493,8 +496,9 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
                   con base e costo aggiuntivo presi dal listino. */
               $minimo = (int) $primo['min_quantity']; ?>
           <form class="plan__scelta" method="get" action="<?= b() . ($dentro ? '/piano' : '/registrati') ?>" data-portfolio
-                data-quantita data-base="<?= (int) $primo['price_cents'] ?>" data-extra="<?= (int) $primo['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($primo)) ?>" data-valuta="<?= Support::e($primo['currency']) ?>">
+                data-quantita data-base="<?= (int) $primo['price_cents'] ?>" data-extra="<?= (int) $primo['extra_price_cents'] ?>" data-scaglioni="<?= Support::e(Plans::tiersJson($primo)) ?>" data-valuta="<?= Support::e($primo['currency']) ?>"<?= $promoV ? ' data-sconto="' . (int) $promoV['value'] . '"' : '' ?>>
             <input type="hidden" name="piano" value="<?= (int) $primo['pv_id'] ?>">
+            <?php if ($promoV): ?><input type="hidden" name="codice" value="<?= Support::e((string) $promoV['code']) ?>"><?php endif; ?>
             <?php $voci = $vociPiano($p); include __DIR__ . '/_voci_piano.php'; ?>
             <div class="plan__quante">
               <?php $pvS = $primo; $qS = $minimo; include __DIR__ . '/_scaglioni.php'; ?>
@@ -503,13 +507,15 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
                        si apre il riquadro del preventivo sotto le schede. Il server rifiuta comunque un ordine oltre il massimo. */ ?>
               <input id="<?= $idSel ?>" name="strutture" type="number" inputmode="numeric" step="1" required
                      min="<?= $minimo ?>" max="999" data-max-prezzo="<?= (int) $primo['max_quantity'] ?>" value="<?= $minimo ?>">
-              <div class="plan__oltre" data-oltre hidden><p><?= $U('Più di ' . (int) $primo['max_quantity'] . ' strutture? Ti facciamo una proposta su misura.', 'More than ' . (int) $primo['max_quantity'] . ' properties? We will make you a tailored offer.') ?></p>
-                <a class="btn btn--sm" href="#preventivo"><?= $U('Chiedi il preventivo', 'Ask for a quote') ?></a></div>
+              <?php $maxO = (int) $primo['max_quantity']; $hrefO = '#preventivo'; include __DIR__ . '/_oltre.php'; ?>
             </div>
             <div class="plan__prezzo">
-              <span class="price" aria-live="polite"><?= Iva::cifra(Plans::price($primo, $minimo), $primo['currency'], 'data-totale') ?><small> <?= Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?></small></span>
-              <?= Iva::dettaglio(Plans::price($primo, $minimo), $en, $primo['currency']) ?>
-              <span class="plan__mese"><?= $U('circa', 'about') ?> <?= Iva::cifra(Plans::monthly(Plans::price($primo, $minimo)), $primo['currency'], 'data-mensile') ?> <?= $U('al mese', 'a month') ?></span>
+              <?php $listinoP = Plans::price($primo, $minimo); $primoAnnoP = $promoV ? MHW\Sconti::conPromo($listinoP, $promoV) : $listinoP; ?>
+              <?php if ($promoV): ?><span class="price price--barrato"><?= Iva::cifra($listinoP, $primo['currency'], 'data-pieno', 's') ?></span><?php endif; ?>
+              <span class="price" aria-live="polite"><?= Iva::cifra($primoAnnoP, $primo['currency'], 'data-totale') ?><small> <?= $promoV ? Iva::nota($U('+ IVA il 1° anno', '+ VAT the 1st year'), $U('IVA inclusa il 1° anno', 'incl. VAT the 1st year')) : Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?></small></span>
+              <?= Iva::dettaglio($primoAnnoP, $en, $primo['currency']) ?>
+              <?php if ($promoV): ?><span class="plan__poi"><?= $U('poi', 'then') ?> <?= Iva::cifra($listinoP, $primo['currency'], 'data-pieno-poi') ?> <?= Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?> · <?= $U('da ', 'from ') . $minimo . $U(' a ', ' to ') . (int) $primo['max_quantity'] . $U(' strutture', ' properties') ?></span>
+              <?php else: ?><span class="plan__mese"><?= $U('circa', 'about') ?> <?= Iva::cifra(Plans::monthly($listinoP), $primo['currency'], 'data-mensile') ?> <?= $U('al mese', 'a month') ?></span><?php endif; ?>
             </div>
             <button class="btn"><?= Support::e($p['cta_label'] ?: $U('Scegli ', 'Choose ') . $nome) ?></button>
           </form>
@@ -517,9 +523,12 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
           <?php $voci = $vociPiano($p); include __DIR__ . '/_voci_piano.php'; ?>
           <div class="plan__quante"></div>
           <div class="plan__prezzo">
-            <span class="price"><?= Iva::cifra((int) $primo['price_cents'], $primo['currency']) ?><small> <?= Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?></small></span>
-            <?= Iva::dettaglio((int) $primo['price_cents'], $en, $primo['currency']) ?>
-            <span class="plan__mese"><?= $U('circa', 'about') ?> <?= Iva::cifra(Plans::monthly((int) $primo['price_cents']), $primo['currency']) ?> <?= $U('al mese', 'a month') ?></span>
+            <?php $listinoS = (int) $primo['price_cents']; $primoAnnoS = $promoV ? MHW\Sconti::conPromo($listinoS, $promoV) : $listinoS; ?>
+            <?php if ($promoV): ?><span class="price price--barrato"><?= Iva::cifra($listinoS, $primo['currency'], '', 's') ?></span><?php endif; ?>
+            <span class="price"><?= Iva::cifra($primoAnnoS, $primo['currency']) ?><small> <?= $promoV ? Iva::nota($U('+ IVA il 1° anno', '+ VAT the 1st year'), $U('IVA inclusa il 1° anno', 'incl. VAT the 1st year')) : Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?></small></span>
+            <?= Iva::dettaglio($primoAnnoS, $en, $primo['currency']) ?>
+            <?php if ($promoV): ?><span class="plan__poi"><?= $U('poi', 'then') ?> <?= Iva::cifra($listinoS, $primo['currency']) ?> <?= Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?></span>
+            <?php else: ?><span class="plan__mese"><?= $U('circa', 'about') ?> <?= Iva::cifra(Plans::monthly($listinoS), $primo['currency']) ?> <?= $U('al mese', 'a month') ?></span><?php endif; ?>
           </div>
           <a class="btn" href="<?= $vai((int) $p['pv_id']) ?>"><?= Support::e($p['cta_label'] ?: $U('Scegli ', 'Choose ') . $nome) ?></a>
         <?php endif; ?>
@@ -528,6 +537,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
   </div>
   <?php /* 9A · Il riquadro del preventivo, sotto le schede: si apre oltre il massimo del Portfolio. */
         foreach ($offers as $of) foreach ($of['options'] as $oP) if (Plans::perProperty($oP)) { $pvP = $oP; $qP = 0; $tornaP = $en ? '/en' : '/'; include __DIR__ . '/_preventivo.php'; break 2; } ?>
+  <?php if ($promoV): $promoR = $promoV; $promoPiccola = false; include __DIR__ . '/_promo.php'; endif; /* 9U · la fascia della promo, sopra «Confronta» */ ?>
   <?php if (isset($qPiani)): /* 9L · Le tre schede restano come sono: nella riga di «Confronta tutti i piani», a destra,
          «Non sai quale scegliere?» apre la finestra con il questionario (senza JavaScript è un link a /piano). */ ?>
     <div class="piani__riga">

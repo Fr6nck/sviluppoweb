@@ -20,7 +20,10 @@ final class Sconti
 
     public static function disponibili(): bool { return Migrator::tableExists('discount_codes'); }
 
-    public static function oggi(): string { return Eventi::oggi(); }
+    /** 9U · Solo per le prove (stesso processo): una data forzata, per simulare per esempio il 1° dicembre dopo una promo. */
+    public static ?string $oggiProva = null;
+
+    public static function oggi(): string { return self::$oggiProva ?? Eventi::oggi(); }
 
     /** «MHW-» più 6 caratteri leggibili, mai già usato. */
     public static function genera(): string
@@ -52,7 +55,7 @@ final class Sconti
     {
         $oggi = self::oggi();
         if (!(int) $r['active']) return 'disattivato';
-        if ((string) $r['stripe_coupon_id'] === '') return 'da_sincronizzare';
+        if ((string) $r['stripe_coupon_id'] === '' && !self::cumulabile($r)) return 'da_sincronizzare';   // 9U · la promo usa il coupon combinato
         if ($oggi > $r['valid_until']) return 'scaduto';
         if ((int) $r['max_uses'] > 0 && self::utilizzi((int) $r['id']) >= (int) $r['max_uses']) return 'esaurito';
         if ($oggi < $r['valid_from']) return 'programmato';
@@ -82,12 +85,12 @@ final class Sconti
         }
         $oggi = self::oggi();
         if (!(int) $r['active']) throw new \RuntimeException('Questo codice non è più attivo.');
-        if ($oggi > $r['valid_until']) throw new \RuntimeException(strtr(Pannello::t('Questo codice è scaduto il {data}.'), ['{data}' => self::giorno($r['valid_until'])]));
+        if ($oggi > $r['valid_until']) throw new \RuntimeException(self::scadutaTesto($r));
         if ($oggi < $r['valid_from']) throw new \RuntimeException(strtr(Pannello::t('Questo codice sarà valido dal {data}.'), ['{data}' => self::giorno($r['valid_from'])]));
         if ((int) $r['max_uses'] > 0 && self::utilizzi((int) $r['id']) >= (int) $r['max_uses']) {
             throw new \RuntimeException('Questo codice ha raggiunto il numero massimo di utilizzi.');
         }
-        if ((string) $r['stripe_coupon_id'] === '') throw new \RuntimeException('Questo codice non è ancora utilizzabile: riprova tra qualche ora o scrivici.');
+        if ((string) $r['stripe_coupon_id'] === '' && !self::cumulabile($r)) throw new \RuntimeException('Questo codice non è ancora utilizzabile: riprova tra qualche ora o scrivici.');
         if ($pv) {
             $pkg = Db::one('SELECT p.code, p.name FROM packages p JOIN package_versions pv ON pv.package_id = p.id WHERE pv.id = ?', [(int) $pv['id']]);
             $ammessi = self::pacchetti($r);
@@ -98,6 +101,75 @@ final class Sconti
             throw new \RuntimeException('I codici sconto valgono solo per il primo abbonamento.');
         }
         return $r;
+    }
+
+    // ------------------------------------------------------------ 9U · le promo (Promo novembre)
+
+    /** 9U · Il codice si somma ad altri sconti di sistema (giudizio e/o invito): allora sta tra loro, con un solo coupon. */
+    public static function cumulabile(array $r): bool
+    {
+        return empty($r['sistema']) && ($r['kind'] ?? '') === 'percent' && (!empty($r['somma_giudizio']) || !empty($r['somma_invito']));
+    }
+
+    /** 9U · «Promo novembre» (il nome della promo) o «Il codice NOVEMBRE17». */
+    public static function nomePromo(array $r): string
+    {
+        return trim((string) ($r['nome_promo'] ?? '')) !== '' ? Pannello::t((string) $r['nome_promo']) : strtr(Pannello::t('Il codice {codice}'), ['{codice}' => $r['code']]);
+    }
+
+    /** Il messaggio della scadenza: «La Promo novembre è scaduta il 30 novembre.» o quello di sempre. */
+    public static function scadutaTesto(array $r): string
+    {
+        if (trim((string) ($r['nome_promo'] ?? '')) === '') return strtr(Pannello::t('Questo codice è scaduto il {data}.'), ['{data}' => self::giorno($r['valid_until'])]);
+        return strtr(Pannello::t('La {promo} è scaduta il {data}.'), ['{promo}' => self::nomePromo($r), '{data}' => Pannello::giornoMese((string) $r['valid_until'])]);
+    }
+
+    /**
+     * 9U · La promo da mostrare in home, in /piano e nelle pagine per tipologia (badge, prezzi barrati, fascia): un codice
+     * attivo con «mostra in home», a percentuale, valido oggi (Europe/Rome) e non esaurito. Dal giorno dopo la fine sparisce
+     * da sola. $oggi solo per le prove.
+     */
+    public static function promoAttiva(?string $oggi = null): ?array
+    {
+        static $cache = [];
+        $oggi ??= self::oggi();
+        if (array_key_exists($oggi, $cache)) return $cache[$oggi];
+        if (!self::disponibili() || !Migrator::columnExists('discount_codes', 'in_home')) return $cache[$oggi] = null;
+        foreach (Db::all("SELECT * FROM discount_codes WHERE in_home = 1 AND active = 1 AND kind = 'percent' AND valid_from <= ? AND valid_until >= ? ORDER BY value DESC, id", [$oggi, $oggi]) as $r) {
+            if ((int) $r['max_uses'] > 0 && self::utilizzi((int) $r['id']) >= (int) $r['max_uses']) continue;
+            return $cache[$oggi] = $r;
+        }
+        return $cache[$oggi] = null;
+    }
+
+    /** 9U · La promo da mostrare a chi guarda adesso: a tutti, tranne a chi è dentro e ha già pagato (non è un cliente nuovo). */
+    public static function promoPerChiGuarda(): ?array
+    {
+        $r = self::promoAttiva();
+        if (!$r) return null;
+        $u = Auth::user();
+        if ($u && ($u['role'] ?? '') === 'admin') return $r;
+        // Non con un codice partner (dal link o nell'account) né con un codice omaggio prenotato: lì vale il loro.
+        if (!$u) return ProgrammaPartner::dalLink() ? null : $r;
+        $acc = Auth::account();
+        if ($acc && (ProgrammaPartner::scontoDiSistema($acc) || Omaggi::daUsare($acc))) return null;
+        return self::promoPer($acc) ? $r : null;
+    }
+
+    /** 9U · Il prezzo del primo anno con la sola promo (per le schede: il giudizio si aggiunge al pagamento). */
+    public static function conPromo(int $prezzo, array $r): int { return self::netto($prezzo, (int) $r['value']); }
+
+    /** 9U · La fine della promo come istante (l'ultimo giorno alle 23:59:59 di Roma): per il conto alla rovescia. */
+    public static function fine(array $r): int
+    {
+        return (new \DateTimeImmutable($r['valid_until'] . ' 23:59:59', new \DateTimeZone('Europe/Rome')))->getTimestamp();
+    }
+
+    /** 9U · Per chi vale la promo «inserita da sola»: chi guarda senza account (non dal link di un partner), o un account che non ha ancora pagato. */
+    private static function promoPer(?array $acc): bool
+    {
+        if (!$acc) return !ProgrammaPartner::dalLink();   // chi arriva dal link di un partner ha lo sconto del partner
+        return !Db::one("SELECT id FROM orders WHERE account_id = ? AND status = 'paid'", [(int) $acc['id']]);
     }
 
     /** Lo sconto in centesimi su un prezzo: mai più del prezzo meno 1 €. */
@@ -178,12 +250,25 @@ final class Sconti
             $prezzi = array_map(fn($o) => (int) $o['price_cents'], array_filter(Plans::public(), fn($o) => !$scelti || in_array($o['code'], $scelti, true)));
             if ($prezzi && $value >= min($prezzi)) throw new \RuntimeException('L\'importo deve essere minore del prezzo del piano meno caro (' . Support::money(min($prezzi)) . ').');
         }
+        $promo = self::campiPromo($in, $kind);
         $id = Db::insert('discount_codes', [
             'code' => $code, 'kind' => $kind, 'value' => $value, 'valid_from' => $da, 'valid_until' => $a, 'max_uses' => $max,
             'packages' => implode(',', $scelti), 'note' => mb_substr(trim((string) ($in['note'] ?? '')), 0, 255),
             'active' => 1, 'stripe_coupon_id' => '', 'created_at' => Support::now(),
-        ]);
-        return [$id, self::sincronizza(self::riga($id))];
+        ] + $promo);
+        $r = self::riga($id);
+        return [$id, self::cumulabile($r) ? true : self::sincronizza($r)];   // 9U · la promo usa il coupon combinato del primo anno
+    }
+
+    /** 9U · Le caselle della promo dal modulo (vuote se la migrazione 070 non c'è ancora). Solo per i codici a percentuale. */
+    private static function campiPromo(array $in, string $kind): array
+    {
+        if (!Migrator::columnExists('discount_codes', 'in_home')) return [];
+        $c = ['somma_giudizio' => empty($in['somma_giudizio']) ? 0 : 1, 'somma_invito' => empty($in['somma_invito']) ? 0 : 1, 'in_home' => empty($in['in_home']) ? 0 : 1,
+              'nome_promo' => mb_substr(trim((string) ($in['nome_promo'] ?? '')), 0, 80)];
+        if ($kind !== 'percent' && ($c['somma_giudizio'] || $c['somma_invito'] || $c['in_home'])) throw new \RuntimeException('Solo un codice a percentuale si somma ad altri sconti o va in home.');
+        if ($c['in_home'] && $c['nome_promo'] === '') throw new \RuntimeException('Scrivi il nome della promo: compare nella fascia della home e nel riepilogo.');
+        return $c;
     }
 
     /** Disattiva: il coupon su Stripe si cancella, chi ha già pagato conserva il suo sconto. */
@@ -199,12 +284,13 @@ final class Sconti
         Db::run('UPDATE accounts SET intended_discount_code_id = NULL WHERE intended_discount_code_id = ?', [$id]);
     }
 
-    /** Nota, piani e stato sono le sole cose che si cambiano dopo (il coupon Stripe resta quello). */
+    /** Nota, piani, stato e (9U) le caselle della promo sono le sole cose che si cambiano dopo (il coupon Stripe resta quello). */
     public static function aggiorna(int $id, array $in): void
     {
         $tutti = array_column(Db::all('SELECT code FROM packages WHERE public = 1'), 'code');
         $scelti = ($in['piani'] ?? 'tutti') === 'tutti' ? [] : array_values(array_intersect($tutti, array_map('strval', (array) ($in['packages'] ?? []))));
-        Db::update('discount_codes', ['note' => mb_substr(trim((string) ($in['note'] ?? '')), 0, 255), 'packages' => implode(',', $scelti)], 'id = :id', ['id' => $id]);
+        $r = self::riga($id) ?? [];
+        Db::update('discount_codes', ['note' => mb_substr(trim((string) ($in['note'] ?? '')), 0, 255), 'packages' => implode(',', $scelti)] + self::campiPromo($in, (string) ($r['kind'] ?? 'percent')), 'id = :id', ['id' => $id]);
     }
 
     /**
@@ -220,11 +306,13 @@ final class Sconti
         if ($centesimi === null) {
             $pv = Db::one('SELECT * FROM package_versions WHERE id = ?', [(int) $order['package_version_id']]) ?: [];
             $centesimi = $pv ? self::calcola($r, Plans::price($pv, max(1, (int) ($order['quantity'] ?? 1)))) : 0;
-        } elseif (($order['sconti'] ?? '') !== '' && !empty($r['sistema'])) {
+        } elseif (($order['sconti'] ?? '') !== '' && (!empty($r['sistema']) || self::cumulabile($r))) {
             // 9A · Coupon combinato (invito + giudizio): all'invito spetta la sua parte, in proporzione ai percenti.
+            // 9U · Lo stesso per la promo (promo + giudizio): alla promo la sua parte.
             $parti = []; $totale = 0;
             foreach (explode(',', (string) $order['sconti']) as $pezzo) { [$t, $n] = array_pad(explode(':', $pezzo, 2), 2, '0'); $parti[$t] = (int) $n; $totale += (int) $n; }
-            if ($totale > 0 && isset($parti['invito'])) $centesimi = (int) round($centesimi * $parti['invito'] / $totale);
+            $mia = !empty($r['sistema']) ? 'invito' : 'promo';
+            if ($totale > 0 && isset($parti[$mia])) $centesimi = (int) round($centesimi * $parti[$mia] / $totale);
         }
         Db::insert('discount_redemptions', ['discount_code_id' => $r['id'], 'account_id' => (int) $order['account_id'], 'order_id' => (int) $order['id'],
                                             'discount_cents' => $centesimi, 'created_at' => Support::now()]);
@@ -474,9 +562,45 @@ final class Sconti
         $visti = []; $sistema = array_values(array_filter($sistema, function ($s) use (&$visti) { if (isset($visti[$s['tipo']])) return false; $visti[$s['tipo']] = 1; return true; }));
         $percento = min(100, array_sum(array_column($sistema, 'percento')));
         $scontoSistema = $prezzo - self::netto($prezzo, $percento);
-        $manuale = null; $scontoManuale = 0;
+        $manuale = null; $scontoManuale = 0; $notaPromo = '';
         if (!$omaggio && $acc && self::disponibili() && !empty($acc['intended_discount_code_id']) && ($r = self::riga((int) $acc['intended_discount_code_id'])) && empty($r['sistema'])) {
-            try { self::valida($r['code'], $acc, $pv, $q); $manuale = $r; $scontoManuale = self::calcola($r, $prezzo); } catch (\RuntimeException) { $manuale = null; }
+            try { self::valida($r['code'], $acc, $pv, $q); $manuale = $r; $scontoManuale = self::calcola($r, $prezzo); }
+            catch (\RuntimeException) {
+                $manuale = null;
+                if (trim((string) ($r['nome_promo'] ?? '')) !== '' && self::oggi() > $r['valid_until']) $notaPromo = self::scadutaTesto($r);   // 9U · «La Promo novembre è scaduta il 30 novembre.»
+            }
+        }
+        // 9U · La promo (un codice «cumulabile», come NOVEMBRE17): quella scritta o arrivata dal link, oppure, finché vale ed è
+        // in home, inserita da sola per chi non ha ancora pagato e non ha un altro codice. Entra tra gli sconti di sistema:
+        // si somma al giudizio e/o all'invito se le sue caselle lo dicono; con gli altri (partner, invito se no) vale il più alto.
+        $promo = null;
+        if (self::disponibili()) {
+            if ($manuale && self::cumulabile($manuale)) { $promo = $manuale; $manuale = null; $scontoManuale = 0; }
+            elseif (!$manuale && $notaPromo === '' && ($pa = self::promoAttiva()) && self::cumulabile($pa) && self::promoPer($acc)) {
+                $ammessi = self::pacchetti($pa);
+                $pkg = $ammessi ? (string) Db::val('SELECT p.code FROM packages p JOIN package_versions pv ON pv.package_id = p.id WHERE pv.id = ?', [(int) $pv['id']], '') : '';
+                if (!$ammessi || in_array($pkg, $ammessi, true)) $promo = $pa;
+            }
+            // Mai con un codice omaggio né con un codice partner (il loro sconto resta): il riepilogo lo dice.
+            if ($promo && $omaggio) { $notaPromo = strtr(Pannello::t('La {promo} non vale con il codice omaggio.'), ['{promo}' => self::nomePromo($promo)]); $promo = null; }
+            elseif ($promo && array_filter($sistema, fn($s) => $s['tipo'] === 'partner')) {
+                $notaPromo = strtr(Pannello::t('La {promo} non vale per chi arriva da un partner: resta lo sconto del partner.'), ['{promo}' => self::nomePromo($promo)]); $promo = null;
+            }
+        }
+        if ($promo) {
+            $rigaP = ['tipo' => 'promo', 'nome' => trim(self::nomePromo($promo) . ' ' . $promo['code']), 'percento' => (int) $promo['value'], 'codice_id' => (int) $promo['id']];
+            $con = [$rigaP]; $fuori = [];
+            foreach ($sistema as $s) {
+                if (($s['tipo'] === 'giudizio' && !empty($promo['somma_giudizio'])) || ($s['tipo'] === 'invito' && !empty($promo['somma_invito']))) $con[] = $s; else $fuori[] = $s;
+            }
+            $pctCon = min(100, array_sum(array_column($con, 'percento')));
+            $nomeP = self::nomePromo($promo);
+            if ($pctCon >= $percento) {
+                if ($fuori) $notaPromo = strtr(Pannello::t('La {promo} non si somma a: {altri}. Vale il più alto.'), ['{promo}' => $nomeP, '{altri}' => implode(', ', array_column($fuori, 'nome'))]);
+                $sistema = $con; $percento = $pctCon; $scontoSistema = $prezzo - self::netto($prezzo, $percento);
+            } else {
+                $notaPromo = strtr(Pannello::t('La {promo} vale meno degli altri sconti: non si applica.'), ['{promo}' => $nomeP]);
+            }
         }
         $righe = []; $nota = ''; $scelta = 'nessuna';
         if ($manuale && $scontoManuale > $scontoSistema) {
@@ -497,6 +621,7 @@ final class Sconti
         } else {
             $sconto = 0;
         }
+        if ($notaPromo !== '' && $scelta !== 'manuale') $nota = trim($notaPromo . ' ' . $nota);
         if ($omaggio && $acc && !empty($acc['intended_discount_code_id'])) $nota = Pannello::t('Con il codice omaggio non si applicano altri codici sconto né l\'invito di un amico.');
         if ($omaggio && $acc && !empty($acc['giudizio_adesione'])) $nota = trim($nota . ' ' . Pannello::t('Lo sconto del giudizio vale dal primo rinnovo dopo il primo pagamento.'));
         return ['prezzo' => $prezzo, 'righe' => $righe, 'sconto' => $sconto, 'totale' => $prezzo - $sconto,
@@ -520,8 +645,10 @@ final class Sconti
         }
         if ($riep['scelta'] !== 'sistema' || $riep['percento'] <= 0) return $vuoto;
         $sconti = implode(',', array_map(fn($s) => $s['tipo'] . ':' . $s['percento'], $riep['sistema']));
-        $invito = null;
-        foreach ($riep['sistema'] as $s) if ($s['tipo'] === 'invito') $invito = Inviti::codiceAmico();
+        $invito = null; $promoId = null;
+        foreach ($riep['sistema'] as $s) { if ($s['tipo'] === 'invito') $invito = Inviti::codiceAmico(); if ($s['tipo'] === 'promo') $promoId = (int) $s['codice_id']; }
+        // 9U · Con la promo: sempre il coupon combinato «Sconti primo anno» della percentuale totale (17, 22…); l'utilizzo è della promo.
+        if ($promoId) return ['coupon' => self::couponCombinato($riep['percento']), 'discount_code_id' => $promoId, 'sconti' => $sconti];
         $coupon = '';
         if (count($riep['sistema']) === 1 && in_array($riep['sistema'][0]['tipo'], ['invito', 'giudizio'], true)) {
             $coupon = $riep['sistema'][0]['tipo'] === 'invito' ? (string) ($invito['stripe_coupon_id'] ?? '') : Giudizi::coupon($riep['percento']);

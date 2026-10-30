@@ -56,6 +56,8 @@ Puoi cambiare piano da Account & Fatturazione. Se passi a un piano superiore o a
 
 I codici sconto valgono solo sul primo anno del primo abbonamento: dal rinnovo si paga il prezzo pieno del piano. Non si sommano tra loro né con lo sconto di un invito: a ogni abbonamento si applica un solo codice. Per «Invita un amico» valgono le condizioni del punto 12.
 
+**Promo novembre.** −17% sul primo anno per i nuovi clienti che attivano un abbonamento entro il 30 novembre 2026, con il codice NOVEMBRE17. Si somma allo sconto del programma «Giudizio con sconto» se aderisci al pagamento (in tutto −22% sul primo anno); non si somma allo sconto dell'invito di un amico (vale il più alto), ad altri codici, ai codici omaggio né ai codici partner. Dal secondo anno vale il prezzo di listino, con gli sconti dei programmi «Porta un amico» e «Giudizio con sconto» se maturati.
+
 **Offerte su misura.** Oltre il numero massimo di strutture del Portfolio ti facciamo un'offerta su misura: un prezzo annuo concordato per tutte le strutture, valido fino alla data indicata nell'offerta, che vale **anche ai rinnovi**. Gli sconti del programma «Invita un amico» e «Giudizio con sconto» non si applicano in automatico alle offerte su misura: un eventuale sconto sul rinnovo lo decidiamo con te e te lo comunichiamo con l'avviso che precede il rinnovo. Per cambiare il numero di strutture ti mandiamo una nuova offerta, che vale subito (pagando la differenza per i giorni che restano) oppure dal rinnovo.
 T,
 'termini.6.titolo' => 'Pagamento e mancato pagamento',
@@ -424,6 +426,7 @@ T,
 
 // ================================================================ AGGIORNAMENTI (la finestra nel pannello e l'email)
 'legale.novita' => <<<'T'
+Promo novembre: −17% sul primo anno per chi attiva entro il 30 novembre 2026 con il codice NOVEMBRE17; si somma al «Giudizio con sconto» (−22%), non all'invito di un amico (vale il più alto).
 Concierge AI: con Plus e Portfolio risponde alle domande degli ospiti con il testo della tua guida, tramite un assistente automatico di Anthropic. Lo accendi e lo spegni dal pannello; le domande degli ospiti sono anonime (punto 14 dei Termini, trattamento 16 dell'Informativa).
 «Giudizio con sconto»: il 5% si applica una sola volta. Se aderisci al pagamento (o prima del primo pagamento), sul primo anno; se aderisci dopo, sul rinnovo successivo al tuo giudizio (voto e commento). Il logo che carichi compare così com'è nella scheda in home.
 Programma partner: con il codice di un partner hai uno sconto sul primo anno; al partner va una commissione sui tuoi pagamenti, senza i tuoi dati personali.
@@ -474,6 +477,8 @@ You can change plan from Account & Billing. If you move to a higher plan or add 
 **A change proposed by us.** We may propose a change of plan with a discount, by email or message, with a link: it applies only with your confirmation from that link, by the date indicated. Without your confirmation nothing changes.
 
 Discount codes apply only to the first year of the first subscription: from renewal the full price of the plan applies. They cannot be combined with each other or with an invitation discount: only one code applies to each subscription. "Invite a friend" follows the conditions in section 12.
+
+**November promo.** −17% on the first year for new customers who activate a subscription by 30 November 2026, with the code NOVEMBRE17. It adds up with the “Review with a discount” programme if you join at checkout (−22% on the first year in total); it does not add up with a friend's invitation discount (the highest applies), other codes, gift codes or partner codes. From the second year the list price applies, with the “Bring a friend” and “Review with a discount” discounts if earned.
 
 **Tailored offers.** Beyond the maximum number of properties of Portfolio we make you a tailored offer: an agreed annual price for all your properties, valid until the date stated in the offer, which also applies **at renewal**. The discounts of the «Invite a friend» and «Review with a discount» programmes do not apply automatically to tailored offers: any renewal discount is agreed with you and shown in the notice before the renewal. To change the number of properties we send you a new offer, which applies straight away (paying the difference for the days left) or from the renewal.
 T,
@@ -851,6 +856,7 @@ T,
 
 // ================================================================ UPDATES (the dashboard window and the email)
 'legale.novita' => <<<'T'
+November promo: −17% on the first year for those who activate by 30 November 2026 with the code NOVEMBRE17; it adds up with “Review with a discount” (−22%), not with a friend's invitation (the highest applies).
 Concierge AI: with Plus and Portfolio it answers guests' questions with your guide's text, through an automatic assistant by Anthropic. You turn it on and off from the dashboard; guests' questions are anonymous (point 14 of the Terms, processing 16 of the Policy).
 “Review with a discount”: the 5% applies only once. If you join at checkout (or before your first payment), on the first year; if you join later, on the renewal following your review (rating and comment). The logo you upload appears as it is on the home-page card.
 Partner programme: with a partner's code you get a discount on the first year; the partner receives a commission on your payments, without your personal data.

@@ -58,7 +58,7 @@
         scrivi(b.querySelector('[data-media]'), Math.round(tot / q), valuta);
         b.querySelectorAll('[data-quante]').forEach(function (x) { x.textContent = q; });   // 9M: anche «per N strutture» accanto al prezzo
         // 9M: il riquadro dello sconto sul rinnovo legato a questo campo (/piu-strutture) e il bottone che porta il numero.
-        if (campo.id) document.querySelectorAll('[data-rinnovo][data-campo="' + campo.id + '"]').forEach(function (r) {
+        if (campo.id && q <= maxPrezzo) document.querySelectorAll('[data-rinnovo][data-campo="' + campo.id + '"]').forEach(function (r) {   // 9U: oltre il massimo resta il conto dell'ultimo prezzo
           ['[data-q-anno]', '[data-q-anno-s]'].forEach(function (s) { scrivi(r.querySelector(s), tot, valuta); });
           var ultimo = tot;
           r.querySelectorAll('[data-q-perc]').forEach(function (td) { ultimo = netto(tot, parseInt(td.getAttribute('data-q-perc'), 10)); scrivi(td, ultimo, valuta); });
@@ -105,12 +105,16 @@
     }
     // 9A: oltre il massimo del listino sparisce il prezzo, resta «Ti facciamo una proposta su misura», il bottone
     // del piano si spegne e il riquadro del preventivo (fuori dalle schede) si apre con il numero già scritto.
-    var boxOltre = b.querySelector('[data-oltre]'), prezzi = b.querySelectorAll('.price, .plan__mese, .plan__sconto-riga, .scaglioni__media');
+    var boxOltre = b.querySelector('[data-oltre]'), prezzi = b.querySelectorAll('.price, .plan__mese, .plan__sconto-riga, .plan__poi, .scaglioni__media');
     var modulo = campo.form, radio = campo.getAttribute('data-sceglie') ? document.getElementById(campo.getAttribute('data-sceglie')) : null;
     var invio = modulo ? modulo.querySelectorAll('button:not([type=button]), input[type=submit]') : [];
     function oltre(si, q) {
       if (boxOltre) boxOltre.hidden = !si;
       for (var k = 0; k < prezzi.length; k++) prezzi[k].hidden = si;
+      // 9U · pagine per tipologia: spariscono anche «+ IVA all'anno», «Sono un privato» e il bottone; il «Chiedi il preventivo»
+      // che porta a /piu-strutture si porta dietro il numero scelto.
+      b.querySelectorAll('[data-nascondi-oltre]').forEach(function (x) { x.hidden = si; });
+      if (boxOltre && si) boxOltre.querySelectorAll('[data-oltre-href]').forEach(function (a) { a.href = a.getAttribute('data-oltre-href') + '?strutture=' + q + '#preventivo'; });
       var blocca = si && (!radio || radio.checked);
       for (var j = 0; j < invio.length; j++) { if (blocca) invio[j].setAttribute('disabled', ''); else invio[j].removeAttribute('disabled'); }
       if (preventivo && si) {
