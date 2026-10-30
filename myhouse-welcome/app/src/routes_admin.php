@@ -500,6 +500,19 @@ $r->post('/admin/cliente/{aid}/prova', function (array $a) {
  * Foto, lingue e luoghi seguono il piano: se l'account non ha un abbonamento attivo, si può
  * concedere Plus dimostrativo per 12 mesi (lo stesso abbonamento manuale qui sopra, nel registro).
  */
+/* 9U · «Pubblica le modifiche della vetrina» da Amministrazione: la home e la demo mostrano la versione pubblicata, e le
+   modifiche fatte nel pannello della vetrina (foto del profilo, copertina, testi) arrivano lì solo con la pubblicazione. */
+$r->post('/admin/cliente/{aid}/vetrina/pubblica', function (array $a) {
+    Auth::requireAdmin();
+    $accId = (int) $a['aid'];
+    $pid = (int) Db::val('SELECT id FROM properties WHERE account_id = ? AND is_demo = ?', [$accId, Demo::VETRINA], 0);
+    if (!$pid) { Support::flash('Questo account non ha una guida vetrina.', 'err'); Support::redirect('/admin/cliente/' . $accId); }
+    $v = MHW\Guide::publish($pid);
+    Auth::audit('demo.vetrina.pubblica', (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$accId], 0) ?: null, ['property_id' => $pid, 'version' => $v]);
+    Support::flash('Vetrina pubblicata: la home e la demo mostrano le modifiche (foto del profilo, copertina, testi).');
+    Support::redirect('/admin/cliente/' . $accId . '#vetrina-titolo');
+});
+
 $r->post('/admin/cliente/{aid}/vetrina', function (array $a) {
     Auth::requireAdmin();
     $accId = (int) $a['aid'];

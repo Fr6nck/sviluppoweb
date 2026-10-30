@@ -8469,10 +8469,20 @@ $h9u = $ospite->get('/')['body']; $g9u = $ospite->get("/g/$slugH9u?l=it")['body'
 prova('9U · 2 · verifica 3: foto del profilo, nome e check-in cambiati senza pubblicare: la home e la demo restano come prima',
       $nuovaP9u > 0 && $tondo9u($h9u) === $prof0 && !str_contains($h9u, 'Casa Checco Nuova') && !str_contains($h9u, 'Check-in dalle 16:00')
       && !str_contains($g9u, $fileDi($nuovaP9u)), json_encode([$rA9u['code'], $nuovaP9u, $tondo9u($h9u), $prof0]));
-// Verifica 2: anche la palette; poi «Pubblica le modifiche» (Guide::publish, come il bottone del pannello).
+// Verifica 2: anche la palette; poi «Pubblica le modifiche della vetrina» da Amministrazione → cliente (come il bottone del pannello).
 $tono9u = $c9n('echo MHW\Palette::readable("oliva", "scuro") ? "scuro" : "chiaro";');
 db()->prepare('UPDATE properties SET palette = ?, text_tone = ? WHERE id = ?')->execute(['oliva', $tono9u, $vH9u]);
-$c9n('MHW\Guide::publish(' . $vH9u . ');');
+$adm9u = $admin->get('/admin/cliente/' . (int) $pH9u['account_id'])['body'];
+prova('9U · 2 · Amministrazione → cliente → Guida vetrina: la foto del profilo nel pannello e quella pubblicata, «Modifiche non pubblicate» e il bottone «Pubblica le modifiche della vetrina»',
+      str_contains($adm9u, 'data-vetrina-stato') && str_contains($adm9u, 'Modifiche non pubblicate') && str_contains($adm9u, 'Pubblica le modifiche della vetrina')
+      && str_contains($adm9u, $fileDi($nuovaP9u)) && str_contains($adm9u, $prof0));
+$admin->segui($admin->post('/admin/cliente/' . (int) $pH9u['account_id'] . '/vetrina/pubblica', []));
+prova('…pubblicata da lì: «Tutto pubblicato», nel Registro delle azioni', str_contains($admin->get('/admin/cliente/' . (int) $pH9u['account_id'])['body'], 'Tutto pubblicato: la home e la demo mostrano')
+      && (bool) val("SELECT id FROM audit_log WHERE action = 'demo.vetrina.pubblica'"));
+// L'account della vetrina non va in sola lettura quando cambiano i Termini (è il sito stesso): «Pubblica» non viene rifiutato.
+$leg9u = $c9n('$u = MHW\Db::one("SELECT * FROM users WHERE id = ' . $uidH9u . '"); $u["terms_version"] = "2020-01-01"; $n = MHW\Db::one("SELECT * FROM users WHERE role = \'host\' AND id <> ' . $uidH9u . ' ORDER BY id"); $n["terms_version"] = "2020-01-01";
+    echo count(MHW\Legale::daAccettare($u)), "|", count(MHW\Legale::daAccettare($n)) > 0 ? "si" : "no";');
+prova('9U · 2 · Termini cambiati: l\'account della vetrina non deve riaccettare (pannello mai in sola lettura), un cliente sì', $leg9u === '0|si', $leg9u);
 $h9u = $ospite->get('/')['body']; $hEn9u = $ospite->get('/en')['body'];
 $demo9u = []; foreach (['it', 'en'] as $l) { $g = $ospite->get("/g/$slugH9u?l=$l")['body']; $demo9u[$l] = str_contains($g, $fileDi($nuovaP9u)) && str_contains($g, 'Casa Checco Nuova'); }
 $olivaT1 = json_decode($c9n('echo json_encode(MHW\Palette::get("oliva")["tiles"]);'), true)[0] ?? '?';

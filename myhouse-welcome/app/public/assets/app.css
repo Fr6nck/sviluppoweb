@@ -3453,6 +3453,9 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .logo-wa{flex:none;border-radius:999px;box-shadow:0 0 0 1.5px #fff}
 .contatta__tel{flex:none;display:inline-grid;place-items:center;width:26px;height:26px;border-radius:999px;background:#fff;color:var(--accent)}
 .contatta__tel svg{stroke:currentColor}
+/* 9U · Amministrazione → cliente: la foto del profilo della vetrina nel pannello e quella pubblicata, una accanto all'altra. */
+.vetrina-stato{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--raised)}
+.vetrina-stato__foto{width:40px;height:40px;border-radius:999px;object-fit:cover}
 .contatta__foto{flex:none;width:26px;height:26px;border-radius:999px;object-fit:cover;box-shadow:0 0 0 1.5px #fff}
 .contatti-foglio__testa{display:flex;align-items:center;gap:12px;padding:2px 4px 10px}
 .contatti-foglio__ciao{font-family:Gloock,Georgia,serif;font-weight:400;font-size:22px;line-height:26px}

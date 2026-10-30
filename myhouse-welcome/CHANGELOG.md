@@ -1,5 +1,12 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 9U (correzione): la foto del profilo di Casa Checco che non arrivava in home (30 ottobre 2026)
+
+- **Perché succedeva**: la home e la demo mostrano la versione **pubblicata** di Casa Checco; la foto cambiata nel pannello resta «modifica non pubblicata» finché non si preme «Pubblica le modifiche». In più, con i Termini nuovi del 30 ottobre l'account della vetrina doveva riaccettarli: finché non lo faceva il suo pannello era in sola lettura e «Pubblica» veniva rifiutato.
+- **Amministrazione → cliente → Guida vetrina**: la foto del profilo nel pannello e quella pubblicata una accanto all'altra, l'avviso «Modifiche non pubblicate» e il bottone **«Pubblica le modifiche della vetrina»** (nel Registro delle azioni); un avviso se la home mostra un'altra guida dimostrativa.
+- **L'account della vetrina** (il sito stesso) non deve più riaccettare i Termini: il suo pannello non va mai in sola lettura (come già per le email legali, mai agli account dimostrativi).
+- «Rifai la vetrina»: il testo dice che copertina, foto del profilo e logo cambiati restano.
+
 ## v2 · 9U (seconda parte): la home segue Casa Checco pubblicata, barra «Chiedi» / «Contatta», promo e partner insieme (30 ottobre 2026)
 
 Nessuna migrazione nuova (070 e 071 sono nel pacchetto di prima). Vedi `DA-CONFIGURARE.md` → **4z**.

@@ -106,9 +106,32 @@ include __DIR__ . '/_stati.php'; ?>
         <a class="btn btn--ghost btn--sm" href="<?= Support::e($urlV) ?>" target="_blank" rel="noopener">Apri</a>
         <button type="button" class="btn btn--ghost btn--sm" data-copia="<?= Support::e($urlV) ?>" data-copiato="Copiato" hidden><?= MHW\Icon::svg('copy', 15) ?>Copia</button></div>
       <?php if ($vetrina['slug'] !== 'casa-checco'): ?><p class="small muted" style="margin:0">/g/casa-checco è la guida di un cliente vero: la vetrina tiene questo indirizzo.</p><?php endif; ?>
+      <?php /* 9U · La home e la demo mostrano la versione PUBBLICATA della vetrina: qui si vede se nel pannello c'è qualcosa di
+               non ancora pubblicato (per esempio la foto del profilo) e si pubblica con un clic. */
+            $snapV = MHW\Guide::published((int) $vetrina['id']); $daPubblicareV = MHW\Guide::pendingChanges((int) $vetrina['id']) > 0;
+            $profPan = !empty($vetrina['profile_media_id']) ? MHW\Media::url((int) $vetrina['profile_media_id']) : null;
+            $profPub = !empty($snapV['property']['profile_id']) ? MHW\Media::url((int) $snapV['property']['profile_id']) : null;
+            $homeV = (int) MHW\Db::val("SELECT id FROM properties WHERE is_demo >= 1 AND status = 'published' AND archived_at IS NULL ORDER BY is_demo DESC, id", [], 0); ?>
+      <div class="vetrina-stato" data-vetrina-stato>
+        <div class="row" style="gap:16px;flex-wrap:wrap;align-items:center">
+          <span class="small"><b>Foto del profilo</b></span>
+          <span class="row small" style="gap:6px;align-items:center">nel pannello <?php if ($profPan): ?><img class="vetrina-stato__foto" src="<?= Support::e($profPan) ?>" alt="La foto del profilo nel pannello" width="40" height="40"><?php else: ?>—<?php endif; ?></span>
+          <span class="row small" style="gap:6px;align-items:center">pubblicata (home e demo) <?php if ($profPub): ?><img class="vetrina-stato__foto" src="<?= Support::e($profPub) ?>" alt="La foto del profilo pubblicata" width="40" height="40"><?php else: ?>—<?php endif; ?></span>
+        </div>
+        <?php if ($daPubblicareV): ?>
+          <p class="small" style="margin:0"><span class="badge badge--alert">Modifiche non pubblicate</span> Nel pannello della vetrina c'è qualcosa di nuovo (foto, testi o sezioni) che la home e la demo non mostrano ancora: le vedono solo dopo la pubblicazione<?= !empty($snapV['published_at']) ? ' (ultima: ' . Support::e(Support::date((string) $snapV['published_at'])) . ')' : '' ?>.</p>
+          <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/vetrina/pubblica" style="margin:0"><?= Csrf::field() ?>
+            <button class="btn btn--sm">Pubblica le modifiche della vetrina</button></form>
+        <?php else: ?>
+          <p class="small muted" style="margin:0">Tutto pubblicato: la home e la demo mostrano quello che c'è nel pannello.</p>
+        <?php endif; ?>
+        <?php if ($homeV && $homeV !== (int) $vetrina['id']): $altraV = MHW\Db::one('SELECT p.name, p.slug, p.account_id FROM properties p WHERE p.id = ?', [$homeV]); ?>
+          <p class="small" style="margin:0"><span class="badge badge--alert">Attenzione</span> La home mostra un'altra guida dimostrativa: «<?= Support::e((string) ($altraV['name'] ?? '')) ?>» (/g/<?= Support::e((string) ($altraV['slug'] ?? '')) ?>, <a href="<?= b() ?>/admin/cliente/<?= (int) ($altraV['account_id'] ?? 0) ?>">il suo account</a>). Le modifiche fatte qui non compaiono in home.</p>
+        <?php endif; ?>
+      </div>
       <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/vetrina" class="stack" style="gap:8px"><?= Csrf::field() ?>
         <input type="hidden" name="rifai" value="1">
-        <p class="small muted">«Rifai la vetrina» la toglie e ne crea una nuova con i dati aggiornati (eventi con le prossime date, foto, luoghi). Le modifiche fatte a mano sulla vetrina si perdono; le altre strutture dell'account non si toccano.</p>
+        <p class="small muted">«Rifai la vetrina» la toglie e ne crea una nuova con i dati aggiornati (eventi con le prossime date, foto, luoghi). Copertina, foto del profilo e logo che hai cambiato restano (9U); le altre modifiche fatte a mano sulla vetrina si perdono; le altre strutture dell'account non si toccano.</p>
         <button class="btn btn--ghost btn--sm" style="align-self:flex-start">Rifai la vetrina</button>
       </form>
       <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/vetrina/traduzioni" class="stack" style="gap:8px"><?= Csrf::field() ?>

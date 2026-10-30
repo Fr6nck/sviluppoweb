@@ -144,6 +144,9 @@ final class Legale
     public static function daAccettare(?array $u): array
     {
         if (!$u || ($u['role'] ?? '') !== 'host' || !self::disponibili()) return [];
+        // 9U · L'account della guida vetrina (Casa Checco) è il sito stesso, non un cliente: niente riaccettazione né pannello in sola
+        // lettura, altrimenti dopo un cambio dei Termini «Pubblica le modifiche» della demo verrebbe rifiutato (come per le email: mai agli account dimostrativi).
+        if (!empty($u['id']) && Db::val('SELECT 1 FROM properties p JOIN accounts a ON a.id = p.account_id WHERE a.user_id = ? AND p.is_demo = ? LIMIT 1', [(int) $u['id'], Demo::VETRINA])) return [];
         $out = [];
         foreach (self::versioni() as $d => $v) {
             if ($v === '' || self::futura($v)) continue;
