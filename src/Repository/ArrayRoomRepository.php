@@ -33,7 +33,7 @@ final class ArrayRoomRepository implements RoomRepositoryInterface
      * vendita scende all'ultimo numero di ospiti con un prezzo, e quella
      * dichiarata resta in occupancy.capacity. Così aggiungere la tariffa dal
      * pannello basta ad aprire la camera a una persona in più, e toglierla
-     * basta a chiuderla.
+     * basta a chiuderla. Le tariffe oltre la capienza in vendita si scartano.
      *
      * Una «singola con letto matrimoniale» venduta anche a due è, per chi
      * prenota, una matrimoniale: tipologia e disposizioni seguono.
@@ -52,6 +52,14 @@ final class ArrayRoomRepository implements RoomRepositoryInterface
 
         $room['occupancy']['capacity'] = $dichiarata;
         $room['occupancy']['max']      = $venduta;
+        // Una tariffa per più persone di quante la camera ne ospita (salvata
+        // dal pannello quando la capienza era più alta) non si mostra e non
+        // si vende: né «da € …», né nella tabella delle tariffe.
+        $room['rates'] = array_filter(
+            (array) ($room['rates'] ?? []),
+            static fn ($ospiti): bool => (int) $ospiti <= $venduta,
+            ARRAY_FILTER_USE_KEY
+        );
         $room['occupancy']['standard'] = min((int) ($room['occupancy']['standard'] ?? $venduta), $venduta);
 
         if (($room['type'] ?? '') === 'single-double' && $venduta >= 2) {
