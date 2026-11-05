@@ -33,6 +33,10 @@ $voci = [
     'testi'     => ['Testi del sito', 'testo'],
     'domande'   => ['Domande frequenti', 'aiuto'],
 ];
+// Camere, immagini, testi e domande sono del super admin: il gestore non le vede.
+if (empty($super)) {
+    $voci = array_intersect_key($voci, array_flip(['', 'richieste', 'struttura']));
+}
 $attiva = match ($vista) {
     'bacheca' => '',
     'richiesta', 'richieste' => 'richieste',
@@ -110,16 +114,18 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
       </ul>
       <p class="adm-nav__gruppo" aria-hidden="true">Generale</p>
       <ul>
-        <li>
-          <a href="<?= e(adminUrl('accesso-sito')) ?>"<?= $attiva === 'accesso-sito' ? ' aria-current="page"' : '' ?>>
-            <?= icona('chiave', 20, 'adm-nav__icona') ?><span class="adm-nav__nome">Accesso al sito</span>
-          </a>
-        </li>
-        <li>
-          <a href="<?= e(adminUrl('posta')) ?>"<?= $attiva === 'posta' ? ' aria-current="page"' : '' ?>>
-            <?= icona('posta', 20, 'adm-nav__icona') ?><span class="adm-nav__nome">Ricezione e-mail</span>
-          </a>
-        </li>
+        <?php if (!empty($super)): /* accesso al sito e posta: solo il super admin */ ?>
+          <li>
+            <a href="<?= e(adminUrl('accesso-sito')) ?>"<?= $attiva === 'accesso-sito' ? ' aria-current="page"' : '' ?>>
+              <?= icona('chiave', 20, 'adm-nav__icona') ?><span class="adm-nav__nome">Accesso al sito</span>
+            </a>
+          </li>
+          <li>
+            <a href="<?= e(adminUrl('posta')) ?>"<?= $attiva === 'posta' ? ' aria-current="page"' : '' ?>>
+              <?= icona('posta', 20, 'adm-nav__icona') ?><span class="adm-nav__nome">Ricezione e-mail</span>
+            </a>
+          </li>
+        <?php endif; ?>
         <li>
           <a href="<?= e(adminUrl('account')) ?>"<?= $attiva === 'account' ? ' aria-current="page"' : '' ?>>
             <?= icona('utente', 20, 'adm-nav__icona') ?><span class="adm-nav__nome">Account</span>
@@ -149,8 +155,12 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
         <a class="adm-promo__bottone" href="<?= e(adminUrl()) ?>#da-completare">Completa ora</a>
       <?php else: ?>
         <p class="adm-promo__titolo">Tutto completo</p>
-        <p class="adm-promo__testo">Nessun dato manca. Le fotografie si possono sempre cambiare.</p>
-        <a class="adm-promo__bottone" href="<?= e(adminUrl('immagini')) ?>">Cambia le foto</a>
+        <?php if (!empty($super)): ?>
+          <p class="adm-promo__testo">Nessun dato manca. Le fotografie si possono sempre cambiare.</p>
+          <a class="adm-promo__bottone" href="<?= e(adminUrl('immagini')) ?>">Cambia le foto</a>
+        <?php else: ?>
+          <p class="adm-promo__testo">Nessun dato manca.</p>
+        <?php endif; ?>
       <?php endif; ?>
     </div>
 

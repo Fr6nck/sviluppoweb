@@ -41,6 +41,15 @@ final class AdminController
     /** Gli archivi che si possono riportare a una versione precedente. */
     private const RIPRISTINABILI = ['impostazioni', 'camere', 'testi-it', 'testi-en', 'domande'];
 
+    /**
+     * Le sezioni del super admin: i contenuti del sito (camere e tariffe,
+     * immagini, testi, domande) e le impostazioni generali (accesso al sito,
+     * ricezione delle e-mail). Al gestore restano bacheca, richieste, La
+     * struttura e il suo account; per lui queste, come Configurazione, sono
+     * pagine che non esistono.
+     */
+    private const SOLO_SUPER = ['camere', 'immagini', 'testi', 'domande', 'posta', 'accesso-sito'];
+
     private readonly Form $form;
 
     /** La pagina corrente sotto /admin, con la sua query: il pulsante del tema ci torna. */
@@ -116,6 +125,9 @@ final class AdminController
         // sceglierne una sua prima di fare qualunque altra cosa.
         if ($auth->mustChangePassword() && $pezzi !== ['account'] && $pezzi !== ['esci']) {
             return $this->headers(Response::redirect($this->url('account'), 303));
+        }
+        if (in_array($pezzi[0] ?? '', self::SOLO_SUPER, true) && !$auth->isSuper()) {
+            return $this->headers(Response::html($this->page('non-trovata', ['titolo' => 'Pagina non trovata']), 404));
         }
 
         $risposta = match (true) {
@@ -510,7 +522,7 @@ final class AdminController
             'periodo'          => $periodo,
             'ultime'           => array_slice($richieste, 0, 6),
             'mancanti'         => $this->mancanti(),
-            'camereIncomplete' => $this->camereIncomplete(),
+            'camereIncomplete' => $this->app->auth()->isSuper() ? $this->camereIncomplete() : [],
             'camere'           => $this->app->rooms()->all(),
             'demo'             => (string) $this->app->config('booking.provider') === 'demo',
             'pagamentoAttivo'  => $this->app->pagamentoAttivo(),
@@ -1372,7 +1384,9 @@ final class AdminController
         $nome   = (string) $this->in($request, 'nome', '');
         $id     = (string) $this->in($request, 'versione', '');
         $ritorno = (string) $this->in($request, 'ritorno', '');
-        if (!in_array($nome, self::RIPRISTINABILI, true) || !$this->app->store()->restore($nome, $id)) {
+        // Il gestore ripristina solo La struttura: il resto è del super admin.
+        $suo = $this->app->auth()->isSuper() || $nome === 'impostazioni';
+        if (!$suo || !in_array($nome, self::RIPRISTINABILI, true) || !$this->app->store()->restore($nome, $id)) {
             $this->flash('errore', 'Versione non trovata.');
         } else {
             $this->flash('ok', 'Versione del ' . $this->quando($id) . ' ripristinata. La versione di prima resta nello storico.');
@@ -1396,7 +1410,8 @@ final class AdminController
             'utente' => $utente,
             'super'  => $utente !== null && $this->app->auth()->isSuper(),
             'nuove'  => $utente !== null ? $this->app->inbox()->countNew() : 0,
-            'daCompletare' => $utente !== null ? count($this->mancanti()) + count($this->camereIncomplete()) : 0,
+            // Per il gestore solo quello che può completare lui: La struttura.
+            'daCompletare' => $utente !== null ? count($this->mancanti()) + ($this->app->auth()->isSuper() ? count($this->camereIncomplete()) : 0) : 0,
             'errori' => [],
             'valori' => [],
             'lingue' => $this->form->languages(),

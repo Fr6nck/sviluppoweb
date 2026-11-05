@@ -77,7 +77,9 @@ $iniziali = static function (string $nome): string {
     <div>
       <h2 id="b-accesso" class="adm-striscia__titolo">Il sito è chiuso da un codice d'accesso</h2>
       <p>Chi non ha il codice vede solo la pagina d'accesso, con il sito sfocato dietro. Tu, entrato qui, lo vedi
-         aperto. Si apre a tutti da <a href="<?= e(adminUrl('accesso-sito')) ?>">Accesso al sito</a>.</p>
+         aperto.
+         <?php if (!empty($super)): ?>Si apre a tutti da <a href="<?= e(adminUrl('accesso-sito')) ?>">Accesso al sito</a>.
+         <?php else: ?>Lo apre a tutti chi cura il sito, quando è pronto.<?php endif; ?></p>
     </div>
   </section>
 <?php endif; ?>
@@ -89,8 +91,8 @@ $iniziali = static function (string $nome): string {
       <h2 id="b-pagamenti" class="adm-striscia__titolo">Il pagamento online è in prova (conto di prova di SumUp)</h2>
       <p>Nessun addebito vero: chi prenota lo vede scritto, e le prenotazioni fatte così sono segnate «Prova».
          Alla pagina di SumUp si paga con la carta di prova 4200 0000 0000 0091, una scadenza futura e un CVV qualsiasi.
-         Prima di aprire il sito, la modalità va rimessa su «Reale» in Configurazione: da lì le prenotazioni di prova
-         non occupano più le date e non contano nei numeri.</p>
+         Prima di aprire il sito, la modalità va rimessa su «Reale»<?= !empty($super) ? ' in Configurazione' : '' ?>: da lì le
+         prenotazioni di prova non occupano più le date e non contano nei numeri.</p>
     </div>
   </section>
 <?php elseif (!empty($pagamentoAttivo)): ?>
@@ -349,12 +351,15 @@ $prossimi = static function (string $dove, string $classe) use ($nottiCamera, $t
     <section class="adm-carta" aria-labelledby="b-camere">
       <div class="adm-carta__testa">
         <h2 id="b-camere">Le camere</h2>
-        <a class="adm-pillola adm-pillola--chiara" href="<?= e(adminUrl('camere')) ?>">Tariffe<?= icona('freccia-destra', 15) ?></a>
+        <?php if (!empty($super)): ?>
+          <a class="adm-pillola adm-pillola--chiara" href="<?= e(adminUrl('camere')) ?>">Tariffe<?= icona('freccia-destra', 15) ?></a>
+        <?php endif; ?>
       </div>
       <ul class="adm-camere">
         <?php foreach ($camere as $cam): $ref = (string) $cam['ref']; $mini = anteprima(immagine('camera.' . $ref), 'foto'); $tariffe = array_map('floatval', (array) ($cam['rates'] ?? [])); ?>
           <li>
-            <a href="<?= e(adminUrl('camere/' . rawurlencode($ref))) ?>">
+            <?php /* Per il gestore le camere si guardano soltanto: la scheda è del super admin. */ ?>
+            <?= !empty($super) ? '<a href="' . e(adminUrl('camere/' . rawurlencode($ref))) . '">' : '<div class="adm-camere__voce">' ?>
               <?php if ($mini !== null): ?>
                 <img class="adm-camere__foto" src="<?= e(asset($mini)) ?>" alt="" width="48" height="48" loading="lazy">
               <?php else: ?>
@@ -369,12 +374,13 @@ $prossimi = static function (string $dove, string $classe) use ($nottiCamera, $t
               <?php else: ?>
                 <span class="adm-segno" title="Foto da fare"><?= icona('immagine', 14) ?><span class="adm-visually-hidden">foto da fare</span></span>
               <?php endif; ?>
-            </a>
+            <?= !empty($super) ? '</a>' : '</div>' ?>
           </li>
         <?php endforeach; ?>
       </ul>
     </section>
 
+    <?php if (!empty($super)): /* logo e fotografie: solo il super admin li cambia */ ?>
     <section class="adm-carta adm-carta--marchio" aria-labelledby="b-marchio">
       <div class="adm-carta__testa">
         <h2 id="b-marchio">Il marchio</h2>
@@ -391,5 +397,6 @@ $prossimi = static function (string $dove, string $classe) use ($nottiCamera, $t
       <p class="adm-nota">Logo, icona e fotografie del sito si cambiano da qui, senza FTP.</p>
       <a class="adm-bottone adm-bottone--pieno-largo" href="<?= e(adminUrl('immagini')) ?>"><?= icona('immagine', 17) ?>Immagini e logo</a>
     </section>
+    <?php endif; ?>
   </aside>
 </div>

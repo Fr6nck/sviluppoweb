@@ -644,6 +644,12 @@ normale di `/admin`: il nome utente dice chi entra.
 **Il gestore non lo vede.** Nel suo menu non c'è Configurazione, e
 `/admin/configurazione` e `/admin/super` per lui sono pagine che non esistono.
 
+**Che cosa resta al gestore.** Bacheca, Richieste, La struttura e Account.
+Camere e tariffe, Immagini e logo, Testi del sito, Domande frequenti, Accesso al
+sito e Ricezione e-mail sono solo del super admin: il gestore non le vede nel
+menu, e se ne apre l'indirizzo trova una pagina che non esiste. Una tariffa, una
+foto o un testo da cambiare li cambi tu.
+
 **Come funziona il pannello.**
 
 - Le voci sono divise in gruppi (sito, pagamento, prenotazioni, posta, codici,
