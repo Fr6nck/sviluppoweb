@@ -448,18 +448,19 @@ fai tu, via FTP.
 **`/admin`** — sul sito di prova `https://blackout.in/assisiapartment/admin`.
 Due account, protetti da password: il gestore e il super admin (sotto). Da lì
 si modifica il sito senza toccare un file e senza FTP. Il gestore vede solo
-Bacheca, Richieste, La struttura e Account; tutte le altre sezioni sono del
-super admin (`AdminController::SOLO_SUPER`), e per il gestore rispondono 404
-come Configurazione. Nella sua bacheca le camere si guardano soltanto, il
-riquadro del marchio non c'è, e «Da completare» elenca solo i dati della
-struttura; dallo storico ripristina solo La struttura.
+Bacheca, Richieste, La struttura, Camere e tariffe e Account; tutte le altre
+sezioni sono del super admin (`AdminController::SOLO_SUPER`), e per il gestore
+rispondono 404 come Configurazione. Nelle sue pagine delle camere le foto si
+vedono ma non c'è il link per cambiarle; nella bacheca il riquadro del marchio
+non c'è, e «Da completare» non conta le fotografie mancanti. Dallo storico
+ripristina solo La struttura e le camere.
 
 | Sezione | Che cosa | Chi |
 | --- | --- | --- |
 | Bacheca | i numeri delle richieste (nuove, prenotazioni e messaggi negli ultimi 30 giorni, con l'andamento), il grafico a colonne di 7 giorni o 6 mesi, le ultime arrivate, i prossimi arrivi e le notti chieste nei prossimi 30 giorni, le camere, il marchio, e quello che sul sito è ancora «da confermare», CIN in testa | tutti e due |
 | Richieste | le prenotazioni e i messaggi arrivati dal sito, con stato: nuova, letta, confermata, rifiutata, archiviata; si cercano per nome, e-mail, riferimento, camera | tutti e due |
 | La struttura | contatti, orari, soggiorno minimo, tassa, dotazioni, obblighi di legge, recensioni, social, coordinate | tutti e due |
-| Camere e tariffe | nome, metratura, piano, vista, tariffa per numero di ospiti, descrizione della fotografia | super admin |
+| Camere e tariffe | nome, metratura, piano, vista, tariffa per numero di ospiti, descrizione della fotografia | tutti e due (il link alle foto solo il super admin) |
 | Immagini e logo | la rosa dei venti (anche icona del browser), il logotipo chiaro e scuro, le cinque foto dell'apertura, le foto delle pagine e quella per i social, la foto principale e due di galleria per ogni camera: si carica il file, si descrive, si torna all'originale | super admin |
 | Testi del sito | tutti i testi in italiano e inglese, pagina per pagina, con l'originale accanto | super admin |
 | Domande frequenti | aggiungere, modificare, riordinare, togliere | super admin |

@@ -351,15 +351,12 @@ $prossimi = static function (string $dove, string $classe) use ($nottiCamera, $t
     <section class="adm-carta" aria-labelledby="b-camere">
       <div class="adm-carta__testa">
         <h2 id="b-camere">Le camere</h2>
-        <?php if (!empty($super)): ?>
-          <a class="adm-pillola adm-pillola--chiara" href="<?= e(adminUrl('camere')) ?>">Tariffe<?= icona('freccia-destra', 15) ?></a>
-        <?php endif; ?>
+        <a class="adm-pillola adm-pillola--chiara" href="<?= e(adminUrl('camere')) ?>">Tariffe<?= icona('freccia-destra', 15) ?></a>
       </div>
       <ul class="adm-camere">
         <?php foreach ($camere as $cam): $ref = (string) $cam['ref']; $mini = anteprima(immagine('camera.' . $ref), 'foto'); $tariffe = array_map('floatval', (array) ($cam['rates'] ?? [])); ?>
           <li>
-            <?php /* Per il gestore le camere si guardano soltanto: la scheda è del super admin. */ ?>
-            <?= !empty($super) ? '<a href="' . e(adminUrl('camere/' . rawurlencode($ref))) . '">' : '<div class="adm-camere__voce">' ?>
+            <a href="<?= e(adminUrl('camere/' . rawurlencode($ref))) ?>">
               <?php if ($mini !== null): ?>
                 <img class="adm-camere__foto" src="<?= e(asset($mini)) ?>" alt="" width="48" height="48" loading="lazy">
               <?php else: ?>
@@ -374,7 +371,7 @@ $prossimi = static function (string $dove, string $classe) use ($nottiCamera, $t
               <?php else: ?>
                 <span class="adm-segno" title="Foto da fare"><?= icona('immagine', 14) ?><span class="adm-visually-hidden">foto da fare</span></span>
               <?php endif; ?>
-            <?= !empty($super) ? '</a>' : '</div>' ?>
+            </a>
           </li>
         <?php endforeach; ?>
       </ul>

@@ -33,9 +33,9 @@ $voci = [
     'testi'     => ['Testi del sito', 'testo'],
     'domande'   => ['Domande frequenti', 'aiuto'],
 ];
-// Camere, immagini, testi e domande sono del super admin: il gestore non le vede.
+// Immagini, testi e domande sono del super admin: il gestore non le vede.
 if (empty($super)) {
-    $voci = array_intersect_key($voci, array_flip(['', 'richieste', 'struttura']));
+    $voci = array_intersect_key($voci, array_flip(['', 'richieste', 'struttura', 'camere']));
 }
 $attiva = match ($vista) {
     'bacheca' => '',

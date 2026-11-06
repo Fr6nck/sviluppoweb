@@ -31,6 +31,11 @@ $inVendita = (int) $camera['occupancy']['max'];
   <?php endif; ?>
   <div>
     <h2 id="c-foto">Le fotografie</h2>
+    <?php if (empty($super)): /* le immagini sono del super admin */ ?>
+      <p class="adm-nota"><?= !empty($camera['photographed']) ? '' : 'Questa camera non ha ancora una foto vera: sul sito compare un disegno. ' ?>Le
+        fotografie le cambia chi cura il sito. Il campo «Che cosa si vede nella fotografia», qui sotto, è quello che
+        leggono i lettori di schermo.</p>
+    <?php else: ?>
     <p class="adm-nota"><?= !empty($camera['photographed']) ? 'La foto principale e, se vuoi, due per la galleria.' : 'Questa camera non ha ancora una foto vera: sul sito compare un disegno.' ?>
       Il campo «Che cosa si vede nella fotografia», qui sotto, è quello che leggono i lettori di schermo: se cambi la foto, controllalo.</p>
     <p class="adm-azioni">
@@ -38,6 +43,7 @@ $inVendita = (int) $camera['occupancy']['max'];
       <a class="adm-link" href="<?= e(adminUrl('immagini/camera.' . $camera['ref'] . '.galleria-1')) ?>">Galleria 1</a>
       <a class="adm-link" href="<?= e(adminUrl('immagini/camera.' . $camera['ref'] . '.galleria-2')) ?>">Galleria 2</a>
     </p>
+    <?php endif; ?>
   </div>
 </section>
 

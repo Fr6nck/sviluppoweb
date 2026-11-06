@@ -42,13 +42,12 @@ final class AdminController
     private const RIPRISTINABILI = ['impostazioni', 'camere', 'testi-it', 'testi-en', 'domande'];
 
     /**
-     * Le sezioni del super admin: i contenuti del sito (camere e tariffe,
-     * immagini, testi, domande) e le impostazioni generali (accesso al sito,
-     * ricezione delle e-mail). Al gestore restano bacheca, richieste, La
-     * struttura e il suo account; per lui queste, come Configurazione, sono
-     * pagine che non esistono.
+     * Le sezioni del super admin: immagini, testi, domande e le impostazioni
+     * generali (accesso al sito, ricezione delle e-mail). Al gestore restano
+     * bacheca, richieste, La struttura, Camere e tariffe e il suo account; per
+     * lui queste, come Configurazione, sono pagine che non esistono.
      */
-    private const SOLO_SUPER = ['camere', 'immagini', 'testi', 'domande', 'posta', 'accesso-sito'];
+    private const SOLO_SUPER = ['immagini', 'testi', 'domande', 'posta', 'accesso-sito'];
 
     private readonly Form $form;
 
@@ -522,7 +521,7 @@ final class AdminController
             'periodo'          => $periodo,
             'ultime'           => array_slice($richieste, 0, 6),
             'mancanti'         => $this->mancanti(),
-            'camereIncomplete' => $this->app->auth()->isSuper() ? $this->camereIncomplete() : [],
+            'camereIncomplete' => $this->camereIncomplete($this->app->auth()->isSuper()),
             'camere'           => $this->app->rooms()->all(),
             'demo'             => (string) $this->app->config('booking.provider') === 'demo',
             'pagamentoAttivo'  => $this->app->pagamentoAttivo(),
@@ -557,8 +556,13 @@ final class AdminController
         return $mancanti;
     }
 
-    /** @return list<array{ref:string,nome:string,buchi:list<string>}> */
-    private function camereIncomplete(): array
+    /**
+     * Le camere a cui manca qualcosa. Senza $conFoto la fotografia mancante
+     * non conta: il gestore non la può caricare, le immagini sono del super admin.
+     *
+     * @return list<array{ref:string,nome:string,buchi:list<string>}>
+     */
+    private function camereIncomplete(bool $conFoto = true): array
     {
         $out = [];
         foreach ($this->app->rooms()->all() as $camera) {
@@ -569,7 +573,7 @@ final class AdminController
             if (empty($camera['floor'])) {
                 $buchi[] = 'piano';
             }
-            if (empty($camera['photographed'])) {
+            if ($conFoto && empty($camera['photographed'])) {
                 $buchi[] = 'fotografia';
             }
             if ($buchi !== []) {
@@ -1384,8 +1388,8 @@ final class AdminController
         $nome   = (string) $this->in($request, 'nome', '');
         $id     = (string) $this->in($request, 'versione', '');
         $ritorno = (string) $this->in($request, 'ritorno', '');
-        // Il gestore ripristina solo La struttura: il resto è del super admin.
-        $suo = $this->app->auth()->isSuper() || $nome === 'impostazioni';
+        // Il gestore ripristina solo La struttura e le camere: il resto è del super admin.
+        $suo = $this->app->auth()->isSuper() || in_array($nome, ['impostazioni', 'camere'], true);
         if (!$suo || !in_array($nome, self::RIPRISTINABILI, true) || !$this->app->store()->restore($nome, $id)) {
             $this->flash('errore', 'Versione non trovata.');
         } else {
@@ -1410,8 +1414,8 @@ final class AdminController
             'utente' => $utente,
             'super'  => $utente !== null && $this->app->auth()->isSuper(),
             'nuove'  => $utente !== null ? $this->app->inbox()->countNew() : 0,
-            // Per il gestore solo quello che può completare lui: La struttura.
-            'daCompletare' => $utente !== null ? count($this->mancanti()) + ($this->app->auth()->isSuper() ? count($this->camereIncomplete()) : 0) : 0,
+            // Per il gestore solo quello che può completare lui: le fotografie no.
+            'daCompletare' => $utente !== null ? count($this->mancanti()) + count($this->camereIncomplete($this->app->auth()->isSuper())) : 0,
             'errori' => [],
             'valori' => [],
             'lingue' => $this->form->languages(),
