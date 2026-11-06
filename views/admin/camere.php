@@ -34,13 +34,9 @@ use ArcoDelVento\Support\RoomPresenter as R;
           </td>
           <td><?= !empty($c['size_sqm']) ? (int) $c['size_sqm'] . ' m²' : '<span class="adm-dc">da confermare</span>' ?></td>
           <td>
-            <?php if (!empty($super)): /* le immagini sono del super admin */ ?>
-              <a class="adm-link" href="<?= e(adminUrl('immagini/camera.' . $c['ref'])) ?>">
-                <?= !empty($c['photographed']) ? 'Cambia' : 'Carica' ?><span class="adm-visually-hidden"> la foto di <?= e((string) ($c['name']['it'] ?? $c['ref'])) ?></span>
-              </a>
-            <?php elseif (!empty($c['photographed'])): ?>
-              c'è
-            <?php endif; ?>
+            <a class="adm-link" href="<?= e(adminUrl('immagini/camera.' . $c['ref'])) ?>">
+              <?= !empty($c['photographed']) ? 'Cambia' : 'Carica' ?><span class="adm-visually-hidden"> la foto di <?= e((string) ($c['name']['it'] ?? $c['ref'])) ?></span>
+            </a>
             <?php if (empty($c['photographed'])): ?><span class="adm-dc">manca</span><?php endif; ?>
           </td>
         </tr>

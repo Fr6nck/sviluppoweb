@@ -216,4 +216,8 @@ $chiamaCredito = !empty($posto['didascalia']) ? 'Didascalia' : (!empty($posto['c
   </details>
 <?php endif; ?>
 
-<p><a class="adm-link" href="<?= e(adminUrl('immagini')) ?>"><?= icona('freccia-sinistra', 15) ?> Tutte le immagini</a></p>
+<?php if (empty($super) && $camera !== null): /* il gestore arriva qui dalla camera, e lì torna */ ?>
+  <p><a class="adm-link" href="<?= e(adminUrl('camere/' . rawurlencode((string) $camera))) ?>"><?= icona('freccia-sinistra', 15) ?> Torna alla camera</a></p>
+<?php else: ?>
+  <p><a class="adm-link" href="<?= e(adminUrl('immagini')) ?>"><?= icona('freccia-sinistra', 15) ?> Tutte le immagini</a></p>
+<?php endif; ?>

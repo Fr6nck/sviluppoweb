@@ -647,8 +647,9 @@ normale di `/admin`: il nome utente dice chi entra.
 **Che cosa resta al gestore.** Bacheca, Richieste, La struttura, Camere e
 tariffe e Account. Immagini e logo, Testi del sito, Domande frequenti, Accesso
 al sito e Ricezione e-mail sono solo del super admin: il gestore non le vede nel
-menu, e se ne apre l'indirizzo trova una pagina che non esiste. Le tariffe le
-cambia anche lui; una foto o un testo da cambiare li cambi tu.
+menu, e se ne apre l'indirizzo trova una pagina che non esiste. Le tariffe e
+le foto delle camere (principale e galleria) le cambia anche lui, dalla pagina
+di ogni camera; logo, foto della home e delle pagine, e i testi, li cambi tu.
 
 **Come funziona il pannello.**
 

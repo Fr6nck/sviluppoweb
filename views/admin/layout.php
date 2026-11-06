@@ -41,7 +41,8 @@ $attiva = match ($vista) {
     'bacheca' => '',
     'richiesta', 'richieste' => 'richieste',
     'camera', 'camere' => 'camere',
-    'immagine', 'immagini' => 'immagini',
+    // Il gestore apre solo le foto delle camere: per lui sono parte di Camere e tariffe.
+    'immagine', 'immagini' => empty($super) ? 'camere' : 'immagini',
     'testi-sezione', 'testi' => 'testi',
     default => $vista,
 };

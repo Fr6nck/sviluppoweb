@@ -44,8 +44,9 @@ final class AdminController
     /**
      * Le sezioni del super admin: immagini, testi, domande e le impostazioni
      * generali (accesso al sito, ricezione delle e-mail). Al gestore restano
-     * bacheca, richieste, La struttura, Camere e tariffe e il suo account; per
-     * lui queste, come Configurazione, sono pagine che non esistono.
+     * bacheca, richieste, La struttura, Camere e tariffe (con le foto delle
+     * camere: vedi fotoDiCamera) e il suo account; per lui queste, come
+     * Configurazione, sono pagine che non esistono.
      */
     private const SOLO_SUPER = ['immagini', 'testi', 'domande', 'posta', 'accesso-sito'];
 
@@ -125,7 +126,7 @@ final class AdminController
         if ($auth->mustChangePassword() && $pezzi !== ['account'] && $pezzi !== ['esci']) {
             return $this->headers(Response::redirect($this->url('account'), 303));
         }
-        if (in_array($pezzi[0] ?? '', self::SOLO_SUPER, true) && !$auth->isSuper()) {
+        if (in_array($pezzi[0] ?? '', self::SOLO_SUPER, true) && !$auth->isSuper() && !$this->fotoDiCamera($pezzi)) {
             return $this->headers(Response::html($this->page('non-trovata', ['titolo' => 'Pagina non trovata']), 404));
         }
 
@@ -521,7 +522,7 @@ final class AdminController
             'periodo'          => $periodo,
             'ultime'           => array_slice($richieste, 0, 6),
             'mancanti'         => $this->mancanti(),
-            'camereIncomplete' => $this->camereIncomplete($this->app->auth()->isSuper()),
+            'camereIncomplete' => $this->camereIncomplete(),
             'camere'           => $this->app->rooms()->all(),
             'demo'             => (string) $this->app->config('booking.provider') === 'demo',
             'pagamentoAttivo'  => $this->app->pagamentoAttivo(),
@@ -557,12 +558,20 @@ final class AdminController
     }
 
     /**
-     * Le camere a cui manca qualcosa. Senza $conFoto la fotografia mancante
-     * non conta: il gestore non la può caricare, le immagini sono del super admin.
+     * Le foto delle camere — la principale e le due della galleria — le
+     * carica anche il gestore, da Camere e tariffe. Le altre immagini (logo,
+     * apertura, pagine) restano del super admin.
      *
-     * @return list<array{ref:string,nome:string,buchi:list<string>}>
+     * @param list<string> $pezzi
      */
-    private function camereIncomplete(bool $conFoto = true): array
+    private function fotoDiCamera(array $pezzi): bool
+    {
+        return count($pezzi) === 2 && $pezzi[0] === 'immagini'
+            && isset($this->app->media()->posto($pezzi[1])['camera']);
+    }
+
+    /** @return list<array{ref:string,nome:string,buchi:list<string>}> */
+    private function camereIncomplete(): array
     {
         $out = [];
         foreach ($this->app->rooms()->all() as $camera) {
@@ -573,7 +582,7 @@ final class AdminController
             if (empty($camera['floor'])) {
                 $buchi[] = 'piano';
             }
-            if ($conFoto && empty($camera['photographed'])) {
+            if (empty($camera['photographed'])) {
                 $buchi[] = 'fotografia';
             }
             if ($buchi !== []) {
@@ -1414,8 +1423,7 @@ final class AdminController
             'utente' => $utente,
             'super'  => $utente !== null && $this->app->auth()->isSuper(),
             'nuove'  => $utente !== null ? $this->app->inbox()->countNew() : 0,
-            // Per il gestore solo quello che può completare lui: le fotografie no.
-            'daCompletare' => $utente !== null ? count($this->mancanti()) + count($this->camereIncomplete($this->app->auth()->isSuper())) : 0,
+            'daCompletare' => $utente !== null ? count($this->mancanti()) + count($this->camereIncomplete()) : 0,
             'errori' => [],
             'valori' => [],
             'lingue' => $this->form->languages(),
