@@ -46,6 +46,11 @@ return [
         'mobile'   => '+39 338 177 7983',
         'whatsapp' => '393381777983',    // solo cifre, con prefisso internazionale
         'email'    => 'info@arcodelvento.it',
+        // Dove arrivano le richieste e le prenotazioni del sito: è la riserva
+        // di MAIL_TO_ADDRESS nei file .env del pacchetto (tools/build-release.php).
+        // Sul sito non compare: lì resta l'indirizzo qui sopra. La casella che
+        // spedisce resta quella del dominio: Hostinger non spedisce a nome di Gmail.
+        'requests_email' => 'dpecetta@gmail.com',
         // Gli orari in cui qualcuno risponde davvero. Dirli evita la telefonata
         // delle 22 a cui nessuno risponde, che l'ospite legge come menefreghismo.
         'hours'    => ['from' => '10:00', 'to' => '20:00'],

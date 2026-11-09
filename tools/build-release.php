@@ -573,6 +573,8 @@ copy($root . '/public/.htaccess', $rinominare . '/htaccess-public.txt');
 $impostazioni = require $root . '/content/settings.php';
 $posta   = (string) ($impostazioni['contacts']['email'] ?? '');
 $dominio = str_contains($posta, '@') ? substr($posta, strpos($posta, '@') + 1) : '';
+// Chi riceve le richieste: può essere una casella diversa da quella che spedisce.
+$arrivo  = (string) ($impostazioni['contacts']['requests_email'] ?? $posta);
 
 /** @var array<string,array{0:string,1:string}> chiave => [valore, nota sopra la riga] */
 $produzione = [
@@ -608,7 +610,7 @@ $produzione = [
     'SUMUP_MERCHANT_CODE' => ['', 'DA SCRIVERE: il codice esercente del conto SumUp.'],
     'MAIL_TRANSPORT'       => ['smtp', 'Le conferme di prenotazione e di pagamento partono per e-mail: serve la posta vera.'],
     'MAIL_FROM_ADDRESS'    => [$posta, ''],
-    'MAIL_TO_ADDRESS'      => [$posta, ''],   // la spiegazione è già in .env.example
+    'MAIL_TO_ADDRESS'      => [$arrivo, 'Dove arrivano richieste e prenotazioni. Spedisce comunque la casella ' . $posta . ' qui sotto: Hostinger non spedisce a nome di un altro dominio.'],
     'MAIL_SMTP_HOST'       => ['smtp.hostinger.com', 'Valido se la casella è su Hostinger. Se è altrove, servono i dati di quel provider.'],
     'MAIL_SMTP_PORT'       => ['587', ''],
     'MAIL_SMTP_USER'       => [$posta, ''],
@@ -682,7 +684,7 @@ if ($urlProva !== '') {
             . 'Per provare la posta vera metti smtp e i dati di una tua casella, non quella del cliente.',
         ],
         'MAIL_FROM_ADDRESS' => [$posta, ''],
-        'MAIL_TO_ADDRESS'   => [$posta, ''],
+        'MAIL_TO_ADDRESS'   => [$arrivo, 'Dove arriverebbero richieste e prenotazioni, se la posta fosse accesa.'],
         'BOOKING_PROVIDER'  => ['sito', 'Il calendario vero del sito, lo stesso della produzione.'],
         'PAYMENT_PROVIDER'  => ['sumup', 'Si paga tutto online con SumUp, al momento della prenotazione: nessuna caparra.'],
         'PAYMENT_MODE'      => [

@@ -234,13 +234,18 @@ messaggio di prova**, per controllare subito che la posta arrivi. Vale dalla
 richiesta successiva.
 
 Se in quella pagina lasci tutti i campi vuoti, valgono gli indirizzi della
-riga **`MAIL_TO_ADDRESS`** del file `.env` sul server: è la riserva, e resta
-quella da compilare alla prima installazione. Anche lì più indirizzi si
-separano con una virgola:
+riga **`MAIL_TO_ADDRESS`** del file `.env` sul server: è la riserva. Nei file
+`env-produzione.txt` ed `env-prova.txt` del pacchetto è già
+`dpecetta@gmail.com` (da `contacts.requests_email` in `content/settings.php`);
+la casella che spedisce resta `info@arcodelvento.it`, perché Hostinger non
+spedisce a nome di Gmail. Anche lì più indirizzi si separano con una virgola:
 
 ```ini
-MAIL_TO_ADDRESS=info@arcodelvento.it, daniele@esempio.it
+MAIL_TO_ADDRESS=dpecetta@gmail.com, info@arcodelvento.it
 ```
+
+Su un sito già installato il `.env` non si ricarica: l'indirizzo si cambia da
+**Configurazione** (voce `MAIL_TO_ADDRESS`) o da **Ricezione e-mail**.
 
 Il `.env` si apre con il File Manager di hPanel (o FileZilla) nella cartella
 del sito — `public_html/`, o `public_html/assisiapartment/` per la prova. Il
