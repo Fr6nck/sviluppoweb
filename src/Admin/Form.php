@@ -212,6 +212,15 @@ final class Form
     /** Due valori sono lo stesso dato? (3 e 3.0 sì; null e '' sì) */
     public static function same(mixed $a, mixed $b): bool
     {
+        // Un testo vuoto in tutte le lingue è un testo vuoto: null, '' e
+        // ['it' => null, 'en' => null] sono lo stesso dato. Senza questo, la
+        // camera 01 (senza descrizione della foto) salvava «alt: null» a ogni
+        // salvataggio, come fosse una modifica.
+        $vuoto = static fn ($x): bool => $x === null || $x === ''
+            || (is_array($x) && array_filter($x, static fn ($y): bool => $y !== null && $y !== '') === []);
+        if ($vuoto($a) && $vuoto($b)) {
+            return true;
+        }
         if (is_numeric($a) && is_numeric($b) && !is_string($a) && !is_string($b)) {
             return abs((float) $a - (float) $b) < 0.000001;
         }

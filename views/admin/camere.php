@@ -5,8 +5,8 @@
  */
 use ArcoDelVento\Support\RoomPresenter as R;
 ?>
-<p class="adm-intro">Nome, metratura, piano, vista e tariffe di ogni camera. Tipologia, letti e numero massimo di
-   ospiti non si cambiano da qui: da loro dipende il motore di prenotazione.</p>
+<p class="adm-intro">Nome, metratura, piano, vista e tariffe di ogni camera<?= !empty($super) ? ', e quanti ospiti può avere' : '' ?>.
+   Tipologia<?= !empty($super) ? ' e letti non si cambiano da qui' : ', letti e numero massimo di ospiti non si cambiano da qui: li cambia chi cura il sito' ?>.</p>
 
 <section class="adm-carta">
 <div class="adm-tabella-scorre">

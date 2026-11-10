@@ -197,6 +197,11 @@ matrimoniale occupata da una persona sola costa meno.
 | 05 | Singola con letto matrimoniale | € 70 | — | — |
 
 Stanno in `content/rooms.php` sotto `rates`, una voce per numero di ospiti.
+La capienza (`occupancy.max`) sta nello stesso file ed è solo la partenza: il
+super admin la cambia dal pannello, e la modifica finisce in
+`storage/data/camere.json` come il resto (`occupancy` intero, standard e max).
+Il sito vende fino all'ultimo numero di ospiti con una tariffa
+(`ArrayRoomRepository::inVendita`); scendendo, le tariffe in più si tolgono.
 Dove una voce manca, la camera non ospita quel numero di persone e il motore
 non la propone: le due cose sono lo stesso dato.
 
@@ -462,7 +467,7 @@ le camere.
 | Bacheca | i numeri delle richieste (nuove, prenotazioni e messaggi negli ultimi 30 giorni, con l'andamento), il grafico a colonne di 7 giorni o 6 mesi, le ultime arrivate, i prossimi arrivi e le notti chieste nei prossimi 30 giorni, le camere, il marchio, e quello che sul sito è ancora «da confermare», CIN in testa | tutti e due |
 | Richieste | le prenotazioni e i messaggi arrivati dal sito, con stato: nuova, letta, confermata, rifiutata, archiviata; si cercano per nome, e-mail, riferimento, camera | tutti e due |
 | La struttura | contatti, orari, soggiorno minimo, tassa, dotazioni, obblighi di legge, recensioni, social, coordinate | tutti e due |
-| Camere e tariffe | nome, metratura, piano, vista, tariffa per numero di ospiti, descrizione della fotografia, e le foto della camera (principale e galleria) | tutti e due |
+| Camere e tariffe | nome, metratura, piano, vista, tariffa per numero di ospiti, descrizione della fotografia, e le foto della camera (principale e galleria); «Ospiti al massimo» (la capienza, da 1 a 6) solo il super admin | tutti e due |
 | Immagini e logo | la rosa dei venti (anche icona del browser), il logotipo chiaro e scuro, le cinque foto dell'apertura, le foto delle pagine e quella per i social, la foto principale e due di galleria per ogni camera: si carica il file, si descrive, si torna all'originale | super admin (le foto delle camere anche il gestore, da Camere e tariffe) |
 | Testi del sito | tutti i testi in italiano e inglese, pagina per pagina, con l'originale accanto | super admin |
 | Domande frequenti | aggiungere, modificare, riordinare, togliere | super admin |

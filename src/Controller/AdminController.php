@@ -751,21 +751,28 @@ final class AdminController
 
         // Un campo di tariffa per ogni persona che la camera può ospitare, non
         // solo per quelle a cui oggi si vende: il campo vuoto è il modo di
-        // aprirla a una persona in più.
+        // aprirla a una persona in più. Quante può ospitarne lo decide il
+        // super admin, dal campo «Ospiti al massimo».
+        $super   = $this->app->auth()->isSuper();
         $massimo = (int) ($camera['occupancy']['capacity'] ?? $camera['occupancy']['max'] ?? 2);
-        $schema  = Schema::room($massimo);
+        $schema  = Schema::room($massimo, $super);
+        // Nel modulo il numero di ospiti è la capienza, non fino a quanti si vende oggi.
+        $occupazione = static fn (int $max) => ['standard' => min((int) ($base['occupancy']['standard'] ?? $max), $max), 'max' => $max];
+        $valori = $camera;
+        $valori['occupancy'] = $occupazione($massimo);
 
         if (!$request->isPost()) {
             return Response::html($this->page('camera', [
                 'titolo' => (string) ($camera['name']['it'] ?? $ref), 'camera' => $camera, 'schema' => $schema,
-                'valori' => $camera,
+                'valori' => $valori,
             ]));
         }
 
         $inviati = (array) ($request->post['f'] ?? []);
         $errori  = [];
-        $nuova   = $camera;
+        $nuova   = $valori;
         $tariffe = [];
+        $massimoNuovo = $massimo;
         foreach ($schema as $campo) {
             $percorso = $campo['path'];
             if (str_starts_with($percorso, 'rates.')) {
@@ -775,12 +782,20 @@ final class AdminController
                 }
                 continue;
             }
+            if ($percorso === 'occupancy.max') {
+                $massimoNuovo = (int) ($this->form->parse($campo, $inviati[$percorso] ?? null, null, $errori) ?? $massimo);
+                continue;
+            }
             $valore = $this->form->parse($campo, $inviati[$percorso] ?? null, $base[$percorso] ?? null, $errori);
             if ($percorso === 'view' && $valore === '') {
                 $valore = null;
             }
             $nuova[$percorso] = $valore;
         }
+        $nuova['occupancy'] = $occupazione($massimoNuovo);
+        // Meno ospiti di prima: le tariffe per chi non ci sta più se ne vanno.
+        $tolte = array_filter(array_keys($tariffe), static fn (int $ospiti): bool => $ospiti > $massimoNuovo);
+        $tariffe = array_filter($tariffe, static fn (int $ospiti): bool => $ospiti <= $massimoNuovo, ARRAY_FILTER_USE_KEY);
         if ($tariffe === []) {
             $errori[] = 'Serve almeno una tariffa: senza, la camera non si può prenotare.';
         }
@@ -795,7 +810,7 @@ final class AdminController
         }
 
         $modifiche = [];
-        foreach (['name', 'size_sqm', 'floor', 'view', 'alt', 'rates'] as $campo) {
+        foreach (['name', 'size_sqm', 'floor', 'view', 'alt', 'rates', 'occupancy'] as $campo) {
             if (!Form::same($nuova[$campo] ?? null, $base[$campo] ?? null)) {
                 $modifiche[$campo] = $nuova[$campo];
             }
@@ -808,7 +823,12 @@ final class AdminController
             $tutte[$ref] = $modifiche;
         }
         $store->write('camere', $tutte);
-        $this->flash('ok', 'Camera salvata. Le modifiche sono già sul sito.');
+        $conPrezzo = $tariffe === [] ? 0 : max(array_keys($tariffe));
+        $this->flash('ok', 'Camera salvata. Le modifiche sono già sul sito.'
+            . ($massimoNuovo > $massimo && $conPrezzo < $massimoNuovo
+                ? ' Ora ospita fino a ' . $massimoNuovo . ': per prenotarla a ' . $massimoNuovo . ' scrivi la tariffa per ' . $massimoNuovo . ', qui sotto.'
+                : '')
+            . ($tolte !== [] ? ' La tariffa per ' . implode(' e ', $tolte) . ' ospiti non serve più: è stata tolta.' : ''));
 
         return Response::redirect($this->url('camere/' . rawurlencode($ref)), 303);
     }

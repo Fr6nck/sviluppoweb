@@ -656,6 +656,13 @@ menu, e se ne apre l'indirizzo trova una pagina che non esiste. Le tariffe e
 le foto delle camere (principale e galleria) le cambia anche lui, dalla pagina
 di ogni camera; logo, foto della home e delle pagine, e i testi, li cambi tu.
 
+**Quanti ospiti in una camera.** Nella scheda di ogni camera tu hai in più il
+campo **Ospiti al massimo** (da 1 a 6). Salvato, compare un campo di tariffa
+per ogni ospite: la camera si prenota fino all'ultimo numero di ospiti che ha
+una tariffa, quindi dopo aver alzato il numero scrivi anche la tariffa nuova.
+Abbassandolo, le tariffe in più si tolgono da sole. Tipologia e letti non
+cambiano.
+
 **Come funziona il pannello.**
 
 - Le voci sono divise in gruppi (sito, pagamento, prenotazioni, posta, codici,

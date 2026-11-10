@@ -117,7 +117,14 @@ final class Schema
      *
      * @return list<array<string,mixed>>
      */
-    public static function room(int $occupazioneMassima): array
+    /** Quante persone al massimo si possono scrivere in una camera. */
+    public const OSPITI_MASSIMI = 6;
+
+    /**
+     * @param int  $occupazioneMassima quanti campi di tariffa: uno per ospite
+     * @param bool $conOspiti          anche il numero di ospiti: solo il super admin
+     */
+    public static function room(int $occupazioneMassima, bool $conOspiti = false): array
     {
         $campi = [
             ['path' => 'name', 'label' => 'Nome', 'type' => 'prose', 'rows' => 1, 'required' => true],
@@ -126,6 +133,12 @@ final class Schema
             ['path' => 'view', 'label' => 'Vista', 'type' => 'select',
              'options' => ['' => 'Sui vicoli di Assisi', 'piazza' => 'Su Piazza San Rufino e il Duomo']],
         ];
+        if ($conOspiti) {
+            $campi[] = ['path' => 'occupancy.max', 'label' => 'Ospiti al massimo', 'type' => 'int', 'min' => 1,
+                        'max' => self::OSPITI_MASSIMI, 'required' => true,
+                        'help' => 'Quante persone può ospitare. Salvato, qui sotto compare un campo di tariffa per ogni ospite: '
+                                . 'la camera si prenota fino all\'ultimo numero di ospiti che ha una tariffa. Tipologia e letti non cambiano.'];
+        }
         for ($ospiti = 1; $ospiti <= $occupazioneMassima; $ospiti++) {
             $campi[] = [
                 'path' => 'rates.' . $ospiti,
