@@ -1450,6 +1450,7 @@ final class AdminController
             'vista'  => $vista,
             'tema'   => $this->tema(),
             'percorso' => $this->percorso,
+            'versione' => $this->app->versione(),
         ];
         $dati['contenuto'] = $this->app->view()->render('admin/' . $vista, $dati);
 

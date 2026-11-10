@@ -339,6 +339,7 @@ sotto `legal.cin`. Finché non c'è, il piè di pagina dice `CIN [da confermare]
 
 | Sintomo | Quasi sempre è |
 | --- | --- |
+| Ho caricato il pacchetto ma non cambia niente | Guarda in fondo a una pagina qualsiasi dell'area riservata: **«Versione del sito: pacchetto del …»** deve dire la data che sta nel nome dello .zip (`arcodelvento-20261110-1544` = 10/11/2026 alle 15:44). Se dice una data vecchia, i file nuovi non sono arrivati: cartella sbagliata (`public_html/` e non `public_html/assisiapartment/`, o viceversa), FileZilla che ha chiesto «sovrascrivere?» e ha saltato, o la cache di Hostinger (hPanel → svuota la cache del sito). Se la data è giusta e manca una cosa che è solo del super admin, guarda in alto a destra: sotto il nome c'è scritto **Amministratore** o **Super admin** |
 | Pagina «Installazione incompleta — manca il file .htaccess» | l'`.htaccess` della cartella del sito non è salito: carica `htaccess-radice.txt` e rinominalo |
 | «403 Forbidden» nero di Hostinger sulla cartella del sito | come sopra, con un pacchetto precedente al 24 settembre 2026 |
 | In una sottocartella, `/it/` porta a una pagina del sito principale | come sopra: senza `.htaccess` la richiesta finisce al sito della radice (WordPress) |

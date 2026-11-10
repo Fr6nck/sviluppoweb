@@ -263,6 +263,7 @@
 /* ------------------------------------------------ contenuto */
 .adm-main { width: 100%; max-width: 1440px; padding: 6px 32px 64px; }
 .adm-main:focus { outline: none; }
+.adm-versione { margin: 40px 0 0; font-size: var(--a-t-xs); color: var(--a-tenue); }
 .adm-intestazione { margin: 10px 0 22px; }
 .adm-titolo { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: var(--a-t-grande); line-height: 1.15; color: var(--a-testo); }
 .adm-sottotitolo { margin: 6px 0 0; color: var(--a-tenue); font-size: var(--a-t-l); }

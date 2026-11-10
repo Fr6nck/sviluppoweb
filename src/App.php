@@ -202,6 +202,21 @@ final class App
         return require $this->config['content'] . '/rooms.php';
     }
 
+    /**
+     * La versione del pacchetto caricato sul server: data e commit, scritti da
+     * tools/build-release.php in config/versione.php. Null nella copia di
+     * lavoro, dove quel file non c'è.
+     *
+     * @return array{data: string, commit: ?string}|null
+     */
+    public function versione(): ?array
+    {
+        $file = $this->config['root'] . '/config/versione.php';
+        $v = is_file($file) ? require $file : null;
+
+        return is_array($v) && !empty($v['data']) ? ['data' => (string) $v['data'], 'commit' => isset($v['commit']) ? (string) $v['commit'] : null] : null;
+    }
+
     /** @return list<array<string,mixed>> le domande frequenti, con le modifiche del pannello */
     public function faq(): array
     {

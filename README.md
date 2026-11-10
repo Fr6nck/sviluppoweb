@@ -476,6 +476,11 @@ le camere.
 | Account | cambiare la propria password; il super admin reimposta anche quella del gestore | tutti e due |
 | Configurazione | le voci del file `.env` | super admin |
 
+**Quale versione è sul server.** `tools/build-release.php` scrive nel
+pacchetto `config/versione.php` (data e commit; nel repository non c'è, è in
+`.gitignore`). Il pannello la mostra in fondo a ogni pagina e il preflight in
+cima: dopo un caricamento via FTP si vede subito se i file nuovi sono arrivati.
+
 **Dove vanno le modifiche.** In `storage/data/`, non in `content/`. I file di
 `content/` restano il punto di partenza, sotto controllo di versione; quello che
 si cambia dal pannello si sovrappone (`src/Storage/ContentOverrides.php`) e vince.

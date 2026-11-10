@@ -108,6 +108,14 @@ if ($url === '') {
     }
 }
 
+// ----------------------------------------------------------- il pacchetto
+$versione = is_file($root . '/config/versione.php') ? require $root . '/config/versione.php' : null;
+$aggiungi('nota', 'Ambiente',
+    is_array($versione) && !empty($versione['data'])
+        ? 'pacchetto del ' . date('d/m/Y H:i', strtotime((string) $versione['data']) ?: time()) . (!empty($versione['commit']) ? ' (' . $versione['commit'] . ')' : '')
+        : 'copia di lavoro: nessun pacchetto (manca config/versione.php)',
+    'La stessa riga sta in fondo a ogni pagina dell\'area riservata: se dopo un caricamento non cambia, i file nuovi non sono arrivati.');
+
 // ------------------------------------------------------------- prova o no
 $inProva = (bool) ($config['app']['noindex'] ?? false);
 $cartella = (string) ($config['app']['base'] ?? '');

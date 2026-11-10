@@ -18,6 +18,7 @@
  * @var int         $nuove
  * @var int         $daCompletare
  * @var string      $vista
+ * @var array|null  $versione data e commit del pacchetto caricato, null nella copia di lavoro
  * @var string|null $tema     chiaro | scuro | null: segue il sistema
  * @var string      $percorso la pagina corrente, sotto /admin
  */
@@ -203,6 +204,9 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
       </div>
       <?= $this->render('admin/_avvisi', ['flash' => $flash, 'errori' => $errori, 'vista' => $vista]) ?>
       <?= $contenuto ?>
+      <?php /* Quale pacchetto c'è sul server: dopo un caricamento via FTP si guarda qui. */ ?>
+      <p class="adm-versione">Versione del sito:
+        <?= !empty($versione) ? 'pacchetto del ' . e(dataOra((string) $versione['data'])) . (!empty($versione['commit']) ? ' · ' . e((string) $versione['commit']) : '') : 'copia di lavoro, senza pacchetto' ?></p>
     </main>
   </div>
 </div>

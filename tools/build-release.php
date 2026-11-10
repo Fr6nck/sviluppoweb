@@ -390,6 +390,13 @@ foreach (['storage', 'tools', 'docs'] as $c) {
 $copia($root . '/.env.example', $cartella . '/.env.example');
 $copia($root . '/docs/DEPLOY-HOSTINGER.md', $cartella . '/docs/DEPLOY-HOSTINGER.md');
 
+// La versione del pacchetto: il pannello la scrive in fondo a ogni pagina e il
+// controllo finale in cima, così si vede subito se un caricamento è arrivato.
+$commit = trim((string) @shell_exec('git -C ' . escapeshellarg($root) . ' rev-parse --short HEAD 2>/dev/null'));
+file_put_contents($cartella . '/config/versione.php', "<?php\n\n// Scritto da tools/build-release.php: la versione di questo pacchetto.\n"
+    . 'return ' . var_export(['data' => date('c'), 'commit' => $commit !== '' ? $commit : null], true) . ";\n");
+$passo('config/versione.php: pacchetto del ' . date('d/m/Y H:i') . ($commit !== '' ? ' (' . $commit . ')' : ''));
+
 // Le due cartelle scrivibili devono esistere: il sito ci scrive.
 foreach (['storage/logs', 'storage/mail'] as $c) {
     @mkdir($cartella . '/' . $c, 0o755, true);
