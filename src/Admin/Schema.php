@@ -132,6 +132,12 @@ final class Schema
             ['path' => 'floor', 'label' => 'Piano', 'type' => 'text', 'max' => 40],
             ['path' => 'view', 'label' => 'Vista', 'type' => 'select',
              'options' => ['' => 'Sui vicoli di Assisi', 'piazza' => 'Su Piazza San Rufino e il Duomo']],
+            // Il link iCal di Booking.com: il sito lo legge e tiene occupate le
+            // notti prenotate lì. Facoltativo: vuoto non è un dato che manca.
+            ['path' => 'ical_import', 'label' => 'Calendario di Booking.com (link iCal)', 'type' => 'text', 'max' => 500, 'facoltativo' => true,
+             'help' => 'Nell\'extranet di Booking.com: Tariffe e disponibilità → Sincronizza calendari → Esporta calendario. Copia il link '
+                     . 'e incollalo qui: le notti prenotate su Booking risultano occupate anche sul sito, entro ' . (int) (\ArcoDelVento\Booking\CalendariEsterni::OGNI / 60)
+                     . ' minuti. Va bene anche il link iCal di Airbnb. Vuoto: il sito non sa niente di Booking.'],
         ];
         if ($conOspiti) {
             $campi[] = ['path' => 'occupancy.max', 'label' => 'Ospiti al massimo', 'type' => 'int', 'min' => 1,

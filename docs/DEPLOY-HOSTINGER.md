@@ -584,8 +584,9 @@ controllo finale si ferma se la modalità è ancora «Prova».
 
 Con `BOOKING_PROVIDER=sito` il calendario è quello del sito: tutto libero,
 tranne le notti che il sito ha già venduto (pagate, confermate, o con la pagina
-di pagamento aperta da meno di mezz'ora). Il sito **non conosce Booking** né le
-prenotazioni prese al telefono: quando arriva una prenotazione pagata, chiudi
+di pagamento aperta da meno di mezz'ora). Il sito conosce Booking solo con il
+calendario iCal collegato (punto 16), e non conosce il telefono: quando arriva
+una prenotazione pagata, chiudi
 quelle date su Booking; se nel frattempo erano già occupate, rimborsa
 l'ospite dal pannello di SumUp e scrivigli. Con `BOOKING_PROVIDER=demo` alcune
 notti risultano occupate a caso: con i pagamenti non va usato.
@@ -693,3 +694,44 @@ Via FTP cancella
 `storage/data/superadmin.json`, rimetti nel `.env` una riga
 `SUPERADMIN_SETUP_TOKEN=` con un codice nuovo (almeno 16 caratteri a caso) e
 rifai la creazione da `/admin/super`. Il `.env` e le sue copie non si toccano.
+
+---
+
+## 16. Il calendario di Booking.com (iCal)
+
+Booking.com e il sito possono leggersi il calendario a vicenda, camera per
+camera, con il formato iCal: un link da copiare da una parte all'altra. Niente
+da installare.
+
+### Da Booking.com al sito
+
+1. Nell'extranet di Booking.com: **Tariffe e disponibilità → Sincronizza
+   calendari → Esporta calendario**: per ogni camera c'è un link che finisce
+   per `.ics`. Copialo.
+2. Area riservata → **Camere e tariffe** → la camera → campo **Calendario di
+   Booking.com (link iCal)**: incolla il link e salva. Lo può fare anche il
+   gestore.
+3. Il sito lo legge subito e dice quante notti risultano occupate; da lì in
+   poi lo rilegge da solo ogni 20 minuti, quando qualcuno cerca una data. Nella
+   scheda della camera, il riquadro **Calendario di Booking.com** dice quando
+   l'ha letto l'ultima volta e quali periodi ha trovato; **Aggiorna adesso** lo
+   rilegge al momento.
+
+Le notti prenotate su Booking risultano occupate anche sul sito: la camera non
+compare fra quelle libere e non si può pagare. Vale anche per il link iCal di
+Airbnb. Del calendario di Booking il sito tiene solo le date, mai i nomi.
+
+**I limiti, da sapere.** Fra la prenotazione su Booking e la lettura passano
+fino a 20 minuti: in quei minuti la camera resta prenotabile qui. Se Booking
+non risponde, restano buone le notti lette l'ultima volta e il pannello mostra
+l'errore. Il controllo finale (`tools/preflight.php`) rilegge i calendari e
+segnala quelli che non si leggono.
+
+### Dal sito a Booking.com
+
+Nella stessa scheda c'è il link del calendario che il sito pubblica per quella
+camera (`…/ical/camera-01/<codice>.ics`): le notti pagate o confermate qui,
+senza nomi. In Booking.com, **Sincronizza calendari → Importa calendario**,
+incolla il link e dagli un nome («Sito»). Booking lo rilegge con i suoi tempi,
+di solito qualche ora. Il link contiene un codice segreto: non pubblicarlo.
+Funziona anche con il sito chiuso dal codice d'accesso.

@@ -63,7 +63,7 @@ $modoTastiera = match ($campo['type']) {
   <?php if ($aiuto !== ''): ?>
     <p class="adm-aiuto" id="<?= e($id) ?>-aiuto"><?= e($aiuto) ?></p>
   <?php endif; ?>
-  <?php if ($campo['type'] !== 'bool' && ($valore === null || $valore === '' || (is_array($valore) && array_filter($valore, static fn ($x) => $x !== null && $x !== '') === []))): ?>
+  <?php if ($campo['type'] !== 'bool' && empty($campo['facoltativo']) && ($valore === null || $valore === '' || (is_array($valore) && array_filter($valore, static fn ($x) => $x !== null && $x !== '') === []))): ?>
     <?php /* Un segno breve: la spiegazione sta una volta sola, in cima alla pagina. */ ?>
     <p class="adm-dc"><?= icona('attenzione', 13) ?>Vuoto</p>
   <?php endif; ?>

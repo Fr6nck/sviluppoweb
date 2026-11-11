@@ -68,7 +68,7 @@ final class AvvisiPagamento
             $righe[] = '';
         }
         if (in_array((string) $this->app->config('booking.provider'), ['demo', 'sito', ''], true)) {
-            $righe[] = 'Il calendario del sito non conosce le prenotazioni fatte su Booking o al telefono:';
+            $righe[] = 'Il calendario del sito non conosce le prenotazioni prese al telefono, e quelle di Booking solo se il calendario iCal è collegato:';
             $righe[] = 'controlla che le date siano libere. Se non lo sono, rimborsa dal pannello di SumUp';
             $righe[] = 'e scrivi all\'ospite.';
             $righe[] = '';

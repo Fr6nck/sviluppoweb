@@ -397,6 +397,28 @@ if (($pagamento['provider'] ?? '') === '') {
         'Il sito le riceve da solo. Prima di aprire, fai una prenotazione vera con una carta tua e rimborsala dal pannello di SumUp: così sai che tutto il giro funziona.');
 }
 
+// ------------------------------------------------- calendari di Booking.com
+$archivioPreflight = new \ArcoDelVento\Storage\JsonStore((string) $config['data']);
+$camerePreflight   = new \ArcoDelVento\Repository\ArrayRoomRepository(
+    (new \ArcoDelVento\Storage\ContentOverrides($archivioPreflight))->rooms(require $root . '/content/rooms.php')
+);
+$calendari = new \ArcoDelVento\Booking\CalendariEsterni($archivioPreflight, $camerePreflight, !filter_var(\ArcoDelVento\Support\Env::fromServer('ADV_ICAL_HTTP') ?? false, FILTER_VALIDATE_BOOL));
+$collegate = $calendari->collegate();
+if ($collegate === []) {
+    $aggiungi('nota', 'Calendari', 'nessuna camera ha il calendario di Booking.com collegato',
+        'Area riservata → Camere e tariffe → la camera → «Calendario di Booking.com (link iCal)». Senza, il sito non sa le notti vendute su Booking.');
+} else {
+    $calendari->aggiorna();
+    foreach ($collegate as $refCal => $urlCal) {
+        $s = $calendari->stato($refCal) ?? ['esito' => 'mai', 'periodi' => [], 'errore' => null];
+        $aggiungi($s['esito'] === 'ok' ? 'ok' : 'attenzione', 'Calendari',
+            $refCal . ': ' . ($s['esito'] === 'ok'
+                ? 'calendario di Booking.com letto, ' . count($s['periodi']) . ' periodi occupati da oggi in poi'
+                : 'il calendario di Booking.com non si legge: ' . (string) ($s['errore'] ?? 'nessuna risposta')),
+            $s['esito'] === 'ok' ? '' : 'Controlla il link nella scheda della camera; se Booking non risponde, restano buone le notti lette l\'ultima volta.');
+    }
+}
+
 // ----------------------------------------------------------- contenuti
 $settings = require $root . '/content/settings.php';
 

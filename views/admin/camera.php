@@ -4,6 +4,7 @@
  * @var list<array<string,mixed>> $schema
  * @var array<string,mixed> $valori
  * @var list<string> $lingue
+ * @var array{stato: array<string,mixed>|null, esporta: string} $ical  il calendario di Booking.com
  */
 use ArcoDelVento\Admin\Form;
 use ArcoDelVento\Support\Csrf;
@@ -39,6 +40,46 @@ $inVendita = (int) $camera['occupancy']['max'];
       <a class="adm-link" href="<?= e(adminUrl('immagini/camera.' . $camera['ref'] . '.galleria-2')) ?>">Galleria 2</a>
     </p>
   </div>
+</section>
+
+<?php
+/* Il calendario di Booking.com: quello che il sito legge (il link si scrive
+   nel modulo qui sotto) e quello che il sito pubblica per Booking. */
+$statoIcal = $ical['stato'] ?? null;
+$quandoIcal = static fn (?string $iso): string => $iso ? dataOra($iso) : '—';
+$giorno = static fn (string $iso): string => date('d/m/Y', strtotime($iso) ?: 0);
+?>
+<section class="adm-carta" id="c-ical" aria-labelledby="c-ical-titolo" tabindex="-1">
+  <div class="adm-carta__testa">
+    <h2 id="c-ical-titolo">Calendario di Booking.com</h2>
+    <?php if ($statoIcal !== null): ?>
+      <span class="adm-etichetta"><?= $statoIcal['esito'] === 'ok' ? 'collegato' : ($statoIcal['esito'] === 'errore' ? 'errore' : 'da leggere') ?></span>
+    <?php endif; ?>
+  </div>
+  <?php if ($statoIcal === null): ?>
+    <p>Non collegato: il sito non sa quali notti sono prenotate su Booking. Incolla il link iCal di Booking.com nel
+       campo «Calendario di Booking.com» qui sotto e salva.</p>
+  <?php else: ?>
+    <dl class="adm-dati adm-dati--piatta">
+      <div><dt>Letto l'ultima volta</dt><dd><?= e($quandoIcal($statoIcal['aggiornato'])) ?><?= $statoIcal['esito'] === 'errore' ? ' · <strong>ultimo tentativo fallito</strong> (' . e($quandoIcal($statoIcal['tentato'])) . '): ' . e((string) $statoIcal['errore']) : '' ?></dd></div>
+      <div><dt>Notti occupate su Booking</dt>
+        <dd><?php if ($statoIcal['periodi'] === []): ?>nessuna, da oggi in poi<?php else: ?>
+          <?= count($statoIcal['periodi']) ?> <?= count($statoIcal['periodi']) === 1 ? 'periodo' : 'periodi' ?>:
+          <?= e(implode(', ', array_map(static fn (array $p): string => $giorno($p['arrivo']) . '–' . $giorno($p['partenza']), array_slice($statoIcal['periodi'], 0, 6)))) ?><?= count($statoIcal['periodi']) > 6 ? '…' : '' ?>
+        <?php endif; ?></dd></div>
+    </dl>
+    <p class="adm-nota">Si rilegge da solo ogni <?= (int) (\ArcoDelVento\Booking\CalendariEsterni::OGNI / 60) ?> minuti, quando qualcuno cerca una data sul sito.
+       Una prenotazione fatta su Booking può restare prenotabile qui per quei minuti: per le ultime ore conta sempre Booking.</p>
+    <form method="post" action="<?= e(adminUrl('camere/' . rawurlencode((string) $camera['ref']))) ?>" class="adm-in-linea">
+      <?= Csrf::field() ?>
+      <input type="hidden" name="azione" value="ical-aggiorna">
+      <button type="submit" class="adm-bottone adm-bottone--piatto"><?= icona('ripristina', 16) ?>Aggiorna adesso</button>
+    </form>
+  <?php endif; ?>
+  <h3 class="adm-sottotitolo-carta">Il calendario del sito, per Booking.com</h3>
+  <p>Su Booking.com, in Sincronizza calendari → <strong>Importa calendario</strong>, incolla questo link: Booking terrà chiuse le
+     notti prenotate o confermate qui. Il link è segreto: non pubblicarlo.</p>
+  <p><code class="adm-codice"><?= e((string) $ical['esporta']) ?></code></p>
 </section>
 
 <form method="post" action="<?= e(adminUrl('camere/' . rawurlencode((string) $camera['ref']))) ?>" class="adm-modulo adm-gruppo" novalidate>

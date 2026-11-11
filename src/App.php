@@ -126,6 +126,29 @@ final class App
         return $this->services['inbox'] ??= new \ArcoDelVento\Admin\Inbox($this->store(), $this->pagamentoInProva());
     }
 
+    /** I calendari di Booking.com e delle altre piattaforme, camera per camera. */
+    public function calendari(): \ArcoDelVento\Booking\CalendariEsterni
+    {
+        // ADV_ICAL_HTTP serve solo alle prove in locale, con un finto Booking in http.
+        return $this->services['calendari'] ??= new \ArcoDelVento\Booking\CalendariEsterni(
+            $this->store(),
+            $this->rooms(),
+            !filter_var(\ArcoDelVento\Support\Env::fromServer('ADV_ICAL_HTTP') ?? false, FILTER_VALIDATE_BOOL),
+        );
+    }
+
+    /**
+     * Le notti che non si vendono: quelle già vendute dal sito e quelle
+     * prenotate sulle altre piattaforme, per le camere con il calendario
+     * collegato.
+     *
+     * @return list<array{id: string, ref: string, arrivo: string, partenza: string}>
+     */
+    public function nottiOccupate(): array
+    {
+        return array_merge($this->inbox()->nottiOccupate(), $this->calendari()->occupate());
+    }
+
     /** Le modifiche dell'area riservata, sovrapposte ai file di content/. */
     /** Le immagini sostituibili dall'area riservata. */
     public function media(): \ArcoDelVento\Media\Immagini
@@ -256,10 +279,11 @@ final class App
 
     public function bookingProvider(): BookingProviderInterface
     {
-        // Le notti già vendute dal sito (pagate, in pagamento, confermate) sono
-        // occupate con qualunque provider di questo file: il sito non vende due
-        // volte la stessa camera.
-        $occupate = fn (): array => $this->inbox()->nottiOccupate();
+        // Le notti già vendute dal sito (pagate, in pagamento, confermate) e
+        // quelle prenotate su Booking.com, dove il calendario è collegato, sono
+        // occupate con qualunque provider di questo file: il sito non vende
+        // due volte la stessa camera.
+        $occupate = fn (): array => $this->nottiOccupate();
 
         return $this->services['booking.provider'] ??= match ((string) $this->config('booking.provider')) {
             // Il calendario del sito: libero tutto, tranne quello che il sito

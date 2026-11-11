@@ -13,7 +13,7 @@ use ArcoDelVento\Support\RoomPresenter as R;
   <table class="adm-tabella adm-tabella--righe">
     <caption class="adm-visually-hidden">Le camere</caption>
     <thead>
-      <tr><th scope="col">Camera</th><th scope="col">Tipologia</th><th scope="col">Tariffe a notte</th><th scope="col">Metratura</th><th scope="col">Fotografia</th></tr>
+      <tr><th scope="col">Camera</th><th scope="col">Tipologia</th><th scope="col">Tariffe a notte</th><th scope="col">Metratura</th><th scope="col">Fotografia</th><th scope="col">Booking.com</th></tr>
     </thead>
     <tbody>
       <?php foreach ($camere as $c): ?>
@@ -39,6 +39,7 @@ use ArcoDelVento\Support\RoomPresenter as R;
             </a>
             <?php if (empty($c['photographed'])): ?><span class="adm-dc">manca</span><?php endif; ?>
           </td>
+          <td><?= trim((string) ($c['ical_import'] ?? '')) !== '' ? 'calendario collegato' : '<span class="adm-tenue">—</span>' ?></td>
         </tr>
       <?php endforeach; ?>
     </tbody>

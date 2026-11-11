@@ -7,6 +7,7 @@ namespace ArcoDelVento\Controller;
 use ArcoDelVento\Admin\Ambiente;
 use ArcoDelVento\Admin\Auth;
 use ArcoDelVento\Admin\Cruscotto;
+use ArcoDelVento\Booking\CalendariEsterni;
 use ArcoDelVento\Admin\Form;
 use ArcoDelVento\Admin\Inbox;
 use ArcoDelVento\Admin\Schema;
@@ -570,6 +571,33 @@ final class AdminController
             && isset($this->app->media()->posto($pezzi[1])['camera']);
     }
 
+    /**
+     * Il calendario di Booking.com di una camera, per la sua scheda: com'è
+     * messo quello importato e il link del calendario che il sito pubblica.
+     *
+     * @return array{stato: array<string,mixed>|null, esporta: string}
+     */
+    private function datiIcal(string $ref): array
+    {
+        $calendari = $this->app->calendari();
+
+        return [
+            'stato'   => $calendari->stato($ref),
+            'esporta' => $this->app->indirizzoCompleto(Routes::base() . '/ical/' . rawurlencode($ref) . '/' . $calendari->gettone() . '.ics'),
+        ];
+    }
+
+    /** @param array<string,mixed> $stato */
+    private function notaIcal(array $stato): string
+    {
+        if ($stato['esito'] !== 'ok') {
+            return 'Il calendario di Booking.com non si è potuto leggere: ' . (string) ($stato['errore'] ?? 'nessuna risposta') . '.';
+        }
+        $n = count((array) $stato['periodi']);
+
+        return 'Calendario di Booking.com letto: ' . ($n === 0 ? 'nessuna notte occupata da oggi in poi' : $n . ($n === 1 ? ' periodo occupato' : ' periodi occupati')) . '.';
+    }
+
     /** @return list<array{ref:string,nome:string,buchi:list<string>}> */
     private function camereIncomplete(): array
     {
@@ -749,6 +777,18 @@ final class AdminController
             return Response::html($this->page('non-trovata', ['titolo' => 'Camera non trovata']), 404);
         }
 
+        // «Aggiorna adesso»: si rilegge il calendario di Booking.com di questa camera.
+        if ($request->isPost() && $this->in($request, 'azione') === 'ical-aggiorna') {
+            $stato = $this->app->calendari()->aggiorna($ref);
+            if ($stato === null) {
+                $this->flash('errore', 'Questa camera non ha un calendario di Booking.com collegato.');
+            } else {
+                $this->flash($stato['esito'] === 'ok' ? 'ok' : 'errore', $this->notaIcal($stato));
+            }
+
+            return Response::redirect($this->url('camere/' . rawurlencode($ref)) . '#c-ical', 303);
+        }
+
         // Un campo di tariffa per ogni persona che la camera può ospitare, non
         // solo per quelle a cui oggi si vende: il campo vuoto è il modo di
         // aprirla a una persona in più. Quante può ospitarne lo decide il
@@ -764,7 +804,7 @@ final class AdminController
         if (!$request->isPost()) {
             return Response::html($this->page('camera', [
                 'titolo' => (string) ($camera['name']['it'] ?? $ref), 'camera' => $camera, 'schema' => $schema,
-                'valori' => $valori,
+                'valori' => $valori, 'ical' => $this->datiIcal($ref),
             ]));
         }
 
@@ -792,6 +832,13 @@ final class AdminController
             }
             $nuova[$percorso] = $valore;
         }
+        $nuova['ical_import'] = isset($nuova['ical_import']) ? trim((string) $nuova['ical_import']) : null;
+        if ($nuova['ical_import'] === '') {
+            $nuova['ical_import'] = null;
+        }
+        if ($nuova['ical_import'] !== null && ($problema = CalendariEsterni::problemaUrl($nuova['ical_import'], $this->app->calendari()->soloHttps())) !== null) {
+            $errori[] = 'Calendario di Booking.com: ' . $problema;
+        }
         $nuova['occupancy'] = $occupazione($massimoNuovo);
         // Meno ospiti di prima: le tariffe per chi non ci sta più se ne vanno.
         $tolte = array_filter(array_keys($tariffe), static fn (int $ospiti): bool => $ospiti > $massimoNuovo);
@@ -805,12 +852,12 @@ final class AdminController
         if ($errori !== []) {
             return Response::html($this->page('camera', [
                 'titolo' => (string) ($camera['name']['it'] ?? $ref), 'camera' => $camera, 'schema' => $schema,
-                'valori' => $nuova, 'errori' => $errori,
+                'valori' => $nuova, 'errori' => $errori, 'ical' => $this->datiIcal($ref),
             ]), 422);
         }
 
         $modifiche = [];
-        foreach (['name', 'size_sqm', 'floor', 'view', 'alt', 'rates', 'occupancy'] as $campo) {
+        foreach (['name', 'size_sqm', 'floor', 'view', 'alt', 'rates', 'occupancy', 'ical_import'] as $campo) {
             if (!Form::same($nuova[$campo] ?? null, $base[$campo] ?? null)) {
                 $modifiche[$campo] = $nuova[$campo];
             }
@@ -823,12 +870,19 @@ final class AdminController
             $tutte[$ref] = $modifiche;
         }
         $store->write('camere', $tutte);
+        // Un link di Booking nuovo si legge subito: l'esito sta nell'avviso.
+        $notaIcal = '';
+        if ($nuova['ical_import'] !== null && $nuova['ical_import'] !== (string) ($camera['ical_import'] ?? '')) {
+            $statoIcal = $this->app->calendari()->aggiorna($ref, $nuova['ical_import']);
+            $notaIcal  = $statoIcal !== null ? ' ' . $this->notaIcal($statoIcal) : '';
+        }
         $conPrezzo = $tariffe === [] ? 0 : max(array_keys($tariffe));
         $this->flash('ok', 'Camera salvata. Le modifiche sono già sul sito.'
             . ($massimoNuovo > $massimo && $conPrezzo < $massimoNuovo
                 ? ' Ora ospita fino a ' . $massimoNuovo . ': per prenotarla a ' . $massimoNuovo . ' scrivi la tariffa per ' . $massimoNuovo . ', qui sotto.'
                 : '')
-            . ($tolte !== [] ? ' La tariffa per ' . implode(' e ', $tolte) . ' ospiti non serve più: è stata tolta.' : ''));
+            . ($tolte !== [] ? ' La tariffa per ' . implode(' e ', $tolte) . ' ospiti non serve più: è stata tolta.' : '')
+            . $notaIcal);
 
         return Response::redirect($this->url('camere/' . rawurlencode($ref)), 303);
     }

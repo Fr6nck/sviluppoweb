@@ -372,7 +372,7 @@ final class BookingController
         // Nel frattempo la camera può essere stata venduta a qualcun altro, o
         // le date possono essere passate.
         $presa = (string) ($d['arrivo'] ?? '') < (new \DateTimeImmutable('today'))->format('Y-m-d');
-        foreach ($this->app->inbox()->nottiOccupate() as $o) {
+        foreach ($this->app->nottiOccupate() as $o) {
             if ($o['id'] !== $riferimento && $o['ref'] === ($d['ref'] ?? '')
                 && ($d['arrivo'] ?? '') < $o['partenza'] && ($d['partenza'] ?? '') > $o['arrivo']) {
                 $presa = true;

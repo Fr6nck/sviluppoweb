@@ -100,7 +100,7 @@ $iniziali = static function (string $nome): string {
     <span class="adm-striscia__icona" aria-hidden="true"><?= icona('chiave', 20) ?></span>
     <div>
       <h2 id="b-pagamenti" class="adm-striscia__titolo">Il pagamento online è acceso (SumUp)</h2>
-      <p>Chi prenota paga subito l'intero soggiorno. Il calendario del sito conosce solo le prenotazioni fatte qui:
+      <p>Chi prenota paga subito l'intero soggiorno. Il calendario del sito conosce le prenotazioni fatte qui e, per le camere con il calendario di Booking.com collegato, le notti prenotate lì (con qualche minuto di ritardo):
          <?= $demo ? 'in più, con BOOKING_PROVIDER=demo, alcune notti risultano occupate a caso — nel file .env metti <code>BOOKING_PROVIDER=sito</code>. ' : '' ?>
          per ogni prenotazione pagata controlla che le date siano libere su Booking; se non lo sono, rimborsa da SumUp.</p>
     </div>

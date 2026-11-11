@@ -95,7 +95,7 @@ $prova = !empty($pagamento['prova']);
                ? 'Finché il sito resta in prova occupa le date come una prenotazione vera.'
                : 'Ora che i pagamenti sono reali non occupa le date e non conta nei numeri: puoi eliminarla qui sotto.' ?></p>
       <?php elseif (($pagamento['stato'] ?? '') === 'pagato'): ?>
-        <p><strong>Pagata su SumUp.</strong> Il calendario del sito non conosce le prenotazioni di Booking: controlla che
+        <p><strong>Pagata su SumUp.</strong> Il calendario del sito conosce le prenotazioni di Booking solo per le camere con il calendario collegato, e con qualche minuto di ritardo: controlla che
            le date siano libere. Se non lo sono, il rimborso si fa dal pannello di SumUp; poi scrivi all'ospite.</p>
       <?php elseif (($pagamento['stato'] ?? '') === 'da controllare'): ?>
         <p><strong>SumUp dice pagata, ma l'importo non coincide.</strong> Guarda la transazione nel pannello di SumUp prima di confermare.</p>

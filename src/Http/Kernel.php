@@ -6,6 +6,7 @@ namespace ArcoDelVento\Http;
 
 use ArcoDelVento\App;
 use ArcoDelVento\Controller\AccessController;
+use ArcoDelVento\Controller\IcalController;
 use ArcoDelVento\Controller\AdminController;
 use ArcoDelVento\Controller\BookingController;
 use ArcoDelVento\Controller\ContactController;
@@ -39,6 +40,12 @@ final class Kernel
         // Non ci si fida del contenuto: dice solo quale pagamento guardare.
         if ($request->path === '/pagamenti/sumup') {
             return (new PaymentController($this->app))->notifica($request);
+        }
+
+        // Il calendario di una camera per Booking.com: senza lingua e prima
+        // della porta del sito in anteprima, perché Booking non ha il codice.
+        if (preg_match('#^/ical/([a-z0-9-]+)/([a-f0-9]{32})\.ics$#', $request->path, $m) === 1) {
+            return (new IcalController($this->app))->esporta($m[1], $m[2]);
         }
 
         // L'area riservata: fuori dalle lingue del sito, sempre in italiano.

@@ -264,6 +264,8 @@
 .adm-main { width: 100%; max-width: 1440px; padding: 6px 32px 64px; }
 .adm-main:focus { outline: none; }
 .adm-versione { margin: 40px 0 0; font-size: var(--a-t-xs); color: var(--a-tenue); }
+.adm .adm-sottotitolo-carta { margin: 22px 0 8px; font-size: var(--a-t-m); font-weight: 600; }
+.adm-codice { display: block; padding: 10px 12px; border-radius: 10px; background: var(--a-tela-2); font-size: var(--a-t-s); overflow-wrap: anywhere; user-select: all; }
 .adm-intestazione { margin: 10px 0 22px; }
 .adm-titolo { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: var(--a-t-grande); line-height: 1.15; color: var(--a-testo); }
 .adm-sottotitolo { margin: 6px 0 0; color: var(--a-tenue); font-size: var(--a-t-l); }

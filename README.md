@@ -269,6 +269,27 @@ SumUp   →  ?passo=esito  e  POST /pagamenti/sumup  →  GET /v0.1/checkouts/{i
   l'etichetta «Prova». Tornati ai pagamenti reali, `Inbox` le esclude da
   `nottiOccupate()` e dalle nuove, e `Cruscotto` dai numeri.
 
+### Calendari di Booking.com (iCal)
+
+Ogni camera può avere il link iCal del suo calendario su Booking.com (campo
+«Calendario di Booking.com» in Camere e tariffe, salvato come `ical_import`
+con le altre modifiche della camera). `src/Booking/CalendariEsterni.php` lo
+legge con cURL (tutte le camere insieme, 6 secondi al massimo, solo https) e
+tiene le notti occupate in `storage/data/calendari-esterni.json`: solo date,
+mai nomi. Si rilegge quando serve, alla prima ricerca di date dopo 20 minuti
+(`App::nottiOccupate()` somma quelle notti a `Inbox::nottiOccupate()`), e dal
+pulsante «Aggiorna adesso»; se Booking non risponde restano buone le notti
+lette l'ultima volta, con l'errore nel pannello e nel preflight.
+`src/Booking/Ical.php` legge e scrive il formato: solo DTSTART e DTEND, con
+DTEND escluso come la partenza.
+
+In senso inverso il sito pubblica `/ical/<camera>/<gettone>.ics`
+(`IcalController`, prima della porta del sito in anteprima): le notti pagate o
+confermate dal sito, come giornate intere e senza nomi. Il gettone è uno per
+tutte le camere, nasce la prima volta che serve e sta nello stesso archivio;
+il link è nella scheda di ogni camera, da dare a Booking.com in «Importa
+calendario».
+
 ## Il sito chiuso da un codice
 
 Finché è in anteprima, ogni pagina pubblica (anche `sitemap.xml`; `robots.txt`
