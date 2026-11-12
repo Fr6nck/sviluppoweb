@@ -167,15 +167,18 @@ return [
     ]),
 
     // ---- Singola con letto matrimoniale: una camera con un letto grande e una
-    // scrivania. Si vende a una persona sola, per scelta della casa (richiesta
-    // del 5 novembre 2026): la capienza è 1, quindi il pannello chiede solo la
-    // tariffa per uno, e una tariffa per due salvata prima non la riapre a due
-    // (vedi ArrayRoomRepository::inVendita). Per riaprirla a due ospiti il
-    // super admin scrive 2 in «Ospiti al massimo», nella scheda della camera,
-    // e poi la tariffa per due: questo valore è solo la partenza.
+    // scrivania. Nel letto dormono in due, e il pannello chiede anche la
+    // tariffa per due: la capienza è 2 (richiesta del 12 novembre 2026, dopo
+    // quella del 5 novembre che l'aveva chiusa a una persona). Il prezzo per
+    // due non è stato dato, e un prezzo non si inventa: finché nel pannello
+    // quel campo resta vuoto, la camera si vende a una persona sola (vedi
+    // ArrayRoomRepository::inVendita). Scritta la tariffa per due, si vende
+    // anche a due, come matrimoniale. Il super admin può chiuderla di nuovo a
+    // una persona con «Ospiti al massimo», nella scheda della camera: questo
+    // valore è solo la partenza.
     $camera(5, [
         'type'         => 'single-double',
-        'occupancy'    => ['standard' => 1, 'max' => 1],
+        'occupancy'    => ['standard' => 1, 'max' => 2],
         'beds'         => ['double' => 1],
         'layouts'      => ['single'],
         'rates'        => [1 => 70],
