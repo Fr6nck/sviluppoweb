@@ -18,9 +18,14 @@ final class LogMailer implements MailerInterface
     {
     }
 
+    private ?string $errore = null;
+
     public function send(MailMessage $message): bool
     {
+        $this->errore = null;
         if (!is_dir($this->directory) && !@mkdir($this->directory, 0775, true) && !is_dir($this->directory)) {
+            $this->errore = 'Non si può scrivere nella cartella storage/mail: controlla i permessi.';
+
             return false;
         }
 
@@ -47,12 +52,23 @@ final class LogMailer implements MailerInterface
 
         $eml = implode("\r\n", $headers) . "\r\n\r\n" . $message->body . "\r\n";
 
-        return file_put_contents($file, $eml) !== false;
+        if (file_put_contents($file, $eml) === false) {
+            $this->errore = 'Non si può scrivere nella cartella storage/mail: controlla i permessi.';
+
+            return false;
+        }
+
+        return true;
     }
 
     public function isPretend(): bool
     {
         return true;
+    }
+
+    public function ultimoErrore(): ?string
+    {
+        return $this->errore;
     }
 
     private function formatFrom(MailMessage $message): string

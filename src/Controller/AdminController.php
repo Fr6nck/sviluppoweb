@@ -1401,6 +1401,9 @@ final class AdminController
             'mittente'    => (string) $this->app->config('mail.from.address'),
             'smtpHost'    => (string) $this->app->config('mail.smtp.host'),
             'smtpUtente'  => (string) $this->app->config('mail.smtp.user'),
+            'smtpPorta'   => (int) $this->app->config('mail.smtp.port'),
+            'smtpCifratura' => strtolower((string) $this->app->config('mail.smtp.encryption')),
+            'smtpPassword'  => (string) $this->app->config('mail.smtp.password') !== '',
             'massimo'     => self::DESTINATARI_MAX,
         ];
 
@@ -1465,8 +1468,10 @@ final class AdminController
 
         $elenco = implode(', ', MailMessage::indirizzi($destinatari)) ?: 'nessuno';
         if (!$partito) {
-            $this->flash('errore', 'Il messaggio non è partito. Controlla nel file .env la casella che spedisce: '
-                . 'MAIL_SMTP_HOST, MAIL_SMTP_USER e MAIL_SMTP_PASSWORD, e che MAIL_FROM_ADDRESS sia lo stesso indirizzo dell\'utente.');
+            // Il perché, con la risposta del server di posta: senza, non si sa se è la password, l'utente o il server.
+            $this->flash('errore', 'Il messaggio non è partito. ' . ($mailer->ultimoErrore()
+                ?? 'Controlla nel file .env la casella che spedisce: MAIL_SMTP_HOST, MAIL_SMTP_USER e MAIL_SMTP_PASSWORD, '
+                 . 'e che MAIL_FROM_ADDRESS sia lo stesso indirizzo dell\'utente.'));
         } elseif ($mailer->isPretend()) {
             $this->flash('ok', 'Messaggio di prova per ' . $elenco . ' scritto in storage/mail/, non spedito: nel .env c\'è '
                 . 'MAIL_TRANSPORT=' . ((string) $this->app->config('mail.transport') ?: 'log') . ', il modo della copia di prova.');

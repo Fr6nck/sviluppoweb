@@ -18,4 +18,11 @@ interface MailerInterface
 
     /** Vero quando i messaggi non escono davvero: la pagina lo dice all'utente. */
     public function isPretend(): bool;
+
+    /**
+     * Perché l'ultimo send() non è partito, detto a chi cura il sito: con la
+     * risposta del server di posta, quando c'è. Null se è partito. Non
+     * contiene mai la password.
+     */
+    public function ultimoErrore(): ?string;
 }

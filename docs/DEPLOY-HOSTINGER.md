@@ -226,6 +226,30 @@ finisce nella posta indesiderata.
 Con `MAIL_TRANSPORT=mail` funziona anche senza credenziali, ma i messaggi non
 sono autenticati e arrivano peggio. `smtp` è la scelta giusta.
 
+### Se le e-mail non partono
+
+Area riservata → **Ricezione e-mail** → **Manda un messaggio di prova**. Se
+non parte, l'avviso dice a che punto si ferma e che cosa risponde il server di
+posta; la stessa riga va nel registro degli errori di PHP, anche per le
+richieste e le prenotazioni. La password non compare mai. I casi più comuni:
+
+| L'avviso dice | Che cosa fare |
+| --- | --- |
+| non accetta l'accesso con l'utente…, risposta «535…» | in hPanel → E-mail, controlla che la casella esista e reimpostane la password; scrivi la stessa in `MAIL_SMTP_PASSWORD`, da Configurazione |
+| non accetta … come mittente | `MAIL_FROM_ADDRESS` e `MAIL_SMTP_USER` devono essere lo stesso indirizzo |
+| il server di posta … non risponde | `MAIL_SMTP_HOST=smtp.hostinger.com`, e porta 465 con `ssl` oppure 587 con `tls` |
+| scritto in storage/mail, non spedito | `MAIL_TRANSPORT` è ancora `log`, il modo della copia di prova: mettilo a `smtp` |
+
+La casella deve essere su Hostinger: se la posta del dominio sta da un altro
+provider, servono host, porta e credenziali di quel provider. Quello che si
+vede già storto prima di provare (mittente diverso dalla casella, password
+vuota, porta e cifratura che non vanno insieme) la pagina lo segnala da sola.
+
+Con il pagamento online acceso, le e-mail della prenotazione partono solo
+quando SumUp conferma il pagamento, sia alla struttura sia all'ospite. Senza
+pagamento online l'ospite non riceve e-mail: arriva solo la richiesta alla
+struttura.
+
 ### Cambiare o aggiungere l'indirizzo che riceve le richieste
 
 **Dall'area riservata**, sezione **Ricezione e-mail**: fino a cinque
