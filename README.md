@@ -50,8 +50,9 @@ minibar su richiesta, animali, divieto di fumo; l'apertura tutto l'anno. Le
 fotografie di quattro camere su cinque e del corridoio. E il fatto che dalle
 finestre si veda San Rufino.
 
-**È dimostrativo**: le metrature. La disponibilità è quella vera del sito:
-prenotazioni dirette, Booking.com con i link iCal e blocchi manuali.
+**È dimostrativo**: la disponibilità — cioè quali date risultino libere — e
+le metrature. Il provider di prenotazione calcola i totali con i prezzi veri
+e applica le regole vere di soggiorno minimo, ma il calendario se lo inventa.
 
 **È una scelta del cliente**: i prezzi non compaiono fuori dal percorso di
 prenotazione (`show_prices_publicly => false`). Si vedono al passo «camere»,
@@ -231,13 +232,10 @@ Su MySQL diventano la tabella `room_rates`, una riga per camera e per
 occupazione. `seasonal_rates` è pronta per le variazioni di periodo, con una
 colonna `guests` per poterle fare anche per occupazione.
 
-**Soggiorno minimo**: due notti, tutto l'anno (dal 12 novembre 2026; prima era
-una notte, due con il sabato). Sta in `stay.min_nights` (`default` 2,
-`saturday` 2), si cambia dal pannello in La struttura, e lo applica
-`BookingService`, che per un soggiorno comprendente un sabato prende il
-maggiore fra i due. `BOOKING_MIN_NIGHTS` nel `.env`, se scritto, vince su
-tutto. La barra delle date lo dice prima della ricerca, e la pagina
-Informazioni scrive la regola che vale. Nei periodi di
+**Soggiorno minimo**: una notte, tranne il sabato, che non si prenota da solo
+— chi arriva di sabato resta almeno due notti. Sta in `stay.min_nights`
+(`default` 1, `saturday` 2) e lo applica `BookingService`, che per un
+soggiorno comprendente un sabato prende il maggiore fra i due. Nei periodi di
 punta — Ferragosto, 4 ottobre, Capodanno — il titolare ha detto che il minimo
 sale, ma non di quanto: `peak` resta `null` e non viene imposto nulla.
 

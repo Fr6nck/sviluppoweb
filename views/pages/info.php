@@ -86,17 +86,7 @@ $testa = static function (string $sezione, string $icona): string {
         $riga('welcome', t('info.known.welcome'));
         $riga('documents', t('info.known.documents'));
         $riga('contact_hours', $contatti['hours']['from'] . '–' . $contatti['hours']['to']);
-        // Il minimo è quello che il motore applica (anche BOOKING_MIN_NIGHTS);
-        // la regola del sabato si dice solo quando chiede di più.
-        $minimo = \ArcoDelVento\App::instance()->booking()->minNights();
-        $sabato = (int) ($scale['saturday'] ?? 1);
-        if ($sabato > $minimo && $minimo > 1) {
-            $riga('min_nights', t('info.known.min_nights_both', ['nights' => $minimo, 'saturday' => $sabato]));
-        } elseif ($sabato > $minimo) {
-            $riga('min_nights', t('info.known.min_nights', ['nights' => $sabato]));
-        } elseif ($minimo > 1) {
-            $riga('min_nights', t('info.known.min_nights_all', ['nights' => $minimo]));
-        }
+        $riga('min_nights', t('info.known.min_nights', ['nights' => (int) $scale['saturday']]));
         // Si paga tutto online con SumUp, prenotando: nessuna caparra. La riga
         // compare quando il pagamento è acceso (PAYMENT_PROVIDER=sumup e le
         // chiavi nel .env); finché non lo è, la prenotazione resta una

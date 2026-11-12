@@ -24,8 +24,6 @@ $minNights = \ArcoDelVento\App::instance()->booking()->minNights();
 $stay      = site('stay');
 
 $oggi = (new DateTimeImmutable('today'))->format('Y-m-d');
-// La partenza più vicina possibile: oggi più il soggiorno minimo.
-$primaPartenza = (new DateTimeImmutable('today'))->modify('+' . max(1, $minNights) . ' day')->format('Y-m-d');
 
 /* Il massimo non è un numero scritto a mano: è la capienza della camera più
    grande. Offrire «4 ospiti» quando nessuna stanza ne ospita quattro manda
@@ -71,7 +69,7 @@ $aria = static function (string $campo, string $idErrore) use ($errore): string 
   <div class="adv-barra__campo">
     <label class="adv-barra__label" for="partenza-<?= e($id) ?>"><?= te('book.search.departure') ?></label>
     <input class="adv-barra__controllo" type="date" id="partenza-<?= e($id) ?>" name="partenza"
-           value="<?= e($partenza) ?>" min="<?= e($primaPartenza) ?>" required<?= $aria('departure', 'err-partenza-' . $id) ?>>
+           value="<?= e($partenza) ?>" min="<?= e($oggi) ?>" required<?= $aria('departure', 'err-partenza-' . $id) ?>>
     <?php if ($messaggio = $errore('departure')): ?>
       <p class="adv-barra__errore" id="err-partenza-<?= e($id) ?>"><span aria-hidden="true">&#9888;</span><?= e($messaggio) ?></p>
     <?php endif; ?>
@@ -98,9 +96,10 @@ $aria = static function (string $campo, string $idErrore) use ($errore): string 
     </button>
   </div>
 
-  <?php /* Il soggiorno minimo si dichiara prima della ricerca: oggi è di due
-           notti (La struttura). Con un minimo di una notte la riga parla solo
-           del prezzo — «soggiorno minimo 1 notti» non è una condizione, è un refuso. */ ?>
+  <?php /* Il soggiorno minimo si dichiara solo se esiste davvero: il titolare
+           non ne ha indicato uno, e inventarne uno bloccherebbe prenotazioni
+           vere. Con BOOKING_MIN_NIGHTS a 1 la riga parla solo del prezzo —
+           «soggiorno minimo 1 notti» non è una condizione, è un refuso. */ ?>
   <p class="adv-barra__nota">
     <?= $minNights > 1
         ? te('book.search.note', ['nights' => $minNights])
