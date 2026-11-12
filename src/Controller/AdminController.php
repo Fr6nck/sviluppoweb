@@ -613,7 +613,7 @@ final class AdminController
             $blocchi->aggiungi($valori['camera'], $valori['dal'], $valori['al'], $valori['nota'], (string) $this->app->auth()->current());
             $copertura = BlocchiManuali::copertura(['ref' => $valori['camera'], 'arrivo' => $valori['dal'], 'partenza' => $valori['al']], $this->app->nottiOccupate());
             $this->flash('ok', $nomi[$valori['camera']] . ' bloccata dal ' . $giorno($valori['dal']) . ' al ' . $giorno($valori['al'])
-                . ': da adesso non si prenota dal sito per quelle notti.'
+                . ': da adesso non si prenota dal sito per quelle notti, e il blocco va anche a Booking.com, se importa il calendario del sito.'
                 . match ($copertura) {
                     'tutto' => ' Erano già tutte occupate (Booking.com o prenotazione diretta): il calendario le conta una volta sola.',
                     'parte' => ' Una parte era già occupata (Booking.com o prenotazione diretta): il calendario la conta una volta sola.',
@@ -652,7 +652,11 @@ final class AdminController
         $blocchi = array_map(static function (array $b) use ($occupazioni): array {
             $copertura = BlocchiManuali::copertura($b, $occupazioni);
 
-            return $b + ['coperto' => $copertura === 'tutto', 'in_parte' => $copertura === 'parte'];
+            return $b + [
+                'coperto'         => $copertura === 'tutto',
+                'coperto_booking' => $copertura === 'tutto' && BlocchiManuali::copertura($b, $occupazioni, 'booking') === 'tutto',
+                'in_parte'        => $copertura === 'parte',
+            ];
         }, $this->app->blocchi()->tutti());
 
         return Response::html($this->page('calendario', [

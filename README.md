@@ -306,11 +306,12 @@ DTEND escluso come la partenza.
 
 In senso inverso il sito pubblica `/ical/<camera>/<gettone>.ics`
 (`IcalController`, prima della porta del sito in anteprima): le notti pagate o
-confermate dal sito, come giornate intere e senza nomi. Il gettone è uno per
+confermate dal sito e i blocchi manuali, come giornate intere e senza nomi. Il gettone è uno per
 tutte le camere, nasce la prima volta che serve e sta nello stesso archivio;
 il link è nella scheda di ogni camera, da dare a Booking.com in «Importa
-calendario». I blocchi manuali non ci sono: il calendario pubblicato porta solo
-le prenotazioni dirette.
+calendario». Un blocco manuale ci va con le sole date e il titolo «non
+disponibile»: la nota, che può avere un nome, resta nel pannello. Le notti
+lette da Booking non si ripubblicano.
 
 Con il channel manager scollegato (sotto) `CalendariEsterni` non legge niente e
 non restituisce notti: `sospendi()` mette `sospeso` nell'archivio e svuota le
@@ -333,11 +334,17 @@ per quelle notti. Si toglie dall'elenco «Blocchi manuali», con «Togli».
 (al massimo 366 notti per blocco, nota di 200 caratteri); quelli finiti si
 tolgono da soli.
 
+Il blocco va anche nel calendario pubblicato per Booking.com, con le sole date:
+se Booking importa quel link, chiude le stesse notti anche lì.
+
 Quando la stessa prenotazione arriva poi da Booking, non c'è conflitto e non
 c'è doppione: per ogni notte il Calendario sceglie una fonte sola, nell'ordine
-diretta, Booking, blocco (`Calendario::FONTI`), e il blocco si segna «già
-arrivato da Booking.com»: si può togliere. Se Booking ne copre solo una parte,
-lo dice.
+diretta, Booking, blocco (`Calendario::FONTI`), e il blocco si segna come
+coperto da Booking.com. Se Booking ne copre solo una parte, lo dice. Non è
+detto che Booking non ripubblichi le date che importa: in quel caso tornerebbe
+indietro il blocco stesso, che il sito vedrebbe come una notte di Booking. Per
+questo il messaggio non dice solo «si può togliere»: se il blocco era per una
+prenotazione presa al telefono, va lasciato.
 
 ### Interruttore del channel manager (prova)
 

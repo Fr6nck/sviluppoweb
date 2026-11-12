@@ -744,8 +744,8 @@ segnala quelli che non si leggono.
 ### Dal sito a Booking.com
 
 Nella stessa scheda c'è il link del calendario che il sito pubblica per quella
-camera (`…/ical/camera-01/<codice>.ics`): le notti pagate o confermate qui,
-senza nomi. In Booking.com, **Sincronizza calendari → Importa calendario**,
+camera (`…/ical/camera-01/<codice>.ics`): le notti pagate o confermate qui e
+quelle bloccate a mano dal Calendario, senza nomi. In Booking.com, **Sincronizza calendari → Importa calendario**,
 incolla il link e dagli un nome («Sito»). Booking lo rilegge con i suoi tempi,
 di solito qualche ora. Il link contiene un codice segreto: non pubblicarlo.
 Funziona anche con il sito chiuso dal codice d'accesso.
@@ -774,7 +774,14 @@ notti. Il blocco compare nel calendario come «Blocco manuale» e nell'elenco
 prese al telefono, o per una di Booking che il calendario iCal non ha ancora
 letto (arriva con fino a 20 minuti di ritardo).
 
-Quando quella prenotazione arriva poi da Booking, non c'è doppione: le notti
-compaiono una volta sola, come Booking, e il blocco dice «già arrivato da
-Booking.com»: si può togliere. Il blocco non va a Booking: per chiudere le date
-anche lì, si chiudono nell'extranet.
+**Il blocco va anche a Booking.com**, con il calendario che il sito pubblica
+(«Dal sito a Booking.com», sopra): se Booking lo importa, chiude le stesse notti
+anche lì, di solito entro qualche ora. Va solo la data, con la scritta «non
+disponibile»: la nota resta nel pannello. Togliendo il blocco, al giro dopo
+Booking riapre quelle notti.
+
+Quando la prenotazione arriva poi da Booking, non c'è doppione: le notti
+compaiono una volta sola, come Booking, e il blocco dice che Booking.com segna
+occupate anche quelle notti. Se il blocco era per quella prenotazione di
+Booking, si può togliere. Se era per una prenotazione presa al telefono,
+lascialo: Booking potrebbe mostrare soltanto il blocco che il sito gli manda.

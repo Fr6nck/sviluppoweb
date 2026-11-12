@@ -46,6 +46,8 @@ $blocchi = $blocchi ?? [];
   <p class="adm-nota">Per una prenotazione arrivata da Booking o al telefono che il calendario non mostra ancora: da
      subito la camera non si prenota più dal sito, per quelle notti. Quando la stessa prenotazione arriva da Booking,
      le notti restano una volta sola, come Booking.</p>
+  <p class="adm-nota">Il blocco va anche nel calendario che il sito pubblica per Booking.com, solo con le date: se Booking
+     lo importa, chiude le stesse notti anche lì, di solito entro qualche ora. La nota resta qui.</p>
   <form method="post" action="<?= e(adminUrl('calendario')) ?>?mese=<?= e($primo->format('Y-m')) ?>" class="adm-modulo adm-cal-blocca" novalidate>
     <?= Csrf::field() ?>
     <input type="hidden" name="azione" value="blocca">
@@ -167,8 +169,13 @@ $blocchi = $blocchi ?? [];
             <strong><?= e($nomi[(string) $bl['ref']] ?? (string) $bl['ref']) ?></strong>, dal <?= e($giorno((string) $bl['arrivo'])) ?> al <?= e($giorno((string) $bl['partenza'])) ?>
             <?= !empty($bl['nota']) ? '· ' . e((string) $bl['nota']) : '' ?>
             <span class="adm-tenue">· messo da <?= e((string) ($bl['utente'] ?? '')) ?> il <?= e(dataOra((string) $bl['creato'])) ?></span>
-            <?php if (!empty($bl['coperto'])): ?>
-              <p class="adm-cal-blocchi__coperto" data-coperto="1"><?= icona('spunta', 14) ?>Le stesse notti sono arrivate da Booking.com: il calendario le conta una volta sola, come Booking. Il blocco si può togliere.</p>
+            <?php if (!empty($bl['coperto_booking'])): ?>
+              <p class="adm-cal-blocchi__coperto" data-coperto="1"><?= icona('spunta', 14) ?>Booking.com segna occupate anche queste notti: il calendario le conta una volta sola, come Booking.
+                 Se il blocco era per quella prenotazione di Booking, si può togliere. Se era per una prenotazione presa al telefono, lascialo:
+                 Booking potrebbe mostrare soltanto il blocco che il sito gli manda.</p>
+            <?php elseif (!empty($bl['coperto'])): ?>
+              <p class="adm-cal-blocchi__coperto" data-coperto="1"><?= icona('spunta', 14) ?>Queste notti sono già tutte occupate da prenotazioni dirette o di Booking.com: il calendario le conta una
+                 volta sola. Se il blocco era per una di queste, si può togliere.</p>
             <?php elseif (!empty($bl['in_parte'])): ?>
               <p class="adm-nota" data-coperto="parte">Una parte di queste notti è già occupata da Booking.com o da una prenotazione diretta: il calendario la mostra così.</p>
             <?php endif; ?>

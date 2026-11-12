@@ -81,7 +81,7 @@ $giorno = static fn (string $iso): string => date('d/m/Y', strtotime($iso) ?: 0)
   <?php endif; ?>
   <h3 class="adm-sottotitolo-carta">Il calendario del sito, per Booking.com</h3>
   <p>Su Booking.com, in Sincronizza calendari → <strong>Importa calendario</strong>, incolla questo link: Booking terrà chiuse le
-     notti prenotate o confermate qui. Il link è segreto: non pubblicarlo.</p>
+     notti prenotate o confermate qui e quelle bloccate a mano dal Calendario, solo con le date. Il link è segreto: non pubblicarlo.</p>
   <p><code class="adm-codice"><?= e((string) $ical['esporta']) ?></code></p>
 </section>
 

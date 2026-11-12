@@ -13,7 +13,9 @@ use ArcoDelVento\Storage\JsonStore;
  * al telefono.
  *
  * Un blocco vale da subito: le sue notti entrano in App::nottiOccupate() e la
- * camera non si prenota più dal sito. Si toglie dal Calendario. Quando la
+ * camera non si prenota più dal sito. Va anche nel calendario che il sito
+ * pubblica per Booking.com (IcalController), senza la nota. Si toglie dal
+ * Calendario. Quando la
  * stessa prenotazione arriva da Booking, il calendario conta quelle notti una
  * volta sola (Admin\Calendario dà la precedenza a Booking) e il blocco si
  * segna come «coperto»: non c'è conflitto e non c'è doppione.
@@ -147,19 +149,21 @@ final class BlocchiManuali
 
     /**
      * Quanto di un blocco è già occupato da altro — Booking.com o una
-     * prenotazione diretta: «tutto», «parte» o «niente».
+     * prenotazione diretta, o solo la fonte data: «tutto», «parte» o «niente».
      *
      * @param array<string,mixed> $blocco
      * @param list<array<string,mixed>> $occupazioni come App::nottiOccupate()
+     * @param string|null $fonte «booking» o «sito»; null, tutte e due
      */
-    public static function copertura(array $blocco, array $occupazioni): string
+    public static function copertura(array $blocco, array $occupazioni, ?string $fonte = null): string
     {
         $coperte = 0;
         $notti = 0;
         for ($g = (string) $blocco['arrivo']; $g < (string) $blocco['partenza']; $g = date('Y-m-d', strtotime($g . ' +1 day') ?: 0)) {
             $notti++;
             foreach ($occupazioni as $o) {
-                if (($o['fonte'] ?? '') !== 'manuale' && $o['ref'] === $blocco['ref'] && $o['arrivo'] <= $g && $g < $o['partenza']) {
+                $di = (string) ($o['fonte'] ?? '');
+                if ($di !== 'manuale' && ($fonte === null || $di === $fonte) && $o['ref'] === $blocco['ref'] && $o['arrivo'] <= $g && $g < $o['partenza']) {
                     $coperte++;
                     break;
                 }
