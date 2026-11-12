@@ -132,11 +132,13 @@ return [
             'paid_at'      => 'check-in',
         ],
 
-        // Il sabato notte non si vende da solo. Vale tutto l'anno: un soggiorno
-        // che comprende un sabato dura almeno due notti — venerdì e sabato,
-        // oppure sabato e domenica.
+        // Si prenota da due notti in su, tutto l'anno (richiesta del 12
+        // novembre 2026; prima era una notte, due con il sabato). La regola
+        // del sabato resta per il giorno in cui il minimo tornasse a una
+        // notte: un soggiorno che comprende un sabato dura almeno due notti.
+        // Tutte e due si cambiano dal pannello, La struttura.
         'min_nights' => [
-            'default'           => 1,
+            'default'           => 2,
             'saturday'          => 2,
             'peak'              => null,   // 3 o 4 nelle iperfestività: da precisare
             'peak_dates_note'   => [

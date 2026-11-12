@@ -94,7 +94,7 @@ final class Ambiente
                     'opzioni' => ['sito' => 'sito — il calendario del sito', 'demo' => 'demo — valore vecchio, oggi vale come «sito»', 'api' => 'api — valore vecchio, oggi vale come «sito»'],
                     'aiuto' => 'Ogni valore usa il calendario del sito: prenotazioni dirette, Booking.com via iCal e blocchi manuali. Il calendario dimostrativo, con le notti occupate a caso, non c\'è più.'],
                 'BOOKING_MIN_NIGHTS' => ['nome' => 'Soggiorno minimo imposto', 'tipo' => 'intero', 'min' => 1, 'max' => 30,
-                    'aiuto' => 'Vuoto: comanda la regola della casa (1 notte, 2 con il sabato). Si riempie solo se un gestionale ne impone un altro.'],
+                    'aiuto' => 'Vuoto: comanda il soggiorno minimo scritto in La struttura (2 notti). Si riempie solo se un gestionale ne impone un altro: scritto qui, vince su La struttura.'],
                 'BOOKING_CURRENCY' => ['nome' => 'Valuta', 'tipo' => 'testo', 'predefinito' => 'EUR', 'modello' => '/^[A-Z]{3}$/',
                     'errore' => 'tre lettere maiuscole, per esempio EUR'],
                 'BOOKING_API_BASE_URL' => ['nome' => 'Gestionale: indirizzo', 'tipo' => 'url', 'aiuto' => 'Solo con Calendario = api.'],

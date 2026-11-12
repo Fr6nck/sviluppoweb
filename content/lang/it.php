@@ -484,6 +484,8 @@ return [
             'welcome'       => 'Daniele, di persona: consegna le chiavi e mostra la casa.',
             'documents'     => 'Al check-in, oppure mandali prima su WhatsApp e facciamo più in fretta.',
             'min_nights'    => 'Un soggiorno che comprende un sabato dura almeno :nights notti.',
+            'min_nights_all' => 'Almeno :nights notti, tutto l’anno.',
+            'min_nights_both' => 'Almeno :nights notti; se comprende un sabato, almeno :saturday.',
             'payment_online' => 'Online, con carta, al momento della prenotazione: si paga l’intero soggiorno su una pagina sicura di SumUp. Nessuna caparra.',
             'children'      => 'Benvenuti. Sotto i :age anni non si paga la tassa di soggiorno.',
             'navigator'     => 'Imposta :place, non l’indirizzo: la via è senza uscita. A piedi l’indirizzo preciso funziona.',

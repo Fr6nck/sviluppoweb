@@ -461,6 +461,8 @@ return [
             'welcome'       => 'Daniele, in person: he hands over the keys and shows you the house.',
             'documents'     => 'At check-in, or send them ahead on WhatsApp and it goes quicker.',
             'min_nights'    => 'A stay that includes a Saturday night is at least :nights nights.',
+            'min_nights_all' => 'At least :nights nights, all year round.',
+            'min_nights_both' => 'At least :nights nights; with a Saturday night, at least :saturday.',
             'payment_online' => 'Online by card when you book: the whole stay is paid on a secure SumUp page. No deposit.',
             'children'      => 'Welcome. Under :age, no tourist tax is due.',
             'navigator'     => 'Set :place, not the street address: the street is a dead end. On foot the exact address works.',
