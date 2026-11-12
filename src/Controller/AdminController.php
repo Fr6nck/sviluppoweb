@@ -961,6 +961,13 @@ final class AdminController
         $occupazione = static fn (int $max) => ['standard' => min((int) ($base['occupancy']['standard'] ?? $max), $max), 'max' => $max];
         $valori = $camera;
         $valori['occupancy'] = $occupazione($massimo);
+        // La tipologia scritta: quella della camera, se il super admin l'ha
+        // cambiata, altrimenti l'etichetta del suo tipo, in ogni lingua.
+        $tipologiaDiPartenza = [];
+        foreach ($this->form->languages() as $lingua) {
+            $tipologiaDiPartenza[$lingua] = t('room_types.' . (string) ($camera['type'] ?? 'double'), [], $lingua);
+        }
+        $valori['type_label'] = is_array($camera['type_label'] ?? null) ? $camera['type_label'] : $tipologiaDiPartenza;
 
         if (!$request->isPost()) {
             return Response::html($this->page('camera', [
@@ -1000,6 +1007,18 @@ final class AdminController
         if ($nuova['ical_import'] !== null && ($problema = CalendariEsterni::problemaUrl($nuova['ical_import'], $this->app->calendari()->soloHttps())) !== null) {
             $errori[] = 'Calendario di Booking.com: ' . $problema;
         }
+        // Uguale all'etichetta del tipo non è una modifica: la camera torna a
+        // seguire l'etichetta, anche se in Testi del sito cambia.
+        if (is_array($nuova['type_label'] ?? null)) {
+            foreach ($nuova['type_label'] as $lingua => $testo) {
+                if (is_string($testo) && mb_strlen($testo) > Schema::TIPOLOGIA_MAX) {
+                    $errori[] = 'Tipologia (' . strtoupper((string) $lingua) . '): al massimo ' . Schema::TIPOLOGIA_MAX . ' caratteri.';
+                }
+            }
+            if (Form::same($nuova['type_label'], $tipologiaDiPartenza)) {
+                $nuova['type_label'] = null;
+            }
+        }
         $nuova['occupancy'] = $occupazione($massimoNuovo);
         // Meno ospiti di prima: le tariffe per chi non ci sta più se ne vanno.
         $tolte = array_filter(array_keys($tariffe), static fn (int $ospiti): bool => $ospiti > $massimoNuovo);
@@ -1018,7 +1037,7 @@ final class AdminController
         }
 
         $modifiche = [];
-        foreach (['name', 'size_sqm', 'floor', 'view', 'alt', 'rates', 'occupancy', 'ical_import'] as $campo) {
+        foreach (['name', 'type_label', 'size_sqm', 'floor', 'view', 'alt', 'rates', 'occupancy', 'ical_import'] as $campo) {
             if (!Form::same($nuova[$campo] ?? null, $base[$campo] ?? null)) {
                 $modifiche[$campo] = $nuova[$campo];
             }

@@ -583,7 +583,7 @@ le camere.
 | Richieste | le prenotazioni e i messaggi arrivati dal sito, con stato: nuova, letta, confermata, rifiutata, archiviata; si cercano per nome, e-mail, riferimento, camera | tutti e due |
 | Calendario | il mese, camera per camera: notti libere, prenotazioni dirette, prenotazioni di Booking.com, blocchi manuali; il modulo per bloccare una camera e l'elenco dei blocchi da togliere | tutti e due |
 | La struttura | contatti, orari, soggiorno minimo, tassa, dotazioni, obblighi di legge, recensioni, social, coordinate | tutti e due |
-| Camere e tariffe | nome, metratura, piano, vista, tariffa per numero di ospiti, descrizione della fotografia, e le foto della camera (principale e galleria); «Ospiti al massimo» (la capienza, da 1 a 6) solo il super admin | tutti e due |
+| Camere e tariffe | nome, metratura, piano, vista, tariffa per numero di ospiti, descrizione della fotografia, e le foto della camera (principale e galleria); «Tipologia» (il testo, in italiano e inglese) e «Ospiti al massimo» (la capienza, da 1 a 6) solo il super admin | tutti e due |
 | Immagini e logo | la rosa dei venti (anche icona del browser), il logotipo chiaro e scuro, le cinque foto dell'apertura, le foto delle pagine e quella per i social, la foto principale e due di galleria per ogni camera: si carica il file, si descrive, si torna all'originale | super admin (le foto delle camere anche il gestore, da Camere e tariffe) |
 | Testi del sito | tutti i testi in italiano e inglese, pagina per pagina, con l'originale accanto | super admin |
 | Domande frequenti | aggiungere, modificare, riordinare, togliere | super admin |
@@ -606,8 +606,12 @@ originale» vuol dire togliere la modifica. Niente database: file JSON scritti i
 modo atomico, con un lucchetto, e con le ultime trenta versioni di ogni archivio
 nello storico — dal pannello si rimette una versione precedente con un click.
 
-**Che cosa non si cambia da lì.** Tipologia, letti e occupazione massima delle
-camere: da quelli dipende il motore di prenotazione.
+**Che cosa non si cambia da lì.** I letti e il tipo di camera che usa il motore
+di prenotazione (`type` in `content/rooms.php`). Il super admin cambia la
+tipologia come si legge sul sito, camera per camera e nelle due lingue
+(`type_label`, `RoomPresenter::typeLabel`), e gli ospiti al massimo. Una
+tipologia riscritta uguale all'etichetta del tipo non si salva: la camera torna
+a seguire l'etichetta, che si cambia per tutte le camere in Testi del sito.
 
 **Le immagini** (`src/Media/`). Il file caricato non si pubblica mai così com'è:
 GD lo apre, lo raddrizza secondo l'EXIF del telefono, lo porta a 2600 px di lato

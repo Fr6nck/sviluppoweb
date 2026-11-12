@@ -68,9 +68,19 @@ final class RoomPresenter
         return ($room['view'] ?? null) === 'piazza';
     }
 
-    /** @param array<string,mixed> $room */
+    /**
+     * La tipologia: quella scritta per questa camera nel pannello, se c'è,
+     * altrimenti l'etichetta del suo tipo.
+     *
+     * @param array<string,mixed> $room
+     */
     public static function typeLabel(array $room): string
     {
+        $scritta = $room['type_label'][locale()] ?? null;
+        if (is_string($scritta) && trim($scritta) !== '') {
+            return trim($scritta);
+        }
+
         return t('room_types.' . (string) ($room['type'] ?? 'double'));
     }
 

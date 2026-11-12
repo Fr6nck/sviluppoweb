@@ -109,25 +109,36 @@ final class Schema
         ];
     }
 
-    /**
-     * I campi di una camera.
-     *
-     * Tipologia, letti e occupazione massima non ci sono: da quelli dipende il
-     * motore di prenotazione, e si cambiano nel file, con cura.
-     *
-     * @return list<array<string,mixed>>
-     */
     /** Quante persone al massimo si possono scrivere in una camera. */
     public const OSPITI_MASSIMI = 6;
 
+    /** La tipologia scritta, in ogni lingua: un'etichetta, non una descrizione. */
+    public const TIPOLOGIA_MAX = 80;
+
     /**
+     * I campi di una camera.
+     *
+     * I letti e la tipologia che usa il motore di prenotazione (`type` in
+     * content/rooms.php) non ci sono: si cambiano nel file, con cura. Il super
+     * admin cambia il testo della tipologia, quello che si legge sul sito
+     * (`type_label`), e quanti ospiti la camera può avere.
+     *
      * @param int  $occupazioneMassima quanti campi di tariffa: uno per ospite
-     * @param bool $conOspiti          anche il numero di ospiti: solo il super admin
+     * @param bool $super              anche tipologia e numero di ospiti: solo il super admin
+     * @return list<array<string,mixed>>
      */
-    public static function room(int $occupazioneMassima, bool $conOspiti = false): array
+    public static function room(int $occupazioneMassima, bool $super = false): array
     {
         $campi = [
             ['path' => 'name', 'label' => 'Nome', 'type' => 'prose', 'rows' => 1, 'required' => true],
+        ];
+        if ($super) {
+            $campi[] = ['path' => 'type_label', 'label' => 'Tipologia', 'type' => 'prose', 'rows' => 1, 'required' => true,
+                        'help' => 'Come si legge sul sito: nella pagina della camera, negli elenchi e nella prenotazione, al massimo '
+                                . self::TIPOLOGIA_MAX . ' caratteri. Vale solo per questa camera; per cambiarla a tutte le camere dello stesso tipo, '
+                                . 'Testi del sito → Tipologie, letti e viste. Gli ospiti e le tariffe non cambiano.'];
+        }
+        array_push($campi,
             ['path' => 'size_sqm', 'label' => 'Metratura, m²', 'type' => 'int', 'min' => 4, 'max' => 200],
             ['path' => 'floor', 'label' => 'Piano', 'type' => 'text', 'max' => 40],
             ['path' => 'view', 'label' => 'Vista', 'type' => 'select',
@@ -138,12 +149,12 @@ final class Schema
              'help' => 'Nell\'extranet di Booking.com: Tariffe e disponibilità → Sincronizza calendari → Esporta calendario. Copia il link '
                      . 'e incollalo qui: le notti prenotate su Booking risultano occupate anche sul sito, entro ' . (int) (\ArcoDelVento\Booking\CalendariEsterni::OGNI / 60)
                      . ' minuti. Va bene anche il link iCal di Airbnb. Vuoto: il sito non sa niente di Booking.'],
-        ];
-        if ($conOspiti) {
+        );
+        if ($super) {
             $campi[] = ['path' => 'occupancy.max', 'label' => 'Ospiti al massimo', 'type' => 'int', 'min' => 1,
                         'max' => self::OSPITI_MASSIMI, 'required' => true,
                         'help' => 'Quante persone può ospitare. Salvato, qui sotto compare un campo di tariffa per ogni ospite: '
-                                . 'la camera si prenota fino all\'ultimo numero di ospiti che ha una tariffa. Tipologia e letti non cambiano.'];
+                                . 'la camera si prenota fino all\'ultimo numero di ospiti che ha una tariffa. I letti e la tipologia scritta qui sopra non cambiano da soli.'];
         }
         for ($ospiti = 1; $ospiti <= $occupazioneMassima; $ospiti++) {
             $campi[] = [

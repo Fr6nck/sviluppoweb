@@ -661,12 +661,20 @@ menu, e se ne apre l'indirizzo trova una pagina che non esiste. Le tariffe e
 le foto delle camere (principale e galleria) le cambia anche lui, dalla pagina
 di ogni camera; logo, foto della home e delle pagine, e i testi, li cambi tu.
 
+**La tipologia di una camera.** Nella scheda di ogni camera tu hai anche il
+campo **Tipologia**, in italiano e in inglese: è la scritta che si legge sul
+sito, per esempio «Singola con letto matrimoniale». Cambiala lì e salva: vale
+per quella camera sola, nella sua pagina, negli elenchi e nella prenotazione.
+Gli ospiti e le tariffe non cambiano. Riscritta com'era all'inizio, la camera
+torna alla scritta di partenza. Per cambiare la scritta a tutte le camere dello
+stesso tipo c'è Testi del sito → Tipologie, letti e viste.
+
 **Quanti ospiti in una camera.** Nella scheda di ogni camera tu hai in più il
 campo **Ospiti al massimo** (da 1 a 6). Salvato, compare un campo di tariffa
 per ogni ospite: la camera si prenota fino all'ultimo numero di ospiti che ha
 una tariffa, quindi dopo aver alzato il numero scrivi anche la tariffa nuova.
-Abbassandolo, le tariffe in più si tolgono da sole. Tipologia e letti non
-cambiano.
+Abbassandolo, le tariffe in più si tolgono da sole. La tipologia e i letti
+non cambiano da soli.
 
 **Come funziona il pannello.**
 
