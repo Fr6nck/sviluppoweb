@@ -14,7 +14,6 @@
  * @var list<array{label:string,gruppo:string,path:string}> $mancanti
  * @var list<array{ref:string,nome:string,buchi:list<string>}> $camereIncomplete
  * @var list<array<string,mixed>> $camere
- * @var bool  $demo
  * @var bool  $pagamentoAttivo
  * @var bool  $pagamentoProva  in prova: conto sandbox di SumUp, nessun addebito vero
  */
@@ -84,6 +83,18 @@ $iniziali = static function (string $nome): string {
   </section>
 <?php endif; ?>
 
+<?php if (!empty($channelScollegato)): /* interruttore del channel manager, funzione di prova */ ?>
+  <section class="adm-striscia" aria-labelledby="b-channel">
+    <span class="adm-striscia__icona" aria-hidden="true"><?= icona('attenzione', 20) ?></span>
+    <div>
+      <h2 id="b-channel" class="adm-striscia__titolo">Il calendario di Booking.com è scollegato</h2>
+      <p>Le notti prenotate su Booking non contano: il sito le vende come libere.
+         <?php if (!empty($super)): ?>Si ricollega da <a href="<?= e(adminUrl('channel-manager')) ?>">Channel manager</a>.
+         <?php else: ?>Lo ricollega chi cura il sito.<?php endif; ?></p>
+    </div>
+  </section>
+<?php endif; ?>
+
 <?php if (!empty($pagamentoAttivo) && !empty($pagamentoProva)): ?>
   <section class="adm-striscia adm-striscia--pagamenti" aria-labelledby="b-pagamenti">
     <span class="adm-striscia__icona" aria-hidden="true"><?= icona('attenzione', 20) ?></span>
@@ -101,18 +112,7 @@ $iniziali = static function (string $nome): string {
     <div>
       <h2 id="b-pagamenti" class="adm-striscia__titolo">Il pagamento online è acceso (SumUp)</h2>
       <p>Chi prenota paga subito l'intero soggiorno. Il calendario del sito conosce le prenotazioni fatte qui e, per le camere con il calendario di Booking.com collegato, le notti prenotate lì (con qualche minuto di ritardo):
-         <?= $demo ? 'in più, con BOOKING_PROVIDER=demo, alcune notti risultano occupate a caso — nel file .env metti <code>BOOKING_PROVIDER=sito</code>. ' : '' ?>
          per ogni prenotazione pagata controlla che le date siano libere su Booking; se non lo sono, rimborsa da SumUp.</p>
-    </div>
-  </section>
-<?php elseif ($demo): ?>
-  <section class="adm-striscia" aria-labelledby="b-calendario">
-    <span class="adm-striscia__icona" aria-hidden="true"><?= icona('calendario', 20) ?></span>
-    <div>
-      <h2 id="b-calendario" class="adm-striscia__titolo">Il calendario è ancora dimostrativo</h2>
-      <p>Le date libere che il sito propone non vengono dal tuo calendario: servono a provare il percorso di
-         prenotazione. Le richieste sono vere, ma vanno controllate su Booking prima di confermarle.
-         Il collegamento al calendario di Booking è il prossimo passo.</p>
     </div>
   </section>
 <?php endif; ?>

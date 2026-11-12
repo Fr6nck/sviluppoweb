@@ -28,6 +28,7 @@ use ArcoDelVento\Support\Csrf;
 $voci = [
     ''          => ['Bacheca', 'griglia'],
     'richieste' => ['Richieste', 'vassoio'],
+    'calendario' => ['Calendario', 'calendario'],
     'struttura' => ['La struttura', 'edificio'],
     'camere'    => ['Camere e tariffe', 'letto'],
     'immagini'  => ['Immagini e logo', 'immagine'],
@@ -36,7 +37,7 @@ $voci = [
 ];
 // Immagini, testi e domande sono del super admin: il gestore non le vede.
 if (empty($super)) {
-    $voci = array_intersect_key($voci, array_flip(['', 'richieste', 'struttura', 'camere']));
+    $voci = array_intersect_key($voci, array_flip(['', 'richieste', 'calendario', 'struttura', 'camere']));
 }
 $attiva = match ($vista) {
     'bacheca' => '',
@@ -137,6 +138,12 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
           <li>
             <a href="<?= e(adminUrl('configurazione')) ?>"<?= $attiva === 'configurazione' ? ' aria-current="page"' : '' ?>>
               <?= icona('ingranaggio', 20, 'adm-nav__icona') ?><span class="adm-nav__nome">Configurazione</span>
+            </a>
+          </li>
+          <?php /* Funzione di prova, isolata: vedi InterruttoreChannelManager. */ ?>
+          <li>
+            <a href="<?= e(adminUrl('channel-manager')) ?>"<?= $attiva === 'channel-manager' ? ' aria-current="page"' : '' ?>>
+              <?= icona('ripristina', 20, 'adm-nav__icona') ?><span class="adm-nav__nome">Channel manager (prova)</span>
             </a>
           </li>
         <?php endif; ?>

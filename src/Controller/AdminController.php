@@ -6,7 +6,10 @@ namespace ArcoDelVento\Controller;
 
 use ArcoDelVento\Admin\Ambiente;
 use ArcoDelVento\Admin\Auth;
+use ArcoDelVento\Admin\Calendario;
 use ArcoDelVento\Admin\Cruscotto;
+use ArcoDelVento\Admin\InterruttoreChannelManager;
+use ArcoDelVento\Booking\BlocchiManuali;
 use ArcoDelVento\Booking\CalendariEsterni;
 use ArcoDelVento\Admin\Form;
 use ArcoDelVento\Admin\Inbox;
@@ -49,7 +52,7 @@ final class AdminController
      * camere: vedi fotoDiCamera) e il suo account; per lui queste, come
      * Configurazione, sono pagine che non esistono.
      */
-    private const SOLO_SUPER = ['immagini', 'testi', 'domande', 'posta', 'accesso-sito'];
+    private const SOLO_SUPER = ['immagini', 'testi', 'domande', 'posta', 'accesso-sito', 'channel-manager'];
 
     private readonly Form $form;
 
@@ -135,6 +138,7 @@ final class AdminController
             $pezzi === []                                   => $this->dashboard($request),
             $pezzi === ['esci'] && $metodo === 'POST'        => $this->logout(),
             $pezzi === ['richieste']                        => $this->requests($request),
+            $pezzi === ['calendario']                       => $this->calendar($request),
             count($pezzi) === 2 && $pezzi[0] === 'richieste' => $this->request($request, $pezzi[1]),
             $pezzi === ['struttura']                        => $this->settings($request),
             $pezzi === ['camere']                           => $this->rooms(),
@@ -150,6 +154,8 @@ final class AdminController
             $pezzi === ['ripristina'] && $metodo === 'POST'  => $this->restore($request),
             // Solo il super admin: per il gestore non esiste, come una pagina qualunque che non c'è.
             $pezzi === ['configurazione'] && $auth->isSuper() => $this->configuration($request),
+            // Funzione di prova, isolata: vedi InterruttoreChannelManager.
+            $pezzi === ['channel-manager'] && $auth->isSuper() => $this->channelManager($request),
             default                                         => Response::html($this->page('non-trovata', ['titolo' => 'Pagina non trovata']), 404),
         };
 
@@ -525,9 +531,10 @@ final class AdminController
             'mancanti'         => $this->mancanti(),
             'camereIncomplete' => $this->camereIncomplete(),
             'camere'           => $this->app->rooms()->all(),
-            'demo'             => (string) $this->app->config('booking.provider') === 'demo',
             'pagamentoAttivo'  => $this->app->pagamentoAttivo(),
             'pagamentoProva'   => $this->app->pagamentoInProva(),
+            // Interruttore del channel manager (prova): la striscia «scollegato».
+            'channelScollegato' => $this->app->calendari()->sospeso(),
             'sitoChiuso'       => $this->app->accesso()->attivo(),
         ]));
     }
@@ -571,6 +578,153 @@ final class AdminController
             && isset($this->app->media()->posto($pezzi[1])['camera']);
     }
 
+    // ============================================================ calendario
+
+    /**
+     * Il calendario delle camere, per il gestore e per il super admin: un mese,
+     * con le prenotazioni dirette, quelle di Booking.com e i blocchi manuali.
+     * Da qui si bloccano le date a mano, e si tolgono i blocchi.
+     */
+    private function calendar(Request $request): Response
+    {
+        $mese = (string) $this->in($request, 'mese', '');
+        if (!$request->isPost()) {
+            return $this->mostraCalendario($mese);
+        }
+
+        $blocchi = $this->app->blocchi();
+        $nomi = [];
+        foreach ($this->app->rooms()->all() as $c) {
+            $nomi[(string) $c['ref']] = (string) ($c['name']['it'] ?? $c['ref']);
+        }
+        $giorno = static fn (string $iso): string => date('d/m/Y', strtotime($iso) ?: 0);
+
+        if ($this->in($request, 'azione') === 'blocca') {
+            $valori = [
+                'camera' => trim($this->in($request, 'camera')),
+                'dal'    => trim($this->in($request, 'dal')),
+                'al'     => trim($this->in($request, 'al')),
+                'nota'   => BlocchiManuali::pulita($this->in($request, 'nota')),
+            ];
+            $errori = BlocchiManuali::problemi($valori['camera'], $valori['dal'], $valori['al'], $valori['nota'], array_keys($nomi));
+            if ($errori !== []) {
+                return $this->mostraCalendario($mese, $errori, $valori);
+            }
+            $blocchi->aggiungi($valori['camera'], $valori['dal'], $valori['al'], $valori['nota'], (string) $this->app->auth()->current());
+            $copertura = BlocchiManuali::copertura(['ref' => $valori['camera'], 'arrivo' => $valori['dal'], 'partenza' => $valori['al']], $this->app->nottiOccupate());
+            $this->flash('ok', $nomi[$valori['camera']] . ' bloccata dal ' . $giorno($valori['dal']) . ' al ' . $giorno($valori['al'])
+                . ': da adesso non si prenota dal sito per quelle notti.'
+                . match ($copertura) {
+                    'tutto' => ' Erano già tutte occupate (Booking.com o prenotazione diretta): il calendario le conta una volta sola.',
+                    'parte' => ' Una parte era già occupata (Booking.com o prenotazione diretta): il calendario la conta una volta sola.',
+                    default => '',
+                });
+
+            return Response::redirect($this->url('calendario') . '?mese=' . substr($valori['dal'], 0, 7) . '#blocchi', 303);
+        }
+        if ($this->in($request, 'azione') === 'togli') {
+            $tolto = $blocchi->togli($this->in($request, 'blocco'));
+            $tolto === null
+                ? $this->flash('errore', 'Quel blocco non c\'è più.')
+                : $this->flash('ok', 'Blocco tolto: ' . ($nomi[(string) $tolto['ref']] ?? (string) $tolto['ref']) . ' dal ' . $giorno((string) $tolto['arrivo'])
+                    . ' al ' . $giorno((string) $tolto['partenza']) . ' torna prenotabile dal sito, se nessun\'altra prenotazione occupa quelle notti.');
+        }
+
+        return Response::redirect($this->url('calendario') . ($mese !== '' ? '?mese=' . rawurlencode($mese) : '') . '#blocchi', 303);
+    }
+
+    /**
+     * @param list<string> $errori
+     * @param array<string,string> $valoriBlocco quello scritto nel modulo del blocco, dopo un errore
+     */
+    private function mostraCalendario(string $mese, array $errori = [], array $valoriBlocco = []): Response
+    {
+        $calendari = $this->app->calendari();
+        // nottiOccupate() rilegge i calendari di Booking se sono vecchi.
+        $occupazioni = $this->app->nottiOccupate();
+        $calendario  = new Calendario($mese, $occupazioni);
+        $camere = $this->app->rooms()->all();
+        $ical = [];
+        foreach ($camere as $c) {
+            $ical[(string) $c['ref']] = $calendari->stato((string) $c['ref']);
+        }
+        // Un blocco le cui notti sono arrivate da Booking (o da una diretta) si segna «coperto».
+        $blocchi = array_map(static function (array $b) use ($occupazioni): array {
+            $copertura = BlocchiManuali::copertura($b, $occupazioni);
+
+            return $b + ['coperto' => $copertura === 'tutto', 'in_parte' => $copertura === 'parte'];
+        }, $this->app->blocchi()->tutti());
+
+        return Response::html($this->page('calendario', [
+            'titolo'            => 'Calendario',
+            'sottotitolo'       => 'Le notti di ogni camera, mese per mese.',
+            'calendario'        => $calendario,
+            'camere'            => $camere,
+            'ical'              => $ical,
+            'channelScollegato' => $calendari->sospeso(),
+            'blocchi'           => $blocchi,
+            'errori'            => $errori,
+            'valoriBlocco'      => $valoriBlocco,
+        ]), $errori === [] ? 200 : 422);
+    }
+
+    // ============================================ channel manager (prova)
+
+    /**
+     * L'interruttore del channel manager: scollega e ricollega il calendario
+     * iCal di Booking.com da tutte le camere. Funzione di prova, isolata: vedi
+     * InterruttoreChannelManager per toglierla.
+     */
+    private function channelManager(Request $request): Response
+    {
+        $interruttore = new InterruttoreChannelManager($this->app);
+        if ($request->isPost()) {
+            $azione = $this->in($request, 'azione');
+            if ($azione === 'scollega' && $this->in($request, 'conferma') !== '1') {
+                $this->flash('errore', 'Per scollegare spunta la conferma: finché è scollegato, il sito vende anche le notti prenotate su Booking.com.');
+            } elseif ($azione === 'scollega') {
+                $esito = $interruttore->scollega();
+                $tolti = array_sum($esito['tolti']);
+                $this->flash('ok', 'Channel manager scollegato da tutte le camere: tolti ' . $tolti
+                    . ($tolti === 1 ? ' periodo importato' : ' periodi importati') . ' da Booking.com. I link iCal restano salvati. '
+                    . ($esito['restano'] === []
+                        ? 'Non c\'erano prenotazioni dirette né blocchi manuali.'
+                        : 'Restano ' . count($esito['restano']) . ' periodi del sito (prenotazioni dirette o blocchi manuali): non sono stati toccati, sono elencati qui sotto.'));
+            } elseif ($azione === 'ricollega') {
+                $stati  = $interruttore->ricollega();
+                $letti  = array_filter($stati, static fn (?array $s): bool => ($s['esito'] ?? '') === 'ok');
+                $errori = array_diff_key($stati, $letti);
+                $periodi = array_sum(array_map(static fn (?array $s): int => count((array) ($s['periodi'] ?? [])), $stati));
+                $this->flash($errori === [] ? 'ok' : 'errore', $stati === []
+                    ? 'Channel manager ricollegato. Nessuna camera ha un link iCal: non c\'era niente da leggere.'
+                    : 'Channel manager ricollegato e sincronizzato: ' . count($letti) . ' calendari letti su ' . count($stati)
+                      . ', ' . $periodi . ($periodi === 1 ? ' periodo occupato' : ' periodi occupati') . ' da Booking.com.'
+                      . ($errori !== [] ? ' Non si leggono: ' . implode(', ', array_keys($errori)) . '.' : ''));
+            }
+
+            return Response::redirect($this->url('channel-manager'), 303);
+        }
+
+        $calendari = $this->app->calendari();
+        $camere = [];
+        $nomi   = [];
+        foreach ($this->app->rooms()->all() as $c) {
+            $ref = (string) $c['ref'];
+            $nomi[$ref] = (string) ($c['name']['it'] ?? $ref);
+            $camere[] = ['ref' => $ref, 'nome' => $nomi[$ref], 'url' => trim((string) ($c['ical_import'] ?? '')), 'stato' => $calendari->stato($ref)];
+        }
+
+        return Response::html($this->page('channel-manager', [
+            'titolo'        => 'Channel manager',
+            'sottotitolo'   => 'Funzione di prova: il calendario iCal di Booking.com, per tutte le camere.',
+            'collegato'     => $interruttore->collegato(),
+            'scollegatoDal' => $interruttore->scollegatoDal(),
+            'camere'        => $camere,
+            'nomi'          => $nomi,
+            'restano'       => $interruttore->restano(),
+        ]));
+    }
+
     /**
      * Il calendario di Booking.com di una camera, per la sua scheda: com'è
      * messo quello importato e il link del calendario che il sito pubblica.
@@ -590,6 +744,9 @@ final class AdminController
     /** @param array<string,mixed> $stato */
     private function notaIcal(array $stato): string
     {
+        if ($stato['esito'] === 'sospeso') {
+            return 'Il calendario di Booking.com è scollegato per tutte le camere (channel manager, prova): il link è salvato e si leggerà quando verrà ricollegato.';
+        }
         if ($stato['esito'] !== 'ok') {
             return 'Il calendario di Booking.com non si è potuto leggere: ' . (string) ($stato['errore'] ?? 'nessuna risposta') . '.';
         }

@@ -7,23 +7,25 @@ namespace ArcoDelVento\Booking;
 use ArcoDelVento\Repository\RoomRepositoryInterface;
 
 /**
- * Il provider dimostrativo.
+ * Il calendario del sito.
  *
- * NON è un calendario reale. Serve a far funzionare tutto il percorso di
- * prenotazione — date, disponibilità, scelta, totale, richiesta — mentre il
- * gestionale vero non c'è ancora. Il sito, davanti, non sa che è finto: parla
- * con BookingProviderInterface e basta.
+ * Una camera è libera se ospita quel numero di persone, ha una tariffa per
+ * quel numero, e nessuna delle sue notti è occupata. Le notti occupate le dà
+ * App::nottiOccupate(): prenotazioni dirette (pagate, in pagamento,
+ * confermate), notti prenotate su Booking.com dove il calendario iCal è
+ * collegato, blocchi manuali del pannello. Nient'altro: nessuna notte si
+ * inventa.
  *
- * La disponibilità è deterministica: la stessa camera, nella stessa notte, dà
- * sempre la stessa risposta. È un requisito, non un vezzo — una disponibilità
- * casuale renderebbe impossibile provare il percorso, perché la camera scelta
- * al passo due sparirebbe al passo tre.
+ * Fino a novembre 2026 qui c'era il provider dimostrativo, che considerava
+ * occupata a caso circa una notte su cinque per camera. Con BOOKING_PROVIDER
+ * assente dal .env era quello in uso, e una ricerca di quattro notti per due
+ * persone mostrava una o due camere su quattro. Non c'è più: ogni valore di
+ * BOOKING_PROVIDER usa questo calendario.
  *
- * Per sostituirlo con un provider reale: una classe che implementi
- * BookingProviderInterface, e BOOKING_PROVIDER nel .env che la selezioni
- * in App::bookingProvider(). Nient'altro nel sito cambia.
+ * Per un gestionale vero: una classe che implementi BookingProviderInterface,
+ * scelta in App::bookingProvider(). Nient'altro nel sito cambia.
  */
-final class DemoBookingProvider implements BookingProviderInterface
+final class CalendarioSito implements BookingProviderInterface
 {
     /** Quanti giorni in avanti cercare quando le date chieste sono piene. */
     private const ALTERNATIVE_WINDOW_DAYS = 60;
@@ -33,17 +35,14 @@ final class DemoBookingProvider implements BookingProviderInterface
 
     /**
      * @param \Closure(): list<array{ref: string, arrivo: string, partenza: string}>|null $occupate
-     *        le notti già vendute dal sito, che non si vendono una seconda volta
-     * @param bool $inventa true: circa una notte su cinque risulta occupata a
-     *        caso (la dimostrazione); false: il calendario del sito, libero
-     *        tranne le notti già vendute
+     *        le notti che non si vendono: vendute dal sito, prenotate su
+     *        Booking.com, bloccate a mano
      */
     public function __construct(
         private readonly RoomRepositoryInterface $rooms,
         private readonly int $minNights = 2,
         private readonly string $currency = 'EUR',
         private readonly ?\Closure $occupate = null,
-        private readonly bool $inventa = true,
     ) {
     }
 
@@ -142,34 +141,8 @@ final class DemoBookingProvider implements BookingProviderInterface
                 return false;
             }
         }
-        if (!$this->inventa) {
-            return true;
-        }
-
-        $night  = $criteria->arrival;
-        $nights = max(1, $criteria->nights());
-
-        for ($i = 0; $i < $nights; $i++) {
-            if (!$this->isNightFree($ref, $night)) {
-                return false;
-            }
-            $night = $night->modify('+1 day');
-        }
 
         return true;
-    }
-
-    /**
-     * Deterministico: stessa camera, stessa notte, stessa risposta.
-     * Circa una notte su cinque risulta occupata — abbastanza da far vedere
-     * anche il caso «non c'è posto», che è metà del lavoro di un motore di
-     * prenotazione.
-     */
-    private function isNightFree(string $ref, \DateTimeImmutable $night): bool
-    {
-        $seed = crc32($ref . '|' . $night->format('Y-m-d'));
-
-        return ($seed % 100) >= 20;
     }
 
     /**

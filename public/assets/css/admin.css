@@ -492,7 +492,7 @@
 .adm-campo > label, .adm-campo legend, .adm-lingua > label { display: block; margin-bottom: 6px; font-size: var(--a-t-m); font-weight: 600; }
 .adm fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 .adm input[type="text"], .adm input[type="email"], .adm input[type="tel"], .adm input[type="url"], .adm input[type="search"],
-.adm input[type="password"], .adm select, .adm textarea {
+.adm input[type="password"], .adm input[type="date"], .adm select, .adm textarea {
   width: 100%; min-height: 46px; padding: 10px 14px; border: 1px solid var(--a-bordo-forte); border-radius: 12px;
   background: var(--a-carta); color: var(--a-testo); font: inherit; font-size: var(--a-t-l);
 }
@@ -876,7 +876,7 @@ td .adm-dc, span.adm-dc { margin: 0; }
 /* Sotto i 16 px Safari su iPhone ingrandisce la pagina a ogni campo toccato. */
 @media (max-width: 760px) {
   .adm input[type="text"], .adm input[type="email"], .adm input[type="tel"], .adm input[type="url"], .adm input[type="search"],
-  .adm input[type="password"], .adm select, .adm textarea { font-size: 16px; }
+  .adm input[type="password"], .adm input[type="date"], .adm select, .adm textarea { font-size: 16px; }
 }
 /* «Prossimi 30 giorni» è stampato due volte: a destra con due colonne, in alto
    con una. Se ne vede sempre uno solo. */
@@ -886,3 +886,59 @@ td .adm-dc, span.adm-dc { margin: 0; }
   .adm-solo-stretto { display: none; }
 }
 .adm-scheda__confronto { margin-top: 4px; }
+
+/* ------------------------------------------------ calendario delle camere */
+/* Tre fonti, tre colori, tre lettere: si distinguono anche senza i colori. */
+.adm {
+  --a-cal-booking: #1f4f8f; --a-cal-booking-testo: #fff;
+  --a-cal-diretta: #7a2e2e; --a-cal-diretta-testo: #fff;
+  --a-cal-manuale: #f2dfb3; --a-cal-manuale-righe: #d9b867; --a-cal-manuale-testo: #4a3007;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="chiaro"]) .adm {
+    --a-cal-booking: #3c6fb8; --a-cal-booking-testo: #fff;
+    --a-cal-diretta: #a84646; --a-cal-diretta-testo: #fff;
+    --a-cal-manuale: #3f3214; --a-cal-manuale-righe: #6b5622; --a-cal-manuale-testo: #f6e3b0;
+  }
+}
+:root[data-tema="scuro"] .adm {
+  --a-cal-booking: #3c6fb8; --a-cal-booking-testo: #fff;
+  --a-cal-diretta: #a84646; --a-cal-diretta-testo: #fff;
+  --a-cal-manuale: #3f3214; --a-cal-manuale-righe: #6b5622; --a-cal-manuale-testo: #f6e3b0;
+}
+.adm-cal-mesi { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0 0 14px; }
+.adm .adm-cal-mesi__titolo { margin: 0; min-width: 8.5em; font-family: var(--font-display, inherit); font-size: var(--a-t-titolo); font-weight: 400; text-align: center; }
+.adm-cal-legenda { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 16px; padding: 0; list-style: none; font-size: var(--a-t-s); }
+.adm-cal-legenda li { display: inline-flex; align-items: center; gap: 8px; }
+.adm-cal-segno { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+.adm-cal { border-collapse: separate; border-spacing: 2px; font-size: var(--a-t-xs); }
+.adm-cal thead th { min-width: 26px; padding: 0 0 4px; font-weight: 600; line-height: 1.2; color: var(--a-tenue); text-align: center; }
+.adm-cal__dow { display: block; font-size: 10px; font-weight: 500; }
+.adm-cal__giorno--fine { color: var(--a-testo); }
+.adm-cal__giorno--oggi { color: var(--a-accento-testo); }
+.adm-cal .adm-cal__camera { position: sticky; left: 0; z-index: 1; padding: 0 12px 0 0; background: var(--a-carta); font-size: var(--a-t-s); text-align: left; white-space: nowrap; }
+.adm-cal .adm-cal__camera a { color: inherit; font-weight: 600; text-decoration: none; }
+.adm-cal .adm-cal__camera a:hover { text-decoration: underline; }
+.adm-cal__notte { height: 30px; min-width: 26px; padding: 0; border-radius: 6px; background: var(--a-tela-2); box-shadow: inset 0 0 0 1px var(--a-bordo); font-weight: 700; text-align: center; }
+.adm-cal__notte--oggi { box-shadow: inset 0 0 0 2px var(--a-accento-testo); }
+.adm-cal__notte--booking, .adm-cal-segno--booking, .adm-cal-etichetta--booking { background: var(--a-cal-booking); color: var(--a-cal-booking-testo); box-shadow: none; }
+.adm-cal__notte--sito, .adm-cal-segno--sito, .adm-cal-etichetta--sito { background: var(--a-cal-diretta); color: var(--a-cal-diretta-testo); box-shadow: none; }
+.adm-cal__notte--manuale, .adm-cal-segno--manuale, .adm-cal-etichetta--manuale {
+  background: repeating-linear-gradient(135deg, var(--a-cal-manuale) 0 6px, var(--a-cal-manuale-righe) 6px 9px);
+  color: var(--a-cal-manuale-testo); box-shadow: inset 0 0 0 1px var(--a-cal-manuale-righe);
+}
+.adm-cal-segno--libera { background: var(--a-tela-2); box-shadow: inset 0 0 0 1px var(--a-bordo); }
+.adm-cal-periodi { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 18px 28px; }
+.adm .adm-cal-periodi h3 { margin: 0 0 6px; font-size: var(--a-t-m); }
+.adm-cal-periodi ul { display: grid; gap: 6px; margin: 0 0 6px; padding: 0; list-style: none; font-size: var(--a-t-m); }
+.adm-cal-periodi .adm-nota { margin: 0; }
+.adm-cal-etichetta { display: inline-flex; padding: 2px 8px; border-radius: 8px; font-size: var(--a-t-xs); font-weight: 600; }
+.adm-cal-blocca { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 14px 16px; align-items: end; }
+.adm-cal-blocca__nota { grid-column: span 2; }
+.adm-cal-blocca__aiuto, .adm-cal-blocca__invia { grid-column: 1 / -1; margin: 0; }
+@media (max-width: 760px) { .adm-cal-blocca__nota { grid-column: 1 / -1; } }
+.adm-cal-blocchi { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.adm-cal-blocchi li { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px; padding: 12px 0; border-top: 1px solid var(--a-bordo); }
+.adm-cal-blocchi li:first-child { border-top: 0; padding-top: 0; }
+.adm-cal-blocchi__coperto { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; color: var(--a-ok-scritta, var(--a-ok)); font-size: var(--a-t-s); }
+.adm-elenco { display: grid; gap: 6px; margin: 0; padding-left: 18px; }

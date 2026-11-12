@@ -137,7 +137,7 @@ final class Testi
         'subject' => 'Oggetto', 'message' => 'Messaggio', 'message_help' => 'Aiuto sotto il messaggio',
         'success_title' => 'Messaggio inviato: titolo', 'success_text' => 'Messaggio inviato: testo',
         'error_title' => 'Errore: titolo', 'error_text' => 'Errore: testo',
-        'demo_title' => 'Avviso di prova: titolo', 'demo_text' => 'Avviso di prova: testo', 'demo_note' => 'Avviso di prova',
+        'demo_note' => 'Avviso di prova',
         'notice_title' => 'Avviso: titolo', 'notice_text' => 'Avviso: testo',
         'places_title' => 'Titolo dell’elenco dei luoghi', 'places_note' => 'Nota sotto l’elenco dei luoghi',
         'rufino_title' => 'Titolo su San Rufino', 'rufino_text' => 'Testo su San Rufino',
@@ -167,7 +167,7 @@ final class Testi
 
     /** Le ultime parole di chiave che indicano un dettaglio. */
     private const DETTAGLI = ['label', 'prev', 'next', 'pause', 'play', 'scroll', 'new_tab', 'vertical', 'chip',
-        'image_alt', 'frame_alt', 'corridor_alt', 'image_credit', 'demo_title', 'demo_text', 'demo_note',
+        'image_alt', 'frame_alt', 'corridor_alt', 'image_credit', 'demo_note',
         'notice_title', 'notice_text', 'step_of', 'name_to_confirm', 'not_found_title', 'not_found_text',
         'photo_pending', 'map_label', 'skip', 'menu_open', 'menu_close',
         'loading', 'close', 'back', 'demo_asset', 'to_confirm', 'price_to_confirm', 'legal_note', 'credits',

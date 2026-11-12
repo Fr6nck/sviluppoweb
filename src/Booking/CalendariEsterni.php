@@ -26,6 +26,10 @@ use ArcoDelVento\Storage\JsonStore;
  * nasce la prima volta che serve.
  *
  * Di Booking si tengono solo le date, mai i nomi: sono ospiti di un'altra casa.
+ *
+ * SOSPESO. L'interruttore del channel manager (Admin\InterruttoreChannelManager,
+ * una funzione di prova) può sospendere l'importazione: allora le notti di
+ * Booking non si leggono e non contano, e i link restano salvati.
  */
 final class CalendariEsterni
 {
@@ -70,7 +74,7 @@ final class CalendariEsterni
     public function occupate(bool $aggiorna = true): array
     {
         $collegate = $this->collegate();
-        if ($collegate === []) {
+        if ($collegate === [] || $this->sospeso()) {
             return [];
         }
         if ($aggiorna) {
@@ -95,7 +99,7 @@ final class CalendariEsterni
             }
             foreach ((array) ($c['periodi'] ?? []) as $p) {
                 if (is_array($p) && ($p['partenza'] ?? '') > $oggi) {
-                    $out[] = ['id' => 'ical:' . $ref . ':' . $p['arrivo'], 'ref' => $ref, 'arrivo' => (string) $p['arrivo'], 'partenza' => (string) $p['partenza']];
+                    $out[] = ['id' => 'ical:' . $ref . ':' . $p['arrivo'], 'ref' => $ref, 'arrivo' => (string) $p['arrivo'], 'partenza' => (string) $p['partenza'], 'fonte' => 'booking'];
                 }
             }
         }
@@ -117,7 +121,7 @@ final class CalendariEsterni
             $collegate[$ref] = $url;
         }
         $daLeggere = $ref === null ? $collegate : array_intersect_key($collegate, [$ref => true]);
-        if ($daLeggere !== []) {
+        if ($daLeggere !== [] && !$this->sospeso()) {
             $this->leggi($daLeggere);
         }
 
@@ -127,7 +131,7 @@ final class CalendariEsterni
     /**
      * Com'è messo il calendario di una camera, per il pannello.
      *
-     * @return array{url: string, esito: 'ok'|'errore'|'mai', aggiornato: ?string, tentato: ?string,
+     * @return array{url: string, esito: 'ok'|'errore'|'mai'|'sospeso', aggiornato: ?string, tentato: ?string,
      *               errore: ?string, periodi: list<array{arrivo: string, partenza: string}>}|null
      *         null se la camera non ha un calendario
      */
@@ -136,6 +140,9 @@ final class CalendariEsterni
         $url ??= $this->collegate()[$ref] ?? null;
         if ($url === null) {
             return null;
+        }
+        if ($this->sospeso()) {
+            return ['url' => $url, 'esito' => 'sospeso', 'aggiornato' => null, 'tentato' => null, 'errore' => null, 'periodi' => []];
         }
         $c = $this->cache()[$ref] ?? [];
         if (($c['url'] ?? '') !== $url) {
@@ -174,6 +181,58 @@ final class CalendariEsterni
     public function soloHttps(): bool
     {
         return $this->soloHttps;
+    }
+
+    // ================================================ sospensione (prova)
+
+    /** L'importazione è sospesa dall'interruttore del channel manager? */
+    public function sospeso(): bool
+    {
+        return !empty($this->store->read(self::ARCHIVIO)['sospeso']);
+    }
+
+    /** Da quando è sospesa, o null. */
+    public function sospesoDal(): ?string
+    {
+        $tutto = $this->store->read(self::ARCHIVIO);
+
+        return !empty($tutto['sospeso']) ? (string) ($tutto['sospeso_il'] ?? '') : null;
+    }
+
+    /**
+     * Sospende l'importazione e toglie tutte le notti importate. I link delle
+     * camere non si toccano: stanno con le camere, non qui.
+     *
+     * @return array<string,int> quanti periodi importati ha tolto, camera per camera
+     */
+    public function sospendi(): array
+    {
+        $tolti = [];
+        $this->store->update(self::ARCHIVIO, static function (array $tutto) use (&$tolti): array {
+            foreach ((array) ($tutto['camere'] ?? []) as $ref => $c) {
+                if (!is_array($c)) {
+                    continue;
+                }
+                $tolti[(string) $ref] = count((array) ($c['periodi'] ?? []));
+                $tutto['camere'][$ref] = ['url' => (string) ($c['url'] ?? ''), 'periodi' => [], 'aggiornato' => null, 'tentato' => null, 'errore' => null];
+            }
+            $tutto['sospeso']    = true;
+            $tutto['sospeso_il'] = date('c');
+
+            return $tutto;
+        });
+
+        return $tolti;
+    }
+
+    /** Riprende l'importazione: le notti tornano alla prossima lettura (aggiorna()). */
+    public function riprendi(): void
+    {
+        $this->store->update(self::ARCHIVIO, static function (array $tutto): array {
+            unset($tutto['sospeso'], $tutto['sospeso_il']);
+
+            return $tutto;
+        });
     }
 
     /**

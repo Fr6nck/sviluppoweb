@@ -543,7 +543,6 @@ final class BookingController
         return Response::html($this->app->view()->page($page, $data + [
             'pagamento'      => $this->app->pagamentoAttivo(),
             'pagamentoProva' => $this->app->pagamentoAttivo() && $this->app->pagamentoInProva(),
-            'calendarioDemo' => (string) $this->app->config('booking.provider') === 'demo',
             'pagina'      => 'book',
             'titoloSeo'   => $this->app->translator()->get('book.seo_title'),
             'descrizione' => $this->app->translator()->get($this->app->pagamentoAttivo() ? 'book.seo_description_pay' : 'book.seo_description'),

@@ -90,8 +90,9 @@ final class Ambiente
             'nome' => 'Prenotazioni',
             'descrizione' => 'Il calendario che dice quali notti sono libere.',
             'voci' => [
-                'BOOKING_PROVIDER' => ['nome' => 'Calendario', 'tipo' => 'scelta', 'predefinito' => 'demo',
-                    'opzioni' => ['sito' => 'sito — il calendario del sito (con il pagamento)', 'demo' => 'demo — dimostrativo, notti occupate a caso', 'api' => 'api — un gestionale esterno']],
+                'BOOKING_PROVIDER' => ['nome' => 'Calendario', 'tipo' => 'scelta', 'predefinito' => 'sito',
+                    'opzioni' => ['sito' => 'sito — il calendario del sito', 'demo' => 'demo — valore vecchio, oggi vale come «sito»', 'api' => 'api — valore vecchio, oggi vale come «sito»'],
+                    'aiuto' => 'Ogni valore usa il calendario del sito: prenotazioni dirette, Booking.com via iCal e blocchi manuali. Il calendario dimostrativo, con le notti occupate a caso, non c\'è più.'],
                 'BOOKING_MIN_NIGHTS' => ['nome' => 'Soggiorno minimo imposto', 'tipo' => 'intero', 'min' => 1, 'max' => 30,
                     'aiuto' => 'Vuoto: comanda la regola della casa (1 notte, 2 con il sabato). Si riempie solo se un gestionale ne impone un altro.'],
                 'BOOKING_CURRENCY' => ['nome' => 'Valuta', 'tipo' => 'testo', 'predefinito' => 'EUR', 'modello' => '/^[A-Z]{3}$/',
@@ -646,9 +647,6 @@ final class Ambiente
                 $avvisi[] = 'Pagamenti in prova: nessun addebito vero, e il sito lo dice a chi prenota. Prima di aprire il sito, rimetti la modalità su «Reale».';
             } elseif (\ArcoDelVento\Payment\SumUp::tipoChiave($chiave) === 'prova') {
                 $avvisi[] = 'La chiave SumUp è di prova (sandbox): i pagamenti non sono veri. Per incassare serve la chiave del conto vero; per provare c\'è la modalità «Prova».';
-            }
-            if ($valore('BOOKING_PROVIDER') !== 'sito') {
-                $avvisi[] = 'Con il pagamento acceso il calendario dovrebbe essere «sito»: con «' . ($valore('BOOKING_PROVIDER') ?: 'demo') . '» si incasserebbe su date non verificate.';
             }
             if ($valore('MAIL_TRANSPORT') !== 'smtp') {
                 $avvisi[] = 'Con il pagamento acceso la posta dovrebbe essere smtp: le conferme di pagamento partono per e-mail.';

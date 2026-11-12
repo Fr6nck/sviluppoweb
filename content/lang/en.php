@@ -504,12 +504,6 @@ return [
         'seo_description_pay' => 'Check your dates, choose the room and book paying online with SumUp: Arco del '
                                . 'Vento, guest rooms on Via Santa Maria delle Rose in Assisi.',
 
-        'demo_title' => 'The dates are a demo, the rates are not',
-        'demo_text'  => 'The prices you see are the real ones, and the total is worked out from them. '
-                      . 'Which dates come up as free, though, is decided by a demo provider built into '
-                      . 'the site rather than a real calendar — and the request does not reach any inbox '
-                      . 'yet.',
-
         'steps' => [
             'dates'   => 'Dates and guests',
             'rooms'   => 'Available rooms',
@@ -545,7 +539,6 @@ return [
             'total'      => 'Total for :nights nights',
             'per_night'  => ':amount per night',
             'change'     => 'Change the dates',
-            'unavailable_room' => 'Not free on these dates',
         ],
 
         'details' => [

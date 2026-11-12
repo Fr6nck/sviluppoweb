@@ -114,7 +114,7 @@ $prova = !empty($pagamento['prova']);
     </div>
   </div>
 <?php elseif ($voce['tipo'] === 'prenotazione'): ?>
-  <p class="adm-nota">Prima di confermare, controlla che le date siano libere su Booking: il calendario del sito è ancora dimostrativo.</p>
+  <p class="adm-nota">Prima di confermare, guarda il <a class="adm-link" href="<?= e(adminUrl('calendario')) ?>">Calendario</a>: conosce le prenotazioni del sito e quelle di Booking.com delle camere con il link iCal, non quelle prese al telefono.</p>
 <?php endif; ?>
 
 <form method="post" action="<?= e(adminUrl('richieste/' . rawurlencode((string) $voce['id']))) ?>" class="adm-modulo adm-in-linea">

@@ -87,7 +87,8 @@ return [
     ],
 
     'booking' => [
-        'provider'    => Env::get('BOOKING_PROVIDER', 'demo'),
+        // Ogni valore usa il calendario del sito (Booking\CalendarioSito).
+        'provider'    => Env::get('BOOKING_PROVIDER', 'sito'),
         'api_base'    => (string) Env::get('BOOKING_API_BASE_URL', ''),
         'api_key'     => (string) Env::get('BOOKING_API_KEY', ''),
         'property_id' => (string) Env::get('BOOKING_PROPERTY_ID', ''),

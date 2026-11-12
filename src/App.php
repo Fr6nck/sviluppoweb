@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace ArcoDelVento;
 
 use ArcoDelVento\Booking\BookingService;
-use ArcoDelVento\Booking\DemoBookingProvider;
+use ArcoDelVento\Booking\CalendarioSito;
 use ArcoDelVento\Booking\BookingProviderInterface;
 use ArcoDelVento\Database\Connection;
 use ArcoDelVento\I18n\Translator;
@@ -137,16 +137,27 @@ final class App
         );
     }
 
+    /** I blocchi manuali delle camere, dal Calendario dell'area riservata. */
+    public function blocchi(): \ArcoDelVento\Booking\BlocchiManuali
+    {
+        return $this->services['blocchi'] ??= new \ArcoDelVento\Booking\BlocchiManuali($this->store());
+    }
+
     /**
-     * Le notti che non si vendono: quelle già vendute dal sito e quelle
-     * prenotate sulle altre piattaforme, per le camere con il calendario
-     * collegato.
+     * Le notti che non si vendono: quelle già vendute dal sito, quelle
+     * prenotate sulle altre piattaforme per le camere con il calendario
+     * collegato, e quelle bloccate a mano dal Calendario.
      *
-     * @return list<array{id: string, ref: string, arrivo: string, partenza: string}>
+     * @return list<array{id: string, ref: string, arrivo: string, partenza: string, fonte: string}>
      */
     public function nottiOccupate(): array
     {
-        return array_merge($this->inbox()->nottiOccupate(), $this->calendari()->occupate());
+        // «fonte» dice da dove viene: sito (prenotazione diretta), booking, manuale.
+        return array_merge(
+            array_map(static fn (array $n): array => $n + ['fonte' => 'sito'], $this->inbox()->nottiOccupate()),
+            $this->calendari()->occupate(),
+            $this->blocchi()->occupate(),
+        );
     }
 
     /** Le modifiche dell'area riservata, sovrapposte ai file di content/. */
@@ -279,31 +290,17 @@ final class App
 
     public function bookingProvider(): BookingProviderInterface
     {
-        // Le notti già vendute dal sito (pagate, in pagamento, confermate) e
-        // quelle prenotate su Booking.com, dove il calendario è collegato, sono
-        // occupate con qualunque provider di questo file: il sito non vende
-        // due volte la stessa camera.
-        $occupate = fn (): array => $this->nottiOccupate();
-
-        return $this->services['booking.provider'] ??= match ((string) $this->config('booking.provider')) {
-            // Il calendario del sito: libero tutto, tranne quello che il sito
-            // ha già venduto. Niente notti occupate a caso.
-            'sito'  => new DemoBookingProvider(
-                $this->rooms(),
-                $this->minNights(),
-                (string) $this->config('booking.currency'),
-                $occupate,
-                false,
-            ),
-            // Un provider reale si aggiunge qui, come altro caso, e implementa
-            // BookingProviderInterface. Il resto del sito non se ne accorge.
-            default => new DemoBookingProvider(
-                $this->rooms(),
-                $this->minNights(),
-                (string) $this->config('booking.currency'),
-                $occupate,
-            ),
-        };
+        // Il calendario del sito, con qualunque valore di BOOKING_PROVIDER:
+        // «demo» e «api», rimasti in qualche .env, non inventano più notti
+        // occupate. Le notti che non si vendono sono quelle di nottiOccupate():
+        // dirette, Booking.com, blocchi manuali. Un gestionale vero si
+        // aggiungerebbe qui, come classe che implementa BookingProviderInterface.
+        return $this->services['booking.provider'] ??= new CalendarioSito(
+            $this->rooms(),
+            $this->minNights(),
+            (string) $this->config('booking.currency'),
+            fn (): array => $this->nottiOccupate(),
+        );
     }
 
     /**

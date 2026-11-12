@@ -53,12 +53,15 @@ $giorno = static fn (string $iso): string => date('d/m/Y', strtotime($iso) ?: 0)
   <div class="adm-carta__testa">
     <h2 id="c-ical-titolo">Calendario di Booking.com</h2>
     <?php if ($statoIcal !== null): ?>
-      <span class="adm-etichetta"><?= $statoIcal['esito'] === 'ok' ? 'collegato' : ($statoIcal['esito'] === 'errore' ? 'errore' : 'da leggere') ?></span>
+      <span class="adm-etichetta"><?= match ($statoIcal['esito']) { 'ok' => 'collegato', 'errore' => 'errore', 'sospeso' => 'scollegato', default => 'da leggere' } ?></span>
     <?php endif; ?>
   </div>
   <?php if ($statoIcal === null): ?>
     <p>Non collegato: il sito non sa quali notti sono prenotate su Booking. Incolla il link iCal di Booking.com nel
        campo «Calendario di Booking.com» qui sotto e salva.</p>
+  <?php elseif ($statoIcal['esito'] === 'sospeso'): ?>
+    <p><strong>Scollegato per tutte le camere</strong> (channel manager, funzione di prova): le notti prenotate su Booking
+       non contano. Il link è salvato e si rileggerà quando il calendario verrà ricollegato.</p>
   <?php else: ?>
     <dl class="adm-dati adm-dati--piatta">
       <div><dt>Letto l'ultima volta</dt><dd><?= e($quandoIcal($statoIcal['aggiornato'])) ?><?= $statoIcal['esito'] === 'errore' ? ' · <strong>ultimo tentativo fallito</strong> (' . e($quandoIcal($statoIcal['tentato'])) . '): ' . e((string) $statoIcal['errore']) : '' ?></dd></div>

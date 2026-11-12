@@ -161,15 +161,36 @@ e il menu diventa una riga di voci in chiaro.
 ```
 interfaccia  →  BookingService  →  BookingProviderInterface
                                         ↑
-                          DemoBookingProvider (oggi)
+                          CalendarioSito       (oggi)
                           il tuo gestionale    (domani)
 ```
 
-`DemoBookingProvider` non è un calendario: è deterministico — la stessa camera,
-nella stessa notte, dà sempre la stessa risposta — perché con una
-disponibilità casuale il percorso non si potrebbe provare. Circa una notte su
-cinque risulta occupata, così si vede anche il caso «non c'è posto», che è
-metà del lavoro di un motore di prenotazione.
+`src/Booking/CalendarioSito.php` è il calendario vero del sito. Una camera è
+libera per un soggiorno se ospita quel numero di persone (`occupancy.max` e una
+tariffa per quel numero) e nessuna delle sue notti è occupata. Le notti
+occupate vengono tutte da `App::nottiOccupate()`, che somma tre fonti:
+
+| Fonte | Da dove | Nel Calendario del pannello |
+| --- | --- | --- |
+| `sito` | le prenotazioni dirette (`Inbox::nottiOccupate`): pagate, confermate, o con la pagina di pagamento aperta da meno di 35 minuti | «Prenotazione diretta», lettera D |
+| `booking` | i calendari iCal di Booking.com (`CalendariEsterni::occupate`) | «Prenotazione Booking.com», lettera B |
+| `manuale` | i blocchi messi dal Calendario (`BlocchiManuali::occupate`) | «Blocco manuale», lettera M |
+
+Una notte è quella che comincia quel giorno: «dal 7 al 10» chiude le notti del
+7, dell'8 e del 9, e il 10 la camera è di nuovo libera.
+
+Prima c'era `DemoBookingProvider`, che per far vedere il caso «non c'è posto»
+dava per occupata circa una notte su cinque, inventata ma sempre la stessa. Era
+il valore predefinito: per questo, con il calendario vuoto, cercando per 2
+persone dal 5 al 9 dicembre uscivano una o due camere invece di quattro. Non
+c'è più: `BOOKING_PROVIDER` vale `sito`, e anche un `.env` vecchio con `demo`, o
+senza la voce, usa il calendario vero.
+
+**Al cliente solo il disponibile.** La ricerca restituisce le camere libere e
+basta: le altre non compaiono, nemmeno come «non disponibile», e nessuna pagina
+pubblica ha un calendario con i giorni spenti. Il filtro sta tutto sul server:
+nessuna pagina, risposta o sorgente pubblica contiene le date occupate. Il link
+diretto ai dati di una camera occupata torna all'elenco, senza dire perché.
 
 **Per collegare un provider vero**: scrivi una classe che implementi
 `BookingProviderInterface` (tre metodi: `search`, `quote`, `request`),
@@ -246,9 +267,9 @@ SumUp   →  ?passo=esito  e  POST /pagamenti/sumup  →  GET /v0.1/checkouts/{i
   camera: il modulo non porta cifre.
 - Il passaggio a SumUp è una pagina del sito con un link, aperto dal JavaScript:
   `form-action 'self'` non lascia che un modulo porti fuori dal sito.
-- `BOOKING_PROVIDER=sito`: il calendario è libero tranne le notti già vendute
-  dal sito (`Inbox::nottiOccupate`): pagate, confermate, o con la pagina di
-  pagamento aperta da meno di 35 minuti. Le notti vendute contano anche con `demo`.
+- Il calendario del sito (`CalendarioSito`) conta come occupate anche le notti
+  con la pagina di pagamento aperta da meno di 35 minuti: due persone non
+  pagano la stessa camera.
 - Ogni pagina aperta tiene la camera mezz'ora, quindi dalla stessa connessione
   se ne aprono al massimo sei l'ora (`storage/data/limiti-pagamento.json`, con
   un'impronta dell'indirizzo cambiata ogni giorno e tenuta un'ora).
@@ -288,7 +309,71 @@ In senso inverso il sito pubblica `/ical/<camera>/<gettone>.ics`
 confermate dal sito, come giornate intere e senza nomi. Il gettone è uno per
 tutte le camere, nasce la prima volta che serve e sta nello stesso archivio;
 il link è nella scheda di ogni camera, da dare a Booking.com in «Importa
-calendario».
+calendario». I blocchi manuali non ci sono: il calendario pubblicato porta solo
+le prenotazioni dirette.
+
+Con il channel manager scollegato (sotto) `CalendariEsterni` non legge niente e
+non restituisce notti: `sospendi()` mette `sospeso` nell'archivio e svuota le
+notti lette, tenendo i link; `riprendi()` lo toglie.
+
+### Il Calendario e i blocchi manuali
+
+**Calendario** (`/admin/calendario`, tutti e due gli account) mostra un mese
+per volta: una riga per camera, una casella per notte. Ogni notte ha un solo
+stato, con la sua lettera, il suo colore e la scritta per chi usa un lettore di
+schermo: libera, prenotazione diretta (D), prenotazione Booking.com (B), blocco
+manuale (M, a righe). Sotto la tabella, per ogni camera, l'elenco dei periodi
+del mese con le date; le dirette portano alla richiesta. Lo costruisce
+`src/Admin/Calendario.php` da `App::nottiOccupate()`.
+
+**Blocca una camera.** Camera, «Dal», «Al» (il giorno di partenza) e una nota
+facoltativa: il blocco vale da subito, e la camera non si prenota più dal sito
+per quelle notti. Si toglie dall'elenco «Blocchi manuali», con «Togli».
+`src/Booking/BlocchiManuali.php` li tiene in `storage/data/blocchi-manuali.json`
+(al massimo 366 notti per blocco, nota di 200 caratteri); quelli finiti si
+tolgono da soli.
+
+Quando la stessa prenotazione arriva poi da Booking, non c'è conflitto e non
+c'è doppione: per ogni notte il Calendario sceglie una fonte sola, nell'ordine
+diretta, Booking, blocco (`Calendario::FONTI`), e il blocco si segna «già
+arrivato da Booking.com»: si può togliere. Se Booking ne copre solo una parte,
+lo dice.
+
+### Interruttore del channel manager (prova)
+
+**Channel manager (prova)** (`/admin/channel-manager`, solo il super admin) è
+una funzione di prova: scollega il calendario di Booking.com da tutte le camere
+e lo ricollega, per vedere il sito con la sola disponibilità propria.
+
+- *Scollega da tutte le camere* (con la spunta di conferma): l'importazione si
+  sospende e le notti importate da Booking si tolgono. I link iCal restano
+  salvati. Le prenotazioni dirette e i blocchi manuali non si toccano: la
+  pagina li elenca, e cosa farne lo decide una persona.
+- *Ricollega e sincronizza adesso*: toglie la sospensione e rilegge subito
+  tutti i calendari.
+- Lo stato, collegato o scollegato e da quando, è in cima alla pagina; da
+  scollegato lo dicono anche la bacheca, il Calendario, la scheda di ogni camera
+  e il preflight (bloccante in produzione).
+
+Attenzione: scollegato sul sito vero, le notti già vendute su Booking.com
+tornano prenotabili dal sito.
+
+**Per toglierla** quando non serve più:
+
+1. cancellare `src/Admin/InterruttoreChannelManager.php` e
+   `views/admin/channel-manager.php`;
+2. in `src/Controller/AdminController.php`, togliere la rotta
+   `channel-manager`, il metodo `channelManager()`, la voce in `SOLO_SUPER` e
+   l'`use` della classe;
+3. in `views/admin/layout.php`, togliere la voce «Channel manager (prova)»;
+4. in `views/admin/bacheca.php` e `views/admin/calendario.php`, togliere la
+   striscia «scollegato» (e in `AdminController` le variabili
+   `channelScollegato` che la accendono);
+5. facoltativo: in `src/Booking/CalendariEsterni.php` i metodi `sospeso()`,
+   `sospesoDal()`, `sospendi()`, `riprendi()` e i loro controlli, e il caso
+   «sospeso» in `views/admin/camera.php`, `views/admin/calendario.php`,
+   `AdminController::notaIcal()` e `tools/preflight.php`. Lasciati
+   lì non fanno niente finché nessuno sospende.
 
 ## Il sito chiuso da un codice
 
@@ -474,7 +559,7 @@ fai tu, via FTP.
 **`/admin`** — sul sito di prova `https://blackout.in/assisiapartment/admin`.
 Due account, protetti da password: il gestore e il super admin (sotto). Da lì
 si modifica il sito senza toccare un file e senza FTP. Il gestore vede solo
-Bacheca, Richieste, La struttura, Camere e tariffe e Account; tutte le altre
+Bacheca, Richieste, Calendario, La struttura, Camere e tariffe e Account; tutte le altre
 sezioni sono del super admin (`AdminController::SOLO_SUPER`), e per il gestore
 rispondono 404 come Configurazione. Delle immagini il gestore apre solo le foto
 delle camere (la principale e le due di galleria, i posti `camera.*` con la
@@ -487,6 +572,7 @@ le camere.
 | --- | --- | --- |
 | Bacheca | i numeri delle richieste (nuove, prenotazioni e messaggi negli ultimi 30 giorni, con l'andamento), il grafico a colonne di 7 giorni o 6 mesi, le ultime arrivate, i prossimi arrivi e le notti chieste nei prossimi 30 giorni, le camere, il marchio, e quello che sul sito è ancora «da confermare», CIN in testa | tutti e due |
 | Richieste | le prenotazioni e i messaggi arrivati dal sito, con stato: nuova, letta, confermata, rifiutata, archiviata; si cercano per nome, e-mail, riferimento, camera | tutti e due |
+| Calendario | il mese, camera per camera: notti libere, prenotazioni dirette, prenotazioni di Booking.com, blocchi manuali; il modulo per bloccare una camera e l'elenco dei blocchi da togliere | tutti e due |
 | La struttura | contatti, orari, soggiorno minimo, tassa, dotazioni, obblighi di legge, recensioni, social, coordinate | tutti e due |
 | Camere e tariffe | nome, metratura, piano, vista, tariffa per numero di ospiti, descrizione della fotografia, e le foto della camera (principale e galleria); «Ospiti al massimo» (la capienza, da 1 a 6) solo il super admin | tutti e due |
 | Immagini e logo | la rosa dei venti (anche icona del browser), il logotipo chiaro e scuro, le cinque foto dell'apertura, le foto delle pagine e quella per i social, la foto principale e due di galleria per ogni camera: si carica il file, si descrive, si torna all'originale | super admin (le foto delle camere anche il gestore, da Camere e tariffe) |
@@ -496,6 +582,7 @@ le camere.
 | Ricezione e-mail | a chi arrivano le richieste (fino a cinque indirizzi), come spedisce il sito, e un messaggio di prova | super admin |
 | Account | cambiare la propria password; il super admin reimposta anche quella del gestore | tutti e due |
 | Configurazione | le voci del file `.env` | super admin |
+| Channel manager (prova) | scollegare e ricollegare il calendario di Booking.com da tutte le camere; funzione di prova, da togliere | super admin |
 
 **Quale versione è sul server.** `tools/build-release.php` scrive nel
 pacchetto `config/versione.php` (data e commit; nel repository non c'è, è in

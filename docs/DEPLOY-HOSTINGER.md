@@ -582,14 +582,17 @@ controllo finale si ferma se la modalità è ancora «Prova».
 
 ### Il calendario e i rimborsi
 
-Con `BOOKING_PROVIDER=sito` il calendario è quello del sito: tutto libero,
-tranne le notti che il sito ha già venduto (pagate, confermate, o con la pagina
-di pagamento aperta da meno di mezz'ora). Il sito conosce Booking solo con il
-calendario iCal collegato (punto 16), e non conosce il telefono: quando arriva
-una prenotazione pagata, chiudi
-quelle date su Booking; se nel frattempo erano già occupate, rimborsa
-l'ospite dal pannello di SumUp e scrivigli. Con `BOOKING_PROVIDER=demo` alcune
-notti risultano occupate a caso: con i pagamenti non va usato.
+Il calendario è quello del sito: tutto libero, tranne le notti che il sito ha
+già venduto (pagate, confermate, o con la pagina di pagamento aperta da meno di
+mezz'ora), quelle di Booking.com con il calendario iCal collegato (punto 16) e
+i blocchi messi a mano dal **Calendario** (punto 16). Il telefono il sito non lo
+conosce: una prenotazione presa a voce si blocca dal Calendario. Quando arriva
+una prenotazione pagata, chiudi quelle date su Booking; se nel frattempo erano
+già occupate, rimborsa l'ospite dal pannello di SumUp e scrivigli.
+
+Il vecchio calendario dimostrativo (`BOOKING_PROVIDER=demo`), che dava per
+occupate notti inventate, non c'è più: anche un `.env` che porta ancora `demo`,
+o non ha la voce, usa il calendario vero.
 
 ### Se qualcosa non torna
 
@@ -651,8 +654,8 @@ normale di `/admin`: il nome utente dice chi entra.
 **Il gestore non lo vede.** Nel suo menu non c'è Configurazione, e
 `/admin/configurazione` e `/admin/super` per lui sono pagine che non esistono.
 
-**Che cosa resta al gestore.** Bacheca, Richieste, La struttura, Camere e
-tariffe e Account. Immagini e logo, Testi del sito, Domande frequenti, Accesso
+**Che cosa resta al gestore.** Bacheca, Richieste, Calendario, La struttura,
+Camere e tariffe e Account. Immagini e logo, Testi del sito, Domande frequenti, Accesso
 al sito e Ricezione e-mail sono solo del super admin: il gestore non le vede nel
 menu, e se ne apre l'indirizzo trova una pagina che non esiste. Le tariffe e
 le foto delle camere (principale e galleria) le cambia anche lui, dalla pagina
@@ -685,6 +688,17 @@ cambiano.
   sul file: si vede, ma da qui non si cambia.
 - Se il sito non può scrivere il `.env`, la pagina si legge soltanto: dai al file
   i permessi 644 via FTP.
+
+**Channel manager (prova).** Nel tuo menu, sotto Configurazione, c'è una
+funzione di prova: **Scollega da tutte le camere** sospende la lettura dei
+calendari di Booking.com e toglie le notti lette, così il sito si vede con la
+sola disponibilità propria; **Ricollega e sincronizza adesso** li rilegge
+subito. I link iCal restano salvati. Le prenotazioni dirette e i blocchi
+manuali non si toccano: la pagina li elenca. Finché è scollegato, la bacheca e
+il Calendario lo dicono, e il controllo finale si ferma in produzione:
+**scollegato sul sito vero, le notti vendute su Booking tornano prenotabili
+qui**. Per togliere la funzione, il README elenca i file, sotto «Interruttore
+del channel manager».
 
 **Password del gestore dimenticata.** Da **Account** → «La password del
 gestore»: vedi il punto 10.
@@ -735,3 +749,32 @@ senza nomi. In Booking.com, **Sincronizza calendari → Importa calendario**,
 incolla il link e dagli un nome («Sito»). Booking lo rilegge con i suoi tempi,
 di solito qualche ora. Il link contiene un codice segreto: non pubblicarlo.
 Funziona anche con il sito chiuso dal codice d'accesso.
+
+### Il Calendario e i blocchi manuali
+
+Area riservata → **Calendario** (lo vedono tutti e due gli account): un mese
+per volta, una riga per camera e una casella per notte.
+
+| Casella | Che cosa |
+| --- | --- |
+| vuota | libera |
+| **D**, rosso scuro | prenotazione diretta, fatta sul sito |
+| **B**, blu | prenotazione arrivata da Booking.com |
+| **M**, a righe | blocco manuale |
+
+Sotto, per ogni camera, i periodi del mese con le date: «Booking.com dal
+07/12/2026 al 10/12/2026». Il giorno di partenza è libero: «dal 7 al 10» vuol
+dire le notti del 7, 8 e 9.
+
+**Bloccare una camera.** Nel riquadro **Blocca una camera**: la camera, «Dal»,
+«Al» (il giorno di partenza) e, se serve, una nota («telefono, sig. Rossi»).
+**Blocca le date**: da quel momento la camera non si prenota dal sito per quelle
+notti. Il blocco compare nel calendario come «Blocco manuale» e nell'elenco
+**Blocchi manuali**, dove si toglie con **Togli**. Serve per le prenotazioni
+prese al telefono, o per una di Booking che il calendario iCal non ha ancora
+letto (arriva con fino a 20 minuti di ritardo).
+
+Quando quella prenotazione arriva poi da Booking, non c'è doppione: le notti
+compaiono una volta sola, come Booking, e il blocco dice «già arrivato da
+Booking.com»: si può togliere. Il blocco non va a Booking: per chiudere le date
+anche lì, si chiudono nell'extranet.

@@ -528,12 +528,6 @@ return [
         'seo_description_pay' => 'Verifica le date, scegli la camera e prenota pagando online con SumUp: '
                                . 'Arco del Vento, affittacamere in Via Santa Maria delle Rose, ad Assisi.',
 
-        'demo_title' => 'Le date sono di prova, le tariffe no',
-        'demo_text'  => 'I prezzi che vedi sono quelli della casa, e il totale è calcolato su quelli. '
-                      . 'Quali date risultino libere, invece, lo decide un provider di prova incluso nel '
-                      . 'sito e non un calendario reale — e la richiesta non raggiunge ancora nessuna '
-                      . 'casella di posta.',
-
         'steps' => [
             'dates'   => 'Date e ospiti',
             'rooms'   => 'Camere libere',
@@ -570,7 +564,6 @@ return [
             'total'      => 'Totale :nights notti',
             'per_night'  => ':amount a notte',
             'change'     => 'Cambia le date',
-            'unavailable_room' => 'Non libera in queste date',
         ],
 
         'details' => [

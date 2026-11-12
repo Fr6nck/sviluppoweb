@@ -10,7 +10,6 @@
  * @var string $passo   dates | rooms | details | done — con il pagamento: pay | result
  * @var bool   $pagamento  il pagamento online è acceso
  * @var bool   $pagamentoProva  in prova: conto sandbox di SumUp, nessun addebito vero
- * @var bool   $calendarioDemo
  * @var \ArcoDelVento\Booking\SearchCriteria|null      $criteri
  * @var \ArcoDelVento\Booking\AvailabilityResult|null  $disponibilita
  * @var \ArcoDelVento\Booking\RoomOffer|null           $offerta
@@ -61,14 +60,6 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
       </li>
     <?php endforeach; ?>
   </ol>
-
-  <?php if (!in_array($passo, ['done', 'pay', 'result'], true) && ($calendarioDemo ?? true)): ?>
-    <?= component('alert', [
-        'tipo'   => 'avviso',
-        'titolo' => t('book.demo_title'),
-        'testo'  => t('book.demo_text'),
-    ]) ?>
-  <?php endif; ?>
 
   <?php if (!empty($pagamentoProva) && in_array($passo, ['details', 'pay', 'result'], true)): ?>
     <?= component('alert', [
@@ -186,27 +177,12 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
     <?php endif; ?>
 
     <?php
-    /* Le camere non libere restano visibili: nasconderle lascia l'ospite a
-       chiedersi se il sito è rotto o se la casa ha davvero cinque camere. */
-    $occupate = array_values(array_filter(
-        $disponibilita->offers,
-        static fn ($o): bool => !$o->available
-    ));
+    /* Le camere non libere NON si mostrano, e nemmeno quante sono: chi visita
+       il sito vede solo quello che può prenotare per le date che ha chiesto.
+       Le date occupate — da Booking, dal sito, dai blocchi — restano
+       nell'area riservata: un concorrente non deve poter ricostruire
+       l'andamento delle prenotazioni dalle pagine pubbliche. */
     ?>
-    <?php if ($occupate !== []): ?>
-      <div class="adv-spazio-sopra">
-        <h3 class="adv-titolo adv-titolo--xs"><?= te('book.results.unavailable_room') ?></h3>
-        <?= component('index-list', [
-            'voci' => array_map(static function ($o) use ($lingua): array {
-                return [
-                    'etichetta' => R::name($o->room, $lingua),
-                    'nota'      => R::metaLine($o->room),
-                    'href'      => R::href($o->room, $lingua),
-                ];
-            }, $occupate),
-        ]) ?>
-      </div>
-    <?php endif; ?>
 
 
   <?php /* ------------------------------------------- 3. i tuoi dati */ ?>

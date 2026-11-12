@@ -387,12 +387,8 @@ if (($pagamento['provider'] ?? '') === '') {
     $cancScritta = is_array($canc) ? trim((string) ($canc['it'] ?? '')) !== '' && trim((string) ($canc['en'] ?? '')) !== '' : trim((string) $canc) !== '';
     $aggiungi($cancScritta ? 'ok' : 'bloccante', 'Pagamento', 'condizioni di cancellazione ' . ($cancScritta ? 'scritte' : 'NON scritte'),
         'Chi paga deve sapere prima che cosa succede se annulla. Area riservata → La struttura → Condizioni di cancellazione, in italiano e in inglese.');
-    $provider = (string) $config['booking']['provider'];
-    $aggiungi($provider === 'sito' ? 'attenzione' : 'bloccante', 'Pagamento',
-        'calendario: ' . ($provider === 'sito' ? 'quello del sito (BOOKING_PROVIDER=sito)' : 'BOOKING_PROVIDER=' . $provider),
-        $provider === 'sito'
-            ? 'Il sito non vende due volte una notte già venduta da lui, ma non conosce Booking né il telefono: per ogni prenotazione pagata controlla che le date siano libere, e se non lo sono rimborsa da SumUp.'
-            : 'Con il calendario dimostrativo alcune notti risultano occupate a caso, e si incassa su date che nessuno ha controllato. Nel .env metti BOOKING_PROVIDER=sito.');
+    $aggiungi('attenzione', 'Pagamento', 'calendario: quello del sito',
+        'Il sito non vende due volte una notte già venduta da lui, né quelle prenotate su Booking.com dove il calendario iCal è collegato (con fino a 20 minuti di ritardo), né quelle bloccate a mano. Non conosce il telefono: per ogni prenotazione pagata guarda il Calendario, e se le date non erano libere rimborsa da SumUp.');
     $aggiungi('attenzione', 'Pagamento', 'notifiche di SumUp a ' . rtrim((string) $config['app']['url'], '/') . '/pagamenti/sumup',
         'Il sito le riceve da solo. Prima di aprire, fai una prenotazione vera con una carta tua e rimborsala dal pannello di SumUp: così sai che tutto il giro funziona.');
 }
@@ -404,7 +400,11 @@ $camerePreflight   = new \ArcoDelVento\Repository\ArrayRoomRepository(
 );
 $calendari = new \ArcoDelVento\Booking\CalendariEsterni($archivioPreflight, $camerePreflight, !filter_var(\ArcoDelVento\Support\Env::fromServer('ADV_ICAL_HTTP') ?? false, FILTER_VALIDATE_BOOL));
 $collegate = $calendari->collegate();
-if ($collegate === []) {
+if ($calendari->sospeso()) {
+    // L'interruttore del channel manager (funzione di prova).
+    $aggiungi($inProva ? 'attenzione' : 'bloccante', 'Calendari', 'channel manager scollegato: le notti di Booking.com non contano',
+        'È la funzione di prova del pannello di amministrazione. Finché è scollegato il sito vende anche le notti prenotate su Booking: area riservata → Channel manager → Ricollega.');
+} elseif ($collegate === []) {
     $aggiungi('nota', 'Calendari', 'nessuna camera ha il calendario di Booking.com collegato',
         'Area riservata → Camere e tariffe → la camera → «Calendario di Booking.com (link iCal)». Senza, il sito non sa le notti vendute su Booking.');
 } else {
