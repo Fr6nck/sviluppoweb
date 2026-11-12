@@ -556,7 +556,6 @@ return [
             'none_text'  => 'Nessuna delle cinque camere è disponibile per il periodo che hai chiesto. '
                           . 'Prova a spostarti di qualche giorno, oppure scrivi a Daniele: a volte si libera '
                           . 'qualcosa che il calendario non ha ancora registrato.',
-            'nearest'    => 'Le date libere più vicine:',
             'too_many_title' => 'Non abbiamo una camera per :guests persone',
             'too_many_text'  => 'La camera più grande ne ospita :max. Per un gruppo più numeroso servono '
                               . 'due camere: scrivici con le date e Daniele ti dice cosa si riesce a fare.',

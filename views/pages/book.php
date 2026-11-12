@@ -125,28 +125,14 @@ $valore = static fn (string $campo): string => (string) ($valori[$campo] ?? '');
     <?php elseif (!$disponibilita->hasAvailability()): ?>
 
       <?php
-      /* Il design system è esplicito: «Quando non c'è disponibilità, la
-         risposta non è un vuoto: mostra le date libere più vicine.» */
-      $alternative = $disponibilita->alternatives;
-      $html = e(t('book.results.none_text'));
-      if ($alternative !== []) {
-          $html .= '<br><br><strong>' . e(t('book.results.nearest')) . '</strong><br>';
-          foreach ($alternative as $a) {
-              $href = url('book', [], [
-                  'passo' => 'camere', 'arrivo' => $a['arrival'],
-                  'partenza' => $a['departure'], 'ospiti' => (string) $criteri->guests,
-              ]);
-              $html .= sprintf(
-                  '<a class="adv-link adv-alternativa" href="%s">%s &rarr; %s</a>',
-                  e($href), e(dataEstesa($a['arrival'])), e(dataEstesa($a['departure']))
-              );
-          }
-      }
+      /* Nessuna data alternativa: proporne vorrebbe dire scorrere il
+         calendario per il cliente, e da quello che manca si leggerebbero le
+         notti occupate. Si dice solo che queste date sono piene. */
       ?>
       <?= component('alert', [
-          'tipo'      => 'errore',
-          'titolo'    => t('book.results.none_title'),
-          'testoHtml' => $html,
+          'tipo'   => 'errore',
+          'titolo' => t('book.results.none_title'),
+          'testo'  => t('book.results.none_text'),
       ]) ?>
 
     <?php endif; ?>

@@ -1528,7 +1528,6 @@ a.adv-tappe__voce:hover .adv-tappe__freccia { transform: translate(3px, -3px); }
 .adv-modulo.adv-pannello > .adv-titolo { margin-bottom: 4px; }
 
 .adv-riferimento { margin-top: 18px; letter-spacing: 0; }
-.adv-alternativa { display: flex; min-height: 36px; }
 
 .adv-griglia-camere .adv-camera__figura { height: clamp(240px, 24vw, 300px); }
 

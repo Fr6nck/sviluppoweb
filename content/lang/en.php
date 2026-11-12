@@ -531,7 +531,6 @@ return [
             'none_text'  => 'None of the five rooms is available for the period you asked for. Try moving a '
                           . 'few days either way, or write to Daniele: sometimes something frees up before '
                           . 'the calendar catches it.',
-            'nearest'    => 'The nearest free dates:',
             'too_many_title' => 'We do not have a room for :guests people',
             'too_many_text'  => 'The largest room sleeps :max. A bigger group needs two rooms: write to us '
                               . 'with your dates and Daniele will tell you what can be done.',

@@ -188,7 +188,9 @@ senza la voce, usa il calendario vero.
 
 **Al cliente solo il disponibile.** La ricerca restituisce le camere libere e
 basta: le altre non compaiono, nemmeno come «non disponibile», e nessuna pagina
-pubblica ha un calendario con i giorni spenti. Il filtro sta tutto sul server:
+pubblica ha un calendario con i giorni spenti. Quando non è libera nessuna, il
+sito lo dice e non propone altre date: dalle proposte si leggerebbero le notti
+occupate. Il filtro sta tutto sul server:
 nessuna pagina, risposta o sorgente pubblica contiene le date occupate. Il link
 diretto ai dati di una camera occupata torna all'elenco, senza dire perché.
 
@@ -814,8 +816,9 @@ nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
   non se ne carica una da «Immagini e logo».
 - Le tre vedute di Assisi si ripetono fra le pagine.
 - L'informativa privacy è impostata ma non è un documento legale finito.
-- Il calendario non è ancora collegato a Booking: l'area riservata mostra le
-  richieste, ma le date libere del sito restano dimostrative.
+- Il calendario di Booking.com si collega con i link iCal, camera per camera:
+  le notti prenotate là arrivano con fino a 20 minuti di ritardo, e nel
+  frattempo si chiudono con un blocco manuale.
 
 ---
 
@@ -824,8 +827,8 @@ nient'altro. `docs/foto-originali/README.md` ha la tabella dei nomi attesi.
 - Tutti gli indirizzi nelle due lingue rispondono, senza errori né avvisi PHP.
 - Percorso di prenotazione completo: ricerca, camere libere, scelta, dati,
   richiesta, conferma; Post/Redirect/Get, gettone CSRF, date non valide,
-  soggiorno minimo e massimo, nessuna disponibilità con proposta delle date
-  libere più vicine, gruppo troppo numeroso per ogni camera.
+  soggiorno minimo e massimo, nessuna disponibilità, gruppo troppo numeroso
+  per ogni camera.
 - Modulo contatti: convalida, trappola per i robot, gettone, e-mail scritta
   nel registro con `Reply-To` all'ospite.
 - Gerarchia dei titoli senza salti in tutte le pagine, un solo `h1`, nessun

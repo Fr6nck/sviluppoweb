@@ -297,7 +297,6 @@ final class App
         // aggiungerebbe qui, come classe che implementa BookingProviderInterface.
         return $this->services['booking.provider'] ??= new CalendarioSito(
             $this->rooms(),
-            $this->minNights(),
             (string) $this->config('booking.currency'),
             fn (): array => $this->nottiOccupate(),
         );

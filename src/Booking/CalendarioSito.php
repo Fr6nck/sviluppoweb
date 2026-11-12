@@ -22,14 +22,16 @@ use ArcoDelVento\Repository\RoomRepositoryInterface;
  * persone mostrava una o due camere su quattro. Non c'è più: ogni valore di
  * BOOKING_PROVIDER usa questo calendario.
  *
+ * Quando nessuna camera è libera non propone altre date: la risposta dice
+ * solo che quelle date sono piene. Proporne altre vorrebbe dire scorrere il
+ * calendario per conto del cliente, e se ne potrebbe dedurre quali notti sono
+ * occupate.
+ *
  * Per un gestionale vero: una classe che implementi BookingProviderInterface,
  * scelta in App::bookingProvider(). Nient'altro nel sito cambia.
  */
 final class CalendarioSito implements BookingProviderInterface
 {
-    /** Quanti giorni in avanti cercare quando le date chieste sono piene. */
-    private const ALTERNATIVE_WINDOW_DAYS = 60;
-
     /** @var list<array{ref: string, arrivo: string, partenza: string}>|null */
     private ?array $vendute = null;
 
@@ -40,7 +42,6 @@ final class CalendarioSito implements BookingProviderInterface
      */
     public function __construct(
         private readonly RoomRepositoryInterface $rooms,
-        private readonly int $minNights = 2,
         private readonly string $currency = 'EUR',
         private readonly ?\Closure $occupate = null,
     ) {
@@ -59,12 +60,7 @@ final class CalendarioSito implements BookingProviderInterface
             $offers[]   = $this->makeOffer($room, $criteria, $free);
         }
 
-        $alternatives = [];
-        if (!array_filter($offers, static fn (RoomOffer $o): bool => $o->available)) {
-            $alternatives = $this->findAlternatives($criteria);
-        }
-
-        return new AvailabilityResult($criteria, $offers, $alternatives);
+        return new AvailabilityResult($criteria, $offers);
     }
 
     public function quote(SearchCriteria $criteria, string $roomRef): ?RoomOffer
@@ -143,35 +139,5 @@ final class CalendarioSito implements BookingProviderInterface
         }
 
         return true;
-    }
-
-    /**
-     * Le date libere più vicine, cercate in avanti giorno per giorno.
-     *
-     * @return list<array{arrival:string,departure:string}>
-     */
-    private function findAlternatives(SearchCriteria $criteria, int $limit = 3): array
-    {
-        $nights = max($this->minNights, $criteria->nights());
-        $found  = [];
-
-        for ($offset = 1; $offset <= self::ALTERNATIVE_WINDOW_DAYS && count($found) < $limit; $offset++) {
-            $arrival   = $criteria->arrival->modify("+{$offset} day");
-            $departure = $arrival->modify("+{$nights} day");
-            $candidate = new SearchCriteria($arrival, $departure, $criteria->guests);
-
-            foreach ($this->rooms->forGuests($criteria->guests) as $room) {
-                if ($this->isFree((string) $room['ref'], $candidate)) {
-                    $found[] = [
-                        'arrival'   => $candidate->arrivalIso(),
-                        'departure' => $candidate->departureIso(),
-                    ];
-                    // Una proposta per data d'arrivo: tre righe, non trenta.
-                    continue 2;
-                }
-            }
-        }
-
-        return $found;
     }
 }

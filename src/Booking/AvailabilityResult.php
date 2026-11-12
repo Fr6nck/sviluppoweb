@@ -5,22 +5,18 @@ declare(strict_types=1);
 namespace ArcoDelVento\Booking;
 
 /**
- * Il risultato di una ricerca: le camere con il loro esito e, se non ce n'è
- * nessuna libera, le date libere più vicine.
- *
- * Il design system è esplicito su questo: «Quando non c'è disponibilità, la
- * risposta non è un vuoto: mostra le date libere più vicine.»
+ * Il risultato di una ricerca: le camere con il loro esito. Le date libere
+ * vicine non si propongono: al cliente si dice solo quali camere sono libere
+ * nel periodo che ha chiesto.
  */
 final class AvailabilityResult
 {
     /**
      * @param list<RoomOffer> $offers
-     * @param list<array{arrival:string,departure:string}> $alternatives
      */
     public function __construct(
         public readonly SearchCriteria $criteria,
         public readonly array $offers,
-        public readonly array $alternatives = [],
     ) {
     }
 
