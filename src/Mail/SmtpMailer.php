@@ -13,6 +13,12 @@ namespace ArcoDelVento\Mail;
  * quelle della casella creata nell'hPanel, host `smtp.hostinger.com`, porta
  * 587 con STARTTLS oppure 465 con TLS implicito.
  *
+ * La cifratura segue la porta, quando la porta la decide: la 465 è cifrata
+ * dall'inizio (ssl), la 587 si cifra dopo il saluto (tls, STARTTLS). Con la
+ * porta 465 e «tls» il sito aspetterebbe un saluto in chiaro che non arriva
+ * mai; con la 587 e «ssl» una cifratura che il server non comincia. Per le
+ * altre porte vale MAIL_SMTP_ENCRYPTION. cifratura() dice quale si usa.
+ *
  * L'utente per l'accesso è MAIL_SMTP_USER; se è vuoto ma la password c'è,
  * si usa il mittente: su Hostinger l'utente è l'indirizzo della casella, lo
  * stesso che spedisce. Senza utente e senza password non si fa l'accesso, e
@@ -50,7 +56,7 @@ final class SmtpMailer implements MailerInterface
         }
 
         $port      = (int) ($this->config['port'] ?? 587);
-        $encrypted = strtolower((string) ($this->config['encryption'] ?? 'tls'));
+        $encrypted = self::cifratura($port, (string) ($this->config['encryption'] ?? 'tls'));
         $endpoint  = ($encrypted === 'ssl' ? 'ssl://' : '') . $host . ':' . $port;
         $mittente  = $this->sanitize($message->fromAddress);
         $password  = (string) ($this->config['password'] ?? '');
@@ -70,7 +76,8 @@ final class SmtpMailer implements MailerInterface
         // Ogni passo dice che cosa significa, se il server risponde di no.
         $passo = '';
         try {
-            $passo = "Il server di posta {$host} non ha salutato";
+            $passo = "Il server di posta {$host} non ha salutato sulla porta {$port}"
+                   . ($encrypted === 'ssl' ? ' (connessione cifrata, ssl)' : '') . '. Su Hostinger: porta 465 oppure 587';
             $this->expect($socket, 220);
             $passo = "Il server di posta {$host} non accetta la presentazione (EHLO)";
             $this->command($socket, 'EHLO ' . $this->helo(), 250);
@@ -126,6 +133,23 @@ final class SmtpMailer implements MailerInterface
     public function isPretend(): bool
     {
         return false;
+    }
+
+    /**
+     * La cifratura che si usa davvero: «ssl» (dall'inizio), «tls» (STARTTLS)
+     * o nessuna. La porta 465 è sempre ssl, la 587 non è mai ssl.
+     */
+    public static function cifratura(int $porta, string $scritta): string
+    {
+        $scritta = strtolower(trim($scritta));
+        if ($porta === 465) {
+            return 'ssl';
+        }
+        if ($porta === 587 && $scritta === 'ssl') {
+            return 'tls';
+        }
+
+        return in_array($scritta, ['ssl', 'tls'], true) ? $scritta : '';
     }
 
     public function ultimoErrore(): ?string

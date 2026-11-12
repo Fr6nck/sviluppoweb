@@ -238,7 +238,7 @@ richieste e le prenotazioni. La password non compare mai. I casi più comuni:
 | non accetta l'accesso con l'utente…, risposta «535…» | in hPanel → E-mail, controlla che la casella esista e reimpostane la password; scrivi la stessa in `MAIL_SMTP_PASSWORD`, da Configurazione |
 | non accetta … come mittente senza accesso, risposta «530 Authentication required» | in Configurazione mancano «Utente SMTP» e «Password della casella»: scrivi l'indirizzo della casella e la sua password (con l'utente vuoto il sito usa il mittente, ma la password serve) |
 | non accetta … come mittente | `MAIL_FROM_ADDRESS` e `MAIL_SMTP_USER` devono essere lo stesso indirizzo |
-| il server di posta … non risponde | `MAIL_SMTP_HOST=smtp.hostinger.com`, e porta 465 con `ssl` oppure 587 con `tls` |
+| il server di posta … non risponde, oppure non ha salutato | `MAIL_SMTP_HOST=smtp.hostinger.com`, porta 465 oppure 587. Per queste due porte la cifratura la sceglie il sito (465 `ssl`, 587 `tls`), qualunque cosa ci sia in «Cifratura»: la riga «Spedisce» dice quale usa |
 | scritto in storage/mail, non spedito | `MAIL_TRANSPORT` è ancora `log`, il modo della copia di prova: mettilo a `smtp` |
 
 La casella deve essere su Hostinger: se la posta del dominio sta da un altro

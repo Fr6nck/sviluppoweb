@@ -37,16 +37,20 @@ if ($trasporto === 'smtp') {
     if (!$smtpPassword && $smtpUtente !== '') {
         $storto[] = 'MAIL_SMTP_PASSWORD è vuota: serve la password della casella.';
     }
-    if ($smtpPorta === 465 && $smtpCifratura !== 'ssl') {
-        $storto[] = 'Con la porta 465 serve MAIL_SMTP_ENCRYPTION=ssl.';
-    } elseif ($smtpPorta === 587 && $smtpCifratura === 'ssl') {
-        $storto[] = 'Con la porta 587 serve MAIL_SMTP_ENCRYPTION=tls.';
+    // Porta e cifratura: per la 465 e la 587 la sceglie il sito (SmtpMailer::cifratura), lo dice la riga «Spedisce».
+    if (\ArcoDelVento\Mail\SmtpMailer::cifratura($smtpPorta, $smtpCifratura) === '' && $smtpHost !== '' && !in_array($smtpHost, ['127.0.0.1', 'localhost'], true)) {
+        $storto[] = 'La posta parte senza cifratura: la password viaggerebbe in chiaro. Usa la porta 465 oppure la 587.';
     }
 }
 // Con l'utente vuoto e la password scritta, per l'accesso si usa il mittente (SmtpMailer).
 $accesso = $smtpUtente !== '' ? $smtpUtente : ($smtpPassword ? $mittente : '');
 $comeSpedisce = match ($trasporto) {
-    'smtp'  => 'SMTP' . ($smtpHost !== '' ? ' su ' . $smtpHost : '') . ($accesso !== ''
+    'smtp'  => 'SMTP' . ($smtpHost !== '' ? ' su ' . $smtpHost : '')
+        . ', porta ' . $smtpPorta . match (\ArcoDelVento\Mail\SmtpMailer::cifratura($smtpPorta, $smtpCifratura)) {
+            'ssl' => ' cifrata dall\'inizio (ssl)', 'tls' => ' cifrata dopo il saluto (tls)', default => ' senza cifratura' }
+        . (\ArcoDelVento\Mail\SmtpMailer::cifratura($smtpPorta, $smtpCifratura) !== $smtpCifratura && in_array($smtpPorta, [465, 587], true)
+            ? ' — scelta dalla porta, anche se in Configurazione c\'è «' . ($smtpCifratura !== '' ? $smtpCifratura : 'nessuna') . '»' : '')
+        . ($accesso !== ''
         ? ', con l\'accesso della casella ' . $accesso . ($smtpUtente === '' ? ' (l\'utente SMTP è vuoto: si usa il mittente)' : '')
         : ', senza accesso: utente e password della casella sono vuoti'),
     'mail'  => 'con la funzione mail() di PHP, senza casella autenticata',
