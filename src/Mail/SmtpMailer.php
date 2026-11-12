@@ -13,6 +13,11 @@ namespace ArcoDelVento\Mail;
  * quelle della casella creata nell'hPanel, host `smtp.hostinger.com`, porta
  * 587 con STARTTLS oppure 465 con TLS implicito.
  *
+ * L'utente per l'accesso è MAIL_SMTP_USER; se è vuoto ma la password c'è,
+ * si usa il mittente: su Hostinger l'utente è l'indirizzo della casella, lo
+ * stesso che spedisce. Senza utente e senza password non si fa l'accesso, e
+ * Hostinger rifiuta con «530 Authentication required».
+ *
  * Quando un messaggio non parte, ultimoErrore() dice a che punto si è
  * fermato e che cosa ha risposto il server, e la stessa riga va nel registro
  * degli errori di PHP: senza, «non è partito» non dice se è la password,
@@ -47,8 +52,12 @@ final class SmtpMailer implements MailerInterface
         $port      = (int) ($this->config['port'] ?? 587);
         $encrypted = strtolower((string) ($this->config['encryption'] ?? 'tls'));
         $endpoint  = ($encrypted === 'ssl' ? 'ssl://' : '') . $host . ':' . $port;
-        $user      = (string) ($this->config['user'] ?? '');
         $mittente  = $this->sanitize($message->fromAddress);
+        $password  = (string) ($this->config['password'] ?? '');
+        $user      = trim((string) ($this->config['user'] ?? ''));
+        if ($user === '' && $password !== '') {
+            $user = $mittente;
+        }
 
         $socket = @stream_socket_client($endpoint, $errno, $errstr, 15);
         if (!$socket) {
@@ -82,15 +91,17 @@ final class SmtpMailer implements MailerInterface
                        . 'devono essere l\'indirizzo e la password della casella, come in hPanel → Email';
                 $this->command($socket, 'AUTH LOGIN', 334);
                 $this->command($socket, base64_encode($user), 334);
-                $this->command($socket, base64_encode((string) ($this->config['password'] ?? '')), 235);
+                $this->command($socket, base64_encode($password), 235);
             }
 
-            $passo = "Il server di posta non accetta {$mittente} come mittente. MAIL_FROM_ADDRESS deve essere la stessa casella di MAIL_SMTP_USER"
-                   . ($user === '' ? ', e MAIL_SMTP_USER è vuoto' : " ({$user})");
+            $passo = $user === ''
+                ? "Il server di posta non accetta {$mittente} come mittente senza accesso: MAIL_SMTP_USER e MAIL_SMTP_PASSWORD sono vuoti. "
+                  . 'Scrivi in Configurazione l\'utente (l\'indirizzo della casella) e la password della casella'
+                : "Il server di posta non accetta {$mittente} come mittente. MAIL_FROM_ADDRESS deve essere la stessa casella di MAIL_SMTP_USER ({$user})";
             $this->command($socket, 'MAIL FROM:<' . $mittente . '>', 250);
             foreach ($destinatari as $destinatario) {
                 $passo = "Il server di posta rifiuta il destinatario {$destinatario}"
-                       . ($user === '' ? ': senza MAIL_SMTP_USER non si spedisce fuori dal dominio' : '');
+                       . ($user === '' ? ': senza utente e password non si spedisce fuori dal dominio' : '');
                 // 250 accettato, 251 inoltrato: vanno bene tutti e due.
                 $this->command($socket, 'RCPT TO:<' . $destinatario . '>', 250, 251);
             }

@@ -27,13 +27,14 @@ if ($trasporto === 'smtp') {
     if ($smtpHost === '') {
         $storto[] = 'MAIL_SMTP_HOST è vuoto: manca il server di posta (su Hostinger: smtp.hostinger.com).';
     }
-    if ($smtpUtente === '') {
-        $storto[] = 'MAIL_SMTP_USER è vuoto: senza accesso il server di posta non spedisce fuori dal dominio.';
-    } elseif (strcasecmp($smtpUtente, $mittente) !== 0) {
+    if ($smtpUtente === '' && !$smtpPassword) {
+        $storto[] = 'Utente SMTP (MAIL_SMTP_USER) e password della casella (MAIL_SMTP_PASSWORD) sono vuoti: '
+                  . 'senza accesso Hostinger non spedisce («530 Authentication required»). Scrivi l\'indirizzo della casella e la sua password.';
+    } elseif ($smtpUtente !== '' && strcasecmp($smtpUtente, $mittente) !== 0) {
         $storto[] = 'Il mittente (' . $mittente . ') non è la casella con cui il sito accede (' . $smtpUtente . '): '
                   . 'Hostinger lo rifiuta. Scrivi lo stesso indirizzo in MAIL_FROM_ADDRESS e MAIL_SMTP_USER.';
     }
-    if (!$smtpPassword) {
+    if (!$smtpPassword && $smtpUtente !== '') {
         $storto[] = 'MAIL_SMTP_PASSWORD è vuota: serve la password della casella.';
     }
     if ($smtpPorta === 465 && $smtpCifratura !== 'ssl') {
@@ -42,8 +43,12 @@ if ($trasporto === 'smtp') {
         $storto[] = 'Con la porta 587 serve MAIL_SMTP_ENCRYPTION=tls.';
     }
 }
+// Con l'utente vuoto e la password scritta, per l'accesso si usa il mittente (SmtpMailer).
+$accesso = $smtpUtente !== '' ? $smtpUtente : ($smtpPassword ? $mittente : '');
 $comeSpedisce = match ($trasporto) {
-    'smtp'  => 'SMTP, dalla casella ' . ($smtpUtente !== '' ? $smtpUtente : $mittente) . ($smtpHost !== '' ? ' su ' . $smtpHost : ''),
+    'smtp'  => 'SMTP' . ($smtpHost !== '' ? ' su ' . $smtpHost : '') . ($accesso !== ''
+        ? ', con l\'accesso della casella ' . $accesso . ($smtpUtente === '' ? ' (l\'utente SMTP è vuoto: si usa il mittente)' : '')
+        : ', senza accesso: utente e password della casella sono vuoti'),
     'mail'  => 'con la funzione mail() di PHP, senza casella autenticata',
     default => 'non spedisce: i messaggi restano scritti in storage/mail/ (è il modo della copia di prova)',
 };
