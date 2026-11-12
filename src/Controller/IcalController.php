@@ -27,6 +27,27 @@ final class IcalController
     {
     }
 
+    /**
+     * Il soggiorno di un ospite, da aggiungere al suo calendario: il link è
+     * nell'e-mail di conferma. Solo per una prenotazione pagata o confermata,
+     * e con il codice giusto; altrimenti una pagina che non esiste.
+     */
+    public function ospite(string $riferimento, string $codice): Response
+    {
+        $calendario = $this->app->calendarioOspite();
+        $voce = $calendario->codiceGiusto($riferimento, $codice) ? $this->app->inbox()->find($riferimento) : null;
+        if ($voce === null || !\ArcoDelVento\Booking\CalendarioOspite::daDare($voce)) {
+            return Response::html('Non trovato', 404);
+        }
+        $lingua = in_array($voce['dati']['lingua'] ?? '', (array) $this->app->config('i18n.available'), true) ? (string) $voce['dati']['lingua'] : 'it';
+
+        return Response::text($calendario->ics($voce, $lingua), 'text/calendar; charset=UTF-8')
+            ->withHeader('Content-Disposition', 'inline; filename="arco-del-vento-' . strtolower($riferimento) . '.ics"')
+            ->withHeader('Cache-Control', 'no-store')
+            ->withHeader('X-LiteSpeed-Cache-Control', 'no-cache')
+            ->withHeader('X-Robots-Tag', 'noindex');
+    }
+
     public function esporta(string $ref, string $gettone): Response
     {
         $camera = $this->app->rooms()->findByRef($ref);

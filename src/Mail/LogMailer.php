@@ -44,13 +44,11 @@ final class LogMailer implements MailerInterface
             'To: ' . implode(', ', $message->recipients()),
             $message->replyTo !== '' ? 'Reply-To: ' . $message->replyTo : null,
             'Subject: ' . $this->encodeHeader($message->subject),
-            'MIME-Version: 1.0',
-            'Content-Type: text/plain; charset=UTF-8',
-            'Content-Transfer-Encoding: 8bit',
             'X-Arco-Del-Vento: prototipo, messaggio non spedito',
         ]);
+        $mime = Mime::componi($message);
 
-        $eml = implode("\r\n", $headers) . "\r\n\r\n" . $message->body . "\r\n";
+        $eml = implode("\r\n", [...$headers, ...$mime['intestazioni']]) . "\r\n\r\n" . $mime['corpo'] . "\r\n";
 
         if (file_put_contents($file, $eml) === false) {
             $this->errore = 'Non si può scrivere nella cartella storage/mail: controlla i permessi.';

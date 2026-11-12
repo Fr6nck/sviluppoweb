@@ -127,6 +127,20 @@ $prova = !empty($pagamento['prova']);
     <?php endforeach; ?>
   </select>
   <button type="submit" class="adm-bottone">Aggiorna</button>
+  <?php /* Confermando, all'ospite parte la conferma con il calendario: AdminController::confermaAllOspite. */
+  $puoConfermare = ($voce['tipo'] ?? '') === 'prenotazione' && ($voce['stato'] ?? '') !== 'confermata'
+      && (($voce['dati']['pagamento']['stato'] ?? '') !== 'pagato') && (string) ($voce['dati']['email'] ?? '') !== ''; ?>
+  <?php if ($puoConfermare): ?>
+    <div class="adm-campo adm-campo--spunta adm-richiesta-avvisa">
+      <input type="hidden" name="avvisa" value="0">
+      <input type="checkbox" id="avvisa" name="avvisa" value="1" checked aria-describedby="avvisa-aiuto">
+      <label for="avvisa">Confermando, manda all'ospite l'e-mail di conferma</label>
+      <p class="adm-aiuto" id="avvisa-aiuto">Con le date da aggiungere al suo calendario (Google, Apple, Outlook). Parte quando scegli «Confermata» e premi «Aggiorna».</p>
+    </div>
+  <?php endif; ?>
+  <?php if (!empty($voce['dati']['conferma_ospite'])): ?>
+    <p class="adm-nota adm-richiesta-avvisa" data-conferma-ospite>Conferma con il calendario mandata all'ospite il <?= e(dataOra((string) $voce['dati']['conferma_ospite'])) ?>.</p>
+  <?php endif; ?>
 </form>
 
 <details class="adm-pericolo">

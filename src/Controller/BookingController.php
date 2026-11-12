@@ -560,40 +560,16 @@ final class BookingController
     }
 
     /** Avvisa la struttura. Chi spedisce davvero lo decide MAIL_TRANSPORT. */
+    /**
+     * Le due e-mail di una richiesta: a chi riceve le richieste, e all'ospite
+     * che la richiesta è arrivata (non è ancora una prenotazione: la conferma,
+     * con il soggiorno da aggiungere al calendario, parte quando Daniele la
+     * conferma nel pannello).
+     */
     private function notify(string $reference, BookingRequest $booking, RoomOffer $offer): void
     {
-        $locale = $booking->locale;
-        $room   = (string) ($offer->room['name'][$locale] ?? $offer->ref());
-
-        $body = implode("\n", [
-            'Nuova richiesta di prenotazione dal sito.',
-            '',
-            'Riferimento: ' . $reference,
-            'Camera:      ' . $room . ' (' . $offer->ref() . ')',
-            'Arrivo:      ' . $booking->criteria->arrivalIso(),
-            'Partenza:    ' . $booking->criteria->departureIso(),
-            'Notti:       ' . $offer->nights,
-            'Ospiti:      ' . $booking->criteria->guests,
-            'Totale:      ' . number_format($offer->total, 2, ',', '.') . ' ' . $offer->currency
-                            . ($offer->rateIsDemo ? '  (tariffa dimostrativa)' : ''),
-            '',
-            'Ospite:      ' . $booking->guestName(),
-            'E-mail:      ' . $booking->email,
-            'Telefono:    ' . ($booking->phone !== '' ? $booking->phone : '—'),
-            'Paese:       ' . ($booking->country !== '' ? $booking->country : '—'),
-            'Lingua:      ' . $locale,
-            '',
-            'Note:',
-            $booking->notes !== '' ? $booking->notes : '—',
-        ]);
-
-        $this->app->mailer()->send(new MailMessage(
-            to:          $this->app->destinatari(),
-            subject:     sprintf('[Arco del Vento] Richiesta %s — %s', $reference, $room),
-            body:        $body,
-            fromAddress: (string) $this->app->config('mail.from.address'),
-            fromName:    (string) $this->app->config('mail.from.name'),
-            replyTo:     $booking->email,
-        ));
+        $messaggi = $this->app->messaggi();
+        $this->app->mailer()->send($messaggi->richiestaAllaStruttura($reference, $booking, $offer));
+        $this->app->mailer()->send($messaggi->ricevutaAllOspite($reference, $booking, $offer));
     }
 }

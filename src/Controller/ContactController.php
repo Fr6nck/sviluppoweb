@@ -81,42 +81,26 @@ final class ContactController
         $chiave   = $v->value('oggetto', 'info');
         $oggetto  = (string) ($soggetti[$chiave] ?? $chiave);
 
-        $body = implode("\n", [
-            'Nuovo messaggio dal modulo contatti del sito.',
-            '',
-            'Oggetto:  ' . $oggetto,
-            'Nome:     ' . $v->value('nome'),
-            'E-mail:   ' . $v->value('email'),
-            'Telefono: ' . ($v->value('telefono') !== '' ? $v->value('telefono') : '—'),
-            'Lingua:   ' . $this->app->locale(),
-            '',
-            'Messaggio:',
-            $v->value('messaggio'),
-        ]);
+        $messaggio = [
+            'oggetto'   => $oggetto,
+            'nome'      => $v->value('nome'),
+            'email'     => $v->value('email'),
+            'telefono'  => $v->value('telefono'),
+            'messaggio' => $v->value('messaggio'),
+            'lingua'    => $this->app->locale(),
+        ];
 
-        $this->app->mailer()->send(new MailMessage(
-            to:          $this->app->destinatari(),
-            subject:     '[Arco del Vento] ' . $oggetto . ' — ' . $v->value('nome'),
-            body:        $body,
-            fromAddress: (string) $this->app->config('mail.from.address'),
-            fromName:    (string) $this->app->config('mail.from.name'),
-            // Rispondere al messaggio scrive all'ospite, non a sé stessi.
-            replyTo:     $v->value('email'),
-        ));
-
-        // Anche nell'area riservata; se non riesce, il messaggio è comunque partito.
+        // Prima nell'area riservata, così l'e-mail porta dritto al messaggio;
+        // se non riesce, l'e-mail parte lo stesso.
+        $id = null;
         try {
-            $this->app->inbox()->add('messaggio', [
-                'oggetto'   => $oggetto,
-                'nome'      => $v->value('nome'),
-                'email'     => $v->value('email'),
-                'telefono'  => $v->value('telefono'),
-                'messaggio' => $v->value('messaggio'),
-                'lingua'    => $this->app->locale(),
-            ]);
+            $id = $this->app->inbox()->add('messaggio', $messaggio);
         } catch (\Throwable $e) {
             error_log('Messaggio non salvato nell\'area riservata: ' . $e->getMessage());
         }
+
+        // Rispondere al messaggio scrive all'ospite, non a sé stessi (Mail\Messaggi).
+        $this->app->mailer()->send($this->app->messaggi()->contattoAllaStruttura($messaggio, $id));
     }
 
     /** @param array<string,mixed> $data */

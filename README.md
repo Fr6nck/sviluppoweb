@@ -322,12 +322,17 @@ notti lette, tenendo i link; `riprendi()` lo toglie.
 ### Il Calendario e i blocchi manuali
 
 **Calendario** (`/admin/calendario`, tutti e due gli account) mostra un mese
-per volta: una riga per camera, una casella per notte. Ogni notte ha un solo
-stato, con la sua lettera, il suo colore e la scritta per chi usa un lettore di
-schermo: libera, prenotazione diretta (D), prenotazione Booking.com (B), blocco
-manuale (M, a righe). Sotto la tabella, per ogni camera, l'elenco dei periodi
-del mese con le date; le dirette portano alla richiesta. Lo costruisce
-`src/Admin/Calendario.php` da `App::nottiOccupate()`.
+per volta. In alto le frecce, la legenda e «Blocca date». Poi, camera per
+camera, una scheda con il mese a sette colonne (da lunedì, come un calendario da
+muro), i periodi occupati con le date e lo stato del calendario di Booking.com;
+sugli schermi larghi (da 1181 px) sopra le schede c'è anche la tabella di tutte
+le camere insieme, una riga per camera e una casella per notte. Sul telefono la
+tabella non c'è: 31 colonne non ci stanno. Ogni notte ha un solo stato, con la
+sua lettera, il suo colore e la scritta per chi usa un lettore di schermo:
+libera, prenotazione diretta (D), prenotazione Booking.com (B), blocco manuale
+(M, a righe). Le dirette portano alla richiesta. Lo costruisce
+`src/Admin/Calendario.php` da `App::nottiOccupate()`; in fondo alla pagina il
+modulo per bloccare e l'elenco dei blocchi.
 
 **Blocca una camera.** Camera, «Dal», «Al» (il giorno di partenza) e una nota
 facoltativa: il blocco vale da subito, e la camera non si prenota più dal sito
@@ -406,8 +411,44 @@ e non un velo dipinto: senza il codice il server non manda niente del sito.
 ## E-mail
 
 ```
-modulo  →  controller  →  MailerInterface  →  LogMailer | NativeMailer | SmtpMailer
+modulo  →  controller  →  Mail\Messaggi  →  MailerInterface  →  LogMailer | NativeMailer | SmtpMailer
+                          (Contenuto: testo + HTML)        (Mime: testo, HTML, allegati)
 ```
+
+**Che cosa parte, e a chi.** Tutte le e-mail le scrive `src/Mail/Messaggi.php`;
+chi decide quando partono resta dov'era.
+
+| E-mail | A chi | Quando |
+| --- | --- | --- |
+| Nuova richiesta | chi riceve (Ricezione e-mail) | una richiesta, con il pagamento online spento |
+| Richiesta ricevuta | l'ospite | la stessa richiesta: non è ancora una prenotazione, la conferma arriva dopo |
+| Prenotazione confermata, con il calendario | l'ospite | Daniele mette la richiesta su «Confermata» con la spunta «manda all'ospite la conferma» (attiva di partenza) |
+| Prenotazione pagata | chi riceve | SumUp conferma il pagamento (anche «da controllare») |
+| Prenotazione confermata, con il calendario | l'ospite | SumUp conferma il pagamento, con l'importo giusto |
+| Nuovo messaggio | chi riceve | il modulo contatti |
+| Messaggio di prova | chi riceve | il pulsante in Ricezione e-mail |
+
+**La grafica.** Ogni e-mail ha il testo semplice e l'HTML con la grafica del
+sito (`views/mail/messaggio.php`): logotipo in PNG
+(`public/assets/img/logo/logotipo-email.png`, l'SVG nelle e-mail non si vede),
+crema e avorio, mattone per pulsanti e occhiello, Prata e Sora dove il programma
+di posta carica i caratteri, Georgia e i caratteri di sistema dove no. Tabelle e
+stili scritti sugli elementi, come vogliono Gmail e Outlook; sul telefono le
+righe dei dati e i pulsanti vanno a capo. `src/Mail/Contenuto.php` descrive
+un'e-mail a blocchi (avviso, paragrafo, dati, pulsanti, nota) e ne fa le due
+versioni; `src/Mail/Mime.php` le mette insieme, con gli allegati.
+
+**Il calendario dell'ospite** (`src/Booking/CalendarioOspite.php`). La conferma
+ha due pulsanti: Google Calendar (un link con l'evento già scritto) e «Apple
+Calendar · Outlook» (il file `.ics` sul sito, `/soggiorno/<riferimento>/<codice>.ics`),
+e lo stesso `.ics` allegato. L'evento va dal check-in del giorno di arrivo al
+check-out del giorno di partenza, in ora italiana; dentro ci sono camera,
+riferimento, indirizzo e telefono, mai il nome dell'ospite. Il codice è
+un'impronta del riferimento con un segreto del server
+(`storage/data/calendario-ospiti.json`, nasce da solo): il file si legge solo
+con il codice giusto, e solo per prenotazioni pagate o confermate; rifiutata o
+archiviata, 404. Come il calendario per Booking, passa prima della porta del
+sito in anteprima.
 
 Si sceglie con `MAIL_TRANSPORT` nel `.env`:
 

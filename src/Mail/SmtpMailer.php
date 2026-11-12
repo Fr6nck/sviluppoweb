@@ -180,16 +180,13 @@ final class SmtpMailer implements MailerInterface
             'To: ' . implode(', ', $message->recipients()),
             $message->replyTo !== '' ? 'Reply-To: ' . $this->sanitize($message->replyTo) : null,
             'Subject: ' . $this->encodeHeader($message->subject),
-            'MIME-Version: 1.0',
-            'Content-Type: text/plain; charset=UTF-8',
-            'Content-Transfer-Encoding: 8bit',
         ]);
+        $mime = Mime::componi($message);
 
-        $body = str_replace(["\r\n", "\r"], "\n", $message->body);
         // Un punto a inizio riga va raddoppiato, altrimenti chiude il messaggio.
-        $body = preg_replace('/^\./m', '..', $body) ?? $body;
+        $body = preg_replace('/^\./m', '..', $mime['corpo']) ?? $mime['corpo'];
 
-        return implode("\r\n", $headers) . "\r\n\r\n" . str_replace("\n", "\r\n", $body);
+        return implode("\r\n", [...$headers, ...$mime['intestazioni']]) . "\r\n\r\n" . $body;
     }
 
     /** @param resource $socket */

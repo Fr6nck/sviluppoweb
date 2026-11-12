@@ -436,6 +436,18 @@ final class App
         return $scelti !== [] ? implode(', ', $scelti) : (string) $this->config('mail.to');
     }
 
+    /** Le e-mail del sito, con la grafica: Mail\Messaggi. */
+    public function messaggi(): \ArcoDelVento\Mail\Messaggi
+    {
+        return $this->services['messaggi'] ??= new \ArcoDelVento\Mail\Messaggi($this);
+    }
+
+    /** Il soggiorno di un ospite da mettere nel suo calendario. */
+    public function calendarioOspite(): \ArcoDelVento\Booking\CalendarioOspite
+    {
+        return $this->services['calendario-ospite'] ??= new \ArcoDelVento\Booking\CalendarioOspite($this, $this->store());
+    }
+
     public function mailer(): MailerInterface
     {
         return $this->services['mailer'] ??= match ((string) $this->config('mail.transport')) {

@@ -47,6 +47,10 @@ final class Kernel
         if (preg_match('#^/ical/([a-z0-9-]+)/([a-f0-9]{32})\.ics$#', $request->path, $m) === 1) {
             return (new IcalController($this->app))->esporta($m[1], $m[2]);
         }
+        // Il soggiorno di un ospite, per il suo calendario: il link è nell'e-mail di conferma.
+        if (preg_match('#^/soggiorno/([A-Z0-9-]{6,40})/([a-f0-9]{32})\.ics$#', $request->path, $m) === 1) {
+            return (new IcalController($this->app))->ospite($m[1], $m[2]);
+        }
 
         // L'area riservata: fuori dalle lingue del sito, sempre in italiano.
         if ($request->path === '/admin' || str_starts_with($request->path, '/admin/')) {

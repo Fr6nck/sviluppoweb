@@ -854,8 +854,9 @@ final class AdminController
 
                 return Response::redirect($this->url('richieste'), 303);
             }
-            $inbox->setStatus($id, (string) $this->in($request, 'stato', ''));
-            $this->flash('ok', 'Stato aggiornato.');
+            $nuovo = (string) $this->in($request, 'stato', '');
+            $inbox->setStatus($id, $nuovo);
+            $this->flash('ok', 'Stato aggiornato.' . $this->confermaAllOspite($id, $voce, $nuovo, $this->in($request, 'avvisa') === '1'));
 
             return Response::redirect($this->url('richieste/' . rawurlencode($id)), 303);
         }
@@ -870,6 +871,39 @@ final class AdminController
             'titolo' => 'Richiesta ' . $id, 'voce' => $voce, 'pagamentoAttivo' => $this->app->pagamentoAttivo(),
             'pagamentoProva' => $this->app->pagamentoInProva(),
         ]));
+    }
+
+    /**
+     * Daniele conferma una richiesta: all'ospite parte la conferma, con il
+     * soggiorno da aggiungere al calendario. Solo per una prenotazione che
+     * diventa confermata adesso, non pagata online (quella la conferma l'ha
+     * già avuta), e se la spunta «Manda all'ospite la conferma» è rimasta.
+     * Restituisce la frase da aggiungere all'avviso.
+     *
+     * @param array<string,mixed> $prima la richiesta com'era prima del cambio
+     */
+    private function confermaAllOspite(string $id, array $prima, string $nuovo, bool $avvisa): string
+    {
+        if ($nuovo !== 'confermata' || ($prima['stato'] ?? '') === 'confermata' || ($prima['tipo'] ?? '') !== 'prenotazione'
+            || (($prima['dati']['pagamento']['stato'] ?? '') === 'pagato') || (string) ($prima['dati']['email'] ?? '') === '') {
+            return '';
+        }
+        if (!$avvisa) {
+            return ' All\'ospite non è partita nessuna e-mail, come hai scelto.';
+        }
+        $voce = $this->app->inbox()->find($id) ?? $prima;
+        $mailer = $this->app->mailer();
+        if (!$mailer->send($this->app->messaggi()->confermataAllOspite($voce))) {
+            return ' La conferma all\'ospite non è partita: ' . ($mailer->ultimoErrore() ?? 'controlla la posta in Ricezione e-mail.');
+        }
+        $this->app->inbox()->aggiorna($id, static function (array $v): array {
+            $v['dati']['conferma_ospite'] = date('c');
+
+            return $v;
+        });
+
+        return ' All\'ospite (' . $voce['dati']['email'] . ') è partita la conferma, con il soggiorno da aggiungere al calendario'
+            . ($mailer->isPretend() ? ' (scritta in storage/mail: la posta del sito è su «log»)' : '') . '.';
     }
 
     // =============================================================== struttura
@@ -1456,15 +1490,7 @@ final class AdminController
 
         $destinatari = $this->app->destinatari();
         $mailer = $this->app->mailer();
-        $partito = $mailer->send(new MailMessage(
-            to:          $destinatari,
-            subject:     '[Arco del Vento] Messaggio di prova',
-            body:        "Questo è un messaggio di prova mandato dall'area riservata del sito.\n\n"
-                       . "Se lo stai leggendo, le richieste di prenotazione e i messaggi del modulo contatti "
-                       . "arrivano a questo indirizzo.\n\nMandato il " . date('d/m/Y \a\l\l\e H:i') . '.',
-            fromAddress: (string) $this->app->config('mail.from.address'),
-            fromName:    (string) $this->app->config('mail.from.name'),
-        ));
+        $partito = $mailer->send($this->app->messaggi()->prova($destinatari));
 
         $elenco = implode(', ', MailMessage::indirizzi($destinatari)) ?: 'nessuno';
         if (!$partito) {

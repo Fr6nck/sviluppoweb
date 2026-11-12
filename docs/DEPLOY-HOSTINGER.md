@@ -246,10 +246,26 @@ provider, servono host, porta e credenziali di quel provider. Quello che si
 vede già storto prima di provare (mittente diverso dalla casella, password
 vuota, porta e cifratura che non vanno insieme) la pagina lo segnala da sola.
 
-Con il pagamento online acceso, le e-mail della prenotazione partono solo
-quando SumUp conferma il pagamento, sia alla struttura sia all'ospite. Senza
-pagamento online l'ospite non riceve e-mail: arriva solo la richiesta alla
-struttura.
+### Che cosa ricevono la struttura e l'ospite
+
+Tutte le e-mail hanno la grafica del sito (logo, colori, caratteri), e sotto la
+stessa e-mail in testo semplice per chi non vede la grafica.
+
+- **Senza pagamento online.** Alla richiesta partono due e-mail: la richiesta a
+  chi riceve, e all'ospite «Richiesta ricevuta» (la camera non è ancora
+  prenotata). Quando nell'area riservata metti la richiesta su **Confermata**,
+  con la spunta «Confermando, manda all'ospite l'e-mail di conferma» (attiva di
+  partenza), all'ospite arriva la conferma con il soggiorno da aggiungere al
+  calendario. La scheda della richiesta ricorda quando è partita.
+- **Con il pagamento online.** Le e-mail partono quando SumUp conferma il
+  pagamento: alla struttura «PAGATA», all'ospite la conferma con il calendario.
+  Se l'importo non torna, all'ospite non parte niente finché non controlli.
+
+**Il calendario dell'ospite.** Nella conferma ci sono due pulsanti, «Google
+Calendar» e «Apple Calendar · Outlook», e il file `.ics` allegato. L'evento va
+dal check-in del giorno di arrivo al check-out del giorno di partenza, con
+indirizzo e telefono della casa. Il link funziona anche con il sito chiuso dal
+codice d'accesso, e smette di funzionare se la richiesta diventa rifiutata.
 
 ### Cambiare o aggiungere l'indirizzo che riceve le richieste
 
@@ -786,7 +802,10 @@ Funziona anche con il sito chiuso dal codice d'accesso.
 ### Il Calendario e i blocchi manuali
 
 Area riservata → **Calendario** (lo vedono tutti e due gli account): un mese
-per volta, una riga per camera e una casella per notte.
+per volta. Per ogni camera c'è una scheda con il mese a sette colonne, da lunedì
+a domenica, come un calendario da muro; sul computer, sopra le schede, anche la
+tabella di tutte le camere insieme. Il modulo per bloccare una camera è in fondo,
+e il pulsante **Blocca date** in alto ci porta.
 
 | Casella | Che cosa |
 | --- | --- |
@@ -795,7 +814,7 @@ per volta, una riga per camera e una casella per notte.
 | **B**, blu | prenotazione arrivata da Booking.com |
 | **M**, a righe | blocco manuale |
 
-Sotto, per ogni camera, i periodi del mese con le date: «Booking.com dal
+Sotto il mese di ogni camera, i periodi con le date: «Booking.com dal
 07/12/2026 al 10/12/2026». Il giorno di partenza è libero: «dal 7 al 10» vuol
 dire le notti del 7, 8 e 9.
 

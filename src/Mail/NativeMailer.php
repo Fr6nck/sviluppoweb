@@ -26,10 +26,9 @@ final class NativeMailer implements MailerInterface
             'From: ' . $this->formatFrom($message),
             'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $dominio . '>',
             $message->replyTo !== '' ? 'Reply-To: ' . $this->sanitize($message->replyTo) : null,
-            'MIME-Version: 1.0',
-            'Content-Type: text/plain; charset=UTF-8',
-            'Content-Transfer-Encoding: 8bit',
         ]);
+        $mime = Mime::componi($message);
+        $headers = [...$headers, ...$mime['intestazioni']];
 
         $destinatari = $message->recipients();
         if ($destinatari === []) {
@@ -42,7 +41,9 @@ final class NativeMailer implements MailerInterface
             implode(', ', $destinatari),
             $this->encodeHeader($message->subject),
             // RFC 5322: le righe finiscono con CRLF e non superano i 998 ottetti.
-            wordwrap(str_replace(["\r\n", "\r"], "\n", $message->body), 900, "\r\n", true),
+            $message->html === '' && $message->allegati === []
+                ? wordwrap(str_replace(["\r\n", "\r"], "\n", $message->body), 900, "\r\n", true)
+                : $mime['corpo'],
             implode("\r\n", $headers)
         );
         if (!$partito) {
