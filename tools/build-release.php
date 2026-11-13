@@ -366,9 +366,12 @@ foreach ($daCopiare as $voce) {
         // marchio sale tutto: l'area Immagini ne mostra tutte le misure. E
         // sale la fotografia sfocata della porta del codice, che le pagine
         // controllate qui (a porta spenta) non chiedono. Le librerie di
-        // vendor/ salgono intere, con la loro licenza.
+        // vendor/ salgono intere, con la loro licenza. Gli script salgono tutti:
+        // admin-app.js (l'app sul telefono) lo chiedono solo le pagine dopo
+        // l'accesso, che qui non si rendono.
         if (!$tutto && str_starts_with($relativo, 'public/assets/') && !str_starts_with($relativo, 'public/assets/img/logo/')
-            && !str_starts_with($relativo, 'public/assets/img/sipario/') && !str_starts_with($relativo, 'public/assets/vendor/')) {
+            && !str_starts_with($relativo, 'public/assets/img/sipario/') && !str_starts_with($relativo, 'public/assets/vendor/')
+            && !str_starts_with($relativo, 'public/assets/js/')) {
             $chiave = substr($relativo, strlen('public'));
             if (!isset($riferite[$chiave])) {
                 $scartate[$chiave] = (int) $f->getSize();
