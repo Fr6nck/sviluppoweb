@@ -11,6 +11,8 @@
  * @var array      $mio         l'account di chi è dentro, senza l'hash
  * @var bool       $daCambiare  deve scegliere una password sua prima di fare altro
  * @var array|null $gestore     solo per il super admin: l'account del gestore ([] se non c'è)
+ * @var list<array<string,mixed>> $dispositivi i dispositivi con le notifiche di questo account
+ * @var bool       $pushPossibile se il server può spedire notifiche
  */
 use ArcoDelVento\Support\Csrf;
 
@@ -98,3 +100,60 @@ $quando = static fn (array $a, string $k): string => !empty($a[$k]) ? dataOra((s
 <?php endif; ?>
 
 <p class="adm-nota">Dopo due ore senza attività si esce da soli; dopo dodici ore in tutto, si rientra comunque.</p>
+
+<section class="adm-carta" id="notifiche" aria-labelledby="a-notifiche" tabindex="-1">
+  <div class="adm-carta__testa"><h2 id="a-notifiche">Notifiche sul telefono</h2></div>
+  <p class="adm-nota">Una notifica per ogni nuova richiesta di prenotazione, prenotazione pagata e messaggio dal sito, su ogni
+     dispositivo dove le attivi, anche con l'area riservata chiusa. Toccandola si apre la richiesta. Arrivano a tutti e due
+     gli account, ognuno sui suoi dispositivi.</p>
+  <?php if (empty($pushPossibile)): ?>
+    <p class="adm-avviso adm-avviso--attenzione">Questo server non può spedire notifiche: servono le estensioni OpenSSL e cURL di PHP.</p>
+  <?php else: ?>
+    <?php /* Lo stato di questo dispositivo lo sa solo il browser: lo scrive admin-app.js. */ ?>
+    <div class="adm-notifiche-qui" data-notifiche-qui hidden>
+      <p class="adm-notifiche-qui__stato"><?= icona('campanella', 18) ?><span data-notifiche-stato>Controllo questo dispositivo…</span></p>
+      <p class="adm-notifiche-qui__azioni">
+        <button type="button" class="adm-bottone" data-notifiche-attiva hidden>Attiva su questo dispositivo</button>
+        <button type="button" class="adm-bottone adm-bottone--piatto" data-notifiche-spegni hidden>Disattiva su questo dispositivo</button>
+      </p>
+      <p class="adm-nota" data-notifiche-esito role="status"></p>
+    </div>
+    <noscript><p class="adm-nota">Per attivare le notifiche serve JavaScript.</p></noscript>
+
+    <h3 class="adm-sottotitolo-carta">I tuoi dispositivi</h3>
+    <?php if (empty($dispositivi)): ?>
+      <p class="adm-tenue">Nessun dispositivo con le notifiche, per ora.</p>
+    <?php else: ?>
+      <ul class="adm-dispositivi">
+        <?php foreach ($dispositivi as $d): ?>
+          <li data-dispositivo="<?= e((string) $d['id']) ?>">
+            <div>
+              <strong><?= e((string) $d['dispositivo']) ?></strong>
+              <span class="adm-tenue">· attivate il <?= e(dataOra((string) $d['creata'])) ?><?= !empty($d['usata']) ? ' · ultima notifica il ' . e(dataOra((string) $d['usata'])) : '' ?></span>
+            </div>
+            <form method="post" action="<?= e(adminUrl('notifiche/togli')) ?>">
+              <?= Csrf::field() ?>
+              <input type="hidden" name="id" value="<?= e((string) $d['id']) ?>">
+              <button type="submit" class="adm-bottone adm-bottone--piatto">Togli<span class="adm-visually-hidden"> le notifiche da <?= e((string) $d['dispositivo']) ?></span></button>
+            </form>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+      <form method="post" action="<?= e(adminUrl('notifiche/prova')) ?>" class="adm-notifiche-prova">
+        <?= Csrf::field() ?>
+        <button type="submit" class="adm-bottone adm-bottone--piatto"><?= icona('campanella', 16) ?>Manda una notifica di prova</button>
+      </form>
+    <?php endif; ?>
+
+    <details class="adm-notifiche-come">
+      <summary>Come si installa l'area riservata sul telefono</summary>
+      <div class="adm-notifiche-come__testo">
+        <p><strong>Android</strong> (Chrome): apri l'area riservata, tocca «Installa» nell'invito in fondo alla pagina,
+           oppure ⋮ → «Installa app». Poi apri l'app e attiva le notifiche.</p>
+        <p><strong>iPhone e iPad</strong> (Safari, iOS 16.4 o più recente): tocca <?= icona('condividi', 15) ?> Condividi →
+           <?= icona('aggiungi', 15) ?> «Aggiungi alla schermata Home». Le notifiche si attivano dall'app, aperta dall'icona:
+           in Safari l'iPhone non le permette. L'app ha un accesso suo: la prima volta si entra con nome utente e password.</p>
+      </div>
+    </details>
+  <?php endif; ?>
+</section>

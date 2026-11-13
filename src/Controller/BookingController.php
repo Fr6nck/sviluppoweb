@@ -571,5 +571,8 @@ final class BookingController
         $messaggi = $this->app->messaggi();
         $this->app->mailer()->send($messaggi->richiestaAllaStruttura($reference, $booking, $offer));
         $this->app->mailer()->send($messaggi->ricevutaAllOspite($reference, $booking, $offer));
+        // E sul telefono di chi gestisce il sito, dove le notifiche sono attive.
+        $this->app->notifiche()->richiesta($reference, $booking->guestName(), (string) ($offer->room['name']['it'] ?? $offer->ref()),
+            $booking->criteria->arrivalIso(), $booking->criteria->departureIso(), $booking->criteria->guests);
     }
 }

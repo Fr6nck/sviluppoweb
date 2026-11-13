@@ -101,6 +101,7 @@ final class ContactController
 
         // Rispondere al messaggio scrive all'ospite, non a sé stessi (Mail\Messaggi).
         $this->app->mailer()->send($this->app->messaggi()->contattoAllaStruttura($messaggio, $id));
+        $this->app->notifiche()->messaggio($oggetto, $messaggio['nome'], $messaggio['messaggio'], $id);
     }
 
     /** @param array<string,mixed> $data */

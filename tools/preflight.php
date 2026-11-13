@@ -265,6 +265,17 @@ if ($dsn === '') {
     }
 }
 
+// ---------------------------------------------------------------- notifiche
+// Le notifiche sul telefono di chi gestisce il sito (Account → Notifiche): servono
+// OpenSSL con le curve ellittiche e cURL. Le chiavi nascono da sole.
+if (\ArcoDelVento\Admin\Notifiche::possibili()) {
+    $iscritti = count((array) ((new \ArcoDelVento\Storage\JsonStore((string) $config['data']))->read('notifiche')['iscrizioni'] ?? []));
+    $aggiungi('ok', 'Notifiche', 'notifiche sul telefono possibili · ' . $iscritti . ($iscritti === 1 ? ' dispositivo attivo' : ' dispositivi attivi'));
+} else {
+    $aggiungi('attenzione', 'Notifiche', 'le notifiche sul telefono non partono',
+        'Servono le estensioni OpenSSL (con la curva prime256v1) e cURL di PHP: si attivano da hPanel.');
+}
+
 // ---------------------------------------------------------------- posta
 $trasporto = (string) $config['mail']['transport'];
 if ($trasporto === 'log') {

@@ -969,3 +969,48 @@ td .adm-dc, span.adm-dc { margin: 0; }
 .adm-cal-blocchi li:first-child { border-top: 0; padding-top: 0; }
 .adm-cal-blocchi__coperto { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; color: var(--a-ok-scritta, var(--a-ok)); font-size: var(--a-t-s); }
 .adm-elenco { display: grid; gap: 6px; margin: 0; padding-left: 18px; }
+
+/* =================================================== l'app sul telefono
+   L'invito a installare l'area riservata e ad attivare le notifiche: una
+   scheda in fondo allo schermo, con la rosa, il titolo in Prata e i pulsanti
+   del pannello. Lo mostra admin-app.js, solo sul telefono. */
+.adm-app {
+  position: fixed; z-index: 60; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: flex-start; gap: 14px; max-width: 520px; margin: 0 auto; padding: 16px 16px 14px;
+  background: var(--a-carta); border: 1px solid var(--a-bordo); border-radius: var(--a-raggio);
+  box-shadow: 0 22px 48px -18px var(--a-ombra-forte), 0 2px 6px var(--a-ombra-lieve);
+  animation: adm-app-entra .32s cubic-bezier(.2, .8, .2, 1) both;
+}
+.adm-app[hidden] { display: none; }
+.adm-app__icona { flex: none; width: 52px; height: 52px; border-radius: 14px; box-shadow: 0 0 0 1px var(--a-bordo); }
+.adm-app__corpo { flex: 1; min-width: 0; }
+.adm .adm-app__titolo { margin: 0 0 4px; font-family: var(--font-display, Georgia, serif); font-size: 19px; font-weight: 400; line-height: 1.25; color: var(--a-testo); }
+.adm-app__testo, .adm-app__passi { margin: 0 0 12px; font-size: var(--a-t-s); line-height: 1.5; color: var(--a-tenue); }
+.adm-app__passi { display: grid; gap: 4px; padding-left: 20px; }
+.adm-app__passi strong { color: var(--a-testo); font-weight: 600; }
+.adm-app__segno { display: inline-grid; place-items: center; width: 22px; height: 22px; margin: 0 1px; vertical-align: -6px;
+  border-radius: 6px; background: var(--a-tela-2); box-shadow: inset 0 0 0 1px var(--a-bordo); color: var(--a-accento-testo); }
+.adm-app__esito { margin: 0 0 10px; font-size: var(--a-t-s); font-weight: 600; color: var(--a-testo); }
+.adm-app__esito:empty { display: none; }
+.adm-app__azioni { display: flex; flex-wrap: wrap; gap: 8px; }
+.adm-app__azioni .adm-bottone { min-height: 44px; }
+.adm-app__azioni .adm-bottone[hidden] { display: none; }
+body.adm-app-aperta .adm-main { padding-bottom: 220px; }
+@keyframes adm-app-entra { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .adm-app { animation: none; } }
+
+/* Account → Notifiche sul telefono. */
+.adm-notifiche-qui { margin: 0 0 18px; padding: 14px 16px; border-radius: 14px; background: var(--a-tela-2); box-shadow: inset 0 0 0 1px var(--a-bordo); }
+.adm-notifiche-qui[hidden] { display: none; }
+.adm-notifiche-qui__stato { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-weight: 600; }
+.adm-notifiche-qui[data-stato="attive"] .adm-notifiche-qui__stato { color: var(--a-ok-scritta, var(--a-testo)); }
+.adm-notifiche-qui__azioni { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 6px; }
+.adm-notifiche-qui__azioni .adm-bottone[hidden] { display: none; }
+.adm-notifiche-qui .adm-nota:empty { display: none; }
+.adm-dispositivi { display: grid; gap: 0; margin: 0 0 14px; padding: 0; list-style: none; }
+.adm-dispositivi li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 0; border-top: 1px solid var(--a-bordo); }
+.adm-dispositivi li:first-child { border-top: 0; padding-top: 0; }
+.adm-notifiche-prova { margin: 0 0 16px; }
+.adm-notifiche-come summary { cursor: pointer; font-weight: 600; color: var(--a-accento-testo); }
+.adm-notifiche-come__testo { margin-top: 10px; font-size: var(--a-t-s); line-height: 1.6; }
+.adm-notifiche-come__testo svg { vertical-align: -3px; }

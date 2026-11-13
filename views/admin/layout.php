@@ -21,6 +21,7 @@
  * @var array|null  $versione data e commit del pacchetto caricato, null nella copia di lavoro
  * @var string|null $tema     chiaro | scuro | null: segue il sistema
  * @var string      $percorso la pagina corrente, sotto /admin
+ * @var string      $pushChiave la chiave pubblica VAPID, vuota se il server non può spedire notifiche
  */
 
 use ArcoDelVento\Support\Csrf;
@@ -64,6 +65,15 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
 <meta name="robots" content="noindex, nofollow">
 <title><?= e($titolo) ?> — Arco del Vento · area riservata</title>
 <link rel="icon" href="<?= e(asset($rosa['src'] . '-96.png')) ?>" type="image/png">
+<?php /* L'area riservata si installa sul telefono come un'app: manifesto, colori, icona per l'iPhone. */ ?>
+<link rel="manifest" href="<?= e(adminUrl('manifest.webmanifest')) ?>">
+<meta name="theme-color" content="#f8f1e3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16100d" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="<?= e(asset('img/logo/app-180.png')) ?>">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Arco del Vento">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="<?= e(asset('css/fonts.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/tokens.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/admin.css')) ?>">
@@ -89,7 +99,8 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
 </main>
 </body>
 <?php else: ?>
-<body class="adm adm--dentro">
+<body class="adm adm--dentro" data-app-sw="<?= e(adminUrl('sw.js')) ?>" data-app-campo="<?= e(adminUrl()) ?>"
+      data-push-chiave="<?= e((string) ($pushChiave ?? '')) ?>" data-push-url="<?= e(adminUrl('notifiche')) ?>">
 <a class="adm-salta" href="#contenuto">Salta al contenuto</a>
 
 <div class="adm-telaio">
@@ -217,6 +228,37 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
     </main>
   </div>
 </div>
+
+<?php /* L'invito a installare l'app e ad attivare le notifiche. Solo qui, dentro l'area
+         riservata: lo vede solo chi ha fatto l'accesso. Lo mostra admin-app.js, e solo sul
+         telefono; senza JavaScript resta nascosto. */ ?>
+<aside class="adm-app" id="adm-app" aria-label="L'area riservata sul telefono" hidden>
+  <img class="adm-app__icona" src="<?= e(asset('img/logo/app-192.png')) ?>" alt="" width="52" height="52">
+  <div class="adm-app__corpo">
+    <div data-app-variante="installa" data-si="Installa" hidden>
+      <p class="adm-app__titolo">L'area riservata, come un'app</p>
+      <p class="adm-app__testo">Installala sul telefono: si apre con un tocco dalla schermata Home e ti avvisa a ogni nuova prenotazione.</p>
+    </div>
+    <div data-app-variante="iphone" data-si="" data-no="Ho capito" hidden>
+      <p class="adm-app__titolo">L'area riservata, come un'app</p>
+      <ol class="adm-app__passi">
+        <li>Tocca <span class="adm-app__segno"><?= icona('condividi', 15) ?></span> <strong>Condividi</strong>, nella barra di Safari.</li>
+        <li>Scegli <span class="adm-app__segno"><?= icona('aggiungi', 15) ?></span> <strong>Aggiungi alla schermata Home</strong>.</li>
+        <li>Apri l'app dall'icona e attiva le notifiche.</li>
+      </ol>
+    </div>
+    <div data-app-variante="notifiche" data-si="Attiva le notifiche" hidden>
+      <p class="adm-app__titolo">Attiva le notifiche</p>
+      <p class="adm-app__testo">Una notifica per ogni nuova richiesta, prenotazione pagata e messaggio, anche con l'app chiusa.</p>
+    </div>
+    <p class="adm-app__esito" data-app-esito role="status"></p>
+    <div class="adm-app__azioni">
+      <button type="button" class="adm-bottone" data-app-si>Installa</button>
+      <button type="button" class="adm-bottone adm-bottone--piatto" data-app-no>Non ora</button>
+    </div>
+  </div>
+</aside>
+<script src="<?= e(asset('js/admin-app.js')) ?>" defer></script>
 </body>
 <?php endif; ?>
 </html>

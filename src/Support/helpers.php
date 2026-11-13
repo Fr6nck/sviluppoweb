@@ -343,6 +343,9 @@ function icona(string $nome, int $misura = 16, string $classe = ''): string
         'esci'       => ['<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>', '<path d="m16 17 5-5-5-5"/>', '<path d="M21 12H9"/>'],
         'cerca'      => ['<circle cx="11" cy="11" r="8"/>', '<path d="m21 21-4.3-4.3"/>'],
         'campanella' => ['<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>', '<path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>'],
+        // Il «Condividi» e l'«Aggiungi alla schermata Home» dell'iPhone: nell'invito a installare l'app.
+        'condividi'  => ['<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>', '<path d="m16 6-4-4-4 4"/>', '<path d="M12 2v13"/>'],
+        'aggiungi'   => ['<rect width="18" height="18" x="3" y="3" rx="2"/>', '<path d="M8 12h8"/>', '<path d="M12 8v8"/>'],
         'esterno'    => ['<path d="M15 3h6v6"/>', '<path d="M10 14 21 3"/>', '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>'],
         'piu'        => ['<path d="M5 12h14"/>', '<path d="M12 5v14"/>'],
         'sale'       => ['<path d="M22 7 13.5 15.5 8.5 10.5 2 17"/>', '<path d="M16 7h6v6"/>'],

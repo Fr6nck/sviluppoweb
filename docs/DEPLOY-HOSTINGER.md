@@ -837,3 +837,45 @@ compaiono una volta sola, come Booking, e il blocco dice che Booking.com segna
 occupate anche quelle notti. Se il blocco era per quella prenotazione di
 Booking, si può togliere. Se era per una prenotazione presa al telefono,
 lascialo: Booking potrebbe mostrare soltanto il blocco che il sito gli manda.
+
+---
+
+## 17. L'app sul telefono e le notifiche
+
+L'area riservata si installa sul telefono come un'app, con l'icona della rosa, e
+avvisa con una notifica a ogni nuova richiesta, prenotazione pagata e messaggio.
+Vale per Daniele e per te, ognuno sui suoi telefoni. Non c'è niente da
+configurare sul server: le chiavi nascono da sole la prima volta, e il controllo
+finale (`tools/preflight.php`) dice se il server può spedire (servono OpenSSL e
+cURL di PHP, attivi di norma su Hostinger). Serve il sito in **https**.
+
+**Android (Chrome).**
+
+1. Apri l'area riservata dal telefono ed entra.
+2. In fondo allo schermo compare l'invito «L'area riservata, come un'app»:
+   tocca **Installa** (oppure, dal menu ⋮ di Chrome, «Installa app»).
+3. Apri l'app dall'icona: compare l'invito **Attiva le notifiche**. Tocca, e
+   rispondi «Consenti».
+
+**iPhone (Safari, iOS 16.4 o più recente).**
+
+1. Apri l'area riservata in Safari ed entra: l'invito mostra i passi.
+2. Tocca **Condividi** → **Aggiungi alla schermata Home**.
+3. Apri l'app dall'icona ed entra di nuovo (l'app ha un accesso suo, separato
+   da Safari). Tocca **Attiva le notifiche** e «Consenti». In Safari, senza
+   installare, l'iPhone le notifiche non le permette.
+
+**Provare.** Area riservata → **Account** → **Notifiche sul telefono** →
+**Manda una notifica di prova**. Lì c'è anche l'elenco dei tuoi dispositivi, con
+«Togli» per ognuno (per esempio un telefono cambiato).
+
+**Da sapere.**
+
+- Le notifiche arrivano anche se nell'app la sessione è scaduta; toccandone una,
+  se la sessione è scaduta, si rientra con nome utente e password.
+- Le chiavi e i dispositivi stanno in `storage/data/notifiche.json`: come il
+  resto di `storage/`, non va cancellato quando ricarichi il sito. Se si perde,
+  le notifiche si riattivano da Account.
+- Le icone dell'app sono la rosa originale: se cambi la rosa da «Immagini e
+  logo», l'icona dell'app resta quella.
+

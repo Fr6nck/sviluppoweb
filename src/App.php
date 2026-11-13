@@ -442,6 +442,17 @@ final class App
         return $this->services['messaggi'] ??= new \ArcoDelVento\Mail\Messaggi($this);
     }
 
+    /** Le notifiche sul telefono di Daniele e del super admin. */
+    public function notifiche(): \ArcoDelVento\Admin\Notifiche
+    {
+        // ADV_PUSH_HTTP serve solo alle prove in locale, con un finto servizio di push in http.
+        return $this->services['notifiche'] ??= new \ArcoDelVento\Admin\Notifiche(
+            $this,
+            $this->store(),
+            (bool) filter_var(\ArcoDelVento\Support\Env::fromServer('ADV_PUSH_HTTP') ?? false, FILTER_VALIDATE_BOOL),
+        );
+    }
+
     /** Il soggiorno di un ospite da mettere nel suo calendario. */
     public function calendarioOspite(): \ArcoDelVento\Booking\CalendarioOspite
     {

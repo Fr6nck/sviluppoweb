@@ -29,6 +29,8 @@ final class AvvisiPagamento
     private function allaStruttura(array $voce): void
     {
         $this->app->mailer()->send($this->app->messaggi()->pagataAllaStruttura($voce));
+        // E sul telefono di chi gestisce il sito, dove le notifiche sono attive. Non lancia mai.
+        $this->app->notifiche()->pagata($voce);
     }
 
     /** @param array<string,mixed> $voce */

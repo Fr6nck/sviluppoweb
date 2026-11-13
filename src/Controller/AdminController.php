@@ -13,6 +13,7 @@ use ArcoDelVento\Booking\BlocchiManuali;
 use ArcoDelVento\Booking\CalendariEsterni;
 use ArcoDelVento\Admin\Form;
 use ArcoDelVento\Admin\Inbox;
+use ArcoDelVento\Admin\Notifiche;
 use ArcoDelVento\Admin\Schema;
 use ArcoDelVento\Admin\Testi;
 use ArcoDelVento\App;
@@ -99,6 +100,15 @@ final class AdminController
             return $this->headers($this->theme($request));
         }
 
+        // L'app dell'area riservata: il manifesto e il service worker. Il browser
+        // li chiede senza la sessione, e non contengono niente di riservato.
+        if ($metodo === 'GET' && $pezzi === ['manifest.webmanifest']) {
+            return $this->headers($this->manifesto());
+        }
+        if ($metodo === 'GET' && $pezzi === ['sw.js']) {
+            return $this->headers($this->serviceWorker());
+        }
+
         $auth = $this->app->auth();
 
         // ------------------------------------------------ la porta del super admin
@@ -151,6 +161,8 @@ final class AdminController
             $pezzi === ['posta']                            => $this->mail($request),
             $pezzi === ['accesso-sito']                     => $this->siteAccess($request),
             $pezzi === ['account']                          => $this->account($request),
+            // Le notifiche sul telefono: di chi è dentro, per i suoi dispositivi.
+            count($pezzi) === 2 && $pezzi[0] === 'notifiche' && $metodo === 'POST' => $this->notifiche($request, $pezzi[1]),
             $pezzi === ['ripristina'] && $metodo === 'POST'  => $this->restore($request),
             // Solo il super admin: per il gestore non esiste, come una pagina qualunque che non c'è.
             $pezzi === ['configurazione'] && $auth->isSuper() => $this->configuration($request),
@@ -329,7 +341,104 @@ final class AdminController
             'daCambiare' => $auth->mustChangePassword(),
             // Solo il super admin vede l'account del gestore.
             'gestore'    => $auth->isSuper() ? $auth->details(Auth::ADMIN) : null,
+            'dispositivi' => $this->app->notifiche()->diUtente($nome),
+            'pushPossibile' => Notifiche::possibili(),
         ];
+    }
+
+    // ============================================================ l'app e le notifiche
+
+    /** Il manifesto dell'app: l'area riservata si installa sul telefono come un'app. */
+    private function manifesto(): Response
+    {
+        $base = Routes::base();
+        $campo = $base . '/admin';
+        $m = [
+            'id'               => $campo,
+            'name'             => 'Arco del Vento · Area riservata',
+            'short_name'       => 'Arco del Vento',
+            'description'      => 'Le richieste, il calendario e i messaggi di Arco del Vento, con le notifiche sul telefono.',
+            'lang'             => 'it',
+            'dir'              => 'ltr',
+            'start_url'        => $campo,
+            'scope'            => $campo,
+            'display'          => 'standalone',
+            'background_color' => '#f8f1e3',
+            'theme_color'      => '#f8f1e3',
+            'icons'            => [
+                ['src' => asset('img/logo/app-192.png'), 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
+                ['src' => asset('img/logo/app-512.png'), 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'],
+                ['src' => asset('img/logo/app-maskable-512.png'), 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'],
+            ],
+            'shortcuts'        => [
+                ['name' => 'Richieste', 'url' => $campo . '/richieste', 'icons' => [['src' => asset('img/logo/app-192.png'), 'sizes' => '192x192']]],
+                ['name' => 'Calendario', 'url' => $campo . '/calendario', 'icons' => [['src' => asset('img/logo/app-192.png'), 'sizes' => '192x192']]],
+            ],
+        ];
+
+        return Response::text((string) json_encode($m, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), 'application/manifest+json; charset=UTF-8');
+    }
+
+    /** Il service worker: notifiche e pagina «senza connessione» (views/admin/sw.js.php). */
+    private function serviceWorker(): Response
+    {
+        $base  = Routes::base();
+        $icona = $this->app->indirizzoCompleto(asset('img/logo/app-192.png'));
+        $badge = $this->app->indirizzoCompleto(asset('img/logo/app-badge-96.png'));
+        ob_start();
+        try {
+            (static function () use ($base, $icona, $badge): void {
+                require dirname(__DIR__, 2) . '/views/admin/sw.js.php';
+            })();
+        } finally {
+            $js = (string) ob_get_clean();
+        }
+
+        // Il campo d'azione è /admin, più largo della cartella del file (/admin/): lo si permette.
+        return Response::text($js, 'text/javascript; charset=UTF-8')->withHeader('Service-Worker-Allowed', $base . '/admin');
+    }
+
+    /**
+     * Le notifiche di questo dispositivo: iscrivi, togli, prova. Il browser le
+     * chiede con fetch (risposta JSON); l'elenco in Account con un modulo
+     * (si torna ad Account con un avviso).
+     */
+    private function notifiche(Request $request, string $azione): Response
+    {
+        $utente = (string) $this->app->auth()->current();
+        $notifiche = $this->app->notifiche();
+        $json = $this->in($request, 'risposta') === 'json';
+        $rispondi = function (bool $ok, string $testo) use ($json, $utente, $notifiche): Response {
+            if ($json) {
+                return Response::text((string) json_encode(['ok' => $ok, 'testo' => $testo, 'dispositivi' => count($notifiche->diUtente($utente))],
+                    JSON_UNESCAPED_UNICODE), 'application/json; charset=UTF-8');
+            }
+            $this->flash($ok ? 'ok' : 'errore', $testo);
+
+            return Response::redirect($this->url('account') . '#notifiche', 303);
+        };
+        if (!Notifiche::possibili()) {
+            return $rispondi(false, 'Questo server non può spedire notifiche: servono OpenSSL e cURL di PHP.');
+        }
+
+        return match ($azione) {
+            'iscrivi' => (($problema = $notifiche->iscrivi($utente, $this->in($request, 'endpoint'), $this->in($request, 'p256dh'), $this->in($request, 'auth'),
+                (string) ($request->server['HTTP_USER_AGENT'] ?? ''))) === null
+                ? $rispondi(true, 'Notifiche attive su questo dispositivo.')
+                : $rispondi(false, $problema)),
+            'togli' => $notifiche->togli($utente, $this->in($request, 'endpoint'), $this->in($request, 'id'))
+                ? $rispondi(true, 'Notifiche tolte da quel dispositivo.')
+                : $rispondi(false, 'Quel dispositivo non c\'è più.'),
+            'prova' => (static function (array $esito) use ($rispondi): Response {
+                if ($esito['spedite'] > 0) {
+                    return $rispondi(true, 'Notifica di prova spedita a ' . $esito['spedite'] . ($esito['spedite'] === 1 ? ' dispositivo.' : ' dispositivi.'));
+                }
+
+                return $rispondi(false, $esito['errori'] !== [] ? 'La notifica non è partita: ' . implode(' · ', $esito['errori'])
+                    : 'Non ci sono dispositivi con le notifiche attive per questo account.');
+            })($notifiche->prova($utente)),
+            default => Response::html($this->page('non-trovata', ['titolo' => 'Pagina non trovata']), 404),
+        };
     }
 
     // =========================================================== super admin
@@ -1716,6 +1825,7 @@ final class AdminController
             'tema'   => $this->tema(),
             'percorso' => $this->percorso,
             'versione' => $this->app->versione(),
+            'pushChiave' => $utente !== null && Notifiche::possibili() ? $this->app->notifiche()->chiavePubblica() : '',
         ];
         $dati['contenuto'] = $this->app->view()->render('admin/' . $vista, $dati);
 

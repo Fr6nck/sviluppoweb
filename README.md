@@ -630,7 +630,7 @@ le camere.
 | Domande frequenti | aggiungere, modificare, riordinare, togliere | super admin |
 | Accesso al sito | il codice dell'anteprima: acceso, spento, cambiato | super admin |
 | Ricezione e-mail | a chi arrivano le richieste (fino a cinque indirizzi), come spedisce il sito, e un messaggio di prova | super admin |
-| Account | cambiare la propria password; il super admin reimposta anche quella del gestore | tutti e due |
+| Account | cambiare la propria password; il super admin reimposta anche quella del gestore; le notifiche sul telefono, dispositivo per dispositivo | tutti e due |
 | Configurazione | le voci del file `.env` | super admin |
 | Channel manager (prova) | scollegare e ricollegare il calendario di Booking.com da tutte le camere; funzione di prova, da togliere | super admin |
 
@@ -711,6 +711,44 @@ pagina lo dice.
 **Le richieste** arrivano sempre anche per e-mail. Nel pannello si cancellano da
 sole dopo 24 mesi: sono dati personali, e lo stesso periodo va scritto
 nell'informativa privacy.
+
+### L'app sul telefono e le notifiche
+
+L'area riservata si installa sul telefono come un'app (PWA), per Daniele e per il
+super admin, e manda una notifica per ogni nuova richiesta di prenotazione, ogni
+prenotazione pagata (o con il pagamento da controllare) e ogni messaggio del
+modulo contatti. Toccandola si apre la richiesta.
+
+- **Installare.** Solo dentro l'area riservata, dopo l'accesso, e solo sul
+  telefono, compare in fondo allo schermo un invito con la grafica del sito: su
+  Android il pulsante «Installa» (l'evento `beforeinstallprompt` del browser),
+  sull'iPhone i tre passi di Safari (Condividi → Aggiungi alla schermata Home).
+  «Non ora» vale due settimane su quel dispositivo. Il sito pubblico non ha né
+  manifesto né invito. Lo fa `public/assets/js/admin-app.js`.
+- **Il manifesto e il service worker** li serve `AdminController` anche senza
+  accesso: `/admin/manifest.webmanifest` e `/admin/sw.js`, con campo d'azione
+  `/admin` (intestazione `Service-Worker-Allowed`), perché i link del pannello
+  sono `/admin`, senza la barra finale. Il service worker
+  (`views/admin/sw.js.php`) mostra le notifiche e, senza rete, una pagina «Senza
+  connessione»; non tiene in memoria nessuna pagina del pannello. Le icone
+  (`public/assets/img/logo/app-*.png`) sono la rosa sul crema del sito.
+- **Attivare le notifiche.** Nell'app installata un secondo invito, oppure
+  Account → Notifiche sul telefono: lo stato di questo dispositivo, «Attiva» o
+  «Disattiva», i dispositivi dell'account con «Togli», e «Manda una notifica di
+  prova». Ognuno vede e toglie solo i suoi.
+- **Spedire** (`src/Push/WebPush.php`, senza librerie): il testo si cifra per il
+  telefono (RFC 8291, aes128gcm) e ogni invio è firmato con le chiavi VAPID del
+  sito (RFC 8292). La cifratura è provata sull'esempio della RFC, byte per byte.
+  `src/Admin/Notifiche.php` tiene in `storage/data/notifiche.json` le chiavi
+  (nascono da sole) e le iscrizioni, spedisce a tutti i dispositivi iscritti e
+  toglie quelli che il servizio dice scaduti (404, 410). Spedisce solo ai
+  servizi di push dei browser (Google, Apple, Mozilla, Microsoft), in https:
+  un indirizzo qualunque mandato da un modulo non diventa una richiesta del
+  server. Una notifica che non parte non ferma mai una prenotazione: l'errore
+  va nel registro di PHP.
+- **iPhone**: serve iOS 16.4 o più recente, e le notifiche arrivano solo all'app
+  installata, non a Safari. L'app ha un accesso suo: la prima volta si entra con
+  nome utente e password.
 
 ### Super admin e Configurazione
 
