@@ -100,7 +100,7 @@ $iniziale = mb_strtoupper(mb_substr((string) $utente, 0, 1)) ?: 'A';
 </body>
 <?php else: ?>
 <body class="adm adm--dentro" data-app-sw="<?= e(adminUrl('sw.js')) ?>" data-app-campo="<?= e(adminUrl()) ?>"
-      data-push-chiave="<?= e((string) ($pushChiave ?? '')) ?>" data-push-url="<?= e(adminUrl('notifiche')) ?>">
+      data-push-chiave="<?= e((string) ($pushChiave ?? '')) ?>" data-push-url="<?= e(adminUrl('notifiche')) ?>" data-nuove="<?= (int) $nuove ?>">
 <a class="adm-salta" href="#contenuto">Salta al contenuto</a>
 
 <div class="adm-telaio">

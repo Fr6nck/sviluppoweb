@@ -342,6 +342,7 @@ final class AdminController
             // Solo il super admin vede l'account del gestore.
             'gestore'    => $auth->isSuper() ? $auth->details(Auth::ADMIN) : null,
             'dispositivi' => $this->app->notifiche()->diUtente($nome),
+            'ultimaNotifica' => $this->app->notifiche()->ultima(),
             'pushPossibile' => Notifiche::possibili(),
         ];
     }
@@ -431,7 +432,9 @@ final class AdminController
                 : $rispondi(false, 'Quel dispositivo non c\'è più.'),
             'prova' => (static function (array $esito) use ($rispondi): Response {
                 if ($esito['spedite'] > 0) {
-                    return $rispondi(true, 'Notifica di prova spedita a ' . $esito['spedite'] . ($esito['spedite'] === 1 ? ' dispositivo.' : ' dispositivi.'));
+                    // Anche quando una parte non è partita: si dice quale, e perché.
+                    return $rispondi($esito['errori'] === [], 'Notifica di prova spedita a ' . $esito['spedite'] . ($esito['spedite'] === 1 ? ' dispositivo.' : ' dispositivi.')
+                        . ($esito['errori'] !== [] ? ' Non partita per ' . implode(' · ', $esito['errori']) . '.' : ''));
                 }
 
                 return $rispondi(false, $esito['errori'] !== [] ? 'La notifica non è partita: ' . implode(' · ', $esito['errori'])

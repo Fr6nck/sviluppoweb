@@ -5,7 +5,10 @@
  *
  * Fa tre cose:
  *   - mostra le notifiche che arrivano (Admin\Notifiche), con l'icona della
- *     rosa; toccandone una si apre la pagina giusta dell'area riservata;
+ *     rosa, e mette sull'icona dell'app il numero delle richieste da leggere
+ *     (dove il telefono lo permette: iPhone con l'app installata, Chrome sul
+ *     computer; su Android il pallino lo mette il telefono, per la notifica);
+ *     toccandone una si apre la pagina giusta dell'area riservata;
  *   - senza rete, al posto di una pagina d'errore del browser mostra una
  *     pagina «senza connessione» con la grafica del sito;
  *   - nient'altro: non tiene in memoria nessuna pagina del pannello, che
@@ -42,7 +45,7 @@ self.addEventListener('activate', (evento) => evento.waitUntil(self.clients.clai
 self.addEventListener('push', (evento) => {
   let d = {};
   try { d = evento.data ? evento.data.json() : {}; } catch (e) { d = { b: evento.data ? evento.data.text() : '' }; }
-  evento.waitUntil(self.registration.showNotification(d.t || 'Arco del Vento', {
+  const lavori = [self.registration.showNotification(d.t || 'Arco del Vento', {
     body: d.b || 'Novità nell\'area riservata.',
     icon: d.i || ICONA,
     badge: d.d || BADGE,
@@ -50,7 +53,12 @@ self.addEventListener('push', (evento) => {
     renotify: Boolean(d.g),
     lang: 'it',
     data: { url: d.u || (self.location.origin + CAMPO) },
-  }));
+  })];
+  // Il numero sull'icona dell'app: le richieste ancora da leggere.
+  if (typeof d.n === 'number' && 'setAppBadge' in self.navigator) {
+    lavori.push((d.n > 0 ? self.navigator.setAppBadge(d.n) : self.navigator.clearAppBadge()).catch(() => {}));
+  }
+  evento.waitUntil(Promise.all(lavori));
 });
 
 // Toccandola: si torna all'app se è aperta, sulla pagina giusta; altrimenti si apre.

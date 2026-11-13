@@ -869,6 +869,22 @@ cURL di PHP, attivi di norma su Hostinger). Serve il sito in **https**.
 **Manda una notifica di prova**. Lì c'è anche l'elenco dei tuoi dispositivi, con
 «Togli» per ognuno (per esempio un telefono cambiato).
 
+**Il numero sull'icona.** Sono le richieste ancora da leggere: arriva con la
+notifica e si aggiorna a ogni apertura dell'app. Sull'iPhone serve anche
+Impostazioni → Notifiche → Arco del Vento → **Badge** attivo. Su Android il
+pallino sull'icona lo mette il telefono quando c'è una notifica non letta.
+
+**Se non arrivano.** In Account → Notifiche:
+
+1. il telefono deve essere nell'elenco dei dispositivi; se non c'è, apri l'app
+   dall'icona e tocca **Attiva su questo dispositivo**;
+2. **Manda una notifica di prova**: se l'avviso dice che è partita ma non arriva,
+   il blocco è nelle impostazioni del telefono (notifiche dell'app spente,
+   risparmio energetico, Full immersion sull'iPhone); se dice che non è partita,
+   scrive il motivo, anche accanto al dispositivo;
+3. dopo una prenotazione, la riga **Ultima notifica del sito** dice se il sito
+   ci ha provato e a quanti dispositivi è arrivata.
+
 **Da sapere.**
 
 - Le notifiche arrivano anche se nell'app la sessione è scaduta; toccandone una,

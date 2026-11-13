@@ -31,12 +31,36 @@
   function scrivi(k, v) { try { window.localStorage.setItem(k, v); } catch (e) { /* senza memoria: si richiede la prossima volta */ } }
   function rimandato(k) { var t = Number(leggi(k) || 0); return t > 0 && Date.now() - t < GIORNI_ATTESA * 864e5; }
 
-  /* -------------------------------------------------- il service worker */
+  /* -------------------------------------------------- il service worker
+     Il campo d'azione è /admin (i link del pannello non hanno la barra finale),
+     più largo della cartella del file: il server lo permette con
+     Service-Worker-Allowed. Se un browser non lo accetta, si registra con il
+     campo /admin/: le notifiche arrivano lo stesso. */
+  /* Si aspetta che questa registrazione sia attiva, non navigator.serviceWorker.ready:
+     con il campo /admin/ la pagina /admin ne è fuori, e ready non arriverebbe mai. */
+  function attivo(reg) {
+    return new Promise(function (fatto) {
+      if (reg.active) { fatto(reg); return; }
+      var w = reg.installing || reg.waiting;
+      if (!w) { fatto(reg); return; }
+      w.addEventListener('statechange', function () { if (w.state === 'activated') fatto(reg); });
+    });
+  }
   var pronto = Promise.resolve(null);
   if ('serviceWorker' in navigator && SW) {
     pronto = navigator.serviceWorker.register(SW, { scope: CAMPO })
-      .then(function () { return navigator.serviceWorker.ready; })
+      .catch(function () { return navigator.serviceWorker.register(SW); })
+      .then(attivo)
       .catch(function () { return null; });
+  }
+
+  /* -------------------------------------- il numero sull'icona dell'app
+     Le richieste da leggere, come il contatore di Richieste: a ogni pagina si
+     aggiorna, e sparisce quando non ce ne sono. Dove il telefono non lo
+     permette (Android) non succede niente: lì il pallino lo mette la notifica. */
+  var daLeggere = Number(corpo.getAttribute('data-nuove') || 0);
+  if ('setAppBadge' in navigator) {
+    (daLeggere > 0 ? navigator.setAppBadge(daLeggere) : navigator.clearAppBadge()).catch(function () {});
   }
 
   /* ---------------------------------------------------- le notifiche */
@@ -203,8 +227,9 @@
     if (!installata && telefono && iphone && !rimandato('adv-app-iphone')) {
       // iPhone e iPad: nessun pulsante, si installa da Condividi.
       mostra('iphone');
-    } else if (installata && pushPossibile && Notification.permission === 'default' && !rimandato('adv-app-notifiche')) {
-      // Nell'app installata: le notifiche.
+    } else if (installata && pushPossibile && Notification.permission !== 'denied' && !rimandato('adv-app-notifiche')) {
+      // Nell'app installata: le notifiche, se questo telefono non è ancora iscritto,
+      // anche quando il permesso c'era già (dato al browser prima di installare).
       stato().then(function (s) { if (s === 'spente') mostra('notifiche'); });
     }
   }

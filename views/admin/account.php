@@ -13,6 +13,7 @@
  * @var array|null $gestore     solo per il super admin: l'account del gestore ([] se non c'è)
  * @var list<array<string,mixed>> $dispositivi i dispositivi con le notifiche di questo account
  * @var bool       $pushPossibile se il server può spedire notifiche
+ * @var array|null $ultimaNotifica l'ultima notifica che il sito ha provato a spedire
  */
 use ArcoDelVento\Support\Csrf;
 
@@ -129,7 +130,10 @@ $quando = static fn (array $a, string $k): string => !empty($a[$k]) ? dataOra((s
           <li data-dispositivo="<?= e((string) $d['id']) ?>">
             <div>
               <strong><?= e((string) $d['dispositivo']) ?></strong>
-              <span class="adm-tenue">· attivate il <?= e(dataOra((string) $d['creata'])) ?><?= !empty($d['usata']) ? ' · ultima notifica il ' . e(dataOra((string) $d['usata'])) : '' ?></span>
+              <span class="adm-tenue">· attivate il <?= e(dataOra((string) $d['creata'])) ?><?= !empty($d['usata']) ? ' · ultima notifica arrivata al servizio il ' . e(dataOra((string) $d['usata'])) : ' · nessuna notifica ancora' ?></span>
+              <?php if (!empty($d['errore'])): ?>
+                <p class="adm-dispositivi__errore" data-errore-dispositivo><?= icona('attenzione', 14) ?>Ultimo tentativo, il <?= e(dataOra((string) $d['tentata'])) ?>, non riuscito: <?= e((string) $d['errore']) ?></p>
+              <?php endif; ?>
             </div>
             <form method="post" action="<?= e(adminUrl('notifiche/togli')) ?>">
               <?= Csrf::field() ?>
@@ -139,11 +143,38 @@ $quando = static fn (array $a, string $k): string => !empty($a[$k]) ? dataOra((s
           </li>
         <?php endforeach; ?>
       </ul>
+      <?php if (!empty($ultimaNotifica)): $u = $ultimaNotifica; ?>
+        <p class="adm-nota adm-notifiche-ultima" data-ultima-notifica>Ultima notifica del sito: «<?= e((string) $u['titolo']) ?>», il <?= e(dataOra((string) $u['quando'])) ?> —
+          <?php if ((int) $u['dispositivi'] === 0): ?>nessun dispositivo aveva le notifiche attive.
+          <?php else: ?>arrivata al servizio di push per <?= (int) $u['spedite'] ?> <?= (int) $u['spedite'] === 1 ? 'dispositivo' : 'dispositivi' ?> su <?= (int) $u['dispositivi'] ?>.<?php endif; ?></p>
+      <?php endif; ?>
       <form method="post" action="<?= e(adminUrl('notifiche/prova')) ?>" class="adm-notifiche-prova">
         <?= Csrf::field() ?>
         <button type="submit" class="adm-bottone adm-bottone--piatto"><?= icona('campanella', 16) ?>Manda una notifica di prova</button>
       </form>
     <?php endif; ?>
+
+    <details class="adm-notifiche-come">
+      <summary>Se le notifiche non arrivano</summary>
+      <div class="adm-notifiche-come__testo">
+        <ol>
+          <li>Il telefono deve comparire qui sopra, fra i tuoi dispositivi. Se non c'è, apri l'app dall'icona, vieni in questa pagina e tocca
+              «Attiva su questo dispositivo».</li>
+          <li>Tocca «Manda una notifica di prova». Se l'avviso dice che è partita ma sul telefono non arriva niente, il blocco è sul telefono:
+            <ul>
+              <li><strong>Android:</strong> Impostazioni → App → Arco del Vento → Notifiche: attive; e il risparmio energetico non deve
+                  limitare l'app.</li>
+              <li><strong>iPhone:</strong> Impostazioni → Notifiche → Arco del Vento: «Consenti notifiche» attivo, anche «Badge» per il numero
+                  sull'icona; e nessuna «Full immersion» (Focus) che le nasconda.</li>
+            </ul>
+          </li>
+          <li>Se l'avviso dice che non è partita, il motivo è scritto lì e accanto al dispositivo.</li>
+          <li>Dopo una prenotazione, «Ultima notifica del sito» qui sopra dice se il sito ci ha provato e a quanti dispositivi è arrivata.</li>
+        </ol>
+        <p>Il numero sull'icona sono le richieste ancora da leggere: sull'iPhone e sul computer lo mette l'app; su Android il pallino
+           lo mette il telefono quando c'è una notifica non letta.</p>
+      </div>
+    </details>
 
     <details class="adm-notifiche-come">
       <summary>Come si installa l'area riservata sul telefono</summary>

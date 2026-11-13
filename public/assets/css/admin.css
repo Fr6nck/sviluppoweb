@@ -1014,3 +1014,9 @@ body.adm-app-aperta .adm-main { padding-bottom: 220px; }
 .adm-notifiche-come summary { cursor: pointer; font-weight: 600; color: var(--a-accento-testo); }
 .adm-notifiche-come__testo { margin-top: 10px; font-size: var(--a-t-s); line-height: 1.6; }
 .adm-notifiche-come__testo svg { vertical-align: -3px; }
+.adm-dispositivi__errore { display: flex; align-items: flex-start; gap: 6px; margin: 4px 0 0; font-size: var(--a-t-s); color: var(--a-giu-scritta); }
+.adm-dispositivi__errore svg { flex: none; margin-top: 3px; }
+.adm-notifiche-ultima { margin: 0 0 12px; }
+.adm-notifiche-come + .adm-notifiche-come { margin-top: 10px; }
+.adm-notifiche-come__testo ol, .adm-notifiche-come__testo ul { display: grid; gap: 6px; margin: 0 0 10px; padding-left: 20px; }
+.adm-notifiche-come__testo ul { margin-top: 6px; }

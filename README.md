@@ -749,6 +749,18 @@ modulo contatti. Toccandola si apre la richiesta.
 - **iPhone**: serve iOS 16.4 o più recente, e le notifiche arrivano solo all'app
   installata, non a Safari. L'app ha un accesso suo: la prima volta si entra con
   nome utente e password.
+- **Il numero sull'icona** (il «bollo»): le richieste da leggere, come il
+  contatore di Richieste. Lo mette il service worker quando arriva una notifica
+  (il numero viaggia nella notifica) e `admin-app.js` a ogni pagina
+  (`data-nuove`), con l'API Badging: iPhone con l'app installata e permesso
+  delle notifiche, Chrome ed Edge sul computer. Android non ha l'API: lì il
+  pallino sull'icona lo mette il telefono per la notifica non letta.
+- **Quando non arrivano.** Ogni dispositivo ricorda l'ultimo tentativo e, se non
+  è riuscito, la risposta del servizio di push; il sito ricorda l'ultima
+  notifica che ha provato a spedire, a quanti dispositivi e com'è andata. Tutto
+  in Account → Notifiche, con una guida «Se le notifiche non arrivano». Se il
+  browser rifiuta il campo d'azione `/admin`, il service worker si registra con
+  `/admin/` e le notifiche arrivano lo stesso.
 
 ### Super admin e Configurazione
 

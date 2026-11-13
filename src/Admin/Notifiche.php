@@ -112,7 +112,7 @@ final class Notifiche
     /**
      * I dispositivi di un account, senza le chiavi.
      *
-     * @return list<array{id: string, dispositivo: string, creata: string, usata: ?string, endpoint: string}>
+     * @return list<array{id: string, dispositivo: string, creata: string, usata: ?string, tentata: ?string, errore: ?string, endpoint: string}>
      */
     public function diUtente(string $utente): array
     {
@@ -120,11 +120,26 @@ final class Notifiche
         foreach ((array) ($this->store->read(self::ARCHIVIO)['iscrizioni'] ?? []) as $i) {
             if (is_array($i) && ($i['utente'] ?? '') === $utente) {
                 $out[] = ['id' => (string) $i['id'], 'dispositivo' => (string) $i['dispositivo'], 'creata' => (string) $i['creata'],
-                          'usata' => $i['usata'] ?? null, 'endpoint' => (string) $i['endpoint']];
+                          'usata' => $i['usata'] ?? null, 'tentata' => $i['tentata'] ?? null, 'errore' => $i['errore'] ?? null,
+                          'endpoint' => (string) $i['endpoint']];
             }
         }
 
         return $out;
+    }
+
+    /**
+     * L'ultima notifica che il sito ha provato a spedire: quando, quale, a
+     * quanti dispositivi e com'è andata. La mostra Account → Notifiche: dopo
+     * una prenotazione si vede se il sito ci ha provato, e perché non è arrivata.
+     *
+     * @return array{quando: string, titolo: string, dispositivi: int, spedite: int, errori: list<string>}|null
+     */
+    public function ultima(): ?array
+    {
+        $u = $this->store->read(self::ARCHIVIO)['ultima'] ?? null;
+
+        return is_array($u) ? $u : null;
     }
 
     /**
@@ -137,10 +152,14 @@ final class Notifiche
     public function invia(string $titolo, string $testo, string $url, string $argomento = '', ?string $soloUtente = null): array
     {
         $esito = ['spedite' => 0, 'errori' => []];
+        $adesso = date('c');
+        $iscrizioni = [];
         try {
             $iscrizioni = array_values(array_filter((array) ($this->store->read(self::ARCHIVIO)['iscrizioni'] ?? []), static fn ($i): bool => is_array($i)
                 && ($soloUtente === null || ($i['utente'] ?? '') === $soloUtente)));
             if ($iscrizioni === [] || !self::possibili()) {
+                $this->ricorda($titolo, $adesso, 0, $esito, []);
+
                 return $esito;
             }
             $vapid = $this->vapid();
@@ -148,42 +167,37 @@ final class Notifiche
                 't' => mb_substr($titolo, 0, 120), 'b' => mb_substr($testo, 0, 240), 'u' => $url, 'g' => $argomento,
                 'i' => $this->app->indirizzoCompleto(\ArcoDelVento\I18n\Routes::base() . '/assets/img/logo/app-192.png'),
                 'd' => $this->app->indirizzoCompleto(\ArcoDelVento\I18n\Routes::base() . '/assets/img/logo/app-badge-96.png'),
+                // Le richieste da leggere: il numero sull'icona dell'app (il «bollo»).
+                'n' => $this->daLeggere(),
             ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             $soggetto = $this->soggetto();
-            $scadute = [];
-            $usate = [];
+            $esiti = [];
             foreach ($iscrizioni as $i) {
-                if ($this->problema((string) $i['endpoint'], (string) $i['p256dh'], (string) $i['auth']) !== null) {
+                if (($problema = $this->problema((string) $i['endpoint'], (string) $i['p256dh'], (string) $i['auth'])) !== null) {
+                    $esiti[$i['endpoint']] = $problema;
+                    $esito['errori'][] = $i['dispositivo'] . ': ' . $problema;
                     continue;
                 }
                 $r = WebPush::invia($i, $carico, $vapid, $soggetto, 86400, 'high', $argomento !== '' ? preg_replace('/[^A-Za-z0-9_-]/', '', $argomento) : null);
                 if ($r['errore'] === null) {
                     $esito['spedite']++;
-                    $usate[] = $i['endpoint'];
+                    $esiti[$i['endpoint']] = null;
                 } elseif (in_array($r['stato'], [404, 410], true)) {
-                    $scadute[] = $i['endpoint'];
+                    $esiti[$i['endpoint']] = false;
                 } else {
+                    $esiti[$i['endpoint']] = (string) $r['errore'];
                     $esito['errori'][] = $i['dispositivo'] . ': ' . $r['errore'];
                     error_log('Notifica non spedita (' . $i['dispositivo'] . '): ' . $r['errore']);
                 }
             }
-            if ($scadute !== [] || $usate !== []) {
-                $adesso = date('c');
-                $this->store->update(self::ARCHIVIO, static function (array $tutto) use ($scadute, $usate, $adesso): array {
-                    $tutto['iscrizioni'] = array_values(array_filter(array_map(static function ($i) use ($usate, $adesso) {
-                        if (is_array($i) && in_array($i['endpoint'] ?? '', $usate, true)) {
-                            $i['usata'] = $adesso;
-                        }
-
-                        return $i;
-                    }, (array) ($tutto['iscrizioni'] ?? [])), static fn ($i): bool => is_array($i) && !in_array($i['endpoint'] ?? '', $scadute, true)));
-
-                    return $tutto;
-                });
-            }
+            $this->ricorda($titolo, $adesso, count($iscrizioni), $esito, $esiti);
         } catch (\Throwable $e) {
             $esito['errori'][] = $e->getMessage();
             error_log('Notifiche non spedite: ' . $e->getMessage());
+            try {
+                $this->ricorda($titolo, $adesso, count($iscrizioni), $esito, []);
+            } catch (\Throwable) {
+            }
         }
 
         return $esito;
@@ -243,6 +257,50 @@ final class Notifiche
     }
 
     // ------------------------------------------------------------------ interni
+
+    /**
+     * Scrive com'è andata: per ogni dispositivo l'ultimo tentativo (null se è
+     * arrivato al servizio di push, il motivo se no; false se il servizio dice
+     * che l'iscrizione non c'è più, e allora si toglie), e l'ultima notifica del sito.
+     *
+     * @param array{spedite: int, errori: list<string>} $esito
+     * @param array<string, string|false|null> $esiti endpoint => esito
+     */
+    private function ricorda(string $titolo, string $adesso, int $dispositivi, array $esito, array $esiti): void
+    {
+        $this->store->update(self::ARCHIVIO, static function (array $tutto) use ($titolo, $adesso, $dispositivi, $esito, $esiti): array {
+            $tutto['iscrizioni'] = array_values(array_filter(array_map(static function ($i) use ($esiti, $adesso) {
+                if (!is_array($i) || !array_key_exists($i['endpoint'] ?? '', $esiti)) {
+                    return $i;
+                }
+                $e = $esiti[$i['endpoint']];
+                if ($e === false) {
+                    return null;
+                }
+                $i['tentata'] = $adesso;
+                $i['errore'] = $e === null ? null : mb_substr($e, 0, 300);
+                if ($e === null) {
+                    $i['usata'] = $adesso;
+                }
+
+                return $i;
+            }, (array) ($tutto['iscrizioni'] ?? [])), 'is_array'));
+            $tutto['ultima'] = ['quando' => $adesso, 'titolo' => mb_substr($titolo, 0, 120), 'dispositivi' => $dispositivi,
+                                'spedite' => $esito['spedite'], 'errori' => array_slice($esito['errori'], 0, 5)];
+
+            return $tutto;
+        });
+    }
+
+    /** Quante richieste ci sono da leggere, per il numero sull'icona. */
+    private function daLeggere(): int
+    {
+        try {
+            return $this->app->inbox()->countNew();
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
 
     /**
      * Spedisce dopo aver risposto: chi prenota non aspetta i servizi di push.
