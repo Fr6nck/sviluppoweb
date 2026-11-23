@@ -70,6 +70,7 @@
   document.addEventListener('change', function (e) {
     var input = e.target;
     if (!input || input.type !== 'file' || input._mhwRidotta) { if (input) input._mhwRidotta = false; return; }
+    if (input.hasAttribute('data-foto-multi')) return;   // 9V: la galleria «La casa» riduce e carica le sue foto da sé (casa.js)
     var file = input.files && input.files[0];
     if (!file || !(/^image\//.test(file.type) || eHeic(file))) { if (input.closest) scrivi(input, ''); return; }
     var form = input.form;

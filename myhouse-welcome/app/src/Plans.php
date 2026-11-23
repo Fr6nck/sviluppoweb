@@ -195,7 +195,8 @@ final class Plans
                    'branding' => 'Custom branding (no longer sold)', 'custom_sections' => 'Custom sections', 'auto_translation' => 'Suggested translations',
                    'protected_content' => 'Protected content', 'advanced_analytics' => 'Advanced statistics', 'video' => 'Video',
                    'upselling' => 'Selling extra services', 'custom_domain' => 'Custom domain', 'ai_concierge' => 'Concierge AI',
-                   'hide_branding' => 'Hideable "Guide created with MyHouse Welcome" signature'];
+                   'hide_branding' => 'Hideable "Guide created with MyHouse Welcome" signature',
+                   'gallery' => 'Photo gallery of the house (up to 10 photos) and description'];   // 9V
         $piani = [];
         foreach (self::offers() as $of) {
             $p = $of['options'][0];

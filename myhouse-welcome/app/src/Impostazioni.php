@@ -36,6 +36,8 @@ final class Impostazioni
             'iva_percentuale'     => ['MHW_IVA_PERCENTUALE', 'Aliquota IVA per i prezzi IVA inclusa (%)', 'percento', 'Di serie 22. Serve solo a mostrare i prezzi con l\'IVA ai privati: l\'IVA vera la calcola Stripe Tax al pagamento.'],
             // 9Q · La strada «Quindici minuti insieme» dell'email del giorno 21 sulle bozze.
             'chiamata_url'        => ['MHW_CHIAMATA_URL', 'Link per fissare una chiamata', 'url', 'Per esempio la pagina di Calendly o di Google Calendar. Nell\'email del giorno 21 sulle bozze diventa il bottone «Scegli un orario»; vuoto, il bottone è «Chiamaci» con il telefono dell\'assistenza (e senza telefono la strada non compare).'],
+            // 9V · Il segno «Novità» accanto alla galleria «La casa» (schede dei piani, confronto, home, pannello).
+            'novita.casa_fino'    => ['MHW_NOVITA_CASA_FINO', 'Segno «Novità» della galleria «La casa»: fino al', 'data', 'L\'ultimo giorno in cui il sito mostra «Novità» accanto a «La casa in foto» (schede dei piani, confronto, home, pannello). Vuoto = 60 giorni dall\'aggiornamento che ha portato la galleria. Per toglierlo subito scrivi una data passata.'],
             'partner.sconto'      => ['MHW_PARTNER_SCONTO', 'Sconto per i clienti del partner (%)', 'percento', 'Lo sconto per i proprietari che attivano con il codice del partner. Vuoto: la pagina dice «uno sconto» senza numero. I codici partner veri arrivano in una fase successiva.'],
         ],
         // 9H · Gli indirizzi email del sito, uno per ogni cosa. Gli ultimi tre, vuoti, valgono l'email assistenza.

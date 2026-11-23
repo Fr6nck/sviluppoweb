@@ -416,7 +416,8 @@ final class Traduttore
             $per = [];
             foreach (self::campi($prop, $loc) as $c) {
                 if ($c['tradotto'] !== '') continue;
-                $sid = $c['tipo'] === 'section' ? $c['id'] : (int) Db::val('SELECT section_id FROM places WHERE id = ?', [$c['id']], 0);
+                // 9V: i testi di «La casa» non sono di una sezione (chiave 0).
+                $sid = $c['tipo'] === 'section' ? $c['id'] : ($c['tipo'] === 'casa' ? 0 : (int) Db::val('SELECT section_id FROM places WHERE id = ?', [$c['id']], 0));
                 $per[$sid] = ($per[$sid] ?? 0) + 1;
             }
             $out[$loc] = $per;
@@ -490,8 +491,9 @@ final class Traduttore
         if (Migrator::tableExists('translation_hashes')) {
             foreach (Db::all("SELECT h.target_type, h.target_id, h.field_path, h.source_hash FROM translation_hashes h
                               WHERE h.locale = ? AND ((h.target_type = 'section' AND h.target_id IN (SELECT id FROM sections WHERE property_id = ?))
-                                 OR (h.target_type = 'place' AND h.target_id IN (SELECT pl.id FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ?)))",
-                             [$loc, $prop['id'], $prop['id']]) as $h) $impronte[$h['target_type'] . ':' . $h['target_id'] . ':' . $h['field_path']] = $h['source_hash'];
+                                 OR (h.target_type = 'place' AND h.target_id IN (SELECT pl.id FROM places pl JOIN sections s ON s.id = pl.section_id WHERE s.property_id = ?))
+                                 OR (h.target_type = 'casa' AND h.target_id = ?))",
+                             [$loc, $prop['id'], $prop['id'], $prop['id']]) as $h) $impronte[$h['target_type'] . ':' . $h['target_id'] . ':' . $h['field_path']] = $h['source_hash'];
         }
         $metti = function (string $tipo, int $id, string $path, string $origine, string $tradotto, int $max) use (&$out, $impronte) {
             if (trim($origine) === '') return;
@@ -501,6 +503,15 @@ final class Traduttore
                         'cambiato' => trim($tradotto) !== '' && isset($impronte[$k]) && $impronte[$k] !== self::impronta($origine)];
         };
         $base = $prop['default_locale'];
+        // 9V · «La casa»: titolo, descrizione e scritta sulla copertina (questa solo se l'ha scritta l'host: quella di serie è già
+        // in ogni lingua). Tipo «casa», id della struttura. Si legge la riga di adesso: $prop può essere di prima del salvataggio.
+        if (Casa::disponibile() && ($pc = Db::one('SELECT id, default_locale, casa_titolo, casa_descrizione, casa_invito, casa_tr FROM properties WHERE id = ?', [$prop['id']]))) {
+            $trC = Casa::tradotti($pc)[$loc] ?? [];
+            foreach (Casa::CAMPI as $nome => [$col, $max]) {
+                if ($nome === 'invito' && !Casa::invitoSuo($pc)) continue;
+                $metti('casa', (int) $pc['id'], $nome, (string) ($pc[$col] ?? ''), (string) ($trC[$nome] ?? ''), $max);
+            }
+        }
         foreach (Db::all('SELECT * FROM sections WHERE property_id = ? AND is_active = 1 ORDER BY is_core DESC, position, id', [$prop['id']]) as $s) {
             $o = Db::one('SELECT title, data FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $base]) ?: ['title' => '', 'data' => ''];
             $t = Db::one('SELECT title, data FROM section_translations WHERE section_id = ? AND locale = ?', [$s['id'], $loc]) ?: ['title' => '', 'data' => ''];
@@ -643,6 +654,7 @@ final class Traduttore
     /** Scrive un campo tradotto, come se l'avesse scritto il cliente («reviewed»). Serve anche alla vetrina (Demo). */
     public static function scrivi(string $tipo, int $id, string $loc, string $path, string $v): void
     {
+        if ($tipo === 'casa') { Casa::scriviTraduzione($id, $loc, $path, $v); return; }   // 9V
         if ($tipo === 'place') {
             if (!isset(self::LUOGO[$path])) return;
             $t = Db::one('SELECT id FROM place_translations WHERE place_id = ? AND locale = ?', [$id, $loc]);

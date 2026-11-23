@@ -10,8 +10,13 @@
  *   campi   — [tipo di sezione => [campi nuovi]]: finché sono vuoti, la sezione ha il pallino ocra e «Nuovo»
  *             in Contenuti, e il campo il bordo ocra nell'editor
  *   sezioni — [tipi di sezione nuovi]: «Nuovo» nel catalogo «Aggiungi una sezione»
+ *   bottone — (facoltativo, 9V) la scritta del bottone al posto di «Mostrami dove»
  */
 return [
+    // 9V · «La casa»: la galleria di foto e la descrizione dalla copertina della guida, in tutti i piani. Nessuna email: solo questa fascia.
+    ['id' => '2026-11-casa', 'data' => '2026-11-23', 'titolo' => 'Mostra la tua casa in foto',
+     'testo' => 'Aggiungi fino a 10 immagini e una descrizione.',
+     'dove' => '/pannello/{pid}/casa', 'bottone' => 'Aggiungi le foto', 'campi' => [], 'sezioni' => []],
     // 10 · Concierge AI: l'assistente che risponde agli ospiti con il testo della guida (Plus e Portfolio).
     ['id' => '2026-10-assistente', 'data' => '2026-10-27', 'titolo' => 'Concierge AI: risponde ai tuoi ospiti, a qualsiasi ora',
      'testo' => 'Nella guida c\'è il bottone «Chiedi al Concierge»: l\'ospite scrive una domanda nella sua lingua e il Concierge AI risponde solo con quello che hai scritto tu, indicando la sezione. Se la guida non lo dice, mostra i tuoi contatti. In Impostazioni lo accendi e lo spegni, e vedi le domande rimaste senza risposta. Compreso in Plus e Portfolio.',

@@ -135,3 +135,64 @@
   // 9T · «Provalo sulla demo» dalla home: con #concierge nell'indirizzo la finestra si apre da sola.
   if (location.hash === '#concierge') apri();
 })();
+
+/* 9V · «La casa»: le foto scorrono con il dito (CSS scroll-snap); qui solo il contatore «3 / 8», i puntini, le frecce
+   (sul computer) e i tasti freccia. La descrizione si chiude a 4 righe con «Leggi di più» / «Mostra meno», e il bottone
+   compare solo se il testo è più lungo. Senza JavaScript le foto scorrono lo stesso e il testo si legge intero. */
+(function () {
+  'use strict';
+  var s = document.querySelector('[data-casa-slide]');
+  var pista = s && s.querySelector('[data-casa-pista]'), conta = s && s.querySelector('[data-casa-conta]');
+  if (pista && conta) {
+    var foto = Array.prototype.slice.call(s.querySelectorAll('[data-casa-foto]'));
+    var puntini = s.querySelector('[data-casa-puntini]'), prima = s.querySelector('[data-casa-prima]'), dopo = s.querySelector('[data-casa-dopo]'), voce = s.querySelector('[data-casa-voce]');
+    var fermo = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var quale = -1, inAttesa = false;
+    var margine = function () { return parseFloat(getComputedStyle(pista).paddingLeft) || 0; };
+    var attuale = function () {
+      var x = pista.scrollLeft + margine(), meglio = 0, d = Infinity;
+      foto.forEach(function (f, i) { var q = Math.abs(f.offsetLeft - x); if (q < d) { d = q; meglio = i; } });
+      // In fondo alla pista l'ultima foto può non arrivare al margine: vale lei.
+      if (pista.scrollLeft + pista.clientWidth >= pista.scrollWidth - 2) meglio = foto.length - 1;
+      return meglio;
+    };
+    var mostra = function () {
+      inAttesa = false;
+      var i = attuale();
+      if (i === quale) return;
+      conta.textContent = (i + 1) + ' / ' + foto.length;
+      if (puntini) for (var k = 0; k < puntini.children.length; k++) puntini.children[k].className = k === i ? 'on' : '';
+      if (prima) prima.disabled = i === 0;
+      if (dopo) dopo.disabled = i === foto.length - 1;
+      if (voce && quale !== -1) voce.textContent = (voce.getAttribute('data-testo') || '').replace('{i}', i + 1);
+      quale = i;
+    };
+    var vai = function (i) {
+      i = Math.max(0, Math.min(foto.length - 1, i));
+      pista.scrollTo({ left: foto[i].offsetLeft - margine(), behavior: fermo ? 'auto' : 'smooth' });
+    };
+    pista.addEventListener('scroll', function () { if (!inAttesa) { inAttesa = true; (window.requestAnimationFrame || setTimeout)(mostra); } }, { passive: true });
+    if (prima) prima.addEventListener('click', function () { vai(quale - 1); });
+    if (dopo) dopo.addEventListener('click', function () { vai(quale + 1); });
+    s.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight') { e.preventDefault(); vai(quale + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); vai(quale - 1); }
+    });
+    [conta, puntini, prima, dopo].forEach(function (el) { if (el) el.hidden = false; });
+    mostra();
+  }
+
+  var box = document.querySelector('[data-casa-testo]');
+  if (box) {
+    var p = box.querySelector('.casa-testo__p'), b = box.querySelector('[data-casa-piu]');
+    var misura = function () { if (!box.classList.contains('casa-testo--aperto')) b.hidden = p.scrollHeight <= p.clientHeight + 2; };
+    b.addEventListener('click', function () {
+      var aperto = box.classList.toggle('casa-testo--aperto');
+      b.setAttribute('aria-expanded', aperto ? 'true' : 'false');
+      b.textContent = b.getAttribute(aperto ? 'data-meno' : 'data-piu');
+    });
+    misura();
+    window.addEventListener('resize', misura);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(misura);
+  }
+})();

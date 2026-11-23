@@ -394,6 +394,18 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 9. **Codici sconto**: «Valido fino al» è ora già compilato con il 31 dicembre; cambialo se serve.
 10. Restano in italiano (per ora): l'email d'invito all'amico e le email scritte dall'amministrazione al cliente (rinnovo fermato, cambio piano, rimborso, password provvisoria).
 
+## 4aa. 9V (23 novembre): «La casa», galleria di foto e descrizione
+
+La migrazione **072** parte da sola al primo accesso. Su Stripe non c'è niente da fare (nessun prezzo né prodotto nuovo). Poi:
+
+1. **Casa Checco**: la migrazione le aggiunge 8 foto e la descrizione, e la ripubblica. Apri la home: nel telefono deve esserci «Scopri la casa · 8 foto». Se non c'è, la vetrina aveva modifiche non pubblicate: Amministrazione → Clienti → l'account della vetrina → **«Pubblica le modifiche della vetrina»**. Foto e testi li cambi dal pannello della vetrina → Contenuti → «La casa: foto e descrizione»; «Rifai la vetrina» non li sovrascrive.
+2. **Segno «Novità»**: sparisce da solo 60 giorni dopo l'aggiornamento. Per un'altra data: Amministrazione → Impostazioni → Sito → «Segno «Novità» della galleria «La casa»: fino al». Per toglierlo subito scrivi una data passata.
+3. **Testi e foto → La casa in foto**: la voce dei piani, la riga del confronto e il blocco in home (IT/EN). Senza modifiche valgono quelli del brief.
+4. **Limiti del server per le foto**: con JavaScript le foto partono una per volta, già ridotte, quindi bastano i limiti di oggi. Senza JavaScript partono tutte insieme: se superano `post_max_size` il cliente legge «Il file è troppo pesante per il server». Restano consigliati `upload_max_filesize = 20M` e `post_max_size = 20M` (Diagnostica).
+5. **Termini**: ho aggiunto una frase al punto 8 (le foto della galleria restano dell'host, che garantisce di averne i diritti). È una precisazione: la versione dei Termini **non** è cambiata e i clienti non devono riaccettare. Se preferisci farli riaccettare, cambia la data in Impostazioni → Titolare e documenti legali.
+6. **Clienti già attivi**: vedono nel pannello la fascia «Mostra la tua casa in foto» con «Aggiungi le foto». Non parte nessuna email.
+7. Poi Amministrazione → Sistema → **Cache** → «Svuota tutto» (CSS e JavaScript nuovi).
+
 ## 4z. 9U (30 ottobre): Promo novembre, foto della demo, selettore oltre 10
 
 Le migrazioni **070** e **071** partono da sole al primo accesso. Poi:

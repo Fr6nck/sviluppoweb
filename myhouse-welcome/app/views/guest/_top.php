@@ -6,7 +6,9 @@ $profilo = !empty($pr['profile_id']) ? Media::url((int) $pr['profile_id']) : nul
 $etScuro = I18n::t($loc, 'theme_dark'); $etChiaro = I18n::t($loc, 'theme_light'); ?>
 <div class="guest-top">
   <div class="row" style="gap:9px;min-width:0">
-    <?php if (!empty($indietro)): ?>
+    <?php if (!empty($indietro) && !empty($indietroTesto)): /* 9V · «‹ Torna alla guida» scritto (la pagina «La casa») */ ?>
+      <a class="guest-indietro" href="<?= Support::e($base) ?>?l=<?= Support::e($loc) ?>"><?= MHW\Icon::svg('back', 17, 2.1) ?><span><?= Support::e(I18n::t($loc, 'back')) ?></span></a>
+    <?php elseif (!empty($indietro)): ?>
       <a class="icon-btn" href="<?= Support::e($base) ?>?l=<?= Support::e($loc) ?>" aria-label="<?= Support::e(I18n::t($loc, 'back')) ?>"><?= MHW\Icon::svg('back', 18, 1.9) ?></a>
     <?php elseif ($logo): ?>
       <img class="logo-guest" src="<?= Support::e($logo) ?>" alt="<?= Support::e($pr['name']) ?>" width="120" height="30">

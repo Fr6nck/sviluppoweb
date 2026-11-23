@@ -27,7 +27,7 @@ final class EliminaAccount
     private const PERSONALI = ['assistant_questions', 'email_log', 'email_optout', 'entitlement_overrides', 'feedback', 'interessi_sito', 'novita_viste',
                                'preventivi', 'proposte_cambio', 'referral_invites', 'testimonials', 'translation_usage', 'vetrina_schede'];
     /** Le tabelle delle strutture senza chiave esterna verso properties (le altre si cancellano da sole con la struttura). */
-    private const DELLE_STRUTTURE = ['assistant_questions', 'property_channels', 'room_variants', 'sezioni_versioni', 'translation_suggestions', 'translation_usage', 'vetrina_schede', 'testimonials'];
+    private const DELLE_STRUTTURE = ['assistant_questions', 'property_channels', 'property_gallery', 'room_variants', 'sezioni_versioni', 'translation_suggestions', 'translation_usage', 'vetrina_schede', 'testimonials'];
     /** Gli stati di un abbonamento che può ancora addebitare. */
     private const APERTI = ['active', 'trialing', 'past_due', 'unpaid', 'incomplete'];
     public const RUOLO = 'eliminato';

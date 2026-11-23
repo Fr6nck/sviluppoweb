@@ -207,7 +207,7 @@ $r->any('/pannello/nuova', function () use ($host, $messaggio) {
                 $pid = Properties::create($aid, $nome, (string) ($_POST['city'] ?? ''), (string) $u['name']);
                 if ($origine) {
                     $lingua = (string) Db::val('SELECT default_locale FROM properties WHERE id = ?', [$origine], 'it');
-                    MHW\Copia::esegui($aid, $origine, $pid, (array) ($_POST['copia'] ?? []), [], !empty($_POST['copia_aspetto']), !empty($_POST['copia_contatti']));
+                    MHW\Copia::esegui($aid, $origine, $pid, (array) ($_POST['copia'] ?? []), [], !empty($_POST['copia_aspetto']), !empty($_POST['copia_contatti']), !empty($_POST['copia_casa']));
                     if ($lingua !== 'it') Properties::setDefaultLocale($aid, $pid, $lingua);
                 }
                 return $pid;
@@ -242,7 +242,7 @@ $r->any('/pannello/{id}/copia', function (array $a) use ($mia, $contesto, $messa
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && $da) {
         try {
             $esito = MHW\Copia::esegui($aid, (int) $da['id'], (int) $p['id'], (array) ($_POST['copia'] ?? []), (array) ($_POST['esistenti'] ?? []),
-                                       !empty($_POST['copia_aspetto']), !empty($_POST['copia_contatti']));
+                                       !empty($_POST['copia_aspetto']), !empty($_POST['copia_contatti']), !empty($_POST['copia_casa']));
             Auth::audit('property.copy', (int) $u['id'], ['da' => (int) $da['id'], 'a' => (int) $p['id']] + $esito);
             // 9N · il titolo vero della sezione nella guida (la sezione libera «La piscina», non «Informazioni utili»)
             $titoloSez = fn(string $kind) => (string) (Db::val('SELECT st.title FROM section_translations st JOIN sections s ON s.id = st.section_id
@@ -252,7 +252,8 @@ $r->any('/pannello/{id}/copia', function (array $a) use ($mia, $contesto, $messa
             Support::flash(MHW\tf('Copia da {nome} fatta.', ['{nome}' => $da['name']])
                 . ($esito['copiate'] ? ' ' . MHW\tf('Copiate: {elenco}.', ['{elenco}' => $nomi($esito['copiate'])]) : '')
                 . ($esito['sostituite'] ? ' ' . MHW\tf('Sostituite: {elenco}.', ['{elenco}' => $nomi($esito['sostituite'])]) : '')
-                . ($esito['saltate'] ? ' ' . MHW\tf('Saltate, perché c\'erano già: {elenco}.', ['{elenco}' => $nomi($esito['saltate'])]) : ''));
+                . ($esito['saltate'] ? ' ' . MHW\tf('Saltate, perché c\'erano già: {elenco}.', ['{elenco}' => $nomi($esito['saltate'])]) : '')
+                . (!empty($esito['casa']) ? ' ' . MHW\t('Copiata anche «La casa: foto e descrizione».') : ''));
             Support::redirect('/pannello/' . $p['id']);
         } catch (\Throwable $e) { $err = $messaggio($e, 'copia'); if ($e instanceof MHW\PianoLimite) $sbloccaCopia = $e->funzione; }
     }
@@ -291,6 +292,7 @@ $r->post('/pannello/{id}/elimina', function (array $a) use ($mia) {
         Support::redirect(Entitlements::editable((int) $acc['id'], (int) $p['id']) ? '/pannello/' . $p['id'] . '/impostazioni' : '/pannello');
     }
     foreach (Db::all('SELECT id FROM media WHERE property_id = ?', [$p['id']]) as $m) Media::delete((int) $m['id'], (int) $acc['id']);
+    if (MHW\Casa::disponibile()) Db::run('DELETE FROM property_gallery WHERE property_id = ?', [$p['id']]);   // 9V: su SQLite va già con la struttura
     Db::run('DELETE FROM properties WHERE id = ?', [$p['id']]);
     Auth::audit('property.delete', (int) $u['id'], ['name' => $p['name']]);
     Support::flash('Struttura eliminata, con la sua guida e il suo QR.');
@@ -665,13 +667,14 @@ $r->post('/pannello/{id}/lingue/{loc}/suggerite.json', function (array $a) use (
     if (!empty($_POST['campo']) && isset($campi[(string) $_POST['campo']])) $lista = [(string) $_POST['campo'] => $campi[(string) $_POST['campo']]];
     if ($sezione > 0) {
         $luoghiDi = array_map('intval', array_column(Db::all('SELECT id FROM places WHERE section_id = ?', [$sezione]), 'id'));
-        $lista = array_filter($lista, fn($c) => $c['tipo'] === 'section' ? (int) $c['id'] === $sezione : in_array((int) $c['id'], $luoghiDi, true));
+        $lista = array_filter($lista, fn($c) => $c['tipo'] === 'section' ? (int) $c['id'] === $sezione : ($c['tipo'] === 'place' && in_array((int) $c['id'], $luoghiDi, true)));
     }
     $chiavi = array_slice(array_keys($lista), 0, $limite);
     [$n, $stop] = $chiavi ? Traduttore::suggerisci((int) $acc['id'], $p, $loc, $chiavi) : [0, ''];
     // L'etichetta del campo, per la lista «Titolo · Deutsch: Heizung».
     $etichetta = function (array $c): string {
         if ($c['tipo'] === 'place') return ['category' => 'Categoria', 'description' => 'Descrizione', 'note' => 'Perché lo consigli', 'badge' => 'Etichetta'][$c['path']] ?? $c['path'];
+        if ($c['tipo'] === 'casa') return (string) (MHW\Casa::CAMPI[$c['path']][3] ?? $c['path']) . ' · La casa';   // 9V
         if ($c['path'] === 'title') return 'Titolo';
         $kind = (string) Db::val('SELECT kind FROM sections WHERE id = ?', [$c['id']], '');
         $parti = explode('.', $c['path']);
@@ -756,6 +759,8 @@ $r->any('/pannello/{id}/lingue/{loc}', function (array $a) use ($mia, $contesto,
                 $sid = (int) Db::val('SELECT section_id FROM places WHERE id = ?', [(int) $plid]);
                 if ($sid) Properties::savePlace((int) $acc['id'], (int) $p['id'], $sid, (int) $plid, $loc, false, (array) $campi);
             }
+            // 9V · «La casa»: titolo, descrizione e scritta sulla copertina in questa lingua.
+            foreach ((array) ($_POST['casa'] ?? []) as $campo => $v) MHW\Casa::scriviTraduzione((int) $p['id'], $loc, (string) $campo, (string) $v);
             // 7C: l'impronta dell'originale per i campi tradotti adesso, per accorgersi quando l'italiano cambia.
             Traduttore::fissaImpronte($p, $loc, Traduttore::campi($p, $loc), $primaT);
             if ($vuoleJson()) Support::json(['ok' => true]);
@@ -789,6 +794,7 @@ $r->any('/pannello/{id}/lingue/{loc}', function (array $a) use ($mia, $contesto,
     // 9N · Quanto costa tradurre quello che manca, prima di «Traduci»: i caratteri dei testi originali.
     $stimaT = array_sum(array_map(fn($c) => mb_strlen((string) $c['origine']), $mancantiT));
     View::out('host/translate', $contesto($acc, $p) + ['stimaT' => $stimaT] + [
+        'casaT' => array_filter($campiT, fn($c) => $c['tipo'] === 'casa'),   // 9V
         'loc' => $loc, 'nome' => Config::get('locales')[$loc] ?? $loc, 'sections' => $sections, 'err' => $err, 'qui' => 'lingue',
         'sugg' => $sugg, 'daSuggerire' => $daSuggerire, 'perche' => Traduttore::perche((int) $acc['id'], $p, $loc),
         'cambiati' => array_keys(array_filter($campiT, fn($c) => $c['cambiato'])),
@@ -855,6 +861,72 @@ $r->any('/pannello/{id}/aspetto', function (array $a) use ($mia, $contesto, $mes
     $palette = [];
     foreach (Palette::all() as $code => $nome) $palette[$code] = ['nome' => $nome, 'dati' => Palette::get($code), 'toni' => Palette::tones($code), 'css' => Palette::css($code)];
     View::out('host/appearance', $contesto($acc, $p) + ['err' => $err, 'palette' => $palette, 'qui' => 'aspetto'], 'layout/cms');
+});
+
+// ------------------------------------------------- 9V · «La casa»: foto e descrizione
+/* La galleria (al massimo 10 foto, ridotte al caricamento) e la descrizione che l'ospite apre dalla copertina.
+   Inclusa in tutti i piani, funziona anche in bozza. Le azioni: «carica» (una o più foto), «togli», «su» e «giu»
+   (le frecce), «ordina» (trascinando), «salva» (testi, interruttore, descrizioni delle foto). Con JavaScript
+   (assets/casa.js) rispondono in JSON e la pagina non si ricarica; senza, si torna alla pagina con il messaggio. */
+$r->any('/pannello/{id}/casa', function (array $a) use ($mia, $contesto, $messaggio, $vuoleJson) {
+    [, $acc, $p] = $mia((int) $a['id']);
+    $aid = (int) $acc['id']; $pid = (int) $p['id'];
+    if (!MHW\Casa::disponibile()) Support::redirect('/pannello/' . $pid);
+    $qui = '/pannello/' . $pid . '/casa';
+    $err = null; $scritto = null;
+    $fotoJson = fn(array $f) => ['id' => $f['id'], 'url' => Media::ridotta($f['media_id'], MHW\Casa::MINIATURA), 'alt' => $f['alt']];
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $cosa = (string) ($_POST['azione'] ?? 'salva');
+        try {
+            if ($cosa === 'carica') {
+                $esito = MHW\Casa::carica($aid, $p, MHW\Casa::elencoFile($_FILES['foto'] ?? []));
+                [$testo, $tipo] = MHW\Casa::messaggio($esito);
+                if ($vuoleJson()) {
+                    $nuove = array_column($esito['caricate'], 'id');
+                    Support::json(['ok' => (bool) $esito['caricate'], 'messaggio' => $testo, 'fuori' => $esito['fuori'], 'errori' => $esito['errori'], 'dopo' => $esito['dopo'],
+                                   'quante' => MHW\Casa::quante($pid), 'max' => MHW\Casa::MAX_FOTO,
+                                   'foto' => array_values(array_map($fotoJson, array_filter(MHW\Casa::foto($pid), fn($f) => in_array($f['id'], $nuove, true))))],
+                                  $esito['caricate'] || $esito['fuori'] ? 200 : 422);
+                }
+                if ($esito['caricate'] && $esito['prima'] > $esito['dopo']) {
+                    $testo .= ' ' . MHW\tf('Ridotte in automatico: da {prima} a {dopo}.', ['{prima}' => Media::mb($esito['prima']), '{dopo}' => MHW\Casa::peso($esito['dopo'])]);
+                }
+                Support::flash($testo, $tipo === 'ok' ? 'ok' : ($tipo === 'avviso' ? 'avviso' : 'err'));
+                Support::redirect($qui . '#foto');
+            }
+            if (in_array($cosa, ['togli', 'su', 'giu'], true)) {
+                $gid = (int) ($_POST['foto_id'] ?? 0);
+                if ($cosa === 'togli') MHW\Casa::togli($aid, $pid, $gid); else MHW\Casa::sposta($pid, $gid, $cosa);
+                if ($vuoleJson()) Support::json(['ok' => true, 'quante' => MHW\Casa::quante($pid), 'ordine' => array_column(MHW\Casa::foto($pid), 'id')]);
+                if ($cosa === 'togli') Support::flash('Foto tolta dalla galleria.');
+                Support::redirect($qui . ($cosa === 'togli' ? '' : '?mossa=' . $gid . '&verso=' . $cosa) . '#foto');
+            }
+            if ($cosa === 'ordina') {
+                MHW\Casa::ordina($pid, array_filter(explode(',', (string) ($_POST['ordine'] ?? ''))));
+                if ($vuoleJson()) Support::json(['ok' => true, 'ordine' => array_column(MHW\Casa::foto($pid), 'id')]);
+                Support::redirect($qui . '#foto');
+            }
+            // «salva»: i tre testi (oltre i limiti non si salva niente), l'interruttore e le descrizioni delle foto.
+            MHW\Casa::salva($pid, $_POST);
+            if (isset($_POST['alt']) && is_array($_POST['alt'])) MHW\Casa::salvaAlt($pid, $_POST['alt']);
+            if ($vuoleJson()) Support::json(['ok' => true]);
+            Support::flash('«La casa» salvata.');
+            Support::redirect($qui);
+        } catch (\Throwable $e) {
+            $err = $messaggio($e, 'la casa');
+            if ($vuoleJson()) Support::json(['ok' => false, 'errore' => $err], 422);
+            $scritto = $_POST;   // quello che ha scritto resta nel modulo, da accorciare
+        }
+        $p = Db::one('SELECT * FROM properties WHERE id = ?', [$pid]);
+    }
+    $foto = MHW\Casa::foto($pid);
+    $peso = array_sum(array_map(fn($f) => (int) (Media::row($f['media_id'])['bytes'] ?? 0), $foto));
+    View::out('host/casa', $contesto($acc, $p) + [
+        'err' => $err, 'scritto' => $scritto, 'foto' => $foto, 'pesoMedio' => $foto ? (int) round($peso / count($foto)) : 0,
+        'mossa' => (int) ($_GET['mossa'] ?? 0), 'verso' => (string) ($_GET['verso'] ?? ''),
+        'pending' => $p['status'] === 'published' ? Guide::pendingChanges($pid) : 1,
+        'online' => Subscriptions::propertyOnline($p), 'qui' => 'contenuti',
+    ], 'layout/cms');
 });
 
 // -------------------------------------------------------------- impostazioni
@@ -1024,6 +1096,12 @@ $anteprima = function (array $a, string $pagina) use ($mia) {
         foreach ($snap['sections'] as $s) if ((string) $s['id'] === (string) $a['sid']) View::out('guest/section', $dati + ['sec' => $s], 'layout/guest');
         Support::redirect('/pannello/' . $p['id'] . '/anteprima');
     }
+    // 9V · La pagina «La casa»: senza foto né descrizione (o con l'interruttore spento) si torna alla copertina.
+    if ($pagina === 'casa') {
+        $casa = MHW\Casa::perGuida($snap['property'], $loc);
+        if (!$casa) Support::redirect('/pannello/' . $p['id'] . '/anteprima');
+        View::out('guest/casa', $dati + ['casa' => $casa], 'layout/guest');
+    }
     View::out(['home' => 'guest/guide', 'benvenuto' => 'guest/splash', 'commiato' => 'guest/farewell', 'recensione' => 'guest/review'][$pagina], $dati,
               in_array($pagina, ['home', 'recensione'], true) ? 'layout/guest' : 'layout/full');
 };
@@ -1031,6 +1109,7 @@ $r->get('/pannello/{id}/anteprima', fn(array $a) => $anteprima($a, 'home'));
 $r->get('/pannello/{id}/anteprima/benvenuto', fn(array $a) => $anteprima($a, 'benvenuto'));
 $r->get('/pannello/{id}/anteprima/commiato', fn(array $a) => $anteprima($a, 'commiato'));
 $r->get('/pannello/{id}/anteprima/recensione', fn(array $a) => $anteprima($a, 'recensione'));   // 8C
+$r->get('/pannello/{id}/anteprima/casa', fn(array $a) => $anteprima($a, 'casa'));               // 9V
 $r->get('/pannello/{id}/anteprima/{sid}', fn(array $a) => $anteprima($a, 'sezione'));
 
 // ---------------------------------------------------------------- pubblica

@@ -30,6 +30,13 @@ $elenco = $sezioniOrigine ?? array_map(fn($k) => ['kind' => $k, 'titolo' => Sect
     <?php endforeach; ?>
     <label class="check"><input type="checkbox" name="copia_aspetto" value="1" checked> <span><?= t('Aspetto: palette, tema e logo') ?></span></label>
     <label class="check"><input type="checkbox" name="copia_contatti" value="1" checked> <span><?= t('Contatti') ?></span></label>
+    <?php /* 9V · «La casa»: la galleria e la descrizione. Con la proposta ($casaOrigine): solo se l'origine ne ha una; se la struttura di arrivo ha già la sua non si tocca. */
+          $casaOrigine = $casaOrigine ?? null; $casaEsiste = $casaEsiste ?? false;
+          if ($sezioniOrigine === null || $casaOrigine !== null): ?>
+      <label class="check"><input type="checkbox" name="copia_casa" value="1" <?= $casaEsiste ? 'disabled' : 'checked' ?>>
+        <span><?= t('La casa: foto e descrizione') ?><?php if ($casaOrigine): ?> <span class="small muted">· <?= Support::e($casaOrigine === 1 ? t('1 foto') : tf('{n} foto', ['{n}' => (int) $casaOrigine])) ?></span><?php endif; ?>
+          <?php if ($casaEsiste): ?><span class="small muted">· <?= Support::e(tf('{nome} ha già la sua: non si tocca', ['{nome}' => $nomeDestinazione ?? t('questa struttura')])) ?></span><?php endif; ?></span></label>
+    <?php endif; ?>
   </div>
   <p class="small muted" style="margin-top:10px"><?= t('Non si copiano mai, perché sono solo di una struttura: indirizzo, CIN, reti Wi-Fi, passaggi per entrare, foto di copertina.') ?></p>
 </fieldset>

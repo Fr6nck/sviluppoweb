@@ -18,7 +18,7 @@ $data = fn(string $d) => MHW\Pannello::data($d); ?>
         <time datetime="<?= Support::e($n['data']) ?>"><?= Support::e($data((string) $n['data'])) ?><?= !empty($n['vista']) ? ' · ' . t('vista') : '' ?></time>
         <b><?= Support::e($n['titolo']) ?></b>
         <p style="margin:4px 0 0"><?= Support::e($n['testo']) ?></p>
-        <?php if ($dove !== ''): ?><p style="margin:8px 0 0"><a class="small" href="<?= b() . Support::e($dove) ?>"<?= str_ends_with($dove, '/anteprima') ? ' target="_blank" rel="noopener"' : '' ?>><?= t('Mostrami dove') ?> <?= Icon::svg('arrow', 14, 2) ?></a></p><?php endif; ?>
+        <?php if ($dove !== ''): ?><p style="margin:8px 0 0"><a class="small" href="<?= b() . Support::e($dove) ?>"<?= str_ends_with($dove, '/anteprima') ? ' target="_blank" rel="noopener"' : '' ?>><?= !empty($n['bottone']) ? Support::e((string) $n['bottone']) : t('Mostrami dove') ?> <?= Icon::svg('arrow', 14, 2) ?></a></p><?php endif; ?>
       </li>
     <?php endforeach; ?>
   </ul>

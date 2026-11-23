@@ -9,4 +9,7 @@ use MHW\{Support, Icon, SectionCatalog}; ?>
     <?php if (str_ends_with(trim($v), ':')): ?><li class="plan__da"><?= Support::e($v) ?></li>
     <?php else: ?><li><?= Icon::svg('check', 16, 2) ?><span><?= Support::e($v) ?></span></li><?php endif; ?>
   <?php endforeach; ?>
+  <?php if (MHW\Casa::disponibile()): /* 9V · «La casa in foto», inclusa in tutti i piani: la stessa voce in ogni scheda, da Testi e foto, con «Novità» */ ?>
+    <li class="plan__casa"><?= Icon::svg('check', 16, 2) ?><span><?= MHW\Casa::voce() ?></span></li>
+  <?php endif; ?>
 </ul>

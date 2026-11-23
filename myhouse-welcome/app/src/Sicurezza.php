@@ -106,6 +106,12 @@ final class Sicurezza
     {
         $out = []; $visti = [];
         $base = (string) ($snap['property']['default_locale'] ?? 'it');
+        // 9V · «La casa»: titolo e descrizione della galleria, in ogni lingua (sid 0: si correggono nella pagina «La casa»).
+        foreach ((array) ($snap['property']['casa']['tr'] ?? []) as $loc => $t) {
+            foreach (['titolo' => 'Titolo', 'descrizione' => 'Descrizione'] as $campo => $etichetta) {
+                if (self::codiceAccesso((string) ($t[$campo] ?? ''))) $out[] = ['sid' => 0, 'sezione' => 'La casa: foto e descrizione', 'campo' => $etichetta, 'lingua' => (string) $loc];
+            }
+        }
         foreach ($snap['sections'] ?? [] as $s) {
             $kind = (string) ($s['kind'] ?? '');
             $titolo = trim((string) ($s['tr'][$base]['title'] ?? '')) ?: SectionCatalog::title($kind, 'it');

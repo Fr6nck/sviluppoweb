@@ -30,12 +30,96 @@ final class Demo
         return count($utenti);
     }
 
-    private static function foto(string $nome, int $accountId, int $propertyId, string $alt): ?int
+    private static function foto(string $nome, int $accountId, int $propertyId, string $alt, ?string $scopo = null): ?int
     {
         foreach ([defined('MHW_PUBLIC') ? MHW_PUBLIC : null, dirname(__DIR__) . '/public'] as $dove) {
-            if ($dove && is_file($dove . '/assets/foto/' . $nome)) return Media::importImage($dove . '/assets/foto/' . $nome, $accountId, $propertyId, $alt);
+            if ($dove && is_file($dove . '/assets/foto/' . $nome)) return Media::importImage($dove . '/assets/foto/' . $nome, $accountId, $propertyId, $alt, $scopo);
         }
         return null;
+    }
+
+    // ---------------------------------------------------- 9V · «La casa» della vetrina
+    /** Il titolo e la descrizione di serie di Casa Checco (una casa di fantasia: come il resto della vetrina). Le altre lingue: lang/vetrina. */
+    public const CASA_TITOLO = 'Una casa in pietra nel cuore di Assisi';
+    public const CASA_DESCRIZIONE = 'Casa Checco è al primo piano di un palazzetto del Trecento, a tre minuti a piedi dalla piazza. Due camere, soggiorno con camino e una piccola terrazza sui tetti, dove fare colazione guardando la valle. La cucina è attrezzata, con il tavolo fatto dalle vecchie assi del pavimento. I muri di pietra tengono il fresco d\'estate, e la sera il vicolo è silenzioso. Si parcheggia in Piazza Matteotti, poi si arriva a piedi.';
+    /** Le foto di serie della galleria (assets/foto), nell'ordine del mockup, con il testo alternativo. */
+    public const CASA_FOTO = [
+        ['checco-orizzontale.jpg', 'Il portone ad arco in legno di Casa Checco nel muro di pietra, con il vaso fiorito e il rampicante'],
+        ['checco-ingresso.jpg', 'La porta rossa ad arco con la rosa rampicante sul muro'],
+        ['checco-soggiorno.jpg', 'Il soggiorno con il divano chiaro, la colonna in legno e la cucina in mattoni'],
+        ['checco-copertina.jpg', self::ALT_COPERTINA],
+        ['checco-trattoria.jpg', 'Tavoli apparecchiati in un vicolo, a due passi dalla casa'],
+        ['checco-bar.jpg', 'Una tazzina di espresso sul bancone del caffè sotto casa'],
+        ['checco-gelato.jpg', 'Vaschette di gelato colorate nella gelateria del vicolo'],
+        ['checco-locandina.jpg', 'Locandina del mercato del sabato in Piazza Matteotti'],
+    ];
+
+    /**
+     * 9V · Mette sulla vetrina la galleria e la descrizione di serie, solo dove mancano (regola della 9U: quello che il
+     * titolare ha già cambiato non si tocca): con almeno una foto la galleria resta com'è, con un titolo o una descrizione
+     * già scritti i testi restano i suoi. Le foto passano dalla stessa riduzione di quelle dei clienti (1600 px, 300 KB).
+     * Non pubblica: lo fa chi chiama. @return bool true se ha cambiato qualcosa
+     */
+    public static function casaVetrina(int $pid): bool
+    {
+        if (!Casa::disponibile()) return false;
+        $p = Db::one('SELECT * FROM properties WHERE id = ?', [$pid]);
+        if (!$p) return false;
+        $cambiato = false;
+        if (!Casa::quante($pid)) {
+            $pos = 0;
+            foreach (self::CASA_FOTO as [$file, $alt]) {
+                $mid = self::foto($file, (int) $p['account_id'], $pid, $alt, 'gallery');
+                if (!$mid) continue;
+                Db::insert('property_gallery', ['property_id' => $pid, 'media_id' => $mid, 'position' => ++$pos, 'alt' => $alt, 'created_at' => Support::now()]);
+                $cambiato = true;
+            }
+        }
+        if (trim((string) ($p['casa_titolo'] ?? '')) === '' && trim((string) ($p['casa_descrizione'] ?? '')) === '') {
+            Db::update('properties', ['casa_titolo' => self::CASA_TITOLO, 'casa_descrizione' => self::CASA_DESCRIZIONE], 'id = :pid', ['pid' => $pid]);
+            $cambiato = true;
+        }
+        if ($cambiato) self::traduciVetrina($pid);   // le altre lingue, dai testi di lang/vetrina
+        return $cambiato;
+    }
+
+    /**
+     * 9V · Prima di «Rifai la vetrina»: la galleria e i testi di «La casa», se il titolare li ha cambiati (una foto non di
+     * serie, un numero di foto diverso, un testo diverso da quello di serie, l'interruttore spento). null = è quella di serie.
+     * @return array{foto:list<array{0:string,1:string,2:string}>,testi:array<string,mixed>}|null
+     */
+    public static function casaDaTenere(int $accountId): ?array
+    {
+        if (!Casa::disponibile()) return null;
+        $p = Db::one('SELECT * FROM properties WHERE account_id = ? AND is_demo = ? ORDER BY id', [$accountId, self::VETRINA]);
+        if (!$p) return null;
+        $foto = Casa::foto((int) $p['id']);
+        $nomi = array_map(fn($f) => (string) (Media::row($f['media_id'])['original_name'] ?? ''), $foto);
+        $diSerie = $nomi === array_column(self::CASA_FOTO, 0)
+            && trim((string) $p['casa_titolo']) === self::CASA_TITOLO && trim((string) ($p['casa_descrizione'] ?? '')) === self::CASA_DESCRIZIONE
+            && trim((string) $p['casa_invito']) === '' && (int) $p['casa_attiva'] === 1;
+        $vuota = !$foto && trim((string) $p['casa_titolo']) === '' && trim((string) ($p['casa_descrizione'] ?? '')) === '' && (int) $p['casa_attiva'] === 1;
+        if ($diSerie || $vuota) return null;
+        $tenute = [];
+        foreach ($foto as $f) {
+            $byte = Media::bytes($f['media_id']);
+            $m = Media::row($f['media_id']);
+            if ($byte !== null && $byte !== '') $tenute[] = [$byte, $f['alt'], (string) ($m['original_name'] ?? 'foto')];
+        }
+        return ['foto' => $tenute, 'testi' => ['casa_titolo' => (string) $p['casa_titolo'], 'casa_descrizione' => $p['casa_descrizione'], 'casa_invito' => (string) $p['casa_invito'],
+                                               'casa_attiva' => (int) $p['casa_attiva'], 'casa_tr' => $p['casa_tr']]];
+    }
+
+    /** 9V · Rimette sulla vetrina nuova la galleria e i testi tenuti da casaDaTenere(), al posto di quelli di serie. */
+    private static function casaRimetti(int $accountId, int $pid, array $casa): void
+    {
+        foreach (Casa::foto($pid) as $f) { Db::run('DELETE FROM property_gallery WHERE id = ?', [$f['id']]); Media::delete($f['media_id'], $accountId); }
+        $pos = 0;
+        foreach ($casa['foto'] as [$byte, $alt, $nome]) {
+            $mid = Media::salvaImmagine($byte, $accountId, $pid, $alt, pathinfo($nome, PATHINFO_FILENAME) ?: 'foto');
+            if ($mid) Db::insert('property_gallery', ['property_id' => $pid, 'media_id' => $mid, 'position' => ++$pos, 'alt' => $alt, 'created_at' => Support::now()]);
+        }
+        Db::update('properties', $casa['testi'], 'id = :pid', ['pid' => $pid]);
     }
 
     /** @param bool $pagato false = piano scelto ma non ancora pagato (Marco: Portfolio prima del pagamento) */
@@ -222,6 +306,8 @@ final class Demo
             'contatti' => $contatti, 'host' => $nomeHost !== '' ? explode(' ', $nomeHost)[0] : '',
             'whatsapp' => (bool) array_filter($contatti, fn($c) => !empty($c['whatsapp'])),
             'concierge' => $snap ? Assistente::datiGuida($snap, 'it') !== null : false,
+            // 9V · «La casa» della guida pubblicata (per la pastiglia sulla foto e il blocco in home), nella lingua del sito.
+            'casa' => $snap ? Casa::perGuida($pr, LinguaSito::get() === 'en' ? 'en' : 'it') : null,
             'snap' => $snap,
         ];
     }
@@ -252,8 +338,13 @@ final class Demo
     public static function rifaiVetrina(int $accountId, bool $plus): int
     {
         $tenute = self::fotoDaTenere($accountId);
+        $casa = self::casaDaTenere($accountId);   // 9V: anche la galleria e i testi di «La casa», se cambiati
         self::eliminaVetrina($accountId);
         $pid = self::creaVetrina($accountId, $plus);
+        if ($casa) {
+            self::casaRimetti($accountId, $pid, $casa);
+            if (!$tenute && Db::val('SELECT status FROM properties WHERE id = ?', [$pid]) === 'published') Guide::publish($pid);
+        }
         if ($tenute) {
             foreach ($tenute as $col => [$byte, $alt, $nome]) {
                 if (!Migrator::columnExists('properties', $col)) continue;
@@ -706,6 +797,7 @@ final class Demo
                 ['Farmacia', 'pharmacy', 'La più vicina è in centro, verso Piazza del Comune: il turno di notte è affisso sulla porta di ogni farmacia.', 'Piazza del Comune', 8, 'late', 'sea', null, null, null, ['en' => ['The nearest one is in the centre, towards Piazza del Comune: the night rota is posted on every pharmacy door.']]],
             ]);
         }
+        self::casaVetrina($pid);   // 9V · la galleria «La casa» e la descrizione (traduce anche le altre lingue)
         self::traduciVetrina($pid);
         Guide::publish($pid);
         return $pid;
@@ -756,6 +848,7 @@ final class Demo
         $n = 0;
         foreach (Db::all('SELECT id FROM properties WHERE account_id = ? AND is_demo = ?', [$accountId, self::VETRINA]) as $p) {
             foreach (Db::all('SELECT id FROM media WHERE property_id = ?', [$p['id']]) as $m) Media::delete((int) $m['id'], $accountId);
+            if (Casa::disponibile()) Db::run('DELETE FROM property_gallery WHERE property_id = ?', [$p['id']]);   // 9V
             Db::run('DELETE FROM properties WHERE id = ?', [$p['id']]);
             $n++;
         }

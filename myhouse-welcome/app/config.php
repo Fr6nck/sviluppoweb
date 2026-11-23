@@ -41,6 +41,10 @@ $config = [
     // 9Q · Il link «Scegli un orario» (Calendly, Google Calendar…) dell'email del giorno 21 sulle bozze. Vuoto = «Chiamaci».
     'chiamata_url' => $env('MHW_CHIAMATA_URL'),
 
+    // 9V · Fino a che giorno (AAAA-MM-GG, compreso) il sito mostra il segno «Novità» accanto alla galleria «La casa».
+    // Vuoto = 60 giorni dal giorno dell'aggiornamento (migrazione 072). Si cambia da Amministrazione → Impostazioni → Sito.
+    'novita' => ['casa_fino' => $env('MHW_NOVITA_CASA_FINO')],
+
     'db' => [
         'driver' => $env('MHW_DB_DRIVER', 'sqlite'),
         'sqlite_path' => __DIR__ . '/storage/myhouse.sqlite',

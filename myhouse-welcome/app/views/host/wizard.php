@@ -73,6 +73,7 @@ case 'sezioni': ?>
       <h1><?= t('Sezioni.') ?></h1>
       <p class="lead"><?= t('Aggiungi quello che serve davvero ai tuoi ospiti: la sezione si apre subito qui sotto, da compilare. Si salva mentre scrivi, e una sezione disattivata tiene i suoi contenuti.') ?></p>
     </div>
+    <?php include __DIR__ . '/_casa_scheda.php'; /* 9V · «La casa: foto e descrizione», anche prima di pubblicare */ ?>
     <?php $torna = 'procedura'; include __DIR__ . '/_sezioni.php'; ?>
     <?php $barraAvanti = $avanti(t('Salva e continua'), $vai('aspetto')); include __DIR__ . '/_barra_passo.php'; ?>
 <?php break;
@@ -215,7 +216,7 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
       <section class="codici-conferma" id="codici" role="alertdialog" aria-labelledby="codici-titolo" aria-describedby="codici-testo" tabindex="-1">
         <h2 id="codici-titolo"><?= Icon::svg('lock', 20) ?><?= t('Nella guida ci sono codici di accesso') ?></h2>
         <ul class="codici-conferma__campi">
-          <?php foreach ($codici as $c): $dove = $c['lingua'] === $prop['default_locale'] ? '/pannello/' . $pid . '/sezioni/' . $c['sid'] : '/pannello/' . $pid . '/lingue/' . $c['lingua']; ?>
+          <?php foreach ($codici as $c): $dove = $c['lingua'] === $prop['default_locale'] ? '/pannello/' . $pid . ((int) $c['sid'] ? '/sezioni/' . $c['sid'] : '/casa') : '/pannello/' . $pid . '/lingue/' . $c['lingua']; /* 9V: sid 0 = «La casa» */ ?>
             <li><span><b><?= Support::e($c['sezione']) ?></b> · <?= Support::e($c['campo']) ?><?= $c['lingua'] !== $prop['default_locale'] ? ' <span class="small muted">(' . Support::e(strtoupper($c['lingua'])) . ')</span>' : '' ?></span>
               <a href="<?= b() . $dove ?>"><?= t('Correggi') ?></a></li>
           <?php endforeach; ?>
@@ -224,7 +225,7 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
         <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/pubblica" class="stack" style="gap:16px;margin:0" data-codici-conferma><?= Csrf::field() ?>
           <label class="check"><input type="checkbox" name="codici_ok" value="1" required data-codici-ok> <span><?= t('Ho capito, pubblico a mio rischio') ?></span></label>
           <div class="row" style="gap:12px">
-            <a class="btn" href="<?= b() ?>/pannello/<?= $pid ?>/<?= $codici[0]['lingua'] === $prop['default_locale'] ? 'sezioni/' . $codici[0]['sid'] : 'lingue/' . $codici[0]['lingua'] ?>"><?= t('Torna a correggere') ?></a>
+            <a class="btn" href="<?= b() ?>/pannello/<?= $pid ?>/<?= $codici[0]['lingua'] === $prop['default_locale'] ? ((int) $codici[0]['sid'] ? 'sezioni/' . $codici[0]['sid'] : 'casa') : 'lingue/' . $codici[0]['lingua'] ?>"><?= t('Torna a correggere') ?></a>
             <button class="btn btn--ghost" data-codici-vai disabled><?= t('Pubblica lo stesso') ?></button>
             <?php /* senza JavaScript il bottone resta attivo: la casella è obbligatoria e il server la controlla */ ?>
             <noscript><style>[data-codici-vai]{display:none}</style><button class="btn btn--ghost"><?= t('Pubblica lo stesso') ?></button></noscript>

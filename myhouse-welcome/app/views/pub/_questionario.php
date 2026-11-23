@@ -80,6 +80,7 @@ $qBase = $qFinestra ? b() . LinguaSito::percorso('/piano') : strtok((string) ($_
             <?php endif; ?>
             <ul class="questionario__punti">
               <?php foreach (TestiSito::lista('questionario.' . $cod . '.punti', $qSost) as $p): ?><li><?= Icon::svg('check', 15, 2.2) ?><span><?= $p ?></span></li><?php endforeach; ?>
+              <?php if (MHW\Casa::disponibile()): /* 9V · la galleria «La casa», inclusa in ogni piano */ ?><li class="plan__casa"><?= Icon::svg('check', 15, 2.2) ?><span><?= MHW\Casa::voce() ?></span></li><?php endif; ?>
             </ul>
           </div>
           <div class="questionario__perche">

@@ -48,7 +48,12 @@ $title = t('Statistiche — ') . $prop['name']; ?>
   </div>
   <div class="grid grid-2" style="align-items:start">
     <div class="panel stack"><span class="kicker"><?= t('Sezioni più lette') ?></span>
-      <?php $top = max(1, ...array_map(fn($s) => (int) $s['n'], $stats['sections'] ?: [['n' => 1]]));
+      <?php /* 9V · la galleria «La casa» sta tra le sezioni, al suo posto per numero di aperture */
+            if (!empty($stats['gallery'])) {
+                $stats['sections'][] = ['title' => t('La casa: foto e descrizione'), 'kind' => 'casa', 'n' => (int) $stats['gallery']];
+                usort($stats['sections'], fn($x, $y) => (int) $y['n'] <=> (int) $x['n']);
+            }
+            $top = max(1, ...array_map(fn($s) => (int) $s['n'], $stats['sections'] ?: [['n' => 1]]));
             foreach ($stats['sections'] as $s): ?>
         <div class="hbar"><span><?= Support::e($s['title'] ?: MHW\SectionCatalog::title($s['kind'], 'it')) ?></span><i><b style="width:<?= (int) round($s['n'] / $top * 100) ?>%"></b></i><span><?= (int) $s['n'] ?></span></div>
       <?php endforeach; if (!$stats['sections']): ?><p class="small muted"><?= t('Ancora nessun dato.') ?></p><?php endif; ?>

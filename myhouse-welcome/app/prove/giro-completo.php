@@ -3853,13 +3853,13 @@ prova('7C · Diagnostica: la riga delle traduzioni con l\'esito esatto dell\'ult
 // 8 · Novità: la fascia, una volta per account, e chiusa resta chiusa.
 db()->prepare('UPDATE users SET created_at = ? WHERE email = ?')->execute(['2026-01-01T00:00:00Z', 'lucia@esempio.it']);
 $r = $lucia->get('/pannello');
-prova('8C → 10 → 9T · Novità: la prima (l\'ultima uscita) è «Concierge AI: risponde ai tuoi ospiti, a qualsiasi ora»', str_contains($r['body'], 'Concierge AI: risponde ai tuoi ospiti, a qualsiasi ora'));
-prova('7C → 9F → 9N · Novità: la fascia con «Mostrami dove» (un modulo POST), «Tutte le novità» e la ✕ per chiuderla (9N)', str_contains($r['body'], 'class="novita"') && str_contains($r['body'], '>Mostrami dove</button>')
+prova('8C → 10 → 9T → 9V · Novità: la prima (l\'ultima uscita) è «Mostra la tua casa in foto» (la galleria «La casa»)', str_contains($r['body'], '<b id="novita-titolo">Mostra la tua casa in foto</b>'));
+prova('7C → 9F → 9N · Novità: la fascia con il suo bottone (9V: «Aggiungi le foto» al posto di «Mostrami dove»; un modulo POST), «Tutte le novità» e la ✕ per chiuderla (9N)', str_contains($r['body'], 'class="novita"') && str_contains($r['body'], '>Aggiungi le foto</button>')
       && str_contains($r['body'], '/pannello/novita/vai"') && str_contains($r['body'], '>Tutte le novità</a>') && str_contains($r['body'], 'novita/chiudi"'));
-$lucia->post('/pannello/novita/vai', ['novita' => '2026-10-assistente']);
+$lucia->post('/pannello/novita/vai', ['novita' => '2026-11-casa']);
 $r = $lucia->get('/pannello');
 prova('…«Mostrami dove» la segna come vista (per account) e la fascia sparisce: si vede solo l\'ultima, le passate stanno in «Novità»', !str_contains($r['body'], 'class="novita"')
-      && (bool) val("SELECT id FROM novita_viste WHERE novita_id = '2026-10-assistente' AND account_id = ?", [$accDi('lucia@esempio.it')])
+      && (bool) val("SELECT id FROM novita_viste WHERE novita_id = '2026-11-casa' AND account_id = ?", [$accDi('lucia@esempio.it')])
       && str_contains($lucia->get('/pannello/novita')['body'], 'La tua foto nella guida, anche con Essential'));
 // Un campo nuovo (una novità di prova con un campo della sezione Emergenze): «Nuovo» in Contenuti e nell'editor, «Ho visto».
 file_put_contents("$DOVE/app/lang/novita.php", str_replace("return [\n", "return [\n    ['id' => 'prova-campo', 'data' => '2026-10-11', 'titolo' => 'Prova', 'testo' => 'Prova', 'dove' => '/pannello', 'campi' => ['emergency' => ['note_prova']], 'sezioni' => []],\n", (string) file_get_contents("$DOVE/app/lang/novita.php")));
@@ -4338,7 +4338,9 @@ file_put_contents("$DOVE/app/lang/novita.php", str_replace("    ['id' => 'prova-
 // 10 · La fascia mostra solo l'ultima novità, che ora è il Concierge AI: per questa prova si toglie dal file e si rimette dopo.
 $novitaFile = "$DOVE/app/lang/novita.php"; $novitaTutto = (string) file_get_contents($novitaFile);
 $novita10 = preg_match("#    // 10 · Concierge AI.*?\n(?:    .*?\n)*?     'dove' => '/pannello/\{pid\}/impostazioni\#concierge-ai', 'campi' => \[\], 'sezioni' => \[\]\],\n#s", $novitaTutto, $mN10) ? $mN10[0] : '';
-file_put_contents($novitaFile, str_replace($novita10, '', $novitaTutto));
+// 9V · …e prima ancora la galleria «La casa»: si toglie anche lei, e torna con il file intero qui sotto.
+$novita9v = preg_match("#    // 9V · «La casa».*?\n(?:    .*?\n)*?     'dove' => '/pannello/\{pid\}/casa', 'bottone' => 'Aggiungi le foto', 'campi' => \[\], 'sezioni' => \[\]\],\n#s", $novitaTutto, $mN9v) ? $mN9v[0] : '';
+file_put_contents($novitaFile, str_replace([$novita10, $novita9v], '', $novitaTutto));
 sleep(3);   // opcache del server di prova
 prova('…Essential al limite: «aria» nasce disattivata, con i suoi testi, e la novità lo dice', $ariaA && (int) $ariaA['is_active'] === 0
       && ($trG((int) $ariaA['id'], 'de')['ac_how'] ?? []) === ['Taste ON drücken.'] && preg_match('#è nata disattivata|was created switched off#', ($rNov = $ester->segui($ester->get("/pannello/$esp/impostazioni")))['body']) === 1,   // 9N: nella lingua del pannello
@@ -8745,6 +8747,321 @@ prova('9U · 4 · nel telefono della home la stessa barra (disegnata): «Chiedi�
       preg_match('#<span class="barra-guida barra-guida--finta">.*?chiedi-apri__testo">Chiedi<.*?class="contatta__foto".*?contatta__testo">Contatta<#s', $hB9u) === 1 && str_contains($hB9u, 'class="device__profilo"'));
 db()->exec("UPDATE discount_codes SET active = 0, valid_from = '2026-10-30', valid_until = '2026-11-30' WHERE code = 'NOVEMBRE17'");
 $conf9t([]);
+
+// ======================================================================= 9V
+capitolo('9V · «La casa»: galleria di foto e descrizione dalla copertina (foto ridotte e limite di 10, testi con le battute, guida ospite, lingue, piani e «Novità», copia ed eliminazione)');
+// Una foto «pesante» di prova (sotto il limite di 2 MB del server di prova, ma grande: 3200 × 2400) e i metadati EXIF.
+$jpg9v = function (int $w, int $h, int $seme) use ($TMP): string {
+    mt_srand($seme);
+    $im = imagecreatetruecolor($w, $h);
+    imagefill($im, 0, 0, imagecolorallocate($im, mt_rand(60, 200), mt_rand(60, 200), mt_rand(60, 200)));
+    for ($i = 0; $i < 1600; $i++) { $x = mt_rand(0, $w); $y = mt_rand(0, $h); imagefilledrectangle($im, $x, $y, $x + mt_rand(20, 260), $y + mt_rand(20, 260), imagecolorallocate($im, mt_rand(0, 255), mt_rand(0, 255), mt_rand(0, 255))); }
+    for ($i = 0; $i < 300; $i++) imageline($im, mt_rand(0, $w), mt_rand(0, $h), mt_rand(0, $w), mt_rand(0, $h), imagecolorallocate($im, mt_rand(0, 255), mt_rand(0, 255), mt_rand(0, 255)));
+    $f = "$TMP/foto9v-$seme.jpg";
+    foreach ([80, 72, 64] as $q) { imagejpeg($im, $f, $q); clearstatcache(); if (filesize($f) < 1900000) break; }
+    mt_srand();
+    return $f;
+};
+// «Ruota di 90° in senso orario» (orientamento 6) e la marca della fotocamera, in un blocco EXIF subito dopo l'inizio del file.
+$exif9v = function (string $f, int $orientamento): void {
+    $marca = "Fotocamera di prova\0";
+    $ifd = pack('n', 2) . pack('nnNN', 0x010F, 2, strlen($marca), 8 + 2 + 24 + 4) . pack('nnNnn', 0x0112, 3, 1, $orientamento, 0) . pack('N', 0);
+    $app1 = "Exif\0\0" . "MM\0*" . pack('N', 8) . $ifd . $marca;
+    $j = (string) file_get_contents($f);
+    file_put_contents($f, substr($j, 0, 2) . "\xFF\xE1" . pack('n', strlen($app1) + 2) . $app1 . substr($j, 2));
+};
+// Gli oggetti nello storage finto (ogni oggetto ha accanto il suo «.tipo»: si contano solo i file veri).
+$oggetti9v = fn(): int => count(array_filter(glob("$S3_DIR/oggetti/*") ?: [], fn($f) => !str_ends_with($f, '.tipo')));
+$galleria9v = fn(int $pid): array => righe('SELECT g.id, g.position, g.alt, g.media_id, m.bytes, m.width, m.height, m.mime, m.object_key FROM property_gallery g JOIN media m ON m.id = g.media_id WHERE g.property_id = ? ORDER BY g.position, g.id', [$pid]);
+
+// La migrazione 072 e il catalogo dei piani.
+$colG9v = array_column(righe('PRAGMA table_info(property_gallery)'), 'type', 'name');
+$colP9v = array_column(righe('PRAGMA table_info(properties)'), 'name');
+$cf9v = json_decode($c9n('$c = MHW\Plans::comparison(); foreach ($c["righe"] as $r) if ($r["code"] === "gallery") echo json_encode(["label" => $r["label"], "valori" => $r["valori"], "piani" => array_column($c["piani"], "nome")]);'), true) ?: [];
+prova('9V · migrazione 072: property_gallery con il solo riferimento al file (nessuna colonna binaria), i campi casa_* su properties',
+      array_keys($colG9v) === ['id', 'property_id', 'media_id', 'position', 'alt', 'created_at'] && !preg_grep('/BLOB/i', $colG9v) && !preg_grep('/BLOB/i', array_column(righe('PRAGMA table_info(media)'), 'type'))
+      && !array_diff(['casa_titolo', 'casa_descrizione', 'casa_invito', 'casa_attiva', 'casa_tr'], $colP9v), json_encode($colG9v));
+prova('9V · 5 · la funzione «gallery» è inclusa in Essential, Plus e Portfolio: «Galleria della casa (fino a 10 foto) e descrizione» ✓ ✓ ✓',
+      ($cf9v['label'] ?? '') === 'Galleria della casa (fino a 10 foto) e descrizione' && ($cf9v['valori'] ?? []) === ['si', 'si', 'si'] && count($cf9v['piani'] ?? []) === 3, json_encode($cf9v));
+
+// Elvira, Essential: prima paga e pubblica SENZA galleria (la copertina di oggi), poi aggiunge foto e testi.
+[$elv, $elvAcc, $elvPid] = $host9l('Elvira', 'elvira9v@prova.test', 'VTRELV85A41G478G', 'Spello', 'essential');
+$c9n('MHW\Properties::saveContacts(' . $elvPid . ', [["name" => "Elvira", "role" => "host", "phone" => "+39 333 111 2233", "whatsapp" => 1]]); echo "ok";');
+[, $r] = $paga9l($elv, $elvAcc, $elvPid, false, 'sub_prova_elv9v');
+$elvSlug = (string) val('SELECT slug FROM properties WHERE id = ?', [$elvPid]);
+$g0 = $ospite->get("/g/$elvSlug?l=it");
+$r404 = $ospite->get("/g/$elvSlug/casa");
+prova('9V · 4 · senza foto e senza descrizione: la copertina è quella di oggi (nessun link, nessuna pastiglia) e la pagina «La casa» è 404', $r['body'] === 'abbonamento-attivato'
+      && $g0['code'] === 200 && str_contains($g0['body'], '<div class="shot shot--h262 guest-cover">') && !str_contains($g0['body'], 'guest-cover__link') && !str_contains($g0['body'], 'casa-pastiglia')
+      && $r404['code'] === 404, $g0['code'] . ' ' . $r404['code']);
+prova('9V · una guida pubblicata prima della galleria non risulta «con modifiche da pubblicare» (l\'istantanea senza galleria è identica a prima)',
+      $c9n('echo MHW\Guide::pendingChanges(' . $elvPid . ');') === '0' && !array_key_exists('casa', json_decode((string) val('SELECT snapshot FROM guide_versions WHERE property_id = ? ORDER BY version DESC', [$elvPid]), true)['property']));
+$r = $elv->get("/pannello/$elvPid");
+prova('9V · 3 · Contenuti: la scheda «La casa: foto e descrizione» con «Novità» e «Da aggiungere», che porta alla sua pagina', pulita($r)
+      && preg_match('#<a class="rowcard" href="[^"]*/pannello/' . $elvPid . '/casa" data-casa-scheda>.*?La casa: foto e descrizione <span class="badge badge--novita">Novità</span>.*?Da aggiungere#s', $r['body']) === 1);
+$r = $elv->get("/pannello/$elvPid/casa");
+prova('9V · 3 · la pagina: griglia con il «+» e le caselle vuote, caricamento multiplo, i tre campi con il contatore («0 / 24», «0 / 60», «0 / 600»), «Dopo 4 righe compare «Leggi di più»», l\'interruttore, l\'anteprima', $r['code'] === 200 && pulita($r)
+      && str_contains($r['body'], 'name="foto[]" multiple') && str_contains($r['body'], 'data-foto-multi') && substr_count($r['body'], 'data-casa-vuota') === 9 && str_contains($r['body'], '0 di 10 foto')
+      && str_contains($r['body'], '0 / 24') && str_contains($r['body'], '0 / 60') && str_contains($r['body'], '0 / 600') && str_contains($r['body'], 'Dopo 4 righe compare «Leggi di più».')
+      && str_contains($r['body'], 'name="casa_attiva" value="1" checked') && str_contains($r['body'], 'Mostra la galleria agli ospiti') && str_contains($r['body'], '/assets/casa.js')
+      && str_contains($r['body'], "/pannello/$elvPid/anteprima\""), (string) $r['code']);
+
+// 1 · Dodici foto pesanti: ne entrano dieci, delle altre due si dice; ogni file ≤ 300 KB e ≤ 1600 px; la terza è coricata nei metadati.
+$foto9v = []; for ($i = 1; $i <= 12; $i++) $foto9v[$i] = $jpg9v(3200, 2400, 900 + $i);
+$exif9v($foto9v[3], 6);
+$pesoPrima9v = array_sum(array_map('filesize', $foto9v));
+$oggPrima9v = $oggetti9v();
+$manda9v = fn(Browser $b, int $pid, array $quali, array $h = []) => $b->post("/pannello/$pid/casa", ['azione' => 'carica'] + array_combine(array_map(fn($k) => "foto[$k]", array_keys(array_values($quali))), array_map(fn($f) => file_($f, 'image/jpeg'), array_values($quali))), $h);
+$r1 = $manda9v($elv, $elvPid, array_slice($foto9v, 0, 4));
+$rF = $elv->segui($r1);
+prova('9V · 1 · senza JavaScript quattro foto in un invio: «4 foto caricate. Ridotte in automatico: da … a …» e si torna alla pagina', $r1['code'] === 302 && str_ends_with($r1['loc'], "/pannello/$elvPid/casa#foto")
+      && str_contains($rF['body'], '4 foto caricate.') && preg_match('#Ridotte in automatico: da [\d,]+ MB a [\d,]+ (KB|MB)\.#u', $rF['body']) === 1 && str_contains($rF['body'], '4 di 10 foto'), $r1['code'] . ' ' . $r1['loc']);
+$manda9v($elv, $elvPid, array_slice($foto9v, 4, 4));
+$r3 = $manda9v($elv, $elvPid, array_slice($foto9v, 8, 4), ['Accept: application/json']);
+$j3 = json_decode($r3['body'], true) ?: [];
+$gal9v = $galleria9v($elvPid);
+prova('9V · 1 · dodici foto: ne entrano 10, «2 sono rimaste fuori» (il limite è sul server)', count($gal9v) === 10 && ($j3['fuori'] ?? 0) === 2 && count($j3['foto'] ?? []) === 2 && ($j3['quante'] ?? 0) === 10
+      && str_contains((string) ($j3['messaggio'] ?? ''), '2 foto caricate.') && str_contains((string) ($j3['messaggio'] ?? ''), 'La galleria ha al massimo 10 foto: 2 sono rimaste fuori.'), substr($r3['body'], 0, 200));
+$r11 = $manda9v($elv, $elvPid, [$foto9v[11]], ['Accept: application/json']);
+prova('9V · 1 · l\'undicesima non entra nemmeno con una richiesta fatta a mano: resta fuori, e nello storage non resta niente di suo', (json_decode($r11['body'], true)['fuori'] ?? 0) === 1
+      && count($galleria9v($elvPid)) === 10 && $oggetti9v() === $oggPrima9v + 10, substr($r11['body'], 0, 160) . ' oggetti ' . $oggetti9v() . '/' . $oggPrima9v);
+$pesi9v = array_map(fn($f) => (int) $f['bytes'], $gal9v); $lati9v = array_map(fn($f) => max((int) $f['width'], (int) $f['height']), $gal9v);
+prova('9V · 1 · ogni file salvato è un JPEG di al massimo 300 KB e 1600 px sul lato lungo (in tutto da ' . round($pesoPrima9v / 1048576, 1) . ' MB per 12 a ' . round(array_sum($pesi9v) / 1048576, 1) . ' MB per 10); nel database solo il riferimento',
+      max($pesi9v) <= 300000 && min($pesi9v) > 10000 && max($lati9v) <= 1600 && min($lati9v) >= 800 && !array_filter($gal9v, fn($f) => $f['mime'] !== 'image/jpeg' || $f['object_key'] === ''),
+      'max ' . max($pesi9v) . ' byte, lato ' . max($lati9v));
+$terza9v = $gal9v[2];
+$ex9v = $c9n('$b = (string) MHW\Media::bytes(' . (int) $terza9v['media_id'] . '); $t = tempnam(sys_get_temp_dir(), "x9v"); file_put_contents($t, $b); $e = @exif_read_data($t); unlink($t); echo str_contains($b, "Fotocamera di prova") ? "metadati" : "pulita", "|", (int) (($e ?: [])["Orientation"] ?? 0);');
+prova('9V · 2 (foto) · la foto coricata nei metadati (EXIF 6) è salvata dritta, in verticale, e i metadati sono tolti', (int) $terza9v['width'] < (int) $terza9v['height'] && $ex9v === 'pulita|0'
+      && (int) $gal9v[0]['width'] > (int) $gal9v[0]['height'], $terza9v['width'] . '×' . $terza9v['height'] . ' ' . $ex9v);
+// Ordine: le frecce, trascinando, e una foto tolta (la guida pubblicata non la mostra: il file se ne va subito).
+$ids9v = array_map('intval', array_column($gal9v, 'id'));
+$elv->post("/pannello/$elvPid/casa", ['azione' => 'giu', 'foto_id' => $ids9v[0]]);
+$dopoGiu = array_map('intval', array_column($galleria9v($elvPid), 'id'));
+$rO = $elv->post("/pannello/$elvPid/casa", ['azione' => 'ordina', 'ordine' => implode(',', array_reverse($ids9v)) . ',999999'], ['Accept: application/json']);
+$dopoOrd = array_map('intval', array_column($galleria9v($elvPid), 'id'));
+prova('9V · 3 · l\'ordine: «Sposta dopo» scambia le prime due; trascinando si salva l\'ordine intero (gli id di altri si ignorano); le posizioni restano 1…10',
+      $dopoGiu === array_merge([$ids9v[1], $ids9v[0]], array_slice($ids9v, 2)) && $dopoOrd === array_reverse($ids9v) && (json_decode($rO['body'], true)['ok'] ?? false) === true
+      && array_map('intval', array_column($galleria9v($elvPid), 'position')) === range(1, 10), implode(',', $dopoOrd));
+$rT = $elv->post("/pannello/$elvPid/casa", ['azione' => 'togli', 'foto_id' => $dopoOrd[9]], ['Accept: application/json']);
+prova('9V · 3 · «Togli»: la foto esce dalla galleria e il suo file dallo storage', (json_decode($rT['body'], true)['quante'] ?? 0) === 9 && count($galleria9v($elvPid)) === 9 && $oggetti9v() === $oggPrima9v + 9, $rT['body']);
+$finta9v = "$TMP/finta9v.jpg"; file_put_contents($finta9v, str_repeat('non sono una foto ', 400));
+$rX = $manda9v($elv, $elvPid, [$finta9v], ['Accept: application/json']);
+$rP = $elv->post("/pannello/$elvPid/casa", ['azione' => 'carica', 'foto[0]' => file_(png(1900, 1200), 'image/png')], ['Accept: application/json']);
+$ultima9v = $galleria9v($elvPid)[9] ?? [];
+prova('9V · 1 · un file che non è un\'immagine si rifiuta con il suo nome («Formati accettati: JPG, PNG, WebP.»); un PNG diventa un JPEG di 1600 px', $rX['code'] === 422
+      && str_contains((string) (json_decode($rX['body'], true)['errori'][0] ?? ''), '«finta9v.jpg»: Formati accettati: JPG, PNG, WebP.') && ($ultima9v['mime'] ?? '') === 'image/jpeg' && (int) ($ultima9v['width'] ?? 0) === 1600, $rX['body']);
+// Un altro host non tocca la galleria di Elvira.
+$pro9u->get('/pannello'); $rA = $pro9u->post("/pannello/$elvPid/casa", ['azione' => 'togli', 'foto_id' => $dopoOrd[0]]);
+prova('9V · la galleria è dell\'account: un altro host riceve 404 e non cambia niente', $rA['code'] === 404 && count($galleria9v($elvPid)) === 10, (string) $rA['code']);
+
+// 2 · I testi: i limiti si contano in battute vere (accenti ed emoji valgono uno) e si rifiutano sul server.
+$testi9v = fn(array $x, array $h = []) => $elv->post("/pannello/$elvPid/casa", $x + ['azione' => 'salva', 'casa_invito' => '', 'casa_titolo' => 'Un tetto sopra Spello', 'casa_attiva' => '1'], $h);
+$r601 = $testi9v(['casa_descrizione' => str_repeat('è', 599) . '🏡🏡']);
+prova('9V · 2 · una descrizione di 601 battute (599 «è» e due emoji) è rifiutata: «La descrizione è troppo lunga: 601 battute, il massimo è 600», niente salvato, il testo resta nel modulo', $r601['code'] === 200
+      && str_contains($r601['body'], 'La descrizione è troppo lunga: 601 battute, il massimo è 600. Accorciala e salva di nuovo.') && str_contains($r601['body'], '601 / 600')
+      && str_contains($r601['body'], str_repeat('è', 599) . '🏡🏡') && (string) val('SELECT casa_descrizione FROM properties WHERE id = ?', [$elvPid]) === ''
+      && (string) val('SELECT casa_titolo FROM properties WHERE id = ?', [$elvPid]) === '');
+$r600 = $testi9v(['casa_descrizione' => "  " . str_repeat('è', 598) . "🏡à  \r\n"]);
+$d600 = (string) val('SELECT casa_descrizione FROM properties WHERE id = ?', [$elvPid]);
+$rPag = $elv->get("/pannello/$elvPid/casa");
+prova('9V · 2 · 600 battute esatte (598 «è», un\'emoji, una «à»; gli spazi intorno non contano) si salvano, e il contatore dice «600 / 600» e «21 / 60»', $r600['code'] === 302
+      && mb_strlen($d600) === 600 && str_ends_with($d600, '🏡à') && str_contains($rPag['body'], '600 / 600') && str_contains($rPag['body'], '21 / 60'), mb_strlen($d600) . ' ' . $r600['code']);
+$rT61 = $testi9v(['casa_titolo' => str_repeat('a', 61), 'casa_descrizione' => 'x'], ['Accept: application/json']);
+$rI25 = $testi9v(['casa_invito' => str_repeat('ò', 25), 'casa_descrizione' => 'x'], ['Accept: application/json']);
+prova('9V · 2 · titolo di 61 e scritta di 25 battute: rifiutati anche dal salvataggio automatico (422 con il messaggio), e la descrizione di prima resta', $rT61['code'] === 422 && $rI25['code'] === 422
+      && str_contains((string) (json_decode($rT61['body'], true)['errore'] ?? ''), 'Il titolo è troppo lungo: 61 battute, il massimo è 60')
+      && str_contains((string) (json_decode($rI25['body'], true)['errore'] ?? ''), 'La scritta sulla copertina è troppo lunga: 25 battute, il massimo è 24')
+      && (string) val('SELECT casa_descrizione FROM properties WHERE id = ?', [$elvPid]) === $d600);
+$descr9v = "Un tetto di coppi sopra i vicoli di Spello, con la terrazza che guarda la valle.\nDue camere, cucina e un soggiorno pieno di libri. La sera si sente solo la fontana della piazza, e d'estate il gelsomino del vicino arriva fin dentro casa. Il forno è a due porte da qui: apre alle sette, e la torta al testo la fanno ancora a mano.";
+$testi9v(['casa_descrizione' => $descr9v, 'alt' => [(string) $dopoOrd[0] => 'La terrazza al tramonto']]);
+prova('9V · 3 · le descrizioni delle foto (per i lettori di schermo) si salvano con i testi', (string) val('SELECT alt FROM property_gallery WHERE id = ?', [$dopoOrd[0]]) === 'La terrazza al tramonto');
+
+// Niente arriva agli ospiti prima di «Pubblica le modifiche»; poi la pastiglia e la pagina.
+$gPrima = $ospite->get("/g/$elvSlug?l=it");
+prova('9V · la galleria si pubblica come il resto: prima di «Pubblica le modifiche» la guida online è quella di prima, e il pannello segnala le modifiche', !str_contains($gPrima['body'], 'casa-pastiglia')
+      && $ospite->get("/g/$elvSlug/casa")['code'] === 404 && $c9n('echo MHW\Guide::pendingChanges(' . $elvPid . ');') === '1');
+$rAnt = $elv->get("/pannello/$elvPid/anteprima/casa");
+prova('9V · 3 · l\'anteprima del pannello mostra già la pagina «La casa» (anche prima di pubblicare), e il telefono della pagina la apre', $rAnt['code'] === 200 && pulita($rAnt) && str_contains($rAnt['body'], 'Un tetto sopra Spello')
+      && substr_count($rAnt['body'], 'data-casa-foto') === 10 && str_contains($elv->get("/pannello/$elvPid/casa")['body'], "/pannello/$elvPid/anteprima/casa\""));
+$elv->post("/pannello/$elvPid/pubblica", []);
+$gDopo = $ospite->get("/g/$elvSlug?l=it");
+prova('9V · 3 · copertina: tutta la foto è un link alla pagina, con la pastiglia «Scopri la casa · 10 foto ›»; il check-in resta al suo posto', $gDopo['code'] === 200 && pulita($gDopo)
+      && preg_match('#<div class="shot shot--h262 guest-cover guest-cover--casa">\s*<img [^>]+>\s*<a class="guest-cover__link" href="[^"]*/g/' . preg_quote($elvSlug, '#') . '/casa\?l=it" data-casa-apri><span class="casa-pastiglia"><span>Scopri la casa</span><span class="casa-pastiglia__n">· 10 foto</span><svg#', $gDopo['body']) === 1
+      && str_contains($gDopo['body'], '<span class="shot-pill"><span class="dot"></span>Check-in dalle'), mb_substr(strip_tags($gDopo['body']), 0, 120));
+$fotoUrl9v = $c9n('echo MHW\Media::url(' . (int) $galleria9v($elvPid)[1]['media_id'] . ');');
+prova('9V · 8 · le foto della galleria non si caricano in copertina (solo la foto di copertina)', $fotoUrl9v !== '' && !str_contains($gDopo['body'], basename((string) parse_url($fotoUrl9v, PHP_URL_PATH))) && substr_count($gDopo['body'], '<img') <= 2);
+$viste9v = (int) val("SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = 'gallery_view'", [$elvPid]);
+$rC = $ospite->get("/g/$elvSlug/casa?l=it"); $r = $rC;
+prova('9V · 3 · la pagina «La casa»: «Torna alla guida», 10 foto a scorrimento (la prima subito, le altre «lazy», srcset 480 px), contatore, puntini, frecce, schermo intero', $rC['code'] === 200 && pulita($rC)
+      && str_contains($rC['body'], 'class="guest-indietro"') && str_contains($rC['body'], '<span>Torna alla guida</span>') && substr_count($rC['body'], 'data-casa-foto') === 10
+      && substr_count($rC['body'], 'loading="lazy"') === 9 && substr_count($rC['body'], 'fetchpriority="high"') === 1 && substr_count($rC['body'], ' 480w, ') === 10 && substr_count($rC['body'], 'data-zoom') === 10
+      && str_contains($rC['body'], 'data-casa-conta aria-hidden="true" hidden>1 / 10<') && substr_count($rC['body'], '<i') >= 10 && str_contains($rC['body'], 'aria-label="Foto successiva"')
+      && str_contains($rC['body'], 'alt="La terrazza al tramonto"') && str_contains($rC['body'], 'alt="Casa Elvira, foto 2 di 10"') && str_contains($rC['body'], 'aria-label="Apri la foto a tutto schermo"'), (string) $rC['code']);
+prova('9V · 3 · sotto: il titolo, la descrizione (senza JavaScript intera) con «Leggi di più» / «Mostra meno», e la barra «Contatta»; pagina non indicizzata, senza moduli né prenotazioni', str_contains($rC['body'], '<h1 class="guest-title casa-titolo">Un tetto sopra Spello</h1>')
+      && str_contains($rC['body'], 'la fanno ancora a mano.</p>') && str_contains($rC['body'], 'data-piu="Leggi di più" data-meno="Mostra meno"') && str_contains($rC['body'], 'guest-bottom barra-guida')
+      && str_contains($rC['body'], '<meta name="robots" content="noindex') && str_contains(intestazione($rC, 'X-Robots-Tag'), 'noindex') && !preg_match('#<form[^>]*method="post"#i', $rC['body']) && !preg_match('/prenot/i', $rC['body'])
+      && !intestazione($rC, 'Set-Cookie'));
+prova('9V · 4 · statistiche: l\'apertura della galleria si conta (anonima), come le sezioni', (int) val("SELECT COUNT(*) FROM analytics_events WHERE property_id = ? AND kind = 'gallery_view'", [$elvPid]) === $viste9v + 1
+      && (int) json_decode($c9n('echo json_encode(MHW\Stats::forProperty(' . $elvPid . '));'), true)['gallery'] === $viste9v + 1);
+// 4 · L'interruttore spento: la copertina torna quella di oggi e la pagina è 404; riacceso, torna tutto.
+$testi9v(['casa_descrizione' => $descr9v, 'casa_attiva' => '']); $elv->post("/pannello/$elvPid/pubblica", []);
+$gSp = $ospite->get("/g/$elvSlug?l=it");
+prova('9V · 4 · interruttore spento: copertina come oggi e pagina 404; foto e testi restano salvati', (int) val('SELECT casa_attiva FROM properties WHERE id = ?', [$elvPid]) === 0 && !str_contains($gSp['body'], 'guest-cover__link')
+      && str_contains($gSp['body'], '<div class="shot shot--h262 guest-cover">') && $ospite->get("/g/$elvSlug/casa")['code'] === 404 && count($galleria9v($elvPid)) === 10
+      && str_contains($elv->get("/pannello/$elvPid")['body'], 'Nascosta agli ospiti'));
+$testi9v(['casa_descrizione' => $descr9v]); $elv->post("/pannello/$elvPid/pubblica", []);
+// Una foto tolta mentre la guida la mostra: resta finché la guida pubblicata la usa, poi la toglie la pubblicazione (nessun file orfano).
+$oggOra9v = $oggetti9v(); $daTogliere9v = $galleria9v($elvPid)[9];
+$elv->post("/pannello/$elvPid/casa", ['azione' => 'togli', 'foto_id' => $daTogliere9v['id']]);
+$restaOnline = $ospite->get("/g/$elvSlug/casa?l=it");
+db()->prepare('UPDATE media SET created_at = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() - 7200), $daTogliere9v['media_id']]);
+$oggTolta9v = $oggetti9v();
+$elv->post("/pannello/$elvPid/pubblica", []);
+prova('9V · 7 · una foto tolta dal pannello resta online finché la guida pubblicata la mostra; alla pubblicazione sparisce anche il file', substr_count($restaOnline['body'], 'data-casa-foto') === 10 && $oggTolta9v === $oggOra9v
+      && $oggetti9v() === $oggOra9v - 1 && !val('SELECT id FROM media WHERE id = ?', [$daTogliere9v['media_id']]) && substr_count($ospite->get("/g/$elvSlug/casa?l=it")['body'], 'data-casa-foto') === 9,
+      $oggTolta9v . '/' . $oggOra9v . ' → ' . $oggetti9v());
+
+// 5 · Le lingue. Essential: la seconda lingua si scrive a mano, nella pagina di quella lingua, come gli altri testi.
+$c9n('MHW\Properties::setLocales(' . $elvAcc . ', ' . $elvPid . ', ["it", "en"]); echo "ok";');
+$rEn = $elv->get("/pannello/$elvPid/lingue/en");
+prova('9V · 5 · Lingue → English: il riquadro «La casa: foto e descrizione» con titolo e descrizione da tradurre (la scritta di serie è già in ogni lingua)', $rEn['code'] === 200 && pulita($rEn)
+      && str_contains($rEn['body'], 'id="traduci-casa"') && str_contains($rEn['body'], 'name="casa[titolo]"') && str_contains($rEn['body'], 'name="casa[descrizione]"') && !str_contains($rEn['body'], 'name="casa[invito]"')
+      && str_contains($rEn['body'], 'Un tetto sopra Spello'));
+$elv->post("/pannello/$elvPid/lingue/en", ['casa' => ['titolo' => 'A roof above Spello', 'descrizione' => 'A tiled roof above the alleys of Spello, with a terrace overlooking the valley.']]);
+$elv->post("/pannello/$elvPid/pubblica", []);
+$gEn = $ospite->get("/g/$elvSlug?l=en"); $cEn = $ospite->get("/g/$elvSlug/casa?l=en");
+prova('9V · 5 · la guida in inglese: «Discover the house · 9 photos», titolo e descrizione tradotti, «Back to the guide», «Read more»', str_contains($gEn['body'], '<span>Discover the house</span><span class="casa-pastiglia__n">· 9 photos</span>')
+      && str_contains($cEn['body'], '<h1 class="guest-title casa-titolo">A roof above Spello</h1>') && str_contains($cEn['body'], 'with a terrace overlooking the valley.</p>') && str_contains($cEn['body'], '<span>Back to the guide</span>')
+      && str_contains($cEn['body'], 'data-piu="Read more" data-meno="Show less"') && str_contains($cEn['body'], 'alt="Casa Elvira, photo 2 of 9"'));
+$lab9v = json_decode($c9n('$o = []; foreach (["it", "en", "fr", "de", "es"] as $l) $o[$l] = [MHW\I18n::t($l, "casa_invite"), MHW\I18n::t($l, "casa_photos", 8), MHW\I18n::t($l, "casa_more"), mb_strlen(MHW\I18n::t($l, "casa_invite")) <= 24]; echo json_encode($o, JSON_UNESCAPED_UNICODE);'), true) ?: [];
+prova('9V · 5 · le etichette della guida nelle 5 lingue (la scritta di serie sta in 24 battute)', $lab9v === ['it' => ['Scopri la casa', '8 foto', 'Leggi di più', true], 'en' => ['Discover the house', '8 photos', 'Read more', true],
+      'fr' => ['Découvrez la maison', '8 photos', 'Lire la suite', true], 'de' => ['Das Haus entdecken', '8 Fotos', 'Mehr lesen', true], 'es' => ['Descubre la casa', '8 fotos', 'Leer más', true]], json_encode($lab9v, JSON_UNESCAPED_UNICODE));
+// Plus: la traduzione suggerita dal traduttore automatico, da approvare, come per gli altri testi; il Concierge AI ha la descrizione nel contesto.
+[$gal, $galAcc, $galPid] = $host9l('Galla', 'galla9v@prova.test', 'VTRGAL85A01G478R', 'Trevi', 'plus');
+$rBozza = $manda9v($gal, $galPid, [$foto9v[12]]);
+$gal->post("/pannello/$galPid/casa", ['azione' => 'salva', 'casa_invito' => 'Entra in casa', 'casa_titolo' => 'La casa di Galla', 'casa_descrizione' => 'Tre stanze e un orto, a dieci minuti dalle fonti del Clitunno.', 'casa_attiva' => '1']);
+prova('9V · 3 · funziona anche in bozza (guida mai pubblicata, piano non ancora pagato): foto e testi si salvano, la scheda è anche nel passo «Sezioni» della procedura e l\'anteprima c\'è', $rBozza['code'] === 302
+      && count($galleria9v($galPid)) === 1 && val('SELECT status FROM properties WHERE id = ?', [$galPid]) === 'draft' && $gal->get("/pannello/$galPid/anteprima/casa")['code'] === 200
+      && str_contains($gal->get("/pannello/$galPid/procedura/sezioni")['body'], 'data-casa-scheda'));
+$rPiano = $gal->get('/piano');
+prova('9V · 6 · /piano (scelta del piano): la voce «La casa in foto: galleria fino a 10 immagini e descrizione» con «Novità» in tutte e tre le schede',
+      substr_count($rPiano['body'], 'La casa in foto: galleria fino a 10 immagini e descrizione <span class="badge badge--novita">Novità</span>') === 3, (string) substr_count($rPiano['body'], 'plan__casa'));
+$paga9l($gal, $galAcc, $galPid, false, 'sub_prova_gal9v');
+$c9n('MHW\Properties::setLocales(' . $galAcc . ', ' . $galPid . ', ["it", "en", "de"]); echo "ok";');
+$gal->get("/pannello/$galPid/lingue/en");
+$gal->post("/pannello/$galPid/lingue/en/suggerite", ['suggerisci' => '1']);
+$sug9v = righe("SELECT * FROM translation_suggestions WHERE property_id = ? AND locale = 'en' AND target_type = 'casa' ORDER BY field_path", [$galPid]);
+$rSug = $gal->get("/pannello/$galPid/lingue/en");
+prova('9V · 5 · Plus: «Traduci tutti i campi mancanti» propone anche titolo, descrizione e scritta della galleria (suggerite, da approvare: la guida non le vede ancora)', array_column($sug9v, 'field_path') === ['descrizione', 'invito', 'titolo']
+      && str_contains((string) ($sug9v[0]['text'] ?? ''), '[en] Tre stanze e un orto') && str_contains($rSug['body'], 'Suggerita: da controllare') && (string) val('SELECT casa_tr FROM properties WHERE id = ?', [$galPid]) === '', json_encode(array_column($sug9v, 'field_path')));
+$gal->post("/pannello/$galPid/lingue/en/suggerite", ['tutte' => '1']);
+$tr9v = json_decode((string) val('SELECT casa_tr FROM properties WHERE id = ?', [$galPid]), true) ?: [];
+$gal->post("/pannello/$galPid/pubblica", []);
+$galSlug = (string) val('SELECT slug FROM properties WHERE id = ?', [$galPid]);
+$gGalEn = $ospite->get("/g/$galSlug?l=en"); $gGalDe = $ospite->get("/g/$galSlug/casa?l=de");
+prova('9V · 5 · approvate, sono le traduzioni della galleria; in tedesco (non ancora tradotta) i testi dell\'host restano in italiano e le etichette sono in tedesco', str_starts_with((string) ($tr9v['en']['titolo'] ?? ''), '[en] La casa di Galla')
+      && str_starts_with((string) ($tr9v['en']['invito'] ?? ''), '[en] Entra in casa') && str_contains($gGalEn['body'], '<span>[en] Entra in casa</span><span class="casa-pastiglia__n">· 1 photo</span>')
+      && str_contains($gGalDe['body'], '<h1 class="guest-title casa-titolo">La casa di Galla</h1>') && str_contains($gGalDe['body'], '<span>Zurück') && !str_contains($gGalDe['body'], 'data-casa-conta'), json_encode($tr9v, JSON_UNESCAPED_UNICODE));
+$ctx9v = $c9n('echo MHW\Assistente::testoGuida(MHW\Guide::published(' . $galPid . '), "it");');
+prova('9V · 4 · il Concierge AI ha titolo e descrizione della casa nel contesto (le foto no)', str_contains($ctx9v, 'La casa («La casa di Galla»): Tre stanze e un orto, a dieci minuti dalle fonti del Clitunno.') && !str_contains($ctx9v, '.jpg'));
+$ospite->get("/g/$galSlug/casa?l=it");
+$rSt = $gal->get("/pannello/$galPid/statistiche");
+prova('9V · 4 · Statistiche (Plus): «La casa: foto e descrizione» tra le sezioni più lette', pulita($rSt) && preg_match('#<div class="hbar"><span>La casa: foto e descrizione</span>.*?<span>\d+</span></div>#s', $rSt['body']) === 1);
+// I codici di accesso si sconsigliano anche qui: con un codice nella descrizione «Pubblica» chiede la conferma, come per le sezioni.
+$gal->post("/pannello/$galPid/casa", ['azione' => 'salva', 'casa_invito' => 'Entra in casa', 'casa_titolo' => 'La casa di Galla', 'casa_descrizione' => 'Il codice della porta è 4821, la cassetta delle chiavi è a destra.', 'casa_attiva' => '1']);
+$rCod = $gal->post("/pannello/$galPid/pubblica", []);
+$rCodP = $gal->get("/pannello/$galPid/procedura/pubblica?codici=1");
+prova('9V · un codice di accesso nella descrizione della casa: «Pubblica» chiede la conferma «a mio rischio» e «Torna a correggere» porta alla pagina «La casa»', $rCod['code'] === 302 && str_contains($rCod['loc'], 'codici=1')
+      && str_contains($rCodP['body'], 'La casa: foto e descrizione') && str_contains($rCodP['body'], "/pannello/$galPid/casa\""), $rCod['code'] . ' ' . $rCod['loc']);
+$gal->post("/pannello/$galPid/casa", ['azione' => 'salva', 'casa_invito' => 'Entra in casa', 'casa_titolo' => 'La casa di Galla', 'casa_descrizione' => 'Tre stanze e un orto, a dieci minuti dalle fonti del Clitunno.', 'casa_attiva' => '1']);
+
+// 6 · Il sito: la voce nei piani, il confronto, il blocco in home, le FAQ, i Termini; il segno «Novità» con la sua scadenza.
+$voce9v = 'La casa in foto: galleria fino a 10 immagini e descrizione <span class="badge badge--novita">Novità</span>';
+$h9v = $ospite->get('/'); $hEn9v = $ospite->get('/en'); $r = $h9v;
+prova('9V · 6 · home: la voce con «Novità» nelle tre schede dei piani e nel questionario, la riga del confronto ✓ ✓ ✓ con «Novità»', pulita($h9v)
+      && substr_count($h9v['body'], '<li class="plan__casa">') >= 6 && substr_count($h9v['body'], $voce9v) >= 6
+      && preg_match('#<th scope="row">Galleria della casa \(fino a 10 foto\) e descrizione <span class="badge badge--novita">Novità</span></th>\s*(<td><span class="confronto__si">.*?</td>\s*){3}</tr>#s', $h9v['body']) === 1, (string) substr_count($h9v['body'], $voce9v));
+prova('9V · 6 · home: il blocco «La casa in foto» dopo il Concierge AI, con «Novità», «La tua casa si presenta da sola.», il testo e la pagina della demo disegnata (terza foto, «3 / 8»)',
+      preg_match('#<section id="la-casa" class="assistente casa-home".*?<span class="badge badge--novita">Novità</span><span>La casa in foto</span>.*?La tua casa si presenta da sola\..*?Inclusa in tutti i piani\..*?casa-slide__conta" aria-hidden="true">3 / 8<.*?Una casa in pietra nel cuore di Assisi#s', $h9v['body']) === 1
+      && strpos($h9v['body'], 'id="concierge-ai"') < strpos($h9v['body'], 'id="la-casa"') && strpos($h9v['body'], 'id="la-casa"') < strpos($h9v['body'], 'id="per-chi"')
+      && preg_match('#href="[^"]*/g/casa-checco[a-z0-9-]*/casa\?l=it" target="_blank" rel="noopener">Guardala nella guida di Casa Checco#', $h9v['body']) === 1);
+prova('9V · 5 · telefono della home: sulla foto la pastiglia «Scopri la casa · 8 foto», letta dalla guida demo pubblicata', preg_match('#<span class="casa-pastiglia casa-pastiglia--mini casa-pastiglia--tondo"><span>Scopri la casa</span><span class="casa-pastiglia__n">· 8 foto</span>#', $h9v['body']) === 1);
+prova('9V · 6 · /en: «The house in photos: gallery of up to 10 images and a description» con «New», «Your house introduces itself.», la pastiglia «Discover the house · 8 photos»', pulita($hEn9v)
+      && substr_count($hEn9v['body'], 'The house in photos: gallery of up to 10 images and a description <span class="badge badge--novita">New</span>') >= 6 && str_contains($hEn9v['body'], 'Your house introduces itself.')
+      && str_contains($hEn9v['body'], '<span>Discover the house</span><span class="casa-pastiglia__n">· 8 photos</span>') && str_contains($hEn9v['body'], 'A stone house in the heart of Assisi')
+      && str_contains($hEn9v['body'], 'Photo gallery of the house (up to 10 photos) and description <span class="badge badge--novita">New</span>'));
+$tip9v = $ospite->get('/case-vacanza'); $piu9v = $ospite->get('/piu-strutture');
+prova('9V · 6 · pagine per tipologia: la voce con «Novità» nel questionario (/case-vacanza) e nel blocco Portfolio (/piu-strutture)', substr_count($tip9v['body'], $voce9v) >= 3
+      && preg_match('#<p class="tipo-piano__casa plan__casa">.*?' . preg_quote($voce9v, '#') . '#s', $piu9v['body']) === 1, substr_count($tip9v['body'], $voce9v) . ' ' . substr_count($piu9v['body'], $voce9v));
+$faq9v = $ospite->get('/domande'); $faqEn9v = $ospite->get('/en/questions');
+prova('9V · 6 · FAQ: «Posso mettere le foto della mia casa?» → sì, fino a 10, una descrizione di 600 battute, in tutti i piani; non è un sito di prenotazione (anche in inglese)', str_contains($faq9v['body'], 'Posso mettere le foto della mia casa?')
+      && str_contains($faq9v['body'], 'fino a 10 foto e una descrizione di 600 battute, in tutti i piani (Essential, Plus e Portfolio)') && str_contains($faq9v['body'], 'non un sito di prenotazione')
+      && str_contains($faqEn9v['body'], 'Can I add photos of my house?') && str_contains($faqEn9v['body'], 'not a booking site'));
+prova('9V · 6 · Termini: le foto della galleria restano dell\'host, che garantisce di averne i diritti; nessun prezzo nuovo e la versione dei Termini non cambia', str_contains($ospite->get('/termini')['body'], 'comprese le foto della galleria «La casa», che è inclusa in tutti i piani')
+      && str_contains($ospite->get('/en/terms')['body'], 'including the photos in the “house” gallery') && $c9n('echo MHW\Config::get("legal")["terms_version"];') === MHW_VERSIONE_LEGALE);
+$rTesti9v = $admin->get('/admin/testi');
+prova('9V · 6 · Testi e foto: la sezione «La casa in foto (Novità)» con le chiavi casa.* (voce, confronto, blocco in home)', str_contains($rTesti9v['body'], 'La casa in foto (Novità)') && str_contains($rTesti9v['body'], 'La tua casa si presenta da sola.'));
+// La scadenza del segno «Novità»: di serie 60 giorni dalla migrazione; da Impostazioni → Sito si cambia; scaduta, sparisce ovunque e la voce resta.
+$fino9v = $c9n('echo MHW\Casa::novitaFino(), "|", (int) MHW\Casa::novita(), "|", (int) MHW\Casa::novita("2099-01-01");');
+$mig9v = (string) val("SELECT applied_at FROM schema_migrations WHERE name = '072_la_casa_9v.php'");
+prova('9V · 6 · «Novità» scade da sola: di serie 60 giorni dopo l\'aggiornamento (migrazione 072)', $fino9v === gmdate('Y-m-d', strtotime($mig9v) + 60 * 86400) . '|1|0', $fino9v . ' ' . $mig9v);
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'impostazioni%'");
+$rImp9v = $admin->get('/admin/impostazioni');
+$admin->post('/admin/impostazioni/sito', $sito9 + ['novita__casa_fino' => gmdate('Y-m-d', time() - 86400)]);
+$hSc9v = $ospite->get('/'); $elvSc9v = $elv->get("/pannello/$elvPid");
+prova('9V · 6 · Impostazioni → Sito: il campo «Segno «Novità» della galleria «La casa»: fino al»; con una data passata il segno sparisce da schede, confronto, home e pannello, la voce resta', str_contains($rImp9v['body'], 'name="novita__casa_fino"')
+      && !str_contains($hSc9v['body'], 'badge--novita') && substr_count($hSc9v['body'], 'La casa in foto: galleria fino a 10 immagini e descrizione') >= 6 && str_contains($hSc9v['body'], 'Galleria della casa (fino a 10 foto) e descrizione')
+      && str_contains($hSc9v['body'], '<span>La casa in foto</span>') && !str_contains($elvSc9v['body'], 'badge--novita') && str_contains($elvSc9v['body'], 'La casa: foto e descrizione'), (string) substr_count($hSc9v['body'], 'badge--novita'));
+db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'impostazioni%'");
+$admin->post('/admin/impostazioni/sito', $sito9 + ['novita__casa_fino' => '']);
+prova('9V · 6 · tolta la data, torna quella di serie', str_contains($ospite->get('/')['body'], 'badge--novita'));
+// La novità per i clienti già attivi: solo la fascia nel pannello, nessuna email.
+db()->prepare('UPDATE users SET created_at = ? WHERE email = ?')->execute(['2026-10-01T00:00:00Z', 'elvira9v@prova.test']);
+db()->prepare('DELETE FROM novita_viste WHERE account_id = ?')->execute([$elvAcc]);
+$postaPrima9v = count(righePosta());
+$rNov = $elv->get("/pannello/$elvPid");
+$rVai = $elv->post('/pannello/novita/vai', ['novita' => '2026-11-casa', 'dove' => "/pannello/$elvPid/casa"]);
+prova('9V · 6 · clienti già attivi: la fascia «Novità · Mostra la tua casa in foto. Aggiungi fino a 10 immagini e una descrizione.» con «Aggiungi le foto», che porta alla pagina; nessuna email', str_contains($rNov['body'], '<b id="novita-titolo">Mostra la tua casa in foto</b>')
+      && str_contains($rNov['body'], 'Aggiungi fino a 10 immagini e una descrizione.') && str_contains($rNov['body'], '>Aggiungi le foto</button>') && $rVai['code'] === 302 && str_ends_with($rVai['loc'], "/pannello/$elvPid/casa")
+      && !str_contains($elv->get("/pannello/$elvPid")['body'], 'class="novita"') && count(righePosta()) === $postaPrima9v, $rVai['code'] . ' ' . $rVai['loc']);
+
+// 7 · Copia ed eliminazione di una struttura: le foto si duplicano e poi se ne vanno con la struttura, senza file orfani.
+$due9v = (int) $c9n('echo MHW\Properties::create(' . $elvAcc . ', "Casa Elvira Due", "Spello", "Elvira", 1);');
+$oggCopia9v = $oggetti9v(); $nElv9v = count($galleria9v($elvPid));
+$copia9v = json_decode($c9n('echo json_encode(MHW\Copia::esegui(' . $elvAcc . ', ' . $elvPid . ', ' . $due9v . ', [], [], false, false, true));'), true) ?: [];
+$galDue9v = $galleria9v($due9v);
+$copia2_9v = json_decode($c9n('echo json_encode(MHW\Copia::esegui(' . $elvAcc . ', ' . $elvPid . ', ' . $due9v . ', [], [], false, false, true));'), true) ?: [];
+prova('9V · 7 · copia di una struttura: galleria e testi copiati, le foto duplicate nello storage (file diversi: le due guide sono indipendenti); una seconda copia non tocca quella che c\'è già', ($copia9v['casa'] ?? null) === true
+      && count($galDue9v) === $nElv9v && !array_intersect(array_column($galDue9v, 'media_id'), array_column($galleria9v($elvPid), 'media_id')) && $oggetti9v() === $oggCopia9v + $nElv9v
+      && (string) val('SELECT casa_titolo FROM properties WHERE id = ?', [$due9v]) === 'Un tetto sopra Spello' && str_contains((string) val('SELECT casa_tr FROM properties WHERE id = ?', [$due9v]), 'A roof above Spello')
+      && ($copia2_9v['casa'] ?? null) === false && count($galleria9v($due9v)) === $nElv9v, json_encode($copia9v) . ' ' . count($galDue9v) . '/' . $nElv9v);
+$prop9v = json_decode($c9n('$p = MHW\Copia::proposta(' . $elvPid . ', ' . $due9v . '); echo json_encode([$p["casa"], $p["casa_esiste"]]);'), true);
+prova('9V · 7 · «Cosa copiare»: la casella «La casa: foto e descrizione» nel modulo (già spuntata come le altre); la proposta dice quante foto ha l\'origine e se la struttura di arrivo ha già la sua', $prop9v === [$nElv9v, true]
+      && str_contains((string) file_get_contents("$DOVE/app/views/host/_copia_scelte.php"), 'name="copia_casa" value="1"'), json_encode($prop9v));
+$elv->get('/pannello'); $rEl9v = $elv->post("/pannello/$due9v/elimina", ['conferma' => 'casa elvira due']);
+prova('9V · 7 · eliminata la struttura: le righe della galleria, i file e le foto se ne vanno con lei, quelle dell\'altra restano (nessun file orfano)', $rEl9v['code'] === 302 && !val('SELECT id FROM properties WHERE id = ?', [$due9v])
+      && (int) val('SELECT COUNT(*) FROM property_gallery WHERE property_id = ?', [$due9v]) === 0 && (int) val('SELECT COUNT(*) FROM media WHERE property_id = ?', [$due9v]) === 0
+      && $oggetti9v() === $oggCopia9v && count($galleria9v($elvPid)) === $nElv9v, $rEl9v['code'] . ' oggetti ' . $oggetti9v() . '/' . $oggCopia9v);
+
+// 5 · La demo: Casa Checco ha la galleria di serie (ridotta come quelle dei clienti) nelle 5 lingue; «Rifai la vetrina» non sovrascrive quella cambiata.
+$vet9v = riga('SELECT id, account_id, casa_titolo, casa_descrizione FROM properties WHERE slug = ?', [$slugV]);
+$galV9v = $galleria9v((int) $vet9v['id']);
+$cDe9v = $ospite->get("/g/$slugV/casa?l=de");
+prova('9V · 5 · Casa Checco: 8 foto (ognuna ≤ 300 KB) con il testo alternativo, il titolo «Una casa in pietra nel cuore di Assisi» e la descrizione; in tedesco «Ein Steinhaus im Herzen von Assisi»', count($galV9v) === 8
+      && max(array_map(fn($f) => (int) $f['bytes'], $galV9v)) <= 300000 && !array_filter($galV9v, fn($f) => $f['alt'] === '') && $vet9v['casa_titolo'] === 'Una casa in pietra nel cuore di Assisi'
+      && mb_strlen((string) $vet9v['casa_descrizione']) <= 600 && $cDe9v['code'] === 200 && str_contains($cDe9v['body'], 'Ein Steinhaus im Herzen von Assisi') && str_contains($cDe9v['body'], 'drei Gehminuten vom Platz entfernt'),
+      count($galV9v) . ' foto, ' . mb_strlen((string) $vet9v['casa_descrizione']) . ' battute');
+$tenere9v = $c9n('echo json_encode(MHW\Demo::casaDaTenere(' . (int) $vet9v['account_id'] . ') === null);');
+$c9n('MHW\Db::update("properties", ["casa_titolo" => "La casa del titolare"], "id = :p", ["p" => ' . (int) $vet9v['id'] . ']); MHW\Casa::togli(' . (int) $vet9v['account_id'] . ', ' . (int) $vet9v['id'] . ', ' . (int) $galV9v[7]['id'] . '); echo "ok";');
+$nuovaV9v = (int) $c9n('echo MHW\Demo::rifaiVetrina(' . (int) $vet9v['account_id'] . ', true);');
+$vet2_9v = riga('SELECT id, slug, casa_titolo FROM properties WHERE id = ?', [$nuovaV9v]) ?: [];
+prova('9V · 5 · «Rifai la vetrina»: la galleria di serie si rimette da sola, ma titolo e foto cambiati dal titolare restano (7 foto, «La casa del titolare»), pubblicati', $tenere9v === 'true' && $nuovaV9v > 0
+      && ($vet2_9v['casa_titolo'] ?? '') === 'La casa del titolare' && count($galleria9v($nuovaV9v)) === 7 && str_contains($ospite->get('/g/' . ($vet2_9v['slug'] ?? 'x') . '/casa?l=it')['body'], 'La casa del titolare'),
+      $tenere9v . ' ' . json_encode($vet2_9v) . ' ' . count($galleria9v($nuovaV9v)));
+// Si rimette quella di serie, per le prove che seguono.
+$c9n('$p = MHW\Db::one("SELECT * FROM properties WHERE id = ' . $nuovaV9v . '"); foreach (MHW\Casa::foto(' . $nuovaV9v . ') as $f) MHW\Casa::togli((int) $p["account_id"], ' . $nuovaV9v . ', $f["id"]);
+    MHW\Db::update("properties", ["casa_titolo" => "", "casa_descrizione" => null, "casa_tr" => null], "id = :p", ["p" => ' . $nuovaV9v . ']); MHW\Demo::casaVetrina(' . $nuovaV9v . '); MHW\Guide::publish(' . $nuovaV9v . '); echo "ok";');
+$slugV = (string) $c9n('echo (string) ((MHW\Demo::vetrinaAttuale() ?? [])["slug"] ?? "");');
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

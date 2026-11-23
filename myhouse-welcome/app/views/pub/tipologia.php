@@ -119,6 +119,7 @@ $linkDemo = fn() => '<a class="btn btn--lg btn--ghost" href="' . $demoUrl . '" t
       <span class="kicker"><?= $U('Il piano per più strutture', 'The plan for several properties') ?></span>
       <h2 id="tipo-portfolio" class="h-sezione"><?= Support::e($pf['name']) ?><?= $U(': più strutture aggiungi, meno costa ognuna', ': the more properties you add, the less each one costs') ?></h2>
       <p><?= $U('Tutto quello che c\'è in Plus, per ogni struttura: tutte le sezioni, foto e PDF, le traduzioni suggerite dal traduttore automatico (le approvi tu, comprese entro un limite annuale), le statistiche di ognuna. Un solo account e un solo abbonamento.', 'Everything in Plus, for every property: all the sections, photos and PDFs, translations suggested by the automatic translator (you approve them, included within a yearly limit), statistics for each. One account and one subscription.') ?></p>
+      <?php if (MHW\Casa::disponibile()): /* 9V · la galleria «La casa», in ogni struttura */ ?><p class="tipo-piano__casa plan__casa"><?= Icon::svg('check', 16, 2) ?><span><?= MHW\Casa::voce() ?></span></p><?php endif; ?>
       <?php $pvS = $pf; $qS = $minP; include __DIR__ . '/_scaglioni.php'; ?>
     </div>
     <div class="tipo-piano__prezzo">

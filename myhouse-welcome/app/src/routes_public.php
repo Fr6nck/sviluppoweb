@@ -1071,6 +1071,17 @@ $r->get('/g/{slug}/evento/{rid}.ics', function (array $a) use ($guida, $nonDispo
     echo $ics;
 });
 
+/* 9V · «La casa»: la galleria e la descrizione, dalla copertina. Senza foto né descrizione nell'istantanea pubblicata (o con
+   l'interruttore spento) la pagina non c'è: 404. L'apertura conta nelle statistiche come quelle delle sezioni (anonima).
+   Registrata prima di /g/{slug}/{sid}. */
+$r->get('/g/{slug}/casa', function (array $a) use ($guida, $telaio, $nonDisponibile) {
+    [$g, $snap, $loc] = $guida($a['slug']);
+    $casa = MHW\Casa::perGuida($snap['property'], $loc);
+    if (!$casa) $nonDisponibile($loc, false);
+    Guide::track((int) $g['property']['id'], 'gallery_view', null, $loc);
+    View::out('guest/casa', ['casa' => $casa] + $telaio($snap, $loc, Support::url('/g/' . $a['slug'])), 'layout/guest');
+});
+
 $r->get('/g/{slug}/{sid}', function (array $a) use ($guida, $telaio, $nonDisponibile) {
     [$g, $snap, $loc] = $guida($a['slug']);
     $sec = null;

@@ -13,10 +13,19 @@ $copertina = !empty($pr['cover_id']) ? MHW\Media::url((int) $pr['cover_id']) : (
 
 <h1 class="guest-title" style="margin-top:22px"><?= Support::e(I18n::t($loc, 'welcome_1')) ?><br><?= Support::e(I18n::t($loc, 'welcome_2', $pr['name'])) ?></h1>
 
+<?php /* 9V · «La casa»: con la galleria (o la descrizione) tutta la foto di copertina è un link alla pagina, con la pastiglia scura
+         «Scopri la casa · 8 foto ›» in alto a sinistra. Il numero di foto sparisce da solo se accanto al tondo dell'host non c'è posto.
+         Senza galleria la copertina è quella di sempre. */
+      $casaG = MHW\Casa::perGuida($pr, $loc);
+      $casaHref = $casaG ? $base . '/casa?l=' . $loc : '';
+      $pastiglia = !$casaG ? '' : '<span class="casa-pastiglia' . (!empty($pr['profile_id']) ? ' casa-pastiglia--tondo' : '') . '"><span>' . Support::e($casaG['invito']) . '</span>'
+          . ($casaG['n'] ? '<span class="casa-pastiglia__n">· ' . Support::e(I18n::t($loc, $casaG['n'] === 1 ? 'casa_photo' : 'casa_photos', $casaG['n'])) . '</span>' : '')
+          . Icon::svg('chevron', 14, 2.4) . '</span>'; ?>
 <?php if ($copertina): ?>
   <div class="guest-cover-wrap" style="margin-top:22px">
-    <div class="shot shot--h262 guest-cover">
+    <div class="shot shot--h262 guest-cover<?= $casaG ? ' guest-cover--casa' : '' ?>">
       <img src="<?= Support::e($copertina) ?>" alt="<?= Support::e((string) $pr['name']) ?>" fetchpriority="high" decoding="async">
+      <?php if ($casaG): ?><a class="guest-cover__link" href="<?= Support::e($casaHref) ?>" data-casa-apri><?= $pastiglia ?></a><?php endif; ?>
       <span class="shot-pill"><span class="dot"></span><?= Support::e(I18n::t($loc, 'checkin_from', $pr['checkin_from'])) ?></span>
     </div>
     <?php include __DIR__ . '/_host.php'; /* 7C: il tondo con la foto dell'host, a cavallo dell'angolo, anche con il logo */ ?>
@@ -27,6 +36,9 @@ $copertina = !empty($pr['cover_id']) ? MHW\Media::url((int) $pr['cover_id']) : (
     <span class="badge badge--pine"><span class="dot"></span><?= Support::e(I18n::t($loc, 'checkin_from', $pr['checkin_from'])) ?></span>
     <span class="badge badge--ochre"><?= Support::e(I18n::t($loc, 'checkout_by', $pr['checkout_by'])) ?></span>
   </div>
+  <?php if ($casaG): /* senza foto di copertina: la stessa pastiglia, in una riga sua */ ?>
+    <p style="margin:14px 0 0"><a class="casa-pastiglia-link" href="<?= Support::e($casaHref) ?>" data-casa-apri><?= $pastiglia ?></a></p>
+  <?php endif; ?>
 <?php endif; ?>
 
 <?php /* Eventi (6G): la guida è un'istantanea, le date si guardano adesso. La casella si vede solo

@@ -256,4 +256,17 @@ return [
     'ask_short'                  => 'Demander',
     'contact_short'              => 'Contacter',
     'email_host'                 => 'E-mail',
+    // 9V · «La casa»: la pastiglia sulla copertina e la pagina con la galleria e la descrizione.
+    'casa_invite'                => 'Découvrez la maison',
+    'casa_photos'                => '%d photos',
+    'casa_photo'                 => '%d photo',
+    'casa_title'                 => 'La maison',
+    'casa_photo_alt'             => '%1$s, photo %2$d sur %3$d',
+    'casa_more'                  => 'Lire la suite',
+    'casa_less'                  => 'Afficher moins',
+    'casa_prev'                  => 'Photo précédente',
+    'casa_next'                  => 'Photo suivante',
+    'casa_counter'               => 'Photo %1$d sur %2$d',
+    'casa_open'                  => 'Ouvrir la photo en plein écran',
+    'casa_gallery'               => 'Les photos de la maison : faites défiler avec le doigt ou les flèches',
 ];

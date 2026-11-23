@@ -70,7 +70,7 @@ final class Media
     }
 
     /**
-     * @param string $purpose logo | cover | profile | section | place
+     * @param string $purpose logo | cover | profile | section | place | gallery (9V: lato lungo 1600 px, al massimo 300 KB)
      */
     public static function storeImage(array $file, int $accountId, ?int $propertyId, string $alt, string $purpose): int
     {
@@ -95,7 +95,12 @@ final class Media
     /** Controlla e ridisegna un'immagine caricata. @return array{0:string,1:string,2:string,3:int,4:int} */
     private static function prepareImage(array $file, string $purpose): array
     {
-        $tmp = self::upload($file);
+        return self::ridisegna(self::upload($file), $purpose);
+    }
+
+    /** Il lavoro di prepareImage su un file che sta già sul server (quello caricato, o una foto di serie della demo). */
+    private static function ridisegna(string $tmp, string $purpose): array
+    {
         $cfg = Config::get('storage');
         if (filesize($tmp) > $cfg['max_image_bytes']) {
             throw new \RuntimeException(strtr(Pannello::t('Immagine troppo pesante: il limite è {n} MB.'), ['{n}' => round($cfg['max_image_bytes'] / 1048576)]));
@@ -120,7 +125,7 @@ final class Media
         };
         if (!$img) throw new \RuntimeException('Questa immagine non si riesce a leggere.');
 
-        $max = $purpose === 'logo' ? 800 : (int) $cfg['max_image_edge'];
+        $max = $purpose === 'logo' ? 800 : ($purpose === 'gallery' ? Casa::LATO : (int) $cfg['max_image_edge']);
         if (max($w, $h) > $max) {
             $k = $max / max($w, $h);
             $nw = max(1, (int) round($w * $k)); $nh = max(1, (int) round($h * $k));
@@ -128,6 +133,12 @@ final class Media
             imagealphablending($r, false); imagesavealpha($r, true);
             imagecopyresampled($r, $img, 0, 0, 0, 0, $nw, $nh, $w, $h);
             imagedestroy($img); $img = $r; $w = $nw; $h = $nh;
+        }
+        // 9V · L'orientamento scritto nei metadati (una foto fatta col telefono in verticale): si raddrizza l'immagine già
+        // ridotta, perché ridisegnandola i metadati spariscono e resterebbe coricata.
+        if ($info['mime'] === 'image/jpeg' && function_exists('exif_read_data')) {
+            $img = self::raddrizza($img, (int) ((@exif_read_data($tmp) ?: [])['Orientation'] ?? 1));
+            $w = imagesx($img); $h = imagesy($img);
         }
 
         // Un logo con la trasparenza resta PNG; tutto il resto diventa JPEG.
@@ -143,11 +154,50 @@ final class Media
                 imagedestroy($img); $img = $bianco;
             }
             imageinterlace($img, true);
-            imagejpeg($img, null, 82); $mime = 'image/jpeg'; $ext = 'jpg';
+            if ($purpose === 'gallery') { $img = self::jpegEntro($img, Casa::PESO); $w = imagesx($img); $h = imagesy($img); }
+            else imagejpeg($img, null, 82);
+            $mime = 'image/jpeg'; $ext = 'jpg';
         }
         $bytes = (string) ob_get_clean();
         imagedestroy($img);
         return [$bytes, $mime, $ext, $w, $h];
+    }
+
+    /** 9V · L'immagine girata come dice l'orientamento EXIF (1 = già dritta). imagerotate gira in senso antiorario. */
+    private static function raddrizza(\GdImage $img, int $orientamento): \GdImage
+    {
+        if (in_array($orientamento, [2, 5, 7], true)) imageflip($img, IMG_FLIP_HORIZONTAL);
+        if ($orientamento === 4) imageflip($img, IMG_FLIP_VERTICAL);
+        $gradi = [3 => 180, 5 => 90, 6 => -90, 7 => -90, 8 => 90][$orientamento] ?? 0;
+        if (!$gradi) return $img;
+        $g = @imagerotate($img, $gradi, 0);
+        if (!$g) return $img;
+        imagedestroy($img);
+        return $g;
+    }
+
+    /**
+     * 9V · Scrive (nel buffer aperto da chi chiama) il JPEG più bello che sta entro $peso byte: prima scende la qualità
+     * (80 → 62), poi il lato lungo, del 15% per volta fino a 800 px (una foto un po' più piccola si vede meglio di una
+     * grande troppo compressa). Restituisce l'immagine usata (può essere più piccola).
+     */
+    private static function jpegEntro(\GdImage $img, int $peso): \GdImage
+    {
+        $q = 80;
+        while (true) {
+            ob_start(); imagejpeg($img, null, $q); $bytes = (string) ob_get_clean();
+            if (strlen($bytes) <= $peso) break;
+            if ($q > 62) { $q -= 6; continue; }
+            $w = imagesx($img); $h = imagesy($img);
+            if (max($w, $h) <= 800) break;   // più piccola di così non serve: resta com'è
+            $nw = max(1, (int) round($w * 0.85)); $nh = max(1, (int) round($h * 0.85));
+            $r = imagecreatetruecolor($nw, $nh);
+            imagecopyresampled($r, $img, 0, 0, 0, 0, $nw, $nh, $w, $h);
+            imageinterlace($r, true);
+            imagedestroy($img); $img = $r; $q = 74;
+        }
+        echo $bytes;
+        return $img;
     }
 
     public static function storePdf(array $file, int $accountId, ?int $propertyId, string $title): int
@@ -173,10 +223,15 @@ final class Media
      * Un file che sta già sul server (le fotografie della demo): passa dagli
      * stessi controlli sul contenuto, ma non arriva da un modulo.
      */
-    public static function importImage(string $path, int $accountId, ?int $propertyId, string $alt): ?int
+    public static function importImage(string $path, int $accountId, ?int $propertyId, string $alt, ?string $purpose = null): ?int
     {
         $info = @getimagesize($path);
         if (!$info || $info['mime'] !== 'image/jpeg') return null;
+        // 9V · Con uno scopo (la galleria della demo) la foto passa dalla stessa riduzione di quelle caricate dai clienti.
+        if ($purpose !== null) {
+            [$bytes, $mime, $ext, $w, $h] = self::ridisegna($path, $purpose);
+            return self::save($bytes, $mime, $ext, 'image', $accountId, $propertyId, $alt, basename($path), $w, $h);
+        }
         return self::save((string) file_get_contents($path), 'image/jpeg', 'jpg', 'image', $accountId, $propertyId,
                           $alt, basename($path), (int) $info[0], (int) $info[1]);
     }
@@ -346,7 +401,7 @@ final class Media
                                  SectionCatalog::mediaIds($s['kind'], json_decode((string) $s['data'], true) ?: []));
             foreach (Db::all('SELECT media_id FROM places WHERE section_id = ? AND media_id IS NOT NULL', [$s['id']]) as $pl) $usati[] = (int) $pl['media_id'];
         }
-        $usati = array_merge($usati, Guide::mediaPubblicati($propertyId));
+        $usati = array_merge($usati, Casa::mediaIds($propertyId), Guide::mediaPubblicati($propertyId));   // 9V: le foto della galleria
         $n = 0;
         $prima = gmdate('Y-m-d\TH:i:s\Z', time() - 3600);
         foreach (Db::all('SELECT id FROM media WHERE property_id = ? AND created_at < ?', [$propertyId, $prima]) as $m) {

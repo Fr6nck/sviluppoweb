@@ -26,7 +26,7 @@ $title = t('Copia sezioni — ') . $prop['name']; $pid = (int) $prop['id']; ?>
     <?php else: ?>
       <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/copia" class="stack"><?= Csrf::field() ?>
         <input type="hidden" name="da" value="<?= (int) $da['id'] ?>">
-        <?php $sezioniOrigine = $proposta['sezioni']; $nomeDestinazione = $prop['name']; include __DIR__ . '/_copia_scelte.php'; ?>
+        <?php $sezioniOrigine = $proposta['sezioni']; $nomeDestinazione = $prop['name']; $casaOrigine = $proposta['casa'] ?? null; $casaEsiste = !empty($proposta['casa_esiste']); include __DIR__ . '/_copia_scelte.php'; ?>
         <div class="actions"><button class="btn"><?= Icon::svg('copy', 16) ?> <?= Support::e(tf('Copia in {nome}', ['{nome}' => $prop['name']])) ?></button>
           <a class="btn btn--quiet" href="<?= b() ?>/pannello/<?= $pid ?>"><?= t('Annulla') ?></a></div>
       </form>

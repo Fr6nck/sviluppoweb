@@ -80,7 +80,7 @@ Se al momento dell'acquisto chiedi espressamente che il servizio inizi subito (l
 T,
 'termini.8.titolo' => 'I tuoi contenuti e i codici di accesso',
 'termini.8.testo' => <<<'T'
-I testi, le immagini e i documenti che pubblichi restano tuoi. Garantisci di avere il diritto di usarli (anche le foto in cui compaiono persone) e che non violano diritti di terzi.
+I testi, le immagini e i documenti che pubblichi restano tuoi. Garantisci di avere il diritto di usarli (anche le foto in cui compaiono persone) e che non violano diritti di terzi. Vale per ogni immagine, comprese le foto della galleria «La casa», che è inclusa in tutti i piani ed è una pagina della guida, non un servizio di prenotazione.
 
 Non pubblicare contenuti illeciti, offensivi o ingannevoli, né dati personali di altre persone senza averne il diritto. Se riceviamo una segnalazione fondata o vediamo un contenuto di questo tipo, possiamo chiederti di toglierlo e, se non lo fai, rimuoverlo o sospendere la guida dopo un avviso; senza avviso solo nei casi gravi o se ce lo chiede un'autorità.
 
@@ -502,7 +502,7 @@ If at checkout you expressly ask for the service to start immediately (the guide
 T,
 'termini.8.titolo' => 'Your content and access codes',
 'termini.8.testo' => <<<'T'
-The texts, images and documents you publish remain yours. You guarantee that you have the right to use them (including photos showing people) and that they do not infringe third-party rights.
+The texts, images and documents you publish remain yours. You guarantee that you have the right to use them (including photos showing people) and that they do not infringe third-party rights. This applies to every image, including the photos in the “house” gallery, which is included in every plan and is a page of the guide, not a booking service.
 
 Do not publish unlawful, offensive or misleading content, or other people's personal data without the right to do so. If we receive a well-founded report or see such content, we may ask you to remove it and, if you don't, remove it or suspend the guide after a notice; without notice only in serious cases or when an authority asks us to.
 

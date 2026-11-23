@@ -3528,3 +3528,125 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .device__tiles span.t-pine{background:var(--tel-t3,#1f6b3f)} .device__tiles span.t-ochre{background:var(--tel-t4,#c08a14)}
 .device__tiles span.t-terracotta{color:var(--tel-i1,#fff8f2)} .device__tiles span.t-sea{color:var(--tel-i2,#fff8f2)}
 .device__tiles span.t-pine{color:var(--tel-i3,#fff8f2)} .device__tiles span.t-ochre{color:var(--tel-i4,#231b12)}
+
+/* ======================================= 9V · «La casa: foto e descrizione» nel pannello (views/host/casa.php, casa.js)
+   La griglia a 5 per riga: ogni foto è un radio vero con la sua immagine; quella scelta ha il bordo d'accento e il numero
+   pieno (non solo il colore: cambia anche la forma). «+» tratteggiato per aggiungere, le caselle vuote fino a 10. */
+.casa-griglia{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;user-select:none;-webkit-user-select:none}
+.casa-foto{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--sunk)}
+.casa-foto label{display:block;width:100%;height:100%;margin:0;cursor:pointer}
+.casa-foto img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-touch-callout:none}
+.casa-foto input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.casa-foto__n{position:absolute;left:5px;top:5px;min-width:20px;height:20px;padding:0 5px;border-radius:6px;background:#fff;color:#231b12;
+  font-size:12px;line-height:20px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
+.casa-foto input:checked + img{outline:4px solid var(--accent);outline-offset:-4px}
+.casa-foto input:checked ~ .casa-foto__n{background:var(--accent);color:var(--on-dark)}
+.casa-foto input:focus-visible + img{outline:4px solid var(--ink);outline-offset:-4px}
+.casa-foto--aggiungi{background:transparent;border:1.5px dashed var(--line-strong)}
+.casa-foto--aggiungi label{display:grid;place-items:center;color:var(--muted)}
+.casa-foto--aggiungi label:hover{color:var(--accent)}
+.casa-foto--aggiungi[hidden],.casa-carica[hidden],.casa-azioni[hidden],[data-casa-piena][hidden],.casa-file__btn[hidden]{display:none}
+.casa-file--nascosto{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.casa-file--nascosto:focus-visible + .casa-file__btn{outline:3px solid var(--accent);outline-offset:2px}
+.casa-file__btn{align-self:flex-start;cursor:pointer}
+[data-casa].casa--sopra{outline:3px dashed var(--accent);outline-offset:-3px}
+.casa-foto--trascina{opacity:.5}
+.casa-foto--trascina img{outline:3px dashed var(--accent);outline-offset:-3px}
+.casa-griglia--trascina,.casa-griglia--trascina label{cursor:grabbing}
+.casa-stato{margin:0}
+.casa-stato__ok{color:var(--pine);font-weight:600}
+.casa-stato__ok svg{vertical-align:-2px}
+.casa-azioni{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px}
+.casa-azioni .btn[disabled]{opacity:.45;cursor:default}
+.casa-carica{display:grid;gap:12px;padding-top:14px;border-top:1px solid var(--line)}
+.casa-carica input[type=file]{max-width:100%;font-size:14px}
+.casa-errore{color:var(--alert);font-weight:500}
+.casa-esito{margin:0}
+.casa-esito:empty{display:none}
+.casa-sotto{gap:12px;align-items:baseline;margin-top:6px}
+.casa-sotto .help{margin:0}
+.casa-sotto .contatore{flex:none}
+.casa-alt summary{cursor:pointer;font-weight:500}
+/* Il segno «Novità» (un solo componente: schede dei piani, confronto, home, pannello). Sparisce da solo alla data di Impostazioni → Sito. */
+.badge--novita{height:22px;padding:0 9px;border-radius:999px;background:var(--pine);color:var(--on-dark);font-size:11px;line-height:22px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;vertical-align:middle;font-family:Onest,"Helvetica Neue",Arial,sans-serif}
+h1 .badge--novita{margin-left:6px;position:relative;top:-4px}
+
+/* ======================================= 9V · «La casa» nella guida dell'ospite
+   La copertina: tutta la foto è un link, con la pastiglia scura in alto a sinistra. Il numero di foto va a capo (e
+   quindi sparisce: la pastiglia è alta una riga) se accanto al tondo dell'host non c'è posto: a 320 px resta la scritta. */
+.guest-cover__link{position:absolute;inset:0;z-index:1;display:block;border-radius:inherit;color:#fff;-webkit-tap-highlight-color:transparent}
+.guest-cover__link:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.guest-cover--casa .shot-pill{z-index:2;pointer-events:none}
+.casa-pastiglia{position:absolute;left:14px;top:14px;max-width:calc(100% - 28px);height:34px;padding:0 30px 0 14px;border-radius:999px;overflow:hidden;
+  display:inline-flex;flex-wrap:wrap;align-content:flex-start;column-gap:5px;background:rgba(35,27,18,.8);color:#fff;font-size:13.5px;font-weight:600;letter-spacing:-.01em}
+.casa-pastiglia--tondo{max-width:calc(100% - 86px)}
+.casa-pastiglia>span{flex:none;height:34px;line-height:34px;white-space:nowrap}
+@media (max-width:359px){ .casa-pastiglia--tondo .casa-pastiglia__n{display:none} }
+.casa-pastiglia>svg{position:absolute;right:11px;top:10px}
+.casa-pastiglia-link{display:inline-block;border-radius:999px}
+.casa-pastiglia-link .casa-pastiglia{position:relative;left:auto;top:auto;max-width:100%;vertical-align:top}
+.casa-pastiglia-link:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+/* La pagina: «‹ Torna alla guida», le foto che scorrono, il titolo, la descrizione. */
+.guest-indietro{display:inline-flex;align-items:center;gap:4px;min-height:44px;margin-left:-4px;color:var(--ink);font-size:15px;font-weight:600;text-decoration:none}
+.guest-indietro:hover{color:var(--accent)}
+.casa-slide{position:relative;margin-top:14px}
+.casa-slide__pista{position:relative;display:flex;gap:8px;margin:0 -16px;padding:0 16px;overflow-x:auto;overscroll-behavior-x:contain;
+  scroll-snap-type:x mandatory;scroll-padding-left:16px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.casa-slide__pista::-webkit-scrollbar{display:none}
+.casa-slide__pista::after{content:"";flex:0 0 28px}
+.casa-slide__pista:focus-visible{outline:3px solid var(--accent);outline-offset:4px;border-radius:var(--r-lg)}
+.casa-slide__foto{flex:0 0 calc(100% - 20px);margin:0;aspect-ratio:4/3;border-radius:var(--r-lg);overflow:hidden;background:var(--sunk);scroll-snap-align:start;scroll-snap-stop:always}
+.casa-slide__foto:only-child{flex-basis:100%}
+.casa-slide__foto a{display:block;width:100%;height:100%;cursor:zoom-in}
+.casa-slide__foto a:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.casa-slide__foto img{display:block;width:100%;height:100%;object-fit:cover}
+.casa-slide__conta{position:absolute;right:30px;top:10px;padding:4px 10px;border-radius:999px;background:rgba(35,27,18,.8);color:#fff;font-size:12.5px;line-height:18px;
+  font-weight:600;font-variant-numeric:tabular-nums;pointer-events:none}
+.casa-slide__puntini{display:flex;justify-content:center;gap:5px;margin-top:10px}
+.casa-slide__puntini[hidden],.casa-slide__conta[hidden]{display:none}
+.casa-slide__puntini i{width:6px;height:6px;border-radius:999px;background:var(--line-strong);opacity:.55;transition:width .2s ease}
+.casa-slide__puntini i.on{width:16px;background:var(--accent);opacity:1}
+.casa-slide__freccia{display:none;position:absolute;top:calc(50% - 34px);width:40px;height:40px;padding:0;border:0;border-radius:50%;place-items:center;
+  background:var(--paper);color:var(--ink);box-shadow:0 2px 10px rgba(0,0,0,.25);cursor:pointer}
+.casa-slide__freccia--prima{left:-2px}
+.casa-slide__freccia--dopo{right:8px}
+.casa-slide__freccia[disabled]{opacity:0;pointer-events:none}
+.casa-slide__freccia:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+@media (hover:hover) and (pointer:fine){ .casa-slide__freccia:not([hidden]){display:grid} }
+@media (prefers-reduced-motion: reduce){ .casa-slide__puntini i{transition:none} }
+/* Con poco testo la barra «Chiedi» / «Contatta» resta in fondo allo schermo, come nelle altre pagine della guida. */
+main.phone:has(> .casa-titolo){display:flex;flex-direction:column;min-height:100dvh}
+main.phone:has(> .casa-titolo) > .guest-bottom{margin-top:auto}
+.casa-titolo{margin-top:16px;font-size:30px;line-height:34px}
+.casa-testo{margin-top:10px}
+.casa-testo__p{margin:0;font-size:16px;line-height:24px;color:var(--ink);overflow-wrap:anywhere}
+.js .casa-testo:not(.casa-testo--aperto) .casa-testo__p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;line-clamp:4;overflow:hidden}
+.casa-testo__piu{margin-top:2px;padding:8px 0;min-height:40px;border:0;background:none;color:var(--accent);font:inherit;font-size:16px;font-weight:700;cursor:pointer}
+.casa-testo__piu[hidden]{display:none}
+.casa-testo__piu:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+/* ======================================= 9V · «La casa in foto» sul sito
+   La voce nelle schede dei piani e nel questionario (con «Novità»), la pastiglia nel telefono della home, il blocco in home. */
+.plan__casa .badge--novita{margin-left:2px}
+.tipo-piano__casa{display:flex;gap:8px;align-items:flex-start;margin:0;font-size:15px;line-height:22px}
+.tipo-piano__casa svg{flex:none;margin-top:3px;color:var(--pine)}
+.casa-pastiglia--mini{left:9px;top:9px;height:24px;padding:0 20px 0 9px;font-size:10.5px;max-width:calc(100% - 18px);column-gap:3px}
+.casa-pastiglia--mini.casa-pastiglia--tondo{max-width:calc(100% - 72px)}
+.casa-pastiglia--mini>span{height:24px;line-height:24px}
+.casa-pastiglia--mini>svg{right:7px;top:6.5px}
+.casa-home__kicker{display:flex;align-items:center;gap:8px}
+.casa-home__fig{margin:0;display:flex;flex-direction:column;gap:12px;align-items:center}
+.casa-home__pagina{width:min(360px,100%);padding:14px 16px 18px;border-radius:var(--r-xl);background:#faf5ec;color:#231b12;border:1px solid var(--line);
+  box-shadow:0 18px 40px rgba(35,27,18,.14);overflow:hidden;display:flex;flex-direction:column}
+.casa-home__indietro{display:inline-flex;align-items:center;gap:3px;font-size:13px;font-weight:600}
+.casa-home__pista{position:relative;display:flex;gap:6px;margin:10px -16px 0 0;overflow:hidden}
+.casa-home__pista img{flex:0 0 calc(100% - 34px);width:calc(100% - 34px);height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:16px;background:#f1e9db}
+.casa-home__pista .casa-slide__conta{right:44px;top:9px}
+.casa-home__pagina .casa-slide__puntini{margin-top:9px}
+.casa-home__pagina .casa-slide__puntini i{background:#94825f}
+.casa-home__pagina .casa-slide__puntini i.on{background:#b4451f}
+.casa-home__titolo{margin-top:10px;font-family:Gloock,Georgia,serif;font-weight:400;font-size:24px;line-height:27px;letter-spacing:-.3px}
+.casa-home__testo{margin:6px 0 0;font-size:14.5px;line-height:21px;color:#3d3226;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;line-clamp:4;overflow:hidden}
+.casa-home__piu{margin-top:4px;font-size:14.5px;font-weight:700;color:#b4451f}
+.casa-home__fig figcaption{margin:0;text-align:center;max-width:360px}

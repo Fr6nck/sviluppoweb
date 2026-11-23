@@ -93,9 +93,12 @@ final class Guide
             ];
         }
 
+        // 9V · «La casa»: la galleria e la descrizione, solo se c'è qualcosa da mostrare (senza, l'istantanea è quella di prima).
+        $casa = Casa::perIstantanea($p, $locales);
+
         return [
             'format' => self::FORMAT,
-            'property' => [
+            'property' => ($casa ? ['casa' => $casa] : []) + [
                 'id' => (int) $p['id'], 'name' => $p['name'], 'slug' => $p['slug'], 'city' => $p['city'], 'region' => $p['region'],
                 'province' => (string) ($p['province'] ?? ''),   // 9F · la sigla (o il testo libero): nella guida «Provincia · Regione», tradotta
                 'checkin_from' => $p['checkin_from'], 'checkout_by' => $p['checkout_by'],
@@ -150,6 +153,7 @@ final class Guide
         if (!$snap) return [];
         $p = $snap['property'] ?? [];
         $ids = [(int) ($p['cover_id'] ?? 0), (int) ($p['logo_id'] ?? 0), (int) ($p['profile_id'] ?? 0)];
+        foreach ((array) ($p['casa']['foto'] ?? []) as $f) $ids[] = (int) ($f['id'] ?? 0);   // 9V: le foto della galleria
         foreach ($snap['sections'] ?? [] as $s) {
             $ids[] = (int) ($s['image_id'] ?? 0); $ids[] = (int) ($s['pdf_id'] ?? 0);
             foreach ($s['places'] ?? [] as $pl) $ids[] = (int) ($pl['image_id'] ?? 0);
@@ -451,8 +455,8 @@ final class Guide
      */
     public static function track(int $propertyId, string $kind, ?int $sectionId = null, string $locale = '', string $source = ''): void
     {
-        // 7C: rating_1 … rating_5, le stelle del commiato: un conteggio anonimo per struttura e voto.
-        if (!in_array($kind, ['guide_view', 'qr_open', 'section_view', 'language_selected', 'rating_1', 'rating_2', 'rating_3', 'rating_4', 'rating_5'], true)) return;
+        // 7C: rating_1 … rating_5, le stelle del commiato: un conteggio anonimo per struttura e voto. 9V: gallery_view, la galleria aperta.
+        if (!in_array($kind, ['guide_view', 'qr_open', 'section_view', 'gallery_view', 'language_selected', 'rating_1', 'rating_2', 'rating_3', 'rating_4', 'rating_5'], true)) return;
         try {
             Db::insert('analytics_events', [
                 'property_id' => $propertyId, 'section_id' => $sectionId, 'locale' => substr($locale, 0, 5),

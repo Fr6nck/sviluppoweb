@@ -106,6 +106,22 @@ $campo = function (string $name, string $tipo, $orig, $trad, string $etichetta, 
   </section>
 
   <form method="post" class="stack stack--lg" data-autosave><?= Csrf::field() ?>
+    <?php if (!empty($casaT)): /* 9V · «La casa: foto e descrizione»: i testi che l'ospite legge aprendo la galleria dalla copertina */ ?>
+      <section class="panel stack" id="traduci-casa">
+        <span class="kicker"><?= t('La casa: foto e descrizione') ?></span>
+        <?php foreach ($casaT as $kC => $cC): [, $maxC, $tipoC, $etC] = MHW\Casa::CAMPI[$cC['path']];
+              $idC = 'c-' . md5($kC); $mancaC = $cC['tradotto'] === ''; ?>
+          <div class="field<?= $mancaC ? ' da-tradurre' : '' ?>" style="margin:0">
+            <label for="<?= $idC ?>"><?= t($etC) ?><?= $mancaC ? ' <span class="badge badge--ochre">' . t('Da tradurre') . '</span>' : '' ?></label>
+            <p class="orig" style="margin-bottom:6px;white-space:pre-line"><?= Support::e($cC['origine']) ?></p>
+            <?php if ($tipoC === 'textarea'): ?><textarea id="<?= $idC ?>" name="casa[<?= Support::e($cC['path']) ?>]" rows="5" maxlength="<?= (int) $maxC ?>"><?= Support::e($cC['tradotto']) ?></textarea>
+            <?php else: ?><input id="<?= $idC ?>" type="text" name="casa[<?= Support::e($cC['path']) ?>]" value="<?= Support::e($cC['tradotto']) ?>" maxlength="<?= (int) $maxC ?>"><?php endif; ?>
+            <p class="help" style="margin:4px 0 0"><?= Support::e(tf('Al massimo {n} battute.', ['{n}' => (int) $maxC])) ?></p>
+            <?= $box($kC, $mancaC) ?>
+          </div>
+        <?php endforeach; ?>
+      </section>
+    <?php endif; ?>
     <?php foreach ($sections as $s): $sid = (int) $s['id'];
           $titoloOrig = $s['orig']['title'] ?: SectionCatalog::title($s['kind'], $prop['default_locale']); ?>
       <section class="panel stack">

@@ -273,7 +273,7 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
       <?php if ($doveN !== ''): ?>
         <form method="post" action="<?= b() ?>/pannello/novita/vai" style="margin:0"<?= str_ends_with($doveN, '/anteprima') ? ' target="_blank"' : '' ?>><?= Csrf::field() ?>
           <input type="hidden" name="novita" value="<?= Support::e($novita['id']) ?>"><input type="hidden" name="dove" value="<?= Support::e($doveN) ?>">
-          <button class="btn btn--sm"><?= MHW\Pannello::t('Mostrami dove') ?></button></form>
+          <button class="btn btn--sm"><?= Support::e((string) ($novita['bottone'] ?? '') !== '' ? (string) $novita['bottone'] : MHW\Pannello::t('Mostrami dove')) ?></button></form>
       <?php endif; ?>
       <a class="novita__tutte" href="<?= b() ?>/pannello/novita"><?= MHW\Pannello::t('Tutte le novità') ?></a>
       <form method="post" action="<?= b() ?>/pannello/novita/chiudi" style="margin:0"><?= Csrf::field() ?>

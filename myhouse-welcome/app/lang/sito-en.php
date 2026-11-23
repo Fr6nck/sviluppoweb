@@ -331,4 +331,11 @@ return [
     'sito2.msg.si'      => 'I already have a website and I\'d like to improve it{bisogni}.',
     'sito2.msg.no'      => 'I don\'t have a website for my property yet and I\'d like to create one.',
     'sito2.msg.fine'    => 'Could you send me a proposal?',
+    // 9V · La casa in foto (the gallery and the description, included in every plan)
+    'casa.voce' => 'The house in photos: gallery of up to 10 images and a description',
+    'casa.confronto' => 'Photo gallery of the house (up to 10 photos) and description',
+    'casa.kicker' => 'The house in photos',
+    'casa.titolo' => 'Your house introduces itself.',
+    'casa.testo' => 'Guests tap the cover photo and browse up to 10 images, with a short description of the house. You upload the photos from your phone: we make them lighter. Included in every plan.',
+    'casa.demo' => 'See it in the {demo} guide',
 ];

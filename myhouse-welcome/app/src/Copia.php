@@ -60,7 +60,11 @@ final class Copia
             $sezioni[] = ['kind' => $s['kind'], 'titolo' => (string) ($s['title'] ?: SectionCatalog::title($s['kind'], 'it')),
                           'esiste' => $aPid !== null && (bool) Db::val('SELECT id FROM sections WHERE property_id = ? AND kind = ?', [$aPid, $s['kind']])];
         }
+        // 9V · «La casa»: quante foto ha l'origine (null = niente da copiare) e se la struttura di arrivo ha già la sua.
+        $aRiga = $aPid !== null ? Db::one('SELECT * FROM properties WHERE id = ?', [$aPid]) : null;
         return ['sezioni' => $sezioni, 'logo' => (bool) $da['logo_media_id'],
+                'casa' => Casa::daCopiare($da),
+                'casa_esiste' => $aRiga !== null && (Casa::quante((int) $aRiga['id']) > 0 || trim((string) ($aRiga['casa_descrizione'] ?? '')) !== ''),
                 'contatti' => (int) Db::val('SELECT COUNT(*) FROM property_contacts WHERE property_id = ?', [$daPid], 0)];
     }
 
@@ -68,9 +72,10 @@ final class Copia
      * Esegue la copia.
      * @param string[] $kinds        le sezioni spuntate (solo quelle di self::SEZIONI)
      * @param array<string,string> $esistenti  kind => 'sostituisci' | 'salta', per le sezioni che la destinazione ha già
-     * @return array{copiate:string[],saltate:string[],sostituite:string[]}
+     * @param bool $casa 9V · anche «La casa» (galleria e descrizione), se la struttura di arrivo non ne ha già una
+     * @return array{copiate:string[],saltate:string[],sostituite:string[],casa?:bool}
      */
-    public static function esegui(int $accountId, int $daPid, int $aPid, array $kinds, array $esistenti, bool $aspetto, bool $contatti): array
+    public static function esegui(int $accountId, int $daPid, int $aPid, array $kinds, array $esistenti, bool $aspetto, bool $contatti, bool $casa = false): array
     {
         if ($daPid === $aPid) throw new \RuntimeException('Scegli una struttura diversa da questa.');
         $da = Db::one('SELECT * FROM properties WHERE id = ? AND account_id = ?', [$daPid, $accountId]);
@@ -84,7 +89,7 @@ final class Copia
         $daCancellare = [];   // media delle sezioni sostituite: si cancellano a copia riuscita
 
         try {
-            $esito = Db::tx(function () use ($accountId, $da, $a, $kinds, $esistenti, $aspetto, $contatti, $foto, &$scritti, &$daCancellare) {
+            $esito = Db::tx(function () use ($accountId, $da, $a, $kinds, $esistenti, $aspetto, $contatti, $casa, $foto, &$scritti, &$daCancellare) {
                 $out = ['copiate' => [], 'saltate' => [], 'sostituite' => []];
                 // Una funzione vera, non una freccia: deve scrivere in $scritti, non in una sua copia.
                 $dup = function (?int $mid) use ($accountId, $a, &$scritti): ?int {
@@ -133,6 +138,8 @@ final class Copia
                     $righe = Db::all('SELECT name, role, phone, whatsapp FROM property_contacts WHERE property_id = ? ORDER BY position, id', [$da['id']]);
                     if ($righe) Properties::saveContacts((int) $a['id'], $righe);
                 }
+                // 9V · La galleria e la descrizione: le foto duplicate come le altre; se l'arrivo ha già la sua, non si tocca.
+                if ($casa) $out['casa'] = Casa::copia($da, $a, $dup);
                 // Le traduzioni copiate servono nelle lingue della guida: si aggiungono quelle che il piano permette.
                 // 8C: con le regole del piano sulla lingua principale della struttura di arrivo.
                 $giaQui = array_column(Db::all('SELECT locale FROM property_locales WHERE property_id = ?', [$a['id']]), 'locale');

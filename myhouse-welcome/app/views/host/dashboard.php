@@ -71,6 +71,7 @@ foreach ($sections as $s) { if ((int) $s['is_core'] === 1) $core = $s; else $alt
       <p class="tiny muted"><?= t('Check-in &amp; Check-out non conta nel limite delle sezioni del piano.') ?></p>
     </div>
     <?php endif; ?>
+    <?php include __DIR__ . '/_casa_scheda.php'; /* 9V · «La casa: foto e descrizione» */ ?>
 
     <?php if (!empty($s0 = array_filter($altre, fn($x) => !empty($x['da_controllare'])))): /* 9M */ ?>
       <p class="note" role="status"><span><?= t('Il parcheggio è stato copiato da un\'altra guida: controlla l\'indirizzo e i prezzi, poi salva la sezione.') ?></span></p>

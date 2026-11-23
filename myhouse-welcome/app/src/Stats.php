@@ -47,6 +47,7 @@ final class Stats
             $n = (int) substr((string) $r['kind'], 7); if ($n >= 1 && $n <= 5) $voti[$n] = (int) $r['n'];
         }
         return [
+            'gallery' => $conta(['gallery_view']),   // 9V: quante volte è stata aperta la galleria «La casa»
             'days' => $days, 'views' => $conta(self::VIEW), 'qr' => $conta(self::QR), 'voti' => $voti,
             'sections' => $sezioni, 'languages' => $lingue, 'series' => $serie,
         ];

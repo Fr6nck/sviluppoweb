@@ -141,6 +141,7 @@ if ($dentro):
             <?php else: ?><picture><source srcset="<?= Support::e($telefonoWebp) ?>" type="image/webp">
             <img src="<?= Support::e($telefonoJpg) ?>" alt="<?= $U('La copertina della guida di ' . Support::e($nomeDemo) . ' sul telefono', 'The cover of the ' . Support::e($nomeDemo) . ' guide on the phone') ?>" width="600" height="422" loading="eager" decoding="async"<?= $F('telefono') ?>></picture><?php endif; ?>
             <span class="device__pill"><i></i><?= Support::e(MHW\I18n::t($locSito, 'checkin_from', $checkinDemo)) ?></span>
+            <?php if ($casaTel = $tel['casa']): /* 9V · la pastiglia «Scopri la casa · 8 foto», dalla guida demo pubblicata */ ?><span class="casa-pastiglia casa-pastiglia--mini<?= $tel['profilo'] ? ' casa-pastiglia--tondo' : '' ?>"><span><?= Support::e($casaTel['invito']) ?></span><?php if ($casaTel['n']): ?><span class="casa-pastiglia__n">· <?= Support::e(MHW\I18n::t($locSito, $casaTel['n'] === 1 ? 'casa_photo' : 'casa_photos', $casaTel['n'])) ?></span><?php endif; ?><?= Icon::svg('chevron', 11, 2.6) ?></span><?php endif; ?>
             <?php if ($tel['profilo']): /* 9U · il tondo con la foto del profilo dell'host, come nella guida */ ?><span class="device__profilo"><img src="<?= Support::e($tel['profilo']) ?>" alt="<?= $tel['host'] !== '' ? $U('La foto di ' . Support::e($tel['host']) . ', l\'host', 'Photo of ' . Support::e($tel['host']) . ', the host') : $U('La foto dell\'host', 'Photo of the host') ?>" width="46" height="46" loading="eager" decoding="async"><i></i></span><?php endif; ?></span>
           <?php /* 8D: con la vetrina pubblicata, tutte le sue sezioni (titolo italiano, icona, colore come nella guida),
                    in una griglia che scorre dentro lo schermo; senza vetrina i quattro riquadri di sempre. */
@@ -300,6 +301,9 @@ $disegni = [
 
 <?php /* 10 · Concierge AI: l'assistente che risponde agli ospiti, solo se la funzione è in vendita in un piano. */
       if (MHW\Assistente::inVendita()) include __DIR__ . '/_assistente.php'; ?>
+
+<?php /* 9V · «La casa in foto»: la galleria e la descrizione dalla copertina, incluse in tutti i piani («Novità» finché vale). */
+      if (MHW\Casa::disponibile()) include __DIR__ . '/_casa.php'; ?>
 
 <?php /* Per chi è: quattro modi di ospitare, a ognuno il suo uso della guida. Niente numeri e
    niente promesse: solo quello che il prodotto fa davvero. */ ?>

@@ -276,6 +276,10 @@ final class Assistente
         if (trim((string) ($d['url'] ?? '')) !== '' || trim((string) ($d['code'] ?? '')) !== '') {
             $r[] = 'Prenotazione diretta per la prossima volta: ' . trim((string) ($d['url'] ?? '')) . (trim((string) ($d['code'] ?? '')) !== '' ? ' codice ' . trim((string) $d['code']) : '') . (trim((string) ($d['discount'] ?? '')) !== '' ? ' (' . trim((string) $d['discount']) . ')' : '');
         }
+        // 9V · «La casa»: il titolo e la descrizione della galleria (le foto no).
+        if (($casa = Casa::perGuida($pr, $loc)) && $casa['descrizione'] !== '') {
+            $r[] = 'La casa' . (trim((string) ($pr['casa']['tr'][$loc]['titolo'] ?? $pr['casa']['tr'][$def]['titolo'] ?? '')) !== '' ? ' («' . $casa['titolo'] . '»)' : '') . ': ' . preg_replace('/\s+/u', ' ', $casa['descrizione']);
+        }
         foreach ($snap['sections'] as $s) {
             $kind = (string) $s['kind'];
             $r[] = ''; $r[] = '## [#' . (int) $s['id'] . '] ' . Guide::title($s, $loc, $def);
