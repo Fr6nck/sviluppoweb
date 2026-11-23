@@ -1,0 +1,17 @@
+# Mai nel repository né nello zip
+/config.php
+/install/install.lock
+/install/.htaccess
+/storage/cache/*
+!/storage/cache/.htaccess
+!/storage/cache/.gitkeep
+/storage/logs/*
+!/storage/logs/.htaccess
+!/storage/logs/.gitkeep
+/storage/*.lock
+/uploads/*
+!/uploads/.htaccess
+!/uploads/index.html
+/dist/
+/sitemap.xml
+/robots.txt

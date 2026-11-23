@@ -1,0 +1,43 @@
+# ChiMangia — regole di sicurezza e prestazioni (Apache / cPanel)
+Options -Indexes
+DirectoryIndex index.php index.html
+AddDefaultCharset UTF-8
+
+# File riservati: configurazione, log, backup, documentazione e script di sviluppo.
+<FilesMatch "(?i)(^config\.php$|^config\.example\.php$|^build-zip\.php$|\.(log|sql|bak|backup|old|orig|swp|dist|lock|md|zip|tar|gz|ini|env|sh)$|^\.)">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # Cartelle interne e materiale di progetto
+  RewriteRule ^(app|storage|design)(/|$) - [F,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  <FilesMatch "\.(woff2|svg|png|jpe?g|webp|ico|css|js)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_mime.c>
+  AddType font/woff2 .woff2
+  AddType image/svg+xml .svg
+  AddType image/webp .webp
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript image/svg+xml application/json application/xml text/plain
+</IfModule>
+
+ErrorDocument 403 "Accesso non consentito."

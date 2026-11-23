@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>ChiMangia: prenotazione pasti per ristoranti e mense</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Inter',sans-serif;color:#13294B;background:#FBF7EF}
+a{color:#13294B}a:hover{color:#0A1830}
+html{scroll-behavior:smooth}
+.btn{position:relative;transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .3s ease,background-color .3s ease,color .3s ease}
+.btn:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(19,41,75,.28)}
+.btn:active{transform:translateY(0) scale(.97);box-shadow:0 3px 8px rgba(19,41,75,.25)}
+.btn:focus-visible{outline:3px solid #F2A900;outline-offset:3px}
+.btn .arr{display:inline-block;margin-left:8px;transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+.btn:hover .arr{transform:translateX(6px)}
+.btn-dark:hover{background-color:#FFFFFF !important;color:#13294B !important;box-shadow:inset 0 0 0 2px #13294B,0 10px 22px rgba(19,41,75,.28)}
+.btn-line:hover{background-color:#13294B !important;color:#FFFFFF !important}
+.nav-link{position:relative}
+.nav-link::after{content:"";position:absolute;left:0;right:0;bottom:8px;height:3px;border-radius:2px;background:#F2A900;transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
+.nav-link:hover::after{transform:scaleX(1)}
+.card{transition:transform .25s ease,box-shadow .25s ease}
+.card:hover{transform:translateY(-4px);box-shadow:0 14px 28px rgba(19,41,75,.12)}
+@media (prefers-reduced-motion:reduce){.btn,.btn .arr,.card,.nav-link::after{transition:none}.btn:hover,.card:hover{transform:none}}
+</style>
+</helmet>
+<div style="width: 100%; box-sizing: border-box; background: #FBF7EF; font-family: 'Inter', sans-serif; color: #13294B; font-size: 17px; line-height: 1.5">
+
+  <header style="background: #FBF7EF; border-bottom: 1px solid #E6DDCB">
+    <div style="max-width: 1120px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+      <a href="#top" aria-label="ChiMangia, torna all'inizio" style="display: flex; align-items: center; gap: 6px; text-decoration: none">
+        <svg aria-hidden="true" width="40" height="43" viewBox="0 0 108 116"><path d="M32 36 C32 20 44 10 56 10 C70 10 80 20 80 34 C80 47 70 52 62 58 C57 62 56 66 56 70" fill="none" stroke="#13294B" stroke-width="12" stroke-linecap="round"/><circle cx="56" cy="100" r="12.5" fill="#F2A900"/><circle cx="56" cy="100" r="6.5" fill="none" stroke="#FBF7EF" stroke-width="2.4"/></svg>
+        <span style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 30px; line-height: 1; color: #13294B">ChiMangia</span>
+      </a>
+      <nav aria-label="Sezioni" style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 22px; font-size: 16px; font-weight: 500">
+        <a class="nav-link" href="#come-funziona" style="text-decoration: none; min-height: 44px; display: flex; align-items: center">Come funziona</a>
+        <a class="nav-link" href="#funzioni" style="text-decoration: none; min-height: 44px; display: flex; align-items: center">Funzioni</a>
+        <a class="nav-link" href="#prezzi" style="text-decoration: none; min-height: 44px; display: flex; align-items: center">Prezzi</a>
+        <a class="nav-link" href="#domande" style="text-decoration: none; min-height: 44px; display: flex; align-items: center">Domande</a>
+        <a class="btn btn-dark" href="#contatti" style="text-decoration: none; min-height: 44px; padding: 0 20px; border-radius: 999px; background: #13294B; color: #FBF7EF; font-weight: 700; display: flex; align-items: center">Prova gratis 7 giorni<span class="arr" aria-hidden="true">→</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <section id="top" style="max-width: 1120px; margin: 0 auto; padding: 64px 24px 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 48px">
+    <div style="flex: 999 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 22px">
+      <div style="align-self: flex-start; background: #F2A900; color: #13294B; font-weight: 700; font-size: 15px; padding: 6px 14px; border-radius: 999px">Offerta di lancio: −30% per i primi 10 clienti</div>
+      <h1 style="margin: 0; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(40px, 6vw, 64px); line-height: 1.02">Sai chi mangia, prima di accendere i fornelli.</h1>
+      <p style="margin: 0; font-size: 20px; color: #33415C; max-width: 560px">I tuoi clienti prenotano pranzo e cena dal telefono e scelgono i piatti dal menù del giorno. Tu trovi i conteggi già pronti per la cucina. Niente più telefonate, messaggi e fogli.</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px">
+        <a class="btn btn-dark" href="#contatti" style="min-height: 56px; padding: 0 28px; border-radius: 14px; background: #13294B; color: #FBF7EF; text-decoration: none; font-weight: 700; font-size: 18px; display: flex; align-items: center">Prova gratis 7 giorni<span class="arr" aria-hidden="true">→</span></a>
+        <a class="btn btn-line" href="#prezzi" style="min-height: 56px; padding: 0 28px; border-radius: 14px; border: 2px solid #13294B; color: #13294B; text-decoration: none; font-weight: 700; font-size: 18px; display: flex; align-items: center; box-sizing: border-box">Guarda i prezzi</a>
+      </div>
+      <div style="font-size: 15px; color: #4A5568">Da 29 € al mese. Nessuna app da scaricare dagli store, nessun vincolo.</div>
+    </div>
+
+    <div style="flex: 1 1 320px; min-width: 0; display: flex; justify-content: center">
+      <div style="width: 100%; max-width: 340px; background: #13294B; border-radius: 28px; padding: 18px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; color: #FBF7EF">
+        <div style="font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: #C9D2E0">Cucina · oggi a pranzo</div>
+        <div style="display: flex; align-items: baseline; gap: 10px">
+          <span style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 64px; line-height: 1; color: #F2A900">38</span>
+          <span style="font-size: 18px">coperti confermati</span>
+        </div>
+        <div style="background: #FBF7EF; color: #13294B; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px; font-size: 16px">
+          <div style="font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #4A5568; font-weight: 600">Primi</div>
+          <div style="display: flex; justify-content: space-between"><span>Penne all'arrabbiata</span><strong>17</strong></div>
+          <div style="display: flex; justify-content: space-between"><span>Risotto ai funghi</span><strong>12</strong></div>
+          <div style="display: flex; justify-content: space-between"><span>Minestrone</span><strong>6</strong></div>
+          <div style="font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #4A5568; font-weight: 600; margin-top: 4px">Secondi</div>
+          <div style="display: flex; justify-content: space-between"><span>Arrosto di vitello</span><strong>21</strong></div>
+          <div style="display: flex; justify-content: space-between"><span>Frittata di verdure</span><strong>9</strong></div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 14px">
+          <span style="background: #F2A900; color: #13294B; font-weight: 700; padding: 5px 12px; border-radius: 999px">3 senza glutine</span>
+          <span style="background: #F2A900; color: #13294B; font-weight: 700; padding: 5px 12px; border-radius: 999px">2 vegetariani</span>
+        </div>
+        <div style="font-size: 12px; color: #C9D2E0">Esempio di schermata</div>
+      </div>
+    </div>
+  </section>
+
+  <section style="background: #13294B; color: #FBF7EF">
+    <div style="max-width: 1120px; margin: 0 auto; padding: 64px 24px; display: flex; flex-direction: column; gap: 32px">
+      <h2 style="margin: 0; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(30px, 4vw, 42px); line-height: 1.1; max-width: 760px">Ogni mattina la stessa domanda: quanti siamo oggi?</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px">
+        <div style="border: 1px solid #3A4E73; border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 8px"><svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#F2A900" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg>
+          <h3 style="margin: 0; font-size: 20px; font-weight: 700; color: #F2A900">Telefonate e messaggi</h3>
+          <p style="margin: 0; color: #E3E8F1">Prenotazioni e disdette arrivano a tutte le ore, su canali diversi, e qualcuna si perde.</p>
+        </div>
+        <div style="border: 1px solid #3A4E73; border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 8px"><svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#F2A900" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+          <h3 style="margin: 0; font-size: 20px; font-weight: 700; color: #F2A900">Cibo sprecato</h3>
+          <p style="margin: 0; color: #E3E8F1">Senza numeri certi si cucina a occhio: troppo, oppure troppo poco.</p>
+        </div>
+        <div style="border: 1px solid #3A4E73; border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 8px"><svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#F2A900" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 12h1M14 12h1M9 16h1M14 16h1"/></svg>
+          <h3 style="margin: 0; font-size: 20px; font-weight: 700; color: #F2A900">Conti a fine mese</h3>
+          <p style="margin: 0; color: #E3E8F1">Ricostruire chi ha mangiato cosa, azienda per azienda, porta via ore.</p>
+        </div>
+      </div>
+      <p style="margin: 0; font-size: 20px; max-width: 760px">ChiMangia risponde a quella domanda prima che tu la faccia.</p>
+    </div>
+  </section>
+
+  <section id="come-funziona" style="max-width: 1120px; margin: 0 auto; padding: 72px 24px; display: flex; flex-direction: column; gap: 32px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <h2 style="margin: 0; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(30px, 4vw, 42px); line-height: 1.1">Come funziona</h2>
+      <p style="margin: 0; font-size: 19px; color: #33415C">Tre passaggi, ogni giorno.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px">
+      <div class="card" style="background: #FFFFFF; border: 1px solid #E6DDCB; border-radius: 20px; padding: 26px; display: flex; flex-direction: column; gap: 10px">
+        <div style="width: 48px; height: 48px; border-radius: 24px; background: #F2A900; color: #13294B; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 26px; display: flex; align-items: center; justify-content: center">1</div>
+        <h3 style="margin: 0; font-size: 22px; font-weight: 700">Pubblichi il menù</h3>
+        <p style="margin: 0; color: #33415C">Scrivi i piatti del giorno in un minuto, oppure carichi la foto del menù. Decidi tu entro che ora si prenota.</p>
+      </div>
+      <div class="card" style="background: #FFFFFF; border: 1px solid #E6DDCB; border-radius: 20px; padding: 26px; display: flex; flex-direction: column; gap: 10px">
+        <div style="width: 48px; height: 48px; border-radius: 24px; background: #F2A900; color: #13294B; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 26px; display: flex; align-items: center; justify-content: center">2</div>
+        <h3 style="margin: 0; font-size: 22px; font-weight: 700">I clienti scelgono dal telefono</h3>
+        <p style="margin: 0; color: #33415C">Ricevono l'avviso, scelgono primo, secondo e contorno con un tocco e confermano. Chi non può, disdice in tempo.</p>
+      </div>
+      <div class="card" style="background: #FFFFFF; border: 1px solid #E6DDCB; border-radius: 20px; padding: 26px; display: flex; flex-direction: column; gap: 10px">
+        <div style="width: 48px; height: 48px; border-radius: 24px; background: #F2A900; color: #13294B; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 26px; display: flex; align-items: center; justify-content: center">3</div>
+        <h3 style="margin: 0; font-size: 22px; font-weight: 700">La cucina ha i numeri</h3>
+        <p style="margin: 0; color: #33415C">Quanti coperti, quanti piatti di ogni tipo, chi ha diete o intolleranze. Sul telefono o stampato su un foglio.</p>
+      </div>
+    </div>
+  </section>
+
+
+  <section id="una-giornata" style="max-width: 1120px; margin: 0 auto; padding: 16px 24px 80px; display: flex; flex-direction: column; gap: 56px">
+    <div style="display: flex; flex-direction: column; gap: 12px; max-width: 760px">
+      <h2 style="margin: 0; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(30px, 4vw, 42px); line-height: 1.1">Una giornata con ChiMangia</h2>
+      <p style="margin: 0; font-size: 19px; color: #33415C">Chi cucina per tanti lo sa: il lavoro vero non è ai fornelli, è capire in tempo per quante persone cucinare. Ecco cosa cambia, dal menù della sera prima ai conti di fine mese.</p>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 40px"><div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 12px"><div style="font-size: 14px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #8A5A00">La sera prima</div><h3 style="margin: 0; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 30px; line-height: 1.1">Il menù parte da solo</h3><p style="margin: 0; color: #33415C; font-size: 18px">Scrivi i piatti di domani, oppure fotografi il foglio che hai già preparato. Scegli entro che ora si può prenotare e premi Pubblica.</p><p style="margin: 0; color: #33415C; font-size: 18px">In quel momento ogni cliente riceve l'avviso sul telefono. Non devi chiamare nessuno, né rispondere a venti messaggi diversi: chi vuole mangiare sceglie i suoi piatti, chi non c'è lo dice con un tocco.</p></div><div role="img" aria-label="Illustrazione: il menù del giorno pubblicato dal telefono" style="flex: 1 1 340px; min-width: 0; border-radius: 22px; background: #F3ECDD; overflow: hidden; display: flex"><svg aria-hidden="true" viewBox="0 0 400 300" style="width: 100%; height: auto; display: block"><rect width="400" height="300" fill="#F3ECDD"/><circle cx="310" cy="70" r="46" fill="#F2A900"/>
+<rect x="120" y="30" width="150" height="250" rx="22" fill="#13294B"/><rect x="132" y="50" width="126" height="210" rx="10" fill="#FBF7EF"/>
+<rect x="144" y="64" width="70" height="10" rx="5" fill="#13294B"/>
+<rect x="144" y="90" width="102" height="26" rx="8" fill="#FFFFFF" stroke="#13294B" stroke-width="2"/><circle cx="158" cy="103" r="5" fill="#F2A900"/><rect x="170" y="99" width="60" height="8" rx="4" fill="#13294B"/>
+<rect x="144" y="124" width="102" height="26" rx="8" fill="#FFFFFF" stroke="#13294B" stroke-width="2"/><circle cx="158" cy="137" r="5" fill="#F2A900"/><rect x="170" y="133" width="48" height="8" rx="4" fill="#13294B"/>
+<rect x="144" y="158" width="102" height="26" rx="8" fill="#FFFFFF" stroke="#13294B" stroke-width="2"/><circle cx="158" cy="171" r="5" fill="#F2A900"/><rect x="170" y="167" width="56" height="8" rx="4" fill="#13294B"/>
+<rect x="144" y="212" width="102" height="34" rx="10" fill="#F2A900"/><path d="M182 229 h22 m-8 -7 l8 7 l-8 7" fill="none" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M290 150 a26 26 0 0 1 52 0 Z" fill="#FFFFFF" stroke="#13294B" stroke-width="3"/><path d="M282 152 h68" stroke="#13294B" stroke-width="4" stroke-linecap="round"/><circle cx="316" cy="120" r="4" fill="#13294B"/>
+<path d="M60 120 q-10 -14 0 -28 M78 120 q-10 -14 0 -28" fill="none" stroke="#13294B" stroke-width="3" stroke-linecap="round"/><path d="M40 132 h58 l-6 40 h-46 Z" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linejoin="round"/></svg></div></div>
+    <div style="display: flex; flex-wrap: wrap-reverse; align-items: center; gap: 40px"><div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 12px"><div style="font-size: 14px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #8A5A00">La mattina</div><h3 style="margin: 0; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 30px; line-height: 1.1">Apri il telefono e trovi la risposta</h3><p style="margin: 0; color: #33415C; font-size: 18px">Quando arrivi in cucina i numeri sono già lì: i coperti di pranzo e di cena, quanti piatti preparare di ogni tipo, chi è senza glutine e chi non mangia maiale.</p><p style="margin: 0; color: #33415C; font-size: 18px">Fai la spesa giusta e cucini il giusto. Chi non ha confermato entro l'orario è stato disdetto in automatico, quindi nessun piatto resta sul passe ad aspettare qualcuno che non arriva.</p></div><div role="img" aria-label="Illustrazione: una tavolata con i piatti prenotati" style="flex: 1 1 340px; min-width: 0; border-radius: 22px; background: #F3ECDD; overflow: hidden; display: flex"><svg aria-hidden="true" viewBox="0 0 400 300" style="width: 100%; height: auto; display: block"><rect width="400" height="300" fill="#F3ECDD"/><circle cx="110" cy="40" r="24" fill="#13294B"/><circle cx="200" cy="40" r="24" fill="#F2A900"/><circle cx="290" cy="40" r="24" fill="#13294B"/><circle cx="110" cy="260" r="24" fill="#F2A900"/><circle cx="200" cy="260" r="24" fill="#13294B"/><circle cx="290" cy="260" r="24" fill="#F2A900"/><rect x="50" y="78" width="300" height="144" rx="28" fill="#FBF7EF" stroke="#13294B" stroke-width="3"/><circle cx="110" cy="112" r="22" fill="#FFFFFF" stroke="#13294B" stroke-width="3"/><circle cx="110" cy="112" r="12.100000000000001" fill="none" stroke="#F2A900" stroke-width="3"/><circle cx="200" cy="112" r="22" fill="#FFFFFF" stroke="#13294B" stroke-width="3"/><circle cx="200" cy="112" r="12.100000000000001" fill="none" stroke="#F2A900" stroke-width="3"/><circle cx="290" cy="112" r="22" fill="#FFFFFF" stroke="#13294B" stroke-width="3"/><circle cx="290" cy="112" r="12.100000000000001" fill="none" stroke="#F2A900" stroke-width="3"/><circle cx="110" cy="188" r="22" fill="#FFFFFF" stroke="#13294B" stroke-width="3"/><circle cx="110" cy="188" r="12.100000000000001" fill="none" stroke="#F2A900" stroke-width="3"/><circle cx="200" cy="188" r="22" fill="#FFFFFF" stroke="#13294B" stroke-width="3"/><circle cx="200" cy="188" r="12.100000000000001" fill="none" stroke="#F2A900" stroke-width="3"/><circle cx="290" cy="188" r="22" fill="#FFFFFF" stroke="#13294B" stroke-width="3"/><circle cx="290" cy="188" r="12.100000000000001" fill="none" stroke="#F2A900" stroke-width="3"/><rect x="170" y="140" width="60" height="20" rx="10" fill="#F2A900"/><circle cx="140" cy="150" r="7" fill="#13294B"/><circle cx="260" cy="150" r="7" fill="#13294B"/><path d="M364 110 l10 10 l18 -22" fill="none" stroke="#13294B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 40px"><div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 12px"><div style="font-size: 14px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #8A5A00">A fine mese</div><h3 style="margin: 0; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 30px; line-height: 1.1">I conti sono già fatti</h3><p style="margin: 0; color: #33415C; font-size: 18px">Ogni pasto resta registrato con il nome del cliente, la sua azienda e la formula scelta. Quando è ora di fare i conti apri il riepilogo: quanti pasti, per quale azienda, in quali giorni.</p><p style="margin: 0; color: #33415C; font-size: 18px">Quello che prima richiedeva una serata con fogli e calcolatrice diventa una stampa. E se un'azienda chiede il dettaglio, lo hai in un minuto.</p></div><div role="img" aria-label="Illustrazione: il riepilogo mensile dei pasti" style="flex: 1 1 340px; min-width: 0; border-radius: 22px; background: #F3ECDD; overflow: hidden; display: flex"><svg aria-hidden="true" viewBox="0 0 400 300" style="width: 100%; height: auto; display: block"><rect width="400" height="300" fill="#F3ECDD"/><circle cx="84" cy="74" r="42" fill="#F2A900"/>
+<rect x="110" y="34" width="190" height="236" rx="14" fill="#FFFFFF" stroke="#13294B" stroke-width="3"/>
+<rect x="128" y="54" width="90" height="12" rx="6" fill="#13294B"/><rect x="128" y="74" width="54" height="8" rx="4" fill="#B9AE96"/>
+<rect x="128" y="104" width="80" height="9" rx="4.5" fill="#13294B"/><rect x="238" y="104" width="44" height="9" rx="4.5" fill="#F2A900"/><path d="M128 124 h154" stroke="#E6DDCB" stroke-width="2"/>
+<rect x="128" y="136" width="64" height="9" rx="4.5" fill="#13294B"/><rect x="250" y="136" width="32" height="9" rx="4.5" fill="#F2A900"/><path d="M128 156 h154" stroke="#E6DDCB" stroke-width="2"/>
+<rect x="128" y="168" width="92" height="9" rx="4.5" fill="#13294B"/><rect x="244" y="168" width="38" height="9" rx="4.5" fill="#F2A900"/><path d="M128 188 h154" stroke="#E6DDCB" stroke-width="2"/>
+<rect x="128" y="212" width="154" height="36" rx="10" fill="#13294B"/><rect x="142" y="225" width="50" height="10" rx="5" fill="#FBF7EF"/><rect x="226" y="225" width="42" height="10" rx="5" fill="#F2A900"/>
+<rect x="286" y="170" width="84" height="84" rx="12" fill="#FBF7EF" stroke="#13294B" stroke-width="3"/><rect x="286" y="170" width="84" height="24" rx="12" fill="#13294B"/><path d="M304 162 v16 M352 162 v16" stroke="#13294B" stroke-width="4" stroke-linecap="round"/><path d="M308 224 l12 12 l24 -28" fill="none" stroke="#F2A900" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+  </section>
+  <section id="funzioni" style="background: #F3ECDD">
+    <div style="max-width: 1120px; margin: 0 auto; padding: 72px 24px; display: flex; flex-direction: column; gap: 32px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <h2 style="margin: 0; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(30px, 4vw, 42px); line-height: 1.1">Tutto quello che serve, niente di più</h2>
+        <p style="margin: 0; font-size: 19px; color: #33415C">Ogni funzione è inclusa in tutti i piani. Quelle che non usi si spengono.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px">
+        <div class="card" style="background: #FFFFFF; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 6px"><div aria-hidden="true" style="width: 48px; height: 48px; border-radius: 14px; background: #FDF0CC; display: flex; align-items: center; justify-content: center; margin-bottom: 6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#13294B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2v20M4 2v6a3 3 0 0 0 6 0V2M17 2c-2 2-3 5-3 8h3v12"/></svg></div>
+          <h3 style="margin: 0; font-size: 20px; font-weight: 700">Menù a scelta o in foto</h3>
+          <p style="margin: 0; color: #33415C">Alternative tra primi, secondi e contorni, con dolce, caffè e ammazzacaffè facoltativi.</p>
+        </div>
+        <div class="card" style="background: #FFFFFF; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 6px"><div aria-hidden="true" style="width: 48px; height: 48px; border-radius: 14px; background: #FDF0CC; display: flex; align-items: center; justify-content: center; margin-bottom: 6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#13294B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12 12 20 4 12V4h8Z"/><circle cx="8.5" cy="8.5" r="1.5"/></svg></div>
+          <h3 style="margin: 0; font-size: 20px; font-weight: 700">Formule a prezzo fisso</h3>
+          <p style="margin: 0; color: #33415C">Base, completo, con o senza bevanda: le formule del tuo pranzo di lavoro, come le fai già.</p>
+        </div>
+        <div class="card" style="background: #FFFFFF; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 6px"><div aria-hidden="true" style="width: 48px; height: 48px; border-radius: 14px; background: #FDF0CC; display: flex; align-items: center; justify-content: center; margin-bottom: 6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#13294B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21C6 17 3 13 3 9a4.5 4.5 0 0 1 9-1 4.5 4.5 0 0 1 9 1c0 4-3 8-9 12Z"/></svg></div>
+          <h3 style="margin: 0; font-size: 20px; font-weight: 700">Diete e intolleranze</h3>
+          <p style="margin: 0; color: #33415C">Ogni cliente le indica una volta sola. La cucina le vede accanto al nome, ogni giorno.</p>
+        </div>
+        <div class="card" style="background: #FFFFFF; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 6px"><div aria-hidden="true" style="width: 48px; height: 48px; border-radius: 14px; background: #FDF0CC; display: flex; align-items: center; justify-content: center; margin-bottom: 6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#13294B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <h3 style="margin: 0; font-size: 20px; font-weight: 700">Orario limite e disdette</h3>
+          <p style="margin: 0; color: #33415C">Fissi tu l'orario. Chi non conferma in tempo viene disdetto in automatico: niente pasti a vuoto.</p>
+        </div>
+        <div class="card" style="background: #FFFFFF; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 6px"><div aria-hidden="true" style="width: 48px; height: 48px; border-radius: 14px; background: #FDF0CC; display: flex; align-items: center; justify-content: center; margin-bottom: 6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#13294B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg></div>
+          <h3 style="margin: 0; font-size: 20px; font-weight: 700">Aziende e riepilogo mensile</h3>
+          <p style="margin: 0; color: #33415C">Ogni cliente indica la sua azienda. A fine mese hai il riepilogo dei pasti, azienda per azienda.</p>
+        </div>
+        <div class="card" style="background: #FFFFFF; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 6px"><div aria-hidden="true" style="width: 48px; height: 48px; border-radius: 14px; background: #FDF0CC; display: flex; align-items: center; justify-content: center; margin-bottom: 6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#13294B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div>
+          <h3 style="margin: 0; font-size: 20px; font-weight: 700">Avvisi automatici</h3>
+          <p style="margin: 0; color: #33415C">Notifiche sul telefono ed email quando esce il menù e quando una richiesta viene approvata.</p>
+        </div>
+        <div class="card" style="background: #FFFFFF; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 6px"><div aria-hidden="true" style="width: 48px; height: 48px; border-radius: 14px; background: #FDF0CC; display: flex; align-items: center; justify-content: center; margin-bottom: 6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#13294B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+          <h3 style="margin: 0; font-size: 20px; font-weight: 700">Varianti su richiesta</h3>
+          <p style="margin: 0; color: #33415C">Il cliente chiede una pasta in bianco al posto del sugo: tu approvi o rifiuti con un tocco.</p>
+        </div>
+        <div class="card" style="background: #FFFFFF; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 6px"><div aria-hidden="true" style="width: 48px; height: 48px; border-radius: 14px; background: #FDF0CC; display: flex; align-items: center; justify-content: center; margin-bottom: 6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#13294B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v8H6z"/></svg></div>
+          <h3 style="margin: 0; font-size: 20px; font-weight: 700">Stampe pronte</h3>
+          <p style="margin: 0; color: #33415C">Il foglio per la cucina con pranzo e cena, la situazione per azienda e per singolo cliente.</p>
+        </div>
+        <div class="card" style="background: #FFFFFF; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 6px"><div aria-hidden="true" style="width: 48px; height: 48px; border-radius: 14px; background: #FDF0CC; display: flex; align-items: center; justify-content: center; margin-bottom: 6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#13294B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg></div>
+          <h3 style="margin: 0; font-size: 20px; font-weight: 700">Funziona come un'app</h3>
+          <p style="margin: 0; color: #33415C">Si apre dal browser e si aggiunge alla schermata del telefono. Con il tuo logo e i tuoi colori.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width: 1120px; margin: 0 auto; padding: 72px 24px; display: flex; flex-direction: column; gap: 32px">
+    <h2 style="margin: 0; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(30px, 4vw, 42px); line-height: 1.1">Per chi è</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px">
+      <div style="border-top: 6px solid #F2A900; background: #FFFFFF; border-radius: 0 0 18px 18px; padding: 22px; display: flex; flex-direction: column; gap: 6px">
+        <h3 style="margin: 0; font-size: 20px; font-weight: 700">Trattorie e ristoranti</h3>
+        <p style="margin: 0; color: #33415C">Con pranzo di lavoro e aziende convenzionate.</p>
+      </div>
+      <div style="border-top: 6px solid #F2A900; background: #FFFFFF; border-radius: 0 0 18px 18px; padding: 22px; display: flex; flex-direction: column; gap: 6px">
+        <h3 style="margin: 0; font-size: 20px; font-weight: 700">Mense aziendali</h3>
+        <p style="margin: 0; color: #33415C">Piccole e medie, gestite in proprio.</p>
+      </div>
+      <div style="border-top: 6px solid #F2A900; background: #FFFFFF; border-radius: 0 0 18px 18px; padding: 22px; display: flex; flex-direction: column; gap: 6px">
+        <h3 style="margin: 0; font-size: 20px; font-weight: 700">Convitti e residenze</h3>
+        <p style="margin: 0; color: #33415C">Per studenti e lavoratori, con presenze ai pasti ogni giorno.</p>
+      </div>
+      <div style="border-top: 6px solid #F2A900; background: #FFFFFF; border-radius: 0 0 18px 18px; padding: 22px; display: flex; flex-direction: column; gap: 6px">
+        <h3 style="margin: 0; font-size: 20px; font-weight: 700">Strutture con ristorante</h3>
+        <p style="margin: 0; color: #33415C">Che ospitano squadre di lavoratori in trasferta.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="prezzi" style="background: #13294B; color: #FBF7EF">
+    <div style="max-width: 1120px; margin: 0 auto; padding: 72px 24px; display: flex; flex-direction: column; gap: 28px">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <h2 style="margin: 0; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(30px, 4vw, 42px); line-height: 1.1">Prezzi chiari, in base a quanti clienti servi</h2>
+        <p style="margin: 0; font-size: 19px; color: #E3E8F1; max-width: 760px">Tutte le funzioni sono incluse in ogni piano. Paghi solo per i clienti che prenotano almeno un pasto nel mese.</p>
+      </div>
+      <div style="background: #F2A900; color: #13294B; border-radius: 16px; padding: 16px 22px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px">
+        <span style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 34px; line-height: 1">−30%</span>
+        <span style="font-size: 18px; font-weight: 600">Offerta di lancio per i primi 10 clienti, su canone e attivazione. Prezzo bloccato per 24 mesi.</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 14px"><div aria-hidden="true" style="width: 44px; height: 44px; border-radius: 22px; background: #F2A900; color: #13294B; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0">1</div><div><h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #FBF7EF">I pacchetti</h3><div style="font-size: 16px; color: #E3E8F1">Scegli il pacchetto: canone mensile o annuale, più l'attivazione una tantum.</div></div></div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; align-items: stretch">
+
+        <div style="background: #FBF7EF; color: #13294B; border-radius: 22px; padding: 26px; display: flex; flex-direction: column; gap: 14px">
+          <h3 style="margin: 0; font-size: 22px; font-weight: 700">Fino a 40 clienti</h3>
+          <div>
+            <div style="font-size: 17px; color: #4A5568"><s>41 € al mese</s></div>
+            <div style="display: flex; align-items: baseline; gap: 6px"><span style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 60px; line-height: 1">29 €</span><span style="font-size: 17px">al mese</span></div>
+          </div>
+          <div style="font-size: 16px; color: #33415C">Oppure <strong>290 € all'anno</strong> <s>410 €</s>: due mesi li offriamo noi.</div>
+          <div style="margin-top: auto; border-top: 2px dashed #B9AE96; padding-top: 14px; display: flex; flex-direction: column; gap: 2px"><div style="font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #4A5568">+ Attivazione, una volta sola</div><div style="display: flex; align-items: baseline; gap: 8px"><span style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 32px; line-height: 1.1">190 €</span><s style="font-size: 16px; color: #4A5568">270 €</s></div></div>
+          <a class="btn btn-line" href="#contatti" style="min-height: 52px; border-radius: 12px; border: 2px solid #13294B; color: #13294B; text-decoration: none; font-weight: 700; display: flex; align-items: center; justify-content: center; box-sizing: border-box">Inizia la prova<span class="arr" aria-hidden="true">→</span></a>
+        </div>
+
+        <div style="background: #FFFFFF; color: #13294B; border-radius: 22px; padding: 26px; border: 4px solid #F2A900; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px">
+            <h3 style="margin: 0; font-size: 22px; font-weight: 700">Fino a 80 clienti</h3>
+            <span style="background: #13294B; color: #FBF7EF; font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 999px">Consigliato</span>
+          </div>
+          <div>
+            <div style="font-size: 17px; color: #4A5568"><s>70 € al mese</s></div>
+            <div style="display: flex; align-items: baseline; gap: 6px"><span style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 60px; line-height: 1">49 €</span><span style="font-size: 17px">al mese</span></div>
+          </div>
+          <div style="font-size: 16px; color: #33415C">Oppure <strong>490 € all'anno</strong> <s>700 €</s>: due mesi li offriamo noi.</div>
+          <div style="margin-top: auto; border-top: 2px dashed #B9AE96; padding-top: 14px; display: flex; flex-direction: column; gap: 2px"><div style="font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #4A5568">+ Attivazione, una volta sola</div><div style="display: flex; align-items: baseline; gap: 8px"><span style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 32px; line-height: 1.1">290 €</span><s style="font-size: 16px; color: #4A5568">410 €</s></div></div>
+          <a class="btn btn-dark" href="#contatti" style="min-height: 52px; border-radius: 12px; background: #13294B; color: #FBF7EF; text-decoration: none; font-weight: 700; display: flex; align-items: center; justify-content: center">Inizia la prova<span class="arr" aria-hidden="true">→</span></a>
+        </div>
+
+        <div style="background: #FBF7EF; color: #13294B; border-radius: 22px; padding: 26px; display: flex; flex-direction: column; gap: 14px">
+          <h3 style="margin: 0; font-size: 22px; font-weight: 700">Oltre 80 clienti</h3>
+          <div>
+            <div style="font-size: 17px; color: #4A5568"><s>99 € al mese</s></div>
+            <div style="display: flex; align-items: baseline; gap: 6px"><span style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 60px; line-height: 1">69 €</span><span style="font-size: 17px">al mese</span></div>
+          </div>
+          <div style="font-size: 16px; color: #33415C">Oppure <strong>690 € all'anno</strong> <s>990 €</s>: due mesi li offriamo noi.</div>
+          <div style="font-size: 16px; color: #33415C">Fino a 150 clienti; oltre, 10 € al mese ogni 50 in più.</div>
+          <div style="margin-top: auto; border-top: 2px dashed #B9AE96; padding-top: 14px; display: flex; flex-direction: column; gap: 2px"><div style="font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #4A5568">+ Attivazione, una volta sola</div><div style="display: flex; align-items: baseline; gap: 8px"><span style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 32px; line-height: 1.1">390 €</span><s style="font-size: 16px; color: #4A5568">560 €</s></div></div>
+          <a class="btn btn-line" href="#contatti" style="min-height: 52px; border-radius: 12px; border: 2px solid #13294B; color: #13294B; text-decoration: none; font-weight: 700; display: flex; align-items: center; justify-content: center; box-sizing: border-box">Inizia la prova<span class="arr" aria-hidden="true">→</span></a>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 14px"><div aria-hidden="true" style="width: 44px; height: 44px; border-radius: 22px; background: #F2A900; color: #13294B; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0">2</div><div><h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #FBF7EF">L'attivazione</h3><div style="font-size: 16px; color: #E3E8F1">Una volta sola, all'avvio. L'importo è in ogni pacchetto qui sopra.</div></div></div>
+      <div style="background: #FBF7EF; color: #13294B; border-radius: 22px; padding: 26px; display: flex; flex-wrap: wrap; gap: 24px; align-items: center">
+        <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+          <div style="font-size: 18px; font-weight: 700">Partiamo insieme, con tutto già pronto</div>
+          <ul style="margin: 0; padding-left: 20px; color: #33415C; font-size: 16px; display: flex; flex-direction: column; gap: 4px">
+            <li>Configurazione con il tuo logo e i tuoi colori</li>
+            <li>Caricamento di menù, formule e orari</li>
+            <li>Formazione del personale di sala e di cucina</li>
+          </ul>
+        </div>
+        <div style="flex: 1 1 300px; min-width: 0; font-size: 16px; color: #33415C">L'importo dipende dal piano ed è indicato in ogni pacchetto, sotto il canone. Con l'offerta di lancio è scontato del 30%, come il canone.</div>
+      </div>
+      <div style="border-left: 6px solid #F2A900; padding: 4px 0 4px 18px; font-size: 17px; color: #FBF7EF"><strong>Un esempio.</strong> Fino a 80 clienti con piano annuale: il primo anno 490 € di canone + 290 € di attivazione = 780 €. Dal secondo anno solo il canone.</div>
+      <div style="background: #1D3A69; border-radius: 14px; padding: 16px 20px; font-size: 17px; color: #FBF7EF"><strong>Prova gratuita di 7 giorni.</strong> La provi con dati di esempio, senza carta e senza attivazione: la paghi solo se decidi di continuare.</div>
+
+      <div style="border: 1px solid #3A4E73; border-radius: 14px; padding: 14px 18px; font-size: 16px; color: #E3E8F1">Hai anche le camere? Con il modulo Hotel aggiungi notti e assegnazione delle camere: + 20 € al mese <s>29 €</s>.</div>
+      <div style="font-size: 14px; color: #C9D2E0">Prezzi IVA esclusa. Il prezzo pieno si applica al termine dell'offerta di lancio.</div>
+    </div>
+  </section>
+
+  <section id="domande" style="max-width: 860px; margin: 0 auto; padding: 72px 24px; display: flex; flex-direction: column; gap: 24px">
+    <h2 style="margin: 0; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(30px, 4vw, 42px); line-height: 1.1">Domande frequenti</h2>
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <div style="background: #FFFFFF; border: 1px solid #E6DDCB; border-radius: 16px; padding: 20px 22px">
+        <h3 style="margin: 0 0 6px; font-size: 19px; font-weight: 700">I miei clienti devono scaricare un'app?</h3>
+        <p style="margin: 0; color: #33415C">No. Aprono un link dal telefono e, se vogliono, lo aggiungono alla schermata iniziale. Accedono con numero di cellulare e password.</p>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E6DDCB; border-radius: 16px; padding: 20px 22px">
+        <h3 style="margin: 0 0 6px; font-size: 19px; font-weight: 700">E se un cliente non è pratico di tecnologia?</h3>
+        <p style="margin: 0; color: #33415C">Bastano pochi tocchi su pulsanti grandi. In ogni caso puoi inserire tu la prenotazione al posto suo dal pannello.</p>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E6DDCB; border-radius: 16px; padding: 20px 22px">
+        <h3 style="margin: 0 0 6px; font-size: 19px; font-weight: 700">Devo mostrare i prezzi ai clienti?</h3>
+        <p style="margin: 0; color: #33415C">Decidi tu: nessun prezzo, prezzo per piatto oppure formule a prezzo fisso.</p>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E6DDCB; border-radius: 16px; padding: 20px 22px">
+        <h3 style="margin: 0 0 6px; font-size: 19px; font-weight: 700">Come si contano i clienti?</h3>
+        <p style="margin: 0; color: #33415C">Conta solo chi prenota almeno un pasto nel mese. Chi è registrato ma non mangia non si paga.</p>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E6DDCB; border-radius: 16px; padding: 20px 22px">
+        <h3 style="margin: 0 0 6px; font-size: 19px; font-weight: 700">Chi vede diete e intolleranze?</h3>
+        <p style="margin: 0; color: #33415C">Solo la cucina e l'amministrazione. Il cliente dà il consenso quando si registra.</p>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E6DDCB; border-radius: 16px; padding: 20px 22px">
+        <h3 style="margin: 0 0 6px; font-size: 19px; font-weight: 700">Posso disdire quando voglio?</h3>
+        <p style="margin: 0; color: #33415C">Sì. Con il piano mensile ti fermi quando vuoi; con l'annuale arrivi alla scadenza dell'anno pagato.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="contatti" style="background: #F2A900; color: #13294B">
+    <div style="max-width: 860px; margin: 0 auto; padding: 72px 24px; display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center">
+      <h2 style="margin: 0; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(32px, 5vw, 50px); line-height: 1.05">Domani mattina, sai già chi mangia.</h2>
+      <p style="margin: 0; font-size: 20px; max-width: 620px">Provalo gratis per 7 giorni. Te lo configuriamo noi, con il tuo menù.</p>
+      <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 12px">
+        <a class="btn btn-dark" href="mailto:[EMAIL]" style="min-height: 56px; padding: 0 28px; border-radius: 14px; background: #13294B; color: #FBF7EF; text-decoration: none; font-weight: 700; font-size: 18px; display: flex; align-items: center">Scrivici: [EMAIL]</a>
+        <a class="btn btn-line" href="tel:[TELEFONO]" style="min-height: 56px; padding: 0 28px; border-radius: 14px; border: 2px solid #13294B; color: #13294B; text-decoration: none; font-weight: 700; font-size: 18px; display: flex; align-items: center; box-sizing: border-box">Chiamaci: [TELEFONO]</a>
+      </div>
+      <div style="font-size: 16px; font-weight: 600">Offerta di lancio per i primi 10 clienti: −30% bloccato per 24 mesi.</div>
+    </div>
+  </section>
+
+  <footer style="background: #13294B; color: #C9D2E0">
+    <div style="max-width: 1120px; margin: 0 auto; padding: 28px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; font-size: 15px">
+      <span style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 24px; color: #FBF7EF">ChiMangia</span>
+      <span>[RAGIONE SOCIALE] · P. IVA [PARTITA IVA]</span>
+      <span><a href="#" style="color: #FBF7EF">Privacy</a> · <a href="#" style="color: #FBF7EF">Cookie</a></span>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":6700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
