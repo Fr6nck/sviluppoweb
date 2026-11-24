@@ -22,3 +22,7 @@ Tutte con il terzo sinistro più calmo e scuro, per lasciare spazio al testo.
 - **camera**: camera doppia semplice e ordinata, letto con coperta blu e cuscino giallo, persiane verdi socchiuse, nessuna persona.
 - **esterno**: facciata di una trattoria con camere al tramonto, porta blu, tenda gialla, tavoli all'aperto con persone a cena.
 - **brigata**: cucina in servizio vista dal passe, cuoca e due cuochi che impiattano, fila di piatti pronti.
+
+## Aggiornamento 1.3
+Le foto `mattina`, `brigata`, `reception`, `camera`, `esterno` sono state create dal cliente con ChatGPT e inserite (larghezza massima 1672 px).
+Restano da fare, se servono: sala piena panoramica, e le quattro foto per "Per chi è".

@@ -83,6 +83,11 @@ function photo_library(): array
         'sera' => ['Foto: il titolare la sera', [640, 1280, 1920], 0.747, 'Il titolare di una trattoria, a sala chiusa, pubblica il menù dal telefono', 'pos-left'],
         'pranzo' => ['Foto: la sala a pranzo', [640, 1280], 0.75, 'La sala di una trattoria a pranzo, con lavoratori a tavola e un cameriere che serve la pasta'],
         'sala' => ['Foto: la sala piena a pranzo (panoramica)', [960, 1920], 0.664, 'La sala di una trattoria piena a pranzo: lavoratori a tavola e un cameriere che serve la pasta'],
+        'mattina' => ['Foto: il cuoco la mattina', [640, 1280], 0.75, 'Un giovane cuoco in grembiule blu guarda soddisfatto il telefono in cucina, accanto alle cassette di verdura fresca'],
+        'brigata' => ['Foto: la cucina in servizio (panoramica)', [960, 1672], 0.563, 'La cucina di una trattoria in pieno servizio: la cuoca impiatta la pasta su una fila di piatti pronti al passe'],
+        'reception' => ['Foto: la reception (panoramica)', [960, 1672], 0.563, 'Alla reception di un piccolo albergo con ristorante, due lavoratori in trasferta ricevono la chiave della camera'],
+        'camera' => ['Foto: una camera (panoramica)', [960, 1672], 0.563, 'Una camera semplice e ordinata, con il letto fatto, una coperta blu e la finestra aperta sul giardino'],
+        'esterno' => ['Foto: il locale visto da fuori (panoramica)', [960, 1672], 0.563, 'La facciata di una trattoria con camere al tramonto, con i tavoli all\'aperto e la gente a cena'],
         'fine-mese' => ['Foto: i conti di fine mese', [640, 1280, 1920], 0.747, 'La gestrice di una trattoria guarda soddisfatta il riepilogo stampato, con il portatile aperto'],
     ];
 }

@@ -156,6 +156,9 @@ function cm_migrate(): void
     if (version_compare($from, '1.2.0', '<')) {
         migrate_hero_full();
     }
+    if (version_compare($from, '1.3.0', '<')) {
+        migrate_new_photos();
+    }
     foreach (default_settings() as $name => $value) {
         q('INSERT IGNORE INTO ' . t('settings') . ' (name, value) VALUES (?, ?)', [$name, json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
     }
@@ -219,4 +222,39 @@ function migrate_hero_full(): void
         $out[$col] = is_array($d) ? content_encode($d) : (string) $row[$col];
     }
     q('UPDATE ' . t('content') . " SET draft = ?, published = ? WHERE area = 'hero'", [$out['draft'], $out['published']]);
+}
+
+/**
+ * 1.3.0: nuove fotografie. Lo slider dell'apertura e il blocco "La mattina"
+ * passano alle foto nuove solo se usano ancora quelle iniziali della 1.2.
+ */
+function migrate_new_photos(): void
+{
+    $oldAlt = 'La sala di una trattoria a pranzo, con lavoratori a tavola e un cameriere che serve la pasta';
+    $newAlt = 'Un giovane cuoco in grembiule blu guarda soddisfatto il telefono in cucina, accanto alle cassette di verdura fresca';
+    foreach (['hero', 'giornata'] as $area) {
+        $row = q_one('SELECT draft, published FROM ' . t('content') . ' WHERE area = ?', [$area]);
+        if (!$row) {
+            continue;
+        }
+        $out = [];
+        foreach (['draft', 'published'] as $col) {
+            $d = json_decode((string) $row[$col], true);
+            if (is_array($d) && $area === 'hero'
+                && ($d['photo'] ?? '') === 'sala' && ($d['photo2'] ?? '') === 'sera' && ($d['photo3'] ?? '') === 'fine-mese' && ($d['photo4'] ?? '') === '') {
+                $d = array_merge($d, ['photo' => 'brigata', 'photo_alt' => '', 'photo2' => 'sala', 'photo3' => 'reception', 'photo4' => 'camera', 'photo5' => 'esterno', 'photo6' => '']);
+            }
+            if (is_array($d) && $area === 'giornata' && is_array($d['cards'] ?? null)) {
+                foreach ($d['cards'] as &$card) {
+                    if (($card['illustration'] ?? '') === 'foto-pranzo' && ($card['alt'] ?? '') === $oldAlt && (int) ($card['image'] ?? 0) === 0) {
+                        $card['illustration'] = 'foto-mattina';
+                        $card['alt'] = $newAlt;
+                    }
+                }
+                unset($card);
+            }
+            $out[$col] = is_array($d) ? content_encode($d) : (string) $row[$col];
+        }
+        q('UPDATE ' . t('content') . ' SET draft = ?, published = ? WHERE area = ?', [$out['draft'], $out['published'], $area]);
+    }
 }
