@@ -142,6 +142,24 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
 <div class="impersonating"><div class="wrap">
   <span>Stai guardando l'applicazione con l'account di un cliente<?php if (($accI = Auth::account()) && ($codI = MHW\Codici::cliente((int) $accI['id'])) !== ''): ?> · <b><?= Support::e($codI) ?></b><?php endif; ?>. La sessione finisce da sola entro un'ora.</span>
   <form method="post" action="<?= b() ?>/admin/esci-da-cliente"><?= Csrf::field() ?><button class="btn">Torna al mio account</button></form>
+  <?php /* 9V-bis · Nell'account della guida vetrina (la demo della home): dove si cambiano le foto e «Pubblica in home». */
+        $vetI = null;
+        try { $vetI = ($accV = Auth::account()) ? MHW\Db::one('SELECT id, name FROM properties WHERE account_id = ? AND is_demo = ? AND archived_at IS NULL ORDER BY id', [(int) $accV['id'], MHW\Demo::VETRINA]) : null; } catch (\Throwable $e) { $vetI = null; }
+        if ($vetI): $pidI = (int) $vetI['id'];
+          try { $nuoveI = MHW\Guide::pendingChanges($pidI) > 0; } catch (\Throwable $e) { $nuoveI = false; }
+          $quiI = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+          $quiI = substr($quiI, strlen(b())) ?: '/'; ?>
+    <div class="impersonating__vetrina" data-vetrina-barra>
+      <span><b><?= Support::e((string) $vetI['name']) ?></b>, la demo della home:</span>
+      <a href="<?= b() ?>/pannello/<?= $pidI ?>/casa">Foto e descrizione</a>
+      <a href="<?= b() ?>/pannello/<?= $pidI ?>/procedura/aspetto">Copertina e foto del profilo</a>
+      <a href="<?= b() ?>/pannello/<?= $pidI ?>">Tutta la guida</a>
+      <?php if ($nuoveI): ?>
+        <span>· modifiche non ancora in home</span>
+        <form method="post" action="<?= b() ?>/pannello/<?= $pidI ?>/vetrina/pubblica"><?= Csrf::field() ?><input type="hidden" name="torna" value="<?= Support::e($quiI) ?>"><button class="btn">Pubblica in home</button></form>
+      <?php else: ?><span>· la home è aggiornata</span><?php endif; ?>
+    </div>
+  <?php endif; ?>
 </div></div>
 <?php endif; ?>
 

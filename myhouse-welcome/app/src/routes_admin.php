@@ -232,7 +232,18 @@ $r->get('/admin/clienti', function () {
 
 $r->post('/admin/entra/{uid}', function (array $a) {
     Auth::requireAdmin();
-    Auth::impersonate((int) $a['uid']);
+    $uid = (int) $a['uid'];
+    Auth::impersonate($uid);
+    // 9V-bis · «Modifica Casa Checco»: si entra e si va dritti alla pagina chiesta, solo se è una struttura di quell'account
+    // (la galleria «La casa», l'aspetto con copertina e foto del profilo, o la scheda della struttura).
+    $vai = (string) ($_POST['vai'] ?? '');
+    unset($_SESSION['esci_verso']);
+    if (preg_match('~^/pannello/(\d+)(/casa|/procedura/aspetto)?$~', $vai, $m)
+        && Db::val('SELECT p.id FROM properties p JOIN accounts a ON a.id = p.account_id WHERE p.id = ? AND a.user_id = ? AND p.archived_at IS NULL', [(int) $m[1], $uid])) {
+        if (($_POST['da'] ?? '') === 'testi') $_SESSION['esci_verso'] = '/admin/testi#casa-checco';   // «Torna al mio account» riporta lì
+        Support::flash('Stai modificando la guida dimostrativa della home con l\'account del suo cliente. In alto: «Pubblica in home» quando hai finito, «Torna al mio account» per uscire (la sessione finisce da sola dopo un\'ora).');
+        Support::redirect($vai);
+    }
     Support::flash('Stai usando l\'account di un cliente. La sua password non è mai stata mostrata; la sessione finisce da sola dopo un\'ora.');
     Support::redirect('/pannello');
 });
@@ -240,8 +251,10 @@ $r->post('/admin/entra/{uid}', function (array $a) {
 $r->post('/admin/esci-da-cliente', function () {
     // 9N · si torna alla scheda del cliente da cui si era entrati, non all'elenco
     $aid = Auth::isImpersonating() ? (int) Db::val('SELECT id FROM accounts WHERE user_id = ?', [(int) ($_SESSION['uid'] ?? 0)], 0) : 0;
+    $verso = (string) ($_SESSION['esci_verso'] ?? '');   // 9V-bis · entrati da Testi e foto («Modifica Casa Checco»)
+    unset($_SESSION['esci_verso']);
     Auth::stopImpersonating();
-    Support::redirect($aid ? '/admin/cliente/' . $aid : '/admin/clienti');
+    Support::redirect($verso === '/admin/testi#casa-checco' ? $verso : ($aid ? '/admin/cliente/' . $aid : '/admin/clienti'));
 });
 
 $r->get('/admin/cliente/{aid}', function (array $a) {
@@ -509,8 +522,9 @@ $r->post('/admin/cliente/{aid}/vetrina/pubblica', function (array $a) {
     if (!$pid) { Support::flash('Questo account non ha una guida vetrina.', 'err'); Support::redirect('/admin/cliente/' . $accId); }
     $v = MHW\Guide::publish($pid);
     Auth::audit('demo.vetrina.pubblica', (int) Db::val('SELECT user_id FROM accounts WHERE id = ?', [$accId], 0) ?: null, ['property_id' => $pid, 'version' => $v]);
-    Support::flash('Vetrina pubblicata: la home e la demo mostrano le modifiche (foto del profilo, copertina, testi).');
-    Support::redirect('/admin/cliente/' . $accId . '#vetrina-titolo');
+    Support::flash('Vetrina pubblicata: la home e la demo mostrano le modifiche (foto, copertina, testi).');
+    // 9V-bis · da Testi e foto si torna lì
+    Support::redirect(($_POST['torna'] ?? '') === 'testi' ? '/admin/testi#casa-checco' : '/admin/cliente/' . $accId . '#vetrina-titolo');
 });
 
 $r->post('/admin/cliente/{aid}/vetrina', function (array $a) {

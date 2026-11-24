@@ -51,7 +51,41 @@ $nomeCampo = fn(string $k) => 't_' . str_replace('.', '_', $k); ?>
     <?php endforeach; ?>
   </div>
 
+  <?php /* 9V-bis · La guida dimostrativa della home (di solito Casa Checco): le sue foto non stanno in questa pagina ma nel
+           suo pannello. Qui si vede quello che la home mostra adesso e si entra a cambiarlo, poi si pubblica. */
+        $vet = $legali ? null : MHW\Db::one("SELECT p.id, p.name, p.slug, p.is_demo, p.account_id, a.user_id FROM properties p JOIN accounts a ON a.id = p.account_id
+                                             WHERE p.is_demo >= 1 AND p.status = 'published' AND p.archived_at IS NULL ORDER BY p.is_demo DESC, p.id");
+        if ($vet):
+          $snapV = MHW\Guide::published((int) $vet['id']); $prV = (array) ($snapV['property'] ?? []);
+          $casaV = MHW\Casa::disponibile() ? MHW\Casa::perGuida($prV, 'it') : null;
+          $copV = !empty($prV['cover_id']) ? MHW\Media::ridotta((int) $prV['cover_id'], 480) : null;
+          $daPubblicare = MHW\Guide::pendingChanges((int) $vet['id']) > 0; ?>
+    <section class="panel stack vetrina-home" id="casa-checco" aria-labelledby="casa-checco-titolo">
+      <div class="stack stack--sm">
+        <h2 id="casa-checco-titolo" style="font-size:22px"><?= Support::e((string) $vet['name']) ?>, la demo della home</h2>
+        <p class="help" style="margin:0">Il telefono in cima alla home e il blocco «La tua casa si presenta da sola» mostrano la guida <b>/g/<?= Support::e((string) $vet['slug']) ?></b> pubblicata:
+          copertina, foto del profilo, foto e descrizione di «La casa». Non si cambiano da questa pagina ma dal suo pannello, con i bottoni qui sotto.</p>
+      </div>
+      <div class="vetrina-home__foto" aria-label="Le foto che la home mostra adesso">
+        <?php if ($copV): ?><figure><img src="<?= Support::e($copV) ?>" alt="La copertina pubblicata" width="96" height="72" loading="lazy"><figcaption>Copertina</figcaption></figure><?php endif; ?>
+        <?php foreach (($casaV['foto'] ?? []) as $i => $f): ?><figure><img src="<?= Support::e((string) MHW\Media::ridotta((int) $f['id'], 480)) ?>" alt="<?= Support::e(trim((string) ($f['alt'] ?? '')) ?: 'Foto ' . ($i + 1)) ?>" width="96" height="72" loading="lazy"><figcaption>La casa · <?= $i + 1 ?></figcaption></figure><?php endforeach; ?>
+        <?php if (!$casaV): ?><p class="small muted" style="margin:0">Nessuna foto in «La casa»: la home non mostra il blocco con la galleria.</p><?php endif; ?>
+      </div>
+      <?php if ($daPubblicare): ?>
+        <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center">
+          <span class="small"><span class="badge badge--alert">Modifiche non pubblicate</span> Nel pannello c'è qualcosa che la home non mostra ancora.</span>
+          <?php if ((int) $vet['is_demo'] === MHW\Demo::VETRINA): ?>
+            <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $vet['account_id'] ?>/vetrina/pubblica" style="margin:0"><?= Csrf::field() ?><input type="hidden" name="torna" value="testi">
+              <button class="btn btn--sm">Pubblica in home</button></form>
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
+      <?php $da = 'testi'; include __DIR__ . '/_vetrina_modifica.php'; ?>
+    </section>
+  <?php endif; ?>
+
   <nav class="testi__indice" aria-label="Blocchi della pagina">
+    <?php if (!empty($vet)): ?><a href="#casa-checco"><?= Support::e((string) $vet['name']) ?></a><?php endif; ?>
     <?php foreach ($sezioni as $sid => [$nome]): ?><a href="#testi-<?= $sid ?>"><?= Support::e($nome) ?></a><?php endforeach; ?>
     <?php if (!$legali): ?><a href="#testi-foto">Foto</a><?php endif; ?>
   </nav>

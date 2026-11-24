@@ -1118,6 +1118,18 @@ $r->get('/pannello/{id}/anteprima/{sid}', fn(array $a) => $anteprima($a, 'sezion
  * Altrimenti: guida pubblicabile, email verificata, piano scelto → Stripe.
  * La guida va online SOLO quando arriva il webhook firmato del pagamento.
  */
+/* 9V-bis · «Pubblica in home» dalla barra di «Entra come cliente»: solo per la guida vetrina (la demo della home) e solo se a
+   premere è l'amministrazione. Come «Pubblica le modifiche della vetrina» della scheda del cliente: niente pagamento. */
+$r->post('/pannello/{id}/vetrina/pubblica', function (array $a) use ($mia) {
+    [$u, , $p] = $mia((int) $a['id'], true);
+    if (!Auth::isImpersonating() || (int) $p['is_demo'] !== MHW\Demo::VETRINA) Support::redirect('/pannello/' . $p['id']);
+    $v = Guide::publish((int) $p['id']);
+    Auth::audit('demo.vetrina.pubblica', (int) $u['id'], ['property_id' => (int) $p['id'], 'version' => $v, 'dal_pannello' => true]);
+    Support::flash('Pubblicata: la home e la demo mostrano le modifiche (foto, copertina, testi).');
+    $torna = (string) ($_POST['torna'] ?? '');
+    Support::redirect(preg_match('~^/pannello/' . (int) $p['id'] . '(/casa|/procedura/[a-z]+)?$~', $torna) ? $torna : '/pannello/' . $p['id'] . '/casa');
+});
+
 $r->post('/pannello/{id}/pubblica', function (array $a) use ($mia) {
     [$u, $acc, $p] = $mia((int) $a['id']);
     $aid = (int) $acc['id'];

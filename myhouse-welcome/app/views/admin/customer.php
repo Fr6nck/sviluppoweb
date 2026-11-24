@@ -106,6 +106,9 @@ include __DIR__ . '/_stati.php'; ?>
         <a class="btn btn--ghost btn--sm" href="<?= Support::e($urlV) ?>" target="_blank" rel="noopener">Apri</a>
         <button type="button" class="btn btn--ghost btn--sm" data-copia="<?= Support::e($urlV) ?>" data-copiato="Copiato" hidden><?= MHW\Icon::svg('copy', 15) ?>Copia</button></div>
       <?php if ($vetrina['slug'] !== 'casa-checco'): ?><p class="small muted" style="margin:0">/g/casa-checco è la guida di un cliente vero: la vetrina tiene questo indirizzo.</p><?php endif; ?>
+      <?php /* 9V-bis · «Modifica Casa Checco»: dritti alla pagina giusta del suo pannello */
+            $vet = ['id' => (int) $vetrina['id'], 'name' => (string) $vetrina['name'], 'user_id' => (int) $acc['user_id']]; $da = '';
+            include __DIR__ . '/_vetrina_modifica.php'; ?>
       <?php /* 9U · La home e la demo mostrano la versione PUBBLICATA della vetrina: qui si vede se nel pannello c'è qualcosa di
                non ancora pubblicato (per esempio la foto del profilo) e si pubblica con un clic. */
             $snapV = MHW\Guide::published((int) $vetrina['id']); $daPubblicareV = MHW\Guide::pendingChanges((int) $vetrina['id']) > 0;
@@ -131,7 +134,7 @@ include __DIR__ . '/_stati.php'; ?>
       </div>
       <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/vetrina" class="stack" style="gap:8px"><?= Csrf::field() ?>
         <input type="hidden" name="rifai" value="1">
-        <p class="small muted">«Rifai la vetrina» la toglie e ne crea una nuova con i dati aggiornati (eventi con le prossime date, foto, luoghi). Copertina, foto del profilo e logo che hai cambiato restano (9U); le altre modifiche fatte a mano sulla vetrina si perdono; le altre strutture dell'account non si toccano.</p>
+        <p class="small muted">«Rifai la vetrina» la toglie e ne crea una nuova con i dati aggiornati (eventi con le prossime date, foto, luoghi). Copertina, foto del profilo e logo che hai cambiato restano (9U), e così foto e testi di «La casa» (9V); le altre modifiche fatte a mano sulla vetrina si perdono; le altre strutture dell'account non si toccano.</p>
         <button class="btn btn--ghost btn--sm" style="align-self:flex-start">Rifai la vetrina</button>
       </form>
       <form method="post" action="<?= b() ?>/admin/cliente/<?= (int) $acc['id'] ?>/vetrina/traduzioni" class="stack" style="gap:8px"><?= Csrf::field() ?>

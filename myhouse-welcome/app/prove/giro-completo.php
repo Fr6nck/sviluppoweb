@@ -9063,6 +9063,70 @@ $c9n('$p = MHW\Db::one("SELECT * FROM properties WHERE id = ' . $nuovaV9v . '");
     MHW\Db::update("properties", ["casa_titolo" => "", "casa_descrizione" => null, "casa_tr" => null], "id = :p", ["p" => ' . $nuovaV9v . ']); MHW\Demo::casaVetrina(' . $nuovaV9v . '); MHW\Guide::publish(' . $nuovaV9v . '); echo "ok";');
 $slugV = (string) $c9n('echo (string) ((MHW\Demo::vetrinaAttuale() ?? [])["slug"] ?? "");');
 
+// ======================================================================= 9V-bis
+capitolo('9V-bis · «Modifica Casa Checco» da Amministrazione');
+// La demo della home (la stessa query della home): da Testi e foto e dalla scheda del cliente si entra nel suo pannello già sulla pagina giusta.
+$hvB = riga("SELECT p.id, p.account_id, p.is_demo, a.user_id FROM properties p JOIN accounts a ON a.id = p.account_id WHERE p.is_demo >= 1 AND p.status = 'published' AND p.archived_at IS NULL ORDER BY p.is_demo DESC, p.id") ?: [];
+$pidB = (int) ($hvB['id'] ?? 0); $uidB = (int) ($hvB['user_id'] ?? 0); $accB = (int) ($hvB['account_id'] ?? 0);
+$rTB = $admin->get('/admin/testi');
+prova('9V-bis · Testi e foto: il riquadro della demo della home (nell\'indice in cima), con le foto pubblicate e tre bottoni che entrano nel suo pannello: «La casa», copertina e foto del profilo, tutta la guida',
+      $pidB > 0 && (int) $hvB['is_demo'] === 2 && $rTB['code'] === 200 && str_contains($rTB['body'], 'id="casa-checco"') && str_contains($rTB['body'], 'href="#casa-checco"')
+      && substr_count($rTB['body'], "/admin/entra/$uidB\"") === 3 && str_contains($rTB['body'], 'name="vai" value="/pannello/' . $pidB . '/casa"')
+      && str_contains($rTB['body'], 'name="vai" value="/pannello/' . $pidB . '/procedura/aspetto"') && substr_count($rTB['body'], 'name="da" value="testi"') === 3
+      && preg_match_all('#<figcaption>La casa · \d+</figcaption>#', $rTB['body']) === count((array) (json_decode((string) val('SELECT snapshot FROM guide_versions WHERE property_id = ? ORDER BY version DESC', [$pidB]), true)['property']['casa']['foto'] ?? [])),
+      $pidB . ' / ' . $uidB);
+$rCB = $admin->get("/admin/cliente/$accB");
+prova('…e gli stessi tre bottoni nella scheda del cliente della vetrina, sotto il suo indirizzo', str_contains($rCB['body'], 'data-vetrina-modifica') && substr_count($rCB['body'], 'name="vai" value="/pannello/' . $pidB) === 3
+      && !str_contains($rCB['body'], 'name="da" value="testi"'));
+// Le prove di prima possono aver lasciato modifiche non pubblicate sulla vetrina: «Pubblica in home» del riquadro le pubblica e torna lì.
+$admin->get('/admin/testi');
+$rPubT = $admin->post("/admin/cliente/$accB/vetrina/pubblica", ['torna' => 'testi']);
+$rTB = $admin->get('/admin/testi');
+prova('9V-bis · «Pubblica in home» del riquadro di Testi e foto pubblica la vetrina e torna al riquadro; poi niente «Modifiche non pubblicate»', $rPubT['code'] === 302
+      && str_ends_with($rPubT['loc'], '/admin/testi#casa-checco') && str_contains($rTB['body'], 'id="casa-checco"') && !str_contains($rTB['body'], 'Modifiche non pubblicate'), $rPubT['code'] . ' ' . $rPubT['loc']);
+$rEB = $admin->post("/admin/entra/$uidB", ['vai' => "/pannello/$pidB/casa", 'da' => 'testi']);
+$rPB = $admin->get("/pannello/$pidB/casa");
+prova('9V-bis · «Foto e descrizione» entra come cliente e porta dritti a «La casa» di Casa Checco; in alto, nella barra rossa, i collegamenti della demo e lo stato «la home è aggiornata»',
+      $rEB['code'] === 302 && str_ends_with($rEB['loc'], "/pannello/$pidB/casa") && $rPB['code'] === 200 && str_contains($rPB['body'], 'data-vetrina-barra')
+      && str_contains($rPB['body'], 'la demo della home') && str_contains($rPB['body'], 'la home è aggiornata') && !str_contains($rPB['body'], "/pannello/$pidB/vetrina/pubblica"),
+      $rEB['code'] . ' ' . $rEB['loc'] . ' ' . json_encode([$rPB['code'], str_contains($rPB['body'], 'data-vetrina-barra'), str_contains($rPB['body'], 'la home è aggiornata')]));
+$fotoB = righe('SELECT id, media_id FROM property_gallery WHERE property_id = ? ORDER BY position', [$pidB]);
+$verB = (int) val('SELECT MAX(version) FROM guide_versions WHERE property_id = ?', [$pidB]);
+$rTogB = $admin->post("/pannello/$pidB/casa", ['azione' => 'togli', 'foto_id' => (int) $fotoB[0]['id']], ['Accept: application/json']);
+$rPB = $admin->get("/pannello/$pidB/casa");
+prova('9V-bis · tolta una foto: la barra dice «modifiche non ancora in home» e offre «Pubblica in home»; la home mostra ancora quella pubblicata',
+      ($rTogB['code'] ?? 0) === 200 && str_contains($rPB['body'], 'modifiche non ancora in home') && str_contains($rPB['body'], "/pannello/$pidB/vetrina/pubblica\"")
+      && (int) val('SELECT MAX(version) FROM guide_versions WHERE property_id = ?', [$pidB]) === $verB, (string) ($rTogB['code'] ?? ''));
+$rPubB = $admin->post("/pannello/$pidB/vetrina/pubblica", ['torna' => "/pannello/$pidB/casa"]);
+$snapB = json_decode((string) val('SELECT snapshot FROM guide_versions WHERE property_id = ? ORDER BY version DESC', [$pidB]), true) ?: [];
+prova('9V-bis · «Pubblica in home» (senza pagamento, perché a premere è l\'amministrazione): nuova versione con una foto in meno, si torna a «La casa», nel Registro azioni',
+      $rPubB['code'] === 302 && str_ends_with($rPubB['loc'], "/pannello/$pidB/casa") && (int) val('SELECT MAX(version) FROM guide_versions WHERE property_id = ?', [$pidB]) === $verB + 1
+      && count($snapB['property']['casa']['foto'] ?? []) === count($fotoB) - 1 && (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'demo.vetrina.pubblica' AND meta LIKE '%dal_pannello%'") >= 1,
+      $rPubB['code'] . ' ' . $rPubB['loc']);
+$rEsB = $admin->post('/admin/esci-da-cliente', []);
+prova('…e «Torna al mio account» riporta a Testi e foto, al riquadro di Casa Checco', $rEsB['code'] === 302 && str_ends_with($rEsB['loc'], '/admin/testi#casa-checco'), $rEsB['loc']);
+// Dalla scheda del cliente: l'aspetto; un indirizzo fuori dal suo account o non previsto porta al pannello, come prima.
+$admin->get("/admin/cliente/$accB");
+$rAsB = $admin->post("/admin/entra/$uidB", ['vai' => "/pannello/$pidB/procedura/aspetto"]);
+$admin->post('/admin/esci-da-cliente', []);
+$admin->get("/admin/cliente/$accB");
+$rFuB = $admin->post("/admin/entra/$uidB", ['vai' => "/pannello/$casa/casa"]);
+$admin->post('/admin/esci-da-cliente', []);
+$admin->get("/admin/cliente/$accB");
+$rXB = $admin->post("/admin/entra/$uidB", ['vai' => '//esempio.test/pannello/' . $pidB]);
+$rEs2B = $admin->post('/admin/esci-da-cliente', []);
+prova('9V-bis · «Copertina, foto del profilo e logo» porta all\'Aspetto; una struttura di un altro account o un indirizzo diverso portano al pannello; uscendo si torna alla scheda del cliente',
+      str_ends_with($rAsB['loc'], "/pannello/$pidB/procedura/aspetto") && str_ends_with($rFuB['loc'], '/pannello') && str_ends_with($rXB['loc'], '/pannello')
+      && str_ends_with($rEs2B['loc'], "/admin/cliente/$accB"), $rAsB['loc'] . ' | ' . $rFuB['loc'] . ' | ' . $rXB['loc'] . ' | ' . $rEs2B['loc']);
+// «Pubblica in home» non è una scorciatoia per i clienti: senza «Entra come cliente», o su una guida che non è la vetrina, non pubblica.
+$verL = (int) val('SELECT MAX(version) FROM guide_versions WHERE property_id = ?', [$casa]);
+$lucia->get('/pannello'); $rLB = $lucia->post("/pannello/$casa/vetrina/pubblica", []);
+prova('9V-bis · un cliente che chiama «Pubblica in home» sulla sua guida non pubblica niente (torna alla guida)', $rLB['code'] === 302 && str_ends_with($rLB['loc'], "/pannello/$casa")
+      && (int) val('SELECT MAX(version) FROM guide_versions WHERE property_id = ?', [$casa]) === $verL, $rLB['code'] . ' ' . $rLB['loc']);
+// Si rimette la galleria di serie, pubblicata.
+$c9n('$p = MHW\Db::one("SELECT * FROM properties WHERE id = ' . $pidB . '"); foreach (MHW\Casa::foto(' . $pidB . ') as $f) MHW\Casa::togli((int) $p["account_id"], ' . $pidB . ', $f["id"]);
+    MHW\Demo::casaVetrina(' . $pidB . '); MHW\Guide::publish(' . $pidB . '); echo "ok";');
+
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";
 $tot = count(array_filter($esiti, fn($e) => !str_starts_with($e, "\n")));

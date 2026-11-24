@@ -1,5 +1,15 @@
 # Changelog — MyHouse Welcome
 
+## v2 · 9V (aggiunta): «Modifica Casa Checco» da Amministrazione (24 novembre 2026)
+
+Nessuna migrazione. Prima a Casa Checco (la demo della home) si arrivava solo con «Entra come cliente» sull'account della vetrina, cercandola poi nel pannello, e per pubblicare bisognava tornare in Amministrazione.
+
+- **Testi e foto → «Casa Checco, la demo della home»** (nuovo riquadro in cima, anche nell'indice dei blocchi): dice da dove vengono le foto del telefono e del blocco «La tua casa si presenta da sola», mostra copertina e foto di «La casa» pubblicate, «Modifiche non pubblicate» con **«Pubblica in home»**, e tre bottoni: **Foto e descrizione («La casa»)**, **Copertina, foto del profilo e logo**, **Tutta la guida**. La guida è la stessa che usa la home (`is_demo` più alto, poi la più vecchia).
+- **Scheda del cliente della vetrina → Guida vetrina**: gli stessi tre bottoni, sotto l'indirizzo. «Rifai la vetrina» ora dice che anche foto e testi di «La casa» cambiati restano (era già così dalla 9V).
+- **I bottoni entrano come cliente e portano dritti alla pagina** (`POST /admin/entra/{uid}` con `vai`): solo `/pannello/{id}`, `/pannello/{id}/casa` o `/pannello/{id}/procedura/aspetto` di una struttura di quell'account; qualunque altro indirizzo porta al pannello, come prima. Uscendo con «Torna al mio account» si torna dove si era partiti (Testi e foto o la scheda del cliente).
+- **Barra rossa di «Entra come cliente»**, nell'account della vetrina: «Casa Checco, la demo della home: Foto e descrizione · Copertina e foto del profilo · Tutta la guida» e lo stato («la home è aggiornata» o «modifiche non ancora in home» con **«Pubblica in home»**). «Pubblica in home» (`POST /pannello/{id}/vetrina/pubblica`) pubblica senza passare dal pagamento solo se a premere è l'amministrazione e solo sulla guida vetrina; nel Registro azioni come `demo.vetrina.pubblica` (`dal_pannello`).
+- **Prove**: capitolo «9V-bis» nel giro completo (bottoni, accesso diretto, togli e pubblica, ritorno, indirizzi non ammessi, un cliente che prova a usare «Pubblica in home»).
+
 ## v2 · 9V: «La casa», galleria di foto e descrizione dalla copertina della guida (23 novembre 2026)
 
 Migrazione **072** (la 069 era già usata): tabella `property_gallery`, campi `casa_titolo`, `casa_descrizione`, `casa_invito`, `casa_attiva`, `casa_tr` su `properties`, funzione `gallery` nel catalogo dei piani (inclusa in tutte le versioni), galleria di serie su Casa Checco. Nessun prezzo nuovo, niente da fare su Stripe; la versione dei Termini non cambia. Vedi `DA-CONFIGURARE.md` → **4aa**.

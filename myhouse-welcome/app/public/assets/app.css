@@ -517,6 +517,14 @@ th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute
 .impersonating{background:#9c2b20;color:#fff;padding:10px 0;font-size:14px}
 .impersonating .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .impersonating form{margin:0}
+.impersonating__vetrina{flex-basis:100%;display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;padding-top:8px;border-top:1px solid rgba(255,255,255,.35)}
+.impersonating__vetrina a{color:#fff;text-decoration:underline;text-underline-offset:3px}
+.impersonating__vetrina a:focus-visible{outline:2px solid #fff;outline-offset:2px}
+/* 9V-bis · Testi e foto: le foto della demo della home, in fila */
+.vetrina-home__foto{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.vetrina-home__foto figure{margin:0;flex:0 0 auto;display:flex;flex-direction:column;gap:4px}
+.vetrina-home__foto img{width:96px;height:72px;object-fit:cover;border-radius:8px;display:block;background:var(--line,#e6dfd3)}
+.vetrina-home__foto figcaption{font-size:12px;color:var(--muted,#6b6259)}
 .impersonating .btn{background:#fff;color:#9c2b20;height:38px;padding:0 16px;font-size:13px}
 
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}

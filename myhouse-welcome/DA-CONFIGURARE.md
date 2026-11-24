@@ -394,6 +394,17 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 9. **Codici sconto**: «Valido fino al» è ora già compilato con il 31 dicembre; cambialo se serve.
 10. Restano in italiano (per ora): l'email d'invito all'amico e le email scritte dall'amministrazione al cliente (rinnovo fermato, cambio piano, rimborso, password provvisoria).
 
+## 4ab. 9V aggiunta (24 novembre): «Modifica Casa Checco»
+
+Niente da configurare: nessuna migrazione, niente su Stripe. Dopo il caricamento, Amministrazione → Sistema → **Cache** → «Svuota tutto» (CSS nuovo). Per cambiare le foto di Casa Checco:
+
+1. Amministrazione → **Testi e foto** → riquadro **«Casa Checco, la demo della home»** (in cima) → **«Foto e descrizione («La casa»)»**. Si apre il pannello di Casa Checco (come «Entra come cliente», un'ora al massimo).
+2. Scegli una foto → **«Togli»**; poi **«Scegli le foto»** per caricare le nuove (fino a 10 in tutto). Per l'ordine: trascinale, o «Sposta prima» / «Sposta dopo».
+3. Nella barra rossa in alto: **«Pubblica in home»**. Solo da quel momento la home e la demo mostrano le foto nuove.
+4. **«Torna al mio account»** riporta a Testi e foto. Copertina e foto del profilo: bottone «Copertina, foto del profilo e logo».
+
+Se togliendo o caricando una foto compare un messaggio d'errore, mandami il testo esatto (e se l'hai fatto da telefono o da computer).
+
 ## 4aa. 9V (23 novembre): «La casa», galleria di foto e descrizione
 
 La migrazione **072** parte da sola al primo accesso. Su Stripe non c'è niente da fare (nessun prezzo né prodotto nuovo). Poi:
