@@ -80,9 +80,10 @@ function photo_library(): array
     return [
         'cucina' => ['Foto: la cuoca al passe', [640, 1120], 1.25, 'Una cuoca in grembiule blu finisce i piatti di pasta allineati sul passe della trattoria'],
         'bancone' => ['Foto: il bancone pieno di appunti', [800, 1600], 0.664, 'Un bancone di ristorante ingombro di telefoni, foglietti scritti a mano e un quaderno di prenotazioni'],
-        'sera' => ['Foto: il titolare la sera', [640, 1280], 0.747, 'Il titolare di una trattoria, a sala chiusa, pubblica il menù dal telefono', 'pos-left'],
+        'sera' => ['Foto: il titolare la sera', [640, 1280, 1920], 0.747, 'Il titolare di una trattoria, a sala chiusa, pubblica il menù dal telefono', 'pos-left'],
         'pranzo' => ['Foto: la sala a pranzo', [640, 1280], 0.75, 'La sala di una trattoria a pranzo, con lavoratori a tavola e un cameriere che serve la pasta'],
-        'fine-mese' => ['Foto: i conti di fine mese', [640, 1280], 0.747, 'La gestrice di una trattoria guarda soddisfatta il riepilogo stampato, con il portatile aperto'],
+        'sala' => ['Foto: la sala piena a pranzo (panoramica)', [960, 1920], 0.664, 'La sala di una trattoria piena a pranzo: lavoratori a tavola e un cameriere che serve la pasta'],
+        'fine-mese' => ['Foto: i conti di fine mese', [640, 1280, 1920], 0.747, 'La gestrice di una trattoria guarda soddisfatta il riepilogo stampato, con il portatile aperto'],
     ];
 }
 

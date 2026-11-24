@@ -211,27 +211,37 @@ function render_hero(RenderCtx $x): string
     if ($s['btn2_text'] !== '') {
         $buttons .= '<a class="btn btn-line btn-lg" href="' . e($x->href($s['btn2_href'])) . '">' . $x->t($s['btn2_text']) . '</a>';
     }
-    $photo = hero_slider_html($x, $s);
-    return '<section id="top" class="hero wrap" aria-labelledby="hero-title"><div class="hero-text">'
+    $full = ($s['layout'] ?? 'full') === 'full';
+    $photo = hero_slider_html($x, $s, $full);
+    $text = '<div class="hero-text">'
         . ($x->offer && $s['badge'] !== '' ? '<p class="pill">' . $x->t($s['badge']) . '</p>' : '')
         . '<h1 id="hero-title">' . $x->t($s['title']) . '</h1>'
         . '<p class="hero-lead">' . $x->t($s['text']) . '</p>'
         . ($buttons !== '' ? '<div class="btn-row">' . $buttons . '</div>' : '')
         . ($s['note'] !== '' ? '<p class="hero-note">' . $x->t($s['note']) . '</p>' : '')
-        . '</div><div class="hero-visual' . ($photo !== '' ? ' has-photo' : '') . '">' . $photo . '<figure class="kitchen-card">'
+        . '</div>';
+    $card = '<figure class="kitchen-card">'
         . '<p class="kc-label">' . e($s['card_label']) . '</p>'
         . '<p class="kc-count"><span class="kc-num">' . e($s['card_number']) . '</span> <span>' . e($s['card_number_label']) . '</span></p>'
         . '<div class="kc-body">' . $groups . '</div>'
         . ($tags !== '' ? '<ul class="kc-tags">' . $tags . '</ul>' : '')
         . '<figcaption class="kc-caption">' . e($s['card_caption']) . '</figcaption>'
-        . '</figure></div></section>';
+        . '</figure>';
+    if ($full && $photo !== '') {
+        // Slider a tutta larghezza: le fotografie fanno da sfondo, il testo sta sopra una velatura blu.
+        return '<section id="top" class="hero-full" aria-labelledby="hero-title">' . $photo
+            . '<div class="hero-shade" aria-hidden="true"></div>'
+            . '<div class="wrap hero-inner">' . $text . $card . '</div></section>';
+    }
+    return '<section id="top" class="hero wrap" aria-labelledby="hero-title">' . $text
+        . '<div class="hero-visual' . ($photo !== '' ? ' has-photo' : '') . '">' . $photo . $card . '</div></section>';
 }
 
 /** Fotografie dell'apertura: una sola è un'immagine fissa, più di una diventano uno slider. */
-function hero_slider_html(RenderCtx $x, array $s): string
+function hero_slider_html(RenderCtx $x, array $s, bool $full = false): string
 {
     $keys = [];
-    foreach (['photo', 'photo2', 'photo3', 'photo4'] as $f) {
+    foreach (['photo', 'photo2', 'photo3', 'photo4', 'photo5', 'photo6'] as $f) {
         $k = (string) ($s[$f] ?? '');
         if ($k !== '' && isset(photo_library()[$k]) && !in_array($k, $keys, true)) {
             $keys[] = $k;
@@ -240,9 +250,10 @@ function hero_slider_html(RenderCtx $x, array $s): string
     if (!$keys) {
         return '';
     }
-    $sizes = '(min-width: 1000px) 440px, 92vw';
+    $sizes = $full ? '100vw' : '(min-width: 1000px) 440px, 92vw';
+    $box = $full ? 'hero-bg' : 'hero-photo';
     if (count($keys) === 1) {
-        return '<div class="hero-photo">' . photo_picture($keys[0], (string) ($s['photo_alt'] ?? ''), $x->prefix, $sizes, true) . '</div>';
+        return '<div class="' . $box . '">' . photo_picture($keys[0], (string) ($s['photo_alt'] ?? ''), $x->prefix, $sizes, true) . '</div>';
     }
     $n = count($keys);
     $slides = '';
@@ -253,7 +264,7 @@ function hero_slider_html(RenderCtx $x, array $s): string
             . ($i === 0 ? '' : ' aria-hidden="true"') . '>' . photo_picture($k, $alt, $x->prefix, $sizes, $i === 0) . '</div>';
         $dots .= '<button type="button" class="slider-dot" data-slide="' . $i . '" aria-label="Mostra la fotografia ' . ($i + 1) . ' di ' . $n . '"' . ($i === 0 ? ' aria-current="true"' : '') . '></button>';
     }
-    return '<div class="hero-photo hero-slider" data-slider role="region" aria-roledescription="carousel" aria-label="Fotografie di ChiMangia al lavoro">'
+    return '<div class="' . $box . ' hero-slider" data-slider role="region" aria-roledescription="carousel" aria-label="Fotografie di ChiMangia al lavoro">'
         . $slides
         . '<div class="slider-ui" hidden><button type="button" class="slider-pause" aria-label="Metti in pausa lo scorrimento delle fotografie" aria-pressed="false"><span aria-hidden="true"></span></button>'
         . '<div class="slider-dots">' . $dots . '</div></div></div>';

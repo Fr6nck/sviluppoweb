@@ -60,11 +60,14 @@ function section_schema(string $area): ?array
                 f('card_caption', 'Didascalia', 'text', ['rec' => 30]),
             ]],
             ['Fotografie (slider)', [
+                f('layout', 'Disposizione dell\'apertura', 'choice', ['options' => ['full' => 'Slider a tutta larghezza, con il testo sopra le fotografie', 'side' => 'Fotografia a lato del testo'], 'hint' => 'A tutta larghezza rendono meglio le fotografie panoramiche.']),
                 f('photo', 'Prima fotografia', 'photo', ['hint' => 'La scheda d\'esempio si appoggia sulla fotografia. Con più fotografie l\'apertura diventa uno slider.']),
                 f('photo_alt', 'Descrizione della prima fotografia (testo alternativo)', 'text', ['rec' => 120, 'hint' => 'Vuoto: si usa la descrizione predefinita della foto.']),
                 f('photo2', 'Seconda fotografia dello slider', 'photo'),
                 f('photo3', 'Terza fotografia dello slider', 'photo'),
                 f('photo4', 'Quarta fotografia dello slider', 'photo'),
+                f('photo5', 'Quinta fotografia dello slider', 'photo'),
+                f('photo6', 'Sesta fotografia dello slider', 'photo'),
             ]],
         ]],
         'problema' => ['title' => 'Il problema', 'groups' => [
@@ -177,6 +180,8 @@ function editor_clean(array $def, mixed $raw, array &$errors, string $errKey): m
             return mb_substr($v, 0, 500);
         case 'photo':
             return isset(photo_library()[$v]) ? $v : '';
+        case 'choice':
+            return isset(($def['options'] ?? [])[$v]) ? $v : (string) array_key_first($def['options'] ?? ['' => '']);
         case 'icon':
             return isset(icon_library()[$v]) ? $v : 'spunta';
         case 'illustration':
@@ -342,6 +347,8 @@ function editor_field_html(array $def, string $name, string $id, mixed $value, s
             return field($name, $def['label'], (string) $value, $o + ['type' => 'date']);
         case 'email':
             return field($name, $def['label'], (string) $value, $o + ['type' => 'email']);
+        case 'choice':
+            return field($name, $def['label'], (string) $value, $o + ['type' => 'select', 'options' => $def['options'] ?? []]);
         case 'photo':
             return field($name, $def['label'], (string) $value, $o + ['type' => 'select', 'options' => ['' => 'Nessuna fotografia'] + array_map(static fn ($p) => $p[0], photo_library())]);
         case 'icon':

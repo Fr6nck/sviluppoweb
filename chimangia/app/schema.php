@@ -153,6 +153,9 @@ function cm_migrate(): void
     if (version_compare($from, '1.1.0', '<')) {
         migrate_day_photos();
     }
+    if (version_compare($from, '1.2.0', '<')) {
+        migrate_hero_full();
+    }
     foreach (default_settings() as $name => $value) {
         q('INSERT IGNORE INTO ' . t('settings') . ' (name, value) VALUES (?, ?)', [$name, json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
     }
@@ -195,4 +198,25 @@ function migrate_day_photos(): void
         $out[$col] = is_array($data) ? content_encode($data) : (string) $row[$col];
     }
     q('UPDATE ' . t('content') . " SET draft = ?, published = ? WHERE area = 'giornata'", [$out['draft'], $out['published']]);
+}
+
+/**
+ * 1.2.0: l'apertura passa allo slider a tutta larghezza. Se le fotografie sono
+ * ancora quelle iniziali della 1.1 vengono sostituite con quelle panoramiche.
+ */
+function migrate_hero_full(): void
+{
+    $row = q_one('SELECT draft, published FROM ' . t('content') . " WHERE area = 'hero'");
+    if (!$row) {
+        return;
+    }
+    $out = [];
+    foreach (['draft', 'published'] as $col) {
+        $d = json_decode((string) $row[$col], true);
+        if (is_array($d) && ($d['photo'] ?? '') === 'cucina' && ($d['photo2'] ?? '') === 'pranzo' && !isset($d['layout'])) {
+            $d = array_merge($d, ['layout' => 'full', 'photo' => 'sala', 'photo_alt' => '', 'photo2' => 'sera', 'photo3' => 'fine-mese', 'photo4' => '']);
+        }
+        $out[$col] = is_array($d) ? content_encode($d) : (string) $row[$col];
+    }
+    q('UPDATE ' . t('content') . " SET draft = ?, published = ? WHERE area = 'hero'", [$out['draft'], $out['published']]);
 }

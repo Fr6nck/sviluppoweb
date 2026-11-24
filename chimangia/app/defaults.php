@@ -46,11 +46,14 @@ function default_content(): array
             ],
             'card_tags' => "3 senza glutine\n2 vegetariani",
             'card_caption' => 'Esempio di schermata',
-            'photo' => 'cucina',
+            'layout' => 'full',
+            'photo' => 'sala',
             'photo_alt' => '',
-            'photo2' => 'pranzo',
-            'photo3' => 'sera',
-            'photo4' => 'fine-mese',
+            'photo2' => 'sera',
+            'photo3' => 'fine-mese',
+            'photo4' => '',
+            'photo5' => '',
+            'photo6' => '',
         ],
 
         'problema' => [

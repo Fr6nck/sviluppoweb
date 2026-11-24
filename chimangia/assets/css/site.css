@@ -408,3 +408,32 @@ img.pos-left { object-position: 26% 50%; }
 .slider-dot::before { content: ""; position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: transparent; box-shadow: inset 0 0 0 2px var(--crema); transition: background-color .3s ease, transform .3s ease; }
 .slider-dot[aria-current="true"]::before { background: var(--zafferano); box-shadow: none; transform: scale(1.3); }
 .slider-pause:focus-visible, .slider-dot:focus-visible { outline: 3px solid var(--zafferano); outline-offset: -3px; border-radius: 999px; }
+
+/* =====================================================================
+ * 1.2 — Apertura con slider a tutta larghezza
+ * ===================================================================== */
+.hero-full { position: relative; isolation: isolate; overflow: hidden; background: var(--blu); color: var(--crema); }
+.hero-full .hero-bg { position: absolute; inset: 0; }
+.hero-full .hero-bg picture, .hero-full .hero-bg img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.hero-full .hero-bg > picture { position: absolute; inset: 0; }
+.hero-shade { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(10, 24, 48, .86) 0%, rgba(10, 24, 48, .8) 55%, rgba(10, 24, 48, .62) 100%); }
+.hero-inner { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 40px; padding-top: 56px; padding-bottom: 96px; }
+.hero-full .hero-text { flex: 0 1 auto; max-width: 640px; }
+.hero-full h1 { font-family: var(--font-titoli); font-weight: 800; font-size: clamp(42px, 6.6vw, 76px); line-height: 1; letter-spacing: -.015em; color: var(--bianco); text-wrap: balance; }
+.hero-full .hero-lead { font-size: 20px; color: var(--chiaro-1); max-width: 560px; }
+.hero-full .hero-note { font-size: 15px; color: var(--chiaro-2); }
+.hero-full .btn-dark { background: var(--zafferano); color: var(--blu); border-color: var(--zafferano); }
+.hero-full .btn-dark:hover, .hero-full .btn-dark:focus-visible { background: var(--bianco); color: var(--blu); border-color: var(--bianco); }
+.hero-full .btn-line { color: var(--crema); border-color: var(--crema); background: rgba(10, 24, 48, .25); }
+.hero-full .btn-line:hover, .hero-full .btn-line:focus-visible { background: var(--crema); color: var(--blu); }
+.hero-full .btn:hover, .hero-full .btn:focus-visible { box-shadow: 0 12px 26px rgba(0, 0, 0, .4); }
+.hero-full .kitchen-card { width: 100%; max-width: 320px; border: 1px solid rgba(255, 255, 255, .16); box-shadow: 0 26px 54px rgba(0, 0, 0, .45); }
+.hero-full .slider-ui { top: auto; right: 16px; bottom: 20px; }
+@media (min-width: 1000px) {
+  .hero-shade { background: linear-gradient(90deg, rgba(10, 24, 48, .93) 0%, rgba(10, 24, 48, .82) 36%, rgba(10, 24, 48, .3) 68%, rgba(10, 24, 48, .42) 100%); }
+  .hero-inner { flex-direction: row; align-items: center; justify-content: space-between; gap: 48px; min-height: min(88vh, 860px); padding-top: 96px; padding-bottom: 112px; }
+  .hero-full .hero-text { flex: 1 1 0; }
+  .hero-full .kitchen-card { flex: 0 0 300px; align-self: flex-end; animation: card-float 7s ease-in-out 1.2s infinite; }
+  .hero-full .slider-ui { right: max(24px, calc((100vw - var(--contenitore)) / 2 + 24px)); bottom: 28px; }
+}

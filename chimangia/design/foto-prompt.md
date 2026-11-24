@@ -3,7 +3,7 @@
 Stile comune: fotografia documentaria editoriale, 35 mm, luce naturale calda, palette crema / blu notte / zafferano,
 grana leggera, nessun testo leggibile, nessun logo.
 
-In uso (assets/img/foto): `cucina` (apertura), `bancone` (il problema), `sera`, `pranzo`, `fine-mese` (una giornata e slider).
+In uso (assets/img/foto): `sala`, `sera`, `fine-mese` (slider a tutta larghezza), `bancone` (il problema), `sera`, `pranzo`, `fine-mese` (una giornata), `cucina` (disposizione con foto a lato).
 
 ## Ancora da generare (limite giornaliero raggiunto il 24/11/2026)
 - **mattina** (4:3 e 4:5): giovane cuoco in giacca bianca e grembiule blu, in cucina al mattino, guarda soddisfatto il telefono;
@@ -14,3 +14,11 @@ In uso (assets/img/foto): `cucina` (apertura), `bancone` (il problema), `sera`, 
 - **cliente** (4:5): operaio in trattoria a pranzo, una cameriera gli serve la pasta, telefono sul tavolo. Per lo slider.
 
 Per aggiungerne una: salvare `nome-640` e `nome-1280` in JPG e WebP in `assets/img/foto/` e registrarla in `photo_library()` (app/icons.php).
+
+## Slider a tutta larghezza: panoramiche 16:9 ancora da generare
+Tutte con il terzo sinistro più calmo e scuro, per lasciare spazio al testo.
+- **sala-piena**: sala di una trattoria piena a pranzo, cameriera con i piatti tra i tavoli, archi in mattoni.
+- **reception**: reception di un piccolo albergo a gestione familiare, la receptionist consegna una chiave a due lavoratori in trasferta; sullo sfondo la sala ristorante.
+- **camera**: camera doppia semplice e ordinata, letto con coperta blu e cuscino giallo, persiane verdi socchiuse, nessuna persona.
+- **esterno**: facciata di una trattoria con camere al tramonto, porta blu, tenda gialla, tavoli all'aperto con persone a cena.
+- **brigata**: cucina in servizio vista dal passe, cuoca e due cuochi che impiattano, fila di piatti pronti.
