@@ -68,3 +68,32 @@ function form_token_age(string $token): int
     $age = time() - (int) $ts;
     return ($age < 0 || $age > 6 * 3600) ? -1 : $age;
 }
+
+/* ---------- Token delle pagine di accesso (prima del login) ----------
+ * Firmato e senza sessione: l'accesso non dipende dal fatto che il cookie
+ * creato aprendo la pagina sia ancora presente al momento dell'invio.
+ */
+
+function login_token(string $purpose = 'login'): string
+{
+    $ts = (string) time();
+    $nonce = bin2hex(random_bytes(6));
+    return $ts . '.' . $nonce . '.' . hash_hmac('sha256', $purpose . '|' . $ts . '|' . $nonce, app_secret());
+}
+
+function login_token_valid(string $token, string $purpose = 'login'): bool
+{
+    $parts = explode('.', $token);
+    if (count($parts) !== 3 || !ctype_digit($parts[0])) {
+        return false;
+    }
+    [$ts, $nonce, $sig] = $parts;
+    $age = time() - (int) $ts;
+    return $age >= 0 && $age <= 12 * 3600
+        && hash_equals(hash_hmac('sha256', $purpose . '|' . $ts . '|' . $nonce, app_secret()), $sig);
+}
+
+function login_token_field(string $purpose = 'login'): string
+{
+    return '<input type="hidden" name="_lt" value="' . e(login_token($purpose)) . '">';
+}

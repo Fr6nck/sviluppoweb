@@ -38,6 +38,25 @@ function site_base_path(): string
     return rtrim($p, '/') . '/';
 }
 
+/**
+ * Percorso del sito ricavato dalla richiesta in corso (es. "/" oppure "/sotto/").
+ * Non dipende dall'indirizzo scritto in config.php: così il cookie di sessione
+ * funziona anche se il sito viene aperto da un indirizzo diverso da quello configurato.
+ */
+function request_base_path(): string
+{
+    $script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    $file = realpath((string) ($_SERVER['SCRIPT_FILENAME'] ?? '')) ?: '';
+    $root = realpath(CM_ROOT) ?: CM_ROOT;
+    if ($script !== '' && $file !== '' && str_starts_with($file, $root)) {
+        $rel = str_replace('\\', '/', substr($file, strlen($root)));   // es. /admin/login.php
+        if ($rel !== '' && str_ends_with($script, $rel)) {
+            return rtrim(substr($script, 0, -strlen($rel)), '/') . '/';
+        }
+    }
+    return site_base_path();
+}
+
 function is_https(): bool
 {
     if (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off') {
@@ -46,7 +65,10 @@ function is_https(): bool
     if (($_SERVER['SERVER_PORT'] ?? '') === '443') {
         return true;
     }
-    return strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+    if (strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https' || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_SSL'] ?? '')) === 'on') {
+        return true;
+    }
+    return str_contains((string) ($_SERVER['HTTP_CF_VISITOR'] ?? ''), '"https"');
 }
 
 function client_ip(): string

@@ -6,7 +6,7 @@ require dirname(__DIR__) . '/app/admin.php';
 $sent = false;
 $error = '';
 if (is_post()) {
-    if (!csrf_valid()) {
+    if (!csrf_valid() && !login_token_valid(post('_lt'), 'recupero')) {
         $error = 'Il modulo è scaduto. Riprova.';
     } else {
         $email = mb_strtolower(post('email'));
@@ -47,6 +47,7 @@ if ($sent): ?>
 <?php else: ?>
 <form method="post" action="recupero.php" class="form" novalidate>
   <?= csrf_field() ?>
+  <?= login_token_field('recupero') ?>
   <p>Scrivi l'email con cui accedi: ti mandiamo un link per scegliere una nuova password.</p>
   <div class="field">
     <label for="email">Email</label>

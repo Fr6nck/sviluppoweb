@@ -20,10 +20,24 @@ function session_start_secure(): void
     ini_set('session.use_strict_mode', '1');
     ini_set('session.use_only_cookies', '1');
     ini_set('session.cookie_httponly', '1');
+    // Sessioni in una cartella propria: sugli hosting condivisi quella predefinita
+    // può non essere scrivibile o venire svuotata da altri siti.
+    $dir = storage_path('sessions');
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0700, true);
+    }
+    if (is_dir($dir) && is_writable($dir)) {
+        ini_set('session.save_handler', 'files');
+        session_save_path($dir);
+        ini_set('session.gc_maxlifetime', '7200');
+        ini_set('session.gc_probability', '1');
+        ini_set('session.gc_divisor', '100');
+    }
+    session_cache_limiter('');
     session_name(CM_SESSION_NAME);
     session_set_cookie_params([
         'lifetime' => 0,
-        'path' => site_base_path(),
+        'path' => request_base_path(),
         'secure' => is_https(),
         'httponly' => true,
         'samesite' => 'Lax',

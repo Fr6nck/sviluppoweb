@@ -25,7 +25,9 @@ if ((string) setting('db_version', '') !== CM_VERSION) {
 
 security_headers(admin_csp());
 header('X-Robots-Tag: noindex, nofollow');
-header('Cache-Control: no-store, private');
+header('Cache-Control: no-store, private, max-age=0');
+header('X-LiteSpeed-Cache-Control: no-cache');
+header('Pragma: no-cache');
 session_start_secure();
 
 /* ---------- Messaggi flash ---------- */

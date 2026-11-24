@@ -16,7 +16,7 @@ if (!$reset) {
 
 $errors = [];
 if (is_post()) {
-    if (!csrf_valid()) {
+    if (!csrf_valid() && !login_token_valid(post('_lt'), 'reimposta')) {
         $errors['password'] = 'Il modulo è scaduto. Riprova.';
     } else {
         $pass = (string) ($_POST['password'] ?? '');
@@ -41,6 +41,7 @@ admin_auth_page_start('Scegli una nuova password');
 ?>
 <form method="post" action="reimposta.php" class="form" novalidate>
   <?= csrf_field() ?>
+  <?= login_token_field('reimposta') ?>
   <input type="hidden" name="token" value="<?= e($token) ?>">
   <p>Account: <strong><?= e($reset['email']) ?></strong></p>
   <div class="field">
