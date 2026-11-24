@@ -59,6 +59,13 @@ function section_schema(string $area): ?array
                 f('card_tags', 'Etichette gialle', 'lines', ['hint' => 'Una per riga.']),
                 f('card_caption', 'Didascalia', 'text', ['rec' => 30]),
             ]],
+            ['Fotografie (slider)', [
+                f('photo', 'Prima fotografia', 'photo', ['hint' => 'La scheda d\'esempio si appoggia sulla fotografia. Con più fotografie l\'apertura diventa uno slider.']),
+                f('photo_alt', 'Descrizione della prima fotografia (testo alternativo)', 'text', ['rec' => 120, 'hint' => 'Vuoto: si usa la descrizione predefinita della foto.']),
+                f('photo2', 'Seconda fotografia dello slider', 'photo'),
+                f('photo3', 'Terza fotografia dello slider', 'photo'),
+                f('photo4', 'Quarta fotografia dello slider', 'photo'),
+            ]],
         ]],
         'problema' => ['title' => 'Il problema', 'groups' => [
             ['Sezione', [$vis, f('title', 'Titolo', 'text', ['rec' => 70])]],
@@ -70,6 +77,10 @@ function section_schema(string $area): ?array
                 ]],
             ]],
             ['Chiusura', [f('closing', 'Frase finale', 'text', ['rec' => 90])]],
+            ['Fotografia', [
+                f('photo', 'Fotografia accanto al titolo', 'photo'),
+                f('photo_alt', 'Descrizione della fotografia (testo alternativo)', 'text', ['rec' => 120, 'hint' => 'Vuoto: si usa la descrizione predefinita della foto.']),
+            ]],
         ]],
         'come_funziona' => ['title' => 'Come funziona', 'groups' => [
             ['Sezione', [$vis, f('title', 'Titolo', 'text', ['rec' => 40]), f('subtitle', 'Sottotitolo', 'text', ['rec' => 60])]],
@@ -87,7 +98,7 @@ function section_schema(string $area): ?array
                     f('kicker', 'Etichetta (es. "La mattina")', 'text', ['rec' => 24]),
                     f('title', 'Titolo', 'text', ['rec' => 50]),
                     f('body', 'Testo', 'rich', ['rec' => 450]),
-                    f('illustration', 'Illustrazione', 'illustration'),
+                    f('illustration', 'Illustrazione o fotografia', 'illustration'),
                     f('image', 'Oppure un\'immagine caricata', 'media', ['hint' => 'Se scegli un\'immagine, sostituisce l\'illustrazione.']),
                     f('alt', 'Descrizione dell\'immagine (testo alternativo)', 'text', ['rec' => 100]),
                 ]],
@@ -164,10 +175,12 @@ function editor_clean(array $def, mixed $raw, array &$errors, string $errKey): m
                 return $v;
             }
             return mb_substr($v, 0, 500);
+        case 'photo':
+            return isset(photo_library()[$v]) ? $v : '';
         case 'icon':
             return isset(icon_library()[$v]) ? $v : 'spunta';
         case 'illustration':
-            return isset(illustration_library()[$v]) ? $v : array_key_first(illustration_library());
+            return isset(visual_library()[$v]) ? $v : array_key_first(visual_library());
         case 'media':
             $id = (int) $v;
             return ($id > 0 && media_get($id)) ? $id : 0;
@@ -329,10 +342,12 @@ function editor_field_html(array $def, string $name, string $id, mixed $value, s
             return field($name, $def['label'], (string) $value, $o + ['type' => 'date']);
         case 'email':
             return field($name, $def['label'], (string) $value, $o + ['type' => 'email']);
+        case 'photo':
+            return field($name, $def['label'], (string) $value, $o + ['type' => 'select', 'options' => ['' => 'Nessuna fotografia'] + array_map(static fn ($p) => $p[0], photo_library())]);
         case 'icon':
             return icon_picker_html($name, $id, (string) $value, $def['label']);
         case 'illustration':
-            return field($name, $def['label'], (string) $value, $o + ['type' => 'select', 'options' => illustration_library()]);
+            return field($name, $def['label'], (string) $value, $o + ['type' => 'select', 'options' => visual_library()]);
         case 'media':
             $opts = [0 => 'Nessuna'];
             foreach (media_all() as $m) {

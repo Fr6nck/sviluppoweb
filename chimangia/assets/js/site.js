@@ -12,6 +12,61 @@
   ready(function () {
     var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    /* ---------- Intestazione: ombra quando si scorre ---------- */
+    var header = document.querySelector('.site-header');
+    if (header) {
+      var onScroll = function () { header.classList.toggle('is-scrolled', window.scrollY > 8); };
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    }
+
+    /* ---------- Slider dell'apertura ---------- */
+    document.querySelectorAll('[data-slider]').forEach(function (slider) {
+      var slides = slider.querySelectorAll('.hero-slide');
+      var ui = slider.querySelector('.slider-ui');
+      var pauseBtn = slider.querySelector('.slider-pause');
+      var dots = slider.querySelectorAll('.slider-dot');
+      if (slides.length < 2 || !ui) return;
+      ui.hidden = false;
+      var current = 0, timer = null, userPaused = reduced, hoverPaused = false;
+
+      function show(i) {
+        current = (i + slides.length) % slides.length;
+        slides.forEach(function (s, n) {
+          s.classList.toggle('is-active', n === current);
+          if (n === current) s.removeAttribute('aria-hidden'); else s.setAttribute('aria-hidden', 'true');
+        });
+        dots.forEach(function (d, n) {
+          if (n === current) d.setAttribute('aria-current', 'true'); else d.removeAttribute('aria-current');
+        });
+      }
+      function stop() { if (timer) { clearInterval(timer); timer = null; } }
+      function start() {
+        stop();
+        if (userPaused || hoverPaused || document.hidden) return;
+        timer = setInterval(function () { show(current + 1); }, 5500);
+      }
+      function syncPause() {
+        pauseBtn.setAttribute('aria-pressed', userPaused ? 'true' : 'false');
+        pauseBtn.setAttribute('aria-label', userPaused ? 'Riprendi lo scorrimento delle fotografie' : 'Metti in pausa lo scorrimento delle fotografie');
+      }
+      pauseBtn.addEventListener('click', function () { userPaused = !userPaused; syncPause(); start(); });
+      dots.forEach(function (d) {
+        d.addEventListener('click', function () { show(parseInt(d.getAttribute('data-slide'), 10)); start(); });
+      });
+      slider.addEventListener('mouseenter', function () { hoverPaused = true; stop(); });
+      slider.addEventListener('mouseleave', function () { hoverPaused = false; start(); });
+      slider.addEventListener('focusin', function () { hoverPaused = true; stop(); });
+      slider.addEventListener('focusout', function () { hoverPaused = false; start(); });
+      slider.addEventListener('keydown', function (ev) {
+        if (ev.key === 'ArrowRight') { show(current + 1); start(); }
+        if (ev.key === 'ArrowLeft') { show(current - 1); start(); }
+      });
+      document.addEventListener('visibilitychange', start);
+      syncPause();
+      start();
+    });
+
     /* ---------- Menu a scomparsa ---------- */
     var toggle = document.querySelector('.nav-toggle');
     var nav = document.getElementById('site-nav');

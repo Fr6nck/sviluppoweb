@@ -70,3 +70,51 @@ function illustration_svg(string $name): string
     $f = CM_ROOT . '/assets/img/illustrazioni/' . $name . '.svg';
     return is_file($f) ? (string) file_get_contents($f) : '';
 }
+
+/**
+ * Fotografie del progetto (assets/img/foto), in due larghezze e in JPG + WebP.
+ * chiave => [etichetta, larghezze disponibili, rapporto altezza/larghezza, testo alternativo predefinito]
+ */
+function photo_library(): array
+{
+    return [
+        'cucina' => ['Foto: la cuoca al passe', [640, 1120], 1.25, 'Una cuoca in grembiule blu finisce i piatti di pasta allineati sul passe della trattoria'],
+        'bancone' => ['Foto: il bancone pieno di appunti', [800, 1600], 0.664, 'Un bancone di ristorante ingombro di telefoni, foglietti scritti a mano e un quaderno di prenotazioni'],
+        'sera' => ['Foto: il titolare la sera', [640, 1280], 0.747, 'Il titolare di una trattoria, a sala chiusa, pubblica il menù dal telefono', 'pos-left'],
+        'pranzo' => ['Foto: la sala a pranzo', [640, 1280], 0.75, 'La sala di una trattoria a pranzo, con lavoratori a tavola e un cameriere che serve la pasta'],
+        'fine-mese' => ['Foto: i conti di fine mese', [640, 1280], 0.747, 'La gestrice di una trattoria guarda soddisfatta il riepilogo stampato, con il portatile aperto'],
+    ];
+}
+
+/** Illustrazioni + fotografie: le scelte per i blocchi di "Una giornata". */
+function visual_library(): array
+{
+    $out = [];
+    foreach (illustration_library() as $k => $label) {
+        $out[$k] = 'Illustrazione: ' . $label;
+    }
+    foreach (photo_library() as $k => [$label]) {
+        $out['foto-' . $k] = $label;
+    }
+    return $out;
+}
+
+/** <picture> responsive di una fotografia del progetto. $sizes: attributo sizes. */
+function photo_picture(string $key, string $alt, string $prefix = '', string $sizes = '100vw', bool $eager = false, string $class = ''): string
+{
+    $lib = photo_library();
+    if (!isset($lib[$key])) {
+        return '';
+    }
+    [, $widths, $ratio, $defaultAlt] = $lib[$key];
+    $class = trim($class . ' ' . ($lib[$key][4] ?? ''));
+    $base = $prefix . 'assets/img/foto/' . $key . '-';
+    $set = static function (string $ext) use ($widths, $base): string {
+        return implode(', ', array_map(static fn ($w) => $base . $w . '.' . $ext . ' ' . $w . 'w', $widths));
+    };
+    $max = max($widths);
+    return '<picture><source type="image/webp" srcset="' . e($set('webp')) . '" sizes="' . e($sizes) . '">'
+        . '<img src="' . e($base . $max . '.jpg') . '" srcset="' . e($set('jpg')) . '" sizes="' . e($sizes) . '" alt="' . e($alt !== '' ? $alt : $defaultAlt) . '"'
+        . ' width="' . $max . '" height="' . (int) round($max * $ratio) . '"' . ($eager ? ' fetchpriority="high"' : ' loading="lazy"') . ' decoding="async"'
+        . ($class !== '' ? ' class="' . e($class) . '"' : '') . '></picture>';
+}

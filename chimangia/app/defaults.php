@@ -46,6 +46,11 @@ function default_content(): array
             ],
             'card_tags' => "3 senza glutine\n2 vegetariani",
             'card_caption' => 'Esempio di schermata',
+            'photo' => 'cucina',
+            'photo_alt' => '',
+            'photo2' => 'pranzo',
+            'photo3' => 'sera',
+            'photo4' => 'fine-mese',
         ],
 
         'problema' => [
@@ -57,6 +62,8 @@ function default_content(): array
                 ['id' => 'p3', 'icon' => 'calcolatrice', 'title' => 'Conti a fine mese', 'text' => 'Ricostruire chi ha mangiato cosa, azienda per azienda, porta via ore.'],
             ],
             'closing' => 'ChiMangia risponde a quella domanda prima che tu la faccia.',
+            'photo' => 'bancone',
+            'photo_alt' => '',
         ],
 
         'come_funziona' => [
@@ -81,9 +88,9 @@ function default_content(): array
                     'title' => 'Il menù parte da solo',
                     'body' => '<p>Scrivi i piatti di domani, oppure fotografi il foglio che hai già preparato. Scegli entro che ora si può prenotare e premi Pubblica.</p>'
                         . "<p>In quel momento ogni cliente riceve l'avviso sul telefono. Non devi chiamare nessuno, né rispondere a venti messaggi diversi: chi vuole mangiare sceglie i suoi piatti, chi non c'è lo dice con un tocco.</p>",
-                    'illustration' => 'menu-telefono',
+                    'illustration' => 'foto-sera',
                     'image' => 0,
-                    'alt' => 'Illustrazione: il menù del giorno pubblicato dal telefono',
+                    'alt' => 'Il titolare di una trattoria, a sala chiusa, pubblica il menù dal telefono',
                 ],
                 [
                     'id' => 'd2',
@@ -91,9 +98,9 @@ function default_content(): array
                     'title' => 'Apri il telefono e trovi la risposta',
                     'body' => '<p>Quando arrivi in cucina i numeri sono già lì: i coperti di pranzo e di cena, quanti piatti preparare di ogni tipo, chi è senza glutine e chi non mangia maiale.</p>'
                         . "<p>Fai la spesa giusta e cucini il giusto. Chi non ha confermato entro l'orario è stato disdetto in automatico, quindi nessun piatto resta sul passe ad aspettare qualcuno che non arriva.</p>",
-                    'illustration' => 'tavolata',
+                    'illustration' => 'foto-pranzo',
                     'image' => 0,
-                    'alt' => 'Illustrazione: una tavolata con i piatti prenotati',
+                    'alt' => 'La sala di una trattoria a pranzo, con lavoratori a tavola e un cameriere che serve la pasta',
                 ],
                 [
                     'id' => 'd3',
@@ -101,9 +108,9 @@ function default_content(): array
                     'title' => 'I conti sono già fatti',
                     'body' => '<p>Ogni pasto resta registrato con il nome del cliente, la sua azienda e la formula scelta. Quando è ora di fare i conti apri il riepilogo: quanti pasti, per quale azienda, in quali giorni.</p>'
                         . "<p>Quello che prima richiedeva una serata con fogli e calcolatrice diventa una stampa. E se un'azienda chiede il dettaglio, lo hai in un minuto.</p>",
-                    'illustration' => 'riepilogo',
+                    'illustration' => 'foto-fine-mese',
                     'image' => 0,
-                    'alt' => 'Illustrazione: il riepilogo mensile dei pasti',
+                    'alt' => 'La gestrice di una trattoria guarda soddisfatta il riepilogo stampato, con il portatile aperto',
                 ],
             ],
         ],

@@ -149,6 +149,10 @@ function cm_migrate(): void
         db()->exec($sql);
     }
     content_seed(null);
+    $from = (string) setting('db_version', '1.0.0');
+    if (version_compare($from, '1.1.0', '<')) {
+        migrate_day_photos();
+    }
     foreach (default_settings() as $name => $value) {
         q('INSERT IGNORE INTO ' . t('settings') . ' (name, value) VALUES (?, ?)', [$name, json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
     }
@@ -156,4 +160,39 @@ function cm_migrate(): void
     if (function_exists('site_rebuild')) {
         site_rebuild();
     }
+}
+
+/**
+ * 1.1.0: i blocchi di "Una giornata" che usano ancora le illustrazioni iniziali
+ * passano alle fotografie. I blocchi già personalizzati non vengono toccati.
+ */
+function migrate_day_photos(): void
+{
+    $map = [
+        'menu-telefono' => ['foto-sera', 'Illustrazione: il menù del giorno pubblicato dal telefono', 'Il titolare di una trattoria, a sala chiusa, pubblica il menù dal telefono'],
+        'tavolata' => ['foto-pranzo', 'Illustrazione: una tavolata con i piatti prenotati', 'La sala di una trattoria a pranzo, con lavoratori a tavola e un cameriere che serve la pasta'],
+        'riepilogo' => ['foto-fine-mese', 'Illustrazione: il riepilogo mensile dei pasti', 'La gestrice di una trattoria guarda soddisfatta il riepilogo stampato, con il portatile aperto'],
+    ];
+    $row = q_one('SELECT draft, published FROM ' . t('content') . " WHERE area = 'giornata'");
+    if (!$row) {
+        return;
+    }
+    $out = [];
+    foreach (['draft', 'published'] as $col) {
+        $data = json_decode((string) $row[$col], true);
+        if (is_array($data) && is_array($data['cards'] ?? null)) {
+            foreach ($data['cards'] as &$card) {
+                $k = (string) ($card['illustration'] ?? '');
+                if (isset($map[$k]) && (int) ($card['image'] ?? 0) === 0) {
+                    $card['illustration'] = $map[$k][0];
+                    if (($card['alt'] ?? '') === $map[$k][1] || ($card['alt'] ?? '') === '') {
+                        $card['alt'] = $map[$k][2];
+                    }
+                }
+            }
+            unset($card);
+        }
+        $out[$col] = is_array($data) ? content_encode($data) : (string) $row[$col];
+    }
+    q('UPDATE ' . t('content') . " SET draft = ?, published = ? WHERE area = 'giornata'", [$out['draft'], $out['published']]);
 }

@@ -48,6 +48,7 @@ Il pannello è su `https://tuodominio.it/admin/`.
 | Voce | Cosa si fa |
 | --- | --- |
 | **Cruscotto** | Richieste nuove, ultime 5 richieste, data dell'ultima pubblicazione, bozze in sospeso con *Pubblica tutto*. |
+| **Fotografie** | In *Apertura* scegli fino a 4 fotografie: con più di una l'apertura diventa uno slider (con pausa e puntini). In *Il problema* e *Una giornata* scegli tra le fotografie e le illustrazioni del progetto, oppure un'immagine caricata da *Media*. |
 | **Contenuti** | Una pagina per ogni sezione: testi, pulsanti (testo e destinazione), Mostra/Nascondi. Le schede si aggiungono, eliminano e riordinano trascinando la maniglia ⠿ o con le frecce. Le icone si scelgono dalla libreria del progetto. |
 | **Prezzi** | Pacchetti (mensile, annuale e attivazione, pieni e di lancio), offerta di lancio (attiva, percentuale, data di fine), pulsante *Calcola prezzi di lancio*, modulo Hotel, testi di esempio, prova gratuita e nota IVA. Con l'offerta spenta o scaduta il sito mostra solo i prezzi pieni. |
 | **Domande frequenti** | Aggiunta, modifica, riordino, Mostra/Nascondi per ogni domanda. |

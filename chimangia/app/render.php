@@ -211,19 +211,52 @@ function render_hero(RenderCtx $x): string
     if ($s['btn2_text'] !== '') {
         $buttons .= '<a class="btn btn-line btn-lg" href="' . e($x->href($s['btn2_href'])) . '">' . $x->t($s['btn2_text']) . '</a>';
     }
+    $photo = hero_slider_html($x, $s);
     return '<section id="top" class="hero wrap" aria-labelledby="hero-title"><div class="hero-text">'
         . ($x->offer && $s['badge'] !== '' ? '<p class="pill">' . $x->t($s['badge']) . '</p>' : '')
         . '<h1 id="hero-title">' . $x->t($s['title']) . '</h1>'
         . '<p class="hero-lead">' . $x->t($s['text']) . '</p>'
         . ($buttons !== '' ? '<div class="btn-row">' . $buttons . '</div>' : '')
         . ($s['note'] !== '' ? '<p class="hero-note">' . $x->t($s['note']) . '</p>' : '')
-        . '</div><div class="hero-visual"><figure class="kitchen-card">'
+        . '</div><div class="hero-visual' . ($photo !== '' ? ' has-photo' : '') . '">' . $photo . '<figure class="kitchen-card">'
         . '<p class="kc-label">' . e($s['card_label']) . '</p>'
         . '<p class="kc-count"><span class="kc-num">' . e($s['card_number']) . '</span> <span>' . e($s['card_number_label']) . '</span></p>'
         . '<div class="kc-body">' . $groups . '</div>'
         . ($tags !== '' ? '<ul class="kc-tags">' . $tags . '</ul>' : '')
         . '<figcaption class="kc-caption">' . e($s['card_caption']) . '</figcaption>'
         . '</figure></div></section>';
+}
+
+/** Fotografie dell'apertura: una sola è un'immagine fissa, più di una diventano uno slider. */
+function hero_slider_html(RenderCtx $x, array $s): string
+{
+    $keys = [];
+    foreach (['photo', 'photo2', 'photo3', 'photo4'] as $f) {
+        $k = (string) ($s[$f] ?? '');
+        if ($k !== '' && isset(photo_library()[$k]) && !in_array($k, $keys, true)) {
+            $keys[] = $k;
+        }
+    }
+    if (!$keys) {
+        return '';
+    }
+    $sizes = '(min-width: 1000px) 440px, 92vw';
+    if (count($keys) === 1) {
+        return '<div class="hero-photo">' . photo_picture($keys[0], (string) ($s['photo_alt'] ?? ''), $x->prefix, $sizes, true) . '</div>';
+    }
+    $n = count($keys);
+    $slides = '';
+    $dots = '';
+    foreach ($keys as $i => $k) {
+        $alt = ($i === 0 && ($s['photo'] ?? '') === $k) ? (string) ($s['photo_alt'] ?? '') : '';
+        $slides .= '<div class="hero-slide' . ($i === 0 ? ' is-active' : '') . '" role="group" aria-roledescription="slide" aria-label="Fotografia ' . ($i + 1) . ' di ' . $n . '"'
+            . ($i === 0 ? '' : ' aria-hidden="true"') . '>' . photo_picture($k, $alt, $x->prefix, $sizes, $i === 0) . '</div>';
+        $dots .= '<button type="button" class="slider-dot" data-slide="' . $i . '" aria-label="Mostra la fotografia ' . ($i + 1) . ' di ' . $n . '"' . ($i === 0 ? ' aria-current="true"' : '') . '></button>';
+    }
+    return '<div class="hero-photo hero-slider" data-slider role="region" aria-roledescription="carousel" aria-label="Fotografie di ChiMangia al lavoro">'
+        . $slides
+        . '<div class="slider-ui" hidden><button type="button" class="slider-pause" aria-label="Metti in pausa lo scorrimento delle fotografie" aria-pressed="false"><span aria-hidden="true"></span></button>'
+        . '<div class="slider-dots">' . $dots . '</div></div></div>';
 }
 
 function render_problema(RenderCtx $x): string
@@ -237,10 +270,18 @@ function render_problema(RenderCtx $x): string
         $cards .= '<li class="problem-card">' . icon_svg((string) ($card['icon'] ?? ''), 30, '#F2A900')
             . '<h3>' . e($card['title']) . '</h3><p>' . $x->t($card['text']) . '</p></li>';
     }
+    $photo = photo_picture((string) ($s['photo'] ?? ''), (string) ($s['photo_alt'] ?? ''), $x->prefix, '(min-width: 900px) 520px, 92vw');
+    $closing = $s['closing'] !== '' ? '<p class="lead measure problem-closing">' . $x->t($s['closing']) . '</p>' : '';
+    if ($photo !== '') {
+        $head = '<div class="problem-head"><div class="problem-intro"><h2 id="problema-title">' . $x->t($s['title']) . '</h2>' . $closing . '</div>'
+            . '<div class="problem-photo photo-frame">' . $photo . '</div></div>';
+        return '<section id="problema" class="band band-blue reveal" aria-labelledby="problema-title"><div class="wrap stack">'
+            . $head . '<ul class="grid grid-260">' . $cards . '</ul></div></section>';
+    }
     return '<section id="problema" class="band band-blue reveal" aria-labelledby="problema-title"><div class="wrap stack">'
         . '<h2 id="problema-title" class="measure">' . $x->t($s['title']) . '</h2>'
         . '<ul class="grid grid-260">' . $cards . '</ul>'
-        . ($s['closing'] !== '' ? '<p class="lead measure">' . $x->t($s['closing']) . '</p>' : '')
+        . $closing
         . '</div></section>';
 }
 
@@ -271,8 +312,14 @@ function render_giornata(RenderCtx $x): string
     foreach (array_values($s['cards']) as $i => $card) {
         $img = (int) ($card['image'] ?? 0);
         $visual = $img > 0 ? media_picture($img, (string) $card['alt'], 'day-photo', $x->prefix) : '';
+        $key = (string) $card['illustration'];
+        if ($visual === '' && str_starts_with($key, 'foto-')) {
+            $visual = photo_picture(substr($key, 5), (string) $card['alt'], $x->prefix, '(min-width: 800px) 520px, 92vw');
+        }
         if ($visual === '') {
-            $visual = '<div class="day-illustration" role="img" aria-label="' . e($card['alt']) . '">' . illustration_svg((string) $card['illustration']) . '</div>';
+            $visual = '<div class="day-illustration" role="img" aria-label="' . e($card['alt']) . '">' . illustration_svg($key) . '</div>';
+        } elseif (str_starts_with($key, 'foto-') && $img === 0) {
+            $visual = '<div class="day-illustration day-photo-wrap photo-frame">' . $visual . '</div>';
         } else {
             $visual = '<div class="day-illustration">' . $visual . '</div>';
         }
