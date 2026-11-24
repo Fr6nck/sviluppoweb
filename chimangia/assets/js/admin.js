@@ -106,7 +106,9 @@
     return res.innerHTML.replace(/<p><\/p>/g, '').replace(/<p><br><\/p>/g, '');
   }
 
-  document.querySelectorAll('[data-rte]').forEach(function (wrap) {
+  function setupRte(wrap) {
+    if (wrap.getAttribute('data-ready')) return;
+    wrap.setAttribute('data-ready', '1');
     var bar = wrap.querySelector('.rte-bar');
     var area = wrap.querySelector('.rte-area');
     var src = wrap.querySelector('.rte-source');
@@ -158,7 +160,8 @@
     });
     var form = wrap.closest('form');
     if (form) form.addEventListener('submit', function () { src.value = cleanHtml(area.innerHTML); });
-  });
+  }
+  document.querySelectorAll('[data-rte]').forEach(setupRte);
 
   /* ---------- Elenchi riordinabili (trascinamento e frecce) ---------- */
   function renumber(list) {
@@ -273,8 +276,7 @@
   });
 
   function initRte(scope) {
-    // Gli editor aggiunti dinamicamente restano come area di testo semplice con HTML ammesso.
-    scope.querySelectorAll('[data-rte] .rte-source').forEach(function (src) { src.hidden = false; });
+    scope.querySelectorAll('[data-rte]').forEach(setupRte);
   }
 
   /* ---------- Prezzi: calcolo dei prezzi di lancio ---------- */

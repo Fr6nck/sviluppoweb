@@ -46,7 +46,7 @@ set_exception_handler(static function (Throwable $e): void {
         return;
     }
     echo '<!doctype html><html lang="it"><meta charset="utf-8"><title>Errore</title>'
-        . '<body style="font-family:sans-serif;padding:40px;color:#13294B;background:#FBF7EF">'
+        . '<body>'
         . '<h1>Si è verificato un errore</h1><p>Riprova tra qualche minuto.</p></body></html>';
 });
 

@@ -11,7 +11,7 @@ require_once CM_APP . '/csrf.php';
 require_once CM_APP . '/content.php';
 require_once CM_APP . '/mail.php';
 require_once CM_APP . '/schema.php';
-foreach (['sanitize', 'icons', 'render', 'media', 'leads', 'forms'] as $cmLib) {
+foreach (['sanitize', 'icons', 'media', 'render', 'leads', 'forms', 'editor'] as $cmLib) {
     if (is_file(CM_APP . '/' . $cmLib . '.php')) {
         require_once CM_APP . '/' . $cmLib . '.php';
     }

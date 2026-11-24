@@ -245,3 +245,4 @@ details.icon-details summary svg { width: 26px; height: 26px; }
   .btn:hover, .btn:focus-visible, .btn:active { transform: none; }
   .btn:hover .arr, .btn:focus-visible .arr { transform: none; }
 }
+.switch span { margin-left: 4px; }

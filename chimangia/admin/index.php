@@ -4,6 +4,7 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/app/admin.php';
 
 $user = require_login();
+leads_retention_cleanup(); // al massimo una volta al giorno
 
 $hasLeads = function_exists('leads_count_new');
 $newLeads = $hasLeads ? leads_count_new() : 0;
