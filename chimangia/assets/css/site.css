@@ -71,7 +71,7 @@ strong { font-weight: 500; }
 .panel-photo { background: var(--blu-scuro); }
 .panel-navy { background: var(--blu); }
 .panel-cream { background: var(--crema-scura); }
-.panel-photo :focus-visible, .panel-navy :focus-visible, .hero-full :focus-visible, .site-footer :focus-visible { outline-color: var(--bianco); }
+.panel-photo :focus-visible, .panel-navy :focus-visible, .hero-full :focus-visible { outline-color: var(--bianco); }
 
 /* ---------- Tipografia ---------- */
 .title, .heading, .title-medium, h1, h2 { font-family: var(--font-display); font-weight: 400; text-wrap: balance; }
@@ -513,14 +513,15 @@ img.pos-left { object-position: 26% 50%; }
   .ask { grid-template-columns: minmax(0, 54fr) minmax(0, 46fr); align-items: center; min-height: min(88vh, 940px); }
 }
 
-/* ---------- Piè di pagina: pannello blu con il nome a tutta larghezza ---------- */
-.site-footer { margin: var(--g); border-radius: var(--r); background: var(--blu); color: var(--su-scuro); overflow: hidden; padding: clamp(32px, 3.6vw, 68px) var(--pad-x) 0; }
+/* ---------- Piè di pagina: pannello beige con il nome in corsivo a tutta larghezza ---------- */
+.site-footer { margin: var(--g); border-radius: var(--r); background: var(--crema-scura); color: var(--blu); overflow: hidden; padding: clamp(32px, 3.6vw, 68px) var(--pad-x) 0; }
 .footer-inner { display: grid; gap: 18px var(--g); align-items: start; font-size: 14px; }
 .footer-legal { font-size: 14px; line-height: 1.6; }
 .footer-links { display: flex; flex-wrap: wrap; gap: 4px 26px; }
-.footer-links a { display: inline-flex; min-height: 44px; align-items: center; color: var(--bianco); text-decoration: none; }
-.footer-links a:hover, .footer-links a:focus-visible { text-decoration: underline; text-decoration-color: var(--zafferano); text-decoration-thickness: 2px; }
-.footer-word { font: 800 clamp(64px, 19.2vw, 420px)/.74 var(--font-logo); letter-spacing: -.035em; color: var(--zafferano); text-align: center; white-space: nowrap; margin: clamp(26px, 4vw, 80px) -0.05em -0.16em; user-select: none; }
+.footer-links a { display: inline-flex; min-height: 44px; align-items: center; color: var(--blu); text-decoration: none; }
+.footer-links a:hover, .footer-links a:focus-visible { text-decoration: underline; text-decoration-thickness: 1px; }
+/* Il nome occupa tutta la larghezza del pannello: esce dai margini interni per restare centrato. */
+.footer-word { font: italic 400 clamp(72px, 23.6vw, 560px)/.8 var(--font-display); letter-spacing: -.03em; color: var(--zafferano); text-align: center; white-space: nowrap; margin: clamp(18px, 2.6vw, 52px) calc(var(--pad-x) * -1) .24em; user-select: none; }
 .js .site-footer.reveal { opacity: 1; transform: none; }
 .js .site-footer.reveal .footer-word { transform: translateY(46%); transition: transform 1.4s var(--ease) .1s; }
 .js .site-footer.reveal.is-visible .footer-word { transform: none; }
