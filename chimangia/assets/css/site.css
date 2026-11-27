@@ -520,8 +520,10 @@ img.pos-left { object-position: 26% 50%; }
 .footer-links { display: flex; flex-wrap: wrap; gap: 4px 26px; }
 .footer-links a { display: inline-flex; min-height: 44px; align-items: center; color: var(--blu); text-decoration: none; }
 .footer-links a:hover, .footer-links a:focus-visible { text-decoration: underline; text-decoration-thickness: 1px; }
-/* Il nome occupa tutta la larghezza del pannello: esce dai margini interni per restare centrato. */
-.footer-word { font: italic 400 clamp(72px, 23.6vw, 560px)/.8 var(--font-display); letter-spacing: -.03em; color: var(--zafferano); text-align: center; white-space: nowrap; margin: clamp(18px, 2.6vw, 52px) calc(var(--pad-x) * -1) .24em; user-select: none; }
+/* Il nome occupa tutta la larghezza del pannello: esce dai margini interni per restare centrato.
+ * È spostato in basso: il 20% della sua altezza (0,97em dall'asta alla coda della g) esce dal bordo
+ * inferiore del pannello. --taglio: 0 lo mostra intero, .2 ne nasconde un quinto. */
+.footer-word { --taglio: .2; font: italic 400 clamp(72px, 23.6vw, 560px)/.8 var(--font-display); letter-spacing: -.03em; color: var(--zafferano); text-align: center; white-space: nowrap; margin: calc(clamp(18px, 2.6vw, 52px) + (.08em + var(--taglio) * .97em)) calc(var(--pad-x) * -1) calc(.16em - var(--taglio) * .97em); user-select: none; }
 .js .site-footer.reveal { opacity: 1; transform: none; }
 .js .site-footer.reveal .footer-word { transform: translateY(46%); transition: transform 1.4s var(--ease) .1s; }
 .js .site-footer.reveal.is-visible .footer-word { transform: none; }
