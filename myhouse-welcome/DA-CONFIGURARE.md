@@ -1,4 +1,4 @@
-# MyHouse Welcome v2 — da configurare
+# Welcome MyHouse v2 — da configurare
 
 Cosa resta da fare a te (o a chi gestisce il server) prima di aprire al pubblico.
 I dettagli tecnici sono in `app/LEGGIMI.md`. Le novità, fase per fase, sono in `CHANGELOG.md`.
@@ -44,7 +44,7 @@ Si impostano come variabili d'ambiente o in `app/config.local.php`. Il modello �
 
 | Variabile | Obbligatoria | Note |
 |---|---|---|
-| `MHW_BASE_URL` | **sì** | indirizzo pubblico senza barra finale (es. `https://myhousewelcome.it` o `https://blackout.in/welcomebook`). Finisce nei QR, nelle email e nei link «non mandarmene più». |
+| `MHW_BASE_URL` | **sì** | indirizzo pubblico senza barra finale (es. `https://welcomemyhouse.it` o `https://blackout.in/welcomebook`). Finisce nei QR, nelle email e nei link «non mandarmene più». |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | **sì**, per vendere | senza, i clienti preparano la guida ma non possono pagarla né aggiungere strutture |
 | `STRIPE_AUTOMATIC_TAX` | da decidere col commercialista | `1` = calcolo dell'IVA con Stripe Tax (va attivato anche su Stripe) |
 | `MAIL_TRANSPORT=smtp`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS`, `MAIL_ENCRYPTION`, `MAIL_FROM`, `MAIL_FROM_NAME` | **sì** | senza, verifica dell'email, password e richiami finiscono in `storage/logs/mail.log` |
@@ -162,7 +162,7 @@ wget -q -O- https://TUODOMINIO/cron/IL_TOKEN >/dev/null
     php app/tools/togli-varianti-stripe.php --prova     # elenca soltanto: cliente, quante camere, importo
     php app/tools/togli-varianti-stripe.php             # chiede conferma (scrivi SI) e toglie
 
-Per ogni abbonamento attivo con la voce delle camere, la toglie con il credito della parte non goduta sulla prossima fattura, azzera la colonna nel database e scrive una riga nel Registro. **Dopo**, su Stripe → Catalogo prodotti, **archivia** il prodotto «MyHouse Welcome — variante camera». Se `--prova` non trova niente, non c'è niente da fare. I QR delle camere già stampati aprono la guida della struttura.
+Per ogni abbonamento attivo con la voce delle camere, la toglie con il credito della parte non goduta sulla prossima fattura, azzera la colonna nel database e scrive una riga nel Registro. **Dopo**, su Stripe → Catalogo prodotti, **archivia** il prodotto «Welcome MyHouse — variante camera». Se `--prova` non trova niente, non c'è niente da fare. I QR delle camere già stampati aprono la guida della struttura.
 
 **Essential**: 6 sezioni aggiuntive e foto profilo, anche per chi è già abbonato (migrazione 031). I testi delle schede sono stati aggiornati solo dove erano quelli di serie: controllali in **Amministrazione → Piani → Testi sulla landing** (in Plus, `{sezioni}` diventa il numero di sezioni del catalogo).
 
@@ -310,7 +310,7 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 - **Dove arriva cosa**: preventivi e risposte di «Anche il tuo sito» a commerciale@ (la conferma al cliente parte da assistenza@ con `Reply-To` commerciale@); le email di rinnovo, scadenza, cambio piano e rimborso partono da assistenza@ con `Reply-To` amministrazione@ e la riga «Per domande su fatture e pagamenti: amministrazione@…»; gli avvisi a noi su pagamenti falliti e rimborsi confermati vanno ad amministrazione@; tutto il resto all'assistenza.
 - **Stripe** → Impostazioni → Dettagli pubblici dell'attività: **email di assistenza = amministrazione@welcomemyhouse.it** (compare su ricevute e fatture Stripe). Stripe → Email ai clienti: **ricevute accese**, «rinnovo imminente» e «fine prova» spente (le mandiamo noi, 9D).
 - **Adamo**: imposta amministrazione@welcomemyhouse.it come email del mittente e di contatto sulle fatture.
-- **Codici omaggio**: «Manda per email» apre il tuo programma di posta (non parte dal sito): scrivi da commerciale@. Il messaggio ha già la firma «MyHouse Welcome · commerciale@…».
+- **Codici omaggio**: «Manda per email» apre il tuo programma di posta (non parte dal sito): scrivi da commerciale@. Il messaggio ha già la firma «Welcome MyHouse · commerciale@…».
 - **Vetrina**: `vetrina_email` di serie è **vetrina@welcomemyhouse.it** (non riceve email: i Richiami lo saltano). La vetrina che c'è già resta dov'è.
 
 **9F · Rifiniture**
@@ -379,7 +379,7 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 4. **SEO e GEO, da fare una volta sul dominio vero**: imposta il **dominio** con https (senza, canonical, sitemap e IndexNow non usano gli indirizzi giusti); in **Bing Webmaster Tools** verifica il sito e invia la sitemap (Bing alimenta anche ChatGPT e Copilot); in **Google Search Console** invia la sitemap. Poi premi **«Avvisa i motori (IndexNow)»**, e di nuovo ogni volta che cambi prezzi, testi o titoli.
 5. Se avevi già cambiato a mano la descrizione della home o l'introduzione di llms.txt, restano le tue: rileggile in SEO e GEO (la home deve stare tra 70 e 155 caratteri; il controllo lo dice).
 6. **Profili social**: in SEO e GEO → Dati dell'azienda → «Profili social» metti gli indirizzi veri (Instagram, Facebook, LinkedIn…). Sono il segnale più forte, per Google e per gli assistenti AI, che il marchio è un'azienda vera.
-7. **Google Business Profile** (fuori dal sito): crea la scheda di City Up / MyHouse Welcome con lo stesso indirizzo, telefono ed email del sito, scritti uguali. Aiuta le ricerche locali e il pannello del marchio.
+7. **Google Business Profile** (fuori dal sito): crea la scheda di City Up / Welcome MyHouse con lo stesso indirizzo, telefono ed email del sito, scritti uguali. Aiuta le ricerche locali e il pannello del marchio.
 
 ## 4q. 9N (20 ottobre): sconto unico, solo aderenti, inglese, omaggio, legale, demo, Cassa
 
@@ -393,6 +393,21 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 8. **Cassa**: l'IVA dei pagamenti Stripe è quella calcolata da Stripe (IVA automatica accesa); se un mese ha l'asterisco, Stripe non l'ha detta per quei pagamenti: controllali nella dashboard di Stripe. Il CSV («pagamenti dell'anno») è quello da mandare al commercialista.
 9. **Codici sconto**: «Valido fino al» è ora già compilato con il 31 dicembre; cambialo se serve.
 10. Restano in italiano (per ora): l'email d'invito all'amico e le email scritte dall'amministrazione al cliente (rinnovo fermato, cambio piano, rimborso, password provvisoria).
+
+## 4ac. 9W (27 novembre): Welcome MyHouse, prezzi nuovi, promo per sempre, Promo dicembre
+
+La migrazione **073** parte da sola al primo accesso. Poi:
+
+1. **Il nome fuori dal sito** (il sito è già tutto «Welcome MyHouse»):
+   - Stripe → Impostazioni → **Dati pubblici dell'attività**: nome «Welcome MyHouse» e descrizione sull'estratto conto (per esempio `WELCOMEMYHOUSE`).
+   - Stripe → Catalogo prodotti: i prodotti nuovi nascono già con il nome nuovo; quelli vecchi puoi rinominarli a mano (facoltativo, non cambia niente nei pagamenti).
+   - Amministrazione → Impostazioni → Email → **Nome del mittente**: se c'è scritto «MyHouse Welcome» (o se sul server c'è la variabile `MAIL_FROM_NAME`), cambialo.
+   - Fuori dal sito: profili social, Google Business, firme email, Adamo.
+2. **Prezzi nuovi** (87 / 117 / da 167 €): niente da fare su Stripe. Per chi è già abbonato il passaggio lo fa il giro automatico dei richiami (lo stesso dei promemoria): entro un giorno, 15 abbonamenti per volta. Serve che il giro giri (Diagnostica → richiami). Non parte nessuna email; al rinnovo pagano il prezzo nuovo e l'avviso 30 e 7 giorni prima dice già l'importo nuovo. Le offerte su misura e gli abbonamenti dello staff restano come sono. Nella scheda del cliente, finché non è fatto, c'è «passa al listino nuovo al prossimo giro»; nel Registro azioni `listino.fatto`.
+3. **Sconto per sempre**: la Promo novembre ora vale per sempre anche per chi l'ha già usata; il giro dei richiami mette lo sconto sul loro rinnovo su Stripe. Ai rinnovi lo sconto per sempre **si somma** a inviti e giudizio (17% + 5% = 22%; al massimo 17% + 55% = 72%). Per le promo future: Amministrazione → Codici sconto → casella **«Per sempre»** (senza, lo sconto vale solo il primo anno, come prima).
+4. **Promo dicembre** (DICEMBRE17, 17% per sempre): parte da sola il 1° dicembre e finisce il 31; la Promo novembre finisce il 30. I testi della fascia sono in Testi e foto → Promo, le tre voci «promo per sempre». Se avevi riscritto a mano quelli della Promo novembre, quelli restano per le promo «del primo anno».
+5. **Termini**: aggiunti i paragrafi della promo per sempre e della Promo dicembre. Sono a favore dei clienti: la versione **non** è cambiata e nessuno deve riaccettare. Se vuoi che li vedano nella finestra degli aggiornamenti, cambia la data in Impostazioni → Titolare e documenti legali.
+6. Poi Amministrazione → Sistema → **Cache** → «Svuota tutto» (CSS, JavaScript e immagini nuove).
 
 ## 4ab. 9V aggiunta (24 novembre): «Modifica Casa Checco»
 
@@ -439,7 +454,7 @@ La migrazione **069** parte da sola al primo accesso (nome «Concierge AI» nell
 
 1. **Amministrazione → Impostazioni → Concierge AI**: «Anche sulla guida vetrina della home» ora è **acceso di serie**, ma se in passato lo avevi salvato spento (resta scritto in `config.local.php`), resta spento: **spuntalo e salva**. Sotto c'è «Domande al mese sulla guida vetrina» (di serie 300, separato dal limite dei clienti); ogni visitatore può fare 5 domande ogni 10 minuti.
 2. **La foto di Francesco**: Amministrazione → Clienti → la scheda dell'account della vetrina → riquadro «Guida vetrina» → **«Rifai la vetrina»**. Controlla poi la demo: in alto il ritratto di Francesco, nessun numero WhatsApp finto.
-3. **Facoltativo, il costo vero**: nella console di Anthropic (organizzazione) **Settings → Admin keys → Create admin key** (comincia con `sk-ant-admin`): incollala **solo** in Impostazioni → Concierge AI → «Admin API key di Anthropic», mai in chat né in un file. Può leggere i costi di tutta l'organizzazione: se nell'organizzazione hai altri progetti, scrivi anche l'**ID del workspace** MyHouse Welcome (Settings → Workspaces, comincia con `wrkspc_`). In Amministrazione → Concierge AI compare «Costo vero da Anthropic» accanto alla stima (si aggiorna ogni 30 minuti; Anthropic lo aggiorna con qualche minuto di ritardo). Senza Admin key la pagina mostra solo la stima.
+3. **Facoltativo, il costo vero**: nella console di Anthropic (organizzazione) **Settings → Admin keys → Create admin key** (comincia con `sk-ant-admin`): incollala **solo** in Impostazioni → Concierge AI → «Admin API key di Anthropic», mai in chat né in un file. Può leggere i costi di tutta l'organizzazione: se nell'organizzazione hai altri progetti, scrivi anche l'**ID del workspace** Welcome MyHouse (Settings → Workspaces, comincia con `wrkspc_`). In Amministrazione → Concierge AI compare «Costo vero da Anthropic» accanto alla stima (si aggiorna ogni 30 minuti; Anthropic lo aggiorna con qualche minuto di ritardo). Senza Admin key la pagina mostra solo la stima.
 4. **Testi e foto → Concierge AI**: controlla i testi nuovi della sezione in home (IT/EN) e la nota della finta chat. In «Come funziona» puoi caricare le schermate verticali per il telefono (`pannello-1-m`, `-2-m`, `-3-m`): senza, il telefono mostra quelle orizzontali intere.
 5. **Inviti**: un amico attivato a mano con il bonifico ora conta (come un pagamento con Stripe); con l'omaggio no, finché non paga. Per provare la barra con account tuoi c'è «Conta l'invito (prova)» nella scheda dell'amico: compare solo se chi invita o l'amico è **staff** o **di prova**, e chiede il motivo.
 6. **Da controllare sul live** (5.11): `canonical`, `hreflang` e `og:url` escono solo se in Impostazioni → Sito è salvato il dominio; controlla anche che i link non abbiano `/index.php/` (indirizzi puliti).
@@ -516,7 +531,7 @@ Il messaggio compare quando il controllo dei prezzi prima del Checkout non va a 
 4. **Pagamenti di prova**: da ora i pagamenti fatti con le chiavi di test di Stripe non entrano nei conti (lo dice il webhook). Quelli di prima, se ci sono, escludili a mano da Cassa → mese → «Escludi dai conti» con il motivo.
 5. **Account di prova da togliere**: scheda cliente → «Elimina account di prova» (solo senza pagamenti live), scrivendo «ELIMINA» e il codice cliente.
 6. **Staff**: per chi prova il sistema da dentro, scheda cliente → «Attiva come staff» (piano, strutture, fino al). Non usare più i piani dati a mano per i tester.
-7. **Portfolio**: se hai creato a mano su Stripe il Price della prima struttura (`stripe_price_id`), il nome della voce in fattura è quello del prodotto su Stripe: chiamalo «MyHouse Welcome Portfolio — prima struttura». Poi, una volta, `php app/tools/verifica-stripe.php --portfolio` (va bene anche con la chiave live: solo letture) o Anomalie → «Ricontrolla con Stripe le quantità dei Portfolio».
+7. **Portfolio**: se hai creato a mano su Stripe il Price della prima struttura (`stripe_price_id`), il nome della voce in fattura è quello del prodotto su Stripe: chiamalo «Welcome MyHouse Portfolio — prima struttura». Poi, una volta, `php app/tools/verifica-stripe.php --portfolio` (va bene anche con la chiave live: solo letture) o Anomalie → «Ricontrolla con Stripe le quantità dei Portfolio».
 8. **Foto di Francesco (demo)**: manca. Metti un ritratto generato con l'IA (nessuna persona reale), quadrato, almeno 800×800, in `_brief/claude-code/pronti/checco/francesco.jpg` e chiedi di collegarlo alla demo; fino ad allora resta la porta rossa.
 
 ## 4r. 9N 10 bis, 9O, 9P, 9Q (21 ottobre): offerta su misura, rimborsi, SEPA, IVA per i privati, partner, email «Fino al 55%» e bozze
@@ -567,7 +582,7 @@ A mano, come prima:
 Dalla migrazione `022` Plus e Portfolio hanno le traduzioni suggerite, anche chi è già abbonato. Finché non inserisci le chiavi, i clienti possono accenderle ma non ne ricevono: la pagina lo dice.
 
 **Una volta, su AWS:**
-1. **IAM → Utenti → Crea utente**, per esempio `myhousewelcome-translate`, senza accesso alla console.
+1. **IAM → Utenti → Crea utente**, per esempio `welcomemyhouse-translate`, senza accesso alla console.
 2. Aggiungi una policy in linea con il solo permesso necessario:
    ```json
    {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": "translate:TranslateText", "Resource": "*"}]}
@@ -594,7 +609,7 @@ Dal tuo computer, senza toccare il sito: `php prove/firma-translate-botocore.php
 
 ## 4d. SEO e GEO (Amministrazione → Sistema → SEO e GEO)
 
-1. **Dominio**: scrivi `https://myhousewelcome.it` (senza barra finale) quando il sito è sul suo dominio. Senza dominio non c'è il canonical e sitemap e llms.txt usano l'indirizzo di adesso.
+1. **Dominio**: scrivi `https://welcomemyhouse.it` (senza barra finale) quando il sito è sul suo dominio. Senza dominio non c'è il canonical e sitemap e llms.txt usano l'indirizzo di adesso.
 2. **Il sito deve stare nella radice del dominio**: in una sottocartella (come `/welcomebook`) robots.txt e llms.txt non vengono letti. La pagina lo dice in rosso.
 3. **Search Console e Bing**: crea la proprietà, scegli la verifica con il «tag HTML» e incolla il codice (va bene anche tutto il tag). Poi invia `https://…/sitemap.xml`.
 4. **Immagine per la condivisione**: JPG o PNG 1200 × 630. Finché non la carichi si usa `assets/og.jpg`. Con S3 senza indirizzo pubblico l'indirizzo dell'immagine scade: meglio impostare l'indirizzo pubblico del bucket.
@@ -634,7 +649,7 @@ Usa solo foto di cui hai i diritti, e nessun locale reale riconoscibile nella de
 2. **IVA.** I prezzi sono IVA esclusa. Bisogna decidere se attivare Stripe Tax (`STRIPE_AUTOMATIC_TAX`) e come trattare i clienti esteri: la scheda di fatturazione oggi è solo italiana.
 3. La frase della FAQ «Ricevo fattura? Sì. …» va confermata.
 4. Il conguaglio quando si aggiunge una struttura: dal pannello va sulla prossima fattura (`create_prorations`); da Account & Fatturazione si paga subito. Le due fatture devono essere coerenti.
-5. I codici sconto per la prenotazione diretta li gestisce l'host sul **suo** sito: MyHouse Welcome li mostra soltanto.
+5. I codici sconto per la prenotazione diretta li gestisce l'host sul **suo** sito: Welcome MyHouse li mostra soltanto.
 
 ## 7. Da verificare con il consulente privacy
 

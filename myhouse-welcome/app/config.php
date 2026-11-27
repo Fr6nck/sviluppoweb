@@ -1,5 +1,5 @@
 <?php
-// MyHouse Welcome — configurazione.
+// Welcome MyHouse — configurazione.
 
 // Aperto direttamente dal web (non da index.php): non risponde niente.
 if (PHP_SAPI !== 'cli' && isset($_SERVER['SCRIPT_FILENAME']) && realpath((string) $_SERVER['SCRIPT_FILENAME']) === __FILE__) {
@@ -16,7 +16,7 @@ $env = fn(string $k, string $d = '') => (($v = getenv($k)) !== false && $v !== '
 $bool = fn(string $k, bool $d = false) => in_array(strtolower($env($k, $d ? '1' : '0')), ['1', 'true', 'yes', 'on'], true);
 
 $config = [
-    'app_name' => 'MyHouse Welcome',
+    'app_name' => 'Welcome MyHouse',
     // L'indirizzo pubblico, senza barra finale: https://welcome.myhouse.it oppure
     // https://blackout.in/welcomebook. Vuoto = si ricava dalla richiesta.
     // È quello che finisce nei QR e nelle email: conviene impostarlo.
@@ -92,7 +92,7 @@ $config = [
         'sezione_attiva' => $bool('MHW_VETRINA_SEZIONE', false),   // «Le guide dei nostri host» in home e /guide-dei-nostri-host
         'dicono_attiva'  => $bool('MHW_DICONO_SEZIONE', false),    // «Cosa dicono di noi» in home
     ],
-    // 9B · «Ti piace MyHouse Welcome?»: lo sconto per chi lascia un giudizio (di serie acceso, 5%) e la sezione in home.
+    // 9B · «Ti piace Welcome MyHouse?»: lo sconto per chi lascia un giudizio (di serie acceso, 5%) e la sezione in home.
     'giudizi' => [
         'sconto_attivo' => $bool('MHW_GIUDIZI_SCONTO', true),
         'percentuale'   => (int) $env('MHW_GIUDIZI_PERCENTO', '5'),
@@ -130,7 +130,7 @@ $config = [
         'encryption'=> $env('MAIL_ENCRYPTION', 'tls'),
         // 9H · Per ora un solo indirizzo per tutto (decisione del titolare): assistenza@welcomemyhouse.it, sul dominio del sito.
         'from'      => $env('MAIL_FROM', 'assistenza@welcomemyhouse.it'),
-        'from_name' => $env('MAIL_FROM_NAME', 'MyHouse Welcome'),
+        'from_name' => $env('MAIL_FROM_NAME', 'Welcome MyHouse'),
     ],
 
     'storage' => [

@@ -184,7 +184,7 @@ return [
     'directions'               => 'Wskazówki dojazdu',
 
     'kind.extras'              => 'Usługi dodatkowe',
-    'made_with'                => 'Przewodnik stworzony w MyHouse Welcome',
+    'made_with'                => 'Przewodnik stworzony w Welcome MyHouse',
     'create_yours'             => 'Stwórz swój',
     'review_title'             => 'Podobał się pobyt?',
     'review_lead'              => 'Opinia bardzo pomaga gospodarzowi.',

@@ -241,6 +241,8 @@ final class Billing
                    + ($customerId !== '' ? ['stripe_customer_id' => $customerId] : []), 'id = :aid', ['aid' => $acc]);
         Db::run('UPDATE package_versions SET sold_count = sold_count + 1 WHERE id = ?', [$order['package_version_id']]);
         Sconti::registra($order, $sconto);   // un utilizzo per ordine, nella stessa transazione
+        // 9W · Pagato con una promo «per sempre»: lo sconto va subito anche sul rinnovo (coupon del rinnovo, a transazione chiusa).
+        if (Sconti::bloccato((int) $order['account_id'])) Sconti::accoda((int) $order['account_id']);
         Inviti::pagato($order);              // se è un amico invitato, l'invito diventa valido
         Giudizi::pagato($order);             // 9B: lo sconto del giudizio sul primo anno è stato applicato
         // 9O · Il cliente di un partner: la commissione sull'imponibile incassato (il prezzo meno lo sconto di Stripe).

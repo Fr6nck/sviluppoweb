@@ -17,7 +17,7 @@ $copertina = !empty($pr['cover_id']) ? Media::url((int) $pr['cover_id']) : ($pr[
         <path d="M6 28V14a10 10 0 0 1 20 0v14" stroke="currentColor" style="color:var(--full-ink,#f6f0e5)" stroke-width="2.2" stroke-linecap="round"></path>
         <circle cx="20.5" cy="19" r="1.9" fill="#ee7a4a"></circle>
       </svg>
-      <span style="font-size:14px;font-weight:500;letter-spacing:-.2px;color:var(--full-ink,#f6f0e5)">myhouse welcome</span>
+      <span style="font-size:14px;font-weight:500;letter-spacing:-.2px;color:var(--full-ink,#f6f0e5)">welcome myhouse</span>
       <?php if ($demoS): ?><span class="demo-tag"><?= Support::e(I18n::t($loc, 'demo_badge')) ?></span><?php endif; ?>
     </<?= $demoS ? 'a' : 'div' ?>>
     <div class="stack" style="gap:24px">

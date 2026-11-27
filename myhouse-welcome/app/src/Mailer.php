@@ -79,7 +79,7 @@ final class Mailer
     /**
      * L'HTML di un'email con il marchio (8A: impaginazione dei grandi servizi). Tutto centrato: in alto
      * il marchio come immagine (assets/email/marchio-email.png, 282×42; con le immagini bloccate resta
-     * l'alt «myhouse welcome»), il titolo in serif, il testo largo al massimo 440 px, UN bottone pieno con
+     * l'alt «welcome myhouse»), il titolo in serif, il testo largo al massimo 440 px, UN bottone pieno con
      * il link in chiaro sotto, la nota piccola. Sotto una riga sottile il piede: ragione sociale, partita
      * IVA e indirizzo, poi Assistenza · Privacy · Termini, e a destra le icone social solo se in «SEO e
      * GEO» ci sono gli indirizzi. Tabelle e stili in linea (Gmail, Outlook, Apple Mail). I paragrafi sono
@@ -105,7 +105,7 @@ final class Mailer
            . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#faf5ec"><tr><td align="center" style="padding:32px 12px">'
            . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:#ffffff;border-radius:16px">'
            . '<tr><td align="center" style="padding:40px 28px 8px">'
-           . '<img src="' . $e($radice . '/assets/email/marchio-email.png') . '" width="282" height="42" alt="myhouse welcome" '
+           . '<img src="' . $e($radice . '/assets/email/marchio-email.png') . '" width="282" height="42" alt="welcome myhouse" '
            . 'style="display:block;width:282px;max-width:100%;height:auto;border:0;' . $font . ';font-size:22px;font-weight:600;color:#231b12">'
            . '</td></tr>'
            . '<tr><td align="center" style="padding:32px 28px 0">'
@@ -174,7 +174,7 @@ final class Mailer
         if ($scelte) $t .= "\n";
         if ($bottone) $t .= $bottone[0] . ': ' . $bottone[1] . "\n\n";
         if ($nota !== null && $nota !== '') $t .= $nota . "\n\n";
-        $t .= "MyHouse Welcome" . ($aiuto !== '' ? (self::en() ? "\nNeed help? Write to us at $aiuto" : "\nHai bisogno di aiuto? Scrivici a $aiuto") : '') . self::SEGNO_CODICE;
+        $t .= "Welcome MyHouse" . ($aiuto !== '' ? (self::en() ? "\nNeed help? Write to us at $aiuto" : "\nHai bisogno di aiuto? Scrivici a $aiuto") : '') . self::SEGNO_CODICE;
         if ($piede !== null && $piede !== '') $t .= "\n\n—\n" . $piede;
         return $t;
     }
@@ -199,7 +199,7 @@ final class Mailer
 
     public static function manda(string $to, string $oggetto, string $titolo, array $paragrafi, ?array $bottone = null, ?string $nota = null, ?array $piede = null): bool
     {
-        return self::send($to, $oggetto . ' — MyHouse Welcome', self::testo($titolo, $paragrafi, $bottone, $nota, $piede[1] ?? null),
+        return self::send($to, $oggetto . ' — Welcome MyHouse', self::testo($titolo, $paragrafi, $bottone, $nota, $piede[1] ?? null),
                           self::layout($titolo, $paragrafi, $bottone, $nota, $piede[0] ?? null));
     }
 

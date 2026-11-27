@@ -1,4 +1,4 @@
-/* MyHouse Welcome — foglio di stile unico.
+/* Welcome MyHouse — foglio di stile unico.
    Segue la direzione "Fauna": foto a tutta larghezza, riquadri di colore pieno,
    Gloock sui titoli, Onest su tutto il resto, angoli 8/18/26 e tondo pieno
    su ogni cosa che si preme. Le misure vengono dalle tavole del progetto. */
@@ -3524,6 +3524,9 @@ tr[draggable="true"]{cursor:grab} tr.giudizi-trascina{opacity:.5}
 .plan--dark .price--barrato{color:var(--inverse-muted)}
 .plan__poi{display:block;font-size:14px;line-height:20px;color:var(--muted)}
 .plan--dark .plan__poi{color:var(--inverse-muted)}
+/* 9W · «Prezzo bloccato per sempre» sotto il prezzo della promo per sempre */
+.plan__poi--sempre{font-weight:600;color:var(--pine)}
+.plan--dark .plan__poi--sempre{color:var(--on-dark,#fff)}
 
 /* 9U · Il telefono della home come la guida demo pubblicata: il tondo con la foto del profilo sopra la copertina (bordo
    bianco, pallino verde, come .host-tondo nella guida), il logo al posto del simbolo, i colori delle sezioni della palette. */

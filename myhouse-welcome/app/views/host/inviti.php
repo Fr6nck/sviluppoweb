@@ -44,14 +44,14 @@ $nI = ['{amico}' => Inviti::AMICO, '{passo}' => Inviti::PASSO, '{max}' => Inviti
     <div class="row" style="gap:8px">
       <button type="button" class="btn btn--sm" data-copia-da="inv-messaggio" data-copiato="<?= t('Messaggio copiato') ?>" hidden><?= Icon::svg('copy', 15) ?><?= t('Copia') ?></button>
       <a class="btn btn--ghost btn--sm" href="https://wa.me/?text=<?= rawurlencode($messaggio) ?>" target="_blank" rel="noopener" data-wa-da="inv-messaggio"><?= Icon::svg('whatsapp', 15) ?><?= t('Manda su WhatsApp') ?></a>
-      <a class="btn btn--ghost btn--sm" href="mailto:?subject=<?= rawurlencode(t('Ti invito su MyHouse Welcome')) ?>&amp;body=<?= rawurlencode($messaggio) ?>" data-mail-da="inv-messaggio"><?= Icon::svg('message', 15) ?>Email</a>
+      <a class="btn btn--ghost btn--sm" href="mailto:?subject=<?= rawurlencode(t('Ti invito su Welcome MyHouse')) ?>&amp;body=<?= rawurlencode($messaggio) ?>" data-mail-da="inv-messaggio"><?= Icon::svg('message', 15) ?>Email</a>
     </div>
     <form method="post" action="<?= b() ?>/inviti/anteprima" class="invito-anteprima"><?= MHW\Csrf::field() ?>
       <input type="hidden" name="mostra" value="0">
       <label class="check"><input type="checkbox" name="mostra" value="1" <?= $anteprima ? 'checked' : '' ?> data-invia-subito>
         <span><?= t('Mostra la copertina e il nome della mia struttura nell\'anteprima dell\'invito') ?></span></label>
       <noscript><button class="btn btn--ghost btn--sm"><?= t('Salva') ?></button></noscript>
-      <p class="help" style="margin:0"><?= t('Spenta, chi apre il tuo link vede un\'anteprima generica di MyHouse Welcome. Indirizzo, Wi-Fi e contatti non si vedono mai.') ?></p>
+      <p class="help" style="margin:0"><?= t('Spenta, chi apre il tuo link vede un\'anteprima generica di Welcome MyHouse. Indirizzo, Wi-Fi e contatti non si vedono mai.') ?></p>
     </form>
   </section>
 

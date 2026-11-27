@@ -12,7 +12,7 @@ $title = $U('Pagina partner', 'Partner page'); ?>
 <?php if (!$p): ?>
   <section class="panel stack" style="max-width:560px" aria-labelledby="pt-accedi">
     <h1 id="pt-accedi" style="margin:0">Pagina partner.</h1>
-    <p class="muted" style="margin:0">Scrivi l'email con cui sei partner di MyHouse Welcome: ti mandiamo un link per entrare, senza password (vale <?= ProgrammaPartner::ORE_LINK ?> ore, una volta sola).
+    <p class="muted" style="margin:0">Scrivi l'email con cui sei partner di Welcome MyHouse: ti mandiamo un link per entrare, senza password (vale <?= ProgrammaPartner::ORE_LINK ?> ore, una volta sola).
       <span lang="en">Partners: enter your email and we send you a link to sign in, no password needed.</span></p>
     <form method="post" action="<?= b() ?>/partner/accedi" class="stack" style="gap:10px"><?= Csrf::field() ?>
       <div class="field" style="margin:0"><label for="pt-email">Email</label><input id="pt-email" name="email" type="email" required autocomplete="email"></div>
@@ -57,7 +57,7 @@ $title = $U('Pagina partner', 'Partner page'); ?>
     <p class="small muted" style="margin:0"><?= $U('Qui vedi solo struttura, città, piano, date e la tua commissione: i dati personali e di pagamento dei clienti restano a loro.', 'Here you only see property, town, plan, dates and your commission: clients\' personal and payment details stay with them.') ?></p>
   </section>
   <section class="panel stack" aria-labelledby="pt-materiali">
-    <h2 id="pt-materiali" style="font-size:22px;margin:0"><?= $U('Come presentare MyHouse Welcome ai tuoi proprietari', 'How to present MyHouse Welcome to your owners') ?></h2>
+    <h2 id="pt-materiali" style="font-size:22px;margin:0"><?= $U('Come presentare Welcome MyHouse ai tuoi proprietari', 'How to present Welcome MyHouse to your owners') ?></h2>
     <ul class="stack small" style="gap:6px;margin:0;padding-left:20px">
       <li><?= $U('Una guida digitale per gli ospiti, sul telefono: arrivo, Wi-Fi, regole, consigli in zona, nelle loro lingue. Niente app.', 'A digital guide for guests, on their phone: arrival, Wi-Fi, house rules, local tips, in their languages. No app.') ?></li>
       <li><?= $U('Meno domande ripetute su WhatsApp, recensioni migliori, più prenotazioni dirette.', 'Fewer repeated WhatsApp questions, better reviews, more direct bookings.') ?></li>

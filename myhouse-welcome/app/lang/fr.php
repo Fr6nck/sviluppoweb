@@ -190,7 +190,7 @@ return [
 
     // Fase 5: firma, recensioni, prenotazione diretta, servizi extra
     'kind.extras'              => 'Services en plus',
-    'made_with'                => 'Guide créé avec MyHouse Welcome',
+    'made_with'                => 'Guide créé avec Welcome MyHouse',
     'create_yours'             => 'Créez le vôtre',
     'review_title'             => 'Votre séjour vous a plu ?',
     'review_lead'              => 'Un avis aide beaucoup votre hôte.',

@@ -6,7 +6,7 @@ use function MHW\a; use MHW\{Support, I18n}; ?>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title><?= Support::e($title ?? 'MyHouse Welcome') ?></title>
+<title><?= Support::e($title ?? 'Welcome MyHouse') ?></title>
 <meta name="robots" content="<?= Support::ROBOTS_GUIDE ?>">
 <?php include __DIR__ . '/_og_guida.php'; ?>
 <meta name="theme-color" content="#17130d">

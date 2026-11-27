@@ -1,4 +1,4 @@
-# MyHouse Welcome — revisione del copy e delle immagini
+# Welcome MyHouse — revisione del copy e delle immagini
 
 Base: `welcomebook-v2-definitivo-2.zip`. Ho letto tutto il testo che si vede nel pannello dell'attività, in amministrazione e sul sito pubblico (pagine, messaggi di conferma e di errore, email, testi dei piani nel database), l'ho reso coerente e l'ho corretto direttamente nei file. Questo documento dice cosa è cambiato e perché.
 
@@ -135,7 +135,7 @@ Non ho inventato numeri, percentuali o testimonianze: ogni frase nuova descrive 
 | `scena-qr.jpg` | Adatta e chiara: il QR in cornice accanto alla porta, il telefono che lo inquadra. Il testo alternativo la descrive bene. | Niente. |
 | `scena-ospite.jpg` | Adatta: sul telefono si leggono Wi-Fi, Check-in, Parcheggio, Dove mangiare, gli stessi nomi della guida. | Niente. |
 | `scena-host.jpg` | **Un problema.** Sullo schermo del portatile si leggeva «La chiave si trova nella key box accanto al portone. Codice: 4821.»: l'immagine mostrava proprio quello che il prodotto dice di non fare (non scrivere codici nella guida). | Ho tolto «Codice: 4821.» dalla foto e rigenerato le due versioni WebP. Resta un limite: il pannello disegnato nella foto non è quello vero (voci «Home», «Alloggi», «Guida ospiti»). A dimensione di pagina non si legge; se rifai la foto, usa una schermata vera. |
-| `pannello-1.webp`, `-2`, `-3` (blocco «Come funziona») | **Due problemi.** Erano state catturate senza i caratteri del sito: titoli in un serif di ripiego, non in Gloock. E il QR della terza si può inquadrare davvero: porta a `myhousewelcome.it/q/8GDAg8m8plZS`, un indirizzo che non ho potuto controllare. | Rifatte tutte e tre a 1200×750 con Gloock e Onest e con i testi nuovi («Dal QR», «Tema»). Il QR della terza ora porta a `myhousewelcome.it/g/casa-checco/benvenuto`, come il QR «Inquadra e prova la demo» della landing. |
+| `pannello-1.webp`, `-2`, `-3` (blocco «Come funziona») | **Due problemi.** Erano state catturate senza i caratteri del sito: titoli in un serif di ripiego, non in Gloock. E il QR della terza si può inquadrare davvero: porta a `welcomemyhouse.it/q/8GDAg8m8plZS`, un indirizzo che non ho potuto controllare. | Rifatte tutte e tre a 1200×750 con Gloock e Onest e con i testi nuovi («Dal QR», «Tema»). Il QR della terza ora porta a `welcomemyhouse.it/g/casa-checco/benvenuto`, come il QR «Inquadra e prova la demo» della landing. |
 | `checco-telefono.jpg` (nel telefono in testa alla pagina) | Adatta. È decorativa e ha il testo alternativo vuoto, come deve essere: il telefono intero ha la sua etichetta. | Niente. |
 | `og.jpg` (anteprima quando condividi il link) | Chiara. Dice «case vacanza, B&B e agriturismi»: mancano gli affittacamere, che il sito nomina sempre. | Niente: è un'immagine con il testo dentro, va rifatta dal file di origine. |
 | Testi alternativi delle schermate | «con palette, testo e copertina» | «con palette, tema e copertina» |

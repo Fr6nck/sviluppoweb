@@ -54,7 +54,7 @@ function riga(string $etichetta, bool $ok, string $dettaglio = ''): void
 
 echo '<!doctype html><html lang="it"><head><meta charset="utf-8">'
    . '<meta name="viewport" content="width=device-width,initial-scale=1">'
-   . '<title>Controllo MyHouse Welcome</title></head>'
+   . '<title>Controllo Welcome MyHouse</title></head>'
    . '<body style="font-family:system-ui,sans-serif;background:#faf5ec;color:#231b12;margin:0;padding:24px">'
    . '<h1 style="font-size:24px">Controllo dell\'installazione</h1>'
    . '<table style="width:100%;max-width:900px;border-collapse:collapse;background:#fff;'

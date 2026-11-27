@@ -97,8 +97,8 @@ final class Benvenuto
         $nome = (string) $p['name'];
         $guida = Support::baseUrl() . '/g/' . $p['slug'];
         $corpo = $en
-            ? "welcome to MyHouse Welcome. The guide for $nome is online now: guests open it on their phone, with no app and no sign-up."
-            : "ti diamo il benvenuto in MyHouse Welcome. La guida di $nome è online da adesso: gli ospiti la aprono dal telefono, senza app e senza registrarsi.";
+            ? "welcome to Welcome MyHouse. The guide for $nome is online now: guests open it on their phone, with no app and no sign-up."
+            : "ti diamo il benvenuto in Welcome MyHouse. La guida di $nome è online da adesso: gli ospiti la aprono dal telefono, senza app e senza registrarsi.";
         $corpo .= "\n\n" . self::coseDaFare($lingua);
         $riga = self::rigaGiudizio($accountId, $lingua);
         if ($riga !== '') $corpo .= "\n\n" . $riga;

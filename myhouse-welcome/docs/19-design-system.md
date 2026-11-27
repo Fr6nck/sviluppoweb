@@ -7,7 +7,7 @@ and demonstrated in [`prototype/design-system.html`](../prototype/design-system.
 
 ## Identity
 
-MyHouse Welcome should feel like a **well-kept house in the Italian countryside,
+Welcome MyHouse should feel like a **well-kept house in the Italian countryside,
 run by someone who knows what they are doing**. Warm, calm, unhurried,
 quietly precise.
 

@@ -33,7 +33,7 @@ Every product decision resolves against it:
 - If it makes the host feel like they are configuring software, it is wrong.
 - If it forces a reprint of a physical QR card, it is a bug.
 
-## What MyHouse Welcome is not
+## What Welcome MyHouse is not
 
 | Not | Why it matters |
 | --- | --- |
@@ -44,7 +44,7 @@ Every product decision resolves against it:
 
 ## Positioning in the MyHouse ecosystem
 
-MyHouse Welcome is the first product in a suite for vacation rentals, B&Bs, guest
+Welcome MyHouse is the first product in a suite for vacation rentals, B&Bs, guest
 houses and small hospitality operators. The consequences for architecture:
 
 - **Accounts are shared.** `accounts` and `users` are modelled as ecosystem-level

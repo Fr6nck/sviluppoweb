@@ -2,13 +2,13 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<title>MyHouse Welcome — Configurazione di Stripe e Adamo</title>
+<title>Welcome MyHouse — Configurazione di Stripe e Adamo</title>
 <link rel="stylesheet" href="_stile.css">
 </head>
 <body>
 
 <div class="copertina">
-  <div class="marchio">MyHouse Welcome · v2</div>
+  <div class="marchio">Welcome MyHouse · v2</div>
   <h1>Configurazione di Stripe e Adamo</h1>
   <p>Come impostare i pagamenti su Stripe e la fattura elettronica con Adamo, e come controllare che sia tutto giusto. Prima tutto in <b>modalità test</b>, poi in live.</p>
   <div class="meta"><span>Webhook: <b>https://DOMINIO/webhook/stripe</b></span><span>Aggiornato al <b>7 ottobre 2026</b></span></div>
@@ -30,8 +30,8 @@
 <h3>1.1 Account e dati dell'attività</h3>
 <ul class="spunte">
   <li>Account Stripe di <b>Blackout Agency</b>, Italia, valuta EUR, verifica dell'identità e conto bancario completati.</li>
-  <li>Impostazioni → Dati pubblici dell'attività: nome «MyHouse Welcome», email <code>info@myhousewelcome.it</code>, telefono, sito, indirizzi di Termini (<code>/termini</code>) e Privacy (<code>/privacy</code>).<small>Questi dati compaiono nella pagina di pagamento, nel portale e nelle email di Stripe.</small></li>
-  <li>Descrizione sull'estratto conto riconoscibile, per esempio <code>MYHOUSEWELCOME</code>.</li>
+  <li>Impostazioni → Dati pubblici dell'attività: nome «Welcome MyHouse», email <code>info@welcomemyhouse.it</code>, telefono, sito, indirizzi di Termini (<code>/termini</code>) e Privacy (<code>/privacy</code>).<small>Questi dati compaiono nella pagina di pagamento, nel portale e nelle email di Stripe.</small></li>
+  <li>Descrizione sull'estratto conto riconoscibile, per esempio <code>WELCOMEMYHOUSE</code>.</li>
   <li>Metodi di pagamento: carte attive (Apple Pay e Google Pay passano dalle carte). Se attivi l'addebito SEPA, servono anche gli eventi «async» del webhook (punto 1.3).</li>
 </ul>
 

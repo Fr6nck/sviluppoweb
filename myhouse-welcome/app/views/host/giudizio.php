@@ -32,7 +32,7 @@ $data = fn(?string $d) => $d ? MHW\Pannello::data($d) : ''; ?>
     <?php elseif ($programma && Giudizi::attivo()): ?>
       <p class="lead"><?= Support::e(tf('Il {n}% di sconto, e la tua guida tra «Le guide dei nostri host» su welcomemyhouse.it.', ['{n}' => $pct])) ?></p>
     <?php else: ?>
-      <p class="lead"><?= t('Ti piace MyHouse Welcome? Raccontacelo: un voto e due righe ci aiutano a migliorare.') ?></p>
+      <p class="lead"><?= t('Ti piace Welcome MyHouse? Raccontacelo: un voto e due righe ci aiutano a migliorare.') ?></p>
     <?php endif; ?>
   </div>
 

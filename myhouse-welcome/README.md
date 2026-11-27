@@ -1,8 +1,8 @@
-# MyHouse Welcome
+# Welcome MyHouse
 
 **Everything your guests need. In one place.**
 
-MyHouse Welcome is the digital guest guide product of the MyHouse ecosystem. An
+Welcome MyHouse is the digital guest guide product of the MyHouse ecosystem. An
 accommodation owner buys a package, answers a guided set of simple questions, and
 gets a fast, mobile-first welcome guide for their guests — reachable by link and by
 QR code, with no app to install.

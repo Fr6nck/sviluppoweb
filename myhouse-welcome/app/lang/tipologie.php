@@ -13,11 +13,11 @@ return [
     'case-vacanza' => [
         'percorso' => '/case-vacanza', 'nome' => 'Case vacanza', 'tipologia' => 'casa_vacanza',
         'foto' => ['portone.jpg', 1200, 900, 'La facciata di una casa con le persiane rosse, una rosa rampicante e il portone ad arco'],
-        'titolo' => 'Guida digitale per case vacanza | MyHouse Welcome',
+        'titolo' => 'Guida digitale per case vacanza | Welcome MyHouse',
         'descrizione' => 'La guida digitale per la tua casa vacanza: arrivo autonomo, Wi-Fi, regole e consigli della zona in un link e un QR Code. La crei gratis.',
         'kicker' => 'Per chi affitta una casa vacanza',
         'h1' => 'La guida digitale per la tua casa vacanza',
-        'intro' => 'Quando non ci sei, la casa deve spiegarsi da sola. Con MyHouse Welcome gli ospiti trovano sul telefono come entrare, la password del Wi-Fi, come funzionano gli elettrodomestici e cosa fare in zona, nella loro lingua.',
+        'intro' => 'Quando non ci sei, la casa deve spiegarsi da sola. Con Welcome MyHouse gli ospiti trovano sul telefono come entrare, la password del Wi-Fi, come funzionano gli elettrodomestici e cosa fare in zona, nella loro lingua.',
         'problemi' => [
             ['Gli ospiti arrivano quando tu non ci sei', 'Volo in ritardo, chiavi in una cassetta, un portone che non si trova: le domande arrivano tutte la sera dell\'arrivo.',
              'In «Check-in & Check-out» scrivi i passi uno per uno, con l\'orario e la foto del portone. L\'ospite li apre dal link che gli mandi prima di partire.'],
@@ -46,7 +46,7 @@ return [
     'bed-and-breakfast' => [
         'percorso' => '/bed-and-breakfast', 'nome' => 'Bed & breakfast', 'tipologia' => 'bnb',
         'foto' => ['tipo-bed-and-breakfast.jpg', 1600, 900, 'L\'ingresso di un B&B in pietra al tramonto, con l\'insegna, le lanterne accese e i vasi fioriti'],
-        'titolo' => 'Guida digitale per B&B | MyHouse Welcome',
+        'titolo' => 'Guida digitale per B&B | Welcome MyHouse',
         'descrizione' => 'La guida digitale per il tuo B&B: orari della colazione, Wi-Fi di ogni camera, regole e consigli della zona in un link e un QR Code per ogni ospite.',
         'kicker' => 'Per chi gestisce un B&B',
         'h1' => 'La guida digitale per il tuo B&B',
@@ -80,7 +80,7 @@ return [
         'percorso' => '/affittacamere', 'nome' => 'Affittacamere', 'tipologia' => 'affittacamere',
         // 9L (revisione): la stessa foto della scheda «Per chi è» (il portone di legno con i fiori), così scheda e pagina coincidono.
         'foto' => ['tipo-affittacamere.jpg', 1200, 900, 'Il portone di legno ad arco di una casa in pietra, tra vasi di fiori, rampicanti e piante aromatiche'],
-        'titolo' => 'Guida digitale per affittacamere | MyHouse Welcome',
+        'titolo' => 'Guida digitale per affittacamere | Welcome MyHouse',
         'descrizione' => 'La guida digitale per il tuo affittacamere: ingresso, spazi comuni, Wi-Fi, regole e consigli in un link e un QR Code, nelle lingue dei tuoi ospiti.',
         'kicker' => 'Per chi gestisce un affittacamere',
         'h1' => 'La guida digitale per il tuo affittacamere',
@@ -113,7 +113,7 @@ return [
     'agriturismi' => [
         'percorso' => '/agriturismi', 'nome' => 'Agriturismi', 'tipologia' => 'agriturismo',
         'foto' => ['tipo-agriturismi.jpg', 1600, 900, 'Un agriturismo in pietra con il cortile fiorito, gli ombrelloni e le colline sullo sfondo'],
-        'titolo' => 'Guida digitale per agriturismi | MyHouse Welcome',
+        'titolo' => 'Guida digitale per agriturismi | Welcome MyHouse',
         'descrizione' => 'La guida digitale per il tuo agriturismo: come arrivare, servizi, ristorante, attività in azienda e sul territorio in un link e un QR Code.',
         'kicker' => 'Per chi gestisce un agriturismo',
         'h1' => 'La guida digitale per il tuo agriturismo',
@@ -148,7 +148,7 @@ return [
     'piu-strutture' => [
         'percorso' => '/piu-strutture', 'nome' => 'Più strutture', 'tipologia' => null,
         'foto' => ['scena-host.jpg', 1200, 750, 'Un host che aggiorna la guida dal portatile, seduto al tavolo di casa'],
-        'titolo' => 'Guida digitale per più strutture ricettive | MyHouse Welcome',
+        'titolo' => 'Guida digitale per più strutture ricettive | Welcome MyHouse',
         'descrizione' => 'Più case, un solo account: ogni struttura ha la sua guida digitale e il suo QR Code, le sezioni si copiano, le statistiche restano distinte. Con Portfolio.',
         'kicker' => 'Per chi gestisce più strutture',
         'h1' => 'Tutte le tue case, una sola regia.',
@@ -173,11 +173,11 @@ return [
     'property-manager' => [
         'percorso' => '/property-manager', 'nome' => 'Property manager', 'tipologia' => null,
         'foto' => ['tipo-property-manager.jpg', 1600, 900, 'Un property manager alla scrivania con le prenotazioni e le foto di più strutture sugli schermi'],
-        'titolo' => 'Programma Partner per property manager | MyHouse Welcome',
-        'descrizione' => 'Gestisci case per conto dei proprietari? Ogni immobile ha la sua guida digitale MyHouse Welcome e tu diventi partner, con una commissione per attivazione.',
+        'titolo' => 'Programma Partner per property manager | Welcome MyHouse',
+        'descrizione' => 'Gestisci case per conto dei proprietari? Ogni immobile ha la sua guida digitale Welcome MyHouse e tu diventi partner, con una commissione per attivazione.',
         'kicker' => 'Per property manager e agenzie',
         'h1' => 'I tuoi proprietari se ne accorgono. I loro ospiti anche.',
-        'intro' => 'Gestisci case per conto di altri? Con MyHouse Welcome ogni immobile ha la sua guida digitale, pronta in un pomeriggio. I proprietari vedono un servizio in più, gli ospiti scrivono meno e recensiscono meglio, e tu diventi partner: guadagni su ogni struttura che porti.',
+        'intro' => 'Gestisci case per conto di altri? Con Welcome MyHouse ogni immobile ha la sua guida digitale, pronta in un pomeriggio. I proprietari vedono un servizio in più, gli ospiti scrivono meno e recensiscono meglio, e tu diventi partner: guadagni su ogni struttura che porti.',
         'problemi_kicker' => 'Perché conviene', 'problemi_titolo' => 'Tre motivi per diventare partner',
         'problemi' => [
             ['Un servizio in più da offrire', 'La guida digitale entra nel tuo pacchetto di gestione: un motivo in più per scegliere te.', ''],

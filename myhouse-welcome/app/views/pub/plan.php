@@ -56,9 +56,9 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans, Iva}; $title = 'Sc
             </div>
             <div class="plan__prezzo">
               <?php if ($scO): ?><span class="price price--barrato"><?= Iva::cifra($scO['prezzo'], $o['currency'], 'data-pieno', 's') ?></span><?php endif; ?>
-              <span class="price"><?= Iva::cifra($scO ? $scO['totale'] : Plans::price($o, $q), $o['currency'], 'data-totale') ?><small> <?= Iva::nota('+ IVA' . ($scO ? ' il primo anno' : ' / anno'), 'IVA inclusa' . ($scO ? ' il primo anno' : ' / anno')) ?></small></span>
+              <span class="price"><?= Iva::cifra($scO ? $scO['totale'] : Plans::price($o, $q), $o['currency'], 'data-totale') ?><small> <?php $soloO = $scO && ($sO = MHW\Sconti::sempreDi($scO)) && (int) $scO['percento'] === $sO['percento']; /* 9W · solo la promo per sempre */ ?><?= Iva::nota('+ IVA' . ($scO ? ($soloO ? ' / anno, per sempre' : ' il primo anno') : ' / anno'), 'IVA inclusa' . ($scO ? ($soloO ? ' / anno, per sempre' : ' il primo anno') : ' / anno')) ?></small></span>
               <?= Iva::dettaglio($scO ? $scO['totale'] : Plans::price($o, $q), false, $o['currency']) ?>
-              <?php if ($scO): ?><span class="plan__sconto-riga">−<?= $scO['percento'] > 0 ? (int) $scO['percento'] . '%' : Support::e(Support::money($scO['sconto'], $o['currency'])) ?> primo anno · poi <?= Iva::cifra($scO['prezzo'], $o['currency'], 'data-pieno-poi') ?></span><?php endif; ?>
+              <?php if ($scO): $sempreO = MHW\Sconti::sempreDi($scO); /* 9W · con la promo per sempre «poi» è il prezzo scontato (prezzi.js lo ricalcola) */ ?><span class="plan__sconto-riga">−<?= $scO['percento'] > 0 ? (int) $scO['percento'] . '%' : Support::e(Support::money($scO['sconto'], $o['currency'])) ?><?= $soloO ? ' per sempre, anche ai rinnovi' : ' primo anno · poi ' . ($sempreO ? Iva::cifra($sempreO['prezzo'], $o['currency'], 'data-pieno-poi data-sconto-poi="' . $sempreO['percento'] . '"') . ' (−' . $sempreO['percento'] . '% per sempre)' : Iva::cifra($scO['prezzo'], $o['currency'], 'data-pieno-poi')) ?></span><?php endif; ?>
               <span class="plan__mese">circa <?= Iva::cifra(Plans::monthly(Plans::price($o, $q)), $o['currency'], 'data-mensile') ?> al mese</span>
             </div>
           </div>
@@ -67,9 +67,9 @@ use function MHW\{a, b}; use MHW\{Support, Csrf, Icon, Plans, Iva}; $title = 'Sc
             <div class="plan__quante"></div>
             <div class="plan__prezzo">
               <?php if ($scO): ?><span class="price price--barrato"><?= Iva::cifra($scO['prezzo'], $o['currency'], '', 's') ?></span><?php endif; ?>
-              <span class="price"><?= Iva::cifra($scO ? $scO['totale'] : (int) $o['price_cents'], $o['currency']) ?><small> <?= Iva::nota('+ IVA' . ($scO ? ' il primo anno' : ' / anno'), 'IVA inclusa' . ($scO ? ' il primo anno' : ' / anno')) ?></small></span>
+              <span class="price"><?= Iva::cifra($scO ? $scO['totale'] : (int) $o['price_cents'], $o['currency']) ?><small> <?php $soloO = $scO && ($sO = MHW\Sconti::sempreDi($scO)) && (int) $scO['percento'] === $sO['percento']; /* 9W · solo la promo per sempre */ ?><?= Iva::nota('+ IVA' . ($scO ? ($soloO ? ' / anno, per sempre' : ' il primo anno') : ' / anno'), 'IVA inclusa' . ($scO ? ($soloO ? ' / anno, per sempre' : ' il primo anno') : ' / anno')) ?></small></span>
               <?= Iva::dettaglio($scO ? $scO['totale'] : (int) $o['price_cents'], false, $o['currency']) ?>
-              <?php if ($scO): ?><span class="plan__sconto-riga">−<?= $scO['percento'] > 0 ? (int) $scO['percento'] . '%' : Support::e(Support::money($scO['sconto'], $o['currency'])) ?> primo anno · poi <?= Iva::cifra($scO['prezzo'], $o['currency']) ?></span><?php endif; ?>
+              <?php if ($scO): $sempreO = MHW\Sconti::sempreDi($scO); ?><span class="plan__sconto-riga">−<?= $scO['percento'] > 0 ? (int) $scO['percento'] . '%' : Support::e(Support::money($scO['sconto'], $o['currency'])) ?><?= $soloO ? ' per sempre, anche ai rinnovi' : ' primo anno · poi ' . ($sempreO ? Iva::cifra($sempreO['prezzo'], $o['currency']) . ' (−' . $sempreO['percento'] . '% per sempre)' : Iva::cifra($scO['prezzo'], $o['currency'])) ?></span><?php endif; ?>
               <span class="plan__mese">circa <?= Iva::cifra(Plans::monthly((int) $o['price_cents']), $o['currency']) ?> al mese</span>
             </div>
           </div>

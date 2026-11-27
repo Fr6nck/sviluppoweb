@@ -36,7 +36,7 @@ $comm = Partner::commissione(); $sc = Partner::sconto(); ?>
   <?php if (!$righe): ?><p class="note note--quiet">Ancora nessuna richiesta.</p><?php else: ?>
   <div class="tablewrap"><table class="data">
     <thead><tr><th>Quando</th><th>Chi</th><th>Strutture e zone</th><th>Messaggio</th><th>Stato e nota</th></tr></thead>
-    <tbody><?php foreach ($righe as $r): $oggetto = rawurlencode('Programma Partner MyHouse Welcome'); ?>
+    <tbody><?php foreach ($righe as $r): $oggetto = rawurlencode('Programma Partner Welcome MyHouse'); ?>
       <tr><td class="small"><?= Support::e(Support::date($r['created_at'])) ?></td>
         <td><b><?= Support::e($r['nome']) ?></b><?= $r['societa'] !== '' ? '<br><span class="small">' . Support::e($r['societa']) . '</span>' : '' ?>
           <br><a class="small" href="mailto:<?= Support::e($r['email']) ?>?subject=<?= $oggetto ?>"><?= Support::e($r['email']) ?></a>

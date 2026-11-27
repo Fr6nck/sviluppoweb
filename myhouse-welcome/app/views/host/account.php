@@ -59,7 +59,11 @@ $statoOrdine = array_map('MHW\\t', ['pending' => 'In attesa', 'awaiting' => 'In 
         <p><span class="badge badge--pine"><span class="dot"></span><?= t('Attivo') ?></span>
           <?php if ($fine): ?><span class="small muted"> · <?= Support::e(tf('si rinnova il {data}', ['{data}' => MHW\Pannello::data($fine)])) ?></span><?php endif; ?></p>
       <?php endif; ?>
-      <?php if (($avuto = MHW\Sconti::avuto((int) $acc['id']))): /* lo sconto del primo anno (6E) */ ?>
+      <?php $bloccatoA = MHW\Sconti::bloccato((int) $acc['id']); /* 9W · la promo per sempre */
+            if ($bloccatoA): ?>
+        <p class="small"><?= t('Sconto per sempre:') ?> <b><?= "\u{2212}" . (int) $bloccatoA['value'] ?>%</b> (<?= Support::e(trim(MHW\Sconti::nomePromo($bloccatoA + ['kind' => 'percent']) . ' ' . $bloccatoA['code'])) ?>).
+          <?php if ($fine): ?><?= Support::e(tf('Vale anche al rinnovo del {data} e a tutti quelli dopo, qualunque piano sceglierai.', ['{data}' => MHW\Pannello::data($fine)])) ?><?php endif; ?></p>
+      <?php elseif (($avuto = MHW\Sconti::avuto((int) $acc['id']))): /* lo sconto del primo anno (6E) */ ?>
         <p class="small"><?= t('Sconto del primo anno:') ?> <b><?= "\u{2212}" . Support::e(Support::money((int) $avuto['discount_cents'])) ?></b> (<?= Support::e($avuto['code']) ?>).
           <?php if ($fine): ?><?= Support::e(tf('Rinnovo a prezzo pieno il {data}.', ['{data}' => MHW\Pannello::data($fine)])) ?><?php endif; ?></p>
       <?php endif; ?>
@@ -69,7 +73,7 @@ $statoOrdine = array_map('MHW\\t', ['pending' => 'In attesa', 'awaiting' => 'In 
             <b><?= Support::e(Support::money((int) $invAcc['scontato'], $invAcc['valuta'])) ?></b> <?= t('+ IVA al prossimo rinnovo') ?></p>
           <p style="margin:0"><?= t('Sconto inviti') ?> <b><?= "\u{2212}" . (int) $invAcc['percento'] ?>%</b>:
             <?= (int) $invAcc['validi'] === 1 ? t('1 amico ha attivato la sua guida') : tf('{n} amici hanno attivato la loro guida', ['{n}' => (int) $invAcc['validi']]) ?>.
-            <?= Support::e(tf('Dal rinnovo successivo torni a {prezzo} + IVA.', ['{prezzo}' => Support::money((int) $invAcc['prezzo'], $invAcc['valuta'])])) ?>
+            <?= Support::e(tf('Dal rinnovo successivo torni a {prezzo} + IVA.', ['{prezzo}' => Support::money($bloccatoA ? MHW\Sconti::netto((int) $invAcc['prezzo'], (int) $bloccatoA['value']) : (int) $invAcc['prezzo'], $invAcc['valuta'])])) ?>
             <a href="<?= b() ?>/inviti"><?= t('Invita altri amici') ?></a></p>
           <?php if (!$invAcc['automatico']): ?><p class="small" style="margin:0"><?= t('Il rinnovo automatico è disattivato: lo sconto vale solo sul rinnovo.') ?></p><?php endif; ?>
         </div>
@@ -243,12 +247,12 @@ $statoOrdine = array_map('MHW\\t', ['pending' => 'In attesa', 'awaiting' => 'In 
     <p class="small" style="margin:0"><?php if ($schA && !empty($schA['ritirato_at'])): ?><?= Support::e(tf('Ti sei ritirato dal programma il {data}: la scheda e il giudizio non si vedono sul sito.', ['{data}' => MHW\Pannello::data((string) $schA['ritirato_at'])])) ?>
       <?php elseif ($rq['aderito']): ?><?= t('Hai aderito: la tua scheda tra «Le guide dei nostri host», le immagini mostrate, il giudizio e il ritiro sono nella pagina del programma.') ?>
       <?php elseif ($rq['stato'] === 'invito'): ?><?= Support::e(tf('Il {n}% sul prossimo rinnovo e la tua guida tra «Le guide dei nostri host». Lo sconto non dipende dal voto.', ['{n}' => $pctG])) ?>
-      <?php else: ?><?= t('Ti piace MyHouse Welcome? Raccontacelo: un voto e due righe.') ?><?php endif; ?></p>
+      <?php else: ?><?= t('Ti piace Welcome MyHouse? Raccontacelo: un voto e due righe.') ?><?php endif; ?></p>
     <a class="btn btn--ghost btn--sm" style="align-self:flex-start" href="<?= b() ?>/giudizio"><?= t('Apri Giudizio con sconto') ?></a>
   </section>
   <?php elseif (!empty($giudizio)): /* 7D: il giudizio sulla piattaforma e il consenso, ritirabile */ ?>
   <section class="panel stack" id="giudizio" aria-labelledby="giudizio-titolo" style="gap:10px">
-    <h2 id="giudizio-titolo" style="font-size:22px;margin:0"><?= t('Il tuo giudizio su MyHouse Welcome') ?></h2>
+    <h2 id="giudizio-titolo" style="font-size:22px;margin:0"><?= t('Il tuo giudizio su Welcome MyHouse') ?></h2>
     <p style="margin:0"><span class="stelline" aria-label="<?= Support::e(tf('{n} su 5', ['{n}' => (int) $giudizio['rating']])) ?>"><?= str_repeat('★', (int) $giudizio['rating']) . str_repeat('☆', 5 - (int) $giudizio['rating']) ?></span>
       «<?= Support::e($giudizio['body']) ?>»</p>
     <?php if (!empty($giudizio['withdrawn_at'])): ?>

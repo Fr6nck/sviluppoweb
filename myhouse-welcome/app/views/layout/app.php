@@ -22,7 +22,7 @@ $lingueBottoni = function () use ($coppia, $en): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <?php /* Titolo, descrizione, robots, canonical, Open Graph e dati strutturati: Amministrazione → SEO e GEO.
          Le pagine senza $seoPagina (accesso, registrazione…) hanno noindex. */ ?>
-<?= MHW\Seo::head($seoPagina ?? null, $title ?? 'MyHouse Welcome', $descrizione ?? '') ?>
+<?= MHW\Seo::head($seoPagina ?? null, $title ?? 'Welcome MyHouse', $descrizione ?? '') ?>
 <?php include __DIR__ . '/_tema.php'; ?>
 <?php include __DIR__ . '/_icone.php'; ?>
 <?php if (empty($seoPagina)) include __DIR__ . '/_condivisione.php'; ?>
@@ -57,7 +57,7 @@ $lingueBottoni = function () use ($coppia, $en): string {
           return $h;
       }; ?>
 <header class="topbar topbar--sito"><div class="wrap">
-  <a class="brand" href="<?= b() . ($en ? '/en' : '/') ?>"><?= Icon::brand(26) ?><span>myhouse welcome</span></a>
+  <a class="brand" href="<?= b() . ($en ? '/en' : '/') ?>"><?= Icon::brand(26) ?><span>welcome myhouse</span></a>
   <nav class="nav topbar__nav" aria-label="Sito">
     <?php foreach ($voci as [$h, $t]): ?><a href="<?= b() . $h ?>"><?= $t ?></a><?php endforeach; ?>
   </nav>

@@ -61,7 +61,7 @@ $tel = $primo ? trim((string) $primo['phone']) : ''; ?>
   <div class="foglio__chip"><?php foreach ($esempi as $k): ?><span>«<?= Support::e($t($k)) ?>»</span><?php endforeach; ?><?php if ($seconda): ?><span>«<?= Support::e($t2($esempi[0])) ?>»</span><?php endif; ?></div>
   <div class="foglio__piede">
     <?php if ($tel !== ''): ?><p style="margin:0"><?= Support::e($nomeHost !== '' ? I18n::t($loc, 'ask_contact', $nomeHost) : $t('ask_contact_plain')) ?>: <b><?= Support::e($tel) ?></b><?= !empty($primo['whatsapp']) ? ' · WhatsApp' : '' ?></p><?php endif; ?>
-    <p class="tiny"><span><?= Support::e($t('ask_note')) ?></span><span style="flex:none;font-weight:600;color:#231b12">MyHouse Welcome</span></p>
+    <p class="tiny"><span><?= Support::e($t('ask_note')) ?></span><span style="flex:none;font-weight:600;color:#231b12">Welcome MyHouse</span></p>
   </div>
 </div>
 </body>

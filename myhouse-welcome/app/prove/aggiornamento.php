@@ -163,7 +163,7 @@ prova('022 · traduzioni suggerite: Essential resta senza, Plus e Portfolio le h
 prova('Nessun codice porta rimasto', (int) $db->query("SELECT COUNT(*) FROM sections WHERE door_code <> ''")->fetchColumn() === 0);
 prova('Nessun codice porta nelle guide pubblicate', (int) $db->query("SELECT COUNT(*) FROM guide_versions WHERE snapshot LIKE '%door_code%' OR snapshot LIKE '%4729%'")->fetchColumn() === 0);
 $prezzi = $db->query("SELECT p.code, pv.price_cents FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE pv.is_current = 1 AND p.public = 1")->fetchAll(PDO::FETCH_KEY_PAIR);
-prova('Listino nuovo in vendita (9A: Portfolio 117 €)', ($prezzi['essential'] ?? 0) == 9700 && ($prezzi['plus'] ?? 0) == 12700 && ($prezzi['portfolio'] ?? 0) == 11700
+prova('Listino nuovo in vendita (9W: Essential 87 €, Plus 117 €, Portfolio 107 € la prima, quindi 167 € con 2 strutture)', ($prezzi['essential'] ?? 0) == 8700 && ($prezzi['plus'] ?? 0) == 11700 && ($prezzi['portfolio'] ?? 0) == 10700
       && !isset($prezzi['portfolio2']) && !isset($prezzi['portfolio3']), json_encode($prezzi));
 $pf = $db->query("SELECT pv.* FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = 'portfolio' AND pv.is_current = 1")->fetch();
 prova('Portfolio a quantità (9A): 117 € + 60 € la 2ª, scaglioni 3:50 e 6:40, da 2 a 10, Price ID vuoti', $pf && (int) $pf['per_property'] === 1 && (int) $pf['extra_price_cents'] === 6000 && (int) $pf['min_quantity'] === 2 && (int) $pf['max_quantity'] === 10
@@ -354,7 +354,7 @@ $plusOra = $db->query("SELECT pv.id FROM package_versions pv JOIN packages p ON 
 prova('Fase 5 · Plus in vendita con la firma nascondibile, in una versione nuova', $hb > 0
       && $db->query("SELECT value FROM package_features WHERE package_version_id = " . (int) $plusOra . " AND feature_id = $hb")->fetchColumn() === '1');
 $r = http("$BASE/g/$demo");
-prova('Fase 5 · la guida demo pubblicata prima mostra la firma', $r['code'] === 200 && str_contains($r['body'], 'Guida creata con MyHouse Welcome'));
+prova('Fase 5 · la guida demo pubblicata prima mostra la firma', $r['code'] === 200 && str_contains($r['body'], 'Guida creata con Welcome MyHouse'));
 $r = http("$BASE/g/$demo/commiato");
 prova('Fase 5 · commiato senza recensioni (non compilate)', $r['code'] === 200 && pulita($r['body']) && !str_contains($r['body'], 'Ti è piaciuto il soggiorno?'));
 $r = http("$BASE/");

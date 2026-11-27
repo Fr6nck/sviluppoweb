@@ -1,5 +1,5 @@
 -- =============================================================================
--- MyHouse Welcome — PostgreSQL schema
+-- Welcome MyHouse — PostgreSQL schema
 -- Target: PostgreSQL 16+
 -- Conventions documented in docs/14-data-model.md
 --

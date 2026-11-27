@@ -51,7 +51,9 @@
         scrivi(totale, principale, valuta);
         b.querySelectorAll('[data-iva-dettaglio]').forEach(function (d) { d.setAttribute('data-iva-dettaglio', principale); });
         scrivi(b.querySelector('[data-pieno]'), tot, valuta);
-        scrivi(b.querySelector('[data-pieno-poi]'), tot, valuta);
+        // 9W · con la promo per sempre il prezzo dei rinnovi è quello scontato (data-sconto-poi).
+        var poi = b.querySelector('[data-pieno-poi]');
+        if (poi) scrivi(poi, poi.hasAttribute('data-sconto-poi') ? netto(tot, parseInt(poi.getAttribute('data-sconto-poi'), 10)) : tot, valuta);
         // L'equivalente mensile: prezzo annuale / 12, arrotondato al centesimo.
         scrivi(b.querySelector('[data-mensile]'), Math.round(tot / 12), valuta);
         // In media a struttura, e quante.

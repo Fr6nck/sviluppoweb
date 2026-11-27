@@ -79,12 +79,12 @@ final class CambioAbbonamento
         ];
     }
 
-    /** «MyHouse Welcome — passaggio da Plus a Portfolio (2 strutture)», oppure «— Portfolio da 2 a 3 strutture». */
+    /** «Welcome MyHouse — passaggio da Plus a Portfolio (2 strutture)», oppure «— Portfolio da 2 a 3 strutture». */
     public static function descrizione(array $pvAttuale, int $qAtt, array $pvNuova, int $q): string
     {
         $conQ = fn(array $pv, int $n) => $pv['name'] . (Plans::perProperty($pv) ? ' (' . $n . ' struttur' . ($n === 1 ? 'a' : 'e') . ')' : '');
-        if ((string) $pvAttuale['code'] === (string) $pvNuova['code']) return 'MyHouse Welcome — ' . $pvNuova['name'] . " da $qAtt a $q strutture";
-        return 'MyHouse Welcome — passaggio da ' . $conQ($pvAttuale, $qAtt) . ' a ' . $conQ($pvNuova, $q);
+        if ((string) $pvAttuale['code'] === (string) $pvNuova['code']) return 'Welcome MyHouse — ' . $pvNuova['name'] . " da $qAtt a $q strutture";
+        return 'Welcome MyHouse — passaggio da ' . $conQ($pvAttuale, $qAtt) . ' a ' . $conQ($pvNuova, $q);
     }
 
     /** Le voci di Stripe portate alla versione e al numero di strutture dati. Rete: va chiamata fuori dalle transazioni. */
@@ -130,6 +130,17 @@ final class CambioAbbonamento
     {
         $s = self::suStripe($sub, $pvNuova, $q, 'mhw-change-subito-' . $sub['id'] . '-' . $pvNuova['id'] . '-' . $q . '-' . gmdate('YmdHi'));
         Db::tx(fn() => self::aggiornaLocale($sub, $pvNuova, $q, $s, 'subito'));
+    }
+
+    /**
+     * 9W · Il listino è sceso (migrazione 073): l'abbonamento passa subito alla versione nuova, che ha le stesse funzioni e
+     * costa meno. Su Stripe le voci cambiano senza proporzioni: il periodo pagato resta com'è, il rinnovo incassa il prezzo
+     * nuovo. Niente pagamenti né rimborsi. Rete: va chiamata fuori dalle transazioni.
+     */
+    public static function listino(array $sub, array $pvNuova, int $q): void
+    {
+        $s = self::suStripe($sub, $pvNuova, $q, 'mhw-listino-' . $sub['id'] . '-' . $pvNuova['id'] . '-' . $q);
+        Db::tx(fn() => self::aggiornaLocale($sub, $pvNuova, $q, $s, 'listino'));
     }
 
     /** L'ordine per la differenza: si riusa quello uguale ancora in attesa da meno di 30 minuti. */
@@ -258,7 +269,7 @@ final class CambioAbbonamento
                                         : 'Lingue: restano {n} lingue di base e {extra} lingue in più. Le traduzioni nelle altre restano salvate, ma la guida non le mostra.')), ['{n}' => $lingueDopo, '{extra}' => $extraDopo]);
         }
         $funzioni = ['photos' => 'Foto e PDF nelle sezioni: restano salvati, la guida non li mostra.', 'profile_image' => 'Foto profilo: resta salvata, la guida non la mostra.',
-                     'analytics' => 'Statistiche di lettura.', 'hide_branding' => 'La firma «Guida creata con MyHouse Welcome» torna visibile.',
+                     'analytics' => 'Statistiche di lettura.', 'hide_branding' => 'La firma «Guida creata con Welcome MyHouse» torna visibile.',
                      'auto_translation' => 'Traduzioni suggerite: quelle approvate restano.'];
         foreach ($funzioni as $k => $testo) {
             if (Entitlements::valore($ora, $k) > 0 && Entitlements::valore($dopo, $k) === 0) $perde[] = $testo;

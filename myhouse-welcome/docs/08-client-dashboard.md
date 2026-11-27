@@ -21,7 +21,7 @@ Rules the interface holds itself to:
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │  Hello, Marco                                                        │
-│  Your MyHouse Welcome guide is online.                    [Preview]  │
+│  Your Welcome MyHouse guide is online.                    [Preview]  │
 │                                                       [Edit guide ▸] │
 │                                                                      │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌─────────────┐ │
@@ -46,7 +46,7 @@ Three states for the headline, because it is the first thing read:
 
 | Guide state | Headline |
 | --- | --- |
-| Published, no pending changes | Your MyHouse Welcome guide is online. |
+| Published, no pending changes | Your Welcome MyHouse guide is online. |
 | Published with pending changes | You have changes that guests can't see yet. → **Publish** |
 | Draft | Your guide isn't online yet. → **Finish and publish** |
 

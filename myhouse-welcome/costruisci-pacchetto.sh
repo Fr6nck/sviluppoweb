@@ -7,7 +7,7 @@ NOME=${1:-welcomebook}
 FUORI="$QUI/dist"
 BASE="$FUORI/$NOME"
 
-rm -rf "$BASE" "$FUORI/myhouse-welcome-$NOME.zip"
+rm -rf "$BASE" "$FUORI/welcome-myhouse-$NOME.zip"
 mkdir -p "$BASE/app/storage/uploads"
 
 # Quello che sta sul web: il front controller, il foglio di stile, le fotografie.
@@ -32,6 +32,6 @@ printf 'Questa cartella deve essere scrivibile dal server (755 o 775).\n' \
 cp "$BASE/app/storage/LEGGIMI.txt" "$BASE/app/storage/uploads/LEGGIMI.txt"
 
 cd "$FUORI"
-zip -qr "myhouse-welcome-$NOME.zip" "$NOME"
-echo "pronto: dist/myhouse-welcome-$NOME.zip  ($(du -h "myhouse-welcome-$NOME.zip" | cut -f1))"
+zip -qr "welcome-myhouse-$NOME.zip" "$NOME"
+echo "pronto: dist/welcome-myhouse-$NOME.zip  ($(du -h "welcome-myhouse-$NOME.zip" | cut -f1))"
 echo "dentro c'e' la cartella '$NOME/': caricatela intera nella radice pubblica."

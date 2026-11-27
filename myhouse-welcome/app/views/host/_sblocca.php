@@ -23,7 +23,7 @@ $varianti = [
     'foto' => ['plus', t('Foto e PDF sono compresi in Plus'), [t('Foto e PDF accanto ai testi, in ogni sezione e nelle righe'), tf('Tutte le {n} sezioni, senza limite', $nn), t('Le statistiche di lettura della guida')]],
     'sezioni' => ['plus', t('Con Plus hai tutte le sezioni'), [tf('Tutte le {n} sezioni del catalogo, senza limite', $nn), t('Foto e PDF accanto ai testi'), t('La guida in più lingue, con le traduzioni suggerite')]],
     'lingue' => ['plus', t('Più lingue sono comprese in Plus'), [tf('Sei lingue: la tua, le altre tra italiano, inglese, francese, tedesco e spagnolo, e una a scelta tra {extra}', $nn), t('Le traduzioni suggerite, da controllare e confermare'), tf('Tutte le {n} sezioni, con foto e PDF', $nn)]],
-    'firma' => ['plus', t('Nascondere la firma è compreso in Plus'), [t('La guida senza «Guida creata con MyHouse Welcome»'), tf('Tutte le {n} sezioni, con foto e PDF', $nn), t('La guida in più lingue, con le traduzioni suggerite')]],
+    'firma' => ['plus', t('Nascondere la firma è compreso in Plus'), [t('La guida senza «Guida creata con Welcome MyHouse»'), tf('Tutte le {n} sezioni, con foto e PDF', $nn), t('La guida in più lingue, con le traduzioni suggerite')]],
     'strutture' => ['portfolio', t('Più strutture con Portfolio'), [t('Più strutture dallo stesso account, ognuna con la sua guida e il suo QR'), t('Tutto quello che c\'è in Plus'), t('Le sezioni si copiano da una struttura all\'altra')]],
 ];
 $nomiPiano = ['plus' => 'Plus', 'portfolio' => 'Portfolio']; ?>

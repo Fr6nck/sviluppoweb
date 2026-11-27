@@ -83,7 +83,7 @@ ob_start(); ?>
             $piano = preg_replace(["#</li>#", "#</p>#", '#<br>#'], ["\n", "\n\n", "\n"], $B('termini.b.testo'));
             $piano = trim(html_entity_decode(strip_tags($piano), ENT_QUOTES, 'UTF-8'));
             $email = (string) ((MHW\Config::get('legal') ?? [])['contact_email'] ?? ''); ?>
-        <?php if ($email !== ''): ?><p><a class="btn btn--ghost btn--sm" href="mailto:<?= Support::e($email) ?>?subject=<?= rawurlencode($U('Recesso dal contratto MyHouse Welcome', 'Withdrawal from the MyHouse Welcome contract')) ?>&amp;body=<?= rawurlencode($piano) ?>"><?= $U('Compila e manda il modulo per email', 'Fill in and send the form by email') ?></a></p><?php endif; ?>
+        <?php if ($email !== ''): ?><p><a class="btn btn--ghost btn--sm" href="mailto:<?= Support::e($email) ?>?subject=<?= rawurlencode($U('Recesso dal contratto Welcome MyHouse', 'Withdrawal from the Welcome MyHouse contract')) ?>&amp;body=<?= rawurlencode($piano) ?>"><?= $U('Compila e manda il modulo per email', 'Fill in and send the form by email') ?></a></p><?php endif; ?>
       <?php endif; ?>
     </section>
   <?php endforeach; ?>

@@ -4,7 +4,7 @@
 use MHW\Support;
 if (empty($og) || !empty($anteprima)) return; ?>
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="MyHouse Welcome">
+<meta property="og:site_name" content="Welcome MyHouse">
 <meta property="og:title" content="<?= Support::e($og['titolo']) ?>">
 <meta property="og:description" content="<?= Support::e($og['testo']) ?>">
 <meta property="og:image" content="<?= Support::e($og['immagine']) ?>">

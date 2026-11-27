@@ -60,7 +60,7 @@ $gemIds = $campD ? array_map(fn($g) => (int) $g['id'], $campD['gemelle']) : []; 
   </a>
 </div>
 
-<?php include __DIR__ . '/_giudizio_invito.php'; /* 7D: «Ti sta piacendo MyHouse Welcome?» */ ?>
+<?php include __DIR__ . '/_giudizio_invito.php'; /* 7D: «Ti sta piacendo Welcome MyHouse?» */ ?>
 
 <div class="guide-griglia">
   <?php foreach ($props as $pr): $cop = Media::url($pr['cover_media_id'] ? (int) $pr['cover_media_id'] : null);

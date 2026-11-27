@@ -4,7 +4,7 @@
    Riceve $schede, $pagina, $pagine, $totale (Vetrina::tutte). */
 use function MHW\b;
 use MHW\{Support, TestiSito};
-$title = 'Le guide dei nostri host · MyHouse Welcome'; ?>
+$title = 'Le guide dei nostri host · Welcome MyHouse'; ?>
 <section class="blocco dicono tutte-guide" aria-labelledby="tutte-titolo">
   <p class="small"><a href="<?= b() ?>/#guide-host">← Torna alla home</a></p>
   <div class="stack stack--sm" style="max-width:640px">

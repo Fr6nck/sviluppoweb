@@ -94,7 +94,7 @@ final class Inviti
     public static function testoPartenza(): string
     {
         $loc = Pannello::en() ? 'en' : null;
-        $serie = strtr(Pannello::t('Ciao! Uso MyHouse Welcome per la guida digitale della mia struttura e mi trovo bene. Con questo invito hai il {amico}% di sconto sul primo anno: crei la guida gratis e paghi solo quando la pubblichi.'), ['{amico}' => self::AMICO]);
+        $serie = strtr(Pannello::t('Ciao! Uso Welcome MyHouse per la guida digitale della mia struttura e mi trovo bene. Con questo invito hai il {amico}% di sconto sul primo anno: crei la guida gratis e paghi solo quando la pubblichi.'), ['{amico}' => self::AMICO]);
         if (!TestiSito::disponibili()) return $serie;
         $t = trim(html_entity_decode(strip_tags(TestiSito::formatta(TestiSito::get('inviti.messaggio_partenza', $loc), ['amico' => self::AMICO . '%'])), ENT_QUOTES, 'UTF-8'));
         return $t !== '' ? $t : $serie;
@@ -534,8 +534,8 @@ final class Inviti
     private static function testoEmail(string $nome, string $messaggio, string $link, string $codice): array
     {
         $e = fn(string $x) => htmlspecialchars($x, ENT_QUOTES, 'UTF-8');
-        $oggetto = $nome . ' ti invita su MyHouse Welcome: ' . "\u{2212}" . self::AMICO . '% sul primo anno';
-        $intro = $nome . ' usa MyHouse Welcome per la guida digitale della sua struttura e ti invita a provarla.';
+        $oggetto = $nome . ' ti invita su Welcome MyHouse: ' . "\u{2212}" . self::AMICO . '% sul primo anno';
+        $intro = $nome . ' usa Welcome MyHouse per la guida digitale della sua struttura e ti invita a provarla.';
         $sconto = 'Con il suo invito hai il ' . self::AMICO . '% di sconto sul primo anno. Crei la guida gratis e paghi solo quando la pubblichi.';
         $piede = 'Ricevi questa email perché ' . $nome . ' ha scritto il tuo indirizzo nel suo pannello. Non lo conserviamo e non ti scriveremo altro.';
         $paragrafi = array_values(array_filter([$intro, $messaggio !== '' ? '«' . $messaggio . '»' : '', $sconto,

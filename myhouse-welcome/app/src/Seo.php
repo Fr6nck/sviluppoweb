@@ -122,40 +122,40 @@ final class Seo
             'indexnow.chiave' => '',
             // 8H · statistiche delle visite (vuoti = spento): Matomo senza cookie, GA4 e Clarity solo con il consenso.
             'stat.matomo_url' => '', 'stat.matomo_id' => '', 'stat.ga4' => '', 'stat.clarity' => '',
-            'p.home.titolo' => 'Guida digitale per case vacanza e B&B | MyHouse Welcome',
+            'p.home.titolo' => 'Guida digitale per case vacanza e B&B | Welcome MyHouse',
             'p.home.descrizione' => 'Il welcome book digitale con Concierge AI per case vacanza e B&B: check-in, Wi-Fi e consigli in un link o QR Code. Gratis finché non pubblichi.',
-            'p.domande.titolo' => 'Domande frequenti | MyHouse Welcome',
-            'p.piano.titolo' => 'Quale piano scegliere | MyHouse Welcome',
-            'p.piano.descrizione' => 'Tre domande, una risposta: lingue, sezioni e strutture. Ti diciamo quale piano di MyHouse Welcome ti basta, senza pagare per quello che non usi.',
-            'p.domande.descrizione' => 'Le risposte su MyHouse Welcome: prova gratuita, lingue e traduzioni, più strutture, B&B con più camere, fattura, cambio di piano e disdetta.',
-            'p.en.titolo' => 'Digital guest guide for holiday rentals | MyHouse Welcome',
+            'p.domande.titolo' => 'Domande frequenti | Welcome MyHouse',
+            'p.piano.titolo' => 'Quale piano scegliere | Welcome MyHouse',
+            'p.piano.descrizione' => 'Tre domande, una risposta: lingue, sezioni e strutture. Ti diciamo quale piano di Welcome MyHouse ti basta, senza pagare per quello che non usi.',
+            'p.domande.descrizione' => 'Le risposte su Welcome MyHouse: prova gratuita, lingue e traduzioni, più strutture, B&B con più camere, fattura, cambio di piano e disdetta.',
+            'p.en.titolo' => 'Digital guest guide for holiday rentals | Welcome MyHouse',
             'p.en.descrizione' => 'The digital welcome book with Concierge AI for holiday homes and B&Bs: check-in, Wi-Fi and local tips in one link or QR code. Free until you publish.',
-            'p.en-domande.titolo' => 'Frequently asked questions | MyHouse Welcome',
-            'p.guide-host.titolo' => 'Le guide dei nostri host | MyHouse Welcome',
-            'p.guide-host.descrizione' => 'Case vacanza, B&B e agriturismi che usano MyHouse Welcome ogni giorno: le strutture degli host che hanno aderito al programma «Giudizio con sconto».',
-            'p.en-piano.titolo' => 'Which plan to choose | MyHouse Welcome',
-            'p.en-piano.descrizione' => 'Three questions, one answer: languages, sections and properties. We tell you which MyHouse Welcome plan is enough, without paying for what you don\'t use.',
-            'p.en-domande.descrizione' => 'Answers about MyHouse Welcome: free trial, languages and translations, several properties, B&Bs with several rooms, invoices, plan changes and cancelling.',
-            'p.termini.titolo' => 'Termini e condizioni | MyHouse Welcome',
-            'p.termini.descrizione' => 'Le condizioni del servizio MyHouse Welcome: abbonamento annuale, prezzi e rinnovo, cambio di piano, codici sconto e contenuti della guida.',
-            'p.privacy.titolo' => 'Informativa sulla privacy | MyHouse Welcome',
-            'p.privacy.descrizione' => 'Come MyHouse Welcome tratta i dati di host e ospiti: quali dati raccoglie, perché, per quanto tempo, con quali fornitori e i tuoi diritti.',
-            'p.dpa.titolo' => 'Accordo sul trattamento dei dati | MyHouse Welcome',
-            'p.dpa.descrizione' => 'L\'accordo sul trattamento dei dati (art. 28 GDPR) tra MyHouse Welcome e gli host: istruzioni, sicurezza, sub-responsabili, violazioni e cancellazione.',
-            'p.en-termini.titolo' => 'Terms and conditions | MyHouse Welcome',
-            'p.en-termini.descrizione' => 'The terms of the MyHouse Welcome service: yearly subscription, prices and renewal, withdrawal, plan changes, your content and liability.',
-            'p.en-privacy.titolo' => 'Privacy policy | MyHouse Welcome',
-            'p.en-privacy.descrizione' => 'How MyHouse Welcome processes the data of hosts and guests: which data, why, for how long, with which providers, and your rights.',
-            'p.en-dpa.titolo' => 'Data processing agreement | MyHouse Welcome',
-            'p.en-dpa.descrizione' => 'The data processing agreement (art. 28 GDPR) between MyHouse Welcome and hosts: instructions, security, sub-processors, breaches and deletion.',
-            'az.nome' => 'MyHouse Welcome',
+            'p.en-domande.titolo' => 'Frequently asked questions | Welcome MyHouse',
+            'p.guide-host.titolo' => 'Le guide dei nostri host | Welcome MyHouse',
+            'p.guide-host.descrizione' => 'Case vacanza, B&B e agriturismi che usano Welcome MyHouse ogni giorno: le strutture degli host che hanno aderito al programma «Giudizio con sconto».',
+            'p.en-piano.titolo' => 'Which plan to choose | Welcome MyHouse',
+            'p.en-piano.descrizione' => 'Three questions, one answer: languages, sections and properties. We tell you which Welcome MyHouse plan is enough, without paying for what you don\'t use.',
+            'p.en-domande.descrizione' => 'Answers about Welcome MyHouse: free trial, languages and translations, several properties, B&Bs with several rooms, invoices, plan changes and cancelling.',
+            'p.termini.titolo' => 'Termini e condizioni | Welcome MyHouse',
+            'p.termini.descrizione' => 'Le condizioni del servizio Welcome MyHouse: abbonamento annuale, prezzi e rinnovo, cambio di piano, codici sconto e contenuti della guida.',
+            'p.privacy.titolo' => 'Informativa sulla privacy | Welcome MyHouse',
+            'p.privacy.descrizione' => 'Come Welcome MyHouse tratta i dati di host e ospiti: quali dati raccoglie, perché, per quanto tempo, con quali fornitori e i tuoi diritti.',
+            'p.dpa.titolo' => 'Accordo sul trattamento dei dati | Welcome MyHouse',
+            'p.dpa.descrizione' => 'L\'accordo sul trattamento dei dati (art. 28 GDPR) tra Welcome MyHouse e gli host: istruzioni, sicurezza, sub-responsabili, violazioni e cancellazione.',
+            'p.en-termini.titolo' => 'Terms and conditions | Welcome MyHouse',
+            'p.en-termini.descrizione' => 'The terms of the Welcome MyHouse service: yearly subscription, prices and renewal, withdrawal, plan changes, your content and liability.',
+            'p.en-privacy.titolo' => 'Privacy policy | Welcome MyHouse',
+            'p.en-privacy.descrizione' => 'How Welcome MyHouse processes the data of hosts and guests: which data, why, for how long, with which providers, and your rights.',
+            'p.en-dpa.titolo' => 'Data processing agreement | Welcome MyHouse',
+            'p.en-dpa.descrizione' => 'The data processing agreement (art. 28 GDPR) between Welcome MyHouse and hosts: instructions, security, sub-processors, breaches and deletion.',
+            'az.nome' => 'Welcome MyHouse',
             'az.venditore' => (string) ($l['company'] ?? ''),
             'az.piva' => (string) ($l['company_vat'] ?? ''),
             'az.indirizzo' => (string) ($l['company_city'] ?? ''),
             'az.email' => (string) ($l['contact_email'] ?? ''),
             'az.telefono' => (string) ($l['contact_phone'] ?? ''),
             'az.social' => '',
-            'llms.intro' => 'MyHouse Welcome è il welcome book digitale (la guida digitale della casa) per case vacanza, B&B, affittacamere e agriturismi: check-in, Wi-Fi, regole della casa e consigli della zona in un link e un QR Code, che gli ospiti aprono dal telefono senza scaricare app.',
+            'llms.intro' => 'Welcome MyHouse è il welcome book digitale (la guida digitale della casa) per case vacanza, B&B, affittacamere e agriturismi: check-in, Wi-Fi, regole della casa e consigli della zona in un link e un QR Code, che gli ospiti aprono dal telefono senza scaricare app.',
             'llms.fatti' => implode("\n", [
                 'La guida si apre nel browser del telefono, da un link o da un QR Code: gli ospiti non scaricano app.',
                 'L\'host crea e prepara la guida gratis, senza carta di credito; paga solo quando la pubblica.',
@@ -410,7 +410,7 @@ final class Seo
             'knowsAbout' => self::ARGOMENTI,
             'logo' => self::conOrigine(a('/assets/apple-touch-icon.png')),
             'sameAs' => self::social(),
-            // 8J: MyHouse Welcome è un servizio del titolare (City Up S.r.l.), con il suo sito.
+            // 8J: Welcome MyHouse è un servizio del titolare (City Up S.r.l.), con il suo sito.
             'parentOrganization' => array_filter(['@type' => 'Organization', 'name' => self::get('az.venditore') !== '' ? self::get('az.venditore') : (string) ((Config::get('legal') ?? [])['company'] ?? ''),
                                                   'url' => (string) ((Config::get('legal') ?? [])['company_site'] ?? '')]),
         ], fn($v) => $v !== '' && $v !== []);
@@ -537,17 +537,17 @@ final class Seo
         $giudizi = Testimonianze::visibili();
         if ($giudizi) {
             $media = Testimonianze::media();
-            $t .= "\n## Giudizi\n\n- Sul sito ci sono " . (count($giudizi) === 1 ? '1 testimonianza' : count($giudizi) . ' testimonianze') . ' di host che usano MyHouse Welcome'
+            $t .= "\n## Giudizi\n\n- Sul sito ci sono " . (count($giudizi) === 1 ? '1 testimonianza' : count($giudizi) . ' testimonianze') . ' di host che usano Welcome MyHouse'
                 . ($media ? ', con una media di ' . number_format($media['media'], 1, ',', '') . ' su 5 da ' . $media['n'] . ' giudizi' : '') . ': ' . self::assoluto('/') . "\n";
         }
         // 9L: «Le guide dei nostri host», solo se ce ne sono di accese.
         if (($schede = Vetrina::perHome())) {
-            $t .= ($giudizi ? '' : "\n## Giudizi\n\n") . '- In home ci ' . (count($schede) === 1 ? 'è 1 guida' : 'sono ' . count($schede) . ' guide') . ' di host che usano MyHouse Welcome («Le guide dei nostri host»), senza link alle guide: ' . self::assoluto('/') . "\n";
+            $t .= ($giudizi ? '' : "\n## Giudizi\n\n") . '- In home ci ' . (count($schede) === 1 ? 'è 1 guida' : 'sono ' . count($schede) . ' guide') . ' di host che usano Welcome MyHouse («Le guide dei nostri host»), senza link alle guide: ' . self::assoluto('/') . "\n";
         }
         // 8E: la home e le domande in inglese.
         if (self::indicizza('en') || self::indicizza('en-domande')) {
             $t .= "\n## English\n\n";
-            if (self::indicizza('en')) $t .= '- [MyHouse Welcome, the digital guest guide](' . self::assoluto('/en') . ")\n";
+            if (self::indicizza('en')) $t .= '- [Welcome MyHouse, the digital guest guide](' . self::assoluto('/en') . ")\n";
             if (self::indicizza('en-domande')) $t .= '- [Frequently asked questions](' . self::assoluto('/en/questions') . ")\n";
         }
         $t .= "\n## Contatti\n\n- Sito: " . self::assoluto('/') . "\n";
@@ -559,7 +559,7 @@ final class Seo
     }
 
     /**
-     * GEO · llms-full.txt: tutto quello che un modello di intelligenza artificiale deve sapere per rispondere su MyHouse Welcome senza aprire
+     * GEO · llms-full.txt: tutto quello che un modello di intelligenza artificiale deve sapere per rispondere su Welcome MyHouse senza aprire
      * altre pagine: llms.txt, poi le domande frequenti con le risposte intere (italiano e inglese) e le pagine per tipologia.
      */
     public static function llmsCompleto(): string

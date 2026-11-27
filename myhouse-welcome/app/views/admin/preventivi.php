@@ -21,7 +21,7 @@ $conta = array_count_values(array_column($righe, 'stato')); ?>
   <?php if (!$righe): ?><p class="note note--quiet">Ancora nessuna richiesta.</p><?php else: ?>
   <div class="tablewrap"><table class="data">
     <thead><tr><th>Quando</th><th>Chi</th><th>Strutture</th><th>Messaggio</th><th>Stato</th><th><span class="sr-only">Azioni</span></th></tr></thead>
-    <tbody><?php foreach ($righe as $r): $oggetto = rawurlencode('Preventivo MyHouse Welcome per ' . (int) $r['strutture'] . ' strutture'); ?>
+    <tbody><?php foreach ($righe as $r): $oggetto = rawurlencode('Preventivo Welcome MyHouse per ' . (int) $r['strutture'] . ' strutture'); ?>
       <tr id="preventivo-<?= (int) $r['id'] ?>"><td class="small"><?= Support::e(Support::date($r['created_at'])) ?><?= $r['lingua'] === 'en' ? '<br><span class="tiny muted">in inglese</span>' : '' ?></td>
         <td><b><?= Support::e($r['nome']) ?></b><br><a class="small" href="mailto:<?= Support::e($r['email']) ?>?subject=<?= $oggetto ?>"><?= Support::e($r['email']) ?></a>
           <?php if ($r['telefono'] !== ''): ?><br><a class="small" href="tel:<?= Support::e(preg_replace('/[^\d+]/', '', $r['telefono'])) ?>"><?= Support::e($r['telefono']) ?></a><?php endif; ?>

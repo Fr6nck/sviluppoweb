@@ -370,7 +370,7 @@ final class ProgrammaPartner
         Db::insert('partner_accessi', ['partner_id' => (int) $p['id'], 'token_hash' => hash('sha256', $token), 'scade_at' => gmdate('Y-m-d\TH:i:s\Z', time() + self::ORE_LINK * 3600), 'created_at' => Support::now()]);
         $en = $p['lingua'] === 'en';
         Mailer::conRispostaA(Support::commerciale(), fn() => Mailer::inLingua($p['lingua'], fn() => Mailer::manda((string) $p['email'],
-            $en ? 'Your MyHouse Welcome partner page' : 'La tua pagina partner di MyHouse Welcome', $en ? 'Here is your link.' : 'Ecco il tuo link.',
+            $en ? 'Your Welcome MyHouse partner page' : 'La tua pagina partner di Welcome MyHouse', $en ? 'Here is your link.' : 'Ecco il tuo link.',
             [$en ? 'Open your partner page with this link: no password needed. It works once and for ' . self::ORE_LINK . ' hours.' : 'Apri la tua pagina partner con questo link: niente password. Vale una volta sola e per ' . self::ORE_LINK . ' ore.'],
             [$en ? 'Open your partner page' : 'Apri la tua pagina partner', Support::baseUrl() . '/partner/entra/' . $token],
             $en ? 'If you did not ask for it, ignore this email.' : 'Se non l\'hai chiesto tu, ignora questa email.')));
@@ -393,7 +393,7 @@ final class ProgrammaPartner
     private static function manda(array $p, string $oggetto, string $titolo, array $par, ?array $bottone): bool
     {
         $en = $p['lingua'] === 'en';
-        $nota = ($en ? 'You receive this email because you are a MyHouse Welcome partner. ' : 'Ricevi questa email perché sei partner di MyHouse Welcome. ') . Support::commerciale();
+        $nota = ($en ? 'You receive this email because you are a Welcome MyHouse partner. ' : 'Ricevi questa email perché sei partner di Welcome MyHouse. ') . Support::commerciale();
         return (bool) Mailer::conRispostaA(Support::commerciale(), fn() => Mailer::inLingua($p['lingua'], fn() => Mailer::manda((string) $p['email'], $oggetto, $titolo, $par, $bottone, $nota)));
     }
 
@@ -401,15 +401,15 @@ final class ProgrammaPartner
     {
         $en = $p['lingua'] === 'en'; $nome = trim(explode(' ', trim((string) ($p['referente'] ?: $p['ragione_sociale'])))[0] ?? '');
         $sc = (int) $p['sconto_clienti_pct']; $pct = (int) $p['commissione_pct'];
-        $par = $en ? [($nome !== '' ? "$nome, welcome" : 'Welcome') . ' to the MyHouse Welcome partner programme. Your code is ' . $p['codice'] . '.',
+        $par = $en ? [($nome !== '' ? "$nome, welcome" : 'Welcome') . ' to the Welcome MyHouse partner programme. Your code is ' . $p['codice'] . '.',
                       ($sc > 0 ? "Your clients get $sc% off their first year; " : '') . "you get $pct% of every payment they make" . ((int) $p['rinnovi'] ? ', renewals included' : ' in their first year') . ', calculated on the amount actually collected, VAT excluded.',
                       'Your link with the code already filled in: ' . self::link($p),
-                      'On your partner page you will find your clients, your commissions, how to present MyHouse Welcome and a sheet to print with your code. We pay commissions by bank transfer against your invoice (' . ($p['periodicita'] === 'mensile' ? 'monthly' : 'quarterly') . ').']
-                   : [($nome !== '' ? "$nome, benvenuto" : 'Benvenuto') . ' nel programma partner di MyHouse Welcome. Il tuo codice è ' . $p['codice'] . '.',
+                      'On your partner page you will find your clients, your commissions, how to present Welcome MyHouse and a sheet to print with your code. We pay commissions by bank transfer against your invoice (' . ($p['periodicita'] === 'mensile' ? 'monthly' : 'quarterly') . ').']
+                   : [($nome !== '' ? "$nome, benvenuto" : 'Benvenuto') . ' nel programma partner di Welcome MyHouse. Il tuo codice è ' . $p['codice'] . '.',
                       ($sc > 0 ? "I tuoi clienti hanno il $sc% di sconto sul primo anno; " : '') . "a te il $pct% di ogni pagamento che fanno" . ((int) $p['rinnovi'] ? ', rinnovi compresi' : ' nel primo anno') . ', calcolato sull\'imponibile incassato, senza IVA.',
                       'Il tuo link con il codice già inserito: ' . self::link($p),
-                      'Nella tua pagina partner trovi i tuoi clienti, le commissioni, come presentare MyHouse Welcome ai proprietari e un foglio da stampare con il codice. Le commissioni le liquidiamo con bonifico su tua fattura (' . $p['periodicita'] . ').'];
-        return self::manda($p, $en ? 'Welcome to the MyHouse Welcome partner programme' : 'Benvenuto nel programma partner di MyHouse Welcome', $en ? 'Your code: ' . $p['codice'] : 'Il tuo codice: ' . $p['codice'],
+                      'Nella tua pagina partner trovi i tuoi clienti, le commissioni, come presentare Welcome MyHouse ai proprietari e un foglio da stampare con il codice. Le commissioni le liquidiamo con bonifico su tua fattura (' . $p['periodicita'] . ').'];
+        return self::manda($p, $en ? 'Welcome to the Welcome MyHouse partner programme' : 'Benvenuto nel programma partner di Welcome MyHouse', $en ? 'Your code: ' . $p['codice'] : 'Il tuo codice: ' . $p['codice'],
                            $par, [$en ? 'Open your partner page' : 'Apri la tua pagina partner', Support::baseUrl() . '/partner']);
     }
 

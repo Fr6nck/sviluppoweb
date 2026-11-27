@@ -207,7 +207,16 @@ $r = $admin->post('/installa', ['email' => 'admin@prova.test', 'password' => 'Ad
 prova('Installazione con i clienti di esempio', $r['code'] === 302 && str_contains($r['loc'], '/admin'));
 prova('Migrazioni applicate tutte', (int) val("SELECT COUNT(*) FROM schema_migrations") >= 3);
 // 9U · La Promo novembre (070) vale dal 30/10 al 30/11/2026: le prove dei prezzi e degli sconti la vogliono spenta; il capitolo 9U la riaccende.
-db()->exec("UPDATE discount_codes SET active = 0 WHERE code = 'NOVEMBRE17'");
+db()->exec("UPDATE discount_codes SET active = 0 WHERE code IN ('NOVEMBRE17', 'DICEMBRE17')");
+// 9W · Le prove fino al capitolo 9W girano come prima: la Promo novembre «del primo anno» e il listino di prima (97 / 127 € e
+// Portfolio 117 € + scaglioni). Il capitolo 9W riapplica la migrazione 073 e prova il listino nuovo e lo sconto per sempre.
+db()->exec("UPDATE discount_codes SET per_sempre = 0 WHERE code = 'NOVEMBRE17'");
+foreach (['essential', 'plus', 'portfolio'] as $c9w0) {
+    $ultima9w0 = riga('SELECT pv.id, pv.package_id, pv.version FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = ? AND pv.is_current = 1', [$c9w0]);
+    if (!$ultima9w0) continue;
+    db()->prepare('UPDATE package_versions SET is_current = 0 WHERE package_id = ?')->execute([$ultima9w0['package_id']]);
+    db()->prepare('UPDATE package_versions SET is_current = 1 WHERE package_id = ? AND version = ?')->execute([$ultima9w0['package_id'], (int) $ultima9w0['version'] - 1]);
+}
 prova('Il catalogo delle funzioni c\'è', (int) val('SELECT COUNT(*) FROM features') >= 20);
 prova('Nessun codice porta nel database', (int) val("SELECT COUNT(*) FROM sections WHERE door_code <> ''") === 0);
 prova('Nessun codice porta nelle guide pubblicate', (int) val("SELECT COUNT(*) FROM guide_versions WHERE snapshot LIKE '%door_code%'") === 0);
@@ -224,14 +233,14 @@ prova('6J · Quadro → Listino: solo i piani in vendita, Portfolio «117 € + 
       && str_contains($r['body'], 'Versioni precedenti e piani nascosti'));
 $r = $ospite->get('/llms.txt');
 prova('llms.txt: introduzione, fatti, piani dal listino (97, 127, 117 + scaglioni), FAQ come link a /domande#id, contatti', $r['code'] === 200
-      && str_starts_with($r['body'], "# MyHouse Welcome\n\n> ") && str_contains($r['body'], '## Fatti chiave') && str_contains($r['body'], '- Essential: 97 €')
+      && str_starts_with($r['body'], "# Welcome MyHouse\n\n> ") && str_contains($r['body'], '## Fatti chiave') && str_contains($r['body'], '- Essential: 97 €')
       && str_contains($r['body'], '- Plus: 127 €') && str_contains($r['body'], '- Portfolio: 117 € la prima struttura, poi 60 € 2ª; 50 € dalla 3ª alla 5ª; 40 € dalla 6ª alla 10ª') && str_contains($r['body'], '(con 2: 177 €)')
       && str_contains($r['body'], '/domande#prova)') && str_contains($r['body'], '## Contatti') && str_contains($r['body'], 'assistenza@welcomemyhouse.it'));
 $r = $ospite->get('/');
 $ld = preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $r['body'], $mm) ? array_map(fn($j) => json_decode($j, true), $mm[1]) : [];
 $grafo = $ld[0]['@graph'] ?? [];
 $app6k = array_values(array_filter($grafo, fn($x) => ($x['@type'] ?? '') === 'SoftwareApplication'))[0] ?? [];
-prova('Home: title e description di serie, index, niente canonical senza dominio, Open Graph', str_contains($r['body'], '<title>Guida digitale per case vacanza e B&amp;B | MyHouse Welcome</title>')
+prova('Home: title e description di serie, index, niente canonical senza dominio, Open Graph', str_contains($r['body'], '<title>Guida digitale per case vacanza e B&amp;B | Welcome MyHouse</title>')
       && substr_count($r['body'], '<meta name="description"') === 1 && str_contains($r['body'], '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">')
       && !str_contains($r['body'], 'rel="canonical"') && substr_count($r['body'], 'property="og:title"') === 1 && str_contains($r['body'], 'name="twitter:card" content="summary_large_image"'));
 prova('Home: JSON-LD valido, Organization con vatID, tre offerte (97, 127, Portfolio 177) IVA esclusa, FAQPage', count($ld) === 2 && !in_array(null, $ld, true)
@@ -406,7 +415,7 @@ prova('7A · indirizzi puliti: il link di conferma è senza index.php', $lv !== 
 $html7 = glob("$DOVE/app/storage/logs/email/*.html") ?: [];
 $ultima = $html7 ? (string) file_get_contents(end($html7)) : '';
 prova('8A · l\'email in HTML: marchio come immagine (senza index.php), titolo e testo centrati, un bottone, link in chiaro, piede con P.IVA e link',
-      preg_match('#<img src="cid:marchio" width="282" height="42" alt="myhouse welcome"#', $ultima) === 1   // 9C: il marchio viaggia dentro l'email
+      preg_match('#<img src="cid:marchio" width="282" height="42" alt="welcome myhouse"#', $ultima) === 1   // 9C: il marchio viaggia dentro l'email
       && !preg_match('#index\.php/assets/email#', $ultima) && str_contains((string) @file_get_contents(substr(end($html7), 0, -5) . '.eml'), 'Content-ID: <marchio>') && str_contains($ultima, 'font-size:30px;line-height:36px;color:#231b12;text-align:center')
       && str_contains($ultima, 'Conferma la tua email') && substr_count($ultima, 'background:#b4451f') === 1 && str_contains($ultima, htmlspecialchars($lv))
       && str_contains($ultima, '>Assistenza</a>') && str_contains($ultima, '/privacy"') && str_contains($ultima, 'P.IVA') && !str_contains($ultima, 'social-'));
@@ -1562,7 +1571,7 @@ $ess = $carte[1][0] ?? ''; $plus = $carte[1][1] ?? '';
 prova('K1 · Essential senza le voci comuni; Plus da «Tutto di Essential, e in più:» senza ripetere', !str_contains($ess, 'Pannello di controllo') && !str_contains($ess, 'Personalizzazione colori')
       && str_contains($plus, '<li class="plan__da">Tutto di Essential, e in più:</li>') && !str_contains($plus, 'Logo della struttura'), substr(strip_tags($plus), 0, 200));
 prova('K1 · «Confronta tutti i piani»: tabella dalle funzioni dei pacchetti', str_contains($r['body'], '<summary>Confronta tutti i piani</summary>')
-      && str_contains($r['body'], 'Firma «Guida creata con MyHouse Welcome» nascondibile') && str_contains($r['body'], '<th scope="row">Lingue pubblicabili</th>')
+      && str_contains($r['body'], 'Firma «Guida creata con Welcome MyHouse» nascondibile') && str_contains($r['body'], '<th scope="row">Lingue pubblicabili</th>')
       && str_contains($r['body'], 'da 2 a 10'));
 prova('K2 · in landing: «Una prenotazione diretta in più all\'anno paga l\'abbonamento.»', str_contains($r['body'], 'Una prenotazione diretta in più all&#039;anno paga l&#039;abbonamento.')
       || str_contains($r['body'], "Una prenotazione diretta in più all'anno paga l'abbonamento."));
@@ -1601,7 +1610,8 @@ $hb = (int) val("SELECT id FROM features WHERE code = 'hide_branding'");
 $vers = fn(string $c) => righe('SELECT pv.id, pv.version, pv.is_current, (SELECT value FROM package_features WHERE package_version_id = pv.id AND feature_id = ?) AS hb
                                 FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = ? ORDER BY pv.version', [$hb, $c]);
 $vp = $vers('plus'); $ve = $vers('essential');
-prova('K4 · migrazione: Plus ha una versione nuova con la firma nascondibile, la vecchia resta com\'era', count($vp) >= 2 && end($vp)['hb'] === '1' && (int) end($vp)['is_current'] === 1
+$vpC = array_values(array_filter($vp, fn($x) => (int) $x['is_current'] === 1))[0] ?? [];   // 9W: dopo la 073 l'ultima versione può essere quella del listino nuovo
+prova('K4 · migrazione: Plus ha una versione nuova con la firma nascondibile, la vecchia resta com\'era', count($vp) >= 2 && ($vpC['hb'] ?? '') === '1' && end($vp)['hb'] === '1'
       && $vp[0]['hb'] !== '1' && end($ve)['hb'] !== '1', json_encode($vp));
 // Testimonianze dall'amministrazione.
 $admin->get('/admin/testimonianze');
@@ -1619,7 +1629,7 @@ prova('…ed eliminata sparisce', !str_contains($ospite->get('/')['body'], 'Le p
 // La firma nella guida, recensioni e prenotazione diretta nel commiato (Casa Lucia).
 $lslug = (string) val('SELECT slug FROM properties WHERE id = ?', [$casa]);
 $r = $ospite->get("/g/$lslug");
-prova('K4 · firma in fondo alla guida, con il link alla landing e ?ref=guida', str_contains($r['body'], 'Guida creata con MyHouse Welcome') && str_contains($r['body'], '/?ref=guida"'));
+prova('K4 · firma in fondo alla guida, con il link alla landing e ?ref=guida', str_contains($r['body'], 'Guida creata con Welcome MyHouse') && str_contains($r['body'], '/?ref=guida"'));
 $r = $ospite->get("/g/$lslug/commiato");
 prova('K2 · commiato senza recensioni né prenotazione diretta: le stelle (7C), ma nessun bottone di recensione né «prenota da noi»', str_contains($r['body'], 'class="stelle"')
       && !str_contains($r['body'], 'data-portale=') && !str_contains($r['body'], 'prenota da noi'));
@@ -1671,7 +1681,7 @@ $lucia->post("/pannello/$casa/pubblica", ['acquirente' => 'impresa']);
 $r = $ospite->get("/g/$lslug/commiato?l=de");
 prova('7C · nel commiato (de): «−10% mit dem Code BENTORNATI», «Code kopieren», «Prenota»', str_contains($r['body'], "\u{2212}10% mit dem Code <b>BENTORNATI</b>")
       && str_contains($r['body'], 'Code kopieren') && str_contains($r['body'], 'href="https://www.esempio.it/prenota"'));
-prova('K4 · firma nascosta (piano con hide_branding)', !str_contains($ospite->get("/g/$lslug")['body'], 'Guida creata con MyHouse Welcome'));
+prova('K4 · firma nascosta (piano con hide_branding)', !str_contains($ospite->get("/g/$lslug")['body'], 'Guida creata con Welcome MyHouse'));
 $anna->post("/pannello/$pid/dopo-il-soggiorno", ['hide_branding' => '1']);
 prova('K4 · Essential non può nasconderla, nemmeno a mano', (int) val('SELECT hide_branding FROM properties WHERE id = ?', [$pid]) === 0
       && str_contains($anna->get("/pannello/$pid/impostazioni")['body'], 'Con Plus e Portfolio puoi nasconderla')
@@ -1679,7 +1689,7 @@ prova('K4 · Essential non può nasconderla, nemmeno a mano', (int) val('SELECT 
 $lucia->post("/pannello/$casa/dopo-il-soggiorno", ['direct_url' => '', 'direct_code' => '']);
 $lucia->post("/pannello/$casa/pubblica", ['acquirente' => 'impresa']);
 prova('…tolti i link e ripubblicato: commiato senza blocchi, firma di nuovo visibile', !str_contains($ospite->get("/g/$lslug/commiato")['body'], 'Ti è piaciuto il soggiorno?')
-      && str_contains($ospite->get("/g/$lslug")['body'], 'Guida creata con MyHouse Welcome'));
+      && str_contains($ospite->get("/g/$lslug")['body'], 'Guida creata con Welcome MyHouse'));
 // Servizi extra (demo): «Richiedi su WhatsApp» con il messaggio nella lingua dell'ospite.
 $extraSid = (int) val("SELECT id FROM sections WHERE property_id = ? AND kind = 'extras'", [$casa]);
 $r = $ospite->get("/g/$lslug/$extraSid?l=en");
@@ -2609,7 +2619,7 @@ prova('«Prova la connessione» con Stripe: la chiave risponde (modalità di pro
 $r = $admin->segui($admin->post('/admin/impostazioni/archivio/prova', []));
 prova('…con il bucket: scrittura, lettura e cancellazione', str_contains($r['body'], 'Il bucket risponde'));
 $r = $admin->segui($admin->post('/admin/impostazioni/posta/prova', []));
-prova('…con la posta: in modalità prova l\'email finisce in mail.log', str_contains($r['body'], 'storage/logs/mail-' . gmdate('Y-m-d') . '.log') && str_contains((string) implode("\n", righePosta()), 'Prova della posta — MyHouse Welcome'));
+prova('…con la posta: in modalità prova l\'email finisce in mail.log', str_contains($r['body'], 'storage/logs/mail-' . gmdate('Y-m-d') . '.log') && str_contains((string) implode("\n", righePosta()), 'Prova della posta — Welcome MyHouse'));
 @unlink($fileLocale); @unlink(dirname($fileLocale) . '/config.local.bak.php');
 
 // ================================================================= PUNTO 5
@@ -2995,7 +3005,7 @@ prova('Password salvata sbagliata: l\'errore dice utente, lunghezza della passwo
       str_contains($r['body'], 'utente «info@prova.test»') && str_contains($r['body'], 'password di 7 caratteri') && str_contains($r['body'], 'provati LOGIN e PLAIN')
       && str_contains($r['body'], 'Prova con questi dati') && !str_contains($r['body'], 'vecchia') && array_column($s, 'metodo') === ['LOGIN', 'PLAIN'], json_encode($s));
 $campiSmtp = ['mail__transport' => 'smtp', 'mail__host' => '127.0.0.1', 'mail__port' => (string) $SMTP_PORTA, 'mail__encryption' => 'none', 'mail__user' => 'info@prova.test',
-              'mail__from' => 'info@prova.test', 'mail__from_name' => 'MyHouse Welcome'];
+              'mail__from' => 'info@prova.test', 'mail__from_name' => 'Welcome MyHouse'];
 $prima = count($sessioni());
 $r = $admin->post('/admin/impostazioni/posta/prova', $campiSmtp + ['mail__pass' => 'Giusta-2026!', 'con_dati' => '1', 'password' => 'sbagliata']);
 prova('«Prova con questi dati» senza la password dell\'amministratore: non parte', $r['code'] === 422 && str_contains($r['body'], 'la prova non è partita') && count($sessioni()) === $prima);
@@ -3040,7 +3050,7 @@ $prima = count($posta('amico.uno@prova.test'));
 $r = $paola->segui($paola->post('/inviti/email', ['email' => "amico.uno@prova.test, non-valida\npaola@prova.test; dario@prova.test", 'messaggio' => 'Io la uso per la casa di Todi: prova anche tu.']));
 $m = $posta('amico.uno@prova.test'); $ult = end($m) ?: [];
 prova('Invito per email: parte solo all\'amico nuovo, con link, codice e messaggio; gli altri si saltano senza dire chi è già cliente',
-      count($m) === $prima + 1 && str_contains((string) ($ult['subject'] ?? ''), 'ti invita su MyHouse Welcome') && str_contains((string) $ult['text'], '/i/' . $codPaola)
+      count($m) === $prima + 1 && str_contains((string) ($ult['subject'] ?? ''), 'ti invita su Welcome MyHouse') && str_contains((string) $ult['text'], '/i/' . $codPaola)
       && str_contains((string) $ult['text'], 'codice ' . $codPaola) && str_contains((string) $ult['text'], 'Io la uso per la casa di Todi')
       && str_contains($r['body'], 'Invito mandato.') && str_contains($r['body'], '3 indirizzi non sono stati invitati'), json_encode($ult));
 $riga = riga('SELECT * FROM referral_invites WHERE account_id = ?', [$pacc]);
@@ -3548,11 +3558,11 @@ $r = $adm6->get('/admin/seo');
 prova('/admin/seo: titolo, frase, tre riquadri, avviso sottocartella, controllo e link esterni', $r['code'] === 200 && pulita($r) && str_contains($r['body'], '<h1>SEO e GEO.</h1>')
       && str_contains($r['body'], 'Controlli superati') && str_contains($r['body'], 'Assistenti AI ammessi') && str_contains($r['body'], '5 su 6')
       && str_contains($r['body'], 'Il sito è in una sottocartella') && str_contains($r['body'], 'search.google.com/test/rich-results') && str_contains($r['body'], '/assets/seo.js'));
-$campi6k = ['dominio' => 'https://myhousewelcome.it/', 'gsc' => '<meta name="google-site-verification" content="gsc-Prova_1" />', 'bing' => 'BING42',
-            'az_nome' => 'MyHouse Welcome', 'az_piva' => '02945910541', 'az_social' => "https://instagram.com/myhousewelcome\nnon un indirizzo",
+$campi6k = ['dominio' => 'https://welcomemyhouse.it/', 'gsc' => '<meta name="google-site-verification" content="gsc-Prova_1" />', 'bing' => 'BING42',
+            'az_nome' => 'Welcome MyHouse', 'az_piva' => '02945910541', 'az_social' => "https://instagram.com/welcomemyhouse\nnon un indirizzo",
             'llms_intro' => 'Introduzione di prova.', 'llms_fatti' => "Primo fatto.\n\nSecondo fatto.",
             'bot' => ['GPTBot' => '0', 'OAI-SearchBot' => '1', 'ClaudeBot' => '1', 'PerplexityBot' => '1', 'Google-Extended' => '1', 'CCBot' => '0']];
-foreach (['home', 'domande', 'termini', 'privacy'] as $k) $campi6k += ["p_{$k}_indicizza" => $k === 'termini' ? '0' : '1', "p_{$k}_titolo" => 'Titolo di prova per la pagina ' . $k . ' | MyHouse Welcome',
+foreach (['home', 'domande', 'termini', 'privacy'] as $k) $campi6k += ["p_{$k}_indicizza" => $k === 'termini' ? '0' : '1', "p_{$k}_titolo" => 'Titolo di prova per la pagina ' . $k . ' | Welcome MyHouse',
                                                                    "p_{$k}_descrizione" => str_repeat('Descrizione di prova della pagina. ', 3)];
 $adm6->modulo('/admin/seo', '/admin/seo', $campi6k);
 prova('/admin/seo: «Salvato…» e il salvataggio nel registro', str_contains($adm6->get('/admin/seo')['body'], 'Salvato. Sitemap, robots.txt e llms.txt sono già aggiornati')
@@ -3630,23 +3640,23 @@ prova('8H · obiettivo «registrazione»: arriva con la pagina seguente, una vol
 $adm6->segui($adm6->modulo('/admin/seo', '/admin/seo', $campi6k));
 prova('8H · svuotati i campi: di nuovo nessuno script e nessun banner', !str_contains($ospite->get('/')['body'], 'mhw-statistiche'));
 $r = $ospite->get('/');
-prova('Con il dominio: canonical, og:url, verifiche Google e Bing solo nella home, sameAs dai social', str_contains($r['body'], '<link rel="canonical" href="https://myhousewelcome.it/">')
+prova('Con il dominio: canonical, og:url, verifiche Google e Bing solo nella home, sameAs dai social', str_contains($r['body'], '<link rel="canonical" href="https://welcomemyhouse.it/">')
       && str_contains($r['body'], '<meta name="google-site-verification" content="gsc-Prova_1">') && str_contains($r['body'], '<meta name="msvalidate.01" content="BING42">')
-      && str_contains($r['body'], '"sameAs":["https://instagram.com/myhousewelcome"]') && !str_contains($ospite->get('/domande')['body'], 'google-site-verification')
-      && str_contains($ospite->get('/domande')['body'], '<link rel="canonical" href="https://myhousewelcome.it/domande">'));
+      && str_contains($r['body'], '"sameAs":["https://instagram.com/welcomemyhouse"]') && !str_contains($ospite->get('/domande')['body'], 'google-site-verification')
+      && str_contains($ospite->get('/domande')['body'], '<link rel="canonical" href="https://welcomemyhouse.it/domande">'));
 $r = $ospite->get('/robots.txt');
 prova('robots.txt dopo il salvataggio: GPTBot e CCBot spenti del tutto, ClaudeBot solo senza guide, Sitemap sul dominio', $blocco($r['body'], 'GPTBot') === "Disallow: /\n"
       && $blocco($r['body'], 'CCBot') === "Disallow: /\n" && str_starts_with((string) $blocco($r['body'], 'ClaudeBot'), "Disallow: /g/\n")
-      && str_ends_with($r['body'], "Sitemap: https://myhousewelcome.it/sitemap.xml\n"));
+      && str_ends_with($r['body'], "Sitemap: https://welcomemyhouse.it/sitemap.xml\n"));
 $r = $ospite->get('/sitemap.xml');
 prova('sitemap.xml: termini spento non c\'è più, indirizzi sul dominio', substr_count($r['body'], '<url>') === 3 && !str_contains($r['body'], '/termini<')
-      && str_contains($r['body'], '<loc>https://myhousewelcome.it/privacy</loc>'));
+      && str_contains($r['body'], '<loc>https://welcomemyhouse.it/privacy</loc>'));
 prova('…e termini ha noindex', str_contains($ospite->get('/termini')['body'], '<meta name="robots" content="noindex">'));
 $r = $ospite->get('/llms.txt');
 prova('llms.txt dopo il salvataggio: introduzione e fatti nuovi, righe vuote tolte', str_contains($r['body'], "> Introduzione di prova.\n") && str_contains($r['body'], "- Primo fatto.\n- Secondo fatto.\n"));
 $r = $adm6->post('/admin/seo', ['dominio' => 'non un dominio'] + $campi6k);
 prova('Dominio scritto male: non si salva e si dice perché', str_contains($adm6->get('/admin/seo')['body'], 'Il dominio va scritto per intero')
-      && (string) val("SELECT valore FROM seo_settings WHERE chiave = 'dominio'") === 'https://myhousewelcome.it');
+      && (string) val("SELECT valore FROM seo_settings WHERE chiave = 'dominio'") === 'https://welcomemyhouse.it');
 $salvSeo = (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'seo.save'");   // 8H: le prove delle statistiche salvano anche loro
 $r = (new Browser('anonimo6k'))->post('/admin/seo', $campi6k);
 prova('/admin/seo senza accesso: non si salva', (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'seo.save'") === $salvSeo);
@@ -3708,7 +3718,7 @@ prova('Pubblicazione con un codice: non pubblica e apre il riquadro di conferma'
 $r = $lucia->get("/pannello/$casa/procedura/pubblica?codici=1");
 prova('…il riquadro: titolo, campo con «Correggi», testo, casella, «Torna a correggere» e «Pubblica lo stesso» disattivo', str_contains($r['body'], 'Nella guida ci sono codici di accesso')
       && str_contains($r['body'], 'Nota importante') && str_contains($r['body'], '>Correggi</a>') && str_contains($r['body'], 'Ho capito, pubblico a mio rischio')
-      && str_contains($r['body'], 'MyHouse Welcome non risponde dell\'uso di questi codici') && str_contains($r['body'], '>Torna a correggere</a>')
+      && str_contains($r['body'], 'Welcome MyHouse non risponde dell\'uso di questi codici') && str_contains($r['body'], '>Torna a correggere</a>')
       && str_contains($r['body'], 'data-codici-vai disabled>Pubblica lo stesso') && !str_contains($r['body'], '4821'));
 prova('…e accanto a Pubblica: la guida non compare nei motori di ricerca', str_contains($r['body'], 'Dopo la pubblicazione la guida è online per chi ha il link o il QR. Non compare nei motori di ricerca.'));
 $r = $lucia->post("/pannello/$casa/pubblica", ['codici_ok' => '1', 'acquirente' => 'impresa']);
@@ -3779,7 +3789,7 @@ $r = $lucia->get("/pannello/$casa/qr.pdf");
 prova('7C · PDF del QR: un PDF valido, con il logo (immagine), il nome e i quattro inviti della stessa grandezza', str_starts_with($r['body'], '%PDF-1.4') && str_contains($r['body'], '/Subtype /Image')
       && str_contains($r['body'], '/DCTDecode') && str_contains($r['body'], '(Inquadra il QR Code) Tj') && str_contains($r['body'], '(All about the house, and more.) Tj')
       && str_contains($r['body'], '(Tutte le informazioni sulla casa, e non solo.) Tj') && str_contains($r['body'], '(La guida digitale della casa ')
-      && substr_count($r['body'], ' 16 Tf ') === 4 && str_contains($r['body'], '(MyHouse Welcome) Tj') && preg_match('#\([a-z0-9.:\-]+[^)]*/q/[A-Za-z0-9]+\) Tj#', $r['body']) === 1
+      && substr_count($r['body'], ' 16 Tf ') === 4 && str_contains($r['body'], '(Welcome MyHouse) Tj') && preg_match('#\([a-z0-9.:\-]+[^)]*/q/[A-Za-z0-9]+\) Tj#', $r['body']) === 1
       && str_ends_with(rtrim($r['body']), '%%EOF'));
 $r = $lucia->get("/pannello/$casa/qr.svg");
 prova('…e lo stesso foglio in SVG', str_contains($r['body'], '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 840"') && str_contains($r['body'], 'Scan the QR code') && str_contains($r['body'], '<image href="data:image/'));
@@ -3880,17 +3890,17 @@ db()->prepare("UPDATE properties SET address = 'Via Segretissima 7', status = 'p
 $r = $paola->get('/inviti');
 prova('7D · barra laterale: «Invita un amico» con l\'etichetta −5% / −5%', str_contains($r['body'], '<span>Invita un amico</span><em class="lato__etichetta"') && str_contains($r['body'], "\u{2212}5% / \u{2212}5%"));
 prova('…in alto «Come funziona» in tre passi, poi il messaggio pronto con struttura, link e codice, e la casella dell\'anteprima',
-      strpos($r['body'], 'Come funziona') < strpos($r['body'], 'Il messaggio pronto') && str_contains($r['body'], 'Ciao! Uso MyHouse Welcome per la guida digitale della mia struttura')
+      strpos($r['body'], 'Come funziona') < strpos($r['body'], 'Il messaggio pronto') && str_contains($r['body'], 'Ciao! Uso Welcome MyHouse per la guida digitale della mia struttura')
       && str_contains($r['body'], 'Con questo invito hai il 5% di sconto sul primo anno') && str_contains($r['body'], 'Il codice è ' . $codP . '.') && str_contains($r['body'], 'data-wa-da="inv-messaggio"')
       && str_contains($r['body'], 'name="mostra" value="1" checked') && str_contains($r['body'], 'Mostra la copertina e il nome della mia struttura'));
 $paola->post("/pannello/$pp6/aspetto", ['palette' => 'terracotta', 'text_tone' => 'scuro', 'cover' => file_(png(1600, 900), 'image/png')]);
 $visit = new Browser('visitatore7d');
 $r = $visit->get('/i/' . $codP);
 prova('7D · /i/CODICE è una pagina: chi invita, struttura e città, i riquadri delle sezioni, i due bottoni, noindex', $r['code'] === 200
-      && str_contains($r['body'], 'Paola usa MyHouse Welcome per Casa Paola, a Todi.') && str_contains($r['body'], 'invito-pagina__riquadri')
+      && str_contains($r['body'], 'Paola usa Welcome MyHouse per Casa Paola, a Todi.') && str_contains($r['body'], 'invito-pagina__riquadri')
       && str_contains($r['body'], 'Crea la tua guida con il 5% di sconto') && str_contains($r['body'], 'Guarda una guida completa') && str_contains($r['body'], '<meta name="robots" content="noindex">'), (string) $r['code']);
 prova('…senza indirizzo, Wi-Fi, contatti o istruzioni', !str_contains($r['body'], 'Via Segretissima') && !str_contains($r['body'], 'Le chiavi sono nella cassetta') && !str_contains($r['body'], 'RSSMRA85T10A562S'));
-prova('…og:title, og:description e og:image della copertina', str_contains($r['body'], '<meta property="og:title" content="Casa Paola usa MyHouse Welcome">')
+prova('…og:title, og:description e og:image della copertina', str_contains($r['body'], '<meta property="og:title" content="Casa Paola usa Welcome MyHouse">')
       && str_contains($r['body'], 'content="Con questo invito hai il 5% di sconto sul primo anno."') && preg_match('#<meta property="og:image" content="http[^"]+/i/' . $codP . '/anteprima\.jpg">#', $r['body']) === 1);
 $img = $visit->get('/i/' . $codP . '/anteprima.jpg');
 $dim = @getimagesizefromstring($img['body']);
@@ -3929,7 +3939,7 @@ prova('…e dario vede che lo sconto lo applichiamo noi (regole)', str_contains(
 
 // Giudizi dei clienti.
 db()->prepare('UPDATE properties SET published_at = ? WHERE id = ?')->execute([gmdate('Y-m-d\TH:i:s\Z', time() - 20 * 86400), $pp6]);
-// 9B: il riquadro «Ti piace MyHouse Welcome?» c'è dal primo accesso (spiega il programma); l'email di richiamo resta a 30 giorni.
+// 9B: il riquadro «Ti piace Welcome MyHouse?» c'è dal primo accesso (spiega il programma); l'email di richiamo resta a 30 giorni.
 $r = $paola->get('/pannello');
 prova('7D · 9B · giudizio: il riquadro del programma c\'è subito, con la casella «Partecipo» (non ha ancora aderito)', str_contains($r['body'], 'id="giudizio-invito"')
       && str_contains($r['body'], 'Giudizio con sconto: il 5% sul prossimo rinnovo') && str_contains($r['body'], 'name="partecipo"') && str_contains($r['body'], '/giudizio/partecipo')
@@ -3944,7 +3954,7 @@ db()->prepare('UPDATE accounts SET giudizio_chiuso_at = ? WHERE id = ?')->execut
 prova('…una volta sola: chiuso due volte non torna più', !str_contains($paola->get('/pannello')['body'], 'id="giudizio-invito"'));
 $prima = count($posta('paola@prova.test')); $cron();
 $m = $posta('paola@prova.test'); $ult = end($m) ?: [];
-prova('7D · email «Ti sta piacendo MyHouse Welcome?» a 30 giorni, una volta sola', count($m) === $prima + 1 && str_contains((string) ($ult['subject'] ?? ''), 'Ti sta piacendo MyHouse Welcome?')
+prova('7D · email «Ti sta piacendo Welcome MyHouse?» a 30 giorni, una volta sola', count($m) === $prima + 1 && str_contains((string) ($ult['subject'] ?? ''), 'Ti sta piacendo Welcome MyHouse?')
       && str_contains((string) $ult['text'], '/giudizio'), json_encode($ult['subject'] ?? null));
 $cron();
 prova('…non si ripete', count($posta('paola@prova.test')) === $prima + 1);
@@ -4497,9 +4507,9 @@ $tipi7f = array_filter(require "$DOVE/app/lang/tipologie.php", fn($tp) => !empty
 foreach (['robots.txt', 'sitemap.xml', 'llms.txt'] as $f) @unlink("$DOVE/$f");
 $campi7f = $campi6k;
 foreach (['home', 'domande', 'en', 'en-domande', 'termini', 'privacy', 'dpa', 'en-termini', 'en-privacy', 'en-dpa', 'piano', 'en-piano', 'guide-host'] as $k) $campi7f["p_{$k}_indicizza"] = '1';
-$campi7f += ['p_piano_titolo' => 'Quale piano scegliere | MyHouse Welcome', 'p_piano_descrizione' => 'Tre domande, una risposta: lingue, sezioni e strutture. Ti diciamo quale piano di MyHouse Welcome ti basta, senza pagare per quello che non usi.'];
-$campi7f += ['p_guide-host_titolo' => 'Le guide dei nostri host | MyHouse Welcome', 'p_guide-host_descrizione' => 'Case vacanza, B&B e agriturismi che usano MyHouse Welcome ogni giorno: le strutture degli host che hanno aderito al programma «Giudizio con sconto».'];
-foreach (['en' => 'Digital guest guide for holiday rentals | MyHouse Welcome', 'en-domande' => 'Frequently asked questions | MyHouse Welcome', 'en-piano' => 'Which plan to choose | MyHouse Welcome'] as $k => $t)
+$campi7f += ['p_piano_titolo' => 'Quale piano scegliere | Welcome MyHouse', 'p_piano_descrizione' => 'Tre domande, una risposta: lingue, sezioni e strutture. Ti diciamo quale piano di Welcome MyHouse ti basta, senza pagare per quello che non usi.'];
+$campi7f += ['p_guide-host_titolo' => 'Le guide dei nostri host | Welcome MyHouse', 'p_guide-host_descrizione' => 'Case vacanza, B&B e agriturismi che usano Welcome MyHouse ogni giorno: le strutture degli host che hanno aderito al programma «Giudizio con sconto».'];
+foreach (['en' => 'Digital guest guide for holiday rentals | Welcome MyHouse', 'en-domande' => 'Frequently asked questions | Welcome MyHouse', 'en-piano' => 'Which plan to choose | Welcome MyHouse'] as $k => $t)
     $campi7f += ["p_{$k}_titolo" => $t, "p_{$k}_descrizione" => str_repeat('An English description for the test page. ', 2)];
 foreach (require "$DOVE/app/lang/tipologie.php" as $k => $tp) $campi7f += ["p_{$k}_indicizza" => '1', "p_{$k}_titolo" => $tp['titolo'], "p_{$k}_descrizione" => $tp['descrizione']];
 $r = $adm6->modulo('/admin/seo', '/admin/seo', $campi7f);
@@ -4509,8 +4519,8 @@ prova('7F · salvando «SEO e GEO»: robots.txt, sitemap.xml e llms.txt scritti 
       && str_contains($adm6->segui($r)['body'], 'anche come file nella cartella principale del sito'));
 $sm7 = (string) @file_get_contents("$DOVE/sitemap.xml"); $ll7 = (string) @file_get_contents("$DOVE/llms.txt");
 prova('7F · le quattro pagine in sitemap (18 pagine in tutto con le legali della 8J, le due della 9K, /piano della 9L, /en/plan; le sei inglesi della 9N non sono spuntate in questo modulo, quindi fuori) e in llms.txt («Per chi è»)', substr_count($sm7, '<url>') === 18 && !str_contains($sm7, '/en/holiday-homes</loc>') && @simplexml_load_string($sm7) !== false
-      && count(array_filter($tipi7f, fn($tp) => str_contains($sm7, '<loc>https://myhousewelcome.it' . $tp['percorso'] . '</loc>') && str_contains($ll7, '(https://myhousewelcome.it' . $tp['percorso'] . ')'))) === 4
-      && str_contains($ll7, "## Per chi è"), substr_count($sm7, '<url>') . ' pagine · ' . count(array_filter($tipi7f, fn($tp) => str_contains($ll7, '(https://myhousewelcome.it' . $tp['percorso'] . ')'))) . ' in llms');
+      && count(array_filter($tipi7f, fn($tp) => str_contains($sm7, '<loc>https://welcomemyhouse.it' . $tp['percorso'] . '</loc>') && str_contains($ll7, '(https://welcomemyhouse.it' . $tp['percorso'] . ')'))) === 4
+      && str_contains($ll7, "## Per chi è"), substr_count($sm7, '<url>') . ' pagine · ' . count(array_filter($tipi7f, fn($tp) => str_contains($ll7, '(https://welcomemyhouse.it' . $tp['percorso'] . ')'))) . ' in llms');
 $giudiziPubblicati = (int) val("SELECT COUNT(*) FROM testimonials WHERE visible = 1 AND (account_id IS NULL OR (status = 'pubblicata' AND consent_at IS NOT NULL AND withdrawn_at IS NULL))");
 prova('7F · llms.txt: la riga sui giudizi solo se ce ne sono di pubblicati', ($giudiziPubblicati > 0) === str_contains($ll7, '## Giudizi'), (string) $giudiziPubblicati);
 prova('7F · Diagnostica e SEO e GEO: la riga sui file veri', str_contains($admin->get('/admin/diagnostica')['body'], 'File per motori e assistenti')
@@ -4532,7 +4542,7 @@ foreach ($tipi7f as $k => $tp) {
     $titoli7[] = preg_match('#<title>([^<]+)</title>#', $r['body'], $mt) ? $mt[1] : '';
     $faqJ = null;
     if (preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $r['body'], $mj)) foreach ($mj[1] as $j) { $d = json_decode($j, true); if (($d['@type'] ?? '') === 'FAQPage') $faqJ = $d; }
-    $buono = $r['code'] === 200 && pulita($r) && str_contains($r['body'], '<link rel="canonical" href="https://myhousewelcome.it' . $tp['percorso'] . '">')
+    $buono = $r['code'] === 200 && pulita($r) && str_contains($r['body'], '<link rel="canonical" href="https://welcomemyhouse.it' . $tp['percorso'] . '">')
         && str_contains($r['body'], '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">') && str_contains($r['body'], '>' . htmlspecialchars($tp['h1']) . '</h1>')
         && $faqJ && count($faqJ['mainEntity']) === 4 && ($faqJ['mainEntity'][0]['acceptedAnswer']['text'] ?? '') === $tp['faq'][0][1]
         && substr_count($r['body'], 'class="faq__voce"') === 4 && substr_count($r['body'], 'class="vantaggio"') === 3
@@ -4741,8 +4751,8 @@ $pag8j = [];
 foreach (['/termini', '/privacy', '/dpa', '/en/terms', '/en/privacy', '/en/dpa'] as $p8) $pag8j[$p8] = $ospite->get($p8);
 prova('8J · /termini, /privacy, /dpa e /en/terms, /en/privacy, /en/dpa: 200, pulite, con canonical e hreflang it/en/x-default',
       count(array_filter($pag8j, fn($r) => $r['code'] === 200 && pulita($r))) === 6
-      && count(array_filter($pag8j, fn($r, $p8) => str_contains($r['body'], '<link rel="canonical" href="https://myhousewelcome.it' . $p8 . '">'), ARRAY_FILTER_USE_BOTH)) === 6
-      && count(array_filter($pag8j, fn($r) => str_contains($r['body'], 'hreflang="it" href="https://myhousewelcome.it/') && str_contains($r['body'], 'hreflang="en" href="https://myhousewelcome.it/en/')
+      && count(array_filter($pag8j, fn($r, $p8) => str_contains($r['body'], '<link rel="canonical" href="https://welcomemyhouse.it' . $p8 . '">'), ARRAY_FILTER_USE_BOTH)) === 6
+      && count(array_filter($pag8j, fn($r) => str_contains($r['body'], 'hreflang="it" href="https://welcomemyhouse.it/') && str_contains($r['body'], 'hreflang="en" href="https://welcomemyhouse.it/en/')
                                        && str_contains($r['body'], 'hreflang="x-default"'))) === 6,
       implode(' ', array_map(fn($r) => $r['code'], $pag8j)));
 prova('8J · le pagine inglesi in inglese (lang="en"), con i link a Terms, Privacy e DPA e alla versione italiana', str_contains($pag8j['/en/terms']['body'], '<html lang="en">')
@@ -4953,7 +4963,7 @@ db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'preventivo:%'");
 $r = $admin->get('/admin/preventivi');
 prova('9A · Amministrazione → Vendite → Preventivi: la voce nel menu, l\'elenco con stato, email e telefono cliccabili, «Rispondi» (mailto con l\'oggetto)', $r['code'] === 200 && pulita($r)
       && preg_match('#/admin/preventivi"[^>]*>(?:<svg.*?</svg>)?\s*(?:<span>)?Preventivi<#s', $r['body']) === 1 && str_contains($r['body'], 'Giulia Verdi') && str_contains($r['body'], 'badge--ochre">Nuovo<')
-      && str_contains($r['body'], 'href="mailto:giulia9a@prova.test?subject=Preventivo%20MyHouse%20Welcome%20per%2014%20strutture"') && str_contains($r['body'], 'href="tel:+393331234567"')
+      && str_contains($r['body'], 'href="mailto:giulia9a@prova.test?subject=Preventivo%20Welcome%20MyHouse%20per%2014%20strutture"') && str_contains($r['body'], 'href="tel:+393331234567"')
       && str_contains($r['body'], 'in inglese') && preg_match('#Da rispondere</span><b class="cifra__valore">4<#', $r['body']) === 1);
 $r = $admin->post("/admin/preventivi/{$prev9['id']}/stato", ['stato' => 'contattato']);
 prova('9A · lo stato si cambia (nuovo → contattato) e resta nel registro delle azioni', $r['code'] === 302 && val('SELECT stato FROM preventivi WHERE id = ?', [$prev9['id']]) === 'contattato'
@@ -5330,9 +5340,9 @@ $r = $admin->segui($admin->post('/admin/omaggi/' . $cod9d['id'] . '/email', ['em
 prova('…un indirizzo sbagliato non parte', str_contains($r['body'], 'Scrivi un indirizzo email valido'));
 $r = $admin->segui($admin->post('/admin/omaggi/' . $cod9d['id'] . '/email', ['email' => 'Tester.Omaggio@Esempio.it']));
 $posta9d = implode("\n", righePosta());
-prova('…uno giusto: il sito manda «3 mesi gratis di MyHouse Welcome» con il messaggio, il codice e il bottone del link',
+prova('…uno giusto: il sito manda «3 mesi gratis di Welcome MyHouse» con il messaggio, il codice e il bottone del link',
       str_contains($r['body'], 'Email con il codice ' . $cod9d['codice'] . ' mandata a tester.omaggio@esempio.it') && str_contains($posta9d, '"to":"tester.omaggio@esempio.it"')
-      && str_contains($posta9d, '3 mesi gratis di MyHouse Welcome') && preg_match('#Crea la tua guida: https?://[^"\s]+/omaggio/' . substr((string) $cod9d['codice'], 8) . '#', $posta9d) === 1);
+      && str_contains($posta9d, '3 mesi gratis di Welcome MyHouse') && preg_match('#Crea la tua guida: https?://[^"\s]+/omaggio/' . substr((string) $cod9d['codice'], 8) . '#', $posta9d) === 1);
 prova('9D · i mesi fuori da 1–12 e la scadenza passata sono rifiutati', str_contains($admin->segui($admin->post('/admin/omaggi', ['mesi' => '13', 'nota' => 'x']))['body'], 'I mesi gratis vanno da 1 a 12')
       && str_contains($admin->segui($admin->post('/admin/omaggi', ['mesi' => '2', 'scade_il' => '2020-01-01']))['body'], 'La data di scadenza è già passata'));
 // Ida arriva dal link: la registrazione con il banner e il campo in sola lettura.
@@ -5577,7 +5587,7 @@ $emlPer = function (string $a) use ($DOVE): string {   // l'ultima email (intera
 };
 $ospite->get('/password/dimenticata'); $ospite->post('/password/dimenticata', ['email' => 'lucia@esempio.it']);
 $eml = $emlPer('lucia@esempio.it');
-prova('9H · un\'email automatica parte da assistenza@welcomemyhouse.it (MAIL_FROM di serie) con Reply-To all\'assistenza', str_contains($eml, 'From: MyHouse Welcome <assistenza@welcomemyhouse.it>')
+prova('9H · un\'email automatica parte da assistenza@welcomemyhouse.it (MAIL_FROM di serie) con Reply-To all\'assistenza', str_contains($eml, 'From: Welcome MyHouse <assistenza@welcomemyhouse.it>')
       && str_contains($eml, 'Reply-To: <assistenza@welcomemyhouse.it>'), substr($eml, 0, 200));
 // Preventivo oltre il Portfolio: a commerciale@ (Reply-To chi scrive); la conferma da assistenza@ con Reply-To commerciale@.
 db()->exec("DELETE FROM rate_limits WHERE bucket LIKE 'preventivo:%'");
@@ -5588,7 +5598,7 @@ $rP9h = $vis9h->modulo('/', '/preventivo', ['torna' => '/', 'nome' => 'Nora Prov
 $emlC = $emlPer('commerciale@welcomemyhouse.it'); $emlN = $emlPer('nora9h@prova.test');
 prova('9H · un preventivo oltre 10 strutture arriva a commerciale@ (Reply-To chi l\'ha chiesto); la conferma parte da assistenza@ con Reply-To commerciale@',
       str_contains((string) (end($posta('commerciale@welcomemyhouse.it'))['subject'] ?? ''), 'Richiesta di preventivo: ' . $nP9h . ' strutture') && str_contains($emlC, 'Reply-To: <nora9h@prova.test>')
-      && str_contains($emlN, 'From: MyHouse Welcome <assistenza@welcomemyhouse.it>') && str_contains($emlN, 'Reply-To: <commerciale@welcomemyhouse.it>'),
+      && str_contains($emlN, 'From: Welcome MyHouse <assistenza@welcomemyhouse.it>') && str_contains($emlN, 'Reply-To: <commerciale@welcomemyhouse.it>'),
       $rP9h['code'] . ' ' . ($rP9h['loc'] ?? '') . ' soglia ' . $daQ9h . ' ' . json_encode(end($posta('commerciale@welcomemyhouse.it'))['subject'] ?? null));
 $r = $ospite->get('/');
 prova('9H · «Anche il tuo sito»: le risposte per email (passo 3) e «Oppure scrivici subito» vanno a commerciale@', str_contains($r['body'], 'data-email="commerciale@welcomemyhouse.it"')
@@ -5607,7 +5617,7 @@ db()->prepare("DELETE FROM email_optout WHERE account_id = (SELECT account_id FR
 $prom9 = $php9('echo json_encode(MHW\Richiami::promemoriaManuale(' . $subL9 . '));');
 $emlR = $emlPer($emR9); $txtR = (string) (end($posta($emR9))['text'] ?? '');
 prova('9H · avviso di rinnovo/scadenza: From assistenza@, Reply-To amministrazione@, e «Per domande su fatture e pagamenti: amministrazione@…»', $subL9 > 0 && str_contains($prom9, 'true')
-      && str_contains($emlR, 'From: MyHouse Welcome <assistenza@welcomemyhouse.it>') && str_contains($emlR, 'Reply-To: <amministrazione@welcomemyhouse.it>')
+      && str_contains($emlR, 'From: Welcome MyHouse <assistenza@welcomemyhouse.it>') && str_contains($emlR, 'Reply-To: <amministrazione@welcomemyhouse.it>')
       && str_contains($txtR, 'Per domande su fatture e pagamenti: amministrazione@welcomemyhouse.it.'), $prom9 . ' ' . $subL9);
 $prA = count($posta('amministrazione@welcomemyhouse.it'));
 $falli9 = $php9('$s = MHW\Db::one("SELECT * FROM subscriptions WHERE id = ' . $subL9 . '"); $r = new ReflectionMethod(MHW\Billing::class, "onInvoiceFailed"); $r->setAccessible(true); echo $r->invoke(null, ["id" => "in_prova9h", "subscription" => $s["provider_subscription_id"], "amount_due" => 14900, "currency" => "eur"]); MHW\Db::update("subscriptions", ["payment_status" => $s["payment_status"], "status" => $s["status"]], "id = :i", ["i" => $s["id"]]);');
@@ -5691,7 +5701,7 @@ prova('9F·2 · nella vetrina il marchio DEMO è un link alla home del sito con 
       && preg_match('#<a class="demo-tag demo-tag--link" href="[^"]+/" title="Torna a [^"]+">Demo</a>#', $r['body']) === 1 && str_contains($r['body'], '<b>Questa è una guida di esempio</b>')
       && str_contains($r['body'], '>Torna al sito</a>') && str_contains($r['body'], '/registrati">Crea la tua guida</a>'));
 $r = $ospite->get('/g/' . $vet9f['slug'] . '/benvenuto?l=de');
-prova('9F·2 · nella copertina il marchio «myhouse welcome · DEMO» è un link, e sotto «Entra» la riga in tedesco', preg_match('#<a href="[^"]+/" title="Zurück zu [^"]+"[^>]*class="rise row"#', $r['body']) === 1
+prova('9F·2 · nella copertina il marchio «welcome myhouse · DEMO» è un link, e sotto «Entra» la riga in tedesco', preg_match('#<a href="[^"]+/" title="Zurück zu [^"]+"[^>]*class="rise row"#', $r['body']) === 1
       && str_contains($r['body'], 'Dies ist ein Beispiel-Guide') && str_contains($r['body'], 'Zurück zur Website') && str_contains($r['body'], 'Erstelle deinen Guide'));
 $veraSlug = (string) val("SELECT slug FROM properties WHERE is_demo = 0 AND status = 'published' AND archived_at IS NULL ORDER BY id LIMIT 1");
 $r = $ospite->get('/g/' . $veraSlug . '?l=it');
@@ -5738,8 +5748,8 @@ prova('9F·4 · Prenotazione diretta: due colonne con «Codice sconto» e «Scon
 $admin->segui($admin->post('/admin/impostazioni/inviti', ['inviti__attivi' => '1', 'password' => 'AdminProva123']));   // le prove di prima possono averli spenti
 $r = $paola->get('/inviti');
 prova('9F·5 · Invita per email: il messaggio parte già scritto con lo sconto (Testi e foto → inviti.messaggio_partenza), lo stesso testo del messaggio pronto di WhatsApp',
-      str_contains($r['body'], 'Ciao! Uso MyHouse Welcome per la guida digitale della mia struttura e mi trovo bene. Con questo invito hai il 5% di sconto sul primo anno: crei la guida gratis e paghi solo quando la pubblichi.</textarea>')
-      && preg_match('~<textarea id="inv-messaggio"[^>]*>Ciao! Uso MyHouse Welcome per la guida digitale della mia struttura e mi trovo bene\. Con questo invito hai il 5% di sconto sul primo anno: crei la guida gratis e paghi solo quando la pubblichi\. Guarda com&#039;è la mia guida: [^<]+ Il codice è [A-Z0-9]+\.</textarea>~', $r['body']) === 1);
+      str_contains($r['body'], 'Ciao! Uso Welcome MyHouse per la guida digitale della mia struttura e mi trovo bene. Con questo invito hai il 5% di sconto sul primo anno: crei la guida gratis e paghi solo quando la pubblichi.</textarea>')
+      && preg_match('~<textarea id="inv-messaggio"[^>]*>Ciao! Uso Welcome MyHouse per la guida digitale della mia struttura e mi trovo bene\. Con questo invito hai il 5% di sconto sul primo anno: crei la guida gratis e paghi solo quando la pubblichi\. Guarda com&#039;è la mia guida: [^<]+ Il codice è [A-Z0-9]+\.</textarea>~', $r['body']) === 1);
 $r = $lucia->get('/pannello');
 prova('9F·6 · il riquadro MyHouse c\'è sempre, senza X né «Non mostrare più»', str_contains($r['body'], 'data-sito-invito') && !str_contains($r['body'], 'data-sito-chiudi') && !str_contains($r['body'], 'Non mostrare più'));
 db()->prepare('UPDATE properties SET has_site = 0 WHERE id = ?')->execute([$casa]);
@@ -6075,14 +6085,14 @@ if (preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $r['
 prova('9K · /piu-strutture: «Tutte le tue case, una sola regia.», tre problemi, solo Portfolio con gli scaglioni e il preventivo, 4 FAQ con FAQPage, il titolo per Google',
       $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'Tutte le tue case, una sola regia.') && substr_count($r['body'], 'class="vantaggio"') === 3
       && str_contains($r['body'], 'Quanto costa ogni struttura') && str_contains($r['body'], 'class="tipo-preventivo panel"') && !str_contains($r['body'], 'data-questionario')
-      && $faq9 && count($faq9['mainEntity']) === 4 && str_contains($r['body'], '<title>Guida digitale per più strutture ricettive | MyHouse Welcome</title>')
+      && $faq9 && count($faq9['mainEntity']) === 4 && str_contains($r['body'], '<title>Guida digitale per più strutture ricettive | Welcome MyHouse</title>')
       && str_contains($r['body'], 'piano=' . pv('portfolio') . '&amp;strutture=2'));
 $r = $ospite->get('/property-manager');
 prova('9K · /property-manager: il titolo, «Perché conviene», i quattro passi, solo Portfolio, il modulo «Diventa partner»; senza percentuali «una commissione» e «uno sconto»',
       $r['code'] === 200 && pulita($r) && str_contains($r['body'], 'I tuoi proprietari se ne accorgono. I loro ospiti anche.') && str_contains($r['body'], 'Perché conviene')
       && substr_count($r['body'], 'class="tipo-passi__n"') === 4 && str_contains($r['body'], 'action="' . $base9 . '/property-manager/partner"')
       && str_contains($r['body'], 'ricevi una commissione sul primo anno') && str_contains($r['body'], 'Con uno sconto per loro.')
-      && str_contains($r['body'], '<title>Programma Partner per property manager | MyHouse Welcome</title>') && str_contains($r['body'], 'name="consenso"'));
+      && str_contains($r['body'], '<title>Programma Partner per property manager | Welcome MyHouse</title>') && str_contains($r['body'], 'name="consenso"'));
 $llms9 = $ospite->get('/llms.txt')['body'];
 prova('9K · le due pagine nuove in llms.txt', str_contains($llms9, '/piu-strutture)') && str_contains($llms9, '/property-manager)'));
 $pm = new Browser('pm9k');
@@ -6262,8 +6272,8 @@ prova('Questionario EN · /en: «Not sure which one to choose?», «Answer 3 que
 prova('Questionario EN · /en: «Start free with …» verso la registrazione con lang=en (come le schede dei piani), «Prices + VAT»', preg_match('#registrati\?piano=' . pv('plus') . '&amp;lang=en"[^>]*>Start free with Plus#', $rEn9l['body']) === 1
       && str_contains($rEn9l['body'], '+ VAT') && !str_contains($rEn9l['body'], 'Crea gratis con'));
 $rEp = $ospite->get('/en/plan?d1=no&d2=si&d3=si');
-prova('Questionario EN · /en/plan: «Which plan to choose | MyHouse Welcome», lang="en", h1, esito Plus senza JavaScript, «← All plans and prices» verso /en, hreflang con /piano', $rEp['code'] === 200 && pulita($rEp)
-      && str_contains($rEp['body'], '<title>Which plan to choose | MyHouse Welcome</title>') && str_contains($rEp['body'], '<html lang="en">') && str_contains($rEp['body'], '<h1 id="piano-giusto-titolo"')
+prova('Questionario EN · /en/plan: «Which plan to choose | Welcome MyHouse», lang="en", h1, esito Plus senza JavaScript, «← All plans and prices» verso /en, hreflang con /piano', $rEp['code'] === 200 && pulita($rEp)
+      && str_contains($rEp['body'], '<title>Which plan to choose | Welcome MyHouse</title>') && str_contains($rEp['body'], '<html lang="en">') && str_contains($rEp['body'], '<h1 id="piano-giusto-titolo"')
       && preg_match('#data-q-esito="plus"(?![^>]*hidden)#', $rEp['body']) === 1 && str_contains($rEp['body'], 'One property: <span data-q-r="3">yes</span>')
       && preg_match('#href="[^"]*/en\#piani">← All plans and prices#', $rEp['body']) === 1 && preg_match('#hreflang="it" href="[^"]*/piano"#', $rEp['body']) === 1
       && preg_match('#<form method="get" action="[^"]*/en/plan\#piano-giusto"#', $rEp['body']) === 1);
@@ -6274,8 +6284,8 @@ $rPi = $ospite->get('/piano');
 prova('Questionario EN · /piano resta in italiano, con IT/EN che porta a /en/plan; /en/plan in sitemap', str_contains($rPi['body'], 'Ti bastano due lingue, scritte da te?') && preg_match('#href="[^"]*/en/plan" hreflang="en" lang="en">EN#', $rPi['body']) === 1
       && str_contains($ospite->get('/sitemap.xml')['body'], '/en/plan</loc>'));
 $rP9l = $ospite->get('/piano');
-prova('9L · /piano senza accesso: «Quale piano scegliere | MyHouse Welcome», il questionario come modulo GET su /piano, h1, indicizzabile', $rP9l['code'] === 200 && pulita($rP9l)
-      && str_contains($rP9l['body'], '<title>Quale piano scegliere | MyHouse Welcome</title>') && preg_match('#<form method="get" action="[^"]*/piano\#piano-giusto"#', $rP9l['body']) === 1
+prova('9L · /piano senza accesso: «Quale piano scegliere | Welcome MyHouse», il questionario come modulo GET su /piano, h1, indicizzabile', $rP9l['code'] === 200 && pulita($rP9l)
+      && str_contains($rP9l['body'], '<title>Quale piano scegliere | Welcome MyHouse</title>') && preg_match('#<form method="get" action="[^"]*/piano\#piano-giusto"#', $rP9l['body']) === 1
       && str_contains($rP9l['body'], '<h1 id="piano-giusto-titolo"') && str_contains($rP9l['body'], 'data-origine="piano"') && !str_contains($rP9l['body'], 'noindex'));
 $rP9l = $ospite->get('/piano?d1=no&d2=si&d3=si');
 prova('9L · /piano senza JavaScript: con le tre risposte l\'esito Plus e «Crea gratis con Plus» con il piano preselezionato', preg_match('#data-q-esito="plus"(?![^>]*hidden)#', $rP9l['body']) === 1
@@ -6299,7 +6309,7 @@ prova('9L · il 55% grande in serif con «Fino al 55% di sconto a partire dal pr
       str_contains($rH9l['body'], '<span class="risparmio__cifra" aria-hidden="true">55%</span>') && str_contains($rH9l['body'], 'Insieme, fino al 55% sul prossimo rinnovo.')
       && str_contains($rH9l['body'], 'Porta un amico:</b> 5% per amico, fino al 50%') && str_contains($rH9l['body'], '#faq-giudizio-sconto">Come funziona') && str_contains($rH9l['body'], 'Il prossimo anno fino al <span class="amico__cifra">50%</span> in meno.'));   // 9R: due programmi, cumulabili
 prova('9L · FAQ: il 55% in «Porta un amico» e le tre domande del programma', str_contains($rD9l = $ospite->get('/domande')['body'], 'i due si sommano, insieme fino al 55% sul prossimo rinnovo')
-      && str_contains($rD9l, 'Cos&#039;è il programma «Giudizio con sconto»?') && str_contains($rD9l, 'La mia guida compare sul sito di MyHouse Welcome?') && str_contains($rD9l, 'Posso ritirarmi dal programma?'));
+      && str_contains($rD9l, 'Cos&#039;è il programma «Giudizio con sconto»?') && str_contains($rD9l, 'La mia guida compare sul sito di Welcome MyHouse?') && str_contains($rD9l, 'Posso ritirarmi dal programma?'));
 prova('9L · /en allineato: «Together, up to 55% off your next renewal» (9R)', str_contains($ospite->get('/en')['body'], 'Together, up to 55% off your next renewal.'));
 @unlink($fileLocale);
 
@@ -6415,7 +6425,7 @@ $sezH = fn() => preg_match('#<section id="guide-host".*?</section>#s', $ospite->
 $h1b = $sezH(); $tutte = $ospite->get('/guide-dei-nostri-host');
 prova('9L · 1 · la terza approvata (2 posti in home): Lia e Teo in home, Sara no; in «Tutte le guide» (indicizzabile) tutte e tre, nello stesso ordine', str_contains($h1b, 'Casa Lia') && str_contains($h1b, 'Casa Teo')
       && !str_contains($h1b, 'Casa Sara') && $tutte['code'] === 200 && preg_match('#Casa Lia.*Casa Teo.*Casa Sara#s', $tutte['body']) === 1 && !str_contains($tutte['body'], 'noindex')
-      && str_contains($tutte['body'], '<title>Le guide dei nostri host | MyHouse Welcome</title>') && str_contains($ospite->get('/sitemap.xml')['body'], '/guide-dei-nostri-host</loc>')
+      && str_contains($tutte['body'], '<title>Le guide dei nostri host | Welcome MyHouse</title>') && str_contains($ospite->get('/sitemap.xml')['body'], '/guide-dei-nostri-host</loc>')
       && str_contains($admin->get('/admin/giudizi')['body'], 'non in home: oltre i 2 posti'));
 $admin->post('/admin/giudizi/' . (int) $saraS['id'] . '/sposta', ['tipo' => 'scheda', 'verso' => '-1']);
 $h1c = $sezH();
@@ -6504,8 +6514,8 @@ $mBenv = fn(string $a) => array_values(array_filter($posta($a), fn($m) => str_co
 // Lia (9L · 1) ha pagato con la casella: il webhook ha messo online la guida e mandato il benvenuto.
 $mL = $mBenv('lia9l@prova.test'); $tL = (string) (end($mL)['text'] ?? '');
 $slugL = (string) val('SELECT slug FROM properties WHERE id = ?', [$liaPid]);
-prova('Benvenuto → 9O · dopo il pagamento (webhook): una sola email «La tua guida Casa Lia è online — MyHouse Welcome» («È online.», pagamento, piano) con dentro il benvenuto: il link della guida, le tre cose da fare, «Apri QR & Link»',
-      count($benv($liaAcc)) === 1 && count($mL) === 1 && ($mL[0]['subject'] ?? '') === 'La tua guida Casa Lia è online — MyHouse Welcome'
+prova('Benvenuto → 9O · dopo il pagamento (webhook): una sola email «La tua guida Casa Lia è online — Welcome MyHouse» («È online.», pagamento, piano) con dentro il benvenuto: il link della guida, le tre cose da fare, «Apri QR & Link»',
+      count($benv($liaAcc)) === 1 && count($mL) === 1 && ($mL[0]['subject'] ?? '') === 'La tua guida Casa Lia è online — Welcome MyHouse'
       && str_contains($tL, 'Il pagamento è andato a buon fine e la guida di Casa Lia è pubblicata') && str_contains($tL, "/g/$slugL") && str_contains($tL, 'Tre cose da fare adesso:')
       && str_contains($tL, '1. Stampa il QR') && str_contains($tL, "3. Quando cambi qualcosa, pubblica le modifiche") && preg_match('#Apri QR & Link: \S+/pannello/' . $liaPid . '/qr#', $tL) === 1, $tL);
 prova('Benvenuto · Lia ha aderito: la riga «Hai aderito a «Giudizio con sconto»» (giudizio.email.aderito), niente invito; email di servizio senza «Non mandarmene più»',
@@ -6535,7 +6545,7 @@ $mZ = $mBenv('zoe.benvenuto@prova.test'); $tZ = (string) (end($mZ)['text'] ?? ''
 $emlZ = $emlPer('zoe.benvenuto@prova.test');
 $hZ = base64_decode(preg_match('#Content-Type: text/html; charset=UTF-8\r?\nContent-Transfer-Encoding: base64\r?\n\r?\n([A-Za-z0-9+/=\r\n]+)#', $emlZ, $mm) ? $mm[1] : '');
 prova('Benvenuto → 9O · pannello in inglese: «Your guide Casa Zoe is online», «It is online.», «Open QR & Link», invito «Would you like 5% off your renewal?», piede «Need help?»',
-      $rZ['body'] === 'abbonamento-attivato' && count($mZ) === 1 && ($mZ[0]['subject'] ?? '') === 'Your guide Casa Zoe is online — MyHouse Welcome'
+      $rZ['body'] === 'abbonamento-attivato' && count($mZ) === 1 && ($mZ[0]['subject'] ?? '') === 'Your guide Casa Zoe is online — Welcome MyHouse'
       && str_contains($tZ, 'It is online.') && str_contains($tZ, 'The payment went through') && str_contains($tZ, 'Three things to do now:') && str_contains($tZ, 'Open QR & Link:')
       && str_contains($tZ, 'Would you like 5% off your renewal? Join “Review with a discount”') && str_contains($tZ, 'Need help? Write to us at') && !str_contains($tZ, 'Ciao'), $tZ);
 prova('Benvenuto · l\'HTML in inglese: lang="en", «If the button does not open», «Support», «Terms» con /en/terms', str_contains($hZ, '<html lang="en">')
@@ -6716,13 +6726,13 @@ capitolo('SEO e GEO: meta robots per anteprime grandi, indirizzo e contatti nei 
 $domSeo = (string) val("SELECT valore FROM seo_settings WHERE chiave = 'dominio'");
 $salvaSeo = function (string $k, string $v) { db()->prepare('DELETE FROM seo_settings WHERE chiave = ?')->execute([$k]); db()->prepare('INSERT INTO seo_settings (chiave, valore, updated_at) VALUES (?, ?, ?)')->execute([$k, $v, gmdate('Y-m-d\TH:i:s\Z')]); };
 foreach (['p.home.descrizione', 'p.en.descrizione', 'az.indirizzo', 'az.email', 'az.telefono', 'az.venditore', 'llms.intro', 'p.domande.indicizza', 'p.en-domande.indicizza', 'p.case-vacanza.indicizza', 'p.en.indicizza'] as $k) db()->prepare('DELETE FROM seo_settings WHERE chiave = ?')->execute([$k]);
-$salvaSeo('dominio', 'https://myhousewelcome.it');
+$salvaSeo('dominio', 'https://welcomemyhouse.it');
 $rS = $ospite->get('/');
 $ldS = preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $rS['body'], $mm) ? array_map(fn($j) => json_decode($j, true), $mm[1]) : [];
 $orgS = array_values(array_filter($ldS[0]['@graph'] ?? [], fn($x) => ($x['@type'] ?? '') === 'Organization'))[0] ?? [];
 $appS = array_values(array_filter($ldS[0]['@graph'] ?? [], fn($x) => ($x['@type'] ?? '') === 'SoftwareApplication'))[0] ?? [];
 prova('SEO · home: robots con anteprime grandi e snippet interi, og:image:alt, twitter:title e twitter:description', str_contains($rS['body'], '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">')
-      && str_contains($rS['body'], '<meta property="og:image:alt" content="MyHouse Welcome: il welcome book digitale">') && str_contains($rS['body'], '<meta name="twitter:title" content="')
+      && str_contains($rS['body'], '<meta property="og:image:alt" content="Welcome MyHouse: il welcome book digitale">') && str_contains($rS['body'], '<meta name="twitter:title" content="')
       && str_contains($rS['body'], '<meta name="twitter:description" content="Il welcome book digitale con Concierge AI per case vacanza'));   // 9T
 $descrS = preg_match('#<meta name="description" content="([^"]*)"#', $rS['body'], $mm) ? html_entity_decode($mm[1]) : '';
 prova('SEO · la descrizione di serie della home sta nei 155 caratteri dello snippet di Google (prima 169), con «welcome book digitale»', mb_strlen($descrS) <= 155 && mb_strlen($descrS) >= 70 && str_contains($descrS, 'welcome book digitale'), (string) mb_strlen($descrS));
@@ -6736,23 +6746,23 @@ $ldS = preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $
 $grS = array_merge(...array_map(fn($j) => $j['@graph'] ?? [$j], $ldS));
 $webS = array_values(array_filter($grS, fn($x) => ($x['@type'] ?? '') === 'WebPage'))[0] ?? [];
 $briS = array_values(array_filter($grS, fn($x) => ($x['@type'] ?? '') === 'BreadcrumbList'))[0] ?? [];
-prova('GEO · pagina per tipologia: WebPage (di chi è, per chi è) + briciole Home › pagina + le sue domande', ($webS['url'] ?? '') === 'https://myhousewelcome.it/case-vacanza'
-      && ($webS['isPartOf']['@id'] ?? '') === 'https://myhousewelcome.it/#sito' && ($webS['audience']['audienceType'] ?? '') === 'Case vacanza'
-      && count($briS['itemListElement'] ?? []) === 2 && ($briS['itemListElement'][0]['item'] ?? '') === 'https://myhousewelcome.it/'
+prova('GEO · pagina per tipologia: WebPage (di chi è, per chi è) + briciole Home › pagina + le sue domande', ($webS['url'] ?? '') === 'https://welcomemyhouse.it/case-vacanza'
+      && ($webS['isPartOf']['@id'] ?? '') === 'https://welcomemyhouse.it/#sito' && ($webS['audience']['audienceType'] ?? '') === 'Case vacanza'
+      && count($briS['itemListElement'] ?? []) === 2 && ($briS['itemListElement'][0]['item'] ?? '') === 'https://welcomemyhouse.it/'
       && (bool) array_filter($grS, fn($x) => ($x['@type'] ?? '') === 'FAQPage'), json_encode($webS));
 $ldEn = preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $ospite->get('/en/questions')['body'], $mm) ? array_map(fn($j) => json_decode($j, true), $mm[1]) : [];
 $briEn = array_values(array_filter(array_merge(...array_map(fn($j) => $j['@graph'] ?? [$j], $ldEn)), fn($x) => ($x['@type'] ?? '') === 'BreadcrumbList'))[0] ?? [];
-prova('GEO · le pagine inglesi hanno le briciole verso /en', ($briEn['itemListElement'][0]['item'] ?? '') === 'https://myhousewelcome.it/en' && ($briEn['itemListElement'][1]['item'] ?? '') === 'https://myhousewelcome.it/en/questions');
+prova('GEO · le pagine inglesi hanno le briciole verso /en', ($briEn['itemListElement'][0]['item'] ?? '') === 'https://welcomemyhouse.it/en' && ($briEn['itemListElement'][1]['item'] ?? '') === 'https://welcomemyhouse.it/en/questions');
 $smS = $ospite->get('/sitemap.xml')['body'];
 prova('SEO · sitemap: le pagine con la gemella nell\'altra lingua (hreflang it, en, x-default), XML valido', @simplexml_load_string($smS) !== false
-      && str_contains($smS, '<loc>https://myhousewelcome.it/domande</loc>') && preg_match('#<loc>https://myhousewelcome\.it/domande</loc>(?:<lastmod>[^<]*</lastmod>)?<xhtml:link rel="alternate" hreflang="it" href="https://myhousewelcome\.it/domande"/><xhtml:link rel="alternate" hreflang="en" href="https://myhousewelcome\.it/en/questions"/><xhtml:link rel="alternate" hreflang="x-default" href="https://myhousewelcome\.it/domande"/></url>#', $smS) === 1
-      && preg_match('#<loc>https://myhousewelcome\.it/case-vacanza</loc>(?:<lastmod>[^<]*</lastmod>)?</url>#', $smS) === 1);
+      && str_contains($smS, '<loc>https://welcomemyhouse.it/domande</loc>') && preg_match('#<loc>https://welcomemyhouse\.it/domande</loc>(?:<lastmod>[^<]*</lastmod>)?<xhtml:link rel="alternate" hreflang="it" href="https://welcomemyhouse\.it/domande"/><xhtml:link rel="alternate" hreflang="en" href="https://welcomemyhouse\.it/en/questions"/><xhtml:link rel="alternate" hreflang="x-default" href="https://welcomemyhouse\.it/domande"/></url>#', $smS) === 1
+      && preg_match('#<loc>https://welcomemyhouse\.it/case-vacanza</loc>(?:<lastmod>[^<]*</lastmod>)?</url>#', $smS) === 1);
 $llS = $ospite->get('/llms.txt')['body']; $llF = $ospite->get('/llms-full.txt');
-prova('GEO · llms.txt: «welcome book digitale» nell\'introduzione, il rimando a llms-full.txt e «Altre pagine» (/piano, guide dei nostri host)', str_contains($llS, '> MyHouse Welcome è il welcome book digitale')
-      && str_contains($llS, "Tutte le risposte per intero: https://myhousewelcome.it/llms-full.txt\n") && str_contains($llS, "## Altre pagine\n") && str_contains($llS, '(https://myhousewelcome.it/piano)'));
+prova('GEO · llms.txt: «welcome book digitale» nell\'introduzione, il rimando a llms-full.txt e «Altre pagine» (/piano, guide dei nostri host)', str_contains($llS, '> Welcome MyHouse è il welcome book digitale')
+      && str_contains($llS, "Tutte le risposte per intero: https://welcomemyhouse.it/llms-full.txt\n") && str_contains($llS, "## Altre pagine\n") && str_contains($llS, '(https://welcomemyhouse.it/piano)'));
 prova('GEO · llms-full.txt: llms.txt + le risposte intere (italiano e inglese) + le pagine per tipologia con le loro domande, testo semplice', $llF['code'] === 200
-      && str_starts_with($llF['body'], "# MyHouse Welcome\n") && str_contains($llF['body'], "## Domande frequenti, con le risposte\n\n### ") && str_contains($llF['body'], "## Per chi è, nel dettaglio\n")
-      && str_contains($llF['body'], "### La guida digitale per la tua casa vacanza\n\nhttps://myhousewelcome.it/case-vacanza\n") && str_contains($llF['body'], "## Frequently asked questions (English)\n")
+      && str_starts_with($llF['body'], "# Welcome MyHouse\n") && str_contains($llF['body'], "## Domande frequenti, con le risposte\n\n### ") && str_contains($llF['body'], "## Per chi è, nel dettaglio\n")
+      && str_contains($llF['body'], "### La guida digitale per la tua casa vacanza\n\nhttps://welcomemyhouse.it/case-vacanza\n") && str_contains($llF['body'], "## Frequently asked questions (English)\n")
       && !preg_match('#<[a-z][^>]*>#i', $llF['body']) && !str_contains($llF['body'], '/g/'), (string) strlen($llF['body']));
 $k1 = trim($ospite->get('/indexnow.txt')['body']); $k2 = trim($ospite->get('/indexnow.txt')['body']);
 prova('GEO · /indexnow.txt: una chiave di 32 caratteri, sempre la stessa, salvata', preg_match('/^[a-f0-9]{32}$/', $k1) === 1 && $k1 === $k2 && (string) val("SELECT valore FROM seo_settings WHERE chiave = 'indexnow.chiave'") === $k1);
@@ -6760,8 +6770,8 @@ prova('GEO · /indexnow.txt: una chiave di 32 caratteri, sempre la stessa, salva
 @unlink("$STRIPE_DIR/indexnow.jsonl"); @unlink("$STRIPE_DIR/indexnow-rifiuta");
 $rS = $admin->segui($admin->post('/admin/seo/indexnow', []));
 $ixS = json_decode((string) (file("$STRIPE_DIR/indexnow.jsonl", FILE_IGNORE_NEW_LINES) ?: [''])[0], true) ?: [];
-prova('GEO · «Avvisa i motori (IndexNow)»: host, chiave, keyLocation e le pagine indicizzate sul dominio; «segnalate»; nel registro', ($ixS['host'] ?? '') === 'myhousewelcome.it' && ($ixS['key'] ?? '') === $k1
-      && ($ixS['keyLocation'] ?? '') === 'https://myhousewelcome.it/indexnow.txt' && in_array('https://myhousewelcome.it/case-vacanza', $ixS['urlList'] ?? [], true)
+prova('GEO · «Avvisa i motori (IndexNow)»: host, chiave, keyLocation e le pagine indicizzate sul dominio; «segnalate»; nel registro', ($ixS['host'] ?? '') === 'welcomemyhouse.it' && ($ixS['key'] ?? '') === $k1
+      && ($ixS['keyLocation'] ?? '') === 'https://welcomemyhouse.it/indexnow.txt' && in_array('https://welcomemyhouse.it/case-vacanza', $ixS['urlList'] ?? [], true)
       && !preg_grep('#/g/|/pannello|/admin#', $ixS['urlList'] ?? []) && str_contains($rS['body'], 'pagine segnalate a Bing') && (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'seo.indexnow'") === 1, json_encode($ixS));
 prova('GEO · llms-full.txt e indexnow.txt anche come file veri accanto a index.php, uguali alle pagine', is_file("$DOVE/llms-full.txt") && (string) file_get_contents("$DOVE/llms-full.txt") === $ospite->get('/llms-full.txt')['body']
       && trim((string) @file_get_contents("$DOVE/indexnow.txt")) === $k1);
@@ -6769,7 +6779,7 @@ touch("$STRIPE_DIR/indexnow-rifiuta");
 $rS = $admin->segui($admin->post('/admin/seo/indexnow', []));
 @unlink("$STRIPE_DIR/indexnow-rifiuta");
 prova('GEO · IndexNow rifiuta (403): si dice cosa controllare, e il controllo di SEO e GEO lo segnala', str_contains($rS['body'], 'IndexNow non trova la chiave') && str_contains($admin->get('/admin/seo')['body'], 'IndexNow: IndexNow non trova la chiave'));
-$salvaSeo('dominio', 'http://myhousewelcome.it');
+$salvaSeo('dominio', 'http://welcomemyhouse.it');
 $rS = $admin->segui($admin->post('/admin/seo/indexnow', []));
 prova('GEO · senza dominio in https IndexNow non parte (gli indirizzi devono essere quelli veri)', str_contains($rS['body'], 'Prima imposta il dominio con https://') && count(file("$STRIPE_DIR/indexnow.jsonl") ?: []) === 2);
 prova('GEO · il controllo di SEO e GEO: indirizzo leggibile dalle mappe', str_contains($admin->get('/admin/seo')['body'], 'Indirizzo dell&#039;azienda leggibile dalle mappe (Perugia, 06123)'));
@@ -7444,7 +7454,7 @@ $cron();
 $m7 = fn(string $a) => array_values(array_filter($mailA($a, $daQ), fn($x) => str_contains((string) $x['subject'], 'è quasi pronta')));
 $qa7 = $m7('quadri9q@prova.test')[0] ?? []; $qb7 = $m7('quercia9q@prova.test')[0] ?? []; $qc7 = $m7('quinto9q@prova.test')[0] ?? [];
 prova('9Q · 1 · giorno 7, copertina mancante: «Casa Quadri è quasi pronta. Ti manca poco.», checklist vera (✓ fatti, ○ il resto), «ti sei fermato qui» sulla copertina, il consiglio di Booking/Airbnb, il bottone al passo Aspetto',
-      ($qa7['subject'] ?? '') === 'Casa Quadri è quasi pronta. Ti manca poco. — MyHouse Welcome' && str_contains((string) $qa7['text'], 'Ciao Quadri, una settimana fa hai iniziato la guida di Casa Quadri')
+      ($qa7['subject'] ?? '') === 'Casa Quadri è quasi pronta. Ti manca poco. — Welcome MyHouse' && str_contains((string) $qa7['text'], 'Ciao Quadri, una settimana fa hai iniziato la guida di Casa Quadri')
       && str_contains((string) $qa7['text'], "✓ Nome e città\n✓ Check-in e check-out\n✓ Wi-Fi\n○ Foto di copertina ← ti sei fermato qui\n✓ CIN\n○ Pubblica")
       && str_contains((string) $qa7['text'], 'Un consiglio: la foto di copertina può essere la stessa che usi su Booking o Airbnb.') && str_contains((string) $qa7['text'], "/pannello/$qaPid/procedura/aspetto?da=bozza7")
       && str_contains((string) $qa7['text'], 'Riprendi da dove eri →') && str_contains((string) $qa7['text'], 'Hai pubblicato nel frattempo? Ignora questa email.')
@@ -7481,12 +7491,12 @@ $m21 = fn(string $a) => array_values(array_filter($mailA($a, $daQ), fn($x) => st
 $qa21 = $m21('quadri9q@prova.test')[0] ?? []; $qg21 = $m21('quiete9q@prova.test')[0] ?? [];
 $codQa = (string) val('SELECT code FROM accounts WHERE id = ?', [$qaAcc]);
 prova('9Q · 1 · giorno 21: «Vuoi una mano a finire la guida di Casa Quadri?», tre strade (la finiamo noi, quindici minuti insieme, non ora), «Rispondi e la finiamo noi» = email all\'assistenza con l\'oggetto e il codice cliente, «Chiamaci» col telefono, «Non ora»; per chi non ha pagato la riga «gratis»',
-      ($qa21['subject'] ?? '') === 'Vuoi una mano a finire la guida di Casa Quadri? — MyHouse Welcome' && str_contains((string) $qa21['text'], 'Ti proponiamo tre strade, scegli tu.')
+      ($qa21['subject'] ?? '') === 'Vuoi una mano a finire la guida di Casa Quadri? — Welcome MyHouse' && str_contains((string) $qa21['text'], 'Ti proponiamo tre strade, scegli tu.')
       && str_contains((string) $qa21['text'], '1 · La finiamo noi.') && str_contains((string) $qa21['text'], '2 · Quindici minuti insieme.') && str_contains((string) $qa21['text'], '3 · Non ora.')
       && str_contains((string) $qa21['text'], 'mailto:assistenza@') && str_contains((string) $qa21['text'], rawurlencode('Finite voi la guida di Casa Quadri · ' . $codQa))
       && str_contains((string) $qa21['text'], 'tel:+393920061600') && str_contains((string) $qa21['text'], '/bozza/non-ora/') && str_contains((string) $qa21['text'], 'Preparare la guida è gratis finché vuoi')
       && !str_contains((string) $qa21['text'], 'Il tuo abbonamento è attivo'), json_encode($qa21, JSON_UNESCAPED_UNICODE));
-prova('9Q · 3 · EN completo, e per chi ha già pagato la riga sull\'abbonamento attivo (dal … al …)', ($qg21['subject'] ?? '') === 'Would you like a hand finishing the guide for Casa Quiete? — MyHouse Welcome'
+prova('9Q · 3 · EN completo, e per chi ha già pagato la riga sull\'abbonamento attivo (dal … al …)', ($qg21['subject'] ?? '') === 'Would you like a hand finishing the guide for Casa Quiete? — Welcome MyHouse'
       && str_contains((string) $qg21['text'], 'Hi Quiete, the guide for Casa Quiete is still a draft.') && str_contains((string) $qg21['text'], 'We finish it for you.') && str_contains((string) $qg21['text'], 'Call us')
       && str_contains((string) $qg21['text'], 'Not now') && str_contains((string) $qg21['text'], 'Your subscription has been active since ') && str_contains((string) $qg21['text'], 'Customer code MW-'), json_encode($qg21, JSON_UNESCAPED_UNICODE));
 prova('9Q · 1 · pubblicata al giorno 10 → nessuna email del giorno 21; Quercia (bozza) la riceve', !$m21('quinto9q@prova.test') && count($m21('quercia9q@prova.test')) === 1);
@@ -7567,7 +7577,7 @@ $sc9p = fn(string $a) => array_values(array_filter($mailA($a, $daP), fn($x) => p
 $mE = $sc9p('pietro9p@prova.test')[0] ?? []; $cE = $conti9p('essential', 1, 0);
 $codE = (string) val('SELECT referral_code FROM accounts WHERE id = ?', [$pEss]);
 prova('9P · 1 · 7 giorni dopo il pagamento: «Dal prossimo anno puoi pagare la metà. O anche meno.», il 55% al massimo, il codice d\'invito, i due riquadri e i conti su Essential (oggi, 10 amici + giudizio, 2 e 5 amici)',
-      ($mE['subject'] ?? '') === 'Dal prossimo anno puoi pagare la metà. O anche meno. — MyHouse Welcome' && str_contains((string) $mE['text'], (int) $cE['totale'] . '% di sconto sul rinnovo, al massimo.')
+      ($mE['subject'] ?? '') === 'Dal prossimo anno puoi pagare la metà. O anche meno. — Welcome MyHouse' && str_contains((string) $mE['text'], (int) $cE['totale'] . '% di sconto sul rinnovo, al massimo.')
       && $codE !== '' && str_contains((string) $mE['text'], 'Il tuo codice: ' . $codE) && str_contains((string) $mE['text'], '1 · Porta un amico: 5% a testa, fino al 50%.') && str_contains((string) $mE['text'], '2 · Giudizio con sconto: un altro 5%, una volta.')
       && str_contains((string) $mE['text'], 'Essential oggi: ' . $cE['prezzo'] . ' + IVA. Con 10 amici e il giudizio, il prossimo rinnovo: ' . $cE['minimo'] . ' + IVA. Con 2 amici: ' . $cE['due'] . '. Con 5: ' . $cE['cinque'] . '.')
       && str_contains((string) $mE['text'], '/inviti?da=email_sconti') && str_contains((string) $mE['text'], '/giudizio?da=email_sconti#adesione') && str_contains((string) $mE['text'], 'Regole complete nei Termini')
@@ -7576,17 +7586,17 @@ $cP = $conti9p('portfolio', 3, 0); $mP = $sc9p('piera9p@prova.test')[0] ?? [];
 prova('9P · 1 · Portfolio con 3 strutture: i conti sul prezzo delle 3 strutture', str_contains((string) ($mP['text'] ?? ''), 'Portfolio (3 strutture) oggi: ' . $cP['prezzo'] . ' + IVA. Con 10 amici e il giudizio, il prossimo rinnovo: ' . $cP['minimo'])
       && str_contains((string) $mP['text'], 'Con 2 amici: ' . $cP['due'] . '. Con 5: ' . $cP['cinque'] . '.'), json_encode([$mP['text'] ?? null, $cP], JSON_UNESCAPED_UNICODE));
 $mPl = $sc9p('paola9p@prova.test')[0] ?? [];
-prova('9P · 2/4 · con 3 inviti «You already have 3 friends: you are at 15%»; EN completo (pannello in inglese), bottoni giusti', ($mPl['subject'] ?? '') === 'From next year you can pay half. Or even less. — MyHouse Welcome'
+prova('9P · 2/4 · con 3 inviti «You already have 3 friends: you are at 15%»; EN completo (pannello in inglese), bottoni giusti', ($mPl['subject'] ?? '') === 'From next year you can pay half. Or even less. — Welcome MyHouse'
       && str_contains((string) $mPl['text'], 'You already have 3 friends: you are at 15% off your next renewal.') && str_contains((string) $mPl['text'], 'Bring a friend: 5% each, up to 50%.')
       && str_contains((string) $mPl['text'], 'Invite a friend: ') && str_contains((string) $mPl['text'], 'Join Review with a discount: '), json_encode($mPl, JSON_UNESCAPED_UNICODE));
 $mA = $sc9p('pia9p@prova.test')[0] ?? []; $cA = $conti9p('plus', 1, 5);
 prova('9P → 9R · ha aderito dopo il pagamento: i due riquadri, il secondo «Hai aderito: lascia voto e commento prima del rinnovo e hai il 5% in più, una volta», conti con il giudizio compreso, senza il bottone del giudizio',
-      ($mA['subject'] ?? '') === 'Dal prossimo anno puoi pagare la metà. O anche meno. — MyHouse Welcome' && str_contains((string) $mA['text'], '2 · Hai aderito: lascia voto e commento prima del rinnovo e hai il 5% in più, una volta.')
+      ($mA['subject'] ?? '') === 'Dal prossimo anno puoi pagare la metà. O anche meno. — Welcome MyHouse' && str_contains((string) $mA['text'], '2 · Hai aderito: lascia voto e commento prima del rinnovo e hai il 5% in più, una volta.')
       && str_contains((string) $mA['text'], 'Plus: con il giudizio e 10 amici il rinnovo scende a ' . $cA['minimo'] . ' + IVA. Con il giudizio e 2 amici: ' . $cA['due'] . '. Con 5: ' . $cA['cinque'] . '.')
       && !str_contains((string) $mA['text'], '/giudizio?da=email_sconti'), json_encode([$mA, $cA], JSON_UNESCAPED_UNICODE));
 $mG = $sc9p('pina9p@prova.test')[0] ?? [];
 prova('9R · 9P · ha aderito al pagamento (5% già usato sul primo anno): «Il prossimo anno puoi pagare la metà.», solo «Porta un amico», conti senza il giudizio (Plus con 10 amici 63,50 €), la riga «l\'hai già avuto sul primo anno»',
-      ($mG['subject'] ?? '') === 'Il prossimo anno puoi pagare la metà. — MyHouse Welcome' && !str_contains((string) $mG['text'], '2 · ')
+      ($mG['subject'] ?? '') === 'Il prossimo anno puoi pagare la metà. — Welcome MyHouse' && !str_contains((string) $mG['text'], '2 · ')
       && str_contains((string) $mG['text'], "Plus: con 10 amici il rinnovo scende a 63,50\u{00A0}€ + IVA.") && str_contains((string) $mG['text'], 'il 5% del giudizio l\'hai già avuto sul primo anno: grazie!')
       && !str_contains((string) $mG['text'], '/giudizio?da=email_sconti'), json_encode($mG, JSON_UNESCAPED_UNICODE));
 $mO = $sc9p('priscilla9p@prova.test')[0] ?? [];
@@ -8360,7 +8370,7 @@ prova('9T · 3 · Amministrazione → Concierge AI: domande del mese con la medi
       $r['code'] === 200 && str_contains($r['body'], 'al giorno ·') && str_contains($r['body'], 'di cui cache') && str_contains($r['body'], 'Proiezione a fine mese') && str_contains($r['body'], 'Costo medio a domanda')
       && !str_contains($r['body'], 'data-costo-reale'), (string) $r['code']);
 prova('…le domande per giorno degli ultimi 30 giorni (30 barre, con la tabella dei numeri) e la nota sul costo vero nella Claude Console',
-      substr_count($r['body'], 'class="giorni__col"') === 30 && str_contains($r['body'], 'I numeri giorno per giorno') && str_contains($r['body'], 'Il costo vero è nella Claude Console → Usage / Cost del workspace MyHouse Welcome.'));
+      substr_count($r['body'], 'class="giorni__col"') === 30 && str_contains($r['body'], 'I numeri giorno per giorno') && str_contains($r['body'], 'Il costo vero è nella Claude Console → Usage / Cost del workspace Welcome MyHouse.'));
 prova('…la riga a sé «Demo Casa Checco» con le domande del mese (fuori dalle righe dei clienti) e la colonna «Per struttura» con la percentuale',
       preg_match('#<b>Demo Casa Checco</b>.*?<td>—</td><td>(\d+)</td>#s', $r['body'], $mD) === 1 && (int) $mD[1] >= 8 && str_contains($r['body'], '<th scope="col">Per struttura</th>')
       && str_contains($r['body'], 'class="uso-strutture"'), json_encode($mD ?? []));
@@ -8404,9 +8414,9 @@ prova('9T · 5.6 · «Buon viaggio»: lo spazio prima dell\'emoji non va a capo 
 prova('9T · 5.7 · EN: il capitale sociale «€10,000.00, fully paid-up»', $c9n('echo MHW\Legale::capitaleEn("10.000,00 € i.v.");') === '€10,000.00, fully paid-up');
 prova('9T · 5.8 · demo: la copertina ha l\'alt con il nome della struttura', str_contains($rV['body'], 'alt="Casa Checco"'));
 $rA = $ospite->get('/accedi'); $rR = $ospite->get('/registrati');
-prova('9T · 5.9 · /accedi e /registrati: «Accedi | MyHouse Welcome», «Crea il tuo account | MyHouse Welcome» e la meta description (restano noindex)',
-      str_contains($rA['body'], '<title>Accedi | MyHouse Welcome</title>') && str_contains($rR['body'], '<title>Crea il tuo account | MyHouse Welcome</title>')
-      && str_contains($rA['body'], '<meta name="description" content="Accedi a MyHouse Welcome') && str_contains($rR['body'], '<meta name="description" content="Crea gratis la guida digitale')
+prova('9T · 5.9 · /accedi e /registrati: «Accedi | Welcome MyHouse», «Crea il tuo account | Welcome MyHouse» e la meta description (restano noindex)',
+      str_contains($rA['body'], '<title>Accedi | Welcome MyHouse</title>') && str_contains($rR['body'], '<title>Crea il tuo account | Welcome MyHouse</title>')
+      && str_contains($rA['body'], '<meta name="description" content="Accedi a Welcome MyHouse') && str_contains($rR['body'], '<meta name="description" content="Crea gratis la guida digitale')
       && str_contains($rA['body'], 'noindex') && str_contains($rR['body'], 'noindex'));
 $busta9t = $c9n('echo MHW\Icon::svg("mail", 18);');
 prova('9T · 5.10 · i bottoni Email in home e in /domande hanno la busta, non il fumetto', str_contains($ospite->get('/')['body'], $busta9t) && str_contains($ospite->get('/domande')['body'], $busta9t));
@@ -8679,9 +8689,9 @@ db()->prepare('DELETE FROM discount_codes WHERE id = ?')->execute([(int) ($n9u['
 
 // Termini e FAQ, IT ed EN.
 $t9u = $ospite->get('/termini')['body']; $te9u = $ospite->get('/en/terms')['body'];
-prova('9U · 3 · Termini IT/EN: il paragrafo della promo (−17%, NOVEMBRE17, −22% con il giudizio, si somma al codice di un partner, non con invito e omaggio); versione del 30 ottobre 2026',
-      str_contains($t9u, '<b>Promo novembre.</b> −17% sul primo anno per i nuovi clienti') && str_contains($t9u, 'NOVEMBRE17') && str_contains($t9u, 'in tutto −22% sul primo anno')
-      && str_contains($t9u, 'e allo sconto del codice di un partner') && str_contains($t9u, 'ad altri codici né ai codici omaggio') && str_contains($te9u, '<b>November promo.</b>') && str_contains($te9u, 'and with a partner') && str_contains($t9u, 'Versione del 30 ottobre 2026'));
+prova('9U · 3 · Termini IT/EN: il paragrafo della promo (−17%, NOVEMBRE17, −22% con il giudizio, si somma al codice di un partner, non con invito e omaggio; 9W: per sempre, anche Promo dicembre); versione del 30 ottobre 2026',
+      str_contains($t9u, '<b>Promo novembre e Promo dicembre: prezzo bloccato per sempre.</b> −17% per i nuovi clienti') && str_contains($t9u, 'NOVEMBRE17') && str_contains($t9u, 'in tutto −22% sul primo anno')
+      && str_contains($t9u, 'e allo sconto del codice di un partner') && str_contains($t9u, 'ad altri codici né ai codici omaggio') && str_contains($te9u, '<b>November promo and December promo: price locked forever.</b>') && str_contains($te9u, 'and with a partner') && str_contains($t9u, 'Versione del 30 ottobre 2026'));
 $f9u = $ospite->get('/domande')['body']; $fe9u = $ospite->get('/en/questions')['body'];
 prova('9U · 3 · FAQ «C\'è un\'offerta?» (IT) e «Is there an offer?» (EN) con il codice e la data', str_contains($f9u, 'C&#039;è un&#039;offerta?') && str_contains($f9u, 'con il codice NOVEMBRE17')
       && str_contains($fe9u, 'Is there an offer?') && str_contains($fe9u, 'NOVEMBRE17'));
@@ -9126,6 +9136,115 @@ prova('9V-bis · un cliente che chiama «Pubblica in home» sulla sua guida non 
 // Si rimette la galleria di serie, pubblicata.
 $c9n('$p = MHW\Db::one("SELECT * FROM properties WHERE id = ' . $pidB . '"); foreach (MHW\Casa::foto(' . $pidB . ') as $f) MHW\Casa::togli((int) $p["account_id"], ' . $pidB . ', $f["id"]);
     MHW\Demo::casaVetrina(' . $pidB . '); MHW\Guide::publish(' . $pidB . '); echo "ok";');
+
+// ======================================================================= 9W
+capitolo('9W · Welcome MyHouse, prezzi nuovi anche per chi è già abbonato, sconto della promo per sempre, Promo dicembre');
+// 1 · Il nome: la scritta del logo e i testi, nelle pagine pubbliche, nel pannello e nella guida dell'ospite.
+$pagine9w = ['/' => $ospite->get('/')['body'], '/en' => $ospite->get('/en')['body'], '/domande' => $ospite->get('/domande')['body'], '/termini' => $ospite->get('/termini')['body'],
+             '/pannello' => $lucia->get('/pannello')['body'], 'guida' => $ospite->get('/g/' . $slugV)['body']];
+$vecchio9w = array_keys(array_filter($pagine9w, fn($h) => (bool) preg_match('/myhouse welcome/i', $h)));
+prova('9W · 1 · «welcome myhouse» nel logo del sito e del pannello, «Welcome MyHouse» nei testi; «MyHouse Welcome» non c\'è più (home, /en, domande, Termini, pannello, guida)',
+      !$vecchio9w && str_contains($pagine9w['/'], '<span>welcome myhouse</span>') && str_contains($pagine9w['/pannello'], '<span>welcome myhouse</span>')
+      && str_contains($pagine9w['/termini'], 'Welcome MyHouse'), implode(', ', $vecchio9w));
+$mig9w = 'require "' . $DOVE . '/app/migrations/073_welcome_myhouse_9w.php";';
+$c9n('MHW\Db::run("DELETE FROM site_texts WHERE chiave = \'promo.bottone\'"); MHW\Db::insert("site_texts", ["chiave" => "promo.bottone", "valore" => "Prova MyHouse Welcome", "updated_at" => "2026-11-27"]); echo "ok";');
+// Fino a qui le prove avevano il listino di prima e la Promo novembre «del primo anno»: la migrazione 073 si riapplica adesso,
+// come al primo accesso dopo l'aggiornamento (il listino di adesso → 87 / 117 / 167 €, le promo in home → per sempre).
+$verPrima9w = (int) val('SELECT COUNT(*) FROM package_versions');
+@unlink("$DOVE/app/storage/.listino-da-riallineare.json"); @unlink("$DOVE/app/storage/.sconti-da-riallineare.json");
+$c9n('$f = ' . $mig9w . ' $f(MHW\Db::conn()); echo "ok";');
+$verDopo9w = (int) val('SELECT COUNT(*) FROM package_versions');
+$filaL9w = json_decode((string) @file_get_contents("$DOVE/app/storage/.listino-da-riallineare.json"), true) ?: [];
+$filaS9w = json_decode((string) @file_get_contents("$DOVE/app/storage/.sconti-da-riallineare.json"), true) ?: [];
+$c9n('$f = ' . $mig9w . ' $f(MHW\Db::conn()); echo "ok";');
+prova('9W · 1 · migrazione 073: i testi salvati passano a «Welcome MyHouse», tre versioni nuove dei piani, Promo novembre per sempre, in fila gli abbonamenti e chi ha pagato con la promo; ripetuta non crea versioni né codici in più',
+      (string) val("SELECT valore FROM site_texts WHERE chiave = 'promo.bottone'") === 'Prova Welcome MyHouse' && $verDopo9w === $verPrima9w + 3 && (int) val('SELECT COUNT(*) FROM package_versions') === $verDopo9w
+      && (int) val("SELECT per_sempre FROM discount_codes WHERE code = 'NOVEMBRE17'") === 1 && (int) val("SELECT COUNT(*) FROM discount_codes WHERE code = 'DICEMBRE17'") === 1
+      && count($filaL9w) >= 3 && in_array($proAcc9u, array_map('intval', $filaS9w), true), json_encode([$verPrima9w, $verDopo9w, count($filaL9w), $filaS9w]));
+@unlink("$DOVE/app/storage/.listino-da-riallineare.json");
+db()->exec("DELETE FROM site_texts WHERE chiave = 'promo.bottone'");
+
+// 2 · Il listino nuovo: 87 / 117 / 167 € (Portfolio con 2 strutture), stesse funzioni della versione di prima.
+$pr9w = json_decode($c9n('$o = []; foreach (["essential", "plus", "portfolio"] as $c) { $pv = MHW\Plans::version((int) MHW\Db::val("SELECT pv.id FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = ? AND pv.is_current = 1", [$c])); $o[$c] = MHW\Plans::price($pv, max(1, (int) $pv["min_quantity"])); } echo json_encode($o);'), true) ?: [];
+$funz9w = fn(string $code) => righe('SELECT pf.feature_id, pf.value FROM package_features pf JOIN package_versions pv ON pv.id = pf.package_version_id JOIN packages p ON p.id = pv.package_id
+                                     WHERE p.code = ? AND pv.version = (SELECT MAX(version) FROM package_versions x WHERE x.package_id = p.id) - ? ORDER BY pf.feature_id', [$code, 0]);
+$vecchiaPlus9w = (int) val("SELECT pv.id FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = 'plus' AND pv.price_cents = 12700 ORDER BY pv.version DESC");
+$funzVecchia9w = righe('SELECT feature_id, value FROM package_features WHERE package_version_id = ? ORDER BY feature_id', [$vecchiaPlus9w]);
+prova('9W · 2 · listino: Essential 87 €, Plus 117 €, Portfolio 167 € con 2 strutture (107 € la prima, scaglioni come prima); la versione nuova di Plus ha le stesse funzioni di quella da 127 €',
+      $pr9w === ['essential' => 8700, 'plus' => 11700, 'portfolio' => 16700] && (int) val('SELECT price_cents FROM package_versions WHERE id = ?', [$vecchiaPlus9w]) === 12700 && $funz9w('plus') == $funzVecchia9w
+      && (int) val("SELECT pv.price_cents FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = 'portfolio' AND pv.is_current = 1") === 10700, json_encode($pr9w));
+
+// 3 · Chi è già abbonato passa al prezzo nuovo: subito su Stripe (senza proporzioni) e nel sito; il rinnovo incassa 117 €.
+$sub9w = riga('SELECT * FROM subscriptions WHERE account_id = ?', [$proAcc9u]) ?? [];
+$suVecchia9w = (int) $sub9w['package_version_id'] === $vecchiaPlus9w;   // ha pagato con il listino di prima
+file_put_contents("$DOVE/app/storage/.listino-da-riallineare.json", json_encode([(int) $sub9w['id']]));
+$daL9w = count(richiesteStripe());
+$fatti9w = (int) $c9n('echo MHW\Listino::inSospeso();');
+$cambioL9w = array_values(array_filter(array_slice(richiesteStripe(), $daL9w), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/' . $sub9w['provider_subscription_id']))[0]['corpo'] ?? [];
+$dopoL9w = riga('SELECT * FROM subscriptions WHERE id = ?', [(int) $sub9w['id']]) ?? [];
+prova('9W · 3 · prezzi nuovi per chi è già abbonato: da Plus a 127 € a Plus a 117 €, su Stripe senza proporzioni (il periodo pagato resta), nel Registro azioni; l\'elenco si svuota',
+      $suVecchia9w && $fatti9w === 1 && (int) $dopoL9w['package_version_id'] === pv('plus') && ($cambioL9w['proration_behavior'] ?? '') === 'none'
+      && (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'listino.fatto'") >= 1 && !is_file("$DOVE/app/storage/.listino-da-riallineare.json"), json_encode([$fatti9w, $dopoL9w['package_version_id'] ?? null, $cambioL9w['proration_behavior'] ?? null]));
+$add9w = json_decode($c9n('echo json_encode(MHW\Richiami::prossimoAddebito(MHW\Db::one("SELECT * FROM subscriptions WHERE id = ' . (int) $sub9w['id'] . '")));'), true) ?: [];
+prova('…l\'avviso di rinnovo dice il prezzo nuovo: 117 € di listino', (int) ($add9w['listino'] ?? 0) === 11700, json_encode($add9w));
+// Con una discesa programmata: la discesa resta, verso la versione nuova del piano scelto; un'offerta su misura resta com'è.
+$vecchiaEss9w = (int) val("SELECT pv.id FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = 'essential' AND pv.price_cents > 8700 ORDER BY pv.version DESC");
+db()->prepare('UPDATE subscriptions SET package_version_id = ?, next_package_version_id = ?, next_quantity = 1, next_choices = ? WHERE id = ?')
+    ->execute([$vecchiaPlus9w, $vecchiaEss9w, json_encode(['sezioni' => [], 'archivia' => []]), (int) $sub9w['id']]);
+$prog9w = $c9n('echo MHW\Listino::porta(MHW\Db::one("SELECT * FROM subscriptions WHERE id = ' . (int) $sub9w['id'] . '"));');
+$dopoP9w = riga('SELECT * FROM subscriptions WHERE id = ?', [(int) $sub9w['id']]) ?? [];
+db()->prepare('UPDATE subscriptions SET offerta_id = 1 WHERE id = ?')->execute([(int) $sub9w['id']]);
+$off9w = $c9n('echo MHW\Listino::porta(MHW\Db::one("SELECT * FROM subscriptions WHERE id = ' . (int) $sub9w['id'] . '"));');
+db()->prepare('UPDATE subscriptions SET offerta_id = NULL, package_version_id = ?, next_package_version_id = NULL, next_quantity = NULL, next_choices = NULL WHERE id = ?')->execute([pv('plus'), (int) $sub9w['id']]);
+$gia9w = $c9n('echo MHW\Listino::porta(MHW\Db::one("SELECT * FROM subscriptions WHERE id = ' . (int) $sub9w['id'] . '"));');
+prova('9W · 3 · discesa programmata verso Essential da 97 €: diventa Essential da 87 € dallo stesso rinnovo; un\'offerta su misura e chi è già al prezzo nuovo restano come sono',
+      $prog9w === 'programmato' && (int) $dopoP9w['next_package_version_id'] === pv('essential') && $off9w === 'resta' && $gia9w === 'resta', json_encode([$prog9w, $dopoP9w['next_package_version_id'] ?? null, $off9w, $gia9w]));
+
+// 4 · Lo sconto della promo per sempre: chi ha pagato con la Promo novembre lo ritrova a ogni rinnovo (coupon del rinnovo su Stripe).
+$bl9w = json_decode($c9n('echo json_encode([MHW\Sconti::bloccato(' . $proAcc9u . '), MHW\Sconti::rinnovo(' . $proAcc9u . ')]);'), true) ?: [];
+$daS9w = count(richiesteStripe());
+$c9n('MHW\Sconti::sincronizzaRinnovo(' . $proAcc9u . '); echo "ok";');
+$syncS9w = array_values(array_filter(array_slice(richiesteStripe(), $daS9w), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/' . $sub9w['provider_subscription_id']))[0]['corpo'] ?? [];
+prova('9W · 4 · Promo novembre per sempre (migrazione 073): l\'account ha −17% bloccato, lo sconto del rinnovo è 17% e su Stripe va il coupon «mhw-rinnovo-17» con la composizione «promo:17»',
+      ($bl9w[0]['code'] ?? '') === 'NOVEMBRE17' && (int) ($bl9w[0]['value'] ?? 0) === 17 && (int) ($bl9w[1]['promo'] ?? 0) === 17 && (int) ($bl9w[1]['stripe'] ?? 0) >= 17
+      && str_contains(json_encode($syncS9w), 'mhw-rinnovo-' . (int) $bl9w[1]['stripe']) && str_contains((string) ($syncS9w['metadata']['sconti'] ?? json_encode($syncS9w)), 'promo:17'),
+      json_encode([$bl9w, $syncS9w]));
+$inv9w = $c9n('echo json_encode(MHW\Sconti::rinnovoInFattura(["total_discount_amounts" => [["amount" => 2574, "discount" => ["coupon" => "mhw-rinnovo-22"]]], "subscription_details" => ["metadata" => ["sconti" => "promo:17,giudizio:5"]]]));');
+prova('…in una fattura di rinnovo con «promo:17,giudizio:5» al giudizio va solo il suo 5% (la promo non si scambia per giudizio o inviti)', json_decode($inv9w, true) === ['inviti' => 0, 'giudizio' => 5, 'sconto' => 2574], $inv9w);
+$acc9w = $pro9u->get('/account')['body'];
+prova('9W · 4 · Account & Fatturazione: «Sconto per sempre: −17% (Promo novembre NOVEMBRE17). Vale anche al rinnovo del … e a tutti quelli dopo»', str_contains($acc9w, 'Sconto per sempre:')
+      && str_contains($acc9w, 'Promo novembre NOVEMBRE17') && str_contains($acc9w, 'e a tutti quelli dopo, qualunque piano sceglierai.') && !str_contains($acc9w, 'Rinnovo a prezzo pieno'));
+// Chi aveva già pagato prima dell'aggiornamento (in fila dalla migrazione, sopra): il giro dei richiami allinea Stripe e svuota la fila.
+$rial9w = (int) $c9n('echo MHW\Sconti::riallineaInSospeso();');
+prova('9W · 4 · la fila degli sconti da riallineare (chi ha già pagato con la Promo novembre) si svuota al giro dei richiami', $rial9w >= 1 && !is_file("$DOVE/app/storage/.sconti-da-riallineare.json"), (string) $rial9w);
+
+// 5 · Promo dicembre: DICEMBRE17, 17% per sempre, dal 1° al 31 dicembre 2026; in home «per sempre» e «Prezzo bloccato per sempre».
+$dc9w = riga("SELECT * FROM discount_codes WHERE code = 'DICEMBRE17'") ?? [];
+$quando9w = $c9n('MHW\Db::run("UPDATE discount_codes SET active = 0 WHERE code = \'NOVEMBRE17\'"); MHW\Db::run("UPDATE discount_codes SET active = 1 WHERE code = \'DICEMBRE17\'"); echo json_encode([(MHW\Sconti::promoAttiva("2026-12-01") ?? [])["code"] ?? "", (MHW\Sconti::promoAttiva("2026-12-31") ?? [])["code"] ?? "", MHW\Sconti::promoAttiva("2027-01-01") ? "si" : "no"]);');
+prova('9W · 5 · DICEMBRE17: 17% per sempre, dal 1° al 31 dicembre 2026, «Promo dicembre», tutti i piani, si somma al giudizio e non all\'invito; vale dal 1° al 31, il 1° gennaio no',
+      (int) ($dc9w['value'] ?? 0) === 17 && ($dc9w['valid_from'] ?? '') === '2026-12-01' && ($dc9w['valid_until'] ?? '') === '2026-12-31' && (int) ($dc9w['per_sempre'] ?? 0) === 1
+      && ($dc9w['nome_promo'] ?? '') === 'Promo dicembre' && (int) $dc9w['in_home'] === 1 && (int) $dc9w['somma_giudizio'] === 1 && (int) $dc9w['somma_invito'] === 0 && ($dc9w['packages'] ?? 'x') === ''
+      && $quando9w === '["DICEMBRE17","DICEMBRE17","no"]', $quando9w);
+db()->prepare("UPDATE discount_codes SET active = 1, valid_from = ?, valid_until = ? WHERE code = 'DICEMBRE17'")->execute([$oggiR(0), $oggiR(3)]);
+$h9w = $ospite->get('/')['body'];
+$giorno9w = $c9n('echo MHW\Pannello::giornoMese("' . $oggiR(3) . '", false);');
+prova('9W · 5 · home con la Promo dicembre: «Promo dicembre: −17% per sempre, se attivi entro il ' . $giorno9w . '.», «il prezzo scontato resta bloccato per sempre», sulle schede «+ IVA / anno, per sempre» e «Prezzo bloccato per sempre, anche ai rinnovi», niente «poi»',
+      str_contains($h9w, 'Promo dicembre: −17% per sempre, se attivi entro il ' . $giorno9w . '.') && str_contains($h9w, 'il prezzo scontato resta bloccato per sempre, anche ai rinnovi')
+      && substr_count($h9w, '+ IVA / anno, per sempre') >= 3 && substr_count($h9w, 'Prezzo bloccato per sempre, anche ai rinnovi') >= 3 && !str_contains($h9w, 'class="plan__poi">poi')
+      && str_contains($h9w, $eur9u($netto9u(11700, 17))) && str_contains($h9w, '<code class="promo__codice">DICEMBRE17</code>'));
+$dom9w = $ospite->get('/domande')['body'];
+prova('…in «Domande»: «Promo dicembre, −17% per sempre (sul primo anno e su ogni rinnovo)»; nei Termini la Promo dicembre e il prezzo bloccato per sempre', str_contains($dom9w, 'Promo dicembre, −17% per sempre (sul primo anno e su ogni rinnovo)')
+      && str_contains($pagine9w['/termini'], 'Promo novembre e Promo dicembre: prezzo bloccato per sempre') && str_contains($pagine9w['/termini'], 'DICEMBRE17'));
+// Il riepilogo prima di pagare: la promo per sempre e il prezzo dei rinnovi.
+[$dic9w, $dicAcc9w, $dicPid9w] = $host9l('Dina', 'dina9w@prova.test', 'VTRDNI85A41G478I', 'Gubbio');
+$rDic9w = $dic9w->get('/piano?piano=' . pv('plus'))['body'];
+prova('9W · 5 · /piano prima di pagare: «Promo dicembre DICEMBRE17: −17% per sempre: sul primo anno e su ogni rinnovo.» e «Dal secondo anno ' . $eur9u($netto9u(11700, 17)) . ' + IVA: il prezzo con la Promo dicembre resta bloccato per sempre.»',
+      str_contains($rDic9w, '−17% per sempre: sul primo anno e su ogni rinnovo.') && str_contains(str_replace("\u{00A0}", ' ', $rDic9w), 'Dal secondo anno ' . str_replace("\u{00A0}", ' ', $eur9u($netto9u(11700, 17))) . ' + IVA: il prezzo con la Promo dicembre resta bloccato per sempre.'));
+db()->prepare("UPDATE discount_codes SET active = 0, valid_from = '2026-12-01', valid_until = '2026-12-31' WHERE code = 'DICEMBRE17'")->execute();
+// La casella «Per sempre» in Codici sconto.
+$scA9w = $admin->get('/admin/sconti')['body'];
+prova('9W · 5 · Amministrazione → Codici sconto: la casella «Per sempre: lo sconto vale anche a ogni rinnovo» e «· per sempre» accanto alle promo', str_contains($scA9w, 'name="per_sempre" value="1"')
+      && str_contains($scA9w, 'Promo dicembre · in home · per sempre'));
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

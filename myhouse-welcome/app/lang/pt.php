@@ -184,7 +184,7 @@ return [
     'directions'               => 'Indicações',
 
     'kind.extras'              => 'Serviços extra',
-    'made_with'                => 'Guia criado com MyHouse Welcome',
+    'made_with'                => 'Guia criado com Welcome MyHouse',
     'create_yours'             => 'Crie o seu',
     'review_title'             => 'Gostou da estadia?',
     'review_lead'              => 'Uma avaliação ajuda muito quem recebe.',

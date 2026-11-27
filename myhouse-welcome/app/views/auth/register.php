@@ -1,7 +1,7 @@
 <?php use function MHW\b; use MHW\{Support, Csrf, Plans, Icon, LinguaSito};
 /* 9N · In inglese da /en/register (o ?lang=en): LinguaSito::en() e $U per i testi fissi; il pannello nasce in inglese. */
 $U = [LinguaSito::class, 't']; $EN = LinguaSito::en();
-$title = $U('Crea il tuo account', 'Create your account') . ' | MyHouse Welcome';   // 9T · 5.9
+$title = $U('Crea il tuo account', 'Create your account') . ' | Welcome MyHouse';   // 9T · 5.9
 $descrizione = $U('Crea gratis la guida digitale della tua struttura: check-in, Wi-Fi e consigli in un link o QR Code. Paghi solo quando la pubblichi.', 'Create the digital guide for your property for free: check-in, Wi-Fi and tips in one link or QR code. You only pay when you publish it.');
 $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
 <div class="registrati__fascia"><?php include __DIR__ . '/../pub/_fascia_sconto.php'; ?></div>
@@ -13,8 +13,8 @@ $pianoScelto = $pianoScelto ?? null; $quantita = $quantita ?? null; ?>
       $prezzoReg = function (array $o, int $q) use ($contoReg): string {
           $r = $contoReg($o, $q);
           if (!$r || $r['sconto'] <= 0) return '<span class="reg-prezzo" data-pieno="' . Plans::price($o, $q) . '" data-valuta="' . Support::e($o['currency']) . '">' . Support::e(Support::money(Plans::price($o, $q), $o['currency'])) . '</span>' . LinguaSito::t(' + IVA / anno', ' + VAT / year');
-          return '<span class="reg-prezzo" data-pieno="' . $r['prezzo'] . '" data-valuta="' . Support::e($o['currency']) . '"><s>' . Support::e(Support::money($r['prezzo'], $o['currency'])) . '</s> <b>' . Support::e(Support::money($r['totale'], $o['currency'])) . '</b></span>' . LinguaSito::t(' + IVA il primo anno', ' + VAT the first year')
-               . ' <span class="reg-prezzo__sconto">−' . (int) $r['percento'] . LinguaSito::t('% primo anno', '% first year') . '</span>';
+          return '<span class="reg-prezzo" data-pieno="' . $r['prezzo'] . '" data-valuta="' . Support::e($o['currency']) . '"><s>' . Support::e(Support::money($r['prezzo'], $o['currency'])) . '</s> <b>' . Support::e(Support::money($r['totale'], $o['currency'])) . '</b></span>' . (($sR = MHW\Sconti::sempreDi($r)) && (int) $r['percento'] === $sR['percento'] ? LinguaSito::t(' + IVA / anno', ' + VAT / year') : LinguaSito::t(' + IVA il primo anno', ' + VAT the first year'))
+               . ' <span class="reg-prezzo__sconto">−' . (int) $r['percento'] . ($sR && (int) $r['percento'] === $sR['percento'] ? LinguaSito::t('% per sempre', '% forever') : LinguaSito::t('% primo anno', '% first year')) . '</span>';
       }; ?>
 <?php if ($oltre && $pianoOltre): /* 9A · più strutture del massimo: il preventivo, non un piano */ ?>
   <?php $pvP = $pianoOltre; $qP = $oltre; $tornaP = LinguaSito::percorso('/registrati') . '?piano=' . (int) $piano . '&strutture=' . (int) $oltre; include __DIR__ . '/../pub/_preventivo.php'; ?>

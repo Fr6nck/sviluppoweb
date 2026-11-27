@@ -113,7 +113,7 @@ final class Pagamenti
                                : ($omaggio ? ($en ? 'Your gift code is active' : 'Il tuo codice omaggio è attivo') : ($en ? 'Payment confirmed' : 'Pagamento confermato'));
             $titolo = $online ? ($en ? 'It is online.' : 'È online.') : ($omaggio ? ($en ? 'All set.' : 'Tutto pronto.') : ($en ? 'Payment confirmed.' : 'Pagamento confermato.'));
             // Reply-To all'assistenza (la nota dice «per qualsiasi domanda»): non è un avviso di addebito.
-            $ok = (bool) Mailer::inLingua($lingua, fn() => Mailer::send((string) $u['email'], $oggetto . ' — MyHouse Welcome',
+            $ok = (bool) Mailer::inLingua($lingua, fn() => Mailer::send((string) $u['email'], $oggetto . ' — Welcome MyHouse',
                 Mailer::testo($titolo, $par, $bottone, $nota, null, $scelte), Mailer::layout($titolo, $par, $bottone, $nota, null, $scelte)));
             if ($ok) {
                 Db::update('orders', ['online_email_at' => Support::now()], 'id = :oid', ['oid' => $orderId]);
@@ -149,9 +149,9 @@ final class Pagamenti
             if (!$u) return false;
             $lingua = Pannello::linguaDi($u, $aid); $en = $lingua === 'en';
             $dove = !empty($o['property_id']) ? '/pannello/' . (int) $o['property_id'] . '/procedura/pubblica' : '/pannello';
-            $par = $en ? ['Your bank did not confirm the direct debit for MyHouse Welcome, so the payment did not go through and the guide is not online yet.',
+            $par = $en ? ['Your bank did not confirm the direct debit for Welcome MyHouse, so the payment did not go through and the guide is not online yet.',
                           'You can pay by card now: it takes a minute and the guide goes online as soon as the payment is confirmed. Nothing has been charged.']
-                       : ['La tua banca non ha confermato l\'addebito sul conto per MyHouse Welcome: il pagamento non è andato a buon fine e la guida non è ancora online.',
+                       : ['La tua banca non ha confermato l\'addebito sul conto per Welcome MyHouse: il pagamento non è andato a buon fine e la guida non è ancora online.',
                           'Puoi pagare adesso con la carta: ci vuole un minuto e la guida va online appena il pagamento è confermato. Non ti è stato addebitato nulla.'];
             $codice = Codici::cliente($aid);
             $nota = ($codice !== '' ? ($en ? 'Customer code ' : 'Codice cliente ') . $codice . ' · ' : '') . Support::fraseFatture($en);

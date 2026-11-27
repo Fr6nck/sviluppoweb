@@ -56,9 +56,9 @@ final class Partner
                 ['Apri in Amministrazione', Support::baseUrl() . '/admin/partner'], 'Rispondi direttamente a ' . $email . '.'));
         }
         Mailer::conRispostaA($commerciale, fn() => Mailer::manda($email, 'Abbiamo ricevuto la tua richiesta di partnership', 'Grazie, ' . explode(' ', $nome)[0] . '.',
-            ['Abbiamo ricevuto la tua richiesta per il programma Partner di MyHouse Welcome: ti contattiamo entro un giorno lavorativo per conoscerci.',
+            ['Abbiamo ricevuto la tua richiesta per il programma Partner di Welcome MyHouse: ti contattiamo entro un giorno lavorativo per conoscerci.',
              'Se nel frattempo vuoi aggiungere qualcosa, rispondi a questa email.'],
-            null, null, ['MyHouse Welcome · ' . $commerciale, 'MyHouse Welcome · ' . $commerciale]));
+            null, null, ['Welcome MyHouse · ' . $commerciale, 'Welcome MyHouse · ' . $commerciale]));
         Log::info('Partner: richiesta salvata', ['id' => $id]);
         return $id;
     }

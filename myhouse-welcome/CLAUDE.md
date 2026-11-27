@@ -1,4 +1,4 @@
-# MyHouse Welcome — regole del progetto
+# Welcome MyHouse — regole del progetto
 
 App PHP 8.1+ per guide digitali degli ospiti (case vacanza, B&B, agriturismi). SQLite o MySQL, nessuna dipendenza, caricata via FTP su cPanel. La cartella dell'app è quella con `index.php`, `app/` e `assets/`. Il codice c'è già ed è in produzione: **si modifica, non si riscrive**.
 

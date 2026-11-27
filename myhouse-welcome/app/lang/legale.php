@@ -16,14 +16,14 @@ return [
 'it' => [
 // ================================================================ TERMINI E CONDIZIONI
 'termini.intro' => <<<'T'
-Questi Termini regolano l'uso di MyHouse Welcome. Leggili prima di creare l'account: creando l'account li accetti, insieme all'{link_dpa} (Allegato A). Come trattiamo i tuoi dati è scritto nell'{link_privacy}.
+Questi Termini regolano l'uso di Welcome MyHouse. Leggili prima di creare l'account: creando l'account li accetti, insieme all'{link_dpa} (Allegato A). Come trattiamo i tuoi dati è scritto nell'{link_privacy}.
 T,
 'termini.1.titolo' => 'Chi siamo e definizioni',
 'termini.1.testo' => <<<'T'
-MyHouse Welcome (il «Servizio») è fornito da {titolare_completo}, con sede in {sede} («noi»). Email {email}.
+Welcome MyHouse (il «Servizio») è fornito da {titolare_completo}, con sede in {sede} («noi»). Email {email}.
 
 In questi Termini:
-- **Servizio**: la piattaforma MyHouse Welcome, con il pannello, le guide e le funzioni collegate;
+- **Servizio**: la piattaforma Welcome MyHouse, con il pannello, le guide e le funzioni collegate;
 - **Host** o **Cliente**: chi crea un account per gestire una o più strutture ricettive («tu»);
 - **Ospite**: chi soggiorna nella struttura e legge la guida;
 - **Guida**: la guida digitale di un'unità ricettiva, raggiungibile da un link e da un codice QR;
@@ -32,7 +32,7 @@ In questi Termini:
 T,
 'termini.2.titolo' => 'Il servizio e la regola «una guida, un\'unità ricettiva»',
 'termini.2.testo' => <<<'T'
-MyHouse Welcome permette a chi gestisce una struttura ricettiva di creare una guida digitale per i propri ospiti, raggiungibile da un link e da un codice QR. Gli ospiti non si registrano e non installano applicazioni.
+Welcome MyHouse permette a chi gestisce una struttura ricettiva di creare una guida digitale per i propri ospiti, raggiungibile da un link e da un codice QR. Gli ospiti non si registrano e non installano applicazioni.
 
 **Una guida, un'unità ricettiva.** Ogni guida corrisponde a una sola unità ricettiva: un indirizzo e un CIN (Codice Identificativo Nazionale), che è obbligatorio per pubblicare e non può essere usato da un'altra guida. Una guida non può raccogliere più case, appartamenti o strutture con indirizzi o CIN diversi: per ciascuna serve una guida, per esempio con il piano Portfolio. Fanno eccezione B&B, affittacamere e agriturismi con più camere allo stesso indirizzo e con lo stesso CIN: sono una struttura sola; se le camere hanno reti Wi-Fi diverse, si scrivono nella sezione Wi-Fi, una riga per zona. In ogni guida ogni sezione compare una volta sola, e la sezione libera è una sola per guida. Se una guida è usata per più unità ricettive possiamo chiederti di separarla e, se non lo fai, sospenderne la pubblicazione dopo un avviso.
 T,
@@ -54,9 +54,9 @@ Puoi cambiare piano da Account & Fatturazione. Se passi a un piano superiore o a
 
 **Cambio proposto da noi.** Possiamo proporti un cambio di piano con uno sconto, per email o messaggio, con un link: vale solo con la tua conferma da quel link, entro la data indicata. Senza la tua conferma non cambia niente.
 
-I codici sconto valgono solo sul primo anno del primo abbonamento: dal rinnovo si paga il prezzo pieno del piano. Non si sommano tra loro né con lo sconto di un invito: a ogni abbonamento si applica un solo codice. Per «Invita un amico» valgono le condizioni del punto 12.
+I codici sconto valgono solo sul primo anno del primo abbonamento, salvo le promo «per sempre» qui sotto: dal rinnovo si paga il prezzo pieno del piano. Non si sommano tra loro né con lo sconto di un invito: a ogni abbonamento si applica un solo codice. Per «Invita un amico» valgono le condizioni del punto 12.
 
-**Promo novembre.** −17% sul primo anno per i nuovi clienti che attivano un abbonamento entro il 30 novembre 2026, con il codice NOVEMBRE17. Si somma allo sconto del programma «Giudizio con sconto» se aderisci al pagamento (in tutto −22% sul primo anno) e allo sconto del codice di un partner; non si somma allo sconto dell'invito di un amico (vale il più alto), ad altri codici né ai codici omaggio. Dal secondo anno vale il prezzo di listino, con gli sconti dei programmi «Porta un amico» e «Giudizio con sconto» se maturati.
+**Promo novembre e Promo dicembre: prezzo bloccato per sempre.** −17% per i nuovi clienti che attivano un abbonamento entro il 30 novembre 2026 con il codice NOVEMBRE17, o dal 1° al 31 dicembre 2026 con il codice DICEMBRE17. Lo sconto vale sul primo anno e **su ogni rinnovo, per sempre**, finché l'abbonamento resta attivo, anche se cambi piano; vale anche per chi ha già attivato con la Promo novembre. Si somma allo sconto del programma «Giudizio con sconto» se aderisci al pagamento (in tutto −22% sul primo anno) e allo sconto del codice di un partner; non si somma allo sconto dell'invito di un amico (vale il più alto), ad altri codici né ai codici omaggio. Ai rinnovi si somma agli sconti dei programmi «Porta un amico» e «Giudizio con sconto», se maturati, in una sola percentuale sul prezzo di listino.
 
 **Offerte su misura.** Oltre il numero massimo di strutture del Portfolio ti facciamo un'offerta su misura: un prezzo annuo concordato per tutte le strutture, valido fino alla data indicata nell'offerta, che vale **anche ai rinnovi**. Gli sconti del programma «Invita un amico» e «Giudizio con sconto» non si applicano in automatico alle offerte su misura: un eventuale sconto sul rinnovo lo decidiamo con te e te lo comunichiamo con l'avviso che precede il rinnovo. Per cambiare il numero di strutture ti mandiamo una nuova offerta, che vale subito (pagando la differenza per i giorni che restano) oppure dal rinnovo.
 T,
@@ -148,7 +148,7 @@ T,
 
 **Lo sconto.** Il {giudizio}% sul prezzo di listino **si applica una sola volta**: se aderisci al pagamento (o prima del primo pagamento), sul primo anno; se aderisci dopo il pagamento, sul rinnovo successivo, a condizione che a quel rinnovo tu abbia già lasciato voto e commento (altrimenti sul primo rinnovo dopo il giudizio). Nei rinnovi seguenti non si ripete. Si somma allo sconto del programma «Porta un amico», fino a un massimo complessivo del {totale}% su quel rinnovo; non si somma ai codici sconto (vale il più alto) e non è disponibile durante un periodo omaggio. Lo sconto non dipende dal voto: vale anche con una stella.
 
-**Cosa possiamo pubblicare.** Aderendo, l'host autorizza MyHouse Welcome a mostrare nella home di welcomemyhouse.it, a propria discrezione e senza obbligo:
+**Cosa possiamo pubblicare.** Aderendo, l'host autorizza Welcome MyHouse a mostrare nella home di welcomemyhouse.it, a propria discrezione e senza obbligo:
 
 - la **scheda** della struttura (nome della struttura, foto di copertina, logo, nome dell'host senza cognome, città), anche prima del giudizio e anche in assenza di giudizio; con il piano Portfolio possono comparire tutte le strutture dell'account;
 - il **giudizio** (voto, commento, nome e struttura).
@@ -157,11 +157,11 @@ T,
 
 Per la riservatezza dell'host e dei suoi ospiti, le schede e i giudizi non contengono link alla guida, non sono cercabili dai motori di ricerca, non mostrano la foto dell'host né alcun dato degli ospiti. Non pubblichiamo nulla di chi non aderisce.
 
-**Ritiro.** L'host può ritirarsi in ogni momento dal pannello: scheda e giudizio spariscono dalla home entro 24 ore. Lo sconto già applicato resta; quello promesso sul rinnovo decade se il ritiro avviene prima del rinnovo. Scheda e giudizio spariscono anche se la guida viene archiviata, l'abbonamento scade o l'account viene chiuso. MyHouse Welcome può togliere o non pubblicare una scheda o un giudizio senza che ciò tocchi lo sconto, e può chiudere il programma ai nuovi aderenti con un preavviso di 30 giorni, mantenendo gli sconti già promessi.
+**Ritiro.** L'host può ritirarsi in ogni momento dal pannello: scheda e giudizio spariscono dalla home entro 24 ore. Lo sconto già applicato resta; quello promesso sul rinnovo decade se il ritiro avviene prima del rinnovo. Scheda e giudizio spariscono anche se la guida viene archiviata, l'abbonamento scade o l'account viene chiuso. Welcome MyHouse può togliere o non pubblicare una scheda o un giudizio senza che ciò tocchi lo sconto, e può chiudere il programma ai nuovi aderenti con un preavviso di 30 giorni, mantenendo gli sconti già promessi.
 
 **Promemoria.** Chi ha aderito e non ha ancora lasciato il giudizio riceve un promemoria dopo 30 giorni dalla pubblicazione e, se ha aderito dopo il pagamento, un secondo 30 giorni prima del rinnovo.
 
-**Sconto sul rinnovo, una sola percentuale.** Lo sconto del giudizio e quelli degli inviti (punto 12) si sommano e si applicano **una sola volta sul prezzo di listino** del rinnovo: per esempio 10 inviti (50%) e il giudizio (5%) fanno il 55%. Non si sommano ai codici sconto, che valgono solo sul primo anno: tra codice e sconti di sistema vale il più alto.
+**Sconto sul rinnovo, una sola percentuale.** Lo sconto del giudizio e quelli degli inviti (punto 12) si sommano e si applicano **una sola volta sul prezzo di listino** del rinnovo: per esempio 10 inviti (50%) e il giudizio (5%) fanno il 55%. Non si sommano ai codici sconto, che valgono solo sul primo anno: tra codice e sconti di sistema vale il più alto. Lo sconto di una promo per sempre (Promo novembre, Promo dicembre) si somma a questi, nella stessa percentuale: per esempio 17% e 5% fanno il 22%.
 
 **Codice omaggio.** Con un codice omaggio i primi mesi indicati sono gratuiti. Registri comunque un metodo di pagamento e, al termine dei mesi gratuiti, l'abbonamento parte automaticamente al prezzo pieno del piano scelto, con gli stessi avvisi per email e nel pannello 30 e 7 giorni prima dell'addebito. Disattivando il rinnovo prima della fine del periodo gratuito non ti viene addebitato nulla: la guida resta online fino a quella data, poi non è più visibile agli ospiti. Il codice vale per una sola persona, solo per il primo abbonamento, entro la data indicata. Durante i mesi gratuiti non vale lo sconto di un invito ricevuto: se l'account è arrivato da un invito e usa un codice omaggio, vale l'omaggio e l'invito non viene conteggiato. Anche nei mesi gratuiti puoi aderire al programma e la tua scheda può essere pubblicata. **Dopo il primo pagamento hai tutte le agevolazioni**: inviti ({passo}% per ogni amico, fino al {max}%) e giudizio ({giudizio}%), fino al {totale}%, a partire dal primo rinnovo. Possiamo annullare un codice non ancora usato in qualsiasi momento.
 T,
@@ -174,7 +174,7 @@ T,
 Allegato I, parte B, del Codice del Consumo. Compila e manda questo modulo solo se sei un consumatore e vuoi recedere dal contratto.
 
 - Destinatario: {titolare_completo}, {sede} · email {email}
-- Con la presente io/noi (*) notifico/notifichiamo (*) il recesso dal mio/nostro (*) contratto per la prestazione del seguente servizio: abbonamento MyHouse Welcome, piano …………
+- Con la presente io/noi (*) notifico/notifichiamo (*) il recesso dal mio/nostro (*) contratto per la prestazione del seguente servizio: abbonamento Welcome MyHouse, piano …………
 - Ordinato il (*) / pagato il (*): …………
 - Nome del/dei consumatore/i: …………
 - Indirizzo del/dei consumatore/i: …………
@@ -187,7 +187,7 @@ T,
 
 // ================================================================ INFORMATIVA SULLA PRIVACY
 'privacy.intro' => <<<'T'
-Questa informativa spiega come {titolare} tratta i dati personali di chi usa MyHouse Welcome (host e visitatori del sito) e degli ospiti che leggono le guide, ai sensi degli articoli 13 e 14 del Regolamento (UE) 2016/679 (GDPR). Per ogni trattamento trovi quali dati, perché, su quale base giuridica, per quanto tempo e chi li riceve.
+Questa informativa spiega come {titolare} tratta i dati personali di chi usa Welcome MyHouse (host e visitatori del sito) e degli ospiti che leggono le guide, ai sensi degli articoli 13 e 14 del Regolamento (UE) 2016/679 (GDPR). Per ogni trattamento trovi quali dati, perché, su quale base giuridica, per quanto tempo e chi li riceve.
 
 Per i dati che gli host inseriscono nelle guide il titolare è l'host e noi siamo responsabili del trattamento: vedi l'{link_dpa}.
 T,
@@ -365,7 +365,7 @@ T,
 
 // ================================================================ ACCORDO SUL TRATTAMENTO DEI DATI (DPA)
 'dpa.intro' => <<<'T'
-Allegato A ai {link_termini}. Questo accordo regola, ai sensi dell'art. 28 del Regolamento (UE) 2016/679 (GDPR), il trattamento dei dati personali che {titolare_completo} («Responsabile») svolge per conto dell'host («Titolare») fornendo MyHouse Welcome. Si accetta insieme ai Termini, alla registrazione, e vale finché vale il contratto.
+Allegato A ai {link_termini}. Questo accordo regola, ai sensi dell'art. 28 del Regolamento (UE) 2016/679 (GDPR), il trattamento dei dati personali che {titolare_completo} («Responsabile») svolge per conto dell'host («Titolare») fornendo Welcome MyHouse. Si accetta insieme ai Termini, alla registrazione, e vale finché vale il contratto.
 T,
 'dpa.1.titolo' => 'Oggetto e durata',
 'dpa.1.testo' => <<<'T'
@@ -426,7 +426,7 @@ T,
 
 // ================================================================ AGGIORNAMENTI (la finestra nel pannello e l'email)
 'legale.novita' => <<<'T'
-Promo novembre: −17% sul primo anno per chi attiva entro il 30 novembre 2026 con il codice NOVEMBRE17; si somma al «Giudizio con sconto» (−22%) e al codice di un partner, non all'invito di un amico (vale il più alto).
+Promo novembre e Promo dicembre: −17% per sempre, sul primo anno e su ogni rinnovo, per chi attiva entro il 30 novembre 2026 (NOVEMBRE17, anche chi l'ha già fatto) o dal 1° al 31 dicembre 2026 (DICEMBRE17); si somma al «Giudizio con sconto» (−22% il primo anno) e al codice di un partner, non all'invito di un amico (vale il più alto).
 Concierge AI: con Plus e Portfolio risponde alle domande degli ospiti con il testo della tua guida, tramite un assistente automatico di Anthropic. Lo accendi e lo spegni dal pannello; le domande degli ospiti sono anonime (punto 14 dei Termini, trattamento 16 dell'Informativa).
 «Giudizio con sconto»: il 5% si applica una sola volta. Se aderisci al pagamento (o prima del primo pagamento), sul primo anno; se aderisci dopo, sul rinnovo successivo al tuo giudizio (voto e commento). Il logo che carichi compare così com'è nella scheda in home.
 Programma partner: con il codice di un partner hai uno sconto sul primo anno; al partner va una commissione sui tuoi pagamenti, senza i tuoi dati personali.
@@ -438,14 +438,14 @@ T,
 'en' => [
 // ================================================================ TERMS AND CONDITIONS
 'termini.intro' => <<<'T'
-These Terms govern the use of MyHouse Welcome. Please read them before creating your account: by creating it you accept them, together with the {link_dpa} (Annex A). How we handle your data is explained in the {link_privacy}. The Italian version prevails in case of doubt.
+These Terms govern the use of Welcome MyHouse. Please read them before creating your account: by creating it you accept them, together with the {link_dpa} (Annex A). How we handle your data is explained in the {link_privacy}. The Italian version prevails in case of doubt.
 T,
 'termini.1.titolo' => 'Who we are and definitions',
 'termini.1.testo' => <<<'T'
-MyHouse Welcome (the "Service") is provided by {titolare_completo}, registered office {sede} ("we"). Email {email}.
+Welcome MyHouse (the "Service") is provided by {titolare_completo}, registered office {sede} ("we"). Email {email}.
 
 In these Terms:
-- **Service**: the MyHouse Welcome platform, with the dashboard, the guides and the related features;
+- **Service**: the Welcome MyHouse platform, with the dashboard, the guides and the related features;
 - **Host** or **Customer**: whoever creates an account to manage one or more accommodation properties ("you");
 - **Guest**: whoever stays at the property and reads the guide;
 - **Guide**: the digital guide of one accommodation unit, reachable from a link and a QR code;
@@ -454,7 +454,7 @@ In these Terms:
 T,
 'termini.2.titolo' => 'The service and the "one guide, one accommodation unit" rule',
 'termini.2.testo' => <<<'T'
-MyHouse Welcome lets whoever runs an accommodation business create a digital guide for their guests, reachable from a link and a QR code. Guests do not sign up and do not install apps.
+Welcome MyHouse lets whoever runs an accommodation business create a digital guide for their guests, reachable from a link and a QR code. Guests do not sign up and do not install apps.
 
 **One guide, one accommodation unit.** Each guide corresponds to a single accommodation unit: one address and one CIN (the Italian National Identification Code), which is required to publish and cannot be used by another guide. A guide cannot cover several houses, flats or properties with different addresses or CINs: each one needs its own guide, for example with the Portfolio plan. B&Bs, guesthouses and farm stays with several rooms at the same address and with the same CIN are the exception: they are a single property; if rooms have different Wi-Fi networks, list them in the Wi-Fi section, one line per area. In each guide every section appears only once, and there is one free section per guide. If a guide is used for several accommodation units we may ask you to split it and, if you don't, suspend its publication after a notice.
 T,
@@ -476,9 +476,9 @@ You can change plan from Account & Billing. If you move to a higher plan or add 
 
 **A change proposed by us.** We may propose a change of plan with a discount, by email or message, with a link: it applies only with your confirmation from that link, by the date indicated. Without your confirmation nothing changes.
 
-Discount codes apply only to the first year of the first subscription: from renewal the full price of the plan applies. They cannot be combined with each other or with an invitation discount: only one code applies to each subscription. "Invite a friend" follows the conditions in section 12.
+Discount codes apply only to the first year of the first subscription, except for the “forever” promos below: from renewal the full price of the plan applies. They cannot be combined with each other or with an invitation discount: only one code applies to each subscription. "Invite a friend" follows the conditions in section 12.
 
-**November promo.** −17% on the first year for new customers who activate a subscription by 30 November 2026, with the code NOVEMBRE17. It adds up with the “Review with a discount” programme if you join at checkout (−22% on the first year in total) and with a partner's code; it does not add up with a friend's invitation discount (the highest applies), other codes or gift codes. From the second year the list price applies, with the “Bring a friend” and “Review with a discount” discounts if earned.
+**November promo and December promo: price locked forever.** −17% for new customers who activate a subscription by 30 November 2026 with the code NOVEMBRE17, or from 1 to 31 December 2026 with the code DICEMBRE17. The discount applies to the first year and **to every renewal, forever**, as long as the subscription stays active, even if you change plan; it also applies to those who have already activated with the November promo. It adds up with the “Review with a discount” programme if you join at checkout (−22% on the first year in total) and with a partner's code; it does not add up with a friend's invitation discount (the highest applies), other codes or gift codes. At renewal it adds up with the “Bring a friend” and “Review with a discount” discounts, if earned, in a single percentage on the list price.
 
 **Tailored offers.** Beyond the maximum number of properties of Portfolio we make you a tailored offer: an agreed annual price for all your properties, valid until the date stated in the offer, which also applies **at renewal**. The discounts of the «Invite a friend» and «Review with a discount» programmes do not apply automatically to tailored offers: any renewal discount is agreed with you and shown in the notice before the renewal. To change the number of properties we send you a new offer, which applies straight away (paying the difference for the days left) or from the renewal.
 T,
@@ -570,7 +570,7 @@ T,
 
 **The discount.** The {giudizio}% off the list price **applies only once**: if you join at checkout (or before your first payment), on the first year; if you join after paying, on the following renewal, provided that by then you have left your rating and comment (otherwise on the first renewal after the review). It is not repeated on later renewals. It adds up with the discount of the "Bring a friend" programme, up to a combined maximum of {totale}% on that renewal; it does not add up with discount codes (the higher one applies) and is not available during a gift period. The discount does not depend on the rating: it applies even with one star.
 
-**What we may publish.** By joining, the host authorises MyHouse Welcome to show on the welcomemyhouse.it home page, at its own discretion and with no obligation:
+**What we may publish.** By joining, the host authorises Welcome MyHouse to show on the welcomemyhouse.it home page, at its own discretion and with no obligation:
 
 - the property **card** (property name, cover photo, logo, the host's first name without surname, town), even before the review and even without a review; with the Portfolio plan all the account's properties may appear;
 - the **review** (rating, comment, name and property).
@@ -579,11 +579,11 @@ T,
 
 To protect the privacy of the host and their guests, cards and reviews contain no link to the guide, cannot be found by search engines, and show neither the host's photo nor any guest data. We publish nothing about those who do not join.
 
-**Leaving.** The host can leave at any time from the dashboard: the card and the review disappear from the home page within 24 hours. A discount already applied stays; the one promised on the renewal lapses if the host leaves before the renewal. The card and the review also disappear if the guide is archived, the subscription expires or the account is closed. MyHouse Welcome may remove or not publish a card or a review without affecting the discount, and may close the programme to new members with 30 days' notice, keeping the discounts already promised.
+**Leaving.** The host can leave at any time from the dashboard: the card and the review disappear from the home page within 24 hours. A discount already applied stays; the one promised on the renewal lapses if the host leaves before the renewal. The card and the review also disappear if the guide is archived, the subscription expires or the account is closed. Welcome MyHouse may remove or not publish a card or a review without affecting the discount, and may close the programme to new members with 30 days' notice, keeping the discounts already promised.
 
 **Reminders.** Whoever has joined and has not yet left the review receives a reminder 30 days after publishing and, if they joined after paying, a second one 30 days before the renewal.
 
-**Renewal discount, a single percentage.** The review discount and the invitation discounts (section 12) add up and are applied **once on the list price** of the renewal: for example 10 invitations (50%) and the review (5%) make 55%. They do not add up with discount codes, which apply to the first year only: between a code and the system discounts, the higher one applies.
+**Renewal discount, a single percentage.** The review discount and the invitation discounts (section 12) add up and are applied **once on the list price** of the renewal: for example 10 invitations (50%) and the review (5%) make 55%. They do not add up with discount codes, which apply to the first year only: between a code and the system discounts, the higher one applies. The discount of a forever promo (November promo, December promo) adds up with them, in the same percentage: for example 17% and 5% make 22%.
 
 **Gift code.** With a gift code the first months indicated are free. You still register a payment method and, at the end of the free months, the subscription starts automatically at the full price of the chosen plan, with the same notices by email and in the dashboard 30 and 7 days before the charge. If you turn off renewal before the end of the free period nothing is charged: the guide stays online until that date, then it is no longer visible to guests. The code is valid for one person only, for the first subscription only, by the date indicated. During the free months the discount of an invitation you received does not apply: if the account came from an invitation and uses a gift code, the gift code applies and the invitation is not counted. During the free months you can also join the programme and your card may be published. **After the first payment you get all the benefits**: invitations ({passo}% per friend, up to {max}%) and review ({giudizio}%), up to {totale}%, starting from the first renewal. We may cancel an unused code at any time.
 T,
@@ -596,7 +596,7 @@ T,
 Annex I, part B, of the Italian Consumer Code. Complete and send this form only if you are a consumer and wish to withdraw from the contract.
 
 - To: {titolare_completo}, {sede}, Italy · email {email}
-- I/We (*) hereby give notice that I/We (*) withdraw from my/our (*) contract for the provision of the following service: MyHouse Welcome subscription, plan …………
+- I/We (*) hereby give notice that I/We (*) withdraw from my/our (*) contract for the provision of the following service: Welcome MyHouse subscription, plan …………
 - Ordered on (*) / paid on (*): …………
 - Name of consumer(s): …………
 - Address of consumer(s): …………
@@ -609,7 +609,7 @@ T,
 
 // ================================================================ PRIVACY POLICY
 'privacy.intro' => <<<'T'
-This policy explains how {titolare} processes the personal data of people using MyHouse Welcome (hosts and website visitors) and of guests reading the guides, under articles 13 and 14 of Regulation (EU) 2016/679 (GDPR). For each processing activity you will find which data, why, on what legal basis, for how long and who receives them.
+This policy explains how {titolare} processes the personal data of people using Welcome MyHouse (hosts and website visitors) and of guests reading the guides, under articles 13 and 14 of Regulation (EU) 2016/679 (GDPR). For each processing activity you will find which data, why, on what legal basis, for how long and who receives them.
 
 For the data hosts enter in their guides, the host is the controller and we are the processor: see the {link_dpa}. The Italian version prevails in case of doubt.
 T,
@@ -795,7 +795,7 @@ T,
 
 // ================================================================ DATA PROCESSING AGREEMENT
 'dpa.intro' => <<<'T'
-Annex A to the {link_termini}. Under art. 28 of Regulation (EU) 2016/679 (GDPR), this agreement governs the processing of personal data that {titolare_completo} ("Processor") carries out on behalf of the host ("Controller") when providing MyHouse Welcome. It is accepted together with the Terms, at sign-up, and applies for as long as the contract does. The Italian version prevails in case of doubt.
+Annex A to the {link_termini}. Under art. 28 of Regulation (EU) 2016/679 (GDPR), this agreement governs the processing of personal data that {titolare_completo} ("Processor") carries out on behalf of the host ("Controller") when providing Welcome MyHouse. It is accepted together with the Terms, at sign-up, and applies for as long as the contract does. The Italian version prevails in case of doubt.
 T,
 'dpa.1.titolo' => 'Subject matter and duration',
 'dpa.1.testo' => <<<'T'
@@ -856,7 +856,7 @@ T,
 
 // ================================================================ UPDATES (the dashboard window and the email)
 'legale.novita' => <<<'T'
-November promo: −17% on the first year for those who activate by 30 November 2026 with the code NOVEMBRE17; it adds up with “Review with a discount” (−22%) and with a partner's code, not with a friend's invitation (the highest applies).
+November promo and December promo: −17% forever, on the first year and on every renewal, for those who activate by 30 November 2026 (NOVEMBRE17, including those who already have) or from 1 to 31 December 2026 (DICEMBRE17); it adds up with “Review with a discount” (−22% on the first year) and with a partner's code, not with a friend's invitation (the highest applies).
 Concierge AI: with Plus and Portfolio it answers guests' questions with your guide's text, through an automatic assistant by Anthropic. You turn it on and off from the dashboard; guests' questions are anonymous (point 14 of the Terms, processing 16 of the Policy).
 “Review with a discount”: the 5% applies only once. If you join at checkout (or before your first payment), on the first year; if you join later, on the renewal following your review (rating and comment). The logo you upload appears as it is on the home-page card.
 Partner programme: with a partner's code you get a discount on the first year; the partner receives a commission on your payments, without your personal data.

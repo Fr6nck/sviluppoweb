@@ -18,7 +18,7 @@ final class Testimonianze
      * @deprecated 9N · Dalla 9L il testo dell'adesione è la casella del programma (Giudizi::casella()), salvata con il giudizio.
      * Resta solo per i giudizi lasciati senza programma (sito senza le migrazioni 044/050); mai una foto della persona.
      */
-    public const CONSENSO = 'Acconsento che MyHouse Welcome pubblichi sul proprio sito il mio voto, il mio giudizio, il mio nome (senza cognome), '
+    public const CONSENSO = 'Acconsento che Welcome MyHouse pubblichi sul proprio sito il mio voto, il mio giudizio, il mio nome (senza cognome), '
         . 'il nome e la città della struttura. Il link della mia guida non viene pubblicato. '
         . 'Posso ritirare il consenso quando voglio da Account & Fatturazione.';
     /** 9L · Mai la foto dell'host: restano la copertina della guida o nessuna foto. */
@@ -156,7 +156,7 @@ final class Testimonianze
     }
 
     /**
-     * Il riquadro «Ti sta piacendo MyHouse Welcome?» in «Le mie guide»: da 30 giorni dopo la prima
+     * Il riquadro «Ti sta piacendo Welcome MyHouse?» in «Le mie guide»: da 30 giorni dopo la prima
      * pubblicazione, se non ha ancora dato un giudizio. Chiuso, torna una volta sola dopo 60 giorni.
      */
     public static function daChiedere(array $acc, ?int $adesso = null): bool
@@ -253,7 +253,7 @@ final class Testimonianze
         $a = Support::contatto();
         if ($a === '') return;
         $paragrafi = [
-            'Un cliente ha dato ' . $d['rating'] . ' stell' . ($d['rating'] === 1 ? 'a' : 'e') . ' a MyHouse Welcome. Gli abbiamo detto che gli scriviamo per capire cosa migliorare.',
+            'Un cliente ha dato ' . $d['rating'] . ' stell' . ($d['rating'] === 1 ? 'a' : 'e') . ' a Welcome MyHouse. Gli abbiamo detto che gli scriviamo per capire cosa migliorare.',
             '«' . $d['body'] . '»',
             'Chi: ' . trim((string) ($u['name'] ?? '')) . ' · ' . (string) ($u['email'] ?? '') . ($d['property_name'] !== '' ? ' · ' . $d['property_name'] . ($d['city'] !== '' ? ', ' . $d['city'] : '') : ''),
         ];

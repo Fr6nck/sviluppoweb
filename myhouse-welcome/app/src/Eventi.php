@@ -263,7 +263,7 @@ final class Eventi
         $ora = trim((string) ($r['time_from'] ?? ''));
         $fuso = new \DateTimeZone('Europe/Rome');
         $utc = new \DateTimeZone('UTC');
-        $righe = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MyHouse Welcome//Eventi//IT', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+        $righe = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Welcome MyHouse//Eventi//IT', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
                   'UID:' . preg_replace('/[^A-Za-z0-9@._-]/', '', $uid),
                   'DTSTAMP:' . gmdate('Ymd\THis\Z', $adesso ?? time())];
         if ($a === $da && preg_match('/^\d{2}:\d{2}$/', $ora)) {

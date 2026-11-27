@@ -10,7 +10,7 @@
  * voce salvata in subscriptions.provider_variant_item_id): DELETE della voce con
  * proration_behavior=create_prorations, così il cliente ha il credito della parte non goduta sulla
  * prossima fattura; poi provider_variant_item_id si azzera e il registro (audit_log) ne tiene traccia.
- * Dopo: su Stripe archivia il prodotto «MyHouse Welcome — variante camera» (vedi DA-CONFIGURARE.md).
+ * Dopo: su Stripe archivia il prodotto «Welcome MyHouse — variante camera» (vedi DA-CONFIGURARE.md).
  */
 
 declare(strict_types=1);
@@ -66,4 +66,4 @@ foreach ($trovati as $t) {
         echo "  ✓ {$t['s']['email']}: voce tolta\n"; $fatti++;
     } catch (\Throwable $e) { echo "  ! {$t['s']['email']}: non riuscito ({$e->getMessage()})\n"; }
 }
-echo "\nFatto: $fatti su " . count($trovati) . ". Ora archivia su Stripe il prodotto «MyHouse Welcome — variante camera».\n";
+echo "\nFatto: $fatti su " . count($trovati) . ". Ora archivia su Stripe il prodotto «Welcome MyHouse — variante camera».\n";

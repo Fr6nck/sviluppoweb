@@ -20,7 +20,7 @@ return [
         'pass'       => '…',
         'encryption' => 'tls',
         'from'       => 'noreply@tuodominio.it',
-        'from_name'  => 'MyHouse Welcome',
+        'from_name'  => 'Welcome MyHouse',
     ],
 
     'storage' => [

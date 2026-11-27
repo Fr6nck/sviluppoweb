@@ -8,7 +8,7 @@
 use function MHW\b; use function MHW\a;
 use MHW\{Support, Icon, Plans, SectionCatalog, Partner, LinguaSito, Iva};
 $U = [LinguaSito::class, 't']; $EN = LinguaSito::en();
-$title = $tp['h1'] . ' · MyHouse Welcome';
+$title = $tp['h1'] . ' · Welcome MyHouse';
 $dentro = !empty($user);
 $pianoPorto = !empty($tp['portfolio']) && $piano && Plans::perProperty($piano);   // la pagina consiglia Portfolio (/piu-strutture)
 $crea = b() . ($dentro ? '/pannello' : LinguaSito::percorso('/registrati') . ($piano ? '?piano=' . (int) $piano['pv_id'] . ($pianoPorto ? '&amp;strutture=' . max(2, (int) $piano['min_quantity']) : '') : ''));
@@ -129,7 +129,7 @@ $linkDemo = fn() => '<a class="btn btn--lg btn--ghost" href="' . $demoUrl . '" t
       <?php if ($promoT): ?><span class="badge-promo" data-nascondi-oltre>−<?= (int) $promoT['value'] ?>%</span><span class="price price--barrato"><?= Iva::cifra($prezzoP, $pf['currency'], 'data-pieno', 's') ?></span><?php endif; ?>
       <?= Iva::cifra($promoT ? MHW\Sconti::conPromo($prezzoP, $promoT) : $prezzoP, $pf['currency'], 'class="tipo-piano__cifra price" data-totale') ?>
       <div class="tipo-piano__righe" data-nascondi-oltre>
-        <span class="small muted"><?= $promoT ? Iva::nota($U('+ IVA il 1° anno per', '+ VAT the 1st year for'), $U('IVA inclusa il 1° anno per', 'incl. VAT the 1st year for')) : Iva::nota($U('+ IVA all\'anno per', '+ VAT per year for'), $U('IVA inclusa all\'anno per', 'incl. VAT per year for')) ?> <span data-quante><?= $minP ?></span><?= $U(' strutture', ' properties') ?><?= $maxP > 0 ? $U(', fino a ', ', up to ') . $maxP : '' ?><?php if ($promoT): ?> · <?= $U('poi', 'then') ?> <?= Iva::cifra($prezzoP, $pf['currency'], 'data-pieno-poi') ?> <?= $U('/ anno', '/ year') ?><?php endif; ?></span>
+        <span class="small muted"><?= $promoT ? MHW\Sconti::notaPromo($promoT, LinguaSito::en(), true) : Iva::nota($U('+ IVA all\'anno per', '+ VAT per year for'), $U('IVA inclusa all\'anno per', 'incl. VAT per year for')) ?> <span data-quante><?= $minP ?></span><?= $U(' strutture', ' properties') ?><?= $maxP > 0 ? $U(', fino a ', ', up to ') . $maxP : '' ?><?php if ($promoT && !MHW\Sconti::perSempre($promoT)): ?> · <?= $U('poi', 'then') ?> <?= Iva::cifra($prezzoP, $pf['currency'], 'data-pieno-poi') ?> <?= $U('/ anno', '/ year') ?><?php endif; ?></span>
         <?= Iva::dettaglio($promoT ? MHW\Sconti::conPromo($prezzoP, $promoT) : $prezzoP, LinguaSito::en(), $pf['currency']) ?>
         <?= Iva::interruttore(LinguaSito::en(), $tp['percorso']) /* 9O · i prezzi IVA inclusa per i privati */ ?>
       </div>

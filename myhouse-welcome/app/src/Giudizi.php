@@ -2,7 +2,7 @@
 namespace MHW;
 
 /**
- * 9B · «Ti piace MyHouse Welcome?»: il giudizio con lo sconto (di serie il 5%).
+ * 9B · «Ti piace Welcome MyHouse?»: il giudizio con lo sconto (di serie il 5%).
  *
  * Le regole, decise dal titolare e scritte nei Termini («Giudizio con sconto»):
  *   - una sola casella, ovunque: chi aderisce si impegna a lasciare un voto con un commento dopo la pubblicazione
@@ -328,7 +328,7 @@ final class Giudizi
     }
 
     /**
-     * Il riquadro «Ti piace MyHouse Welcome?» del pannello e di Account: in che stato è.
+     * Il riquadro «Ti piace Welcome MyHouse?» del pannello e di Account: in che stato è.
      * @return array{stato:string,giudizio:?array,pubblicata:bool,aderito:bool,sconto:string}
      *   stato: nascosto | aderito | invito | senza_sconto | fatto
      */

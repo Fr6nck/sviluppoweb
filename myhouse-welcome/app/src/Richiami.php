@@ -36,7 +36,7 @@ final class Richiami
                          'scadenza' => 'l\'avviso prima della scadenza',
                          'conferma' => 'il promemoria sulla conferma dell\'email', 'pagamento' => 'il promemoria sul pagamento',
                          'parere' => 'la domanda su cosa ti ha fermato',
-                         'giudizio' => 'la richiesta di un giudizio su MyHouse Welcome', 'benvenuto' => 'l\'email di benvenuto',
+                         'giudizio' => 'la richiesta di un giudizio su Welcome MyHouse', 'benvenuto' => 'l\'email di benvenuto',
                          'sconti' => 'l\'email sugli sconti del rinnovo',
                          'bozza7' => 'le email sulla guida in bozza', 'bozza21' => 'le email sulla guida in bozza', 'bozza' => 'le email sulla guida in bozza',
                          'assistente' => 'le email sul Concierge AI'];   // con l'articolo: «Non vuoi più ricevere …?»
@@ -105,7 +105,7 @@ final class Richiami
             $link = Support::baseUrl() . '/verifica/' . Tokens::issue((int) $u['uid'], Tokens::VERIFY, 48 * 3600);
             self::lingua((int) $u['acc_id']);
             $m = [self::tt('Confermi la tua email?'),
-                  ($ref === '72' ? self::tt('è l\'ultima volta che te lo chiediamo:') . ' ' : '') . self::tt('il tuo account MyHouse Welcome aspetta solo la conferma dell\'indirizzo. Un clic sul bottone e prepari la tua guida, come la vedranno i tuoi ospiti.'),
+                  ($ref === '72' ? self::tt('è l\'ultima volta che te lo chiediamo:') . ' ' : '') . self::tt('il tuo account Welcome MyHouse aspetta solo la conferma dell\'indirizzo. Un clic sul bottone e prepari la tua guida, come la vedranno i tuoi ospiti.'),
                   self::tt('Conferma la mia email'), $link, self::tt('Il link vale 48 ore. Se non hai creato tu l\'account, ignora questo messaggio.')];
             if (self::manda((int) $u['acc_id'], $u['email'], (string) $u['user_name'], 'conferma', $ref, $m)) $fatte['conferma']++;
         }
@@ -218,7 +218,7 @@ final class Richiami
             $base = Support::baseUrl() . '/parere/{token}/';
             self::lingua($acc);
             $m = [self::tt('Cosa ti ha fermato?'),
-                  self::tt('ti sei iscritto a MyHouse Welcome due settimane fa, ma la guida non è ancora online. Ci aiuti a capire perché? Basta un clic, non serve accedere.'),
+                  self::tt('ti sei iscritto a Welcome MyHouse due settimane fa, ma la guida non è ancora online. Ci aiuti a capire perché? Basta un clic, non serve accedere.'),
                   null, null, null, array_map(fn($k, $v) => [self::tt($v), $base . $k], array_keys(self::MOTIVI), self::MOTIVI)];
             if (self::manda($acc, $u['email'], (string) $u['user_name'], 'parere', 'primo', $m)) $fatte['parere']++;
         }
@@ -241,7 +241,7 @@ final class Richiami
                 if ($aderito && Staff::e((int) $g['acc_id'])) continue;
                 self::lingua((int) $g['acc_id']);
                 $m = $aderito ? self::testoPromemoriaGiudizio((int) $g['acc_id'], 'pubblicazione')
-                          : [self::tt('Ti sta piacendo MyHouse Welcome?'),
+                          : [self::tt('Ti sta piacendo Welcome MyHouse?'),
                              self::tt('la tua guida è online da un mese. Ci dici com\'è andata? Bastano un voto e due righe: ci aiutano a migliorare.'),
                              self::tt('Dai il tuo giudizio'), Support::baseUrl() . '/giudizio?scrivi=1'];
                 if (self::manda((int) $g['acc_id'], $g['email'], (string) $g['user_name'], 'giudizio', 'primo', $m)) $fatte['giudizio']++;
@@ -280,6 +280,7 @@ final class Richiami
         try { Campione::pulisci(); } catch (\Throwable $e) { Log::exception($e, 'campione: storico'); }   // 9M: le copie sovrascritte oltre i 30 giorni
         try { AccountProva::pulisci(); } catch (\Throwable $e) { Log::exception($e, 'account di prova: registro'); }   // 9R: l'email tolta dopo 90 giorni
         try { Sconti::riallineaInSospeso(); } catch (\Throwable $e) { Log::exception($e, 'sconti da riallineare'); }   // 9R · migrazione 063
+        try { Listino::inSospeso(); } catch (\Throwable $e) { Log::exception($e, 'listino: prezzi nuovi'); }   // 9W · migrazione 073
         // Benvenuto: le prime guide degli ultimi giorni rimaste senza email (il primo tentativo non è partito).
         try { $fatte['online'] = Pagamenti::recenti($t); } catch (\Throwable $e) { Log::exception($e, 'email «La tua guida è online»'); }   // 9O: quelle non partite
         try { $fatte['benvenuto'] = Benvenuto::recenti($t); } catch (\Throwable $e) { Log::exception($e, 'email di benvenuto'); }
@@ -531,7 +532,7 @@ final class Richiami
     {
         $quando = self::giorno((string) $s['current_period_end']);
         $piano = (Plans::version((int) $s['package_version_id']) ?? [])['name'] ?? '';
-        $abb = $piano !== '' ? self::tt('il tuo abbonamento MyHouse Welcome {piano}', ['{piano}' => $piano]) : self::tt('il tuo abbonamento MyHouse Welcome');
+        $abb = $piano !== '' ? self::tt('il tuo abbonamento Welcome MyHouse {piano}', ['{piano}' => $piano]) : self::tt('il tuo abbonamento Welcome MyHouse');
         $x = ['{abb}' => $abb, '{data}' => $quando];
         if ($finito) {
             return [self::tt('La tua guida è offline'),
@@ -682,7 +683,7 @@ final class Richiami
         $piedeHtml = $servizio ? '' : ($dovuta ? $dovutaT
                    : $e($tl('Non vuoi più ricevere {cosa}?', ['{cosa}' => $tl(self::TIPI[$tipo])])) . ' <a href="' . $e($stop) . '" style="color:#6a5b48">' . $e($tl('Non mandarmene più')) . '</a>');
         $piedeTesto = $servizio ? '' : ($dovuta ? $dovutaT : $tl('Non vuoi più ricevere {cosa}?', ['{cosa}' => $tl(self::TIPI[$tipo])]) . " $stop");
-        $invio = fn() => Mailer::inLingua($lingua, fn() => Mailer::send($email, $oggetto . ' — MyHouse Welcome',
+        $invio = fn() => Mailer::inLingua($lingua, fn() => Mailer::send($email, $oggetto . ' — Welcome MyHouse',
             Mailer::testo($oggetto, $paragrafi, $tasto, $nota, $piedeTesto, $scelte), Mailer::layout($oggetto, $paragrafi, $tasto, $nota, $piedeHtml, $scelte)));
         $ok = $pagamento ? Mailer::diPagamento($invio) : $invio();
         if (!$ok) Db::run('DELETE FROM email_log WHERE token = ?', [$token]);   // si riproverà al prossimo giro

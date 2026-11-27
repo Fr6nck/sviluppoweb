@@ -48,7 +48,7 @@ $testoInvito = Inviti::messaggio($acc);   /* 7D: lo stesso messaggio pronto dell
       <button type="button" class="btn btn--sm" data-copia="<?= Support::e($linkInvito) ?>" data-copiato="<?= t('Link copiato') ?>" hidden><?= Icon::svg('copy', 15) ?><?= t('Copia il link') ?></button>
       <?php if (empty($paginaInviti)): /* nella pagina «Invita un amico» ci sono già, sotto il messaggio pronto */ ?>
       <a class="btn btn--ghost btn--sm" href="https://wa.me/?text=<?= rawurlencode($testoInvito) ?>" target="_blank" rel="noopener"><?= Icon::svg('whatsapp', 15) ?>WhatsApp</a>
-      <a class="btn btn--ghost btn--sm" href="mailto:?subject=<?= rawurlencode(t('Ti invito su MyHouse Welcome')) ?>&amp;body=<?= rawurlencode($testoInvito) ?>"><?= Icon::svg('message', 15) ?>Email</a>
+      <a class="btn btn--ghost btn--sm" href="mailto:?subject=<?= rawurlencode(t('Ti invito su Welcome MyHouse')) ?>&amp;body=<?= rawurlencode($testoInvito) ?>"><?= Icon::svg('message', 15) ?>Email</a>
       <?php endif; ?>
     </div>
     <?php $codiceInv = Inviti::codice($acc); ?>

@@ -87,7 +87,7 @@ final class Anteprima
         return $img;
     }
 
-    /** Il marchio «myhouse welcome» in bianco, in basso a destra (assets/email/marchio-email.png). */
+    /** Il marchio «welcome myhouse» in bianco, in basso a destra (assets/email/marchio-email.png). */
     private static function marchio(\GdImage $img): void
     {
         $f = MHW_APP . '/public/assets/email/marchio-email.png';

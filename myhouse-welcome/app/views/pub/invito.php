@@ -5,15 +5,15 @@
    guida non è pubblicata), $sezioni, $copertina, $esempio. */
 use function MHW\b;
 use MHW\{Support, Icon, Inviti, Palette, SectionCatalog};
-$title = $p ? $p['name'] . ' usa MyHouse Welcome' : $nome . ' ti invita su MyHouse Welcome';
+$title = $p ? $p['name'] . ' usa Welcome MyHouse' : $nome . ' ti invita su Welcome MyHouse';
 $pal = Palette::get((string) ($p['palette'] ?? ''));
 $tiles = $pal['tiles']; $inchiostri = $pal['tile_ink']; ?>
 <section class="blocco invito-pagina" aria-labelledby="invito-titolo">
   <div class="invito-pagina__testo stack">
     <span class="kicker">Un invito di <?= Support::e($nome) ?></span>
     <h1 id="invito-titolo" class="h-sezione">
-      <?php if ($p): ?><?= Support::e($nome) ?> usa MyHouse Welcome per <?= Support::e($p['name']) ?><?= trim((string) $p['city']) !== '' ? ', a ' . Support::e($p['city']) : '' ?>.
-      <?php else: ?><?= Support::e($nome) ?> usa MyHouse Welcome e ti invita a provarla.<?php endif; ?>
+      <?php if ($p): ?><?= Support::e($nome) ?> usa Welcome MyHouse per <?= Support::e($p['name']) ?><?= trim((string) $p['city']) !== '' ? ', a ' . Support::e($p['city']) : '' ?>.
+      <?php else: ?><?= Support::e($nome) ?> usa Welcome MyHouse e ti invita a provarla.<?php endif; ?>
     </h1>
     <p class="lead">La guida digitale della casa: check-in, Wi-Fi e consigli in un link e un QR, nella lingua di ogni ospite.
       Con questo invito hai il <b><?= Inviti::AMICO ?>% di sconto</b> sul primo anno.</p>

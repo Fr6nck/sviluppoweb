@@ -184,7 +184,7 @@ return [
     'directions'               => 'Routebeschrijving',
 
     'kind.extras'              => 'Extra diensten',
-    'made_with'                => 'Gids gemaakt met MyHouse Welcome',
+    'made_with'                => 'Gids gemaakt met Welcome MyHouse',
     'create_yours'             => 'Maak de jouwe',
     'review_title'             => 'Heb je genoten van je verblijf?',
     'review_lead'              => 'Een review helpt je gastheer enorm.',

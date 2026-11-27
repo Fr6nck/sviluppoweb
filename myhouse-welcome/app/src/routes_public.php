@@ -154,7 +154,7 @@ $r->get('/i/{codice}', function (array $a) use ($guard) {
         'chi' => $chi, 'nome' => explode(' ', trim((string) $chi['user_name']))[0] ?: 'Un host', 'codice' => $codice,
         'p' => $p, 'sezioni' => $sezioni, 'copertina' => $p && $p['cover_media_id'] ? Media::url((int) $p['cover_media_id']) : null,
         'esempio' => MHW\Demo::esempio(null, $p ? (int) $p['id'] : 0),
-        'ogTitolo' => $p ? $p['name'] . ' usa MyHouse Welcome' : null,
+        'ogTitolo' => $p ? $p['name'] . ' usa Welcome MyHouse' : null,
         'ogTesto' => 'Con questo invito hai il ' . MHW\Inviti::AMICO . '% di sconto sul primo anno.',
         'ogImmagine' => $p && $p['cover_media_id'] ? Support::baseUrl() . '/i/' . rawurlencode($codice) . '/anteprima.jpg' : null,
     ]);
@@ -685,12 +685,12 @@ $r->get('/partner/foglio.pdf', function () use ($partnerDentro) {
     $p = $partnerDentro();
     if (!$p) Support::redirect('/partner');
     $en = $p['lingua'] === 'en'; $sc = (int) $p['sconto_clienti_pct'];
-    $pdf = MHW\QrExport::pdf(MHW\ProgrammaPartner::link($p), 'MyHouse Welcome', null,
+    $pdf = MHW\QrExport::pdf(MHW\ProgrammaPartner::link($p), 'Welcome MyHouse', null,
         [$en ? 'Your guests\' guide, on their phone' : 'La guida per i tuoi ospiti, sul telefono', ($en ? 'Code ' : 'Codice ') . $p['codice'] . ($sc > 0 ? ($en ? ": $sc% off the first year" : ": $sc% sul primo anno") : ''),
          $en ? 'Scan the QR code to start' : 'Inquadra il QR per cominciare', (string) ($p['ragione_sociale'] ?: $p['referente'])],
         $en ? 'The digital guide for holiday homes, B&Bs and farm stays' : 'La guida digitale per case vacanza, B&B e agriturismi');
     header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="myhouse-welcome-' . strtolower((string) $p['codice']) . '.pdf"');
+    header('Content-Disposition: attachment; filename="welcome-myhouse-' . strtolower((string) $p['codice']) . '.pdf"');
     header('X-Robots-Tag: noindex');
     echo $pdf; exit;
 });

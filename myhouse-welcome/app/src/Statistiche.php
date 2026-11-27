@@ -94,12 +94,12 @@ final class Statistiche
         if (!isset(self::OBIETTIVI[$nome]) || !self::matomo() || !function_exists('curl_init')) return;
         $c = self::config();
         $q = http_build_query(['idsite' => $c['matomo_id'], 'rec' => 1, 'apiv' => 1, 'send_image' => 0, 'rand' => bin2hex(random_bytes(4)),
-                               'url' => Support::baseUrl() . '/', 'action_name' => 'MyHouse Welcome',
+                               'url' => Support::baseUrl() . '/', 'action_name' => 'Welcome MyHouse',
                                'e_c' => 'obiettivo', 'e_a' => $nome, 'e_n' => $dettaglio]);
         try {
             $ch = curl_init($c['matomo_url'] . 'matomo.php?' . $q);
             curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 2, CURLOPT_TIMEOUT => 2,
-                                    CURLOPT_USERAGENT => 'MyHouse Welcome (statistiche dal server)']);
+                                    CURLOPT_USERAGENT => 'Welcome MyHouse (statistiche dal server)']);
             curl_exec($ch);
             curl_close($ch);
         } catch (\Throwable $e) { Log::exception($e, 'Statistiche::matomoDalServer'); }

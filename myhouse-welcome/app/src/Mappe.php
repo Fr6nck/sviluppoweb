@@ -93,7 +93,7 @@ final class Mappe
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true, CURLOPT_HEADER => true, CURLOPT_NOBODY => false,
                 CURLOPT_FOLLOWLOCATION => false, CURLOPT_TIMEOUT_MS => (int) ($resta * 1000), CURLOPT_CONNECTTIMEOUT_MS => (int) ($resta * 1000),
-                CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS, CURLOPT_USERAGENT => 'MyHouseWelcome/1.0',
+                CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS, CURLOPT_USERAGENT => 'WelcomeMyHouse/1.0',
                 CURLOPT_RANGE => '0-2047',
             ]);
             $risposta = curl_exec($ch);

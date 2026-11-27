@@ -112,8 +112,8 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
       </div>
       <?php if (!$admin && Support::contatto() !== ''): /* 7A: l'assistenza, con pagina, struttura e account già scritti */
             $paginaAiuto = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH); ?>
-        <a class="lato__aiuto" href="<?= Support::e(Support::mailto(t('Assistenza — ') . ($prop['name'] ?? 'MyHouse Welcome'),
-            tf("Ciao, mi serve aiuto con MyHouse Welcome.\n\nPagina: {pagina}\nStruttura: {struttura}\nAccount: {email}\n\nCosa succede:\n", ['{pagina}' => $paginaAiuto, '{struttura}' => $prop['name'] ?? '—', '{email}' => $u['email']]))) ?>">
+        <a class="lato__aiuto" href="<?= Support::e(Support::mailto(t('Assistenza — ') . ($prop['name'] ?? 'Welcome MyHouse'),
+            tf("Ciao, mi serve aiuto con Welcome MyHouse.\n\nPagina: {pagina}\nStruttura: {struttura}\nAccount: {email}\n\nCosa succede:\n", ['{pagina}' => $paginaAiuto, '{struttura}' => $prop['name'] ?? '—', '{email}' => $u['email']]))) ?>">
           <?= Icon::svg('message', 18, 1.8) ?><?= t('Aiuto') ?></a>
       <?php endif; ?>
       <div class="lato__comandi">
@@ -129,7 +129,7 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="<?= Support::ROBOTS_GUIDE ?>">
-<title><?= Support::e($title ?? 'MyHouse Welcome') ?></title>
+<title><?= Support::e($title ?? 'Welcome MyHouse') ?></title>
 <?php include __DIR__ . '/_tema.php'; ?>
 <?php include __DIR__ . '/_icone.php'; ?>
 <?php /* 8H: i caratteri dal nostro server (assets/fonts): niente richieste a Google; si anticipa solo Onest, il testo. */ ?>
@@ -166,7 +166,7 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
 <?php if ($conLato): ?>
 <div class="app">
   <aside class="lato" aria-label="Navigazione">
-    <a class="lato__marchio" href="<?= b() ?>/<?= $admin ? 'admin' : 'pannello' ?>"><?= Icon::brand(26) ?><span>myhouse welcome</span></a>
+    <a class="lato__marchio" href="<?= b() ?>/<?= $admin ? 'admin' : 'pannello' ?>"><?= Icon::brand(26) ?><span>welcome myhouse</span></a>
     <?php if ($admin): ?><span class="tag lato__tag">Amministrazione</span><?php endif; ?>
     <?php $navigazione(); ?>
   </aside>
@@ -174,12 +174,12 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
   <div class="tela">
     <header class="tela__testa">
       <div class="tela__telefono">
-        <a class="brand" href="<?= b() ?>/<?= $admin ? 'admin' : 'pannello' ?>"><?= Icon::brand(24) ?><span>myhouse welcome</span></a>
+        <a class="brand" href="<?= b() ?>/<?= $admin ? 'admin' : 'pannello' ?>"><?= Icon::brand(24) ?><span>welcome myhouse</span></a>
         <details class="cassetto">
           <summary class="icon-btn" aria-label="Menu"><?= Icon::svg('menu', 20, 2) ?></summary>
           <div class="cassetto__pannello lato">
             <div class="cassetto__testa">
-              <span class="lato__marchio"><?= Icon::brand(24) ?><span>myhouse welcome</span></span>
+              <span class="lato__marchio"><?= Icon::brand(24) ?><span>welcome myhouse</span></span>
               <button type="button" class="icon-btn cassetto__chiudi" aria-label="Chiudi il menu" onclick="this.closest('details').open=false"><?= Icon::svg('close', 18, 2) ?></button>
             </div>
             <?php $navigazione(); ?>
@@ -253,7 +253,7 @@ $navigazione = function () use ($admin, $generale, $gruppiAdmin, $attiva, $guida
     <?php endif; ?>
 <?php else: ?>
 <header class="topbar"><div class="wrap">
-  <a class="brand" href="<?= b() ?>/<?= $u ? ($admin ? 'admin' : 'pannello') : '' ?>"><?= Icon::brand(26) ?><span>myhouse welcome</span></a>
+  <a class="brand" href="<?= b() ?>/<?= $u ? ($admin ? 'admin' : 'pannello') : '' ?>"><?= Icon::brand(26) ?><span>welcome myhouse</span></a>
   <div class="row" style="gap:10px">
     <?php if ($soloPassi): ?>
       <a class="btn btn--quiet btn--sm propbar__dopo" href="<?= b() ?>/pannello/<?= (int) $prop['id'] ?>"><?= t('Continua dopo') ?></a>

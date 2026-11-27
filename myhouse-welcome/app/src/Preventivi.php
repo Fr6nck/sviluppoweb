@@ -62,12 +62,12 @@ final class Preventivi
                 Mailer::manda($email, 'We received your request for ' . $strutture . ' properties', 'Thanks, ' . explode(' ', $nome)[0] . '.',
                               ['We received your request for a quote for ' . $strutture . ' properties: we will get back to you within one working day with a tailored proposal.',
                                'If you want to add anything in the meantime, just reply to this email.'],
-                              null, null, ['MyHouse Welcome · ' . $commerciale, 'MyHouse Welcome · ' . $commerciale]);
+                              null, null, ['Welcome MyHouse · ' . $commerciale, 'Welcome MyHouse · ' . $commerciale]);
             } else {
                 Mailer::manda($email, 'Abbiamo ricevuto la richiesta per ' . $strutture . ' strutture', 'Grazie, ' . explode(' ', $nome)[0] . '.',
                               ['Abbiamo ricevuto la richiesta di preventivo per ' . $strutture . ' strutture: ti rispondiamo entro un giorno lavorativo con una proposta su misura.',
                                'Se nel frattempo vuoi aggiungere qualcosa, rispondi a questa email.'],
-                              null, null, ['MyHouse Welcome · ' . $commerciale, 'MyHouse Welcome · ' . $commerciale]);
+                              null, null, ['Welcome MyHouse · ' . $commerciale, 'Welcome MyHouse · ' . $commerciale]);
             }
         });
         Log::info('Preventivo: richiesta salvata', ['id' => $id, 'strutture' => $strutture]);

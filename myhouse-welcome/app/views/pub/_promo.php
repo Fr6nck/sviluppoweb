@@ -21,8 +21,9 @@ $finePr = Sconti::fine($promoR); ?>
 <aside class="promo<?= $piccolaPr ? ' promo--piccola' : '' ?>" aria-labelledby="promo-titolo-<?= $piccolaPr ? 'p' : 'g' ?>" data-promo>
   <span class="promo__cifra" aria-hidden="true">−<?= (int) $promoR['value'] ?>%</span>
   <div class="promo__testo">
-    <h2 class="promo__titolo" id="promo-titolo-<?= $piccolaPr ? 'p' : 'g' ?>"><?= TestiSito::html('promo.titolo', $sostPr) ?></h2>
-    <p><?= TestiSito::html($gPr > 0 ? 'promo.testo' : 'promo.semplice', $sostPr) ?></p>
+    <?php $chPr = Sconti::perSempre($promoR) ? 'promo.sempre.' : 'promo.';   /* 9W · la promo per sempre ha i suoi testi */ ?>
+    <h2 class="promo__titolo" id="promo-titolo-<?= $piccolaPr ? 'p' : 'g' ?>"><?= TestiSito::html($chPr . 'titolo', $sostPr) ?></h2>
+    <p><?= TestiSito::html($chPr . ($gPr > 0 ? 'testo' : 'semplice'), $sostPr) ?></p>
     <div class="promo__conto" data-promo-fine="<?= $finePr * 1000 ?>" hidden role="timer" aria-label="<?= Support::e(LinguaSito::t('Tempo che resta alla fine della promo', 'Time left until the promo ends')) ?>">
       <span><b data-promo-giorni>–</b><small><?= LinguaSito::t('giorni', 'days') ?></small></span>
       <span><b data-promo-ore>–</b><small><?= LinguaSito::t('ore', 'hours') ?></small></span>

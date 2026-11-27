@@ -19,7 +19,7 @@ namespace MHW;
  * PDF anche dentro le righe (servizi, parcheggio). Stessa conversione al volo.
  *
  * Formato 5: recensioni e prenotazione diretta per il commiato, e la firma
- * «Guida creata con MyHouse Welcome» (visibile, salvo chi la nasconde col piano).
+ * «Guida creata con Welcome MyHouse» (visibile, salvo chi la nasconde col piano).
  *
  * Formato 8 (8C): l'email per gli ospiti (pagina delle recensioni); riscaldamento e aria
  * condizionata sono due sezioni. Le istantanee di prima con «clima» si vedono come prima.

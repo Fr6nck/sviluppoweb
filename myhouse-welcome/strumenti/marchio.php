@@ -57,7 +57,7 @@ for ($i = 0; $i < 90000; $i++) {
 }
 $ink = imagecolorallocate($im, ...INK); $muted = imagecolorallocate($im, ...MUTED); $terra = imagecolorallocate($im, ...TERRA);
 simbolo($im, 88 * $k, 70 * $k, 3.1 * $k, INK, TERRA);
-imagettftext($im, 30 * $k, 0, 200 * $k, 150 * $k, $ink, $onest, 'myhouse welcome');
+imagettftext($im, 30 * $k, 0, 200 * $k, 150 * $k, $ink, $onest, 'welcome myhouse');
 imagettftext($im, 78 * $k, 0, 88 * $k, 330 * $k, $ink, $gloock, 'La casa risponde');
 imagettftext($im, 78 * $k, 0, 88 * $k, 425 * $k, $ink, $gloock, 'prima che chiedano.');
 imagefilledrectangle($im, 88 * $k, 480 * $k, 148 * $k, 485 * $k, $terra);

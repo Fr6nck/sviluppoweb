@@ -48,7 +48,7 @@ final class Properties
     {
         $mia = (int) $altra['account_id'] === $accountId;
         // 9N · Nella lingua del pannello (frasi intere).
-        return ($mia ? strtr(Pannello::t('Questo CIN è già usato dalla tua guida «{nome}».'), ['{nome}' => $altra['name']]) : Pannello::t('Questo CIN è già usato da un\'altra guida su MyHouse Welcome.')) . ' '
+        return ($mia ? strtr(Pannello::t('Questo CIN è già usato dalla tua guida «{nome}».'), ['{nome}' => $altra['name']]) : Pannello::t('Questo CIN è già usato da un\'altra guida su Welcome MyHouse.')) . ' '
              . Pannello::t('Una guida corrisponde a un\'unità ricettiva, con il suo indirizzo e il suo CIN: più camere allo stesso indirizzo e con lo stesso CIN sono una guida sola.')
              . ($mia ? '' : ' ' . strtr(Pannello::t('Se la struttura è tua, scrivici a {email} e lo sistemiamo.'), ['{email}' => (string) ((Config::get('legal') ?? [])['contact_email'] ?? '')]));
     }

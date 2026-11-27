@@ -15,7 +15,7 @@ $enS = LinguaSito::en(); ?>
   <div class="dicono-scheda__corpo">
     <span class="stelline dicono-scheda__voto" role="img" aria-label="<?= (int) $g['rating'] ?> <?= $enS ? 'out of 5' : 'su 5' ?>"><?= str_repeat('★', (int) $g['rating']) . str_repeat('☆', 5 - (int) $g['rating']) ?></span>
     <blockquote><p>«<?= Support::e($g['body']) ?>»</p></blockquote>
-    <?php if ($g['risposta'] !== ''): ?><p class="dicono-scheda__risposta"><b>MyHouse Welcome:</b> <?= Support::e($g['risposta']) ?></p><?php endif; ?>
+    <?php if ($g['risposta'] !== ''): ?><p class="dicono-scheda__risposta"><b>Welcome MyHouse:</b> <?= Support::e($g['risposta']) ?></p><?php endif; ?>
     <figcaption class="dicono-scheda__chi">
       <b><?= Support::e($g['name']) ?></b><span class="small muted"><?= Support::e(trim($g['property_name'] . ($g['luogo'] !== '' ? ' · ' . $g['luogo'] : ''), ' ·')) ?></span>
     </figcaption>

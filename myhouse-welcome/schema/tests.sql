@@ -1,5 +1,5 @@
 -- =============================================================================
--- MyHouse Welcome — schema guarantee tests
+-- Welcome MyHouse — schema guarantee tests
 --
 -- These assert the invariants the product design depends on. They are not
 -- exhaustive coverage; they pin the promises made in the documentation:

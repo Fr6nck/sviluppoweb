@@ -1,4 +1,4 @@
-# MyHouse Welcome — applicazione
+# Welcome MyHouse — applicazione
 
 PHP 8.1+ e SQLite (o MySQL). **Nessuna dipendenza da installare**: niente
 Composer, niente Node, niente SDK. Si carica via FTP, anche in una
@@ -37,7 +37,7 @@ ritorno dal browser non attiva niente.
 | QR | permanente; PNG, SVG e PDF da stampare; link da copiare |
 | Statistiche (Plus) | aperture, aperture dal QR, sezioni più lette, lingue; eventi anonimi, niente cookie |
 | Amministrazione | quadro, clienti, abbonamenti con gli ID Stripe, guide, pacchetti e versioni, eccezioni per cliente, abbonamenti manuali, accesso come cliente tracciato (scade da solo dopo un'ora), registro, diagnostica |
-| Guida ospite | non indicizzabile (`noindex`), nessun cookie, nessun codice di porte o cassette, commiato con le sole istruzioni scritte dall'host, recensioni e prenotazione diretta se compilate, firma «Guida creata con MyHouse Welcome» (nascondibile con Plus e Portfolio) |
+| Guida ospite | non indicizzabile (`noindex`), nessun cookie, nessun codice di porte o cassette, commiato con le sole istruzioni scritte dall'host, recensioni e prenotazione diretta se compilate, firma «Guida creata con Welcome MyHouse» (nascondibile con Plus e Portfolio) |
 | Email di richiamo | dopo 1, 3 e 7 giorni se la guida è ferma, 30 giorni prima del rinnovo; una volta sola (`email_log`), con il link per non riceverne più |
 | Funnel | landing → registrazione → struttura → pubblicazione, eventi anonimi senza cookie, nel Quadro dell'admin |
 

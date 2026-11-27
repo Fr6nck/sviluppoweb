@@ -1,4 +1,4 @@
-# MyHouse Welcome — dall'applicazione funzionante all'MVP vendibile
+# Welcome MyHouse — dall'applicazione funzionante all'MVP vendibile
 
 Base di lavoro: il codice del ramo `claude/tender-mendel-6uq9eq` al commit `8f27f4f`
 (lo stesso contenuto dello ZIP `dist/myhouse-welcome-welcomebook.zip`).

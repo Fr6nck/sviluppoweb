@@ -10,11 +10,11 @@ return [
     'case-vacanza' => [
         'percorso' => '/en/holiday-homes', 'percorso_it' => '/case-vacanza', 'nome' => 'Holiday homes', 'tipologia' => 'casa_vacanza',
         'foto' => ['portone.jpg', 1200, 900, 'The front of a house with red shutters, a climbing rose and an arched door'],
-        'titolo' => 'Digital guest guide for holiday homes | MyHouse Welcome',
+        'titolo' => 'Digital guest guide for holiday homes | Welcome MyHouse',
         'descrizione' => 'The digital guide for your holiday home: self check-in, Wi-Fi, house rules and local tips in one link and QR code. Build it for free.',
         'kicker' => 'For holiday home owners',
         'h1' => 'The digital guide for your holiday home',
-        'intro' => 'When you are not there, the house has to explain itself. With MyHouse Welcome guests find on their phone how to get in, the Wi-Fi password, how the appliances work and what to do nearby, in their own language.',
+        'intro' => 'When you are not there, the house has to explain itself. With Welcome MyHouse guests find on their phone how to get in, the Wi-Fi password, how the appliances work and what to do nearby, in their own language.',
         'problemi' => [
             ['Guests arrive when you are not there', 'A late flight, keys in a key box, a front door that is hard to find: all the questions arrive on the evening of arrival.',
              'In "Check-in & Check-out" you write the steps one by one, with times and a photo of the door. Guests open them from the link you send before they leave.'],
@@ -43,7 +43,7 @@ return [
     'bed-and-breakfast' => [
         'percorso' => '/en/bed-and-breakfast', 'percorso_it' => '/bed-and-breakfast', 'nome' => 'Bed & breakfasts', 'tipologia' => 'bnb',
         'foto' => ['tipo-bed-and-breakfast.jpg', 1600, 900, 'The entrance of a stone B&B at sunset, with the sign, lit lanterns and flower pots'],
-        'titolo' => 'Digital guest guide for B&Bs | MyHouse Welcome',
+        'titolo' => 'Digital guest guide for B&Bs | Welcome MyHouse',
         'descrizione' => 'The digital guide for your B&B: breakfast times, the Wi-Fi of every room, house rules and local tips in one link and QR code for every guest.',
         'kicker' => 'For B&B owners',
         'h1' => 'The digital guide for your B&B',
@@ -76,7 +76,7 @@ return [
     'affittacamere' => [
         'percorso' => '/en/guesthouses', 'percorso_it' => '/affittacamere', 'nome' => 'Guesthouses', 'tipologia' => 'affittacamere',
         'foto' => ['tipo-affittacamere.jpg', 1200, 900, 'The arched wooden door of a stone house, among flower pots, climbing plants and herbs'],
-        'titolo' => 'Digital guest guide for guesthouses | MyHouse Welcome',
+        'titolo' => 'Digital guest guide for guesthouses | Welcome MyHouse',
         'descrizione' => 'The digital guide for your guesthouse: entrance, shared spaces, Wi-Fi, house rules and tips in one link and QR code, in your guests\' languages.',
         'kicker' => 'For guesthouse owners',
         'h1' => 'The digital guide for your guesthouse',
@@ -109,7 +109,7 @@ return [
     'agriturismi' => [
         'percorso' => '/en/farm-stays', 'percorso_it' => '/agriturismi', 'nome' => 'Farm stays', 'tipologia' => 'agriturismo',
         'foto' => ['tipo-agriturismi.jpg', 1600, 900, 'A stone farm stay with a flowered courtyard, umbrellas and hills in the background'],
-        'titolo' => 'Digital guest guide for farm stays | MyHouse Welcome',
+        'titolo' => 'Digital guest guide for farm stays | Welcome MyHouse',
         'descrizione' => 'The digital guide for your farm stay: how to get there, services, restaurant, activities on the farm and in the area, in one link and QR code.',
         'kicker' => 'For farm stay owners',
         'h1' => 'The digital guide for your farm stay',
@@ -142,7 +142,7 @@ return [
     'piu-strutture' => [
         'percorso' => '/en/multiple-properties', 'percorso_it' => '/piu-strutture', 'nome' => 'Multiple properties', 'tipologia' => null,
         'foto' => ['scena-host.jpg', 1200, 750, 'A host updating the guide on a laptop, sitting at the kitchen table'],
-        'titolo' => 'Digital guide for multiple properties | MyHouse Welcome',
+        'titolo' => 'Digital guide for multiple properties | Welcome MyHouse',
         'descrizione' => 'Several homes, one account: each property has its own digital guide and QR code, sections are copied, statistics stay separate. With Portfolio.',
         'kicker' => 'For hosts with more than one property',
         'h1' => 'All your homes, one place to run them.',
@@ -166,11 +166,11 @@ return [
     'property-manager' => [
         'percorso' => '/en/property-managers', 'percorso_it' => '/property-manager', 'nome' => 'Property managers', 'tipologia' => null,
         'foto' => ['tipo-property-manager.jpg', 1600, 900, 'A property manager at the desk with bookings and photos of several properties on the screens'],
-        'titolo' => 'Partner programme for property managers | MyHouse Welcome',
-        'descrizione' => 'Do you manage homes for their owners? Each property gets its own MyHouse Welcome digital guide and you become a partner, with a commission for each activation.',
+        'titolo' => 'Partner programme for property managers | Welcome MyHouse',
+        'descrizione' => 'Do you manage homes for their owners? Each property gets its own Welcome MyHouse digital guide and you become a partner, with a commission for each activation.',
         'kicker' => 'For property managers and agencies',
         'h1' => 'Your owners will notice. So will their guests.',
-        'intro' => 'Do you manage homes for others? With MyHouse Welcome each property has its own digital guide, ready in an afternoon. Owners see an extra service, guests write less and review better, and you become a partner: you earn on every property you bring.',
+        'intro' => 'Do you manage homes for others? With Welcome MyHouse each property has its own digital guide, ready in an afternoon. Owners see an extra service, guests write less and review better, and you become a partner: you earn on every property you bring.',
         'problemi_kicker' => 'Why it pays', 'problemi_titolo' => 'Three reasons to become a partner',
         'problemi' => [
             ['One more service to offer', 'The digital guide becomes part of your management package: one more reason to choose you.', ''],

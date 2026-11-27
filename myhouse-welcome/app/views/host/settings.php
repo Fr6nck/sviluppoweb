@@ -119,7 +119,7 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
         <img src="<?= Support::e(MHW\av('/assets/myhouse/myhouse-logo-nero-breve.png')) ?>" alt="<?= MHW\Support::e(t('MyHouse')) ?>" width="114" height="26">
         <span><b><?= t('Crealo con noi.') ?></b> <?= t('Un sito tuo, con la prenotazione diretta: meno commissioni ai portali e ospiti che tornano da te.') ?></span>
         <?php $waNumero = preg_replace('/\D/', '', (string) ((MHW\Config::get('legal') ?? [])['contact_whatsapp'] ?? ''));
-              $msgSito = tf('Ciao, ho una guida MyHouse Welcome per {nome}. Non ho ancora un sito per la mia struttura e vorrei crearlo. Mi date una proposta?', ['{nome}' => $prop['name']]); ?>
+              $msgSito = tf('Ciao, ho una guida Welcome MyHouse per {nome}. Non ho ancora un sito per la mia struttura e vorrei crearlo. Mi date una proposta?', ['{nome}' => $prop['name']]); ?>
         <span class="row striscia-myhouse__bottoni">
           <button type="button" class="btn btn--sm" data-funnel-apri="no" data-funnel-dialogo="dlg-sito"><?= t('Voglio una proposta') ?></button>
           <?php if ($waNumero !== ''): ?><a class="btn btn--ghost btn--sm" href="https://wa.me/<?= Support::e($waNumero) ?>?text=<?= rawurlencode($msgSito) ?>" target="_blank" rel="noopener"><?= Icon::svg('whatsapp', 15) ?>WhatsApp</a><?php endif; ?>
@@ -129,7 +129,7 @@ $title = 'Impostazioni — ' . $prop['name']; ?>
     </fieldset>
     <fieldset class="fieldset">
       <legend><?= t('Firma nella guida') ?></legend>
-      <p class="help"><?= t('In fondo alla guida: «Guida creata con MyHouse Welcome · Crea la tua».') ?></p>
+      <p class="help"><?= t('In fondo alla guida: «Guida creata con Welcome MyHouse · Crea la tua».') ?></p>
       <?php if ($firma): ?>
         <label class="check"><input type="checkbox" name="hide_branding" value="1" <?= (int) $prop['hide_branding'] === 1 ? 'checked' : '' ?>> <span><?= t('Nascondi la firma') ?></span></label>
       <?php else: ?>

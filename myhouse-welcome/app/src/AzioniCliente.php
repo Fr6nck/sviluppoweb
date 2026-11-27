@@ -46,13 +46,13 @@ final class AzioniCliente
         $fine = Support::date((string) $s['current_period_end']);
         $omaggio = !empty($s['omaggio_fino']) && $s['status'] === 'trialing';
         if ($ferma) {
-            self::email($u, 'Il tuo abbonamento non si rinnoverà', [self::nome($u) . ', come concordato con la nostra assistenza abbiamo disattivato il rinnovo automatico del tuo abbonamento MyHouse Welcome.',
+            self::email($u, 'Il tuo abbonamento non si rinnoverà', [self::nome($u) . ', come concordato con la nostra assistenza abbiamo disattivato il rinnovo automatico del tuo abbonamento Welcome MyHouse.',
                 $omaggio ? "La guida resta online fino alla fine dei mesi gratis, il $fine. Dopo quella data non ti verrà addebitato nulla e la guida non sarà più visibile agli ospiti: i contenuti restano salvati."
                          : "La guida resta online fino al $fine, fine del periodo già pagato. Dopo quella data non ti verrà addebitato nulla e la guida non sarà più visibile agli ospiti: i contenuti restano salvati.",
                 'Se cambi idea, puoi riattivare il rinnovo quando vuoi da Account & Fatturazione.']);
             return 'Rinnovo fermato: resta attivo fino al ' . $fine . ', poi la guida va offline senza addebiti. Il cliente ha ricevuto un\'email.';
         }
-        self::email($u, 'Il tuo abbonamento si rinnova di nuovo da solo', [self::nome($u) . ', come concordato con la nostra assistenza abbiamo riattivato il rinnovo automatico del tuo abbonamento MyHouse Welcome.',
+        self::email($u, 'Il tuo abbonamento si rinnova di nuovo da solo', [self::nome($u) . ', come concordato con la nostra assistenza abbiamo riattivato il rinnovo automatico del tuo abbonamento Welcome MyHouse.',
             "Il prossimo addebito sarà il $fine: ti avvisiamo per email 30 e 7 giorni prima. Puoi disattivarlo quando vuoi da Account & Fatturazione."]);
         return 'Rinnovo riattivato: il prossimo addebito è il ' . $fine . '. Il cliente ha ricevuto un\'email.';
     }
@@ -175,7 +175,7 @@ final class AzioniCliente
                                      + (Migrator::columnExists('rimborsi', 'code') ? ['code' => Codici::pagamentoFattura($accountId, $invoiceId)] : []));   // 9I: il pagamento rimborsato
         Auth::audit('refund.requested', (int) $u['id'], ['rimborso' => $id, 'invoice' => $invoiceId, 'amount' => $cents, 'motivo' => $motivo, 'testo' => mb_substr(trim($testo), 0, 255)]);
         self::email($u, 'Ti abbiamo rimborsato ' . Support::money($cents, $f['valuta']), [
-            self::nome($u) . ', abbiamo disposto un rimborso di ' . Support::money($cents, $f['valuta']) . ' sulla fattura ' . $f['numero'] . ' di MyHouse Welcome.',
+            self::nome($u) . ', abbiamo disposto un rimborso di ' . Support::money($cents, $f['valuta']) . ' sulla fattura ' . $f['numero'] . ' di Welcome MyHouse.',
             'Lo vedrai sulla carta usata per il pagamento entro 5–10 giorni lavorativi, a seconda della tua banca. Il tuo abbonamento non cambia.',
             'Per la fattura elettronica riceverai la nota di credito con gli stessi dati di fatturazione.']);
         return 'Rimborso di ' . Support::money($cents, $f['valuta']) . ' disposto su Stripe (fattura ' . $f['numero'] . '). Il cliente ha ricevuto un\'email. Nota di credito da fare in Adamo.';
@@ -214,7 +214,7 @@ final class AzioniCliente
         Db::update('users', ['password_hash' => password_hash($pw, PASSWORD_DEFAULT), 'password_temp_until' => gmdate('Y-m-d\TH:i:s\Z', time() + 48 * 3600), 'must_change_password' => 1], 'id = :uid', ['uid' => (int) $u['id']]);
         Auth::audit('admin.password_temp', (int) $u['id']);
         self::email($u, 'Una password provvisoria per il tuo account', [
-            self::nome($u) . ', un amministratore ha impostato una password provvisoria per il tuo account MyHouse Welcome, su tua richiesta. Vale 48 ore: al primo accesso ti chiediamo di sceglierne una nuova.',
+            self::nome($u) . ', un amministratore ha impostato una password provvisoria per il tuo account Welcome MyHouse, su tua richiesta. Vale 48 ore: al primo accesso ti chiediamo di sceglierne una nuova.',
             'Se non sei stato tu a chiederla, scrivici subito' . (Support::contatto() !== '' ? ' a ' . Support::contatto() : '') . '.'], ['Accedi', Support::baseUrl() . '/accedi'], false);
         return $pw;
     }

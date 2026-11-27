@@ -4,7 +4,7 @@
    del questionario ($qPiani, $qRiep, $qRisposte, $qStrutture). In inglese su /en/plan (LinguaSito). */
 use function MHW\b;
 use MHW\LinguaSito;
-$title = LinguaSito::t('Quale piano scegliere · MyHouse Welcome', 'Which plan to choose · MyHouse Welcome');
+$title = LinguaSito::t('Quale piano scegliere · Welcome MyHouse', 'Which plan to choose · Welcome MyHouse');
 $dentro = !empty($user) && ($user['role'] ?? '') !== 'admin'; $qOrigine = 'piano'; ?>
 <div class="pagina-piano">
   <p class="small"><a href="<?= b() . LinguaSito::percorso('/') ?>#piani"><?= LinguaSito::t('← Tutti i piani e i prezzi', '← All plans and prices') ?></a></p>

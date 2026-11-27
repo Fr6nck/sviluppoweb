@@ -267,7 +267,7 @@ final class Offerte
     {
         $r = Stripe::call('POST', 'prices', [
             'currency' => strtolower((string) $pv['currency']), 'unit_amount' => (string) (int) $o['prezzo_cents'], 'tax_behavior' => 'exclusive',
-            'recurring[interval]' => 'year', 'product_data[name]' => 'MyHouse Welcome Portfolio su misura · ' . (int) $o['strutture'] . ' strutture',
+            'recurring[interval]' => 'year', 'product_data[name]' => 'Welcome MyHouse Portfolio su misura · ' . (int) $o['strutture'] . ' strutture',
             'product_data[metadata][ruolo]' => 'offerta', 'product_data[metadata][offerta]' => (string) $o['id'], 'metadata[offerta]' => (string) $o['id'],
         ], 'mhw-offerta-prezzo-' . $o['id']);
         return (string) ($r['id'] ?? '');
@@ -300,7 +300,7 @@ final class Offerte
         ]);
         Codici::pagamento($oid);
         return Stripe::checkoutChange(Db::one('SELECT * FROM orders WHERE id = ?', [$oid]),
-                                      'MyHouse Welcome Portfolio su misura · da ' . (int) $sub['quantity'] . ' a ' . (int) $o['strutture'] . ' strutture (conguaglio fino al rinnovo)', $acc, $user);
+                                      'Welcome MyHouse Portfolio su misura · da ' . (int) $sub['quantity'] . ' a ' . (int) $o['strutture'] . ' strutture (conguaglio fino al rinnovo)', $acc, $user);
     }
 
     /** Stripe passa al prezzo della nuova offerta, senza proporzioni (il conguaglio, se c'è, è pagato a parte). Rete. */

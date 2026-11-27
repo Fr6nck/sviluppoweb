@@ -115,7 +115,7 @@ $fmt1 = fn(float $x) => number_format($x, 1, ',', '.'); ?>
       </tbody>
     </table></div>
     <?php endif; ?>
-    <p class="small muted" style="margin:0">Stima calcolata con i prezzi in Impostazioni. Il costo vero è nella Claude Console → Usage / Cost del workspace MyHouse Welcome.</p>
+    <p class="small muted" style="margin:0">Stima calcolata con i prezzi in Impostazioni. Il costo vero è nella Claude Console → Usage / Cost del workspace Welcome MyHouse.</p>
     <p class="small muted" style="margin:0">Costo stimato = token in ingresso × prezzo + token in uscita × prezzo (la cache dei prompt costa 1,25× in scrittura e 0,1× in lettura). Il limite è per struttura: di serie <?= $n($limite) ?> domande al mese ciascuna; quello personale di un cliente è nella sua scheda.</p>
   </section>
 

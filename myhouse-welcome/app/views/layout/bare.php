@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <?php /* Titolo, descrizione, robots, canonical, Open Graph e dati strutturati: Amministrazione → SEO e GEO.
          Le pagine senza $seoPagina (accesso, registrazione…) hanno noindex. */ ?>
-<?= MHW\Seo::head($seoPagina ?? null, $title ?? 'MyHouse Welcome', $descrizione ?? '') ?>
+<?= MHW\Seo::head($seoPagina ?? null, $title ?? 'Welcome MyHouse', $descrizione ?? '') ?>
 <?php include __DIR__ . '/_tema.php'; ?>
 <?php include __DIR__ . '/_icone.php'; ?>
 <?php if (empty($seoPagina)) include __DIR__ . '/_condivisione.php'; ?>
@@ -17,7 +17,7 @@
 <body class="cms">
 <main class="wrap" style="max-width:<?= Support::e($larghezza ?? '520px') ?>;padding-top:40px;padding-bottom:48px">
   <div class="spread spread--mid">
-    <a class="brand" href="<?= b() . ($enB ? '/en' : '/') ?>"><?= Icon::brand(26) ?><span>myhouse welcome</span></a>
+    <a class="brand" href="<?= b() . ($enB ? '/en' : '/') ?>"><?= Icon::brand(26) ?><span>welcome myhouse</span></a>
     <?php include __DIR__ . '/_tema-bottone.php'; ?>
   </div>
   <?php if ($f): ?><p class="note note--<?= $f['kind'] === 'err' ? 'err' : 'ok' ?>" style="margin-top:24px" role="status"><?= Support::e($f['msg']) ?></p><?php endif; ?>

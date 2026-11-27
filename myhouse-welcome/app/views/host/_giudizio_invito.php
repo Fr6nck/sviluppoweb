@@ -1,5 +1,5 @@
 <?php use function MHW\t, MHW\tf;
-/* «Ti piace MyHouse Welcome?» in «Le mie guide» (7D, 9B): il riquadro del programma del giudizio con lo sconto.
+/* «Ti piace Welcome MyHouse?» in «Le mie guide» (7D, 9B): il riquadro del programma del giudizio con lo sconto.
    Dal primo accesso, finché non c'è un giudizio. La ✕ lo chiude; torna una volta sola dopo 60 giorni. In Account →
    Il tuo giudizio resta sempre. Stati (Giudizi::riquadro): aderito (al pagamento o dal pannello), invito (non ha
    aderito, interruttore acceso: la stessa unica casella del pagamento, in breve), senza_sconto (interruttore spento). */
@@ -20,7 +20,7 @@ $pct = Giudizi::disponibili() ? Giudizi::percentuale() : 5; ?>
       <h2 id="giudizio-invito-titolo"><?= Support::e(tf('Giudizio con sconto: il {n}% sul prossimo rinnovo', ['{n}' => $pct])) ?></h2>
       <p class="small"><?= t('La tua guida tra «Le guide dei nostri host» su welcomemyhouse.it e, dopo 30 giorni, il tuo giudizio. Lo sconto non dipende dal voto.') ?></p>
     <?php else: ?>
-      <h2 id="giudizio-invito-titolo"><?= t('Ti piace MyHouse Welcome? Raccontacelo') ?></h2>
+      <h2 id="giudizio-invito-titolo"><?= t('Ti piace Welcome MyHouse? Raccontacelo') ?></h2>
       <p class="small"><?= t('Un voto e due righe per un altro host che sta decidendo. Ci vuole un minuto.') ?></p>
     <?php endif; ?>
   </div>

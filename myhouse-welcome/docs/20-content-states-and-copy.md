@@ -237,7 +237,7 @@ whether a property exists.
 | `marketing.cta.primary` | Create your Welcome Guide | Crea la tua guida |
 | `marketing.cta.secondary` | See an example | Guarda un esempio |
 | `activate.title` | Set your password | Scegli la tua password |
-| `welcome.title` | Welcome to MyHouse Welcome | Benvenuto in MyHouse Welcome |
+| `welcome.title` | Welcome to Welcome MyHouse | Benvenuto in Welcome MyHouse |
 | `welcome.subtitle` | Let's create your guest guide. | Creiamo la guida per i tuoi ospiti. |
 | `welcome.cta` | Start configuration | Iniziamo |
 | `welcome.time` | About 20 minutes. You can stop and come back any time. | Circa 20 minuti. Puoi fermarti e riprendere quando vuoi. |
@@ -245,7 +245,7 @@ whether a property exists.
 | `wizard.skip` | Skip this step | Salta questo passaggio |
 | `wizard.continue` | Continue | Continua |
 | `dashboard.greeting` | Hello, {name} | Ciao, {name} |
-| `dashboard.status.online` | Your MyHouse Welcome guide is online. | La tua guida è online. |
+| `dashboard.status.online` | Your Welcome MyHouse guide is online. | La tua guida è online. |
 | `dashboard.status.draft` | Your guide isn't online yet. | La tua guida non è ancora online. |
 | `dashboard.status.pending` | You have changes guests can't see yet. | Ci sono modifiche che i tuoi ospiti non vedono ancora. |
 | `content.title` | Your guide | La tua guida |

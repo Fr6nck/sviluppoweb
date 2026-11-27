@@ -53,7 +53,7 @@ final class QrExport
              . $t($name, $yNome, 30, '700') . $t(self::SOTTOTITOLO, $yNome + 28, 13, '400', '#6a5b48') . $qr
              . $t(self::INVITI[0], 620, 18, '700') . $t(self::INVITI[1], 646, 18, '700')
              . $t(self::INVITI[2], 684, 18, '400', '#6a5b48') . $t(self::INVITI[3], 710, 18, '400', '#6a5b48')
-             . $t('MyHouse Welcome', 792, 11, '700', '#94825f') . $t((string) preg_replace('#^https?://#', '', $text), 810, 10, '400', '#6a5b48')
+             . $t('Welcome MyHouse', 792, 11, '700', '#94825f') . $t((string) preg_replace('#^https?://#', '', $text), 810, 10, '400', '#6a5b48')
              . '</svg>' . "\n";
     }
 
@@ -149,7 +149,7 @@ final class QrExport
         $c .= $scrivi($righe[2], 16, 206, false, $grigio);
         $c .= $scrivi($righe[3], 16, 184, false, $grigio);
         // In fondo, piccoli: il marchio e l'indirizzo breve della guida, così come lo genera il sito.
-        $c .= $scrivi('MyHouse Welcome', 10, 62, true, '0.580 0.510 0.373');
+        $c .= $scrivi('Welcome MyHouse', 10, 62, true, '0.580 0.510 0.373');
         $c .= $scrivi(preg_replace('#^https?://#', '', $text), 9, 46, false, $grigio);
         $c .= "Q\n";
 
@@ -161,7 +161,7 @@ final class QrExport
         $obj[4] = '<< /Length ' . strlen($c) . " >>\nstream\n" . $c . "endstream";
         $obj[5] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
         $obj[6] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
-        $obj[7] = '<< /Title (' . self::pdfText('QR — ' . $name) . ') /Producer (MyHouse Welcome) >>';
+        $obj[7] = '<< /Title (' . self::pdfText('QR — ' . $name) . ') /Producer (Welcome MyHouse) >>';
         if ($logoJ) $obj[8] = '<< /Type /XObject /Subtype /Image /Width ' . $logoJ[1] . ' /Height ' . $logoJ[2]
             . ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' . strlen($logoJ[0]) . " >>\nstream\n" . $logoJ[0] . "\nendstream";
 

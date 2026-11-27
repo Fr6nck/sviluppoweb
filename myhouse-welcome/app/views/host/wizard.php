@@ -128,7 +128,7 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
             <?php else: ?><?= Support::e(Support::money(Plans::price($piano, $qSc), $piano['currency'])) ?>
             <span class="small muted"><?= t('+ IVA / anno') ?></span><?php endif; ?></span>
         </div>
-        <?php if ($sc && !$om): ?><p class="plan__sconto-riga" style="margin:0">−<?= $sc['percento'] > 0 ? (int) $sc['percento'] . '%' : Support::e(Support::money($sc['sconto'], $piano['currency'])) ?> <?= t('primo anno') ?></p><?php endif; ?>
+        <?php if ($sc && !$om): $sempreW = MHW\Sconti::sempreDi($sc); ?><p class="plan__sconto-riga" style="margin:0">−<?= $sc['percento'] > 0 ? (int) $sc['percento'] . '%' : Support::e(Support::money($sc['sconto'], $piano['currency'])) ?> <?= t('primo anno') ?><?php if ($sempreW): /* 9W */ ?> · <?= Support::e(tf('poi {prezzo} + IVA a ogni rinnovo: −{n}% per sempre', ['{prezzo}' => Support::money($sempreW['prezzo'], $piano['currency']), '{n}' => $sempreW['percento']])) ?><?php endif; ?></p><?php endif; ?>
         <?php if ($om): ?>
           <div class="spiega omaggio-spiega" role="status"><b><?= t('Oggi paghi 0 €.') ?></b> <?= tf('I tuoi primi {n} mesi sono gratis: il primo addebito di {prezzo} sarà il {data}.', ['{n}' => '<b>' . (int) $om['mesi'] . '</b>', '{prezzo}' => '<b>' . Support::e(Support::money($riep['totale'], $piano['currency'])) . ' ' . t('+ IVA') . '</b>', '{data}' => '<b>' . Support::e($dataOm) . '</b>']) ?>
             <?= Support::e(tf('Prima ti avvisiamo due volte, per email e nel pannello, 30 e 7 giorni prima. Puoi disattivare il rinnovo quando vuoi da Account & Fatturazione: fino al {data} la guida resta online e non paghi nulla; senza disattivazione l\'abbonamento parte da solo.', ['{data}' => $dataOm])) ?></div>
@@ -221,7 +221,7 @@ case 'pubblica': $quantita = (int) ($acc['intended_quantity'] ?? 1); ?>
               <a href="<?= b() . $dove ?>"><?= t('Correggi') ?></a></li>
           <?php endforeach; ?>
         </ul>
-        <p id="codici-testo"><?= t('Chi ha il link o il QR della guida può leggerli, anche dopo la partenza, e il link si può inoltrare. Ti consigliamo di toglierli e comunicarli all\'ospite in privato. Se pubblichi lo stesso, lo fai a tuo rischio: MyHouse Welcome non risponde dell\'uso di questi codici.') ?></p>
+        <p id="codici-testo"><?= t('Chi ha il link o il QR della guida può leggerli, anche dopo la partenza, e il link si può inoltrare. Ti consigliamo di toglierli e comunicarli all\'ospite in privato. Se pubblichi lo stesso, lo fai a tuo rischio: Welcome MyHouse non risponde dell\'uso di questi codici.') ?></p>
         <form method="post" action="<?= b() ?>/pannello/<?= $pid ?>/pubblica" class="stack" style="gap:16px;margin:0" data-codici-conferma><?= Csrf::field() ?>
           <label class="check"><input type="checkbox" name="codici_ok" value="1" required data-codici-ok> <span><?= t('Ho capito, pubblico a mio rischio') ?></span></label>
           <div class="row" style="gap:12px">

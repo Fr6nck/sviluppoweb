@@ -1658,7 +1658,7 @@ $r->post('/account/email', function () use ($host, $paginaAccount) {
     // 9N · L'email nella lingua del pannello dell'host.
     $n = trim(explode(' ', trim((string) $u['name']))[0] ?? '');
     $partita = MHW\Mailer::manda($email, MHW\t('Conferma la tua nuova email'), MHW\t('Conferma la tua nuova email'),
-        [$n !== '' ? MHW\tf('Ciao {nome}, per usare questo indirizzo nel tuo account MyHouse Welcome confermalo dal bottone qui sotto.', ['{nome}' => $n]) : MHW\t('Ciao, per usare questo indirizzo nel tuo account MyHouse Welcome confermalo dal bottone qui sotto.'),
+        [$n !== '' ? MHW\tf('Ciao {nome}, per usare questo indirizzo nel tuo account Welcome MyHouse confermalo dal bottone qui sotto.', ['{nome}' => $n]) : MHW\t('Ciao, per usare questo indirizzo nel tuo account Welcome MyHouse confermalo dal bottone qui sotto.'),
          MHW\t('Finché non lo confermi resta valida l\'email di prima.')],
         [MHW\t('Conferma la nuova email'), $link], MHW\t('Il link vale 48 ore. Se non l\'hai chiesto tu, ignora questo messaggio.'));
     if (!$partita) {
@@ -1683,7 +1683,7 @@ $r->get('/account/email/{token}', function (array $a) {
     $lin = MHW\Pannello::linguaDi($u, (int) Db::val('SELECT id FROM accounts WHERE user_id = ?', [$uid], 0));
     $n = trim(explode(' ', trim((string) $u['name']))[0] ?? '');
     MHW\Mailer::manda((string) $u['email'], MHW\Pannello::tIn($lin, 'La tua email è cambiata'), MHW\Pannello::tIn($lin, 'La tua email è cambiata'),
-        [MHW\Pannello::tIn($lin, $n !== '' ? 'Ciao {nome}, l\'email del tuo account MyHouse Welcome ora è {email}.' : 'Ciao, l\'email del tuo account MyHouse Welcome ora è {email}.', ['{nome}' => $n, '{email}' => $nuova]),
+        [MHW\Pannello::tIn($lin, $n !== '' ? 'Ciao {nome}, l\'email del tuo account Welcome MyHouse ora è {email}.' : 'Ciao, l\'email del tuo account Welcome MyHouse ora è {email}.', ['{nome}' => $n, '{email}' => $nuova]),
          MHW\Pannello::tIn($lin, 'Se non l\'hai chiesto tu, scrivici subito: {contatto}.', ['{contatto}' => Support::contatto()])]);
     Auth::audit('account.email', (int) $uid, ['da' => $u['email']]);
     Support::flash(MHW\Pannello::tIn($lin, 'Email cambiata: ora accedi con {email}.', ['{email}' => $nuova]));

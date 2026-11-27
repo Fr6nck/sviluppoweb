@@ -1,12 +1,12 @@
 <?php /* L'anteprima dei link condivisi (WhatsApp, Facebook, LinkedIn): solo nelle
          pagine pubbliche, mai nella guida degli ospiti. */
 use function MHW\a; use MHW\Support;
-$ogTitolo = $ogTitolo ?? 'MyHouse Welcome · La casa risponde prima che chiedano';
+$ogTitolo = $ogTitolo ?? 'Welcome MyHouse · La casa risponde prima che chiedano';
 $ogTesto = $ogTesto ?? 'La guida digitale per case vacanza, B&B, affittacamere e agriturismi: check-in, Wi-Fi e consigli in un link e un QR Code. La crei gratis, paghi solo quando la pubblichi.';
 $origine = (string) preg_replace('#^(https?://[^/]+).*$#', '$1', Support::baseUrl());
 $ogImmagine = $ogImmagine ?? ($origine . a('/assets/og.jpg'));   /* 7D: l'invito porta la copertina di chi invita */ ?>
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="MyHouse Welcome">
+<meta property="og:site_name" content="Welcome MyHouse">
 <meta property="og:title" content="<?= Support::e($ogTitolo) ?>">
 <meta property="og:description" content="<?= Support::e($ogTesto) ?>">
 <meta property="og:image" content="<?= Support::e($ogImmagine) ?>">

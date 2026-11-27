@@ -40,7 +40,7 @@ $modulo = function (array $t) {
   <?php else: ?>
   <section class="stack" aria-labelledby="giudizi-titolo" style="gap:12px">
     <h2 id="giudizi-titolo" style="font-size:22px">Giudizi dei clienti <?php if ($attesa): ?><span class="badge badge--ochre"><?= count($attesa) ?> in attesa</span><?php endif; ?></h2>
-    <p class="small muted" style="margin:0">Arrivano dal pannello («Ti sta piacendo MyHouse Welcome?»). Si pubblicano solo quelli con il consenso;
+    <p class="small muted" style="margin:0">Arrivano dal pannello («Ti sta piacendo Welcome MyHouse?»). Si pubblicano solo quelli con il consenso;
       se il cliente lo ritira, il giudizio sparisce subito dalla home. In home la media compare da <?= Testimonianze::MEDIA_DA ?> giudizi pubblicati.</p>
     <?php if (!$giudizi): ?><p class="note note--quiet">Ancora nessun giudizio.</p><?php endif; ?>
     <?php foreach ($giudizi as $g):

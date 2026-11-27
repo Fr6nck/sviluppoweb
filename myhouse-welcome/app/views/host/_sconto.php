@@ -32,10 +32,12 @@ $omaggioS = MHW\Omaggi::daUsare($acc);   // 9D · il codice omaggio prenotato: m
   <div class="sconto-ok" role="status">
     <p class="sconto-ok__prezzo" style="margin:0"><s><?= Support::e(Support::money($riep['prezzo'], $val)) ?></s>
       <b><?= Support::e(Support::money($riep['totale'], $val)) ?></b> <?= t('+ IVA il primo anno') ?></p>
-    <?php foreach ($riep['righe'] as $rr): ?>
-      <p style="margin:0"><b><?= Support::e($rr['nome']) ?></b>: <?= Support::e(tf('{sconto} sul primo anno.', ['{sconto}' => $rr['percento'] > 0 ? '−' . (int) $rr['percento'] . '%' : '−' . Support::money((int) $rr['cents'], $val)])) ?></p>
+    <?php $sempreS = Sconti::sempreDi($riep);   /* 9W · la promo per sempre vale anche ai rinnovi */
+          foreach ($riep['righe'] as $rr): $scontoRr = $rr['percento'] > 0 ? '−' . (int) $rr['percento'] . '%' : '−' . Support::money((int) $rr['cents'], $val); ?>
+      <p style="margin:0"><b><?= Support::e($rr['nome']) ?></b>: <?= Support::e($sempreS && ($rr['tipo'] ?? '') === 'promo' ? tf('{sconto} per sempre: sul primo anno e su ogni rinnovo.', ['{sconto}' => $scontoRr]) : tf('{sconto} sul primo anno.', ['{sconto}' => $scontoRr])) ?></p>
     <?php endforeach; ?>
-    <p style="margin:0"><?= Support::e(tf('Dal secondo anno {prezzo} + IVA.', ['{prezzo}' => Support::money($riep['prezzo'], $val)])) ?></p>
+    <p style="margin:0"><?= Support::e($sempreS ? tf('Dal secondo anno {prezzo} + IVA: il prezzo con la {promo} resta bloccato per sempre.', ['{prezzo}' => Support::money($sempreS['prezzo'], $val), '{promo}' => $sempreS['nome']])
+                                               : tf('Dal secondo anno {prezzo} + IVA.', ['{prezzo}' => Support::money($riep['prezzo'], $val)])) ?></p>
     <?php if ($riep['nota'] !== ''): ?><p class="small" style="margin:0"><?= Support::e($riep['nota']) ?></p><?php endif; ?>
     <?php if ($manuale): echo $togli(); endif; ?>
   </div>

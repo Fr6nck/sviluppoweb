@@ -1,5 +1,5 @@
 // =============================================================================
-// MyHouse Welcome — Prisma schema
+// Welcome MyHouse — Prisma schema
 //
 // The application-layer mirror of schema.sql. schema.sql is the source of truth:
 // it carries the CHECK constraints, partial indexes, triggers and row-level

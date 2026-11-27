@@ -243,7 +243,7 @@ payment.status = refunded
 order.status = refunded
 account.status = suspended          ← content preserved
 guide.status = unpublished          ← public URL returns 404
-email: "Your MyHouse Welcome guide has been unpublished"
+email: "Your Welcome MyHouse guide has been unpublished"
 ```
 
 Nothing is deleted. A refunded customer who returns is reactivated with their

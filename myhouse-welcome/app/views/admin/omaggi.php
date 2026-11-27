@@ -16,7 +16,7 @@ $bottoni = function (array $c) {
          . '<label class="small" for="om-email-' . (int) $c['id'] . '">Email della persona</label>'
          . '<span class="row" style="gap:6px;flex-wrap:nowrap"><input id="om-email-' . (int) $c['id'] . '" name="email" type="email" required maxlength="190" autocomplete="off" placeholder="nome@esempio.it">'
          . '<button class="btn btn--sm">Manda</button></span>'
-         . '<a class="tiny" href="mailto:?subject=' . rawurlencode((int) $c['mesi'] . ' mesi gratis di MyHouse Welcome') . '&amp;body=' . rawurlencode($msg) . '">oppure apri il tuo programma di posta</a></form></details>'
+         . '<a class="tiny" href="mailto:?subject=' . rawurlencode((int) $c['mesi'] . ' mesi gratis di Welcome MyHouse') . '&amp;body=' . rawurlencode($msg) . '">oppure apri il tuo programma di posta</a></form></details>'
          . '<button type="button" class="btn btn--ghost btn--sm" data-copia="' . Support::e($link) . '" data-copiato="Link copiato" hidden>' . Icon::svg('copy', 15) . 'Copia il link</button>';
 }; ?>
 <div class="stack stack--lg">

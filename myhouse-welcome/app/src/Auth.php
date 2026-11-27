@@ -94,13 +94,13 @@ final class Auth
         $link = Support::baseUrl() . '/password/nuova/' . $token;
         if (($u['panel_lang'] ?? '') === 'en') {   // 9N
             Mailer::inLingua('en', fn() => Mailer::manda($u['email'], 'Choose a new password', 'Choose a new password',
-                ['Someone asked to change the password of your MyHouse Welcome account. If it was you, choose the new password with the button below.',
+                ['Someone asked to change the password of your Welcome MyHouse account. If it was you, choose the new password with the button below.',
                  'If it was not you, ignore this message: the password stays the same.'],
                 ['Choose the password', $link], 'The link expires in one hour.'));
             return;
         }
         Mailer::manda($u['email'], 'Scegli una nuova password', 'Scegli una nuova password',
-            ['Qualcuno ha chiesto di cambiare la password del tuo account MyHouse Welcome. Se sei stato tu, scegli la nuova password dal bottone qui sotto.',
+            ['Qualcuno ha chiesto di cambiare la password del tuo account Welcome MyHouse. Se sei stato tu, scegli la nuova password dal bottone qui sotto.',
              'Se non sei stato tu, ignora questo messaggio: la password resta quella di prima.'],
             ['Scegli la password', $link], 'Il link scade tra un\'ora.');
     }

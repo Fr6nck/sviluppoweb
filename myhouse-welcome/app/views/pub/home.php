@@ -23,7 +23,7 @@ use MHW\{Support, Icon, Plans, TestiSito, LinguaSito, Iva};
 $U = [LinguaSito::class, 't'];
 $en = LinguaSito::en();
 $locSito = $en ? 'en' : 'it';
-$title = $U('MyHouse Welcome — la guida digitale della tua struttura', 'MyHouse Welcome — the digital guide for your property');
+$title = $U('Welcome MyHouse — la guida digitale della tua struttura', 'Welcome MyHouse — the digital guide for your property');
 /* I testi della pagina: Amministrazione → Sistema → «Testi e foto» (TestiSito); di serie, quelli di sempre. */
 $anteprimaTesti = !empty($anteprimaTesti);
 $T = fn(string $k, array $sost = []) => $anteprimaTesti
@@ -406,7 +406,7 @@ $disegni = [
       <div class="passi__schermate">
         <?php foreach ($passi as $i => [$n, , , $alt]): ?>
           <figure class="schermata" id="schermata-<?= $i + 1 ?>">
-            <span class="schermata__barra" aria-hidden="true"><i></i><i></i><i></i><span>myhousewelcome.it</span></span>
+            <span class="schermata__barra" aria-hidden="true"><i></i><i></i><i></i><span>welcomemyhouse.it</span></span>
             <img src="<?= Support::e($schermate[$i]) ?>" alt="<?= $alt ?>"<?= $F('pannello-' . ($i + 1)) ?>
                  loading="lazy" decoding="async" width="1200" height="750">
           </figure>
@@ -528,9 +528,10 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
             <div class="plan__prezzo">
               <?php $listinoP = Plans::price($primo, $minimo); $primoAnnoP = $promoV ? MHW\Sconti::conPromo($listinoP, $promoV) : $listinoP; ?>
               <?php if ($promoV): ?><span class="price price--barrato"><?= Iva::cifra($listinoP, $primo['currency'], 'data-pieno', 's') ?></span><?php endif; ?>
-              <span class="price" aria-live="polite"><?= Iva::cifra($primoAnnoP, $primo['currency'], 'data-totale') ?><small> <?= $promoV ? Iva::nota($U('+ IVA il 1° anno', '+ VAT the 1st year'), $U('IVA inclusa il 1° anno', 'incl. VAT the 1st year')) : Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?></small></span>
+              <span class="price" aria-live="polite"><?= Iva::cifra($primoAnnoP, $primo['currency'], 'data-totale') ?><small> <?= $promoV ? MHW\Sconti::notaPromo($promoV, $en) : Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?></small></span>
               <?= Iva::dettaglio($primoAnnoP, $en, $primo['currency']) ?>
-              <?php if ($promoV): ?><span class="plan__poi"><?= $U('poi', 'then') ?> <?= Iva::cifra($listinoP, $primo['currency'], 'data-pieno-poi') ?> <?= Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?> · <?= $U('da ', 'from ') . $minimo . $U(' a ', ' to ') . (int) $primo['max_quantity'] . $U(' strutture', ' properties') ?></span>
+              <?php if ($promoV && MHW\Sconti::perSempre($promoV)): /* 9W · la promo per sempre: niente «poi», il prezzo resta */ ?><span class="plan__poi plan__poi--sempre"><?= $U('Prezzo bloccato per sempre, anche ai rinnovi', 'Price locked forever, renewals included') ?> · <?= $U('da ', 'from ') . $minimo . $U(' a ', ' to ') . (int) $primo['max_quantity'] . $U(' strutture', ' properties') ?></span>
+              <?php elseif ($promoV): ?><span class="plan__poi"><?= $U('poi', 'then') ?> <?= Iva::cifra($listinoP, $primo['currency'], 'data-pieno-poi') ?> <?= Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?> · <?= $U('da ', 'from ') . $minimo . $U(' a ', ' to ') . (int) $primo['max_quantity'] . $U(' strutture', ' properties') ?></span>
               <?php else: ?><span class="plan__mese"><?= $U('circa', 'about') ?> <?= Iva::cifra(Plans::monthly($listinoP), $primo['currency'], 'data-mensile') ?> <?= $U('al mese', 'a month') ?></span><?php endif; ?>
             </div>
             <button class="btn"><?= Support::e($p['cta_label'] ?: $U('Scegli ', 'Choose ') . $nome) ?></button>
@@ -541,9 +542,10 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
           <div class="plan__prezzo">
             <?php $listinoS = (int) $primo['price_cents']; $primoAnnoS = $promoV ? MHW\Sconti::conPromo($listinoS, $promoV) : $listinoS; ?>
             <?php if ($promoV): ?><span class="price price--barrato"><?= Iva::cifra($listinoS, $primo['currency'], '', 's') ?></span><?php endif; ?>
-            <span class="price"><?= Iva::cifra($primoAnnoS, $primo['currency']) ?><small> <?= $promoV ? Iva::nota($U('+ IVA il 1° anno', '+ VAT the 1st year'), $U('IVA inclusa il 1° anno', 'incl. VAT the 1st year')) : Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?></small></span>
+            <span class="price"><?= Iva::cifra($primoAnnoS, $primo['currency']) ?><small> <?= $promoV ? MHW\Sconti::notaPromo($promoV, $en) : Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?></small></span>
             <?= Iva::dettaglio($primoAnnoS, $en, $primo['currency']) ?>
-            <?php if ($promoV): ?><span class="plan__poi"><?= $U('poi', 'then') ?> <?= Iva::cifra($listinoS, $primo['currency']) ?> <?= Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?></span>
+            <?php if ($promoV && MHW\Sconti::perSempre($promoV)): ?><span class="plan__poi plan__poi--sempre"><?= $U('Prezzo bloccato per sempre, anche ai rinnovi', 'Price locked forever, renewals included') ?></span>
+            <?php elseif ($promoV): ?><span class="plan__poi"><?= $U('poi', 'then') ?> <?= Iva::cifra($listinoS, $primo['currency']) ?> <?= Iva::nota($U('+ IVA / anno', '+ VAT / year'), $U('IVA inclusa / anno', 'incl. VAT / year')) ?></span>
             <?php else: ?><span class="plan__mese"><?= $U('circa', 'about') ?> <?= Iva::cifra(Plans::monthly($listinoS), $primo['currency']) ?> <?= $U('al mese', 'a month') ?></span><?php endif; ?>
           </div>
           <a class="btn" href="<?= $vai((int) $p['pv_id']) ?>"><?= Support::e($p['cta_label'] ?: $U('Scegli ', 'Choose ') . $nome) ?></a>
@@ -650,7 +652,7 @@ $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
       <?php if ($demoUrl): ?><a class="btn btn--lg btn--ghost" href="<?= $demoUrl ?>"<?= $nuovaScheda ?>><?= $T('cta.demo') ?> <?= Icon::svg('external', 16, 2) ?><?= $srNuova ?></a><?php endif; ?>
     </div>
   </div>
-  <aside class="chi" aria-label="<?= $U('Chi c\'è dietro MyHouse Welcome', 'Who is behind MyHouse Welcome') ?>">
+  <aside class="chi" aria-label="<?= $U('Chi c\'è dietro Welcome MyHouse', 'Who is behind Welcome MyHouse') ?>">
     <span class="chi__marchio"><?= Icon::brand(28) ?></span>
     <p class="chi__titolo"><?= $T('chi.titolo') ?></p>
     <p><?= $T('chi.testo') ?></p>

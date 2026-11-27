@@ -6,7 +6,9 @@ namespace MHW;
  *
  * Un codice nasce in amministrazione e diventa un coupon Stripe con duration=once:
  * su un abbonamento annuale sconta solo la prima fattura, quindi dal rinnovo si
- * paga il prezzo pieno. Su Stripe un coupon non si modifica: per cambiare valore
+ * paga il prezzo pieno. Una promo «per sempre» (per_sempre, dalla migrazione 073) sconta
+ * anche ogni rinnovo: il percento resta sull'account (bloccato()) ed entra nello sconto
+ * del rinnovo (rinnovo(), coupon mhw-rinnovo-N) dopo ogni fattura pagata. Su Stripe un coupon non si modifica: per cambiare valore
  * o date si disattiva e se ne crea un altro.
  *
  * Il limite per piano si controlla qui (i prodotti del checkout nascono al volo).
@@ -109,6 +111,52 @@ final class Sconti
     public static function cumulabile(array $r): bool
     {
         return empty($r['sistema']) && ($r['kind'] ?? '') === 'percent' && (!empty($r['somma_giudizio']) || !empty($r['somma_invito']));
+    }
+
+    /** 9W · Lo sconto di questa promo vale per sempre (anche ai rinnovi), non solo sul primo anno. */
+    public static function perSempre(?array $r): bool
+    {
+        return $r !== null && !empty($r['per_sempre']) && ($r['kind'] ?? '') === 'percent';
+    }
+
+    /**
+     * 9W · Lo sconto «per sempre» che l'account si è assicurato pagando con una promo per sempre (Promo novembre, Promo
+     * dicembre…): il più alto, se ne ha più d'uno. Vale a ogni rinnovo, qualunque piano scelga dopo. null = nessuno.
+     * @return array{id:int,code:string,value:int,nome_promo:string}|null
+     */
+    public static function bloccato(int $accountId): ?array
+    {
+        if (!self::disponibili() || !Migrator::columnExists('discount_codes', 'per_sempre')) return null;
+        $r = Db::one("SELECT c.id, c.code, c.value, c.nome_promo FROM discount_redemptions r JOIN discount_codes c ON c.id = r.discount_code_id
+                      WHERE r.account_id = ? AND c.per_sempre = 1 AND c.kind = 'percent' ORDER BY c.value DESC, r.id", [$accountId]);
+        return $r ? ['id' => (int) $r['id'], 'code' => (string) $r['code'], 'value' => (int) $r['value'], 'nome_promo' => (string) $r['nome_promo']] : null;
+    }
+
+    /**
+     * 9W · La nota accanto al prezzo scontato da una promo: «+ IVA / anno, per sempre» (promo per sempre) o «+ IVA il 1° anno»;
+     * $per aggiunge «per» in fondo (le schede Portfolio: «… per 2 strutture»). Con l'IVA inclusa, la versione lorda (Iva::nota).
+     */
+    public static function notaPromo(array $promo, bool $en, bool $per = false): string
+    {
+        $sempre = self::perSempre($promo);
+        $u = fn(string $it, string $e) => ($en ? $e : $it) . ($per ? ($sempre ? ',' : '') . ($en ? ' for' : ' per') : '');
+        return $sempre ? Iva::nota($u('+ IVA / anno, per sempre', '+ VAT / year, forever'), $u('IVA inclusa / anno, per sempre', 'incl. VAT / year, forever'))
+                       : Iva::nota($u('+ IVA il 1° anno', '+ VAT the 1st year'), $u('IVA inclusa il 1° anno', 'incl. VAT the 1st year'));
+    }
+
+    /**
+     * 9W · La promo per sempre dentro un riepilogo (riepilogo()): percento, nome e prezzo di ogni rinnovo con la sola promo
+     * (inviti e giudizio maturati si aggiungono dopo). null = nessuna promo per sempre nel conto.
+     * @return array{percento:int,nome:string,prezzo:int}|null
+     */
+    public static function sempreDi(?array $riep): ?array
+    {
+        foreach ((array) ($riep['righe'] ?? []) as $rr) {
+            if (($rr['tipo'] ?? '') !== 'promo' || empty($rr['codice_id'])) continue;
+            $r = self::riga((int) $rr['codice_id']);
+            if (self::perSempre($r)) return ['percento' => (int) $r['value'], 'nome' => self::nomePromo($r), 'prezzo' => self::netto((int) $riep['prezzo'], (int) $r['value'])];
+        }
+        return null;
     }
 
     /** 9U · «Promo novembre» (il nome della promo) o «Il codice NOVEMBRE17». */
@@ -265,7 +313,8 @@ final class Sconti
         if (!Migrator::columnExists('discount_codes', 'in_home')) return [];
         $c = ['somma_giudizio' => empty($in['somma_giudizio']) ? 0 : 1, 'somma_invito' => empty($in['somma_invito']) ? 0 : 1, 'in_home' => empty($in['in_home']) ? 0 : 1,
               'nome_promo' => mb_substr(trim((string) ($in['nome_promo'] ?? '')), 0, 80)];
-        if ($kind !== 'percent' && ($c['somma_giudizio'] || $c['somma_invito'] || $c['in_home'])) throw new \RuntimeException('Solo un codice a percentuale si somma ad altri sconti o va in home.');
+        if (Migrator::columnExists('discount_codes', 'per_sempre')) $c['per_sempre'] = empty($in['per_sempre']) ? 0 : 1;   // 9W
+        if ($kind !== 'percent' && ($c['somma_giudizio'] || $c['somma_invito'] || $c['in_home'] || !empty($c['per_sempre']))) throw new \RuntimeException('Solo un codice a percentuale si somma ad altri sconti, va in home o vale per sempre.');
         if ($c['in_home'] && $c['nome_promo'] === '') throw new \RuntimeException('Scrivi il nome della promo: compare nella fascia della home e nel riepilogo.');
         return $c;
     }
@@ -361,18 +410,21 @@ final class Sconti
             // 9R · Il 5% sul rinnovo matura solo con il giudizio lasciato (voto e commento): senza, il coupon comprende solo gli inviti.
             if (!empty($a['giudizio_adesione']) && ($stato === 'da_applicare_rinnovo' || ($omaggio && $stato === 'promesso')) && Giudizi::conGiudizio($accountId)) $giudizio = Giudizi::percentuale();
         }
-        $percento = min(100, $inviti + $giudizio);
+        // 9W · La promo «per sempre» pagata dall'account: si somma a inviti e giudizio, a ogni rinnovo.
+        $promo = ($bl = self::bloccato($accountId)) ? $bl['value'] : 0;
+        $percento = min(100, $promo + $inviti + $giudizio);
         // 9R · Un cambio di piano proposto e accettato «dal rinnovo»: il suo sconto vale su questo rinnovo al posto di inviti e
-        // giudizio, se è più alto (non si sommano); dopo, si torna alle regole solite.
+        // giudizio, se è più alto (non si sommano); dopo, si torna alle regole solite. 9W: la promo per sempre resta.
         $cambio = ProposteCambio::scontoRinnovo($accountId, $sub);
-        if ($cambio > $percento) return ['inviti' => 0, 'giudizio' => 0, 'cambio' => $cambio, 'percento' => $cambio, 'omaggio' => $omaggio, 'stripe' => $omaggio ? 0 : $cambio];
-        return ['inviti' => $inviti, 'giudizio' => $giudizio, 'percento' => $percento, 'omaggio' => $omaggio, 'stripe' => $omaggio ? 0 : $percento];
+        $conPromo = $promo > 0 ? ['promo' => $promo] : [];   // la chiave c'è solo con una promo per sempre
+        if ($cambio > $inviti + $giudizio) { $p = min(100, $promo + $cambio); return ['inviti' => 0, 'giudizio' => 0, 'cambio' => $cambio] + $conPromo + ['percento' => $p, 'omaggio' => $omaggio, 'stripe' => $omaggio ? 0 : $p]; }
+        return ['inviti' => $inviti, 'giudizio' => $giudizio] + $conPromo + ['percento' => $percento, 'omaggio' => $omaggio, 'stripe' => $omaggio ? 0 : $percento];
     }
 
     /** I metadati della composizione, sull'abbonamento Stripe: «inviti:10,giudizio:5». */
     public static function composizione(array $r): string
     {
-        return implode(',', array_map(fn($k) => "$k:" . (int) $r[$k], array_values(array_filter(['inviti', 'giudizio', 'manuale', 'cambio'], fn($k) => (int) ($r[$k] ?? 0) > 0))));
+        return implode(',', array_map(fn($k) => "$k:" . (int) $r[$k], array_values(array_filter(['promo', 'inviti', 'giudizio', 'manuale', 'cambio'], fn($k) => (int) ($r[$k] ?? 0) > 0))));
     }
 
     /** Il coupon del rinnovo di una percentuale somma: id fisso «mhw-rinnovo-N», una volta sola, creato se manca (come mhw-primo-anno-N). */
@@ -486,14 +538,14 @@ final class Sconti
         foreach ((array) ($inv['discounts'] ?? []) as $d) $leggi($d);
         foreach ((array) ($inv['total_discount_amounts'] ?? []) as $d) $leggi($d['discount'] ?? null);
         $meta = (string) ($inv['parent']['subscription_details']['metadata']['sconti'] ?? $inv['subscription_details']['metadata']['sconti'] ?? '');
-        $daMeta = ['inviti' => 0, 'giudizio' => 0];
+        $daMeta = ['inviti' => 0, 'giudizio' => 0, 'promo' => 0, 'cambio' => 0];   // 9W: anche la promo per sempre
         foreach (array_filter(explode(',', $meta)) as $pezzo) { [$t, $n] = array_pad(explode(':', $pezzo, 2), 2, '0'); if (isset($daMeta[$t])) $daMeta[$t] = (int) $n; }
         $out = ['inviti' => 0, 'giudizio' => 0, 'sconto' => $sconto]; $visto = false;
         foreach (array_unique($coupon) as $cid) {
             if (str_starts_with($cid, self::COUPON_RINNOVO)) {
                 $n = (int) substr($cid, strlen(self::COUPON_RINNOVO)); $visto = true;
-                if ($daMeta['inviti'] + $daMeta['giudizio'] === $n) { $out['inviti'] += $daMeta['inviti']; $out['giudizio'] += $daMeta['giudizio']; }
-                else { $out['inviti'] += min($n, $applicatoInviti); $out['giudizio'] += max(0, $n - min($n, $applicatoInviti)); }
+                if ($daMeta['inviti'] + $daMeta['giudizio'] + $daMeta['promo'] + $daMeta['cambio'] === $n) { $out['inviti'] += $daMeta['inviti']; $out['giudizio'] += $daMeta['giudizio']; }
+                else { $resto = max(0, $n - $daMeta['promo']); $out['inviti'] += min($resto, $applicatoInviti); $out['giudizio'] += max(0, $resto - min($resto, $applicatoInviti)); }
             } elseif (str_starts_with($cid, 'mhw-invito-')) { $out['inviti'] += (int) substr($cid, 11); $visto = true; }
             elseif (str_starts_with($cid, 'mhw-giudizio-')) { $out['giudizio'] += (int) substr($cid, 13); $visto = true; }
         }

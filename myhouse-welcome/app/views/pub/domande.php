@@ -5,7 +5,7 @@
 use function MHW\b;
 use MHW\{Support, Icon, Config, LinguaSito};
 $enD = LinguaSito::en();
-$title = $enD ? 'Frequently asked questions · MyHouse Welcome' : 'Domande frequenti · MyHouse Welcome';
+$title = $enD ? 'Frequently asked questions · Welcome MyHouse' : 'Domande frequenti · Welcome MyHouse';
 $legale = Config::get('legal') ?? [];
 $waFaq = preg_replace('/\D/', '', (string) ($legale['contact_whatsapp'] ?? ''));
 $crea = b() . (!empty(MHW\Auth::user()) ? '/pannello' : '/registrati' . ($enD ? '?lang=en' : '')); ?>

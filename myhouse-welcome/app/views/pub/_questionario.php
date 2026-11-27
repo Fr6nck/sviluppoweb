@@ -63,7 +63,7 @@ $qBase = $qFinestra ? b() . LinguaSito::percorso('/piano') : strtok((string) ($_
             <p class="questionario__prezzo">
               <?php if ($sc): ?><?= Iva::cifra($pieno, 'EUR', 'class="muted" data-q-pieno', 's') ?> <?php endif; ?>
               <?= Iva::cifra($sc ? $sc['totale'] : $pieno, 'EUR', 'data-q-totale', 'b') ?>
-              <span class="muted"> <?= $qEn ? Iva::nota('+ VAT', 'incl. VAT') : Iva::nota('+ IVA', 'IVA inclusa') ?> <?= $sc ? $qU('il primo anno', 'the first year') : $qU('/ anno', '/ year') ?><?= $qPorto ? $qU(' per ', ' for ') . '<span data-q-n>' . $q . '</span>' . $qU(' strutture', ' properties') : '' ?></span>
+              <span class="muted"> <?= $qEn ? Iva::nota('+ VAT', 'incl. VAT') : Iva::nota('+ IVA', 'IVA inclusa') ?> <?php $sempreQ = MHW\Sconti::sempreDi($sc); /* 9W · con la sola promo per sempre il prezzo vale anche ai rinnovi */ ?><?= $sc ? ($sempreQ && (int) $sc['percento'] === $sempreQ['percento'] ? $qU('/ anno, per sempre', '/ year, forever') : $qU('il primo anno', 'the first year')) : $qU('/ anno', '/ year') ?><?= $qPorto ? $qU(' per ', ' for ') . '<span data-q-n>' . $q . '</span>' . $qU(' strutture', ' properties') : '' ?></span>
             </p>
             <?= Iva::dettaglio($sc ? $sc['totale'] : $pieno, $qEn) ?>
             <?php if ($qPorto): /* il prezzo struttura per struttura, poi il selettore (2 … massimo del listino) */

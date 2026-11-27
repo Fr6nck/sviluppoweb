@@ -1690,7 +1690,7 @@ $r->post('/admin/omaggi/{id}/email', function (array $a) {
     if (!RateLimit::hit('omaggi-email:' . (int) $admin['id'], 50, 86400)) { Support::flash('Hai mandato molte email oggi: riprova domani, o usa WhatsApp.', 'err'); Support::redirect('/admin/omaggi'); }
     $mesi = (int) $c['mesi'];
     $paragrafi = array_values(array_filter(array_map('trim', preg_split('/\R\s*\R/', MHW\Omaggi::messaggio($c)) ?: []), fn($p) => $p !== ''));
-    $ok = MHW\Mailer::conRispostaA(Support::commerciale(), fn() => MHW\Mailer::manda($email, $mesi . ' mesi gratis di MyHouse Welcome', $mesi . ($mesi === 1 ? ' mese gratis' : ' mesi gratis') . ' per te',
+    $ok = MHW\Mailer::conRispostaA(Support::commerciale(), fn() => MHW\Mailer::manda($email, $mesi . ' mesi gratis di Welcome MyHouse', $mesi . ($mesi === 1 ? ' mese gratis' : ' mesi gratis') . ' per te',
         $paragrafi, ['Crea la tua guida', MHW\Omaggi::link($c)]));
     Auth::audit('omaggio.email', null, ['id' => (int) $c['id'], 'codice' => (string) $c['codice'], 'a' => MHW\Inviti::maschera($email), 'esito' => $ok ? 'partita' : 'non partita']);
     Support::flash($ok ? 'Email con il codice ' . $c['codice'] . ' mandata a ' . $email . '. Le risposte arrivano a ' . Support::commerciale() . '.'
@@ -2076,7 +2076,7 @@ $r->post('/admin/seo', function () {
     $in = fn(string $k, int $max) => mb_substr(trim(str_replace("\r", '', (string) ($_POST[$k] ?? ''))), 0, $max);
     $dominio = rtrim($in('dominio', 200), '/');
     if ($dominio !== '' && !preg_match('~^https?://[a-z0-9.-]+(:\d+)?(/[^\s?#]*)?$~i', $dominio)) {
-        Support::flash('Il dominio va scritto per intero, per esempio https://myhousewelcome.it.', 'err'); Support::redirect('/admin/seo#seo-motori');
+        Support::flash('Il dominio va scritto per intero, per esempio https://welcomemyhouse.it.', 'err'); Support::redirect('/admin/seo#seo-motori');
     }
     // Chi incolla tutto il meta di verifica: si tiene solo il codice.
     $codice = function (string $k) use ($in): string {

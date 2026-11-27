@@ -192,7 +192,7 @@ final class Stripe
             $p['line_items[0][price_data][tax_behavior]'] = 'exclusive';
             $p['line_items[0][price_data][recurring][interval]'] = 'year';
             // 9R · Con il Portfolio la fattura (e Adamo) dice «prima struttura» e «struttura aggiuntiva × N».
-            $p['line_items[0][price_data][product_data][name]'] = 'MyHouse Welcome ' . $pkg['name'] . (Plans::perProperty($pv) ? ' — prima struttura' : '');
+            $p['line_items[0][price_data][product_data][name]'] = 'Welcome MyHouse ' . $pkg['name'] . (Plans::perProperty($pv) ? ' — prima struttura' : '');
             $p['line_items[0][price_data][product_data][metadata][package]'] = $pkg['code'];
             $p['line_items[0][price_data][product_data][metadata][ruolo]'] = 'base';
         }
@@ -206,7 +206,7 @@ final class Stripe
                 $p['line_items[1][price_data][unit_amount]'] = (string) (int) $pv['extra_price_cents'];
                 $p['line_items[1][price_data][tax_behavior]'] = 'exclusive';
                 $p['line_items[1][price_data][recurring][interval]'] = 'year';
-                $p['line_items[1][price_data][product_data][name]'] = 'MyHouse Welcome ' . $pkg['name'] . ' — struttura aggiuntiva';
+                $p['line_items[1][price_data][product_data][name]'] = 'Welcome MyHouse ' . $pkg['name'] . ' — struttura aggiuntiva';
                 $p['line_items[1][price_data][product_data][metadata][package]'] = $pkg['code'];
                 $p['line_items[1][price_data][product_data][metadata][ruolo]'] = 'aggiuntiva';
             }
@@ -516,7 +516,7 @@ final class Stripe
             'line_items[0][price_data][unit_amount]' => (string) (int) $offerta['prezzo_cents'],
             'line_items[0][price_data][tax_behavior]' => 'exclusive',
             'line_items[0][price_data][recurring][interval]' => 'year',
-            'line_items[0][price_data][product_data][name]' => 'MyHouse Welcome Portfolio su misura · ' . (int) $offerta['strutture'] . ' strutture',
+            'line_items[0][price_data][product_data][name]' => 'Welcome MyHouse Portfolio su misura · ' . (int) $offerta['strutture'] . ' strutture',
             'line_items[0][price_data][product_data][metadata][ruolo]' => 'offerta',
             'line_items[0][price_data][product_data][metadata][offerta]' => (string) $offerta['id'],
             'success_url' => $base . '/pagamento/ok?order=' . $order['id'],
@@ -694,7 +694,7 @@ final class Stripe
         };
         $base = (string) ($pv['stripe_price_id'] ?? '');
         if ($base === '') {
-            $base = $crea((int) $pv['price_cents'], 'base', 'MyHouse Welcome ' . $pkg['name']);
+            $base = $crea((int) $pv['price_cents'], 'base', 'Welcome MyHouse ' . $pkg['name']);
             Db::update('package_versions', ['stripe_price_id' => $base], 'id = :id', ['id' => $pv['id']]);
         }
         return [$base, Plans::perProperty($pv) ? self::ensureExtraPrice($pv, $pkg) : ''];
@@ -709,7 +709,7 @@ final class Stripe
     {
         $extra = (string) ($pv['stripe_extra_price_id'] ?? '');
         if ($extra !== '') return $extra;
-        $nome = 'MyHouse Welcome ' . $pkg['name'] . ' — struttura aggiuntiva';
+        $nome = 'Welcome MyHouse ' . $pkg['name'] . ' — struttura aggiuntiva';
         $p = ['currency' => strtolower((string) $pv['currency']), 'tax_behavior' => 'exclusive', 'recurring[interval]' => 'year',
               'product_data[name]' => $nome, 'product_data[metadata][package]' => (string) $pkg['code'], 'product_data[metadata][ruolo]' => 'aggiuntiva'];
         $scaglioni = Plans::tiers($pv);

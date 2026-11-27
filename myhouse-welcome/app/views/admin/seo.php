@@ -112,7 +112,7 @@ $v = fn(string $k) => Support::e(Seo::get($k)); ?>
       <h2 id="seo-motori-titolo" style="font-size:22px">Motori e assistenti AI</h2>
       <div class="grid grid-2">
         <div class="field" style="margin:0"><label for="seo-dominio">Dominio</label>
-          <input id="seo-dominio" name="dominio" type="url" placeholder="https://myhousewelcome.it" value="<?= $v('dominio') ?>" aria-describedby="seo-dominio-aiuto">
+          <input id="seo-dominio" name="dominio" type="url" placeholder="https://welcomemyhouse.it" value="<?= $v('dominio') ?>" aria-describedby="seo-dominio-aiuto">
           <p class="help" id="seo-dominio-aiuto">Con https:// e senza barra finale. Serve per canonical, sitemap e condivisione.</p></div>
         <div class="field" style="margin:0"><label for="seo-gsc">Verifica Google (Search Console)</label>
           <input id="seo-gsc" name="gsc" type="text" value="<?= $v('gsc') ?>" aria-describedby="seo-gsc-aiuto">

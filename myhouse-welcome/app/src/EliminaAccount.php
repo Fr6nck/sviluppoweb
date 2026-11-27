@@ -211,7 +211,7 @@ final class EliminaAccount
         $tl = fn(string $it, array $s = []) => Pannello::tIn($lin, $it, $s);
         $nome = trim(explode(' ', trim((string) ($acc['user_name'] ?? '')))[0] ?? '');
         $x = ['{nome}' => $nome, '{codice}' => Codici::cliente((int) $acc['id']), '{email}' => Support::contatto()];
-        $par = [$tl($nome !== '' ? 'Ciao {nome}, abbiamo chiuso il tuo account MyHouse Welcome, come ci hai chiesto.' : 'Ciao, abbiamo chiuso il tuo account MyHouse Welcome, come ci hai chiesto.', $x),
+        $par = [$tl($nome !== '' ? 'Ciao {nome}, abbiamo chiuso il tuo account Welcome MyHouse, come ci hai chiesto.' : 'Ciao, abbiamo chiuso il tuo account Welcome MyHouse, come ci hai chiesto.', $x),
                 $tl('Le guide sono offline e il QR non apre più niente; testi, foto e PDF sono cancellati. L\'abbonamento è chiuso: non ci saranno altri addebiti.')];
         $par[] = $modo === 'conserva'
             ? $tl('Per legge conserviamo per 10 anni solo i dati di fatturazione e dei pagamenti (codice cliente {codice}); le fatture restano nel tuo cassetto fiscale. Con questa email puoi registrarti di nuovo quando vuoi.', $x)
