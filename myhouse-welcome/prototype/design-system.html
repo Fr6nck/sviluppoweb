@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Design system — MyHouse Welcome</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231F5B4B'/><circle cx='16' cy='16' r='7' fill='%23fff'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/app.css">
+<style>
+.ds { display: grid; grid-template-columns: 210px 1fr; min-height: 100vh; }
+@media (max-width: 900px) { .ds { grid-template-columns: 1fr; } }
+.ds-nav { border-right: 1px solid var(--mh-border); padding: var(--mh-space-7) var(--mh-space-5);
+  position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--mh-surface-raised); }
+@media (max-width: 900px) { .ds-nav { position: static; height: auto; } }
+.ds-nav a { display: block; padding: .3rem .5rem; border-radius: var(--mh-radius-sm);
+  font-size: var(--mh-text-sm); color: var(--mh-ink-muted); text-decoration: none; }
+.ds-nav a:hover { background: var(--mh-surface-sunken); color: var(--mh-ink); }
+.ds-nav strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .09em;
+  color: var(--mh-ink-subtle); padding: var(--mh-space-5) .5rem .3rem; }
+.ds-main { padding: var(--mh-space-9) var(--mh-space-8) 6rem; max-width: 920px; }
+.ds-h { font-family: var(--mh-font-display); font-size: var(--mh-text-4xl); letter-spacing: -.02em; margin-bottom: .5rem; }
+h2.s { font-size: var(--mh-text-2xl); margin: var(--mh-space-11) 0 .4rem; scroll-margin-top: 1rem; }
+h2.s:first-of-type { margin-top: var(--mh-space-9); }
+.s-note { color: var(--mh-ink-muted); font-size: var(--mh-text-sm); margin-bottom: var(--mh-space-6); max-width: 62ch; line-height: 1.6; }
+h3.ss { font-size: var(--mh-text-sm); font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--mh-ink-subtle); margin: var(--mh-space-7) 0 var(--mh-space-4); }
+.demo { background: var(--mh-surface-raised); border: 1px solid var(--mh-border);
+  border-radius: var(--mh-radius-lg); padding: var(--mh-space-6); margin-bottom: var(--mh-space-5); }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: .5rem; }
+.sw { border-radius: var(--mh-radius-md); overflow: hidden; border: 1px solid var(--mh-border); }
+.sw__c { height: 54px; }
+.sw__m { padding: .4rem .5rem; font-size: 10px; background: var(--mh-surface-raised); }
+.sw__m b { display: block; font-family: var(--mh-font-mono); font-size: 9px; color: var(--mh-ink-subtle); }
+.scale-row { display: flex; align-items: baseline; gap: var(--mh-space-6); padding: .45rem 0; border-bottom: 1px solid var(--mh-border); }
+.scale-row code { font-size: 11px; color: var(--mh-ink-subtle); min-width: 130px; font-family: var(--mh-font-mono); }
+.sp { background: var(--mh-brand-200); height: 14px; border-radius: 2px; }
+.rad { width: 62px; height: 62px; background: var(--mh-brand-100); border: 1px solid var(--mh-brand-300); display: grid; place-items: center; font-size: 10px; color: var(--mh-brand-700); }
+.shbox { width: 96px; height: 62px; background: var(--mh-surface-raised); border-radius: var(--mh-radius-md);
+  display: grid; place-items: center; font-size: 10px; color: var(--mh-ink-subtle); }
+.dsflex { display: flex; gap: var(--mh-space-5); flex-wrap: wrap; align-items: center; }
+code.tok { font-family: var(--mh-font-mono); font-size: 11px; background: var(--mh-surface-sunken);
+  padding: .1rem .35rem; border-radius: 4px; }
+.proto-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 95; background: var(--mh-ink); color: #fff;
+  font-size: var(--mh-text-xs); padding: .35rem var(--mh-space-5); display: flex; gap: .8rem; justify-content: center; }
+.proto-bar a { color: #fff; }
+body { padding-top: 26px; }
+.ds-nav { top: 26px; height: calc(100vh - 26px); }
+</style>
+</head>
+<body>
+<a class="mh-skip" href="#ds-main">Skip to content</a>
+<div class="proto-bar"><span>Prototype</span><a href="index.html">All screens</a><a href="../docs/19-design-system.md">Document 19</a></div>
+
+<div class="ds">
+  <nav class="ds-nav" aria-label="Design system">
+    <strong>Foundations</strong>
+    <a href="#colour">Colour</a><a href="#type">Typography</a><a href="#space">Spacing</a>
+    <a href="#radius">Radius &amp; elevation</a><a href="#motion">Motion</a>
+    <strong>Components</strong>
+    <a href="#buttons">Buttons</a><a href="#inputs">Inputs</a><a href="#controls">Controls</a>
+    <a href="#upload">Upload</a><a href="#cards">Cards &amp; chips</a><a href="#feedback">Feedback</a>
+    <a href="#empty">Empty states</a><a href="#loading">Loading</a><a href="#tables">Tables</a>
+    <a href="#nav">Navigation</a>
+  </nav>
+
+  <main class="ds-main" id="ds-main">
+    <h1 class="ds-h">MyHouse design system</h1>
+    <p class="s-note">
+      The literal implementation of <a href="../docs/19-design-system.md">document 19</a>.
+      Every value on this page comes from <code class="tok">styles/tokens.css</code>;
+      nothing is hard-coded twice.
+      <br><br>
+      The influence is Apple's philosophy — restraint, whitespace, one clear action,
+      typography carrying the hierarchy — not Apple's appearance. Three things make
+      it MyHouse rather than generic: a <strong>warm</strong> neutral instead of a
+      cool grey, a <strong>serif</strong> at display sizes, and a deep
+      <strong>cypress green</strong> where every other tool uses blue.
+    </p>
+
+    <!-- ---------------- COLOUR ---------------- -->
+    <h2 class="s" id="colour">Colour</h2>
+    <p class="s-note">Warm neutrals, one brand ramp, one restrained accent, five semantic roles.
+      Every text pairing is at least 4.5:1. Support mode has a colour used nowhere else,
+      so an impersonation banner can never be mistaken for anything.</p>
+
+    <h3 class="ss">Neutrals</h3>
+    <div class="swatches">
+      <div class="sw"><div class="sw__c" style="background:#FAF8F5"></div><div class="sw__m">Surface<b>--mh-surface</b></div></div>
+      <div class="sw"><div class="sw__c" style="background:#FFFFFF"></div><div class="sw__m">Raised<b>--mh-surface-raised</b></div></div>
+      <div class="sw"><div class="sw__c" style="background:#F2EEE8"></div><div class="sw__m">Sunken<b>--mh-surface-sunken</b></div></div>
+      <div class="sw"><div class="sw__c" style="background:#E7E2DA"></div><div class="sw__m">Border<b>--mh-border</b></div></div>
+      <div class="sw"><div class="sw__c" style="background:#D5CEC3"></div><div class="sw__m">Border strong<b>--mh-border-strong</b></div></div>
+      <div class="sw"><div class="sw__c" style="background:#8A9099"></div><div class="sw__m">Ink subtle<b>--mh-ink-subtle</b></div></div>
+      <div class="sw"><div class="sw__c" style="background:#5B6068"></div><div class="sw__m">Ink muted<b>--mh-ink-muted</b></div></div>
+      <div class="sw"><div class="sw__c" style="background:#15171A"></div><div class="sw__m">Ink<b>--mh-ink</b></div></div>
+    </div>
+
+    <h3 class="ss">Brand — Cipresso</h3>
+    <div class="swatches">
+      <div class="sw"><div class="sw__c" style="background:#EFF5F2"></div><div class="sw__m">50<b>tint</b></div></div>
+      <div class="sw"><div class="sw__c" style="background:#D6E6DE"></div><div class="sw__m">100</div></div>
+      <div class="sw"><div class="sw__c" style="background:#ADCDBE"></div><div class="sw__m">200</div></div>
+      <div class="sw"><div class="sw__c" style="background:#7FB09C"></div><div class="sw__m">300<b>dark mode action</b></div></div>
+      <div class="sw"><div class="sw__c" style="background:#52927B"></div><div class="sw__m">400<b>3.4:1 large only</b></div></div>
+      <div class="sw"><div class="sw__c" style="background:#2E7460"></div><div class="sw__m">500<b>4.9:1</b></div></div>
+      <div class="sw"><div class="sw__c" style="background:#1F5B4B"></div><div class="sw__m">600<b>7.3:1 primary</b></div></div>
+      <div class="sw"><div class="sw__c" style="background:#17473A"></div><div class="sw__m">700<b>9.5:1</b></div></div>
+      <div class="sw"><div class="sw__c" style="background:#103228"></div><div class="sw__m">800<b>13.0:1</b></div></div>
+    </div>
+
+    <h3 class="ss">Accent &amp; semantic</h3>
+    <div class="swatches">
+      <div class="sw"><div class="sw__c" style="background:#C9713F"></div><div class="sw__m">Terracotta<b>host picks only</b></div></div>
+      <div class="sw"><div class="sw__c" style="background:#1F7A4D"></div><div class="sw__m">Success</div></div>
+      <div class="sw"><div class="sw__c" style="background:#9A6A12"></div><div class="sw__m">Warning</div></div>
+      <div class="sw"><div class="sw__c" style="background:#B3392C"></div><div class="sw__m">Danger</div></div>
+      <div class="sw"><div class="sw__c" style="background:#24628F"></div><div class="sw__m">Info</div></div>
+      <div class="sw"><div class="sw__c" style="background:#6B3FA0"></div><div class="sw__m">Support mode<b>nowhere else</b></div></div>
+    </div>
+
+    <!-- ---------------- TYPE ---------------- -->
+    <h2 class="s" id="type">Typography</h2>
+    <p class="s-note">Fraunces at display sizes, Inter for everything else, monospace for anything
+      a guest transcribes into a keypad. Measure is capped at 68 characters, 60 on the guest guide.</p>
+    <div class="demo">
+      <div class="scale-row"><code>6xl / Fraunces</code><span class="mh-display" style="font-size:var(--mh-text-6xl); line-height:1">Marketing hero</span></div>
+      <div class="scale-row"><code>4xl / Fraunces</code><span class="mh-display" style="font-size:var(--mh-text-4xl)">Casa San Francesco</span></div>
+      <div class="scale-row"><code>3xl / Inter 600</code><span style="font-size:var(--mh-text-3xl);font-weight:600">Page title</span></div>
+      <div class="scale-row"><code>2xl / Inter 600</code><span style="font-size:var(--mh-text-2xl);font-weight:600">Section heading</span></div>
+      <div class="scale-row"><code>xl / Inter 600</code><span style="font-size:var(--mh-text-xl);font-weight:600">Card title</span></div>
+      <div class="scale-row"><code>lg / Inter 400</code><span style="font-size:var(--mh-text-lg)">Lead paragraph</span></div>
+      <div class="scale-row"><code>base / Inter 400</code><span>Body text — never smaller on the guest guide</span></div>
+      <div class="scale-row"><code>sm / Inter 400</code><span class="small">Secondary text and table cells</span></div>
+      <div class="scale-row"><code>xs / Inter 400</code><span class="xs">Captions and chips</span></div>
+      <div class="scale-row"><code>mono / tabular</code><span class="mh-mono" style="font-size:var(--mh-text-xl)">4821 · ulivo2026</span></div>
+    </div>
+    <p class="s-note">Codes are always monospace with tabular numerals and wide tracking. A guest is
+      copying them into a keypad one character at a time, often in bad light.</p>
+
+    <!-- ---------------- SPACE ---------------- -->
+    <h2 class="s" id="space">Spacing</h2>
+    <p class="s-note">A 4px base. The admin console uses the same scale one step tighter — the density
+      difference between the two surfaces is a multiplier, not a second system.</p>
+    <div class="demo">
+      <div class="scale-row"><code>--mh-space-2 · 4px</code><span class="sp" style="width:4px"></span></div>
+      <div class="scale-row"><code>--mh-space-3 · 8px</code><span class="sp" style="width:8px"></span></div>
+      <div class="scale-row"><code>--mh-space-5 · 16px</code><span class="sp" style="width:16px"></span></div>
+      <div class="scale-row"><code>--mh-space-7 · 24px</code><span class="sp" style="width:24px"></span></div>
+      <div class="scale-row"><code>--mh-space-8 · 32px</code><span class="sp" style="width:32px"></span></div>
+      <div class="scale-row"><code>--mh-space-10 · 48px</code><span class="sp" style="width:48px"></span></div>
+      <div class="scale-row"><code>--mh-space-12 · 80px</code><span class="sp" style="width:80px"></span></div>
+    </div>
+
+    <!-- ---------------- RADIUS ---------------- -->
+    <h2 class="s" id="radius">Radius &amp; elevation</h2>
+    <div class="demo dsflex">
+      <div class="rad" style="border-radius:var(--mh-radius-sm)">sm 6</div>
+      <div class="rad" style="border-radius:var(--mh-radius-md)">md 10</div>
+      <div class="rad" style="border-radius:var(--mh-radius-lg)">lg 14</div>
+      <div class="rad" style="border-radius:var(--mh-radius-xl)">xl 20</div>
+      <div class="rad" style="border-radius:var(--mh-radius-2xl)">2xl 28</div>
+      <div class="rad" style="border-radius:var(--mh-radius-full)">full</div>
+    </div>
+    <div class="demo dsflex" style="background:var(--mh-surface)">
+      <div class="shbox" style="box-shadow:var(--mh-shadow-xs)">xs</div>
+      <div class="shbox" style="box-shadow:var(--mh-shadow-sm)">sm</div>
+      <div class="shbox" style="box-shadow:var(--mh-shadow-md)">md</div>
+      <div class="shbox" style="box-shadow:var(--mh-shadow-lg)">lg</div>
+    </div>
+    <p class="s-note">Four levels, all subtle, all tinted with the ink colour rather than pure black so
+      shadows stay warm. Elevation communicates layering, never decoration — a card does not lift on
+      hover unless it is draggable.</p>
+
+    <!-- ---------------- MOTION ---------------- -->
+    <h2 class="s" id="motion">Motion</h2>
+    <p class="s-note">Entering is slower than leaving. Nothing animates opacity alone. No loops except a
+      spinner, and only after 400ms of waiting. <code class="tok">prefers-reduced-motion</code> collapses
+      every duration at the token level, so no component can forget it.</p>
+    <div class="demo dsflex">
+      <button class="btn btn--secondary" id="m1">fast · 140ms</button>
+      <button class="btn btn--secondary" id="m2">base · 220ms</button>
+      <button class="btn btn--secondary" id="m3">slow · 340ms</button>
+      <div id="mbox" style="width:40px;height:40px;border-radius:var(--mh-radius-md);background:var(--mh-brand-600)"></div>
+    </div>
+
+    <!-- ---------------- BUTTONS ---------------- -->
+    <h2 class="s" id="buttons">Buttons</h2>
+    <p class="s-note">One primary per screen. Minimum touch target 44×44, achieved with padding rather
+      than by growing the visible control. Loading replaces the label but holds the width, so nothing reflows.</p>
+    <div class="demo dsflex">
+      <button class="btn btn--primary">Publish my guide</button>
+      <button class="btn btn--secondary">Preview</button>
+      <button class="btn btn--ghost">Skip this step</button>
+      <button class="btn btn--danger">Delete</button>
+      <button class="btn btn--primary" disabled>Disabled</button>
+      <button class="btn btn--primary" id="loadbtn">Click to load</button>
+    </div>
+    <div class="demo dsflex">
+      <button class="btn btn--primary btn--sm">Small</button>
+      <button class="btn btn--primary">Medium</button>
+      <button class="btn btn--primary btn--lg">Large</button>
+    </div>
+
+    <!-- ---------------- INPUTS ---------------- -->
+    <h2 class="s" id="inputs">Inputs</h2>
+    <p class="s-note">Label above, always visible — never a placeholder as a label. 44px minimum height,
+      16px minimum font size so iOS does not zoom. Focus is a 2px ring, never <code class="tok">outline:none</code>.</p>
+    <div class="demo" style="max-width:440px">
+      <div class="field">
+        <label class="field__label" for="d1">What's your property called?</label>
+        <input class="input" id="d1" placeholder="Casa San Francesco">
+        <p class="field__help">Your guests will see this name.</p>
+      </div>
+      <div class="field">
+        <label class="field__label" for="d2">Email</label>
+        <input class="input" id="d2" value="marco@" aria-invalid="true">
+        <p class="field__error"><span aria-hidden="true">&#9888;</span> This doesn't look like an email address.</p>
+      </div>
+      <div class="field">
+        <label class="field__label" for="d3">Your guide address</label>
+        <div class="input-group">
+          <span class="input-group__prefix">welcome.myhouse.it/</span>
+          <input class="input" id="d3" value="casa-san-francesco">
+        </div>
+        <p class="field__help" style="color:var(--mh-success)">&#10003; Available</p>
+      </div>
+      <div class="field" style="margin:0">
+        <label class="field__label" for="d4">Anything else to know?</label>
+        <textarea class="textarea" id="d4" placeholder="The router is in the hallway cupboard&hellip;"></textarea>
+      </div>
+    </div>
+
+    <!-- ---------------- CONTROLS ---------------- -->
+    <h2 class="s" id="controls">Controls</h2>
+    <div class="demo">
+      <h3 class="ss" style="margin-top:0">Yes / no — the wizard's most-used control</h3>
+      <div class="yesno" style="max-width:420px" role="radiogroup" aria-label="Is it a self check-in?">
+        <input type="radio" id="y1" name="yn" checked><label for="y1">Yes, guests let themselves in</label>
+        <input type="radio" id="y2" name="yn"><label for="y2">No, I meet them</label>
+      </div>
+
+      <h3 class="ss">Toggle</h3>
+      <label class="toggle"><input type="checkbox" checked><span class="toggle__track" aria-hidden="true"></span>
+        <span class="small">Show this section to guests</span></label>
+
+      <h3 class="ss">Checkbox grid</h3>
+      <div class="checkgrid" style="max-width:560px">
+        <label><input type="checkbox" checked><span>Kitchen</span></label>
+        <label><input type="checkbox" checked><span>Washing machine</span></label>
+        <label><input type="checkbox"><span>Pool</span></label>
+        <label><input type="checkbox" checked><span>Terrace</span></label>
+      </div>
+    </div>
+
+    <!-- ---------------- UPLOAD ---------------- -->
+    <h2 class="s" id="upload">Upload</h2>
+    <p class="s-note">The most-used input in the product. HEIC is accepted and converted server-side;
+      EXIF including GPS is stripped; nothing is served until it has been sniffed and scanned.</p>
+    <div class="demo" style="max-width:440px">
+      <div class="dropzone">
+        <div class="dropzone__icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <div class="dsflex" style="justify-content:center">
+          <button class="btn btn--secondary btn--sm">Choose from your phone</button>
+          <button class="btn btn--ghost btn--sm">Choose from your photos</button>
+        </div>
+        <p class="dropzone__hint">JPG, PNG or HEIC · up to 15 MB</p>
+      </div>
+    </div>
+
+    <!-- ---------------- CARDS ---------------- -->
+    <h2 class="s" id="cards">Cards &amp; chips</h2>
+    <div class="demo dsflex">
+      <span class="chip">Neutral</span>
+      <span class="chip chip--brand">Most chosen</span>
+      <span class="chip chip--accent">Host's pick</span>
+      <span class="chip chip--success"><span class="dot dot--live"></span> Live</span>
+      <span class="chip chip--warning">Changes pending</span>
+      <span class="chip chip--danger">Refunded</span>
+      <span class="chip chip--info">v2</span>
+      <span class="chip chip--lock">Available with Plus</span>
+    </div>
+    <div class="demo" style="padding:0">
+      <div class="card__head"><strong style="font-size:var(--mh-text-sm)">Card with a head</strong>
+        <button class="btn btn--ghost btn--sm">Action</button></div>
+      <div class="card__body"><p class="small muted">Rounded, hairline border, the lightest shadow at rest.</p></div>
+    </div>
+
+    <!-- ---------------- FEEDBACK ---------------- -->
+    <h2 class="s" id="feedback">Feedback</h2>
+    <div class="demo" style="display:grid; gap:.6rem">
+      <div class="alert alert--info"><span aria-hidden="true">&#9432;</span><div class="alert__body">
+        <strong>This code always works</strong>Change your guide, your address, even your domain — the printed QR keeps working.</div></div>
+      <div class="alert alert--success"><span aria-hidden="true">&#10003;</span><div class="alert__body">
+        <strong>Your guide is online</strong>welcome.myhouse.it/casa-san-francesco</div></div>
+      <div class="alert alert--warning"><span aria-hidden="true">&#9888;</span><div class="alert__body">
+        <strong>In use by 118 customers — read-only</strong>Create a new version to change the price or the features.</div></div>
+      <div class="alert alert--danger"><span aria-hidden="true">&#9888;</span><div class="alert__body">
+        <strong>The payment didn't go through</strong>Your bank declined the card. Nothing has been charged.</div></div>
+    </div>
+    <div class="support-banner" style="border-radius:var(--mh-radius-md); position:static">
+      <span>&#9432; You are assisting <strong>Casa San Francesco</strong> as administrator. Giulia · ends 15:02</span>
+      <button class="btn btn--secondary btn--sm">End session</button>
+    </div>
+    <div class="demo dsflex" style="margin-top:.7rem">
+      <span class="saveind saveind--saved"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Saved</span>
+      <span class="saveind">Saving…</span>
+      <span class="saveind" style="color:var(--mh-warning)">Not saved yet — we'll save when you're back online</span>
+      <button class="btn btn--secondary btn--sm" id="toastbtn">Show a toast</button>
+    </div>
+
+    <!-- ---------------- EMPTY ---------------- -->
+    <h2 class="s" id="empty">Empty states</h2>
+    <p class="s-note">Every collection has one. A blank table is a dead end. Zero is a fact; an empty
+      state is a next step.</p>
+    <div class="demo">
+      <div class="empty">
+        <div class="empty__icon" aria-hidden="true">&#127869;</div>
+        <div class="empty__title">No places added yet</div>
+        <p class="empty__body">Add the restaurants, bars and shops you'd recommend to a friend.</p>
+        <div class="dsflex" style="justify-content:center">
+          <button class="btn btn--primary btn--sm">Add a place</button>
+          <button class="btn btn--ghost btn--sm">Not sure? See examples</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------------- LOADING ---------------- -->
+    <h2 class="s" id="loading">Loading</h2>
+    <p class="s-note">Skeletons match the shape of the real content, so nothing jumps when it arrives.</p>
+    <div class="demo">
+      <div class="skeleton" style="height:14px; width:36%; margin-bottom:.6rem"></div>
+      <div class="skeleton" style="height:11px; width:82%; margin-bottom:.35rem"></div>
+      <div class="skeleton" style="height:11px; width:64%; margin-bottom:1rem"></div>
+      <div class="dsflex">
+        <div class="skeleton" style="height:66px; width:66px; border-radius:var(--mh-radius-md)"></div>
+        <div style="flex:1">
+          <div class="skeleton" style="height:11px; width:44%; margin-bottom:.35rem"></div>
+          <div class="skeleton" style="height:11px; width:70%"></div>
+        </div>
+      </div>
+      <div class="progress" style="margin-top:1rem"><div class="progress__bar" style="width:62%"></div></div>
+    </div>
+
+    <!-- ---------------- TABLES ---------------- -->
+    <h2 class="s" id="tables">Tables</h2>
+    <p class="s-note">Admin only. Hosts get cards — they have 1 to 12 of most things, not 400.</p>
+    <div class="table__wrap">
+      <table class="table">
+        <thead><tr><th>Customer</th><th>Package</th><th>Status</th><th>Completion</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Marco Bianchi</strong></td><td><span class="chip">Plus</span></td>
+              <td><span class="chip chip--success"><span class="dot dot--live"></span> Live</span></td><td class="num">85%</td></tr>
+          <tr><td><strong>Elena Rossi</strong></td><td><span class="chip">Pro</span></td>
+              <td><span class="chip chip--success"><span class="dot dot--live"></span> Live</span></td><td class="num">100%</td></tr>
+          <tr><td><strong>Studio Mare srl</strong></td><td><span class="chip">Plus</span></td>
+              <td><span class="chip"><span class="dot dot--draft"></span> Draft</span></td><td class="num">12%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ---------------- NAV ---------------- -->
+    <h2 class="s" id="nav">Navigation</h2>
+    <p class="s-note">Seven sidebar items, never more. Items the package does not include stay visible
+      and muted with one quiet chip — a host should be able to see the shape of the product they could
+      have, without being nagged.</p>
+    <div class="demo" style="max-width:260px; padding:.6rem">
+      <div style="display:grid; gap:1px">
+        <span class="nav-demo" style="display:flex;align-items:center;gap:.65rem;padding:.55rem .7rem;border-radius:var(--mh-radius-md);background:var(--mh-brand-50);color:var(--mh-brand-700);font-size:var(--mh-text-sm);font-weight:600">Home</span>
+        <span style="display:flex;align-items:center;gap:.65rem;padding:.55rem .7rem;font-size:var(--mh-text-sm);color:var(--mh-ink-muted)">My Welcome Guide</span>
+        <span style="display:flex;align-items:center;gap:.65rem;padding:.55rem .7rem;font-size:var(--mh-text-sm);color:var(--mh-ink-muted)">Languages</span>
+        <span style="display:flex;align-items:center;gap:.65rem;padding:.55rem .7rem;font-size:var(--mh-text-sm);color:var(--mh-ink-muted)">QR &amp; Link</span>
+        <span style="display:flex;align-items:center;gap:.65rem;padding:.55rem .7rem;font-size:var(--mh-text-sm);color:var(--mh-ink-subtle)">Statistics
+          <span class="chip chip--lock" style="margin-left:auto">Pro</span></span>
+        <span style="display:flex;align-items:center;gap:.65rem;padding:.55rem .7rem;font-size:var(--mh-text-sm);color:var(--mh-ink-muted)">Account</span>
+      </div>
+    </div>
+
+    <p class="s-note" style="margin-top:var(--mh-space-11)">
+      Full rationale in <a href="../docs/19-design-system.md">document 19</a>.
+      Copy rules and the full deck of empty and error states in
+      <a href="../docs/20-content-states-and-copy.md">document 20</a>.
+    </p>
+  </main>
+</div>
+
+<div id="live" class="mh-sr" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+  var box = document.getElementById('mbox');
+  function move(ms) {
+    box.style.transition = 'transform ' + ms + 'ms var(--mh-ease)';
+    box.style.transform = box.style.transform === 'translateX(140px)' ? 'none' : 'translateX(140px)';
+  }
+  document.getElementById('m1').addEventListener('click', function () { move(140); });
+  document.getElementById('m2').addEventListener('click', function () { move(220); });
+  document.getElementById('m3').addEventListener('click', function () { move(340); });
+
+  document.getElementById('loadbtn').addEventListener('click', function () {
+    var b = this; b.classList.add('is-loading');
+    setTimeout(function () { b.classList.remove('is-loading'); }, 1400);
+  });
+
+  document.getElementById('toastbtn').addEventListener('click', function () {
+    var old = document.querySelector('.toast');
+    if (old) old.remove();
+    var t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Your guide is online';
+    document.body.appendChild(t);
+    document.getElementById('live').textContent = 'Your guide is online';
+    setTimeout(function () { t.remove(); }, 4000);
+  });
+})();
+</script>
+</body>
+</html>

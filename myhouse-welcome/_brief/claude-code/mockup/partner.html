@@ -1,0 +1,51 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Programma partner · mockup</title>
+<style>
+:root{--paper:#faf5ec;--sabbia:#f3ece0;--ink:#231b12;--muted:#6a5b48;--line:#e7dccb;--acc:#b4451f;--ok:#2f6b3f;--ocra:#8a5a12}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Onest,"Helvetica Neue",Arial,sans-serif;padding:40px 20px 60px}
+.serif{font-family:Gloock,Georgia,"Times New Roman",serif;font-weight:400}.wrap{max-width:1040px;margin:0 auto;display:grid;gap:36px}
+.lbl{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;font-weight:600}
+.box{background:#fff;border:1px solid var(--line);border-radius:24px;padding:24px 28px}h3{font-size:21px;margin:0 0 4px}.sub{color:var(--muted);margin:0 0 16px;font-size:14.5px;line-height:21px}
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 18px;border-radius:999px;background:var(--acc);color:#fff;font-weight:700;font-size:14px;text-decoration:none}.btn.g{background:#fff;color:var(--ink);border:1.5px solid #8a7b65}.btn.s{height:32px;font-size:12.5px;padding:0 12px}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.kpi div{background:var(--sabbia);border-radius:16px;padding:14px 16px;font-size:13px;color:var(--muted)}.kpi b{display:block;font-size:26px;color:var(--ink);font-family:Gloock,Georgia,serif;font-weight:400}
+table{width:100%;border-collapse:collapse;font-size:13.5px}th{text-align:left;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line);font-weight:600}td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill{font-size:12px;border-radius:999px;padding:3px 9px;display:inline-block;white-space:nowrap}.pill.g{background:#e8f1e6;color:var(--ok)}.pill.a{background:#fbefd9;color:var(--ocra)}.pill.r{background:#f6e2dc;color:var(--acc)}.pill.n{background:var(--sabbia);color:var(--muted)}
+.f{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.f label{font-size:12.5px;color:var(--muted);display:grid;gap:6px}.f span{border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:15px;color:var(--ink);background:#fff}.f .w2{grid-column:span 2}
+.sw{width:40px;height:22px;border-radius:999px;background:#cfc4b2;position:relative;display:inline-block;vertical-align:middle}.sw.on{background:var(--acc)}.sw:after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff}.sw.on:after{left:21px}
+.code{font-family:ui-monospace,Menlo,monospace;background:var(--sabbia);border-radius:8px;padding:3px 8px;font-size:14px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}@media(max-width:720px){.two,.f,.kpi{grid-template-columns:1fr 1fr}}
+.hint{background:var(--sabbia);border-radius:14px;padding:12px 16px;font-size:13.5px;line-height:20px;margin-top:14px}
+.mail{max-width:520px;border:1px solid var(--line);border-radius:18px;padding:22px 24px;background:#fff;font-size:14.5px;line-height:22px}.mail h4{font-family:Gloock,Georgia,serif;font-weight:400;font-size:22px;margin:0 0 10px}.mail small{color:var(--muted)}
+</style></head><body><div class="wrap">
+
+<section><p class="lbl">1 · Admin → Vendite → Partner → scheda del partner (dopo «Diventa partner» approvato)</p>
+<div class="box"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start"><div><h3 class="serif">Rossi Property Management</h3><p class="sub">Marco Rossi · marco@rossipm.it · 347 … · Perugia e Assisi · partner dal 15 ott 2026</p></div><span class="pill g">Attivo</span></div>
+<div class="f"><label>Codice partner<span><span class="code">PM-ROSSI</span></span></label><label>Commissione<span>15 %</span></label><label>Sconto per i suoi clienti (1° anno)<span>10 %</span></label><label>Commissione sui rinnovi<span><i class="sw on"></i> sì</span></label>
+<label class="w2">IBAN per le liquidazioni<span>IT60 X054 2811 1010 0000 0123 456</span></label><label>P.IVA del partner<span>01234567890</span></label><label>Liquidazione<span>trimestrale, su fattura</span></label></div>
+<div class="hint">La commissione si calcola sull'<b>imponibile incassato</b> (dopo gli sconti, senza IVA), matura solo a pagamento riuscito e si storna in caso di rimborso. «Commissione sui rinnovi» si può spegnere in qualsiasi momento: da quel giorno maturano solo le commissioni sui nuovi clienti. Ogni modifica va nel Registro azioni.</div>
+<h3 class="serif" style="margin-top:22px">Clienti portati · 4</h3>
+<table><tr><th>Struttura</th><th>Piano</th><th>Pagamento</th><th class="n">Imponibile</th><th class="n">Commissione</th><th>Stato</th></tr>
+<tr><td>Casa Checco · Assisi<br><span style="color:var(--muted);font-size:12.5px">MW-00012 · codice PM-ROSSI usato il 3 ott</span></td><td>Plus</td><td>1° anno · 3 ott 2026</td><td class="n">114,30 €</td><td class="n"><b>17,15 €</b></td><td><span class="pill a">Da liquidare</span></td></tr>
+<tr><td>B&amp;B La Corte · Spello<br><span style="color:var(--muted);font-size:12.5px">MW-00007</span></td><td>Plus</td><td>1° anno · 12 set 2026</td><td class="n">114,30 €</td><td class="n"><b>17,15 €</b></td><td><span class="pill g">Liquidata 30 set</span></td></tr>
+<tr><td>Agriturismo Le Vigne · Montefalco<br><span style="color:var(--muted);font-size:12.5px">MW-00019</span></td><td>Portfolio · 3</td><td>1° anno · 1 ott 2026</td><td class="n">204,30 €</td><td class="n"><b>30,65 €</b></td><td><span class="pill a">Da liquidare</span></td></tr>
+<tr><td>Appartamento Sole · Perugia<br><span style="color:var(--muted);font-size:12.5px">MW-00021</span></td><td>Essential</td><td>1° anno · 15 ott 2026 · <span class="pill r">rimborsato 18 ott</span></td><td class="n">0,00 €</td><td class="n">0,00 €</td><td><span class="pill n">Stornata</span></td></tr></table>
+<p style="margin:14px 0 0;display:flex;gap:10px;flex-wrap:wrap"><a class="btn s">Sospendi il partner</a><a class="btn g s">Rimanda il codice e i materiali</a><a class="btn g s">Storico</a></p></div></section>
+
+<section><p class="lbl">2 · Admin → Cassa → scheda «Commissioni partner»</p>
+<div class="box"><div class="kpi"><div>Da liquidare<b>47,80 €</b>2 partner</div><div>Liquidate nel 2026<b>17,15 €</b></div><div>Clienti dai partner<b>4</b>su 41 attivi</div><div>Imponibile portato<b>433 €</b>anno</div></div>
+<table style="margin-top:14px"><tr><th>Partner</th><th>Periodo</th><th>Clienti</th><th class="n">Imponibile</th><th class="n">Commissione</th><th></th></tr>
+<tr><td>Rossi Property Management · 15 %</td><td>ott–dic 2026</td><td>2</td><td class="n">318,60 €</td><td class="n"><b>47,80 €</b></td><td><a class="btn s">Segna come pagata</a> <a class="btn g s">CSV</a></td></tr>
+<tr><td>Umbria Host · 20 %</td><td>ott–dic 2026</td><td>0</td><td class="n">—</td><td class="n">—</td><td><span class="pill n">niente da liquidare</span></td></tr></table>
+<div class="hint">«Segna come pagata» chiede data, importo e riferimento del bonifico e numero della fattura del partner; la liquidazione finisce nel Registro azioni e nella pagina del partner. Le commissioni sono un costo, non un incasso: in Cassa stanno in una scheda separata e non toccano i totali degli incassi.</div></div></section>
+
+<section><p class="lbl">3 · Pagina del partner: welcomemyhouse.it/partner (accesso con la sua email, link senza password)</p>
+<div class="box"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start"><div><h3 class="serif">Ciao Marco</h3><p class="sub">Il tuo codice: <span class="code">PM-ROSSI</span> · i tuoi clienti hanno il 10 % sul primo anno · a te il 15 % su ogni pagamento</p></div><a class="btn g s">Copia il link con il codice</a></div>
+<div class="kpi"><div>Clienti attivi<b>3</b></div><div>Da ricevere<b>47,80 €</b>prossima liquidazione: gennaio</div><div>Ricevuto nel 2026<b>17,15 €</b></div><div>Prossimi rinnovi<b>2</b>entro 90 giorni</div></div>
+<table style="margin-top:14px"><tr><th>Struttura</th><th>Piano</th><th>Dal</th><th>Ultimo pagamento</th><th class="n">La tua commissione</th><th>Stato</th></tr>
+<tr><td>Casa Checco · Assisi</td><td>Plus</td><td>3 ott 2026</td><td>3 ott 2026</td><td class="n">17,15 €</td><td><span class="pill a">Da ricevere</span></td></tr>
+<tr><td>B&amp;B La Corte · Spello</td><td>Plus</td><td>12 set 2026</td><td>12 set 2026</td><td class="n">17,15 €</td><td><span class="pill g">Ricevuta 30 set</span></td></tr>
+<tr><td>Agriturismo Le Vigne · Montefalco</td><td>Portfolio · 3 strutture</td><td>1 ott 2026</td><td>1 ott 2026</td><td class="n">30,65 €</td><td><span class="pill a">Da ricevere</span></td></tr></table>
+<div class="hint">Il partner vede solo struttura, città, piano, date e la sua commissione: <b>mai</b> email, importi pagati dal cliente né dati di pagamento. Materiali: pagina «Come presentare MyHouse Welcome ai tuoi proprietari», il link con il codice già inserito, un PDF da stampare.</div></div></section>
+
+<section><p class="lbl">4 · Email al partner quando un suo cliente paga</p>
+<div class="mail"><h4>Nuovo cliente dal tuo codice</h4><p><b>Casa Checco</b> (Assisi) ha attivato il piano <b>Plus</b> con il tuo codice PM-ROSSI.</p><p>La tua commissione per questo pagamento è di <b>17,15 €</b> (15 % su 114,30 € di imponibile). La trovi tra quelle da ricevere nella tua pagina partner; la liquidiamo con bonifico alla prossima scadenza trimestrale, su tua fattura.</p><p><a class="btn s">Apri la tua pagina partner →</a></p><small>Ricevi questa email perché sei partner di MyHouse Welcome. commerciale@welcomemyhouse.it</small></div></section>
+</div></body></html>

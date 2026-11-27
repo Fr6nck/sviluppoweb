@@ -1,0 +1,99 @@
+#!/bin/sh
+# Schiera l'applicazione come sull'hosting (in una sottocartella, senza URL
+# riscritti), avvia uno Stripe finto e un bucket S3 finto, e ci passa sopra
+# il giro completo. Alla fine pulisce tutto.
+#
+# Le chiavi qui sotto sono FINTE e valgono solo per i servizi finti locali.
+set -e
+QUI=$(cd "$(dirname "$0")" && pwd)
+RADICE=$(cd "$QUI/../.." && pwd)
+PORTA=${PORTA:-8088}
+PORTA_STRIPE=$((PORTA + 1))
+PORTA_S3=$((PORTA + 2))
+PORTA_TRADUZIONI=$((PORTA + 3))
+PORTA_SMTP=$((PORTA + 4))
+PORTA_ASSISTENTE=$((PORTA + 5))
+TMP=$(mktemp -d)
+W="$TMP/docroot/welcomebook"
+
+pulisci() { for p in $PID $PID_STRIPE $PID_S3 $PID_TRADUZIONI $PID_SMTP $PID_ASSISTENTE; do kill "$p" 2>/dev/null || true; done; rm -rf "$TMP"; }
+trap pulisci EXIT
+
+mkdir -p "$W/app/storage/uploads" "$TMP/stripe" "$TMP/s3" "$TMP/translate" "$TMP/smtp" "$TMP/assistente"
+cp "$RADICE/app/public/index.php" "$W/"
+for f in .htaccess web.config controllo.php; do
+  [ -f "$RADICE/app/public/$f" ] && cp "$RADICE/app/public/$f" "$W/"
+done
+cp -r "$RADICE/app/public/assets" "$W/assets"
+cp -r "$RADICE/app/src" "$RADICE/app/views" "$RADICE/app/migrations" "$RADICE/app/lang" "$RADICE/app/tools" "$RADICE/app/config.php" "$W/app/"
+chmod -R 777 "$W/app/storage"
+
+# Il server di prova fa quello che farebbe Apache con mod_rewrite.
+cat > "$TMP/docroot/router.php" <<'EOF'
+<?php
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+if ($path !== '/' && is_file(__DIR__ . $path)) return false;
+if (str_starts_with($path, '/welcomebook')) {
+    $_SERVER['SCRIPT_NAME'] = '/welcomebook/index.php';
+    require __DIR__ . '/welcomebook/index.php';
+    return true;
+}
+return false;
+EOF
+
+STRIPE_FINTO_DIR="$TMP/stripe" php -S "127.0.0.1:$PORTA_STRIPE" "$QUI/stripe-finto.php" > "$TMP/stripe.log" 2>&1 &
+PID_STRIPE=$!
+S3_FINTO_DIR="$TMP/s3" php -S "127.0.0.1:$PORTA_S3" "$QUI/s3-finto.php" > "$TMP/s3.log" 2>&1 &
+PID_S3=$!
+TRANSLATE_FINTO_DIR="$TMP/translate" TRANSLATE_FINTO_KEY=AKIATRADUZIONIFINTE TRANSLATE_FINTO_SECRET=segreto-traduzioni-finto \
+  php -S "127.0.0.1:$PORTA_TRADUZIONI" "$QUI/translate-finto.php" > "$TMP/translate.log" 2>&1 &
+PID_TRADUZIONI=$!
+# 10 · Un'API di Anthropic finta per il Concierge AI (prove/assistente-finto.php): verifica la chiave e risponde con le regole del prompt; 9T: anche il rapporto dei costi con la Admin key.
+ASSISTENTE_FINTO_DIR="$TMP/assistente" ASSISTENTE_FINTO_KEY=chiave-finta-assistente-solo-prove ASSISTENTE_FINTO_ADMIN_KEY=sk-ant-admin-finta-solo-prove \
+  php -S "127.0.0.1:$PORTA_ASSISTENTE" "$QUI/assistente-finto.php" > "$TMP/assistente.log" 2>&1 &
+PID_ASSISTENTE=$!
+# Un server di posta finto, per l'accesso SMTP (LOGIN e PLAIN) e «Prova con questi dati».
+php "$QUI/smtp-finto.php" "$PORTA_SMTP" "$TMP/smtp" > "$TMP/smtp.log" 2>&1 &
+PID_SMTP=$!
+
+export STRIPE_SECRET_KEY=sk_test_finto_solo_per_le_prove
+export STRIPE_WEBHOOK_SECRET=whsec_finto_solo_per_le_prove
+export STRIPE_API_BASE="http://127.0.0.1:$PORTA_STRIPE"
+export MHW_STORAGE=${MHW_STORAGE:-s3}
+export AWS_REGION=eu-south-1
+export AWS_S3_BUCKET=mhw-prove
+export AWS_ACCESS_KEY_ID=AKIAFINTOPERLEPROVE
+export AWS_SECRET_ACCESS_KEY=segreto-finto-per-le-prove
+export AWS_S3_ENDPOINT="http://127.0.0.1:$PORTA_S3"
+export MHW_TRANSLATE_KEY=AKIATRADUZIONIFINTE
+export MHW_TRANSLATE_SECRET=segreto-traduzioni-finto
+export MHW_TRANSLATE_ENDPOINT="http://127.0.0.1:$PORTA_TRADUZIONI"
+export MHW_ASSISTENTE_KEY=chiave-finta-assistente-solo-prove
+export MHW_ASSISTENTE_ENDPOINT="http://127.0.0.1:$PORTA_ASSISTENTE"
+export MAIL_TRANSPORT=log
+export MHW_CRON_TOKEN=token-finto-per-le-prove
+# GEO · gli avvisi IndexNow vanno allo Stripe finto (prove/stripe-finto.php, /indexnow), mai ad api.indexnow.org.
+export MHW_INDEXNOW_ENDPOINT="http://127.0.0.1:$PORTA_STRIPE/indexnow"
+export PROVE_DUMP=${PROVE_DUMP:-}
+# La vetrina automatica nelle prove: un account suo, non quello dell'agenzia (che le prove usano per il pulsante).
+export MHW_VETRINA_EMAIL=vetrina-auto@prova.test
+# 9N · Le due sezioni pubbliche sono spente di serie: nelle prove si accendono qui (il capitolo 9N le spegne e riaccende da Amministrazione).
+export MHW_VETRINA_SEZIONE=1 MHW_DICONO_SEZIONE=1
+
+php -S "127.0.0.1:$PORTA" -t "$TMP/docroot" "$TMP/docroot/router.php" > "$TMP/server.log" 2>&1 &
+PID=$!
+sleep 2
+
+set +e
+php "$QUI/giro-completo.php" "http://127.0.0.1:$PORTA/welcomebook/index.php" "$W" "$TMP/stripe" "$TMP/s3" "$TMP/translate" "$TMP/smtp" "$PORTA_SMTP" "$TMP/assistente"
+ESITO=$?
+# PROVE_EMAIL=1: un file HTML per ogni email (l'ultima di ogni oggetto) in prove/email/, da aprire nel browser.
+if [ -n "${PROVE_EMAIL:-}" ] && [ -d "$W/app/storage/logs/email" ]; then
+  mkdir -p "$QUI/email"
+  for f in "$W/app/storage/logs/email"/*.html; do cp "$f" "$QUI/email/$(basename "$f" | sed 's/^[0-9]*-[0-9]*-//')"; done
+fi
+if ls "$W"/app/storage/logs/app-*.log >/dev/null 2>&1; then
+  echo; echo "--- registro tecnico dell'applicazione (errori previsti dalle prove inclusi) ---"
+  cat "$W"/app/storage/logs/app-*.log | cut -c1-300 | tail -n 25
+fi
+exit $ESITO

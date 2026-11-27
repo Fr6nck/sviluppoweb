@@ -1,0 +1,44 @@
+/* Gloock e Onest (SIL Open Font License), in locale: il PDF li incorpora sempre. */
+@font-face{font-family:Gloock;font-weight:400;src:url(font/gloock-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2190-2199,U+2212,U+2215}
+@font-face{font-family:Gloock;font-weight:400;src:url(font/gloock-latin-ext.woff2) format('woff2');unicode-range:U+0100-02AF,U+1E00-1EFF,U+20A0-20AB,U+20AD-20C0,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:Onest;font-weight:100 900;src:url(font/onest-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2190-2199,U+2212,U+2215}
+@font-face{font-family:Onest;font-weight:100 900;src:url(font/onest-latin-ext.woff2) format('woff2');unicode-range:U+0100-02AF,U+1E00-1EFF,U+20A0-20AB,U+20AD-20C0,U+2C60-2C7F,U+A720-A7FF}
+:root{--carta:#faf5ec;--incavo:#f1e9db;--linea:#e2d7c4;--inchiostro:#231b12;--muto:#6a5b48;--terra:#b4451f;--terra-chiaro:#f7e6dc;--pino:#1f6b3f;--pino-chiaro:#e1f0e5;--ocra:#b07d0c;--ocra-chiaro:#f9edd2}
+@page{size:A4;margin:18mm 16mm 20mm}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;font-family:Onest,"Liberation Sans",Arial,sans-serif;font-size:10.5pt;line-height:1.5;color:var(--inchiostro);background:#fff}
+h1,h2,h3{font-family:Gloock,"DejaVu Serif",Georgia,serif;font-weight:400;line-height:1.15;margin:0}
+h1{font-size:28pt;letter-spacing:-.5px}
+h2{font-size:17pt;margin:22pt 0 8pt;padding-top:4pt;border-top:2px solid var(--terra);break-after:avoid}
+h3{font-size:12.5pt;margin:14pt 0 6pt;break-after:avoid}
+p{margin:0 0 7pt}
+a{color:var(--terra);text-decoration:none}
+code{font-family:"DejaVu Sans Mono",monospace;font-size:8.8pt;background:var(--incavo);padding:1px 4px;border-radius:4px;word-break:break-word}
+.copertina{padding:22pt 24pt;border-radius:14pt;background:var(--carta);margin-bottom:16pt}
+.copertina .marchio{font-weight:600;color:var(--terra);font-size:10pt;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10pt}
+.copertina p{color:var(--muto);margin:8pt 0 0}
+.meta{display:flex;gap:14pt;flex-wrap:wrap;font-size:9pt;color:var(--muto);margin-top:12pt}
+.meta b{color:var(--inchiostro)}
+.nota{padding:9pt 12pt;border-radius:9pt;background:var(--ocra-chiaro);margin:8pt 0;break-inside:avoid}
+.nota--rossa{background:var(--terra-chiaro)}
+.nota--verde{background:var(--pino-chiaro)}
+.nota b:first-child{display:block;margin-bottom:2pt}
+ul.spunte{list-style:none;margin:0 0 6pt;padding:0}
+ul.spunte li{position:relative;padding:4pt 0 4pt 22pt;border-bottom:1px solid var(--linea);break-inside:avoid}
+ul.spunte li::before{content:"";position:absolute;left:2pt;top:6.5pt;width:10pt;height:10pt;border:1.4px solid var(--muto);border-radius:3px;background:#fff}
+ul.spunte li small{display:block;color:var(--muto);font-size:8.8pt;line-height:1.4}
+ol.passi{margin:0 0 8pt;padding-left:18pt}
+ol.passi li{margin:0 0 5pt;padding-left:2pt}
+table{width:100%;border-collapse:collapse;margin:6pt 0 10pt;font-size:9.2pt;break-inside:auto}
+th,td{text-align:left;vertical-align:top;padding:5pt 6pt;border-bottom:1px solid var(--linea)}
+th{background:var(--incavo);font-weight:600;font-size:8.6pt;text-transform:uppercase;letter-spacing:.04em}
+tr{break-inside:avoid}
+.firma{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12pt;margin-top:18pt;break-inside:avoid}
+.firma div{border-top:1px solid var(--inchiostro);padding-top:4pt;font-size:9pt;color:var(--muto)}
+.esito{display:inline-block;min-width:80pt;border-bottom:1px solid var(--muto)}
+.indice{columns:2;column-gap:18pt;font-size:9.5pt;margin:6pt 0 0;padding-left:16pt}
+.piccolo{font-size:9pt;color:var(--muto)}
+ol.passi li small{display:block;color:var(--muto);font-size:8.8pt;line-height:1.4;margin-top:1pt}
+td code{white-space:nowrap}
+table.eventi td:first-child{width:46%}

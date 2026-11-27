@@ -1,0 +1,53 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lingua in più e traduzione</title>
+<style>
+:root{--paper:#faf5ec;--sabbia:#efe7da;--ink:#231b12;--muted:#6a5b48;--line:#e2d7c4;--acc:#b4451f;--ok:#2f6b3f;--warn:#b7791f}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);font-family:Onest,"Helvetica Neue",Arial,sans-serif;color:var(--ink);padding:40px 16px 80px}
+.wrap{max-width:900px;margin:0 auto}.nota{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:48px 0 14px}.nota:first-child{margin-top:0}
+h3{font-family:Gloock,Georgia,serif;font-weight:400;margin:0 0 6px;font-size:24px}.card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px}
+p{margin:0 0 10px;font-size:14.5px;line-height:22px}.ex{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}@media(max-width:700px){.ex{grid-template-columns:1fr}}
+.ex div{background:var(--sabbia);border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:19px}.ex b{display:block;margin-bottom:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.chip{border:1.5px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13.5px;display:flex;gap:8px;align-items:center}.chip i{width:14px;height:14px;border-radius:50%;border:1.5px solid #8a7b65}.chip.si{border-color:var(--acc)}.chip.si i{border:4px solid var(--acc)}
+.piccolo{font-size:12.5px;color:var(--muted)}.btn{display:inline-flex;align-items:center;gap:10px;height:42px;padding:0 18px;border-radius:999px;background:var(--acc);color:#fff;border:0;font:inherit;font-weight:600}.btn.off{opacity:.65;cursor:wait}
+.spin{width:16px;height:16px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:r 1s linear infinite}@keyframes r{to{transform:rotate(360deg)}}
+.bar{height:8px;background:var(--sabbia);border-radius:999px;overflow:hidden;margin:10px 0 6px}.bar span{display:block;height:100%;background:var(--acc);border-radius:999px}.bar.ok span{background:var(--ok)}.bar.err span{background:var(--warn)}
+.campo{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;margin:8px 0}.campo small{display:block;color:var(--muted);font-size:12px;margin-bottom:2px}.campo.new{background:#fff7ef;animation:f .4s ease forwards}@keyframes f{to{background:#fff}}.campo.wait{color:#b5a890}
+.stati{display:grid;gap:16px;grid-template-columns:1fr 1fr 1fr}@media(max-width:800px){.stati{grid-template-columns:1fr}}
+.stati .card{padding:16px}.stati h4{margin:0 0 8px;font-size:14px}
+.form3{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}@media(max-width:700px){.form3{grid-template-columns:1fr 1fr}}.form3 label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}.form3 input{width:100%;height:42px;border:1px solid #c9bca6;border-radius:10px;padding:0 12px;font:inherit}.form3 small{display:block;font-size:12px;color:var(--muted);margin-top:4px}</style></head><body><div class="wrap">
+<p class="nota">1 · Pannello → Lingue: il riquadro «Una lingua in più» spiegato</p>
+<div class="card">
+  <h3>Una lingua in più, oltre alle cinque di base</h3>
+  <p>Le cinque lingue di base sono italiano, inglese, francese, tedesco e spagnolo. La lingua in più serve in due casi: <b>se i tuoi ospiti parlano un'altra lingua</b> (per esempio olandese o polacco), la aggiungi qui e la guida la mostra; <b>se tu scrivi la guida in una lingua diversa dall'italiano</b>, la tua è la lingua principale e le cinque di base restano tutte.</p>
+  <div class="ex"><div><b>Esempio 1 · Scrivi in italiano, ospiti dall'Olanda</b>Lingua principale: Italiano · Lingua in più: Nederlands. La guida esce in 6 lingue.</div><div><b>Esempio 2 · Scrivi in polacco</b>Lingua principale: Polski · Lingua in più: nessuna. Le cinque di base ci sono già, tradotte dal polacco.</div></div>
+  <div class="chips"><span class="chip si"><i></i>Nessuna</span><span class="chip"><i></i>Nederlands</span><span class="chip"><i></i>Português</span><span class="chip"><i></i>Português (Brasil)</span><span class="chip"><i></i>Polski</span><span class="chip"><i></i>Русский</span><span class="chip"><i></i>中文</span><span class="chip"><i></i>日本語</span><span class="chip"><i></i>Svenska</span><span class="chip"><i></i>Dansk</span><span class="chip"><i></i>Čeština</span></div>
+  <p class="piccolo">L'interfaccia della guida (bottoni e titoli) è tradotta per nederlands, português e polski; per le altre lingue in più i bottoni sono in inglese e i testi nella lingua scelta. La tua lingua non c'è? <u>Scrivici</u>.</p>
+  <button class="btn">Salva la lingua</button>
+</div>
+
+<p class="nota">2 · Traduzione in corso: i tre stati</p>
+<div class="stati">
+  <div class="card"><h4>In corso</h4><button class="btn off"><span class="spin"></span>Traduzione in corso…</button><div class="bar"><span style="width:40%"></span></div><div class="piccolo">Francese · 2 di 5 lingue</div>
+    <div class="campo new"><small>Titolo · Deutsch</small>Heizung</div><div class="campo new"><small>Titolo · English</small>Heating</div><div class="campo wait"><small>Titolo · Français</small>…</div><div class="campo wait"><small>Titolo · Español</small>…</div></div>
+  <div class="card"><h4>Fatto</h4><button class="btn">Traduci di nuovo</button><div class="bar ok"><span style="width:100%"></span></div><div class="piccolo" style="color:var(--ok);font-weight:600">Fatto: 5 lingue, 12 testi. Controllali e approva.</div>
+    <div class="campo"><small>Titolo · Deutsch</small>Heizung</div><div class="campo"><small>Titolo · English</small>Heating</div><div class="campo"><small>Titolo · Français</small>Chauffage</div><div class="campo"><small>Titolo · Español</small>Calefacción</div></div>
+  <div class="card"><h4>Errore su una lingua</h4><button class="btn">Riprova il tedesco</button><div class="bar err"><span style="width:80%"></span></div><div class="piccolo" style="color:var(--warn);font-weight:600">Tedesco non tradotto. Le altre 4 lingue sono pronte.</div>
+    <div class="campo wait"><small>Titolo · Deutsch</small>non tradotto</div><div class="campo"><small>Titolo · English</small>Heating</div><div class="campo"><small>Titolo · Français</small>Chauffage</div><div class="campo"><small>Titolo · Español</small>Calefacción</div></div>
+</div>
+
+<p class="nota">3 · La struttura: Regione e Provincia al posto di «Zona o regione»</p>
+<div class="card">
+  <div class="form3"><div><label>CAP</label><input value="06123"></div><div><label>Città</label><input value="Perugia"></div><div><label>Provincia</label><input value="PG" style="text-transform:uppercase"><small>Sigla: PG, FI, RM…</small></div><div><label>Regione</label><input value="Umbria"><small>Si completa da sola dalla provincia</small></div></div>
+  <p class="piccolo" style="margin-top:10px">Struttura all'estero (paese diverso da Italia): «Provincia» diventa «Provincia o contea», facoltativa, testo libero.</p>
+  <div class="ex" style="margin-top:14px"><div><b>Nella guida, italiano</b>Casa Checco<br>Assisi · Perugia · Umbria</div><div><b>Nella guida, inglese / tedesco</b>Assisi · Perugia · Umbria<br>Firenze diventa Florence / Florenz, Toscana → Tuscany / Toskana: solo dove esiste una forma tradotta.</div></div>
+</div>
+
+<p class="nota">4 · Pannello in inglese quando la lingua principale non è l'italiano (primo passo della procedura)</p>
+<div class="card">
+  <h3 style="font-size:20px">Step 1 · The language you write in</h3>
+  <p>Choose the language you'll write the guide in. Guests will read it in this language and in the ones you add later.</p>
+  <div class="chips"><span class="chip"><i></i>Italiano</span><span class="chip"><i></i>English</span><span class="chip"><i></i>Français</span><span class="chip"><i></i>Deutsch</span><span class="chip"><i></i>Español</span><span class="chip si"><i></i>Polski</span><span class="chip"><i></i>Nederlands</span><span class="chip"><i></i>Português</span><span class="chip"><i></i>Русский</span><span class="chip"><i></i>中文</span><span class="chip"><i></i>日本語</span></div>
+  <div class="ex"><div><b>Essential</b>You write in Polish; guests read Polish and one more language of your choice. Translations are written by you.</div><div><b>Plus and Portfolio</b>You write in Polish; we suggest translations into Italian, English, French, German and Spanish, which you approve.</div></div>
+  <p class="piccolo">Your language isn't listed? <u>Write to us</u> and we'll add it. · Panel language: <b>English</b> (change in Account).</p>
+  <button class="btn">Continue</button>
+</div>
+</div></body></html>

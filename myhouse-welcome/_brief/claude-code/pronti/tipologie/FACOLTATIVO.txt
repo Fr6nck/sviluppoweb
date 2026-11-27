@@ -1,0 +1,3 @@
+Facoltativo: foto per le 6 schede «Per chi è», con questi nomi (JPEG, 4:3, almeno 1200 px):
+case-vacanza.jpg, bed-and-breakfast.jpg, affittacamere.jpg, agriturismi.jpg, piu-strutture.jpg, property-manager.jpg
+Se non ci sono, la 9K usa le foto già presenti nel sito.

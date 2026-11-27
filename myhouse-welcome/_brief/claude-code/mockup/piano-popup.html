@@ -1,0 +1,77 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Scelta del piano · finestra</title>
+<style>
+:root{--bg:#161410;--card:#28221b;--card2:#1e1a15;--line:#3b332a;--ink:#f4eee2;--muted:#b7ab98;--acc:#e86f48;--ok:#7bb27a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Onest,"Helvetica Neue",Arial,sans-serif;padding:40px 24px 60px}
+.serif{font-family:Gloock,Georgia,"Times New Roman",serif;font-weight:400}
+.wrap{max-width:1100px;margin:0 auto}
+.piani{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}@media(max-width:720px){.piani{grid-template-columns:1fr}}
+.pc{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:26px 28px;min-height:230px;display:flex;flex-direction:column;justify-content:flex-end}
+.pc.sel{border-color:var(--acc)}.pc .n{font-size:14px;color:var(--muted);margin-bottom:auto}.pc .pr{font-size:36px}.pc .pr small{font-size:15px;color:var(--muted)}
+.pc .mese{font-size:14px;color:var(--muted);margin:4px 0 14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:54px;padding:0 24px;border-radius:999px;background:var(--acc);color:#1a120c;border:0;font:inherit;font-weight:600;font-size:17px;cursor:pointer;text-decoration:none}
+.btn.g{background:transparent;color:var(--ink);border:1.5px solid var(--line)}.btn.g:hover{border-color:var(--acc)}
+.riga{display:flex;justify-content:space-between;align-items:center;gap:16px;border-top:1px solid var(--line);margin-top:36px;padding-top:26px;flex-wrap:wrap}
+.riga a.l{color:var(--acc);font-weight:600;text-decoration:none;font-size:17px}
+.aiuto{display:flex;align-items:center;gap:14px;background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:8px 8px 8px 20px}
+.aiuto span{color:var(--muted);font-size:15px}.aiuto .btn{height:44px;font-size:15px}
+.nota{text-align:center;color:var(--muted);font-size:15px;max-width:720px;margin:30px auto 0;line-height:24px}
+/* finestra */
+.velo{position:fixed;inset:0;background:rgba(10,8,6,.72);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px}
+.velo.on{display:flex}
+.fin{background:var(--card);border:1px solid var(--line);border-radius:30px;width:min(760px,100%);padding:36px 40px;position:relative;box-shadow:0 40px 80px -30px #000;max-height:100%;overflow:auto}
+@media(max-width:640px){.velo{padding:0;align-items:flex-end}.fin{border-radius:26px 26px 0 0;padding:26px 20px;max-height:94vh}}
+.x{position:absolute;top:18px;right:18px;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:20px;cursor:pointer}
+.kick{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);font-weight:700;margin:0 0 10px}
+h2{font-size:38px;line-height:42px;margin:0 0 6px;letter-spacing:-.3px}.sub{color:var(--muted);margin:0 0 22px;font-size:16px}
+.prog{display:flex;gap:6px;margin:0 0 26px}.prog i{flex:1;height:5px;border-radius:9px;background:#3b332a}.prog i.on{background:var(--acc)}
+.q{font-size:28px;line-height:34px;margin:0 0 6px}.qs{color:var(--muted);margin:0 0 20px;font-size:15.5px;line-height:22px}
+.scelte{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:520px){.scelte{grid-template-columns:1fr}}
+.sc{border:1.5px solid var(--line);background:var(--card2);border-radius:18px;padding:18px 20px;text-align:left;font:inherit;color:var(--ink);cursor:pointer}
+.sc:hover{border-color:var(--acc)}.sc b{display:block;font-size:18px;margin-bottom:4px}.sc span{color:var(--muted);font-size:14px;line-height:20px}
+.indietro{background:none;border:0;color:var(--muted);font:inherit;font-size:14px;margin-top:16px;cursor:pointer;text-decoration:underline}
+.badge{display:inline-block;background:#3a2a20;color:var(--acc);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.esito .piano{display:grid;grid-template-columns:1.2fr 1fr;gap:24px;margin-top:14px}@media(max-width:640px){.esito .piano{grid-template-columns:1fr}}
+h3{font-size:40px;line-height:42px;margin:6px 0 6px}.prezzo{font-size:15px;color:var(--muted)}.prezzo b{font-size:30px;color:var(--ink)}
+ul.p{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:8px}ul.p li{display:grid;grid-template-columns:20px 1fr;gap:8px;font-size:15px;line-height:21px}ul.p li:before{content:"✓";color:var(--acc);font-weight:700}
+.perche{background:var(--card2);border:1px solid var(--line);border-radius:18px;padding:18px 20px;font-size:14.5px;line-height:21px;color:var(--muted)}.perche b{display:block;font-family:Gloock,Georgia,serif;font-weight:400;font-size:19px;margin-bottom:6px;color:var(--ink)}
+.azioni{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+.rinnovo{margin-top:22px;border-top:1px solid var(--line);padding-top:18px;display:grid;grid-template-columns:1fr auto;gap:6px 16px;align-items:center;font-size:14.5px;color:var(--muted)}
+.rinnovo .v{font-family:Gloock,Georgia,serif;font-size:34px;color:var(--acc)}.rinnovo table{grid-column:1/-1;width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}.rinnovo td{padding:6px 0;border-top:1px solid var(--line)}.rinnovo td:last-child{text-align:right;color:var(--ink);font-weight:600}
+.rinnovo small{grid-column:1/-1;font-size:12.5px}
+.lbl{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+</style></head><body><div class="wrap">
+<p class="lbl">Home → sezione piani: le tre schede restano IDENTICHE a oggi (sotto, lo schermo attuale). Si aggiunge solo la riga «Non sai quale scegliere?»</p>
+<img src="piani-home.jpg" alt="" style="width:100%;display:block;border-radius:18px 18px 0 0">
+<div class="riga" style="margin-top:0;border-top:0;padding-top:4px;justify-content:flex-end"><div class="aiuto"><span>Non sai quale scegliere?</span><button class="btn" id="apri">Rispondi a 3 domande →</button></div></div>
+<p class="nota">Abbonamento annuale con rinnovo automatico. Puoi disattivare il rinnovo dal tuo account quando vuoi: la guida resta online fino alla fine del periodo già pagato.</p>
+</div>
+
+<div class="velo" id="velo"><div class="fin" role="dialog" aria-modal="true" aria-labelledby="t">
+ <button class="x" aria-label="Chiudi">×</button>
+ <p class="kick">Qual è il piano giusto per te?</p>
+ <h2 class="serif" id="t">Tre domande, una risposta.</h2>
+ <p class="sub">Rispondi in 20 secondi: ti diciamo quale piano ti basta, senza pagare per quello che non usi.</p>
+ <div class="prog" id="prog"><i class="on"></i><i></i><i></i></div>
+ <div id="passo1">
+  <p class="q serif">Ti bastano due lingue, scritte da te?</p>
+  <p class="qs">Per esempio italiano e inglese. Con due lingue la guida la scrivi tu, in tutte e due.</p>
+  <div class="scelte"><button class="sc"><b>Sì, mi bastano</b><span>Scrivo io tutti i testi, in tutte e due le lingue</span></button><button class="sc"><b>No, voglio la traduzione automatica</b><span>Scrivo solo in italiano, la guida si traduce da sola e ne approfitto per avere più lingue, fino a 6</span></button></div>
+ </div>
+ <div id="esito" class="esito" style="display:none">
+  <span class="badge">Il piano per te</span>
+  <div class="piano"><div><h3 class="serif">Plus</h3><div class="prezzo"><b>127 €</b> + IVA / anno</div>
+   <ul class="p"><li>1 struttura</li><li>Tutte le 18 sezioni</li><li>Traduzione automatica in 6 lingue, inclusa</li><li>Foto e PDF accanto ai testi</li></ul></div>
+   <div class="perche"><b>Perché questo piano</b>Vuoi raccontare di più o parlare a ospiti di tante lingue: con Plus hai tutte le sezioni e la traduzione automatica in 6 lingue. Scrivi una volta, la guida parla la lingua dei tuoi ospiti.</div></div>
+  <div class="azioni"><a class="btn" href="#">Crea gratis con Plus →</a><button class="btn g">Rifai il test</button></div>
+  <div class="rinnovo"><span>Primo anno <b style="color:var(--ink)">127 €</b>, dal rinnovo con il 55%:<br><s>127,00 €</s></span><b class="v">57,15 €</b>
+   <table><tr><td>Nessuno sconto</td><td>127,00 €</td></tr><tr><td>2 amici · 10%</td><td>114,30 €</td></tr><tr><td>5 amici · 25%</td><td>95,25 €</td></tr><tr><td>10 amici · 50%</td><td>63,50 €</td></tr><tr><td>10 amici + giudizio · 55%</td><td>57,15 €</td></tr></table>
+   <small>Prezzi + IVA, all'anno. Lo sconto vale sul rinnovo successivo agli inviti andati a buon fine.</small></div>
+ </div>
+</div></div>
+<script>
+const s=new URLSearchParams(location.search).get('stato');
+if(s){document.getElementById('velo').classList.add('on')}
+if(s==='2'){document.getElementById('passo1').style.display='none';document.getElementById('prog').style.display='none';document.getElementById('esito').style.display='block'}
+document.getElementById('apri').onclick=()=>document.getElementById('velo').classList.add('on');
+document.querySelector('.x').onclick=()=>document.getElementById('velo').classList.remove('on');
+</script></body></html>

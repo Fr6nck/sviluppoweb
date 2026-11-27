@@ -1,0 +1,152 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Giudizi e sconti</title>
+<style>
+:root{--paper:#faf5ec;--sabbia:#efe7da;--ink:#231b12;--muted:#6a5b48;--line:#e2d7c4;--acc:#b4451f;--ocra:#d49a1e;--ok:#2f6b3f}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);font-family:Onest,"Helvetica Neue",Arial,sans-serif;color:var(--ink);padding:40px 16px 80px}
+.wrap{max-width:1120px;margin:0 auto}.nota{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:56px 0 14px}
+.nota:first-child{margin-top:0}h2,h3{font-family:Gloock,Georgia,serif;font-weight:400;margin:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start}@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px}
+.banner{background:#fbefd4;border-radius:12px;padding:12px 14px;font-size:14px;line-height:20px;margin-bottom:16px}
+.piano{border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:start}
+.piano.on{border-color:var(--acc)}.radio{width:18px;height:18px;border-radius:50%;border:1.5px solid #8a7b65;margin-top:2px}.on .radio{border:5px solid var(--acc)}
+.piano b{font-size:15px}.prezzo{text-align:right;font-size:14px;white-space:nowrap}.prezzo s{color:var(--muted);margin-right:6px}.prezzo strong{font-size:16px}
+.prezzo small{display:block;color:var(--ok);font-weight:600;font-size:12px;margin-top:2px}
+label.f{display:block;font-size:13.5px;font-weight:600;margin:14px 0 6px}input.t{width:100%;height:44px;border:1px solid #c9bca6;border-radius:10px;padding:0 12px;font:inherit}
+.codice{display:flex;gap:8px}.codice input{flex:1}.codice .btn{flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 20px;border-radius:999px;background:var(--acc);color:#fff;font-weight:600;border:0;font:inherit;font-weight:600;white-space:nowrap}
+.btn.ghost{background:#fff;color:var(--ink);border:1.5px solid #8a7b65}
+.ok{color:var(--ok);font-size:13px;margin-top:6px}
+.check{display:grid;grid-template-columns:20px 1fr;gap:10px;font-size:14px;line-height:20px;margin:12px 0}.box{width:18px;height:18px;border:1.5px solid #8a7b65;border-radius:5px;margin-top:1px}.box.si{background:var(--acc);border-color:var(--acc)}
+.riepilogo{border-top:1px solid var(--line);margin-top:14px;padding-top:12px;font-size:14px}.riga{display:flex;justify-content:space-between;padding:3px 0}.riga.sc{color:var(--ok)}.riga.tot{font-weight:700;font-size:16px;border-top:1px dashed var(--line);margin-top:6px;padding-top:8px}
+.spiega{background:var(--sabbia);border-radius:12px;padding:12px 14px;font-size:13px;line-height:19px;color:#4a3d2c}
+.stelle{display:flex;gap:6px;margin:10px 0 4px}.stelle span{font-size:30px;color:#d8ccb7;line-height:1}.stelle span.si{color:var(--ocra)}
+textarea{width:100%;min-height:90px;border:1px solid #c9bca6;border-radius:10px;padding:10px 12px;font:inherit;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{border:1.5px solid var(--line);border-radius:999px;padding:7px 12px;font-size:13px}.chip.si{border-color:var(--acc);background:#fbefe9}
+.stato{display:inline-flex;gap:6px;align-items:center;background:#e7f1e9;color:var(--ok);border-radius:999px;padding:5px 11px;font-size:12.5px;font-weight:600}
+/* home */
+.home{background:var(--paper);border:1px solid var(--line);border-radius:28px;padding:48px 40px}
+.home .kick{font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);font-weight:600}
+.home h2{font-size:44px;line-height:48px;margin:8px 0 6px;letter-spacing:-.5px}.home .sotto{color:var(--muted);font-size:17px;margin:0 0 28px}
+.test{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}@media(max-width:860px){.test{grid-template-columns:1fr}.home{padding:32px 20px}.home h2{font-size:34px;line-height:38px}}
+.t{background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;cursor:default}
+.cop{height:120px;background-size:cover;background-position:center;position:relative}
+.logo{position:absolute;right:12px;bottom:-22px;width:52px;height:52px;border-radius:12px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font-family:Gloock,Georgia,serif;font-size:18px}
+.tb{padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px;flex:1}
+.voto{color:var(--ocra);letter-spacing:2px;font-size:15px}.tb p{margin:0;font-size:15.5px;line-height:23px}
+.chi{display:flex;gap:10px;align-items:center;margin-top:auto;padding-top:6px}.av{width:40px;height:40px;border-radius:50%;background-size:cover;background-position:center;flex:none}
+.chi b{display:block;font-size:14px}.chi span{font-size:13px;color:var(--muted)}
+.disclaimer{font-size:12.5px;color:var(--muted);margin:18px 0 0;text-align:center}
+/* admin */
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tog{display:inline-block;width:40px;height:24px;border-radius:999px;background:var(--ok);position:relative;vertical-align:middle}.tog::after{content:"";position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff}
+.tog.off{background:#c9bca6}.tog.off::after{right:auto;left:3px}
+.sm{height:34px;padding:0 14px;font-size:13px}
+</style></head><body><div class="wrap">
+
+<p class="nota">1 · Registrazione da link d'invito — codice visibile, prezzo barrato</p>
+<div class="grid">
+<div class="card">
+  <div class="banner"><b>Anfiteatro ti ha invitato</b>: hai il 5% di sconto sul primo anno. Il codice è già inserito.</div>
+  <div class="piano"><span class="radio"></span><div><b>Essential</b><br><span style="font-size:13px;color:var(--muted)">1 struttura · 6 sezioni a scelta</span></div><div class="prezzo"><s>97 €</s><strong>92,15 €</strong><small>−5% primo anno</small></div></div>
+  <div class="piano on"><span class="radio"></span><div><b>Plus</b><br><span style="font-size:13px;color:var(--muted)">Tutte le 18 sezioni · 6 lingue</span></div><div class="prezzo"><s>127 €</s><strong>120,65 €</strong><small>−5% primo anno</small></div></div>
+  <div class="piano"><span class="radio"></span><div><b>Portfolio</b><br><span style="font-size:13px;color:var(--muted)">2 strutture · 117 + 60 €</span></div><div class="prezzo"><s>177 €</s><strong>168,15 €</strong><small>−5% primo anno</small></div></div>
+  <label class="f">Codice di invito</label>
+  <div class="codice"><input class="t" value="AMICO-ANF7K" readonly></div>
+  <div class="ok">✓ Codice di Anfiteatro: 5% sul primo anno</div>
+  <p style="font-size:12.5px;color:var(--muted);margin:10px 0 0">Prezzi IVA esclusa. Lo sconto vale solo sul primo anno del primo abbonamento.</p>
+</div>
+<div class="card">
+  <p style="margin:0 0 12px;font-size:14px;color:var(--muted)">Senza link d'invito: il campo è vuoto e si può scrivere a mano.</p>
+  <label class="f" style="margin-top:0">Hai un codice di invito? <span style="font-weight:400;color:var(--muted)">(facoltativo)</span></label>
+  <div class="codice"><input class="t" placeholder="Es. AMICO-ANF7K"><button class="btn ghost">Applica</button></div>
+  <p style="font-size:13px;color:var(--muted);margin:8px 0 0">Te l'ha dato un altro host che usa MyHouse Welcome. Applicato, i prezzi qui sopra si aggiornano.</p>
+  <p class="nota" style="margin:26px 0 10px">Codice non valido</p>
+  <div class="codice"><input class="t" value="AMICO-XXXX" style="border-color:var(--acc)"><button class="btn ghost">Applica</button></div>
+  <div style="color:var(--acc);font-size:13px;margin-top:6px">Questo codice non esiste o non è più attivo. Controlla con chi te l'ha dato.</div>
+</div>
+</div>
+
+<p class="nota">2 · Prima del pagamento — la casella del giudizio e il riepilogo con gli sconti</p>
+<div class="grid">
+<div class="card">
+  <h3 style="font-size:24px;margin-bottom:6px">Riepilogo</h3>
+  <p style="margin:0;color:var(--muted);font-size:14px">Plus · 1 struttura · annuale</p>
+  <div class="check"><span class="box si"></span><span>Ho letto e accetto i <u>Termini</u>, l'<u>Accordo sul trattamento dei dati</u> e l'<u>Informativa privacy</u>.</span></div>
+  <div class="check"><span class="box si"></span><span><b>Sì, voglio il 5% in più: lascerò un giudizio.</b> Dopo aver pubblicato la guida darò un voto da 1 a 5 con due righe, e accetto che MyHouse Welcome possa mostrarlo nella sua home con il mio nome, la copertina, la mia foto e il logo della struttura, senza link alla mia guida.</span></div>
+  <div class="spiega">Lo sconto non dipende dal voto. Il giudizio lo lasci dal tuo pannello quando vuoi, anche tra mesi. Decidiamo noi quali giudizi mostrare in home e non c'è nessun link alla tua guida. Puoi ritirare il giudizio quando vuoi; lo sconto già avuto resta. Regole complete nei <u>Termini</u>, punto «Giudizio con sconto».</div>
+  <div class="riepilogo">
+    <div class="riga"><span>Plus, primo anno</span><span>127,00 €</span></div>
+    <div class="riga sc"><span>Invito di Anfiteatro −5%</span><span>−6,35 €</span></div>
+    <div class="riga sc"><span>Giudizio −5%</span><span>−6,35 €</span></div>
+    <div class="riga tot"><span>Totale primo anno</span><span>114,30 € + IVA</span></div>
+    <div class="riga" style="color:var(--muted);font-size:12.5px"><span>Dal secondo anno</span><span>127,00 € + IVA</span></div>
+  </div>
+  <button class="btn" style="width:100%;margin-top:14px">Paga 114,30 € + IVA</button>
+</div>
+<div class="card">
+  <p style="margin:0 0 6px;font-weight:600">Portfolio: più di 10 strutture</p>
+  <label class="f" style="margin-top:6px">Quante strutture vuoi gestire?</label>
+  <div style="display:flex;gap:10px;align-items:center"><button class="btn ghost" style="width:52px;padding:0">−</button><input class="t" value="14" style="width:90px;text-align:center"><button class="btn ghost" style="width:52px;padding:0">+</button></div>
+  <div class="spiega" style="margin-top:14px"><b style="font-size:15px;color:var(--ink)">14 strutture? Ti facciamo una proposta su misura.</b><br>Lasciaci i tuoi contatti: ti rispondiamo entro un giorno lavorativo.</div>
+  <label class="f">Nome e cognome</label><input class="t">
+  <label class="f">Email</label><input class="t">
+  <label class="f">Telefono <span style="font-weight:400;color:var(--muted)">(facoltativo)</span></label><input class="t">
+  <label class="f">Qualcosa da aggiungere?</label><textarea placeholder="Es. 9 appartamenti a Perugia e 5 ad Assisi"></textarea>
+  <button class="btn" style="width:100%;margin-top:14px">Chiedi il preventivo</button>
+</div>
+</div>
+
+<p class="nota">3 · Pannello del cliente — riquadro «Ti piace MyHouse Welcome?» (Quadro, e Account → Il tuo giudizio)</p>
+<div class="grid">
+<div class="card">
+  <span class="stato">5% già applicato al primo anno</span>
+  <h3 style="font-size:26px;margin:10px 0 4px">Ti piace MyHouse Welcome?</h3>
+  <p style="margin:0;color:var(--muted);font-size:14.5px;line-height:21px">Hai pubblicato la guida: ora puoi lasciarci il tuo giudizio. Ci vuole un minuto.</p>
+  <div class="stelle"><span class="si">★</span><span class="si">★</span><span class="si">★</span><span class="si">★</span><span class="si">★</span></div>
+  <label class="f">Cosa diresti a un altro host?</label>
+  <textarea>Da quando i miei ospiti hanno la guida sul telefono non ricevo più messaggi alle 11 di sera per il Wi-Fi. E le recensioni sono salite.</textarea>
+  <div style="font-size:12px;color:var(--muted);text-align:right">132 / 400</div>
+  <label class="f">Cosa mostriamo, se il tuo giudizio va in home <span style="font-weight:400;color:var(--muted)">(togli quello che non vuoi)</span></label>
+  <div class="chips"><span class="chip si">✓ Copertina</span><span class="chip si">✓ La mia foto</span><span class="chip si">✓ Logo della struttura</span></div>
+  <p style="font-size:12.5px;color:var(--muted);margin:8px 0 0">Nome senza cognome, struttura e città compaiono sempre. Nessun link alla tua guida. Decidiamo noi quali giudizi mostrare.</p>
+  <button class="btn" style="margin-top:12px">Invia il giudizio</button>
+</div>
+<div class="card">
+  <p style="margin:0 0 10px;font-size:14px;color:var(--muted)">Chi non ha aderito al pagamento lo vede così (anche prima di pubblicare, con il modulo che si apre dopo la pubblicazione):</p>
+  <h3 style="font-size:24px;margin-bottom:6px">5% sul prossimo rinnovo, con un giudizio</h3>
+  <p style="margin:0 0 10px;font-size:14.5px;line-height:21px">Lasciaci un voto da 1 a 5 e due righe quando hai pubblicato la guida: il 5% si applica al rinnovo annuale successivo. Lo sconto non dipende dal voto.</p>
+  <div class="check"><span class="box"></span><span><b>Partecipo: lascerò un giudizio</b> e accetto che possa essere mostrato in home con nome, copertina, foto e logo, senza link alla mia guida.</span></div>
+  <button class="btn ghost">Conferma</button>
+  <p class="nota" style="margin:26px 0 10px">Dopo l'invio</p>
+  <span class="stato">Grazie! Giudizio ricevuto</span>
+  <p style="margin:10px 0 0;font-size:14px;line-height:21px">Sconto del 5% sul rinnovo del 16 ottobre 2027. Il tuo giudizio <b>non è ancora sulla nostra home</b>: decidiamo noi quali mostrare. <u>Modifica</u> · <u>Ritira il giudizio</u></p>
+</div>
+</div>
+
+<p class="nota">4 · Home pubblica — la sezione appare solo se c'è almeno un giudizio pubblicato</p>
+<section class="home">
+  <div class="kick">Cosa dicono di noi</div>
+  <h2>Host veri, ospiti più sereni.</h2>
+  <p class="sotto">Le parole di chi usa MyHouse Welcome ogni giorno.</p>
+  <div class="test">
+    <div class="t"><div class="cop" style="background-image:linear-gradient(135deg,#c9a27a,#8c5a2e)"><span class="logo">A</span></div><div class="tb"><span class="voto">★★★★★</span><p>«Da quando i miei ospiti hanno la guida sul telefono non ricevo più messaggi alle 11 di sera per il Wi-Fi.»</p><div class="chi"><span class="av" style="background:#d7b899"></span><span><b>Daniele</b><span>Anfiteatro · Assisi</span></span></div></div></div>
+    <div class="t"><div class="cop" style="background-image:linear-gradient(135deg,#9db8a5,#2f6f73)"><span class="logo">L</span></div><div class="tb"><span class="voto">★★★★★</span><p>«L'ho configurata in una sera. Le traduzioni mi hanno salvata con gli ospiti tedeschi.»</p><div class="chi"><span class="av" style="background:#b6c7bc"></span><span><b>Laura</b><span>La Loggia · Spello</span></span></div></div></div>
+    <div class="t"><div class="cop" style="background-image:linear-gradient(135deg,#d4b483,#b4451f)"><span class="logo">C</span></div><div class="tb"><span class="voto">★★★★☆</span><p>«Il QR all'ingresso funziona: gli ospiti lo usano davvero. Mi piacerebbe ancora più scelta di colori.»</p><div class="chi"><span class="av" style="background:#e0c3a3"></span><span><b>Marco</b><span>Casale dei Cipressi · Todi</span></span></div></div></div>
+  </div>
+  <p class="disclaimer">Giudizi di clienti che hanno aderito al programma: chi lascia un giudizio riceve uno sconto del 5%, qualunque voto dia. Pubblicati con il loro accordo, senza link alle loro guide.</p>
+</section>
+
+<p class="nota">5 · Amministrazione → Giudizi</p>
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+    <span style="font-size:14px">Sconto del 5% per i nuovi clienti <span class="tog" style="margin-left:8px"></span> <b>attivo</b></span>
+    <span style="font-size:14px">Sezione in home <span class="tog" style="margin-left:8px"></span> <b>visibile</b> (2 pubblicati)</span>
+  </div>
+  <table><thead><tr><th>Cliente</th><th>Voto</th><th>Giudizio</th><th>Adesione</th><th>Sconto</th><th>In home</th></tr></thead><tbody>
+  <tr><td><b>Daniele</b><br><span style="color:var(--muted);font-size:13px">Anfiteatro · Assisi</span></td><td>★★★★★</td><td>«Da quando i miei ospiti…»</td><td>al pagamento 16/10</td><td>primo anno</td><td><span class="tog"></span></td></tr>
+  <tr><td><b>Marco</b><br><span style="color:var(--muted);font-size:13px">Casale dei Cipressi · Todi</span></td><td>★★★★☆</td><td>«Il QR all'ingresso…»</td><td>dal pannello 12/10</td><td>rinnovo 2027</td><td><span class="tog"></span></td></tr>
+  <tr><td><b>Sara</b><br><span style="color:var(--muted);font-size:13px">B&amp;B Rocca · Gubbio</span></td><td>★★☆☆☆</td><td>«Mi manca la sezione…»</td><td>dal pannello 2/10</td><td>rinnovo 2027</td><td><span class="tog off"></span> <span style="font-size:12px;color:var(--muted)">non in home</span></td></tr>
+  </tbody></table>
+</div>
+</div></body></html>

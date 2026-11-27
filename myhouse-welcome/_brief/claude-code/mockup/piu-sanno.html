@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Più sanno, meglio stanno</title>
+<style>
+@font-face{font-family:Onest;src:url(file:///tmp/claude-0/onest.woff2) format("woff2");font-weight:100 900}
+:root{--paper:#f7f3ea;--sabbia:#ece6da;--ink:#231b12;--muted:#6a5b48;--line:#e2d7c4;--acc:#b4451f;--ocra:#d49a1e}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);font-family:Onest,Arial,sans-serif;color:var(--ink);padding:48px 16px}
+.wrap{max-width:1180px;margin:0 auto}
+.nota{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 18px;font-weight:600}
+.box{background:var(--sabbia);border-radius:32px;padding:44px 46px;display:grid;grid-template-columns:1fr 260px;gap:40px;align-items:center}
+h2{font-family:Gloock,Georgia,serif;font-weight:400;font-size:48px;line-height:52px;letter-spacing:-1px;margin:0 0 22px}
+ul{list-style:none;margin:0;padding:0;display:grid;gap:16px;max-width:560px}
+li{display:grid;grid-template-columns:22px 1fr;gap:10px}
+li svg{margin-top:3px}
+li b{display:block;font-size:17px;font-weight:600}
+li span{display:block;color:var(--muted);font-size:16px;line-height:24px;margin-top:2px}
+.scheda{background:#fff;border:1px solid var(--line);border-radius:26px;padding:22px 20px 16px;text-align:center}
+.passo{display:flex;align-items:center;gap:12px;text-align:left;padding:6px 4px}
+.ico{flex:none;width:38px;height:38px;border-radius:50%;background:#f3ece0;display:grid;place-items:center;color:var(--ink)}
+.passo p{margin:0;font-size:14.5px;font-weight:500}
+.stelle{color:var(--ocra);font-size:15px;letter-spacing:1px;display:block;line-height:16px}
+.freccia{display:block;margin:0 0 0 23px;width:1px;height:14px;background:#cbbda5;position:relative}
+.freccia::after{content:"";position:absolute;bottom:-1px;left:-3px;border:3.5px solid transparent;border-top-color:#cbbda5}
+.ultimo .ico{background:var(--acc);color:#fff}.ultimo p{color:var(--acc);font-weight:600}
+.didascalia{margin:12px 0 0;font-size:13.5px;color:var(--muted)}
+.tel{max-width:390px;margin:48px auto 0}
+.tel .box{grid-template-columns:1fr;padding:28px 22px;gap:24px;border-radius:26px}
+.tel h2{font-size:34px;line-height:38px}
+.tel .scheda{max-width:280px;margin:0 auto}
+</style></head><body><div class="wrap">
+<p class="nota">Mockup · sezione nuova della home, tra le tre scene e «Cosa trova l'ospite» — computer</p>
+<section class="box" id="c">
+  <div>
+    <h2>Più sanno, meglio stanno.</h2>
+    <ul>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#231b12" stroke-width="2" stroke-linecap="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg><div><b>Nessun dubbio, nessuno stress.</b><span>Tutte le risposte, prima ancora di chiederle.</span></div></li>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#231b12" stroke-width="2" stroke-linecap="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg><div><b>Ospite sereno, recensione a 5 stelle.</b><span>Chi si sente accolto lo racconta.</span></div></li>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#231b12" stroke-width="2" stroke-linecap="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg><div><b>Più stelle, più prenotazioni.</b><span>Su Booking, Airbnb e Google la differenza si vede.</span></div></li>
+    </ul>
+  </div>
+  <div>
+    <div class="scheda">
+      <div class="passo"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20"/></svg></span><p>Informazioni chiare</p></div>
+      <span class="freccia"></span>
+      <div class="passo"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5c1 1.3 2.2 2 3.5 2s2.5-.7 3.5-2"/><path d="M9 9.5h.01M15 9.5h.01"/></svg></span><p>Ospite sereno</p></div>
+      <span class="freccia"></span>
+      <div class="passo"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="#d49a1e"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg></span><p><span class="stelle">★★★★★</span>Recensione a 5 stelle</p></div>
+      <span class="freccia"></span>
+      <div class="passo ultimo"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span><p>Nuove prenotazioni</p></div>
+    </div>
+  </div>
+</section>
+<p class="nota" style="margin-top:56px;text-align:center">Telefono</p>
+<div class="tel"><section class="box" id="t"></section></div>
+</div>
+<script>document.getElementById('t').innerHTML=document.getElementById('c').innerHTML;</script>
+</body></html>
