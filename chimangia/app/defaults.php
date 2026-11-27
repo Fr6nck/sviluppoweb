@@ -46,6 +46,8 @@ function default_content(): array
             ],
             'card_tags' => "3 senza glutine\n2 vegetariani",
             'card_caption' => 'Esempio di schermata',
+            'phone_title' => 'Menù di oggi',
+            'phone_button' => 'Conferma',
             'layout' => 'full',
             'photo' => 'brigata',
             'photo_alt' => '',
@@ -103,7 +105,7 @@ function default_content(): array
                     'body' => '<p>Quando arrivi in cucina i numeri sono già lì: i coperti di pranzo e di cena, quanti piatti preparare di ogni tipo, chi è senza glutine e chi non mangia maiale.</p>'
                         . "<p>Fai la spesa giusta e cucini il giusto. Chi non ha confermato entro l'orario è stato disdetto in automatico, quindi nessun piatto resta sul passe ad aspettare qualcuno che non arriva.</p>",
                     'illustration' => 'foto-mattina',
-                    'illustration2' => 'foto-pranzo',
+                    'illustration2' => 'foto-cucina',
                     'image' => 0,
                     'alt' => 'Un giovane cuoco in grembiule blu guarda soddisfatto il telefono in cucina, accanto alle cassette di verdura fresca',
                 ],
@@ -214,7 +216,7 @@ function default_content(): array
         'faq' => [
             'visible' => true,
             'title' => 'Domande *frequenti*',
-            'photo' => 'cucina',
+            'photo' => '',
             'photo_alt' => '',
             'items' => [
                 ['id' => 'q1', 'visible' => true, 'question' => "I miei clienti devono scaricare un'app?", 'answer' => '<p>No. Aprono un link dal telefono e, se vogliono, lo aggiungono alla schermata iniziale. Accedono con numero di cellulare e password.</p>'],
@@ -244,6 +246,8 @@ function default_content(): array
             'email_label' => 'Scrivici:',
             'phone_label' => 'Chiamaci:',
             'offer_line' => 'Offerta di lancio per i primi 10 clienti: −{sconto} bloccato per 24 mesi.',
+            'photo' => 'sala',
+            'photo_alt' => '',
         ],
 
         'azienda' => [

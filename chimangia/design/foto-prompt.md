@@ -26,3 +26,14 @@ Tutte con il terzo sinistro più calmo e scuro, per lasciare spazio al testo.
 ## Aggiornamento 1.3
 Le foto `mattina`, `brigata`, `reception`, `camera`, `esterno` sono state create dal cliente con ChatGPT e inserite (larghezza massima 1672 px).
 Restano da fare, se servono: sala piena panoramica, e le quattro foto per "Per chi è".
+
+## Aggiornamento 4.0 — dove sono usate le fotografie
+- Apertura (slider): `brigata`, `sala`, `reception`, `camera`
+- Il problema (sfondo): `bancone`
+- Una giornata: `sera` + `esterno`, `mattina` + `cucina`, `fine-mese`
+- Contatti (sfondo): `sala` — è l'unica ripetuta (anche seconda slide dell'apertura)
+
+Per evitare la ripetizione servirebbero altre panoramiche 16:9, calme e scure sul lato sinistro:
+- una tavola apparecchiata in una sala vuota alla luce del mattino;
+- una sala a cena, luci calde, persone a tavola viste da lontano (per lo sfondo dei contatti);
+- mani che scelgono un piatto sul telefono, a tavola, con un piatto di pasta sfocato sullo sfondo.

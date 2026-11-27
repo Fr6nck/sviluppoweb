@@ -165,6 +165,9 @@ function cm_migrate(): void
     if (version_compare($from, '3.0.0', '<')) {
         migrate_day_pairs();
     }
+    if (version_compare($from, '4.0.0', '<')) {
+        migrate_photo_panels();
+    }
     foreach (default_settings() as $name => $value) {
         q('INSERT IGNORE INTO ' . t('settings') . ' (name, value) VALUES (?, ?)', [$name, json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
     }
@@ -339,4 +342,45 @@ function migrate_day_pairs(): void
         $out[$col] = is_array($d) ? content_encode($d) : (string) $row[$col];
     }
     q('UPDATE ' . t('content') . " SET draft = ?, published = ? WHERE area = 'giornata'", [$out['draft'], $out['published']]);
+}
+
+/**
+ * 4.0.0: sezioni con fotografia di sfondo. Riassegna le fotografie predefinite per non
+ * ripeterle (la cuoca passa a "La mattina", la sala fa da sfondo ai contatti). Le scelte
+ * fatte dal pannello restano: si toccano solo i valori ancora uguali a quelli iniziali.
+ */
+function migrate_photo_panels(): void
+{
+    $edit = static function (string $area, callable $fn): void {
+        $row = q_one('SELECT draft, published FROM ' . t('content') . ' WHERE area = ?', [$area]);
+        if (!$row) {
+            return;
+        }
+        $out = [];
+        foreach (['draft', 'published'] as $col) {
+            $d = json_decode((string) $row[$col], true);
+            $out[$col] = is_array($d) ? content_encode($fn($d)) : (string) $row[$col];
+        }
+        q('UPDATE ' . t('content') . ' SET draft = ?, published = ? WHERE area = ?', [$out['draft'], $out['published'], $area]);
+    };
+    $edit('giornata', static function (array $d): array {
+        foreach ($d['cards'] ?? [] as $i => $card) {
+            if (($card['illustration'] ?? '') === 'foto-mattina' && ($card['illustration2'] ?? '') === 'foto-pranzo') {
+                $d['cards'][$i]['illustration2'] = 'foto-cucina';
+            }
+        }
+        return $d;
+    });
+    $edit('faq', static function (array $d): array {
+        if (($d['photo'] ?? '') === 'cucina') {
+            $d['photo'] = '';
+        }
+        return $d;
+    });
+    $edit('contatti', static function (array $d): array {
+        if (in_array($d['photo'] ?? null, ['esterno'], true)) {
+            $d['photo'] = 'sala';
+        }
+        return $d;
+    });
 }

@@ -11,7 +11,7 @@ $schema = ['title' => 'Domande frequenti', 'groups' => [
         f('title', 'Titolo', 'text', ['rec' => 40]),
     ]],
     ['Fotografia', [
-        f('photo', 'Fotografia accanto alle domande', 'photo'),
+        f('photo', 'Fotografia accanto alle domande (facoltativa)', 'photo'),
         f('photo_alt', 'Descrizione della fotografia (testo alternativo)', 'text', ['rec' => 120, 'hint' => 'Vuoto: si usa la descrizione predefinita della foto.']),
     ]],
     ['Domande', [

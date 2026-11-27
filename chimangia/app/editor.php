@@ -48,7 +48,7 @@ function section_schema(string $area): ?array
                 f('btn2_text', 'Secondo pulsante: testo', 'text', ['rec' => 24]),
                 f('btn2_href', 'Secondo pulsante: destinazione', 'href'),
             ]],
-            ['Scheda d\'esempio della cucina', [
+            ['Dimostrazione: scheda della cucina e telefono (in "Come funziona")', [
                 f('card_label', 'Etichetta in alto', 'text', ['rec' => 30]),
                 f('card_number', 'Numero grande', 'text', ['rec' => 4]),
                 f('card_number_label', 'Testo accanto al numero', 'text', ['rec' => 24]),
@@ -58,10 +58,12 @@ function section_schema(string $area): ?array
                 ]],
                 f('card_tags', 'Etichette gialle', 'lines', ['hint' => 'Una per riga.']),
                 f('card_caption', 'Didascalia', 'text', ['rec' => 30]),
+                f('phone_title', 'Telefono d\'esempio: titolo dello schermo', 'text', ['rec' => 20, 'hint' => 'Il telefono mostra i piatti dei primi due gruppi, accanto alla scheda della cucina.']),
+                f('phone_button', 'Telefono d\'esempio: testo del pulsante', 'text', ['rec' => 14]),
             ]],
             ['Fotografie (slider)', [
                 f('layout', 'Disposizione dell\'apertura', 'choice', ['options' => ['full' => 'Fotografia grande con il titolo al centro (slider)', 'side' => 'Fotografia a lato del testo'], 'hint' => 'A tutta larghezza rendono meglio le fotografie panoramiche.']),
-                f('photo', 'Prima fotografia', 'photo', ['hint' => 'Con più fotografie l\'apertura diventa uno slider. La scheda d\'esempio compare nella sezione "Il problema".']),
+                f('photo', 'Prima fotografia', 'photo', ['hint' => 'Con più fotografie l\'apertura diventa uno slider.']),
                 f('photo_alt', 'Descrizione della prima fotografia (testo alternativo)', 'text', ['rec' => 120, 'hint' => 'Vuoto: si usa la descrizione predefinita della foto.']),
                 f('photo2', 'Seconda fotografia dello slider', 'photo'),
                 f('photo3', 'Terza fotografia dello slider', 'photo'),
@@ -81,7 +83,7 @@ function section_schema(string $area): ?array
             ]],
             ['Chiusura', [f('closing', 'Frase finale', 'text', ['rec' => 90])]],
             ['Fotografia', [
-                f('photo', 'Fotografia a sinistra del titolo', 'photo', ['hint' => 'A destra compare la scheda d\'esempio della cucina.']),
+                f('photo', 'Fotografia di sfondo', 'photo', ['hint' => 'Occupa tutta la larghezza, sotto il testo. Senza fotografia il fondo è blu.']),
                 f('photo_alt', 'Descrizione della fotografia (testo alternativo)', 'text', ['rec' => 120, 'hint' => 'Vuoto: si usa la descrizione predefinita della foto.']),
             ]],
         ]],
@@ -146,6 +148,10 @@ function section_schema(string $area): ?array
                 f('email_label', 'Testo prima dell\'email', 'text', ['hint' => 'L\'indirizzo si modifica in Dati aziendali.']),
                 f('phone_label', 'Testo prima del telefono', 'text'),
                 f('offer_line', 'Riga dell\'offerta', 'text', ['rec' => 90, 'hint' => 'Visibile solo con l\'offerta di lancio attiva.']),
+            ]],
+            ['Fotografia', [
+                f('photo', 'Fotografia di sfondo', 'photo', ['hint' => 'Occupa tutta la larghezza, dietro il titolo e il modulo. Senza fotografia il fondo è blu.']),
+                f('photo_alt', 'Descrizione della fotografia (testo alternativo)', 'text', ['rec' => 120, 'hint' => 'Vuoto: si usa la descrizione predefinita della foto.']),
             ]],
         ]],
     ];
