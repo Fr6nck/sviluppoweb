@@ -280,7 +280,7 @@ final class Richiami
         try { Campione::pulisci(); } catch (\Throwable $e) { Log::exception($e, 'campione: storico'); }   // 9M: le copie sovrascritte oltre i 30 giorni
         try { AccountProva::pulisci(); } catch (\Throwable $e) { Log::exception($e, 'account di prova: registro'); }   // 9R: l'email tolta dopo 90 giorni
         try { Sconti::riallineaInSospeso(); } catch (\Throwable $e) { Log::exception($e, 'sconti da riallineare'); }   // 9R · migrazione 063
-        try { Listino::inSospeso(); } catch (\Throwable $e) { Log::exception($e, 'listino: prezzi nuovi'); }   // 9W · migrazione 073
+        try { Listino::ripristinaInSospeso(); } catch (\Throwable $e) { Log::exception($e, 'listino: prezzi di prima'); }   // 9W · migrazione 074
         // Benvenuto: le prime guide degli ultimi giorni rimaste senza email (il primo tentativo non è partito).
         try { $fatte['online'] = Pagamenti::recenti($t); } catch (\Throwable $e) { Log::exception($e, 'email «La tua guida è online»'); }   // 9O: quelle non partite
         try { $fatte['benvenuto'] = Benvenuto::recenti($t); } catch (\Throwable $e) { Log::exception($e, 'email di benvenuto'); }

@@ -133,9 +133,9 @@ final class CambioAbbonamento
     }
 
     /**
-     * 9W · Il listino è sceso (migrazione 073): l'abbonamento passa subito alla versione nuova, che ha le stesse funzioni e
-     * costa meno. Su Stripe le voci cambiano senza proporzioni: il periodo pagato resta com'è, il rinnovo incassa il prezzo
-     * nuovo. Niente pagamenti né rimborsi. Rete: va chiamata fuori dalle transazioni.
+     * 9W · Un cambio di listino con le stesse funzioni (Listino, migrazione 074: ritorno al prezzo di prima): l'abbonamento
+     * passa subito alla versione data. Su Stripe le voci cambiano senza proporzioni: il periodo pagato resta com'è, il
+     * rinnovo incassa il prezzo della versione. Niente pagamenti né rimborsi. Rete: va chiamata fuori dalle transazioni.
      */
     public static function listino(array $sub, array $pvNuova, int $q): void
     {

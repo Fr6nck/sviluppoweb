@@ -394,19 +394,19 @@ Sul sito, **Amministrazione → Impostazioni → Indirizzi email**: i quattro ca
 9. **Codici sconto**: «Valido fino al» è ora già compilato con il 31 dicembre; cambialo se serve.
 10. Restano in italiano (per ora): l'email d'invito all'amico e le email scritte dall'amministrazione al cliente (rinnovo fermato, cambio piano, rimborso, password provvisoria).
 
-## 4ac. 9W (27 novembre): Welcome MyHouse, prezzi nuovi, promo per sempre, Promo dicembre
+## 4ac. 9W (27 novembre): Welcome MyHouse e promo per sempre (prezzi di prima)
 
-La migrazione **073** parte da sola al primo accesso. Poi:
+Le migrazioni **073** e **074** partono da sole al primo accesso. I prezzi restano quelli di prima (97 / 127 / da 177 €) e nel codice non c'è nessuna Promo dicembre: vale quella che hai creato a mano. Poi:
 
 1. **Il nome fuori dal sito** (il sito è già tutto «Welcome MyHouse»):
    - Stripe → Impostazioni → **Dati pubblici dell'attività**: nome «Welcome MyHouse» e descrizione sull'estratto conto (per esempio `WELCOMEMYHOUSE`).
-   - Stripe → Catalogo prodotti: i prodotti nuovi nascono già con il nome nuovo; quelli vecchi puoi rinominarli a mano (facoltativo, non cambia niente nei pagamenti).
+   - Stripe → Catalogo prodotti: i prodotti nuovi nascono già con il nome nuovo; quelli vecchi puoi rinominarli a mano (facoltativo).
    - Amministrazione → Impostazioni → Email → **Nome del mittente**: se c'è scritto «MyHouse Welcome» (o se sul server c'è la variabile `MAIL_FROM_NAME`), cambialo.
    - Fuori dal sito: profili social, Google Business, firme email, Adamo.
-2. **Prezzi nuovi** (87 / 117 / da 167 €): niente da fare su Stripe. Per chi è già abbonato il passaggio lo fa il giro automatico dei richiami (lo stesso dei promemoria): entro un giorno, 15 abbonamenti per volta. Serve che il giro giri (Diagnostica → richiami). Non parte nessuna email; al rinnovo pagano il prezzo nuovo e l'avviso 30 e 7 giorni prima dice già l'importo nuovo. Le offerte su misura e gli abbonamenti dello staff restano come sono. Nella scheda del cliente, finché non è fatto, c'è «passa al listino nuovo al prossimo giro»; nel Registro azioni `listino.fatto`.
-3. **Sconto per sempre**: la Promo novembre ora vale per sempre anche per chi l'ha già usata; il giro dei richiami mette lo sconto sul loro rinnovo su Stripe. Ai rinnovi lo sconto per sempre **si somma** a inviti e giudizio (17% + 5% = 22%; al massimo 17% + 55% = 72%). Per le promo future: Amministrazione → Codici sconto → casella **«Per sempre»** (senza, lo sconto vale solo il primo anno, come prima).
-4. **Promo dicembre** (DICEMBRE17, 17% per sempre): parte da sola il 1° dicembre e finisce il 31; la Promo novembre finisce il 30. I testi della fascia sono in Testi e foto → Promo, le tre voci «promo per sempre». Se avevi riscritto a mano quelli della Promo novembre, quelli restano per le promo «del primo anno».
-5. **Termini**: aggiunti i paragrafi della promo per sempre e della Promo dicembre. Sono a favore dei clienti: la versione **non** è cambiata e nessuno deve riaccettare. Se vuoi che li vedano nella finestra degli aggiornamenti, cambia la data in Impostazioni → Titolare e documenti legali.
+2. **La tua Promo dicembre**: Amministrazione → Codici sconto → aprila e controlla la casella **«Per sempre»**. Se l'avevi creata con «Mostra in home» prima di caricare l'aggiornamento, la migrazione l'ha già messa «per sempre» (come la Promo novembre); toglila se vuoi lo sconto solo sul primo anno. Per aumentare lo sconto: un codice su Stripe non si cambia, quindi disattiva quello di adesso e creane uno nuovo con la percentuale nuova (stesso nome della promo, date da oggi). I testi della fascia per le promo per sempre sono in Testi e foto → Promo, le tre voci «promo per sempre».
+3. **Sconto per sempre**: la Promo novembre ora vale per sempre anche per chi l'ha già usata; il giro dei richiami mette lo sconto sul loro rinnovo su Stripe. Ai rinnovi lo sconto per sempre **si somma** a inviti e giudizio (17% + 5% = 22%; al massimo 17% + 55% = 72%).
+4. **Solo se avevi già caricato il pacchetto 9W del 27 novembre** (quello con i prezzi a 87 / 117 / 167 €): la 074 rimette in vendita i prezzi di prima e toglie DICEMBRE17; i clienti già passati al prezzo più basso tornano al loro prezzo entro un giorno, dal giro dei richiami, senza addebiti né rimborsi (Registro azioni `listino.ripristinato`; nella scheda del cliente «torna al suo prezzo al prossimo giro»). Chi nel frattempo ha comprato a 87 / 117 € tiene quel prezzo.
+5. **Termini**: aggiunta la regola delle promo per sempre (con la Promo novembre). È a favore dei clienti: la versione **non** è cambiata. Se vuoi che la vedano nella finestra degli aggiornamenti, cambia la data in Impostazioni → Titolare e documenti legali.
 6. Poi Amministrazione → Sistema → **Cache** → «Svuota tutto» (CSS, JavaScript e immagini nuove).
 
 ## 4ab. 9V aggiunta (24 novembre): «Modifica Casa Checco»

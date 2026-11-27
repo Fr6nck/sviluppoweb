@@ -208,15 +208,9 @@ prova('Installazione con i clienti di esempio', $r['code'] === 302 && str_contai
 prova('Migrazioni applicate tutte', (int) val("SELECT COUNT(*) FROM schema_migrations") >= 3);
 // 9U · La Promo novembre (070) vale dal 30/10 al 30/11/2026: le prove dei prezzi e degli sconti la vogliono spenta; il capitolo 9U la riaccende.
 db()->exec("UPDATE discount_codes SET active = 0 WHERE code IN ('NOVEMBRE17', 'DICEMBRE17')");
-// 9W · Le prove fino al capitolo 9W girano come prima: la Promo novembre «del primo anno» e il listino di prima (97 / 127 € e
-// Portfolio 117 € + scaglioni). Il capitolo 9W riapplica la migrazione 073 e prova il listino nuovo e lo sconto per sempre.
+// 9W · Le prove fino al capitolo 9W girano come prima, con la Promo novembre «del primo anno»: il capitolo 9W riapplica la
+// migrazione 073 (la promo diventa per sempre) e prova lo sconto per sempre e la 074 (prezzi di prima).
 db()->exec("UPDATE discount_codes SET per_sempre = 0 WHERE code = 'NOVEMBRE17'");
-foreach (['essential', 'plus', 'portfolio'] as $c9w0) {
-    $ultima9w0 = riga('SELECT pv.id, pv.package_id, pv.version FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = ? AND pv.is_current = 1', [$c9w0]);
-    if (!$ultima9w0) continue;
-    db()->prepare('UPDATE package_versions SET is_current = 0 WHERE package_id = ?')->execute([$ultima9w0['package_id']]);
-    db()->prepare('UPDATE package_versions SET is_current = 1 WHERE package_id = ? AND version = ?')->execute([$ultima9w0['package_id'], (int) $ultima9w0['version'] - 1]);
-}
 prova('Il catalogo delle funzioni c\'è', (int) val('SELECT COUNT(*) FROM features') >= 20);
 prova('Nessun codice porta nel database', (int) val("SELECT COUNT(*) FROM sections WHERE door_code <> ''") === 0);
 prova('Nessun codice porta nelle guide pubblicate', (int) val("SELECT COUNT(*) FROM guide_versions WHERE snapshot LIKE '%door_code%'") === 0);
@@ -8689,9 +8683,9 @@ db()->prepare('DELETE FROM discount_codes WHERE id = ?')->execute([(int) ($n9u['
 
 // Termini e FAQ, IT ed EN.
 $t9u = $ospite->get('/termini')['body']; $te9u = $ospite->get('/en/terms')['body'];
-prova('9U · 3 · Termini IT/EN: il paragrafo della promo (−17%, NOVEMBRE17, −22% con il giudizio, si somma al codice di un partner, non con invito e omaggio; 9W: per sempre, anche Promo dicembre); versione del 30 ottobre 2026',
-      str_contains($t9u, '<b>Promo novembre e Promo dicembre: prezzo bloccato per sempre.</b> −17% per i nuovi clienti') && str_contains($t9u, 'NOVEMBRE17') && str_contains($t9u, 'in tutto −22% sul primo anno')
-      && str_contains($t9u, 'e allo sconto del codice di un partner') && str_contains($t9u, 'ad altri codici né ai codici omaggio') && str_contains($te9u, '<b>November promo and December promo: price locked forever.</b>') && str_contains($te9u, 'and with a partner') && str_contains($t9u, 'Versione del 30 ottobre 2026'));
+prova('9U · 3 · Termini IT/EN: il paragrafo della promo (−17%, NOVEMBRE17, −22% con il giudizio, si somma al codice di un partner, non con invito e omaggio; 9W: le promo per sempre); versione del 30 ottobre 2026',
+      str_contains($t9u, '<b>Promo con il prezzo bloccato per sempre.</b> Una promo indicata come «per sempre»') && str_contains($t9u, 'NOVEMBRE17') && str_contains($t9u, 'in tutto −22% sul primo anno')
+      && str_contains($t9u, 'e allo sconto del codice di un partner') && str_contains($t9u, 'ad altri codici né ai codici omaggio') && str_contains($te9u, '<b>Promos with the price locked forever.</b>') && str_contains($te9u, 'and with a partner') && str_contains($t9u, 'Versione del 30 ottobre 2026'));
 $f9u = $ospite->get('/domande')['body']; $fe9u = $ospite->get('/en/questions')['body'];
 prova('9U · 3 · FAQ «C\'è un\'offerta?» (IT) e «Is there an offer?» (EN) con il codice e la data', str_contains($f9u, 'C&#039;è un&#039;offerta?') && str_contains($f9u, 'con il codice NOVEMBRE17')
       && str_contains($fe9u, 'Is there an offer?') && str_contains($fe9u, 'NOVEMBRE17'));
@@ -9138,7 +9132,7 @@ $c9n('$p = MHW\Db::one("SELECT * FROM properties WHERE id = ' . $pidB . '"); for
     MHW\Demo::casaVetrina(' . $pidB . '); MHW\Guide::publish(' . $pidB . '); echo "ok";');
 
 // ======================================================================= 9W
-capitolo('9W · Welcome MyHouse, prezzi nuovi anche per chi è già abbonato, sconto della promo per sempre, Promo dicembre');
+capitolo('9W · Welcome MyHouse, sconto della promo per sempre, prezzi di prima (correzione del 27 novembre)');
 // 1 · Il nome: la scritta del logo e i testi, nelle pagine pubbliche, nel pannello e nella guida dell'ospite.
 $pagine9w = ['/' => $ospite->get('/')['body'], '/en' => $ospite->get('/en')['body'], '/domande' => $ospite->get('/domande')['body'], '/termini' => $ospite->get('/termini')['body'],
              '/pannello' => $lucia->get('/pannello')['body'], 'guida' => $ospite->get('/g/' . $slugV)['body']];
@@ -9148,57 +9142,62 @@ prova('9W · 1 · «welcome myhouse» nel logo del sito e del pannello, «Welcom
       && str_contains($pagine9w['/termini'], 'Welcome MyHouse'), implode(', ', $vecchio9w));
 $mig9w = 'require "' . $DOVE . '/app/migrations/073_welcome_myhouse_9w.php";';
 $c9n('MHW\Db::run("DELETE FROM site_texts WHERE chiave = \'promo.bottone\'"); MHW\Db::insert("site_texts", ["chiave" => "promo.bottone", "valore" => "Prova MyHouse Welcome", "updated_at" => "2026-11-27"]); echo "ok";');
-// Fino a qui le prove avevano il listino di prima e la Promo novembre «del primo anno»: la migrazione 073 si riapplica adesso,
-// come al primo accesso dopo l'aggiornamento (il listino di adesso → 87 / 117 / 167 €, le promo in home → per sempre).
+// Fino a qui la Promo novembre era «del primo anno»: la migrazione 073 si riapplica adesso, come al primo accesso dopo
+// l'aggiornamento (le promo in home → per sempre; chi le ha pagate → in fila per lo sconto sul rinnovo). Prezzi e codici: niente.
 $verPrima9w = (int) val('SELECT COUNT(*) FROM package_versions');
-@unlink("$DOVE/app/storage/.listino-da-riallineare.json"); @unlink("$DOVE/app/storage/.sconti-da-riallineare.json");
+@unlink("$DOVE/app/storage/.sconti-da-riallineare.json");
+db()->exec("INSERT INTO discount_codes (code, kind, value, valid_from, valid_until, max_uses, packages, note, active, stripe_coupon_id, created_at, somma_giudizio, somma_invito, in_home, nome_promo, per_sempre)
+            VALUES ('DICEMBRE20', 'percent', 20, '2026-12-01', '2026-12-31', 0, '', 'creata a mano', 0, '', '2026-11-27T09:00:00Z', 1, 0, 1, 'Promo dicembre', 0)");
 $c9n('$f = ' . $mig9w . ' $f(MHW\Db::conn()); echo "ok";');
-$verDopo9w = (int) val('SELECT COUNT(*) FROM package_versions');
-$filaL9w = json_decode((string) @file_get_contents("$DOVE/app/storage/.listino-da-riallineare.json"), true) ?: [];
 $filaS9w = json_decode((string) @file_get_contents("$DOVE/app/storage/.sconti-da-riallineare.json"), true) ?: [];
 $c9n('$f = ' . $mig9w . ' $f(MHW\Db::conn()); echo "ok";');
-prova('9W · 1 · migrazione 073: i testi salvati passano a «Welcome MyHouse», tre versioni nuove dei piani, Promo novembre per sempre, in fila gli abbonamenti e chi ha pagato con la promo; ripetuta non crea versioni né codici in più',
-      (string) val("SELECT valore FROM site_texts WHERE chiave = 'promo.bottone'") === 'Prova Welcome MyHouse' && $verDopo9w === $verPrima9w + 3 && (int) val('SELECT COUNT(*) FROM package_versions') === $verDopo9w
-      && (int) val("SELECT per_sempre FROM discount_codes WHERE code = 'NOVEMBRE17'") === 1 && (int) val("SELECT COUNT(*) FROM discount_codes WHERE code = 'DICEMBRE17'") === 1
-      && count($filaL9w) >= 3 && in_array($proAcc9u, array_map('intval', $filaS9w), true), json_encode([$verPrima9w, $verDopo9w, count($filaL9w), $filaS9w]));
-@unlink("$DOVE/app/storage/.listino-da-riallineare.json");
+prova('9W · 1 · migrazione 073: i testi salvati passano a «Welcome MyHouse», la Promo novembre e una promo in home creata a mano diventano per sempre, chi ha pagato con la promo va in fila; prezzi e codici restano come sono (ripetuta: uguale)',
+      (string) val("SELECT valore FROM site_texts WHERE chiave = 'promo.bottone'") === 'Prova Welcome MyHouse' && (int) val('SELECT COUNT(*) FROM package_versions') === $verPrima9w
+      && (int) val("SELECT per_sempre FROM discount_codes WHERE code = 'NOVEMBRE17'") === 1 && (int) val("SELECT per_sempre FROM discount_codes WHERE code = 'DICEMBRE20'") === 1
+      && (int) val("SELECT COUNT(*) FROM discount_codes WHERE code = 'DICEMBRE17'") === 0 && !is_file("$DOVE/app/storage/.listino-da-riallineare.json")
+      && in_array($proAcc9u, array_map('intval', $filaS9w), true), json_encode([$verPrima9w, (int) val('SELECT COUNT(*) FROM package_versions'), $filaS9w]));
 db()->exec("DELETE FROM site_texts WHERE chiave = 'promo.bottone'");
 
-// 2 · Il listino nuovo: 87 / 117 / 167 € (Portfolio con 2 strutture), stesse funzioni della versione di prima.
-$pr9w = json_decode($c9n('$o = []; foreach (["essential", "plus", "portfolio"] as $c) { $pv = MHW\Plans::version((int) MHW\Db::val("SELECT pv.id FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = ? AND pv.is_current = 1", [$c])); $o[$c] = MHW\Plans::price($pv, max(1, (int) $pv["min_quantity"])); } echo json_encode($o);'), true) ?: [];
-$funz9w = fn(string $code) => righe('SELECT pf.feature_id, pf.value FROM package_features pf JOIN package_versions pv ON pv.id = pf.package_version_id JOIN packages p ON p.id = pv.package_id
-                                     WHERE p.code = ? AND pv.version = (SELECT MAX(version) FROM package_versions x WHERE x.package_id = p.id) - ? ORDER BY pf.feature_id', [$code, 0]);
-$vecchiaPlus9w = (int) val("SELECT pv.id FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = 'plus' AND pv.price_cents = 12700 ORDER BY pv.version DESC");
-$funzVecchia9w = righe('SELECT feature_id, value FROM package_features WHERE package_version_id = ? ORDER BY feature_id', [$vecchiaPlus9w]);
-prova('9W · 2 · listino: Essential 87 €, Plus 117 €, Portfolio 167 € con 2 strutture (107 € la prima, scaglioni come prima); la versione nuova di Plus ha le stesse funzioni di quella da 127 €',
-      $pr9w === ['essential' => 8700, 'plus' => 11700, 'portfolio' => 16700] && (int) val('SELECT price_cents FROM package_versions WHERE id = ?', [$vecchiaPlus9w]) === 12700 && $funz9w('plus') == $funzVecchia9w
-      && (int) val("SELECT pv.price_cents FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = 'portfolio' AND pv.is_current = 1") === 10700, json_encode($pr9w));
+// 2 · I prezzi restano quelli di prima (correzione del 27 novembre): Plus 127 €, Portfolio 177 € con 2 strutture.
+$pr9w = json_decode($c9n('$o = []; foreach (["plus", "portfolio"] as $c) { $pv = MHW\Plans::version((int) MHW\Db::val("SELECT pv.id FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = ? AND pv.is_current = 1", [$c])); $o[$c] = MHW\Plans::price($pv, max(1, (int) $pv["min_quantity"])); } echo json_encode($o);'), true) ?: [];
+prova('9W · 2 · listino di prima: Plus 127 €, Portfolio 177 € con 2 strutture (nessuna versione nuova)', $pr9w === ['plus' => 12700, 'portfolio' => 17700], json_encode($pr9w));
 
-// 3 · Chi è già abbonato passa al prezzo nuovo: subito su Stripe (senza proporzioni) e nel sito; il rinnovo incassa 117 €.
+// 3 · Dove il pacchetto 9W del 27 novembre era già girato (listino a 87 / 117 / 107 €, DICEMBRE17, abbonamenti spostati):
+// la 074 rimette in vendita le versioni di prima, toglie DICEMBRE17 (non quello creato a mano) e riporta indietro gli abbonamenti.
 $sub9w = riga('SELECT * FROM subscriptions WHERE account_id = ?', [$proAcc9u]) ?? [];
-$suVecchia9w = (int) $sub9w['package_version_id'] === $vecchiaPlus9w;   // ha pagato con il listino di prima
+$pvPrima9w = ['essential' => pv('essential'), 'plus' => pv('plus'), 'portfolio' => pv('portfolio')];
+$nuove9w = json_decode($c9n('$o = []; foreach (["essential" => 8700, "plus" => 11700, "portfolio" => 16700] as $c => $t) {
+    $cv = MHW\Db::one("SELECT pv.* FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = ? AND pv.is_current = 1", [$c]);
+    $base = (int) $cv["per_property"] === 1 ? $t - (MHW\Plans::price($cv, 2) - (int) $cv["price_cents"]) : $t;
+    $r = $cv; unset($r["id"]); $r = ["version" => (int) $cv["version"] + 1, "price_cents" => $base, "stripe_price_id" => "", "created_at" => "2026-11-27T10:00:00Z"] + $r;
+    MHW\Db::run("UPDATE package_versions SET is_current = 0 WHERE package_id = ?", [(int) $cv["package_id"]]);
+    $id = MHW\Db::insert("package_versions", $r);
+    MHW\Db::run("INSERT INTO package_features (package_version_id, feature_id, value) SELECT ?, feature_id, value FROM package_features WHERE package_version_id = ?", [$id, (int) $cv["id"]]);
+    $o[$c] = $id; } echo json_encode($o);'), true) ?: [];
+db()->exec("INSERT INTO discount_codes (code, kind, value, valid_from, valid_until, max_uses, packages, note, active, stripe_coupon_id, created_at, somma_giudizio, somma_invito, in_home, nome_promo, per_sempre)
+            VALUES ('DICEMBRE17', 'percent', 17, '2026-12-01', '2026-12-31', 0, '', 'Promo dicembre (9W): 17% per sempre, solo nuovi clienti, si somma al Giudizio con sconto', 1, '', '2026-11-27T10:00:00Z', 1, 0, 1, 'Promo dicembre', 1)");
+// Pro era stato portato a Plus da 117 € dal giro dei richiami (Registro azioni «listino.fatto»).
+db()->prepare('UPDATE subscriptions SET package_version_id = ?, next_package_version_id = NULL WHERE id = ?')->execute([(int) $nuove9w['plus'], (int) $sub9w['id']]);
+db()->prepare("INSERT INTO audit_log (actor_user_id, target_user_id, action, meta, created_at) VALUES (NULL, NULL, 'listino.fatto', ?, '2026-11-27T11:00:00Z')")
+    ->execute([json_encode(['subscription' => (int) $sub9w['id'], 'da' => ['pv' => $pvPrima9w['plus'], 'q' => 1, 'prezzo' => 12700], 'a' => ['pv' => (int) $nuove9w['plus'], 'q' => 1, 'prezzo' => 11700]])]);
 file_put_contents("$DOVE/app/storage/.listino-da-riallineare.json", json_encode([(int) $sub9w['id']]));
+$c9n('$f = require "' . $DOVE . '/app/migrations/074_prezzi_di_prima_9w.php"; $f(MHW\Db::conn()); echo "ok";');
+$rip9w = json_decode((string) @file_get_contents("$DOVE/app/storage/.listino-ripristino.json"), true) ?: [];
+prova('9W · 3 · migrazione 074 dopo il pacchetto del 27 novembre: tornano in vendita le versioni di prima (Plus 127 €, Portfolio 117 € la prima), DICEMBRE17 sparisce (quello creato a mano resta), l\'elenco dei prezzi nuovi si cancella, Pro va nella fila del ritorno',
+      pv('essential') === $pvPrima9w['essential'] && pv('plus') === $pvPrima9w['plus'] && pv('portfolio') === $pvPrima9w['portfolio']
+      && (int) val("SELECT COUNT(*) FROM discount_codes WHERE code = 'DICEMBRE17'") === 0 && (int) val("SELECT COUNT(*) FROM discount_codes WHERE code = 'DICEMBRE20'") === 1
+      && !is_file("$DOVE/app/storage/.listino-da-riallineare.json") && ($rip9w[0]['s'] ?? 0) === (int) $sub9w['id'] && ($rip9w[0]['pv'] ?? 0) === $pvPrima9w['plus'], json_encode([$pvPrima9w, pv('plus'), $rip9w]));
 $daL9w = count(richiesteStripe());
-$fatti9w = (int) $c9n('echo MHW\Listino::inSospeso();');
+$fatti9w = (int) $c9n('echo MHW\Listino::ripristinaInSospeso();');
 $cambioL9w = array_values(array_filter(array_slice(richiesteStripe(), $daL9w), fn($x) => $x['metodo'] === 'POST' && $x['percorso'] === '/v1/subscriptions/' . $sub9w['provider_subscription_id']))[0]['corpo'] ?? [];
 $dopoL9w = riga('SELECT * FROM subscriptions WHERE id = ?', [(int) $sub9w['id']]) ?? [];
-prova('9W · 3 · prezzi nuovi per chi è già abbonato: da Plus a 127 € a Plus a 117 €, su Stripe senza proporzioni (il periodo pagato resta), nel Registro azioni; l\'elenco si svuota',
-      $suVecchia9w && $fatti9w === 1 && (int) $dopoL9w['package_version_id'] === pv('plus') && ($cambioL9w['proration_behavior'] ?? '') === 'none'
-      && (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'listino.fatto'") >= 1 && !is_file("$DOVE/app/storage/.listino-da-riallineare.json"), json_encode([$fatti9w, $dopoL9w['package_version_id'] ?? null, $cambioL9w['proration_behavior'] ?? null]));
-$add9w = json_decode($c9n('echo json_encode(MHW\Richiami::prossimoAddebito(MHW\Db::one("SELECT * FROM subscriptions WHERE id = ' . (int) $sub9w['id'] . '")));'), true) ?: [];
-prova('…l\'avviso di rinnovo dice il prezzo nuovo: 117 € di listino', (int) ($add9w['listino'] ?? 0) === 11700, json_encode($add9w));
-// Con una discesa programmata: la discesa resta, verso la versione nuova del piano scelto; un'offerta su misura resta com'è.
-$vecchiaEss9w = (int) val("SELECT pv.id FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.code = 'essential' AND pv.price_cents > 8700 ORDER BY pv.version DESC");
-db()->prepare('UPDATE subscriptions SET package_version_id = ?, next_package_version_id = ?, next_quantity = 1, next_choices = ? WHERE id = ?')
-    ->execute([$vecchiaPlus9w, $vecchiaEss9w, json_encode(['sezioni' => [], 'archivia' => []]), (int) $sub9w['id']]);
-$prog9w = $c9n('echo MHW\Listino::porta(MHW\Db::one("SELECT * FROM subscriptions WHERE id = ' . (int) $sub9w['id'] . '"));');
-$dopoP9w = riga('SELECT * FROM subscriptions WHERE id = ?', [(int) $sub9w['id']]) ?? [];
-db()->prepare('UPDATE subscriptions SET offerta_id = 1 WHERE id = ?')->execute([(int) $sub9w['id']]);
-$off9w = $c9n('echo MHW\Listino::porta(MHW\Db::one("SELECT * FROM subscriptions WHERE id = ' . (int) $sub9w['id'] . '"));');
-db()->prepare('UPDATE subscriptions SET offerta_id = NULL, package_version_id = ?, next_package_version_id = NULL, next_quantity = NULL, next_choices = NULL WHERE id = ?')->execute([pv('plus'), (int) $sub9w['id']]);
-$gia9w = $c9n('echo MHW\Listino::porta(MHW\Db::one("SELECT * FROM subscriptions WHERE id = ' . (int) $sub9w['id'] . '"));');
-prova('9W · 3 · discesa programmata verso Essential da 97 €: diventa Essential da 87 € dallo stesso rinnovo; un\'offerta su misura e chi è già al prezzo nuovo restano come sono',
-      $prog9w === 'programmato' && (int) $dopoP9w['next_package_version_id'] === pv('essential') && $off9w === 'resta' && $gia9w === 'resta', json_encode([$prog9w, $dopoP9w['next_package_version_id'] ?? null, $off9w, $gia9w]));
+prova('9W · 3 · il giro dei richiami riporta Pro a Plus da 127 €: su Stripe senza proporzioni (niente addebiti né rimborsi), nel Registro azioni «listino.ripristinato»; la fila si svuota',
+      $fatti9w === 1 && (int) $dopoL9w['package_version_id'] === $pvPrima9w['plus'] && ($cambioL9w['proration_behavior'] ?? '') === 'none'
+      && (int) val("SELECT COUNT(*) FROM audit_log WHERE action = 'listino.ripristinato'") === 1 && !is_file("$DOVE/app/storage/.listino-ripristino.json"),
+      json_encode([$fatti9w, $dopoL9w['package_version_id'] ?? null, $cambioL9w['proration_behavior'] ?? null]));
+$c9n('$f = require "' . $DOVE . '/app/migrations/074_prezzi_di_prima_9w.php"; $f(MHW\Db::conn()); echo "ok";');
+prova('…ripetuta, la 074 non cambia più niente (le versioni restano quelle di prima)', pv('plus') === $pvPrima9w['plus'] && pv('portfolio') === $pvPrima9w['portfolio']);
+@unlink("$DOVE/app/storage/.listino-ripristino.json");
 
 // 4 · Lo sconto della promo per sempre: chi ha pagato con la Promo novembre lo ritrova a ogni rinnovo (coupon del rinnovo su Stripe).
 $bl9w = json_decode($c9n('echo json_encode([MHW\Sconti::bloccato(' . $proAcc9u . '), MHW\Sconti::rinnovo(' . $proAcc9u . ')]);'), true) ?: [];
@@ -9218,33 +9217,28 @@ prova('9W · 4 · Account & Fatturazione: «Sconto per sempre: −17% (Promo nov
 $rial9w = (int) $c9n('echo MHW\Sconti::riallineaInSospeso();');
 prova('9W · 4 · la fila degli sconti da riallineare (chi ha già pagato con la Promo novembre) si svuota al giro dei richiami', $rial9w >= 1 && !is_file("$DOVE/app/storage/.sconti-da-riallineare.json"), (string) $rial9w);
 
-// 5 · Promo dicembre: DICEMBRE17, 17% per sempre, dal 1° al 31 dicembre 2026; in home «per sempre» e «Prezzo bloccato per sempre».
-$dc9w = riga("SELECT * FROM discount_codes WHERE code = 'DICEMBRE17'") ?? [];
-$quando9w = $c9n('MHW\Db::run("UPDATE discount_codes SET active = 0 WHERE code = \'NOVEMBRE17\'"); MHW\Db::run("UPDATE discount_codes SET active = 1 WHERE code = \'DICEMBRE17\'"); echo json_encode([(MHW\Sconti::promoAttiva("2026-12-01") ?? [])["code"] ?? "", (MHW\Sconti::promoAttiva("2026-12-31") ?? [])["code"] ?? "", MHW\Sconti::promoAttiva("2027-01-01") ? "si" : "no"]);');
-prova('9W · 5 · DICEMBRE17: 17% per sempre, dal 1° al 31 dicembre 2026, «Promo dicembre», tutti i piani, si somma al giudizio e non all\'invito; vale dal 1° al 31, il 1° gennaio no',
-      (int) ($dc9w['value'] ?? 0) === 17 && ($dc9w['valid_from'] ?? '') === '2026-12-01' && ($dc9w['valid_until'] ?? '') === '2026-12-31' && (int) ($dc9w['per_sempre'] ?? 0) === 1
-      && ($dc9w['nome_promo'] ?? '') === 'Promo dicembre' && (int) $dc9w['in_home'] === 1 && (int) $dc9w['somma_giudizio'] === 1 && (int) $dc9w['somma_invito'] === 0 && ($dc9w['packages'] ?? 'x') === ''
-      && $quando9w === '["DICEMBRE17","DICEMBRE17","no"]', $quando9w);
-db()->prepare("UPDATE discount_codes SET active = 1, valid_from = ?, valid_until = ? WHERE code = 'DICEMBRE17'")->execute([$oggiR(0), $oggiR(3)]);
+// 5 · Una promo per sempre creata a mano (come la Promo dicembre del titolare): in home «per sempre» e «Prezzo bloccato per sempre».
+db()->prepare("UPDATE discount_codes SET active = 1, valid_from = ?, valid_until = ? WHERE code = 'DICEMBRE20'")->execute([$oggiR(0), $oggiR(3)]);
 $h9w = $ospite->get('/')['body'];
 $giorno9w = $c9n('echo MHW\Pannello::giornoMese("' . $oggiR(3) . '", false);');
-prova('9W · 5 · home con la Promo dicembre: «Promo dicembre: −17% per sempre, se attivi entro il ' . $giorno9w . '.», «il prezzo scontato resta bloccato per sempre», sulle schede «+ IVA / anno, per sempre» e «Prezzo bloccato per sempre, anche ai rinnovi», niente «poi»',
-      str_contains($h9w, 'Promo dicembre: −17% per sempre, se attivi entro il ' . $giorno9w . '.') && str_contains($h9w, 'il prezzo scontato resta bloccato per sempre, anche ai rinnovi')
+prova('9W · 5 · home con una promo per sempre (Promo dicembre, −20%): «Promo dicembre: −20% per sempre, se attivi entro il ' . $giorno9w . '.», «il prezzo scontato resta bloccato per sempre», sulle schede «+ IVA / anno, per sempre» e «Prezzo bloccato per sempre, anche ai rinnovi», niente «poi»',
+      str_contains($h9w, 'Promo dicembre: −20% per sempre, se attivi entro il ' . $giorno9w . '.') && str_contains($h9w, 'il prezzo scontato resta bloccato per sempre, anche ai rinnovi')
       && substr_count($h9w, '+ IVA / anno, per sempre') >= 3 && substr_count($h9w, 'Prezzo bloccato per sempre, anche ai rinnovi') >= 3 && !str_contains($h9w, 'class="plan__poi">poi')
-      && str_contains($h9w, $eur9u($netto9u(11700, 17))) && str_contains($h9w, '<code class="promo__codice">DICEMBRE17</code>'));
+      && str_contains($h9w, $eur9u($netto9u(12700, 20))) && str_contains($h9w, '<code class="promo__codice">DICEMBRE20</code>'));
 $dom9w = $ospite->get('/domande')['body'];
-prova('…in «Domande»: «Promo dicembre, −17% per sempre (sul primo anno e su ogni rinnovo)»; nei Termini la Promo dicembre e il prezzo bloccato per sempre', str_contains($dom9w, 'Promo dicembre, −17% per sempre (sul primo anno e su ogni rinnovo)')
-      && str_contains($pagine9w['/termini'], 'Promo novembre e Promo dicembre: prezzo bloccato per sempre') && str_contains($pagine9w['/termini'], 'DICEMBRE17'));
+prova('…in «Domande»: «Promo dicembre, −20% per sempre (sul primo anno e su ogni rinnovo)»; nei Termini la regola delle promo per sempre, senza codici di dicembre', str_contains($dom9w, 'Promo dicembre, −20% per sempre (sul primo anno e su ogni rinnovo)')
+      && str_contains($pagine9w['/termini'], 'Promo con il prezzo bloccato per sempre.') && !str_contains($pagine9w['/termini'], 'DICEMBRE'));
 // Il riepilogo prima di pagare: la promo per sempre e il prezzo dei rinnovi.
 [$dic9w, $dicAcc9w, $dicPid9w] = $host9l('Dina', 'dina9w@prova.test', 'VTRDNI85A41G478I', 'Gubbio');
 $rDic9w = $dic9w->get('/piano?piano=' . pv('plus'))['body'];
-prova('9W · 5 · /piano prima di pagare: «Promo dicembre DICEMBRE17: −17% per sempre: sul primo anno e su ogni rinnovo.» e «Dal secondo anno ' . $eur9u($netto9u(11700, 17)) . ' + IVA: il prezzo con la Promo dicembre resta bloccato per sempre.»',
-      str_contains($rDic9w, '−17% per sempre: sul primo anno e su ogni rinnovo.') && str_contains(str_replace("\u{00A0}", ' ', $rDic9w), 'Dal secondo anno ' . str_replace("\u{00A0}", ' ', $eur9u($netto9u(11700, 17))) . ' + IVA: il prezzo con la Promo dicembre resta bloccato per sempre.'));
-db()->prepare("UPDATE discount_codes SET active = 0, valid_from = '2026-12-01', valid_until = '2026-12-31' WHERE code = 'DICEMBRE17'")->execute();
+prova('9W · 5 · /piano prima di pagare: «−20% per sempre: sul primo anno e su ogni rinnovo.» e «Dal secondo anno ' . $eur9u($netto9u(12700, 20)) . ' + IVA: il prezzo con la Promo dicembre resta bloccato per sempre.»',
+      str_contains($rDic9w, '−20% per sempre: sul primo anno e su ogni rinnovo.') && str_contains(str_replace("\u{00A0}", ' ', $rDic9w), 'Dal secondo anno ' . str_replace("\u{00A0}", ' ', $eur9u($netto9u(12700, 20))) . ' + IVA: il prezzo con la Promo dicembre resta bloccato per sempre.'));
+db()->exec("UPDATE discount_codes SET active = 0, valid_from = '2026-12-01', valid_until = '2026-12-31' WHERE code = 'DICEMBRE20'");
 // La casella «Per sempre» in Codici sconto.
 $scA9w = $admin->get('/admin/sconti')['body'];
 prova('9W · 5 · Amministrazione → Codici sconto: la casella «Per sempre: lo sconto vale anche a ogni rinnovo» e «· per sempre» accanto alle promo', str_contains($scA9w, 'name="per_sempre" value="1"')
       && str_contains($scA9w, 'Promo dicembre · in home · per sempre'));
+db()->exec("DELETE FROM discount_codes WHERE code = 'DICEMBRE20'");
 
 // ================================================================= RIEPILOGO
 $finito = true; echo implode("\n", $esiti), "\n\n";

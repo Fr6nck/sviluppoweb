@@ -1,5 +1,15 @@
 # Changelog — Welcome MyHouse
 
+## v2 · 9W (correzione): prezzi di prima, niente Promo dicembre nel codice (27 novembre 2026)
+
+Decisione del titolare: la Promo dicembre l'ha creata a mano in Codici sconto; i prezzi restano quelli di prima (Essential 97 €, Plus 127 €, Portfolio 117 € la prima struttura, 177 € con 2), semmai aumenta lo sconto. Restano il nome «Welcome MyHouse» e lo sconto delle promo per sempre.
+
+- **Migrazione 073** (corretta): non crea più DICEMBRE17 né le versioni a 87 / 117 / 107 €, e non mette in fila gli abbonamenti per il prezzo nuovo. Le promo in home già create (la Promo novembre e una promo di dicembre creata a mano prima dell'aggiornamento) diventano «per sempre»; si toglie la spunta da Codici sconto, se non si vuole.
+- **Migrazione 074** (nuova), solo dove il pacchetto 9W del 27 novembre era già girato: rimette in vendita le versioni di prima (stesse funzioni), cancella DICEMBRE17 creato da quella migrazione (spento se qualcuno l'ha già usato; un codice creato a mano non si tocca), cancella l'elenco dei prezzi nuovi e mette in `storage/.listino-ripristino.json` gli abbonamenti già portati al prezzo nuovo. Il giro dei richiami li riporta al prezzo di prima (`Listino::ripristinaInSospeso`, su Stripe senza proporzioni; Registro azioni `listino.ripristinato`). Altrove non trova niente.
+- `Listino` tiene solo il ritorno al prezzo di prima; il passaggio automatico ai prezzi nuovi è tolto.
+- **Termini** (IT/EN) e aggiornamenti: la regola generale delle promo «per sempre» (nome, codice, sconto e date nella fascia), con la Promo novembre; nessun codice di dicembre scritto nei Termini.
+- **Prove**: capitolo «9W» rifatto (073 corretta, 074 dopo il pacchetto del 27 novembre, una promo per sempre creata a mano in home e nei riepiloghi).
+
 ## v2 · 9W: Welcome MyHouse, prezzi nuovi anche per chi è già abbonato, sconto della promo per sempre, Promo dicembre (27 novembre 2026)
 
 Migrazione **073**: colonna `discount_codes.per_sempre`, codice DICEMBRE17, versioni nuove di Essential, Plus e Portfolio, il nome nei testi salvati. Decisioni del titolare del 27 novembre: prezzi nuovi anche per i clienti attivi, dal prossimo rinnovo; sconto della Promo novembre per sempre anche per chi l'ha già pagata.
