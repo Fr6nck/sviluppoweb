@@ -641,15 +641,22 @@ function structured_data(RenderCtx $x): string
  * Cache, sitemap, robots
  * ===================================================================== */
 
+/** Il nome contiene la versione: dopo un aggiornamento dei file la pagina vecchia non viene più servita. */
 function cache_file(string $name): string
 {
-    return storage_path('cache/' . $name . '.html');
+    return storage_path('cache/' . $name . '-' . CM_VERSION . '.html');
 }
 
 /** Rigenera le pagine in cache e i file SEO dalla versione pubblicata. */
 function site_rebuild(): void
 {
     $c = content_all('published');
+    // Elimina le pagine in cache delle versioni precedenti.
+    foreach (glob(storage_path('cache') . '/*.html') ?: [] as $old) {
+        if (!str_ends_with($old, '-' . CM_VERSION . '.html')) {
+            @unlink($old);
+        }
+    }
     write_file_atomic(cache_file('index'), render_site($c, ['prefix' => '']));
     foreach (['privacy', 'cookie'] as $area) {
         write_file_atomic(cache_file($area), render_legal($c, $area, ['prefix' => '../']));
@@ -673,7 +680,14 @@ function serve_cached(string $name, string $prefix): string
 {
     $file = cache_file($name);
     if (!is_file($file)) {
-        site_rebuild();
+        // Prima visita dopo un aggiornamento dei file: allinea anche il database, poi rigenera.
+        if ((string) setting('db_version', '') !== CM_VERSION) {
+            require_once CM_APP . '/schema.php';
+            cm_migrate();
+        }
+        if (!is_file($file)) {
+            site_rebuild();
+        }
     }
     $html = is_file($file) ? (string) file_get_contents($file) : '';
     if ($html === '') {
