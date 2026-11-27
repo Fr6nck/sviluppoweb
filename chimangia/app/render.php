@@ -23,6 +23,8 @@ final class RenderCtx
     public bool $offer;
     public string $prefix;
     public bool $preview;
+    /** Scheda d'esempio della cucina: l'apertura la prepara, "Il problema" la mostra. */
+    public string $heroCard = '';
 
     public function __construct(array $c, string $prefix, bool $preview)
     {
@@ -149,8 +151,8 @@ function render_document(RenderCtx $x, string $title, string $description, strin
         . '<link rel="icon" href="' . $p . 'assets/img/favicon.ico" sizes="32x32">'
         . '<link rel="icon" href="' . $p . 'assets/img/favicon.svg" type="image/svg+xml">'
         . '<link rel="apple-touch-icon" href="' . $p . 'assets/img/apple-touch-icon.png">'
-        . '<link rel="preload" href="' . $p . 'assets/fonts/baloo-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>'
-        . '<link rel="preload" href="' . $p . 'assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>'
+        . '<link rel="preload" href="' . $p . 'assets/fonts/instrument-serif-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>'
+        . '<link rel="preload" href="' . $p . 'assets/fonts/inter-latin-300-normal.woff2" as="font" type="font/woff2" crossorigin>'
         . '<link rel="stylesheet" href="' . $p . 'assets/css/site.css?v=' . CM_VERSION . '">'
         . '<script src="' . $p . 'assets/js/site.js?v=' . CM_VERSION . '"></script>'
         . ($jsonLd !== '' ? '<script type="application/ld+json">' . $jsonLd . '</script>' : '')
@@ -177,7 +179,7 @@ function render_header(RenderCtx $x): string
         }
         $links .= '<li><a class="nav-link" href="' . e($x->href((string) $n['href'])) . '">' . e($n['label']) . '</a></li>';
     }
-    return '<header class="site-header"><div class="wrap header-inner">'
+    return '<header class="site-header"><div class="edge header-inner">'
         . '<a class="logo" href="' . e($x->prefix === '' ? '#top' : $x->prefix) . '" aria-label="ChiMangia, torna all\'inizio">' . logo_svg(40) . '<span>ChiMangia</span></a>'
         . '<button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav">'
         . '<span class="nav-toggle-bars" aria-hidden="true"></span><span class="nav-toggle-label">Menu</span></button>'
@@ -212,10 +214,10 @@ function render_hero(RenderCtx $x): string
     }
     $buttons = '';
     if ($s['btn1_text'] !== '') {
-        $buttons .= '<a class="btn btn-dark btn-lg" href="' . e($x->href($s['btn1_href'])) . '">' . $x->t($s['btn1_text']) . btn_arrow() . '</a>';
+        $buttons .= '<a class="btn btn-dark" href="' . e($x->href($s['btn1_href'])) . '">' . $x->t($s['btn1_text']) . btn_arrow() . '</a>';
     }
     if ($s['btn2_text'] !== '') {
-        $buttons .= '<a class="btn btn-line btn-lg" href="' . e($x->href($s['btn2_href'])) . '">' . $x->t($s['btn2_text']) . '</a>';
+        $buttons .= '<a class="btn btn-line" href="' . e($x->href($s['btn2_href'])) . '">' . $x->t($s['btn2_text']) . '</a>';
     }
     $full = ($s['layout'] ?? 'full') === 'full';
     $photo = hero_slider_html($x, $s, $full);
@@ -234,13 +236,14 @@ function render_hero(RenderCtx $x): string
         . '<figcaption class="kc-caption">' . e($s['card_caption']) . '</figcaption>'
         . '</figure>';
     if ($full && $photo !== '') {
-        // Slider a tutta larghezza: le fotografie fanno da sfondo, il testo sta sopra una velatura blu.
+        // Fotografia grande con il titolo al centro. La scheda d'esempio passa alla sezione successiva.
+        $x->heroCard = $card;
+        $after = empty($x->c['problema']['visible']) ? '<div class="edge hero-card-row">' . $card . '</div>' : '';
         return '<section id="top" class="hero-full" aria-labelledby="hero-title">' . $photo
             . '<div class="hero-shade" aria-hidden="true"></div>'
-            . '<div class="wrap hero-inner">' . $text . '</div></section>'
-            . '<div class="wrap hero-card-row">' . $card . '</div>';
+            . '<div class="hero-inner">' . $text . '</div></section>' . $after;
     }
-    return '<section id="top" class="hero wrap" aria-labelledby="hero-title">' . $text
+    return '<section id="top" class="hero-side edge" aria-labelledby="hero-title">' . $text
         . '<div class="hero-visual' . ($photo !== '' ? ' has-photo' : '') . '">' . $photo . $card . '</div></section>';
 }
 
@@ -257,7 +260,7 @@ function hero_slider_html(RenderCtx $x, array $s, bool $full = false): string
     if (!$keys) {
         return '';
     }
-    $sizes = $full ? '100vw' : '(min-width: 1000px) 440px, 92vw';
+    $sizes = $full ? '100vw' : '(min-width: 1000px) 44vw, 92vw';
     $box = $full ? 'hero-bg' : 'hero-photo';
     if (count($keys) === 1) {
         return '<div class="' . $box . '">' . photo_picture($keys[0], (string) ($s['photo_alt'] ?? ''), $x->prefix, $sizes, true) . '</div>';
@@ -283,24 +286,20 @@ function render_problema(RenderCtx $x): string
     if (empty($s['visible'])) {
         return '';
     }
-    $cards = '';
+    $items = '';
     foreach ($s['cards'] as $card) {
-        $cards .= '<li class="problem-card">' . icon_svg((string) ($card['icon'] ?? ''), 30, '#F2A900')
-            . '<h3>' . e($card['title']) . '</h3><p>' . $x->t($card['text']) . '</p></li>';
+        $items .= '<li class="line-item"><span class="line-icon" aria-hidden="true">' . icon_svg((string) ($card['icon'] ?? ''), 22) . '</span>'
+            . '<h3 class="title-medium">' . e($card['title']) . '</h3><p>' . $x->t($card['text']) . '</p></li>';
     }
-    $photo = photo_picture((string) ($s['photo'] ?? ''), (string) ($s['photo_alt'] ?? ''), $x->prefix, '(min-width: 900px) 520px, 92vw');
-    $closing = $s['closing'] !== '' ? '<p class="lead measure problem-closing">' . $x->t($s['closing']) . '</p>' : '';
-    if ($photo !== '') {
-        $head = '<div class="problem-head"><div class="problem-intro"><h2 id="problema-title">' . $x->ti($s['title']) . '</h2>' . $closing . '</div>'
-            . '<div class="problem-photo photo-frame">' . $photo . '</div></div>';
-        return '<section id="problema" class="band band-blue reveal" aria-labelledby="problema-title"><div class="wrap stack">'
-            . $head . '<ul class="grid grid-260">' . $cards . '</ul></div></section>';
-    }
-    return '<section id="problema" class="band band-blue reveal" aria-labelledby="problema-title"><div class="wrap stack">'
-        . '<h2 id="problema-title" class="measure">' . $x->ti($s['title']) . '</h2>'
-        . '<ul class="grid grid-260">' . $cards . '</ul>'
-        . $closing
-        . '</div></section>';
+    $photo = photo_picture((string) ($s['photo'] ?? ''), (string) ($s['photo_alt'] ?? ''), $x->prefix, '(min-width: 1000px) 27vw, 92vw');
+    $side = $x->heroCard !== '' ? '<div class="trio-side">' . $x->heroCard . '</div>' : '';
+    return '<section id="problema" class="edge section reveal" aria-labelledby="problema-title">'
+        . '<div class="trio' . ($photo === '' ? ' trio-nophoto' : '') . ($side === '' ? ' trio-noside' : '') . '">'
+        . ($photo !== '' ? '<div class="trio-media photo-frame">' . $photo . '</div>' : '')
+        . '<div class="trio-center"><h2 id="problema-title" class="heading">' . $x->ti($s['title']) . '</h2>'
+        . ($s['closing'] !== '' ? '<p class="trio-text">' . $x->t($s['closing']) . '</p>' : '') . '</div>'
+        . $side . '</div>'
+        . '<ul class="line-grid">' . $items . '</ul></section>';
 }
 
 function render_come_funziona(RenderCtx $x): string
@@ -309,15 +308,15 @@ function render_come_funziona(RenderCtx $x): string
     if (empty($s['visible'])) {
         return '';
     }
-    $cards = '';
+    $items = '';
     foreach (array_values($s['cards']) as $i => $card) {
-        $cards .= '<li class="card step-card"><span class="step-num" aria-hidden="true">' . ($i + 1) . '</span>'
-            . '<h3><span class="sr-only">Passaggio ' . ($i + 1) . ': </span>' . e($card['title']) . '</h3><p>' . $x->t($card['text']) . '</p></li>';
+        $items .= '<li class="line-item"><span class="num" aria-hidden="true">' . sprintf('%02d', $i + 1) . '</span>'
+            . '<h3 class="title-medium"><span class="sr-only">Passaggio ' . ($i + 1) . ': </span>' . e($card['title']) . '</h3><p>' . $x->t($card['text']) . '</p></li>';
     }
-    return '<section id="come-funziona" class="wrap section stack reveal" aria-labelledby="cf-title">'
-        . '<div class="section-head"><h2 id="cf-title">' . $x->ti($s['title']) . '</h2>'
+    return '<section id="come-funziona" class="edge section reveal" aria-labelledby="cf-title">'
+        . '<div class="section-head"><h2 id="cf-title" class="title">' . $x->ti($s['title']) . '</h2>'
         . ($s['subtitle'] !== '' ? '<p class="sub">' . $x->t($s['subtitle']) . '</p>' : '') . '</div>'
-        . '<ol class="grid grid-280 plain">' . $cards . '</ol></section>';
+        . '<ol class="line-grid steps">' . $items . '</ol></section>';
 }
 
 function render_giornata(RenderCtx $x): string
@@ -326,28 +325,32 @@ function render_giornata(RenderCtx $x): string
     if (empty($s['visible'])) {
         return '';
     }
+    $sizes = '(min-width: 1000px) 30vw, 92vw';
+    // Riquadro di un'immagine: fotografia del progetto, illustrazione oppure immagine caricata.
+    $frame = static function (string $key, int $media, string $alt) use ($x, $sizes): string {
+        if ($media > 0 && ($pic = media_picture($media, $alt, '', $x->prefix)) !== '') {
+            return '<div class="photo-frame">' . $pic . '</div>';
+        }
+        if (str_starts_with($key, 'foto-')) {
+            $pic = photo_picture(substr($key, 5), $alt, $x->prefix, $sizes);
+            return $pic !== '' ? '<div class="photo-frame">' . $pic . '</div>' : '';
+        }
+        $svg = illustration_svg($key);
+        return $svg !== '' ? '<div class="photo-frame is-illustration" role="img" aria-label="' . e($alt) . '">' . $svg . '</div>' : '';
+    };
     $rows = '';
     foreach (array_values($s['cards']) as $i => $card) {
-        $img = (int) ($card['image'] ?? 0);
-        $visual = $img > 0 ? media_picture($img, (string) $card['alt'], 'day-photo', $x->prefix) : '';
-        $key = (string) $card['illustration'];
-        if ($visual === '' && str_starts_with($key, 'foto-')) {
-            $visual = photo_picture(substr($key, 5), (string) $card['alt'], $x->prefix, '(min-width: 800px) 520px, 92vw');
-        }
-        if ($visual === '') {
-            $visual = '<div class="day-illustration" role="img" aria-label="' . e($card['alt']) . '">' . illustration_svg($key) . '</div>';
-        } elseif (str_starts_with($key, 'foto-') && $img === 0) {
-            $visual = '<div class="day-illustration day-photo-wrap photo-frame">' . $visual . '</div>';
-        } else {
-            $visual = '<div class="day-illustration">' . $visual . '</div>';
-        }
-        $rows .= '<article class="day-row' . ($i % 2 === 1 ? ' day-row-alt' : '') . ' reveal">'
-            . '<div class="day-text">' . ($card['kicker'] !== '' ? '<p class="kicker">' . e($card['kicker']) . '</p>' : '')
-            . '<h3>' . $x->ti((string) $card['title']) . '</h3><div class="day-body">' . $x->h((string) $card['body']) . '</div></div>'
-            . $visual . '</article>';
+        $first = $frame((string) $card['illustration'], (int) ($card['image'] ?? 0), (string) $card['alt']);
+        $second = $frame((string) ($card['illustration2'] ?? ''), 0, '');
+        $media = $first . $second;
+        $rows .= '<article class="duo' . ($i % 2 === 1 ? ' duo-alt' : '') . ($second === '' || $first === '' ? ' duo-single' : '') . ' reveal">'
+            . ($media !== '' ? '<div class="duo-media">' . $media . '</div>' : '')
+            . '<div class="duo-text"><div class="duo-head">' . ($card['kicker'] !== '' ? '<p class="label">' . e($card['kicker']) . '</p>' : '')
+            . '<h3 class="heading">' . $x->ti((string) $card['title']) . '</h3></div>'
+            . '<div class="duo-body">' . $x->h((string) $card['body']) . '</div></div></article>';
     }
-    return '<section id="una-giornata" class="wrap section-day" aria-labelledby="day-title">'
-        . '<div class="section-head measure reveal"><h2 id="day-title">' . $x->ti($s['title']) . '</h2>'
+    return '<section id="una-giornata" class="edge section" aria-labelledby="day-title">'
+        . '<div class="section-head reveal"><h2 id="day-title" class="title">' . $x->ti($s['title']) . '</h2>'
         . ($s['intro'] !== '' ? '<p class="sub">' . $x->t($s['intro']) . '</p>' : '') . '</div>'
         . $rows . '</section>';
 }
@@ -358,15 +361,15 @@ function render_funzioni(RenderCtx $x): string
     if (empty($s['visible'])) {
         return '';
     }
-    $cards = '';
+    $items = '';
     foreach ($s['cards'] as $card) {
-        $cards .= '<li class="card feature-card"><span class="icon-box" aria-hidden="true">' . icon_svg((string) ($card['icon'] ?? ''), 26, '#13294B') . '</span>'
-            . '<h3>' . e($card['title']) . '</h3><p>' . $x->t($card['text']) . '</p></li>';
+        $items .= '<li class="line-item"><span class="line-icon" aria-hidden="true">' . icon_svg((string) ($card['icon'] ?? ''), 22) . '</span>'
+            . '<h3 class="title-medium">' . e($card['title']) . '</h3><p>' . $x->t($card['text']) . '</p></li>';
     }
-    return '<section id="funzioni" class="band band-cream reveal" aria-labelledby="fn-title"><div class="wrap section stack">'
-        . '<div class="section-head"><h2 id="fn-title">' . $x->ti($s['title']) . '</h2>'
+    return '<section id="funzioni" class="edge section reveal" aria-labelledby="fn-title">'
+        . '<div class="section-head"><h2 id="fn-title" class="heading">' . $x->ti($s['title']) . '</h2>'
         . ($s['subtitle'] !== '' ? '<p class="sub">' . $x->t($s['subtitle']) . '</p>' : '') . '</div>'
-        . '<ul class="grid grid-300">' . $cards . '</ul></div></section>';
+        . '<ul class="line-grid features">' . $items . '</ul></section>';
 }
 
 function render_per_chi(RenderCtx $x): string
@@ -375,12 +378,14 @@ function render_per_chi(RenderCtx $x): string
     if (empty($s['visible'])) {
         return '';
     }
-    $cards = '';
-    foreach ($s['cards'] as $card) {
-        $cards .= '<li class="who-card"><h3>' . e($card['title']) . '</h3><p>' . $x->t($card['text']) . '</p></li>';
+    $items = '';
+    foreach (array_values($s['cards']) as $i => $card) {
+        $items .= '<li class="tile"><span class="tile-label" aria-hidden="true">' . sprintf('%02d', $i + 1) . '</span>'
+            . '<h3 class="title-medium">' . e($card['title']) . '</h3><p>' . $x->t($card['text']) . '</p></li>';
     }
-    return '<section id="per-chi" class="wrap section stack reveal" aria-labelledby="pc-title">'
-        . '<div class="section-head"><h2 id="pc-title">' . $x->ti($s['title']) . '</h2></div><ul class="grid grid-240">' . $cards . '</ul></section>';
+    return '<section id="per-chi" class="edge section reveal" aria-labelledby="pc-title">'
+        . '<div class="section-head"><h2 id="pc-title" class="heading">' . $x->ti($s['title']) . '</h2></div>'
+        . '<ul class="tile-grid">' . $items . '</ul></section>';
 }
 
 /** Riga "Oppure … : due mesi li offriamo noi." */
@@ -458,18 +463,20 @@ function render_prezzi(RenderCtx $x): string
 
     $vat = trim($x->t($s['vat_note']) . ($offer && $s['vat_offer_note'] !== '' ? ' ' . $x->t($s['vat_offer_note']) : ''));
 
-    return '<section id="prezzi" class="band band-blue reveal" aria-labelledby="prezzi-title"><div class="wrap section stack-28 prices" data-mode="monthly">'
-        . '<div class="section-head"><h2 id="prezzi-title">' . $x->ti($s['title']) . '</h2>'
-        . ($s['intro'] !== '' ? '<p class="sub sub-light measure">' . $x->t($s['intro']) . '</p>' : '') . '</div>'
+    return '<section id="prezzi" class="edge section reveal" aria-labelledby="prezzi-title"><div class="prices" data-mode="monthly">'
+        . '<div class="section-head"><h2 id="prezzi-title" class="title">' . $x->ti($s['title']) . '</h2>'
+        . ($s['intro'] !== '' ? '<p class="sub">' . $x->t($s['intro']) . '</p>' : '') . '</div>'
         . $band
         . '<div class="step-head"><span class="step-num" aria-hidden="true">1</span><div><h3>' . e($s['step1_title']) . '</h3><p>' . $x->t($s['step1_text']) . '</p></div></div>'
         . $toggle
-        . '<ul class="grid grid-280 pk-grid">' . $cards . '</ul>'
+        . '<ul class="pk-grid">' . $cards . '</ul>'
         . '<div class="step-head"><span class="step-num" aria-hidden="true">2</span><div><h3>' . e($s['step2_title']) . '</h3><p>' . $x->t($s['step2_text']) . '</p></div></div>'
         . '<div class="activation-box"><div class="ab-main"><p class="ab-title">' . e($s['activation_title']) . '</p>' . $x->h((string) $s['activation_list']) . '</div>'
         . '<p class="ab-side">' . $x->t($s['activation_text']) . ($offer && $s['activation_offer_text'] !== '' ? ' ' . $x->t($s['activation_offer_text']) : '') . '</p></div>'
+        . '<div class="notes">'
         . (trim((string) $s['example']) !== '' ? '<div class="example">' . $x->h((string) $s['example']) . '</div>' : '')
         . (trim((string) $s['trial']) !== '' ? '<div class="trial-box">' . $x->h((string) $s['trial']) . '</div>' : '')
+        . '</div>'
         . $hotel
         . ($vat !== '' ? '<p class="vat-note">' . $vat . '</p>' : '')
         . '</div></section>';
@@ -495,8 +502,11 @@ function render_faq(RenderCtx $x): string
     if ($items === '') {
         return '';
     }
-    return '<section id="domande" class="wrap wrap-faq section stack-24 reveal" aria-labelledby="faq-title">'
-        . '<div class="section-head"><h2 id="faq-title">' . $x->ti($s['title']) . '</h2></div><div class="faq">' . $items . '</div></section>';
+    $photo = photo_picture((string) ($s['photo'] ?? ''), (string) ($s['photo_alt'] ?? ''), $x->prefix, '(min-width: 1000px) 34vw, 92vw');
+    return '<section id="domande" class="edge section faq-section' . ($photo === '' ? ' faq-nophoto' : '') . ' reveal" aria-labelledby="faq-title">'
+        . '<div class="faq-col"><h2 id="faq-title" class="heading">' . $x->ti($s['title']) . '</h2><div class="faq">' . $items . '</div></div>'
+        . ($photo !== '' ? '<div class="faq-media photo-frame">' . $photo . '</div>' : '')
+        . '</section>';
 }
 
 function render_contatti(RenderCtx $x): string
@@ -537,29 +547,25 @@ function render_contatti(RenderCtx $x): string
         . '<div class="f-field f-check"><input type="checkbox" id="cf-privacy" name="privacy" value="1" required aria-describedby="cf-privacy-err">'
         . '<label for="cf-privacy">' . $consent . ' <span aria-hidden="true">*</span></label><p class="f-error" id="cf-privacy-err" hidden></p></div>'
         . '<p class="f-required">I campi con * sono obbligatori.</p>'
-        . '<button type="submit" class="btn btn-dark btn-lg">' . e($s['submit_text']) . btn_arrow() . '</button>'
+        . '<button type="submit" class="btn btn-dark">' . e($s['submit_text']) . btn_arrow() . '</button>'
         . '<div class="f-status" role="status" aria-live="polite" tabindex="-1">' . CM_FORM_STATUS_PLACEHOLDER . '</div>'
         . '</form>';
 
     $links = '';
     if (trim((string) $a['email']) !== '') {
-        $links .= '<a class="btn btn-dark btn-lg" href="mailto:' . e($a['email']) . '">' . e($s['email_label']) . ' ' . e($a['email']) . '</a>';
+        $links .= '<a class="btn btn-line" href="mailto:' . e($a['email']) . '">' . e($s['email_label']) . ' ' . e($a['email']) . '</a>';
     }
     if (trim((string) $a['phone']) !== '') {
         $tel = preg_replace('/[^0-9+]/', '', (string) $a['phone']);
-        $links .= '<a class="btn btn-line btn-lg" href="tel:' . e($tel) . '">' . e($s['phone_label']) . ' ' . e($a['phone']) . '</a>';
+        $links .= '<a class="btn btn-line" href="tel:' . e($tel) . '">' . e($s['phone_label']) . ' ' . e($a['phone']) . '</a>';
     }
 
-    $cphoto = photo_picture((string) ($s['photo'] ?? ''), (string) ($s['photo_alt'] ?? ''), $x->prefix, '100vw');
-    return '<section id="contatti" class="band band-contact' . ($cphoto !== '' ? ' has-photo' : '') . ' reveal" aria-labelledby="ct-title">'
-        . ($cphoto !== '' ? '<div class="contact-photo photo-frame">' . $cphoto . '</div>' : '')
-        . '<div class="wrap wrap-faq section contact">'
-        . '<h2 id="ct-title">' . $x->ti($s['title']) . '</h2>'
-        . ($s['text'] !== '' ? '<p class="lead">' . $x->t($s['text']) . '</p>' : '')
-        . $form
-        . ($links !== '' ? '<div class="btn-row btn-row-center">' . $links . '</div>' : '')
+    return '<section id="contatti" class="edge section reveal" aria-labelledby="ct-title"><div class="ask">'
+        . '<div class="ask-head"><h2 id="ct-title" class="title">' . $x->ti($s['title']) . '</h2>'
+        . ($s['text'] !== '' ? '<p class="ask-lead">' . $x->t($s['text']) . '</p>' : '')
+        . ($links !== '' ? '<div class="btn-row">' . $links . '</div>' : '')
         . ($x->offer && $s['offer_line'] !== '' ? '<p class="offer-line">' . $x->t($s['offer_line']) . '</p>' : '')
-        . '</div></section>';
+        . '</div><div class="ask-form">' . $form . '</div></div></section>';
 }
 
 function render_footer(RenderCtx $x): string
@@ -573,7 +579,7 @@ function render_footer(RenderCtx $x): string
         }
     }
     $legal = trim((string) $a['company_name']) . ($a['vat_number'] !== '' ? ' · P. IVA ' . $a['vat_number'] : '');
-    return '<footer class="site-footer"><div class="wrap footer-inner">'
+    return '<footer class="site-footer"><div class="edge footer-inner">'
         . '<p class="footer-brand">ChiMangia</p>'
         . '<p class="footer-legal">' . e($legal) . ($a['address'] !== '' ? '<br><span>' . e($a['address']) . '</span>' : '') . '</p>'
         . '<ul class="footer-links">' . $social

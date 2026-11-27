@@ -162,6 +162,9 @@ function cm_migrate(): void
     if (version_compare($from, '2.0.0', '<')) {
         migrate_editorial_style();
     }
+    if (version_compare($from, '3.0.0', '<')) {
+        migrate_day_pairs();
+    }
     foreach (default_settings() as $name => $value) {
         q('INSERT IGNORE INTO ' . t('settings') . ' (name, value) VALUES (?, ?)', [$name, json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
     }
@@ -308,4 +311,32 @@ function migrate_editorial_style(): void
         }
         q('UPDATE ' . t('content') . ' SET draft = ?, published = ? WHERE area = ?', [$out['draft'], $out['published'], $row['area']]);
     }
+}
+
+/**
+ * 3.0.0: i blocchi di "Una giornata" mostrano due fotografie affiancate.
+ * Dove la prima è ancora quella iniziale e la seconda non è mai stata scelta, viene aggiunta.
+ */
+function migrate_day_pairs(): void
+{
+    $pairs = ['foto-sera' => 'foto-esterno', 'foto-mattina' => 'foto-pranzo'];
+    $row = q_one('SELECT draft, published FROM ' . t('content') . " WHERE area = 'giornata'");
+    if (!$row) {
+        return;
+    }
+    $out = [];
+    foreach (['draft', 'published'] as $col) {
+        $d = json_decode((string) $row[$col], true);
+        if (is_array($d) && is_array($d['cards'] ?? null)) {
+            foreach ($d['cards'] as &$card) {
+                $k = (string) ($card['illustration'] ?? '');
+                if (!array_key_exists('illustration2', $card)) {
+                    $card['illustration2'] = (isset($pairs[$k]) && (int) ($card['image'] ?? 0) === 0) ? $pairs[$k] : '';
+                }
+            }
+            unset($card);
+        }
+        $out[$col] = is_array($d) ? content_encode($d) : (string) $row[$col];
+    }
+    q('UPDATE ' . t('content') . " SET draft = ?, published = ? WHERE area = 'giornata'", [$out['draft'], $out['published']]);
 }

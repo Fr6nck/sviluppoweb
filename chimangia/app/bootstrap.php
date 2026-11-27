@@ -9,7 +9,7 @@ if (!defined('CM_ROOT')) {
     define('CM_ROOT', dirname(__DIR__));
 }
 define('CM_APP', __DIR__);
-define('CM_VERSION', '2.0.0');
+define('CM_VERSION', '3.0.0');
 
 mb_internal_encoding('UTF-8');
 

@@ -92,6 +92,7 @@ function default_content(): array
                     'body' => '<p>Scrivi i piatti di domani, oppure fotografi il foglio che hai già preparato. Scegli entro che ora si può prenotare e premi Pubblica.</p>'
                         . "<p>In quel momento ogni cliente riceve l'avviso sul telefono. Non devi chiamare nessuno, né rispondere a venti messaggi diversi: chi vuole mangiare sceglie i suoi piatti, chi non c'è lo dice con un tocco.</p>",
                     'illustration' => 'foto-sera',
+                    'illustration2' => 'foto-esterno',
                     'image' => 0,
                     'alt' => 'Il titolare di una trattoria, a sala chiusa, pubblica il menù dal telefono',
                 ],
@@ -102,6 +103,7 @@ function default_content(): array
                     'body' => '<p>Quando arrivi in cucina i numeri sono già lì: i coperti di pranzo e di cena, quanti piatti preparare di ogni tipo, chi è senza glutine e chi non mangia maiale.</p>'
                         . "<p>Fai la spesa giusta e cucini il giusto. Chi non ha confermato entro l'orario è stato disdetto in automatico, quindi nessun piatto resta sul passe ad aspettare qualcuno che non arriva.</p>",
                     'illustration' => 'foto-mattina',
+                    'illustration2' => 'foto-pranzo',
                     'image' => 0,
                     'alt' => 'Un giovane cuoco in grembiule blu guarda soddisfatto il telefono in cucina, accanto alle cassette di verdura fresca',
                 ],
@@ -112,6 +114,7 @@ function default_content(): array
                     'body' => '<p>Ogni pasto resta registrato con il nome del cliente, la sua azienda e la formula scelta. Quando è ora di fare i conti apri il riepilogo: quanti pasti, per quale azienda, in quali giorni.</p>'
                         . "<p>Quello che prima richiedeva una serata con fogli e calcolatrice diventa una stampa. E se un'azienda chiede il dettaglio, lo hai in un minuto.</p>",
                     'illustration' => 'foto-fine-mese',
+                    'illustration2' => '',
                     'image' => 0,
                     'alt' => 'La gestrice di una trattoria guarda soddisfatta il riepilogo stampato, con il portatile aperto',
                 ],
@@ -211,6 +214,8 @@ function default_content(): array
         'faq' => [
             'visible' => true,
             'title' => 'Domande *frequenti*',
+            'photo' => 'cucina',
+            'photo_alt' => '',
             'items' => [
                 ['id' => 'q1', 'visible' => true, 'question' => "I miei clienti devono scaricare un'app?", 'answer' => '<p>No. Aprono un link dal telefono e, se vogliono, lo aggiungono alla schermata iniziale. Accedono con numero di cellulare e password.</p>'],
                 ['id' => 'q2', 'visible' => true, 'question' => 'E se un cliente non è pratico di tecnologia?', 'answer' => '<p>Bastano pochi tocchi su pulsanti grandi. In ogni caso puoi inserire tu la prenotazione al posto suo dal pannello.</p>'],
@@ -239,8 +244,6 @@ function default_content(): array
             'email_label' => 'Scrivici:',
             'phone_label' => 'Chiamaci:',
             'offer_line' => 'Offerta di lancio per i primi 10 clienti: −{sconto} bloccato per 24 mesi.',
-            'photo' => 'esterno',
-            'photo_alt' => '',
         ],
 
         'azienda' => [

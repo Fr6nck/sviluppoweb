@@ -60,8 +60,8 @@ function section_schema(string $area): ?array
                 f('card_caption', 'Didascalia', 'text', ['rec' => 30]),
             ]],
             ['Fotografie (slider)', [
-                f('layout', 'Disposizione dell\'apertura', 'choice', ['options' => ['full' => 'Slider a tutta larghezza, con il testo sopra le fotografie', 'side' => 'Fotografia a lato del testo'], 'hint' => 'A tutta larghezza rendono meglio le fotografie panoramiche.']),
-                f('photo', 'Prima fotografia', 'photo', ['hint' => 'La scheda d\'esempio si appoggia sulla fotografia. Con più fotografie l\'apertura diventa uno slider.']),
+                f('layout', 'Disposizione dell\'apertura', 'choice', ['options' => ['full' => 'Fotografia grande con il titolo al centro (slider)', 'side' => 'Fotografia a lato del testo'], 'hint' => 'A tutta larghezza rendono meglio le fotografie panoramiche.']),
+                f('photo', 'Prima fotografia', 'photo', ['hint' => 'Con più fotografie l\'apertura diventa uno slider. La scheda d\'esempio compare nella sezione "Il problema".']),
                 f('photo_alt', 'Descrizione della prima fotografia (testo alternativo)', 'text', ['rec' => 120, 'hint' => 'Vuoto: si usa la descrizione predefinita della foto.']),
                 f('photo2', 'Seconda fotografia dello slider', 'photo'),
                 f('photo3', 'Terza fotografia dello slider', 'photo'),
@@ -81,7 +81,7 @@ function section_schema(string $area): ?array
             ]],
             ['Chiusura', [f('closing', 'Frase finale', 'text', ['rec' => 90])]],
             ['Fotografia', [
-                f('photo', 'Fotografia accanto al titolo', 'photo'),
+                f('photo', 'Fotografia a sinistra del titolo', 'photo', ['hint' => 'A destra compare la scheda d\'esempio della cucina.']),
                 f('photo_alt', 'Descrizione della fotografia (testo alternativo)', 'text', ['rec' => 120, 'hint' => 'Vuoto: si usa la descrizione predefinita della foto.']),
             ]],
         ]],
@@ -101,7 +101,8 @@ function section_schema(string $area): ?array
                     f('kicker', 'Etichetta (es. "La mattina")', 'text', ['rec' => 24]),
                     f('title', 'Titolo', 'text', ['rec' => 50]),
                     f('body', 'Testo', 'rich', ['rec' => 450]),
-                    f('illustration', 'Illustrazione o fotografia', 'illustration'),
+                    f('illustration', 'Prima immagine', 'illustration'),
+                    f('illustration2', 'Seconda immagine (facoltativa)', 'visual_opt', ['hint' => 'Con due immagini il blocco le mostra affiancate.']),
                     f('image', 'Oppure un\'immagine caricata', 'media', ['hint' => 'Se scegli un\'immagine, sostituisce l\'illustrazione.']),
                     f('alt', 'Descrizione dell\'immagine (testo alternativo)', 'text', ['rec' => 100]),
                 ]],
@@ -146,10 +147,6 @@ function section_schema(string $area): ?array
                 f('phone_label', 'Testo prima del telefono', 'text'),
                 f('offer_line', 'Riga dell\'offerta', 'text', ['rec' => 90, 'hint' => 'Visibile solo con l\'offerta di lancio attiva.']),
             ]],
-            ['Fotografia', [
-                f('photo', 'Fotografia sopra il modulo', 'photo', ['hint' => 'A tutta larghezza; il riquadro con il modulo si sovrappone alla foto.']),
-                f('photo_alt', 'Descrizione della fotografia (testo alternativo)', 'text', ['rec' => 120, 'hint' => 'Vuoto: si usa la descrizione predefinita della foto.']),
-            ]],
         ]],
     ];
     return $schemas[$area] ?? null;
@@ -184,6 +181,8 @@ function editor_clean(array $def, mixed $raw, array &$errors, string $errKey): m
             return mb_substr($v, 0, 500);
         case 'photo':
             return isset(photo_library()[$v]) ? $v : '';
+        case 'visual_opt':
+            return isset(visual_library()[$v]) ? $v : '';
         case 'choice':
             return isset(($def['options'] ?? [])[$v]) ? $v : (string) array_key_first($def['options'] ?? ['' => '']);
         case 'icon':
@@ -351,6 +350,8 @@ function editor_field_html(array $def, string $name, string $id, mixed $value, s
             return field($name, $def['label'], (string) $value, $o + ['type' => 'date']);
         case 'email':
             return field($name, $def['label'], (string) $value, $o + ['type' => 'email']);
+        case 'visual_opt':
+            return field($name, $def['label'], (string) $value, $o + ['type' => 'select', 'options' => ['' => 'Nessuna'] + visual_library()]);
         case 'choice':
             return field($name, $def['label'], (string) $value, $o + ['type' => 'select', 'options' => $def['options'] ?? []]);
         case 'photo':
