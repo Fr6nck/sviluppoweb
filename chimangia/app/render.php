@@ -39,6 +39,12 @@ final class RenderCtx
         return e(apply_tokens($s, $this->tokens));
     }
 
+    /** Titolo: come t(), ma il testo tra *asterischi* diventa corsivo. */
+    public function ti(string $s): string
+    {
+        return preg_replace('/\\*([^*<>]+)\\*/u', '<em>$1</em>', $this->t($s)) ?? $this->t($s);
+    }
+
     /** HTML dell'editor (già filtrato in salvataggio, rifiltrato per sicurezza). */
     public function h(string $html): string
     {
@@ -215,7 +221,7 @@ function render_hero(RenderCtx $x): string
     $photo = hero_slider_html($x, $s, $full);
     $text = '<div class="hero-text">'
         . ($x->offer && $s['badge'] !== '' ? '<p class="pill">' . $x->t($s['badge']) . '</p>' : '')
-        . '<h1 id="hero-title">' . $x->t($s['title']) . '</h1>'
+        . '<h1 id="hero-title">' . $x->ti($s['title']) . '</h1>'
         . '<p class="hero-lead">' . $x->t($s['text']) . '</p>'
         . ($buttons !== '' ? '<div class="btn-row">' . $buttons . '</div>' : '')
         . ($s['note'] !== '' ? '<p class="hero-note">' . $x->t($s['note']) . '</p>' : '')
@@ -231,7 +237,8 @@ function render_hero(RenderCtx $x): string
         // Slider a tutta larghezza: le fotografie fanno da sfondo, il testo sta sopra una velatura blu.
         return '<section id="top" class="hero-full" aria-labelledby="hero-title">' . $photo
             . '<div class="hero-shade" aria-hidden="true"></div>'
-            . '<div class="wrap hero-inner">' . $text . $card . '</div></section>';
+            . '<div class="wrap hero-inner">' . $text . '</div></section>'
+            . '<div class="wrap hero-card-row">' . $card . '</div>';
     }
     return '<section id="top" class="hero wrap" aria-labelledby="hero-title">' . $text
         . '<div class="hero-visual' . ($photo !== '' ? ' has-photo' : '') . '">' . $photo . $card . '</div></section>';
@@ -284,13 +291,13 @@ function render_problema(RenderCtx $x): string
     $photo = photo_picture((string) ($s['photo'] ?? ''), (string) ($s['photo_alt'] ?? ''), $x->prefix, '(min-width: 900px) 520px, 92vw');
     $closing = $s['closing'] !== '' ? '<p class="lead measure problem-closing">' . $x->t($s['closing']) . '</p>' : '';
     if ($photo !== '') {
-        $head = '<div class="problem-head"><div class="problem-intro"><h2 id="problema-title">' . $x->t($s['title']) . '</h2>' . $closing . '</div>'
+        $head = '<div class="problem-head"><div class="problem-intro"><h2 id="problema-title">' . $x->ti($s['title']) . '</h2>' . $closing . '</div>'
             . '<div class="problem-photo photo-frame">' . $photo . '</div></div>';
         return '<section id="problema" class="band band-blue reveal" aria-labelledby="problema-title"><div class="wrap stack">'
             . $head . '<ul class="grid grid-260">' . $cards . '</ul></div></section>';
     }
     return '<section id="problema" class="band band-blue reveal" aria-labelledby="problema-title"><div class="wrap stack">'
-        . '<h2 id="problema-title" class="measure">' . $x->t($s['title']) . '</h2>'
+        . '<h2 id="problema-title" class="measure">' . $x->ti($s['title']) . '</h2>'
         . '<ul class="grid grid-260">' . $cards . '</ul>'
         . $closing
         . '</div></section>';
@@ -308,7 +315,7 @@ function render_come_funziona(RenderCtx $x): string
             . '<h3><span class="sr-only">Passaggio ' . ($i + 1) . ': </span>' . e($card['title']) . '</h3><p>' . $x->t($card['text']) . '</p></li>';
     }
     return '<section id="come-funziona" class="wrap section stack reveal" aria-labelledby="cf-title">'
-        . '<div class="section-head"><h2 id="cf-title">' . $x->t($s['title']) . '</h2>'
+        . '<div class="section-head"><h2 id="cf-title">' . $x->ti($s['title']) . '</h2>'
         . ($s['subtitle'] !== '' ? '<p class="sub">' . $x->t($s['subtitle']) . '</p>' : '') . '</div>'
         . '<ol class="grid grid-280 plain">' . $cards . '</ol></section>';
 }
@@ -336,11 +343,11 @@ function render_giornata(RenderCtx $x): string
         }
         $rows .= '<article class="day-row' . ($i % 2 === 1 ? ' day-row-alt' : '') . ' reveal">'
             . '<div class="day-text">' . ($card['kicker'] !== '' ? '<p class="kicker">' . e($card['kicker']) . '</p>' : '')
-            . '<h3>' . e($card['title']) . '</h3><div class="day-body">' . $x->h((string) $card['body']) . '</div></div>'
+            . '<h3>' . $x->ti((string) $card['title']) . '</h3><div class="day-body">' . $x->h((string) $card['body']) . '</div></div>'
             . $visual . '</article>';
     }
     return '<section id="una-giornata" class="wrap section-day" aria-labelledby="day-title">'
-        . '<div class="section-head measure reveal"><h2 id="day-title">' . $x->t($s['title']) . '</h2>'
+        . '<div class="section-head measure reveal"><h2 id="day-title">' . $x->ti($s['title']) . '</h2>'
         . ($s['intro'] !== '' ? '<p class="sub">' . $x->t($s['intro']) . '</p>' : '') . '</div>'
         . $rows . '</section>';
 }
@@ -357,7 +364,7 @@ function render_funzioni(RenderCtx $x): string
             . '<h3>' . e($card['title']) . '</h3><p>' . $x->t($card['text']) . '</p></li>';
     }
     return '<section id="funzioni" class="band band-cream reveal" aria-labelledby="fn-title"><div class="wrap section stack">'
-        . '<div class="section-head"><h2 id="fn-title">' . $x->t($s['title']) . '</h2>'
+        . '<div class="section-head"><h2 id="fn-title">' . $x->ti($s['title']) . '</h2>'
         . ($s['subtitle'] !== '' ? '<p class="sub">' . $x->t($s['subtitle']) . '</p>' : '') . '</div>'
         . '<ul class="grid grid-300">' . $cards . '</ul></div></section>';
 }
@@ -373,7 +380,7 @@ function render_per_chi(RenderCtx $x): string
         $cards .= '<li class="who-card"><h3>' . e($card['title']) . '</h3><p>' . $x->t($card['text']) . '</p></li>';
     }
     return '<section id="per-chi" class="wrap section stack reveal" aria-labelledby="pc-title">'
-        . '<h2 id="pc-title">' . $x->t($s['title']) . '</h2><ul class="grid grid-240">' . $cards . '</ul></section>';
+        . '<div class="section-head"><h2 id="pc-title">' . $x->ti($s['title']) . '</h2></div><ul class="grid grid-240">' . $cards . '</ul></section>';
 }
 
 /** Riga "Oppure … : due mesi li offriamo noi." */
@@ -452,7 +459,7 @@ function render_prezzi(RenderCtx $x): string
     $vat = trim($x->t($s['vat_note']) . ($offer && $s['vat_offer_note'] !== '' ? ' ' . $x->t($s['vat_offer_note']) : ''));
 
     return '<section id="prezzi" class="band band-blue reveal" aria-labelledby="prezzi-title"><div class="wrap section stack-28 prices" data-mode="monthly">'
-        . '<div class="section-head"><h2 id="prezzi-title">' . $x->t($s['title']) . '</h2>'
+        . '<div class="section-head"><h2 id="prezzi-title">' . $x->ti($s['title']) . '</h2>'
         . ($s['intro'] !== '' ? '<p class="sub sub-light measure">' . $x->t($s['intro']) . '</p>' : '') . '</div>'
         . $band
         . '<div class="step-head"><span class="step-num" aria-hidden="true">1</span><div><h3>' . e($s['step1_title']) . '</h3><p>' . $x->t($s['step1_text']) . '</p></div></div>'
@@ -489,7 +496,7 @@ function render_faq(RenderCtx $x): string
         return '';
     }
     return '<section id="domande" class="wrap wrap-faq section stack-24 reveal" aria-labelledby="faq-title">'
-        . '<h2 id="faq-title">' . $x->t($s['title']) . '</h2><div class="faq">' . $items . '</div></section>';
+        . '<div class="section-head"><h2 id="faq-title">' . $x->ti($s['title']) . '</h2></div><div class="faq">' . $items . '</div></section>';
 }
 
 function render_contatti(RenderCtx $x): string
@@ -543,8 +550,11 @@ function render_contatti(RenderCtx $x): string
         $links .= '<a class="btn btn-line btn-lg" href="tel:' . e($tel) . '">' . e($s['phone_label']) . ' ' . e($a['phone']) . '</a>';
     }
 
-    return '<section id="contatti" class="band band-saffron reveal" aria-labelledby="ct-title"><div class="wrap wrap-faq section contact">'
-        . '<h2 id="ct-title">' . $x->t($s['title']) . '</h2>'
+    $cphoto = photo_picture((string) ($s['photo'] ?? ''), (string) ($s['photo_alt'] ?? ''), $x->prefix, '100vw');
+    return '<section id="contatti" class="band band-contact' . ($cphoto !== '' ? ' has-photo' : '') . ' reveal" aria-labelledby="ct-title">'
+        . ($cphoto !== '' ? '<div class="contact-photo photo-frame">' . $cphoto . '</div>' : '')
+        . '<div class="wrap wrap-faq section contact">'
+        . '<h2 id="ct-title">' . $x->ti($s['title']) . '</h2>'
         . ($s['text'] !== '' ? '<p class="lead">' . $x->t($s['text']) . '</p>' : '')
         . $form
         . ($links !== '' ? '<div class="btn-row btn-row-center">' . $links . '</div>' : '')

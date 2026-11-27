@@ -437,3 +437,150 @@ img.pos-left { object-position: 26% 50%; }
   .hero-full .kitchen-card { flex: 0 0 300px; align-self: flex-end; animation: card-float 7s ease-in-out 1.2s infinite; }
   .hero-full .slider-ui { right: max(24px, calc((100vw - var(--contenitore)) / 2 + 24px)); bottom: 28px; }
 }
+
+/* =====================================================================
+ * 2.0 — Stile editoriale: serif leggero con corsivo, fondo chiaro,
+ * pulsanti a pillola sottili, molto respiro, foto grandi.
+ * ===================================================================== */
+@font-face { font-family: "Cormorant Garamond"; font-style: normal; font-weight: 400; font-display: swap; src: url("../fonts/cormorant-garamond-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Cormorant Garamond"; font-style: italic; font-weight: 400; font-display: swap; src: url("../fonts/cormorant-garamond-latin-400-italic.woff2") format("woff2"); }
+@font-face { font-family: "Cormorant Garamond"; font-style: normal; font-weight: 500; font-display: swap; src: url("../fonts/cormorant-garamond-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Cormorant Garamond"; font-style: italic; font-weight: 500; font-display: swap; src: url("../fonts/cormorant-garamond-latin-500-italic.woff2") format("woff2"); }
+
+:root {
+  --font-display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --carta: #FFFDF9;
+  --r: 6px;
+}
+body { background: var(--carta); font-size: 17px; line-height: 1.6; }
+.site-header { background: var(--carta); }
+.site-header.is-scrolled { background: rgba(255, 253, 249, .92); }
+
+/* Titoli */
+h1, h2, .hero h1, .hero-full h1, .contact h2, .legal h1, .maintenance-box h1, .day-text h3 {
+  font-family: var(--font-display); font-weight: 400; letter-spacing: -.012em; line-height: 1.04; text-wrap: balance;
+}
+h2 { font-size: clamp(38px, 5.4vw, 66px); }
+h1 em, h2 em, h3 em { font-style: italic; font-weight: 400; }
+.section-head { align-items: center; text-align: center; gap: 14px; }
+.section-head.measure { margin-left: auto; margin-right: auto; }
+.sub { font-size: 18px; color: var(--testo-2); max-width: 620px; }
+.kicker { font-size: 12px; letter-spacing: .22em; font-weight: 600; }
+@media (min-width: 900px) {
+  .section { padding-top: 128px; padding-bottom: 128px; }
+  .stack { gap: 64px; }
+}
+
+/* Pulsanti: pillole sottili */
+.btn { border-width: 1px; border-radius: 999px; min-height: 48px; padding: 0 26px; font-weight: 500; font-size: 15px; letter-spacing: .03em; }
+.btn-lg { min-height: 54px; padding: 0 32px; font-size: 16px; }
+.btn-block { border-radius: 999px; min-height: 50px; }
+.btn:hover, .btn:focus-visible { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(19, 41, 75, .16); }
+.nav-link { font-size: 15px; letter-spacing: .02em; }
+.pill { border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; padding: 8px 16px; box-shadow: none; }
+
+/* Schede: linee sottili, niente ombre */
+.card, .who-card, .step-card, .feature-card, .problem-card { border-radius: var(--r); border: 1px solid var(--bordo); background: var(--bianco); box-shadow: none; padding: 32px 28px; }
+.card:hover, .card:focus-within, .who-card:hover { box-shadow: 0 18px 40px rgba(19, 41, 75, .08); }
+.who-card { border-top: 2px solid var(--zafferano); }
+.card h3, .who-card h3, .feature-card h3, .step-card h3, .problem-card h3 { font: 600 18px/1.3 var(--font-testo); }
+.card p, .who-card p, .feature-card p, .problem-card p { font-size: 16px; }
+.step-card .step-num { width: auto; height: auto; align-self: flex-start; background: none; border-radius: 0; border-bottom: 2px solid var(--zafferano); padding: 0 6px 6px 0; margin-bottom: 8px; font: italic 400 60px/0.9 var(--font-display); color: var(--blu); }
+.icon-box { border-radius: 50%; width: 52px; height: 52px; margin-bottom: 10px; }
+.feature-card:hover { border-color: var(--tratteggio); }
+
+/* Fotografie: angoli appena smussati, nessuna cornice colorata */
+.photo-frame, .day-illustration, .hero-photo { border-radius: var(--r); }
+.day-photo-wrap, .problem-photo, .day-row-alt .day-photo-wrap { box-shadow: none; margin: 0; }
+
+/* ---------- Apertura: titolo centrato sulla foto, scheda a cavallo del bordo ---------- */
+.hero-shade { background: linear-gradient(180deg, rgba(10, 24, 48, .62) 0%, rgba(10, 24, 48, .5) 45%, rgba(10, 24, 48, .72) 100%); }
+.hero-full .hero-inner { flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 0; min-height: min(92vh, 900px); padding-top: 88px; padding-bottom: 220px; }
+.hero-full .hero-text { flex: 0 1 auto; max-width: 900px; align-items: center; gap: 26px; }
+.hero-full .pill { align-self: center; }
+.hero-full h1 { font-size: clamp(46px, 8vw, 104px); line-height: .98; color: var(--bianco); }
+.hero-full .hero-lead { max-width: 600px; font-size: 19px; color: #EEF1F6; }
+.hero-full .btn-row { justify-content: center; }
+.hero-full .hero-note { font-size: 14px; letter-spacing: .02em; color: var(--chiaro-1); }
+.hero-card-row { position: relative; z-index: 5; display: flex; justify-content: center; margin-top: -150px; }
+.hero-card-row .kitchen-card { width: 100%; max-width: 340px; border-radius: 14px; border: 0; box-shadow: 0 30px 60px rgba(10, 24, 48, .28); animation: none; }
+.kc-num, .pk-amount, .pk-act-price span, .offer-pct, .footer-brand { font-family: var(--font-display); font-weight: 500; }
+.kc-body { border-radius: 8px; }
+.hero-full .slider-ui { top: 16px; right: 16px; bottom: auto; left: auto; }
+@media (min-width: 1000px) {
+  .hero-shade { background: linear-gradient(180deg, rgba(10, 24, 48, .6) 0%, rgba(10, 24, 48, .46) 45%, rgba(10, 24, 48, .7) 100%); }
+  .hero-full .hero-inner { flex-direction: column; padding-top: 96px; padding-bottom: 200px; }
+  .hero-card-row { justify-content: flex-end; margin-top: -190px; }
+  .hero-full .slider-ui { top: auto; right: auto; bottom: 32px; left: max(24px, calc((100vw - var(--contenitore)) / 2 + 24px)); }
+}
+
+/* ---------- Il problema: fascia chiara ---------- */
+#problema.band-blue { background: var(--crema); color: var(--blu); }
+.problem-intro h2 { text-align: left; }
+.problem-closing { color: var(--testo-2); border-left: 2px solid var(--zafferano); }
+.problem-photo { aspect-ratio: 4 / 3; background: var(--crema-scura); }
+.problem-card svg { stroke: var(--blu); }
+.problem-card h3 { color: var(--blu); }
+.problem-card p { color: var(--testo-2); }
+
+/* ---------- Una giornata ---------- */
+.section-day { gap: 88px; }
+.day-row { gap: 40px 96px; }
+.day-text { gap: 18px; }
+.day-text h3 { font-size: clamp(34px, 3.8vw, 52px); }
+.day-body { font-size: 17px; gap: 14px; }
+@media (min-width: 800px) {
+  .section-day { gap: 144px; padding-bottom: 144px; }
+  .day-text { flex: 1 1 340px; max-width: 460px; }
+  .day-illustration { flex: 1 1 440px; }
+  .day-photo-wrap { aspect-ratio: 5 / 6; }
+  .day-row:nth-of-type(odd) .day-photo-wrap { margin-top: 56px; }
+}
+
+/* ---------- Funzioni ---------- */
+.band-cream { background: var(--crema); }
+
+/* ---------- Prezzi (unica fascia scura) ---------- */
+#prezzi h2 { color: var(--bianco); }
+#prezzi .section-head { align-items: flex-start; text-align: left; }
+.offer-band, .activation-box, .trial-box, .hotel-line, .pk-card { border-radius: 10px; }
+.pk-amount { font-size: 72px; }
+.pk-act-price span { font-size: 38px; }
+.offer-pct { font-size: 44px; }
+.step-head .step-num { font: italic 500 26px/1 var(--font-display); }
+.step-head h3 { font: 400 32px/1.1 var(--font-display); }
+
+/* ---------- Domande: righe sottili ---------- */
+.faq { gap: 0; border-top: 1px solid var(--bordo); }
+.faq-item { background: none; border: 0; border-bottom: 1px solid var(--bordo); border-radius: 0; }
+.faq-item h3 { font: 500 24px/1.25 var(--font-display); }
+.faq-q { border-radius: 0; padding: 24px 4px; min-height: 72px; }
+.faq-q:hover { background: none; }
+.faq-q:hover span:first-child { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; }
+.faq-icon::before, .faq-icon::after { height: 1.5px; }
+.faq-a { padding: 0 4px 26px; max-width: 680px; }
+
+/* ---------- Contatti: foto a tutta larghezza e riquadro sovrapposto ---------- */
+.band-contact { background: var(--crema); }
+.band-contact :focus-visible { outline-color: var(--zafferano); }
+.contact-photo { border-radius: 0; height: clamp(280px, 46vw, 600px); }
+.band-contact.has-photo .contact { position: relative; z-index: 2; margin-top: -120px; margin-bottom: 96px; background: var(--bianco); border: 1px solid var(--bordo); border-radius: var(--r); padding: 56px 24px 48px; box-shadow: 0 30px 70px rgba(19, 41, 75, .12); }
+.contact { gap: 22px; }
+.contact h2 { font-size: clamp(38px, 5.4vw, 64px); }
+.contact .lead { font-size: 18px; color: var(--testo-2); }
+.contact-form { padding: 8px 0 0; border-radius: 0; }
+.contact-form input[type="text"], .contact-form input[type="email"], .contact-form input[type="tel"], .contact-form select, .contact-form textarea { border-width: 1px; border-radius: 4px; background: var(--carta); }
+.f-field > label { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--testo-3); }
+.contact-form .btn { align-self: center; }
+.offer-line { font-size: 14px; font-weight: 500; color: var(--testo-3); }
+@media (min-width: 800px) {
+  .band-contact.has-photo .contact { margin-top: -220px; padding: 72px 72px 56px; }
+}
+
+/* Piè di pagina e pagine interne */
+.footer-brand { font-size: 30px; }
+.legal h1 { font-size: clamp(40px, 6vw, 64px); }
+.maintenance-box h1 { font-size: clamp(40px, 6vw, 64px); }
+.preview-banner { letter-spacing: .02em; }
+.sub.sub-light { color: var(--chiaro-1); max-width: 760px; }
+.f-check label { font-size: 15px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--blu); }

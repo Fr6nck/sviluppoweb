@@ -26,7 +26,7 @@ echo editor_status_html($area);
 ?>
 <form method="post" action="<?= e($self) ?>" class="form" novalidate data-dirty-check>
   <?= csrf_field() ?>
-  <?= in_array($area, ['hero', 'contatti'], true) ? editor_tokens_hint() : '' ?>
+  <?= $area !== 'header' ? editor_tokens_hint() : '' ?>
   <?= editor_groups_html($schema, $data, $errors) ?>
   <?= edit_actions() ?>
 </form>

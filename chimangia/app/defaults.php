@@ -30,7 +30,7 @@ function default_content(): array
         'hero' => [
             'visible' => true,
             'badge' => 'Offerta di lancio: −{sconto} per i primi 10 clienti',
-            'title' => 'Sai chi mangia, prima di accendere i fornelli.',
+            'title' => 'Sai chi mangia, prima di *accendere i fornelli.*',
             'text' => 'I tuoi clienti prenotano pranzo e cena dal telefono e scelgono i piatti dal menù del giorno. Tu trovi i conteggi già pronti per la cucina. Niente più telefonate, messaggi e fogli.',
             'btn1_text' => 'Prova gratis 7 giorni',
             'btn1_href' => '#contatti',
@@ -52,13 +52,13 @@ function default_content(): array
             'photo2' => 'sala',
             'photo3' => 'reception',
             'photo4' => 'camera',
-            'photo5' => 'esterno',
+            'photo5' => '',
             'photo6' => '',
         ],
 
         'problema' => [
             'visible' => true,
-            'title' => 'Ogni mattina la stessa domanda: quanti siamo oggi?',
+            'title' => 'Ogni mattina la stessa domanda: *quanti siamo oggi?*',
             'cards' => [
                 ['id' => 'p1', 'icon' => 'telefono', 'title' => 'Telefonate e messaggi', 'text' => 'Prenotazioni e disdette arrivano a tutte le ore, su canali diversi, e qualcuna si perde.'],
                 ['id' => 'p2', 'icon' => 'cestino', 'title' => 'Cibo sprecato', 'text' => 'Senza numeri certi si cucina a occhio: troppo, oppure troppo poco.'],
@@ -71,7 +71,7 @@ function default_content(): array
 
         'come_funziona' => [
             'visible' => true,
-            'title' => 'Come funziona',
+            'title' => 'Come *funziona*',
             'subtitle' => 'Tre passaggi, ogni giorno.',
             'cards' => [
                 ['id' => 'c1', 'title' => 'Pubblichi il menù', 'text' => 'Scrivi i piatti del giorno in un minuto, oppure carichi la foto del menù. Decidi tu entro che ora si prenota.'],
@@ -82,13 +82,13 @@ function default_content(): array
 
         'giornata' => [
             'visible' => true,
-            'title' => 'Una giornata con ChiMangia',
+            'title' => 'Una giornata con *ChiMangia*',
             'intro' => 'Chi cucina per tanti lo sa: il lavoro vero non è ai fornelli, è capire in tempo per quante persone cucinare. Ecco cosa cambia, dal menù della sera prima ai conti di fine mese.',
             'cards' => [
                 [
                     'id' => 'd1',
                     'kicker' => 'La sera prima',
-                    'title' => 'Il menù parte da solo',
+                    'title' => 'Il menù *parte da solo*',
                     'body' => '<p>Scrivi i piatti di domani, oppure fotografi il foglio che hai già preparato. Scegli entro che ora si può prenotare e premi Pubblica.</p>'
                         . "<p>In quel momento ogni cliente riceve l'avviso sul telefono. Non devi chiamare nessuno, né rispondere a venti messaggi diversi: chi vuole mangiare sceglie i suoi piatti, chi non c'è lo dice con un tocco.</p>",
                     'illustration' => 'foto-sera',
@@ -98,7 +98,7 @@ function default_content(): array
                 [
                     'id' => 'd2',
                     'kicker' => 'La mattina',
-                    'title' => 'Apri il telefono e trovi la risposta',
+                    'title' => 'Apri il telefono e *trovi la risposta*',
                     'body' => '<p>Quando arrivi in cucina i numeri sono già lì: i coperti di pranzo e di cena, quanti piatti preparare di ogni tipo, chi è senza glutine e chi non mangia maiale.</p>'
                         . "<p>Fai la spesa giusta e cucini il giusto. Chi non ha confermato entro l'orario è stato disdetto in automatico, quindi nessun piatto resta sul passe ad aspettare qualcuno che non arriva.</p>",
                     'illustration' => 'foto-mattina',
@@ -108,7 +108,7 @@ function default_content(): array
                 [
                     'id' => 'd3',
                     'kicker' => 'A fine mese',
-                    'title' => 'I conti sono già fatti',
+                    'title' => 'I conti sono *già fatti*',
                     'body' => '<p>Ogni pasto resta registrato con il nome del cliente, la sua azienda e la formula scelta. Quando è ora di fare i conti apri il riepilogo: quanti pasti, per quale azienda, in quali giorni.</p>'
                         . "<p>Quello che prima richiedeva una serata con fogli e calcolatrice diventa una stampa. E se un'azienda chiede il dettaglio, lo hai in un minuto.</p>",
                     'illustration' => 'foto-fine-mese',
@@ -120,7 +120,7 @@ function default_content(): array
 
         'funzioni' => [
             'visible' => true,
-            'title' => 'Tutto quello che serve, niente di più',
+            'title' => 'Tutto quello che serve, *niente di più*',
             'subtitle' => 'Ogni funzione è inclusa in tutti i piani. Quelle che non usi si spengono.',
             'cards' => [
                 ['id' => 'f1', 'icon' => 'posate', 'title' => 'Menù a scelta o in foto', 'text' => 'Alternative tra primi, secondi e contorni, con dolce, caffè e ammazzacaffè facoltativi.'],
@@ -137,7 +137,7 @@ function default_content(): array
 
         'per_chi' => [
             'visible' => true,
-            'title' => 'Per chi è',
+            'title' => 'Per *chi è*',
             'cards' => [
                 ['id' => 'w1', 'title' => 'Trattorie e ristoranti', 'text' => 'Con pranzo di lavoro e aziende convenzionate.'],
                 ['id' => 'w2', 'title' => 'Mense aziendali', 'text' => 'Piccole e medie, gestite in proprio.'],
@@ -148,7 +148,7 @@ function default_content(): array
 
         'prezzi' => [
             'visible' => true,
-            'title' => 'Prezzi chiari, in base a quanti clienti servi',
+            'title' => 'Prezzi chiari, in base a *quanti clienti servi*',
             'intro' => 'Tutte le funzioni sono incluse in ogni piano. Paghi solo per i clienti che prenotano almeno un pasto nel mese.',
             'offer_active' => true,
             'offer_percent' => 30,
@@ -210,7 +210,7 @@ function default_content(): array
 
         'faq' => [
             'visible' => true,
-            'title' => 'Domande frequenti',
+            'title' => 'Domande *frequenti*',
             'items' => [
                 ['id' => 'q1', 'visible' => true, 'question' => "I miei clienti devono scaricare un'app?", 'answer' => '<p>No. Aprono un link dal telefono e, se vogliono, lo aggiungono alla schermata iniziale. Accedono con numero di cellulare e password.</p>'],
                 ['id' => 'q2', 'visible' => true, 'question' => 'E se un cliente non è pratico di tecnologia?', 'answer' => '<p>Bastano pochi tocchi su pulsanti grandi. In ogni caso puoi inserire tu la prenotazione al posto suo dal pannello.</p>'],
@@ -223,7 +223,7 @@ function default_content(): array
 
         'contatti' => [
             'visible' => true,
-            'title' => 'Domani mattina, sai già chi mangia.',
+            'title' => 'Domani mattina, *sai già chi mangia.*',
             'text' => 'Provalo gratis per 7 giorni. Te lo configuriamo noi, con il tuo menù.',
             'label_name' => 'Nome e cognome',
             'label_business' => 'Attività',
@@ -239,6 +239,8 @@ function default_content(): array
             'email_label' => 'Scrivici:',
             'phone_label' => 'Chiamaci:',
             'offer_line' => 'Offerta di lancio per i primi 10 clienti: −{sconto} bloccato per 24 mesi.',
+            'photo' => 'esterno',
+            'photo_alt' => '',
         ],
 
         'azienda' => [

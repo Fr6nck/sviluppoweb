@@ -146,6 +146,10 @@ function section_schema(string $area): ?array
                 f('phone_label', 'Testo prima del telefono', 'text'),
                 f('offer_line', 'Riga dell\'offerta', 'text', ['rec' => 90, 'hint' => 'Visibile solo con l\'offerta di lancio attiva.']),
             ]],
+            ['Fotografia', [
+                f('photo', 'Fotografia sopra il modulo', 'photo', ['hint' => 'A tutta larghezza; il riquadro con il modulo si sovrappone alla foto.']),
+                f('photo_alt', 'Descrizione della fotografia (testo alternativo)', 'text', ['rec' => 120, 'hint' => 'Vuoto: si usa la descrizione predefinita della foto.']),
+            ]],
         ]],
     ];
     return $schemas[$area] ?? null;
@@ -441,5 +445,5 @@ function editor_groups_html(array $schema, array $data, array $errors): string
 
 function editor_tokens_hint(): string
 {
-    return '<p class="hint">Nei testi brevi puoi usare <code>{sconto}</code> (percentuale dell\'offerta di lancio) e <code>{prezzo_da}</code> (canone mensile più basso).</p>';
+    return '<p class="hint">Nei titoli, il testo tra <code>*asterischi*</code> esce in corsivo.</p><p class="hint">Nei testi brevi puoi usare <code>{sconto}</code> (percentuale dell\'offerta di lancio) e <code>{prezzo_da}</code> (canone mensile più basso).</p>';
 }

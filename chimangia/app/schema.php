@@ -159,6 +159,9 @@ function cm_migrate(): void
     if (version_compare($from, '1.3.0', '<')) {
         migrate_new_photos();
     }
+    if (version_compare($from, '2.0.0', '<')) {
+        migrate_editorial_style();
+    }
     foreach (default_settings() as $name => $value) {
         q('INSERT IGNORE INTO ' . t('settings') . ' (name, value) VALUES (?, ?)', [$name, json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
     }
@@ -256,5 +259,53 @@ function migrate_new_photos(): void
             $out[$col] = is_array($d) ? content_encode($d) : (string) $row[$col];
         }
         q('UPDATE ' . t('content') . ' SET draft = ?, published = ? WHERE area = ?', [$out['draft'], $out['published'], $area]);
+    }
+}
+
+/**
+ * 2.0.0: stile editoriale. I titoli ancora uguali a quelli iniziali ricevono la parte
+ * in corsivo (tra asterischi); la foto dell'esterno passa dallo slider alla sezione contatti.
+ */
+function migrate_editorial_style(): void
+{
+    $titles = [
+        "Sai chi mangia, prima di accendere i fornelli." => "Sai chi mangia, prima di *accendere i fornelli.*",
+        "Ogni mattina la stessa domanda: quanti siamo oggi?" => "Ogni mattina la stessa domanda: *quanti siamo oggi?*",
+        "Come funziona" => "Come *funziona*",
+        "Una giornata con ChiMangia" => "Una giornata con *ChiMangia*",
+        "Il menù parte da solo" => "Il menù *parte da solo*",
+        "Apri il telefono e trovi la risposta" => "Apri il telefono e *trovi la risposta*",
+        "I conti sono già fatti" => "I conti sono *già fatti*",
+        "Tutto quello che serve, niente di più" => "Tutto quello che serve, *niente di più*",
+        "Per chi è" => "Per *chi è*",
+        "Prezzi chiari, in base a quanti clienti servi" => "Prezzi chiari, in base a *quanti clienti servi*",
+        "Domande frequenti" => "Domande *frequenti*",
+        "Domani mattina, sai già chi mangia." => "Domani mattina, *sai già chi mangia.*"
+    ];
+    $fix = static function (array &$node) use (&$fix, $titles): void {
+        foreach ($node as $k => &$v) {
+            if (is_array($v)) {
+                $fix($v);
+            } elseif ($k === 'title' && is_string($v) && isset($titles[$v])) {
+                $v = $titles[$v];
+            }
+        }
+    };
+    foreach (q('SELECT area, draft, published FROM ' . t('content'))->fetchAll() as $row) {
+        if (in_array($row['area'], ['seo', 'privacy', 'cookie'], true)) {
+            continue;
+        }
+        $out = [];
+        foreach (['draft', 'published'] as $col) {
+            $d = json_decode((string) $row[$col], true);
+            if (is_array($d)) {
+                $fix($d);
+                if ($row['area'] === 'hero' && ($d['photo'] ?? '') === 'brigata' && ($d['photo5'] ?? '') === 'esterno') {
+                    $d['photo5'] = '';
+                }
+            }
+            $out[$col] = is_array($d) ? content_encode($d) : (string) $row[$col];
+        }
+        q('UPDATE ' . t('content') . ' SET draft = ?, published = ? WHERE area = ?', [$out['draft'], $out['published'], $row['area']]);
     }
 }
