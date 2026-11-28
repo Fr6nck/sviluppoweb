@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/app/platform/core.php';
 require_once CM_APP . '/platform/maint.php';
+require_once CM_APP . '/platform/demo.php';
 pf_boot('super', '../');
 require __DIR__ . '/_guard.php';
 
@@ -12,6 +13,24 @@ $error = '';
 
 if (is_post()) {
     pf_csrf_check();
+    if (post('azione') === 'demo_crea') {
+        try {
+            $demo = demo_create();
+            pf_event($demo['venue_id'], 'demo_creata', 'locale dimostrativo con le date di oggi');
+            audit('piattaforma_demo_creata', 'Locanda Demo');
+            pf_flash('ok', 'Locale demo pronto, con le date di oggi. Password di tutti gli accessi dimostrativi: ' . $demo['password']);
+        } catch (Throwable $e) {
+            log_message('Demo non creata: ' . $e->getMessage());
+            pf_flash('error', $e instanceof RuntimeException ? $e->getMessage() : 'Non è stato possibile creare il locale demo. Il dettaglio è nel registro errori.');
+        }
+        redirect('index.php#demo');
+    }
+    if (post('azione') === 'demo_elimina') {
+        $n = demo_delete();
+        audit('piattaforma_demo_eliminata', (string) $n);
+        pf_flash('info', $n > 0 ? 'Locale demo eliminato con tutti i suoi dati.' : 'Non c\'era nessun locale demo da eliminare.');
+        redirect('index.php#demo');
+    }
     if (post('azione') === 'nuovo') {
         $new = [
             'venue' => clean_text(post('venue'), 160), 'kind' => post('kind'), 'owner' => clean_text(post('owner'), 120),
@@ -51,13 +70,15 @@ if (is_post()) {
 /* ---------- Numeri d'insieme ---------- */
 $now = now();
 $soon = date('Y-m-d H:i:s', time() + 3 * 86400);
-$count = static fn (string $where, array $args = []): int => (int) q_value('SELECT COUNT(*) FROM ' . t('venues') . ' WHERE ' . $where, $args);
+// Il locale demo resta fuori dai numeri d'insieme.
+$demoId = demo_venue_id();
+$count = static fn (string $where, array $args = []): int => (int) q_value('SELECT COUNT(*) FROM ' . t('venues') . ' WHERE id <> ' . $demoId . ' AND ' . $where, $args);
 $active = $count("status = 'attivo'");
 $trial = $count("status = 'prova' AND (trial_ends_at IS NULL OR trial_ends_at > ?)", [$now]);
 $expiring = $count("status = 'prova' AND trial_ends_at > ? AND trial_ends_at <= ?", [$now, $soon]);
 $expired = $count("status = 'prova' AND trial_ends_at IS NOT NULL AND trial_ends_at <= ?", [$now]);
 $meals = (int) q_value(
-    'SELECT COUNT(*) FROM ' . t('bookings') . " WHERE day BETWEEN ? AND ? AND status IN ('prenotato', 'confermato')",
+    'SELECT COUNT(*) FROM ' . t('bookings') . " WHERE venue_id <> " . $demoId . " AND day BETWEEN ? AND ? AND status IN ('prenotato', 'confermato')",
     [day_add(today(), -30), today()]
 );
 
@@ -102,6 +123,36 @@ echo '<div class="kpis">'
     . ui_kpi('Prove in scadenza', $expiring, 'entro 3 giorni', $expiring > 0 ? 'zaff' : '')
     . ui_kpi('Pasti prenotati', number_format($meals, 0, ',', '.'), 'negli ultimi 30 giorni')
     . '</div>';
+
+/* ---------- Locale demo ---------- */
+$demo = demo_info();
+echo '<section class="card card-navy" id="demo" aria-labelledby="demo-t"><div class="card-head"><h2 id="demo-t">Locale demo</h2><p>'
+    . ($demo ? 'Creato il ' . e(data_it($demo['created_at'])) : 'Per provare la piattaforma con dati realistici') . '</p></div>';
+if ($demo) {
+    $dv = $demo['venue'];
+    $pw = $demo['password'];
+    $row = static fn (string $who, string $login, string $where): string => '<tr><td data-th="Chi">' . $who . '</td><td data-th="Accesso"><code>' . e($login) . '</code></td><td data-th="Da dove">' . $where . '</td></tr>';
+    echo '<div class="stack-s"><p class="small muted">«' . e($dv['name']) . '» è un albergo con ristorante: 12 ospiti di 4 società, 6 camere, tre settimane di pasti, i menù di oggi e di domani, due registrazioni da confermare e alcune richieste in attesa. Le date seguono il giorno in cui lo crei: ricrealo quando vuoi ripartire da capo.</p>'
+        . '<div class="demo-pass"><span class="small">Password per tutti gli accessi</span><code id="demo-pw">' . e($pw !== '' ? $pw : 'non disponibile: ricrea il locale') . '</code>'
+        . ($pw !== '' ? '<button type="button" class="btn btn-small btn-zaff" data-copy="#demo-pw">Copia</button>' : '') . '</div>'
+        . '<div class="table-wrap"><table class="table stack-sm demo-table"><thead><tr><th scope="col">Chi</th><th scope="col">Accesso</th><th scope="col">Da dove</th></tr></thead><tbody>'
+        . $row('Titolare · ' . e(DEMO_STAFF['admin'][1]), demo_email('titolare'), '<a href="../accedi/" target="_blank" rel="noopener">Pannello del locale</a>')
+        . $row('Reception · ' . e(DEMO_STAFF['reception'][1]), demo_email('reception'), '<a href="../accedi/" target="_blank" rel="noopener">Pannello del locale</a>')
+        . $row('Cucina · ' . e(DEMO_STAFF['cucina'][1]), demo_email('cucina'), '<a href="../accedi/" target="_blank" rel="noopener">Pannello del locale</a> (vede solo la cucina)')
+        . $row('Ospite · Marco Bianchi', '300 000 0001', '<a href="../ospiti/?l=' . e(rawurlencode((string) $dv['slug'])) . '" target="_blank" rel="noopener">Area ospiti</a> (con il cellulare)')
+        . $row('Ospite · Luca Ferri', '300 000 0005', 'Area ospiti · vegetariano, variante rifiutata ieri')
+        . '</tbody></table></div>'
+        . '<p class="small muted">Le email finiscono in @demo.invalid: nessun messaggio parte davvero. Gli altri ospiti hanno i numeri da 300 000 0001 a 300 000 0012, con la stessa password.</p>'
+        . '<div class="row"><a class="btn btn-small btn-ghost" href="cliente.php?id=' . (int) $dv['id'] . '">Scheda del locale</a>'
+        . ui_post_btn('index.php', ['azione' => 'demo_crea'], icon('refresh', 16) . 'Ricrea con le date di oggi', 'btn btn-small btn-zaff', 'Ricreare il locale demo? I dati attuali della demo vengono cancellati e la password cambia.')
+        . ui_post_btn('index.php', ['azione' => 'demo_elimina'], icon('trash', 16) . 'Elimina il locale demo', 'btn btn-small btn-ghost', 'Eliminare il locale demo con tutti i suoi dati?')
+        . '</div></div>';
+} else {
+    echo '<div class="stack-s"><p class="muted">Crea un albergo con ristorante già pieno di dati di prova: ospiti, società, camere, menù, prenotazioni, varianti e richieste da approvare. '
+        . 'Hai gli accessi da titolare, reception, cucina e ospite per provare ogni area. Resta fuori dai numeri qui sopra e si elimina con un tocco.</p>'
+        . '<div>' . ui_post_btn('index.php', ['azione' => 'demo_crea'], icon('plus', 16) . 'Crea il locale demo', 'btn btn-zaff') . '</div></div>';
+}
+echo '</section>';
 ?>
 <details class="card card-cream fold"<?= $error !== '' ? ' open' : '' ?>>
   <summary>Nuovo cliente</summary>
@@ -152,7 +203,7 @@ echo '<div class="kpis">'
           $days = venue_trial_days($v);
           ?>
         <tr>
-          <td data-th="Locale"><a href="cliente.php?id=<?= (int) $v['id'] ?>"><strong><?= e($v['name']) ?></strong></a><span class="sub"><?= e($v['slug']) ?><?= $v['email_verified_at'] === null ? ' · email da confermare' : '' ?></span></td>
+          <td data-th="Locale"><a href="cliente.php?id=<?= (int) $v['id'] ?>"><strong><?= e($v['name']) ?></strong></a><?= venue_is_demo($v) ? ' ' . ui_tag('Demo', 'zaff') : '' ?><span class="sub"><?= e($v['slug']) ?><?= $v['email_verified_at'] === null ? ' · email da confermare' : '' ?></span></td>
           <td data-th="Tipo"><?= e(pf_kinds()[$v['kind']] ?? $v['kind']) ?></td>
           <td data-th="Stato"><?= super_status_tag($v) ?></td>
           <td data-th="Piano"><?= e($plans[$v['plan']][0] ?? $v['plan']) ?><span class="sub"><?= e($v['billing']) ?></span></td>

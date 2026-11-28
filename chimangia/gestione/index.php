@@ -83,7 +83,7 @@ if (!$hotel) {
 }
 echo '</div>';
 
-echo '<div class="grid-2"><div class="stack">';
+echo '<div class="grid-2 dash-grid"><div class="stack">';
 
 /* ---------- Registrazioni da confermare ---------- */
 if (can('conferma', $me)) {

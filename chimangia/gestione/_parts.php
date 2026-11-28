@@ -38,37 +38,54 @@ function pending_guests(array $venue, int $limit = 100): array
     return $rows;
 }
 
-/** Tabella "Registrazioni da confermare" (cruscotto e pagina dedicata). $back: pagina a cui tornare dopo l'azione. */
+/** Intervallo di date compatto: "29 nov", "29–30 nov", "30 nov – 2 dic". */
+function range_short(string $from, string $to): string
+{
+    $f = strtotime($from);
+    $t = strtotime($to);
+    $m = static fn (int $ts): string => mb_substr(PF_MONTHS[(int) date('n', $ts)], 0, 3);
+    if ($from === $to) {
+        return date('j', $f) . ' ' . $m($f);
+    }
+    return date('n', $f) === date('n', $t) ? date('j', $f) . '–' . date('j', $t) . ' ' . $m($t) : date('j', $f) . ' ' . $m($f) . ' – ' . date('j', $t) . ' ' . $m($t);
+}
+
+/**
+ * Tabella "Registrazioni da confermare" (cruscotto e pagina dedicata). $back: pagina a cui tornare dopo l'azione.
+ * Poche colonne, perché nel cruscotto sta accanto alle richieste: società sotto il nome, notti e pasti insieme.
+ */
 function registrations_table(array $me, array $rows, string $back): string
 {
     $v = $me['venue'];
     $hotel = feature('hotel', $v);
     $canRooms = $hotel && can('camere', $me);
     $rooms = $canRooms ? rooms_all((int) $v['id']) : [];
-    $h = '<div class="table-wrap"><table class="table stack-sm"><thead><tr><th>Ospite</th>' . (feature('societa', $v) ? '<th>Società</th>' : '')
-        . ($hotel ? '<th>Notti</th>' : '') . '<th>Pasti</th>' . (can('note', $me) ? '<th>Diete</th>' : '') . ($canRooms ? '<th>Camera</th>' : '')
-        . '<th><span class="sr-only">Azioni</span></th></tr></thead><tbody>';
+    $h = '<div class="table-wrap"><table class="table stack-sm reg-table"><thead><tr><th>Ospite</th><th>Chiede</th>'
+        . (can('note', $me) ? '<th>Diete</th>' : '') . ($canRooms ? '<th>Camera</th>' : '') . '<th><span class="sr-only">Azioni</span></th></tr></thead><tbody>';
     foreach ($rows as $r) {
         $id = (int) $r['id'];
-        $h .= '<tr><td data-th="Ospite"><strong>' . e(guest_name($r)) . '</strong><span class="sub">' . e(phone_show((string) $r['phone'])) . '</span></td>';
-        if (feature('societa', $v)) {
-            $h .= '<td data-th="Società">' . ($r['company'] ? e((string) $r['company']) : '<span class="muted">—</span>');
+        $h .= '<tr><td data-th="Ospite"><strong>' . e(guest_name($r)) . '</strong><span class="sub">' . e(phone_show((string) $r['phone'])) . '</span>';
+        if (feature('societa', $v) && $r['company']) {
+            $h .= '<span class="sub">' . icon('building', 14) . ' ' . e((string) $r['company']) . '</span>';
             if ($r['similar'] && can('societa', $me)) {
-                $h .= '<span class="sub">Nuova · simile a «' . e((string) $r['similar']['name']) . '»</span>'
-                    . ui_post_btn('registrazioni.php', ['azione' => 'unisci', 'da' => $r['company_id'], 'a' => $r['similar']['id'], 'back' => $back], 'Unisci');
-            } elseif ($r['company'] && !(int) $r['company_verified']) {
+                $h .= '<span class="reg-similar"><span class="sub">Nuova · simile a «' . e((string) $r['similar']['name']) . '»</span>'
+                    . ui_post_btn('registrazioni.php', ['azione' => 'unisci', 'da' => $r['company_id'], 'a' => $r['similar']['id'], 'back' => $back], 'Unisci') . '</span>';
+            } elseif (!(int) $r['company_verified']) {
                 $h .= '<span class="sub">Nuova società</span>';
             }
-            $h .= '</td>';
         }
-        if ($hotel) {
+        $h .= '</td><td data-th="Chiede">';
+        $bits = [];
+        if ($hotel && $r['nights']['count']) {
             $n = $r['nights'];
-            $h .= '<td data-th="Notti">' . ($n['count'] ? e(day_it((string) $n['from'], 'short') . ($n['count'] > 1 ? ' – ' . day_it((string) $n['to'], 'short') : ''))
-                . '<span class="sub">' . ($n['count'] === 1 ? '1 notte' : $n['count'] . ' notti') . '</span>' : '<span class="muted">—</span>') . '</td>';
+            $bits[] = '<div><span class="nowrap">' . e(range_short((string) $n['from'], (string) $n['to'])) . '</span><span class="sub">' . ($n['count'] === 1 ? '1 notte' : $n['count'] . ' notti') . '</span></div>';
         }
-        $h .= '<td data-th="Pasti">' . ($r['pranzi'] + $r['cene'] > 0
-            ? ($r['pranzi'] ? $r['pranzi'] . ($r['pranzi'] === 1 ? ' pranzo' : ' pranzi') . '<br>' : '') . ($r['cene'] ? $r['cene'] . ($r['cene'] === 1 ? ' cena' : ' cene') : '')
-            : '<span class="muted">—</span>') . '</td>';
+        $meals = array_filter([$r['pranzi'] ? $r['pranzi'] . ($r['pranzi'] === 1 ? ' pranzo' : ' pranzi') : '', $r['cene'] ? $r['cene'] . ($r['cene'] === 1 ? ' cena' : ' cene') : '']);
+        if ($meals) {
+            $bits[] = '<div class="nowrap">' . e(implode(' · ', $meals)) . '</div>';
+        }
+        $h .= $bits ? '<div class="reg-asks">' . implode('', $bits) . '</div>' : '<span class="muted">—</span>';
+        $h .= '</td>';
         if (can('note', $me)) {
             $tags = ui_guest_tags(guest_tags($r));
             $h .= '<td data-th="Diete"><div class="tags">' . ($tags !== '' ? $tags : '<span class="muted">—</span>') . '</div></td>';
@@ -80,10 +97,11 @@ function registrations_table(array $me, array $rows, string $back): string
             }
             $h .= '</select></td>';
         }
-        $h .= '<td class="actions"><a class="btn btn-small btn-line" href="ospite.php?id=' . $id . '">Modifica</a>'
+        $h .= '<td class="actions reg-cell"><div class="reg-actions">'
             . '<form method="post" action="registrazioni.php" id="conf' . $id . '" class="inline-form">' . csrf_field()
             . '<input type="hidden" name="azione" value="conferma"><input type="hidden" name="id" value="' . $id . '"><input type="hidden" name="back" value="' . e($back) . '">'
-            . '<button type="submit" class="btn btn-small btn-dark">Conferma</button></form></td></tr>';
+            . '<button type="submit" class="btn btn-small btn-dark">Conferma</button></form>'
+            . '<a class="btn btn-small btn-line" href="ospite.php?id=' . $id . '">Modifica</a></div></td></tr>';
     }
     return $h . '</tbody></table></div>';
 }

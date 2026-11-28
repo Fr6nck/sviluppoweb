@@ -127,6 +127,7 @@ I ruoli sono **Amministrazione**, **Reception** e **Cucina**. Il titolare ha sem
 
 ### Super admin (`/superadmin/`)
 - **Clienti:** elenco dei locali con stato, piano, scadenza della prova e clienti del mese; nuovo cliente; scheda con dati, note interne, attivazione, sospensione, proroga della prova.
+- **Locale demo:** in *Clienti*, un pulsante crea «Locanda Demo», un albergo con ristorante già pieno di dati di prova: 12 ospiti di 4 società, 6 camere, tre settimane di pasti con importi, i menù di oggi e di domani, due registrazioni da confermare (una con una società doppione da unire) e alcune richieste in attesa. La scheda mostra gli accessi da titolare, reception, cucina e ospite e una password casuale unica per tutti, nuova a ogni generazione. Le email degli accessi finiscono in `@demo.invalid`, quindi non parte nessun messaggio; i cellulari degli ospiti sono `300 000 0001`–`0012`. *Ricrea con le date di oggi* riparte da capo, *Elimina* toglie tutto. La demo resta fuori dai numeri d'insieme.
 - **Funzioni attive:** undici interruttori per locale (modulo Hotel, menù a scelta, menù in foto, varianti, società, formule, prezzi per piatto, riepilogo mensile, avvisi nell'area ospiti, email, WhatsApp).
 - **Permessi dei ruoli:** la tabella permesso × ruolo di ogni locale.
 - **Entra nel pannello:** accesso di assistenza al pannello di un locale, con un collegamento monouso valido un minuto; resta scritto nel registro come «fornitore».

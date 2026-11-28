@@ -41,7 +41,7 @@ echo '<div class="row no-print"><a class="round" href="riepilogo.php?m=' . $prev
     . ($next <= date('Y-m') ? '<a class="round" href="riepilogo.php?m=' . $next . '" aria-label="Mese successivo">' . icon('chev-right', 18) . '</a>' : '') . '</div>';
 
 $tt = $r['total'];
-echo '<div class="kpis">' . ui_kpi('Pasti serviti', $tt['pasti'], $tt['pranzi'] . ' pranzi · ' . $tt['cene'] . ' cene') . ui_kpi('Ospiti', $tt['ospiti'], count($r['companies']) . (count($r['companies']) === 1 ? ' società' : ' società'))
+echo '<div class="kpis">' . ui_kpi('Pasti serviti', $tt['pasti'], $tt['pranzi'] . ' pranzi · ' . $tt['cene'] . ' cene') . ui_kpi('Ospiti', $tt['ospiti'], ($nco = count(array_filter($r['companies'], static fn ($c) => (int) $c['id'] !== 0))) . ' società' . (count($r['companies']) > $nco ? ' · più chi non ne ha' : ''))
     . ($hotel ? ui_kpi('Notti', $tt['notti'], 'confermate') : '') . ($money ? ui_kpi('Importo', euro($tt['totale']), 'IVA come da listino', 'zaff') : '') . '</div>';
 
 echo '<section class="card">';

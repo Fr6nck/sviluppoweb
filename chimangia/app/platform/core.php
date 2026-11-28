@@ -804,7 +804,8 @@ function pf_token_use(string $kind, string $token): bool
 /** Mette un'email in coda: parte a fine richiesta, senza far aspettare chi sta usando il pannello. */
 function pf_mail_queue(?int $venueId, string $to, string $subject, string $body): void
 {
-    if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+    // Gli indirizzi .invalid (accessi del locale dimostrativo) non ricevono mai posta.
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL) || str_ends_with(mb_strtolower($to), '.invalid')) {
         return;
     }
     q(
