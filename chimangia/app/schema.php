@@ -135,6 +135,219 @@ function schema_statements(string $prefix): array
             KEY idx_created (created_at),
             KEY idx_action (action)
         ) $opt",
+
+        /* ---------- Piattaforma: locali, staff, ospiti, pasti ---------- */
+
+        "CREATE TABLE IF NOT EXISTS `{$p}venues` (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            slug VARCHAR(60) NOT NULL,
+            name VARCHAR(160) NOT NULL,
+            kind VARCHAR(30) NOT NULL DEFAULT 'ristorante',
+            email VARCHAR(190) NOT NULL DEFAULT '',
+            phone VARCHAR(40) NOT NULL DEFAULT '',
+            address VARCHAR(255) NOT NULL DEFAULT '',
+            vat VARCHAR(40) NOT NULL DEFAULT '',
+            status VARCHAR(20) NOT NULL DEFAULT 'prova',
+            plan VARCHAR(20) NOT NULL DEFAULT 'p40',
+            billing VARCHAR(10) NOT NULL DEFAULT 'mensile',
+            trial_ends_at DATETIME NULL,
+            email_verified_at DATETIME NULL,
+            features TEXT NOT NULL,
+            perms TEXT NOT NULL,
+            settings MEDIUMTEXT NOT NULL,
+            notes TEXT NOT NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            UNIQUE KEY uq_slug (slug),
+            KEY idx_status (status)
+        ) $opt",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}staff` (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            venue_id INT UNSIGNED NOT NULL,
+            name VARCHAR(120) NOT NULL,
+            email VARCHAR(190) NOT NULL,
+            password_hash VARCHAR(255) NOT NULL,
+            role VARCHAR(20) NOT NULL DEFAULT 'reception',
+            is_owner TINYINT(1) NOT NULL DEFAULT 0,
+            active TINYINT(1) NOT NULL DEFAULT 1,
+            last_login_at DATETIME NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            UNIQUE KEY uq_email (email),
+            KEY idx_venue (venue_id)
+        ) $opt",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}companies` (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            venue_id INT UNSIGNED NOT NULL,
+            name VARCHAR(160) NOT NULL,
+            note VARCHAR(255) NOT NULL DEFAULT '',
+            contact VARCHAR(190) NOT NULL DEFAULT '',
+            verified TINYINT(1) NOT NULL DEFAULT 1,
+            created_at DATETIME NOT NULL,
+            KEY idx_venue (venue_id, name)
+        ) $opt",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}guests` (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            venue_id INT UNSIGNED NOT NULL,
+            first_name VARCHAR(80) NOT NULL,
+            last_name VARCHAR(80) NOT NULL,
+            phone VARCHAR(30) NOT NULL,
+            email VARCHAR(190) NOT NULL DEFAULT '',
+            password_hash VARCHAR(255) NOT NULL,
+            company_id INT UNSIGNED NULL,
+            diets VARCHAR(255) NOT NULL DEFAULT '',
+            needs VARCHAR(500) NOT NULL DEFAULT '',
+            kitchen_note VARCHAR(160) NOT NULL DEFAULT '',
+            staff_note TEXT NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'attesa',
+            consent_at DATETIME NULL,
+            last_login_at DATETIME NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            UNIQUE KEY uq_phone (venue_id, phone),
+            KEY idx_status (venue_id, status),
+            KEY idx_company (company_id)
+        ) $opt",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}rooms` (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            venue_id INT UNSIGNED NOT NULL,
+            name VARCHAR(40) NOT NULL,
+            beds TINYINT UNSIGNED NOT NULL DEFAULT 1,
+            note VARCHAR(160) NOT NULL DEFAULT '',
+            active TINYINT(1) NOT NULL DEFAULT 1,
+            KEY idx_venue (venue_id)
+        ) $opt",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}nights` (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            venue_id INT UNSIGNED NOT NULL,
+            guest_id INT UNSIGNED NOT NULL,
+            day DATE NOT NULL,
+            room_id INT UNSIGNED NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'richiesta',
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            UNIQUE KEY uq_guest_day (guest_id, day),
+            KEY idx_venue_day (venue_id, day)
+        ) $opt",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}menus` (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            venue_id INT UNSIGNED NOT NULL,
+            day DATE NOT NULL,
+            meal VARCHAR(10) NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'bozza',
+            mode VARCHAR(10) NOT NULL DEFAULT 'scelta',
+            cutoff TIME NULL,
+            show_prices TINYINT(1) NOT NULL DEFAULT 0,
+            data MEDIUMTEXT NOT NULL,
+            photo VARCHAR(120) NOT NULL DEFAULT '',
+            note VARCHAR(255) NOT NULL DEFAULT '',
+            published_at DATETIME NULL,
+            closed_at DATETIME NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            UNIQUE KEY uq_meal (venue_id, day, meal),
+            KEY idx_status (status, day)
+        ) $opt",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}bookings` (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            venue_id INT UNSIGNED NOT NULL,
+            guest_id INT UNSIGNED NOT NULL,
+            day DATE NOT NULL,
+            meal VARCHAR(10) NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'prenotato',
+            choices TEXT NOT NULL,
+            amount DECIMAL(8,2) NULL,
+            variant VARCHAR(500) NOT NULL DEFAULT '',
+            variant_status VARCHAR(20) NOT NULL DEFAULT '',
+            source VARCHAR(10) NOT NULL DEFAULT 'ospite',
+            wa_sent_at DATETIME NULL,
+            answered_at DATETIME NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            UNIQUE KEY uq_guest_meal (guest_id, day, meal),
+            KEY idx_venue_day (venue_id, day, meal)
+        ) $opt",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}requests` (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            venue_id INT UNSIGNED NOT NULL,
+            guest_id INT UNSIGNED NOT NULL,
+            kind VARCHAR(20) NOT NULL,
+            booking_id INT UNSIGNED NULL,
+            day DATE NULL,
+            meal VARCHAR(10) NOT NULL DEFAULT '',
+            body VARCHAR(500) NOT NULL DEFAULT '',
+            status VARCHAR(20) NOT NULL DEFAULT 'attesa',
+            staff_note VARCHAR(255) NOT NULL DEFAULT '',
+            handled_by INT UNSIGNED NULL,
+            handled_at DATETIME NULL,
+            created_at DATETIME NOT NULL,
+            KEY idx_venue (venue_id, status, created_at),
+            KEY idx_booking (booking_id)
+        ) $opt",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}notices` (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            venue_id INT UNSIGNED NOT NULL,
+            guest_id INT UNSIGNED NOT NULL,
+            title VARCHAR(160) NOT NULL,
+            body VARCHAR(500) NOT NULL DEFAULT '',
+            href VARCHAR(190) NOT NULL DEFAULT '',
+            read_at DATETIME NULL,
+            created_at DATETIME NOT NULL,
+            KEY idx_guest (guest_id, read_at, created_at)
+        ) $opt",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}events` (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            venue_id INT UNSIGNED NULL,
+            actor VARCHAR(20) NOT NULL DEFAULT 'sistema',
+            actor_id INT UNSIGNED NULL,
+            actor_name VARCHAR(120) NOT NULL DEFAULT '',
+            action VARCHAR(60) NOT NULL,
+            details VARCHAR(500) NOT NULL DEFAULT '',
+            created_at DATETIME NOT NULL,
+            KEY idx_venue (venue_id, created_at),
+            KEY idx_created (created_at)
+        ) $opt",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}pf_tokens` (
+            token_hash CHAR(64) NOT NULL PRIMARY KEY,
+            kind VARCHAR(20) NOT NULL,
+            subject_id INT UNSIGNED NOT NULL DEFAULT 0,
+            expires_at DATETIME NOT NULL,
+            used_at DATETIME NULL,
+            created_at DATETIME NOT NULL,
+            KEY idx_expires (expires_at)
+        ) $opt",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}pf_rate` (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            bucket VARCHAR(40) NOT NULL,
+            ip_hash CHAR(64) NOT NULL,
+            created_at DATETIME NOT NULL,
+            KEY idx_bucket (bucket, ip_hash, created_at)
+        ) $opt",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}outbox` (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            venue_id INT UNSIGNED NULL,
+            to_email VARCHAR(190) NOT NULL,
+            subject VARCHAR(190) NOT NULL,
+            body TEXT NOT NULL,
+            attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
+            error VARCHAR(255) NOT NULL DEFAULT '',
+            sent_at DATETIME NULL,
+            created_at DATETIME NOT NULL,
+            KEY idx_pending (sent_at, attempts)
+        ) $opt",
     ];
 }
 
@@ -167,6 +380,9 @@ function cm_migrate(): void
     }
     if (version_compare($from, '4.0.0', '<')) {
         migrate_photo_panels();
+    }
+    if (version_compare($from, '5.0.0', '<')) {
+        migrate_signup_links();
     }
     foreach (default_settings() as $name => $value) {
         q('INSERT IGNORE INTO ' . t('settings') . ' (name, value) VALUES (?, ?)', [$name, json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
@@ -380,6 +596,46 @@ function migrate_photo_panels(): void
     $edit('contatti', static function (array $d): array {
         if (in_array($d['photo'] ?? null, ['esterno'], true)) {
             $d['photo'] = 'sala';
+        }
+        return $d;
+    });
+}
+
+/**
+ * 5.0.0: nasce la piattaforma. I pulsanti "Prova gratis" e "Inizia la prova" che puntavano
+ * ancora al modulo contatti portano alla registrazione del locale; i pulsanti già personalizzati restano come sono.
+ */
+function migrate_signup_links(): void
+{
+    $edit = static function (string $area, callable $fn): void {
+        $row = q_one('SELECT draft, published FROM ' . t('content') . ' WHERE area = ?', [$area]);
+        if (!$row) {
+            return;
+        }
+        $out = [];
+        foreach (['draft', 'published'] as $col) {
+            $d = json_decode((string) $row[$col], true);
+            $out[$col] = is_array($d) ? content_encode($fn($d)) : (string) $row[$col];
+        }
+        q('UPDATE ' . t('content') . ' SET draft = ?, published = ? WHERE area = ?', [$out['draft'], $out['published'], $area]);
+    };
+    $edit('header', static function (array $d): array {
+        if (($d['cta_href'] ?? '') === '#contatti') {
+            $d['cta_href'] = 'registrati/';
+        }
+        return $d;
+    });
+    $edit('hero', static function (array $d): array {
+        if (($d['btn1_href'] ?? '') === '#contatti') {
+            $d['btn1_href'] = 'registrati/';
+        }
+        return $d;
+    });
+    $edit('prezzi', static function (array $d): array {
+        foreach ($d['packages'] ?? [] as $i => $p) {
+            if (($p['cta_href'] ?? '') === '#contatti') {
+                $d['packages'][$i]['cta_href'] = 'registrati/';
+            }
         }
         return $d;
     });

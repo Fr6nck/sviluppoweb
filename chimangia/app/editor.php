@@ -31,7 +31,11 @@ function section_schema(string $area): ?array
             ]],
             ['Pulsante', [
                 f('cta_text', 'Testo del pulsante', 'text', ['rec' => 24]),
-                f('cta_href', 'Destinazione del pulsante', 'href'),
+                f('cta_href', 'Destinazione del pulsante', 'href', ['hint' => 'Per la registrazione di un nuovo locale: registrati/']),
+            ]],
+            ['Accesso all\'area riservata', [
+                f('login_text', 'Testo del collegamento', 'text', ['rec' => 12, 'hint' => 'Lascia vuoto per non mostrarlo.']),
+                f('login_href', 'Destinazione', 'href', ['hint' => 'La pagina di accesso dei locali è: accedi/']),
             ]],
         ]],
         'hero' => ['title' => 'Apertura', 'groups' => [

@@ -16,3 +16,6 @@
 /sitemap.xml
 /robots.txt
 /storage/sessions/
+/storage/sessions-staff/
+/storage/sessions-guest/
+/storage/backups/

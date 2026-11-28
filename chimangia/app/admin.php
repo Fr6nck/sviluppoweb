@@ -57,6 +57,7 @@ function admin_menu(): array
 {
     return [
         ['index.php', 'Cruscotto', 'editor', ''],
+        ['piattaforma.php', 'Clienti e piattaforma', 'admin', 'Piattaforma'],
         ['sezione.php?s=header', 'Intestazione', 'editor', 'Contenuti'],
         ['sezione.php?s=hero', 'Apertura', 'editor', 'Contenuti'],
         ['sezione.php?s=problema', 'Il problema', 'editor', 'Contenuti'],

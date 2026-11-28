@@ -18,6 +18,8 @@ AddDefaultCharset UTF-8
   RewriteEngine On
   # Cartelle interne e materiale di progetto
   RewriteRule ^(app|storage|design)(/|$) - [F,L]
+  # File di servizio inclusi dalle pagine (iniziano con il trattino basso)
+  RewriteRule (^|/)_[^/]+\.php$ - [F,L]
 </IfModule>
 
 <IfModule mod_headers.c>

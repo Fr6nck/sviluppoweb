@@ -24,7 +24,9 @@ function default_content(): array
                 ['id' => 'n4', 'label' => 'Domande', 'href' => '#domande'],
             ],
             'cta_text' => 'Prova gratis 7 giorni',
-            'cta_href' => '#contatti',
+            'cta_href' => 'registrati/',
+            'login_text' => 'Accedi',
+            'login_href' => 'accedi/',
         ],
 
         'hero' => [
@@ -33,7 +35,7 @@ function default_content(): array
             'title' => 'Sai chi mangia, prima di *accendere i fornelli.*',
             'text' => 'I tuoi clienti prenotano pranzo e cena dal telefono e scelgono i piatti dal menù del giorno. Tu trovi i conteggi già pronti per la cucina. Niente più telefonate, messaggi e fogli.',
             'btn1_text' => 'Prova gratis 7 giorni',
-            'btn1_href' => '#contatti',
+            'btn1_href' => 'registrati/',
             'btn2_text' => 'Guarda i prezzi',
             'btn2_href' => '#prezzi',
             'note' => 'Da {prezzo_da} al mese. Nessuna app da scaricare dagli store, nessun vincolo.',
@@ -177,7 +179,7 @@ function default_content(): array
                     'annual_full' => 410, 'annual_launch' => 290,
                     'activation_full' => 270, 'activation_launch' => 190,
                     'note' => '', 'featured' => false, 'badge' => '',
-                    'cta_text' => 'Inizia la prova', 'cta_href' => '#contatti', 'visible' => true,
+                    'cta_text' => 'Inizia la prova', 'cta_href' => 'registrati/', 'visible' => true,
                 ],
                 [
                     'id' => 'k2', 'name' => 'Fino a 80 clienti', 'clients' => 80,
@@ -185,7 +187,7 @@ function default_content(): array
                     'annual_full' => 700, 'annual_launch' => 490,
                     'activation_full' => 410, 'activation_launch' => 290,
                     'note' => '', 'featured' => true, 'badge' => 'Consigliato',
-                    'cta_text' => 'Inizia la prova', 'cta_href' => '#contatti', 'visible' => true,
+                    'cta_text' => 'Inizia la prova', 'cta_href' => 'registrati/', 'visible' => true,
                 ],
                 [
                     'id' => 'k3', 'name' => 'Oltre 80 clienti', 'clients' => 150,
@@ -193,7 +195,7 @@ function default_content(): array
                     'annual_full' => 990, 'annual_launch' => 690,
                     'activation_full' => 560, 'activation_launch' => 390,
                     'note' => 'Fino a 150 clienti; oltre, 10 € al mese ogni 50 in più.', 'featured' => false, 'badge' => '',
-                    'cta_text' => 'Inizia la prova', 'cta_href' => '#contatti', 'visible' => true,
+                    'cta_text' => 'Inizia la prova', 'cta_href' => 'registrati/', 'visible' => true,
                 ],
             ],
             'step2_title' => "L'attivazione",

@@ -41,7 +41,8 @@ $exclude = [
     '#^install/\.htaccess$#',               // creato dall'installazione per bloccarla
     '#^uploads/(?!\.htaccess$|index\.html$).+#',
     '#^storage/(cache|logs)/(?!\.htaccess$|\.gitkeep$).+#',
-    '#^storage/sessions(/|$)#',
+    '#^storage/sessions[a-z-]*(/|$)#',        // sessioni del pannello, dei locali e degli ospiti
+    '#^storage/backups(/|$)#',
     '#^storage/[^/]+\.lock$#',
     '#^(sitemap\.xml|robots\.txt)$#',       // rigenerati dal sito
     '#(^|/)\.DS_Store$#',

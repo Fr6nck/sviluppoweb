@@ -121,7 +121,8 @@ p { font-size: 1.07rem; line-height: 1.44; }
 .logo span { font: 800 26px/1 var(--font-logo); }
 .site-nav { display: contents; }
 .site-nav ul { grid-column: 1; grid-row: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 26px; }
-.site-nav .btn { grid-column: 3; grid-row: 1; justify-self: end; height: 50px; }
+.site-nav .nav-actions { grid-column: 3; grid-row: 1; justify-self: end; display: flex; align-items: center; gap: 24px; }
+.site-nav .btn { height: 50px; }
 .nav-link { position: relative; display: inline-flex; align-items: center; min-height: 44px; font-size: 15px; font-weight: 400; text-decoration: none; }
 .nav-link::after { content: ""; position: absolute; left: 0; right: 0; bottom: 9px; height: 2px; background: var(--zafferano); transform: scaleX(0); transform-origin: left; transition: transform .3s ease; }
 .nav-link:hover::after, .nav-link:focus-visible::after { transform: scaleX(1); }
@@ -146,7 +147,9 @@ p { font-size: 1.07rem; line-height: 1.44; }
   .js .site-nav li { border-bottom: 1px solid var(--linea); }
   .js .site-nav .nav-link { display: flex; min-height: 64px; font: 400 30px/1 var(--font-display); letter-spacing: -.01em; }
   .js .site-nav .nav-link::after { display: none; }
+  .js .site-nav .nav-actions { flex-direction: column-reverse; align-items: stretch; gap: 6px; }
   .js .site-nav .btn { width: 100%; }
+  .js .site-nav .nav-login { justify-content: center; min-height: 52px; font: 400 16px/1 var(--font-testo); text-decoration: underline; text-underline-offset: 4px; }
   html:not(.js) .site-header { height: auto; padding: 10px 0; }
   html:not(.js) .header-inner { display: flex; flex-wrap: wrap; }
   html:not(.js) .site-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }

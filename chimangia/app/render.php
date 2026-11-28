@@ -186,9 +186,10 @@ function render_header(RenderCtx $x): string
         . '<a class="logo" href="' . e($x->prefix === '' ? '#top' : $x->prefix) . '" aria-label="ChiMangia, torna all\'inizio">' . logo_svg(40) . '<span>ChiMangia</span></a>'
         . '<button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav">'
         . '<span class="nav-toggle-bars" aria-hidden="true"></span><span class="nav-toggle-label">Menu</span></button>'
-        . '<nav id="site-nav" class="site-nav" aria-label="Sezioni"><ul>' . $links . '</ul>'
+        . '<nav id="site-nav" class="site-nav" aria-label="Sezioni"><ul>' . $links . '</ul><div class="nav-actions">'
+        . (trim((string) ($h['login_text'] ?? '')) !== '' ? '<a class="nav-link nav-login" href="' . e($x->href((string) ($h['login_href'] ?? 'accedi/'))) . '">' . $x->t((string) $h['login_text']) . '</a>' : '')
         . ($h['cta_text'] !== '' ? '<a class="btn btn-dark btn-pill" href="' . e($x->href((string) $h['cta_href'])) . '">' . $x->t($h['cta_text']) . btn_arrow() . '</a>' : '')
-        . '</nav></div><div class="scroll-progress" aria-hidden="true"><span></span></div></header>';
+        . '</div></nav></div><div class="scroll-progress" aria-hidden="true"><span></span></div></header>';
 }
 
 function render_hero(RenderCtx $x): string
