@@ -90,8 +90,8 @@ Tre aree, ognuna con il suo accesso e la sua sessione.
 | Area | Indirizzo | Chi la usa |
 | --- | --- | --- |
 | **Registrazione del locale** | `/registrati/` | Il titolare: crea il locale e parte la prova gratuita. |
-| **Pannello del locale** | `/accedi/` → `/gestione/` | Titolare, reception, cucina. |
-| **Area ospiti** | `/ospiti/?l=codice-del-locale` | I clienti del locale, dal telefono. |
+| **Pannello del locale** | `/accedi/` → `/gestione/` | Titolare, reception, cucina (con l'email). |
+| **Area ospiti** | `/ospiti/?l=codice-del-locale` | I clienti del locale, dal telefono. Per registrarsi serve il collegamento (o il codice) del locale; per entrare basta cellulare e password, anche da `/accedi/` o da `/ospiti/` senza codice. |
 | **Super admin** | `/superadmin/` (oppure *Clienti e piattaforma* nel pannello del sito) | Il fornitore: stesso accesso dell'Amministratore di `/admin/`. |
 
 Sul sito, *Accedi* e *Prova gratis* nell'intestazione portano a queste pagine; i testi e le destinazioni si cambiano in *Intestazione*.

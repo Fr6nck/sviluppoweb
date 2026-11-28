@@ -588,6 +588,48 @@ function guest_require(): array
     return $me;
 }
 
+/**
+ * Accesso dell'ospite senza il codice del locale: cerca il cellulare in tutti i locali
+ * e prova la password su ciascuno. Restituisce [elenco di ['guest_id', 'venue'], errore].
+ * Più risultati solo se la stessa persona usa la stessa password in più locali.
+ */
+function guest_find_by_login(string $phone, string $password): array
+{
+    $phone = phone_normalize($phone);
+    if ($phone === '' || $password === '') {
+        return [[], 'Scrivi cellulare e password.'];
+    }
+    $key = 'g:*:' . $phone;
+    if (login_locked($key)) {
+        return [[], 'Troppi tentativi errati. Riprova tra ' . CM_LOGIN_LOCK_MINUTES . ' minuti oppure chiedi alla reception.'];
+    }
+    $rows = q('SELECT id, venue_id, password_hash, status FROM ' . t('guests') . ' WHERE phone = ? ORDER BY id LIMIT 20', [$phone])->fetchAll();
+    if (!$rows) {
+        password_verify($password, password_hash(random_token(8), PASSWORD_DEFAULT));   // stessi tempi anche se il numero non c'è
+    }
+    $found = [];
+    $blocked = false;
+    foreach ($rows as $g) {
+        if (!password_verify($password, (string) $g['password_hash'])) {
+            continue;
+        }
+        if ($g['status'] === 'bloccato') {
+            $blocked = true;
+            continue;
+        }
+        $venue = venue_get((int) $g['venue_id']);
+        if ($venue && venue_live($venue)) {
+            $found[] = ['guest_id' => (int) $g['id'], 'venue' => $venue];
+        }
+    }
+    if (!$found) {
+        login_record($key, false);
+        return [[], $blocked ? 'Questo accesso è stato sospeso. Rivolgiti alla reception.' : 'Cellulare o password non corretti.'];
+    }
+    login_record($key, true);
+    return [$found, null];
+}
+
 function guest_login(array $venue, string $phone, string $password): ?string
 {
     $phone = phone_normalize($phone);

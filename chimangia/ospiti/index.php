@@ -31,15 +31,69 @@ if (!$me) {
     $venue = g_venue_pick();
 
     if (!$venue) {
+        // Senza codice del locale: si entra con cellulare e password (il locale lo troviamo noi),
+        // oppure, la prima volta, si scrive il codice per registrarsi.
         unset($_SESSION['venue_slug']);
-        ui_guest_start('Qual è il tuo *locale*?', '', ['eyebrow' => 'Area ospiti']);
-        if ($asked !== '') {
-            echo '<div class="notice notice-error" role="alert">Non troviamo un locale con questo codice. Controlla il collegamento che ti hanno dato.</div>';
+        $error = '';
+        $phone = '';
+        $choices = [];
+        if (is_post() && post('azione') === 'scegli') {
+            $allowed = (array) ($_SESSION['guest_choices'] ?? []);
+            $pick = (int) post('ospite');
+            $fresh = time() - (int) ($_SESSION['guest_choices_at'] ?? 0) < 300;
+            unset($_SESSION['guest_choices'], $_SESSION['guest_choices_at']);
+            if (csrf_valid() && $fresh && isset($allowed[$pick])) {
+                guest_session_open($pick, (string) $allowed[$pick]);
+                redirect('index.php');
+            }
+            $error = 'La scelta è scaduta. Accedi di nuovo con cellulare e password.';
+        } elseif (is_post()) {
+            $phone = post('phone');
+            if (!login_token_valid(post('_lt'), 'guest')) {
+                $error = 'Il modulo è scaduto. Ricarica la pagina e riprova.';
+            } else {
+                [$found, $err] = guest_find_by_login($phone, (string) ($_POST['password'] ?? ''));
+                if ($err !== null) {
+                    $error = $err;
+                } elseif (count($found) === 1) {
+                    guest_session_open($found[0]['guest_id'], (string) $found[0]['venue']['slug']);
+                    redirect('index.php');
+                } else {
+                    $choices = $found;
+                    $_SESSION['guest_choices'] = array_combine(array_column($choices, 'guest_id'), array_map(static fn ($c) => (string) $c['venue']['slug'], $choices));
+                    $_SESSION['guest_choices_at'] = time();
+                }
+            }
         }
-        echo '<form method="get" action="index.php" class="card stack-s">'
-            . '<p class="small muted">Apri il collegamento che ti ha dato il locale, oppure scrivi qui il suo codice.</p>'
+
+        if ($choices) {
+            ui_guest_start('In quale *locale*?', '', ['eyebrow' => 'Area ospiti', 'lead' => 'Hai un accesso in più locali con questo cellulare.', 'nav' => false]);
+            echo '<div class="stack-s">';
+            foreach ($choices as $c) {
+                echo '<form method="post" action="index.php">' . csrf_field() . '<input type="hidden" name="azione" value="scegli"><input type="hidden" name="ospite" value="' . (int) $c['guest_id'] . '">'
+                    . '<button type="submit" class="btn btn-line btn-big btn-block">' . e((string) $c['venue']['name']) . icon('arrow', 18) . '</button></form>';
+            }
+            echo '</div>';
+            ui_guest_end();
+            exit;
+        }
+
+        ui_guest_start('La tua area *ospiti*', '', ['eyebrow' => 'Prenotazioni dal telefono', 'lead' => 'Prenoti pranzo, cena e le notti del tuo locale dal telefono.']);
+        if ($asked !== '') {
+            echo '<div class="notice notice-error" role="alert">Non troviamo un locale con il codice «' . e($asked) . '». Controlla il collegamento che ti hanno dato, oppure entra con cellulare e password.</div>';
+        }
+        if ($error !== '') {
+            echo '<div class="notice notice-error" role="alert">' . e($error) . '</div>';
+        }
+        echo '<form method="post" action="index.php" class="card stack-s" novalidate>' . login_token_field('guest')
+            . '<h2>Accedi</h2>'
+            . ui_field('phone', 'Cellulare', $phone, ['type' => 'tel', 'required' => true, 'autocomplete' => 'tel', 'placeholder' => '333 123 4567'])
+            . ui_field('password', 'Password', '', ['type' => 'password', 'required' => true, 'autocomplete' => 'current-password'])
+            . '<button type="submit" class="btn btn-dark btn-big btn-block">Entra' . icon('arrow', 20) . '</button></form>';
+        echo '<form method="get" action="index.php" class="card card-cream stack-s">'
+            . '<h2>È la prima volta?</h2><p class="small muted">Apri il collegamento che ti ha dato il locale, oppure scrivi qui il suo codice per registrarti.</p>'
             . ui_field('l', 'Codice del locale', '', ['required' => true, 'placeholder' => 'es. trattoria-da-mario', 'autocomplete' => 'off', 'attrs' => 'autocapitalize="none" pattern="[a-zA-Z0-9-]{2,60}"'])
-            . '<button type="submit" class="btn btn-dark btn-block">Vai' . icon('arrow', 18) . '</button></form>';
+            . '<button type="submit" class="btn btn-zaff btn-block">Vai' . icon('arrow', 18) . '</button></form>';
         ui_guest_end();
         exit;
     }

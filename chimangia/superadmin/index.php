@@ -139,7 +139,7 @@ if ($demo) {
         . $row('Titolare · ' . e(DEMO_STAFF['admin'][1]), demo_email('titolare'), '<a href="../accedi/" target="_blank" rel="noopener">Pannello del locale</a>')
         . $row('Reception · ' . e(DEMO_STAFF['reception'][1]), demo_email('reception'), '<a href="../accedi/" target="_blank" rel="noopener">Pannello del locale</a>')
         . $row('Cucina · ' . e(DEMO_STAFF['cucina'][1]), demo_email('cucina'), '<a href="../accedi/" target="_blank" rel="noopener">Pannello del locale</a> (vede solo la cucina)')
-        . $row('Ospite · Marco Bianchi', '300 000 0001', '<a href="../ospiti/?l=' . e(rawurlencode((string) $dv['slug'])) . '" target="_blank" rel="noopener">Area ospiti</a> (con il cellulare)')
+        . $row('Ospite · Marco Bianchi', '300 000 0001', '<a href="../accedi/" target="_blank" rel="noopener">Accedi</a> con il cellulare, oppure <a href="../ospiti/?l=' . e(rawurlencode((string) $dv['slug'])) . '" target="_blank" rel="noopener">area ospiti</a> (codice ' . e((string) $dv['slug']) . ')')
         . $row('Ospite · Luca Ferri', '300 000 0005', 'Area ospiti · vegetariano, variante rifiutata ieri')
         . '</tbody></table></div>'
         . '<p class="small muted">Le email finiscono in @demo.invalid: nessun messaggio parte davvero. Gli altri ospiti hanno i numeri da 300 000 0001 a 300 000 0012, con la stessa password.</p>'
